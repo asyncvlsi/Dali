@@ -1,0 +1,11 @@
+CC=g++
+CFLAGS=-std=c++11 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic
+BIN=./bin
+SOURCE=./src
+
+LIST=$(BIN)/BG
+
+all: $(LIST)
+
+$(BIN)/%: $(SOURCE)/%.cpp
+	${CC} ${CFLAGS} -o $@ $<
