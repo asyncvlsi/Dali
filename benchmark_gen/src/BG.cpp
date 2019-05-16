@@ -3,7 +3,18 @@
 //
 
 #include <iostream>
+#include <cmath>
+#include <ctime>
+#include <cstdlib>
+#include <vector>
 
 int main() {
-  std::cout << "This is another test\n";
+  clock_t T=clock();
+
+
+
+
+  T = clock() - T;
+  std::cout << "Process complete. Execution time : " << (float)T/CLOCKS_PER_SEC << " s\n";
+  return 0;
 }
