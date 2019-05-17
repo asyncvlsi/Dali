@@ -1,11 +1,15 @@
-#ifndef node_t_NET_HPP
-#define node_t_NET_HPP
+//
+// Created by Yihang Yang on 2019-05-16.
+//
+
+#ifndef NODE_NET_HPP
+#define NODE_NET_HPP
 
 #include <vector>
 class node_t {
 public:
   node_t();
-  int node_t_num, w, h;
+  int node_num, w, h;
   std::string orientation;
   bool is_terminal;
   float anchorx, anchory, x0, y0;
@@ -17,7 +21,7 @@ public:
   std::vector<size_t> edgelist;
   // used to record which nets this node_t is connected to
   bool isterminal() const { return is_terminal; }
-  int node_tnum() const { return node_t_num; }
+  int nodenum() const { return node_num; }
   int width() const { return w; }
   int height() const { return h; }
   int area() const { return w*h; }
@@ -34,7 +38,7 @@ public:
 
 node_t::node_t() {
   orientation = "N";
-  node_t_num = 0;
+  node_num = 0;
   is_terminal = false;
   w = 0;
   h = 0;
@@ -67,7 +71,7 @@ public:
 };
 
 pininfo::pininfo() {
-  pinnum = 0;
+  pinnum = 0; // pinnum is the nodenum of the node which this pin belongs to
   xoffset = 0;
   yoffset = 0;
   x = 0;
@@ -75,9 +79,9 @@ pininfo::pininfo() {
 }
 
 
-class Net {
+class net_t {
 public:
-  Net();
+  net_t();
   size_t net_num, Inum, Onum, p, maxpindex_x, minpindex_x, maxpindex_y, minpindex_y;
   float invpmin1, hpwlx, hpwly;
   // net_num is the primary key
@@ -93,7 +97,7 @@ public:
   //std::vector<> offlist; // pin offset in the input file is measured from the center of corresponding object
 };
 
-Net::Net() {
+net_t::net_t() {
   net_num = 0;
   Inum = 0;
   Onum = 0;
