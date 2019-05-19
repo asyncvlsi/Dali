@@ -93,8 +93,6 @@ public:
   // maxpindex_y is the index of the pin whose node_t number has the maximum y
   // minpindex_y is the index of the pin whose node_t number has the minimum y
   std::vector<pininfo> pinlist;
-  std::vector<char> node_ttype;
-  //std::vector<> offlist; // pin offset in the input file is measured from the center of corresponding object
 };
 
 net_t::net_t() {

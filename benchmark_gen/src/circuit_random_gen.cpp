@@ -52,7 +52,7 @@ void circuit_t::random_gen_net_list() {
         for (int j = 0; j < 4; j++) {
           tmp_net.pinlist.clear();
           tmp_pin.pinnum = i - 1;
-          tmp_pin.xoffset = (j+1) * Nodelist[i-1].w/6.0;
+          tmp_pin.xoffset = (j+1) + Nodelist[i-1].w/2.0 - 2;
           if (rand_num % 2 == 1) {
             tmp_pin.yoffset = 0;
           } else {
@@ -60,7 +60,7 @@ void circuit_t::random_gen_net_list() {
           }
           tmp_net.pinlist.push_back(tmp_pin);
           tmp_pin.pinnum = i;
-          tmp_pin.xoffset = (j+1) * Nodelist[i].w/6.0;
+          tmp_pin.xoffset = (j+1) + Nodelist[i].w/2.0 - 2;
           if (rand_num % 2) {
             tmp_pin.yoffset = Nodelist[i].h;
           } else {
@@ -80,7 +80,7 @@ void circuit_t::random_gen_net_list() {
           } else {
             tmp_pin.xoffset = Nodelist[i-1].w;
           }
-          tmp_pin.yoffset = (j+1) * Nodelist[i-1].h/6.0;
+          tmp_pin.yoffset = (j+1) + Nodelist[i-1].h/2.0 - 2;
           tmp_net.pinlist.push_back(tmp_pin);
           tmp_pin.pinnum = i;
           if (rand_num % 2) {
@@ -88,7 +88,7 @@ void circuit_t::random_gen_net_list() {
           } else {
             tmp_pin.xoffset = 0;
           }
-          tmp_pin.yoffset = (j+1) * Nodelist[i].h/6.0;
+          tmp_pin.yoffset = (j+1) + Nodelist[i].h/2.0 - 2;
           tmp_net.pinlist.push_back(tmp_pin);
           tmp_net.net_num = netNum;
           Netlist.push_back(tmp_net);
@@ -113,7 +113,7 @@ void circuit_t::random_gen_net_list() {
       if (std::rand() % 2) {
         tmp_net.pinlist.clear();
         tmp_pin.pinnum = i;
-        tmp_pin.xoffset = (std::rand() % 5 + 1) * Nodelist[i].w/6.0;
+        tmp_pin.xoffset = std::rand() % Nodelist[i].w;
         if (rand_num % 2) {
           tmp_pin.yoffset = 0;
         } else {
@@ -124,7 +124,7 @@ void circuit_t::random_gen_net_list() {
           continue;
         }
         tmp_pin.pinnum = rand_node_num;
-        tmp_pin.xoffset = (std::rand() % 5 + 1) * Nodelist[rand_node_num].w/6.0;
+        tmp_pin.xoffset = std::rand() % Nodelist[rand_node_num].w;
         if (rand_num % 2) {
           tmp_pin.yoffset = Nodelist[rand_node_num].h;
         } else {
@@ -145,7 +145,7 @@ void circuit_t::random_gen_net_list() {
         } else {
           tmp_pin.xoffset = Nodelist[i].w;
         }
-        tmp_pin.yoffset = (std::rand() % 5 + 1) * Nodelist[i].h/6.0;
+        tmp_pin.yoffset = std::rand() % Nodelist[i].h;
         tmp_net.pinlist.push_back(tmp_pin);
         if (usage[rand_node_num] >= capacity[rand_node_num]) {
           continue;
@@ -156,7 +156,7 @@ void circuit_t::random_gen_net_list() {
         } else {
           tmp_pin.xoffset = 0;
         }
-        tmp_pin.yoffset = (std::rand() % 5 + 1) * Nodelist[rand_node_num].h/6.0;
+        tmp_pin.yoffset = std::rand() % Nodelist[rand_node_num].h;
         tmp_net.pinlist.push_back(tmp_pin);
         tmp_net.net_num = netNum;
         Netlist.push_back(tmp_net);
@@ -164,6 +164,25 @@ void circuit_t::random_gen_net_list() {
         usage[i]++;
         usage[rand_node_num]++;
       }
+    }
+  }
+
+  size_t max_pin_num_index;
+  size_t max_pin_num;
+  for (auto &&net: Netlist) {
+    for (size_t i=0; i<net.pinlist.size(); i++) {
+      max_pin_num_index = i;
+      max_pin_num = net.pinlist[i].pinnum;
+      for (size_t j=i+1; j<net.pinlist.size(); j++) {
+        if (net.pinlist[j].pinnum > max_pin_num) {
+          max_pin_num = net.pinlist[j].pinnum;
+          max_pin_num_index = j;
+        }
+      }
+
+      tmp_pin = net.pinlist[i];
+      net.pinlist[i] = net.pinlist[max_pin_num_index];
+      net.pinlist[max_pin_num_index] = tmp_pin;
     }
   }
 }

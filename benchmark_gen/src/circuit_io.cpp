@@ -3,6 +3,7 @@
 //
 
 #include <fstream>
+#include <iomanip>      // std::setprecision
 
 bool circuit_t::write_node_file(std::string const &NameOfFile) {
   std::ofstream ost;
@@ -11,8 +12,11 @@ bool circuit_t::write_node_file(std::string const &NameOfFile) {
     std::cout << "Error: Cannot open node file " << NameOfFile << "!!!\n";
     return false;
   }
-
-
+  ost << "NumNodes : \t\t" << Netlist.size() << "\n";
+  ost << "NumTerminals : \t\t" << 0 << "\n";
+  for (auto &&node: Nodelist) {
+    ost << "\to" << node.node_num << "\t" << node.w << "\t" << node.h << "\n";
+  }
 
   return true;
 }
@@ -24,8 +28,20 @@ bool circuit_t::write_net_file(std::string const &NameOfFile) {
     std::cout << "Error: Cannot open node file " << NameOfFile << "!!!\n";
     return false;
   }
-
-
+  size_t total_pin_num = 0;
+  for (auto &&net: Netlist) {
+    total_pin_num += net.pinlist.size();
+  }
+  ost << "NumNets : " << Netlist.size() << "\n";
+  ost << "NumPins : " << total_pin_num << "\n\n";
+  for (auto &&net: Netlist) {
+    ost << "NetDegree : "<< net.pinlist.size() << "   n" << net.net_num << "\n";
+    ost << std::fixed;
+    for (auto &&pin: net.pinlist) {
+      ost << "\to" << pin.pinnum << "\tO : " << std::setprecision(6) << pin.xoffset - Nodelist[pin.pinnum].w/2.0
+          << "\t" << std::setprecision(6) << pin.yoffset - Nodelist[pin.pinnum].h/2.0 << "\n";
+    }
+  }
 
   return true;
 }
