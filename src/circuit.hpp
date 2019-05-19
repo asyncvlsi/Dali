@@ -39,7 +39,7 @@ public:
   float HPWL_inter_linearSolver_precision;
   // HPWL and gap should converge, this is the criterion for the converge of HPWL, note that this is different
   // from the previous HPWL related criterion
-  float TARGET_FILLING_RATE;
+  float TARGET_FILLING_RATE, WHITE_SPACE_NODE_RATE;
   // target density of cells, movable cells density in each bin cannot exceed this density constraint
   int GRID_NUM;
   int GRID_BIN_WIDTH, GRID_BIN_HEIGHT;
@@ -53,15 +53,17 @@ public:
   std::vector< net_t > Netlist;
   int std_cell_height;
   int real_LEFT, real_RIGHT, real_BOTTOM, real_TOP;
-  void read_nodes_file(std::string const &NameOfFile);
-  void read_pl_file(std::string const &NameOfFile);
-  void read_nets_file(std::string const &NameOfFile);
+  bool read_nodes_file(std::string const &NameOfFile);
+  bool read_pl_file(std::string const &NameOfFile);
+  bool read_nets_file(std::string const &NameOfFile);
   bool read_scl_file(std::string const &NameOfFile);
   bool write_pl_solution(std::string const &NameOfFile);
   bool write_pl_anchor_solution(std::string const &NameOfFile);
   bool write_node_terminal(std::string const &NameOfFile="terminal.txt", std::string const &NameOfFile1="nodes.txt");
   bool write_anchor_terminal(std::string const &NameOfFile="terminal.txt", std::string const &NameOfFile1="nodes.txt");
-  /* implemented in circuit_t_io.cpp */
+  bool set_filling_rate(float rate=2.0/3.0);
+  bool set_boundary(int left=0, int right=0, int bottom=0, int top=0);
+  /* implemented in circuit_io.cpp */
 
   std::vector< std::vector<weight_tuple> > Ax, Ay;
   // declare matrix here, such that every function in this namespace can see these matrix
@@ -128,6 +130,9 @@ public:
   void linear_system_solve();
   void global_placement();
   void global_placer();
+
+  bool diffusion_limited_aggregation_placer();
+
 };
 
 #endif //HPCC_CIRCUIT_HPP

@@ -28,6 +28,7 @@ circuit_t::circuit_t() {
   HPWLy_converge = false;
   HPWL_inter_linearSolver_precision = 0.1;
   TARGET_FILLING_RATE = 1;
+  WHITE_SPACE_NODE_RATE = 1;
   GRID_NUM = 100;
   GRID_BIN_WIDTH = 0;
   GRID_BIN_HEIGHT = 0;
@@ -46,3 +47,4 @@ circuit_t::circuit_t() {
 #include "circuit_look_ahead_legalization.cpp"
 #include "circuit_legalizer.cpp"
 #include "circuit_detailed_placer.cpp"
+#include "circuit_diffusion_limited_aggregation_placer.cpp"

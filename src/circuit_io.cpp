@@ -1,8 +1,10 @@
 //
-// Created by Yihang Yang on 2019-03-26.
+// Created by Yihang Yang on 2019-05-19.
 //
 
-void circuit_t::read_nodes_file(std::string const &NameOfFile) {
+#include <cmath>
+
+bool circuit_t::read_nodes_file(std::string const &NameOfFile) {
   size_t pos0, pos1, pos2, pos3, NumOfTerminal;
   node_t node_temp;
   std::string line, str_temp;
@@ -10,7 +12,7 @@ void circuit_t::read_nodes_file(std::string const &NameOfFile) {
   std::ifstream ist(NameOfFile.c_str());
   if (ist.is_open()==0) {
     std::cout << "cannot open input file " << NameOfFile << "\n";
-    exit(1);
+    return false;
   }
 
   AVE_WIDTH = 0;
@@ -70,16 +72,18 @@ void circuit_t::read_nodes_file(std::string const &NameOfFile) {
   for (size_t i=0; i<10; i++) {
     std::cout << "\to" << Nodelist[i].nodenum() << "\t" << Nodelist[i].width() << "\t" << Nodelist[i].height() << "\t" << Nodelist[i].isterminal() << "\n";
   }*/
+
+  return true;
 }
 
-void circuit_t::read_pl_file(std::string const &NameOfFile) {
+bool circuit_t::read_pl_file(std::string const &NameOfFile) {
   size_t pos1, pos2;
   float fl_temp;
   std::string line, str_temp;
   std::ifstream ist(NameOfFile.c_str());
   if (ist.is_open()==0) {
     std::cout << "cannot open input file " << NameOfFile << "\n";
-    exit(1);
+    return false;
   }
   for (size_t i=0; i<Nodelist.size();) {
     getline(ist, line);
@@ -105,9 +109,11 @@ void circuit_t::read_pl_file(std::string const &NameOfFile) {
     std::cout << "\to" << Nodelist[i].nodenum() << "\t" << Nodelist[i].width() << "\t" << Nodelist[i].height() << "\t" << Nodelist[i].llx() << "\t" << Nodelist[i].lly() << "\t" << Nodelist[i].isterminal() << "\n";
   }
   */
+
+  return true;
 }
 
-void circuit_t::read_nets_file(std::string const &NameOfFile) {
+bool circuit_t::read_nets_file(std::string const &NameOfFile) {
   pininfo pin_info_temp;
   size_t pos1, pos2, pos3, NumPins=0;
   int int_temp=0;
@@ -116,12 +122,12 @@ void circuit_t::read_nets_file(std::string const &NameOfFile) {
   std::ifstream ist(NameOfFile.c_str());
   if (ist.is_open()==0) {
     std::cout << "cannot open input file " << NameOfFile << "\n";
-    exit(1);
+    return false;
   }
   size_t i=0;
   while (!ist.eof()) {
     getline(ist, line);
-    if (line.compare(0,3,"net_t")==0) {
+    if (line.compare(0,3,"Net")==0) {
       pos1 = line.find(":");
       pos2 = line.find(" ", pos1+2);
       pos3 = line.find("n", pos2+1);
@@ -182,6 +188,8 @@ void circuit_t::read_nets_file(std::string const &NameOfFile) {
     if (Netslist[j].Onum==0) std::cout << j << "\n";
   }
   */
+
+  return true;
 }
 
 bool circuit_t::read_scl_file(std::string const &NameOfFile) {
@@ -372,5 +380,46 @@ bool circuit_t::write_anchor_terminal(std::string const &NameOfFile, std::string
   }
   ost.close();
   ost1.close();
+  return true;
+}
+
+bool circuit_t::set_filling_rate(float rate) {
+  if (rate >=1 ) {
+    return false;
+  } else {
+    TARGET_FILLING_RATE = rate;
+  }
+  return true;
+}
+
+bool circuit_t::set_boundary(int left, int right, int bottom, int top) {
+  int tot_node_area = 0;
+  int area;
+  for (auto &&node: Nodelist) {
+    tot_node_area += node.area();
+  }
+
+  if ((left == 0)&&(right == 0)&&(bottom == 0)&&(top == 0)) {
+    // default boundary setting, a square
+    int width = std::ceil(std::sqrt(tot_node_area/TARGET_FILLING_RATE));
+    LEFT = (int)AVE_WIDTH;
+    RIGHT = LEFT + width;
+    BOTTOM = (int)AVE_WIDTH;
+    TOP = BOTTOM + width;
+    area = width * width;
+    std::cout << "Pre-set filling rate: " << TARGET_FILLING_RATE << "\n";
+    TARGET_FILLING_RATE = tot_node_area/(float)area;
+    std::cout << "Adjusted filling rate: " << TARGET_FILLING_RATE << "\n";
+  } else {
+    area = (right - left) * (top - bottom);
+    // check if area is large enough and update
+    if (area <= tot_node_area) {
+      std::cout << "Error: defined boundaries have smaller area than total cell area\n";
+      return false;
+    } else {
+      TARGET_FILLING_RATE = tot_node_area/(float)area;
+    }
+  }
+
   return true;
 }

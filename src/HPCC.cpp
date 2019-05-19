@@ -10,14 +10,15 @@
 int main() {
   time_t Time = clock();
   circuit_t circuit;
-  circuit.read_nodes_file("./test/sample1.nodes");
-  circuit.read_nets_file("./test/sample1.nets");
+  circuit.read_nodes_file("../test/sample1.nodes");
+  circuit.read_nets_file("../test/sample1.nets");
 
+  circuit.set_filling_rate();
   circuit.set_boundary();
 
   circuit.diffusion_limited_aggregation_placer();
-  circuit.simulated_annealing_placer();
-  circuit.analytical_legalization_placer();
+  //circuit.simulated_annealing_placer();
+  //circuit.analytical_legalization_placer();
 
   //circuit.write_pl_solution("./test/sample1_solution.pl");
   //circuit.write_node_terminal("terminal.txt", "nodes.txt");
