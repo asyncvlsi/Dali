@@ -3,7 +3,29 @@
 //
 
 #include <iostream>
+#include <vector>
+#include <ctime>
+#include "circuit.cpp"
 
 int main() {
-  std::cout << "This is just a test\n";
+  time_t Time = clock();
+  circuit_t circuit;
+  circuit.read_nodes_file("./test/sample1.nodes");
+  circuit.read_nets_file("./test/sample1.nets");
+
+  circuit.set_boundary();
+
+  circuit.diffusion_limited_aggregation_placer();
+  circuit.simulated_annealing_placer();
+  circuit.analytical_legalization_placer();
+
+  //circuit.write_pl_solution("./test/sample1_solution.pl");
+  //circuit.write_node_terminal("terminal.txt", "nodes.txt");
+  //circuit.write_pl_anchor_solution("./test/sample1_solution.pl");
+  //circuit.write_anchor_terminal("terminal.txt", "nodes.txt");
+
+  Time = clock() - Time;
+  std::cout << "Execution time " << (float)Time/CLOCKS_PER_SEC << "s.\n";
+
+  return 0;
 }
