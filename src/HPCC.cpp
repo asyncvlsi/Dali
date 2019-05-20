@@ -17,7 +17,8 @@ int main() {
   circuit.set_filling_rate();
   circuit.set_boundary();
 
-  circuit.diffusion_limited_aggregation_placer();
+  diffusion_limited_aggregation_placer placer0(circuit);
+  placer0.start_place();
   //circuit.simulated_annealing_placer();
   //circuit.analytical_legalization_placer();
 
