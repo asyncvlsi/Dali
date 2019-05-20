@@ -46,6 +46,32 @@ void diffusion_limited_aggregation_placer::addnebnum(std::vector<node_t> &cellli
   }
 }
 
+void diffusion_limited_aggregation_placer::sort_neighbor_list(std::vector<node_t> &celllist)
+{
+  int maxwirecell, tempcellnum;
+  double tempwirenum;
+  for (int i=0; i<celllist.size(); i++)
+  {
+    for (int j=0; j<celllist[i].neblist.size(); j++)
+    {
+      maxwirecell = j;
+      for (int k=j+1; k<celllist[i].neblist.size(); k++)
+      {
+        if (celllist[i].neblist[k].wireNum > celllist[i].neblist[maxwirecell].wireNum) maxwirecell = k;
+      }
+      if (maxwirecell != j)
+      {
+        tempcellnum = celllist[i].neblist[j].cellNum;
+        tempwirenum = celllist[i].neblist[j].wireNum;
+        celllist[i].neblist[j].cellNum = celllist[i].neblist[maxwirecell].cellNum;
+        celllist[i].neblist[j].wireNum = celllist[i].neblist[maxwirecell].wireNum;
+        celllist[i].neblist[maxwirecell].cellNum = tempcellnum;
+        celllist[i].neblist[maxwirecell].wireNum = tempwirenum;
+      }
+    }
+  }
+}
+
 void diffusion_limited_aggregation_placer::update_neighbor_list(std::vector<node_t> &celllist, std::vector<net_t> &NetList) {
   // update the list of neighbor and the wire numbers connected to its neighbor, and the nets connected to this cell
   int cell1, cell2;
