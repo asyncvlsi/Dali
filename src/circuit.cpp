@@ -47,4 +47,3 @@ circuit_t::circuit_t() {
 #include "circuit_look_ahead_legalization.cpp"
 #include "circuit_legalizer.cpp"
 #include "circuit_detailed_placer.cpp"
-#include "circuit_diffusion_limited_aggregation_placer.cpp"

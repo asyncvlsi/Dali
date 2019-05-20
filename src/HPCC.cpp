@@ -6,6 +6,7 @@
 #include <vector>
 #include <ctime>
 #include "circuit.cpp"
+#include "DLA/diffusionlimitedaggregationplacer.cpp"
 
 int main() {
   time_t Time = clock();
