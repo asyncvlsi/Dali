@@ -25,11 +25,6 @@ void node_dla::retrive_info_from_database(const node_t &node_info){
 }
 
 void node_dla::write_info_to_database(node_t &node_info) {
-  node_info.node_num = node_num;
-  node_info.w = w;
-  node_info.h = h;
-  node_info.orientation = orientation;
-  node_info.is_terminal = is_terminal;
   node_info.x0 = x0;
   node_info.y0 = y0;
 }

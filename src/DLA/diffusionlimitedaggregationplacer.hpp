@@ -16,19 +16,25 @@ public:
   diffusion_limited_aggregation_placer();
   explicit diffusion_limited_aggregation_placer(circuit_t &input_circuit);
   circuit_t *circuit;
-  std::vector< node_dla > node_list;
   std::vector< net_t > *net_list;
+  std::vector< node_dla > node_list;
+  int LEFT, RIGHT, BOTTOM, TOP;
 
   void set_input(circuit_t &input_circuit);
   void report_result();
   void clear();
 
-  std::vector< node_dla > boundry_list;
+  std::vector< node_dla > boundary_list;
+  void add_boundary_list();
   std::vector< std::vector<bin_dla> > bin_list;
-  void add_bound(std::vector<node_dla> &celllist, int cell1, int cell2, int netsize);
-  void addnebnum(std::vector<node_dla> &celllist, int cell1, int cell2, int netsize);
-  void sort_neighbor_list(std::vector<node_dla> &celllist);
-  void update_neighbor_list(std::vector<node_dla> &celllist, std::vector<net_t> &NetList);
+  int bin_width, bin_height;
+  void initialize_bin_list();
+  void add_neb_num(int node_num1, int node_num2, int net_size);
+  void sort_neighbor_list();
+  void update_neighbor_list();
+  void order_node_to_place(std::queue<int> &cell_to_place);
+  void update_binlist(int firstcell, std::vector<int> &cell_out_bin);
+  bool DLA();
   bool place();
 };
 

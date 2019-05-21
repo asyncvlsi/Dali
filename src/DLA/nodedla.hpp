@@ -13,11 +13,13 @@
 struct bin_index {
   int iloc;
   int jloc;
+  explicit bin_index(int i=0, double j=0): iloc(i), jloc(j){}
 };
 
 struct cell_neighbor {
-  int cellNum;
-  double wireNum;
+  int node_num;
+  double wire_num;
+  explicit cell_neighbor(int n=0, double w=0): node_num(n), wire_num(w){}
 };
 
 class node_dla {
@@ -31,7 +33,14 @@ public:
   // is_terminal can only be 0 or 1, 0 means this node is not a terminal, 1 means it is
   // w is width
   // h is height
-  std::vector<size_t> edgelist;
+  double vx;
+  double vy;
+  std::vector<bin_index> bin; // bins this cell is in
+  std::vector<cell_neighbor> neblist; // the list of cells this cell is connected to
+  std::vector<int> net; // the list of nets this cell is connected to
+  double totalwire; // the number of wires attached to this cell
+  bool placed; // 0 indicates this cell has not been placed, 1 means this cell has been placed
+  bool queued; // 0 indicates this cell has not been in Q_place, 1 means this cell has been in the Q_place
   // used to record which nets this node is connected to
   bool isterminal() const { return is_terminal; }
   int nodenum() const { return node_num; }
