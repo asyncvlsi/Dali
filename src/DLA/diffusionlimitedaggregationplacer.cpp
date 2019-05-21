@@ -5,13 +5,47 @@
 #include <queue>
 #include <vector>
 #include "diffusionlimitedaggregationplacer.hpp"
+#include "../circuit_node_net.hpp"
 
 diffusion_limited_aggregation_placer::diffusion_limited_aggregation_placer() {
   circuit = nullptr;
+  net_list = nullptr;
 }
 
 diffusion_limited_aggregation_placer::diffusion_limited_aggregation_placer(circuit_t &input_circuit) {
   circuit = &input_circuit;
+  net_list = &input_circuit.Netlist;
+  node_list.resize(input_circuit.Nodelist.size());
+  node_dla *node;
+  for (size_t i=0; i<node_list.size(); i++) {
+    node = &node_list[i];
+    node->retrive_info_from_database(input_circuit.Nodelist[i]);
+  }
+}
+
+void diffusion_limited_aggregation_placer::set_input(circuit_t &input_circuit) {
+  net_list = &input_circuit.Netlist;
+  node_list.clear();
+  node_list.resize(input_circuit.Nodelist.size());
+  node_dla *node;
+  for (size_t i=0; i<node_list.size(); i++) {
+    node = &node_list[i];
+    node->retrive_info_from_database(input_circuit.Nodelist[i]);
+  }
+}
+
+void diffusion_limited_aggregation_placer::report_result() {
+  node_dla *node;
+  for (size_t i=0; i<node_list.size(); i++) {
+    node = &node_list[i];
+    node->write_info_to_database(circuit->Nodelist[i]);
+  }
+}
+
+void diffusion_limited_aggregation_placer::clear() {
+  circuit = nullptr;
+  net_list = nullptr;
+  node_list.clear();
 }
 
 void diffusion_limited_aggregation_placer::addnebnum(std::vector<node_t> &celllist, int cell1, int cell2, int netsize) {
@@ -100,7 +134,7 @@ void diffusion_limited_aggregation_placer::update_neighbor_list(std::vector<node
 }
 
 
-bool diffusion_limited_aggregation_placer::start_place() {
+bool diffusion_limited_aggregation_placer::place() {
   update_neighbor_list(celllist, NetList);
   std::queue<int> cell_to_place;
   std::vector<int> cell_out_bin; // cells which are out of bins

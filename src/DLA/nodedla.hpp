@@ -6,7 +6,9 @@
 #define HPCC_NODEDLA_HPP
 
 #include <vector>
+#include <string>
 #include "bindla.hpp"
+#include "circuit_node_net.hpp"
 
 struct bin_index {
   int iloc;
@@ -41,6 +43,8 @@ public:
   float urx() const { return x0 + w/(float)2; }
   float ury() const { return y0 + h/(float)2; }
   bool is_overlap(const node_dla &rhs) const;
+  void retrive_info_from_database(const node_t &node_info);
+  void write_info_to_database(node_t &node_info);
 };
 
 

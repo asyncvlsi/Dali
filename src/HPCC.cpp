@@ -11,14 +11,16 @@
 int main() {
   time_t Time = clock();
   circuit_t circuit;
-  circuit.read_nodes_file("../test/sample1.nodes");
-  circuit.read_nets_file("../test/sample1.nets");
+  circuit.read_nodes_file("../test/layout.nodes");
+  circuit.read_nets_file("../test/layout.nets");
 
   circuit.set_filling_rate();
   circuit.set_boundary();
 
   diffusion_limited_aggregation_placer placer0(circuit);
-  placer0.start_place();
+  placer0.place();
+  placer0.report_result();
+  placer0.clear();
   //circuit.simulated_annealing_placer();
   //circuit.analytical_legalization_placer();
 
