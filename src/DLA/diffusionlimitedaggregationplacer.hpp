@@ -33,7 +33,8 @@ public:
   void sort_neighbor_list();
   void update_neighbor_list();
   void order_node_to_place(std::queue<int> &cell_to_place);
-  void update_binlist(int firstcell, std::vector<int> &cell_out_bin);
+  void update_bin_list(int first_node_num, std::vector<int> &cell_out_bin);
+  void diffuse(int first_node_num, std::vector<int> &cell_out_bin);
   bool DLA();
   bool place();
 };

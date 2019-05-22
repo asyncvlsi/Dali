@@ -2,6 +2,7 @@
 // Created by Yihang Yang on 2019-05-20.
 //
 
+#include <algorithm>
 #include "nodedla.hpp"
 
 node_dla::node_dla() {
@@ -12,9 +13,43 @@ node_dla::node_dla() {
   is_terminal = false;
   x0 = 0;
   y0 = 0;
+  vx = 0;
+  vy = 0;
+  totalwire = 0;
+  placed = false;
+  queued = false;
 }
 
-void node_dla::retrive_info_from_database(const node_t &node_info){
+bool node_dla::is_overlap(const  node_dla &rhs) const{
+  // If one rectangle is on left side of other
+  if (llx() > rhs.urx() || rhs.llx() > urx())
+    return false;
+
+  // If one rectangle is above other
+  if (lly() > rhs.ury() || rhs.lly() > ury())
+    return false;
+
+  return true;
+}
+
+double node_dla::overlap_area(const  node_dla &rhs) const{
+  if (is_overlap(rhs)) {
+    double l1x, l1y, r1x, r1y, l2x, l2y, r2x, r2y;
+    l1x = llx();
+    l1y = lly();
+    r1x = urx();
+    r1y = ury();
+    l2x = rhs.llx();
+    l2y = rhs.lly();
+    r2x = rhs.urx();
+    r2y = rhs.ury();
+    return (std::min(r1x, r2x) - std::max(l1x, l2x)) * (std::min(r1y, r2y) - std::max(l1y, l2y));
+  } else {
+    return 0;
+  }
+}
+
+void node_dla::retrieve_info_from_database(const node_t &node_info){
   node_num = node_info.node_num;
   w = node_info.w;
   h = node_info.h;
