@@ -30,7 +30,7 @@ public:
   bool is_terminal;
   double x0, y0;
   // node_num is the primary key
-  // is_terminal can only be 0 or 1, 0 means this node is not a terminal, 1 means it is
+  // movable can only be 0 or 1, 0 means this node is not a terminal, 1 means it is
   // w is width
   // h is height
   double vx;
@@ -54,8 +54,8 @@ public:
   bool is_overlap(const node_dla &rhs) const;
   double overlap_area(const  node_dla &rhs) const;
   void random_move(double distance);
-  void retrieve_info_from_database(const node_t &node_info);
-  void write_info_to_database(node_t &node_info);
+  void retrieve_info_from_database(const block_t &node_info);
+  void write_info_to_database(block_t &node_info);
 };
 
 

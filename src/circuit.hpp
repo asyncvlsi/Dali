@@ -6,27 +6,41 @@
 #define HPCC_CIRCUIT_HPP
 
 #include <vector>
-#include <queue>
-#include <set>
-#include "circuit_node_net.hpp"
+#include <map>
+#include "circuitblock.hpp"
+#include "circuitpin.hpp"
+#include "circuitnet.hpp"
 
 class circuit_t {
 public:
   circuit_t();
-  size_t CELL_NUM, TERMINAL_NUM;
-  // total movable cells number and terminals number, calculated in ispd_read_write.hpp, used in global_placer.hpp, and conjugate_gradient.hpp
-  int LEFT, RIGHT, BOTTOM, TOP;
-  // Boundaries of the chip, calculated in global_placer.hpp, used in conjugate_gradient.hpp
-  float TARGET_FILLING_RATE, WHITE_SPACE_NODE_RATE;
-  // target density of cells, movable cells density in each bin cannot exceed this density constraint
-  double HPWL;
-  double AVE_WIDTH, AVE_HEIGHT, AVE_CELL_AREA;
+  /* essential data entries */
+  std::vector< block_t > block_list;
+  std::vector< net_t > net_list;
+  // node_list and net_list contains all the information of a circuit graph
 
-  std::vector< node_t > Nodelist;
-  std::vector< net_t > Netlist;
+  /* the following entries are derived data */
+  size_t tot_movable_num, tot_unmovable_num;
+  // the total number of movable blocks, and the total number of unmovable blocks. These two variables might be removed later
+  int HPWL;
+  // HPWL of this circuit
+  double ave_width;
+  double ave_height;
+  double ave_cell_area;
+  // average cell width, height, and area
+  std::map<std::string, size_t> block_name_map;
+  // string to size_t map to find the index of a block in the block_list
+  std::map<std::string, size_t> net_name_map;
+  // string to size_t map to find the index of a net in the net_list
+
+  bool add_to_block_list(block_t &block);
+  bool add_to_net_list(net_t &net);
+  block_t* create_empty_entry_block_list();
+  net_t* create_empty_entry_net_list();
   bool read_nodes_file(std::string const &NameOfFile);
   bool read_pl_file(std::string const &NameOfFile);
   bool read_nets_file(std::string const &NameOfFile);
+
   bool write_pl_solution(std::string const &NameOfFile);
   bool write_pl_anchor_solution(std::string const &NameOfFile);
   bool write_node_terminal(std::string const &NameOfFile="terminal.txt", std::string const &NameOfFile1="nodes.txt");

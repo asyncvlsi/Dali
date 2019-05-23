@@ -6,7 +6,6 @@
 #include <vector>
 #include <ctime>
 #include "circuit.hpp"
-#include "DLA/diffusionlimitedaggregationplacer.hpp"
 
 int main() {
   time_t Time = clock();
@@ -14,15 +13,13 @@ int main() {
   circuit.read_nodes_file("../test/layout.nodes");
   circuit.read_nets_file("../test/layout.nets");
 
-  circuit.set_filling_rate();
-  circuit.set_boundary();
+  //circuit.set_filling_rate();
+  //circuit.set_boundary();
 
-  diffusion_limited_aggregation_placer placer0(circuit);
-  placer0.place();
-  placer0.report_result();
-  placer0.clear();
-  //circuit.simulated_annealing_placer();
-  //circuit.analytical_legalization_placer();
+  //diffusion_limited_aggregation_placer placer0(circuit);
+  //placer0.place();
+  //placer0.report_result();
+  //placer0.clear();
 
   //circuit.write_pl_solution("./test/sample1_solution.pl");
   //circuit.write_node_terminal("terminal.txt", "nodes.txt");

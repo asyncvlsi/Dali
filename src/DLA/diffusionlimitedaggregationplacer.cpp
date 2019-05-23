@@ -25,12 +25,12 @@ diffusion_limited_aggregation_placer::diffusion_limited_aggregation_placer(circu
   bin_height = 0;
   bin_width = 0;
   circuit = &input_circuit;
-  net_list = &input_circuit.Netlist;
-  node_list.resize(input_circuit.Nodelist.size());
+  net_list = &input_circuit.net_list;
+  node_list.resize(input_circuit.block_list.size());
   node_dla *node;
   for (size_t i=0; i<node_list.size(); i++) {
     node = &node_list[i];
-    node->retrieve_info_from_database(input_circuit.Nodelist[i]);
+    node->retrieve_info_from_database(input_circuit.block_list[i]);
   }
   LEFT = input_circuit.LEFT;
   RIGHT = input_circuit.RIGHT;
@@ -40,12 +40,12 @@ diffusion_limited_aggregation_placer::diffusion_limited_aggregation_placer(circu
 
 void diffusion_limited_aggregation_placer::set_input(circuit_t &input_circuit) {
   node_list.clear();
-  net_list = &input_circuit.Netlist;
-  node_list.resize(input_circuit.Nodelist.size());
+  net_list = &input_circuit.net_list;
+  node_list.resize(input_circuit.block_list.size());
   node_dla *node;
   for (size_t i=0; i<node_list.size(); i++) {
     node = &node_list[i];
-    node->retrieve_info_from_database(input_circuit.Nodelist[i]);
+    node->retrieve_info_from_database(input_circuit.block_list[i]);
   }
   LEFT = input_circuit.LEFT;
   RIGHT = input_circuit.RIGHT;
@@ -57,7 +57,7 @@ void diffusion_limited_aggregation_placer::report_result() {
   node_dla *node;
   for (size_t i=0; i<node_list.size(); i++) {
     node = &node_list[i];
-    node->write_info_to_database(circuit->Nodelist[i]);
+    node->write_info_to_database(circuit->block_list[i]);
   }
 }
 
@@ -134,13 +134,14 @@ void diffusion_limited_aggregation_placer::initialize_bin_list(){
       max_height = node.h;
     }
   }
-  int x_bin_num = std::ceil((RIGHT - LEFT + 2*max_width)/(double)max_width); // determine the bin numbers in x direction
-  int y_bin_num = std::ceil((TOP - BOTTOM + 2*max_height)/(double)max_height); // determine the bin numbers in y direction
+  size_t x_bin_num, y_bin_num;
+  x_bin_num = (size_t)std::ceil((RIGHT - LEFT + 2*max_width)/(double)max_width); // determine the bin numbers in x direction
+  y_bin_num = (size_t)std::ceil((TOP - BOTTOM + 2*max_height)/(double)max_height); // determine the bin numbers in y direction
   bin_width = max_width;
   bin_height = max_height;
   bin_dla tmp_bin;
   std::vector<bin_dla> tmp_bin_column(y_bin_num);
-  for (int x=0; x<x_bin_num; x++) {
+  for (size_t x=0; x<x_bin_num; x++) {
     // binlist[x][y] indicates the bin in the  x-th x, and y-th y bin
     bin_list.push_back(tmp_bin_column);
   }
@@ -521,6 +522,7 @@ bool diffusion_limited_aggregation_placer::DLA() {
 
 bool diffusion_limited_aggregation_placer::place() {
   add_boundary_list();
+  std::cout << "bug here\n";
   initialize_bin_list();
   DLA();
   return true;

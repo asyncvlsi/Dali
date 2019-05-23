@@ -36,9 +36,7 @@ public:
   void update_bin_list(int first_node_num, std::vector<int> &cell_out_bin);
   double net_hwpl_during_dla(net_t *net);
   double wirelength_during_DLA(int first_node_num);
-
   double net_hwpl(net_t *net);
-
   int is_legal(int first_node_num, std::vector<int> &cell_out_bin);
   bool random_release_from_boundaries(int boundary_num, node_dla &node);
   void diffuse(int first_node_num, std::vector<int> &cell_out_bin);

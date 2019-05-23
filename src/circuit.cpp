@@ -8,21 +8,44 @@
 #include "circuit.hpp"
 
 circuit_t::circuit_t() {
-  CELL_NUM = 0;
-  TERMINAL_NUM = 0;
-  LEFT = 0;
-  RIGHT = 0;
-  BOTTOM = 0;
-  TOP = 0;
-  TARGET_FILLING_RATE = 1;
-  WHITE_SPACE_NODE_RATE = 1;
+  tot_movable_num = 0;
+  tot_unmovable_num = 0;
   HPWL = 0;
 }
 
+bool circuit_t::add_to_block_list(block_t &block) {
+  if (block_name_map.find(block.name()) != block_name_map.end()) {
+    block_name_map.insert(std::pair<std::string, int>(block.name(), block.num()));
+    block_list.push_back(block);
+    return true;
+  } else {
+    std::cout << "Existing block in block_list with name: " << block.name() << "\n";
+    return false;
+  }
+}
+
+bool circuit_t::add_to_net_list(net_t &net) {
+  net_list.push_back(net);
+  return true;
+}
+
+block_t* circuit_t::create_empty_entry_block_list() {
+  block_t new_block;
+  block_list.push_back(new_block);
+  size_t block_list_size = block_list.size();
+  return &block_list[block_list_size-1];
+}
+
+net_t* circuit_t::create_empty_entry_net_list() {
+  net_t new_net;
+  net_list.push_back(new_net);
+  size_t net_list_size = net_list.size();
+  return &net_list[net_list_size-1];
+}
 
 bool circuit_t::read_nodes_file(std::string const &NameOfFile) {
   size_t pos0, pos1, pos2, pos3, NumOfTerminal;
-  node_t node_temp;
+  block_t node_temp;
   std::string line, str_temp;
   NumOfTerminal = 0;
   std::ifstream ist(NameOfFile.c_str());
@@ -31,9 +54,9 @@ bool circuit_t::read_nodes_file(std::string const &NameOfFile) {
     return false;
   }
 
-  AVE_WIDTH = 0;
-  AVE_HEIGHT = 0;
-  AVE_CELL_AREA = 0;
+  ave_width = 0;
+  ave_height = 0;
+  ave_cell_area = 0;
 
   int tmp_int;
   while (!ist.eof()) {
@@ -45,45 +68,45 @@ bool circuit_t::read_nodes_file(std::string const &NameOfFile) {
       pos3 = line.rfind("\t");
       str_temp = line.substr(pos0+2, pos1-pos0-2);//find the number of the node
       tmp_int = stoi(str_temp);
-      node_temp.node_num = tmp_int;
+      node_temp.set_block_num(tmp_int);
       if (pos3 == pos2) {
         //find whether the node is a terminal or not
-        node_temp.is_terminal = false;
+        node_temp.set_movable(false);
         //if the node is not a terminal, write 0
       }
       else {
-        node_temp.is_terminal = true;
+        node_temp.set_movable(true);
         //if the node is a terminal, write 1
         NumOfTerminal += 1;
       }
       str_temp = line.substr(pos1+1, pos2-pos1-1);
       //find the width of this node
       tmp_int = stoi(str_temp);
-      node_temp.w = tmp_int;
+      node_temp.set_width(tmp_int);
       str_temp = line.substr(pos2+1);
       //find the height of this node
       tmp_int = stoi(str_temp);
-      node_temp.h = tmp_int;
-      Nodelist.push_back(node_temp);
-      if (node_temp.isterminal()==0) {
-        AVE_WIDTH += node_temp.w;
-        AVE_HEIGHT += node_temp.h;
-        AVE_CELL_AREA += node_temp.w * node_temp.h;
+      node_temp.set_height(tmp_int);
+      block_list.push_back(node_temp);
+      if (node_temp.is_movable()) {
+        ave_width += node_temp.width();
+        ave_height += node_temp.height();
+        ave_cell_area += node_temp.width() * node_temp.height();
       }
     }
   }
   ist.close();
-  TERMINAL_NUM = NumOfTerminal;
-  CELL_NUM = Nodelist.size() - NumOfTerminal;
-  AVE_WIDTH = AVE_WIDTH/CELL_NUM;
-  AVE_HEIGHT = AVE_HEIGHT/CELL_NUM;
-  AVE_CELL_AREA = AVE_CELL_AREA/CELL_NUM;
+  tot_unmovable_num = NumOfTerminal;
+  tot_movable_num = block_list.size() - NumOfTerminal;
+  ave_width = ave_width/tot_movable_num;
+  ave_height = ave_height/tot_movable_num;
+  ave_cell_area = ave_cell_area/tot_movable_num;
   /*
-  std::cout << AVE_WIDTH << "\t" << AVE_HEIGHT << "\n";
+  std::cout << ave_width << "\t" << ave_height << "\n";
   std::cout << "Node file Reading is complete\n";
-  std::cout << "\t\tTotal " << Nodelist.size() << " objects (terminal " << NumOfTerminal << ")\n";
+  std::cout << "\t\tTotal " << block_list.size() << " objects (terminal " << NumOfTerminal << ")\n";
   for (size_t i=0; i<10; i++) {
-    std::cout << "\to" << Nodelist[i].nodenum() << "\t" << Nodelist[i].width() << "\t" << Nodelist[i].height() << "\t" << Nodelist[i].isterminal() << "\n";
+    std::cout << "\to" << block_list[i].nodenum() << "\t" << block_list[i].width() << "\t" << block_list[i].height() << "\t" << block_list[i].isterminal() << "\n";
   }*/
 
   return true;
@@ -98,7 +121,7 @@ bool circuit_t::read_pl_file(std::string const &NameOfFile) {
     std::cout << "cannot open input file " << NameOfFile << "\n";
     return false;
   }
-  for (size_t i=0; i<Nodelist.size();) {
+  for (size_t i=0; i<block_list.size();) {
     getline(ist, line);
     if ((line.compare(0,1,"o")==0)) {
       pos1 = line.find("\t");
@@ -106,20 +129,20 @@ bool circuit_t::read_pl_file(std::string const &NameOfFile) {
       str_temp = line.substr(pos1+1, pos2-pos1-1);
       //find the low_x position of this node
       fl_temp = stof(str_temp);
-      Nodelist[i].x0 = fl_temp + Nodelist[i].w/(float)2;
+      block_list[i].set_llx(fl_temp);
       str_temp = line.substr(pos2+1);
       //find the low_y position of this node
       fl_temp = stof(str_temp);
-      Nodelist[i].y0 = fl_temp + Nodelist[i].h/(float)2;
+      block_list[i].set_lly(fl_temp);
       i++;
     }
   }
   ist.close();
   /*
   std::cout << "Placement file Reading is complete\n";
-  std::cout << "\t\tTotal " << Nodelist.size() << " objects\n";
-  for (size_t i=0; i<Nodelist.size(); i++) {
-    std::cout << "\to" << Nodelist[i].nodenum() << "\t" << Nodelist[i].width() << "\t" << Nodelist[i].height() << "\t" << Nodelist[i].llx() << "\t" << Nodelist[i].lly() << "\t" << Nodelist[i].isterminal() << "\n";
+  std::cout << "\t\tTotal " << block_list.size() << " objects\n";
+  for (size_t i=0; i<block_list.size(); i++) {
+    std::cout << "\to" << block_list[i].nodenum() << "\t" << block_list[i].width() << "\t" << block_list[i].height() << "\t" << block_list[i].llx() << "\t" << block_list[i].lly() << "\t" << block_list[i].isterminal() << "\n";
   }
   */
 
@@ -127,7 +150,7 @@ bool circuit_t::read_pl_file(std::string const &NameOfFile) {
 }
 
 bool circuit_t::read_nets_file(std::string const &NameOfFile) {
-  pininfo pin_info_temp;
+  pin_t pin_info_temp;
   size_t pos1, pos2, pos3, NumPins=0;
   int int_temp=0;
   std::string line, str_temp;
@@ -160,7 +183,7 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
       else {
         net_temp.invpmin1 = 0;
       }
-      Netlist.push_back(net_temp);
+      net_list.push_back(net_temp);
     }
     else if (line.compare(0,1,"\t")==0) {
       // find all the pins in this net, including Node number and xoffset, y offset,
@@ -171,12 +194,12 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
       int_temp = stoi(str_temp);
       pin_info_temp.pinnum = (size_t)int_temp;
       str_temp = line.substr(pos2+1, 1);
-      Netlist[i].nodetype.push_back(str_temp[0]);
+      net_list[i].nodetype.push_back(str_temp[0]);
       if (str_temp.compare(0,1,"I")==0) {
-        Netlist[i].Inum += 1;
+        net_list[i].Inum += 1;
       }
       else {
-        Netlist[i].Onum += 1;
+        net_list[i].Onum += 1;
       }
       pos1 = line.find(":", pos2);
       pos2 = line.find("\t", pos1);
@@ -184,7 +207,7 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
       pin_info_temp.xoffset = stof(str_temp);
       str_temp = line.substr(pos2);
       pin_info_temp.yoffset = stof(str_temp);
-      Netlist[i].pinlist.push_back(pin_info_temp);
+      net_list[i].pinlist.push_back(pin_info_temp);
     }
   }
   ist.close();
@@ -211,7 +234,7 @@ bool circuit_t::write_pl_solution(std::string const &NameOfFile) {
     std::cout << "Cannot open file" << NameOfFile << "\n";
     return false;
   }
-  for (auto &&node: Nodelist) {
+  for (auto &&node: block_list) {
     if (node.isterminal()==0) {
       ost << "o" << node.nodenum() << "\t" << node.llx() << "\t" << node.lly() << "\t:\tN\n";
     }
@@ -230,7 +253,7 @@ bool circuit_t::write_pl_anchor_solution(std::string const &NameOfFile) {
     std::cout << "Cannot open file" << NameOfFile << "\n";
     return false;
   }
-  for (auto &&node: Nodelist) {
+  for (auto &&node: block_list) {
     if (node.isterminal()==0) {
       ost << "o" << node.nodenum() << "\t" << node.anchorx - node.w/2.0 << "\t" << node.anchory - node.h/2.0 << "\t:\tN\n";
     }
@@ -250,7 +273,7 @@ bool circuit_t::write_node_terminal(std::string const &NameOfFile, std::string c
     std::cout << "Cannot open file" << NameOfFile << " or " << NameOfFile1 <<  "\n";
     return false;
   }
-  for (auto &&node: Nodelist) {
+  for (auto &&node: block_list) {
     if (node.isterminal()==0) {
       ost1 << node.x0 << "\t" << node.y0 << "\n";
     }
@@ -282,7 +305,7 @@ bool circuit_t::write_anchor_terminal(std::string const &NameOfFile, std::string
     std::cout << "Cannot open file" << NameOfFile << " or " << NameOfFile1 <<  "\n";
     return false;
   }
-  for (auto &&node: Nodelist) {
+  for (auto &&node: block_list) {
     if (node.isterminal()==0) {
       ost1 << node.anchorx << "\t" << node.anchory << "\n";
     }
@@ -319,16 +342,16 @@ bool circuit_t::set_filling_rate(float rate) {
 bool circuit_t::set_boundary(int left, int right, int bottom, int top) {
   int tot_node_area = 0;
   int area;
-  for (auto &&node: Nodelist) {
+  for (auto &&node: block_list) {
     tot_node_area += node.area();
   }
 
   if ((left == 0)&&(right == 0)&&(bottom == 0)&&(top == 0)) {
     // default boundary setting, a square
     int width = std::ceil(std::sqrt(tot_node_area/TARGET_FILLING_RATE));
-    LEFT = (int)AVE_WIDTH;
+    LEFT = (int)ave_width;
     RIGHT = LEFT + width;
-    BOTTOM = (int)AVE_WIDTH;
+    BOTTOM = (int)ave_width;
     TOP = BOTTOM + width;
     area = width * width;
     std::cout << "Pre-set filling rate: " << TARGET_FILLING_RATE << "\n";
