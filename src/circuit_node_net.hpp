@@ -6,6 +6,8 @@
 #define HPCC_CIRCUIT_NODE_NET_HPP
 
 #include <vector>
+#include <string>
+
 class node_t {
 public:
   node_t();
@@ -36,30 +38,6 @@ public:
   bool is_overlap(const node_t &rhs) const;
 };
 
-node_t::node_t() {
-  orientation = "N";
-  node_num = 0;
-  is_terminal = false;
-  w = 0;
-  h = 0;
-  x0 = 0;
-  y0 = 0;
-  anchorx = 0;
-  anchory = 0;
-}
-
-bool node_t::is_overlap(const  node_t &rhs) const{
-  // If one rectangle is on left side of other
-  if (llx() > rhs.urx() || rhs.llx() > urx())
-    return false;
-
-  // If one rectangle is above other
-  if (lly() > rhs.ury() || rhs.lly() > ury())
-    return false;
-
-  return true;
-}
-
 class pininfo {
 public:
   pininfo();
@@ -70,15 +48,6 @@ public:
   float y;
 };
 
-pininfo::pininfo() {
-  pinnum = 0; // pinnum is the nodenum of the node which this pin belongs to
-  xoffset = 0;
-  yoffset = 0;
-  x = 0;
-  y = 0;
-}
-
-
 class net_t {
 public:
   net_t();
@@ -88,26 +57,12 @@ public:
   // Inum is the total number of input pin
   // Onum is the total number of output pin
   // p is the "p" in "p"-pin net
-  // maxpindex_x is the index of the pin whose node_t number has the maximum x
-  // minpindex_x is the index of the pin whose node_t number has the minimum x
-  // maxpindex_y is the index of the pin whose node_t number has the maximum y
-  // minpindex_y is the index of the pin whose node_t number has the minimum y
+  // maxpindex_x is the index of the pin whose node number has the maximum x
+  // minpindex_x is the index of the pin whose node number has the minimum x
+  // maxpindex_y is the index of the pin whose node number has the maximum y
+  // minpindex_y is the index of the pin whose node number has the minimum y
   std::vector<pininfo> pinlist;
   std::vector<char> nodetype;
 };
-
-net_t::net_t() {
-  net_num = 0;
-  Inum = 0;
-  Onum = 0;
-  p = 0;
-  maxpindex_x = 0;
-  minpindex_x = 0;
-  maxpindex_y = 0;
-  minpindex_y = 0;
-  invpmin1 = 0;
-  hpwlx = 0;
-  hpwly = 0;
-}
 
 #endif //HPCC_CIRCUIT_NODE_NET_HPP

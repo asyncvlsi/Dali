@@ -5,8 +5,8 @@
 #include <iostream>
 #include <vector>
 #include <ctime>
-#include "circuit.cpp"
-#include "DLA/diffusionlimitedaggregationplacer.cpp"
+#include "circuit.hpp"
+#include "DLA/diffusionlimitedaggregationplacer.hpp"
 
 int main() {
   time_t Time = clock();

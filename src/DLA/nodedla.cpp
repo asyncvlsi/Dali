@@ -3,6 +3,7 @@
 //
 
 #include <algorithm>
+#include <cstdlib>
 #include "nodedla.hpp"
 
 node_dla::node_dla() {
@@ -46,6 +47,23 @@ double node_dla::overlap_area(const  node_dla &rhs) const{
     return (std::min(r1x, r2x) - std::max(l1x, l2x)) * (std::min(r1y, r2y) - std::max(l1y, l2y));
   } else {
     return 0;
+  }
+}
+
+void node_dla::random_move(double distance) {
+  int rand_num = std::rand();
+  if (rand_num % 4 == 0) {
+    // leftward move
+    x0 -= distance;
+  } else if (rand_num % 4 == 1) {
+    // rightward move
+    x0 += distance;
+  } else if (rand_num % 4 == 2) {
+    // downward move
+    y0 -= distance;
+  } else {
+    // upward move
+    y0 += distance;
   }
 }
 

@@ -53,6 +53,7 @@ public:
   double ury() const { return y0 + h/2.0; }
   bool is_overlap(const node_dla &rhs) const;
   double overlap_area(const  node_dla &rhs) const;
+  void random_move(double distance);
   void retrieve_info_from_database(const node_t &node_info);
   void write_info_to_database(node_t &node_info);
 };

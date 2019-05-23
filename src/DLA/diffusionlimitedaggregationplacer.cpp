@@ -5,6 +5,7 @@
 #include <queue>
 #include <vector>
 #include <cmath>
+#include <algorithm>
 #include <iostream>
 #include "diffusionlimitedaggregationplacer.hpp"
 #include "../circuit_node_net.hpp"
@@ -16,16 +17,20 @@ diffusion_limited_aggregation_placer::diffusion_limited_aggregation_placer() {
   RIGHT = 0;
   BOTTOM = 0;
   TOP = 0;
+  bin_height = 0;
+  bin_width = 0;
 }
 
 diffusion_limited_aggregation_placer::diffusion_limited_aggregation_placer(circuit_t &input_circuit) {
+  bin_height = 0;
+  bin_width = 0;
   circuit = &input_circuit;
   net_list = &input_circuit.Netlist;
   node_list.resize(input_circuit.Nodelist.size());
   node_dla *node;
   for (size_t i=0; i<node_list.size(); i++) {
     node = &node_list[i];
-    node->retrive_info_from_database(input_circuit.Nodelist[i]);
+    node->retrieve_info_from_database(input_circuit.Nodelist[i]);
   }
   LEFT = input_circuit.LEFT;
   RIGHT = input_circuit.RIGHT;
@@ -283,43 +288,149 @@ void diffusion_limited_aggregation_placer::update_bin_list(int first_node_num, s
   //cout << "\n";
 }
 
-void diffusion_limited_aggregation_placer::diffusion_limited_aggregation_placer::diffuse(int first_node_num, std::vector<int> &cell_out_bin)
-{
+bool diffusion_limited_aggregation_placer::random_release_from_boundaries(int boundary_num, node_dla &node) {
+  switch (boundary_num) {
+    case 0:
+      // 2*Left boundry
+      node.x0 = LEFT - 1*(RIGHT - LEFT);
+      node.y0 = BOTTOM + std::rand()%(TOP - BOTTOM);
+      break;
+    case 1:
+      // 2*Top boundry
+      node.x0 = LEFT + std::rand()%(RIGHT - LEFT);
+      node.y0 = TOP + 1*(TOP - BOTTOM);
+      break;
+    case 2:
+      // 2*Right boundry
+      node.x0 = RIGHT + 1*(RIGHT - LEFT);
+      node.y0 = BOTTOM + std::rand()%(TOP - BOTTOM);
+      break;
+    case 3:
+      // 2*Bottom boundry
+      node.x0 = LEFT + std::rand()%(RIGHT - LEFT);
+      node.y0 = BOTTOM - 1*(TOP - BOTTOM);
+      break;
+    default:
+      return false;
+  }
+  return true;
+}
+
+double diffusion_limited_aggregation_placer::net_hwpl_during_dla(net_t *net) {
+  double WL=0;
+  int num_of_placed_cell_in_net=0, tempnetsize, tempcellNo;
+  double tempcellx, tempcelly;
+  double maxx = 0, minx = 0, maxy = 0, miny = 0;
+  tempnetsize = net->pinlist.size();
+  for (int j=0; j<tempnetsize; j++) {
+    tempcellNo = net->pinlist[j].pinnum;
+    if (node_list[tempcellNo].placed==1) {
+      num_of_placed_cell_in_net += 1;
+      //cout << Net.PinList[j].cellNo << "\n";
+      //cout << Net.PinList[j].x_off << " " << Net.PinList[j].y_off << "\t" << node_list[tempcellNo].left << " " << node_list[tempcellNo].bottom << "\n";
+      tempcellx = node_list[tempcellNo].x0 + net->pinlist[j].xoffset;
+      tempcelly = node_list[tempcellNo].y0 + net->pinlist[j].yoffset;
+      if ( num_of_placed_cell_in_net == 1 ) {
+        maxx = tempcellx; minx = tempcellx; maxy = tempcelly; miny = tempcelly;
+      }
+      else {
+        if ( tempcellx > maxx ) maxx = tempcellx;
+        if ( tempcellx < minx ) minx = tempcellx;
+        if ( tempcelly > maxy ) maxy = tempcelly;
+        if ( tempcelly < maxy ) miny = tempcelly;
+      }
+    }
+  }
+  WL = ( maxx - minx ) + ( maxy - miny );
+  //cout << maxx << " " << minx << " " << maxy << " " << miny << "\n\n";
+  return WL;
+}
+
+double diffusion_limited_aggregation_placer::wirelength_during_DLA(int first_node_num) {
+  // support multi-pin nets
+  double WL=0;
+  net_t *net;
+  for (size_t i=0; i<node_list[first_node_num].net.size(); i++) {
+    //cout << "Net " << node_list[first_node_num].net[i] << "\n";
+    net = &(net_list->at(node_list[first_node_num].net[i]));
+    WL += net_hwpl_during_dla(net);
+  }
+  return WL;
+}
+
+int diffusion_limited_aggregation_placer::is_legal(int first_node_num, std::vector<int> &cell_out_bin) {
+  // if legal, return -1, if illegal, return the cell with which this first_node_num has overlap
+  double left_most = bin_list[0][0].left, bottom_most = bin_list[0][0].bottom;
+  int binwidth = bin_list[0][0].width, binheight = bin_list[0][0].height;
+  int Ybinlistsize = bin_list.size(), Xbinlistsize = bin_list[0].size();
+  double right_most = left_most + Xbinlistsize*binwidth, top_most = bottom_most + Ybinlistsize*binheight;
+  double Left = node_list[first_node_num].llx(), Right = node_list[first_node_num].urx();
+  double Bottom = node_list[first_node_num].lly(), Top = node_list[first_node_num].ury();
+  node_dla temp_large_boundry; // the larger boundries of bins
+  temp_large_boundry.x0 = left_most;
+  temp_large_boundry.y0 = bottom_most;
+  temp_large_boundry.w = (int)(right_most - left_most);
+  temp_large_boundry.h = (int)(top_most - bottom_most);
+
+  int tempcellnum;
+  if (temp_large_boundry.overlap_area(node_list[first_node_num]) < node_list[first_node_num].area()) {
+    for (size_t i=0; i<cell_out_bin.size(); i++) {
+      tempcellnum = cell_out_bin[i];
+      if ((tempcellnum!=first_node_num)&&(node_list[first_node_num].overlap_area(node_list[tempcellnum])>=1)) return tempcellnum;
+    }
+  }
+  int L,B,R,T; // left, bottom, right, top of the cell in which bin
+  L = floor((Left - left_most)/binwidth);
+  B = floor((Bottom - bottom_most)/binheight);
+  R = floor((Right - left_most)/binwidth);
+  T = floor((Top - bottom_most)/binheight);
+  for (int j=B; j<=T; j++) {
+    if ((j>=0)&&(j<Ybinlistsize)) {
+      for (int k=L; k<=R; k++) {
+        if ((k>=0)&&(k<Xbinlistsize)) {
+          for (size_t i=0; i<bin_list[j][k].CIB.size(); i++) {
+            tempcellnum = bin_list[j][k].CIB[i];
+            if ((tempcellnum!=first_node_num)&&(node_list[first_node_num].overlap_area(node_list[tempcellnum])>=1)) return tempcellnum;
+          }
+        }
+      }
+    }
+  }
+  return -1;
+}
+
+void diffusion_limited_aggregation_placer::diffuse(int first_node_num, std::vector<int> &cell_out_bin) {
   double WL1, WL2, MW; // MW indicates minimum wirelength
   double modWL1, modWL2;
   int step;
-  int cell_width=node_list[first_node_num].w;
-  int cell_height=node_list[first_node_num].h;
-  double centerx=(LEFT + RIGHT)/2.0, centery=(BOTTOM + TOP)/2.0;
-  double cellcenterx, cellcentery, distance_to_center;
+  double center_x=(LEFT + RIGHT)/2.0, center_y=(BOTTOM + TOP)/2.0;
+  double cell_center_x, cell_center_y, distance_to_center;
   double p1=0.00005, p2; // accept probability
   double r, T=50.0;
   node_dla TLUM; // Temporary Location Under Motion
   node_dla MWLL; // Minimum Wire-Length Location
-  node_list[first_node_num].random_initial(0, boundries);
-  MW = wirelength_during_DLA(first_node_num, node_list, *net_list);
+  random_release_from_boundaries(0, node_list[first_node_num]);
+  MW = wirelength_during_DLA(first_node_num);
   for (int i=0; i<4; i++) {
     // release this cell from all 4 boundries and find the location, which gives the smallest total wirelength
-    node_list[first_node_num].random_initial(i, boundries);
-    while (1)
-    {
-      cellcenterx = node_list[first_node_num].left + cellwidth/2.0;
-      cellcentery = node_list[first_node_num].bottom + cellheight/2.0;
-      distance_to_center = fabs(cellcenterx-centerx)+fabs(cellcentery-centery);
-      WL1 = wirelength_during_DLA(first_node_num, node_list, NetList);
+    random_release_from_boundaries(i, node_list[first_node_num]);
+    while (true) {
+      cell_center_x = node_list[first_node_num].x0;
+      cell_center_y = node_list[first_node_num].y0;
+      distance_to_center = fabs(cell_center_x - center_x)+fabs(cell_center_y - center_y);
+      WL1 = wirelength_during_DLA(first_node_num);
       modWL1 = WL1 + distance_to_center/4.0;
       TLUM = node_list[first_node_num];
       step = (int)(WL1/100.0);
-      node_list[first_node_num].random_move(max(step, 1));
-      cellcenterx = node_list[first_node_num].left + cellwidth/2.0;
-      cellcentery = node_list[first_node_num].bottom + cellheight/2.0;
-      distance_to_center = fabs(cellcenterx-centerx)+fabs(cellcentery-centery);
-      WL2 = wirelength_during_DLA(first_node_num, node_list, NetList);
+      node_list[first_node_num].random_move(std::max(step, 1));
+      cell_center_x = node_list[first_node_num].x0;
+      cell_center_y = node_list[first_node_num].y0;
+      distance_to_center = fabs(cell_center_x - center_x)+fabs(cell_center_y - center_y);
+      WL2 = wirelength_during_DLA(first_node_num);
       modWL2 = WL2 + distance_to_center/4.0;
-      if (islegal(first_node_num, cell_out_bin, binlist, node_list)==-1)
-      {
-        if (modWL2 > modWL1) // if wirelength becomes larger, reject this move by some probability
-        {
+      if (is_legal(first_node_num, cell_out_bin)==-1) {
+        if (modWL2 > modWL1) {
+          // if wire-length becomes larger, reject this move by some probability
           r = ((double) std::rand()/RAND_MAX);
           p2 = exp(-(modWL2-modWL1)/T);
           if (r>p2) node_list[first_node_num] = TLUM;
@@ -412,4 +523,5 @@ bool diffusion_limited_aggregation_placer::place() {
   add_boundary_list();
   initialize_bin_list();
   DLA();
+  return true;
 }
