@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
 
 /* a block can be a gate, can also be a large module, it includes information like
  * the name of a gate/module, its width and height, its lower left corner (llx, lly),
@@ -23,7 +24,7 @@ private:
   int _orientation; // currently not used
 
   /* the following entries are derived data */
-  size_t _block_num;
+  size_t _num;
   /* block_num is the index of this block in the vector block_list, this data must be updated after push a new block into block_list */
 
 public:
@@ -42,8 +43,18 @@ public:
   int lly();
   void set_movable(bool movable);
   bool is_movable();
-  void set_block_num(size_t block_num);
+  void set_num(size_t num);
   size_t num();
+
+  friend std::ostream& operator<<(std::ostream& os, const block_t &block) {
+    os << "block name: " << block._name << "\n";
+    os << "width and height: " << block._w << " " << block._h << "\n";
+    os << "lower left corner: " << block._llx << " " << block._lly << "\n";
+    os << "movability: " << block._movable << "\n";
+    os << "assigned primary key: " << block._num << "\n";
+
+    return os;
+  }
 };
 
 

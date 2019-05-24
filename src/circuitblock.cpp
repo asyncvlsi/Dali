@@ -12,7 +12,7 @@ block_t::block_t() {
   _lly = 0;
   _movable = true;
   _orientation = 0;
-  _block_num = 0;
+  _num = 0;
 }
 
 block_t::block_t(std::string &blockName, int w, int h, int llx, int lly, bool movable)
@@ -65,10 +65,10 @@ bool block_t::is_movable() {
   return _movable;
 }
 
-void block_t::set_block_num(size_t block_num) {
-  _block_num = block_num;
+void block_t::set_num(size_t num) {
+  _num = num;
 }
 
 size_t block_t::num() {
-  return  _block_num;
+  return  _num;
 }
