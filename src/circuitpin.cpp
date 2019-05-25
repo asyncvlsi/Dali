@@ -18,6 +18,14 @@ bool pin_t::operator ==(const pin_t &rhs) const {
   return ((_block_name == rhs._block_name) && (_x_offset == rhs._x_offset) && (_y_offset == rhs._y_offset));
 }
 
+void pin_t::set_name(std::string &blockName) {
+  _block_name = blockName;
+}
+
+std::string pin_t::name() {
+  return _block_name;
+}
+
 void pin_t::set_x_offset(int xOffset) {
   _x_offset = xOffset;
 }

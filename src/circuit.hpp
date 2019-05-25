@@ -35,11 +35,11 @@ public:
 
   bool add_to_block_list(block_t &block);
   bool add_to_net_list(net_t &net);
+  void parse_line(std::string &line, std::vector<std::string> &field_list);
   bool read_nodes_file(std::string const &NameOfFile);
   void report_block_list();
   void report_block_map();
   bool read_pl_file(std::string const &NameOfFile);
-  void parse_line(std::string &line, std::vector<std::string> &field_list);
   bool read_nets_file(std::string const &NameOfFile);
 
   bool write_pl_solution(std::string const &NameOfFile);
