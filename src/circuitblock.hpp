@@ -21,7 +21,7 @@ private:
   int _w, _h; // width and height
   int _llx, _lly; // lower left corner
   bool _movable; // movable
-  int _orientation; // currently not used
+  std::string _orientation; // currently not used
 
   /* the following entries are derived data */
   size_t _num;
@@ -43,6 +43,9 @@ public:
   int lly();
   void set_movable(bool movable);
   bool is_movable();
+  int area();
+  void set_orientation(std::string orientation);
+  std::string orientation();
   void set_num(size_t num);
   size_t num();
 
@@ -51,6 +54,7 @@ public:
     os << "width and height: " << block._w << " " << block._h << "\n";
     os << "lower left corner: " << block._llx << " " << block._lly << "\n";
     os << "movability: " << block._movable << "\n";
+    os << "orientation: " << block._orientation << "\n";
     os << "assigned primary key: " << block._num << "\n";
 
     return os;

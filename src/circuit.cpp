@@ -77,12 +77,9 @@ void circuit_t::parse_line(std::string &line, std::vector<std::string> &field_li
 }
 
 bool circuit_t::read_nodes_file(std::string const &NameOfFile) {
-  size_t pos0, pos1, pos2, NumOfTerminal;block_t tmp_block;
-  std::string tmp_name; // name
   int tmp_w, tmp_h; // width and height
-
+  std::string tmp_name; // name
   std::string line, tmp_string;
-  NumOfTerminal = 0;
   std::ifstream ist(NameOfFile.c_str());
   if (ist.is_open()==0) {
     std::cout << "cannot open input file " << NameOfFile << "\n";
@@ -98,6 +95,8 @@ bool circuit_t::read_nodes_file(std::string const &NameOfFile) {
     getline(ist, line);
     parse_line(line, block_field);
     if (block_field.size()<=3) {
+      std::cout << "Ignoring line:\n";
+      std::cout << "\t" << line << "\n";
       continue;
     }
     tmp_name = block_field[0];
@@ -119,9 +118,6 @@ bool circuit_t::read_nodes_file(std::string const &NameOfFile) {
       std::cout << "Invalid stoi conversion: " << block_field[2] << "\n";
       std::cout << line << "\n";
       return false;
-    }
-    if (line.find("terminal") != std::string::npos) {
-      tmp_block.set_movable(false);
     }
 
     if (!add_to_block_list(tmp_block)) {
@@ -173,6 +169,9 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
     getline(ist, line);
     if (line.find("NetDegree") != std::string::npos) {
       is_in_useful_context = true;
+    } else {
+      std::cout << "Ignoring line:\n";
+      std::cout << "\t" << line << "\n";
     }
   }
   while (!ist.eof()) {
@@ -181,6 +180,12 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
       parse_line(line, net_head_field);
       //for (auto &&field: net_head_field) std::cout << field << "---";
       //std::cout << "\n";
+      if (net_head_field.size() < 3) {
+        std::cout << "Error!\n";
+        std::cout << "Invalid input, filed number less than 3, expecting at least 3\n";
+        std::cout << "\t" << line << "\n";
+        return false;
+      }
       tmp_net.set_name(net_head_field[2]);
       //std::cout << tmp_net.name() << "\n";
       tmp_net.pin_list.clear();
@@ -194,6 +199,12 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
         parse_line(line, pin_field);
         //for (auto &&field: pin_field) std::cout << field << "---";
         //std::cout << "\n";
+        if (pin_field.size() < 4) {
+          std::cout << "Error!\n";
+          std::cout << "Invalid input, filed number less than 4, expecting at least 4\n";
+          std::cout << "\t" << line << "\n";
+          return false;
+        }
 
         tmp_name = pin_field[0];
         tmp_pin.set_name(tmp_name);
@@ -203,7 +214,7 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
         } catch (...) {
           std::cout << "Error!\n";
           std::cout << "Invalid stoi conversion:" << pin_field[2] << "\n";
-          std::cout << line << "\n";
+          std::cout << "\t" << line << "\n";
           return false;
         }
         try {
@@ -212,10 +223,9 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
         } catch (...) {
           std::cout << "Error!\n";
           std::cout << "Invalid stoi conversion: " << pin_field[3] << "\n";
-          std::cout << line << "\n";
+          std::cout << "\t" << line << "\n";
           return false;
         }
-        //std::cout << tmp_pin << "\n";
 
         if (!tmp_net.add_pin(tmp_pin)) {
           return false;
@@ -236,10 +246,86 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
     }
   }
   ist.close();
+  return true;
+}
 
+void circuit_t::report_net_list() {
   for (auto &&net: net_list) {
     std::cout << net << "\n";
   }
+}
+
+void circuit_t::report_net_map() {
+  for (auto &&name_num_pair: net_name_map) {
+    std::cout << name_num_pair.first << " " << name_num_pair.second << "\n";
+  }
+}
+
+bool circuit_t::read_pl_file(std::string const &NameOfFile) {
+  block_t *block;
+  int tmp_block_index;
+  int tmp_x, tmp_y;
+  std::string line, tmp_name;
+  std::ifstream ist(NameOfFile.c_str());
+  if (ist.is_open()==0) {
+    std::cout << "cannot open input file " << NameOfFile << "\n";
+    return false;
+  }
+  while (!ist.eof()) {
+    getline(ist, line);
+    bool is_comment = false;
+    for (auto &&c: line) {
+      if (c == '#') {
+        is_comment = true;
+        break;
+      }
+    }
+    if (is_comment) {
+      continue;
+    }
+
+    std::vector<std::string> block_field;
+    parse_line(line, block_field);
+    if (block_field.size() < 4) {
+      std::cout << "Ignoring line:\n";
+      std::cout << "\t" << line << "\n";
+      continue;
+    }
+    tmp_name = block_field[0];
+    if (block_name_map.find(tmp_name) == block_name_map.end()) {
+      std::cout << "Warning: cannot find block with name: " << tmp_name << "\n";
+      std::cout << "Ignoring line:\n";
+      std::cout << "\t" << line << "\n";
+      continue;
+    }
+    tmp_block_index = block_name_map.find(tmp_name)->second;
+    block = &block_list[tmp_block_index];
+    try {
+      tmp_x = std::stoi(block_field[1]);
+      block->set_llx(tmp_x);
+    } catch (...) {
+      std::cout << "Error!\n";
+      std::cout << "Invalid stoi conversion:" << block_field[1] << "\n";
+      std::cout << line << "\n";
+      return false;
+    }
+    try {
+      tmp_y = std::stoi(block_field[1]);
+      block->set_lly(tmp_y);
+    } catch (...) {
+      std::cout << "Error!\n";
+      std::cout << "Invalid stoi conversion: " << block_field[2] << "\n";
+      std::cout << line << "\n";
+      return false;
+    }
+
+    block->set_orientation(block_field[3]);
+
+    if (line.find("FIXED") != std::string::npos) {
+      block->set_movable(false);
+    }
+  }
+  ist.close();
 
   return true;
 }

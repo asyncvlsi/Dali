@@ -35,19 +35,18 @@ public:
 
   bool add_to_block_list(block_t &block);
   bool add_to_net_list(net_t &net);
+
   void parse_line(std::string &line, std::vector<std::string> &field_list);
+
   bool read_nodes_file(std::string const &NameOfFile);
   void report_block_list();
   void report_block_map();
-  bool read_pl_file(std::string const &NameOfFile);
-  bool read_nets_file(std::string const &NameOfFile);
 
-  bool write_pl_solution(std::string const &NameOfFile);
-  bool write_pl_anchor_solution(std::string const &NameOfFile);
-  bool write_node_terminal(std::string const &NameOfFile="terminal.txt", std::string const &NameOfFile1="nodes.txt");
-  bool write_anchor_terminal(std::string const &NameOfFile="terminal.txt", std::string const &NameOfFile1="nodes.txt");
-  bool set_filling_rate(float rate=2.0/3.0);
-  bool set_boundary(int left=0, int right=0, int bottom=0, int top=0);
+  bool read_nets_file(std::string const &NameOfFile);
+  void report_net_list();
+  void report_net_map();
+
+  bool read_pl_file(std::string const &NameOfFile);
 };
 
 #endif //HPCC_CIRCUIT_HPP

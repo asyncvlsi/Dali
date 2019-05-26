@@ -11,7 +11,7 @@ block_t::block_t() {
   _llx = 0;
   _lly = 0;
   _movable = true;
-  _orientation = 0;
+  _orientation = "";
   _num = 0;
 }
 
@@ -63,6 +63,18 @@ void block_t::set_movable(bool movable) {
 
 bool block_t::is_movable() {
   return _movable;
+}
+
+int block_t::area() {
+  return _h * _w;
+}
+
+void block_t::set_orientation(std::string orientation) {
+  _orientation = orientation;
+}
+
+std::string block_t::orientation() {
+  return _orientation;
 }
 
 void block_t::set_num(size_t num) {

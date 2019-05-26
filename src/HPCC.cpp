@@ -10,10 +10,21 @@
 int main() {
   time_t Time = clock();
   circuit_t circuit;
-  circuit.read_nodes_file("../test/layout.nodes");
+  if (!circuit.read_nodes_file("../test/layout.nodes")) {
+    return 1;
+  }
   //circuit.report_block_list();
   //circuit.report_block_map();
-  circuit.read_nets_file("../test/layout.nets");
+  if (!circuit.read_nets_file("../test/layout.nets")) {
+    return 1;
+  }
+  //circuit.report_net_list();
+  //circuit.report_net_map();
+  if (!circuit.read_pl_file("../test/layout.pl")) {
+    return 1;
+  }
+  //circuit.report_block_list();
+
 
   //circuit.set_filling_rate();
   //circuit.set_boundary();
