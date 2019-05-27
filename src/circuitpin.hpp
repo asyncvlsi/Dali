@@ -7,6 +7,7 @@
 
 #include <string>
 #include <iostream>
+#include <cassert>
 #include "circuitblock.hpp"
 
 class pin_t {
@@ -35,6 +36,8 @@ public:
   int y_offset();
   void set_block_point(block_t &block);
   block_t* get_block();
+  int abs_x();
+  int abs_y();
 };
 
 

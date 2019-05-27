@@ -47,3 +47,35 @@ bool net_t::add_pin(pin_t &pin) {
   pin_list.push_back(pin);
   return true;
 }
+
+int net_t::hpwl() {
+  if (pin_list.empty()) {
+    std::cout << "Error!\n";
+    std::cout << "net contains no pin\n";
+    assert(!pin_list.empty());
+  }
+  int max_x = pin_list[0].abs_x();
+  int min_x = pin_list[0].abs_x();
+  int max_y = pin_list[0].abs_y();
+  int min_y = pin_list[0].abs_y();
+
+  for (auto &&pin: pin_list) {
+    if (pin.get_block() == nullptr) {
+      std::cout << "Error!\n";
+      std::cout << "attribute block_t* _block is nullptr, it should points to the block containing this pin\n";
+      assert(pin.get_block() != nullptr);
+    }
+    if (max_x < pin.abs_x()) {
+      max_x = pin.abs_x();
+    }
+    if (min_x > pin.abs_x()) {
+      min_x = pin.abs_x();
+    }
+    if (max_y < pin.abs_y()) {
+      max_y = pin.abs_y();
+    }
+    if (min_y > pin.abs_y()) {
+      min_y = pin.abs_y();
+    }
+  }
+}

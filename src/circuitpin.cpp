@@ -49,3 +49,21 @@ void pin_t::set_block_point(block_t &block) {
 block_t* pin_t::get_block() {
   return _block;
 }
+
+int pin_t::abs_x() {
+  if (get_block() == nullptr) {
+    std::cout << "Error!\n";
+    std::cout << "cannot find the block contain pin:\n" << this << "\n";
+    assert(get_block() != nullptr);
+  }
+  return get_block()->llx() + x_offset();
+}
+
+int pin_t::abs_y() {
+  if (get_block() == nullptr) {
+    std::cout << "Error!\n";
+    std::cout << "cannot find the block contain pin:\n" << this << "\n";
+    assert(get_block() != nullptr);
+  }
+  return get_block()->lly() + y_offset();
+}
