@@ -42,8 +42,8 @@ int pin_t::y_offset() {
   return _y_offset;
 }
 
-void pin_t::set_block_point(block_t *block) {
-  _block = block;
+void pin_t::set_block_point(block_t &block) {
+  _block = &block;
 }
 
 block_t* pin_t::get_block() {

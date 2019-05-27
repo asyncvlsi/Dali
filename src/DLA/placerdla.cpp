@@ -7,7 +7,7 @@
 #include <cmath>
 #include <algorithm>
 #include <iostream>
-#include "diffusionlimitedaggregationplacer.hpp"
+#include "placerdla.hpp"
 #include "../circuit_node_net.hpp"
 
 diffusion_limited_aggregation_placer::diffusion_limited_aggregation_placer() {
@@ -27,7 +27,7 @@ diffusion_limited_aggregation_placer::diffusion_limited_aggregation_placer(circu
   circuit = &input_circuit;
   net_list = &input_circuit.net_list;
   node_list.resize(input_circuit.block_list.size());
-  node_dla *node;
+  block_dla *node;
   for (size_t i=0; i<node_list.size(); i++) {
     node = &node_list[i];
     node->retrieve_info_from_database(input_circuit.block_list[i]);
@@ -42,7 +42,7 @@ void diffusion_limited_aggregation_placer::set_input(circuit_t &input_circuit) {
   node_list.clear();
   net_list = &input_circuit.net_list;
   node_list.resize(input_circuit.block_list.size());
-  node_dla *node;
+  block_dla *node;
   for (size_t i=0; i<node_list.size(); i++) {
     node = &node_list[i];
     node->retrieve_info_from_database(input_circuit.block_list[i]);
@@ -54,7 +54,7 @@ void diffusion_limited_aggregation_placer::set_input(circuit_t &input_circuit) {
 }
 
 void diffusion_limited_aggregation_placer::report_result() {
-  node_dla *node;
+  block_dla *node;
   for (size_t i=0; i<node_list.size(); i++) {
     node = &node_list[i];
     node->write_info_to_database(circuit->block_list[i]);
@@ -82,7 +82,7 @@ void diffusion_limited_aggregation_placer::add_boundary_list() {
     }
   }
 
-  node_dla tmp_node;
+  block_dla tmp_node;
   int multiplier = 500;
   tmp_node.is_terminal = true;
 
@@ -159,7 +159,7 @@ void diffusion_limited_aggregation_placer::initialize_bin_list(){
 
 void diffusion_limited_aggregation_placer::add_neb_num(int node_num1, int node_num2, int net_size) {
   size_t neb_list_size; // neighbor number
-  cell_neighbor tmp_neb; // for one of its neighbor, we need to record the primary key of this neighbor and the number of wires between them
+  block_neighbor tmp_neb; // for one of its neighbor, we need to record the primary key of this neighbor and the number of wires between them
   tmp_neb.node_num = node_num2;
   tmp_neb.wire_num = 1.0 / (net_size - 1);
   neb_list_size = node_list[node_num1].neblist.size();
@@ -184,7 +184,7 @@ void diffusion_limited_aggregation_placer::add_neb_num(int node_num1, int node_n
 
 void diffusion_limited_aggregation_placer::sort_neighbor_list() {
   int max_wire_node_index;
-  cell_neighbor tmp_neb;
+  block_neighbor tmp_neb;
   for (auto &&node: node_list) {
     for (size_t i=0; i<node.neblist.size(); i++) {
       max_wire_node_index = i;
@@ -225,8 +225,8 @@ void diffusion_limited_aggregation_placer::update_neighbor_list() {
 
 void diffusion_limited_aggregation_placer::order_node_to_place(std::queue<int> &cell_to_place){
   // creat a new cell list cell_to_place to store the sorted node_list based on the number of wires connecting to the cell
-  node_dla tmp_node;
-  std::vector<node_dla> tmp_node_list;
+  block_dla tmp_node;
+  std::vector<block_dla> tmp_node_list;
   for (auto &&node: node_list) {
     tmp_node_list.push_back(node);
   }
@@ -254,7 +254,7 @@ void diffusion_limited_aggregation_placer::update_bin_list(int first_node_num, s
   double right_most = left_most + X_bin_list_size * bin_width, top_most = bottom_most + Y_bin_list_size * bin_height;
   double left = node_list[first_node_num].llx(), right = node_list[first_node_num].urx();
   double bottom = node_list[first_node_num].lly(), top = node_list[first_node_num].ury();
-  node_dla temp_large_boundry; // the larger boundries of bins
+  block_dla temp_large_boundry; // the larger boundries of bins
   temp_large_boundry.x0 = left_most;
   temp_large_boundry.y0 = bottom_most;
   temp_large_boundry.w = (int)(right_most - left_most);
@@ -289,7 +289,7 @@ void diffusion_limited_aggregation_placer::update_bin_list(int first_node_num, s
   //cout << "\n";
 }
 
-bool diffusion_limited_aggregation_placer::random_release_from_boundaries(int boundary_num, node_dla &node) {
+bool diffusion_limited_aggregation_placer::random_release_from_boundaries(int boundary_num, block_dla &node) {
   switch (boundary_num) {
     case 0:
       // 2*Left boundry
@@ -367,7 +367,7 @@ int diffusion_limited_aggregation_placer::is_legal(int first_node_num, std::vect
   double right_most = left_most + Xbinlistsize*binwidth, top_most = bottom_most + Ybinlistsize*binheight;
   double Left = node_list[first_node_num].llx(), Right = node_list[first_node_num].urx();
   double Bottom = node_list[first_node_num].lly(), Top = node_list[first_node_num].ury();
-  node_dla temp_large_boundry; // the larger boundries of bins
+  block_dla temp_large_boundry; // the larger boundries of bins
   temp_large_boundry.x0 = left_most;
   temp_large_boundry.y0 = bottom_most;
   temp_large_boundry.w = (int)(right_most - left_most);
@@ -408,8 +408,8 @@ void diffusion_limited_aggregation_placer::diffuse(int first_node_num, std::vect
   double cell_center_x, cell_center_y, distance_to_center;
   double p1=0.00005, p2; // accept probability
   double r, T=50.0;
-  node_dla TLUM; // Temporary Location Under Motion
-  node_dla MWLL; // Minimum Wire-Length Location
+  block_dla TLUM; // Temporary Location Under Motion
+  block_dla MWLL; // Minimum Wire-Length Location
   random_release_from_boundaries(0, node_list[first_node_num]);
   MW = wirelength_during_DLA(first_node_num);
   for (int i=0; i<4; i++) {

@@ -12,6 +12,12 @@
 #include "circuitnet.hpp"
 
 class circuit_t {
+protected:
+  double _ave_width;
+  double _ave_height;
+  int _tot_block_area;
+  int _tot_movable_num;
+  // these data entries are all cached data
 public:
   circuit_t();
   /* essential data entries */
@@ -19,15 +25,8 @@ public:
   std::vector< net_t > net_list;
   // node_list and net_list contains all the information of a circuit graph
 
-  /* the following entries are derived data */
-  size_t tot_movable_num, tot_unmovable_num;
-  // the total number of movable blocks, and the total number of unmovable blocks. These two variables might be removed later
   int HPWL;
   // HPWL of this circuit
-  double ave_width;
-  double ave_height;
-  double ave_cell_area;
-  // average cell width, height, and area
   std::map<std::string, size_t> block_name_map;
   // string to size_t map to find the index of a block in the block_list
   std::map<std::string, size_t> net_name_map;
@@ -47,6 +46,25 @@ public:
   void report_net_map();
 
   bool read_pl_file(std::string const &NameOfFile);
+
+  //-----------------------------------------------------------------------------------------------
+  /* the following member function calculate corresponding values in real time, the running time is O(n) */
+  double ave_width_real_time();
+  double ave_height_real_time();
+  double ave_block_area_real_time();
+  int tot_block_area_real_time();
+  int tot_movable_num_real_time();
+  int tot_unmovable_num_real_time();
+
+  /* these following member functions just return cached data entries O(1)
+   * or if the cached data entries have not been initialized, the corresponding real_time function will be called O(n) */
+  double ave_width();
+  double ave_height();
+  double ave_block_area();
+  int tot_block_area();
+  int tot_movable_num();
+  int tot_unmovable_num();
+
 };
 
 #endif //HPCC_CIRCUIT_HPP

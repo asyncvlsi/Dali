@@ -10,7 +10,7 @@
 #include "circuitblock.hpp"
 
 class pin_t {
-private:
+protected:
   std::string _block_name;
   int _x_offset;
   int _y_offset;
@@ -33,7 +33,7 @@ public:
   void set_y_offset(int yOffset);
   int x_offset();
   int y_offset();
-  void set_block_point(block_t *block);
+  void set_block_point(block_t &block);
   block_t* get_block();
 };
 

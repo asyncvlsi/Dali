@@ -10,7 +10,7 @@
 #include "circuitpin.hpp"
 
 class net_t {
-private:
+protected:
   /* essential data entries */
   std::string _name; // name
   double _weight; // weight of this net

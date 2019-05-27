@@ -12,7 +12,6 @@ placer_t::placer_t() {
   _right = 0;
   _bottom = 0;
   _top = 0;
-  _white_space_block_area_ratio = 0;
   _circuit = nullptr;
 }
 
@@ -21,7 +20,6 @@ placer_t::placer_t(double aspectRatio, double fillingRate) : _aspect_ratio(aspec
   _right = 0;
   _bottom = 0;
   _top = 0;
-  _white_space_block_area_ratio = 1/fillingRate;
   _circuit = nullptr;
 }
 
@@ -32,9 +30,16 @@ bool placer_t::set_filling_rate(double rate) {
     return false;
   } else {
     _filling_rate = rate;
-    _white_space_block_area_ratio = 1/_filling_rate;
   }
   return true;
+}
+
+double placer_t::filling_rate() {
+  return _filling_rate;
+}
+
+double placer_t::aspect_ratio() {
+  return _aspect_ratio;
 }
 
 bool placer_t::set_aspect_ratio(double ratio){
@@ -48,14 +53,44 @@ bool placer_t::set_aspect_ratio(double ratio){
   return true;
 }
 
-bool placer_t::set_input_circuit(circuit_t *circuit) {
-  if (circuit == nullptr) {
+double placer_t::space_block_ratio() {
+  if (_filling_rate < 1e-3) {
+    std::cout << "Warning: filling rate too small, might lead to large numerical error.\n";
+  }
+  return 1.0/_filling_rate;
+}
+
+bool placer_t::set_space_block_ratio(double ratio) {
+  if (ratio < 1) {
     std::cout << "Error!\n";
-    std::cout << "Invalid input circuit, argument cannot be set to nullptr!\n";
+    std::cout << "Invalid value: value should be in range [1, +infinity)\n";
+    return false;
+  } else {
+    _filling_rate = 1./ratio;
+  }
+  return true;
+}
+
+bool placer_t::set_input_circuit(circuit_t &circuit) {
+  if (circuit.block_list.empty()) {
+    std::cout << "Error!\n";
+    std::cout << "Invalid circuit: no block defined\n";
     return false;
   }
-  _circuit = circuit;
+  if (circuit.net_list.empty()) {
+    std::cout << "Warning!\n";
+    std::cout << "net list empty\n";
+  }
+  _circuit = &circuit;
   return true;
+}
+
+std::vector<net_t>* placer_t::net_list() {
+  return &_circuit->net_list;
+}
+
+std::vector<block_t>* placer_t::block_list() {
+  return &_circuit->block_list;
 }
 
 bool placer_t::auto_set_boundaries() {
@@ -64,57 +99,67 @@ bool placer_t::auto_set_boundaries() {
     std::cout << "Member function set_input_circuit must be called before auto_set_boundaries\n";
     return false;
   }
-  int tot_block_area = 0;
-  int area;
-  for (auto &&node: _circuit->block_list) {
-    tot_block_area += node.area();
-  }
+  int tot_block_area = _circuit->tot_block_area();
   int width = std::ceil(std::sqrt(tot_block_area/_aspect_ratio/_filling_rate));
   int height = std::ceil(width * _aspect_ratio);
   std::cout << "Pre-set aspect ratio: " << _aspect_ratio << "\n";
   _aspect_ratio = height/(double)width;
-  std::cout << "Adjusted filling rate: " << _aspect_ratio << "\n";
+  std::cout << "Adjusted aspect rate: " << _aspect_ratio << "\n";
 
-  _left = (int)_circuit->ave_width;
+  _left = (int)_circuit->ave_width();
   _right = _left + width;
-  _bottom = (int)_circuit->ave_width;
-  _top = _bottom + width;
-  area = width * width;
+  _bottom = (int)_circuit->ave_width();
+  _top = _bottom + height;
+  int area = height * width;
   std::cout << "Pre-set filling rate: " << _filling_rate << "\n";
   _filling_rate = tot_block_area/(double)area;
   std::cout << "Adjusted filling rate: " << _filling_rate << "\n";
   return true;
 }
 
-bool placer_t::set_boundary(int left, int right, int bottom, int top) {
-  int tot_block_area = 0;
-  int area;
-  for (auto &&node: block_list) {
-    tot_block_area += node.area();
-  }
+void placer_t::report_boundaries() {
+  std::cout << "\tleft\tright\tbottom\ttop\n";
+  std::cout << "\t" << _left << "\t" << _right << "\t" << _bottom << "\t" << _top << "\n";
+}
 
-  if ((left == 0)&&(right == 0)&&(bottom == 0)&&(top == 0)) {
-    // default boundary setting, a square
-    int width = std::ceil(std::sqrt(tot_block_area/TARGET_FILLING_RATE));
-    LEFT = (int)ave_width;
-    RIGHT = LEFT + width;
-    BOTTOM = (int)ave_width;
-    TOP = BOTTOM + width;
-    area = width * width;
-    std::cout << "Pre-set filling rate: " << TARGET_FILLING_RATE << "\n";
-    TARGET_FILLING_RATE = tot_block_area/(float)area;
-    std::cout << "Adjusted filling rate: " << TARGET_FILLING_RATE << "\n";
-  } else {
-    area = (right - left) * (top - bottom);
-    // check if area is large enough and update
-    if (area <= tot_block_area) {
-      std::cout << "Error: defined boundaries have smaller area than total cell area\n";
-      return false;
-    } else {
-      TARGET_FILLING_RATE = tot_block_area/(float)area;
-    }
+bool placer_t::update_aspect_ratio() {
+  if ((_right - _left == 0) || (_top - _bottom == 0)) {
+    std::cout << "Error!\n";
+    std::cout << "Zero height or width of placement region!\n";
+    report_boundaries();
+    return false;
   }
-
+  _aspect_ratio = (_top - _bottom)/(double)(_right - _left);
   return true;
 }
 
+bool placer_t::set_boundary(int left, int right, int bottom, int top) {
+  if (_circuit == nullptr) {
+    std::cout << "Error!\n";
+    std::cout << "Member function set_input_circuit must be called before auto_set_boundaries\n";
+    return false;
+  }
+
+  int tot_block_area = _circuit->tot_block_area();
+  int tot_area = (right - left) * (top - bottom);
+
+  if (tot_area <= tot_block_area) {
+    std::cout << "Error!\n";
+    std::cout << "Given boundaries have smaller area than total block area!\n";
+    return false;
+  } else {
+    std::cout << "Pre-set filling rate: " << _filling_rate << "\n";
+    _filling_rate = tot_block_area/(float)tot_area;
+    std::cout << "Adjusted filling rate: " << _filling_rate << "\n";
+    _left = left;
+    _right = right;
+    _bottom = bottom;
+    _top = top;
+    return true;
+  }
+}
+
+bool placer_t::start_placement() {
+  std::cout << "placer_t::start_placement() is a virtual member function\n";
+  return true;
+}

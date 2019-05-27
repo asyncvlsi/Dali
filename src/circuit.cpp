@@ -9,9 +9,11 @@
 #include "circuit.hpp"
 
 circuit_t::circuit_t() {
-  tot_movable_num = 0;
-  tot_unmovable_num = 0;
   HPWL = 0;
+  _tot_movable_num = 0;
+  _ave_width = 0;
+  _ave_height = 0;
+  _tot_block_area = 0;
 }
 
 bool circuit_t::add_to_block_list(block_t &block) {
@@ -30,6 +32,17 @@ bool circuit_t::add_to_block_list(block_t &block) {
 
 bool circuit_t::add_to_net_list(net_t &net) {
   if (net_name_map.find(net.name()) == net_name_map.end()) {
+    for (auto &&pin: net.pin_list) {
+      if (block_name_map.find(pin.name()) == block_name_map.end()) {
+        std::cout << "Error!\n";
+        std::cout << "Invalid pin: block name does not match block_list\n";
+        std::cout << pin << "\n";
+        return false;
+      }
+      int block_num = block_name_map.find(pin.name())->second;
+      pin.set_block_point(block_list[block_num]);
+    }
+
     size_t net_list_size = net_list.size();
     net.set_num(net_list_size);
     net_name_map.insert(std::pair<std::string, int>(net.name(), net.num()));
@@ -37,7 +50,7 @@ bool circuit_t::add_to_net_list(net_t &net) {
     return true;
   } else {
     std::cout << "Error!\n";
-    std::cout << "Existing block in block_list with name: " << net.name() << "\n";
+    std::cout << "Existing net in net_list with name: " << net.name() << "\n";
     return false;
   }
 }
@@ -86,9 +99,8 @@ bool circuit_t::read_nodes_file(std::string const &NameOfFile) {
     return false;
   }
 
-  ave_width = 0;
-  ave_height = 0;
-  ave_cell_area = 0;
+  std::cout << "Start reading node file\n";
+
   while (!ist.eof()) {
     block_t tmp_block;
     std::vector<std::string> block_field;
@@ -126,16 +138,6 @@ bool circuit_t::read_nodes_file(std::string const &NameOfFile) {
   }
   ist.close();
 
-  for (auto &&block: block_list) {
-    ave_width += block.width();
-    ave_height += block.height();
-    ave_cell_area += block.width() * block.height();
-  }
-
-  ave_width = ave_width/tot_movable_num;
-  ave_height = ave_height/tot_movable_num;
-  ave_cell_area = ave_cell_area/tot_movable_num;
-
   return true;
 }
 
@@ -157,6 +159,8 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
     std::cout << "cannot open input file " << NameOfFile << "\n";
     return false;
   }
+
+  std::cout << "Start reading net file\n";
 
   net_t tmp_net;
   std::string tmp_net_name;
@@ -232,14 +236,18 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
         }
 
         if (ist.eof()) {
-          add_to_net_list(tmp_net);
+          if (!add_to_net_list(tmp_net)) {
+            return false;
+          }
           break;
         } else {
           getline(ist, line);
         }
 
         if (line.find("NetDegree") != std::string::npos) {
-          add_to_net_list(tmp_net);
+          if (!add_to_net_list(tmp_net)) {
+            return false;
+          }
           break;
         }
       }
@@ -271,6 +279,9 @@ bool circuit_t::read_pl_file(std::string const &NameOfFile) {
     std::cout << "cannot open input file " << NameOfFile << "\n";
     return false;
   }
+
+  std::cout << "Start reading placement file\n";
+
   while (!ist.eof()) {
     getline(ist, line);
     bool is_comment = false;
@@ -328,4 +339,84 @@ bool circuit_t::read_pl_file(std::string const &NameOfFile) {
   ist.close();
 
   return true;
+}
+
+double circuit_t::ave_width_real_time() {
+  _ave_width = 0;
+  for (auto &&block: block_list) {
+    _ave_width += block.width();
+  }
+  _ave_width /= block_list.size();
+  return _ave_width;
+}
+
+double circuit_t::ave_height_real_time() {
+  _ave_height = 0;
+  for (auto &&block: block_list) {
+    _ave_height += block.width();
+  }
+  _ave_height /= block_list.size();
+  return _ave_height;
+}
+
+int circuit_t::tot_block_area_real_time() {
+  _tot_block_area = 0;
+  for (auto &&block: block_list) {
+    _tot_block_area += block.area();
+  }
+  return _tot_block_area;
+}
+
+double circuit_t::ave_block_area_real_time() {
+  return tot_block_area_real_time()/(double)block_list.size();
+}
+
+int circuit_t::tot_movable_num_real_time() {
+  _tot_movable_num = 0;
+  for (auto &&block: block_list) {
+    if (block.is_movable()) {
+      _tot_movable_num++;
+    }
+  }
+  return _tot_movable_num;
+}
+
+int circuit_t::tot_unmovable_num_real_time() {
+  return block_list.size() - tot_movable_num_real_time();
+}
+
+double circuit_t::ave_width() {
+  if (_ave_width < 1e-5) {
+    return ave_width_real_time();
+  }
+  return _ave_width;
+}
+
+double circuit_t::ave_height() {
+  if (_ave_height < 1e-5) {
+    return ave_height_real_time();
+  }
+  return _ave_height;
+}
+
+int circuit_t::tot_block_area() {
+  if (_tot_block_area == 0) {
+    return tot_block_area_real_time();
+  }
+  return _tot_block_area;
+}
+
+double circuit_t::ave_block_area() {
+  return tot_block_area()/(double)block_list.size();
+}
+
+int circuit_t::tot_movable_num() {
+  if (_tot_movable_num == 0) {
+    return tot_movable_num_real_time();
+  }
+  return _tot_movable_num;
+}
+
+int circuit_t::tot_unmovable_num() {
+  return block_list.size() - _tot_movable_num;
 }

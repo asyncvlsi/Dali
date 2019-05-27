@@ -15,7 +15,7 @@
  * the movability, orientation. */
 
 class block_t {
-private:
+protected:
   /* essential data entries */
   std::string _name; // name
   int _w, _h; // width and height
@@ -33,21 +33,29 @@ public:
 
   void set_name(std::string &blockName);
   std::string name();
-  void set_width(int width);
-  int width();
-  void set_height(int height);
-  int height();
-  void set_llx(int lower_left_x);
-  int llx();
-  void set_lly(int lower_left_y);
-  int lly();
+  void set_width(int &width);
+  int width() const;
+  void set_height(int &height);
+  int height() const;
+  void set_llx(int &lower_left_x);
+  int llx() const;
+  void set_lly(int &lower_left_y);
+  int lly() const;
+  void set_urx(int &upper_right_x);
+  int urx() const;
+  void set_ury(int &upper_right_y);
+  int ury() const;
+  void set_center_x(double &center_x);
+  double x() const;
+  void set_center_y(double &center_y);
+  double y() const;
   void set_movable(bool movable);
-  bool is_movable();
-  int area();
-  void set_orientation(std::string orientation);
-  std::string orientation();
-  void set_num(size_t num);
-  size_t num();
+  bool is_movable() const;
+  int area() const;
+  void set_orientation(std::string &orientation);
+  std::string orientation() const;
+  void set_num(size_t &num);
+  size_t num() const;
 
   friend std::ostream& operator<<(std::ostream& os, const block_t &block) {
     os << "block name: " << block._name << "\n";
