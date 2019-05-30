@@ -78,4 +78,6 @@ int net_t::hpwl() {
       min_y = pin.abs_y();
     }
   }
+
+  return (max_x - min_x) + (max_y - min_y);
 }

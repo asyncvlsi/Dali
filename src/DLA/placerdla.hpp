@@ -7,22 +7,17 @@
 
 #include <vector>
 #include "../circuit.hpp"
-#include "../circuit_node_net.hpp"
+#include "../circuitblock.hpp"
+#include "../circuitnet.hpp"
+#include "../circuitpin.hpp"
+#include "../placer.hpp"
 #include "bindla.hpp"
 #include "blockdla.hpp"
 
-class diffusion_limited_aggregation_placer {
+class placer_dla_t: public placer_t {
 public:
-  diffusion_limited_aggregation_placer();
-  explicit diffusion_limited_aggregation_placer(circuit_t &input_circuit);
-  circuit_t *circuit;
-  std::vector< net_t > *net_list;
-  std::vector< block_dla > node_list;
-  int LEFT, RIGHT, BOTTOM, TOP;
-
-  void set_input(circuit_t &input_circuit);
-  void report_result();
-  void clear();
+  placer_dla_t(): placer_t() {};
+  placer_dla_t(double aspectRatio, double fillingRate): placer_t(aspectRatio, fillingRate) {};
 
   std::vector< block_dla > boundary_list;
   void add_boundary_list();

@@ -31,7 +31,7 @@ int main() {
   placer.set_aspect_ratio(2);
   std::cout << placer.space_block_ratio() << " " << placer.filling_rate() << " " << placer.aspect_ratio() << "\n";
 
-  placer.set_input_circuit(circuit);
+  placer.set_input_circuit(&circuit);
   placer.auto_set_boundaries();
   placer.report_boundaries();
 

@@ -71,17 +71,17 @@ bool placer_t::set_space_block_ratio(double ratio) {
   return true;
 }
 
-bool placer_t::set_input_circuit(circuit_t &circuit) {
-  if (circuit.block_list.empty()) {
+bool placer_t::set_input_circuit(circuit_t *circuit) {
+  if (circuit->block_list.empty()) {
     std::cout << "Error!\n";
     std::cout << "Invalid circuit: no block defined\n";
     return false;
   }
-  if (circuit.net_list.empty()) {
+  if (circuit->net_list.empty()) {
     std::cout << "Warning!\n";
     std::cout << "net list empty\n";
   }
-  _circuit = &circuit;
+  _circuit = circuit;
   return true;
 }
 

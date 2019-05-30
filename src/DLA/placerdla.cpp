@@ -10,7 +10,7 @@
 #include "placerdla.hpp"
 #include "../circuit_node_net.hpp"
 
-diffusion_limited_aggregation_placer::diffusion_limited_aggregation_placer() {
+placer_dla_t::placer_dla_t() {
   circuit = nullptr;
   net_list = nullptr;
   LEFT = 0;
@@ -21,7 +21,7 @@ diffusion_limited_aggregation_placer::diffusion_limited_aggregation_placer() {
   bin_width = 0;
 }
 
-diffusion_limited_aggregation_placer::diffusion_limited_aggregation_placer(circuit_t &input_circuit) {
+placer_dla_t::placer_dla_t(circuit_t &input_circuit) {
   bin_height = 0;
   bin_width = 0;
   circuit = &input_circuit;
@@ -38,7 +38,7 @@ diffusion_limited_aggregation_placer::diffusion_limited_aggregation_placer(circu
   TOP = input_circuit.TOP;
 }
 
-void diffusion_limited_aggregation_placer::set_input(circuit_t &input_circuit) {
+void placer_dla_t::set_input(circuit_t &input_circuit) {
   node_list.clear();
   net_list = &input_circuit.net_list;
   node_list.resize(input_circuit.block_list.size());
@@ -53,7 +53,7 @@ void diffusion_limited_aggregation_placer::set_input(circuit_t &input_circuit) {
   TOP = input_circuit.TOP;
 }
 
-void diffusion_limited_aggregation_placer::report_result() {
+void placer_dla_t::report_result() {
   block_dla *node;
   for (size_t i=0; i<node_list.size(); i++) {
     node = &node_list[i];
@@ -61,13 +61,13 @@ void diffusion_limited_aggregation_placer::report_result() {
   }
 }
 
-void diffusion_limited_aggregation_placer::clear() {
+void placer_dla_t::clear() {
   circuit = nullptr;
   net_list = nullptr;
   node_list.clear();
 }
 
-void diffusion_limited_aggregation_placer::add_boundary_list() {
+void placer_dla_t::add_boundary_list() {
   int max_width=0, max_height=0;
   for (auto &&node: node_list) {
     // find maximum width and maximum height
@@ -119,7 +119,7 @@ void diffusion_limited_aggregation_placer::add_boundary_list() {
   boundary_list.push_back(tmp_node);
 }
 
-void diffusion_limited_aggregation_placer::initialize_bin_list(){
+void placer_dla_t::initialize_bin_list(){
   // initialize the binlist, build up the binlist matrix
   int max_width=0, max_height=0;
   for (auto &&node: node_list) {
@@ -157,7 +157,7 @@ void diffusion_limited_aggregation_placer::initialize_bin_list(){
   }
 }
 
-void diffusion_limited_aggregation_placer::add_neb_num(int node_num1, int node_num2, int net_size) {
+void placer_dla_t::add_neb_num(int node_num1, int node_num2, int net_size) {
   size_t neb_list_size; // neighbor number
   block_neighbor tmp_neb; // for one of its neighbor, we need to record the primary key of this neighbor and the number of wires between them
   tmp_neb.node_num = node_num2;
@@ -182,7 +182,7 @@ void diffusion_limited_aggregation_placer::add_neb_num(int node_num1, int node_n
   }
 }
 
-void diffusion_limited_aggregation_placer::sort_neighbor_list() {
+void placer_dla_t::sort_neighbor_list() {
   int max_wire_node_index;
   block_neighbor tmp_neb;
   for (auto &&node: node_list) {
@@ -200,7 +200,7 @@ void diffusion_limited_aggregation_placer::sort_neighbor_list() {
   }
 }
 
-void diffusion_limited_aggregation_placer::update_neighbor_list() {
+void placer_dla_t::update_neighbor_list() {
   // update the list of neighbor and the wire numbers connected to its neighbor, and the nets connected to this cell
   int cell1, cell2;
   size_t net_size;
@@ -223,7 +223,7 @@ void diffusion_limited_aggregation_placer::update_neighbor_list() {
   sort_neighbor_list();
 }
 
-void diffusion_limited_aggregation_placer::order_node_to_place(std::queue<int> &cell_to_place){
+void placer_dla_t::order_node_to_place(std::queue<int> &cell_to_place){
   // creat a new cell list cell_to_place to store the sorted node_list based on the number of wires connecting to the cell
   block_dla tmp_node;
   std::vector<block_dla> tmp_node_list;
@@ -248,7 +248,7 @@ void diffusion_limited_aggregation_placer::order_node_to_place(std::queue<int> &
   }
 }
 
-void diffusion_limited_aggregation_placer::update_bin_list(int first_node_num, std::vector<int> &cell_out_bin) {
+void placer_dla_t::update_bin_list(int first_node_num, std::vector<int> &cell_out_bin) {
   double left_most = bin_list[0][0].left, bottom_most = bin_list[0][0].bottom;
   int X_bin_list_size = bin_list.size(), Y_bin_list_size = bin_list[0].size();
   double right_most = left_most + X_bin_list_size * bin_width, top_most = bottom_most + Y_bin_list_size * bin_height;
@@ -289,7 +289,7 @@ void diffusion_limited_aggregation_placer::update_bin_list(int first_node_num, s
   //cout << "\n";
 }
 
-bool diffusion_limited_aggregation_placer::random_release_from_boundaries(int boundary_num, block_dla &node) {
+bool placer_dla_t::random_release_from_boundaries(int boundary_num, block_dla &node) {
   switch (boundary_num) {
     case 0:
       // 2*Left boundry
@@ -317,7 +317,7 @@ bool diffusion_limited_aggregation_placer::random_release_from_boundaries(int bo
   return true;
 }
 
-double diffusion_limited_aggregation_placer::net_hwpl_during_dla(net_t *net) {
+double placer_dla_t::net_hwpl_during_dla(net_t *net) {
   double WL=0;
   int num_of_placed_cell_in_net=0, tempnetsize, tempcellNo;
   double tempcellx, tempcelly;
@@ -347,7 +347,7 @@ double diffusion_limited_aggregation_placer::net_hwpl_during_dla(net_t *net) {
   return WL;
 }
 
-double diffusion_limited_aggregation_placer::wirelength_during_DLA(int first_node_num) {
+double placer_dla_t::wirelength_during_DLA(int first_node_num) {
   // support multi-pin nets
   double WL=0;
   net_t *net;
@@ -359,7 +359,7 @@ double diffusion_limited_aggregation_placer::wirelength_during_DLA(int first_nod
   return WL;
 }
 
-int diffusion_limited_aggregation_placer::is_legal(int first_node_num, std::vector<int> &cell_out_bin) {
+int placer_dla_t::is_legal(int first_node_num, std::vector<int> &cell_out_bin) {
   // if legal, return -1, if illegal, return the cell with which this first_node_num has overlap
   double left_most = bin_list[0][0].left, bottom_most = bin_list[0][0].bottom;
   int binwidth = bin_list[0][0].width, binheight = bin_list[0][0].height;
@@ -400,7 +400,7 @@ int diffusion_limited_aggregation_placer::is_legal(int first_node_num, std::vect
   return -1;
 }
 
-void diffusion_limited_aggregation_placer::diffuse(int first_node_num, std::vector<int> &cell_out_bin) {
+void placer_dla_t::diffuse(int first_node_num, std::vector<int> &cell_out_bin) {
   double WL1, WL2, MW; // MW indicates minimum wirelength
   double modWL1, modWL2;
   int step;
@@ -465,7 +465,7 @@ void diffusion_limited_aggregation_placer::diffuse(int first_node_num, std::vect
   update_bin_list(first_node_num, cell_out_bin);
 }
 
-bool diffusion_limited_aggregation_placer::DLA() {
+bool placer_dla_t::DLA() {
   update_neighbor_list();
   std::queue<int> cell_to_place;
   std::vector<int> cell_out_bin; // cells which are out of bins
@@ -520,7 +520,7 @@ bool diffusion_limited_aggregation_placer::DLA() {
   return true;
 }
 
-bool diffusion_limited_aggregation_placer::place() {
+bool placer_dla_t::place() {
   add_boundary_list();
   std::cout << "bug here\n";
   initialize_bin_list();

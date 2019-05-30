@@ -25,7 +25,6 @@ protected:
 
 public:
   placer_t();
-
   placer_t(double aspectRatio, double fillingRate);
 
   bool set_filling_rate(double rate = 2.0/3.0);
@@ -37,7 +36,7 @@ public:
   bool set_space_block_ratio(double ratio);
   // the ratio of total_white_space/total_block_area
 
-  bool set_input_circuit(circuit_t &circuit);
+  bool set_input_circuit(circuit_t *circuit);
   std::vector<net_t>* net_list();
   std::vector<block_t>* block_list();
 

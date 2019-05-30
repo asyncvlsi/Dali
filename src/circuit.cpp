@@ -32,17 +32,6 @@ bool circuit_t::add_to_block_list(block_t &block) {
 
 bool circuit_t::add_to_net_list(net_t &net) {
   if (net_name_map.find(net.name()) == net_name_map.end()) {
-    for (auto &&pin: net.pin_list) {
-      if (block_name_map.find(pin.name()) == block_name_map.end()) {
-        std::cout << "Error!\n";
-        std::cout << "Invalid pin: block name does not match block_list\n";
-        std::cout << pin << "\n";
-        return false;
-      }
-      int block_num = block_name_map.find(pin.name())->second;
-      pin.set_block_point(block_list[block_num]);
-    }
-
     size_t net_list_size = net_list.size();
     net.set_num(net_list_size);
     net_name_map.insert(std::pair<std::string, int>(net.name(), net.num()));
@@ -211,7 +200,15 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
         }
 
         tmp_name = pin_field[0];
-        tmp_pin.set_name(tmp_name);
+        if (block_name_map.find(tmp_name) == block_name_map.end()) {
+          std::cout << "Error!\n";
+          std::cout << "Invalid pin: block name does not match any element in block_list\n";
+          std::cout << line << "\n";
+          return false;
+        } else {
+          int block_num = block_name_map.find(tmp_name)->second;
+          tmp_pin.set_block_point(&block_list[block_num]);
+        }
         try {
           tmp_x_offset = std::stoi(pin_field[2]);
           tmp_pin.set_x_offset(tmp_x_offset);
