@@ -16,33 +16,56 @@ circuit_t::circuit_t() {
   _tot_block_area = 0;
 }
 
-bool circuit_t::add_to_block_list(block_t &block) {
-  if (block_name_map.find(block.name()) == block_name_map.end()) {
+bool circuit_t::add_new_block(std::string &blockName, int w, int h, int llx, int lly, bool movable) {
+  if (block_name_map.find(blockName) == block_name_map.end()) {
     size_t block_list_size = block_list.size();
-    block.set_num(block_list_size);
-    block_name_map.insert(std::pair<std::string, int>(block.name(), block.num()));
-    block_list.push_back(block);
+    block_t tmp_block(blockName, w, h, llx, lly, movable);
+    tmp_block.set_num(block_list_size);
+    block_name_map.insert(std::pair<std::string, int>(tmp_block.name(), tmp_block.num()));
+    block_list.push_back(tmp_block);
     return true;
   } else {
     std::cout << "Error!\n";
-    std::cout << "Existing block in block_list with name: " << block.name() << "\n";
+    std::cout << "Existing block in block_list with name: " << blockName << "\n";
     return false;
   }
 }
 
-bool circuit_t::add_to_net_list(net_t &net) {
-  if (net_name_map.find(net.name()) == net_name_map.end()) {
+bool circuit_t::create_blank_net(std::string &netName, double weight) {
+  if (net_name_map.find(netName) == net_name_map.end()) {
+    net_t tmp_net(netName, weight);
     size_t net_list_size = net_list.size();
-    net.set_num(net_list_size);
-    net_name_map.insert(std::pair<std::string, int>(net.name(), net.num()));
-    net_list.push_back(net);
+    tmp_net.set_num(net_list_size);
+    net_name_map.insert(std::pair<std::string, int>(tmp_net.name(), tmp_net.num()));
+    net_list.push_back(tmp_net);
     return true;
   } else {
     std::cout << "Error!\n";
-    std::cout << "Existing net in net_list with name: " << net.name() << "\n";
+    std::cout << "Existing net in net_list with name: " << netName << "\n";
     return false;
   }
 }
+
+bool circuit_t::add_pin_to_net(std::string &netName, std::string &blockName, int xOffset, int yOffset) {
+  if (net_name_map.find(netName) == net_name_map.end()) {
+    std::cout << "Error!\n";
+    std::cout << "No net in net_list has name: " << netName << "\n";
+    return false;
+  }
+  if (block_name_map.find(blockName) == block_name_map.end()){
+    std::cout << "Error!\n";
+    std::cout << "No block in block_list has name: " << blockName << "\n";
+    return false;
+  }
+
+  int block_num = block_name_map.find(blockName)->second;
+  pin_t tmp_pin(xOffset, yOffset, &block_list[block_num]);
+
+  int net_num = net_name_map.find(netName)->second;
+  return net_list[net_num].add_pin(tmp_pin);
+
+}
+
 
 void circuit_t::parse_line(std::string &line, std::vector<std::string> &field_list) {
   std::vector<char> delimiter_list;
@@ -91,20 +114,16 @@ bool circuit_t::read_nodes_file(std::string const &NameOfFile) {
   std::cout << "Start reading node file\n";
 
   while (!ist.eof()) {
-    block_t tmp_block;
     std::vector<std::string> block_field;
     getline(ist, line);
     parse_line(line, block_field);
     if (block_field.size()<=3) {
-      std::cout << "Ignoring line:\n";
-      std::cout << "\t" << line << "\n";
+      std::cout << "\t#" << line << "\n";
       continue;
     }
     tmp_name = block_field[0];
-    tmp_block.set_name(tmp_name);
     try {
       tmp_w = std::stoi(block_field[1]);
-      tmp_block.set_width(tmp_w);
     } catch (...) {
       std::cout << "Error!\n";
       std::cout << "Invalid stoi conversion:" << block_field[1] << "\n";
@@ -113,7 +132,6 @@ bool circuit_t::read_nodes_file(std::string const &NameOfFile) {
     }
     try {
       tmp_h = std::stoi(block_field[2]);
-      tmp_block.set_height(tmp_h);
     } catch (...) {
       std::cout << "Error!\n";
       std::cout << "Invalid stoi conversion: " << block_field[2] << "\n";
@@ -121,7 +139,7 @@ bool circuit_t::read_nodes_file(std::string const &NameOfFile) {
       return false;
     }
 
-    if (!add_to_block_list(tmp_block)) {
+    if (!add_new_block(tmp_name, tmp_w, tmp_h)) {
       return false;
     }
   }
@@ -150,12 +168,8 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
   }
 
   std::cout << "Start reading net file\n";
-
-  net_t tmp_net;
-  std::string tmp_net_name;
-  std::string tmp_block_name;
   std::string line;
-  net_t net_temp;
+  std::string tmp_net_name;
 
   bool is_in_useful_context = false;
   while (!is_in_useful_context) {
@@ -163,8 +177,7 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
     if (line.find("NetDegree") != std::string::npos) {
       is_in_useful_context = true;
     } else {
-      std::cout << "Ignoring line:\n";
-      std::cout << "\t" << line << "\n";
+      std::cout << "\t#" << line << "\n";
     }
   }
   while (!ist.eof()) {
@@ -179,75 +192,46 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
         std::cout << "\t" << line << "\n";
         return false;
       }
-      tmp_net.set_name(net_head_field[2]);
-      //std::cout << tmp_net.name() << "\n";
-      tmp_net.pin_list.clear();
-      getline(ist, line);
+      tmp_net_name = net_head_field[2];
+      create_blank_net(tmp_net_name);
     } else {
-      while (true) {
-        pin_t tmp_pin;
-        std::string tmp_name;
-        int tmp_x_offset, tmp_y_offset;
-        std::vector<std::string> pin_field;
-        parse_line(line, pin_field);
-        //for (auto &&field: pin_field) std::cout << field << "---";
-        //std::cout << "\n";
-        if (pin_field.size() < 4) {
-          std::cout << "Error!\n";
-          std::cout << "Invalid input, filed number less than 4, expecting at least 4\n";
-          std::cout << "\t" << line << "\n";
-          return false;
-        }
-
-        tmp_name = pin_field[0];
-        if (block_name_map.find(tmp_name) == block_name_map.end()) {
-          std::cout << "Error!\n";
-          std::cout << "Invalid pin: block name does not match any element in block_list\n";
-          std::cout << line << "\n";
-          return false;
-        } else {
-          int block_num = block_name_map.find(tmp_name)->second;
-          tmp_pin.set_block_point(&block_list[block_num]);
-        }
-        try {
-          tmp_x_offset = std::stoi(pin_field[2]);
-          tmp_pin.set_x_offset(tmp_x_offset);
-        } catch (...) {
-          std::cout << "Error!\n";
-          std::cout << "Invalid stoi conversion:" << pin_field[2] << "\n";
-          std::cout << "\t" << line << "\n";
-          return false;
-        }
-        try {
-          tmp_y_offset = std::stoi(pin_field[3]);
-          tmp_pin.set_y_offset(tmp_y_offset);
-        } catch (...) {
-          std::cout << "Error!\n";
-          std::cout << "Invalid stoi conversion: " << pin_field[3] << "\n";
-          std::cout << "\t" << line << "\n";
-          return false;
-        }
-
-        if (!tmp_net.add_pin(tmp_pin)) {
-          return false;
-        }
-
-        if (ist.eof()) {
-          if (!add_to_net_list(tmp_net)) {
-            return false;
-          }
-          break;
-        } else {
-          getline(ist, line);
-        }
-
-        if (line.find("NetDegree") != std::string::npos) {
-          if (!add_to_net_list(tmp_net)) {
-            return false;
-          }
-          break;
-        }
+      std::string tmp_block_name;
+      int tmp_x_offset, tmp_y_offset;
+      std::vector<std::string> pin_field;
+      parse_line(line, pin_field);
+      //for (auto &&field: pin_field) std::cout << field << "---";
+      //std::cout << "\n";
+      if (pin_field.size() < 4) {
+        std::cout << "Error!\n";
+        std::cout << "Invalid input, filed number less than 4, expecting at least 4\n";
+        std::cout << "\t" << line << "\n";
+        return false;
       }
+
+      tmp_block_name = pin_field[0];
+      try {
+        tmp_x_offset = std::stoi(pin_field[2]);
+      } catch (...) {
+        std::cout << "Error!\n";
+        std::cout << "Invalid stoi conversion:" << pin_field[2] << "\n";
+        std::cout << "\t" << line << "\n";
+        return false;
+      }
+      try {
+        tmp_y_offset = std::stoi(pin_field[3]);
+      } catch (...) {
+        std::cout << "Error!\n";
+        std::cout << "Invalid stoi conversion: " << pin_field[3] << "\n";
+        std::cout << "\t" << line << "\n";
+        return false;
+      }
+      if (!add_pin_to_net(tmp_net_name, tmp_block_name, tmp_x_offset, tmp_y_offset)) {
+        return false;
+      }
+    }
+    getline(ist, line);
+    if (line.empty()) {
+      continue;
     }
   }
   ist.close();
@@ -295,8 +279,7 @@ bool circuit_t::read_pl_file(std::string const &NameOfFile) {
     std::vector<std::string> block_field;
     parse_line(line, block_field);
     if (block_field.size() < 4) {
-      std::cout << "Ignoring line:\n";
-      std::cout << "\t" << line << "\n";
+      std::cout << "\t#" << line << "\n";
       continue;
     }
     tmp_name = block_field[0];
@@ -318,7 +301,7 @@ bool circuit_t::read_pl_file(std::string const &NameOfFile) {
       return false;
     }
     try {
-      tmp_y = std::stoi(block_field[1]);
+      tmp_y = std::stoi(block_field[2]);
       block->set_lly(tmp_y);
     } catch (...) {
       std::cout << "Error!\n";

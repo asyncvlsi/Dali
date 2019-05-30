@@ -29,7 +29,7 @@ protected:
 
 public:
   block_t();
-  block_t(std::string &blockName, int w, int h, int llx, int lly, bool movable);
+  block_t(std::string &blockName, int w, int h, int llx = 0, int lly = 0, bool movable = true);
 
   void set_name(std::string &blockName);
   std::string name();

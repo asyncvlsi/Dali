@@ -32,8 +32,9 @@ public:
   std::map<std::string, size_t> net_name_map;
   // string to size_t map to find the index of a net in the net_list
 
-  bool add_to_block_list(block_t &block);
-  bool add_to_net_list(net_t &net);
+  bool add_new_block(std::string &blockName, int w, int h, int llx = 0, int lly = 0, bool movable = true);
+  bool create_blank_net(std::string &netName, double weight = 1);
+  bool add_pin_to_net(std::string &netName, std::string &blockName, int xOffset, int yOffset);
 
   void parse_line(std::string &line, std::vector<std::string> &field_list);
 
