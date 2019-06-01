@@ -16,13 +16,14 @@
 
 class placer_dla_t: public placer_t {
 public:
-  placer_dla_t(): placer_t() {};
-  placer_dla_t(double aspectRatio, double fillingRate): placer_t(aspectRatio, fillingRate) {};
+  placer_dla_t();
+  placer_dla_t(double aspectRatio, double fillingRate);
 
   std::vector< block_dla > boundary_list;
   void add_boundary_list();
   std::vector< std::vector<bin_dla> > bin_list;
   int bin_width, bin_height;
+  /*
   void initialize_bin_list();
   void add_neb_num(int node_num1, int node_num2, int net_size);
   void sort_neighbor_list();
@@ -36,7 +37,9 @@ public:
   bool random_release_from_boundaries(int boundary_num, block_dla &node);
   void diffuse(int first_node_num, std::vector<int> &cell_out_bin);
   bool DLA();
-  bool place();
+   */
+
+  bool start_placement();
 };
 
 

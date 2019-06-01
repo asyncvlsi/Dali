@@ -8,64 +8,16 @@
 #include <algorithm>
 #include <iostream>
 #include "placerdla.hpp"
-#include "../circuit_node_net.hpp"
 
-placer_dla_t::placer_dla_t() {
-  circuit = nullptr;
-  net_list = nullptr;
-  LEFT = 0;
-  RIGHT = 0;
-  BOTTOM = 0;
-  TOP = 0;
-  bin_height = 0;
+placer_dla_t::placer_dla_t(): placer_t() {
   bin_width = 0;
-}
-
-placer_dla_t::placer_dla_t(circuit_t &input_circuit) {
   bin_height = 0;
+};
+
+placer_dla_t::placer_dla_t(double aspectRatio, double fillingRate): placer_t(aspectRatio, fillingRate) {
   bin_width = 0;
-  circuit = &input_circuit;
-  net_list = &input_circuit.net_list;
-  node_list.resize(input_circuit.block_list.size());
-  block_dla *node;
-  for (size_t i=0; i<node_list.size(); i++) {
-    node = &node_list[i];
-    node->retrieve_info_from_database(input_circuit.block_list[i]);
-  }
-  LEFT = input_circuit.LEFT;
-  RIGHT = input_circuit.RIGHT;
-  BOTTOM = input_circuit.BOTTOM;
-  TOP = input_circuit.TOP;
-}
-
-void placer_dla_t::set_input(circuit_t &input_circuit) {
-  node_list.clear();
-  net_list = &input_circuit.net_list;
-  node_list.resize(input_circuit.block_list.size());
-  block_dla *node;
-  for (size_t i=0; i<node_list.size(); i++) {
-    node = &node_list[i];
-    node->retrieve_info_from_database(input_circuit.block_list[i]);
-  }
-  LEFT = input_circuit.LEFT;
-  RIGHT = input_circuit.RIGHT;
-  BOTTOM = input_circuit.BOTTOM;
-  TOP = input_circuit.TOP;
-}
-
-void placer_dla_t::report_result() {
-  block_dla *node;
-  for (size_t i=0; i<node_list.size(); i++) {
-    node = &node_list[i];
-    node->write_info_to_database(circuit->block_list[i]);
-  }
-}
-
-void placer_dla_t::clear() {
-  circuit = nullptr;
-  net_list = nullptr;
-  node_list.clear();
-}
+  bin_height = 0;
+};
 
 void placer_dla_t::add_boundary_list() {
   int max_width=0, max_height=0;
@@ -119,6 +71,7 @@ void placer_dla_t::add_boundary_list() {
   boundary_list.push_back(tmp_node);
 }
 
+/*
 void placer_dla_t::initialize_bin_list(){
   // initialize the binlist, build up the binlist matrix
   int max_width=0, max_height=0;
@@ -451,17 +404,16 @@ void placer_dla_t::diffuse(int first_node_num, std::vector<int> &cell_out_bin) {
     }
   }
   node_list[first_node_num] = MWLL;
-  /*
-  cout << first_node_num << " " << MWLL.cellNo << "\n";
-  for (int j=0; j<node_list.size(); j++)
-  {
-    if (node_list[j].cellNo == -1)
-    {
-      cout << j << " errordiffuse\n";
-      exit(1);
-    }
-  }
-  */
+
+  //cout << first_node_num << " " << MWLL.cellNo << "\n";
+  //for (int j=0; j<node_list.size(); j++)
+  //{
+    //if (node_list[j].cellNo == -1)
+    //{
+      //cout << j << " errordiffuse\n";
+      //exit(1);
+    //}
+  //}
   update_bin_list(first_node_num, cell_out_bin);
 }
 
@@ -519,11 +471,13 @@ bool placer_dla_t::DLA() {
   //std::cout << "Total WireLength after placement is " <<  TotalWireLength(node_list, NetList) << "\n";
   return true;
 }
+*/
 
-bool placer_dla_t::place() {
+bool placer_dla_t::start_placement() {
   add_boundary_list();
-  std::cout << "bug here\n";
+  /*
   initialize_bin_list();
   DLA();
+   */
   return true;
 }

@@ -13,17 +13,17 @@
 struct bin_index {
   int iloc;
   int jloc;
-  explicit bin_index(int i=0, double j=0): iloc(i), jloc(j){}
+  bin_index(int i=0, double j=0): iloc(i), jloc(j){}
 };
 
 struct block_neighbor {
   int block_num;
   double wire_num;
-  explicit block_neighbor(int n=0, double w=0): block_num(n), wire_num(w){}
+  block_neighbor(int n=0, double w=0): block_num(n), wire_num(w){}
 };
 
 class block_dla: public block_t {
-protected:
+private:
   double _total_wire; // the number of wires attached to this cell
   bool _placed; // 0 indicates this cell has not been placed, 1 means this cell has been placed
   bool _queued; // 0 indicates this cell has not been in Q_place, 1 means this cell has been in the Q_place
