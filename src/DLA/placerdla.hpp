@@ -6,18 +6,24 @@
 #define HPCC_PLACERDLA_HPP
 
 #include <vector>
-#include "../circuit.hpp"
-#include "../circuitblock.hpp"
-#include "../circuitnet.hpp"
-#include "../circuitpin.hpp"
-#include "../placer.hpp"
+#include "circuit.hpp"
+#include "circuitblock.hpp"
+#include "circuitnet.hpp"
+#include "circuitpin.hpp"
+#include "placer.hpp"
 #include "bindla.hpp"
 #include "blockdla.hpp"
+#include "netdla.hpp"
 
 class placer_dla_t: public placer_t {
 public:
   placer_dla_t();
   placer_dla_t(double aspectRatio, double fillingRate);
+
+
+  std::vector< block_dla > block_list;
+  std::vector< net_dla > net_list;
+  bool set_input_circuit(circuit_t *circuit);
 
   std::vector< block_dla > boundary_list;
   void add_boundary_list();

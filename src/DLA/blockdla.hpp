@@ -13,13 +13,13 @@
 struct bin_index {
   int iloc;
   int jloc;
-  bin_index(int i=0, double j=0): iloc(i), jloc(j){}
+  explicit bin_index(int i=0, double j=0): iloc(i), jloc(j){}
 };
 
 struct block_neighbor {
   int block_num;
   double wire_num;
-  block_neighbor(int n=0, double w=0): block_num(n), wire_num(w){}
+  explicit block_neighbor(int n=0, double w=0): block_num(n), wire_num(w){}
 };
 
 class block_dla: public block_t {

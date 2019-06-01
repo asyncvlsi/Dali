@@ -19,6 +19,10 @@ placer_dla_t::placer_dla_t(double aspectRatio, double fillingRate): placer_t(asp
   bin_height = 0;
 };
 
+bool placer_dla_t::set_input_circuit(circuit_t *circuit) {
+  
+}
+
 void placer_dla_t::add_boundary_list() {
   int max_width=0, max_height=0;
   for (auto &&node: node_list) {
