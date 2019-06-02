@@ -4,7 +4,7 @@
 
 #include "bindla.hpp"
 
-bin_dla:: bin_dla() {
+bin_t:: bin_t() {
   left = -1000;
   bottom = -1000;
   width = 0;

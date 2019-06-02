@@ -7,9 +7,9 @@
 
 #include <vector>
 
-class bin_dla {
+class bin_t {
 public:
-  bin_dla();
+  bin_t();
   double left;
   double bottom;
   int width;

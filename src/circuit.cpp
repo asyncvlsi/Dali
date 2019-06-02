@@ -107,7 +107,7 @@ bool circuit_t::read_nodes_file(std::string const &NameOfFile) {
   std::string line, tmp_string;
   std::ifstream ist(NameOfFile.c_str());
   if (ist.is_open()==0) {
-    std::cout << "cannot open input file " << NameOfFile << "\n";
+    std::cout << "Cannot open input file " << NameOfFile << "\n";
     return false;
   }
 
@@ -163,7 +163,7 @@ void circuit_t::report_block_map() {
 bool circuit_t::read_nets_file(std::string const &NameOfFile) {
   std::ifstream ist(NameOfFile.c_str());
   if (ist.is_open()==0) {
-    std::cout << "cannot open input file " << NameOfFile << "\n";
+    std::cout << "Cannot open input file " << NameOfFile << "\n";
     return false;
   }
 
@@ -171,17 +171,20 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
   std::string line;
   std::string tmp_net_name;
 
-  bool is_in_useful_context = false;
-  while (!is_in_useful_context) {
+  while (true) {
     getline(ist, line);
     if (line.find("NetDegree") != std::string::npos) {
-      is_in_useful_context = true;
+      goto I_DONT_LIKE_THIS_BUT;
     } else {
       std::cout << "\t#" << line << "\n";
     }
   }
   while (!ist.eof()) {
-    if (line.find("NetDegree") != std::string::npos) {
+    getline(ist, line);
+    if (line.empty()) {
+      continue;
+    }
+    I_DONT_LIKE_THIS_BUT:if (line.find("NetDegree") != std::string::npos) {
       std::vector<std::string> net_head_field;
       parse_line(line, net_head_field);
       //for (auto &&field: net_head_field) std::cout << field << "---";
@@ -229,10 +232,6 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
         return false;
       }
     }
-    getline(ist, line);
-    if (line.empty()) {
-      continue;
-    }
   }
   ist.close();
   return true;
@@ -257,7 +256,7 @@ bool circuit_t::read_pl_file(std::string const &NameOfFile) {
   std::string line, tmp_name;
   std::ifstream ist(NameOfFile.c_str());
   if (ist.is_open()==0) {
-    std::cout << "cannot open input file " << NameOfFile << "\n";
+    std::cout << "Cannot open input file " << NameOfFile << "\n";
     return false;
   }
 
@@ -284,7 +283,7 @@ bool circuit_t::read_pl_file(std::string const &NameOfFile) {
     }
     tmp_name = block_field[0];
     if (block_name_map.find(tmp_name) == block_name_map.end()) {
-      std::cout << "Warning: cannot find block with name: " << tmp_name << "\n";
+      std::cout << "Warning: Cannot find block with name: " << tmp_name << "\n";
       std::cout << "Ignoring line:\n";
       std::cout << "\t" << line << "\n";
       continue;

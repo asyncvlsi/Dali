@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include "blockdla.hpp"
 
-block_dla::block_dla() {
+block_dla_t::block_dla_t() {
   _num = 0;
   _w = 0;
   _h = 0;
@@ -21,14 +21,32 @@ block_dla::block_dla() {
   vy = 0;
 }
 
-bool block_dla::is_overlap(const  block_dla &rhs) const{
+block_dla_t::block_dla_t(std::string &blockName, int w, int h, int llx, int lly, bool movable):block_t(blockName, w, h, llx, lly, movable) {
+
+}
+
+void block_dla_t::retrieve_info_from_database(const block_t &block){
+  _name = block.name();
+  _num = block.num();
+  _w = block.width();
+  _h = block.height();
+  _orientation = block.orientation();
+  _movable = block.is_movable();
+}
+
+void block_dla_t::write_info_to_database(block_t &block) {
+  block.set_llx(_llx);
+  block.set_lly(_lly);
+}
+
+bool block_dla_t::is_overlap(const  block_dla_t &rhs) const{
   bool not_overlap;
   not_overlap = llx() > rhs.urx() || rhs.llx() > urx() || lly() > rhs.ury() || rhs.lly() > ury();
   // If one rectangle is on left side of another or if one rectangle is above another
   return !not_overlap;
 }
 
-double block_dla::overlap_area(const  block_dla &rhs) const{
+double block_dla_t::overlap_area(const  block_dla_t &rhs) const{
   if (is_overlap(rhs)) {
     double l1x, l1y, r1x, r1y, l2x, l2y, r2x, r2y;
     l1x = llx();
@@ -45,7 +63,7 @@ double block_dla::overlap_area(const  block_dla &rhs) const{
   }
 }
 
-void block_dla::random_move(double distance) {
+void block_dla_t::random_move(double distance) {
   int rand_num = std::rand();
   if (rand_num % 4 == 0) {
     // leftward move
@@ -60,19 +78,4 @@ void block_dla::random_move(double distance) {
     // upward move
     y0 += distance;
   }
-}
-
-void block_dla::retrieve_info_from_database(const block_t &node_info){
-  node_num = node_info.node_num;
-  w = node_info.w;
-  h = node_info.h;
-  orientation = node_info.orientation;
-  is_terminal = node_info.movable;
-  x0 = node_info.x0;
-  y0 = node_info.y0;
-}
-
-void block_dla::write_info_to_database(block_t &node_info) {
-  node_info.x0 = x0;
-  node_info.y0 = y0;
 }

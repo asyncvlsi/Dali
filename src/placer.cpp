@@ -71,20 +71,6 @@ bool placer_t::set_space_block_ratio(double ratio) {
   return true;
 }
 
-bool placer_t::set_input_circuit(circuit_t *circuit) {
-  if (circuit->block_list.empty()) {
-    std::cout << "Error!\n";
-    std::cout << "Invalid circuit: no block defined\n";
-    return false;
-  }
-  if (circuit->net_list.empty()) {
-    std::cout << "Warning!\n";
-    std::cout << "net list empty\n";
-  }
-  _circuit = circuit;
-  return true;
-}
-
 std::vector<net_t>* placer_t::net_list() {
   return &_circuit->net_list;
 }
@@ -120,6 +106,22 @@ bool placer_t::auto_set_boundaries() {
 void placer_t::report_boundaries() {
   std::cout << "\tleft\tright\tbottom\ttop\n";
   std::cout << "\t" << _left << "\t" << _right << "\t" << _bottom << "\t" << _top << "\n";
+}
+
+int placer_t::left() {
+  return _left;
+}
+
+int placer_t::right() {
+  return _right;
+}
+
+int placer_t::bottom() {
+  return _bottom;
+}
+
+int placer_t::top() {
+  return _top;
 }
 
 bool placer_t::update_aspect_ratio() {
@@ -159,7 +161,7 @@ bool placer_t::set_boundary(int left, int right, int bottom, int top) {
   }
 }
 
-bool placer_t::start_placement() {
-  std::cout << "placer_t::start_placement() is a virtual member function\n";
-  return true;
+placer_t::~placer_t() {
+
 }
+

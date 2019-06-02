@@ -21,13 +21,13 @@ public:
   placer_dla_t(double aspectRatio, double fillingRate);
 
 
-  std::vector< block_dla > block_list;
-  std::vector< net_dla > net_list;
-  bool set_input_circuit(circuit_t *circuit);
+  std::vector< block_dla_t > block_list;
+  std::vector< net_dla_t > net_list;
+  bool set_input_circuit(circuit_t *circuit) override;
 
-  std::vector< block_dla > boundary_list;
+  std::vector< block_dla_t > boundary_list;
   void add_boundary_list();
-  std::vector< std::vector<bin_dla> > bin_list;
+  std::vector< std::vector<bin_t> > bin_list;
   int bin_width, bin_height;
   /*
   void initialize_bin_list();
@@ -40,12 +40,19 @@ public:
   double wirelength_during_DLA(int first_node_num);
   double net_hwpl(net_t *net);
   int is_legal(int first_node_num, std::vector<int> &cell_out_bin);
-  bool random_release_from_boundaries(int boundary_num, block_dla &node);
+  bool random_release_from_boundaries(int boundary_num, block_dla_t &node);
   void diffuse(int first_node_num, std::vector<int> &cell_out_bin);
   bool DLA();
    */
 
-  bool start_placement();
+  bool start_placement() override;
+
+  bool drawbinlist(std::string filename="binlist.m");
+  bool drawcellnetlist(std::string filename="celllist.m");
+  bool drawplaced(std::string filename="cellplaced.m");
+  bool outputcelllist(std::string filename="layout.pl");
+
+  ~placer_dla_t() override;
 };
 
 

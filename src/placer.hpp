@@ -36,21 +36,27 @@ public:
   bool set_space_block_ratio(double ratio);
   // the ratio of total_white_space/total_block_area
 
-  bool set_input_circuit(circuit_t *circuit);
+  virtual bool set_input_circuit(circuit_t *circuit) = 0;
   std::vector<net_t>* net_list();
   std::vector<block_t>* block_list();
 
   bool auto_set_boundaries();
   void report_boundaries();
+  int left();
+  int right();
+  int bottom();
+  int top();
   bool update_aspect_ratio();
   bool set_boundary(int left=0, int right=0, int bottom=0, int top=0);
 
-  bool start_placement();
+  virtual bool start_placement() = 0;
 
   bool write_pl_solution(std::string const &NameOfFile);
   bool write_pl_anchor_solution(std::string const &NameOfFile);
   bool write_node_terminal(std::string const &NameOfFile="terminal.txt", std::string const &NameOfFile1="nodes.txt");
   bool write_anchor_terminal(std::string const &NameOfFile="terminal.txt", std::string const &NameOfFile1="nodes.txt");
+
+  virtual ~placer_t();
 };
 
 

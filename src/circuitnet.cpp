@@ -12,7 +12,7 @@ net_t::net_t() {
 
 net_t::net_t(std::string &name, double weight) : _name(name), _weight(weight) {}
 
-void net_t::set_name(std::string &name) {
+void net_t::set_name(const std::string &name) {
   _name = name;
 }
 
@@ -81,3 +81,4 @@ int net_t::hpwl() {
 
   return (max_x - min_x) + (max_y - min_y);
 }
+

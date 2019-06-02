@@ -22,24 +22,25 @@ struct block_neighbor {
   explicit block_neighbor(int n=0, double w=0): block_num(n), wire_num(w){}
 };
 
-class block_dla: public block_t {
+class block_dla_t: public block_t {
 private:
   double _total_wire; // the number of wires attached to this cell
   bool _placed; // 0 indicates this cell has not been placed, 1 means this cell has been placed
   bool _queued; // 0 indicates this cell has not been in Q_place, 1 means this cell has been in the Q_place
-public:
-  block_dla();
   double x0, y0;
   double vx, vy;
+public:
+  block_dla_t();
+  block_dla_t(std::string &blockName, int w, int h, int llx = 0, int lly = 0, bool movable = true);
+  void retrieve_info_from_database(const block_t &node_info);
+  void write_info_to_database(block_t &node_info);
   std::vector<bin_index> bin; // bins this cell is in
   std::vector<block_neighbor> neblist; // the list of cells this cell is connected to
   std::vector<int> net; // the list of nets this cell is connected to
   // used to record which nets this node is connected to
-  bool is_overlap(const block_dla &rhs) const;
-  double overlap_area(const  block_dla &rhs) const;
+  bool is_overlap(const block_dla_t &rhs) const;
+  double overlap_area(const  block_dla_t &rhs) const;
   void random_move(double distance);
-  void retrieve_info_from_database(const block_t &node_info);
-  void write_info_to_database(block_t &node_info);
 };
 
 

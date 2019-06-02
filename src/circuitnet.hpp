@@ -34,7 +34,7 @@ public:
     return os;
   }
 
-  void set_name(std::string &name);
+  void set_name(const std::string &name);
   std::string name();
   void set_num(size_t num);
   size_t num();
