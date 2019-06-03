@@ -6,6 +6,7 @@
 #define HPCC_PLACERDLA_HPP
 
 #include <vector>
+#include <queue>
 #include "circuit.hpp"
 #include "circuitblock.hpp"
 #include "circuitnet.hpp"
@@ -31,15 +32,18 @@ public:
   int bin_width, bin_height;
   void initialize_bin_list();
   void update_neighbor_list();
+
+  std::queue<int> block_to_place_queue;
+  std::vector<int> block_out_of_bin; // cells which are out of bins
+  void order_node_to_place();
   /*
-  void order_node_to_place(std::queue<int> &cell_to_place);
-  void update_bin_list(int first_node_num, std::vector<int> &cell_out_bin);
+  void update_bin_list(int first_node_num, std::vector<int> &block_out_of_bin);
   double net_hwpl_during_dla(net_t *net);
   double wirelength_during_DLA(int first_node_num);
   double net_hwpl(net_t *net);
-  int is_legal(int first_node_num, std::vector<int> &cell_out_bin);
+  int is_legal(int first_node_num, std::vector<int> &block_out_of_bin);
   bool random_release_from_boundaries(int boundary_num, block_dla_t &node);
-  void diffuse(int first_node_num, std::vector<int> &cell_out_bin);
+  void diffuse(int first_node_num, std::vector<int> &block_out_of_bin);
   bool DLA();
    */
 

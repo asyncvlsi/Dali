@@ -178,7 +178,7 @@ void placer_dla_t::update_neighbor_list() {
   for (auto &&block: block_list) {
     block.sort_neb_list();
   }
-
+  /*
   for (auto &&block: block_list) {
     std::cout << "Block: " << block.name() << " is connected to net: ";
     for (auto &&net_ptr: block.net) {
@@ -203,12 +203,11 @@ void placer_dla_t::update_neighbor_list() {
     }
     std::cout << block.num() << " is connected to " << total_wire_weight << " wire(s)\n";
   }
-
+   */
 }
 
-/*
-void placer_dla_t::order_node_to_place(std::queue<int> &cell_to_place){
-  // creat a new cell list cell_to_place to store the sorted block_list based on the number of wires connecting to the cell
+void placer_dla_t::order_node_to_place(){
+  // creat a new cell list block_to_place_queue to store the sorted block_list based on the number of wires connecting to the cell
   block_dla_t tmp_block;
   std::vector<block_dla_t> tmp_node_list;
   for (auto &&block: block_list) {
@@ -218,7 +217,7 @@ void placer_dla_t::order_node_to_place(std::queue<int> &cell_to_place){
   for (size_t i=0; i<tmp_node_list.size(); i++) {
     max_wire_cell = i;
     for (size_t j=i+1; j<tmp_node_list.size(); j++) {
-      if (tmp_node_list[j].totalwire > tmp_node_list[max_wire_cell].totalwire) {
+      if (tmp_node_list[j].total_net() > tmp_node_list[max_wire_cell].total_net()) {
         max_wire_cell = j;
       }
     }
@@ -227,12 +226,12 @@ void placer_dla_t::order_node_to_place(std::queue<int> &cell_to_place){
     tmp_node_list[max_wire_cell] = tmp_block;
   }
   for (auto &&block: tmp_node_list) {
-    std::cout << block.block_num << " is connected to " << block.totalwire << "\n";
-    cell_to_place.push(block.block_num); // the queue of sorted cell list
+    std::cout << block.num() << " is connected to " << block.total_net() << "\n";
+    block_to_place_queue.push(block.num()); // the queue of sorted cell list
   }
 }
-
-void placer_dla_t::update_bin_list(int first_node_num, std::vector<int> &cell_out_bin) {
+/*
+void placer_dla_t::update_bin_list(int first_node_num, std::vector<int> &block_out_of_bin) {
   double left_most = bin_list[0][0].left, bottom_most = bin_list[0][0].bottom;
   int X_bin_list_size = bin_list.size(), Y_bin_list_size = bin_list[0].size();
   double right_most = left_most + X_bin_list_size * bin_width, top_most = bottom_most + Y_bin_list_size * bin_height;
@@ -246,7 +245,7 @@ void placer_dla_t::update_bin_list(int first_node_num, std::vector<int> &cell_ou
 
   //cout << "Cell: " << first_node_num << " is in bins: ";
   if (temp_large_boundry.overlap_area(block_list[first_node_num]) < block_list[first_node_num].area()) {
-    cell_out_bin.push_back(first_node_num);
+    block_out_of_bin.push_back(first_node_num);
     //cout << "-1 -1; ";
   }
   int L,B,R,T; // left, bottom, right, top of the cell in which bin
@@ -343,7 +342,7 @@ double placer_dla_t::wirelength_during_DLA(int first_node_num) {
   return WL;
 }
 
-int placer_dla_t::is_legal(int first_node_num, std::vector<int> &cell_out_bin) {
+int placer_dla_t::is_legal(int first_node_num, std::vector<int> &block_out_of_bin) {
   // if legal, return -1, if illegal, return the cell with which this first_node_num has overlap
   double left_most = bin_list[0][0].left, bottom_most = bin_list[0][0].bottom;
   int binwidth = bin_list[0][0].width, binheight = bin_list[0][0].height;
@@ -359,8 +358,8 @@ int placer_dla_t::is_legal(int first_node_num, std::vector<int> &cell_out_bin) {
 
   int tempcellnum;
   if (temp_large_boundry.overlap_area(block_list[first_node_num]) < block_list[first_node_num].area()) {
-    for (size_t i=0; i<cell_out_bin.size(); i++) {
-      tempcellnum = cell_out_bin[i];
+    for (size_t i=0; i<block_out_of_bin.size(); i++) {
+      tempcellnum = block_out_of_bin[i];
       if ((tempcellnum!=first_node_num)&&(block_list[first_node_num].overlap_area(block_list[tempcellnum])>=1)) return tempcellnum;
     }
   }
@@ -384,7 +383,7 @@ int placer_dla_t::is_legal(int first_node_num, std::vector<int> &cell_out_bin) {
   return -1;
 }
 
-void placer_dla_t::diffuse(int first_node_num, std::vector<int> &cell_out_bin) {
+void placer_dla_t::diffuse(int first_node_num, std::vector<int> &block_out_of_bin) {
   double WL1, WL2, MW; // MW indicates minimum wirelength
   double modWL1, modWL2;
   int step;
@@ -413,7 +412,7 @@ void placer_dla_t::diffuse(int first_node_num, std::vector<int> &cell_out_bin) {
       distance_to_center = fabs(cell_center_x - center_x)+fabs(cell_center_y - center_y);
       WL2 = wirelength_during_DLA(first_node_num);
       modWL2 = WL2 + distance_to_center/4.0;
-      if (is_legal(first_node_num, cell_out_bin)==-1) {
+      if (is_legal(first_node_num, block_out_of_bin)==-1) {
         if (modWL2 > modWL1) {
           // if wire-length becomes larger, reject this move by some probability
           r = ((double) std::rand()/RAND_MAX);
@@ -445,18 +444,14 @@ void placer_dla_t::diffuse(int first_node_num, std::vector<int> &cell_out_bin) {
       //exit(1);
     //}
   //}
-  update_bin_list(first_node_num, cell_out_bin);
+  update_bin_list(first_node_num, block_out_of_bin);
 }
 
 bool placer_dla_t::DLA() {
-  std::queue<int> cell_to_place;
-  std::vector<int> cell_out_bin; // cells which are out of bins
-  order_node_to_place(cell_to_place);
-
   std::queue<int> Q_place;
   int first_node_num, tmp_num;
-  first_node_num = cell_to_place.front();
-  cell_to_place.pop();
+  first_node_num = block_to_place_queue.front();
+  block_to_place_queue.pop();
   Q_place.push(first_node_num);
   block_list[first_node_num].queued = true;
   int num_of_node_placed = 0;
@@ -478,22 +473,22 @@ bool placer_dla_t::DLA() {
     if (num_of_node_placed == 0) {
       block_list[first_node_num].x0 = (left() + right())/2.0;
       block_list[first_node_num].y0 = (bottom() + top())/2.0;
-      update_bin_list(first_node_num, cell_out_bin);
+      update_bin_list(first_node_num, block_out_of_bin);
     }
     else {
-      diffuse(first_node_num, cell_out_bin);
+      diffuse(first_node_num, block_out_of_bin);
     }
     num_of_node_placed += 1;
     //drawplaced(block_list, net_list, boundries);
     //if (numofcellplaced==2) break;
     if (Q_place.empty()) {
-      while (!cell_to_place.empty()) {
-        first_node_num = cell_to_place.front();
+      while (!block_to_place_queue.empty()) {
+        first_node_num = block_to_place_queue.front();
         if (!block_list[first_node_num].queued) {
           Q_place.push(first_node_num);
           break;
         } else {
-          cell_to_place.pop();
+          block_to_place_queue.pop();
         }
       }
     }
@@ -508,6 +503,7 @@ bool placer_dla_t::start_placement() {
   initialize_bin_list();
   draw_bin_list();
   update_neighbor_list();
+  order_node_to_place();
   /*
   DLA();
    */
