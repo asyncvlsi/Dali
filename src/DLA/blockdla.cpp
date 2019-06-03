@@ -39,6 +39,22 @@ void block_dla_t::write_info_to_database(block_t &block) {
   block.set_lly(_lly);
 }
 
+void block_dla_t::set_placed(bool placed) {
+  _placed = placed;
+}
+
+bool block_dla_t::is_placed() {
+  return _placed;
+}
+
+void block_dla_t::set_queued(bool queued) {
+  _queued = queued;
+}
+
+bool block_dla_t::is_queued() {
+  return _queued;
+}
+
 bool block_dla_t::is_overlap(const  block_dla_t &rhs) const{
   bool not_overlap;
   not_overlap = llx() > rhs.urx() || rhs.llx() > urx() || lly() > rhs.ury() || rhs.lly() > ury();

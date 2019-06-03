@@ -29,8 +29,8 @@ public:
   void add_boundary_list();
   std::vector< std::vector<bin_t> > bin_list;
   int bin_width, bin_height;
-  /*
   void initialize_bin_list();
+  /*
   void add_neb_num(int node_num1, int node_num2, int net_size);
   void sort_neighbor_list();
   void update_neighbor_list();
@@ -47,10 +47,10 @@ public:
 
   bool start_placement() override;
 
-  bool drawbinlist(std::string filename="binlist.m");
-  bool drawcellnetlist(std::string filename="celllist.m");
-  bool drawplaced(std::string filename="cellplaced.m");
-  bool outputcelllist(std::string filename="layout.pl");
+  bool draw_bin_list(std::string const &filename="binlist.m");
+  bool draw_block_net_list(std::string const &filename="celllist.m");
+  bool draw_placed_blocks(std::string const &filename="cellplaced.m");
+  bool output_result(std::string const &filename="layout.pl");
 
   ~placer_dla_t() override;
 };

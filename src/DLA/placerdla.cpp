@@ -12,12 +12,12 @@
 placer_dla_t::placer_dla_t(): placer_t() {
   bin_width = 0;
   bin_height = 0;
-};
+}
 
 placer_dla_t::placer_dla_t(double aspectRatio, double fillingRate): placer_t(aspectRatio, fillingRate) {
   bin_width = 0;
   bin_height = 0;
-};
+}
 
 bool placer_dla_t::set_input_circuit(circuit_t *circuit) {
   if (circuit->block_list.empty()) {
@@ -121,20 +121,19 @@ void placer_dla_t::add_boundary_list() {
   boundary_list.push_back(tmp_block);
 }
 
-/*
 void placer_dla_t::initialize_bin_list(){
   // initialize the bin_list, build up the bin_list matrix
   int max_width=0, max_height=0;
   for (auto &&block: block_list) {
     // find maximum width and maximum height
-    if (block.is_terminal) {
+    if (!block.is_movable()) {
       continue;
     }
-    if (block.w>max_width) {
-      max_width = block.w;
+    if (block.width() > max_width) {
+      max_width = block.width();
     }
-    if (block.h>max_height) {
-      max_height = block.h;
+    if (block.height() > max_height) {
+      max_height = block.height();
     }
   }
   size_t x_bin_num, y_bin_num;
@@ -142,7 +141,6 @@ void placer_dla_t::initialize_bin_list(){
   y_bin_num = (size_t)std::ceil((top() - bottom() + 2*max_height)/(double)max_height); // determine the bin numbers in y direction
   bin_width = max_width;
   bin_height = max_height;
-  bin_t tmp_bin;
   std::vector<bin_t> tmp_bin_column(y_bin_num);
   for (size_t x=0; x<x_bin_num; x++) {
     // bin_list[x][y] indicates the bin in the  x-th x, and y-th y bin
@@ -152,33 +150,34 @@ void placer_dla_t::initialize_bin_list(){
   double Bottom_new = bottom() - (y_bin_num * bin_height - (top() - bottom()))/2.0;
   for (size_t x=0; x<bin_list.size(); x++) {
     for (size_t y=0; y<bin_list[x].size(); y++) {
-      bin_list[x][y].left = Left_new + x*bin_width;
-      bin_list[x][y].bottom = Bottom_new + y*bin_height;
-      bin_list[x][y].width = bin_width;
-      bin_list[x][y].height = bin_height;
+      bin_list[x][y].set_left(Left_new + x*bin_width);
+      bin_list[x][y].set_bottom(Bottom_new + y*bin_height);
+      bin_list[x][y].set_width(bin_width);
+      bin_list[x][y].set_height(bin_height);
     }
   }
 }
 
+/*
 void placer_dla_t::add_neb_num(int node_num1, int node_num2, int net_size) {
   size_t neb_list_size; // neighbor number
   block_neighbor tmp_neb; // for one of its neighbor, we need to record the primary key of this neighbor and the number of wires between them
   tmp_neb.node_num = node_num2;
   tmp_neb.wire_num = 1.0 / (net_size - 1);
-  neb_list_size = block_list[node_num1].neblist.size();
+  neb_list_size = block_list[node_num1].neb_list.size();
   if (neb_list_size == 0) {
-    block_list[node_num1].neblist.push_back(tmp_neb);
+    block_list[node_num1].neb_list.push_back(tmp_neb);
   } else {
-    for (size_t j = 0; j < block_list[node_num1].neblist.size(); j++) {
-      if (block_list[node_num1].neblist[j].node_num != node_num2) {
+    for (size_t j = 0; j < block_list[node_num1].neb_list.size(); j++) {
+      if (block_list[node_num1].neb_list[j].node_num != node_num2) {
         if (j == neb_list_size - 1) {
-          block_list[node_num1].neblist.push_back(tmp_neb);
+          block_list[node_num1].neb_list.push_back(tmp_neb);
           break;
         } else {
           continue;
         }
       } else {
-        block_list[node_num1].neblist[j].wire_num += tmp_neb.wire_num;
+        block_list[node_num1].neb_list[j].wire_num += tmp_neb.wire_num;
         break;
       }
     }
@@ -189,16 +188,16 @@ void placer_dla_t::sort_neighbor_list() {
   int max_wire_node_index;
   block_neighbor tmp_neb;
   for (auto &&block: block_list) {
-    for (size_t i=0; i<block.neblist.size(); i++) {
+    for (size_t i=0; i<block.neb_list.size(); i++) {
       max_wire_node_index = i;
-      for (size_t j=i+1; j<block.neblist.size(); j++) {
-        if (block.neblist[j].wire_num > block.neblist[max_wire_node_index].wire_num) {
+      for (size_t j=i+1; j<block.neb_list.size(); j++) {
+        if (block.neb_list[j].wire_num > block.neb_list[max_wire_node_index].wire_num) {
           max_wire_node_index = j;
         }
       }
-      tmp_neb = block.neblist[i];
-      block.neblist[i] = block.neblist[max_wire_node_index];
-      block.neblist[max_wire_node_index] = tmp_neb;
+      tmp_neb = block.neb_list[i];
+      block.neb_list[i] = block.neb_list[max_wire_node_index];
+      block.neb_list[max_wire_node_index] = tmp_neb;
     }
   }
 }
@@ -485,8 +484,8 @@ bool placer_dla_t::DLA() {
     first_node_num = Q_place.front();
     Q_place.pop();
     std::cout << "Placing cell " << first_node_num << "\n";
-    for (size_t j=0; j<block_list[first_node_num].neblist.size(); j++) {
-      tmp_num = block_list[first_node_num].neblist[j].node_num;
+    for (size_t j=0; j<block_list[first_node_num].neb_list.size(); j++) {
+      tmp_num = block_list[first_node_num].neb_list[j].node_num;
       if (block_list[tmp_num].queued){
         continue;
       } else {
@@ -525,22 +524,23 @@ bool placer_dla_t::DLA() {
 
 bool placer_dla_t::start_placement() {
   add_boundary_list();
-  /*
   initialize_bin_list();
+  draw_bin_list();
+  /*
   DLA();
    */
   return true;
 }
 
-bool placer_dla_t::drawbinlist(std::string filename) {
+bool placer_dla_t::draw_bin_list(std::string const &filename) {
   std::ofstream ost(filename.c_str());
   if (ost.is_open()==0) {
     std::cout << "Cannot open output file: " << filename << "\n";
     return false;
   }
-  for (int i=0; i<bin_list.size(); i++) {
-    for (int j=0; j<bin_list[i].size(); j++) {
-      ost << "rectangle('Position',[" << bin_list[i][j].left << " " << bin_list[i][j].bottom << " " << bin_list[i][j].width << " " << bin_list[i][j].height << "],'LineWidth',1)\n";
+  for (auto &&bin_column: bin_list) {
+    for (auto &&bin: bin_column) {
+      ost << "rectangle('Position',[" << bin.left() << " " << bin.bottom() << " " << bin.width() << " " << bin.height() << "],'LineWidth',1)\n";
     }
   }
   ost << "rectangle('Position',[" << left() << " " << bottom() << " " << right() - left() << " " << top() - bottom() << "],'LineWidth',1)\n";
@@ -550,7 +550,7 @@ bool placer_dla_t::drawbinlist(std::string filename) {
   return true;
 }
 
-bool placer_dla_t::drawcellnetlist(std::string filename) {
+bool placer_dla_t::draw_block_net_list(std::string const &filename) {
   std::ofstream ost(filename.c_str());
   if (ost.is_open()==0) {
     std::cout << "Cannot open output file: " << filename << "\n";
@@ -562,6 +562,7 @@ bool placer_dla_t::drawcellnetlist(std::string filename) {
   int cell1, cell2;
   int x1, x2, y1, y2;
   int xoff1, xoff2, yoff1, yoff2;
+  /*
   for (int i=0; i<net_list.size(); i++) {
     cell1 = net_list[i].pin_list[0].cellNo;
     cell2 = net_list[i].pin_list[1].cellNo;
@@ -572,6 +573,7 @@ bool placer_dla_t::drawcellnetlist(std::string filename) {
     ost << "line([" << x1+xoff1 << "," << x2+xoff2 << "],[" << y1+yoff1 << "," << y2+yoff2 << "],'lineWidth', 2)\n";
     //ost << "line([" << x1+xoff1 << "," << x2+xoff2 << "],[" << y1+yoff1 << "," << y2+yoff2 << "],'Color',[.5 .5 .5],'lineWidth', 2)\n";
   }
+   */
   ost << "rectangle('Position',[" << left() << " " << bottom() << " " << right() - left() << " " << top() - bottom() << "],'LineWidth',1)\n";
   ost << "axis auto equal\n";
   ost.close();
@@ -579,22 +581,21 @@ bool placer_dla_t::drawcellnetlist(std::string filename) {
   return true;
 }
 
-bool placer_dla_t::drawplaced(std::string filename) {
+bool placer_dla_t::draw_placed_blocks(std::string const &filename) {
   std::ofstream ost(filename.c_str());
   if (ost.is_open()==0) {
     std::cout << "Cannot open output file: " << filename << "\n";
     return false;
   }
-  for (int i=0; i<block_list.size(); i++)
-  {
-    if (block_list[i].placed == 1)
-    {
-      ost << "rectangle('Position',[" << block_list[i].llx() << " " << block_list[i].lly() << " " << block_list[i].width() << " " << block_list[i].height() << "], 'LineWidth',3)%" << block_list[i].num() << "\n";
+  for (auto &&block: block_list) {
+    if (block.is_placed()) {
+      ost << "rectangle('Position',[" << block.llx() << " " << block.lly() << " " << block.width() << " " << block.height() << "], 'LineWidth',3)%" << block.num() << "\n";
     }
   }
   int cell1, cell2, tempnetsize;
   int x1, x2, y1, y2;
   int xoff1, xoff2, yoff1, yoff2;
+  /*
   for (int i=0; i<net_list.size(); i++)
   {
     tempnetsize = net_list[i].pin_list.size();
@@ -612,6 +613,7 @@ bool placer_dla_t::drawplaced(std::string filename) {
       }
     }
   }
+   */
   ost << "rectangle('Position',[" << left() << " " << bottom() << " " << right() - left() << " " << top() - bottom() << "],'LineWidth',1)\n";
   ost << "axis auto equal\n";
   ost.close();
@@ -619,15 +621,14 @@ bool placer_dla_t::drawplaced(std::string filename) {
   return true;
 }
 
-bool placer_dla_t::outputcelllist(std::string filename) {
+bool placer_dla_t::output_result(std::string const &filename) {
   std::ofstream ost(filename.c_str());
   if (ost.is_open()==0) {
     std::cout << "Cannot open output file: " << filename << "\n";
     return false;
   }
-  for (int i=0; i<block_list.size(); i++)
-  {
-    ost << "o" << block_list[i].num() << "\t" << block_list[i].llx() << "\t" << block_list[i].lly() << "\t : N\n";
+  for (auto &&block: block_list) {
+    ost << "\t" << block.name() << "\t" << block.llx() << "\t" << block.lly() << "\t : N\n";
   }
   ost.close();
 

@@ -27,16 +27,15 @@ int main() {
   }
   //circuit.report_block_list();
 
-  placer_t *placer;
-  placer_dla_t placer_dla;
-  placer = &placer_dla;
-  placer->set_space_block_ratio(2);
-  placer->set_aspect_ratio(2);
+  placer_t *placer = new placer_dla_t;
+  placer->set_space_block_ratio(1.5);
+  placer->set_aspect_ratio(1);
   std::cout << placer->space_block_ratio() << " " << placer->filling_rate() << " " << placer->aspect_ratio() << "\n";
 
   placer->set_input_circuit(&circuit);
   placer->auto_set_boundaries();
   placer->report_boundaries();
+  placer->start_placement();
 
   //placer->start_placement();
 

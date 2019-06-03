@@ -34,8 +34,12 @@ public:
   block_dla_t(std::string &blockName, int w, int h, int llx = 0, int lly = 0, bool movable = true);
   void retrieve_info_from_database(const block_t &node_info);
   void write_info_to_database(block_t &node_info);
+  void set_placed(bool placed);
+  bool is_placed();
+  void set_queued(bool queued);
+  bool is_queued();
   std::vector<bin_index> bin; // bins this cell is in
-  std::vector<block_neighbor> neblist; // the list of cells this cell is connected to
+  std::vector<block_neighbor> neb_list; // the list of cells this cell is connected to
   std::vector<int> net; // the list of nets this cell is connected to
   // used to record which nets this node is connected to
   bool is_overlap(const block_dla_t &rhs) const;
