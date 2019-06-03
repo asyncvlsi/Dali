@@ -13,19 +13,19 @@ int main() {
   time_t Time = clock();
   circuit_t circuit;
   if (!circuit.read_nodes_file("../test/layout.nodes")) {
+    //circuit.report_block_list();
+    //circuit.report_block_map();
     return 1;
   }
-  //circuit.report_block_list();
-  //circuit.report_block_map();
   if (!circuit.read_nets_file("../test/layout.nets")) {
+    //circuit.report_net_list();
+    //circuit.report_net_map();
     return 1;
   }
-  //circuit.report_net_list();
-  //circuit.report_net_map();
   if (!circuit.read_pl_file("../test/layout.pl")) {
+    //circuit.report_block_list();
     return 1;
   }
-  //circuit.report_block_list();
 
   placer_t *placer = new placer_dla_t;
   placer->set_space_block_ratio(1.5);

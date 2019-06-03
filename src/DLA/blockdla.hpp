@@ -9,22 +9,23 @@
 #include <string>
 #include "bindla.hpp"
 #include "circuitblock.hpp"
+#include "netdla.hpp"
 
 struct bin_index {
   int iloc;
   int jloc;
-  explicit bin_index(int i=0, double j=0): iloc(i), jloc(j){}
+  explicit bin_index(int i=0, int j=0): iloc(i), jloc(j){}
 };
 
-struct block_neighbor {
-  int block_num;
-  double wire_num;
-  explicit block_neighbor(int n=0, double w=0): block_num(n), wire_num(w){}
+class block_dla_t;
+struct block_neighbor_t {
+  block_dla_t *block;
+  double total_wire_weight;
+  explicit block_neighbor_t(block_dla_t *b= nullptr, double w=0): block(b), total_wire_weight(w){}
 };
 
 class block_dla_t: public block_t {
 private:
-  double _total_wire; // the number of wires attached to this cell
   bool _placed; // 0 indicates this cell has not been placed, 1 means this cell has been placed
   bool _queued; // 0 indicates this cell has not been in Q_place, 1 means this cell has been in the Q_place
   double x0, y0;
@@ -34,13 +35,20 @@ public:
   block_dla_t(std::string &blockName, int w, int h, int llx = 0, int lly = 0, bool movable = true);
   void retrieve_info_from_database(const block_t &node_info);
   void write_info_to_database(block_t &node_info);
+
+  int total_net();
+
   void set_placed(bool placed);
   bool is_placed();
   void set_queued(bool queued);
   bool is_queued();
-  std::vector<bin_index> bin; // bins this cell is in
-  std::vector<block_neighbor> neb_list; // the list of cells this cell is connected to
-  std::vector<int> net; // the list of nets this cell is connected to
+  std::vector< bin_index > bin; // bins this cell is in
+  std::vector< block_neighbor_t > neb_list; // the list of cells this cell is connected to
+  void add_to_neb_list(block_dla_t *block_dla, double net_weight);
+  void sort_neb_list();
+  std::vector< net_dla_t* > net; // the list of nets this cell is connected to
+  void add_to_net(net_dla_t *net_dla);
+
   // used to record which nets this node is connected to
   bool is_overlap(const block_dla_t &rhs) const;
   double overlap_area(const  block_dla_t &rhs) const;

@@ -30,10 +30,8 @@ public:
   std::vector< std::vector<bin_t> > bin_list;
   int bin_width, bin_height;
   void initialize_bin_list();
-  /*
-  void add_neb_num(int node_num1, int node_num2, int net_size);
-  void sort_neighbor_list();
   void update_neighbor_list();
+  /*
   void order_node_to_place(std::queue<int> &cell_to_place);
   void update_bin_list(int first_node_num, std::vector<int> &cell_out_bin);
   double net_hwpl_during_dla(net_t *net);

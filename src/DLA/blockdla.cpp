@@ -12,7 +12,6 @@ block_dla_t::block_dla_t() {
   _h = 0;
   _orientation = "N";
   _movable = true;
-  _total_wire = 0;
   _placed = false;
   _queued = false;
   x0 = 0;
@@ -22,7 +21,12 @@ block_dla_t::block_dla_t() {
 }
 
 block_dla_t::block_dla_t(std::string &blockName, int w, int h, int llx, int lly, bool movable):block_t(blockName, w, h, llx, lly, movable) {
-
+  _placed = false;
+  _queued = false;
+  x0 = 0;
+  y0 = 0;
+  vx = 0;
+  vy = 0;
 }
 
 void block_dla_t::retrieve_info_from_database(const block_t &block){
@@ -39,6 +43,10 @@ void block_dla_t::write_info_to_database(block_t &block) {
   block.set_lly(_lly);
 }
 
+int block_dla_t::total_net() {
+  return net.size();
+}
+
 void block_dla_t::set_placed(bool placed) {
   _placed = placed;
 }
@@ -53,6 +61,49 @@ void block_dla_t::set_queued(bool queued) {
 
 bool block_dla_t::is_queued() {
   return _queued;
+}
+
+void block_dla_t::add_to_neb_list(block_dla_t *block_dla, double net_weight) {
+  bool is_new_block_in_neb = false;
+  for (auto &&neb: neb_list) {
+    if (block_dla == neb.block) {
+      is_new_block_in_neb = true;
+      neb.total_wire_weight += net_weight;
+      break;
+    }
+  }
+  if (!is_new_block_in_neb) {
+    block_neighbor_t block_neighbor(block_dla, net_weight);
+    neb_list.push_back(block_neighbor);
+  }
+}
+
+void block_dla_t::sort_neb_list() {
+  int max_wire_node_index;
+  block_neighbor_t tmp_neb;
+  for (size_t i=0; i<neb_list.size(); i++) {
+    max_wire_node_index = i;
+    for (size_t j=i+1; j<neb_list.size(); j++) {
+      if (neb_list[j].total_wire_weight > neb_list[max_wire_node_index].total_wire_weight) {
+        max_wire_node_index = j;
+      }
+    }
+    tmp_neb = neb_list[i];
+    neb_list[i] = neb_list[max_wire_node_index];
+    neb_list[max_wire_node_index] = tmp_neb;
+  }
+}
+
+void block_dla_t::add_to_net(net_dla_t *net_dla) {
+  bool is_in_net = false;
+  for (auto &&net_ptr: net) {
+    if (net_ptr == net_dla) {
+      is_in_net = true;
+    }
+  }
+  if (!is_in_net) {
+    net.push_back(net_dla);
+  }
 }
 
 bool block_dla_t::is_overlap(const  block_dla_t &rhs) const{

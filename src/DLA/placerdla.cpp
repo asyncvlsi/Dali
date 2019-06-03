@@ -36,7 +36,7 @@ bool placer_dla_t::set_input_circuit(circuit_t *circuit) {
     block_dla_t block_dla;
     block_dla.retrieve_info_from_database(block);
     block_list.push_back(block_dla);
-    std::cout << block_dla << "\n";
+    //std::cout << block_dla << "\n";
   }
 
   for (auto &&net: circuit->net_list) {
@@ -158,73 +158,55 @@ void placer_dla_t::initialize_bin_list(){
   }
 }
 
-/*
-void placer_dla_t::add_neb_num(int node_num1, int node_num2, int net_size) {
-  size_t neb_list_size; // neighbor number
-  block_neighbor tmp_neb; // for one of its neighbor, we need to record the primary key of this neighbor and the number of wires between them
-  tmp_neb.node_num = node_num2;
-  tmp_neb.wire_num = 1.0 / (net_size - 1);
-  neb_list_size = block_list[node_num1].neb_list.size();
-  if (neb_list_size == 0) {
-    block_list[node_num1].neb_list.push_back(tmp_neb);
-  } else {
-    for (size_t j = 0; j < block_list[node_num1].neb_list.size(); j++) {
-      if (block_list[node_num1].neb_list[j].node_num != node_num2) {
-        if (j == neb_list_size - 1) {
-          block_list[node_num1].neb_list.push_back(tmp_neb);
-          break;
-        } else {
-          continue;
-        }
-      } else {
-        block_list[node_num1].neb_list[j].wire_num += tmp_neb.wire_num;
-        break;
-      }
-    }
-  }
-}
-
-void placer_dla_t::sort_neighbor_list() {
-  int max_wire_node_index;
-  block_neighbor tmp_neb;
-  for (auto &&block: block_list) {
-    for (size_t i=0; i<block.neb_list.size(); i++) {
-      max_wire_node_index = i;
-      for (size_t j=i+1; j<block.neb_list.size(); j++) {
-        if (block.neb_list[j].wire_num > block.neb_list[max_wire_node_index].wire_num) {
-          max_wire_node_index = j;
-        }
-      }
-      tmp_neb = block.neb_list[i];
-      block.neb_list[i] = block.neb_list[max_wire_node_index];
-      block.neb_list[max_wire_node_index] = tmp_neb;
-    }
-  }
-}
-
 void placer_dla_t::update_neighbor_list() {
   // update the list of neighbor and the wire numbers connected to its neighbor, and the nets connected to this cell
-  int cell1, cell2;
-  size_t net_size;
-  for (auto &&net: *net_list) {
-    for (auto &&pin: net.pinlist) {
-      cell1 = pin.pinnum;
-      block_list[cell1].net.push_back(net.net_num);
-      block_list[cell1].totalwire += 1;
+  block_dla_t *block_dla1, *block_dla2;
+  for (auto &&net: net_list) {
+    for (auto &&pin: net.pin_list) {
+      block_dla1 = (block_dla_t *)(pin.get_block());
+      block_dla1->add_to_net(&net);
     }
-    net_size = net.pinlist.size();
-    for (size_t i=0; i<net_size; i++) {
-      cell1 = net.pinlist[i].pinnum;
-      for (size_t j=i+1; j<net.pinlist.size(); j++) {
-        cell2 = net.pinlist[j].pinnum;
-        add_neb_num(cell1, cell2, net_size);
-        add_neb_num(cell2, cell1, net_size);
+    for (size_t i=0; i<net.pin_list.size(); i++) {
+      block_dla1 = (block_dla_t *)(net.pin_list[i].get_block());
+      for (size_t j=i+1; j<net.pin_list.size(); j++) {
+        block_dla2 = (block_dla_t *)(net.pin_list[j].get_block());
+        block_dla1->add_to_neb_list(block_dla2, net.inv_p());
+        block_dla2->add_to_neb_list(block_dla1, net.inv_p());
       }
     }
   }
-  sort_neighbor_list();
+  for (auto &&block: block_list) {
+    block.sort_neb_list();
+  }
+
+  for (auto &&block: block_list) {
+    std::cout << "Block: " << block.name() << " is connected to net: ";
+    for (auto &&net_ptr: block.net) {
+      std::cout << net_ptr->name() << " ";
+    }
+    std::cout << "\t";
+
+    std::cout << "In total " << block.total_net() << " net(s).\n";
+  }
+  for (auto &&net: net_list) {
+    std::cout << "Net " << net.name() << " connects cells: ";
+    for (auto &&pin: net.pin_list) {
+      std::cout << "\t" <<  pin.get_block()->name();
+    }
+    std::cout << "\n";
+  }
+  for (auto &&block: block_list) {
+    double total_wire_weight = 0;
+    for (auto &&neb: block.neb_list) {
+      std::cout << "Block " << block.name() << " is connected to " << neb.block->name() << " with wire numbers " << neb.total_wire_weight << "\n";
+      total_wire_weight += neb.total_wire_weight;
+    }
+    std::cout << block.num() << " is connected to " << total_wire_weight << " wire(s)\n";
+  }
+
 }
 
+/*
 void placer_dla_t::order_node_to_place(std::queue<int> &cell_to_place){
   // creat a new cell list cell_to_place to store the sorted block_list based on the number of wires connecting to the cell
   block_dla_t tmp_block;
@@ -245,8 +227,8 @@ void placer_dla_t::order_node_to_place(std::queue<int> &cell_to_place){
     tmp_node_list[max_wire_cell] = tmp_block;
   }
   for (auto &&block: tmp_node_list) {
-    std::cout << block.node_num << " is connected to " << block.totalwire << "\n";
-    cell_to_place.push(block.node_num); // the queue of sorted cell list
+    std::cout << block.block_num << " is connected to " << block.totalwire << "\n";
+    cell_to_place.push(block.block_num); // the queue of sorted cell list
   }
 }
 
@@ -324,15 +306,15 @@ double placer_dla_t::net_hwpl_during_dla(net_t *net) {
   int num_of_placed_cell_in_net=0, tempnetsize, tempcellNo;
   double tempcellx, tempcelly;
   double maxx = 0, minx = 0, maxy = 0, miny = 0;
-  tempnetsize = net->pinlist.size();
+  tempnetsize = net->pin_list.size();
   for (int j=0; j<tempnetsize; j++) {
-    tempcellNo = net->pinlist[j].pinnum;
+    tempcellNo = net->pin_list[j].pinnum;
     if (block_list[tempcellNo].placed==1) {
       num_of_placed_cell_in_net += 1;
       //cout << Net.pin_list[j].cellNo << "\n";
       //cout << Net.pin_list[j].x_off << " " << Net.pin_list[j].y_off << "\t" << block_list[tempcellNo].left << " " << block_list[tempcellNo].bottom << "\n";
-      tempcellx = block_list[tempcellNo].x0 + net->pinlist[j].xoffset;
-      tempcelly = block_list[tempcellNo].y0 + net->pinlist[j].yoffset;
+      tempcellx = block_list[tempcellNo].x0 + net->pin_list[j].xoffset;
+      tempcelly = block_list[tempcellNo].y0 + net->pin_list[j].yoffset;
       if ( num_of_placed_cell_in_net == 1 ) {
         maxx = tempcellx; minx = tempcellx; maxy = tempcelly; miny = tempcelly;
       }
@@ -467,7 +449,6 @@ void placer_dla_t::diffuse(int first_node_num, std::vector<int> &cell_out_bin) {
 }
 
 bool placer_dla_t::DLA() {
-  update_neighbor_list();
   std::queue<int> cell_to_place;
   std::vector<int> cell_out_bin; // cells which are out of bins
   order_node_to_place(cell_to_place);
@@ -485,7 +466,7 @@ bool placer_dla_t::DLA() {
     Q_place.pop();
     std::cout << "Placing cell " << first_node_num << "\n";
     for (size_t j=0; j<block_list[first_node_num].neb_list.size(); j++) {
-      tmp_num = block_list[first_node_num].neb_list[j].node_num;
+      tmp_num = block_list[first_node_num].neb_list[j].block_num;
       if (block_list[tmp_num].queued){
         continue;
       } else {
@@ -526,6 +507,7 @@ bool placer_dla_t::start_placement() {
   add_boundary_list();
   initialize_bin_list();
   draw_bin_list();
+  update_neighbor_list();
   /*
   DLA();
    */
@@ -559,15 +541,15 @@ bool placer_dla_t::draw_block_net_list(std::string const &filename) {
   for (auto &&block: block_list) {
     ost << "rectangle('Position',[" << block.llx() << " " << block.lly() << " " << block.width() << " " << block.height() << "], 'LineWidth',3)\n";
   }
-  int cell1, cell2;
+  /*
+  int block_num1, block_num2;
   int x1, x2, y1, y2;
   int xoff1, xoff2, yoff1, yoff2;
-  /*
   for (int i=0; i<net_list.size(); i++) {
-    cell1 = net_list[i].pin_list[0].cellNo;
-    cell2 = net_list[i].pin_list[1].cellNo;
-    x1 = block_list[cell1].llx(); y1 = block_list[cell1].lly();
-    x2 = block_list[cell2].llx(); y2 = block_list[cell2].lly();
+    block_num1 = net_list[i].pin_list[0].cellNo;
+    block_num2 = net_list[i].pin_list[1].cellNo;
+    x1 = block_list[block_num1].llx(); y1 = block_list[block_num1].lly();
+    x2 = block_list[block_num2].llx(); y2 = block_list[block_num2].lly();
     xoff1 = net_list[i].pin_list[0].x_offset(); yoff1 = net_list[i].pin_list[0].y_offset();
     xoff2 = net_list[i].pin_list[1].x_offset(); yoff2 = net_list[i].pin_list[1].y_offset();
     ost << "line([" << x1+xoff1 << "," << x2+xoff2 << "],[" << y1+yoff1 << "," << y2+yoff2 << "],'lineWidth', 2)\n";
@@ -592,10 +574,10 @@ bool placer_dla_t::draw_placed_blocks(std::string const &filename) {
       ost << "rectangle('Position',[" << block.llx() << " " << block.lly() << " " << block.width() << " " << block.height() << "], 'LineWidth',3)%" << block.num() << "\n";
     }
   }
-  int cell1, cell2, tempnetsize;
+  /*
+  int block_num1, block_num2, tempnetsize;
   int x1, x2, y1, y2;
   int xoff1, xoff2, yoff1, yoff2;
-  /*
   for (int i=0; i<net_list.size(); i++)
   {
     tempnetsize = net_list[i].pin_list.size();
@@ -603,10 +585,10 @@ bool placer_dla_t::draw_placed_blocks(std::string const &filename) {
     {
       for (int k=j+1; k<tempnetsize; k++)
       {
-        cell1 = net_list[i].pin_list[j].cellNo;
-        cell2 = net_list[i].pin_list[k].cellNo;
-        x1 = block_list[cell1].llx(); y1 = block_list[cell1].lly();
-        x2 = block_list[cell2].llx(); y2 = block_list[cell2].lly();
+        block_num1 = net_list[i].pin_list[j].cellNo;
+        block_num2 = net_list[i].pin_list[k].cellNo;
+        x1 = block_list[block_num1].llx(); y1 = block_list[block_num1].lly();
+        x2 = block_list[block_num2].llx(); y2 = block_list[block_num2].lly();
         xoff1 = net_list[i].pin_list[j].x_offset(); yoff1 = net_list[i].pin_list[j].y_offset();
         xoff2 = net_list[i].pin_list[k].x_offset(); yoff2 = net_list[i].pin_list[k].y_offset();
         ost << "line([" << x1+xoff1 << "," << x2+xoff2 << "],[" << y1+yoff1 << "," << y2+yoff2 << "],'lineWidth', " << 3*1.0/(tempnetsize-1) << ")\n";
@@ -635,6 +617,4 @@ bool placer_dla_t::output_result(std::string const &filename) {
   return true;
 }
 
-placer_dla_t::~placer_dla_t() {
-
-}
+placer_dla_t::~placer_dla_t() = default;

@@ -48,6 +48,16 @@ bool net_t::add_pin(pin_t &pin) {
   return true;
 }
 
+double net_t::inv_p() {
+  if (pin_list.size() <= 1) {
+    std::cout << "Error!\n";
+    std::cout << "Invalid net to calculate 1/(p-1)\n";
+    std::cout << this << "\n";
+    exit(1);
+  }
+  return 1.0/(pin_list.size() - 1);
+}
+
 int net_t::hpwl() {
   if (pin_list.empty()) {
     std::cout << "Error!\n";
