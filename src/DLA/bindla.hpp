@@ -9,10 +9,10 @@
 
 class bin_t {
 private:
-  int _left;
-  int _bottom;
-  int _width;
-  int _height;
+  int m_left;
+  int m_bottom;
+  int m_width;
+  int m_height;
 public:
   bin_t();
   bin_t(int left, int bottom, int width, int height);

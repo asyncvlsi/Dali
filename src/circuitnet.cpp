@@ -5,42 +5,42 @@
 #include "circuitnet.hpp"
 
 net_t::net_t() {
-  _name = "";
-  _weight = 1;
-  _num = 0;
+  m_name = "";
+  m_weight = 1;
+  m_num = 0;
 }
 
-net_t::net_t(std::string &name, double weight) : _name(name), _weight(weight) {}
+net_t::net_t(std::string &name, double weight) : m_name(name), m_weight(weight) {}
 
 void net_t::set_name(const std::string &name) {
-  _name = name;
+  m_name = name;
 }
 
 std::string net_t::name() {
-  return _name;
+  return m_name;
 }
 
 void net_t::set_weight(double weight) {
-  _weight = weight;
+  m_weight = weight;
 }
 
 void net_t::set_num(size_t num) {
-  _num = num;
+  m_num = num;
 }
 
 size_t net_t::num() {
- return _num;
+ return m_num;
 }
 
 double net_t::weight() {
-  return _weight;
+  return m_weight;
 }
 
 bool net_t::add_pin(pin_t &pin) {
   for (auto &&existing_pin: pin_list) {
     if (existing_pin == pin) {
       std::cout << "Error!\n";
-      std::cout << pin << " has already been in net: " << _name << "\n";
+      std::cout << pin << " has already been in net: " << m_name << "\n";
       return false;
     }
   }

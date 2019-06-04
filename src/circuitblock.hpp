@@ -17,14 +17,14 @@
 class block_t {
 protected:
   /* essential data entries */
-  std::string _name; // name
-  int _w, _h; // width and height
-  int _llx, _lly; // lower left corner
-  bool _movable; // movable
-  std::string _orientation; // currently not used
+  std::string m_name; // name
+  int m_w, m_h; // width and height
+  int m_llx, m_lly; // lower left corner
+  bool m_movable; // movable
+  std::string m_orientation; // currently not used
 
   /* the following entries are derived data */
-  size_t _num;
+  size_t m_num;
   /* block_num is the index of this block in the vector block_list, this data must be updated after push a new block into block_list */
 
 public:
@@ -58,12 +58,12 @@ public:
   size_t num() const;
 
   friend std::ostream& operator<<(std::ostream& os, const block_t &block) {
-    os << "block name: " << block._name << "\n";
-    os << "width and height: " << block._w << " " << block._h << "\n";
-    os << "lower left corner: " << block._llx << " " << block._lly << "\n";
-    os << "movability: " << block._movable << "\n";
-    os << "orientation: " << block._orientation << "\n";
-    os << "assigned primary key: " << block._num << "\n";
+    os << "block name: " << block.m_name << "\n";
+    os << "width and height: " << block.m_w << " " << block.m_h << "\n";
+    os << "lower left corner: " << block.m_llx << " " << block.m_lly << "\n";
+    os << "movability: " << block.m_movable << "\n";
+    os << "orientation: " << block.m_orientation << "\n";
+    os << "assigned primary key: " << block.m_num << "\n";
 
     return os;
   }

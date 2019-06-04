@@ -13,15 +13,15 @@
 class placer_t {
 protected:
   /* essential data entries */
-  double _aspect_ratio; // placement region height/width
-  double _filling_rate;
+  double m_aspect_ratio; // placement region height/width
+  double m_filling_rate;
 
   /* the following entries are derived data
    * note that the following entries can be manually changed
-   * if so, the _aspect_ratio or _filling_rate might also be changed */
-  int _left, _right, _bottom, _top;
+   * if so, the m_aspect_ratio or m_filling_rate might also be changed */
+  int m_left, m_right, m_bottom, m_top;
   // boundaries of the placement region
-  circuit_t* _circuit;
+  circuit_t* m_circuit;
 
 public:
   placer_t();

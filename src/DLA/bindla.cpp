@@ -5,51 +5,51 @@
 #include "bindla.hpp"
 
 bin_t::bin_t() {
-  _left = 0;
-  _bottom = 0;
-  _width = 0;
-  _height = 0;
+  m_left = 0;
+  m_bottom = 0;
+  m_width = 0;
+  m_height = 0;
 }
 
-bin_t::bin_t(int left, int bottom, int width, int height) : _left(left), _bottom(bottom), _width(width),
-                                                                  _height(height) {}
+bin_t::bin_t(int left, int bottom, int width, int height) : m_left(left), m_bottom(bottom), m_width(width),
+                                                                  m_height(height) {}
 
 void bin_t::set_left(int left) {
-  _left = left;
+  m_left = left;
 }
 
 int bin_t::left() {
-  return _left;
+  return m_left;
 }
 
 void bin_t::set_bottom(int bottom) {
-  _bottom = bottom;
+  m_bottom = bottom;
 }
 
 int bin_t::bottom() {
-  return _bottom;
+  return m_bottom;
 }
 
 void bin_t::set_width(int width) {
-  _width = width;
+  m_width = width;
 }
 
 int bin_t::width() {
-  return _width;
+  return m_width;
 }
 
 void bin_t::set_height(int height) {
-  _height = height;
+  m_height = height;
 }
 
 int bin_t::height() {
-  return  _height;
+  return  m_height;
 }
 
 int bin_t::right() {
-  return _left + _width;
+  return m_left + m_width;
 }
 
 int bin_t::top() {
-  return _bottom + _height;
+  return m_bottom + m_height;
 }

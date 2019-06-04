@@ -5,114 +5,114 @@
 #include "circuitblock.hpp"
 
 block_t::block_t() {
-  _name = "";
-  _w = 0;
-  _h = 0;
-  _llx = 0;
-  _lly = 0;
-  _movable = true;
-  _orientation = "";
-  _num = 0;
+  m_name = "";
+  m_w = 0;
+  m_h = 0;
+  m_llx = 0;
+  m_lly = 0;
+  m_movable = true;
+  m_orientation = "";
+  m_num = 0;
 }
 
 block_t::block_t(std::string &blockName, int w, int h, int llx, int lly, bool movable)
-    : _name(blockName), _w(w), _h(h), _llx(llx), _lly(lly), _movable(movable) {}
+    : m_name(blockName), m_w(w), m_h(h), m_llx(llx), m_lly(lly), m_movable(movable) {}
 
 void block_t::set_name(std::string &blockName) {
-  _name = blockName;
+  m_name = blockName;
 }
 
 std::string block_t::name() const{
-  return _name;
+  return m_name;
 }
 void block_t::set_width(int width) {
-  _w = width;
+  m_w = width;
 }
 
 int block_t::width() const{
-  return _w;
+  return m_w;
 }
 
 void block_t::set_height(int height) {
-  _h = height;
+  m_h = height;
 }
 
 int block_t::height() const{
-  return _h;
+  return m_h;
 }
 
 void block_t::set_llx(int lower_left_x) {
-  _llx = lower_left_x;
+  m_llx = lower_left_x;
 }
 
 int block_t::llx() const{
-  return _llx;
+  return m_llx;
 }
 
 void block_t::set_lly(int lower_left_y) {
-  _lly = lower_left_y;
+  m_lly = lower_left_y;
 }
 
 int block_t::lly() const{
-  return _lly;
+  return m_lly;
 }
 
 void block_t::set_urx(int upper_right_x) {
-  _llx = upper_right_x - _w;
+  m_llx = upper_right_x - m_w;
 }
 
 int block_t::urx() const{
-  return _llx + _w;
+  return m_llx + m_w;
 }
 
 void block_t::set_ury(int upper_right_y) {
-  _lly = upper_right_y - _h;
+  m_lly = upper_right_y - m_h;
 }
 
 int block_t::ury() const{
-  return _lly + _h;
+  return m_lly + m_h;
 }
 
 void block_t::set_center_x(double center_x) {
-  _llx = (int) (center_x - _w/2.0);
+  m_llx = (int) (center_x - m_w/2.0);
 }
 
 double block_t::x() const{
-  return _llx + _w/2.0;
+  return m_llx + m_w/2.0;
 }
 
 void block_t::set_center_y(double center_y) {
-  _lly = (int) (center_y - _h/2.0);
+  m_lly = (int) (center_y - m_h/2.0);
 }
 
 double block_t::y() const{
-  return _lly + _h/2.0;
+  return m_lly + m_h/2.0;
 }
 
 void block_t::set_movable(bool movable) {
-  _movable = movable;
+  m_movable = movable;
 }
 
 bool block_t::is_movable() const{
-  return _movable;
+  return m_movable;
 }
 
 int block_t::area() const{
-  return _h * _w;
+  return m_h * m_w;
 }
 
 void block_t::set_orientation(std::string &orientation) {
-  _orientation = orientation;
+  m_orientation = orientation;
 }
 
 std::string block_t::orientation() const{
-  return _orientation;
+  return m_orientation;
 }
 
 void block_t::set_num(size_t &num) {
-  _num = num;
+  m_num = num;
 }
 
 size_t block_t::num() const{
-  return  _num;
+  return  m_num;
 }

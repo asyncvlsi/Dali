@@ -27,8 +27,8 @@ struct block_neighbor_t {
 
 class block_dla_t: public block_t {
 private:
-  bool _placed; // 0 indicates this cell has not been placed, 1 means this cell has been placed
-  bool _queued; // 0 indicates this cell has not been in Q_place, 1 means this cell has been in the Q_place
+  bool m_placed; // 0 indicates this cell has not been placed, 1 means this cell has been placed
+  bool m_queued; // 0 indicates this cell has not been in Q_place, 1 means this cell has been in the Q_place
   double x0, y0;
   double vx, vy;
 public:

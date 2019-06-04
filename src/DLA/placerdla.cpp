@@ -31,7 +31,7 @@ bool placer_dla_t::set_input_circuit(circuit_t *circuit) {
     return false;
   }
 
-  _circuit = circuit;
+  m_circuit = circuit;
   for (auto &&block: circuit->block_list) {
     block_dla_t block_dla;
     block_dla.retrieve_info_from_database(block);
