@@ -138,19 +138,19 @@ int block_dla_t::wire_length_during_dla() {
   return WL;
 }
 
-void block_dla_t::random_move(double distance) {
+void block_dla_t::random_move(int distance) {
   int rand_num = std::rand();
   if (rand_num % 4 == 0) {
     // leftward move
-    x0 -= distance;
+    _llx -= distance;
   } else if (rand_num % 4 == 1) {
     // rightward move
-    x0 += distance;
+    _llx += distance;
   } else if (rand_num % 4 == 2) {
     // downward move
-    y0 -= distance;
+    _lly -= distance;
   } else {
     // upward move
-    y0 += distance;
+    _lly += distance;
   }
 }

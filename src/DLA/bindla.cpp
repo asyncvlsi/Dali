@@ -46,3 +46,10 @@ int bin_t::height() {
   return  _height;
 }
 
+int bin_t::right() {
+  return _left + _width;
+}
+
+int bin_t::top() {
+  return _bottom + _height;
+}

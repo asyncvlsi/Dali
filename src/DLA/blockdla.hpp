@@ -54,7 +54,7 @@ public:
   bool is_overlap(const block_dla_t &rhs) const;
   double overlap_area(const  block_dla_t &rhs) const;
   int wire_length_during_dla();
-  void random_move(double distance);
+  void random_move(int distance);
 };
 
 

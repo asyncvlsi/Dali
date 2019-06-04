@@ -148,6 +148,10 @@ void placer_dla_t::initialize_bin_list(){
   }
   int Left_new = left() - (x_bin_num * bin_width - (right() - left()))/2;
   int Bottom_new = bottom() - (y_bin_num * bin_height - (top() - bottom()))/2;
+  virtual_bin_boundary.set_llx(Left_new);
+  virtual_bin_boundary.set_lly(Bottom_new);
+  virtual_bin_boundary.set_width(x_bin_num * bin_width);
+  virtual_bin_boundary.set_height(y_bin_num * bin_height);
   for (size_t x=0; x<bin_list.size(); x++) {
     for (size_t y=0; y<bin_list[x].size(); y++) {
       bin_list[x][y].set_left(Left_new + x*bin_width);
@@ -208,45 +212,41 @@ void placer_dla_t::update_neighbor_list() {
 
 void placer_dla_t::prioritize_block_to_place(){
   // creat a new cell list block_to_place_queue to store the sorted block_list based on the number of wires connecting to the cell
-  block_dla_t tmp_block;
-  std::vector<block_dla_t> tmp_node_list;
+  std::vector<std::pair <int, int>> pair_list;
   for (auto &&block: block_list) {
-    tmp_node_list.push_back(block);
+    pair_list.emplace_back(std::make_pair(block.num(), block.total_net()));
   }
-  int max_wire_cell;
-  for (size_t i=0; i<tmp_node_list.size(); i++) {
-    max_wire_cell = i;
-    for (size_t j=i+1; j<tmp_node_list.size(); j++) {
-      if (tmp_node_list[j].total_net() > tmp_node_list[max_wire_cell].total_net()) {
-        max_wire_cell = j;
+  int max_wire_index;
+  std::pair <int,int> tmp_pair;
+  for (size_t i=0; i<block_list.size(); i++) {
+    max_wire_index = i;
+    for (size_t j=i+1; j<block_list.size(); j++) {
+      if (pair_list[j].second > pair_list[max_wire_index].second) {
+        max_wire_index = j;
       }
     }
-    tmp_block = tmp_node_list[i];
-    tmp_node_list[i] = tmp_node_list[max_wire_cell];
-    tmp_node_list[max_wire_cell] = tmp_block;
+    tmp_pair = pair_list[i];
+    pair_list[i] = pair_list[max_wire_index];
+    pair_list[max_wire_index] = tmp_pair;
   }
-  for (auto &&block: tmp_node_list) {
-    //std::cout << block.num() << " is connected to " << block.total_net() << " nets\n";
-    block_to_place_queue.push(block.num()); // the queue of sorted cell list
+
+  for (auto &&pair: pair_list) {
+    //std::cout << pair.first << " is connected to " << pair.second << " nets\n";
+    block_to_place_queue.push(pair.first); // the queue of sorted cell list
   }
+
 }
 
 void placer_dla_t::update_bin_list(int first_blk_num) {
   int left_most = bin_list[0][0].left(), bottom_most = bin_list[0][0].bottom();
   int X_bin_list_size = bin_list.size(), Y_bin_list_size = bin_list[0].size();
-  int right_most = left_most + X_bin_list_size * bin_width, top_most = bottom_most + Y_bin_list_size * bin_height;
   double left = block_list[first_blk_num].llx(), right = block_list[first_blk_num].urx();
   double bottom = block_list[first_blk_num].lly(), top = block_list[first_blk_num].ury();
-  block_dla_t temp_large_boundary; // the larger boundaries of bins
-  temp_large_boundary.set_llx(left_most);
-  temp_large_boundary.set_lly(bottom_most);
-  temp_large_boundary.set_width(right_most - left_most);
-  temp_large_boundary.set_height(top_most - bottom_most);
 
-  std::cout << "Block: " << first_blk_num << " is in bins: ";
-  if (temp_large_boundary.overlap_area(block_list[first_blk_num]) < block_list[first_blk_num].area()) {
+  //std::cout << "Block: " << first_blk_num << " is in bins: ";
+  if (virtual_bin_boundary.overlap_area(block_list[first_blk_num]) < block_list[first_blk_num].area()) {
     block_out_of_bin.push_back(first_blk_num);
-    std::cout << "-1 -1; ";
+    //std::cout << "-1 -1; ";
   }
   int L,B,R,T; // left, bottom, right, top of the cell in which bin
   L = std::floor((left - left_most)/bin_width);
@@ -259,10 +259,16 @@ void placer_dla_t::update_bin_list(int first_blk_num) {
   if (T >= Y_bin_list_size) {
     T = Y_bin_list_size - 1;
   }
+  if (L < 0) {
+    L = 0;
+  }
+  if (B < 0) {
+    B = 0;
+  }
   for (int j=B; j<=T; j++) {
     for (int k=L; k<=R; k++) {
-      bin_list[j][k].CIB.push_back(first_blk_num);
       std::cout << j << " " << k << "; ";
+      bin_list[j][k].CIB.push_back(first_blk_num);
       bin_index tmp_bin_loc(j,k);
       block_list[first_blk_num].bin.push_back(tmp_bin_loc);
     }
@@ -302,22 +308,18 @@ bool placer_dla_t::random_release_from_boundaries(int boundary_num, block_dla_t 
 
 int placer_dla_t::is_legal(int first_blk_num) {
   // if legal, return -1, if illegal, return the cell with which this first_blk_num has overlap
-  double left_most = bin_list[0][0].left(), bottom_most = bin_list[0][0].bottom();
+  int left_most = bin_list[0][0].left(), bottom_most = bin_list[0][0].bottom();
   int X_bin_list_size = bin_list.size(), Y_bin_list_size = bin_list[0].size();
-  double right_most = left_most + X_bin_list_size*bin_width, top_most = bottom_most + Y_bin_list_size*bin_height;
-  double Left = block_list[first_blk_num].llx(), Right = block_list[first_blk_num].urx();
-  double Bottom = block_list[first_blk_num].lly(), Top = block_list[first_blk_num].ury();
-  block_dla_t temp_large_boundary; // the larger boundries of bins
-  temp_large_boundary.set_llx(left_most);
-  temp_large_boundary.set_lly(bottom_most);
-  temp_large_boundary.set_width(right_most - left_most);
-  temp_large_boundary.set_height(top_most - bottom_most);
+  int Left = block_list[first_blk_num].llx(), Right = block_list[first_blk_num].urx();
+  int Bottom = block_list[first_blk_num].lly(), Top = block_list[first_blk_num].ury();
 
   int tempcellnum;
-  if (temp_large_boundary.overlap_area(block_list[first_blk_num]) < block_list[first_blk_num].area()) {
+  if (virtual_bin_boundary.overlap_area(block_list[first_blk_num]) < block_list[first_blk_num].area()) {
     for (size_t i=0; i<block_out_of_bin.size(); i++) {
       tempcellnum = block_out_of_bin[i];
-      if ((tempcellnum!=first_blk_num)&&(block_list[first_blk_num].overlap_area(block_list[tempcellnum])>=1)) return tempcellnum;
+      if ((tempcellnum!=first_blk_num)&&(block_list[first_blk_num].overlap_area(block_list[tempcellnum])>=1)) {
+        return tempcellnum;
+      }
     }
   }
   int L,B,R,T; // left, bottom, right, top of the cell in which bin
@@ -331,11 +333,19 @@ int placer_dla_t::is_legal(int first_blk_num) {
   if (T >= Y_bin_list_size) {
     T = Y_bin_list_size - 1;
   }
+  if (L < 0) {
+    L = 0;
+  }
+  if (B < 0) {
+    B = 0;
+  }
   for (int j=B; j<=T; j++) {
     for (int k=L; k<=R; k++) {
       for (size_t i=0; i<bin_list[j][k].CIB.size(); i++) {
         tempcellnum = bin_list[j][k].CIB[i];
-        if ((tempcellnum!=first_blk_num)&&(block_list[first_blk_num].overlap_area(block_list[tempcellnum])>=1)) return tempcellnum;
+        if ((tempcellnum!=first_blk_num)&&(block_list[first_blk_num].overlap_area(block_list[tempcellnum])>=1)) {
+          return tempcellnum;
+        }
       }
     }
   }
@@ -345,51 +355,62 @@ int placer_dla_t::is_legal(int first_blk_num) {
 void placer_dla_t::diffuse(int first_blk_num) {
   double WL1, WL2, MW; // MW indicates minimum wirelength
   double modWL1, modWL2;
-  int step;
+  //int step;
   double center_x=(left() + right())/2.0, center_y=(bottom() + top())/2.0;
   double cell_center_x, cell_center_y, distance_to_center;
-  double p1=0.00005, p2; // accept probability
-  double r, T=50.0;
+  double p1=0.5, p2; // accept probability
+  double r, T=20.0;
   block_dla_t TLUM; // Temporary Location Under Motion
   block_dla_t MWLL; // Minimum Wire-Length Location
   random_release_from_boundaries(0, block_list[first_blk_num]);
   MW = block_list[first_blk_num].wire_length_during_dla();
   for (int i=0; i<4; i++) {
     // release this cell from all 4 boundries and find the location, which gives the smallest total wirelength
+    //std::cout << i << "\n";
     random_release_from_boundaries(i, block_list[first_blk_num]);
+    //std::cout << "here2\n";
+    int counter = 0;
     while (true) {
+      //std::cout << counter++ << "\t";
+      //std::cout << "here5\t";
       cell_center_x = block_list[first_blk_num].x();
       cell_center_y = block_list[first_blk_num].y();
       distance_to_center = fabs(cell_center_x - center_x)+fabs(cell_center_y - center_y);
+      //std::cout << "here3\t";
       WL1 = block_list[first_blk_num].wire_length_during_dla();
+      //std::cout << "here4\t";
+      //std::cout << i << " " << "WL1: " << WL1 << "\t";
       modWL1 = WL1 + distance_to_center/4.0;
       TLUM = block_list[first_blk_num];
-      step = (int)(WL1/100.0);
-      block_list[first_blk_num].random_move(std::max(step, 1));
+      //step = (int)(WL1/100.0);
+      block_list[first_blk_num].random_move(1);
       cell_center_x = block_list[first_blk_num].x();
       cell_center_y = block_list[first_blk_num].y();
+      //std::cout << first_blk_num << " " << cell_center_x << " " << cell_center_y << "\n";
       distance_to_center = fabs(cell_center_x - center_x)+fabs(cell_center_y - center_y);
       WL2 = block_list[first_blk_num].wire_length_during_dla();
+      //std::cout << "WL2: " << WL2 << "\t";
       modWL2 = WL2 + distance_to_center/4.0;
+      //std::cout << "here0\t";
       if (is_legal(first_blk_num)==-1) {
+        //std::cout << "here6\t";
         if (modWL2 > modWL1) {
           // if wire-length becomes larger, reject this move by some probability
           r = ((double) std::rand()/RAND_MAX);
           p2 = exp(-(modWL2-modWL1)/T);
-          if (r>p2) block_list[first_blk_num] = TLUM;
+          if (r > p2) block_list[first_blk_num] = TLUM;
         }
-        if (WL2<=MW)
-        {
+        if (WL2<=MW) {
           MW = WL2;
           MWLL = block_list[first_blk_num];
         }
-      }
-      else
-      {
+      } else {
+        //std::cout << "here7\t";
         block_list[first_blk_num] = TLUM;
         r = ((double)std::rand()/RAND_MAX);
         if (r<=p1) break;
       }
+      //std::cout << "here1\n";
     }
   }
   block_list[first_blk_num] = MWLL;
@@ -461,7 +482,6 @@ bool placer_dla_t::start_placement() {
   initialize_bin_list();
   update_neighbor_list();
   prioritize_block_to_place();
-  update_bin_list(0);
   draw_bin_list();
   DLA();
   return true;

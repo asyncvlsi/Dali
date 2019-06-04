@@ -25,6 +25,8 @@ public:
   int width();
   void set_height(int height);
   int height();
+  int right();
+  int top();
 
   std::vector<int> CIB; // stands for cell in this bin, used to store the list of cells in this bin
 };

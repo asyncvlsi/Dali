@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <queue>
+#include <utility>
 #include "circuit.hpp"
 #include "circuitblock.hpp"
 #include "circuitnet.hpp"
@@ -30,6 +31,7 @@ public:
   void add_boundary_list();
   std::vector< std::vector<bin_t> > bin_list;
   int bin_width, bin_height;
+  block_dla_t virtual_bin_boundary;
   void initialize_bin_list();
   void update_neighbor_list();
 
