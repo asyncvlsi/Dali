@@ -8,21 +8,21 @@
 
 block_dla_t::block_dla_t() {
   m_num = 0;
-  m_w = 0;
-  m_h = 0;
-  m_orientation = "N";
-  m_movable = true;
-  m_placed = false;
-  m_queued = false;
+  _w = 0;
+  _h = 0;
+  _orientation = "N";
+  _movable = true;
+  _placed = false;
+  _queued = false;
   x0 = 0;
   y0 = 0;
   vx = 0;
   vy = 0;
 }
 
-block_dla_t::block_dla_t(std::string &blockName, int w, int h, int llx, int lly, bool movable):block_t(blockName, w, h, llx, lly, movable) {
-  m_placed = false;
-  m_queued = false;
+block_dla_t::block_dla_t(std::string &blockName, int w, int h, int lx, int ly, bool movable):block_t(blockName, w, h, lx, ly, movable) {
+  _placed = false;
+  _queued = false;
   x0 = 0;
   y0 = 0;
   vx = 0;
@@ -30,17 +30,17 @@ block_dla_t::block_dla_t(std::string &blockName, int w, int h, int llx, int lly,
 }
 
 void block_dla_t::retrieve_info_from_database(const block_t &block){
-  m_name = block.name();
+  _name = block.name();
   m_num = block.num();
-  m_w = block.width();
-  m_h = block.height();
-  m_orientation = block.orientation();
-  m_movable = block.is_movable();
+  _w = block.width();
+  _h = block.height();
+  _orientation = block.orientation();
+  _movable = block.is_movable();
 }
 
 void block_dla_t::write_info_to_database(block_t &block) {
-  block.set_llx(m_llx);
-  block.set_lly(m_lly);
+  block.set_llx(_llx);
+  block.set_lly(_lly);
 }
 
 int block_dla_t::total_net() {
@@ -48,19 +48,19 @@ int block_dla_t::total_net() {
 }
 
 void block_dla_t::set_placed(bool placed) {
-  m_placed = placed;
+  _placed = placed;
 }
 
 bool block_dla_t::is_placed() {
-  return m_placed;
+  return _placed;
 }
 
 void block_dla_t::set_queued(bool queued) {
-  m_queued = queued;
+  _queued = queued;
 }
 
 bool block_dla_t::is_queued() {
-  return m_queued;
+  return _queued;
 }
 
 void block_dla_t::add_to_neb_list(block_dla_t *block_dla, double net_weight) {
@@ -142,15 +142,15 @@ void block_dla_t::random_move(int distance) {
   int rand_num = std::rand();
   if (rand_num % 4 == 0) {
     // leftward move
-    m_llx -= distance;
+    _llx -= distance;
   } else if (rand_num % 4 == 1) {
     // rightward move
-    m_llx += distance;
+    _llx += distance;
   } else if (rand_num % 4 == 2) {
     // downward move
-    m_lly -= distance;
+    _lly -= distance;
   } else {
     // upward move
-    m_lly += distance;
+    _lly += distance;
   }
 }

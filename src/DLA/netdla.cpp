@@ -8,14 +8,14 @@ net_dla_t::net_dla_t(): net_t() {
 
 }
 
-net_dla_t::net_dla_t(std::string &name, double weight): net_t(name, weight) {
+net_dla_t::net_dla_t(std::string &name_arg, double weight_arg): net_t(name_arg, weight_arg) {
 
 }
 
 void net_dla_t::retrieve_info_from_database(net_t &net) {
-  m_name = net.name();
-  m_weight = net.weight();
-  m_num = net.num();
+  _name = net.name();
+  _weight = net.weight();
+  _num = net.num();
 }
 
 int net_dla_t::hpwl_during_dla() {

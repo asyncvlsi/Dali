@@ -12,7 +12,7 @@
 class net_dla_t: public net_t {
 public:
   net_dla_t();
-  explicit net_dla_t(std::string &name, double weight = 1);
+  explicit net_dla_t(std::string &name_arg, double weight_arg = 1);
   void retrieve_info_from_database(net_t &net);
 
   int hpwl_during_dla();

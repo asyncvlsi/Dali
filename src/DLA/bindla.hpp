@@ -9,21 +9,21 @@
 
 class bin_t {
 private:
-  int m_left;
-  int m_bottom;
-  int m_width;
-  int m_height;
+  int _left;
+  int _bottom;
+  int _width;
+  int _height;
 public:
   bin_t();
-  bin_t(int left, int bottom, int width, int height);
+  bin_t(int left_arg, int bottom_arg, int width_arg, int height_arg);
 
-  void set_left(int left);
+  void set_left(int left_arg);
   int left();
-  void set_bottom(int bottom);
+  void set_bottom(int bottom_arg);
   int bottom();
-  void set_width(int width);
+  void set_width(int width_arg);
   int width();
-  void set_height(int height);
+  void set_height(int height_arg);
   int height();
   int right();
   int top();

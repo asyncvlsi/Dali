@@ -27,13 +27,13 @@ struct block_neighbor_t {
 
 class block_dla_t: public block_t {
 private:
-  bool m_placed; // 0 indicates this cell has not been placed, 1 means this cell has been placed
-  bool m_queued; // 0 indicates this cell has not been in Q_place, 1 means this cell has been in the Q_place
+  bool _placed; // 0 indicates this cell has not been placed, 1 means this cell has been placed
+  bool _queued; // 0 indicates this cell has not been in Q_place, 1 means this cell has been in the Q_place
   double x0, y0;
   double vx, vy;
 public:
   block_dla_t();
-  block_dla_t(std::string &blockName, int w, int h, int llx = 0, int lly = 0, bool movable = true);
+  block_dla_t(std::string &blockName, int w, int h, int lx = 0, int ly = 0, bool movable = true);
   void retrieve_info_from_database(const block_t &node_info);
   void write_info_to_database(block_t &node_info);
 

@@ -5,51 +5,51 @@
 #include "bindla.hpp"
 
 bin_t::bin_t() {
-  m_left = 0;
-  m_bottom = 0;
-  m_width = 0;
-  m_height = 0;
+  _left = 0;
+  _bottom = 0;
+  _width = 0;
+  _height = 0;
 }
 
-bin_t::bin_t(int left, int bottom, int width, int height) : m_left(left), m_bottom(bottom), m_width(width),
-                                                                  m_height(height) {}
+bin_t::bin_t(int left_arg, int bottom_arg, int width_arg, int height_arg) : _left(left_arg), _bottom(bottom_arg), _width(width_arg),
+                                                                  _height(height_arg) {}
 
-void bin_t::set_left(int left) {
-  m_left = left;
+void bin_t::set_left(int left_arg) {
+  _left = left_arg;
 }
 
 int bin_t::left() {
-  return m_left;
+  return _left;
 }
 
-void bin_t::set_bottom(int bottom) {
-  m_bottom = bottom;
+void bin_t::set_bottom(int bottom_arg) {
+  _bottom = bottom_arg;
 }
 
 int bin_t::bottom() {
-  return m_bottom;
+  return _bottom;
 }
 
-void bin_t::set_width(int width) {
-  m_width = width;
+void bin_t::set_width(int width_arg) {
+  _width = width_arg;
 }
 
 int bin_t::width() {
-  return m_width;
+  return _width;
 }
 
-void bin_t::set_height(int height) {
-  m_height = height;
+void bin_t::set_height(int height_arg) {
+  _height = height_arg;
 }
 
 int bin_t::height() {
-  return  m_height;
+  return  _height;
 }
 
 int bin_t::right() {
-  return m_left + m_width;
+  return _left + _width;
 }
 
 int bin_t::top() {
-  return m_bottom + m_height;
+  return _bottom + _height;
 }

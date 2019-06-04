@@ -17,11 +17,11 @@
 class block_t {
 protected:
   /* essential data entries */
-  std::string m_name; // name
-  int m_w, m_h; // width and height
-  int m_llx, m_lly; // lower left corner
-  bool m_movable; // movable
-  std::string m_orientation; // currently not used
+  std::string _name; // name
+  int _w, _h; // width and height
+  int _llx, _lly; // lower left corner
+  bool _movable; // movable
+  std::string _orientation; // currently not used
 
   /* the following entries are derived data */
   size_t m_num;
@@ -29,13 +29,13 @@ protected:
 
 public:
   block_t();
-  block_t(std::string &blockName, int w, int h, int llx = 0, int lly = 0, bool movable = true);
+  block_t(std::string &blockName, int w, int h, int lx = 0, int ly = 0, bool movable = true);
 
   void set_name(std::string &blockName);
   std::string name() const;
-  void set_width(int width);
+  void set_width(int w);
   int width() const;
-  void set_height(int height);
+  void set_height(int h);
   int height() const;
   void set_llx(int lower_left_x);
   int llx() const;
@@ -52,17 +52,17 @@ public:
   void set_movable(bool movable);
   bool is_movable() const;
   int area() const;
-  void set_orientation(std::string &orientation);
+  void set_orientation(std::string &orient);
   std::string orientation() const;
-  void set_num(size_t &num);
+  void set_num(size_t &number);
   size_t num() const;
 
   friend std::ostream& operator<<(std::ostream& os, const block_t &block) {
-    os << "block name: " << block.m_name << "\n";
-    os << "width and height: " << block.m_w << " " << block.m_h << "\n";
-    os << "lower left corner: " << block.m_llx << " " << block.m_lly << "\n";
-    os << "movability: " << block.m_movable << "\n";
-    os << "orientation: " << block.m_orientation << "\n";
+    os << "block name: " << block._name << "\n";
+    os << "width and height: " << block._w << " " << block._h << "\n";
+    os << "lower left corner: " << block._llx << " " << block._lly << "\n";
+    os << "movability: " << block._movable << "\n";
+    os << "orientation: " << block._orientation << "\n";
     os << "assigned primary key: " << block.m_num << "\n";
 
     return os;
