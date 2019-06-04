@@ -9,18 +9,18 @@
 
 class bin_t {
 private:
-  double _left;
-  double _bottom;
+  int _left;
+  int _bottom;
   int _width;
   int _height;
 public:
   bin_t();
-  bin_t(double left, double bottom, int width, int height);
+  bin_t(int left, int bottom, int width, int height);
 
-  void set_left(double left);
-  double left();
-  void set_bottom(double bottom);
-  double bottom();
+  void set_left(int left);
+  int left();
+  void set_bottom(int bottom);
+  int bottom();
   void set_width(int width);
   int width();
   void set_height(int height);

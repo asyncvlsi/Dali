@@ -11,22 +11,22 @@ bin_t::bin_t() {
   _height = 0;
 }
 
-bin_t::bin_t(double left, double bottom, int width, int height) : _left(left), _bottom(bottom), _width(width),
+bin_t::bin_t(int left, int bottom, int width, int height) : _left(left), _bottom(bottom), _width(width),
                                                                   _height(height) {}
 
-void bin_t::set_left(double left) {
+void bin_t::set_left(int left) {
   _left = left;
 }
 
-double bin_t::left() {
+int bin_t::left() {
   return _left;
 }
 
-void bin_t::set_bottom(double bottom) {
+void bin_t::set_bottom(int bottom) {
   _bottom = bottom;
 }
 
-double bin_t::bottom() {
+int bin_t::bottom() {
   return _bottom;
 }
 

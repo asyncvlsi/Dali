@@ -130,6 +130,14 @@ double block_dla_t::overlap_area(const  block_dla_t &rhs) const{
   }
 }
 
+int block_dla_t::wire_length_during_dla() {
+  int WL = 0;
+  for (auto &&net_ptr: net) {
+    WL += net_ptr->hpwl_during_dla();
+  }
+  return WL;
+}
+
 void block_dla_t::random_move(double distance) {
   int rand_num = std::rand();
   if (rand_num % 4 == 0) {

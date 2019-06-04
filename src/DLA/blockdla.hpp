@@ -17,6 +17,7 @@ struct bin_index {
   explicit bin_index(int i=0, int j=0): iloc(i), jloc(j){}
 };
 
+class net_dla_t;
 class block_dla_t;
 struct block_neighbor_t {
   block_dla_t *block;
@@ -46,12 +47,13 @@ public:
   std::vector< block_neighbor_t > neb_list; // the list of cells this cell is connected to
   void add_to_neb_list(block_dla_t *block_dla, double net_weight);
   void sort_neb_list();
-  std::vector< net_dla_t* > net; // the list of nets this cell is connected to
+  std::vector<net_dla_t *> net; // the list of nets this cell is connected to
   void add_to_net(net_dla_t *net_dla);
 
   // used to record which nets this node is connected to
   bool is_overlap(const block_dla_t &rhs) const;
   double overlap_area(const  block_dla_t &rhs) const;
+  int wire_length_during_dla();
   void random_move(double distance);
 };
 

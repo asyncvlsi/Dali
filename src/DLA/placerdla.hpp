@@ -35,17 +35,12 @@ public:
 
   std::queue<int> block_to_place_queue;
   std::vector<int> block_out_of_bin; // cells which are out of bins
-  void order_node_to_place();
-  /*
-  void update_bin_list(int first_node_num, std::vector<int> &block_out_of_bin);
-  double net_hwpl_during_dla(net_t *net);
-  double wirelength_during_DLA(int first_node_num);
-  double net_hwpl(net_t *net);
-  int is_legal(int first_node_num, std::vector<int> &block_out_of_bin);
+  void prioritize_block_to_place();
+  void update_bin_list(int first_blk_num);
   bool random_release_from_boundaries(int boundary_num, block_dla_t &node);
-  void diffuse(int first_node_num, std::vector<int> &block_out_of_bin);
+  int is_legal(int first_node_num);
+  void diffuse(int first_node_num);
   bool DLA();
-   */
 
   bool start_placement() override;
 
