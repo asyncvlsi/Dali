@@ -40,7 +40,7 @@ public:
   void prioritize_block_to_place();
   void update_bin_list(int first_blk_num);
   bool random_release_from_boundaries(int boundary_num, block_dla_t &node);
-  int is_legal(int first_node_num);
+  bool is_legal(int first_node_num);
   void diffuse(int first_node_num);
   bool DLA();
 

@@ -37,8 +37,6 @@ public:
   // the ratio of total_white_space/total_block_area
 
   virtual bool set_input_circuit(circuit_t *circuit) = 0;
-  std::vector<net_t>* net_list();
-  std::vector<block_t>* block_list();
 
   bool auto_set_boundaries();
   void report_boundaries();

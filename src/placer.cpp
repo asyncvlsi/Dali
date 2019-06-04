@@ -71,14 +71,6 @@ bool placer_t::set_space_block_ratio(double ratio) {
   return true;
 }
 
-std::vector<net_t>* placer_t::net_list() {
-  return &_circuit->net_list;
-}
-
-std::vector<block_t>* placer_t::block_list() {
-  return &_circuit->block_list;
-}
-
 bool placer_t::auto_set_boundaries() {
   if (_circuit == nullptr) {
     std::cout << "Error!\n";
