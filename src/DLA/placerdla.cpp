@@ -240,19 +240,19 @@ void placer_dla_t::prioritize_block_to_place(){
 void placer_dla_t::update_bin_list(int first_blk_num) {
   int left_most = bin_list[0][0].left(), bottom_most = bin_list[0][0].bottom();
   int X_bin_list_size = bin_list.size(), Y_bin_list_size = bin_list[0].size();
-  double left = block_list[first_blk_num].llx(), right = block_list[first_blk_num].urx();
-  double bottom = block_list[first_blk_num].lly(), top = block_list[first_blk_num].ury();
+  double block_left = block_list[first_blk_num].llx(), block_right = block_list[first_blk_num].urx();
+  double block_bottom = block_list[first_blk_num].lly(), block_top = block_list[first_blk_num].ury();
 
   //std::cout << "Block: " << first_blk_num << " is in bins: ";
   if (virtual_bin_boundary.overlap_area(block_list[first_blk_num]) < block_list[first_blk_num].area()) {
     block_out_of_bin.push_back(first_blk_num);
     //std::cout << "-1 -1; ";
   }
-  int L,B,R,T; // left, bottom, right, top of the cell in which bin
-  L = std::floor((left - left_most)/bin_width);
-  B = std::floor((bottom - bottom_most)/bin_height);
-  R = std::floor((right - left_most)/bin_width);
-  T = std::floor((top - bottom_most)/bin_height);
+  int L,B,R,T; // block_left, block_bottom, block_right, block_top of the cell in which bin
+  L = std::floor((block_left - left_most)/bin_width);
+  B = std::floor((block_bottom - bottom_most)/bin_height);
+  R = std::floor((block_right - left_most)/bin_width);
+  T = std::floor((block_top - bottom_most)/bin_height);
   if (R >= X_bin_list_size) {
     R = X_bin_list_size - 1;
   }

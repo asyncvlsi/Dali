@@ -10,7 +10,7 @@ net_t::net_t() {
   _num = 0;
 }
 
-net_t::net_t(std::string &name, double weight) : _name(name), _weight(weight) {}
+net_t::net_t(std::string &name_arg, double weight_arg) : _name(name_arg), _weight(weight_arg) {}
 
 void net_t::set_name(const std::string &name_arg) {
   _name = name_arg;

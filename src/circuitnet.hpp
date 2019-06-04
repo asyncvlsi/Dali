@@ -20,7 +20,7 @@ protected:
   /* net_num is the index of this block in the vector net_list, this data must be updated after push a new block into net_list */
 public:
   net_t();
-  explicit net_t(std::string &name, double weight = 1);
+  explicit net_t(std::string &name_arg, double weight_arg = 1);
 
   /* essential data entries */
   std::vector<pin_t> pin_list;
