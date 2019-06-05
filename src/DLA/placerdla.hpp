@@ -46,8 +46,8 @@ public:
 
   bool start_placement() override;
 
-  bool draw_bin_list(std::string const &filename="binlist.m");
-  bool draw_block_net_list(std::string const &filename="celllist.m");
+  bool draw_bin_list(std::string const &filename="bin_list.m");
+  bool draw_block_net_list(std::string const &filename="block_net_list.m");
   bool draw_placed_blocks(std::string const &filename="cellplaced.m");
   bool output_result(std::string const &filename="layout.pl");
 

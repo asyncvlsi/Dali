@@ -357,7 +357,7 @@ void placer_dla_t::diffuse(int first_blk_num) {
   //int step;
   double center_x=(left() + right())/2.0, center_y=(bottom() + top())/2.0;
   double cell_center_x, cell_center_y, distance_to_center;
-  double p1=0.5, p2; // accept probability
+  double p1=0.0005, p2; // accept probability
   double r, T=20.0;
   block_dla_t TLUM; // Temporary Location Under Motion
   block_dla_t MWLL; // Minimum Wire-Length Location
@@ -397,7 +397,6 @@ void placer_dla_t::diffuse(int first_blk_num) {
         r = ((double)std::rand()/RAND_MAX);
         if (r<=p1) break;
       }
-      //std::cout << "here1\n";
     }
   }
   block_list[first_blk_num] = MWLL;
@@ -471,6 +470,7 @@ bool placer_dla_t::start_placement() {
   prioritize_block_to_place();
   draw_bin_list();
   DLA();
+  draw_block_net_list();
   return true;
 }
 
@@ -501,21 +501,13 @@ bool placer_dla_t::draw_block_net_list(std::string const &filename) {
   for (auto &&block: block_list) {
     ost << "rectangle('Position',[" << block.llx() << " " << block.lly() << " " << block.width() << " " << block.height() << "], 'LineWidth',3)\n";
   }
-  /*
-  int block_num1, block_num2;
-  int x1, x2, y1, y2;
-  int xoff1, xoff2, yoff1, yoff2;
-  for (int i=0; i<net_list.size(); i++) {
-    block_num1 = net_list[i].pin_list[0].cellNo;
-    block_num2 = net_list[i].pin_list[1].cellNo;
-    x1 = block_list[block_num1].llx(); y1 = block_list[block_num1].lly();
-    x2 = block_list[block_num2].llx(); y2 = block_list[block_num2].lly();
-    xoff1 = net_list[i].pin_list[0].x_offset(); yoff1 = net_list[i].pin_list[0].y_offset();
-    xoff2 = net_list[i].pin_list[1].x_offset(); yoff2 = net_list[i].pin_list[1].y_offset();
-    ost << "line([" << x1+xoff1 << "," << x2+xoff2 << "],[" << y1+yoff1 << "," << y2+yoff2 << "],'lineWidth', 2)\n";
-    //ost << "line([" << x1+xoff1 << "," << x2+xoff2 << "],[" << y1+yoff1 << "," << y2+yoff2 << "],'Color',[.5 .5 .5],'lineWidth', 2)\n";
-  }
-   */
+  for (auto &&net: net_list) {
+		for (size_t i=0; i<net.pin_list.size(); i++) {
+			for (size_t j=i+1; j<net.pin_list.size(); j++) {
+				ost << "line([" << net.pin_list[i].abs_x() << "," << net.pin_list[j].abs_x() << "],[" << net.pin_list[i].abs_y() << "," << net.pin_list[j].abs_y() << "],'lineWidth', 0.5)\n";
+			}
+		}
+	}
   ost << "rectangle('Position',[" << left() << " " << bottom() << " " << right() - left() << " " << top() - bottom() << "],'LineWidth',1)\n";
   ost << "axis auto equal\n";
   ost.close();
@@ -534,28 +526,18 @@ bool placer_dla_t::draw_placed_blocks(std::string const &filename) {
       ost << "rectangle('Position',[" << block.llx() << " " << block.lly() << " " << block.width() << " " << block.height() << "], 'LineWidth',3)%" << block.num() << "\n";
     }
   }
-  /*
-  int block_num1, block_num2, tempnetsize;
-  int x1, x2, y1, y2;
-  int xoff1, xoff2, yoff1, yoff2;
-  for (int i=0; i<net_list.size(); i++)
-  {
-    tempnetsize = net_list[i].pin_list.size();
-    for (int j=0; j<tempnetsize; j++)
-    {
-      for (int k=j+1; k<tempnetsize; k++)
-      {
-        block_num1 = net_list[i].pin_list[j].cellNo;
-        block_num2 = net_list[i].pin_list[k].cellNo;
-        x1 = block_list[block_num1].llx(); y1 = block_list[block_num1].lly();
-        x2 = block_list[block_num2].llx(); y2 = block_list[block_num2].lly();
-        xoff1 = net_list[i].pin_list[j].x_offset(); yoff1 = net_list[i].pin_list[j].y_offset();
-        xoff2 = net_list[i].pin_list[k].x_offset(); yoff2 = net_list[i].pin_list[k].y_offset();
-        ost << "line([" << x1+xoff1 << "," << x2+xoff2 << "],[" << y1+yoff1 << "," << y2+yoff2 << "],'lineWidth', " << 3*1.0/(tempnetsize-1) << ")\n";
+  for (auto &&net: net_list) {
+    for (size_t i=0; i<net.pin_list.size(); i++) {
+      auto *block_dla1 = (block_dla_t *)net.pin_list[i].get_block();
+      for (size_t j=i+1; j<net.pin_list.size(); j++) {
+        auto *block_dla2 = (block_dla_t *)net.pin_list[j].get_block();
+        if ((block_dla1->is_placed()) && (block_dla2->is_placed())) {
+          ost << "line([" << net.pin_list[i].abs_x() << "," << net.pin_list[j].abs_x() << "],["
+              << net.pin_list[i].abs_y() << "," << net.pin_list[j].abs_y() << "],'lineWidth', 0.5)\n";
+        }
       }
     }
   }
-   */
   ost << "rectangle('Position',[" << left() << " " << bottom() << " " << right() - left() << " " << top() - bottom() << "],'LineWidth',1)\n";
   ost << "axis auto equal\n";
   ost.close();
