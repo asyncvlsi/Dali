@@ -108,7 +108,7 @@ void block_dla_t::add_to_net(net_dla_t *net_dla) {
 
 bool block_dla_t::is_overlap(const  block_dla_t &rhs) const{
   bool not_overlap;
-  not_overlap = llx() > rhs.urx() || rhs.llx() > urx() || lly() > rhs.ury() || rhs.lly() > ury();
+  not_overlap = llx() >= rhs.urx() || rhs.llx() >= urx() || lly() >= rhs.ury() || rhs.lly() >= ury();
   // If one rectangle is on left side of another or if one rectangle is above another
   return !not_overlap;
 }
