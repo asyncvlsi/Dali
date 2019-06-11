@@ -12,6 +12,8 @@ file(GLOB SOURCES
         src/*.cpp
         src/DLA/*.hpp
         src/DLA/*.cpp
+        src/AL/*.hpp
+        src/AL/*.cpp
         )
 
 add_executable(HPCC ${SOURCES})

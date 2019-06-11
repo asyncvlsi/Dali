@@ -37,7 +37,7 @@ public:
   // the ratio of total_white_space/total_block_area
 
   virtual bool set_input_circuit(circuit_t *circuit) = 0;
-
+  virtual std::vector<block_t> *get_block_list() = 0;
   bool auto_set_boundaries();
   void report_boundaries();
   int left();
@@ -48,6 +48,7 @@ public:
   bool set_boundary(int left_arg=0, int right_arg=0, int bottom_arg=0, int top_arg=0);
 
   virtual bool start_placement() = 0;
+  void report_placement_result();
 
   bool write_pl_solution(std::string const &NameOfFile);
   bool write_pl_anchor_solution(std::string const &NameOfFile);

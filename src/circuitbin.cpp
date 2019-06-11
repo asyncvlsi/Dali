@@ -2,7 +2,7 @@
 // Created by Yihang Yang on 2019-05-20.
 //
 
-#include "bindla.hpp"
+#include "circuitbin.hpp"
 
 bin_t::bin_t() {
   _left = 0;

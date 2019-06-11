@@ -7,7 +7,7 @@
 
 #include <vector>
 #include <string>
-#include "bindla.hpp"
+#include "circuitbin.hpp"
 #include "circuitblock.hpp"
 #include "netdla.hpp"
 

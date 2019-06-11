@@ -13,7 +13,7 @@
 #include "circuitnet.hpp"
 #include "circuitpin.hpp"
 #include "placer.hpp"
-#include "bindla.hpp"
+#include "circuitbin.hpp"
 #include "blockdla.hpp"
 #include "netdla.hpp"
 
@@ -26,6 +26,7 @@ public:
   std::vector< block_dla_t > block_list;
   std::vector< net_dla_t > net_list;
   bool set_input_circuit(circuit_t *circuit) override;
+  std::vector<block_t> *get_block_list() override;
 
   std::vector< block_dla_t > boundary_list;
   void add_boundary_list();

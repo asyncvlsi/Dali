@@ -153,6 +153,10 @@ bool placer_t::set_boundary(int left_arg, int right_arg, int bottom_arg, int top
   }
 }
 
+void placer_t::report_placement_result() {
+  
+}
+
 placer_t::~placer_t() {
 
 }

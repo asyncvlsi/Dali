@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 2019-05-20.
 //
 
-#ifndef HPCC_BINDLA_HPP
-#define HPCC_BINDLA_HPP
+#ifndef HPCC_CIRCUITBIN_HPP
+#define HPCC_CIRCUITBIN_HPP
 
 #include <vector>
 
@@ -32,4 +32,4 @@ public:
 };
 
 
-#endif //HPCC_BINDLA_HPP
+#endif //HPCC_CIRCUITBIN_HPP

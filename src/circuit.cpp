@@ -16,6 +16,32 @@ circuit_t::circuit_t() {
   _tot_block_area = 0;
 }
 
+/*
+ * ... array somewhere with some size ...
+ * block_t **allblocks;
+ * int num_blocks = 0;
+ * int max_blocks = 0;
+ *
+ * if (max_blocks == num_blocks) {
+ *      if (max_blocks == 0) {
+ *          allblocks = (block_t **) malloc (sizeof (block_t *)*1024);
+ *          // check for NULL result, error
+ *          max_blocks = 1024;
+ *      }
+ *      else {
+ *            max_blocks = max_blocks + 1024;
+ *           allblocks = (block_t **) realloc (sizeof (block_t *)*max_blocks);
+ *           // check for null result
+ *      }
+ *  }
+ *  allblocks[num_blocks] = new block_t (w, h, llx, lly, movable);
+ *  num_blocks++;
+ *  allblocks[num_blocks-1]->set_num (num_blocks-1);
+ *  return allblocks[num_blocks-1];
+ *
+ */
+
+
 bool circuit_t::add_new_block(std::string &blockName, int w, int h, int llx, int lly, bool movable) {
   if (block_name_map.find(blockName) == block_name_map.end()) {
     size_t block_list_size = block_list.size();

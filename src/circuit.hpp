@@ -35,18 +35,17 @@ public:
   bool add_new_block(std::string &blockName, int w, int h, int llx = 0, int lly = 0, bool movable = true);
   bool create_blank_net(std::string &netName, double weight = 1);
   bool add_pin_to_net(std::string &netName, std::string &blockName, int xOffset, int yOffset);
+  // the above three member functions should be called to add elements to block_list or net_list
 
   void parse_line(std::string &line, std::vector<std::string> &field_list);
-
   bool read_nodes_file(std::string const &NameOfFile);
   void report_block_list();
   void report_block_map();
-
   bool read_nets_file(std::string const &NameOfFile);
   void report_net_list();
   void report_net_map();
-
   bool read_pl_file(std::string const &NameOfFile);
+  // the above member functions should be called when input comes from files
 
   //-----------------------------------------------------------------------------------------------
   /* the following member function calculate corresponding values in real time, the running time is O(n) */

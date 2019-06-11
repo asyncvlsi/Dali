@@ -36,13 +36,9 @@ int main() {
   placer->auto_set_boundaries();
   placer->report_boundaries();
   placer->start_placement();
-
-  //placer->start_placement();
+  placer->report_placement_result();
 
   //circuit.write_pl_solution("./test/sample1_solution.pl");
-  //circuit.write_node_terminal("terminal.txt", "nodes.txt");
-  //circuit.write_pl_anchor_solution("./test/sample1_solution.pl");
-  //circuit.write_anchor_terminal("terminal.txt", "nodes.txt");
 
   Time = clock() - Time;
   std::cout << "Execution time " << (float)Time/CLOCKS_PER_SEC << "s.\n";

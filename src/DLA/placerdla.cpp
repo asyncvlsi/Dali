@@ -53,6 +53,10 @@ bool placer_dla_t::set_input_circuit(circuit_t *circuit) {
   return true;
 }
 
+std::vector<block_t> *placer_dla_t::get_block_list() {
+  return (std::vector<block_t> *)&block_list;
+}
+
 void placer_dla_t::add_boundary_list() {
   int max_width=0, max_height=0;
   for (auto &&block: block_list) {
