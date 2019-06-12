@@ -8,7 +8,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#include "circuit.hpp"
+#include "circuit/circuit.hpp"
 
 class placer_t {
 protected:

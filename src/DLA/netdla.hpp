@@ -6,7 +6,7 @@
 #define HPCC_NETDLA_HPP
 
 #include <string>
-#include "circuitnet.hpp"
+#include "circuit/circuitnet.hpp"
 #include "blockdla.hpp"
 
 class net_dla_t: public net_t {

@@ -7,8 +7,8 @@
 
 #include <vector>
 #include <string>
-#include "circuitbin.hpp"
-#include "circuitblock.hpp"
+#include "circuit/circuitbin.hpp"
+#include "circuit/circuitblock.hpp"
 #include "netdla.hpp"
 
 struct bin_index {

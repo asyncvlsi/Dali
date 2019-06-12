@@ -8,12 +8,12 @@
 #include <vector>
 #include <queue>
 #include <utility>
-#include "circuit.hpp"
-#include "circuitblock.hpp"
-#include "circuitnet.hpp"
-#include "circuitpin.hpp"
+#include "circuit/circuit.hpp"
+#include "circuit/circuitblock.hpp"
+#include "circuit/circuitnet.hpp"
+#include "circuit/circuitpin.hpp"
 #include "placer.hpp"
-#include "circuitbin.hpp"
+#include "circuit/circuitbin.hpp"
 #include "blockdla.hpp"
 #include "netdla.hpp"
 

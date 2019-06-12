@@ -5,7 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <ctime>
-#include "circuit.hpp"
+#include "circuit/circuit.hpp"
 #include "placer.hpp"
 #include "DLA/placerdla.hpp"
 

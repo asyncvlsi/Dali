@@ -10,6 +10,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 file(GLOB SOURCES
         src/*.hpp
         src/*.cpp
+        src/circuit/*.hpp
+        src/circuit/*.cpp
         src/DLA/*.hpp
         src/DLA/*.cpp
         src/AL/*.hpp
