@@ -26,7 +26,6 @@ public:
   std::vector< block_dla_t > block_list;
   std::vector< net_dla_t > net_list;
   bool set_input_circuit(circuit_t *circuit) override;
-  std::vector<block_t> *get_block_list() override;
 
   std::vector< block_dla_t > boundary_list;
   void add_boundary_list();

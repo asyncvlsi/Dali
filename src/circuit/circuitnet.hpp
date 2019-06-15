@@ -42,6 +42,7 @@ public:
   double weight();
   bool add_pin(pin_t &pin);
   double inv_p();
+  int p();
 
   int hpwl();
 };

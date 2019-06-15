@@ -5,8 +5,64 @@
 #ifndef HPCC_PLACERAL_HPP
 #define HPCC_PLACERAL_HPP
 
-class placeral {
+#include <vector>
+#include "placer.hpp"
+#include "blockal.hpp"
+#include "netal.hpp"
 
+typedef struct  {
+  size_t pin;
+  float weight;
+} weight_tuple;
+
+class placer_al_t: public placer_t {
+private:
+  size_t _movable_block_num;
+  double width_epsilon;
+  double height_epsilon;
+  double HPWLX_new = 0;
+  double HPWLY_new = 0;
+  double HPWLX_old = 1e30;
+  double HPWLY_old = 1e30;
+  bool HPWLx_converge = false;
+  bool HPWLy_converge = false;
+public:
+  placer_al_t();
+  placer_al_t(double aspectRatio, double fillingRate);
+  size_t movable_block_num();
+
+  std::vector< block_al_t > block_list;
+  std::vector< net_al_t > net_list;
+  bool set_input_circuit(circuit_t *circuit) override;
+
+  std::vector< std::vector<weight_tuple> > Ax, Ay;
+  // declare matrix here, such that every function in this namespace can see these matrix
+  std::vector<size_t> kx, ky;
+  // track the length of each row of Ax and Ay
+  std::vector<double> bx, by;
+
+  void cg_init();
+  void cg_close();
+  void initialize_HPWL_flags();
+  void build_problem_clique_x();
+  void build_problem_clique_y();
+  void update_max_min_node_x();
+  void update_HPWL_x();
+  void build_problem_b2b_x();
+  void build_problem_b2b_x_nooffset();
+  void update_max_min_node_y();
+  void update_HPWL_y();
+  void build_problem_b2b_y();
+  void build_problem_b2b_y_nooffset();
+  void add_anchor_x();
+  void add_anchor_y();
+  void CG_solver(std::string const &dimension, std::vector< std::vector<weight_tuple> > &A, std::vector<float> &b, std::vector<size_t> &k);
+  void CG_solver_x();
+  void CG_solver_y();
+
+  bool legalization();
+
+  bool start_placement() override;
 };
 
 

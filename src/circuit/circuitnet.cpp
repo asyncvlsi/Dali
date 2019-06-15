@@ -58,6 +58,10 @@ double net_t::inv_p() {
   return 1.0/(pin_list.size() - 1);
 }
 
+int net_t::p() {
+  return (int)pin_list.size();
+}
+
 int net_t::hpwl() {
   if (pin_list.empty()) {
     std::cout << "Error!\n";

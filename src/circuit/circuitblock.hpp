@@ -24,7 +24,7 @@ protected:
   std::string _orientation; // currently not used
 
   /* the following entries are derived data */
-  size_t m_num;
+  size_t _num;
   /* block_num is the index of this block in the vector block_list, this data must be updated after push a new block into block_list */
 
 public:
@@ -63,8 +63,7 @@ public:
     os << "lower left corner: " << block._llx << " " << block._lly << "\n";
     os << "movability: " << block._movable << "\n";
     os << "orientation: " << block._orientation << "\n";
-    os << "assigned primary key: " << block.m_num << "\n";
-
+    os << "assigned primary key: " << block._num << "\n";
     return os;
   }
 };

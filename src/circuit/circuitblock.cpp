@@ -12,7 +12,7 @@ block_t::block_t() {
   _lly = 0;
   _movable = true;
   _orientation = "";
-  m_num = 0;
+  _num = 0;
 }
 
 block_t::block_t(std::string &blockName, int w, int h, int lx, int ly, bool movable)
@@ -110,9 +110,9 @@ std::string block_t::orientation() const{
 }
 
 void block_t::set_num(size_t &number) {
-  m_num = number;
+  _num = number;
 }
 
 size_t block_t::num() const{
-  return  m_num;
+  return  _num;
 }

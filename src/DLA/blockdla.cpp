@@ -6,8 +6,8 @@
 #include <cstdlib>
 #include "blockdla.hpp"
 
-block_dla_t::block_dla_t() {
-  m_num = 0;
+block_dla_t::block_dla_t(): block_t() {
+  _num = 0;
   _w = 0;
   _h = 0;
   _orientation = "N";
@@ -20,7 +20,7 @@ block_dla_t::block_dla_t() {
   vy = 0;
 }
 
-block_dla_t::block_dla_t(std::string &blockName, int w, int h, int lx, int ly, bool movable):block_t(blockName, w, h, lx, ly, movable) {
+block_dla_t::block_dla_t(std::string &blockName, int w, int h, int lx, int ly, bool movable): block_t(blockName, w, h, lx, ly, movable) {
   _placed = false;
   _queued = false;
   x0 = 0;
@@ -31,7 +31,7 @@ block_dla_t::block_dla_t(std::string &blockName, int w, int h, int lx, int ly, b
 
 void block_dla_t::retrieve_info_from_database(const block_t &block){
   _name = block.name();
-  m_num = block.num();
+  _num = block.num();
   _w = block.width();
   _h = block.height();
   _orientation = block.orientation();
