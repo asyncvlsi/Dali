@@ -17,6 +17,14 @@ size_t placer_al_t::movable_block_num() {
   return _movable_block_num;
 }
 
+double placer_al_t::width_epsilon()() {
+  return _width_epsilon;
+}
+
+double placer_al_t::height_epsilon()() {
+  return _height_epsilon;
+}
+
 bool placer_al_t::set_input_circuit(circuit_t *circuit) {
   if (circuit->block_list.empty()) {
     std::cout << "Error!\n";
@@ -31,21 +39,34 @@ bool placer_al_t::set_input_circuit(circuit_t *circuit) {
 
   _circuit = circuit;
   _movable_block_num = 0;
+  _width_epsilon = 0;
+  _height_epsilon = 0;
   for (auto &&block: circuit->block_list) {
     block_al_t block_al;
     block_al.retrieve_info_from_database(block);
     block_list.push_back(block_al);
     //std::cout << block_dla << "\n";
-    if (block_al.is_movable()) ++_movable_block_num;
+    if (block_al.is_movable()) {
+      ++_movable_block_num;
+      _width_epsilon += block.width();
+      _height_epsilon += block.height();
+    }
   }
+  if (_movable_block_num == 0) {
+    std::cout << "Error!\n";
+    std::cout << "No movable blocks in circuit!\n";
+    return false;
+  }
+  _width_epsilon /= _movable_block_num*100;
+  _height_epsilon /= _movable_block_num*100;
 
   for (auto &&net: circuit->net_list) {
     net_al_t net_al;
     net_al.retrieve_info_from_database(net);
     for (auto &&pin: net.pin_list) {
       int block_num = circuit->block_name_map.find(pin.get_block()->name())->second;
-      block_al_t *block_dla_ptr = &block_list[block_num];
-      pin_t pin_al(pin.x_offset(), pin.y_offset(), block_dla_ptr);
+      block_al_t *block_al_ptr = &block_list[block_num];
+      pin_t pin_al(pin.x_offset(), pin.y_offset(), block_al_ptr);
       net_al.pin_list.push_back(pin_al);
     }
     net_list.push_back(net_al);
@@ -135,7 +156,7 @@ void placer_al_t::build_problem_clique_x() {
         if ((block_list[tempnodenum0].is_movable() == 0)&&(block_list[tempnodenum1].is_movable() == 0)) {
           continue;
         }
-        weightx = invp/((float)fabs(temppinlocx0 - temppinlocx1) + WEPSI);
+        weightx = invp/((float)fabs(temppinlocx0 - temppinlocx1) + width_epsilon());
         if ((block_list[tempnodenum0].is_movable() == 0)&&(block_list[tempnodenum1].is_movable() == 1)) {
           bx[tempnodenum1] += (temppinlocx0 - net.pin_list[k].x_offset()) * weightx;
           Ax[tempnodenum1][0].weight += weightx;
@@ -193,15 +214,15 @@ void placer_al_t::build_problem_clique_y() {
         tempnodenum1 = net.pin_list[k].get_block()->num();
         temppinlocy1 = block_list[tempnodenum1].y() + net.pin_list[k].y_offset();
         if (tempnodenum0 == tempnodenum1) continue;
-        if ((block_list[tempnodenum0].isterminal() == 1)&&(block_list[tempnodenum1].isterminal() == 1)) {
+        if ((block_list[tempnodenum0].is_movable() == 0)&&(block_list[tempnodenum1].is_movable() == 0)) {
           continue;
         }
-        weighty = invp/((float)fabs(temppinlocy0 - temppinlocy1) + HEPSI);
-        if ((block_list[tempnodenum0].isterminal() == 1)&&(block_list[tempnodenum1].isterminal() == 0)) {
+        weighty = invp/((float)fabs(temppinlocy0 - temppinlocy1) + height_epsilon());
+        if ((block_list[tempnodenum0].is_movable() == 0)&&(block_list[tempnodenum1].is_movable() == 1)) {
           by[tempnodenum1] += (temppinlocy0 - net.pin_list[k].y_offset()) * weighty;
           Ay[tempnodenum1][0].weight += weighty;
         }
-        else if ((block_list[tempnodenum0].isterminal() == 0)&&(block_list[tempnodenum1].isterminal() == 1)) {
+        else if ((block_list[tempnodenum0].is_movable() == 1)&&(block_list[tempnodenum1].is_movable() == 0)) {
           by[tempnodenum0] += (temppinlocy1 - net.pin_list[j].y_offset()) * weighty;
           Ay[tempnodenum0][0].weight += weighty;
         }
@@ -334,7 +355,7 @@ void placer_al_t::build_problem_b2b_x() {
         tempnodenum1 = net.pin_list[k]..get_block()->num();
         if (tempnodenum0 == tempnodenum1) continue;
         temppinlocx1 = net.pin_list[k].x;
-        weightx = invp/((float)fabs(temppinlocx0 - temppinlocx1) + WEPSI);
+        weightx = invp/((float)fabs(temppinlocx0 - temppinlocx1) + width_epsilon());
         if ((block_list[tempnodenum0].isterminal() == 1)&&(block_list[tempnodenum1].isterminal() == 1)) {
           continue;
         }
@@ -404,7 +425,7 @@ void placer_al_t::build_problem_b2b_x_nooffset() {
         tempnodenum1 = net.pin_list[k]..get_block()->num();
         if (tempnodenum0 == tempnodenum1) continue;
         temppinlocx1 = block_list[tempnodenum1].x();
-        weightx = invp/((float)fabs(temppinlocx0 - temppinlocx1) + WEPSI);
+        weightx = invp/((float)fabs(temppinlocx0 - temppinlocx1) + width_epsilon());
         if ((block_list[tempnodenum0].isterminal() == 1)&&(block_list[tempnodenum1].isterminal() == 1)) {
           continue;
         }
@@ -547,7 +568,7 @@ void placer_al_t::build_problem_b2b_y() {
         tempnodenum1 = net.pin_list[k]..get_block()->num();
         if (tempnodenum0 == tempnodenum1) continue;
         temppinlocy1 = net.pin_list[k].y;
-        weighty = invp/((float)fabs(temppinlocy0 - temppinlocy1) + HEPSI);
+        weighty = invp/((float)fabs(temppinlocy0 - temppinlocy1) + height_epsilon());
         if ((block_list[tempnodenum0].isterminal() == 1)&&(block_list[tempnodenum1].isterminal() == 1)) {
           continue;
         }
@@ -616,7 +637,7 @@ void placer_al_t::build_problem_b2b_y_nooffset() {
         tempnodenum1 = net.pin_list[k]..get_block()->num();
         if (tempnodenum0 == tempnodenum1) continue;
         temppinlocy1 = block_list[tempnodenum1].y();
-        weighty = invp/((float)fabs(temppinlocy0 - temppinlocy1) + HEPSI);
+        weighty = invp/((float)fabs(temppinlocy0 - temppinlocy1) + height_epsilon());
         if ((block_list[tempnodenum0].isterminal() == 1)&&(block_list[tempnodenum1].isterminal() == 1)) {
           continue;
         }
@@ -651,28 +672,6 @@ void placer_al_t::build_problem_b2b_y_nooffset() {
         }
       }
     }
-  }
-}
-
-void placer_al_t::add_anchor_x() {
-  float weight_x;
-  Node *node;
-  for (size_t i=0; i < movable_block_num(); i++) {
-    node = &block_list[i];
-    weight_x = 1 / ((float) fabs(node->x() - node->anchorx) + WEPSI);
-    Ax[i][0].weight += weight_x * ALPHA;
-    bx[i] += weight_x * node->anchorx * ALPHA;
-  }
-}
-
-void placer_al_t::add_anchor_y() {
-  float weight_y;
-  Node *node;
-  for (size_t i=0; i < movable_block_num(); i++) {
-    node = &block_list[i];
-    weight_y = 1 / ((float) fabs(node->y() - node->anchory) + HEPSI);
-    Ay[i][0].weight += weight_y * ALPHA;
-    by[i] += weight_y * node->anchory * ALPHA;
   }
 }
 
@@ -752,12 +751,12 @@ void placer_al_t::CG_solver(std::string const &dimension, std::vector< std::vect
   /* if the cell is out of boundary, just shift it back to the placement region */
   if (dimension == "x") {
     for (size_t i=0; i<movable_block_num(); i++) {
-      if (block_list[i].llx() < LEFT) {
-        block_list[i].x() = (float) LEFT + block_list[i].width()/(float)2 + (float)1;
+      if (block_list[i].llx() < left()) {
+        block_list[i].x() = (float) left() + block_list[i].width()/(float)2 + (float)1;
         //std::cout << i << "\n";
       }
-      else if (block_list[i].urx() > RIGHT) {
-        block_list[i].x() = (float) RIGHT - block_list[i].width()/(float)2 - (float)1;
+      else if (block_list[i].urx() > right()) {
+        block_list[i].x() = (float) right() - block_list[i].width()/(float)2 - (float)1;
         //std::cout << i << "\n";
       }
       else {
@@ -767,12 +766,12 @@ void placer_al_t::CG_solver(std::string const &dimension, std::vector< std::vect
   }
   else{
     for (size_t i=0; i<movable_block_num(); i++) {
-      if (block_list[i].lly() < BOTTOM) {
-        block_list[i].y() = (float) BOTTOM + block_list[i].height()/(float)2 + (float)1;
+      if (block_list[i].lly() < bottom()) {
+        block_list[i].y() = (float) bottom() + block_list[i].height()/(float)2 + (float)1;
         //std::cout << i << "\n";
       }
-      else if (block_list[i].ury() > TOP) {
-        block_list[i].y() = (float) TOP - block_list[i].height()/(float)2 - (float)1;
+      else if (block_list[i].ury() > top()) {
+        block_list[i].y() = (float) top() - block_list[i].height()/(float)2 - (float)1;
         //std::cout << i << "\n";
       }
       else {

@@ -18,18 +18,21 @@ typedef struct  {
 class placer_al_t: public placer_t {
 private:
   size_t _movable_block_num;
-  double width_epsilon;
-  double height_epsilon;
+  double _width_epsilon;
+  double _height_epsilon;
   double HPWLX_new = 0;
   double HPWLY_new = 0;
   double HPWLX_old = 1e30;
   double HPWLY_old = 1e30;
   bool HPWLx_converge = false;
   bool HPWLy_converge = false;
+  double cg_precision = 0.05;
 public:
   placer_al_t();
   placer_al_t(double aspectRatio, double fillingRate);
   size_t movable_block_num();
+  double width_epsilon();
+  double height_epsilon();
 
   std::vector< block_al_t > block_list;
   std::vector< net_al_t > net_list;
@@ -54,8 +57,6 @@ public:
   void update_HPWL_y();
   void build_problem_b2b_y();
   void build_problem_b2b_y_nooffset();
-  void add_anchor_x();
-  void add_anchor_y();
   void CG_solver(std::string const &dimension, std::vector< std::vector<weight_tuple> > &A, std::vector<float> &b, std::vector<size_t> &k);
   void CG_solver_x();
   void CG_solver_y();

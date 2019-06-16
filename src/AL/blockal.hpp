@@ -7,10 +7,9 @@
 
 #include "circuit/circuitblock.hpp"
 
-class block_al_t:block_t {
+class block_al_t:public block_t {
 private:
   double _dllx, _dlly; // lower left corner of type double
-
 public:
   block_al_t();
   block_al_t(std::string &blockName, int w, int h, int lx = 0, int ly = 0, bool movable = true);
@@ -34,7 +33,7 @@ public:
   friend std::ostream& operator<<(std::ostream& os, const block_al_t &block) {
     os << "block name: " << block._name << "\n";
     os << "width and height: " << block._w << " " << block._h << "\n";
-    os << "lower left corner: " << block._llx << " " << block._lly << "\n";
+    os << "lower left corner: " << block._dllx << " " << block._dlly << "\n";
     os << "movability: " << block._movable << "\n";
     os << "orientation: " << block._orientation << "\n";
     os << "assigned primary key: " << block._num << "\n";
