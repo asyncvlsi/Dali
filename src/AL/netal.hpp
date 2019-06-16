@@ -13,7 +13,12 @@ public:
   explicit net_al_t(std::string &name_arg, double weight_arg = 1);
   void retrieve_info_from_database(net_t &net);
 
-  double dhpwl();
+  double dhpwlx();
+  double dhpwly();
+  size_t max_pin_index_x();
+  size_t min_pin_index_x();
+  size_t max_pin_index_y();
+  size_t min_pin_index_y();
 };
 
 

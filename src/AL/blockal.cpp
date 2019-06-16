@@ -82,3 +82,11 @@ void block_al_t::set_center_dy(double center_y) {
 double block_al_t::dy() const{
   return _dlly + _h/2.0;
 }
+
+void block_al_t::x_increment(double delta_x) {
+  _dllx += delta_x;
+}
+
+void block_al_t::y_increment(double delta_y) {
+  _dlly += delta_y;
+}

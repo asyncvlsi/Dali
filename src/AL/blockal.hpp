@@ -28,6 +28,8 @@ public:
   double dx() const;
   void set_center_dy(double center_y);
   double dy() const;
+  void x_increment(double delta_x);
+  void y_increment(double delta_y);
 
 
   friend std::ostream& operator<<(std::ostream& os, const block_al_t &block) {

@@ -6,6 +6,7 @@
 #define HPCC_PLACERAL_HPP
 
 #include <vector>
+#include <random>
 #include "placer.hpp"
 #include "blockal.hpp"
 #include "netal.hpp"
@@ -27,6 +28,7 @@ private:
   bool HPWLx_converge = false;
   bool HPWLy_converge = false;
   double cg_precision = 0.05;
+  double HPWL_intra_linearSolver_precision = 0.05;
 public:
   placer_al_t();
   placer_al_t(double aspectRatio, double fillingRate);
@@ -44,6 +46,8 @@ public:
   // track the length of each row of Ax and Ay
   std::vector<double> bx, by;
 
+  void uniform_initialization();
+
   void cg_init();
   void cg_close();
   void initialize_HPWL_flags();
@@ -57,7 +61,7 @@ public:
   void update_HPWL_y();
   void build_problem_b2b_y();
   void build_problem_b2b_y_nooffset();
-  void CG_solver(std::string const &dimension, std::vector< std::vector<weight_tuple> > &A, std::vector<float> &b, std::vector<size_t> &k);
+  void CG_solver(std::string const &dimension, std::vector< std::vector<weight_tuple> > &A, std::vector<double> &b, std::vector<size_t> &k);
   void CG_solver_x();
   void CG_solver_y();
 
