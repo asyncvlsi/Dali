@@ -8,6 +8,7 @@
 #include "circuit/circuit.hpp"
 #include "placer.hpp"
 #include "DLA/placerdla.hpp"
+#include "AL/placeral.hpp"
 
 int main() {
   time_t Time = clock();
@@ -27,7 +28,7 @@ int main() {
     return 1;
   }
 
-  placer_t *placer = new placer_dla_t;
+  placer_t *placer = new placer_al_t;
   placer->set_space_block_ratio(1.5);
   placer->set_aspect_ratio(1);
   std::cout << placer->space_block_ratio() << " " << placer->filling_rate() << " " << placer->aspect_ratio() << "\n";
@@ -36,7 +37,7 @@ int main() {
   placer->auto_set_boundaries();
   placer->report_boundaries();
   placer->start_placement();
-  placer->report_placement_result();
+  //placer->report_placement_result();
 
   //circuit.write_pl_solution("./test/sample1_solution.pl");
 

@@ -698,7 +698,49 @@ void placer_al_t::cg_close() {
   ky.clear();
 }
 
+void placer_al_t::shift_cg_solution_to_region_center() {
+  double leftmost = block_list[0].dllx(), bottommost = block_list[0].dlly(), rightmost = block_list[0].durx(), topmost = block_list[0].dury();
+  for (auto &&block: block_list) {
+    if (block.dllx() < leftmost) leftmost = block.dllx();
+    if (block.dlly() < bottommost) bottommost = block.dlly();
+    if (block.durx() > rightmost) rightmost = block.durx();
+    if (block.dury() > topmost) topmost = block.dury();
+  }
+  for (auto &&block: block_list) {
+    block.set_dllx(block.dllx() - leftmost + 1/2.0*(right() + left() - rightmost + leftmost));
+    block.set_dlly(block.dlly() - bottommost + 1/2.0*(top() + bottom() - topmost + bottommost));
+  }
+}
+
+bool placer_al_t::draw_block_net_list(std::string const &filename) {
+  std::ofstream ost(filename.c_str());
+  if (ost.is_open()==0) {
+    std::cout << "Cannot open output file: " << filename << "\n";
+    return false;
+  }
+  for (auto &&block: block_list) {
+    ost << "rectangle('Position',[" << block.dllx() << " " << block.dlly() << " " << block.width() << " " << block.height() << "], 'LineWidth', 1, 'EdgeColor','blue')\n";
+  }
+  block_al_t *block_ptr0, *block_ptr1;
+  for (auto &&net: net_list) {
+    for (size_t i=0; i<net.pin_list.size(); i++) {
+      block_ptr0 = (block_al_t *)net.pin_list[i].get_block();
+      for (size_t j=i+1; j<net.pin_list.size(); j++) {
+        block_ptr1 = (block_al_t *)net.pin_list[j].get_block();
+        ost << "line([" << block_ptr0->dllx() + net.pin_list[i].x_offset() << "," << block_ptr1->dllx() + net.pin_list[j].x_offset()
+               << "],[" << block_ptr0->dlly() + net.pin_list[i].y_offset() << "," << block_ptr1->dlly() + net.pin_list[j].y_offset() << "],'lineWidth', 0.5)\n";
+      }
+    }
+  }
+  ost << "rectangle('Position',[" << left() << " " << bottom() << " " << right() - left() << " " << top() - bottom() << "],'LineWidth',1)\n";
+  ost << "axis auto equal\n";
+  ost.close();
+
+  return true;
+}
+
 bool placer_al_t::start_placement() {
+  cg_init();
   uniform_initialization();
   /* give each node a initial location, which is random inside the placement region, defined by LEFT, RIGHT, BOTTOM, TOP */
   update_max_min_node_x();
@@ -710,8 +752,6 @@ bool placer_al_t::start_placement() {
   for (int i=0; ; i++) {
     if (HPWLx_converge && HPWLy_converge) break;
     if (!HPWLx_converge) {
-      //build_problem_clique_x();
-      //build_problem_b2b_x_nooffset();
       build_problem_b2b_x();
       // fill elements into matrix Ax, bx
       CG_solver_x();
@@ -720,8 +760,6 @@ bool placer_al_t::start_placement() {
     }
 
     if (!HPWLy_converge) {
-      //build_problem_clique_y();
-      //build_problem_b2b_y_nooffset();
       build_problem_b2b_y();
       // fill elements into matrix Ay, by
       CG_solver_y();
@@ -737,4 +775,9 @@ bool placer_al_t::start_placement() {
   }*/
   std::cout << "Initial Placement Complete\n";
   std::cout << "HPWL: " << HPWLX_new + HPWLY_new << "\n";
+
+  shift_cg_solution_to_region_center();
+  draw_block_net_list();
+
+  return true;
 }

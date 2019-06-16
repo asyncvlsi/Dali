@@ -66,6 +66,8 @@ public:
   void CG_solver_y();
 
   bool legalization();
+  void shift_cg_solution_to_region_center();
+  bool draw_block_net_list(std::string const &filename="block_net_list.m");
 
   bool start_placement() override;
 };
