@@ -929,7 +929,7 @@ void placer_al_t::integerize() {
 
 void placer_al_t::update_velocity() {
   double rij, overlap = 0, areai;
-  double maxv1 = 10, maxv2 = 20;
+  double maxv1 = 15, maxv2 = 20;
   for (auto &&block: block_list) {
     block.vx = 0;
     block.vy = 0;
@@ -942,6 +942,7 @@ void placer_al_t::update_velocity() {
   int L,B,R,T; // left, bottom, right, top of the cell in which bin
   std::set<int> temp_physical_neighbor_set;
   for (size_t i=0; i<block_list.size(); i++) {
+    if (!block_list[i].is_movable()) continue;
     Left = block_list[i].dllx(), Right = block_list[i].durx();
     Bottom = block_list[i].dlly(), Top = block_list[i].dury();
     L = floor((Left - leftmost)/bin_width);
@@ -972,6 +973,11 @@ void placer_al_t::update_velocity() {
     for (size_t j=0; j<boundary_list.size(); j++) {
       overlap = block_list[i].overlap_area(boundary_list[j]);
       rij = sqrt(pow(block_list[i].dx() - boundary_list[j].dx(), 2) + pow(block_list[i].dy() - boundary_list[j].dy(), 2));
+      /*
+      block_list[i].vx += maxv2*overlap*(block_list[i].dx() - boundary_list[j].dx())/rij;
+      block_list[i].vy += maxv2*overlap*(block_list[i].dy() - boundary_list[j].dy())/rij;
+       */
+
       if ((boundary_list[j].dx() > left())&&(boundary_list[j].dx() < right())) {
         block_list[i].vy += maxv2*overlap*(block_list[i].dy() - boundary_list[j].dy())/rij;
       }
@@ -982,6 +988,7 @@ void placer_al_t::update_velocity() {
         block_list[i].vx += maxv2*overlap*(block_list[i].dx() - boundary_list[j].dx())/rij;
         block_list[i].vy += maxv2*overlap*(block_list[i].dy() - boundary_list[j].dy())/rij;
       }
+
     }
     areai = block_list[i].area();
     block_list[i].vx = block_list[i].vx/areai;
@@ -1031,41 +1038,35 @@ bool placer_al_t::legalization() {
 bool placer_al_t::start_placement() {
   cg_init();
   uniform_initialization();
-  /* give each node a initial location, which is random inside the placement region, defined by LEFT, RIGHT, BOTTOM, TOP */
   update_max_min_node_x();
   update_max_min_node_y();
-  /* update HPWLX, HPWLY, prepare for problem building */
   HPWLx_converge = false;
   HPWLy_converge = false;
-  /* set HPWLx_converge and HPWLy_converge to false */
   for (int i=0; ; i++) {
     if (HPWLx_converge && HPWLy_converge) break;
     if (!HPWLx_converge) {
       build_problem_b2b_x();
-      // fill elements into matrix Ax, bx
       CG_solver_x();
-      // solve the linear equation for x direction
       update_max_min_node_x();
     }
-
     if (!HPWLy_converge) {
       build_problem_b2b_y();
-      // fill elements into matrix Ay, by
       CG_solver_y();
-      // solve the linear equation for y direction
       update_max_min_node_y();
     }
     if (HPWLx_converge && HPWLy_converge) break;
   }
   std::cout << "Initial Placement Complete\n";
-  std::cout << "HPWL: " << HPWLX_new + HPWLY_new << "\n";
+  report_hpwl();
 
   shift_cg_solution_to_region_center();
   add_boundary_list();
   initialize_bin_list();
   //draw_bin_list();
   legalization();
-  draw_block_net_list();
+  std::cout << "Legalization Complete\n";
+  report_hpwl();
+  //draw_block_net_list();
 
   return true;
 }
@@ -1077,4 +1078,10 @@ void placer_al_t::report_placement_result() {
       _circuit->block_list[i].set_lly((int)block_list[i].dlly());
     }
   }
+}
+
+void placer_al_t::report_hpwl() {
+  update_HPWL_x();
+  update_HPWL_y();
+  std::cout << "HPWL: " << HPWLX_new + HPWLY_new << "\n";
 }

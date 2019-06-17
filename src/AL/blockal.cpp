@@ -11,12 +11,16 @@ block_al_t::block_al_t() {
   _dlly = 0;
   _movable = true;
   _num = 0;
+  vx = 0;
+  vy = 0;
 }
 
 block_al_t::block_al_t(std::string &blockName, int w, int h, int lx, int ly, bool movable): block_t(blockName, w, h, lx, ly,movable) {
   _dllx = lx;
   _dlly = ly;
   _num = 0;
+  vx = 0;
+  vy = 0;
 }
 
 void block_al_t::retrieve_info_from_database(const block_t &node_info) {

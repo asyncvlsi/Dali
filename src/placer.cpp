@@ -160,7 +160,7 @@ bool placer_t::gen_matlab_disp_file(std::string const &filename) {
     return false;
   }
   for (auto &&block: _circuit->block_list) {
-    ost << "rectangle('Position',[" << block.llx() << " " << block.lly() << " " << block.width() << " " << block.height() << "], 'LineWidth',3)\n";
+    ost << "rectangle('Position',[" << block.llx() << " " << block.lly() << " " << block.width() << " " << block.height() << "], 'LineWidth', 1, 'EdgeColor','blue')\n";
   }
   for (auto &&net: _circuit->net_list) {
     for (size_t i=0; i<net.pin_list.size(); i++) {

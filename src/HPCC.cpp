@@ -29,7 +29,7 @@ int main() {
   }
 
   placer_t *placer = new placer_al_t;
-  placer->set_space_block_ratio(2);
+  placer->set_space_block_ratio(1.5);
   placer->set_aspect_ratio(1);
   std::cout << placer->space_block_ratio() << " " << placer->filling_rate() << " " << placer->aspect_ratio() << "\n";
 
@@ -38,7 +38,7 @@ int main() {
   placer->report_boundaries();
   placer->start_placement();
   placer->report_placement_result();
-  //placer->gen_matlab_disp_file();
+  placer->gen_matlab_disp_file();
 
   //circuit.write_pl_solution("./test/sample1_solution.pl");
 

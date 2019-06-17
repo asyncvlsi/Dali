@@ -86,6 +86,7 @@ public:
   bool legalization();
   bool start_placement() override;
   void report_placement_result() override;
+  void report_hpwl();
 };
 
 
