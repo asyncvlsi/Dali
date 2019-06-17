@@ -6,10 +6,12 @@
 #define HPCC_PLACERAL_HPP
 
 #include <vector>
+#include <set>
 #include <random>
 #include "placer.hpp"
 #include "blockal.hpp"
 #include "netal.hpp"
+#include "circuit/circuitbin.hpp"
 
 typedef struct  {
   size_t pin;
@@ -65,10 +67,22 @@ public:
   void CG_solver_x();
   void CG_solver_y();
 
-  bool legalization();
+  std::vector< block_al_t > boundary_list;
+  void add_boundary_list();
+  std::vector< std::vector<bin_t> > bin_list;
+  int bin_width, bin_height;
+  block_al_t virtual_bin_boundary;
+  void initialize_bin_list();
+  bool draw_bin_list(std::string const &filename="bin_list.m");
   void shift_cg_solution_to_region_center();
   bool draw_block_net_list(std::string const &filename="block_net_list.m");
-
+  void update_block_in_bin();
+  bool check_legal();
+  void integerize();
+  void update_velocity();
+  void update_position(int time_step);
+  void diffusion_legalization(int time_step, int NumStep);
+  bool legalization();
   bool start_placement() override;
 };
 

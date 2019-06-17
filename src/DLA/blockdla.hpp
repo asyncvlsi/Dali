@@ -11,12 +11,6 @@
 #include "circuit/circuitblock.hpp"
 #include "netdla.hpp"
 
-struct bin_index {
-  int iloc;
-  int jloc;
-  explicit bin_index(int i=0, int j=0): iloc(i), jloc(j){}
-};
-
 class net_dla_t;
 class block_dla_t;
 struct block_neighbor_t {

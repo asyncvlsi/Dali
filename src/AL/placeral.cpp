@@ -698,6 +698,133 @@ void placer_al_t::cg_close() {
   ky.clear();
 }
 
+void placer_al_t::add_boundary_list() {
+  int max_width=0, max_height=0;
+  for (auto &&block: block_list) {
+    // find maximum width and maximum height
+    if (!block.is_movable()) {
+      continue;
+    }
+    if (block.width() > max_width) {
+      max_width = block.width();
+    }
+    if (block.height() > max_height) {
+      max_height = block.height();
+    }
+  }
+
+  block_al_t tmp_block;
+  int multiplier = 500;
+  tmp_block.set_movable(false);
+
+  tmp_block.set_width(multiplier*max_width);
+  tmp_block.set_height(multiplier*max_height);
+  tmp_block.set_dllx(left() - tmp_block.width());
+  tmp_block.set_dlly(top());
+  boundary_list.push_back(tmp_block);
+
+  tmp_block.set_width(right() - left());
+  tmp_block.set_height(multiplier*max_height);
+  tmp_block.set_dllx(left());
+  tmp_block.set_dlly(top());
+  boundary_list.push_back(tmp_block);
+
+  tmp_block.set_width(multiplier*max_width);
+  tmp_block.set_height(multiplier*max_height);
+  tmp_block.set_dllx(right());
+  tmp_block.set_dlly(top());
+  boundary_list.push_back(tmp_block);
+
+  tmp_block.set_width(multiplier*max_width);
+  tmp_block.set_width(top() - bottom());
+  tmp_block.set_dllx(right());
+  tmp_block.set_dlly(bottom());
+  boundary_list.push_back(tmp_block);
+
+  tmp_block.set_width(multiplier*max_width);
+  tmp_block.set_height(multiplier*max_height);
+  tmp_block.set_dllx(right());
+  tmp_block.set_dlly(bottom() - tmp_block.height());
+  boundary_list.push_back(tmp_block);
+
+  tmp_block.set_width(right() - left());
+  tmp_block.set_height(multiplier*max_height);
+  tmp_block.set_dllx(left());
+  tmp_block.set_dlly(bottom() - tmp_block.height());
+  boundary_list.push_back(tmp_block);
+
+  tmp_block.set_width(multiplier*max_width);
+  tmp_block.set_height(multiplier*max_height);
+  tmp_block.set_dllx(left() - tmp_block.width());
+  tmp_block.set_dlly(bottom() - tmp_block.height());
+  boundary_list.push_back(tmp_block);
+
+  tmp_block.set_width(multiplier*max_width);
+  tmp_block.set_height(top() - bottom());
+  tmp_block.set_dllx(left() - tmp_block.width());
+  tmp_block.set_dlly(bottom());
+  boundary_list.push_back(tmp_block);
+}
+
+void placer_al_t::initialize_bin_list(){
+  // initialize the bin_list, build up the bin_list matrix
+  int max_width=0, max_height=0;
+  for (auto &&block: block_list) {
+    // find maximum width and maximum height
+    if (!block.is_movable()) {
+      continue;
+    }
+    if (block.width() > max_width) {
+      max_width = block.width();
+    }
+    if (block.height() > max_height) {
+      max_height = block.height();
+    }
+  }
+  size_t x_bin_num, y_bin_num;
+  x_bin_num = (size_t)std::ceil((right() - left() + 2*max_width)/(double)max_width); // determine the bin numbers in x direction
+  y_bin_num = (size_t)std::ceil((top() - bottom() + 2*max_height)/(double)max_height); // determine the bin numbers in y direction
+  bin_width = max_width;
+  bin_height = max_height;
+  std::vector<bin_t> tmp_bin_column(y_bin_num);
+  for (size_t x=0; x<x_bin_num; x++) {
+    // bin_list[x][y] indicates the bin in the  x-th x, and y-th y bin
+    bin_list.push_back(tmp_bin_column);
+  }
+  int Left_new = left() - (x_bin_num * bin_width - (right() - left()))/2;
+  int Bottom_new = bottom() - (y_bin_num * bin_height - (top() - bottom()))/2;
+  virtual_bin_boundary.set_dllx(Left_new);
+  virtual_bin_boundary.set_dlly(Bottom_new);
+  virtual_bin_boundary.set_width(x_bin_num * bin_width);
+  virtual_bin_boundary.set_height(y_bin_num * bin_height);
+  for (size_t x=0; x<bin_list.size(); x++) {
+    for (size_t y=0; y<bin_list[x].size(); y++) {
+      bin_list[x][y].set_left(Left_new + x*bin_width);
+      bin_list[x][y].set_bottom(Bottom_new + y*bin_height);
+      bin_list[x][y].set_width(bin_width);
+      bin_list[x][y].set_height(bin_height);
+    }
+  }
+}
+
+bool placer_al_t::draw_bin_list(std::string const &filename) {
+  std::ofstream ost(filename.c_str());
+  if (ost.is_open()==0) {
+    std::cout << "Cannot open output file: " << filename << "\n";
+    return false;
+  }
+  for (auto &&bin_column: bin_list) {
+    for (auto &&bin: bin_column) {
+      ost << "rectangle('Position',[" << bin.left() << " " << bin.bottom() << " " << bin.width() << " " << bin.height() << "],'LineWidth',1)\n";
+    }
+  }
+  ost << "rectangle('Position',[" << left() << " " << bottom() << " " << right() - left() << " " << top() - bottom() << "],'LineWidth',1)\n";
+  ost << "axis auto equal\n";
+  ost.close();
+
+  return true;
+}
+
 void placer_al_t::shift_cg_solution_to_region_center() {
   double leftmost = block_list[0].dllx(), bottommost = block_list[0].dlly(), rightmost = block_list[0].durx(), topmost = block_list[0].dury();
   for (auto &&block: block_list) {
@@ -732,10 +859,168 @@ bool placer_al_t::draw_block_net_list(std::string const &filename) {
       }
     }
   }
-  ost << "rectangle('Position',[" << left() << " " << bottom() << " " << right() - left() << " " << top() - bottom() << "],'LineWidth',1)\n";
+  //ost << "rectangle('Position',[" << left() << " " << bottom() << " " << right() - left() << " " << top() - bottom() << "],'LineWidth',1)\n";
+  ost << "rectangle('Position',[" << virtual_bin_boundary.dllx() << " " << virtual_bin_boundary.dlly() << " " << virtual_bin_boundary.width() << " " << virtual_bin_boundary.height() << "],'LineWidth',1)\n";
   ost << "axis auto equal\n";
   ost.close();
 
+  return true;
+}
+
+void placer_al_t::update_block_in_bin() {
+  double leftmost=bin_list[0][0].left(), bottommost=bin_list[0][0].bottom();
+  int X_bin_list_size = bin_list.size(), Y_bin_list_size = bin_list[0].size();
+  int L,B,R,T; // left, bottom, right, top of the cell in which bin
+  for (auto &&bin_column: bin_list) {
+    for (auto &&bin: bin_column) {
+      bin.CIB.clear();
+    }
+  }
+  for (size_t i=0; i<block_list.size(); i++) {
+    block_list[i].bin.clear();
+    L = floor((block_list[i].dllx() - leftmost)/bin_width);
+    B = floor((block_list[i].dlly() - bottommost)/bin_height);
+    R = floor((block_list[i].durx() - leftmost)/bin_width);
+    T = floor((block_list[i].dury() - bottommost)/bin_height);
+    if (R >= X_bin_list_size) {
+      R = X_bin_list_size - 1;
+    }
+    if (T >= Y_bin_list_size) {
+      T = Y_bin_list_size - 1;
+    }
+    if (L < 0) {
+      L = 0;
+    }
+    if (B < 0) {
+      B = 0;
+    }
+    for (int x=L; x<=R; x++) {
+      for (int y=B; y<=T; y++) {
+        bin_list[x][y].CIB.push_back(i);
+        bin_index tmp_bin_loc(x,y);
+        block_list[i].bin.push_back(tmp_bin_loc);
+      }
+    }
+  }
+}
+
+bool placer_al_t::check_legal() {
+  for (size_t i=0; i<block_list.size(); i++) {
+    for (size_t j=i+1; j<block_list.size(); j++) {
+      if (block_list[i].is_overlap(block_list[j])) {
+        return false;
+      }
+    }
+    for (size_t k=0; k<boundary_list.size(); k++) {
+      if (block_list[i].is_overlap(boundary_list[k])) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+void placer_al_t::integerize() {
+  for (auto &&block: block_list) {
+    block.set_dllx(round(block.dllx()));
+    block.set_dlly(round(block.dlly()));
+  }
+}
+
+void placer_al_t::update_velocity() {
+  double rij, overlap = 0, areai;
+  double maxv1 = 5, maxv2 = 10;
+  for (auto &&block: block_list) {
+    block.vx = 0;
+    block.vy = 0;
+  }
+
+  double leftmost = bin_list[0][0].left(), bottommost = bin_list[0][0].bottom();
+  int Ybinlistsize = bin_list[0].size(), Xbinlistsize = bin_list.size();
+  double Left, Right, Bottom, Top;
+
+  int L,B,R,T; // left, bottom, right, top of the cell in which bin
+  std::set<int> temp_physical_neighbor_set;
+  for (size_t i=0; i<block_list.size(); i++) {
+    Left = block_list[i].dllx(), Right = block_list[i].durx();
+    Bottom = block_list[i].dlly(), Top = block_list[i].dury();
+    L = floor((Left - leftmost)/bin_width);
+    B = floor((Bottom - bottommost)/bin_height);
+    R = floor((Right - leftmost)/bin_width);
+    T = floor((Top - bottommost)/bin_height);
+    for (int y=B-1; y<=T+1; y++) { // find all cells around cell i, and put all these cells into the set "temp_physical_neighbor_set", thereason to do so is because a cell might appear in different bins
+      if ((y>=0)&&(y<Ybinlistsize)) {
+        for (int x=L-1; x<=R+1; x++) {
+          if ((x>=0)&&(x<Xbinlistsize)) {
+            for (auto &&cell_num_in_bin: bin_list[x][y].CIB) {
+              if (i==(size_t)cell_num_in_bin) continue;
+              temp_physical_neighbor_set.insert(cell_num_in_bin);
+            }
+          }
+        }
+      }
+    }
+
+    for (auto &&block_num: temp_physical_neighbor_set) {
+      overlap = block_list[i].overlap_area(block_list[block_num]);
+      rij = sqrt(pow(block_list[i].dx() - block_list[block_num].dx(), 2) + pow(block_list[i].dy()-block_list[block_num].dy(), 2));
+      block_list[i].vx += maxv1*overlap*(block_list[i].dx() - block_list[block_num].dx())/rij; // the maximum velocity of each cell is 5 at maxmimum
+      block_list[i].vy += maxv1*overlap*(block_list[i].dy() - block_list[block_num].dy())/rij;
+    }
+    temp_physical_neighbor_set.clear(); // clear this set after calculate the velocity due to overlap of cells
+
+    for (size_t j=0; j<boundary_list.size(); j++) {
+      overlap = block_list[i].overlap_area(boundary_list[j]);
+      rij = sqrt(pow(block_list[i].dx() - boundary_list[j].dx(), 2) + pow(block_list[i].dy() - boundary_list[j].dy(), 2));
+      if ((boundary_list[j].dx() > left())&&(boundary_list[j].dx() < right())) {
+        block_list[i].vy += maxv2*overlap*(block_list[i].dy() - boundary_list[j].dy())/rij;
+      }
+      else if ((block_list[j].dy() > bottom())&&(block_list[j].dy() < top())) {
+        block_list[i].vx += maxv2*overlap*(block_list[i].dx() - boundary_list[j].dx())/rij;
+      }
+      else {
+        block_list[i].vx += maxv2*overlap*(block_list[i].dx() - boundary_list[j].dx())/rij;
+        block_list[i].vy += maxv2*overlap*(block_list[i].dy() - boundary_list[j].dy())/rij;
+      }
+    }
+    areai = block_list[i].area();
+    block_list[i].vx = block_list[i].vx/areai;
+    block_list[i].vy = block_list[i].vy/areai;
+    block_list[i].modif_vx();
+    block_list[i].modif_vy();
+  }
+}
+
+void placer_al_t::update_position(int time_step) {
+  for (auto &&block:block_list) {
+    block.update_loc(time_step);
+  }
+}
+
+void placer_al_t::diffusion_legalization(int time_step, int NumStep) {
+  for (int i=0; i<NumStep; i++) {
+    update_block_in_bin();
+    update_velocity();
+    update_position(time_step);
+  }
+}
+
+bool placer_al_t::legalization() {
+  int NumStep = 100;
+  int time_step = 5;
+  update_block_in_bin();
+  for (int i=0; i<50; i++) {
+    if (check_legal()) {
+      integerize();
+      if (check_legal()) break;
+    }
+    diffusion_legalization(time_step, NumStep);
+    if (time_step>1) time_step -= 1;
+    if (i==49) {
+      std::cout << "fail\n";
+      return false;
+    }
+  }
   return true;
 }
 
@@ -777,6 +1062,10 @@ bool placer_al_t::start_placement() {
   std::cout << "HPWL: " << HPWLX_new + HPWLY_new << "\n";
 
   shift_cg_solution_to_region_center();
+  add_boundary_list();
+  initialize_bin_list();
+  draw_bin_list();
+  legalization();
   draw_block_net_list();
 
   return true;

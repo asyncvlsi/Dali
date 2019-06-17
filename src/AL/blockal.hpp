@@ -5,7 +5,9 @@
 #ifndef HPCC_BLOCKAL_HPP
 #define HPCC_BLOCKAL_HPP
 
+#include <cmath>
 #include "circuit/circuitblock.hpp"
+#include "circuit/circuitbin.hpp"
 
 class block_al_t:public block_t {
 private:
@@ -30,6 +32,15 @@ public:
   double dy() const;
   void x_increment(double delta_x);
   void y_increment(double delta_y);
+
+  std::vector< bin_index > bin; // bins this cell is in
+  bool is_overlap(const block_al_t &rhs) const;
+  double overlap_area(const  block_al_t &rhs) const;
+
+  double vx, vy;
+  void modif_vx();
+  void modif_vy();
+  void update_loc(int time_step);
 
 
   friend std::ostream& operator<<(std::ostream& os, const block_al_t &block) {

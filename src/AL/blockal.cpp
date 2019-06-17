@@ -90,3 +90,50 @@ void block_al_t::x_increment(double delta_x) {
 void block_al_t::y_increment(double delta_y) {
   _dlly += delta_y;
 }
+
+bool block_al_t::is_overlap(const block_al_t &rhs) const {
+  bool not_overlap;
+  not_overlap = dllx() >= rhs.durx() || rhs.dllx() >= durx() || dlly() >= rhs.dury() || rhs.dlly() >= dury();
+  // If one rectangle is on left side of another or if one rectangle is above another
+  return !not_overlap;
+}
+
+double block_al_t::overlap_area(const  block_al_t &rhs) const {
+  if (is_overlap(rhs)) {
+    double l1x, l1y, r1x, r1y, l2x, l2y, r2x, r2y;
+    l1x = dllx();
+    l1y = dlly();
+    r1x = durx();
+    r1y = dury();
+    l2x = rhs.dllx();
+    l2y = rhs.dlly();
+    r2x = rhs.durx();
+    r2y = rhs.dury();
+    return (std::min(r1x, r2x) - std::max(l1x, l2x)) * (std::min(r1y, r2y) - std::max(l1y, l2y));
+  } else {
+    return 0;
+  }
+}
+
+void block_al_t::modif_vx() {
+  double epsilon = 1e-5;
+  double modv = 0;
+  if (fabs(vx)>=1) modv = round(vx);
+  else if (fabs(vx)>epsilon) modv = vx/fabs(vx);
+  else modv = 0;
+  vx = modv;
+}
+
+void block_al_t::modif_vy() {
+  double epsilon = 1e-5;
+  double modv = 0;
+  if (fabs(vy)>=1) modv = round(vy);
+  else if (fabs(vy)>epsilon) modv = vy/fabs(vy);
+  else modv = 0;
+  vy = modv;
+}
+
+void block_al_t::update_loc(int time_step) {
+  _dllx += vx * time_step;
+  _dlly += vy * time_step;
+}
