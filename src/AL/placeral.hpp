@@ -8,6 +8,7 @@
 #include <vector>
 #include <set>
 #include <random>
+#include <cmath>
 #include "placer.hpp"
 #include "blockal.hpp"
 #include "netal.hpp"
@@ -84,6 +85,7 @@ public:
   void diffusion_legalization(int time_step, int NumStep);
   bool legalization();
   bool start_placement() override;
+  void report_placement_result() override;
 };
 
 

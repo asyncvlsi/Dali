@@ -474,6 +474,15 @@ bool placer_dla_t::start_placement() {
   return true;
 }
 
+void placer_dla_t::report_placement_result() {
+  for (size_t i=0; i<block_list.size(); i++) {
+    if (block_list[i].is_movable()) {
+      _circuit->block_list[i].set_llx(block_list[i].llx());
+      _circuit->block_list[i].set_lly(block_list[i].lly());
+    }
+  }
+}
+
 bool placer_dla_t::draw_bin_list(std::string const &filename) {
   std::ofstream ost(filename.c_str());
   if (ost.is_open()==0) {

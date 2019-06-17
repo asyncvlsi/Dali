@@ -47,7 +47,9 @@ public:
   bool set_boundary(int left_arg=0, int right_arg=0, int bottom_arg=0, int top_arg=0);
 
   virtual bool start_placement() = 0;
-  void report_placement_result();
+  virtual void report_placement_result() = 0;
+
+  bool gen_matlab_disp_file(std::string const &filename="block_net_list.m");
 
   bool write_pl_solution(std::string const &NameOfFile);
   bool write_pl_anchor_solution(std::string const &NameOfFile);

@@ -45,6 +45,7 @@ public:
   bool DLA();
 
   bool start_placement() override;
+  void report_placement_result() override;
 
   bool draw_bin_list(std::string const &filename="bin_list.m");
   bool draw_block_net_list(std::string const &filename="block_net_list.m");

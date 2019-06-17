@@ -860,7 +860,7 @@ bool placer_al_t::draw_block_net_list(std::string const &filename) {
     }
   }
   //ost << "rectangle('Position',[" << left() << " " << bottom() << " " << right() - left() << " " << top() - bottom() << "],'LineWidth',1)\n";
-  ost << "rectangle('Position',[" << virtual_bin_boundary.dllx() << " " << virtual_bin_boundary.dlly() << " " << virtual_bin_boundary.width() << " " << virtual_bin_boundary.height() << "],'LineWidth',1)\n";
+  ost << "rectangle('Position',[" << left() << " " << bottom() << " " << right()-left() << " " << top()-bottom() << "],'LineWidth',1)\n";
   ost << "axis auto equal\n";
   ost.close();
 
@@ -922,14 +922,14 @@ bool placer_al_t::check_legal() {
 
 void placer_al_t::integerize() {
   for (auto &&block: block_list) {
-    block.set_dllx(round(block.dllx()));
-    block.set_dlly(round(block.dlly()));
+    block.set_dllx((int)block.dllx());
+    block.set_dlly((int)block.dlly());
   }
 }
 
 void placer_al_t::update_velocity() {
   double rij, overlap = 0, areai;
-  double maxv1 = 5, maxv2 = 10;
+  double maxv1 = 10, maxv2 = 20;
   for (auto &&block: block_list) {
     block.vx = 0;
     block.vy = 0;
@@ -948,7 +948,7 @@ void placer_al_t::update_velocity() {
     B = floor((Bottom - bottommost)/bin_height);
     R = floor((Right - leftmost)/bin_width);
     T = floor((Top - bottommost)/bin_height);
-    for (int y=B-1; y<=T+1; y++) { // find all cells around cell i, and put all these cells into the set "temp_physical_neighbor_set", thereason to do so is because a cell might appear in different bins
+    for (int y=B-1; y<=T+1; y++) { // find all cells around cell i, and put all these cells into the set "temp_physical_neighbor_set", there is a reason to do so is because a cell might appear in different bins
       if ((y>=0)&&(y<Ybinlistsize)) {
         for (int x=L-1; x<=R+1; x++) {
           if ((x>=0)&&(x<Xbinlistsize)) {
@@ -1008,15 +1008,19 @@ void placer_al_t::diffusion_legalization(int time_step, int NumStep) {
 bool placer_al_t::legalization() {
   int NumStep = 100;
   int time_step = 5;
+  int N = 100;
   update_block_in_bin();
-  for (int i=0; i<50; i++) {
+  for (int i=0; i<N; i++) {
     if (check_legal()) {
       integerize();
-      if (check_legal()) break;
+      if (check_legal()) {
+        std::cout << i << " iterations\n";
+        break;
+      }
     }
     diffusion_legalization(time_step, NumStep);
     if (time_step>1) time_step -= 1;
-    if (i==49) {
+    if (i==N-1) {
       std::cout << "fail\n";
       return false;
     }
@@ -1053,20 +1057,24 @@ bool placer_al_t::start_placement() {
     }
     if (HPWLx_converge && HPWLy_converge) break;
   }
-  /*for (size_t i=0; i<CELL_NUM; i++) {
-    if ((Nodelist[i].llx() < LEFT) || (Nodelist[i].urx() > RIGHT) || (Nodelist[i].lly() < BOTTOM) || (Nodelist[i].ury() > TOP)) {
-      std::cout << "Final outboundary" << i << "\n";
-    }
-  }*/
   std::cout << "Initial Placement Complete\n";
   std::cout << "HPWL: " << HPWLX_new + HPWLY_new << "\n";
 
   shift_cg_solution_to_region_center();
   add_boundary_list();
   initialize_bin_list();
-  draw_bin_list();
+  //draw_bin_list();
   legalization();
   draw_block_net_list();
 
   return true;
+}
+
+void placer_al_t::report_placement_result() {
+  for (size_t i=0; i<block_list.size(); i++) {
+    if (block_list[i].is_movable()) {
+      _circuit->block_list[i].set_llx((int)block_list[i].dllx());
+      _circuit->block_list[i].set_lly((int)block_list[i].dlly());
+    }
+  }
 }
