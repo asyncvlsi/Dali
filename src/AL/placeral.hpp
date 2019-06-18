@@ -32,6 +32,9 @@ private:
   bool HPWLy_converge = false;
   double cg_precision = 0.05;
   double HPWL_intra_linearSolver_precision = 0.05;
+  int max_legalization_iteration = 200;
+  int iteration_limit_diffusion = 10;
+  int time_step = 5;
 public:
   placer_al_t();
   placer_al_t(double aspectRatio, double fillingRate);
@@ -76,13 +79,15 @@ public:
   void initialize_bin_list();
   bool draw_bin_list(std::string const &filename="bin_list.m");
   void shift_cg_solution_to_region_center();
+  void look_ahead_legalization();
   bool draw_block_net_list(std::string const &filename="block_net_list.m");
   void update_block_in_bin();
   bool check_legal();
   void integerize();
   void update_velocity();
-  void update_position(int time_step);
-  void diffusion_legalization(int time_step, int NumStep);
+  void update_velocity_force_damping();
+  void update_position();
+  void diffusion_legalization();
   bool legalization();
   bool start_placement() override;
   void report_placement_result() override;

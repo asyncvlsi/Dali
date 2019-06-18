@@ -867,6 +867,72 @@ bool placer_al_t::draw_block_net_list(std::string const &filename) {
   return true;
 }
 
+void placer_al_t::look_ahead_legalization() {
+  double b_left, b_right, b_bottom, b_top;
+  b_left = right();
+  b_right = left();
+  b_top = bottom();
+  b_bottom = top();
+  int max_height = 0;
+  int max_width = 0;
+  for (auto &&block: block_list) {
+    if (block.is_movable()) {
+      if (block.dx() < b_left) {
+        b_left = block.dx();
+      }
+      if (block.dx() > b_right) {
+        b_right = block.dx();
+      }
+      if (block.dy() < b_bottom) {
+        b_bottom = block.dy();
+      }
+      if (block.dy() > b_top) {
+        b_top = block.dy();
+      }
+      if (block.height() > max_height) {
+        max_height = block.height();
+      }
+      if (block.width() > max_width) {
+        max_width = block.width();
+      }
+    }
+  }
+  double box_width = b_right -b_left;
+  double box_height = b_top - b_bottom;
+
+  double mod_right = right() - max_width;
+  double mod_top = top() - max_height;
+  double mod_left = left() + max_width;
+  double mod_bottom = bottom() + max_height;
+  double mod_region_width = mod_right - mod_left;
+  double mod_region_height = mod_top - mod_bottom;
+
+  for (auto &&block: block_list) {
+    if (block.is_movable()) {
+      block.set_center_dx(mod_left + (block.dx() - b_left)/box_width * mod_region_width);
+      block.set_center_dy(mod_bottom + (block.dy() - b_bottom)/box_height * mod_region_height);
+    }
+  }
+
+  double gravity_center_x = 0;
+  double gravity_center_y = 0;
+  for (auto &&block: block_list) {
+    if (block.is_movable()) {
+      gravity_center_x += block.dx();
+      gravity_center_y += block.dy();
+    }
+  }
+  gravity_center_x /= block_list.size();
+  gravity_center_y /= block_list.size();
+  for (auto &&block: block_list) {
+    if (block.is_movable()) {
+      block.set_center_dx(block.dx() - (gravity_center_x - (right() - left())/2.0));
+      block.set_center_dy(block.dy() - (gravity_center_y - (top() - bottom())/2.0));
+    }
+  }
+
+}
+
 void placer_al_t::update_block_in_bin() {
   double leftmost=bin_list[0][0].left(), bottommost=bin_list[0][0].bottom();
   int X_bin_list_size = bin_list.size(), Y_bin_list_size = bin_list[0].size();
@@ -911,8 +977,8 @@ bool placer_al_t::check_legal() {
         return false;
       }
     }
-    for (size_t k=0; k<boundary_list.size(); k++) {
-      if (block_list[i].is_overlap(boundary_list[k])) {
+    for (auto &&boundary: boundary_list) {
+      if (block_list[i].is_overlap(boundary)) {
         return false;
       }
     }
@@ -973,10 +1039,9 @@ void placer_al_t::update_velocity() {
     for (size_t j=0; j<boundary_list.size(); j++) {
       overlap = block_list[i].overlap_area(boundary_list[j]);
       rij = sqrt(pow(block_list[i].dx() - boundary_list[j].dx(), 2) + pow(block_list[i].dy() - boundary_list[j].dy(), 2));
-      /*
-      block_list[i].vx += maxv2*overlap*(block_list[i].dx() - boundary_list[j].dx())/rij;
-      block_list[i].vy += maxv2*overlap*(block_list[i].dy() - boundary_list[j].dy())/rij;
-       */
+
+      //block_list[i].vx += maxv2*overlap*(block_list[i].dx() - boundary_list[j].dx())/rij;
+      //block_list[i].vy += maxv2*overlap*(block_list[i].dy() - boundary_list[j].dy())/rij;
 
       if ((boundary_list[j].dx() > left())&&(boundary_list[j].dx() < right())) {
         block_list[i].vy += maxv2*overlap*(block_list[i].dy() - boundary_list[j].dy())/rij;
@@ -998,26 +1063,91 @@ void placer_al_t::update_velocity() {
   }
 }
 
-void placer_al_t::update_position(int time_step) {
+void placer_al_t::update_velocity_force_damping() {
+  double rij, overlap = 0, areai;
+  double maxv1 = 15, maxv2 = 20;
+  for (auto &&block: block_list) {
+    block.vx = 0;
+    block.vy = 0;
+  }
+
+  double leftmost = bin_list[0][0].left(), bottommost = bin_list[0][0].bottom();
+  int Ybinlistsize = bin_list[0].size(), Xbinlistsize = bin_list.size();
+  double Left, Right, Bottom, Top;
+
+  int L,B,R,T; // left, bottom, right, top of the cell in which bin
+  std::set<int> temp_physical_neighbor_set;
+  for (size_t i=0; i<block_list.size(); i++) {
+    if (!block_list[i].is_movable()) continue;
+    Left = block_list[i].dllx(), Right = block_list[i].durx();
+    Bottom = block_list[i].dlly(), Top = block_list[i].dury();
+    L = floor((Left - leftmost)/bin_width);
+    B = floor((Bottom - bottommost)/bin_height);
+    R = floor((Right - leftmost)/bin_width);
+    T = floor((Top - bottommost)/bin_height);
+    for (int y=B-1; y<=T+1; y++) { // find all cells around cell i, and put all these cells into the set "temp_physical_neighbor_set", there is a reason to do so is because a cell might appear in different bins
+      if ((y>=0)&&(y<Ybinlistsize)) {
+        for (int x=L-1; x<=R+1; x++) {
+          if ((x>=0)&&(x<Xbinlistsize)) {
+            for (auto &&cell_num_in_bin: bin_list[x][y].CIB) {
+              if (i==(size_t)cell_num_in_bin) continue;
+              temp_physical_neighbor_set.insert(cell_num_in_bin);
+            }
+          }
+        }
+      }
+    }
+
+    double force_x = 0;
+    double force_y = 0;
+    for (auto &&block_num: temp_physical_neighbor_set) {
+      overlap = block_list[i].overlap_area(block_list[block_num]);
+      rij = sqrt(pow(block_list[i].dx() - block_list[block_num].dx(), 2) + pow(block_list[i].dy()-block_list[block_num].dy(), 2));
+      force_x += maxv1*overlap*(block_list[i].dx() - block_list[block_num].dx())/rij;
+      force_y += maxv1*overlap*(block_list[i].dy() - block_list[block_num].dy())/rij;
+    }
+    temp_physical_neighbor_set.clear(); // clear this set after calculate the velocity due to overlap of cells
+
+    for (size_t j=0; j<boundary_list.size(); j++) {
+      overlap = block_list[i].overlap_area(boundary_list[j]);
+      rij = sqrt(pow(block_list[i].dx() - boundary_list[j].dx(), 2) + pow(block_list[i].dy() - boundary_list[j].dy(), 2));
+      if ((boundary_list[j].dx() > left())&&(boundary_list[j].dx() < right())) {
+        force_y += maxv2*overlap*(block_list[i].dy() - boundary_list[j].dy())/rij;
+      }
+      else if ((block_list[j].dy() > bottom())&&(block_list[j].dy() < top())) {
+        force_x += maxv2*overlap*(block_list[i].dx() - boundary_list[j].dx())/rij;
+      }
+      else {
+        force_x += maxv2*overlap*(block_list[i].dx() - boundary_list[j].dx())/rij;
+        force_y += maxv2*overlap*(block_list[i].dy() - boundary_list[j].dy())/rij;
+      }
+
+    }
+    areai = block_list[i].area();
+    force_x = force_x/areai;
+    force_y = force_y/areai;
+    block_list[i].modif_vx();
+    block_list[i].modif_vy();
+  }
+}
+
+void placer_al_t::update_position() {
   for (auto &&block:block_list) {
     block.update_loc(time_step);
   }
 }
 
-void placer_al_t::diffusion_legalization(int time_step, int NumStep) {
-  for (int i=0; i<NumStep; i++) {
+void placer_al_t::diffusion_legalization() {
+  for (int i=0; i< iteration_limit_diffusion; i++) {
     update_block_in_bin();
     update_velocity();
-    update_position(time_step);
+    update_position();
   }
 }
 
 bool placer_al_t::legalization() {
-  int NumStep = 100;
-  int time_step = 5;
-  int N = 100;
   update_block_in_bin();
-  for (int i=0; i<N; i++) {
+  for (int i=0; i<max_legalization_iteration; i++) {
     if (check_legal()) {
       integerize();
       if (check_legal()) {
@@ -1025,9 +1155,9 @@ bool placer_al_t::legalization() {
         break;
       }
     }
-    diffusion_legalization(time_step, NumStep);
-    if (time_step>1) time_step -= 1;
-    if (i==N-1) {
+    diffusion_legalization();
+    if (time_step > 1) time_step -= 1;
+    if (i==max_legalization_iteration-1) {
       std::cout << "fail\n";
       return false;
     }
@@ -1060,6 +1190,7 @@ bool placer_al_t::start_placement() {
   report_hpwl();
 
   shift_cg_solution_to_region_center();
+  look_ahead_legalization();
   add_boundary_list();
   initialize_bin_list();
   //draw_bin_list();
