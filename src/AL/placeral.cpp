@@ -900,12 +900,10 @@ void placer_al_t::look_ahead_legalization() {
   double box_width = b_right -b_left;
   double box_height = b_top - b_bottom;
 
-  double mod_right = right() - max_width;
-  double mod_top = top() - max_height;
-  double mod_left = left() + max_width;
-  double mod_bottom = bottom() + max_height;
-  double mod_region_width = mod_right - mod_left;
-  double mod_region_height = mod_top - mod_bottom;
+  double mod_region_width = (right() - left())*sqrt(_filling_rate);
+  double mod_region_height = (top() - bottom())*sqrt(_filling_rate);
+  double mod_left = (left() + right())/2.0 - mod_region_width/2.0;
+  double mod_bottom = (bottom() + top())/2.0 - mod_region_height/2.0;
 
   for (auto &&block: block_list) {
     if (block.is_movable()) {
@@ -914,6 +912,7 @@ void placer_al_t::look_ahead_legalization() {
     }
   }
 
+  /*
   double gravity_center_x = 0;
   double gravity_center_y = 0;
   for (auto &&block: block_list) {
@@ -930,6 +929,7 @@ void placer_al_t::look_ahead_legalization() {
       block.set_center_dy(block.dy() - (gravity_center_y - (top() - bottom())/2.0));
     }
   }
+   */
 
 }
 
@@ -1189,12 +1189,12 @@ bool placer_al_t::start_placement() {
   std::cout << "Initial Placement Complete\n";
   report_hpwl();
 
-  shift_cg_solution_to_region_center();
-  look_ahead_legalization();
+  //shift_cg_solution_to_region_center();
+  //look_ahead_legalization();
   add_boundary_list();
   initialize_bin_list();
   //draw_bin_list();
-  legalization();
+  //legalization();
   std::cout << "Legalization Complete\n";
   report_hpwl();
   //draw_block_net_list();

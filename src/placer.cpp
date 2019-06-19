@@ -176,6 +176,25 @@ bool placer_t::gen_matlab_disp_file(std::string const &filename) {
   return true;
 }
 
+bool placer_t::write_pl_solution(std::string const &NameOfFile) {
+  std::ofstream ost(NameOfFile.c_str());
+  if (ost.is_open()==0) {
+    std::cout << "Cannot open file" << NameOfFile << "\n";
+    return false;
+  }
+  for (auto &&block: _circuit->block_list) {
+    if (block.is_movable()) {
+      ost << block.name() << "\t" << block.llx() << "\t" << block.lly() << "\t:\tN\n";
+    }
+    else {
+      ost << block.name() << "\t" << block.llx() << "\t" << block.lly() << "\t:\tN\t/FIXED\n";
+    }
+  }
+  ost.close();
+  //std::cout << "Output solution file complete\n";
+  return true;
+}
+
 placer_t::~placer_t() {
 
 }

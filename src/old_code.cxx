@@ -1,22 +1,3 @@
-bool circuit_t::write_pl_solution(std::string const &NameOfFile) {
-  std::ofstream ost(NameOfFile.c_str());
-  if (ost.is_open()==0) {
-    std::cout << "Cannot open file" << NameOfFile << "\n";
-    return false;
-  }
-  for (auto &&node: block_list) {
-    if (node.isterminal()==0) {
-      ost << "o" << node.nodenum() << "\t" << node.llx() << "\t" << node.lly() << "\t:\tN\n";
-    }
-    else {
-      ost << "o" << node.nodenum() << "\t" << node.llx() << "\t" << node.lly() << "\t:\tN\t/FIXED\n";
-    }
-  }
-  ost.close();
-  //std::cout << "Output solution file complete\n";
-  return true;
-}
-
 bool circuit_t::write_pl_anchor_solution(std::string const &NameOfFile) {
   std::ofstream ost(NameOfFile.c_str());
   if (ost.is_open()==0) {

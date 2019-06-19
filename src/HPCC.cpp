@@ -13,20 +13,20 @@
 int main() {
   time_t Time = clock();
   circuit_t circuit;
-  if (!circuit.read_nodes_file("../test/layout.nodes")) {
+  if (!circuit.read_nodes_file("../test/adaptec1/adaptec1.nodes")) {
     //circuit.report_block_list();
     //circuit.report_block_map();
     return 1;
   }
-  if (!circuit.read_nets_file("../test/layout.nets")) {
+  if (!circuit.read_nets_file("../test/adaptec1/adaptec1.nets")) {
     //circuit.report_net_list();
     //circuit.report_net_map();
     return 1;
   }
-  if (!circuit.read_pl_file("../test/layout.pl")) {
+  //if (!circuit.read_pl_file("../test/layout.pl")) {
     //circuit.report_block_list();
-    return 1;
-  }
+    //return 1;
+  //}
 
   placer_t *placer = new placer_al_t;
   placer->set_space_block_ratio(1.5);

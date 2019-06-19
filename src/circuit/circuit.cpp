@@ -142,8 +142,11 @@ bool circuit_t::read_nodes_file(std::string const &NameOfFile) {
   while (!ist.eof()) {
     std::vector<std::string> block_field;
     getline(ist, line);
+    if (line.find("#")!=std::string::npos) {
+      continue;
+    }
     parse_line(line, block_field);
-    if (block_field.size()<=3) {
+    if (block_field.size()<=2) {
       std::cout << "\t#" << line << "\n";
       continue;
     }
