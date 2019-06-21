@@ -32,6 +32,8 @@ void block_al_t::retrieve_info_from_database(const block_t &node_info) {
   _h = node_info.height();
   _orientation = node_info.orientation();
   _movable = node_info.is_movable();
+  _dllx = _llx;
+  _dlly = _lly;
 }
 
 void block_al_t::write_info_to_database(block_t &node_info) {

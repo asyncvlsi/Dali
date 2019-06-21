@@ -294,58 +294,52 @@ void placer_al_t::build_problem_b2b_x() {
   }
   // update the x direction max and min node in each net
   weight_tuple tempWT;
-  double weightx, invp, temppinlocx0, temppinlocx1, tempdiffoffset;
-  size_t tempnodenum0, tempnodenum1, maxpindex_x, minpindex_x;
+  double weight_x, inv_p, temp_pin_loc_x0, temp_pin_loc_x1, temp_diff_offset;
+  size_t temp_node_num0, temp_node_num1, max_pindex_x, min_pindex_x;
   for (auto &&net: net_list) {
     if (net.p()<=1) continue;
-    invp = net.inv_p();
-    maxpindex_x = net.max_pin_index_x();
-    minpindex_x = net.min_pin_index_x();
+    inv_p = net.inv_p();
+    max_pindex_x = net.max_pin_index_x();
+    min_pindex_x = net.min_pin_index_x();
     for (size_t i=0; i<net.pin_list.size(); i++) {
-      tempnodenum0 = net.pin_list[i].get_block()->num();
-      temppinlocx0 = block_list[tempnodenum0].dllx() + net.pin_list[i].x_offset();
+      temp_node_num0 = net.pin_list[i].get_block()->num();
+      temp_pin_loc_x0 = block_list[temp_node_num0].dllx() + net.pin_list[i].x_offset();
       for (size_t k=i+1; k<net.pin_list.size(); k++) {
-        if ((i!=maxpindex_x)&&(i!=minpindex_x)) {
-          if ((k!=maxpindex_x)&&(k!=minpindex_x)) continue;
+        if ((i!=max_pindex_x)&&(i!=min_pindex_x)) {
+          if ((k!=max_pindex_x)&&(k!=min_pindex_x)) continue;
         }
-        tempnodenum1 = net.pin_list[k].get_block()->num();
-        if (tempnodenum0 == tempnodenum1) continue;
-        temppinlocx1 = block_list[tempnodenum1].dllx() + net.pin_list[k].x_offset();
-        weightx = invp/((double)fabs(temppinlocx0 - temppinlocx1) + width_epsilon());
-        if ((block_list[tempnodenum0].is_movable() == 0)&&(block_list[tempnodenum1].is_movable() == 0)) {
+        temp_node_num1 = net.pin_list[k].get_block()->num();
+        if (temp_node_num0 == temp_node_num1) continue;
+        temp_pin_loc_x1 = block_list[temp_node_num1].dllx() + net.pin_list[k].x_offset();
+        weight_x = inv_p/(std::fabs(temp_pin_loc_x0 - temp_pin_loc_x1) + width_epsilon());
+        if ((block_list[temp_node_num0].is_movable() == 0)&&(block_list[temp_node_num1].is_movable() == 0)) {
           continue;
         }
-        else if ((block_list[tempnodenum0].is_movable() == 0)&&(block_list[tempnodenum1].is_movable() == 1)) {
-          bx[tempnodenum1] += (temppinlocx0 - net.pin_list[k].x_offset()) * weightx;
-          Ax[tempnodenum1][0].weight += weightx;
+        else if ((block_list[temp_node_num0].is_movable() == 0)&&(block_list[temp_node_num1].is_movable() == 1)) {
+          bx[temp_node_num1] += (temp_pin_loc_x0 - net.pin_list[k].x_offset()) * weight_x;
+          Ax[temp_node_num1][0].weight += weight_x;
         }
-        else if ((block_list[tempnodenum0].is_movable() == 1)&&(block_list[tempnodenum1].is_movable() == 0)) {
-          bx[tempnodenum0] += (temppinlocx1 - net.pin_list[i].x_offset()) * weightx;
-          Ax[tempnodenum0][0].weight += weightx;
+        else if ((block_list[temp_node_num0].is_movable() == 1)&&(block_list[temp_node_num1].is_movable() == 0)) {
+          bx[temp_node_num0] += (temp_pin_loc_x1 - net.pin_list[i].x_offset()) * weight_x;
+          Ax[temp_node_num0][0].weight += weight_x;
         }
         else {
-          //((block_list[tempnodenum0].isterminal() == 0)&&(block_list[tempnodenum1].isterminal() == 0))
-          tempWT.pin = tempnodenum1;
-          tempWT.weight = -weightx;
-          kx[tempnodenum0]++;
-          /*if (kx[tempnodenum0] == Ax[tempnodenum0].size()) {
-            std::cout << tempnodenum0 << " " << kx[tempnodenum0] << " Overflowx\n";
-          }*/
-          Ax[tempnodenum0][kx[tempnodenum0]] = tempWT;
+          //((block_list[temp_node_num0].is_movable())&&(block_list[temp_node_num1].is_movable()))
+          tempWT.pin = temp_node_num1;
+          tempWT.weight = -weight_x;
+          kx[temp_node_num0]++;
+          Ax[temp_node_num0][kx[temp_node_num0]] = tempWT;
 
-          tempWT.pin = tempnodenum0;
-          tempWT.weight = -weightx;
-          kx[tempnodenum1]++;
-          /*if (kx[tempnodenum1] == Ax[tempnodenum1].size()) {
-            std::cout << tempnodenum1 << " " << kx[tempnodenum1] << " Overflowx\n";
-          }*/
-          Ax[tempnodenum1][kx[tempnodenum1]] = tempWT;
+          tempWT.pin = temp_node_num0;
+          tempWT.weight = -weight_x;
+          kx[temp_node_num1]++;
+          Ax[temp_node_num1][kx[temp_node_num1]] = tempWT;
 
-          Ax[tempnodenum0][0].weight += weightx;
-          Ax[tempnodenum1][0].weight += weightx;
-          tempdiffoffset = (net.pin_list[k].x_offset() - net.pin_list[i].x_offset()) * weightx;
-          bx[tempnodenum0] += tempdiffoffset;
-          bx[tempnodenum1] -= tempdiffoffset;
+          Ax[temp_node_num0][0].weight += weight_x;
+          Ax[temp_node_num1][0].weight += weight_x;
+          temp_diff_offset = (net.pin_list[k].x_offset() - net.pin_list[i].x_offset()) * weight_x;
+          bx[temp_node_num0] += temp_diff_offset;
+          bx[temp_node_num1] -= temp_diff_offset;
         }
       }
     }
@@ -451,58 +445,52 @@ void placer_al_t::build_problem_b2b_y() {
     // make each element of b 0
   }
   weight_tuple tempWT;
-  double weighty, invp, temppinlocy0, temppinlocy1, tempdiffoffset;
-  size_t tempnodenum0, tempnodenum1, maxpindex_y, minpindex_y;
+  double weighty, inv_p, temp_pin_loc_y0, temp_pin_loc_y1, temp_diff_offset;
+  size_t temp_node_num0, temp_node_num1, max_pindex_y, min_pindex_y;
   for (auto &&net: net_list) {
     if (net.p()<=1) continue;
-    invp = net.inv_p();
-    maxpindex_y = net.max_pin_index_y();
-    minpindex_y = net.min_pin_index_y();
+    inv_p = net.inv_p();
+    max_pindex_y = net.max_pin_index_y();
+    min_pindex_y = net.min_pin_index_y();
     for (size_t i=0; i<net.pin_list.size(); i++) {
-      tempnodenum0 = net.pin_list[i].get_block()->num();
-      temppinlocy0 = block_list[tempnodenum0].dlly() + net.pin_list[i].y_offset();
+      temp_node_num0 = net.pin_list[i].get_block()->num();
+      temp_pin_loc_y0 = block_list[temp_node_num0].dlly() + net.pin_list[i].y_offset();
       for (size_t k=i+1; k<net.pin_list.size(); k++) {
-        if ((i!=maxpindex_y)&&(i!=minpindex_y)) {
-          if ((k!=maxpindex_y)&&(k!=minpindex_y)) continue;
+        if ((i!=max_pindex_y)&&(i!=min_pindex_y)) {
+          if ((k!=max_pindex_y)&&(k!=min_pindex_y)) continue;
         }
-        tempnodenum1 = net.pin_list[k].get_block()->num();
-        if (tempnodenum0 == tempnodenum1) continue;
-        temppinlocy1 = block_list[tempnodenum1].dlly() + net.pin_list[i].y_offset();
-        weighty = invp/((double)fabs(temppinlocy0 - temppinlocy1) + height_epsilon());
-        if ((block_list[tempnodenum0].is_movable() == 0)&&(block_list[tempnodenum1].is_movable() == 0)) {
+        temp_node_num1 = net.pin_list[k].get_block()->num();
+        if (temp_node_num0 == temp_node_num1) continue;
+        temp_pin_loc_y1 = block_list[temp_node_num1].dlly() + net.pin_list[i].y_offset();
+        weighty = inv_p/((double)fabs(temp_pin_loc_y0 - temp_pin_loc_y1) + height_epsilon());
+        if ((block_list[temp_node_num0].is_movable() == 0)&&(block_list[temp_node_num1].is_movable() == 0)) {
           continue;
         }
-        else if ((block_list[tempnodenum0].is_movable() == 0)&&(block_list[tempnodenum1].is_movable() == 1)) {
-          by[tempnodenum1] += (temppinlocy0 - net.pin_list[k].y_offset()) * weighty;
-          Ay[tempnodenum1][0].weight += weighty;
+        else if ((block_list[temp_node_num0].is_movable() == 0)&&(block_list[temp_node_num1].is_movable() == 1)) {
+          by[temp_node_num1] += (temp_pin_loc_y0 - net.pin_list[k].y_offset()) * weighty;
+          Ay[temp_node_num1][0].weight += weighty;
         }
-        else if ((block_list[tempnodenum0].is_movable() == 1)&&(block_list[tempnodenum1].is_movable() == 0)) {
-          by[tempnodenum0] += (temppinlocy1 - net.pin_list[i].y_offset()) * weighty;
-          Ay[tempnodenum0][0].weight += weighty;
+        else if ((block_list[temp_node_num0].is_movable() == 1)&&(block_list[temp_node_num1].is_movable() == 0)) {
+          by[temp_node_num0] += (temp_pin_loc_y1 - net.pin_list[i].y_offset()) * weighty;
+          Ay[temp_node_num0][0].weight += weighty;
         }
         else {
-          //((block_list[tempnodenum0].isterminal() == 0)&&(block_list[tempnodenum1].isterminal() == 0))
-          tempWT.pin = tempnodenum1;
+          //((block_list[temp_node_num0].is_movable())&&(block_list[temp_node_num1].is_movable()))
+          tempWT.pin = temp_node_num1;
           tempWT.weight = -weighty;
-          ky[tempnodenum0]++;
-          /*if (ky[tempnodenum0] == Ay[tempnodenum0].size()) {
-            std::cout << tempnodenum0 << " " << ky[tempnodenum0] << " Overflowy\n";
-          }*/
-          Ay[tempnodenum0][ky[tempnodenum0]] = tempWT;
+          ky[temp_node_num0]++;
+          Ay[temp_node_num0][ky[temp_node_num0]] = tempWT;
 
-          tempWT.pin = tempnodenum0;
+          tempWT.pin = temp_node_num0;
           tempWT.weight = -weighty;
-          ky[tempnodenum1]++;
-          /*if (ky[tempnodenum1] == Ay[tempnodenum1].size()) {
-            std::cout << tempnodenum1 << " " << ky[tempnodenum1] << " Overflowy\n";
-          }*/
-          Ay[tempnodenum1][ky[tempnodenum1]] = tempWT;
+          ky[temp_node_num1]++;
+          Ay[temp_node_num1][ky[temp_node_num1]] = tempWT;
 
-          Ay[tempnodenum0][0].weight += weighty;
-          Ay[tempnodenum1][0].weight += weighty;
-          tempdiffoffset = (net.pin_list[k].y_offset() - net.pin_list[i].y_offset()) * weighty;
-          by[tempnodenum0] += tempdiffoffset;
-          by[tempnodenum1] -= tempdiffoffset;
+          Ay[temp_node_num0][0].weight += weighty;
+          Ay[temp_node_num1][0].weight += weighty;
+          temp_diff_offset = (net.pin_list[k].y_offset() - net.pin_list[i].y_offset()) * weighty;
+          by[temp_node_num0] += temp_diff_offset;
+          by[temp_node_num1] -= temp_diff_offset;
         }
       }
     }

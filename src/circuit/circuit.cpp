@@ -208,6 +208,12 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
   std::string line;
   std::string tmp_net_name;
 
+  /***here is a converter, converting ISPD file format from pin offset with respect to the center of a cell to lower left corner***/
+  /*** start ***/
+  //std::string new_file_name = NameOfFile + "_after_conversion";
+  //std::ofstream ost(new_file_name.c_str());
+  /*** To be continued ***/
+
   while (true) {
     getline(ist, line);
     if (line.find("NetDegree") != std::string::npos) {
@@ -234,9 +240,15 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
       }
       tmp_net_name = net_head_field[2];
       create_blank_net(tmp_net_name);
+
+      /*****cont'*****/
+      //ost << line << "\n";
+      /*****to be continues*****/
+
     } else {
       std::string tmp_block_name;
       int tmp_x_offset, tmp_y_offset;
+      //double tmp_x_offset, tmp_y_offset;
       std::vector<std::string> pin_field;
       parse_line(line, pin_field);
       //for (auto &&field: pin_field) std::cout << field << "---";
@@ -251,6 +263,7 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
       tmp_block_name = pin_field[0];
       try {
         tmp_x_offset = std::stoi(pin_field[2]);
+        //tmp_x_offset = std::stod(pin_field[2]);
       } catch (...) {
         std::cout << "Error!\n";
         std::cout << "Invalid stoi conversion:" << pin_field[2] << "\n";
@@ -259,6 +272,7 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
       }
       try {
         tmp_y_offset = std::stoi(pin_field[3]);
+        //tmp_y_offset = std::stod(pin_field[3]);
       } catch (...) {
         std::cout << "Error!\n";
         std::cout << "Invalid stoi conversion: " << pin_field[3] << "\n";
@@ -268,9 +282,19 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
       if (!add_pin_to_net(tmp_net_name, tmp_block_name, tmp_x_offset, tmp_y_offset)) {
         return false;
       }
+
+      /*****cont'*****/
+      //size_t block_num = block_name_map.find(tmp_block_name)->second;
+      //ost << "    " << pin_field[0] << "\t" << pin_field[1] << " : " << tmp_x_offset + block_list[block_num].width()/2.0 << "\t" << tmp_y_offset + block_list[block_num].height()/2.0 << "\n";
+      /*****to be continues*****/
+
     }
   }
   ist.close();
+
+  /*****cont'*****/
+  //ost.close();
+
   return true;
 }
 
@@ -337,15 +361,12 @@ bool circuit_t::read_pl_file(std::string const &NameOfFile) {
       std::cout << line << "\n";
       return false;
     }
-
     block->set_orientation(block_field[3]);
-
     if (line.find("FIXED") != std::string::npos) {
       block->set_movable(false);
     }
   }
   ist.close();
-
   return true;
 }
 

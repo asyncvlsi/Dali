@@ -44,6 +44,7 @@ int main() {
   placer->report_placement_result();
   placer->write_node_terminal();
 
+
   Time = clock() - Time;
   std::cout << "Execution time " << (float)Time/CLOCKS_PER_SEC << "s.\n";
 
