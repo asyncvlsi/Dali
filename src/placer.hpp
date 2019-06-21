@@ -52,6 +52,7 @@ public:
   bool gen_matlab_disp_file(std::string const &filename="block_net_list.m");
 
   bool write_pl_solution(std::string const &NameOfFile);
+  bool write_node_terminal(std::string const &NameOfFile="terminal.txt", std::string const &NameOfFile1="nodes.txt");
 
   virtual ~placer_t();
 };

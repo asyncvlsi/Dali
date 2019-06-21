@@ -129,6 +129,7 @@ void circuit_t::parse_line(std::string &line, std::vector<std::string> &field_li
 
 bool circuit_t::read_nodes_file(std::string const &NameOfFile) {
   int tmp_w, tmp_h; // width and height
+  bool tmp_movable = true;
   std::string tmp_name; // name
   std::string line, tmp_string;
   std::ifstream ist(NameOfFile.c_str());
@@ -168,7 +169,14 @@ bool circuit_t::read_nodes_file(std::string const &NameOfFile) {
       return false;
     }
 
-    if (!add_new_block(tmp_name, tmp_w, tmp_h)) {
+    tmp_movable = true;
+    if (block_field.size() >= 4) {
+      if (block_field[3].find("terminal")!=std::string::npos) {
+        tmp_movable = false;
+      }
+    }
+
+    if (!add_new_block(tmp_name, tmp_w, tmp_h, 0, 0, tmp_movable)) {
       return false;
     }
   }
@@ -293,17 +301,9 @@ bool circuit_t::read_pl_file(std::string const &NameOfFile) {
 
   while (!ist.eof()) {
     getline(ist, line);
-    bool is_comment = false;
-    for (auto &&c: line) {
-      if (c == '#') {
-        is_comment = true;
-        break;
-      }
-    }
-    if (is_comment) {
+    if (line.find("#")!=std::string::npos) {
       continue;
     }
-
     std::vector<std::string> block_field;
     parse_line(line, block_field);
     if (block_field.size() < 4) {

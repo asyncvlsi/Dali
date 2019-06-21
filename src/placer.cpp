@@ -195,6 +195,38 @@ bool placer_t::write_pl_solution(std::string const &NameOfFile) {
   return true;
 }
 
+bool placer_t::write_node_terminal(std::string const &NameOfFile, std::string const &NameOfFile1) {
+  std::ofstream ost(NameOfFile.c_str());
+  std::ofstream ost1(NameOfFile1.c_str());
+  if ((ost.is_open()==0)||(ost1.is_open()==0)) {
+    std::cout << "Cannot open file" << NameOfFile << " or " << NameOfFile1 <<  "\n";
+    return false;
+  }
+  for (auto &&node: _circuit->block_list) {
+    if (node.is_movable()) {
+      ost1 << node.x() << "\t" << node.y() << "\n";
+    }
+    else {
+      double low_x, low_y, width, height;
+      width = node.width();
+      height = node.height();
+      low_x = node.llx();
+      low_y = node.lly();
+      for (int j=0; j<height; j++) {
+        ost << low_x << "\t" << low_y+j << "\n";
+        ost << low_x+width << "\t" << low_y+j << "\n";
+      }
+      for (int j=0; j<width; j++) {
+        ost << low_x+j << "\t" << low_y << "\n";
+        ost << low_x+j << "\t" << low_y+height << "\n";
+      }
+    }
+  }
+  ost.close();
+  ost1.close();
+  return true;
+}
+
 placer_t::~placer_t() {
 
 }
