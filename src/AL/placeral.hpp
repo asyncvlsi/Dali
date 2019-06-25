@@ -79,7 +79,7 @@ public:
   void initialize_bin_list();
   bool draw_bin_list(std::string const &filename="bin_list.m");
   void shift_cg_solution_to_region_center();
-  void look_ahead_legalization();
+  void expansion_legalization();
   bool draw_block_net_list(std::string const &filename="block_net_list.m");
   void update_block_in_bin();
   bool check_legal();
@@ -89,6 +89,8 @@ public:
   void update_position();
   void diffusion_legalization();
   bool legalization();
+  bool gravity_legalization();
+  bool post_legalization_optimization();
   bool start_placement() override;
   void report_placement_result() override;
   void report_hpwl();

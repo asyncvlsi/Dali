@@ -855,7 +855,7 @@ bool placer_al_t::draw_block_net_list(std::string const &filename) {
   return true;
 }
 
-void placer_al_t::look_ahead_legalization() {
+void placer_al_t::expansion_legalization() {
   double b_left, b_right, b_bottom, b_top;
   b_left = right();
   b_right = left();
@@ -1146,10 +1146,20 @@ bool placer_al_t::legalization() {
     diffusion_legalization();
     if (time_step > 1) time_step -= 1;
     if (i==max_legalization_iteration-1) {
-      std::cout << "fail\n";
+      std::cout << "Molecular-dynamic legalization fail\n";
       return false;
     }
   }
+  return true;
+}
+
+bool placer_al_t::gravity_legalization() {
+
+  return true;
+}
+
+bool placer_al_t::post_legalization_optimization() {
+
   return true;
 }
 
@@ -1177,14 +1187,17 @@ bool placer_al_t::start_placement() {
   std::cout << "Initial Placement Complete\n";
   report_hpwl();
 
-  //shift_cg_solution_to_region_center();
-  //look_ahead_legalization();
+  shift_cg_solution_to_region_center();
+  expansion_legalization();
   add_boundary_list();
   initialize_bin_list();
-  //draw_bin_list();
-  //legalization();
+  if (!legalization()) {
+    gravity_legalization();
+  }
+  post_legalization_optimization();
   std::cout << "Legalization Complete\n";
   report_hpwl();
+  //draw_bin_list();
   //draw_block_net_list();
 
   return true;
