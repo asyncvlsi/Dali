@@ -1053,7 +1053,7 @@ void placer_al_t::update_velocity() {
 
 void placer_al_t::update_velocity_force_damping() {
   double rij, overlap = 0, areai;
-  double maxv1 = 15, maxv2 = 20;
+  double maxv1 = 5, maxv2 = 30;
   for (auto &&block: block_list) {
     block.vx = 0;
     block.vy = 0;
@@ -1153,8 +1153,40 @@ bool placer_al_t::legalization() {
   return true;
 }
 
-bool placer_al_t::gravity_legalization() {
+void placer_al_t::diffusion_with_gravity() {
+  for (int i=0; i<max_legalization_iteration; i++) {
+    update_block_in_bin();
+    update_velocity();
+    for (auto &&block: block_list) {
+      if (rand()%2==0) {
+        block.add_gravity_vx(-1);
+      } else {
+        block.add_gravity_vy(-1);
+      }
+    }
+    update_position();
+  }
+}
 
+bool placer_al_t::gravity_legalization() {
+  update_block_in_bin();
+  diffusion_with_gravity();
+  time_step = 5;
+  for (int i=0; i<max_legalization_iteration; i++) {
+    if (check_legal()) {
+      integerize();
+      if (check_legal()) {
+        std::cout << i << " iterations\n";
+        break;
+      }
+    }
+    diffusion_legalization();
+    if (time_step > 1) time_step -= 1;
+    if (i==max_legalization_iteration-1) {
+      std::cout << "Gravity legalization fail\n";
+      return false;
+    }
+  }
   return true;
 }
 

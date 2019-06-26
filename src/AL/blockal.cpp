@@ -122,7 +122,7 @@ double block_al_t::overlap_area(const  block_al_t &rhs) const {
 }
 
 void block_al_t::modif_vx() {
-  double epsilon = 1e-5;
+  double epsilon = 1e-15;
   double modv = 0;
   if (fabs(vx)>=1) modv = round(vx);
   else if (fabs(vx)>epsilon) modv = vx/fabs(vx);
@@ -131,12 +131,20 @@ void block_al_t::modif_vx() {
 }
 
 void block_al_t::modif_vy() {
-  double epsilon = 1e-5;
+  double epsilon = 1e-15;
   double modv = 0;
   if (fabs(vy)>=1) modv = round(vy);
   else if (fabs(vy)>epsilon) modv = vy/fabs(vy);
   else modv = 0;
   vy = modv;
+}
+
+void block_al_t::add_gravity_vx(double gravity_x) {
+  vx += gravity_x;
+}
+
+void block_al_t::add_gravity_vy(double gravity_y) {
+  vy += gravity_y;
 }
 
 void block_al_t::update_loc(int time_step) {

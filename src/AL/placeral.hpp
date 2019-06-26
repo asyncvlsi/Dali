@@ -89,6 +89,7 @@ public:
   void update_position();
   void diffusion_legalization();
   bool legalization();
+  void diffusion_with_gravity();
   bool gravity_legalization();
   bool post_legalization_optimization();
   bool start_placement() override;

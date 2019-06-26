@@ -40,6 +40,8 @@ public:
   double vx, vy;
   void modif_vx();
   void modif_vy();
+  void add_gravity_vx(double gravity_x);
+  void add_gravity_vy(double gravity_y);
   void update_loc(int time_step);
 
 
