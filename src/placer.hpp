@@ -53,6 +53,7 @@ public:
 
   bool write_pl_solution(std::string const &NameOfFile);
   bool write_node_terminal(std::string const &NameOfFile="terminal.txt", std::string const &NameOfFile1="nodes.txt");
+  bool save_DEF(std::string const &NameOfFile="circuit.def");
 
   virtual ~placer_t();
 };

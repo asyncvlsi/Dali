@@ -61,8 +61,9 @@ int main() {
   placer->report_boundaries();
   placer->start_placement();
   placer->report_placement_result();
-  placer->gen_matlab_disp_file(); // generate matlab file for layout
+  //placer->gen_matlab_disp_file(); // generate matlab file for layout
   //placer->write_node_terminal(); // generate a data file for adaptec1
+  placer->save_DEF();
 
 
   Time = clock() - Time;

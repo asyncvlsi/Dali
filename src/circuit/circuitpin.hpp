@@ -29,6 +29,7 @@ public:
   }
 
   std::string name() const;
+  std::string pin_name() const;
   void set_x_offset(int xOffset);
   void set_y_offset(int yOffset);
   int x_offset();

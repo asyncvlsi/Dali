@@ -116,3 +116,16 @@ void block_t::set_num(size_t &number) {
 size_t block_t::num() const{
   return  _num;
 }
+
+std::string block_t::type() {
+  return _name;
+}
+
+std::string block_t::place_status() {
+  return "PLACED";
+}
+
+std::string block_t::lower_left_corner() {
+  return "( " + std::to_string(llx()) + " " + std::to_string(lly()) + " )";
+}
+

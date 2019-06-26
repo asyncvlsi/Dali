@@ -66,6 +66,10 @@ public:
     os << "assigned primary key: " << block._num << "\n";
     return os;
   }
+
+  std::string type();
+  std::string place_status();
+  std::string lower_left_corner();
 };
 
 

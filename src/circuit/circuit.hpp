@@ -64,7 +64,6 @@ public:
   int tot_block_area();
   int tot_movable_num();
   int tot_unmovable_num();
-
 };
 
 #endif //HPCC_CIRCUIT_HPP

@@ -21,6 +21,10 @@ std::string pin_t::name() const{
   return _block->name();
 }
 
+std::string pin_t::pin_name() const{
+  return "( " + _block->name() + " " + "dummy_port_name" + " )";
+}
+
 void pin_t::set_x_offset(int xOffset) {
   _x_offset = xOffset;
 }
