@@ -1202,8 +1202,7 @@ bool placer_al_t::start_placement() {
   update_max_min_node_y();
   HPWLx_converge = false;
   HPWLy_converge = false;
-  for (int i=0; ; i++) {
-    if (HPWLx_converge && HPWLy_converge) break;
+  for (int i=0; i<20; i++) {
     if (!HPWLx_converge) {
       build_problem_b2b_x();
       CG_solver_x();
@@ -1214,7 +1213,10 @@ bool placer_al_t::start_placement() {
       CG_solver_y();
       update_max_min_node_y();
     }
-    if (HPWLx_converge && HPWLy_converge) break;
+    if (HPWLx_converge && HPWLy_converge)  {
+      std::cout << i << " iterations in cg\n";
+      break;
+    }
   }
   std::cout << "Initial Placement Complete\n";
   report_hpwl();

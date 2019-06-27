@@ -449,3 +449,34 @@ int circuit_t::tot_movable_num() {
 int circuit_t::tot_unmovable_num() {
   return block_list.size() - _tot_movable_num;
 }
+
+bool circuit_t::write_nodes_file(std::string const &NameOfFile) {
+  std::ofstream ost(NameOfFile.c_str());
+  if (!ost.is_open()) {
+    std::cout << "Cannot open file " << NameOfFile << "\n";
+    return false;
+  }
+
+  for (auto &&block: block_list) {
+    ost << "\t" << block.name() << "\t" << block.width() << "\t" << block.height() << "\n";
+  }
+
+  return true;
+}
+
+bool circuit_t::write_nets_file(std::string const &NameOfFile) {
+  std::ofstream ost(NameOfFile.c_str());
+  if (!ost.is_open()) {
+    std::cout << "Cannot open file " << NameOfFile << "\n";
+    return false;
+  }
+
+  for (auto &&net: net_list) {
+    ost << "NetDegree : " << net.p() << "\t" << net.name() << "\n";
+    for (auto &&pin: net.pin_list) {
+      ost << "\t" << pin.name() << "\tI : " << pin.x_offset() << "\t" << pin.y_offset() << "\n";
+    }
+  }
+
+  return true;
+}

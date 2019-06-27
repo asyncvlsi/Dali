@@ -64,6 +64,9 @@ public:
   int tot_block_area();
   int tot_movable_num();
   int tot_unmovable_num();
+
+  bool write_nodes_file(std::string const &NameOfFile="circuit.nodes");
+  bool write_nets_file(std::string const &NameOfFile="circuit.nets");
 };
 
 #endif //HPCC_CIRCUIT_HPP

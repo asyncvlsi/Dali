@@ -47,6 +47,9 @@ int main() {
     return 1;
   }
 
+  circuit.write_nodes_file();
+  circuit.write_nets_file();
+
   std::cout << circuit.tot_movable_num_real_time() << " movable cells\n";
   std::cout << circuit.block_list.size() << " total cells\n";
 
@@ -63,7 +66,7 @@ int main() {
   placer->report_placement_result();
   //placer->gen_matlab_disp_file(); // generate matlab file for layout
   //placer->write_node_terminal(); // generate a data file for adaptec1
-  placer->save_DEF();
+  //placer->save_DEF();
 
 
   Time = clock() - Time;
