@@ -47,6 +47,20 @@ int main() {
     return 1;
   }
 
+  /****debug case****/
+  /*
+  if (!circuit.read_nodes_file("nodes.txt")) {
+    //circuit.report_block_list();
+    //circuit.report_block_map();
+    return 1;
+  }
+  if (!circuit.read_nets_file("nets.txt")) {
+    //circuit.report_net_list();
+    //circuit.report_net_map();
+    return 1;
+  }
+   */
+
   std::cout << circuit.tot_movable_num_real_time() << " movable cells\n";
   std::cout << circuit.block_list.size() << " total cells\n";
 

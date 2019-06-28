@@ -278,8 +278,12 @@ void placer_al_t::update_max_min_node_x() {
   //std::cout << "HPWLX_old: " << HPWLX_old << "\n";
   //std::cout << "HPWLX_new: " << HPWLX_new << "\n";
   //std::cout << 1 - HPWLX_new/HPWLX_old << "\n";
-  HPWLx_converge = (std::fabs(1 - HPWLX_new/HPWLX_old) < HPWL_intra_linearSolver_precision);
-  HPWLX_old = HPWLX_new;
+  if (HPWLX_new == 0) {
+    HPWLx_converge = true;
+  } else {
+    HPWLx_converge = (std::fabs(1 - HPWLX_new / HPWLX_old) < HPWL_intra_linearSolver_precision);
+    HPWLX_old = HPWLX_new;
+  }
 }
 
 void placer_al_t::build_problem_b2b_x() {
@@ -297,7 +301,9 @@ void placer_al_t::build_problem_b2b_x() {
   double weight_x, inv_p, temp_pin_loc_x0, temp_pin_loc_x1, temp_diff_offset;
   size_t temp_node_num0, temp_node_num1, max_pindex_x, min_pindex_x;
   for (auto &&net: net_list) {
-    if (net.p()<=1) continue;
+    if (net.p()<=1) {
+      continue;
+    }
     inv_p = net.inv_p();
     max_pindex_x = net.max_pin_index_x();
     min_pindex_x = net.min_pin_index_x();
@@ -342,6 +348,12 @@ void placer_al_t::build_problem_b2b_x() {
           bx[temp_node_num1] -= temp_diff_offset;
         }
       }
+    }
+  }
+  for (size_t i=0; i<Ax.size(); i++) {
+    if (Ax[i][0].weight < 1e-10) {
+      Ax[i][0].weight = 1;
+      bx[i] = block_list[i].dllx();
     }
   }
 }
@@ -430,8 +442,12 @@ void placer_al_t::update_max_min_node_y() {
   //std::cout << "HPWLY_old: " << HPWLY_old << "\n";
   //std::cout << "HPWLY_new: " << HPWLY_new << "\n";
   //std::cout << 1 - HPWLY_new/HPWLY_old << "\n";
-  HPWLy_converge = (std::fabs(1 - HPWLY_new/HPWLY_old) < HPWL_intra_linearSolver_precision);
-  HPWLY_old = HPWLY_new;
+  if (HPWLY_new == 0) {
+    HPWLy_converge = true;
+  } else {
+    HPWLy_converge = (std::fabs(1 - HPWLY_new / HPWLY_old) < HPWL_intra_linearSolver_precision);
+    HPWLY_old = HPWLY_new;
+  }
 }
 
 void placer_al_t::build_problem_b2b_y() {
@@ -448,7 +464,9 @@ void placer_al_t::build_problem_b2b_y() {
   double weighty, inv_p, temp_pin_loc_y0, temp_pin_loc_y1, temp_diff_offset;
   size_t temp_node_num0, temp_node_num1, max_pindex_y, min_pindex_y;
   for (auto &&net: net_list) {
-    if (net.p()<=1) continue;
+    if (net.p()<=1) {
+      continue;
+    }
     inv_p = net.inv_p();
     max_pindex_y = net.max_pin_index_y();
     min_pindex_y = net.min_pin_index_y();
@@ -493,6 +511,12 @@ void placer_al_t::build_problem_b2b_y() {
           by[temp_node_num1] -= temp_diff_offset;
         }
       }
+    }
+  }
+  for (size_t i=0; i<Ay.size(); i++) {
+    if (Ay[i][0].weight < 1e-10) {
+      Ay[i][0].weight = 1;
+      by[i] = block_list[i].dlly();
     }
   }
 }
@@ -564,7 +588,7 @@ void placer_al_t::build_problem_b2b_y_nooffset() {
 }
 
 void placer_al_t::CG_solver(std::string const &dimension, std::vector< std::vector<weight_tuple> > &A, std::vector<double> &b, std::vector<size_t> &k) {
-  static double epsilon = 1e-5, alpha, beta, rsold, rsnew, pAp, solution_distance;
+  static double epsilon = 1e-15, alpha, beta, rsold, rsnew, pAp, solution_distance;
   static std::vector<double> ax(movable_block_num()), ap(movable_block_num()), z(movable_block_num()), p(movable_block_num()), JP(movable_block_num());
   // JP = Jacobi_preconditioner
   for (size_t i=0; i<movable_block_num(); i++) {
@@ -600,7 +624,7 @@ void placer_al_t::CG_solver(std::string const &dimension, std::vector< std::vect
     rsold += z[i]*z[i]/JP[i];
   }
 
-  for (size_t t=0; ; t++) {
+  for (size_t t=0; t<100; t++) {
     pAp = 0;
     for (size_t i=0; i<movable_block_num(); i++) {
       ap[i] = 0;
@@ -1202,7 +1226,7 @@ bool placer_al_t::start_placement() {
   update_max_min_node_y();
   HPWLx_converge = false;
   HPWLy_converge = false;
-  for (int i=0; i<20; i++) {
+  for (int i=0; i<50; i++) {
     if (!HPWLx_converge) {
       build_problem_b2b_x();
       CG_solver_x();

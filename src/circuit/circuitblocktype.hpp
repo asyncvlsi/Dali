@@ -21,7 +21,7 @@ private:
   int _num;
 public:
   blocktype_t();
-  
+
 };
 
 
