@@ -11,12 +11,15 @@ block_t::block_t() {
   _llx = 0;
   _lly = 0;
   _movable = true;
-  _orientation = "";
+  _orientation = "N";
   _num = 0;
+  _type = "";
 }
 
-block_t::block_t(std::string &blockName, int w, int h, int lx, int ly, bool movable)
-    : _name(blockName), _w(w), _h(h), _llx(lx), _lly(ly), _movable(movable) {}
+block_t::block_t(std::string &blockName, int w, int h, int lx, int ly, bool movable, std::string typeName)
+    : _name(blockName), _w(w), _h(h), _llx(lx), _lly(ly), _movable(movable), _type(std::move(typeName)) {
+  _num = 0;
+}
 
 void block_t::set_name(std::string &blockName) {
   _name = blockName;
@@ -118,7 +121,10 @@ size_t block_t::num() const{
 }
 
 std::string block_t::type() {
-  return _name;
+  if (_type.length() > 0) {
+    return _type;
+  }
+  return "dummy_type_name"+_name;
 }
 
 std::string block_t::place_status() {

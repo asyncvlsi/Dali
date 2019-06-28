@@ -250,7 +250,7 @@ bool placer_t::save_DEF(std::string const &NameOfFile) {
   for (auto &&block: _circuit->block_list) {
     ost << "- "
         << block.name() << " "
-        << "dummy_type" << block.type() << " + "
+        << block.type() << " + "
         << block.place_status() << " "
         << block.lower_left_corner() << " "
         << block.orientation() + " ;\n";

@@ -22,6 +22,7 @@ protected:
   int _llx, _lly; // lower left corner
   bool _movable; // movable
   std::string _orientation; // currently not used
+  std::string _type;
 
   /* the following entries are derived data */
   size_t _num;
@@ -29,7 +30,7 @@ protected:
 
 public:
   block_t();
-  block_t(std::string &blockName, int w, int h, int lx = 0, int ly = 0, bool movable = true);
+  block_t(std::string &blockName, int w, int h, int lx = 0, int ly = 0, bool movable = true, std::string typeName="");
 
   void set_name(std::string &blockName);
   std::string name() const;

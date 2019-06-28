@@ -42,10 +42,10 @@ circuit_t::circuit_t() {
  */
 
 
-bool circuit_t::add_new_block(std::string &blockName, int w, int h, int llx, int lly, bool movable) {
+bool circuit_t::add_new_block(std::string &blockName, int w, int h, int llx, int lly, bool movable, std::string typeName) {
   if (block_name_map.find(blockName) == block_name_map.end()) {
     size_t block_list_size = block_list.size();
-    block_t tmp_block(blockName, w, h, llx, lly, movable);
+    block_t tmp_block(blockName, w, h, llx, lly, movable, std::move(typeName));
     tmp_block.set_num(block_list_size);
     block_name_map.insert(std::pair<std::string, int>(tmp_block.name(), tmp_block.num()));
     block_list.push_back(tmp_block);
@@ -72,7 +72,7 @@ bool circuit_t::create_blank_net(std::string &netName, double weight) {
   }
 }
 
-bool circuit_t::add_pin_to_net(std::string &netName, std::string &blockName, int xOffset, int yOffset) {
+bool circuit_t::add_pin_to_net(std::string &netName, std::string &blockName, int xOffset, int yOffset, std::string pinName) {
   if (net_name_map.find(netName) == net_name_map.end()) {
     std::cout << "Error!\n";
     std::cout << "No net in net_list has name: " << netName << "\n";
@@ -85,7 +85,7 @@ bool circuit_t::add_pin_to_net(std::string &netName, std::string &blockName, int
   }
 
   int block_num = block_name_map.find(blockName)->second;
-  pin_t tmp_pin(xOffset, yOffset, &block_list[block_num]);
+  pin_t tmp_pin(xOffset, yOffset, &block_list[block_num], std::move(pinName));
 
   int net_num = net_name_map.find(netName)->second;
   return net_list[net_num].add_pin(tmp_pin);

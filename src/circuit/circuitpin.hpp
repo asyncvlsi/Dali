@@ -17,10 +17,11 @@ protected:
 
   /* the following entries are derived data */
   block_t* _block; // pointer pointing to the block entry in block_list for HPWL calculation in net
+  std::string _pin_name;
 
 public:
   pin_t();
-  pin_t(int xOffset, int yOffset, block_t *block);
+  pin_t(int xOffset, int yOffset, block_t *block, std::string pinName="");
 
   bool operator ==(const pin_t &rhs) const;
   friend std::ostream& operator<<(std::ostream& os, const pin_t &pin) {

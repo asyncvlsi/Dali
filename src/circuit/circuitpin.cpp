@@ -8,10 +8,11 @@ pin_t::pin_t() {
   _x_offset = 0;
   _y_offset = 0;
   _block = nullptr;
+  _pin_name = "";
 }
 
-pin_t::pin_t(int xOffset, int yOffset, block_t *block)
-              :_x_offset(xOffset), _y_offset(yOffset), _block(block) {}
+pin_t::pin_t(int xOffset, int yOffset, block_t *block, std::string pinName)
+              :_x_offset(xOffset), _y_offset(yOffset), _block(block), _pin_name(std::move(pinName)) {}
 
 bool pin_t::operator ==(const pin_t &rhs) const {
   return ((_block == rhs._block) && (_x_offset == rhs._x_offset) && (_y_offset == rhs._y_offset));
@@ -22,6 +23,9 @@ std::string pin_t::name() const{
 }
 
 std::string pin_t::pin_name() const{
+  if (_pin_name.length()>0) {
+    return "( " + _block->name() + " " + _pin_name + " )";
+  }
   return "( " + _block->name() + " " + "dummy_port_name" + " )";
 }
 
