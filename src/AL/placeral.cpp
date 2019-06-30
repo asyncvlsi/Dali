@@ -1170,10 +1170,11 @@ bool placer_al_t::legalization() {
     diffusion_legalization();
     if (time_step > 1) time_step -= 1;
     if (i==max_legalization_iteration-1) {
-      std::cout << "Molecular-dynamic legalization fail\n";
+      std::cout << "Molecular-dynamic legalization finish\n";
       return false;
     }
   }
+  std::cout << "Molecular-dynamic legalization succeeds\n";
   return true;
 }
 
@@ -1207,10 +1208,11 @@ bool placer_al_t::gravity_legalization() {
     diffusion_legalization();
     if (time_step > 1) time_step -= 1;
     if (i==max_legalization_iteration-1) {
-      std::cout << "Gravity legalization fail\n";
+      std::cout << "Gravity legalization finish\n";
       return false;
     }
   }
+  std::cout << "Gravity legalization succeeds\n";
   return true;
 }
 

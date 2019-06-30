@@ -32,6 +32,7 @@ int main() {
   */
 
   /****layout****/
+  /*
   if (!circuit.read_nodes_file("../test/layout.nodes")) {
     //circuit.report_block_list();
     //circuit.report_block_map();
@@ -46,9 +47,9 @@ int main() {
     //circuit.report_block_list();
     return 1;
   }
+  */
 
   /****debug case****/
-  /*
   if (!circuit.read_nodes_file("nodes.txt")) {
     //circuit.report_block_list();
     //circuit.report_block_map();
@@ -59,7 +60,6 @@ int main() {
     //circuit.report_net_map();
     return 1;
   }
-   */
 
 
   std::cout << circuit.tot_movable_num_real_time() << " movable cells\n";
