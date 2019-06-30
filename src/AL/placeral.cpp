@@ -278,7 +278,7 @@ void placer_al_t::update_max_min_node_x() {
   //std::cout << "HPWLX_old: " << HPWLX_old << "\n";
   //std::cout << "HPWLX_new: " << HPWLX_new << "\n";
   //std::cout << 1 - HPWLX_new/HPWLX_old << "\n";
-  if (HPWLX_new == 0) {
+  if (HPWLX_new == 0) { // this is for 1 degree net, this happens in extremely rare cases
     HPWLx_converge = true;
   } else {
     HPWLx_converge = (std::fabs(1 - HPWLX_new / HPWLX_old) < HPWL_intra_linearSolver_precision);
@@ -350,7 +350,7 @@ void placer_al_t::build_problem_b2b_x() {
       }
     }
   }
-  for (size_t i=0; i<Ax.size(); i++) {
+  for (size_t i=0; i<Ax.size(); i++) { // this is for cells with tiny force applied on them
     if (Ax[i][0].weight < 1e-10) {
       Ax[i][0].weight = 1;
       bx[i] = block_list[i].dllx();
@@ -442,7 +442,7 @@ void placer_al_t::update_max_min_node_y() {
   //std::cout << "HPWLY_old: " << HPWLY_old << "\n";
   //std::cout << "HPWLY_new: " << HPWLY_new << "\n";
   //std::cout << 1 - HPWLY_new/HPWLY_old << "\n";
-  if (HPWLY_new == 0) {
+  if (HPWLY_new == 0) { // this is for 1 degree net, this happens in extremely rare cases
     HPWLy_converge = true;
   } else {
     HPWLy_converge = (std::fabs(1 - HPWLY_new / HPWLY_old) < HPWL_intra_linearSolver_precision);
@@ -513,7 +513,7 @@ void placer_al_t::build_problem_b2b_y() {
       }
     }
   }
-  for (size_t i=0; i<Ay.size(); i++) {
+  for (size_t i=0; i<Ay.size(); i++) { // // this is for cells with tiny force applied on them
     if (Ay[i][0].weight < 1e-10) {
       Ay[i][0].weight = 1;
       by[i] = block_list[i].dlly();
@@ -1182,7 +1182,7 @@ void placer_al_t::diffusion_with_gravity() {
     update_block_in_bin();
     update_velocity();
     for (auto &&block: block_list) {
-      if (rand()%2==0) {
+      if (i%2==0) {
         block.add_gravity_vx(-1);
       } else {
         block.add_gravity_vy(-1);

@@ -61,6 +61,7 @@ int main() {
   }
    */
 
+
   std::cout << circuit.tot_movable_num_real_time() << " movable cells\n";
   std::cout << circuit.block_list.size() << " total cells\n";
 
