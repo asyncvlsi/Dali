@@ -34,7 +34,7 @@ public:
 
   bool add_new_block(std::string &blockName, int w, int h, int llx = 0, int lly = 0, bool movable = true, std::string typeName="");
   bool create_blank_net(std::string &netName, double weight = 1);
-  bool add_pin_to_net(std::string &netName, std::string &blockName, int xOffset, int yOffset, std::string pinName="");
+  bool add_pin_to_net(const std::string &netName, const std::string &blockName, int xOffset, int yOffset, std::string pinName="");
   // the above three member functions should be called to add elements to block_list or net_list
 
   void parse_line(std::string &line, std::vector<std::string> &field_list);

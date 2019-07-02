@@ -3,6 +3,7 @@
 //
 
 #include "circuitnet.hpp"
+#include "debug.h"
 
 net_t::net_t() {
   _name = "";
@@ -10,7 +11,9 @@ net_t::net_t() {
   _num = 0;
 }
 
-net_t::net_t(std::string &name_arg, double weight_arg) : _name(name_arg), _weight(weight_arg) {}
+net_t::net_t(std::string &name_arg, double weight_arg) : _name(name_arg), _weight(weight_arg) {
+  _num = 0;
+}
 
 void net_t::set_name(const std::string &name_arg) {
   _name = name_arg;
@@ -39,8 +42,10 @@ double net_t::weight() {
 bool net_t::add_pin(pin_t &pin) {
   for (auto &&existing_pin: pin_list) {
     if (existing_pin == pin) {
+      #ifdef USEDEBUG
       std::cout << "Error!\n";
       std::cout << pin << " has already been in net: " << _name << "\n";
+      #endif
       return false;
     }
   }

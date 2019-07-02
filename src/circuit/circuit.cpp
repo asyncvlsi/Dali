@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include "circuit.hpp"
+#include "debug.h"
 
 circuit_t::circuit_t() {
   HPWL = 0;
@@ -51,8 +52,10 @@ bool circuit_t::add_new_block(std::string &blockName, int w, int h, int llx, int
     block_list.push_back(tmp_block);
     return true;
   } else {
+    #ifdef USEDEBUG
     std::cout << "Error!\n";
     std::cout << "Existing block in block_list with name: " << blockName << "\n";
+    #endif
     return false;
   }
 }
@@ -66,21 +69,27 @@ bool circuit_t::create_blank_net(std::string &netName, double weight) {
     net_list.push_back(tmp_net);
     return true;
   } else {
+    #ifdef USEDEBUG
     std::cout << "Error!\n";
     std::cout << "Existing net in net_list with name: " << netName << "\n";
+    #endif
     return false;
   }
 }
 
-bool circuit_t::add_pin_to_net(std::string &netName, std::string &blockName, int xOffset, int yOffset, std::string pinName) {
+bool circuit_t::add_pin_to_net(const std::string &netName, const std::string &blockName, int xOffset, int yOffset, std::string pinName) {
   if (net_name_map.find(netName) == net_name_map.end()) {
+    #ifdef USEDEBUG
     std::cout << "Error!\n";
     std::cout << "No net in net_list has name: " << netName << "\n";
+    #endif
     return false;
   }
   if (block_name_map.find(blockName) == block_name_map.end()){
+    #ifdef USEDEBUG
     std::cout << "Error!\n";
     std::cout << "No block in block_list has name: " << blockName << "\n";
+    #endif
     return false;
   }
 
