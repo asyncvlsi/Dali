@@ -6,8 +6,8 @@
 #define HPCC_BLOCKAL_HPP
 
 #include <cmath>
-#include "circuit/circuitblock.hpp"
-#include "circuit/circuitbin.hpp"
+#include "circuit/block.hpp"
+#include "circuit/bin.hpp"
 
 class block_al_t:public block_t {
 private:

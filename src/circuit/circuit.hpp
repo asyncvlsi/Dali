@@ -7,9 +7,9 @@
 
 #include <vector>
 #include <map>
-#include "circuitblock.hpp"
-#include "circuitpin.hpp"
-#include "circuitnet.hpp"
+#include "block.hpp"
+#include "pin.hpp"
+#include "net.hpp"
 
 class circuit_t {
 protected:

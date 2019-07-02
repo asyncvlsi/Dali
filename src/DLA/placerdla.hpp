@@ -9,11 +9,11 @@
 #include <queue>
 #include <utility>
 #include "circuit/circuit.hpp"
-#include "circuit/circuitblock.hpp"
-#include "circuit/circuitnet.hpp"
-#include "circuit/circuitpin.hpp"
-#include "placer.hpp"
-#include "circuit/circuitbin.hpp"
+#include "circuit/block.hpp"
+#include "circuit/net.hpp"
+#include "circuit/pin.hpp"
+#include "placer/placerbase.hpp"
+#include "circuit/bin.hpp"
 #include "blockdla.hpp"
 #include "netdla.hpp"
 

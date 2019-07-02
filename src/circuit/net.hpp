@@ -2,12 +2,12 @@
 // Created by Yihang Yang on 2019-05-23.
 //
 
-#ifndef HPCC_CIRCUITNET_HPP
-#define HPCC_CIRCUITNET_HPP
+#ifndef HPCC_NET_HPP
+#define HPCC_NET_HPP
 
 #include <string>
 #include <vector>
-#include "circuitpin.hpp"
+#include "pin.hpp"
 
 class net_t {
 protected:
@@ -48,4 +48,4 @@ public:
 };
 
 
-#endif //HPCC_CIRCUITNET_HPP
+#endif //HPCC_NET_HPP

@@ -9,10 +9,10 @@
 #include <set>
 #include <random>
 #include <cmath>
-#include "placer.hpp"
+#include "placer/placerbase.hpp"
 #include "blockal.hpp"
 #include "netal.hpp"
-#include "circuit/circuitbin.hpp"
+#include "circuit/bin.hpp"
 
 typedef struct  {
   size_t pin;

@@ -2,7 +2,7 @@
 // Created by Yihang Yang on 2019-05-23.
 //
 
-#include "circuitnet.hpp"
+#include "net.hpp"
 
 net_t::net_t() {
   _name = "";

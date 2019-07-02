@@ -12,6 +12,8 @@ file(GLOB SOURCES
         src/*.cpp
         src/circuit/*.hpp
         src/circuit/*.cpp
+        src/placer/*.hpp
+        src/placer/*.cpp
         src/DLA/*.hpp
         src/DLA/*.cpp
         src/AL/*.hpp

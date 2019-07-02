@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 2019-05-23.
 //
 
-#ifndef HPCC_PLACER_HPP
-#define HPCC_PLACER_HPP
+#ifndef HPCC_PLACERBASE_HPP
+#define HPCC_PLACERBASE_HPP
 
 #include <string>
 #include <iostream>
@@ -59,4 +59,4 @@ public:
 };
 
 
-#endif //HPCC_PLACER_HPP
+#endif //HPCC_PLACERBASE_HPP

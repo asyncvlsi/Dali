@@ -6,7 +6,7 @@
 #include <vector>
 #include <ctime>
 #include "circuit/circuit.hpp"
-#include "placer.hpp"
+#include "placer/placerbase.hpp"
 #include "DLA/placerdla.hpp"
 #include "AL/placeral.hpp"
 

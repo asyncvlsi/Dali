@@ -5,7 +5,7 @@
 #ifndef HPCC_NETAL_HPP
 #define HPCC_NETAL_HPP
 
-#include "circuit/circuitnet.hpp"
+#include "circuit/net.hpp"
 
 class net_al_t: public net_t {
 public:

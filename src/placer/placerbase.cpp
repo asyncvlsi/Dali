@@ -3,7 +3,7 @@
 //
 
 #include <cmath>
-#include "placer.hpp"
+#include "placerbase.hpp"
 
 placer_t::placer_t() {
   _aspect_ratio = 0;
