@@ -106,6 +106,7 @@ void circuit_t::parse_line(std::string &line, std::vector<std::string> &field_li
   std::vector<char> delimiter_list;
   delimiter_list.push_back(' ');
   delimiter_list.push_back(':');
+  delimiter_list.push_back(';');
   delimiter_list.push_back('\t');
   delimiter_list.push_back('\r');
   delimiter_list.push_back('\n');
@@ -376,6 +377,188 @@ bool circuit_t::read_pl_file(std::string const &NameOfFile) {
     }
   }
   ist.close();
+  return true;
+}
+
+bool circuit_t::read_lef_file(std::string const &NameOfFile) {
+  std::ifstream ist(NameOfFile.c_str());
+  if (ist.is_open()==0) {
+    std::cout << "Cannot open input file " << NameOfFile << "\n";
+    return false;
+  }
+
+  std::string line;
+  lef_database_microns = 0;
+  while ((lef_database_microns == 0) && !ist.eof()) {
+    getline(ist, line);
+    if (line.find("DATABASE MICRONS")!=std::string::npos) {
+      std::vector<std::string> line_field;
+      parse_line(line, line_field);
+      if (line_field.size() < 3) {
+        std::cout << "Error!\n";
+        std::cout << "Invalid UNITS declaration: expecting 3 fields\n";
+        return false;
+      }
+      try {
+        lef_database_microns = std::stoi(line_field[2]);
+      } catch (...) {
+        std::cout << "Error!\n";
+        std::cout << "Invalid stoi conversion:" << line_field[2] << "\n";
+        std::cout << line << "\n";
+        return false;
+      }
+    }
+  }
+  //std::cout << "DATABASE MICRONS " << lef_database_microns << "\n";
+
+  m2_pitch = 0;
+  while ((m2_pitch == 0) && !ist.eof()) {
+    getline(ist, line);
+    if(line.find("LAYER Metal2")!=std::string::npos) {
+      //std::cout << line << "\n";
+      do {
+        getline(ist, line);
+        //std::cout << line << "\n";
+        if (line.find("PITCH") != std::string::npos) {
+          std::vector<std::string> line_field;
+          parse_line(line, line_field);
+          if (line_field.size() < 3) {
+            std::cout << "Error!\n";
+            std::cout << "Invalid LAYER Metal2 PITCH declaration: expecting 3 fields\n";
+            return false;
+          }
+          try {
+            m2_pitch = std::stod(line_field[2]);
+          } catch (...) {
+            std::cout << "Error!\n";
+            std::cout << "Invalid stoi conversion:" << line_field[2] << "\n";
+            std::cout << line << "\n";
+            return false;
+          }
+        }
+      } while (line.find("END Metal2")==std::string::npos && !ist.eof());
+      break;
+    }
+  }
+
+  while (!ist.eof()) {
+    getline(ist, line);
+    if (line.find("MACRO") != std::string::npos) {
+      // extend the vector by one
+      blockType_list.resize(blockType_list.size() + 1);
+
+      std::vector<std::string> line_field;
+
+      // set the name
+      parse_line(line, line_field);
+      if (line_field.size() < 2) {
+        blockType_list.resize(blockType_list.size() - 1);
+        std::cout << "Error!\n";
+        std::cout << "Invalid type name: expecting 2 fields\n";
+        std::cout << line << "\n";
+      }
+      blockType_list.back().set_name(line_field[1]);
+      std::cout << blockType_list.back().name() << "\n";
+      std::string end_macro_flag = "END " + line_field[1];
+
+      do {
+        getline(ist, line);
+        while ((blockType_list.back().width()==0) && !ist.eof()) {
+          if (line.find("SIZE") != std::string::npos) {
+            std::vector<std::string> size_field;
+            parse_line(line, size_field);
+            double tmp_width, tmp_height;
+            try {
+              tmp_width = std::stod(size_field[1]);
+            } catch (...) {
+              blockType_list.resize(blockType_list.size() - 1);
+              std::cout << "Error!\n";
+              std::cout << "Invalid stod conversion:" << size_field[1] << "\n";
+              std::cout << line << "\n";
+              return false;
+            }
+            try {
+              tmp_height = std::stod(size_field[3]);
+            } catch (...) {
+              blockType_list.resize(blockType_list.size() - 1);
+              std::cout << "Error!\n";
+              std::cout << "Invalid stod conversion:" << size_field[3] << "\n";
+              std::cout << line << "\n";
+              return false;
+            }
+            tmp_width = tmp_width/m2_pitch;
+            tmp_height = tmp_height/m2_pitch;
+
+            blockType_list.back().set_width((int)tmp_width);
+            blockType_list.back().set_height((int)tmp_height);
+
+            std::cout << "  type width, height: "
+                      << blockType_list.back().width() << " "
+                      << blockType_list.back().height() << "\n";
+          }
+          getline(ist, line);
+        }
+
+        if (line.find("PIN") != std::string::npos) {
+          std::vector<std::string> pin_field;
+          parse_line(line, pin_field);
+          if (pin_field.size() < 2) {
+            std::cout << "Error!\n";
+            std::cout << "Invalid pin name: expecting 2 fields\n";
+            std::cout << line << "\n";
+            return false;
+          }
+          std::string pin_name = pin_field[1];
+          std::string end_pin_flag = "END " + pin_name;
+
+          // skip to "PORT" rectangle list
+          do {
+            getline(ist, line);
+          }  while (line.find("PORT")==std::string::npos && !ist.eof());
+
+          int tmp_xoffset = -1, tmp_yoffset = -1;
+          do {
+            getline(ist, line);
+            if (line.find("RECT") != std::string::npos) {
+              std::cout << line << "\n";
+              if ((tmp_xoffset == -1) && (tmp_yoffset == -1)) {
+                std::vector<std::string> rect_field;
+                parse_line(line, rect_field);
+                if (rect_field.size() < 5) {
+                  std::cout << "Error!\n";
+                  std::cout << "Invalid rect definition: expecting 5 fields\n";
+                  std::cout << line << "\n";
+                  return false;
+                }
+                tmp_xoffset = (int)((std::stod(rect_field[1]) + std::stod(rect_field[3]))/m2_pitch);
+              } else {
+                continue;
+              }
+            }
+          } while (line.find(end_pin_flag)==std::string::npos && !ist.eof());
+        }
+
+      } while (line.find(end_macro_flag)==std::string::npos && !ist.eof());
+      if (blockType_list.back().pin_list.empty()) {
+        std::cout << "Error!\n";
+        std::cout << "MACRO: " << blockType_list.back().name() << " has no pin!\n";
+        //blockType_list.resize(blockType_list.size() - 1);
+        //return false;
+      }
+    }
+  }
+
+
+  return true;
+}
+
+bool circuit_t::read_def_file(std::string const &NameOfFile) {
+  std::ifstream ist(NameOfFile.c_str());
+  if (ist.is_open()==0) {
+    std::cout << "Cannot open input file " << NameOfFile << "\n";
+    return false;
+  }
+
   return true;
 }
 

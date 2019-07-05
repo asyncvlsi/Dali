@@ -32,6 +32,7 @@ int main() {
   */
 
   /****layout****/
+  /*
   if (!circuit.read_nodes_file("../test/layout.nodes")) {
     //circuit.report_block_list();
     //circuit.report_block_map();
@@ -46,6 +47,19 @@ int main() {
     //circuit.report_block_list();
     return 1;
   }
+  */
+
+  /****LEF/DEF****/
+  if (!circuit.read_lef_file("out.lef")) {
+    //circuit.report_blockType_list();
+    //circuit.report_blockType_map();
+    return 1;
+  }
+  /*if (!circuit.read_def_file("out.def")) {
+    //circuit.report_net_list();
+    //circuit.report_net_map();
+    return 1;
+  }*/
   /****debug case****/
   /*
   if (!circuit.read_nodes_file("nodes.txt")) {
@@ -60,6 +74,7 @@ int main() {
   }
   */
 
+  /*
   std::cout << circuit.tot_movable_num_real_time() << " movable cells\n";
   std::cout << circuit.block_list.size() << " total cells\n";
 
@@ -79,6 +94,7 @@ int main() {
   //ptr_placer->save_DEF();
 
   delete ptr_placer;
+   */
 
   Time = clock() - Time;
   std::cout << "Execution time " << (float)Time/CLOCKS_PER_SEC << "s.\n";
