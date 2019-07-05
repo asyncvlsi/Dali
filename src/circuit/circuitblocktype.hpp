@@ -28,7 +28,7 @@ public:
   block_type_t(std::string &name, int width, int height);
   /****essential data entries****/
   std::vector<point> pin_list;
-  std::map<std::string, int> pinname_num_map;
+  std::map<std::string, size_t> pinname_num_map;
   /********/
 
   void set_name(std::string &typeName);
@@ -46,7 +46,7 @@ public:
     return os;
   }
 
-  bool add_pin(std::string &pinName, int xoff, int yoff);
+  bool add_pin(std::string &pinName, double xOffset, double yOffset);
 
 };
 

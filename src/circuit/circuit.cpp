@@ -516,7 +516,7 @@ bool circuit_t::read_lef_file(std::string const &NameOfFile) {
             getline(ist, line);
           }  while (line.find("PORT")==std::string::npos && !ist.eof());
 
-          int tmp_xoffset = -1, tmp_yoffset = -1;
+          double tmp_xoffset = -1, tmp_yoffset = -1;
           do {
             getline(ist, line);
             if (line.find("RECT") != std::string::npos) {
@@ -530,7 +530,10 @@ bool circuit_t::read_lef_file(std::string const &NameOfFile) {
                   std::cout << line << "\n";
                   return false;
                 }
-                tmp_xoffset = (int)((std::stod(rect_field[1]) + std::stod(rect_field[3]))/m2_pitch);
+                tmp_xoffset = (std::stod(rect_field[1]) + std::stod(rect_field[3]))/2/m2_pitch;
+                tmp_yoffset = (std::stod(rect_field[2]) + std::stod(rect_field[4]))/2/m2_pitch;
+                std::cout << "  " << tmp_xoffset << " " << tmp_yoffset << "\n";
+                blockType_list.back().add_pin(pin_name, tmp_xoffset, tmp_yoffset);
               } else {
                 continue;
               }
@@ -542,8 +545,8 @@ bool circuit_t::read_lef_file(std::string const &NameOfFile) {
       if (blockType_list.back().pin_list.empty()) {
         std::cout << "Error!\n";
         std::cout << "MACRO: " << blockType_list.back().name() << " has no pin!\n";
-        //blockType_list.resize(blockType_list.size() - 1);
-        //return false;
+        blockType_list.resize(blockType_list.size() - 1);
+        return false;
       }
     }
   }

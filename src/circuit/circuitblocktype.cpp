@@ -43,10 +43,10 @@ int block_type_t::num() {
   return  _num;
 }
 
-bool block_type_t::add_pin(std::string &pinName, int xoff, int yoff) {
+bool block_type_t::add_pin(std::string &pinName, double xOffset, double yOffset) {
   if (pinname_num_map.find(pinName) == pinname_num_map.end()) {
-    pinname_num_map.insert(std::pair<std::string, int>(pinName, pin_list.size()));
-    pin_list.emplace_back(xoff, yoff);
+    pinname_num_map.insert(std::pair<std::string, size_t>(pinName, pin_list.size()));
+    pin_list.emplace_back(xOffset, yOffset);
     return true;
   } else {
     std::cout << "Error!\n";
