@@ -87,9 +87,9 @@ int main() {
   std::cout << placer.space_block_ratio() << " " << placer.filling_rate() << " " << placer.aspect_ratio() << "\n";
 
   placer.set_input_circuit(&circuit);
-  //placer.auto_set_boundaries(); // set boundary for layout
+  placer.auto_set_boundaries(); // set boundary for layout
   //placer.set_boundary(459,11151,459,11139); // set boundary for adaptec1
-  placer.set_boundary(circuit.def_left,circuit.def_right,circuit.def_bottom,circuit.def_top); // set boundary for lef/def
+  //placer.set_boundary(circuit.def_left,circuit.def_right,circuit.def_bottom,circuit.def_top); // set boundary for lef/def
   placer.report_boundaries();
   placer.start_placement();
   placer.report_placement_result();
