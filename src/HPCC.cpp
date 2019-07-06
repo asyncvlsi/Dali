@@ -32,7 +32,7 @@ int main() {
   */
 
   /****layout****/
-  /*
+
   if (!circuit.read_nodes_file("../test/layout.nodes")) {
     //circuit.report_block_list();
     //circuit.report_block_map();
@@ -47,9 +47,10 @@ int main() {
     //circuit.report_block_list();
     return 1;
   }
-  */
+
 
   /****LEF/DEF****/
+  /*
   if (!circuit.read_lef_file("out.lef")) {
     return 1;
   }
@@ -58,6 +59,7 @@ int main() {
   if (!circuit.read_def_file("out.def")) {
     return 1;
   }
+   */
   //circuit.report_block_list();
   //circuit.report_block_map();
   //circuit.report_net_list();
@@ -79,23 +81,21 @@ int main() {
   std::cout << circuit.tot_movable_num_real_time() << " movable cells\n";
   std::cout << circuit.block_list.size() << " total cells\n";
 
-  placer_t *ptr_placer = new placer_al_t;
-  ptr_placer->set_space_block_ratio(1.5);
-  ptr_placer->set_aspect_ratio(1);
-  std::cout << ptr_placer->space_block_ratio() << " " << ptr_placer->filling_rate() << " " << ptr_placer->aspect_ratio() << "\n";
+  placer_al_t placer;
+  placer.set_space_block_ratio(1.5);
+  placer.set_aspect_ratio(1);
+  std::cout << placer.space_block_ratio() << " " << placer.filling_rate() << " " << placer.aspect_ratio() << "\n";
 
-  ptr_placer->set_input_circuit(&circuit);
-  //ptr_placer->auto_set_boundaries(); // set boundary for layout
-  //ptr_placer->set_boundary(459,11151,459,11139); // set boundary for adaptec1
-  ptr_placer->set_boundary(circuit.def_left,circuit.def_right,circuit.def_bottom,circuit.def_top); // set boundary for lef/def
-  ptr_placer->report_boundaries();
-  ptr_placer->start_placement();
-  ptr_placer->report_placement_result();
-  ptr_placer->gen_matlab_disp_file(); // generate matlab file for layout
-  //ptr_placer->write_node_terminal(); // generate a data file for adaptec1
+  placer.set_input_circuit(&circuit);
+  //placer.auto_set_boundaries(); // set boundary for layout
+  //placer.set_boundary(459,11151,459,11139); // set boundary for adaptec1
+  placer.set_boundary(circuit.def_left,circuit.def_right,circuit.def_bottom,circuit.def_top); // set boundary for lef/def
+  placer.report_boundaries();
+  placer.start_placement();
+  placer.report_placement_result();
+  placer.gen_matlab_disp_file(); // generate matlab file for layout
+  //placer.write_node_terminal(); // generate a data file for adaptec1
   circuit.save_DEF();
-
-  delete ptr_placer;
 
 
   Time = clock() - Time;

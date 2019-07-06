@@ -26,6 +26,8 @@ double placer_al_t::height_epsilon() {
 }
 
 bool placer_al_t::set_input_circuit(circuit_t *circuit) {
+  block_list.clear();
+  net_list.clear();
   if (circuit->block_list.empty()) {
     std::cout << "Error!\n";
     std::cout << "Invalid input circuit: empty block list!\n";
@@ -100,7 +102,12 @@ void placer_al_t::uniform_initialization() {
 void placer_al_t::cg_init() {
   // this init function allocate memory to Ax and Ay
   // the size of memory allocated for each row is the maximum memory which might be used
-  Ax.clear(); Ay.clear(); kx.clear(); ky.clear(); bx.clear(); by.clear();
+  Ax.clear();
+  Ay.clear();
+  kx.clear();
+  ky.clear();
+  bx.clear();
+  by.clear();
   for (size_t i=0; i<movable_block_num(); i++) {
     // initialize bx, by
     bx.push_back(0);
@@ -711,6 +718,7 @@ void placer_al_t::cg_close() {
 }
 
 void placer_al_t::add_boundary_list() {
+  boundary_list.clear();
   int max_width=0, max_height=0;
   for (auto &&block: block_list) {
     // find maximum width and maximum height
@@ -780,6 +788,7 @@ void placer_al_t::add_boundary_list() {
 
 void placer_al_t::initialize_bin_list(){
   // initialize the bin_list, build up the bin_list matrix
+  bin_list.clear();
   int max_width=0, max_height=0;
   for (auto &&block: block_list) {
     // find maximum width and maximum height
@@ -1244,6 +1253,7 @@ bool placer_al_t::start_placement() {
       break;
     }
   }
+  cg_close();
   std::cout << "Initial Placement Complete\n";
   report_hpwl();
 
