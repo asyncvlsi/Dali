@@ -65,12 +65,12 @@ int main() {
   //circuit.report_net_map();
   /****debug case****/
 
-  if (!circuit.read_nodes_file("nnnodes0")) {
+  if (!circuit.read_nodes_file("nnnodes1")) {
     //circuit.report_block_list();
     //circuit.report_block_map();
     return 1;
   }
-  if (!circuit.read_nets_file("nnnets0")) {
+  if (!circuit.read_nets_file("nnnets1")) {
     //circuit.report_net_list();
     //circuit.report_net_map();
     return 1;
@@ -86,7 +86,7 @@ int main() {
   std::cout << placer.space_block_ratio() << " " << placer.filling_rate() << " " << placer.aspect_ratio() << "\n";
   std::cout << "average width and height: " << circuit.ave_width() << " " << circuit.ave_height() << " " << circuit.ave_width() + circuit.ave_height() << "\n";
   placer.set_input_circuit(&circuit);
-  placer.set_boundary(0,360,0,3000); // debug case
+  placer.set_boundary(360,3000,0,3000); // debug case
   //placer.auto_set_boundaries(); // set boundary for layout
   //placer.set_boundary(459,11151,459,11139); // set boundary for adaptec1
   //placer.set_boundary(circuit.def_left,circuit.def_right,circuit.def_bottom,circuit.def_top); // set boundary for lef/def
