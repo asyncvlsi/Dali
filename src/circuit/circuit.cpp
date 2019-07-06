@@ -716,7 +716,7 @@ double circuit_t::ave_width_real_time() {
 double circuit_t::ave_height_real_time() {
   _ave_height = 0;
   for (auto &&block: block_list) {
-    _ave_height += block.width();
+    _ave_height += block.height();
   }
   _ave_height /= block_list.size();
   return _ave_height;

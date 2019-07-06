@@ -32,7 +32,7 @@ int main() {
   */
 
   /****layout****/
-
+  /*
   if (!circuit.read_nodes_file("../test/layout.nodes")) {
     //circuit.report_block_list();
     //circuit.report_block_map();
@@ -47,19 +47,18 @@ int main() {
     //circuit.report_block_list();
     return 1;
   }
-
-
+  */
   /****LEF/DEF****/
-  /*
-  if (!circuit.read_lef_file("out.lef")) {
+
+  if (!circuit.read_lef_file("out_1K.lef")) {
     return 1;
   }
   //circuit.report_blockType_list();
   //circuit.report_blockType_map();
-  if (!circuit.read_def_file("out.def")) {
+  if (!circuit.read_def_file("out_1K.def")) {
     return 1;
   }
-   */
+
   //circuit.report_block_list();
   //circuit.report_block_map();
   //circuit.report_net_list();
@@ -82,10 +81,10 @@ int main() {
   std::cout << circuit.block_list.size() << " total cells\n";
 
   placer_al_t placer;
-  placer.set_space_block_ratio(1.5);
+  placer.set_space_block_ratio(1.6);
   placer.set_aspect_ratio(1);
   std::cout << placer.space_block_ratio() << " " << placer.filling_rate() << " " << placer.aspect_ratio() << "\n";
-
+  std::cout << "average width and height: " << circuit.ave_width() << " " << circuit.ave_height() << " " << circuit.ave_width() + circuit.ave_height() << "\n";
   placer.set_input_circuit(&circuit);
   placer.auto_set_boundaries(); // set boundary for layout
   //placer.set_boundary(459,11151,459,11139); // set boundary for adaptec1

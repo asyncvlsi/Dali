@@ -1016,7 +1016,8 @@ void placer_al_t::integerize() {
 
 void placer_al_t::update_velocity() {
   double rij, overlap = 0, areai;
-  double maxv1 = 3, maxv2 = 4;
+  //double maxv1 = 10, maxv2 = 20; // for layout
+  double maxv1 = (_circuit->ave_width() + _circuit->ave_height())/20, maxv2 = 2*maxv1;
   for (auto &&block: block_list) {
     block.vx = 0;
     block.vy = 0;
@@ -1168,6 +1169,7 @@ void placer_al_t::diffusion_legalization() {
 
 bool placer_al_t::legalization() {
   update_block_in_bin();
+  time_step = 5;
   for (int i=0; i<max_legalization_iteration; i++) {
     if (check_legal()) {
       integerize();
@@ -1188,14 +1190,15 @@ bool placer_al_t::legalization() {
 }
 
 void placer_al_t::diffusion_with_gravity() {
+  double drift_v = -(_circuit->ave_width() + _circuit->ave_height())/300;
   for (int i=0; i<max_legalization_iteration; i++) {
     update_block_in_bin();
     update_velocity();
     for (auto &&block: block_list) {
       if (i%2==0) {
-        block.add_gravity_vx(-0.1);
+        block.add_gravity_vx(drift_v);
       } else {
-        block.add_gravity_vy(-0.1);
+        block.add_gravity_vy(drift_v);
       }
     }
     update_position();
