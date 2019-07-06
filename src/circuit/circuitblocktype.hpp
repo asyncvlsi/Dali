@@ -10,9 +10,9 @@
 #include "circuitpin.hpp"
 
 struct point {
-  double x;
-  double y;
-  explicit point(double x0=0, double y0=0): x(x0), y(y0){}
+  int x;
+  int y;
+  explicit point(int x0=0, int y0=0): x(x0), y(y0){}
 };
 
 class block_type_t {
@@ -37,12 +37,17 @@ public:
   int width();
   void set_height(int h);
   int height();
+  void set_num(size_t Num);
   int num();
 
   friend std::ostream& operator<<(std::ostream& os, const block_type_t &blockType) {
     os << "block type name: " << blockType._name << "\n";
     os << "width and height: " << blockType._width << " " << blockType._height << "\n";
     os << "assigned primary key: " << blockType._num << "\n";
+    os << "pin list:\n";
+    for( auto &&it: blockType.pinname_num_map) {
+      os << "  " << it.first << " " << it.second << "  " << blockType.pin_list[it.second].x << " " << blockType.pin_list[it.second].y << "\n";
+    }
     return os;
   }
 

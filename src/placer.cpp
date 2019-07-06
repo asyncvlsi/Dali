@@ -245,7 +245,7 @@ bool placer_t::save_DEF(std::string const &NameOfFile) {
   // no tracks?
 
   // 2. print component
-  std::cout << _circuit->block_list.size() << "\n";
+  //std::cout << _circuit->block_list.size() << "\n";
   ost << "COMPONENTS " << _circuit->block_list.size() << " ;\n";
   for (auto &&block: _circuit->block_list) {
     ost << "- "

@@ -65,6 +65,7 @@ public:
     os << "movability: " << block._movable << "\n";
     os << "orientation: " << block._orientation << "\n";
     os << "assigned primary key: " << block._num << "\n";
+    os << "type: " << block._type << "\n";
     return os;
   }
 

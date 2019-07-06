@@ -444,21 +444,29 @@ bool circuit_t::read_lef_file(std::string const &NameOfFile) {
   while (!ist.eof()) {
     getline(ist, line);
     if (line.find("MACRO") != std::string::npos) {
-      // extend the vector by one
-      blockType_list.resize(blockType_list.size() + 1);
-
       std::vector<std::string> line_field;
-
-      // set the name
       parse_line(line, line_field);
       if (line_field.size() < 2) {
-        blockType_list.resize(blockType_list.size() - 1);
         std::cout << "Error!\n";
         std::cout << "Invalid type name: expecting 2 fields\n";
         std::cout << line << "\n";
+        return false;
       }
+      // check if this type exist already
+      if (blockType_name_map.find(line_field[1]) == blockType_name_map.end()) {
+        blockType_name_map.insert(std::pair<std::string, size_t>(line_field[1], blockType_name_map.size()));
+      } else {
+        std::cout << "Error!\n";
+        std::cout << "Block type existing: " << line_field[1] << "\n";
+        return false;
+      }
+
+
+      // extend the vector by one
+      blockType_list.resize(blockType_list.size() + 1);
       blockType_list.back().set_name(line_field[1]);
-      std::cout << blockType_list.back().name() << "\n";
+      blockType_list.back().set_num(blockType_name_map.size()-1);
+      //std::cout << blockType_list.back().name() << "\n";
       std::string end_macro_flag = "END " + line_field[1];
 
       do {
@@ -471,7 +479,6 @@ bool circuit_t::read_lef_file(std::string const &NameOfFile) {
             try {
               tmp_width = std::stod(size_field[1]);
             } catch (...) {
-              blockType_list.resize(blockType_list.size() - 1);
               std::cout << "Error!\n";
               std::cout << "Invalid stod conversion:" << size_field[1] << "\n";
               std::cout << line << "\n";
@@ -480,21 +487,20 @@ bool circuit_t::read_lef_file(std::string const &NameOfFile) {
             try {
               tmp_height = std::stod(size_field[3]);
             } catch (...) {
-              blockType_list.resize(blockType_list.size() - 1);
               std::cout << "Error!\n";
               std::cout << "Invalid stod conversion:" << size_field[3] << "\n";
               std::cout << line << "\n";
               return false;
             }
-            tmp_width = tmp_width/m2_pitch;
-            tmp_height = tmp_height/m2_pitch;
+            tmp_width = std::round(tmp_width/m2_pitch);
+            tmp_height = std::round(tmp_height/m2_pitch);
 
             blockType_list.back().set_width((int)tmp_width);
             blockType_list.back().set_height((int)tmp_height);
 
-            std::cout << "  type width, height: "
-                      << blockType_list.back().width() << " "
-                      << blockType_list.back().height() << "\n";
+            //std::cout << "  type width, height: "
+            //          << blockType_list.back().width() << " "
+            //          << blockType_list.back().height() << "\n";
           }
           getline(ist, line);
         }
@@ -516,11 +522,11 @@ bool circuit_t::read_lef_file(std::string const &NameOfFile) {
             getline(ist, line);
           }  while (line.find("PORT")==std::string::npos && !ist.eof());
 
-          double tmp_xoffset = -1, tmp_yoffset = -1;
+          int tmp_xoffset = -1, tmp_yoffset = -1;
           do {
             getline(ist, line);
             if (line.find("RECT") != std::string::npos) {
-              std::cout << line << "\n";
+              //std::cout << line << "\n";
               if ((tmp_xoffset == -1) && (tmp_yoffset == -1)) {
                 std::vector<std::string> rect_field;
                 parse_line(line, rect_field);
@@ -530,9 +536,9 @@ bool circuit_t::read_lef_file(std::string const &NameOfFile) {
                   std::cout << line << "\n";
                   return false;
                 }
-                tmp_xoffset = (std::stod(rect_field[1]) + std::stod(rect_field[3]))/2/m2_pitch;
-                tmp_yoffset = (std::stod(rect_field[2]) + std::stod(rect_field[4]))/2/m2_pitch;
-                std::cout << "  " << tmp_xoffset << " " << tmp_yoffset << "\n";
+                tmp_xoffset = (int)(std::round(std::stod(rect_field[1])/m2_pitch));
+                tmp_yoffset = (int)(std::round(std::stod(rect_field[4])/m2_pitch));
+                //std::cout << "  " << tmp_xoffset << " " << tmp_yoffset << "\n";
                 blockType_list.back().add_pin(pin_name, tmp_xoffset, tmp_yoffset);
               } else {
                 continue;
@@ -545,14 +551,23 @@ bool circuit_t::read_lef_file(std::string const &NameOfFile) {
       if (blockType_list.back().pin_list.empty()) {
         std::cout << "Error!\n";
         std::cout << "MACRO: " << blockType_list.back().name() << " has no pin!\n";
-        blockType_list.resize(blockType_list.size() - 1);
         return false;
       }
     }
   }
-
-
   return true;
+}
+
+void circuit_t::report_blockType_list() {
+  for (auto &&block_type: blockType_list) {
+    std::cout << block_type << "\n";
+  }
+}
+
+void circuit_t::report_blockType_map() {
+  for (auto &&blockTypeMap: blockType_name_map) {
+    std::cout << blockTypeMap.first << " " << blockTypeMap.second << "\n";
+  }
 }
 
 bool circuit_t::read_def_file(std::string const &NameOfFile) {
@@ -561,6 +576,130 @@ bool circuit_t::read_def_file(std::string const &NameOfFile) {
     std::cout << "Cannot open input file " << NameOfFile << "\n";
     return false;
   }
+
+  std::string line;
+  def_distance_microns = 0;
+  while ((def_distance_microns == 0) && !ist.eof()) {
+    getline(ist, line);
+    if (line.find("DISTANCE MICRONS")!=std::string::npos) {
+      std::vector<std::string> line_field;
+      parse_line(line, line_field);
+      if (line_field.size() < 4) {
+        std::cout << "Error!\n";
+        std::cout << "Invalid UNITS declaration: expecting 4 fields\n";
+        return false;
+      }
+      try {
+        def_distance_microns = std::stoi(line_field[3]);
+      } catch (...) {
+        std::cout << "Error!\n";
+        std::cout << "Invalid stoi conversion:" << line_field[3] << "\n";
+        std::cout << line << "\n";
+        return false;
+      }
+    }
+  }
+  std::cout << "DISTANCE MICRONS " << def_distance_microns << "\n";
+
+  def_left = 0;
+  def_right = 0;
+  def_bottom = 0;
+  def_top = 0;
+  while ((def_left == 0) && (def_right == 0) && (def_bottom == 0) && (def_top == 0) && !ist.eof()) {
+    getline(ist, line);
+    if (line.find("DIEAREA")!=std::string::npos) {
+      std::vector<std::string> die_area_field;
+      parse_line(line, die_area_field);
+      //std::cout << line << "\n";
+      if (die_area_field.size() < 9) {
+        std::cout << "Error!\n";
+        std::cout << "Invalid UNITS declaration: expecting 9 fields\n";
+        return false;
+      }
+      try {
+        def_left = (int)std::round(std::stoi(die_area_field[2])/m2_pitch/def_distance_microns);
+        def_bottom = (int)std::round(std::stoi(die_area_field[3])/m2_pitch/def_distance_microns);
+        def_right = (int)std::round(std::stoi(die_area_field[6])/m2_pitch/def_distance_microns);
+        def_top = (int)std::round(std::stoi(die_area_field[7])/m2_pitch/def_distance_microns);
+      } catch (...) {
+        std::cout << "Error!\n";
+        std::cout << "Invalid stoi conversion: expecting DIEAREA ( XXX XXX ) ( XXX XXX ) ;\n";
+        std::cout << line << "\n";
+        return false;
+      }
+    }
+  }
+  std::cout << "DIEAREA ( " << def_left << " " << def_bottom << " ) ( " << def_right << " " << def_top << " )\n";
+
+  while ((line.find("COMPONENTS") == std::string::npos) && !ist.eof()) {
+    getline(ist, line);
+  }
+  std::cout << line << "\n";
+  getline(ist, line);
+  while ((line.find("END COMPONENTS") == std::string::npos) && !ist.eof()) {
+    //std::cout << line << "\t";
+    std::vector<std::string> block_declare_field;
+    parse_line(line, block_declare_field);
+    if (block_declare_field.empty()) {
+      continue;
+    } else if (block_declare_field.size() < 3) {
+      std::cout << "Error!\n";
+      std::cout << "Invalid block declaration, expecting at least: - compName modelName\n";
+      return false;
+    }
+    //std::cout << block_declare_field[0] << " " << block_declare_field[1] << "\n";
+    if (blockType_name_map.find(block_declare_field[2]) == blockType_name_map.end()) {
+      std::cout << "Error!\n";
+      std::cout << "Invalid block declaration, no such type exists\n";
+      std::cout << line << "\n";
+      return false;
+    } else {
+      block_type_t *blockType = &blockType_list[blockType_name_map.find(block_declare_field[2])->second];
+      add_new_block(block_declare_field[1], blockType->width(), blockType->height(), 0, 0, true, block_declare_field[2]);
+    }
+    getline(ist, line);
+  }
+
+  while (line.find("NETS") == std::string::npos && !ist.eof()) {
+    getline(ist, line);
+  }
+  std::cout << line << "\n";
+  getline(ist, line);
+  // the following is a hack now, cannot handle all cases, probably need to use BISON in the future if necessary
+  while ((line.find("END NETS") == std::string::npos) && !ist.eof()) {
+    if (line.find("-", 0) != std::string::npos) {
+      //std::cout << line << "\n";
+      std::vector<std::string> net_field;
+      parse_line(line, net_field);
+      if (net_field.size() < 2) {
+        std::cout << "Error!\n";
+        std::cout << "Invalid net declaration, expecting at least: - netName\n";
+        return false;
+      }
+      //std::cout << "\t" << net_field[0] << " " << net_field[1] << "\n";
+      create_blank_net(net_field[1]);
+      getline(ist, line);
+      //std::cout << line << "\n";
+      std::vector<std::string> pin_field;
+      parse_line(line, pin_field);
+      if ((pin_field.size()%4 != 0) || (pin_field.size() < 8)) {
+        std::cout << "Error!\n";
+        std::cout << "Invalid net declaration, expecting 4n fields, where n >= 2\n";
+        return false;
+      }
+      for (size_t i=0; i<pin_field.size(); i += 4) {
+        //std::cout << "     " << pin_field[i+1] << " " << pin_field[i+2];
+        block_type_t *tmp_type = &blockType_list[blockType_name_map.find(block_list[block_name_map.find(pin_field[i+1])->second].type())->second];
+        int tmp_xOffset = tmp_type->pin_list[tmp_type->pinname_num_map.find(pin_field[i+2])->second].x;
+        int tmp_yOffset = tmp_type->pin_list[tmp_type->pinname_num_map.find(pin_field[i+2])->second].y;
+        add_pin_to_net(net_field[1], pin_field[i+1], tmp_xOffset, tmp_yOffset, pin_field[i+2]);
+      }
+      //std::cout << "\n";
+    }
+
+    getline(ist, line);
+  }
+
 
   return true;
 }

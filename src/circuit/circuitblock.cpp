@@ -18,6 +18,7 @@ block_t::block_t() {
 
 block_t::block_t(std::string &blockName, int w, int h, int lx, int ly, bool movable, std::string typeName)
     : _name(blockName), _w(w), _h(h), _llx(lx), _lly(ly), _movable(movable), _type(std::move(typeName)) {
+  _orientation = "N";
   _num = 0;
 }
 

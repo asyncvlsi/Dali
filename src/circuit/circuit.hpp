@@ -51,9 +51,12 @@ public:
   int lef_database_microns = 0;
   double m2_pitch = 0;
   int def_distance_microns = 0;
+  int def_left = 0, def_right = 0, def_bottom = 0, def_top = 0;
   std::vector< block_type_t > blockType_list;
   std::map<std::string, size_t> blockType_name_map;
   bool read_lef_file(std::string const &NameOfFile);
+  void report_blockType_list();
+  void report_blockType_map();
   bool read_def_file(std::string const &NameOfFile);
 
   //-----------------------------------------------------------------------------------------------

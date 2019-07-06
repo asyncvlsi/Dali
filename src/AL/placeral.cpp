@@ -1007,7 +1007,7 @@ void placer_al_t::integerize() {
 
 void placer_al_t::update_velocity() {
   double rij, overlap = 0, areai;
-  double maxv1 = 15, maxv2 = 20;
+  double maxv1 = 3, maxv2 = 4;
   for (auto &&block: block_list) {
     block.vx = 0;
     block.vy = 0;
@@ -1184,9 +1184,9 @@ void placer_al_t::diffusion_with_gravity() {
     update_velocity();
     for (auto &&block: block_list) {
       if (i%2==0) {
-        block.add_gravity_vx(-1);
+        block.add_gravity_vx(-0.1);
       } else {
-        block.add_gravity_vy(-1);
+        block.add_gravity_vy(-0.1);
       }
     }
     update_position();

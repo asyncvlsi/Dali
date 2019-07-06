@@ -39,6 +39,10 @@ int block_type_t::height() {
   return _height;
 }
 
+void block_type_t::set_num(size_t Num) {
+  _num = (int) Num;
+}
+
 int block_type_t::num() {
   return  _num;
 }

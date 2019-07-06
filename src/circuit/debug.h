@@ -5,6 +5,6 @@
 #ifndef HPCC_DEBUG_H
 #define HPCC_DEBUG_H
 
-//#define USEDEBUG 1
+#define USEDEBUG 1
 
 #endif //HPCC_DEBUG_H
