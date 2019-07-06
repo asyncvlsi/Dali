@@ -11,7 +11,7 @@ block_type_t::block_type_t() {
   _num = 0;
 }
 
-block_type_t::block_type_t(std::string &name, int width, int height) : _name(std::move(name)), _width(width), _height(height) {
+block_type_t::block_type_t(std::string &init_name, int init_width, int init_height) : _name(std::move(init_name)), _width(init_width), _height(init_height) {
   _num = 0;
 }
 
