@@ -93,7 +93,7 @@ int main() {
   ptr_placer->report_placement_result();
   ptr_placer->gen_matlab_disp_file(); // generate matlab file for layout
   //ptr_placer->write_node_terminal(); // generate a data file for adaptec1
-  ptr_placer->save_DEF();
+  circuit.save_DEF();
 
   delete ptr_placer;
 

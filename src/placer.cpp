@@ -227,54 +227,6 @@ bool placer_t::write_node_terminal(std::string const &NameOfFile, std::string co
   return true;
 }
 
-bool placer_t::save_DEF(std::string const &NameOfFile) {
-  std::ofstream ost(NameOfFile.c_str());
-  if (!ost.is_open()) {
-    std::cout << "Cannot open file " << NameOfFile << "\n";
-    return false;
-  }
-
-  // 1. print file header?
-  ost << "VERSION 5.8 ;\n"
-      << "DIVIDERCHAR \"/\" ;\n"
-      << "BUSBITCHARS \"[]\" ;\n";
-  ost << "DESIGN tmp_circuit_name\n";
-  ost << "UNITS DISTANCE MICRONS 2000 \n\n"; // temporary values, depends on LEF file
-
-  // no core rows?
-  // no tracks?
-
-  // 2. print component
-  //std::cout << _circuit->block_list.size() << "\n";
-  ost << "COMPONENTS " << _circuit->block_list.size() << " ;\n";
-  for (auto &&block: _circuit->block_list) {
-    ost << "- "
-        << block.name() << " "
-        << block.type() << " + "
-        << block.place_status() << " "
-        << block.lower_left_corner() << " "
-        << block.orientation() + " ;\n";
-  }
-  ost << "END COMPONENTS\n\n";
-
-  // 3. print net
-  ost << "NETS " << _circuit->net_list.size() << " ;\n";
-  for (auto &&net: _circuit->net_list) {
-    ost << "- "
-        << net.name() << "\n";
-    ost << " ";
-    for (auto &&pin: net.pin_list) {
-      ost << " " << pin.pin_name();
-    }
-    ost << "\n" << " ;\n";
-  }
-  ost << "END NETS\n\n";
-
-  ost << "END DESIGN\n";
-  ost.close();
-  return true;
-}
-
 placer_t::~placer_t() {
 
 }

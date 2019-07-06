@@ -79,6 +79,7 @@ public:
 
   bool write_nodes_file(std::string const &NameOfFile="circuit.nodes");
   bool write_nets_file(std::string const &NameOfFile="circuit.nets");
+  bool save_DEF(std::string const &NameOfFile="circuit.def");
 };
 
 #endif //HPCC_CIRCUIT_HPP
