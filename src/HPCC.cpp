@@ -65,12 +65,12 @@ int main() {
   //circuit.report_net_map();
   /****debug case****/
 
-  if (!circuit.read_nodes_file("nnnodes1")) {
+  if (!circuit.read_nodes_file("nnnodes0")) {
     //circuit.report_block_list();
     //circuit.report_block_map();
     return 1;
   }
-  if (!circuit.read_nets_file("nnnets1")) {
+  if (!circuit.read_nets_file("nnnets0")) {
     //circuit.report_net_list();
     //circuit.report_net_map();
     return 1;
@@ -86,17 +86,44 @@ int main() {
   std::cout << placer.space_block_ratio() << " " << placer.filling_rate() << " " << placer.aspect_ratio() << "\n";
   std::cout << "average width and height: " << circuit.ave_width() << " " << circuit.ave_height() << " " << circuit.ave_width() + circuit.ave_height() << "\n";
   placer.set_input_circuit(&circuit);
-  placer.set_boundary(360,3000,0,3000); // debug case
+  placer.set_boundary(0,360,0,3000); // debug case
   //placer.auto_set_boundaries(); // set boundary for layout
   //placer.set_boundary(459,11151,459,11139); // set boundary for adaptec1
   //placer.set_boundary(circuit.def_left,circuit.def_right,circuit.def_bottom,circuit.def_top); // set boundary for lef/def
   placer.report_boundaries();
   placer.start_placement();
   placer.report_placement_result();
-  placer.gen_matlab_disp_file(); // generate matlab file for layout
   //placer.write_node_terminal(); // generate a data file for adaptec1
   //circuit.save_DEF();
 
+
+  circuit_t circuit1;
+  if (!circuit1.read_nodes_file("nnnodes1")) {
+    //circuit.report_block_list();
+    //circuit.report_block_map();
+    return 1;
+  }
+  if (!circuit1.read_nets_file("nnnets1")) {
+    //circuit.report_net_list();
+    //circuit.report_net_map();
+    return 1;
+  }
+
+
+  std::cout << circuit1.tot_movable_num_real_time() << " movable cells\n";
+  std::cout << circuit1.block_list.size() << " total cells\n";
+
+  placer_al_t placer1;
+  placer1.set_space_block_ratio(1.6);
+  placer1.set_aspect_ratio(1);
+  std::cout << placer1.space_block_ratio() << " " << placer1.filling_rate() << " " << placer1.aspect_ratio() << "\n";
+  std::cout << "average width and height: " << circuit1.ave_width() << " " << circuit1.ave_height() << " " << circuit1.ave_width() + circuit1.ave_height() << "\n";
+  placer1.set_input_circuit(&circuit1);
+  placer1.set_boundary(360,3000,0,3000); // debug case
+  placer1.report_boundaries();
+  placer1.start_placement();
+  placer1.report_placement_result();
+  placer1.gen_matlab_disp_file(); // generate matlab file for layout
 
   Time = clock() - Time;
   std::cout << "Execution time " << (float)Time/CLOCKS_PER_SEC << "s.\n";

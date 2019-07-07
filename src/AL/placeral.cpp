@@ -595,8 +595,8 @@ void placer_al_t::build_problem_b2b_y_nooffset() {
 }
 
 void placer_al_t::CG_solver(std::string const &dimension, std::vector< std::vector<weight_tuple> > &A, std::vector<double> &b, std::vector<size_t> &k) {
-  static double epsilon = 1e-15, alpha, beta, rsold, rsnew, pAp, solution_distance;
-  static std::vector<double> ax(movable_block_num()), ap(movable_block_num()), z(movable_block_num()), p(movable_block_num()), JP(movable_block_num());
+  double epsilon = 1e-15, alpha, beta, rsold, rsnew, pAp, solution_distance;
+  std::vector<double> ax(movable_block_num()), ap(movable_block_num()), z(movable_block_num()), p(movable_block_num()), JP(movable_block_num());
   // JP = Jacobi_preconditioner
   for (size_t i=0; i<movable_block_num(); i++) {
     // initialize the Jacobi preconditioner
@@ -1240,6 +1240,8 @@ bool placer_al_t::start_placement() {
   update_max_min_node_y();
   HPWLx_converge = false;
   HPWLy_converge = false;
+  HPWLX_old = 1e30;
+  HPWLY_old = 1e30;
   for (int i=0; i<50; i++) {
     if (!HPWLx_converge) {
       build_problem_b2b_x();
