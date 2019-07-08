@@ -43,6 +43,7 @@ public:
   bool is_legal(int first_node_num);
   void diffuse(int first_node_num);
   bool DLA();
+  void shift_result_to_center();
 
   void report_hpwl();
   bool start_placement() override;

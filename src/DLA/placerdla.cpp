@@ -357,7 +357,7 @@ void placer_dla_t::diffuse(int first_blk_num) {
   //int step;
   double center_x=(left() + right())/2.0, center_y=(bottom() + top())/2.0;
   double cell_center_x, cell_center_y, distance_to_center;
-  double p1=0.005, p2; // accept probability
+  double p1=0.0005, p2; // accept probability
   double r, T=20.0;
   block_dla_t TLUM; // Temporary Location Under Motion
   block_dla_t MWLL; // Minimum Wire-Length Location
@@ -453,6 +453,20 @@ bool placer_dla_t::DLA() {
   return true;
 }
 
+void placer_dla_t::shift_result_to_center() {
+  double leftmost = block_list[0].llx(), bottommost = block_list[0].lly(), rightmost = block_list[0].urx(), topmost = block_list[0].ury();
+  for (auto &&block: block_list) {
+    if (block.llx() < leftmost) leftmost = block.llx();
+    if (block.lly() < bottommost) bottommost = block.lly();
+    if (block.urx() > rightmost) rightmost = block.urx();
+    if (block.ury() > topmost) topmost = block.ury();
+  }
+  for (auto &&block: block_list) {
+    block.set_llx(block.llx() - (int)leftmost + (int)(1/2.0*(right() + left() - rightmost + leftmost)));
+    block.set_lly(block.lly() - (int)bottommost + (int)(1/2.0*(top() + bottom() - topmost + bottommost)));
+  }
+}
+
 bool placer_dla_t::start_placement() {
   add_boundary_list();
   initialize_bin_list();
@@ -460,6 +474,7 @@ bool placer_dla_t::start_placement() {
   prioritize_block_to_place();
   draw_bin_list();
   DLA();
+  shift_result_to_center();
   report_hpwl();
 
   return true;

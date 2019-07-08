@@ -97,7 +97,7 @@ int main() {
   circuit.gen_matlab_disp_file("dla_result.m"); // generate matlab file for layout
   //placer->write_node_terminal(); // generate a data file for adaptec1
   delete placer;
-  circuit.save_DEF("circuit.def", defFileName);
+  circuit.save_DEF("circuit_dla.def", defFileName);
 
   placer = new placer_al_t;
   placer->set_space_block_ratio(1.6);
@@ -114,6 +114,7 @@ int main() {
   placer->report_placement_result();
   circuit.gen_matlab_disp_file("al_result.m"); // generate matlab file for layout
   delete placer;
+  circuit.save_DEF("circuit_al.def", defFileName);
 
   /*
   circuit_t circuit1;
