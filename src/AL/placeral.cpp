@@ -1267,7 +1267,11 @@ bool placer_al_t::start_placement() {
   add_boundary_list();
   initialize_bin_list();
   if (!legalization()) {
-    gravity_legalization();
+    if (!gravity_legalization()) {
+      report_hpwl();
+      std::cout << "Legalization fail\n";
+      return false;
+    }
   }
   post_legalization_optimization();
   std::cout << "Legalization Complete\n";

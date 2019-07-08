@@ -48,6 +48,7 @@ public:
 
   virtual bool start_placement() = 0;
   virtual void report_placement_result() = 0;
+  bool write_node_net_file(std::string nameOfFile = "", const std::string &padding = "");
 
   bool gen_matlab_disp_file(std::string const &filename="block_net_list.m");
 

@@ -49,14 +49,14 @@ int main() {
   }
   */
   /****LEF/DEF****/
-  std::string lefFileName = "../test/out_1K.lef";
-  std::string defFileName = "../test/out_1K.def";
-  if (!circuit.read_lef_file("../test/out_1K.lef")) {
+  std::string lefFileName = "../test/out_1K/3m/out_1K.lef";
+  std::string defFileName = "../test/out_1K/3m/out_1K.def";
+  if (!circuit.read_lef_file(lefFileName)) {
     return 1;
   }
   //circuit.report_blockType_list();
   //circuit.report_blockType_map();
-  if (!circuit.read_def_file("../test/out_1K.def")) {
+  if (!circuit.read_def_file(defFileName)) {
     return 1;
   }
   //circuit.report_block_list();
@@ -87,13 +87,15 @@ int main() {
   std::cout << "average width and height: " << circuit.ave_width() << " " << circuit.ave_height() << " " << circuit.ave_width() + circuit.ave_height() << "\n";
   placer->set_input_circuit(&circuit);
   //placer->set_boundary(0,360,0,3000); // debug case
-  //placer->auto_set_boundaries(); // set boundary for layout
+  placer->auto_set_boundaries(); // set boundary for layout
   //placer->set_boundary(459,11151,459,11139); // set boundary for adaptec1
-  placer->set_boundary(circuit.def_left,circuit.def_right,circuit.def_bottom,circuit.def_top); // set boundary for lef/def
+  //placer->set_boundary(circuit.def_left,circuit.def_right,circuit.def_bottom,circuit.def_top); // set boundary for lef/def
   placer->report_boundaries();
-  placer->start_placement();
+  if (!placer->start_placement()) {
+    placer->write_node_net_file();
+  }
   placer->report_placement_result();
-  circuit.gen_matlab_disp_file("dla_result.m"); // generate matlab file for layout
+  placer->gen_matlab_disp_file("dla_result.m"); // generate matlab file for layout
   //placer->write_node_terminal(); // generate a data file for adaptec1
   delete placer;
   circuit.save_DEF("circuit_dla.def", defFileName);

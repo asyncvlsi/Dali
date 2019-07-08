@@ -3,6 +3,7 @@
 //
 
 #include <cmath>
+#include <ctime>
 #include "placer.hpp"
 
 placer_t::placer_t() {
@@ -151,6 +152,36 @@ bool placer_t::set_boundary(int left_arg, int right_arg, int bottom_arg, int top
     _top = top_arg;
     return true;
   }
+}
+
+bool placer_t::write_node_net_file(std::string nameOfFile, const std::string &padding) {
+  report_placement_result();
+  if (nameOfFile.empty()) {
+    time_t current_time;
+    current_time = time(nullptr);
+    nameOfFile = std::to_string(current_time);
+  }
+  nameOfFile += padding;
+  std::string netFileName = nameOfFile + ".nets";
+  if (!_circuit->write_nets_file(netFileName)) {
+    std::cout << "Cannot write nets file!\n";
+    return false;
+  }
+  std::string nodeFileName = nameOfFile + ".nodes";
+  if (!_circuit->write_nodes_file(nodeFileName)) {
+    std::cout << "Cannot write nodes file!\n";
+    return false;
+  }
+  std::string boundFileName = nameOfFile + ".bdrs";
+  std::ofstream ost(boundFileName.c_str());
+  if (!ost.is_open()) {
+    std::cout << "Cannot write boundaries files!\n";
+    return false;
+  }
+  ost << left() << " " << right() << " " << bottom() << " " << top() << "\n";
+  ost.close();
+
+  return true;
 }
 
 bool placer_t::gen_matlab_disp_file(std::string const &filename) {

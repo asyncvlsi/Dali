@@ -393,6 +393,22 @@ bool circuit_t::read_pl_file(std::string const &NameOfFile) {
   return true;
 }
 
+bool add_block_type(std::string &blockTypeName, int width, int height) {
+
+}
+
+bool add_pin_to_block(std::string &blockTypeName, std::string &pinName, int xOffset, int yOffset) {
+
+}
+
+bool add_new_block(std::string &blockName, std::string &blockTypeName, int llx = 0, int lly = 0, bool movable = true) {
+
+}
+
+bool add_pin_to_net(std::string &netName, std::string &blockName, std::string &pinName) {
+
+}
+
 bool circuit_t::read_lef_file(std::string const &NameOfFile) {
   std::ifstream ist(NameOfFile.c_str());
   if (ist.is_open()==0) {
@@ -612,7 +628,7 @@ bool circuit_t::read_def_file(std::string const &NameOfFile) {
       }
     }
   }
-  std::cout << "DISTANCE MICRONS " << def_distance_microns << "\n";
+  //std::cout << "DISTANCE MICRONS " << def_distance_microns << "\n";
 
   def_left = 0;
   def_right = 0;
@@ -642,12 +658,12 @@ bool circuit_t::read_def_file(std::string const &NameOfFile) {
       }
     }
   }
-  std::cout << "DIEAREA ( " << def_left << " " << def_bottom << " ) ( " << def_right << " " << def_top << " )\n";
+  //std::cout << "DIEAREA ( " << def_left << " " << def_bottom << " ) ( " << def_right << " " << def_top << " )\n";
 
   while ((line.find("COMPONENTS") == std::string::npos) && !ist.eof()) {
     getline(ist, line);
   }
-  std::cout << line << "\n";
+  //std::cout << line << "\n";
   getline(ist, line);
   while ((line.find("END COMPONENTS") == std::string::npos) && !ist.eof()) {
     //std::cout << line << "\t";
@@ -676,11 +692,11 @@ bool circuit_t::read_def_file(std::string const &NameOfFile) {
   while (line.find("NETS") == std::string::npos && !ist.eof()) {
     getline(ist, line);
   }
-  std::cout << line << "\n";
+  //std::cout << line << "\n";
   getline(ist, line);
   // the following is a hack now, cannot handle all cases, probably need to use BISON in the future if necessary
   while ((line.find("END NETS") == std::string::npos) && !ist.eof()) {
-    if (line.find("-", 0) != std::string::npos) {
+    if (line.find("-") != std::string::npos) {
       //std::cout << line << "\n";
       std::vector<std::string> net_field;
       parse_line(line, net_field);
@@ -709,10 +725,8 @@ bool circuit_t::read_def_file(std::string const &NameOfFile) {
       }
       //std::cout << "\n";
     }
-
     getline(ist, line);
   }
-
 
   return true;
 }
@@ -807,6 +821,7 @@ bool circuit_t::write_nodes_file(std::string const &NameOfFile) {
   for (auto &&block: block_list) {
     ost << "\t" << block.name() << "\t" << block.width() << "\t" << block.height() << "\n";
   }
+  ost.close();
 
   return true;
 }
@@ -824,6 +839,7 @@ bool circuit_t::write_nets_file(std::string const &NameOfFile) {
       ost << "\t" << pin.name() << "\tI : " << pin.x_offset() << "\t" << pin.y_offset() << "\n";
     }
   }
+  ost.close();
 
   return true;
 }
