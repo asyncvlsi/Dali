@@ -425,7 +425,7 @@ bool circuit_t::add_pin_to_block(std::string &blockTypeName, std::string &pinNam
   return blockTypeList[blockTypeNum].add_pin(pinName, xOffset, yOffset);
 }
 
-bool circuit_t::add_new_block(std::string &blockName, std::string blockTypeName, int llx, int lly, bool movable) {
+bool circuit_t::add_new_block(std::string &blockName, std::string &blockTypeName, int llx, int lly, bool movable) {
   if (blockTypeNameMap.find(blockTypeName) == blockTypeNameMap.end()) {
     #ifdef USEDEBUG
     std::cout << "Error!\n";
@@ -738,7 +738,8 @@ bool circuit_t::read_def_file(std::string const &NameOfFile) {
       return false;
     } else {
       block_type_t *blockType = &blockTypeList[blockTypeNameMap.find(block_declare_field[2])->second];
-      add_new_block(block_declare_field[1], blockType->name(), 0, 0, true);
+      std::string blockName = blockType->name();
+      add_new_block(block_declare_field[1], blockName, 0, 0, true);
     }
     getline(ist, line);
   }

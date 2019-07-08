@@ -63,7 +63,7 @@ public:
   std::map<std::string, size_t> blockTypeNameMap;
   bool add_block_type(std::string &blockTypeName, int width, int height);
   bool add_pin_to_block(std::string &blockTypeName, std::string &pinName, int xOffset, int yOffset);
-  bool add_new_block(std::string &blockName, std::string blockTypeName, int llx = 0, int lly = 0, bool movable = true);
+  bool add_new_block(std::string &blockName, std::string &blockTypeName, int llx = 0, int lly = 0, bool movable = true);
   bool add_pin_to_net(std::string &netName, std::string &blockName, std::string &pinName);
   bool read_lef_file(std::string const &NameOfFile);
   void report_blockType_list();
