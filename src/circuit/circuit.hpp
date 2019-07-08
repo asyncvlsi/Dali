@@ -14,7 +14,8 @@
 
 class circuit_t {
 private:
-  int dummy_space = 2;
+  int _dummy_space_x = 0;
+  int _dummy_space_y = 0;
 protected:
   double _ave_width;
   double _ave_height;
@@ -34,6 +35,8 @@ public:
   // string to size_t map to find the index of a block in the block_list
   std::map<std::string, size_t> net_name_map;
   // string to size_t map to find the index of a net in the net_list
+
+  void set_dummy_space(int init_ds_x, int init_ds_y);
 
   bool add_new_block(std::string &blockName, int w, int h, int llx = 0, int lly = 0, bool movable = true, std::string typeName="");
   bool create_blank_net(std::string &netName, double weight = 1);

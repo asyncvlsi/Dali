@@ -32,7 +32,7 @@ private:
   bool HPWLy_converge = false;
   double cg_precision = 0.01;
   double HPWL_intra_linearSolver_precision = 0.01;
-  int max_legalization_iteration = 1000;
+  int max_legalization_iteration = 500;
   int iteration_limit_diffusion = 10;
   int time_step = 5;
 public:

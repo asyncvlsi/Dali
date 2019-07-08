@@ -42,6 +42,10 @@ circuit_t::circuit_t() {
  *
  */
 
+void circuit_t::set_dummy_space(int init_ds_x, int init_ds_y) {
+  _dummy_space_x = init_ds_x;
+  _dummy_space_y = init_ds_y;
+}
 
 bool circuit_t::add_new_block(std::string &blockName, int w, int h, int llx, int lly, bool movable, std::string typeName) {
   if (block_name_map.find(blockName) == block_name_map.end()) {

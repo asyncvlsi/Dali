@@ -1234,7 +1234,6 @@ bool placer_al_t::post_legalization_optimization() {
 }
 
 bool placer_al_t::start_placement() {
-  /*
   cg_init();
   uniform_initialization();
   update_max_min_node_x();
@@ -1265,7 +1264,6 @@ bool placer_al_t::start_placement() {
 
   shift_cg_solution_to_region_center();
   expansion_legalization();
-   */
   add_boundary_list();
   initialize_bin_list();
   if (!legalization()) {

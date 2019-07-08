@@ -59,7 +59,6 @@ int main() {
   if (!circuit.read_def_file("../test/out_1K.def")) {
     return 1;
   }
-
   //circuit.report_block_list();
   //circuit.report_block_map();
   //circuit.report_net_list();
