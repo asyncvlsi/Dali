@@ -37,6 +37,8 @@ public:
   // string to size_t map to find the index of a net in the net_list
 
   void set_dummy_space(int init_ds_x, int init_ds_y);
+  int dummy_space_x();
+  int dummy_space_y();
 
   bool add_new_block(std::string &blockName, int w, int h, int llx = 0, int lly = 0, bool movable = true, std::string typeName="");
   bool create_blank_net(std::string &netName, double weight = 1);

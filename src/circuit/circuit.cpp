@@ -47,6 +47,15 @@ void circuit_t::set_dummy_space(int init_ds_x, int init_ds_y) {
   _dummy_space_y = init_ds_y;
 }
 
+int circuit_t::dummy_space_x() {
+  return _dummy_space_x;
+}
+
+int circuit_t::dummy_space_y() {
+  return _dummy_space_y;
+}
+
+
 bool circuit_t::add_new_block(std::string &blockName, int w, int h, int llx, int lly, bool movable, std::string typeName) {
   if (block_name_map.find(blockName) == block_name_map.end()) {
     size_t block_list_size = block_list.size();
@@ -659,7 +668,7 @@ bool circuit_t::read_def_file(std::string const &NameOfFile) {
       return false;
     } else {
       block_type_t *blockType = &blockType_list[blockType_name_map.find(block_declare_field[2])->second];
-      add_new_block(block_declare_field[1], blockType->width(), blockType->height()+dummy_space, 0, 0, true, block_declare_field[2]);
+      add_new_block(block_declare_field[1], blockType->width()+dummy_space_x(), blockType->height()+dummy_space_y(), 0, 0, true, block_declare_field[2]);
     }
     getline(ist, line);
   }
@@ -696,7 +705,7 @@ bool circuit_t::read_def_file(std::string const &NameOfFile) {
         block_type_t *tmp_type = &blockType_list[blockType_name_map.find(block_list[block_name_map.find(pin_field[i+1])->second].type())->second];
         int tmp_xOffset = tmp_type->pin_list[tmp_type->pinname_num_map.find(pin_field[i+2])->second].x;
         int tmp_yOffset = tmp_type->pin_list[tmp_type->pinname_num_map.find(pin_field[i+2])->second].y;
-        add_pin_to_net(net_field[1], pin_field[i+1], tmp_xOffset, tmp_yOffset + dummy_space/2, pin_field[i+2]);
+        add_pin_to_net(net_field[1], pin_field[i+1], tmp_xOffset+dummy_space_x()/2, tmp_yOffset+dummy_space_y()/2, pin_field[i+2]);
       }
       //std::cout << "\n";
     }
@@ -888,12 +897,12 @@ bool circuit_t::gen_matlab_disp_file(std::string const &filename) {
     return false;
   }
   for (auto &&block: block_list) {
-    ost << "rectangle('Position',[" << block.llx() << " " << block.lly() << " " << block.width() << " " << block.height()-dummy_space << "], 'LineWidth', 1, 'EdgeColor','blue')\n";
+    ost << "rectangle('Position',[" << block.llx() << " " << block.lly() << " " << block.width() - dummy_space_x() << " " << block.height() - dummy_space_y() << "], 'LineWidth', 1, 'EdgeColor','blue')\n";
   }
   for (auto &&net: net_list) {
     for (size_t i=0; i<net.pin_list.size(); i++) {
       for (size_t j=i+1; j<net.pin_list.size(); j++) {
-        ost << "line([" << net.pin_list[i].abs_x() << "," << net.pin_list[j].abs_x() << "],[" << net.pin_list[i].abs_y() - dummy_space/2 << "," << net.pin_list[j].abs_y() << "],'lineWidth', 0.5)\n";
+        ost << "line([" << net.pin_list[i].abs_x() << "," << net.pin_list[j].abs_x() - dummy_space_x()/2 << "],[" << net.pin_list[i].abs_y() - dummy_space_y()/2 << "," << net.pin_list[j].abs_y() << "],'lineWidth', 0.5)\n";
       }
     }
   }

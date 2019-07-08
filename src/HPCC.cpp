@@ -80,7 +80,7 @@ int main() {
   std::cout << circuit.tot_movable_num_real_time() << " movable cells\n";
   std::cout << circuit.block_list.size() << " total cells\n";
 
-  placer_t *placer = new placer_dla_t;
+  placer_t *placer = new placer_al_t;
   placer->set_space_block_ratio(1.6);
   placer->set_aspect_ratio(1);
   std::cout << placer->space_block_ratio() << " " << placer->filling_rate() << " " << placer->aspect_ratio() << "\n";
@@ -97,7 +97,7 @@ int main() {
   //placer->write_node_terminal(); // generate a data file for adaptec1
   delete placer;
   circuit.save_DEF("circuit_dla.def", defFileName);
-
+  /*
   placer = new placer_al_t;
   placer->set_space_block_ratio(1.6);
   placer->set_aspect_ratio(1);
@@ -114,6 +114,7 @@ int main() {
   circuit.gen_matlab_disp_file("al_result.m"); // generate matlab file for layout
   delete placer;
   circuit.save_DEF("circuit_al.def", defFileName);
+   */
 
   /*
   circuit_t circuit1;
