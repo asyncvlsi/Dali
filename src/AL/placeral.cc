@@ -3,7 +3,7 @@
 //
 
 #include <cmath>
-#include "placeral.hpp"
+#include "placeral.h"
 
 placer_al_t::placer_al_t(): placer_t() {
 

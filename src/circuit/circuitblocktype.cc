@@ -2,7 +2,8 @@
 // Created by Yihang Yang on 2019-06-27.
 //
 
-#include "circuitblocktype.hpp"
+#include "circuitblocktype.h"
+#include "debug.h"
 
 block_type_t::block_type_t() {
   _name = "";
@@ -11,8 +12,8 @@ block_type_t::block_type_t() {
   _num = 0;
 }
 
-block_type_t::block_type_t(std::string &init_name, int init_width, int init_height) : _name(std::move(init_name)), _width(init_width), _height(init_height) {
-  _num = 0;
+block_type_t::block_type_t(std::string &init_name, int init_width, int init_height, int num) :
+  _name(std::move(init_name)), _width(init_width), _height(init_height), _num(num) {
 }
 
 void block_type_t::set_name(std::string &typeName) {
@@ -53,8 +54,10 @@ bool block_type_t::add_pin(std::string &pinName, double xOffset, double yOffset)
     pin_list.emplace_back(xOffset, yOffset);
     return true;
   } else {
+    #ifdef USEDEBUG
     std::cout << "Error!\n";
     std::cout << "Existing pin in pin_list with name: " << pinName << "\n";
+    #endif
     return false;
   }
 }

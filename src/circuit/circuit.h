@@ -2,15 +2,15 @@
 // Created by Yihang Yang on 2019-03-26.
 //
 
-#ifndef HPCC_CIRCUIT_HPP
-#define HPCC_CIRCUIT_HPP
+#ifndef HPCC_CIRCUIT_H
+#define HPCC_CIRCUIT_H
 
 #include <vector>
 #include <map>
-#include "circuitblocktype.hpp"
-#include "circuitblock.hpp"
-#include "circuitpin.hpp"
-#include "circuitnet.hpp"
+#include "circuitblocktype.h"
+#include "circuitblock.h"
+#include "circuitpin.h"
+#include "circuitnet.h"
 
 class circuit_t {
 private:
@@ -59,11 +59,11 @@ public:
   double m2_pitch = 0;
   int def_distance_microns = 0;
   int def_left = 0, def_right = 0, def_bottom = 0, def_top = 0;
-  std::vector< block_type_t > blockType_list;
-  std::map<std::string, size_t> blockType_name_map;
+  std::vector< block_type_t > blockTypeList;
+  std::map<std::string, size_t> blockTypeNameMap;
   bool add_block_type(std::string &blockTypeName, int width, int height);
   bool add_pin_to_block(std::string &blockTypeName, std::string &pinName, int xOffset, int yOffset);
-  bool add_new_block(std::string &blockName, std::string &blockTypeName, int llx = 0, int lly = 0, bool movable = true);
+  bool add_new_block(std::string &blockName, std::string blockTypeName, int llx = 0, int lly = 0, bool movable = true);
   bool add_pin_to_net(std::string &netName, std::string &blockName, std::string &pinName);
   bool read_lef_file(std::string const &NameOfFile);
   void report_blockType_list();
@@ -94,4 +94,4 @@ public:
   bool save_DEF(std::string const &NameOfFile, std::string const &defFileName);
 };
 
-#endif //HPCC_CIRCUIT_HPP
+#endif //HPCC_CIRCUIT_H

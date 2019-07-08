@@ -2,7 +2,7 @@
 // Created by Yihang Yang on 2019-05-23.
 //
 
-#include "circuitpin.hpp"
+#include "circuitpin.h"
 
 pin_t::pin_t() {
   _x_offset = 0;

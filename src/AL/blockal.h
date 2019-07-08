@@ -2,12 +2,12 @@
 // Created by Yihang Yang on 2019-06-15.
 //
 
-#ifndef HPCC_BLOCKAL_HPP
-#define HPCC_BLOCKAL_HPP
+#ifndef HPCC_BLOCKAL_H
+#define HPCC_BLOCKAL_H
 
 #include <cmath>
-#include "circuit/circuitblock.hpp"
-#include "circuit/circuitbin.hpp"
+#include "circuit/circuitblock.h"
+#include "circuit/circuitbin.h"
 
 class block_al_t:public block_t {
 private:
@@ -57,4 +57,4 @@ public:
 };
 
 
-#endif //HPCC_BLOCKAL_HPP
+#endif //HPCC_BLOCKAL_H

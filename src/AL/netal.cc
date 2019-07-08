@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 2019-06-15.
 //
 
-#include "netal.hpp"
-#include "blockal.hpp"
+#include "netal.h"
+#include "blockal.h"
 
 net_al_t::net_al_t(): net_t() {
 

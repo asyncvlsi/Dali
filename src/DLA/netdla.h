@@ -2,12 +2,12 @@
 // Created by Yihang Yang on 2019-06-01.
 //
 
-#ifndef HPCC_NETDLA_HPP
-#define HPCC_NETDLA_HPP
+#ifndef HPCC_NETDLA_H
+#define HPCC_NETDLA_H
 
 #include <string>
-#include "circuit/circuitnet.hpp"
-#include "blockdla.hpp"
+#include "circuit/circuitnet.h"
+#include "blockdla.h"
 
 class net_dla_t: public net_t {
 public:
@@ -19,4 +19,4 @@ public:
 };
 
 
-#endif //HPCC_NETDLA_HPP
+#endif //HPCC_NETDLA_H

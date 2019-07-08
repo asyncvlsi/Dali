@@ -4,7 +4,7 @@
 
 #include <algorithm>
 #include <cstdlib>
-#include "blockdla.hpp"
+#include "blockdla.h"
 
 block_dla_t::block_dla_t(): block_t() {
   _num = 0;

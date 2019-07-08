@@ -2,7 +2,7 @@
 // Created by Yihang Yang on 2019-05-23.
 //
 
-#include "circuitnet.hpp"
+#include "circuitnet.h"
 #include "debug.h"
 
 net_t::net_t() {

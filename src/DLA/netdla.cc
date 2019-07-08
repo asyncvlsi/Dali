@@ -2,7 +2,7 @@
 // Created by Yihang Yang on 2019-06-01.
 //
 
-#include "netdla.hpp"
+#include "netdla.h"
 
 net_dla_t::net_dla_t(): net_t() {
 

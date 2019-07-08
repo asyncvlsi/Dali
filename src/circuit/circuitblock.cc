@@ -2,7 +2,7 @@
 // Created by Yihang Yang on 2019-05-23.
 //
 
-#include "circuitblock.hpp"
+#include "circuitblock.h"
 
 block_t::block_t() {
   _name = "";

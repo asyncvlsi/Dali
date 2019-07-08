@@ -2,13 +2,13 @@
 // Created by Yihang Yang on 2019-05-23.
 //
 
-#ifndef HPCC_PLACER_HPP
-#define HPCC_PLACER_HPP
+#ifndef HPCC_PLACER_H
+#define HPCC_PLACER_H
 
 #include <string>
 #include <iostream>
 #include <fstream>
-#include "circuit/circuit.hpp"
+#include "circuit/circuit.h"
 
 class placer_t {
 protected:
@@ -59,4 +59,4 @@ public:
 };
 
 
-#endif //HPCC_PLACER_HPP
+#endif //HPCC_PLACER_H

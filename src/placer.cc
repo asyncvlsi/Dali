@@ -4,7 +4,7 @@
 
 #include <cmath>
 #include <ctime>
-#include "placer.hpp"
+#include "placer.h"
 
 placer_t::placer_t() {
   _aspect_ratio = 0;

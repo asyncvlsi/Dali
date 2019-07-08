@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 2019-05-23.
 //
 
-#ifndef HPCC_CIRCUITBLOCK_HPP
-#define HPCC_CIRCUITBLOCK_HPP
+#ifndef HPCC_CIRCUITBLOCK_H
+#define HPCC_CIRCUITBLOCK_H
 
 
 #include <vector>
@@ -75,4 +75,4 @@ public:
 };
 
 
-#endif //HPCC_CIRCUITBLOCK_HPP
+#endif //HPCC_CIRCUITBLOCK_H

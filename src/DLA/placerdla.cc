@@ -7,7 +7,7 @@
 #include <cmath>
 #include <algorithm>
 #include <iostream>
-#include "placerdla.hpp"
+#include "placerdla.h"
 
 placer_dla_t::placer_dla_t(): placer_t() {
   bin_width = 0;

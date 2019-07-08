@@ -6,7 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include "circuit.hpp"
+#include "circuit.h"
 #include "debug.h"
 
 circuit_t::circuit_t() {
@@ -393,20 +393,85 @@ bool circuit_t::read_pl_file(std::string const &NameOfFile) {
   return true;
 }
 
-bool add_block_type(std::string &blockTypeName, int width, int height) {
-
+bool circuit_t::add_block_type(std::string &blockTypeName, int width, int height) {
+  if (blockTypeNameMap.find(blockTypeName) == blockTypeNameMap.end()) {
+    size_t blockTypeMapSize = blockTypeNameMap.size();
+    blockTypeNameMap.insert(std::pair<std::string, int>(blockTypeName, blockTypeMapSize));
+    blockTypeList.resize(blockTypeMapSize + 1);
+    blockTypeList.back().set_name(blockTypeName);
+    blockTypeList.back().set_width(width);
+    blockTypeList.back().set_height(height);
+    blockTypeList.back().set_num(blockTypeMapSize);
+    return true;
+  } else {
+    #ifdef USEDEBUG
+    std::cout << "Error!\n";
+    std::cout << "Existing block type in blockTypeList with name: " << blockTypeName << "\n";
+    #endif
+    return false;
+  }
 }
 
-bool add_pin_to_block(std::string &blockTypeName, std::string &pinName, int xOffset, int yOffset) {
-
+bool circuit_t::add_pin_to_block(std::string &blockTypeName, std::string &pinName, int xOffset, int yOffset) {
+  if (blockTypeNameMap.find(blockTypeName) == blockTypeNameMap.end()) {
+    #ifdef USEDEBUG
+    std::cout << "Error!\n";
+    std::cout << "Adding pin to block\n";
+    std::cout << "No block type exists in blockTypeList has name: " << blockTypeName << "\n";
+    #endif
+    return false;
+  }
+  int blockTypeNum = blockTypeNameMap.find(blockTypeName)->second;
+  return blockTypeList[blockTypeNum].add_pin(pinName, xOffset, yOffset);
 }
 
-bool add_new_block(std::string &blockName, std::string &blockTypeName, int llx = 0, int lly = 0, bool movable = true) {
-
+bool circuit_t::add_new_block(std::string &blockName, std::string blockTypeName, int llx, int lly, bool movable) {
+  if (blockTypeNameMap.find(blockTypeName) == blockTypeNameMap.end()) {
+    #ifdef USEDEBUG
+    std::cout << "Error!\n";
+    std::cout << "No block type exists in blockTypeList has name: " << blockTypeName << "\n";
+    #endif
+    return false;
+  }
+  if (block_name_map.find(blockName) != block_name_map.end()) {
+    #ifdef USEDEBUG
+    std::cout << "Error!\n";
+    std::cout << "Block in blockList already: " << blockName << "\n";
+    #endif
+    return false;
+  }
+  int blockTypeNum = blockTypeNameMap.find(blockTypeName)->second;
+  int width = blockTypeList[blockTypeNum].width();
+  int height = blockTypeList[blockTypeNum].height();
+  return add_new_block(blockName, width, height, llx, lly, movable, blockTypeName);
 }
 
-bool add_pin_to_net(std::string &netName, std::string &blockName, std::string &pinName) {
-
+bool circuit_t::add_pin_to_net(std::string &netName, std::string &blockName, std::string &pinName) {
+  if (net_name_map.find(netName) == net_name_map.end()) {
+    #ifdef USEDEBUG
+    std::cout << "Error!\n";
+    std::cout << "No net in net_list has name: " << netName << "\n";
+    #endif
+    return false;
+  }
+  if (block_name_map.find(blockName) == block_name_map.end()) {
+    #ifdef USEDEBUG
+    std::cout << "Error!\n";
+    std::cout << "No block in blockList has name: " << blockName << "\n";
+    #endif
+    return false;
+  }
+  block_type_t *tmp_type = &blockTypeList[blockTypeNameMap.find(block_list[block_name_map.find(blockName)->second].type())->second];
+  if (tmp_type->pinname_num_map.find(pinName) == tmp_type->pinname_num_map.end()) {
+    #ifdef USEDEBUG
+    std::cout << "Error!\n";
+    std::cout << "No pin: " << pinName << " in block: " << blockName << " with type: " << tmp_type->name() << "\n";
+    #endif
+    return false;
+  }
+  int tmp_xOffset = tmp_type->pin_list[tmp_type->pinname_num_map.find(pinName)->second].x;
+  int tmp_yOffset = tmp_type->pin_list[tmp_type->pinname_num_map.find(pinName)->second].y;
+  return add_pin_to_net(netName, blockName, tmp_xOffset+dummy_space_x()/2, tmp_yOffset+dummy_space_y()/2, pinName);
 }
 
 bool circuit_t::read_lef_file(std::string const &NameOfFile) {
@@ -415,6 +480,8 @@ bool circuit_t::read_lef_file(std::string const &NameOfFile) {
     std::cout << "Cannot open input file " << NameOfFile << "\n";
     return false;
   }
+
+  std::cout << "Start reading lef file\n";
 
   std::string line;
   lef_database_microns = 0;
@@ -481,32 +548,18 @@ bool circuit_t::read_lef_file(std::string const &NameOfFile) {
         std::cout << line << "\n";
         return false;
       }
-      // check if this type exist already
-      if (blockType_name_map.find(line_field[1]) == blockType_name_map.end()) {
-        blockType_name_map.insert(std::pair<std::string, size_t>(line_field[1], blockType_name_map.size()));
-      } else {
-        std::cout << "Error!\n";
-        std::cout << "Block type existing: " << line_field[1] << "\n";
-        return false;
-      }
-
-
-      // extend the vector by one
-      blockType_list.resize(blockType_list.size() + 1);
-      blockType_list.back().set_name(line_field[1]);
-      blockType_list.back().set_num(blockType_name_map.size()-1);
-      //std::cout << blockType_list.back().name() << "\n";
+      std::string blockTypeName = line_field[1];
+      //std::cout << blockTypeName << "\n";
+      int width = 0, height = 0;
       std::string end_macro_flag = "END " + line_field[1];
-
       do {
         getline(ist, line);
-        while ((blockType_list.back().width()==0) && !ist.eof()) {
+        while ((width==0) && (height==0) && !ist.eof()) {
           if (line.find("SIZE") != std::string::npos) {
             std::vector<std::string> size_field;
             parse_line(line, size_field);
-            double tmp_width, tmp_height;
             try {
-              tmp_width = std::stod(size_field[1]);
+              width = std::stoi(size_field[1]);
             } catch (...) {
               std::cout << "Error!\n";
               std::cout << "Invalid stod conversion:" << size_field[1] << "\n";
@@ -514,22 +567,19 @@ bool circuit_t::read_lef_file(std::string const &NameOfFile) {
               return false;
             }
             try {
-              tmp_height = std::stod(size_field[3]);
+              height = std::stoi(size_field[3]);
             } catch (...) {
               std::cout << "Error!\n";
               std::cout << "Invalid stod conversion:" << size_field[3] << "\n";
               std::cout << line << "\n";
               return false;
             }
-            tmp_width = std::round(tmp_width/m2_pitch);
-            tmp_height = std::round(tmp_height/m2_pitch);
-
-            blockType_list.back().set_width((int)tmp_width);
-            blockType_list.back().set_height((int)tmp_height);
-
+            width = (int)(std::round(width/m2_pitch));
+            height = (int)(std::round(height/m2_pitch));
+            add_block_type(blockTypeName, width, height);
             //std::cout << "  type width, height: "
-            //          << blockType_list.back().width() << " "
-            //          << blockType_list.back().height() << "\n";
+            //          << blockTypeList.back().width() << " "
+            //          << blockTypeList.back().height() << "\n";
           }
           getline(ist, line);
         }
@@ -543,8 +593,8 @@ bool circuit_t::read_lef_file(std::string const &NameOfFile) {
             std::cout << line << "\n";
             return false;
           }
-          std::string pin_name = pin_field[1];
-          std::string end_pin_flag = "END " + pin_name;
+          std::string pinName = pin_field[1];
+          std::string end_pin_flag = "END " + pinName;
 
           // skip to "PORT" rectangle list
           do {
@@ -568,7 +618,7 @@ bool circuit_t::read_lef_file(std::string const &NameOfFile) {
                 tmp_xoffset = (int)(std::round(std::stod(rect_field[1])/m2_pitch));
                 tmp_yoffset = (int)(std::round(std::stod(rect_field[4])/m2_pitch));
                 //std::cout << "  " << tmp_xoffset << " " << tmp_yoffset << "\n";
-                blockType_list.back().add_pin(pin_name, tmp_xoffset, tmp_yoffset);
+                add_pin_to_block(blockTypeName, pinName, tmp_xoffset, tmp_yoffset);
               } else {
                 continue;
               }
@@ -577,24 +627,26 @@ bool circuit_t::read_lef_file(std::string const &NameOfFile) {
         }
 
       } while (line.find(end_macro_flag)==std::string::npos && !ist.eof());
-      if (blockType_list.back().pin_list.empty()) {
+      if (blockTypeList.back().pin_list.empty()) {
         std::cout << "Error!\n";
-        std::cout << "MACRO: " << blockType_list.back().name() << " has no pin!\n";
+        std::cout << "MACRO: " << blockTypeList.back().name() << " has no pin!\n";
         return false;
       }
     }
   }
+
+  std::cout << "lef file reading complete\n";
   return true;
 }
 
 void circuit_t::report_blockType_list() {
-  for (auto &&block_type: blockType_list) {
+  for (auto &&block_type: blockTypeList) {
     std::cout << block_type << "\n";
   }
 }
 
 void circuit_t::report_blockType_map() {
-  for (auto &&blockTypeMap: blockType_name_map) {
+  for (auto &&blockTypeMap: blockTypeNameMap) {
     std::cout << blockTypeMap.first << " " << blockTypeMap.second << "\n";
   }
 }
@@ -605,6 +657,8 @@ bool circuit_t::read_def_file(std::string const &NameOfFile) {
     std::cout << "Cannot open input file " << NameOfFile << "\n";
     return false;
   }
+
+  std::cout << "Start reading def file\n";
 
   std::string line;
   def_distance_microns = 0;
@@ -677,14 +731,14 @@ bool circuit_t::read_def_file(std::string const &NameOfFile) {
       return false;
     }
     //std::cout << block_declare_field[0] << " " << block_declare_field[1] << "\n";
-    if (blockType_name_map.find(block_declare_field[2]) == blockType_name_map.end()) {
+    if (blockTypeNameMap.find(block_declare_field[2]) == blockTypeNameMap.end()) {
       std::cout << "Error!\n";
       std::cout << "Invalid block declaration, no such type exists\n";
       std::cout << line << "\n";
       return false;
     } else {
-      block_type_t *blockType = &blockType_list[blockType_name_map.find(block_declare_field[2])->second];
-      add_new_block(block_declare_field[1], blockType->width()+dummy_space_x(), blockType->height()+dummy_space_y(), 0, 0, true, block_declare_field[2]);
+      block_type_t *blockType = &blockTypeList[blockTypeNameMap.find(block_declare_field[2])->second];
+      add_new_block(block_declare_field[1], blockType->name(), 0, 0, true);
     }
     getline(ist, line);
   }
@@ -718,16 +772,13 @@ bool circuit_t::read_def_file(std::string const &NameOfFile) {
       }
       for (size_t i=0; i<pin_field.size(); i += 4) {
         //std::cout << "     " << pin_field[i+1] << " " << pin_field[i+2];
-        block_type_t *tmp_type = &blockType_list[blockType_name_map.find(block_list[block_name_map.find(pin_field[i+1])->second].type())->second];
-        int tmp_xOffset = tmp_type->pin_list[tmp_type->pinname_num_map.find(pin_field[i+2])->second].x;
-        int tmp_yOffset = tmp_type->pin_list[tmp_type->pinname_num_map.find(pin_field[i+2])->second].y;
-        add_pin_to_net(net_field[1], pin_field[i+1], tmp_xOffset+dummy_space_x()/2, tmp_yOffset+dummy_space_y()/2, pin_field[i+2]);
+        add_pin_to_net(net_field[1], pin_field[i+1], pin_field[i+2]);
       }
       //std::cout << "\n";
     }
     getline(ist, line);
   }
-
+  std::cout << "def file reading complete\n";
   return true;
 }
 

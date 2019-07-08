@@ -2,7 +2,7 @@
 // Created by Yihang Yang on 2019-05-20.
 //
 
-#include "circuitbin.hpp"
+#include "circuitbin.h"
 
 bin_t::bin_t() {
   _left = 0;

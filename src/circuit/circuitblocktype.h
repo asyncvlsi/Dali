@@ -7,7 +7,7 @@
 
 #include <string>
 #include <map>
-#include "circuitpin.hpp"
+#include "circuitpin.h"
 
 struct point {
   int x;
@@ -25,7 +25,7 @@ private:
   int _num;
 public:
   block_type_t();
-  block_type_t(std::string &init_name, int init_width, int init_height);
+  block_type_t(std::string &init_name, int init_width, int init_height, int num = 0);
   /****essential data entries****/
   std::vector<point> pin_list;
   std::map<std::string, size_t> pinname_num_map;

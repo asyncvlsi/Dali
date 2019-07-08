@@ -2,7 +2,7 @@
 // Created by Yihang Yang on 2019-06-15.
 //
 
-#include "blockal.hpp"
+#include "blockal.h"
 
 block_al_t::block_al_t() {
   _w = 0;

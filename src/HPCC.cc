@@ -5,10 +5,10 @@
 #include <iostream>
 #include <vector>
 #include <ctime>
-#include "circuit/circuit.hpp"
-#include "placer.hpp"
-#include "DLA/placerdla.hpp"
-#include "AL/placeral.hpp"
+#include "circuit/circuit.h"
+#include "placer.h"
+#include "DLA/placerdla.h"
+#include "AL/placeral.h"
 
 int main() {
   time_t Time = clock();
@@ -76,7 +76,6 @@ int main() {
     return 1;
   }
   */
-
   std::cout << circuit.tot_movable_num_real_time() << " movable cells\n";
   std::cout << circuit.block_list.size() << " total cells\n";
 
@@ -87,9 +86,9 @@ int main() {
   std::cout << "average width and height: " << circuit.ave_width() << " " << circuit.ave_height() << " " << circuit.ave_width() + circuit.ave_height() << "\n";
   placer->set_input_circuit(&circuit);
   //placer->set_boundary(0,360,0,3000); // debug case
-  placer->auto_set_boundaries(); // set boundary for layout
+  //placer->auto_set_boundaries(); // set boundary for layout
   //placer->set_boundary(459,11151,459,11139); // set boundary for adaptec1
-  //placer->set_boundary(circuit.def_left,circuit.def_right,circuit.def_bottom,circuit.def_top); // set boundary for lef/def
+  placer->set_boundary(circuit.def_left,circuit.def_right,circuit.def_bottom,circuit.def_top); // set boundary for lef/def
   placer->report_boundaries();
   if (!placer->start_placement()) {
     placer->write_node_net_file();
@@ -99,6 +98,7 @@ int main() {
   //placer->write_node_terminal(); // generate a data file for adaptec1
   delete placer;
   circuit.save_DEF("circuit_dla.def", defFileName);
+
   /*
   placer = new placer_al_t;
   placer->set_space_block_ratio(1.6);

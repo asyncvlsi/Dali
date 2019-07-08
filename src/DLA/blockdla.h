@@ -2,14 +2,14 @@
 // Created by Yihang Yang on 2019-05-20.
 //
 
-#ifndef HPCC_BLOCKDLA_HPP
-#define HPCC_BLOCKDLA_HPP
+#ifndef HPCC_BLOCKDLA_H
+#define HPCC_BLOCKDLA_H
 
 #include <vector>
 #include <string>
-#include "circuit/circuitbin.hpp"
-#include "circuit/circuitblock.hpp"
-#include "netdla.hpp"
+#include "circuit/circuitbin.h"
+#include "circuit/circuitblock.h"
+#include "netdla.h"
 
 class net_dla_t;
 class block_dla_t;
@@ -53,4 +53,4 @@ public:
 
 
 
-#endif //HPCC_BLOCKDLA_HPP
+#endif //HPCC_BLOCKDLA_H

@@ -2,20 +2,20 @@
 // Created by Yihang Yang on 2019-05-20.
 //
 
-#ifndef HPCC_PLACERDLA_HPP
-#define HPCC_PLACERDLA_HPP
+#ifndef HPCC_PLACERDLA_H
+#define HPCC_PLACERDLA_H
 
 #include <vector>
 #include <queue>
 #include <utility>
-#include "circuit/circuit.hpp"
-#include "circuit/circuitblock.hpp"
-#include "circuit/circuitnet.hpp"
-#include "circuit/circuitpin.hpp"
-#include "placer.hpp"
-#include "circuit/circuitbin.hpp"
-#include "blockdla.hpp"
-#include "netdla.hpp"
+#include "circuit/circuit.h"
+#include "circuit/circuitblock.h"
+#include "circuit/circuitnet.h"
+#include "circuit/circuitpin.h"
+#include "placer.h"
+#include "circuit/circuitbin.h"
+#include "blockdla.h"
+#include "netdla.h"
 
 class placer_dla_t: public placer_t {
 public:
@@ -58,4 +58,4 @@ public:
 };
 
 
-#endif //HPCC_PLACERDLA_HPP
+#endif //HPCC_PLACERDLA_H

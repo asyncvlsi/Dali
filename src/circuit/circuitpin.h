@@ -2,13 +2,13 @@
 // Created by Yihang Yang on 2019-05-23.
 //
 
-#ifndef HPCC_CIRCUITPIN_HPP
-#define HPCC_CIRCUITPIN_HPP
+#ifndef HPCC_CIRCUITPIN_H
+#define HPCC_CIRCUITPIN_H
 
 #include <string>
 #include <iostream>
 #include <cassert>
-#include "circuitblock.hpp"
+#include "circuitblock.h"
 
 class pin_t {
 protected:
@@ -42,4 +42,4 @@ public:
 };
 
 
-#endif //HPCC_CIRCUITPIN_HPP
+#endif //HPCC_CIRCUITPIN_H

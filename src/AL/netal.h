@@ -2,10 +2,10 @@
 // Created by Yihang Yang on 2019-06-15.
 //
 
-#ifndef HPCC_NETAL_HPP
-#define HPCC_NETAL_HPP
+#ifndef HPCC_NETAL_H
+#define HPCC_NETAL_H
 
-#include "circuit/circuitnet.hpp"
+#include "circuit/circuitnet.h"
 
 class net_al_t: public net_t {
 public:
@@ -22,4 +22,4 @@ public:
 };
 
 
-#endif //HPCC_NETAL_HPP
+#endif //HPCC_NETAL_H
