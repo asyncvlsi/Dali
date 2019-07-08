@@ -13,6 +13,8 @@
 #include "circuitnet.hpp"
 
 class circuit_t {
+private:
+  int dummy_space = 2;
 protected:
   double _ave_width;
   double _ave_height;
@@ -79,7 +81,8 @@ public:
 
   bool write_nodes_file(std::string const &NameOfFile="circuit.nodes");
   bool write_nets_file(std::string const &NameOfFile="circuit.nets");
-  bool save_DEF(std::string const &NameOfFile="circuit.def");
+  bool gen_matlab_disp_file(std::string const &filename="block_net_list.m");
+  bool save_DEF(std::string const &NameOfFile, std::string const &defFileName);
 };
 
 #endif //HPCC_CIRCUIT_HPP

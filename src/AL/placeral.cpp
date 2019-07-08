@@ -1169,7 +1169,7 @@ void placer_al_t::diffusion_legalization() {
 
 bool placer_al_t::legalization() {
   update_block_in_bin();
-  time_step = 5;
+  time_step = 1;
   for (int i=0; i<max_legalization_iteration; i++) {
     if (check_legal()) {
       integerize();
@@ -1234,6 +1234,7 @@ bool placer_al_t::post_legalization_optimization() {
 }
 
 bool placer_al_t::start_placement() {
+  /*
   cg_init();
   uniform_initialization();
   update_max_min_node_x();
@@ -1264,6 +1265,7 @@ bool placer_al_t::start_placement() {
 
   shift_cg_solution_to_region_center();
   expansion_legalization();
+   */
   add_boundary_list();
   initialize_bin_list();
   if (!legalization()) {

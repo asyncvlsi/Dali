@@ -44,6 +44,7 @@ public:
   void diffuse(int first_node_num);
   bool DLA();
 
+  void report_hpwl();
   bool start_placement() override;
   void report_placement_result() override;
 

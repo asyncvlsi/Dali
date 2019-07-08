@@ -655,7 +655,7 @@ bool circuit_t::read_def_file(std::string const &NameOfFile) {
       return false;
     } else {
       block_type_t *blockType = &blockType_list[blockType_name_map.find(block_declare_field[2])->second];
-      add_new_block(block_declare_field[1], blockType->width(), blockType->height(), 0, 0, true, block_declare_field[2]);
+      add_new_block(block_declare_field[1], blockType->width(), blockType->height()+dummy_space, 0, 0, true, block_declare_field[2]);
     }
     getline(ist, line);
   }
@@ -692,7 +692,7 @@ bool circuit_t::read_def_file(std::string const &NameOfFile) {
         block_type_t *tmp_type = &blockType_list[blockType_name_map.find(block_list[block_name_map.find(pin_field[i+1])->second].type())->second];
         int tmp_xOffset = tmp_type->pin_list[tmp_type->pinname_num_map.find(pin_field[i+2])->second].x;
         int tmp_yOffset = tmp_type->pin_list[tmp_type->pinname_num_map.find(pin_field[i+2])->second].y;
-        add_pin_to_net(net_field[1], pin_field[i+1], tmp_xOffset, tmp_yOffset, pin_field[i+2]);
+        add_pin_to_net(net_field[1], pin_field[i+1], tmp_xOffset, tmp_yOffset + dummy_space/2, pin_field[i+2]);
       }
       //std::cout << "\n";
     }
@@ -815,37 +815,48 @@ bool circuit_t::write_nets_file(std::string const &NameOfFile) {
   return true;
 }
 
-bool circuit_t::save_DEF(std::string const &NameOfFile) {
+bool circuit_t::save_DEF(std::string const &NameOfFile, std::string const &defFileName) {
   std::ofstream ost(NameOfFile.c_str());
   if (!ost.is_open()) {
     std::cout << "Cannot open file " << NameOfFile << "\n";
     return false;
   }
 
-  // 1. print file header?
-  ost << "VERSION 5.8 ;\n"
-      << "DIVIDERCHAR \"/\" ;\n"
-      << "BUSBITCHARS \"[]\" ;\n";
-  ost << "DESIGN tmp_circuit_name\n";
-  ost << "UNITS DISTANCE MICRONS 2000 \n\n"; // temporary values, depends on LEF file
+  std::ifstream ist(defFileName.c_str());
+  if (!ist.is_open()) {
+    std::cout << "Cannot open file " << defFileName << "\n";
+    return false;
+  }
 
-  // no core rows?
-  // no tracks?
+  std::string line;
+  // 1. print file header, copy from def file
+  while (line.find("COMPONENTS") == std::string::npos && !ist.eof()) {
+    getline(ist,line);
+    ost << line << "\n";
+  }
 
   // 2. print component
   //std::cout << _circuit->block_list.size() << "\n";
-  ost << "COMPONENTS " << block_list.size() << " ;\n";
   for (auto &&block: block_list) {
     ost << "- "
         << block.name() << " "
         << block.type() << " + "
         << block.place_status() << " "
-        << "( " + std::to_string(block.llx()*def_distance_microns) + " " + std::to_string(block.lly()*def_distance_microns) + " )" << " "
+        << "( " + std::to_string((int)(block.llx()*def_distance_microns*m2_pitch)) + " " + std::to_string((int)(block.lly()*def_distance_microns*m2_pitch)) + " )" << " "
         << block.orientation() + " ;\n";
   }
-  ost << "END COMPONENTS\n\n";
+  ost << "END COMPONENTS\n";
+  // jump to the end of components
+  while (line.find("END COMPONENTS") == std::string::npos && !ist.eof()) {
+    getline(ist,line);
+  }
 
-  // 3. print net
+  // 3. print net, copy from def file
+  while (!ist.eof()) {
+    getline(ist,line);
+    ost << line << "\n";
+  }
+  /*
   ost << "NETS " << net_list.size() << " ;\n";
   for (auto &&net: net_list) {
     ost << "- "
@@ -859,6 +870,32 @@ bool circuit_t::save_DEF(std::string const &NameOfFile) {
   ost << "END NETS\n\n";
 
   ost << "END DESIGN\n";
+   */
+
   ost.close();
+  ist.close();
+  return true;
+}
+
+bool circuit_t::gen_matlab_disp_file(std::string const &filename) {
+  std::ofstream ost(filename.c_str());
+  if (ost.is_open()==0) {
+    std::cout << "Cannot open output file: " << filename << "\n";
+    return false;
+  }
+  for (auto &&block: block_list) {
+    ost << "rectangle('Position',[" << block.llx() << " " << block.lly() << " " << block.width() << " " << block.height()-dummy_space << "], 'LineWidth', 1, 'EdgeColor','blue')\n";
+  }
+  for (auto &&net: net_list) {
+    for (size_t i=0; i<net.pin_list.size(); i++) {
+      for (size_t j=i+1; j<net.pin_list.size(); j++) {
+        ost << "line([" << net.pin_list[i].abs_x() << "," << net.pin_list[j].abs_x() << "],[" << net.pin_list[i].abs_y() - dummy_space/2 << "," << net.pin_list[j].abs_y() << "],'lineWidth', 0.5)\n";
+      }
+    }
+  }
+  ost << "rectangle('Position',[" << def_left << " " << def_bottom << " " << def_right - def_left << " " << def_top - def_bottom << "],'LineWidth',1)\n";
+  ost << "axis auto equal\n";
+  ost.close();
+
   return true;
 }

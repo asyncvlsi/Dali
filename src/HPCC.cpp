@@ -49,22 +49,23 @@ int main() {
   }
   */
   /****LEF/DEF****/
-  /*
-  if (!circuit.read_lef_file("out_1K.lef")) {
+  std::string lefFileName = "../test/out_1K.lef";
+  std::string defFileName = "../test/out_1K.def";
+  if (!circuit.read_lef_file("../test/out_1K.lef")) {
     return 1;
   }
   //circuit.report_blockType_list();
   //circuit.report_blockType_map();
-  if (!circuit.read_def_file("out_1K.def")) {
+  if (!circuit.read_def_file("../test/out_1K.def")) {
     return 1;
   }
-  */
+
   //circuit.report_block_list();
   //circuit.report_block_map();
   //circuit.report_net_list();
   //circuit.report_net_map();
   /****debug case****/
-
+  /*
   if (!circuit.read_nodes_file("nnnodes0")) {
     //circuit.report_block_list();
     //circuit.report_block_map();
@@ -75,28 +76,46 @@ int main() {
     //circuit.report_net_map();
     return 1;
   }
-
+  */
 
   std::cout << circuit.tot_movable_num_real_time() << " movable cells\n";
   std::cout << circuit.block_list.size() << " total cells\n";
 
-  placer_al_t placer;
-  placer.set_space_block_ratio(1.6);
-  placer.set_aspect_ratio(1);
-  std::cout << placer.space_block_ratio() << " " << placer.filling_rate() << " " << placer.aspect_ratio() << "\n";
+  placer_t *placer = new placer_dla_t;
+  placer->set_space_block_ratio(1.6);
+  placer->set_aspect_ratio(1);
+  std::cout << placer->space_block_ratio() << " " << placer->filling_rate() << " " << placer->aspect_ratio() << "\n";
   std::cout << "average width and height: " << circuit.ave_width() << " " << circuit.ave_height() << " " << circuit.ave_width() + circuit.ave_height() << "\n";
-  placer.set_input_circuit(&circuit);
-  placer.set_boundary(0,360,0,3000); // debug case
-  //placer.auto_set_boundaries(); // set boundary for layout
-  //placer.set_boundary(459,11151,459,11139); // set boundary for adaptec1
-  //placer.set_boundary(circuit.def_left,circuit.def_right,circuit.def_bottom,circuit.def_top); // set boundary for lef/def
-  placer.report_boundaries();
-  placer.start_placement();
-  placer.report_placement_result();
-  //placer.write_node_terminal(); // generate a data file for adaptec1
-  //circuit.save_DEF();
+  placer->set_input_circuit(&circuit);
+  //placer->set_boundary(0,360,0,3000); // debug case
+  //placer->auto_set_boundaries(); // set boundary for layout
+  //placer->set_boundary(459,11151,459,11139); // set boundary for adaptec1
+  placer->set_boundary(circuit.def_left,circuit.def_right,circuit.def_bottom,circuit.def_top); // set boundary for lef/def
+  placer->report_boundaries();
+  placer->start_placement();
+  placer->report_placement_result();
+  circuit.gen_matlab_disp_file("dla_result.m"); // generate matlab file for layout
+  //placer->write_node_terminal(); // generate a data file for adaptec1
+  delete placer;
+  circuit.save_DEF("circuit.def", defFileName);
 
+  placer = new placer_al_t;
+  placer->set_space_block_ratio(1.6);
+  placer->set_aspect_ratio(1);
+  std::cout << placer->space_block_ratio() << " " << placer->filling_rate() << " " << placer->aspect_ratio() << "\n";
+  std::cout << "average width and height: " << circuit.ave_width() << " " << circuit.ave_height() << " " << circuit.ave_width() + circuit.ave_height() << "\n";
+  placer->set_input_circuit(&circuit);
+  //placer->set_boundary(0,360,0,3000); // debug case
+  //placer->auto_set_boundaries(); // set boundary for layout
+  //placer->set_boundary(459,11151,459,11139); // set boundary for adaptec1
+  placer->set_boundary(circuit.def_left,circuit.def_right,circuit.def_bottom,circuit.def_top); // set boundary for lef/def
+  placer->report_boundaries();
+  placer->start_placement();
+  placer->report_placement_result();
+  circuit.gen_matlab_disp_file("al_result.m"); // generate matlab file for layout
+  delete placer;
 
+  /*
   circuit_t circuit1;
   if (!circuit1.read_nodes_file("nnnodes1")) {
     //circuit.report_block_list();
@@ -124,6 +143,7 @@ int main() {
   placer1.start_placement();
   placer1.report_placement_result();
   placer1.gen_matlab_disp_file(); // generate matlab file for layout
+   */
 
   Time = clock() - Time;
   std::cout << "Execution time " << (float)Time/CLOCKS_PER_SEC << "s.\n";

@@ -357,7 +357,7 @@ void placer_dla_t::diffuse(int first_blk_num) {
   //int step;
   double center_x=(left() + right())/2.0, center_y=(bottom() + top())/2.0;
   double cell_center_x, cell_center_y, distance_to_center;
-  double p1=0.0005, p2; // accept probability
+  double p1=0.005, p2; // accept probability
   double r, T=20.0;
   block_dla_t TLUM; // Temporary Location Under Motion
   block_dla_t MWLL; // Minimum Wire-Length Location
@@ -400,16 +400,6 @@ void placer_dla_t::diffuse(int first_blk_num) {
     }
   }
   block_list[first_blk_num] = MWLL;
-
-  //cout << first_blk_num << " " << MWLL.cellNo << "\n";
-  //for (int j=0; j<block_list.size(); j++)
-  //{
-    //if (block_list[j].cellNo == -1)
-    //{
-      //cout << j << " errordiffuse\n";
-      //exit(1);
-    //}
-  //}
   update_bin_list(first_blk_num);
 }
 
@@ -470,7 +460,8 @@ bool placer_dla_t::start_placement() {
   prioritize_block_to_place();
   draw_bin_list();
   DLA();
-  draw_block_net_list();
+  report_hpwl();
+
   return true;
 }
 
@@ -566,6 +557,15 @@ bool placer_dla_t::output_result(std::string const &filename) {
   ost.close();
 
   return true;
+}
+
+void placer_dla_t::report_hpwl() {
+  int HPWL = 0;
+  for (auto &&net: net_list) {
+    HPWL += net.hpwl();
+  }
+
+  std::cout << "HPWL: " << HPWL << "\n";
 }
 
 placer_dla_t::~placer_dla_t() = default;
