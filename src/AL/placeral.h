@@ -34,7 +34,7 @@ private:
   double HPWL_intra_linearSolver_precision = 0.01;
   int max_legalization_iteration = 500;
   int iteration_limit_diffusion = 10;
-  int time_step = 5;
+  int time_step = 1;
 public:
   placer_al_t();
   placer_al_t(double aspectRatio, double fillingRate);

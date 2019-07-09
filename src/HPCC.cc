@@ -80,21 +80,19 @@ int main() {
   std::cout << circuit.block_list.size() << " total cells\n";
 
   placer_t *placer = new placer_al_t;
-  placer->set_space_block_ratio(2);
+  placer->set_space_block_ratio(3);
   placer->set_aspect_ratio(1);
   std::cout << placer->space_block_ratio() << " " << placer->filling_rate() << " " << placer->aspect_ratio() << "\n";
   std::cout << "average width and height: " << circuit.ave_width() << " " << circuit.ave_height() << " " << circuit.ave_width() + circuit.ave_height() << "\n";
   placer->set_input_circuit(&circuit);
   //placer->set_boundary(0,360,0,3000); // debug case
-  placer->auto_set_boundaries(); // set boundary for layout
+  //placer->auto_set_boundaries(); // set boundary for layout
   //placer->set_boundary(459,11151,459,11139); // set boundary for adaptec1
-  //placer->set_boundary(circuit.def_left,circuit.def_right,circuit.def_bottom,circuit.def_top); // set boundary for lef/def
+  placer->set_boundary(circuit.def_left,circuit.def_right,circuit.def_bottom,circuit.def_top); // set boundary for lef/def
   placer->report_boundaries();
-  if (!placer->start_placement()) {
-    placer->write_node_net_file();
-  }
+  placer->start_placement();
   placer->report_placement_result();
-  placer->gen_matlab_disp_file("dla_result.m"); // generate matlab file for layout
+  placer->gen_matlab_disp_file("al_result.m"); // generate matlab file for layout
   //placer->write_node_terminal(); // generate a data file for adaptec1
   delete placer;
   //circuit.save_DEF("circuit_dla.def", defFileName);

@@ -803,8 +803,8 @@ void placer_al_t::initialize_bin_list(){
     }
   }
   size_t x_bin_num, y_bin_num;
-  x_bin_num = (size_t)std::ceil((right() - left() + 2*max_width)/(double)max_width); // determine the bin numbers in x direction
-  y_bin_num = (size_t)std::ceil((top() - bottom() + 2*max_height)/(double)max_height); // determine the bin numbers in y direction
+  x_bin_num = (size_t)std::ceil((right() - left() + 4*max_width)/(double)max_width); // determine the bin numbers in x direction
+  y_bin_num = (size_t)std::ceil((top() - bottom() + 4*max_height)/(double)max_height); // determine the bin numbers in y direction
   bin_width = max_width;
   bin_height = max_height;
   std::vector<bin_t> tmp_bin_column(y_bin_num);
@@ -1266,6 +1266,7 @@ bool placer_al_t::start_placement() {
   expansion_legalization();
   add_boundary_list();
   initialize_bin_list();
+  //draw_bin_list();
   if (!legalization()) {
     if (!gravity_legalization()) {
       report_hpwl();
@@ -1276,7 +1277,6 @@ bool placer_al_t::start_placement() {
   post_legalization_optimization();
   std::cout << "Legalization Complete\n";
   report_hpwl();
-  //draw_bin_list();
   //draw_block_net_list();
 
   return true;
