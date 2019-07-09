@@ -867,8 +867,11 @@ bool placer_al_t::draw_block_net_list(std::string const &filename) {
     return false;
   }
   for (auto &&block: block_list) {
-    ost << "rectangle('Position',[" << block.dllx() << " " << block.dlly() << " " << block.width() << " " << block.height() << "], 'LineWidth', 1, 'EdgeColor','blue')\n";
+    //if ((block.name() == "E0_acx0") || (block.name() == "E_1_acx0") || (block.name() == "E_2_acx0") || (block.name() == "E_3_acx0") || (block.name() == "S_1_acx0") || (block.name() == "S_1_acx1") || (block.name() == "S0_acx0") || (block.name() == "S0_acx1")) continue;
+    ost << "rectangle('Position',[" << block.dllx() << " " << block.dlly() << " " << block.width() << " " << block.height() << "], 'LineWidth', 1, 'EdgeColor','blue')"
+        << "%" << block.name() << "\n";
   }
+  /*
   block_al_t *block_ptr0, *block_ptr1;
   for (auto &&net: net_list) {
     for (size_t i=0; i<net.pin_list.size(); i++) {
@@ -880,9 +883,9 @@ bool placer_al_t::draw_block_net_list(std::string const &filename) {
       }
     }
   }
-  //ost << "rectangle('Position',[" << left() << " " << bottom() << " " << right() - left() << " " << top() - bottom() << "],'LineWidth',1)\n";
+   */
   ost << "rectangle('Position',[" << left() << " " << bottom() << " " << right()-left() << " " << top()-bottom() << "],'LineWidth',1)\n";
-  ost << "axis auto equal\n";
+  ost << "axis auto equal\naxis off\n";
   ost.close();
 
   return true;
@@ -1015,7 +1018,7 @@ void placer_al_t::integerize() {
 }
 
 void placer_al_t::update_velocity() {
-  double rij, overlap = 0, areai;
+  double rij, overlap = 0;
   //double maxv1 = 10, maxv2 = 20; // for layout
   double maxv1 = (_circuit->ave_width() + _circuit->ave_height())/20, maxv2 = 2*maxv1;
   for (auto &&block: block_list) {
@@ -1052,9 +1055,21 @@ void placer_al_t::update_velocity() {
 
     for (auto &&block_num: temp_physical_neighbor_set) {
       overlap = block_list[i].overlap_area(block_list[block_num]);
-      rij = sqrt(pow(block_list[i].dx() - block_list[block_num].dx(), 2) + pow(block_list[i].dy()-block_list[block_num].dy(), 2));
-      block_list[i].vx += maxv1*overlap*(block_list[i].dx() - block_list[block_num].dx())/rij; // the maximum velocity of each cell is 5 at maxmimum
-      block_list[i].vy += maxv1*overlap*(block_list[i].dy() - block_list[block_num].dy())/rij;
+      if ((block_list[i].dx() == block_list[block_num].dx()) && (block_list[i].dy() == block_list[block_num].dy())) {
+        if (i<(size_t)block_num) {
+          block_list[i].vx += 1*block_list[i].area();
+          block_list[i].vy += 1*block_list[i].area();
+        } else {
+          block_list[i].vx -= 1*block_list[i].area();
+          block_list[i].vy -= 1*block_list[i].area();
+        }
+      }
+      else {
+        rij = sqrt(pow(block_list[i].dx() - block_list[block_num].dx(), 2) +
+                   pow(block_list[i].dy() - block_list[block_num].dy(), 2));
+        block_list[i].vx += maxv1 * overlap * (block_list[i].dx() - block_list[block_num].dx()) / rij; // the maximum velocity of each cell is 5 at maxmimum
+        block_list[i].vy += maxv1 * overlap * (block_list[i].dy() - block_list[block_num].dy()) / rij;
+      }
     }
     temp_physical_neighbor_set.clear(); // clear this set after calculate the velocity due to overlap of cells
 
@@ -1077,9 +1092,8 @@ void placer_al_t::update_velocity() {
       }
 
     }
-    areai = block_list[i].area();
-    block_list[i].vx = block_list[i].vx/areai;
-    block_list[i].vy = block_list[i].vy/areai;
+    block_list[i].vx = block_list[i].vx/block_list[i].area();
+    block_list[i].vy = block_list[i].vy/block_list[i].area();
     block_list[i].modif_vx();
     block_list[i].modif_vy();
   }
@@ -1184,6 +1198,10 @@ bool placer_al_t::legalization() {
       std::cout << "Molecular-dynamic legalization finish\n";
       return false;
     }
+    /*if (i%20 == 0) {
+      std::string tmpFileName = "legalization" + std::to_string(i) + ".m";
+      draw_block_net_list(tmpFileName);
+    }*/
   }
   std::cout << "Molecular-dynamic legalization succeeds\n";
   return true;
@@ -1261,6 +1279,7 @@ bool placer_al_t::start_placement() {
   cg_close();
   std::cout << "Initial Placement Complete\n";
   report_hpwl();
+  //draw_block_net_list("cg_result.m");
 
   shift_cg_solution_to_region_center();
   expansion_legalization();

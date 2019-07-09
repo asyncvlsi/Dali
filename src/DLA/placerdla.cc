@@ -412,6 +412,10 @@ bool placer_dla_t::DLA() {
   block_list[first_blk_num].set_queued(true);
   int num_of_node_placed = 0;
   while (!Q_place.empty()) {
+    if (num_of_node_placed % 30 == 1) {
+      std::string tmpFileName = "diffusion" + std::to_string(num_of_node_placed) + ".m";
+      draw_block_net_list(tmpFileName);
+    }
     std::cout << "Number of blocks in current queue: " << Q_place.size() << "\n";
     first_blk_num = Q_place.front();
     Q_place.pop();
@@ -514,8 +518,13 @@ bool placer_dla_t::draw_block_net_list(std::string const &filename) {
     return false;
   }
   for (auto &&block: block_list) {
-    ost << "rectangle('Position',[" << block.llx() << " " << block.lly() << " " << block.width() << " " << block.height() << "], 'LineWidth',3)\n";
+    if (block.is_placed()) {
+      ost << "rectangle('Position',[" << block.llx() << " " << block.lly() << " " << block.width() << " "
+          << block.height() << "], 'LineWidth', 1, 'EdgeColor','blue')"
+          << "%" << block.name() << "\n";
+    }
   }
+  /*
   for (auto &&net: net_list) {
 		for (size_t i=0; i<net.pin_list.size(); i++) {
 			for (size_t j=i+1; j<net.pin_list.size(); j++) {
@@ -523,8 +532,9 @@ bool placer_dla_t::draw_block_net_list(std::string const &filename) {
 			}
 		}
 	}
+   */
   ost << "rectangle('Position',[" << left() << " " << bottom() << " " << right() - left() << " " << top() - bottom() << "],'LineWidth',1)\n";
-  ost << "axis auto equal\n";
+  ost << "axis auto equal\naxis off\n";
   ost.close();
 
   return true;

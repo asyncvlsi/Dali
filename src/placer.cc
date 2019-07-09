@@ -193,13 +193,14 @@ bool placer_t::gen_matlab_disp_file(std::string const &filename) {
   for (auto &&block: _circuit->block_list) {
     ost << "rectangle('Position',[" << block.llx() << " " << block.lly() << " " << block.width() << " " << block.height() << "], 'LineWidth', 1, 'EdgeColor','blue')\n";
   }
+  /*
   for (auto &&net: _circuit->net_list) {
     for (size_t i=0; i<net.pin_list.size(); i++) {
       for (size_t j=i+1; j<net.pin_list.size(); j++) {
         ost << "line([" << net.pin_list[i].abs_x() << "," << net.pin_list[j].abs_x() << "],[" << net.pin_list[i].abs_y() << "," << net.pin_list[j].abs_y() << "],'lineWidth', 0.5)\n";
       }
     }
-  }
+  }*/
   ost << "rectangle('Position',[" << left() << " " << bottom() << " " << right() - left() << " " << top() - bottom() << "],'LineWidth',1)\n";
   ost << "axis auto equal\n";
   ost.close();
