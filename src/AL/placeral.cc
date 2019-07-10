@@ -311,7 +311,7 @@ void placer_al_t::build_problem_b2b_x() {
     if (net.p()<=1) {
       continue;
     }
-    inv_p = net.inv_p();
+    inv_p = net.inv_p()*net.weight();
     max_pindex_x = net.max_pin_index_x();
     min_pindex_x = net.min_pin_index_x();
     for (size_t i=0; i<net.pin_list.size(); i++) {
@@ -474,7 +474,7 @@ void placer_al_t::build_problem_b2b_y() {
     if (net.p()<=1) {
       continue;
     }
-    inv_p = net.inv_p();
+    inv_p = net.inv_p()*net.weight();
     max_pindex_y = net.max_pin_index_y();
     min_pindex_y = net.min_pin_index_y();
     for (size_t i=0; i<net.pin_list.size(); i++) {
