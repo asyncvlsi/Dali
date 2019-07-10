@@ -92,11 +92,11 @@ int main() {
   placer->set_boundary(circuit.def_left,circuit.def_right,circuit.def_bottom,circuit.def_top); // set boundary for lef/def
   placer->report_boundaries();
   placer->start_placement();
-  placer->report_placement_result();
+  std::cout << "Circuit HPWL: " << circuit.reportHPWL() << "\n";
   placer->gen_matlab_disp_file("al_result.m"); // generate matlab file for layout
   //placer->write_node_terminal(); // generate a data file for adaptec1
   delete placer;
-  //circuit.save_DEF("circuit_dla.def", defFileName);
+  circuit.save_DEF("circuit_dla.def", defFileName);
 
   /*
   placer = new placer_al_t;

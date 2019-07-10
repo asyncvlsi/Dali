@@ -16,6 +16,8 @@ class circuit_t {
 private:
   int _dummy_space_x = 0;
   int _dummy_space_y = 0;
+  double _global_signal_weight = 1e-6;
+  double _normal_signal_weight = 1;
 protected:
   double _ave_width;
   double _ave_height;
@@ -29,8 +31,6 @@ public:
   std::vector< net_t > net_list;
   // node_list and net_list contains all the information of a circuit graph
 
-  int HPWL;
-  // HPWL of this circuit
   std::map<std::string, size_t> block_name_map;
   // string to size_t map to find the index of a block in the block_list
   std::map<std::string, size_t> net_name_map;
@@ -78,6 +78,7 @@ public:
   int tot_block_area_real_time();
   int tot_movable_num_real_time();
   int tot_unmovable_num_real_time();
+  int reportHPWL();
 
   /* these following member functions just return cached data entries O(1)
    * or if the cached data entries have not been initialized, the corresponding real_time function will be called O(n) */

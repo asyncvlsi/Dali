@@ -1297,7 +1297,7 @@ bool placer_al_t::start_placement() {
   std::cout << "Legalization Complete\n";
   report_hpwl();
   //draw_block_net_list();
-
+  report_placement_result();
   return true;
 }
 

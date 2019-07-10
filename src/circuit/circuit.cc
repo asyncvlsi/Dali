@@ -10,7 +10,6 @@
 #include "debug.h"
 
 circuit_t::circuit_t() {
-  HPWL = 0;
   _tot_movable_num = 0;
   _ave_width = 0;
   _ave_height = 0;
@@ -761,7 +760,12 @@ bool circuit_t::read_def_file(std::string const &NameOfFile) {
         return false;
       }
       //std::cout << "\t" << net_field[0] << " " << net_field[1] << "\n";
-      create_blank_net(net_field[1]);
+      if (net_field[1].find("Reset") != std::string::npos) {
+        //std::cout << net_field[1] << "\n";
+        create_blank_net(net_field[1], _global_signal_weight);
+      } else {
+        create_blank_net(net_field[1], _normal_signal_weight);
+      }
       getline(ist, line);
       //std::cout << line << "\n";
       std::vector<std::string> pin_field;
@@ -825,6 +829,14 @@ int circuit_t::tot_movable_num_real_time() {
 
 int circuit_t::tot_unmovable_num_real_time() {
   return block_list.size() - tot_movable_num_real_time();
+}
+
+int circuit_t::reportHPWL() {
+  int HPWL = 0;
+  for (auto &&net: net_list) {
+    HPWL += net.hpwl();
+  }
+  return HPWL;
 }
 
 double circuit_t::ave_width() {
