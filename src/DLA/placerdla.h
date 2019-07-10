@@ -18,6 +18,8 @@
 #include "netdla.h"
 
 class placer_dla_t: public placer_t {
+private:
+  double accept_probability = 0.0005;
 public:
   placer_dla_t();
   placer_dla_t(double aspectRatio, double fillingRate);

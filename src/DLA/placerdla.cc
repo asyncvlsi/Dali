@@ -357,7 +357,7 @@ void placer_dla_t::diffuse(int first_blk_num) {
   //int step;
   double center_x=(left() + right())/2.0, center_y=(bottom() + top())/2.0;
   double cell_center_x, cell_center_y, distance_to_center;
-  double p1=0.0005, p2; // accept probability
+  double p1=accept_probability, p2; // accept probability
   double r, T=20.0;
   block_dla_t TLUM; // Temporary Location Under Motion
   block_dla_t MWLL; // Minimum Wire-Length Location
@@ -405,26 +405,19 @@ void placer_dla_t::diffuse(int first_blk_num) {
 
 bool placer_dla_t::DLA() {
   std::queue<int> Q_place;
-  int first_blk_num, tmp_num;
-  first_blk_num = block_to_place_queue.front();
+  int first_blk_num = block_to_place_queue.front();
+  int num_of_node_placed = 0;
   block_to_place_queue.pop();
   Q_place.push(first_blk_num);
   block_list[first_blk_num].set_queued(true);
-  int num_of_node_placed = 0;
   while (!Q_place.empty()) {
-    if (num_of_node_placed % 30 == 1) {
-      std::string tmpFileName = "diffusion" + std::to_string(num_of_node_placed) + ".m";
-      draw_block_net_list(tmpFileName);
-    }
     std::cout << "Number of blocks in current queue: " << Q_place.size() << "\n";
     first_blk_num = Q_place.front();
     Q_place.pop();
     std::cout << "Placing block: " << block_list[first_blk_num].name() << "\n";
-    for (size_t j=0; j<block_list[first_blk_num].neb_list.size(); j++) {
-      tmp_num = block_list[first_blk_num].neb_list[j].block->num();
-      if (block_list[tmp_num].is_queued()){
-        continue;
-      } else {
+    for (size_t i=0; i<block_list[first_blk_num].neb_list.size(); ++i) {
+      int tmp_num = block_list[first_blk_num].neb_list[i].block->num();
+      if (!block_list[tmp_num].is_queued()){
         block_list[tmp_num].set_queued(true);
         Q_place.push(tmp_num);
       }
@@ -438,22 +431,20 @@ bool placer_dla_t::DLA() {
     else {
       diffuse(first_blk_num);
     }
-    num_of_node_placed += 1;
-    //drawplaced(block_list, net_list, boundries);
-    //if (numofcellplaced==2) break;
+    ++num_of_node_placed;
     if (Q_place.empty()) {
       while (!block_to_place_queue.empty()) {
         first_blk_num = block_to_place_queue.front();
+        block_to_place_queue.pop();
         if (!block_list[first_blk_num].is_queued()) {
           Q_place.push(first_blk_num);
+          block_list[first_blk_num].set_queued(true);
           break;
-        } else {
-          block_to_place_queue.pop();
         }
       }
     }
   }
-  //std::cout << "Total WireLength after placement is " <<  TotalWireLength(block_list, net_list) << "\n";
+  std::cout << "Total blocks placed: " << num_of_node_placed << "\n";
   return true;
 }
 
