@@ -507,7 +507,7 @@ bool circuit_t::read_lef_file(std::string const &NameOfFile) {
   m2_pitch = 0;
   while ((m2_pitch == 0) && !ist.eof()) {
     getline(ist, line);
-    if(line.find("LAYER Metal2")!=std::string::npos) {
+    if((line.find("LAYER Metal2")!=std::string::npos) || (line.find("LAYER m2")!=std::string::npos)) {
       //std::cout << line << "\n";
       do {
         getline(ist, line);
@@ -522,6 +522,7 @@ bool circuit_t::read_lef_file(std::string const &NameOfFile) {
           }
           try {
             m2_pitch = std::stod(line_field[2]);
+            //std::cout << line_field[2] << "\n";
           } catch (...) {
             std::cout << "Error!\n";
             std::cout << "Invalid stoi conversion:" << line_field[2] << "\n";
@@ -529,10 +530,16 @@ bool circuit_t::read_lef_file(std::string const &NameOfFile) {
             return false;
           }
         }
-      } while (line.find("END Metal2")==std::string::npos && !ist.eof());
+      } while (line.find("END Metal2")==std::string::npos && line.find("END m2")==std::string::npos && !ist.eof());
       break;
     }
   }
+  if (m2_pitch == 0) {
+    std::cout << "Error!\n";
+    std::cout << "Cannot find Metal2/m2 PITCH\n";
+    return false;
+  }
+  //std::cout << "Metal2 PITCH: " << m2_pitch << "\n";
 
   while (!ist.eof()) {
     getline(ist, line);
