@@ -26,7 +26,7 @@ protected:
 
   /* the following entries are derived data */
   size_t _num;
-  /* block_num is the index of this block in the vector block_list, this data must be updated after push a new block into block_list */
+  /* block_num is the index of this block in the vector blockList, this data must be updated after push a new block into blockList */
 
 public:
   block_t();

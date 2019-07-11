@@ -60,11 +60,19 @@ double net_t::inv_p() {
     std::cout << this << "\n";
     exit(1);
   }
-  return 1.0/(pin_list.size() - 1);
+  return _weight/(pin_list.size() - 1);
 }
 
 int net_t::p() {
   return (int)pin_list.size();
+}
+
+void net_t::setIsPseudo(bool initIsPseudo) {
+  _isPseudo = initIsPseudo;
+}
+
+bool net_t::isPseudo() {
+  return _isPseudo;
 }
 
 int net_t::hpwl() {

@@ -20,30 +20,30 @@ placer_dla_t::placer_dla_t(double aspectRatio, double fillingRate): placer_t(asp
 }
 
 bool placer_dla_t::set_input_circuit(circuit_t *circuit) {
-  if (circuit->block_list.empty()) {
+  if (circuit->blockList.empty()) {
     std::cout << "Error!\n";
     std::cout << "Invalid input circuit: empty block list!\n";
     return false;
   }
-  if (circuit->net_list.empty()) {
+  if (circuit->netList.empty()) {
     std::cout << "Error!\n";
     std::cout << "Invalid input circuit: empty net list!\n";
     return false;
   }
 
   _circuit = circuit;
-  for (auto &&block: circuit->block_list) {
+  for (auto &&block: circuit->blockList) {
     block_dla_t block_dla;
     block_dla.retrieve_info_from_database(block);
     block_list.push_back(block_dla);
     //std::cout << block_dla << "\n";
   }
 
-  for (auto &&net: circuit->net_list) {
+  for (auto &&net: circuit->netList) {
     net_dla_t net_dla;
     net_dla.retrieve_info_from_database(net);
     for (auto &&pin: net.pin_list) {
-      int block_num = circuit->block_name_map.find(pin.get_block()->name())->second;
+      int block_num = circuit->blockNameMap.find(pin.get_block()->name())->second;
       block_dla_t *block_dla_ptr = &block_list[block_num];
       pin_t pin_dla(pin.x_offset(), pin.y_offset(), block_dla_ptr);
       net_dla.pin_list.push_back(pin_dla);
@@ -183,7 +183,7 @@ void placer_dla_t::update_neighbor_list() {
     block.sort_neb_list();
   }
   /*
-  for (auto &&block: block_list) {
+  for (auto &&block: blockList) {
     std::cout << "Block: " << block.name() << " is connected to net: ";
     for (auto &&net_ptr: block.net) {
       std::cout << net_ptr->name() << " ";
@@ -192,14 +192,14 @@ void placer_dla_t::update_neighbor_list() {
 
     std::cout << "In total " << block.total_net() << " net(s).\n";
   }
-  for (auto &&net: net_list) {
+  for (auto &&net: netList) {
     std::cout << "Net " << net.name() << " connects cells: ";
     for (auto &&pin: net.pin_list) {
       std::cout << "\t" <<  pin.get_block()->name();
     }
     std::cout << "\n";
   }
-  for (auto &&block: block_list) {
+  for (auto &&block: blockList) {
     double total_wire_weight = 0;
     for (auto &&neb: block.neb_list) {
       std::cout << "Block " << block.name() << " is connected to " << neb.block->name() << " with wire numbers " << neb.total_wire_weight << "\n";
@@ -211,7 +211,7 @@ void placer_dla_t::update_neighbor_list() {
 }
 
 void placer_dla_t::prioritize_block_to_place(){
-  // creat a new cell list block_to_place_queue to store the sorted block_list based on the number of wires connecting to the cell
+  // creat a new cell list block_to_place_queue to store the sorted blockList based on the number of wires connecting to the cell
   std::vector<std::pair <int, int>> pair_list;
   for (auto &&block: block_list) {
     pair_list.emplace_back(std::make_pair(block.num(), block.total_net()));
@@ -478,8 +478,8 @@ bool placer_dla_t::start_placement() {
 void placer_dla_t::report_placement_result() {
   for (size_t i=0; i<block_list.size(); i++) {
     if (block_list[i].is_movable()) {
-      _circuit->block_list[i].set_llx(block_list[i].llx());
-      _circuit->block_list[i].set_lly(block_list[i].lly());
+      _circuit->blockList[i].set_llx(block_list[i].llx());
+      _circuit->blockList[i].set_lly(block_list[i].lly());
     }
   }
 }
@@ -516,7 +516,7 @@ bool placer_dla_t::draw_block_net_list(std::string const &filename) {
     }
   }
   /*
-  for (auto &&net: net_list) {
+  for (auto &&net: netList) {
 		for (size_t i=0; i<net.pin_list.size(); i++) {
 			for (size_t j=i+1; j<net.pin_list.size(); j++) {
 				ost << "line([" << net.pin_list[i].abs_x() << "," << net.pin_list[j].abs_x() << "],[" << net.pin_list[i].abs_y() << "," << net.pin_list[j].abs_y() << "],'lineWidth', 0.5)\n";

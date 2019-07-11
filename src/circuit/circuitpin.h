@@ -16,7 +16,7 @@ protected:
   int _y_offset;
 
   /* the following entries are derived data */
-  block_t* _block; // pointer pointing to the block entry in block_list for HPWL calculation in net
+  block_t* _block; // pointer pointing to the block entry in blockList for HPWL calculation in net
   std::string _pin_name;
 
 public:

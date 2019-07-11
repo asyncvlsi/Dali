@@ -14,10 +14,11 @@ protected:
   /* essential data entries */
   std::string _name; // name
   double _weight; // weight of this net
+  bool _isPseudo;
 
   /* the following entries are derived data */
   size_t _num;
-  /* net_num is the index of this block in the vector net_list, this data must be updated after push a new block into net_list */
+  /* net_num is the index of this block in the vector netList, this data must be updated after push a new block into netList */
 public:
   net_t();
   explicit net_t(std::string &name_arg, double weight_arg = 1);
@@ -43,6 +44,8 @@ public:
   bool add_pin(pin_t &pin);
   double inv_p();
   int p();
+  void setIsPseudo(bool initIsPseudo);
+  bool isPseudo();
 
   int hpwl();
 };

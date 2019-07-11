@@ -56,63 +56,61 @@ int circuit_t::dummy_space_y() {
 
 
 bool circuit_t::add_new_block(std::string &blockName, int w, int h, int llx, int lly, bool movable, std::string typeName) {
-  if (block_name_map.find(blockName) == block_name_map.end()) {
-    size_t block_list_size = block_list.size();
+  if (blockNameMap.find(blockName) == blockNameMap.end()) {
+    size_t block_list_size = blockList.size();
     block_t tmp_block(blockName, w, h, llx, lly, movable, std::move(typeName));
     tmp_block.set_num(block_list_size);
-    block_name_map.insert(std::pair<std::string, int>(tmp_block.name(), tmp_block.num()));
-    block_list.push_back(tmp_block);
+    blockNameMap.insert(std::pair<std::string, int>(tmp_block.name(), tmp_block.num()));
+    blockList.push_back(tmp_block);
     return true;
   } else {
     #ifdef USEDEBUG
     std::cout << "Error!\n";
-    std::cout << "Existing block in block_list with name: " << blockName << "\n";
+    std::cout << "Existing block in blockList with name: " << blockName << "\n";
     #endif
     return false;
   }
 }
 
 bool circuit_t::create_blank_net(std::string &netName, double weight) {
-  if (net_name_map.find(netName) == net_name_map.end()) {
+  if (netNameMap.find(netName) == netNameMap.end()) {
     net_t tmp_net(netName, weight);
-    size_t net_list_size = net_list.size();
+    size_t net_list_size = netList.size();
     tmp_net.set_num(net_list_size);
-    net_name_map.insert(std::pair<std::string, int>(tmp_net.name(), tmp_net.num()));
-    net_list.push_back(tmp_net);
+    netNameMap.insert(std::pair<std::string, int>(tmp_net.name(), tmp_net.num()));
+    netList.push_back(tmp_net);
     return true;
   } else {
     #ifdef USEDEBUG
     std::cout << "Error!\n";
-    std::cout << "Existing net in net_list with name: " << netName << "\n";
+    std::cout << "Existing net in netList with name: " << netName << "\n";
     #endif
     return false;
   }
 }
 
 bool circuit_t::add_pin_to_net(const std::string &netName, const std::string &blockName, int xOffset, int yOffset, std::string pinName) {
-  if (net_name_map.find(netName) == net_name_map.end()) {
+  if (netNameMap.find(netName) == netNameMap.end()) {
     #ifdef USEDEBUG
     std::cout << "Error!\n";
-    std::cout << "No net in net_list has name: " << netName << "\n";
+    std::cout << "No net in netList has name: " << netName << "\n";
     #endif
     return false;
   }
-  if (block_name_map.find(blockName) == block_name_map.end()){
+  if (blockNameMap.find(blockName) == blockNameMap.end()){
     #ifdef USEDEBUG
     std::cout << "Error!\n";
-    std::cout << "No block in block_list has name: " << blockName << "\n";
+    std::cout << "No block in blockList has name: " << blockName << "\n";
     #endif
     return false;
   }
 
-  int block_num = block_name_map.find(blockName)->second;
-  pin_t tmp_pin(xOffset, yOffset, &block_list[block_num], std::move(pinName));
+  int block_num = blockNameMap.find(blockName)->second;
+  pin_t tmp_pin(xOffset, yOffset, &blockList[block_num], std::move(pinName));
 
-  int net_num = net_name_map.find(netName)->second;
-  return net_list[net_num].add_pin(tmp_pin);
-
+  int net_num = netNameMap.find(netName)->second;
+  return netList[net_num].add_pin(tmp_pin);
 }
-
 
 void circuit_t::parse_line(std::string &line, std::vector<std::string> &field_list) {
   std::vector<char> delimiter_list;
@@ -208,13 +206,13 @@ bool circuit_t::read_nodes_file(std::string const &NameOfFile) {
 }
 
 void circuit_t::report_block_list() {
-  for (auto &&block: block_list) {
+  for (auto &&block: blockList) {
     std::cout << block << "\n";
   }
 }
 
 void circuit_t::report_block_map() {
-  for (auto &&name_num_pair: block_name_map) {
+  for (auto &&name_num_pair: blockNameMap) {
     std::cout << name_num_pair.first << " " << name_num_pair.second << "\n";
   }
 }
@@ -306,8 +304,8 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
       }
 
       /*****cont'*****/
-      //size_t block_num = block_name_map.find(tmp_block_name)->second;
-      //ost << "    " << pin_field[0] << "\t" << pin_field[1] << " : " << tmp_x_offset + block_list[block_num].width()/2.0 << "\t" << tmp_y_offset + block_list[block_num].height()/2.0 << "\n";
+      //size_t block_num = blockNameMap.find(tmp_block_name)->second;
+      //ost << "    " << pin_field[0] << "\t" << pin_field[1] << " : " << tmp_x_offset + blockList[block_num].width()/2.0 << "\t" << tmp_y_offset + blockList[block_num].height()/2.0 << "\n";
       /*****to be continues*****/
 
     }
@@ -321,13 +319,13 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
 }
 
 void circuit_t::report_net_list() {
-  for (auto &&net: net_list) {
+  for (auto &&net: netList) {
     std::cout << net << "\n";
   }
 }
 
 void circuit_t::report_net_map() {
-  for (auto &&name_num_pair: net_name_map) {
+  for (auto &&name_num_pair: netNameMap) {
     std::cout << name_num_pair.first << " " << name_num_pair.second << "\n";
   }
 }
@@ -357,14 +355,14 @@ bool circuit_t::read_pl_file(std::string const &NameOfFile) {
       continue;
     }
     tmp_name = block_field[0];
-    if (block_name_map.find(tmp_name) == block_name_map.end()) {
+    if (blockNameMap.find(tmp_name) == blockNameMap.end()) {
       std::cout << "Warning: Cannot find block with name: " << tmp_name << "\n";
       std::cout << "Ignoring line:\n";
       std::cout << "\t" << line << "\n";
       continue;
     }
-    tmp_block_index = block_name_map.find(tmp_name)->second;
-    block = &block_list[tmp_block_index];
+    tmp_block_index = blockNameMap.find(tmp_name)->second;
+    block = &blockList[tmp_block_index];
     try {
       tmp_x = std::stoi(block_field[1]);
       block->set_llx(tmp_x);
@@ -432,7 +430,7 @@ bool circuit_t::add_new_block(std::string &blockName, std::string &blockTypeName
     #endif
     return false;
   }
-  if (block_name_map.find(blockName) != block_name_map.end()) {
+  if (blockNameMap.find(blockName) != blockNameMap.end()) {
     #ifdef USEDEBUG
     std::cout << "Error!\n";
     std::cout << "Block in blockList already: " << blockName << "\n";
@@ -446,21 +444,21 @@ bool circuit_t::add_new_block(std::string &blockName, std::string &blockTypeName
 }
 
 bool circuit_t::add_pin_to_net(std::string &netName, std::string &blockName, std::string &pinName) {
-  if (net_name_map.find(netName) == net_name_map.end()) {
+  if (netNameMap.find(netName) == netNameMap.end()) {
     #ifdef USEDEBUG
     std::cout << "Error!\n";
-    std::cout << "No net in net_list has name: " << netName << "\n";
+    std::cout << "No net in netList has name: " << netName << "\n";
     #endif
     return false;
   }
-  if (block_name_map.find(blockName) == block_name_map.end()) {
+  if (blockNameMap.find(blockName) == blockNameMap.end()) {
     #ifdef USEDEBUG
     std::cout << "Error!\n";
     std::cout << "No block in blockList has name: " << blockName << "\n";
     #endif
     return false;
   }
-  block_type_t *tmp_type = &blockTypeList[blockTypeNameMap.find(block_list[block_name_map.find(blockName)->second].type())->second];
+  block_type_t *tmp_type = &blockTypeList[blockTypeNameMap.find(blockList[blockNameMap.find(blockName)->second].type())->second];
   if (tmp_type->pinname_num_map.find(pinName) == tmp_type->pinname_num_map.end()) {
     #ifdef USEDEBUG
     std::cout << "Error!\n";
@@ -787,39 +785,158 @@ bool circuit_t::read_def_file(std::string const &NameOfFile) {
   return true;
 }
 
+bool circuit_t::create_pseudo_net(std::string &driveBlockName, std::string &drivePinName,
+                       std::string &loadBlockName, std::string &loadPinName, double weight) {
+  if (blockNameMap.find(driveBlockName) == blockNameMap.end()) {
+    #ifdef USEDEBUG
+    std::cout << "Error!\n";
+    std::cout << "Cannot find the following drive block from block list: " << driveBlockName << "\n";
+    #endif
+    return false;
+  }
+  if (blockNameMap.find(loadBlockName) == blockNameMap.end()) {
+    #ifdef USEDEBUG
+    std::cout << "Error!\n";
+    std::cout << "Cannot find the following load block from block list: " << loadBlockName << "\n";
+    #endif
+    return false;
+  }
+  int driveNum = blockNameMap.find(driveBlockName)->second;
+  int loadNum = blockNameMap.find(loadBlockName)->second;
+  std::string pseudoNetName;
+  block_type_t *driveType = &blockTypeList[blockTypeNameMap.find(blockList[driveNum].type())->second];
+  if (driveType->pinname_num_map.find(drivePinName) == driveType->pinname_num_map.end()) {
+    #ifdef USEDEBUG
+    std::cout << "Error!\n";
+    std::cout << "No pin: " << drivePinName << " in block: " << driveBlockName << " with type: " << driveType->name() << "\n";
+    #endif
+    return false;
+  }
+  block_type_t *loadType = &blockTypeList[blockTypeNameMap.find(blockList[loadNum].type())->second];
+  if (loadType->pinname_num_map.find(loadPinName) == loadType->pinname_num_map.end()) {
+    #ifdef USEDEBUG
+    std::cout << "Error!\n";
+    std::cout << "No pin: " << loadPinName << " in block: " << loadBlockName << " with type: " << loadType->name() << "\n";
+    #endif
+    return false;
+  }
+  pseudoNetName += driveBlockName + drivePinName + loadBlockName + loadPinName;
+  int driveXOffset = driveType->pin_list[driveType->pinname_num_map.find(drivePinName)->second].x;
+  int driveYOffset = driveType->pin_list[driveType->pinname_num_map.find(drivePinName)->second].y;
+  int loadXOffset = loadType->pin_list[loadType->pinname_num_map.find(loadPinName)->second].x;
+  int loadYOffset = loadType->pin_list[loadType->pinname_num_map.find(loadPinName)->second].y;
+
+  if (pseudoNetNameMap.find(pseudoNetName) == pseudoNetNameMap.end()) {
+    net_t tmp_net(pseudoNetName, weight);
+    size_t pseudoNetListSize = pseudoNetList.size();
+    tmp_net.set_num(pseudoNetListSize);
+    pin_t drivePin(driveXOffset, driveYOffset, &blockList[driveNum], drivePinName);
+    pin_t loadPin(loadXOffset, loadYOffset, &blockList[loadNum], loadPinName);
+    tmp_net.add_pin(drivePin);
+    tmp_net.add_pin(loadPin);
+    pseudoNetNameMap.insert(std::pair<std::string, int>(tmp_net.name(), tmp_net.num()));
+    pseudoNetList.push_back(tmp_net);
+  } else {
+    #ifdef USEDEBUG
+    std::cout << "Error!\n";
+    std::cout << "Existing net in netList with name: " << pseudoNetName << "\n";
+    #endif
+    return false;
+  }
+  return true;
+}
+
+bool circuit_t::remove_pseudo_net(std::string &driveBlockName, std::string &drivePinName, std::string &loadBlockName, std::string &loadPinName) {
+  if (blockNameMap.find(driveBlockName) == blockNameMap.end()) {
+    #ifdef USEDEBUG
+    std::cout << "Error!\n";
+    std::cout << "Cannot find the following drive block from block list: " << driveBlockName << "\n";
+    #endif
+    return false;
+  }
+  if (blockNameMap.find(loadBlockName) == blockNameMap.end()) {
+    #ifdef USEDEBUG
+    std::cout << "Error!\n";
+    std::cout << "Cannot find the following load block from block list: " << loadBlockName << "\n";
+    #endif
+    return false;
+  }
+  int driveNum = blockNameMap.find(driveBlockName)->second;
+  int loadNum = blockNameMap.find(loadBlockName)->second;
+  std::string pseudoNetName;
+  block_type_t *driveType = &blockTypeList[blockTypeNameMap.find(blockList[driveNum].type())->second];
+  if (driveType->pinname_num_map.find(drivePinName) == driveType->pinname_num_map.end()) {
+    #ifdef USEDEBUG
+    std::cout << "Error!\n";
+    std::cout << "No pin: " << drivePinName << " in block: " << driveBlockName << " with type: " << driveType->name() << "\n";
+    #endif
+    return false;
+  }
+  block_type_t *loadType = &blockTypeList[blockTypeNameMap.find(blockList[loadNum].type())->second];
+  if (loadType->pinname_num_map.find(loadPinName) == loadType->pinname_num_map.end()) {
+    #ifdef USEDEBUG
+    std::cout << "Error!\n";
+    std::cout << "No pin: " << loadPinName << " in block: " << loadBlockName << " with type: " << loadType->name() << "\n";
+    #endif
+    return false;
+  }
+  pseudoNetName += driveBlockName + drivePinName + loadBlockName + loadPinName;
+  if (pseudoNetNameMap.find(pseudoNetName) == pseudoNetNameMap.end()) {
+    #ifdef USEDEBUG
+    std::cout << "Error!\n";
+    std::cout << "No pseudo net can be deleted from pseudo net list:" << pseudoNetName << "\n";
+    #endif
+    return false;
+  } else {
+    int pseudoNetNum = pseudoNetNameMap.find(pseudoNetName)->second;
+    pseudoNetList.erase(pseudoNetList.begin()+pseudoNetNum);
+    for (size_t i=pseudoNetNum; i<pseudoNetList.size(); ++i) {
+      net_t *pseudoNet = &pseudoNetList[i];
+      std::string tmpPseudoNetName = pseudoNet->pin_list[0].get_block()->name() + pseudoNet->pin_list[0].name() +
+                                     pseudoNet->pin_list[1].get_block()->name() + pseudoNet->pin_list[1].name();
+      pseudoNetNameMap[tmpPseudoNetName] = i;
+    }
+  }
+  return true;
+}
+
+void circuit_t::remove_all_pseudo_nets() {
+  pseudoNetList.clear();
+}
+
 double circuit_t::ave_width_real_time() {
   _ave_width = 0;
-  for (auto &&block: block_list) {
+  for (auto &&block: blockList) {
     _ave_width += block.width();
   }
-  _ave_width /= block_list.size();
+  _ave_width /= blockList.size();
   return _ave_width;
 }
 
 double circuit_t::ave_height_real_time() {
   _ave_height = 0;
-  for (auto &&block: block_list) {
+  for (auto &&block: blockList) {
     _ave_height += block.height();
   }
-  _ave_height /= block_list.size();
+  _ave_height /= blockList.size();
   return _ave_height;
 }
 
 int circuit_t::tot_block_area_real_time() {
   _tot_block_area = 0;
-  for (auto &&block: block_list) {
+  for (auto &&block: blockList) {
     _tot_block_area += block.area();
   }
   return _tot_block_area;
 }
 
 double circuit_t::ave_block_area_real_time() {
-  return tot_block_area_real_time()/(double)block_list.size();
+  return tot_block_area_real_time()/(double)blockList.size();
 }
 
 int circuit_t::tot_movable_num_real_time() {
   _tot_movable_num = 0;
-  for (auto &&block: block_list) {
+  for (auto &&block: blockList) {
     if (block.is_movable()) {
       _tot_movable_num++;
     }
@@ -828,12 +945,12 @@ int circuit_t::tot_movable_num_real_time() {
 }
 
 int circuit_t::tot_unmovable_num_real_time() {
-  return block_list.size() - tot_movable_num_real_time();
+  return blockList.size() - tot_movable_num_real_time();
 }
 
 int circuit_t::reportHPWL() {
   int HPWL = 0;
-  for (auto &&net: net_list) {
+  for (auto &&net: netList) {
     HPWL += net.hpwl();
   }
   return HPWL;
@@ -861,7 +978,7 @@ int circuit_t::tot_block_area() {
 }
 
 double circuit_t::ave_block_area() {
-  return tot_block_area()/(double)block_list.size();
+  return tot_block_area()/(double)blockList.size();
 }
 
 int circuit_t::tot_movable_num() {
@@ -872,7 +989,7 @@ int circuit_t::tot_movable_num() {
 }
 
 int circuit_t::tot_unmovable_num() {
-  return block_list.size() - _tot_movable_num;
+  return blockList.size() - _tot_movable_num;
 }
 
 bool circuit_t::write_nodes_file(std::string const &NameOfFile) {
@@ -882,7 +999,7 @@ bool circuit_t::write_nodes_file(std::string const &NameOfFile) {
     return false;
   }
 
-  for (auto &&block: block_list) {
+  for (auto &&block: blockList) {
     ost << "\t" << block.name() << "\t" << block.width() << "\t" << block.height() << "\n";
   }
   ost.close();
@@ -897,7 +1014,7 @@ bool circuit_t::write_nets_file(std::string const &NameOfFile) {
     return false;
   }
 
-  for (auto &&net: net_list) {
+  for (auto &&net: netList) {
     ost << "NetDegree : " << net.p() << "\t" << net.name() << "\n";
     for (auto &&pin: net.pin_list) {
       ost << "\t" << pin.name() << "\tI : " << pin.x_offset() << "\t" << pin.y_offset() << "\n";
@@ -929,8 +1046,8 @@ bool circuit_t::save_DEF(std::string const &NameOfFile, std::string const &defFi
   }
 
   // 2. print component
-  //std::cout << _circuit->block_list.size() << "\n";
-  for (auto &&block: block_list) {
+  //std::cout << _circuit->blockList.size() << "\n";
+  for (auto &&block: blockList) {
     ost << "- "
         << block.name() << " "
         << block.type() << " + "
@@ -950,8 +1067,8 @@ bool circuit_t::save_DEF(std::string const &NameOfFile, std::string const &defFi
     ost << line << "\n";
   }
   /*
-  ost << "NETS " << net_list.size() << " ;\n";
-  for (auto &&net: net_list) {
+  ost << "NETS " << netList.size() << " ;\n";
+  for (auto &&net: netList) {
     ost << "- "
         << net.name() << "\n";
     ost << " ";
@@ -976,10 +1093,10 @@ bool circuit_t::gen_matlab_disp_file(std::string const &filename) {
     std::cout << "Cannot open output file: " << filename << "\n";
     return false;
   }
-  for (auto &&block: block_list) {
+  for (auto &&block: blockList) {
     ost << "rectangle('Position',[" << block.llx() << " " << block.lly() << " " << block.width() - dummy_space_x() << " " << block.height() - dummy_space_y() << "], 'LineWidth', 1, 'EdgeColor','blue')\n";
   }
-  for (auto &&net: net_list) {
+  for (auto &&net: netList) {
     for (size_t i=0; i<net.pin_list.size(); i++) {
       for (size_t j=i+1; j<net.pin_list.size(); j++) {
         ost << "line([" << net.pin_list[i].abs_x() << "," << net.pin_list[j].abs_x() - dummy_space_x()/2 << "],[" << net.pin_list[i].abs_y() - dummy_space_y()/2 << "," << net.pin_list[j].abs_y() << "],'lineWidth', 0.5)\n";

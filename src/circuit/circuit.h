@@ -27,14 +27,13 @@ protected:
 public:
   circuit_t();
   /* essential data entries */
-  std::vector< block_t > block_list;
-  std::vector< net_t > net_list;
-  // node_list and net_list contains all the information of a circuit graph
-
-  std::map<std::string, size_t> block_name_map;
-  // string to size_t map to find the index of a block in the block_list
-  std::map<std::string, size_t> net_name_map;
-  // string to size_t map to find the index of a net in the net_list
+  std::vector< block_t > blockList;
+  std::map<std::string, size_t> blockNameMap;
+  // string to size_t map to find the index of a block in the blockList
+  std::vector< net_t > netList;
+  std::map<std::string, size_t> netNameMap;
+  // string to size_t map to find the index of a net in the netList
+  // node_list and netList contains all the information of a circuit graph
 
   void set_dummy_space(int init_ds_x, int init_ds_y);
   int dummy_space_x();
@@ -43,7 +42,7 @@ public:
   bool add_new_block(std::string &blockName, int w, int h, int llx = 0, int lly = 0, bool movable = true, std::string typeName="");
   bool create_blank_net(std::string &netName, double weight = 1);
   bool add_pin_to_net(const std::string &netName, const std::string &blockName, int xOffset, int yOffset, std::string pinName="");
-  // the above three member functions should be called to add elements to block_list or net_list
+  // the above three member functions should be called to add elements to blockList or netList
 
   void parse_line(std::string &line, std::vector<std::string> &field_list);
   bool read_nodes_file(std::string const &NameOfFile);
@@ -69,6 +68,12 @@ public:
   void report_blockType_list();
   void report_blockType_map();
   bool read_def_file(std::string const &NameOfFile);
+
+  std::vector< net_t > pseudoNetList;
+  std::map<std::string, size_t> pseudoNetNameMap;
+  bool create_pseudo_net(std::string &driveBlockName, std::string &drivePinName, std::string &loadBlockName, std::string &loadPinName, double weight = 1);
+  bool remove_pseudo_net(std::string &driveBlockName, std::string &drivePinName, std::string &loadBlockName, std::string &loadPinName);
+  void remove_all_pseudo_nets();
 
   //-----------------------------------------------------------------------------------------------
   /* the following member function calculate corresponding values in real time, the running time is O(n) */

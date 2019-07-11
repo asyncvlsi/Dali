@@ -78,7 +78,7 @@ int main() {
    */
 
   std::cout << circuit.tot_movable_num_real_time() << " movable cells\n";
-  std::cout << circuit.block_list.size() << " total cells\n";
+  std::cout << circuit.blockList.size() << " total cells\n";
 
   placer_t *placer = new placer_al_t;
   placer->set_space_block_ratio(3);
@@ -132,7 +132,7 @@ int main() {
 
 
   std::cout << circuit1.tot_movable_num_real_time() << " movable cells\n";
-  std::cout << circuit1.block_list.size() << " total cells\n";
+  std::cout << circuit1.blockList.size() << " total cells\n";
 
   placer_al_t placer1;
   placer1.set_space_block_ratio(1.6);
