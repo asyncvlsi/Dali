@@ -12,7 +12,7 @@
 #include "grid_bin_index.h"
 #include "cell_cut_point.h"
 #include "grid_bin.h"
-#include "blockal.h"
+#include "AL/blockal.h"
 
 class box_bin {
 public:

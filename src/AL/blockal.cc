@@ -97,6 +97,11 @@ void block_al_t::y_increment(double delta_y) {
   _dlly += delta_y;
 }
 
+void block_al_t::move(double deltaX, double deltaY) {
+  _dllx += deltaX;
+  _dlly += deltaY;
+}
+
 bool block_al_t::is_overlap(const block_al_t &rhs) const {
   bool not_overlap;
   not_overlap = dllx() >= rhs.durx() || rhs.dllx() >= durx() || dlly() >= rhs.dury() || rhs.dlly() >= dury();

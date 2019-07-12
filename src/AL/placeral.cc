@@ -1010,6 +1010,52 @@ bool placer_al_t::check_legal() {
   return true;
 }
 
+bool placer_al_t::isCurrentLocationLegal(block_al_t *blockptr, int direction) {
+  double leftmost = bin_list[0][0].left(), bottommost = bin_list[0][0].bottom();
+  int Ybinlistsize = bin_list[0].size(), Xbinlistsize = bin_list.size();
+  double Left, Right, Bottom, Top;
+  int L,B,R,T; // left, bottom, right, top of the cell in which bin
+  std::set<int> temp_physical_neighbor_set;
+  Left = blockptr->dllx();
+  Right = blockptr->durx();
+  Bottom = blockptr->dlly();
+  Top = blockptr->dury();
+  L = floor((Left - leftmost)/bin_width);
+  B = floor((Bottom - bottommost)/bin_height);
+  R = floor((Right - leftmost)/bin_width);
+  T = floor((Top - bottommost)/bin_height);
+  for (int y=B-1; y<=T+1; y++) { // find all cells around cell i, and put all these cells into the set "temp_physical_neighbor_set", there is a reason to do so is because a cell might appear in different bins
+    if ((y>=0)&&(y<Ybinlistsize)) {
+      for (int x=L-1; x<=R+1; x++) {
+        if ((x>=0)&&(x<Xbinlistsize)) {
+          for (auto &&cell_num_in_bin: bin_list[x][y].CIB) {
+            if (blockptr->num()==(size_t)cell_num_in_bin) continue;
+            switch (direction) {
+              case -2: // -x direction
+                if (blockptr->durx() < block_list[cell_num_in_bin].dllx()) continue;
+                break;
+              case -1: // +x direction
+                break;
+              case 1: // +y direction
+                break;
+              case 2: // -y direction
+                break;
+              default: // all direction
+                break;
+            }
+            temp_physical_neighbor_set.insert(cell_num_in_bin);
+          }
+        }
+      }
+    }
+  }
+  return true;
+}
+
+/*bool placer_al_t::isMoveLegal(block_al_t *blockptr, double deltaX, double deltaY) {
+
+}*/
+
 void placer_al_t::integerize() {
   for (auto &&block: block_list) {
     block.set_dllx((int)block.dllx());
@@ -1090,7 +1136,6 @@ void placer_al_t::update_velocity() {
         block_list[i].vx += maxv2*overlap*(block_list[i].dx() - boundary_list[j].dx())/rij;
         block_list[i].vy += maxv2*overlap*(block_list[i].dy() - boundary_list[j].dy())/rij;
       }
-
     }
     block_list[i].vx = block_list[i].vx/block_list[i].area();
     block_list[i].vy = block_list[i].vy/block_list[i].area();
@@ -1223,6 +1268,141 @@ void placer_al_t::diffusion_with_gravity() {
   }
 }
 
+void placer_al_t::diffusion_with_gravity2() {
+  for (auto &&block: block_list) {
+    if (block.dllx() < left()) {
+      block.set_dllx(left());
+    }
+    if (block.dlly() < bottom()) {
+      block.set_dlly(bottom());
+    }
+    if (block.durx() > right()) {
+      block.set_durx(right());
+    }
+    if (block.dury() > top()) {
+      block.set_dury(top());
+    }
+  }
+
+  std::vector< size_t > blockXOrder(block_list.size());
+  for (size_t i=0; i<blockXOrder.size(); i++) {
+    blockXOrder[i] = i;
+  }
+  for (size_t i=0; i<blockXOrder.size(); i++) {
+    size_t minBlockNum = i;
+    for (size_t j=i+1; j<blockXOrder.size(); j++) {
+      if (block_list[blockXOrder[j]].dllx() < block_list[blockXOrder[minBlockNum]].dllx()) {
+        minBlockNum = j;
+      } else if (block_list[blockXOrder[j]].dllx() == block_list[blockXOrder[minBlockNum]].dllx()) {
+        if (block_list[blockXOrder[j]].dlly() < block_list[blockXOrder[minBlockNum]].dlly()) {
+          minBlockNum = j;
+        }
+      }
+    }
+    size_t tmpNum = blockXOrder[i];
+    blockXOrder[i] = blockXOrder[minBlockNum];
+    blockXOrder[minBlockNum] = tmpNum;
+  }
+  for (auto &&blockNum: blockXOrder) {
+    std::cout << blockNum << " " << block_list[blockNum].dllx() << " " << block_list[blockNum].dlly() << "\n";
+  }
+
+  update_block_in_bin();
+
+  /*for (auto &&blockNum: blockXOrder) {
+    //while(false);
+    if (isMoveLegal(&block_list[blockNum],-1,0)) {
+      block_list[blockNum].move(-1,0);
+    }
+  }*/
+}
+
+bool placer_al_t::tetris_legalization() {
+  for (auto &&block: block_list) {
+    if (block.dllx() < left()) {
+      block.set_dllx(left());
+    }
+    if (block.dlly() < bottom()) {
+      block.set_dlly(bottom());
+    }
+    if (block.durx() > right()) {
+      block.set_durx(right());
+    }
+    if (block.dury() > top()) {
+      block.set_dury(top());
+    }
+  }
+
+  std::vector< size_t > blockXOrder(block_list.size());
+  for (size_t i=0; i<blockXOrder.size(); i++) {
+    blockXOrder[i] = i;
+  }
+  for (size_t i=0; i<blockXOrder.size(); i++) {
+    size_t minBlockNum = i;
+    for (size_t j=i+1; j<blockXOrder.size(); j++) {
+      if (block_list[blockXOrder[j]].dllx() < block_list[blockXOrder[minBlockNum]].dllx()) {
+        minBlockNum = j;
+      } else if (block_list[blockXOrder[j]].dllx() == block_list[blockXOrder[minBlockNum]].dllx()) {
+        if (block_list[blockXOrder[j]].dlly() < block_list[blockXOrder[minBlockNum]].dlly()) {
+          minBlockNum = j;
+        }
+      }
+    }
+    size_t tmpNum = blockXOrder[i];
+    blockXOrder[i] = blockXOrder[minBlockNum];
+    blockXOrder[minBlockNum] = tmpNum;
+  }
+  double aveWidth = 0, aveHeight = 0;
+  for (auto &&block: block_list) {
+    aveWidth += block.width();
+    aveHeight += block.height();
+  }
+  aveHeight /= block_list.size();
+  int totRowNum = std::floor((top()-bottom())/aveHeight);
+
+  std::vector< double > tetrisMap(totRowNum);
+  for (auto &&tetrisRowFill: tetrisMap) {
+    tetrisRowFill = 0;
+  }
+  for (auto &&orderedBlockNum: blockXOrder) {
+    double minDisplacement = right() - left() + top() - bottom();
+    int targetRow = -1;
+    for (size_t i=0; i<tetrisMap.size(); i++) {
+      if (tetrisMap[i] + block_list[orderedBlockNum].width() > right() - left()) {
+        continue;
+      }
+      double tetrisllx = tetrisMap[i] + left();
+      double tetrislly = i*aveHeight + bottom();
+      double displacement = fabs(block_list[orderedBlockNum].dllx() - tetrisllx) + fabs(block_list[orderedBlockNum].dlly() - tetrislly);
+      if (displacement < minDisplacement) {
+        minDisplacement = displacement;
+        targetRow = i;
+      }
+    }
+    block_list[orderedBlockNum].set_dllx(tetrisMap[targetRow] + left());
+    block_list[orderedBlockNum].set_dlly(targetRow * aveHeight + bottom());
+    tetrisMap[targetRow] += block_list[orderedBlockNum].width();
+  }
+
+  for (int i=0; i<max_legalization_iteration; i++) {
+    if (check_legal()) {
+      integerize();
+      if (check_legal()) {
+        std::cout << i << " iterations\n";
+        break;
+      }
+    }
+    diffusion_legalization();
+    if (time_step > 1) time_step -= 1;
+    if (i==max_legalization_iteration-1) {
+      std::cout << "Tetris legalization finish\n";
+      return false;
+    }
+  }
+  std::cout << "Tetris legalization succeeds\n";
+  return true;
+}
+
 bool placer_al_t::gravity_legalization() {
   update_block_in_bin();
   diffusion_with_gravity();
@@ -1280,7 +1460,6 @@ bool placer_al_t::start_placement() {
   std::cout << "Initial Placement Complete\n";
   report_hpwl();
   //draw_block_net_list("cg_result.m");
-
   shift_cg_solution_to_region_center();
   expansion_legalization();
   add_boundary_list();
@@ -1288,16 +1467,18 @@ bool placer_al_t::start_placement() {
   //draw_bin_list();
   if (!legalization()) {
     if (!gravity_legalization()) {
-      report_hpwl();
-      std::cout << "Legalization fail\n";
-      return false;
+      if (!tetris_legalization()) {
+        report_hpwl();
+        tetris_legalization();
+        std::cout << "Legalization fail\n";
+        return false;
+      }
     }
   }
   post_legalization_optimization();
   std::cout << "Legalization Complete\n";
   report_hpwl();
   //draw_block_net_list();
-  report_placement_result();
   return true;
 }
 

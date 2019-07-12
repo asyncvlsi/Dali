@@ -32,6 +32,7 @@ public:
   double dy() const;
   void x_increment(double delta_x);
   void y_increment(double delta_y);
+  void move(double deltaX, double deltaY);
 
   std::vector< bin_index > bin; // bins this cell is in
   bool is_overlap(const block_al_t &rhs) const;

@@ -32,7 +32,7 @@ private:
   bool HPWLy_converge = false;
   double cg_precision = 0.01;
   double HPWL_intra_linearSolver_precision = 0.01;
-  int max_legalization_iteration = 500;
+  int max_legalization_iteration = 1000;
   int iteration_limit_diffusion = 10;
   int time_step = 1;
 public:
@@ -83,6 +83,8 @@ public:
   bool draw_block_net_list(std::string const &filename="block_net_list.m");
   void update_block_in_bin();
   bool check_legal();
+  bool isCurrentLocationLegal(block_al_t *blockptr, int direction);
+  bool isMoveLegal(block_al_t *blockptr, double deltaX, double deltaY);
   void integerize();
   void update_velocity();
   void update_velocity_force_damping();
@@ -90,6 +92,8 @@ public:
   void diffusion_legalization();
   bool legalization();
   void diffusion_with_gravity();
+  void diffusion_with_gravity2();
+  bool tetris_legalization();
   bool gravity_legalization();
   bool post_legalization_optimization();
   bool start_placement() override;
