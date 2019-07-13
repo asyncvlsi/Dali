@@ -1318,7 +1318,7 @@ void placer_al_t::diffusion_with_gravity2() {
 }
 
 bool placer_al_t::tetris_legalization() {
-  draw_block_net_list("before_tetris_legalization.m");
+  //draw_block_net_list("before_tetris_legalization.m");
   for (auto &&block: block_list) {
     if (block.dllx() < left()) {
       block.set_dllx(left());
@@ -1353,13 +1353,8 @@ bool placer_al_t::tetris_legalization() {
     blockXOrder[i] = blockXOrder[minBlockNum];
     blockXOrder[minBlockNum] = tmpNum;
   }
-  double aveWidth = 0, aveHeight = 0;
+  double aveHeight = 0;
   double minWidth = block_list[0].width();
-  for (auto &&block: block_list) {
-    aveWidth += block.width();
-    aveHeight += block.height();
-  }
-  aveHeight /= block_list.size();
   for (auto &&block: block_list) {
     if (block.height() > aveHeight) {
       aveHeight = block.height();
@@ -1372,7 +1367,7 @@ bool placer_al_t::tetris_legalization() {
 
   std::vector< double > tetrisMap(totRowNum);
   for (auto &&tetrisRowFill: tetrisMap) {
-    tetrisRowFill = 0;
+    tetrisRowFill = left();
   }
   bool allRowOerflow = false;
   for (auto &&orderedBlockNum: blockXOrder) {
@@ -1380,33 +1375,33 @@ bool placer_al_t::tetris_legalization() {
     int targetRow = 0;
     allRowOerflow = true;
     for (auto &&rowLengthUsed: tetrisMap) {
-      if (rowLengthUsed + minWidth < right() - left()) {
+      if (rowLengthUsed + minWidth < right()) {
         allRowOerflow = false;
         break;
       }
     }
     for (size_t i=0; i<tetrisMap.size(); i++) {
       if (!allRowOerflow) {
-        if (tetrisMap[i] + block_list[orderedBlockNum].width() > right() - left()) {
+        if (tetrisMap[i] + block_list[orderedBlockNum].width() > right()) {
           continue;
         }
       }
       double tetrisllx = tetrisMap[i] + left();
       double tetrislly = i*aveHeight + bottom();
       double displacement = fabs(block_list[orderedBlockNum].dllx() - tetrisllx) + fabs(block_list[orderedBlockNum].dlly() - tetrislly);
-      if (tetrisMap[i] > right() - left()) {
-        displacement += (tetrisMap[i] - (right() - left()))*5;
+      if (tetrisMap[i] > right()) {
+        displacement += (tetrisMap[i] - right())*5;
       }
       if (displacement < minDisplacement) {
         minDisplacement = displacement;
         targetRow = i;
       }
     }
-    block_list[orderedBlockNum].set_dllx(tetrisMap[targetRow] + left());
+    block_list[orderedBlockNum].set_dllx(tetrisMap[targetRow]);
     block_list[orderedBlockNum].set_dlly(targetRow * aveHeight + bottom());
     tetrisMap[targetRow] += block_list[orderedBlockNum].width();
   }
-  draw_block_net_list("after_tetris.m");
+  //draw_block_net_list("after_tetris.m");
 
   for (int i=0; i<max_legalization_iteration; i++) {
     if (check_legal()) {
@@ -1484,7 +1479,7 @@ bool placer_al_t::start_placement() {
   std::cout << "Initial Placement Complete\n";
   report_hpwl();
 
-  draw_block_net_list("cg_result.m");
+  //draw_block_net_list("cg_result.m");
 
   shift_cg_solution_to_region_center();
   expansion_legalization();
