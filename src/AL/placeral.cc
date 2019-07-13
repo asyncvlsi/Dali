@@ -116,12 +116,12 @@ void placer_al_t::cg_init() {
     kx.push_back(0);
     ky.push_back(0);
   }
-  std::vector<weight_tuple> tempArow;
+  std::vector<weightTuple> tempArow;
   for (size_t i=0; i<movable_block_num(); i++) {
     Ax.push_back(tempArow);
     Ay.push_back(tempArow);
   }
-  weight_tuple tempWT;
+  weightTuple tempWT;
   tempWT.weight = 0;
   for (size_t i=0; i<movable_block_num(); i++) {
     tempWT.pin = i;
@@ -159,7 +159,7 @@ void placer_al_t::build_problem_clique_x() {
     // make each element of b 0
   }
 
-  weight_tuple tempWT;
+  weightTuple tempWT;
   double weightx, invp, temppinlocx0, temppinlocx1, tempdiffoffset;
   size_t tempnodenum0, tempnodenum1;
 
@@ -220,7 +220,7 @@ void placer_al_t::build_problem_clique_y() {
     // make each element of b 0
   }
 
-  weight_tuple tempWT;
+  weightTuple tempWT;
   double weighty, invp, temppinlocy0, temppinlocy1, tempdiffoffset;
   size_t tempnodenum0, tempnodenum1;
 
@@ -304,7 +304,7 @@ void placer_al_t::build_problem_b2b_x() {
     // make each element of b 0
   }
   // update the x direction max and min node in each net
-  weight_tuple tempWT;
+  weightTuple tempWT;
   double weight_x, inv_p, temp_pin_loc_x0, temp_pin_loc_x1, temp_diff_offset;
   size_t temp_node_num0, temp_node_num1, max_pindex_x, min_pindex_x;
   for (auto &&net: net_list) {
@@ -375,7 +375,7 @@ void placer_al_t::build_problem_b2b_x_nooffset() {
     bx[i] = 0;
     // make each element of b 0
   }
-  weight_tuple tempWT;
+  weightTuple tempWT;
   double weightx, invp, temppinlocx0, temppinlocx1;
   size_t tempnodenum0, tempnodenum1, maxpindex_x, minpindex_x;
 
@@ -467,7 +467,7 @@ void placer_al_t::build_problem_b2b_y() {
     by[i] = 0;
     // make each element of b 0
   }
-  weight_tuple tempWT;
+  weightTuple tempWT;
   double weighty, inv_p, temp_pin_loc_y0, temp_pin_loc_y1, temp_diff_offset;
   size_t temp_node_num0, temp_node_num1, max_pindex_y, min_pindex_y;
   for (auto &&net: net_list) {
@@ -538,7 +538,7 @@ void placer_al_t::build_problem_b2b_y_nooffset() {
     by[i] = 0;
     // make each element of b 0
   }
-  weight_tuple tempWT;
+  weightTuple tempWT;
   double weighty, invp, temppinlocy0, temppinlocy1;
   size_t tempnodenum0, tempnodenum1, maxpindex_y, minpindex_y;
   for (auto &&net: net_list) {
@@ -594,7 +594,7 @@ void placer_al_t::build_problem_b2b_y_nooffset() {
   }
 }
 
-void placer_al_t::CG_solver(std::string const &dimension, std::vector< std::vector<weight_tuple> > &A, std::vector<double> &b, std::vector<size_t> &k) {
+void placer_al_t::CG_solver(std::string const &dimension, std::vector< std::vector<weightTuple> > &A, std::vector<double> &b, std::vector<size_t> &k) {
   double epsilon = 1e-15, alpha, beta, rsold, rsnew, pAp, solution_distance;
   std::vector<double> ax(movable_block_num()), ap(movable_block_num()), z(movable_block_num()), p(movable_block_num()), JP(movable_block_num());
   // JP = Jacobi_preconditioner
@@ -846,7 +846,7 @@ bool placer_al_t::draw_bin_list(std::string const &filename) {
   return true;
 }
 
-void placer_al_t::shift_cg_solution_to_region_center() {
+void placer_al_t::shift_to_region_center() {
   double leftmost = block_list[0].dllx(), bottommost = block_list[0].dlly(), rightmost = block_list[0].durx(), topmost = block_list[0].dury();
   for (auto &&block: block_list) {
     if (block.dllx() < leftmost) leftmost = block.dllx();
@@ -1319,6 +1319,8 @@ void placer_al_t::diffusion_with_gravity2() {
 
 bool placer_al_t::tetris_legalization() {
   //draw_block_net_list("before_tetris_legalization.m");
+
+  // 1. move all blocks into placement region
   for (auto &&block: block_list) {
     if (block.dllx() < left()) {
       block.set_dllx(left());
@@ -1334,6 +1336,7 @@ bool placer_al_t::tetris_legalization() {
     }
   }
 
+  // 2. sort blocks based on their lower left corners
   std::vector< size_t > blockXOrder(block_list.size());
   for (size_t i=0; i<blockXOrder.size(); i++) {
     blockXOrder[i] = i;
@@ -1353,67 +1356,71 @@ bool placer_al_t::tetris_legalization() {
     blockXOrder[i] = blockXOrder[minBlockNum];
     blockXOrder[minBlockNum] = tmpNum;
   }
-  double aveHeight = 0;
+
+  // 3. initialize the data structure to store row usage
+  double rowHeight = block_list[0].height();
   double minWidth = block_list[0].width();
   for (auto &&block: block_list) {
-    if (block.height() > aveHeight) {
-      aveHeight = block.height();
+    if (block.height() < rowHeight) {
+      rowHeight = block.height();
     }
     if (block.width() < minWidth) {
       minWidth = block.width();
     }
   }
-  int totRowNum = (int)(std::round((top()-bottom())/aveHeight));
-
-  std::vector< double > tetrisMap(totRowNum);
-  for (auto &&tetrisRowFill: tetrisMap) {
-    tetrisRowFill = left();
+  int totRowNum = (int)(std::round((top()-bottom())/rowHeight));
+  std::vector<std::vector<AvailSpace>> rowUsageMatrix;
+  for (int i=0; i<totRowNum; ++i) {
+    std::vector<AvailSpace> rowUsage;
+    rowUsageMatrix.push_back(rowUsage);
   }
-  bool allRowOerflow = false;
+  for (auto &&rowUsage: rowUsageMatrix) {
+    AvailSpace availSpace(left(),right());
+    rowUsage.push_back(availSpace);
+  }
+
+  //bool allRowFull = false;
   for (auto &&orderedBlockNum: blockXOrder) {
-    double minDisplacement = right() - left() + top() - bottom();
-    int targetRow = 0;
-    allRowOerflow = true;
-    for (auto &&rowLengthUsed: tetrisMap) {
-      if (rowLengthUsed + minWidth < right()) {
-        allRowOerflow = false;
-        break;
-      }
-    }
-    for (size_t i=0; i<tetrisMap.size(); i++) {
-      if (!allRowOerflow) {
-        if (tetrisMap[i] + block_list[orderedBlockNum].width() > right()) {
-          continue;
+    double minDisplacement = 1e30;
+    int indexRowToPlace = 0;
+    const AvailSpace *availSpaceptr = nullptr;
+    /*allRowFull = true;
+    for (auto &&rowUsage: rowUsageMatrix) {
+      for (auto &&availSpace: rowUsage) {
+        if (availSpace.start() + minWidth < right()) {
+          allRowFull = false;
+          break;
         }
       }
-      double tetrisllx = tetrisMap[i] + left();
-      double tetrislly = i*aveHeight + bottom();
-      double displacement = fabs(block_list[orderedBlockNum].dllx() - tetrisllx) + fabs(block_list[orderedBlockNum].dlly() - tetrislly);
-      if (tetrisMap[i] > right()) {
-        displacement += (tetrisMap[i] - right())*5;
-      }
-      if (displacement < minDisplacement) {
-        minDisplacement = displacement;
-        targetRow = i;
+    }*/
+    for (size_t i=0; i<rowUsageMatrix.size(); i++) {
+      /*if (!allRowFull) {
+        if (rowUsageMatrix[i].begin()->start() + block_list[orderedBlockNum].width() > right()) {
+          continue;
+        }
+      }*/
+      for (auto &&availSpace: rowUsageMatrix[i]) {
+        double tetrisllx = availSpace.start() + left();
+        double tetrislly = i * rowHeight + bottom();
+        double displacement = fabs(block_list[orderedBlockNum].dllx() - tetrisllx) + fabs(block_list[orderedBlockNum].dlly() - tetrislly);
+        if (availSpace.start() > right()) {
+          displacement += (availSpace.start() - right()) * 6;
+        }
+        if (displacement < minDisplacement) {
+          minDisplacement = displacement;
+          indexRowToPlace = i;
+          availSpaceptr = &availSpace;
+        }
       }
     }
-    block_list[orderedBlockNum].set_dllx(tetrisMap[targetRow]);
-    block_list[orderedBlockNum].set_dlly(targetRow * aveHeight + bottom());
-    tetrisMap[targetRow] += block_list[orderedBlockNum].width();
+    block_list[orderedBlockNum].set_dllx(availSpaceptr->start());
+    block_list[orderedBlockNum].set_dlly(indexRowToPlace * rowHeight + bottom());
+    rowUsageMatrix[indexRowToPlace].begin()->increStart(block_list[orderedBlockNum].width());
   }
-  //draw_block_net_list("after_tetris.m");
+  draw_block_net_list("after_tetris.m");
 
   for (int i=0; i<max_legalization_iteration; i++) {
-    if (check_legal()) {
-      integerize();
-      if (check_legal()) {
-        std::cout << i << " iterations\n";
-        break;
-      }
-    }
-    diffusion_legalization();
-    if (time_step > 1) time_step -= 1;
-    if (i==max_legalization_iteration-1) {
+    if (!check_legal()) {
       std::cout << "Tetris legalization finish\n";
       return false;
     }
@@ -1480,13 +1487,13 @@ bool placer_al_t::start_placement() {
   report_hpwl();
 
   //draw_block_net_list("cg_result.m");
-
-  shift_cg_solution_to_region_center();
-  expansion_legalization();
-  add_boundary_list();
-  initialize_bin_list();
-  //draw_bin_list();
+  /*
   if (!tetris_legalization()) {
+    shift_to_region_center();
+    //expansion_legalization();
+    draw_block_net_list("tse_result.m");
+    add_boundary_list();
+    initialize_bin_list();
     if (!legalization()) {
       if (!gravity_legalization()) {
         report_hpwl();
@@ -1494,7 +1501,23 @@ bool placer_al_t::start_placement() {
         return false;
       }
     }
+  }*/
+
+  shift_to_region_center();
+  expansion_legalization();
+  add_boundary_list();
+  initialize_bin_list();
+  //draw_bin_list();
+  if (!legalization()) {
+    if (!tetris_legalization()) {
+      if (!gravity_legalization()) {
+        report_hpwl();
+        std::cout << "Legalization fail\n";
+        return false;
+      }
+    }
   }
+
   post_legalization_optimization();
   std::cout << "Legalization Complete\n";
   report_hpwl();

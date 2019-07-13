@@ -12,12 +12,13 @@
 #include "placer.h"
 #include "blockal.h"
 #include "netal.h"
+#include "AvailSpace.h"
 #include "circuit/circuitbin.h"
 
-typedef struct  {
+typedef struct {
   size_t pin;
-  float weight;
-} weight_tuple;
+  double weight;
+} weightTuple;
 
 class placer_al_t: public placer_t {
 private:
@@ -46,7 +47,7 @@ public:
   std::vector< net_al_t > net_list;
   bool set_input_circuit(circuit_t *circuit) override;
 
-  std::vector< std::vector<weight_tuple> > Ax, Ay;
+  std::vector< std::vector<weightTuple> > Ax, Ay;
   // declare matrix here, such that every function in this namespace can see these matrix
   std::vector<size_t> kx, ky;
   // track the length of each row of Ax and Ay
@@ -67,7 +68,7 @@ public:
   void update_HPWL_y();
   void build_problem_b2b_y();
   void build_problem_b2b_y_nooffset();
-  void CG_solver(std::string const &dimension, std::vector< std::vector<weight_tuple> > &A, std::vector<double> &b, std::vector<size_t> &k);
+  void CG_solver(std::string const &dimension, std::vector< std::vector<weightTuple> > &A, std::vector<double> &b, std::vector<size_t> &k);
   void CG_solver_x();
   void CG_solver_y();
 
@@ -78,7 +79,7 @@ public:
   block_al_t virtual_bin_boundary;
   void initialize_bin_list();
   bool draw_bin_list(std::string const &filename="bin_list.m");
-  void shift_cg_solution_to_region_center();
+  void shift_to_region_center();
   void expansion_legalization();
   bool draw_block_net_list(std::string const &filename="block_net_list.m");
   void update_block_in_bin();
