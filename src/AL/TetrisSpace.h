@@ -7,15 +7,12 @@
 
 #include <vector>
 #include <cmath>
-#include "blockal.h"
+#include "FreeSegment.h"
 
-/* define doubly linked list */
-struct SpaceRange {
-  int start;
-  int end;
-  struct SpaceRange* next = nullptr; // Pointer to next space range
-  struct SpaceRange* prev = nullptr; // Pointer to previous space range
-  explicit SpaceRange(int initStart, int initEnd): start(initStart), end(initEnd) {};
+struct Loc2D {
+  int x;
+  int y;
+  explicit Loc2D(int initX, int initY): x(initX), y(initY) {};
 };
 
 class TetrisSpace {
@@ -26,13 +23,13 @@ private:
   int _top;
   int _rowHeight;
   int _minWidth;
-  std::vector< SpaceRange * > availSpaceMap;
+  std::vector< FreeSegment * > availSpaceMap;
 
   /****derived data entry****/
   int _rowNum;
 public:
   TetrisSpace(int left, int right, int bottom, int top, int rowHeight, int minWidth);
-  bool placeBlock(block_al_t &block);
+  Loc2D placeBlock(double currentX, double currentY, int blockWidth, int blockHeight);
 };
 
 

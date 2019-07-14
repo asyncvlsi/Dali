@@ -76,9 +76,11 @@ public:
   void add_boundary_list();
   std::vector< std::vector<bin_t> > bin_list;
   int bin_width, bin_height;
+  int bin_list_size_x, bin_list_size_y;
   block_al_t virtual_bin_boundary;
   void initialize_bin_list();
   bool draw_bin_list(std::string const &filename="bin_list.m");
+
   void shift_to_region_center();
   void expansion_legalization();
   bool draw_block_net_list(std::string const &filename="block_net_list.m");

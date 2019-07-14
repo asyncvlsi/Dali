@@ -802,22 +802,21 @@ void placer_al_t::initialize_bin_list(){
       max_height = block.height();
     }
   }
-  size_t x_bin_num, y_bin_num;
-  x_bin_num = (size_t)std::ceil((right() - left() + 4*max_width)/(double)max_width); // determine the bin numbers in x direction
-  y_bin_num = (size_t)std::ceil((top() - bottom() + 4*max_height)/(double)max_height); // determine the bin numbers in y direction
+  bin_list_size_x = (int)std::ceil((right() - left() + 4*max_width)/(double)max_width); // determine the bin numbers in x direction
+  bin_list_size_y = (int)std::ceil((top() - bottom() + 4*max_height)/(double)max_height); // determine the bin numbers in y direction
   bin_width = max_width;
   bin_height = max_height;
-  std::vector<bin_t> tmp_bin_column(y_bin_num);
-  for (size_t x=0; x<x_bin_num; x++) {
+  std::vector<bin_t> tmp_bin_column(bin_list_size_y);
+  for (int x=0; x<bin_list_size_x; x++) {
     // bin_list[x][y] indicates the bin in the  x-th x, and y-th y bin
     bin_list.push_back(tmp_bin_column);
   }
-  int Left_new = left() - (x_bin_num * bin_width - (right() - left()))/2;
-  int Bottom_new = bottom() - (y_bin_num * bin_height - (top() - bottom()))/2;
+  int Left_new = left() - (bin_list_size_x * bin_width - (right() - left()))/2;
+  int Bottom_new = bottom() - (bin_list_size_y * bin_height - (top() - bottom()))/2;
   virtual_bin_boundary.set_dllx(Left_new);
   virtual_bin_boundary.set_dlly(Bottom_new);
-  virtual_bin_boundary.set_width(x_bin_num * bin_width);
-  virtual_bin_boundary.set_height(y_bin_num * bin_height);
+  virtual_bin_boundary.set_width(bin_list_size_x * bin_width);
+  virtual_bin_boundary.set_height(bin_list_size_y * bin_height);
   for (size_t x=0; x<bin_list.size(); x++) {
     for (size_t y=0; y<bin_list[x].size(); y++) {
       bin_list[x][y].set_left(Left_new + x*bin_width);
@@ -995,17 +994,44 @@ void placer_al_t::update_block_in_bin() {
 }
 
 bool placer_al_t::check_legal() {
-  for (size_t i=0; i<block_list.size(); i++) {
-    for (size_t j=i+1; j<block_list.size(); j++) {
-      if (block_list[i].is_overlap(block_list[j])) {
-        return false;
-      }
-    }
+  double leftmost = virtual_bin_boundary.dllx(), bottommost = virtual_bin_boundary.dlly();
+  for (auto &&block: block_list) {
+    if (!block.is_movable()) continue;
+    // 1. check overlap with boundaries
     for (auto &&boundary: boundary_list) {
-      if (block_list[i].is_overlap(boundary)) {
+      if (block.is_overlap(boundary)) {
         return false;
       }
     }
+    // 2. check overlap with cells
+    std::vector< int > temp_physical_neighbor_set;
+    int L,B,R,T; // left, bottom, right, top of the cell in which bin
+    L = floor((block.dllx() - leftmost) / bin_width);
+    B = floor((block.dlly() - bottommost) / bin_height);
+    R = floor((block.durx() - leftmost) / bin_width);
+    T = floor((block.dury() - bottommost) / bin_height);
+    for (int y = B - 1; y <= T + 1; y++) {
+      // find all cells around cell i, and put all these cells into the set "temp_physical_neighbor_set", there is a reason to do so is because a cell might appear in different bins
+      if ((y >= 0) && (y < bin_list_size_y)) {
+        for (int x = L - 1; x <= R + 1; x++) {
+          if ((x >= 0) && (x < bin_list_size_x)) {
+            for (auto &&cell_num_in_bin: bin_list[x][y].CIB) {
+              if (block.num() == (size_t)cell_num_in_bin) {
+                continue;
+              } else {
+                temp_physical_neighbor_set.push_back(cell_num_in_bin);
+              }
+            }
+          }
+        }
+      }
+    }
+    for (auto &&block_num: temp_physical_neighbor_set) {
+      if (block.is_overlap(block_list[block_num])) {
+        return false;
+      }
+    }
+    temp_physical_neighbor_set.clear(); // clear this set after calculate the velocity due to overlap of cells
   }
   return true;
 }
@@ -1224,6 +1250,7 @@ void placer_al_t::diffusion_legalization() {
     update_velocity();
     update_position();
   }
+  update_block_in_bin();
 }
 
 bool placer_al_t::legalization() {
@@ -1407,7 +1434,7 @@ bool placer_al_t::tetris_legalization() {
     tetrisMap[targetRow] += block_list[orderedBlockNum].width();
   }
   //draw_block_net_list("after_tetris.m");
-  
+
   if (!check_legal()) {
     std::cout << "Tetris legalization finish\n";
     return false;
@@ -1474,7 +1501,7 @@ bool placer_al_t::start_placement() {
   report_hpwl();
 
   //draw_block_net_list("cg_result.m");
-
+  /*
   if (!tetris_legalization()) {
     shift_to_region_center();
     //expansion_legalization();
@@ -1488,8 +1515,8 @@ bool placer_al_t::start_placement() {
         return false;
       }
     }
-  }
-  /*
+  }*/
+
   shift_to_region_center();
   expansion_legalization();
   add_boundary_list();
@@ -1504,7 +1531,7 @@ bool placer_al_t::start_placement() {
       }
     }
   }
-   */
+
 
   post_legalization_optimization();
   std::cout << "Legalization Complete\n";
