@@ -12,12 +12,13 @@ class FreeSegment {
 private:
   int _start;
   int _end;
-  FreeSegment *_next = nullptr; // Pointer to next space range
-  FreeSegment *_prev = nullptr; // Pointer to previous space range
+  FreeSegment *_prev = nullptr; // Pointer to previous free segment
+  FreeSegment *_next = nullptr; // Pointer to next free segment
+  int _minWidth;
 public:
-  explicit FreeSegment(int initStart = 0, int initEnd = 0);
-  bool setPrev(FreeSegment *preFreeSegptr);
-  bool setNext(FreeSegment *nextFreeSegptr);
+  explicit FreeSegment(int initStart = 0, int initEnd = 0, int minWidth = 0);
+  bool setPrev(FreeSegment *preFreeSeg_ptr);
+  bool setNext(FreeSegment *nextFreeSeg_ptr);
   bool useSpace(int startLoc, int endLoc);
   int start() const;
   int end() const;

@@ -23,10 +23,9 @@ private:
   int _top;
   int _rowHeight;
   int _minWidth;
-  std::vector< FreeSegment * > availSpaceMap;
-
+  std::vector< FreeSegment * > freeSegmentRows;
   /****derived data entry****/
-  int _rowNum;
+  int _totNumRow;
 public:
   TetrisSpace(int left, int right, int bottom, int top, int rowHeight, int minWidth);
   Loc2D placeBlock(double currentX, double currentY, int blockWidth, int blockHeight);
