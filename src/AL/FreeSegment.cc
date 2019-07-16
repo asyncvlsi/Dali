@@ -16,6 +16,14 @@ bool FreeSegment::setNext(FreeSegment *nextFreeSeg_ptr) {
   return true;
 }
 
+FreeSegment *FreeSegment::next() const {
+  return _next;
+}
+
+FreeSegment *FreeSegment::prev() const {
+  return  _prev;
+}
+
 bool FreeSegment::useSpace(int startLoc, int endLoc) {
   /****use a segment of this free segment:
    * 1. use all free space (remove this segment),
@@ -45,4 +53,8 @@ int FreeSegment::start() const {
 
 int FreeSegment::end() const {
   return  _end;
+}
+
+int FreeSegment::length() const {
+  return _end - _start;
 }

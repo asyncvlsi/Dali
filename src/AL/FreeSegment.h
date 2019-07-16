@@ -19,9 +19,12 @@ public:
   explicit FreeSegment(int initStart = 0, int initEnd = 0, int minWidth = 0);
   bool setPrev(FreeSegment *preFreeSeg_ptr);
   bool setNext(FreeSegment *nextFreeSeg_ptr);
+  FreeSegment *next() const;
+  FreeSegment *prev() const;
   bool useSpace(int startLoc, int endLoc);
   int start() const;
   int end() const;
+  int length() const;
 };
 
 
