@@ -47,8 +47,16 @@ bool FreeSegment::useSpace(int startLoc, int endLoc) {
   return true;
 }
 
+void FreeSegment::setStart(int startLoc) {
+  _start = startLoc;
+}
+
 int FreeSegment::start() const {
   return  _start;
+}
+
+void FreeSegment::setEnd(int endLoc) {
+  _end = endLoc;
 }
 
 int FreeSegment::end() const {
@@ -57,4 +65,13 @@ int FreeSegment::end() const {
 
 int FreeSegment::length() const {
   return _end - _start;
+}
+
+bool FreeSegment::isOverlap(FreeSegment *seg) const {
+  if ((length() == 0) || (seg->length() == 0)) {
+    std::cout << "Length 0 segment?!\n";
+    return false;
+  }
+  bool notOverlap = (_end <= seg->start()) || (_start >= seg->end());
+  return !notOverlap;
 }

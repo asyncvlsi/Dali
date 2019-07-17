@@ -28,8 +28,8 @@ private:
   int _totNumRow;
 public:
   TetrisSpace(int left, int right, int bottom, int top, int rowHeight, int minWidth);
-  bool updateCommonSegment(int rowNum, std::vector< int > &commonSegments);
-  bool findCommonSegments(int startRowNum, int endRowNum, int blockWidth, std::vector< int > &commonSegments);
+  bool trimCommonSegment(int rowNum, FreeSegment *commonSegments);
+  bool findCommonSegments(int startRowNum, int endRowNum, int blockWidth, FreeSegment *commonSegments);
   Loc2D findBlockLocation(double currentX, double currentY, int blockWidth, int blockHeight);
 };
 

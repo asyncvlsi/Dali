@@ -22,9 +22,12 @@ public:
   FreeSegment *next() const;
   FreeSegment *prev() const;
   bool useSpace(int startLoc, int endLoc);
+  void setStart(int startLoc);
   int start() const;
+  void setEnd(int endLoc);
   int end() const;
   int length() const;
+  bool isOverlap(FreeSegment *seg) const;
 };
 
 

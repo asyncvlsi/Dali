@@ -16,29 +16,40 @@ TetrisSpace::TetrisSpace(int left, int right, int bottom, int top, int rowHeight
   }
 }
 
-bool TetrisSpace::updateCommonSegment(int rowNum, std::vector< int > &commonSegments) {
-
+bool TetrisSpace::trimCommonSegment(int rowNum, FreeSegment *commonSegments) {
+  // find the common segment of this row with existing common segment
+  // 1. some basic checking
+  if ((rowNum < 0) || (rowNum > (int)(freeSegmentRows.size()) - 1)) {
+    return false;
+  }
+  for (FreeSegment *curSeg_ptr = freeSegmentRows[rowNum]; curSeg_ptr != nullptr; curSeg_ptr = curSeg_ptr->next()) {
+    
+  }
   return true;
 }
 
-bool TetrisSpace::findCommonSegments(int startRowNum, int endRowNum, int blockWidth, std::vector< int > &commonSegments) {
+bool TetrisSpace::findCommonSegments(int startRowNum, int endRowNum, int blockWidth, FreeSegment *commonSegments) {
   // find the first common segment which can put new block into
   // 1. some basic checking
+  if (endRowNum < startRowNum) {
+    return false;
+  }
   if ((startRowNum < 0) || (endRowNum > (int)(freeSegmentRows.size()) - 1)) {
     return false;
   }
+
   bool isFindCommonSegSuccess = false;
   for (FreeSegment *curSeg_ptr = freeSegmentRows[startRowNum]; curSeg_ptr != nullptr; curSeg_ptr = curSeg_ptr->next()){
     if (curSeg_ptr->length() < blockWidth){
       continue;
     }
-    std::vector< int > tmpCommonSegment;
-    tmpCommonSegment.push_back(curSeg_ptr->start());
-    tmpCommonSegment.push_back(curSeg_ptr->end());
+    auto *tmpCommonSegment = new FreeSegment;
+    tmpCommonSegment->setStart(curSeg_ptr->start());
+    tmpCommonSegment->setEnd(curSeg_ptr->end());
     // for each of the following rows, update this temporary common segment list
     isFindCommonSegSuccess = true;
     for (int i=startRowNum+1; i<=endRowNum; ++i) {
-      if (!updateCommonSegment(i, tmpCommonSegment)) {
+      if (!trimCommonSegment(i, tmpCommonSegment)) {
         isFindCommonSegSuccess = false;
         break;
       }
@@ -58,7 +69,7 @@ Loc2D TetrisSpace::findBlockLocation(double currentX, double currentY, int block
   int topRowNumToCheck = freeSegmentRows.size() - effectiveHeight;
   for (int i=0; i<topRowNumToCheck; ++i) {
     double costFunction = 0;
-    std::vector< int > commonSegments;
+    FreeSegment *commonSegments;
     if (findCommonSegments(i, i+effectiveHeight, blockWidth, commonSegments)) {
       // calculate
     }
