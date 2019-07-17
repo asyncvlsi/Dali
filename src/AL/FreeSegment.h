@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <algorithm>
 
 class FreeSegment {
 private:
@@ -28,6 +29,21 @@ public:
   int end() const;
   int length() const;
   bool isOverlap(FreeSegment *seg) const;
+  FreeSegment *singleSegAnd(FreeSegment *seg);
+  FreeSegment *singleSegOr(FreeSegment *seg);
+  void clear();
+
+  friend std::ostream& operator<<(std::ostream& os, const FreeSegment *seg) {
+    if (seg == nullptr) {
+      os << "No overlap\n";
+    } else {
+      os << "( " << seg->_start << " " << seg->_end << " )\n";
+      if (seg->next() != nullptr) {
+        os << seg->next();
+      }
+    }
+    return os;
+  }
 };
 
 

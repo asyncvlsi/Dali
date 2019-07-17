@@ -75,3 +75,48 @@ bool FreeSegment::isOverlap(FreeSegment *seg) const {
   bool notOverlap = (_end <= seg->start()) || (_start >= seg->end());
   return !notOverlap;
 }
+
+FreeSegment *FreeSegment::singleSegAnd(FreeSegment *seg) {
+  if (!isOverlap(seg)) {
+    return nullptr;
+  }
+  auto *result = new FreeSegment(std::max(_start, seg->start()), std::min(_end, seg->end()));
+  return result;
+}
+
+FreeSegment *FreeSegment::singleSegOr(FreeSegment *seg) {
+  if ((length() == 0) && (seg->length() == 0)) {
+    return nullptr;
+  }
+  auto *result = new FreeSegment;
+  if (_start > seg->end() || _end < seg->start()) { // no overlap, no touch
+    result->setStart(std::min(_start, seg->start()));
+    result->setEnd(std::min(_end, seg->end()));
+    auto *secondSeg = new FreeSegment;
+    secondSeg->setStart(std::max(_start, seg->start()));
+    secondSeg->setEnd(std::max(_end, seg->end()));
+    result->setNext(secondSeg);
+  } else if (_start == seg->end()) { // _start touches the end of seg
+    result->setStart(seg->start());
+    result->setEnd(_end);
+  } else if (_end == seg->start()) { // _end touches the start of seg
+    result->setStart(_start);
+    result->setEnd(seg->end());
+  } else { // non-zero overlap
+    result->setStart(std::min(_start, seg->start()));
+    result->setEnd(std::max(_end, seg->end()));
+  }
+  return result;
+}
+
+void FreeSegment::clear() {
+  // clear things after this node
+  FreeSegment* current = this;
+  FreeSegment* next;
+  while (current != nullptr) {
+    next = current->next();
+    free(current);
+    current = next;
+  }
+
+}

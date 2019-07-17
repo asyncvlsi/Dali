@@ -23,7 +23,7 @@ bool TetrisSpace::trimCommonSegment(int rowNum, FreeSegment *commonSegments) {
     return false;
   }
   for (FreeSegment *curSeg_ptr = freeSegmentRows[rowNum]; curSeg_ptr != nullptr; curSeg_ptr = curSeg_ptr->next()) {
-    
+
   }
   return true;
 }
