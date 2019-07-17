@@ -6,21 +6,21 @@
 
 FreeSegment::FreeSegment(int initStart, int initEnd, int minWidth): _start(initStart), _end(initEnd), _minWidth(minWidth) {}
 
-bool FreeSegment::setPrev(FreeSegment *preFreeSeg_ptr) {
+bool FreeSegment::setPrev(FreeSegment* preFreeSeg_ptr) {
   _prev = preFreeSeg_ptr;
   return true;
 }
 
-bool FreeSegment::setNext(FreeSegment *nextFreeSeg_ptr) {
+bool FreeSegment::setNext(FreeSegment* nextFreeSeg_ptr) {
   _next = nextFreeSeg_ptr;
   return true;
 }
 
-FreeSegment *FreeSegment::next() const {
+FreeSegment* FreeSegment::next() const {
   return _next;
 }
 
-FreeSegment *FreeSegment::prev() const {
+FreeSegment* FreeSegment::prev() const {
   return  _prev;
 }
 
@@ -63,11 +63,24 @@ int FreeSegment::end() const {
   return  _end;
 }
 
+bool FreeSegment::setTail(FreeSegment *seg) {
+  if (tail == nullptr) {
+    std::cout << "Set tail-ptr to a nullptr?!\n";
+    return false;
+  }
+  _tail = seg;
+  return true;
+}
+
+FreeSegment* FreeSegment::tail() {
+  return _tail;
+}
+
 int FreeSegment::length() const {
   return _end - _start;
 }
 
-bool FreeSegment::isOverlap(FreeSegment *seg) const {
+bool FreeSegment::isOverlap(FreeSegment* seg) const {
   if ((length() == 0) || (seg->length() == 0)) {
     std::cout << "Length 0 segment?!\n";
     return false;
@@ -76,7 +89,7 @@ bool FreeSegment::isOverlap(FreeSegment *seg) const {
   return !notOverlap;
 }
 
-FreeSegment *FreeSegment::singleSegAnd(FreeSegment *seg) {
+FreeSegment* FreeSegment::singleSegAnd(FreeSegment* seg) {
   if (!isOverlap(seg)) {
     return nullptr;
   }
@@ -84,7 +97,7 @@ FreeSegment *FreeSegment::singleSegAnd(FreeSegment *seg) {
   return result;
 }
 
-FreeSegment *FreeSegment::singleSegOr(FreeSegment *seg) {
+FreeSegment* FreeSegment::singleSegOr(FreeSegment* seg) {
   if ((length() == 0) && (seg->length() == 0)) {
     std::cout << "What?! two segments with length 0 for OR operation\n";
     return nullptr;
@@ -121,14 +134,44 @@ FreeSegment *FreeSegment::singleSegOr(FreeSegment *seg) {
   return result;
 }
 
+FreeSegment* FreeSegment::SegAnd(FreeSegment* seg) {
+  /****each free segment in seg will do AND with each single free segment in "this" row,
+   * and OR the final result together
+   * requirement: no overlap between free segments in seg and "this" row.
+   * (this requirement is safe, if users only call APIs)***/
+  FreeSegment* result = nullptr;
+  for (FreeSegment* curSeg_ptr = seg; curSeg_ptr != nullptr; curSeg_ptr = curSeg_ptr->next()) {
+    FreeSegment* segANDRowResult = nullptr;
+    for (FreeSegment* seg_ptr = this; seg_ptr != nullptr; seg_ptr = seg_ptr->next()) {
+      if (segANDRowResult == nullptr) {
+        segANDRowResult = curSeg_ptr->singleSegAnd(seg_ptr);
+      } else {
+        segANDRowResult->push_back(curSeg_ptr->singleSegAnd(seg_ptr));
+      }
+    }
+  }
+}
+
+FreeSegment* FreeSegment::SegOr(FreeSegment* seg) {
+  /****each free segment in seg will do OR with each single free segment in "this" row,
+   * and OR the final result together
+   * requirement: no overlap between free segments in seg and "this" row.
+   * (this requirement is safe, if users only call APIs)***/
+}
+
+void FreeSegment::push_back(FreeSegment* seg) {
+  FreeSegment* tail_ptr = tail();
+  tail_ptr->setNext(seg);
+  setTail(seg);
+}  
+
 void FreeSegment::clear() {
   // clear things after this node
   FreeSegment* current = this;
-  FreeSegment* next;
+  FreeSegment* next = nullptr;
   while (current != nullptr) {
     next = current->next();
     free(current);
     current = next;
   }
-
 }
