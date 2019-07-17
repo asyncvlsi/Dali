@@ -86,15 +86,27 @@ FreeSegment *FreeSegment::singleSegAnd(FreeSegment *seg) {
 
 FreeSegment *FreeSegment::singleSegOr(FreeSegment *seg) {
   if ((length() == 0) && (seg->length() == 0)) {
+    std::cout << "What?! two segments with length 0 for OR operation\n";
     return nullptr;
   }
   auto *result = new FreeSegment;
   if (_start > seg->end() || _end < seg->start()) { // no overlap, no touch
-    result->setStart(std::min(_start, seg->start()));
-    result->setEnd(std::min(_end, seg->end()));
-    auto *secondSeg = new FreeSegment;
-    secondSeg->setStart(std::max(_start, seg->start()));
-    secondSeg->setEnd(std::max(_end, seg->end()));
+    int firstStart, firstEnd, secondStart, secondEnd;
+    if (_start < seg->start()) {
+      firstStart = _start;
+      firstEnd = _end;
+      secondStart = seg->start();
+      secondEnd = seg->end();
+    } else {
+      firstStart = seg->start();
+      firstEnd = seg->end();
+      secondStart = _start;
+      secondEnd = _end;
+    }
+    result->setStart(firstStart);
+    result->setEnd(firstEnd);
+
+    auto *secondSeg = new FreeSegment(secondStart, secondEnd);
     result->setNext(secondSeg);
   } else if (_start == seg->end()) { // _start touches the end of seg
     result->setStart(seg->start());

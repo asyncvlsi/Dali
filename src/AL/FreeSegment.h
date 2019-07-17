@@ -35,7 +35,7 @@ public:
 
   friend std::ostream& operator<<(std::ostream& os, const FreeSegment *seg) {
     if (seg == nullptr) {
-      os << "No overlap\n";
+      os << "Empty point?! No overlap, it is...\n";
     } else {
       os << "( " << seg->_start << " " << seg->_end << " )\n";
       if (seg->next() != nullptr) {
