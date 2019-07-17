@@ -2,7 +2,7 @@
 // Created by yihan on 7/12/2019.
 //
 
-#include "AvailSpace.h"
+#include "availspace.h"
 
 AvailSpace::AvailSpace(double initStart, double initEnd): _start(initStart), _end(initEnd){}
 

@@ -7,7 +7,7 @@
 
 #include <vector>
 #include <cmath>
-#include "FreeSegment.h"
+#include "freesegment.h"
 
 struct Loc2D {
   int x;

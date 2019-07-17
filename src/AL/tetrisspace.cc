@@ -2,7 +2,7 @@
 // Created by yihan on 7/12/2019.
 //
 
-#include "TetrisSpace.h"
+#include "tetrisspace.h"
 
 TetrisSpace::TetrisSpace(int left, int right, int bottom, int top, int rowHeight, int minWidth):
                   _left(left), _right(right), _bottom(bottom), _top(top), _rowHeight(rowHeight), _minWidth(minWidth) {

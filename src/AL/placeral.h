@@ -12,7 +12,7 @@
 #include "placer.h"
 #include "blockal.h"
 #include "netal.h"
-#include "AvailSpace.h"
+#include "availspace.h"
 #include "circuit/circuitbin.h"
 
 typedef struct {

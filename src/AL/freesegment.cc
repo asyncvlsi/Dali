@@ -2,7 +2,7 @@
 // Created by yihan on 7/13/2019.
 //
 
-#include "FreeSegment.h"
+#include "freesegment.h"
 
 FreeSegment::FreeSegment(int initStart, int initEnd, int minWidth): _start(initStart), _end(initEnd), _minWidth(minWidth) {}
 
@@ -64,7 +64,7 @@ int FreeSegment::end() const {
 }
 
 bool FreeSegment::setTail(FreeSegment *seg) {
-  if (tail == nullptr) {
+  if (seg == nullptr) {
     std::cout << "Set tail-ptr to a nullptr?!\n";
     return false;
   }
