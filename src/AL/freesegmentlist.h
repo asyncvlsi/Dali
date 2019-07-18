@@ -15,13 +15,24 @@ private:
   FreeSegment* _tail;
   int _minWidth;
   size_t _size;
+  /***derived data entries***/
 public:
-  explicit FreeSegmentList(int minWidth = 0);
+  FreeSegmentList();
+  explicit FreeSegmentList(int initStart, int initEnd, int minWidth = 0);
   ~FreeSegmentList();
   size_t size();
+  int left();
+  int right();
+  FreeSegment* head();
+  FreeSegment* tail();
+  int minWidth();
+  void append(FreeSegment *segList);
+  bool emplace_back(int start, int end);
   void push_back(FreeSegment* seg);
+  void copyFrom(FreeSegmentList &originList);
   void clear();
   FreeSegment* ANDSingleSeg(FreeSegment* seg);
+  bool applyMask(FreeSegmentList &maskRow);
   void show();
 };
 

@@ -7,12 +7,9 @@
 TetrisSpace::TetrisSpace(int left, int right, int bottom, int top, int rowHeight, int minWidth):
                   _left(left), _right(right), _bottom(bottom), _top(top), _rowHeight(rowHeight), _minWidth(minWidth) {
   _totNumRow = std::floor((_top-_bottom)/rowHeight);
-  FreeSegment *tmpSpaceRange_ptr = nullptr;
+  FreeSegmentList tmpRow(_left, _right, _minWidth);
   for (int i=0; i<_totNumRow; ++i) {
-    freeSegmentRows.push_back(tmpSpaceRange_ptr);
-  }
-  for (auto &&spaceRange_ptr: freeSegmentRows) {
-    spaceRange_ptr = new FreeSegment(_left, _right, _minWidth);
+    freeSegmentRows.push_back(tmpRow);
   }
 }
 
@@ -22,7 +19,7 @@ bool TetrisSpace::trimCommonSegment(int rowNum, FreeSegment *commonSegments) {
   if ((rowNum < 0) || (rowNum > (int)(freeSegmentRows.size()) - 1)) {
     return false;
   }
-  for (FreeSegment *curSeg_ptr = freeSegmentRows[rowNum]; curSeg_ptr != nullptr; curSeg_ptr = curSeg_ptr->next()) {
+  for (FreeSegment *curSeg_ptr = freeSegmentRows[rowNum].head(); curSeg_ptr != nullptr; curSeg_ptr = curSeg_ptr->next()) {
 
   }
   return true;
@@ -39,7 +36,7 @@ bool TetrisSpace::findCommonSegments(int startRowNum, int endRowNum, int blockWi
   }
 
   bool isFindCommonSegSuccess = false;
-  for (FreeSegment *curSeg_ptr = freeSegmentRows[startRowNum]; curSeg_ptr != nullptr; curSeg_ptr = curSeg_ptr->next()){
+  for (FreeSegment *curSeg_ptr = freeSegmentRows[startRowNum].head(); curSeg_ptr != nullptr; curSeg_ptr = curSeg_ptr->next()){
     if (curSeg_ptr->length() < blockWidth){
       continue;
     }

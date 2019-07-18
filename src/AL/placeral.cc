@@ -1501,7 +1501,7 @@ bool placer_al_t::start_placement() {
   report_hpwl();
 
   //draw_block_net_list("cg_result.m");
-  /*
+
   if (!tetris_legalization()) {
     shift_to_region_center();
     //expansion_legalization();
@@ -1515,8 +1515,8 @@ bool placer_al_t::start_placement() {
         return false;
       }
     }
-  }*/
-
+  }
+  /*
   shift_to_region_center();
   expansion_legalization();
   add_boundary_list();
@@ -1531,7 +1531,7 @@ bool placer_al_t::start_placement() {
       }
     }
   }
-
+   */
 
   post_legalization_optimization();
   std::cout << "Legalization Complete\n";

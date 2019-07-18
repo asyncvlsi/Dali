@@ -7,7 +7,7 @@
 
 #include <vector>
 #include <cmath>
-#include "freesegment.h"
+#include "freesegmentlist.h"
 
 struct Loc2D {
   int x;
@@ -23,7 +23,7 @@ private:
   int _top;
   int _rowHeight;
   int _minWidth;
-  std::vector< FreeSegment * > freeSegmentRows;
+  std::vector< FreeSegmentList > freeSegmentRows;
   /****derived data entry****/
   int _totNumRow;
 public:

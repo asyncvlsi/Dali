@@ -16,10 +16,14 @@ bool FreeSegment::setNext(FreeSegment* nextFreeSeg_ptr) {
   return true;
 }
 
-bool FreeSegment::concatSingleSeg(FreeSegment* seg_ptr) {
+bool FreeSegment::linkSingleSeg(FreeSegment *seg_ptr) {
+  if (seg_ptr == nullptr) {
+    std::cout << "Want to link to an empty pointer?\n";
+    assert(seg_ptr != nullptr);
+  }
   if ((this->next() != nullptr) || (seg_ptr->next() != nullptr)) {
     std::cout << "This member function is not for concatenating multi nodes linked list\n";
-    assert(this->next() == nullptr && seg_ptr->next() == nullptr);
+    assert((this->next() == nullptr) && (seg_ptr->next() == nullptr));
   }
   return (setNext(seg_ptr) && seg_ptr->setPrev(this));
 }
@@ -82,6 +86,14 @@ bool FreeSegment::isOverlap(FreeSegment* seg) const {
   }
   bool notOverlap = (_end <= seg->start()) || (_start >= seg->end());
   return !notOverlap;
+}
+
+bool FreeSegment::isTouch(FreeSegment* seg) const {
+  if ((length() == 0) || (seg->length() == 0)) {
+    std::cout << "Length 0 segment?!\n";
+    return false;
+  }
+  return (_end == seg->start()) || (_start == seg->end());
 }
 
 FreeSegment* FreeSegment::singleSegAnd(FreeSegment* seg) {

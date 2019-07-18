@@ -49,6 +49,7 @@ int main() {
   }
   */
   /****LEF/DEF****/
+  /*
   std::string lefFileName = "../test/out_1K/3m/out_1K.lef";
   std::string defFileName = "../test/out_1K/3m/out_1K.def";
   if (!circuit.read_lef_file(lefFileName)) {
@@ -59,24 +60,24 @@ int main() {
   if (!circuit.read_def_file(defFileName)) {
     return 1;
   }
+   */
 
   //circuit.report_block_list();
   //circuit.report_block_map();
   //circuit.report_net_list();
   //circuit.report_net_map();
   /****debug case****/
-  /*
-  if (!circuit.read_nodes_file("fnode")) {
+
+  if (!circuit.read_nodes_file("nnnodes62")) {
     //circuit.report_block_list();
     //circuit.report_block_map();
     return 1;
   }
-  if (!circuit.read_nets_file("fnet")) {
+  if (!circuit.read_nets_file("nnnets62")) {
     //circuit.report_net_list();
     //circuit.report_net_map();
     return 1;
   }
-  */
 
   std::cout << circuit.tot_movable_num_real_time() << " movable cells\n";
   std::cout << circuit.blockList.size() << " total cells\n";
@@ -87,7 +88,7 @@ int main() {
   std::cout << placer->space_block_ratio() << " " << placer->filling_rate() << " " << placer->aspect_ratio() << "\n";
   std::cout << "average width and height: " << circuit.ave_width() << " " << circuit.ave_height() << " " << circuit.ave_width() + circuit.ave_height() << "\n";
   placer->set_input_circuit(&circuit);
-  //placer->set_boundary(10,192,4366,4469); // debug case
+  //placer->set_boundary(10,295,169,307); // debug case
   //placer->auto_set_boundaries(); // set boundary for layout
   //placer->set_boundary(459,11151,459,11139); // set boundary for adaptec1
   placer->set_boundary(circuit.def_left,circuit.def_right,circuit.def_bottom,circuit.def_top); // set boundary for lef/def

@@ -19,7 +19,7 @@ public:
   explicit FreeSegment(int initStart = 0, int initEnd = 0);
   bool setPrev(FreeSegment* preFreeSeg_ptr);
   bool setNext(FreeSegment* nextFreeSeg_ptr);
-  bool concatSingleSeg(FreeSegment* seg_ptr);
+  bool linkSingleSeg(FreeSegment *seg_ptr);
   FreeSegment* next() const;
   FreeSegment* prev() const;
   bool useSpace(int startLoc, int endLoc);
@@ -29,6 +29,7 @@ public:
   int end() const;
   int length() const;
   bool isOverlap(FreeSegment* seg) const;
+  bool isTouch(FreeSegment* seg) const;
   FreeSegment* singleSegAnd(FreeSegment* seg);
   FreeSegment* singleSegOr(FreeSegment* seg);
   void clear();
