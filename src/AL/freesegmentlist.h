@@ -18,7 +18,7 @@ private:
   /***derived data entries***/
 public:
   FreeSegmentList();
-  explicit FreeSegmentList(int initStart, int initEnd, int minWidth = 0);
+  explicit FreeSegmentList(int initStart, int initEnd, int initMinWidth = 0);
   ~FreeSegmentList();
   size_t size() const;
   int left() const;
@@ -35,7 +35,7 @@ public:
   void clear();
   bool applyMask(FreeSegmentList &maskRow);
   void removeSeg(FreeSegment* &segInList);
-  void removeShortSeg(int minWidth);
+  void removeShortSeg();
   void useSpace(int locToStart, int lengthToUse);
   void show();
 };

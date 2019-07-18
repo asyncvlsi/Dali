@@ -11,7 +11,7 @@ FreeSegmentList::FreeSegmentList() {
   _size = 0;
 }
 
-FreeSegmentList::FreeSegmentList(int initStart, int initEnd, int minWidth): _minWidth(minWidth) {
+FreeSegmentList::FreeSegmentList(int initStart, int initEnd, int initMinWidth): _minWidth(initMinWidth) {
   _head = new FreeSegment(initStart, initEnd);
   _tail = _head;
   _size = 1;
@@ -206,10 +206,10 @@ bool FreeSegmentList::applyMask(FreeSegmentList &maskRow) {
   return true;
 }
 
-void FreeSegmentList::removeShortSeg(int minWidth) {
+void FreeSegmentList::removeShortSeg() {
   if (empty()) return;
   for (FreeSegment* current = head(); current != nullptr; current = current->next()) {
-    if (current->length() < minWidth) {
+    if (current->length() < _minWidth) {
       removeSeg(current);
     }
   }
