@@ -5,8 +5,8 @@
 #include "freesegmentlist.h"
 
 FreeSegmentList::FreeSegmentList() {
-  _head = 0;
-  _tail = 0;
+  _head = nullptr;
+  _tail = nullptr;
   _minWidth = 0;
   _size = 0;
 }
@@ -14,7 +14,7 @@ FreeSegmentList::FreeSegmentList() {
 FreeSegmentList::FreeSegmentList(int initStart, int initEnd, int initMinWidth): _minWidth(initMinWidth) {
   _head = new FreeSegment(initStart, initEnd);
   _tail = _head;
-  _size = 1;
+  ++_size;
 }
 
 FreeSegmentList::~FreeSegmentList() {
@@ -146,7 +146,7 @@ void FreeSegmentList::clear() {
   FreeSegment* next = nullptr;
   while (current != nullptr) {
     next = current->next();
-    free(current);
+    delete current;
     current = next;
   }
   _head = nullptr;
