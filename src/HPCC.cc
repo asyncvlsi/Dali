@@ -49,7 +49,6 @@ int main() {
   }
   */
   /****LEF/DEF****/
-  /*
   std::string lefFileName = "../test/out_1K/3m/out_1K.lef";
   std::string defFileName = "../test/out_1K/3m/out_1K.def";
   if (!circuit.read_lef_file(lefFileName)) {
@@ -60,14 +59,13 @@ int main() {
   if (!circuit.read_def_file(defFileName)) {
     return 1;
   }
-   */
 
   //circuit.report_block_list();
   //circuit.report_block_map();
   //circuit.report_net_list();
   //circuit.report_net_map();
   /****debug case****/
-
+  /*
   if (!circuit.read_nodes_file("nnnodes62")) {
     //circuit.report_block_list();
     //circuit.report_block_map();
@@ -78,7 +76,7 @@ int main() {
     //circuit.report_net_map();
     return 1;
   }
-
+  */
   std::cout << circuit.tot_movable_num_real_time() << " movable cells\n";
   std::cout << circuit.blockList.size() << " total cells\n";
 

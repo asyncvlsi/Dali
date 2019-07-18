@@ -22,7 +22,6 @@ public:
   bool linkSingleSeg(FreeSegment *seg_ptr);
   FreeSegment* next() const;
   FreeSegment* prev() const;
-  bool useSpace(int startLoc, int endLoc);
   void setStart(int startLoc);
   int start() const;
   void setEnd(int endLoc);
@@ -30,6 +29,7 @@ public:
   int length() const;
   bool isOverlap(FreeSegment* seg) const;
   bool isTouch(FreeSegment* seg) const;
+  bool dominate(FreeSegment* seg) const;
   FreeSegment* singleSegAnd(FreeSegment* seg);
   FreeSegment* singleSegOr(FreeSegment* seg);
   void clear();

@@ -12,7 +12,7 @@
 #include "placer.h"
 #include "blockal.h"
 #include "netal.h"
-#include "availspace.h"
+#include "tetrisspace.h"
 #include "circuit/circuitbin.h"
 
 typedef struct {
@@ -97,6 +97,7 @@ public:
   void diffusion_with_gravity();
   void diffusion_with_gravity2();
   bool tetris_legalization();
+  bool tetris_legalization2();
   bool gravity_legalization();
   bool post_legalization_optimization();
   bool start_placement() override;

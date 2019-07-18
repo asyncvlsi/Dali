@@ -13,72 +13,55 @@ TetrisSpace::TetrisSpace(int left, int right, int bottom, int top, int rowHeight
   }
 }
 
-bool TetrisSpace::trimCommonSegment(int rowNum, FreeSegment *commonSegments) {
-  // find the common segment of this row with existing common segment
-  // 1. some basic checking
-  if ((rowNum < 0) || (rowNum > (int)(freeSegmentRows.size()) - 1)) {
-    return false;
-  }
-  for (FreeSegment *curSeg_ptr = freeSegmentRows[rowNum].head(); curSeg_ptr != nullptr; curSeg_ptr = curSeg_ptr->next()) {
-
-  }
-  return true;
-}
-
-bool TetrisSpace::findCommonSegments(int startRowNum, int endRowNum, int blockWidth, FreeSegment *commonSegments) {
+void TetrisSpace::findCommonSegments(int startRowNum, int endRowNum, FreeSegmentList &commonSegments) {
   // find the first common segment which can put new block into
   // 1. some basic checking
   if (endRowNum < startRowNum) {
-    return false;
+    assert (endRowNum >= startRowNum);
   }
-  if ((startRowNum < 0) || (endRowNum > (int)(freeSegmentRows.size()) - 1)) {
-    return false;
+  if ((startRowNum < 0) || (endRowNum >= (int)(freeSegmentRows.size()))) {
+    assert((startRowNum >= 0) && (endRowNum < (int)freeSegmentRows.size()));
   }
-
-  bool isFindCommonSegSuccess = false;
-  for (FreeSegment *curSeg_ptr = freeSegmentRows[startRowNum].head(); curSeg_ptr != nullptr; curSeg_ptr = curSeg_ptr->next()){
-    if (curSeg_ptr->length() < blockWidth){
-      continue;
-    }
-    auto *tmpCommonSegment = new FreeSegment;
-    tmpCommonSegment->setStart(curSeg_ptr->start());
-    tmpCommonSegment->setEnd(curSeg_ptr->end());
-    // for each of the following rows, update this temporary common segment list
-    isFindCommonSegSuccess = true;
-    for (int i=startRowNum+1; i<=endRowNum; ++i) {
-      if (!trimCommonSegment(i, tmpCommonSegment)) {
-        isFindCommonSegSuccess = false;
-        break;
-      }
-    }
-    if (isFindCommonSegSuccess) {
-      //write data into commonSegments
-      break;
-    }
+  commonSegments.copyFrom(freeSegmentRows[startRowNum]);
+  for (int i = startRowNum+1; i<endRowNum; ++i) {
+    commonSegments.applyMask(freeSegmentRows[i]);
+    if (commonSegments.empty()) break;
   }
-  return isFindCommonSegSuccess;
 }
 
 Loc2D TetrisSpace::findBlockLocation(double currentX, double currentY, int blockWidth, int blockHeight) {
   double minDisplacement = 1e30;
-  int minRowNum = -1;
   int effectiveHeight = (int)(std::ceil((double)blockHeight/_rowHeight));
   int topRowNumToCheck = freeSegmentRows.size() - effectiveHeight;
+  bool allRowFail = true;
+  std::vector< Loc2D > candidateList;
   for (int i=0; i<topRowNumToCheck; ++i) {
-    double costFunction = 0;
-    FreeSegment *commonSegments;
-    if (findCommonSegments(i, i+effectiveHeight, blockWidth, commonSegments)) {
-      // calculate
+    FreeSegmentList commonSegments;
+    findCommonSegments(i, i+effectiveHeight, commonSegments);
+    commonSegments.removeShortSeg(blockWidth);
+    if (!commonSegments.empty()) {
+      allRowFail = false;
+      candidateList.emplace_back(-1,-1);
+    } else {
+      candidateList.emplace_back(commonSegments.head()->start(),i);
     }
   }
-  // findLocation();
-  // setBlockLocation();
-  // updateAvailSpace();
-  currentX = 0;
-  currentY = 0;
-  blockWidth = 0;
-  blockHeight = 0;
-  Loc2D loc(0,0);
-  return loc;
+
+  Loc2D bestLoc(-1,-1);
+  if (allRowFail) { // need to change this in the future
+    return bestLoc;
+  }
+  for (auto &&loc: candidateList) {
+    double displacement = std::fabs(currentX - loc.x) + std::fabs(currentY - loc.y);
+    if (displacement < minDisplacement) {
+      bestLoc = loc;
+    }
+  }
+
+  for (int i = bestLoc.y; i < bestLoc.y + effectiveHeight; ++i) {
+    freeSegmentRows[i].useSpace(bestLoc.x, effectiveHeight);
+  }
+
+  return bestLoc;
 }
 

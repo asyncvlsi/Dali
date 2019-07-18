@@ -1443,6 +1443,80 @@ bool placer_al_t::tetris_legalization() {
   return true;
 }
 
+bool placer_al_t::tetris_legalization2() {
+  //draw_block_net_list("before_tetris_legalization.m");
+
+  // 1. move all blocks into placement region
+  for (auto &&block: block_list) {
+    if (block.dllx() < left()) {
+      block.set_dllx(left());
+    }
+    if (block.dlly() < bottom()) {
+      block.set_dlly(bottom());
+    }
+    if (block.durx() > right()) {
+      block.set_durx(right());
+    }
+    if (block.dury() > top()) {
+      block.set_dury(top());
+    }
+  }
+
+  // 2. sort blocks based on their lower left corners
+  std::vector< size_t > blockXOrder(block_list.size());
+  for (size_t i=0; i<blockXOrder.size(); i++) {
+    blockXOrder[i] = i;
+  }
+  for (size_t i=0; i<blockXOrder.size(); i++) {
+    size_t minBlockNum = i;
+    for (size_t j=i+1; j<blockXOrder.size(); j++) {
+      if (block_list[blockXOrder[j]].dllx() < block_list[blockXOrder[minBlockNum]].dllx()) {
+        minBlockNum = j;
+      } else if (block_list[blockXOrder[j]].dllx() == block_list[blockXOrder[minBlockNum]].dllx()) {
+        if (block_list[blockXOrder[j]].dlly() < block_list[blockXOrder[minBlockNum]].dlly()) {
+          minBlockNum = j;
+        }
+      }
+    }
+    size_t tmpNum = blockXOrder[i];
+    blockXOrder[i] = blockXOrder[minBlockNum];
+    blockXOrder[minBlockNum] = tmpNum;
+  }
+
+  // 3. initialize the data structure to store row usage
+  int maxHeight = 0;
+  int minWidth = block_list[0].width();
+  for (auto &&block: block_list) {
+    if (block.height() > maxHeight) {
+      maxHeight = block.height();
+    }
+    if (block.width() < minWidth) {
+      minWidth = block.width();
+    }
+  }
+
+  std::cout << "bug in the following\n";
+
+  TetrisSpace tetrisSpace(left(), right(), bottom(), top(), maxHeight, minWidth);
+
+  std::cout << "bug in the following again\n";
+
+  for (auto &&blockNum: blockXOrder) {
+    Loc2D result = tetrisSpace.findBlockLocation(block_list[blockNum].dllx(), block_list[blockNum].dllx(), block_list[blockNum].width(), block_list[blockNum].height());
+    block_list[blockNum].set_dllx(result.x);
+    block_list[blockNum].set_dlly(result.y);
+  }
+
+  draw_block_net_list("after_tetris.m");
+
+  if (!check_legal()) {
+    std::cout << "Tetris legalization finish\n";
+    return false;
+  }
+  std::cout << "Tetris legalization succeeds\n";
+  return true;
+}
+
 bool placer_al_t::gravity_legalization() {
   update_block_in_bin();
   diffusion_with_gravity();
@@ -1502,7 +1576,7 @@ bool placer_al_t::start_placement() {
 
   //draw_block_net_list("cg_result.m");
 
-  if (!tetris_legalization()) {
+  if (!tetris_legalization2()) {
     shift_to_region_center();
     //expansion_legalization();
     //draw_block_net_list("tse_result.m");

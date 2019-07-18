@@ -36,29 +36,6 @@ FreeSegment* FreeSegment::prev() const {
   return  _prev;
 }
 
-bool FreeSegment::useSpace(int startLoc, int endLoc) {
-  /****use a segment of this free segment:
-   * 1. use all free space (remove this segment),
-   * 2. use left part, use right part (shrink this segment),
-   * 3. use middle part (split)****/
-  if (startLoc < _start) {
-    std::cout << "Error!\n";
-    std::cout << "Invalid input, startLoc should be >= the starting point of a free segment\n";
-    assert(startLoc >= _start);
-  }
-  if (endLoc > _end) {
-    std::cout << "Error!\n";
-    std::cout << "Invalid input, endLoc should be <= the start point of a free segment\n";
-    assert(endLoc <= _end);
-  }
-  if ((startLoc == _start) && (endLoc == _end)) {
-    _prev = _next;
-    delete this; // this might be bad
-  }
-
-  return true;
-}
-
 void FreeSegment::setStart(int startLoc) {
   _start = startLoc;
 }
@@ -94,6 +71,10 @@ bool FreeSegment::isTouch(FreeSegment* seg) const {
     return false;
   }
   return (_end == seg->start()) || (_start == seg->end());
+}
+
+bool FreeSegment::dominate(FreeSegment* seg) const {
+  return (_start >= seg->end());
 }
 
 FreeSegment* FreeSegment::singleSegAnd(FreeSegment* seg) {
