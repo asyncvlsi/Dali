@@ -206,10 +206,10 @@ bool FreeSegmentList::applyMask(FreeSegmentList &maskRow) {
   return true;
 }
 
-void FreeSegmentList::removeShortSeg() {
+void FreeSegmentList::removeShortSeg(int width) {
   if (empty()) return;
   for (FreeSegment* current = head(); current != nullptr; current = current->next()) {
-    if (current->length() < _minWidth) {
+    if (current->length() < width) {
       removeSeg(current);
     }
   }

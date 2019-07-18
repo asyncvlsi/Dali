@@ -35,7 +35,7 @@ public:
   void clear();
   bool applyMask(FreeSegmentList &maskRow);
   void removeSeg(FreeSegment* &segInList);
-  void removeShortSeg();
+  void removeShortSeg(int width);
   void useSpace(int locToStart, int lengthToUse);
   void show();
 };
