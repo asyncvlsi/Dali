@@ -34,19 +34,19 @@ void TetrisSpace::findCommonSegments(int startRowNum, int endRowNum, FreeSegment
 }
 
 Loc2D TetrisSpace::findBlockLocation(double currentX, double currentY, int blockWidth, int blockHeight) {
-  std::cout << "Block dimension: " << blockWidth << " " << blockHeight << std::endl;
+  //std::cout << "Block dimension: " << blockWidth << " " << blockHeight << std::endl;
   double minDisplacement = 1e30;
   int effectiveHeight = (int)(std::ceil((double)blockHeight/_rowHeight));
-  std::cout << "effective height: " << effectiveHeight << std::endl;
+  //std::cout << "effective height: " << effectiveHeight << std::endl;
   int topRowNumToCheck = freeSegmentRows.size() - effectiveHeight + 1;
   bool allRowFail = true;
   std::vector< Loc2D > candidateList;
   for (int i=0; i<topRowNumToCheck; ++i) {
     FreeSegmentList commonSegments;
     findCommonSegments(i, i+effectiveHeight, commonSegments);
-    std::cout << i*_rowHeight + _bottom << std::endl;
+    //std::cout << i*_rowHeight + _bottom << std::endl;
     commonSegments.removeShortSeg(blockWidth);
-    commonSegments.show();
+    //commonSegments.show();
     if (commonSegments.empty()) {
       candidateList.emplace_back(-1,-1);
     } else {
@@ -56,7 +56,7 @@ Loc2D TetrisSpace::findBlockLocation(double currentX, double currentY, int block
   }
 
   Loc2D bestLoc(-1,-1);
-  std::cout << "allRowFail: " << allRowFail << std::endl;
+  //std::cout << "allRowFail: " << allRowFail << std::endl;
   if (allRowFail) { // need to change this in the future
     return bestLoc;
   }
@@ -69,12 +69,12 @@ Loc2D TetrisSpace::findBlockLocation(double currentX, double currentY, int block
       bestLoc = loc;
     }
   }
-  std::cout << "best loc: " << bestLoc.x << " " << bestLoc.y*_rowHeight + _bottom << std::endl;
+  //std::cout << "best loc: " << bestLoc.x << " " << bestLoc.y*_rowHeight + _bottom << std::endl;
 
   for (int i = bestLoc.y; i < bestLoc.y + effectiveHeight; ++i) {
-    freeSegmentRows[i].show();
-    std::cout << "Space to use, x, y, length: "
-              << bestLoc.x << " " << bestLoc.y*_rowHeight + _bottom << " " << blockWidth << std::endl;
+    //freeSegmentRows[i].show();
+    //std::cout << "Space to use, x, y, length: "
+    //          << bestLoc.x << " " << bestLoc.y*_rowHeight + _bottom << " " << blockWidth << std::endl;
     freeSegmentRows[i].useSpace(bestLoc.x, blockWidth);
   }
 

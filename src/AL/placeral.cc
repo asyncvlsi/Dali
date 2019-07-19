@@ -1453,11 +1453,14 @@ bool placer_al_t::tetris_legalization2() {
     }
   }
 
-  TetrisSpace tetrisSpace(left(), right(), bottom(), top(), minHeight, minWidth);
+  //TetrisSpace tetrisSpace(left(), right(), bottom(), top(), maxHeight, minWidth);
+  //TetrisSpace tetrisSpace(left(), right(), bottom(), top(), minHeight, minWidth);
+  TetrisSpace tetrisSpace(left(), right(), bottom(), top(), (int)(std::ceil(minHeight/2.0)), minWidth);
+  //TetrisSpace tetrisSpace(left(), right(), bottom(), top(), 1, minWidth);
   //tetrisSpace.show();
   for (auto &&blockNum: blockXOrder) {
     Loc2D result = tetrisSpace.findBlockLocation(block_list[blockNum].dllx(), block_list[blockNum].dlly(), block_list[blockNum].width(), block_list[blockNum].height());
-    std::cout << "Loc to set: " << result.x << " " << result.y << std::endl;
+    //std::cout << "Loc to set: " << result.x << " " << result.y << std::endl;
     block_list[blockNum].set_dllx(result.x);
     block_list[blockNum].set_dlly(result.y);
     //draw_block_net_list("during_tetris.m");

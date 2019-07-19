@@ -240,7 +240,11 @@ bool FreeSegmentList::applyMask(FreeSegmentList &maskRow) {
 void FreeSegmentList::removeShortSeg(int width) {
   /****to understand this member function, one needs to understand member function removeSeg()
    * the member function works in the following way:
-   * 1. ****/
+   * traverse the linked list
+   * 1. if the current segment has length less than the required length, remove it,
+   *    the current pointer will be automatically set to its next;
+   * 2. if the current segment has length no less than the required length,
+   *    set current pointer to its next.****/
   if (empty()) return;
   for (FreeSegment* current = head(); current != nullptr;) {
     if (current->length() < width) {
