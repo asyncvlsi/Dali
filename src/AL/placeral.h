@@ -83,7 +83,7 @@ public:
 
   void shift_to_region_center();
   void expansion_legalization();
-  bool draw_block_net_list(std::string const &filename="block_net_list.m");
+  bool draw_block_net_list(std::string const &filename="block_net_list.txt");
   void update_block_in_bin();
   bool check_legal();
   void integerize();

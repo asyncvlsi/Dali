@@ -190,9 +190,9 @@ bool placer_t::gen_matlab_disp_file(std::string const &filename) {
     std::cout << "Cannot open output file: " << filename << "\n";
     return false;
   }
+  ost << left() << " " << bottom() << " " << right() - left() << " " << top() - bottom() << "\n";
   for (auto &&block: _circuit->blockList) {
-    ost << "rectangle('Position',[" << block.llx() << " " << block.lly() << " " << block.width() << " " << block.height()
-    << "], 'LineWidth', 1, 'FaceColor', 'cyan', 'EdgeColor','blue')\n";
+    ost << block.llx() << " " << block.lly() << " " << block.width() << " " << block.height() << "\n";
   }
   /*
   for (auto &&net: _circuit->netList) {
@@ -202,10 +202,7 @@ bool placer_t::gen_matlab_disp_file(std::string const &filename) {
       }
     }
   }*/
-  ost << "rectangle('Position',[" << left() << " " << bottom() << " " << right() - left() << " " << top() - bottom() << "],'LineWidth',1)\n";
-  ost << "axis auto equal\n";
   ost.close();
-
   return true;
 }
 

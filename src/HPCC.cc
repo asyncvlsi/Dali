@@ -49,8 +49,10 @@ int main() {
   }
   */
   /****LEF/DEF****/
-  std::string lefFileName = "../test/out_1K/3m/out_1K.lef";
-  std::string defFileName = "../test/out_1K/3m/out_1K.def";
+  //std::string lefFileName = "../test/out_1K/3m/out_1K.lef";
+  //std::string defFileName = "../test/out_1K/3m/out_1K.def";
+  std::string lefFileName = "out_10K.lef";
+  std::string defFileName = "out_10K.def";
   if (!circuit.read_lef_file(lefFileName)) {
     return 1;
   }
@@ -94,7 +96,7 @@ int main() {
   placer->report_boundaries();
   placer->start_placement();
   placer->report_placement_result();
-  placer->gen_matlab_disp_file("al_result.m"); // generate matlab file for layout
+  placer->gen_matlab_disp_file("al_result.txt"); // generate matlab file for layout
   //placer->write_node_terminal(); // generate a data file for adaptec1
   delete placer;
   //circuit.save_DEF("circuit_dla.def", defFileName);
