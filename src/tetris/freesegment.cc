@@ -4,7 +4,9 @@
 
 #include "freesegment.h"
 
-FreeSegment::FreeSegment(int initStart, int initEnd): _start(initStart), _end(initEnd) {}
+FreeSegment::FreeSegment(int initStart, int initEnd): _start(initStart), _end(initEnd) {
+  assert(initStart <= initEnd);
+}
 
 bool FreeSegment::setPrev(FreeSegment* preFreeSeg_ptr) {
   _prev = preFreeSeg_ptr;
@@ -28,24 +30,26 @@ bool FreeSegment::linkSingleSeg(FreeSegment *seg_ptr) {
   return (setNext(seg_ptr) && seg_ptr->setPrev(this));
 }
 
-FreeSegment* FreeSegment::next() const {
+FreeSegment* FreeSegment::next() {
   return _next;
 }
 
-FreeSegment* FreeSegment::prev() const {
+FreeSegment* FreeSegment::prev() {
   return  _prev;
 }
 
-void FreeSegment::setStart(int startLoc) {
+void FreeSegment::setSpan(int startLoc, int endLoc) {
+  if (startLoc > endLoc) {
+    std::cout << "Cannot set the span of a segment with start larger than end, start" << startLoc
+              << " end: " << endLoc << std::endl;
+    assert(startLoc <= endLoc);
+  }
   _start = startLoc;
+  _end = endLoc;
 }
 
 int FreeSegment::start() const {
   return  _start;
-}
-
-void FreeSegment::setEnd(int endLoc) {
-  _end = endLoc;
 }
 
 int FreeSegment::end() const {
@@ -104,20 +108,15 @@ FreeSegment* FreeSegment::singleSegOr(FreeSegment* seg) {
       secondStart = _start;
       secondEnd = _end;
     }
-    result->setStart(firstStart);
-    result->setEnd(firstEnd);
-
+    result->setSpan(firstStart,firstEnd);
     auto *secondSeg = new FreeSegment(secondStart, secondEnd);
     result->setNext(secondSeg);
   } else if (_start == seg->end()) { // _start touches the end of seg
-    result->setStart(seg->start());
-    result->setEnd(_end);
+    result->setSpan(seg->start(),_end);
   } else if (_end == seg->start()) { // _end touches the start of seg
-    result->setStart(_start);
-    result->setEnd(seg->end());
+    result->setSpan(_start,seg->end());
   } else { // non-zero overlap
-    result->setStart(std::min(_start, seg->start()));
-    result->setEnd(std::max(_end, seg->end()));
+    result->setSpan(std::min(_start, seg->start()), std::max(_end, seg->end()));
   }
   return result;
 }
@@ -127,7 +126,7 @@ void FreeSegment::clear() {
   FreeSegment* next = nullptr;
   while (current != nullptr) {
     next = current->next();
-    free(current);
+    delete current;
     current = next;
   }
 }

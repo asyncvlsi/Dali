@@ -30,6 +30,7 @@ public:
   TetrisSpace(int left, int right, int bottom, int top, int rowHeight, int minWidth);
   void findCommonSegments(int startRowNum, int endRowNum, FreeSegmentList &commonSegments);
   Loc2D findBlockLocation(double currentX, double currentY, int blockWidth, int blockHeight);
+  void show();
 };
 
 

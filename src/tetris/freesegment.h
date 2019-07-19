@@ -20,11 +20,10 @@ public:
   bool setPrev(FreeSegment* preFreeSeg_ptr);
   bool setNext(FreeSegment* nextFreeSeg_ptr);
   bool linkSingleSeg(FreeSegment *seg_ptr);
-  FreeSegment* next() const;
-  FreeSegment* prev() const;
-  void setStart(int startLoc);
+  FreeSegment* next();
+  FreeSegment* prev();
+  void setSpan(int startLoc, int endLoc);
   int start() const;
-  void setEnd(int endLoc);
   int end() const;
   int length() const;
   bool isOverlap(FreeSegment* seg) const;
@@ -34,7 +33,7 @@ public:
   FreeSegment* singleSegOr(FreeSegment* seg);
   void clear();
 
-  friend std::ostream& operator<<(std::ostream& os, const FreeSegment* seg) {
+  friend std::ostream& operator<<(std::ostream& os, FreeSegment* seg) {
     if (seg == nullptr) {
       os << "Empty pointer?\n";
     } else {

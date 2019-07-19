@@ -18,7 +18,7 @@ private:
   /***derived data entries***/
 public:
   FreeSegmentList();
-  explicit FreeSegmentList(int initStart, int initEnd, int initMinWidth = 0);
+  explicit FreeSegmentList(int initStart, int initEnd, int initMinWidth);
   ~FreeSegmentList();
   size_t size() const;
   int left() const;
@@ -26,6 +26,7 @@ public:
   FreeSegment* head() const;
   FreeSegment* tail() const;
   int minWidth() const;
+  void setminWidth(int initMinWidth);
   void append(FreeSegment* segList);
   bool emplace_back(int start, int end);
   void push_back(FreeSegment* seg);

@@ -11,12 +11,13 @@ file(GLOB SOURCES
         src/*.h
         src/*.cc
         src/circuit/*.h
-        src/circuit/*.h
         src/circuit/*.cc
         src/DLA/*.h
         src/DLA/*.cc
         src/AL/*.h
         src/AL/*.cc
+        src/tetris/*.h
+        src/tetris/*.cc
         )
 
 add_executable(HPCC ${SOURCES})

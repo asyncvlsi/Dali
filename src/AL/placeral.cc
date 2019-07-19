@@ -867,7 +867,7 @@ bool placer_al_t::draw_block_net_list(std::string const &filename) {
   }
   for (auto &&block: block_list) {
     //if ((block.name() == "E0_acx0") || (block.name() == "E_1_acx0") || (block.name() == "E_2_acx0") || (block.name() == "E_3_acx0") || (block.name() == "S_1_acx0") || (block.name() == "S_1_acx1") || (block.name() == "S0_acx0") || (block.name() == "S0_acx1")) continue;
-    ost << "rectangle('Position',[" << block.dllx() << " " << block.dlly() << " " << block.width() << " " << block.height() << "], 'LineWidth', 1, 'EdgeColor','blue')"
+    ost << "rectangle('Position',[" << block.dllx() << " " << block.dlly() << " " << block.width() << " " << block.height() << "], 'LineWidth', 1, 'FaceColor', 'cyan', 'EdgeColor','blue')"
         << "%" << block.name() << "\n";
   }
   /*
@@ -884,7 +884,7 @@ bool placer_al_t::draw_block_net_list(std::string const &filename) {
   }
    */
   ost << "rectangle('Position',[" << left() << " " << bottom() << " " << right()-left() << " " << top()-bottom() << "],'LineWidth',1)\n";
-  ost << "axis auto equal\naxis off\n";
+  ost << "axis auto equal\n";
   ost.close();
 
   return true;
@@ -1035,52 +1035,6 @@ bool placer_al_t::check_legal() {
   }
   return true;
 }
-
-bool placer_al_t::isCurrentLocationLegal(block_al_t *blockptr, int direction) {
-  double leftmost = bin_list[0][0].left(), bottommost = bin_list[0][0].bottom();
-  int Ybinlistsize = bin_list[0].size(), Xbinlistsize = bin_list.size();
-  double Left, Right, Bottom, Top;
-  int L,B,R,T; // left, bottom, right, top of the cell in which bin
-  std::set<int> temp_physical_neighbor_set;
-  Left = blockptr->dllx();
-  Right = blockptr->durx();
-  Bottom = blockptr->dlly();
-  Top = blockptr->dury();
-  L = floor((Left - leftmost)/bin_width);
-  B = floor((Bottom - bottommost)/bin_height);
-  R = floor((Right - leftmost)/bin_width);
-  T = floor((Top - bottommost)/bin_height);
-  for (int y=B-1; y<=T+1; y++) { // find all cells around cell i, and put all these cells into the set "temp_physical_neighbor_set", there is a reason to do so is because a cell might appear in different bins
-    if ((y>=0)&&(y<Ybinlistsize)) {
-      for (int x=L-1; x<=R+1; x++) {
-        if ((x>=0)&&(x<Xbinlistsize)) {
-          for (auto &&cell_num_in_bin: bin_list[x][y].CIB) {
-            if (blockptr->num()==(size_t)cell_num_in_bin) continue;
-            switch (direction) {
-              case -2: // -x direction
-                if (blockptr->durx() < block_list[cell_num_in_bin].dllx()) continue;
-                break;
-              case -1: // +x direction
-                break;
-              case 1: // +y direction
-                break;
-              case 2: // -y direction
-                break;
-              default: // all direction
-                break;
-            }
-            temp_physical_neighbor_set.insert(cell_num_in_bin);
-          }
-        }
-      }
-    }
-  }
-  return true;
-}
-
-/*bool placer_al_t::isMoveLegal(block_al_t *blockptr, double deltaX, double deltaY) {
-
-}*/
 
 void placer_al_t::integerize() {
   for (auto &&block: block_list) {
@@ -1486,27 +1440,28 @@ bool placer_al_t::tetris_legalization2() {
   // 3. initialize the data structure to store row usage
   int maxHeight = 0;
   int minWidth = block_list[0].width();
+  int minHeight = 100000;
   for (auto &&block: block_list) {
     if (block.height() > maxHeight) {
       maxHeight = block.height();
+    }
+    if (block.height() < minHeight) {
+      minHeight = block.height();
     }
     if (block.width() < minWidth) {
       minWidth = block.width();
     }
   }
 
-  std::cout << "bug in the following\n";
-
-  TetrisSpace tetrisSpace(left(), right(), bottom(), top(), maxHeight, minWidth);
-
-  std::cout << "bug in the following again\n";
-
+  TetrisSpace tetrisSpace(left(), right(), bottom(), top(), minHeight, minWidth);
+  //tetrisSpace.show();
   for (auto &&blockNum: blockXOrder) {
-    Loc2D result = tetrisSpace.findBlockLocation(block_list[blockNum].dllx(), block_list[blockNum].dllx(), block_list[blockNum].width(), block_list[blockNum].height());
+    Loc2D result = tetrisSpace.findBlockLocation(block_list[blockNum].dllx(), block_list[blockNum].dlly(), block_list[blockNum].width(), block_list[blockNum].height());
+    std::cout << "Loc to set: " << result.x << " " << result.y << std::endl;
     block_list[blockNum].set_dllx(result.x);
     block_list[blockNum].set_dlly(result.y);
+    //draw_block_net_list("during_tetris.m");
   }
-
   draw_block_net_list("after_tetris.m");
 
   if (!check_legal()) {

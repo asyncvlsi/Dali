@@ -12,7 +12,7 @@
 #include "placer.h"
 #include "blockal.h"
 #include "netal.h"
-#include "tetrisspace.h"
+#include "tetris/tetrisspace.h"
 #include "circuit/circuitbin.h"
 
 typedef struct {
@@ -86,8 +86,6 @@ public:
   bool draw_block_net_list(std::string const &filename="block_net_list.m");
   void update_block_in_bin();
   bool check_legal();
-  bool isCurrentLocationLegal(block_al_t *blockptr, int direction);
-  bool isMoveLegal(block_al_t *blockptr, double deltaX, double deltaY);
   void integerize();
   void update_velocity();
   void update_velocity_force_damping();

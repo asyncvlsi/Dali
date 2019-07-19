@@ -14,7 +14,7 @@ FreeSegmentList::FreeSegmentList() {
 FreeSegmentList::FreeSegmentList(int initStart, int initEnd, int initMinWidth): _minWidth(initMinWidth) {
   _head = new FreeSegment(initStart, initEnd);
   _tail = _head;
-  ++_size;
+  _size = 1;
 }
 
 FreeSegmentList::~FreeSegmentList() {
@@ -53,7 +53,12 @@ int FreeSegmentList::minWidth() const {
   return _minWidth;
 }
 
+void FreeSegmentList::setminWidth(int initMinWidth) {
+  _minWidth = initMinWidth;
+}
+
 void FreeSegmentList::append(FreeSegment *segList) {
+  /****push a list of freesegment into the linked list with some sanity check****/
   if (segList == nullptr) {
     std::cout << "push nullptr to linked list?\n";
     assert(segList != nullptr);
@@ -93,6 +98,7 @@ bool FreeSegmentList::emplace_back(int start, int end) {
 }
 
 void FreeSegmentList::push_back(FreeSegment* seg) {
+  /****push a single free segment into the linked list****/
   if (seg == nullptr) {
     std::cout << "push nullptr to linked list?\n";
     assert(seg != nullptr);
@@ -101,15 +107,25 @@ void FreeSegmentList::push_back(FreeSegment* seg) {
     std::cout << "argument has more than one nodes inside, please use method append() instead of push_back\n";
     assert(seg->next() == nullptr);
   }
-    if (_head == nullptr) {
-      _head = seg;
-      _tail = seg;
-    } else {
+  if (empty()) {
+    _head = seg;
+    _tail = seg;
+    ++_size;
+  } else {
+    if (right() > seg->start()) {
+      std::cout << "Cannot push segment into list, because the right of list is: " << right()
+                << " larger than the start of segment to push: " << seg->start() << std::endl;
+      assert(right() <= seg->start());
+    }
+    if (right() < seg->start()) {
       seg->setPrev(_tail);
       _tail->setNext(seg);
       _tail = seg;
+      ++_size;
+    } else {
+      _tail->setSpan(_tail->start(), seg->end());
     }
-    ++_size;
+  }
 }
 
 void FreeSegmentList::insert(FreeSegment* insertPosition, FreeSegment* segToInsert) {
@@ -131,13 +147,12 @@ bool FreeSegmentList::empty() const {
 
 void FreeSegmentList::copyFrom(FreeSegmentList &originList) {
   this->clear();
-  if (originList.head() == nullptr) {
-    return;
+  if (!originList.empty()) {
+    for (FreeSegment *current = originList.head(); current != nullptr; current = current->next()) {
+      emplace_back(current->start(), current->end());
+    }
+    _minWidth = originList.minWidth();
   }
-  for (FreeSegment* current = originList.head(); current != nullptr; current = current->next()) {
-    emplace_back(current->start(), current->end());
-  }
-  _minWidth = originList.minWidth();
 }
 
 void FreeSegmentList::clear() {
@@ -155,7 +170,15 @@ void FreeSegmentList::clear() {
   _minWidth = 0;
 }
 
-void FreeSegmentList::removeSeg(FreeSegment* &segInList) {
+void FreeSegmentList::removeSeg(FreeSegment* &segInList) { // don't remove, traverse the linked list is good enough
+  /****remove a segment in the linked list
+   * 1. if the linked list is empty, assert fault;
+   * 2. if the linked list has length 1, clear this linked list, argument is then set to nullptr;
+   * 3. if the linked list has length larger than 1:
+   *    a). if the segment to remove is the head, set the head to the next one, argument is then set to the new head;
+   *    b). if the segment to remove is the tail, set the tail to the prev one, argument is then set to the new tail;
+   *    c). if the segment to remove has real prev and next, i.e., not nullptr, remove this segment,
+   *        and connect its prev with its next, argument is then set to its next****/
   if (segInList == nullptr) {
     std::cout << "Remove empty pointer? Be careful, you can only remove nodes in the linked list\n";
     assert(segInList != nullptr);
@@ -165,26 +188,34 @@ void FreeSegmentList::removeSeg(FreeSegment* &segInList) {
     assert(!empty());
   }
   FreeSegment* current = segInList;
-  if (current == head()) {
-    _head = current->next();
-    _head->setPrev(nullptr);
-    --_size;
-    segInList = _head;
-    free(current);
-  } else if (current == tail()) {
-    _tail = current->prev();
-    _tail->setNext(nullptr);
-    --_size;
-    segInList = _tail;
-    free(current);
+  if (size() == 1) {
+    delete current;
+    _head = nullptr;
+    _tail = nullptr;
+    _size = 0;
+    segInList = nullptr;
   } else {
-    FreeSegment* prev = current->prev();
-    FreeSegment* next = current->next();
-    prev->setNext(next);
-    next->setPrev(prev);
-    --_size;
-    segInList = prev;
-    free(current);
+    if (current == head()) {
+      _head = current->next();
+      _head->setPrev(nullptr);
+      --_size;
+      segInList = _head;
+      delete current;
+    } else if (current == tail()) {
+      _tail = current->prev();
+      _tail->setNext(nullptr);
+      --_size;
+      segInList = _tail;
+      delete current;
+    } else {
+      FreeSegment *prev = current->prev();
+      FreeSegment *next = current->next();
+      prev->setNext(next);
+      next->setPrev(prev);
+      --_size;
+      segInList = next;
+      delete current;
+    }
   }
 }
 
@@ -207,19 +238,25 @@ bool FreeSegmentList::applyMask(FreeSegmentList &maskRow) {
 }
 
 void FreeSegmentList::removeShortSeg(int width) {
+  /****to understand this member function, one needs to understand member function removeSeg()
+   * the member function works in the following way:
+   * 1. ****/
   if (empty()) return;
-  for (FreeSegment* current = head(); current != nullptr; current = current->next()) {
+  for (FreeSegment* current = head(); current != nullptr;) {
     if (current->length() < width) {
       removeSeg(current);
+    } else {
+      current = current->next();
     }
   }
 }
 
 void FreeSegmentList::useSpace(int locToStart, int lengthToUse) {
   /****use a segment of this free segment:
- * 1. use all free space (remove this segment from the linked list level),
- * 2. use left part, use right part (shrink this segment),
- * 3. use middle part (split)****/
+ * 1. use all free space (remove this segment from the linked list level);
+ * 2. use left part;
+ * 3. right part (shrink this segment);
+ * 4. use middle part (split)****/
   int endLoc = locToStart + lengthToUse;
   bool isSegFound = false;
   for (auto* current = head(); current != nullptr; current = current->next()) {
@@ -228,25 +265,28 @@ void FreeSegmentList::useSpace(int locToStart, int lengthToUse) {
       if ((locToStart == current->start()) && (endLoc == current->end())) {
         removeSeg(current);
       } else if ((locToStart == current->start()) && (endLoc < current->end())) {
-        current->setStart(endLoc);
+        current->setSpan(endLoc, current->end());
       } else if ((locToStart > current->start()) && (endLoc == current->end())) {
-        current->setEnd(locToStart);
+        current->setSpan(current->start(), locToStart);
       } else {
-        current->setEnd(locToStart);
         auto* seg_ptr = new FreeSegment(endLoc, current->end());
+        current->setSpan(current->start(), locToStart);
         insert(current, seg_ptr);
       }
     }
+    // some issues here, not clearly understood
+    if (isSegFound) break;
   }
+
   if (!isSegFound) {
-    std::cout << "What? there is a bug in the code, you should not reach here\n";
+    std::cout << "What? there are bugs in the code, the program should not reach here" << std::endl;
     assert(isSegFound);
   }
 }
 
 void FreeSegmentList::show() {
   if (_head == nullptr) {
-    std::cout << "Empty list, nothing to display\n";
+    std::cout << "Empty list, nothing to display" <<std::endl;
   } else {
     std::cout << "minWidth: " << _minWidth << "  ";
     FreeSegment* current = _head;
@@ -261,6 +301,6 @@ void FreeSegmentList::show() {
       }
       ++count;
     }
-    std::cout << "\n";
+    std::cout << std::endl;
   }
 }
