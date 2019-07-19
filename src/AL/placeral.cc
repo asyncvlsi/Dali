@@ -867,7 +867,8 @@ bool placer_al_t::draw_block_net_list(std::string const &filename) {
   }
   for (auto &&block: block_list) {
     //if ((block.name() == "E0_acx0") || (block.name() == "E_1_acx0") || (block.name() == "E_2_acx0") || (block.name() == "E_3_acx0") || (block.name() == "S_1_acx0") || (block.name() == "S_1_acx1") || (block.name() == "S0_acx0") || (block.name() == "S0_acx1")) continue;
-    ost << "rectangle('Position',[" << block.dllx() << " " << block.dlly() << " " << block.width() << " " << block.height() << "], 'LineWidth', 1, 'FaceColor', 'cyan', 'EdgeColor','blue')"
+    ost << "rectangle('Position',[" << block.dllx() << " " << block.dlly() << " " << block.width() << " " << block.height()
+        << "], 'LineWidth', 1, 'FaceColor', 'cyan', 'EdgeColor','blue')"
         << "%" << block.name() << "\n";
   }
   /*
@@ -1465,7 +1466,7 @@ bool placer_al_t::tetris_legalization2() {
     block_list[blockNum].set_dlly(result.y);
     //draw_block_net_list("during_tetris.m");
   }
-  draw_block_net_list("after_tetris.m");
+  //draw_block_net_list("after_tetris.m");
 
   if (!check_legal()) {
     std::cout << "Tetris legalization finish\n";

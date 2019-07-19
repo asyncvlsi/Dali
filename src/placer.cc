@@ -191,7 +191,8 @@ bool placer_t::gen_matlab_disp_file(std::string const &filename) {
     return false;
   }
   for (auto &&block: _circuit->blockList) {
-    ost << "rectangle('Position',[" << block.llx() << " " << block.lly() << " " << block.width() << " " << block.height() << "], 'LineWidth', 1, 'EdgeColor','blue')\n";
+    ost << "rectangle('Position',[" << block.llx() << " " << block.lly() << " " << block.width() << " " << block.height()
+    << "], 'LineWidth', 1, 'FaceColor', 'cyan', 'EdgeColor','blue')\n";
   }
   /*
   for (auto &&net: _circuit->netList) {
