@@ -1396,7 +1396,7 @@ bool placer_al_t::tetris_legalization() {
 
 bool placer_al_t::tetris_legalization2() {
   //draw_block_net_list("before_tetris_legalization.m");
-
+  std::cout << "Start tetris legalization" << std::endl;
   // 1. move all blocks into placement region
   for (auto &&block: block_list) {
     if (block.dllx() < left()) {
@@ -1419,6 +1419,7 @@ bool placer_al_t::tetris_legalization2() {
     blockXOrder[i] = i;
   }
   for (size_t i=0; i<blockXOrder.size(); i++) {
+    // change this!!!!!!
     size_t minBlockNum = i;
     for (size_t j=i+1; j<blockXOrder.size(); j++) {
       if (block_list[blockXOrder[j]].dllx() < block_list[blockXOrder[minBlockNum]].dllx()) {
@@ -1450,12 +1451,14 @@ bool placer_al_t::tetris_legalization2() {
     }
   }
 
+  std::cout << "Building tetris space" << std::endl;
   //TetrisSpace tetrisSpace(left(), right(), bottom(), top(), maxHeight, minWidth);
   //TetrisSpace tetrisSpace(left(), right(), bottom(), top(), minHeight, minWidth);
-  TetrisSpace tetrisSpace(left(), right(), bottom(), top(), (int)(std::ceil(minHeight/2.0)), minWidth);
-  //TetrisSpace tetrisSpace(left(), right(), bottom(), top(), 1, minWidth);
+  //TetrisSpace tetrisSpace(left(), right(), bottom(), top(), (int)(std::ceil(minHeight/2.0)), minWidth);
+  TetrisSpace tetrisSpace(left(), right(), bottom(), top(), 1, minWidth);
   //tetrisSpace.show();
   for (auto &&blockNum: blockXOrder) {
+    std::cout << "Placing block: " << blockNum << std::endl;
     Loc2D result = tetrisSpace.findBlockLocation(block_list[blockNum].dllx(), block_list[blockNum].dlly(), block_list[blockNum].width(), block_list[blockNum].height());
     //std::cout << "Loc to set: " << result.x << " " << result.y << std::endl;
     block_list[blockNum].set_dllx(result.x);
