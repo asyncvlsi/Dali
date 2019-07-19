@@ -1533,13 +1533,12 @@ bool placer_al_t::start_placement() {
   report_hpwl();
 
   //draw_block_net_list("cg_result.m");
-
+  add_boundary_list();
+  initialize_bin_list();
   if (!tetris_legalization2()) {
     shift_to_region_center();
     //expansion_legalization();
     //draw_block_net_list("tse_result.m");
-    add_boundary_list();
-    initialize_bin_list();
     if (!legalization()) {
       if (!gravity_legalization()) {
         report_hpwl();
