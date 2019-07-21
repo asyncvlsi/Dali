@@ -1449,9 +1449,9 @@ bool placer_al_t::tetris_legalization2() {
   }
 
   std::cout << "Building tetris space" << std::endl;
-  //TetrisSpace tetrisSpace(left(), right(), bottom(), top(), maxHeight, minWidth);
+  TetrisSpace tetrisSpace(left(), right(), bottom(), top(), maxHeight, minWidth);
   //TetrisSpace tetrisSpace(left(), right(), bottom(), top(), minHeight, minWidth);
-  TetrisSpace tetrisSpace(left(), right(), bottom(), top(), (int)(std::ceil(minHeight/2.0)), minWidth);
+  //TetrisSpace tetrisSpace(left(), right(), bottom(), top(), (int)(std::ceil(minHeight/2.0)), minWidth);
   //TetrisSpace tetrisSpace(left(), right(), bottom(), top(), 1, minWidth);
   //tetrisSpace.show();
   std::cout << "Placing blocks:\n";
@@ -1482,8 +1482,14 @@ bool placer_al_t::tetris_legalization2() {
       //std::cout << std::endl;
       std::cout.flush();
     }
-
   }
+  for (int i = 0; i < barWidth; ++i) {
+    if (i < barWidth) std::cout << "=";
+    else if (i == barWidth) std::cout << ">";
+    else std::cout << " ";
+  }
+  std::cout << "] " << 100 << " %\n";
+
   //draw_block_net_list("after_tetris.txt");
   if (!check_legal()) {
     std::cout << "Tetris legalization finish\n";
