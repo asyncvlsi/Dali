@@ -9,6 +9,7 @@
 #include <set>
 #include <random>
 #include <cmath>
+#include <algorithm>
 #include "placer.h"
 #include "blockal.h"
 #include "netal.h"

@@ -1413,32 +1413,29 @@ bool placer_al_t::tetris_legalization2() {
     }
   }
 
-  // 2. sort blocks based on their lower left corners
-  std::vector< size_t > blockXOrder(block_list.size());
+  // 2. sort blocks based on their lower left corners. Further optimization is doable here.
+  struct indexLocPair{
+    int num;
+    double x;
+    double y;
+  };
+  std::vector< indexLocPair > blockXOrder(block_list.size());
   for (size_t i=0; i<blockXOrder.size(); i++) {
-    blockXOrder[i] = i;
+    blockXOrder[i].num = i;
+    blockXOrder[i].x = block_list[i].dllx();
+    blockXOrder[i].y = block_list[i].dlly();
   }
-  for (size_t i=0; i<blockXOrder.size(); i++) {
-    // change this!!!!!!
-    size_t minBlockNum = i;
-    for (size_t j=i+1; j<blockXOrder.size(); j++) {
-      if (block_list[blockXOrder[j]].dllx() < block_list[blockXOrder[minBlockNum]].dllx()) {
-        minBlockNum = j;
-      } else if (block_list[blockXOrder[j]].dllx() == block_list[blockXOrder[minBlockNum]].dllx()) {
-        if (block_list[blockXOrder[j]].dlly() < block_list[blockXOrder[minBlockNum]].dlly()) {
-          minBlockNum = j;
-        }
-      }
+  struct {
+    bool operator()(indexLocPair &a, indexLocPair &b) {
+      return (a.x < b.x) || ((a.x == b.x) && (a.y < b.y));
     }
-    size_t tmpNum = blockXOrder[i];
-    blockXOrder[i] = blockXOrder[minBlockNum];
-    blockXOrder[minBlockNum] = tmpNum;
-  }
+  } customLess;
+  std::sort(blockXOrder.begin(), blockXOrder.end(), customLess);
 
   // 3. initialize the data structure to store row usage
   int maxHeight = 0;
   int minWidth = block_list[0].width();
-  int minHeight = 100000;
+  int minHeight = block_list[0].height();
   for (auto &&block: block_list) {
     if (block.height() > maxHeight) {
       maxHeight = block.height();
@@ -1454,16 +1451,38 @@ bool placer_al_t::tetris_legalization2() {
   std::cout << "Building tetris space" << std::endl;
   //TetrisSpace tetrisSpace(left(), right(), bottom(), top(), maxHeight, minWidth);
   //TetrisSpace tetrisSpace(left(), right(), bottom(), top(), minHeight, minWidth);
-  //TetrisSpace tetrisSpace(left(), right(), bottom(), top(), (int)(std::ceil(minHeight/2.0)), minWidth);
-  TetrisSpace tetrisSpace(left(), right(), bottom(), top(), 1, minWidth);
+  TetrisSpace tetrisSpace(left(), right(), bottom(), top(), (int)(std::ceil(minHeight/2.0)), minWidth);
+  //TetrisSpace tetrisSpace(left(), right(), bottom(), top(), 1, minWidth);
   //tetrisSpace.show();
+  std::cout << "Placing blocks:\n";
+  int numPlaced = 0;
+  int barWidth = 70;
+  int approxNum = blockXOrder.size()/100;
+  int quota = std::max(approxNum,1);
+  double progress = 0;
   for (auto &&blockNum: blockXOrder) {
-    std::cout << "Placing block: " << blockNum << std::endl;
-    Loc2D result = tetrisSpace.findBlockLocation(block_list[blockNum].dllx(), block_list[blockNum].dlly(), block_list[blockNum].width(), block_list[blockNum].height());
+    //std::cout << "Placing block: " << blockNum.num << std::endl;
+    Loc2D result = tetrisSpace.findBlockLocation(block_list[blockNum.num].dllx(), block_list[blockNum.num].dlly(), block_list[blockNum.num].width(), block_list[blockNum.num].height());
     //std::cout << "Loc to set: " << result.x << " " << result.y << std::endl;
-    block_list[blockNum].set_dllx(result.x);
-    block_list[blockNum].set_dlly(result.y);
+    block_list[blockNum.num].set_dllx(result.x);
+    block_list[blockNum.num].set_dlly(result.y);
     //draw_block_net_list("during_tetris.m");
+
+    ++numPlaced;
+    if (numPlaced%quota == 0) {
+      progress = (double)(numPlaced)/blockXOrder.size();
+      std::cout << "[";
+      int pos = (int) (barWidth * progress);
+      for (int i = 0; i < barWidth; ++i) {
+        if (i < pos) std::cout << "=";
+        else if (i == pos) std::cout << ">";
+        else std::cout << " ";
+      }
+      std::cout << "] " << int(progress * 100.0) << " %\r";
+      //std::cout << std::endl;
+      std::cout.flush();
+    }
+
   }
   //draw_block_net_list("after_tetris.txt");
   if (!check_legal()) {
