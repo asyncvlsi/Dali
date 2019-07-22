@@ -170,15 +170,15 @@ void FreeSegmentList::clear() {
   _minWidth = 0;
 }
 
-void FreeSegmentList::removeSeg(FreeSegment* &segInList) { // don't remove, traverse the linked list is good enough
+void FreeSegmentList::removeSeg(FreeSegment* segInList) { // don't remove, traverse the linked list is good enough
   /****remove a segment in the linked list
    * 1. if the linked list is empty, assert fault;
-   * 2. if the linked list has length 1, clear this linked list, argument is then set to nullptr;
+   * 2. if the linked list has length 1, clear this linked list;
    * 3. if the linked list has length larger than 1:
-   *    a). if the segment to remove is the head, set the head to the next one, argument is then set to the new head;
-   *    b). if the segment to remove is the tail, set the tail to the prev one, argument is then set to the new tail;
+   *    a). if the segment to remove is the head, set the head to the next one;
+   *    b). if the segment to remove is the tail, set the tail to the prev one;
    *    c). if the segment to remove has real prev and next, i.e., not nullptr, remove this segment,
-   *        and connect its prev with its next, argument is then set to its next****/
+   *        and connect its prev with its next****/
   if (segInList == nullptr) {
     std::cout << "Remove empty pointer? Be careful, you can only remove nodes in the linked list\n";
     assert(segInList != nullptr);
@@ -199,13 +199,11 @@ void FreeSegmentList::removeSeg(FreeSegment* &segInList) { // don't remove, trav
       _head = current->next();
       _head->setPrev(nullptr);
       --_size;
-      segInList = _head;
       delete current;
     } else if (current == tail()) {
       _tail = current->prev();
       _tail->setNext(nullptr);
       --_size;
-      segInList = _tail;
       delete current;
     } else {
       FreeSegment *prev = current->prev();
@@ -213,7 +211,6 @@ void FreeSegmentList::removeSeg(FreeSegment* &segInList) { // don't remove, trav
       prev->setNext(next);
       next->setPrev(prev);
       --_size;
-      segInList = next;
       delete current;
     }
   }
@@ -241,17 +238,16 @@ void FreeSegmentList::removeShortSeg(int width) {
   /****to understand this member function, one needs to understand member function removeSeg()
    * the member function works in the following way:
    * traverse the linked list
-   * 1. if the current segment has length less than the required length, remove it,
-   *    the current pointer will be automatically set to its next;
-   * 2. if the current segment has length no less than the required length,
-   *    set current pointer to its next.****/
+   * 1. if the current segment has length less than the required length, remove it;
+   * 2. if the current segment has length no less than the required length, skip;
+   * 3. set current pointer to its next.****/
   if (empty()) return;
   for (FreeSegment* current = head(); current != nullptr;) {
+    FreeSegment* next = current->next();
     if (current->length() < width) {
       removeSeg(current);
-    } else {
-      current = current->next();
     }
+    current = next;
   }
 }
 

@@ -1449,9 +1449,9 @@ bool placer_al_t::tetris_legalization2() {
   }
 
   std::cout << "Building tetris space" << std::endl;
-  TetrisSpace tetrisSpace(left(), right(), bottom(), top(), maxHeight, minWidth);
+  //TetrisSpace tetrisSpace(left(), right(), bottom(), top(), maxHeight, minWidth);
   //TetrisSpace tetrisSpace(left(), right(), bottom(), top(), minHeight, minWidth);
-  //TetrisSpace tetrisSpace(left(), right(), bottom(), top(), (int)(std::ceil(minHeight/2.0)), minWidth);
+  TetrisSpace tetrisSpace(left(), right(), bottom(), top(), (int)(std::ceil(minHeight/2.0)), minWidth);
   //TetrisSpace tetrisSpace(left(), right(), bottom(), top(), 1, minWidth);
   //tetrisSpace.show();
   std::cout << "Placing blocks:\n";
