@@ -99,48 +99,96 @@ void placer_al_t::uniform_initialization() {
   }
 }
 
-void placer_al_t::build_problem_x(std::vector<T> &coefficients, Eigen::VectorXd &b) {
-  size_t tempnodenum1, tempnodenum2;
+void placer_al_t::build_problem_b2b_x(std::vector<T> &coefficients, Eigen::VectorXd &b) {
+  coefficients.clear();
+  for (int i=0; i<b.size(); i++) {
+    b[i] = 0;
+  }
+  double weightX, invP, tmpPinLocX0, tmpPinLocX1, tmpDiffOffset;
+  size_t tmpNodeNum0, tmpNodeNum1, maxPinIndex_x, minPinIndex_x;
   for (auto &&net: net_list) {
     if (net.p()==1) continue;
-    for (size_t j=0; j<net.pin_list.size(); j++) {
-      tempnodenum1 = net.pin_list[j].get_block()->num();
-      if (!block_list[tempnodenum1].is_movable()) continue;
-      for (size_t k=j+1; k<net.pin_list.size(); k++) {
-        tempnodenum2 = net.pin_list[k].get_block()->num();
-        if (block_list[tempnodenum2].is_movable()) {
-          coefficients.emplace_back(T(tempnodenum1,tempnodenum1,1));
-          coefficients.emplace_back(T(tempnodenum2,tempnodenum2,1));
-          coefficients.emplace_back(T(tempnodenum1,tempnodenum2,-1));
-          coefficients.emplace_back(T(tempnodenum2,tempnodenum1,-1));
+    invP = net.inv_p();
+    maxPinIndex_x = net.max_pin_index_x();
+    minPinIndex_x = net.min_pin_index_x();
+    for (size_t i=0; i<net.pin_list.size(); i++) {
+      tmpNodeNum0 = net.pin_list[i].get_block()->num();
+      tmpPinLocX0 = block_list[tmpNodeNum0].dllx();
+      for (size_t j=i+1; j<net.pin_list.size(); j++) {
+        if ((i!=maxPinIndex_x)&&(i!=minPinIndex_x)) {
+          if ((j!=maxPinIndex_x)&&(j!=minPinIndex_x)) continue;
+        }
+        tmpNodeNum1 = net.pin_list[j].get_block()->num();
+        if (tmpNodeNum0 == tmpNodeNum1) continue;
+        tmpPinLocX1 = block_list[tmpNodeNum1].dllx();
+        weightX = invP/((double)fabs(tmpPinLocX0 - tmpPinLocX1) + width_epsilon());
+        if (!block_list[tmpNodeNum0].is_movable() && !block_list[tmpNodeNum1].is_movable()) {
+          continue;
+        }
+        else if (!block_list[tmpNodeNum0].is_movable() && block_list[tmpNodeNum1].is_movable()) {
+          b[tmpNodeNum1] += tmpPinLocX0 * weightX;
+          coefficients.emplace_back(T(tmpNodeNum1,tmpNodeNum1,weightX));
+        }
+        else if (block_list[tmpNodeNum0].is_movable() && !block_list[tmpNodeNum1].is_movable()) {
+          b[tmpNodeNum0] += tmpPinLocX1 * weightX;
+          coefficients.emplace_back(T(tmpNodeNum0,tmpNodeNum0,weightX));
         }
         else {
-          coefficients.emplace_back(T(tempnodenum1,tempnodenum1,1));
-          b(tempnodenum1) += block_list[tempnodenum2].dx();
+          coefficients.emplace_back(T(tmpNodeNum0,tmpNodeNum0,weightX));
+          coefficients.emplace_back(T(tmpNodeNum1,tmpNodeNum1,weightX));
+          coefficients.emplace_back(T(tmpNodeNum0,tmpNodeNum1,-weightX));
+          coefficients.emplace_back(T(tmpNodeNum1,tmpNodeNum0,-weightX));
+          tmpDiffOffset = (net.pin_list[j].x_offset() - net.pin_list[i].x_offset()) * weightX;
+          b[tmpNodeNum0] += tmpDiffOffset;
+          b[tmpNodeNum1] -= tmpDiffOffset;
         }
       }
     }
   }
 }
 
-void placer_al_t::build_problem_y(std::vector<T> &coefficients, Eigen::VectorXd &b) {
-  size_t tempnodenum1, tempnodenum2;
+void placer_al_t::build_problem_b2b_y(std::vector<T> &coefficients, Eigen::VectorXd &b) {
+  coefficients.clear();
+  for (int i=0; i<b.size(); i++) {
+    b[i] = 0;
+  }
+  double weightY, invP, tmpPinLocY0, tmpPinLocY1, tmpDiffOffset;
+  size_t tmpNodeNum0, tmpNodeNum1, maxPinIndex_y, minPinIndex_y;
   for (auto &&net: net_list) {
     if (net.p()==1) continue;
-    for (size_t j=0; j<net.pin_list.size(); j++) {
-      tempnodenum1 = net.pin_list[j].get_block()->num();
-      if (!block_list[tempnodenum1].is_movable()) continue;
-      for (size_t k=j+1; k<net.pin_list.size(); k++) {
-        tempnodenum2 = net.pin_list[k].get_block()->num();
-        if (block_list[tempnodenum2].is_movable()) {
-          coefficients.emplace_back(T(tempnodenum1,tempnodenum1,1));
-          coefficients.emplace_back(T(tempnodenum2,tempnodenum2,1));
-          coefficients.emplace_back(T(tempnodenum1,tempnodenum2,-1));
-          coefficients.emplace_back(T(tempnodenum2,tempnodenum1,-1));
+    invP = net.inv_p();
+    maxPinIndex_y = net.max_pin_index_y();
+    minPinIndex_y = net.min_pin_index_y();
+    for (size_t i=0; i<net.pin_list.size(); i++) {
+      tmpNodeNum0 = net.pin_list[i].get_block()->num();
+      tmpPinLocY0 = block_list[tmpNodeNum0].dlly();
+      for (size_t j=i+1; j<net.pin_list.size(); j++) {
+        if ((i!=maxPinIndex_y)&&(i!=minPinIndex_y)) {
+          if ((j!=maxPinIndex_y)&&(j!=minPinIndex_y)) continue;
+        }
+        tmpNodeNum1 = net.pin_list[j].get_block()->num();
+        if (tmpNodeNum0 == tmpNodeNum1) continue;
+        tmpPinLocY1 = block_list[tmpNodeNum1].dlly();
+        weightY = invP/((double)fabs(tmpPinLocY0 - tmpPinLocY1) + height_epsilon());
+        if (!block_list[tmpNodeNum0].is_movable() && !block_list[tmpNodeNum1].is_movable()) {
+          continue;
+        }
+        else if (!block_list[tmpNodeNum0].is_movable() && block_list[tmpNodeNum1].is_movable()) {
+          b[tmpNodeNum1] += tmpPinLocY0 * weightY;
+          coefficients.emplace_back(T(tmpNodeNum1,tmpNodeNum1,weightY));
+        }
+        else if (block_list[tmpNodeNum0].is_movable() && !block_list[tmpNodeNum1].is_movable()) {
+          b[tmpNodeNum0] += tmpPinLocY1 * weightY;
+          coefficients.emplace_back(T(tmpNodeNum0,tmpNodeNum0,weightY));
         }
         else {
-          coefficients.emplace_back(T(tempnodenum1,tempnodenum1,1));
-          b(tempnodenum1) += block_list[tempnodenum2].dy();
+          coefficients.emplace_back(T(tmpNodeNum0,tmpNodeNum0,weightY));
+          coefficients.emplace_back(T(tmpNodeNum1,tmpNodeNum1,weightY));
+          coefficients.emplace_back(T(tmpNodeNum0,tmpNodeNum1,-weightY));
+          coefficients.emplace_back(T(tmpNodeNum1,tmpNodeNum0,-weightY));
+          tmpDiffOffset = (net.pin_list[j].y_offset() - net.pin_list[i].y_offset()) * weightY;
+          b[tmpNodeNum0] += tmpDiffOffset;
+          b[tmpNodeNum1] -= tmpDiffOffset;
         }
       }
     }
@@ -153,13 +201,13 @@ void placer_al_t::eigen_cg_solver() {
   std::vector<T> coefficientsx;
   Eigen::VectorXd x(movable_block_num()), eigen_bx(movable_block_num());
   SpMat eigen_Ax(movable_block_num(),movable_block_num());
-  build_problem_x(coefficientsx, eigen_bx);
+  build_problem_b2b_x(coefficientsx, eigen_bx);
   eigen_Ax.setFromTriplets(coefficientsx.begin(), coefficientsx.end());
 
   std::vector<T> coefficientsy; // list of non-zeros coefficients
   Eigen::VectorXd y(movable_block_num()), eigen_by(movable_block_num()); // the solution and the right hand side-vector resulting from the constraints
   SpMat eigen_Ay(movable_block_num(),movable_block_num()); // sparse matrix
-  build_problem_y(coefficientsy, eigen_by); // fill A and b
+  build_problem_b2b_y(coefficientsy, eigen_by); // fill A and b
   eigen_Ay.setFromTriplets(coefficientsy.begin(), coefficientsy.end());
   // Solving:
   Eigen::BiCGSTAB<SpMat, Eigen::IdentityPreconditioner> cg;

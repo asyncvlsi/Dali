@@ -49,8 +49,8 @@ public:
   bool set_input_circuit(circuit_t *circuit) override;
 
   void uniform_initialization();
-  void build_problem_x(std::vector<T> &coefficients, Eigen::VectorXd &b);
-  void build_problem_y(std::vector<T> &coefficients, Eigen::VectorXd &b);
+  void build_problem_b2b_x(std::vector<T> &coefficients, Eigen::VectorXd &b);
+  void build_problem_b2b_y(std::vector<T> &coefficients, Eigen::VectorXd &b);
   void eigen_cg_solver();
 
   void initialize_HPWL_flags();
