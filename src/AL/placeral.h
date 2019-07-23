@@ -24,6 +24,7 @@ typedef Eigen::Triplet<double> T; // A triplet is a simple object representing a
 class placer_al_t: public placer_t {
 private:
   size_t _movable_block_num;
+  size_t _terminal_block_num;
   double _width_epsilon;
   double _height_epsilon;
   double HPWLX_new = 0;
@@ -32,15 +33,19 @@ private:
   double HPWLY_old = 1e30;
   bool HPWLx_converge = false;
   bool HPWLy_converge = false;
-  double cg_precision = 0.01;
+  double cgTolerance = 0.001;
   double HPWL_intra_linearSolver_precision = 0.01;
   int max_legalization_iteration = 1000;
   int iteration_limit_diffusion = 10;
   int time_step = 1;
+  int cgIterMaxNum = 100;
+  int b2bIterMaxNum = 15;
 public:
   placer_al_t();
   placer_al_t(double aspectRatio, double fillingRate);
   size_t movable_block_num();
+  size_t terminal_block_num();
+  size_t block_num();
   double width_epsilon();
   double height_epsilon();
 
@@ -49,8 +54,8 @@ public:
   bool set_input_circuit(circuit_t *circuit) override;
 
   void uniform_initialization();
-  void build_problem_b2b_x(std::vector<T> &coefficients, Eigen::VectorXd &b);
-  void build_problem_b2b_y(std::vector<T> &coefficients, Eigen::VectorXd &b);
+  void build_problem_b2b_x(SpMat &eigen_A, Eigen::VectorXd &b);
+  void build_problem_b2b_y(SpMat &eigen_A, Eigen::VectorXd &b);
   void eigen_cg_solver();
 
   void initialize_HPWL_flags();

@@ -17,6 +17,14 @@ size_t placer_al_t::movable_block_num() {
   return _movable_block_num;
 }
 
+size_t placer_al_t::terminal_block_num() {
+  return _terminal_block_num;
+}
+
+size_t placer_al_t::block_num() {
+  return _movable_block_num + _terminal_block_num;
+}
+
 double placer_al_t::width_epsilon() {
   return _width_epsilon;
 }
@@ -41,6 +49,7 @@ bool placer_al_t::set_input_circuit(circuit_t *circuit) {
 
   _circuit = circuit;
   _movable_block_num = 0;
+  _terminal_block_num = 0;
   _width_epsilon = 0;
   _height_epsilon = 0;
   for (auto &&block: circuit->blockList) {
@@ -52,6 +61,8 @@ bool placer_al_t::set_input_circuit(circuit_t *circuit) {
       ++_movable_block_num;
       _width_epsilon += block.width();
       _height_epsilon += block.height();
+    } else {
+      ++_terminal_block_num;
     }
   }
   if (_movable_block_num == 0) {
@@ -99,8 +110,9 @@ void placer_al_t::uniform_initialization() {
   }
 }
 
-void placer_al_t::build_problem_b2b_x(std::vector<T> &coefficients, Eigen::VectorXd &b) {
-  coefficients.clear();
+void placer_al_t::build_problem_b2b_x(SpMat &eigen_A, Eigen::VectorXd &b) {
+  std::vector<T> coefficients;
+  coefficients.reserve(10000000);
   for (int i=0; i<b.size(); i++) {
     b[i] = 0;
   }
@@ -121,19 +133,14 @@ void placer_al_t::build_problem_b2b_x(std::vector<T> &coefficients, Eigen::Vecto
         tmpNodeNum1 = net.pin_list[j].get_block()->num();
         if (tmpNodeNum0 == tmpNodeNum1) continue;
         tmpPinLocX1 = block_list[tmpNodeNum1].dllx();
-        weightX = invP/((double)fabs(tmpPinLocX0 - tmpPinLocX1) + width_epsilon());
-        if (!block_list[tmpNodeNum0].is_movable() && !block_list[tmpNodeNum1].is_movable()) {
-          continue;
-        }
-        else if (!block_list[tmpNodeNum0].is_movable() && block_list[tmpNodeNum1].is_movable()) {
-          b[tmpNodeNum1] += tmpPinLocX0 * weightX;
+        weightX = invP/(fabs(tmpPinLocX0 - tmpPinLocX1) + width_epsilon());
+        if (!block_list[tmpNodeNum0].is_movable() && block_list[tmpNodeNum1].is_movable()) {
+          b[tmpNodeNum1] += (tmpPinLocX0 - net.pin_list[j].x_offset()) * weightX;
           coefficients.emplace_back(T(tmpNodeNum1,tmpNodeNum1,weightX));
-        }
-        else if (block_list[tmpNodeNum0].is_movable() && !block_list[tmpNodeNum1].is_movable()) {
-          b[tmpNodeNum0] += tmpPinLocX1 * weightX;
+        } else if (block_list[tmpNodeNum0].is_movable() && !block_list[tmpNodeNum1].is_movable()) {
+          b[tmpNodeNum0] += (tmpPinLocX1 - net.pin_list[i].x_offset()) * weightX;
           coefficients.emplace_back(T(tmpNodeNum0,tmpNodeNum0,weightX));
-        }
-        else {
+        } else if (block_list[tmpNodeNum0].is_movable() && block_list[tmpNodeNum1].is_movable()){
           coefficients.emplace_back(T(tmpNodeNum0,tmpNodeNum0,weightX));
           coefficients.emplace_back(T(tmpNodeNum1,tmpNodeNum1,weightX));
           coefficients.emplace_back(T(tmpNodeNum0,tmpNodeNum1,-weightX));
@@ -141,14 +148,24 @@ void placer_al_t::build_problem_b2b_x(std::vector<T> &coefficients, Eigen::Vecto
           tmpDiffOffset = (net.pin_list[j].x_offset() - net.pin_list[i].x_offset()) * weightX;
           b[tmpNodeNum0] += tmpDiffOffset;
           b[tmpNodeNum1] -= tmpDiffOffset;
+        } else {
+          continue;
         }
       }
     }
   }
+  for (size_t i=0; i<block_list.size(); ++i) {
+    if (!block_list[i].is_movable()) {
+      coefficients.emplace_back(T(i,i,1));
+      b[i] = block_list[i].dllx();
+    }
+  }
+  eigen_A.setFromTriplets(coefficients.begin(), coefficients.end());
 }
 
-void placer_al_t::build_problem_b2b_y(std::vector<T> &coefficients, Eigen::VectorXd &b) {
-  coefficients.clear();
+void placer_al_t::build_problem_b2b_y(SpMat &eigen_A, Eigen::VectorXd &b) {
+  std::vector<T> coefficients;
+  coefficients.reserve(10000000);
   for (int i=0; i<b.size(); i++) {
     b[i] = 0;
   }
@@ -170,18 +187,13 @@ void placer_al_t::build_problem_b2b_y(std::vector<T> &coefficients, Eigen::Vecto
         if (tmpNodeNum0 == tmpNodeNum1) continue;
         tmpPinLocY1 = block_list[tmpNodeNum1].dlly();
         weightY = invP/((double)fabs(tmpPinLocY0 - tmpPinLocY1) + height_epsilon());
-        if (!block_list[tmpNodeNum0].is_movable() && !block_list[tmpNodeNum1].is_movable()) {
-          continue;
-        }
-        else if (!block_list[tmpNodeNum0].is_movable() && block_list[tmpNodeNum1].is_movable()) {
-          b[tmpNodeNum1] += tmpPinLocY0 * weightY;
+        if (!block_list[tmpNodeNum0].is_movable() && block_list[tmpNodeNum1].is_movable()) {
+          b[tmpNodeNum1] += (tmpPinLocY0 - net.pin_list[j].y_offset()) * weightY;
           coefficients.emplace_back(T(tmpNodeNum1,tmpNodeNum1,weightY));
-        }
-        else if (block_list[tmpNodeNum0].is_movable() && !block_list[tmpNodeNum1].is_movable()) {
-          b[tmpNodeNum0] += tmpPinLocY1 * weightY;
+        } else if (block_list[tmpNodeNum0].is_movable() && !block_list[tmpNodeNum1].is_movable()) {
+          b[tmpNodeNum0] += (tmpPinLocY1 - net.pin_list[i].y_offset()) * weightY;
           coefficients.emplace_back(T(tmpNodeNum0,tmpNodeNum0,weightY));
-        }
-        else {
+        } else if (block_list[tmpNodeNum0].is_movable() && block_list[tmpNodeNum1].is_movable()) {
           coefficients.emplace_back(T(tmpNodeNum0,tmpNodeNum0,weightY));
           coefficients.emplace_back(T(tmpNodeNum1,tmpNodeNum1,weightY));
           coefficients.emplace_back(T(tmpNodeNum0,tmpNodeNum1,-weightY));
@@ -189,42 +201,79 @@ void placer_al_t::build_problem_b2b_y(std::vector<T> &coefficients, Eigen::Vecto
           tmpDiffOffset = (net.pin_list[j].y_offset() - net.pin_list[i].y_offset()) * weightY;
           b[tmpNodeNum0] += tmpDiffOffset;
           b[tmpNodeNum1] -= tmpDiffOffset;
+        } else {
+          continue;
         }
       }
     }
   }
+  for (size_t i=0; i<block_list.size(); ++i) {
+    if (!block_list[i].is_movable()) {
+      coefficients.emplace_back(T(i,i,1));
+      b[i] = block_list[i].dlly();
+    }
+  }
+  eigen_A.setFromTriplets(coefficients.begin(), coefficients.end());
 }
 
 void placer_al_t::eigen_cg_solver() {
   std::cout << "Total number of movable cells: " << movable_block_num() << "\n";
+  std::cout << "Total number of cells: " << block_num() << "\n";
+  int cellNum = block_num();
+  Eigen::ConjugateGradient <SpMat> cgx;
+  cgx.setMaxIterations(cgIterMaxNum);
+  cgx.setTolerance(cgTolerance);
+  HPWLx_converge = false;
+  HPWLX_old = 1e30;
+  Eigen::VectorXd x(cellNum), eigen_bx(cellNum);
+  SpMat eigen_Ax(cellNum, cellNum);
+  for (size_t i=0; i<block_list.size(); ++i) {
+    x[i] = block_list[i].dllx();
+  }
+  for (int i=0; i<b2bIterMaxNum; ++i) {
+    if (HPWLx_converge) {
+      std::cout << "iterations:     " << i << "\n";
+      break;
+    }
+
+    build_problem_b2b_x(eigen_Ax, eigen_bx);
+    cgx.compute(eigen_Ax);
+    x = cgx.solveWithGuess(eigen_bx, x);
+    //std::cout << "Here is the vector x:\n" << x << std::endl;
+    std::cout << "\t#iterations:     " << cgx.iterations() << std::endl;
+    std::cout << "\testimated error: " << cgx.error() << std::endl;
+    for (int num=0; num<x.size(); ++num) {
+      block_list[num].set_dllx(x[num]);
+    }
+    update_max_min_node_x();
+  }
+
+  Eigen::ConjugateGradient <SpMat> cgy;
+  cgy.setMaxIterations(cgIterMaxNum);
+  cgy.setTolerance(cgTolerance);
   // Assembly:
-  std::vector<T> coefficientsx;
-  Eigen::VectorXd x(movable_block_num()), eigen_bx(movable_block_num());
-  SpMat eigen_Ax(movable_block_num(),movable_block_num());
-  build_problem_b2b_x(coefficientsx, eigen_bx);
-  eigen_Ax.setFromTriplets(coefficientsx.begin(), coefficientsx.end());
-
-  std::vector<T> coefficientsy; // list of non-zeros coefficients
-  Eigen::VectorXd y(movable_block_num()), eigen_by(movable_block_num()); // the solution and the right hand side-vector resulting from the constraints
-  SpMat eigen_Ay(movable_block_num(),movable_block_num()); // sparse matrix
-  build_problem_b2b_y(coefficientsy, eigen_by); // fill A and b
-  eigen_Ay.setFromTriplets(coefficientsy.begin(), coefficientsy.end());
-  // Solving:
-  Eigen::BiCGSTAB<SpMat, Eigen::IdentityPreconditioner> cg;
-  cg.setMaxIterations(10);
-  cg.compute(eigen_Ax);
-  x = cg.solve(eigen_bx);
-  //std::cout << "Here is the vector x:\n" << x << std::endl;
-  std::cout << "#iterations:     " << cg.iterations() << std::endl;
-  std::cout << "estimated error: " << cg.error()      << std::endl;
-  cg.compute(eigen_Ay);
-  y = cg.solve(eigen_by);
-  std::cout << "#iterations:     " << cg.iterations() << std::endl;
-  std::cout << "estimated error: " << cg.error()      << std::endl;
-
-  for (int i=0; i<x.size(); i++) {
-    block_list[i].set_center_dx(x[i]);
-    block_list[i].set_center_dy(y[i]);
+  HPWLy_converge = false;
+  HPWLY_old = 1e30;
+  Eigen::VectorXd y(cellNum), eigen_by(cellNum); // the solution and the right hand side-vector resulting from the constraints
+  SpMat eigen_Ay(cellNum, cellNum); // sparse matrix
+  for (size_t i=0; i<block_list.size(); ++i) {
+    y[i] = block_list[i].dlly();
+  }
+  for (int i=0; i<b2bIterMaxNum; ++i) {
+    if (HPWLy_converge) {
+      std::cout << "iterations:     " << i << "\n";
+      break;
+    }
+    build_problem_b2b_y(eigen_Ay, eigen_by); // fill A and b
+    // Solving:
+    cgy.compute(eigen_Ay);
+    y = cgy.solveWithGuess(eigen_by, y);
+    std::cout << "\t#iterations:     " << cgy.iterations() << std::endl;
+    std::cout << "\testimated error: " << cgy.error() << std::endl;
+    for (int num=0; num<y.size(); ++num) {
+      block_list[num].set_dlly(y[num]);
+    }
+    update_max_min_node_y();
   }
 }
 
