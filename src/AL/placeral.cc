@@ -17,14 +17,6 @@ size_t placer_al_t::movable_block_num() {
   return _movable_block_num;
 }
 
-size_t placer_al_t::terminal_block_num() {
-  return _terminal_block_num;
-}
-
-size_t placer_al_t::block_num() {
-  return _movable_block_num + _terminal_block_num;
-}
-
 double placer_al_t::width_epsilon() {
   return _width_epsilon;
 }
@@ -49,7 +41,6 @@ bool placer_al_t::set_input_circuit(circuit_t *circuit) {
 
   _circuit = circuit;
   _movable_block_num = 0;
-  _terminal_block_num = 0;
   _width_epsilon = 0;
   _height_epsilon = 0;
   for (auto &&block: circuit->blockList) {
@@ -61,8 +52,6 @@ bool placer_al_t::set_input_circuit(circuit_t *circuit) {
       ++_movable_block_num;
       _width_epsilon += block.width();
       _height_epsilon += block.height();
-    } else {
-      ++_terminal_block_num;
     }
   }
   if (_movable_block_num == 0) {
@@ -110,170 +99,174 @@ void placer_al_t::uniform_initialization() {
   }
 }
 
-void placer_al_t::build_problem_b2b_x(SpMat &eigen_A, Eigen::VectorXd &b) {
-  std::vector<T> coefficients;
-  coefficients.reserve(10000000);
-  for (int i=0; i<b.size(); i++) {
-    b[i] = 0;
+void placer_al_t::cg_init() {
+  // this init function allocate memory to Ax and Ay
+  // the size of memory allocated for each row is the maximum memory which might be used
+  Ax.clear();
+  Ay.clear();
+  kx.clear();
+  ky.clear();
+  bx.clear();
+  by.clear();
+  for (size_t i=0; i<movable_block_num(); i++) {
+    // initialize bx, by
+    bx.push_back(0);
+    by.push_back(0);
+    // initialize kx, ky to track the length of Ax[i] and Ay[i]
+    kx.push_back(0);
+    ky.push_back(0);
   }
-  double weightX, invP, tmpPinLocX0, tmpPinLocX1, tmpDiffOffset;
-  size_t tmpNodeNum0, tmpNodeNum1, maxPinIndex_x, minPinIndex_x;
+  std::vector<weightTuple> tempArow;
+  for (size_t i=0; i<movable_block_num(); i++) {
+    Ax.push_back(tempArow);
+    Ay.push_back(tempArow);
+  }
+  weightTuple tempWT;
+  tempWT.weight = 0;
+  for (size_t i=0; i<movable_block_num(); i++) {
+    tempWT.pin = i;
+    Ax[i].push_back(tempWT);
+    Ay[i].push_back(tempWT);
+  }
+  size_t tempnodenum0, tempnodenum1;
   for (auto &&net: net_list) {
-    if (net.p()==1) continue;
-    invP = net.inv_p();
-    maxPinIndex_x = net.max_pin_index_x();
-    minPinIndex_x = net.min_pin_index_x();
-    for (size_t i=0; i<net.pin_list.size(); i++) {
-      tmpNodeNum0 = net.pin_list[i].get_block()->num();
-      tmpPinLocX0 = block_list[tmpNodeNum0].dllx();
-      for (size_t j=i+1; j<net.pin_list.size(); j++) {
-        if ((i!=maxPinIndex_x)&&(i!=minPinIndex_x)) {
-          if ((j!=maxPinIndex_x)&&(j!=minPinIndex_x)) continue;
-        }
-        tmpNodeNum1 = net.pin_list[j].get_block()->num();
-        if (tmpNodeNum0 == tmpNodeNum1) continue;
-        tmpPinLocX1 = block_list[tmpNodeNum1].dllx();
-        weightX = invP/(fabs(tmpPinLocX0 - tmpPinLocX1) + width_epsilon());
-        if (!block_list[tmpNodeNum0].is_movable() && block_list[tmpNodeNum1].is_movable()) {
-          b[tmpNodeNum1] += (tmpPinLocX0 - net.pin_list[j].x_offset()) * weightX;
-          coefficients.emplace_back(T(tmpNodeNum1,tmpNodeNum1,weightX));
-        } else if (block_list[tmpNodeNum0].is_movable() && !block_list[tmpNodeNum1].is_movable()) {
-          b[tmpNodeNum0] += (tmpPinLocX1 - net.pin_list[i].x_offset()) * weightX;
-          coefficients.emplace_back(T(tmpNodeNum0,tmpNodeNum0,weightX));
-        } else if (block_list[tmpNodeNum0].is_movable() && block_list[tmpNodeNum1].is_movable()){
-          coefficients.emplace_back(T(tmpNodeNum0,tmpNodeNum0,weightX));
-          coefficients.emplace_back(T(tmpNodeNum1,tmpNodeNum1,weightX));
-          coefficients.emplace_back(T(tmpNodeNum0,tmpNodeNum1,-weightX));
-          coefficients.emplace_back(T(tmpNodeNum1,tmpNodeNum0,-weightX));
-          tmpDiffOffset = (net.pin_list[j].x_offset() - net.pin_list[i].x_offset()) * weightX;
-          b[tmpNodeNum0] += tmpDiffOffset;
-          b[tmpNodeNum1] -= tmpDiffOffset;
-        } else {
-          continue;
+    if (net.p()<=1) continue;
+    for (size_t j=0; j<net.pin_list.size(); j++) {
+      tempnodenum0 = net.pin_list[j].get_block()->num();
+      for (size_t k=j+1; k<net.pin_list.size(); k++) {
+        tempnodenum1 = net.pin_list[k].get_block()->num();
+        if (tempnodenum0 == tempnodenum1) continue;
+        if ((block_list[tempnodenum0].is_movable())&&(block_list[tempnodenum1].is_movable())) {
+          // when both nodes are movable and are not the same, increase the row length by 1
+          Ax[tempnodenum0].push_back(tempWT);
+          Ax[tempnodenum1].push_back(tempWT);
+          Ay[tempnodenum0].push_back(tempWT);
+          Ay[tempnodenum1].push_back(tempWT);
         }
       }
     }
   }
-  for (size_t i=0; i<block_list.size(); ++i) {
-    if (!block_list[i].is_movable()) {
-      coefficients.emplace_back(T(i,i,1));
-      b[i] = block_list[i].dllx();
-    }
-  }
-  eigen_A.setFromTriplets(coefficients.begin(), coefficients.end());
 }
 
-void placer_al_t::build_problem_b2b_y(SpMat &eigen_A, Eigen::VectorXd &b) {
-  std::vector<T> coefficients;
-  coefficients.reserve(10000000);
-  for (int i=0; i<b.size(); i++) {
-    b[i] = 0;
+void placer_al_t::build_problem_clique_x() {
+  // before build a new Matrix, clean the information in existing matrix
+  for (size_t i=0; i<movable_block_num(); i++) {
+    Ax[i][0].weight = 0;
+    // make the diagonal elements 0
+    kx[i] = 0;
+    // mark the length each row of matrix 0, although some data might still exists there
+    bx[i] = 0;
+    // make each element of b 0
   }
-  double weightY, invP, tmpPinLocY0, tmpPinLocY1, tmpDiffOffset;
-  size_t tmpNodeNum0, tmpNodeNum1, maxPinIndex_y, minPinIndex_y;
+
+  weightTuple tempWT;
+  double weightx, invp, temppinlocx0, temppinlocx1, tempdiffoffset;
+  size_t tempnodenum0, tempnodenum1;
+
   for (auto &&net: net_list) {
-    if (net.p()==1) continue;
-    invP = net.inv_p();
-    maxPinIndex_y = net.max_pin_index_y();
-    minPinIndex_y = net.min_pin_index_y();
-    for (size_t i=0; i<net.pin_list.size(); i++) {
-      tmpNodeNum0 = net.pin_list[i].get_block()->num();
-      tmpPinLocY0 = block_list[tmpNodeNum0].dlly();
-      for (size_t j=i+1; j<net.pin_list.size(); j++) {
-        if ((i!=maxPinIndex_y)&&(i!=minPinIndex_y)) {
-          if ((j!=maxPinIndex_y)&&(j!=minPinIndex_y)) continue;
-        }
-        tmpNodeNum1 = net.pin_list[j].get_block()->num();
-        if (tmpNodeNum0 == tmpNodeNum1) continue;
-        tmpPinLocY1 = block_list[tmpNodeNum1].dlly();
-        weightY = invP/((double)fabs(tmpPinLocY0 - tmpPinLocY1) + height_epsilon());
-        if (!block_list[tmpNodeNum0].is_movable() && block_list[tmpNodeNum1].is_movable()) {
-          b[tmpNodeNum1] += (tmpPinLocY0 - net.pin_list[j].y_offset()) * weightY;
-          coefficients.emplace_back(T(tmpNodeNum1,tmpNodeNum1,weightY));
-        } else if (block_list[tmpNodeNum0].is_movable() && !block_list[tmpNodeNum1].is_movable()) {
-          b[tmpNodeNum0] += (tmpPinLocY1 - net.pin_list[i].y_offset()) * weightY;
-          coefficients.emplace_back(T(tmpNodeNum0,tmpNodeNum0,weightY));
-        } else if (block_list[tmpNodeNum0].is_movable() && block_list[tmpNodeNum1].is_movable()) {
-          coefficients.emplace_back(T(tmpNodeNum0,tmpNodeNum0,weightY));
-          coefficients.emplace_back(T(tmpNodeNum1,tmpNodeNum1,weightY));
-          coefficients.emplace_back(T(tmpNodeNum0,tmpNodeNum1,-weightY));
-          coefficients.emplace_back(T(tmpNodeNum1,tmpNodeNum0,-weightY));
-          tmpDiffOffset = (net.pin_list[j].y_offset() - net.pin_list[i].y_offset()) * weightY;
-          b[tmpNodeNum0] += tmpDiffOffset;
-          b[tmpNodeNum1] -= tmpDiffOffset;
-        } else {
+    //std::cout << i << "\n";
+    if (net.p() <= 1) continue;
+    invp = net.inv_p();
+    for (size_t j=0; j<net.pin_list.size(); j++) {
+      tempnodenum0 = net.pin_list[j].get_block()->num();
+      temppinlocx0 = block_list[tempnodenum0].dllx() + net.pin_list[j].x_offset();
+      for (size_t k=j+1; k<net.pin_list.size(); k++) {
+        tempnodenum1 = net.pin_list[k].get_block()->num();
+        temppinlocx1 = block_list[tempnodenum1].dllx() + net.pin_list[k].x_offset();
+        if (tempnodenum0 == tempnodenum1) continue;
+        if ((block_list[tempnodenum0].is_movable() == 0)&&(block_list[tempnodenum1].is_movable() == 0)) {
           continue;
+        }
+        weightx = invp/(fabs(temppinlocx0 - temppinlocx1) + width_epsilon());
+        if ((block_list[tempnodenum0].is_movable() == 0)&&(block_list[tempnodenum1].is_movable() == 1)) {
+          bx[tempnodenum1] += (temppinlocx0 - net.pin_list[k].x_offset()) * weightx;
+          Ax[tempnodenum1][0].weight += weightx;
+        }
+        else if ((block_list[tempnodenum0].is_movable() == 1)&&(block_list[tempnodenum1].is_movable() == 0)) {
+          bx[tempnodenum0] += (temppinlocx1 - net.pin_list[j].x_offset()) * weightx;
+          Ax[tempnodenum0][0].weight += weightx;
+        }
+        else {
+          //((blockList[tempnodenum0].isterminal() == 0)&&(blockList[tempnodenum1].isterminal() == 0))
+          tempWT.pin = tempnodenum1;
+          tempWT.weight = -weightx;
+          kx[tempnodenum0]++;
+          Ax[tempnodenum0][kx[tempnodenum0]] = tempWT;
+
+          tempWT.pin = tempnodenum0;
+          tempWT.weight = -weightx;
+          kx[tempnodenum1]++;
+          Ax[tempnodenum1][kx[tempnodenum1]] = tempWT;
+
+          Ax[tempnodenum0][0].weight += weightx;
+          Ax[tempnodenum1][0].weight += weightx;
+          tempdiffoffset = (net.pin_list[k].x_offset() - net.pin_list[j].x_offset()) * weightx;
+          bx[tempnodenum0] += tempdiffoffset;
+          bx[tempnodenum1] -= tempdiffoffset;
         }
       }
     }
   }
-  for (size_t i=0; i<block_list.size(); ++i) {
-    if (!block_list[i].is_movable()) {
-      coefficients.emplace_back(T(i,i,1));
-      b[i] = block_list[i].dlly();
-    }
-  }
-  eigen_A.setFromTriplets(coefficients.begin(), coefficients.end());
 }
 
-void placer_al_t::eigen_cg_solver() {
-  std::cout << "Total number of movable cells: " << movable_block_num() << "\n";
-  std::cout << "Total number of cells: " << block_num() << "\n";
-  int cellNum = block_num();
-  Eigen::ConjugateGradient <SpMat> cgx;
-  cgx.setMaxIterations(cgIterMaxNum);
-  cgx.setTolerance(cgTolerance);
-  HPWLx_converge = false;
-  HPWLX_old = 1e30;
-  Eigen::VectorXd x(cellNum), eigen_bx(cellNum);
-  SpMat eigen_Ax(cellNum, cellNum);
-  for (size_t i=0; i<block_list.size(); ++i) {
-    x[i] = block_list[i].dllx();
-  }
-  for (int i=0; i<b2bIterMaxNum; ++i) {
-    if (HPWLx_converge) {
-      std::cout << "iterations:     " << i << "\n";
-      break;
-    }
-
-    build_problem_b2b_x(eigen_Ax, eigen_bx);
-    cgx.compute(eigen_Ax);
-    x = cgx.solveWithGuess(eigen_bx, x);
-    //std::cout << "Here is the vector x:\n" << x << std::endl;
-    std::cout << "\t#iterations:     " << cgx.iterations() << std::endl;
-    std::cout << "\testimated error: " << cgx.error() << std::endl;
-    for (int num=0; num<x.size(); ++num) {
-      block_list[num].set_dllx(x[num]);
-    }
-    update_max_min_node_x();
+void placer_al_t::build_problem_clique_y() {
+  // before build a new Matrix, clean the information in existing matrix
+  for (size_t i=0; i<movable_block_num(); i++) {
+    Ay[i][0].weight = 0;
+    // make the diagonal elements 0
+    ky[i] = 0;
+    // mark the length each row of matrix 0, although some data might still exists there
+    by[i] = 0;
+    // make each element of b 0
   }
 
-  Eigen::ConjugateGradient <SpMat> cgy;
-  cgy.setMaxIterations(cgIterMaxNum);
-  cgy.setTolerance(cgTolerance);
-  // Assembly:
-  HPWLy_converge = false;
-  HPWLY_old = 1e30;
-  Eigen::VectorXd y(cellNum), eigen_by(cellNum); // the solution and the right hand side-vector resulting from the constraints
-  SpMat eigen_Ay(cellNum, cellNum); // sparse matrix
-  for (size_t i=0; i<block_list.size(); ++i) {
-    y[i] = block_list[i].dlly();
-  }
-  for (int i=0; i<b2bIterMaxNum; ++i) {
-    if (HPWLy_converge) {
-      std::cout << "iterations:     " << i << "\n";
-      break;
+  weightTuple tempWT;
+  double weighty, invp, temppinlocy0, temppinlocy1, tempdiffoffset;
+  size_t tempnodenum0, tempnodenum1;
+
+  for (auto &&net: net_list) {
+    //std::cout << i << "\n";
+    if (net.p() <= 1) continue;
+    invp = net.inv_p();
+    for (size_t j=0; j<net.pin_list.size(); j++) {
+      tempnodenum0 = net.pin_list[j].get_block()->num();
+      temppinlocy0 = block_list[tempnodenum0].dlly() + net.pin_list[j].y_offset();
+      for (size_t k=j+1; k<net.pin_list.size(); k++) {
+        tempnodenum1 = net.pin_list[k].get_block()->num();
+        temppinlocy1 = block_list[tempnodenum1].dlly() + net.pin_list[k].y_offset();
+        if (tempnodenum0 == tempnodenum1) continue;
+        if ((block_list[tempnodenum0].is_movable() == 0)&&(block_list[tempnodenum1].is_movable() == 0)) {
+          continue;
+        }
+        weighty = invp/((double)fabs(temppinlocy0 - temppinlocy1) + height_epsilon());
+        if ((block_list[tempnodenum0].is_movable() == 0)&&(block_list[tempnodenum1].is_movable() == 1)) {
+          by[tempnodenum1] += (temppinlocy0 - net.pin_list[k].y_offset()) * weighty;
+          Ay[tempnodenum1][0].weight += weighty;
+        }
+        else if ((block_list[tempnodenum0].is_movable() == 1)&&(block_list[tempnodenum1].is_movable() == 0)) {
+          by[tempnodenum0] += (temppinlocy1 - net.pin_list[j].y_offset()) * weighty;
+          Ay[tempnodenum0][0].weight += weighty;
+        }
+        else {
+          //((blockList[tempnodenum0].isterminal() == 0)&&(blockList[tempnodenum1].isterminal() == 0))
+          tempWT.pin = tempnodenum1;
+          tempWT.weight = -weighty;
+          ky[tempnodenum0]++;
+          Ay[tempnodenum0][ky[tempnodenum0]] = tempWT;
+
+          tempWT.pin = tempnodenum0;
+          tempWT.weight = -weighty;
+          ky[tempnodenum1]++;
+          Ay[tempnodenum1][ky[tempnodenum1]] = tempWT;
+
+          Ay[tempnodenum0][0].weight += weighty;
+          Ay[tempnodenum1][0].weight += weighty;
+          tempdiffoffset = (net.pin_list[k].y_offset() - net.pin_list[j].y_offset()) * weighty;
+          by[tempnodenum0] += tempdiffoffset;
+          by[tempnodenum1] -= tempdiffoffset;
+        }
+      }
     }
-    build_problem_b2b_y(eigen_Ay, eigen_by); // fill A and b
-    // Solving:
-    cgy.compute(eigen_Ay);
-    y = cgy.solveWithGuess(eigen_by, y);
-    std::cout << "\t#iterations:     " << cgy.iterations() << std::endl;
-    std::cout << "\testimated error: " << cgy.error() << std::endl;
-    for (int num=0; num<y.size(); ++num) {
-      block_list[num].set_dlly(y[num]);
-    }
-    update_max_min_node_y();
   }
 }
 
@@ -300,6 +293,145 @@ void placer_al_t::update_max_min_node_x() {
   }
 }
 
+void placer_al_t::build_problem_b2b_x() {
+  // before build a new Matrix, clean the information in existing matrix
+  for (size_t i=0; i<movable_block_num(); i++) {
+    Ax[i][0].weight = 0;
+    // make the diagonal elements 0
+    kx[i] = 0;
+    // mark the length each row of matrix 0, although some data might still exists there
+    bx[i] = 0;
+    // make each element of b 0
+  }
+  // update the x direction max and min node in each net
+  weightTuple tempWT;
+  double weight_x, inv_p, temp_pin_loc_x0, temp_pin_loc_x1, temp_diff_offset;
+  size_t temp_node_num0, temp_node_num1, max_pindex_x, min_pindex_x;
+  for (auto &&net: net_list) {
+    if (net.p()<=1) {
+      continue;
+    }
+    inv_p = net.inv_p();
+    max_pindex_x = net.max_pin_index_x();
+    min_pindex_x = net.min_pin_index_x();
+    for (size_t i=0; i<net.pin_list.size(); i++) {
+      temp_node_num0 = net.pin_list[i].get_block()->num();
+      temp_pin_loc_x0 = block_list[temp_node_num0].dllx() + net.pin_list[i].x_offset();
+      for (size_t k=i+1; k<net.pin_list.size(); k++) {
+        if ((i!=max_pindex_x)&&(i!=min_pindex_x)) {
+          if ((k!=max_pindex_x)&&(k!=min_pindex_x)) continue;
+        }
+        temp_node_num1 = net.pin_list[k].get_block()->num();
+        if (temp_node_num0 == temp_node_num1) continue;
+        temp_pin_loc_x1 = block_list[temp_node_num1].dllx() + net.pin_list[k].x_offset();
+        weight_x = inv_p/(std::fabs(temp_pin_loc_x0 - temp_pin_loc_x1) + width_epsilon());
+        if ((block_list[temp_node_num0].is_movable() == 0)&&(block_list[temp_node_num1].is_movable() == 0)) {
+          continue;
+        }
+        else if ((block_list[temp_node_num0].is_movable() == 0)&&(block_list[temp_node_num1].is_movable() == 1)) {
+          bx[temp_node_num1] += (temp_pin_loc_x0 - net.pin_list[k].x_offset()) * weight_x;
+          Ax[temp_node_num1][0].weight += weight_x;
+        }
+        else if ((block_list[temp_node_num0].is_movable() == 1)&&(block_list[temp_node_num1].is_movable() == 0)) {
+          bx[temp_node_num0] += (temp_pin_loc_x1 - net.pin_list[i].x_offset()) * weight_x;
+          Ax[temp_node_num0][0].weight += weight_x;
+        }
+        else {
+          //((blockList[temp_node_num0].is_movable())&&(blockList[temp_node_num1].is_movable()))
+          tempWT.pin = temp_node_num1;
+          tempWT.weight = -weight_x;
+          kx[temp_node_num0]++;
+          Ax[temp_node_num0][kx[temp_node_num0]] = tempWT;
+
+          tempWT.pin = temp_node_num0;
+          tempWT.weight = -weight_x;
+          kx[temp_node_num1]++;
+          Ax[temp_node_num1][kx[temp_node_num1]] = tempWT;
+
+          Ax[temp_node_num0][0].weight += weight_x;
+          Ax[temp_node_num1][0].weight += weight_x;
+          temp_diff_offset = (net.pin_list[k].x_offset() - net.pin_list[i].x_offset()) * weight_x;
+          bx[temp_node_num0] += temp_diff_offset;
+          bx[temp_node_num1] -= temp_diff_offset;
+        }
+      }
+    }
+  }
+  for (size_t i=0; i<Ax.size(); i++) { // this is for cells with tiny force applied on them
+    if (Ax[i][0].weight < 1e-10) {
+      Ax[i][0].weight = 1;
+      bx[i] = block_list[i].dllx();
+    }
+  }
+}
+
+void placer_al_t::build_problem_b2b_x_nooffset() {
+  // before build a new Matrix, clean the information in existing matrix
+  for (size_t i=0; i<movable_block_num(); i++) {
+    Ax[i][0].weight = 0;
+    // make the diagonal elements 0
+    kx[i] = 0;
+    // mark the length each row of matrix 0, although some data might still exists there
+    bx[i] = 0;
+    // make each element of b 0
+  }
+  weightTuple tempWT;
+  double weightx, invp, temppinlocx0, temppinlocx1;
+  size_t tempnodenum0, tempnodenum1, maxpindex_x, minpindex_x;
+
+  for (auto &&net: net_list) {
+    if (net.p()<=1) continue;
+    invp = net.inv_p();
+    maxpindex_x = net.max_pin_index_x();
+    minpindex_x = net.min_pin_index_x();
+    for (size_t i=0; i<net.pin_list.size(); i++) {
+      tempnodenum0 = net.pin_list[i].get_block()->num();
+      temppinlocx0 = block_list[tempnodenum0].dllx();
+      for (size_t k=i+1; k<net.pin_list.size(); k++) {
+        if ((i!=maxpindex_x)&&(i!=minpindex_x)) {
+          if ((k!=maxpindex_x)&&(k!=minpindex_x)) continue;
+        }
+        tempnodenum1 = net.pin_list[k].get_block()->num();
+        if (tempnodenum0 == tempnodenum1) continue;
+        temppinlocx1 = block_list[tempnodenum1].dllx();
+        weightx = invp/((double)fabs(temppinlocx0 - temppinlocx1) + width_epsilon());
+        if ((block_list[tempnodenum0].is_movable() == 0)&&(block_list[tempnodenum1].is_movable() == 0)) {
+          continue;
+        }
+        else if ((block_list[tempnodenum0].is_movable() == 0)&&(block_list[tempnodenum1].is_movable() == 1)) {
+          bx[tempnodenum1] += temppinlocx0 * weightx;
+          Ax[tempnodenum1][0].weight += weightx;
+        }
+        else if ((block_list[tempnodenum0].is_movable() == 1)&&(block_list[tempnodenum1].is_movable() == 0)) {
+          bx[tempnodenum0] += temppinlocx1 * weightx;
+          Ax[tempnodenum0][0].weight += weightx;
+        }
+        else {
+          //((blockList[tempnodenum0].isterminal() == 0)&&(blockList[tempnodenum1].isterminal() == 0))
+          tempWT.pin = tempnodenum1;
+          tempWT.weight = -weightx;
+          kx[tempnodenum0]++;
+          /*if (kx[tempnodenum0] == Ax[tempnodenum0].size()) {
+            std::cout << tempnodenum0 << " " << kx[tempnodenum0] << " Overflowx\n";
+          }*/
+          Ax[tempnodenum0][kx[tempnodenum0]] = tempWT;
+
+          tempWT.pin = tempnodenum0;
+          tempWT.weight = -weightx;
+          kx[tempnodenum1]++;
+          /*if (kx[tempnodenum1] == Ax[tempnodenum1].size()) {
+            std::cout << tempnodenum1 << " " << kx[tempnodenum1] << " Overflowx\n";
+          }*/
+          Ax[tempnodenum1][kx[tempnodenum1]] = tempWT;
+
+          Ax[tempnodenum0][0].weight += weightx;
+          Ax[tempnodenum1][0].weight += weightx;
+        }
+      }
+    }
+  }
+}
+
 void placer_al_t::update_HPWL_y() {
   // update the y direction max and min node in each net
   HPWLY_new = 0;
@@ -323,6 +455,266 @@ void placer_al_t::update_max_min_node_y() {
     HPWLy_converge = (std::fabs(1 - HPWLY_new / HPWLY_old) < HPWL_intra_linearSolver_precision);
     HPWLY_old = HPWLY_new;
   }
+}
+
+void placer_al_t::build_problem_b2b_y() {
+  // before build a new Matrix, clean the information in existing matrix
+  for (size_t i=0; i<movable_block_num(); i++) {
+    Ay[i][0].weight = 0;
+    // make the diagonal elements 0
+    ky[i] = 0;
+    // mark the length each row of matrix 0, although some data might still exists there
+    by[i] = 0;
+    // make each element of b 0
+  }
+  weightTuple tempWT;
+  double weighty, inv_p, temp_pin_loc_y0, temp_pin_loc_y1, temp_diff_offset;
+  size_t temp_node_num0, temp_node_num1, max_pindex_y, min_pindex_y;
+  for (auto &&net: net_list) {
+    if (net.p()<=1) {
+      continue;
+    }
+    inv_p = net.inv_p();
+    max_pindex_y = net.max_pin_index_y();
+    min_pindex_y = net.min_pin_index_y();
+    for (size_t i=0; i<net.pin_list.size(); i++) {
+      temp_node_num0 = net.pin_list[i].get_block()->num();
+      temp_pin_loc_y0 = block_list[temp_node_num0].dlly() + net.pin_list[i].y_offset();
+      for (size_t k=i+1; k<net.pin_list.size(); k++) {
+        if ((i!=max_pindex_y)&&(i!=min_pindex_y)) {
+          if ((k!=max_pindex_y)&&(k!=min_pindex_y)) continue;
+        }
+        temp_node_num1 = net.pin_list[k].get_block()->num();
+        if (temp_node_num0 == temp_node_num1) continue;
+        temp_pin_loc_y1 = block_list[temp_node_num1].dlly() + net.pin_list[i].y_offset();
+        weighty = inv_p/((double)fabs(temp_pin_loc_y0 - temp_pin_loc_y1) + height_epsilon());
+        if ((block_list[temp_node_num0].is_movable() == 0)&&(block_list[temp_node_num1].is_movable() == 0)) {
+          continue;
+        }
+        else if ((block_list[temp_node_num0].is_movable() == 0)&&(block_list[temp_node_num1].is_movable() == 1)) {
+          by[temp_node_num1] += (temp_pin_loc_y0 - net.pin_list[k].y_offset()) * weighty;
+          Ay[temp_node_num1][0].weight += weighty;
+        }
+        else if ((block_list[temp_node_num0].is_movable() == 1)&&(block_list[temp_node_num1].is_movable() == 0)) {
+          by[temp_node_num0] += (temp_pin_loc_y1 - net.pin_list[i].y_offset()) * weighty;
+          Ay[temp_node_num0][0].weight += weighty;
+        }
+        else {
+          //((blockList[temp_node_num0].is_movable())&&(blockList[temp_node_num1].is_movable()))
+          tempWT.pin = temp_node_num1;
+          tempWT.weight = -weighty;
+          ky[temp_node_num0]++;
+          Ay[temp_node_num0][ky[temp_node_num0]] = tempWT;
+
+          tempWT.pin = temp_node_num0;
+          tempWT.weight = -weighty;
+          ky[temp_node_num1]++;
+          Ay[temp_node_num1][ky[temp_node_num1]] = tempWT;
+
+          Ay[temp_node_num0][0].weight += weighty;
+          Ay[temp_node_num1][0].weight += weighty;
+          temp_diff_offset = (net.pin_list[k].y_offset() - net.pin_list[i].y_offset()) * weighty;
+          by[temp_node_num0] += temp_diff_offset;
+          by[temp_node_num1] -= temp_diff_offset;
+        }
+      }
+    }
+  }
+  for (size_t i=0; i<Ay.size(); i++) { // // this is for cells with tiny force applied on them
+    if (Ay[i][0].weight < 1e-10) {
+      Ay[i][0].weight = 1;
+      by[i] = block_list[i].dlly();
+    }
+  }
+}
+
+void placer_al_t::build_problem_b2b_y_nooffset() {
+  // before build a new Matrix, clean the information in existing matrix
+  for (size_t i=0; i<movable_block_num(); i++) {
+    Ay[i][0].weight = 0;
+    // make the diagonal elements 0
+    ky[i] = 0;
+    // mark the length each row of matrix 0, although some data might still exists there
+    by[i] = 0;
+    // make each element of b 0
+  }
+  weightTuple tempWT;
+  double weighty, invp, temppinlocy0, temppinlocy1;
+  size_t tempnodenum0, tempnodenum1, maxpindex_y, minpindex_y;
+  for (auto &&net: net_list) {
+    if (net.p()<=1) continue;
+    invp = net.inv_p();
+    maxpindex_y = net.max_pin_index_y();
+    minpindex_y = net.min_pin_index_y();
+    for (size_t i=0; i<net.pin_list.size(); i++) {
+      tempnodenum0 = net.pin_list[i].get_block()->num();
+      temppinlocy0 = block_list[tempnodenum0].dlly();
+      for (size_t k=i+1; k<net.pin_list.size(); k++) {
+        if ((i!=maxpindex_y)&&(i!=minpindex_y)) {
+          if ((k!=maxpindex_y)&&(k!=minpindex_y)) continue;
+        }
+        tempnodenum1 = net.pin_list[k].get_block()->num();
+        if (tempnodenum0 == tempnodenum1) continue;
+        temppinlocy1 = block_list[tempnodenum1].dlly();
+        weighty = invp/((double)fabs(temppinlocy0 - temppinlocy1) + height_epsilon());
+        if ((block_list[tempnodenum0].is_movable() == 0)&&(block_list[tempnodenum1].is_movable() == 0)) {
+          continue;
+        }
+        else if ((block_list[tempnodenum0].is_movable() == 0)&&(block_list[tempnodenum1].is_movable() == 1)) {
+          by[tempnodenum1] += temppinlocy0 * weighty;
+          Ay[tempnodenum1][0].weight += weighty;
+        }
+        else if ((block_list[tempnodenum0].is_movable() == 1)&&(block_list[tempnodenum1].is_movable() == 0)) {
+          by[tempnodenum0] += temppinlocy1 * weighty;
+          Ay[tempnodenum0][0].weight += weighty;
+        }
+        else {
+          //((blockList[tempnodenum0].isterminal() == 0)&&(blockList[tempnodenum1].isterminal() == 0))
+          tempWT.pin = tempnodenum1;
+          tempWT.weight = -weighty;
+          ky[tempnodenum0]++;
+          /*if (ky[tempnodenum0] == Ay[tempnodenum0].size()) {
+            std::cout << tempnodenum0 << " " << ky[tempnodenum0] << " Overflowy\n";
+          }*/
+          Ay[tempnodenum0][ky[tempnodenum0]] = tempWT;
+
+          tempWT.pin = tempnodenum0;
+          tempWT.weight = -weighty;
+          ky[tempnodenum1]++;
+          /*if (ky[tempnodenum1] == Ay[tempnodenum1].size()) {
+            std::cout << tempnodenum1 << " " << ky[tempnodenum1] << " Overflowy\n";
+          }*/
+          Ay[tempnodenum1][ky[tempnodenum1]] = tempWT;
+
+          Ay[tempnodenum0][0].weight += weighty;
+          Ay[tempnodenum1][0].weight += weighty;
+        }
+      }
+    }
+  }
+}
+
+void placer_al_t::CG_solver(std::string const &dimension, std::vector< std::vector<weightTuple> > &A, std::vector<double> &b, std::vector<size_t> &k) {
+  double epsilon = 1e-15, alpha, beta, rsold, rsnew, pAp, solution_distance;
+  std::vector<double> ax(movable_block_num()), ap(movable_block_num()), z(movable_block_num()), p(movable_block_num()), JP(movable_block_num());
+  // JP = Jacobi_preconditioner
+  for (size_t i=0; i<movable_block_num(); i++) {
+    // initialize the Jacobi preconditioner
+    if (A[i][0].weight > epsilon) {
+      // JP[i] is the reverse of diagonal value
+      JP[i] = 1/A[i][0].weight;
+    }
+    else {
+      // if the diagonal is too small, set JP[i] to 1 to prevent diverge
+      JP[i] = 1;
+    }
+  }
+  for (size_t i=0; i<movable_block_num(); i++) {
+    // calculate Ax
+    ax[i] = 0;
+    if (dimension=="x") {
+      for (size_t j=0; j<=k[i]; j++) {
+        ax[i] += A[i][j].weight * block_list[A[i][j].pin].dx();
+      }
+    }
+    else {
+      for (size_t j=0; j<=k[i]; j++) {
+        ax[i] += A[i][j].weight * block_list[A[i][j].pin].dy();
+      }
+    }
+  }
+  rsold = 0;
+  for (size_t i=0; i<movable_block_num(); i++) {
+    // calculate z and p and rsold
+    z[i] = JP[i]*(b[i] - ax[i]);
+    p[i] = z[i];
+    rsold += z[i]*z[i]/JP[i];
+  }
+
+  for (size_t t=0; t<100; t++) {
+    pAp = 0;
+    for (size_t i=0; i<movable_block_num(); i++) {
+      ap[i] = 0;
+      for (size_t j=0; j<=k[i]; j++) {
+        ap[i] += A[i][j].weight * p[A[i][j].pin];
+      }
+      pAp += p[i]*ap[i];
+    }
+    alpha = rsold/pAp;
+    rsnew = 0;
+    if (dimension=="x") {
+      for (size_t i=0; i<movable_block_num(); i++) {
+        block_list[i].x_increment(alpha * p[i]);
+      }
+    }
+    else {
+      for (size_t i=0; i<movable_block_num(); i++) {
+        block_list[i].y_increment(alpha * p[i]);
+      }
+    }
+    solution_distance = 0;
+    for (size_t i=0; i<movable_block_num(); i++) {
+      z[i] -= JP[i]*alpha * ap[i];
+      solution_distance += z[i]*z[i]/JP[i]/JP[i];
+      rsnew += z[i]*z[i]/JP[i];
+    }
+    //std::cout << "solution_distance: " << solution_distance/movable_block_num() << "\n";
+    if (solution_distance/movable_block_num() < cg_precision) break;
+    beta = rsnew/rsold;
+    for (size_t i=0; i<movable_block_num(); i++) {
+      p[i] = z[i] + beta*p[i];
+    }
+    rsold = rsnew;
+  }
+
+  /* if the cell is out of boundary, just shift it back to the placement region */
+  if (dimension == "x") {
+    for (size_t i=0; i<movable_block_num(); i++) {
+      if (block_list[i].dllx() < left()) {
+        block_list[i].set_center_dx(left() + block_list[i].width()/2.0 + 1);
+        //std::cout << i << "\n";
+      }
+      else if (block_list[i].urx() > right()) {
+        block_list[i].set_center_dx(right() - block_list[i].width()/2.0 - 1);
+        //std::cout << i << "\n";
+      }
+      else {
+        continue;
+      }
+    }
+  }
+  else{
+    for (size_t i=0; i<movable_block_num(); i++) {
+      if (block_list[i].dlly() < bottom()) {
+        block_list[i].set_center_dy(bottom() + block_list[i].height()/2.0 + 1);
+        //std::cout << i << "\n";
+      }
+      else if (block_list[i].ury() > top()) {
+        block_list[i].set_center_dy(top() - block_list[i].height()/2.0 - 1);
+        //std::cout << i << "\n";
+      }
+      else {
+        continue;
+      }
+    }
+  }
+}
+
+void placer_al_t::CG_solver_x() {
+  CG_solver("x", Ax, bx, kx);
+}
+
+void placer_al_t::CG_solver_y() {
+  CG_solver("y", Ay, by, ky);
+}
+
+void placer_al_t::cg_close() {
+  Ax.clear();
+  Ay.clear();
+  bx.clear();
+  by.clear();
+  kx.clear();
+  ky.clear();
 }
 
 void placer_al_t::add_boundary_list() {
@@ -1136,18 +1528,65 @@ bool placer_al_t::post_legalization_optimization() {
 }
 
 bool placer_al_t::start_placement() {
+  cg_init();
   uniform_initialization();
-  draw_block_net_list("ui.txt");
-  eigen_cg_solver();
+  update_max_min_node_x();
+  update_max_min_node_y();
+  HPWLx_converge = false;
+  HPWLy_converge = false;
+  HPWLX_old = 1e30;
+  HPWLY_old = 1e30;
+  for (int i=0; i<50; i++) {
+    if (!HPWLx_converge) {
+      build_problem_b2b_x();
+      CG_solver_x();
+      update_max_min_node_x();
+    }
+    if (!HPWLy_converge) {
+      build_problem_b2b_y();
+      CG_solver_y();
+      update_max_min_node_y();
+    }
+    if (HPWLx_converge && HPWLy_converge)  {
+      std::cout << i << " iterations in cg\n";
+      break;
+    }
+  }
+  cg_close();
   std::cout << "Initial Placement Complete\n";
   report_hpwl();
 
-  draw_block_net_list("cg_result.txt");
-  /*if (!tetris_legalization2()) {
-    report_hpwl();
-    std::cout << "Legalization fail\n";
-    return false;
-  }*/
+  //draw_block_net_list("cg_result.m");
+  add_boundary_list();
+  initialize_bin_list();
+  if (!tetris_legalization2()) {
+    shift_to_region_center();
+    //expansion_legalization();
+    //draw_block_net_list("tse_result.m");
+    if (!legalization()) {
+      if (!gravity_legalization()) {
+        report_hpwl();
+        std::cout << "Legalization fail\n";
+        return false;
+      }
+    }
+  }
+  /*
+  shift_to_region_center();
+  expansion_legalization();
+  add_boundary_list();
+  initialize_bin_list();
+  //draw_bin_list();
+  if (!legalization()) {
+    if (!tetris_legalization()) {
+      if (!gravity_legalization()) {
+        report_hpwl();
+        std::cout << "Legalization fail\n";
+        return false;
+      }
+    }
+  }
+   */
 
   post_legalization_optimization();
   std::cout << "Legalization Complete\n";

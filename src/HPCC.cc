@@ -14,6 +14,7 @@ int main() {
   time_t Time = clock();
   circuit_t circuit;
   /****adaptec1****/
+  /*
   if (!circuit.read_nodes_file("../test/adaptec1/adaptec1.nodes")) {
     //circuit.report_block_list();
     //circuit.report_block_map();
@@ -28,7 +29,7 @@ int main() {
     //circuit.report_block_list();
     return 1;
   }
-
+  */
   /****layout****/
   /*
   if (!circuit.read_nodes_file("../test/layout.nodes")) {
@@ -47,7 +48,7 @@ int main() {
   }
   */
   /****LEF/DEF****/
-  /*
+
   //std::string lefFileName = "../test/out_1K/3m/out_1K.lef";
   //std::string defFileName = "../test/out_1K/3m/out_1K.def";
   std::string lefFileName = "out_1K.lef";
@@ -60,7 +61,7 @@ int main() {
   if (!circuit.read_def_file(defFileName)) {
     return 1;
   }
-  */
+
   //circuit.report_block_list();
   //circuit.report_block_map();
   //circuit.report_net_list();
@@ -90,8 +91,8 @@ int main() {
   placer->set_input_circuit(&circuit);
   //placer->set_boundary(1149,1718,2664,2667); // debug case
   //placer->auto_set_boundaries(); // set boundary for layout
-  placer->set_boundary(459,11151,459,11139); // set boundary for adaptec1
-  //placer->set_boundary(circuit.def_left,circuit.def_right,circuit.def_bottom,circuit.def_top); // set boundary for lef/def
+  //placer->set_boundary(459,11151,459,11139); // set boundary for adaptec1
+  placer->set_boundary(circuit.def_left,circuit.def_right,circuit.def_bottom,circuit.def_top); // set boundary for lef/def
   placer->report_boundaries();
   placer->start_placement();
   placer->report_placement_result();
