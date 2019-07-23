@@ -18,6 +18,7 @@ file(GLOB SOURCES
         src/AL/*.cc
         src/tetris/*.h
         src/tetris/*.cc
+        module/Eigen/*
         )
 
 add_executable(HPCC ${SOURCES})

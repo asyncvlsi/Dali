@@ -10,16 +10,16 @@
 #include <random>
 #include <cmath>
 #include <algorithm>
+#include "../module/Eigen/Sparse"
+#include "../module/Eigen//IterativeLinearSolvers"
 #include "placer.h"
 #include "blockal.h"
 #include "netal.h"
 #include "tetris/tetrisspace.h"
 #include "circuit/circuitbin.h"
 
-typedef struct {
-  size_t pin;
-  double weight;
-} weightTuple;
+typedef Eigen::SparseMatrix<double> SpMat; // declares a column-major sparse matrix type of double
+typedef Eigen::Triplet<double> T; // A triplet is a simple object representing a non-zero entry as the triplet: row index, column index, value.
 
 class placer_al_t: public placer_t {
 private:
@@ -48,30 +48,16 @@ public:
   std::vector< net_al_t > net_list;
   bool set_input_circuit(circuit_t *circuit) override;
 
-  std::vector< std::vector<weightTuple> > Ax, Ay;
-  // declare matrix here, such that every function in this namespace can see these matrix
-  std::vector<size_t> kx, ky;
-  // track the length of each row of Ax and Ay
-  std::vector<double> bx, by;
-
   void uniform_initialization();
+  void build_problem_x(std::vector<T> &coefficients, Eigen::VectorXd &b);
+  void build_problem_y(std::vector<T> &coefficients, Eigen::VectorXd &b);
+  void eigen_cg_solver();
 
-  void cg_init();
-  void cg_close();
   void initialize_HPWL_flags();
-  void build_problem_clique_x();
-  void build_problem_clique_y();
   void update_max_min_node_x();
   void update_HPWL_x();
-  void build_problem_b2b_x();
-  void build_problem_b2b_x_nooffset();
   void update_max_min_node_y();
   void update_HPWL_y();
-  void build_problem_b2b_y();
-  void build_problem_b2b_y_nooffset();
-  void CG_solver(std::string const &dimension, std::vector< std::vector<weightTuple> > &A, std::vector<double> &b, std::vector<size_t> &k);
-  void CG_solver_x();
-  void CG_solver_y();
 
   std::vector< block_al_t > boundary_list;
   void add_boundary_list();
