@@ -96,8 +96,8 @@ int main() {
   placer->report_boundaries();
   placer->start_placement();
   placer->report_placement_result();
-  //placer->gen_matlab_disp_file("al_result.txt"); // generate matlab file for layout
-  placer->write_node_terminal(); // generate a data file for adaptec1
+  placer->gen_matlab_disp_file("al_result.txt"); // generate matlab file for layout
+  //placer->write_node_terminal(); // generate a data file for adaptec1
   delete placer;
   //circuit.save_DEF("circuit_dla.def", defFileName);
 
