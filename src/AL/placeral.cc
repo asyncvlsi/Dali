@@ -5,18 +5,6 @@
 #include <cmath>
 #include "placeral.h"
 
-struct indexLocPair{
-  int num;
-  double x;
-  double y;
-};
-
-struct DIYLess{
-  bool operator()(const indexLocPair a, const indexLocPair b) {
-    return (a.x < b.x) || ((a.x == b.x) && (a.y < b.y));
-  }
-} customLess;
-
 placer_al_t::placer_al_t(): placer_t() {
 
 }
@@ -1426,14 +1414,22 @@ bool placer_al_t::tetris_legalization2() {
   }
 
   // 2. sort blocks based on their lower left corners. Further optimization is doable here.
-
+  struct indexLocPair{
+    int num;
+    double x;
+    double y;
+  };
   std::vector< indexLocPair > blockXOrder(block_list.size());
   for (size_t i=0; i<blockXOrder.size(); i++) {
     blockXOrder[i].num = i;
     blockXOrder[i].x = block_list[i].dllx();
     blockXOrder[i].y = block_list[i].dlly();
   }
-
+  struct DIYLess{
+    bool operator()(const indexLocPair a, const indexLocPair b) {
+      return (a.x < b.x) || ((a.x == b.x) && (a.y < b.y));
+    }
+  } customLess;
   std::sort(blockXOrder.begin(), blockXOrder.end(), customLess);
 
   // 3. initialize the data structure to store row usage
@@ -1487,6 +1483,7 @@ bool placer_al_t::tetris_legalization2() {
       std::cout.flush();
     }
   }
+  std::cout << "[";
   for (int i = 0; i < barWidth; ++i) {
     if (i < barWidth) std::cout << "=";
     else if (i == barWidth) std::cout << ">";

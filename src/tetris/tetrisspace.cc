@@ -38,7 +38,7 @@ Loc2D TetrisSpace::findBlockLocation(double currentX, double currentY, int block
   double minDisplacement = 1e30;
   int effectiveHeight = (int)(std::ceil((double)blockHeight/_rowHeight));
   //std::cout << "effective height: " << effectiveHeight << std::endl;
-  int topRowNumToCheck = freeSegmentRows.size() - effectiveHeight + 1;
+  int topRowNumToCheck = (int)(freeSegmentRows.size()) - effectiveHeight + 1;
   bool allRowFail = true;
   std::vector< Loc2D > candidateList;
   for (int i=0; i<topRowNumToCheck; ++i) {
@@ -66,6 +66,7 @@ Loc2D TetrisSpace::findBlockLocation(double currentX, double currentY, int block
     }
     double displacement = std::fabs(currentX - loc.x) + std::fabs(currentY - (loc.y*_rowHeight + _bottom));
     if (displacement < minDisplacement) {
+      minDisplacement = displacement;
       bestLoc = loc;
     }
   }

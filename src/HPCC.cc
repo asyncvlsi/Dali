@@ -51,8 +51,8 @@ int main() {
 
   //std::string lefFileName = "../test/out_1K/3m/out_1K.lef";
   //std::string defFileName = "../test/out_1K/3m/out_1K.def";
-  std::string lefFileName = "out_1K.lef";
-  std::string defFileName = "out_1K.def";
+  std::string lefFileName = "out_10K.lef";
+  std::string defFileName = "out_10K.def";
   if (!circuit.read_lef_file(lefFileName)) {
     return 1;
   }
