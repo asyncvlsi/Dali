@@ -12,7 +12,7 @@ struct indexLocPair{
 };
 
 struct DIYLess{
-  bool operator()(indexLocPair &a, indexLocPair &b) {
+  bool operator()(const indexLocPair a, const indexLocPair b) {
     return (a.x < b.x) || ((a.x == b.x) && (a.y < b.y));
   }
 } customLess;
