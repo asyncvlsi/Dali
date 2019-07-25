@@ -11,7 +11,7 @@ struct indexLocPair{
   double y;
 };
 
-struct {
+struct DIYLess{
   bool operator()(indexLocPair &a, indexLocPair &b) {
     return (a.x < b.x) || ((a.x == b.x) && (a.y < b.y));
   }
