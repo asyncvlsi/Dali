@@ -8,16 +8,18 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wshadow -Wnon
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 
 file(GLOB SOURCES
-        src/*.hpp
-        src/*.cpp
-        src/circuit/*.hpp
-        src/circuit/*.cpp
-        src/placer/*.hpp
-        src/placer/*.cpp
-        src/DLA/*.hpp
-        src/DLA/*.cpp
-        src/AL/*.hpp
-        src/AL/*.cpp
+        src/*.h
+        src/*.cc
+        src/circuit/*.h
+        src/circuit/*.cc
+        src/placer/*.h
+        src/placer/*.cc
+        src/DLA/*.h
+        src/DLA/*.cc
+        src/AL/*.h
+        src/AL/*.cc
+        src/common/*.h
+        src/common/*.cc
         )
 
 add_executable(HPCC ${SOURCES})

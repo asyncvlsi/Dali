@@ -9,10 +9,10 @@
 #include <vector>
 #include <string>
 #include <iostream>
-#include "blocktype.hpp"
+#include "blocktype.h"
 
 /* a block can be a gate, can also be a large module, it includes information like
- * the name of a gate/module, its width and height, its lower left corner (llx, lly),
+ * the Name of a gate/module, its Width and Height, its lower left corner (llx, lly),
  * the movability, orientation. */
 
 enum orient_t{N, S, W, E, FN, FS, FW, FE};
@@ -20,8 +20,8 @@ enum orient_t{N, S, W, E, FN, FS, FW, FE};
 class block_t {
 protected:
   /* essential data entries */
-  block_type_t *_type;
-  std::string _name; // name
+  BlockType *_type;
+  std::string _name; // Name
   int _llx, _lly; // lower left corner
   bool _movable; // movable
   enum orient_t _orient; // currently not used
@@ -31,7 +31,7 @@ protected:
   /* block_num is the index of this block in the vector block_list, this data must be updated after push a new block into block_list */
 
 public:
-  block_t(block_type_t *type, std::string name, int llx, int lly, bool movable="true", orient_t orient=N);
+  block_t(BlockType *type, std::string name, int llx, int lly, bool movable="true", orient_t orient=N);
 
   void set_name(std::string blockName);
   std::string name() const;
@@ -59,8 +59,8 @@ public:
   size_t num() const;
 
   friend std::ostream& operator<<(std::ostream& os, const block_t &block) {
-    os << "block name: " << block._name << "\n";
-    os << "width and height: " << block.width() << " " << block.height() << "\n";
+    os << "block Name: " << block._name << "\n";
+    os << "Width and Height: " << block.width() << " " << block.height() << "\n";
     os << "lower left corner: " << block._llx << " " << block._lly << "\n";
     os << "movability: " << block._movable << "\n";
     os << "orientation: " << block.orient_str() << "\n";

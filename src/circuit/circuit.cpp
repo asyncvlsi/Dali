@@ -52,7 +52,7 @@ bool circuit_t::add_new_block(std::string &blockName, int w, int h, int llx, int
     return true;
   } else {
     std::cout << "Error!\n";
-    std::cout << "Existing block in block_list with name: " << blockName << "\n";
+    std::cout << "Existing block in block_list with Name: " << blockName << "\n";
     return false;
   }
 }
@@ -67,7 +67,7 @@ bool circuit_t::create_blank_net(std::string &netName, double weight) {
     return true;
   } else {
     std::cout << "Error!\n";
-    std::cout << "Existing net in net_list with name: " << netName << "\n";
+    std::cout << "Existing net in net_list with Name: " << netName << "\n";
     return false;
   }
 }
@@ -75,12 +75,12 @@ bool circuit_t::create_blank_net(std::string &netName, double weight) {
 bool circuit_t::add_pin_to_net(std::string &netName, std::string &blockName, int xOffset, int yOffset, std::string pinName) {
   if (net_name_map.find(netName) == net_name_map.end()) {
     std::cout << "Error!\n";
-    std::cout << "No net in net_list has name: " << netName << "\n";
+    std::cout << "No net in net_list has Name: " << netName << "\n";
     return false;
   }
   if (block_name_map.find(blockName) == block_name_map.end()){
     std::cout << "Error!\n";
-    std::cout << "No block in block_list has name: " << blockName << "\n";
+    std::cout << "No block in block_list has Name: " << blockName << "\n";
     return false;
   }
 
@@ -128,9 +128,9 @@ void circuit_t::parse_line(std::string &line, std::vector<std::string> &field_li
 }
 
 bool circuit_t::read_nodes_file(std::string const &NameOfFile) {
-  int tmp_w, tmp_h; // width and height
+  int tmp_w, tmp_h; // Width and Height
   bool tmp_movable = true;
-  std::string tmp_name; // name
+  std::string tmp_name; // Name
   std::string line, tmp_string;
   std::ifstream ist(NameOfFile.c_str());
   if (ist.is_open()==0) {
@@ -285,7 +285,7 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
 
       /*****cont'*****/
       //size_t block_num = block_name_map.find(tmp_block_name)->second;
-      //ost << "    " << pin_field[0] << "\t" << pin_field[1] << " : " << tmp_x_offset + block_list[block_num].width()/2.0 << "\t" << tmp_y_offset + block_list[block_num].height()/2.0 << "\n";
+      //ost << "    " << pin_field[0] << "\t" << pin_field[1] << " : " << tmp_x_offset + block_list[block_num].Width()/2.0 << "\t" << tmp_y_offset + block_list[block_num].Height()/2.0 << "\n";
       /*****to be continues*****/
 
     }
@@ -336,7 +336,7 @@ bool circuit_t::read_pl_file(std::string const &NameOfFile) {
     }
     tmp_name = block_field[0];
     if (block_name_map.find(tmp_name) == block_name_map.end()) {
-      std::cout << "Warning: Cannot find block with name: " << tmp_name << "\n";
+      std::cout << "Warning: Cannot find block with Name: " << tmp_name << "\n";
       std::cout << "Ignoring line:\n";
       std::cout << "\t" << line << "\n";
       continue;

@@ -64,7 +64,7 @@ bool placer_al_t::set_input_circuit(circuit_t *circuit) {
     net_al_t net_al;
     net_al.retrieve_info_from_database(net);
     for (auto &&pin: net.pin_list) {
-      int block_num = circuit->block_name_map.find(pin.get_block()->name())->second;
+      int block_num = circuit->block_name_map.find(pin.get_block()->Name())->second;
       block_al_t *block_al_ptr = &block_list[block_num];
       pin_t pin_al(pin.x_offset(), pin.y_offset(), block_al_ptr);
       net_al.pin_list.push_back(pin_al);
@@ -125,9 +125,9 @@ void placer_al_t::cg_init() {
   for (auto &&net: net_list) {
     if (net.p()<=1) continue;
     for (size_t j=0; j<net.pin_list.size(); j++) {
-      tempnodenum0 = net.pin_list[j].get_block()->num();
+      tempnodenum0 = net.pin_list[j].get_block()->Num();
       for (size_t k=j+1; k<net.pin_list.size(); k++) {
-        tempnodenum1 = net.pin_list[k].get_block()->num();
+        tempnodenum1 = net.pin_list[k].get_block()->Num();
         if (tempnodenum0 == tempnodenum1) continue;
         if ((block_list[tempnodenum0].is_movable())&&(block_list[tempnodenum1].is_movable())) {
           // when both nodes are movable and are not the same, increase the row length by 1
@@ -161,10 +161,10 @@ void placer_al_t::build_problem_clique_x() {
     if (net.p() <= 1) continue;
     invp = net.inv_p();
     for (size_t j=0; j<net.pin_list.size(); j++) {
-      tempnodenum0 = net.pin_list[j].get_block()->num();
+      tempnodenum0 = net.pin_list[j].get_block()->Num();
       temppinlocx0 = block_list[tempnodenum0].dllx() + net.pin_list[j].x_offset();
       for (size_t k=j+1; k<net.pin_list.size(); k++) {
-        tempnodenum1 = net.pin_list[k].get_block()->num();
+        tempnodenum1 = net.pin_list[k].get_block()->Num();
         temppinlocx1 = block_list[tempnodenum1].dllx() + net.pin_list[k].x_offset();
         if (tempnodenum0 == tempnodenum1) continue;
         if ((block_list[tempnodenum0].is_movable() == 0)&&(block_list[tempnodenum1].is_movable() == 0)) {
@@ -222,10 +222,10 @@ void placer_al_t::build_problem_clique_y() {
     if (net.p() <= 1) continue;
     invp = net.inv_p();
     for (size_t j=0; j<net.pin_list.size(); j++) {
-      tempnodenum0 = net.pin_list[j].get_block()->num();
+      tempnodenum0 = net.pin_list[j].get_block()->Num();
       temppinlocy0 = block_list[tempnodenum0].dlly() + net.pin_list[j].y_offset();
       for (size_t k=j+1; k<net.pin_list.size(); k++) {
-        tempnodenum1 = net.pin_list[k].get_block()->num();
+        tempnodenum1 = net.pin_list[k].get_block()->Num();
         temppinlocy1 = block_list[tempnodenum1].dlly() + net.pin_list[k].y_offset();
         if (tempnodenum0 == tempnodenum1) continue;
         if ((block_list[tempnodenum0].is_movable() == 0)&&(block_list[tempnodenum1].is_movable() == 0)) {
@@ -308,13 +308,13 @@ void placer_al_t::build_problem_b2b_x() {
     max_pindex_x = net.max_pin_index_x();
     min_pindex_x = net.min_pin_index_x();
     for (size_t i=0; i<net.pin_list.size(); i++) {
-      temp_node_num0 = net.pin_list[i].get_block()->num();
+      temp_node_num0 = net.pin_list[i].get_block()->Num();
       temp_pin_loc_x0 = block_list[temp_node_num0].dllx() + net.pin_list[i].x_offset();
       for (size_t k=i+1; k<net.pin_list.size(); k++) {
         if ((i!=max_pindex_x)&&(i!=min_pindex_x)) {
           if ((k!=max_pindex_x)&&(k!=min_pindex_x)) continue;
         }
-        temp_node_num1 = net.pin_list[k].get_block()->num();
+        temp_node_num1 = net.pin_list[k].get_block()->Num();
         if (temp_node_num0 == temp_node_num1) continue;
         temp_pin_loc_x1 = block_list[temp_node_num1].dllx() + net.pin_list[k].x_offset();
         weight_x = inv_p/(std::fabs(temp_pin_loc_x0 - temp_pin_loc_x1) + width_epsilon());
@@ -378,13 +378,13 @@ void placer_al_t::build_problem_b2b_x_nooffset() {
     maxpindex_x = net.max_pin_index_x();
     minpindex_x = net.min_pin_index_x();
     for (size_t i=0; i<net.pin_list.size(); i++) {
-      tempnodenum0 = net.pin_list[i].get_block()->num();
+      tempnodenum0 = net.pin_list[i].get_block()->Num();
       temppinlocx0 = block_list[tempnodenum0].dllx();
       for (size_t k=i+1; k<net.pin_list.size(); k++) {
         if ((i!=maxpindex_x)&&(i!=minpindex_x)) {
           if ((k!=maxpindex_x)&&(k!=minpindex_x)) continue;
         }
-        tempnodenum1 = net.pin_list[k].get_block()->num();
+        tempnodenum1 = net.pin_list[k].get_block()->Num();
         if (tempnodenum0 == tempnodenum1) continue;
         temppinlocx1 = block_list[tempnodenum1].dllx();
         weightx = invp/((double)fabs(temppinlocx0 - temppinlocx1) + width_epsilon());
@@ -471,13 +471,13 @@ void placer_al_t::build_problem_b2b_y() {
     max_pindex_y = net.max_pin_index_y();
     min_pindex_y = net.min_pin_index_y();
     for (size_t i=0; i<net.pin_list.size(); i++) {
-      temp_node_num0 = net.pin_list[i].get_block()->num();
+      temp_node_num0 = net.pin_list[i].get_block()->Num();
       temp_pin_loc_y0 = block_list[temp_node_num0].dlly() + net.pin_list[i].y_offset();
       for (size_t k=i+1; k<net.pin_list.size(); k++) {
         if ((i!=max_pindex_y)&&(i!=min_pindex_y)) {
           if ((k!=max_pindex_y)&&(k!=min_pindex_y)) continue;
         }
-        temp_node_num1 = net.pin_list[k].get_block()->num();
+        temp_node_num1 = net.pin_list[k].get_block()->Num();
         if (temp_node_num0 == temp_node_num1) continue;
         temp_pin_loc_y1 = block_list[temp_node_num1].dlly() + net.pin_list[i].y_offset();
         weighty = inv_p/((double)fabs(temp_pin_loc_y0 - temp_pin_loc_y1) + height_epsilon());
@@ -540,13 +540,13 @@ void placer_al_t::build_problem_b2b_y_nooffset() {
     maxpindex_y = net.max_pin_index_y();
     minpindex_y = net.min_pin_index_y();
     for (size_t i=0; i<net.pin_list.size(); i++) {
-      tempnodenum0 = net.pin_list[i].get_block()->num();
+      tempnodenum0 = net.pin_list[i].get_block()->Num();
       temppinlocy0 = block_list[tempnodenum0].dlly();
       for (size_t k=i+1; k<net.pin_list.size(); k++) {
         if ((i!=maxpindex_y)&&(i!=minpindex_y)) {
           if ((k!=maxpindex_y)&&(k!=minpindex_y)) continue;
         }
-        tempnodenum1 = net.pin_list[k].get_block()->num();
+        tempnodenum1 = net.pin_list[k].get_block()->Num();
         if (tempnodenum0 == tempnodenum1) continue;
         temppinlocy1 = block_list[tempnodenum1].dlly();
         weighty = invp/((double)fabs(temppinlocy0 - temppinlocy1) + height_epsilon());
@@ -713,7 +713,7 @@ void placer_al_t::cg_close() {
 void placer_al_t::add_boundary_list() {
   int max_width=0, max_height=0;
   for (auto &&block: block_list) {
-    // find maximum width and maximum height
+    // find maximum Width and maximum Height
     if (!block.is_movable()) {
       continue;
     }
@@ -782,7 +782,7 @@ void placer_al_t::initialize_bin_list(){
   // initialize the bin_list, build up the bin_list matrix
   int max_width=0, max_height=0;
   for (auto &&block: block_list) {
-    // find maximum width and maximum height
+    // find maximum Width and maximum Height
     if (!block.is_movable()) {
       continue;
     }

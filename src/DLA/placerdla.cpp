@@ -43,7 +43,7 @@ bool placer_dla_t::set_input_circuit(circuit_t *circuit) {
     net_dla_t net_dla;
     net_dla.retrieve_info_from_database(net);
     for (auto &&pin: net.pin_list) {
-      int block_num = circuit->block_name_map.find(pin.get_block()->name())->second;
+      int block_num = circuit->block_name_map.find(pin.get_block()->Name())->second;
       block_dla_t *block_dla_ptr = &block_list[block_num];
       pin_t pin_dla(pin.x_offset(), pin.y_offset(), block_dla_ptr);
       net_dla.pin_list.push_back(pin_dla);
@@ -56,7 +56,7 @@ bool placer_dla_t::set_input_circuit(circuit_t *circuit) {
 void placer_dla_t::add_boundary_list() {
   int max_width=0, max_height=0;
   for (auto &&block: block_list) {
-    // find maximum width and maximum height
+    // find maximum Width and maximum Height
     if (!block.is_movable()) {
       continue;
     }
@@ -125,7 +125,7 @@ void placer_dla_t::initialize_bin_list(){
   // initialize the bin_list, build up the bin_list matrix
   int max_width=0, max_height=0;
   for (auto &&block: block_list) {
-    // find maximum width and maximum height
+    // find maximum Width and maximum Height
     if (!block.is_movable()) {
       continue;
     }
@@ -194,7 +194,7 @@ void placer_dla_t::update_neighbor_list() {
   }
   for (auto &&net: net_list) {
     std::cout << "Net " << net.name() << " connects cells: ";
-    for (auto &&pin: net.pin_list) {
+    for (auto &&pin: net.pin_list_) {
       std::cout << "\t" <<  pin.get_block()->name();
     }
     std::cout << "\n";
@@ -202,10 +202,10 @@ void placer_dla_t::update_neighbor_list() {
   for (auto &&block: block_list) {
     double total_wire_weight = 0;
     for (auto &&neb: block.neb_list) {
-      std::cout << "Block " << block.name() << " is connected to " << neb.block->name() << " with wire numbers " << neb.total_wire_weight << "\n";
+      std::cout << "Block " << block.name() << " is connected to " << neb.block->Name() << " with wire numbers " << neb.total_wire_weight << "\n";
       total_wire_weight += neb.total_wire_weight;
     }
-    std::cout << block.num() << " is connected to " << total_wire_weight << " wire(s)\n";
+    std::cout << block.Num() << " is connected to " << total_wire_weight << " wire(s)\n";
   }
    */
 }

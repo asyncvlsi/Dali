@@ -8,7 +8,7 @@
 #include <vector>
 #include <map>
 #include "block.hpp"
-#include "pin.hpp"
+#include "pin.h"
 #include "net.hpp"
 
 class circuit_t {

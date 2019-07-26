@@ -7,12 +7,12 @@
 
 #include <string>
 #include <vector>
-#include "pin.hpp"
+#include "pin.h"
 
 class net_t {
 protected:
   /* essential data entries */
-  std::string _name; // name
+  std::string _name; // Name
   double _weight; // weight of this net
 
   /* the following entries are derived data */

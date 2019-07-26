@@ -11,7 +11,7 @@
 #include "circuit/circuit.hpp"
 #include "circuit/block.hpp"
 #include "circuit/net.hpp"
-#include "circuit/pin.hpp"
+#include "circuit/pin.h"
 #include "placer/placerbase.hpp"
 #include "circuit/bin.hpp"
 #include "blockdla.hpp"

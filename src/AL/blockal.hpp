@@ -46,8 +46,8 @@ public:
 
 
   friend std::ostream& operator<<(std::ostream& os, const block_al_t &block) {
-    os << "block name: " << block._name << "\n";
-    os << "width and height: " << block._w << " " << block._h << "\n";
+    os << "block Name: " << block._name << "\n";
+    os << "Width and Height: " << block._w << " " << block._h << "\n";
     os << "lower left corner: " << block._dllx << " " << block._dlly << "\n";
     os << "movability: " << block._movable << "\n";
     os << "orientation: " << block._orientation << "\n";

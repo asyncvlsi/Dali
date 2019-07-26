@@ -4,7 +4,7 @@
 
 #include "block.hpp"
 
-block_t::block_t(block_type_t *type, std::string name, int llx, int lly, bool movable, orient_t orient) : _type(
+block_t::block_t(BlockType *type, std::string name, int llx, int lly, bool movable, orient_t orient) : _type(
     type), _name(std::move(name)), _llx(llx), _lly(lly), _movable(movable), _orient(orient) {
   _num = 0;
 }
@@ -18,12 +18,12 @@ std::string block_t::name() const{
 }
 
 int block_t::width() const{
-  return _type->width();
+  return _type->Width();
 }
 
 
 int block_t::height() const{
-  return _type->height();
+  return _type->Height();
 }
 
 void block_t::set_llx(int lower_left_x) {
@@ -121,7 +121,7 @@ size_t block_t::num() const{
 }
 
 std::string block_t::type_name() {
-  return _type->name();
+  return _type->Name();
 }
 
 std::string block_t::place_status() {

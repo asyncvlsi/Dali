@@ -119,7 +119,7 @@ int placer_t::top() {
 bool placer_t::update_aspect_ratio() {
   if ((_right - _left == 0) || (_top - _bottom == 0)) {
     std::cout << "Error!\n";
-    std::cout << "Zero height or width of placement region!\n";
+    std::cout << "Zero Height or Width of placement region!\n";
     report_boundaries();
     return false;
   }

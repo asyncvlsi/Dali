@@ -13,7 +13,7 @@
 class placer_t {
 protected:
   /* essential data entries */
-  double _aspect_ratio; // placement region height/width
+  double _aspect_ratio; // placement region Height/Width
   double _filling_rate;
 
   /* the following entries are derived data
