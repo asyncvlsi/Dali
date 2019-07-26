@@ -8,9 +8,9 @@
 #include <vector>
 #include <queue>
 #include <utility>
-#include "circuit/circuit.hpp"
+#include "circuit/circuit.h"
 #include "circuit/block.hpp"
-#include "circuit/net.hpp"
+#include "circuit/net.h"
 #include "circuit/pin.h"
 #include "placer/placerbase.hpp"
 #include "circuit/bin.hpp"

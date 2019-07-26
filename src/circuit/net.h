@@ -23,7 +23,7 @@ public:
   explicit net_t(std::string &name_arg, double weight_arg = 1);
 
   /* essential data entries */
-  std::vector<pin_t> pin_list;
+  std::vector<Pin> pin_list;
   // the list of pins in the net. It is public because of easy accessibility.
 
   friend std::ostream& operator<<(std::ostream& os, const net_t &net) {
@@ -40,9 +40,11 @@ public:
   size_t num();
   void set_weight(double weight_arg);
   double weight();
-  bool add_pin(pin_t &pin);
+  bool add_pin(Pin &pin);
   double inv_p();
   int p();
+
+  bool NewPin(int block_index, int pin_index);
 
   int hpwl();
 };

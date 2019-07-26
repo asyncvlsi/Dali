@@ -36,7 +36,9 @@ public:
   void SetWidth(int width);
   void SetHeight(int height);
 
-  void AddPin(std::string &pin_name, double x_offset, double y_offset);
+  bool PinExist(std::string &pin_name);
+  int PinIndex(std::string &pin_name);
+  Pin *NewPin(std::string &pin_name);
 
   friend std::ostream& operator<<(std::ostream& os, const BlockType &block_type) {
     os << "block type Name: " << block_type.name_ << "\n";

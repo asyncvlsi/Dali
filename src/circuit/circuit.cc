@@ -6,7 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include "circuit.hpp"
+#include "circuit.h"
 
 circuit_t::circuit_t() {
   HPWL = 0;

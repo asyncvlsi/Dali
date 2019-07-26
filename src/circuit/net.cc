@@ -2,7 +2,7 @@
 // Created by Yihang Yang on 2019-05-23.
 //
 
-#include "net.hpp"
+#include "net.h"
 
 net_t::net_t() {
   _name = "";

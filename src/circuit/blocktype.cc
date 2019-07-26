@@ -41,9 +41,10 @@ void BlockType::SetHeight(int height) {
   height_ = height;
 }
 
-void BlockType::AddPin(std::string &pin_name, double x_offset, double y_offset) {
+Pin *BlockType::NewPin(std::string &pin_name) {
   bool pin_not_exist = pin_name_num_map.find(pin_name) == pin_name_num_map.end();
   Assert(pin_not_exist, "The following pin exists in pin_list: " + pin_name);
   pin_name_num_map.insert(std::pair<std::string, size_t>(pin_name, pin_list.size()));
-  pin_list.emplace_back(x_offset, y_offset);
+  pin_list.emplace_back(pin_name);
+  return &pin_list.back();
 }
