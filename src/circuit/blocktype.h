@@ -14,6 +14,7 @@ class BlockType {
 private:
   /****essential data entries****/
   std::string name_;
+  std::map<std::string,int>::iterator name_num_pair_ptr_;
   int width_, height_;
 
   /****cached data entries****/

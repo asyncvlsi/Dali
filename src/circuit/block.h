@@ -22,6 +22,7 @@ protected:
   /* essential data entries */
   BlockType *_type;
   std::string _name; // Name
+  std::map<std::string,int>::iterator name_num_pair_ptr_;
   int _llx, _lly; // lower left corner
   bool _movable; // movable
   enum orient_t _orient; // currently not used

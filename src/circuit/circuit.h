@@ -15,6 +15,7 @@ class Circuit {
 protected:
   std::vector<BlockType> block_type_list;
   std::map<std::string, size_t> block_type_name_map;
+  std::map<std::pair<int, int>, int> pin_name_map;
   std::vector<Block > block_list;
   std::map<std::string, size_t> block_name_map;
   std::vector<Net > net_list;

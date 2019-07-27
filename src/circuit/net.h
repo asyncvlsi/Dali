@@ -13,6 +13,7 @@
 class Net {
 protected:
   std::string name_;
+  std::map<std::string,int>::iterator name_num_pair_ptr_;
   int num_;
   double weight_;
 public:

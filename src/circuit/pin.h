@@ -8,6 +8,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <map>
 #include "common/misc.h"
 #include "rect.h"
 
@@ -16,6 +17,7 @@ class Pin {
   /*** essential data entries ****/
   std::string name_; // the Name of this pin, for example "in", "out", "a", "b", etc.
   std::vector<Rect> rect_list_;
+  std::map<std::pair<int, int>, int>::iterator pin_name_pair_ptr_;
 
   /**** derived data ****/
   double x_offset_;
