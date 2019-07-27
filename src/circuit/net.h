@@ -7,27 +7,26 @@
 
 #include <string>
 #include <vector>
-#include "pin.h"
+#include "block.h"
+
+struct BlockPinPair {
+  Block *block;
+  int pin;
+  BlockPinPair(Block *block_ptr, int pin_num): block(block_ptr), pin(pin_num) {}
+  int &operator[] (int);
+};
 
 class Net {
 protected:
-  /* essential data entries */
-  std::string _name; // Name
-  double _weight; // weight of this net
-
-  /* the following entries are derived data */
-  size_t _num;
-  /* net_num is the index of this block in the vector net_list, this data must be updated after push a new block into net_list */
+  std::string name_;
+  int num_;
+  double weight_;
 public:
-  Net();
-  explicit Net(std::string &name_arg, double weight_arg = 1);
-
-  /* essential data entries */
-  std::vector<Pin> pin_list;
-  // the list of pins in the net. It is public because of easy accessibility.
+  explicit Net(std::string &name_arg, int num, double weight_arg = 1);
+  std::vector<BlockPinPair> pin_list;
 
   friend std::ostream& operator<<(std::ostream& os, const Net &net) {
-    os << net._name <<"\n";
+    os << net.name_ << "\n";
     for (auto &&pin: net.pin_list) {
       os << "\t" << pin << "\n";
     }

@@ -4,13 +4,7 @@
 
 #include "net.h"
 
-Net::Net() {
-  _name = "";
-  _weight = 1;
-  _num = 0;
-}
-
-Net::Net(std::string &name_arg, double weight_arg) : _name(name_arg), _weight(weight_arg) {}
+Net::Net(std::string &name, int num, double weight) : name_(name), num_(num), weight_(weight) {}
 
 void Net::set_name(const std::string &name_arg) {
   _name = name_arg;
