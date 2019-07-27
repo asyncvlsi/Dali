@@ -9,7 +9,7 @@
 #include <queue>
 #include <utility>
 #include "circuit/circuit.h"
-#include "circuit/block.hpp"
+#include "circuit/block.h"
 #include "circuit/net.h"
 #include "circuit/pin.h"
 #include "placer/placerbase.hpp"

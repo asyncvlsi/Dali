@@ -6,7 +6,7 @@
 #define HPCC_BLOCKAL_HPP
 
 #include <cmath>
-#include "circuit/block.hpp"
+#include "circuit/block.h"
 #include "circuit/bin.hpp"
 
 class block_al_t:public block_t {

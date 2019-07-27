@@ -9,7 +9,7 @@
 #include <vector>
 #include "pin.h"
 
-class net_t {
+class Net {
 protected:
   /* essential data entries */
   std::string _name; // Name
@@ -19,14 +19,14 @@ protected:
   size_t _num;
   /* net_num is the index of this block in the vector net_list, this data must be updated after push a new block into net_list */
 public:
-  net_t();
-  explicit net_t(std::string &name_arg, double weight_arg = 1);
+  Net();
+  explicit Net(std::string &name_arg, double weight_arg = 1);
 
   /* essential data entries */
   std::vector<Pin> pin_list;
   // the list of pins in the net. It is public because of easy accessibility.
 
-  friend std::ostream& operator<<(std::ostream& os, const net_t &net) {
+  friend std::ostream& operator<<(std::ostream& os, const Net &net) {
     os << net._name <<"\n";
     for (auto &&pin: net.pin_list) {
       os << "\t" << pin << "\n";

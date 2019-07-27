@@ -8,44 +8,97 @@
 #include <string>
 #include "circuit.h"
 
-circuit_t::circuit_t() {
-  HPWL = 0;
-  _tot_movable_num = 0;
-  _ave_width = 0;
-  _ave_height = 0;
-  _tot_block_area = 0;
+Circuit::Circuit() {
+  tot_movable_num_ = 0;
+  ave_width_ = 0;
+  ave_height_ = 0;
+  tot_block_area_ = 0;
 }
 
-/*
- * ... array somewhere with some size ...
- * block_t **allblocks;
- * int num_blocks = 0;
- * int max_blocks = 0;
- *
- * if (max_blocks == num_blocks) {
- *      if (max_blocks == 0) {
- *          allblocks = (block_t **) malloc (sizeof (block_t *)*1024);
- *          // check for NULL result, error
- *          max_blocks = 1024;
- *      }
- *      else {
- *            max_blocks = max_blocks + 1024;
- *           allblocks = (block_t **) realloc (sizeof (block_t *)*max_blocks);
- *           // check for null result
- *      }
- *  }
- *  allblocks[num_blocks] = new block_t (w, h, llx, lly, movable);
- *  num_blocks++;
- *  allblocks[num_blocks-1]->set_num (num_blocks-1);
- *  return allblocks[num_blocks-1];
- *
- */
+Circuit::Circuit(int tot_block_type_num, int tot_block_num, int tot_net_num) {
+  block_type_list.reserve(tot_block_type_num);
+  block_list.reserve(tot_block_num);
+  net_list.reserve(tot_net_num);
+}
 
+void Circuit::SetBoundry(int left, int right, int bottom, int top) {
+  Assert(right > left, "right boundary is not larger than left boundary?");
+  Assert(top > bottom, "top boundary is not larger than bottom boundary?");
+  def_left = left;
+  def_right = right;
+  def_bottom = bottom;
+  def_top = top;
+}
 
-bool circuit_t::add_new_block(std::string &blockName, int w, int h, int llx, int lly, bool movable, std::string typeName) {
+bool Circuit::BlockTypeExist(std::string &block_type_name) {
+  return !(block_type_name_map.find(block_type_name) == block_type_name_map.end());
+}
+
+int Circuit::BlockTypeIndex(std::string &block_type_name) {
+  Assert(BlockTypeExist(block_type_name), "BlockType not exist, cannot find its index: " + block_type_name);
+  return block_type_name_map.find(block_type_name)->second;
+}
+
+void Circuit::AddToBlockTypeMap(std::string &block_type_name) {
+  int map_size = block_type_name_map.size();
+  block_type_name_map.insert(std::pair<std::string, int>(block_type_name, map_size));
+}
+
+BlockType *Circuit::NewBlockType(std::string &block_type_name, int width, int height) {
+  Assert(!BlockTypeExist(block_type_name), "BlockType exist, cannot create this block type again: " + block_type_name);
+  int list_size = block_type_list.size();
+  block_type_list.resize(list_size + 1);
+  AddToBlockTypeMap(block_type_name);
+  return &block_type_list.back();
+}
+
+bool Circuit::BlockInstExist(std::string &block_name) {
+  return !(block_name_map.find(block_name) == block_name_map.end());
+}
+
+int Circuit::BlockInstIndex(std::string &block_name) {
+  Assert(BlockInstExist(block_name), "Block name does not exist, cannot find its index: " + block_name);
+  return block_name_map.find(block_name)->second;
+}
+
+void Circuit::AddToBlockMap(std::string &block_name) {
+  int map_size = block_name_map.size();
+  block_name_map.insert(std::pair<std::string, int>(block_name, map_size));
+}
+
+void Circuit::NewBlockInst(std::string &block_name, std::string &block_type_name, int llx, int lly, bool movable, orient_t orient) {
+  Assert(!BlockInstExist(block_name), "Block exists, cannot create this block again: " + block_name);
+  int block_type_index = BlockTypeIndex(block_type_name);
+  BlockType *block_type = &block_type_list[block_type_index];
+  block_list.emplace_back(block_name, block_type, llx, lly, movable, orient);
+  AddToBlockMap(block_name);
+}
+
+bool Circuit::NetExist(std::string &net_name) {
+  return !(net_name_map.find(net_name) == net_name_map.end());
+}
+
+int Circuit::NetIndex(std::string &net_name) {
+  Assert(NetExist(net_name), "Net does not exist, cannot find its index: " + net_name);
+  return net_name_map.find(net_name)->second;
+}
+
+void Circuit::AddToNetMap(std::string &net_name) {
+  int map_size = net_name_map.size();
+  net_name_map.insert(std::pair<std::string, int>(net_name, map_size));
+}
+
+Net *Circuit::NewNet(std::string &net_name, double weight) {
+  Assert(!NetExist(net_name), "Net exists, cannot create this net again: " + net_name);
+  net_list.emplace_back(net_name, weight);
+  AddToNetMap(net_name);
+  return &net_list.back();
+}
+
+bool Circuit::add_new_block(std::string &blockName, int w, int h, int llx, int lly, bool movable, std::string typeName) {
   if (block_name_map.find(blockName) == block_name_map.end()) {
     size_t block_list_size = block_list.size();
-    block_t tmp_block(blockName, w, h, llx, lly, movable, std::move(typeName));
+    Block tmp_block(blockName, w, h, llx, lly, movable, std::move(typeName));
     tmp_block.set_num(block_list_size);
     block_name_map.insert(std::pair<std::string, int>(tmp_block.name(), tmp_block.num()));
     block_list.push_back(tmp_block);
@@ -57,9 +110,9 @@ bool circuit_t::add_new_block(std::string &blockName, int w, int h, int llx, int
   }
 }
 
-bool circuit_t::create_blank_net(std::string &netName, double weight) {
+bool Circuit::create_blank_net(std::string &netName, double weight) {
   if (net_name_map.find(netName) == net_name_map.end()) {
-    net_t tmp_net(netName, weight);
+    Net tmp_net(netName, weight);
     size_t net_list_size = net_list.size();
     tmp_net.set_num(net_list_size);
     net_name_map.insert(std::pair<std::string, int>(tmp_net.name(), tmp_net.num()));
@@ -72,7 +125,7 @@ bool circuit_t::create_blank_net(std::string &netName, double weight) {
   }
 }
 
-bool circuit_t::add_pin_to_net(std::string &netName, std::string &blockName, int xOffset, int yOffset, std::string pinName) {
+bool Circuit::add_pin_to_net(std::string &netName, std::string &blockName, int xOffset, int yOffset, std::string pinName) {
   if (net_name_map.find(netName) == net_name_map.end()) {
     std::cout << "Error!\n";
     std::cout << "No net in net_list has Name: " << netName << "\n";
@@ -93,7 +146,7 @@ bool circuit_t::add_pin_to_net(std::string &netName, std::string &blockName, int
 }
 
 
-void circuit_t::parse_line(std::string &line, std::vector<std::string> &field_list) {
+void Circuit::parse_line(std::string &line, std::vector<std::string> &field_list) {
   std::vector<char> delimiter_list;
   delimiter_list.push_back(' ');
   delimiter_list.push_back(':');
@@ -127,7 +180,7 @@ void circuit_t::parse_line(std::string &line, std::vector<std::string> &field_li
   }
 }
 
-bool circuit_t::read_nodes_file(std::string const &NameOfFile) {
+bool Circuit::read_nodes_file(std::string const &NameOfFile) {
   int tmp_w, tmp_h; // Width and Height
   bool tmp_movable = true;
   std::string tmp_name; // Name
@@ -185,19 +238,19 @@ bool circuit_t::read_nodes_file(std::string const &NameOfFile) {
   return true;
 }
 
-void circuit_t::report_block_list() {
+void Circuit::report_block_list() {
   for (auto &&block: block_list) {
     std::cout << block << "\n";
   }
 }
 
-void circuit_t::report_block_map() {
+void Circuit::report_block_map() {
   for (auto &&name_num_pair: block_name_map) {
     std::cout << name_num_pair.first << " " << name_num_pair.second << "\n";
   }
 }
 
-bool circuit_t::read_nets_file(std::string const &NameOfFile) {
+bool Circuit::read_nets_file(std::string const &NameOfFile) {
   std::ifstream ist(NameOfFile.c_str());
   if (ist.is_open()==0) {
     std::cout << "Cannot open input file " << NameOfFile << "\n";
@@ -298,20 +351,20 @@ bool circuit_t::read_nets_file(std::string const &NameOfFile) {
   return true;
 }
 
-void circuit_t::report_net_list() {
+void Circuit::report_net_list() {
   for (auto &&net: net_list) {
     std::cout << net << "\n";
   }
 }
 
-void circuit_t::report_net_map() {
+void Circuit::report_net_map() {
   for (auto &&name_num_pair: net_name_map) {
     std::cout << name_num_pair.first << " " << name_num_pair.second << "\n";
   }
 }
 
-bool circuit_t::read_pl_file(std::string const &NameOfFile) {
-  block_t *block;
+bool Circuit::read_pl_file(std::string const &NameOfFile) {
+  Block *block;
   int tmp_block_index;
   int tmp_x, tmp_y;
   std::string line, tmp_name;
@@ -370,87 +423,87 @@ bool circuit_t::read_pl_file(std::string const &NameOfFile) {
   return true;
 }
 
-double circuit_t::ave_width_real_time() {
-  _ave_width = 0;
+double Circuit::ave_width_real_time() {
+  ave_width_ = 0;
   for (auto &&block: block_list) {
-    _ave_width += block.width();
+    ave_width_ += block.width();
   }
-  _ave_width /= block_list.size();
-  return _ave_width;
+  ave_width_ /= block_list.size();
+  return ave_width_;
 }
 
-double circuit_t::ave_height_real_time() {
-  _ave_height = 0;
+double Circuit::ave_height_real_time() {
+  ave_height_ = 0;
   for (auto &&block: block_list) {
-    _ave_height += block.width();
+    ave_height_ += block.width();
   }
-  _ave_height /= block_list.size();
-  return _ave_height;
+  ave_height_ /= block_list.size();
+  return ave_height_;
 }
 
-int circuit_t::tot_block_area_real_time() {
-  _tot_block_area = 0;
+int Circuit::tot_block_area_real_time() {
+  tot_block_area_ = 0;
   for (auto &&block: block_list) {
-    _tot_block_area += block.area();
+    tot_block_area_ += block.area();
   }
-  return _tot_block_area;
+  return tot_block_area_;
 }
 
-double circuit_t::ave_block_area_real_time() {
+double Circuit::ave_block_area_real_time() {
   return tot_block_area_real_time()/(double)block_list.size();
 }
 
-int circuit_t::tot_movable_num_real_time() {
-  _tot_movable_num = 0;
+int Circuit::tot_movable_num_real_time() {
+  tot_movable_num_ = 0;
   for (auto &&block: block_list) {
     if (block.is_movable()) {
-      _tot_movable_num++;
+      tot_movable_num_++;
     }
   }
-  return _tot_movable_num;
+  return tot_movable_num_;
 }
 
-int circuit_t::tot_unmovable_num_real_time() {
+int Circuit::tot_unmovable_num_real_time() {
   return block_list.size() - tot_movable_num_real_time();
 }
 
-double circuit_t::ave_width() {
-  if (_ave_width < 1e-5) {
+double Circuit::ave_width() {
+  if (ave_width_ < 1e-5) {
     return ave_width_real_time();
   }
-  return _ave_width;
+  return ave_width_;
 }
 
-double circuit_t::ave_height() {
-  if (_ave_height < 1e-5) {
+double Circuit::ave_height() {
+  if (ave_height_ < 1e-5) {
     return ave_height_real_time();
   }
-  return _ave_height;
+  return ave_height_;
 }
 
-int circuit_t::tot_block_area() {
-  if (_tot_block_area == 0) {
+int Circuit::tot_block_area() {
+  if (tot_block_area_ == 0) {
     return tot_block_area_real_time();
   }
-  return _tot_block_area;
+  return tot_block_area_;
 }
 
-double circuit_t::ave_block_area() {
+double Circuit::ave_block_area() {
   return tot_block_area()/(double)block_list.size();
 }
 
-int circuit_t::tot_movable_num() {
-  if (_tot_movable_num == 0) {
+int Circuit::tot_movable_num() {
+  if (tot_movable_num_ == 0) {
     return tot_movable_num_real_time();
   }
-  return _tot_movable_num;
+  return tot_movable_num_;
 }
 
-int circuit_t::tot_unmovable_num() {
-  return block_list.size() - _tot_movable_num;
+int Circuit::tot_unmovable_num() {
+  return block_list.size() - tot_movable_num_;
 }
 
-bool circuit_t::write_nodes_file(std::string const &NameOfFile) {
+bool Circuit::write_nodes_file(std::string const &NameOfFile) {
   std::ofstream ost(NameOfFile.c_str());
   if (!ost.is_open()) {
     std::cout << "Cannot open file " << NameOfFile << "\n";
@@ -464,7 +517,7 @@ bool circuit_t::write_nodes_file(std::string const &NameOfFile) {
   return true;
 }
 
-bool circuit_t::write_nets_file(std::string const &NameOfFile) {
+bool Circuit::write_nets_file(std::string const &NameOfFile) {
   std::ofstream ost(NameOfFile.c_str());
   if (!ost.is_open()) {
     std::cout << "Cannot open file " << NameOfFile << "\n";

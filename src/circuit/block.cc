@@ -2,7 +2,7 @@
 // Created by Yihang Yang on 2019-05-23.
 //
 
-#include "block.hpp"
+#include "block.h"
 
 block_t::block_t(BlockType *type, std::string name, int llx, int lly, bool movable, orient_t orient) : _type(
     type), _name(std::move(name)), _llx(llx), _lly(lly), _movable(movable), _orient(orient) {

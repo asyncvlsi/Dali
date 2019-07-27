@@ -4,39 +4,39 @@
 
 #include "net.h"
 
-net_t::net_t() {
+Net::Net() {
   _name = "";
   _weight = 1;
   _num = 0;
 }
 
-net_t::net_t(std::string &name_arg, double weight_arg) : _name(name_arg), _weight(weight_arg) {}
+Net::Net(std::string &name_arg, double weight_arg) : _name(name_arg), _weight(weight_arg) {}
 
-void net_t::set_name(const std::string &name_arg) {
+void Net::set_name(const std::string &name_arg) {
   _name = name_arg;
 }
 
-std::string net_t::name() {
+std::string Net::name() {
   return _name;
 }
 
-void net_t::set_weight(double weight_arg) {
+void Net::set_weight(double weight_arg) {
   _weight = weight_arg;
 }
 
-void net_t::set_num(size_t number) {
+void Net::set_num(size_t number) {
   _num = number;
 }
 
-size_t net_t::num() {
+size_t Net::num() {
  return _num;
 }
 
-double net_t::weight() {
+double Net::weight() {
   return _weight;
 }
 
-bool net_t::add_pin(pin_t &pin) {
+bool Net::add_pin(pin_t &pin) {
   for (auto &&existing_pin: pin_list) {
     if (existing_pin == pin) {
       std::cout << "Error!\n";
@@ -48,7 +48,7 @@ bool net_t::add_pin(pin_t &pin) {
   return true;
 }
 
-double net_t::inv_p() {
+double Net::inv_p() {
   if (pin_list.size() <= 1) {
     std::cout << "Error!\n";
     std::cout << "Invalid net to calculate 1/(p-1)\n";
@@ -58,11 +58,11 @@ double net_t::inv_p() {
   return 1.0/(pin_list.size() - 1);
 }
 
-int net_t::p() {
+int Net::p() {
   return (int)pin_list.size();
 }
 
-int net_t::hpwl() {
+int Net::hpwl() {
   if (pin_list.empty()) {
     std::cout << "Error!\n";
     std::cout << "net contains no pin\n";
@@ -76,7 +76,7 @@ int net_t::hpwl() {
   for (auto &&pin: pin_list) {
     if (pin.get_block() == nullptr) {
       std::cout << "Error!\n";
-      std::cout << "attribute block_t* _block is nullptr, it should points to the block containing this pin\n";
+      std::cout << "attribute Block* _block is nullptr, it should points to the block containing this pin\n";
       assert(pin.get_block() != nullptr);
     }
     if (max_x < pin.abs_x()) {

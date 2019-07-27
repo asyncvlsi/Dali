@@ -8,7 +8,7 @@
 #include <vector>
 #include <string>
 #include "circuit/bin.hpp"
-#include "circuit/block.hpp"
+#include "circuit/block.h"
 #include "netdla.hpp"
 
 class net_dla_t;

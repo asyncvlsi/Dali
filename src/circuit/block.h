@@ -17,7 +17,7 @@
 
 enum orient_t{N, S, W, E, FN, FS, FW, FE};
 
-class block_t {
+class Block {
 protected:
   /* essential data entries */
   BlockType *_type;
@@ -31,7 +31,7 @@ protected:
   /* block_num is the index of this block in the vector block_list, this data must be updated after push a new block into block_list */
 
 public:
-  block_t(BlockType *type, std::string name, int llx, int lly, bool movable="true", orient_t orient=N);
+  Block(BlockType *type, std::string name, int llx, int lly, bool movable="true", orient_t orient=N);
 
   void set_name(std::string blockName);
   std::string name() const;
@@ -58,7 +58,7 @@ public:
   void set_num(size_t &number);
   size_t num() const;
 
-  friend std::ostream& operator<<(std::ostream& os, const block_t &block) {
+  friend std::ostream& operator<<(std::ostream& os, const Block &block) {
     os << "block Name: " << block._name << "\n";
     os << "Width and Height: " << block.width() << " " << block.height() << "\n";
     os << "lower left corner: " << block._llx << " " << block._lly << "\n";
