@@ -44,7 +44,7 @@ void Circuit::AddToBlockTypeMap(std::string &block_type_name) {
   block_type_name_map.insert(std::pair<std::string, int>(block_type_name, map_size));
 }
 
-BlockType *Circuit::NewBlockType(std::string &block_type_name, int width, int height) {
+BlockType *Circuit::AddBlockType(std::string &block_type_name, int width, int height) {
   Assert(!BlockTypeExist(block_type_name), "BlockType exist, cannot create this block type again: " + block_type_name);
   int list_size = block_type_list.size();
   block_type_list.resize(list_size + 1);
@@ -66,7 +66,7 @@ void Circuit::AddToBlockMap(std::string &block_name) {
   block_name_map.insert(std::pair<std::string, int>(block_name, map_size));
 }
 
-void Circuit::NewBlockInst(std::string &block_name, std::string &block_type_name, int llx, int lly, bool movable, orient_t orient) {
+void Circuit::AddBlockInst(std::string &block_name, std::string &block_type_name, int llx, int lly, bool movable, orient_t orient) {
   Assert(!BlockInstExist(block_name), "Block exists, cannot create this block again: " + block_name);
   int block_type_index = BlockTypeIndex(block_type_name);
   BlockType *block_type = &block_type_list[block_type_index];
@@ -88,7 +88,7 @@ void Circuit::AddToNetMap(std::string &net_name) {
   net_name_map.insert(std::pair<std::string, int>(net_name, map_size));
 }
 
-Net *Circuit::NewNet(std::string &net_name, double weight) {
+Net *Circuit::AddNet(std::string &net_name, double weight) {
   Assert(!NetExist(net_name), "Net exists, cannot create this net again: " + net_name);
   net_list.emplace_back(net_name, weight);
   AddToNetMap(net_name);

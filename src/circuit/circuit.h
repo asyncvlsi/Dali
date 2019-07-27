@@ -45,19 +45,19 @@ public:
   bool BlockTypeExist(std::string &block_type_name);
   int BlockTypeIndex(std::string &block_type_name);
   void AddToBlockTypeMap(std::string &block_type_name);
-  BlockType *NewBlockType(std::string &block_type_name, int width, int height);
+  BlockType *AddBlockType(std::string &block_type_name, int width, int height);
 
   // API to add new Block Instance
   bool BlockInstExist(std::string &block_name);
   int BlockInstIndex(std::string &block_name);
   void AddToBlockMap(std::string &block_name);
-  void NewBlockInst(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, bool movable = true, orient_t orient=N);
+  void AddBlockInst(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, bool movable = true, orient_t orient= N);
 
   // API to add new Net
   bool NetExist(std::string &net_name);
   int NetIndex(std::string &net_name);
   void AddToNetMap(std::string &net_name);
-  Net *NewNet(std::string &net_name, double weight = 1);
+  Net *AddNet(std::string &net_name, double weight = 1);
 
   // old API
   void add_block_type(std::string &blockTypeName, int width, int height);

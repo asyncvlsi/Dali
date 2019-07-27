@@ -8,13 +8,7 @@
 #include <string>
 #include <vector>
 #include "block.h"
-
-struct BlockPinPair {
-  Block *block;
-  int pin;
-  BlockPinPair(Block *block_ptr, int pin_num): block(block_ptr), pin(pin_num) {}
-  int &operator[] (int);
-};
+#include "blockpinpair.h"
 
 class Net {
 protected:
@@ -43,7 +37,7 @@ public:
   double inv_p();
   int p();
 
-  bool NewPin(int block_index, int pin_index);
+  bool AddBlockPinPair(int block_index, int pin_index);
 
   int hpwl();
 };
