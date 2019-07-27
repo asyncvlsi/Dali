@@ -95,53 +95,19 @@ Net *Circuit::NewNet(std::string &net_name, double weight) {
   return &net_list.back();
 }
 
-bool Circuit::add_new_block(std::string &blockName, int w, int h, int llx, int lly, bool movable, std::string typeName) {
-  if (block_name_map.find(blockName) == block_name_map.end()) {
-    size_t block_list_size = block_list.size();
-    Block tmp_block(blockName, w, h, llx, lly, movable, std::move(typeName));
-    tmp_block.set_num(block_list_size);
-    block_name_map.insert(std::pair<std::string, int>(tmp_block.name(), tmp_block.num()));
-    block_list.push_back(tmp_block);
-    return true;
-  } else {
-    std::cout << "Error!\n";
-    std::cout << "Existing block in block_list with Name: " << blockName << "\n";
-    return false;
-  }
+void Circuit::add_block_type(std::string &blockTypeName, int width, int height) {
+
 }
 
-bool Circuit::create_blank_net(std::string &netName, double weight) {
-  if (net_name_map.find(netName) == net_name_map.end()) {
-    Net tmp_net(netName, weight);
-    size_t net_list_size = net_list.size();
-    tmp_net.set_num(net_list_size);
-    net_name_map.insert(std::pair<std::string, int>(tmp_net.name(), tmp_net.num()));
-    net_list.push_back(tmp_net);
-    return true;
-  } else {
-    std::cout << "Error!\n";
-    std::cout << "Existing net in net_list with Name: " << netName << "\n";
-    return false;
-  }
+void Circuit::add_pin_to_block(std::string &blockTypeName, std::string &pinName, int xOffset, int yOffset) {
+
 }
 
-bool Circuit::add_pin_to_net(std::string &netName, std::string &blockName, int xOffset, int yOffset, std::string pinName) {
-  if (net_name_map.find(netName) == net_name_map.end()) {
-    std::cout << "Error!\n";
-    std::cout << "No net in net_list has Name: " << netName << "\n";
-    return false;
-  }
-  if (block_name_map.find(blockName) == block_name_map.end()){
-    std::cout << "Error!\n";
-    std::cout << "No block in block_list has Name: " << blockName << "\n";
-    return false;
-  }
+void Circuit::add_new_block(std::string &blockName, std::string &blockTypeName, int llx, int lly, bool movable) {
 
-  int block_num = block_name_map.find(blockName)->second;
-  pin_t tmp_pin(xOffset, yOffset, &block_list[block_num], std::move(pinName));
+}
 
-  int net_num = net_name_map.find(netName)->second;
-  return net_list[net_num].add_pin(tmp_pin);
+void Circuit::add_pin_to_net(std::string &netName, std::string &blockName, std::string &pinName) {
 
 }
 

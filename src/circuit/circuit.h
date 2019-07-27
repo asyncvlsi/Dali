@@ -33,11 +33,12 @@ protected:
 public:
   Circuit();
   Circuit(int tot_block_type_num, int tot_block_num, int tot_net_num);
+
   int lef_database_microns = 0;
   double m2_pitch = 0;
   int def_distance_microns = 0;
-  int def_left = 0, def_right = 0, def_bottom = 0, def_top = 0;
 
+  int def_left = 0, def_right = 0, def_bottom = 0, def_top = 0;
   void SetBoundry(int left, int right, int bottom, int top);
 
   // API to add new BlockType
@@ -59,10 +60,10 @@ public:
   Net *NewNet(std::string &net_name, double weight = 1);
 
   // old API
-  bool add_block_type(std::string &blockTypeName, int width, int height);
-  bool add_pin_to_block(std::string &blockTypeName, std::string &pinName, int xOffset, int yOffset);
-  bool add_new_block(std::string &blockName, std::string &blockTypeName, int llx = 0, int lly = 0, bool movable = true);
-  bool add_pin_to_net(std::string &netName, std::string &blockName, std::string &pinName);
+  void add_block_type(std::string &blockTypeName, int width, int height);
+  void add_pin_to_block(std::string &blockTypeName, std::string &pinName, int xOffset, int yOffset);
+  void add_new_block(std::string &blockName, std::string &blockTypeName, int llx = 0, int lly = 0, bool movable = true);
+  void add_pin_to_net(std::string &netName, std::string &blockName, std::string &pinName);
 
   // functional member functions
   void parse_line(std::string &line, std::vector<std::string> &field_list);
