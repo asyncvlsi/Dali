@@ -57,7 +57,7 @@ bool Circuit::BlockInstExist(std::string &block_name) {
 }
 
 int Circuit::BlockInstIndex(std::string &block_name) {
-  Assert(BlockInstExist(block_name), "Block name does not exist, cannot find its index: " + block_name);
+  Assert(BlockInstExist(block_name), "Block Name does not exist, cannot find its index: " + block_name);
   return block_name_map.find(block_name)->second;
 }
 
@@ -66,7 +66,7 @@ void Circuit::AddToBlockMap(std::string &block_name) {
   block_name_map.insert(std::pair<std::string, int>(block_name, map_size));
 }
 
-void Circuit::AddBlockInst(std::string &block_name, std::string &block_type_name, int llx, int lly, bool movable, orient_t orient) {
+void Circuit::AddBlockInst(std::string &block_name, std::string &block_type_name, int llx, int lly, bool movable, BlockOrient orient) {
   Assert(!BlockInstExist(block_name), "Block exists, cannot create this block again: " + block_name);
   int block_type_index = BlockTypeIndex(block_type_name);
   BlockType *block_type = &block_type_list[block_type_index];
@@ -364,7 +364,7 @@ bool Circuit::read_pl_file(std::string const &NameOfFile) {
     block = &block_list[tmp_block_index];
     try {
       tmp_x = std::stoi(block_field[1]);
-      block->set_llx(tmp_x);
+      block->SetLLX(tmp_x);
     } catch (...) {
       std::cout << "Error!\n";
       std::cout << "Invalid stoi conversion:" << block_field[1] << "\n";
@@ -373,16 +373,16 @@ bool Circuit::read_pl_file(std::string const &NameOfFile) {
     }
     try {
       tmp_y = std::stoi(block_field[2]);
-      block->set_lly(tmp_y);
+      block->SetLLY(tmp_y);
     } catch (...) {
       std::cout << "Error!\n";
       std::cout << "Invalid stoi conversion: " << block_field[2] << "\n";
       std::cout << line << "\n";
       return false;
     }
-    block->set_orientation(block_field[3]);
+    block->SetOrient(block_field[3]);
     if (line.find("FIXED") != std::string::npos) {
-      block->set_movable(false);
+      block->SetMovable(false);
     }
   }
   ist.close();
@@ -392,7 +392,7 @@ bool Circuit::read_pl_file(std::string const &NameOfFile) {
 double Circuit::ave_width_real_time() {
   ave_width_ = 0;
   for (auto &&block: block_list) {
-    ave_width_ += block.width();
+    ave_width_ += block.Width();
   }
   ave_width_ /= block_list.size();
   return ave_width_;
@@ -401,7 +401,7 @@ double Circuit::ave_width_real_time() {
 double Circuit::ave_height_real_time() {
   ave_height_ = 0;
   for (auto &&block: block_list) {
-    ave_height_ += block.width();
+    ave_height_ += block.Width();
   }
   ave_height_ /= block_list.size();
   return ave_height_;
@@ -410,7 +410,7 @@ double Circuit::ave_height_real_time() {
 int Circuit::tot_block_area_real_time() {
   tot_block_area_ = 0;
   for (auto &&block: block_list) {
-    tot_block_area_ += block.area();
+    tot_block_area_ += block.Area();
   }
   return tot_block_area_;
 }
@@ -422,7 +422,7 @@ double Circuit::ave_block_area_real_time() {
 int Circuit::tot_movable_num_real_time() {
   tot_movable_num_ = 0;
   for (auto &&block: block_list) {
-    if (block.is_movable()) {
+    if (block.IsMovable()) {
       tot_movable_num_++;
     }
   }
@@ -477,7 +477,7 @@ bool Circuit::write_nodes_file(std::string const &NameOfFile) {
   }
 
   for (auto &&block: block_list) {
-    ost << "\t" << block.name() << "\t" << block.width() << "\t" << block.height() << "\n";
+    ost << "\t" << block.Name() << "\t" << block.Width() << "\t" << block.Height() << "\n";
   }
 
   return true;

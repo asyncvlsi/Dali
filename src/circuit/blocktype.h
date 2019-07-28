@@ -43,7 +43,7 @@ public:
 
   friend std::ostream& operator<<(std::ostream& os, const BlockType &block_type) {
     os << "block type Name: " << block_type.name_ << "\n";
-    os << "width and height: " << block_type.width_ << " " << block_type.height_ << "\n";
+    os << "Width and Height: " << block_type.width_ << " " << block_type.height_ << "\n";
     os << "assigned primary key: " << block_type.num_ << "\n";
     os << "pin list:\n";
     for( auto &&it: block_type.pin_name_num_map) {

@@ -4,99 +4,96 @@
 
 #include "block.h"
 
-block_t::block_t(BlockType *type, std::string name, int llx, int lly, bool movable, orient_t orient) : _type(
-    type), _name(std::move(name)), _llx(llx), _lly(lly), _movable(movable), _orient(orient) {
-  _num = 0;
+Block::Block(BlockType *type, STR_INT_IT name_num_pair_ptr, int llx, int lly, bool movable, BlockOrient orient) : type_(
+    type), name_num_pair_ptr_(name_num_pair_ptr), llx_(llx), lly_(lly), movable_(movable), orient_(orient) {}
+
+const std::string *Block::Name() const{
+  return &(name_num_pair_ptr_->first);
 }
 
-void block_t::set_name(std::string blockName) {
-  _name = std::move(blockName);
+int Block::Num() const {
+  return name_num_pair_ptr_->second;
 }
 
-std::string block_t::name() const{
-  return _name;
+int Block::Width() const{
+  return type_->Width();
 }
 
-int block_t::width() const{
-  return _type->Width();
+int Block::Height() const{
+  return type_->Height();
 }
 
-
-int block_t::height() const{
-  return _type->Height();
+void Block::SetLLX(int lower_left_x) {
+  llx_ = lower_left_x;
 }
 
-void block_t::set_llx(int lower_left_x) {
-  _llx = lower_left_x;
+int Block::LLX() const{
+  return llx_;
 }
 
-int block_t::llx() const{
-  return _llx;
+void Block::SetLLY(int lower_left_y) {
+  lly_ = lower_left_y;
 }
 
-void block_t::set_lly(int lower_left_y) {
-  _lly = lower_left_y;
+int Block::LLY() const{
+  return lly_;
 }
 
-int block_t::lly() const{
-  return _lly;
+void Block::SetURX(int upper_right_x) {
+  llx_ = upper_right_x - Width();
 }
 
-void block_t::set_urx(int upper_right_x) {
-  _llx = upper_right_x - width();
+int Block::URX() const{
+  return llx_ + Width();
 }
 
-int block_t::urx() const{
-  return _llx + width();
+void Block::SetURY(int upper_right_y) {
+  lly_ = upper_right_y - Height();
 }
 
-void block_t::set_ury(int upper_right_y) {
-  _lly = upper_right_y - height();
+int Block::URY() const{
+  return lly_ + Height();
 }
 
-int block_t::ury() const{
-  return _lly + height();
+void Block::SetCenterX(double center_x) {
+  llx_ = (int) (center_x - Width()/2.0);
 }
 
-void block_t::set_center_x(double center_x) {
-  _llx = (int) (center_x - width()/2.0);
+double Block::X() const{
+  return llx_ + Width()/2.0;
 }
 
-double block_t::x() const{
-  return _llx + width()/2.0;
+void Block::SetCenterY(double center_y) {
+  lly_ = (int) (center_y - Height()/2.0);
 }
 
-void block_t::set_center_y(double center_y) {
-  _lly = (int) (center_y - height()/2.0);
+double Block::Y() const{
+  return lly_ + Height()/2.0;
 }
 
-double block_t::y() const{
-  return _lly + height()/2.0;
+void Block::SetMovable(bool movable) {
+  movable_ = movable;
 }
 
-void block_t::set_movable(bool movable) {
-  _movable = movable;
+bool Block::IsMovable() const {
+  return movable_;
 }
 
-bool block_t::is_movable() const {
-  return _movable;
+int Block::Area() const {
+  return Height() * Width();
 }
 
-int block_t::area() const {
-  return height() * width();
+void Block::SetOrient(BlockOrient &orient) {
+  orient_ = orient;
 }
 
-void block_t::set_orientation(orient_t &orient) {
-  _orient = orient;
+BlockOrient Block::Orient() const {
+  return orient_;
 }
 
-orient_t block_t::orientation() const {
-  return _orient;
-}
-
-std::string block_t::orient_str() const {
+std::string Block::OrientStr() const {
   std::string s;
-  switch (_orient) {
+  switch (orient_) {
     case 0: { s = "N"; } break;
     case 1: { s = "S"; } break;
     case 2: { s = "W"; } break;
@@ -105,31 +102,23 @@ std::string block_t::orient_str() const {
     case 5: { s = "FS"; } break;
     case 6: { s = "FW"; } break;
     case 7: { s = "FE"; } break;
-    default: { s = "unknown";
-      std::cout << "unknown block orientation, this should not happen\n";
-      exit(1); }
+    default: {
+      Assert(false, "Block orientation error! This should not happen!");
+    }
   }
   return s;
 }
 
-void block_t::set_num(size_t &number) {
-  _num = number;
+std::string Block::TypeName() {
+  return type_->Name();
 }
 
-size_t block_t::num() const{
-  return  _num;
-}
-
-std::string block_t::type_name() {
-  return _type->Name();
-}
-
-std::string block_t::place_status() {
+std::string Block::IsPlace() {
   return "PLACED";
 }
 
-std::string block_t::lower_left_corner() {
-  return "( " + std::to_string(llx()) + " " + std::to_string(lly()) + " )";
+std::string Block::LowerLeftCorner() {
+  return "( " + std::to_string(LLX()) + " " + std::to_string(LLY()) + " )";
 }
 
 

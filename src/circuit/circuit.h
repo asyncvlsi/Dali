@@ -52,7 +52,7 @@ public:
   bool BlockInstExist(std::string &block_name);
   int BlockInstIndex(std::string &block_name);
   void AddToBlockMap(std::string &block_name);
-  void AddBlockInst(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, bool movable = true, orient_t orient= N);
+  void AddBlockInst(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, bool movable = true, BlockOrient orient= N);
 
   // API to add new Net
   bool NetExist(std::string &net_name);

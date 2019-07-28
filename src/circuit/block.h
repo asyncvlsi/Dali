@@ -10,68 +10,71 @@
 #include <string>
 #include <iostream>
 #include "blocktype.h"
+#include "common/misc.h"
 
 /* a block can be a gate, can also be a large module, it includes information like
- * the Name of a gate/module, its Width and Height, its lower left corner (llx, lly),
- * the movability, orientation. */
+ * the Name of a gate/module, its Width and Height, its lower left corner (LLX, LLY),
+ * the movability, Orient. */
 
-enum orient_t{N, S, W, E, FN, FS, FW, FE};
+enum BlockOrient{
+  N = 0,
+  S = 1,
+  W = 2,
+  E = 3,
+  FN = 4,
+  FS = 5,
+  FW = 6,
+  FE = 7
+};
+
+#define STR_INT_IT std::map<std::string,int>::iterator
 
 class Block {
 protected:
   /* essential data entries */
-  BlockType *_type;
-  std::string _name; // Name
-  std::map<std::string,int>::iterator name_num_pair_ptr_;
-  int _llx, _lly; // lower left corner
-  bool _movable; // movable
-  enum orient_t _orient; // currently not used
-
-  /* the following entries are derived data */
-  size_t _num;
-  /* block_num is the index of this block in the vector block_list, this data must be updated after push a new block into block_list */
-
+  BlockType *type_;
+  STR_INT_IT name_num_pair_ptr_;
+  int llx_, lly_; // lower left corner
+  bool movable_; // movable
+  enum BlockOrient orient_; // currently not used
 public:
-  Block(BlockType *type, std::string name, int llx, int lly, bool movable="true", orient_t orient=N);
-
-  void set_name(std::string blockName);
-  std::string name() const;
-  int width() const;
-  int height() const;
-  void set_llx(int lower_left_x);
-  int llx() const;
-  void set_lly(int lower_left_y);
-  int lly() const;
-  void set_urx(int upper_right_x);
-  int urx() const;
-  void set_ury(int upper_right_y);
-  int ury() const;
-  void set_center_x(double center_x);
-  double x() const;
-  void set_center_y(double center_y);
-  double y() const;
-  void set_movable(bool movable);
-  bool is_movable() const;
-  int area() const;
-  void set_orientation(orient_t &orient);
-  orient_t orientation() const;
-  std::string orient_str() const;
-  void set_num(size_t &number);
-  size_t num() const;
+  Block(BlockType *type, STR_INT_IT name_num_pair, int llx, int lly, bool movable = "true", BlockOrient orient = N);
+  const std::string *Name() const;
+  int Num() const;
+  int Width() const;
+  int Height() const;
+  void SetLLX(int lower_left_x);
+  int LLX() const;
+  void SetLLY(int lower_left_y);
+  int LLY() const;
+  void SetURX(int upper_right_x);
+  int URX() const;
+  void SetURY(int upper_right_y);
+  int URY() const;
+  void SetCenterX(double center_x);
+  double X() const;
+  void SetCenterY(double center_y);
+  double Y() const;
+  void SetMovable(bool movable);
+  bool IsMovable() const;
+  int Area() const;
+  void SetOrient(BlockOrient &orient);
+  BlockOrient Orient() const;
+  std::string OrientStr() const;
 
   friend std::ostream& operator<<(std::ostream& os, const Block &block) {
-    os << "block Name: " << block._name << "\n";
-    os << "Width and Height: " << block.width() << " " << block.height() << "\n";
-    os << "lower left corner: " << block._llx << " " << block._lly << "\n";
-    os << "movability: " << block._movable << "\n";
-    os << "orientation: " << block.orient_str() << "\n";
-    os << "assigned primary key: " << block._num << "\n";
+    os << "block Name: " << *block.Name() << "\n";
+    os << "Width and Height: " << block.Width() << " " << block.Height() << "\n";
+    os << "lower left corner: " << block.LLX() << " " << block.LLY() << "\n";
+    os << "movability: " << block.IsMovable() << "\n";
+    os << "orientation: " << block.OrientStr() << "\n";
+    os << "assigned primary key: " << block.Num() << "\n";
     return os;
   }
 
-  std::string type_name();
-  std::string place_status();
-  std::string lower_left_corner();
+  std::string TypeName();
+  std::string IsPlace();
+  std::string LowerLeftCorner();
 };
 
 
