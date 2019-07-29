@@ -27,18 +27,18 @@ enum BlockOrient{
   FE = 7
 };
 
-#define STR_INT_IT std::map<std::string,int>::iterator
+#define STR_INT_PAIR_PTR std::pair<std::string, int>*
 
 class Block {
 protected:
   /* essential data entries */
   BlockType *type_;
-  STR_INT_IT name_num_pair_ptr_;
+  STR_INT_PAIR_PTR name_num_pair_ptr_;
   int llx_, lly_; // lower left corner
   bool movable_; // movable
   enum BlockOrient orient_; // currently not used
 public:
-  Block(BlockType *type, STR_INT_IT name_num_pair, int llx, int lly, bool movable = "true", BlockOrient orient = N);
+  Block(BlockType *type, STR_INT_PAIR_PTR name_num_pair, int llx, int lly, bool movable = "true", BlockOrient orient = N);
   const std::string *Name() const;
   int Num() const;
   int Width() const;
@@ -72,7 +72,7 @@ public:
     return os;
   }
 
-  std::string TypeName();
+  const std::string *TypeName() const;
   std::string IsPlace();
   std::string LowerLeftCorner();
 };

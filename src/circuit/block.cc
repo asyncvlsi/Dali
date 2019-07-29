@@ -4,8 +4,10 @@
 
 #include "block.h"
 
-Block::Block(BlockType *type, STR_INT_IT name_num_pair_ptr, int llx, int lly, bool movable, BlockOrient orient) : type_(
-    type), name_num_pair_ptr_(name_num_pair_ptr), llx_(llx), lly_(lly), movable_(movable), orient_(orient) {}
+Block::Block(BlockType *type, STR_INT_PAIR_PTR name_num_pair_ptr, int llx, int lly, bool movable, BlockOrient orient) : type_(
+    type), name_num_pair_ptr_(name_num_pair_ptr), llx_(llx), lly_(lly), movable_(movable), orient_(orient) {
+  Assert(name_num_pair_ptr != nullptr, "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
+}
 
 const std::string *Block::Name() const{
   return &(name_num_pair_ptr_->first);
@@ -109,7 +111,7 @@ std::string Block::OrientStr() const {
   return s;
 }
 
-std::string Block::TypeName() {
+const std::string *Block::TypeName() const {
   return type_->Name();
 }
 

@@ -10,8 +10,6 @@
 
 Circuit::Circuit() {
   tot_movable_num_ = 0;
-  ave_width_ = 0;
-  ave_height_ = 0;
   tot_block_area_ = 0;
 }
 

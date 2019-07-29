@@ -12,17 +12,7 @@
 #include "net.h"
 
 class Circuit {
-protected:
-  std::vector<BlockType> block_type_list;
-  std::map<std::string, size_t> block_type_name_map;
-  std::map<std::pair<int, int>, int> pin_name_map;
-  std::vector<Block > block_list;
-  std::map<std::string, size_t> block_name_map;
-  std::vector<Net > net_list;
-  std::map<std::string, size_t> net_name_map;
-
-  double ave_width_;
-  double ave_height_;
+private:
   int tot_width_;
   int tot_height_;
   int tot_block_area_;
@@ -34,6 +24,13 @@ protected:
 public:
   Circuit();
   Circuit(int tot_block_type_num, int tot_block_num, int tot_net_num);
+  std::vector<BlockType> block_type_list;
+  std::map<std::string, int> block_type_name_map;
+  std::map<std::pair<int, int>, int> pin_name_map;
+  std::vector<Block > block_list;
+  std::map<std::string, int> block_name_map;
+  std::vector<Net > net_list;
+  std::map<std::string, int> net_name_map;
 
   int lef_database_microns = 0;
   double m2_pitch = 0;
