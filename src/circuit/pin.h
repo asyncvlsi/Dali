@@ -15,19 +15,20 @@
 class Pin {
  private:
   /*** essential data entries ****/
-  std::string name_; // the Name of this pin, for example "in", "out", "a", "b", etc.
   std::vector<Rect> rect_list_;
-  std::map<std::pair<int, int>, int>::iterator pin_name_pair_ptr_;
-
-  /**** derived data ****/
+  std::pair<const std::string, int>* name_num_pair_ptr_;
   double x_offset_;
   double y_offset_;
+  bool manual_set_;
 
  public:
-  explicit Pin(std::string &name);
+  explicit Pin(std::pair<const std::string, int>* name_num_pair_ptr);
+  Pin(std::pair<const std::string, int>* name_num_pair_ptr, int x_offset, int y_offset);
 
   const std::string *Name() const;
+  int Num() const;
   void InitOffset();
+  void SetOffset(double x_offset, double y_offset);
   double XOffset() const;
   double YOffset() const;
 
@@ -35,7 +36,7 @@ class Pin {
   void AddRect(int llx, int lly, int urx, int ury);
 
   friend std::ostream& operator<<(std::ostream& os, const Pin &pin) {
-    os << pin.Name() << " (" << pin.x_offset_ << ", " << pin.y_offset_ << ")";
+    os << pin.Name() << " (" << pin.XOffset() << ", " << pin.YOffset() << ")";
     return os;
   }
 };

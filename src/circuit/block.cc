@@ -4,7 +4,7 @@
 
 #include "block.h"
 
-Block::Block(BlockType *type, STR_INT_PAIR_PTR name_num_pair_ptr, int llx, int lly, bool movable, BlockOrient orient) : type_(
+Block::Block(BlockType *type, std::pair<const std::string, int>* name_num_pair_ptr, int llx, int lly, bool movable, BlockOrient orient) : type_(
     type), name_num_pair_ptr_(name_num_pair_ptr), llx_(llx), lly_(lly), movable_(movable), orient_(orient) {
   Assert(name_num_pair_ptr != nullptr, "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
 }

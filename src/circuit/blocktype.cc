@@ -4,9 +4,7 @@
 
 #include "blocktype.h"
 
-BlockType::BlockType(STR_INT_PAIR_PTR name_num_pair_ptr, int width, int height) : name_num_pair_ptr_(name_num_pair_ptr), width_(width), height_(height) {
-
-}
+BlockType::BlockType(std::pair<const std::string, int>* name_num_pair_ptr, int width, int height) : name_num_pair_ptr_(name_num_pair_ptr), width_(width), height_(height) {}
 
 const std::string *BlockType::Name() const {
   return &(name_num_pair_ptr_->first);
@@ -39,17 +37,27 @@ void BlockType::SetHeight(int height) {
 }
 
 bool BlockType::PinExist(std::string &pin_name) {
-  return !(pin_name.find(block_type_name) == block_type_name_map.end());
+  return !(pin_name_num_map.find(pin_name) == pin_name_num_map.end());
 }
 
 int BlockType::PinIndex(std::string &pin_name) {
-
+  Assert(PinExist(pin_name), "Pin does not exist, cannot find its index: " + pin_name);
+  return pin_name_num_map.find(pin_name)->second;
 }
 
 Pin *BlockType::AddPin(std::string &pin_name) {
   bool pin_not_exist = pin_name_num_map.find(pin_name) == pin_name_num_map.end();
   Assert(pin_not_exist, "The following pin exists in pin_list: " + pin_name);
-  pin_name_num_map.insert(std::pair<std::string, size_t>(pin_name, pin_list.size()));
-  pin_list.emplace_back(pin_name);
+  pin_name_num_map.insert(std::pair<std::string, int>(pin_name, pin_list.size()));
+  std::pair<const std::string, int> *name_num_ptr = &(*pin_name_num_map.find(pin_name));
+  pin_list.emplace_back(name_num_ptr);
   return &pin_list.back();
+}
+
+void BlockType::AddPin(std::string &pin_name, double x_offset, double y_offset) {
+  bool pin_not_exist = pin_name_num_map.find(pin_name) == pin_name_num_map.end();
+  Assert(pin_not_exist, "The following pin exists in pin_list: " + pin_name);
+  pin_name_num_map.insert(std::pair<std::string, int>(pin_name, pin_list.size()));
+  std::pair<const std::string, int> *name_num_ptr = &(*pin_name_num_map.find(pin_name));
+  pin_list.emplace_back(name_num_ptr, x_offset, y_offset);
 }

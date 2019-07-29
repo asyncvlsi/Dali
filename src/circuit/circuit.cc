@@ -19,7 +19,7 @@ Circuit::Circuit(int tot_block_type_num, int tot_block_num, int tot_net_num) {
   net_list.reserve(tot_net_num);
 }
 
-void Circuit::SetBoundry(int left, int right, int bottom, int top) {
+void Circuit::SetBoundary(int left, int right, int bottom, int top) {
   Assert(right > left, "right boundary is not larger than left boundary?");
   Assert(top > bottom, "top boundary is not larger than bottom boundary?");
   def_left = left;
@@ -28,12 +28,12 @@ void Circuit::SetBoundry(int left, int right, int bottom, int top) {
   def_top = top;
 }
 
-bool Circuit::BlockTypeExist(std::string &block_type_name) {
+bool Circuit::IsBlockTypeExist(std::string &block_type_name) {
   return !(block_type_name_map.find(block_type_name) == block_type_name_map.end());
 }
 
 int Circuit::BlockTypeIndex(std::string &block_type_name) {
-  Assert(BlockTypeExist(block_type_name), "BlockType not exist, cannot find its index: " + block_type_name);
+  Assert(IsBlockTypeExist(block_type_name), "BlockType not exist, cannot find its index: " + block_type_name);
   return block_type_name_map.find(block_type_name)->second;
 }
 
@@ -43,19 +43,19 @@ void Circuit::AddToBlockTypeMap(std::string &block_type_name) {
 }
 
 BlockType *Circuit::AddBlockType(std::string &block_type_name, int width, int height) {
-  Assert(!BlockTypeExist(block_type_name), "BlockType exist, cannot create this block type again: " + block_type_name);
+  Assert(!IsBlockTypeExist(block_type_name), "BlockType exist, cannot create this block type again: " + block_type_name);
   int list_size = block_type_list.size();
   block_type_list.resize(list_size + 1);
   AddToBlockTypeMap(block_type_name);
   return &block_type_list.back();
 }
 
-bool Circuit::BlockInstExist(std::string &block_name) {
+bool Circuit::IsBlockInstExist(std::string &block_name) {
   return !(block_name_map.find(block_name) == block_name_map.end());
 }
 
 int Circuit::BlockInstIndex(std::string &block_name) {
-  Assert(BlockInstExist(block_name), "Block Name does not exist, cannot find its index: " + block_name);
+  Assert(IsBlockInstExist(block_name), "Block Name does not exist, cannot find its index: " + block_name);
   return block_name_map.find(block_name)->second;
 }
 
@@ -65,19 +65,19 @@ void Circuit::AddToBlockMap(std::string &block_name) {
 }
 
 void Circuit::AddBlockInst(std::string &block_name, std::string &block_type_name, int llx, int lly, bool movable, BlockOrient orient) {
-  Assert(!BlockInstExist(block_name), "Block exists, cannot create this block again: " + block_name);
+  Assert(!IsBlockInstExist(block_name), "Block exists, cannot create this block again: " + block_name);
   int block_type_index = BlockTypeIndex(block_type_name);
   BlockType *block_type = &block_type_list[block_type_index];
   block_list.emplace_back(block_name, block_type, llx, lly, movable, orient);
   AddToBlockMap(block_name);
 }
 
-bool Circuit::NetExist(std::string &net_name) {
+bool Circuit::IsNetExist(std::string &net_name) {
   return !(net_name_map.find(net_name) == net_name_map.end());
 }
 
 int Circuit::NetIndex(std::string &net_name) {
-  Assert(NetExist(net_name), "Net does not exist, cannot find its index: " + net_name);
+  Assert(IsNetExist(net_name), "Net does not exist, cannot find its index: " + net_name);
   return net_name_map.find(net_name)->second;
 }
 
@@ -87,7 +87,7 @@ void Circuit::AddToNetMap(std::string &net_name) {
 }
 
 Net *Circuit::AddNet(std::string &net_name, double weight) {
-  Assert(!NetExist(net_name), "Net exists, cannot create this net again: " + net_name);
+  Assert(!IsNetExist(net_name), "Net exists, cannot create this net again: " + net_name);
   net_list.emplace_back(net_name, weight);
   AddToNetMap(net_name);
   return &net_list.back();
