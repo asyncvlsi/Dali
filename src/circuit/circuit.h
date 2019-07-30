@@ -31,50 +31,55 @@ public:
   std::vector<Net > net_list;
   std::map<std::string, int> net_name_map;
 
+  double reset_signal_weight = 1e-6;
+  double normal_signal_weight = 1;
   int lef_database_microns = 0;
   double m2_pitch = 0;
   int def_distance_microns = 0;
-
   int def_left = 0, def_right = 0, def_bottom = 0, def_top = 0;
+
   void SetBoundary(int left, int right, int bottom, int top);
 
   // API to add new BlockType
   bool IsBlockTypeExist(std::string &block_type_name);
-  int BlockTypeIndex(std::string &block_type_name);
+  BlockType *GetBlockType(std::string &block_type_name);
   void AddToBlockTypeMap(std::string &block_type_name);
   BlockType *AddBlockType(std::string &block_type_name, int width, int height);
 
   // API to add new Block Instance
-  bool IsBlockInstExist(std::string &block_name);
-  int BlockInstIndex(std::string &block_name);
+  bool IsBlockExist(std::string &block_name);
+  Block *GetBlock(std::string &block_name);
   void AddToBlockMap(std::string &block_name);
-  void AddBlockInst(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, bool movable = true, BlockOrient orient= N);
+  void AddBlock(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, bool movable = true, BlockOrient orient= N);
 
   // API to add new Net
   bool IsNetExist(std::string &net_name);
-  int NetIndex(std::string &net_name);
+  Net *GetIndex(std::string &net_name);
   void AddToNetMap(std::string &net_name);
   Net *AddNet(std::string &net_name, double weight = 1);
 
   // old API
-  void add_block_type(std::string &blockTypeName, int width, int height);
-  void add_pin_to_block(std::string &blockTypeName, std::string &pinName, int xOffset, int yOffset);
-  void add_new_block(std::string &blockName, std::string &blockTypeName, int llx = 0, int lly = 0, bool movable = true);
-  void add_pin_to_net(std::string &netName, std::string &blockName, std::string &pinName);
+  void add_block_type(std::string &block_type_name, int width, int height);
+  void add_pin_to_block(std::string &block_type_name, std::string &pin_name, int x_offset, int y_offset);
+  void add_new_block(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, bool movable = true, BlockOrient orient = N);
+  void create_blank_net(std::string &net_name, double weight);
+  void add_pin_to_net(std::string &net_name, std::string &block_name, std::string &pin_name);
 
-  // functional member functions
-  void parse_line(std::string &line, std::vector<std::string> &field_list);
-  bool read_nodes_file(std::string const &NameOfFile);
-  void report_block_list();
-  void report_block_map();
-  bool read_nets_file(std::string const &NameOfFile);
-  void report_net_list();
-  void report_net_map();
-  bool read_pl_file(std::string const &NameOfFile);
+  // read lef/def file using above member functions
+  void ParseLine(std::string &line, std::vector<std::string> &field_list);
+  void ReadLefFile(std::string const &NameOfFile);
+  void ReadDefFile(std::string const &NameOfFile);
+  void ReportBlockTypeList();
+  void ReportBlockTypeMap();
+  void ReportBlockList();
+  void ReportBlockMap();
+  void ReportNetList();
+  void ReportNetMap();
 
-  // dump circuit to LEF/DEF file, readable by
-  bool write_nodes_file(std::string const &NameOfFile="circuit.nodes");
-  bool write_nets_file(std::string const &NameOfFile="circuit.nets");
+  // dump circuit to LEF/DEF file, readable by the the above ReadDefFile()
+  void WriteDefFileDebug(std::string const &NameOfFile= "circuit.nodes");
+  void GenMATLABScript(std::string const &filename= "block_net_list.m");
+  void SaveDefFile(std::string const &NameOfFile, std::string const &defFileName);
 };
 
 #endif //HPCC_CIRCUIT_HPP

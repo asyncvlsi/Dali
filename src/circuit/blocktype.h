@@ -39,7 +39,7 @@ public:
     os << "assigned primary key: " << block_type.Num() << "\n";
     os << "pin list:\n";
     for( auto &&it: block_type.pin_name_num_map) {
-      os << "  " << it.first << " num: " << it.second << " (" << block_type.pin_list[it.second].XOffset() << ", " << block_type.pin_list[it.second].YOffset() << ")\n";
+      os << "  " << it.first << " Num: " << it.second << " (" << block_type.pin_list[it.second].XOffset() << ", " << block_type.pin_list[it.second].YOffset() << ")\n";
     }
     return os;
   }

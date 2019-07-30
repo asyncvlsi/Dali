@@ -47,7 +47,7 @@ int BlockType::PinIndex(std::string &pin_name) {
 
 Pin *BlockType::AddPin(std::string &pin_name) {
   bool pin_not_exist = pin_name_num_map.find(pin_name) == pin_name_num_map.end();
-  Assert(pin_not_exist, "The following pin exists in pin_list: " + pin_name);
+  Assert(pin_not_exist, "The following pin exists in blk_pin_pair_list: " + pin_name);
   pin_name_num_map.insert(std::pair<std::string, int>(pin_name, pin_list.size()));
   std::pair<const std::string, int> *name_num_ptr = &(*pin_name_num_map.find(pin_name));
   pin_list.emplace_back(name_num_ptr);
@@ -56,7 +56,7 @@ Pin *BlockType::AddPin(std::string &pin_name) {
 
 void BlockType::AddPin(std::string &pin_name, double x_offset, double y_offset) {
   bool pin_not_exist = pin_name_num_map.find(pin_name) == pin_name_num_map.end();
-  Assert(pin_not_exist, "The following pin exists in pin_list: " + pin_name);
+  Assert(pin_not_exist, "The following pin exists in blk_pin_pair_list: " + pin_name);
   pin_name_num_map.insert(std::pair<std::string, int>(pin_name, pin_list.size()));
   std::pair<const std::string, int> *name_num_ptr = &(*pin_name_num_map.find(pin_name));
   pin_list.emplace_back(name_num_ptr, x_offset, y_offset);

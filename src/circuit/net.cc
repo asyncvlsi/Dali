@@ -4,89 +4,38 @@
 
 #include "net.h"
 
-Net::Net(std::string &name, int num, double weight) : name_(name), num_(num), weight_(weight) {}
+Net::Net(std::pair<std::string,int> *name_num_pair_ptr, double weight): name_num_pair_ptr_(name_num_pair_ptr), weight_(weight) {}
 
-void Net::set_name(const std::string &name_arg) {
-  _name = name_arg;
+void Net::AddBlockPinPair(Block *block_ptr, int pin_index) {
+  blk_pin_pair_list.emplace_back(block_ptr, pin_index);
 }
 
-std::string Net::name() {
-  return _name;
+const std::string *Net::Name() const {
+  return &(name_num_pair_ptr_->first);
 }
 
-void Net::set_weight(double weight_arg) {
-  _weight = weight_arg;
+size_t Net::Num() {
+ return name_num_pair_ptr_->second;
 }
 
-void Net::set_num(size_t number) {
-  _num = number;
+void Net::SetWeight(double weight) {
+  weight_ = weight;
 }
 
-size_t Net::num() {
- return _num;
+double Net::Weight() {
+  return weight_;
 }
 
-double Net::weight() {
-  return _weight;
+double Net::InvP() {
+  Assert(blk_pin_pair_list.size() > 1, "Invalid net to calculate 1/(P-1)");
+  return 1.0/(double)(blk_pin_pair_list.size() - 1);
 }
 
-bool Net::add_pin(pin_t &pin) {
-  for (auto &&existing_pin: pin_list) {
-    if (existing_pin == pin) {
-      std::cout << "Error!\n";
-      std::cout << pin << " has already been in net: " << _name << "\n";
-      return false;
-    }
-  }
-  pin_list.push_back(pin);
-  return true;
+int Net::P() {
+  return (int)blk_pin_pair_list.size();
 }
 
-double Net::inv_p() {
-  if (pin_list.size() <= 1) {
-    std::cout << "Error!\n";
-    std::cout << "Invalid net to calculate 1/(p-1)\n";
-    std::cout << this << "\n";
-    exit(1);
-  }
-  return 1.0/(pin_list.size() - 1);
-}
-
-int Net::p() {
-  return (int)pin_list.size();
-}
-
-int Net::hpwl() {
-  if (pin_list.empty()) {
-    std::cout << "Error!\n";
-    std::cout << "net contains no pin\n";
-    assert(!pin_list.empty());
-  }
-  int max_x = pin_list[0].abs_x();
-  int min_x = pin_list[0].abs_x();
-  int max_y = pin_list[0].abs_y();
-  int min_y = pin_list[0].abs_y();
-
-  for (auto &&pin: pin_list) {
-    if (pin.get_block() == nullptr) {
-      std::cout << "Error!\n";
-      std::cout << "attribute Block* _block is nullptr, it should points to the block containing this pin\n";
-      assert(pin.get_block() != nullptr);
-    }
-    if (max_x < pin.abs_x()) {
-      max_x = pin.abs_x();
-    }
-    if (min_x > pin.abs_x()) {
-      min_x = pin.abs_x();
-    }
-    if (max_y < pin.abs_y()) {
-      max_y = pin.abs_y();
-    }
-    if (min_y > pin.abs_y()) {
-      min_y = pin.abs_y();
-    }
-  }
-
-  return (max_x - min_x) + (max_y - min_y);
+double Net::HPWL() {
+  return 0;
 }
 

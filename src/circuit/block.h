@@ -38,6 +38,7 @@ protected:
 public:
   Block(BlockType *type, std::pair<const std::string, int>* name_num_pair, int llx, int lly, bool movable = "true", BlockOrient orient = N);
   const std::string *Name() const;
+  BlockType *Type() const;
   int Num() const;
   int Width() const;
   int Height() const;

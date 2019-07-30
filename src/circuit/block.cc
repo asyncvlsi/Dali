@@ -13,6 +13,10 @@ const std::string *Block::Name() const{
   return &(name_num_pair_ptr_->first);
 }
 
+BlockType *Block::Type() const {
+  return type_;
+}
+
 int Block::Num() const {
   return name_num_pair_ptr_->second;
 }

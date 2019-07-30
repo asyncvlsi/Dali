@@ -9,38 +9,32 @@
 #include <vector>
 #include "block.h"
 #include "blockpinpair.h"
+#include "common/misc.h"
 
 class Net {
 protected:
-  std::string name_;
-  std::map<std::string,int>::iterator name_num_pair_ptr_;
-  int num_;
+  std::pair<std::string, int> *name_num_pair_ptr_;
   double weight_;
 public:
-  explicit Net(std::string &name_arg, int num, double weight_arg = 1);
-  std::vector<BlockPinPair> pin_list;
+  explicit Net(std::pair<std::string,int> *name_num_pair_ptr, double weight = 1);
+  std::vector<BlockPinPair> blk_pin_pair_list;
+  void AddBlockPinPair(Block *block_ptr, int pin_index);
 
   friend std::ostream& operator<<(std::ostream& os, const Net &net) {
-    os << net.name_ << "\n";
-    for (auto &&pin: net.pin_list) {
-      os << "\t" << pin << "\n";
+    os << net.Name() << "\n";
+    for (auto &&block_pin_pair: net.blk_pin_pair_list) {
+      os << "\t" << block_pin_pair << "\n";
     }
     return os;
   }
 
-  void set_name(const std::string &name_arg);
-  std::string name();
-  void set_num(size_t number);
-  size_t num();
-  void set_weight(double weight_arg);
-  double weight();
-  bool add_pin(Pin &pin);
-  double inv_p();
-  int p();
-
-  bool AddBlockPinPair(int block_index, int pin_index);
-
-  int hpwl();
+  const std::string *Name() const;
+  size_t Num();
+  void SetWeight(double weight);
+  double Weight();
+  double InvP();
+  int P();
+  double HPWL();
 };
 
 
