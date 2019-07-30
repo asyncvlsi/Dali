@@ -50,9 +50,13 @@ bool Circuit::IsBlockTypeExist(std::string &block_type_name) {
   return !(block_type_name_map.find(block_type_name) == block_type_name_map.end());
 }
 
-BlockType *Circuit::GetBlockType(std::string &block_type_name) {
+int Circuit::BlockTypeIndex(std::string &block_type_name) {
   Assert(IsBlockTypeExist(block_type_name), "BlockType not exist, cannot find its index: " + block_type_name);
-  return &block_type_list[block_type_name_map.find(block_type_name)->second];
+  return block_type_name_map.find(block_type_name)->second;
+}
+
+BlockType *Circuit::GetBlockType(std::string &block_type_name) {
+  return &block_type_list[BlockTypeIndex(block_type_name)];
 }
 
 void Circuit::AddToBlockTypeMap(std::string &block_type_name) {
@@ -74,9 +78,13 @@ bool Circuit::IsBlockExist(std::string &block_name) {
   return !(block_name_map.find(block_name) == block_name_map.end());
 }
 
-Block *Circuit::GetBlock(std::string &block_name) {
+int Circuit::BlockIndex(std::string &block_name) {
   Assert(IsBlockExist(block_name), "Block Name does not exist, cannot find its index: " + block_name);
-  return &block_list[block_name_map.find(block_name)->second];
+  return block_name_map.find(block_name)->second;
+}
+
+Block *Circuit::GetBlock(std::string &block_name) {
+  return &block_list[BlockIndex(block_name)];
 }
 
 void Circuit::AddToBlockMap(std::string &block_name) {
@@ -96,9 +104,13 @@ bool Circuit::IsNetExist(std::string &net_name) {
   return !(net_name_map.find(net_name) == net_name_map.end());
 }
 
-Net *Circuit::GetIndex(std::string &net_name) {
+int Circuit::NetIndex(std::string &net_name) {
   Assert(IsNetExist(net_name), "Net does not exist, cannot find its index: " + net_name);
-  return &net_list[net_name_map.find(net_name)->second];
+  return net_name_map.find(net_name)->second;
+}
+
+Net *Circuit::GetIndex(std::string &net_name) {
+  return &net_list[NetIndex(net_name)];
 }
 
 void Circuit::AddToNetMap(std::string &net_name) {

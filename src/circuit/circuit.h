@@ -42,18 +42,21 @@ public:
 
   // API to add new BlockType
   bool IsBlockTypeExist(std::string &block_type_name);
+  int BlockTypeIndex(std::string &block_type_name);
   BlockType *GetBlockType(std::string &block_type_name);
   void AddToBlockTypeMap(std::string &block_type_name);
   BlockType *AddBlockType(std::string &block_type_name, int width, int height);
 
   // API to add new Block Instance
   bool IsBlockExist(std::string &block_name);
+  int BlockIndex(std::string &block_name);
   Block *GetBlock(std::string &block_name);
   void AddToBlockMap(std::string &block_name);
   void AddBlock(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, bool movable = true, BlockOrient orient= N);
 
   // API to add new Net
   bool IsNetExist(std::string &net_name);
+  int NetIndex(std::string &net_name);
   Net *GetIndex(std::string &net_name);
   void AddToNetMap(std::string &net_name);
   Net *AddNet(std::string &net_name, double weight = 1);
