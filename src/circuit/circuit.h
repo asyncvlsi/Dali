@@ -8,7 +8,6 @@
 #include <vector>
 #include <map>
 #include "block.h"
-#include "pin.h"
 #include "net.h"
 
 class Circuit {

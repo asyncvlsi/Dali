@@ -4,7 +4,7 @@
 
 #include "net.h"
 
-Net::Net(std::pair<std::string,int> *name_num_pair_ptr, double weight): name_num_pair_ptr_(name_num_pair_ptr), weight_(weight) {}
+Net::Net(std::pair<const std::string, int> *name_num_pair_ptr, double weight): name_num_pair_ptr_(name_num_pair_ptr), weight_(weight) {}
 
 void Net::AddBlockPinPair(Block *block_ptr, int pin_index) {
   blk_pin_pair_list.emplace_back(block_ptr, pin_index);

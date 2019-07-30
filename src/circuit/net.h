@@ -13,10 +13,10 @@
 
 class Net {
 protected:
-  std::pair<std::string, int> *name_num_pair_ptr_;
+  std::pair<const std::string, int> *name_num_pair_ptr_;
   double weight_;
 public:
-  explicit Net(std::pair<std::string,int> *name_num_pair_ptr, double weight = 1);
+  explicit Net(std::pair<const std::string,int> *name_num_pair_ptr, double weight = 1);
   std::vector<BlockPinPair> blk_pin_pair_list;
   void AddBlockPinPair(Block *block_ptr, int pin_index);
 

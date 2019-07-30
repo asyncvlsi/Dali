@@ -95,9 +95,10 @@ void Circuit::AddToBlockMap(std::string &block_name) {
 void Circuit::AddBlock(std::string &block_name, std::string &block_type_name, int llx, int lly, bool movable, BlockOrient orient) {
   Assert(net_list.empty(), "Cannot add new Block, because net_list is not empty");
   Assert(!IsBlockExist(block_name), "Block exists, cannot create this block again: " + block_name);
-  BlockType *block_type = GetBlockType(block_type_name);
-  block_list.emplace_back(block_name, block_type, llx, lly, movable, orient);
   AddToBlockMap(block_name);
+  std::pair<const std::string, int>* name_num_pair_ptr = &(*block_name_map.find(block_name));
+  BlockType *block_type = GetBlockType(block_type_name);
+  block_list.emplace_back(block_type, name_num_pair_ptr, llx, lly, movable, orient);
 }
 
 bool Circuit::IsNetExist(std::string &net_name) {
@@ -120,8 +121,9 @@ void Circuit::AddToNetMap(std::string &net_name) {
 
 Net *Circuit::AddNet(std::string &net_name, double weight) {
   Assert(!IsNetExist(net_name), "Net exists, cannot create this net again: " + net_name);
-  net_list.emplace_back(net_name, weight);
   AddToNetMap(net_name);
+  std::pair<const std::string, int>* name_num_pair_ptr = &(*net_name_map.find(net_name));
+  net_list.emplace_back(name_num_pair_ptr, weight);
   return &net_list.back();
 }
 

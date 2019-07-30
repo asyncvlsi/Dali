@@ -12,12 +12,6 @@ file(GLOB SOURCES
         src/*.cc
         src/circuit/*.h
         src/circuit/*.cc
-        src/placer/*.h
-        src/placer/*.cc
-        src/DLA/*.h
-        src/DLA/*.cc
-        src/AL/*.h
-        src/AL/*.cc
         src/common/*.h
         src/common/*.cc
         )
