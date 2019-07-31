@@ -9,9 +9,9 @@
 #include <iostream>
 
 class Rect {
-private:
+ private:
   int llx_, lly_, urx_, ury_;
-public:
+ public:
   Rect(int llx, int lly, int urx, int ury);
   bool operator==(Rect &rhs) const;
   int llx() const;

@@ -12,21 +12,14 @@
 #include "common/misc.h"
 
 class Net {
-protected:
+ protected:
   std::pair<const std::string, int> *name_num_pair_ptr_;
   double weight_;
-public:
-  explicit Net(std::pair<const std::string,int> *name_num_pair_ptr, double weight = 1);
+ public:
+  explicit Net(std::pair<const std::string, int> *name_num_pair_ptr, double weight = 1);
+
   std::vector<BlockPinPair> blk_pin_pair_list;
   void AddBlockPinPair(Block *block_ptr, int pin_index);
-
-  friend std::ostream& operator<<(std::ostream& os, const Net &net) {
-    os << net.Name() << "\n";
-    for (auto &&block_pin_pair: net.blk_pin_pair_list) {
-      os << "\t" << block_pin_pair << "\n";
-    }
-    return os;
-  }
 
   const std::string *Name() const;
   size_t Num();
@@ -35,6 +28,14 @@ public:
   double InvP();
   int P();
   double HPWL();
+
+  friend std::ostream& operator<<(std::ostream& os, const Net &net) {
+    os << net.Name() << "\n";
+    for (auto &&block_pin_pair: net.blk_pin_pair_list) {
+      os << "\t" << block_pin_pair << "\n";
+    }
+    return os;
+  }
 };
 
 

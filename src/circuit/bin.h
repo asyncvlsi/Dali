@@ -14,12 +14,12 @@ struct bin_index {
 };
 
 class bin_t {
-private:
+ private:
   int _left;
   int _bottom;
   int _width;
   int _height;
-public:
+ public:
   bin_t();
   bin_t(int left_arg, int bottom_arg, int width_arg, int height_arg);
 

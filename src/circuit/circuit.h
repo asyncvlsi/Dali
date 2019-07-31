@@ -11,16 +11,16 @@
 #include "net.h"
 
 class Circuit {
-private:
+ private:
   int tot_width_;
   int tot_height_;
   int tot_block_area_;
-  int tot_movable_num_;
+  int tot_movable_blk_num_;
   int min_width_;
   int max_width_;
   int min_height_;
   int max_height_;
-public:
+ public:
   Circuit();
   Circuit(int tot_block_type_num, int tot_block_num, int tot_net_num);
   std::vector<BlockType> block_type_list;
@@ -51,6 +51,7 @@ public:
   int BlockIndex(std::string &block_name);
   Block *GetBlock(std::string &block_name);
   void AddToBlockMap(std::string &block_name);
+  void AddBlock(std::string &block_name, BlockType *block_type, int llx = 0, int lly = 0, bool movable = true, BlockOrient orient= N);
   void AddBlock(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, bool movable = true, BlockOrient orient= N);
 
   // API to add new Net
@@ -62,13 +63,13 @@ public:
 
   // old API
   void add_block_type(std::string &block_type_name, int width, int height);
-  void add_pin_to_block(std::string &block_type_name, std::string &pin_name, int x_offset, int y_offset);
+  void add_pin_to_block(std::string &block_type_name, std::string &pin_name, double x_offset, double y_offset);
   void add_new_block(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, bool movable = true, BlockOrient orient = N);
   void create_blank_net(std::string &net_name, double weight);
   void add_pin_to_net(std::string &net_name, std::string &block_name, std::string &pin_name);
 
   // read lef/def file using above member functions
-  void ParseLine(std::string &line, std::vector<std::string> &field_list);
+  static void ParseLine(std::string &line, std::vector<std::string> &field_list);
   void ReadLefFile(std::string const &NameOfFile);
   void ReadDefFile(std::string const &NameOfFile);
   void ReportBlockTypeList();

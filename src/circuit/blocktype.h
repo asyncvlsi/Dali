@@ -11,14 +11,19 @@
 #include "common/misc.h"
 
 class BlockType {
-private:
+ private:
   /****essential data entries****/
   std::pair<const std::string, int>* name_num_pair_ptr_;
   int width_, height_;
-public:
+ public:
   BlockType(std::pair<const std::string, int>* name_num_pair_ptr, int width, int height);
   std::vector<Pin> pin_list;
   std::map<std::string, int> pin_name_num_map;
+
+  bool PinExist(std::string &pin_name);
+  int PinIndex(std::string &pin_name);
+  Pin *AddPin(std::string &pin_name);
+  void AddPin(std::string &pin_name, double x_offset, double y_offset);
 
   const std::string *Name() const;
   int Num() const;
@@ -28,18 +33,13 @@ public:
   void SetWidth(int width);
   void SetHeight(int height);
 
-  bool PinExist(std::string &pin_name);
-  int PinIndex(std::string &pin_name);
-  Pin *AddPin(std::string &pin_name);
-  void AddPin(std::string &pin_name, double x_offset, double y_offset);
-
   friend std::ostream& operator<<(std::ostream& os, const BlockType &block_type) {
-    os << "block type Name: " << *block_type.Name() << "\n";
-    os << "Width and Height: " << block_type.Width() << " " << block_type.Height() << "\n";
-    os << "assigned primary key: " << block_type.Num() << "\n";
-    os << "pin list:\n";
+    os << "BlockType name: " << *block_type.Name() << "\n";
+    os << "  width, height: " << block_type.Width() << " " << block_type.Height() << "\n";
+    os << "  assigned key: " << block_type.Num() << "\n";
+    os << "  pin list:\n";
     for( auto &&it: block_type.pin_name_num_map) {
-      os << "  " << it.first << " Num: " << it.second << " (" << block_type.pin_list[it.second].XOffset() << ", " << block_type.pin_list[it.second].YOffset() << ")\n";
+      os << "    " << it.first << " " << it.second << " (" << block_type.pin_list[it.second].XOffset() << ", " << block_type.pin_list[it.second].YOffset() << ")\n";
     }
     return os;
   }

@@ -7,7 +7,7 @@
 
 #include <cmath>
 #include "circuit/block.h"
-#include "circuit/bin.hpp"
+#include "circuit/bin.h"
 
 class block_al_t:public block_t {
 private:

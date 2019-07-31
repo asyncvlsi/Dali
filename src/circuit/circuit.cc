@@ -9,12 +9,12 @@
 #include "circuit.h"
 
 Circuit::Circuit() {
-  tot_movable_num_ = 0;
+  tot_movable_blk_num_ = 0;
   tot_block_area_ = 0;
   tot_width_ = 0;
   tot_height_ = 0;
   tot_block_area_ = 0;
-  tot_movable_num_ = 0;
+  tot_movable_blk_num_ = 0;
   min_width_ = 100000000;
   max_width_ = 0;
   min_height_ = 100000000;
@@ -25,12 +25,12 @@ Circuit::Circuit(int tot_block_type_num, int tot_block_num, int tot_net_num) {
   block_type_list.reserve(tot_block_type_num);
   block_list.reserve(tot_block_num);
   net_list.reserve(tot_net_num);
-  tot_movable_num_ = 0;
+  tot_movable_blk_num_ = 0;
   tot_block_area_ = 0;
   tot_width_ = 0;
   tot_height_ = 0;
   tot_block_area_ = 0;
-  tot_movable_num_ = 0;
+  tot_movable_blk_num_ = 0;
   min_width_ = 100000000;
   max_width_ = 0;
   min_height_ = 100000000;
@@ -92,13 +92,17 @@ void Circuit::AddToBlockMap(std::string &block_name) {
   block_name_map.insert(std::pair<std::string, int>(block_name, map_size));
 }
 
-void Circuit::AddBlock(std::string &block_name, std::string &block_type_name, int llx, int lly, bool movable, BlockOrient orient) {
+void Circuit::AddBlock(std::string &block_name, BlockType *block_type, int llx, int lly, bool movable, BlockOrient orient) {
   Assert(net_list.empty(), "Cannot add new Block, because net_list is not empty");
   Assert(!IsBlockExist(block_name), "Block exists, cannot create this block again: " + block_name);
   AddToBlockMap(block_name);
   std::pair<const std::string, int>* name_num_pair_ptr = &(*block_name_map.find(block_name));
-  BlockType *block_type = GetBlockType(block_type_name);
   block_list.emplace_back(block_type, name_num_pair_ptr, llx, lly, movable, orient);
+}
+
+void Circuit::AddBlock(std::string &block_name, std::string &block_type_name, int llx, int lly, bool movable, BlockOrient orient) {
+  BlockType *block_type = GetBlockType(block_type_name);
+  AddBlock(block_name, block_type, llx, lly, movable, orient);
 }
 
 bool Circuit::IsNetExist(std::string &net_name) {
@@ -131,7 +135,7 @@ void Circuit::add_block_type(std::string &block_type_name, int width, int height
   AddBlockType(block_type_name, width, height);
 }
 
-void Circuit::add_pin_to_block(std::string &block_type_name, std::string &pin_name, int x_offset, int y_offset) {
+void Circuit::add_pin_to_block(std::string &block_type_name, std::string &pin_name, double x_offset, double y_offset) {
   BlockType *block_type_ptr = GetBlockType(block_type_name);
   block_type_ptr->AddPin(pin_name, x_offset, y_offset);
 }
@@ -278,7 +282,7 @@ void Circuit::ReadLefFile(std::string const &NameOfFile) {
             std::vector<std::string> size_field;
             ParseLine(line, size_field);
             try {
-              width = std::stoi(size_field[1]);
+              width = (int)(std::stod(size_field[1])/m2_pitch);
             } catch (...) {
               std::cout << "Error!\n";
               std::cout << "Invalid stod conversion:" << size_field[1] << "\n";
@@ -286,19 +290,18 @@ void Circuit::ReadLefFile(std::string const &NameOfFile) {
               exit(1);
             }
             try {
-              height = std::stoi(size_field[3]);
+              height = (int)(std::stod(size_field[3])/m2_pitch);
             } catch (...) {
               std::cout << "Error!\n";
               std::cout << "Invalid stod conversion:" << size_field[3] << "\n";
               std::cout << line << "\n";
               exit(1);
             }
-            width = (int)(std::round(width/m2_pitch));
-            height = (int)(std::round(height/m2_pitch));
+            std::cout << width << " " << height << "\n";
             add_block_type(blockTypeName, width, height);
-            //std::cout << "  type width, height: "
-            //          << blockTypeList.back().width() << " "
-            //          << blockTypeList.back().height() << "\n";
+            std::cout << "  type width, height: "
+                      << block_type_list.back().Width() << " "
+                      << block_type_list.back().Height() << "\n";
           }
           getline(ist, line);
         }
@@ -320,7 +323,7 @@ void Circuit::ReadLefFile(std::string const &NameOfFile) {
             getline(ist, line);
           }  while (line.find("PORT")==std::string::npos && !ist.eof());
 
-          int tmp_xoffset = -1, tmp_yoffset = -1;
+          double tmp_xoffset = -1, tmp_yoffset = -1;
           do {
             getline(ist, line);
             if (line.find("RECT") != std::string::npos) {
@@ -334,9 +337,9 @@ void Circuit::ReadLefFile(std::string const &NameOfFile) {
                   std::cout << line << "\n";
                   exit(1);
                 }
-                tmp_xoffset = (int)(std::round(std::stod(rect_field[1])/m2_pitch));
-                tmp_yoffset = (int)(std::round(std::stod(rect_field[4])/m2_pitch));
-                //std::cout << "  " << tmp_xoffset << " " << tmp_yoffset << "\n";
+                tmp_xoffset = std::stod(rect_field[1])/m2_pitch;
+                tmp_yoffset = std::stod(rect_field[4])/m2_pitch;
+                std::cout << "  " << tmp_xoffset << " " << tmp_yoffset << "\n";
                 add_pin_to_block(blockTypeName, pinName, tmp_xoffset, tmp_yoffset);
               } else {
                 continue;
@@ -377,10 +380,10 @@ void Circuit::ReadDefFile(std::string const &NameOfFile) {
         exit(1);
       }
       try {
-        def_distance_microns = std::stoi(line_field[3]);
+        def_distance_microns = std::stod(line_field[3]);
       } catch (...) {
         std::cout << "Error!\n";
-        std::cout << "Invalid stoi conversion:" << line_field[3] << "\n";
+        std::cout << "Invalid stod conversion:" << line_field[3] << "\n";
         std::cout << line << "\n";
         exit(1);
       }
@@ -492,11 +495,15 @@ void Circuit::ReadDefFile(std::string const &NameOfFile) {
 }
 
 void Circuit::ReportBlockTypeList() {
-
+  for (auto &&block_type: block_type_list) {
+    std::cout << block_type << "\n";
+  }
 }
 
 void Circuit::ReportBlockTypeMap() {
-
+  for (auto &&it: block_type_name_map) {
+    std::cout << it.first << " " << it.second << "\n";
+  }
 }
 
 void Circuit::ReportBlockList() {
@@ -506,12 +513,10 @@ void Circuit::ReportBlockList() {
 }
 
 void Circuit::ReportBlockMap() {
-  for (auto &&name_num_pair: block_name_map) {
-    std::cout << name_num_pair.first << " " << name_num_pair.second << "\n";
+  for (auto &&it: block_name_map) {
+    std::cout << it.first << " " << it.second << "\n";
   }
 }
-
-
 
 void Circuit::ReportNetList() {
   for (auto &&net: net_list) {
@@ -520,8 +525,8 @@ void Circuit::ReportNetList() {
 }
 
 void Circuit::ReportNetMap() {
-  for (auto &&name_num_pair: net_name_map) {
-    std::cout << name_num_pair.first << " " << name_num_pair.second << "\n";
+  for (auto &&it: net_name_map) {
+    std::cout << it.first << " " << it.second << "\n";
   }
 }
 

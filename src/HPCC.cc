@@ -14,14 +14,14 @@ int main() {
   std::string lefFileName = "out_1K.lef";
   std::string defFileName = "out_1K.def";
   circuit.ReadLefFile(lefFileName);
-  circuit.ReadDefFile(defFileName);
+  //circuit.ReadDefFile(defFileName);
 
-  //circuit.ReportBlockTypeList();
+  circuit.ReportBlockTypeList();
   //circuit.ReportBlockTypeMap();
   //circuit.ReportBlockList();
   //circuit.ReportBlockMap();
   //circuit.ReportNetList();
-  //circuit.ReportNet_map();
+  //circuit.ReportNetMap();
 
   Time = clock() - Time;
   std::cout << "Execution time " << (float)Time/CLOCKS_PER_SEC << "s.\n";

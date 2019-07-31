@@ -28,14 +28,14 @@ enum BlockOrient{
 };
 
 class Block {
-protected:
+ protected:
   /* essential data entries */
   BlockType *type_;
   std::pair<const std::string, int>* name_num_pair_ptr_;
   int llx_, lly_; // lower left corner
   bool movable_; // movable
   enum BlockOrient orient_; // currently not used
-public:
+ public:
   Block(BlockType *type, std::pair<const std::string, int>* name_num_pair, int llx, int lly, bool movable = "true", BlockOrient orient = N);
   const std::string *Name() const;
   BlockType *Type() const;

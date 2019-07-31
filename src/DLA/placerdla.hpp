@@ -13,7 +13,7 @@
 #include "circuit/net.h"
 #include "circuit/pin.h"
 #include "placer/placerbase.hpp"
-#include "circuit/bin.hpp"
+#include "circuit/bin.h"
 #include "blockdla.hpp"
 #include "netdla.hpp"
 
