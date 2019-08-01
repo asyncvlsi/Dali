@@ -31,9 +31,9 @@ class Pin {
   void SetOffset(double x_offset, double y_offset);
   double XOffset() const;
   double YOffset() const;
-
   void AddRect(Rect &rect);
-  void AddRect(int llx, int lly, int urx, int ury);
+  void AddRect(double llx, double lly, double urx, double ury);
+  bool Empty();
 
   friend std::ostream& operator<<(std::ostream& os, const Pin &pin) {
     os << pin.Name() << " (" << pin.XOffset() << ", " << pin.YOffset() << ")";

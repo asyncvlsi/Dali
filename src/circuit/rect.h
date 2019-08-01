@@ -10,14 +10,14 @@
 
 class Rect {
  private:
-  int llx_, lly_, urx_, ury_;
+  double llx_, lly_, urx_, ury_;
  public:
-  Rect(int llx, int lly, int urx, int ury);
+  Rect(double llx, double lly, double urx, double ury);
   bool operator==(Rect &rhs) const;
-  int llx() const;
-  int lly() const;
-  int urx() const;
-  int ury() const;
+  double llx() const;
+  double lly() const;
+  double urx() const;
+  double ury() const;
   void ReportRectMatlab(const std::string &color = "black") const;
 };
 

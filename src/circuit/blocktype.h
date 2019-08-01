@@ -32,6 +32,7 @@ class BlockType {
   int Area() const;
   void SetWidth(int width);
   void SetHeight(int height);
+  bool Empty();
 
   friend std::ostream& operator<<(std::ostream& os, const BlockType &block_type) {
     os << "BlockType name: " << *block_type.Name() << "\n";

@@ -193,36 +193,29 @@ void Circuit::ParseLine(std::string &line, std::vector<std::string> &field_list)
 
 void Circuit::ReadLefFile(std::string const &NameOfFile) {
   std::ifstream ist(NameOfFile.c_str());
-  if (ist.is_open()==0) {
-    std::cout << "Cannot open input file " << NameOfFile << "\n";
-    exit(1);
-  }
+  Assert(ist.is_open(), "Cannot open input file " + NameOfFile);
   std::cout << "Start reading lef file\n";
-
   std::string line;
+
+  // 1. find DATABASE MICRONS
   lef_database_microns = 0;
   while ((lef_database_microns == 0) && !ist.eof()) {
     getline(ist, line);
     if (line.find("DATABASE MICRONS")!=std::string::npos) {
       std::vector<std::string> line_field;
       ParseLine(line, line_field);
-      if (line_field.size() < 3) {
-        std::cout << "Error!\n";
-        std::cout << "Invalid UNITS declaration: expecting 3 fields\n";
-        exit(1);
-      }
+      Assert(line_field.size() >= 3, "Invalid UNITS declaration: expecting 3 fields");
       try {
         lef_database_microns = std::stoi(line_field[2]);
       } catch (...) {
-        std::cout << "Error!\n";
-        std::cout << "Invalid stoi conversion:" << line_field[2] << "\n";
         std::cout << line << "\n";
-        exit(1);
+        Assert(false, "Invalid stoi conversion:" + line_field[2]);
       }
     }
   }
   //std::cout << "DATABASE MICRONS " << lef_database_microns << "\n";
 
+  // 2. find m2_pitch for aligning gates
   m2_pitch = 0;
   while ((m2_pitch == 0) && !ist.eof()) {
     getline(ist, line);
@@ -234,45 +227,32 @@ void Circuit::ReadLefFile(std::string const &NameOfFile) {
         if (line.find("PITCH") != std::string::npos) {
           std::vector<std::string> line_field;
           ParseLine(line, line_field);
-          if (line_field.size() < 3) {
-            std::cout << "Error!\n";
-            std::cout << "Invalid LAYER Metal2 PITCH declaration: expecting 3 fields\n";
-            exit(1);
-          }
+          Assert(line_field.size() >= 3, "Invalid LAYER Metal2 PITCH declaration: expecting 3 fields");
           try {
             m2_pitch = std::stod(line_field[2]);
             //std::cout << line_field[2] << "\n";
           } catch (...) {
-            std::cout << "Error!\n";
-            std::cout << "Invalid stoi conversion:" << line_field[2] << "\n";
             std::cout << line << "\n";
-            exit(1);
+            Assert(false, "Invalid stoi conversion:" + line_field[2]);
           }
         }
       } while (line.find("END Metal2")==std::string::npos && line.find("END m2")==std::string::npos && !ist.eof());
       break;
     }
   }
-  if (m2_pitch == 0) {
-    std::cout << "Error!\n";
-    std::cout << "Cannot find Metal2/m2 PITCH\n";
-    exit(1);
-  }
+  Assert(m2_pitch > 0, "Cannot find or invalid Metal2/m2 PITCH");
   //std::cout << "Metal2 PITCH: " << m2_pitch << "\n";
 
+  // 3. read block type information
   while (!ist.eof()) {
     getline(ist, line);
     if (line.find("MACRO") != std::string::npos) {
       std::vector<std::string> line_field;
       ParseLine(line, line_field);
-      if (line_field.size() < 2) {
-        std::cout << "Error!\n";
-        std::cout << "Invalid type name: expecting 2 fields\n";
-        std::cout << line << "\n";
-        exit(1);
-      }
-      std::string blockTypeName = line_field[1];
-      //std::cout << blockTypeName << "\n";
+      Assert(line_field.size() >= 2, "Invalid type name: expecting 2 fields\n" + line);
+      std::string block_type_name = line_field[1];
+      //std::cout << block_type_name << "\n";
+      BlockType *new_block_type = nullptr;
       int width = 0, height = 0;
       std::string end_macro_flag = "END " + line_field[1];
       do {
@@ -284,75 +264,62 @@ void Circuit::ReadLefFile(std::string const &NameOfFile) {
             try {
               width = (int)(std::stod(size_field[1])/m2_pitch);
             } catch (...) {
-              std::cout << "Error!\n";
-              std::cout << "Invalid stod conversion:" << size_field[1] << "\n";
               std::cout << line << "\n";
-              exit(1);
+              Assert(false, "Invalid stod conversion:" + size_field[1]);
             }
             try {
               height = (int)(std::stod(size_field[3])/m2_pitch);
             } catch (...) {
-              std::cout << "Error!\n";
-              std::cout << "Invalid stod conversion:" << size_field[3] << "\n";
               std::cout << line << "\n";
-              exit(1);
+              Assert(false, "Invalid stod conversion:" + size_field[3]);
             }
-            std::cout << width << " " << height << "\n";
-            add_block_type(blockTypeName, width, height);
-            std::cout << "  type width, height: "
-                      << block_type_list.back().Width() << " "
-                      << block_type_list.back().Height() << "\n";
+            new_block_type = AddBlockType(block_type_name, width, height);
+            //std::cout << "  type width, height: "
+            //          << block_type_list.back().Width() << " "
+            //          << block_type_list.back().Height() << "\n";
           }
           getline(ist, line);
         }
 
         if (line.find("PIN") != std::string::npos) {
           std::vector<std::string> pin_field;
-          ParseLine(line, pin_field);
-          if (pin_field.size() < 2) {
-            std::cout << "Error!\n";
-            std::cout << "Invalid pin name: expecting 2 fields\n";
-            std::cout << line << "\n";
-            exit(1);
-          }
-          std::string pinName = pin_field[1];
-          std::string end_pin_flag = "END " + pinName;
 
+          ParseLine(line, pin_field);
+          Assert(pin_field.size() >= 2, "Invalid pin name: expecting 2 fields\n" + line);
+
+          std::string pin_name = pin_field[1];
+          std::string end_pin_flag = "END " + pin_name;
+          Pin *new_pin = nullptr;
+          new_pin = new_block_type->AddPin(pin_name);
           // skip to "PORT" rectangle list
           do {
             getline(ist, line);
           }  while (line.find("PORT")==std::string::npos && !ist.eof());
 
-          double tmp_xoffset = -1, tmp_yoffset = -1;
+          double llx = 0, lly = 0, urx = 0, ury = 0;
           do {
             getline(ist, line);
             if (line.find("RECT") != std::string::npos) {
               //std::cout << line << "\n";
-              if ((tmp_xoffset == -1) && (tmp_yoffset == -1)) {
-                std::vector<std::string> rect_field;
-                ParseLine(line, rect_field);
-                if (rect_field.size() < 5) {
-                  std::cout << "Error!\n";
-                  std::cout << "Invalid rect definition: expecting 5 fields\n";
-                  std::cout << line << "\n";
-                  exit(1);
-                }
-                tmp_xoffset = std::stod(rect_field[1])/m2_pitch;
-                tmp_yoffset = std::stod(rect_field[4])/m2_pitch;
-                std::cout << "  " << tmp_xoffset << " " << tmp_yoffset << "\n";
-                add_pin_to_block(blockTypeName, pinName, tmp_xoffset, tmp_yoffset);
-              } else {
-                continue;
+              std::vector<std::string> rect_field;
+              ParseLine(line, rect_field);
+              Assert(rect_field.size() >= 5, "Invalid rect definition: expecting 5 fields\n" + line);
+              try {
+                llx = std::stod(rect_field[1])/m2_pitch;
+                lly = std::stod(rect_field[2])/m2_pitch;
+                urx = std::stod(rect_field[3])/m2_pitch;
+                ury = std::stod(rect_field[4])/m2_pitch;
+              } catch (...) {
+                Assert(false, "Invalid stod conversion:" + line);
               }
+              //std::cout << llx << " " << lly << " " << urx << " " << ury << "\n";
+              new_pin->AddRect(llx, lly, urx, ury);
             }
           } while (line.find(end_pin_flag)==std::string::npos && !ist.eof());
+          Assert(!new_pin->Empty(), "Pin has no rects: " + *new_pin->Name());
         }
       } while (line.find(end_macro_flag)==std::string::npos && !ist.eof());
-      if (block_type_list.back().pin_list.empty()) {
-        std::cout << "Error!\n";
-        std::cout << "MACRO: " << *block_type_list.back().Name() << " has no pin!\n";
-        exit(1);
-      }
+      Assert(!new_block_type->Empty(), "MACRO has no pins: " + *new_block_type->Name());
     }
   }
   std::cout << "lef file reading complete\n";

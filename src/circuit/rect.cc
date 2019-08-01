@@ -4,25 +4,25 @@
 
 #include "rect.h"
 
-Rect::Rect(int llx, int lly, int urx, int ury) : llx_(llx), lly_(lly), urx_(urx), ury_(ury) {}
+Rect::Rect(double llx, double lly, double urx, double ury) : llx_(llx), lly_(lly), urx_(urx), ury_(ury) {}
 
 bool Rect::operator==(Rect &rhs) const {
   return (llx_ == rhs.llx_) && (lly_ == rhs.llx_) && (urx_ == rhs.llx_) && (ury_ == rhs.llx_);
 }
 
-int Rect::llx() const {
+double Rect::llx() const {
   return llx_;
 }
 
-int Rect::lly() const {
+double Rect::lly() const {
   return lly_;
 }
 
-int Rect::urx() const {
+double Rect::urx() const {
   return urx_;
 }
 
-int Rect::ury() const {
+double Rect::ury() const {
   return ury_;
 }
 

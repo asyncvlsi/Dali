@@ -46,6 +46,14 @@ void Pin::AddRect(Rect &rect) {
   rect_list_.push_back(rect);
 }
 
-void Pin::AddRect(int llx, int lly, int urx, int ury) {
+void Pin::AddRect(double llx, double lly, double urx, double ury) {
+  if (rect_list_.empty()) {
+    x_offset_ = (llx + urx)/2.0;
+    y_offset_ = (lly + ury)/2.0;
+  }
   rect_list_.emplace_back(llx, lly, urx, ury);
+}
+
+bool Pin::Empty() {
+  return rect_list_.empty();
 }

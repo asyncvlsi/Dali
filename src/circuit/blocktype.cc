@@ -36,6 +36,10 @@ void BlockType::SetHeight(int height) {
   height_ = height;
 }
 
+bool BlockType::Empty() {
+  return pin_list.empty();
+}
+
 bool BlockType::PinExist(std::string &pin_name) {
   return !(pin_name_num_map.find(pin_name) == pin_name_num_map.end());
 }
