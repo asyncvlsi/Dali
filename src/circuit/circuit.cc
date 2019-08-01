@@ -161,6 +161,7 @@ void Circuit::ParseLine(std::string &line, std::vector<std::string> &field_list)
   std::vector<char> delimiter_list;
   delimiter_list.push_back(' ');
   delimiter_list.push_back(':');
+  delimiter_list.push_back(';');
   delimiter_list.push_back('\t');
   delimiter_list.push_back('\r');
   delimiter_list.push_back('\n');
@@ -310,16 +311,16 @@ void Circuit::ReadLefFile(std::string const &NameOfFile) {
                 urx = std::stod(rect_field[3])/m2_pitch;
                 ury = std::stod(rect_field[4])/m2_pitch;
               } catch (...) {
-                Assert(false, "Invalid stod conversion:" + line);
+                Assert(false, "Invalid stod conversion:\n" + line);
               }
               //std::cout << llx << " " << lly << " " << urx << " " << ury << "\n";
               new_pin->AddRect(llx, lly, urx, ury);
             }
           } while (line.find(end_pin_flag)==std::string::npos && !ist.eof());
-          Assert(!new_pin->Empty(), "Pin has no rects: " + *new_pin->Name());
+          Assert(!new_pin->Empty(), "Pin has no RECTs: " + *new_pin->Name());
         }
       } while (line.find(end_macro_flag)==std::string::npos && !ist.eof());
-      Assert(!new_block_type->Empty(), "MACRO has no pins: " + *new_block_type->Name());
+      Assert(!new_block_type->Empty(), "MACRO has no PINs: " + *new_block_type->Name());
     }
   }
   std::cout << "lef file reading complete\n";
@@ -327,11 +328,7 @@ void Circuit::ReadLefFile(std::string const &NameOfFile) {
 
 void Circuit::ReadDefFile(std::string const &NameOfFile) {
   std::ifstream ist(NameOfFile.c_str());
-  if (ist.is_open()==0) {
-    std::cout << "Cannot open input file " << NameOfFile << "\n";
-    exit(1);
-  }
-
+  Assert(ist.is_open(), "Cannot open input file " + NameOfFile);
   std::cout << "Start reading def file\n";
 
   std::string line;
@@ -341,18 +338,11 @@ void Circuit::ReadDefFile(std::string const &NameOfFile) {
     if (line.find("DISTANCE MICRONS")!=std::string::npos) {
       std::vector<std::string> line_field;
       ParseLine(line, line_field);
-      if (line_field.size() < 4) {
-        std::cout << "Error!\n";
-        std::cout << "Invalid UNITS declaration: expecting 4 fields\n";
-        exit(1);
-      }
+      Assert(line_field.size() >= 4, "Invalid UNITS declaration: expecting 4 fields");
       try {
-        def_distance_microns = std::stod(line_field[3]);
+        def_distance_microns = std::stoi(line_field[3]);
       } catch (...) {
-        std::cout << "Error!\n";
-        std::cout << "Invalid stod conversion:" << line_field[3] << "\n";
-        std::cout << line << "\n";
-        exit(1);
+        Assert(false, "Invalid stoi conversion:\n" + line);
       }
     }
   }
@@ -368,21 +358,14 @@ void Circuit::ReadDefFile(std::string const &NameOfFile) {
       std::vector<std::string> die_area_field;
       ParseLine(line, die_area_field);
       //std::cout << line << "\n";
-      if (die_area_field.size() < 9) {
-        std::cout << "Error!\n";
-        std::cout << "Invalid UNITS declaration: expecting 9 fields\n";
-        exit(1);
-      }
+      Assert(die_area_field.size() >= 9, "Invalid UNITS declaration: expecting 9 fields");
       try {
         def_left = (int)std::round(std::stoi(die_area_field[2])/m2_pitch/def_distance_microns);
         def_bottom = (int)std::round(std::stoi(die_area_field[3])/m2_pitch/def_distance_microns);
         def_right = (int)std::round(std::stoi(die_area_field[6])/m2_pitch/def_distance_microns);
         def_top = (int)std::round(std::stoi(die_area_field[7])/m2_pitch/def_distance_microns);
       } catch (...) {
-        std::cout << "Error!\n";
-        std::cout << "Invalid stoi conversion: expecting DIEAREA ( XXX XXX ) ( XXX XXX ) ;\n";
-        std::cout << line << "\n";
-        exit(1);
+        Assert(false, "Invalid stoi conversion:\n" + line);
       }
     }
   }
@@ -397,24 +380,9 @@ void Circuit::ReadDefFile(std::string const &NameOfFile) {
     //std::cout << line << "\t";
     std::vector<std::string> block_declare_field;
     ParseLine(line, block_declare_field);
-    if (block_declare_field.empty()) {
-      continue;
-    } else if (block_declare_field.size() < 3) {
-      std::cout << "Error!\n";
-      std::cout << "Invalid block declaration, expecting at least: - compName modelName\n";
-      exit(1);
-    }
+    Assert(block_declare_field.size() >= 3, "Invalid block declaration, expecting at least: - compName modelName ;\n" + line);
     //std::cout << block_declare_field[0] << " " << block_declare_field[1] << "\n";
-    if (block_type_name_map.find(block_declare_field[2]) == block_type_name_map.end()) {
-      std::cout << "Error!\n";
-      std::cout << "Invalid block declaration, no such type exists\n";
-      std::cout << line << "\n";
-      exit(1);
-    } else {
-      BlockType *block_type = &block_type_list[block_type_name_map.find(block_declare_field[2])->second];
-      std::string blockName = *block_type->Name();
-      add_new_block(block_declare_field[1], blockName, 0, 0, true);
-    }
+    AddBlock(block_declare_field[1], block_declare_field[2], 0, 0, true, N);
     getline(ist, line);
   }
 
@@ -429,17 +397,14 @@ void Circuit::ReadDefFile(std::string const &NameOfFile) {
       //std::cout << line << "\n";
       std::vector<std::string> net_field;
       ParseLine(line, net_field);
-      if (net_field.size() < 2) {
-        std::cout << "Error!\n";
-        std::cout << "Invalid net declaration, expecting at least: - netName\n";
-        exit(1);
-      }
+      Assert(net_field.size() >= 2, "Invalid net declaration, expecting at least: - netName\n" + line);
       //std::cout << "\t" << net_field[0] << " " << net_field[1] << "\n";
+      Net *new_net = nullptr;
       if (net_field[1].find("Reset") != std::string::npos) {
         //std::cout << net_field[1] << "\n";
-        create_blank_net(net_field[1], reset_signal_weight);
+        new_net = AddNet(net_field[1], reset_signal_weight);
       } else {
-        create_blank_net(net_field[1], normal_signal_weight);
+        new_net = AddNet(net_field[1], normal_signal_weight);
       }
       getline(ist, line);
       //std::cout << line << "\n";
@@ -452,7 +417,9 @@ void Circuit::ReadDefFile(std::string const &NameOfFile) {
       }
       for (size_t i=0; i<pin_field.size(); i += 4) {
         //std::cout << "     " << pin_field[i+1] << " " << pin_field[i+2];
-        add_pin_to_net(net_field[1], pin_field[i+1], pin_field[i+2]);
+        Block *block = GetBlock(pin_field[i+1]);
+        int pin_num = block->Type()->PinIndex(pin_field[i+2]);
+        new_net->AddBlockPinPair(block, pin_num);
       }
       //std::cout << "\n";
     }

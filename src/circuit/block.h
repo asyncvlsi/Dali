@@ -62,7 +62,8 @@ class Block {
   std::string OrientStr() const;
 
   friend std::ostream& operator<<(std::ostream& os, const Block &block) {
-    os << "block Name: " << *block.Name() << "\n";
+    os << "Block Name: " << *block.Name() << "\n";
+    os << "Block Type: " << *(block.Type()->Name()) << "\n";
     os << "Width and Height: " << block.Width() << " " << block.Height() << "\n";
     os << "lower left corner: " << block.LLX() << " " << block.LLY() << "\n";
     os << "movability: " << block.IsMovable() << "\n";

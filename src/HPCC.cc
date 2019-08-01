@@ -14,9 +14,9 @@ int main() {
   std::string lefFileName = "out_1K.lef";
   std::string defFileName = "out_1K.def";
   circuit.ReadLefFile(lefFileName);
-  //circuit.ReadDefFile(defFileName);
+  circuit.ReadDefFile(defFileName);
 
-  circuit.ReportBlockTypeList();
+  //circuit.ReportBlockTypeList();
   //circuit.ReportBlockTypeMap();
   //circuit.ReportBlockList();
   //circuit.ReportBlockMap();

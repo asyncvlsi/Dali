@@ -19,7 +19,7 @@ class BlockPinPair {
   double XOffset();
   double YOffset();
   friend std::ostream& operator<<(std::ostream& os, const BlockPinPair &block_pin_pair) {
-    os << " (" << *(block_pin_pair.GetBlock()->Name()) << ", " << *(block_pin_pair.GetPin()->Name()) << ") ";
+    os << " (" << *(block_pin_pair.GetBlock()->Name()) << " " << *(block_pin_pair.GetPin()->Name()) << ") ";
     return os;
   }
 };

@@ -30,7 +30,7 @@ class Net {
   double HPWL();
 
   friend std::ostream& operator<<(std::ostream& os, const Net &net) {
-    os << net.Name() << "\n";
+    os << *net.Name() << "\n";
     for (auto &&block_pin_pair: net.blk_pin_pair_list) {
       os << "\t" << block_pin_pair << "\n";
     }
