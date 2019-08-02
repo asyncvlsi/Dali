@@ -18,8 +18,10 @@ class BlockPinPair {
   Pin *GetPin() const;
   double XOffset();
   double YOffset();
+  const std::string *BlockName() const;
+  const std::string *PinName() const;
   friend std::ostream& operator<<(std::ostream& os, const BlockPinPair &block_pin_pair) {
-    os << " (" << *(block_pin_pair.GetBlock()->Name()) << " " << *(block_pin_pair.GetPin()->Name()) << ") ";
+    os << " (" << *(block_pin_pair.BlockName()) << " " << *(block_pin_pair.PinName()) << ") ";
     return os;
   }
 };

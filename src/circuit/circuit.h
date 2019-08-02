@@ -70,8 +70,8 @@ class Circuit {
 
   // read lef/def file using above member functions
   static void ParseLine(std::string &line, std::vector<std::string> &field_list);
-  void ReadLefFile(std::string const &NameOfFile);
-  void ReadDefFile(std::string const &NameOfFile);
+  void ReadLefFile(std::string const &name_of_file);
+  void ReadDefFile(std::string const &name_of_file);
   void ReportBlockTypeList();
   void ReportBlockTypeMap();
   void ReportBlockList();
@@ -79,10 +79,21 @@ class Circuit {
   void ReportNetList();
   void ReportNetMap();
 
+  int MinWidth() const;
+  int MaxWidth() const;
+  int MinHeight() const;
+  int MaxHeight() const;
+  int TotArea() const;
+  int TotBlockNum() const;
+  int TotMovableBlockNum() const;
+  double AveWidth() const;
+  double AveHeight() const;
+  double AveArea() const;
+
   // dump circuit to LEF/DEF file, readable by the the above ReadDefFile()
-  void WriteDefFileDebug(std::string const &NameOfFile= "circuit.nodes");
-  void GenMATLABScript(std::string const &filename= "block_net_list.m");
-  void SaveDefFile(std::string const &NameOfFile, std::string const &defFileName);
+  void WriteDefFileDebug(std::string const &name_of_file= "circuit.def");
+  void GenMATLABScript(std::string const &name_of_file= "block_net_list.m");
+  void SaveDefFile(std::string const &name_of_file, std::string const &def_file_name);
 };
 
 #endif //HPCC_CIRCUIT_HPP

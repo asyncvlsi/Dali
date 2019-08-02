@@ -31,3 +31,11 @@ double BlockPinPair::YOffset() {
     exit(1);
   }
 }
+
+const std::string *BlockPinPair::BlockName() const {
+  return GetBlock()->Name();
+}
+
+const std::string *BlockPinPair::PinName() const {
+  return GetPin()->Name();
+}
