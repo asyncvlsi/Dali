@@ -98,6 +98,25 @@ void Circuit::AddBlock(std::string &block_name, BlockType *block_type, int llx, 
   AddToBlockMap(block_name);
   std::pair<const std::string, int>* name_num_pair_ptr = &(*block_name_map.find(block_name));
   block_list.emplace_back(block_type, name_num_pair_ptr, llx, lly, movable, orient);
+
+  tot_block_area_ += block_list.back().Area();
+  tot_width_ += block_list.back().Width();
+  tot_height_ += block_list.back().Height();
+  if (block_list.back().IsMovable()) {
+    ++tot_movable_blk_num_;
+  }
+  if ( block_list.back().Height() < min_height_ ) {
+    min_height_ = block_list.back().Height();
+  }
+  if ( block_list.back().Height() > max_height_ ) {
+    max_height_ = block_list.back().Height();
+  }
+  if ( block_list.back().Width() < min_width_ ) {
+    min_width_ = block_list.back().Width();
+  }
+  if ( block_list.back().Width() > min_width_ ) {
+    max_width_ = block_list.back().Width();
+  }
 }
 
 void Circuit::AddBlock(std::string &block_name, std::string &block_type_name, int llx, int lly, bool movable, BlockOrient orient) {
@@ -192,9 +211,9 @@ void Circuit::ParseLine(std::string &line, std::vector<std::string> &field_list)
   }
 }
 
-void Circuit::ReadLefFile(std::string const &NameOfFile) {
-  std::ifstream ist(NameOfFile.c_str());
-  Assert(ist.is_open(), "Cannot open input file " + NameOfFile);
+void Circuit::ReadLefFile(std::string const &name_of_file) {
+  std::ifstream ist(name_of_file.c_str());
+  Assert(ist.is_open(), "Cannot open input file " + name_of_file);
   std::cout << "Start reading lef file\n";
   std::string line;
 
@@ -264,15 +283,9 @@ void Circuit::ReadLefFile(std::string const &NameOfFile) {
             ParseLine(line, size_field);
             try {
               width = (int)(std::stod(size_field[1])/m2_pitch);
-            } catch (...) {
-              std::cout << line << "\n";
-              Assert(false, "Invalid stod conversion:" + size_field[1]);
-            }
-            try {
               height = (int)(std::stod(size_field[3])/m2_pitch);
             } catch (...) {
-              std::cout << line << "\n";
-              Assert(false, "Invalid stod conversion:" + size_field[3]);
+              Assert(false, "Invalid stod conversion:\n" + line);
             }
             new_block_type = AddBlockType(block_type_name, width, height);
             //std::cout << "  type width, height: "
@@ -326,9 +339,9 @@ void Circuit::ReadLefFile(std::string const &NameOfFile) {
   std::cout << "lef file reading complete\n";
 }
 
-void Circuit::ReadDefFile(std::string const &NameOfFile) {
-  std::ifstream ist(NameOfFile.c_str());
-  Assert(ist.is_open(), "Cannot open input file " + NameOfFile);
+void Circuit::ReadDefFile(std::string const &name_of_file) {
+  std::ifstream ist(name_of_file.c_str());
+  Assert(ist.is_open(), "Cannot open input file " + name_of_file);
   std::cout << "Start reading def file\n";
 
   std::string line;
@@ -464,22 +477,147 @@ void Circuit::ReportNetMap() {
   }
 }
 
-void Circuit::WriteDefFileDebug(std::string const &NameOfFile) {
-  std::ofstream ost(NameOfFile.c_str());
-  if (!ost.is_open()) {
-    std::cout << "Cannot open file " << NameOfFile << "\n";
-    exit(1);
-  }
+int Circuit::MinWidth() const {
+  return min_width_;
+}
+
+int Circuit::MaxWidth() const {
+  return  max_width_;
+}
+
+int Circuit::MinHeight() const {
+  return min_height_;
+}
+
+int Circuit::MaxHeight() const {
+  return  max_height_;
+}
+
+int Circuit::TotArea() const {
+  return tot_block_area_;
+}
+
+int Circuit::TotBlockNum() const {
+  return block_list.size();
+}
+
+int Circuit::TotMovableBlockNum() const {
+  return tot_movable_blk_num_;
+}
+
+double Circuit::AveWidth() const {
+  return tot_width_/(double)TotBlockNum();
+}
+
+double Circuit::AveHeight() const {
+  return tot_height_/(double)TotBlockNum();
+}
+
+double Circuit::AveArea() const {
+  return tot_block_area_/(double)TotBlockNum();
+}
+
+void Circuit::WriteDefFileDebug(std::string const &name_of_file) {
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open file " + name_of_file);
+
+  // need some header here
+
 
   for (auto &&block: block_list) {
-    ost << "\t" << block.Name() << "\t" << block.Width() << "\t" << block.Height() << "\n";
+    ost << "- "
+        << *(block.Name()) << " "
+        << *(block.Type()->Name()) << " + "
+        << "PLACED" << " "
+        << "( " + std::to_string((int)(block.LLX()*def_distance_microns*m2_pitch)) + " " + std::to_string((int)(block.LLY()*def_distance_microns*m2_pitch)) + " )" << " "
+        << block.OrientStr() + " ;\n";
   }
+  ost << "END COMPONENTS\n";
+
+  ost << "NETS " << net_list.size() << " ;\n";
+  for (auto &&net: net_list) {
+    ost << "- "
+        << *(net.Name()) << "\n";
+    ost << " ";
+    for (auto &&pin_pair: net.blk_pin_pair_list) {
+      ost << " ( " << *(pin_pair.BlockName()) << " " << *(pin_pair.PinName()) << " ) ";
+    }
+    ost << "\n" << " ;\n";
+  }
+  ost << "END NETS\n\n";
+  ost << "END DESIGN\n";
+
+  ost.close();
 }
 
-void Circuit::GenMATLABScript(std::string const &filename) {
-
+void Circuit::GenMATLABScript(std::string const &name_of_file) {
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+  //ost << left() << " " << bottom() << " " << right() - left() << " " << top() - bottom() << "\n";
+  for (auto &&block: block_list) {
+    ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";
+  }
+  /*
+  for (auto &&net: net_list) {
+    for (size_t i=0; i<net.pin_list.size(); i++) {
+      for (size_t j=i+1; j<net.pin_list.size(); j++) {
+        ost << "line([" << net.pin_list[i].abs_x() << "," << net.pin_list[j].abs_x() << "],[" << net.pin_list[i].abs_y() << "," << net.pin_list[j].abs_y() << "],'lineWidth', 0.5)\n";
+      }
+    }
+  }
+   */
+  ost.close();
 }
 
-void Circuit::SaveDefFile(std::string const &NameOfFile, std::string const &defFileName) {
+void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &def_file_name) {
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open file " + name_of_file);
 
+  std::ifstream ist(def_file_name.c_str());
+  Assert(ist.is_open(), "Cannot open file " + def_file_name);
+
+  std::string line;
+  // 1. print file header, copy from def file
+  while (line.find("COMPONENTS") == std::string::npos && !ist.eof()) {
+    getline(ist,line);
+    ost << line << "\n";
+  }
+
+  // 2. print component
+  //std::cout << _circuit->blockList.size() << "\n";
+  for (auto &&block: block_list) {
+    ost << "- "
+        << *block.Name() << " "
+        << *(block.Type()->Name()) << " + "
+        << "PLACED" << " "
+        << "( " + std::to_string((int)(block.LLX()*def_distance_microns*m2_pitch)) + " " + std::to_string((int)(block.LLY()*def_distance_microns*m2_pitch)) + " )" << " "
+        << block.OrientStr() + " ;\n";
+  }
+  ost << "END COMPONENTS\n";
+  // jump to the end of components
+  while (line.find("END COMPONENTS") == std::string::npos && !ist.eof()) {
+    getline(ist,line);
+  }
+
+  // 3. print net, copy from def file
+  while (!ist.eof()) {
+    getline(ist,line);
+    ost << line << "\n";
+  }
+  /*
+  ost << "NETS " << netList.size() << " ;\n";
+  for (auto &&net: netList) {
+    ost << "- "
+        << net.name() << "\n";
+    ost << " ";
+    for (auto &&pin: net.pin_list) {
+      ost << " " << pin.pin_name();
+    }
+    ost << "\n" << " ;\n";
+  }
+  ost << "END NETS\n\n";
+  ost << "END DESIGN\n";
+   */
+  ost.close();
+  ist.close();
 }
