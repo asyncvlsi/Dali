@@ -13,7 +13,7 @@
 #include "common/misc.h"
 
 /* a block can be a gate, can also be a large module, it includes information like
- * the Name of a gate/module, its Width and Height, its lower left corner (LLX, LLY),
+ * the Name of a gate/module, its Width and Height, its lower Left corner (LLX, LLY),
  * the movability, Orient. */
 
 enum BlockOrient{
@@ -32,7 +32,7 @@ class Block {
   /* essential data entries */
   BlockType *type_;
   std::pair<const std::string, int>* name_num_pair_ptr_;
-  int llx_, lly_; // lower left corner
+  int llx_, lly_; // lower Left corner
   bool movable_; // movable
   enum BlockOrient orient_; // currently not used
  public:
@@ -65,7 +65,7 @@ class Block {
     os << "Block Name: " << *block.Name() << "\n";
     os << "Block Type: " << *(block.Type()->Name()) << "\n";
     os << "Width and Height: " << block.Width() << " " << block.Height() << "\n";
-    os << "lower left corner: " << block.LLX() << " " << block.LLY() << "\n";
+    os << "lower Left corner: " << block.LLX() << " " << block.LLY() << "\n";
     os << "movability: " << block.IsMovable() << "\n";
     os << "orientation: " << block.OrientStr() << "\n";
     os << "assigned primary key: " << block.Num() << "\n";

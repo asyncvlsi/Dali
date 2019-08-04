@@ -32,6 +32,14 @@ double BlockPinPair::YOffset() {
   }
 }
 
+double BlockPinPair::AbsX() const {
+  return 0;
+}
+
+double BlockPinPair::AbsY() const {
+  return 0;
+}
+
 const std::string *BlockPinPair::BlockName() const {
   return GetBlock()->Name();
 }

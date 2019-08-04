@@ -14,7 +14,10 @@ file(GLOB SOURCES
         src/circuit/*.cc
         src/placer/*.h
         src/placer/*.cc
-
+        src/placer/globalPlacer/*.h
+        src/placer/globalPlacer/*.cc
+        src/placer/legalizer/*.h
+        src/placer/legalizer/*.cc
         src/*.h
         src/*.cc
         )

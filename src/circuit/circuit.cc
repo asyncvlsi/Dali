@@ -38,8 +38,8 @@ Circuit::Circuit(int tot_block_type_num, int tot_block_num, int tot_net_num) {
 }
 
 void Circuit::SetBoundary(int left, int right, int bottom, int top) {
-  Assert(right > left, "right boundary is not larger than left boundary?");
-  Assert(top > bottom, "top boundary is not larger than bottom boundary?");
+  Assert(right > left, "Right boundary is not larger than Left boundary?");
+  Assert(top > bottom, "Top boundary is not larger than Bottom boundary?");
   def_left = left;
   def_right = right;
   def_bottom = bottom;
@@ -553,7 +553,7 @@ void Circuit::WriteDefFileDebug(std::string const &name_of_file) {
 void Circuit::GenMATLABScript(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
-  //ost << left() << " " << bottom() << " " << right() - left() << " " << top() - bottom() << "\n";
+  //ost << left() << " " << bottom() << " " << Right() - Left() << " " << Top() - Bottom() << "\n";
   for (auto &&block: block_list) {
     ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";
   }
@@ -584,7 +584,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   }
 
   // 2. print component
-  //std::cout << _circuit->blockList.size() << "\n";
+  //std::cout << circuit_->blockList.size() << "\n";
   for (auto &&block: block_list) {
     ost << "- "
         << *block.Name() << " "
