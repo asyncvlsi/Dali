@@ -10,7 +10,7 @@
 #include <fstream>
 #include "circuit/circuit.h"
 
-class placer_t {
+class Placer {
 protected:
   /* essential data entries */
   double _aspect_ratio; // placement region Height/Width
@@ -21,11 +21,11 @@ protected:
    * if so, the _aspect_ratio or _filling_rate might also be changed */
   int _left, _right, _bottom, _top;
   // boundaries of the placement region
-  circuit_t* _circuit;
+  Circuit* _circuit;
 
 public:
-  placer_t();
-  placer_t(double aspectRatio, double fillingRate);
+  Placer();
+  Placer(double aspectRatio, double fillingRate);
 
   bool set_filling_rate(double rate = 2.0/3.0);
   double filling_rate();
@@ -36,7 +36,7 @@ public:
   bool set_space_block_ratio(double ratio);
   // the ratio of total_white_space/total_block_area
 
-  virtual bool set_input_circuit(circuit_t *circuit) = 0;
+  virtual bool set_input_circuit(Circuit *circuit) = 0;
   bool auto_set_boundaries();
   void report_boundaries();
   int left();
@@ -55,7 +55,7 @@ public:
   bool write_node_terminal(std::string const &NameOfFile="terminal.txt", std::string const &NameOfFile1="nodes.txt");
   bool save_DEF(std::string const &NameOfFile="circuit.def");
 
-  virtual ~placer_t();
+  virtual ~Placer();
 };
 
 

@@ -3,9 +3,9 @@
 //
 
 #include <cmath>
-#include "placerbase.hpp"
+#include "placerbase.h"
 
-placer_t::placer_t() {
+Placer::Placer() {
   _aspect_ratio = 0;
   _filling_rate = 0;
   _left = 0;
@@ -15,7 +15,7 @@ placer_t::placer_t() {
   _circuit = nullptr;
 }
 
-placer_t::placer_t(double aspectRatio, double fillingRate) : _aspect_ratio(aspectRatio), _filling_rate(fillingRate) {
+Placer::Placer(double aspectRatio, double fillingRate) : _aspect_ratio(aspectRatio), _filling_rate(fillingRate) {
   _left = 0;
   _right = 0;
   _bottom = 0;
@@ -23,7 +23,7 @@ placer_t::placer_t(double aspectRatio, double fillingRate) : _aspect_ratio(aspec
   _circuit = nullptr;
 }
 
-bool placer_t::set_filling_rate(double rate) {
+bool Placer::set_filling_rate(double rate) {
   if ((rate > 1)||(rate <= 0)) {
     std::cout << "Error!\n";
     std::cout << "Invalid value: value should be in range (0, 1]\n";
@@ -34,15 +34,15 @@ bool placer_t::set_filling_rate(double rate) {
   return true;
 }
 
-double placer_t::filling_rate() {
+double Placer::filling_rate() {
   return _filling_rate;
 }
 
-double placer_t::aspect_ratio() {
+double Placer::aspect_ratio() {
   return _aspect_ratio;
 }
 
-bool placer_t::set_aspect_ratio(double ratio){
+bool Placer::set_aspect_ratio(double ratio){
   if (ratio < 0) {
     std::cout << "Error!\n";
     std::cout << "Invalid value: value should be in range (0, +infinity)\n";
@@ -53,14 +53,14 @@ bool placer_t::set_aspect_ratio(double ratio){
   return true;
 }
 
-double placer_t::space_block_ratio() {
+double Placer::space_block_ratio() {
   if (_filling_rate < 1e-3) {
     std::cout << "Warning: filling rate too small, might lead to large numerical error.\n";
   }
   return 1.0/_filling_rate;
 }
 
-bool placer_t::set_space_block_ratio(double ratio) {
+bool Placer::set_space_block_ratio(double ratio) {
   if (ratio < 1) {
     std::cout << "Error!\n";
     std::cout << "Invalid value: value should be in range [1, +infinity)\n";
@@ -71,7 +71,7 @@ bool placer_t::set_space_block_ratio(double ratio) {
   return true;
 }
 
-bool placer_t::auto_set_boundaries() {
+bool Placer::auto_set_boundaries() {
   if (_circuit == nullptr) {
     std::cout << "Error!\n";
     std::cout << "Member function set_input_circuit must be called before auto_set_boundaries\n";
@@ -95,28 +95,28 @@ bool placer_t::auto_set_boundaries() {
   return true;
 }
 
-void placer_t::report_boundaries() {
+void Placer::report_boundaries() {
   std::cout << "\tleft\tright\tbottom\ttop\n";
   std::cout << "\t" << _left << "\t" << _right << "\t" << _bottom << "\t" << _top << "\n";
 }
 
-int placer_t::left() {
+int Placer::left() {
   return _left;
 }
 
-int placer_t::right() {
+int Placer::right() {
   return _right;
 }
 
-int placer_t::bottom() {
+int Placer::bottom() {
   return _bottom;
 }
 
-int placer_t::top() {
+int Placer::top() {
   return _top;
 }
 
-bool placer_t::update_aspect_ratio() {
+bool Placer::update_aspect_ratio() {
   if ((_right - _left == 0) || (_top - _bottom == 0)) {
     std::cout << "Error!\n";
     std::cout << "Zero Height or Width of placement region!\n";
@@ -127,7 +127,7 @@ bool placer_t::update_aspect_ratio() {
   return true;
 }
 
-bool placer_t::set_boundary(int left_arg, int right_arg, int bottom_arg, int top_arg) {
+bool Placer::set_boundary(int left_arg, int right_arg, int bottom_arg, int top_arg) {
   if (_circuit == nullptr) {
     std::cout << "Error!\n";
     std::cout << "Member function set_input_circuit must be called before auto_set_boundaries\n";
@@ -153,7 +153,7 @@ bool placer_t::set_boundary(int left_arg, int right_arg, int bottom_arg, int top
   }
 }
 
-bool placer_t::gen_matlab_disp_file(std::string const &filename) {
+bool Placer::gen_matlab_disp_file(std::string const &filename) {
   std::ofstream ost(filename.c_str());
   if (ost.is_open()==0) {
     std::cout << "Cannot open output file: " << filename << "\n";
@@ -176,7 +176,7 @@ bool placer_t::gen_matlab_disp_file(std::string const &filename) {
   return true;
 }
 
-bool placer_t::write_pl_solution(std::string const &NameOfFile) {
+bool Placer::write_pl_solution(std::string const &NameOfFile) {
   std::ofstream ost(NameOfFile.c_str());
   if (ost.is_open()==0) {
     std::cout << "Cannot open file" << NameOfFile << "\n";
@@ -195,7 +195,7 @@ bool placer_t::write_pl_solution(std::string const &NameOfFile) {
   return true;
 }
 
-bool placer_t::write_node_terminal(std::string const &NameOfFile, std::string const &NameOfFile1) {
+bool Placer::write_node_terminal(std::string const &NameOfFile, std::string const &NameOfFile1) {
   std::ofstream ost(NameOfFile.c_str());
   std::ofstream ost1(NameOfFile1.c_str());
   if ((ost.is_open()==0)||(ost1.is_open()==0)) {
@@ -227,7 +227,7 @@ bool placer_t::write_node_terminal(std::string const &NameOfFile, std::string co
   return true;
 }
 
-bool placer_t::save_DEF(std::string const &NameOfFile) {
+bool Placer::save_DEF(std::string const &NameOfFile) {
   std::ofstream ost(NameOfFile.c_str());
   if (!ost.is_open()) {
     std::cout << "Cannot open file " << NameOfFile << "\n";
@@ -275,7 +275,7 @@ bool placer_t::save_DEF(std::string const &NameOfFile) {
   return true;
 }
 
-placer_t::~placer_t() {
+Placer::~Placer() {
 
 }
 

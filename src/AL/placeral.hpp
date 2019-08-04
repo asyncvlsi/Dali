@@ -9,7 +9,7 @@
 #include <set>
 #include <random>
 #include <cmath>
-#include "placer/placerbase.hpp"
+#include "placer/placerbase.h"
 #include "blockal.hpp"
 #include "netal.hpp"
 #include "circuit/bin.h"
