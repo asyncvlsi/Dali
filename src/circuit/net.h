@@ -22,12 +22,17 @@ class Net {
   void AddBlockPinPair(Block *block_ptr, int pin_index);
 
   const std::string *Name() const;
-  size_t Num();
+  int Num();
   void SetWeight(double weight);
   double Weight();
   double InvP();
   int P();
   double HPWL();
+
+  int MaxPinX();
+  int MinPinX();
+  int MaxPinY();
+  int MinPinY();
 
   friend std::ostream& operator<<(std::ostream& os, const Net &net) {
     os << *net.Name() << "\n";

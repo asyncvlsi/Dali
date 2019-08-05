@@ -14,7 +14,7 @@ const std::string *Net::Name() const {
   return &(name_num_pair_ptr_->first);
 }
 
-size_t Net::Num() {
+int Net::Num() {
  return name_num_pair_ptr_->second;
 }
 
