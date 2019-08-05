@@ -15,10 +15,14 @@ class Net {
  protected:
   std::pair<const std::string, int> *name_num_pair_ptr_;
   double weight_;
+
+  // cached data
+  int max_pin_x_, min_pin_x_;
+  int max_pin_y_, min_pin_y_;
  public:
   explicit Net(std::pair<const std::string, int> *name_num_pair_ptr, double weight = 1);
 
-  std::vector<BlockPinPair> blk_pin_pair_list;
+  std::vector<BlockPinPair> blk_pin_list;
   void AddBlockPinPair(Block *block_ptr, int pin_index);
 
   const std::string *Name() const;
@@ -27,16 +31,23 @@ class Net {
   double Weight();
   double InvP();
   int P();
-  double HPWL();
+
+  void UpdateMaxMinX();
+  void UpdateMaxMinY();
+  void UpdateMaxMin();
 
   int MaxPinX();
   int MinPinX();
   int MaxPinY();
   int MinPinY();
 
+  double HPWLX();
+  double HPWLY();
+  double HPWL();
+
   friend std::ostream& operator<<(std::ostream& os, const Net &net) {
     os << *net.Name() << "\n";
-    for (auto &&block_pin_pair: net.blk_pin_pair_list) {
+    for (auto &&block_pin_pair: net.blk_pin_list) {
       os << "\t" << block_pin_pair << "\n";
     }
     return os;

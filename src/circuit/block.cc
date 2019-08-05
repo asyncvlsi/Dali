@@ -7,6 +7,7 @@
 Block::Block(BlockType *type, std::pair<const std::string, int>* name_num_pair_ptr, int llx, int lly, bool movable, BlockOrient orient) : type_(
     type), name_num_pair_ptr_(name_num_pair_ptr), llx_(llx), lly_(lly), movable_(movable), orient_(orient) {
   Assert(name_num_pair_ptr != nullptr, "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
+  aux_ = nullptr;
 }
 
 const std::string *Block::Name() const{
@@ -113,6 +114,23 @@ std::string Block::OrientStr() const {
     }
   }
   return s;
+}
+
+void Block::SetAux(BlockAux *aux) {
+  Assert(aux != nullptr, "When set auxiliary information, argument cannot be a nullptr");
+  aux_ = aux;
+}
+
+BlockAux *Block::Aux() const {
+  return aux_;
+}
+
+void Block::IncreX(double amount) {
+  llx_ += amount;
+}
+
+void Block::IncreY(double amount) {
+  lly_ += amount;
 }
 
 const std::string *Block::TypeName() const {

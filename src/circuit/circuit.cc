@@ -539,7 +539,7 @@ void Circuit::WriteDefFileDebug(std::string const &name_of_file) {
     ost << "- "
         << *(net.Name()) << "\n";
     ost << " ";
-    for (auto &&pin_pair: net.blk_pin_pair_list) {
+    for (auto &&pin_pair: net.blk_pin_list) {
       ost << " ( " << *(pin_pair.BlockName()) << " " << *(pin_pair.PinName()) << " ) ";
     }
     ost << "\n" << " ;\n";

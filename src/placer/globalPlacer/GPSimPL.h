@@ -6,6 +6,7 @@
 #define HPCC_SRC_PLACER_GLOBALPLACER_GPSIMPL_H_
 
 #include "placer/placer.h"
+#include "circuit/bin.h"
 
 typedef struct {
   size_t pin;
@@ -14,9 +15,6 @@ typedef struct {
 
 class GPSimPL: public Placer {
  private:
-  size_t _movable_block_num;
-  double _width_epsilon;
-  double _height_epsilon;
   double HPWLX_new = 0;
   double HPWLY_new = 0;
   double HPWLX_old = 1e30;
@@ -25,24 +23,26 @@ class GPSimPL: public Placer {
   bool HPWLy_converge = false;
   double cg_precision = 0.01;
   double HPWL_intra_linearSolver_precision = 0.01;
-  int max_legalization_iteration = 1000;
-  int iteration_limit_diffusion = 10;
-  int time_step = 1;
  public:
   GPSimPL();
   GPSimPL(double aspectRatio, double fillingRate);
-  size_t movable_block_num();
+  int TotBlockNum();
   double WidthEpsilon();
   double HeightEpsilon();
 
   std::vector< std::vector<weightTuple> > Ax, Ay;
-  // declare matrix here, such that every function in this namespace can see these matrix
   std::vector<size_t> kx, ky;
   // track the length of each row of Ax and Ay
   std::vector<double> bx, by;
 
-  void uniform_initialization();
+  std::vector<double> ax;
+  std::vector<double> ap;
+  std::vector<double> z;
+  std::vector<double> p;
+  std::vector<double> JP;
+  // some static variable used in the CG_solver
 
+  void uniform_initialization();
   void cg_init();
   void cg_close();
   void initialize_HPWL_flags();
@@ -60,34 +60,8 @@ class GPSimPL: public Placer {
   void CG_solver_x();
   void CG_solver_y();
 
-  std::vector< block_al_t > boundary_list;
-  void add_boundary_list();
-  std::vector< std::vector<bin_t> > bin_list;
-  int bin_width, bin_height;
-  int bin_list_size_x, bin_list_size_y;
-  block_al_t virtual_bin_boundary;
-  void initialize_bin_list();
-  bool draw_bin_list(std::string const &filename="bin_list.m");
-
-  void shift_to_region_center();
-  void expansion_legalization();
   bool draw_block_net_list(std::string const &filename="block_net_list.txt");
-  void update_block_in_bin();
-  bool check_legal();
-  void integerize();
-  void update_velocity();
-  void update_velocity_force_damping();
-  void update_position();
-  void diffusion_legalization();
-  bool legalization();
-  void diffusion_with_gravity();
-  void diffusion_with_gravity2();
-  bool tetris_legalization();
-  bool tetris_legalization2();
-  bool gravity_legalization();
-  bool post_legalization_optimization();
   bool StartPlacement() override;
-  void report_placement_result();
   void report_hpwl();
 };
 

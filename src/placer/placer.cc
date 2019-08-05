@@ -23,11 +23,18 @@ Placer::Placer(double aspectRatio, double fillingRate) : aspect_ratio_(aspectRat
   circuit_ = nullptr;
 }
 
+Placer::~Placer() {}
+
 void Placer::SetInputCircuit(Circuit *circuit) {
   Assert(circuit != nullptr, "Invalid input circuit: not allowed to set nullptr as the input!");
-  Assert(circuit->block_list.empty(), "Invalid input circuit: empty block list!");
-  Assert(circuit->net_list.empty(), "Invalid input circuit: empty net list!");
+  Assert(!circuit->block_list.empty(), "Invalid input circuit: empty block list!");
+  Assert(!circuit->net_list.empty(), "Invalid input circuit: empty net list!");
   circuit_ = circuit;
+}
+
+Circuit *Placer::GetCircuit() {
+  Warning(circuit_ != nullptr, "Circuit is a nullptr!");
+  return  circuit_;
 }
 
 void Placer::SetFillingRate(double rate) {
@@ -56,6 +63,14 @@ void Placer::SetSpaceBlockRatio(double ratio) {
 double Placer::SpaceBlockRatio() const {
   Warning(filling_rate_ < 1e-3, "Warning: filling rate too small, might lead to large numerical error.");
   return 1.0/filling_rate_;
+}
+
+std::vector<Block> *Placer::BlockList() {
+  return &(circuit_->block_list);
+}
+
+std::vector<Net> *Placer::NetList() {
+  return &(circuit_->net_list);
 }
 
 bool Placer::IsBoundaryProper() {
@@ -138,6 +153,16 @@ bool Placer::UpdateAspectRatio() {
   return true;
 }
 
+void Placer::TakeOver(Placer *placer) {
+  aspect_ratio_ = placer->AspectRatio();
+  filling_rate_ = placer->FillingRate();
+  left_ = placer->Left();
+  right_ = placer->Right();
+  bottom_ = placer->Bottom();
+  top_ = placer->Top();
+  circuit_ = placer->GetCircuit();
+}
+
 bool Placer::GenMATLABScript(std::string const &filename) {
   std::ofstream ost(filename.c_str());
   if (ost.is_open()==0) {
@@ -148,9 +173,9 @@ bool Placer::GenMATLABScript(std::string const &filename) {
     ost << "rectangle('Position',[" << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "], 'LineWidth', 1, 'EdgeColor','blue')\n";
   }
   for (auto &&net: circuit_->net_list) {
-    for (size_t i=0; i<net.blk_pin_pair_list.size(); i++) {
-      for (size_t j=i+1; j<net.blk_pin_pair_list.size(); j++) {
-        ost << "line([" << net.blk_pin_pair_list[i].AbsX() << "," << net.blk_pin_pair_list[j].AbsX() << "],[" << net.blk_pin_pair_list[i].AbsY() << "," << net.blk_pin_pair_list[j].AbsY() << "],'lineWidth', 0.5)\n";
+    for (size_t i=0; i<net.blk_pin_list.size(); i++) {
+      for (size_t j=i+1; j<net.blk_pin_list.size(); j++) {
+        ost << "line([" << net.blk_pin_list[i].AbsX() << "," << net.blk_pin_list[j].AbsX() << "],[" << net.blk_pin_list[i].AbsY() << "," << net.blk_pin_list[j].AbsY() << "],'lineWidth', 0.5)\n";
       }
     }
   }
@@ -232,7 +257,7 @@ bool Placer::SaveDEFFile(std::string const &NameOfFile) {
     ost << "- "
         << *(net.Name()) << "\n";
     ost << " ";
-    for (auto &&pin_pair: net.blk_pin_pair_list) {
+    for (auto &&pin_pair: net.blk_pin_list) {
       ost << " ( " << *(pin_pair.BlockName()) << " " << *(pin_pair.PinName()) << " ) ";
     }
     ost << "\n" << " ;\n";
@@ -241,8 +266,3 @@ bool Placer::SaveDEFFile(std::string const &NameOfFile) {
   ost << "END DESIGN\n";
   return true;
 }
-
-Placer::~Placer() {
-
-}
-

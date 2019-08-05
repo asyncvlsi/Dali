@@ -12,7 +12,7 @@
 #include "common/misc.h"
 
 class Placer {
-protected:
+ protected:
   /* essential data entries */
   double aspect_ratio_; // placement region Height/Width
   double filling_rate_;
@@ -27,14 +27,19 @@ protected:
 public:
   Placer();
   Placer(double aspectRatio, double fillingRate);
+  virtual ~Placer();
 
   void SetInputCircuit(Circuit *circuit);
+  Circuit *GetCircuit();
   void SetFillingRate(double rate = 2.0/3.0);
   double FillingRate() const;
   void SetAspectRatio(double ratio = 1.0);
   double AspectRatio() const;
   void SetSpaceBlockRatio(double ratio);
   double SpaceBlockRatio() const;
+
+  std::vector<Block> *BlockList();
+  std::vector<Net> *NetList();
 
   bool IsBoundaryProper();
   void SetBoundaryAuto();
@@ -46,12 +51,11 @@ public:
   int Top();
   bool UpdateAspectRatio();
   virtual bool StartPlacement() = 0;
+  void TakeOver(Placer *placer);
 
   bool GenMATLABScript(std::string const &filename= "block_net_list.m");
   bool SaveNodeTerminal(std::string const &NameOfFile= "terminal.txt", std::string const &NameOfFile1= "nodes.txt");
   bool SaveDEFFile(std::string const &NameOfFile= "circuit.def");
-
-  virtual ~Placer();
 };
 
 

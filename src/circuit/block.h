@@ -10,6 +10,7 @@
 #include <string>
 #include <iostream>
 #include "blocktype.h"
+#include "blockaux.h"
 #include "common/misc.h"
 
 /* a block can be a gate, can also be a large module, it includes information like
@@ -27,14 +28,17 @@ enum BlockOrient{
   FE = 7
 };
 
+class BlockAux;
+
 class Block {
  protected:
   /* essential data entries */
   BlockType *type_;
   std::pair<const std::string, int>* name_num_pair_ptr_;
-  int llx_, lly_; // lower Left corner
+  double llx_, lly_; // lower Left corner
   bool movable_; // movable
   enum BlockOrient orient_; // currently not used
+  BlockAux *aux_;
  public:
   Block(BlockType *type, std::pair<const std::string, int>* name_num_pair, int llx, int lly, bool movable = "true", BlockOrient orient = N);
   const std::string *Name() const;
@@ -60,6 +64,10 @@ class Block {
   void SetOrient(BlockOrient &orient);
   BlockOrient Orient() const;
   std::string OrientStr() const;
+  void SetAux(BlockAux *aux);
+  BlockAux *Aux() const;
+  void IncreX(double amount);
+  void IncreY(double amount);
 
   friend std::ostream& operator<<(std::ostream& os, const Block &block) {
     os << "Block Name: " << *block.Name() << "\n";

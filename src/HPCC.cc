@@ -6,6 +6,8 @@
 #include <vector>
 #include <ctime>
 #include "circuit/circuit.h"
+#include "placer/placer.h"
+#include "placer/globalPlacer/GPSimPL.h"
 
 int main() {
   time_t Time = clock();
@@ -22,6 +24,13 @@ int main() {
   //circuit.ReportBlockMap();
   //circuit.ReportNetList();
   //circuit.ReportNetMap();
+
+  Placer *placer = new GPSimPL;
+  placer->SetInputCircuit(&circuit);
+  placer->SetAspectRatio(1);
+  placer->SetBoundaryAuto();
+  placer->StartPlacement();
+  placer->GenMATLABScript();
 
   Time = clock() - Time;
   std::cout << "Execution time " << (float)Time/CLOCKS_PER_SEC << "s.\n";
