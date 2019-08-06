@@ -163,15 +163,14 @@ void Placer::TakeOver(Placer *placer) {
   circuit_ = placer->GetCircuit();
 }
 
-bool Placer::GenMATLABScript(std::string const &filename) {
-  std::ofstream ost(filename.c_str());
-  if (ost.is_open()==0) {
-    std::cout << "Cannot open output file: " << filename << "\n";
-    return false;
-  }
+void Placer::GenMATLABScript(std::string const &name_of_file) {
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open input file " + name_of_file);
+  ost << "rectangle('Position',[" << Left() << " " << Bottom() << " " << Right() - Left() << " " << Top() - Bottom() << "],'LineWidth',1)\n";
   for (auto &&block: circuit_->block_list) {
     ost << "rectangle('Position',[" << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "], 'LineWidth', 1, 'EdgeColor','blue')\n";
   }
+  /*
   for (auto &&net: circuit_->net_list) {
     for (size_t i=0; i<net.blk_pin_list.size(); i++) {
       for (size_t j=i+1; j<net.blk_pin_list.size(); j++) {
@@ -179,11 +178,9 @@ bool Placer::GenMATLABScript(std::string const &filename) {
       }
     }
   }
-  ost << "rectangle('Position',[" << Left() << " " << Bottom() << " " << Right() - Left() << " " << Top() - Bottom() << "],'LineWidth',1)\n";
+  */
   ost << "axis auto equal\n";
   ost.close();
-
-  return true;
 }
 
 bool Placer::SaveNodeTerminal(std::string const &NameOfFile, std::string const &NameOfFile1) {

@@ -22,7 +22,7 @@ double GPSimPL::HeightEpsilon() {
   return circuit_->AveHeight()/100.0;
 }
 
-void GPSimPL::initialize_HPWL_flags() {
+void GPSimPL::InitHPWLFlags() {
   HPWLX_new = 0;
   HPWLY_new = 0;
   HPWLX_old = 1e30;
@@ -31,7 +31,7 @@ void GPSimPL::initialize_HPWL_flags() {
   HPWLy_converge = false;
 }
 
-void GPSimPL::uniform_initialization() {
+void GPSimPL::UniformInit() {
   int length_x = Right() - Left();
   int length_y = Top() - Bottom();
   std::default_random_engine generator{0};
@@ -45,7 +45,7 @@ void GPSimPL::uniform_initialization() {
   }
 }
 
-void GPSimPL::cg_init() {
+void GPSimPL::CGInit() {
   // this init function allocate memory to Ax and Ay
   // the size of memory allocated for each row is the maximum memory which might be used
   Ax.clear();
@@ -114,7 +114,7 @@ void GPSimPL::cg_init() {
   }
 }
 
-void GPSimPL::build_problem_clique_x() {
+void GPSimPL::BuildProblemCliqueX() {
   // before build a new Matrix, clean the information in existing matrix
   for (int i=0; i< TotBlockNum(); i++) {
     Ax[i][0].weight = 0;
@@ -176,7 +176,7 @@ void GPSimPL::build_problem_clique_x() {
   }
 }
 
-void GPSimPL::build_problem_clique_y() {
+void GPSimPL::BuildProblemCliqueY() {
   // before build a new Matrix, clean the information in existing matrix
   for (int i=0; i< TotBlockNum(); i++) {
     Ay[i][0].weight = 0;
@@ -238,7 +238,7 @@ void GPSimPL::build_problem_clique_y() {
   }
 }
 
-void GPSimPL::update_HPWL_x() {
+void GPSimPL::UpdateHPWLX() {
   HPWLX_new = 0;
   std::vector<Net> &net_list = *NetList();
   for (auto &&net: net_list) {
@@ -246,7 +246,7 @@ void GPSimPL::update_HPWL_x() {
   }
 }
 
-void GPSimPL::update_max_min_node_x() {
+void GPSimPL::UpdateMaxMinX() {
   HPWLX_new = 0;
   std::vector<Net> &net_list = *NetList();
   for (auto &&net: net_list) {
@@ -263,7 +263,7 @@ void GPSimPL::update_max_min_node_x() {
   }
 }
 
-void GPSimPL::build_problem_b2b_x() {
+void GPSimPL::BuildProblemB2BX() {
   // before build a new Matrix, clean the information in existing matrix
   for (int i=0; i< TotBlockNum(); i++) {
     Ax[i][0].weight = 0;
@@ -338,7 +338,7 @@ void GPSimPL::build_problem_b2b_x() {
   }
 }
 
-void GPSimPL::build_problem_b2b_x_nooffset() {
+void GPSimPL::BuildProblemB2BXNoOffset() {
   // before build a new Matrix, clean the information in existing matrix
   for (int i=0; i< TotBlockNum(); i++) {
     Ax[i][0].weight = 0;
@@ -407,7 +407,7 @@ void GPSimPL::build_problem_b2b_x_nooffset() {
   }
 }
 
-void GPSimPL::update_HPWL_y() {
+void GPSimPL::UpdateHPWLY() {
   // update the y direction max and min node in each net
   HPWLY_new = 0;
   std::vector<Net> &net_list = *NetList();
@@ -416,7 +416,7 @@ void GPSimPL::update_HPWL_y() {
   }
 }
 
-void GPSimPL::update_max_min_node_y() {
+void GPSimPL::UpdateMaxMinY() {
   // update the y direction max and min node in each net
   HPWLY_new = 0;
   std::vector<Net> &net_list = *NetList();
@@ -434,7 +434,7 @@ void GPSimPL::update_max_min_node_y() {
   }
 }
 
-void GPSimPL::build_problem_b2b_y() {
+void GPSimPL::BuildProblemB2BY() {
   // before build a new Matrix, clean the information in existing matrix
   for (int i=0; i< TotBlockNum(); i++) {
     Ay[i][0].weight = 0;
@@ -508,7 +508,7 @@ void GPSimPL::build_problem_b2b_y() {
   }
 }
 
-void GPSimPL::build_problem_b2b_y_nooffset() {
+void GPSimPL::BuildProblemB2BYNoOffset() {
   // before build a new Matrix, clean the information in existing matrix
   for (int i=0; i< TotBlockNum(); i++) {
     Ay[i][0].weight = 0;
@@ -577,7 +577,7 @@ void GPSimPL::build_problem_b2b_y_nooffset() {
   }
 }
 
-void GPSimPL::CG_solver(std::string const &dimension, std::vector< std::vector<weightTuple> > &A, std::vector<double> &b, std::vector<size_t> &k) {
+void GPSimPL::CGSolver(std::string const &dimension, std::vector<std::vector<weightTuple> > &A, std::vector<double> &b, std::vector<size_t> &k) {
   double epsilon = 1e-15, alpha, beta, rsold, rsnew, pAp, solution_distance;
   for (int i=0; i< TotBlockNum(); i++) {
     // initialize the Jacobi pre-conditioner
@@ -682,15 +682,15 @@ void GPSimPL::CG_solver(std::string const &dimension, std::vector< std::vector<w
   }
 }
 
-void GPSimPL::CG_solver_x() {
-  CG_solver("x", Ax, bx, kx);
+void GPSimPL::CGSolverX() {
+  CGSolver("x", Ax, bx, kx);
 }
 
-void GPSimPL::CG_solver_y() {
-  CG_solver("y", Ay, by, ky);
+void GPSimPL::CGsolverY() {
+  CGSolver("y", Ay, by, ky);
 }
 
-void GPSimPL::cg_close() {
+void GPSimPL::CGClose() {
   Ax.clear();
   Ay.clear();
   bx.clear();
@@ -704,12 +704,9 @@ void GPSimPL::cg_close() {
   JP.clear();
 }
 
-bool GPSimPL::draw_block_net_list(std::string const &filename) {
-  std::ofstream ost(filename.c_str());
-  if (ost.is_open()==0) {
-    std::cout << "Cannot open output file: " << filename << "\n";
-    return false;
-  }
+void GPSimPL::DrawBlockNetList(std::string const &name_of_file) {
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open input file " + name_of_file);
   ost << Left() << " " << Bottom() << " " << Right() - Left() << " " << Top() - Bottom() << "\n";
   std::vector<Block> &block_list = *BlockList();
   for (auto &&block: block_list) {
@@ -730,43 +727,40 @@ bool GPSimPL::draw_block_net_list(std::string const &filename) {
   }
    */
   ost.close();
-
-  return true;
 }
 
-bool GPSimPL::StartPlacement() {
-  cg_init();
-  uniform_initialization();
-  update_max_min_node_x();
-  update_max_min_node_y();
+void GPSimPL::StartPlacement() {
+  CGInit();
+  UniformInit();
+  UpdateMaxMinX();
+  UpdateMaxMinY();
   HPWLx_converge = false;
   HPWLy_converge = false;
   HPWLX_old = 1e30;
   HPWLY_old = 1e30;
   for (int i=0; i<50; i++) {
     if (!HPWLx_converge) {
-      build_problem_b2b_x();
-      CG_solver_x();
-      update_max_min_node_x();
+      BuildProblemB2BX();
+      CGSolverX();
+      UpdateMaxMinX();
     }
     if (!HPWLy_converge) {
-      build_problem_b2b_y();
-      CG_solver_y();
-      update_max_min_node_y();
+      BuildProblemB2BY();
+      CGsolverY();
+      UpdateMaxMinY();
     }
     if (HPWLx_converge && HPWLy_converge)  {
       std::cout << i << " iterations in cg\n";
       break;
     }
   }
-  cg_close();
+  CGClose();
   std::cout << "Initial Placement Complete\n";
-  report_hpwl();
-  return true;
+  ReportHPWL();
 }
 
-void GPSimPL::report_hpwl() {
-  update_HPWL_x();
-  update_HPWL_y();
+void GPSimPL::ReportHPWL() {
+  UpdateHPWLX();
+  UpdateHPWLY();
   std::cout << "HPWL: " << HPWLX_new + HPWLY_new << "\n";
 }

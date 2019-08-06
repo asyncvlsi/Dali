@@ -40,29 +40,29 @@ class GPSimPL: public Placer {
   std::vector<double> z;
   std::vector<double> p;
   std::vector<double> JP;
-  // some static variable used in the CG_solver
+  // some static variable used in the CGSolver
 
-  void uniform_initialization();
-  void cg_init();
-  void cg_close();
-  void initialize_HPWL_flags();
-  void build_problem_clique_x();
-  void build_problem_clique_y();
-  void update_max_min_node_x();
-  void update_HPWL_x();
-  void build_problem_b2b_x();
-  void build_problem_b2b_x_nooffset();
-  void update_max_min_node_y();
-  void update_HPWL_y();
-  void build_problem_b2b_y();
-  void build_problem_b2b_y_nooffset();
-  void CG_solver(std::string const &dimension, std::vector< std::vector<weightTuple> > &A, std::vector<double> &b, std::vector<size_t> &k);
-  void CG_solver_x();
-  void CG_solver_y();
+  void UniformInit();
+  void CGInit();
+  void CGClose();
+  void InitHPWLFlags();
+  void BuildProblemCliqueX();
+  void BuildProblemCliqueY();
+  void UpdateMaxMinX();
+  void UpdateHPWLX();
+  void BuildProblemB2BX();
+  void BuildProblemB2BXNoOffset();
+  void UpdateMaxMinY();
+  void UpdateHPWLY();
+  void BuildProblemB2BY();
+  void BuildProblemB2BYNoOffset();
+  void CGSolver(std::string const &dimension, std::vector<std::vector<weightTuple> > &A, std::vector<double> &b, std::vector<size_t> &k);
+  void CGSolverX();
+  void CGsolverY();
 
-  bool draw_block_net_list(std::string const &filename="block_net_list.txt");
-  bool StartPlacement() override;
-  void report_hpwl();
+  void DrawBlockNetList(std::string const &name_of_file= "block_net_list.txt");
+  void StartPlacement() override;
+  void ReportHPWL();
 };
 
 #endif //HPCC_SRC_PLACER_GLOBALPLACER_GPSIMPL_H_

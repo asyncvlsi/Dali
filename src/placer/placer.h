@@ -50,10 +50,11 @@ public:
   int Bottom();
   int Top();
   bool UpdateAspectRatio();
-  virtual bool StartPlacement() = 0;
+  virtual void StartPlacement() = 0;
+  void ReportHPWL();
   void TakeOver(Placer *placer);
 
-  bool GenMATLABScript(std::string const &filename= "block_net_list.m");
+  void GenMATLABScript(std::string const &name_of_file= "block_net_list.m");
   bool SaveNodeTerminal(std::string const &NameOfFile= "terminal.txt", std::string const &NameOfFile1= "nodes.txt");
   bool SaveDEFFile(std::string const &NameOfFile= "circuit.def");
 };
