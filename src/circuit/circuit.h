@@ -36,8 +36,7 @@ class Circuit {
   double m2_pitch = 0;
   int def_distance_microns = 0;
   int def_left = 0, def_right = 0, def_bottom = 0, def_top = 0;
-
-  void SetBoundary(int left, int right, int bottom, int top);
+  void SetBoundaryFromDef(int left, int right, int bottom, int top);
 
   // API to add new BlockType
   bool IsBlockTypeExist(std::string &block_type_name);
@@ -89,6 +88,11 @@ class Circuit {
   double AveWidth() const;
   double AveHeight() const;
   double AveArea() const;
+
+  double HPWLX();
+  double HPWLY();
+  double HPWL();
+  void ReportHPWL();
 
   // dump circuit to LEF/DEF file, readable by the the above ReadDefFile()
   void WriteDefFileDebug(std::string const &name_of_file= "circuit.def");

@@ -62,7 +62,6 @@ class GPSimPL: public Placer {
 
   void DrawBlockNetList(std::string const &name_of_file= "block_net_list.txt");
   void StartPlacement() override;
-  void ReportHPWL();
 };
 
 #endif //HPCC_SRC_PLACER_GLOBALPLACER_GPSIMPL_H_

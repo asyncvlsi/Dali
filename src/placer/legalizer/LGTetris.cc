@@ -6,7 +6,7 @@
 
 bool TetrisLegalizer::TetrisLegal() {
   //draw_block_net_list("before_tetris_legalization.m");
-  std::cout << "Start tetris legalization" << std::endl;
+  std::cout << "Start LGTetris legalization" << std::endl;
   std::vector<Block> &block_list = *BlockList();
   // 1. move all blocks into placement region
   for (auto &&block: block_list) {
@@ -48,7 +48,7 @@ bool TetrisLegalizer::TetrisLegal() {
   int minWidth = GetCircuit()->MinWidth();
   int minHeight = GetCircuit()->MinHeight();
 
-  std::cout << "Building tetris space" << std::endl;
+  std::cout << "Building LGTetris space" << std::endl;
   //TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), maxHeight, minWidth);
   //TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), minHeight, minWidth);
   TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), (int)(std::ceil(minHeight/2.0)), minWidth);
@@ -98,4 +98,5 @@ bool TetrisLegalizer::TetrisLegal() {
 
 void TetrisLegalizer::StartPlacement() {
   TetrisLegal();
+  ReportHPWL();
 }

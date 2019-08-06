@@ -44,6 +44,7 @@ public:
   bool IsBoundaryProper();
   void SetBoundaryAuto();
   void SetBoundary(int left, int right, int bottom, int top);
+  void SetBoundaryDef();
   void ReportBoundaries();
   int Left();
   int Right();
@@ -51,6 +52,9 @@ public:
   int Top();
   bool UpdateAspectRatio();
   virtual void StartPlacement() = 0;
+  double HPWLX();
+  double HPWLY();
+  double HPWL();
   void ReportHPWL();
   void TakeOver(Placer *placer);
 

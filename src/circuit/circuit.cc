@@ -37,7 +37,7 @@ Circuit::Circuit(int tot_block_type_num, int tot_block_num, int tot_net_num) {
   max_height_ = 0;
 }
 
-void Circuit::SetBoundary(int left, int right, int bottom, int top) {
+void Circuit::SetBoundaryFromDef(int left, int right, int bottom, int top) {
   Assert(right > left, "Right boundary is not larger than Left boundary?");
   Assert(top > bottom, "Top boundary is not larger than Bottom boundary?");
   def_left = left;
@@ -515,6 +515,30 @@ double Circuit::AveHeight() const {
 
 double Circuit::AveArea() const {
   return tot_block_area_/(double)TotBlockNum();
+}
+
+double Circuit::HPWLX() {
+  double HPWLX = 0;
+  for (auto &&net: net_list) {
+    HPWLX += net.HPWLX();
+  }
+  return HPWLX;
+}
+
+double Circuit::HPWLY() {
+  double HPWLY = 0;
+  for (auto &&net: net_list) {
+    HPWLY += net.HPWLY();
+  }
+  return HPWLY;
+}
+
+double Circuit::HPWL() {
+  return HPWLX() + HPWLY();
+}
+
+void Circuit::ReportHPWL() {
+  std::cout << "HPWL: " << HPWL() << "\n";
 }
 
 void Circuit::WriteDefFileDebug(std::string const &name_of_file) {

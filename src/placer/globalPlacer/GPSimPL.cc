@@ -239,11 +239,7 @@ void GPSimPL::BuildProblemCliqueY() {
 }
 
 void GPSimPL::UpdateHPWLX() {
-  HPWLX_new = 0;
-  std::vector<Net> &net_list = *NetList();
-  for (auto &&net: net_list) {
-    HPWLX_new += net.HPWLX();
-  }
+  HPWLX_new = HPWLX();
 }
 
 void GPSimPL::UpdateMaxMinX() {
@@ -409,11 +405,7 @@ void GPSimPL::BuildProblemB2BXNoOffset() {
 
 void GPSimPL::UpdateHPWLY() {
   // update the y direction max and min node in each net
-  HPWLY_new = 0;
-  std::vector<Net> &net_list = *NetList();
-  for (auto &&net: net_list) {
-    HPWLY_new += net.HPWLY();
-  }
+  HPWLY_new = HPWLY();
 }
 
 void GPSimPL::UpdateMaxMinY() {
@@ -757,10 +749,4 @@ void GPSimPL::StartPlacement() {
   CGClose();
   std::cout << "Initial Placement Complete\n";
   ReportHPWL();
-}
-
-void GPSimPL::ReportHPWL() {
-  UpdateHPWLX();
-  UpdateHPWLY();
-  std::cout << "HPWL: " << HPWLX_new + HPWLY_new << "\n";
 }

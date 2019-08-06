@@ -28,9 +28,12 @@ int main() {
 
   Placer *gb_placer = new GPSimPL;
   gb_placer->SetInputCircuit(&circuit);
-  gb_placer->SetFillingRate(1/1.4);
-  gb_placer->SetAspectRatio(1);
-  gb_placer->SetBoundaryAuto();
+
+  //gb_placer->SetFillingRate(1/1.4);
+  //gb_placer->SetAspectRatio(1);
+  //gb_placer->SetBoundaryAuto();
+
+  gb_placer->SetBoundaryDef();
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
   gb_placer->GenMATLABScript("gb_placement_result.m");
