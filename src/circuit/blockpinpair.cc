@@ -4,19 +4,19 @@
 
 #include "blockpinpair.h"
 
-BlockPinPair::BlockPinPair(Block *block, int pin): block_(block), pin_(pin) {}
+BlockPinPair::BlockPinPair(Block *block, int pin): block_(block), pin_num_(pin) {}
 
 Block *BlockPinPair::GetBlock() const {
   return block_;
 }
 
 Pin *BlockPinPair::GetPin() const {
-  return &(block_->Type()->pin_list[pin_]);
+  return &(block_->Type()->pin_list[pin_num_]);
 }
 
 double BlockPinPair::XOffset() {
   if (block_->Orient() == N) {
-    return block_->Type()->pin_list[pin_].XOffset();
+    return block_->Type()->pin_list[pin_num_].XOffset();
   } else {
     std::cout << "Currently, only N orientation is supported\n";
     exit(1);
@@ -25,7 +25,7 @@ double BlockPinPair::XOffset() {
 
 double BlockPinPair::YOffset() {
   if (block_->Orient() == N) {
-    return block_->Type()->pin_list[pin_].YOffset();
+    return block_->Type()->pin_list[pin_num_].YOffset();
   } else {
     std::cout << "Currently, only N orientation is supported\n";
     exit(1);
@@ -34,7 +34,7 @@ double BlockPinPair::YOffset() {
 
 double BlockPinPair::AbsX() const {
   if (block_->Orient() == N) {
-    return block_->Type()->pin_list[pin_].XOffset() + block_->LLX();
+    return block_->Type()->pin_list[pin_num_].XOffset() + block_->LLX();
   } else {
     std::cout << "Currently, only N orientation is supported\n";
     exit(1);
@@ -43,7 +43,7 @@ double BlockPinPair::AbsX() const {
 
 double BlockPinPair::AbsY() const {
   if (block_->Orient() == N) {
-    return block_->Type()->pin_list[pin_].YOffset() + block_->LLY();
+    return block_->Type()->pin_list[pin_num_].YOffset() + block_->LLY();
   } else {
     std::cout << "Currently, only N orientation is supported\n";
     exit(1);

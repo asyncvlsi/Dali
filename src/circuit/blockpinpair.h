@@ -11,7 +11,7 @@
 class BlockPinPair {
  private:
   Block *block_;
-  int pin_;
+  int pin_num_;
  public:
   BlockPinPair(Block *block, int pin);
   Block *GetBlock() const;

@@ -58,7 +58,7 @@ class GPSimPL: public Placer {
   void BuildProblemB2BYNoOffset();
   void CGSolver(std::string const &dimension, std::vector<std::vector<weightTuple> > &A, std::vector<double> &b, std::vector<size_t> &k);
   void CGSolverX();
-  void CGsolverY();
+  void CGSolverY();
 
   void DrawBlockNetList(std::string const &name_of_file= "block_net_list.txt");
   void StartPlacement() override;

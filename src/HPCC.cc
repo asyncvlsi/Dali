@@ -36,12 +36,12 @@ int main() {
   gb_placer->SetBoundaryDef();
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
-  gb_placer->GenMATLABScript("gb_placement_result.m");
+  gb_placer->GenMATLABScript("gb_placement_result.txt");
 
   Placer *legalizer = new TetrisLegalizer;
   legalizer->TakeOver(gb_placer);
   legalizer->StartPlacement();
-  legalizer->GenMATLABScript("legalizer_result.m");
+  legalizer->GenMATLABScript("legalizer_result.txt");
 
 
   Time = clock() - Time;

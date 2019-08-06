@@ -194,21 +194,11 @@ void Placer::TakeOver(Placer *placer) {
 
 void Placer::GenMATLABScript(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open input file " + name_of_file);
-  ost << "rectangle('Position',[" << Left() << " " << Bottom() << " " << Right() - Left() << " " << Top() - Bottom() << "],'LineWidth',1)\n";
+  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+  ost << Left() << " " << Bottom() << " " << Right() - Left() << " " << Top() - Bottom() << "\n";
   for (auto &&block: circuit_->block_list) {
-    ost << "rectangle('Position',[" << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "], 'LineWidth', 1, 'EdgeColor','blue')\n";
+    ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";
   }
-  /*
-  for (auto &&net: circuit_->net_list) {
-    for (size_t i=0; i<net.blk_pin_list.size(); i++) {
-      for (size_t j=i+1; j<net.blk_pin_list.size(); j++) {
-        ost << "line([" << net.blk_pin_list[i].AbsX() << "," << net.blk_pin_list[j].AbsX() << "],[" << net.blk_pin_list[i].AbsY() << "," << net.blk_pin_list[j].AbsY() << "],'lineWidth', 0.5)\n";
-      }
-    }
-  }
-  */
-  ost << "axis auto equal\n";
   ost.close();
 }
 

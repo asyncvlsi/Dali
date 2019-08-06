@@ -678,7 +678,7 @@ void GPSimPL::CGSolverX() {
   CGSolver("x", Ax, bx, kx);
 }
 
-void GPSimPL::CGsolverY() {
+void GPSimPL::CGSolverY() {
   CGSolver("y", Ay, by, ky);
 }
 
@@ -704,20 +704,6 @@ void GPSimPL::DrawBlockNetList(std::string const &name_of_file) {
   for (auto &&block: block_list) {
     ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";
   }
-  /*
-  std::vector<Net> &net_list = *NetList();
-  block_al_t *block_ptr0, *block_ptr1;
-  for (auto &&net: netList) {
-    for (int i=0; i<net.blk_pin_list.size(); i++) {
-      block_ptr0 = (block_al_t *)net.blk_pin_list[i].GetBlock();
-      for (int j=i+1; j<net.blk_pin_list.size(); j++) {
-        block_ptr1 = (block_al_t *)net.blk_pin_list[j].GetBlock();
-        ost << "line([" << block_ptr0->LLX() + net.blk_pin_list[i].XOffset() << "," << block_ptr1->LLX() + net.blk_pin_list[j].XOffset()
-               << "],[" << block_ptr0->LLY() + net.blk_pin_list[i].YOffset() << "," << block_ptr1->LLY() + net.blk_pin_list[j].YOffset() << "],'lineWidth', 0.5)\n";
-      }
-    }
-  }
-   */
   ost.close();
 }
 
@@ -738,7 +724,7 @@ void GPSimPL::StartPlacement() {
     }
     if (!HPWLy_converge) {
       BuildProblemB2BY();
-      CGsolverY();
+      CGSolverY();
       UpdateMaxMinY();
     }
     if (HPWLx_converge && HPWLy_converge)  {
