@@ -239,7 +239,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
   m2_pitch = 0;
   while ((m2_pitch == 0) && !ist.eof()) {
     getline(ist, line);
-    if((line.find("LAYER Metal2")!=std::string::npos) || (line.find("LAYER m2")!=std::string::npos)) {
+    if((line.find("LAYER Metal2")!=std::string::npos) || (line.find("LAYER m2")!=std::string::npos) || (line.find("LAYER metal2")!=std::string::npos)) {
       //std::cout << line << "\n";
       do {
         getline(ist, line);

@@ -202,23 +202,20 @@ void Placer::GenMATLABScript(std::string const &name_of_file) {
   ost.close();
 }
 
-bool Placer::SaveNodeTerminal(std::string const &NameOfFile, std::string const &NameOfFile1) {
-  std::ofstream ost(NameOfFile.c_str());
-  std::ofstream ost1(NameOfFile1.c_str());
-  if ((ost.is_open()==0)||(ost1.is_open()==0)) {
-    std::cout << "Cannot open file " << NameOfFile << " or " << NameOfFile1 <<  "\n";
-    return false;
-  }
-  for (auto &&node: circuit_->block_list) {
-    if (node.IsMovable()) {
-      ost1 << node.X() << "\t" << node.Y() << "\n";
+bool Placer::SaveNodeTerminal(std::string const &terminal_file, std::string const &node_file) {
+  std::ofstream ost(terminal_file.c_str());
+  std::ofstream ost1(node_file.c_str());
+  Assert(ost.is_open() && ost1.is_open(), "Cannot open file " + terminal_file + " or " + node_file);
+  for (auto &&block: circuit_->block_list) {
+    if (block.IsMovable()) {
+      ost1 << block.X() << "\t" << block.Y() << "\n";
     }
     else {
       double low_x, low_y, width, height;
-      width = node.Width();
-      height = node.Height();
-      low_x = node.LLX();
-      low_y = node.LLY();
+      width = block.Width();
+      height = block.Height();
+      low_x = block.LLX();
+      low_y = block.LLY();
       for (int j=0; j<height; j++) {
         ost << low_x << "\t" << low_y+j << "\n";
         ost << low_x+width << "\t" << low_y+j << "\n";

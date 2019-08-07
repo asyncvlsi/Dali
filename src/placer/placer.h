@@ -59,7 +59,7 @@ public:
   void TakeOver(Placer *placer);
 
   void GenMATLABScript(std::string const &name_of_file= "block_net_list.m");
-  bool SaveNodeTerminal(std::string const &NameOfFile= "terminal.txt", std::string const &NameOfFile1= "nodes.txt");
+  bool SaveNodeTerminal(std::string const &terminal_file= "terminal.txt", std::string const &node_file= "nodes.txt");
   bool SaveDEFFile(std::string const &NameOfFile= "circuit.def");
 };
 
