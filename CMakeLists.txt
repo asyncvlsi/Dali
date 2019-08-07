@@ -16,6 +16,8 @@ file(GLOB SOURCES
         src/placer/*.cc
         src/placer/globalPlacer/*.h
         src/placer/globalPlacer/*.cc
+        src/placer/globalPlacer/GPSimPL/*.h
+        src/placer/globalPlacer/GPSimPL/*.cc
         src/placer/legalizer/LGTetris/*.h
         src/placer/legalizer/LGTetris/*.cc
         src/placer/legalizer/*.h

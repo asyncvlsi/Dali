@@ -25,8 +25,6 @@ int main() {
   circuit.ReadLefFile(lef_file);
   circuit.ReadDefFile(def_file);
 
-
-
   //circuit.ReportBlockTypeList();
   //circuit.ReportBlockTypeMap();
   //circuit.ReportBlockList();
