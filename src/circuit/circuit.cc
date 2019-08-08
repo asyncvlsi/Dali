@@ -150,32 +150,6 @@ Net *Circuit::AddNet(std::string &net_name, double weight) {
   return &net_list.back();
 }
 
-void Circuit::add_block_type(std::string &block_type_name, int width, int height) {
-  AddBlockType(block_type_name, width, height);
-}
-
-void Circuit::add_pin_to_block(std::string &block_type_name, std::string &pin_name, double x_offset, double y_offset) {
-  BlockType *block_type_ptr = GetBlockType(block_type_name);
-  block_type_ptr->AddPin(pin_name, x_offset, y_offset);
-}
-
-void Circuit::add_new_block(std::string &block_name, std::string &block_type_name, int llx, int lly, bool movable, BlockOrient orient) {
-  AddBlock(block_name, block_type_name, llx, lly, movable, orient);
-}
-
-void Circuit::create_blank_net(std::string &net_name, double weight) {
-  AddNet(net_name, weight);
-}
-
-void Circuit::add_pin_to_net(std::string &net_name, std::string &block_name, std::string &pin_name) {
-  Net *net_ptr = GetIndex(net_name);
-  Block *block_ptr = GetBlock(block_name);
-  BlockType *block_type_ptr = block_ptr->Type();
-  int pin_num = block_type_ptr->PinIndex(pin_name);
-  net_ptr->AddBlockPinPair(block_ptr, pin_num);
-}
-
-
 void Circuit::ParseLine(std::string &line, std::vector<std::string> &field_list) {
   std::vector<char> delimiter_list;
   delimiter_list.push_back(' ');
@@ -209,6 +183,18 @@ void Circuit::ParseLine(std::string &line, std::vector<std::string> &field_list)
       old_is_delimiter = is_delimiter;
     }
   }
+}
+
+void Circuit::SetGridValue(double grid_value) {
+  Assert(grid_value > 0, "grid_value must be a positive real number!");
+  Assert(!grid_set_, "once set, grid_value cannot be changed!");
+  grid_value_ = grid_value;
+  grid_set_ = true;
+}
+
+double Circuit::GridValue() {
+  Assert(grid_set_, "cannot call Circuit::GridValue() since grid_value has not been set!");
+  return grid_value_;
 }
 
 void Circuit::ReadLefFile(std::string const &name_of_file) {
