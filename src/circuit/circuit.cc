@@ -221,33 +221,26 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
   }
   //std::cout << "DATABASE MICRONS " << lef_database_microns << "\n";
 
-  // 2. find m2_pitch for aligning gates
-  m2_pitch = 0;
-  while ((m2_pitch == 0) && !ist.eof()) {
-    getline(ist, line);
-    if((line.find("LAYER Metal2")!=std::string::npos) || (line.find("LAYER m2")!=std::string::npos) || (line.find("LAYER metal2")!=std::string::npos)) {
-      //std::cout << line << "\n";
-      do {
-        getline(ist, line);
-        //std::cout << line << "\n";
-        if (line.find("PITCH") != std::string::npos) {
-          std::vector<std::string> line_field;
-          ParseLine(line, line_field);
-          Assert(line_field.size() >= 3, "Invalid LAYER Metal2 PITCH declaration: expecting 3 fields");
-          try {
-            m2_pitch = std::stod(line_field[2]);
-            //std::cout << line_field[2] << "\n";
-          } catch (...) {
-            std::cout << line << "\n";
-            Assert(false, "Invalid stoi conversion:" + line_field[2]);
-          }
+  // 2. find MANUFACTURINGGRID
+  if (!grid_set_) {
+    grid_value_ = 0;
+    while ((grid_value_ == 0) && !ist.eof()) {
+      getline(ist, line);
+      if (line.find("MANUFACTURINGGRID") != std::string::npos) {
+        std::vector<std::string> grid_field;
+        ParseLine(line, grid_field);
+        Assert(grid_field.size() >= 2, "Invalid MANUFACTURINGGRID declaration: expecting 2 fields");
+        try {
+          grid_value_ = std::stod(grid_field[1]);
+        } catch (...) {
+          Assert(false, "Invalid stoi conversion:\n" + line);
         }
-      } while (line.find("END Metal2")==std::string::npos && line.find("END m2")==std::string::npos && !ist.eof());
-      break;
+        break;
+      }
     }
+    Assert(grid_value_ > 0, "Cannot find or invalid MANUFACTURINGGRID");
   }
-  Assert(m2_pitch > 0, "Cannot find or invalid Metal2/m2 PITCH");
-  //std::cout << "Metal2 PITCH: " << m2_pitch << "\n";
+  std::cout << "MANUFACTURINGGRID: " << grid_value_ << "\n";
 
   // 3. read block type information
   while (!ist.eof()) {
@@ -268,8 +261,8 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
             std::vector<std::string> size_field;
             ParseLine(line, size_field);
             try {
-              width = (int)(std::stod(size_field[1])/m2_pitch);
-              height = (int)(std::stod(size_field[3])/m2_pitch);
+              width = (int)(std::stod(size_field[1])/grid_value_);
+              height = (int)(std::stod(size_field[3])/grid_value_);
             } catch (...) {
               Assert(false, "Invalid stod conversion:\n" + line);
             }
@@ -305,10 +298,10 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
               ParseLine(line, rect_field);
               Assert(rect_field.size() >= 5, "Invalid rect definition: expecting 5 fields\n" + line);
               try {
-                llx = std::stod(rect_field[1])/m2_pitch;
-                lly = std::stod(rect_field[2])/m2_pitch;
-                urx = std::stod(rect_field[3])/m2_pitch;
-                ury = std::stod(rect_field[4])/m2_pitch;
+                llx = std::stod(rect_field[1])/grid_value_;
+                lly = std::stod(rect_field[2])/grid_value_;
+                urx = std::stod(rect_field[3])/grid_value_;
+                ury = std::stod(rect_field[4])/grid_value_;
               } catch (...) {
                 Assert(false, "Invalid stod conversion:\n" + line);
               }
@@ -359,10 +352,10 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       //std::cout << line << "\n";
       Assert(die_area_field.size() >= 9, "Invalid UNITS declaration: expecting 9 fields");
       try {
-        def_left = (int)std::round(std::stoi(die_area_field[2])/m2_pitch/def_distance_microns);
-        def_bottom = (int)std::round(std::stoi(die_area_field[3])/m2_pitch/def_distance_microns);
-        def_right = (int)std::round(std::stoi(die_area_field[6])/m2_pitch/def_distance_microns);
-        def_top = (int)std::round(std::stoi(die_area_field[7])/m2_pitch/def_distance_microns);
+        def_left = (int)std::round(std::stoi(die_area_field[2])/grid_value_/def_distance_microns);
+        def_bottom = (int)std::round(std::stoi(die_area_field[3])/grid_value_/def_distance_microns);
+        def_right = (int)std::round(std::stoi(die_area_field[6])/grid_value_/def_distance_microns);
+        def_top = (int)std::round(std::stoi(die_area_field[7])/grid_value_/def_distance_microns);
       } catch (...) {
         Assert(false, "Invalid stoi conversion:\n" + line);
       }
@@ -405,22 +398,24 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       } else {
         new_net = AddNet(net_field[1], normal_signal_weight);
       }
-      getline(ist, line);
-      //std::cout << line << "\n";
-      std::vector<std::string> pin_field;
-      ParseLine(line, pin_field);
-      if ((pin_field.size()%4 != 0) || (pin_field.size() < 8)) {
-        std::cout << "Error!\n";
-        std::cout << "Invalid net declaration, expecting 4n fields, where n >= 2\n";
-        exit(1);
+      while (true) {
+        getline(ist, line);
+        if (line.find(";")) break;
+        //std::cout << line << "\n";
+        std::vector<std::string> pin_field;
+        ParseLine(line, pin_field);
+        if ((pin_field.size() % 4 != 0)) {
+          Assert(false, "Invalid net declaration, expecting 4n fields, where n >= 2:\n" + line);
+        }
+        for (size_t i = 0; i < pin_field.size(); i += 4) {
+          //std::cout << "     " << pin_field[i+1] << " " << pin_field[i+2];
+          Block *block = GetBlock(pin_field[i + 1]);
+          int pin_num = block->Type()->PinIndex(pin_field[i + 2]);
+          new_net->AddBlockPinPair(block, pin_num);
+        }
+        //std::cout << "\n";
       }
-      for (size_t i=0; i<pin_field.size(); i += 4) {
-        //std::cout << "     " << pin_field[i+1] << " " << pin_field[i+2];
-        Block *block = GetBlock(pin_field[i+1]);
-        int pin_num = block->Type()->PinIndex(pin_field[i+2]);
-        new_net->AddBlockPinPair(block, pin_num);
-      }
-      //std::cout << "\n";
+      Warning(new_net->blk_pin_list.size() == 1, "Net " + net_field[1] + " has only one blk_pin_pair\n");
     }
     getline(ist, line);
   }
@@ -539,7 +534,7 @@ void Circuit::WriteDefFileDebug(std::string const &name_of_file) {
         << *(block.Name()) << " "
         << *(block.Type()->Name()) << " + "
         << "PLACED" << " "
-        << "( " + std::to_string((int)(block.LLX()*def_distance_microns*m2_pitch)) + " " + std::to_string((int)(block.LLY()*def_distance_microns*m2_pitch)) + " )" << " "
+        << "( " + std::to_string((int)(block.LLX()*def_distance_microns*grid_value_)) + " " + std::to_string((int)(block.LLY()*def_distance_microns*grid_value_)) + " )" << " "
         << block.OrientStr() + " ;\n";
   }
   ost << "END COMPONENTS\n";
@@ -600,7 +595,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
         << *block.Name() << " "
         << *(block.Type()->Name()) << " + "
         << "PLACED" << " "
-        << "( " + std::to_string((int)(block.LLX()*def_distance_microns*m2_pitch)) + " " + std::to_string((int)(block.LLY()*def_distance_microns*m2_pitch)) + " )" << " "
+        << "( " + std::to_string((int)(block.LLX()*def_distance_microns*grid_value_)) + " " + std::to_string((int)(block.LLY()*def_distance_microns*grid_value_)) + " )" << " "
         << block.OrientStr() + " ;\n";
   }
   ost << "END COMPONENTS\n";

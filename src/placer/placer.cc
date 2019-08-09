@@ -33,7 +33,7 @@ void Placer::SetInputCircuit(Circuit *circuit) {
 }
 
 Circuit *Placer::GetCircuit() {
-  Warning(circuit_ != nullptr, "Circuit is a nullptr!");
+  Warning(circuit_ == nullptr, "Circuit is a nullptr!");
   return  circuit_;
 }
 

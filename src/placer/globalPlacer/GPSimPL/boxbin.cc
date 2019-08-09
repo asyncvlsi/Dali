@@ -2,6 +2,7 @@
 // Created by Yihang Yang on 2019-08-07.
 //
 
+#include <cmath>
 #include "boxbin.h"
 
 BoxBin::BoxBin() {
@@ -38,14 +39,14 @@ void BoxBin::update_cell_area(std::vector<Block> &Nodelist) {
   Block *node;
   for (auto &&cell_id: cell_list) {
     node = &Nodelist[cell_id];
-    temp_total_cell_area += node->area();
+    temp_total_cell_area += node->Area();
   }
   std::cout << "Total cell area: " << total_cell_area << "  " << temp_total_cell_area << "\n";
   temp_total_cell_area = 0;
   for (auto &&node: Nodelist) {
     if (node.isterminal()) continue;
     if ((node.x0 >= ll_point.x) && (node.x0 < ur_point.x) && (node.y0 >= ll_point.y) && (node.y0 < ur_point.y)) {
-      temp_total_cell_area += node.area();
+      temp_total_cell_area += node.Area();
     }
   }
   std::cout << "Total cell area: " << total_cell_area << "  " << temp_total_cell_area << "\n";
@@ -55,7 +56,7 @@ void BoxBin::update_cell_area(std::vector<Block> &Nodelist) {
   total_cell_area = 0;
   for (auto &&cell_id: cell_list) {
     node = &Nodelist[cell_id];
-    total_cell_area += node->area();
+    total_cell_area += node->Area();
   }
 }
 
@@ -182,10 +183,10 @@ void BoxBin::update_terminal_list_white_space(std::vector<Block> &Nodelist, std:
   total_white_space = (right-left)*(top-bottom);
   for (auto &&terminal_id: box_terminal_list) {
     node = &Nodelist[terminal_id];
-    node_llx = (int)node->llx();
-    node_lly = (int)node->lly();
-    node_urx = (int)node->urx();
-    node_ury = (int)node->ury();
+    node_llx = (int)node->LLX();
+    node_lly = (int)node->LLY();
+    node_urx = (int)node->URX();
+    node_ury = (int)node->URY();
     bin_llx = left;
     bin_lly = bottom;
     bin_urx = right;
@@ -217,17 +218,17 @@ void BoxBin::update_ob_boundaries(std::vector<Block> &Nodelist) {
   Block *node;
   for (auto &&terminal_id: terminal_list) {
     node = &Nodelist[terminal_id];
-    if ((left < node->llx()) && (right > node->llx())) {
-      vertical_obstacle_boundaries.push_back((int)node->llx());
+    if ((left < node->LLX()) && (right > node->LLX())) {
+      vertical_obstacle_boundaries.push_back((int)node->LLX());
     }
-    if ((left < node->urx()) && (right > node->urx())) {
-      vertical_obstacle_boundaries.push_back((int)node->urx());
+    if ((left < node->URX()) && (right > node->URX())) {
+      vertical_obstacle_boundaries.push_back((int)node->URX());
     }
-    if ((bottom < node->lly()) && (top > node->lly())) {
-      horizontal_obstacle_boundaries.push_back((int)node->lly());
+    if ((bottom < node->LLY()) && (top > node->LLY())) {
+      horizontal_obstacle_boundaries.push_back((int)node->LLY());
     }
-    if ((bottom < node->ury()) && (top > node->ury())) {
-      horizontal_obstacle_boundaries.push_back((int)node->ury());
+    if ((bottom < node->URY()) && (top > node->URY())) {
+      horizontal_obstacle_boundaries.push_back((int)node->URY());
     }
   }
   /* sort boundaries in the ascending order */
@@ -285,15 +286,15 @@ bool BoxBin::write_cell_in_box(std::string const &NameOfFile, std::vector<Block>
     return false;
   }
   for (auto &&cell_id: cell_list) {
-    if (!Nodelist[cell_id].isterminal()) {
-      ost << Nodelist[cell_id].x0 << "\t" << Nodelist[cell_id].y0 << "\n";
+    if (Nodelist[cell_id].IsMovable()) {
+      ost << Nodelist[cell_id].X() << "\t" << Nodelist[cell_id].Y() << "\n";
     }
   }
   ost.close();
   return true;
 }
 
-double BoxBin::white_space_LUT(std::vector< std::vector< int > > &grid_bin_white_space_LUT, grid_bin_index &ll, grid_bin_index &ur) {
+double BoxBin::white_space_LUT(std::vector< std::vector< int > > &grid_bin_white_space_LUT, GridBinIndex &ll, GridBinIndex &ur) {
   double white_space;
   if (ll.x == 0) {
     if (ll.y == 0) {
@@ -381,8 +382,8 @@ bool BoxBin::update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist, i
       cut_line = (cut_line_low + cut_line_high)/2;
       for (auto &&cell_id: cell_list) {
         node = &Nodelist[cell_id];
-        if (node->y0 < cut_line) {
-          cell_area_low += node->area();
+        if (node->Y() < cut_line) {
+          cell_area_low += node->Area();
         }
       }
       //std::cout << cell_area_low/(float)total_cell_area << "\n";
@@ -401,7 +402,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist, i
     //std::cout << cut_line << " lly " << ll_point.y << " ury " << ll_point.y << "\n";
     for (auto &&cell_id: cell_list) {
       node = &Nodelist[cell_id];
-      if (node->y0 < cut_line) {
+      if (node->Y() < cut_line) {
         cell_list_low.push_back(cell_id);
       } else {
         cell_list_high.push_back(cell_id);
@@ -418,8 +419,8 @@ bool BoxBin::update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist, i
       cut_line = (cut_line_low + cut_line_high)/2;
       for (auto &&cell_id: cell_list) {
         node = &Nodelist[cell_id];
-        if (node->x0 < cut_line) {
-          cell_area_low += node->area();
+        if (node->X() < cut_line) {
+          cell_area_low += node->Area();
         }
       }
       //std::cout << cell_area_low/(float)total_cell_area << "\n";
@@ -438,7 +439,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist, i
     //std::cout << cut_line << " llx " << ll_point.x << " urx " << ur_point.x << "\n";
     for (auto &&cell_id: cell_list) {
       node = &Nodelist[cell_id];
-      if (node->x0 < cut_line) {
+      if (node->X() < cut_line) {
         cell_list_low.push_back(cell_id);
       } else {
         cell_list_high.push_back(cell_id);
@@ -485,12 +486,12 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodeli
     for (size_t i=0; i<cell_list.size(); i++) {
       node = &Nodelist[cell_list[i]];
       mini_index = i;
-      mini_loc = node->y0;
+      mini_loc = node->Y();
       for (size_t j=i+1; j<cell_list.size(); j++) {
         node1 = &Nodelist[cell_list[j]];
-        if (node1->y0 < mini_loc) {
+        if (node1->Y() < mini_loc) {
           mini_index = j;
-          mini_loc = node1->y0;
+          mini_loc = node1->Y();
         }
       }
       tmp_cell_id = cell_list[mini_index];
@@ -503,7 +504,7 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodeli
     int index_tot_cell_low_closest_to_half = 0;
     for (size_t i=0; i<cell_list.size(); i++) {
       node = &Nodelist[cell_list[i]];
-      tmp_tot_cell_area_low += node->area();
+      tmp_tot_cell_area_low += node->Area();
       cell_area_low_percentage = tmp_tot_cell_area_low/(float)total_cell_area;
       //std::cout << i << " " << cell_area_low_percentage << "\n";
       if (fabs(cell_area_low_percentage - low_white_space_total_ratio) < mini_error) {
@@ -521,7 +522,7 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodeli
     for (int i=0; i < (int)cell_list.size(); i++) {
       node = &Nodelist[cell_list[i]];
       if (i <= index_tot_cell_low_closest_to_half) {
-        cell_area_low += node->area();
+        cell_area_low += node->Area();
         cell_list_low.push_back(cell_list[i]);
       } else {
         cell_list_high.push_back(cell_list[i]);
@@ -536,7 +537,7 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodeli
     cut_ur_point.x = ur_point.x;
     cut_ll_point.x = ll_point.x;
     node = &Nodelist[cell_list[index_tot_cell_low_closest_to_half]];
-    cut_line = node->y0;
+    cut_line = node->Y();
     cut_ll_point.y = cut_line;
     cut_ur_point.y = cut_line;
   }
@@ -549,12 +550,12 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodeli
     for (size_t i=0; i<cell_list.size(); i++) {
       node = &Nodelist[cell_list[i]];
       mini_index = i;
-      mini_loc = node->x0;
+      mini_loc = node->X();
       for (size_t j=i+1; j<cell_list.size(); j++) {
         node1 = &Nodelist[cell_list[j]];
-        if (node1->x0 < mini_loc) {
+        if (node1->X() < mini_loc) {
           mini_index = j;
-          mini_loc = node1->x0;
+          mini_loc = node1->X();
         }
       }
       tmp_cell_id = cell_list[mini_index];
@@ -566,7 +567,7 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodeli
     int index_tot_cell_low_closest_to_half = 0;
     for (size_t i=0; i<cell_list.size(); i++) {
       node = &Nodelist[cell_list[i]];
-      tmp_tot_cell_area_low += node->area();
+      tmp_tot_cell_area_low += node->Area();
       cell_area_low_percentage = tmp_tot_cell_area_low/(float)total_cell_area;
       //std::cout << i << " " << cell_area_low_percentage << "\n";
       if (fabs(cell_area_low_percentage - 1/ratio) < mini_error) {
@@ -584,7 +585,7 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodeli
     for (int i=0; i < (int)cell_list.size(); i++) {
       node = &Nodelist[cell_list[i]];
       if (i <= index_tot_cell_low_closest_to_half) {
-        cell_area_low += node->area();
+        cell_area_low += node->Area();
         cell_list_low.push_back(cell_list[i]);
       } else {
         cell_list_high.push_back(cell_list[i]);
@@ -598,7 +599,7 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodeli
     cut_ur_point.y = ur_point.y;
     cut_ll_point.y = ll_point.y;
     node = &Nodelist[cell_list[index_tot_cell_low_closest_to_half]];
-    cut_line = node->x0;
+    cut_line = node->X();
     cut_ll_point.y = cut_line;
     cut_ur_point.y = cut_line;
     /* finally, the cut-line for white space is proportional to the total_cell_area_low */

@@ -27,3 +27,8 @@ bool GridBinIndex::operator>(const GridBinIndex &rhs) const{
 bool GridBinIndex::operator==(const GridBinIndex &rhs) const{
   return ((x == rhs.x) && (y == rhs.y));
 }
+
+GridBinCluster::GridBinCluster() {
+  total_cell_area = 0;
+  total_white_space = 0;
+}

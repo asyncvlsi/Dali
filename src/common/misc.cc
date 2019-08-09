@@ -13,7 +13,7 @@ void Assert(bool e, const std::string &error_message) {
 }
 
 void Warning(bool e, const std::string &warning_message) {
-  if (!e) {
+  if (e) {
     std::cout << "WARNING:" << std::endl;
     std::cout << warning_message << std::endl;
   }

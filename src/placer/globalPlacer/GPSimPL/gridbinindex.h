@@ -32,9 +32,4 @@ class GridBinCluster {
   std::set< GridBinIndex > grid_bin_index_set;
 };
 
-GridBinCluster::GridBinCluster() {
-  total_cell_area = 0;
-  total_white_space = 0;
-}
-
 #endif //HPCC_SRC_PLACER_GLOBALPLACER_GPSIMPL_GRIDBININDEX_H_
