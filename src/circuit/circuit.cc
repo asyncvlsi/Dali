@@ -185,6 +185,30 @@ void Circuit::ParseLine(std::string &line, std::vector<std::string> &field_list)
   }
 }
 
+BlockOrient Circuit::StrToOrient(std::string &str_orient) {
+  BlockOrient orient = N;
+  if (str_orient == "N") {
+    orient = N;
+  } else if (str_orient == "S") {
+    orient = S;
+  } else if (str_orient == "W") {
+    orient = W;
+  } else if (str_orient == "E") {
+    orient = E;
+  } else if (str_orient == "FN") {
+    orient = FN;
+  } else if (str_orient == "FS") {
+    orient = FS;
+  } else if (str_orient == "FW") {
+    orient = FW;
+  } else if (str_orient == "FE") {
+    orient = FE;
+  } else {
+    Assert(false, "Block orientation error! This should not happen!");
+  }
+  return orient;
+}
+
 void Circuit::SetGridValue(double grid_value) {
   Assert(grid_value > 0, "grid_value must be a positive real number!");
   Assert(!grid_set_, "once set, grid_value cannot be changed!");
@@ -226,12 +250,17 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     grid_value_ = 0;
     while ((grid_value_ == 0) && !ist.eof()) {
       getline(ist, line);
+      if (line.find("LAYER") != std::string::npos) {
+        SetGridValue(1.0/lef_database_microns);
+        std::cout << "MANUFACTURINGGRID not specified explicitly, using 1.0/DATABASE MICRONS instead\n";
+      }
       if (line.find("MANUFACTURINGGRID") != std::string::npos) {
         std::vector<std::string> grid_field;
         ParseLine(line, grid_field);
         Assert(grid_field.size() >= 2, "Invalid MANUFACTURINGGRID declaration: expecting 2 fields");
         try {
-          grid_value_ = std::stod(grid_field[1]);
+          double tmp_value = std::stod(grid_field[1]);
+          SetGridValue(tmp_value);
         } catch (...) {
           Assert(false, "Invalid stoi conversion:\n" + line);
         }
@@ -240,7 +269,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     }
     Assert(grid_value_ > 0, "Cannot find or invalid MANUFACTURINGGRID");
   }
-  std::cout << "MANUFACTURINGGRID: " << grid_value_ << "\n";
+  //std::cout << "MANUFACTURINGGRID: " << grid_value_ << "\n";
 
   // 3. read block type information
   while (!ist.eof()) {
@@ -374,7 +403,30 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
     ParseLine(line, block_declare_field);
     Assert(block_declare_field.size() >= 3, "Invalid block declaration, expecting at least: - compName modelName ;\n" + line);
     //std::cout << block_declare_field[0] << " " << block_declare_field[1] << "\n";
-    AddBlock(block_declare_field[1], block_declare_field[2], 0, 0, true, N);
+    if (block_declare_field.size() == 3) {
+      AddBlock(block_declare_field[1], block_declare_field[2], 0, 0, true, N);
+    } else if (block_declare_field.size() == 10) {
+      bool movable = false;
+      if (block_declare_field[4] == "UNPLACED") {
+        movable = true;
+      } else if (block_declare_field[4] == "FIXED") {
+        movable = false;
+      } else {
+        Assert(false, "Unknown Placed Status!");
+      }
+      BlockOrient orient = StrToOrient(block_declare_field[9]);
+      int llx = 0, lly = 0;
+      try {
+        llx = (int)std::round(std::stoi(block_declare_field[6])/grid_value_/def_distance_microns);
+        lly = (int)std::round(std::stoi(block_declare_field[7])/grid_value_/def_distance_microns);
+      } catch (...) {
+        Assert(false, "Invalid stoi conversion:\n" + line);
+      }
+      AddBlock(block_declare_field[1], block_declare_field[2], llx, lly, movable, orient);
+    } else {
+      Assert(false, "Unknown block declaration!");
+    }
+
     getline(ist, line);
   }
 
@@ -400,7 +452,6 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       }
       while (true) {
         getline(ist, line);
-        if (line.find(";")) break;
         //std::cout << line << "\n";
         std::vector<std::string> pin_field;
         ParseLine(line, pin_field);
@@ -414,8 +465,10 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
           new_net->AddBlockPinPair(block, pin_num);
         }
         //std::cout << "\n";
+        if (line.find(";") != std::string::npos) break;
       }
-      Warning(new_net->blk_pin_list.size() == 1, "Net " + net_field[1] + " has only one blk_pin_pair\n");
+      Assert(!new_net->blk_pin_list.empty(), "Net " + net_field[1] + " has no blk_pin_pair");
+      Warning(new_net->blk_pin_list.size() == 1, "Net " + net_field[1] + " has only one blk_pin_pair");
     }
     getline(ist, line);
   }
