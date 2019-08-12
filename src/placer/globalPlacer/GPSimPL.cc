@@ -260,22 +260,28 @@ void GPSimPL::UpdateMaxMinX() {
 }
 
 void GPSimPL::BuildProblemB2BX() {
+  std::vector<Block> &block_list = *BlockList();
+  std::vector<Net> &net_list = *NetList();
   // before build a new Matrix, clean the information in existing matrix
   for (int i=0; i< TotBlockNum(); i++) {
-    Ax[i][0].weight = 0;
-    // make the diagonal elements 0
-    kx[i] = 0;
-    // mark the length each row of matrix 0, although some data might still exists there
-    bx[i] = 0;
-    // make each element of b 0
+    if (block_list[i].IsMovable()) {
+      Ax[i][0].weight = 0;
+      // make the diagonal elements 0
+      kx[i] = 0;
+      // mark the length each row of matrix 0, although some data might still exists there
+      bx[i] = 0;
+      // make each element of b 0
+    } else {
+      Ax[i][0].weight = 1;
+      kx[i] = 0;
+      bx[i] = block_list[i].LLX();
+    }
   }
   // update the x direction max and min node in each net
   weightTuple tempWT;
   double weight_x, inv_p, temp_pin_loc_x0, temp_pin_loc_x1, temp_diff_offset;
   int temp_node_num0, temp_node_num1;
   size_t max_pindex_x, min_pindex_x;
-  std::vector<Block> &block_list = *BlockList();
-  std::vector<Net> &net_list = *NetList();
   for (auto &&net: net_list) {
     if (net.P()<=1) {
       continue;
@@ -306,7 +312,6 @@ void GPSimPL::BuildProblemB2BX() {
           Ax[temp_node_num0][0].weight += weight_x;
         }
         else {
-          //((blockList[temp_node_num0].IsMovable())&&(blockList[temp_node_num1].IsMovable()))
           tempWT.pin = temp_node_num1;
           tempWT.weight = -weight_x;
           kx[temp_node_num0]++;
@@ -427,21 +432,27 @@ void GPSimPL::UpdateMaxMinY() {
 }
 
 void GPSimPL::BuildProblemB2BY() {
+  std::vector<Block> &block_list = *BlockList();
+  std::vector<Net> &net_list = *NetList();
   // before build a new Matrix, clean the information in existing matrix
   for (int i=0; i< TotBlockNum(); i++) {
-    Ay[i][0].weight = 0;
-    // make the diagonal elements 0
-    ky[i] = 0;
-    // mark the length each row of matrix 0, although some data might still exists there
-    by[i] = 0;
-    // make each element of b 0
+    if (block_list[i].IsMovable()) {
+      Ay[i][0].weight = 0;
+      // make the diagonal elements 0
+      ky[i] = 0;
+      // mark the length each row of matrix 0, although some data might still exists there
+      by[i] = 0;
+      // make each element of b 0
+    } else {
+      Ay[i][0].weight = 1;
+      ky[i] = 0;
+      by[i] = block_list[i].LLY();
+    }
   }
   weightTuple tempWT;
   double weighty, inv_p, temp_pin_loc_y0, temp_pin_loc_y1, temp_diff_offset;
   int temp_node_num0, temp_node_num1;
   size_t max_pindex_y, min_pindex_y;
-  std::vector<Block> &block_list = *BlockList();
-  std::vector<Net> &net_list = *NetList();
   for (auto &&net: net_list) {
     if (net.P()<=1) {
       continue;
@@ -472,7 +483,6 @@ void GPSimPL::BuildProblemB2BY() {
           Ay[temp_node_num0][0].weight += weighty;
         }
         else {
-          //((blockList[temp_node_num0].IsMovable())&&(blockList[temp_node_num1].IsMovable()))
           tempWT.pin = temp_node_num1;
           tempWT.weight = -weighty;
           ky[temp_node_num0]++;
@@ -570,7 +580,8 @@ void GPSimPL::BuildProblemB2BYNoOffset() {
 }
 
 void GPSimPL::CGSolver(std::string const &dimension, std::vector<std::vector<weightTuple> > &A, std::vector<double> &b, std::vector<size_t> &k) {
-  double epsilon = 1e-15, alpha, beta, rsold, rsnew, pAp, solution_distance;
+  double epsilon = 1e-10, alpha, beta, rsold, rsnew, pAp, solution_distance;
+  std::vector<Block> &block_list = *BlockList();
   for (int i=0; i< TotBlockNum(); i++) {
     // initialize the Jacobi pre-conditioner
     if (A[i][0].weight > epsilon) {
@@ -580,9 +591,13 @@ void GPSimPL::CGSolver(std::string const &dimension, std::vector<std::vector<wei
     else {
       // if the diagonal is too small, set JP[i] to 1 to prevent diverge
       JP[i] = 1;
+      if (dimension == "x") {
+        bx[i] = block_list[i].LLX();
+      } else {
+        by[i] = block_list[i].LLY();
+      }
     }
   }
-  std::vector<Block> &block_list = *BlockList();
   for (int i=0; i< TotBlockNum(); i++) {
     // calculate Ax
     ax[i] = 0;
@@ -618,12 +633,16 @@ void GPSimPL::CGSolver(std::string const &dimension, std::vector<std::vector<wei
     rsnew = 0;
     if (dimension=="x") {
       for (int i=0; i< TotBlockNum(); i++) {
-        block_list[i].IncreX(alpha * p[i]);
+        if (block_list[i].IsMovable()) {
+          block_list[i].IncreX(alpha * p[i]);
+        }
       }
     }
     else {
       for (int i=0; i< TotBlockNum(); i++) {
-        block_list[i].IncreY(alpha * p[i]);
+        if (block_list[i].IsMovable()) {
+          block_list[i].IncreY(alpha * p[i]);
+        }
       }
     }
     solution_distance = 0;
@@ -644,31 +663,30 @@ void GPSimPL::CGSolver(std::string const &dimension, std::vector<std::vector<wei
   /* if the cell is out of boundary, just shift it back to the placement region */
   if (dimension == "x") {
     for (int i=0; i< TotBlockNum(); i++) {
-      if (block_list[i].LLX() < Left()) {
-        block_list[i].SetCenterX(Left() + block_list[i].Width()/2.0 + 1);
-        //std::cout << i << "\n";
-      }
-      else if (block_list[i].URX() > Right()) {
-        block_list[i].SetCenterX(Right() - block_list[i].Width()/2.0 - 1);
-        //std::cout << i << "\n";
-      }
-      else {
-        continue;
+      if (block_list[i].IsMovable()) {
+        if (block_list[i].LLX() < Left()) {
+          block_list[i].SetCenterX(Left() + block_list[i].Width() / 2.0 + 1);
+          //std::cout << i << "\n";
+        } else if (block_list[i].URX() > Right()) {
+          block_list[i].SetCenterX(Right() - block_list[i].Width() / 2.0 - 1);
+          //std::cout << i << "\n";
+        } else {
+          continue;
+        }
       }
     }
-  }
-  else{
+  } else{
     for (int i=0; i< TotBlockNum(); i++) {
-      if (block_list[i].LLY() < Bottom()) {
-        block_list[i].SetCenterY(Bottom() + block_list[i].Height()/2.0 + 1);
-        //std::cout << i << "\n";
-      }
-      else if (block_list[i].URY() > Top()) {
-        block_list[i].SetCenterY(Top() - block_list[i].Height()/2.0 - 1);
-        //std::cout << i << "\n";
-      }
-      else {
-        continue;
+      if (block_list[i].IsMovable()) {
+        if (block_list[i].LLY() < Bottom()) {
+          block_list[i].SetCenterY(Bottom() + block_list[i].Height() / 2.0 + 1);
+          //std::cout << i << "\n";
+        } else if (block_list[i].URY() > Top()) {
+          block_list[i].SetCenterY(Top() - block_list[i].Height() / 2.0 - 1);
+          //std::cout << i << "\n";
+        } else {
+          continue;
+        }
       }
     }
   }

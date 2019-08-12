@@ -22,7 +22,7 @@ class GPSimPL: public Placer {
   bool HPWLx_converge = false;
   bool HPWLy_converge = false;
   double cg_precision = 0.01;
-  double HPWL_intra_linearSolver_precision = 0.01;
+  double HPWL_intra_linearSolver_precision = 0.05;
  public:
   GPSimPL();
   GPSimPL(double aspectRatio, double fillingRate);
