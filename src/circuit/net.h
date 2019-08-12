@@ -32,18 +32,27 @@ class Net {
   double InvP();
   int P();
 
-  void UpdateMaxMinX();
-  void UpdateMaxMinY();
-  void UpdateMaxMin();
-
+  void UpdateMaxMinX(); // implementation not complete
+  void UpdateMaxMinY(); // implementation not complete
+  void UpdateMaxMin(); // implementation not complete
   int MaxPinX();
   int MinPinX();
   int MaxPinY();
   int MinPinY();
-
   double HPWLX();
   double HPWLY();
   double HPWL();
+
+  void UpdateMaxMinCtoCX(); // implementation not complete
+  void UpdateMaxMinCtoCY(); // implementation not complete
+  void UpdateMaxMinCtoC(); // implementation not complete
+  int MaxPinCtoCX();
+  int MinPinCtoCX();
+  int MaxPinCtoCY();
+  int MinPinCtoCY();
+  double HPWLCtoCX();
+  double HPWLCtoCY();
+  double HPWLCtoC();
 
   friend std::ostream& operator<<(std::ostream& os, const Net &net) {
     os << *net.Name() << "\n";

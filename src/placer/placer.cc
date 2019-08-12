@@ -182,6 +182,11 @@ void Placer::ReportHPWL() {
   GetCircuit()->ReportHPWL();
 }
 
+void Placer::ReportHPWLCtoC() {
+  Assert(circuit_ != nullptr, "No imput circuit specified, cannot compute HPWLCtoC!");
+  GetCircuit()->ReportHPWLCtoC();
+}
+
 void Placer::TakeOver(Placer *placer) {
   aspect_ratio_ = placer->AspectRatio();
   filling_rate_ = placer->FillingRate();

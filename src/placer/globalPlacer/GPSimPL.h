@@ -21,7 +21,7 @@ class GPSimPL: public Placer {
   double HPWLY_old = 1e30;
   bool HPWLx_converge = false;
   bool HPWLy_converge = false;
-  double cg_precision = 0.01;
+  double cg_precision = 0.05;
   double HPWL_intra_linearSolver_precision = 0.05;
  public:
   GPSimPL();
@@ -51,10 +51,12 @@ class GPSimPL: public Placer {
   void UpdateMaxMinX();
   void UpdateHPWLX();
   void BuildProblemB2BX();
+  void UpdateMaxMinCtoCX();
   void BuildProblemB2BXNoOffset();
   void UpdateMaxMinY();
   void UpdateHPWLY();
   void BuildProblemB2BY();
+  void UpdateMaxMinCtoCY();
   void BuildProblemB2BYNoOffset();
   void CGSolver(std::string const &dimension, std::vector<std::vector<weightTuple> > &A, std::vector<double> &b, std::vector<size_t> &k);
   void CGSolverX();

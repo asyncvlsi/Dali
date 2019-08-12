@@ -332,44 +332,70 @@ void GPSimPL::BuildProblemB2BX() {
     }
   }
   for (size_t i=0; i<Ax.size(); i++) { // this is for cells with tiny force applied on them
-    if (Ax[i][0].weight < 1e-10) {
+    if ((Ax[i][0].weight < 1e-10) && (block_list[i].IsMovable())) {
       Ax[i][0].weight = 1;
       bx[i] = block_list[i].LLX();
     }
   }
 }
 
+void GPSimPL::UpdateMaxMinCtoCX() {
+  HPWLX_new = 0;
+  std::vector<Net> &net_list = *NetList();
+  for (auto &&net: net_list) {
+    HPWLX_new += net.HPWLCtoCX();
+  }
+  //std::cout << "HPWLX_old: " << HPWLX_old << "\n";
+  //std::cout << "HPWLX_new: " << HPWLX_new << "\n";
+  //std::cout << 1 - HPWLX_new/HPWLX_old << "\n";
+  if (HPWLX_new == 0) { // this is for 1 degree net, this happens in extremely rare cases
+    HPWLx_converge = true;
+  } else {
+    HPWLx_converge = (std::fabs(1 - HPWLX_new / HPWLX_old) < HPWL_intra_linearSolver_precision);
+    HPWLX_old = HPWLX_new;
+  }
+}
+
 void GPSimPL::BuildProblemB2BXNoOffset() {
   // before build a new Matrix, clean the information in existing matrix
+  std::vector<Block> &block_list = *BlockList();
+  std::vector<Net> &net_list = *NetList();
+  // before build a new Matrix, clean the information in existing matrix
   for (int i=0; i< TotBlockNum(); i++) {
-    Ax[i][0].weight = 0;
-    // make the diagonal elements 0
-    kx[i] = 0;
-    // mark the length each row of matrix 0, although some data might still exists there
-    bx[i] = 0;
-    // make each element of b 0
+    if (block_list[i].IsMovable()) {
+      Ax[i][0].weight = 0;
+      // make the diagonal elements 0
+      kx[i] = 0;
+      // mark the length each row of matrix 0, although some data might still exists there
+      bx[i] = 0;
+      // make each element of b 0
+    } else {
+      Ax[i][0].weight = 1;
+      kx[i] = 0;
+      bx[i] = block_list[i].LLX();
+    }
   }
   weightTuple tempWT;
   double weightx, invp, temppinlocx0, temppinlocx1;
   int tempnodenum0, tempnodenum1;
   size_t maxpindex_x, minpindex_x;
-  std::vector<Block> &block_list = *BlockList();
-  std::vector<Net> &net_list = *NetList();
   for (auto &&net: net_list) {
-    if (net.P()<=1) continue;
+    if (net.P()<=1) {
+      continue;
+    }
     invp = net.InvP();
-    maxpindex_x = net.MaxPinX();
-    minpindex_x = net.MinPinX();
+    maxpindex_x = net.MaxPinCtoCX();
+    minpindex_x = net.MinPinCtoCX();
     for (size_t i=0; i<net.blk_pin_list.size(); i++) {
       tempnodenum0 = net.blk_pin_list[i].GetBlock()->Num();
-      temppinlocx0 = block_list[tempnodenum0].LLX();
+      temppinlocx0 = block_list[tempnodenum0].X();
       for (size_t k=i+1; k<net.blk_pin_list.size(); k++) {
         if ((i!=maxpindex_x)&&(i!=minpindex_x)) {
           if ((k!=maxpindex_x)&&(k!=minpindex_x)) continue;
         }
         tempnodenum1 = net.blk_pin_list[k].GetBlock()->Num();
         if (tempnodenum0 == tempnodenum1) continue;
-        temppinlocx1 = block_list[tempnodenum1].LLX();
+        temppinlocx1 = block_list[tempnodenum1].X();
         weightx = invp/((double)fabs(temppinlocx0 - temppinlocx1) + WidthEpsilon());
         if ((block_list[tempnodenum0].IsMovable() == 0)&&(block_list[tempnodenum1].IsMovable() == 0)) {
           continue;
@@ -404,6 +430,12 @@ void GPSimPL::BuildProblemB2BXNoOffset() {
           Ax[tempnodenum1][0].weight += weightx;
         }
       }
+    }
+  }
+  for (size_t i=0; i<Ax.size(); i++) { // this is for cells with tiny force applied on them
+    if ((Ax[i][0].weight < 1e-10) && (block_list[i].IsMovable())) {
+      Ax[i][0].weight = 1;
+      bx[i] = block_list[i].X();
     }
   }
 }
@@ -446,7 +478,7 @@ void GPSimPL::BuildProblemB2BY() {
     } else {
       Ay[i][0].weight = 1;
       ky[i] = 0;
-      by[i] = block_list[i].LLY();
+      by[i] = block_list[i].Y();
     }
   }
   weightTuple tempWT;
@@ -503,44 +535,71 @@ void GPSimPL::BuildProblemB2BY() {
     }
   }
   for (size_t i=0; i<Ay.size(); i++) { // // this is for cells with tiny force applied on them
-    if (Ay[i][0].weight < 1e-10) {
+    if ((Ay[i][0].weight < 1e-10) && (block_list[i].IsMovable())) {
       Ay[i][0].weight = 1;
       by[i] = block_list[i].LLY();
     }
   }
 }
 
+void GPSimPL::UpdateMaxMinCtoCY() {
+  // update the y direction max and min node in each net
+  HPWLY_new = 0;
+  std::vector<Net> &net_list = *NetList();
+  for (auto &&net: net_list) {
+    HPWLY_new += net.HPWLCtoCY();
+  }
+  //std::cout << "HPWLY_old: " << HPWLY_old << "\n";
+  //std::cout << "HPWLY_new: " << HPWLY_new << "\n";
+  //std::cout << 1 - HPWLY_new/HPWLY_old << "\n";
+  if (HPWLY_new == 0) { // this is for 1 degree net, this happens in extremely rare cases
+    HPWLy_converge = true;
+  } else {
+    HPWLy_converge = (std::fabs(1 - HPWLY_new / HPWLY_old) < HPWL_intra_linearSolver_precision);
+    HPWLY_old = HPWLY_new;
+  }
+}
+
 void GPSimPL::BuildProblemB2BYNoOffset() {
   // before build a new Matrix, clean the information in existing matrix
+  std::vector<Block> &block_list = *BlockList();
+  std::vector<Net> &net_list = *NetList();
+  // before build a new Matrix, clean the information in existing matrix
   for (int i=0; i< TotBlockNum(); i++) {
-    Ay[i][0].weight = 0;
-    // make the diagonal elements 0
-    ky[i] = 0;
-    // mark the length each row of matrix 0, although some data might still exists there
-    by[i] = 0;
-    // make each element of b 0
+    if (block_list[i].IsMovable()) {
+      Ay[i][0].weight = 0;
+      // make the diagonal elements 0
+      ky[i] = 0;
+      // mark the length each row of matrix 0, although some data might still exists there
+      by[i] = 0;
+      // make each element of b 0
+    } else {
+      Ay[i][0].weight = 1;
+      ky[i] = 0;
+      by[i] = block_list[i].Y();
+    }
   }
   weightTuple tempWT;
   double weighty, invp, temppinlocy0, temppinlocy1;
   int tempnodenum0, tempnodenum1;
   size_t maxpindex_y, minpindex_y;
-  std::vector<Block> &block_list = *BlockList();
-  std::vector<Net> &net_list = *NetList();
   for (auto &&net: net_list) {
-    if (net.P()<=1) continue;
+    if (net.P()<=1) {
+      continue;
+    }
     invp = net.InvP();
-    maxpindex_y = net.MaxPinY();
-    minpindex_y = net.MinPinY();
+    maxpindex_y = net.MaxPinCtoCY();
+    minpindex_y = net.MinPinCtoCY();
     for (size_t i=0; i<net.blk_pin_list.size(); i++) {
       tempnodenum0 = net.blk_pin_list[i].GetBlock()->Num();
-      temppinlocy0 = block_list[tempnodenum0].LLY();
+      temppinlocy0 = block_list[tempnodenum0].Y();
       for (size_t k=i+1; k<net.blk_pin_list.size(); k++) {
         if ((i!=maxpindex_y)&&(i!=minpindex_y)) {
           if ((k!=maxpindex_y)&&(k!=minpindex_y)) continue;
         }
         tempnodenum1 = net.blk_pin_list[k].GetBlock()->Num();
         if (tempnodenum0 == tempnodenum1) continue;
-        temppinlocy1 = block_list[tempnodenum1].LLY();
+        temppinlocy1 = block_list[tempnodenum1].Y();
         weighty = invp/((double)fabs(temppinlocy0 - temppinlocy1) + HeightEpsilon());
         if ((block_list[tempnodenum0].IsMovable() == 0)&&(block_list[tempnodenum1].IsMovable() == 0)) {
           continue;
@@ -575,6 +634,12 @@ void GPSimPL::BuildProblemB2BYNoOffset() {
           Ay[tempnodenum1][0].weight += weighty;
         }
       }
+    }
+  }
+  for (size_t i=0; i<Ay.size(); i++) { // // this is for cells with tiny force applied on them
+    if ((Ay[i][0].weight < 1e-10) && (block_list[i].IsMovable())) {
+      Ay[i][0].weight = 1;
+      by[i] = block_list[i].Y();
     }
   }
 }
@@ -730,6 +795,8 @@ void GPSimPL::StartPlacement() {
   UniformInit();
   UpdateMaxMinX();
   UpdateMaxMinY();
+  //UpdateMaxMinCtoCX();
+  //UpdateMaxMinCtoCY();
   HPWLx_converge = false;
   HPWLy_converge = false;
   HPWLX_old = 1e30;
@@ -737,13 +804,17 @@ void GPSimPL::StartPlacement() {
   for (int i=0; i<50; i++) {
     if (!HPWLx_converge) {
       BuildProblemB2BX();
+      //BuildProblemB2BXNoOffset();
       CGSolverX();
       UpdateMaxMinX();
+      //UpdateMaxMinCtoCX();
     }
     if (!HPWLy_converge) {
       BuildProblemB2BY();
+      //BuildProblemB2BYNoOffset();
       CGSolverY();
       UpdateMaxMinY();
+      //UpdateMaxMinCtoCY();
     }
     if (HPWLx_converge && HPWLy_converge)  {
       std::cout << i << " iterations in cg\n";
@@ -753,4 +824,5 @@ void GPSimPL::StartPlacement() {
   CGClose();
   std::cout << "Initial Placement Complete\n";
   ReportHPWL();
+  //ReportHPWLCtoC();
 }

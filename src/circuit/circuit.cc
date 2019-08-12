@@ -19,6 +19,8 @@ Circuit::Circuit() {
   max_width_ = 0;
   min_height_ = 100000000;
   max_height_ = 0;
+  grid_set_ = false;
+  grid_value_ = 0;
 }
 
 Circuit::Circuit(int tot_block_type_num, int tot_block_num, int tot_net_num) {
@@ -35,6 +37,8 @@ Circuit::Circuit(int tot_block_type_num, int tot_block_num, int tot_net_num) {
   max_width_ = 0;
   min_height_ = 100000000;
   max_height_ = 0;
+  grid_set_ = false;
+  grid_value_ = 0;
 }
 
 void Circuit::SetBoundaryFromDef(int left, int right, int bottom, int top) {
@@ -573,6 +577,30 @@ double Circuit::HPWL() {
 
 void Circuit::ReportHPWL() {
   std::cout << "HPWL: " << HPWL() << "\n";
+}
+
+double Circuit::HPWLCtoCX() {
+  double HPWLCtoCX = 0;
+  for (auto &&net: net_list) {
+    HPWLCtoCX += net.HPWLCtoCX();
+  }
+  return HPWLCtoCX;
+}
+
+double Circuit::HPWLCtoCY() {
+  double HPWLCtoCY = 0;
+  for (auto &&net: net_list) {
+    HPWLCtoCY += net.HPWLCtoCY();
+  }
+  return HPWLCtoCY;
+}
+
+double Circuit::HPWLCtoC() {
+  return HPWLCtoCX() + HPWLCtoCY();
+}
+
+void Circuit::ReportHPWLCtoC() {
+  std::cout << "HPWLCtoC: " << HPWLCtoC() << "\n";
 }
 
 void Circuit::WriteDefFileDebug(std::string const &name_of_file) {

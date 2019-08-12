@@ -56,6 +56,7 @@ public:
   double HPWLY();
   double HPWL();
   void ReportHPWL();
+  void ReportHPWLCtoC();
   void TakeOver(Placer *placer);
 
   void GenMATLABScript(std::string const &name_of_file= "block_net_list.m");

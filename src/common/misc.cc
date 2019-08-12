@@ -7,7 +7,7 @@
 void Assert(bool e, const std::string &error_message) {
   if (!e) {
     std::cout << "FATAL ERROR:" << std::endl;
-    std::cout << error_message << std::endl;
+    std::cout << "\t" << error_message << std::endl;
     assert(e);
   }
 }
@@ -15,6 +15,6 @@ void Assert(bool e, const std::string &error_message) {
 void Warning(bool e, const std::string &warning_message) {
   if (e) {
     std::cout << "WARNING:" << std::endl;
-    std::cout << warning_message << std::endl;
+    std::cout << "\t" << warning_message << std::endl;
   }
 }

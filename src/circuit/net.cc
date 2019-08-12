@@ -53,8 +53,6 @@ void Net::UpdateMaxMinX() {
     }
   }
   max_pin_x_ = max_pin_index;
-
-
 }
 
 void Net::UpdateMaxMinY() {
@@ -124,7 +122,7 @@ int Net::MinPinY() {
   double min_y = block->LLY() + blk_pin_list[0].YOffset();
   for (size_t i=0; i<blk_pin_list.size(); i++) {
     block = blk_pin_list[i].GetBlock();
-    if (min_y < block->LLY() + blk_pin_list[i].YOffset()) {
+    if (min_y > block->LLY() + blk_pin_list[i].YOffset()) {
       min_y = block->LLY() + blk_pin_list[i].YOffset();
       min_pin_index = i;
     }
@@ -133,11 +131,7 @@ int Net::MinPinY() {
 }
 
 double Net::HPWLX() {
-  if (blk_pin_list.empty()) {
-    std::cout << "Error!\n";
-    std::cout << "net contains no pin\n";
-    assert(!blk_pin_list.empty());
-  }
+  Assert(!blk_pin_list.empty(), "Net contains no pin: " + *Name());
   auto *block = blk_pin_list[0].GetBlock();
   double max_x = block->LLX() + blk_pin_list[0].XOffset();
   double min_x = block->LLX() + blk_pin_list[0].YOffset();
@@ -161,11 +155,7 @@ double Net::HPWLX() {
 }
 
 double Net::HPWLY() {
-  if (blk_pin_list.empty()) {
-    std::cout << "Error!\n";
-    std::cout << "net contains no pin\n";
-    assert(!blk_pin_list.empty());
-  }
+  Assert(!blk_pin_list.empty(), "Net contains no pin: " + *Name());
   auto *block = blk_pin_list[0].GetBlock();
   double max_y = block->LLY() + blk_pin_list[0].YOffset();
   double min_y = block->LLY() + blk_pin_list[0].YOffset();
@@ -192,3 +182,143 @@ double Net::HPWL() {
   return HPWLX() + HPWLY();
 }
 
+void Net::UpdateMaxMinCtoCX() {
+  size_t max_pin_index = 0;
+  auto *block = blk_pin_list[0].GetBlock();
+  double max_x = block->X();
+  for (size_t i=0; i<blk_pin_list.size(); i++) {
+    block = blk_pin_list[i].GetBlock();
+    if (max_x < block->X()) {
+      max_x = block->X();
+      max_pin_index = i;
+    }
+  }
+  max_pin_x_ = max_pin_index;
+}
+
+void Net::UpdateMaxMinCtoCY() {
+  size_t max_pin_index = 0;
+  auto *block = blk_pin_list[0].GetBlock();
+  double max_y = block->Y();
+  for (size_t i=0; i<blk_pin_list.size(); i++) {
+    block = blk_pin_list[i].GetBlock();
+    if (max_y < block->Y()) {
+      max_y = block->Y();
+      max_pin_index = i;
+    }
+  }
+  max_pin_y_ = max_pin_index;
+}
+
+void Net::UpdateMaxMinCtoC() {
+  UpdateMaxMinX();
+  UpdateMaxMinY();
+}
+
+int Net::MaxPinCtoCX() {
+  size_t max_pin_index = 0;
+  auto *block = blk_pin_list[0].GetBlock();
+  double max_x = block->X();
+  for (size_t i=0; i<blk_pin_list.size(); i++) {
+    block = blk_pin_list[i].GetBlock();
+    if (max_x < block->X()) {
+      max_x = block->X();
+      max_pin_index = i;
+    }
+  }
+  return max_pin_index;
+}
+
+int Net::MinPinCtoCX() {
+  size_t min_pin_index = 0;
+  auto *block = blk_pin_list[0].GetBlock();
+  double min_x = block->X() ;
+  for (size_t i=0; i<blk_pin_list.size(); i++) {
+    block = blk_pin_list[i].GetBlock();
+    if (min_x > block->X()) {
+      min_x = block->X();
+      min_pin_index = i;
+    }
+  }
+  return min_pin_index;
+}
+
+int Net::MaxPinCtoCY() {
+  size_t max_pin_index = 0;
+  auto *block = blk_pin_list[0].GetBlock();
+  double max_y = block->Y();
+  for (size_t i=0; i<blk_pin_list.size(); i++) {
+    block = blk_pin_list[i].GetBlock();
+    if (max_y < block->Y()) {
+      max_y = block->Y();
+      max_pin_index = i;
+    }
+  }
+  return max_pin_index;
+}
+
+int Net::MinPinCtoCY() {
+  size_t min_pin_index = 0;
+  auto *block = blk_pin_list[0].GetBlock();
+  double min_y = block->Y();
+  for (size_t i=0; i<blk_pin_list.size(); i++) {
+    block = blk_pin_list[i].GetBlock();
+    if (min_y > block->Y()) {
+      min_y = block->Y();
+      min_pin_index = i;
+    }
+  }
+  return min_pin_index;
+}
+
+double Net::HPWLCtoCX() {
+  Assert(!blk_pin_list.empty(), "Net contains no pin: " + *Name());
+  auto *block = blk_pin_list[0].GetBlock();
+  double max_x = block->X();
+  double min_x = block->X();
+
+  for (auto &&pin: blk_pin_list) {
+    if (pin.GetBlock() == nullptr) {
+      std::cout << "Error!\n";
+      std::cout << "attribute block_t* _block is nullptr, it should points to the block containing this pin\n";
+      assert(pin.GetBlock() != nullptr);
+    }
+    block = pin.GetBlock();
+    if (max_x < block->X()) {
+      max_x = block->X();
+    }
+    if (min_x > block->X()) {
+      min_x = block->X();
+    }
+  }
+
+  return (max_x - min_x);
+}
+
+double Net::HPWLCtoCY() {
+  Assert(!blk_pin_list.empty(), "Net contains no pin: " + *Name());
+  auto *block = blk_pin_list[0].GetBlock();
+  double max_y = block->Y();
+  double min_y = block->Y();
+
+  for (auto &&pin: blk_pin_list) {
+    if (pin.GetBlock() == nullptr) {
+      std::cout << "Error!\n";
+      std::cout << "attribute block_t* _block is nullptr, it should points to the block containing this pin\n";
+      assert(pin.GetBlock() != nullptr);
+    }
+    block = pin.GetBlock();
+    if (max_y < block->Y()) {
+      max_y = block->Y();
+    }
+    if (min_y > block->Y()) {
+      min_y = block->Y();
+    }
+  }
+
+  return (max_y - min_y);
+}
+
+double Net::HPWLCtoC() {
+  return HPWLCtoCX() + HPWLCtoCY();
+}

@@ -95,6 +95,10 @@ class Circuit {
   double HPWLY();
   double HPWL();
   void ReportHPWL();
+  double HPWLCtoCX();
+  double HPWLCtoCY();
+  double HPWLCtoC();
+  void ReportHPWLCtoC();
 
   // dump circuit to LEF/DEF file, readable by the the above ReadDefFile()
   void WriteDefFileDebug(std::string const &name_of_file= "circuit.def");
