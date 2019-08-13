@@ -42,31 +42,47 @@ int Net::P() {
 
 
 void Net::UpdateMaxMinX() {
-  size_t max_pin_index = 0;
+  Assert(!blk_pin_list.empty(), "Net contains no pin: " + *Name());
+  int max_pin_index = 0, min_pin_index = 0;
   auto *block = blk_pin_list[0].GetBlock();
   double max_x = block->LLX() + blk_pin_list[0].XOffset();
+  double min_x = block->LLX() + blk_pin_list[0].XOffset();
+  double tmp_pin_loc = 0;
   for (size_t i=0; i<blk_pin_list.size(); i++) {
-    block = blk_pin_list[i].GetBlock();
-    if (max_x < block->LLX() + blk_pin_list[i].XOffset()) {
-      max_x = block->LLX() + blk_pin_list[i].XOffset();
+    tmp_pin_loc = blk_pin_list[i].GetBlock()->LLX() + blk_pin_list[i].XOffset();
+    if (max_x < tmp_pin_loc) {
+      max_x = tmp_pin_loc;
       max_pin_index = i;
+    }
+    if (min_x > tmp_pin_loc) {
+      min_x = tmp_pin_loc;
+      min_pin_index = i;
     }
   }
   max_pin_x_ = max_pin_index;
+  min_pin_x_ = min_pin_index;
 }
 
 void Net::UpdateMaxMinY() {
-  size_t max_pin_index = 0;
+  Assert(!blk_pin_list.empty(), "Net contains no pin: " + *Name());
+  int max_pin_index = 0, min_pin_index = 0;
   auto *block = blk_pin_list[0].GetBlock();
   double max_y = block->LLY() + blk_pin_list[0].YOffset();
+  double min_y = block->LLY() + blk_pin_list[0].YOffset();
+  double tmp_pin_loc = 0;
   for (size_t i=0; i<blk_pin_list.size(); i++) {
-    block = blk_pin_list[i].GetBlock();
-    if (max_y < block->LLY() + blk_pin_list[i].YOffset()) {
-      max_y = block->LLY() + blk_pin_list[i].YOffset();
+    tmp_pin_loc = blk_pin_list[i].GetBlock()->LLY() + blk_pin_list[i].YOffset();
+    if (max_y < tmp_pin_loc) {
+      max_y = tmp_pin_loc;
       max_pin_index = i;
+    }
+    if (min_y > tmp_pin_loc) {
+      min_y = tmp_pin_loc;
+      min_pin_index = i;
     }
   }
   max_pin_y_ = max_pin_index;
+  min_pin_y_ = min_pin_index;
 }
 
 void Net::UpdateMaxMin() {
@@ -75,107 +91,33 @@ void Net::UpdateMaxMin() {
 }
 
 int Net::MaxPinX() {
-  size_t max_pin_index = 0;
-  auto *block = blk_pin_list[0].GetBlock();
-  double max_x = block->LLX() + blk_pin_list[0].XOffset();
-  for (size_t i=0; i<blk_pin_list.size(); i++) {
-    block = blk_pin_list[i].GetBlock();
-    if (max_x < block->LLX() + blk_pin_list[i].XOffset()) {
-      max_x = block->LLX() + blk_pin_list[i].XOffset();
-      max_pin_index = i;
-    }
-  }
-  return max_pin_index;
+  return max_pin_x_;
 }
 
 int Net::MinPinX() {
-  size_t min_pin_index = 0;
-  auto *block = blk_pin_list[0].GetBlock();
-  double min_x = block->LLX() + blk_pin_list[0].XOffset();
-  for (size_t i=0; i<blk_pin_list.size(); i++) {
-    block = blk_pin_list[i].GetBlock();
-    if (min_x > block->LLX() + blk_pin_list[i].XOffset()) {
-      min_x = block->LLX() + blk_pin_list[i].XOffset();
-      min_pin_index = i;
-    }
-  }
-  return min_pin_index;
+  return min_pin_x_;
 }
 
 int Net::MaxPinY() {
-  size_t max_pin_index = 0;
-  auto *block = blk_pin_list[0].GetBlock();
-  double max_y = block->LLY() + blk_pin_list[0].YOffset();
-  for (size_t i=0; i<blk_pin_list.size(); i++) {
-    block = blk_pin_list[i].GetBlock();
-    if (max_y < block->LLY() + blk_pin_list[i].YOffset()) {
-      max_y = block->LLY() + blk_pin_list[i].YOffset();
-      max_pin_index = i;
-    }
-  }
-  return max_pin_index;
+  return max_pin_y_;
 }
 
 int Net::MinPinY() {
-  size_t min_pin_index = 0;
-  auto *block = blk_pin_list[0].GetBlock();
-  double min_y = block->LLY() + blk_pin_list[0].YOffset();
-  for (size_t i=0; i<blk_pin_list.size(); i++) {
-    block = blk_pin_list[i].GetBlock();
-    if (min_y > block->LLY() + blk_pin_list[i].YOffset()) {
-      min_y = block->LLY() + blk_pin_list[i].YOffset();
-      min_pin_index = i;
-    }
-  }
-  return min_pin_index;
+  return min_pin_y_;
 }
 
 double Net::HPWLX() {
-  Assert(!blk_pin_list.empty(), "Net contains no pin: " + *Name());
-  auto *block = blk_pin_list[0].GetBlock();
-  double max_x = block->LLX() + blk_pin_list[0].XOffset();
-  double min_x = block->LLX() + blk_pin_list[0].YOffset();
-
-  for (auto &&pin: blk_pin_list) {
-    if (pin.GetBlock() == nullptr) {
-      std::cout << "Error!\n";
-      std::cout << "attribute block_t* _block is nullptr, it should points to the block containing this pin\n";
-      assert(pin.GetBlock() != nullptr);
-    }
-    block = pin.GetBlock();
-    if (max_x < block->LLX() + pin.XOffset()) {
-      max_x = block->LLX() + pin.XOffset();
-    }
-    if (min_x > block->LLX() + pin.XOffset()) {
-      min_x = block->LLX() + pin.XOffset();
-    }
-  }
-  
-  return (max_x - min_x);
+  UpdateMaxMinX();
+  double max_x = blk_pin_list[max_pin_x_].GetBlock()->LLX() + blk_pin_list[max_pin_x_].XOffset();
+  double min_x = blk_pin_list[min_pin_x_].GetBlock()->LLX() + blk_pin_list[min_pin_x_].XOffset();
+  return (max_x - min_x) * weight_;
 }
 
 double Net::HPWLY() {
-  Assert(!blk_pin_list.empty(), "Net contains no pin: " + *Name());
-  auto *block = blk_pin_list[0].GetBlock();
-  double max_y = block->LLY() + blk_pin_list[0].YOffset();
-  double min_y = block->LLY() + blk_pin_list[0].YOffset();
-
-  for (auto &&pin: blk_pin_list) {
-    if (pin.GetBlock() == nullptr) {
-      std::cout << "Error!\n";
-      std::cout << "attribute block_t* _block is nullptr, it should points to the block containing this pin\n";
-      assert(pin.GetBlock() != nullptr);
-    }
-    block = pin.GetBlock();
-    if (max_y < block->LLY() + pin.YOffset()) {
-      max_y = block->LLY() + pin.YOffset();
-    }
-    if (min_y > block->LLY() + pin.YOffset()) {
-      min_y = block->LLY() + pin.YOffset();
-    }
-  }
-
-  return (max_y - min_y);
+  UpdateMaxMinY();
+  double max_y = blk_pin_list[max_pin_y_].GetBlock()->LLY() + blk_pin_list[max_pin_y_].YOffset();
+  double min_y = blk_pin_list[min_pin_y_].GetBlock()->LLY() + blk_pin_list[min_pin_y_].YOffset();
+  return (max_y - min_y) * weight_;
 }
 
 double Net::HPWL() {
@@ -292,7 +234,7 @@ double Net::HPWLCtoCX() {
     }
   }
 
-  return (max_x - min_x);
+  return (max_x - min_x) * weight_;
 }
 
 double Net::HPWLCtoCY() {
@@ -316,7 +258,7 @@ double Net::HPWLCtoCY() {
     }
   }
 
-  return (max_y - min_y);
+  return (max_y - min_y) * weight_;
 }
 
 double Net::HPWLCtoC() {

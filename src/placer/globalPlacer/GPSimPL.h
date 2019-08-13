@@ -7,6 +7,7 @@
 
 #include "placer/placer.h"
 #include "circuit/bin.h"
+#include "GPSimPL/simplblockaux.h"
 
 typedef struct {
   size_t pin;
@@ -42,6 +43,8 @@ class GPSimPL: public Placer {
   std::vector<double> JP;
   // some static variable used in the CGSolver
 
+  std::vector< SimPLBlockAux > aux_list;
+  void InterLockAuxInfo();
   void UniformInit();
   void CGInit();
   void CGClose();

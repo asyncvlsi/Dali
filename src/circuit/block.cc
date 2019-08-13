@@ -121,7 +121,7 @@ void Block::SetAux(BlockAux *aux) {
   aux_ = aux;
 }
 
-BlockAux *Block::Aux() const {
+BlockAux *Block::Aux(){
   return aux_;
 }
 

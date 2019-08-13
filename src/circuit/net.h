@@ -32,9 +32,9 @@ class Net {
   double InvP();
   int P();
 
-  void UpdateMaxMinX(); // implementation not complete
-  void UpdateMaxMinY(); // implementation not complete
-  void UpdateMaxMin(); // implementation not complete
+  void UpdateMaxMinX();
+  void UpdateMaxMinY();
+  void UpdateMaxMin();
   int MaxPinX();
   int MinPinX();
   int MaxPinY();

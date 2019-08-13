@@ -65,7 +65,7 @@ class Block {
   BlockOrient Orient() const;
   std::string OrientStr() const;
   void SetAux(BlockAux *aux);
-  BlockAux *Aux() const;
+  BlockAux *Aux();
   void IncreX(double amount);
   void IncreY(double amount);
 

@@ -31,6 +31,23 @@ void GPSimPL::InitHPWLFlags() {
   HPWLy_converge = false;
 }
 
+void GPSimPL::InterLockAuxInfo() {
+  auto &&block_list = *BlockList();
+  int size = block_list.size();
+  aux_list.reserve(size);
+  for (int i=0; i<size; i++) {
+    aux_list.emplace_back(&(block_list[i]));
+  }
+
+  auto &&net_list = *NetList();
+  for (auto &&net: net_list) {
+    for (auto &&blk_pin: net.blk_pin_list) {
+      auto block_aux = (SimPLBlockAux *)(blk_pin.GetBlock()->Aux());
+
+    }
+  }
+}
+
 void GPSimPL::UniformInit() {
   int length_x = Right() - Left();
   int length_y = Top() - Bottom();
@@ -287,6 +304,7 @@ void GPSimPL::BuildProblemB2BX() {
       continue;
     }
     inv_p = net.InvP();
+    net.UpdateMaxMinX();
     max_pindex_x = net.MaxPinX();
     min_pindex_x = net.MinPinX();
     for (size_t i=0; i<net.blk_pin_list.size(); i++) {
@@ -490,6 +508,7 @@ void GPSimPL::BuildProblemB2BY() {
       continue;
     }
     inv_p = net.InvP();
+    net.UpdateMaxMinY();
     max_pindex_y = net.MaxPinY();
     min_pindex_y = net.MinPinY();
     for (size_t i=0; i<net.blk_pin_list.size(); i++) {
@@ -791,6 +810,7 @@ void GPSimPL::DrawBlockNetList(std::string const &name_of_file) {
 }
 
 void GPSimPL::StartPlacement() {
+  InterLockAuxInfo();
   CGInit();
   UniformInit();
   UpdateMaxMinX();
