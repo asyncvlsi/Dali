@@ -32,13 +32,18 @@ class Net {
   double InvP();
   int P();
 
+  void SortBlkPinList();
   void UpdateMaxMinX();
   void UpdateMaxMinY();
   void UpdateMaxMin();
-  int MaxPinX();
-  int MinPinX();
-  int MaxPinY();
-  int MinPinY();
+  int MaxBlkPinNumX();
+  int MinBlkPinNumX();
+  int MaxBlkPinNumY();
+  int MinBlkPinNumY();
+  Block *MaxBlockX();
+  Block *MinBlockX();
+  Block *MaxBlockY();
+  Block *MinBlockY();
   double HPWLX();
   double HPWLY();
   double HPWL();

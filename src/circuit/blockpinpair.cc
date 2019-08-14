@@ -10,8 +10,16 @@ Block *BlockPinPair::GetBlock() const {
   return block_;
 }
 
+int BlockPinPair::BlockNum() const {
+  return block_->Num();
+}
+
 Pin *BlockPinPair::GetPin() const {
   return &(block_->Type()->pin_list[pin_num_]);
+}
+
+int BlockPinPair::PinNum() const {
+  return pin_num_;
 }
 
 double BlockPinPair::XOffset() {
@@ -56,4 +64,16 @@ const std::string *BlockPinPair::BlockName() const {
 
 const std::string *BlockPinPair::PinName() const {
   return GetPin()->Name();
+}
+
+bool BlockPinPair::operator <(const BlockPinPair &rhs) const {
+  return (BlockNum() < rhs.BlockNum()) || ((BlockNum() == rhs.BlockNum()) && (PinNum() < rhs.PinNum()));
+}
+
+bool BlockPinPair::operator >(const BlockPinPair &rhs) const {
+  return (BlockNum() < rhs.BlockNum()) || ((BlockNum() == rhs.BlockNum()) && (PinNum() > rhs.PinNum()));
+}
+
+bool BlockPinPair::operator ==(const BlockPinPair &rhs) const {
+  return (BlockNum() == rhs.BlockNum()) && (PinNum() == rhs.PinNum());
 }

@@ -162,28 +162,33 @@ bool Placer::UpdateAspectRatio() {
   return true;
 }
 
+void Placer::NetSortBlkPin() {
+  Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWLX!");
+  GetCircuit()->NetSortBlkPin();
+}
+
 double Placer::HPWLX() {
-  Assert(circuit_ != nullptr, "No imput circuit specified, cannot compute HPWLX!");
+  Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWLX!");
   return GetCircuit()->HPWLX();
 }
 
 double Placer::HPWLY() {
-  Assert(circuit_ != nullptr, "No imput circuit specified, cannot compute HPWLY!");
+  Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWLY!");
   return GetCircuit()->HPWLY();
 }
 
 double Placer::HPWL() {
-  Assert(circuit_ != nullptr, "No imput circuit specified, cannot compute HPWL!");
+  Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWL!");
   return GetCircuit()->HPWL();
 }
 
 void Placer::ReportHPWL() {
-  Assert(circuit_ != nullptr, "No imput circuit specified, cannot compute HPWL!");
+  Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWL!");
   GetCircuit()->ReportHPWL();
 }
 
 void Placer::ReportHPWLCtoC() {
-  Assert(circuit_ != nullptr, "No imput circuit specified, cannot compute HPWLCtoC!");
+  Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWLCtoC!");
   GetCircuit()->ReportHPWLCtoC();
 }
 

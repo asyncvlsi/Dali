@@ -51,6 +51,7 @@ public:
   int Bottom();
   int Top();
   bool UpdateAspectRatio();
+  void NetSortBlkPin();
   virtual void StartPlacement() = 0;
   double HPWLX();
   double HPWLY();

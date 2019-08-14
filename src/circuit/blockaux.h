@@ -14,6 +14,7 @@ class BlockAux {
   Block *block_;
  public:
   BlockAux(Block *block);
+  Block *GetBlock();
 };
 
 #endif //HPCC_SRC_BLOCKAUX_H_

@@ -555,6 +555,12 @@ double Circuit::AveArea() const {
   return tot_block_area_/(double)TotBlockNum();
 }
 
+void Circuit::NetSortBlkPin() {
+  for (auto &&net: net_list) {
+    net.SortBlkPinList();
+  }
+}
+
 double Circuit::HPWLX() {
   double HPWLX = 0;
   for (auto &&net: net_list) {

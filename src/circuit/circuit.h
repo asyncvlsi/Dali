@@ -91,6 +91,7 @@ class Circuit {
   double AveHeight() const;
   double AveArea() const;
 
+  void NetSortBlkPin();
   double HPWLX();
   double HPWLY();
   double HPWL();

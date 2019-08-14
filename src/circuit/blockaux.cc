@@ -7,3 +7,7 @@
 BlockAux::BlockAux(Block *block): block_(block) {
   block->SetAux(this);
 }
+
+Block *BlockAux::GetBlock() {
+  return block_;
+}

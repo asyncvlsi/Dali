@@ -10,9 +10,9 @@
 #include "GPSimPL/simplblockaux.h"
 
 typedef struct {
-  size_t pin;
+  int pin;
   double weight;
-} weightTuple;
+} WeightTuple;
 
 class GPSimPL: public Placer {
  private:
@@ -31,9 +31,7 @@ class GPSimPL: public Placer {
   double WidthEpsilon();
   double HeightEpsilon();
 
-  std::vector< std::vector<weightTuple> > Ax, Ay;
-  std::vector<size_t> kx, ky;
-  // track the length of each row of Ax and Ay
+  std::vector< std::vector<WeightTuple> > Ax, Ay;
   std::vector<double> bx, by;
 
   std::vector<double> ax;
@@ -45,23 +43,26 @@ class GPSimPL: public Placer {
 
   std::vector< SimPLBlockAux > aux_list;
   void InterLockAuxInfo();
-  void UniformInit();
+  void ReportAuxInfo();
+  void BlockLocInit();
   void CGInit();
   void CGClose();
-  void InitHPWLFlags();
+  void InitCGFlags();
   void BuildProblemCliqueX();
   void BuildProblemCliqueY();
-  void UpdateMaxMinX();
+  void UpdateCGFlagsX();
   void UpdateHPWLX();
+  void UpdateMaxMinX();
   void BuildProblemB2BX();
   void UpdateMaxMinCtoCX();
   void BuildProblemB2BXNoOffset();
-  void UpdateMaxMinY();
+  void UpdateCGFlagsY();
   void UpdateHPWLY();
+  void UpdateMaxMinY();
   void BuildProblemB2BY();
   void UpdateMaxMinCtoCY();
   void BuildProblemB2BYNoOffset();
-  void CGSolver(std::string const &dimension, std::vector<std::vector<weightTuple> > &A, std::vector<double> &b, std::vector<size_t> &k);
+  void CGSolver(std::string const &dimension, std::vector<std::vector<WeightTuple> > &A, std::vector<double> &b);
   void CGSolverX();
   void CGSolverY();
 

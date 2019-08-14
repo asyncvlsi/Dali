@@ -40,6 +40,9 @@ int Net::P() {
   return (int)blk_pin_list.size();
 }
 
+void Net::SortBlkPinList() {
+  std::sort(blk_pin_list.begin(), blk_pin_list.end());
+}
 
 void Net::UpdateMaxMinX() {
   Assert(!blk_pin_list.empty(), "Net contains no pin: " + *Name());
@@ -90,20 +93,36 @@ void Net::UpdateMaxMin() {
   UpdateMaxMinY();
 }
 
-int Net::MaxPinX() {
+int Net::MaxBlkPinNumX() {
   return max_pin_x_;
 }
 
-int Net::MinPinX() {
+int Net::MinBlkPinNumX() {
   return min_pin_x_;
 }
 
-int Net::MaxPinY() {
+int Net::MaxBlkPinNumY() {
   return max_pin_y_;
 }
 
-int Net::MinPinY() {
+int Net::MinBlkPinNumY() {
   return min_pin_y_;
+}
+
+Block *Net::MaxBlockX() {
+  return blk_pin_list[max_pin_x_].GetBlock();
+}
+
+Block *Net::MinBlockX() {
+  return blk_pin_list[min_pin_x_].GetBlock();
+}
+
+Block *Net::MaxBlockY() {
+  return blk_pin_list[max_pin_y_].GetBlock();
+}
+
+Block *Net::MinBlockY() {
+  return blk_pin_list[min_pin_y_].GetBlock();
 }
 
 double Net::HPWLX() {

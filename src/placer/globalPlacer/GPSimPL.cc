@@ -22,7 +22,7 @@ double GPSimPL::HeightEpsilon() {
   return circuit_->AveHeight()/100.0;
 }
 
-void GPSimPL::InitHPWLFlags() {
+void GPSimPL::InitCGFlags() {
   HPWLX_new = 0;
   HPWLY_new = 0;
   HPWLX_old = 1e30;
@@ -43,12 +43,22 @@ void GPSimPL::InterLockAuxInfo() {
   for (auto &&net: net_list) {
     for (auto &&blk_pin: net.blk_pin_list) {
       auto block_aux = (SimPLBlockAux *)(blk_pin.GetBlock()->Aux());
-
+      block_aux->InsertNet(&net);
     }
+  }
+
+  //ReportAuxInfo();
+}
+
+void GPSimPL::ReportAuxInfo() {
+  auto &&block_list = *BlockList();
+  for (auto &&block: block_list) {
+    auto block_aux = (SimPLBlockAux *)(block.Aux());
+    block_aux->ReportAux();
   }
 }
 
-void GPSimPL::UniformInit() {
+void GPSimPL::BlockLocInit() {
   int length_x = Right() - Left();
   int length_y = Top() - Bottom();
   std::default_random_engine generator{0};
@@ -65,17 +75,10 @@ void GPSimPL::UniformInit() {
 void GPSimPL::CGInit() {
   // this init function allocate memory to Ax and Ay
   // the size of memory allocated for each row is the maximum memory which might be used
-  Ax.clear();
-  Ay.clear();
-  kx.clear();
-  ky.clear();
-  bx.clear();
-  by.clear();
+  Ax.reserve(TotBlockNum());
+  Ay.reserve(TotBlockNum());
   bx.reserve(TotBlockNum());
   by.reserve(TotBlockNum());
-  kx.reserve(TotBlockNum());
-  ky.reserve(TotBlockNum());
-
   ax.reserve(TotBlockNum());
   ap.reserve(TotBlockNum());
   z.reserve(TotBlockNum());
@@ -86,47 +89,32 @@ void GPSimPL::CGInit() {
     // initialize bx, by
     bx.push_back(0);
     by.push_back(0);
-    // initialize kx, ky to track the length of Ax[i] and Ay[i]
-    kx.push_back(0);
-    ky.push_back(0);
-
     ax.push_back(0);
     ap.push_back(0);
     z.push_back(0);
     p.push_back(0);
     JP.push_back(0);
   }
-  std::vector<weightTuple> tempArow;
+
+  std::vector<WeightTuple> tmp_row;
   for (int i=0; i < TotBlockNum(); i++) {
-    Ax.push_back(tempArow);
-    Ay.push_back(tempArow);
-  }
-  weightTuple tempWT;
-  tempWT.weight = 0;
-  for (int i=0; i < TotBlockNum(); i++) {
-    tempWT.pin = i;
-    Ax[i].push_back(tempWT);
-    Ay[i].push_back(tempWT);
+    Ax.push_back(tmp_row);
+    Ay.push_back(tmp_row);
   }
 
-  int tempnodenum0, tempnodenum1;
+  // initialize diagonal elements
   std::vector<Block> &block_list = *BlockList();
-  std::vector<Net> &net_list = *NetList();
-  for (auto &&net: net_list) {
-    if (net.P()<=1) continue;
-    for (size_t j=0; j<net.blk_pin_list.size(); j++) {
-      tempnodenum0 = net.blk_pin_list[j].GetBlock()->Num();
-      for (size_t k=j+1; k<net.blk_pin_list.size(); k++) {
-        tempnodenum1 = net.blk_pin_list[k].GetBlock()->Num();
-        if (tempnodenum0 == tempnodenum1) continue;
-        if ((block_list[tempnodenum0].IsMovable())&&(block_list[tempnodenum1].IsMovable())) {
-          // when both nodes are movable and are not the same, increase the row length by 1
-          Ax[tempnodenum0].push_back(tempWT);
-          Ax[tempnodenum1].push_back(tempWT);
-          Ay[tempnodenum0].push_back(tempWT);
-          Ay[tempnodenum1].push_back(tempWT);
-        }
-      }
+  WeightTuple tmp_weight_tuple;
+  tmp_weight_tuple.weight = 0;
+  for (int i=0; i < TotBlockNum(); i++) {
+    tmp_weight_tuple.pin = i;
+    Ax[i].push_back(tmp_weight_tuple);
+    Ay[i].push_back(tmp_weight_tuple);
+    if (!block_list[i].IsMovable()) {
+      Ax[i][0].weight = 1;
+      bx[i] = block_list[i].LLX();
+      Ay[i][0].weight = 1;
+      by[i] = block_list[i].LLY();
     }
   }
 }
@@ -136,13 +124,11 @@ void GPSimPL::BuildProblemCliqueX() {
   for (int i=0; i< TotBlockNum(); i++) {
     Ax[i][0].weight = 0;
     // make the diagonal elements 0
-    kx[i] = 0;
-    // mark the length each row of matrix 0, although some data might still exists there
     bx[i] = 0;
     // make each element of b 0
   }
 
-  weightTuple tempWT;
+  WeightTuple tempWT;
   double weightx, invp, temppinlocx0, temppinlocx1, tempdiffoffset;
   int tempnodenum0, tempnodenum1;
   std::vector<Block> &block_list = *BlockList();
@@ -174,14 +160,8 @@ void GPSimPL::BuildProblemCliqueX() {
           //((blockList[tempnodenum0].isterminal() == 0)&&(blockList[tempnodenum1].isterminal() == 0))
           tempWT.pin = tempnodenum1;
           tempWT.weight = -weightx;
-          kx[tempnodenum0]++;
-          Ax[tempnodenum0][kx[tempnodenum0]] = tempWT;
-
           tempWT.pin = tempnodenum0;
           tempWT.weight = -weightx;
-          kx[tempnodenum1]++;
-          Ax[tempnodenum1][kx[tempnodenum1]] = tempWT;
-
           Ax[tempnodenum0][0].weight += weightx;
           Ax[tempnodenum1][0].weight += weightx;
           tempdiffoffset = (net.blk_pin_list[k].XOffset() - net.blk_pin_list[j].XOffset()) * weightx;
@@ -198,13 +178,11 @@ void GPSimPL::BuildProblemCliqueY() {
   for (int i=0; i< TotBlockNum(); i++) {
     Ay[i][0].weight = 0;
     // make the diagonal elements 0
-    ky[i] = 0;
-    // mark the length each row of matrix 0, although some data might still exists there
     by[i] = 0;
     // make each element of b 0
   }
 
-  weightTuple tempWT;
+  WeightTuple tempWT;
   double weighty, invp, temppinlocy0, temppinlocy1, tempdiffoffset;
   int tempnodenum0, tempnodenum1;
   std::vector<Block> &block_list = *BlockList();
@@ -236,14 +214,8 @@ void GPSimPL::BuildProblemCliqueY() {
           //((blockList[tempnodenum0].isterminal() == 0)&&(blockList[tempnodenum1].isterminal() == 0))
           tempWT.pin = tempnodenum1;
           tempWT.weight = -weighty;
-          ky[tempnodenum0]++;
-          Ay[tempnodenum0][ky[tempnodenum0]] = tempWT;
-
           tempWT.pin = tempnodenum0;
           tempWT.weight = -weighty;
-          ky[tempnodenum1]++;
-          Ay[tempnodenum1][ky[tempnodenum1]] = tempWT;
-
           Ay[tempnodenum0][0].weight += weighty;
           Ay[tempnodenum1][0].weight += weighty;
           tempdiffoffset = (net.blk_pin_list[k].YOffset() - net.blk_pin_list[j].YOffset()) * weighty;
@@ -260,14 +232,14 @@ void GPSimPL::UpdateHPWLX() {
 }
 
 void GPSimPL::UpdateMaxMinX() {
-  HPWLX_new = 0;
   std::vector<Net> &net_list = *NetList();
   for (auto &&net: net_list) {
-    HPWLX_new += net.HPWLX();
+    net.UpdateMaxMinX();
   }
-  //std::cout << "HPWLX_old: " << HPWLX_old << "\n";
-  //std::cout << "HPWLX_new: " << HPWLX_new << "\n";
-  //std::cout << 1 - HPWLX_new/HPWLX_old << "\n";
+}
+
+void GPSimPL::UpdateCGFlagsX() {
+  UpdateHPWLX();
   if (HPWLX_new == 0) { // this is for 1 degree net, this happens in extremely rare cases
     HPWLx_converge = true;
   } else {
@@ -279,72 +251,67 @@ void GPSimPL::UpdateMaxMinX() {
 void GPSimPL::BuildProblemB2BX() {
   std::vector<Block> &block_list = *BlockList();
   std::vector<Net> &net_list = *NetList();
-  // before build a new Matrix, clean the information in existing matrix
+  // 1. update the x direction max and min node in each net
+  UpdateMaxMinX();
+  // 2. before build a new Matrix, "clean" the information in existing matrix, and reserve space for this row
   for (int i=0; i< TotBlockNum(); i++) {
     if (block_list[i].IsMovable()) {
+      Ax[i].resize(1);
       Ax[i][0].weight = 0;
-      // make the diagonal elements 0
-      kx[i] = 0;
-      // mark the length each row of matrix 0, although some data might still exists there
+      // initialize the diagonal value of movable blocks to 0
       bx[i] = 0;
-      // make each element of b 0
-    } else {
-      Ax[i][0].weight = 1;
-      kx[i] = 0;
-      bx[i] = block_list[i].LLX();
+      // initialize the corresponding b value of this movable blocks to 0
+      auto block_aux = (SimPLBlockAux *)(block_list[i].Aux());
+      Ax[i].reserve(block_aux->B2BRowSizeX());
+      // reserve space for this row
     }
   }
-  // update the x direction max and min node in each net
-  weightTuple tempWT;
-  double weight_x, inv_p, temp_pin_loc_x0, temp_pin_loc_x1, temp_diff_offset;
-  int temp_node_num0, temp_node_num1;
-  size_t max_pindex_x, min_pindex_x;
+  WeightTuple tmp_weight_tuple;
+  double weight_x, inv_p, pin_loc_x0, pin_loc_x1, offset_diff;
+  int block_num0, block_num1;
+  size_t max_pin_x, min_pin_x;
   for (auto &&net: net_list) {
-    if (net.P()<=1) {
-      continue;
-    }
+    if (net.P() <= 1) continue;
     inv_p = net.InvP();
-    net.UpdateMaxMinX();
-    max_pindex_x = net.MaxPinX();
-    min_pindex_x = net.MinPinX();
+    max_pin_x = net.MaxBlkPinNumX();
+    min_pin_x = net.MinBlkPinNumX();
     for (size_t i=0; i<net.blk_pin_list.size(); i++) {
-      temp_node_num0 = net.blk_pin_list[i].GetBlock()->Num();
-      temp_pin_loc_x0 = block_list[temp_node_num0].LLX() + net.blk_pin_list[i].XOffset();
+      block_num0 = net.blk_pin_list[i].GetBlock()->Num();
+      pin_loc_x0 = block_list[block_num0].LLX() + net.blk_pin_list[i].XOffset();
       for (size_t k=i+1; k<net.blk_pin_list.size(); k++) {
-        if ((i!=max_pindex_x)&&(i!=min_pindex_x)) {
-          if ((k!=max_pindex_x)&&(k!=min_pindex_x)) continue;
+        if ((i!=max_pin_x)&&(i!=min_pin_x)) {
+          if ((k!=max_pin_x)&&(k!=min_pin_x)) continue;
+          // if neither of these two pins are boundary pins, there is no nets between them
         }
-        temp_node_num1 = net.blk_pin_list[k].GetBlock()->Num();
-        if (temp_node_num0 == temp_node_num1) continue;
-        temp_pin_loc_x1 = block_list[temp_node_num1].LLX() + net.blk_pin_list[k].XOffset();
-        weight_x = inv_p/(std::fabs(temp_pin_loc_x0 - temp_pin_loc_x1) + WidthEpsilon());
-        if ((block_list[temp_node_num0].IsMovable() == 0)&&(block_list[temp_node_num1].IsMovable() == 0)) {
+        block_num1 = net.blk_pin_list[k].GetBlock()->Num();
+        if (block_num0 == block_num1) continue;
+        pin_loc_x1 = block_list[block_num1].LLX() + net.blk_pin_list[k].XOffset();
+        weight_x = inv_p/(std::fabs(pin_loc_x0 - pin_loc_x1) + WidthEpsilon());
+        if ((block_list[block_num0].IsMovable() == 0)&&(block_list[block_num1].IsMovable() == 0)) {
           continue;
         }
-        else if ((block_list[temp_node_num0].IsMovable() == 0)&&(block_list[temp_node_num1].IsMovable() == 1)) {
-          bx[temp_node_num1] += (temp_pin_loc_x0 - net.blk_pin_list[k].XOffset()) * weight_x;
-          Ax[temp_node_num1][0].weight += weight_x;
+        else if ((block_list[block_num0].IsMovable() == 0)&&(block_list[block_num1].IsMovable() == 1)) {
+          bx[block_num1] += (pin_loc_x0 - net.blk_pin_list[k].XOffset()) * weight_x;
+          Ax[block_num1][0].weight += weight_x;
         }
-        else if ((block_list[temp_node_num0].IsMovable() == 1)&&(block_list[temp_node_num1].IsMovable() == 0)) {
-          bx[temp_node_num0] += (temp_pin_loc_x1 - net.blk_pin_list[i].XOffset()) * weight_x;
-          Ax[temp_node_num0][0].weight += weight_x;
+        else if ((block_list[block_num0].IsMovable() == 1)&&(block_list[block_num1].IsMovable() == 0)) {
+          bx[block_num0] += (pin_loc_x1 - net.blk_pin_list[i].XOffset()) * weight_x;
+          Ax[block_num0][0].weight += weight_x;
         }
         else {
-          tempWT.pin = temp_node_num1;
-          tempWT.weight = -weight_x;
-          kx[temp_node_num0]++;
-          Ax[temp_node_num0][kx[temp_node_num0]] = tempWT;
+          tmp_weight_tuple.pin = block_num1;
+          tmp_weight_tuple.weight = -weight_x;
+          Ax[block_num0].push_back(tmp_weight_tuple);
 
-          tempWT.pin = temp_node_num0;
-          tempWT.weight = -weight_x;
-          kx[temp_node_num1]++;
-          Ax[temp_node_num1][kx[temp_node_num1]] = tempWT;
+          tmp_weight_tuple.pin = block_num0;
+          tmp_weight_tuple.weight = -weight_x;
+          Ax[block_num1].push_back(tmp_weight_tuple);
 
-          Ax[temp_node_num0][0].weight += weight_x;
-          Ax[temp_node_num1][0].weight += weight_x;
-          temp_diff_offset = (net.blk_pin_list[k].XOffset() - net.blk_pin_list[i].XOffset()) * weight_x;
-          bx[temp_node_num0] += temp_diff_offset;
-          bx[temp_node_num1] -= temp_diff_offset;
+          Ax[block_num0][0].weight += weight_x;
+          Ax[block_num1][0].weight += weight_x;
+          offset_diff = (net.blk_pin_list[k].XOffset() - net.blk_pin_list[i].XOffset()) * weight_x;
+          bx[block_num0] += offset_diff;
+          bx[block_num1] -= offset_diff;
         }
       }
     }
@@ -383,17 +350,14 @@ void GPSimPL::BuildProblemB2BXNoOffset() {
     if (block_list[i].IsMovable()) {
       Ax[i][0].weight = 0;
       // make the diagonal elements 0
-      kx[i] = 0;
-      // mark the length each row of matrix 0, although some data might still exists there
       bx[i] = 0;
       // make each element of b 0
     } else {
       Ax[i][0].weight = 1;
-      kx[i] = 0;
       bx[i] = block_list[i].LLX();
     }
   }
-  weightTuple tempWT;
+  WeightTuple tempWT;
   double weightx, invp, temppinlocx0, temppinlocx1;
   int tempnodenum0, tempnodenum1;
   size_t maxpindex_x, minpindex_x;
@@ -430,20 +394,8 @@ void GPSimPL::BuildProblemB2BXNoOffset() {
           //((blockList[tempnodenum0].isterminal() == 0)&&(blockList[tempnodenum1].isterminal() == 0))
           tempWT.pin = tempnodenum1;
           tempWT.weight = -weightx;
-          kx[tempnodenum0]++;
-          /*if (kx[tempnodenum0] == Ax[tempnodenum0].size()) {
-            std::cout << tempnodenum0 << " " << kx[tempnodenum0] << " Overflowx\n";
-          }*/
-          Ax[tempnodenum0][kx[tempnodenum0]] = tempWT;
-
           tempWT.pin = tempnodenum0;
           tempWT.weight = -weightx;
-          kx[tempnodenum1]++;
-          /*if (kx[tempnodenum1] == Ax[tempnodenum1].size()) {
-            std::cout << tempnodenum1 << " " << kx[tempnodenum1] << " Overflowx\n";
-          }*/
-          Ax[tempnodenum1][kx[tempnodenum1]] = tempWT;
-
           Ax[tempnodenum0][0].weight += weightx;
           Ax[tempnodenum1][0].weight += weightx;
         }
@@ -464,15 +416,14 @@ void GPSimPL::UpdateHPWLY() {
 }
 
 void GPSimPL::UpdateMaxMinY() {
-  // update the y direction max and min node in each net
-  HPWLY_new = 0;
   std::vector<Net> &net_list = *NetList();
   for (auto &&net: net_list) {
-    HPWLY_new += net.HPWLY();
+    net.UpdateMaxMinY();
   }
-  //std::cout << "HPWLY_old: " << HPWLY_old << "\n";
-  //std::cout << "HPWLY_new: " << HPWLY_new << "\n";
-  //std::cout << 1 - HPWLY_new/HPWLY_old << "\n";
+}
+
+void GPSimPL::UpdateCGFlagsY() {
+  UpdateHPWLY();
   if (HPWLY_new == 0) { // this is for 1 degree net, this happens in extremely rare cases
     HPWLy_converge = true;
   } else {
@@ -484,71 +435,69 @@ void GPSimPL::UpdateMaxMinY() {
 void GPSimPL::BuildProblemB2BY() {
   std::vector<Block> &block_list = *BlockList();
   std::vector<Net> &net_list = *NetList();
-  // before build a new Matrix, clean the information in existing matrix
+  // 1. update the x direction max and min node in each net
+  UpdateMaxMinY();
+  // 2. before build a new Matrix, "clean" the information in existing matrix, and reserve space for this row
   for (int i=0; i< TotBlockNum(); i++) {
     if (block_list[i].IsMovable()) {
+      Ay[i].resize(1);
       Ay[i][0].weight = 0;
-      // make the diagonal elements 0
-      ky[i] = 0;
-      // mark the length each row of matrix 0, although some data might still exists there
+      // initialize the diagonal value of movable blocks to 0
       by[i] = 0;
-      // make each element of b 0
-    } else {
-      Ay[i][0].weight = 1;
-      ky[i] = 0;
-      by[i] = block_list[i].Y();
+      // initialize the corresponding b value of this movable blocks to 0
+      auto block_aux = (SimPLBlockAux *)(block_list[i].Aux());
+      Ay[i].reserve(block_aux->B2BRowSizeY());
+      // reserve space for this row
     }
   }
-  weightTuple tempWT;
-  double weighty, inv_p, temp_pin_loc_y0, temp_pin_loc_y1, temp_diff_offset;
-  int temp_node_num0, temp_node_num1;
-  size_t max_pindex_y, min_pindex_y;
+  WeightTuple tmp_weight_tuple;
+  double weighty, inv_p, pin_loc_y0, pin_loc_y1, offset_diff;
+  int block_num0, block_num1;
+  size_t max_pin_y, min_pin_y;
   for (auto &&net: net_list) {
     if (net.P()<=1) {
       continue;
     }
     inv_p = net.InvP();
     net.UpdateMaxMinY();
-    max_pindex_y = net.MaxPinY();
-    min_pindex_y = net.MinPinY();
+    max_pin_y = net.MaxBlkPinNumY();
+    min_pin_y = net.MinBlkPinNumY();
     for (size_t i=0; i<net.blk_pin_list.size(); i++) {
-      temp_node_num0 = net.blk_pin_list[i].GetBlock()->Num();
-      temp_pin_loc_y0 = block_list[temp_node_num0].LLY() + net.blk_pin_list[i].YOffset();
+      block_num0 = net.blk_pin_list[i].GetBlock()->Num();
+      pin_loc_y0 = block_list[block_num0].LLY() + net.blk_pin_list[i].YOffset();
       for (size_t k=i+1; k<net.blk_pin_list.size(); k++) {
-        if ((i!=max_pindex_y)&&(i!=min_pindex_y)) {
-          if ((k!=max_pindex_y)&&(k!=min_pindex_y)) continue;
+        if ((i!=max_pin_y)&&(i!=min_pin_y)) {
+          if ((k!=max_pin_y)&&(k!=min_pin_y)) continue;
         }
-        temp_node_num1 = net.blk_pin_list[k].GetBlock()->Num();
-        if (temp_node_num0 == temp_node_num1) continue;
-        temp_pin_loc_y1 = block_list[temp_node_num1].LLY() + net.blk_pin_list[i].YOffset();
-        weighty = inv_p/((double)fabs(temp_pin_loc_y0 - temp_pin_loc_y1) + HeightEpsilon());
-        if ((block_list[temp_node_num0].IsMovable() == 0)&&(block_list[temp_node_num1].IsMovable() == 0)) {
+        block_num1 = net.blk_pin_list[k].GetBlock()->Num();
+        if (block_num0 == block_num1) continue;
+        pin_loc_y1 = block_list[block_num1].LLY() + net.blk_pin_list[i].YOffset();
+        weighty = inv_p/((double)fabs(pin_loc_y0 - pin_loc_y1) + HeightEpsilon());
+        if ((block_list[block_num0].IsMovable() == 0)&&(block_list[block_num1].IsMovable() == 0)) {
           continue;
         }
-        else if ((block_list[temp_node_num0].IsMovable() == 0)&&(block_list[temp_node_num1].IsMovable() == 1)) {
-          by[temp_node_num1] += (temp_pin_loc_y0 - net.blk_pin_list[k].YOffset()) * weighty;
-          Ay[temp_node_num1][0].weight += weighty;
+        else if ((block_list[block_num0].IsMovable() == 0)&&(block_list[block_num1].IsMovable() == 1)) {
+          by[block_num1] += (pin_loc_y0 - net.blk_pin_list[k].YOffset()) * weighty;
+          Ay[block_num1][0].weight += weighty;
         }
-        else if ((block_list[temp_node_num0].IsMovable() == 1)&&(block_list[temp_node_num1].IsMovable() == 0)) {
-          by[temp_node_num0] += (temp_pin_loc_y1 - net.blk_pin_list[i].YOffset()) * weighty;
-          Ay[temp_node_num0][0].weight += weighty;
+        else if ((block_list[block_num0].IsMovable() == 1)&&(block_list[block_num1].IsMovable() == 0)) {
+          by[block_num0] += (pin_loc_y1 - net.blk_pin_list[i].YOffset()) * weighty;
+          Ay[block_num0][0].weight += weighty;
         }
         else {
-          tempWT.pin = temp_node_num1;
-          tempWT.weight = -weighty;
-          ky[temp_node_num0]++;
-          Ay[temp_node_num0][ky[temp_node_num0]] = tempWT;
+          tmp_weight_tuple.pin = block_num1;
+          tmp_weight_tuple.weight = -weighty;
+          Ay[block_num0].push_back(tmp_weight_tuple);
 
-          tempWT.pin = temp_node_num0;
-          tempWT.weight = -weighty;
-          ky[temp_node_num1]++;
-          Ay[temp_node_num1][ky[temp_node_num1]] = tempWT;
+          tmp_weight_tuple.pin = block_num0;
+          tmp_weight_tuple.weight = -weighty;
+          Ay[block_num1].push_back(tmp_weight_tuple);
 
-          Ay[temp_node_num0][0].weight += weighty;
-          Ay[temp_node_num1][0].weight += weighty;
-          temp_diff_offset = (net.blk_pin_list[k].YOffset() - net.blk_pin_list[i].YOffset()) * weighty;
-          by[temp_node_num0] += temp_diff_offset;
-          by[temp_node_num1] -= temp_diff_offset;
+          Ay[block_num0][0].weight += weighty;
+          Ay[block_num1][0].weight += weighty;
+          offset_diff = (net.blk_pin_list[k].YOffset() - net.blk_pin_list[i].YOffset()) * weighty;
+          by[block_num0] += offset_diff;
+          by[block_num1] -= offset_diff;
         }
       }
     }
@@ -588,17 +537,15 @@ void GPSimPL::BuildProblemB2BYNoOffset() {
     if (block_list[i].IsMovable()) {
       Ay[i][0].weight = 0;
       // make the diagonal elements 0
-      ky[i] = 0;
       // mark the length each row of matrix 0, although some data might still exists there
       by[i] = 0;
       // make each element of b 0
     } else {
       Ay[i][0].weight = 1;
-      ky[i] = 0;
       by[i] = block_list[i].Y();
     }
   }
-  weightTuple tempWT;
+  WeightTuple tempWT;
   double weighty, invp, temppinlocy0, temppinlocy1;
   int tempnodenum0, tempnodenum1;
   size_t maxpindex_y, minpindex_y;
@@ -635,20 +582,8 @@ void GPSimPL::BuildProblemB2BYNoOffset() {
           //((blockList[tempnodenum0].isterminal() == 0)&&(blockList[tempnodenum1].isterminal() == 0))
           tempWT.pin = tempnodenum1;
           tempWT.weight = -weighty;
-          ky[tempnodenum0]++;
-          /*if (ky[tempnodenum0] == Ay[tempnodenum0].size()) {
-            std::cout << tempnodenum0 << " " << ky[tempnodenum0] << " Overflowy\n";
-          }*/
-          Ay[tempnodenum0][ky[tempnodenum0]] = tempWT;
-
           tempWT.pin = tempnodenum0;
           tempWT.weight = -weighty;
-          ky[tempnodenum1]++;
-          /*if (ky[tempnodenum1] == Ay[tempnodenum1].size()) {
-            std::cout << tempnodenum1 << " " << ky[tempnodenum1] << " Overflowy\n";
-          }*/
-          Ay[tempnodenum1][ky[tempnodenum1]] = tempWT;
-
           Ay[tempnodenum0][0].weight += weighty;
           Ay[tempnodenum1][0].weight += weighty;
         }
@@ -663,7 +598,7 @@ void GPSimPL::BuildProblemB2BYNoOffset() {
   }
 }
 
-void GPSimPL::CGSolver(std::string const &dimension, std::vector<std::vector<weightTuple> > &A, std::vector<double> &b, std::vector<size_t> &k) {
+void GPSimPL::CGSolver(std::string const &dimension, std::vector<std::vector<WeightTuple> > &A, std::vector<double> &b) {
   double epsilon = 1e-10, alpha, beta, rsold, rsnew, pAp, solution_distance;
   std::vector<Block> &block_list = *BlockList();
   for (int i=0; i< TotBlockNum(); i++) {
@@ -686,12 +621,12 @@ void GPSimPL::CGSolver(std::string const &dimension, std::vector<std::vector<wei
     // calculate Ax
     ax[i] = 0;
     if (dimension=="x") {
-      for (size_t j=0; j<=k[i]; j++) {
+      for (size_t j=0; j<=A[i].size(); j++) {
         ax[i] += A[i][j].weight * block_list[A[i][j].pin].X();
       }
     }
     else {
-      for (size_t j=0; j<=k[i]; j++) {
+      for (size_t j=0; j<=A[i].size(); j++) {
         ax[i] += A[i][j].weight * block_list[A[i][j].pin].Y();
       }
     }
@@ -708,7 +643,7 @@ void GPSimPL::CGSolver(std::string const &dimension, std::vector<std::vector<wei
     pAp = 0;
     for (int i=0; i< TotBlockNum(); i++) {
       ap[i] = 0;
-      for (size_t j=0; j<=k[i]; j++) {
+      for (size_t j=0; j<=A[i].size(); j++) {
         ap[i] += A[i][j].weight * p[A[i][j].pin];
       }
       pAp += p[i]*ap[i];
@@ -777,11 +712,11 @@ void GPSimPL::CGSolver(std::string const &dimension, std::vector<std::vector<wei
 }
 
 void GPSimPL::CGSolverX() {
-  CGSolver("x", Ax, bx, kx);
+  CGSolver("x", Ax, bx);
 }
 
 void GPSimPL::CGSolverY() {
-  CGSolver("y", Ay, by, ky);
+  CGSolver("y", Ay, by);
 }
 
 void GPSimPL::CGClose() {
@@ -789,8 +724,6 @@ void GPSimPL::CGClose() {
   Ay.clear();
   bx.clear();
   by.clear();
-  kx.clear();
-  ky.clear();
   ax.clear();
   ap.clear();
   z.clear();
@@ -810,30 +743,34 @@ void GPSimPL::DrawBlockNetList(std::string const &name_of_file) {
 }
 
 void GPSimPL::StartPlacement() {
+  NetSortBlkPin();
   InterLockAuxInfo();
   CGInit();
-  UniformInit();
-  UpdateMaxMinX();
-  UpdateMaxMinY();
-  //UpdateMaxMinCtoCX();
-  //UpdateMaxMinCtoCY();
-  HPWLx_converge = false;
-  HPWLy_converge = false;
-  HPWLX_old = 1e30;
-  HPWLY_old = 1e30;
+  BlockLocInit();
+  InitCGFlags();
   for (int i=0; i<50; i++) {
+    std::cout << i << "\n";
     if (!HPWLx_converge) {
+      std::cout << i << "\n";
       BuildProblemB2BX();
+      std::cout << i << "\n";
       //BuildProblemB2BXNoOffset();
       CGSolverX();
-      UpdateMaxMinX();
+      std::cout << i << "\n";
+      UpdateCGFlagsX();
+      std::cout << i << "\n";
       //UpdateMaxMinCtoCX();
     }
+    std::cout << i << "\n";
     if (!HPWLy_converge) {
+      std::cout << i << "\n";
       BuildProblemB2BY();
+      std::cout << i << "\n";
       //BuildProblemB2BYNoOffset();
       CGSolverY();
-      UpdateMaxMinY();
+      std::cout << i << "\n";
+      UpdateCGFlagsY();
+      std::cout << i << "\n";
       //UpdateMaxMinCtoCY();
     }
     if (HPWLx_converge && HPWLy_converge)  {
@@ -844,5 +781,6 @@ void GPSimPL::StartPlacement() {
   CGClose();
   std::cout << "Initial Placement Complete\n";
   ReportHPWL();
+
   //ReportHPWLCtoC();
 }
