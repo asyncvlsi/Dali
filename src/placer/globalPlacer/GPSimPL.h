@@ -8,8 +8,8 @@
 #include "placer/placer.h"
 #include "circuit/bin.h"
 #include "GPSimPL/simplblockaux.h"
-#include "../module/Eigen/Sparse"
-#include "../module/Eigen//IterativeLinearSolvers"
+#include "../../../module/Eigen/Sparse"
+#include "../../../module/Eigen//IterativeLinearSolvers"
 
 typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat; // declares a row-major sparse matrix type of double
 typedef Eigen::Triplet<double> T; // A triplet is a simple object representing a non-zero entry as the triplet: row index, column index, value.

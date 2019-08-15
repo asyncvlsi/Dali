@@ -30,35 +30,35 @@ int Block::Height() const{
   return type_->Height();
 }
 
-void Block::SetLLX(int lower_left_x) {
+void Block::SetLLX(double lower_left_x) {
   llx_ = lower_left_x;
 }
 
-int Block::LLX() const{
+double Block::LLX() const{
   return llx_;
 }
 
-void Block::SetLLY(int lower_left_y) {
+void Block::SetLLY(double lower_left_y) {
   lly_ = lower_left_y;
 }
 
-int Block::LLY() const{
+double Block::LLY() const{
   return lly_;
 }
 
-void Block::SetURX(int upper_right_x) {
+void Block::SetURX(double upper_right_x) {
   llx_ = upper_right_x - Width();
 }
 
-int Block::URX() const{
+double Block::URX() const{
   return llx_ + Width();
 }
 
-void Block::SetURY(int upper_right_y) {
+void Block::SetURY(double upper_right_y) {
   lly_ = upper_right_y - Height();
 }
 
-int Block::URY() const{
+double Block::URY() const{
   return lly_ + Height();
 }
 

@@ -44,7 +44,7 @@ double BlockPinPair::AbsX() const {
   if (block_->Orient() == N) {
     return block_->Type()->pin_list[pin_num_].XOffset() + block_->LLX();
   } else {
-    std::cout << "Currently, only N orientation is supported\n";
+    std::cout << "Currently, only N orientation is supported, exit program\n";
     exit(1);
   }
 }
@@ -53,7 +53,7 @@ double BlockPinPair::AbsY() const {
   if (block_->Orient() == N) {
     return block_->Type()->pin_list[pin_num_].YOffset() + block_->LLY();
   } else {
-    std::cout << "Currently, only N orientation is supported\n";
+    std::cout << "Currently, only N orientation is supported, exit program\n";
     exit(1);
   }
 }
