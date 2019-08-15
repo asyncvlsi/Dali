@@ -24,6 +24,7 @@ file(GLOB SOURCES
         src/placer/legalizer/*.cc
         src/*.h
         src/*.cc
+        module/Eigen/*
         )
 
 add_executable(HPCC ${SOURCES})

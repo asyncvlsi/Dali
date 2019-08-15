@@ -8,6 +8,11 @@
 #include "placer/placer.h"
 #include "circuit/bin.h"
 #include "GPSimPL/simplblockaux.h"
+#include "../module/Eigen/Sparse"
+#include "../module/Eigen//IterativeLinearSolvers"
+
+typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat; // declares a row-major sparse matrix type of double
+typedef Eigen::Triplet<double> T; // A triplet is a simple object representing a non-zero entry as the triplet: row index, column index, value.
 
 typedef struct {
   int pin;
@@ -23,6 +28,7 @@ class GPSimPL: public Placer {
   bool HPWLx_converge = false;
   bool HPWLy_converge = false;
   double cg_precision = 0.05;
+  int cg_iteration_max_num = 100;
   double HPWL_intra_linearSolver_precision = 0.05;
  public:
   GPSimPL();
@@ -65,6 +71,9 @@ class GPSimPL: public Placer {
   void CGSolver(std::string const &dimension, std::vector<std::vector<WeightTuple> > &A, std::vector<double> &b);
   void CGSolverX();
   void CGSolverY();
+  void build_problem_b2b_x(SpMat &eigen_A, Eigen::VectorXd &b);
+  void build_problem_b2b_y(SpMat &eigen_A, Eigen::VectorXd &b);
+  void eigen_cg_solver();
 
   void DrawBlockNetList(std::string const &name_of_file= "block_net_list.txt");
   void StartPlacement() override;

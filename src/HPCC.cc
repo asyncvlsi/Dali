@@ -45,8 +45,7 @@ int main() {
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
   //gb_placer->GenMATLABScript("gb_placement_result.txt");
-  //gb_placer->SaveNodeTerminal();
-  circuit.ReportNetList();
+  gb_placer->SaveNodeTerminal();
 
   /*
   Placer *legalizer = new TetrisLegalizer;

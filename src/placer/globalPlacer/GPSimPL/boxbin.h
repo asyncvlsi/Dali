@@ -20,7 +20,7 @@ class BoxBin {
   // cut line is alone x direction
   bool all_terminal;
   int total_white_space;
-  float filling_rate;
+  double filling_rate;
   bool is_all_terminal() { return all_terminal; };
   /* Cut-line to split box white space */
   GridBinIndex ll_index;

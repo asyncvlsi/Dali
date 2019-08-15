@@ -3,6 +3,7 @@
 //
 
 #include "net.h"
+#include <algorithm>
 
 Net::Net(std::pair<const std::string, int> *name_num_pair_ptr, double weight): name_num_pair_ptr_(name_num_pair_ptr), weight_(weight) {
   max_pin_x_ = -1;

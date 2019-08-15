@@ -44,7 +44,7 @@ bool TetrisLegalizer::TetrisLegal() {
   std::sort(blockXOrder.begin(), blockXOrder.end(), customLess);
 
   // 3. initialize the data structure to store row usage
-  int maxHeight = GetCircuit()->MaxHeight();
+  //int maxHeight = GetCircuit()->MaxHeight();
   int minWidth = GetCircuit()->MinWidth();
   int minHeight = GetCircuit()->MinHeight();
 
