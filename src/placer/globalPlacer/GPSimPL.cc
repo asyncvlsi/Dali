@@ -737,6 +737,7 @@ void GPSimPL::eigen_cg_solver() {
         block_list[num].SetLLX(x[num]);
       }
     }
+    UpdateMaxMinX();
     UpdateCGFlagsX();
     if (HPWLx_converge) {
       std::cout << "iterations x:     " << i << "\n";
@@ -769,6 +770,7 @@ void GPSimPL::eigen_cg_solver() {
         block_list[num].SetLLX(y[num]);
       }
     }
+    UpdateMaxMinY();
     UpdateCGFlagsY();
     if (HPWLy_converge) {
       std::cout << "iterations y:     " << i << "\n";
