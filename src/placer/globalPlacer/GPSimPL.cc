@@ -27,8 +27,8 @@ void GPSimPL::InitCGFlags() {
   HPWLY_new = 0;
   HPWLX_old = 1e30;
   HPWLY_old = 1e30;
-  HPWLx_converge = false;
-  HPWLy_converge = false;
+  HPWLX_converge = false;
+  HPWLY_converge = false;
 }
 
 void GPSimPL::InterLockAuxInfo() {
@@ -242,9 +242,9 @@ void GPSimPL::UpdateCGFlagsX() {
   std::cout << "HPWLX_old\tHPWLX_new\n";
   std::cout << HPWLX_old << "\t" << HPWLX_new << "\n";
   if (HPWLX_new == 0) { // this is for 1 degree net, this happens in extremely rare cases
-    HPWLx_converge = true;
+    HPWLX_converge = true;
   } else {
-    HPWLx_converge = (std::fabs(1 - HPWLX_new / HPWLX_old) < HPWL_intra_linearSolver_precision);
+    HPWLX_converge = (std::fabs(1 - HPWLX_new / HPWLX_old) < HPWL_intra_linearSolver_precision);
     HPWLX_old = HPWLX_new;
   }
 }
@@ -335,9 +335,9 @@ void GPSimPL::UpdateMaxMinCtoCX() {
   //std::cout << "HPWLX_new: " << HPWLX_new << "\n";
   //std::cout << 1 - HPWLX_new/HPWLX_old << "\n";
   if (HPWLX_new == 0) { // this is for 1 degree net, this happens in extremely rare cases
-    HPWLx_converge = true;
+    HPWLX_converge = true;
   } else {
-    HPWLx_converge = (std::fabs(1 - HPWLX_new / HPWLX_old) < HPWL_intra_linearSolver_precision);
+    HPWLX_converge = (std::fabs(1 - HPWLX_new / HPWLX_old) < HPWL_intra_linearSolver_precision);
     HPWLX_old = HPWLX_new;
   }
 }
@@ -428,9 +428,9 @@ void GPSimPL::UpdateCGFlagsY() {
   std::cout << "HPWLY_old\tHPWLY_new\n";
   std::cout << HPWLY_old << "\t" << HPWLY_new << "\n";
   if (HPWLY_new == 0) { // this is for 1 degree net, this happens in extremely rare cases
-    HPWLy_converge = true;
+    HPWLY_converge = true;
   } else {
-    HPWLy_converge = (std::fabs(1 - HPWLY_new / HPWLY_old) < HPWL_intra_linearSolver_precision);
+    HPWLY_converge = (std::fabs(1 - HPWLY_new / HPWLY_old) < HPWL_intra_linearSolver_precision);
     HPWLY_old = HPWLY_new;
   }
 }
@@ -524,9 +524,9 @@ void GPSimPL::UpdateMaxMinCtoCY() {
   //std::cout << "HPWLY_new: " << HPWLY_new << "\n";
   //std::cout << 1 - HPWLY_new/HPWLY_old << "\n";
   if (HPWLY_new == 0) { // this is for 1 degree net, this happens in extremely rare cases
-    HPWLy_converge = true;
+    HPWLY_converge = true;
   } else {
-    HPWLy_converge = (std::fabs(1 - HPWLY_new / HPWLY_old) < HPWL_intra_linearSolver_precision);
+    HPWLY_converge = (std::fabs(1 - HPWLY_new / HPWLY_old) < HPWL_intra_linearSolver_precision);
     HPWLY_old = HPWLY_new;
   }
 }
@@ -606,18 +606,15 @@ void GPSimPL::build_problem_b2b_x(SpMat &eigen_A, Eigen::VectorXd &b) {
   std::vector<Net> &net_list = *NetList();
   std::vector<T> coefficients;
   coefficients.reserve(10000000);
-  for (size_t i=0; i<block_list.size(); ++i) {
-    if (!block_list[i].IsMovable()) {
-      coefficients.emplace_back(T(i,i,1));
-      b[i] = block_list[i].LLX();
-    } else {
-      b[i] = 0;
-    }
+  std::cout << coefficients.capacity() << "  " << &coefficients[0] << std::endl;
+  for (int i=0; i<b.size(); i++) {
+    b[i] = 0;
   }
   double weightX, invP, tmpPinLocX0, tmpPinLocX1, tmpDiffOffset;
   size_t tmpNodeNum0, tmpNodeNum1, maxPinIndex_x, minPinIndex_x;
+  bool is_movable0 = true, is_movable1 = true;
   for (auto &&net: net_list) {
-    if (net.P()==1) continue;
+    if (net.P() <= 1) continue;
     invP = net.InvP();
     net.UpdateMaxMinX();
     maxPinIndex_x = net.MaxBlkPinNumX();
@@ -625,6 +622,7 @@ void GPSimPL::build_problem_b2b_x(SpMat &eigen_A, Eigen::VectorXd &b) {
     for (size_t i=0; i<net.blk_pin_list.size(); i++) {
       tmpNodeNum0 = net.blk_pin_list[i].BlockNum();
       tmpPinLocX0 = net.blk_pin_list[i].AbsX();
+      is_movable0 = net.blk_pin_list[i].GetBlock()->IsMovable();
       for (size_t j=i+1; j<net.blk_pin_list.size(); j++) {
         if ((i!=maxPinIndex_x)&&(i!=minPinIndex_x)) {
           if ((j!=maxPinIndex_x)&&(j!=minPinIndex_x)) continue;
@@ -632,14 +630,15 @@ void GPSimPL::build_problem_b2b_x(SpMat &eigen_A, Eigen::VectorXd &b) {
         tmpNodeNum1 = net.blk_pin_list[j].BlockNum();
         if (tmpNodeNum0 == tmpNodeNum1) continue;
         tmpPinLocX1 = net.blk_pin_list[j].AbsX();
+        is_movable1 = net.blk_pin_list[j].GetBlock()->IsMovable();
         weightX = invP/(fabs(tmpPinLocX0 - tmpPinLocX1) + WidthEpsilon());
-        if (!block_list[tmpNodeNum0].IsMovable() && block_list[tmpNodeNum1].IsMovable()) {
+        if (!is_movable0 && is_movable1) {
           b[tmpNodeNum1] += (tmpPinLocX0 - net.blk_pin_list[j].XOffset()) * weightX;
-          coefficients.emplace_back(T(tmpNodeNum1,tmpNodeNum1,weightX));
-        } else if (block_list[tmpNodeNum0].IsMovable() && !block_list[tmpNodeNum1].IsMovable()) {
+          coefficients.emplace_back(T(tmpNodeNum1, tmpNodeNum1, weightX));
+        } else if (is_movable0 && !is_movable1) {
           b[tmpNodeNum0] += (tmpPinLocX1 - net.blk_pin_list[i].XOffset()) * weightX;
-          coefficients.emplace_back(T(tmpNodeNum0,tmpNodeNum0,weightX));
-        } else if (block_list[tmpNodeNum0].IsMovable() && block_list[tmpNodeNum1].IsMovable()){
+          coefficients.emplace_back(T(tmpNodeNum0, tmpNodeNum0, weightX));
+        } else if (is_movable0 && is_movable1){
           coefficients.emplace_back(T(tmpNodeNum0, tmpNodeNum0, weightX));
           coefficients.emplace_back(T(tmpNodeNum1, tmpNodeNum1, weightX));
           coefficients.emplace_back(T(tmpNodeNum0, tmpNodeNum1, -weightX));
@@ -653,6 +652,13 @@ void GPSimPL::build_problem_b2b_x(SpMat &eigen_A, Eigen::VectorXd &b) {
       }
     }
   }
+  for (size_t i=0; i<block_list.size(); ++i) {
+    if (!block_list[i].IsMovable()) {
+      coefficients.emplace_back(T(i, i, 1));
+      b[i] = block_list[i].LLX();
+    }
+  }
+  std::cout << coefficients.capacity() << "  " << &coefficients[0] << std::endl;
   eigen_A.setFromTriplets(coefficients.begin(), coefficients.end());
 }
 
@@ -661,18 +667,15 @@ void GPSimPL::build_problem_b2b_y(SpMat &eigen_A, Eigen::VectorXd &b) {
   std::vector<Net> &net_list = *NetList();
   std::vector<T> coefficients;
   coefficients.reserve(10000000);
-  for (size_t i=0; i<block_list.size(); ++i) {
-    if (!block_list[i].IsMovable()) {
-      coefficients.emplace_back(T(i,i,1));
-      b[i] = block_list[i].LLY();
-    } else {
-      b[i] = 0;
-    }
+  std::cout << coefficients.capacity() << "  " << &coefficients[0] << std::endl;
+  for (long int i=0; i<b.size(); i++) {
+    b[i] = 0;
   }
   double weightY, invP, tmpPinLocY0, tmpPinLocY1, tmpDiffOffset;
   size_t tmpNodeNum0, tmpNodeNum1, maxPinIndex_y, minPinIndex_y;
+  bool is_movable0 = true, is_movable1 = true;
   for (auto &&net: net_list) {
-    if (net.P()==1) continue;
+    if (net.P() <= 1) continue;
     invP = net.InvP();
     net.UpdateMaxMinY();
     maxPinIndex_y = net.MaxBlkPinNumY();
@@ -680,6 +683,7 @@ void GPSimPL::build_problem_b2b_y(SpMat &eigen_A, Eigen::VectorXd &b) {
     for (size_t i=0; i<net.blk_pin_list.size(); i++) {
       tmpNodeNum0 = net.blk_pin_list[i].BlockNum();
       tmpPinLocY0 = net.blk_pin_list[i].AbsY();
+      is_movable0 = net.blk_pin_list[i].GetBlock()->IsMovable();
       for (size_t j=i+1; j<net.blk_pin_list.size(); j++) {
         if ((i!=maxPinIndex_y)&&(i!=minPinIndex_y)) {
           if ((j!=maxPinIndex_y)&&(j!=minPinIndex_y)) continue;
@@ -687,14 +691,15 @@ void GPSimPL::build_problem_b2b_y(SpMat &eigen_A, Eigen::VectorXd &b) {
         tmpNodeNum1 = net.blk_pin_list[j].BlockNum();
         if (tmpNodeNum0 == tmpNodeNum1) continue;
         tmpPinLocY1 = net.blk_pin_list[j].AbsY();
+        is_movable1 = net.blk_pin_list[j].GetBlock()->IsMovable();
         weightY = invP/((double)fabs(tmpPinLocY0 - tmpPinLocY1) + HeightEpsilon());
-        if (!block_list[tmpNodeNum0].IsMovable() && block_list[tmpNodeNum1].IsMovable()) {
+        if (!is_movable0 && is_movable1) {
           b[tmpNodeNum1] += (tmpPinLocY0 - net.blk_pin_list[j].YOffset()) * weightY;
-          coefficients.emplace_back(T(tmpNodeNum1,tmpNodeNum1,weightY));
-        } else if (block_list[tmpNodeNum0].IsMovable() && !block_list[tmpNodeNum1].IsMovable()) {
+          coefficients.emplace_back(T(tmpNodeNum1, tmpNodeNum1, weightY));
+        } else if (is_movable0 && !is_movable1) {
           b[tmpNodeNum0] += (tmpPinLocY1 - net.blk_pin_list[i].YOffset()) * weightY;
-          coefficients.emplace_back(T(tmpNodeNum0,tmpNodeNum0,weightY));
-        } else if (block_list[tmpNodeNum0].IsMovable() && block_list[tmpNodeNum1].IsMovable()) {
+          coefficients.emplace_back(T(tmpNodeNum0, tmpNodeNum0, weightY));
+        } else if (is_movable0 && is_movable1) {
           coefficients.emplace_back(T(tmpNodeNum0, tmpNodeNum0, weightY));
           coefficients.emplace_back(T(tmpNodeNum1, tmpNodeNum1, weightY));
           coefficients.emplace_back(T(tmpNodeNum0, tmpNodeNum1, -weightY));
@@ -708,6 +713,13 @@ void GPSimPL::build_problem_b2b_y(SpMat &eigen_A, Eigen::VectorXd &b) {
       }
     }
   }
+  for (size_t i=0; i<block_list.size(); ++i) {
+    if (!block_list[i].IsMovable()) {
+      coefficients.emplace_back(T(i, i, 1));
+      b[i] = block_list[i].LLY();
+    }
+  }
+  std::cout << coefficients.capacity() << "  " << &coefficients[0] << std::endl;
   eigen_A.setFromTriplets(coefficients.begin(), coefficients.end());
 }
 
@@ -718,9 +730,9 @@ void GPSimPL::eigen_cg_solver() {
   int cellNum = TotBlockNum();
 
   Eigen::ConjugateGradient <SpMat> cgx;
-  cgx.setMaxIterations(cg_iteration_max_num);
-  cgx.setTolerance(cg_precision);
-  HPWLx_converge = false;
+  cgx.setMaxIterations(100);
+  cgx.setTolerance(0.001);
+  HPWLX_converge = false;
   HPWLX_old = 1e30;
   Eigen::VectorXd x(cellNum), eigen_bx(cellNum);
   SpMat eigen_Ax(cellNum, cellNum);
@@ -729,32 +741,31 @@ void GPSimPL::eigen_cg_solver() {
   }
 
   UpdateMaxMinX();
-  for (int i=0; i<1; ++i) {
+  for (int i=0; i<15; ++i) {
     build_problem_b2b_x(eigen_Ax, eigen_bx);
     cgx.compute(eigen_Ax);
     x = cgx.solveWithGuess(eigen_bx, x);
     //std::cout << "Here is the vector x:\n" << x << std::endl;
+    if (cgx.info() != Eigen::Success) {
+      std::cout << "Not successful\n";
+    }
     std::cout << "\t#iterations:     " << cgx.iterations() << std::endl;
     std::cout << "\testimated error: " << cgx.error() << std::endl;
     for (long int num=0; num<x.size(); ++num) {
-      if (block_list[num].IsMovable()) {
-        block_list[num].SetLLX(x[num]);
-      }
       block_list[num].SetLLX(x[num]);
     }
-    UpdateMaxMinX();
     UpdateCGFlagsX();
-    if (HPWLx_converge) {
+    if (HPWLX_converge) {
       std::cout << "iterations x:     " << i << "\n";
       break;
     }
   }
 
   Eigen::ConjugateGradient <SpMat> cgy;
-  cgy.setMaxIterations(cg_iteration_max_num);
-  cgy.setTolerance(cg_precision);
+  cgy.setMaxIterations(100);
+  cgy.setTolerance(0.001);
   // Assembly:
-  HPWLy_converge = false;
+  HPWLY_converge = false;
   HPWLY_old = 1e30;
   Eigen::VectorXd y(cellNum), eigen_by(cellNum); // the solution and the right hand side-vector resulting from the constraints
   SpMat eigen_Ay(cellNum, cellNum); // sparse matrix
@@ -763,22 +774,21 @@ void GPSimPL::eigen_cg_solver() {
   }
 
   UpdateMaxMinY();
-  for (int i=0; i<1; ++i) {
+  for (int i=0; i<15; ++i) {
     build_problem_b2b_y(eigen_Ay, eigen_by); // fill A and b
     // Solving:
     cgy.compute(eigen_Ay);
     y = cgy.solveWithGuess(eigen_by, y);
+    if (cgy.info() != Eigen::Success) {
+      std::cout << "Not successful\n";
+    }
     std::cout << "\t#iterations:     " << cgy.iterations() << std::endl;
     std::cout << "\testimated error: " << cgy.error() << std::endl;
     for (long int num=0; num<y.size(); ++num) {
-      if (block_list[num].IsMovable()) {
-        block_list[num].SetLLX(y[num]);
-      }
-      block_list[num].SetLLX(y[num]);
+      block_list[num].SetLLY(y[num]);
     }
-    UpdateMaxMinY();
     UpdateCGFlagsY();
-    if (HPWLy_converge) {
+    if (HPWLY_converge) {
       std::cout << "iterations y:     " << i << "\n";
       break;
     }
@@ -931,6 +941,7 @@ void GPSimPL::DrawBlockNetList(std::string const &name_of_file) {
 
 void GPSimPL::StartPlacement() {
   BlockLocInit();
+  ReportHPWL();
   eigen_cg_solver();
   std::cout << "Initial Placement Complete\n";
   ReportHPWL();

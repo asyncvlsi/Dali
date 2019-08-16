@@ -25,8 +25,8 @@ class GPSimPL: public Placer {
   double HPWLY_new = 0;
   double HPWLX_old = 1e30;
   double HPWLY_old = 1e30;
-  bool HPWLx_converge = false;
-  bool HPWLy_converge = false;
+  bool HPWLX_converge = false;
+  bool HPWLY_converge = false;
   double cg_precision = 0.05;
   int cg_iteration_max_num = 100;
   double HPWL_intra_linearSolver_precision = 0.05;
