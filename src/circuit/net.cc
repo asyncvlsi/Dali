@@ -28,13 +28,13 @@ void Net::SetWeight(double weight) {
   weight_ = weight;
 }
 
-double Net::Weight() {
+double Net::Weight() const {
   return weight_;
 }
 
 double Net::InvP() {
   Assert(blk_pin_list.size() > 1, "Invalid net to calculate 1/(P-1)");
-  return 1.0/(double)(blk_pin_list.size() - 1);
+  return 1.0*weight_/(double)(blk_pin_list.size() - 1);
 }
 
 int Net::P() {

@@ -28,7 +28,7 @@ class Net {
   const std::string *Name() const;
   int Num();
   void SetWeight(double weight);
-  double Weight();
+  double Weight() const;
   double InvP();
   int P();
 
@@ -60,7 +60,7 @@ class Net {
   double HPWLCtoC();
 
   friend std::ostream& operator<<(std::ostream& os, const Net &net) {
-    os << *net.Name() << "\n";
+    os << *net.Name() << "  " << net.Weight() << "\n";
     for (auto &&block_pin_pair: net.blk_pin_list) {
       os << "\t" << block_pin_pair << "\n";
     }
