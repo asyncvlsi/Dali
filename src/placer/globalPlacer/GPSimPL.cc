@@ -607,45 +607,45 @@ void GPSimPL::build_problem_b2b_x(SpMat &eigen_A, Eigen::VectorXd &b) {
   std::vector<T> coefficients;
   coefficients.reserve(10000000);
   std::cout << coefficients.capacity() << "  " << &coefficients[0] << std::endl;
-  for (int i=0; i<b.size(); i++) {
+  for (long int i=0; i<b.size(); i++) {
     b[i] = 0;
   }
-  double weightX, invP, tmpPinLocX0, tmpPinLocX1, tmpDiffOffset;
-  size_t tmpNodeNum0, tmpNodeNum1, maxPinIndex_x, minPinIndex_x;
-  bool is_movable0 = true, is_movable1 = true;
+  double weight, inv_p, pin_loc0, pin_loc1, offset_diff;
+  size_t blk_num0, blk_num1, max_pin_index, min_pin_index;
+  bool is_movable0, is_movable1;
   for (auto &&net: net_list) {
     if (net.P() <= 1) continue;
-    invP = net.InvP();
+    inv_p = net.InvP();
     net.UpdateMaxMinX();
-    maxPinIndex_x = net.MaxBlkPinNumX();
-    minPinIndex_x = net.MinBlkPinNumX();
+    max_pin_index = net.MaxBlkPinNumX();
+    min_pin_index = net.MinBlkPinNumX();
     for (size_t i=0; i<net.blk_pin_list.size(); i++) {
-      tmpNodeNum0 = net.blk_pin_list[i].BlockNum();
-      tmpPinLocX0 = net.blk_pin_list[i].AbsX();
+      blk_num0 = net.blk_pin_list[i].BlockNum();
+      pin_loc0 = net.blk_pin_list[i].AbsX();
       is_movable0 = net.blk_pin_list[i].GetBlock()->IsMovable();
       for (size_t j=i+1; j<net.blk_pin_list.size(); j++) {
-        if ((i!=maxPinIndex_x)&&(i!=minPinIndex_x)) {
-          if ((j!=maxPinIndex_x)&&(j!=minPinIndex_x)) continue;
+        if ((i!=max_pin_index)&&(i!=min_pin_index)) {
+          if ((j!=max_pin_index)&&(j!=min_pin_index)) continue;
         }
-        tmpNodeNum1 = net.blk_pin_list[j].BlockNum();
-        if (tmpNodeNum0 == tmpNodeNum1) continue;
-        tmpPinLocX1 = net.blk_pin_list[j].AbsX();
+        blk_num1 = net.blk_pin_list[j].BlockNum();
+        if (blk_num0 == blk_num1) continue;
+        pin_loc1 = net.blk_pin_list[j].AbsX();
         is_movable1 = net.blk_pin_list[j].GetBlock()->IsMovable();
-        weightX = invP/(fabs(tmpPinLocX0 - tmpPinLocX1) + WidthEpsilon());
+        weight = inv_p/(fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
         if (!is_movable0 && is_movable1) {
-          b[tmpNodeNum1] += (tmpPinLocX0 - net.blk_pin_list[j].XOffset()) * weightX;
-          coefficients.emplace_back(T(tmpNodeNum1, tmpNodeNum1, weightX));
+          b[blk_num1] += (pin_loc0 - net.blk_pin_list[j].XOffset()) * weight;
+          coefficients.emplace_back(T(blk_num1, blk_num1, weight));
         } else if (is_movable0 && !is_movable1) {
-          b[tmpNodeNum0] += (tmpPinLocX1 - net.blk_pin_list[i].XOffset()) * weightX;
-          coefficients.emplace_back(T(tmpNodeNum0, tmpNodeNum0, weightX));
+          b[blk_num0] += (pin_loc1 - net.blk_pin_list[i].XOffset()) * weight;
+          coefficients.emplace_back(T(blk_num0, blk_num0, weight));
         } else if (is_movable0 && is_movable1){
-          coefficients.emplace_back(T(tmpNodeNum0, tmpNodeNum0, weightX));
-          coefficients.emplace_back(T(tmpNodeNum1, tmpNodeNum1, weightX));
-          coefficients.emplace_back(T(tmpNodeNum0, tmpNodeNum1, -weightX));
-          coefficients.emplace_back(T(tmpNodeNum1, tmpNodeNum0, -weightX));
-          tmpDiffOffset = (net.blk_pin_list[j].XOffset() - net.blk_pin_list[i].XOffset()) * weightX;
-          b[tmpNodeNum0] += tmpDiffOffset;
-          b[tmpNodeNum1] -= tmpDiffOffset;
+          coefficients.emplace_back(T(blk_num0, blk_num0, weight));
+          coefficients.emplace_back(T(blk_num1, blk_num1, weight));
+          coefficients.emplace_back(T(blk_num0, blk_num1, -weight));
+          coefficients.emplace_back(T(blk_num1, blk_num0, -weight));
+          offset_diff = (net.blk_pin_list[j].XOffset() - net.blk_pin_list[i].XOffset()) * weight;
+          b[blk_num0] += offset_diff;
+          b[blk_num1] -= offset_diff;
         } else {
           continue;
         }
@@ -673,7 +673,7 @@ void GPSimPL::build_problem_b2b_y(SpMat &eigen_A, Eigen::VectorXd &b) {
   }
   double weightY, invP, tmpPinLocY0, tmpPinLocY1, tmpDiffOffset;
   size_t tmpNodeNum0, tmpNodeNum1, maxPinIndex_y, minPinIndex_y;
-  bool is_movable0 = true, is_movable1 = true;
+  bool is_movable0, is_movable1;
   for (auto &&net: net_list) {
     if (net.P() <= 1) continue;
     invP = net.InvP();
