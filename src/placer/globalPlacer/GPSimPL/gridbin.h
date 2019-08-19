@@ -27,10 +27,10 @@ class GridBin {
   std::vector< int > cell_list;
   std::vector< int > terminal_list;
   std::vector< GridBinIndex > adjacent_bin_index;
-  int llx() { return left; }
-  int lly() { return bottom; }
-  int urx() { return right; }
-  int ury() { return top; }
+  int LLX() { return left; }
+  int LLY() { return bottom; }
+  int URX() { return right; }
+  int URY() { return top; }
   bool is_all_terminal() { return all_terminal; }
   bool is_over_fill() { return over_fill; }
   void create_adjacent_bin_list(int GRID_NUM);

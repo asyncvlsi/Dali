@@ -338,7 +338,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
               } catch (...) {
                 Assert(false, "Invalid stod conversion:\n" + line);
               }
-              //std::cout << llx << " " << lly << " " << urx << " " << ury << "\n";
+              //std::cout << LLX << " " << LLY << " " << URX << " " << URY << "\n";
               new_pin->AddRect(llx, lly, urx, ury);
             }
           } while (line.find(end_pin_flag)==std::string::npos && !ist.eof());

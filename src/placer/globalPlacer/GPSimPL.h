@@ -50,6 +50,10 @@ class GPSimPL: public Placer {
   void BuildProblemB2B(bool is_x_direction, SpMat &A, Eigen::VectorXd &b);
   void QuadraticPlacement();
 
+  int GRID_BIN_HEIGHT, GRID_BIN_WIDTH;
+  int GRID_NUM;
+  std::vector< std::vector<GridBin> > grid_bin_matrix;
+  std::vector< std::vector<int> > grid_bin_white_space_LUT;
   void create_grid_bins();
   void init_update_white_space_LUT();
   void init_look_ahead_legal();

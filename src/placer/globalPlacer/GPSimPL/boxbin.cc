@@ -399,7 +399,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist, i
     total_cell_area_high = total_cell_area - total_cell_area_low;
     cut_ll_point.y = cut_line;
     cut_ur_point.y = cut_line;
-    //std::cout << cut_line << " lly " << ll_point.y << " ury " << ll_point.y << "\n";
+    //std::cout << cut_line << " LLY " << ll_point.y << " URY " << ll_point.y << "\n";
     for (auto &&cell_id: cell_list) {
       node = &Nodelist[cell_id];
       if (node->Y() < cut_line) {
@@ -436,7 +436,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist, i
     total_cell_area_high = total_cell_area - total_cell_area_low;
     cut_ll_point.x = cut_line;
     cut_ur_point.x = cut_line;
-    //std::cout << cut_line << " llx " << ll_point.x << " urx " << ur_point.x << "\n";
+    //std::cout << cut_line << " LLX " << ll_point.x << " URX " << ur_point.x << "\n";
     for (auto &&cell_id: cell_list) {
       node = &Nodelist[cell_id];
       if (node->X() < cut_line) {
