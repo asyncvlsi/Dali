@@ -37,10 +37,14 @@ class GPSimPL: public Placer {
   double WidthEpsilon();
   double HeightEpsilon();
 
-  std::vector< double > x, y;
+  Eigen::VectorXd x, y;
+  Eigen::VectorXd eigen_bx, eigen_by;
+  SpMat eigen_Ax, eigen_Ay;
   std::vector< double > anchor_x, anchor_y;
 
   void BlockLocInit();
+  void CGInit();
+  void CGClose();
   void InitCGFlags();
   void UpdateCGFlagsX();
   void UpdateHPWLX();

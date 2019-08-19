@@ -45,6 +45,30 @@ void GPSimPL::BlockLocInit() {
   }
 }
 
+void GPSimPL::CGInit() {
+  std::vector<Block> &block_list = *BlockList();
+  int size = block_list.size();
+  x.resize(size);
+  y.resize(size);
+  eigen_bx.resize(size);
+  eigen_by.resize(size);
+  eigen_Ax.resize(size, size);
+  eigen_Ay.resize(size, size);
+  anchor_x.resize(size);
+  anchor_y.resize(size);
+}
+
+void GPSimPL::CGClose() {
+  x.resize(0);
+  y.resize(0);
+  eigen_bx.resize(0);
+  eigen_by.resize(0);
+  eigen_Ax.resize(0, 0);
+  eigen_Ay.resize(0, 0);
+  anchor_x.resize(0);
+  anchor_y.resize(0);
+}
+
 void GPSimPL::UpdateHPWLX() {
   HPWLX_new = HPWLX();
 }
@@ -245,8 +269,6 @@ void GPSimPL::QuadraticPlacement() {
   cgx.setTolerance(cg_precision);
   HPWLX_converge = false;
   HPWLX_old = 1e30;
-  Eigen::VectorXd x(cellNum), eigen_bx(cellNum);
-  SpMat eigen_Ax(cellNum, cellNum);
   for (size_t i=0; i<block_list.size(); ++i) {
     x[i] = block_list[i].LLX();
   }
@@ -275,8 +297,6 @@ void GPSimPL::QuadraticPlacement() {
   // Assembly:
   HPWLY_converge = false;
   HPWLY_old = 1e30;
-  Eigen::VectorXd y(cellNum), eigen_by(cellNum); // the solution and the right hand side-vector resulting from the constraints
-  SpMat eigen_Ay(cellNum, cellNum); // sparse matrix
   for (size_t i=0; i<block_list.size(); ++i) {
     y[i] = block_list[i].LLY();
   }
