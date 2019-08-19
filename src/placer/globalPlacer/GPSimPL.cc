@@ -15,11 +15,11 @@ int GPSimPL::TotBlockNum() {
 }
 
 double GPSimPL::WidthEpsilon() {
-  return circuit_->AveWidth()/100.0;
+  return circuit_->AveMovWidth()/100.0;
 }
 
 double GPSimPL::HeightEpsilon() {
-  return circuit_->AveHeight()/100.0;
+  return circuit_->AveMovHeight()/100.0;
 }
 
 void GPSimPL::InitCGFlags() {
@@ -319,7 +319,7 @@ void GPSimPL::create_grid_bins() {
 
   /* determine the width and height of grid bin based on the boundaries and given GRID_NUM */
 
-  GRID_BIN_HEIGHT = (int)(std::round(8 * GetCircuit()->AveHeight()));
+  GRID_BIN_HEIGHT = (int)(std::round(8 * GetCircuit()->AveMovHeight()));
   GRID_NUM = std::ceil((double)(Top() - Bottom()) / GRID_BIN_HEIGHT);
   GRID_BIN_WIDTH = std::ceil((double)(Right() - Left()) / GRID_NUM);
 
@@ -656,10 +656,12 @@ void GPSimPL::update_grid_bins_state() {
   /* for each cell, find the index of the grid bin it should be in
    * note that in extreme cases, the index might be smaller than 0 or larger than the maximum allowed index
    * because the cell is on the boundaries, so we need to make some modifications for these extreme cases*/
+  std::vector<Block> &block_list = *BlockList();
   int x_index, y_index;
-  for (size_t i=0; i<CELL_NUM; i++) {
-    x_index = (int)std::floor((block_list[i].x0 - LEFT)/GRID_BIN_WIDTH);
-    y_index = (int)std::floor((block_list[i].y0 - BOTTOM)/GRID_BIN_HEIGHT);
+  for (size_t i=0; i<block_list.size(); i++) {
+    if (!block_list[i].IsMovable()) continue;
+    x_index = (int)std::floor((block_list[i].X() - Left())/GRID_BIN_WIDTH);
+    y_index = (int)std::floor((block_list[i].Y() - Bottom())/GRID_BIN_HEIGHT);
     if (x_index < 0) {
       x_index = 0;
     }
@@ -673,7 +675,7 @@ void GPSimPL::update_grid_bins_state() {
       y_index = GRID_NUM - 1;
     }
     grid_bin_matrix[x_index][y_index].cell_list.push_back(i);
-    grid_bin_matrix[x_index][y_index].cell_area += block_list[i].area();
+    grid_bin_matrix[x_index][y_index].cell_area += block_list[i].Area();
   }
 
   /* below is the criterion to decide whether a grid bin is over_filled or not
@@ -692,8 +694,8 @@ void GPSimPL::update_grid_bins_state() {
           bin.over_fill = true;
         }
       } else {
-        bin.filling_rate = (double) bin.cell_area / bin.white_space;
-        if (bin.filling_rate > TARGET_FILLING_RATE) {
+        bin.filling_rate = bin.cell_area/(double)bin.white_space;
+        if (bin.filling_rate > FillingRate()) {
           bin.over_fill = true;
         }
       }
@@ -723,7 +725,7 @@ void GPSimPL::cluster_sort_grid_bins() {
       bin.cluster_visited = false;
     }
   }
-  grid_bin_index tmp_index;
+  GridBinIndex tmp_index;
   for (size_t i=0; i<grid_bin_matrix.size(); i++) {
     for (size_t j=0; j<grid_bin_matrix[i].size(); j++) {
       if ((grid_bin_matrix[i][j].cluster_visited)||(!grid_bin_matrix[i][j].over_fill)) {
@@ -732,10 +734,10 @@ void GPSimPL::cluster_sort_grid_bins() {
       }
       tmp_index.x = i;
       tmp_index.y = j;
-      grid_bin_cluster H;
+      GridBinCluster H;
       H.grid_bin_index_set.insert(tmp_index);
       grid_bin_matrix[i][j].cluster_visited = true;
-      std::queue < grid_bin_index > Q;
+      std::queue < GridBinIndex > Q;
       Q.push(tmp_index);
       while (!Q.empty()) {
         tmp_index = Q.front();
@@ -768,7 +770,7 @@ void GPSimPL::cluster_sort_grid_bins() {
   }
   /* then do the Selection sort */
   size_t max_index;
-  grid_bin_cluster tmp_cluster;
+  GridBinCluster tmp_cluster;
   for (size_t i=0; i<cluster_list.size(); i++) {
     max_index = i;
     for (size_t j=i+1; j<cluster_list.size(); j++) {
@@ -834,11 +836,11 @@ bool GPSimPL::write_first_box(std::string const &NameOfFile) {
     return false;
   }
   double low_x, low_y, width, height;
-  box_bin *R = &queue_box_bin.front();
+  BoxBin *R = &queue_box_bin.front();
   width = (R->ur_index.x - R->ll_index.x + 1) * GRID_BIN_WIDTH;
   height = (R->ur_index.y - R->ll_index.y + 1) * GRID_BIN_HEIGHT;
-  low_x = R->ll_index.x * GRID_BIN_WIDTH + LEFT;
-  low_y = R->ll_index.y * GRID_BIN_HEIGHT + BOTTOM;
+  low_x = R->ll_index.x * GRID_BIN_WIDTH + Left();
+  low_y = R->ll_index.y * GRID_BIN_HEIGHT + Bottom();
   int step = 20;
   for (int j = 0; j < height; j += step) {
     ost << low_x << "\t" << low_y + j << "\n";
@@ -860,7 +862,7 @@ bool GPSimPL::write_first_box_cell_bounding(std::string const &NameOfFile) {
     return false;
   }
   double low_x, low_y, width, height;
-  box_bin *R = &queue_box_bin.front();
+  BoxBin *R = &queue_box_bin.front();
   width = R->ur_point.x - R->ll_point.x;
   height = R->ur_point.y - R->ll_point.y;
   low_x = R->ll_point.x;
@@ -887,8 +889,9 @@ void GPSimPL::find_box_first_cluster() {
 
   if (cluster_list.empty()) return;
   // this is redundant, but for safety reasons. Probably this statement can be safely removed
+  std::vector<Block> &block_list = *BlockList();
 
-  box_bin R;
+  BoxBin R;
   R.cut_direction_x = false;
   R.ll_index.x = GRID_NUM - 1;
   R.ll_index.y = GRID_NUM - 1;
@@ -916,7 +919,7 @@ void GPSimPL::find_box_first_cluster() {
     R.total_white_space = white_space(R.ll_index, R.ur_index);
     R.update_cell_area_white_space_LUT(grid_bin_white_space_LUT, grid_bin_matrix);
     //R.update_cell_area_white_space(grid_bin_matrix);
-    if (R.filling_rate > TARGET_FILLING_RATE) {
+    if (R.filling_rate > FillingRate()) {
       R.expand_box(GRID_NUM);
     }
     else {
@@ -944,17 +947,18 @@ void GPSimPL::find_box_first_cluster() {
   //std::cout << "Bounding box total white space: " << queue_box_bin.front().total_white_space << "\n";
   //std::cout << "Bounding box total cell area: " << queue_box_bin.front().total_cell_area << "\n";
 
-  for (size_t x = R.ll_index.x; x <= R.ur_index.x; x++) {
-    for (size_t y = R.ll_index.y; y <= R.ur_index.y; y++) {
+  for (int x = R.ll_index.x; x <= R.ur_index.x; x++) {
+    for (int y = R.ll_index.y; y <= R.ur_index.y; y++) {
       grid_bin_matrix[x][y].global_placed = true;
     }
   }
 }
 
-void GPSimPL::box_split(box_bin &box) {
+void GPSimPL::box_split(BoxBin &box) {
+  std::vector<Block> &block_list = *BlockList();
   bool flag_bisection_complete;
-  int dominating_box_flag; // indicate whether there is a dominating box_bin
-  box_bin box1, box2;
+  int dominating_box_flag; // indicate whether there is a dominating BoxBin
+  BoxBin box1, box2;
   box1.ll_index = box.ll_index;
   box2.ur_index = box.ur_index;
   // this part of code can be simplified, but after which the code might be unclear
@@ -1091,8 +1095,9 @@ void GPSimPL::box_split(box_bin &box) {
   }
 }
 
-void GPSimPL::grid_bin_box_split(box_bin &box) {
-  box_bin box1, box2;
+void GPSimPL::grid_bin_box_split(BoxBin &box) {
+  std::vector<Block> &block_list = *BlockList();
+  BoxBin box1, box2;
   box1.left = box.left;
   box1.bottom = box.bottom;
   box2.right = box.right;
@@ -1181,7 +1186,8 @@ void GPSimPL::grid_bin_box_split(box_bin &box) {
   }
 }
 
-void GPSimPL::cell_placement_in_box(box_bin &box) {
+void GPSimPL::cell_placement_in_box(BoxBin &box) {
+  std::vector<Block> &block_list = *BlockList();
   /* this is the simplest version, just linearly move cells in the cell_box to the grid box
    * non-linearity is not considered yet*/
   double cell_box_left, cell_box_bottom;
@@ -1190,11 +1196,11 @@ void GPSimPL::cell_placement_in_box(box_bin &box) {
   cell_box_bottom = box.ll_point.y;
   cell_box_width = box.ur_point.x - cell_box_left;
   cell_box_height = box.ur_point.y - cell_box_bottom;
-  Node *cell;
+  Block *cell;
   for (auto &&cell_id: box.cell_list) {
     cell = &block_list[cell_id];
-    cell->x0 = (cell->x0 - cell_box_left)/cell_box_width * (box.right - box.left) + box.left;
-    cell->y0 = (cell->y0 - cell_box_bottom)/cell_box_height * (box.top - box.bottom) + box.bottom;
+    cell->SetCenterX((cell->X() - cell_box_left)/cell_box_width * (box.right - box.left) + box.left);
+    cell->SetCenterY((cell->Y() - cell_box_bottom)/cell_box_height * (box.top - box.bottom) + box.bottom);
     /*if ((box.left < LEFT) || (box.bottom < BOTTOM)) {
       std::cout << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM << "\n";
       std::cout << box.left << " " << box.bottom << "\n";
@@ -1202,9 +1208,9 @@ void GPSimPL::cell_placement_in_box(box_bin &box) {
   }
 }
 
-double GPSimPL::cell_overlap(Node *node1, Node *node2) {
+double GPSimPL::cell_overlap(Block *node1,Block *node2) {
   bool not_overlap;
-  not_overlap = ((node1->LLX() >= node2->urx())||(node1->LLY() >= node2->ury())) || ((node2->LLX() >= node1->urx())||(node2->LLY() >= node1->ury()));
+  not_overlap = ((node1->LLX() >= node2->URX())||(node1->LLY() >= node2->URY())) || ((node2->LLX() >= node1->URX())||(node2->LLY() >= node1->URY()));
   if (not_overlap) {
     return 0;
   } else {
@@ -1234,7 +1240,8 @@ double GPSimPL::cell_overlap(Node *node1, Node *node2) {
   }
 }
 
-void GPSimPL::cell_placement_in_box_molecular_dynamics(box_bin &box) {
+void GPSimPL::cell_placement_in_box_molecular_dynamics(BoxBin &box) {
+  std::vector<Block> &block_list = *BlockList();
   /* this is the simplest version, just linearly move cells in the cell_box to the grid box
    * non-linearity is not considered yet*/
   double cell_box_left, cell_box_bottom;
@@ -1243,11 +1250,11 @@ void GPSimPL::cell_placement_in_box_molecular_dynamics(box_bin &box) {
   cell_box_bottom = box.ll_point.y;
   cell_box_width = box.ur_point.x - cell_box_left;
   cell_box_height = box.ur_point.y - cell_box_bottom;
-  Node *cell;
+  Block *cell;
   for (auto &&cell_id: box.cell_list) {
     cell = &block_list[cell_id];
-    cell->x0 = (cell->x0 - cell_box_left)/cell_box_width * (box.right - box.left) + box.left;
-    cell->y0 = (cell->y0 - cell_box_bottom)/cell_box_height * (box.top - box.bottom) + box.bottom;
+    cell->SetCenterX(cell->X() - cell_box_left)/cell_box_width * (box.right - box.left) + box.left);
+    cell->SetCenterY(cell->Y() - cell_box_bottom)/cell_box_height * (box.top - box.bottom) + box.bottom);
   }
 
   std::vector< double > vx, vy;
@@ -1258,7 +1265,7 @@ void GPSimPL::cell_placement_in_box_molecular_dynamics(box_bin &box) {
 
   double overlap_ij, rij;
   double tmp_vx, tmp_vy;
-  Node *node_i, *node_j;
+  Block *node_i, *node_j;
   for (int t=0; t<60; t++) {
     // 0. initialize velocity
     for (size_t i=0; i<box.cell_list.size(); i++) {
@@ -1272,14 +1279,13 @@ void GPSimPL::cell_placement_in_box_molecular_dynamics(box_bin &box) {
       for (size_t j=i+1; j<box.cell_list.size(); j++) {
         node_j = &block_list[box.cell_list[j]];
         overlap_ij = cell_overlap(node_i, node_j);
-        rij = sqrt(pow(node_i->x0 - node_j->x0, 2) + pow(node_i->y0 - node_j->y0, 2)) + 1;
-        tmp_vx = overlap_ij*(node_i->x0 - node_j->x0)/rij * 40;
-        tmp_vy = overlap_ij*(node_i->y0 - node_j->y0)/rij * 40;
-        vx[i] += tmp_vx/node_i->area();
-        vy[i] += tmp_vy/node_i->area();
-
-        vx[j] -= tmp_vx/node_j->area();
-        vy[j] -= tmp_vy/node_j->area();
+        rij = sqrt(pow(node_i->X() - node_j->X(), 2) + pow(node_i->Y() - node_j->Y(), 2)) + 1;
+        tmp_vx = overlap_ij*(node_i->X() - node_j->X())/rij * 40;
+        tmp_vy = overlap_ij*(node_i->Y() - node_j->Y())/rij * 40;
+        vx[i] += tmp_vx/node_i->Area();
+        vy[i] += tmp_vy/node_i->Area();
+        vx[j] -= tmp_vx/node_j->Area();
+        vy[j] -= tmp_vy/node_j->Area();
       }
 
       /* this part need modifications, the overlap between boundaries and cells, some constant should be changed to constant related to ave_height or ave_width */
@@ -1301,8 +1307,8 @@ void GPSimPL::cell_placement_in_box_molecular_dynamics(box_bin &box) {
     // 2. update location
     for (size_t i=0; i<box.cell_list.size(); i++) {
       node_i = &block_list[box.cell_list[i]];
-      node_i->x0 += vx[i];
-      node_i->y0 += vy[i];
+      node_i->IncreX(vx[i]);
+      node_i->IncreY(vy[i]);
       /*if (node_i->LLX() < box.left) {
         node_i->x0 = box.left + node_i->width()/2.0;
       }
@@ -1319,15 +1325,16 @@ void GPSimPL::cell_placement_in_box_molecular_dynamics(box_bin &box) {
   }
 }
 
-void GPSimPL::cell_placement_in_box_bisection(box_bin &box) {
+void GPSimPL::cell_placement_in_box_bisection(BoxBin &box) {
+  std::vector<Block> &block_list = *BlockList();
   /* keep bisect a grid bin until the leaf bin has less than say 2 nodes? */
   size_t max_cell_num_in_box = 1;
   box.cut_direction_x = true;
-  std::queue< box_bin > box_Q;
+  std::queue< BoxBin > box_Q;
   box_Q.push(box);
   while (!box_Q.empty()) {
     //std::cout << " Q.size: " << box_Q.size() << "\n";
-    box_bin &front_box = box_Q.front();
+    BoxBin &front_box = box_Q.front();
     if (front_box.cell_list.size() > max_cell_num_in_box) {
       /*
       std::cout << front_box.cell_list.size() << "\n";
@@ -1341,7 +1348,7 @@ void GPSimPL::cell_placement_in_box_bisection(box_bin &box) {
       */
 
       // split box and push it to box_Q
-      box_bin box1, box2;
+      BoxBin box1, box2;
       box1.ur_index = front_box.ur_index;
       box2.ll_index = front_box.ll_index;
       box1.bottom = front_box.bottom;
@@ -1349,14 +1356,10 @@ void GPSimPL::cell_placement_in_box_bisection(box_bin &box) {
       box2.top = front_box.top;
       box2.right = front_box.right;
 
-      if (front_box.top - front_box.bottom <= std_cell_height) {
-        front_box.cut_direction_x = false;
-      } else {
-        front_box.cut_direction_x = true;
-      }
-
+      int ave_blk_height = std::ceil(GetCircuit()->AveMovHeight());
+      front_box.cut_direction_x = (front_box.top - front_box.bottom > ave_blk_height);
       int cut_line_w = 0; // cut-line for White space
-      front_box.update_cut_point_cell_list_low_high_leaf(block_list, cut_line_w, std_cell_height);
+      front_box.update_cut_point_cell_list_low_high_leaf(block_list, cut_line_w, ave_blk_height);
       if (front_box.cut_direction_x) {
         box1.top = cut_line_w;
         box1.right = front_box.right;
@@ -1381,14 +1384,14 @@ void GPSimPL::cell_placement_in_box_bisection(box_bin &box) {
 
       if (!box1.cell_list.empty()) {
         box_Q.push(box1);
-        if ((box1.top - box1.bottom) % std_cell_height != 0) {
+        if ((box1.top - box1.bottom) % ave_blk_height != 0) {
           std::cout << "Error in grib bin split\n";
           std::cout << box1.left << " " << box1.right << " " << box1.bottom << " " << box1.top << "\n";
         }
       }
       if (!box2.cell_list.empty()) {
         box_Q.push(box2);
-        if ((box2.top - box2.bottom) % std_cell_height != 0) {
+        if ((box2.top - box2.bottom) % ave_blk_height != 0) {
           std::cout << "Error in grib bin split\n";
           std::cout << box2.left << " " << box2.right << " " << box2.bottom << " " << box2.top << "\n";
         }
@@ -1396,11 +1399,11 @@ void GPSimPL::cell_placement_in_box_bisection(box_bin &box) {
     } else {
       // shift cells to the center of the final box
       if (max_cell_num_in_box == 1) {
-        Node *cell;
+        Block *cell;
         for (auto &&cell_id: front_box.cell_list) {
           cell = &block_list[cell_id];
-          cell->x0 = (front_box.left + front_box.right)/2.0;
-          cell->y0 = (front_box.bottom + front_box.top)/2.0;
+          cell->SetCenterY((front_box.left + front_box.right)/2.0);
+          cell->SetCenterY((front_box.bottom + front_box.top)/2.0);
         }
       } else {
         cell_placement_in_box(front_box);
@@ -1412,6 +1415,7 @@ void GPSimPL::cell_placement_in_box_bisection(box_bin &box) {
 }
 
 bool GPSimPL::recursive_bisection_cell_spreading() {
+  std::vector<Block> &block_list = *BlockList();
   /* keep splitting the biggest box to many small boxes, and keep update the shape of each box and cells should be assigned to the box */
   int t = 0;
   while(!queue_box_bin.empty()) {
@@ -1419,7 +1423,7 @@ bool GPSimPL::recursive_bisection_cell_spreading() {
     std::cout << t++ << "\n";
     std::cout << " Q.size: " << queue_box_bin.size() << "\n";
     if (queue_box_bin.empty()) break;
-    box_bin &box = queue_box_bin.front();
+    BoxBin &box = queue_box_bin.front();
     /* when the box is a grid bin box or a smaller box with no terminals inside, start moving cells to the box */
     /* if there is terminals inside a box, keep splitting it */
     if (box.ll_index == box.ur_index) {
@@ -1492,29 +1496,108 @@ void GPSimPL::look_ahead_legal() {
 }
 
 void GPSimPL::copy_xy_to_anchor () {
-  for (auto &&node: block_list){
-    node.cp_x_2_anchor();
-    node.cp_y_2_anchor();
+  std::vector<Block> &block_list = *BlockList();
+  for (size_t i=0; i<block_list.size(); ++i) {
+    anchor_x[i] = block_list[i].X();
+    anchor_y[i] = block_list[i].Y();
   }
 }
 
 void GPSimPL::swap_xy_anchor() {
-  Node *node;
-  for (size_t cell_id=0; cell_id < CELL_NUM; cell_id++){
-    node = &block_list[cell_id];
-    node->swap_x_anchor();
-    node->swap_y_anchor();
+  std::vector<Block> &block_list = *BlockList();
+  double tmp_value;
+  for (size_t i=0; i<block_list.size(); ++i) {
+    tmp_value = anchor_x[i];
+    anchor_x[i] = block_list[i].X();
+    block_list[i].SetCenterX(tmp_value);
+
+    tmp_value = anchor_y[i];
+    anchor_y[i] = block_list[i].Y();
+    block_list[i].SetCenterY(tmp_value);
   }
+
 }
 
-void GPSimPL::global_placer() {
-  //std::cout << CELL_NUM << "\t" << TERMINAL_NUM << "\n";
-  cg_init();
-  // create empty matrix Ax, Ay, and vector bx, by in namespace cg
-  initial_placement();
-  global_placement();
+void GPSimPL::initial_placement() {
+  BlockLocInit();
+  /* give each node a initial location, which is random inside the placement region, defined by LEFT, RIGHT, BOTTOM, TOP */
+  UpdateMaxMinX();
+  UpdateMaxMinY();
+  /* update HPWLX, HPWLY, prepare for problem building */
+  HPWLX_converge = false;
+  HPWLY_converge = false;
+  /* set HPWLx_converge and HPWLy_converge to false */
+  for (int i=0; i<50; i++) {
+    if (HPWLX_converge && HPWLY_converge) break;
+    if (!HPWLX_converge) {
+      //build_problem_clique_x();
+      //build_problem_b2b_x_nooffset();
+      build_problem_b2b_x();
+      // fill elements into matrix Ax, bx
+      CG_solver_x();
+      // solve the linear equation for x direction
+      UpdateMaxMinX();
+    }
 
-  cg_close();
+    if (!HPWLY_converge) {
+      //build_problem_clique_y();
+      //build_problem_b2b_y_nooffset();
+      build_problem_b2b_y();
+      // fill elements into matrix Ay, by
+      CG_solver_y();
+      // solve the linear equation for y direction
+      UpdateMaxMinY();
+    }
+    if (HPWLX_converge && HPWLY_converge) break;
+  }
+  /*for (size_t i=0; i<CELL_NUM; i++) {
+    if ((Nodelist[i].llx() < LEFT) || (Nodelist[i].urx() > RIGHT) || (Nodelist[i].lly() < BOTTOM) || (Nodelist[i].ury() > TOP)) {
+      std::cout << "Final outboundary" << i << "\n";
+    }
+  }*/
+  std::cout << "Initial Placement Complete\n";
+  std::cout << "HPWL: " << HPWLX_new + HPWLY_new << "\n";
+}
+
+void GPSimPL::look_ahead_legalization() {
+  copy_xy_to_anchor();
+  init_look_ahead_legal();
+  look_ahead_legal();
+  UpdateHPWLX();
+  UpdateHPWLY();
+  std::cout << "Look-ahead legalization complete\n";
+  std::cout << "HPWL: " << HPWLX_new + HPWLY_new << "\n";
+
+  swap_xy_anchor();
+}
+
+void GPSimPL::linear_system_solve() {
+  UpdateMaxMinX();
+  UpdateMaxMinY();
+  InitCGFlags();
+  /* set HPWLx_converge and HPWLy_converge to false
+  update HPWLX, HPWLY, prepare for problem building */
+
+  for (int i=0; i<50 ; i++) {
+    //std::cout << "cg iteration " << i << "\n";
+    if (!HPWLX_converge) {
+      BuildProblemB2BX();
+      add_anchor_x();
+      CG_solver_x();
+      UpdateMaxMinX();
+    }
+
+    if (!HPWLY_converge) {
+      BuildProblemB2BY();
+      add_anchor_y();
+      CG_solver_y();
+      UpdateMaxMinY();
+    }
+    if (HPWLX_converge && HPWLY_converge) break;
+  }
+
+  std::cout << "Linear solver complete\n";
+  std::cout << "HPWL: " << HPWLX_new + HPWLY_new << "\n";
 }
 
 void GPSimPL::global_placement () {
@@ -1528,12 +1611,18 @@ void GPSimPL::global_placement () {
     look_ahead_legalization();
     std::cout << " look-ahead legalization complete\n";
     if (t == N-1) break;
-    ALPHA = ALPHA * (1+t);
+    alpha = alpha * (1+t);
     linear_system_solve();
     //std::cout << "   linear solver complete\n";
   }
   std::cout << "Global Placement Complete\n";
   //std::cout << "HPWL: " << HPWLX_new + HPWLY_new << "\n";
+}
+
+
+void GPSimPL::global_placer() {
+  initial_placement();
+  global_placement();
 }
 
 void GPSimPL::StartPlacement() {

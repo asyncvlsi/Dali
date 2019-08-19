@@ -16,6 +16,9 @@ class Circuit {
   int tot_width_;
   int tot_height_;
   int tot_block_area_;
+  int tot_mov_width_;
+  int tot_mov_height_;
+  int tot_mov_block_area_;
   int tot_movable_blk_num_;
   int min_width_;
   int max_width_;
@@ -90,6 +93,9 @@ class Circuit {
   double AveWidth() const;
   double AveHeight() const;
   double AveArea() const;
+  double AveMovWidth() const;
+  double AveMovHeight() const;
+  double AveMovArea() const;
 
   void NetSortBlkPin();
   double HPWLX();

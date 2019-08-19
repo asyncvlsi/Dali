@@ -64,10 +64,11 @@ class Block {
   void SetOrient(BlockOrient &orient);
   BlockOrient Orient() const;
   std::string OrientStr() const;
-  void SetAux(BlockAux *aux);
-  BlockAux *Aux();
   void IncreX(double amount);
   void IncreY(double amount);
+  bool is_overlap(const Block &rhs) const;
+  void SetAux(BlockAux *aux);
+  BlockAux *Aux();
 
   friend std::ostream& operator<<(std::ostream& os, const Block &block) {
     os << "Block Name: " << *block.Name() << "\n";

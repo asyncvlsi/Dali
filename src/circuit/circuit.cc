@@ -14,6 +14,9 @@ Circuit::Circuit() {
   tot_width_ = 0;
   tot_height_ = 0;
   tot_block_area_ = 0;
+  tot_mov_width_ = 0;
+  tot_mov_height_ = 0;
+  tot_mov_block_area_ = 0;
   tot_movable_blk_num_ = 0;
   min_width_ = 100000000;
   max_width_ = 0;
@@ -32,6 +35,9 @@ Circuit::Circuit(int tot_block_type_num, int tot_block_num, int tot_net_num) {
   tot_width_ = 0;
   tot_height_ = 0;
   tot_block_area_ = 0;
+  tot_mov_width_ = 0;
+  tot_mov_height_ = 0;
+  tot_mov_block_area_ = 0;
   tot_movable_blk_num_ = 0;
   min_width_ = 100000000;
   max_width_ = 0;
@@ -106,6 +112,11 @@ void Circuit::AddBlock(std::string &block_name, BlockType *block_type, int llx, 
   tot_block_area_ += block_list.back().Area();
   tot_width_ += block_list.back().Width();
   tot_height_ += block_list.back().Height();
+  if (block_list.back().IsMovable()) {
+    tot_mov_block_area_ += block_list.back().Area();
+    tot_mov_width_ += block_list.back().Width();
+    tot_mov_height_ += block_list.back().Height();
+  }
   if (block_list.back().IsMovable()) {
     ++tot_movable_blk_num_;
   }
@@ -553,6 +564,18 @@ double Circuit::AveHeight() const {
 
 double Circuit::AveArea() const {
   return tot_block_area_/(double)TotBlockNum();
+}
+
+double Circuit::AveMovWidth() const {
+  return tot_mov_width_/(double)TotBlockNum();
+}
+
+double Circuit::AveMovHeight() const {
+  return tot_mov_height_/(double)TotBlockNum();
+}
+
+double Circuit::AveMovArea() const {
+  return tot_mov_block_area_/(double)TotBlockNum();
 }
 
 void Circuit::NetSortBlkPin() {

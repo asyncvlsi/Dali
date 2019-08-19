@@ -116,6 +116,19 @@ std::string Block::OrientStr() const {
   return s;
 }
 
+void Block::IncreX(double amount) {
+  llx_ += amount;
+}
+
+void Block::IncreY(double amount) {
+  lly_ += amount;
+}
+
+bool Block::is_overlap(const Block &rhs) const{
+  bool not_overlap = LLX() > rhs.URX() || rhs.LLX() > URX() || LLY() > rhs.URY() || rhs.LLY() > URY();
+  return !not_overlap;
+}
+
 void Block::SetAux(BlockAux *aux) {
   Assert(aux != nullptr, "When set auxiliary information, argument cannot be a nullptr");
   aux_ = aux;
@@ -123,14 +136,6 @@ void Block::SetAux(BlockAux *aux) {
 
 BlockAux *Block::Aux(){
   return aux_;
-}
-
-void Block::IncreX(double amount) {
-  llx_ += amount;
-}
-
-void Block::IncreY(double amount) {
-  lly_ += amount;
 }
 
 const std::string *Block::TypeName() const {

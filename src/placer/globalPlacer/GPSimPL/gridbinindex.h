@@ -27,8 +27,8 @@ class GridBinIndex {
 class GridBinCluster {
  public:
   GridBinCluster();
-  float total_cell_area;
-  float total_white_space;
+  double total_cell_area;
+  double total_white_space;
   std::set< GridBinIndex > grid_bin_index_set;
 };
 
