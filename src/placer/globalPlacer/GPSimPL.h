@@ -38,9 +38,13 @@ class GPSimPL: public Placer {
   double HeightEpsilon();
 
   Eigen::VectorXd x, y;
-  Eigen::VectorXd eigen_bx, eigen_by;
-  SpMat eigen_Ax, eigen_Ay;
-  std::vector< double > anchor_x, anchor_y;
+  Eigen::VectorXd bx, by;
+  SpMat Ax, Ay;
+  std::vector< double > x_anchor, y_anchor;
+
+  std::vector<T> coefficients;
+  Eigen::ConjugateGradient <SpMat> cgx;
+  Eigen::ConjugateGradient <SpMat> cgy;
 
   void BlockLocInit();
   void CGInit();
@@ -55,11 +59,10 @@ class GPSimPL: public Placer {
   void UpdateMaxMinY();
   void UpdateMaxMinCtoCY();
   void BuildProblemB2B(bool is_x_direction, SpMat &A, Eigen::VectorXd &b);
-  void QuadraticPlacement();
 
   int GRID_BIN_HEIGHT, GRID_BIN_WIDTH;
   int GRID_NUM;
-  double alpha = 0;
+  double alpha = 0.06;
   std::vector< std::vector<GridBin> > grid_bin_matrix;
   std::vector< std::vector<int> > grid_bin_white_space_LUT;
   void create_grid_bins();
@@ -97,6 +100,7 @@ class GPSimPL: public Placer {
   void look_ahead_legalization();
   void linear_system_solve();
   void global_placement ();
+  void global_placer();
 
   void DrawBlockNetList(std::string const &name_of_file= "block_net_list.txt");
   void StartPlacement() override;
