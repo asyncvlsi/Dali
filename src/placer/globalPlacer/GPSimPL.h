@@ -28,7 +28,7 @@ class GPSimPL: public Placer {
   bool HPWLX_converge = false;
   bool HPWLY_converge = false;
   double cg_precision = 0.001;
-  int cg_iteration_max_num = 20;
+  int cg_iteration_max_num = 30;
   double HPWL_intra_linearSolver_precision = 0.001;
  public:
   GPSimPL();
@@ -41,10 +41,11 @@ class GPSimPL: public Placer {
   Eigen::VectorXd bx, by;
   SpMat Ax, Ay;
   std::vector< double > x_anchor, y_anchor;
-
   std::vector<T> coefficients;
-  Eigen::ConjugateGradient <SpMat> cgx;
-  Eigen::ConjugateGradient <SpMat> cgy;
+  //Eigen::BiCGSTAB  <SpMat, Eigen::IncompleteLUT<double, int>> cgx;
+  //Eigen::BiCGSTAB  <SpMat, Eigen::IncompleteLUT<double, int>> cgy;
+  Eigen::BiCGSTAB  <SpMat> cgx;
+  Eigen::BiCGSTAB  <SpMat> cgy;
 
   void BlockLocInit();
   void CGInit();

@@ -15,6 +15,7 @@ class Net {
  protected:
   std::pair<const std::string, int> *name_num_pair_ptr_;
   double weight_;
+  int cnt_fixed_;
 
   // cached data
   int max_pin_x_, min_pin_x_;
@@ -31,6 +32,7 @@ class Net {
   double Weight() const;
   double InvP();
   int P();
+  int FixedCnt();
 
   void SortBlkPinList();
   void UpdateMaxMinX();

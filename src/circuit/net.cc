@@ -6,6 +6,7 @@
 #include <algorithm>
 
 Net::Net(std::pair<const std::string, int> *name_num_pair_ptr, double weight): name_num_pair_ptr_(name_num_pair_ptr), weight_(weight) {
+  cnt_fixed_ = 0;
   max_pin_x_ = -1;
   min_pin_x_ = -1;
   max_pin_y_ = -1;
@@ -14,6 +15,9 @@ Net::Net(std::pair<const std::string, int> *name_num_pair_ptr, double weight): n
 
 void Net::AddBlockPinPair(Block *block_ptr, int pin_index) {
   blk_pin_list.emplace_back(block_ptr, pin_index);
+  if (!block_ptr->IsMovable()) {
+    ++cnt_fixed_;
+  }
 }
 
 const std::string *Net::Name() const {
@@ -39,6 +43,10 @@ double Net::InvP() {
 
 int Net::P() {
   return (int)blk_pin_list.size();
+}
+
+int Net::FixedCnt() {
+  return cnt_fixed_;
 }
 
 void Net::SortBlkPinList() {

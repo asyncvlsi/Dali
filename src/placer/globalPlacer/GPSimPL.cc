@@ -63,16 +63,16 @@ void GPSimPL::CGInit() {
   cgy.setTolerance(cg_precision);
 
   std::vector<Net> &net_list = *NetList();
-  int coefficient_size = size;
+  int coefficient_size = 0;
   int net_size = 0;
   for (auto &&net: net_list) {
     net_size = net.P();
     if (net_size > 1) {
-      coefficient_size += ((net_size-2)*2 + 1) * 2;
+      coefficient_size += ((net_size-2)*2 + 1) * 4;
     }
   }
-  std::cout << coefficient_size << " non-zero entries\n";
-  coefficients.reserve(10000000);
+  //std::cout << "Reserve space for " << coefficient_size << " non-zero matrix entries\n";
+  coefficients.reserve(coefficient_size);
 }
 
 void GPSimPL::CGClose() {
@@ -171,6 +171,7 @@ void GPSimPL::UpdateMaxMinCtoCY() {
 void GPSimPL::BuildProblemB2B(bool is_x_direction, SpMat &A, Eigen::VectorXd &b) {
   std::vector<Block> &block_list = *BlockList();
   std::vector<Net> &net_list = *NetList();
+  size_t coefficients_capacity = coefficients.capacity();
   coefficients.resize(0);
   for (long int i = 0; i < b.size(); i++) {
     b[i] = 0;
@@ -271,7 +272,11 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, SpMat &A, Eigen::VectorXd &b)
       }
     }
   }
-  std::cout << coefficients.size() << "\n";
+  if (coefficients_capacity != coefficients.capacity()) {
+    std::cout << "WARNING: coefficients capacity changed!\n";
+    std::cout << "\told capacity: " << coefficients_capacity << "\n";
+    std::cout << "\tnew capacity: " << coefficients.size() << "\n";
+  }
   A.setFromTriplets(coefficients.begin(), coefficients.end());
 }
 
@@ -1513,6 +1518,14 @@ void GPSimPL::initial_placement() {
     std::cout << "\t#iterations:     " << cgx.iterations() << std::endl;
     std::cout << "\testimated error: " << cgx.error() << std::endl;
     for (long int num=0; num<x.size(); ++num) {
+      if (block_list[num].IsMovable()) {
+        if (x[num] < Left()) {
+          x[num] = Left() + block_list[num].Width()/2.0;
+        }
+        if (x[num] > Right()) {
+          x[num] = Right() - block_list[num].Width()/2.0;
+        }
+      }
       block_list[num].SetLLX(x[num]);
     }
     UpdateCGFlagsX();
@@ -1538,6 +1551,14 @@ void GPSimPL::initial_placement() {
     std::cout << "\t#iterations:     " << cgy.iterations() << std::endl;
     std::cout << "\testimated error: " << cgy.error() << std::endl;
     for (long int num=0; num<y.size(); ++num) {
+      if (block_list[num].IsMovable()) {
+        if (y[num] < Bottom()) {
+          y[num] = Bottom() + block_list[num].Height()/2.0;
+        }
+        if (y[num] > Top()) {
+          y[num] = Top() - block_list[num].Height()/2.0;
+        }
+      }
       block_list[num].SetLLY(y[num]);
     }
     UpdateCGFlagsY();
