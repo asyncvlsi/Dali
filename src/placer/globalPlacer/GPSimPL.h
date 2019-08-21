@@ -27,7 +27,7 @@ class GPSimPL: public Placer {
   double HPWLY_old = 1e30;
   bool HPWLX_converge = false;
   bool HPWLY_converge = false;
-  double cg_precision = 0.001;
+  double cg_precision = 0.0005;
   int cg_iteration_max_num = 30;
   double HPWL_intra_linearSolver_precision = 0.001;
  public:
@@ -60,15 +60,19 @@ class GPSimPL: public Placer {
   void UpdateMaxMinY();
   void UpdateMaxMinCtoCY();
   void BuildProblemB2B(bool is_x_direction, SpMat &A, Eigen::VectorXd &b);
+  void BuildProblemB2BX();
+  void BuildProblemB2BY();
+  void SolveProblemX();
+  void SolveProblemY();
 
   int GRID_BIN_HEIGHT, GRID_BIN_WIDTH;
   int GRID_NUM;
   double alpha = 0.06;
   std::vector< std::vector<GridBin> > grid_bin_matrix;
   std::vector< std::vector<int> > grid_bin_white_space_LUT;
-  void create_grid_bins();
-  void init_update_white_space_LUT();
-  void init_look_ahead_legal();
+  void InitGridBins();
+  void InitUpdateWhiteSpaceLut();
+  void UnsetGridBinFlag();
   int white_space(GridBinIndex const &ll_index, GridBinIndex const &ur_index);
   bool write_all_terminal_grid_bins(std::string const &NameOfFile);
   bool write_not_all_terminal_grid_bins(std::string const &NameOfFile);
@@ -93,12 +97,15 @@ class GPSimPL: public Placer {
   void cell_placement_in_box_molecular_dynamics(BoxBin &box);
   void cell_placement_in_box_bisection(BoxBin &box);
   bool recursive_bisection_cell_spreading();
-  void look_ahead_legal();
+  void LookAheadLegal();
 
-  void copy_xy_to_anchor();
-  void swap_xy_anchor();
-  void initial_placement();
-  void look_ahead_legalization();
+  void add_anchor_x();
+  void add_anchor_y();
+  void SaveAnchorLoc();
+  void SwapAnchorBlkLoc();
+  void InitialPlacement();
+  void InitLAL();
+  void LookAheadLegalization();
   void linear_system_solve();
   void global_placement ();
   void global_placer();
