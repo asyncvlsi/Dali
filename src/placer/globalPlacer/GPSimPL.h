@@ -71,8 +71,8 @@ class GPSimPL: public Placer {
   std::vector< std::vector<GridBin> > grid_bin_matrix;
   std::vector< std::vector<int> > grid_bin_white_space_LUT;
   void InitGridBins();
-  void InitUpdateWhiteSpaceLut();
-  void UnsetGridBinFlag();
+  void InitWhiteSpaceLut();
+  void ClearGridBinFlag();
   int white_space(GridBinIndex const &ll_index, GridBinIndex const &ur_index);
   bool write_all_terminal_grid_bins(std::string const &NameOfFile);
   bool write_not_all_terminal_grid_bins(std::string const &NameOfFile);

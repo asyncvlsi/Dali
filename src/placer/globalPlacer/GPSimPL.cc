@@ -470,9 +470,10 @@ void GPSimPL::InitGridBins() {
       }
     }
   }
+  //std::cout << "Grid bin mesh initialization complete\n";
 }
 
-void GPSimPL::InitUpdateWhiteSpaceLut() {
+void GPSimPL::InitWhiteSpaceLut() {
   /* this is a member function to initialize white space look-up table
    * this table is a matrix, one way to calculate the white space in a region is to add all white space of every single grid bin in it
    * but an easier way is to define an accumulate function and store it as a look-up table
@@ -505,9 +506,10 @@ void GPSimPL::InitUpdateWhiteSpaceLut() {
       }
     }
   }
+  //std::cout << "White space look-up table initialization complete\n";
 }
 
-void GPSimPL::UnsetGridBinFlag() {
+void GPSimPL::ClearGridBinFlag() {
   for (auto &&bin_column: grid_bin_matrix) {
     for (auto &&bin: bin_column) {
       bin.global_placed = false;
@@ -943,10 +945,14 @@ void GPSimPL::find_box_first_cluster() {
       R.ur_index.y = bin->index.y;
     }
   }
+  std::cout << "here?\n";
   while (true) {
     // update cell area, white space, and thus filling rate to determine whether to expand this box or not
     R.total_white_space = white_space(R.ll_index, R.ur_index);
+    std::cout << R.total_white_space << "\n";
     R.update_cell_area_white_space_LUT(grid_bin_white_space_LUT, grid_bin_matrix);
+    std::cout << R.total_cell_area << "\n";
+    std::cout << R.filling_rate << "  " << FillingRate() << "\n";
     //R.update_cell_area_white_space(grid_bin_matrix);
     if (R.filling_rate > FillingRate()) {
       R.expand_box(GRID_NUM);
@@ -955,6 +961,7 @@ void GPSimPL::find_box_first_cluster() {
       break;
     }
   }
+  std::cout << "here2?\n";
   R.update_cell_in_box(grid_bin_matrix);
   R.ll_point.x = grid_bin_matrix[R.ll_index.x][R.ll_index.y].left;
   R.ll_point.y = grid_bin_matrix[R.ll_index.x][R.ll_index.y].bottom;
@@ -1431,7 +1438,7 @@ void GPSimPL::cell_placement_in_box_bisection(BoxBin &box) {
         Block *cell;
         for (auto &&cell_id: front_box.cell_list) {
           cell = &block_list[cell_id];
-          cell->SetCenterY((front_box.left + front_box.right)/2.0);
+          cell->SetCenterX((front_box.left + front_box.right)/2.0);
           cell->SetCenterY((front_box.bottom + front_box.top)/2.0);
         }
       } else {
@@ -1444,7 +1451,6 @@ void GPSimPL::cell_placement_in_box_bisection(BoxBin &box) {
 }
 
 bool GPSimPL::recursive_bisection_cell_spreading() {
-  std::vector<Block> &block_list = *BlockList();
   /* keep splitting the biggest box to many small boxes, and keep update the shape of each box and cells should be assigned to the box */
   int t = 0;
   while(!queue_box_bin.empty()) {
@@ -1465,9 +1471,9 @@ bool GPSimPL::recursive_bisection_cell_spreading() {
       //cell_placement_in_box(box);
       //cell_placement_in_box_molecular_dynamics(box);
       cell_placement_in_box_bisection(box);
-      box.write_cell_region("first_cell_bounding_box.txt");
-      box.write_box_boundary("first_bounding_box.txt");
-      box.write_cell_in_box("nodes.txt", block_list);
+      //box.write_cell_region("first_cell_bounding_box.txt");
+      //box.write_box_boundary("first_bounding_box.txt");
+      //box.write_cell_in_box("nodes.txt", block_list);
       queue_box_bin.pop();
     } else {
       box_split(box);
@@ -1556,7 +1562,7 @@ void GPSimPL::SwapAnchorBlkLoc() {
 
 void GPSimPL::InitLAL() {
   InitGridBins();
-  InitUpdateWhiteSpaceLut();
+  InitWhiteSpaceLut();
 }
 
 void GPSimPL::InitialPlacement() {
@@ -1602,15 +1608,19 @@ void GPSimPL::InitialPlacement() {
 }
 
 void GPSimPL::LookAheadLegalization() {
+  std::cout << 1 << "\n";
   SaveAnchorLoc();
-  UnsetGridBinFlag();
+  std::cout << 2 << "\n";
+  ClearGridBinFlag();
+  std::cout << 3 << "\n";
   LookAheadLegal();
+  std::cout << 4 << "\n";
   UpdateHPWLX();
   UpdateHPWLY();
   std::cout << "Look-ahead legalization complete\n";
   ReportHPWL();
 
-  SwapAnchorBlkLoc();
+  //SwapAnchorBlkLoc();
 }
 
 void GPSimPL::linear_system_solve() {
@@ -1645,7 +1655,7 @@ void GPSimPL::global_placement () {
   InitGridBins();
   //write_all_terminal_grid_bins("grid_bin_all_terminal.txt");
   //write_not_all_terminal_grid_bins("grid_bin_not_all_terminal.txt");
-  InitUpdateWhiteSpaceLut();
+  InitWhiteSpaceLut();
   int N = 1;
   for (int t = 0; t < N; t++) {
     //std::cout << t << "\n";

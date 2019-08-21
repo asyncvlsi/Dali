@@ -42,6 +42,7 @@ int main() {
 
 
   gb_placer->SetBoundaryDef();
+  gb_placer->SetFillingRate(1);
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
   //gb_placer->GenMATLABScript("gb_placement_result.txt");
