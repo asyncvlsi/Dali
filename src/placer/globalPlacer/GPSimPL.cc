@@ -1223,25 +1223,25 @@ void GPSimPL::grid_bin_box_split(BoxBin &box) {
 }
 
 void GPSimPL::cell_placement_in_box(BoxBin &box) {
-  std::vector<Block> &block_list = *BlockList();
-  /* this is the simplest version, just linearly move cells in the cell_box to the grid box
-   * non-linearity is not considered yet*/
-  double cell_box_left, cell_box_bottom;
-  double cell_box_width, cell_box_height;
-  cell_box_left = box.ll_point.x;
-  cell_box_bottom = box.ll_point.y;
-  cell_box_width = box.ur_point.x - cell_box_left;
-  cell_box_height = box.ur_point.y - cell_box_bottom;
-  Block *cell;
-  for (auto &&cell_id: box.cell_list) {
-    cell = &block_list[cell_id];
-    cell->SetCenterX((cell->X() - cell_box_left)/cell_box_width * (box.right - box.left) + box.left);
-    cell->SetCenterY((cell->Y() - cell_box_bottom)/cell_box_height * (box.top - box.bottom) + box.bottom);
-    /*if ((box.left < LEFT) || (box.bottom < BOTTOM)) {
-      std::cout << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM << "\n";
-      std::cout << box.left << " " << box.bottom << "\n";
-    }*/
-  }
+    std::vector<Block> &block_list = *BlockList();
+    /* this is the simplest version, just linearly move cells in the cell_box to the grid box
+     * non-linearity is not considered yet*/
+    double cell_box_left, cell_box_bottom;
+    double cell_box_width, cell_box_height;
+    cell_box_left = box.ll_point.x;
+    cell_box_bottom = box.ll_point.y;
+    cell_box_width = box.ur_point.x - cell_box_left;
+    cell_box_height = box.ur_point.y - cell_box_bottom;
+    Block *cell;
+    for (auto &&cell_id: box.cell_list) {
+      cell = &block_list[cell_id];
+      cell->SetCenterX((cell->X() - cell_box_left)/cell_box_width * (box.right - box.left) + box.left);
+      cell->SetCenterY((cell->Y() - cell_box_bottom)/cell_box_height * (box.top - box.bottom) + box.bottom);
+      /*if ((box.left < LEFT) || (box.bottom < BOTTOM)) {
+        std::cout << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM << "\n";
+        std::cout << box.left << " " << box.bottom << "\n";
+      }*/
+    }
 }
 
 double GPSimPL::cell_overlap(Block *node1,Block *node2) {
