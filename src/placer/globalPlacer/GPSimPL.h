@@ -41,7 +41,7 @@ class GPSimPL: public Placer {
   Eigen::VectorXd bx, by;
   SpMat Ax, Ay;
   std::vector< double > x_anchor, y_anchor;
-  std::vector<T> coefficients;
+  std::vector< T > coefficients;
   //Eigen::BiCGSTAB  <SpMat, Eigen::IncompleteLUT<double, int>> cgx;
   //Eigen::BiCGSTAB  <SpMat, Eigen::IncompleteLUT<double, int>> cgy;
   Eigen::BiCGSTAB  <SpMat> cgx;
@@ -65,53 +65,62 @@ class GPSimPL: public Placer {
   void SolveProblemX();
   void SolveProblemY();
 
-  int GRID_BIN_HEIGHT, GRID_BIN_WIDTH;
-  int GRID_NUM;
+  // look ahead legalization member function implemented below
+  int grid_bin_height;
+  int grid_bin_width;
+  int grid_cnt; // might distinguish the gird count in the x direction and y direction
   double alpha = 0.06;
   std::vector< std::vector<GridBin> > grid_bin_matrix;
   std::vector< std::vector<int> > grid_bin_white_space_LUT;
   void InitGridBins();
   void InitWhiteSpaceLut();
   void ClearGridBinFlag();
-  int white_space(GridBinIndex const &ll_index, GridBinIndex const &ur_index);
-  bool write_all_terminal_grid_bins(std::string const &NameOfFile);
-  bool write_not_all_terminal_grid_bins(std::string const &NameOfFile);
-  bool write_overfill_grid_bins(std::string const &NameOfFile);
-  bool write_not_overfill_grid_bins(std::string const &NameOfFile);
-  void update_grid_bins_state();
+  int WhiteSpace(GridBinIndex const &ll_index, GridBinIndex const &ur_index);
+  void UpdateGridBinState();
 
   std::vector< GridBinCluster > cluster_list;
-  void cluster_sort_grid_bins();
-  bool write_first_n_bin_cluster(std::string const &NameOfFile, size_t n);
-  bool write_first_bin_cluster(std::string const &NameOfFile);
-  bool write_all_bin_cluster(const std::string &NameOfFile);
-  bool write_first_box(std::string const &NameOfFile);
-  bool write_first_box_cell_bounding(std::string const &NameOfFile);
+  void ClusterOverfilledGridBin();
+  void SortGridBinCluster();
+  void UpdateClusterList();
 
   std::queue < BoxBin > queue_box_bin;
-  void find_box_first_cluster();
-  void box_split(BoxBin &box);
-  void grid_bin_box_split(BoxBin &box);
-  void cell_placement_in_box(BoxBin &box);
-  double cell_overlap(Block *node1, Block *node2);
-  void cell_placement_in_box_molecular_dynamics(BoxBin &box);
-  void cell_placement_in_box_bisection(BoxBin &box);
-  bool recursive_bisection_cell_spreading();
+  static double BlkOverlapArea(Block *node1, Block *node2);
+  void FindMinimumBoxForFirstCluster();
+  void SplitBox(BoxBin &box);
+  void SplitGridBox(BoxBin &box);
+  void PlaceBlkInBox(BoxBin &box);
+  void PlaceBlkInBoxBisection(BoxBin &box);
+  bool RecursiveBisectionBlkSpreading();
   void LookAheadLegal();
 
   void add_anchor_x();
   void add_anchor_y();
-  void SaveAnchorLoc();
-  void SwapAnchorBlkLoc();
+  void BackUpBlkLoc();
   void InitialPlacement();
   void InitLAL();
+
   void LookAheadLegalization();
+  void UpdateAnchorLoc();
+  void BuildProblemB2BWithAnchor(Eigen::VectorXd &b);
+  void BuildProblemB2BWithAnchorX();
+  void BuildProblemB2BWithAnchorY();
+
   void linear_system_solve();
   void global_placement ();
   void global_placer();
 
   void DrawBlockNetList(std::string const &name_of_file= "block_net_list.txt");
   void StartPlacement() override;
+
+  void write_all_terminal_grid_bins(std::string const &name_of_file);
+  void write_not_all_terminal_grid_bins(std::string const &name_of_file);
+  void write_overfill_grid_bins(std::string const &name_of_file);
+  void write_not_overfill_grid_bins(std::string const &name_of_file);
+  void write_first_n_bin_cluster(std::string const &name_of_file, size_t n);
+  void write_first_bin_cluster(std::string const &name_of_file);
+  void write_all_bin_cluster(const std::string &name_of_file);
+  void write_first_box(std::string const &name_of_file);
+  void write_first_box_cell_bounding(std::string const &name_of_file);
 };
 
 #endif //HPCC_SRC_PLACER_GLOBALPLACER_GPSIMPL_H_

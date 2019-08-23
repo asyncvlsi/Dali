@@ -5,6 +5,7 @@
 #include "GPSimPL.h"
 #include <cmath>
 #include <random>
+#include "../../common/misc.h"
 
 GPSimPL::GPSimPL(): Placer() {}
 
@@ -341,24 +342,24 @@ void GPSimPL::DrawBlockNetList(std::string const &name_of_file) {
 }
 
 void GPSimPL::InitGridBins() {
-  /* this is a function which create the grid bins, based on the GRID_NUM and the boundaries of chip region, LEFT, RIGHT, BOTTOM, TOP
+  /* this is a function which create the grid bins, based on the grid_cnt and the boundaries of chip region, LEFT, RIGHT, BOTTOM, TOP
    * these four boundaries are given by the bounding box of placed macros/terminals now, these value should be specified in the .scl file
    * but it seems for global placement, the accurate value does not really matter now
    * in the future, when we want to do more careful global placement, we will then make some modifications*/
 
-  /* determine the width and height of grid bin based on the boundaries and given GRID_NUM */
+  /* determine the width and height of grid bin based on the boundaries and given grid_cnt */
 
-  GRID_BIN_HEIGHT = (int)(std::round(8 * GetCircuit()->AveMovHeight()));
-  GRID_NUM = std::ceil((double)(Top() - Bottom()) / GRID_BIN_HEIGHT);
-  GRID_BIN_WIDTH = std::ceil((double)(Right() - Left()) / GRID_NUM);
+  grid_bin_height = (int)(std::round(8 * GetCircuit()->AveMovHeight()));
+  grid_cnt = std::ceil((double)(Top() - Bottom()) / grid_bin_height);
+  grid_bin_width = std::ceil((double)(Right() - Left()) / grid_cnt);
 
-  //std::cout << "GRID_BIN_HEIGHT: " << GRID_BIN_HEIGHT << "\n";
-  //std::cout << "GRID_BIN_WIDTH: " << GRID_BIN_WIDTH << "\n";
-  //std::cout << "GRID_NUM: " << GRID_NUM << "\n";
+  //std::cout << "grid_bin_height: " << grid_bin_height << "\n";
+  //std::cout << "grid_bin_width: " << grid_bin_width << "\n";
+  //std::cout << "grid_cnt: " << grid_cnt << "\n";
 
-  /* create an empty grid bin column with size GRID_NUM and push the grid bin column to grid_bin_matrix for GRID_NUM times */
-  std::vector<GridBin> temp_grid_bin_column(GRID_NUM);
-  for (int i = 0; i < GRID_NUM; i++) {
+  /* create an empty grid bin column with size grid_cnt and push the grid bin column to grid_bin_matrix for grid_cnt times */
+  std::vector<GridBin> temp_grid_bin_column(grid_cnt);
+  for (int i = 0; i < grid_cnt; i++) {
     grid_bin_matrix.push_back(temp_grid_bin_column);
   }
 
@@ -368,20 +369,20 @@ void GPSimPL::InitGridBins() {
     for (int j = 0; j < (int)(grid_bin_matrix[i].size()); j++) {
       grid_bin_matrix[i][j].index.x = i;
       grid_bin_matrix[i][j].index.y = j;
-      grid_bin_matrix[i][j].bottom = Bottom() + j * GRID_BIN_HEIGHT;
-      grid_bin_matrix[i][j].top = Bottom() + (j+1) * GRID_BIN_HEIGHT;
-      grid_bin_matrix[i][j].left = Left() + i * GRID_BIN_WIDTH;
-      grid_bin_matrix[i][j].right = Left() + (i+1) * GRID_BIN_WIDTH;
+      grid_bin_matrix[i][j].bottom = Bottom() + j * grid_bin_height;
+      grid_bin_matrix[i][j].top = Bottom() + (j+1) * grid_bin_height;
+      grid_bin_matrix[i][j].left = Left() + i * grid_bin_width;
+      grid_bin_matrix[i][j].right = Left() + (i+1) * grid_bin_width;
       grid_bin_matrix[i][j].area = (grid_bin_matrix[i][j].right - grid_bin_matrix[i][j].left) * (grid_bin_matrix[i][j].top - grid_bin_matrix[i][j].bottom);
       grid_bin_matrix[i][j].white_space = grid_bin_matrix[i][j].area; // at the very beginning, assuming the white space is the same as area
-      grid_bin_matrix[i][j].create_adjacent_bin_list(GRID_NUM);
+      grid_bin_matrix[i][j].create_adjacent_bin_list(grid_cnt);
     }
   }
 
   for (auto &&grid_bin_column: grid_bin_matrix) {
-    grid_bin_column[GRID_NUM - 1].top = Top();
+    grid_bin_column[grid_cnt - 1].top = Top();
   }
-  for (auto &&grid_bin: grid_bin_matrix[GRID_NUM - 1]) {
+  for (auto &&grid_bin: grid_bin_matrix[grid_cnt - 1]) {
     grid_bin.right = Right();
   }
 
@@ -403,23 +404,23 @@ void GPSimPL::InitGridBins() {
     if (terminal_out_of_region) {
       continue;
     }
-    left_index = (int)std::floor((block_list[i].LLX() - Left())/GRID_BIN_WIDTH);
-    right_index = (int)std::floor((block_list[i].URX() - Left())/GRID_BIN_WIDTH);
-    bottom_index = (int)std::floor((block_list[i].LLY() - Bottom())/GRID_BIN_HEIGHT);
-    top_index = (int)std::floor((block_list[i].URY() - Bottom())/GRID_BIN_HEIGHT);
+    left_index = (int)std::floor((block_list[i].LLX() - Left())/grid_bin_width);
+    right_index = (int)std::floor((block_list[i].URX() - Left())/grid_bin_width);
+    bottom_index = (int)std::floor((block_list[i].LLY() - Bottom())/grid_bin_height);
+    top_index = (int)std::floor((block_list[i].URY() - Bottom())/grid_bin_height);
     /* sometimes the grid boundaries might be the placement region boundaries, need some fix here
      * because the top boundary and the right boundary of a grid bin does not actually belong to that grid bin */
     if (left_index < 0) {
       left_index = 0;
     }
-    if (right_index == GRID_NUM) {
-      right_index = GRID_NUM - 1;
+    if (right_index == grid_cnt) {
+      right_index = grid_cnt - 1;
     }
     if (bottom_index < 0) {
       bottom_index = 0;
     }
-    if (top_index == GRID_NUM) {
-      top_index = GRID_NUM - 1;
+    if (top_index == grid_cnt) {
+      top_index = grid_cnt - 1;
     }
 
     /* for each terminal, we will check which grid is inside it, and directly set the all_terminal attribute to true for that grid
@@ -480,8 +481,8 @@ void GPSimPL::InitWhiteSpaceLut() {
    * when we want to find the white space in a region, just read it from the look-up table*/
 
   /* this for loop is created to initialize the size of the loop-up table */
-  std::vector< int > tmp_vector(GRID_NUM);
-  for (int i=0; i<GRID_NUM ; i++) {
+  std::vector< int > tmp_vector(grid_cnt);
+  for (int i=0; i<grid_cnt ; i++) {
     grid_bin_white_space_LUT.push_back(tmp_vector);
   }
 
@@ -517,7 +518,7 @@ void GPSimPL::ClearGridBinFlag() {
   }
 }
 
-int GPSimPL::white_space(GridBinIndex const &ll_index, GridBinIndex const &ur_index) {
+int GPSimPL::WhiteSpace(GridBinIndex const &ll_index, GridBinIndex const &ur_index) {
   /* this function is used to return the white space in a region specified by ll_index, and ur_index
    * there are four cases, element at (0,0), elements on the left edge, elements on the right edge, otherwise */
 
@@ -543,135 +544,7 @@ int GPSimPL::white_space(GridBinIndex const &ll_index, GridBinIndex const &ur_in
   return total_white_space;
 }
 
-bool GPSimPL::write_all_terminal_grid_bins(std::string const &NameOfFile) {
-  /* this is a member function for testing, print grid bins where the flag "all_terminal" is true */
-  std::ofstream ost(NameOfFile.c_str());
-  if (ost.is_open()==0) {
-    std::cout << "Cannot open file" << NameOfFile << "\n";
-    return false;
-  }
-  for (auto &&bin_column: grid_bin_matrix) {
-    for (auto &&bin: bin_column) {
-      double low_x, low_y, width, height;
-      width = bin.right - bin.left;
-      height = bin.top - bin.bottom;
-      low_x = bin.left;
-      low_y = bin.bottom;
-      int N = 3;
-      double step_x = width/N, step_y = height/N;
-      if (bin.is_all_terminal()) {
-        for (int j = 0; j < N; j++) {
-          ost << low_x << "\t" << low_y + j*step_y << "\n";
-          ost << low_x + width << "\t" << low_y + j*step_y << "\n";
-        }
-        for (int j = 0; j < N; j++) {
-          ost << low_x + j*step_x << "\t" << low_y << "\n";
-          ost << low_x + j*step_x << "\t" << low_y + height << "\n";
-        }
-      }
-    }
-  }
-  ost.close();
-  return true;
-}
-
-bool GPSimPL::write_not_all_terminal_grid_bins(std::string const &NameOfFile) {
-  /* this is a member function for testing, print grid bins where the flag "all_terminal" is false */
-  std::ofstream ost(NameOfFile.c_str());
-  if (ost.is_open()==0) {
-    std::cout << "Cannot open file" << NameOfFile << "\n";
-    return false;
-  }
-  for (auto &&bin_column: grid_bin_matrix) {
-    for (auto &&bin: bin_column) {
-      double low_x, low_y, width, height;
-      width = bin.right - bin.left;
-      height = bin.top - bin.bottom;
-      low_x = bin.left;
-      low_y = bin.bottom;
-      int N = 3;
-      double step_x = width/N, step_y = height/N;
-      if (!bin.is_all_terminal()) {
-        for (int j = 0; j < N; j++) {
-          ost << low_x << "\t" << low_y + j*step_y << "\n";
-          ost << low_x + width << "\t" << low_y + j*step_y << "\n";
-        }
-        for (int j = 0; j < N; j++) {
-          ost << low_x + j*step_x << "\t" << low_y << "\n";
-          ost << low_x + j*step_x << "\t" << low_y + height << "\n";
-        }
-      }
-    }
-  }
-  ost.close();
-  return true;
-}
-
-bool GPSimPL::write_overfill_grid_bins(std::string const &NameOfFile) {
-  /* this is a member function for testing, print grid bins where the flag "over_fill" is true */
-  std::ofstream ost(NameOfFile.c_str());
-  if (ost.is_open()==0) {
-    std::cout << "Cannot open file" << NameOfFile << "\n";
-    return false;
-  }
-  for (auto &&bin_column: grid_bin_matrix) {
-    for (auto &&bin: bin_column) {
-      double low_x, low_y, width, height;
-      width = bin.right - bin.left;
-      height = bin.top - bin.bottom;
-      low_x = bin.left;
-      low_y = bin.bottom;
-      int N = 3;
-      double step_x = width/N, step_y = height/N;
-      if (bin.is_over_fill()) {
-        for (int j = 0; j < N; j++) {
-          ost << low_x << "\t" << low_y + j*step_y << "\n";
-          ost << low_x + width << "\t" << low_y + j*step_y << "\n";
-        }
-        for (int j = 0; j < N; j++) {
-          ost << low_x + j*step_x << "\t" << low_y << "\n";
-          ost << low_x + j*step_x << "\t" << low_y + height << "\n";
-        }
-      }
-    }
-  }
-  ost.close();
-  return true;
-}
-
-bool GPSimPL::write_not_overfill_grid_bins(std::string const &NameOfFile) {
-  /* this is a member function for testing, print grid bins where the flag "over_fill" is false */
-  std::ofstream ost(NameOfFile.c_str());
-  if (ost.is_open()==0) {
-    std::cout << "Cannot open file" << NameOfFile << "\n";
-    return false;
-  }
-  for (auto &&bin_column: grid_bin_matrix) {
-    for (auto &&bin: bin_column) {
-      double low_x, low_y, width, height;
-      width = bin.right - bin.left;
-      height = bin.top - bin.bottom;
-      low_x = bin.left;
-      low_y = bin.bottom;
-      int N = 3;
-      double step_x = width/N, step_y = height/N;
-      if (!bin.is_over_fill()) {
-        for (int j = 0; j < N; j++) {
-          ost << low_x << "\t" << low_y + j*step_y << "\n";
-          ost << low_x + width << "\t" << low_y + j*step_y << "\n";
-        }
-        for (int j = 0; j < N; j++) {
-          ost << low_x + j*step_x << "\t" << low_y << "\n";
-          ost << low_x + j*step_x << "\t" << low_y + height << "\n";
-        }
-      }
-    }
-  }
-  ost.close();
-  return true;
-}
-
-void GPSimPL::update_grid_bins_state() {
+void GPSimPL::UpdateGridBinState() {
   /* this is a member function to initialize grid bins, because the cell_list, cell_area and over_fill state can be changed
    * so we need to update them when necessary*/
 
@@ -691,19 +564,19 @@ void GPSimPL::update_grid_bins_state() {
   int x_index, y_index;
   for (size_t i=0; i<block_list.size(); i++) {
     if (!block_list[i].IsMovable()) continue;
-    x_index = (int)std::floor((block_list[i].X() - Left())/GRID_BIN_WIDTH);
-    y_index = (int)std::floor((block_list[i].Y() - Bottom())/GRID_BIN_HEIGHT);
+    x_index = (int)std::floor((block_list[i].X() - Left())/grid_bin_width);
+    y_index = (int)std::floor((block_list[i].Y() - Bottom())/grid_bin_height);
     if (x_index < 0) {
       x_index = 0;
     }
-    if (x_index > GRID_NUM-1) {
-      x_index = GRID_NUM - 1;
+    if (x_index > grid_cnt-1) {
+      x_index = grid_cnt - 1;
     }
     if (y_index < 0) {
       y_index = 0;
     }
-    if (y_index > GRID_NUM-1) {
-      y_index = GRID_NUM - 1;
+    if (y_index > grid_cnt-1) {
+      y_index = grid_cnt - 1;
     }
     grid_bin_matrix[x_index][y_index].cell_list.push_back(i);
     grid_bin_matrix[x_index][y_index].cell_area += block_list[i].Area();
@@ -747,9 +620,9 @@ void GPSimPL::update_grid_bins_state() {
   }
 }
 
-void GPSimPL::cluster_sort_grid_bins() {
-  /* this function is to cluster over_fill grid bins, and sort them based on total cell area
-   * the algorithm to cluster over_fill grid bins is breadth first search*/
+void GPSimPL::ClusterOverfilledGridBin() {
+  /* this function is to cluster overfilled grid bins, and sort them based on total cell area
+   * the algorithm to cluster overfilled grid bins is breadth first search*/
   cluster_list.clear();
   for (auto &&bin_column: grid_bin_matrix) {
     for (auto &&bin: bin_column) {
@@ -785,9 +658,11 @@ void GPSimPL::cluster_sort_grid_bins() {
       cluster_list.push_back(H);
     }
   }
+}
 
-  /* sort grid bin clusters based on total cell area */
-  /* first calculate the total cell area, total white space */
+void GPSimPL::SortGridBinCluster() {
+  // sort grid bin clusters based on total cell area
+  // first calculate the total cell area, total white space
   for (auto &&cluster: cluster_list) {
     cluster.total_cell_area = 0;
     cluster.total_white_space = 0;
@@ -809,109 +684,22 @@ void GPSimPL::cluster_sort_grid_bins() {
         max_index = j;
       }
     }
-    tmp_cluster = cluster_list[i];
-    cluster_list[i] = cluster_list[max_index];
-    cluster_list[max_index] = tmp_cluster;
+    if (i != max_index) {
+      tmp_cluster = cluster_list[i];
+      cluster_list[i] = cluster_list[max_index];
+      cluster_list[max_index] = tmp_cluster;
+    }
     //std::cout << "Total cell area: " << cluster_list[i].total_cell_area;
     //std::cout << " Total white space: " << cluster_list[i].total_white_space << "\n";
   }
 }
 
-bool GPSimPL::write_first_n_bin_cluster(std::string const &NameOfFile, size_t n) {
-  /* this is a member function for testing, print the first n over_filled clusters */
-  std::ofstream ost(NameOfFile.c_str());
-  if (ost.is_open()==0) {
-    std::cout << "Cannot open file" << NameOfFile << "\n";
-    return false;
-  }
-  for (size_t i=0; i<n; i++) {
-    for (auto &&index: cluster_list[i].grid_bin_index_set) {
-      double low_x, low_y, width, height;
-      GridBin *GridBin = &grid_bin_matrix[index.x][index.y];
-      width = GridBin->right - GridBin->left;
-      height = GridBin->top - GridBin->bottom;
-      low_x = GridBin->left;
-      low_y = GridBin->bottom;
-      int step = 40;
-      if (GridBin->is_over_fill()) {
-        for (int j = 0; j < height; j += step) {
-          ost << low_x << "\t" << low_y + j << "\n";
-          ost << low_x + width << "\t" << low_y + j << "\n";
-        }
-        for (int j = 0; j < width; j += step) {
-          ost << low_x + j << "\t" << low_y << "\n";
-          ost << low_x + j << "\t" << low_y + height << "\n";
-        }
-      }
-    }
-  }
-  ost.close();
-  return true;
+void GPSimPL::UpdateClusterList() {
+  ClusterOverfilledGridBin();
+  SortGridBinCluster();
 }
 
-bool GPSimPL::write_first_bin_cluster(std::string const &NameOfFile) {
-  /* this is a member function for testing, print the first one over_filled clusters */
-  return write_first_n_bin_cluster(NameOfFile, 1);
-}
-
-bool GPSimPL::write_all_bin_cluster(const std::string &NameOfFile) {
-  /* this is a member function for testing, print all over_filled clusters */
-  return write_first_n_bin_cluster(NameOfFile, cluster_list.size());
-}
-
-bool GPSimPL::write_first_box(std::string const &NameOfFile) {
-  /* this is a member function for testing, print the first n over_filled clusters */
-  std::ofstream ost(NameOfFile.c_str());
-  if (ost.is_open()==0) {
-    std::cout << "Cannot open file" << NameOfFile << "\n";
-    return false;
-  }
-  double low_x, low_y, width, height;
-  BoxBin *R = &queue_box_bin.front();
-  width = (R->ur_index.x - R->ll_index.x + 1) * GRID_BIN_WIDTH;
-  height = (R->ur_index.y - R->ll_index.y + 1) * GRID_BIN_HEIGHT;
-  low_x = R->ll_index.x * GRID_BIN_WIDTH + Left();
-  low_y = R->ll_index.y * GRID_BIN_HEIGHT + Bottom();
-  int step = 20;
-  for (int j = 0; j < height; j += step) {
-    ost << low_x << "\t" << low_y + j << "\n";
-    ost << low_x + width << "\t" << low_y + j << "\n";
-  }
-  for (int j = 0; j < width; j += step) {
-    ost << low_x + j << "\t" << low_y << "\n";
-    ost << low_x + j << "\t" << low_y + height << "\n";
-  }
-  ost.close();
-  return true;
-}
-
-bool GPSimPL::write_first_box_cell_bounding(std::string const &NameOfFile) {
-  /* this is a member function for testing, print the bounding box of cells in which all cells should be placed into corresponding boxes */
-  std::ofstream ost(NameOfFile.c_str());
-  if (ost.is_open()==0) {
-    std::cout << "Cannot open file" << NameOfFile << "\n";
-    return false;
-  }
-  double low_x, low_y, width, height;
-  BoxBin *R = &queue_box_bin.front();
-  width = R->ur_point.x - R->ll_point.x;
-  height = R->ur_point.y - R->ll_point.y;
-  low_x = R->ll_point.x;
-  low_y = R->ll_point.y;
-  int step = 30;
-  for (int j = 0; j < height; j += step) {
-    ost << low_x << "\t" << low_y + j << "\n";
-    ost << low_x + width << "\t" << low_y + j << "\n";
-  }
-  for (int j = 0; j < width; j += step) {
-    ost << low_x + j << "\t" << low_y << "\n";
-    ost << low_x + j << "\t" << low_y + height << "\n";
-  }
-  ost.close();
-  return true;
-}
-
-void GPSimPL::find_box_first_cluster() {
+void GPSimPL::FindMinimumBoxForFirstCluster() {
   /* this function find the box for the first cluster, such that the total white space in the box is larger than the total
    * cell area, the way to do this is just by expanding the boundaries of the bounding box of the first cluster */
 
@@ -924,8 +712,8 @@ void GPSimPL::find_box_first_cluster() {
 
   BoxBin R;
   R.cut_direction_x = false;
-  R.ll_index.x = GRID_NUM - 1;
-  R.ll_index.y = GRID_NUM - 1;
+  R.ll_index.x = grid_cnt - 1;
+  R.ll_index.y = grid_cnt - 1;
   R.ur_index.x = 0;
   R.ur_index.y = 0;
   // initialize a box with y cut-direction
@@ -945,23 +733,18 @@ void GPSimPL::find_box_first_cluster() {
       R.ur_index.y = bin->index.y;
     }
   }
-  std::cout << "here?\n";
   while (true) {
     // update cell area, white space, and thus filling rate to determine whether to expand this box or not
-    R.total_white_space = white_space(R.ll_index, R.ur_index);
-    std::cout << R.total_white_space << "\n";
+    R.total_white_space = WhiteSpace(R.ll_index, R.ur_index);
     R.update_cell_area_white_space_LUT(grid_bin_white_space_LUT, grid_bin_matrix);
-    std::cout << R.total_cell_area << "\n";
-    std::cout << R.filling_rate << "  " << FillingRate() << "\n";
     //R.update_cell_area_white_space(grid_bin_matrix);
     if (R.filling_rate > FillingRate()) {
-      R.expand_box(GRID_NUM);
+      R.expand_box(grid_cnt);
     }
     else {
       break;
     }
   }
-  std::cout << "here2?\n";
   R.update_cell_in_box(grid_bin_matrix);
   R.ll_point.x = grid_bin_matrix[R.ll_index.x][R.ll_index.y].left;
   R.ll_point.y = grid_bin_matrix[R.ll_index.x][R.ll_index.y].bottom;
@@ -990,7 +773,7 @@ void GPSimPL::find_box_first_cluster() {
   }
 }
 
-void GPSimPL::box_split(BoxBin &box) {
+void GPSimPL::SplitBox(BoxBin &box) {
   std::vector<Block> &block_list = *BlockList();
   bool flag_bisection_complete;
   int dominating_box_flag; // indicate whether there is a dominating BoxBin
@@ -1088,8 +871,8 @@ void GPSimPL::box_split(BoxBin &box) {
 
     queue_box_bin.push(box1);
     queue_box_bin.push(box2);
-    //box1.write_box_boundary("first_bounding_box.txt", GRID_BIN_WIDTH, GRID_BIN_HEIGHT, LEFT, BOTTOM);
-    //box2.write_box_boundary("first_bounding_box.txt", GRID_BIN_WIDTH, GRID_BIN_HEIGHT, LEFT, BOTTOM);
+    //box1.write_box_boundary("first_bounding_box.txt", grid_bin_width, grid_bin_height, LEFT, BOTTOM);
+    //box2.write_box_boundary("first_bounding_box.txt", grid_bin_width, grid_bin_height, LEFT, BOTTOM);
     //box1.write_cell_region("first_cell_bounding_box.txt");
     //box2.write_cell_region("first_cell_bounding_box.txt");
   } else if (dominating_box_flag == 1) {
@@ -1108,7 +891,7 @@ void GPSimPL::box_split(BoxBin &box) {
     }*/
 
     queue_box_bin.push(box2);
-    //box2.write_box_boundary("first_bounding_box.txt", GRID_BIN_WIDTH, GRID_BIN_HEIGHT, LEFT, BOTTOM);
+    //box2.write_box_boundary("first_bounding_box.txt", grid_bin_width, grid_bin_height, LEFT, BOTTOM);
     //box2.write_cell_region("first_cell_bounding_box.txt");
   } else {
     box1.ll_point = box.ll_point;
@@ -1126,12 +909,12 @@ void GPSimPL::box_split(BoxBin &box) {
     }*/
 
     queue_box_bin.push(box1);
-    //box1.write_box_boundary("first_bounding_box.txt", GRID_BIN_WIDTH, GRID_BIN_HEIGHT, LEFT, BOTTOM);
+    //box1.write_box_boundary("first_bounding_box.txt", grid_bin_width, grid_bin_height, LEFT, BOTTOM);
     //box1.write_cell_region("first_cell_bounding_box.txt");
   }
 }
 
-void GPSimPL::grid_bin_box_split(BoxBin &box) {
+void GPSimPL::SplitGridBox(BoxBin &box) {
   std::vector<Block> &block_list = *BlockList();
   BoxBin box1, box2;
   box1.left = box.left;
@@ -1222,7 +1005,7 @@ void GPSimPL::grid_bin_box_split(BoxBin &box) {
   }
 }
 
-void GPSimPL::cell_placement_in_box(BoxBin &box) {
+void GPSimPL::PlaceBlkInBox(BoxBin &box) {
     std::vector<Block> &block_list = *BlockList();
     /* this is the simplest version, just linearly move cells in the cell_box to the grid box
      * non-linearity is not considered yet*/
@@ -1244,7 +1027,7 @@ void GPSimPL::cell_placement_in_box(BoxBin &box) {
     }
 }
 
-double GPSimPL::cell_overlap(Block *node1,Block *node2) {
+double GPSimPL::BlkOverlapArea(Block *node1, Block *node2) {
   bool not_overlap;
   not_overlap = ((node1->LLX() >= node2->URX())||(node1->LLY() >= node2->URY())) || ((node2->LLX() >= node1->URX())||(node2->LLY() >= node1->URY()));
   if (not_overlap) {
@@ -1276,92 +1059,7 @@ double GPSimPL::cell_overlap(Block *node1,Block *node2) {
   }
 }
 
-void GPSimPL::cell_placement_in_box_molecular_dynamics(BoxBin &box) {
-  std::vector<Block> &block_list = *BlockList();
-  /* this is the simplest version, just linearly move cells in the cell_box to the grid box
-   * non-linearity is not considered yet*/
-  double cell_box_left, cell_box_bottom;
-  double cell_box_width, cell_box_height;
-  cell_box_left = box.ll_point.x;
-  cell_box_bottom = box.ll_point.y;
-  cell_box_width = box.ur_point.x - cell_box_left;
-  cell_box_height = box.ur_point.y - cell_box_bottom;
-  Block *cell;
-  for (auto &&cell_id: box.cell_list) {
-    cell = &block_list[cell_id];
-    cell->SetCenterX((cell->X() - cell_box_left)/cell_box_width * (box.right - box.left) + box.left);
-    cell->SetCenterY((cell->Y() - cell_box_bottom)/cell_box_height * (box.top - box.bottom) + box.bottom);
-  }
-
-  std::vector< double > vx, vy;
-  for (size_t i=0; i<box.cell_list.size(); i++) {
-    vx.push_back(0);
-    vy.push_back(0);
-  }
-
-  double overlap_ij, rij;
-  double tmp_vx, tmp_vy;
-  Block *node_i, *node_j;
-  for (int t=0; t<60; t++) {
-    // 0. initialize velocity
-    for (size_t i=0; i<box.cell_list.size(); i++) {
-      vx[i] = 0;
-      vy[i] = 0;
-    }
-
-    // 1. update velocity based on overlap with other nodes and boundaries
-    for (size_t i=0; i<box.cell_list.size(); i++) {
-      node_i = &block_list[box.cell_list[i]];
-      for (size_t j=i+1; j<box.cell_list.size(); j++) {
-        node_j = &block_list[box.cell_list[j]];
-        overlap_ij = cell_overlap(node_i, node_j);
-        rij = sqrt(pow(node_i->X() - node_j->X(), 2) + pow(node_i->Y() - node_j->Y(), 2)) + 1;
-        tmp_vx = overlap_ij*(node_i->X() - node_j->X())/rij * 40;
-        tmp_vy = overlap_ij*(node_i->Y() - node_j->Y())/rij * 40;
-        vx[i] += tmp_vx/node_i->Area();
-        vy[i] += tmp_vy/node_i->Area();
-        vx[j] -= tmp_vx/node_j->Area();
-        vy[j] -= tmp_vy/node_j->Area();
-      }
-
-      /* this part need modifications, the overlap between boundaries and cells, some constant should be changed to constant related to ave_height or ave_width */
-      if (node_i->LLX() < box.left) {
-        vx[i]++;
-      }
-      if (node_i->URX() > box.right) {
-        vx[i]--;
-      }
-      if (node_i->LLY() < box.bottom) {
-        vy[i]++;
-      }
-      if (node_i->URY() > box.top) {
-        vy[i]--;
-      }
-
-    }
-
-    // 2. update location
-    for (size_t i=0; i<box.cell_list.size(); i++) {
-      node_i = &block_list[box.cell_list[i]];
-      node_i->IncreX(vx[i]);
-      node_i->IncreY(vy[i]);
-      /*if (node_i->LLX() < box.left) {
-        node_i->x0 = box.left + node_i->width()/2.0;
-      }
-      if (node_i->URX() > box.right) {
-        node_i->x0 = box.right - node_i->width()/2.0;
-      }
-      if (node_i->LLY() < box.bottom) {
-        node_i->y0 = box.bottom + node_i->height()/2.0;
-      }
-      if (node_i->URY() > box.top) {
-        node_i->y0 = box.top - node_i->height()/2.0;
-      }*/
-    }
-  }
-}
-
-void GPSimPL::cell_placement_in_box_bisection(BoxBin &box) {
+void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
   std::vector<Block> &block_list = *BlockList();
   /* keep bisect a grid bin until the leaf bin has less than say 2 nodes? */
   size_t max_cell_num_in_box = 1;
@@ -1442,7 +1140,7 @@ void GPSimPL::cell_placement_in_box_bisection(BoxBin &box) {
           cell->SetCenterY((front_box.bottom + front_box.top)/2.0);
         }
       } else {
-        cell_placement_in_box(front_box);
+        PlaceBlkInBox(front_box);
       }
     }
     box_Q.pop();
@@ -1450,7 +1148,7 @@ void GPSimPL::cell_placement_in_box_bisection(BoxBin &box) {
 
 }
 
-bool GPSimPL::recursive_bisection_cell_spreading() {
+bool GPSimPL::RecursiveBisectionBlkSpreading() {
   /* keep splitting the biggest box to many small boxes, and keep update the shape of each box and cells should be assigned to the box */
   int t = 0;
   while(!queue_box_bin.empty()) {
@@ -1463,20 +1161,20 @@ bool GPSimPL::recursive_bisection_cell_spreading() {
     /* if there is terminals inside a box, keep splitting it */
     if (box.ll_index == box.ur_index) {
       if (box.has_terminal()) {
-        grid_bin_box_split(box);
+        SplitGridBox(box);
         queue_box_bin.pop();
         continue;
       }
       /* if no terminals in side a box, do cell placement inside the box */
-      //cell_placement_in_box(box);
+      //PlaceBlkInBox(box);
       //cell_placement_in_box_molecular_dynamics(box);
-      cell_placement_in_box_bisection(box);
+      PlaceBlkInBoxBisection(box);
       //box.write_cell_region("first_cell_bounding_box.txt");
       //box.write_box_boundary("first_bounding_box.txt");
       //box.write_cell_in_box("nodes.txt", block_list);
       queue_box_bin.pop();
     } else {
-      box_split(box);
+      SplitBox(box);
       queue_box_bin.pop();
     }
   }
@@ -1504,20 +1202,20 @@ void GPSimPL::LookAheadLegal() {
 
   do {
     //for (int t=0; t<1; t++) {
-    update_grid_bins_state();
+    UpdateGridBinState();
 
     /* print out grid_bins (terminal.txt) and nodes (nodes.txt) in order to verify the above initialization is correct */
     //write_node_terminal();
     //write_overfill_grid_bins();
     //write_not_overfill_grid_bins();
 
-    cluster_sort_grid_bins();
+    UpdateClusterList();
     //std::cout << "Number of clusters: " << cluster_list.size() << "\n";
 
     //write_first_bin_cluster();
     //write_all_bin_cluster();
 
-    find_box_first_cluster();
+    FindMinimumBoxForFirstCluster();
     //std::cout << "Total cell list size before bisection: " << queue_box_bin.front().cell_list.size() << "\n";
     //queue_box_bin.front().write_cell_in_box("nodes.txt", block_list);
 
@@ -1526,7 +1224,7 @@ void GPSimPL::LookAheadLegal() {
 
     // for debug purpose, use with member function write_cell_in_box, to create a empty nodes.txt
 
-    recursive_bisection_cell_spreading();
+    RecursiveBisectionBlkSpreading();
   } while (!cluster_list.empty());
 }
 
@@ -1538,7 +1236,7 @@ void GPSimPL::add_anchor_y() {
 
 }
 
-void GPSimPL::SaveAnchorLoc () {
+void GPSimPL::BackUpBlkLoc () {
   std::vector<Block> &block_list = *BlockList();
   for (size_t i=0; i<block_list.size(); ++i) {
     x_anchor[i] = block_list[i].LLX();
@@ -1546,7 +1244,7 @@ void GPSimPL::SaveAnchorLoc () {
   }
 }
 
-void GPSimPL::SwapAnchorBlkLoc() {
+void GPSimPL::UpdateAnchorLoc() {
   std::vector<Block> &block_list = *BlockList();
   double tmp_value;
   for (size_t i=0; i<block_list.size(); ++i) {
@@ -1558,6 +1256,18 @@ void GPSimPL::SwapAnchorBlkLoc() {
     y_anchor[i] = block_list[i].LLY();
     block_list[i].SetLLY(tmp_value);
   }
+}
+
+void GPSimPL::BuildProblemB2BWithAnchor(Eigen::VectorXd &b) {
+
+}
+
+void GPSimPL::BuildProblemB2BWithAnchorX() {
+
+}
+
+void GPSimPL::BuildProblemB2BWithAnchorY() {
+
 }
 
 void GPSimPL::InitLAL() {
@@ -1608,19 +1318,15 @@ void GPSimPL::InitialPlacement() {
 }
 
 void GPSimPL::LookAheadLegalization() {
-  std::cout << 1 << "\n";
-  SaveAnchorLoc();
-  std::cout << 2 << "\n";
+  BackUpBlkLoc();
   ClearGridBinFlag();
-  std::cout << 3 << "\n";
   LookAheadLegal();
-  std::cout << 4 << "\n";
   UpdateHPWLX();
   UpdateHPWLY();
   std::cout << "Look-ahead legalization complete\n";
   ReportHPWL();
 
-  //SwapAnchorBlkLoc();
+  //UpdateAnchorLoc();
 }
 
 void GPSimPL::linear_system_solve() {
@@ -1682,4 +1388,198 @@ void GPSimPL::StartPlacement() {
   InitialPlacement();
   InitLAL();
   LookAheadLegalization();
+}
+
+void GPSimPL::write_all_terminal_grid_bins(std::string const &name_of_file) {
+  /* this is a member function for testing, print grid bins where the flag "all_terminal" is true */
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open file" + name_of_file);
+  for (auto &&bin_column: grid_bin_matrix) {
+    for (auto &&bin: bin_column) {
+      double low_x, low_y, width, height;
+      width = bin.right - bin.left;
+      height = bin.top - bin.bottom;
+      low_x = bin.left;
+      low_y = bin.bottom;
+      int N = 3;
+      double step_x = width/N, step_y = height/N;
+      if (bin.is_all_terminal()) {
+        for (int j = 0; j < N; j++) {
+          ost << low_x << "\t" << low_y + j*step_y << "\n";
+          ost << low_x + width << "\t" << low_y + j*step_y << "\n";
+        }
+        for (int j = 0; j < N; j++) {
+          ost << low_x + j*step_x << "\t" << low_y << "\n";
+          ost << low_x + j*step_x << "\t" << low_y + height << "\n";
+        }
+      }
+    }
+  }
+  ost.close();
+}
+
+void GPSimPL::write_not_all_terminal_grid_bins(std::string const &name_of_file) {
+  /* this is a member function for testing, print grid bins where the flag "all_terminal" is false */
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open file" + name_of_file);
+  for (auto &&bin_column: grid_bin_matrix) {
+    for (auto &&bin: bin_column) {
+      double low_x, low_y, width, height;
+      width = bin.right - bin.left;
+      height = bin.top - bin.bottom;
+      low_x = bin.left;
+      low_y = bin.bottom;
+      int N = 3;
+      double step_x = width/N, step_y = height/N;
+      if (!bin.is_all_terminal()) {
+        for (int j = 0; j < N; j++) {
+          ost << low_x << "\t" << low_y + j*step_y << "\n";
+          ost << low_x + width << "\t" << low_y + j*step_y << "\n";
+        }
+        for (int j = 0; j < N; j++) {
+          ost << low_x + j*step_x << "\t" << low_y << "\n";
+          ost << low_x + j*step_x << "\t" << low_y + height << "\n";
+        }
+      }
+    }
+  }
+  ost.close();
+}
+
+void GPSimPL::write_overfill_grid_bins(std::string const &name_of_file) {
+  /* this is a member function for testing, print grid bins where the flag "over_fill" is true */
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open file" + name_of_file);
+  for (auto &&bin_column: grid_bin_matrix) {
+    for (auto &&bin: bin_column) {
+      double low_x, low_y, width, height;
+      width = bin.right - bin.left;
+      height = bin.top - bin.bottom;
+      low_x = bin.left;
+      low_y = bin.bottom;
+      int N = 3;
+      double step_x = width/N, step_y = height/N;
+      if (bin.is_over_fill()) {
+        for (int j = 0; j < N; j++) {
+          ost << low_x << "\t" << low_y + j*step_y << "\n";
+          ost << low_x + width << "\t" << low_y + j*step_y << "\n";
+        }
+        for (int j = 0; j < N; j++) {
+          ost << low_x + j*step_x << "\t" << low_y << "\n";
+          ost << low_x + j*step_x << "\t" << low_y + height << "\n";
+        }
+      }
+    }
+  }
+  ost.close();
+}
+
+void GPSimPL::write_not_overfill_grid_bins(std::string const &name_of_file) {
+  /* this is a member function for testing, print grid bins where the flag "over_fill" is false */
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open file" + name_of_file);
+  for (auto &&bin_column: grid_bin_matrix) {
+    for (auto &&bin: bin_column) {
+      double low_x, low_y, width, height;
+      width = bin.right - bin.left;
+      height = bin.top - bin.bottom;
+      low_x = bin.left;
+      low_y = bin.bottom;
+      int N = 3;
+      double step_x = width/N, step_y = height/N;
+      if (!bin.is_over_fill()) {
+        for (int j = 0; j < N; j++) {
+          ost << low_x << "\t" << low_y + j*step_y << "\n";
+          ost << low_x + width << "\t" << low_y + j*step_y << "\n";
+        }
+        for (int j = 0; j < N; j++) {
+          ost << low_x + j*step_x << "\t" << low_y << "\n";
+          ost << low_x + j*step_x << "\t" << low_y + height << "\n";
+        }
+      }
+    }
+  }
+  ost.close();
+}
+
+void GPSimPL::write_first_n_bin_cluster(std::string const &name_of_file, size_t n) {
+  /* this is a member function for testing, print the first n over_filled clusters */
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open file" + name_of_file);
+  for (size_t i=0; i<n; i++) {
+    for (auto &&index: cluster_list[i].grid_bin_index_set) {
+      double low_x, low_y, width, height;
+      GridBin *GridBin = &grid_bin_matrix[index.x][index.y];
+      width = GridBin->right - GridBin->left;
+      height = GridBin->top - GridBin->bottom;
+      low_x = GridBin->left;
+      low_y = GridBin->bottom;
+      int step = 40;
+      if (GridBin->is_over_fill()) {
+        for (int j = 0; j < height; j += step) {
+          ost << low_x << "\t" << low_y + j << "\n";
+          ost << low_x + width << "\t" << low_y + j << "\n";
+        }
+        for (int j = 0; j < width; j += step) {
+          ost << low_x + j << "\t" << low_y << "\n";
+          ost << low_x + j << "\t" << low_y + height << "\n";
+        }
+      }
+    }
+  }
+  ost.close();
+}
+
+void GPSimPL::write_first_bin_cluster(std::string const &name_of_file) {
+  /* this is a member function for testing, print the first one over_filled clusters */
+  write_first_n_bin_cluster(name_of_file, 1);
+}
+
+void GPSimPL::write_all_bin_cluster(const std::string &name_of_file) {
+  /* this is a member function for testing, print all over_filled clusters */
+  write_first_n_bin_cluster(name_of_file, cluster_list.size());
+}
+
+void GPSimPL::write_first_box(std::string const &name_of_file) {
+  /* this is a member function for testing, print the first n over_filled clusters */
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open file" + name_of_file);
+  double low_x, low_y, width, height;
+  BoxBin *R = &queue_box_bin.front();
+  width = (R->ur_index.x - R->ll_index.x + 1) * grid_bin_width;
+  height = (R->ur_index.y - R->ll_index.y + 1) * grid_bin_height;
+  low_x = R->ll_index.x * grid_bin_width + Left();
+  low_y = R->ll_index.y * grid_bin_height + Bottom();
+  int step = 20;
+  for (int j = 0; j < height; j += step) {
+    ost << low_x << "\t" << low_y + j << "\n";
+    ost << low_x + width << "\t" << low_y + j << "\n";
+  }
+  for (int j = 0; j < width; j += step) {
+    ost << low_x + j << "\t" << low_y << "\n";
+    ost << low_x + j << "\t" << low_y + height << "\n";
+  }
+  ost.close();
+}
+
+void GPSimPL::write_first_box_cell_bounding(std::string const &name_of_file) {
+  /* this is a member function for testing, print the bounding box of cells in which all cells should be placed into corresponding boxes */
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open file" + name_of_file);
+  double low_x, low_y, width, height;
+  BoxBin *R = &queue_box_bin.front();
+  width = R->ur_point.x - R->ll_point.x;
+  height = R->ur_point.y - R->ll_point.y;
+  low_x = R->ll_point.x;
+  low_y = R->ll_point.y;
+  int step = 30;
+  for (int j = 0; j < height; j += step) {
+    ost << low_x << "\t" << low_y + j << "\n";
+    ost << low_x + width << "\t" << low_y + j << "\n";
+  }
+  for (int j = 0; j < width; j += step) {
+    ost << low_x + j << "\t" << low_y << "\n";
+    ost << low_x + j << "\t" << low_y + height << "\n";
+  }
+  ost.close();
 }
