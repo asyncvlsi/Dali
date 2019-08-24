@@ -30,7 +30,13 @@ class GPSimPL: public Placer {
   double cg_precision = 0.0005;
   int cg_iteration_max_num = 30;
   double HPWL_intra_linearSolver_precision = 0.001;
+
+  double alpha = 0.01;
   int look_ahead_iter_max = 1;
+  double HPWL_LAL_new = 0;
+  double HPWL_LAL_old = 1e30;
+  bool HPWL_LAL_converge = false;
+  double HPWL_inter_linearSolver_precision = 0.001;
  public:
   GPSimPL();
   GPSimPL(double aspectRatio, double fillingRate);
@@ -43,8 +49,6 @@ class GPSimPL: public Placer {
   SpMat Ax, Ay;
   std::vector< double > x_anchor, y_anchor;
   std::vector< T > coefficients;
-  //Eigen::BiCGSTAB  <SpMat, Eigen::IncompleteLUT<double, int>> cgx;
-  //Eigen::BiCGSTAB  <SpMat, Eigen::IncompleteLUT<double, int>> cgy;
   Eigen::BiCGSTAB  <SpMat> cgx;
   Eigen::BiCGSTAB  <SpMat> cgy;
 
@@ -71,13 +75,13 @@ class GPSimPL: public Placer {
   int grid_bin_height;
   int grid_bin_width;
   int grid_cnt; // might distinguish the gird count in the x direction and y direction
-  double alpha = 0.06;
   std::vector< std::vector<GridBin> > grid_bin_matrix;
   std::vector< std::vector<int> > grid_bin_white_space_LUT;
   void InitGridBins();
   void InitWhiteSpaceLut();
   int LookUpWhiteSpace(GridBinIndex const &ll_index, GridBinIndex const &ur_index);
-  void InitLAL();
+  void LookAheadLgInit();
+  void LookAheadClose();
   void ClearGridBinFlag();
   void UpdateGridBinState();
 
@@ -95,19 +99,14 @@ class GPSimPL: public Placer {
   void PlaceBlkInBoxBisection(BoxBin &box);
   bool RecursiveBisectionBlkSpreading();
 
-  void add_anchor_x();
-  void add_anchor_y();
   void BackUpBlkLoc();
-
   void LookAheadLegalization();
+  void UpdateLALConvergeState();
   void UpdateAnchorLoc();
-  void BuildProblemB2BWithAnchor(Eigen::VectorXd &b);
   void BuildProblemB2BWithAnchorX();
   void BuildProblemB2BWithAnchorY();
-  void QuadraticPlacment();
-  void UpdateAlpha();
-  void linear_system_solve();
-  void global_placement ();
+  void QuadraticPlacementWithAnchor();
+  void UpdateAnchorNetWeight();
 
   void DrawBlockNetList(std::string const &name_of_file= "block_net_list.txt");
   void StartPlacement() override;

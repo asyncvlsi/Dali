@@ -74,6 +74,7 @@ void GPSimPL::CGInit() {
       coefficient_size += ((net_size-2)*2 + 1) * 4;
     }
   }
+  coefficient_size += size; // this is for anchor, because each blk has an anchor
   //std::cout << "Reserve space for " << coefficient_size << " non-zero matrix entries\n";
   coefficients.reserve(coefficient_size);
 }
@@ -201,7 +202,7 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, SpMat &A, Eigen::VectorXd &b)
           if (blk_num0 == blk_num1) continue;
           pin_loc1 = block_list[blk_num1].LLX() + net.blk_pin_list[j].XOffset();
           is_movable1 = net.blk_pin_list[j].GetBlock()->IsMovable();
-          weight = inv_p / (fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
+          weight = inv_p / (std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
           if (!is_movable0 && is_movable1) {
             b[blk_num1] += (pin_loc0 - net.blk_pin_list[j].XOffset()) * weight;
             coefficients.emplace_back(T(blk_num1, blk_num1, weight));
@@ -223,7 +224,7 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, SpMat &A, Eigen::VectorXd &b)
       }
     }
     for (size_t i = 0; i < block_list.size(); ++i) {
-      if (!block_list[i].IsMovable()) {
+      if (block_list[i].IsFixed()) {
         coefficients.emplace_back(T(i, i, 1));
         b[i] = block_list[i].LLX();
       }
@@ -247,7 +248,7 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, SpMat &A, Eigen::VectorXd &b)
           if (blk_num0 == blk_num1) continue;
           pin_loc1 = block_list[blk_num1].LLY() + net.blk_pin_list[j].YOffset();
           is_movable1 = net.blk_pin_list[j].GetBlock()->IsMovable();
-          weight = inv_p / (fabs(pin_loc0 - pin_loc1) + HeightEpsilon());
+          weight = inv_p / (std::fabs(pin_loc0 - pin_loc1) + HeightEpsilon());
           if (!is_movable0 && is_movable1) {
             b[blk_num1] += (pin_loc0 - net.blk_pin_list[j].YOffset()) * weight;
             coefficients.emplace_back(T(blk_num1, blk_num1, weight));
@@ -268,8 +269,8 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, SpMat &A, Eigen::VectorXd &b)
         }
       }
     }
-    for (size_t i = 0; i < block_list.size(); ++i) {
-      if (!block_list[i].IsMovable()) {
+    for (size_t i = 0; i < block_list.size(); ++i) { // add the diagonal non-zero element for fixed blocks
+      if (block_list[i].IsFixed()) {
         coefficients.emplace_back(T(i, i, 1));
         b[i] = block_list[i].LLY();
       }
@@ -280,15 +281,16 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, SpMat &A, Eigen::VectorXd &b)
     std::cout << "\told capacity: " << coefficients_capacity << "\n";
     std::cout << "\tnew capacity: " << coefficients.size() << "\n";
   }
-  A.setFromTriplets(coefficients.begin(), coefficients.end());
 }
 
 void GPSimPL::BuildProblemB2BX() {
   BuildProblemB2B(true, Ax, bx);
+  Ax.setFromTriplets(coefficients.begin(), coefficients.end());
 }
 
 void GPSimPL::BuildProblemB2BY() {
   BuildProblemB2B(false, Ay, by);
+  Ay.setFromTriplets(coefficients.begin(), coefficients.end());
 }
 
 void GPSimPL::SolveProblemX() {
@@ -552,9 +554,14 @@ void GPSimPL::InitWhiteSpaceLut() {
   //std::cout << "White space look-up table initialization complete\n";
 }
 
-void GPSimPL::InitLAL() {
+void GPSimPL::LookAheadLgInit() {
   InitGridBins();
   InitWhiteSpaceLut();
+}
+
+void GPSimPL::LookAheadClose() {
+  grid_bin_matrix.clear();
+  grid_bin_white_space_LUT.clear();
 }
 
 void GPSimPL::ClearGridBinFlag() {
@@ -1228,14 +1235,6 @@ bool GPSimPL::RecursiveBisectionBlkSpreading() {
   return true;
 }
 
-void GPSimPL::add_anchor_x() {
-
-}
-
-void GPSimPL::add_anchor_y() {
-
-}
-
 void GPSimPL::BackUpBlkLoc () {
   std::vector<Block> &block_list = *BlockList();
   for (size_t i=0; i<block_list.size(); ++i) {
@@ -1248,6 +1247,7 @@ void GPSimPL::UpdateAnchorLoc() {
   std::vector<Block> &block_list = *BlockList();
   double tmp_value;
   for (size_t i=0; i<block_list.size(); ++i) {
+    if (block_list[i].IsFixed()) continue;
     tmp_value = x_anchor[i];
     x_anchor[i] = block_list[i].LLX();
     block_list[i].SetLLX(tmp_value);
@@ -1258,28 +1258,79 @@ void GPSimPL::UpdateAnchorLoc() {
   }
 }
 
-void GPSimPL::BuildProblemB2BWithAnchor(Eigen::VectorXd &b) {
-
-}
-
 void GPSimPL::BuildProblemB2BWithAnchorX() {
-  BuildProblemB2BWithAnchor(bx);
+  BuildProblemB2BX();
+  std::vector<Block> &block_list = *BlockList();
+  double weight = 0;
+  double pin_loc0, pin_loc1;
+  for (size_t i=0; i<block_list.size(); ++i) {
+    if (block_list[i].IsFixed()) continue;
+    pin_loc0 = block_list[i].LLX();
+    pin_loc1 = x_anchor[i];
+    weight = alpha/(std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
+    bx[i] += pin_loc1 * weight;
+    coefficients.emplace_back(T(i, i, weight));
+  }
+  Ax.setFromTriplets(coefficients.begin(), coefficients.end());
 }
 
 void GPSimPL::BuildProblemB2BWithAnchorY() {
-  BuildProblemB2BWithAnchor(by);
+  BuildProblemB2BY();
+  std::vector<Block> &block_list = *BlockList();
+  double weight = 0;
+  double pin_loc0, pin_loc1;
+  for (size_t i=0; i<block_list.size(); ++i) {
+    if (block_list[i].IsFixed()) continue;
+    pin_loc0 = block_list[i].LLY();
+    pin_loc1 = y_anchor[i];
+    weight = alpha/(std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
+    by[i] += pin_loc1 * weight;
+    coefficients.emplace_back(T(i, i, weight));
+  }
+  Ay.setFromTriplets(coefficients.begin(), coefficients.end());
 }
 
-void GPSimPL::QuadraticPlacment() {
-  BuildProblemB2BWithAnchorX();
-  SolveProblemX();
+void GPSimPL::QuadraticPlacementWithAnchor() {
+  std::cout << "Total number of movable cells: " << GetCircuit()->TotMovableBlockNum() << "\n";
+  std::cout << "Total number of cells: " << TotBlockNum() << "\n";
+  std::vector<Block> &block_list = *BlockList();
 
-  BuildProblemB2BWithAnchorY();
-  SolveProblemY();
+  HPWLX_converge = false;
+  HPWLX_old = 1e30;
+  for (size_t i=0; i<block_list.size(); ++i) {
+    x[i] = block_list[i].LLX();
+  }
+  UpdateMaxMinX();
+  for (int i=0; i<50; ++i) {
+    BuildProblemB2BWithAnchorX();
+    SolveProblemX();
+    UpdateCGFlagsX();
+    if (HPWLX_converge) {
+      std::cout << "iterations x:     " << i << "\n";
+      break;
+    }
+  }
+  HPWLY_converge = false;
+  HPWLY_old = 1e30;
+  for (size_t i=0; i<block_list.size(); ++i) {
+    y[i] = block_list[i].LLY();
+  }
+  UpdateMaxMinY();
+  for (int i=0; i<50; ++i) {
+    BuildProblemB2BWithAnchorY();
+    SolveProblemY();
+    UpdateCGFlagsY();
+    if (HPWLY_converge) {
+      std::cout << "iterations y:     " << i << "\n";
+      break;
+    }
+  }
+  std::cout << "Quadratic Placement With Anchor Complete\n";
+  ReportHPWL();
 }
 
-void GPSimPL::UpdateAlpha() {
-  alpha = alpha * (1+t);
+void GPSimPL::UpdateAnchorNetWeight() {
+  alpha += 0.01;
 }
 
 void GPSimPL::LookAheadLegalization() {
@@ -1299,70 +1350,34 @@ void GPSimPL::LookAheadLegalization() {
   ReportHPWL();
 }
 
-void GPSimPL::linear_system_solve() {
-  UpdateMaxMinX();
-  UpdateMaxMinY();
-  InitCGFlags();
-  // set HPWLx_converge and HPWLy_converge to false update HPWLX, HPWLY, prepare for problem building
-
-  for (int i=0; i<50 ; i++) {
-    //std::cout << "cg iteration " << i << "\n";
-    if (!HPWLX_converge) {
-      BuildProblemB2BX();
-      add_anchor_x();
-      SolveProblemX();
-      UpdateMaxMinX();
-    }
-
-    if (!HPWLY_converge) {
-      BuildProblemB2BY();
-      add_anchor_y();
-      SolveProblemY();
-      UpdateMaxMinY();
-    }
-    if (HPWLX_converge && HPWLY_converge) break;
-  }
-
-  std::cout << "Linear solver complete\n";
-  std::cout << "HPWL: " << HPWLX_new + HPWLY_new << "\n";
-}
-
-void GPSimPL::global_placement () {
-  InitGridBins();
-  //write_all_terminal_grid_bins("grid_bin_all_terminal.txt");
-  //write_not_all_terminal_grid_bins("grid_bin_not_all_terminal.txt");
-  InitWhiteSpaceLut();
-  int N = 1;
-  for (int t = 0; t < N; t++) {
-    //std::cout << t << "\n";
-    LookAheadLegalization();
-    std::cout << " look-ahead legalization complete\n";
-    if (t == N-1) break;
-    alpha = alpha * (1+t);
-    //linear_system_solve();
-    //std::cout << "   linear solver complete\n";
-  }
-  std::cout << "Global Placement Complete\n";
-  //std::cout << "HPWL: " << HPWLX_new + HPWLY_new << "\n";
+void GPSimPL::UpdateLALConvergeState() {
+  HPWL_LAL_new = HPWLX_new + HPWLY_new;
+  HPWL_LAL_converge = std::fabs(1 - HPWL_LAL_new/HPWL_LAL_old) < HPWL_inter_linearSolver_precision;
+  HPWL_LAL_old = HPWL_LAL_new;
 }
 
 void GPSimPL::StartPlacement() {
-  BlockLocInit();
   CGInit();
-  InitLAL();
+  LookAheadLgInit();
+
+  BlockLocInit();
   InitialPlacement();
   for (int i=0; i<look_ahead_iter_max; ++i) {
     LookAheadLegalization();
-    if (true) { // if HPWL satisfies some conditions
+    UpdateLALConvergeState();
+    if (HPWL_LAL_converge) { // if HPWL sconverges
       break;
     } else {
       UpdateAnchorLoc();
-      UpdateAlpha();
+      UpdateAnchorNetWeight();
     }
-    QuadraticPlacment();
+    QuadraticPlacementWithAnchor();
   }
   ReportHPWL();
-  std::cout << "Global Placement compelte\n";
+  std::cout << "Global Placement complete\n";
+
+  CGClose();
+  LookAheadClose();
 }
 
 void GPSimPL::write_all_terminal_grid_bins(std::string const &name_of_file) {

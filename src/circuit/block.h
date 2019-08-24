@@ -60,6 +60,7 @@ class Block {
   double Y() const;
   void SetMovable(bool movable);
   bool IsMovable() const;
+  bool IsFixed() const;
   int Area() const;
   void SetOrient(BlockOrient &orient);
   BlockOrient Orient() const;

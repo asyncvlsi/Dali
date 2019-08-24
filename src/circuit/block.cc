@@ -86,6 +86,10 @@ bool Block::IsMovable() const {
   return movable_;
 }
 
+bool Block::IsFixed() const {
+  return  !movable_;
+}
+
 int Block::Area() const {
   return Height() * Width();
 }
