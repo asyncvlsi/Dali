@@ -32,7 +32,7 @@ class GridBin {
   int URX() { return right; }
   int URY() { return top; }
   bool is_all_terminal() { return all_terminal; }
-  bool is_over_fill() { return over_fill; }
+  bool OverFill() { return over_fill; }
   void create_adjacent_bin_list(int GRID_NUM);
 };
 

@@ -30,6 +30,7 @@ class GPSimPL: public Placer {
   double cg_precision = 0.0005;
   int cg_iteration_max_num = 30;
   double HPWL_intra_linearSolver_precision = 0.001;
+  int look_ahead_iter_max = 1;
  public:
   GPSimPL();
   GPSimPL(double aspectRatio, double fillingRate);
@@ -64,6 +65,7 @@ class GPSimPL: public Placer {
   void BuildProblemB2BY();
   void SolveProblemX();
   void SolveProblemY();
+  void InitialPlacement();
 
   // look ahead legalization member function implemented below
   int grid_bin_height;
@@ -74,8 +76,9 @@ class GPSimPL: public Placer {
   std::vector< std::vector<int> > grid_bin_white_space_LUT;
   void InitGridBins();
   void InitWhiteSpaceLut();
+  int LookUpWhiteSpace(GridBinIndex const &ll_index, GridBinIndex const &ur_index);
+  void InitLAL();
   void ClearGridBinFlag();
-  int WhiteSpace(GridBinIndex const &ll_index, GridBinIndex const &ur_index);
   void UpdateGridBinState();
 
   std::vector< GridBinCluster > cluster_list;
@@ -91,23 +94,20 @@ class GPSimPL: public Placer {
   void PlaceBlkInBox(BoxBin &box);
   void PlaceBlkInBoxBisection(BoxBin &box);
   bool RecursiveBisectionBlkSpreading();
-  void LookAheadLegal();
 
   void add_anchor_x();
   void add_anchor_y();
   void BackUpBlkLoc();
-  void InitialPlacement();
-  void InitLAL();
 
   void LookAheadLegalization();
   void UpdateAnchorLoc();
   void BuildProblemB2BWithAnchor(Eigen::VectorXd &b);
   void BuildProblemB2BWithAnchorX();
   void BuildProblemB2BWithAnchorY();
-
+  void QuadraticPlacment();
+  void UpdateAlpha();
   void linear_system_solve();
   void global_placement ();
-  void global_placer();
 
   void DrawBlockNetList(std::string const &name_of_file= "block_net_list.txt");
   void StartPlacement() override;

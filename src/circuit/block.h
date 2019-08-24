@@ -66,7 +66,7 @@ class Block {
   std::string OrientStr() const;
   void IncreX(double amount);
   void IncreY(double amount);
-  bool is_overlap(const Block &rhs) const;
+  bool IsOverlap(const Block &rhs) const;
   void SetAux(BlockAux *aux);
   BlockAux *Aux();
 

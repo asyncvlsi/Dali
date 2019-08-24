@@ -124,7 +124,7 @@ void Block::IncreY(double amount) {
   lly_ += amount;
 }
 
-bool Block::is_overlap(const Block &rhs) const{
+bool Block::IsOverlap(const Block &rhs) const{
   bool not_overlap = LLX() > rhs.URX() || rhs.LLX() > URX() || LLY() > rhs.URY() || rhs.LLY() > URY();
   return !not_overlap;
 }
