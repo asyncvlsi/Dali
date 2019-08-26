@@ -15,7 +15,7 @@ Placer::Placer() {
   circuit_ = nullptr;
 }
 
-Placer::Placer(double aspectRatio, double fillingRate) : aspect_ratio_(aspectRatio), filling_rate_(fillingRate) {
+Placer::Placer(double aspect_ratio, double filling_rate) : aspect_ratio_(aspect_ratio), filling_rate_(filling_rate) {
   left_ = 0;
   right_ = 0;
   bottom_ = 0;
@@ -200,6 +200,11 @@ void Placer::TakeOver(Placer *placer) {
   bottom_ = placer->Bottom();
   top_ = placer->Top();
   circuit_ = placer->GetCircuit();
+}
+
+void Placer::SanityCheck() {
+  double epsilon = 1e-3;
+  Assert(filling_rate_ > epsilon, "Filling rate should be in a proper range, for example [0.1, 1], current value: " + std::to_string(filling_rate_));
 }
 
 void Placer::GenMATLABScript(std::string const &name_of_file) {

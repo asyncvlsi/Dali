@@ -1324,6 +1324,7 @@ void GPSimPL::UpdateLALConvergeState() {
 }
 
 void GPSimPL::StartPlacement() {
+  SanityCheck();
   CGInit();
   LookAheadLgInit();
 
