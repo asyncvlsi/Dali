@@ -4,6 +4,8 @@
 
 #include "misc.h"
 
+#define USEDEGBUG
+
 void Assert(bool e, const std::string &error_message) {
   if (!e) {
     std::cout << "FATAL ERROR:" << std::endl;
@@ -13,8 +15,10 @@ void Assert(bool e, const std::string &error_message) {
 }
 
 void Warning(bool e, const std::string &warning_message) {
+  #ifndef USEDEGBUG
   if (e) {
     std::cout << "WARNING:" << std::endl;
     std::cout << "\t" << warning_message << std::endl;
   }
+  #endif
 }

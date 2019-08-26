@@ -44,3 +44,10 @@ void GridBin::create_adjacent_bin_list(int GRID_NUM) {
     adjacent_bin_index.push_back(tmp_index);
   }
 }
+
+void GridBin::Report() {
+  std::cout << "  block count: " << cell_list.size() << std::endl;
+  std::cout << "  block area:  " << cell_area << std::endl;
+  std::cout << "  white space: " << white_space << std::endl;
+  std::cout << "  over fill: " << over_fill << std::endl;
+}

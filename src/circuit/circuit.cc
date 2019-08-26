@@ -113,12 +113,10 @@ void Circuit::AddBlock(std::string &block_name, BlockType *block_type, int llx, 
   tot_width_ += block_list.back().Width();
   tot_height_ += block_list.back().Height();
   if (block_list.back().IsMovable()) {
+    ++tot_movable_blk_num_;
     tot_mov_block_area_ += block_list.back().Area();
     tot_mov_width_ += block_list.back().Width();
     tot_mov_height_ += block_list.back().Height();
-  }
-  if (block_list.back().IsMovable()) {
-    ++tot_movable_blk_num_;
   }
   if ( block_list.back().Height() < min_height_ ) {
     min_height_ = block_list.back().Height();
@@ -267,7 +265,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
       getline(ist, line);
       if (line.find("LAYER") != std::string::npos) {
         SetGridValue(1.0/lef_database_microns);
-        std::cout << "MANUFACTURINGGRID not specified explicitly, using 1.0/DATABASE MICRONS instead\n";
+        std::cout << "  WARNING:\n  MANUFACTURINGGRID not specified explicitly, using 1.0/DATABASE MICRONS instead\n";
       }
       if (line.find("MANUFACTURINGGRID") != std::string::npos) {
         std::vector<std::string> grid_field;
@@ -305,15 +303,13 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
             std::vector<std::string> size_field;
             ParseLine(line, size_field);
             try {
-              width = (int)(std::stod(size_field[1])/grid_value_);
-              height = (int)(std::stod(size_field[3])/grid_value_);
+              width = (int)(std::round(std::stod(size_field[1])/grid_value_));
+              height = (int)(std::round(std::stod(size_field[3])/grid_value_));
             } catch (...) {
               Assert(false, "Invalid stod conversion:\n" + line);
             }
             new_block_type = AddBlockType(block_type_name, width, height);
-            //std::cout << "  type width, height: "
-            //          << block_type_list.back().Width() << " "
-            //          << block_type_list.back().Height() << "\n";
+            //std::cout << "  type width, height: " << block_type_list.back().Width() << " " << block_type_list.back().Height() << "\n";
           }
           getline(ist, line);
         }
@@ -526,6 +522,12 @@ void Circuit::ReportNetMap() {
   }
 }
 
+void Circuit::ReportBriefSummary() {
+  std::cout << "  movable blocks: " << TotMovableBlockNum() << "\n";
+  std::cout << "  blocks: " << TotBlockNum() << "\n";
+  std::cout << "  nets: " << net_list.size() << "\n";
+}
+
 int Circuit::MinWidth() const {
   return min_width_;
 }
@@ -567,15 +569,15 @@ double Circuit::AveArea() const {
 }
 
 double Circuit::AveMovWidth() const {
-  return tot_mov_width_/(double)TotBlockNum();
+  return tot_mov_width_/(double)TotMovableBlockNum();
 }
 
 double Circuit::AveMovHeight() const {
-  return tot_mov_height_/(double)TotBlockNum();
+  return tot_mov_height_/(double)TotMovableBlockNum();
 }
 
 double Circuit::AveMovArea() const {
-  return tot_mov_block_area_/(double)TotBlockNum();
+  return tot_mov_block_area_/(double)TotMovableBlockNum();
 }
 
 void Circuit::NetSortBlkPin() {
@@ -605,7 +607,7 @@ double Circuit::HPWL() {
 }
 
 void Circuit::ReportHPWL() {
-  std::cout << "HPWL: " << HPWL() << "\n";
+  std::cout << "Current HPWL: " << HPWL() << "\n";
 }
 
 double Circuit::HPWLCtoCX() {

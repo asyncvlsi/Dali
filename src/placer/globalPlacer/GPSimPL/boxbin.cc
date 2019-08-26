@@ -449,7 +449,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist, i
   return true;
 }
 
-bool BoxBin::update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodelist, int &cut_line_w, int std_cell_height) {
+bool BoxBin::update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodelist, int &cut_line_w, int ave_blk_height) {
   int cell_area_low = 0;
   double cut_line = 0;
   // the above three cut-lines are for cells, thus they needs to be double
@@ -465,13 +465,13 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodeli
   Block *node, *node1;
   if (cut_direction_x) {
     int box_height = top - bottom;
-    int row_num = box_height/std_cell_height;
-    double low_white_space_total_ratio;
+    int row_num = box_height/ave_blk_height;
+    double low_white_space_total_ratio = 0.5;
     // first part, find the cut-line of white space, which the the middle of top and bottom of this box
     low_white_space_total_ratio = std::floor(row_num/2.0)/row_num;
     cut_line_w = bottom + (int)(low_white_space_total_ratio * box_height);
     /*
-    if ((box_height % std_cell_height == 0) && (box_height > std_cell_height)) {
+    if ((box_height % ave_blk_height == 0) && (box_height > ave_blk_height)) {
       //std::cout << left << " " << right << " " << bottom << " " << top << "\n";
       low_white_space_total_ratio = std::floor(row_num/2.0)/row_num;
       cut_line_w = bottom + (int)(low_white_space_total_ratio * box_height);
@@ -480,6 +480,7 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodeli
       std::cout << "Error: out of expectation, bin height is not the integer multiple of standard cell height!\n";
       exit(1);
     }*/
+
     /* second part, split the total cell_list to two part,
      * by sort cell_list based on y location in ascending order */
     size_t mini_index;

@@ -64,7 +64,7 @@ class GPSimPL: public Placer {
   void UpdateHPWLY();
   void UpdateMaxMinY();
   void UpdateMaxMinCtoCY();
-  void BuildProblemB2B(bool is_x_direction, SpMat &A, Eigen::VectorXd &b);
+  void BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b);
   void BuildProblemB2BX();
   void BuildProblemB2BY();
   void SolveProblemX();
@@ -108,9 +108,9 @@ class GPSimPL: public Placer {
   void QuadraticPlacementWithAnchor();
   void UpdateAnchorNetWeight();
 
-  void DrawBlockNetList(std::string const &name_of_file= "block_net_list.txt");
   void StartPlacement() override;
 
+  void DrawBlockNetList(std::string const &name_of_file= "block_net_list.txt");
   void write_all_terminal_grid_bins(std::string const &name_of_file);
   void write_not_all_terminal_grid_bins(std::string const &name_of_file);
   void write_overfill_grid_bins(std::string const &name_of_file);

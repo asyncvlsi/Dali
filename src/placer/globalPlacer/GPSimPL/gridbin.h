@@ -34,6 +34,7 @@ class GridBin {
   bool is_all_terminal() { return all_terminal; }
   bool OverFill() { return over_fill; }
   void create_adjacent_bin_list(int GRID_NUM);
+  void Report();
 };
 
 #endif //HPCC_SRC_PLACER_GLOBALPLACER_GPSIMPL_GRIDBIN_H_

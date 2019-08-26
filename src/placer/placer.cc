@@ -148,7 +148,7 @@ int Placer::Top() {
 
 void Placer::ReportBoundaries() {
   std::cout << "Left, Right, Bottom, Top:\n";
-  std::cout << "\t" << Left() << ", " << Right() << ", " << Bottom() << ", " << Top() << "\n";
+  std::cout << "  " << Left() << ", " << Right() << ", " << Bottom() << ", " << Top() << "\n";
 }
 
 bool Placer::UpdateAspectRatio() {

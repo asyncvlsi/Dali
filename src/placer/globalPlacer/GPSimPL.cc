@@ -172,7 +172,7 @@ void GPSimPL::UpdateMaxMinCtoCY() {
   }
 }
 
-void GPSimPL::BuildProblemB2B(bool is_x_direction, SpMat &A, Eigen::VectorXd &b) {
+void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
   std::vector<Block> &block_list = *BlockList();
   std::vector<Net> &net_list = *NetList();
   size_t coefficients_capacity = coefficients.capacity();
@@ -284,12 +284,12 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, SpMat &A, Eigen::VectorXd &b)
 }
 
 void GPSimPL::BuildProblemB2BX() {
-  BuildProblemB2B(true, Ax, bx);
+  BuildProblemB2B(true, bx);
   Ax.setFromTriplets(coefficients.begin(), coefficients.end());
 }
 
 void GPSimPL::BuildProblemB2BY() {
-  BuildProblemB2B(false, Ay, by);
+  BuildProblemB2B(false, by);
   Ay.setFromTriplets(coefficients.begin(), coefficients.end());
 }
 
@@ -298,8 +298,8 @@ void GPSimPL::SolveProblemX() {
   cgx.compute(Ax);
   x = cgx.solveWithGuess(bx, x);
   //std::cout << "Here is the vector x:\n" << x << std::endl;
-  std::cout << "    #iterations:     " << cgx.iterations() << std::endl;
-  std::cout << "    estimated error: " << cgx.error() << std::endl;
+  //std::cout << "    #iterations:     " << cgx.iterations() << std::endl;
+  //std::cout << "    estimated error: " << cgx.error() << std::endl;
   for (long int num=0; num<x.size(); ++num) {
     if (block_list[num].IsMovable()) {
       if (x[num] < Left()) {
@@ -317,8 +317,8 @@ void GPSimPL::SolveProblemY() {
   std::vector<Block> &block_list = *BlockList();
   cgy.compute(Ay);
   y = cgy.solveWithGuess(by, y);
-  std::cout << "    #iterations:     " << cgy.iterations() << std::endl;
-  std::cout << "    estimated error: " << cgy.error() << std::endl;
+  //std::cout << "    #iterations:     " << cgy.iterations() << std::endl;
+  //std::cout << "    estimated error: " << cgy.error() << std::endl;
   for (long int num=0; num<y.size(); ++num) {
     if (block_list[num].IsMovable()) {
       if (y[num] < Bottom()) {
@@ -333,8 +333,6 @@ void GPSimPL::SolveProblemY() {
 }
 
 void GPSimPL::InitialPlacement() {
-  std::cout << "Total number of movable cells: " << GetCircuit()->TotMovableBlockNum() << "\n";
-  std::cout << "Total number of cells: " << TotBlockNum() << "\n";
   std::vector<Block> &block_list = *BlockList();
 
   HPWLX_converge = false;
@@ -348,7 +346,7 @@ void GPSimPL::InitialPlacement() {
     SolveProblemX();
     UpdateCGFlagsX();
     if (HPWLX_converge) {
-      std::cout << "iterations x:     " << i << "\n";
+      //std::cout << "iterations x:     " << i << "\n";
       break;
     }
   }
@@ -365,24 +363,13 @@ void GPSimPL::InitialPlacement() {
     SolveProblemY();// Solving:
     UpdateCGFlagsY();
     if (HPWLY_converge) {
-      std::cout << "iterations y:     " << i << "\n";
+      //std::cout << "iterations y:     " << i << "\n";
       break;
     }
   }
 
   std::cout << "Initial Placement Complete\n";
   ReportHPWL();
-}
-
-void GPSimPL::DrawBlockNetList(std::string const &name_of_file) {
-  std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open input file " + name_of_file);
-  ost << Left() << " " << Bottom() << " " << Right() - Left() << " " << Top() - Bottom() << "\n";
-  std::vector<Block> &block_list = *BlockList();
-  for (auto &&block: block_list) {
-    ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";
-  }
-  ost.close();
 }
 
 void GPSimPL::InitGridBins() {
@@ -393,7 +380,7 @@ void GPSimPL::InitGridBins() {
 
   /* determine the width and height of grid bin based on the boundaries and given grid_cnt */
 
-  grid_bin_height = (int)(std::round(8 * GetCircuit()->AveMovHeight()));
+  grid_bin_height = (int)(std::round(4 * GetCircuit()->AveMovHeight()));
   grid_cnt = std::ceil((double)(Top() - Bottom()) / grid_bin_height);
   grid_bin_width = std::ceil((double)(Right() - Left()) / grid_cnt);
 
@@ -617,7 +604,7 @@ void GPSimPL::UpdateGridBinState() {
   std::vector<Block> &block_list = *BlockList();
   int x_index, y_index;
   for (size_t i=0; i<block_list.size(); i++) {
-    if (!block_list[i].IsMovable()) continue;
+    if (block_list[i].IsFixed()) continue;
     x_index = (int)std::floor((block_list[i].X() - Left())/grid_bin_width);
     y_index = (int)std::floor((block_list[i].Y() - Bottom())/grid_bin_height);
     if (x_index < 0) {
@@ -1124,17 +1111,6 @@ void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
     //std::cout << " Q.size: " << box_Q.size() << "\n";
     BoxBin &front_box = box_Q.front();
     if (front_box.cell_list.size() > max_cell_num_in_box) {
-      /*
-      std::cout << front_box.cell_list.size() << "\n";
-      std::cout << front_box.left << " " << front_box.right << " " << front_box.bottom << " " << front_box.top << "\n";
-      std::cout << front_box.total_cell_area << "\n";
-      Node *node;
-      for (auto &&cell_id: front_box.cell_list) {
-        node = &block_list[cell_id];
-        std::cout << node->x0 << ", " << node->y0 << "\n";
-      }
-      */
-
       // split box and push it to box_Q
       BoxBin box1, box2;
       box1.ur_index = front_box.ur_index;
@@ -1145,6 +1121,7 @@ void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
       box2.right = front_box.right;
 
       int ave_blk_height = std::ceil(GetCircuit()->AveMovHeight());
+      //std::cout << "Average block height: " << ave_blk_height << "  " << GetCircuit()->AveMovHeight() << "\n";
       front_box.cut_direction_x = (front_box.top - front_box.bottom > ave_blk_height);
       int cut_line_w = 0; // cut-line for White space
       front_box.update_cut_point_cell_list_low_high_leaf(block_list, cut_line_w, ave_blk_height);
@@ -1172,17 +1149,9 @@ void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
 
       if (!box1.cell_list.empty()) {
         box_Q.push(box1);
-        if ((box1.top - box1.bottom) % ave_blk_height != 0) {
-          std::cout << "Error in grib bin split\n";
-          std::cout << box1.left << " " << box1.right << " " << box1.bottom << " " << box1.top << "\n";
-        }
       }
       if (!box2.cell_list.empty()) {
         box_Q.push(box2);
-        if ((box2.top - box2.bottom) % ave_blk_height != 0) {
-          std::cout << "Error in grib bin split\n";
-          std::cout << box2.left << " " << box2.right << " " << box2.bottom << " " << box2.top << "\n";
-        }
       }
     } else {
       // shift cells to the center of the final box
@@ -1204,11 +1173,7 @@ void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
 
 bool GPSimPL::RecursiveBisectionBlkSpreading() {
   /* keep splitting the biggest box to many small boxes, and keep update the shape of each box and cells should be assigned to the box */
-  int t = 0;
   while(!queue_box_bin.empty()) {
-    //for (size_t t=0; t<11000; t++) {
-    std::cout << t++ << "\n";
-    std::cout << " Q.size: " << queue_box_bin.size() << "\n";
     if (queue_box_bin.empty()) break;
     BoxBin &box = queue_box_bin.front();
     /* when the box is a grid bin box or a smaller box with no terminals inside, start moving cells to the box */
@@ -1220,12 +1185,7 @@ bool GPSimPL::RecursiveBisectionBlkSpreading() {
         continue;
       }
       /* if no terminals in side a box, do cell placement inside the box */
-      //PlaceBlkInBox(box);
-      //cell_placement_in_box_molecular_dynamics(box);
       PlaceBlkInBoxBisection(box);
-      //box.write_cell_region("first_cell_bounding_box.txt");
-      //box.write_box_boundary("first_bounding_box.txt");
-      //box.write_cell_in_box("nodes.txt", block_list);
       queue_box_bin.pop();
     } else {
       SplitBox(box);
@@ -1291,8 +1251,6 @@ void GPSimPL::BuildProblemB2BWithAnchorY() {
 }
 
 void GPSimPL::QuadraticPlacementWithAnchor() {
-  std::cout << "Total number of movable cells: " << GetCircuit()->TotMovableBlockNum() << "\n";
-  std::cout << "Total number of cells: " << TotBlockNum() << "\n";
   std::vector<Block> &block_list = *BlockList();
 
   HPWLX_converge = false;
@@ -1306,7 +1264,7 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
     SolveProblemX();
     UpdateCGFlagsX();
     if (HPWLX_converge) {
-      std::cout << "iterations x:     " << i << "\n";
+      //std::cout << "iterations x:     " << i << "\n";
       break;
     }
   }
@@ -1321,7 +1279,7 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
     SolveProblemY();
     UpdateCGFlagsY();
     if (HPWLY_converge) {
-      std::cout << "iterations y:     " << i << "\n";
+      //std::cout << "iterations y:     " << i << "\n";
       break;
     }
   }
@@ -1337,12 +1295,21 @@ void GPSimPL::LookAheadLegalization() {
   BackUpBlkLoc();
   ClearGridBinFlag();
 
-  do {
+  /*do {
     UpdateGridBinState();
     UpdateClusterList();
     FindMinimumBoxForFirstCluster();
     RecursiveBisectionBlkSpreading();
-  } while (!cluster_list.empty());
+  } while (!cluster_list.empty());*/
+
+  UpdateGridBinState();
+  grid_bin_matrix[3][3].Report();
+  grid_bin_matrix[4][3].Report();
+  write_not_overfill_grid_bins("grid_bin_not_overfill.txt");
+  write_overfill_grid_bins("grid_bin_overfill.txt");
+  UpdateClusterList();
+  //FindMinimumBoxForFirstCluster();
+  //RecursiveBisectionBlkSpreading();
 
   UpdateHPWLX();
   UpdateHPWLY();
@@ -1362,9 +1329,12 @@ void GPSimPL::StartPlacement() {
 
   BlockLocInit();
   InitialPlacement();
+
+  DrawBlockNetList();
   for (int i=0; i<look_ahead_iter_max; ++i) {
     LookAheadLegalization();
     UpdateLALConvergeState();
+    break;
     if (HPWL_LAL_converge) { // if HPWL sconverges
       break;
     } else {
@@ -1378,6 +1348,19 @@ void GPSimPL::StartPlacement() {
 
   CGClose();
   LookAheadClose();
+  DrawBlockNetList("cg_result.txt");
+}
+
+void GPSimPL::DrawBlockNetList(std::string const &name_of_file) {
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open input file " + name_of_file);
+  ost << Left() << " " << Bottom() << " " << Right() - Left() << " " << Top() - Bottom() << "\n";
+  std::vector<Block> &block_list = *BlockList();
+  for (auto &&block: block_list) {
+    //ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";
+    ost << block.X() << " " << block.Y() << " " << 100 << " " << 100 << "\n";
+  }
+  ost.close();
 }
 
 void GPSimPL::write_all_terminal_grid_bins(std::string const &name_of_file) {
@@ -1447,7 +1430,7 @@ void GPSimPL::write_overfill_grid_bins(std::string const &name_of_file) {
       height = bin.top - bin.bottom;
       low_x = bin.left;
       low_y = bin.bottom;
-      int N = 3;
+      int N = 10;
       double step_x = width/N, step_y = height/N;
       if (bin.OverFill()) {
         for (int j = 0; j < N; j++) {
@@ -1475,7 +1458,7 @@ void GPSimPL::write_not_overfill_grid_bins(std::string const &name_of_file) {
       height = bin.top - bin.bottom;
       low_x = bin.left;
       low_y = bin.bottom;
-      int N = 3;
+      int N = 10;
       double step_x = width/N, step_y = height/N;
       if (!bin.OverFill()) {
         for (int j = 0; j < N; j++) {

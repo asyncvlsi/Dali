@@ -63,7 +63,7 @@ double Block::URY() const{
 }
 
 void Block::SetCenterX(double center_x) {
-  llx_ = (int) (center_x - Width()/2.0);
+  llx_ = center_x - Width()/2.0;
 }
 
 double Block::X() const{
@@ -71,7 +71,7 @@ double Block::X() const{
 }
 
 void Block::SetCenterY(double center_y) {
-  lly_ = (int) (center_y - Height()/2.0);
+  lly_ = center_y - Height()/2.0;
 }
 
 double Block::Y() const{

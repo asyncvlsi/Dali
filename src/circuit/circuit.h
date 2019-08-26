@@ -82,6 +82,7 @@ class Circuit {
   void ReportBlockMap();
   void ReportNetList();
   void ReportNetMap();
+  void ReportBriefSummary();
 
   int MinWidth() const;
   int MaxWidth() const;

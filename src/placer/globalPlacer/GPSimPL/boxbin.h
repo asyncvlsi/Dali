@@ -71,12 +71,12 @@ class BoxBin {
   void expand_box(int GRID_NUM);
   bool write_box_boundary(std::string const &NameOfFile);
   bool write_cell_region(std::string const &NameOfFile="first_cell_bounding_box.txt");
-  double white_space_LUT(std::vector< std::vector< int > > &grid_bin_white_space_LUT, GridBinIndex &ll, GridBinIndex &ur);
+  static double white_space_LUT(std::vector< std::vector< int > > &grid_bin_white_space_LUT, GridBinIndex &ll, GridBinIndex &ur);
   void update_cell_in_box(std::vector<std::vector<GridBin> > &grid_bin_matrix);
   bool write_cell_in_box(std::string const &NameOfFile, std::vector<Block> &Nodelist);
   bool update_cut_index_white_space(std::vector< std::vector< int > > &grid_bin_white_space_LUT);
   bool update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist, int &box1_total_white_space, int &box2_total_white_space);
-  bool update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodelist, int &cut_line_w, int std_cell_height);
+  bool update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodelist, int &cut_line_w, int ave_blk_height);
 };
 
 #endif //HPCC_SRC_PLACER_GLOBALPLACER_GPSIMPL_BOXBIN_H_

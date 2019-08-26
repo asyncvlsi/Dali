@@ -20,8 +20,8 @@ int main() {
   std::string lef_file, def_file;
   lef_file = "out_1K.lef";
   def_file = "out_1K.def";
-  lef_file = adaptec1lef;
-  def_file = adaptec1def;
+  //lef_file = adaptec1lef;
+  //def_file = adaptec1def;
   circuit.ReadLefFile(lef_file);
   circuit.ReadDefFile(def_file);
 
@@ -31,6 +31,7 @@ int main() {
   //circuit.ReportBlockMap();
   //circuit.ReportNetList();
   //circuit.ReportNetMap();
+  circuit.ReportBriefSummary();
 
   Placer *gb_placer = new GPSimPL;
   gb_placer->SetInputCircuit(&circuit);
@@ -46,7 +47,7 @@ int main() {
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
   //gb_placer->GenMATLABScript("gb_placement_result.txt");
-  gb_placer->SaveNodeTerminal();
+  //gb_placer->SaveNodeTerminal();
 
   /*
   Placer *legalizer = new TetrisLegalizer;
