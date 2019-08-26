@@ -18,8 +18,8 @@ int main() {
   std::string adaptec1def = "../test/adaptec1/adaptec1.def";
 
   std::string lef_file, def_file;
-  lef_file = "out_1K.lef";
-  def_file = "out_1K.def";
+  lef_file = "../test/out_1K.lef";
+  def_file = "../test/out_1K.def";
   //lef_file = adaptec1lef;
   //def_file = adaptec1def;
   circuit.ReadLefFile(lef_file);
