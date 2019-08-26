@@ -380,7 +380,7 @@ void GPSimPL::InitGridBins() {
 
   /* determine the width and height of grid bin based on the boundaries and given grid_cnt */
 
-  grid_bin_height = (int)(std::round(4 * GetCircuit()->AveMovHeight()));
+  grid_bin_height = (int)(std::round(8 * GetCircuit()->AveMovHeight()));
   grid_cnt = std::ceil((double)(Top() - Bottom()) / grid_bin_height);
   grid_bin_width = std::ceil((double)(Right() - Left()) / grid_cnt);
 
@@ -620,9 +620,7 @@ void GPSimPL::UpdateGridBinState() {
       y_index = grid_cnt - 1;
     }
     grid_bin_matrix[x_index][y_index].cell_list.push_back(i);
-    if (grid_bin_matrix[x_index][y_index].white_space > 0) {
-      grid_bin_matrix[x_index][y_index].filling_rate += block_list[i].Area()/(double)(grid_bin_matrix[x_index][y_index].white_space);
-    }
+    grid_bin_matrix[x_index][y_index].cell_area += block_list[i].Area();
   }
 
   /* below is the criterion to decide whether a grid bin is over_filled or not
@@ -641,6 +639,7 @@ void GPSimPL::UpdateGridBinState() {
           bin.over_fill = true;
         }
       } else {
+        bin.filling_rate = bin.cell_area/(double)bin.white_space;
         if (bin.filling_rate > FillingRate()) {
           bin.over_fill = true;
         }
@@ -1296,21 +1295,21 @@ void GPSimPL::LookAheadLegalization() {
   BackUpBlkLoc();
   ClearGridBinFlag();
 
-  /*do {
+  do {
     UpdateGridBinState();
     UpdateClusterList();
     FindMinimumBoxForFirstCluster();
     RecursiveBisectionBlkSpreading();
-  } while (!cluster_list.empty());*/
+  } while (!cluster_list.empty());
 
-  UpdateGridBinState();
+  /*UpdateGridBinState();
   grid_bin_matrix[3][3].Report();
   grid_bin_matrix[4][3].Report();
   write_not_overfill_grid_bins("grid_bin_not_overfill.txt");
   write_overfill_grid_bins("grid_bin_overfill.txt");
   UpdateClusterList();
-  //FindMinimumBoxForFirstCluster();
-  //RecursiveBisectionBlkSpreading();
+  FindMinimumBoxForFirstCluster();
+  RecursiveBisectionBlkSpreading();*/
 
   UpdateHPWLX();
   UpdateHPWLY();
@@ -1358,8 +1357,8 @@ void GPSimPL::DrawBlockNetList(std::string const &name_of_file) {
   ost << Left() << " " << Bottom() << " " << Right() - Left() << " " << Top() - Bottom() << "\n";
   std::vector<Block> &block_list = *BlockList();
   for (auto &&block: block_list) {
-    //ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";
-    ost << block.X() << " " << block.Y() << " " << 100 << " " << 100 << "\n";
+    ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";
+    //ost << block.X() << " " << block.Y() << " " << 1 << " " << 1 << "\n";
   }
   ost.close();
 }

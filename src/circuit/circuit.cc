@@ -109,12 +109,17 @@ void Circuit::AddBlock(std::string &block_name, BlockType *block_type, int llx, 
   std::pair<const std::string, int>* name_num_pair_ptr = &(*block_name_map.find(block_name));
   block_list.emplace_back(block_type, name_num_pair_ptr, llx, lly, movable, orient);
 
+  auto old_tot_area = tot_block_area_;
+
   tot_block_area_ += block_list.back().Area();
+  Assert(old_tot_area < tot_block_area_, "Total Block Area Overflow, choose a different MANUFACTURINGGRID/unit or contact Yihang");
   tot_width_ += block_list.back().Width();
   tot_height_ += block_list.back().Height();
   if (block_list.back().IsMovable()) {
     ++tot_movable_blk_num_;
+    old_tot_area = tot_mov_block_area_;
     tot_mov_block_area_ += block_list.back().Area();
+    Assert(old_tot_area < tot_mov_block_area_, "Total Movable Block Area Overflow, choose a different MANUFACTURINGGRID/unit or contact Yihang");
     tot_mov_width_ += block_list.back().Width();
     tot_mov_height_ += block_list.back().Height();
   }
@@ -237,7 +242,7 @@ double Circuit::GridValue() {
 void Circuit::ReadLefFile(std::string const &name_of_file) {
   std::ifstream ist(name_of_file.c_str());
   Assert(ist.is_open(), "Cannot open input file " + name_of_file);
-  std::cout << "Start reading lef file\n";
+  std::cout << "Start reading lef file" << std::endl;
   std::string line;
 
   // 1. find DATABASE MICRONS
@@ -355,13 +360,13 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
       Assert(!new_block_type->Empty(), "MACRO has no PINs: " + *new_block_type->Name());
     }
   }
-  std::cout << "lef file reading complete\n";
+  std::cout << "lef file reading complete" << std::endl;
 }
 
 void Circuit::ReadDefFile(std::string const &name_of_file) {
   std::ifstream ist(name_of_file.c_str());
   Assert(ist.is_open(), "Cannot open input file " + name_of_file);
-  std::cout << "Start reading def file\n";
+  std::cout << "Start reading def file" << std::endl;
 
   std::string line;
   def_distance_microns = 0;

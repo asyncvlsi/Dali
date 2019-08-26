@@ -49,12 +49,12 @@ int main() {
   //gb_placer->GenMATLABScript("gb_placement_result.txt");
   //gb_placer->SaveNodeTerminal();
 
-  /*
+
   Placer *legalizer = new TetrisLegalizer;
   legalizer->TakeOver(gb_placer);
   legalizer->StartPlacement();
   legalizer->GenMATLABScript("legalizer_result.txt");
-  */
+
 
 
   Time = clock() - Time;
