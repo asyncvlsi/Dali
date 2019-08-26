@@ -620,7 +620,9 @@ void GPSimPL::UpdateGridBinState() {
       y_index = grid_cnt - 1;
     }
     grid_bin_matrix[x_index][y_index].cell_list.push_back(i);
-    grid_bin_matrix[x_index][y_index].cell_area += block_list[i].Area();
+    if (grid_bin_matrix[x_index][y_index].white_space > 0) {
+      grid_bin_matrix[x_index][y_index].filling_rate += block_list[i].Area()/(double)(grid_bin_matrix[x_index][y_index].white_space);
+    }
   }
 
   /* below is the criterion to decide whether a grid bin is over_filled or not
@@ -639,7 +641,6 @@ void GPSimPL::UpdateGridBinState() {
           bin.over_fill = true;
         }
       } else {
-        bin.filling_rate = bin.cell_area/(double)bin.white_space;
         if (bin.filling_rate > FillingRate()) {
           bin.over_fill = true;
         }
