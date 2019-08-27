@@ -168,6 +168,27 @@ Net *Circuit::AddNet(std::string &net_name, double weight) {
   return &net_list.back();
 }
 
+bool Circuit::CreatePseudoNet(std::string &drive_blk, std::string &drive_pin,
+                              std::string &load_blk, std::string &load_pin, double weight) {
+
+}
+
+bool Circuit::CreatePseudoNet(Block *drive_blk, int drive_pin, Block *load_blk, int load_pin, double weight = 1) {
+
+}
+
+bool Circuit::RemovePseudoNet(std::string &drive_blk, std::string &drive_pin, std::string &load_blk, std::string &load_pin) {
+
+}
+
+bool Circuit::RemovePseudoNet(Block *drive_blk, int drive_pin, Block *load_blk, int load_pin) {
+
+}
+
+void Circuit::RemoveAllPseudoNets() {
+
+}
+
 void Circuit::ParseLine(std::string &line, std::vector<std::string> &field_list) {
   std::vector<char> delimiter_list;
   delimiter_list.push_back(' ');

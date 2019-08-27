@@ -69,6 +69,14 @@ class Circuit {
   void AddToNetMap(std::string &net_name);
   Net *AddNet(std::string &net_name, double weight = 1);
 
+  std::vector< Net > pseudo_net_list;
+  std::map<std::string, size_t> pseudo_net_name_map;
+  bool CreatePseudoNet(std::string &drive_blk, std::string &drive_pin, std::string &load_blk, std::string &load_pin, double weight = 1);
+  bool CreatePseudoNet(Block *drive_blk, int drive_pin, Block *load_blk, int load_pin, double weight = 1);
+  bool RemovePseudoNet(std::string &drive_blk, std::string &drive_pin, std::string &load_blk, std::string &load_pin);
+  bool RemovePseudoNet(Block *drive_blk, int drive_pin, Block *load_blk, int load_pin);
+  void RemoveAllPseudoNets();
+
   // read lef/def file using above member functions
   static void ParseLine(std::string &line, std::vector<std::string> &field_list);
   static BlockOrient StrToOrient(std::string &str_orient);
