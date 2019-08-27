@@ -1325,18 +1325,17 @@ void GPSimPL::UpdateLALConvergeState() {
 
 void GPSimPL::StartPlacement() {
   SanityCheck();
+
   CGInit();
   LookAheadLgInit();
-
   BlockLocInit();
   InitialPlacement();
 
-  DrawBlockNetList();
   for (int i=0; i<look_ahead_iter_max; ++i) {
     LookAheadLegalization();
     UpdateLALConvergeState();
-    break;
     if (HPWL_LAL_converge) { // if HPWL sconverges
+      std::cout << "Iterative look-ahead legalization complete" << std::endl;
       break;
     } else {
       UpdateAnchorLoc();
@@ -1344,12 +1343,12 @@ void GPSimPL::StartPlacement() {
     }
     QuadraticPlacementWithAnchor();
   }
-  ReportHPWL();
+  //ReportHPWL();
   std::cout << "Global Placement complete\n";
 
   CGClose();
   LookAheadClose();
-  DrawBlockNetList("cg_result.txt");
+  //DrawBlockNetList("cg_result.txt");
 }
 
 void GPSimPL::DrawBlockNetList(std::string const &name_of_file) {

@@ -17,8 +17,8 @@ class GridBin {
   int left;
   int right;
   int area;
-  int white_space;
-  int cell_area;
+  long int white_space;
+  long int cell_area;
   double filling_rate;
   bool all_terminal;
   bool over_fill; // a grid bin is over-filled, if filling rate is larger than the target, or cells locate on terminals
