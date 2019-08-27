@@ -15,10 +15,10 @@ class Circuit {
   // statistical data of the circuit
   int tot_width_;
   int tot_height_;
-  int tot_block_area_;
+  long int tot_block_area_;
   int tot_mov_width_;
   int tot_mov_height_;
-  int tot_mov_block_area_;
+  long int tot_mov_block_area_;
   int tot_movable_blk_num_;
   int min_width_;
   int max_width_;
@@ -88,7 +88,7 @@ class Circuit {
   int MaxWidth() const;
   int MinHeight() const;
   int MaxHeight() const;
-  int TotArea() const;
+  long int TotArea() const;
   int TotBlockNum() const;
   int TotMovableBlockNum() const;
   double AveWidth() const;

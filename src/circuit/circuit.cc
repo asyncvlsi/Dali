@@ -549,7 +549,7 @@ int Circuit::MaxHeight() const {
   return  max_height_;
 }
 
-int Circuit::TotArea() const {
+long int Circuit::TotArea() const {
   return tot_block_area_;
 }
 
