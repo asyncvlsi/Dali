@@ -612,7 +612,7 @@ double Circuit::HPWL() {
 }
 
 void Circuit::ReportHPWL() {
-  std::cout << "Current HPWL: " << HPWL() << "\n";
+  std::cout << "  Current HPWL: " << HPWL() << "\n";
 }
 
 double Circuit::HPWLCtoCX() {

@@ -14,14 +14,14 @@ int main() {
   time_t Time = clock();
   Circuit circuit;
 
-  std::string adaptec1lef = "../test/adaptec1/adaptec1.lef";
-  std::string adaptec1def = "../test/adaptec1/adaptec1.def";
+  std::string adaptec1_lef = "../test/adaptec1/adaptec1.lef";
+  std::string adaptec1_def = "../test/adaptec1/adaptec1.def";
 
   std::string lef_file, def_file;
   lef_file = "../test/out_1K.lef";
   def_file = "../test/out_1K.def";
-  //lef_file = adaptec1lef;
-  //def_file = adaptec1def;
+  //lef_file = adaptec1_lef;
+  //def_file = adaptec1_def;
   circuit.ReadLefFile(lef_file);
   circuit.ReadDefFile(def_file);
 
@@ -54,6 +54,7 @@ int main() {
   legalizer->TakeOver(gb_placer);
   legalizer->StartPlacement();
   legalizer->GenMATLABScript("legalizer_result.txt");
+  legalizer->SaveDEFFile("circuit.def", def_file);
 
 
 

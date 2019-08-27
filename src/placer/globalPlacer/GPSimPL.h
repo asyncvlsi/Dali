@@ -32,7 +32,7 @@ class GPSimPL: public Placer {
   double HPWL_intra_linearSolver_precision = 0.001;
 
   double alpha = 0.01;
-  int look_ahead_iter_max = 1;
+  int look_ahead_iter_max = 20;
   double HPWL_LAL_new = 0;
   double HPWL_LAL_old = 1e30;
   bool HPWL_LAL_converge = false;

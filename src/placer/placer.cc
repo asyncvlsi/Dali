@@ -246,12 +246,9 @@ bool Placer::SaveNodeTerminal(std::string const &terminal_file, std::string cons
   return true;
 }
 
-bool Placer::SaveDEFFile(std::string const &NameOfFile) {
-  std::ofstream ost(NameOfFile.c_str());
-  if (!ost.is_open()) {
-    std::cout << "Cannot open file " << NameOfFile << "\n";
-    return false;
-  }
+void Placer::SaveDEFFile(std::string const &name_of_file) {
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
 
   // 1. print file header?
   ost << "VERSION 5.8 ;\n"
@@ -292,5 +289,60 @@ bool Placer::SaveDEFFile(std::string const &NameOfFile) {
   }
   ost << "END NETS\n\n";
   ost << "END DESIGN\n";
-  return true;
+}
+
+void Placer::SaveDEFFile(std::string const &name_of_file, std::string const &input_def_file) {
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+  std::ifstream ist(input_def_file.c_str());
+  Assert(ist.is_open(), "Cannot open output file: " + input_def_file);
+
+  std::string line;
+  // 1. print file header, copy from def file
+  while (line.find("COMPONENTS") == std::string::npos && !ist.eof()) {
+    getline(ist,line);
+    ost << line << "\n";
+  }
+
+  // 2. print component
+  //std::cout << _circuit->block_list.size() << "\n";
+  for (auto &&block: circuit_->block_list) {
+    ost << "- "
+        << *(block.Name()) << " "
+        << *(block.Type()->Name()) << " + "
+        << "PLACED"
+        << " ("
+        << " " + std::to_string((int)(block.LLX()*circuit_->def_distance_microns*circuit_->GridValue()))
+        << " " + std::to_string((int)(block.LLY()*circuit_->def_distance_microns*circuit_->GridValue()))
+        << " ) "
+        << block.OrientStr() + " ;\n";
+  }
+  ost << "END COMPONENTS\n";
+  // jump to the end of components
+  while (line.find("END COMPONENTS") == std::string::npos && !ist.eof()) {
+    getline(ist,line);
+  }
+
+  // 3. print net, copy from def file
+  while (!ist.eof()) {
+    getline(ist,line);
+    ost << line << "\n";
+  }
+  /*
+  ost << "NETS " << net_list.size() << " ;\n";
+  for (auto &&net: net_list) {
+    ost << "- "
+        << net.name() << "\n";
+    ost << " ";
+    for (auto &&pin: net.pin_list) {
+      ost << " " << pin.pin_name();
+    }
+    ost << "\n" << " ;\n";
+  }
+  ost << "END NETS\n\n";
+  ost << "END DESIGN\n";
+   */
+
+  ost.close();
+  ist.close();
 }

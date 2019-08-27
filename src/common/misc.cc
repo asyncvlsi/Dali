@@ -4,7 +4,7 @@
 
 #include "misc.h"
 
-#define USEDEGBUG
+//#define USEDEGBUG
 
 void Assert(bool e, const std::string &error_message) {
   if (!e) {
