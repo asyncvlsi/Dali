@@ -8,6 +8,8 @@ jobs:
      steps:
        - checkout
        - run: |
+          which g++
+          g++ --version
           apt-get -q update -y
           apt-get install g++
           apt-get -y install cmake
