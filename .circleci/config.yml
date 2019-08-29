@@ -9,7 +9,7 @@ jobs:
        - checkout
        - run: |
           apt-get -q update -y
-          apt-get install build-essential
+          apt-get install g++
           apt-get -y install cmake
           mkdir build
           cd build
