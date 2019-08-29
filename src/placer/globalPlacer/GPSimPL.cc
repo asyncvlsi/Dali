@@ -297,9 +297,8 @@ void GPSimPL::SolveProblemX() {
   std::vector<Block> &block_list = *BlockList();
   cgx.compute(Ax);
   x = cgx.solveWithGuess(bx, x);
-  //std::cout << "Here is the vector x:\n" << x << std::endl;
-  //std::cout << "    #iterations:     " << cgx.iterations() << std::endl;
-  //std::cout << "    estimated error: " << cgx.error() << std::endl;
+  std::cout << "    #iterations:     " << cgx.iterations() << std::endl;
+  std::cout << "    estimated error: " << cgx.error() << std::endl;
   for (long int num=0; num<x.size(); ++num) {
     if (block_list[num].IsMovable()) {
       if (x[num] < Left()) {
@@ -317,8 +316,8 @@ void GPSimPL::SolveProblemY() {
   std::vector<Block> &block_list = *BlockList();
   cgy.compute(Ay);
   y = cgy.solveWithGuess(by, y);
-  //std::cout << "    #iterations:     " << cgy.iterations() << std::endl;
-  //std::cout << "    estimated error: " << cgy.error() << std::endl;
+  std::cout << "    #iterations:     " << cgy.iterations() << std::endl;
+  std::cout << "    estimated error: " << cgy.error() << std::endl;
   for (long int num=0; num<y.size(); ++num) {
     if (block_list[num].IsMovable()) {
       if (y[num] < Bottom()) {
@@ -346,7 +345,7 @@ void GPSimPL::InitialPlacement() {
     SolveProblemX();
     UpdateCGFlagsX();
     if (HPWLX_converge) {
-      //std::cout << "iterations x:     " << i << "\n";
+      std::cout << "iterations x:     " << i << "\n";
       break;
     }
   }
@@ -363,7 +362,7 @@ void GPSimPL::InitialPlacement() {
     SolveProblemY();// Solving:
     UpdateCGFlagsY();
     if (HPWLY_converge) {
-      //std::cout << "iterations y:     " << i << "\n";
+      std::cout << "iterations y:     " << i << "\n";
       break;
     }
   }
@@ -1330,7 +1329,7 @@ void GPSimPL::StartPlacement() {
   LookAheadLgInit();
   BlockLocInit();
   InitialPlacement();
-
+  /*
   for (int i=0; i<look_ahead_iter_max; ++i) {
     LookAheadLegalization();
     UpdateLALConvergeState();
@@ -1348,6 +1347,7 @@ void GPSimPL::StartPlacement() {
 
   CGClose();
   LookAheadClose();
+   */
   //DrawBlockNetList("cg_result.txt");
 }
 
