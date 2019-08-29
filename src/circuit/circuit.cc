@@ -173,7 +173,7 @@ bool Circuit::CreatePseudoNet(std::string &drive_blk, std::string &drive_pin,
 
 }
 
-bool Circuit::CreatePseudoNet(Block *drive_blk, int drive_pin, Block *load_blk, int load_pin, double weight = 1) {
+bool Circuit::CreatePseudoNet(Block *drive_blk, int drive_pin, Block *load_blk, int load_pin, double weight) {
 
 }
 

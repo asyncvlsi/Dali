@@ -80,8 +80,9 @@ class Circuit {
   // read lef/def file using above member functions
   static void ParseLine(std::string &line, std::vector<std::string> &field_list);
   static BlockOrient StrToOrient(std::string &str_orient);
-  void SetGridValue(double grid_value);
-  double GridValue();
+  void SetGridValue(double grid_value_x, double grid_value_y);
+  double GridValueX();
+  double GridValueY();
   void ReadLefFile(std::string const &name_of_file);
   void ReadDefFile(std::string const &name_of_file);
   void ReportBlockTypeList();
