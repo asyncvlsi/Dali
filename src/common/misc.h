@@ -11,5 +11,6 @@
 
 void Assert(bool e, const std::string &error_message);
 void Warning(bool e, const std::string &warning_message);
+double Random();
 
 #endif //HPCC_SRC_COMMON_MISC_H_
