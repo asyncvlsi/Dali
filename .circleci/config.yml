@@ -15,6 +15,8 @@ jobs:
           cd build
           cmake ..
           make
+          cd ../bin
+          ./HPCC
 workflows:
    version: 2
    build:
