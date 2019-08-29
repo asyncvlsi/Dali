@@ -35,7 +35,6 @@ int main() {
 
   Placer *gb_placer = new GPSimPL;
   gb_placer->SetInputCircuit(&circuit);
-  //gb_placer->SaveNodeTerminal();
 
   //gb_placer->SetFillingRate(1/1.4);
   //gb_placer->SetAspectRatio(1);
@@ -46,7 +45,7 @@ int main() {
   gb_placer->SetFillingRate(1);
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
-  //gb_placer->GenMATLABScript("gb_placement_result.txt");
+  gb_placer->GenMATLABScript("gb_placement_result.txt");
   //gb_placer->SaveNodeTerminal();
 
   /*
