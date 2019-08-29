@@ -35,7 +35,7 @@ void GPSimPL::InitCGFlags() {
 void GPSimPL::BlockLocInit() {
   int length_x = Right() - Left();
   int length_y = Top() - Bottom();
-  std::default_random_engine generator{0};
+  std::minstd_rand0 generator{1};
   std::uniform_real_distribution<double> distribution(0,1);
   std::vector<Block> &block_list = *BlockList();
   for (auto &&block: block_list) {
@@ -1334,7 +1334,7 @@ void GPSimPL::StartPlacement() {
   for (int i=0; i<look_ahead_iter_max; ++i) {
     LookAheadLegalization();
     UpdateLALConvergeState();
-    if (HPWL_LAL_converge) { // if HPWL sconverges
+    if (HPWL_LAL_converge || i==look_ahead_iter_max-1) { // if HPWL sconverges
       std::cout << "Iterative look-ahead legalization complete" << std::endl;
       break;
     } else {

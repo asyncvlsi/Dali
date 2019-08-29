@@ -26,13 +26,10 @@ void Warning(bool e, const std::string &warning_message) {
 
 double Random() {
   // Schrage Method random number generator, a = 16807, q = 127773, r = 2836, m = 2^31 - 1 = 2147483647;
-  static long seed = 0;
-  double f = (16807*fmod(seed, 127773) - 2836*(seed/127773));
-  if (f > 0) {
-    seed = (long)(16807*fmod(seed, 127773)-2836*(seed/127773));
-  } else {
-    f += 1.0;
-    seed = (long)(16807*fmod(seed, 127773)-2836*(seed/127773)) + 2147483647;
+  static long seed = 1;
+  seed = (long)(16807*fmod((double)seed, 127773)-2836*(seed/127773));
+  if (seed < 0) {
+    seed += 2147483647;
   }
-  return f/2147483647.0;
+  return seed/2147483647.0;
 }
