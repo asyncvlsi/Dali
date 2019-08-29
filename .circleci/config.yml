@@ -8,6 +8,7 @@ jobs:
      steps:
        - checkout
        - run: |
+          sudo apt-get -q update -y
           sudo apt-get -y install cmake
           mkdir build
           cd build
