@@ -17,6 +17,7 @@ jobs:
           make
           cd ../bin
           ./HPCC
+          which g++
 workflows:
    version: 2
    build:
