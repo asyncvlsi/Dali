@@ -1329,7 +1329,7 @@ void GPSimPL::StartPlacement() {
   LookAheadLgInit();
   BlockLocInit();
   InitialPlacement();
-  /*
+
   for (int i=0; i<look_ahead_iter_max; ++i) {
     LookAheadLegalization();
     UpdateLALConvergeState();
@@ -1347,7 +1347,6 @@ void GPSimPL::StartPlacement() {
 
   CGClose();
   LookAheadClose();
-   */
   //DrawBlockNetList("cg_result.txt");
 }
 
