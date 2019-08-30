@@ -4,9 +4,6 @@
 
 #include "misc.h"
 
-//#define USEDEGBUG
-#include <cmath>
-
 void Assert(bool e, const std::string &error_message) {
   if (!e) {
     std::cout << "FATAL ERROR:" << std::endl;
@@ -16,20 +13,19 @@ void Assert(bool e, const std::string &error_message) {
 }
 
 void Warning(bool e, const std::string &warning_message) {
-  #ifndef USEDEGBUG
-  if (e) {
-    std::cout << "WARNING:" << std::endl;
-    std::cout << "\t" << warning_message << std::endl;
+  if (globalVerboseLevel >= LOG_WARNING) {
+    if (e) {
+      std::cout << "WARNING:" << std::endl;
+      std::cout << "\t" << warning_message << std::endl;
+    }
   }
-  #endif
 }
 
-double Random() {
-  // Schrage Method random number generator, a = 16807, q = 127773, r = 2836, m = 2^31 - 1 = 2147483647;
-  static long seed = 1;
-  seed = (long)(16807*fmod((double)seed, 127773)-2836*(seed/127773));
-  if (seed < 0) {
-    seed += 2147483647;
+void VerbosePrint(VerboseLevel verbose_level, std::stringstream &buf) {
+  /**** this function is easy to use, but might not be efficient, because whether or not a log is printed out,
+   * the stringstream buf should always be generated, if not used, the computation for this buffer is wasted ****/
+  if (globalVerboseLevel >= verbose_level) {
+    std::cout << buf.str();
   }
-  return seed/2147483647.0;
+  buf.str(std::string()); // clear the buf
 }

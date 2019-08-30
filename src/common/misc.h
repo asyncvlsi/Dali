@@ -7,10 +7,12 @@
 
 #include <cassert>
 #include <iostream>
+#include <sstream>
 #include <string>
+#include "global.h"
 
 void Assert(bool e, const std::string &error_message);
 void Warning(bool e, const std::string &warning_message);
-double Random();
+void VerbosePrint(VerboseLevel verbose_level, std::stringstream &buf);
 
 #endif //HPCC_SRC_COMMON_MISC_H_

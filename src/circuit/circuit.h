@@ -76,6 +76,7 @@ class Circuit {
   bool RemovePseudoNet(std::string &drive_blk, std::string &drive_pin, std::string &load_blk, std::string &load_pin);
   bool RemovePseudoNet(Block *drive_blk, int drive_pin, Block *load_blk, int load_pin);
   void RemoveAllPseudoNets();
+  // repulsive force can be created using an attractive force, a spring whose rest length in the current distance or even longer than the current distance
 
   // read lef/def file using above member functions
   static void ParseLine(std::string &line, std::vector<std::string> &field_list);
