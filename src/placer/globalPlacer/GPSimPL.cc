@@ -10,6 +10,22 @@ GPSimPL::GPSimPL(): Placer() {}
 
 GPSimPL::GPSimPL(double aspectRatio, double fillingRate): Placer(aspectRatio, fillingRate) {}
 
+GPSimPL::~GPSimPL() {
+  x.~Matrix();
+  y.~Matrix();
+  bx.~Matrix();
+  by.~Matrix();
+  Ax.~SparseMatrix();
+  Ay.~SparseMatrix();
+  x_anchor.~vector();
+  y_anchor.~vector();
+  coefficients.~vector();
+  grid_bin_matrix.~vector();
+  grid_bin_white_space_LUT.~vector();
+  cluster_list.~vector();
+  queue_box_bin.~queue();
+}
+
 int GPSimPL::TotBlockNum() {
   return GetCircuit()->TotBlockNum();
 }
@@ -78,18 +94,12 @@ void GPSimPL::CGInit() {
 }
 
 void GPSimPL::CGClose() {
-  //x.resize(0);
-  //y.resize(0);
-  //bx.resize(0);
-  //by.resize(0);
-  //Ax.resize(0, 0);
-  //Ay.resize(0, 0);
-  x.~Matrix();
-  y.~Matrix();
-  bx.~Matrix();
-  by.~Matrix();
-  Ax.~SparseMatrix();
-  Ay.~SparseMatrix();
+  x.resize(0);
+  y.resize(0);
+  bx.resize(0);
+  by.resize(0);
+  Ax.resize(0, 0);
+  Ay.resize(0, 0);
   x_anchor.resize(0);
   y_anchor.resize(0);
 }

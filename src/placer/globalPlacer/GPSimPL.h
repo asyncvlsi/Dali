@@ -40,6 +40,7 @@ class GPSimPL: public Placer {
  public:
   GPSimPL();
   GPSimPL(double aspectRatio, double fillingRate);
+  ~GPSimPL() override;
   int TotBlockNum();
   double WidthEpsilon();
   double HeightEpsilon();
