@@ -77,6 +77,23 @@ void GPSimPL::CGInit() {
   coefficients.reserve(coefficient_size);
 }
 
+void GPSimPL::CGClose() {
+  //x.resize(0);
+  //y.resize(0);
+  //bx.resize(0);
+  //by.resize(0);
+  //Ax.resize(0, 0);
+  //Ay.resize(0, 0);
+  x.~Matrix();
+  y.~Matrix();
+  bx.~Matrix();
+  by.~Matrix();
+  Ax.~SparseMatrix();
+  Ay.~SparseMatrix();
+  x_anchor.resize(0);
+  y_anchor.resize(0);
+}
+
 void GPSimPL::UpdateHPWLX() {
   HPWLX_new = HPWLX();
 }
@@ -1332,6 +1349,7 @@ void GPSimPL::StartPlacement() {
   //ReportHPWL();
   std::cout << "Global Placement complete\n";
 
+  CGClose();
   LookAheadClose();
   //DrawBlockNetList("cg_result.txt");
 }
