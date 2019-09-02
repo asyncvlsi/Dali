@@ -40,7 +40,6 @@ class GPSimPL: public Placer {
  public:
   GPSimPL();
   GPSimPL(double aspectRatio, double fillingRate);
-  ~GPSimPL() override;
   int TotBlockNum();
   double WidthEpsilon();
   double HeightEpsilon();
@@ -56,7 +55,6 @@ class GPSimPL: public Placer {
 
   void BlockLocInit();
   void CGInit();
-  void CGClose();
   void InitCGFlags();
   void UpdateCGFlagsX();
   void UpdateHPWLX();

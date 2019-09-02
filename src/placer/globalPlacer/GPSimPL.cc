@@ -10,22 +10,6 @@ GPSimPL::GPSimPL(): Placer() {}
 
 GPSimPL::GPSimPL(double aspectRatio, double fillingRate): Placer(aspectRatio, fillingRate) {}
 
-GPSimPL::~GPSimPL() {
-  x.~Matrix();
-  y.~Matrix();
-  bx.~Matrix();
-  by.~Matrix();
-  Ax.~SparseMatrix();
-  Ay.~SparseMatrix();
-  x_anchor.~vector();
-  y_anchor.~vector();
-  coefficients.~vector();
-  grid_bin_matrix.~vector();
-  grid_bin_white_space_LUT.~vector();
-  cluster_list.~vector();
-  queue_box_bin.~queue();
-}
-
 int GPSimPL::TotBlockNum() {
   return GetCircuit()->TotBlockNum();
 }
@@ -91,17 +75,6 @@ void GPSimPL::CGInit() {
   coefficient_size += size; // this is for anchor, because each blk has an anchor
   //std::cout << "Reserve space for " << coefficient_size << " non-zero matrix entries\n";
   coefficients.reserve(coefficient_size);
-}
-
-void GPSimPL::CGClose() {
-  x.resize(0);
-  y.resize(0);
-  bx.resize(0);
-  by.resize(0);
-  Ax.resize(0, 0);
-  Ay.resize(0, 0);
-  x_anchor.resize(0);
-  y_anchor.resize(0);
 }
 
 void GPSimPL::UpdateHPWLX() {
@@ -1359,7 +1332,6 @@ void GPSimPL::StartPlacement() {
   //ReportHPWL();
   std::cout << "Global Placement complete\n";
 
-  CGClose();
   LookAheadClose();
   //DrawBlockNetList("cg_result.txt");
 }

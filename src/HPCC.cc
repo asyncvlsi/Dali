@@ -49,6 +49,7 @@ int main() {
   gb_placer->StartPlacement();
   gb_placer->GenMATLABScript("gb_placement_result.txt");
   //gb_placer->SaveNodeTerminal();
+  delete gb_placer;
 
   /*
   Placer *legalizer = new TetrisLegalizer;
