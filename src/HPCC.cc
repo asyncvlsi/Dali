@@ -10,6 +10,8 @@
 #include "placer/globalPlacer/GPSimPL.h"
 #include "placer/legalizer/LGTetris.h"
 
+VerboseLevel globalVerboseLevel = LOG_DEBUG;
+
 int main() {
   time_t Time = clock();
   Circuit circuit;

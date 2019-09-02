@@ -4,7 +4,6 @@
 
 #include "GPSimPL.h"
 #include <cmath>
-#include <random>
 #include "../../common/misc.h"
 
 GPSimPL::GPSimPL(): Placer() {}
@@ -35,7 +34,6 @@ void GPSimPL::InitCGFlags() {
 void GPSimPL::BlockLocInit() {
   int length_x = Right() - Left();
   int length_y = Top() - Bottom();
-  std::minstd_rand0 generator{1};
   std::uniform_real_distribution<double> distribution(0,1);
   std::vector<Block> &block_list = *BlockList();
   for (auto &&block: block_list) {

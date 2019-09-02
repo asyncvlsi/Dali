@@ -14,6 +14,6 @@ enum VerboseLevel {
   LOG_DEBUG = 5
 };
 
-VerboseLevel globalVerboseLevel = LOG_DEBUG;
+extern VerboseLevel globalVerboseLevel;
 
 #endif //HPCC_SRC_COMMON_GLOBAL_H_

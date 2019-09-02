@@ -6,6 +6,7 @@
 #define HPCC_SRC_PLACER_GLOBALPLACER_GPSIMPL_H_
 
 #include <queue>
+#include <random>
 #include "placer/placer.h"
 #include "circuit/bin.h"
 #include "../../../module/Eigen/Sparse"
@@ -30,7 +31,6 @@ class GPSimPL: public Placer {
   double cg_precision = 0.0005;
   int cg_iteration_max_num = 30;
   double HPWL_intra_linearSolver_precision = 0.001;
-
   double alpha = 0.01;
   int look_ahead_iter_max = 1;
   double HPWL_LAL_new = 0;
@@ -44,6 +44,7 @@ class GPSimPL: public Placer {
   double WidthEpsilon();
   double HeightEpsilon();
 
+  std::minstd_rand0 generator{1};
   Eigen::VectorXd x, y;
   Eigen::VectorXd bx, by;
   SpMat Ax, Ay;
