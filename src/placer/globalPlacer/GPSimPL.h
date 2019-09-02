@@ -55,7 +55,6 @@ class GPSimPL: public Placer {
 
   void BlockLocInit();
   void CGInit();
-  void CGClose();
   void InitCGFlags();
   void UpdateCGFlagsX();
   void UpdateHPWLX();
