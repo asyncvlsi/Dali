@@ -42,5 +42,8 @@ build/*
 # Ignore any executables
 bin/*
 
+# Igore any libraries
+lib/*
+
 # Ignore Mac specific files
 *.DS_Store
