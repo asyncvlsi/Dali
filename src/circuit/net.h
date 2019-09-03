@@ -9,7 +9,6 @@
 #include <vector>
 #include "block.h"
 #include "blockpinpair.h"
-#include "common/misc.h"
 
 class Net {
  protected:

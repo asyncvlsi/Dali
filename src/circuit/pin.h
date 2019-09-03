@@ -9,7 +9,6 @@
 #include <iostream>
 #include <vector>
 #include <map>
-#include "common/misc.h"
 #include "rect.h"
 
 class Pin {

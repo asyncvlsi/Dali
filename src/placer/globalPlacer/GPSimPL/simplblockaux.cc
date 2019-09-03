@@ -3,6 +3,7 @@
 //
 
 #include "simplblockaux.h"
+#include "common/misc.h"
 
 SimPLBlockAux::SimPLBlockAux(Block *block): BlockAux(block) {}
 

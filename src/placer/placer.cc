@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include "placer.h"
+#include "common/misc.h"
 
 Placer::Placer() {
   aspect_ratio_ = 0;

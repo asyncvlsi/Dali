@@ -8,7 +8,6 @@
 #include <string>
 #include <map>
 #include "pin.h"
-#include "common/misc.h"
 
 class BlockType {
  private:
