@@ -10,7 +10,7 @@
 #include "placer/globalPlacer/GPSimPL.h"
 #include "placer/legalizer/LGTetris.h"
 
-VerboseLevel globalVerboseLevel = LOG_DEBUG;
+VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 
 int main() {
   time_t Time = clock();
@@ -42,7 +42,6 @@ int main() {
   //gb_placer->SetAspectRatio(1);
   //gb_placer->SetBoundaryAuto();
 
-
   gb_placer->SetBoundaryDef();
   gb_placer->SetFillingRate(1);
   gb_placer->ReportBoundaries();
@@ -51,15 +50,12 @@ int main() {
   //gb_placer->SaveNodeTerminal();
   delete gb_placer;
 
-  /*
   Placer *legalizer = new TetrisLegalizer;
   legalizer->TakeOver(gb_placer);
   legalizer->StartPlacement();
   legalizer->GenMATLABScript("legalizer_result.txt");
   //legalizer->SaveDEFFile("circuit.def", def_file);
-   */
-
-
+  delete legalizer;
 
   Time = clock() - Time;
   std::cout << "Execution time " << (float)Time/CLOCKS_PER_SEC << "s.\n";

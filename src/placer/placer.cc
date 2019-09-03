@@ -109,12 +109,16 @@ void Placer::SetBoundary(int left, int right, int bottom, int top) {
   Assert(circuit_ != nullptr, "Must set input circuit before setting boundaries");
   Assert(left < right, "Invalid boundary setting: left boundary should be less than right boundary!");
   Assert(bottom < top, "Invalid boundary setting: bottom boundary should be less than top boundary!");
-  int tot_block_area = circuit_->TotArea();
-  int tot_area = (right - left) * (top - bottom);
+  long int tot_block_area = circuit_->TotArea();
+  long int tot_area = (right - left) * (top - bottom);
   Assert(tot_area >= tot_block_area, "Invalid boundary setting: given region has smaller area than total block area!");
-  std::cout << "Pre-set filling rate: " << filling_rate_ << "\n";
-  filling_rate_ = tot_block_area/(double)tot_area;
-  std::cout << "Adjusted filling rate: " << filling_rate_ << "\n";
+  if (globalVerboseLevel >= LOG_INFO) {
+    std::cout << "Pre-set filling rate: " << filling_rate_ << "\n";
+  }
+  filling_rate_ = (double)tot_block_area/(double)tot_area;
+  if (globalVerboseLevel >= LOG_INFO) {
+    std::cout << "Adjusted filling rate: " << filling_rate_ << "\n";
+  }
   left_ = left;
   right_ = right;
   bottom_ = bottom;
@@ -147,15 +151,19 @@ int Placer::Top() {
 }
 
 void Placer::ReportBoundaries() {
-  std::cout << "Left, Right, Bottom, Top:\n";
-  std::cout << "  " << Left() << ", " << Right() << ", " << Bottom() << ", " << Top() << "\n";
+  if (globalVerboseLevel >= LOG_DEBUG) {
+    std::cout << "Left, Right, Bottom, Top:\n";
+    std::cout << "  " << Left() << ", " << Right() << ", " << Bottom() << ", " << Top() << "\n";
+  }
 }
 
 bool Placer::UpdateAspectRatio() {
   if ((right_ - left_ == 0) || (top_ - bottom_ == 0)) {
-    std::cout << "Error!\n";
-    std::cout << "Zero Height or Width of placement region!\n";
-    ReportBoundaries();
+    if (globalVerboseLevel >= LOG_ERROR) {
+      std::cout << "Error!\n";
+      std::cout << "Zero Height or Width of placement region!\n";
+      ReportBoundaries();
+    }
     return false;
   }
   aspect_ratio_ = (top_ - bottom_)/(double)(right_ - left_);
@@ -182,9 +190,11 @@ double Placer::HPWL() {
   return GetCircuit()->HPWL();
 }
 
-void Placer::ReportHPWL() {
+void Placer::ReportHPWL(VerboseLevel verbose_level) {
   Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWL!");
-  GetCircuit()->ReportHPWL();
+  if (globalVerboseLevel >= verbose_level) {
+    GetCircuit()->ReportHPWL();
+  }
 }
 
 void Placer::ReportHPWLCtoC() {
@@ -269,8 +279,8 @@ void Placer::SaveDEFFile(std::string const &name_of_file) {
         << *(block.Type()->Name()) << " + "
         << "PLACED"
         << " ("
-        << " " + std::to_string((int)(block.LLX()*circuit_->def_distance_microns*circuit_->m2_pitch))
-        << " " + std::to_string((int)(block.LLY()*circuit_->def_distance_microns*circuit_->m2_pitch))
+        << " " + std::to_string((int)(block.LLX()*circuit_->def_distance_microns*circuit_->GridValueX()))
+        << " " + std::to_string((int)(block.LLY()*circuit_->def_distance_microns*circuit_->GridValueY()))
         << " ) "
         << block.OrientStr() + " ;\n";
   }
@@ -312,8 +322,8 @@ void Placer::SaveDEFFile(std::string const &name_of_file, std::string const &inp
         << *(block.Type()->Name()) << " + "
         << "PLACED"
         << " ("
-        << " " + std::to_string((int)(block.LLX()*circuit_->def_distance_microns*circuit_->GridValue()))
-        << " " + std::to_string((int)(block.LLY()*circuit_->def_distance_microns*circuit_->GridValue()))
+        << " " + std::to_string((int)(block.LLX()*circuit_->def_distance_microns*circuit_->GridValueX()))
+        << " " + std::to_string((int)(block.LLY()*circuit_->def_distance_microns*circuit_->GridValueY()))
         << " ) "
         << block.OrientStr() + " ;\n";
   }

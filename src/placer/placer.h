@@ -10,6 +10,7 @@
 #include <fstream>
 #include "circuit/circuit.h"
 #include "common/misc.h"
+#include "common/global.h"
 
 class Placer {
  protected:
@@ -56,7 +57,7 @@ public:
   double HPWLX();
   double HPWLY();
   double HPWL();
-  void ReportHPWL();
+  void ReportHPWL(VerboseLevel verbose_level = LOG_INFO);
   void ReportHPWLCtoC();
   void TakeOver(Placer *placer);
   void SanityCheck();

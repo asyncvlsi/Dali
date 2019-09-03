@@ -42,8 +42,10 @@ void GPSimPL::BlockLocInit() {
       block.SetCenterY(Bottom() + length_y * distribution(generator));
     }
   }
-  std::cout << "Block location randomly uniform initialization complete\n";
-  ReportHPWL();
+  if (globalVerboseLevel >= LOG_INFO) {
+    std::cout << "Block location randomly uniform initialization complete\n";
+  }
+  ReportHPWL(LOG_INFO);
 }
 
 void GPSimPL::CGInit() {
@@ -284,8 +286,10 @@ void GPSimPL::SolveProblemX() {
   std::vector<Block> &block_list = *BlockList();
   cgx.compute(Ax);
   x = cgx.solveWithGuess(bx, x);
-  std::cout << "    #iterations:     " << cgx.iterations() << std::endl;
-  std::cout << "    estimated error: " << cgx.error() << std::endl;
+  if (globalVerboseLevel >= LOG_DEBUG) {
+    std::cout << "    #iterations:     " << cgx.iterations() << std::endl;
+    std::cout << "    estimated error: " << cgx.error() << std::endl;
+  }
   for (long int num=0; num<x.size(); ++num) {
     if (block_list[num].IsMovable()) {
       if (x[num] < Left()) {
@@ -303,8 +307,10 @@ void GPSimPL::SolveProblemY() {
   std::vector<Block> &block_list = *BlockList();
   cgy.compute(Ay);
   y = cgy.solveWithGuess(by, y);
-  std::cout << "    #iterations:     " << cgy.iterations() << std::endl;
-  std::cout << "    estimated error: " << cgy.error() << std::endl;
+  if (globalVerboseLevel >= LOG_DEBUG) {
+    std::cout << "    #iterations:     " << cgy.iterations() << std::endl;
+    std::cout << "    estimated error: " << cgy.error() << std::endl;
+  }
   for (long int num=0; num<y.size(); ++num) {
     if (block_list[num].IsMovable()) {
       if (y[num] < Bottom()) {
@@ -332,7 +338,9 @@ void GPSimPL::InitialPlacement() {
     SolveProblemX();
     UpdateCGFlagsX();
     if (HPWLX_converge) {
-      std::cout << "iterations x:     " << i << "\n";
+      if (globalVerboseLevel >= LOG_DEBUG) {
+        std::cout << "iterations x:     " << i << "\n";
+      }
       break;
     }
   }
@@ -349,13 +357,17 @@ void GPSimPL::InitialPlacement() {
     SolveProblemY();// Solving:
     UpdateCGFlagsY();
     if (HPWLY_converge) {
-      std::cout << "iterations y:     " << i << "\n";
+      if (globalVerboseLevel >= LOG_DEBUG) {
+        std::cout << "iterations y:     " << i << "\n";
+      }
       break;
     }
   }
 
-  std::cout << "Initial Placement Complete\n";
-  ReportHPWL();
+  if (globalVerboseLevel >= LOG_INFO) {
+    std::cout << "Initial Placement Complete\n";
+  }
+  ReportHPWL(LOG_INFO);
 }
 
 void GPSimPL::InitGridBins() {
@@ -730,10 +742,14 @@ void GPSimPL::FindMinimumBoxForFirstCluster() {
   /* this function find the box for the first cluster, such that the total white space in the box is larger than the total
    * cell area, the way to do this is just by expanding the boundaries of the bounding box of the first cluster */
 
-  while(!queue_box_bin.empty()) queue_box_bin.pop();
+  while (!queue_box_bin.empty()) {
+    queue_box_bin.pop();
+  }
   // clear the queue_box_bin
 
-  if (cluster_list.empty()) return;
+  if (cluster_list.empty()) {
+    return;
+  }
   // this is redundant, but for safety reasons. Probably this statement can be safely removed
   std::vector<Block> &block_list = *BlockList();
 
@@ -764,7 +780,6 @@ void GPSimPL::FindMinimumBoxForFirstCluster() {
     // update cell area, white space, and thus filling rate to determine whether to expand this box or not
     R.total_white_space = LookUpWhiteSpace(R.ll_index, R.ur_index);
     R.update_cell_area_white_space_LUT(grid_bin_white_space_LUT, grid_bin_matrix);
-    //R.update_cell_area_white_space(grid_bin_matrix);
     if (R.filling_rate > FillingRate()) {
       R.expand_box(grid_cnt);
     }
@@ -778,10 +793,10 @@ void GPSimPL::FindMinimumBoxForFirstCluster() {
   R.ur_point.x = grid_bin_matrix[R.ur_index.x][R.ur_index.y].right;
   R.ur_point.y = grid_bin_matrix[R.ur_index.x][R.ur_index.y].top;
 
-  R.left = R.ll_point.x;
-  R.bottom = R.ll_point.y;
-  R.right = R.ur_point.x;
-  R.top = R.ur_point.y;
+  R.left = (int)R.ll_point.x;
+  R.bottom = (int)R.ll_point.y;
+  R.right = (int)R.ur_point.x;
+  R.top = (int)R.ur_point.y;
 
   if (R.ll_index == R.ur_index) {
     R.update_terminal_list(grid_bin_matrix);
@@ -1154,7 +1169,6 @@ void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
     }
     box_Q.pop();
   }
-
 }
 
 bool GPSimPL::RecursiveBisectionBlkSpreading() {
@@ -1172,11 +1186,10 @@ bool GPSimPL::RecursiveBisectionBlkSpreading() {
       }
       /* if no terminals in side a box, do cell placement inside the box */
       PlaceBlkInBoxBisection(box);
-      queue_box_bin.pop();
     } else {
       SplitBox(box);
-      queue_box_bin.pop();
     }
+    queue_box_bin.pop();
   }
   return true;
 }
@@ -1250,7 +1263,9 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
     SolveProblemX();
     UpdateCGFlagsX();
     if (HPWLX_converge) {
-      //std::cout << "iterations x:     " << i << "\n";
+      if (globalVerboseLevel >= LOG_DEBUG) {
+        std::cout << "iterations x:     " << i << "\n";
+      }
       break;
     }
   }
@@ -1265,12 +1280,16 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
     SolveProblemY();
     UpdateCGFlagsY();
     if (HPWLY_converge) {
-      //std::cout << "iterations y:     " << i << "\n";
+      if (globalVerboseLevel >= LOG_DEBUG) {
+        std::cout << "iterations y:     " << i << "\n";
+      }
       break;
     }
   }
-  std::cout << "Quadratic Placement With Anchor Complete\n";
-  ReportHPWL();
+  if (globalVerboseLevel >= LOG_INFO) {
+    std::cout << "Quadratic Placement With Anchor Complete\n";
+  }
+  ReportHPWL(LOG_INFO);
 }
 
 void GPSimPL::UpdateAnchorNetWeight() {
@@ -1299,8 +1318,10 @@ void GPSimPL::LookAheadLegalization() {
 
   UpdateHPWLX();
   UpdateHPWLY();
-  std::cout << "Look-ahead legalization complete\n";
-  ReportHPWL();
+  if (globalVerboseLevel >= LOG_INFO) {
+    std::cout << "Look-ahead legalization complete\n";
+  }
+  ReportHPWL(LOG_INFO);
 }
 
 void GPSimPL::UpdateLALConvergeState() {
@@ -1310,18 +1331,26 @@ void GPSimPL::UpdateLALConvergeState() {
 }
 
 void GPSimPL::StartPlacement() {
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "Start global placement\n";
+  }
   SanityCheck();
-
   CGInit();
   LookAheadLgInit();
   BlockLocInit();
   InitialPlacement();
 
   for (int i=0; i<look_ahead_iter_max; ++i) {
+    if (globalVerboseLevel >= LOG_INFO) {
+      std::cout << i << "-th iteration\n";
+    }
     LookAheadLegalization();
     UpdateLALConvergeState();
     if (HPWL_LAL_converge || i==look_ahead_iter_max-1) { // if HPWL sconverges
-      std::cout << "Iterative look-ahead legalization complete" << std::endl;
+      if (globalVerboseLevel >= LOG_CRITICAL) {
+        std::cout << "Iterative look-ahead legalization complete" << std::endl;
+        std::cout << "Total number of iteration: " << i << std::endl;
+      }
       break;
     } else {
       UpdateAnchorLoc();
@@ -1329,10 +1358,11 @@ void GPSimPL::StartPlacement() {
     }
     QuadraticPlacementWithAnchor();
   }
-  //ReportHPWL();
-  std::cout << "Global Placement complete\n";
-
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "Global Placement complete\n";
+  }
   LookAheadClose();
+  ReportHPWL(LOG_CRITICAL);
   //DrawBlockNetList("cg_result.txt");
 }
 

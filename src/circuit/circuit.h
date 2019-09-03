@@ -27,7 +27,8 @@ class Circuit {
 
   // Manufacturing Grid
   bool grid_set_;
-  double grid_value_;
+  double grid_value_x_;
+  double grid_value_y_;
 
  public:
   Circuit();
@@ -42,7 +43,6 @@ class Circuit {
   double reset_signal_weight = 1e-6;
   double normal_signal_weight = 1;
   int lef_database_microns = 0;
-  double m2_pitch = 0;
   int def_distance_microns = 0;
   int def_left = 0, def_right = 0, def_bottom = 0, def_top = 0;
   void SetBoundaryFromDef(int left, int right, int bottom, int top);
@@ -69,6 +69,7 @@ class Circuit {
   void AddToNetMap(std::string &net_name);
   Net *AddNet(std::string &net_name, double weight = 1);
 
+  /*
   std::vector< Net > pseudo_net_list;
   std::map<std::string, size_t> pseudo_net_name_map;
   bool CreatePseudoNet(std::string &drive_blk, std::string &drive_pin, std::string &load_blk, std::string &load_pin, double weight = 1);
@@ -76,16 +77,15 @@ class Circuit {
   bool RemovePseudoNet(std::string &drive_blk, std::string &drive_pin, std::string &load_blk, std::string &load_pin);
   bool RemovePseudoNet(Block *drive_blk, int drive_pin, Block *load_blk, int load_pin);
   void RemoveAllPseudoNets();
+   */
   // repulsive force can be created using an attractive force, a spring whose rest length in the current distance or even longer than the current distance
 
   // read lef/def file using above member functions
   static void ParseLine(std::string &line, std::vector<std::string> &field_list);
   static BlockOrient StrToOrient(std::string &str_orient);
-  //void SetGridValue(double grid_value_x, double grid_value_y);
-  //double GridValueX();
-  //double GridValueY();
-  void SetGridValue(double grid_value_x);
-  double GridValue();
+  void SetGridValue(double grid_value_x, double grid_value_y);
+  double GridValueX();
+  double GridValueY();
   void ReadLefFile(std::string const &name_of_file);
   void ReadDefFile(std::string const &name_of_file);
   void ReportBlockTypeList();

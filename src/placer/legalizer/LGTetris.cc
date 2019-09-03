@@ -48,55 +48,29 @@ bool TetrisLegalizer::TetrisLegal() {
   int minWidth = GetCircuit()->MinWidth();
   int minHeight = GetCircuit()->MinHeight();
 
-  std::cout << "Building LGTetris space" << std::endl;
+  if (globalVerboseLevel >= LOG_INFO) {
+    std::cout << "Building LGTetris space" << std::endl;
+  }
   //TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), maxHeight, minWidth);
   //TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), minHeight, minWidth);
   TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), (int)(std::ceil(minHeight/2.0)), minWidth);
   //TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), 1, minWidth);
   //tetrisSpace.show();
-  std::cout << "Placing blocks:\n";
-  int numPlaced = 0;
-  int barWidth = 70;
-  int approxNum = (int)(blockXOrder.size())/100;
-  int quota = std::max(approxNum,1);
-  double progress = 0;
   for (auto &&blockNum: blockXOrder) {
     //std::cout << "Placing block: " << blockNum.num << std::endl;
     Loc2D result = tetrisSpace.findBlockLocation(block_list[blockNum.num].LLX(), block_list[blockNum.num].LLY(), block_list[blockNum.num].Width(), block_list[blockNum.num].Height());
     //std::cout << "Loc to set: " << result.x << " " << result.y << std::endl;
     block_list[blockNum.num].SetLLX(result.x);
     block_list[blockNum.num].SetLLY(result.y);
-    //draw_block_net_list("during_tetris.m");
-    ++numPlaced;
-    if (numPlaced%quota == 0) {
-      progress = (double)(numPlaced)/blockXOrder.size();
-      std::cout << "[";
-      int pos = (int) (barWidth * progress);
-      for (int i = 0; i < barWidth; ++i) {
-        if (i < pos) std::cout << "=";
-        else if (i == pos) std::cout << ">";
-        else std::cout << " ";
-      }
-      std::cout << "] " << int(progress * 100.0) << " %\r";
-      //std::cout << std::endl;
-      std::cout.flush();
-    }
   }
-  std::cout << "[";
-  for (int i = 0; i < barWidth; ++i) {
-    if (i < barWidth) std::cout << "=";
-    else if (i == barWidth) std::cout << ">";
-    else std::cout << " ";
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "Tetris legalization complete!\n";
   }
-  std::cout << "] " << 100 << " %\n";
-
-  //draw_block_net_list("after_tetris.txt");
-  std::cout << "Tetris legalization complete!\n";
   return true;
 }
 
 
 void TetrisLegalizer::StartPlacement() {
   TetrisLegal();
-  ReportHPWL();
+  ReportHPWL(LOG_CRITICAL);
 }

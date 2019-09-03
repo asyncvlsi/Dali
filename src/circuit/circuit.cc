@@ -23,7 +23,8 @@ Circuit::Circuit() {
   min_height_ = 100000000;
   max_height_ = 0;
   grid_set_ = false;
-  grid_value_ = 0;
+  grid_value_x_ = 0;
+  grid_value_y_ = 0;
 }
 
 Circuit::Circuit(int tot_block_type_num, int tot_block_num, int tot_net_num) {
@@ -44,7 +45,8 @@ Circuit::Circuit(int tot_block_type_num, int tot_block_num, int tot_net_num) {
   min_height_ = 100000000;
   max_height_ = 0;
   grid_set_ = false;
-  grid_value_ = 0;
+  grid_value_x_ = 0;
+  grid_value_y_ = 0;
 }
 
 void Circuit::SetBoundaryFromDef(int left, int right, int bottom, int top) {
@@ -168,6 +170,7 @@ Net *Circuit::AddNet(std::string &net_name, double weight) {
   return &net_list.back();
 }
 
+/*
 bool Circuit::CreatePseudoNet(std::string &drive_blk, std::string &drive_pin,
                               std::string &load_blk, std::string &load_pin, double weight) {
 
@@ -188,6 +191,7 @@ bool Circuit::RemovePseudoNet(Block *drive_blk, int drive_pin, Block *load_blk, 
 void Circuit::RemoveAllPseudoNets() {
 
 }
+ */
 
 void Circuit::ParseLine(std::string &line, std::vector<std::string> &field_list) {
   std::vector<char> delimiter_list;
@@ -248,16 +252,21 @@ BlockOrient Circuit::StrToOrient(std::string &str_orient) {
   return orient;
 }
 
-void Circuit::SetGridValue(double grid_value) {
-  Assert(grid_value > 0, "grid_value must be a positive real number!");
+void Circuit::SetGridValue(double grid_value_x, double grid_value_y) {
+  Assert(grid_value_x > 0, "grid_value_x must be a positive real number!");
+  Assert(grid_value_y > 0, "grid_value_y must be a positive real number!");
   Assert(!grid_set_, "once set, grid_value cannot be changed!");
-  grid_value_ = grid_value;
+  grid_value_x_ = grid_value_x;
+  grid_value_y_ = grid_value_y;
   grid_set_ = true;
 }
 
-double Circuit::GridValue() {
-  Assert(grid_set_, "cannot call Circuit::GridValue() since grid_value has not been set!");
-  return grid_value_;
+double Circuit::GridValueX() {
+  return grid_value_x_;
+}
+
+double Circuit::GridValueY() {
+  return grid_value_y_;
 }
 
 void Circuit::ReadLefFile(std::string const &name_of_file) {
@@ -286,11 +295,11 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
 
   // 2. find MANUFACTURINGGRID
   if (!grid_set_) {
-    grid_value_ = 0;
-    while ((grid_value_ == 0) && !ist.eof()) {
+    grid_value_x_ = 0;
+    while ((grid_value_x_ == 0) && !ist.eof()) {
       getline(ist, line);
       if (line.find("LAYER") != std::string::npos) {
-        SetGridValue(1.0/lef_database_microns);
+        SetGridValue(1.0/lef_database_microns, 1.0/lef_database_microns);
         std::cout << "  WARNING:\n  MANUFACTURINGGRID not specified explicitly, using 1.0/DATABASE MICRONS instead\n";
       }
       if (line.find("MANUFACTURINGGRID") != std::string::npos) {
@@ -299,14 +308,14 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
         Assert(grid_field.size() >= 2, "Invalid MANUFACTURINGGRID declaration: expecting 2 fields");
         try {
           double tmp_value = std::stod(grid_field[1]);
-          SetGridValue(tmp_value);
+          SetGridValue(tmp_value, tmp_value);
         } catch (...) {
           Assert(false, "Invalid stoi conversion:\n" + line);
         }
         break;
       }
     }
-    Assert(grid_value_ > 0, "Cannot find or invalid MANUFACTURINGGRID");
+    Assert(grid_value_x_ > 0, "Cannot find or invalid MANUFACTURINGGRID");
   }
   //std::cout << "MANUFACTURINGGRID: " << grid_value_ << "\n";
 
@@ -329,8 +338,8 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
             std::vector<std::string> size_field;
             ParseLine(line, size_field);
             try {
-              width = (int)(std::round(std::stod(size_field[1])/grid_value_));
-              height = (int)(std::round(std::stod(size_field[3])/grid_value_));
+              width = (int)(std::round(std::stod(size_field[1])/grid_value_x_));
+              height = (int)(std::round(std::stod(size_field[3])/grid_value_y_));
             } catch (...) {
               Assert(false, "Invalid stod conversion:\n" + line);
             }
@@ -364,10 +373,10 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
               ParseLine(line, rect_field);
               Assert(rect_field.size() >= 5, "Invalid rect definition: expecting 5 fields\n" + line);
               try {
-                llx = std::stod(rect_field[1])/grid_value_;
-                lly = std::stod(rect_field[2])/grid_value_;
-                urx = std::stod(rect_field[3])/grid_value_;
-                ury = std::stod(rect_field[4])/grid_value_;
+                llx = std::stod(rect_field[1])/grid_value_x_;
+                lly = std::stod(rect_field[2])/grid_value_y_;
+                urx = std::stod(rect_field[3])/grid_value_x_;
+                ury = std::stod(rect_field[4])/grid_value_y_;
               } catch (...) {
                 Assert(false, "Invalid stod conversion:\n" + line);
               }
@@ -418,10 +427,10 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       //std::cout << line << "\n";
       Assert(die_area_field.size() >= 9, "Invalid UNITS declaration: expecting 9 fields");
       try {
-        def_left = (int)std::round(std::stoi(die_area_field[2])/grid_value_/def_distance_microns);
-        def_bottom = (int)std::round(std::stoi(die_area_field[3])/grid_value_/def_distance_microns);
-        def_right = (int)std::round(std::stoi(die_area_field[6])/grid_value_/def_distance_microns);
-        def_top = (int)std::round(std::stoi(die_area_field[7])/grid_value_/def_distance_microns);
+        def_left = (int)std::round(std::stoi(die_area_field[2])/grid_value_x_/def_distance_microns);
+        def_bottom = (int)std::round(std::stoi(die_area_field[3])/grid_value_y_/def_distance_microns);
+        def_right = (int)std::round(std::stoi(die_area_field[6])/grid_value_x_/def_distance_microns);
+        def_top = (int)std::round(std::stoi(die_area_field[7])/grid_value_y_/def_distance_microns);
       } catch (...) {
         Assert(false, "Invalid stoi conversion:\n" + line);
       }
@@ -454,8 +463,8 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       BlockOrient orient = StrToOrient(block_declare_field[9]);
       int llx = 0, lly = 0;
       try {
-        llx = (int)std::round(std::stoi(block_declare_field[6])/grid_value_/def_distance_microns);
-        lly = (int)std::round(std::stoi(block_declare_field[7])/grid_value_/def_distance_microns);
+        llx = (int)std::round(std::stoi(block_declare_field[6])/grid_value_x_/def_distance_microns);
+        lly = (int)std::round(std::stoi(block_declare_field[7])/grid_value_y_/def_distance_microns);
       } catch (...) {
         Assert(false, "Invalid stoi conversion:\n" + line);
       }
@@ -549,9 +558,11 @@ void Circuit::ReportNetMap() {
 }
 
 void Circuit::ReportBriefSummary() {
-  std::cout << "  movable blocks: " << TotMovableBlockNum() << "\n";
-  std::cout << "  blocks: " << TotBlockNum() << "\n";
-  std::cout << "  nets: " << net_list.size() << "\n";
+  if (globalVerboseLevel >= LOG_INFO) {
+    std::cout << "  movable blocks: " << TotMovableBlockNum() << "\n";
+    std::cout << "  blocks: " << TotBlockNum() << "\n";
+    std::cout << "  nets: " << net_list.size() << "\n";
+  }
 }
 
 int Circuit::MinWidth() const {
@@ -672,7 +683,7 @@ void Circuit::WriteDefFileDebug(std::string const &name_of_file) {
         << *(block.Name()) << " "
         << *(block.Type()->Name()) << " + "
         << "PLACED" << " "
-        << "( " + std::to_string((int)(block.LLX()*def_distance_microns*grid_value_)) + " " + std::to_string((int)(block.LLY()*def_distance_microns*grid_value_)) + " )" << " "
+        << "( " + std::to_string((int)(block.LLX()*def_distance_microns*grid_value_x_)) + " " + std::to_string((int)(block.LLY()*def_distance_microns*grid_value_y_)) + " )" << " "
         << block.OrientStr() + " ;\n";
   }
   ost << "END COMPONENTS\n";
@@ -733,7 +744,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
         << *block.Name() << " "
         << *(block.Type()->Name()) << " + "
         << "PLACED" << " "
-        << "( " + std::to_string((int)(block.LLX()*def_distance_microns*grid_value_)) + " " + std::to_string((int)(block.LLY()*def_distance_microns*grid_value_)) + " )" << " "
+        << "( " + std::to_string((int)(block.LLX()*def_distance_microns*grid_value_x_)) + " " + std::to_string((int)(block.LLY()*def_distance_microns*grid_value_y_)) + " )" << " "
         << block.OrientStr() + " ;\n";
   }
   ost << "END COMPONENTS\n";
