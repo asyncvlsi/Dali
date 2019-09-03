@@ -4,6 +4,8 @@
 
 #include "LGTetris.h"
 
+TetrisLegalizer::TetrisLegalizer(): Placer() {}
+
 bool TetrisLegalizer::TetrisLegal() {
   //draw_block_net_list("before_tetris_legalization.m");
   std::cout << "Start LGTetris legalization" << std::endl;

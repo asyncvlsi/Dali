@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include "circuit.h"
+#include "common/misc.h"
 
 Circuit::Circuit() {
   tot_movable_blk_num_ = 0;

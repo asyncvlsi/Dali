@@ -11,7 +11,6 @@
 #include <iostream>
 #include "blocktype.h"
 #include "blockaux.h"
-#include "common/misc.h"
 
 /* a block can be a gate, can also be a large module, it includes information like
  * the Name of a gate/module, its Width and Height, its lower Left corner (LLX, LLY),

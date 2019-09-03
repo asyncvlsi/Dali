@@ -8,23 +8,17 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -Wall -Wextra -Wshadow -W
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 
 file(GLOB SOURCES
-        src/common/*.h
-        src/common/*.cc
-        src/circuit/*.h
-        src/circuit/*.cc
-        src/placer/*.h
-        src/placer/*.cc
-        src/placer/globalPlacer/*.h
-        src/placer/globalPlacer/*.cc
-        src/placer/globalPlacer/GPSimPL/*.h
-        src/placer/globalPlacer/GPSimPL/*.cc
-        src/placer/legalizer/LGTetris/*.h
-        src/placer/legalizer/LGTetris/*.cc
-        src/placer/legalizer/*.h
-        src/placer/legalizer/*.cc
-        src/*.h
-        src/*.cc
-        module/Eigen/*
-        )
+    src/*.cc
+    src/common/*.cc
+    src/circuit/*.cc
+    src/placer/*.cc
+    src/placer/globalPlacer/*.cc
+    src/placer/globalPlacer/GPSimPL/*.cc
+    src/placer/detailedPlacer/*.cc
+    src/placer/detailedPlacer/DPLinear/*.cc
+    src/placer/legalizer/*.cc
+    src/placer/legalizer/LGTetris/*.cc
+    module/Eigen/*
+    )
 
 add_executable(HPCC ${SOURCES})

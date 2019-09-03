@@ -2,6 +2,7 @@
 // Created by Yihang Yang on 2019-05-23.
 //
 
+#include "common/misc.h"
 #include "block.h"
 
 Block::Block(BlockType *type, std::pair<const std::string, int>* name_num_pair_ptr, int llx, int lly, bool movable, BlockOrient orient) : type_(

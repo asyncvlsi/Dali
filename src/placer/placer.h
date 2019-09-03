@@ -9,7 +9,6 @@
 #include <iostream>
 #include <fstream>
 #include "circuit/circuit.h"
-#include "common/misc.h"
 #include "common/global.h"
 
 class Placer {

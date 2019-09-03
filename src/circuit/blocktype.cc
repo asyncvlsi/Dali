@@ -2,6 +2,7 @@
 // Created by Yihang Yang on 2019-06-27.
 //
 
+#include "common/misc.h"
 #include "blocktype.h"
 
 BlockType::BlockType(std::pair<const std::string, int>* name_num_pair_ptr, int width, int height) : name_num_pair_ptr_(name_num_pair_ptr), width_(width), height_(height) {}

@@ -12,6 +12,7 @@ class TetrisLegalizer: public Placer {
  private:
 
  public:
+  TetrisLegalizer();
   bool TetrisLegal();
   void StartPlacement() override;
 };
