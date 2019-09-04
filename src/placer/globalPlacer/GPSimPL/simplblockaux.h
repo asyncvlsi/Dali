@@ -6,8 +6,8 @@
 #define HPCC_SRC_PLACER_GLOBALPLACER_GPSIMPL_SIMPLBLOCKAUX_H_
 
 #include <set>
-#include "circuit/net.h"
-#include "circuit/blockaux.h"
+#include "../../../circuit/net.h"
+#include "../../../circuit/blockaux.h"
 
 class SimPLBlockAux: public BlockAux {
  public:

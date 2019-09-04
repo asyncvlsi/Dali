@@ -7,8 +7,8 @@
 
 #include <queue>
 #include <random>
-#include "placer/placer.h"
-#include "circuit/bin.h"
+#include "../placer.h"
+#include "../../circuit/bin.h"
 #include "../../../module/Eigen/Sparse"
 #include "../../../module/Eigen//IterativeLinearSolvers"
 #include "GPSimPL/simplblockaux.h"

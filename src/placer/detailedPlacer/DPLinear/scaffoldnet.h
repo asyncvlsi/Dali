@@ -5,7 +5,7 @@
 #ifndef HPCC_SRC_PLACER_DETAILEDPLACER_DPLINEAR_SCAFFOLDNET_H_
 #define HPCC_SRC_PLACER_DETAILEDPLACER_DPLINEAR_SCAFFOLDNET_H_
 
-#include <circuit/block.h>
+#include "../../../circuit/block.h"
 
 class ScaffoldNet {
  private:

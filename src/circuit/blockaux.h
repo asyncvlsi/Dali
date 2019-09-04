@@ -13,7 +13,7 @@ class BlockAux {
  private:
   Block *block_;
  public:
-  BlockAux(Block *block);
+  explicit BlockAux(Block *block);
   Block *GetBlock();
 };
 

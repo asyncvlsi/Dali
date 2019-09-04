@@ -37,13 +37,16 @@ cmake-build-debug/
 .idea/
 
 # Ignore the build and lib dirs
-build/*
+build/
 
 # Ignore any executables
-bin/*
+bin/
 
 # Igore any libraries
-lib/*
+lib/
+
+# Ignore any header files
+include/
 
 # Ignore Mac specific files
 *.DS_Store

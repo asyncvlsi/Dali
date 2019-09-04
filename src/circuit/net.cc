@@ -50,6 +50,15 @@ int Net::FixedCnt() {
   return cnt_fixed_;
 }
 
+void Net::SetAux(NetAux *aux) {
+  Assert(aux != nullptr, "When set auxiliary information, argument cannot be a nullptr");
+  aux_ = aux;
+}
+
+NetAux *Net::Aux() {
+  return aux_;
+}
+
 void Net::SortBlkPinList() {
   std::sort(blk_pin_list.begin(), blk_pin_list.end());
 }

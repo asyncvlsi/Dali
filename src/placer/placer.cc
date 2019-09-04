@@ -3,7 +3,7 @@
 //
 
 #include <cmath>
-#include "common/misc.h"
+#include "../common/misc.h"
 #include "placer.h"
 
 Placer::Placer() {

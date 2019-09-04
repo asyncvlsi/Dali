@@ -11,7 +11,7 @@
 #include "gridbinindex.h"
 #include "cellcutpoint.h"
 #include "gridbin.h"
-#include "circuit/block.h"
+#include "../../../circuit/block.h"
 
 class BoxBin {
  public:

@@ -9,6 +9,9 @@
 #include <vector>
 #include "block.h"
 #include "blockpinpair.h"
+#include "netaux.h"
+
+class NetAux;
 
 class Net {
  protected:
@@ -19,6 +22,8 @@ class Net {
   // cached data
   int max_pin_x_, min_pin_x_;
   int max_pin_y_, min_pin_y_;
+
+  NetAux *aux_;
  public:
   explicit Net(std::pair<const std::string, int> *name_num_pair_ptr, double weight = 1);
 
@@ -32,6 +37,8 @@ class Net {
   double InvP();
   int P();
   int FixedCnt();
+  void SetAux(NetAux *aux);
+  NetAux *Aux();
 
   void SortBlkPinList();
   void UpdateMaxMinX();

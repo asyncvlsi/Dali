@@ -6,7 +6,7 @@
 #define HPCC_SRC_PLACER_DETAILEDPLACER_DPLINEAR_H_
 
 #include <vector>
-#include <placer/placer.h>
+#include "../../placer/placer.h"
 #include "DPLinear/scaffoldnet.h"
 
 class DPLinear: public Placer {

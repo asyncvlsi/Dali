@@ -4,7 +4,6 @@
 
 #include "cellcutpoint.h"
 
-
 CellCutPoint::CellCutPoint() {
   x = 0;
   y = 0;

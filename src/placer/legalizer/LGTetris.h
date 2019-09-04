@@ -5,7 +5,7 @@
 #ifndef HPCC_SRC_PLACER_LEGALIZER_LGTETRIS_H_
 #define HPCC_SRC_PLACER_LEGALIZER_LGTETRIS_H_
 
-#include "placer/placer.h"
+#include "../placer.h"
 #include "LGTetris/tetrisspace.h"
 
 class TetrisLegalizer: public Placer {
