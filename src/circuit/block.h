@@ -67,6 +67,7 @@ class Block {
   void IncreX(double amount);
   void IncreY(double amount);
   bool IsOverlap(const Block &rhs) const;
+  bool IsOverlap(const Block *rhs) const;
   void SetAux(BlockAux *aux);
   BlockAux *Aux();
 

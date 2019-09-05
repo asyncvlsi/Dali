@@ -3,3 +3,5 @@
 //
 
 #include "DPAbacus.h"
+
+DPAbacus::DPAbacus(): Placer() {};

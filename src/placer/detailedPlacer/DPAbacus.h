@@ -5,8 +5,13 @@
 #ifndef HPCC_SRC_PLACER_DETAILEDPLACER_DPABACUS_H_
 #define HPCC_SRC_PLACER_DETAILEDPLACER_DPABACUS_H_
 
-class DPAbacus {
+#include "../placer.h"
 
+class DPAbacus: public Placer {
+ private:
+
+ public:
+  DPAbacus();
 };
 
 #endif //HPCC_SRC_PLACER_DETAILEDPLACER_DPABACUS_H_
