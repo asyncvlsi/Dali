@@ -135,7 +135,7 @@ bool Block::IsOverlap(const Block &rhs) const {
 }
 
 bool Block::IsOverlap(const Block *rhs) const {
-  IsOverlap(*rhs);
+  return IsOverlap(*rhs);
 }
 
 void Block::SetAux(BlockAux *aux) {

@@ -60,64 +60,25 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
 ######################################
+# Detect if $ACT_HOME exits, change the installation directory to ACT_HOME
+######################################
+message(STATUS "Detecting environment variable ACT_HOME...")
+if(DEFINED ENV{ACT_HOME})
+  message(STATUS "Environment variable ACT_HOME detected: " $ENV{ACT_HOME})
+  if(FLASE)
+    message(STATUS "Changing Installation directory to ACT_HOME")
+    set(CMAKE_INSTALL_PREFIX $ENV{ACT_HOME} CACHE PATH "installation path" FORCE)
+    message(STATUS "Current installation directory: " ${CMAKE_INSTALL_PREFIX})
+  endif()
+else()
+  message(STATUS "Environment variable ACT_HOME not found")
+endif()
+
+######################################
 # Install header files
 ######################################
-file(GLOB HEADER_COMMON
-    src/common/*.h
-    )
-
-file(GLOB HEADER_CIRCUIT
-    src/circuit/*.h
-    )
-
-file(GLOB HEADER_PLACER
-    src/placer/*.h
-    )
-
-file(GLOB H_GLOBPLACER
-    src/placer/globalPlacer/*.h
-    )
-
-file(GLOB H_GPSIMPL
-    src/placer/globalPlacer/GPSimPL/*.h
-    )
-
-file(GLOB H_DPLACER
-    src/placer/detailedPlacer/*.h
-    )
-
-file(GLOB H_DPLINEAR
-    src/placer/detailedPlacer/DPLinear/*.h
-    )
-
-file(GLOB H_LEGAL
-    src/placer/legalizer/*.h
-    )
-
-file(GLOB H_TETRIS
-    src/placer/legalizer/LGTetris/*.h
-    )
-
-set(INLUDE_DESTIN include/hpcc)
-
-install(FILES ${HEADER_COMMON}
-    DESTINATION ${INLUDE_DESTIN}/common)
-install(FILES ${HEADER_CIRCUIT}
-    DESTINATION ${INLUDE_DESTIN}/circuit)
-install(FILES ${HEADER_PLACER}
-    DESTINATION ${INLUDE_DESTIN}/placer)
-install(FILES ${H_GLOBPLACER}
-    DESTINATION ${INLUDE_DESTIN}/placer/globalPlacer)
-install(FILES ${H_GPSIMPL}
-    DESTINATION ${INLUDE_DESTIN}/placer/globalPlacer/GPSimPL)
-install(FILES ${H_DPLACER}
-    DESTINATION ${INLUDE_DESTIN}/placer/detailedPlacer)
-install(FILES ${H_DPLINEAR}
-    DESTINATION ${INLUDE_DESTIN}/placer/detailedPlacer/DPLinear)
-install(FILES ${H_LEGAL}
-    DESTINATION ${INLUDE_DESTIN}/placer/legalizer)
-install(FILES ${H_TETRIS}
-    DESTINATION ${INLUDE_DESTIN}/placer/legalizer/LGTetris)
+set(INLUDE_DESTIN include)
+install(DIRECTORY src/ DESTINATION ${INLUDE_DESTIN}/hpcc COMPONENT Devel FILES_MATCHING PATTERN "*.h")
 
 ######################################
 # Install binary

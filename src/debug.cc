@@ -5,10 +5,8 @@
 #include <iostream>
 #include <vector>
 #include <ctime>
-#include "circuit/circuit.h"
-#include "placer/placer.h"
-#include "placer/globalPlacer/GPSimPL.h"
-#include "placer/legalizer/LGTetris.h"
+#include "circuit.h"
+#include "placer.h"
 
 VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 
