@@ -22,7 +22,7 @@ ScaffoldNet::ScaffoldNet(double weight,
       x_offset_1_(x_offset_1),
       y_offset_1_(y_offset_1) {}
 
-ScaffoldNet::ScaffoldNet(double weight, Block *block_0, Block *block_1) {
+ScaffoldNet::ScaffoldNet(Block *block_0, Block *block_1, double weight) {
   /****
    * As two given points are diagonals of a rectangle. so, x1 < x2, y1 < y2. similarly x3 < x4, y3 < y4.
    * so, bottom-left and top-right points of intersection rectangle can be found by using formula.
@@ -64,6 +64,8 @@ ScaffoldNet::ScaffoldNet(double weight, Block *block_0, Block *block_1) {
   }
 }
 
+ScaffoldNet::ScaffoldNet(Block &block_0, Block &block_1, double weight): ScaffoldNet(&block_0, &block_1, weight) {};
+
 double ScaffoldNet::Weight() const {
   return weight_;
 }
@@ -90,6 +92,22 @@ double ScaffoldNet::XOffset1() const {
 
 double ScaffoldNet::YOffset1() const {
   return y_offset_1_;
+}
+
+double ScaffoldNet::XAbsLoc0() const {
+  return block_0_->LLX() + x_offset_0_;
+}
+
+double ScaffoldNet::YAbsLoc0() const {
+  return block_0_->LLY() + y_offset_0_;
+}
+
+double ScaffoldNet::XAbsLoc1() const {
+  return block_1_->LLX() + x_offset_1_;
+}
+
+double ScaffoldNet::YAbsLoc1() const {
+  return block_1_->LLY() + y_offset_1_;
 }
 
 double ScaffoldNet::HPWLX() const {

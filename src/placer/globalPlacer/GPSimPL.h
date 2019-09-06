@@ -21,7 +21,7 @@ typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat; // declares a row-ma
 typedef Eigen::Triplet<double> T; // A triplet is a simple object representing a non-zero entry as the triplet: row index, column index, value.
 
 class GPSimPL: public Placer {
- private:
+ protected:
   double HPWLX_new = 0;
   double HPWLY_new = 0;
   double HPWLX_old = 1e30;

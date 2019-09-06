@@ -5,6 +5,7 @@
 #include "GPSimPL.h"
 #include <cmath>
 #include "../../common/misc.h"
+#include "../../common/global.h"
 
 GPSimPL::GPSimPL(): Placer() {}
 
@@ -265,10 +266,12 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
       }
     }
   }
-  if (coefficients_capacity != coefficients.capacity()) {
-    std::cout << "WARNING: coefficients capacity changed!\n";
-    std::cout << "\told capacity: " << coefficients_capacity << "\n";
-    std::cout << "\tnew capacity: " << coefficients.size() << "\n";
+  if (globalVerboseLevel >= LOG_WARNING) {
+    if (coefficients_capacity != coefficients.capacity()) {
+      std::cout << "WARNING: coefficients capacity changed!\n";
+      std::cout << "\told capacity: " << coefficients_capacity << "\n";
+      std::cout << "\tnew capacity: " << coefficients.size() << "\n";
+    }
   }
 }
 

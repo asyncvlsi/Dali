@@ -25,7 +25,8 @@ class ScaffoldNet {
               double y_offset_0,
               double x_offset_1,
               double y_offset_1);
-  ScaffoldNet(double weight, Block *block_0, Block *block_1);
+  ScaffoldNet(Block *block_0, Block *block_1, double weight = 1);
+  ScaffoldNet(Block &block_0, Block &block_1, double weight = 1);
   double Weight() const;
   Block *Block0() const;
   Block *Block1() const;
@@ -33,6 +34,10 @@ class ScaffoldNet {
   double YOffset0() const;
   double XOffset1() const;
   double YOffset1() const;
+  double XAbsLoc0() const;
+  double YAbsLoc0() const;
+  double XAbsLoc1() const;
+  double YAbsLoc1() const;
   double HPWLX() const;
   double HPWLY() const;
   double HPWL() const;
