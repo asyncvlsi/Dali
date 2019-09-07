@@ -8,7 +8,7 @@
 #include "circuit.h"
 #include "placer.h"
 
-VerboseLevel globalVerboseLevel = LOG_CRITICAL;
+VerboseLevel globalVerboseLevel = LOG_INFO;
 
 int main() {
   time_t Time = clock();
@@ -44,16 +44,25 @@ int main() {
   gb_placer->SetFillingRate(1);
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
-  gb_placer->GenMATLABScript("gb_placement_result.txt");
+  gb_placer->GenMATLABScript("gb_result.txt");
   //gb_placer->SaveNodeTerminal();
-  delete gb_placer;
 
+
+  Placer *d_placer = new DPLinear;
+  d_placer->TakeOver(gb_placer);
+  d_placer->StartPlacement();
+  d_placer->GenMATLABScript("dp_result.txt");
+  /*
   Placer *legalizer = new TetrisLegalizer;
   legalizer->TakeOver(gb_placer);
   legalizer->StartPlacement();
   legalizer->GenMATLABScript("legalizer_result.txt");
   //legalizer->SaveDEFFile("circuit.def", def_file);
-  delete legalizer;
+   */
+
+  delete gb_placer;
+  delete d_placer;
+  //delete legalizer;
 
   Time = clock() - Time;
   std::cout << "Execution time " << (float)Time/CLOCKS_PER_SEC << "s.\n";

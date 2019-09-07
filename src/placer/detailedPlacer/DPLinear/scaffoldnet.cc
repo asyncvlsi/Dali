@@ -50,7 +50,33 @@ ScaffoldNet::ScaffoldNet(Block *block_0, Block *block_1, double weight) {
     double lly = std::max(block_0->LLY(), block_1->LLY());
     double urx = std::max(block_0->URX(), block_1->URX());
     double ury = std::max(block_0->URY(), block_1->URY());
-
+    double overlap_width = urx - llx;
+    double overlap_height = ury - lly;
+    if (overlap_height >= overlap_width) { // the following only works well if one block is not inside another.
+      if (block_0->LLX() <= block_1->LLX()) {
+        x_offset_0_ = urx - block_0->LLX(); // x_offset_0_ = block_0->Width();
+        y_offset_0_ = 0;
+        x_offset_1_ = 0;
+        y_offset_1_ = lly - block_1->LLY();
+      } else {
+        x_offset_0_ = 0;
+        y_offset_0_ = lly - block_0->LLY();
+        x_offset_1_ = urx - block_1->LLX(); // x_offset_1_ = block_1->Width();
+        y_offset_1_ = 0;
+      }
+    } else {
+      if (block_0->LLY() <= block_1->LLY()) {
+        x_offset_0_ = llx - block_0->LLX();
+        y_offset_0_ = 0;
+        x_offset_1_ = 0;
+        y_offset_1_ = ury - block_1->LLY();
+      } else {
+        x_offset_0_ = 0;
+        y_offset_0_ = ury - block_0->LLY();
+        x_offset_1_ = llx - block_1->LLX();
+        y_offset_1_ = 0;
+      }
+    }
 
   } else {
     if (globalVerboseLevel >= LOG_WARNING) {

@@ -25,7 +25,10 @@ class DPLinear: public GPSimPL {
   std::vector< ScaffoldNet > scaffold_net_list;
 
   void UpdateScaffoldNetList();
-  void BuildProblem(bool is_x_direction, Eigen::VectorXd &b);
+  void BuildProblemDPLinear(bool is_x_direction, Eigen::VectorXd &b);
+  void BuildProblemDPLinearX();
+  void BuildProblemDPLinearY();
+  void StartPlacement() override;
 };
 
 #endif //HPCC_SRC_PLACER_DETAILEDPLACER_DPLINEAR_H_
