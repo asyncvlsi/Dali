@@ -202,47 +202,52 @@ void DPLinear::BuildProblemDPLinearY() {
 
 void DPLinear::StartPlacement() {
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "Start global placement\n";
+    std::cout << "Start detailed placement\n";
   }
   SanityCheck();
   CGInit();
 
-  r = 0.9;
+  r = 0.1;
   std::vector<Block> &block_list = *BlockList();
-  HPWLX_converge = false;
-  HPWLX_old = 1e30;
-  for (size_t i=0; i<block_list.size(); ++i) {
-    x[i] = block_list[i].LLX();
-  }
-  UpdateMaxMinX();
-  for (int i=0; i<50; ++i) {
-    BuildProblemDPLinearX();
-    SolveProblemX();
-    UpdateCGFlagsX();
-    if (HPWLX_converge) {
-      if (globalVerboseLevel >= LOG_DEBUG) {
-        std::cout << "iterations x:     " << i << "\n";
-      }
-      break;
+  //for (int t=0; t<=10; ++t) {
+    //r = 0.1 * t;
+    HPWLX_converge = false;
+    HPWLX_old = 1e30;
+    for (size_t i = 0; i < block_list.size(); ++i) {
+      x[i] = block_list[i].LLX();
     }
-  }
-  HPWLY_converge = false;
-  HPWLY_old = 1e30;
-  for (size_t i=0; i<block_list.size(); ++i) {
-    y[i] = block_list[i].LLY();
-  }
-  UpdateMaxMinY();
-  for (int i=0; i<50; ++i) {
-    BuildProblemDPLinearY();
-    SolveProblemY();
-    UpdateCGFlagsY();
-    if (HPWLY_converge) {
-      if (globalVerboseLevel >= LOG_DEBUG) {
-        std::cout << "iterations y:     " << i << "\n";
+    UpdateMaxMinX();
+    //UpdateScaffoldNetList();
+    for (int i = 0; i < 50; ++i) {
+      BuildProblemDPLinearX();
+      SolveProblemX();
+      UpdateCGFlagsX();
+      if (HPWLX_converge) {
+        if (globalVerboseLevel >= LOG_DEBUG) {
+          std::cout << "iterations x:     " << i << "\n";
+        }
+        break;
       }
-      break;
     }
-  }
+    HPWLY_converge = false;
+    HPWLY_old = 1e30;
+    for (size_t i = 0; i < block_list.size(); ++i) {
+      y[i] = block_list[i].LLY();
+    }
+    UpdateMaxMinY();
+    //UpdateScaffoldNetList();
+    for (int i = 0; i < 50; ++i) {
+      BuildProblemDPLinearY();
+      SolveProblemY();
+      UpdateCGFlagsY();
+      if (HPWLY_converge) {
+        if (globalVerboseLevel >= LOG_DEBUG) {
+          std::cout << "iterations y:     " << i << "\n";
+        }
+        break;
+      }
+    }
+  //}
   if (globalVerboseLevel >= LOG_INFO) {
     std::cout << "Quadratic Placement With Anchor Complete\n";
   }

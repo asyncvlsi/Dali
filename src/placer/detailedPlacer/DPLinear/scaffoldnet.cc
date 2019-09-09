@@ -44,9 +44,11 @@ ScaffoldNet::ScaffoldNet(Block *block_0, Block *block_1, double weight) {
    * ****/
 
   bool is_overlap = block_0->IsOverlap(block_1);
+  block_0_ = block_0;
+  block_1_ = block_1;
   if (is_overlap) {
     weight_ = weight;
-    double llx = std::max(block_0->LLX(), block_1->LLX());
+    /*double llx = std::max(block_0->LLX(), block_1->LLX());
     double lly = std::max(block_0->LLY(), block_1->LLY());
     double urx = std::max(block_0->URX(), block_1->URX());
     double ury = std::max(block_0->URY(), block_1->URY());
@@ -76,6 +78,11 @@ ScaffoldNet::ScaffoldNet(Block *block_0, Block *block_1, double weight) {
         x_offset_1_ = llx - block_1->LLX();
         y_offset_1_ = 0;
       }
+    }*/
+    if (true) { // if one block is fully inside another block
+
+    } else { // if one block is partially overlap with another block
+
     }
 
   } else {
@@ -90,7 +97,7 @@ ScaffoldNet::ScaffoldNet(Block *block_0, Block *block_1, double weight) {
   }
 }
 
-ScaffoldNet::ScaffoldNet(Block &block_0, Block &block_1, double weight): ScaffoldNet(&block_0, &block_1, weight) {};
+ScaffoldNet::ScaffoldNet(Block &block_0, Block &block_1, double weight): ScaffoldNet(&block_0, &block_1, weight) {}
 
 double ScaffoldNet::Weight() const {
   return weight_;

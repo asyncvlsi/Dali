@@ -1296,7 +1296,7 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
 }
 
 void GPSimPL::UpdateAnchorNetWeight() {
-  alpha += 0.01;
+  alpha += 0.1;
 }
 
 void GPSimPL::LookAheadLegalization() {

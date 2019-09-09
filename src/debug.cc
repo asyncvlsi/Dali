@@ -47,22 +47,21 @@ int main() {
   gb_placer->GenMATLABScript("gb_result.txt");
   //gb_placer->SaveNodeTerminal();
 
-
   Placer *d_placer = new DPLinear;
   d_placer->TakeOver(gb_placer);
   d_placer->StartPlacement();
   d_placer->GenMATLABScript("dp_result.txt");
-  /*
+
   Placer *legalizer = new TetrisLegalizer;
   legalizer->TakeOver(gb_placer);
   legalizer->StartPlacement();
   legalizer->GenMATLABScript("legalizer_result.txt");
   //legalizer->SaveDEFFile("circuit.def", def_file);
-   */
+
 
   delete gb_placer;
   delete d_placer;
-  //delete legalizer;
+  delete legalizer;
 
   Time = clock() - Time;
   std::cout << "Execution time " << (float)Time/CLOCKS_PER_SEC << "s.\n";
