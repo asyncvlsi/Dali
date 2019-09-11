@@ -448,6 +448,10 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
     //std::cout << line << "\t";
     std::vector<std::string> block_declare_field;
     ParseLine(line, block_declare_field);
+    if (block_declare_field.size() <= 1) {
+      getline(ist, line);
+      continue;
+    }
     Assert(block_declare_field.size() >= 3, "Invalid block declaration, expecting at least: - compName modelName ;\n" + line);
     //std::cout << block_declare_field[0] << " " << block_declare_field[1] << "\n";
     if (block_declare_field.size() == 3) {
@@ -457,6 +461,8 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       if (block_declare_field[4] == "UNPLACED") {
         movable = true;
       } else if (block_declare_field[4] == "FIXED") {
+        movable = false;
+      } else if (block_declare_field[4] == "PLACED") {
         movable = false;
       } else {
         Assert(false, "Unknown Placed Status!");
@@ -473,7 +479,6 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
     } else {
       Assert(false, "Unknown block declaration!");
     }
-
     getline(ist, line);
   }
 
