@@ -20,17 +20,18 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
 # All used circuit and placer source code
 file(GLOB SOURCES
-    src/common/*.cc
-    src/circuit/*.cc
-    src/placer/*.cc
-    src/placer/globalPlacer/*.cc
-    src/placer/globalPlacer/GPSimPL/*.cc
-    src/placer/detailedPlacer/*.cc
-    src/placer/detailedPlacer/DPLinear/*.cc
-    src/placer/legalizer/*.cc
-    src/placer/legalizer/LGTetris/*.cc
-    module/Eigen/*
-    )
+        src/common/*.cc
+        src/circuit/*.cc
+        src/placer/*.cc
+        src/placer/globalPlacer/*.cc
+        src/placer/globalPlacer/GPSimPL/*.cc
+        src/placer/detailedPlacer/*.cc
+        src/placer/detailedPlacer/DPLinear/*.cc
+        src/placer/detailedPlacer/MDPlacer/*.cc
+        src/placer/legalizer/*.cc
+        src/placer/legalizer/LGTetris/*.cc
+        module/Eigen/*
+        )
 
 # Create a library, static libraries are controlled by ARCHIVE_OUTPUT_DIRECTORY property
 # Shared libraries are controlled by LIBRARY_OUTPUT_DIRECTORY

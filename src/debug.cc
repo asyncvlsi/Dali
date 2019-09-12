@@ -19,8 +19,8 @@ int main() {
 
   std::string lef_file, def_file;
   lef_file = "../test/out_1K.lef";
-  //def_file = "../test/out_1K.def";
-  def_file = "wrapper.def";
+  def_file = "../test/out_1K.def";
+  //def_file = "wrapper.def";
   //lef_file = adaptec1_lef;
   //def_file = adaptec1_def;
   circuit.ReadLefFile(lef_file);
@@ -35,7 +35,7 @@ int main() {
   circuit.ReportBriefSummary();
 
   circuit.ReportHPWL();
-  /*
+
   Placer *gb_placer = new GPSimPL;
   gb_placer->SetInputCircuit(&circuit);
 
@@ -63,9 +63,9 @@ int main() {
 
 
   delete gb_placer;
-  //delete d_placer;
+  delete d_placer;
   delete legalizer;
-   */
+
 
   Time = clock() - Time;
   std::cout << "Execution time " << (float)Time/CLOCKS_PER_SEC << "s.\n";
