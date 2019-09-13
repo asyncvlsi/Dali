@@ -14,11 +14,11 @@ class MDPlacer: public Placer {
   double learning_rate;
   double momentum_term = 0.9;
  public:
-  std::vector<double> fx;
-  std::vector<double> fy;
-  std::vector<double> vx;
-  std::vector<double> vy;
   std::vector<MDPlacer> blk_aux_list;
+  void CreateBlkAuxList();
+  void UpdateForce();
+  void UpdateVelocity();
+  void UpdateLoc();
   void StartPlacement();
 };
 
