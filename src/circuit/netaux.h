@@ -10,7 +10,7 @@
 class Net;
 
 class NetAux {
- private:
+ protected:
   Net *net_;
  public:
   explicit NetAux(Net *net);

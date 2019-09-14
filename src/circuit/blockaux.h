@@ -10,7 +10,7 @@
 class Block;
 
 class BlockAux {
- private:
+ protected:
   Block *block_;
  public:
   explicit BlockAux(Block *block);

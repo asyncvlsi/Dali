@@ -24,7 +24,7 @@ class MDBlkAux: public BlockAux {
   double Fy();
   double Vx();
   double Vy();
-  Value2D GetForce(Block &blk);
+  Value2D GetForce(Block *blk);
 };
 
 #endif //HPCC_SRC_PLACER_DETAILEDPLACER_MDPLACER_MDBLKAUX_H_

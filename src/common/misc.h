@@ -24,9 +24,27 @@ struct Value2D {
     return Value2D(a.x+x, a.y+y);
   }
 
+  Value2D operator+=(const Value2D& a) {
+    x += a.x;
+    y += a.y;
+    return *this;
+  }
+
   // equality comparison. doesn't modify object. therefore const.
   bool operator==(const Value2D& a) const {
     return (x == a.x && y == a.y);
+  }
+
+  void Normalize() {
+    double amp = sqrt(x*x + y*y);
+    x /= amp;
+    y /= amp;
+  }
+
+  Value2D& LinearScale(double f) {
+    x *= f;
+    y *= f;
+    return *this;
   }
 };
 
