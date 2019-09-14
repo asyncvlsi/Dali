@@ -8,6 +8,7 @@
 #include <vector>
 #include "../placer.h"
 #include "MDPlacer/MDBlkAux.h"
+#include "../../common/misc.h"
 
 class MDPlacer: public Placer {
  private:
@@ -16,9 +17,9 @@ class MDPlacer: public Placer {
  public:
   std::vector<MDPlacer> blk_aux_list;
   void CreateBlkAuxList();
-  void UpdateForce();
-  void UpdateVelocity();
-  void UpdateLoc();
+  Value2D UpdateForce(Block &block);
+  Value2D UpdateVelocity(Value2D &force);
+  Value2D UpdateLoc(Value2D &velocity);
   void StartPlacement();
 };
 

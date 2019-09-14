@@ -12,18 +12,32 @@ void MDPlacer::CreateBlkAuxList() {
   }
 }
 
-void MDPlacer::UpdateForce() {
+Value2D MDPlacer::UpdateForce(Block &block) {
+  Value2D force;
 
+  return force;
 }
 
-void MDPlacer::UpdateVelocity() {
+Value2D MDPlacer::UpdateVelocity(Value2D &force) {
+  Value2D velocity = force;
 
+  return velocity;
 }
 
-void MDPlacer::UpdateLoc() {
+Value2D MDPlacer::UpdateLoc(Value2D &velocity) {
+  Value2D displacement = velocity;
 
+  return displacement;
 }
 
 void MDPlacer::StartPlacement() {
-
+  std::vector<Block> &block_list = *BlockList();
+  Value2D f, v;
+  Value2D loc_displacement;
+  for (auto &&block: block_list) {
+    f = UpdateForce(block);
+    v = UpdateVelocity(f);
+    loc_displacement = UpdateLoc(v);
+    //block.UpdateLoc(v);
+  }
 }

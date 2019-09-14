@@ -11,6 +11,25 @@
 #include <string>
 #include "global.h"
 
+struct Value2D {
+  double x;
+  double y;
+  explicit Value2D(double x=0, double y=0): x(x), y(y) {}
+
+  // assignment operator modifies object, therefore non-const
+  Value2D& operator=(const Value2D& a) = default;
+
+  // addop. doesn't modify object. therefore const.
+  Value2D operator+(const Value2D& a) const {
+    return Value2D(a.x+x, a.y+y);
+  }
+
+  // equality comparison. doesn't modify object. therefore const.
+  bool operator==(const Value2D& a) const {
+    return (x == a.x && y == a.y);
+  }
+};
+
 void Assert(bool e, const std::string &error_message);
 void Warning(bool e, const std::string &warning_message);
 void VerbosePrint(VerboseLevel verbose_level, std::stringstream &buf);

@@ -3,7 +3,6 @@
 //
 
 #include "MDBlkAux.h"
-#include "../../../common/misc.h"
 
 MDBlkAux::MDBlkAux(Block* blk_ptr): BlockAux(blk_ptr), fx_(0), fy_(0), vx_(0), vy_(0) {}
 
