@@ -1,5 +1,5 @@
 //
-// Created by yihan on 9/11/2019.
+// Created by Yihang Yang on 9/11/2019.
 //
 
 #ifndef HPCC_SRC_PLACER_DETAILEDPLACER_MDPLACER_MDBLKAUX_H_
@@ -9,21 +9,15 @@
 #include "../../../common/misc.h"
 
 class MDBlkAux: public BlockAux {
- private:
-  double fx_;
-  double fy_;
-  double vx_;
-  double vy_;
  public:
+  Value2D v_;
   explicit MDBlkAux(Block* blk_ptr);
-  void SetFx(double fx);
-  void SetFy(double fy);
   void SetVx(double vx);
   void SetVy(double vy);
-  double Fx();
-  double Fy();
   double Vx();
   double Vy();
+  void SetVelocity(Value2D velocity);
+  Value2D Velocity();
   Value2D GetForce(Block *blk);
 };
 

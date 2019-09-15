@@ -10,11 +10,12 @@
 #include <sstream>
 #include <string>
 #include "global.h"
+#include <cmath>
 
 struct Value2D {
   double x;
   double y;
-  explicit Value2D(double x=0, double y=0): x(x), y(y) {}
+  explicit Value2D(double x_init=0, double y_init=0): x(x_init), y(y_init) {}
 
   // assignment operator modifies object, therefore non-const
   Value2D& operator=(const Value2D& a) = default;
@@ -30,6 +31,11 @@ struct Value2D {
     return *this;
   }
 
+  void Incre(const Value2D& a) {
+    x += a.x;
+    y += a.y;
+  }
+
   // equality comparison. doesn't modify object. therefore const.
   bool operator==(const Value2D& a) const {
     return (x == a.x && y == a.y);
@@ -41,9 +47,13 @@ struct Value2D {
     y /= amp;
   }
 
-  Value2D& LinearScale(double f) {
-    x *= f;
-    y *= f;
+  Value2D operator*(const double scale) const {
+    return Value2D(x*scale, y*scale);
+  }
+
+  Value2D operator*=(const double scale) {
+    x *= scale;
+    y *= scale;
     return *this;
   }
 };

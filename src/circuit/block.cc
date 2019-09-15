@@ -121,12 +121,12 @@ std::string Block::OrientStr() const {
   return s;
 }
 
-void Block::IncreX(double amount) {
-  llx_ += amount;
+void Block::IncreX(double displacement) {
+  llx_ += displacement;
 }
 
-void Block::IncreY(double amount) {
-  lly_ += amount;
+void Block::IncreY(double displacement) {
+  lly_ += displacement;
 }
 
 bool Block::IsOverlap(const Block &rhs) const {

@@ -1,5 +1,5 @@
 //
-// Created by yihan on 9/11/2019.
+// Created by Yihang Yang on 9/11/2019.
 //
 
 #ifndef HPCC_SRC_PLACER_DETAILEDPLACER_MDPLACER_H_
@@ -15,12 +15,10 @@ class MDPlacer: public Placer {
   double learning_rate = 0.1;
   double momentum_term = 0.9;
  public:
-  std::vector<MDPlacer> blk_aux_list;
+  std::vector<MDBlkAux> blk_aux_list;
   void CreateBlkAuxList();
-  Value2D UpdateForce(Block &blk);
-  Value2D UpdateVelocity(Value2D &force);
-  Value2D UpdateLoc(Value2D &velocity);
-  void StartPlacement();
+  void UpdateLocMomentum(Block &blk);
+  void StartPlacement() override;
 };
 
 #endif //HPCC_SRC_PLACER_DETAILEDPLACER_MDPLACER_H_

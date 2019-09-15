@@ -1,5 +1,5 @@
 //
-// Created by yihan on 8/4/2019.
+// Created by Yihang Yang on 8/4/2019.
 //
 
 #ifndef HPCC_SRC_PLACER_GLOBALPLACER_GPSIMPL_H_

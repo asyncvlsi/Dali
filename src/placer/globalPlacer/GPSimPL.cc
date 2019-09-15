@@ -1,5 +1,5 @@
 //
-// Created by yihan on 8/4/2019.
+// Created by Yihang Yang on 8/4/2019.
 //
 
 #include "GPSimPL.h"

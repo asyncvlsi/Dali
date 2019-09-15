@@ -1,52 +1,48 @@
 //
-// Created by yihan on 9/11/2019.
+// Created by Yihang Yang on 9/11/2019.
 //
 
 #include "MDBlkAux.h"
 #include <algorithm>
 #include <cmath>
 
-MDBlkAux::MDBlkAux(Block* blk_ptr): BlockAux(blk_ptr), fx_(0), fy_(0), vx_(0), vy_(0) {}
-
-void MDBlkAux::SetFx(double fx) {
-  fx_ = fx;
-}
-
-void MDBlkAux::SetFy(double fy) {
-  fy_ = fy;
-}
+MDBlkAux::MDBlkAux(Block* blk_ptr): BlockAux(blk_ptr), v_(0,0) {}
 
 void MDBlkAux::SetVx(double vx) {
-  vx_ = vx;
+  v_.x = vx;
 }
 
 void MDBlkAux::SetVy(double vy) {
-  vy_ = vy;
-}
-
-double MDBlkAux::Fx() {
-  return fx_;
-}
-
-double MDBlkAux::Fy() {
-  return fy_;
+  v_.y = vy;
 }
 
 double MDBlkAux::Vx() {
-  return vx_;
+  return v_.x;
 }
 
 double MDBlkAux::Vy() {
-  return vy_;
+  return v_.y;
+}
+
+void MDBlkAux::SetVelocity(Value2D velocity) {
+  v_ = velocity;
+}
+
+Value2D MDBlkAux::Velocity() {
+  return v_;
 }
 
 Value2D MDBlkAux::GetForce(Block *blk) {
   /****
-   * a rectangle can be described by its (llx, lly,) (urx, ury), and using these four values, one can calculate the area
+   * A rectangle can be described by its (llx, lly,) (urx, ury), and using these four values, one can calculate the area;
+   * The force between two blocks are in  proportional to the overlapping area, thus we need to find the overlap rectangle;
+   * The direction of force can be chosen in many ways, we chose the force direction along the line of the center of two blocks;
+   * If the center of two blocks are the same, the block with a lower number will move left, and the block with a higher number will move right;
+   * Now we have the force amplitude and its direction, done.
    * ****/
   Value2D force(0,0);
   double epsilon = 1e-5;
-  if (block_->IsOverlap(*blk)) {
+  if ((blk != GetBlock())&&(block_->IsOverlap(*blk))) {
     double force_amp;
     double llx, urx, lly, ury;
     llx = std::max(block_->LLX(), blk->LLX());
@@ -57,12 +53,17 @@ Value2D MDBlkAux::GetForce(Block *blk) {
     Value2D direction(block_->X() - blk->X(), block_->Y() - blk->Y());
     // default direction is center to center direction
     if ((std::fabs(direction.x) < epsilon) && (std::fabs(direction.y) < epsilon)) {
-      // when two blocks have very close center, chose a different direction to avoid numerical problems
-      Value2D default_direction(1, 0);
+      // when the centers of two blocks are very close, chose a default direction to avoid numerical issues
+      Value2D default_direction(0,0);
+      if (block_->Num() < blk->Num()) {
+        default_direction.x = -1;
+      } else {
+        default_direction.x = 1;
+      }
       direction = default_direction;
     }
     direction.Normalize();
-    force = direction.LinearScale(force_amp);
+    force = direction*force_amp;
   }
   return force;
 }

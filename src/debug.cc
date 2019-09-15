@@ -50,7 +50,7 @@ int main() {
   gb_placer->GenMATLABScript("gb_result.txt");
   //gb_placer->SaveNodeTerminal();
 
-  Placer *d_placer = new DPLinear;
+  Placer *d_placer = new MDPlacer;
   d_placer->TakeOver(gb_placer);
   d_placer->StartPlacement();
   d_placer->GenMATLABScript("dp_result.txt");

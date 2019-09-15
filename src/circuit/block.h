@@ -64,8 +64,8 @@ class Block {
   void SetOrient(BlockOrient &orient);
   BlockOrient Orient() const;
   std::string OrientStr() const;
-  void IncreX(double amount);
-  void IncreY(double amount);
+  void IncreX(double displacement);
+  void IncreY(double displacement);
   bool IsOverlap(const Block &rhs) const;
   bool IsOverlap(const Block *rhs) const;
   void SetAux(BlockAux *aux);
