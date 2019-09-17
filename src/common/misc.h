@@ -56,6 +56,11 @@ struct Value2D {
     y *= scale;
     return *this;
   }
+
+  void Init() {
+    x = 0;
+    y = 0;
+  }
 };
 
 void Assert(bool e, const std::string &error_message);

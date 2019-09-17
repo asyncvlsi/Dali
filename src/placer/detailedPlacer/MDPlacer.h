@@ -17,7 +17,7 @@ class MDPlacer: public Placer {
  public:
   std::vector<MDBlkAux> blk_aux_list;
   void CreateBlkAuxList();
-  void UpdateLocMomentum(Block &blk);
+  void UpdateVelocityLoc(Block &blk);
   void StartPlacement() override;
 };
 
