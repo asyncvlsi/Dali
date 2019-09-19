@@ -17,20 +17,21 @@ struct Loc2D {
 
 class TetrisSpace {
 private:
-  int _left;
-  int _right;
-  int _bottom;
-  int _top;
-  int _rowHeight;
-  int _minWidth;
-  std::vector< FreeSegmentList > freeSegmentRows;
+  int left_;
+  int right_;
+  int bottom_;
+  int top_;
+  int row_height_;
+  int min_width_;
+  std::vector< FreeSegmentList > free_segment_rows;
   /****derived data entry****/
-  int _totNumRow;
+  int tot_num_row_;
 public:
   TetrisSpace(int left, int right, int bottom, int top, int rowHeight, int minWidth);
-  void findCommonSegments(int startRowNum, int endRowNum, FreeSegmentList &commonSegments);
-  Loc2D findBlockLocation(double currentX, double currentY, int blockWidth, int blockHeight);
-  void show();
+  void FindCommonSegments(int startRowNum, int endRowNum, FreeSegmentList &commonSegments);
+  bool IsSpaceAvail(double x_loc, double y_loc, int width, int height);
+  Loc2D FindBlockLocation(double currentX, double currentY, int blockWidth, int blockHeight);
+  void Show();
 };
 
 

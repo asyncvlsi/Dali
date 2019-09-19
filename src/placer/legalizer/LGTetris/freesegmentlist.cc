@@ -284,7 +284,11 @@ void FreeSegmentList::useSpace(int locToStart, int lengthToUse) {
   }
 }
 
-void FreeSegmentList::show() {
+bool FreeSegmentList::IsSpaceAvail(double x_loc, double y_loc, int width, int height) {
+  return true;
+}
+
+void FreeSegmentList::Show() {
   if (_head == nullptr) {
     std::cout << "Empty list, nothing to display" <<std::endl;
   } else {

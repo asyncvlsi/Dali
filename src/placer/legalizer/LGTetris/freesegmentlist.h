@@ -38,7 +38,8 @@ public:
   void removeSeg(FreeSegment* segInList);
   void removeShortSeg(int width);
   void useSpace(int locToStart, int lengthToUse);
-  void show();
+  bool IsSpaceAvail(double x_loc, double y_loc, int width, int height);
+  void Show();
 };
 
 

@@ -1,5 +1,5 @@
 //
-// Created by yihan on 8/4/2019.
+// Created by Yihang Yang on 8/4/2019.
 //
 
 #include "LGTetris.h"
@@ -57,11 +57,13 @@ bool TetrisLegalizer::TetrisLegal() {
   //TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), minHeight, minWidth);
   TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), (int)(std::ceil(minHeight/2.0)), minWidth);
   //TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), 1, minWidth);
-  //tetrisSpace.show();
+
   for (auto &&blockNum: blockXOrder) {
-    //std::cout << "Placing block: " << blockNum.num << std::endl;
-    Loc2D result = tetrisSpace.findBlockLocation(block_list[blockNum.num].LLX(), block_list[blockNum.num].LLY(), block_list[blockNum.num].Width(), block_list[blockNum.num].Height());
-    //std::cout << "Loc to set: " << result.x << " " << result.y << std::endl;
+    bool is_current_loc_legal = tetrisSpace.IsSpaceAvail(block_list[blockNum.num].LLX(), block_list[blockNum.num].LLY(), block_list[blockNum.num].Width(), block_list[blockNum.num].Height());
+    Loc2D result = tetrisSpace.FindBlockLocation(block_list[blockNum.num].LLX(),
+                                                 block_list[blockNum.num].LLY(),
+                                                 block_list[blockNum.num].Width(),
+                                                 block_list[blockNum.num].Height());
     block_list[blockNum.num].SetLLX(result.x);
     block_list[blockNum.num].SetLLY(result.y);
   }
