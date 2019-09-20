@@ -10,7 +10,7 @@
 
 class TetrisLegalizer: public Placer {
  private:
-
+  int max_interation_;
  public:
   TetrisLegalizer();
   bool TetrisLegal();

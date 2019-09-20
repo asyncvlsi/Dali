@@ -8,6 +8,7 @@
 #include <vector>
 #include <cmath>
 #include "freesegmentlist.h"
+#include "../../../common/misc.h"
 
 struct Loc2D {
   int x;
@@ -30,7 +31,7 @@ public:
   TetrisSpace(int left, int right, int bottom, int top, int rowHeight, int minWidth);
   void FindCommonSegments(int startRowNum, int endRowNum, FreeSegmentList &commonSegments);
   bool IsSpaceAvail(double x_loc, double y_loc, int width, int height);
-  Loc2D FindBlockLocation(double currentX, double currentY, int blockWidth, int blockHeight);
+  bool FindBlockLoc(double currentX, double currentY, int blockWidth, int blockHeight, Loc2D result_loc);
   void Show();
 };
 

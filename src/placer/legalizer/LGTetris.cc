@@ -3,8 +3,9 @@
 //
 
 #include "LGTetris.h"
+#include "../../common/misc.h"
 
-TetrisLegalizer::TetrisLegalizer(): Placer() {}
+TetrisLegalizer::TetrisLegalizer(): Placer(), max_interation_(0) {}
 
 bool TetrisLegalizer::TetrisLegal() {
   //draw_block_net_list("before_tetris_legalization.m");
@@ -57,15 +58,31 @@ bool TetrisLegalizer::TetrisLegal() {
   //TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), minHeight, minWidth);
   TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), (int)(std::ceil(minHeight/2.0)), minWidth);
   //TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), 1, minWidth);
-
+  double llx, lly;
+  int width, height;
   for (auto &&blockNum: blockXOrder) {
-    bool is_current_loc_legal = tetrisSpace.IsSpaceAvail(block_list[blockNum.num].LLX(), block_list[blockNum.num].LLY(), block_list[blockNum.num].Width(), block_list[blockNum.num].Height());
-    Loc2D result = tetrisSpace.FindBlockLocation(block_list[blockNum.num].LLX(),
-                                                 block_list[blockNum.num].LLY(),
-                                                 block_list[blockNum.num].Width(),
-                                                 block_list[blockNum.num].Height());
-    block_list[blockNum.num].SetLLX(result.x);
-    block_list[blockNum.num].SetLLY(result.y);
+    llx = block_list[blockNum.num].LLX();
+    lly = block_list[blockNum.num].LLY();
+    width = block_list[blockNum.num].Width();
+    height = block_list[blockNum.num].Height();
+    bool is_current_loc_legal = tetrisSpace.IsSpaceAvail(llx, lly, width, height);
+    /****
+     * 1. if the current location is legal, the location of this block don't have to be changed,
+     *  IsSpaceAvail() will mark the space occupied by this block to be "used", and for sure this space is no more available
+     * 2. if the current location is illegal,
+     *  FindBlockLoc() will find a legal location for this block, and mark that space used.
+     * ****/
+    if (!is_current_loc_legal) {
+      Loc2D result(0,0);
+      bool is_found = tetrisSpace.FindBlockLoc(llx, lly, width, height, result);
+      if (is_found) {
+        block_list[blockNum.num].SetLLX(result.x);
+        block_list[blockNum.num].SetLLY(result.y);
+      } else {
+        // if a legal location is not found, need to reverse the legalization process
+        throw NotImplementedException();
+      }
+    }
   }
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "Tetris legalization complete!\n";

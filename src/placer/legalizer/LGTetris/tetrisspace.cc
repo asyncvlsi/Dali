@@ -44,7 +44,7 @@ bool TetrisSpace::IsSpaceAvail(double x_loc, double y_loc, int width, int height
   return true;
 }
 
-Loc2D TetrisSpace::FindBlockLocation(double currentX, double currentY, int blockWidth, int blockHeight) {
+bool TetrisSpace::FindBlockLoc(double currentX, double currentY, int blockWidth, int blockHeight, Loc2D result_loc) {
   //std::cout << "Block dimension: " << blockWidth << " " << blockHeight << std::endl;
   double minDisplacement = 1e30;
   int effective_height = (int)(std::ceil((double)blockHeight/row_height_));
@@ -68,7 +68,7 @@ Loc2D TetrisSpace::FindBlockLocation(double currentX, double currentY, int block
   Loc2D bestLoc(-1,-1);
   //std::cout << "allRowFail: " << allRowFail << std::endl;
   if (allRowFail) { // need to change this in the future
-    return bestLoc;
+    return false;
   }
   for (auto &&loc: candidateList) {
     if (loc.x == -1 && loc.y == -1) {
@@ -91,7 +91,8 @@ Loc2D TetrisSpace::FindBlockLocation(double currentX, double currentY, int block
 
   int overhead = effective_height * row_height_ - blockHeight;
   bestLoc.y = bestLoc.y*row_height_ + bottom_ + overhead/2;
-  return bestLoc;
+  result_loc = bestLoc;
+  return true;
 }
 
 void TetrisSpace::Show() {
