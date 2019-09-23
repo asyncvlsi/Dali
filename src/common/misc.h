@@ -63,6 +63,12 @@ struct Value2D {
   }
 };
 
+struct Loc2D {
+  int x;
+  int y;
+  explicit Loc2D(int initX, int initY): x(initX), y(initY) {};
+};
+
 void Assert(bool e, const std::string &error_message);
 void Warning(bool e, const std::string &warning_message);
 void VerbosePrint(VerboseLevel verbose_level, std::stringstream &buf);

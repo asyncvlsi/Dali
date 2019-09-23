@@ -10,14 +10,9 @@
 #include "freesegmentlist.h"
 #include "../../../common/misc.h"
 
-struct Loc2D {
-  int x;
-  int y;
-  explicit Loc2D(int initX, int initY): x(initX), y(initY) {};
-};
-
 class TetrisSpace {
 private:
+  int scan_line_;
   int left_;
   int right_;
   int bottom_;
@@ -31,7 +26,7 @@ public:
   TetrisSpace(int left, int right, int bottom, int top, int rowHeight, int minWidth);
   void FindCommonSegments(int startRowNum, int endRowNum, FreeSegmentList &commonSegments);
   bool IsSpaceAvail(int x_loc, int y_loc, int width, int height);
-  bool FindBlockLoc(double currentX, double currentY, int blockWidth, int blockHeight, Loc2D result_loc);
+  bool FindBlockLoc(double current_x, double current_y, int block_width, int block_height, Loc2D &result_loc);
   void Show();
 };
 

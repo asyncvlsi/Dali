@@ -3,6 +3,7 @@
 //
 
 #include "freesegmentlist.h"
+#include "../../../common/misc.h"
 
 FreeSegmentList::FreeSegmentList() {
   head_ = nullptr;
@@ -287,16 +288,29 @@ void FreeSegmentList::UseSpace(int locToStart, int lengthToUse) {
 bool FreeSegmentList::IsSpaceAvail(int x_loc, int width) {
   /****
    * In order to know if interval [x_loc, x_loc + width] is available, we just need to check if this segment sits in a FreeSegment in the linked-list
-   * A speed-up algorithm is to
+   * A speed-up algorithm is known, will implement it
    * ****/
   FreeSegment target(x_loc, x_loc+width);
+  bool is_avail = false;
   for (auto* current = Head(); current != nullptr; current = current->Next()) {
-    if (target.IsDominate(current)) {
-      continue;
+    if (current->IsContain(&target)) {
+      is_avail = true;
+      break;
     }
-
+    if (current->IsDominate(&target)) {
+      break;
+    }
   }
-  return true;
+  return is_avail;
+}
+
+int FreeSegmentList::MinDispLoc(int llx, int width) {
+  /****
+   * We assume any segment in this list has a length longer than block width
+   *
+   * ****/
+  Assert(Head()->Length() >= width, "Segment length should be longer than block width");
+  return Head()->Start();
 }
 
 void FreeSegmentList::Show() {

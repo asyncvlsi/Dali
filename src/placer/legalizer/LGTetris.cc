@@ -34,7 +34,7 @@ bool TetrisLegalizer::TetrisLegal() {
     double y;
   };
   std::vector< indexLocPair > blockXOrder(block_list.size());
-  for (size_t i=0; i<blockXOrder.size(); i++) {
+  for (size_t i=0; i<blockXOrder.size(); ++i) {
     blockXOrder[i].num = i;
     blockXOrder[i].x = block_list[i].LLX();
     blockXOrder[i].y = block_list[i].LLY();
@@ -54,25 +54,26 @@ bool TetrisLegalizer::TetrisLegal() {
   if (globalVerboseLevel >= LOG_INFO) {
     std::cout << "Building LGTetris space" << std::endl;
   }
-  //TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), maxHeight, MinWidth);
-  //TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), minHeight, MinWidth);
   TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), (int)(std::ceil(minHeight/2.0)), minWidth);
-  //TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), 1, MinWidth);
   int llx, lly;
   int width, height;
   for (auto &&blockNum: blockXOrder) {
-    llx = (int)std::round(block_list[blockNum.num].LLX());
-    lly = (int)std::round(block_list[blockNum.num].LLY());
     width = block_list[blockNum.num].Width();
     height = block_list[blockNum.num].Height();
     /****
+     * After "integerizing" the current location from "double" to "int":
      * 1. if the current location is legal, the location of this block don't have to be changed,
      *  IsSpaceAvail() will mark the space occupied by this block to be "used", and for sure this space is no more available
      * 2. if the current location is illegal,
      *  FindBlockLoc() will find a legal location for this block, and mark that space used.
      * ****/
+    llx = (int)std::round(block_list[blockNum.num].LLX());
+    lly = (int)std::round(block_list[blockNum.num].LLY());
     bool is_current_loc_legal = tetrisSpace.IsSpaceAvail(llx, lly, width, height);
-    if (!is_current_loc_legal) {
+    if (is_current_loc_legal) {
+      block_list[blockNum.num].SetLLX(llx);
+      block_list[blockNum.num].SetLLY(lly);
+    } else {
       Loc2D result_loc(0, 0);
       bool is_found = tetrisSpace.FindBlockLoc(llx, lly, width, height, result_loc);
       if (is_found) {
