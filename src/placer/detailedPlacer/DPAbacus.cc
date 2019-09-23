@@ -4,4 +4,4 @@
 
 #include "DPAbacus.h"
 
-DPAbacus::DPAbacus(): Placer() {};
+DPAbacus::DPAbacus(): Placer() {}

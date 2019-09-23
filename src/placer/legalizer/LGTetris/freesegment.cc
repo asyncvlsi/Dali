@@ -4,128 +4,147 @@
 
 #include "freesegment.h"
 
-FreeSegment::FreeSegment(int initStart, int initEnd): _start(initStart), _end(initEnd) {
-  assert(initStart <= initEnd);
+FreeSegment::FreeSegment(int start, int stop): start_(start), end_(stop) {
+  assert(start <= stop);
 }
 
-bool FreeSegment::setPrev(FreeSegment* preFreeSeg_ptr) {
-  _prev = preFreeSeg_ptr;
+bool FreeSegment::SetPrev(FreeSegment* preFreeSeg_ptr) {
+  prev_ = preFreeSeg_ptr;
   return true;
 }
 
-bool FreeSegment::setNext(FreeSegment* nextFreeSeg_ptr) {
-  _next = nextFreeSeg_ptr;
+bool FreeSegment::SetNext(FreeSegment* nextFreeSeg_ptr) {
+  next_ = nextFreeSeg_ptr;
   return true;
 }
 
-bool FreeSegment::linkSingleSeg(FreeSegment *seg_ptr) {
+bool FreeSegment::LinkSingleSeg(FreeSegment *seg_ptr) {
   if (seg_ptr == nullptr) {
-    std::cout << "Want to link to an empty pointer?\n";
+    std::cout << "Want to link to an Empty pointer?\n";
     assert(seg_ptr != nullptr);
   }
-  if ((this->next() != nullptr) || (seg_ptr->next() != nullptr)) {
+  if ((this->Next() != nullptr) || (seg_ptr->Next() != nullptr)) {
     std::cout << "This member function is not for concatenating multi nodes linked list\n";
-    assert((this->next() == nullptr) && (seg_ptr->next() == nullptr));
+    assert((this->Next() == nullptr) && (seg_ptr->Next() == nullptr));
   }
-  return (setNext(seg_ptr) && seg_ptr->setPrev(this));
+  return (SetNext(seg_ptr) && seg_ptr->SetPrev(this));
 }
 
-FreeSegment* FreeSegment::next() {
-  return _next;
+FreeSegment* FreeSegment::Next() {
+  return next_;
 }
 
-FreeSegment* FreeSegment::prev() {
-  return  _prev;
+FreeSegment* FreeSegment::Prev() {
+  return  prev_;
 }
 
-void FreeSegment::setSpan(int startLoc, int endLoc) {
+void FreeSegment::SetSpan(int startLoc, int endLoc) {
   if (startLoc > endLoc) {
-    std::cout << "Cannot set the span of a segment with start larger than end, start" << startLoc
-              << " end: " << endLoc << std::endl;
+    std::cout << "Cannot set the span of a segment with start larger than End, Start" << startLoc
+              << " End: " << endLoc << std::endl;
     assert(startLoc <= endLoc);
   }
-  _start = startLoc;
-  _end = endLoc;
+  start_ = startLoc;
+  end_ = endLoc;
 }
 
-int FreeSegment::start() const {
-  return  _start;
+int FreeSegment::Start() const {
+  return  start_;
 }
 
-int FreeSegment::end() const {
-  return  _end;
+int FreeSegment::End() const {
+  return  end_;
 }
 
-int FreeSegment::length() const {
-  return _end - _start;
+int FreeSegment::Length() const {
+  return end_ - start_;
 }
 
-bool FreeSegment::isOverlap(FreeSegment* seg) const {
-  if ((length() == 0) || (seg->length() == 0)) {
+bool FreeSegment::IsOverlap(FreeSegment* seg) const {
+  if ((Length() == 0) || (seg->Length() == 0)) {
     std::cout << "Length 0 segment?!\n";
     return false;
   }
-  bool notOverlap = (_end <= seg->start()) || (_start >= seg->end());
+  bool notOverlap = (end_ <= seg->Start()) || (start_ >= seg->End());
   return !notOverlap;
 }
 
-bool FreeSegment::isTouch(FreeSegment* seg) const {
-  if ((length() == 0) || (seg->length() == 0)) {
+bool FreeSegment::IsTouch(FreeSegment* seg) const {
+  if ((Length() == 0) || (seg->Length() == 0)) {
     std::cout << "Length 0 segment?!\n";
     return false;
   }
-  return (_end == seg->start()) || (_start == seg->end());
+  return (end_ == seg->Start()) || (start_ == seg->End());
 }
 
-bool FreeSegment::dominate(FreeSegment* seg) const {
-  return (_start >= seg->end());
+bool FreeSegment::IsDominate(FreeSegment* seg) const {
+  /****
+   * If this FreeSegment is on the right hand side of seg, and has common overlap length 0, return true
+   *
+   * example: |---seg---| ... |---this seg---|, return true
+   * example: |---seg---|---this seg---|, return true
+   * else return false
+   * ****/
+  return (start_ >= seg->End());
 }
 
-FreeSegment* FreeSegment::singleSegAnd(FreeSegment* seg) {
-  if (!isOverlap(seg)) {
+bool FreeSegment::IsContain(FreeSegment* seg) const {
+  /****
+   * If this FreeSegment contains seg, return true
+   * true condition:
+   *    start_ <= seg->Start() && end_ >= seg->End()
+   * example: |---this seg---|
+   *          |---seg---|
+   *          return true
+   * ****/
+  return (start_ <= seg->Start()) && (end_ >= seg->End());
+}
+
+FreeSegment* FreeSegment::SingleSegAnd(FreeSegment* seg) {
+  if (!IsOverlap(seg)) {
     return nullptr;
   }
-  auto *result = new FreeSegment(std::max(_start, seg->start()), std::min(_end, seg->end()));
+  auto *result = new FreeSegment(std::max(start_, seg->Start()), std::min(end_, seg->End()));
   return result;
 }
 
-FreeSegment* FreeSegment::singleSegOr(FreeSegment* seg) {
-  if ((length() == 0) && (seg->length() == 0)) {
-    std::cout << "What?! two segments with length 0 for OR operation\n";
+FreeSegment* FreeSegment::SingleSegOr(FreeSegment* seg) {
+  if ((Length() == 0) && (seg->Length() == 0)) {
+    std::cout << "What?! two segments with Length 0 for OR operation\n";
     return nullptr;
   }
   auto *result = new FreeSegment;
-  if (_start > seg->end() || _end < seg->start()) { // no overlap, no touch
+  if (start_ > seg->End() || end_ < seg->Start()) { // no overlap, no touch
     int firstStart, firstEnd, secondStart, secondEnd;
-    if (_start < seg->start()) {
-      firstStart = _start;
-      firstEnd = _end;
-      secondStart = seg->start();
-      secondEnd = seg->end();
+    if (start_ < seg->Start()) {
+      firstStart = start_;
+      firstEnd = end_;
+      secondStart = seg->Start();
+      secondEnd = seg->End();
     } else {
-      firstStart = seg->start();
-      firstEnd = seg->end();
-      secondStart = _start;
-      secondEnd = _end;
+      firstStart = seg->Start();
+      firstEnd = seg->End();
+      secondStart = start_;
+      secondEnd = end_;
     }
-    result->setSpan(firstStart,firstEnd);
+    result->SetSpan(firstStart, firstEnd);
     auto *secondSeg = new FreeSegment(secondStart, secondEnd);
-    result->setNext(secondSeg);
-  } else if (_start == seg->end()) { // _start touches the end of seg
-    result->setSpan(seg->start(),_end);
-  } else if (_end == seg->start()) { // _end touches the start of seg
-    result->setSpan(_start,seg->end());
+    result->SetNext(secondSeg);
+  } else if (start_ == seg->End()) { // start_ touches the End of seg
+    result->SetSpan(seg->Start(), end_);
+  } else if (end_ == seg->Start()) { // end_ touches the Start of seg
+    result->SetSpan(start_, seg->End());
   } else { // non-zero overlap
-    result->setSpan(std::min(_start, seg->start()), std::max(_end, seg->end()));
+    result->SetSpan(std::min(start_, seg->Start()), std::max(end_, seg->End()));
   }
   return result;
 }
 
-void FreeSegment::clear() {
+void FreeSegment::Clear() {
   FreeSegment* current = this;
   FreeSegment* next = nullptr;
   while (current != nullptr) {
-    next = current->next();
+    next = current->Next();
     delete current;
     current = next;
   }

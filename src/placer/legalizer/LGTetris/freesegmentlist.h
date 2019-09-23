@@ -11,34 +11,34 @@
 
 class FreeSegmentList {
 private:
-  FreeSegment* _head;
-  FreeSegment* _tail;
-  int _minWidth;
-  size_t _size;
+  FreeSegment* head_;
+  FreeSegment* tail_;
+  int min_width_;
+  size_t size_;
   /***derived data entries***/
 public:
   FreeSegmentList();
-  explicit FreeSegmentList(int initStart, int initEnd, int initMinWidth);
+  explicit FreeSegmentList(int start, int stop, int min_width);
   ~FreeSegmentList();
   size_t size() const;
-  int left() const;
-  int right() const;
-  FreeSegment* head() const;
-  FreeSegment* tail() const;
-  int minWidth() const;
-  void setminWidth(int initMinWidth);
-  void append(FreeSegment* segList);
-  bool emplace_back(int start, int end);
-  void push_back(FreeSegment* seg);
-  void insert(FreeSegment* insertPosition, FreeSegment* segToInsert);
-  bool empty() const;
-  void copyFrom(FreeSegmentList &originList);
-  void clear();
-  bool applyMask(FreeSegmentList &maskRow);
-  void removeSeg(FreeSegment* segInList);
-  void removeShortSeg(int width);
-  void useSpace(int locToStart, int lengthToUse);
-  bool IsSpaceAvail(double x_loc, double y_loc, int width, int height);
+  int Left() const;
+  int Right() const;
+  FreeSegment* Head() const;
+  FreeSegment* Tail() const;
+  int MinWidth() const;
+  void SetMinWidth(int initMinWidth);
+  void Append(FreeSegment* segList);
+  bool EmplaceBack(int start, int end);
+  void PushBack(FreeSegment* seg);
+  void Insert(FreeSegment* insertPosition, FreeSegment* segToInsert);
+  bool Empty() const;
+  void CopyFrom(FreeSegmentList &originList);
+  void Clear();
+  bool ApplyMask(FreeSegmentList &maskRow);
+  void RemoveSeg(FreeSegment* segInList);
+  void RemoveShortSeg(int width);
+  void UseSpace(int locToStart, int lengthToUse);
+  bool IsSpaceAvail(int x_loc, int width);
   void Show();
 };
 

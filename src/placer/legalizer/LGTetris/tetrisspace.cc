@@ -13,8 +13,8 @@ TetrisSpace::TetrisSpace(int left, int right, int bottom, int top, int rowHeight
   }
   for (auto &&row:free_segment_rows) {
     auto* seg_ptr = new FreeSegment(left_, right_);
-    row.push_back(seg_ptr);
-    row.setminWidth(min_width_);
+    row.PushBack(seg_ptr);
+    row.SetMinWidth(min_width_);
 
   }
 }
@@ -26,22 +26,26 @@ void TetrisSpace::FindCommonSegments(int startRowNum, int endRowNum, FreeSegment
   if ((startRowNum < 0) || (endRowNum > (int)(free_segment_rows.size()))) {
     assert((startRowNum >= 0) && (endRowNum <= (int)free_segment_rows.size()));
   }
-  commonSegments.copyFrom(free_segment_rows[startRowNum]);
+  commonSegments.CopyFrom(free_segment_rows[startRowNum]);
   for (int i = startRowNum+1; i<endRowNum; ++i) {
-    commonSegments.applyMask(free_segment_rows[i]);
-    if (commonSegments.empty()) break;
+    commonSegments.ApplyMask(free_segment_rows[i]);
+    if (commonSegments.Empty()) break;
   }
 }
 
-bool TetrisSpace::IsSpaceAvail(double x_loc, double y_loc, int width, int height) {
+bool TetrisSpace::IsSpaceAvail(int x_loc, int y_loc, int width, int height) {
   int start_row = std::floor((y_loc-bottom_)/row_height_);
   int end_row = start_row + (int)(std::ceil((double)height/row_height_));
+  bool all_row_avail = true;
+  bool current_row_avail = true;
   for (int i=start_row; i<= end_row; ++i) {
-    if (!free_segment_rows[i].IsSpaceAvail(x_loc, y_loc, width, height)) {
-      return false;
+    current_row_avail = free_segment_rows[i].IsSpaceAvail(x_loc, width);
+    if (!current_row_avail) {
+      all_row_avail = false;
+      break;
     }
   }
-  return true;
+  return all_row_avail;
 }
 
 bool TetrisSpace::FindBlockLoc(double currentX, double currentY, int blockWidth, int blockHeight, Loc2D result_loc) {
@@ -56,12 +60,12 @@ bool TetrisSpace::FindBlockLoc(double currentX, double currentY, int blockWidth,
     FreeSegmentList commonSegments;
     FindCommonSegments(i, i + effective_height, commonSegments);
     //std::cout << i*row_height_ + bottom_ << std::endl;
-    commonSegments.removeShortSeg(blockWidth);
-    if (commonSegments.empty()) {
+    commonSegments.RemoveShortSeg(blockWidth);
+    if (commonSegments.Empty()) {
       candidateList.emplace_back(-1,-1);
     } else {
       allRowFail = false;
-      candidateList.emplace_back(commonSegments.head()->start(),i);
+      candidateList.emplace_back(commonSegments.Head()->Start(), i);
     }
   }
 
@@ -84,9 +88,9 @@ bool TetrisSpace::FindBlockLoc(double currentX, double currentY, int blockWidth,
 
   for (int i = bestLoc.y; i < bestLoc.y + effective_height; ++i) {
     //free_segment_rows[i].Show();
-    //std::cout << "Space to use, x, y, length: "
+    //std::cout << "Space to use, x, y, Length: "
     //          << bestLoc.x << " " << bestLoc.y*row_height_ + bottom_ << " " << blockWidth << std::endl;
-    free_segment_rows[i].useSpace(bestLoc.x, blockWidth);
+    free_segment_rows[i].UseSpace(bestLoc.x, blockWidth);
   }
 
   int overhead = effective_height * row_height_ - blockHeight;

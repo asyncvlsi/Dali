@@ -11,35 +11,36 @@
 
 class FreeSegment {
 private:
-  int _start;
-  int _end;
-  FreeSegment* _prev = nullptr; // Pointer to previous free segment
-  FreeSegment* _next = nullptr; // Pointer to next free segment
+  int start_;
+  int end_;
+  FreeSegment* prev_ = nullptr; // Pointer to previous free segment
+  FreeSegment* next_ = nullptr; // Pointer to Next free segment
 public:
-  explicit FreeSegment(int initStart = 0, int initEnd = 0);
-  bool setPrev(FreeSegment* preFreeSeg_ptr);
-  bool setNext(FreeSegment* nextFreeSeg_ptr);
-  bool linkSingleSeg(FreeSegment *seg_ptr);
-  FreeSegment* next();
-  FreeSegment* prev();
-  void setSpan(int startLoc, int endLoc);
-  int start() const;
-  int end() const;
-  int length() const;
-  bool isOverlap(FreeSegment* seg) const;
-  bool isTouch(FreeSegment* seg) const;
-  bool dominate(FreeSegment* seg) const;
-  FreeSegment* singleSegAnd(FreeSegment* seg);
-  FreeSegment* singleSegOr(FreeSegment* seg);
-  void clear();
+  explicit FreeSegment(int start = 0, int stop = 0);
+  bool SetPrev(FreeSegment* preFreeSeg_ptr);
+  bool SetNext(FreeSegment* nextFreeSeg_ptr);
+  bool LinkSingleSeg(FreeSegment *seg_ptr);
+  FreeSegment* Next();
+  FreeSegment* Prev();
+  void SetSpan(int startLoc, int endLoc);
+  int Start() const;
+  int End() const;
+  int Length() const;
+  bool IsOverlap(FreeSegment* seg) const;
+  bool IsTouch(FreeSegment* seg) const;
+  bool IsDominate(FreeSegment* seg) const;
+  bool IsContain(FreeSegment* seg) const;
+  FreeSegment* SingleSegAnd(FreeSegment* seg);
+  FreeSegment* SingleSegOr(FreeSegment* seg);
+  void Clear();
 
   friend std::ostream& operator<<(std::ostream& os, FreeSegment* seg) {
     if (seg == nullptr) {
       os << "Empty pointer?\n";
     } else {
-      os << "( " << seg->_start << " " << seg->_end << " )\n";
-      if (seg->next() != nullptr) {
-        os << seg->next();
+      os << "( " << seg->start_ << " " << seg->end_ << " )\n";
+      if (seg->Next() != nullptr) {
+        os << seg->Next();
       }
     }
     return os;
