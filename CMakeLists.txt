@@ -53,6 +53,13 @@ add_executable(hpcc-debug
 target_link_libraries(hpcc-debug
     PRIVATE placer)
 
+# Stand-alone hpwl calculator, building from the placer library
+add_executable(hpwl
+    EXCLUDE_FROM_ALL
+    src/hpwl.cc)
+target_link_libraries(hpwl
+    PRIVATE placer)
+
 ######################################
 # Configure install destination directory
 ######################################
