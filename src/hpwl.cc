@@ -13,10 +13,7 @@
  * ****/
 
 #include <iostream>
-#include "common/global.h"
 #include "circuit.h"
-
-VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 
 void ReportUsage();
 
@@ -36,20 +33,29 @@ int main(int argc, char *argv[]) {
       lef_file_name = std::string(argv[i++]);
     } else if (arg == "-def" && i < argc) {
       def_file_name = std::string(argv[i++]);
-    } else if (arg == "-grid" && i < argc) {
-      str_grid_value_x = std::string(argv[i++]);
-      str_grid_value_y = std::string(argv[i++]);
-    } else if (arg == "-v" && i < argc) {
-      str_verbose_level = std::string(argv[i++]);
     } else {
       std::cout << "Unknown option for readArgs\n";
     }
   }
 
+  if ((lef_file_name.empty())||(def_file_name.empty())) {
+    std::cout << "Invalid input!\n";
+    ReportUsage();
+    return 1;
+  }
+
   Circuit circuit;
-  //circuit.SetGridValue();
   circuit.ReadLefFile(lef_file_name);
   circuit.ReadDefFile(def_file_name);
+  // might need to print out some circuit info here
+  std::cout << "Pin-to-Pin HPWL\n";
+  std::cout << "  HPWL in the x direction: " << circuit.HPWLX() << std::endl;
+  std::cout << "  HPWL in the y direction: " << circuit.HPWLY() << std::endl;
+  std::cout << "  HPWL total:              " << circuit.HPWL()  << std::endl;
+  std::cout << "Center-to-Center HPWL\n";
+  std::cout << "  HPWL in the x direction: " << circuit.HPWLCtoCX() << std::endl;
+  std::cout << "  HPWL in the y direction: " << circuit.HPWLCtoCY() << std::endl;
+  std::cout << "  HPWL total:              " << circuit.HPWLCtoC()  << std::endl;
   return 0;
 }
 
@@ -57,8 +63,6 @@ void ReportUsage() {
   std::cout << "Usage: hpwl\n"
                " -lef <file.lef>\n"
                " -def <file.def>\n"
-               " -grid grid_value_x grid_value_y (optional? default TBD)\n"
-               " -v verbosity_level (optional, 0-5, default 0)\n"
                "(order does not matter)"
             << std::endl;
 }
