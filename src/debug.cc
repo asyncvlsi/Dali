@@ -61,11 +61,9 @@ int main() {
   legalizer->GenMATLABScript("legalizer_result.txt");
   //legalizer->SaveDEFFile("circuit.def", def_file);
 
-
   delete gb_placer;
   delete d_placer;
   delete legalizer;
-
 
   Time = clock() - Time;
   std::cout << "Execution time " << (float)Time/CLOCKS_PER_SEC << "s.\n";

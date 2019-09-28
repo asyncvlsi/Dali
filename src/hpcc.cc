@@ -3,7 +3,7 @@
 //
 
 #include <iostream>
-#include <common/global.h>
+#include "common/global.h"
 
 VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 

@@ -12,7 +12,7 @@ bool TetrisLegalizer::TetrisLegal() {
   std::cout << "Start LGTetris legalization" << std::endl;
   std::vector<Block> &block_list = *BlockList();
   // 1. move all blocks into placement region
-  for (auto &&block: block_list) {
+  /*for (auto &&block: block_list) {
     if (block.LLX() < Left()) {
       block.SetLLX(Left());
     }
@@ -25,7 +25,7 @@ bool TetrisLegalizer::TetrisLegal() {
     if (block.URY() > Top()) {
       block.SetURY(Top());
     }
-  }
+  }*/
 
   // 2. sort blocks based on their lower Left corners. Further optimization is doable here.
   struct indexLocPair{
@@ -57,11 +57,12 @@ bool TetrisLegalizer::TetrisLegal() {
   TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), (int)(std::ceil(minHeight/2.0)), minWidth);
   int llx, lly;
   int width, height;
+  //int count = 0;
   for (auto &&blockNum: blockXOrder) {
     width = block_list[blockNum.num].Width();
     height = block_list[blockNum.num].Height();
     /****
-     * After "integerizing" the current location from "double" to "int":
+     * After "integerization" of the current location from "double" to "int":
      * 1. if the current location is legal, the location of this block don't have to be changed,
      *  IsSpaceAvail() will mark the space occupied by this block to be "used", and for sure this space is no more available
      * 2. if the current location is illegal,
@@ -84,6 +85,11 @@ bool TetrisLegalizer::TetrisLegal() {
         throw NotImplementedException();
       }
     }
+    block_list[blockNum.num].is_placed = true;
+    /*std::string file_name = std::to_string(count);
+    std::cout << count << "  " << is_current_loc_legal << "\n";
+    count++;
+    GenMATLABScriptPlaced(file_name);*/
   }
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "Tetris legalization complete!\n";

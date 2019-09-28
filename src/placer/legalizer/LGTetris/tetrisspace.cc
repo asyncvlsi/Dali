@@ -38,8 +38,19 @@ void TetrisSpace::FindCommonSegments(int startRowNum, int endRowNum, FreeSegment
 }
 
 bool TetrisSpace::IsSpaceAvail(int x_loc, int y_loc, int width, int height) {
+  /****
+   * 1. Check if the current location is in the placement region, if not return false. We need to find a new location;
+   * If in this region:
+   * 2. We need to check from the bottom row to the top row, which occupied by this block to know if for each row, the space is available;
+   * 3. If one of the answer is no, return false;
+   * 4. If all of them are yes, make the region as used.
+   * ****/
+
+  bool out_range = (x_loc > right_) || (x_loc < left_) || (y_loc > top_) || (y_loc < bottom_);
+  if (out_range)  return false;
+
   int start_row = std::floor((y_loc-bottom_)/row_height_);
-  int end_row = start_row + (int)(std::ceil((double)height/row_height_)) - 1;
+  int end_row = start_row + (int)(std::ceil((double)height/row_height_));
   bool all_row_avail = true;
   for (int i=start_row; i<= end_row; ++i) {
     if (!free_segment_rows[i].IsSpaceAvail(x_loc, width)) {
@@ -48,7 +59,7 @@ bool TetrisSpace::IsSpaceAvail(int x_loc, int y_loc, int width, int height) {
     }
   }
   if (all_row_avail) {
-    for (int i = start_row; i < end_row; ++i) {
+    for (int i = start_row; i <= end_row; ++i) {
       free_segment_rows[i].UseSpace(x_loc, width);
     }
   }
@@ -56,7 +67,15 @@ bool TetrisSpace::IsSpaceAvail(int x_loc, int y_loc, int width, int height) {
 }
 
 bool TetrisSpace::FindBlockLoc(double current_x, double current_y, int block_width, int block_height, Loc2D &result_loc) {
-  scan_line_ = (int)(std::round(current_x));
+  int llx = int(std::round(current_x));
+  if (llx < left_) {
+    scan_line_ = left_;
+  } else {
+    scan_line_ = llx;
+  }
+  if (scan_line_ >= right_) {
+    scan_line_ = right_;
+  }
   double min_cost = 1e30;
   int effective_height = (int)(std::ceil((double)block_height/row_height_));
   int top_row_to_check = (int)(free_segment_rows.size()) - effective_height + 1;

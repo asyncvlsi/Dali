@@ -228,6 +228,18 @@ void Placer::GenMATLABScript(std::string const &name_of_file) {
   ost.close();
 }
 
+void Placer::GenMATLABScriptPlaced(std::string const &name_of_file) {
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+  ost << Left() << " " << Bottom() << " " << Right() - Left() << " " << Top() - Bottom() << "\n";
+  for (auto &&block: circuit_->block_list) {
+    if (block.is_placed) {
+      ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";
+    }
+  }
+  ost.close();
+}
+
 bool Placer::SaveNodeTerminal(std::string const &terminal_file, std::string const &node_file) {
   std::ofstream ost(terminal_file.c_str());
   std::ofstream ost1(node_file.c_str());

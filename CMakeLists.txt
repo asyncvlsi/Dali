@@ -42,7 +42,7 @@ add_library(placer
 
 # Stand-alone placer, building from the placer library
 add_executable(hpcc
-    src/main.cc)
+    src/hpcc.cc)
 target_link_libraries(hpcc
     PRIVATE placer)
 
