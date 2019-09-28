@@ -35,9 +35,9 @@ public:
   void CopyFrom(FreeSegmentList &originList);
   void Clear();
   bool ApplyMask(FreeSegmentList &maskRow);
-  void RemoveSeg(FreeSegment* segInList);
+  void RemoveSeg(FreeSegment* seg_in_list);
   void RemoveShortSeg(int width);
-  void UseSpace(int locToStart, int lengthToUse);
+  void UseSpace(int start, int length);
   bool IsSpaceAvail(int x_loc, int width);
   int MinDispLoc(int llx, int width);
   void Show();

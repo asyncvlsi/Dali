@@ -30,6 +30,7 @@ public:
   bool IsTouch(FreeSegment* seg) const;
   bool IsDominate(FreeSegment* seg) const;
   bool IsContain(FreeSegment* seg) const;
+  bool IsSameStartEnd(FreeSegment* seg) const;
   FreeSegment* SingleSegAnd(FreeSegment* seg);
   FreeSegment* SingleSegOr(FreeSegment* seg);
   void Clear();

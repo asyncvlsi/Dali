@@ -100,6 +100,10 @@ bool FreeSegment::IsContain(FreeSegment* seg) const {
   return (start_ <= seg->Start()) && (end_ >= seg->End());
 }
 
+bool FreeSegment::IsSameStartEnd(FreeSegment* seg) const {
+  return (start_ == seg->Start()) && (end_ == seg->End());
+}
+
 FreeSegment* FreeSegment::SingleSegAnd(FreeSegment* seg) {
   if (!IsOverlap(seg)) {
     return nullptr;
