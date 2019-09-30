@@ -11,6 +11,7 @@
 #include <string>
 #include "global.h"
 #include <cmath>
+#include <stdexcept>
 
 struct Value2D {
   double x;
@@ -73,7 +74,7 @@ void Assert(bool e, const std::string &error_message);
 void Warning(bool e, const std::string &warning_message);
 void VerbosePrint(VerboseLevel verbose_level, std::stringstream &buf);
 
-class NotImplementedException : public std::logic_error {
+class NotImplementedException: public std::logic_error {
  public:
   NotImplementedException(): std::logic_error("Function not yet implemented.") {};
 };

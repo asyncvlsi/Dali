@@ -24,6 +24,15 @@ TetrisSpace::TetrisSpace(int left, int right, int bottom, int top, int rowHeight
   }
 }
 
+int TetrisSpace::LocToRow(int y_loc) {
+  int relative_y = y_loc-bottom_;
+  int row_num = (y_loc-bottom_)/row_height_;
+  if (relative_y%row_height_ == 0) {
+    --row_num;
+  }
+  return(row_num);
+}
+
 void TetrisSpace::FindCommonSegments(int startRowNum, int endRowNum, FreeSegmentList &commonSegments) {
   if (endRowNum < startRowNum) {
     assert (endRowNum >= startRowNum);
@@ -46,13 +55,21 @@ bool TetrisSpace::IsSpaceAvail(int x_loc, int y_loc, int width, int height) {
    * 4. If all of them are yes, make the region as used.
    * ****/
 
-  bool out_range = (x_loc > right_) || (x_loc < left_) || (y_loc > top_) || (y_loc < bottom_);
-  if (out_range)  return false;
+  bool out_range = (x_loc+width > right_) || (x_loc < left_) || (y_loc+height > top_) || (y_loc < bottom_);
+  if (out_range) {
+    return false;
+  }
 
-  int start_row = std::floor((y_loc-bottom_)/row_height_);
-  int end_row = start_row + (int)(std::ceil((double)height/row_height_));
+  int start_row = LocToRow(y_loc);
+  int end_row = LocToRow(y_loc + height);
+  if (end_row >= tot_num_row_) {
+    std::cout << "Fatal error\n";
+    std::cout << start_row << "  " << end_row << "  " << tot_num_row_ << "\n";
+    std::cout << y_loc << "  " << y_loc + height << "  " << top_ << "\n";
+    exit(1);
+  }
   bool all_row_avail = true;
-  for (int i=start_row; i<= end_row; ++i) {
+  for (int i = start_row; i <= end_row; ++i) {
     if (!free_segment_rows[i].IsSpaceAvail(x_loc, width)) {
       all_row_avail = false;
       break;

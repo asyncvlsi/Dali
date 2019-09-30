@@ -188,24 +188,21 @@ void FreeSegmentList::RemoveSeg(FreeSegment* seg_in_list) { // don't remove, tra
   if (size() == 1) {
     head_ = nullptr;
     tail_ = nullptr;
-    size_ = 0;
   } else {
     if (current == Head()) {
       head_ = current->Next();
       head_->SetPrev(nullptr);
-      --size_;
     } else if (current == Tail()) {
       tail_ = current->Prev();
       tail_->SetNext(nullptr);
-      --size_;
     } else {
       FreeSegment *prev = current->Prev();
       FreeSegment *next = current->Next();
       prev->SetNext(next);
       next->SetPrev(prev);
-      --size_;
     }
   }
+  --size_;
   delete current;
 }
 
@@ -256,7 +253,7 @@ void FreeSegmentList::UseSpace(int start, int length) {
   int end_loc = start + length;
   bool isSegFound = false;
   FreeSegment target(start, end_loc);
-  for (auto current = Head(); current != nullptr; current = current->Next()) {
+  for (auto *current = Head(); current != nullptr; current = current->Next()) {
     if (current->IsContain(&target)) {
       isSegFound = true;
       if (current->IsSameStartEnd(&target)) {
@@ -288,7 +285,7 @@ bool FreeSegmentList::IsSpaceAvail(int x_loc, int width) {
   FreeSegment target(x_loc, x_loc+width);
   bool is_avail = false;
   //std::cout << Head() << "\n";
-  for (auto current = Head(); current != nullptr; current = current->Next()) {
+  for (auto *current = Head(); current != nullptr; current = current->Next()) {
     if (current->IsContain(&target)) {
       is_avail = true;
       break;
