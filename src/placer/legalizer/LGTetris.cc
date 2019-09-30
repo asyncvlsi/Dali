@@ -57,7 +57,7 @@ bool TetrisLegalizer::TetrisLegal() {
   TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), (int)(std::ceil(minHeight/2.0)), minWidth);
   int llx, lly;
   int width, height;
-  int count = 0;
+  //int count = 0;
   for (auto &&blockNum: blockXOrder) {
     width = block_list[blockNum.num].Width();
     height = block_list[blockNum.num].Height();
@@ -85,11 +85,11 @@ bool TetrisLegalizer::TetrisLegal() {
         throw NotImplementedException();
       }
     }
-    block_list[blockNum.num].is_placed = true;
+    /*block_list[blockNum.num].is_placed = true;
     std::string file_name = std::to_string(count);
     std::cout << count << "  " << is_current_loc_legal << "\n";
-    count++;
-    GenMATLABScriptPlaced(file_name);
+     GenMATLABScriptPlaced(file_name);*/
+    //count++;
   }
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "Tetris legalization complete!\n";

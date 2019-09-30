@@ -24,11 +24,24 @@ TetrisSpace::TetrisSpace(int left, int right, int bottom, int top, int rowHeight
   }
 }
 
-int TetrisSpace::LocToRow(int y_loc) {
+int TetrisSpace::ToStartRow(int y_loc) {
+  int row_num = (y_loc-bottom_)/row_height_;
+  if ((row_num < 0) || (row_num >= tot_num_row_)) {
+    std::cout << "y_loc out of range, y_loc, bottom_, top_: " << y_loc << "  " << bottom_ << "  " << top_ << std::endl;
+    exit(1);
+  }
+  return(row_num);
+}
+
+int TetrisSpace::ToEndRow(int y_loc) {
   int relative_y = y_loc-bottom_;
   int row_num = (y_loc-bottom_)/row_height_;
   if (relative_y%row_height_ == 0) {
     --row_num;
+  }
+  if ((row_num < 0) || (row_num >= tot_num_row_)) {
+    std::cout << "y_loc out of range, y_loc, bottom_, top_: " << y_loc << "  " << bottom_ << "  " << top_ << std::endl;
+    exit(1);
   }
   return(row_num);
 }
@@ -60,8 +73,8 @@ bool TetrisSpace::IsSpaceAvail(int x_loc, int y_loc, int width, int height) {
     return false;
   }
 
-  int start_row = LocToRow(y_loc);
-  int end_row = LocToRow(y_loc + height);
+  int start_row = ToStartRow(y_loc);
+  int end_row = ToEndRow(y_loc + height);
   if (end_row >= tot_num_row_) {
     std::cout << "Fatal error\n";
     std::cout << start_row << "  " << end_row << "  " << tot_num_row_ << "\n";
