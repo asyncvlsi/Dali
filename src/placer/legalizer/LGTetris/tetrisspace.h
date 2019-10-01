@@ -26,9 +26,10 @@ public:
   TetrisSpace(int left, int right, int bottom, int top, int rowHeight, int minWidth);
   int ToStartRow(int y_loc);
   int ToEndRow(int y_loc);
+  void UseSpace(int llx, int lly, int width, int height);
   void FindCommonSegments(int startRowNum, int endRowNum, FreeSegmentList &commonSegments);
-  bool IsSpaceAvail(int x_loc, int y_loc, int width, int height);
-  bool FindBlockLoc(double current_x, double current_y, int block_width, int block_height, Loc2D &result_loc);
+  bool IsSpaceAvail(int llx, int lly, int width, int height);
+  bool FindBlockLoc(int llx, int lly, int width, int height, Loc2D &result_loc);
   void Show();
 };
 
