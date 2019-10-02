@@ -7,6 +7,12 @@
 
 TetrisLegalizer::TetrisLegalizer(): Placer(), max_interation_(0) {}
 
+void TetrisLegalizer::FlipPlacement() {
+  flipped_ = !flipped_;
+
+
+}
+
 bool TetrisLegalizer::TetrisLegal() {
   //draw_block_net_list("before_tetris_legalization.m");
   std::cout << "Start LGTetris legalization" << std::endl;
@@ -82,7 +88,13 @@ bool TetrisLegalizer::TetrisLegal() {
         block_list[blockNum.num].SetLLY(result_loc.y);
       } else {
         // if a legal location is not found, need to reverse the legalization process
-        throw NotImplementedException();
+        if (current_interation_ < max_interation_) {
+          FlipPlacement();
+          TetrisLegal();
+        } else {
+          std::cout << "Tetris legalization fail!\n";
+          return false;
+        }
       }
     }
     /*block_list[blockNum.num].is_placed = true;

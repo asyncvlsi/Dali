@@ -11,8 +11,11 @@
 class TetrisLegalizer: public Placer {
  private:
   int max_interation_;
+  int current_interation_;
+  bool flipped_;
  public:
   TetrisLegalizer();
+  void FlipPlacement();
   bool TetrisLegal();
   void StartPlacement() override;
 };
