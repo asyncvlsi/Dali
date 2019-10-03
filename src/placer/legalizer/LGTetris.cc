@@ -5,7 +5,32 @@
 #include "LGTetris.h"
 #include "../../common/misc.h"
 
-TetrisLegalizer::TetrisLegalizer(): Placer(), max_interation_(0) {}
+struct DIYLess{
+  bool operator()(const indexLocPair a, const indexLocPair b) {
+    return (a.x < b.x) || ((a.x == b.x) && (a.y < b.y));
+  }
+} customLess;
+
+TetrisLegalizer::TetrisLegalizer(): Placer(), max_iteration_(5), current_iteration_(0), flipped_(false) {}
+
+void TetrisLegalizer::Init() {
+  std::vector<Block> &block_list = *BlockList();
+  indexLocPair init_pair(0,0,0);
+  blockXOrder.assign(block_list.size(), init_pair);
+}
+
+void TetrisLegalizer::SetMaxItr(int max_iteration) {
+  Assert(max_iteration > 0, "Invalid max_iteration value, value must be greater than 0");
+  max_iteration_ = max_iteration;
+}
+
+void TetrisLegalizer::ResetItr() {
+  current_iteration_ = 0;
+}
+
+void TetrisLegalizer::FastShift() {
+
+}
 
 void TetrisLegalizer::FlipPlacement() {
   flipped_ = !flipped_;
@@ -34,22 +59,12 @@ bool TetrisLegalizer::TetrisLegal() {
   }*/
 
   // 2. sort blocks based on their lower Left corners. Further optimization is doable here.
-  struct indexLocPair{
-    int num;
-    double x;
-    double y;
-  };
-  std::vector< indexLocPair > blockXOrder(block_list.size());
+
   for (size_t i=0; i<blockXOrder.size(); ++i) {
     blockXOrder[i].num = i;
     blockXOrder[i].x = block_list[i].LLX();
     blockXOrder[i].y = block_list[i].LLY();
   }
-  struct DIYLess{
-    bool operator()(const indexLocPair a, const indexLocPair b) {
-      return (a.x < b.x) || ((a.x == b.x) && (a.y < b.y));
-    }
-  } customLess;
   std::sort(blockXOrder.begin(), blockXOrder.end(), customLess);
 
   // 3. initialize the data structure to store row usage
@@ -64,31 +79,38 @@ bool TetrisLegalizer::TetrisLegal() {
   int llx, lly;
   int width, height;
   //int count = 0;
-  for (auto &&blockNum: blockXOrder) {
-    width = block_list[blockNum.num].Width();
-    height = block_list[blockNum.num].Height();
+  for (size_t i=0; i<blockXOrder.size(); ++i) {
+    int &block_num = blockXOrder[i].num;
+    width = block_list[block_num].Width();
+    height = block_list[block_num].Height();
     /****
      * After "integerization" of the current location from "double" to "int":
      * 1. if the current location is legal, the location of this block don't have to be changed,
      *  IsSpaceAvail() will mark the space occupied by this block to be "used", and for sure this space is no more available
      * 2. if the current location is illegal,
      *  FindBlockLoc() will find a legal location for this block, and mark that space used.
+     * 3. If FindBlocLoc() fails to find a legal location,
+     *  FastShift() the remaining blocks to the right hand side of the last placed block, in order to keep block orders
+     *  FlipPlacement() will flip the placement in the x-direction
+     *  if current_iteration does not reach the maximum allowed number, then do the legalization in a reverse order
      * ****/
-    llx = (int)std::round(block_list[blockNum.num].LLX());
-    lly = (int)std::round(block_list[blockNum.num].LLY());
+    llx = (int)std::round(block_list[block_num].LLX());
+    lly = (int)std::round(block_list[block_num].LLY());
     bool is_current_loc_legal = tetrisSpace.IsSpaceAvail(llx, lly, width, height);
     if (is_current_loc_legal) {
-      block_list[blockNum.num].SetLLX(llx);
-      block_list[blockNum.num].SetLLY(lly);
+      block_list[block_num].SetLLX(llx);
+      block_list[block_num].SetLLY(lly);
     } else {
       Loc2D result_loc(0, 0);
       bool is_found = tetrisSpace.FindBlockLoc(llx, lly, width, height, result_loc);
       if (is_found) {
-        block_list[blockNum.num].SetLLX(result_loc.x);
-        block_list[blockNum.num].SetLLY(result_loc.y);
+        block_list[block_num].SetLLX(result_loc.x);
+        block_list[block_num].SetLLY(result_loc.y);
       } else {
         // if a legal location is not found, need to reverse the legalization process
-        if (current_interation_ < max_interation_) {
+        FastShift();
+        if (current_iteration_ < max_iteration_) {
+          ++current_iteration_;
           FlipPlacement();
           TetrisLegal();
         } else {
@@ -97,7 +119,7 @@ bool TetrisLegalizer::TetrisLegal() {
         }
       }
     }
-    /*block_list[blockNum.num].is_placed = true;
+    /*block_list[block_num].is_placed = true;
     std::string file_name = std::to_string(count);
     std::cout << count << "  " << is_current_loc_legal << "\n";
      GenMATLABScriptPlaced(file_name);*/
@@ -111,6 +133,7 @@ bool TetrisLegalizer::TetrisLegal() {
 
 
 void TetrisLegalizer::StartPlacement() {
+  Init();
   TetrisLegal();
   ReportHPWL(LOG_CRITICAL);
 }
