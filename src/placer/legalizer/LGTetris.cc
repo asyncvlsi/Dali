@@ -16,7 +16,7 @@ TetrisLegalizer::TetrisLegalizer(): Placer(), max_iteration_(5), current_iterati
 void TetrisLegalizer::Init() {
   std::vector<Block> &block_list = *BlockList();
   indexLocPair init_pair(0,0,0);
-  blockXOrder.assign(block_list.size(), init_pair);
+  ordered_list.assign(block_list.size(), init_pair);
 }
 
 void TetrisLegalizer::SetMaxItr(int max_iteration) {
@@ -28,8 +28,44 @@ void TetrisLegalizer::ResetItr() {
   current_iteration_ = 0;
 }
 
-void TetrisLegalizer::FastShift() {
-
+void TetrisLegalizer::FastShift(int failure_point) {
+  /****
+   * This method is to FastShift() the blocks following the failure_point (included) to reasonable locations in order to keep block orders
+   *    1. tetrisSpace.IsSpaceAvail() fails to place a block when the current location of this block is illegal
+   *    2. tetrisSpace.FindBlockLoc() fails to place a block when there is no possible legal location on the right hand side of this block,
+   * if failure_point is the first block
+   *    we shift the bounding box of all blocks to the placement region,
+   *    the bounding box left and bottom boundaries touch the left and bottom boundaries of placement region,
+   *    note that the bounding box might be larger than the placement region, but should not be much larger
+   * else:
+   *    we shift the bounding box of the remaining blocks to the right hand side of the block just placed
+   *    the bottom boundary of the bounding box will not be changed
+   *    only the left boundary of the bounding box will be shifted to the right hand side of the block just placed
+   * ****/
+  std::vector<Block> &block_list = *BlockList();
+   double bounding_left;
+   if (failure_point == 0) {
+     double bounding_bottom;
+     bounding_left = block_list[0].LLX();
+     bounding_bottom = block_list[0].LLY();
+     for (auto &&block: block_list) {
+       if (block.LLY() < bounding_bottom) {
+         bounding_bottom = block.LLY();
+       }
+     }
+     for (auto &&block: block_list) {
+       block.IncreX(left_ - bounding_left);
+       block.IncreY(bottom_ - bounding_bottom);
+     }
+   } else {
+     bounding_left = block_list[failure_point].LLX();
+     int last_placed_block = ordered_list[failure_point-1].num;
+     int left_new = (int)std::round(block_list[last_placed_block].LLX());
+     for (size_t i=failure_point; i<ordered_list.size(); ++i) {
+       int block_num = ordered_list[i].num;
+       block_list[block_num].IncreX(left_new - bounding_left);
+     }
+   }
 }
 
 void TetrisLegalizer::FlipPlacement() {
@@ -60,12 +96,12 @@ bool TetrisLegalizer::TetrisLegal() {
 
   // 2. sort blocks based on their lower Left corners. Further optimization is doable here.
 
-  for (size_t i=0; i<blockXOrder.size(); ++i) {
-    blockXOrder[i].num = i;
-    blockXOrder[i].x = block_list[i].LLX();
-    blockXOrder[i].y = block_list[i].LLY();
+  for (size_t i=0; i<ordered_list.size(); ++i) {
+    ordered_list[i].num = i;
+    ordered_list[i].x = block_list[i].LLX();
+    ordered_list[i].y = block_list[i].LLY();
   }
-  std::sort(blockXOrder.begin(), blockXOrder.end(), customLess);
+  std::sort(ordered_list.begin(), ordered_list.end(), customLess);
 
   // 3. initialize the data structure to store row usage
   //int maxHeight = GetCircuit()->MaxHeight();
@@ -79,8 +115,8 @@ bool TetrisLegalizer::TetrisLegal() {
   int llx, lly;
   int width, height;
   //int count = 0;
-  for (size_t i=0; i<blockXOrder.size(); ++i) {
-    int &block_num = blockXOrder[i].num;
+  for (size_t i=0; i<ordered_list.size(); ++i) {
+    int block_num = ordered_list[i].num;
     width = block_list[block_num].Width();
     height = block_list[block_num].Height();
     /****
@@ -108,7 +144,7 @@ bool TetrisLegalizer::TetrisLegal() {
         block_list[block_num].SetLLY(result_loc.y);
       } else {
         // if a legal location is not found, need to reverse the legalization process
-        FastShift();
+        FastShift(i);
         if (current_iteration_ < max_iteration_) {
           ++current_iteration_;
           FlipPlacement();

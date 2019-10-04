@@ -2,6 +2,16 @@
 // Created by Yihang Yang on 8/4/2019.
 //
 
+/****
+ * The default setting of this legalizer expects a reasonably good placement as an input;
+ * "Reasonably good" means:
+ *  1. All blocks are inside placement region
+ *  2. There are few or no location with extremely high block density
+ *  3. Maybe something else should be added here
+ * There is a setting of this legalizer, which can handle bad placement input really well,
+ * but who wants bad input? The Global placer and detailed placer should have done their job well;
+ * ****/
+
 #ifndef HPCC_SRC_PLACER_LEGALIZER_LGTETRIS_H_
 #define HPCC_SRC_PLACER_LEGALIZER_LGTETRIS_H_
 
@@ -22,11 +32,11 @@ class TetrisLegalizer: public Placer {
   bool flipped_;
  public:
   TetrisLegalizer();
-  std::vector< indexLocPair > blockXOrder;
+  std::vector< indexLocPair > ordered_list;
   void Init();
   void SetMaxItr(int max_iteration);
   void ResetItr();
-  void FastShift();
+  void FastShift(int failure_point);
   void FlipPlacement();
   bool TetrisLegal();
   void StartPlacement() override;
