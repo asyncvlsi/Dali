@@ -72,9 +72,24 @@ void TetrisLegalizer::FastShift(int failure_point) {
 }
 
 void TetrisLegalizer::FlipPlacement() {
+  /****
+   * flip_axis = (left_ + right_)/2;
+   * blk_x = block.X();
+   * flipped_x = -(blk_x - flip_axis) + flip_axis = 2*flip_axis - blk_x;
+   * flipped_llx = flipped_x - block.Width()/2.0
+   *             = 2*flip_axis - (block.X() + block.Width()/2.0)
+   *             = 2*flip_axis - block.URX()
+   *             = (left_ + right_) - block.URX()
+   *             = sum_left_right - block.URX()
+   * block.SetLLX(flipped_llx);
+   *
+   * ****/
   flipped_ = !flipped_;
-
-
+  int sum_left_right = left_ + right_;
+  for (auto &&block: GetCircuit()->block_list) {
+    block.SetLLX(sum_left_right - block.URX());
+  }
+  //GenMATLABScript("flip_result.txt");
 }
 
 bool TetrisLegalizer::TetrisLegal() {
@@ -150,16 +165,9 @@ bool TetrisLegalizer::TetrisLegal() {
         block_list[block_num].SetLLX(result_loc.x);
         block_list[block_num].SetLLY(result_loc.y);
       } else {
-        // if a legal location is not found, need to reverse the legalization process
         FastShift(i);
-        if (current_iteration_ < max_iteration_) {
-          ++current_iteration_;
-          FlipPlacement();
-          TetrisLegal();
-        } else {
-          std::cout << "Tetris legalization fail!\n";
-          return false;
-        }
+        std::cout << "Tetris legalization fail!\n";
+        return false;
       }
     }
     /*block_list[block_num].is_placed = true;
@@ -167,9 +175,6 @@ bool TetrisLegalizer::TetrisLegal() {
     std::cout << count << "  " << is_current_loc_legal << "\n";
      GenMATLABScriptPlaced(file_name);*/
     //count++;
-  }
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "Tetris legalization complete!\n";
   }
   return true;
 }
@@ -180,8 +185,23 @@ void TetrisLegalizer::StartPlacement() {
   /*for (auto &&block: GetCircuit()->block_list) {
     block.IncreX((right_-left_)/2.0);
   }
-  max_iteration_ = 0;
+  max_iteration_ = 2;
   GenMATLABScript("shift_result.txt");*/
-  TetrisLegal();
+  bool is_successful;
+  for (current_iteration_ = 0; current_iteration_<max_iteration_; ++current_iteration_) {
+    // if a legal location is not found, need to reverse the legalization process
+    is_successful = TetrisLegal();
+    if (!is_successful) {
+      FlipPlacement();
+    } else {
+      if (globalVerboseLevel >= LOG_CRITICAL) {
+        std::cout << "Tetris legalization complete!\n";
+      }
+      break;
+    }
+  }
+  if (flipped_) {
+    FlipPlacement();
+  }
   ReportHPWL(LOG_CRITICAL);
 }
