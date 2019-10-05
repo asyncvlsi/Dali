@@ -13,10 +13,10 @@ struct DIYLess{
 
 TetrisLegalizer::TetrisLegalizer(): Placer(), max_iteration_(5), current_iteration_(0), flipped_(false) {}
 
-void TetrisLegalizer::Init() {
+void TetrisLegalizer::InitLegalizer() {
   std::vector<Block> &block_list = *BlockList();
   indexLocPair init_pair(0,0,0);
-  ordered_list.assign(block_list.size(), init_pair);
+  ordered_list_.assign(block_list.size(), init_pair);
 }
 
 void TetrisLegalizer::SetMaxItr(int max_iteration) {
@@ -43,29 +43,32 @@ void TetrisLegalizer::FastShift(int failure_point) {
    *    only the left boundary of the bounding box will be shifted to the right hand side of the block just placed
    * ****/
   std::vector<Block> &block_list = *BlockList();
-   double bounding_left;
-   if (failure_point == 0) {
-     double bounding_bottom;
-     bounding_left = block_list[0].LLX();
-     bounding_bottom = block_list[0].LLY();
-     for (auto &&block: block_list) {
-       if (block.LLY() < bounding_bottom) {
-         bounding_bottom = block.LLY();
-       }
-     }
-     for (auto &&block: block_list) {
-       block.IncreX(left_ - bounding_left);
-       block.IncreY(bottom_ - bounding_bottom);
-     }
-   } else {
-     bounding_left = block_list[failure_point].LLX();
-     int last_placed_block = ordered_list[failure_point-1].num;
-     int left_new = (int)std::round(block_list[last_placed_block].LLX());
-     for (size_t i=failure_point; i<ordered_list.size(); ++i) {
-       int block_num = ordered_list[i].num;
-       block_list[block_num].IncreX(left_new - bounding_left);
-     }
-   }
+  double bounding_left;
+  if (failure_point == 0) {
+    double bounding_bottom;
+    bounding_left = block_list[0].LLX();
+    bounding_bottom = block_list[0].LLY();
+    for (auto &&block: block_list) {
+      if (block.LLY() < bounding_bottom) {
+        bounding_bottom = block.LLY();
+      }
+    }
+    for (auto &&block: block_list) {
+      block.IncreX(left_ - bounding_left);
+      block.IncreY(bottom_ - bounding_bottom);
+    }
+  } else {
+    double init_diff = ordered_list_[failure_point-1].x - ordered_list_[failure_point].x;
+    int failed_block = ordered_list_[failure_point].num;
+    bounding_left = block_list[failed_block].LLX();
+    int last_placed_block = ordered_list_[failure_point-1].num;
+    int left_new = (int)std::round(block_list[last_placed_block].LLX());
+    //std::cout << left_new << "  " << bounding_left << "\n";
+    for (size_t i=failure_point; i<ordered_list_.size(); ++i) {
+      int block_num = ordered_list_[i].num;
+      block_list[block_num].IncreX(left_new + init_diff - bounding_left);
+    }
+  }
 }
 
 void TetrisLegalizer::FlipPlacement() {
@@ -96,12 +99,16 @@ bool TetrisLegalizer::TetrisLegal() {
 
   // 2. sort blocks based on their lower Left corners. Further optimization is doable here.
 
-  for (size_t i=0; i<ordered_list.size(); ++i) {
-    ordered_list[i].num = i;
-    ordered_list[i].x = block_list[i].LLX();
-    ordered_list[i].y = block_list[i].LLY();
+  for (size_t i=0; i<ordered_list_.size(); ++i) {
+    ordered_list_[i].num = i;
+    ordered_list_[i].x = block_list[i].LLX();
+    ordered_list_[i].y = block_list[i].LLY();
   }
-  std::sort(ordered_list.begin(), ordered_list.end(), customLess);
+  std::sort(ordered_list_.begin(), ordered_list_.end(), customLess);
+
+  /*for (auto &&pair: ordered_list_) {
+    std::cout << block_list[pair.num].LLX() << "\n";
+  }*/
 
   // 3. initialize the data structure to store row usage
   //int maxHeight = GetCircuit()->MaxHeight();
@@ -115,8 +122,8 @@ bool TetrisLegalizer::TetrisLegal() {
   int llx, lly;
   int width, height;
   //int count = 0;
-  for (size_t i=0; i<ordered_list.size(); ++i) {
-    int block_num = ordered_list[i].num;
+  for (size_t i=0; i<ordered_list_.size(); ++i) {
+    int block_num = ordered_list_[i].num;
     width = block_list[block_num].Width();
     height = block_list[block_num].Height();
     /****
@@ -169,7 +176,12 @@ bool TetrisLegalizer::TetrisLegal() {
 
 
 void TetrisLegalizer::StartPlacement() {
-  Init();
+  InitLegalizer();
+  /*for (auto &&block: GetCircuit()->block_list) {
+    block.IncreX((right_-left_)/2.0);
+  }
+  max_iteration_ = 0;
+  GenMATLABScript("shift_result.txt");*/
   TetrisLegal();
   ReportHPWL(LOG_CRITICAL);
 }

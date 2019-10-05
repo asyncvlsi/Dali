@@ -30,10 +30,10 @@ class TetrisLegalizer: public Placer {
   int max_iteration_;
   int current_iteration_;
   bool flipped_;
+  std::vector< indexLocPair > ordered_list_;
  public:
   TetrisLegalizer();
-  std::vector< indexLocPair > ordered_list;
-  void Init();
+  void InitLegalizer();
   void SetMaxItr(int max_iteration);
   void ResetItr();
   void FastShift(int failure_point);
