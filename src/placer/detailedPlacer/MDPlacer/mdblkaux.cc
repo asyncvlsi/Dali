@@ -2,7 +2,7 @@
 // Created by Yihang Yang on 9/11/2019.
 //
 
-#include "MDBlkAux.h"
+#include "mdblkaux.h"
 #include <algorithm>
 #include <cmath>
 

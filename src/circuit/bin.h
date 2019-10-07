@@ -8,31 +8,30 @@
 #include <vector>
 
 struct bin_index {
-  int iloc;
-  int jloc;
-  explicit bin_index(int i=0, int j=0): iloc(i), jloc(j){}
+  int x;
+  int y;
+  explicit bin_index(int i=0, int j=0): x(i), y(j){}
 };
 
-class bin_t {
+class Bin {
  private:
-  int _left;
-  int _bottom;
-  int _width;
-  int _height;
+  int left_;
+  int bottom_;
+  int width_;
+  int height_;
  public:
-  bin_t();
-  bin_t(int left_arg, int bottom_arg, int width_arg, int height_arg);
-
-  void set_left(int left_arg);
-  int left();
-  void set_bottom(int bottom_arg);
-  int bottom();
-  void set_width(int width_arg);
-  int width();
-  void set_height(int height_arg);
-  int height();
-  int right();
-  int top();
+  Bin();
+  Bin(int left, int bottom, int width, int height);
+  void SetLeft(int left);
+  void SetBottom(int bottom);
+  void SetWidth(int width);
+  void SetHeight(int height);
+  int Left() const;
+  int Bottom() const;
+  int Width() const;
+  int Height() const;
+  int Right() const;
+  int Top() const;
 
   std::vector<int> CIB; // stands for cell in this bin, used to store the list of cells in this bin
 };

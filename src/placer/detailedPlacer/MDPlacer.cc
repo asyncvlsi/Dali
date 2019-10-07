@@ -8,7 +8,7 @@
  * In this implementation, we choose a different approach compared with traditional molecular dynamic simulation:
  *  1. Every time we only calculate the force, velocity, and update the location for a single block.
  *  2. We will traverse the block_list to make sure all blocks will have an opportunity to move.
- *  3. We will use Conjugate gradient with momentum to optimize (1-r)HWPL + rOverLap.
+ *  3. We will use gradient descent with momentum to optimize (1-r)HWPL + rOverLap.
  * ****/
 
 #include "MDPlacer.h"
@@ -34,6 +34,10 @@ void MDPlacer::CreateBlkAuxList() {
   /*for (auto &&blk_aux: blk_aux_list) {
     blk_aux.ReportNet();
   }*/
+}
+
+void MDPlacer::InitGridBin() {
+
 }
 
 void MDPlacer::UpdateVelocityLoc(Block &blk) {
@@ -72,8 +76,8 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
   }
   tot_force.Incre(force);
 
-  Value2D velocity_incre = tot_force * learning_rate;
-  Value2D velocity = aux_info->Velocity() * momentum_term;
+  Value2D velocity_incre = tot_force * learning_rate_;
+  Value2D velocity = aux_info->Velocity() * momentum_term_;
   velocity += velocity_incre;
   aux_info->SetVelocity(velocity);
 
@@ -87,7 +91,8 @@ void MDPlacer::StartPlacement() {
   }
   CreateBlkAuxList();
   std::vector<Block> &block_list = *BlockList();
-  for (int i=0; i<100; ++i) {
+  InitGridBin();
+  for (int i=0; i<max_iteration_num_; ++i) {
     ReportHPWL(LOG_INFO);
     for (auto &&block: block_list) {
       UpdateVelocityLoc(block);

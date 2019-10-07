@@ -4,52 +4,52 @@
 
 #include "bin.h"
 
-bin_t::bin_t() {
-  _left = 0;
-  _bottom = 0;
-  _width = 0;
-  _height = 0;
+Bin::Bin() {
+  left_ = 0;
+  bottom_ = 0;
+  width_ = 0;
+  height_ = 0;
 }
 
-bin_t::bin_t(int left_arg, int bottom_arg, int width_arg, int height_arg) : _left(left_arg), _bottom(bottom_arg), _width(width_arg),
-                                                                  _height(height_arg) {}
+Bin::Bin(int left, int bottom, int width, int height) : left_(left), bottom_(bottom), width_(width),
+                                                        height_(height) {}
 
-void bin_t::set_left(int left_arg) {
-  _left = left_arg;
+void Bin::SetLeft(int left) {
+  left_ = left;
 }
 
-int bin_t::left() {
-  return _left;
+void Bin::SetBottom(int bottom) {
+  bottom_ = bottom;
 }
 
-void bin_t::set_bottom(int bottom_arg) {
-  _bottom = bottom_arg;
+void Bin::SetWidth(int width) {
+  width_ = width;
 }
 
-int bin_t::bottom() {
-  return _bottom;
+void Bin::SetHeight(int height) {
+  height_ = height;
 }
 
-void bin_t::set_width(int width_arg) {
-  _width = width_arg;
+int Bin::Left() const {
+  return left_;
 }
 
-int bin_t::width() {
-  return _width;
+int Bin::Bottom() const {
+  return bottom_;
 }
 
-void bin_t::set_height(int height_arg) {
-  _height = height_arg;
+int Bin::Width() const {
+  return width_;
 }
 
-int bin_t::height() {
-  return  _height;
+int Bin::Height() const {
+  return  height_;
 }
 
-int bin_t::right() {
-  return _left + _width;
+int Bin::Right() const {
+  return left_ + width_;
 }
 
-int bin_t::top() {
-  return _bottom + _height;
+int Bin::Top() const {
+  return bottom_ + height_;
 }
