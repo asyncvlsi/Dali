@@ -8,15 +8,18 @@
 #include <vector>
 #include "../placer.h"
 #include "../../common/misc.h"
-#include "placer/detailedPlacer/MDPlacer/mdblkaux.h"
-#include "../../circuit/bin.h"
+#include "MDPlacer/mdblkaux.h"
+#include "MDPlacer/bin.h"
 
 class MDPlacer: public Placer {
  private:
-  double learning_rate_ = 0.1;
-  double momentum_term_ = 0.9;
-  int max_iteration_num_ = 100;
+  double learning_rate_;
+  double momentum_term_;
+  int max_iteration_num_ ;
+  int bin_width_;
+  int bin_height_;
  public:
+  MDPlacer();
   std::vector<MDBlkAux> blk_aux_list;
   std::vector<std::vector<Bin>> bin_matrix;
   void CreateBlkAuxList();

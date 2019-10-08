@@ -7,10 +7,13 @@
 
 #include <vector>
 
-struct bin_index {
+struct BinIndex {
   int x;
   int y;
-  explicit bin_index(int i=0, int j=0): x(i), y(j){}
+  explicit BinIndex(int i=0, int j=0): x(i), y(j){}
+  bool operator<(const BinIndex& a) const {
+    return (x < a.x) || ((x == a.x)&&(y < a.y));
+  }
 };
 
 class Bin {

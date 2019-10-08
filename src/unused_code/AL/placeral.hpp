@@ -12,7 +12,7 @@
 #include "placer/placer.h"
 #include "blockal.hpp"
 #include "netal.hpp"
-#include "circuit/bin.h"
+#include "placer/detailedPlacer/MDPlacer/bin.h"
 
 typedef struct  {
   size_t pin;

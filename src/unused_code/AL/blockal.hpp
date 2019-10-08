@@ -7,7 +7,7 @@
 
 #include <cmath>
 #include "circuit/block.h"
-#include "circuit/bin.h"
+#include "placer/detailedPlacer/MDPlacer/bin.h"
 
 class block_al_t:public block_t {
 private:

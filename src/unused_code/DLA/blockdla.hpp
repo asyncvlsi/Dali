@@ -7,7 +7,7 @@
 
 #include <vector>
 #include <string>
-#include "circuit/bin.h"
+#include "placer/detailedPlacer/MDPlacer/bin.h"
 #include "circuit/block.h"
 #include "netdla.hpp"
 

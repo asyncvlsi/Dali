@@ -13,6 +13,8 @@
 
 #include "MDPlacer.h"
 
+MDPlacer::MDPlacer(): learning_rate_(0.1), momentum_term_(0.9), max_iteration_num_(100), bin_width_(0), bin_height_(0) {}
+
 void MDPlacer::CreateBlkAuxList() {
   /****
    * 1. Create blk_aux_list and link auxiliary information with blocks;
@@ -37,7 +39,8 @@ void MDPlacer::CreateBlkAuxList() {
 }
 
 void MDPlacer::InitGridBin() {
-
+  bin_width_ = GetCircuit()->MinWidth();
+  bin_height_ = GetCircuit()->MinHeight();
 }
 
 void MDPlacer::UpdateVelocityLoc(Block &blk) {
