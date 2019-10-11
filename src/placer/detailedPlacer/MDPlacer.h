@@ -18,6 +18,8 @@ class MDPlacer: public Placer {
   int max_iteration_num_ ;
   int bin_width_;
   int bin_height_;
+  int bin_cnt_x_;
+  int bin_cnt_y_;
  public:
   MDPlacer();
   std::vector<MDBlkAux> blk_aux_list;

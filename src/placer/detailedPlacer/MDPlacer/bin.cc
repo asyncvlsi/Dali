@@ -7,12 +7,12 @@
 Bin::Bin() {
   left_ = 0;
   bottom_ = 0;
-  width_ = 0;
-  height_ = 0;
+  right_ = 0;
+  top_ = 0;
 }
 
-Bin::Bin(int left, int bottom, int width, int height) : left_(left), bottom_(bottom), width_(width),
-                                                        height_(height) {}
+Bin::Bin(int left, int bottom, int right, int top) : left_(left), bottom_(bottom), right_(right),
+                                                     top_(top) {}
 
 void Bin::SetLeft(int left) {
   left_ = left;
@@ -22,12 +22,12 @@ void Bin::SetBottom(int bottom) {
   bottom_ = bottom;
 }
 
-void Bin::SetWidth(int width) {
-  width_ = width;
+void Bin::SetRight(int right) {
+  right_ = right;
 }
 
-void Bin::SetHeight(int height) {
-  height_ = height;
+void Bin::SetTop(int top) {
+  top_ = top;
 }
 
 int Bin::Left() const {
@@ -38,18 +38,19 @@ int Bin::Bottom() const {
   return bottom_;
 }
 
-int Bin::Width() const {
-  return width_;
-}
-
-int Bin::Height() const {
-  return  height_;
-}
-
 int Bin::Right() const {
-  return left_ + width_;
+  return right_;
 }
 
 int Bin::Top() const {
-  return bottom_ + height_;
+  return top_;
 }
+
+int Bin::Width() const {
+  return right_ - left_;
+}
+
+int Bin::Height() const {
+  return  top_ - bottom_;
+}
+

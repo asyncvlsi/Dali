@@ -20,21 +20,21 @@ class Bin {
  private:
   int left_;
   int bottom_;
-  int width_;
-  int height_;
+  int right_;
+  int top_;
  public:
   Bin();
-  Bin(int left, int bottom, int width, int height);
+  Bin(int left, int bottom, int right, int top);
   void SetLeft(int left);
   void SetBottom(int bottom);
-  void SetWidth(int width);
-  void SetHeight(int height);
+  void SetRight(int right);
+  void SetTop(int top);
   int Left() const;
   int Bottom() const;
-  int Width() const;
-  int Height() const;
   int Right() const;
   int Top() const;
+  int Width() const;
+  int Height() const;
 
   std::vector<int> CIB; // stands for cell in this bin, used to store the list of cells in this bin
 };

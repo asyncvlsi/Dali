@@ -41,6 +41,37 @@ void MDPlacer::CreateBlkAuxList() {
 void MDPlacer::InitGridBin() {
   bin_width_ = GetCircuit()->MinWidth();
   bin_height_ = GetCircuit()->MinHeight();
+  bin_cnt_x_ = std::ceil((double)(right_ - left_) / bin_width_);
+  bin_cnt_y_ = std::ceil((double)(top_ - bottom_) / bin_height_);
+  
+  std::cout << "bin_width: " << bin_width_ << "\n";
+  std::cout << "bin_height: " << bin_height_ << "\n";
+  std::cout << "bin_cnt_x: " << bin_cnt_x_ << "\n";
+  std::cout << "bin_cnt_y: " << bin_cnt_y_ << "\n";
+  
+  std::vector<Bin> tmp_bin_column(bin_cnt_y_);
+  bin_matrix.reserve(bin_cnt_x_);
+  for (int i = 0; i < bin_cnt_x_; i++) {
+    bin_matrix.push_back(tmp_bin_column);
+  }
+
+  /* for each grid bin, we need to initialize the attributes, including index, boundaries, area, and potential available white space
+   * the adjacent bin list is created for the convenience of overfilled bin clustering */
+  for (int i=0; i<(int)(bin_matrix.size()); i++) {
+    for (int j = 0; j < (int)(bin_matrix[i].size()); j++) {
+      bin_matrix[i][j].SetBottom(Bottom() + j * bin_height_);
+      bin_matrix[i][j].SetTop(Bottom() + (j+1) * bin_height_);
+      bin_matrix[i][j].SetLeft(Left() + i * bin_width_);
+      bin_matrix[i][j].SetRight(Left() + (i+1) * bin_width_);
+    }
+  }
+
+  for (auto &&bin_column: bin_matrix) {
+    bin_column[bin_cnt_y_ - 1].SetTop(Top());
+  }
+  for (auto &&grid_bin: bin_matrix[bin_cnt_x_ - 1]) {
+    grid_bin.SetRight(Right());
+  }
 }
 
 void MDPlacer::UpdateVelocityLoc(Block &blk) {
