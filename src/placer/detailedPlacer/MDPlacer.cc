@@ -74,6 +74,11 @@ void MDPlacer::InitGridBin() {
   }
 }
 
+void MDPlacer::UpdateBin(Block &blk) {
+  std::vector<BinIndex> index_list;
+  
+}
+
 void MDPlacer::UpdateVelocityLoc(Block &blk) {
   /****
    * 1. Calculate the total force, use the total force to calculate the velocity_incre, delta_v = f * learning_rate
@@ -83,10 +88,10 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
   Value2D tot_force(0, 0);
   Value2D force(0, 0);
   std::vector<Block> &block_list = *BlockList();
-  auto aux_info = (MDBlkAux *)blk.Aux();
+  auto blk_aux = (MDBlkAux *)blk.Aux();
   for (auto &&block: block_list) {
     if (&block == &blk) continue;
-    force = aux_info->GetForce(&block);
+    force = blk_aux->GetForce(&block);
     tot_force.Incre(force);
   }
   tot_force *= 1.0/blk.Area();
@@ -111,9 +116,9 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
   tot_force.Incre(force);
 
   Value2D velocity_incre = tot_force * learning_rate_;
-  Value2D velocity = aux_info->Velocity() * momentum_term_;
+  Value2D velocity = blk_aux->Velocity() * momentum_term_;
   velocity += velocity_incre;
-  aux_info->SetVelocity(velocity);
+  blk_aux->SetVelocity(velocity);
 
   blk.IncreX(velocity.x);
   blk.IncreY(velocity.y);
@@ -130,6 +135,7 @@ void MDPlacer::StartPlacement() {
     ReportHPWL(LOG_INFO);
     for (auto &&block: block_list) {
       UpdateVelocityLoc(block);
+      UpdateBin(block);
     }
   }
   if (globalVerboseLevel >= LOG_INFO) {

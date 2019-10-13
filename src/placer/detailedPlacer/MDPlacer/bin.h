@@ -5,7 +5,7 @@
 #ifndef HPCC_BIN_HPP
 #define HPCC_BIN_HPP
 
-#include <vector>
+#include <unordered_set>
 
 struct BinIndex {
   int x;
@@ -36,8 +36,58 @@ class Bin {
   int Width() const;
   int Height() const;
 
-  std::vector<int> CIB; // stands for cell in this bin, used to store the list of cells in this bin
+  std::unordered_set<int> block_set; // stands for cell in this bin, used to store the list of cells in this bin
+  void AddBlk(int blk_num);
+  void RemoveBlk(int blk_num);
 };
+
+inline void Bin::SetLeft(int left) {
+  left_ = left;
+}
+
+inline void Bin::SetBottom(int bottom) {
+  bottom_ = bottom;
+}
+
+inline void Bin::SetRight(int right) {
+  right_ = right;
+}
+
+inline void Bin::SetTop(int top) {
+  top_ = top;
+}
+
+inline int Bin::Left() const {
+  return left_;
+}
+
+inline int Bin::Bottom() const {
+  return bottom_;
+}
+
+inline int Bin::Right() const {
+  return right_;
+}
+
+inline int Bin::Top() const {
+  return top_;
+}
+
+inline int Bin::Width() const {
+  return right_ - left_;
+}
+
+inline int Bin::Height() const {
+  return  top_ - bottom_;
+}
+
+inline void Bin::AddBlk(int blk_num) {
+  block_set.insert(blk_num);
+}
+
+inline void Bin::RemoveBlk(int blk_num) {
+  block_set.erase(blk_num);
+}
 
 
 #endif //HPCC_BIN_HPP

@@ -27,6 +27,7 @@ class MDPlacer: public Placer {
   void CreateBlkAuxList();
   void InitGridBin();
   void UpdateVelocityLoc(Block &blk);
+  void UpdateBin(Block &blk);
   void StartPlacement() override;
 };
 
