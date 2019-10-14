@@ -24,55 +24,7 @@ Placer::Placer(double aspect_ratio, double filling_rate) : aspect_ratio_(aspect_
   circuit_ = nullptr;
 }
 
-Placer::~Placer() {}
-
-void Placer::SetInputCircuit(Circuit *circuit) {
-  Assert(circuit != nullptr, "Invalid input circuit: not allowed to set nullptr as the input!");
-  Assert(!circuit->block_list.empty(), "Invalid input circuit: empty block list!");
-  Assert(!circuit->net_list.empty(), "Invalid input circuit: empty net list!");
-  circuit_ = circuit;
-}
-
-Circuit *Placer::GetCircuit() {
-  Warning(circuit_ == nullptr, "Circuit is a nullptr!");
-  return  circuit_;
-}
-
-void Placer::SetFillingRate(double rate) {
-  Assert((rate <=1) && (rate > 0),"Invalid value: value should be in range (0, 1]");
-  filling_rate_ = rate;
-}
-
-double Placer::FillingRate() const {
-  return filling_rate_;
-}
-
-void Placer::SetAspectRatio(double ratio){
-  Assert( ratio >= 0,"Invalid value: value should be in range (0, +infinity)");
-  aspect_ratio_ = ratio;
-}
-
-double Placer::AspectRatio() const {
-  return aspect_ratio_;
-}
-
-void Placer::SetSpaceBlockRatio(double ratio) {
-  Assert( ratio >= 1,"Invalid value: value should be in range [1, +infinity)");
-  filling_rate_ = 1./ratio;
-}
-
-double Placer::SpaceBlockRatio() const {
-  Warning(filling_rate_ < 1e-3, "Warning: filling rate too small, might lead to large numerical error.");
-  return 1.0/filling_rate_;
-}
-
-std::vector<Block> *Placer::BlockList() {
-  return &(circuit_->block_list);
-}
-
-std::vector<Net> *Placer::NetList() {
-  return &(circuit_->net_list);
-}
+Placer::~Placer() = default;
 
 bool Placer::IsBoundaryProper() {
   if (circuit_->MaxWidth() > Right() - Left()) {
@@ -135,22 +87,6 @@ void Placer::SetBoundaryDef() {
   Assert(IsBoundaryProper(), "Invalid boundary setting");
 }
 
-int Placer::Left() {
-  return left_;
-}
-
-int Placer::Right() {
-  return right_;
-}
-
-int Placer::Bottom() {
-  return bottom_;
-}
-
-int Placer::Top() {
-  return top_;
-}
-
 void Placer::ReportBoundaries() {
   if (globalVerboseLevel >= LOG_DEBUG) {
     std::cout << "Left, Right, Bottom, Top:\n";
@@ -171,38 +107,6 @@ bool Placer::UpdateAspectRatio() {
   return true;
 }
 
-void Placer::NetSortBlkPin() {
-  Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWLX!");
-  GetCircuit()->NetSortBlkPin();
-}
-
-double Placer::HPWLX() {
-  Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWLX!");
-  return GetCircuit()->HPWLX();
-}
-
-double Placer::HPWLY() {
-  Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWLY!");
-  return GetCircuit()->HPWLY();
-}
-
-double Placer::HPWL() {
-  Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWL!");
-  return GetCircuit()->HPWL();
-}
-
-void Placer::ReportHPWL(VerboseLevel verbose_level) {
-  Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWL!");
-  if (globalVerboseLevel >= verbose_level) {
-    GetCircuit()->ReportHPWL();
-  }
-}
-
-void Placer::ReportHPWLCtoC() {
-  Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWLCtoC!");
-  GetCircuit()->ReportHPWLCtoC();
-}
-
 void Placer::TakeOver(Placer *placer) {
   aspect_ratio_ = placer->AspectRatio();
   filling_rate_ = placer->FillingRate();
@@ -211,11 +115,6 @@ void Placer::TakeOver(Placer *placer) {
   bottom_ = placer->Bottom();
   top_ = placer->Top();
   circuit_ = placer->GetCircuit();
-}
-
-void Placer::SanityCheck() {
-  double epsilon = 1e-3;
-  Assert(filling_rate_ > epsilon, "Filling rate should be in a proper range, for example [0.1, 1], current value: " + std::to_string(filling_rate_));
 }
 
 void Placer::GenMATLABScript(std::string const &name_of_file) {

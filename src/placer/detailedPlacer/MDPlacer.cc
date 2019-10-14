@@ -12,8 +12,9 @@
  * ****/
 
 #include "MDPlacer.h"
+#include <algorithm>
 
-MDPlacer::MDPlacer(): learning_rate_(0.1), momentum_term_(0.9), max_iteration_num_(100), bin_width_(0), bin_height_(0) {}
+MDPlacer::MDPlacer(): learning_rate_(0.1), momentum_term_(0.9), max_iteration_num_(100), bin_width_(0), bin_height_(0), bin_cnt_x_(0), bin_cnt_y_(0) {}
 
 void MDPlacer::CreateBlkAuxList() {
   /****
@@ -41,8 +42,8 @@ void MDPlacer::CreateBlkAuxList() {
 void MDPlacer::InitGridBin() {
   bin_width_ = GetCircuit()->MinWidth();
   bin_height_ = GetCircuit()->MinHeight();
-  bin_cnt_x_ = std::ceil((double)(right_ - left_) / bin_width_);
-  bin_cnt_y_ = std::ceil((double)(top_ - bottom_) / bin_height_);
+  bin_cnt_x_ = std::ceil((double)(Right() - Left()) / bin_width_);
+  bin_cnt_y_ = std::ceil((double)(Top() - Bottom()) / bin_height_);
   
   std::cout << "bin_width: " << bin_width_ << "\n";
   std::cout << "bin_height: " << bin_height_ << "\n";
@@ -74,9 +75,36 @@ void MDPlacer::InitGridBin() {
   }
 }
 
+BinIndex MDPlacer::LowLocToIndex(double llx, double lly) {
+  BinIndex result;
+  result.x = std::floor((llx - Left())/BinWidth());
+  result.x = std::max(result.x, 0);
+  result.y = std::floor((lly - Bottom())/BinHeight());
+  result.x = std::max(result.x, 0);
+  return result;
+}
+
+BinIndex MDPlacer::HighLocToIndex(double urx, double ury) {
+  BinIndex result;
+  result.x = std::ceil((urx - Left())/BinWidth());
+  result.x = std::min(result.x, BinCountX());
+  result.y = std::ceil((ury - Bottom())/BinHeight());
+  result.x = std::min(result.x, BinCountY());
+  return result;
+}
+
+void MDPlacer::UpdateIndex(BlockAux &blk_aux) {
+
+}
+
 void MDPlacer::UpdateBin(Block &blk) {
   std::vector<BinIndex> index_list;
-  
+  auto blk_aux = (MDBlkAux *)blk.Aux();
+  BinIndex new_ll = LowLocToIndex(blk.LLX(), blk.LLY());
+  BinIndex new_ur = HighLocToIndex(blk.URX(), blk.URY());
+  BinIndex old_ll = blk_aux->ll_index;
+  BinIndex old_ur = blk_aux->ur_index;
+
 }
 
 void MDPlacer::UpdateVelocityLoc(Block &blk) {
@@ -120,8 +148,8 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
   velocity += velocity_incre;
   blk_aux->SetVelocity(velocity);
 
-  blk.IncreX(velocity.x);
-  blk.IncreY(velocity.y);
+  blk.IncreX(velocity.x, Right(), Left());
+  blk.IncreY(velocity.y, Top(), Bottom());
 }
 
 void MDPlacer::StartPlacement() {

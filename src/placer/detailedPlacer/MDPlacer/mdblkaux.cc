@@ -8,30 +8,6 @@
 
 MDBlkAux::MDBlkAux(Block* blk_ptr): BlockAux(blk_ptr), v_(0,0) {}
 
-void MDBlkAux::SetVx(double vx) {
-  v_.x = vx;
-}
-
-void MDBlkAux::SetVy(double vy) {
-  v_.y = vy;
-}
-
-double MDBlkAux::Vx() {
-  return v_.x;
-}
-
-double MDBlkAux::Vy() {
-  return v_.y;
-}
-
-void MDBlkAux::SetVelocity(Value2D velocity) {
-  v_ = velocity;
-}
-
-Value2D MDBlkAux::Velocity() {
-  return v_;
-}
-
 Value2D MDBlkAux::GetForce(Block *blk) {
   /****
    * A rectangle can be described by its (llx, lly,) (urx, ury), and using these four values, one can calculate the area;

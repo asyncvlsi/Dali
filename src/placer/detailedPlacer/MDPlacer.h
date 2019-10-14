@@ -27,8 +27,31 @@ class MDPlacer: public Placer {
   void CreateBlkAuxList();
   void InitGridBin();
   void UpdateVelocityLoc(Block &blk);
+  int BinWidth() const;
+  int BinHeight() const;
+  int BinCountX() const;
+  int BinCountY() const;
+  BinIndex LowLocToIndex(double llx, double lly);
+  BinIndex HighLocToIndex(double urx, double ury);
+  void UpdateIndex(BlockAux &blk_aux);
   void UpdateBin(Block &blk);
   void StartPlacement() override;
 };
+
+inline int MDPlacer::BinWidth() const {
+  return bin_width_;
+}
+
+inline int MDPlacer::BinHeight() const {
+  return bin_height_;
+}
+
+inline int MDPlacer::BinCountX() const {
+  return bin_cnt_x_;
+}
+
+inline int MDPlacer::BinCountY() const {
+  return bin_cnt_y_;
+}
 
 #endif //HPCC_SRC_PLACER_DETAILEDPLACER_MDPLACER_H_
