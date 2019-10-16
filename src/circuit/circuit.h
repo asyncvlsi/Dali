@@ -65,9 +65,22 @@ class Circuit {
   // API to add new Net
   bool IsNetExist(std::string &net_name);
   int NetIndex(std::string &net_name);
-  Net *GetIndex(std::string &net_name);
+  Net *GetNet(std::string &net_name);
   void AddToNetMap(std::string &net_name);
   Net *AddNet(std::string &net_name, double weight = 1);
+
+  // API to set grid value
+  void SetGridValue(double grid_value_x, double grid_value_y);
+
+  // API to add well information
+  void AddBlkWell(std::string &block_name, bool is_pluged, int llx, int lly, int urx, int ury);
+  void AddBlkWell(Block *blk, bool is_pluged, int llx, int lly, int urx, int ury);
+  void SetWellWidth(double well_width);
+  void SetWellSpace(double well_space);
+  void SetWellMaxLenthUnplug(double max_length_unplug);
+  double WellWidth() const;
+  double WellSpace() const;
+  double WellMaxLengthUnplug() const;
 
   /*
   std::vector< Net > pseudo_net_list;
@@ -83,7 +96,6 @@ class Circuit {
   // read lef/def file using above member functions
   static void ParseLine(std::string &line, std::vector<std::string> &field_list);
   static BlockOrient StrToOrient(std::string &str_orient);
-  void SetGridValue(double grid_value_x, double grid_value_y);
   double GridValueX();
   double GridValueY();
   void ReadLefFile(std::string const &name_of_file);

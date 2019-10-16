@@ -22,34 +22,44 @@ int main(int argc, char *argv[]) {
   std::string str_verbose_level;
   std::string str_x_grid;
   std::string str_y_grid;
+  double x_grid, y_grid;
 
   for( int i = 1; i < argc; ) {
     std::string arg(argv[i++]);
     if (arg == "-lef" && i < argc) {
       lef_file_name = std::string(argv[i++]);
+      if (lef_file_name.empty()) {
+        std::cout << "Invalid input lef file!\n";
+        ReportUsage();
+        return 1;
+      }
     } else if (arg == "-def" && i < argc) {
       def_file_name = std::string(argv[i++]);
+      if (def_file_name.empty()) {
+        std::cout << "Invalid input def file!\n";
+        ReportUsage();
+        return 1;
+      }
     } else if (arg == "-grid" && i < argc) {
       str_x_grid = std::string(argv[i++]);
       str_y_grid = std::string(argv[i++]);
+      try {
+        x_grid = std::stod(str_x_grid);
+        y_grid = std::stod(str_y_grid);
+      } catch (...) {
+        std::cout << "Invalid input files!\n";
+        ReportUsage();
+        return 1;
+      }
     } else if (arg == "-v" && i < argc) {
       str_verbose_level = std::string(argv[i++]);
+
     } else {
       std::cout << "Unknown option for file reading\n";
     }
   }
 
   if ((lef_file_name.empty())||(def_file_name.empty())) {
-    std::cout << "Invalid input files!\n";
-    ReportUsage();
-    return 1;
-  }
-
-  double x_grid, y_grid;
-  try {
-    x_grid = std::stod(str_x_grid);
-    y_grid = std::stod(str_y_grid);
-  } catch (...) {
     std::cout << "Invalid input files!\n";
     ReportUsage();
     return 1;
@@ -78,10 +88,10 @@ int main(int argc, char *argv[]) {
   gb_placer->GenMATLABScript("gb_result.txt");
   //gb_placer->SaveNodeTerminal();
 
-  Placer *d_placer = new MDPlacer;
+  /*Placer *d_placer = new MDPlacer;
   d_placer->TakeOver(gb_placer);
   d_placer->StartPlacement();
-  d_placer->GenMATLABScript("dp_result.txt");
+  d_placer->GenMATLABScript("dp_result.txt");*/
 
   Placer *legalizer = new TetrisLegalizer;
   legalizer->TakeOver(gb_placer);
@@ -90,7 +100,7 @@ int main(int argc, char *argv[]) {
   //legalizer->SaveDEFFile("circuit.def", def_file);
 
   delete gb_placer;
-  delete d_placer;
+  //delete d_placer;
   delete legalizer;
 
   Time = clock() - Time;

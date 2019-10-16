@@ -45,10 +45,10 @@ void MDPlacer::InitGridBin() {
   bin_cnt_x_ = std::ceil((double)(Right() - Left()) / bin_width_);
   bin_cnt_y_ = std::ceil((double)(Top() - Bottom()) / bin_height_);
   
-  std::cout << "bin_width: " << bin_width_ << "\n";
-  std::cout << "bin_height: " << bin_height_ << "\n";
-  std::cout << "bin_cnt_x: " << bin_cnt_x_ << "\n";
-  std::cout << "bin_cnt_y: " << bin_cnt_y_ << "\n";
+  //std::cout << "bin_width: " << bin_width_ << "\n";
+  //std::cout << "bin_height: " << bin_height_ << "\n";
+  //std::cout << "bin_cnt_x: " << bin_cnt_x_ << "\n";
+  //std::cout << "bin_cnt_y: " << bin_cnt_y_ << "\n";
   
   std::vector<Bin> tmp_bin_column(bin_cnt_y_);
   bin_matrix.reserve(bin_cnt_x_);

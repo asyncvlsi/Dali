@@ -24,6 +24,8 @@ class BlockType {
   Pin *AddPin(std::string &pin_name);
   void AddPin(std::string &pin_name, double x_offset, double y_offset);
 
+  void AddWell(bool is_pluged, int llx, int lly, int urx, int ury);
+
   const std::string *Name() const;
   int Num() const;
   int Width() const;

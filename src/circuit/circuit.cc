@@ -154,7 +154,7 @@ int Circuit::NetIndex(std::string &net_name) {
   return net_name_map.find(net_name)->second;
 }
 
-Net *Circuit::GetIndex(std::string &net_name) {
+Net *Circuit::GetNet(std::string &net_name) {
   return &net_list[NetIndex(net_name)];
 }
 
@@ -273,7 +273,7 @@ double Circuit::GridValueY() {
 void Circuit::ReadLefFile(std::string const &name_of_file) {
   std::ifstream ist(name_of_file.c_str());
   Assert(ist.is_open(), "Cannot open input file " + name_of_file);
-  std::cout << "Start reading lef file" << std::endl;
+  std::cout << "Start loading lef file" << std::endl;
   std::string line;
 
   // 1. find DATABASE MICRONS
@@ -391,13 +391,13 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
       Assert(!new_block_type->Empty(), "MACRO has no PINs: " + *new_block_type->Name());
     }
   }
-  std::cout << "lef file reading complete" << std::endl;
+  std::cout << "lef file loading complete" << std::endl;
 }
 
 void Circuit::ReadDefFile(std::string const &name_of_file) {
   std::ifstream ist(name_of_file.c_str());
   Assert(ist.is_open(), "Cannot open input file " + name_of_file);
-  std::cout << "Start reading def file" << std::endl;
+  std::cout << "Start loading def file" << std::endl;
 
   std::string line;
   def_distance_microns = 0;
@@ -524,7 +524,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
     }
     getline(ist, line);
   }
-  std::cout << "def file reading complete\n";
+  std::cout << "def file loading complete\n";
 }
 
 void Circuit::ReportBlockTypeList() {
