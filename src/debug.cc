@@ -18,8 +18,8 @@ int main() {
   std::string adaptec1_def = "../test/adaptec1/adaptec1.def";
 
   std::string lef_file, def_file;
-  lef_file = "../test/out_1K.lef";
-  def_file = "../test/out_1K.def";
+  lef_file = "../test/out_10K.lef";
+  def_file = "../test/out_10K.def";
   //def_file = "wrapper.def";
   //lef_file = adaptec1_lef;
   //def_file = adaptec1_def;

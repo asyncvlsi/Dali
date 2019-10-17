@@ -14,7 +14,7 @@
 #include "MDPlacer.h"
 #include <algorithm>
 
-MDPlacer::MDPlacer(): learning_rate_(0.1), momentum_term_(0.9), max_iteration_num_(100), bin_width_(0), bin_height_(0), bin_cnt_x_(0), bin_cnt_y_(0) {}
+MDPlacer::MDPlacer(): learning_rate_(0.1), momentum_term_(0.9), max_iteration_num_(20), bin_width_(0), bin_height_(0), bin_cnt_x_(0), bin_cnt_y_(0) {}
 
 void MDPlacer::CreateBlkAuxList() {
   /****
@@ -45,10 +45,10 @@ void MDPlacer::InitGridBin() {
   bin_cnt_x_ = std::ceil((double)(Right() - Left()) / bin_width_);
   bin_cnt_y_ = std::ceil((double)(Top() - Bottom()) / bin_height_);
   
-  //std::cout << "bin_width: " << bin_width_ << "\n";
-  //std::cout << "bin_height: " << bin_height_ << "\n";
-  //std::cout << "bin_cnt_x: " << bin_cnt_x_ << "\n";
-  //std::cout << "bin_cnt_y: " << bin_cnt_y_ << "\n";
+  std::cout << "bin_width: " << bin_width_ << "\n";
+  std::cout << "bin_height: " << bin_height_ << "\n";
+  std::cout << "bin_cnt_x: " << bin_cnt_x_ << "\n";
+  std::cout << "bin_cnt_y: " << bin_cnt_y_ << "\n";
   
   std::vector<Bin> tmp_bin_column(bin_cnt_y_);
   bin_matrix.reserve(bin_cnt_x_);
@@ -75,12 +75,26 @@ void MDPlacer::InitGridBin() {
   }
 }
 
+void MDPlacer::UpdateBinMatrix() {
+  std::vector<Block> &block_list = *BlockList();
+  MDBlkAux *blk_aux = nullptr;
+  BinIndex ll, ur;
+  for (auto &&blk: block_list) {
+    blk_aux = (MDBlkAux *)blk.Aux();
+    ll = LowLocToIndex(blk.LLX(), blk.LLY());
+    ur = HighLocToIndex(blk.URX(), blk.URY());
+    BinRegionAdd(blk.Num(), ll, ur);
+    blk_aux->SetLLIndex(ll);
+    blk_aux->SetURIndex(ur);
+  }
+}
+
 BinIndex MDPlacer::LowLocToIndex(double llx, double lly) {
   BinIndex result;
   result.x = std::floor((llx - Left())/BinWidth());
   result.x = std::max(result.x, 0);
   result.y = std::floor((lly - Bottom())/BinHeight());
-  result.x = std::max(result.x, 0);
+  result.y = std::max(result.y, 0);
   return result;
 }
 
@@ -89,12 +103,24 @@ BinIndex MDPlacer::HighLocToIndex(double urx, double ury) {
   result.x = std::ceil((urx - Left())/BinWidth());
   result.x = std::min(result.x, BinCountX());
   result.y = std::ceil((ury - Bottom())/BinHeight());
-  result.x = std::min(result.x, BinCountY());
+  result.y = std::min(result.y, BinCountY());
   return result;
 }
 
-void MDPlacer::UpdateIndex(BlockAux &blk_aux) {
+void MDPlacer::BinRegionRemove(int blk_num, BinIndex &ll, BinIndex &ur) {
+  for (int i=ll.x; i<=ur.x; ++i) {
+    for (int j=ll.y; j<ur.y; ++j) {
+      bin_matrix[i][j].RemoveBlk(blk_num);
+    }
+  }
+}
 
+void MDPlacer::BinRegionAdd(int blk_num, BinIndex &ll, BinIndex &ur) {
+  for (int i=ll.x; i<=ur.x; ++i) {
+    for (int j=ll.y; j<ur.y; ++j) {
+      bin_matrix[i][j].AddBlk(blk_num);
+    }
+  }
 }
 
 void MDPlacer::UpdateBin(Block &blk) {
@@ -102,9 +128,15 @@ void MDPlacer::UpdateBin(Block &blk) {
   auto blk_aux = (MDBlkAux *)blk.Aux();
   BinIndex new_ll = LowLocToIndex(blk.LLX(), blk.LLY());
   BinIndex new_ur = HighLocToIndex(blk.URX(), blk.URY());
-  BinIndex old_ll = blk_aux->ll_index;
-  BinIndex old_ur = blk_aux->ur_index;
-
+  BinIndex old_ll = blk_aux->LLIndex();
+  BinIndex old_ur = blk_aux->URIndex();
+  bool is_unchanged = (new_ll == old_ll) && (new_ur == old_ur);
+  if (!is_unchanged) {
+    BinRegionRemove(blk.Num(), old_ll, old_ur);
+    BinRegionAdd(blk.Num(), new_ll, new_ur);
+    blk_aux->SetLLIndex(new_ll);
+    blk_aux->SetURIndex(new_ur);
+  }
 }
 
 void MDPlacer::UpdateVelocityLoc(Block &blk) {
@@ -117,14 +149,34 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
   Value2D force(0, 0);
   std::vector<Block> &block_list = *BlockList();
   auto blk_aux = (MDBlkAux *)blk.Aux();
+  int blk_num = blk.Num();
+  BinIndex ll = blk_aux->LLIndex();
+  BinIndex ur = blk_aux->URIndex();
+
+  std::set<int> near_blk_set;
+  for (int i=ll.x; i<=ur.x; ++i) {
+    for (int j=ll.y; j<ur.y; ++j) {
+      for (auto &&num: bin_matrix[i][j].block_set) {
+        near_blk_set.insert(num);
+      }
+    }
+  }
+
+  for (auto &&num: near_blk_set) {
+    if (num == blk_num) continue;
+    force = blk_aux->GetForce(&block_list[num]);
+    tot_force.Incre(force);
+  }
+
+  /*
   for (auto &&block: block_list) {
     if (&block == &blk) continue;
     force = blk_aux->GetForce(&block);
     tot_force.Incre(force);
-  }
+  }*/
+
   tot_force *= 1.0/blk.Area();
 
-  int blk_num = blk.Num();
   force.Init();
   for (auto &&net_ptr: blk_aux_list[blk_num].net_list) {
     net_ptr->UpdateMaxMin();
@@ -159,6 +211,7 @@ void MDPlacer::StartPlacement() {
   CreateBlkAuxList();
   std::vector<Block> &block_list = *BlockList();
   InitGridBin();
+  UpdateBinMatrix();
   for (int i=0; i<max_iteration_num_; ++i) {
     ReportHPWL(LOG_INFO);
     for (auto &&block: block_list) {

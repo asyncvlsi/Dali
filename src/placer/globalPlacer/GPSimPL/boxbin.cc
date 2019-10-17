@@ -337,7 +337,7 @@ bool BoxBin::update_cut_index_white_space(std::vector< std::vector< int > > &gri
     }
     if (cut_ur_index.y != index_give_minimum_error) {
       cut_ur_index.y = index_give_minimum_error;
-      //white_space_low = white_space_LUT(grid_bin_white_space_LUT, ll_index, cut_ur_index);
+      //white_space_low = white_space_LUT(grid_bin_white_space_LUT, ll_index_, cut_ur_index);
     }
     cut_ll_index.y = cut_ur_index.y + 1;
     return true;
@@ -357,7 +357,7 @@ bool BoxBin::update_cut_index_white_space(std::vector< std::vector< int > > &gri
     }
     if (cut_ur_index.x!= index_give_minimum_error) {
       cut_ur_index.x = index_give_minimum_error;
-      //white_space_low = white_space_LUT(grid_bin_white_space_LUT, ll_index, cut_ur_index);
+      //white_space_low = white_space_LUT(grid_bin_white_space_LUT, ll_index_, cut_ur_index);
     }
     cut_ll_index.x = cut_ur_index.x + 1;
     return true;

@@ -561,7 +561,7 @@ void GPSimPL::ClearGridBinFlag() {
 }
 
 int GPSimPL::LookUpWhiteSpace(GridBinIndex const &ll_index, GridBinIndex const &ur_index) {
-  /* this function is used to return the white space in a region specified by ll_index, and ur_index
+  /* this function is used to return the white space in a region specified by ll_index_, and ur_index_
    * there are four cases, element at (0,0), elements on the left edge, elements on the right edge, otherwise */
 
   int total_white_space;
@@ -866,8 +866,8 @@ void GPSimPL::SplitBox(BoxBin &box) {
   }
   box1.update_cell_area_white_space(grid_bin_matrix);
   box2.update_cell_area_white_space(grid_bin_matrix);
-  //std::cout << box1.ll_index << box1.ur_index << "\n";
-  //std::cout << box2.ll_index << box2.ur_index << "\n";
+  //std::cout << box1.ll_index_ << box1.ur_index_ << "\n";
+  //std::cout << box2.ll_index_ << box2.ur_index_ << "\n";
   //box1.update_all_terminal(grid_bin_matrix);
   //box2.update_all_terminal(grid_bin_matrix);
   // if the white space in one bin is dominating the other, ignore the smaller one

@@ -26,6 +26,7 @@ class MDPlacer: public Placer {
   std::vector<std::vector<Bin>> bin_matrix;
   void CreateBlkAuxList();
   void InitGridBin();
+  void UpdateBinMatrix();
   void UpdateVelocityLoc(Block &blk);
   int BinWidth() const;
   int BinHeight() const;
@@ -33,7 +34,8 @@ class MDPlacer: public Placer {
   int BinCountY() const;
   BinIndex LowLocToIndex(double llx, double lly);
   BinIndex HighLocToIndex(double urx, double ury);
-  void UpdateIndex(BlockAux &blk_aux);
+  void BinRegionRemove(int blk_num, BinIndex &ll, BinIndex &ur);
+  void BinRegionAdd(int blk_num, BinIndex &ll, BinIndex &ur);
   void UpdateBin(Block &blk);
   void StartPlacement() override;
 };
