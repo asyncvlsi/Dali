@@ -31,6 +31,7 @@ class GPSimPL: public Placer {
   int cg_iteration_max_num = 30;
   double HPWL_intra_linearSolver_precision = 0.001;
   double alpha = 0.00;
+  double alpha_increment = 0.01;
   int look_ahead_iter_max = 30;
   double HPWL_LAL_new = 0;
   double HPWL_LAL_old = 1e30;

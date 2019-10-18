@@ -8,7 +8,7 @@
 #include "circuit.h"
 #include "placer.h"
 
-VerboseLevel globalVerboseLevel = LOG_INFO;
+VerboseLevel globalVerboseLevel = LOG_DEBUG;
 
 int main() {
   time_t Time = clock();
@@ -18,11 +18,10 @@ int main() {
   std::string adaptec1_def = "../test/adaptec1/adaptec1.def";
 
   std::string lef_file, def_file;
-  lef_file = "../test/out_10K.lef";
-  def_file = "../test/out_10K.def";
-  //def_file = "wrapper.def";
-  //lef_file = adaptec1_lef;
-  //def_file = adaptec1_def;
+  //lef_file = "../test/out_10K.lef";
+  //def_file = "../test/out_10K.def";
+  lef_file = adaptec1_lef;
+  def_file = adaptec1_def;
   circuit.ReadLefFile(lef_file);
   circuit.ReadDefFile(def_file);
 
@@ -47,10 +46,10 @@ int main() {
   gb_placer->SetFillingRate(1);
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
-  gb_placer->GenMATLABScript("gb_result.txt");
-  //gb_placer->SaveNodeTerminal();
+  //gb_placer->GenMATLABScript("gb_result.txt");
+  gb_placer->SaveNodeTerminal();
 
-  Placer *d_placer = new MDPlacer;
+  /*Placer *d_placer = new MDPlacer;
   d_placer->TakeOver(gb_placer);
   d_placer->StartPlacement();
   d_placer->GenMATLABScript("dp_result.txt");
@@ -59,11 +58,11 @@ int main() {
   legalizer->TakeOver(gb_placer);
   legalizer->StartPlacement();
   legalizer->GenMATLABScript("legalizer_result.txt");
-  //legalizer->SaveDEFFile("circuit.def", def_file);
+  //legalizer->SaveDEFFile("circuit.def", def_file);*/
 
   delete gb_placer;
-  delete d_placer;
-  delete legalizer;
+  //delete d_placer;
+  //delete legalizer;
 
   Time = clock() - Time;
   std::cout << "Execution time " << (float)Time/CLOCKS_PER_SEC << "s.\n";

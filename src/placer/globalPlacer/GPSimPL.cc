@@ -1253,6 +1253,7 @@ void GPSimPL::BuildProblemB2BWithAnchorY() {
 }
 
 void GPSimPL::QuadraticPlacementWithAnchor() {
+  std::cout << "alpha: " << alpha << "\n";
   std::vector<Block> &block_list = *BlockList();
 
   HPWLX_converge = false;
@@ -1296,7 +1297,7 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
 }
 
 void GPSimPL::UpdateAnchorNetWeight() {
-  alpha += 0.1;
+  alpha += alpha_increment;
 }
 
 void GPSimPL::LookAheadLegalization() {
@@ -1310,15 +1311,6 @@ void GPSimPL::LookAheadLegalization() {
     RecursiveBisectionBlkSpreading();
   } while (!cluster_list.empty());
 
-  /*UpdateGridBinState();
-  grid_bin_matrix[3][3].Report();
-  grid_bin_matrix[4][3].Report();
-  write_not_overfill_grid_bins("grid_bin_not_overfill.txt");
-  write_overfill_grid_bins("grid_bin_overfill.txt");
-  UpdateClusterList();
-  FindMinimumBoxForFirstCluster();
-  RecursiveBisectionBlkSpreading();*/
-
   UpdateHPWLX();
   UpdateHPWLY();
   if (globalVerboseLevel >= LOG_INFO) {
@@ -1330,6 +1322,9 @@ void GPSimPL::LookAheadLegalization() {
 void GPSimPL::UpdateLALConvergeState() {
   HPWL_LAL_new = HPWLX_new + HPWLY_new;
   HPWL_LAL_converge = std::fabs(1 - HPWL_LAL_new/HPWL_LAL_old) < HPWL_inter_linearSolver_precision;
+  std::cout << "Old HPWL after look ahead legalization: " << HPWL_LAL_old << "\n";
+  std::cout << "New HPWL after look ahead legalization: " << HPWL_LAL_new << "\n";
+  std::cout << "Converge is: " << HPWL_LAL_converge << "\n";
   HPWL_LAL_old = HPWL_LAL_new;
 }
 
@@ -1350,11 +1345,13 @@ void GPSimPL::StartPlacement() {
     LookAheadLegalization();
     UpdateLALConvergeState();
     if (HPWL_LAL_converge || i==look_ahead_iter_max-1) { // if HPWL sconverges
-      if (globalVerboseLevel >= LOG_CRITICAL) {
-        std::cout << "Iterative look-ahead legalization complete" << std::endl;
-        std::cout << "Total number of iteration: " << i << std::endl;
+      if (i >= 5) {
+        if (globalVerboseLevel >= LOG_CRITICAL) {
+          std::cout << "Iterative look-ahead legalization complete" << std::endl;
+          std::cout << "Total number of iteration: " << i + 1 << std::endl;
+        }
+        break;
       }
-      break;
     } else {
       UpdateAnchorLoc();
       UpdateAnchorNetWeight();
