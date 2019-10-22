@@ -43,11 +43,3 @@ Value2D MDBlkAux::GetForce(Block *blk) {
   }
   return force;
 }
-
-void MDBlkAux::ReportNet() {
-  std::cout << *(block_->Name()) << " connects to:\n";
-  for (auto &&net_ptr: net_list) {
-    std::cout << *(net_ptr->Name()) << "  ";
-  }
-  std::cout << "\n";
-}

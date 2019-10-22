@@ -17,7 +17,6 @@ class MDBlkAux: public BlockAux {
   BinIndex ll_index_, ur_index_;
  public:
   Value2D v_;
-  std::vector<Net*> net_list;
   explicit MDBlkAux(Block* blk_ptr);
   void SetVx(double vx);
   void SetVy(double vy);
@@ -30,7 +29,6 @@ class MDBlkAux: public BlockAux {
   BinIndex URIndex();
   void SetLLIndex(BinIndex ll);
   void SetURIndex(BinIndex ur);
-  void ReportNet();
 };
 
 inline void MDBlkAux::SetVx(double vx) {

@@ -45,7 +45,7 @@ class Block {
   bool is_placed = false;
   Block(BlockType *type, std::pair<const std::string, int>* name_num_pair, int llx, int lly, bool movable = "true", BlockOrient orient = N);
 
-  std::vector<Net*> net_list;
+  std::vector<int> net_list;
 
   const std::string *Name() const;
   BlockType *Type() const;
@@ -83,6 +83,7 @@ class Block {
   bool IsOverlap(const Block *rhs) const;
 
   void Report();
+  void ReportNet();
 
   /*friend std::ostream& operator<<(std::ostream& os, const Block &block) {
     os << "Block Name: " << *block.Name() << "\n";

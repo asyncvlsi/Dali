@@ -20,7 +20,9 @@ void Net::AddBlockPinPair(Block *block_ptr, int pin_index) {
   if (!block_ptr->IsMovable()) {
     ++cnt_fixed_;
   }
-  block_ptr->net_list.push_back(this);
+  // because net list is stored as a vector, so the location of a net will change, thus here, we have to use Num() to
+  // find a net, although a pointer to this net is more convenient.
+  block_ptr->net_list.push_back(Num());
 }
 
 const std::string *Net::Name() const {

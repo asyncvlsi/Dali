@@ -37,3 +37,11 @@ void Block::Report() {
   std::cout << "orientation: " << OrientStr() << "\n";
   std::cout << "assigned primary key: " << Num() << "\n";
 }
+
+void Block::ReportNet() {
+  std::cout << *Name() << " connects to:\n";
+  for (auto &&net_num: net_list) {
+    std::cout << net_num << "  ";
+  }
+  std::cout << "\n";
+}

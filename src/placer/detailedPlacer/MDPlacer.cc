@@ -27,13 +27,6 @@ void MDPlacer::CreateBlkAuxList() {
     blk_aux_list.emplace_back(&block);
   }
 
-  std::vector<Net> &net_list = *NetList();
-  for (auto &&net: net_list) {
-    for (auto &&blk_pin: net.blk_pin_list) {
-      blk_aux_list[blk_pin.BlockNum()].net_list.push_back(&net);
-    }
-  }
-
   /*for (auto &&blk_aux: blk_aux_list) {
     blk_aux.ReportNet();
   }*/
@@ -152,7 +145,7 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
   int blk_num = blk.Num();
   BinIndex ll = blk_aux->LLIndex();
   BinIndex ur = blk_aux->URIndex();
-  /*
+
   std::set<int> near_blk_set;
   for (int i=ll.x; i<=ur.x; ++i) {
     for (int j=ll.y; j<=ur.y; ++j) {
@@ -166,29 +159,29 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
     force = blk_aux->GetForce(&block_list[num]);
     tot_force.Incre(force);
   }
-  */
 
-  for (auto &&block: block_list) {
+  /*for (auto &&block: block_list) {
     if (&block == &blk) continue;
     force = blk_aux->GetForce(&block);
     tot_force.Incre(force);
-  }
+  }*/
 
   tot_force *= 1.0/blk.Area();
 
   force.Init();
-  for (auto &&net_ptr: blk_aux_list[blk_num].net_list) {
-    net_ptr->UpdateMaxMin();
-    if (blk_num == net_ptr->MaxBlkPinNumX()) {
+  std::vector<Net> &net_list = *NetList();
+  for (auto &&net_num: blk.net_list) {
+    net_list[net_num].UpdateMaxMin();
+    if (blk_num == net_list[net_num].MaxBlkPinNumX()) {
       force.x -= 1;
     }
-    if (blk_num == net_ptr->MinBlkPinNumX()) {
+    if (blk_num == net_list[net_num].MinBlkPinNumX()) {
       force.x += 1;
     }
-    if (blk_num == net_ptr->MaxBlkPinNumY()) {
+    if (blk_num == net_list[net_num].MaxBlkPinNumY()) {
       force.y -= 1;
     }
-    if (blk_num == net_ptr->MinBlkPinNumY()) {
+    if (blk_num == net_list[net_num].MinBlkPinNumY()) {
       force.y += 1;
     }
   }
