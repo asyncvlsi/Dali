@@ -12,6 +12,7 @@ Net::Net(std::pair<const std::string, int> *name_num_pair_ptr, double weight): n
   min_pin_x_ = -1;
   max_pin_y_ = -1;
   min_pin_y_ = -1;
+  aux_ = nullptr;
 }
 
 void Net::AddBlockPinPair(Block *block_ptr, int pin_index) {
@@ -19,6 +20,7 @@ void Net::AddBlockPinPair(Block *block_ptr, int pin_index) {
   if (!block_ptr->IsMovable()) {
     ++cnt_fixed_;
   }
+  block_ptr->net_list.push_back(this);
 }
 
 const std::string *Net::Name() const {

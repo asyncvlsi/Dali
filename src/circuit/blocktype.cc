@@ -41,6 +41,16 @@ bool BlockType::Empty() {
   return pin_list.empty();
 }
 
+void BlockType::Report() {
+  std::cout << "BlockType name: " << *Name() << "\n";
+  std::cout << "  width, height: " << Width() << " " << Height() << "\n";
+  std::cout << "  assigned key: " << Num() << "\n";
+  std::cout << "  pin list:\n";
+  for( auto &&it: pin_name_num_map) {
+    std::cout << "    " << it.first << " " << it.second << " (" << pin_list[it.second].XOffset() << ", " << pin_list[it.second].YOffset() << ")\n";
+  }
+}
+
 bool BlockType::PinExist(std::string &pin_name) {
   return !(pin_name_num_map.find(pin_name) == pin_name_num_map.end());
 }

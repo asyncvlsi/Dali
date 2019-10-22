@@ -529,7 +529,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
 
 void Circuit::ReportBlockTypeList() {
   for (auto &&block_type: block_type_list) {
-    std::cout << block_type << "\n";
+    block_type.Report();
   }
 }
 
@@ -541,7 +541,7 @@ void Circuit::ReportBlockTypeMap() {
 
 void Circuit::ReportBlockList() {
   for (auto &&block: block_list) {
-    std::cout << block << "\n";
+    block.Report();
   }
 }
 
@@ -553,7 +553,10 @@ void Circuit::ReportBlockMap() {
 
 void Circuit::ReportNetList() {
   for (auto &&net: net_list) {
-    std::cout << net << "\n";
+    std::cout << *net.Name() << "  " << net.Weight() << "\n";
+    for (auto &&block_pin_pair: net.blk_pin_list) {
+      std::cout << "\t" << " (" << *(block_pin_pair.BlockName()) << " " << *(block_pin_pair.PinName()) << ") " << "\n";
+    }
   }
 }
 

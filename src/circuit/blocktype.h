@@ -35,7 +35,9 @@ class BlockType {
   void SetHeight(int height);
   bool Empty();
 
-  friend std::ostream& operator<<(std::ostream& os, const BlockType &block_type) {
+  void Report();
+
+  /*friend std::ostream& operator<<(std::ostream& os, const BlockType &block_type) {
     os << "BlockType name: " << *block_type.Name() << "\n";
     os << "  width, height: " << block_type.Width() << " " << block_type.Height() << "\n";
     os << "  assigned key: " << block_type.Num() << "\n";
@@ -44,7 +46,7 @@ class BlockType {
       os << "    " << it.first << " " << it.second << " (" << block_type.pin_list[it.second].XOffset() << ", " << block_type.pin_list[it.second].YOffset() << ")\n";
     }
     return os;
-  }
+  }*/
 };
 
 

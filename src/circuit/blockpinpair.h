@@ -8,6 +8,8 @@
 #include "block.h"
 #include "pin.h"
 
+class Block;
+
 class BlockPinPair {
  private:
   Block *block_;
@@ -27,10 +29,10 @@ class BlockPinPair {
   bool operator <(const BlockPinPair &rhs) const;
   bool operator >(const BlockPinPair &rhs) const;
   bool operator ==(const BlockPinPair &rhs) const;
-  friend std::ostream& operator<<(std::ostream& os, const BlockPinPair &block_pin_pair) {
+  /*friend std::ostream& operator<<(std::ostream& os, const BlockPinPair &block_pin_pair) {
     os << " (" << *(block_pin_pair.BlockName()) << " " << *(block_pin_pair.PinName()) << ") ";
     return os;
-  }
+  }*/
 };
 
 #endif //HPCC_SRC_CIRCUIT_BLOCKPINPAIR_H_

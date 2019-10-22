@@ -27,3 +27,13 @@ std::string Block::OrientStr() const {
   }
   return s;
 }
+
+void Block::Report() {
+  std::cout << "Block Name: " << *Name() << "\n";
+  std::cout << "Block Type: " << *(Type()->Name()) << "\n";
+  std::cout << "Width and Height: " << Width() << " " << Height() << "\n";
+  std::cout << "lower Left corner: " << LLX() << " " << LLY() << "\n";
+  std::cout << "movability: " << IsMovable() << "\n";
+  std::cout << "orientation: " << OrientStr() << "\n";
+  std::cout << "assigned primary key: " << Num() << "\n";
+}

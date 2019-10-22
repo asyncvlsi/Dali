@@ -12,6 +12,8 @@
 #include "netaux.h"
 
 class NetAux;
+class Block;
+class BlockPinPair;
 
 class Net {
  protected:
@@ -67,13 +69,13 @@ class Net {
   double HPWLCtoCY();
   double HPWLCtoC();
 
-  friend std::ostream& operator<<(std::ostream& os, const Net &net) {
+  /*friend std::ostream& operator<<(std::ostream& os, const Net &net) {
     os << *net.Name() << "  " << net.Weight() << "\n";
     for (auto &&block_pin_pair: net.blk_pin_list) {
       os << "\t" << block_pin_pair << "\n";
     }
     return os;
-  }
+  }*/
 };
 
 

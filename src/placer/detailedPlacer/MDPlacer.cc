@@ -59,7 +59,7 @@ void MDPlacer::InitGridBin() {
   /* for each grid bin, we need to initialize the attributes, including index, boundaries, area, and potential available white space
    * the adjacent bin list is created for the convenience of overfilled bin clustering */
   for (int i=0; i<(int)(bin_matrix.size()); i++) {
-    for (int j = 0; j < (int)(bin_matrix[i].size()); j++) {
+    for (int j = 0; j <(int)(bin_matrix[i].size()); j++) {
       bin_matrix[i][j].SetBottom(Bottom() + j * bin_height_);
       bin_matrix[i][j].SetTop(Bottom() + (j+1) * bin_height_);
       bin_matrix[i][j].SetLeft(Left() + i * bin_width_);
@@ -109,7 +109,7 @@ BinIndex MDPlacer::HighLocToIndex(double urx, double ury) {
 
 void MDPlacer::BinRegionRemove(int blk_num, BinIndex &ll, BinIndex &ur) {
   for (int i=ll.x; i<=ur.x; ++i) {
-    for (int j=ll.y; j<ur.y; ++j) {
+    for (int j=ll.y; j<=ur.y; ++j) {
       bin_matrix[i][j].RemoveBlk(blk_num);
     }
   }
@@ -117,7 +117,7 @@ void MDPlacer::BinRegionRemove(int blk_num, BinIndex &ll, BinIndex &ur) {
 
 void MDPlacer::BinRegionAdd(int blk_num, BinIndex &ll, BinIndex &ur) {
   for (int i=ll.x; i<=ur.x; ++i) {
-    for (int j=ll.y; j<ur.y; ++j) {
+    for (int j=ll.y; j<=ur.y; ++j) {
       bin_matrix[i][j].AddBlk(blk_num);
     }
   }

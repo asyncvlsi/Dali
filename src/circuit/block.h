@@ -11,6 +11,7 @@
 #include <iostream>
 #include "blocktype.h"
 #include "blockaux.h"
+#include "net.h"
 #include "common/misc.h"
 
 /* a block can be a gate, can also be a large module, it includes information like
@@ -29,6 +30,7 @@ enum BlockOrient{
 };
 
 class BlockAux;
+class Net;
 
 class Block {
  protected:
@@ -42,40 +44,47 @@ class Block {
  public:
   bool is_placed = false;
   Block(BlockType *type, std::pair<const std::string, int>* name_num_pair, int llx, int lly, bool movable = "true", BlockOrient orient = N);
+
+  std::vector<Net*> net_list;
+
   const std::string *Name() const;
   BlockType *Type() const;
   int Num() const;
   int Width() const;
   int Height() const;
-  void SetLLX(double lower_left_x);
   double LLX() const;
-  void SetLLY(double lower_left_y);
   double LLY() const;
-  void SetURX(double upper_right_x);
   double URX() const;
-  void SetURY(double upper_right_y);
   double URY() const;
-  void SetCenterX(double center_x);
   double X() const;
-  void SetCenterY(double center_y);
   double Y() const;
-  void SetMovable(bool movable);
   bool IsMovable() const;
   bool IsFixed() const;
   int Area() const;
-  void SetOrient(BlockOrient &orient);
   BlockOrient Orient() const;
   std::string OrientStr() const;
+  BlockAux *Aux();
+
+  void SetLLX(double lower_left_x);
+  void SetLLY(double lower_left_y);
+  void SetURX(double upper_right_x);
+  void SetURY(double upper_right_y);
+  void SetCenterX(double center_x);
+  void SetCenterY(double center_y);
+  void SetMovable(bool movable);
+  void SetOrient(BlockOrient &orient);
+  void SetAux(BlockAux *aux);
+
   void IncreX(double displacement);
   void IncreY(double displacement);
   void IncreX(double displacement, double upper, double lower);
   void IncreY(double displacement, double upper, double lower);
   bool IsOverlap(const Block &rhs) const;
   bool IsOverlap(const Block *rhs) const;
-  void SetAux(BlockAux *aux);
-  BlockAux *Aux();
 
-  friend std::ostream& operator<<(std::ostream& os, const Block &block) {
+  void Report();
+
+  /*friend std::ostream& operator<<(std::ostream& os, const Block &block) {
     os << "Block Name: " << *block.Name() << "\n";
     os << "Block Type: " << *(block.Type()->Name()) << "\n";
     os << "Width and Height: " << block.Width() << " " << block.Height() << "\n";
@@ -84,7 +93,7 @@ class Block {
     os << "orientation: " << block.OrientStr() << "\n";
     os << "assigned primary key: " << block.Num() << "\n";
     return os;
-  }
+  }*/
 
   const std::string *TypeName() const;
   std::string IsPlace();

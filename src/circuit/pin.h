@@ -34,10 +34,10 @@ class Pin {
   void AddRect(double llx, double lly, double urx, double ury);
   bool Empty();
 
-  friend std::ostream& operator<<(std::ostream& os, const Pin &pin) {
+  /*friend std::ostream& operator<<(std::ostream& os, const Pin &pin) {
     os << pin.Name() << " (" << pin.XOffset() << ", " << pin.YOffset() << ")";
     return os;
-  }
+  }*/
 };
 
 
