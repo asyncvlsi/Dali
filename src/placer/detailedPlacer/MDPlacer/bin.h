@@ -86,7 +86,7 @@ inline int Bin::Height() const {
 }
 
 inline void Bin::AddBlk(int blk_num) {
-  std::cout << block_set.size() << std::endl;
+  //std::cout << block_set.size() << std::endl;
   if(block_set.find(blk_num) != block_set.end()) {
     std::cout << "Error, block already in set!" << std::endl;
     exit(1);

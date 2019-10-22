@@ -101,9 +101,9 @@ BinIndex MDPlacer::LowLocToIndex(double llx, double lly) {
 BinIndex MDPlacer::HighLocToIndex(double urx, double ury) {
   BinIndex result;
   result.x = std::ceil((urx - Left())/BinWidth());
-  result.x = std::min(result.x, BinCountX());
+  result.x = std::min(result.x, BinCountX()-1);
   result.y = std::ceil((ury - Bottom())/BinHeight());
-  result.y = std::min(result.y, BinCountY());
+  result.y = std::min(result.y, BinCountY()-1);
   return result;
 }
 
@@ -152,28 +152,27 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
   int blk_num = blk.Num();
   BinIndex ll = blk_aux->LLIndex();
   BinIndex ur = blk_aux->URIndex();
-
+  /*
   std::set<int> near_blk_set;
   for (int i=ll.x; i<=ur.x; ++i) {
-    for (int j=ll.y; j<ur.y; ++j) {
+    for (int j=ll.y; j<=ur.y; ++j) {
       for (auto &&num: bin_matrix[i][j].block_set) {
         near_blk_set.insert(num);
       }
     }
   }
-
   for (auto &&num: near_blk_set) {
     if (num == blk_num) continue;
     force = blk_aux->GetForce(&block_list[num]);
     tot_force.Incre(force);
   }
+  */
 
-  /*
   for (auto &&block: block_list) {
     if (&block == &blk) continue;
     force = blk_aux->GetForce(&block);
     tot_force.Incre(force);
-  }*/
+  }
 
   tot_force *= 1.0/blk.Area();
 
