@@ -485,6 +485,15 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
   while (line.find("NETS") == std::string::npos && !ist.eof()) {
     getline(ist, line);
   }
+  std::vector<std::string> nets_size_field;
+  ParseLine(line, nets_size_field);
+  try {
+    //std::cout << line << "\n";
+    int net_list_size = (int)std::round(std::stoi(nets_size_field[1]));
+    net_list.reserve(net_list_size);
+  } catch (...) {
+    Assert(false, "Invalid stoi conversion:\n" + line);
+  }
   //std::cout << line << "\n";
   getline(ist, line);
   // the following is a hack now, cannot handle all cases, probably need to use BISON in the future if necessary

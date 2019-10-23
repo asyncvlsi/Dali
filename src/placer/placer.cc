@@ -26,6 +26,10 @@ Placer::Placer(double aspect_ratio, double filling_rate) : aspect_ratio_(aspect_
 
 Placer::~Placer() = default;
 
+double Placer::GetBlkHPWL(Block &blk) {
+
+}
+
 bool Placer::IsBoundaryProper() {
   if (circuit_->MaxWidth() > Right() - Left()) {
     std::cout << "Improper boundary: MaxWidth() > Right() - Left()\n";

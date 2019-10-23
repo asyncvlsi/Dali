@@ -24,6 +24,8 @@ class Placer {
   // boundaries of the placement region
   Circuit* circuit_;
 
+  double GetBlkHPWL(Block &blk);
+
 public:
   Placer();
   Placer(double aspect_ratio, double filling_rate);
