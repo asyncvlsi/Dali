@@ -5,11 +5,11 @@
 #ifndef HPCC_SRC_PLACER_DETAILEDPLACER_DPSIMANNEAL_H_
 #define HPCC_SRC_PLACER_DETAILEDPLACER_DPSIMANNEAL_H_
 
-#include "../placer.h"
+#include "MDPlacer.h"
 #include <unordered_set>
 #include "MDPlacer/bin.h"
 
-class DPSimAnneal: public Placer {
+class DPSimAnneal: public MDPlacer {
  private:
   double hpwl_converge_criterion_ = 0.01;
   double global_swap_threshold;

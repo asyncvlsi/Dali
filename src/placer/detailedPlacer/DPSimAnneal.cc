@@ -17,7 +17,28 @@ void DPSimAnneal::FindOptimalRegion(Block &blk, std::unordered_set<int> &optimal
 }
 
 double DPSimAnneal::GetOverlap(Block &blk) {
+  std::vector<Block> &block_list = *BlockList();
+  auto blk_aux = (MDBlkAux *)blk.Aux();
+  int blk_num = blk.Num();
+  BinIndex ll = blk_aux->LLIndex();
+  BinIndex ur = blk_aux->URIndex();
 
+  std::unordered_set<int> near_blk_set;
+  for (int i=ll.x; i<=ur.x; ++i) {
+    for (int j=ll.y; j<=ur.y; ++j) {
+      for (auto &&num: bin_matrix[i][j].block_set) {
+        if (num == blk_num) continue;
+        near_blk_set.insert(num);
+      }
+    }
+  }
+
+  double total_overlap = 0;
+  for (auto &&num: near_blk_set) {
+    total_overlap += blk.OverlapArea(block_list[num]);
+  }
+
+  return total_overlap;
 }
 
 double DPSimAnneal::SwapCost(Block &blk1, Block &blk2, double hpwl_old, double everlap_old) {
@@ -31,7 +52,7 @@ void DPSimAnneal::SwapLoc(Block &blk1, Block &blk2) {
 void DPSimAnneal::GlobalSwap() {
   std::vector<Block> &block_list = *BlockList();
   double cost, best_num, best_cost;
-  int hpwl_before_swap, overlap_before_swap;
+  double hpwl_before_swap, overlap_before_swap;
   bool found_good_enough_swap;
   for (auto &&blk: block_list) {
     std::unordered_set<int> optimal_region;
@@ -69,6 +90,12 @@ void DPSimAnneal::LocalReOrder() {
 }
 
 void DPSimAnneal::StartPlacement() {
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "Start DPSimAnneal\n";
+  }
+  CreateBlkAuxList();
+  InitGridBin();
+  UpdateBinMatrix();
   double hpwl = 1e30;
   double hpwl_new;
   bool hpwl_converge = false;

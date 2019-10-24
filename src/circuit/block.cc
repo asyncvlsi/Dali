@@ -28,6 +28,23 @@ std::string Block::OrientStr() const {
   return s;
 }
 
+double Block::OverlapArea(const Block &rhs) const {
+  double overlap_area = 0;
+  if (IsOverlap(rhs)) {
+    double llx, urx, lly, ury;
+    llx = std::max(LLX(), rhs.LLX());
+    urx = std::min(URX(), rhs.URX());
+    lly = std::max(LLY(), rhs.LLY());
+    ury = std::min(URY(), rhs.URY());
+    overlap_area = (urx - llx)*(ury - lly);
+  }
+  return overlap_area;
+}
+
+double Block::OverlapArea(const Block *rhs) const {
+  return OverlapArea(*rhs);
+}
+
 void Block::Report() {
   std::cout << "Block Name: " << *Name() << "\n";
   std::cout << "Block Type: " << *(Type()->Name()) << "\n";

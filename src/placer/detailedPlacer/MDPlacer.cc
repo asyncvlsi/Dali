@@ -146,16 +146,16 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
   BinIndex ll = blk_aux->LLIndex();
   BinIndex ur = blk_aux->URIndex();
 
-  std::set<int> near_blk_set;
+  std::unordered_set<int> near_blk_set;
   for (int i=ll.x; i<=ur.x; ++i) {
     for (int j=ll.y; j<=ur.y; ++j) {
       for (auto &&num: bin_matrix[i][j].block_set) {
+        if (num == blk_num) continue;
         near_blk_set.insert(num);
       }
     }
   }
   for (auto &&num: near_blk_set) {
-    if (num == blk_num) continue;
     force = blk_aux->GetForce(&block_list[num]);
     tot_force.Incre(force);
   }

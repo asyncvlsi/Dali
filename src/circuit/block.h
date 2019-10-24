@@ -81,6 +81,8 @@ class Block {
   void IncreY(double displacement, double upper, double lower);
   bool IsOverlap(const Block &rhs) const;
   bool IsOverlap(const Block *rhs) const;
+  double OverlapArea(const Block &rhs) const;
+  double OverlapArea(const Block *rhs) const;
 
   void Report();
   void ReportNet();

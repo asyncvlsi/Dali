@@ -27,7 +27,12 @@ Placer::Placer(double aspect_ratio, double filling_rate) : aspect_ratio_(aspect_
 Placer::~Placer() = default;
 
 double Placer::GetBlkHPWL(Block &blk) {
-
+  double hpwl = 0;
+  std::vector<Net> &net_list = GetCircuit()->net_list;
+  for (auto &&idx: blk.net_list) {
+    hpwl += net_list[idx].HPWL();
+  }
+  return hpwl;
 }
 
 bool Placer::IsBoundaryProper() {
