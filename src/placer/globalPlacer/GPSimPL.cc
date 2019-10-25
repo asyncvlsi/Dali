@@ -1322,9 +1322,11 @@ void GPSimPL::LookAheadLegalization() {
 void GPSimPL::UpdateLALConvergeState() {
   HPWL_LAL_new = HPWLX_new + HPWLY_new;
   HPWL_LAL_converge = std::fabs(1 - HPWL_LAL_new/HPWL_LAL_old) < HPWL_inter_linearSolver_precision;
-  std::cout << "Old HPWL after look ahead legalization: " << HPWL_LAL_old << "\n";
-  std::cout << "New HPWL after look ahead legalization: " << HPWL_LAL_new << "\n";
-  std::cout << "Converge is: " << HPWL_LAL_converge << "\n";
+  if (globalVerboseLevel >= LOG_DEBUG) {
+    std::cout << "Old HPWL after look ahead legalization: " << HPWL_LAL_old << "\n";
+    std::cout << "New HPWL after look ahead legalization: " << HPWL_LAL_new << "\n";
+    std::cout << "Converge is: " << HPWL_LAL_converge << "\n";
+  }
   HPWL_LAL_old = HPWL_LAL_new;
 }
 
@@ -1339,7 +1341,7 @@ void GPSimPL::StartPlacement() {
   InitialPlacement();
 
   for (int i=0; i<look_ahead_iter_max; ++i) {
-    if (globalVerboseLevel >= LOG_INFO) {
+    if (globalVerboseLevel >= LOG_DEBUG) {
       std::cout << i << "-th iteration\n";
     }
     LookAheadLegalization();

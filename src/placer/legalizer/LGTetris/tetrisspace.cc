@@ -4,15 +4,10 @@
 
 #include "tetrisspace.h"
 
-TetrisSpace::TetrisSpace(int left, int right, int bottom, int top, int rowHeight, int minWidth):
-    scan_line_(left),
-    left_(left),
-    right_(right),
-    bottom_(bottom),
-    top_(top),
-    row_height_(rowHeight),
-    min_width_(minWidth) {
-  tot_num_row_ = std::floor((top_-bottom_)/rowHeight);
+TetrisSpace::TetrisSpace(int left, int right, int bottom, int top, int rowHeight, int minWidth): scan_line_(left),
+    left_(left), right_(right), bottom_(bottom), top_(top), row_height_(rowHeight), min_width_(minWidth) {
+  tot_num_row_ = (top_-bottom_)/rowHeight;
+  top_ -= (top_-bottom_)%rowHeight;
   for (int i=0; i<tot_num_row_; ++i) {
     FreeSegmentList tmpRow;
     free_segment_rows.push_back(tmpRow);
@@ -43,6 +38,10 @@ int TetrisSpace::ToEndRow(int y_loc) {
   if ((row_num < 0) || (row_num >= tot_num_row_)) {
     std::cout << "Fatal error:" << std::endl;
     std::cout << "  y_loc out of range, y_loc, bottom_, top_: " << y_loc << "  " << bottom_ << "  " << top_ << std::endl;
+    std::cout << "  relative y location:" << relative_y << std::endl;
+    std::cout << "  row height:" << row_height_ << std::endl;
+    std::cout << "  row num: " << row_num << std::endl;
+    std::cout << "  total row num: " << tot_num_row_ << std::endl;
     Assert(false, "ToEndRow conversion fail");
   }
   return(row_num);

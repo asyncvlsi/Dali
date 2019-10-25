@@ -580,6 +580,7 @@ void Circuit::ReportBriefSummary() {
     std::cout << "  movable blocks: " << TotMovableBlockNum() << "\n";
     std::cout << "  blocks: " << TotBlockNum() << "\n";
     std::cout << "  nets: " << net_list.size() << "\n";
+    std::cout << "  grid size x: " << grid_value_x_ << " um, grid size y: " << grid_value_y_ << " um\n";
   }
 }
 
@@ -662,7 +663,7 @@ double Circuit::HPWL() {
 }
 
 void Circuit::ReportHPWL() {
-  std::cout << "  Current HPWL: " << HPWL() << "\n";
+  std::cout << "  Current HPWL: " << std::scientific << HPWLX()*GridValueX() + HPWLY()*GridValueY() << " um\n";
 }
 
 double Circuit::HPWLCtoCX() {
@@ -725,7 +726,6 @@ void Circuit::WriteDefFileDebug(std::string const &name_of_file) {
 void Circuit::GenMATLABScript(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
-  //ost << left() << " " << bottom() << " " << Right() - Left() << " " << Top() - Bottom() << "\n";
   for (auto &&block: block_list) {
     ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";
   }

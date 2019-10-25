@@ -8,10 +8,9 @@
 #include "circuit.h"
 #include "placer.h"
 
-VerboseLevel globalVerboseLevel = LOG_DEBUG;
+VerboseLevel globalVerboseLevel = LOG_INFO;
 
 int main() {
-  time_t Time = clock();
   Circuit circuit;
 
   std::string adaptec1_lef = "../test/adaptec1/adaptec1.lef";
@@ -22,8 +21,10 @@ int main() {
   def_file = "../test/out_1K.def";
   //lef_file = adaptec1_lef;
   //def_file = adaptec1_def;
+  time_t Time = clock();
   circuit.ReadLefFile(lef_file);
   circuit.ReadDefFile(def_file);
+  std::cout << "File loading complete, time: " << (float) Time / CLOCKS_PER_SEC << std::endl;
 
   //circuit.ReportBlockTypeList();
   //circuit.ReportBlockTypeMap();
@@ -35,6 +36,7 @@ int main() {
 
   circuit.ReportHPWL();
 
+  Time = clock();
   Placer *gb_placer = new GPSimPL;
   gb_placer->SetInputCircuit(&circuit);
 
@@ -46,8 +48,8 @@ int main() {
   gb_placer->SetFillingRate(1);
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
-  //gb_placer->GenMATLABScript("gb_result.txt");
-  gb_placer->SaveNodeTerminal();
+  gb_placer->GenMATLABScript("gb_result.txt");
+  //gb_placer->SaveNodeTerminal();
 
   Placer *d_placer = new MDPlacer;
   d_placer->TakeOver(gb_placer);

@@ -77,7 +77,7 @@ class Circuit {
   void AddBlkWell(Block *blk, bool is_pluged, int llx, int lly, int urx, int ury);
   void SetWellWidth(double well_width);
   void SetWellSpace(double well_space);
-  void SetWellMaxLenthUnplug(double max_length_unplug);
+  void SetWellMaxLengthUnplug(double max_length_unplug);
   double WellWidth() const;
   double WellSpace() const;
   double WellMaxLengthUnplug() const;
