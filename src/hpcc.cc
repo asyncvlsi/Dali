@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
 
   Time = clock() - Time;
   if (globalVerboseLevel >= LOG_INFO) {
-    std::cout << "File loading complete, time: " << (float) Time / CLOCKS_PER_SEC << std::endl;
+    std::cout << "File loading complete, time: " << (float) Time / CLOCKS_PER_SEC << "s\n";
   }
   circuit.ReportBriefSummary();
   circuit.ReportHPWL();

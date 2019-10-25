@@ -24,7 +24,7 @@ int main() {
   time_t Time = clock();
   circuit.ReadLefFile(lef_file);
   circuit.ReadDefFile(def_file);
-  std::cout << "File loading complete, time: " << (float) Time / CLOCKS_PER_SEC << std::endl;
+  std::cout << "File loading complete, time: " << (float) Time / CLOCKS_PER_SEC << "s\n";
 
   //circuit.ReportBlockTypeList();
   //circuit.ReportBlockTypeMap();

@@ -51,14 +51,18 @@ int main(int argc, char *argv[]) {
   circuit.ReadLefFile(lef_file_name);
   circuit.ReadDefFile(def_file_name);
   // might need to print out some circuit info here
+  double hpwl_x = circuit.HPWLX()*circuit.GridValueX();
+  double hpwl_y = circuit.HPWLY()*circuit.GridValueY();
   std::cout << "Pin-to-Pin HPWL\n";
-  std::cout << "  HPWL in the x direction: " << circuit.HPWLX() << std::endl;
-  std::cout << "  HPWL in the y direction: " << circuit.HPWLY() << std::endl;
-  std::cout << "  HPWL total:              " << circuit.HPWL()  << std::endl;
+  std::cout << "  HPWL in the x direction: " << hpwl_x << std::endl;
+  std::cout << "  HPWL in the y direction: " << hpwl_y << std::endl;
+  std::cout << "  HPWL total:              " << hpwl_x + hpwl_y  << std::endl;
+  hpwl_x = circuit.HPWLCtoCX()*circuit.GridValueX();
+  hpwl_y = circuit.HPWLCtoCY()*circuit.GridValueY();
   std::cout << "Center-to-Center HPWL\n";
-  std::cout << "  HPWL in the x direction: " << circuit.HPWLCtoCX() << std::endl;
-  std::cout << "  HPWL in the y direction: " << circuit.HPWLCtoCY() << std::endl;
-  std::cout << "  HPWL total:              " << circuit.HPWLCtoC()  << std::endl;
+  std::cout << "  HPWL in the x direction: " << hpwl_x << std::endl;
+  std::cout << "  HPWL in the y direction: " << hpwl_y << std::endl;
+  std::cout << "  HPWL total:              " << hpwl_x + hpwl_y  << std::endl;
   return 0;
 }
 
