@@ -1253,7 +1253,9 @@ void GPSimPL::BuildProblemB2BWithAnchorY() {
 }
 
 void GPSimPL::QuadraticPlacementWithAnchor() {
-  std::cout << "alpha: " << alpha << "\n";
+  if (globalVerboseLevel >= LOG_DEBUG) {
+    std::cout << "alpha: " << alpha << "\n";
+  }
   std::vector<Block> &block_list = *BlockList();
 
   HPWLX_converge = false;

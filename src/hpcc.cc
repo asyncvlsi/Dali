@@ -43,6 +43,7 @@ int main(int argc, char *argv[]) {
       }
     } else if (arg == "-o" && i < argc) {
       output_name = std::string(argv[i++]);
+      output_name += ".def";
       if (output_name.empty()) {
         std::cout << "Invalid output name!\n";
         ReportUsage();
@@ -93,9 +94,7 @@ int main(int argc, char *argv[]) {
   circuit.ReadDefFile(def_file_name);
 
   Time = clock() - Time;
-  if (globalVerboseLevel >= LOG_INFO) {
-    std::cout << "File loading complete, time: " << (float) Time / CLOCKS_PER_SEC << "s\n";
-  }
+  std::cout << "File loading complete, time: " << (float) Time / CLOCKS_PER_SEC << "s\n";
   circuit.ReportBriefSummary();
   circuit.ReportHPWL();
 
@@ -133,7 +132,7 @@ void ReportUsage() {
   std::cout << "Usage: hpcc\n"
                " -lef <file.lef>\n"
                " -def <file.def>\n"
-               " -o <output_name.def>\n"
+               " -o <output_name>.def\n"
                " -grid grid_value_x grid_value_y\n"
                " -v verbosity_level (optional, 0-5, default 0)\n"
                "(order does not matter)"
