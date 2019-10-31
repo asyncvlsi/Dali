@@ -15,7 +15,7 @@
 #include "placer/detailedPlacer/DPLinear.h"
 #include "placer/detailedPlacer/DPAbacus.h"
 #include "placer/detailedPlacer/MDPlacer.h"
-#include "placer/detailedPlacer/DPSimAnneal.h"
+#include "placer/detailedPlacer/DPSwap.h"
 
 /****Legalizer****/
 #include "placer/legalizer/LGTetris.h"

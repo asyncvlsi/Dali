@@ -2,4 +2,4 @@
 
 git checkout master
 git branch -d develop
-#git push origin --delete develop
+git push origin --delete develop

@@ -74,6 +74,7 @@ class Block {
   void SetMovable(bool movable);
   void SetOrient(BlockOrient &orient);
   void SetAux(BlockAux *aux);
+  void SwapLoc(Block &blk);
 
   void IncreX(double displacement);
   void IncreY(double displacement);

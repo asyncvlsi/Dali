@@ -2,21 +2,21 @@
 // Created by Yihang on 10/21/2019.
 //
 
-#include "DPSimAnneal.h"
+#include "DPSwap.h"
 
-DPSimAnneal::DPSimAnneal() {
+DPSwap::DPSwap() {
   global_swap_threshold = 0;
 }
 
-void DPSimAnneal::SingleSegmentCluster() {
+void DPSwap::SingleSegmentCluster() {
 
 }
 
-void DPSimAnneal::FindOptimalRegion(Block &blk, std::unordered_set<int> &optimal_region) {
+void DPSwap::FindOptimalRegion(Block &blk, std::unordered_set<int> &optimal_region) {
 
 }
 
-double DPSimAnneal::GetOverlap(Block &blk) {
+double DPSwap::GetOverlap(Block &blk) {
   std::vector<Block> &block_list = *BlockList();
   auto blk_aux = (MDBlkAux *)blk.Aux();
   int blk_num = blk.Num();
@@ -41,57 +41,63 @@ double DPSimAnneal::GetOverlap(Block &blk) {
   return total_overlap;
 }
 
-double DPSimAnneal::SwapCost(Block &blk1, Block &blk2, double hpwl_old, double everlap_old) {
+double DPSwap::SwapCostChange(Block &blk1, Block &blk2, double cell_cost) {
+  double cost_old = GetOverlap(blk2) + GetBlkHPWL(blk2) + cell_cost;
 
+  SwapLoc(blk1, blk2);
+  double cost_new = GetOverlap(blk1) + GetOverlap(blk2) + GetBlkHPWL(blk1) + GetBlkHPWL(blk2);
+  SwapLoc(blk1, blk2);
+  return cost_old - cost_new;
 }
 
-void DPSimAnneal::SwapLoc(Block &blk1, Block &blk2) {
-
+void DPSwap::SwapLoc(Block &blk1, Block &blk2) {
+  blk1.SwapLoc(blk2);
+  UpdateBin(blk1);
+  UpdateBin(blk2);
 }
 
-void DPSimAnneal::GlobalSwap() {
+void DPSwap::GlobalSwap() {
   std::vector<Block> &block_list = *BlockList();
-  double cost, best_num, best_cost;
-  double hpwl_before_swap, overlap_before_swap;
+  double benefit, best_num, best_benefit;
+  double cell_cost;
   bool found_good_enough_swap;
   for (auto &&blk: block_list) {
     std::unordered_set<int> optimal_region;
     FindOptimalRegion(blk, optimal_region);
-    best_cost = 1e30;
-    hpwl_before_swap = GetBlkHPWL(blk);
-    overlap_before_swap = GetOverlap(blk);
+    best_benefit = 0;
+    cell_cost = GetBlkHPWL(blk) + GetOverlap(blk);
     found_good_enough_swap = false;
     best_num = -1;
     for (auto &&num: optimal_region) {
-      cost = SwapCost(blk, block_list[num], hpwl_before_swap, overlap_before_swap);
-      if (cost < best_cost) {
+      benefit = SwapCostChange(blk, block_list[num], cell_cost);
+      if (benefit > best_benefit) {
         best_num = num;
-        best_cost = cost;
+        best_benefit = benefit;
       }
-      if (cost < global_swap_threshold) {
+      if (benefit < global_swap_threshold) {
         SwapLoc(blk, block_list[num]);
         found_good_enough_swap = true;
         break;
       }
     }
-    if (!found_good_enough_swap && best_cost < 0 && best_num > 0 && best_num != blk.Num()) {
+    if (!found_good_enough_swap && best_benefit < 0 && best_num > 0 && best_num != blk.Num()) {
       SwapLoc(blk, block_list[best_num]);
     }
   }
 }
 
-void DPSimAnneal::VerticalSwap() {
+void DPSwap::VerticalSwap() {
 
 
 }
 
-void DPSimAnneal::LocalReOrder() {
+void DPSwap::LocalReOrder() {
 
 }
 
-void DPSimAnneal::StartPlacement() {
+void DPSwap::StartPlacement() {
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "Start DPSimAnneal\n";
+    std::cout << "Start DPSwap\n";
   }
   CreateBlkAuxList();
   InitGridBin();

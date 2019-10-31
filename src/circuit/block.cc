@@ -62,3 +62,12 @@ void Block::ReportNet() {
   }
   std::cout << "\n";
 }
+
+void Block::SwapLoc(Block &blk) {
+  double tmp_x = llx_;
+  double tmp_y = lly_;
+  llx_ = blk.LLX();
+  lly_ = blk.LLY();
+  blk.SetLLX(tmp_x);
+  blk.SetLLY(tmp_y);
+}
