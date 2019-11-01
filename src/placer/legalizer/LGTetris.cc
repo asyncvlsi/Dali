@@ -128,12 +128,12 @@ bool TetrisLegalizer::TetrisLegal() {
   // 3. initialize the data structure to store row usage
   //int maxHeight = GetCircuit()->MaxHeight();
   int minWidth = GetCircuit()->MinWidth();
-  int minHeight = GetCircuit()->MinHeight();
+  //int minHeight = GetCircuit()->MinHeight();
 
   if (globalVerboseLevel >= LOG_INFO) {
     std::cout << "Building LGTetris space" << std::endl;
   }
-  TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), (int)(std::ceil(minHeight/2.0)), minWidth);
+  TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), 1, minWidth);
   int llx, lly;
   int width, height;
   //int count = 0;

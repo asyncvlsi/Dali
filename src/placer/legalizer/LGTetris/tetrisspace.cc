@@ -118,7 +118,11 @@ bool TetrisSpace::FindBlockLoc(int llx, int lly, int width, int height, Loc2D &r
   bool all_row_fail = true;
   int min_disp_x;
   std::vector< Loc2D > candidate_list;
-  for (int i=0; i<top_row_to_check; ++i) {
+
+  int min_row = ToStartRow(std::max(bottom_, lly - 2*height));
+  int max_row = ToEndRow(std::min(top_, lly + 2*height)) - height/row_height_;
+
+  for (int i=min_row; i<max_row; ++i) {
     FreeSegmentList common_segments(scan_line_, right_, min_width_);
     FindCommonSegments(i, i + effective_height, common_segments);
     common_segments.RemoveShortSeg(width);
@@ -129,6 +133,27 @@ bool TetrisSpace::FindBlockLoc(int llx, int lly, int width, int height, Loc2D &r
       min_disp_x = common_segments.MinDispLoc(scan_line_, width);
       candidate_list.emplace_back(min_disp_x, i);
     }
+  }
+
+  while (all_row_fail) {
+    int old_min_row  = min_row;
+    int old_max_row = max_row;
+    min_row = std::max(0, min_row - 2*height);
+    max_row = std::min(top_row_to_check, max_row + 2*height);
+    for (int i=min_row; i<max_row; ++i) {
+      if (i>=old_min_row && i<old_max_row) continue;
+      FreeSegmentList common_segments(scan_line_, right_, min_width_);
+      FindCommonSegments(i, i + effective_height, common_segments);
+      common_segments.RemoveShortSeg(width);
+      if (common_segments.Empty()) {
+        candidate_list.emplace_back(-1, -1);
+      } else {
+        all_row_fail = false;
+        min_disp_x = common_segments.MinDispLoc(scan_line_, width);
+        candidate_list.emplace_back(min_disp_x, i);
+      }
+    }
+    if (min_row <= 0 && max_row >= top_row_to_check) break;
   }
 
   Loc2D best_loc(-1, -1);
