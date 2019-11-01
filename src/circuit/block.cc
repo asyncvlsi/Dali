@@ -10,6 +10,150 @@ Block::Block(BlockType *type, std::pair<const std::string, int>* name_num_pair_p
   aux_ = nullptr;
 }
 
+const std::string *Block::Name() const{
+  return &(name_num_pair_ptr_->first);
+}
+
+BlockType *Block::Type() const {
+  return type_;
+}
+
+int Block::Num() const {
+  return name_num_pair_ptr_->second;
+}
+
+int Block::Width() const{
+  return type_->Width();
+}
+
+int Block::Height() const{
+  return type_->Height();
+}
+
+void Block::SetLLX(double lower_left_x) {
+  llx_ = lower_left_x;
+}
+
+double Block::LLX() const{
+  return llx_;
+}
+
+void Block::SetLLY(double lower_left_y) {
+  lly_ = lower_left_y;
+}
+
+double Block::LLY() const{
+  return lly_;
+}
+
+void Block::SetURX(double upper_right_x) {
+  llx_ = upper_right_x - Width();
+}
+
+double Block::URX() const{
+  return llx_ + Width();
+}
+
+void Block::SetURY(double upper_right_y) {
+  lly_ = upper_right_y - Height();
+}
+
+double Block::URY() const{
+  return lly_ + Height();
+}
+
+void Block::SetCenterX(double center_x) {
+  llx_ = center_x - Width()/2.0;
+}
+
+double Block::X() const{
+  return llx_ + Width()/2.0;
+}
+
+void Block::SetCenterY(double center_y) {
+  lly_ = center_y - Height()/2.0;
+}
+
+double Block::Y() const{
+  return lly_ + Height()/2.0;
+}
+
+void Block::SetMovable(bool movable) {
+  movable_ = movable;
+}
+
+bool Block::IsMovable() const {
+  return movable_;
+}
+
+bool Block::IsFixed() const {
+  return !movable_;
+}
+
+int Block::Area() const {
+  return Height() * Width();
+}
+
+void Block::SetOrient(BlockOrient &orient) {
+  orient_ = orient;
+}
+
+BlockOrient Block::Orient() const {
+  return orient_;
+}
+
+void Block::IncreX(double displacement) {
+  llx_ += displacement;
+}
+
+void Block::IncreY(double displacement) {
+  lly_ += displacement;
+}
+
+void Block::IncreX(double displacement, double upper, double lower) {
+  llx_ += displacement;
+  double real_upper = upper - Width();
+  if (llx_ < lower) llx_ = lower;
+  else if (llx_ > real_upper) llx_ = real_upper;
+}
+
+void Block::IncreY(double displacement, double upper, double lower) {
+  lly_ += displacement;
+  double real_upper = upper - Height();
+  if (lly_ < lower) lly_ = lower;
+  else if (lly_ > real_upper) lly_ = real_upper;
+}
+
+bool Block::IsOverlap(const Block &rhs) const {
+  bool not_overlap = LLX() > rhs.URX() || rhs.LLX() > URX() || LLY() > rhs.URY() || rhs.LLY() > URY();
+  return !not_overlap;
+}
+
+bool Block::IsOverlap(const Block *rhs) const {
+  return IsOverlap(*rhs);
+}
+
+void Block::SetAux(BlockAux *aux) {
+  Assert(aux != nullptr, "When set auxiliary information, argument cannot be a nullptr");
+  aux_ = aux;
+}
+
+BlockAux *Block::Aux(){
+  return aux_;
+}
+
+const std::string *Block::TypeName() const {
+  return type_->Name();
+}
+
+std::string Block::IsPlace() {
+  return "PLACED";
+}
+
+std::string Block::LowerLeftCorner() {
+  return "( " + std::to_string(LLX()) + " " + std::to_string(LLY()) + " )";
+}
+
 std::string Block::OrientStr() const {
   std::string s;
   switch (orient_) {

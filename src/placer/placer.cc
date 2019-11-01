@@ -277,3 +277,11 @@ void Placer::SaveDEFFile(std::string const &name_of_file, std::string const &inp
   ost.close();
   ist.close();
 }
+
+void Placer::SanityCheck() {
+  double epsilon = 1e-3;
+  Assert(filling_rate_ > epsilon, "Filling rate should be in a proper range, for example [0.1, 1], current value: " + std::to_string(filling_rate_));
+  for (auto &&net: GetCircuit()->net_list) {
+    Assert(!net.blk_pin_list.empty(), "Empty net?" + *net.Name());
+  }
+}

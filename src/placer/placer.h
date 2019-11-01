@@ -166,10 +166,5 @@ inline void Placer::ReportHPWLCtoC() {
   GetCircuit()->ReportHPWLCtoC();
 }
 
-inline void Placer::SanityCheck() {
-  double epsilon = 1e-3;
-  Assert(filling_rate_ > epsilon, "Filling rate should be in a proper range, for example [0.1, 1], current value: " + std::to_string(filling_rate_));
-}
-
 
 #endif //HPCC_PLACERBASE_HPP

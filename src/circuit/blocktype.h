@@ -1,13 +1,13 @@
 //
-// Created by Yihang Yang on 2019-06-27.
+// Created by Yihang Yang on 10/31/19.
 //
 
-#ifndef HPCC_BLOCKTYPE_HPP
-#define HPCC_BLOCKTYPE_HPP
+#ifndef HPCC_SRC_CIRCUIT_BLOCKTYPE_H_
+#define HPCC_SRC_CIRCUIT_BLOCKTYPE_H_
 
-#include <string>
-#include <map>
 #include "pin.h"
+#include <map>
+#include <vector>
 
 class BlockType {
  private:
@@ -49,5 +49,4 @@ class BlockType {
   }*/
 };
 
-
-#endif //HPCC_BLOCKTYPE_HPP
+#endif //HPCC_SRC_CIRCUIT_BLOCKTYPE_H_

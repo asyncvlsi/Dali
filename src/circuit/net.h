@@ -10,10 +10,9 @@
 #include "block.h"
 #include "blockpinpair.h"
 #include "netaux.h"
+#include "../common/misc.h"
 
 class NetAux;
-class Block;
-class BlockPinPair;
 
 class Net {
  protected:
@@ -41,6 +40,9 @@ class Net {
   int FixedCnt();
   void SetAux(NetAux *aux);
   NetAux *Aux();
+
+  void XBoundExclude(Block *blk_ptr, double &x1, double &x2);
+  void YBoundExclude(Block *blk_ptr, double &y1, double &y2);
 
   void SortBlkPinList();
   void UpdateMaxMinX();
@@ -77,6 +79,5 @@ class Net {
     return os;
   }*/
 };
-
 
 #endif //HPCC_NET_HPP

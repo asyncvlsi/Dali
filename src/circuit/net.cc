@@ -15,22 +15,13 @@ Net::Net(std::pair<const std::string, int> *name_num_pair_ptr, double weight): n
   aux_ = nullptr;
 }
 
-void Net::AddBlockPinPair(Block *block_ptr, int pin_index) {
-  blk_pin_list.emplace_back(block_ptr, pin_index);
-  if (!block_ptr->IsMovable()) {
-    ++cnt_fixed_;
-  }
-  // because net list is stored as a vector, so the location of a net will change, thus here, we have to use Num() to
-  // find a net, although a pointer to this net is more convenient.
-  block_ptr->net_list.push_back(Num());
-}
 
 const std::string *Net::Name() const {
   return &(name_num_pair_ptr_->first);
 }
 
 int Net::Num() {
- return name_num_pair_ptr_->second;
+  return name_num_pair_ptr_->second;
 }
 
 void Net::SetWeight(double weight) {
@@ -61,55 +52,6 @@ void Net::SetAux(NetAux *aux) {
 
 NetAux *Net::Aux() {
   return aux_;
-}
-
-void Net::SortBlkPinList() {
-  std::sort(blk_pin_list.begin(), blk_pin_list.end());
-}
-
-void Net::UpdateMaxMinX() {
-  Assert(!blk_pin_list.empty(), "Net contains no pin: " + *Name());
-  max_pin_x_ = 0;
-  min_pin_x_ = 0;
-  double max_x = blk_pin_list[0].AbsX();
-  double min_x = max_x;
-  double tmp_pin_loc = 0;
-  for (size_t i=0; i<blk_pin_list.size(); i++) {
-    tmp_pin_loc = blk_pin_list[i].AbsX();
-    if (max_x < tmp_pin_loc) {
-      max_x = tmp_pin_loc;
-      max_pin_x_ = i;
-    }
-    if (min_x > tmp_pin_loc) {
-      min_x = tmp_pin_loc;
-      min_pin_x_ = i;
-    }
-  }
-}
-
-void Net::UpdateMaxMinY() {
-  Assert(!blk_pin_list.empty(), "Net contains no pin: " + *Name());
-  max_pin_y_ = 0;
-  min_pin_y_ = 0;
-  double max_y = blk_pin_list[0].AbsY();
-  double min_y = max_y;
-  double tmp_pin_loc = 0;
-  for (size_t i=0; i<blk_pin_list.size(); i++) {
-    tmp_pin_loc = blk_pin_list[i].GetBlock()->LLY() + blk_pin_list[i].YOffset();
-    if (max_y < tmp_pin_loc) {
-      max_y = tmp_pin_loc;
-      max_pin_y_ = i;
-    }
-    if (min_y > tmp_pin_loc) {
-      min_y = tmp_pin_loc;
-      min_pin_y_ = i;
-    }
-  }
-}
-
-void Net::UpdateMaxMin() {
-  UpdateMaxMinX();
-  UpdateMaxMinY();
 }
 
 int Net::MaxBlkPinNumX() {
@@ -144,17 +86,126 @@ Block *Net::MinBlockY() {
   return blk_pin_list[min_pin_y_].GetBlock();
 }
 
+void Net::AddBlockPinPair(Block *block_ptr, int pin_index) {
+  blk_pin_list.emplace_back(block_ptr, pin_index);
+  if (!block_ptr->IsMovable()) {
+    ++cnt_fixed_;
+  }
+  // because net list is stored as a vector, so the location of a net will change, thus here, we have to use Num() to
+  // find a net, although a pointer to this net is more convenient.
+  block_ptr->net_list.push_back(Num());
+}
+
+void Net::XBoundExclude(Block *blk_ptr, double &x1, double &x2) {
+  double db_max = 1e30;
+  x1 = -db_max;
+  x2 = db_max;
+  if (blk_pin_list.size()==1) return;
+  max_pin_x_ = -1;
+  min_pin_x_ = -1;
+  double max_x = -db_max;
+  double min_x = db_max;
+  double tmp_pin_loc;
+  for (size_t i=0; i<blk_pin_list.size(); ++i) {
+    if (blk_pin_list[i].GetBlock() == blk_ptr) continue;
+    tmp_pin_loc = blk_pin_list[i].AbsX();
+    if (max_x < tmp_pin_loc) {
+      max_x = tmp_pin_loc;
+      max_pin_x_ = i;
+    }
+    if (min_x > tmp_pin_loc) {
+      min_x = tmp_pin_loc;
+      min_pin_x_ = i;
+    }
+  }
+  x1 = blk_pin_list[min_pin_x_].AbsX();
+  x2 = blk_pin_list[max_pin_x_].AbsX();
+}
+
+void Net::YBoundExclude(Block *blk_ptr, double &y1, double &y2) {
+  double db_max = 1e30;
+  y1 = -db_max;
+  y2 = db_max;
+  if (blk_pin_list.size()==1) return;
+  max_pin_y_ = -1;
+  min_pin_y_ = -1;
+  double max_y = -db_max;
+  double min_y = db_max;
+  double tmp_pin_loc;
+  for (size_t i=0; i<blk_pin_list.size(); i++) {
+    if (blk_pin_list[i].GetBlock() == blk_ptr) continue;
+    tmp_pin_loc = blk_pin_list[i].GetBlock()->LLY() + blk_pin_list[i].YOffset();
+    if (max_y < tmp_pin_loc) {
+      max_y = tmp_pin_loc;
+      max_pin_y_ = i;
+    }
+    if (min_y > tmp_pin_loc) {
+      min_y = tmp_pin_loc;
+      min_pin_y_ = i;
+    }
+  }
+  y1 = blk_pin_list[min_pin_y_].AbsY();
+  y2 = blk_pin_list[max_pin_y_].AbsY();
+}
+
+void Net::SortBlkPinList() {
+  std::sort(blk_pin_list.begin(), blk_pin_list.end());
+}
+
+void Net::UpdateMaxMinX() {
+  max_pin_x_ = 0;
+  min_pin_x_ = 0;
+  double max_x = blk_pin_list[0].AbsX();
+  double min_x = max_x;
+  double tmp_pin_loc = 0;
+  for (size_t i=0; i<blk_pin_list.size(); i++) {
+    tmp_pin_loc = blk_pin_list[i].AbsX();
+    if (max_x < tmp_pin_loc) {
+      max_x = tmp_pin_loc;
+      max_pin_x_ = i;
+    }
+    if (min_x > tmp_pin_loc) {
+      min_x = tmp_pin_loc;
+      min_pin_x_ = i;
+    }
+  }
+}
+
+void Net::UpdateMaxMinY() {
+  max_pin_y_ = 0;
+  min_pin_y_ = 0;
+  double max_y = blk_pin_list[0].AbsY();
+  double min_y = max_y;
+  double tmp_pin_loc = 0;
+  for (size_t i=0; i<blk_pin_list.size(); i++) {
+    tmp_pin_loc = blk_pin_list[i].GetBlock()->LLY() + blk_pin_list[i].YOffset();
+    if (max_y < tmp_pin_loc) {
+      max_y = tmp_pin_loc;
+      max_pin_y_ = i;
+    }
+    if (min_y > tmp_pin_loc) {
+      min_y = tmp_pin_loc;
+      min_pin_y_ = i;
+    }
+  }
+}
+
+void Net::UpdateMaxMin() {
+  UpdateMaxMinX();
+  UpdateMaxMinY();
+}
+
 double Net::HPWLX() {
   UpdateMaxMinX();
-  double max_x = blk_pin_list[max_pin_x_].GetBlock()->LLX() + blk_pin_list[max_pin_x_].XOffset();
-  double min_x = blk_pin_list[min_pin_x_].GetBlock()->LLX() + blk_pin_list[min_pin_x_].XOffset();
+  double max_x = blk_pin_list[max_pin_x_].AbsX();
+  double min_x = blk_pin_list[min_pin_x_].AbsX();
   return (max_x - min_x) * weight_;
 }
 
 double Net::HPWLY() {
   UpdateMaxMinY();
-  double max_y = blk_pin_list[max_pin_y_].GetBlock()->LLY() + blk_pin_list[max_pin_y_].YOffset();
-  double min_y = blk_pin_list[min_pin_y_].GetBlock()->LLY() + blk_pin_list[min_pin_y_].YOffset();
+  double max_y = blk_pin_list[max_pin_y_].AbsY();
+  double min_y = blk_pin_list[min_pin_y_].AbsY();
   return (max_y - min_y) * weight_;
 }
 

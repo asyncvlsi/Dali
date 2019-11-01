@@ -1,14 +1,11 @@
 //
-// Created by yihan on 7/27/2019.
+// Created by Yihang Yang on 10/31/19.
 //
 
 #ifndef HPCC_SRC_CIRCUIT_BLOCKPINPAIR_H_
 #define HPCC_SRC_CIRCUIT_BLOCKPINPAIR_H_
 
 #include "block.h"
-#include "pin.h"
-
-class Block;
 
 class BlockPinPair {
  private:

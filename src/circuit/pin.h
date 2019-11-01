@@ -1,15 +1,12 @@
 //
-// Created by Yihang Yang on 2019-05-23.
+// Created by Yihang Yang on 10/31/19.
 //
 
-#ifndef HPCC_PIN_HPP
-#define HPCC_PIN_HPP
+#ifndef HPCC_SRC_CIRCUIT_PIN_H_
+#define HPCC_SRC_CIRCUIT_PIN_H_
 
-#include <string>
-#include <iostream>
-#include <vector>
-#include <map>
 #include "rect.h"
+#include <vector>
 
 class Pin {
  private:
@@ -40,5 +37,4 @@ class Pin {
   }*/
 };
 
-
-#endif //HPCC_PIN_HPP
+#endif //HPCC_SRC_CIRCUIT_PIN_H_

@@ -1,9 +1,9 @@
 //
-// Created by Yihang Yang on 2019-05-23.
+// Created by Yihang Yang on 10/31/19.
 //
 
-#include "common/misc.h"
 #include "pin.h"
+#include "../common/misc.h"
 
 Pin::Pin(std::pair<const std::string, int>* name_num_pair_ptr): name_num_pair_ptr_(name_num_pair_ptr), x_offset_(-1), y_offset_(-1) {
   manual_set_ = false;
