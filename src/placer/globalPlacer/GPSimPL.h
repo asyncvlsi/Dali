@@ -37,6 +37,7 @@ class GPSimPL: public Placer {
   double HPWL_LAL_old = 1e30;
   bool HPWL_LAL_converge = false;
   double HPWL_inter_linearSolver_precision = 0.05;
+  int number_of_cell_in_bin = 30;
  public:
   GPSimPL();
   GPSimPL(double aspectRatio, double fillingRate);
@@ -78,7 +79,7 @@ class GPSimPL: public Placer {
   std::vector< std::vector<GridBin> > grid_bin_matrix;
   std::vector< std::vector<int> > grid_bin_white_space_LUT;
   void InitGridBins();
-  void InitWhiteSpaceLut();
+  void InitWhiteSpaceLUT();
   int LookUpWhiteSpace(GridBinIndex const &ll_index, GridBinIndex const &ur_index);
   void LookAheadLgInit();
   void LookAheadClose();

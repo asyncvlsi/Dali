@@ -18,10 +18,10 @@ class GridBinIndex {
   bool operator <(const GridBinIndex &rhs) const;
   bool operator >(const GridBinIndex &rhs) const;
   bool operator ==(const GridBinIndex &rhs) const;
-  friend std::ostream& operator<<(std::ostream& os, const GridBinIndex &index) {
+  /*friend std::ostream& operator<<(std::ostream& os, const GridBinIndex &index) {
     os << "(" << index.x << ", " << index.y << ")";
     return os;
-  }
+  }*/
 };
 
 class GridBinCluster {
@@ -29,7 +29,13 @@ class GridBinCluster {
   GridBinCluster();
   long int total_cell_area;
   long int total_white_space;
-  std::set< GridBinIndex > grid_bin_index_set;
+  std::set<GridBinIndex> bin_set;
+  bool operator < (const GridBinCluster& rhs) const {
+    return (total_cell_area < rhs.total_cell_area);
+  }
+  bool operator > (const GridBinCluster& rhs) const {
+    return (total_cell_area > rhs.total_cell_area);
+  }
 };
 
 #endif //HPCC_SRC_PLACER_GLOBALPLACER_GPSIMPL_GRIDBININDEX_H_

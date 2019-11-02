@@ -6,6 +6,7 @@
 #include <cmath>
 #include "../../common/misc.h"
 #include "../../common/global.h"
+#include <algorithm>
 
 GPSimPL::GPSimPL(): Placer() {}
 
@@ -381,9 +382,13 @@ void GPSimPL::InitGridBins() {
 
   /* determine the width and height of grid bin based on the boundaries and given grid_cnt */
 
-  grid_bin_height = (int)(std::round(8 * GetCircuit()->AveMovHeight()));
+  //grid_bin_height = (int)(std::round(8 * GetCircuit()->AveMovHeight()));
+  //grid_cnt = std::ceil((double)(Top() - Bottom()) / grid_bin_height);
+  //grid_bin_width = std::ceil((double)(Right() - Left()) / grid_cnt);
+  grid_bin_height = (int)(std::round(std::sqrt(number_of_cell_in_bin * GetCircuit()->AveMovArea()/FillingRate())));
+  grid_bin_width = grid_bin_height;
   grid_cnt = std::ceil((double)(Top() - Bottom()) / grid_bin_height);
-  grid_bin_width = std::ceil((double)(Right() - Left()) / grid_cnt);
+
 
   //std::cout << "grid_bin_height: " << grid_bin_height << "\n";
   //std::cout << "grid_bin_width: " << grid_bin_width << "\n";
@@ -391,6 +396,7 @@ void GPSimPL::InitGridBins() {
 
   /* create an empty grid bin column with size grid_cnt and push the grid bin column to grid_bin_matrix for grid_cnt times */
   std::vector<GridBin> temp_grid_bin_column(grid_cnt);
+  grid_bin_matrix.reserve(grid_cnt);
   for (int i = 0; i < grid_cnt; i++) {
     grid_bin_matrix.push_back(temp_grid_bin_column);
   }
@@ -506,7 +512,7 @@ void GPSimPL::InitGridBins() {
   //std::cout << "Grid bin mesh initialization complete\n";
 }
 
-void GPSimPL::InitWhiteSpaceLut() {
+void GPSimPL::InitWhiteSpaceLUT() {
   /* this is a member function to initialize white space look-up table
    * this table is a matrix, one way to calculate the white space in a region is to add all white space of every single grid bin in it
    * but an easier way is to define an accumulate function and store it as a look-up table
@@ -544,7 +550,7 @@ void GPSimPL::InitWhiteSpaceLut() {
 
 void GPSimPL::LookAheadLgInit() {
   InitGridBins();
-  InitWhiteSpaceLut();
+  InitWhiteSpaceLUT();
 }
 
 void GPSimPL::LookAheadClose() {
@@ -666,33 +672,41 @@ void GPSimPL::ClusterOverfilledGridBin() {
   /* this function is to cluster overfilled grid bins, and sort them based on total cell area
    * the algorithm to cluster overfilled grid bins is breadth first search*/
   cluster_list.clear();
-  for (auto &&bin_column: grid_bin_matrix) {
-    for (auto &&bin: bin_column) {
-      bin.cluster_visited = false;
+  int m = (int)grid_bin_matrix.size(); // number of rows
+  int n = (int)grid_bin_matrix[0].size(); // number of columns
+
+  for (int i=0; i<m; ++i) {
+    for (int j=0; j<n; ++j) {
+      grid_bin_matrix[i][j].cluster_visited = false;
     }
   }
-  GridBinIndex tmp_index;
-  for (size_t i=0; i<grid_bin_matrix.size(); i++) {
-    for (size_t j=0; j<grid_bin_matrix[i].size(); j++) {
-      if ((grid_bin_matrix[i][j].cluster_visited)||(!grid_bin_matrix[i][j].over_fill)) {
+  int cnt;
+  for (int i=0; i<m; i++) {
+    for (int j=0; j<n; j++) {
+      if (grid_bin_matrix[i][j].cluster_visited || !grid_bin_matrix[i][j].over_fill) {
         grid_bin_matrix[i][j].cluster_visited = true;
         continue;
       }
-      tmp_index.x = i;
-      tmp_index.y = j;
+      GridBinIndex b(i,j);
       GridBinCluster H;
-      H.grid_bin_index_set.insert(tmp_index);
+      H.bin_set.insert(b);
       grid_bin_matrix[i][j].cluster_visited = true;
-      std::queue < GridBinIndex > Q;
-      Q.push(tmp_index);
+      cnt = 0;
+      std::queue<GridBinIndex> Q;
+      Q.push(b);
       while (!Q.empty()) {
-        tmp_index = Q.front();
+        b = Q.front();
         Q.pop();
-        for (auto &&index: grid_bin_matrix[tmp_index.x][tmp_index.y].adjacent_bin_index) {
+        for (auto &&index: grid_bin_matrix[b.x][b.y].adjacent_bin_index) {
           GridBin *bin = &grid_bin_matrix[index.x][index.y];
-          if ((!bin->cluster_visited)&&(bin->over_fill)) {
+          if (!bin->cluster_visited && bin->over_fill) {
+            if (cnt > 3) {
+              cluster_list.push_back(H);
+              break;
+            }
             bin->cluster_visited = true;
-            H.grid_bin_index_set.insert(index);
+            H.bin_set.insert(index);
+            ++cnt;
             Q.push(index);
           }
         }
@@ -708,7 +722,7 @@ void GPSimPL::SortGridBinCluster() {
   for (auto &&cluster: cluster_list) {
     cluster.total_cell_area = 0;
     cluster.total_white_space = 0;
-    for (auto &&index: cluster.grid_bin_index_set) {
+    for (auto &&index: cluster.bin_set) {
       GridBin *tmp_grid_bin = &grid_bin_matrix[index.x][index.y];
       cluster.total_cell_area += tmp_grid_bin->cell_area;
       cluster.total_white_space += tmp_grid_bin->white_space;
@@ -716,24 +730,12 @@ void GPSimPL::SortGridBinCluster() {
     //std::cout << "Total cell area: " << cluster.total_cell_area;
     //std::cout << " Total white space: " << cluster.total_white_space << "\n";
   }
-  /* then do the Selection sort */
-  size_t max_index;
-  GridBinCluster tmp_cluster;
-  for (size_t i=0; i<cluster_list.size(); i++) {
-    max_index = i;
-    for (size_t j=i+1; j<cluster_list.size(); j++) {
-      if (cluster_list[j].total_cell_area > cluster_list[max_index].total_cell_area) {
-        max_index = j;
-      }
-    }
-    if (i != max_index) {
-      tmp_cluster = cluster_list[i];
-      cluster_list[i] = cluster_list[max_index];
-      cluster_list[max_index] = tmp_cluster;
-    }
-    //std::cout << "Total cell area: " << cluster_list[i].total_cell_area;
-    //std::cout << " Total white space: " << cluster_list[i].total_white_space << "\n";
-  }
+  // then do the Selection sort
+  std::sort(cluster_list.begin(), cluster_list.end(), std::greater<GridBinCluster>());
+  /*for (auto &&cluster: cluster_list) {
+    std::cout << "Total cell area: " << cluster.total_cell_area;
+    std::cout << " Total white space: " << cluster.total_white_space << "\n";
+  }*/
 }
 
 void GPSimPL::UpdateClusterList() {
@@ -764,7 +766,7 @@ void GPSimPL::FindMinimumBoxForFirstCluster() {
   R.ur_index.y = 0;
   // initialize a box with y cut-direction
   // identify the bounding box of the initial cluster
-  for (auto &&index: cluster_list[0].grid_bin_index_set) {
+  for (auto &&index: cluster_list[0].bin_set) {
     GridBin *bin = &grid_bin_matrix[index.x][index.y];
     if (bin->index.x < R.ll_index.x) {
       R.ll_index.x = bin->index.x;
@@ -1499,7 +1501,7 @@ void GPSimPL::write_first_n_bin_cluster(std::string const &name_of_file, size_t 
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file" + name_of_file);
   for (size_t i=0; i<n; i++) {
-    for (auto &&index: cluster_list[i].grid_bin_index_set) {
+    for (auto &&index: cluster_list[i].bin_set) {
       double low_x, low_y, width, height;
       GridBin *GridBin = &grid_bin_matrix[index.x][index.y];
       width = GridBin->right - GridBin->left;

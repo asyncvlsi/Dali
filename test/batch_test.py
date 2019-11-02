@@ -8,7 +8,7 @@ os.system("make hpcc hpwl")
 os.chdir("../bin")
 
 path_to_test = "../test/"
-lef_file_list = ["out_1K", "out_10K", "OUT_100K"]
+lef_file_list = ["out_1K", "out_10K", "out_100K"]
 
 for file in lef_file_list:
 	command = "./hpcc -grid 2.1 2.1 -v 5 "
