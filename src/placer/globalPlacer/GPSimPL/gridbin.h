@@ -16,7 +16,6 @@ class GridBin {
   int top;
   int left;
   int right;
-  int area;
   long int white_space;
   long int cell_area;
   double filling_rate;
@@ -31,9 +30,12 @@ class GridBin {
   int LLY() { return bottom; }
   int URX() { return right; }
   int URY() { return top; }
+  int Height() { return top - bottom; }
+  int Width() { return right - left; }
+  int Area() { return (top-bottom)*(right-left);}
   bool is_all_terminal() { return all_terminal; }
   bool OverFill() { return over_fill; }
-  void create_adjacent_bin_list(int GRID_NUM);
+  void create_adjacent_bin_list(int grid_cnt_x, int grid_cnt_y);
   void Report();
 };
 

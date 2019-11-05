@@ -4,13 +4,21 @@
 
 #include "GPSimPL.h"
 #include <cmath>
-#include "../../common/misc.h"
-#include "../../common/global.h"
 #include <algorithm>
 
-GPSimPL::GPSimPL(): Placer() {}
+GPSimPL::GPSimPL(): Placer() {
+  grid_bin_height = 0;
+  grid_bin_width = 0;
+  grid_cnt_y = 0;
+  grid_cnt_x = 0;
+}
 
-GPSimPL::GPSimPL(double aspectRatio, double fillingRate): Placer(aspectRatio, fillingRate) {}
+GPSimPL::GPSimPL(double aspectRatio, double fillingRate): Placer(aspectRatio, fillingRate) {
+  grid_bin_height = 0;
+  grid_bin_width = 0;
+  grid_cnt_y = 0;
+  grid_cnt_x = 0;
+}
 
 int GPSimPL::TotBlockNum() {
   return GetCircuit()->TotBlockNum();
@@ -375,62 +383,71 @@ void GPSimPL::InitialPlacement() {
 }
 
 void GPSimPL::InitGridBins() {
-  /* this is a function which create the grid bins, based on the grid_cnt and the boundaries of chip region, LEFT, RIGHT, BOTTOM, TOP
-   * these four boundaries are given by the bounding box of placed macros/terminals now, these value should be specified in the .scl file
-   * but it seems for global placement, the accurate value does not really matter now
-   * in the future, when we want to do more careful global placement, we will then make some modifications*/
+  /****
+   * This function initialize the grid bin matrix, each bin has an area which can accommodate around number_of_cell_in_bin # of cells
+   * Part1
+   * grid_bin_height and grid_bin_width is determined by the following formula:
+   *    grid_bin_height = sqrt(number_of_cell_in_bin * average_area / filling_rate)
+   * the number of bins in the y-direction is given by:
+   *    grid_cnt_y = (Top() - Bottom())/grid_bin_height
+   *    grid_cnt_x = (Right() - Left())/grid_bin_width
+   * And initialize the space of grid_bin_matrix
+   *
+   * Part2
+   * for each grid bin, we need to initialize the attributes,
+   * including index, boundaries, area, and potential available white space
+   * the adjacent bin list is cached for the convenience of overfilled bin clustering
+   *
+   * Part3
+   * check whether the grid bin is occupied by fixed blocks, and we only do this once, and cache this result for future usage
+   * Assumption: fixed blocks do not overlap with each other!!!!!!!
+   * we will check whether this grid bin is covered by a fixed block,
+   * if yes, we set the label of this grid bin "all_terminal" to be true, initially, this value is false
+   * if not, we deduce the white space by the amount of fixed block and grid bin overlap region
+   * because a grid bin might be covered by more than one fixed blocks
+   * if the final white space is 0, we know the grid bin is also all covered by fixed blocks
+   * and we set the flag "all_terminal" to true.
+   * ****/
 
-  /* determine the width and height of grid bin based on the boundaries and given grid_cnt */
-
-  //grid_bin_height = (int)(std::round(8 * GetCircuit()->AveMovHeight()));
-  //grid_cnt = std::ceil((double)(Top() - Bottom()) / grid_bin_height);
-  //grid_bin_width = std::ceil((double)(Right() - Left()) / grid_cnt);
-  grid_bin_height = (int)(std::round(std::sqrt(number_of_cell_in_bin * GetCircuit()->AveMovArea()/FillingRate())));
+  // Part1
+  grid_bin_height = int(std::round(std::sqrt(number_of_cell_in_bin * GetCircuit()->AveMovArea()/FillingRate())));
   grid_bin_width = grid_bin_height;
-  grid_cnt = std::ceil((double)(Top() - Bottom()) / grid_bin_height);
+  grid_cnt_y = std::ceil(double(Top() - Bottom()) / grid_bin_height);
+  grid_cnt_x = std::ceil(double(Right() - Left()) / grid_bin_width);
 
-
-  //std::cout << "grid_bin_height: " << grid_bin_height << "\n";
-  //std::cout << "grid_bin_width: " << grid_bin_width << "\n";
-  //std::cout << "grid_cnt: " << grid_cnt << "\n";
-
-  /* create an empty grid bin column with size grid_cnt and push the grid bin column to grid_bin_matrix for grid_cnt times */
-  std::vector<GridBin> temp_grid_bin_column(grid_cnt);
-  grid_bin_matrix.reserve(grid_cnt);
-  for (int i = 0; i < grid_cnt; i++) {
+  std::vector<GridBin> temp_grid_bin_column(grid_cnt_y);
+  grid_bin_matrix.reserve(grid_cnt_x);
+  for (int i = 0; i < grid_cnt_x; i++) {
     grid_bin_matrix.push_back(temp_grid_bin_column);
   }
 
-  /* for each grid bin, we need to initialize the attributes, including index, boundaries, area, and potential available white space
-   * the adjacent bin list is created for the convenience of overfilled bin clustering */
-  for (int i=0; i<(int)(grid_bin_matrix.size()); i++) {
-    for (int j = 0; j < (int)(grid_bin_matrix[i].size()); j++) {
-      grid_bin_matrix[i][j].index.x = i;
-      grid_bin_matrix[i][j].index.y = j;
+  // Part2
+  for (int i=0; i<grid_cnt_x; i++) {
+    for (int j = 0; j < grid_cnt_y; j++) {
+      grid_bin_matrix[i][j].index = {i, j};
       grid_bin_matrix[i][j].bottom = Bottom() + j * grid_bin_height;
       grid_bin_matrix[i][j].top = Bottom() + (j+1) * grid_bin_height;
       grid_bin_matrix[i][j].left = Left() + i * grid_bin_width;
       grid_bin_matrix[i][j].right = Left() + (i+1) * grid_bin_width;
-      grid_bin_matrix[i][j].area = (grid_bin_matrix[i][j].right - grid_bin_matrix[i][j].left) * (grid_bin_matrix[i][j].top - grid_bin_matrix[i][j].bottom);
-      grid_bin_matrix[i][j].white_space = grid_bin_matrix[i][j].area; // at the very beginning, assuming the white space is the same as area
-      grid_bin_matrix[i][j].create_adjacent_bin_list(grid_cnt);
+      grid_bin_matrix[i][j].white_space = grid_bin_matrix[i][j].Area(); // at the very beginning, assuming the white space is the same as area
+      grid_bin_matrix[i][j].create_adjacent_bin_list(grid_cnt_x, grid_cnt_y);
     }
   }
 
-  for (auto &&grid_bin_column: grid_bin_matrix) {
-    grid_bin_column[grid_cnt - 1].top = Top();
+  // make sure the top placement boundary is the same as the top of the topmost bins
+  for (int i=0; i<grid_cnt_x; ++i) {
+    grid_bin_matrix[i][grid_cnt_y - 1].top = Top();
   }
-  for (auto &&grid_bin: grid_bin_matrix[grid_cnt - 1]) {
-    grid_bin.right = Right();
+  // make sure the right placement boundary is the same as the right of the rightmost bins
+  for (int i=0; i<grid_cnt_y; ++i) {
+    grid_bin_matrix[grid_cnt_x-1][i].right = Right();
   }
 
-  /* check whether the grid bin is occupied by terminals, and we only need to check it once, if we do not want to change GridBin configurations in the future
-   * the idea of the part is that for each macro/terminal, we can easily calculate which grid bins it overlap with, and for each grid bin it overlap with,
-   * we will check whether this grid bin is covered by this terminal, if yes, we set the label of this grid bin "all_terminal" to be true, initially, which is false
-   * if not, we deduce the white space by the amount of terminal/macro and grid bin overlap region, because a grid bin might be covered by more than one terminals/macros
-   * if the final white space is 0, we know the grid bin is also cover by terminals, and we set the flag "all_terminal" to be true also. */
+
+  // Part3
   std::vector<Block> &block_list = *BlockList();
-  int node_llx, node_lly, node_urx, node_ury, bin_llx, bin_lly, bin_urx, bin_ury;
+  int node_llx, node_lly, node_urx, node_ury;
+  int bin_llx, bin_lly, bin_urx, bin_ury;
   int min_urx, max_llx, min_ury, max_lly;
   int overlap_x, overlap_y, overlap_area;
   bool all_terminal, terminal_out_of_region, terminal_out_of_box;
@@ -451,14 +468,14 @@ void GPSimPL::InitGridBins() {
     if (left_index < 0) {
       left_index = 0;
     }
-    if (right_index == grid_cnt) {
-      right_index = grid_cnt - 1;
+    if (right_index == grid_cnt_y) {
+      right_index = grid_cnt_y - 1;
     }
     if (bottom_index < 0) {
       bottom_index = 0;
     }
-    if (top_index == grid_cnt) {
-      top_index = grid_cnt - 1;
+    if (top_index == grid_cnt_y) {
+      top_index = grid_cnt_y - 1;
     }
 
     /* for each terminal, we will check which grid is inside it, and directly set the all_terminal attribute to true for that grid
@@ -519,8 +536,8 @@ void GPSimPL::InitWhiteSpaceLUT() {
    * when we want to find the white space in a region, just read it from the look-up table*/
 
   /* this for loop is created to initialize the size of the loop-up table */
-  std::vector< int > tmp_vector(grid_cnt);
-  for (int i=0; i<grid_cnt ; i++) {
+  std::vector< int > tmp_vector(grid_cnt_y);
+  for (int i=0; i<grid_cnt_x; ++i) {
     grid_bin_white_space_LUT.push_back(tmp_vector);
   }
 
@@ -617,14 +634,14 @@ void GPSimPL::UpdateGridBinState() {
     if (x_index < 0) {
       x_index = 0;
     }
-    if (x_index > grid_cnt-1) {
-      x_index = grid_cnt - 1;
+    if (x_index > grid_cnt_y-1) {
+      x_index = grid_cnt_y - 1;
     }
     if (y_index < 0) {
       y_index = 0;
     }
-    if (y_index > grid_cnt-1) {
-      y_index = grid_cnt - 1;
+    if (y_index > grid_cnt_y-1) {
+      y_index = grid_cnt_y - 1;
     }
     grid_bin_matrix[x_index][y_index].cell_list.push_back(i);
     grid_bin_matrix[x_index][y_index].cell_area += block_list[i].Area();
@@ -731,7 +748,7 @@ void GPSimPL::SortGridBinCluster() {
     //std::cout << " Total white space: " << cluster.total_white_space << "\n";
   }
   // then do the Selection sort
-  std::sort(cluster_list.begin(), cluster_list.end(), std::greater<GridBinCluster>());
+  //std::sort(cluster_list.begin(), cluster_list.end(), std::greater<GridBinCluster>());
   /*for (auto &&cluster: cluster_list) {
     std::cout << "Total cell area: " << cluster.total_cell_area;
     std::cout << " Total white space: " << cluster.total_white_space << "\n";
@@ -756,17 +773,26 @@ void GPSimPL::FindMinimumBoxForFirstCluster() {
     return;
   }
   // this is redundant, but for safety reasons. Probably this statement can be safely removed
+
+  int max_cluster = 0;
+  int list_sz = cluster_list.size();
+  for (int i=0; i<list_sz; ++i) {
+    if (cluster_list[i].total_cell_area > cluster_list[max_cluster].total_cell_area) {
+      max_cluster = i;
+    }
+  }
+
   std::vector<Block> &block_list = *BlockList();
 
   BoxBin R;
   R.cut_direction_x = false;
-  R.ll_index.x = grid_cnt - 1;
-  R.ll_index.y = grid_cnt - 1;
+  R.ll_index.x = grid_cnt_y - 1;
+  R.ll_index.y = grid_cnt_y - 1;
   R.ur_index.x = 0;
   R.ur_index.y = 0;
   // initialize a box with y cut-direction
   // identify the bounding box of the initial cluster
-  for (auto &&index: cluster_list[0].bin_set) {
+  for (auto &&index: cluster_list[max_cluster].bin_set) {
     GridBin *bin = &grid_bin_matrix[index.x][index.y];
     if (bin->index.x < R.ll_index.x) {
       R.ll_index.x = bin->index.x;
@@ -786,7 +812,7 @@ void GPSimPL::FindMinimumBoxForFirstCluster() {
     R.total_white_space = LookUpWhiteSpace(R.ll_index, R.ur_index);
     R.update_cell_area_white_space_LUT(grid_bin_white_space_LUT, grid_bin_matrix);
     if (R.filling_rate > FillingRate()) {
-      R.expand_box(grid_cnt);
+      R.expand_box(grid_cnt_y);
     }
     else {
       break;

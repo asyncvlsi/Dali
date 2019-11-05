@@ -105,6 +105,8 @@ int main(int argc, char *argv[]) {
   gb_placer->SetFillingRate(1);
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
+  time_t gp_time = clock() - Time;
+  std::cout << "global placement complete, time: " << (float) gp_time / CLOCKS_PER_SEC << "s\n";
 
   /*Placer *d_placer = new MDPlacer;
   d_placer->TakeOver(gb_placer);
@@ -114,6 +116,8 @@ int main(int argc, char *argv[]) {
   Placer *legalizer = new TetrisLegalizer;
   legalizer->TakeOver(gb_placer);
   legalizer->StartPlacement();
+  time_t lg_time = clock() - gp_time;
+  std::cout << "legalization complete, time: " << (float) lg_time / CLOCKS_PER_SEC << "s\n";
 
   delete gb_placer;
   //delete d_placer;

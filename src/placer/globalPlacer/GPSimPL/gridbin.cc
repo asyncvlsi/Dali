@@ -10,7 +10,6 @@ GridBin::GridBin() {
   top = 0;
   left = 0;
   right = 0;
-  area = 0;
   white_space = 0;
   cell_area = 0;
   filling_rate = 0;
@@ -20,7 +19,7 @@ GridBin::GridBin() {
   global_placed = false;
 }
 
-void GridBin::create_adjacent_bin_list(int GRID_NUM) {
+void GridBin::create_adjacent_bin_list(int grid_cnt_x, int grid_cnt_y) {
   adjacent_bin_index.clear();
   GridBinIndex tmp_index;
   if (index.x > 0) {
@@ -28,7 +27,7 @@ void GridBin::create_adjacent_bin_list(int GRID_NUM) {
     tmp_index.y = index.y;
     adjacent_bin_index.push_back(tmp_index);
   }
-  if (index.x < GRID_NUM-1) {
+  if (index.x < grid_cnt_x-1) {
     tmp_index.x = index.x + 1;
     tmp_index.y = index.y;
     adjacent_bin_index.push_back(tmp_index);
@@ -38,11 +37,15 @@ void GridBin::create_adjacent_bin_list(int GRID_NUM) {
     tmp_index.y = index.y - 1;
     adjacent_bin_index.push_back(tmp_index);
   }
-  if (index.y < GRID_NUM-1) {
+  if (index.y < grid_cnt_y-1) {
     tmp_index.x = index.x;
     tmp_index.y = index.y + 1;
     adjacent_bin_index.push_back(tmp_index);
   }
+  /*for (auto &&neighbor: adjacent_bin_index) {
+    std::cout << neighbor.x << "  " << neighbor.y << ",  ";
+  }
+  std::cout << "\n";*/
 }
 
 void GridBin::Report() {
