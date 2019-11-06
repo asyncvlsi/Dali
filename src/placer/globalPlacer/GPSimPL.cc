@@ -446,78 +446,61 @@ void GPSimPL::InitGridBins() {
 
   // Part3
   std::vector<Block> &block_list = *BlockList();
-  int node_llx, node_lly, node_urx, node_ury;
-  int bin_llx, bin_lly, bin_urx, bin_ury;
   int min_urx, max_llx, min_ury, max_lly;
-  int overlap_x, overlap_y, overlap_area;
-  bool all_terminal, terminal_out_of_region, terminal_out_of_box;
+  bool all_terminal, fixed_blk_out_of_region, blk_out_of_bin;
   int left_index, right_index, bottom_index, top_index;
   for (size_t i=0; i<block_list.size(); i++) {
     /* find the left, right, bottom, top index of the grid */
     if (block_list[i].IsMovable()) continue;
-    terminal_out_of_region = ((int)block_list[i].LLX() >= Right()) || ((int)block_list[i].URX() <= Left()) || ((int)block_list[i].LLY() >= Top()) || ((int)block_list[i].URY() <= Bottom());
-    if (terminal_out_of_region) {
-      continue;
-    }
+    fixed_blk_out_of_region = int(block_list[i].LLX()) >= Right() ||
+                              int(block_list[i].URX()) <= Left() ||
+                              int(block_list[i].LLY()) >= Top() ||
+                              int(block_list[i].URY()) <= Bottom();
+    if (fixed_blk_out_of_region) continue;
     left_index = (int)std::floor((block_list[i].LLX() - Left())/grid_bin_width);
     right_index = (int)std::floor((block_list[i].URX() - Left())/grid_bin_width);
     bottom_index = (int)std::floor((block_list[i].LLY() - Bottom())/grid_bin_height);
     top_index = (int)std::floor((block_list[i].URY() - Bottom())/grid_bin_height);
-    /* sometimes the grid boundaries might be the placement region boundaries, need some fix here
-     * because the top boundary and the right boundary of a grid bin does not actually belong to that grid bin */
-    if (left_index < 0) {
-      left_index = 0;
-    }
-    if (right_index == grid_cnt_y) {
-      right_index = grid_cnt_y - 1;
-    }
-    if (bottom_index < 0) {
-      bottom_index = 0;
-    }
-    if (top_index == grid_cnt_y) {
-      top_index = grid_cnt_y - 1;
-    }
+    /* the grid boundaries might be the placement region boundaries
+     * if a block touches the rightmost and topmost boundaries, the index need to be fixed
+     * to make sure no memory access out of scope */
+    if (left_index < 0) left_index = 0;
+    if (right_index >= grid_cnt_x) right_index = grid_cnt_x - 1;
+    if (bottom_index < 0) bottom_index = 0;
+    if (top_index >= grid_cnt_y) top_index = grid_cnt_y - 1;
 
     /* for each terminal, we will check which grid is inside it, and directly set the all_terminal attribute to true for that grid
      * some small terminals might occupy the same grid, we need to deduct the overlap area from the white space of that grid bin
      * when the final white space is 0, we know this grid bin is occupied by several terminals*/
-    for (int j=left_index; j<=right_index; j++) {
-      for (int k=bottom_index; k<=top_index; k++) {
-        /* this is kind of rare case, the top/right of a terminal overlap with the bottom/left of a grid box
-         * if this happens, we need to ignore this terminal for this grid box. */
-        terminal_out_of_box = ((int)block_list[i].LLX() >= grid_bin_matrix[j][k].right) || ((int)block_list[i].URX() <= grid_bin_matrix[j][k].left) ||
-            ((int)block_list[i].LLY() >= grid_bin_matrix[j][k].top) || ((int)block_list[i].URY() <= grid_bin_matrix[j][k].bottom);
-        if (terminal_out_of_box) {
-          continue;
-        }
+    for (int j=left_index; j<=right_index; ++j) {
+      for (int k=bottom_index; k<=top_index; ++k) {
+        /* the following case might happen:
+         * the top/right of a fixed block overlap with the bottom/left of a grid box
+         * if this case happens, we need to ignore this fixed block for this grid box. */
+        blk_out_of_bin = int(block_list[i].LLX() >= grid_bin_matrix[j][k].right) ||
+                         int(block_list[i].URX() <= grid_bin_matrix[j][k].left) ||
+                         int(block_list[i].LLY() >= grid_bin_matrix[j][k].top) ||
+                         int(block_list[i].URY() <= grid_bin_matrix[j][k].bottom);
+        if (blk_out_of_bin) continue;
         grid_bin_matrix[j][k].terminal_list.push_back(i);
 
-        /* if grid bin is covered by a large terminal, then this grid is all_terminal for sure */
-        all_terminal = ((int)block_list[i].LLX() <= grid_bin_matrix[j][k].LLX()) && ((int)block_list[i].LLY() <= grid_bin_matrix[j][k].LLY()) &&
-            ((int)block_list[i].URX() >= grid_bin_matrix[j][k].URX()) && ((int)block_list[i].URY() >= grid_bin_matrix[j][k].URY());
+        // if grid bin is covered by a large fixed block, then all_terminal flag for this block is set to be true
+        all_terminal = int(block_list[i].LLX() <= grid_bin_matrix[j][k].LLX()) &&
+                       int(block_list[i].LLY() <= grid_bin_matrix[j][k].LLY()) &&
+                       int(block_list[i].URX() >= grid_bin_matrix[j][k].URX()) &&
+                       int(block_list[i].URY() >= grid_bin_matrix[j][k].URY());
         grid_bin_matrix[j][k].all_terminal = all_terminal;
-        /* if not, we need to calculate the overlap of grid bin and this terminal to calculate white space, when white space is 0, this grid bin is also all_terminal */
+        // if all_terminal flag is false, we need to calculate the overlap of grid bin and this fixed block to get the white space,
+        // when white space is less than 1, this grid bin is also all_terminal
         if (all_terminal) {
           grid_bin_matrix[j][k].white_space = 0;
         } else {
-          node_llx = (int)block_list[i].LLX();
-          node_lly = (int)block_list[i].LLY();
-          node_urx = (int)block_list[i].URX();
-          node_ury = (int)block_list[i].URY();
-          bin_llx = grid_bin_matrix[j][k].LLX();
-          bin_lly = grid_bin_matrix[j][k].LLY();
-          bin_urx = grid_bin_matrix[j][k].URX();
-          bin_ury = grid_bin_matrix[j][k].URY();
-
-          max_llx = std::max(node_llx, bin_llx);
-          max_lly = std::max(node_lly, bin_lly);
-          min_urx = std::min(node_urx, bin_urx);
-          min_ury = std::min(node_ury, bin_ury);
-
-          overlap_x = min_urx - max_llx;
-          overlap_y = min_ury - max_lly;
-          overlap_area = overlap_x * overlap_y;
-          grid_bin_matrix[j][k].white_space -= overlap_area;
+          // this part calculate the overlap of two rectangles
+          max_llx = std::max(int(block_list[i].LLX()), grid_bin_matrix[j][k].LLX());
+          max_lly = std::max(int(block_list[i].LLY()), grid_bin_matrix[j][k].LLY());
+          min_urx = std::min(int(block_list[i].URX()), grid_bin_matrix[j][k].URX());
+          min_ury = std::min(int(block_list[i].URY()), grid_bin_matrix[j][k].URY());
+          grid_bin_matrix[j][k].white_space -= (min_urx - max_llx) * (min_ury - max_lly);
           if (grid_bin_matrix[j][k].white_space < 1) {
             grid_bin_matrix[j][k].all_terminal = true;
             grid_bin_matrix[j][k].white_space = 0;
@@ -526,7 +509,6 @@ void GPSimPL::InitGridBins() {
       }
     }
   }
-  //std::cout << "Grid bin mesh initialization complete\n";
 }
 
 void GPSimPL::InitWhiteSpaceLUT() {
