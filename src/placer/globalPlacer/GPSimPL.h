@@ -27,8 +27,10 @@ class GPSimPL: public Placer {
   double HPWLY_old = 1e30;
   bool HPWLX_converge = false;
   bool HPWLY_converge = false;
-  double cg_precision = 0.001;
-  int cg_iteration_max_num = 30;
+  double cg_tolerance_ = 0.001;
+  int cg_iteration_max_num_ = 30;
+  double width_epsilon;
+  double height_epsilon;
   double HPWL_intra_linearSolver_precision = 0.05;
   double alpha = 0.00;
   double alpha_increment = 0.01;
@@ -41,9 +43,11 @@ class GPSimPL: public Placer {
  public:
   GPSimPL();
   GPSimPL(double aspectRatio, double fillingRate);
-  int TotBlockNum();
-  double WidthEpsilon();
-  double HeightEpsilon();
+  int TotBlockNum() { return GetCircuit()->TotBlockNum();};
+  void SetEpsilon() { width_epsilon = circuit_->AveMovWidth()/100.0;
+                      height_epsilon = circuit_->AveMovHeight()/100.0;};
+  double WidthEpsilon() {return width_epsilon;};
+  double HeightEpsilon() {return height_epsilon;};
 
   std::minstd_rand0 generator{1};
   Eigen::VectorXd x, y;
@@ -58,12 +62,12 @@ class GPSimPL: public Placer {
   void CGInit();
   void InitCGFlags();
   void UpdateCGFlagsX();
-  void UpdateHPWLX();
-  void UpdateMaxMinX();
+  void UpdateHPWLX() { HPWLX_new = HPWLX();};
+  void UpdateMaxMinX() {for (auto &&net: circuit_->net_list) net.UpdateMaxMinX();};
   void UpdateMaxMinCtoCX();
   void UpdateCGFlagsY();
-  void UpdateHPWLY();
-  void UpdateMaxMinY();
+  void UpdateHPWLY() { HPWLY_new = HPWLY();};
+  void UpdateMaxMinY() {for (auto &&net: circuit_->net_list) net.UpdateMaxMinY();};
   void UpdateMaxMinCtoCY();
   void BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b);
   void BuildProblemB2BX();

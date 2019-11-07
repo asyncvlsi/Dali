@@ -40,18 +40,18 @@ public:
   void SetSpaceBlockRatio(double ratio);
   double SpaceBlockRatio() const;
 
-  std::vector<Block> *BlockList();
-  std::vector<Net> *NetList();
+  std::vector<Block> *BlockList() {return &(circuit_->block_list);};
+  std::vector<Net> *NetList() {return &(circuit_->net_list);};
 
   bool IsBoundaryProper();
   void SetBoundaryAuto();
   void SetBoundary(int left, int right, int bottom, int top);
   void SetBoundaryDef();
   void ReportBoundaries();
-  int Left();
-  int Right();
-  int Bottom();
-  int Top();
+  int Left() {return left_;};
+  int Right() {return right_;};
+  int Bottom() {return bottom_;};
+  int Top() {return top_;};
   bool UpdateAspectRatio();
   void NetSortBlkPin();
   virtual void StartPlacement() = 0;
@@ -108,30 +108,6 @@ inline void Placer::SetSpaceBlockRatio(double ratio) {
 inline double Placer::SpaceBlockRatio() const {
   Warning(filling_rate_ < 1e-3, "Warning: filling rate too small, might lead to large numerical error.");
   return 1.0/filling_rate_;
-}
-
-inline std::vector<Block> *Placer::BlockList() {
-  return &(circuit_->block_list);
-}
-
-inline std::vector<Net> *Placer::NetList() {
-  return &(circuit_->net_list);
-}
-
-inline int Placer::Left() {
-  return left_;
-}
-
-inline int Placer::Right() {
-  return right_;
-}
-
-inline int Placer::Bottom() {
-  return bottom_;
-}
-
-inline int Placer::Top() {
-  return top_;
 }
 
 inline void Placer::NetSortBlkPin() {

@@ -20,18 +20,6 @@ GPSimPL::GPSimPL(double aspectRatio, double fillingRate): Placer(aspectRatio, fi
   grid_cnt_x = 0;
 }
 
-int GPSimPL::TotBlockNum() {
-  return GetCircuit()->TotBlockNum();
-}
-
-double GPSimPL::WidthEpsilon() {
-  return circuit_->AveMovWidth()/100.0;
-}
-
-double GPSimPL::HeightEpsilon() {
-  return circuit_->AveMovHeight()/100.0;
-}
-
 void GPSimPL::InitCGFlags() {
   HPWLX_new = 0;
   HPWLY_new = 0;
@@ -42,16 +30,15 @@ void GPSimPL::InitCGFlags() {
 }
 
 void GPSimPL::BlockLocInit() {
-  int length_x = Right() - Left();
-  int length_y = Top() - Bottom();
+  int region_width = Right() - Left();
+  int region_height = Top() - Bottom();
   std::uniform_real_distribution<double> distribution(0,1);
-  std::vector<Block> &block_list = *BlockList();
-  for (auto &&block: block_list) {
-    if (block.IsMovable()) {
-      block.SetCenterX(Left() + length_x * distribution(generator));
-      block.SetCenterY(Bottom() + length_y * distribution(generator));
+  for (auto &&block: circuit_->block_list) {
+      if (block.IsMovable()) {
+        block.SetCenterX(Left() + region_width * distribution(generator));
+        block.SetCenterY(Bottom() + region_height * distribution(generator));
+      }
     }
-  }
   if (globalVerboseLevel >= LOG_INFO) {
     std::cout << "Block location randomly uniform initialization complete\n";
   }
@@ -59,45 +46,32 @@ void GPSimPL::BlockLocInit() {
 }
 
 void GPSimPL::CGInit() {
-  std::vector<Block> &block_list = *BlockList();
-  int size = block_list.size();
-  x.resize(size);
-  y.resize(size);
-  bx.resize(size);
-  by.resize(size);
-  Ax.resize(size, size);
-  Ay.resize(size, size);
-  x_anchor.resize(size);
-  y_anchor.resize(size);
+  SetEpsilon(); // set a small value for net weight dividend to avoid divergence
+  int sz = circuit_->block_list.size();
+  x.resize(sz);
+  y.resize(sz);
+  bx.resize(sz);
+  by.resize(sz);
+  Ax.resize(sz, sz);
+  Ay.resize(sz, sz);
+  x_anchor.resize(sz);
+  y_anchor.resize(sz);
 
-  cgx.setMaxIterations(cg_iteration_max_num);
-  cgx.setTolerance(cg_precision);
-  cgy.setMaxIterations(cg_iteration_max_num);
-  cgy.setTolerance(cg_precision);
+  cgx.setMaxIterations(cg_iteration_max_num_);
+  cgx.setTolerance(cg_tolerance_);
+  cgy.setMaxIterations(cg_iteration_max_num_);
+  cgy.setTolerance(cg_tolerance_);
 
-  std::vector<Net> &net_list = *NetList();
   int coefficient_size = 0;
-  int net_size = 0;
-  for (auto &&net: net_list) {
-    net_size = net.P();
-    if (net_size > 1) {
-      coefficient_size += ((net_size-2)*2 + 1) * 4;
-    }
+  int net_sz = 0;
+  for (auto &&net: circuit_->net_list) {
+    net_sz = net.P();
+    // if a net has size n, then in total, there will be (2(n-2)+1)*4 non-zero entries in the matrix
+    if (net_sz > 1) coefficient_size += ((net_sz-2)*2 + 1) * 4;
   }
-  coefficient_size += size; // this is for anchor, because each blk has an anchor
-  //std::cout << "Reserve space for " << coefficient_size << " non-zero matrix entries\n";
+  // this is to reserve space for anchor, because each block may need an anchor
+  coefficient_size += sz;
   coefficients.reserve(coefficient_size);
-}
-
-void GPSimPL::UpdateHPWLX() {
-  HPWLX_new = HPWLX();
-}
-
-void GPSimPL::UpdateMaxMinX() {
-  std::vector<Net> &net_list = *NetList();
-  for (auto &&net: net_list) {
-    net.UpdateMaxMinX();
-  }
 }
 
 void GPSimPL::UpdateCGFlagsX() {
@@ -126,18 +100,6 @@ void GPSimPL::UpdateMaxMinCtoCX() {
   } else {
     HPWLX_converge = (std::fabs(1 - HPWLX_new / HPWLX_old) < HPWL_intra_linearSolver_precision);
     HPWLX_old = HPWLX_new;
-  }
-}
-
-void GPSimPL::UpdateHPWLY() {
-  // update the y direction max and min node in each net
-  HPWLY_new = HPWLY();
-}
-
-void GPSimPL::UpdateMaxMinY() {
-  std::vector<Net> &net_list = *NetList();
-  for (auto &&net: net_list) {
-    net.UpdateMaxMinY();
   }
 }
 
