@@ -88,8 +88,7 @@ void GPSimPL::UpdateCGFlagsX() {
 
 void GPSimPL::UpdateMaxMinCtoCX() {
   HPWLX_new = 0;
-  std::vector<Net> &net_list = *NetList();
-  for (auto &&net: net_list) {
+  for (auto &&net: circuit_->net_list) {
     HPWLX_new += net.HPWLCtoCX();
   }
   //std::cout << "HPWLX_old: " << HPWLX_old << "\n";
@@ -118,8 +117,7 @@ void GPSimPL::UpdateCGFlagsY() {
 void GPSimPL::UpdateMaxMinCtoCY() {
   // update the y direction max and min node in each net
   HPWLY_new = 0;
-  std::vector<Net> &net_list = *NetList();
-  for (auto &&net: net_list) {
+  for (auto &&net: circuit_->net_list) {
     HPWLY_new += net.HPWLCtoCY();
   }
   //std::cout << "HPWLY_old: " << HPWLY_old << "\n";
@@ -135,27 +133,26 @@ void GPSimPL::UpdateMaxMinCtoCY() {
 
 void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
   std::vector<Block> &block_list = *BlockList();
-  std::vector<Net> &net_list = *NetList();
   size_t coefficients_capacity = coefficients.capacity();
   coefficients.resize(0);
   for (long int i = 0; i < b.size(); i++) {
     b[i] = 0;
   }
   double weight, inv_p, pin_loc0, pin_loc1, offset_diff;
-  size_t blk_num0, blk_num1, max_pin_index, min_pin_index;
+  int blk_num0, blk_num1, max_pin_index, min_pin_index;
   bool is_movable0, is_movable1;
   if (is_x_direction) {
-    for (auto &&net: net_list) {
+    for (auto &&net: circuit_->net_list) {
       if (net.P() <= 1) continue;
       inv_p = net.InvP();
       net.UpdateMaxMinX();
       max_pin_index = net.MaxBlkPinNumX();
       min_pin_index = net.MinBlkPinNumX();
-      for (size_t i = 0; i < net.blk_pin_list.size(); i++) {
+      for (int i = 0; i < int(net.blk_pin_list.size()); ++i) {
         blk_num0 = net.blk_pin_list[i].BlockNum();
         pin_loc0 = block_list[blk_num0].LLX() + net.blk_pin_list[i].XOffset();
         is_movable0 = net.blk_pin_list[i].GetBlock()->IsMovable();
-        for (size_t j = i + 1; j < net.blk_pin_list.size(); j++) {
+        for (int j = i + 1; j < int(net.blk_pin_list.size()); j++) {
           if ((i != max_pin_index) && (i != min_pin_index)) {
             if ((j != max_pin_index) && (j != min_pin_index)) continue;
           }
@@ -191,17 +188,17 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
       }
     }
   } else {
-    for (auto &&net: net_list) {
+    for (auto &&net: circuit_->net_list) {
       if (net.P() <= 1) continue;
       inv_p = net.InvP();
       net.UpdateMaxMinY();
       max_pin_index = net.MaxBlkPinNumY();
       min_pin_index = net.MinBlkPinNumY();
-      for (size_t i = 0; i < net.blk_pin_list.size(); i++) {
+      for (int i = 0; i < int(net.blk_pin_list.size()); i++) {
         blk_num0 = net.blk_pin_list[i].BlockNum();
         pin_loc0 = block_list[blk_num0].LLY() + net.blk_pin_list[i].YOffset();
         is_movable0 = net.blk_pin_list[i].GetBlock()->IsMovable();
-        for (size_t j = i + 1; j < net.blk_pin_list.size(); j++) {
+        for (int j = i + 1; j < int(net.blk_pin_list.size()); j++) {
           if ((i != max_pin_index) && (i != min_pin_index)) {
             if ((j != max_pin_index) && (j != min_pin_index)) continue;
           }
