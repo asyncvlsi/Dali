@@ -21,7 +21,7 @@ class BoxBin {
   bool all_terminal;
   int total_white_space;
   double filling_rate;
-  bool is_all_terminal() { return all_terminal; };
+  bool IsAllFixedBlk() { return all_terminal; };
   /* Cut-line to split box white space */
   GridBinIndex ll_index;
   GridBinIndex ur_index;
@@ -38,21 +38,21 @@ class BoxBin {
   int total_cell_area_high;
 
   /* all cell_id in the box, and cell_id in two children box */
-  std::vector< int > cell_list;
-  std::vector< int > cell_list_low;
-  std::vector< int > cell_list_high;
+  std::vector<int> cell_list;
+  std::vector<int> cell_list_low;
+  std::vector<int> cell_list_high;
 
   /* the cell_id for terminals in the box, will be updated only when the box is a GridBin
    * if there is no terminal in the grid bin, do not have to further split the box into smaller boxs,
    * otherwise split the box into smaller boxes, until there is no terminals in any boxes*/
   std::vector< int > terminal_list;
-  void update_terminal_list(std::vector<std::vector<GridBin> > &grid_bin_matrix) {terminal_list = grid_bin_matrix[ll_index.x][ll_index.y].terminal_list;};
-  /* update_terminal_list can only be called when the box is a grid_bin_box */
-  bool has_terminal() { return !terminal_list.empty(); };
+  void UpdateFixedBlkList(std::vector<std::vector<GridBin> > &grid_bin_matrix) { terminal_list = grid_bin_matrix[ll_index.x][ll_index.y].terminal_list;};
+  /* UpdateFixedBlkList can only be called when the box is a grid_bin_box */
+  bool IsContainFixedBlk() { return !terminal_list.empty(); };
 
   std::vector< int > vertical_obstacle_boundaries;
   std::vector< int > horizontal_obstacle_boundaries;
-  void update_ob_boundaries(std::vector<Block> &block_list);
+  void UpdateObsBoundary(std::vector<Block> &block_list);
 
   /* the boundary of box if the box is smaller than a grid bin, the following for attribute will be very important
    * the left, right, bottom, top boundaries are the region where cells will be placed in */
@@ -67,12 +67,12 @@ class BoxBin {
   void update_all_terminal(std::vector< std::vector< GridBin > > &grid_bin_matrix);
   void update_cell_area(std::vector<Block> &Nodelist);
   void update_cell_area_white_space(std::vector< std::vector< GridBin > > &grid_bin_matrix);
-  void update_cell_area_white_space_LUT(std::vector< std::vector< int > > &grid_bin_white_space_LUT, std::vector<std::vector<GridBin> > &grid_bin_matrix);
-  void expand_box(int GRID_NUM);
+  void UpdateCellAreaWhiteSpaceFillingRate(std::vector<std::vector<int > > &grid_bin_white_space_LUT, std::vector<std::vector<GridBin> > &grid_bin_matrix);
+  void ExpandBox(int grid_cnt_x, int grid_cnt_y);
   bool write_box_boundary(std::string const &NameOfFile);
   bool write_cell_region(std::string const &NameOfFile="first_cell_bounding_box.txt");
   static double white_space_LUT(std::vector< std::vector< int > > &grid_bin_white_space_LUT, GridBinIndex &ll, GridBinIndex &ur);
-  void update_cell_in_box(std::vector<std::vector<GridBin> > &grid_bin_matrix);
+  void UpdateCellList(std::vector<std::vector<GridBin> > &grid_bin_matrix);
   bool write_cell_in_box(std::string const &NameOfFile, std::vector<Block> &Nodelist);
   bool update_cut_index_white_space(std::vector< std::vector< int > > &grid_bin_white_space_LUT);
   bool update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist, int &box1_total_white_space, int &box2_total_white_space);

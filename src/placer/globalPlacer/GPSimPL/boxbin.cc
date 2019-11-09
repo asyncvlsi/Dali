@@ -24,7 +24,7 @@ void BoxBin::update_all_terminal(std::vector< std::vector< GridBin > > &grid_bin
   for (int x=ll_index.x; x <= ur_index.x; x++) {
     for (int y=ll_index.y; y <= ur_index.y; y++) {
       bin = &grid_bin_matrix[x][y];
-      if (!bin->is_all_terminal()) {
+      if (!bin->IsAllFixedBlk()) {
         all_terminal = false;
         return;
       }
@@ -72,7 +72,7 @@ void BoxBin::update_cell_area_white_space(std::vector<std::vector<GridBin> > &gr
   filling_rate = total_cell_area/(double)total_white_space;
 }
 
-void BoxBin::update_cell_area_white_space_LUT(std::vector< std::vector< int > > &grid_bin_white_space_LUT, std::vector<std::vector<GridBin> > &grid_bin_matrix) {
+void BoxBin::UpdateCellAreaWhiteSpaceFillingRate(std::vector<std::vector<int > > &grid_bin_white_space_LUT, std::vector<std::vector<GridBin> > &grid_bin_matrix) {
   if (ll_index.x == 0) {
     if (ll_index.y == 0) {
       total_white_space = grid_bin_white_space_LUT[ur_index.x][ur_index.y];
@@ -100,11 +100,11 @@ void BoxBin::update_cell_area_white_space_LUT(std::vector< std::vector< int > > 
   filling_rate = total_cell_area/(double)total_white_space;
 }
 
-void BoxBin::expand_box(int GRID_NUM) {
-  if (ll_index.x > 0) ll_index.x--;
-  if (ll_index.y > 0) ll_index.y--;
-  if (ur_index.x < GRID_NUM - 1) ur_index.x++;
-  if (ur_index.y < GRID_NUM - 1) ur_index.y++;
+void BoxBin::ExpandBox(int grid_cnt_x, int grid_cnt_y) {
+  if (ll_index.x > 0) --ll_index.x;
+  if (ll_index.y > 0) --ll_index.y;
+  if (ur_index.x < grid_cnt_x - 1) ++ur_index.x;
+  if (ur_index.y < grid_cnt_y - 1) ++ur_index.y;
 }
 
 bool BoxBin::write_box_boundary(std::string const &NameOfFile) {
@@ -156,7 +156,7 @@ bool BoxBin::write_cell_region(std::string const &NameOfFile) {
   return true;
 }
 
-void BoxBin::update_cell_in_box(std::vector<std::vector<GridBin> > &grid_bin_matrix) {
+void BoxBin::UpdateCellList(std::vector<std::vector<GridBin> > &grid_bin_matrix) {
   cell_list.clear();
   for (int x=ll_index.x; x<=ur_index.x; x++) {
     for (int y=ll_index.y; y<=ur_index.y; y++) {
@@ -209,7 +209,7 @@ void BoxBin::update_terminal_list_white_space(std::vector<Block> &Nodelist, std:
   }
 }
 
-void BoxBin::update_ob_boundaries(std::vector<Block> &Nodelist) {
+void BoxBin::UpdateObsBoundary(std::vector<Block> &block_list) {
   if (terminal_list.empty()) {
     return;
   }
@@ -217,7 +217,7 @@ void BoxBin::update_ob_boundaries(std::vector<Block> &Nodelist) {
   horizontal_obstacle_boundaries.clear();
   Block *node;
   for (auto &&terminal_id: terminal_list) {
-    node = &Nodelist[terminal_id];
+    node = &block_list[terminal_id];
     if ((left < node->LLX()) && (right > node->LLX())) {
       vertical_obstacle_boundaries.push_back((int)node->LLX());
     }

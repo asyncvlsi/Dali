@@ -8,7 +8,7 @@
 #include "circuit.h"
 #include "placer.h"
 
-VerboseLevel globalVerboseLevel = LOG_INFO;
+VerboseLevel globalVerboseLevel = LOG_DEBUG;
 
 int main() {
   Circuit circuit;

@@ -7,7 +7,6 @@
 #include <iostream>
 #include <string>
 #include "circuit.h"
-#include "common/misc.h"
 
 Circuit::Circuit() {
   tot_movable_blk_num_ = 0;
@@ -19,9 +18,9 @@ Circuit::Circuit() {
   tot_mov_height_ = 0;
   tot_mov_block_area_ = 0;
   tot_movable_blk_num_ = 0;
-  min_width_ = 100000000;
+  min_width_ = INT_MAX;
   max_width_ = 0;
-  min_height_ = 100000000;
+  min_height_ = INT_MAX;
   max_height_ = 0;
   grid_set_ = false;
   grid_value_x_ = 0;
@@ -41,9 +40,9 @@ Circuit::Circuit(int tot_block_type_num, int tot_block_num, int tot_net_num) {
   tot_mov_height_ = 0;
   tot_mov_block_area_ = 0;
   tot_movable_blk_num_ = 0;
-  min_width_ = 100000000;
+  min_width_ = INT_MAX;
   max_width_ = 0;
-  min_height_ = 100000000;
+  min_height_ = INT_MAX;
   max_height_ = 0;
   grid_set_ = false;
   grid_value_x_ = 0;
@@ -115,14 +114,14 @@ void Circuit::AddBlock(std::string &block_name, BlockType *block_type, int llx, 
   auto old_tot_area = tot_block_area_;
 
   tot_block_area_ += block_list.back().Area();
-  Assert(old_tot_area < tot_block_area_, "Total Block Area Overflow, choose a different MANUFACTURINGGRID/unit or contact Yihang");
+  Assert(old_tot_area < tot_block_area_, "Total Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
   tot_width_ += block_list.back().Width();
   tot_height_ += block_list.back().Height();
   if (block_list.back().IsMovable()) {
     ++tot_movable_blk_num_;
     old_tot_area = tot_mov_block_area_;
     tot_mov_block_area_ += block_list.back().Area();
-    Assert(old_tot_area < tot_mov_block_area_, "Total Movable Block Area Overflow, choose a different MANUFACTURINGGRID/unit or contact Yihang");
+    Assert(old_tot_area < tot_mov_block_area_, "Total Movable Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
     tot_mov_width_ += block_list.back().Width();
     tot_mov_height_ += block_list.back().Height();
   }

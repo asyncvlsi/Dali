@@ -73,7 +73,7 @@ public:
 inline void Placer::SetInputCircuit(Circuit *circuit) {
   Assert(circuit != nullptr, "Invalid input circuit: not allowed to set nullptr as the input!");
   Assert(!circuit->block_list.empty(), "Invalid input circuit: empty block list!");
-  Assert(!circuit->net_list.empty(), "Invalid input circuit: empty net list!");
+  Warning(circuit->net_list.empty(), "Improper input circuit: empty net list, nothing to optimize during placement!");
   circuit_ = circuit;
 }
 

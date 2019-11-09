@@ -32,6 +32,7 @@ class GPSimPL: public Placer {
   double width_epsilon;
   double height_epsilon;
   double HPWL_intra_linearSolver_precision = 0.05;
+  int b2b_update_max_iteration = 50;
   double alpha = 0.00;
   double alpha_increment = 0.01;
   int look_ahead_iter_max = 30;
@@ -69,6 +70,7 @@ class GPSimPL: public Placer {
   void UpdateHPWLY() { HPWLY_new = HPWLY();};
   void UpdateMaxMinY() {for (auto &&net: circuit_->net_list) net.UpdateMaxMinY();};
   void UpdateMaxMinCtoCY();
+  void AddMatrixElement(Net& net, int i, int j);
   void BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b);
   void BuildProblemB2BX();
   void BuildProblemB2BY();
@@ -93,7 +95,7 @@ class GPSimPL: public Placer {
 
   std::vector< GridBinCluster > cluster_list;
   void ClusterOverfilledGridBin();
-  void SortGridBinCluster();
+  void UpdateClusterArea();
   void UpdateClusterList();
 
   std::queue < BoxBin > queue_box_bin;

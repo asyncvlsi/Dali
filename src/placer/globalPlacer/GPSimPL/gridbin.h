@@ -33,7 +33,7 @@ class GridBin {
   int Height() { return top - bottom; }
   int Width() { return right - left; }
   int Area() { return (top-bottom)*(right-left);}
-  bool is_all_terminal() { return all_terminal; }
+  bool IsAllFixedBlk() { return all_terminal; }
   bool OverFill() { return over_fill; }
   void create_adjacent_bin_list(int grid_cnt_x, int grid_cnt_y);
   void Report();
