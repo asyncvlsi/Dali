@@ -52,19 +52,13 @@ void GPSimPL::BlockLocInit() {
 void GPSimPL::CGInit() {
   SetEpsilon(); // set a small value for net weight dividend to avoid divergence
   int sz = circuit_->block_list.size();
-  x.resize(sz);
-  y.resize(sz);
-  bx.resize(sz);
-  by.resize(sz);
-  Ax.resize(sz, sz);
-  Ay.resize(sz, sz);
-  x_anchor.resize(sz);
-  y_anchor.resize(sz);
-
-  cgx.setMaxIterations(cg_iteration_max_num_);
-  cgx.setTolerance(cg_tolerance_);
-  cgy.setMaxIterations(cg_iteration_max_num_);
-  cgy.setTolerance(cg_tolerance_);
+  diag = (double *)malloc(sz * sizeof(*diag));
+  x = (double *)malloc(sz * sizeof(*x));
+  y = (double *)malloc(sz * sizeof(*y));
+  bx = (double *)malloc(sz * sizeof(*bx));
+  by = (double *)malloc(sz * sizeof(*by));
+  x_anchor = (double *)malloc(sz * sizeof(*x_anchor));
+  y_anchor = (double *)malloc(sz * sizeof(*y_anchor));
 
   int coefficient_size = 0;
   int net_sz = 0;
@@ -151,15 +145,15 @@ void GPSimPL::AddMatrixElement(Net& net, int i, int j) {
   weight = inv_p / (std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
   if (!is_movable0 && is_movable1) {
     bx[blk_num1] += (pin_loc0 - net.blk_pin_list[j].XOffset()) * weight;
-    coefficients.emplace_back(T(blk_num1, blk_num1, weight));
+    diag[blk_num1] += weight;
   } else if (is_movable0 && !is_movable1) {
     bx[blk_num0] += (pin_loc1 - net.blk_pin_list[i].XOffset()) * weight;
-    coefficients.emplace_back(T(blk_num0, blk_num0, weight));
+    diag[blk_num0] += weight;
   } else if (is_movable0 && is_movable1) {
-    coefficients.emplace_back(T(blk_num0, blk_num0, weight));
-    coefficients.emplace_back(T(blk_num1, blk_num1, weight));
-    coefficients.emplace_back(T(blk_num0, blk_num1, -weight));
-    coefficients.emplace_back(T(blk_num1, blk_num0, -weight));
+    diag[blk_num0] += weight;
+    diag[blk_num1] += weight;
+    coefficients.emplace_back(blk_num0, blk_num1, -weight);
+    coefficients.emplace_back(blk_num1, blk_num0, -weight);
     offset_diff = (net.blk_pin_list[j].XOffset() - net.blk_pin_list[i].XOffset()) * weight;
     bx[blk_num0] += offset_diff;
     bx[blk_num1] -= offset_diff;
@@ -199,15 +193,15 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
           weight = inv_p / (std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
           if (!is_movable0 && is_movable1) {
             b[blk_num1] += (pin_loc0 - net.blk_pin_list[j].XOffset()) * weight;
-            coefficients.emplace_back(T(blk_num1, blk_num1, weight));
+            diag[blk_num1] += weight;
           } else if (is_movable0 && !is_movable1) {
             b[blk_num0] += (pin_loc1 - net.blk_pin_list[i].XOffset()) * weight;
-            coefficients.emplace_back(T(blk_num0, blk_num0, weight));
+            diag[blk_num0] += weight;
           } else if (is_movable0 && is_movable1) {
-            coefficients.emplace_back(T(blk_num0, blk_num0, weight));
-            coefficients.emplace_back(T(blk_num1, blk_num1, weight));
-            coefficients.emplace_back(T(blk_num0, blk_num1, -weight));
-            coefficients.emplace_back(T(blk_num1, blk_num0, -weight));
+            diag[blk_num0] += weight;
+            diag[blk_num1] += weight;
+            coefficients.emplace_back(blk_num0, blk_num1, -weight);
+            coefficients.emplace_back(blk_num1, blk_num0, -weight);
             offset_diff = (net.blk_pin_list[j].XOffset() - net.blk_pin_list[i].XOffset()) * weight;
             b[blk_num0] += offset_diff;
             b[blk_num1] -= offset_diff;
@@ -219,7 +213,7 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
     }
     for (size_t i = 0; i < block_list.size(); ++i) {
       if (block_list[i].IsFixed()) {
-        coefficients.emplace_back(T(i, i, 1));
+        diag[i] = 1;
         b[i] = block_list[i].LLX();
       }
     }
