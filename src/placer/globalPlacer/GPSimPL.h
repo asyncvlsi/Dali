@@ -56,8 +56,10 @@ class GPSimPL: public Placer {
   SpMat Ax, Ay;
   std::vector< double > x_anchor, y_anchor;
   std::vector< T > coefficients;
-  Eigen::BiCGSTAB  <SpMat, Eigen::IdentityPreconditioner> cgx;
-  Eigen::BiCGSTAB  <SpMat, Eigen::IdentityPreconditioner> cgy;
+  //Eigen::ConjugateGradient  <SpMat, Eigen::Lower|Eigen::Upper> cgx;
+  //Eigen::ConjugateGradient  <SpMat, Eigen::Lower|Eigen::Upper> cgy;
+  Eigen::ConjugateGradient  <SpMat, Eigen::Lower> cgx;
+  Eigen::ConjugateGradient  <SpMat, Eigen::Lower> cgy;
 
   void BlockLocInit();
   void CGInit();
@@ -115,6 +117,8 @@ class GPSimPL: public Placer {
   void BuildProblemB2BWithAnchorY();
   void QuadraticPlacementWithAnchor();
   void UpdateAnchorNetWeight();
+
+  void CheckAndShift();
 
   void StartPlacement() override;
 

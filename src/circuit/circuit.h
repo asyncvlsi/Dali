@@ -40,7 +40,7 @@ class Circuit {
   std::vector<Net > net_list;
   std::map<std::string, int> net_name_map;
 
-  double reset_signal_weight = 1e-6;
+  double reset_signal_weight = 1e-1;
   double normal_signal_weight = 1;
   int lef_database_microns = 0;
   int def_distance_microns = 0;
@@ -115,6 +115,7 @@ class Circuit {
   long int TotArea() const;
   int TotBlockNum() const;
   int TotMovableBlockNum() const;
+  unsigned int TotFixedBlkCnt() const {return block_list.size() - tot_movable_blk_num_;}
   double AveWidth() const;
   double AveHeight() const;
   double AveArea() const;

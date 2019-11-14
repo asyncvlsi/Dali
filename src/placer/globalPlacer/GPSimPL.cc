@@ -158,8 +158,11 @@ void GPSimPL::AddMatrixElement(Net& net, int i, int j) {
   } else if (is_movable0 && is_movable1) {
     coefficients.emplace_back(T(blk_num0, blk_num0, weight));
     coefficients.emplace_back(T(blk_num1, blk_num1, weight));
-    coefficients.emplace_back(T(blk_num0, blk_num1, -weight));
-    coefficients.emplace_back(T(blk_num1, blk_num0, -weight));
+    if (blk_num0 > blk_num1) {
+      coefficients.emplace_back(T(blk_num0, blk_num1, -weight));
+    } else {
+      coefficients.emplace_back(T(blk_num1, blk_num0, -weight));
+    }
     offset_diff = (net.blk_pin_list[j].XOffset() - net.blk_pin_list[i].XOffset()) * weight;
     bx[blk_num0] += offset_diff;
     bx[blk_num1] -= offset_diff;
@@ -206,8 +209,11 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
           } else if (is_movable0 && is_movable1) {
             coefficients.emplace_back(T(blk_num0, blk_num0, weight));
             coefficients.emplace_back(T(blk_num1, blk_num1, weight));
-            coefficients.emplace_back(T(blk_num0, blk_num1, -weight));
-            coefficients.emplace_back(T(blk_num1, blk_num0, -weight));
+            if (blk_num0 > blk_num1) { // build a lower matrix
+              coefficients.emplace_back(T(blk_num0, blk_num1, -weight));
+            } else {
+              coefficients.emplace_back(T(blk_num1, blk_num0, -weight));
+            }
             offset_diff = (net.blk_pin_list[j].XOffset() - net.blk_pin_list[i].XOffset()) * weight;
             b[blk_num0] += offset_diff;
             b[blk_num1] -= offset_diff;
@@ -255,8 +261,11 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
           } else if (is_movable0 && is_movable1) {
             coefficients.emplace_back(T(blk_num0, blk_num0, weight));
             coefficients.emplace_back(T(blk_num1, blk_num1, weight));
-            coefficients.emplace_back(T(blk_num0, blk_num1, -weight));
-            coefficients.emplace_back(T(blk_num1, blk_num0, -weight));
+            if (blk_num0 > blk_num1) { // build a lower matrix
+              coefficients.emplace_back(T(blk_num0, blk_num1, -weight));
+            } else {
+              coefficients.emplace_back(T(blk_num1, blk_num0, -weight));
+            }
             offset_diff = (net.blk_pin_list[j].YOffset() - net.blk_pin_list[i].YOffset()) * weight;
             b[blk_num0] += offset_diff;
             b[blk_num1] -= offset_diff;
@@ -1298,6 +1307,43 @@ void GPSimPL::LookAheadLegalization() {
   ReportHPWL(LOG_INFO);
 }
 
+void GPSimPL::CheckAndShift() {
+  if (circuit_->TotFixedBlkCnt() > 0) return;
+  /****
+   * This method is useful, when a circuit does not have any fixed blocks.
+   * In this case, the shift of the whole circuit does not influence HPWL and overlap.
+   * But if the circuit is placed close to the right placement boundary, it give very few change to legalizer if cells close
+   * to the right boundary need to find different locations.
+   *
+   * 1. Find the leftmost, rightmost, topmost, bottommost cell edges
+   * 2. Calculate the total margin in x direction and y direction
+   * 3. Evenly assign the margin to each side
+   * ****/
+
+  double left_most = INT_MAX;
+  double right_most = INT_MIN;
+  double bottom_most = INT_MAX;
+  double top_most= INT_MIN;
+
+  for (auto &&blk: circuit_->block_list) {
+    left_most = std::min(left_most, blk.LLX());
+    right_most = std::max(right_most, blk.URX());
+    bottom_most = std::min(bottom_most, blk.LLY());
+    top_most = std::max(top_most, blk.URY());
+  }
+
+  double margin_x = (right_ - left_) - (right_most - left_most);
+  double margin_y = (top_ - bottom_) - (top_most - bottom_most);
+
+  double delta_x = left_ + margin_x/10 - left_most;
+  double delta_y = bottom_ + margin_y/2 - bottom_most;
+
+  for (auto &&blk: circuit_->block_list) {
+    blk.IncreX(delta_x);
+    blk.IncreY(delta_y);
+  }
+}
+
 void GPSimPL::UpdateLALConvergeState() {
   HPWL_LAL_new = HPWLX_new + HPWLY_new;
   HPWL_LAL_converge = std::fabs(1 - HPWL_LAL_new/HPWL_LAL_old) < HPWL_inter_linearSolver_precision;
@@ -1349,6 +1395,7 @@ void GPSimPL::StartPlacement() {
     std::cout << "Global Placement complete\n";
   }
   LookAheadClose();
+  CheckAndShift();
   ReportHPWL(LOG_CRITICAL);
   //DrawBlockNetList("cg_result.txt");
 }
