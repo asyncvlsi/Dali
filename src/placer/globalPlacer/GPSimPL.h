@@ -8,18 +8,16 @@
 #include <queue>
 #include <random>
 #include "../placer.h"
+#include "../../../module/Eigen/Sparse"
+#include "../../../module/Eigen//IterativeLinearSolvers"
 #include "GPSimPL/simplblockaux.h"
 #include "GPSimPL/gridbinindex.h"
 #include "GPSimPL/gridbin.h"
 #include "GPSimPL/boxbin.h"
 #include "GPSimPL/cellcutpoint.h"
 
-typedef struct triplet {
-  int row;
-  int col;
-  double value;
-} T;
-// A triplet is a simple object representing a non-zero entry as the triplet: row index, column index, value.
+typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat; // declares a row-major sparse matrix type of double
+typedef Eigen::Triplet<double> T; // A triplet is a simple object representing a non-zero entry as the triplet: row index, column index, value.
 
 class GPSimPL: public Placer {
  protected:
@@ -53,11 +51,13 @@ class GPSimPL: public Placer {
   double HeightEpsilon() {return height_epsilon;};
 
   std::minstd_rand0 generator{1};
-  double *diag;
-  double *x, *y;
-  double *bx, *by;
-  double *x_anchor, *y_anchor;
+  Eigen::VectorXd x, y;
+  Eigen::VectorXd bx, by;
+  SpMat Ax, Ay;
+  std::vector< double > x_anchor, y_anchor;
   std::vector< T > coefficients;
+  Eigen::BiCGSTAB  <SpMat, Eigen::IdentityPreconditioner> cgx;
+  Eigen::BiCGSTAB  <SpMat, Eigen::IdentityPreconditioner> cgy;
 
   void BlockLocInit();
   void CGInit();
@@ -71,7 +71,7 @@ class GPSimPL: public Placer {
   void UpdateMaxMinY() {for (auto &&net: circuit_->net_list) net.UpdateMaxMinY();};
   void UpdateMaxMinCtoCY();
   void AddMatrixElement(Net& net, int i, int j);
-  void BuildProblemB2B(bool is_x_direction, std::vector<double> &b);
+  void BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b);
   void BuildProblemB2BX();
   void BuildProblemB2BY();
   void SolveProblemX();
