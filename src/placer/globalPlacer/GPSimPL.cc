@@ -1037,25 +1037,60 @@ void GPSimPL::SplitGridBox(BoxBin &box) {
 }
 
 void GPSimPL::PlaceBlkInBox(BoxBin &box) {
-    std::vector<Block> &block_list = *BlockList();
-    /* this is the simplest version, just linearly move cells in the cell_box to the grid box
-     * non-linearity is not considered yet*/
-    double cell_box_left, cell_box_bottom;
-    double cell_box_width, cell_box_height;
-    cell_box_left = box.ll_point.x;
-    cell_box_bottom = box.ll_point.y;
-    cell_box_width = box.ur_point.x - cell_box_left;
-    cell_box_height = box.ur_point.y - cell_box_bottom;
-    Block *cell;
-    for (auto &&cell_id: box.cell_list) {
-      cell = &block_list[cell_id];
-      cell->SetCenterX((cell->X() - cell_box_left)/cell_box_width * (box.right - box.left) + box.left);
-      cell->SetCenterY((cell->Y() - cell_box_bottom)/cell_box_height * (box.top - box.bottom) + box.bottom);
-      /*if ((box.left < LEFT) || (box.bottom < BOTTOM)) {
-        std::cout << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM << "\n";
-        std::cout << box.left << " " << box.bottom << "\n";
-      }*/
-    }
+  std::vector<Block> &block_list = *BlockList();
+  /* this is the simplest version, just linearly move cells in the cell_box to the grid box
+  * non-linearity is not considered yet*/
+
+  /*double cell_box_left, cell_box_bottom;
+  double cell_box_width, cell_box_height;
+  cell_box_left = box.ll_point.x;
+  cell_box_bottom = box.ll_point.y;
+  cell_box_width = box.ur_point.x - cell_box_left;
+  cell_box_height = box.ur_point.y - cell_box_bottom;
+  Block *cell;
+
+  for (auto &&cell_id: box.cell_list) {
+    cell = &block_list[cell_id];
+    cell->SetCenterX((cell->X() - cell_box_left)/cell_box_width * (box.right - box.left) + box.left);
+    cell->SetCenterY((cell->Y() - cell_box_bottom)/cell_box_height * (box.top - box.bottom) + box.bottom);
+  }*/
+
+  int sz = box.cell_list.size();
+  std::vector<std::pair<int, double>> index_loc_list_x(sz);
+  std::vector<std::pair<int, double>> index_loc_list_y(sz);
+  for (int i=0; i<sz; ++i) {
+    index_loc_list_x[i].first = box.cell_list[i];
+    index_loc_list_x[i].second = block_list[box.cell_list[i]].X();
+    index_loc_list_y[i].first = box.cell_list[i];
+    index_loc_list_y[i].second = block_list[box.cell_list[i]].Y();
+  }
+
+  std::sort(index_loc_list_x.begin(), index_loc_list_x.end(), [](const std::pair<int, double>& p1, const std::pair<int, double>& p2) {
+    return p1.second < p2.second;
+  });
+  double total_length = 0;
+  for (auto &&cell_id: box.cell_list) total_length += block_list[cell_id].Width();
+  double cur_pos = 0;
+  int box_width = box.right - box.left;
+  int cell_num;
+  for (auto &&pair: index_loc_list_x) {
+    cell_num = pair.first;
+    block_list[cell_num].SetCenterX(box.left + cur_pos/total_length*box_width);
+    cur_pos += block_list[cell_num].Width();
+  }
+
+  std::sort(index_loc_list_y.begin(), index_loc_list_y.end(), [](const std::pair<int, double>& p1, const std::pair<int, double>& p2) {
+    return p1.second < p2.second;
+  });
+  total_length = 0;
+  for (auto &&cell_id: box.cell_list) total_length += block_list[cell_id].Height();
+  cur_pos = 0;
+  int box_height = box.top - box.bottom;
+  for (auto &&pair: index_loc_list_y) {
+    cell_num = pair.first;
+    block_list[cell_num].SetCenterY(box.bottom + cur_pos/total_length*box_height);
+    cur_pos += block_list[cell_num].Height();
+  }
 }
 
 double GPSimPL::BlkOverlapArea(Block *node1, Block *node2) {
@@ -1093,7 +1128,7 @@ double GPSimPL::BlkOverlapArea(Block *node1, Block *node2) {
 void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
   std::vector<Block> &block_list = *BlockList();
   /* keep bisect a grid bin until the leaf bin has less than say 2 nodes? */
-  size_t max_cell_num_in_box = 1;
+  size_t max_cell_num_in_box = 10;
   box.cut_direction_x = true;
   std::queue< BoxBin > box_Q;
   box_Q.push(box);
@@ -1174,7 +1209,8 @@ bool GPSimPL::RecursiveBisectionBlkSpreading() {
         continue;
       }
       /* if no terminals in side a box, do cell placement inside the box */
-      PlaceBlkInBoxBisection(box);
+      //PlaceBlkInBoxBisection(box);
+      PlaceBlkInBox(box);
     } else {
       SplitBox(box);
     }

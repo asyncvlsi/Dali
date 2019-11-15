@@ -1,0 +1,12 @@
+//
+// Created by Yihang Yang on 11/14/19.
+//
+
+#ifndef HPCC_SRC_PLACER_DETAILEDPLACER_DPADAM_H_
+#define HPCC_SRC_PLACER_DETAILEDPLACER_DPADAM_H_
+
+class DPAdam {
+
+};
+
+#endif //HPCC_SRC_PLACER_DETAILEDPLACER_DPADAM_H_

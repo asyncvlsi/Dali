@@ -40,7 +40,7 @@ class Circuit {
   std::vector<Net > net_list;
   std::map<std::string, int> net_name_map;
 
-  double reset_signal_weight = 1e-1;
+  double reset_signal_weight = 1;
   double normal_signal_weight = 1;
   int lef_database_microns = 0;
   int def_distance_microns = 0;

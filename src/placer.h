@@ -16,6 +16,7 @@
 #include "placer/detailedPlacer/DPAbacus.h"
 #include "placer/detailedPlacer/MDPlacer.h"
 #include "placer/detailedPlacer/DPSwap.h"
+#include "placer/detailedPlacer/DPAdam.h"
 
 /****Legalizer****/
 #include "placer/legalizer/LGTetris.h"
