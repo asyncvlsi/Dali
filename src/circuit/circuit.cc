@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <climits>
 #include "circuit.h"
 
 Circuit::Circuit() {
@@ -646,7 +647,7 @@ double Circuit::HPWLX() {
   for (auto &&net: net_list) {
     HPWLX += net.HPWLX();
   }
-  return HPWLX;
+  return HPWLX*GridValueX();
 }
 
 double Circuit::HPWLY() {
@@ -654,7 +655,7 @@ double Circuit::HPWLY() {
   for (auto &&net: net_list) {
     HPWLY += net.HPWLY();
   }
-  return HPWLY;
+  return HPWLY*GridValueY();
 }
 
 double Circuit::HPWL() {
@@ -662,7 +663,7 @@ double Circuit::HPWL() {
 }
 
 void Circuit::ReportHPWL() {
-  std::cout << "  Current HPWL: " << std::scientific << HPWLX()*GridValueX() + HPWLY()*GridValueY() << " um\n";
+  std::cout << "  Current HPWL: " << std::scientific << HPWLX() + HPWLY() << " um\n";
 }
 
 double Circuit::HPWLCtoCX() {

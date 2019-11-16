@@ -1321,7 +1321,7 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
 }
 
 void GPSimPL::UpdateAnchorNetWeight() {
-  alpha += alpha_increment;
+  alpha = 0.01*lal_iteration;
 }
 
 void GPSimPL::LookAheadLegalization() {
@@ -1381,7 +1381,7 @@ void GPSimPL::CheckAndShift() {
 }
 
 void GPSimPL::UpdateLALConvergeState() {
-  HPWL_LAL_new = HPWLX_new + HPWLY_new;
+  HPWL_LAL_new = HPWL();
   HPWL_LAL_converge = std::fabs(1 - HPWL_LAL_new/HPWL_LAL_old) < HPWL_inter_linearSolver_precision;
   if (globalVerboseLevel >= LOG_DEBUG) {
     std::cout << "Old HPWL after look ahead legalization: " << HPWL_LAL_old << "\n";
@@ -1407,17 +1407,17 @@ void GPSimPL::StartPlacement() {
   }
   InitialPlacement();
 
-  for (int i=0; i<look_ahead_iter_max; ++i) {
+  for (lal_iteration=0; lal_iteration<look_ahead_iter_max; ++lal_iteration) {
     if (globalVerboseLevel >= LOG_DEBUG) {
-      std::cout << i << "-th iteration\n";
+      std::cout << lal_iteration << "-th iteration\n";
     }
     LookAheadLegalization();
     UpdateLALConvergeState();
-    if (HPWL_LAL_converge || i==look_ahead_iter_max-1) { // if HPWL sconverges
-      if (i >= 5) {
+    if (HPWL_LAL_converge) { // if HPWL sconverges
+      if (lal_iteration >= 5) {
         if (globalVerboseLevel >= LOG_CRITICAL) {
           std::cout << "Iterative look-ahead legalization complete" << std::endl;
-          std::cout << "Total number of iteration: " << i + 1 << std::endl;
+          std::cout << "Total number of iteration: " << lal_iteration + 1 << std::endl;
         }
         break;
       }

@@ -7,6 +7,7 @@
 
 #include <queue>
 #include <random>
+#include <cfloat>
 #include "../placer.h"
 #include "../../../module/Eigen/Sparse"
 #include "../../../module/Eigen//IterativeLinearSolvers"
@@ -23,8 +24,8 @@ class GPSimPL: public Placer {
  protected:
   double HPWLX_new = 0;
   double HPWLY_new = 0;
-  double HPWLX_old = 1e30;
-  double HPWLY_old = 1e30;
+  double HPWLX_old = DBL_MAX;
+  double HPWLY_old = DBL_MAX;
   bool HPWLX_converge = false;
   bool HPWLY_converge = false;
   double cg_tolerance_ = 0.001;
@@ -34,12 +35,12 @@ class GPSimPL: public Placer {
   double HPWL_intra_linearSolver_precision = 0.05;
   int b2b_update_max_iteration = 50;
   double alpha = 0.00;
-  double alpha_increment = 0.01;
+  int lal_iteration = 0;
   int look_ahead_iter_max = 30;
   double HPWL_LAL_new = 0;
-  double HPWL_LAL_old = 1e30;
+  double HPWL_LAL_old = DBL_MAX;
   bool HPWL_LAL_converge = false;
-  double HPWL_inter_linearSolver_precision = 0.05;
+  double HPWL_inter_linearSolver_precision = 0.01;
   int number_of_cell_in_bin = 30;
  public:
   GPSimPL();
