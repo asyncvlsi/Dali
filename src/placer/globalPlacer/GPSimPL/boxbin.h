@@ -11,6 +11,7 @@
 #include "gridbinindex.h"
 #include "cellcutpoint.h"
 #include "gridbin.h"
+#include "windowquadruple.h"
 #include "../../../circuit/block.h"
 
 class BoxBin {
@@ -19,7 +20,7 @@ class BoxBin {
   bool cut_direction_x;
   // cut line is alone x direction
   bool all_terminal;
-  int total_white_space;
+  long int total_white_space;
   double filling_rate;
   bool IsAllFixedBlk() { return all_terminal; };
   /* Cut-line to split box white space */
@@ -75,7 +76,7 @@ class BoxBin {
   void UpdateCellList(std::vector<std::vector<GridBin> > &grid_bin_matrix);
   bool write_cell_in_box(std::string const &NameOfFile, std::vector<Block> &Nodelist);
   bool update_cut_index_white_space(std::vector< std::vector< int > > &grid_bin_white_space_LUT);
-  bool update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist, int &box1_total_white_space, int &box2_total_white_space);
+  bool update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist, long int &box1_total_white_space, long int &box2_total_white_space);
   bool update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodelist, int &cut_line_w, int ave_blk_height);
 };
 

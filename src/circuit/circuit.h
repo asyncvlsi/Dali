@@ -137,6 +137,7 @@ class Circuit {
   void WriteDefFileDebug(std::string const &name_of_file= "circuit.def");
   void GenMATLABScript(std::string const &name_of_file= "block_net_list.m");
   void SaveDefFile(std::string const &name_of_file, std::string const &def_file_name);
+  void SaveISPD(std::string const &name_of_file);
 };
 
 #endif //HPCC_CIRCUIT_HPP

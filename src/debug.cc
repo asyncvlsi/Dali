@@ -50,7 +50,8 @@ int main() {
   gb_placer->StartPlacement();
   //gb_placer->GenMATLABScript("gb_result.txt");
   gb_placer->SaveNodeTerminal();
-  gb_placer->SaveDEFFile("circuit.def", def_file);
+  //gb_placer->SaveDEFFile("circuit.def", def_file);
+  //circuit.SaveISPD("circuit.pl");
 
   /*Placer *d_placer = new MDPlacer;
   d_placer->TakeOver(gb_placer);

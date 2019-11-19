@@ -793,3 +793,17 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   ost.close();
   ist.close();
 }
+
+void Circuit::SaveISPD(std::string const &name_of_file) {
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open file " + name_of_file);
+  for (auto &&node: block_list) {
+    if (node.IsMovable()) {
+      ost << *node.Name() << "\t" << int(node.LLX()*def_distance_microns*grid_value_x_) << "\t" << int(node.LLY()*def_distance_microns*grid_value_y_) << "\t:\tN\n";
+    }
+    else {
+      ost << *node.Name() << "\t" << int(node.LLX()*def_distance_microns*grid_value_x_) << "\t" << int(node.LLY()*def_distance_microns*grid_value_y_) << "\t:\tN\t/FIXED\n";
+    }
+  }
+  ost.close();
+}

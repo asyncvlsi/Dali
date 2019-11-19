@@ -364,7 +364,7 @@ bool BoxBin::update_cut_index_white_space(std::vector< std::vector< int > > &gri
   }
 }
 
-bool BoxBin::update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist, int &box1_total_white_space, int &box2_total_white_space) {
+bool BoxBin::update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist, long int &box1_total_white_space, long int &box2_total_white_space) {
   // this member function will be called only when two white spaces are not different from each other for several magnitudes
   int cell_area_low = 0;
   double cut_line_low, cut_line_high;

@@ -52,8 +52,8 @@ void GPSimPL::BlockLocInit() {
 void GPSimPL::CGInit() {
   SetEpsilon(); // set a small value for net weight dividend to avoid divergence
   int sz = circuit_->block_list.size();
-  x.resize(sz);
-  y.resize(sz);
+  vx.resize(sz);
+  vy.resize(sz);
   bx.resize(sz);
   by.resize(sz);
   Ax.resize(sz, sz);
@@ -304,42 +304,42 @@ void GPSimPL::BuildProblemB2BY() {
 void GPSimPL::SolveProblemX() {
   std::vector<Block> &block_list = *BlockList();
   cgx.compute(Ax);
-  x = cgx.solveWithGuess(bx, x);
+  vx = cgx.solveWithGuess(bx, vx);
   if (globalVerboseLevel >= LOG_DEBUG) {
     std::cout << "    #iterations:     " << cgx.iterations() << std::endl;
     std::cout << "    estimated error: " << cgx.error() << std::endl;
   }
-  for (long int num=0; num<x.size(); ++num) {
+  for (long int num=0; num<vx.size(); ++num) {
     if (block_list[num].IsMovable()) {
-      if (x[num] < Left()) {
-        x[num] = Left();
+      if (vx[num] < Left()) {
+        vx[num] = Left();
       }
-      if (x[num] > Right() - block_list[num].Width()) {
-        x[num] = Right() - block_list[num].Width();
+      if (vx[num] > Right() - block_list[num].Width()) {
+        vx[num] = Right() - block_list[num].Width();
       }
     }
-    block_list[num].SetLLX(x[num]);
+    block_list[num].SetLLX(vx[num]);
   }
 }
 
 void GPSimPL::SolveProblemY() {
   std::vector<Block> &block_list = *BlockList();
   cgy.compute(Ay);
-  y = cgy.solveWithGuess(by, y);
+  vy = cgy.solveWithGuess(by, vy);
   if (globalVerboseLevel >= LOG_DEBUG) {
     std::cout << "    #iterations:     " << cgy.iterations() << std::endl;
     std::cout << "    estimated error: " << cgy.error() << std::endl;
   }
-  for (long int num=0; num<y.size(); ++num) {
+  for (long int num=0; num<vy.size(); ++num) {
     if (block_list[num].IsMovable()) {
-      if (y[num] < Bottom()) {
-        y[num] = Bottom();
+      if (vy[num] < Bottom()) {
+        vy[num] = Bottom();
       }
-      if (y[num] > Top() - block_list[num].Height()) {
-        y[num] = Top() - block_list[num].Height();
+      if (vy[num] > Top() - block_list[num].Height()) {
+        vy[num] = Top() - block_list[num].Height();
       }
     }
-    block_list[num].SetLLY(y[num]);
+    block_list[num].SetLLY(vy[num]);
   }
 }
 
@@ -348,7 +348,7 @@ void GPSimPL::InitialPlacement() {
 
   HPWLX_converge = false;
   HPWLX_old = 1e30;
-  for (size_t i=0; i<block_list.size(); ++i) x[i] = block_list[i].LLX();
+  for (size_t i=0; i<block_list.size(); ++i) vx[i] = block_list[i].LLX();
   for (int i=0; i<b2b_update_max_iteration; ++i) {
     BuildProblemB2BX();
     SolveProblemX();
@@ -364,7 +364,7 @@ void GPSimPL::InitialPlacement() {
   // Assembly:
   HPWLY_converge = false;
   HPWLY_old = 1e30;
-  for (size_t i=0; i<block_list.size(); ++i) y[i] = block_list[i].LLY();
+  for (size_t i=0; i<block_list.size(); ++i) vy[i] = block_list[i].LLY();
   for (int i=0; i<b2b_update_max_iteration; ++i) {
     BuildProblemB2BY(); // fill A and b
     SolveProblemY();// Solving:
@@ -564,14 +564,14 @@ void GPSimPL::ClearGridBinFlag() {
   }
 }
 
-int GPSimPL::LookUpWhiteSpace(GridBinIndex const &ll_index, GridBinIndex const &ur_index) {
+long int GPSimPL::LookUpWhiteSpace(GridBinIndex const &ll_index, GridBinIndex const &ur_index) {
   /****
    * this function is used to return the white space in a region specified by ll_index, and ur_index
    * there are four cases, element at (0,0), elements on the left edge, elements on the right edge, otherwise
    * ****/
 
-  int total_white_space;
-  if (ll_index.x == 0) {
+  long int total_white_space;
+  /*if (ll_index.x == 0) {
     if (ll_index.y == 0) {
       total_white_space = grid_bin_white_space_LUT[ur_index.x][ur_index.y];
     } else {
@@ -588,8 +588,72 @@ int GPSimPL::LookUpWhiteSpace(GridBinIndex const &ll_index, GridBinIndex const &
           - grid_bin_white_space_LUT[ll_index.x-1][ur_index.y]
           + grid_bin_white_space_LUT[ll_index.x-1][ll_index.y-1];
     }
+  }*/
+  WindowQuadruple window = {ll_index.x, ll_index.y, ur_index.x, ur_index.y};
+  total_white_space = LookUpWhiteSpace(window);
+  return total_white_space;
+}
+
+long int GPSimPL::LookUpWhiteSpace(WindowQuadruple &window) {
+  long int total_white_space;
+  if (window.llx == 0) {
+    if (window.lly == 0) {
+      total_white_space = grid_bin_white_space_LUT[window.urx][window.ury];
+    } else {
+      total_white_space = grid_bin_white_space_LUT[window.urx][window.ury]
+          - grid_bin_white_space_LUT[window.urx][window.lly-1];
+    }
+  } else {
+    if (window.lly == 0) {
+      total_white_space = grid_bin_white_space_LUT[window.urx][window.ury]
+          - grid_bin_white_space_LUT[window.llx-1][window.ury];
+    } else {
+      total_white_space = grid_bin_white_space_LUT[window.urx][window.ury]
+          - grid_bin_white_space_LUT[window.urx][window.lly-1]
+          - grid_bin_white_space_LUT[window.llx-1][window.ury]
+          + grid_bin_white_space_LUT[window.llx-1][window.lly-1];
+    }
   }
   return total_white_space;
+}
+
+long int GPSimPL::LookUpBlkArea(WindowQuadruple &window) {
+  long int res = 0;
+  for (int x=window.llx; x<=window.urx; ++x) {
+    for (int y=window.lly; y<=window.ury; ++y) {
+      res += grid_bin_matrix[x][y].cell_area;
+    }
+  }
+  return res;
+}
+
+long int GPSimPL::WindowArea(WindowQuadruple &window) {
+  long int res = 0;
+  if (window.urx == grid_cnt_x-1) {
+    if (window.ury == grid_cnt_y-1) {
+      res = (window.urx-window.llx)*(window.ury-window.lly)*grid_bin_width*grid_bin_height;
+      res += (window.urx-window.llx)*grid_bin_width*grid_bin_matrix[window.urx][window.ury].Height();
+      res += (window.ury-window.lly)*grid_bin_height*grid_bin_matrix[window.urx][window.ury].Width();
+      res += grid_bin_matrix[window.urx][window.ury].Area();
+    } else {
+      res = (window.urx-window.llx)*(window.ury-window.lly+1)*grid_bin_width*grid_bin_height;
+      res += (window.ury-window.lly+1)*grid_bin_height*grid_bin_matrix[window.urx][window.ury].Width();
+    }
+  } else {
+    if (window.ury == grid_cnt_y-1) {
+      res = (window.urx-window.llx+1)*(window.ury-window.lly)*grid_bin_width*grid_bin_height;
+      res += (window.urx-window.llx+1)*grid_bin_width*grid_bin_matrix[window.urx][window.ury].Height();
+    } else {
+      res = (window.urx-window.llx+1)*(window.ury-window.lly+1)*grid_bin_width*grid_bin_height;
+    }
+  }
+  /*
+  for (int i=window.llx; i<=window.urx; ++i) {
+    for (int j=window.lly; j<=window.ury; ++j) {
+      res += grid_bin_matrix[i][j].Area();
+    }
+  }*/
+  return res;
 }
 
 void GPSimPL::UpdateGridBinState() {
@@ -724,7 +788,7 @@ void GPSimPL::UpdateClusterList() {
   UpdateClusterArea();
 }
 
-void GPSimPL::FindMinimumBoxForFirstCluster() {
+void GPSimPL::FindMinimumBoxForLargestCluster() {
   /****
    * this function find the box for the largest cluster,
    * such that the total white space in the box is larger than the total cell area
@@ -751,19 +815,18 @@ void GPSimPL::FindMinimumBoxForFirstCluster() {
 
   BoxBin R;
   R.cut_direction_x = false;
+
   R.ll_index.x = grid_cnt_x - 1;
   R.ll_index.y = grid_cnt_y - 1;
   R.ur_index.x = 0;
   R.ur_index.y = 0;
   // initialize a box with y cut-direction
   // identify the bounding box of the initial cluster
-  GridBin *bin;
   for (auto &&index: cluster_list[max_cluster].bin_set) {
-    bin = &grid_bin_matrix[index.x][index.y];
-    R.ll_index.x = std::min(R.ll_index.x, bin->index.x);
-    R.ur_index.x = std::max(R.ur_index.x, bin->index.x);
-    R.ll_index.y = std::min(R.ll_index.y, bin->index.y);
-    R.ur_index.y = std::max(R.ur_index.y, bin->index.y);
+    R.ll_index.x = std::min(R.ll_index.x, index.x);
+    R.ur_index.x = std::max(R.ur_index.x, index.x);
+    R.ll_index.y = std::min(R.ll_index.y, index.y);
+    R.ur_index.y = std::max(R.ur_index.y, index.y);
   }
   while (true) {
     // update cell area, white space, and thus filling rate to determine whether to expand this box or not
@@ -776,6 +839,9 @@ void GPSimPL::FindMinimumBoxForFirstCluster() {
       break;
     }
   }
+
+  R.total_white_space = LookUpWhiteSpace(R.ll_index, R.ur_index);
+  R.UpdateCellAreaWhiteSpaceFillingRate(grid_bin_white_space_LUT, grid_bin_matrix);
   R.UpdateCellList(grid_bin_matrix);
   R.ll_point.x = grid_bin_matrix[R.ll_index.x][R.ll_index.y].left;
   R.ll_point.y = grid_bin_matrix[R.ll_index.x][R.ll_index.y].bottom;
@@ -802,6 +868,7 @@ void GPSimPL::FindMinimumBoxForFirstCluster() {
       grid_bin_matrix[kx][ky].global_placed = true;
     }
   }
+
 }
 
 void GPSimPL::SplitBox(BoxBin &box) {
@@ -858,10 +925,10 @@ void GPSimPL::SplitBox(BoxBin &box) {
   //box2.update_all_terminal(grid_bin_matrix);
   // if the white space in one bin is dominating the other, ignore the smaller one
   dominating_box_flag = 0;
-  if (box1.total_white_space/(double)box.total_white_space <= 0.01) {
+  if (double(box1.total_white_space)/double(box.total_white_space) <= 0.01) {
     dominating_box_flag = 1;
   }
-  if (box2.total_white_space/(double)box.total_white_space <= 0.01) {
+  if (double(box2.total_white_space)/double(box.total_white_space) <= 0.01) {
     dominating_box_flag = 2;
   }
 
@@ -966,14 +1033,14 @@ void GPSimPL::SplitGridBox(BoxBin &box) {
     box1.update_terminal_list_white_space(block_list, box.terminal_list);
     box2.update_terminal_list_white_space(block_list, box.terminal_list);
 
-    if (box1.total_white_space/(double)box.total_white_space <= 0.01) {
+    if (double(box1.total_white_space)/(double)box.total_white_space <= 0.01) {
       box2.ll_point = box.ll_point;
       box2.ur_point = box.ur_point;
       box2.cell_list = box.cell_list;
       box2.total_cell_area = box.total_cell_area;
       box2.UpdateObsBoundary(block_list);
       queue_box_bin.push(box2);
-    } else if (box2.total_white_space/(double)box.total_white_space <= 0.01) {
+    } else if (double(box2.total_white_space)/(double)box.total_white_space <= 0.01) {
       box1.ll_point = box.ll_point;
       box1.ur_point = box.ur_point;
       box1.cell_list = box.cell_list;
@@ -1004,14 +1071,14 @@ void GPSimPL::SplitGridBox(BoxBin &box) {
     box1.update_terminal_list_white_space(block_list, box.terminal_list);
     box2.update_terminal_list_white_space(block_list, box.terminal_list);
 
-    if (box1.total_white_space/(double)box.total_white_space <= 0.01) {
+    if (double(box1.total_white_space)/(double)box.total_white_space <= 0.01) {
       box2.ll_point = box.ll_point;
       box2.ur_point = box.ur_point;
       box2.cell_list = box.cell_list;
       box2.total_cell_area = box.total_cell_area;
       box2.UpdateObsBoundary(block_list);
       queue_box_bin.push(box2);
-    } else if (box2.total_white_space/(double)box.total_white_space <= 0.01) {
+    } else if (double(box2.total_white_space)/(double)box.total_white_space <= 0.01) {
       box1.ll_point = box.ll_point;
       box1.ur_point = box.ur_point;
       box1.cell_list = box.cell_list;
@@ -1283,7 +1350,7 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
   HPWLX_converge = false;
   HPWLX_old = 1e30;
   for (size_t i=0; i<block_list.size(); ++i) {
-    x[i] = block_list[i].LLX();
+    vx[i] = block_list[i].LLX();
   }
   UpdateMaxMinX();
   for (int i=0; i<50; ++i) {
@@ -1300,7 +1367,7 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
   HPWLY_converge = false;
   HPWLY_old = 1e30;
   for (size_t i=0; i<block_list.size(); ++i) {
-    y[i] = block_list[i].LLY();
+    vy[i] = block_list[i].LLY();
   }
   UpdateMaxMinY();
   for (int i=0; i<50; ++i) {
@@ -1331,7 +1398,7 @@ void GPSimPL::LookAheadLegalization() {
   do {
     UpdateGridBinState();
     UpdateClusterList();
-    FindMinimumBoxForFirstCluster();
+    FindMinimumBoxForLargestCluster();
     RecursiveBisectionBlkSpreading();
   } while (!cluster_list.empty());
 
@@ -1591,6 +1658,31 @@ void GPSimPL::write_first_n_bin_cluster(std::string const &name_of_file, size_t 
 void GPSimPL::write_first_bin_cluster(std::string const &name_of_file) {
   /* this is a member function for testing, print the first one over_filled clusters */
   write_first_n_bin_cluster(name_of_file, 1);
+}
+
+void GPSimPL::write_n_bin_cluster(std::string const &name_of_file, size_t n) {
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open file" + name_of_file);
+  for (auto &&index: cluster_list[n].bin_set) {
+    double low_x, low_y, width, height;
+    GridBin *GridBin = &grid_bin_matrix[index.x][index.y];
+    width = GridBin->right - GridBin->left;
+    height = GridBin->top - GridBin->bottom;
+    low_x = GridBin->left;
+    low_y = GridBin->bottom;
+    int step = 40;
+    if (GridBin->OverFill()) {
+      for (int j = 0; j < height; j += step) {
+        ost << low_x << "\t" << low_y + j << "\n";
+        ost << low_x + width << "\t" << low_y + j << "\n";
+      }
+      for (int j = 0; j < width; j += step) {
+        ost << low_x + j << "\t" << low_y << "\n";
+        ost << low_x + j << "\t" << low_y + height << "\n";
+      }
+    }
+  }
+  ost.close();
 }
 
 void GPSimPL::write_all_bin_cluster(const std::string &name_of_file) {

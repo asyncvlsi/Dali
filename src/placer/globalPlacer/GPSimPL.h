@@ -14,6 +14,7 @@
 #include "GPSimPL/simplblockaux.h"
 #include "GPSimPL/gridbinindex.h"
 #include "GPSimPL/gridbin.h"
+#include "GPSimPL/windowquadruple.h"
 #include "GPSimPL/boxbin.h"
 #include "GPSimPL/cellcutpoint.h"
 
@@ -52,7 +53,7 @@ class GPSimPL: public Placer {
   double HeightEpsilon() {return height_epsilon;};
 
   std::minstd_rand0 generator{1};
-  Eigen::VectorXd x, y;
+  Eigen::VectorXd vx, vy;
   Eigen::VectorXd bx, by;
   SpMat Ax, Ay;
   std::vector< double > x_anchor, y_anchor;
@@ -90,7 +91,10 @@ class GPSimPL: public Placer {
   std::vector< std::vector<int> > grid_bin_white_space_LUT;
   void InitGridBins();
   void InitWhiteSpaceLUT();
-  int LookUpWhiteSpace(GridBinIndex const &ll_index, GridBinIndex const &ur_index);
+  long int LookUpWhiteSpace(GridBinIndex const &ll_index, GridBinIndex const &ur_index);
+  long int LookUpWhiteSpace(WindowQuadruple &window);
+  long int LookUpBlkArea(WindowQuadruple &window);
+  long int WindowArea(WindowQuadruple &window);
   void LookAheadLgInit();
   void LookAheadClose();
   void ClearGridBinFlag();
@@ -103,7 +107,7 @@ class GPSimPL: public Placer {
 
   std::queue < BoxBin > queue_box_bin;
   static double BlkOverlapArea(Block *node1, Block *node2);
-  void FindMinimumBoxForFirstCluster();
+  void FindMinimumBoxForLargestCluster();
   void SplitBox(BoxBin &box);
   void SplitGridBox(BoxBin &box);
   void PlaceBlkInBox(BoxBin &box);
@@ -130,6 +134,7 @@ class GPSimPL: public Placer {
   void write_not_overfill_grid_bins(std::string const &name_of_file);
   void write_first_n_bin_cluster(std::string const &name_of_file, size_t n);
   void write_first_bin_cluster(std::string const &name_of_file);
+  void write_n_bin_cluster(std::string const &name_of_file, size_t n);
   void write_all_bin_cluster(const std::string &name_of_file);
   void write_first_box(std::string const &name_of_file);
   void write_first_box_cell_bounding(std::string const &name_of_file);

@@ -28,7 +28,7 @@ class DPLinear: public GPSimPL {
   void BuildProblemDPLinear(bool is_x_direction, Eigen::VectorXd &b);
   void BuildProblemDPLinearX();
   void BuildProblemDPLinearY();
-  void StartPlacement() override;
+  void StartPlacement();
 };
 
 #endif //HPCC_SRC_PLACER_DETAILEDPLACER_DPLINEAR_H_

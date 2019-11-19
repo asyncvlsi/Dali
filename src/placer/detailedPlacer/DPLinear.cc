@@ -214,7 +214,7 @@ void DPLinear::StartPlacement() {
     HPWLX_converge = false;
     HPWLX_old = 1e30;
     for (size_t i = 0; i < block_list.size(); ++i) {
-      x[i] = block_list[i].LLX();
+      vx[i] = block_list[i].LLX();
     }
     UpdateMaxMinX();
     //UpdateScaffoldNetList();
@@ -232,7 +232,7 @@ void DPLinear::StartPlacement() {
     HPWLY_converge = false;
     HPWLY_old = 1e30;
     for (size_t i = 0; i < block_list.size(); ++i) {
-      y[i] = block_list[i].LLY();
+      vy[i] = block_list[i].LLY();
     }
     UpdateMaxMinY();
     //UpdateScaffoldNetList();
