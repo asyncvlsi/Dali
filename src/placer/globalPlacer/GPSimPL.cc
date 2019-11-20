@@ -27,8 +27,8 @@ GPSimPL::GPSimPL(double aspectRatio, double fillingRate): Placer(aspectRatio, fi
 void GPSimPL::InitCGFlags() {
   HPWLX_new = 0;
   HPWLY_new = 0;
-  HPWLX_old = 1e30;
-  HPWLY_old = 1e30;
+  HPWLX_old = DBL_MAX;
+  HPWLY_old = DBL_MAX;
   HPWLX_converge = false;
   HPWLY_converge = false;
 }
@@ -347,7 +347,7 @@ void GPSimPL::InitialPlacement() {
   std::vector<Block> &block_list = *BlockList();
 
   HPWLX_converge = false;
-  HPWLX_old = 1e30;
+  HPWLX_old = DBL_MAX;
   for (size_t i=0; i<block_list.size(); ++i) vx[i] = block_list[i].LLX();
   for (int i=0; i<b2b_update_max_iteration; ++i) {
     BuildProblemB2BX();
@@ -363,7 +363,7 @@ void GPSimPL::InitialPlacement() {
 
   // Assembly:
   HPWLY_converge = false;
-  HPWLY_old = 1e30;
+  HPWLY_old = DBL_MAX;
   for (size_t i=0; i<block_list.size(); ++i) vy[i] = block_list[i].LLY();
   for (int i=0; i<b2b_update_max_iteration; ++i) {
     BuildProblemB2BY(); // fill A and b
@@ -1348,7 +1348,7 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
   std::vector<Block> &block_list = *BlockList();
 
   HPWLX_converge = false;
-  HPWLX_old = 1e30;
+  HPWLX_old = DBL_MAX;
   for (size_t i=0; i<block_list.size(); ++i) {
     vx[i] = block_list[i].LLX();
   }
@@ -1365,7 +1365,7 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
     }
   }
   HPWLY_converge = false;
-  HPWLY_old = 1e30;
+  HPWLY_old = DBL_MAX;
   for (size_t i=0; i<block_list.size(); ++i) {
     vy[i] = block_list[i].LLY();
   }
@@ -1481,7 +1481,7 @@ void GPSimPL::StartPlacement() {
     LookAheadLegalization();
     UpdateLALConvergeState();
     if (HPWL_LAL_converge) { // if HPWL sconverges
-      if (lal_iteration >= 5) {
+      if (lal_iteration >= 20) {
         if (globalVerboseLevel >= LOG_CRITICAL) {
           std::cout << "Iterative look-ahead legalization complete" << std::endl;
           std::cout << "Total number of iteration: " << lal_iteration + 1 << std::endl;

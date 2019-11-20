@@ -29,11 +29,11 @@ class GPSimPL: public Placer {
   double HPWLY_old = DBL_MAX;
   bool HPWLX_converge = false;
   bool HPWLY_converge = false;
-  double cg_tolerance_ = 0.001;
-  int cg_iteration_max_num_ = 30;
+  double cg_tolerance_ = 0.000000001;
+  int cg_iteration_max_num_ = 100;
   double width_epsilon;
   double height_epsilon;
-  double HPWL_intra_linearSolver_precision = 0.05;
+  double HPWL_intra_linearSolver_precision = 0.01;
   int b2b_update_max_iteration = 50;
   double alpha = 0.00;
   int lal_iteration = 0;
