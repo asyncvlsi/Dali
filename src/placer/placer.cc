@@ -203,7 +203,7 @@ void Placer::SaveDEFFile(std::string const &name_of_file) {
         << " " + std::to_string((int)(block.LLX()*circuit_->def_distance_microns*circuit_->GridValueX()))
         << " " + std::to_string((int)(block.LLY()*circuit_->def_distance_microns*circuit_->GridValueY()))
         << " ) "
-        << block.OrientStr() + " ;\n";
+        << OrientStr(block.Orient()) + " ;\n";
   }
   ost << "END COMPONENTS\n";
 
@@ -246,7 +246,7 @@ void Placer::SaveDEFFile(std::string const &name_of_file, std::string const &inp
         << " " + std::to_string((int)(block.LLX()*circuit_->def_distance_microns*circuit_->GridValueX()))
         << " " + std::to_string((int)(block.LLY()*circuit_->def_distance_microns*circuit_->GridValueY()))
         << " ) "
-        << block.OrientStr() + " ;\n";
+        << OrientStr(block.Orient()) + " ;\n";
   }
   ost << "END COMPONENTS\n";
   // jump to the end of components

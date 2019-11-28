@@ -10,6 +10,7 @@
 #include <map>
 #include <string>
 #include <iostream>
+#include "status.h"
 #include "blockaux.h"
 #include "blocktype.h"
 #include "common/misc.h"
@@ -17,17 +18,6 @@
 /* a block can be a gate, can also be a large module, it includes information like
  * the Name of a gate/module, its Width and Height, its lower Left corner (LLX, LLY),
  * the movability, Orient. */
-
-enum BlockOrient{
-  N = 0,
-  S = 1,
-  W = 2,
-  E = 3,
-  FN = 4,
-  FS = 5,
-  FW = 6,
-  FE = 7
-};
 
 class BlockAux;
 
@@ -37,13 +27,13 @@ class Block {
   BlockType *type_;
   std::pair<const std::string, int>* name_num_pair_ptr_;
   double llx_, lly_; // lower Left corner
-  bool movable_; // movable
-  enum BlockOrient orient_; // currently not used
+  PlaceStatus place_status_;
+  BlockOrient orient_; // currently not used
   BlockAux *aux_;
  public:
   bool is_placed = false;
   Block(BlockType *type, std::pair<const std::string, int>* name_num_pair, int llx, int lly, bool movable = "true", BlockOrient orient = N);
-
+  Block(BlockType *type, std::pair<const std::string, int>* name_num_pair, int llx, int lly, PlaceStatus place_state = UNPLACED, BlockOrient orient = N);
   std::vector<int> net_list;
 
   const std::string *Name() const;
@@ -60,8 +50,7 @@ class Block {
   bool IsMovable() const;
   bool IsFixed() const;
   int Area() const;
-  BlockOrient Orient() const;
-  std::string OrientStr() const;
+  BlockOrient Orient() const {return orient_;}
   BlockAux *Aux();
 
   void SetLLX(double lower_left_x);

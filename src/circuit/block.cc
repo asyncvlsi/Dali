@@ -4,9 +4,20 @@
 
 #include "block.h"
 
-Block::Block(BlockType *type, std::pair<const std::string, int>* name_num_pair_ptr, int llx, int lly, bool movable, BlockOrient orient) : type_(
-    type), name_num_pair_ptr_(name_num_pair_ptr), llx_(llx), lly_(lly), movable_(movable), orient_(orient) {
-  Assert(name_num_pair_ptr != nullptr, "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
+Block::Block(BlockType *type, std::pair<const std::string, int>* name_num_pair, int llx, int lly, bool movable, BlockOrient orient) : type_(
+    type), name_num_pair_ptr_(name_num_pair), llx_(llx), lly_(lly), orient_(orient) {
+  Assert(name_num_pair != nullptr, "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
+  aux_ = nullptr;
+  if (movable) {
+    place_status_ = UNPLACED;
+  } else {
+    place_status_ = FIXED;
+  }
+}
+
+Block::Block(BlockType *type, std::pair<const std::string, int>* name_num_pair, int llx, int lly, PlaceStatus place_state, BlockOrient orient) :
+    type_(type), name_num_pair_ptr_(name_num_pair), llx_(llx), lly_(lly), place_status_(place_state), orient_(orient) {
+  Assert(name_num_pair != nullptr, "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
   aux_ = nullptr;
 }
 
@@ -79,15 +90,19 @@ double Block::Y() const{
 }
 
 void Block::SetMovable(bool movable) {
-  movable_ = movable;
+  if (movable) {
+    place_status_ = UNPLACED;
+  } else {
+    place_status_ = FIXED;
+  }
 }
 
 bool Block::IsMovable() const {
-  return movable_;
+  return place_status_==UNPLACED || place_status_==PLACED;
 }
 
 bool Block::IsFixed() const {
-  return !movable_;
+  return !IsMovable();
 }
 
 int Block::Area() const {
@@ -96,10 +111,6 @@ int Block::Area() const {
 
 void Block::SetOrient(BlockOrient &orient) {
   orient_ = orient;
-}
-
-BlockOrient Block::Orient() const {
-  return orient_;
 }
 
 void Block::IncreX(double displacement) {
@@ -154,24 +165,6 @@ std::string Block::LowerLeftCorner() {
   return "( " + std::to_string(LLX()) + " " + std::to_string(LLY()) + " )";
 }
 
-std::string Block::OrientStr() const {
-  std::string s;
-  switch (orient_) {
-    case 0: { s = "N"; } break;
-    case 1: { s = "S"; } break;
-    case 2: { s = "W"; } break;
-    case 3: { s = "E"; } break;
-    case 4: { s = "FN"; } break;
-    case 5: { s = "FS"; } break;
-    case 6: { s = "FW"; } break;
-    case 7: { s = "FE"; } break;
-    default: {
-      Assert(false, "Block orientation error! This should not happen!");
-    }
-  }
-  return s;
-}
-
 double Block::OverlapArea(const Block &rhs) const {
   double overlap_area = 0;
   if (IsOverlap(rhs)) {
@@ -195,7 +188,7 @@ void Block::Report() {
   std::cout << "Width and Height: " << Width() << " " << Height() << "\n";
   std::cout << "lower Left corner: " << LLX() << " " << LLY() << "\n";
   std::cout << "movability: " << IsMovable() << "\n";
-  std::cout << "orientation: " << OrientStr() << "\n";
+  std::cout << "orientation: " << OrientStr(orient_) << "\n";
   std::cout << "assigned primary key: " << Num() << "\n";
 }
 

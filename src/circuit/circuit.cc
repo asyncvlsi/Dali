@@ -703,7 +703,7 @@ void Circuit::WriteDefFileDebug(std::string const &name_of_file) {
         << *(block.Type()->Name()) << " + "
         << "PLACED" << " "
         << "( " + std::to_string((int)(block.LLX()*def_distance_microns*grid_value_x_)) + " " + std::to_string((int)(block.LLY()*def_distance_microns*grid_value_y_)) + " )" << " "
-        << block.OrientStr() + " ;\n";
+        << OrientStr(block.Orient()) + " ;\n";
   }
   ost << "END COMPONENTS\n";
 
@@ -763,7 +763,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
         << *(block.Type()->Name()) << " + "
         << "PLACED" << " "
         << "( " + std::to_string((int)(block.LLX()*def_distance_microns*grid_value_x_)) + " " + std::to_string((int)(block.LLY()*def_distance_microns*grid_value_y_)) + " )" << " "
-        << block.OrientStr() + " ;\n";
+        << OrientStr(block.Orient()) + " ;\n";
   }
   ost << "END COMPONENTS\n";
   // jump to the end of components

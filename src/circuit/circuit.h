@@ -6,6 +6,7 @@
 #define HPCC_CIRCUIT_HPP
 
 #include <vector>
+#include <set>
 #include <map>
 #include "block.h"
 #include "net.h"
@@ -35,9 +36,15 @@ class Circuit {
   Circuit(int tot_block_type_num, int tot_block_num, int tot_net_num);
   std::vector<BlockType> block_type_list;
   std::map<std::string, int> block_type_name_map;
-  std::vector<Block > block_list;
+
+  std::vector<Block> block_list;
   std::map<std::string, int> block_name_map;
-  std::vector<Net > net_list;
+
+  std::set<BlockType> pin_type_list;
+  std::vector<Block> pin_list;
+  std::map<std::string, int> pin_name_map;
+
+  std::vector<Net> net_list;
   std::map<std::string, int> net_name_map;
 
   double reset_signal_weight = 1;
