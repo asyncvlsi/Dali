@@ -62,7 +62,7 @@ public:
   void ReportHPWLCtoC();
   void TakeOver(Placer *placer);
   void SanityCheck();
-
+  void UpdateComponentsPlacementStatus();
   void NaivePinPlacement();
 
   void GenMATLABScript(std::string const &name_of_file= "block_net_list.m");

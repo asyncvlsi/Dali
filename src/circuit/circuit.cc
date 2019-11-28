@@ -9,6 +9,7 @@
 #include <climits>
 #include "circuit.h"
 
+
 Circuit::Circuit() {
   tot_movable_blk_num_ = 0;
   tot_block_area_ = 0;
@@ -106,11 +107,26 @@ void Circuit::AddToBlockMap(std::string &block_name) {
 }
 
 void Circuit::AddBlock(std::string &block_name, BlockType *block_type, int llx, int lly, bool movable, BlockOrient orient) {
+  PlaceStatus place_status;
+  if (movable) {
+    place_status = UNPLACED;
+  } else {
+    place_status = FIXED;
+  }
+  AddBlock(block_name, block_type, llx, lly, place_status, orient);
+}
+
+void Circuit::AddBlock(std::string &block_name, std::string &block_type_name, int llx, int lly, bool movable, BlockOrient orient) {
+  BlockType *block_type = GetBlockType(block_type_name);
+  AddBlock(block_name, block_type, llx, lly, movable, orient);
+}
+
+void Circuit::AddBlock(std::string &block_name, BlockType *block_type, int llx, int lly, PlaceStatus place_status, BlockOrient orient) {
   Assert(net_list.empty(), "Cannot add new Block, because net_list is not empty");
   Assert(!IsBlockExist(block_name), "Block exists, cannot create this block again: " + block_name);
   AddToBlockMap(block_name);
   std::pair<const std::string, int>* name_num_pair_ptr = &(*block_name_map.find(block_name));
-  block_list.emplace_back(block_type, name_num_pair_ptr, llx, lly, movable, orient);
+  block_list.emplace_back(block_type, name_num_pair_ptr, llx, lly, place_status, orient);
 
   auto old_tot_area = tot_block_area_;
 
@@ -140,9 +156,9 @@ void Circuit::AddBlock(std::string &block_name, BlockType *block_type, int llx, 
   }
 }
 
-void Circuit::AddBlock(std::string &block_name, std::string &block_type_name, int llx, int lly, bool movable, BlockOrient orient) {
+void Circuit::AddBlock(std::string &block_name, std::string &block_type_name, int llx, int lly, PlaceStatus place_status, BlockOrient orient) {
   BlockType *block_type = GetBlockType(block_type_name);
-  AddBlock(block_name, block_type, llx, lly, movable, orient);
+  AddBlock(block_name, block_type, llx, lly, place_status, orient);
 }
 
 bool Circuit::IsNetExist(std::string &net_name) {
@@ -229,30 +245,6 @@ void Circuit::ParseLine(std::string &line, std::vector<std::string> &field_list)
   }
 }
 
-BlockOrient Circuit::StrToOrient(std::string &str_orient) {
-  BlockOrient orient = N;
-  if (str_orient == "N") {
-    orient = N;
-  } else if (str_orient == "S") {
-    orient = S;
-  } else if (str_orient == "W") {
-    orient = W;
-  } else if (str_orient == "E") {
-    orient = E;
-  } else if (str_orient == "FN") {
-    orient = FN;
-  } else if (str_orient == "FS") {
-    orient = FS;
-  } else if (str_orient == "FW") {
-    orient = FW;
-  } else if (str_orient == "FE") {
-    orient = FE;
-  } else {
-    Assert(false, "Block orientation error! This should not happen!");
-  }
-  return orient;
-}
-
 void Circuit::SetGridValue(double grid_value_x, double grid_value_y) {
   Assert(grid_value_x > 0, "grid_value_x must be a positive real number!");
   Assert(grid_value_y > 0, "grid_value_y must be a positive real number!");
@@ -271,6 +263,10 @@ double Circuit::GridValueY() {
 }
 
 void Circuit::ReadLefFile(std::string const &name_of_file) {
+  /****
+  * This is a naive lef parser, it cannot cover all corner cases
+  * Please use other APIs to build a circuit if necessary
+  * ****/
   std::ifstream ist(name_of_file.c_str());
   Assert(ist.is_open(), "Cannot open input file " + name_of_file);
   std::cout << "Start loading lef file" << std::endl;
@@ -395,11 +391,16 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
 }
 
 void Circuit::ReadDefFile(std::string const &name_of_file) {
+  /****
+   * This is a naive def parser, it cannot cover all corner cases
+   * Please use other APIs to build a circuit if this naive def parser cannot satisfy your needs
+   * ****/
   std::ifstream ist(name_of_file.c_str());
   Assert(ist.is_open(), "Cannot open input file " + name_of_file);
-  std::cout << "Start loading def file" << std::endl;
-
+  std::cout << "  loading def file" << std::endl;
   std::string line;
+
+  // find UNITS DISTANCE MICRONS
   def_distance_microns = 0;
   while ((def_distance_microns == 0) && !ist.eof()) {
     getline(ist, line);
@@ -410,12 +411,14 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       try {
         def_distance_microns = std::stoi(line_field[3]);
       } catch (...) {
-        Assert(false, "Invalid stoi conversion:\n" + line);
+        Assert(false, "Invalid stoi conversion (UNITS DISTANCE MICRONS):\n" + line);
       }
     }
   }
+  Assert(def_distance_microns>0, "Invalid/null UNITS DISTANCE MICRONS");
   //std::cout << "DISTANCE MICRONS " << def_distance_microns << "\n";
 
+  // find DIEAREA
   def_left = 0;
   def_right = 0;
   def_bottom = 0;
@@ -432,18 +435,33 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         def_bottom = (int)std::round(std::stoi(die_area_field[3])/grid_value_y_/def_distance_microns);
         def_right = (int)std::round(std::stoi(die_area_field[6])/grid_value_x_/def_distance_microns);
         def_top = (int)std::round(std::stoi(die_area_field[7])/grid_value_y_/def_distance_microns);
+        def_boundary_set = true;
       } catch (...) {
-        Assert(false, "Invalid stoi conversion:\n" + line);
+        Assert(false, "Invalid stoi conversion (DIEAREA):\n" + line);
       }
     }
   }
+  Warning(!def_boundary_set, "DIEAREA is absent, you need to specify the placement region explicitly before placement");
   //std::cout << "DIEAREA ( " << def_left << " " << def_bottom << " ) ( " << def_right << " " << def_top << " )\n";
 
+  // find COMPONENTS
   while ((line.find("COMPONENTS") == std::string::npos) && !ist.eof()) {
     getline(ist, line);
   }
   //std::cout << line << "\n";
+  // a). find the number of components
+  std::vector<std::string> components_field;
+  ParseLine(line, components_field);
+  try {
+    int components_cnt = std::stoi(components_field[1]);
+    block_list.reserve(components_cnt);
+  } catch (...) {
+    Assert(false, "Invalid stoi conversion:\n" + line);
+  }
+
   getline(ist, line);
+
+  // b). parse the body of components
   while ((line.find("END COMPONENTS") == std::string::npos) && !ist.eof()) {
     //std::cout << line << "\t";
     std::vector<std::string> block_declare_field;
@@ -455,18 +473,9 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
     Assert(block_declare_field.size() >= 3, "Invalid block declaration, expecting at least: - compName modelName ;\n" + line);
     //std::cout << block_declare_field[0] << " " << block_declare_field[1] << "\n";
     if (block_declare_field.size() == 3) {
-      AddBlock(block_declare_field[1], block_declare_field[2], 0, 0, true, N);
+      AddBlock(block_declare_field[1], block_declare_field[2], 0, 0, UNPLACED, N);
     } else if (block_declare_field.size() == 10) {
-      bool movable = false;
-      if (block_declare_field[4] == "UNPLACED") {
-        movable = true;
-      } else if (block_declare_field[4] == "FIXED") {
-        movable = false;
-      } else if (block_declare_field[4] == "PLACED") {
-        movable = false;
-      } else {
-        Assert(false, "Unknown Placed Status!");
-      }
+      PlaceStatus place_status = StrToPlaceStatus(block_declare_field[4]);
       BlockOrient orient = StrToOrient(block_declare_field[9]);
       int llx = 0, lly = 0;
       try {
@@ -475,20 +484,46 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       } catch (...) {
         Assert(false, "Invalid stoi conversion:\n" + line);
       }
-      AddBlock(block_declare_field[1], block_declare_field[2], llx, lly, movable, orient);
+      AddBlock(block_declare_field[1], block_declare_field[2], llx, lly, place_status, orient);
     } else {
       Assert(false, "Unknown block declaration!");
     }
     getline(ist, line);
   }
 
+  // find PINS
+  while ((line.find("PINS") == std::string::npos) && !ist.eof()) {
+    getline(ist, line);
+  }
+  std::cout << line << "\n";
+  // a). find the number of pins
+  std::vector<std::string> pins_field;
+  ParseLine(line, pins_field);
+  std::cout << pins_field[1] << "\n";
+  try {
+    int pins_cnt = std::stoi(pins_field[1]);
+    pin_list.reserve(pins_cnt);
+  } catch (...) {
+    Assert(false, "Invalid stoi conversion:\n" + line);
+  }
+
+  getline(ist, line);
+
+  while ((line.find("END PINS") == std::string::npos) && !ist.eof()) {
+    if (line.find('-') != std::string::npos && line.find("NET") != std::string::npos) {
+      std::cout << line << "\n";
+    }
+    getline(ist, line);
+  }
+
+
   while (line.find("NETS") == std::string::npos && !ist.eof()) {
     getline(ist, line);
   }
+  // a). find the number of nets
   std::vector<std::string> nets_size_field;
   ParseLine(line, nets_size_field);
   try {
-    //std::cout << line << "\n";
     int net_list_size = (int)std::round(std::stoi(nets_size_field[1]));
     net_list.reserve(net_list_size);
   } catch (...) {
@@ -498,7 +533,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
   getline(ist, line);
   // the following is a hack now, cannot handle all cases, probably need to use BISON in the future if necessary
   while ((line.find("END NETS") == std::string::npos) && !ist.eof()) {
-    if (line.find("-") != std::string::npos) {
+    if (line.find('-') != std::string::npos) {
       //std::cout << line << "\n";
       std::vector<std::string> net_field;
       ParseLine(line, net_field);

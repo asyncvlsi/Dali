@@ -47,6 +47,7 @@ class Block {
   double URY() const;
   double X() const;
   double Y() const;
+  PlaceStatus GetPlaceStatus() {return place_status_;}
   bool IsMovable() const;
   bool IsFixed() const;
   int Area() const;
@@ -59,7 +60,7 @@ class Block {
   void SetURY(double upper_right_y);
   void SetCenterX(double center_x);
   void SetCenterY(double center_y);
-  void SetMovable(bool movable);
+  void SetPlaceStatus(PlaceStatus place_status) {place_status_ = place_status;}
   void SetOrient(BlockOrient &orient);
   void SetAux(BlockAux *aux);
   void SwapLoc(Block &blk);
@@ -88,7 +89,7 @@ class Block {
   }*/
 
   const std::string *TypeName() const;
-  std::string IsPlace();
+  std::string IsPlace() {return PlaceStatusStr(place_status_);}
   std::string LowerLeftCorner();
 };
 

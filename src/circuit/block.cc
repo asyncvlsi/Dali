@@ -89,14 +89,6 @@ double Block::Y() const{
   return lly_ + Height()/2.0;
 }
 
-void Block::SetMovable(bool movable) {
-  if (movable) {
-    place_status_ = UNPLACED;
-  } else {
-    place_status_ = FIXED;
-  }
-}
-
 bool Block::IsMovable() const {
   return place_status_==UNPLACED || place_status_==PLACED;
 }
@@ -155,10 +147,6 @@ BlockAux *Block::Aux(){
 
 const std::string *Block::TypeName() const {
   return type_->Name();
-}
-
-std::string Block::IsPlace() {
-  return "PLACED";
 }
 
 std::string Block::LowerLeftCorner() {

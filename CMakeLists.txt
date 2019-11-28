@@ -8,6 +8,8 @@ project(HPCC
 
 include_directories(./src)
 
+#set(CMAKE_CXX_COMPILER /usr/local/bin/g++-8)
+
 set(CMAKE_CXX_STANDARD 11)
 # The flags for g++, -g is needed here for debugging purposes, which can be removed
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -g -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")

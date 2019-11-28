@@ -5,6 +5,31 @@
 #include "status.h"
 #include <iostream>
 
+BlockOrient StrToOrient(std::string &str_orient) {
+  BlockOrient orient = N;
+  if (str_orient == "N") {
+    orient = N;
+  } else if (str_orient == "S") {
+    orient = S;
+  } else if (str_orient == "W") {
+    orient = W;
+  } else if (str_orient == "E") {
+    orient = E;
+  } else if (str_orient == "FN") {
+    orient = FN;
+  } else if (str_orient == "FS") {
+    orient = FS;
+  } else if (str_orient == "FW") {
+    orient = FW;
+  } else if (str_orient == "FE") {
+    orient = FE;
+  } else {
+    std::cout << "Block orientation error!" << std::endl;
+    exit(1);
+  }
+  return orient;
+}
+
 std::string OrientStr(BlockOrient orient) {
   std::string s;
   switch (orient) {
@@ -22,6 +47,25 @@ std::string OrientStr(BlockOrient orient) {
     }
   }
   return s;
+}
+
+PlaceStatus StrToPlaceStatus(std::string &str_place_status) {
+  PlaceStatus place_status = UNPLACED;
+  if (str_place_status == "COVER") {
+    place_status = COVER;
+  } else if (str_place_status == "FIXED") {
+    place_status = FIXED;
+  } else if (str_place_status == "PLACED") {
+    place_status = PLACED;
+  } else if (str_place_status == "UNPLACED") {
+    place_status = UNPLACED;
+  } else if (str_place_status == "NULL_STATE") {
+    place_status = NULL_STATE;
+  } else {
+    std::cout << "Unit placement status error!" << std::endl;
+    exit(1);
+  }
+  return place_status;
 }
 
 std::string PlaceStatusStr(PlaceStatus place_status) {

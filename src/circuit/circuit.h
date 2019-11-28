@@ -8,6 +8,7 @@
 #include <vector>
 #include <set>
 #include <map>
+#include "status.h"
 #include "block.h"
 #include "net.h"
 
@@ -34,6 +35,9 @@ class Circuit {
  public:
   Circuit();
   Circuit(int tot_block_type_num, int tot_block_num, int tot_net_num);
+
+
+
   std::vector<BlockType> block_type_list;
   std::map<std::string, int> block_type_name_map;
 
@@ -52,6 +56,7 @@ class Circuit {
   int lef_database_microns = 0;
   int def_distance_microns = 0;
   int def_left = 0, def_right = 0, def_bottom = 0, def_top = 0;
+  bool def_boundary_set = false;
   void SetBoundaryFromDef(int left, int right, int bottom, int top);
 
   // API to add new BlockType
@@ -68,6 +73,8 @@ class Circuit {
   void AddToBlockMap(std::string &block_name);
   void AddBlock(std::string &block_name, BlockType *block_type, int llx = 0, int lly = 0, bool movable = true, BlockOrient orient= N);
   void AddBlock(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, bool movable = true, BlockOrient orient= N);
+  void AddBlock(std::string &block_name, BlockType *block_type, int llx = 0, int lly = 0, PlaceStatus place_status = UNPLACED, BlockOrient orient= N);
+  void AddBlock(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, PlaceStatus place_status = UNPLACED, BlockOrient orient= N);
 
   // API to add new Net
   bool IsNetExist(std::string &net_name);
@@ -78,6 +85,7 @@ class Circuit {
 
   // API to set grid value
   void SetGridValue(double grid_value_x, double grid_value_y);
+  void SetGridUsingMetalPitch();
 
   // API to add well information
   void AddBlkWell(std::string &block_name, bool is_pluged, int llx, int lly, int urx, int ury);
@@ -102,7 +110,6 @@ class Circuit {
 
   // read lef/def file using above member functions
   static void ParseLine(std::string &line, std::vector<std::string> &field_list);
-  static BlockOrient StrToOrient(std::string &str_orient);
   double GridValueX(); // unit in micro
   double GridValueY();
   void ReadLefFile(std::string const &name_of_file);

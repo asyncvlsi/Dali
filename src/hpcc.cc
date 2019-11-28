@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include <ctime>
 #include "common/global.h"
 #include "circuit.h"
 #include "placer.h"

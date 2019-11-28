@@ -285,3 +285,9 @@ void Placer::SanityCheck() {
     Assert(!net.blk_pin_list.empty(), "Empty net?" + *net.Name());
   }
 }
+
+void Placer::UpdateComponentsPlacementStatus() {
+  for (auto &&blk: circuit_->block_list) {
+    blk.SetPlaceStatus(PLACED);
+  }
+}
