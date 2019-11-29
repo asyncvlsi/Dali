@@ -19,8 +19,8 @@ int main() {
   std::string lef_file, def_file;
   lef_file = "ispd19_sample3.input.lef";
   def_file = "ispd19_sample3.input.def";
-  lef_file = "../test/out_1K.lef";
-  def_file = "../test/out_1K.def";
+  lef_file = "../test/out_10K.lef";
+  def_file = "../test/out_10K.def";
   //lef_file = adaptec1_lef;
   //def_file = adaptec1_def;
   time_t Time = clock();
@@ -51,7 +51,7 @@ int main() {
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
   //gb_placer->GenMATLABScript("gb_result.txt");
-  gb_placer->SaveNodeTerminal();
+  //gb_placer->SaveNodeTerminal();
   //gb_placer->SaveDEFFile("circuit.def", def_file);
   //circuit.SaveISPD("circuit.pl");
 

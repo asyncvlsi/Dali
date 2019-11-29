@@ -12,10 +12,12 @@
 class BlockType {
  private:
   /****essential data entries****/
-  std::pair<const std::string, int>* name_num_pair_ptr_;
+  //std::pair<const std::string, int>* name_num_pair_ptr_;
+  const std::string *name_;
   int width_, height_;
  public:
-  BlockType(std::pair<const std::string, int>* name_num_pair_ptr, int width, int height);
+  BlockType(int width, int height);
+  void SetName(const std::string *name) {name_ = name;}
   std::vector<Pin> pin_list;
   std::map<std::string, int> pin_name_num_map;
 
@@ -26,8 +28,7 @@ class BlockType {
 
   void AddWell(bool is_pluged, int llx, int lly, int urx, int ury);
 
-  const std::string *Name() const;
-  int Num() const;
+  const std::string *Name() const { return name_;}
   int Width() const;
   int Height() const;
   int Area() const;

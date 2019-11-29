@@ -145,9 +145,9 @@ BlockAux *Block::Aux(){
   return aux_;
 }
 
-const std::string *Block::TypeName() const {
+/*const std::string *Block::TypeName() const {
   return type_->Name();
-}
+}*/
 
 std::string Block::LowerLeftCorner() {
   return "( " + std::to_string(LLX()) + " " + std::to_string(LLY()) + " )";

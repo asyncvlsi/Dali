@@ -8,8 +8,10 @@
 #include <vector>
 #include <set>
 #include <map>
+#include <unordered_map>
 #include "status.h"
 #include "block.h"
+#include "pin.h"
 #include "net.h"
 
 class Circuit {
@@ -34,18 +36,14 @@ class Circuit {
 
  public:
   Circuit();
-  Circuit(int tot_block_type_num, int tot_block_num, int tot_net_num);
 
-
-
-  std::vector<BlockType> block_type_list;
-  std::map<std::string, int> block_type_name_map;
+  //std::vector<BlockType> block_type_list;
+  std::unordered_map<std::string, BlockType*> block_type_name_map;
 
   std::vector<Block> block_list;
   std::map<std::string, int> block_name_map;
 
-  std::set<BlockType> pin_type_list;
-  std::vector<Block> pin_list;
+  std::vector<Pin> pin_list;
   std::map<std::string, int> pin_name_map;
 
   std::vector<Net> net_list;
@@ -61,9 +59,8 @@ class Circuit {
 
   // API to add new BlockType
   bool IsBlockTypeExist(std::string &block_type_name);
-  int BlockTypeIndex(std::string &block_type_name);
+  //int BlockTypeIndex(std::string &block_type_name);
   BlockType *GetBlockType(std::string &block_type_name);
-  void AddToBlockTypeMap(std::string &block_type_name);
   BlockType *AddBlockType(std::string &block_type_name, int width, int height);
 
   // API to add new Block Instance
@@ -75,6 +72,10 @@ class Circuit {
   void AddBlock(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, bool movable = true, BlockOrient orient= N);
   void AddBlock(std::string &block_name, BlockType *block_type, int llx = 0, int lly = 0, PlaceStatus place_status = UNPLACED, BlockOrient orient= N);
   void AddBlock(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, PlaceStatus place_status = UNPLACED, BlockOrient orient= N);
+
+  // API to add new IOPin
+  bool IsIOPinExist(std::string &iopin_name);
+  int PinIndex();
 
   // API to add new Net
   bool IsNetExist(std::string &net_name);

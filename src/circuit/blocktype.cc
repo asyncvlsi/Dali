@@ -5,15 +5,7 @@
 #include "blocktype.h"
 #include "../common/misc.h"
 
-BlockType::BlockType(std::pair<const std::string, int>* name_num_pair_ptr, int width, int height) : name_num_pair_ptr_(name_num_pair_ptr), width_(width), height_(height) {}
-
-const std::string *BlockType::Name() const {
-  return &(name_num_pair_ptr_->first);
-}
-
-int BlockType::Num() const {
-  return name_num_pair_ptr_->second;
-}
+BlockType::BlockType(int width, int height) : width_(width), height_(height) {}
 
 int BlockType::Width() const {
   return width_;
@@ -44,7 +36,6 @@ bool BlockType::Empty() {
 void BlockType::Report() {
   std::cout << "BlockType name: " << *Name() << "\n";
   std::cout << "  width, height: " << Width() << " " << Height() << "\n";
-  std::cout << "  assigned key: " << Num() << "\n";
   std::cout << "  pin list:\n";
   for( auto &&it: pin_name_num_map) {
     std::cout << "    " << it.first << " " << it.second << " (" << pin_list[it.second].XOffset() << ", " << pin_list[it.second].YOffset() << ")\n";

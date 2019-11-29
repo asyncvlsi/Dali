@@ -29,28 +29,6 @@ Circuit::Circuit() {
   grid_value_y_ = 0;
 }
 
-Circuit::Circuit(int tot_block_type_num, int tot_block_num, int tot_net_num) {
-  block_type_list.reserve(tot_block_type_num);
-  block_list.reserve(tot_block_num);
-  net_list.reserve(tot_net_num);
-  tot_movable_blk_num_ = 0;
-  tot_block_area_ = 0;
-  tot_width_ = 0;
-  tot_height_ = 0;
-  tot_block_area_ = 0;
-  tot_mov_width_ = 0;
-  tot_mov_height_ = 0;
-  tot_mov_block_area_ = 0;
-  tot_movable_blk_num_ = 0;
-  min_width_ = INT_MAX;
-  max_width_ = 0;
-  min_height_ = INT_MAX;
-  max_height_ = 0;
-  grid_set_ = false;
-  grid_value_x_ = 0;
-  grid_value_y_ = 0;
-}
-
 void Circuit::SetBoundaryFromDef(int left, int right, int bottom, int top) {
   Assert(right > left, "Right boundary is not larger than Left boundary?");
   Assert(top > bottom, "Top boundary is not larger than Bottom boundary?");
@@ -64,28 +42,24 @@ bool Circuit::IsBlockTypeExist(std::string &block_type_name) {
   return !(block_type_name_map.find(block_type_name) == block_type_name_map.end());
 }
 
-int Circuit::BlockTypeIndex(std::string &block_type_name) {
+/*int Circuit::BlockTypeIndex(std::string &block_type_name) {
   Assert(IsBlockTypeExist(block_type_name), "BlockType not exist, cannot find its index: " + block_type_name);
   return block_type_name_map.find(block_type_name)->second;
-}
+}*/
 
 BlockType *Circuit::GetBlockType(std::string &block_type_name) {
-  return &block_type_list[BlockTypeIndex(block_type_name)];
-}
-
-void Circuit::AddToBlockTypeMap(std::string &block_type_name) {
-  int map_size = block_type_name_map.size();
-  block_type_name_map.insert(std::pair<std::string, int>(block_type_name, map_size));
+  Assert(IsBlockTypeExist(block_type_name), "BlockType not exist, cannot find it: " + block_type_name);
+  return block_type_name_map.find(block_type_name)->second;
 }
 
 BlockType *Circuit::AddBlockType(std::string &block_type_name, int width, int height) {
   Assert(block_list.empty(), "Cannot add new BlockType, because block_list is not empty");
   Assert(net_list.empty(), "Cannot add new BlockType, because net_list is not empty");
   Assert(!IsBlockTypeExist(block_type_name), "BlockType exist, cannot create this block type again: " + block_type_name);
-  AddToBlockTypeMap(block_type_name);
-  std::pair<const std::string, int>* name_num_pair_ptr = &(*block_type_name_map.find(block_type_name));
-  block_type_list.emplace_back(name_num_pair_ptr, width, height);
-  return &block_type_list.back();
+  auto *block_type_ptr = new BlockType(width, height);
+  auto ret = block_type_name_map.insert(std::pair<std::string, BlockType*>(block_type_name, block_type_ptr));
+  block_type_ptr->SetName(&ret.first->first);
+  return block_type_ptr;
 }
 
 bool Circuit::IsBlockExist(std::string &block_name) {
@@ -252,6 +226,10 @@ void Circuit::SetGridValue(double grid_value_x, double grid_value_y) {
   grid_value_x_ = grid_value_x;
   grid_value_y_ = grid_value_y;
   grid_set_ = true;
+}
+
+void Circuit::SetGridUsingMetalPitch() {
+
 }
 
 double Circuit::GridValueX() {
@@ -572,8 +550,8 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
 }
 
 void Circuit::ReportBlockTypeList() {
-  for (auto &&block_type: block_type_list) {
-    block_type.Report();
+  for (auto &&it: block_type_name_map) {
+    it.second->Report();
   }
 }
 
