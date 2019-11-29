@@ -29,6 +29,39 @@ Circuit::Circuit() {
   grid_value_y_ = 0;
 }
 
+Circuit::~Circuit() {
+  /****
+   * This destructor free the memory allocated for unordered_map<key, *T>
+   * because T is initialized by
+   *    auto *T = new T();
+   * ****/
+  for (auto &&pair: block_type_name_map) {
+    delete pair.second;
+  }
+}
+
+bool Circuit::IsMetalLayerExist(std::string &metal_name) {
+  return !(metal_name_map.find(metal_name) == metal_name_map.end());
+}
+
+int Circuit::MetalLayerIndex(std::string &metal_name) {
+  Assert(IsMetalLayerExist(metal_name), "MetalLayer does not exist, cannot find it: " + metal_name);
+  return metal_name_map.find(metal_name)->second;
+}
+
+MetalLayer *Circuit::GetMetalLayer(std::string &metal_name) {
+  Assert(IsMetalLayerExist(metal_name), "MetalLayer does not exist, cannot find it: " + metal_name);
+  return &metal_list[MetalLayerIndex(metal_name)];
+}
+
+MetalLayer *Circuit::AddMetalLayer(std::string &metal_name, double width, double spacing) {
+  Assert(!IsMetalLayerExist(metal_name), "MetalLayer exist, cannot create this MetalLayer again: " + metal_name);
+  int map_size = metal_name_map.size();
+  auto res = metal_name_map.insert(std::pair<std::string, int>(metal_name, map_size));
+  std::pair<const std::string, int>* name_num_pair_ptr = &(*res.first);
+  metal_list.emplace_back(name_num_pair_ptr, width, spacing);
+}
+
 void Circuit::SetBoundaryFromDef(int left, int right, int bottom, int top) {
   Assert(right > left, "Right boundary is not larger than Left boundary?");
   Assert(top > bottom, "Top boundary is not larger than Bottom boundary?");
@@ -42,19 +75,12 @@ bool Circuit::IsBlockTypeExist(std::string &block_type_name) {
   return !(block_type_name_map.find(block_type_name) == block_type_name_map.end());
 }
 
-/*int Circuit::BlockTypeIndex(std::string &block_type_name) {
-  Assert(IsBlockTypeExist(block_type_name), "BlockType not exist, cannot find its index: " + block_type_name);
-  return block_type_name_map.find(block_type_name)->second;
-}*/
-
 BlockType *Circuit::GetBlockType(std::string &block_type_name) {
   Assert(IsBlockTypeExist(block_type_name), "BlockType not exist, cannot find it: " + block_type_name);
   return block_type_name_map.find(block_type_name)->second;
 }
 
 BlockType *Circuit::AddBlockType(std::string &block_type_name, int width, int height) {
-  Assert(block_list.empty(), "Cannot add new BlockType, because block_list is not empty");
-  Assert(net_list.empty(), "Cannot add new BlockType, because net_list is not empty");
   Assert(!IsBlockTypeExist(block_type_name), "BlockType exist, cannot create this block type again: " + block_type_name);
   auto *block_type_ptr = new BlockType(width, height);
   auto ret = block_type_name_map.insert(std::pair<std::string, BlockType*>(block_type_name, block_type_ptr));
@@ -75,11 +101,6 @@ Block *Circuit::GetBlock(std::string &block_name) {
   return &block_list[BlockIndex(block_name)];
 }
 
-void Circuit::AddToBlockMap(std::string &block_name) {
-  int map_size = block_name_map.size();
-  block_name_map.insert(std::pair<std::string, int>(block_name, map_size));
-}
-
 void Circuit::AddBlock(std::string &block_name, BlockType *block_type, int llx, int lly, bool movable, BlockOrient orient) {
   PlaceStatus place_status;
   if (movable) {
@@ -96,10 +117,11 @@ void Circuit::AddBlock(std::string &block_name, std::string &block_type_name, in
 }
 
 void Circuit::AddBlock(std::string &block_name, BlockType *block_type, int llx, int lly, PlaceStatus place_status, BlockOrient orient) {
-  Assert(net_list.empty(), "Cannot add new Block, because net_list is not empty");
+  Assert(net_list.empty(), "Cannot add new Block, because net_list now is not empty");
   Assert(!IsBlockExist(block_name), "Block exists, cannot create this block again: " + block_name);
-  AddToBlockMap(block_name);
-  std::pair<const std::string, int>* name_num_pair_ptr = &(*block_name_map.find(block_name));
+  int map_size = block_name_map.size();
+  auto ret = block_name_map.insert(std::pair<std::string, int>(block_name, map_size));
+  std::pair<const std::string, int>* name_num_pair_ptr = &(*ret.first);
   block_list.emplace_back(block_type, name_num_pair_ptr, llx, lly, place_status, orient);
 
   auto old_tot_area = tot_block_area_;
@@ -184,41 +206,6 @@ void Circuit::RemoveAllPseudoNets() {
 }
  */
 
-void Circuit::ParseLine(std::string &line, std::vector<std::string> &field_list) {
-  std::vector<char> delimiter_list;
-  delimiter_list.push_back(' ');
-  delimiter_list.push_back(':');
-  delimiter_list.push_back(';');
-  delimiter_list.push_back('\t');
-  delimiter_list.push_back('\r');
-  delimiter_list.push_back('\n');
-
-  field_list.clear();
-  std::string empty_str;
-  bool is_delimiter, old_is_delimiter = true;
-  int current_field = -1;
-  for (auto &&c: line) {
-    is_delimiter = false;
-    for (auto &&delimiter: delimiter_list) {
-      if (c == delimiter) {
-        is_delimiter = true;
-        break;
-      }
-    }
-    if (is_delimiter) {
-      old_is_delimiter = is_delimiter;
-      continue;
-    } else {
-      if (old_is_delimiter) {
-        current_field++;
-        field_list.push_back(empty_str);
-      }
-      field_list[current_field] += c;
-      old_is_delimiter = is_delimiter;
-    }
-  }
-}
-
 void Circuit::SetGridValue(double grid_value_x, double grid_value_y) {
   Assert(grid_value_x > 0, "grid_value_x must be a positive real number!");
   Assert(grid_value_y > 0, "grid_value_y must be a positive real number!");
@@ -256,7 +243,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     getline(ist, line);
     if (line.find("DATABASE MICRONS")!=std::string::npos) {
       std::vector<std::string> line_field;
-      ParseLine(line, line_field);
+      StrSplit(line, line_field);
       Assert(line_field.size() >= 3, "Invalid UNITS declaration: expecting 3 fields");
       try {
         lef_database_microns = std::stoi(line_field[2]);
@@ -269,37 +256,51 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
   //std::cout << "DATABASE MICRONS " << lef_database_microns << "\n";
 
   // 2. find MANUFACTURINGGRID
-  if (!grid_set_) {
-    grid_value_x_ = 0;
-    while ((grid_value_x_ == 0) && !ist.eof()) {
-      getline(ist, line);
-      if (line.find("LAYER") != std::string::npos) {
-        SetGridValue(1.0/lef_database_microns, 1.0/lef_database_microns);
-        std::cout << "  WARNING:\n  MANUFACTURINGGRID not specified explicitly, using 1.0/DATABASE MICRONS instead\n";
-      }
-      if (line.find("MANUFACTURINGGRID") != std::string::npos) {
-        std::vector<std::string> grid_field;
-        ParseLine(line, grid_field);
-        Assert(grid_field.size() >= 2, "Invalid MANUFACTURINGGRID declaration: expecting 2 fields");
-        try {
-          double tmp_value = std::stod(grid_field[1]);
-          SetGridValue(tmp_value, tmp_value);
-        } catch (...) {
-          Assert(false, "Invalid stoi conversion:\n" + line);
-        }
-        break;
-      }
+  manufacturing_grid = 0;
+  while ((manufacturing_grid <= 1e-10) && !ist.eof()) {
+    getline(ist, line);
+    if (line.find("LAYER") != std::string::npos) {
+      manufacturing_grid = 1.0/lef_database_microns;
+      std::cout << "  WARNING:\n  MANUFACTURINGGRID not specified explicitly, using 1.0/DATABASE MICRONS instead\n";
     }
-    Assert(grid_value_x_ > 0, "Cannot find or invalid MANUFACTURINGGRID");
+    if (line.find("MANUFACTURINGGRID") != std::string::npos) {
+      std::vector<std::string> grid_field;
+      StrSplit(line, grid_field);
+      Assert(grid_field.size() >= 2, "Invalid MANUFACTURINGGRID declaration: expecting 2 fields");
+      try {
+        manufacturing_grid = std::stod(grid_field[1]);
+      } catch (...) {
+        Assert(false, "Invalid stod conversion:\n" + line);
+      }
+      break;
+    }
+  }
+  Assert(manufacturing_grid > 0, "Cannot find or invalid MANUFACTURINGGRID");
+  if (!grid_set_) {
+    SetGridValue(manufacturing_grid, manufacturing_grid);
   }
   //std::cout << "MANUFACTURINGGRID: " << grid_value_ << "\n";
 
-  // 3. read block type information
+  // 3. read metal layer
+  static std::vector<std::string> metal_identifier_list {"m", "M", "metal", "Metal"};
   while (!ist.eof()) {
-    getline(ist, line);
+    if (line.find("LAYER")!= std::string::npos) {
+      std::vector<std::string> layer_field;
+      StrSplit(line, layer_field);
+      Assert(layer_field.size() == 2, "Invalid LAYER, expect only: LAYER layerName\n\tgot: " + line);
+      int first_digit_pos = FindFirstDigit(layer_field[1]);
+      std::string metal_id(layer_field[1].begin(), layer_field[1].end()-1);
+      std::cout << metal_id << "\n";
+    }
+    getline(ist,line);
+    if (line.find("VIA")!=std::string::npos) break;
+  }
+
+  // 4. read block type information
+  while (!ist.eof()) {
     if (line.find("MACRO") != std::string::npos) {
       std::vector<std::string> line_field;
-      ParseLine(line, line_field);
+      StrSplit(line, line_field);
       Assert(line_field.size() >= 2, "Invalid type name: expecting 2 fields\n" + line);
       std::string block_type_name = line_field[1];
       //std::cout << block_type_name << "\n";
@@ -311,7 +312,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
         while ((width==0) && (height==0) && !ist.eof()) {
           if (line.find("SIZE") != std::string::npos) {
             std::vector<std::string> size_field;
-            ParseLine(line, size_field);
+            StrSplit(line, size_field);
             try {
               width = (int)(std::round(std::stod(size_field[1])/grid_value_x_));
               height = (int)(std::round(std::stod(size_field[3])/grid_value_y_));
@@ -327,7 +328,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
         if (line.find("PIN") != std::string::npos) {
           std::vector<std::string> pin_field;
 
-          ParseLine(line, pin_field);
+          StrSplit(line, pin_field);
           Assert(pin_field.size() >= 2, "Invalid pin name: expecting 2 fields\n" + line);
 
           std::string pin_name = pin_field[1];
@@ -345,7 +346,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
             if (line.find("RECT") != std::string::npos) {
               //std::cout << line << "\n";
               std::vector<std::string> rect_field;
-              ParseLine(line, rect_field);
+              StrSplit(line, rect_field);
               Assert(rect_field.size() >= 5, "Invalid rect definition: expecting 5 fields\n" + line);
               try {
                 llx = std::stod(rect_field[1])/grid_value_x_;
@@ -364,6 +365,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
       } while (line.find(end_macro_flag)==std::string::npos && !ist.eof());
       Assert(!new_block_type->Empty(), "MACRO has no PINs: " + *new_block_type->Name());
     }
+    getline(ist, line);
   }
   std::cout << "lef file loading complete" << std::endl;
 }
@@ -384,7 +386,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
     getline(ist, line);
     if (line.find("DISTANCE MICRONS")!=std::string::npos) {
       std::vector<std::string> line_field;
-      ParseLine(line, line_field);
+      StrSplit(line, line_field);
       Assert(line_field.size() >= 4, "Invalid UNITS declaration: expecting 4 fields");
       try {
         def_distance_microns = std::stoi(line_field[3]);
@@ -405,7 +407,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
     getline(ist, line);
     if (line.find("DIEAREA")!=std::string::npos) {
       std::vector<std::string> die_area_field;
-      ParseLine(line, die_area_field);
+      StrSplit(line, die_area_field);
       //std::cout << line << "\n";
       Assert(die_area_field.size() >= 9, "Invalid UNITS declaration: expecting 9 fields");
       try {
@@ -429,7 +431,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
   //std::cout << line << "\n";
   // a). find the number of components
   std::vector<std::string> components_field;
-  ParseLine(line, components_field);
+  StrSplit(line, components_field);
   try {
     int components_cnt = std::stoi(components_field[1]);
     block_list.reserve(components_cnt);
@@ -443,7 +445,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
   while ((line.find("END COMPONENTS") == std::string::npos) && !ist.eof()) {
     //std::cout << line << "\t";
     std::vector<std::string> block_declare_field;
-    ParseLine(line, block_declare_field);
+    StrSplit(line, block_declare_field);
     if (block_declare_field.size() <= 1) {
       getline(ist, line);
       continue;
@@ -476,7 +478,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
   std::cout << line << "\n";
   // a). find the number of pins
   std::vector<std::string> pins_field;
-  ParseLine(line, pins_field);
+  StrSplit(line, pins_field);
   std::cout << pins_field[1] << "\n";
   try {
     int pins_cnt = std::stoi(pins_field[1]);
@@ -500,7 +502,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
   }
   // a). find the number of nets
   std::vector<std::string> nets_size_field;
-  ParseLine(line, nets_size_field);
+  StrSplit(line, nets_size_field);
   try {
     int net_list_size = (int)std::round(std::stoi(nets_size_field[1]));
     net_list.reserve(net_list_size);
@@ -514,7 +516,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
     if (line.find('-') != std::string::npos) {
       //std::cout << line << "\n";
       std::vector<std::string> net_field;
-      ParseLine(line, net_field);
+      StrSplit(line, net_field);
       Assert(net_field.size() >= 2, "Invalid net declaration, expecting at least: - netName\n" + line);
       //std::cout << "\t" << net_field[0] << " " << net_field[1] << "\n";
       Net *new_net = nullptr;
@@ -528,7 +530,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         getline(ist, line);
         //std::cout << line << "\n";
         std::vector<std::string> pin_field;
-        ParseLine(line, pin_field);
+        StrSplit(line, pin_field);
         if ((pin_field.size() % 4 != 0)) {
           Assert(false, "Invalid net declaration, expecting 4n fields, where n >= 2:\n" + line);
         }

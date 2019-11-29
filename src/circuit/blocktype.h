@@ -12,7 +12,7 @@
 class BlockType {
  private:
   /****essential data entries****/
-  //std::pair<const std::string, int>* name_num_pair_ptr_;
+  //std::pair<const std::string, int>* name_num_ptr_;
   const std::string *name_;
   int width_, height_;
  public:

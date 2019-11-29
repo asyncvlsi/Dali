@@ -5,6 +5,38 @@
 #include "status.h"
 #include <iostream>
 
+MetalDirection StrToMetalDirection(std::string &str_metal_direction)  {
+  MetalDirection metal_direction = HORIZONTAL;
+  if (str_metal_direction == "HORIZONTAL") {
+    metal_direction = HORIZONTAL;
+  } else if (str_metal_direction == "VERTICAL") {
+    metal_direction = VERTICAL;
+  } else if (str_metal_direction == "DIAG45") {
+    metal_direction = DIAG45;
+  } else if (str_metal_direction == "DIAG135") {
+    metal_direction = DIAG135;
+  } else {
+    std::cout << "Unknown MetalLayer direction: " << str_metal_direction << std::endl;
+    exit(1);
+  }
+  return metal_direction;
+}
+
+std::string MetalDirectionStr(MetalDirection metal_direction) {
+  std::string s;
+  switch (metal_direction) {
+    case 0: { s = "HORIZONTAL"; } break;
+    case 1: { s = "VERTICAL"; } break;
+    case 2: { s = "DIAG45"; } break;
+    case 3: { s = "DIAG135"; } break;
+    default: {
+      std::cout << "MetalLayer direction error! This should never happen!" << std::endl;
+      exit(1);
+    }
+  }
+  return s;
+}
+
 BlockOrient StrToOrient(std::string &str_orient) {
   BlockOrient orient = N;
   if (str_orient == "N") {
@@ -24,7 +56,7 @@ BlockOrient StrToOrient(std::string &str_orient) {
   } else if (str_orient == "FE") {
     orient = FE;
   } else {
-    std::cout << "Block orientation error!" << std::endl;
+    std::cout << "Unknown Block orientation: " << str_orient << std::endl;
     exit(1);
   }
   return orient;
@@ -42,7 +74,7 @@ std::string OrientStr(BlockOrient orient) {
     case 6: { s = "FW"; } break;
     case 7: { s = "FE"; } break;
     default: {
-      std::cout << "Block orientation error!" << std::endl;
+      std::cout << "Block orientation error! This should never happen!" << std::endl;
       exit(1);
     }
   }
@@ -62,7 +94,7 @@ PlaceStatus StrToPlaceStatus(std::string &str_place_status) {
   } else if (str_place_status == "NULL_STATE") {
     place_status = NULL_STATE;
   } else {
-    std::cout << "Unit placement status error!" << std::endl;
+    std::cout << "Unknown placement status: " << str_place_status << std::endl;
     exit(1);
   }
   return place_status;
@@ -77,7 +109,39 @@ std::string PlaceStatusStr(PlaceStatus place_status) {
     case 3: { s = "UNPLACED"; } break;
     case 4: { s = "NULL_STATE"; } break;
     default: {
-      std::cout << "Unit placement state error!" << std::endl;
+      std::cout << "Unit placement state error! This should never happen!" << std::endl;
+      exit(1);
+    }
+  }
+  return s;
+}
+
+SignalDirection  StrToSignalDirection(std::string &str_signal_direction) {
+  SignalDirection signal_direction = INPUT;
+  if (str_signal_direction == "INPUT") {
+    signal_direction = INPUT;
+  } else if (str_signal_direction == "OUTPUT") {
+    signal_direction = OUTPUT;
+  } else if (str_signal_direction == "INOUT") {
+    signal_direction = INOUT;
+  } else if (str_signal_direction == "FEEDTHRU") {
+    signal_direction = FEEDTHRU;
+  } else {
+    std::cout << "Unknown SignalDirection: " << str_signal_direction << std::endl;
+    exit(0);
+  }
+  return signal_direction;
+}
+
+std::string SignalDirectionStr(SignalDirection signal_direction) {
+  std::string s;
+  switch (signal_direction) {
+    case 0: { s = "INPUT"; } break;
+    case 1: { s = "OUTPUT"; } break;
+    case 2: { s = "INOUT"; } break;
+    case 3: { s = "FEEDTHRU"; } break;
+    default: {
+      std::cout << "IOPIN signal direction error! This should never happen!" << std::endl;
       exit(1);
     }
   }

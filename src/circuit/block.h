@@ -15,9 +15,18 @@
 #include "blocktype.h"
 #include "common/misc.h"
 
-/* a block can be a gate, can also be a large module, it includes information like
+/****
+ * a block can be a gate, can also be a large module, it includes information like
  * the Name of a gate/module, its Width and Height, its lower Left corner (LLX, LLY),
- * the movability, Orient. */
+ * the movability, Orient.
+ *
+ * lefdefref version 5.8, page 129
+ * After placement, a DEF COMPONENTS placement pt indicates
+ * where the lower-left corner of the placement bounding
+ * rectangle is placed after any possible rotations or flips. The
+ * bounding rectangle width and height should be a multiple of
+ * the placement grid to allow for abutting cells.
+ * ****/
 
 class BlockAux;
 
@@ -36,11 +45,11 @@ class Block {
   Block(BlockType *type, std::pair<const std::string, int>* name_num_pair, int llx, int lly, PlaceStatus place_state = UNPLACED, BlockOrient orient = N);
   std::vector<int> net_list;
 
-  const std::string *Name() const;
-  BlockType *Type() const;
-  int Num() const;
-  int Width() const;
-  int Height() const;
+  const std::string *Name() const {return &(name_num_pair_ptr_->first);}
+  BlockType *Type() const {return type_;}
+  int Num() const {return name_num_pair_ptr_->second;}
+  int Width() const {return type_->Width();}
+  int Height() const {return type_->Height();}
   double LLX() const;
   double LLY() const;
   double URX() const;

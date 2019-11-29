@@ -10,6 +10,7 @@
 #include <map>
 #include <unordered_map>
 #include "status.h"
+#include "layer.h"
 #include "block.h"
 #include "pin.h"
 #include "net.h"
@@ -36,8 +37,15 @@ class Circuit {
 
  public:
   Circuit();
+  ~Circuit();
 
-  //std::vector<BlockType> block_type_list;
+  std::vector<MetalLayer> metal_list;
+  std::unordered_map<std::string, int> metal_name_map;
+  bool IsMetalLayerExist(std::string &metal_name);
+  int MetalLayerIndex(std::string &metal_name);
+  MetalLayer *GetMetalLayer(std::string &metal_name);
+  MetalLayer *AddMetalLayer(std::string &metal_name, double width, double spacing);
+
   std::unordered_map<std::string, BlockType*> block_type_name_map;
 
   std::vector<Block> block_list;
@@ -51,6 +59,7 @@ class Circuit {
 
   double reset_signal_weight = 1;
   double normal_signal_weight = 1;
+  double manufacturing_grid = 0;
   int lef_database_microns = 0;
   int def_distance_microns = 0;
   int def_left = 0, def_right = 0, def_bottom = 0, def_top = 0;
@@ -59,7 +68,6 @@ class Circuit {
 
   // API to add new BlockType
   bool IsBlockTypeExist(std::string &block_type_name);
-  //int BlockTypeIndex(std::string &block_type_name);
   BlockType *GetBlockType(std::string &block_type_name);
   BlockType *AddBlockType(std::string &block_type_name, int width, int height);
 
@@ -67,7 +75,6 @@ class Circuit {
   bool IsBlockExist(std::string &block_name);
   int BlockIndex(std::string &block_name);
   Block *GetBlock(std::string &block_name);
-  void AddToBlockMap(std::string &block_name);
   void AddBlock(std::string &block_name, BlockType *block_type, int llx = 0, int lly = 0, bool movable = true, BlockOrient orient= N);
   void AddBlock(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, bool movable = true, BlockOrient orient= N);
   void AddBlock(std::string &block_name, BlockType *block_type, int llx = 0, int lly = 0, PlaceStatus place_status = UNPLACED, BlockOrient orient= N);
@@ -110,7 +117,6 @@ class Circuit {
   // repulsive force can be created using an attractive force, a spring whose rest length in the current distance or even longer than the current distance
 
   // read lef/def file using above member functions
-  static void ParseLine(std::string &line, std::vector<std::string> &field_list);
   double GridValueX(); // unit in micro
   double GridValueY();
   void ReadLefFile(std::string const &name_of_file);

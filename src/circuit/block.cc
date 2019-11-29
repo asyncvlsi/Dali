@@ -21,26 +21,6 @@ Block::Block(BlockType *type, std::pair<const std::string, int>* name_num_pair, 
   aux_ = nullptr;
 }
 
-const std::string *Block::Name() const{
-  return &(name_num_pair_ptr_->first);
-}
-
-BlockType *Block::Type() const {
-  return type_;
-}
-
-int Block::Num() const {
-  return name_num_pair_ptr_->second;
-}
-
-int Block::Width() const{
-  return type_->Width();
-}
-
-int Block::Height() const{
-  return type_->Height();
-}
-
 void Block::SetLLX(double lower_left_x) {
   llx_ = lower_left_x;
 }

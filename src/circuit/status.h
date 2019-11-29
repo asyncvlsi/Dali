@@ -7,6 +7,16 @@
 
 #include <string>
 
+enum MetalDirection {
+  HORIZONTAL = 0,
+  VERTICAL = 1,
+  DIAG45 = 2,
+  DIAG135 = 3
+};
+
+MetalDirection StrToMetalDirection(std::string &str_metal_direction);
+std::string MetalDirectionStr(MetalDirection metal_direction);
+
 enum BlockOrient {
   N = 0,
   S = 1,
@@ -39,6 +49,7 @@ enum SignalDirection {
   FEEDTHRU = 3
 };
 
-
+SignalDirection  StrToSignalDirection(std::string &str_signal_direction);
+std::string SignalDirectionStr(SignalDirection signal_direction);
 
 #endif //HPCC_SRC_CIRCUIT_STATUS_H_

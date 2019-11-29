@@ -8,6 +8,7 @@
 #include <cassert>
 #include <iostream>
 #include <sstream>
+#include <vector>
 #include <string>
 #include "global.h"
 #include <cmath>
@@ -72,7 +73,8 @@ struct Loc2D {
 
 void Assert(bool e, const std::string &error_message);
 void Warning(bool e, const std::string &warning_message);
-void VerbosePrint(VerboseLevel verbose_level, std::stringstream &buf);
+void StrSplit(std::string &line, std::vector<std::string> &res);
+int FindFirstDigit(std::string &str);
 
 class NotImplementedException: public std::logic_error {
  public:
