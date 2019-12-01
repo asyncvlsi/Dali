@@ -51,5 +51,23 @@ void StrSplit(std::string &line, std::vector<std::string> &res) {
 }
 
 int FindFirstDigit(std::string &str) {
-  
+  /****
+   * this function assumes that the input string is a concatenation of a pure English char string, and a pure digit string
+   * it will return the location of the first digit
+   * ****/
+
+  int res = -1;
+  int sz = str.size();
+  for (int i=0; i<sz; ++i) {
+    if (str[i]>='0' && str[i]<= '9') {
+      res = i;
+      break;
+    }
+  }
+  if (res > 0) {
+    for (int i=res+1; i<sz; ++i) {
+      Assert(str[i]>='0'&&str[i]<='9', "Invalid naming convention: " + str);
+    }
+  }
+  return res;
 }

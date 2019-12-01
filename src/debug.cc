@@ -17,12 +17,12 @@ int main() {
   std::string adaptec1_def = "../test/adaptec1/adaptec1.def";
 
   std::string lef_file, def_file;
-  lef_file = "ispd19_sample3.input.lef";
-  def_file = "ispd19_sample3.input.def";
-  lef_file = "../test/out_1K.lef";
-  def_file = "../test/out_1K.def";
-  //lef_file = adaptec1_lef;
-  //def_file = adaptec1_def;
+  //lef_file = "ispd19_sample3.input.lef";
+  //def_file = "ispd19_sample3.input.def";
+  //lef_file = "../test/out_100K.lef";
+  //def_file = "../test/out_100K.def";
+  lef_file = adaptec1_lef;
+  def_file = adaptec1_def;
   time_t Time = clock();
   circuit.ReadLefFile(lef_file);
   circuit.ReadDefFile(def_file);
@@ -66,7 +66,7 @@ int main() {
   legalizer->GenMATLABScript("legalizer_result.txt");*/
   //legalizer->SaveDEFFile("circuit.def", def_file);
 
-  delete gb_placer;
+  //delete gb_placer;
   //delete d_placer;
   //delete legalizer;
 

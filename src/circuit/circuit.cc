@@ -7,8 +7,8 @@
 #include <iostream>
 #include <string>
 #include <climits>
+#include <algorithm>
 #include "circuit.h"
-
 
 Circuit::Circuit() {
   tot_movable_blk_num_ = 0;
@@ -57,9 +57,20 @@ MetalLayer *Circuit::GetMetalLayer(std::string &metal_name) {
 MetalLayer *Circuit::AddMetalLayer(std::string &metal_name, double width, double spacing) {
   Assert(!IsMetalLayerExist(metal_name), "MetalLayer exist, cannot create this MetalLayer again: " + metal_name);
   int map_size = metal_name_map.size();
-  auto res = metal_name_map.insert(std::pair<std::string, int>(metal_name, map_size));
-  std::pair<const std::string, int>* name_num_pair_ptr = &(*res.first);
+  auto ret = metal_name_map.insert(std::pair<std::string, int>(metal_name, map_size));
+  std::pair<const std::string, int>* name_num_pair_ptr = &(*ret.first);
   metal_list.emplace_back(name_num_pair_ptr, width, spacing);
+  return &(metal_list.back());
+}
+
+MetalLayer *Circuit::AddMetalLayer(std::string &metal_name) {
+  return AddMetalLayer(metal_name, 0, 0);
+}
+
+void Circuit::ReportMetalLayers() {
+  for (auto &&metal_layer: metal_list) {
+    metal_layer.Report();
+  }
 }
 
 void Circuit::SetBoundaryFromDef(int left, int right, int bottom, int top) {
@@ -234,7 +245,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
   * ****/
   std::ifstream ist(name_of_file.c_str());
   Assert(ist.is_open(), "Cannot open input file " + name_of_file);
-  std::cout << "Start loading lef file" << std::endl;
+  std::cout << "loading lef file" << std::endl;
   std::string line;
 
   // 1. find DATABASE MICRONS
@@ -289,12 +300,83 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
       StrSplit(line, layer_field);
       Assert(layer_field.size() == 2, "Invalid LAYER, expect only: LAYER layerName\n\tgot: " + line);
       int first_digit_pos = FindFirstDigit(layer_field[1]);
-      std::string metal_id(layer_field[1].begin(), layer_field[1].end()-1);
-      std::cout << metal_id << "\n";
+      std::string metal_id(layer_field[1], 0, first_digit_pos);
+      if (std::find(metal_identifier_list.begin(), metal_identifier_list.end(), metal_id) != metal_identifier_list.end()) {
+        std::string end_layer_flag = "END " + layer_field[1];
+        MetalLayer *metal_layer = AddMetalLayer(layer_field[1]);
+        do {
+          getline(ist, line);
+          if (line.find("DIRECTION")!=std::string::npos) {
+            std::vector<std::string> direction_field;
+            StrSplit(line, direction_field);
+            Assert(direction_field.size()>=2, "Invalid DIRECTION\n" + line);
+            MetalDirection direction = StrToMetalDirection(direction_field[1]);
+            metal_layer->SetDirection(direction);
+          }
+          if (line.find("AREA")!=std::string::npos) {
+            std::vector<std::string> area_field;
+            StrSplit(line, area_field);
+            Assert(area_field.size()>=2, "Invalid AREA\n" + line);
+            try {
+              double area = std::stod(area_field[1]);
+              metal_layer->SetArea(area);
+            } catch (...) {
+              Assert(false, "Invalid stod conversion\n" + line);
+            }
+          }
+          if (line.find("WIDTH")!=std::string::npos) {
+            std::vector<std::string> width_field;
+            StrSplit(line, width_field);
+            if (width_field.size()!=2) continue;
+            try {
+              double width = std::stod(width_field[1]);
+              metal_layer->SetWidth(width);
+            } catch (...) {
+              Assert(false, "Invalid stod conversion:\n" + line);
+            }
+          }
+          if (line.find("SPACING")!=std::string::npos &&
+              line.find("SPACINGTABLE")==std::string::npos &&
+              line.find("ENDOFLINE")==std::string::npos) {
+            std::vector<std::string> spacing_field;
+            StrSplit(line, spacing_field);
+            Assert(spacing_field.size()>=2, "Invalid SPACING\n" + line);
+            try {
+              double spacing = std::stod(spacing_field[1]);
+              metal_layer->SetSpacing(spacing);
+            } catch (...) {
+              Assert(false, "Invalid stod conversion:\n" + line);
+            }
+          }
+          if (line.find("PITCH")!=std::string::npos) {
+            std::vector<std::string> pitch_field;
+            StrSplit(line, pitch_field);
+            int pch_sz = pitch_field.size();
+            Assert(pch_sz>=2, "Invalid PITCH\n" + line);
+            if (pch_sz==2) {
+              try {
+                double pitch = std::stod(pitch_field[1]);
+                metal_layer->SetPitch(pitch, pitch);
+              } catch (...) {
+                Assert(false, "Invalid stod conversion:\n" + line);
+              }
+            } else {
+              try {
+                double x_pitch = std::stod(pitch_field[1]);
+                double y_pitch = std::stod(pitch_field[2]);
+                metal_layer->SetPitch(x_pitch, y_pitch);
+              } catch (...) {
+                Assert(false, "Invalid stod conversion:\n" + line);
+              }
+            }
+          }
+        } while (line.find(end_layer_flag)==std::string::npos && !ist.eof());
+      }
     }
     getline(ist,line);
-    if (line.find("VIA")!=std::string::npos) break;
+    if (line.find("VIA")!=std::string::npos || line.find("MACRO")!=std::string::npos) break;
   }
+  //ReportMetalLayers();
 
   // 4. read block type information
   while (!ist.eof()) {
@@ -377,8 +459,67 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
    * ****/
   std::ifstream ist(name_of_file.c_str());
   Assert(ist.is_open(), "Cannot open input file " + name_of_file);
-  std::cout << "  loading def file" << std::endl;
+  std::cout << "loading def file" << std::endl;
   std::string line;
+
+  bool component_section_exist = false;
+  int components_count = 0;
+  bool pins_section_exist = false;
+  int pins_count = 0;
+  bool nets_section_exist = false;
+  int nets_count = 0;
+
+  while (!ist.eof()) {
+    getline(ist, line);
+    if (!component_section_exist) {
+      if (line.find("COMPONENTS")!=std::string::npos) {
+        std::vector<std::string> components_field;
+        StrSplit(line, components_field);
+        Assert(components_field.size()==2, "Improper use of COMPONENTS?\n" + line);
+        try {
+          components_count = std::stoi(components_field[1]);
+          std::cout << "COMPONENTS:  " << components_count << "\n";
+          component_section_exist = true;
+        } catch (...) {
+          Assert(false, "Invalid stoi conversion:\n" + line);
+        }
+      }
+    }
+    if (!pins_section_exist) {
+      if (line.find("PINS")!=std::string::npos) {
+        std::vector<std::string> pins_field;
+        StrSplit(line, pins_field);
+        Assert(pins_field.size()==2, "Improper use of PINS?\n" + line);
+        try {
+          pins_count = std::stoi(pins_field[1]);
+          std::cout << "PINS:  " << pins_count << "\n";
+          pins_section_exist = true;
+        } catch (...) {
+          Assert(false, "Invalid stoi conversion:\n" + line);
+        }
+      }
+    }
+    if (!nets_section_exist) {
+      if (line.find("NETS")!=std::string::npos) {
+        std::vector<std::string> nets_field;
+        StrSplit(line, nets_field);
+        Assert(nets_field.size()==2, "Improper use of NETS?\n" + line);
+        try {
+          nets_count = std::stoi(nets_field[1]);
+          std::cout << "NETS:  " << nets_count << "\n";
+          nets_section_exist = true;
+        } catch (...) {
+          Assert(false, "Invalid stoi conversion:\n" + line);
+        }
+      }
+    }
+
+    if (component_section_exist && pins_section_exist && nets_section_exist) break;
+  }
+  ist.clear();
+  ist.seekg(0, std::ios::beg);
+  block_list.reserve(components_count+pins_count);
+  net_list.reserve(nets_count);
 
   // find UNITS DISTANCE MICRONS
   def_distance_microns = 0;
@@ -395,7 +536,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       }
     }
   }
-  Assert(def_distance_microns>0, "Invalid/null UNITS DISTANCE MICRONS");
+  Assert(def_distance_microns>0, "Invalid/null UNITS DISTANCE MICRONS: " + std::to_string(def_distance_microns));
   //std::cout << "DISTANCE MICRONS " << def_distance_microns << "\n";
 
   // find DIEAREA
@@ -425,128 +566,123 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
   //std::cout << "DIEAREA ( " << def_left << " " << def_bottom << " ) ( " << def_right << " " << def_top << " )\n";
 
   // find COMPONENTS
-  while ((line.find("COMPONENTS") == std::string::npos) && !ist.eof()) {
-    getline(ist, line);
-  }
-  //std::cout << line << "\n";
-  // a). find the number of components
-  std::vector<std::string> components_field;
-  StrSplit(line, components_field);
-  try {
-    int components_cnt = std::stoi(components_field[1]);
-    block_list.reserve(components_cnt);
-  } catch (...) {
-    Assert(false, "Invalid stoi conversion:\n" + line);
-  }
-
-  getline(ist, line);
-
-  // b). parse the body of components
-  while ((line.find("END COMPONENTS") == std::string::npos) && !ist.eof()) {
-    //std::cout << line << "\t";
-    std::vector<std::string> block_declare_field;
-    StrSplit(line, block_declare_field);
-    if (block_declare_field.size() <= 1) {
+  if (component_section_exist) {
+    while ((line.find("COMPONENTS") == std::string::npos) && !ist.eof()) {
       getline(ist, line);
-      continue;
     }
-    Assert(block_declare_field.size() >= 3, "Invalid block declaration, expecting at least: - compName modelName ;\n" + line);
-    //std::cout << block_declare_field[0] << " " << block_declare_field[1] << "\n";
-    if (block_declare_field.size() == 3) {
-      AddBlock(block_declare_field[1], block_declare_field[2], 0, 0, UNPLACED, N);
-    } else if (block_declare_field.size() == 10) {
-      PlaceStatus place_status = StrToPlaceStatus(block_declare_field[4]);
-      BlockOrient orient = StrToOrient(block_declare_field[9]);
-      int llx = 0, lly = 0;
-      try {
-        llx = (int)std::round(std::stoi(block_declare_field[6])/grid_value_x_/def_distance_microns);
-        lly = (int)std::round(std::stoi(block_declare_field[7])/grid_value_y_/def_distance_microns);
-      } catch (...) {
-        Assert(false, "Invalid stoi conversion:\n" + line);
-      }
-      AddBlock(block_declare_field[1], block_declare_field[2], llx, lly, place_status, orient);
-    } else {
-      Assert(false, "Unknown block declaration!");
-    }
+    //std::cout << line << "\n";
     getline(ist, line);
+
+    // a). parse the body of components
+    while ((line.find("END COMPONENTS") == std::string::npos) && !ist.eof()) {
+      //std::cout << line << "\t";
+      std::vector<std::string> block_declare_field;
+      StrSplit(line, block_declare_field);
+      if (block_declare_field.size() <= 1) {
+        getline(ist, line);
+        continue;
+      }
+      Assert(block_declare_field.size() >= 3,
+             "Invalid block declaration, expecting at least: - compName modelName ;\n" + line);
+      //std::cout << block_declare_field[0] << " " << block_declare_field[1] << "\n";
+      if (block_declare_field.size() == 3) {
+        AddBlock(block_declare_field[1], block_declare_field[2], 0, 0, UNPLACED, N);
+      } else if (block_declare_field.size() == 10) {
+        PlaceStatus place_status = StrToPlaceStatus(block_declare_field[4]);
+        BlockOrient orient = StrToOrient(block_declare_field[9]);
+        int llx = 0, lly = 0;
+        try {
+          llx = (int) std::round(std::stoi(block_declare_field[6]) / grid_value_x_ / def_distance_microns);
+          lly = (int) std::round(std::stoi(block_declare_field[7]) / grid_value_y_ / def_distance_microns);
+        } catch (...) {
+          Assert(false, "Invalid stoi conversion:\n" + line);
+        }
+        AddBlock(block_declare_field[1], block_declare_field[2], llx, lly, place_status, orient);
+      } else {
+        Assert(false, "Unknown block declaration!");
+      }
+      getline(ist, line);
+    }
   }
 
   // find PINS
-  while ((line.find("PINS") == std::string::npos) && !ist.eof()) {
-    getline(ist, line);
-  }
-  std::cout << line << "\n";
-  // a). find the number of pins
-  std::vector<std::string> pins_field;
-  StrSplit(line, pins_field);
-  std::cout << pins_field[1] << "\n";
-  try {
-    int pins_cnt = std::stoi(pins_field[1]);
-    pin_list.reserve(pins_cnt);
-  } catch (...) {
-    Assert(false, "Invalid stoi conversion:\n" + line);
-  }
-
-  getline(ist, line);
-
-  while ((line.find("END PINS") == std::string::npos) && !ist.eof()) {
-    if (line.find('-') != std::string::npos && line.find("NET") != std::string::npos) {
-      std::cout << line << "\n";
+  if (pins_section_exist) {
+    while ((line.find("PINS") == std::string::npos) && !ist.eof()) {
+      getline(ist, line);
     }
-    getline(ist, line);
-  }
+    std::cout << line << "\n";
+    // a). find the number of pins
+    std::vector<std::string> pins_field;
+    StrSplit(line, pins_field);
+    std::cout << pins_field[1] << "\n";
+    try {
+      int pins_cnt = std::stoi(pins_field[1]);
+      pin_list.reserve(pins_cnt);
+    } catch (...) {
+      Assert(false, "Invalid stoi conversion:\n" + line);
+    }
 
-
-  while (line.find("NETS") == std::string::npos && !ist.eof()) {
     getline(ist, line);
-  }
-  // a). find the number of nets
-  std::vector<std::string> nets_size_field;
-  StrSplit(line, nets_size_field);
-  try {
-    int net_list_size = (int)std::round(std::stoi(nets_size_field[1]));
-    net_list.reserve(net_list_size);
-  } catch (...) {
-    Assert(false, "Invalid stoi conversion:\n" + line);
-  }
-  //std::cout << line << "\n";
-  getline(ist, line);
-  // the following is a hack now, cannot handle all cases, probably need to use BISON in the future if necessary
-  while ((line.find("END NETS") == std::string::npos) && !ist.eof()) {
-    if (line.find('-') != std::string::npos) {
-      //std::cout << line << "\n";
-      std::vector<std::string> net_field;
-      StrSplit(line, net_field);
-      Assert(net_field.size() >= 2, "Invalid net declaration, expecting at least: - netName\n" + line);
-      //std::cout << "\t" << net_field[0] << " " << net_field[1] << "\n";
-      Net *new_net = nullptr;
-      if (net_field[1].find("Reset") != std::string::npos) {
-        //std::cout << net_field[1] << "\n";
-        new_net = AddNet(net_field[1], reset_signal_weight);
-      } else {
-        new_net = AddNet(net_field[1], normal_signal_weight);
+
+    while ((line.find("END PINS") == std::string::npos) && !ist.eof()) {
+      if (line.find('-') != std::string::npos && line.find("NET") != std::string::npos) {
+        std::cout << line << "\n";
       }
-      while (true) {
-        getline(ist, line);
+      getline(ist, line);
+    }
+  }
+
+  if (nets_section_exist) {
+    while (line.find("NETS") == std::string::npos && !ist.eof()) {
+      getline(ist, line);
+    }
+    // a). find the number of nets
+    std::vector<std::string> nets_size_field;
+    StrSplit(line, nets_size_field);
+    try {
+      int net_list_size = (int) std::round(std::stoi(nets_size_field[1]));
+    } catch (...) {
+      Assert(false, "Invalid stoi conversion:\n" + line);
+    }
+    //std::cout << line << "\n";
+    getline(ist, line);
+    // the following is a hack now, cannot handle all cases, probably need to use BISON in the future if necessary
+    while ((line.find("END NETS") == std::string::npos) && !ist.eof()) {
+      if (line.find('-') != std::string::npos) {
         //std::cout << line << "\n";
-        std::vector<std::string> pin_field;
-        StrSplit(line, pin_field);
-        if ((pin_field.size() % 4 != 0)) {
-          Assert(false, "Invalid net declaration, expecting 4n fields, where n >= 2:\n" + line);
+        std::vector<std::string> net_field;
+        StrSplit(line, net_field);
+        Assert(net_field.size() >= 2, "Invalid net declaration, expecting at least: - netName\n" + line);
+        //std::cout << "\t" << net_field[0] << " " << net_field[1] << "\n";
+        Net *new_net = nullptr;
+        if (net_field[1].find("Reset") != std::string::npos) {
+          //std::cout << net_field[1] << "\n";
+          new_net = AddNet(net_field[1], reset_signal_weight);
+        } else {
+          new_net = AddNet(net_field[1], normal_signal_weight);
         }
-        for (size_t i = 0; i < pin_field.size(); i += 4) {
-          //std::cout << "     " << pin_field[i+1] << " " << pin_field[i+2];
-          Block *block = GetBlock(pin_field[i + 1]);
-          int pin_num = block->Type()->PinIndex(pin_field[i + 2]);
-          new_net->AddBlockPinPair(block, pin_num);
+        while (true) {
+          getline(ist, line);
+          //std::cout << line << "\n";
+          std::vector<std::string> pin_field;
+          StrSplit(line, pin_field);
+          if ((pin_field.size() % 4 != 0)) {
+            Assert(false, "Invalid net declaration, expecting 4n fields, where n >= 2:\n" + line);
+          }
+          for (size_t i = 0; i < pin_field.size(); i += 4) {
+            //std::cout << "     " << pin_field[i+1] << " " << pin_field[i+2];
+            Block *block = GetBlock(pin_field[i + 1]);
+            int pin_num = block->Type()->PinIndex(pin_field[i + 2]);
+            new_net->AddBlockPinPair(block, pin_num);
+          }
+          //std::cout << "\n";
+          if (line.find(";") != std::string::npos) break;
         }
-        //std::cout << "\n";
-        if (line.find(";") != std::string::npos) break;
+        Assert(!new_net->blk_pin_list.empty(), "Net " + net_field[1] + " has no blk_pin_pair");
+        Warning(new_net->blk_pin_list.size() == 1, "Net " + net_field[1] + " has only one blk_pin_pair");
       }
-      Assert(!new_net->blk_pin_list.empty(), "Net " + net_field[1] + " has no blk_pin_pair");
-      Warning(new_net->blk_pin_list.size() == 1, "Net " + net_field[1] + " has only one blk_pin_pair");
+      getline(ist, line);
     }
-    getline(ist, line);
   }
   std::cout << "def file loading complete\n";
 }

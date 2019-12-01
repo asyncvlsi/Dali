@@ -45,6 +45,8 @@ class Circuit {
   int MetalLayerIndex(std::string &metal_name);
   MetalLayer *GetMetalLayer(std::string &metal_name);
   MetalLayer *AddMetalLayer(std::string &metal_name, double width, double spacing);
+  MetalLayer *AddMetalLayer(std::string &metal_name);
+  void ReportMetalLayers();
 
   std::unordered_map<std::string, BlockType*> block_type_name_map;
 
