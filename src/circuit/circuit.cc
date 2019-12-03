@@ -10,24 +10,9 @@
 #include <algorithm>
 #include "circuit.h"
 
-Circuit::Circuit() {
-  tot_movable_blk_num_ = 0;
-  tot_block_area_ = 0;
-  tot_width_ = 0;
-  tot_height_ = 0;
-  tot_block_area_ = 0;
-  tot_mov_width_ = 0;
-  tot_mov_height_ = 0;
-  tot_mov_block_area_ = 0;
-  tot_movable_blk_num_ = 0;
-  min_width_ = INT_MAX;
-  max_width_ = 0;
-  min_height_ = INT_MAX;
-  max_height_ = 0;
-  grid_set_ = false;
-  grid_value_x_ = 0;
-  grid_value_y_ = 0;
-}
+Circuit::Circuit(): tot_width_(0), tot_height_(0), tot_blk_area_(0), tot_mov_width_(0), tot_mov_height_(0),
+                    tot_mov_block_area_(0), tot_mov_blk_num_(0), min_width_(INT_MAX), max_width_(0),
+                    min_height_(INT_MAX), max_height_(0), grid_set_(false), grid_value_x_(0), grid_value_y_(0){}
 
 Circuit::~Circuit() {
   /****
@@ -35,7 +20,7 @@ Circuit::~Circuit() {
    * because T is initialized by
    *    auto *T = new T();
    * ****/
-  for (auto &&pair: block_type_name_map) {
+  for (auto &&pair: block_type_map) {
     delete pair.second;
   }
 }
@@ -83,20 +68,28 @@ void Circuit::SetBoundaryFromDef(int left, int right, int bottom, int top) {
 }
 
 bool Circuit::IsBlockTypeExist(std::string &block_type_name) {
-  return !(block_type_name_map.find(block_type_name) == block_type_name_map.end());
+  return !(block_type_map.find(block_type_name) == block_type_map.end());
 }
 
 BlockType *Circuit::GetBlockType(std::string &block_type_name) {
   Assert(IsBlockTypeExist(block_type_name), "BlockType not exist, cannot find it: " + block_type_name);
-  return block_type_name_map.find(block_type_name)->second;
+  return block_type_map.find(block_type_name)->second;
 }
 
 BlockType *Circuit::AddBlockType(std::string &block_type_name, int width, int height) {
   Assert(!IsBlockTypeExist(block_type_name), "BlockType exist, cannot create this block type again: " + block_type_name);
-  auto *block_type_ptr = new BlockType(width, height);
-  auto ret = block_type_name_map.insert(std::pair<std::string, BlockType*>(block_type_name, block_type_ptr));
-  block_type_ptr->SetName(&ret.first->first);
-  return block_type_ptr;
+  auto ret = block_type_map.insert(std::pair<std::string, BlockType*>(block_type_name, nullptr));
+  auto tmp_ptr = new BlockType(&(ret.first->first), width, height);
+  ret.first->second = tmp_ptr;
+  if (tmp_ptr->Area() > INT_MAX) tmp_ptr->Report();
+  return tmp_ptr;
+}
+
+void Circuit::ReportBlockType() {
+  std::cout << "BlockType counts: " << block_type_map.size() << std::endl;
+  for (auto &&pair: block_type_map) {
+    pair.second->Report();
+  }
 }
 
 bool Circuit::IsBlockExist(std::string &block_name) {
@@ -135,14 +128,13 @@ void Circuit::AddBlock(std::string &block_name, BlockType *block_type, int llx, 
   std::pair<const std::string, int>* name_num_pair_ptr = &(*ret.first);
   block_list.emplace_back(block_type, name_num_pair_ptr, llx, lly, place_status, orient);
 
-  auto old_tot_area = tot_block_area_;
-
-  tot_block_area_ += block_list.back().Area();
-  Assert(old_tot_area < tot_block_area_, "Total Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
+  unsigned long int old_tot_area = tot_blk_area_;
+  tot_blk_area_ += block_list.back().Area();
+  Assert(old_tot_area < tot_blk_area_, "Total Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
   tot_width_ += block_list.back().Width();
   tot_height_ += block_list.back().Height();
   if (block_list.back().IsMovable()) {
-    ++tot_movable_blk_num_;
+    ++tot_mov_blk_num_;
     old_tot_area = tot_mov_block_area_;
     tot_mov_block_area_ += block_list.back().Area();
     Assert(old_tot_area < tot_mov_block_area_, "Total Movable Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
@@ -450,6 +442,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     getline(ist, line);
   }
   std::cout << "lef file loading complete" << std::endl;
+  //ReportBlockType();
 }
 
 void Circuit::ReadDefFile(std::string const &name_of_file) {
@@ -639,11 +632,6 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
     // a). find the number of nets
     std::vector<std::string> nets_size_field;
     StrSplit(line, nets_size_field);
-    try {
-      int net_list_size = (int) std::round(std::stoi(nets_size_field[1]));
-    } catch (...) {
-      Assert(false, "Invalid stoi conversion:\n" + line);
-    }
     //std::cout << line << "\n";
     getline(ist, line);
     // the following is a hack now, cannot handle all cases, probably need to use BISON in the future if necessary
@@ -671,32 +659,21 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
           }
           for (size_t i = 0; i < pin_field.size(); i += 4) {
             //std::cout << "     " << pin_field[i+1] << " " << pin_field[i+2];
-            Block *block = GetBlock(pin_field[i + 1]);
+            if (pin_field[i+1]=="PIN") continue;
+            Block *block = GetBlock(pin_field[i+1]);
             int pin_num = block->Type()->PinIndex(pin_field[i + 2]);
             new_net->AddBlockPinPair(block, pin_num);
           }
           //std::cout << "\n";
-          if (line.find(";") != std::string::npos) break;
+          if (line.find(';') != std::string::npos) break;
         }
         Assert(!new_net->blk_pin_list.empty(), "Net " + net_field[1] + " has no blk_pin_pair");
-        Warning(new_net->blk_pin_list.size() == 1, "Net " + net_field[1] + " has only one blk_pin_pair");
+        //Warning(new_net->blk_pin_list.size() == 1, "Net " + net_field[1] + " has only one blk_pin_pair");
       }
       getline(ist, line);
     }
   }
   std::cout << "def file loading complete\n";
-}
-
-void Circuit::ReportBlockTypeList() {
-  for (auto &&it: block_type_name_map) {
-    it.second->Report();
-  }
-}
-
-void Circuit::ReportBlockTypeMap() {
-  for (auto &&it: block_type_name_map) {
-    std::cout << it.first << " " << it.second << "\n";
-  }
 }
 
 void Circuit::ReportBlockList() {
@@ -728,10 +705,14 @@ void Circuit::ReportNetMap() {
 
 void Circuit::ReportBriefSummary() {
   if (globalVerboseLevel >= LOG_INFO) {
-    std::cout << "  movable blocks: " << TotMovableBlockNum() << "\n";
-    std::cout << "  blocks: " << TotBlockNum() << "\n";
-    std::cout << "  nets: " << net_list.size() << "\n";
-    std::cout << "  grid size x: " << grid_value_x_ << " um, grid size y: " << grid_value_y_ << " um\n";
+    std::cout << "  movable blocks: " << TotMovableBlockNum() << "\n"
+              << "  blocks: " << TotBlockNum() << "\n"
+              << "  nets: " << net_list.size() << "\n"
+              << "  grid size x: " << grid_value_x_ << " um, grid size y: " << grid_value_y_ << " um\n"
+              << "  total block area: " << tot_blk_area_ << "\n"
+              << "  total white space: " << (unsigned long int)(def_right-def_left)*(def_top-def_bottom)
+              << "\n";
+
   }
 }
 
@@ -751,28 +732,12 @@ int Circuit::MaxHeight() const {
   return  max_height_;
 }
 
-long int Circuit::TotArea() const {
-  return tot_block_area_;
-}
-
 int Circuit::TotBlockNum() const {
   return block_list.size();
 }
 
 int Circuit::TotMovableBlockNum() const {
-  return tot_movable_blk_num_;
-}
-
-double Circuit::AveWidth() const {
-  return tot_width_/(double)TotBlockNum();
-}
-
-double Circuit::AveHeight() const {
-  return tot_height_/(double)TotBlockNum();
-}
-
-double Circuit::AveArea() const {
-  return tot_block_area_/(double)TotBlockNum();
+  return tot_mov_blk_num_;
 }
 
 double Circuit::AveMovWidth() const {
@@ -820,7 +785,7 @@ void Circuit::ReportHPWL() {
 double Circuit::HPWLCtoCX() {
   double HPWLCtoCX = 0;
   for (auto &&net: net_list) {
-    HPWLCtoCX += net.HPWLCtoCX();
+    HPWLCtoCX += net.HPWLCtoCX()*GridValueX();
   }
   return HPWLCtoCX;
 }
@@ -828,7 +793,7 @@ double Circuit::HPWLCtoCX() {
 double Circuit::HPWLCtoCY() {
   double HPWLCtoCY = 0;
   for (auto &&net: net_list) {
-    HPWLCtoCY += net.HPWLCtoCY();
+    HPWLCtoCY += net.HPWLCtoCY()*GridValueY();
   }
   return HPWLCtoCY;
 }

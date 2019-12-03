@@ -18,13 +18,13 @@
 class Circuit {
  private:
   // statistical data of the circuit
-  int tot_width_;
-  int tot_height_;
-  long int tot_block_area_;
-  int tot_mov_width_;
-  int tot_mov_height_;
-  long int tot_mov_block_area_;
-  int tot_movable_blk_num_;
+  unsigned long int tot_width_;
+  unsigned long int tot_height_;
+  unsigned long int tot_blk_area_;
+  unsigned long int tot_mov_width_;
+  unsigned long int tot_mov_height_;
+  unsigned long int tot_mov_block_area_;
+  int tot_mov_blk_num_;
   int min_width_;
   int max_width_;
   int min_height_;
@@ -48,13 +48,31 @@ class Circuit {
   MetalLayer *AddMetalLayer(std::string &metal_name);
   void ReportMetalLayers();
 
-  std::unordered_map<std::string, BlockType*> block_type_name_map;
+  std::unordered_map<std::string, BlockType*> block_type_map;
+  // API to add new BlockType
+  bool IsBlockTypeExist(std::string &block_type_name);
+  BlockType *GetBlockType(std::string &block_type_name);
+  BlockType *AddBlockType(std::string &block_type_name, int width, int height);
+  void ReportBlockType();
 
   std::vector<Block> block_list;
   std::map<std::string, int> block_name_map;
+  // API to add new Block Instance
+  bool IsBlockExist(std::string &block_name);
+  int BlockIndex(std::string &block_name);
+  Block *GetBlock(std::string &block_name);
+  void AddBlock(std::string &block_name, BlockType *block_type, int llx = 0, int lly = 0, bool movable = true, BlockOrient orient= N);
+  void AddBlock(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, bool movable = true, BlockOrient orient= N);
+  void AddBlock(std::string &block_name, BlockType *block_type, int llx = 0, int lly = 0, PlaceStatus place_status = UNPLACED, BlockOrient orient= N);
+  void AddBlock(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, PlaceStatus place_status = UNPLACED, BlockOrient orient= N);
 
   std::vector<Pin> pin_list;
   std::map<std::string, int> pin_name_map;
+  // API to add new IOPin
+  bool IsIOPinExist(std::string &iopin_name);
+  int PinIndex();
+  Pin *GetPin(std::string &iopin_name);
+  void AddIOPin(std::string &iopin_name, std::string &net_name);
 
   std::vector<Net> net_list;
   std::map<std::string, int> net_name_map;
@@ -68,23 +86,6 @@ class Circuit {
   bool def_boundary_set = false;
   void SetBoundaryFromDef(int left, int right, int bottom, int top);
 
-  // API to add new BlockType
-  bool IsBlockTypeExist(std::string &block_type_name);
-  BlockType *GetBlockType(std::string &block_type_name);
-  BlockType *AddBlockType(std::string &block_type_name, int width, int height);
-
-  // API to add new Block Instance
-  bool IsBlockExist(std::string &block_name);
-  int BlockIndex(std::string &block_name);
-  Block *GetBlock(std::string &block_name);
-  void AddBlock(std::string &block_name, BlockType *block_type, int llx = 0, int lly = 0, bool movable = true, BlockOrient orient= N);
-  void AddBlock(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, bool movable = true, BlockOrient orient= N);
-  void AddBlock(std::string &block_name, BlockType *block_type, int llx = 0, int lly = 0, PlaceStatus place_status = UNPLACED, BlockOrient orient= N);
-  void AddBlock(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, PlaceStatus place_status = UNPLACED, BlockOrient orient= N);
-
-  // API to add new IOPin
-  bool IsIOPinExist(std::string &iopin_name);
-  int PinIndex();
 
   // API to add new Net
   bool IsNetExist(std::string &net_name);
@@ -123,8 +124,6 @@ class Circuit {
   double GridValueY();
   void ReadLefFile(std::string const &name_of_file);
   void ReadDefFile(std::string const &name_of_file);
-  void ReportBlockTypeList();
-  void ReportBlockTypeMap();
   void ReportBlockList();
   void ReportBlockMap();
   void ReportNetList();
@@ -135,13 +134,13 @@ class Circuit {
   int MaxWidth() const;
   int MinHeight() const;
   int MaxHeight() const;
-  long int TotArea() const;
+  unsigned long int TotArea() const {return tot_blk_area_;}
   int TotBlockNum() const;
   int TotMovableBlockNum() const;
-  unsigned int TotFixedBlkCnt() const {return block_list.size() - tot_movable_blk_num_;}
-  double AveWidth() const;
-  double AveHeight() const;
-  double AveArea() const;
+  unsigned int TotFixedBlkCnt() const {return block_list.size() - tot_mov_blk_num_;}
+  double AveWidth() const {return double(tot_width_)/double(TotBlockNum());}
+  double AveHeight() const {return double(tot_height_)/double(TotBlockNum());}
+  double AveArea() const {return double(tot_blk_area_)/(double)TotBlockNum();}
   double AveMovWidth() const;
   double AveMovHeight() const;
   double AveMovArea() const;

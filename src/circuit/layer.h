@@ -15,9 +15,13 @@ class Layer {
   double width_;
   double spacing_;
  public:
-  explicit Layer(std::pair<const std::string, int>* name_num_ptr): name_num_ptr_(name_num_ptr), width_(0), spacing_(0) {}
+  explicit Layer(std::pair<const std::string, int>* name_num_ptr): name_num_ptr_(name_num_ptr), width_(0), spacing_(0) {
+    Assert(name_num_ptr != nullptr, "Must provide a valid pointer to a std::pair<std::string, int> element in the metal_name_map");
+  }
   Layer(std::pair<const std::string, int>* name_num_ptr, double width, double spacing):
-      name_num_ptr_(name_num_ptr), width_(width), spacing_(spacing) {}
+      name_num_ptr_(name_num_ptr), width_(width), spacing_(spacing) {
+    Assert(name_num_ptr != nullptr, "Must provide a valid pointer to a std::pair<std::string, int> element in the metal_name_map");
+  }
   void SetWidth(double width) {Assert(width>=0, "Negative width?"); width_=width;}
   void SetSpacing(double spacing) {Assert(spacing>=0, "Negative spacing?"); spacing_=spacing;}
   double Width() {return width_;}

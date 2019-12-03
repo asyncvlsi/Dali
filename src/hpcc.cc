@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
   circuit.ReadDefFile(def_file_name);
 
   Time = clock() - Time;
-  std::cout << "File loading complete, time: " << (float) Time / CLOCKS_PER_SEC << "s\n";
+  std::cout << "File loading complete, time: " << float(Time) / CLOCKS_PER_SEC << "s\n";
   circuit.ReportBriefSummary();
   circuit.ReportHPWL();
 
@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
   time_t gp_time = clock() - Time;
-  std::cout << "global placement complete, time: " << (float) gp_time / CLOCKS_PER_SEC << "s\n";
+  std::cout << "global placement complete, time: " << float(gp_time) / CLOCKS_PER_SEC << "s\n";
 
   /*Placer *d_placer = new MDPlacer;
   d_placer->TakeOver(gb_placer);
@@ -118,14 +118,14 @@ int main(int argc, char *argv[]) {
   legalizer->TakeOver(gb_placer);
   legalizer->StartPlacement();
   time_t lg_time = clock() - gp_time;
-  std::cout << "legalization complete, time: " << (float) lg_time / CLOCKS_PER_SEC << "s\n";
+  std::cout << "legalization complete, time: " << float(lg_time) / CLOCKS_PER_SEC << "s\n";
 
   delete gb_placer;
   //delete d_placer;
   delete legalizer;
 
   Time = clock() - Time;
-  std::cout << "Execution time " << (float)Time/CLOCKS_PER_SEC << "s.\n";
+  std::cout << "Execution time " << float(Time)/CLOCKS_PER_SEC << "s.\n";
   if (!output_name.empty()) {
     circuit.SaveDefFile(output_name, def_file_name);
   }
@@ -135,11 +135,11 @@ int main(int argc, char *argv[]) {
 
 void ReportUsage() {
   std::cout << "Usage: hpcc\n"
-               " -lef <file.lef>\n"
-               " -def <file.def>\n"
-               " -o <output_name>.def\n"
-               " -grid grid_value_x grid_value_y\n"
-               " -v verbosity_level (optional, 0-5, default 0)\n"
-               "(order does not matter)"
-               << std::endl;
+            << "  -lef <file.lef>\n"
+            << "  -def <file.def>\n"
+            << "  -o <output_name>.def\n"
+            << "  -grid grid_value_x grid_value_y\n"
+            << "  -v verbosity_level (optional, 0-5, default 0)\n"
+            << "(order does not matter)"
+            << std::endl;
 }

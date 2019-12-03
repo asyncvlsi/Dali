@@ -14,9 +14,9 @@ class BlockType {
   /****essential data entries****/
   //std::pair<const std::string, int>* name_num_ptr_;
   const std::string *name_;
-  int width_, height_;
+  unsigned int width_, height_;
  public:
-  BlockType(int width, int height);
+  BlockType(const std::string *name, unsigned int width, unsigned int height);
   void SetName(const std::string *name) {name_ = name;}
   std::vector<Pin> pin_list;
   std::map<std::string, int> pin_name_num_map;
@@ -31,7 +31,7 @@ class BlockType {
   const std::string *Name() const { return name_;}
   int Width() const;
   int Height() const;
-  int Area() const;
+  unsigned long int Area() const {return width_ * height_;}
   void SetWidth(int width);
   void SetHeight(int height);
   bool Empty();

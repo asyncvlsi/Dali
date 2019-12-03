@@ -27,8 +27,8 @@ class GridBinIndex {
 class GridBinCluster {
  public:
   GridBinCluster();
-  long int total_cell_area;
-  long int total_white_space;
+  unsigned long int total_cell_area;
+  unsigned long int total_white_space;
   std::set<GridBinIndex> bin_set;
   bool operator < (const GridBinCluster& rhs) const {
     return (total_cell_area < rhs.total_cell_area);

@@ -5,7 +5,9 @@
 #include "blocktype.h"
 #include "../common/misc.h"
 
-BlockType::BlockType(int width, int height) : width_(width), height_(height) {}
+BlockType::BlockType(const std::string *name, unsigned int width, unsigned int height): name_(name), width_(width), height_(height) {
+  Assert(width>=0&&height>=0, "Negative width/height? " + *Name());
+}
 
 int BlockType::Width() const {
   return width_;
@@ -15,17 +17,13 @@ int BlockType::Height() const {
   return height_;
 }
 
-int BlockType::Area() const {
-  return width_ * height_;
-}
-
 void BlockType::SetWidth(int width) {
-  Assert(width > 0, "Width equal or less than 0?");
+  Assert(width >= 0, "Negative BlockType width?");
   width_ = width;
 }
 
 void BlockType::SetHeight(int height) {
-  Assert(height > 0, "Height equal or less than 0?");
+  Assert(height >= 0, "Negative BlockType height?");
   height_ = height;
 }
 
@@ -34,12 +32,13 @@ bool BlockType::Empty() {
 }
 
 void BlockType::Report() {
-  std::cout << "BlockType name: " << *Name() << "\n";
-  std::cout << "  width, height: " << Width() << " " << Height() << "\n";
-  std::cout << "  pin list:\n";
+  std::cout << "  BlockType name: " << *Name() << "\n"
+            << "    width, height: " << Width() << " " << Height() << "\n"
+            << "    pin list:\n";
   for( auto &&it: pin_name_num_map) {
-    std::cout << "    " << it.first << " " << it.second << " (" << pin_list[it.second].XOffset() << ", " << pin_list[it.second].YOffset() << ")\n";
+    std::cout << "      " << it.first << " " << it.second << " (" << pin_list[it.second].XOffset() << ", " << pin_list[it.second].YOffset() << ")\n";
   }
+  std::cout << std::endl;
 }
 
 bool BlockType::PinExist(std::string &pin_name) {
@@ -52,8 +51,8 @@ int BlockType::PinIndex(std::string &pin_name) {
 }
 
 Pin *BlockType::AddPin(std::string &pin_name) {
-  bool pin_not_exist = pin_name_num_map.find(pin_name) == pin_name_num_map.end();
-  Assert(pin_not_exist, "The following pin exists in blk_pin_list: " + pin_name);
+  bool pin_not_exist = (pin_name_num_map.find(pin_name) == pin_name_num_map.end());
+  Assert(pin_not_exist, "Cannot add this pin in BlockType: " + *Name() + ", because this pin exists in blk_pin_list: " + pin_name);
   pin_name_num_map.insert(std::pair<std::string, int>(pin_name, pin_list.size()));
   std::pair<const std::string, int> *name_num_ptr = &(*pin_name_num_map.find(pin_name));
   pin_list.emplace_back(name_num_ptr);
@@ -62,7 +61,7 @@ Pin *BlockType::AddPin(std::string &pin_name) {
 
 void BlockType::AddPin(std::string &pin_name, double x_offset, double y_offset) {
   bool pin_not_exist = pin_name_num_map.find(pin_name) == pin_name_num_map.end();
-  Assert(pin_not_exist, "The following pin exists in blk_pin_list: " + pin_name);
+  Assert(pin_not_exist, "Cannot add this pin, because this pin exists in blk_pin_list: " + pin_name);
   pin_name_num_map.insert(std::pair<std::string, int>(pin_name, pin_list.size()));
   std::pair<const std::string, int> *name_num_ptr = &(*pin_name_num_map.find(pin_name));
   pin_list.emplace_back(name_num_ptr, x_offset, y_offset);

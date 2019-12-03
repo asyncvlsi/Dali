@@ -59,9 +59,9 @@ class Block {
   PlaceStatus GetPlaceStatus() {return place_status_;}
   bool IsMovable() const;
   bool IsFixed() const;
-  int Area() const;
+  unsigned long int Area() const {return type_->Area();}
   BlockOrient Orient() const {return orient_;}
-  BlockAux *Aux();
+  BlockAux *Aux() {return aux_;}
 
   void SetLLX(double lower_left_x);
   void SetLLY(double lower_left_y);
@@ -79,7 +79,7 @@ class Block {
   void IncreX(double displacement, double upper, double lower);
   void IncreY(double displacement, double upper, double lower);
   bool IsOverlap(const Block &rhs) const;
-  bool IsOverlap(const Block *rhs) const;
+  bool IsOverlap(const Block *rhs) const {return IsOverlap(*rhs);}
   double OverlapArea(const Block &rhs) const;
   double OverlapArea(const Block *rhs) const;
 
@@ -97,9 +97,9 @@ class Block {
     return os;
   }*/
 
-  const std::string *TypeName() const;
-  std::string IsPlace() {return PlaceStatusStr(place_status_);}
-  std::string LowerLeftCorner();
+  const std::string *TypeName() const {return type_->Name();}
+  std::string GetPlaceStatusStr() {return PlaceStatusStr(place_status_);}
+  std::string LowerLeftCorner() {return "( " + std::to_string(LLX()) + " " + std::to_string(LLY()) + " )";}
 };
 
 #endif //HPCC_BLOCK_HPP

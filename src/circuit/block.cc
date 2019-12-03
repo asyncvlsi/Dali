@@ -77,10 +77,6 @@ bool Block::IsFixed() const {
   return !IsMovable();
 }
 
-int Block::Area() const {
-  return Height() * Width();
-}
-
 void Block::SetOrient(BlockOrient &orient) {
   orient_ = orient;
 }
@@ -112,25 +108,9 @@ bool Block::IsOverlap(const Block &rhs) const {
   return !not_overlap;
 }
 
-bool Block::IsOverlap(const Block *rhs) const {
-  return IsOverlap(*rhs);
-}
-
 void Block::SetAux(BlockAux *aux) {
   Assert(aux != nullptr, "When set auxiliary information, argument cannot be a nullptr");
   aux_ = aux;
-}
-
-BlockAux *Block::Aux(){
-  return aux_;
-}
-
-/*const std::string *Block::TypeName() const {
-  return type_->Name();
-}*/
-
-std::string Block::LowerLeftCorner() {
-  return "( " + std::to_string(LLX()) + " " + std::to_string(LLY()) + " )";
 }
 
 double Block::OverlapArea(const Block &rhs) const {
@@ -151,13 +131,14 @@ double Block::OverlapArea(const Block *rhs) const {
 }
 
 void Block::Report() {
-  std::cout << "Block Name: " << *Name() << "\n";
-  std::cout << "Block Type: " << *(Type()->Name()) << "\n";
-  std::cout << "Width and Height: " << Width() << " " << Height() << "\n";
-  std::cout << "lower Left corner: " << LLX() << " " << LLY() << "\n";
-  std::cout << "movability: " << IsMovable() << "\n";
-  std::cout << "orientation: " << OrientStr(orient_) << "\n";
-  std::cout << "assigned primary key: " << Num() << "\n";
+  std::cout << "  block name: " << *Name() << "\n"
+            << "    block type: " << *(Type()->Name()) << "\n"
+            << "    width and height: " << Width() << " " << Height() << "\n"
+            << "    lower left corner: " << LLX() << " " << LLY() << "\n"
+            << "    movable: " << IsMovable() << "\n"
+            << "    orientation: " << OrientStr(orient_) << "\n"
+            << "    assigned primary key: " << Num()
+            << "\n";
 }
 
 void Block::ReportNet() {

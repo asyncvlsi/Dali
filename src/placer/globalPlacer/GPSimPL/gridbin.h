@@ -16,8 +16,8 @@ class GridBin {
   int top;
   int left;
   int right;
-  long int white_space;
-  long int cell_area;
+  unsigned long int white_space;
+  unsigned long int cell_area;
   double filling_rate;
   bool all_terminal;
   bool over_fill; // a grid bin is over-filled, if filling rate is larger than the target, or cells locate on terminals
@@ -32,7 +32,7 @@ class GridBin {
   int URY() { return top; }
   int Height() { return top - bottom; }
   int Width() { return right - left; }
-  int Area() { return (top-bottom)*(right-left);}
+  unsigned long int Area() { return (unsigned long int)(top-bottom)*(right-left);}
   bool IsAllFixedBlk() { return all_terminal; }
   bool OverFill() { return over_fill; }
   void create_adjacent_bin_list(int grid_cnt_x, int grid_cnt_y);

@@ -415,6 +415,7 @@ void GPSimPL::InitGridBins() {
   grid_bin_width = grid_bin_height;
   grid_cnt_y = std::ceil(double(Top() - Bottom()) / grid_bin_height);
   grid_cnt_x = std::ceil(double(Right() - Left()) / grid_bin_width);
+  std::cout << "Global placement bin width, height: " << grid_bin_width << "  " << grid_bin_height << "\n";
 
   std::vector<GridBin> temp_grid_bin_column(grid_cnt_y);
   grid_bin_matrix.reserve(grid_cnt_x);
@@ -501,7 +502,7 @@ void GPSimPL::InitGridBins() {
           max_lly = std::max(int(block_list[i].LLY()), grid_bin_matrix[j][k].LLY());
           min_urx = std::min(int(block_list[i].URX()), grid_bin_matrix[j][k].URX());
           min_ury = std::min(int(block_list[i].URY()), grid_bin_matrix[j][k].URY());
-          grid_bin_matrix[j][k].white_space -= (min_urx - max_llx) * (min_ury - max_lly);
+          grid_bin_matrix[j][k].white_space -= (unsigned long int)(min_urx - max_llx) * (min_ury - max_lly);
           if (grid_bin_matrix[j][k].white_space < 1) {
             grid_bin_matrix[j][k].all_terminal = true;
             grid_bin_matrix[j][k].white_space = 0;
@@ -521,7 +522,7 @@ void GPSimPL::InitWhiteSpaceLUT() {
    * ****/
 
   // this for loop is created to initialize the size of the loop-up table
-  std::vector<int> tmp_vector(grid_cnt_y);
+  std::vector<unsigned long int> tmp_vector(grid_cnt_y);
   grid_bin_white_space_LUT.reserve(grid_cnt_x);
   for (int i=0; i<grid_cnt_x; ++i) grid_bin_white_space_LUT.push_back(tmp_vector);
 
@@ -564,13 +565,13 @@ void GPSimPL::ClearGridBinFlag() {
   }
 }
 
-long int GPSimPL::LookUpWhiteSpace(GridBinIndex const &ll_index, GridBinIndex const &ur_index) {
+unsigned long int GPSimPL::LookUpWhiteSpace(GridBinIndex const &ll_index, GridBinIndex const &ur_index) {
   /****
    * this function is used to return the white space in a region specified by ll_index, and ur_index
    * there are four cases, element at (0,0), elements on the left edge, elements on the right edge, otherwise
    * ****/
 
-  long int total_white_space;
+  unsigned long int total_white_space;
   /*if (ll_index.x == 0) {
     if (ll_index.y == 0) {
       total_white_space = grid_bin_white_space_LUT[ur_index.x][ur_index.y];
@@ -594,8 +595,8 @@ long int GPSimPL::LookUpWhiteSpace(GridBinIndex const &ll_index, GridBinIndex co
   return total_white_space;
 }
 
-long int GPSimPL::LookUpWhiteSpace(WindowQuadruple &window) {
-  long int total_white_space;
+unsigned long int GPSimPL::LookUpWhiteSpace(WindowQuadruple &window) {
+  unsigned long int total_white_space;
   if (window.llx == 0) {
     if (window.lly == 0) {
       total_white_space = grid_bin_white_space_LUT[window.urx][window.ury];
@@ -617,8 +618,8 @@ long int GPSimPL::LookUpWhiteSpace(WindowQuadruple &window) {
   return total_white_space;
 }
 
-long int GPSimPL::LookUpBlkArea(WindowQuadruple &window) {
-  long int res = 0;
+unsigned long int GPSimPL::LookUpBlkArea(WindowQuadruple &window) {
+  unsigned long int res = 0;
   for (int x=window.llx; x<=window.urx; ++x) {
     for (int y=window.lly; y<=window.ury; ++y) {
       res += grid_bin_matrix[x][y].cell_area;
@@ -627,8 +628,8 @@ long int GPSimPL::LookUpBlkArea(WindowQuadruple &window) {
   return res;
 }
 
-long int GPSimPL::WindowArea(WindowQuadruple &window) {
-  long int res = 0;
+unsigned long int GPSimPL::WindowArea(WindowQuadruple &window) {
+  unsigned long int res = 0;
   if (window.urx == grid_cnt_x-1) {
     if (window.ury == grid_cnt_y-1) {
       res = (window.urx-window.llx)*(window.ury-window.lly)*grid_bin_width*grid_bin_height;
@@ -834,10 +835,10 @@ void GPSimPL::FindMinimumBoxForLargestCluster() {
     R.UpdateCellAreaWhiteSpaceFillingRate(grid_bin_white_space_LUT, grid_bin_matrix);
     if (R.filling_rate > FillingRate()) {
       R.ExpandBox(grid_cnt_x, grid_cnt_y);
-    }
-    else {
+    } else {
       break;
     }
+    //std::cout << R.total_white_space << "  " << R.filling_rate << "  " << FillingRate() << "\n";
   }
 
   R.total_white_space = LookUpWhiteSpace(R.ll_index, R.ur_index);
@@ -1394,7 +1395,6 @@ void GPSimPL::UpdateAnchorNetWeight() {
 void GPSimPL::LookAheadLegalization() {
   BackUpBlkLoc();
   ClearGridBinFlag();
-
   do {
     UpdateGridBinState();
     UpdateClusterList();

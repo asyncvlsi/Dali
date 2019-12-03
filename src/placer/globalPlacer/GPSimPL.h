@@ -88,13 +88,13 @@ class GPSimPL: public Placer {
   int grid_cnt_y; // might distinguish the gird count in the x direction and y direction
   int grid_cnt_x;
   std::vector< std::vector<GridBin> > grid_bin_matrix;
-  std::vector< std::vector<int> > grid_bin_white_space_LUT;
+  std::vector< std::vector<unsigned long int> > grid_bin_white_space_LUT;
   void InitGridBins();
   void InitWhiteSpaceLUT();
-  long int LookUpWhiteSpace(GridBinIndex const &ll_index, GridBinIndex const &ur_index);
-  long int LookUpWhiteSpace(WindowQuadruple &window);
-  long int LookUpBlkArea(WindowQuadruple &window);
-  long int WindowArea(WindowQuadruple &window);
+  unsigned long int LookUpWhiteSpace(GridBinIndex const &ll_index, GridBinIndex const &ur_index);
+  unsigned long int LookUpWhiteSpace(WindowQuadruple &window);
+  unsigned long int LookUpBlkArea(WindowQuadruple &window);
+  unsigned long int WindowArea(WindowQuadruple &window);
   void LookAheadLgInit();
   void LookAheadClose();
   void ClearGridBinFlag();

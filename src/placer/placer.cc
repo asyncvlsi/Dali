@@ -103,17 +103,16 @@ void Placer::ReportBoundaries() {
   }
 }
 
-bool Placer::UpdateAspectRatio() {
+void Placer::UpdateAspectRatio() {
   if ((right_ - left_ == 0) || (top_ - bottom_ == 0)) {
     if (globalVerboseLevel >= LOG_ERROR) {
-      std::cout << "Error!\n";
-      std::cout << "Zero Height or Width of placement region!\n";
+      std::cout << "Error!\n"
+                << "Zero Height or Width of placement region!\n";
       ReportBoundaries();
     }
-    return false;
+    exit(1);
   }
   aspect_ratio_ = (top_ - bottom_)/(double)(right_ - left_);
-  return true;
 }
 
 void Placer::TakeOver(Placer *placer) {

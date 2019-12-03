@@ -52,7 +52,7 @@ public:
   int Right() {return right_;};
   int Bottom() {return bottom_;};
   int Top() {return top_;};
-  bool UpdateAspectRatio();
+  void UpdateAspectRatio();
   void NetSortBlkPin();
   virtual void StartPlacement() = 0;
   double HPWLX();
@@ -73,9 +73,9 @@ public:
 };
 
 inline void Placer::SetInputCircuit(Circuit *circuit) {
-  Assert(circuit != nullptr, "Invalid input circuit: not allowed to set nullptr as the input!");
+  Assert(circuit != nullptr, "Invalid input circuit: not allowed to set nullptr as an input!");
   Assert(!circuit->block_list.empty(), "Invalid input circuit: empty block list!");
-  Warning(circuit->net_list.empty(), "Improper input circuit: empty net list, nothing to optimize during placement!");
+  Warning(circuit->net_list.empty(), "Improper input circuit: empty net list, nothing to optimize during placement! But anyway...");
   circuit_ = circuit;
 }
 
