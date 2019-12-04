@@ -97,8 +97,11 @@ bool Circuit::IsBlockExist(std::string &block_name) {
 }
 
 int Circuit::BlockIndex(std::string &block_name) {
-  Assert(IsBlockExist(block_name), "Block Name does not exist, cannot find its index: " + block_name);
-  return block_name_map.find(block_name)->second;
+  auto ret = block_name_map.find(block_name);
+  if (ret==block_name_map.end()) {
+    Assert(false, "Block does not exist, cannot find its index: " + block_name);
+  }
+  return ret->second;
 }
 
 Block *Circuit::GetBlock(std::string &block_name) {
@@ -158,6 +161,30 @@ void Circuit::AddBlock(std::string &block_name, BlockType *block_type, int llx, 
 void Circuit::AddBlock(std::string &block_name, std::string &block_type_name, int llx, int lly, PlaceStatus place_status, BlockOrient orient) {
   BlockType *block_type = GetBlockType(block_type_name);
   AddBlock(block_name, block_type, llx, lly, place_status, orient);
+}
+
+bool Circuit::IsIOPinExist(std::string &iopin_name) {
+  return !(pin_name_map.find(iopin_name) == pin_name_map.end());
+}
+
+int Circuit::IOPinIndex(std::string &iopin_name) {
+  auto ret = pin_name_map.find(iopin_name);
+  if (ret == pin_name_map.end()) {
+    Assert(false, "IOPIN does not exist, cannot find its index: " + iopin_name);
+  }
+  return ret->second;
+}
+
+IOPin *Circuit::GetIOPin(std::string &iopin_name) {
+  return &pin_list[IOPinIndex(iopin_name)];
+}
+
+IOPin *Circuit::AddIOPin(std::string &iopin_name) {
+
+}
+
+IOPin *Circuit::AddIOPin(std::string &iopin_name, int lx, int ly) {
+
 }
 
 bool Circuit::IsNetExist(std::string &net_name) {
@@ -220,14 +247,6 @@ void Circuit::SetGridValue(double grid_value_x, double grid_value_y) {
 
 void Circuit::SetGridUsingMetalPitch() {
 
-}
-
-double Circuit::GridValueX() {
-  return grid_value_x_;
-}
-
-double Circuit::GridValueY() {
-  return grid_value_y_;
 }
 
 void Circuit::ReadLefFile(std::string const &name_of_file) {

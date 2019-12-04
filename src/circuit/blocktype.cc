@@ -5,33 +5,9 @@
 #include "blocktype.h"
 #include "../common/misc.h"
 
-BlockType::BlockType(const std::string *name, unsigned int width, unsigned int height): name_(name), width_(width), height_(height) {
-  Assert(width>=0&&height>=0, "Negative width/height? " + *Name());
-}
+BlockType::BlockType(const std::string *name, unsigned int width, unsigned int height): name_(name), width_(width), height_(height) {}
 
-int BlockType::Width() const {
-  return width_;
-}
-
-int BlockType::Height() const {
-  return height_;
-}
-
-void BlockType::SetWidth(int width) {
-  Assert(width >= 0, "Negative BlockType width?");
-  width_ = width;
-}
-
-void BlockType::SetHeight(int height) {
-  Assert(height >= 0, "Negative BlockType height?");
-  height_ = height;
-}
-
-bool BlockType::Empty() {
-  return pin_list.empty();
-}
-
-void BlockType::Report() {
+void BlockType::Report() const {
   std::cout << "  BlockType name: " << *Name() << "\n"
             << "    width, height: " << Width() << " " << Height() << "\n"
             << "    pin list:\n";

@@ -12,7 +12,7 @@
 #include "status.h"
 #include "layer.h"
 #include "block.h"
-#include "pin.h"
+#include "iopin.h"
 #include "net.h"
 
 class Circuit {
@@ -38,6 +38,10 @@ class Circuit {
  public:
   Circuit();
   ~Circuit();
+
+  // API to set grid value
+  void SetGridValue(double grid_value_x, double grid_value_y);
+  void SetGridUsingMetalPitch();
 
   std::vector<MetalLayer> metal_list;
   std::unordered_map<std::string, int> metal_name_map;
@@ -66,16 +70,23 @@ class Circuit {
   void AddBlock(std::string &block_name, BlockType *block_type, int llx = 0, int lly = 0, PlaceStatus place_status = UNPLACED, BlockOrient orient= N);
   void AddBlock(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, PlaceStatus place_status = UNPLACED, BlockOrient orient= N);
 
-  std::vector<Pin> pin_list;
+  std::vector<IOPin> pin_list;
   std::map<std::string, int> pin_name_map;
   // API to add new IOPin
   bool IsIOPinExist(std::string &iopin_name);
-  int PinIndex();
-  Pin *GetPin(std::string &iopin_name);
-  void AddIOPin(std::string &iopin_name, std::string &net_name);
+  int IOPinIndex(std::string &iopin_name);
+  IOPin *GetIOPin(std::string &iopin_name);
+  IOPin *AddIOPin(std::string &iopin_name);
+  IOPin *AddIOPin(std::string &iopin_name, int lx, int ly);
 
   std::vector<Net> net_list;
   std::map<std::string, int> net_name_map;
+  // API to add new Net
+  bool IsNetExist(std::string &net_name);
+  int NetIndex(std::string &net_name);
+  Net *GetNet(std::string &net_name);
+  void AddToNetMap(std::string &net_name);
+  Net *AddNet(std::string &net_name, double weight = 1);
 
   double reset_signal_weight = 1;
   double normal_signal_weight = 1;
@@ -85,18 +96,6 @@ class Circuit {
   int def_left = 0, def_right = 0, def_bottom = 0, def_top = 0;
   bool def_boundary_set = false;
   void SetBoundaryFromDef(int left, int right, int bottom, int top);
-
-
-  // API to add new Net
-  bool IsNetExist(std::string &net_name);
-  int NetIndex(std::string &net_name);
-  Net *GetNet(std::string &net_name);
-  void AddToNetMap(std::string &net_name);
-  Net *AddNet(std::string &net_name, double weight = 1);
-
-  // API to set grid value
-  void SetGridValue(double grid_value_x, double grid_value_y);
-  void SetGridUsingMetalPitch();
 
   // API to add well information
   void AddBlkWell(std::string &block_name, bool is_pluged, int llx, int lly, int urx, int ury);
@@ -120,8 +119,8 @@ class Circuit {
   // repulsive force can be created using an attractive force, a spring whose rest length in the current distance or even longer than the current distance
 
   // read lef/def file using above member functions
-  double GridValueX(); // unit in micro
-  double GridValueY();
+  double GridValueX() const {return grid_value_x_;} // unit in micro
+  double GridValueY() const {return grid_value_y_;}
   void ReadLefFile(std::string const &name_of_file);
   void ReadDefFile(std::string const &name_of_file);
   void ReportBlockList();

@@ -41,21 +41,11 @@ double BlockPinPair::YOffset() {
 }
 
 double BlockPinPair::AbsX() const {
-  if (block_->Orient() == N) {
-    return block_->Type()->pin_list[pin_num_].XOffset() + block_->LLX();
-  } else {
-    std::cout << "Currently, only N orientation is supported, exit program\n";
-    exit(1);
-  }
+  return block_->Type()->pin_list[pin_num_].XOffset(block_->Orient()) + block_->LLX();
 }
 
 double BlockPinPair::AbsY() const {
-  if (block_->Orient() == N) {
-    return block_->Type()->pin_list[pin_num_].YOffset() + block_->LLY();
-  } else {
-    std::cout << "Currently, only N orientation is supported, exit program\n";
-    exit(1);
-  }
+  return block_->Type()->pin_list[pin_num_].YOffset(block_->Orient()) + block_->LLY();
 }
 
 const std::string *BlockPinPair::BlockName() const {

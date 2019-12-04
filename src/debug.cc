@@ -28,7 +28,7 @@ int main() {
   time_t Time = clock();
   circuit.ReadLefFile(lef_file);
   circuit.ReadDefFile(def_file);
-  std::cout << "File loading complete, time: " << (float) Time / CLOCKS_PER_SEC << "s\n";
+  std::cout << "File loading complete, time: " << double(Time)/CLOCKS_PER_SEC << "s\n";
 
   circuit.ReportBriefSummary();
 
@@ -62,12 +62,12 @@ int main() {
   legalizer->GenMATLABScript("legalizer_result.txt");*/
   //legalizer->SaveDEFFile("circuit.def", def_file);
 
-  //delete gb_placer;
+  delete gb_placer;
   //delete d_placer;
   //delete legalizer;
 
   Time = clock() - Time;
-  std::cout << "Execution time " << (float)Time/CLOCKS_PER_SEC << "s.\n";
+  std::cout << "Execution time " << double(Time)/CLOCKS_PER_SEC << "s.\n";
 
   return 0;
 }

@@ -12,9 +12,9 @@
 class BlockType {
  private:
   /****essential data entries****/
-  //std::pair<const std::string, int>* name_num_ptr_;
   const std::string *name_;
   unsigned int width_, height_;
+
  public:
   BlockType(const std::string *name, unsigned int width, unsigned int height);
   void SetName(const std::string *name) {name_ = name;}
@@ -29,14 +29,14 @@ class BlockType {
   void AddWell(bool is_pluged, int llx, int lly, int urx, int ury);
 
   const std::string *Name() const { return name_;}
-  int Width() const;
-  int Height() const;
+  unsigned int Width() const {return width_;}
+  unsigned int Height() const {return height_;}
   unsigned long int Area() const {return width_ * height_;}
-  void SetWidth(int width);
-  void SetHeight(int height);
-  bool Empty();
+  void SetWidth(unsigned int width) {width_ = width;}
+  void SetHeight(unsigned int height) {height_ = height;}
+  bool Empty() const {return pin_list.empty();}
 
-  void Report();
+  void Report() const;
 
   /*friend std::ostream& operator<<(std::ostream& os, const BlockType &block_type) {
     os << "BlockType name: " << *block_type.Name() << "\n";
