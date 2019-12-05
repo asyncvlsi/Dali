@@ -12,7 +12,12 @@
 
 Circuit::Circuit(): tot_width_(0), tot_height_(0), tot_blk_area_(0), tot_mov_width_(0), tot_mov_height_(0),
                     tot_mov_block_area_(0), tot_mov_blk_num_(0), min_width_(INT_MAX), max_width_(0),
-                    min_height_(INT_MAX), max_height_(0), grid_set_(false), grid_value_x_(0), grid_value_y_(0){}
+                    min_height_(INT_MAX), max_height_(0), grid_set_(false), grid_value_x_(0), grid_value_y_(0){
+  std::string iopin_type_name("PIN");
+  auto io_pin_type = AddBlockType(iopin_type_name, 0, 0);
+  std::string tmp_pin_name("pin");
+  io_pin_type->AddPin(tmp_pin_name,0,0);
+}
 
 Circuit::~Circuit() {
   /****
@@ -86,7 +91,7 @@ BlockType *Circuit::AddBlockType(std::string &block_type_name, int width, int he
 }
 
 void Circuit::ReportBlockType() {
-  std::cout << "BlockType counts: " << block_type_map.size() << std::endl;
+  std::cout << "Total BlockType: " << block_type_map.size() << std::endl;
   for (auto &&pair: block_type_map) {
     pair.second->Report();
   }
@@ -131,6 +136,7 @@ void Circuit::AddBlock(std::string &block_name, BlockType *block_type, int llx, 
   std::pair<const std::string, int>* name_num_pair_ptr = &(*ret.first);
   block_list.emplace_back(block_type, name_num_pair_ptr, llx, lly, place_status, orient);
 
+  // update statistics of blocks
   unsigned long int old_tot_area = tot_blk_area_;
   tot_blk_area_ += block_list.back().Area();
   Assert(old_tot_area < tot_blk_area_, "Total Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
@@ -255,7 +261,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
   * Please use other APIs to build a circuit if necessary
   * ****/
   std::ifstream ist(name_of_file.c_str());
-  Assert(ist.is_open(), "Cannot open input file " + name_of_file);
+  Assert(ist.is_open(), "Cannot open input file: " + name_of_file);
   std::cout << "loading lef file" << std::endl;
   std::string line;
 
@@ -470,7 +476,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
    * Please use other APIs to build a circuit if this naive def parser cannot satisfy your needs
    * ****/
   std::ifstream ist(name_of_file.c_str());
-  Assert(ist.is_open(), "Cannot open input file " + name_of_file);
+  Assert(ist.is_open(), "Cannot open input file: " + name_of_file);
   std::cout << "loading def file" << std::endl;
   std::string line;
 

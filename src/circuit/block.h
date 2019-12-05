@@ -34,10 +34,10 @@ class Block {
  protected:
   /* essential data entries */
   BlockType *type_;
-  std::pair<const std::string, int>* name_num_pair_ptr_;
+  std::pair<const std::string, int>* name_num_pair_;
   double llx_, lly_; // lower Left corner
   PlaceStatus place_status_;
-  BlockOrient orient_; // currently not used
+  BlockOrient orient_;
   BlockAux *aux_;
  public:
   bool is_placed = false;
@@ -45,9 +45,9 @@ class Block {
   Block(BlockType *type, std::pair<const std::string, int>* name_num_pair, int llx, int lly, PlaceStatus place_state = UNPLACED, BlockOrient orient = N);
   std::vector<int> net_list;
 
-  const std::string *Name() const {return &(name_num_pair_ptr_->first);}
+  const std::string *Name() const {return &(name_num_pair_->first);}
   BlockType *Type() const {return type_;}
-  int Num() const {return name_num_pair_ptr_->second;}
+  int Num() const {return name_num_pair_->second;}
   int Width() const {return type_->Width();}
   int Height() const {return type_->Height();}
   double LLX() const;

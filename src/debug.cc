@@ -19,8 +19,8 @@ int main() {
   std::string lef_file, def_file;
   //lef_file = "ispd19_sample3.input.lef";
   //def_file = "ispd19_sample3.input.def";
-  lef_file = "../test/out_1K.lef";
-  def_file = "../test/out_1K.def";
+  lef_file = "../test/out_100K.lef";
+  def_file = "../test/out_100K.def";
   //lef_file = "benchmark_1K.lef";
   //def_file = "benchmark_1K.def";
   //lef_file = adaptec1_lef;
@@ -28,6 +28,7 @@ int main() {
   time_t Time = clock();
   circuit.ReadLefFile(lef_file);
   circuit.ReadDefFile(def_file);
+  //circuit.ReportBlockType();
   std::cout << "File loading complete, time: " << double(Time)/CLOCKS_PER_SEC << "s\n";
 
   circuit.ReportBriefSummary();

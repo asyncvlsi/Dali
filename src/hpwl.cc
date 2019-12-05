@@ -21,7 +21,7 @@ VerboseLevel globalVerboseLevel = LOG_INFO;
 void ReportUsage();
 
 int main(int argc, char *argv[]) {
-  if (argc < 4) {
+  if (argc != 5) {
     ReportUsage();
     return 1;
   }
@@ -37,14 +37,9 @@ int main(int argc, char *argv[]) {
     } else if (arg == "-def" && i < argc) {
       def_file_name = std::string(argv[i++]);
     } else {
-      std::cout << "Unknown option for readArgs\n";
+      std::cout << "Unknown command line option: " << argv[i] << "\n";
+      return 1;
     }
-  }
-
-  if ((lef_file_name.empty())||(def_file_name.empty())) {
-    std::cout << "Invalid input!\n";
-    ReportUsage();
-    return 1;
   }
 
   Circuit circuit;

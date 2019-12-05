@@ -8,7 +8,7 @@ void Assert(bool e, const std::string &error_message) {
   if (!e) {
     std::cout << "FATAL ERROR:" << std::endl;
     std::cout << "    " << error_message << std::endl;
-    assert(e);
+    exit(1);
   }
 }
 
