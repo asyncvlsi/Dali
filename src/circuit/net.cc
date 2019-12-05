@@ -178,7 +178,7 @@ void Net::UpdateMaxMinY() {
   double min_y = max_y;
   double tmp_pin_loc = 0;
   for (size_t i=0; i<blk_pin_list.size(); i++) {
-    tmp_pin_loc = blk_pin_list[i].GetBlock()->LLY() + blk_pin_list[i].YOffset();
+    tmp_pin_loc = blk_pin_list[i].AbsY();
     if (max_y < tmp_pin_loc) {
       max_y = tmp_pin_loc;
       max_pin_y_ = i;

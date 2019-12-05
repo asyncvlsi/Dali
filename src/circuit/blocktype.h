@@ -9,6 +9,8 @@
 #include <map>
 #include <vector>
 
+class Pin;
+
 class BlockType {
  private:
   /****essential data entries****/

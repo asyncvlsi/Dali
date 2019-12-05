@@ -13,7 +13,7 @@ VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 void ReportUsage();
 
 int main(int argc, char *argv[]) {
-  if (argc < 4) {
+  if (argc < 7) {
     ReportUsage();
     return 1;
   }
@@ -21,10 +21,12 @@ int main(int argc, char *argv[]) {
   std::string def_file_name;
   std::string output_name;
   std::string str_grid_value_x, str_grid_value_y;
+  std::string str_target_density;
   std::string str_verbose_level;
   std::string str_x_grid;
   std::string str_y_grid;
   double x_grid = 0, y_grid = 0;
+  double target_density = 1;
 
   for( int i = 1; i < argc; ) {
     std::string arg(argv[i++]);
@@ -50,7 +52,7 @@ int main(int argc, char *argv[]) {
         ReportUsage();
         return 1;
       }
-    } else if (arg == "-grid" && i < argc) {
+    } else if ((arg=="-g" || arg=="-grid") && i < argc) {
       str_x_grid = std::string(argv[i++]);
       str_y_grid = std::string(argv[i++]);
       try {
@@ -58,6 +60,15 @@ int main(int argc, char *argv[]) {
         y_grid = std::stod(str_y_grid);
       } catch (...) {
         std::cout << "Invalid input files!\n";
+        ReportUsage();
+        return 1;
+      }
+    } else if ((arg=="-d" || arg=="-density") && i < argc) {
+      str_target_density = std::string(argv[i++]);
+      try {
+        target_density = std::stod(str_target_density);
+      } catch (...) {
+        std::cout << "Invalid target density!\n";
         ReportUsage();
         return 1;
       }
@@ -95,7 +106,7 @@ int main(int argc, char *argv[]) {
   circuit.ReadDefFile(def_file_name);
 
   Time = clock() - Time;
-  std::cout << "File loading complete, time: " << float(Time) / CLOCKS_PER_SEC << "s\n";
+  std::cout << "File loading complete, time: " << float(Time)/CLOCKS_PER_SEC << "s\n";
   circuit.ReportBriefSummary();
   circuit.ReportHPWL();
 
@@ -103,11 +114,11 @@ int main(int argc, char *argv[]) {
   Placer *gb_placer = new GPSimPL;
   gb_placer->SetInputCircuit(&circuit);
   gb_placer->SetBoundaryDef();
-  gb_placer->SetFillingRate(1);
+  gb_placer->SetFillingRate(target_density);
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
   time_t gp_time = clock() - Time;
-  std::cout << "global placement complete, time: " << float(gp_time) / CLOCKS_PER_SEC << "s\n";
+  std::cout << "global placement complete, time: " << float(gp_time)/CLOCKS_PER_SEC << "s\n";
 
   /*Placer *d_placer = new MDPlacer;
   d_placer->TakeOver(gb_placer);
@@ -118,7 +129,7 @@ int main(int argc, char *argv[]) {
   legalizer->TakeOver(gb_placer);
   legalizer->StartPlacement();
   time_t lg_time = clock() - gp_time;
-  std::cout << "legalization complete, time: " << float(lg_time) / CLOCKS_PER_SEC << "s\n";
+  std::cout << "legalization complete, time: " << float(lg_time)/CLOCKS_PER_SEC << "s\n";
 
   delete gb_placer;
   //delete d_placer;
@@ -138,7 +149,8 @@ void ReportUsage() {
             << "  -lef <file.lef>\n"
             << "  -def <file.def>\n"
             << "  -o <output_name>.def\n"
-            << "  -grid grid_value_x grid_value_y\n"
+            << "  -g/-grid grid_value_x grid_value_y\n"
+            << "  -d/-density (optional, value interval (0,1], default 1)\n"
             << "  -v verbosity_level (optional, 0-5, default 0)\n"
             << "(order does not matter)"
             << std::endl;
