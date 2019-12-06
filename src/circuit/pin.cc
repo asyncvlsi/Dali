@@ -14,7 +14,7 @@ Pin::Pin(std::pair<const std::string, int>* name_num_pair_ptr, BlockType *blk_ty
   y_offset_.resize(8,0);
 }
 
-Pin::Pin(std::pair<const std::string, int>* name_num_pair_ptr, BlockType *blk_type, int x_offset, int y_offset):
+Pin::Pin(std::pair<const std::string, int>* name_num_pair_ptr, BlockType *blk_type, double x_offset, double y_offset):
         name_num_pair_ptr_(name_num_pair_ptr),
         blk_type_(blk_type)
         {
@@ -36,26 +36,97 @@ void Pin::CalculateOffset(double x_offset, double y_offset) {
   x_offset_[0] = x_offset;
   y_offset_[0] = y_offset;
 
-  x_offset_[S-N] = x_offset;
-  y_offset_[S-N] = y_offset;
+  /****
+   * rotate 180 degree counterclockwise
+   *    x' = -x; y' = -y;
+   * shift back to the first quadrant
+   *    x' += width; y' += height;
+   * sum effect
+   *    x' = width - x;
+   *    y' = height - y;
+   ****/
+  x_offset_[S-N] = blk_type_->Width() - x_offset;
+  y_offset_[S-N] = blk_type_->Height() - y_offset;
 
-  x_offset_[W-N] = x_offset;
-  y_offset_[W-N] = y_offset;
+  /****
+   * rotate 90 degree counterclockwise
+   *    x' = -y; y' = x;
+   * width, height switch
+   *    width' = height;
+   *    height' = width;
+   * shift back to the first quadrant
+   *    x' += width';
+   * sum effect
+   *    x' = height - y;
+   *    y' = x;
+   * ****/
+  x_offset_[W-N] = blk_type_->Height() - y_offset;
+  y_offset_[W-N] = x_offset;
 
-  x_offset_[E-N] = x_offset;
-  y_offset_[E-N] = y_offset;
 
-  x_offset_[FN-N] = x_offset;
+  /****
+   * rotate 270 degree counterclockwise
+   *    x' = y; y' = -x;
+   * width, height switch
+   *    width' = height;
+   *    height' = width;
+   * shift back to the first quadrant
+   *    y' += height';
+   * sum effect
+   *    x' = y;
+   *    y' = width - x;
+   * ****/
+  x_offset_[E-N] = y_offset;
+  y_offset_[E-N] = blk_type_->Width() - x_offset;
+
+  /****
+   * Flip along the line through the middle of width
+   *    x' = width - x; y = y;
+   * ****/
+  x_offset_[FN-N] = blk_type_->Width() - x_offset;
   y_offset_[FN-N] = y_offset;
 
+  /****
+   * rotate 180 degree counterclockwise
+   *    x' = width - x;
+   *    y' = height - y;
+   * then flip
+   *    x' = width - x';
+   *    y' = y';
+   * sum effect
+   *    x' = x;
+   *    y' = height - y;
+   * ****/
   x_offset_[FS-N] = x_offset;
   y_offset_[FS-N] = blk_type_->Height() - y_offset;
 
-  x_offset_[FW-N] = x_offset;
-  y_offset_[FW-N] = y_offset;
+  /****
+   * rotate 90 degree counterclockwise
+   *    x' = height - y;
+   *    y' = x;
+   * then flip
+   *    x' = width' - x';
+   *    y' = y';
+   * sum effect
+   *    x' = y
+   *    y' = x;
+   * ****/
+  x_offset_[FW-N] = y_offset;
+  y_offset_[FW-N] = x_offset;
 
-  x_offset_[FE-N] = x_offset;
-  y_offset_[FE-N] = y_offset;
+  /****
+   * rotate 270 degree counterclockwise
+   *    x' = y;
+   *    y' = width - x;
+   * then flip
+   *    x' = width' - x';
+   *    y' = y';
+   * sum effect
+   *    x' = height - y;
+   *    y = width - x;
+   * ****/
+  x_offset_[FE-N] = blk_type_->Height() - y_offset;
+  y_offset_[FE-N] = blk_type_->Width() - x_offset;
 
 }
 

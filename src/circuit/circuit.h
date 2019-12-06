@@ -56,8 +56,9 @@ class Circuit {
   // API to add new BlockType
   bool IsBlockTypeExist(std::string &block_type_name);
   BlockType *GetBlockType(std::string &block_type_name);
-  BlockType *AddBlockType(std::string &block_type_name, int width, int height);
+  BlockType *AddBlockType(std::string &block_type_name, unsigned int width, unsigned int height);
   void ReportBlockType();
+  void CopyBlockType(Circuit &circuit);
 
   std::vector<Block> block_list;
   std::map<std::string, int> block_name_map;

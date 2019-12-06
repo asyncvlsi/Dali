@@ -81,7 +81,7 @@ BlockType *Circuit::GetBlockType(std::string &block_type_name) {
   return block_type_map.find(block_type_name)->second;
 }
 
-BlockType *Circuit::AddBlockType(std::string &block_type_name, int width, int height) {
+BlockType *Circuit::AddBlockType(std::string &block_type_name, unsigned int width, unsigned int height) {
   Assert(!IsBlockTypeExist(block_type_name), "BlockType exist, cannot create this block type again: " + block_type_name);
   auto ret = block_type_map.insert(std::pair<std::string, BlockType*>(block_type_name, nullptr));
   auto tmp_ptr = new BlockType(&(ret.first->first), width, height);
@@ -94,6 +94,22 @@ void Circuit::ReportBlockType() {
   std::cout << "Total BlockType: " << block_type_map.size() << std::endl;
   for (auto &&pair: block_type_map) {
     pair.second->Report();
+  }
+}
+
+void Circuit::CopyBlockType(Circuit &circuit) {
+  BlockType *blk_type = nullptr;
+  BlockType *blk_type_new = nullptr;
+  std::string type_name, pin_name;
+  for (auto &&item: circuit.block_type_map) {
+    blk_type = item.second;
+    type_name = *(blk_type->Name());
+    if (type_name == "PIN") continue;
+    blk_type_new = AddBlockType(type_name, blk_type->Width(), blk_type->Height());
+    for (auto &&pin: blk_type->pin_list) {
+      pin_name = *(pin.Name());
+      blk_type_new->AddPin(pin_name, pin.XOffset(), pin.YOffset());
+    }
   }
 }
 

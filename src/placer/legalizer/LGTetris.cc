@@ -166,7 +166,7 @@ bool TetrisLegalizer::TetrisLegal() {
         block_list[block_num].SetLLY(result_loc.y);
       } else {
         FastShift(i);
-        std::cout << "Tetris legalization fail!\n";
+        std::cout << "Tetris legalization iteration...\n";
         return false;
       }
     }
