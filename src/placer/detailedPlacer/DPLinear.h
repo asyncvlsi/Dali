@@ -9,8 +9,8 @@
 #include <random>
 #include "../placer.h"
 #include "../globalPlacer/GPSimPL.h"
-#include "../../../module/Eigen/Sparse"
-#include "../../../module/Eigen//IterativeLinearSolvers"
+#include "../../../module/eigen/Eigen/Sparse"
+#include "../../../module/eigen/Eigen//IterativeLinearSolvers"
 #include "DPLinear/scaffoldnet.h"
 
 typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat; // declares a row-major sparse matrix type of double

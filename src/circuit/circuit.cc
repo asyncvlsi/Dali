@@ -320,9 +320,6 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     }
   }
   Assert(manufacturing_grid > 0, "Cannot find or invalid MANUFACTURINGGRID");
-  if (!grid_set_) {
-    SetGridValue(manufacturing_grid, manufacturing_grid);
-  }
   //std::cout << "MANUFACTURINGGRID: " << grid_value_ << "\n";
 
   // 3. read metal layer
@@ -410,6 +407,12 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     if (line.find("VIA")!=std::string::npos || line.find("MACRO")!=std::string::npos) break;
   }
   //ReportMetalLayers();
+  if (!grid_set_) {
+    if (!metal_list.empty()) {
+      double
+    }
+    SetGridValue(manufacturing_grid, manufacturing_grid);
+  }
 
   // 4. read block type information
   while (!ist.eof()) {

@@ -1,0 +1,8 @@
+[submodule "module/OpenDB"]
+	path = module/OpenDB
+	url = https://github.com/The-OpenROAD-Project/OpenDB.git
+	branch = master
+[submodule "module/eigen"]
+	path = module/eigen
+	url = https://gitlab.com/libeigen/eigen.git
+	branch = master

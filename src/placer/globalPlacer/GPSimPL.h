@@ -9,8 +9,8 @@
 #include <random>
 #include <cfloat>
 #include "../placer.h"
-#include "../../../module/Eigen/Sparse"
-#include "../../../module/Eigen//IterativeLinearSolvers"
+#include "../../../module/eigen/Eigen/Sparse"
+#include "../../../module/eigen/Eigen//IterativeLinearSolvers"
 #include "GPSimPL/simplblockaux.h"
 #include "GPSimPL/gridbinindex.h"
 #include "GPSimPL/gridbin.h"
