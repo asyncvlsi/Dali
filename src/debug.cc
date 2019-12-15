@@ -19,8 +19,6 @@ int main() {
   std::string lef_file, def_file;
   //lef_file = "ispd19_sample3.input.lef";
   //def_file = "ispd19_sample3.input.def";
-  lef_file = "../test/out_1K.lef";
-  def_file = "../test/out_1K.def";
   //lef_file = "benchmark_1K.lef";
   //def_file = "benchmark_1K.def";
   //lef_file = adaptec1_lef;
@@ -48,7 +46,7 @@ int main() {
   //gb_placer->SetBoundaryAuto();
 
   gb_placer->SetBoundaryDef();
-  gb_placer->SetFillingRate(0.7);
+  gb_placer->SetFillingRate(1);
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
   gb_placer->GenMATLABScript("gb_result.txt");
