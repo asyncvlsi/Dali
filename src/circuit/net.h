@@ -60,9 +60,14 @@ class Net {
   double HPWLY();
   double HPWL();
 
-  void UpdateMaxMinCtoCX(); // implementation not complete
-  void UpdateMaxMinCtoCY(); // implementation not complete
-  void UpdateMaxMinCtoC(); // implementation not complete
+  double Left()   {return blk_pin_list[min_pin_x_].AbsX();}
+  double Right()  {return blk_pin_list[max_pin_x_].AbsX();}
+  double Bottom() {return blk_pin_list[min_pin_y_].AbsY();}
+  double Top()    {return blk_pin_list[max_pin_y_].AbsY();}
+
+  void UpdateMaxMinCtoCX();
+  void UpdateMaxMinCtoCY();
+  void UpdateMaxMinCtoC();
   int MaxPinCtoCX();
   int MinPinCtoCX();
   int MaxPinCtoCY();

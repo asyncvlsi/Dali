@@ -202,11 +202,29 @@ IOPin *Circuit::GetIOPin(std::string &iopin_name) {
 }
 
 IOPin *Circuit::AddIOPin(std::string &iopin_name) {
-
+  Assert(net_list.empty(), "Cannot add new IOPIN, because net_list now is not empty");
+  Assert(!IsIOPinExist(iopin_name), "IOPin exists, cannot create this IOPin again: " + iopin_name);
+  int map_size = pin_name_map.size();
+  auto ret = pin_name_map.insert(std::pair<std::string, int>(iopin_name, map_size));
+  std::pair<const std::string, int>* name_num_pair_ptr = &(*ret.first);
+  pin_list.emplace_back(name_num_pair_ptr);
+  return &(pin_list.back());
 }
 
 IOPin *Circuit::AddIOPin(std::string &iopin_name, int lx, int ly) {
+  Assert(net_list.empty(), "Cannot add new IOPIN, because net_list now is not empty");
+  Assert(!IsIOPinExist(iopin_name), "IOPin exists, cannot create this IOPin again: " + iopin_name);
+  int map_size = pin_name_map.size();
+  auto ret = pin_name_map.insert(std::pair<std::string, int>(iopin_name, map_size));
+  std::pair<const std::string, int>* name_num_pair_ptr = &(*ret.first);
+  pin_list.emplace_back(name_num_pair_ptr,lx,ly);
+  return &(pin_list.back());
+}
 
+void Circuit::ReportIOPin() {
+  for (auto &&iopin: pin_list) {
+    iopin.Report();
+  }
 }
 
 bool Circuit::IsNetExist(std::string &net_name) {
@@ -408,12 +426,16 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
   }
   //ReportMetalLayers();
   if (!grid_set_) {
-    if (metal_list.size() >= 2) {
-      SetGridUsingMetalPitch();
-    } else {
+    if (metal_list.size() < 2) {
+      SetGridValue(manufacturing_grid, manufacturing_grid);
       std::cout << "No enough metal layers to specify horizontal and vertical pitch\n"
                 << "Using manufacturing grid as grid values\n";
+    } else if (metal_list[0].PitchY()<=0 || metal_list[1].PitchX()<=0) {
       SetGridValue(manufacturing_grid, manufacturing_grid);
+      std::cout << "No enough metal layers to specify horizontal and vertical pitch\n"
+                << "Using manufacturing grid as grid values\n";
+    } else {
+      SetGridUsingMetalPitch();
     }
   }
 
@@ -441,7 +463,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
               Assert(false, "Invalid stod conversion:\n" + line);
             }
             new_block_type = AddBlockType(block_type_name, width, height);
-            //std::cout << "  type width, height: " << block_type_list.back().Width() << " " << block_type_list.back().Height() << "\n";
+            //std::cout << "  type width, height: " << new_block_type->Width() << " " << new_block_type->Height() << "\n";
           }
           getline(ist, line);
         }
@@ -559,6 +581,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
   ist.clear();
   ist.seekg(0, std::ios::beg);
   block_list.reserve(components_count+pins_count);
+  pin_list.reserve(pins_count);
   net_list.reserve(nets_count);
 
   // find UNITS DISTANCE MICRONS
@@ -651,26 +674,21 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       getline(ist, line);
     }
     //std::cout << line << "\n";
-    // a). find the number of pins
-    std::vector<std::string> pins_field;
-    StrSplit(line, pins_field);
-    //std::cout << pins_field[1] << "\n";
-    try {
-      int pins_cnt = std::stoi(pins_field[1]);
-      pin_list.reserve(pins_cnt);
-    } catch (...) {
-      Assert(false, "Invalid stoi conversion:\n" + line);
-    }
-
     getline(ist, line);
 
     while ((line.find("END PINS") == std::string::npos) && !ist.eof()) {
-      /*if (line.find('-') != std::string::npos && line.find("NET") != std::string::npos) {
-        std::cout << line << "\n";
-      }*/
+      if (line.find('-') != std::string::npos && line.find("NET") != std::string::npos) {
+        //std::cout << line << "\n";
+        std::vector<std::string> io_pin_field;
+        StrSplit(line, io_pin_field);
+        //IOPin *iopin = nullptr;
+        //iopin = AddIOPin(io_pin_field[1]);
+        AddIOPin(io_pin_field[1]);
+      }
       getline(ist, line);
     }
   }
+  //ReportIOPin();
 
   if (nets_section_exist) {
     while (line.find("NETS") == std::string::npos && !ist.eof()) {
@@ -706,7 +724,10 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
           }
           for (size_t i = 0; i < pin_field.size(); i += 4) {
             //std::cout << "     " << pin_field[i+1] << " " << pin_field[i+2];
-            if (pin_field[i+1]=="PIN") continue;
+            if (pin_field[i+1]=="PIN") {
+              GetIOPin(pin_field[i+2])->SetNet(new_net);
+              continue;
+            }
             Block *block = GetBlock(pin_field[i+1]);
             int pin_num = block->Type()->PinIndex(pin_field[i + 2]);
             new_net->AddBlockPinPair(block, pin_num);
@@ -720,6 +741,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       getline(ist, line);
     }
   }
+  //ReportIOPin();
   std::cout << "def file loading complete\n";
 }
 

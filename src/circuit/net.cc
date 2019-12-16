@@ -158,7 +158,7 @@ void Net::UpdateMaxMinX() {
   double max_x = blk_pin_list[0].AbsX();
   double min_x = max_x;
   double tmp_pin_loc = 0;
-  for (size_t i=0; i<blk_pin_list.size(); i++) {
+  for (size_t i=1; i<blk_pin_list.size(); ++i) {
     tmp_pin_loc = blk_pin_list[i].AbsX();
     if (max_x < tmp_pin_loc) {
       max_x = tmp_pin_loc;
@@ -177,7 +177,7 @@ void Net::UpdateMaxMinY() {
   double max_y = blk_pin_list[0].AbsY();
   double min_y = max_y;
   double tmp_pin_loc = 0;
-  for (size_t i=0; i<blk_pin_list.size(); i++) {
+  for (size_t i=1; i<blk_pin_list.size(); ++i) {
     tmp_pin_loc = blk_pin_list[i].AbsY();
     if (max_y < tmp_pin_loc) {
       max_y = tmp_pin_loc;
@@ -214,31 +214,41 @@ double Net::HPWL() {
 }
 
 void Net::UpdateMaxMinCtoCX() {
-  size_t max_pin_index = 0;
-  auto *block = blk_pin_list[0].GetBlock();
-  double max_x = block->X();
-  for (size_t i=0; i<blk_pin_list.size(); i++) {
-    block = blk_pin_list[i].GetBlock();
-    if (max_x < block->X()) {
-      max_x = block->X();
-      max_pin_index = i;
+  max_pin_x_ = 0;
+  min_pin_x_ = 0;
+  double max_x = blk_pin_list[0].GetBlock()->X();
+  double min_x = max_x;
+  double tmp_pin_loc = 0;
+  for (size_t i=1; i<blk_pin_list.size(); ++i) {
+    tmp_pin_loc = blk_pin_list[i].GetBlock()->X();
+    if (max_x < tmp_pin_loc) {
+      max_x = tmp_pin_loc;
+      max_pin_x_ = i;
+    }
+    if (min_x > tmp_pin_loc) {
+      min_x = tmp_pin_loc;
+      min_pin_x_ = i;
     }
   }
-  max_pin_x_ = max_pin_index;
 }
 
 void Net::UpdateMaxMinCtoCY() {
-  size_t max_pin_index = 0;
-  auto *block = blk_pin_list[0].GetBlock();
-  double max_y = block->Y();
-  for (size_t i=0; i<blk_pin_list.size(); i++) {
-    block = blk_pin_list[i].GetBlock();
-    if (max_y < block->Y()) {
-      max_y = block->Y();
-      max_pin_index = i;
+  max_pin_y_ = 0;
+  min_pin_y_ = 0;
+  double max_y = blk_pin_list[0].GetBlock()->Y();
+  double min_y = max_y;
+  double tmp_pin_loc = 0;
+  for (size_t i=1; i<blk_pin_list.size(); ++i) {
+    tmp_pin_loc = blk_pin_list[i].GetBlock()->Y();
+    if (max_y < tmp_pin_loc) {
+      max_y = tmp_pin_loc;
+      max_pin_y_ = i;
+    }
+    if (min_y > tmp_pin_loc) {
+      min_y = tmp_pin_loc;
+      min_pin_y_ = i;
     }
   }
-  max_pin_y_ = max_pin_index;
 }
 
 void Net::UpdateMaxMinCtoC() {

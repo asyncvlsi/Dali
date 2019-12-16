@@ -8,7 +8,7 @@
 #include "circuit.h"
 #include "placer.h"
 
-VerboseLevel globalVerboseLevel = LOG_DEBUG;
+VerboseLevel globalVerboseLevel = LOG_INFO;
 
 int main() {
   Circuit circuit;
@@ -23,6 +23,7 @@ int main() {
   def_file = "Pbenchmark_1K.def";
   //lef_file = adaptec1_lef;
   //def_file = adaptec1_def;
+  //circuit.SetGridValue(0.01,0.01);
   time_t Time = clock();
   circuit.ReadLefFile(lef_file);
   circuit.ReadDefFile(def_file);
@@ -48,7 +49,7 @@ int main() {
   gb_placer->StartPlacement();
   //gb_placer->GenMATLABScript("gb_result.txt");
   //gb_placer->SaveNodeTerminal();
-  gb_placer->SaveDEFFile("circuit.def", def_file);
+  //gb_placer->SaveDEFFile("circuit.def", def_file);
   //circuit.SaveISPD("circuit.pl");
 
   /*Placer *d_placer = new MDPlacer;
@@ -56,15 +57,15 @@ int main() {
   d_placer->StartPlacement();
   d_placer->GenMATLABScript("dp_result.txt");*/
 
-  Placer *legalizer = new TetrisLegalizer;
-  legalizer->TakeOver(gb_placer);
-  legalizer->StartPlacement();
-  legalizer->GenMATLABScript("legalizer_result.txt");
+  //Placer *legalizer = new TetrisLegalizer;
+  //legalizer->TakeOver(gb_placer);
+  //legalizer->StartPlacement();
+  //legalizer->GenMATLABScript("legalizer_result.txt");
   //legalizer->SaveDEFFile("circuit.def", def_file);
 
   delete gb_placer;
   //delete d_placer;
-  delete legalizer;
+  //delete legalizer;
 
   Time = clock() - Time;
   std::cout << "Execution time " << double(Time)/CLOCKS_PER_SEC << "s.\n";

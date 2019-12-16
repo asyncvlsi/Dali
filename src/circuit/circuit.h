@@ -79,6 +79,7 @@ class Circuit {
   IOPin *GetIOPin(std::string &iopin_name);
   IOPin *AddIOPin(std::string &iopin_name);
   IOPin *AddIOPin(std::string &iopin_name, int lx, int ly);
+  void ReportIOPin();
 
   std::vector<Net> net_list;
   std::map<std::string, int> net_name_map;

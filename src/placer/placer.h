@@ -63,7 +63,7 @@ public:
   void TakeOver(Placer *placer);
   void SanityCheck();
   void UpdateComponentsPlacementStatus();
-  void NaivePinPlacement();
+  void IOPinPlacement();
 
   void GenMATLABScript(std::string const &name_of_file= "block_net_list.m");
   void GenMATLABScriptPlaced(std::string const &name_of_file= "block_net_list.m");
