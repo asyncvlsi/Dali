@@ -268,7 +268,7 @@ void Circuit::SetGridValue(double grid_value_x, double grid_value_y) {
 }
 
 void Circuit::SetGridUsingMetalPitch() {
-
+  SetGridValue(metal_list[0].PitchY(), metal_list[1].PitchX());
 }
 
 void Circuit::ReadLefFile(std::string const &name_of_file) {
@@ -408,10 +408,13 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
   }
   //ReportMetalLayers();
   if (!grid_set_) {
-    if (!metal_list.empty()) {
-      double
+    if (metal_list.size() >= 2) {
+      SetGridUsingMetalPitch();
+    } else {
+      std::cout << "No enough metal layers to specify horizontal and vertical pitch\n"
+                << "Using manufacturing grid as grid values\n";
+      SetGridValue(manufacturing_grid, manufacturing_grid);
     }
-    SetGridValue(manufacturing_grid, manufacturing_grid);
   }
 
   // 4. read block type information
@@ -647,11 +650,11 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
     while ((line.find("PINS") == std::string::npos) && !ist.eof()) {
       getline(ist, line);
     }
-    std::cout << line << "\n";
+    //std::cout << line << "\n";
     // a). find the number of pins
     std::vector<std::string> pins_field;
     StrSplit(line, pins_field);
-    std::cout << pins_field[1] << "\n";
+    //std::cout << pins_field[1] << "\n";
     try {
       int pins_cnt = std::stoi(pins_field[1]);
       pin_list.reserve(pins_cnt);
@@ -662,9 +665,9 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
     getline(ist, line);
 
     while ((line.find("END PINS") == std::string::npos) && !ist.eof()) {
-      if (line.find('-') != std::string::npos && line.find("NET") != std::string::npos) {
+      /*if (line.find('-') != std::string::npos && line.find("NET") != std::string::npos) {
         std::cout << line << "\n";
-      }
+      }*/
       getline(ist, line);
     }
   }

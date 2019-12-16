@@ -28,6 +28,8 @@ int main(int argc, char *argv[]) {
   double x_grid = 0, y_grid = 0;
   double target_density = 1;
 
+  Circuit circuit;
+
   for( int i = 1; i < argc; ) {
     std::string arg(argv[i++]);
     if (arg == "-lef" && i < argc) {
@@ -58,6 +60,7 @@ int main(int argc, char *argv[]) {
       try {
         x_grid = std::stod(str_x_grid);
         y_grid = std::stod(str_y_grid);
+        circuit.SetGridValue(x_grid, y_grid);
       } catch (...) {
         std::cout << "Invalid input files!\n";
         ReportUsage();
@@ -100,8 +103,6 @@ int main(int argc, char *argv[]) {
   }
 
   time_t Time = clock();
-  Circuit circuit;
-  circuit.SetGridValue(x_grid, y_grid);
   circuit.ReadLefFile(lef_file_name);
   circuit.ReadDefFile(def_file_name);
 

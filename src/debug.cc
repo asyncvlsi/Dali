@@ -19,8 +19,8 @@ int main() {
   std::string lef_file, def_file;
   //lef_file = "ispd19_sample3.input.lef";
   //def_file = "ispd19_sample3.input.def";
-  lef_file = "benchmark_1K.lef";
-  def_file = "benchmark_1K.def";
+  lef_file = "Pbenchmark_1K.lef";
+  def_file = "Pbenchmark_1K.def";
   //lef_file = adaptec1_lef;
   //def_file = adaptec1_def;
   time_t Time = clock();
@@ -46,7 +46,7 @@ int main() {
   gb_placer->SetFillingRate(1);
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
-  gb_placer->GenMATLABScript("gb_result.txt");
+  //gb_placer->GenMATLABScript("gb_result.txt");
   //gb_placer->SaveNodeTerminal();
   //gb_placer->SaveDEFFile("circuit.def", def_file);
   //circuit.SaveISPD("circuit.pl");
@@ -59,7 +59,7 @@ int main() {
   Placer *legalizer = new TetrisLegalizer;
   legalizer->TakeOver(gb_placer);
   legalizer->StartPlacement();
-  legalizer->GenMATLABScript("legalizer_result.txt");
+  //legalizer->GenMATLABScript("legalizer_result.txt");
   //legalizer->SaveDEFFile("circuit.def", def_file);
 
   delete gb_placer;

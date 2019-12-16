@@ -2,7 +2,7 @@
 	path = module/OpenDB
 	url = https://github.com/The-OpenROAD-Project/OpenDB.git
 	branch = master
-[submodule "module/eigen"]
-	path = module/eigen
-	url = https://gitlab.com/libeigen/eigen.git
+[submodule "module/eigen-git-mirror"]
+	path = module/eigen-git-mirror
+	url = https://github.com/eigenteam/eigen-git-mirror.git
 	branch = master
