@@ -48,7 +48,7 @@ int main() {
   gb_placer->StartPlacement();
   //gb_placer->GenMATLABScript("gb_result.txt");
   //gb_placer->SaveNodeTerminal();
-  //gb_placer->SaveDEFFile("circuit.def", def_file);
+  gb_placer->SaveDEFFile("circuit.def", def_file);
   //circuit.SaveISPD("circuit.pl");
 
   /*Placer *d_placer = new MDPlacer;
@@ -59,7 +59,7 @@ int main() {
   Placer *legalizer = new TetrisLegalizer;
   legalizer->TakeOver(gb_placer);
   legalizer->StartPlacement();
-  //legalizer->GenMATLABScript("legalizer_result.txt");
+  legalizer->GenMATLABScript("legalizer_result.txt");
   //legalizer->SaveDEFFile("circuit.def", def_file);
 
   delete gb_placer;

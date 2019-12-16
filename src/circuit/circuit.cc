@@ -757,9 +757,9 @@ void Circuit::ReportBriefSummary() {
               << "  nets: " << net_list.size() << "\n"
               << "  grid size x: " << grid_value_x_ << " um, grid size y: " << grid_value_y_ << " um\n"
               << "  total block area: " << tot_blk_area_ << "\n"
-              << "  total white space: " << (unsigned long int)(def_right-def_left)*(def_top-def_bottom)
-              << "\n";
-
+              << "  total white space: " << (unsigned long int)(def_right-def_left)*(def_top-def_bottom) << "\n"
+              << "  white space utility: " << WhiteSpaceUsage() << "\n"
+              ;
   }
 }
 

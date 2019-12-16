@@ -144,6 +144,7 @@ class Circuit {
   double AveMovWidth() const;
   double AveMovHeight() const;
   double AveMovArea() const;
+  double WhiteSpaceUsage() const {return double(TotArea())/(def_right-def_left)/(def_top-def_bottom);}
 
   void NetSortBlkPin();
   double HPWLX();

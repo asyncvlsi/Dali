@@ -3,7 +3,10 @@
 //
 
 #include <iostream>
+#include <chrono>
+#include <ratio>
 #include <ctime>
+#include <algorithm>
 #include "common/global.h"
 #include "circuit.h"
 #include "placer.h"
@@ -13,21 +16,27 @@ VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 void ReportUsage();
 
 int main(int argc, char *argv[]) {
-  if (argc < 7) {
+  using std::chrono::system_clock;
+  system_clock::time_point today = system_clock::now();
+  std::time_t tt = system_clock::to_time_t (today);
+  std::cout << "today is: " << ctime(&tt);
+
+  if (argc < 5) {
     ReportUsage();
     return 1;
   }
   std::string lef_file_name;
   std::string def_file_name;
-  std::string output_name;
+  std::string output_name = std::to_string(tt) + ".def";
   std::string str_grid_value_x, str_grid_value_y;
   std::string str_target_density;
   std::string str_verbose_level;
   std::string str_x_grid;
   std::string str_y_grid;
   double x_grid = 0, y_grid = 0;
-  double target_density = 1;
+  double target_density = -1;
 
+  time_t Time = clock();
   Circuit circuit;
 
   for( int i = 1; i < argc; ) {
@@ -102,7 +111,6 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  time_t Time = clock();
   circuit.ReadLefFile(lef_file_name);
   circuit.ReadDefFile(def_file_name);
 
@@ -110,6 +118,13 @@ int main(int argc, char *argv[]) {
   std::cout << "File loading complete, time: " << float(Time)/CLOCKS_PER_SEC << "s\n";
   circuit.ReportBriefSummary();
   circuit.ReportHPWL();
+
+  if (target_density == -1) {
+    target_density = std::min(circuit.WhiteSpaceUsage() * 1.2, 1.0);
+  }
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "target density: " << target_density << "\n";
+  }
 
   Time = clock();
   Placer *gb_placer = new GPSimPL;
@@ -149,8 +164,8 @@ void ReportUsage() {
   std::cout << "Usage: hpcc\n"
             << "  -lef <file.lef>\n"
             << "  -def <file.def>\n"
-            << "  -o <output_name>.def\n"
-            << "  -g/-grid grid_value_x grid_value_y\n"
+            << "  -o <output_name>.def (optional, default name timestamp.def)\n"
+            << "  -g/-grid grid_value_x grid_value_y (optional, default metal1 and metal 2 pitch values)\n"
             << "  -d/-density (optional, value interval (0,1], default 1)\n"
             << "  -v verbosity_level (optional, 0-5, default 0)\n"
             << "(order does not matter)"
