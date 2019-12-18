@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.9)
 
 # We only use C++ compiler for this project.
 # By specifying the languages, project() will only check if there is a C++ compiler.
@@ -21,6 +21,24 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 # Set the output directory of executables
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
+add_subdirectory(module/eigen-git-mirror)
+add_subdirectory(module/OpenDB)
+
+include_directories(
+    module/OpenDB/include/lef56
+    module/OpenDB/include/opendb
+    module/OpenDB/src/db
+    module/OpenDB/src/defin
+    module/OpenDB/src/defout
+    module/OpenDB/src/lef56
+    module/OpenDB/src/lefin
+    module/OpenDB/src/lefout
+    module/OpenDB/src/swig
+    module/OpenDB/src/tm
+    module/OpenDB/src/zlib
+    module/OpenDB/src/zutil
+)
+
 # All used circuit and placer source code
 file(GLOB SOURCES
         src/common/*.cc
@@ -33,12 +51,11 @@ file(GLOB SOURCES
         src/placer/detailedPlacer/MDPlacer/*.cc
         src/placer/legalizer/*.cc
         src/placer/legalizer/LGTetris/*.cc
-        module/Eigen/*
         )
 
 # Create a library, static libraries are controlled by ARCHIVE_OUTPUT_DIRECTORY property
 # Shared libraries are controlled by LIBRARY_OUTPUT_DIRECTORY
-# This placer library is not necessary, this library is created beacuse we need to put it somewhere in $ACT_HOME or $CAD_HOME
+# This placer library is not necessary, this library is created because we need to put it somewhere in $ACT_HOME or $CAD_HOME
 add_library(placer
     STATIC
     ${SOURCES})
@@ -53,8 +70,13 @@ target_link_libraries(hpcc
 add_executable(hpcc-debug
     EXCLUDE_FROM_ALL
     src/debug.cc)
+add_dependencies( hpcc-debug opendb )
+
 target_link_libraries(hpcc-debug
-    PRIVATE placer)
+    PRIVATE placer
+    def
+    lef
+    )
 
 # Stand-alone hpwl calculator, building from the placer library
 add_executable(hpwl

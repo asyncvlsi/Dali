@@ -43,10 +43,10 @@ PlaceStatus StrToPlaceStatus(std::string &str_place_status);
 std::string PlaceStatusStr(PlaceStatus place_status);
 
 enum SignalDirection {
-  INPUT = 0,
-  OUTPUT = 1,
-  INOUT = 2,
-  FEEDTHRU = 3
+  INPUT_ = 0,
+  OUTPUT_ = 1,
+  INOUT_ = 2,
+  FEEDTHRU_ = 3
 };
 
 SignalDirection  StrToSignalDirection(std::string &str_signal_direction);

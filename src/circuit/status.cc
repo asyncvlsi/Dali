@@ -117,15 +117,15 @@ std::string PlaceStatusStr(PlaceStatus place_status) {
 }
 
 SignalDirection  StrToSignalDirection(std::string &str_signal_direction) {
-  SignalDirection signal_direction = INPUT;
+  SignalDirection signal_direction = INPUT_;
   if (str_signal_direction == "INPUT") {
-    signal_direction = INPUT;
+    signal_direction = INPUT_;
   } else if (str_signal_direction == "OUTPUT") {
-    signal_direction = OUTPUT;
+    signal_direction = OUTPUT_;
   } else if (str_signal_direction == "INOUT") {
-    signal_direction = INOUT;
+    signal_direction = INOUT_;
   } else if (str_signal_direction == "FEEDTHRU") {
-    signal_direction = FEEDTHRU;
+    signal_direction = FEEDTHRU_;
   } else {
     std::cout << "Unknown SignalDirection: " << str_signal_direction << std::endl;
     exit(0);

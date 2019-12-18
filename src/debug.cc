@@ -5,12 +5,26 @@
 #include <iostream>
 #include <vector>
 #include <ctime>
+#include "opendb.h"
 #include "circuit.h"
 #include "placer.h"
 
-VerboseLevel globalVerboseLevel = LOG_INFO;
+VerboseLevel globalVerboseLevel = LOG_DEBUG;
 
 int main() {
+  std::string lefFileName = "Pbenchmark_1K.lef";
+  std::string defFileName = "Pbenchmark_1K.def";
+  using namespace odb;
+  extern bool lefin_parse(lefin* , const char* );
+  dbDatabase* db = dbDatabase::create();
+  bool ignore_non_routing_layers = false;
+  std::vector<std::string> defFileVec;
+  defFileVec.push_back(defFileName);
+  //odb_read_lef(db, lefFileName.c_str());
+  //odb_read_def(db, defFileVec);
+
+  return 0;
+
   Circuit circuit;
 
   std::string adaptec1_lef = "../test/adaptec1/adaptec1.lef";
@@ -38,10 +52,6 @@ int main() {
   Time = clock();
   Placer *gb_placer = new GPSimPL;
   gb_placer->SetInputCircuit(&circuit);
-
-  //gb_placer->SetFillingRate(1/1.4);
-  //gb_placer->SetAspectRatio(1);
-  //gb_placer->SetBoundaryAuto();
 
   gb_placer->SetBoundaryDef();
   gb_placer->SetFillingRate(1);
