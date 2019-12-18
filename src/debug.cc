@@ -12,16 +12,22 @@
 VerboseLevel globalVerboseLevel = LOG_DEBUG;
 
 int main() {
+  using namespace odb;
   std::string lefFileName = "Pbenchmark_1K.lef";
   std::string defFileName = "Pbenchmark_1K.def";
-  using namespace odb;
-  extern bool lefin_parse(lefin* , const char* );
   dbDatabase* db = dbDatabase::create();
-  bool ignore_non_routing_layers = false;
+
   std::vector<std::string> defFileVec;
   defFileVec.push_back(defFileName);
-  //odb_read_lef(db, lefFileName.c_str());
-  //odb_read_def(db, defFileVec);
+  odb_read_lef(db, lefFileName.c_str());
+  std::cout << db->getTech()->getDbUnitsPerMicron() << "\n";
+  odb_read_def(db, defFileVec);
+  std::cout << db->getChip()->getBlock()->getName() << "\n";
+  //std::cout << db->getChip()->getBlock()->getInsts().begin()->getName() << "\n";
+  for (auto &&blk: db->getChip()->getBlock()->getInsts()) {
+    std::cout << blk->getConstName() << "\n";
+  }
+
 
   return 0;
 

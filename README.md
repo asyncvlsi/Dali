@@ -11,6 +11,7 @@
   * Cmake, version >= 3.10.2
 
 ### Pre-requisite for submodules: OpenDB
+  * Tcl/Tk, version >= 8.6.8
   * GCC, version >= 7.4.0
   * Cmake, version >= 3.10.2
   * Bison, version >= 3.0.4

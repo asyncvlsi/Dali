@@ -74,9 +74,7 @@ add_dependencies( hpcc-debug opendb )
 
 target_link_libraries(hpcc-debug
     PRIVATE placer
-    def
-    lef
-    )
+    opendb)
 
 # Stand-alone hpwl calculator, building from the placer library
 add_executable(hpwl
