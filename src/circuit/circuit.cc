@@ -13,10 +13,16 @@
 Circuit::Circuit(): tot_width_(0), tot_height_(0), tot_blk_area_(0), tot_mov_width_(0), tot_mov_height_(0),
                     tot_mov_block_area_(0), tot_mov_blk_num_(0), min_width_(INT_MAX), max_width_(0),
                     min_height_(INT_MAX), max_height_(0), grid_set_(false), grid_value_x_(0), grid_value_y_(0){
-  std::string iopin_type_name("PIN");
-  auto io_pin_type = AddBlockType(iopin_type_name, 0, 0);
-  std::string tmp_pin_name("pin");
-  io_pin_type->AddPin(tmp_pin_name,0,0);
+  AddAbsIOPinType();
+  db_ = nullptr;
+}
+
+Circuit::Circuit(odb::dbDatabase* db): tot_width_(0), tot_height_(0), tot_blk_area_(0), tot_mov_width_(0), tot_mov_height_(0),
+                                       tot_mov_block_area_(0), tot_mov_blk_num_(0), min_width_(INT_MAX), max_width_(0),
+                                       min_height_(INT_MAX), max_height_(0), grid_set_(false), grid_value_x_(0), grid_value_y_(0) {
+  AddAbsIOPinType();
+  db_ = db;
+  InitializeFromDB(db);
 }
 
 Circuit::~Circuit() {
@@ -27,6 +33,83 @@ Circuit::~Circuit() {
    * ****/
   for (auto &&pair: block_type_map) {
     delete pair.second;
+  }
+}
+
+void Circuit::InitializeFromDB(odb::dbDatabase* db) {
+  db_ = db;
+
+  // 1. lef database microns
+  lef_database_microns = db->getTech()->getDbUnitsPerMicron();
+  //std::cout << db->getTech()->getDbUnitsPerMicron() << "\n";
+  //std::cout << db->getTech()->getLefUnits() << "\n";
+  //std::cout << db->getChip()->getBlock()->getDefUnits() << "\n";
+
+  // 2. manufacturing grid
+  if (db->getTech()->hasManufacturingGrid()) {
+    //std::cout << "Mangrid" << db->getTech()->getManufacturingGrid() << "\n";
+    manufacturing_grid = db->getTech()->getManufacturingGrid()/double(lef_database_microns);
+  } else {
+    manufacturing_grid = 1.0/lef_database_microns;
+  }
+
+  // 3. find the first and second metal layer pitch
+  int routing_layer_count = db->getTech()->getRoutingLayerCount();
+  double grid_value_x = -1, grid_value_y = -1;
+  Assert(routing_layer_count>=2, "Needs at least one metal layer to find metal pitch");
+  for (auto &&layer: db->getTech()->getLayers()) {
+    //std::cout << layer->getNumber() << "  " << layer->getName() << "  " << layer->getType() << "\n";
+    std::string layer_name(layer->getName());
+    if (layer_name=="m1" ||
+        layer_name=="metal1" ||
+        layer_name=="M1" ||
+        layer_name=="Metal1" ||
+        layer_name=="METAL1") {
+      grid_value_y = (layer->getWidth() + layer->getSpacing()) / double(lef_database_microns);
+      //std::cout << (layer->getWidth() + layer->getSpacing()) / double(lef_database_microns) << "\n";
+    }
+    else if (layer_name=="m2" ||
+        layer_name=="metal2" ||
+        layer_name=="M2" ||
+        layer_name=="Metal2" ||
+        layer_name=="METAL2") {
+      grid_value_x = (layer->getWidth() + layer->getSpacing()) / double(lef_database_microns);
+      //std::cout << (layer->getWidth() + layer->getSpacing()) / double(lef_database_microns) << "\n";
+    }
+  }
+  SetGridValue(grid_value_x, grid_value_y);
+
+  std::cout << db->getLibs().begin()->getName() << "\n";
+  double llx = 0, lly = 0, urx = 0, ury = 0;
+  unsigned int width = 0, height = 0;
+  for (auto &&mac: db->getLibs().begin()->getMasters()) {
+    std::string blk_name(mac->getName());
+    width = (unsigned int)(mac->getWidth()/grid_value_x/lef_database_microns);
+    height = (unsigned int)(mac->getHeight()/grid_value_y/lef_database_microns);
+    auto blk_type = AddBlockType(blk_name, width, height);
+    std::cout << mac->getName() << "\n";
+    std::cout << mac->getWidth()/grid_value_x/lef_database_microns << "  " << mac->getHeight()/grid_value_y/lef_database_microns << "\n";
+    for (auto &&terminal: mac->getMTerms()) {
+      std::string pin_name(terminal->getName());
+      //std::cout << terminal->getName() << " " << terminal->getMPins().begin()->getGeometry().begin()->xMax()/grid_value_x/lef_database_microns << "\n";
+      auto new_pin = blk_type->AddPin(pin_name);
+      auto geo_shape = terminal->getMPins().begin()->getGeometry().begin();
+      llx = geo_shape->xMin()/grid_value_x/lef_database_microns;
+      urx = geo_shape->xMax()/grid_value_x/lef_database_microns;
+      lly = geo_shape->yMin()/grid_value_y/lef_database_microns;
+      ury = geo_shape->yMax()/grid_value_y/lef_database_microns;
+      new_pin->AddRect(llx, lly, urx, ury);
+    }
+  }
+
+  std::cout << db->getChip()->getBlock()->getName() << "\n";
+  for (auto &&blk: db->getChip()->getBlock()->getInsts()) {
+    std::cout << blk->getName() << "\n";
+  }
+
+  std::cout << "Nets:\n";
+  for (auto &&net: db->getChip()->getBlock()->getNets()) {
+    std::cout << net->getName() << "\n";
   }
 }
 
@@ -183,6 +266,13 @@ void Circuit::AddBlock(std::string &block_name, BlockType *block_type, int llx, 
 void Circuit::AddBlock(std::string &block_name, std::string &block_type_name, int llx, int lly, PlaceStatus place_status, BlockOrient orient) {
   BlockType *block_type = GetBlockType(block_type_name);
   AddBlock(block_name, block_type, llx, lly, place_status, orient);
+}
+
+void Circuit::AddAbsIOPinType() {
+  std::string iopin_type_name("PIN");
+  auto io_pin_type = AddBlockType(iopin_type_name, 0, 0);
+  std::string tmp_pin_name("pin");
+  io_pin_type->AddPin(tmp_pin_name,0,0);
 }
 
 bool Circuit::IsIOPinExist(std::string &iopin_name) {

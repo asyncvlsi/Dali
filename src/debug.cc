@@ -20,18 +20,17 @@ int main() {
   std::vector<std::string> defFileVec;
   defFileVec.push_back(defFileName);
   odb_read_lef(db, lefFileName.c_str());
-  std::cout << db->getTech()->getDbUnitsPerMicron() << "\n";
   odb_read_def(db, defFileVec);
-  std::cout << db->getChip()->getBlock()->getName() << "\n";
-  //std::cout << db->getChip()->getBlock()->getInsts().begin()->getName() << "\n";
-  for (auto &&blk: db->getChip()->getBlock()->getInsts()) {
-    std::cout << blk->getConstName() << "\n";
-  }
 
+  time_t Time = clock();
+  Circuit circuit(db);
+  std::cout << "File loading complete, time: " << double(Time)/CLOCKS_PER_SEC << "s\n";
+
+  circuit.ReportBriefSummary();
+
+  circuit.ReportHPWL();
 
   return 0;
-
-  Circuit circuit;
 
   std::string adaptec1_lef = "../test/adaptec1/adaptec1.lef";
   std::string adaptec1_def = "../test/adaptec1/adaptec1.def";
@@ -44,7 +43,6 @@ int main() {
   //lef_file = adaptec1_lef;
   //def_file = adaptec1_def;
   //circuit.SetGridValue(0.01,0.01);
-  time_t Time = clock();
   circuit.ReadLefFile(lef_file);
   circuit.ReadDefFile(def_file);
   //circuit.ReportBlockType();

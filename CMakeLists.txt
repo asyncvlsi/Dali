@@ -21,7 +21,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 # Set the output directory of executables
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
-add_subdirectory(module/eigen-git-mirror)
+#add_subdirectory(module/eigen-git-mirror)
 add_subdirectory(module/OpenDB)
 
 include_directories(
@@ -41,6 +41,7 @@ include_directories(
 
 # All used circuit and placer source code
 file(GLOB SOURCES
+        src/opendb.cc
         src/common/*.cc
         src/circuit/*.cc
         src/placer/*.cc

@@ -14,6 +14,7 @@
 #include "block.h"
 #include "iopin.h"
 #include "net.h"
+#include "opendb.h"
 
 class Circuit {
  private:
@@ -35,9 +36,14 @@ class Circuit {
   double grid_value_x_;
   double grid_value_y_;
 
+  odb::dbDatabase* db_;
+
  public:
   Circuit();
+  explicit Circuit(odb::dbDatabase* db);
   ~Circuit();
+
+  void InitializeFromDB(odb::dbDatabase* db);
 
   // API to set grid value
   void SetGridValue(double grid_value_x, double grid_value_y);
@@ -74,6 +80,7 @@ class Circuit {
   std::vector<IOPin> pin_list;
   std::map<std::string, int> pin_name_map;
   // API to add new IOPin
+  void AddAbsIOPinType();
   bool IsIOPinExist(std::string &iopin_name);
   int IOPinIndex(std::string &iopin_name);
   IOPin *GetIOPin(std::string &iopin_name);

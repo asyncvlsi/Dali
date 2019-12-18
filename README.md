@@ -11,12 +11,14 @@
   * Cmake, version >= 3.10.2
 
 ### Pre-requisite for submodules: OpenDB
-  * Tcl/Tk, version >= 8.6.8
-  * GCC, version >= 7.4.0
-  * Cmake, version >= 3.10.2
-  * Bison, version >= 3.0.4
-  * Flex, version >= 2.6.4
-  * Swig, version >= 3.0.12
+  * Tcl/Tk, version >= ? (8.6.8)
+  * GCC, version >= ? (7.4.0)
+  * Cmake, version >= ? (3.10.2)
+  * Bison, version >= ? (3.0.4)
+  * Flex, version >= ? (2.6.4)
+  * Swig, version >= ? (3.0.12)
+
+Minimum version requirement is unknown. Version numbers in parenthesis are used by the developer.
   
 ### Clone repo and compile
     $ git clone --recursive https://github.com/Yang-Yihang/Hierarchical_Placer_for_Custom_Cell.git
