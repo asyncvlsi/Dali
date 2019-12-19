@@ -13,8 +13,8 @@ VerboseLevel globalVerboseLevel = LOG_DEBUG;
 
 int main() {
   using namespace odb;
-  std::string lefFileName = "Pbenchmark_1K.lef";
-  std::string defFileName = "Pbenchmark_1K.def";
+  std::string lefFileName = "out_10K.lef";
+  std::string defFileName = "10K.def";
   dbDatabase* db = dbDatabase::create();
 
   std::vector<std::string> defFileVec;

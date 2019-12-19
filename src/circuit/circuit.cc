@@ -9,6 +9,7 @@
 #include <climits>
 #include <algorithm>
 #include "circuit.h"
+#include "status.h"
 
 Circuit::Circuit(): tot_width_(0), tot_height_(0), tot_blk_area_(0), tot_mov_width_(0), tot_mov_height_(0),
                     tot_mov_block_area_(0), tot_mov_blk_num_(0), min_width_(INT_MAX), max_width_(0),
@@ -38,26 +39,29 @@ Circuit::~Circuit() {
 
 void Circuit::InitializeFromDB(odb::dbDatabase* db) {
   db_ = db;
+  auto tech = db->getTech();
+  auto lib = db->getLibs().begin();
+  auto chip = db->getChip();
+  auto top_level = chip->getBlock();
 
   // 1. lef database microns
-  lef_database_microns = db->getTech()->getDbUnitsPerMicron();
-  //std::cout << db->getTech()->getDbUnitsPerMicron() << "\n";
-  //std::cout << db->getTech()->getLefUnits() << "\n";
-  //std::cout << db->getChip()->getBlock()->getDefUnits() << "\n";
+  lef_database_microns = tech->getDbUnitsPerMicron();
+  //std::cout << tech->getDbUnitsPerMicron() << "\n";
+  //std::cout << tech->getLefUnits() << "\n";
+  //std::cout << top_level->getDefUnits() << "\n";
 
   // 2. manufacturing grid
-  if (db->getTech()->hasManufacturingGrid()) {
-    //std::cout << "Mangrid" << db->getTech()->getManufacturingGrid() << "\n";
-    manufacturing_grid = db->getTech()->getManufacturingGrid()/double(lef_database_microns);
+  if (tech->hasManufacturingGrid()) {
+    //std::cout << "Mangrid" << tech->getManufacturingGrid() << "\n";
+    manufacturing_grid = tech->getManufacturingGrid()/double(lef_database_microns);
   } else {
     manufacturing_grid = 1.0/lef_database_microns;
   }
 
   // 3. find the first and second metal layer pitch
-  int routing_layer_count = db->getTech()->getRoutingLayerCount();
   double grid_value_x = -1, grid_value_y = -1;
-  Assert(routing_layer_count>=2, "Needs at least one metal layer to find metal pitch");
-  for (auto &&layer: db->getTech()->getLayers()) {
+  Assert(tech->getRoutingLayerCount()>=2, "Needs at least one metal layer to find metal pitch");
+  for (auto &&layer: tech->getLayers()) {
     //std::cout << layer->getNumber() << "  " << layer->getName() << "  " << layer->getType() << "\n";
     std::string layer_name(layer->getName());
     if (layer_name=="m1" ||
@@ -65,7 +69,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase* db) {
         layer_name=="M1" ||
         layer_name=="Metal1" ||
         layer_name=="METAL1") {
-      grid_value_y = (layer->getWidth() + layer->getSpacing()) / double(lef_database_microns);
+      grid_value_y = (layer->getWidth()+layer->getSpacing())/double(lef_database_microns);
       //std::cout << (layer->getWidth() + layer->getSpacing()) / double(lef_database_microns) << "\n";
     }
     else if (layer_name=="m2" ||
@@ -73,43 +77,95 @@ void Circuit::InitializeFromDB(odb::dbDatabase* db) {
         layer_name=="M2" ||
         layer_name=="Metal2" ||
         layer_name=="METAL2") {
-      grid_value_x = (layer->getWidth() + layer->getSpacing()) / double(lef_database_microns);
+      grid_value_x = (layer->getWidth()+layer->getSpacing())/double(lef_database_microns);
       //std::cout << (layer->getWidth() + layer->getSpacing()) / double(lef_database_microns) << "\n";
     }
   }
   SetGridValue(grid_value_x, grid_value_y);
 
-  std::cout << db->getLibs().begin()->getName() << "\n";
+  // 4. load all macro, or we say gate type
+  std::cout << lib->getName() << " lib\n";
   double llx = 0, lly = 0, urx = 0, ury = 0;
   unsigned int width = 0, height = 0;
-  for (auto &&mac: db->getLibs().begin()->getMasters()) {
+  for (auto &&mac: lib->getMasters()) {
     std::string blk_name(mac->getName());
-    width = (unsigned int)(mac->getWidth()/grid_value_x/lef_database_microns);
-    height = (unsigned int)(mac->getHeight()/grid_value_y/lef_database_microns);
+    width = int(std::round((mac->getWidth()/grid_value_x_/lef_database_microns)));
+    height = int(std::round((mac->getHeight()/grid_value_y_/lef_database_microns)));
     auto blk_type = AddBlockType(blk_name, width, height);
     std::cout << mac->getName() << "\n";
-    std::cout << mac->getWidth()/grid_value_x/lef_database_microns << "  " << mac->getHeight()/grid_value_y/lef_database_microns << "\n";
+    std::cout << mac->getWidth()/grid_value_x_/lef_database_microns << "  " << mac->getHeight()/grid_value_y_/lef_database_microns << "\n";
     for (auto &&terminal: mac->getMTerms()) {
       std::string pin_name(terminal->getName());
       //std::cout << terminal->getName() << " " << terminal->getMPins().begin()->getGeometry().begin()->xMax()/grid_value_x/lef_database_microns << "\n";
       auto new_pin = blk_type->AddPin(pin_name);
       auto geo_shape = terminal->getMPins().begin()->getGeometry().begin();
-      llx = geo_shape->xMin()/grid_value_x/lef_database_microns;
-      urx = geo_shape->xMax()/grid_value_x/lef_database_microns;
-      lly = geo_shape->yMin()/grid_value_y/lef_database_microns;
-      ury = geo_shape->yMax()/grid_value_y/lef_database_microns;
+      llx = geo_shape->xMin()/grid_value_x_/lef_database_microns;
+      urx = geo_shape->xMax()/grid_value_x_/lef_database_microns;
+      lly = geo_shape->yMin()/grid_value_y_/lef_database_microns;
+      ury = geo_shape->yMax()/grid_value_y_/lef_database_microns;
       new_pin->AddRect(llx, lly, urx, ury);
     }
   }
 
-  std::cout << db->getChip()->getBlock()->getName() << "\n";
-  for (auto &&blk: db->getChip()->getBlock()->getInsts()) {
-    std::cout << blk->getName() << "\n";
+  unsigned int components_count=0, pins_count=0, nets_count=0;
+  components_count = top_level->getInsts().size();
+  pins_count = top_level->getBTerms().size();
+  nets_count = top_level->getNets().size();
+  block_list.reserve(components_count+pins_count);
+  pin_list.reserve(pins_count);
+  net_list.reserve(nets_count);
+
+  std::cout << "components count: " << components_count << "\n"
+            << "pin count:        " << pins_count       << "\n"
+            << "nets count:       " << nets_count       << "\n";
+
+  //std::cout << db->getChip()->getBlock()->getName() << "\n";
+  //std::cout << db->getChip()->getBlock()->getBTerms().size() << "\n";
+  // 5. load all gates
+  int llx_int=0, lly_int=0;
+  def_distance_microns = top_level->getDefUnits();
+  std::cout << top_level->getBBox()->xMin() << "\n";
+  std::cout << top_level->getBBox()->xMax() << "\n";
+  auto boundary_shape = top_level->getBBox();
+  def_left = (int)std::round(boundary_shape->xMin()/grid_value_x_/def_distance_microns);
+  def_right = (int)std::round(boundary_shape->xMax()/grid_value_x_/def_distance_microns);
+  def_bottom = (int)std::round(boundary_shape->yMin()/grid_value_y_/def_distance_microns);
+  def_top = (int)std::round(boundary_shape->yMax()/grid_value_y_/def_distance_microns);
+  for (auto &&blk: top_level->getInsts()) {
+    //std::cout << blk->getName() << "  " << blk->getMaster()->getName() << "\n";
+    std::string blk_name(blk->getName());
+    std::string blk_type_name(blk->getMaster()->getName());
+    blk->getLocation(llx_int, lly_int);
+    llx_int = (int)std::round(llx_int/grid_value_x_/def_distance_microns);
+    lly_int = (int)std::round(lly_int/grid_value_y_/def_distance_microns);
+    std::string place_status(blk->getPlacementStatus().getString());
+    std::string orient(blk->getOrient().getString());
+    AddBlock(blk_name, blk_type_name,llx_int,lly_int,StrToPlaceStatus(place_status),StrToOrient(orient));
+  }
+  /*
+  auto res = db->getChip()->getBlock()->findInst("LL_327_acx1");
+  int x,y;
+  res->getOrigin(x,y);
+  std::cout << x << "  " << y << " origin\n";
+  res->getLocation(x,y);
+  std::cout << x << "  " << y << " location\n";
+  std::cout << res->getOrient().getString() << " orient\n";
+  std::string orient(res->getOrient().getString());
+  std::cout << StrToOrient(orient) << "\n";
+  std::cout << res->getPlacementStatus().getString() << " placement status\n";
+  std::string place_status(res->getPlacementStatus().getString());
+  std::cout << StrToPlaceStatus(place_status) << "\n";
+   */
+
+  for (auto &&term: top_level->getBTerms()) {
+    //std::cout << term->getName() << "\n";
+    std::string pin_name(term->getName());
+    AddIOPin(pin_name);
   }
 
-  std::cout << "Nets:\n";
-  for (auto &&net: db->getChip()->getBlock()->getNets()) {
-    std::cout << net->getName() << "\n";
+  //std::cout << "Nets:\n";
+  for (auto &&net: top_level->getNets()) {
+    //std::cout << net->getName() << "\n";
   }
 }
 

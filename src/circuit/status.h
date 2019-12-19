@@ -19,16 +19,17 @@ std::string MetalDirectionStr(MetalDirection metal_direction);
 
 enum BlockOrient {
   N = 0,
-  S = 1,
-  W = 2,
+  W = 1,
+  S = 2,
   E = 3,
   FN = 4,
-  FS = 5,
-  FW = 6,
-  FE = 7
+  FE = 5,
+  FS = 6,
+  FW = 7,
 };
 
 BlockOrient StrToOrient(std::string &str_orient);
+BlockOrient StrToOrient(const char * str_orient);
 std::string OrientStr(BlockOrient orient);
 
 enum PlaceStatus {

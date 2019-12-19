@@ -39,21 +39,21 @@ std::string MetalDirectionStr(MetalDirection metal_direction) {
 
 BlockOrient StrToOrient(std::string &str_orient) {
   BlockOrient orient = N;
-  if (str_orient == "N") {
+  if (str_orient == "N" || str_orient == "R0") {
     orient = N;
-  } else if (str_orient == "S") {
+  } else if (str_orient == "S" || str_orient == "R180") {
     orient = S;
-  } else if (str_orient == "W") {
+  } else if (str_orient == "W" || str_orient == "R90") {
     orient = W;
-  } else if (str_orient == "E") {
+  } else if (str_orient == "E" || str_orient == "R270") {
     orient = E;
-  } else if (str_orient == "FN") {
+  } else if (str_orient == "FN" || str_orient == "MY") {
     orient = FN;
-  } else if (str_orient == "FS") {
+  } else if (str_orient == "FS" || str_orient == "MX") {
     orient = FS;
-  } else if (str_orient == "FW") {
+  } else if (str_orient == "FW" || str_orient == "MX90" || str_orient == "MXR90") {
     orient = FW;
-  } else if (str_orient == "FE") {
+  } else if (str_orient == "FE" || str_orient == "MY90" || str_orient == "MYR90") {
     orient = FE;
   } else {
     std::cout << "Unknown Block orientation: " << str_orient << std::endl;
@@ -85,11 +85,11 @@ PlaceStatus StrToPlaceStatus(std::string &str_place_status) {
   PlaceStatus place_status = UNPLACED;
   if (str_place_status == "COVER") {
     place_status = COVER;
-  } else if (str_place_status == "FIXED") {
+  } else if (str_place_status == "FIXED" || str_place_status == "LOCKED" || str_place_status == "FIRM") {
     place_status = FIXED;
-  } else if (str_place_status == "PLACED") {
+  } else if (str_place_status == "PLACED" || str_place_status == "SUGGESTED") {
     place_status = PLACED;
-  } else if (str_place_status == "UNPLACED") {
+  } else if (str_place_status == "UNPLACED" || str_place_status == "NONE") {
     place_status = UNPLACED;
   } else if (str_place_status == "NULL_STATE") {
     place_status = NULL_STATE;
