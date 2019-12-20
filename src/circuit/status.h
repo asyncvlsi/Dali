@@ -19,13 +19,13 @@ std::string MetalDirectionStr(MetalDirection metal_direction);
 
 enum BlockOrient {
   N = 0,
-  W = 1,
-  S = 2,
+  S = 1,
+  W = 2,
   E = 3,
   FN = 4,
-  FE = 5,
-  FS = 6,
-  FW = 7,
+  FS = 5,
+  FW = 6,
+  FE = 7
 };
 
 BlockOrient StrToOrient(std::string &str_orient);

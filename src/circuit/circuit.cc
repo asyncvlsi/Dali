@@ -124,13 +124,16 @@ void Circuit::InitializeFromDB(odb::dbDatabase* db) {
   // 5. load all gates
   int llx_int=0, lly_int=0;
   def_distance_microns = top_level->getDefUnits();
-  std::cout << top_level->getBBox()->xMin() << "\n";
-  std::cout << top_level->getBBox()->xMax() << "\n";
-  auto boundary_shape = top_level->getBBox();
-  def_left = (int)std::round(boundary_shape->xMin()/grid_value_x_/def_distance_microns);
-  def_right = (int)std::round(boundary_shape->xMax()/grid_value_x_/def_distance_microns);
-  def_bottom = (int)std::round(boundary_shape->yMin()/grid_value_y_/def_distance_microns);
-  def_top = (int)std::round(boundary_shape->yMax()/grid_value_y_/def_distance_microns);
+  odb::adsRect die_area;
+  top_level->getDieArea(die_area);
+  //std::cout << die_area.xMin() << "\n"
+  //          << die_area.xMax() << "\n"
+  //          << die_area.yMin() << "\n"
+  //          << die_area.yMax() << "\n";
+  def_left = (int)std::round(die_area.xMin()/grid_value_x_/def_distance_microns);
+  def_right = (int)std::round(die_area.xMax()/grid_value_x_/def_distance_microns);
+  def_bottom = (int)std::round(die_area.yMin()/grid_value_y_/def_distance_microns);
+  def_top = (int)std::round(die_area.yMax()/grid_value_y_/def_distance_microns);
   for (auto &&blk: top_level->getInsts()) {
     //std::cout << blk->getName() << "  " << blk->getMaster()->getName() << "\n";
     std::string blk_name(blk->getName());
@@ -166,6 +169,20 @@ void Circuit::InitializeFromDB(odb::dbDatabase* db) {
   //std::cout << "Nets:\n";
   for (auto &&net: top_level->getNets()) {
     //std::cout << net->getName() << "\n";
+    std::string net_name(net->getName());
+    auto new_net = AddNet(net_name, normal_signal_weight);
+    for (auto &&bterm: net->getBTerms()) {
+      //std::cout << "  ( PIN " << bterm->getName() << ")  \t";
+    }
+    for (auto &&iterm: net->getITerms()) {
+      //std::cout << "  (" << iterm->getInst()->getName() << "  " << iterm->getMTerm()->getName() << ")  \t";
+      std::string blk_name(iterm->getInst()->getName());
+      std::string pin_name(iterm->getMTerm()->getName());
+      Block *blk_ptr = GetBlock(blk_name);
+      int pin_num = blk_ptr->Type()->PinIndex(pin_name);
+      new_net->AddBlockPinPair(blk_ptr, pin_num);
+    }
+    std::cout << "\n";
   }
 }
 
@@ -926,6 +943,10 @@ void Circuit::ReportBriefSummary() {
               << "  grid size x: " << grid_value_x_ << " um, grid size y: " << grid_value_y_ << " um\n"
               << "  total block area: " << tot_blk_area_ << "\n"
               << "  total white space: " << (unsigned long int)(def_right-def_left)*(def_top-def_bottom) << "\n"
+              << "    left:   " << def_left   << "\n"
+              << "    right:  " << def_right  << "\n"
+              << "    bottom: " << def_bottom << "\n"
+              << "    top:    " << def_top    << "\n"
               << "  white space utility: " << WhiteSpaceUsage() << "\n"
               ;
   }

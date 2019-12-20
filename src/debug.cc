@@ -13,8 +13,8 @@ VerboseLevel globalVerboseLevel = LOG_DEBUG;
 
 int main() {
   using namespace odb;
-  std::string lefFileName = "out_10K.lef";
-  std::string defFileName = "10K.def";
+  std::string lefFileName = "Pbenchmark_100K.lef";
+  std::string defFileName = "Pbenchmark_100K.def";
   dbDatabase* db = dbDatabase::create();
 
   std::vector<std::string> defFileVec;
@@ -29,6 +29,17 @@ int main() {
   circuit.ReportBriefSummary();
 
   circuit.ReportHPWL();
+
+  Placer *gb_placer = new GPSimPL;
+  gb_placer->SetInputCircuit(&circuit);
+
+  gb_placer->SetBoundaryDef();
+  gb_placer->SetFillingRate(1);
+  gb_placer->ReportBoundaries();
+  gb_placer->StartPlacement();
+  //gb_placer->GenMATLABScript("gb_result.txt");
+  //gb_placer->SaveNodeTerminal();
+  //gb_placer->SaveDEFFile("circuit.def", def_file);
 
   return 0;
 
@@ -54,13 +65,7 @@ int main() {
   circuit.ReportHPWL();
 
   Time = clock();
-  Placer *gb_placer = new GPSimPL;
-  gb_placer->SetInputCircuit(&circuit);
 
-  gb_placer->SetBoundaryDef();
-  gb_placer->SetFillingRate(1);
-  gb_placer->ReportBoundaries();
-  gb_placer->StartPlacement();
   //gb_placer->GenMATLABScript("gb_result.txt");
   //gb_placer->SaveNodeTerminal();
   //gb_placer->SaveDEFFile("circuit.def", def_file);
