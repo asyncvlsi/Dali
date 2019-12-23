@@ -19,6 +19,8 @@ class Tech {
   WellLayer *GetPWell() const {return p_well_;}
   void SetNWell(double width, double spacing, double op_spacing, double max_plug_dist);
   void SetPWell(double width, double spacing, double op_spacing, double max_plug_dist);
+
+  void Report();
 };
 
 #endif //HPCC_SRC_CIRCUIT_TECH_H_

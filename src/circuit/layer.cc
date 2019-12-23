@@ -35,3 +35,10 @@ void WellLayer::SetParams(double width, double spacing, double op_spacing, doubl
   SetOpSpacing(op_spacing);
   SetMaxPlugDist(max_plug_dist);
 }
+
+void WellLayer::Report() {
+  std::cout << "    Width:       " << Width()       << "\n"
+            << "    Spacing:     " << Spacing()     << "\n"
+            << "    OpSpacing:   " << OpSpacing()   << "\n"
+            << "    MaxPlugDist: " << MaxPlugDist() << "\n";
+}

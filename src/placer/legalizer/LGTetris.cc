@@ -195,7 +195,9 @@ void TetrisLegalizer::StartPlacement() {
       FlipPlacement();
     } else {
       if (globalVerboseLevel >= LOG_CRITICAL) {
-        std::cout << "Tetris legalization complete!\n";
+        std::cout << "\033[0;36m"
+                  << "Tetris legalization complete!\n"
+                  << "\033[0m";
       }
       break;
     }

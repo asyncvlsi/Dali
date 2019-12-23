@@ -8,6 +8,7 @@
 #include <ctime>
 #include <algorithm>
 #include "common/global.h"
+#include "opendb.h"
 #include "circuit.h"
 #include "placer.h"
 
@@ -27,6 +28,7 @@ int main(int argc, char *argv[]) {
   }
   std::string lef_file_name;
   std::string def_file_name;
+  std::string cell_file_name;
   std::string output_name = std::to_string(tt) + ".def";
   std::string str_grid_value_x, str_grid_value_y;
   std::string str_target_density;
@@ -52,6 +54,13 @@ int main(int argc, char *argv[]) {
       def_file_name = std::string(argv[i++]);
       if (def_file_name.empty()) {
         std::cout << "Invalid input def file!\n";
+        ReportUsage();
+        return 1;
+      }
+    } else if (arg == "-cell" && i < argc) {
+      cell_file_name = std::string(argv[i++]);
+      if (cell_file_name.empty()) {
+        std::cout << "Invalid input cell file!\n";
         ReportUsage();
         return 1;
       }
@@ -86,7 +95,7 @@ int main(int argc, char *argv[]) {
       }
     } else if (arg == "-v" && i < argc) {
       str_verbose_level = std::string(argv[i++]);
-      int tmp = -1;
+      int tmp;
       try {
         tmp = std::stoi(str_verbose_level);
       } catch (...) {
@@ -111,8 +120,17 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
+#ifdef USE_OPENDB
+  odb::dbDatabase* db = odb::dbDatabase::create();
+  std::vector<std::string> defFileVec;
+  defFileVec.push_back(def_file_name);
+  odb_read_lef(db, lef_file_name.c_str());
+  odb_read_def(db, defFileVec);
+  circuit.InitializeFromDB(db);
+#else
   circuit.ReadLefFile(lef_file_name);
   circuit.ReadDefFile(def_file_name);
+#endif
 
   Time = clock() - Time;
   std::cout << "File loading complete, time: " << float(Time)/CLOCKS_PER_SEC << "s\n";
@@ -161,13 +179,15 @@ int main(int argc, char *argv[]) {
 }
 
 void ReportUsage() {
-  std::cout << "Usage: hpcc\n"
-            << "  -lef <file.lef>\n"
-            << "  -def <file.def>\n"
-            << "  -o <output_name>.def (optional, default name timestamp.def)\n"
-            << "  -g/-grid grid_value_x grid_value_y (optional, default metal1 and metal 2 pitch values)\n"
-            << "  -d/-density (optional, value interval (0,1], default 1)\n"
-            << "  -v verbosity_level (optional, 0-5, default 0)\n"
+  std::cout << "\033[0;36m"
+            << "Usage: hpcc\n"
+            << "  -lef        <file.lef>\n"
+            << "  -def        <file.def>\n"
+            << "  -cell       <file.cell>\n"
+            << "  -o          <output_name>.def (optional, default name timestamp.def)\n"
+            << "  -g/-grid    grid_value_x grid_value_y (optional, default metal1 and metal 2 pitch values)\n"
+            << "  -d/-density density (optional, value interval (0,1], default 1)\n"
+            << "  -v          verbosity_level (optional, 0-5, default 0)\n"
             << "(order does not matter)"
-            << std::endl;
+            << "\033[0m\n";
 }

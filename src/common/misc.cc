@@ -6,8 +6,8 @@
 
 void Assert(bool e, const std::string &error_message) {
   if (!e) {
-    std::cout << "FATAL ERROR:" << std::endl;
-    std::cout << "    " << error_message << std::endl;
+    std::cout << "\033[0;31m" << "FATAL ERROR:" << std::endl;
+    std::cout << "    " << error_message << "\033[0m" << std::endl;
     exit(1);
   }
 }

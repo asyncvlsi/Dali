@@ -64,6 +64,7 @@ class WellLayer: public Layer {
   void SetOpSpacing(double op_spacing) {Assert(op_spacing>=0, "Negative opposite spacing?"); op_spacing_=op_spacing;}
   void SetMaxPlugDist(double max_plug_dist) {Assert(max_plug_dist>=0, "Negative max plug distance?"); max_plug_dist_=max_plug_dist;}
   void SetParams(double width, double height, double op_spacing, double max_plug_dist);
+  void Report();
 };
 
 #endif //HPCC_SRC_CIRCUIT_LAYER_H_

@@ -1468,7 +1468,9 @@ void GPSimPL::StartPlacement() {
   BlockLocInit();
   if (circuit_->net_list.empty()) {
     if (globalVerboseLevel >= LOG_CRITICAL) {
-      std::cout << "Global Placement complete\n";
+      std::cout << "\033[0;36m"
+                << "Global Placement complete\n"
+                << "\033[0m";
     }
     return;
   }
@@ -1495,7 +1497,9 @@ void GPSimPL::StartPlacement() {
     QuadraticPlacementWithAnchor();
   }
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "Global Placement complete\n";
+    std::cout << "\033[0;36m"
+              << "Global Placement complete\n"
+              << "\033[0m";
   }
   LookAheadClose();
   CheckAndShift();

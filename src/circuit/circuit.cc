@@ -16,14 +16,8 @@ Circuit::Circuit(): tot_width_(0), tot_height_(0), tot_blk_area_(0), tot_mov_wid
                     blk_min_height_(INT_MAX), blk_max_height_(0), grid_set_(false), grid_value_x_(0), grid_value_y_(0){
   AddAbsIOPinType();
   db_ = nullptr;
-}
-
-Circuit::Circuit(odb::dbDatabase* db): tot_width_(0), tot_height_(0), tot_blk_area_(0), tot_mov_width_(0), tot_mov_height_(0),
-                                       tot_mov_block_area_(0), tot_mov_blk_num_(0), blk_min_width_(INT_MAX), blk_max_width_(0),
-                                       blk_min_height_(INT_MAX), blk_max_height_(0), grid_set_(false), grid_value_x_(0), grid_value_y_(0) {
-  AddAbsIOPinType();
-  db_ = db;
-  InitializeFromDB(db);
+  tech_param_ = nullptr;
+  design_ = nullptr;
 }
 
 Circuit::~Circuit() {
@@ -35,6 +29,18 @@ Circuit::~Circuit() {
   for (auto &&pair: block_type_map) {
     delete pair.second;
   }
+  delete tech_param_;
+}
+
+#ifdef USE_OPENDB
+Circuit::Circuit(odb::dbDatabase* db): tot_width_(0), tot_height_(0), tot_blk_area_(0), tot_mov_width_(0), tot_mov_height_(0),
+                                       tot_mov_block_area_(0), tot_mov_blk_num_(0), blk_min_width_(INT_MAX), blk_max_width_(0),
+                                       blk_min_height_(INT_MAX), blk_max_height_(0), grid_set_(false), grid_value_x_(0), grid_value_y_(0) {
+  AddAbsIOPinType();
+  db_ = db;
+  tech_param_ = nullptr;
+  design_ = nullptr;
+  InitializeFromDB(db);
 }
 
 void Circuit::InitializeFromDB(odb::dbDatabase* db) {
@@ -186,272 +192,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase* db) {
   }
 }
 
-bool Circuit::IsMetalLayerExist(std::string &metal_name) {
-  return !(metal_name_map.find(metal_name) == metal_name_map.end());
-}
-
-int Circuit::MetalLayerIndex(std::string &metal_name) {
-  Assert(IsMetalLayerExist(metal_name), "MetalLayer does not exist, cannot find it: " + metal_name);
-  return metal_name_map.find(metal_name)->second;
-}
-
-MetalLayer *Circuit::GetMetalLayer(std::string &metal_name) {
-  Assert(IsMetalLayerExist(metal_name), "MetalLayer does not exist, cannot find it: " + metal_name);
-  return &metal_list[MetalLayerIndex(metal_name)];
-}
-
-MetalLayer *Circuit::AddMetalLayer(std::string &metal_name, double width, double spacing) {
-  Assert(!IsMetalLayerExist(metal_name), "MetalLayer exist, cannot create this MetalLayer again: " + metal_name);
-  int map_size = metal_name_map.size();
-  auto ret = metal_name_map.insert(std::pair<std::string, int>(metal_name, map_size));
-  std::pair<const std::string, int>* name_num_pair_ptr = &(*ret.first);
-  metal_list.emplace_back(width, spacing, name_num_pair_ptr);
-  return &(metal_list.back());
-}
-
-MetalLayer *Circuit::AddMetalLayer(std::string &metal_name) {
-  return AddMetalLayer(metal_name, 0, 0);
-}
-
-void Circuit::ReportMetalLayers() {
-  for (auto &&metal_layer: metal_list) {
-    metal_layer.Report();
-  }
-}
-
-void Circuit::SetBoundaryFromDef(int left, int right, int bottom, int top) {
-  Assert(right > left, "Right boundary is not larger than Left boundary?");
-  Assert(top > bottom, "Top boundary is not larger than Bottom boundary?");
-  def_left = left;
-  def_right = right;
-  def_bottom = bottom;
-  def_top = top;
-}
-
-bool Circuit::IsBlockTypeExist(std::string &block_type_name) {
-  return !(block_type_map.find(block_type_name) == block_type_map.end());
-}
-
-BlockType *Circuit::GetBlockType(std::string &block_type_name) {
-  Assert(IsBlockTypeExist(block_type_name), "BlockType not exist, cannot find it: " + block_type_name);
-  return block_type_map.find(block_type_name)->second;
-}
-
-BlockType *Circuit::AddBlockType(std::string &block_type_name, unsigned int width, unsigned int height) {
-  Assert(!IsBlockTypeExist(block_type_name), "BlockType exist, cannot create this block type again: " + block_type_name);
-  auto ret = block_type_map.insert(std::pair<std::string, BlockType*>(block_type_name, nullptr));
-  auto tmp_ptr = new BlockType(&(ret.first->first), width, height);
-  ret.first->second = tmp_ptr;
-  if (tmp_ptr->Area() > INT_MAX) tmp_ptr->Report();
-  return tmp_ptr;
-}
-
-void Circuit::ReportBlockType() {
-  std::cout << "Total BlockType: " << block_type_map.size() << std::endl;
-  for (auto &&pair: block_type_map) {
-    pair.second->Report();
-  }
-}
-
-void Circuit::CopyBlockType(Circuit &circuit) {
-  BlockType *blk_type = nullptr;
-  BlockType *blk_type_new = nullptr;
-  std::string type_name, pin_name;
-  for (auto &&item: circuit.block_type_map) {
-    blk_type = item.second;
-    type_name = *(blk_type->Name());
-    if (type_name == "PIN") continue;
-    blk_type_new = AddBlockType(type_name, blk_type->Width(), blk_type->Height());
-    for (auto &&pin: blk_type->pin_list) {
-      pin_name = *(pin.Name());
-      blk_type_new->AddPin(pin_name, pin.XOffset(), pin.YOffset());
-    }
-  }
-}
-
-bool Circuit::IsBlockExist(std::string &block_name) {
-  return !(block_name_map.find(block_name) == block_name_map.end());
-}
-
-int Circuit::BlockIndex(std::string &block_name) {
-  auto ret = block_name_map.find(block_name);
-  if (ret==block_name_map.end()) {
-    Assert(false, "Block does not exist, cannot find its index: " + block_name);
-  }
-  return ret->second;
-}
-
-Block *Circuit::GetBlock(std::string &block_name) {
-  return &block_list[BlockIndex(block_name)];
-}
-
-void Circuit::AddBlock(std::string &block_name, BlockType *block_type, int llx, int lly, bool movable, BlockOrient orient) {
-  PlaceStatus place_status;
-  if (movable) {
-    place_status = UNPLACED;
-  } else {
-    place_status = FIXED;
-  }
-  AddBlock(block_name, block_type, llx, lly, place_status, orient);
-}
-
-void Circuit::AddBlock(std::string &block_name, std::string &block_type_name, int llx, int lly, bool movable, BlockOrient orient) {
-  BlockType *block_type = GetBlockType(block_type_name);
-  AddBlock(block_name, block_type, llx, lly, movable, orient);
-}
-
-void Circuit::AddBlock(std::string &block_name, BlockType *block_type, int llx, int lly, PlaceStatus place_status, BlockOrient orient) {
-  Assert(net_list.empty(), "Cannot add new Block, because net_list now is not empty");
-  Assert(!IsBlockExist(block_name), "Block exists, cannot create this block again: " + block_name);
-  int map_size = block_name_map.size();
-  auto ret = block_name_map.insert(std::pair<std::string, int>(block_name, map_size));
-  std::pair<const std::string, int>* name_num_pair_ptr = &(*ret.first);
-  block_list.emplace_back(block_type, name_num_pair_ptr, llx, lly, place_status, orient);
-
-  // update statistics of blocks
-  unsigned long int old_tot_area = tot_blk_area_;
-  tot_blk_area_ += block_list.back().Area();
-  Assert(old_tot_area < tot_blk_area_, "Total Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
-  tot_width_ += block_list.back().Width();
-  tot_height_ += block_list.back().Height();
-  if (block_list.back().IsMovable()) {
-    ++tot_mov_blk_num_;
-    old_tot_area = tot_mov_block_area_;
-    tot_mov_block_area_ += block_list.back().Area();
-    Assert(old_tot_area < tot_mov_block_area_, "Total Movable Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
-    tot_mov_width_ += block_list.back().Width();
-    tot_mov_height_ += block_list.back().Height();
-  }
-  if ( block_list.back().Height() < blk_min_height_ ) {
-    blk_min_height_ = block_list.back().Height();
-  }
-  if ( block_list.back().Height() > blk_max_height_ ) {
-    blk_max_height_ = block_list.back().Height();
-  }
-  if ( block_list.back().Width() < blk_min_width_ ) {
-    blk_min_width_ = block_list.back().Width();
-  }
-  if ( block_list.back().Width() > blk_min_width_ ) {
-    blk_max_width_ = block_list.back().Width();
-  }
-}
-
-void Circuit::AddBlock(std::string &block_name, std::string &block_type_name, int llx, int lly, PlaceStatus place_status, BlockOrient orient) {
-  BlockType *block_type = GetBlockType(block_type_name);
-  AddBlock(block_name, block_type, llx, lly, place_status, orient);
-}
-
-void Circuit::AddAbsIOPinType() {
-  std::string iopin_type_name("PIN");
-  auto io_pin_type = AddBlockType(iopin_type_name, 0, 0);
-  std::string tmp_pin_name("pin");
-  io_pin_type->AddPin(tmp_pin_name,0,0);
-}
-
-bool Circuit::IsIOPinExist(std::string &iopin_name) {
-  return !(pin_name_map.find(iopin_name) == pin_name_map.end());
-}
-
-int Circuit::IOPinIndex(std::string &iopin_name) {
-  auto ret = pin_name_map.find(iopin_name);
-  if (ret == pin_name_map.end()) {
-    Assert(false, "IOPIN does not exist, cannot find its index: " + iopin_name);
-  }
-  return ret->second;
-}
-
-IOPin *Circuit::GetIOPin(std::string &iopin_name) {
-  return &pin_list[IOPinIndex(iopin_name)];
-}
-
-IOPin *Circuit::AddIOPin(std::string &iopin_name) {
-  Assert(net_list.empty(), "Cannot add new IOPIN, because net_list now is not empty");
-  Assert(!IsIOPinExist(iopin_name), "IOPin exists, cannot create this IOPin again: " + iopin_name);
-  int map_size = pin_name_map.size();
-  auto ret = pin_name_map.insert(std::pair<std::string, int>(iopin_name, map_size));
-  std::pair<const std::string, int>* name_num_pair_ptr = &(*ret.first);
-  pin_list.emplace_back(name_num_pair_ptr);
-  return &(pin_list.back());
-}
-
-IOPin *Circuit::AddIOPin(std::string &iopin_name, int lx, int ly) {
-  Assert(net_list.empty(), "Cannot add new IOPIN, because net_list now is not empty");
-  Assert(!IsIOPinExist(iopin_name), "IOPin exists, cannot create this IOPin again: " + iopin_name);
-  int map_size = pin_name_map.size();
-  auto ret = pin_name_map.insert(std::pair<std::string, int>(iopin_name, map_size));
-  std::pair<const std::string, int>* name_num_pair_ptr = &(*ret.first);
-  pin_list.emplace_back(name_num_pair_ptr,lx,ly);
-  return &(pin_list.back());
-}
-
-void Circuit::ReportIOPin() {
-  for (auto &&iopin: pin_list) {
-    iopin.Report();
-  }
-}
-
-bool Circuit::IsNetExist(std::string &net_name) {
-  return !(net_name_map.find(net_name) == net_name_map.end());
-}
-
-int Circuit::NetIndex(std::string &net_name) {
-  Assert(IsNetExist(net_name), "Net does not exist, cannot find its index: " + net_name);
-  return net_name_map.find(net_name)->second;
-}
-
-Net *Circuit::GetNet(std::string &net_name) {
-  return &net_list[NetIndex(net_name)];
-}
-
-void Circuit::AddToNetMap(std::string &net_name) {
-  int map_size = net_name_map.size();
-  net_name_map.insert(std::pair<std::string, int>(net_name, map_size));
-}
-
-Net *Circuit::AddNet(std::string &net_name, double weight) {
-  Assert(!IsNetExist(net_name), "Net exists, cannot create this net again: " + net_name);
-  AddToNetMap(net_name);
-  std::pair<const std::string, int>* name_num_pair_ptr = &(*net_name_map.find(net_name));
-  net_list.emplace_back(name_num_pair_ptr, weight);
-  return &net_list.back();
-}
-
-/*
-bool Circuit::CreatePseudoNet(std::string &drive_blk, std::string &drive_pin,
-                              std::string &load_blk, std::string &load_pin, double weight) {
-
-}
-
-bool Circuit::CreatePseudoNet(Block *drive_blk, int drive_pin, Block *load_blk, int load_pin, double weight) {
-
-}
-
-bool Circuit::RemovePseudoNet(std::string &drive_blk, std::string &drive_pin, std::string &load_blk, std::string &load_pin) {
-
-}
-
-bool Circuit::RemovePseudoNet(Block *drive_blk, int drive_pin, Block *load_blk, int load_pin) {
-
-}
-
-void Circuit::RemoveAllPseudoNets() {
-
-}
- */
-
-void Circuit::SetGridValue(double grid_value_x, double grid_value_y) {
-  Assert(grid_value_x > 0, "grid_value_x must be a positive real number!");
-  Assert(grid_value_y > 0, "grid_value_y must be a positive real number!");
-  Assert(!grid_set_, "once set, grid_value cannot be changed!");
-  grid_value_x_ = grid_value_x;
-  grid_value_y_ = grid_value_y;
-  grid_set_ = true;
-}
-
-void Circuit::SetGridUsingMetalPitch() {
-  SetGridValue(metal_list[0].PitchY(), metal_list[1].PitchX());
-}
-
+#else
 void Circuit::ReadLefFile(std::string const &name_of_file) {
   /****
   * This is a naive lef parser, it cannot cover all corner cases
@@ -905,6 +646,273 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
   }
   std::cout << "DEF file loading complete: " << name_of_file << "\n";
 }
+#endif
+
+bool Circuit::IsMetalLayerExist(std::string &metal_name) {
+  return !(metal_name_map.find(metal_name) == metal_name_map.end());
+}
+
+int Circuit::MetalLayerIndex(std::string &metal_name) {
+  Assert(IsMetalLayerExist(metal_name), "MetalLayer does not exist, cannot find it: " + metal_name);
+  return metal_name_map.find(metal_name)->second;
+}
+
+MetalLayer *Circuit::GetMetalLayer(std::string &metal_name) {
+  Assert(IsMetalLayerExist(metal_name), "MetalLayer does not exist, cannot find it: " + metal_name);
+  return &metal_list[MetalLayerIndex(metal_name)];
+}
+
+MetalLayer *Circuit::AddMetalLayer(std::string &metal_name, double width, double spacing) {
+  Assert(!IsMetalLayerExist(metal_name), "MetalLayer exist, cannot create this MetalLayer again: " + metal_name);
+  int map_size = metal_name_map.size();
+  auto ret = metal_name_map.insert(std::pair<std::string, int>(metal_name, map_size));
+  std::pair<const std::string, int>* name_num_pair_ptr = &(*ret.first);
+  metal_list.emplace_back(width, spacing, name_num_pair_ptr);
+  return &(metal_list.back());
+}
+
+MetalLayer *Circuit::AddMetalLayer(std::string &metal_name) {
+  return AddMetalLayer(metal_name, 0, 0);
+}
+
+void Circuit::ReportMetalLayers() {
+  for (auto &&metal_layer: metal_list) {
+    metal_layer.Report();
+  }
+}
+
+void Circuit::SetBoundaryFromDef(int left, int right, int bottom, int top) {
+  Assert(right > left, "Right boundary is not larger than Left boundary?");
+  Assert(top > bottom, "Top boundary is not larger than Bottom boundary?");
+  def_left = left;
+  def_right = right;
+  def_bottom = bottom;
+  def_top = top;
+}
+
+bool Circuit::IsBlockTypeExist(std::string &block_type_name) {
+  return !(block_type_map.find(block_type_name) == block_type_map.end());
+}
+
+BlockType *Circuit::GetBlockType(std::string &block_type_name) {
+  Assert(IsBlockTypeExist(block_type_name), "BlockType not exist, cannot find it: " + block_type_name);
+  return block_type_map.find(block_type_name)->second;
+}
+
+BlockType *Circuit::AddBlockType(std::string &block_type_name, unsigned int width, unsigned int height) {
+  Assert(!IsBlockTypeExist(block_type_name), "BlockType exist, cannot create this block type again: " + block_type_name);
+  auto ret = block_type_map.insert(std::pair<std::string, BlockType*>(block_type_name, nullptr));
+  auto tmp_ptr = new BlockType(&(ret.first->first), width, height);
+  ret.first->second = tmp_ptr;
+  if (tmp_ptr->Area() > INT_MAX) tmp_ptr->Report();
+  return tmp_ptr;
+}
+
+void Circuit::ReportBlockType() {
+  std::cout << "Total BlockType: " << block_type_map.size() << std::endl;
+  for (auto &&pair: block_type_map) {
+    pair.second->Report();
+  }
+}
+
+void Circuit::CopyBlockType(Circuit &circuit) {
+  BlockType *blk_type = nullptr;
+  BlockType *blk_type_new = nullptr;
+  std::string type_name, pin_name;
+  for (auto &&item: circuit.block_type_map) {
+    blk_type = item.second;
+    type_name = *(blk_type->Name());
+    if (type_name == "PIN") continue;
+    blk_type_new = AddBlockType(type_name, blk_type->Width(), blk_type->Height());
+    for (auto &&pin: blk_type->pin_list) {
+      pin_name = *(pin.Name());
+      blk_type_new->AddPin(pin_name, pin.XOffset(), pin.YOffset());
+    }
+  }
+}
+
+bool Circuit::IsBlockExist(std::string &block_name) {
+  return !(block_name_map.find(block_name) == block_name_map.end());
+}
+
+int Circuit::BlockIndex(std::string &block_name) {
+  auto ret = block_name_map.find(block_name);
+  if (ret==block_name_map.end()) {
+    Assert(false, "Block does not exist, cannot find its index: " + block_name);
+  }
+  return ret->second;
+}
+
+Block *Circuit::GetBlock(std::string &block_name) {
+  return &block_list[BlockIndex(block_name)];
+}
+
+void Circuit::AddBlock(std::string &block_name, BlockType *block_type, int llx, int lly, bool movable, BlockOrient orient) {
+  PlaceStatus place_status;
+  if (movable) {
+    place_status = UNPLACED;
+  } else {
+    place_status = FIXED;
+  }
+  AddBlock(block_name, block_type, llx, lly, place_status, orient);
+}
+
+void Circuit::AddBlock(std::string &block_name, std::string &block_type_name, int llx, int lly, bool movable, BlockOrient orient) {
+  BlockType *block_type = GetBlockType(block_type_name);
+  AddBlock(block_name, block_type, llx, lly, movable, orient);
+}
+
+void Circuit::AddBlock(std::string &block_name, BlockType *block_type, int llx, int lly, PlaceStatus place_status, BlockOrient orient) {
+  Assert(net_list.empty(), "Cannot add new Block, because net_list now is not empty");
+  Assert(!IsBlockExist(block_name), "Block exists, cannot create this block again: " + block_name);
+  int map_size = block_name_map.size();
+  auto ret = block_name_map.insert(std::pair<std::string, int>(block_name, map_size));
+  std::pair<const std::string, int>* name_num_pair_ptr = &(*ret.first);
+  block_list.emplace_back(block_type, name_num_pair_ptr, llx, lly, place_status, orient);
+
+  // update statistics of blocks
+  unsigned long int old_tot_area = tot_blk_area_;
+  tot_blk_area_ += block_list.back().Area();
+  Assert(old_tot_area < tot_blk_area_, "Total Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
+  tot_width_ += block_list.back().Width();
+  tot_height_ += block_list.back().Height();
+  if (block_list.back().IsMovable()) {
+    ++tot_mov_blk_num_;
+    old_tot_area = tot_mov_block_area_;
+    tot_mov_block_area_ += block_list.back().Area();
+    Assert(old_tot_area < tot_mov_block_area_, "Total Movable Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
+    tot_mov_width_ += block_list.back().Width();
+    tot_mov_height_ += block_list.back().Height();
+  }
+  if ( block_list.back().Height() < blk_min_height_ ) {
+    blk_min_height_ = block_list.back().Height();
+  }
+  if ( block_list.back().Height() > blk_max_height_ ) {
+    blk_max_height_ = block_list.back().Height();
+  }
+  if ( block_list.back().Width() < blk_min_width_ ) {
+    blk_min_width_ = block_list.back().Width();
+  }
+  if ( block_list.back().Width() > blk_min_width_ ) {
+    blk_max_width_ = block_list.back().Width();
+  }
+}
+
+void Circuit::AddBlock(std::string &block_name, std::string &block_type_name, int llx, int lly, PlaceStatus place_status, BlockOrient orient) {
+  BlockType *block_type = GetBlockType(block_type_name);
+  AddBlock(block_name, block_type, llx, lly, place_status, orient);
+}
+
+void Circuit::AddAbsIOPinType() {
+  std::string iopin_type_name("PIN");
+  auto io_pin_type = AddBlockType(iopin_type_name, 0, 0);
+  std::string tmp_pin_name("pin");
+  io_pin_type->AddPin(tmp_pin_name,0,0);
+}
+
+bool Circuit::IsIOPinExist(std::string &iopin_name) {
+  return !(pin_name_map.find(iopin_name) == pin_name_map.end());
+}
+
+int Circuit::IOPinIndex(std::string &iopin_name) {
+  auto ret = pin_name_map.find(iopin_name);
+  if (ret == pin_name_map.end()) {
+    Assert(false, "IOPIN does not exist, cannot find its index: " + iopin_name);
+  }
+  return ret->second;
+}
+
+IOPin *Circuit::GetIOPin(std::string &iopin_name) {
+  return &pin_list[IOPinIndex(iopin_name)];
+}
+
+IOPin *Circuit::AddIOPin(std::string &iopin_name) {
+  Assert(net_list.empty(), "Cannot add new IOPIN, because net_list now is not empty");
+  Assert(!IsIOPinExist(iopin_name), "IOPin exists, cannot create this IOPin again: " + iopin_name);
+  int map_size = pin_name_map.size();
+  auto ret = pin_name_map.insert(std::pair<std::string, int>(iopin_name, map_size));
+  std::pair<const std::string, int>* name_num_pair_ptr = &(*ret.first);
+  pin_list.emplace_back(name_num_pair_ptr);
+  return &(pin_list.back());
+}
+
+IOPin *Circuit::AddIOPin(std::string &iopin_name, int lx, int ly) {
+  Assert(net_list.empty(), "Cannot add new IOPIN, because net_list now is not empty");
+  Assert(!IsIOPinExist(iopin_name), "IOPin exists, cannot create this IOPin again: " + iopin_name);
+  int map_size = pin_name_map.size();
+  auto ret = pin_name_map.insert(std::pair<std::string, int>(iopin_name, map_size));
+  std::pair<const std::string, int>* name_num_pair_ptr = &(*ret.first);
+  pin_list.emplace_back(name_num_pair_ptr,lx,ly);
+  return &(pin_list.back());
+}
+
+void Circuit::ReportIOPin() {
+  for (auto &&iopin: pin_list) {
+    iopin.Report();
+  }
+}
+
+bool Circuit::IsNetExist(std::string &net_name) {
+  return !(net_name_map.find(net_name) == net_name_map.end());
+}
+
+int Circuit::NetIndex(std::string &net_name) {
+  Assert(IsNetExist(net_name), "Net does not exist, cannot find its index: " + net_name);
+  return net_name_map.find(net_name)->second;
+}
+
+Net *Circuit::GetNet(std::string &net_name) {
+  return &net_list[NetIndex(net_name)];
+}
+
+void Circuit::AddToNetMap(std::string &net_name) {
+  int map_size = net_name_map.size();
+  net_name_map.insert(std::pair<std::string, int>(net_name, map_size));
+}
+
+Net *Circuit::AddNet(std::string &net_name, double weight) {
+  Assert(!IsNetExist(net_name), "Net exists, cannot create this net again: " + net_name);
+  AddToNetMap(net_name);
+  std::pair<const std::string, int>* name_num_pair_ptr = &(*net_name_map.find(net_name));
+  net_list.emplace_back(name_num_pair_ptr, weight);
+  return &net_list.back();
+}
+
+/*
+bool Circuit::CreatePseudoNet(std::string &drive_blk, std::string &drive_pin,
+                              std::string &load_blk, std::string &load_pin, double weight) {
+
+}
+
+bool Circuit::CreatePseudoNet(Block *drive_blk, int drive_pin, Block *load_blk, int load_pin, double weight) {
+
+}
+
+bool Circuit::RemovePseudoNet(std::string &drive_blk, std::string &drive_pin, std::string &load_blk, std::string &load_pin) {
+
+}
+
+bool Circuit::RemovePseudoNet(Block *drive_blk, int drive_pin, Block *load_blk, int load_pin) {
+
+}
+
+void Circuit::RemoveAllPseudoNets() {
+
+}
+ */
+
+void Circuit::SetGridValue(double grid_value_x, double grid_value_y) {
+  Assert(grid_value_x > 0, "grid_value_x must be a positive real number!");
+  Assert(grid_value_y > 0, "grid_value_y must be a positive real number!");
+  Assert(!grid_set_, "once set, grid_value cannot be changed!");
+  grid_value_x_ = grid_value_x;
+  grid_value_y_ = grid_value_y;
+  grid_set_ = true;
+}
+
+void Circuit::SetGridUsingMetalPitch() {
+  SetGridValue(metal_list[0].PitchY(), metal_list[1].PitchX());
+}
 
 void Circuit::ReadWellFile(std::string const &name_of_file) {
   std::ifstream ist(name_of_file.c_str());
@@ -912,9 +920,74 @@ void Circuit::ReadWellFile(std::string const &name_of_file) {
   std::cout << "Loading CELL file: " << name_of_file << "\n";
   std::string line;
 
+  while (!ist.eof()) {
+    getline(ist, line);
+    if (line.empty()) continue;
+    if (line.find("LAYER")!=std::string::npos) {
+      std::vector<std::string> well_fields;
+      StrSplit(line, well_fields);
+      bool is_n_well = (well_fields[1]=="nwell");
+      if (!is_n_well) Assert(well_fields[1]=="pwell", "Unknow N/P well type: " + well_fields[1]);
+      std::string end_layer_flag = "END " + well_fields[1];
+      double width = 0, spacing = 0, op_spacing = 0, max_plug_dist = 0;
+      do {
+        if (line.find("MINWIDTH")!=std::string::npos) {
+          StrSplit(line, well_fields);
+          try {
+            width = std::stod(well_fields[1]);
+          } catch (...) {
+            std::cout << line << std::endl;
+            Assert(false, "Invalid stod conversion: " + well_fields[1]);
+          }
+        } else if (line.find("OPPOSPACING")!=std::string::npos) {
+          StrSplit(line, well_fields);
+          try {
+            op_spacing = std::stod(well_fields[1]);
+          } catch (...) {
+            std::cout << line << std::endl;
+            Assert(false, "Invalid stod conversion: " + well_fields[1]);
+          }
+        } else if (line.find("SPACING")!=std::string::npos) {
+          StrSplit(line, well_fields);
+          try {
+            spacing = std::stod(well_fields[1]);
+          } catch (...) {
+            std::cout << line << std::endl;
+            Assert(false, "Invalid stod conversion: " + well_fields[1]);
+          }
+        } else if (line.find("MAXPLUGDIST")!=std::string::npos) {
+          StrSplit(line, well_fields);
+          try {
+            max_plug_dist = std::stod(well_fields[1]);
+          } catch (...) {
+            std::cout << line << std::endl;
+            Assert(false, "Invalid stod conversion: " + well_fields[1]);
+          }
+        } else { }
+        getline(ist, line);
+      } while (line.find(end_layer_flag)==std::string::npos && !ist.eof());
+      if (tech_param_== nullptr) tech_param_ = new Tech;
+      //std::cout << width << "  " << spacing << "  " << op_spacing << "  " << max_plug_dist << "\n";
+      if (is_n_well) {
+        tech_param_->SetNWell(width, spacing, op_spacing, max_plug_dist);
+      } else {
+        tech_param_->SetPWell(width, spacing, op_spacing, max_plug_dist);
+      }
+    }
 
-
-
+    if (line.find("MACRO")!=std::string::npos) {
+      std::cout << line << "\n";
+      std::vector<std::string> macro_fields;
+      StrSplit(line, macro_fields);
+      std::string end_macro_flag = "END " + macro_fields[1];
+      std::cout << end_macro_flag << "\n";
+      do {
+        getline(ist, line);
+      } while (line.find(end_macro_flag)==std::string::npos && !ist.eof());
+    }
+  }
+  Assert(tech_param_ != nullptr, "No N/P well technology information detected!");
+  //tech_param_->Report();
 
   std::cout << "CELL file loading complete: " << name_of_file << "\n";
 }

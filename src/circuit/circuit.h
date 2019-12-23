@@ -16,7 +16,7 @@
 #include "block.h"
 #include "iopin.h"
 #include "net.h"
-#include "opendb.h"
+#include "../opendb.h"
 
 class Circuit {
  private:
@@ -38,15 +38,22 @@ class Circuit {
   double grid_value_x_;
   double grid_value_y_;
 
-  odb::dbDatabase * db_;
   Tech * tech_param_;
   Design * design_;
+#ifdef USE_OPENDB
+  odb::dbDatabase * db_;
+#endif
  public:
   Circuit();
-  explicit Circuit(odb::dbDatabase* db);
   ~Circuit();
 
+#ifdef USE_OPENDB
+  explicit Circuit(odb::dbDatabase* db);
   void InitializeFromDB(odb::dbDatabase* db);
+#else
+  void ReadLefFile(std::string const &name_of_file);
+  void ReadDefFile(std::string const &name_of_file);
+#endif
 
   // API to set grid value
   void SetGridValue(double grid_value_x, double grid_value_y);
@@ -133,8 +140,6 @@ class Circuit {
   // read lef/def file using above member functions
   double GridValueX() const {return grid_value_x_;} // unit in micro
   double GridValueY() const {return grid_value_y_;}
-  void ReadLefFile(std::string const &name_of_file);
-  void ReadDefFile(std::string const &name_of_file);
   void ReadWellFile(std::string const &name_of_file);
   void ReportBlockList();
   void ReportBlockMap();

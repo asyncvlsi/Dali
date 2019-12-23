@@ -43,8 +43,17 @@ int main(int argc, char *argv[]) {
   }
 
   Circuit circuit;
+#ifdef USE_OPENDB
+  odb::dbDatabase* db = odb::dbDatabase::create();
+  std::vector<std::string> defFileVec;
+  defFileVec.push_back(def_file_name);
+  odb_read_lef(db, lef_file_name.c_str());
+  odb_read_def(db, defFileVec);
+  circuit.InitializeFromDB(db);
+#else
   circuit.ReadLefFile(lef_file_name);
   circuit.ReadDefFile(def_file_name);
+#endif
   // might need to print out some circuit info here
   double hpwl_x = circuit.HPWLX();
   double hpwl_y = circuit.HPWLY();
@@ -64,9 +73,10 @@ int main(int argc, char *argv[]) {
 }
 
 void ReportUsage() {
-  std::cout << "Usage: hpwl\n"
+  std::cout << "\033[0;36m"
+            << "Usage: hpwl\n"
             << " -lef <file.lef>\n"
             << " -def <file.def>\n"
             << "(order does not matter)"
-            << "\n";
+            << "\033[0m\n";
 }
