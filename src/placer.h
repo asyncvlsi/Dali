@@ -21,4 +21,7 @@
 /****Legalizer****/
 #include "placer/legalizer/LGTetris.h"
 
+/****Well Legalizer****/
+#include "placer/wellLegalizer/welllegalizer.h"
+
 #endif //HPCC_SRC_PLACER_H_

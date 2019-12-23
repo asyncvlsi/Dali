@@ -12,15 +12,15 @@
 #include "status.h"
 
 Circuit::Circuit(): tot_width_(0), tot_height_(0), tot_blk_area_(0), tot_mov_width_(0), tot_mov_height_(0),
-                    tot_mov_block_area_(0), tot_mov_blk_num_(0), min_width_(INT_MAX), max_width_(0),
-                    min_height_(INT_MAX), max_height_(0), grid_set_(false), grid_value_x_(0), grid_value_y_(0){
+                    tot_mov_block_area_(0), tot_mov_blk_num_(0), blk_min_width_(INT_MAX), blk_max_width_(0),
+                    blk_min_height_(INT_MAX), blk_max_height_(0), grid_set_(false), grid_value_x_(0), grid_value_y_(0){
   AddAbsIOPinType();
   db_ = nullptr;
 }
 
 Circuit::Circuit(odb::dbDatabase* db): tot_width_(0), tot_height_(0), tot_blk_area_(0), tot_mov_width_(0), tot_mov_height_(0),
-                                       tot_mov_block_area_(0), tot_mov_blk_num_(0), min_width_(INT_MAX), max_width_(0),
-                                       min_height_(INT_MAX), max_height_(0), grid_set_(false), grid_value_x_(0), grid_value_y_(0) {
+                                       tot_mov_block_area_(0), tot_mov_blk_num_(0), blk_min_width_(INT_MAX), blk_max_width_(0),
+                                       blk_min_height_(INT_MAX), blk_max_height_(0), grid_set_(false), grid_value_x_(0), grid_value_y_(0) {
   AddAbsIOPinType();
   db_ = db;
   InitializeFromDB(db);
@@ -84,7 +84,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase* db) {
   SetGridValue(grid_value_x, grid_value_y);
 
   // 4. load all macro, or we say gate type
-  std::cout << lib->getName() << " lib\n";
+  //std::cout << lib->getName() << " lib\n";
   double llx = 0, lly = 0, urx = 0, ury = 0;
   unsigned int width = 0, height = 0;
   for (auto &&mac: lib->getMasters()) {
@@ -92,8 +92,8 @@ void Circuit::InitializeFromDB(odb::dbDatabase* db) {
     width = int(std::round((mac->getWidth()/grid_value_x_/lef_database_microns)));
     height = int(std::round((mac->getHeight()/grid_value_y_/lef_database_microns)));
     auto blk_type = AddBlockType(blk_name, width, height);
-    std::cout << mac->getName() << "\n";
-    std::cout << mac->getWidth()/grid_value_x_/lef_database_microns << "  " << mac->getHeight()/grid_value_y_/lef_database_microns << "\n";
+    //std::cout << mac->getName() << "\n";
+    //std::cout << mac->getWidth()/grid_value_x_/lef_database_microns << "  " << mac->getHeight()/grid_value_y_/lef_database_microns << "\n";
     for (auto &&terminal: mac->getMTerms()) {
       std::string pin_name(terminal->getName());
       //std::cout << terminal->getName() << " " << terminal->getMPins().begin()->getGeometry().begin()->xMax()/grid_value_x/lef_database_microns << "\n";
@@ -182,7 +182,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase* db) {
       int pin_num = blk_ptr->Type()->PinIndex(pin_name);
       new_net->AddBlockPinPair(blk_ptr, pin_num);
     }
-    std::cout << "\n";
+    //std::cout << "\n";
   }
 }
 
@@ -205,7 +205,7 @@ MetalLayer *Circuit::AddMetalLayer(std::string &metal_name, double width, double
   int map_size = metal_name_map.size();
   auto ret = metal_name_map.insert(std::pair<std::string, int>(metal_name, map_size));
   std::pair<const std::string, int>* name_num_pair_ptr = &(*ret.first);
-  metal_list.emplace_back(name_num_pair_ptr, width, spacing);
+  metal_list.emplace_back(width, spacing, name_num_pair_ptr);
   return &(metal_list.back());
 }
 
@@ -322,17 +322,17 @@ void Circuit::AddBlock(std::string &block_name, BlockType *block_type, int llx, 
     tot_mov_width_ += block_list.back().Width();
     tot_mov_height_ += block_list.back().Height();
   }
-  if ( block_list.back().Height() < min_height_ ) {
-    min_height_ = block_list.back().Height();
+  if ( block_list.back().Height() < blk_min_height_ ) {
+    blk_min_height_ = block_list.back().Height();
   }
-  if ( block_list.back().Height() > max_height_ ) {
-    max_height_ = block_list.back().Height();
+  if ( block_list.back().Height() > blk_max_height_ ) {
+    blk_max_height_ = block_list.back().Height();
   }
-  if ( block_list.back().Width() < min_width_ ) {
-    min_width_ = block_list.back().Width();
+  if ( block_list.back().Width() < blk_min_width_ ) {
+    blk_min_width_ = block_list.back().Width();
   }
-  if ( block_list.back().Width() > min_width_ ) {
-    max_width_ = block_list.back().Width();
+  if ( block_list.back().Width() > blk_min_width_ ) {
+    blk_max_width_ = block_list.back().Width();
   }
 }
 
@@ -459,7 +459,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
   * ****/
   std::ifstream ist(name_of_file.c_str());
   Assert(ist.is_open(), "Cannot open input file: " + name_of_file);
-  std::cout << "loading lef file" << std::endl;
+  std::cout << "Loading LEF file" << "\n";
   std::string line;
 
   // 1. find DATABASE MICRONS
@@ -673,7 +673,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     }
     getline(ist, line);
   }
-  std::cout << "lef file loading complete" << std::endl;
+  std::cout << "LEF file loading complete: " << name_of_file << "\n";
   //ReportBlockType();
 }
 
@@ -684,7 +684,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
    * ****/
   std::ifstream ist(name_of_file.c_str());
   Assert(ist.is_open(), "Cannot open input file: " + name_of_file);
-  std::cout << "loading def file" << std::endl;
+  std::cout << "Loading DEF file" << std::endl;
   std::string line;
 
   bool component_section_exist = false;
@@ -851,7 +851,6 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       getline(ist, line);
     }
   }
-  //ReportIOPin();
 
   if (nets_section_exist) {
     while (line.find("NETS") == std::string::npos && !ist.eof()) {
@@ -904,8 +903,20 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       getline(ist, line);
     }
   }
-  //ReportIOPin();
-  std::cout << "def file loading complete\n";
+  std::cout << "DEF file loading complete: " << name_of_file << "\n";
+}
+
+void Circuit::ReadWellFile(std::string const &name_of_file) {
+  std::ifstream ist(name_of_file.c_str());
+  Assert(ist.is_open(), "Cannot open input file: " + name_of_file);
+  std::cout << "Loading CELL file: " << name_of_file << "\n";
+  std::string line;
+
+
+
+
+
+  std::cout << "CELL file loading complete: " << name_of_file << "\n";
 }
 
 void Circuit::ReportBlockList() {
@@ -953,19 +964,19 @@ void Circuit::ReportBriefSummary() {
 }
 
 int Circuit::MinWidth() const {
-  return min_width_;
+  return blk_min_width_;
 }
 
 int Circuit::MaxWidth() const {
-  return  max_width_;
+  return  blk_max_width_;
 }
 
 int Circuit::MinHeight() const {
-  return min_height_;
+  return blk_min_height_;
 }
 
 int Circuit::MaxHeight() const {
-  return  max_height_;
+  return  blk_max_height_;
 }
 
 int Circuit::TotBlockNum() const {
@@ -977,15 +988,15 @@ int Circuit::TotMovableBlockNum() const {
 }
 
 double Circuit::AveMovWidth() const {
-  return tot_mov_width_/(double)TotMovableBlockNum();
+  return double(tot_mov_width_)/TotMovableBlockNum();
 }
 
 double Circuit::AveMovHeight() const {
-  return tot_mov_height_/(double)TotMovableBlockNum();
+  return double(tot_mov_height_)/TotMovableBlockNum();
 }
 
 double Circuit::AveMovArea() const {
-  return tot_mov_block_area_/(double)TotMovableBlockNum();
+  return double(tot_mov_block_area_)/TotMovableBlockNum();
 }
 
 void Circuit::NetSortBlkPin() {

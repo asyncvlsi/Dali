@@ -52,6 +52,7 @@ file(GLOB SOURCES
         src/placer/detailedPlacer/MDPlacer/*.cc
         src/placer/legalizer/*.cc
         src/placer/legalizer/LGTetris/*.cc
+        src/placer/wellLegalizer/*.cc
         )
 
 # Create a library, static libraries are controlled by ARCHIVE_OUTPUT_DIRECTORY property

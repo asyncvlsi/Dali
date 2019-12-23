@@ -11,6 +11,8 @@
 #include <unordered_map>
 #include "status.h"
 #include "layer.h"
+#include "tech.h"
+#include "design.h"
 #include "block.h"
 #include "iopin.h"
 #include "net.h"
@@ -26,18 +28,19 @@ class Circuit {
   unsigned long int tot_mov_height_;
   unsigned long int tot_mov_block_area_;
   int tot_mov_blk_num_;
-  int min_width_;
-  int max_width_;
-  int min_height_;
-  int max_height_;
+  int blk_min_width_;
+  int blk_max_width_;
+  int blk_min_height_;
+  int blk_max_height_;
 
   // Manufacturing Grid
   bool grid_set_;
   double grid_value_x_;
   double grid_value_y_;
 
-  odb::dbDatabase* db_;
-
+  odb::dbDatabase * db_;
+  Tech * tech_param_;
+  Design * design_;
  public:
   Circuit();
   explicit Circuit(odb::dbDatabase* db);
@@ -132,6 +135,7 @@ class Circuit {
   double GridValueY() const {return grid_value_y_;}
   void ReadLefFile(std::string const &name_of_file);
   void ReadDefFile(std::string const &name_of_file);
+  void ReadWellFile(std::string const &name_of_file);
   void ReportBlockList();
   void ReportBlockMap();
   void ReportNetList();
