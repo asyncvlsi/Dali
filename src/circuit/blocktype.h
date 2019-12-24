@@ -5,9 +5,10 @@
 #ifndef HPCC_SRC_CIRCUIT_BLOCKTYPE_H_
 #define HPCC_SRC_CIRCUIT_BLOCKTYPE_H_
 
-#include "pin.h"
 #include <map>
 #include <vector>
+#include "pin.h"
+#include "blocktypeaux.h"
 
 class Pin;
 
@@ -17,6 +18,7 @@ class BlockType {
   const std::string *name_;
   unsigned int width_, height_;
 
+  BlockTypeAux *aux_;
  public:
   BlockType(const std::string *name, unsigned int width, unsigned int height);
   void SetName(const std::string *name) {name_ = name;}
@@ -28,7 +30,8 @@ class BlockType {
   Pin *AddPin(std::string &pin_name);
   void AddPin(std::string &pin_name, double x_offset, double y_offset);
 
-  void AddWell(bool is_pluged, int llx, int lly, int urx, int ury);
+  void SetAux(BlockTypeAux *aux);
+  BlockTypeAux *GetAux() const {return aux_;}
 
   const std::string *Name() const { return name_;}
   unsigned int Width() const {return width_;}

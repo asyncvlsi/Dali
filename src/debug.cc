@@ -72,6 +72,10 @@ int main() {
   //delete d_placer;
   delete legalizer;
 
+#ifdef USE_OPENDB
+  odb::dbDatabase::destroy(db);
+#endif
+
   Time = clock() - Time;
   std::cout << "Execution time " << double(Time)/CLOCKS_PER_SEC << "s.\n";
 

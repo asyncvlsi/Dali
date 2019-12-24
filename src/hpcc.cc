@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
   using std::chrono::system_clock;
   system_clock::time_point today = system_clock::now();
   std::time_t tt = system_clock::to_time_t (today);
-  std::cout << "today is: " << ctime(&tt);
+  std::cout << "today is: " << ctime(&tt) << std::endl;
 
   if (argc < 5) {
     ReportUsage();

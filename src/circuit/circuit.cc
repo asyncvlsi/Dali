@@ -65,29 +65,31 @@ void Circuit::InitializeFromDB(odb::dbDatabase* db) {
   }
 
   // 3. find the first and second metal layer pitch
-  double grid_value_x = -1, grid_value_y = -1;
-  Assert(tech->getRoutingLayerCount()>=2, "Needs at least one metal layer to find metal pitch");
-  for (auto &&layer: tech->getLayers()) {
-    //std::cout << layer->getNumber() << "  " << layer->getName() << "  " << layer->getType() << "\n";
-    std::string layer_name(layer->getName());
-    if (layer_name=="m1" ||
-        layer_name=="metal1" ||
-        layer_name=="M1" ||
-        layer_name=="Metal1" ||
-        layer_name=="METAL1") {
-      grid_value_y = (layer->getWidth()+layer->getSpacing())/double(lef_database_microns);
-      //std::cout << (layer->getWidth() + layer->getSpacing()) / double(lef_database_microns) << "\n";
+  if (!grid_set_) {
+    double grid_value_x = -1, grid_value_y = -1;
+    Assert(tech->getRoutingLayerCount()>=2, "Needs at least one metal layer to find metal pitch");
+    for (auto &&layer: tech->getLayers()) {
+      //std::cout << layer->getNumber() << "  " << layer->getName() << "  " << layer->getType() << "\n";
+      std::string layer_name(layer->getName());
+      if (layer_name=="m1" ||
+          layer_name=="metal1" ||
+          layer_name=="M1" ||
+          layer_name=="Metal1" ||
+          layer_name=="METAL1") {
+        grid_value_y = (layer->getWidth()+layer->getSpacing())/double(lef_database_microns);
+        //std::cout << (layer->getWidth() + layer->getSpacing()) / double(lef_database_microns) << "\n";
+      }
+      else if (layer_name=="m2" ||
+          layer_name=="metal2" ||
+          layer_name=="M2" ||
+          layer_name=="Metal2" ||
+          layer_name=="METAL2") {
+        grid_value_x = (layer->getWidth()+layer->getSpacing())/double(lef_database_microns);
+        //std::cout << (layer->getWidth() + layer->getSpacing()) / double(lef_database_microns) << "\n";
+      }
     }
-    else if (layer_name=="m2" ||
-        layer_name=="metal2" ||
-        layer_name=="M2" ||
-        layer_name=="Metal2" ||
-        layer_name=="METAL2") {
-      grid_value_x = (layer->getWidth()+layer->getSpacing())/double(lef_database_microns);
-      //std::cout << (layer->getWidth() + layer->getSpacing()) / double(lef_database_microns) << "\n";
-    }
+    SetGridValue(grid_value_x, grid_value_y);
   }
-  SetGridValue(grid_value_x, grid_value_y);
 
   // 4. load all macro, or we say gate type
   //std::cout << lib->getName() << " lib\n";
