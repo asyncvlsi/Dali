@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.9)
 # We only use C++ compiler for this project.
 # By specifying the languages, project() will only check if there is a C++ compiler.
 # Default values of LANGUAGES is C and C++, if not specified.
-project(HPCC
+project(DALI
     LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -50,17 +50,17 @@ add_library(placer
     ${SOURCES})
 
 # Stand-alone placer, building from the placer library
-add_executable(hpcc
-    src/hpcc.cc)
-target_link_libraries(hpcc
+add_executable(dali
+        src/dali.cc)
+target_link_libraries(dali
     PRIVATE placer
     opendb)
 
 # Debugging exectuable, building from the placer library
-add_executable(hpcc-debug
+add_executable(dali-debug
     EXCLUDE_FROM_ALL
     src/debug.cc)
-target_link_libraries(hpcc-debug
+target_link_libraries(dali-debug
     PRIVATE placer
     opendb)
 
@@ -98,12 +98,12 @@ endif()
 # Install header files
 ######################################
 set(INLUDE_DESTIN include)
-install(DIRECTORY src/ DESTINATION ${INLUDE_DESTIN}/hpcc COMPONENT Development FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY src/ DESTINATION ${INLUDE_DESTIN}/dali COMPONENT Development FILES_MATCHING PATTERN "*.h")
 
 ######################################
 # Install binary
 ######################################
-#install(TARGETS hpcc
+#install(TARGETS dali
 #    DESTINATION bin)
 
 ######################################

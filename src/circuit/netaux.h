@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 2019-08-05.
 //
 
-#ifndef HPCC_SRC_NETAUX_H_
-#define HPCC_SRC_NETAUX_H_
+#ifndef DALI_SRC_NETAUX_H_
+#define DALI_SRC_NETAUX_H_
 
 #include "net.h"
 
@@ -17,4 +17,4 @@ class NetAux {
   Net *GetNet();
 };
 
-#endif //HPCC_SRC_PLACER_NETAUX_H_
+#endif //DALI_SRC_PLACER_NETAUX_H_

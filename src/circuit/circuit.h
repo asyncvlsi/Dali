@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 2019-03-26.
 //
 
-#ifndef HPCC_CIRCUIT_HPP
-#define HPCC_CIRCUIT_HPP
+#ifndef DALI_CIRCUIT_HPP
+#define DALI_CIRCUIT_HPP
 
 #include <vector>
 #include <set>
@@ -116,15 +116,11 @@ class Circuit {
   bool def_boundary_set = false;
   void SetBoundaryFromDef(int left, int right, int bottom, int top);
 
-  // API to add well information
-  void AddBlkWell(std::string &block_name, bool is_pluged, int llx, int lly, int urx, int ury);
-  void AddBlkWell(Block *blk, bool is_pluged, int llx, int lly, int urx, int ury);
-  void SetWellWidth(double well_width);
-  void SetWellSpace(double well_space);
-  void SetWellMaxLengthUnplug(double max_length_unplug);
-  double WellWidth() const;
-  double WellSpace() const;
-  double WellMaxLengthUnplug() const;
+  // API to add N/P-well technology information
+  BlockTypeWell *AddBlockTypeWell(BlockType *blk_type_ptr, bool is_plug);
+  BlockTypeWell *AddBlockTypeWell(std::string &blk_type_name, bool is_plug);
+  void SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist);
+  void SetPWellParams(double width, double spacing, double op_spacing, double max_plug_dist);
 
   /*
   std::vector< Net > pseudo_net_list;
@@ -180,4 +176,4 @@ class Circuit {
   void SaveISPD(std::string const &name_of_file);
 };
 
-#endif //HPCC_CIRCUIT_HPP
+#endif //DALI_CIRCUIT_HPP

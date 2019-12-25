@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 9/5/19.
 //
 
-#ifndef HPCC_SRC_PLACER_H_
-#define HPCC_SRC_PLACER_H_
+#ifndef DALI_SRC_PLACER_H_
+#define DALI_SRC_PLACER_H_
 
 /****placer base class****/
 #include "placer/placer.h"
@@ -24,4 +24,4 @@
 /****Well Legalizer****/
 #include "placer/wellLegalizer/welllegalizer.h"
 
-#endif //HPCC_SRC_PLACER_H_
+#endif //DALI_SRC_PLACER_H_

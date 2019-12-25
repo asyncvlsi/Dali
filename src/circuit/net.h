@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 2019-05-23.
 //
 
-#ifndef HPCC_NET_HPP
-#define HPCC_NET_HPP
+#ifndef DALI_NET_HPP
+#define DALI_NET_HPP
 
 #include <string>
 #include <vector>
@@ -85,4 +85,4 @@ class Net {
   }*/
 };
 
-#endif //HPCC_NET_HPP
+#endif //DALI_NET_HPP

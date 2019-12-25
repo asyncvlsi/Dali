@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 12/22/19.
 //
 
-#ifndef HPCC_SRC_CIRCUIT_TECH_H_
-#define HPCC_SRC_CIRCUIT_TECH_H_
+#ifndef DALI_SRC_CIRCUIT_TECH_H_
+#define DALI_SRC_CIRCUIT_TECH_H_
 
 #include "layer.h"
 class Tech {
@@ -23,4 +23,4 @@ class Tech {
   void Report();
 };
 
-#endif //HPCC_SRC_CIRCUIT_TECH_H_
+#endif //DALI_SRC_CIRCUIT_TECH_H_

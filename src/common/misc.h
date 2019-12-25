@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 2019-07-25.
 //
 
-#ifndef HPCC_SRC_COMMON_MISC_H_
-#define HPCC_SRC_COMMON_MISC_H_
+#ifndef DALI_SRC_COMMON_MISC_H_
+#define DALI_SRC_COMMON_MISC_H_
 
 #include <cassert>
 #include <iostream>
@@ -81,4 +81,4 @@ class NotImplementedException: public std::logic_error {
   NotImplementedException(): std::logic_error("Function not yet implemented.") {};
 };
 
-#endif //HPCC_SRC_COMMON_MISC_H_
+#endif //DALI_SRC_COMMON_MISC_H_

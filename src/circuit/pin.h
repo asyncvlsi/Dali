@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 10/31/19.
 //
 
-#ifndef HPCC_SRC_CIRCUIT_PIN_H_
-#define HPCC_SRC_CIRCUIT_PIN_H_
+#ifndef DALI_SRC_CIRCUIT_PIN_H_
+#define DALI_SRC_CIRCUIT_PIN_H_
 
 #include "rect.h"
 #include <vector>
@@ -39,4 +39,4 @@ class Pin {
   void Report() const;
 };
 
-#endif //HPCC_SRC_CIRCUIT_PIN_H_
+#endif //DALI_SRC_CIRCUIT_PIN_H_

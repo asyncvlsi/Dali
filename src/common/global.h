@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 8/29/19.
 //
 
-#ifndef HPCC_SRC_COMMON_GLOBAL_H_
-#define HPCC_SRC_COMMON_GLOBAL_H_
+#ifndef DALI_SRC_COMMON_GLOBAL_H_
+#define DALI_SRC_COMMON_GLOBAL_H_
 
 enum VerboseLevel {
   LOG_NOTHING = 0,
@@ -16,4 +16,4 @@ enum VerboseLevel {
 
 extern VerboseLevel globalVerboseLevel;
 
-#endif //HPCC_SRC_COMMON_GLOBAL_H_
+#endif //DALI_SRC_COMMON_GLOBAL_H_

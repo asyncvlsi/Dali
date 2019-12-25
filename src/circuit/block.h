@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 2019-05-23.
 //
 
-#ifndef HPCC_BLOCK_HPP
-#define HPCC_BLOCK_HPP
+#ifndef DALI_BLOCK_HPP
+#define DALI_BLOCK_HPP
 
 
 #include <vector>
@@ -102,4 +102,4 @@ class Block {
   std::string LowerLeftCorner() {return "( " + std::to_string(LLX()) + " " + std::to_string(LLY()) + " )";}
 };
 
-#endif //HPCC_BLOCK_HPP
+#endif //DALI_BLOCK_HPP

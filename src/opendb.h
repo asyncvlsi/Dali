@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 12/17/19.
 //
 
-#ifndef HPCC_SRC_OPENDB_H_
-#define HPCC_SRC_OPENDB_H_
+#ifndef DALI_SRC_OPENDB_H_
+#define DALI_SRC_OPENDB_H_
 
 #include "db.h"
 #include "lefin.h"
@@ -30,4 +30,4 @@ int odb_write_def(odb::dbBlock* block, const char* path, odb::defout::Version ve
 
 int odb_write_lef(odb::dbLib* lib, const char* path);
 
-#endif //HPCC_SRC_OPENDB_H_
+#endif //DALI_SRC_OPENDB_H_

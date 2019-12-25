@@ -2,8 +2,8 @@
 // Created by yihang on 11/27/19.
 //
 
-#ifndef HPCC_SRC_CIRCUIT_STATUS_H_
-#define HPCC_SRC_CIRCUIT_STATUS_H_
+#ifndef DALI_SRC_CIRCUIT_STATUS_H_
+#define DALI_SRC_CIRCUIT_STATUS_H_
 
 #include <string>
 
@@ -53,4 +53,4 @@ enum SignalDirection {
 SignalDirection  StrToSignalDirection(std::string &str_signal_direction);
 std::string SignalDirectionStr(SignalDirection signal_direction);
 
-#endif //HPCC_SRC_CIRCUIT_STATUS_H_
+#endif //DALI_SRC_CIRCUIT_STATUS_H_

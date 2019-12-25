@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 11/28/19.
 //
 
-#ifndef HPCC_SRC_CIRCUIT_LAYER_H_
-#define HPCC_SRC_CIRCUIT_LAYER_H_
+#ifndef DALI_SRC_CIRCUIT_LAYER_H_
+#define DALI_SRC_CIRCUIT_LAYER_H_
 
 #include <string>
 #include "status.h"
@@ -67,4 +67,4 @@ class WellLayer: public Layer {
   void Report();
 };
 
-#endif //HPCC_SRC_CIRCUIT_LAYER_H_
+#endif //DALI_SRC_CIRCUIT_LAYER_H_

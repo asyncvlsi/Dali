@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 2019-05-23.
 //
 
-#ifndef HPCC_PLACERBASE_HPP
-#define HPCC_PLACERBASE_HPP
+#ifndef DALI_PLACERBASE_HPP
+#define DALI_PLACERBASE_HPP
 
 #include <string>
 #include <iostream>
@@ -145,4 +145,4 @@ inline void Placer::ReportHPWLCtoC() {
 }
 
 
-#endif //HPCC_PLACERBASE_HPP
+#endif //DALI_PLACERBASE_HPP

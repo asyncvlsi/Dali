@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 11/28/19.
 //
 
-#ifndef HPCC_SRC_CIRCUIT_IOPIN_H_
-#define HPCC_SRC_CIRCUIT_IOPIN_H_
+#ifndef DALI_SRC_CIRCUIT_IOPIN_H_
+#define DALI_SRC_CIRCUIT_IOPIN_H_
 
 #include <string>
 #include "../common/misc.h"
@@ -44,4 +44,4 @@ class IOPin {
   void Report() const;
 };
 
-#endif //HPCC_SRC_CIRCUIT_IOPIN_H_
+#endif //DALI_SRC_CIRCUIT_IOPIN_H_

@@ -692,6 +692,28 @@ void Circuit::SetBoundaryFromDef(int left, int right, int bottom, int top) {
   def_top = top;
 }
 
+BlockTypeWell *Circuit::AddBlockTypeWell(BlockType *blk_type_ptr, bool is_plug) {
+  blk_type_ptr->well_ = new BlockTypeWell(blk_type_ptr);
+  blk_type_ptr->well_->SetPlug(is_plug);
+  return blk_type_ptr->well_;
+}
+
+BlockTypeWell *Circuit::AddBlockTypeWell(std::string &blk_type_name, bool is_plug) {
+  BlockType *blk_type_ptr = GetBlockType(blk_type_name);
+  AddBlockTypeWell(blk_type_ptr, is_plug);
+  return blk_type_ptr->well_;
+}
+
+void Circuit::SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist) {
+  if (tech_param_== nullptr) tech_param_ = new Tech;
+  tech_param_->SetNWell(width, spacing, op_spacing, max_plug_dist);
+}
+
+void Circuit::SetPWellParams(double width, double spacing, double op_spacing, double max_plug_dist) {
+  if (tech_param_== nullptr) tech_param_ = new Tech;
+  tech_param_->SetPWell(width, spacing, op_spacing, max_plug_dist);
+}
+
 bool Circuit::IsBlockTypeExist(std::string &block_type_name) {
   return !(block_type_map.find(block_type_name) == block_type_map.end());
 }
@@ -968,12 +990,10 @@ void Circuit::ReadWellFile(std::string const &name_of_file) {
         } else { }
         getline(ist, line);
       } while (line.find(end_layer_flag)==std::string::npos && !ist.eof());
-      if (tech_param_== nullptr) tech_param_ = new Tech;
-      //std::cout << width << "  " << spacing << "  " << op_spacing << "  " << max_plug_dist << "\n";
       if (is_n_well) {
-        tech_param_->SetNWell(width, spacing, op_spacing, max_plug_dist);
+        SetNWellParams(width, spacing, op_spacing, max_plug_dist);
       } else {
-        tech_param_->SetPWell(width, spacing, op_spacing, max_plug_dist);
+        SetPWellParams(width, spacing, op_spacing, max_plug_dist);
       }
     }
 
