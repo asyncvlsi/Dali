@@ -7,10 +7,23 @@
 
 #include "blocktype.h"
 #include "rect.h"
-#include "blocktypecluster.h"
 
 class BlockType;
-class BlockTypeCluster;
+class BlockTypeWell;
+struct BlockTypeCluster{
+ private:
+  BlockTypeWell *plug_;
+  BlockTypeWell *unplug_;
+ public:
+  BlockTypeCluster(): plug_(nullptr), unplug_(nullptr) {}
+  void SetAll(BlockTypeWell *plug, BlockTypeWell *unplug) {plug_ = plug; unplug_ = unplug;}
+  void SetPlug(BlockTypeWell *plug) {plug_ = plug;}
+  void SetUnplug(BlockTypeWell *unplug) {unplug_ = unplug;}
+  BlockTypeWell *GetPlug() const {return plug_;}
+  BlockTypeWell *GetUnplug() const {return unplug_;}
+  bool Empty() {return plug_ == nullptr && unplug_ == nullptr;}
+};
+
 
 class BlockTypeWell {
  private:
@@ -28,10 +41,15 @@ class BlockTypeWell {
   void SetPlug(bool is_plug) {is_plug_ = is_plug;}
   bool IsPlug() const {return is_plug_;}
 
-  void SetNWell(double lx, double ly, double ux, double uy);
-  void SetNWell(Rect &rect);
-  void SetPWell(double lx, double ly, double ux, double uy);
-  void SetPWell(Rect &rect);
+  void SetNWellShape(double lx, double ly, double ux, double uy);
+  void SetNWellShape(Rect &rect);
+  void SetPWellShape(double lx, double ly, double ux, double uy);
+  void SetPWellShape(Rect &rect);
+
+  void SetWellShape(bool is_n, double lx, double ly, double ux, double uy);
+  void SetWellShape(bool is_n, Rect &rect);
+
+  void Report();
 };
 
 #endif //DALI_SRC_CIRCUIT_WELLBLKTYPEAUX_H_

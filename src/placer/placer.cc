@@ -199,8 +199,8 @@ void Placer::SaveDEFFile(std::string const &name_of_file) {
         << *(block.Type()->Name()) << " + "
         << "PLACED"
         << " ("
-        << " " + std::to_string((int)(block.LLX()*circuit_->def_distance_microns*circuit_->GridValueX()))
-        << " " + std::to_string((int)(block.LLY()*circuit_->def_distance_microns*circuit_->GridValueY()))
+        << " " + std::to_string((int)(block.LLX()*circuit_->def_distance_microns* circuit_->GetGridValueX()))
+        << " " + std::to_string((int)(block.LLY()*circuit_->def_distance_microns* circuit_->GetGridValueY()))
         << " ) "
         << OrientStr(block.Orient()) + " ;\n";
   }
@@ -242,8 +242,8 @@ void Placer::SaveDEFFile(std::string const &name_of_file, std::string const &inp
         << *(block.Type()->Name()) << " + "
         << "PLACED"
         << " ("
-        << " " + std::to_string((int)(block.LLX()*circuit_->def_distance_microns*circuit_->GridValueX()))
-        << " " + std::to_string((int)(block.LLY()*circuit_->def_distance_microns*circuit_->GridValueY()))
+        << " " + std::to_string((int)(block.LLX()*circuit_->def_distance_microns* circuit_->GetGridValueX()))
+        << " " + std::to_string((int)(block.LLY()*circuit_->def_distance_microns* circuit_->GetGridValueY()))
         << " ) "
         << OrientStr(block.Orient()) + " ;\n";
   }

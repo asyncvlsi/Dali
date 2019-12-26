@@ -405,7 +405,6 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
               } catch (...) {
                 Assert(false, "Invalid stod conversion:\n" + line);
               }
-              //std::cout << LLX << " " << LLY << " " << URX << " " << URY << "\n";
               new_pin->AddRect(llx, lly, urx, ury);
             }
           } while (line.find(end_pin_flag)==std::string::npos && !ist.eof());
@@ -714,6 +713,15 @@ void Circuit::SetPWellParams(double width, double spacing, double op_spacing, do
   tech_param_->SetPWell(width, spacing, op_spacing, max_plug_dist);
 }
 
+void Circuit::ReportWellShape() {
+  for (auto &pair: block_type_map) {
+    BlockTypeWell *well = pair.second->GetWell();
+    if (well != nullptr) {
+      well->Report();
+    }
+  }
+}
+
 bool Circuit::IsBlockTypeExist(std::string &block_type_name) {
   return !(block_type_map.find(block_type_name) == block_type_map.end());
 }
@@ -998,18 +1006,58 @@ void Circuit::ReadWellFile(std::string const &name_of_file) {
     }
 
     if (line.find("MACRO")!=std::string::npos) {
-      std::cout << line << "\n";
+      //std::cout << line << "\n";
       std::vector<std::string> macro_fields;
       StrSplit(line, macro_fields);
       std::string end_macro_flag = "END " + macro_fields[1];
-      std::cout << end_macro_flag << "\n";
+      //std::cout << end_macro_flag << "\n";
+      auto *cluster = new BlockTypeCluster();
+      BlockTypeWell *plug = nullptr;
+      BlockTypeWell *unplug = nullptr;
       do {
         getline(ist, line);
+        if (line.find("VERSION")!=std::string::npos) {
+          std::vector<std::string> version_fields;
+          StrSplit(line, version_fields);
+          getline(ist,line);
+          bool is_plug = false;
+          if (line.find("UNPLUG")==std::string::npos) is_plug = true;
+          BlockTypeWell *well = AddBlockTypeWell(version_fields[1], is_plug);
+          if (is_plug) {
+            plug = well;
+          } else {
+            unplug = well;
+          }
+          double lx=0, ly=0, ux=0, uy=0;
+          bool is_n=false;
+          do {
+            getline(ist,line);
+            if (line.find("nwell")!=std::string::npos) {
+              is_n = true;
+            } else if (line.find("RECT")!=std::string::npos) {
+              std::vector<std::string> shape_fields;
+              StrSplit(line, shape_fields);
+              try {
+                lx = std::stod(shape_fields[1])/grid_value_x_/def_distance_microns;
+                ly = std::stod(shape_fields[2])/grid_value_y_/def_distance_microns;
+                ux = std::stod(shape_fields[3])/grid_value_x_/def_distance_microns;
+                uy = std::stod(shape_fields[4])/grid_value_y_/def_distance_microns;
+              } catch (...) {
+                Assert(false, "Invalid stod conversion:\n" + line);
+              }
+              well->SetWellShape(is_n, lx, ly, ux, uy);
+            }
+          } while (line.find("END VERSION")==std::string::npos && !ist.eof());
+        }
       } while (line.find(end_macro_flag)==std::string::npos && !ist.eof());
+      if (plug != nullptr) plug->SetCluster(cluster);
+      if (unplug != nullptr) unplug->SetCluster(cluster);
+      Assert(!cluster->Empty(), "No plug/unplug version provided");
     }
   }
-  Assert(tech_param_ != nullptr, "No N/P well technology information detected!");
-  //tech_param_->Report();
+  Assert(tech_param_ != nullptr, "N/P well technology information not found!");
+  tech_param_->Report();
+  ReportWellShape();
 
   std::cout << "CELL file loading complete: " << name_of_file << "\n";
 }
@@ -1058,42 +1106,6 @@ void Circuit::ReportBriefSummary() {
   }
 }
 
-int Circuit::MinWidth() const {
-  return blk_min_width_;
-}
-
-int Circuit::MaxWidth() const {
-  return  blk_max_width_;
-}
-
-int Circuit::MinHeight() const {
-  return blk_min_height_;
-}
-
-int Circuit::MaxHeight() const {
-  return  blk_max_height_;
-}
-
-int Circuit::TotBlockNum() const {
-  return block_list.size();
-}
-
-int Circuit::TotMovableBlockNum() const {
-  return tot_mov_blk_num_;
-}
-
-double Circuit::AveMovWidth() const {
-  return double(tot_mov_width_)/TotMovableBlockNum();
-}
-
-double Circuit::AveMovHeight() const {
-  return double(tot_mov_height_)/TotMovableBlockNum();
-}
-
-double Circuit::AveMovArea() const {
-  return double(tot_mov_block_area_)/TotMovableBlockNum();
-}
-
 void Circuit::NetSortBlkPin() {
   for (auto &&net: net_list) {
     net.SortBlkPinList();
@@ -1105,7 +1117,7 @@ double Circuit::HPWLX() {
   for (auto &&net: net_list) {
     HPWLX += net.HPWLX();
   }
-  return HPWLX*GridValueX();
+  return HPWLX* GetGridValueX();
 }
 
 double Circuit::HPWLY() {
@@ -1113,7 +1125,7 @@ double Circuit::HPWLY() {
   for (auto &&net: net_list) {
     HPWLY += net.HPWLY();
   }
-  return HPWLY*GridValueY();
+  return HPWLY* GetGridValueY();
 }
 
 double Circuit::HPWL() {
@@ -1127,7 +1139,7 @@ void Circuit::ReportHPWL() {
 double Circuit::HPWLCtoCX() {
   double HPWLCtoCX = 0;
   for (auto &&net: net_list) {
-    HPWLCtoCX += net.HPWLCtoCX()*GridValueX();
+    HPWLCtoCX += net.HPWLCtoCX()* GetGridValueX();
   }
   return HPWLCtoCX;
 }
@@ -1135,7 +1147,7 @@ double Circuit::HPWLCtoCX() {
 double Circuit::HPWLCtoCY() {
   double HPWLCtoCY = 0;
   for (auto &&net: net_list) {
-    HPWLCtoCY += net.HPWLCtoCY()*GridValueY();
+    HPWLCtoCY += net.HPWLCtoCY()* GetGridValueY();
   }
   return HPWLCtoCY;
 }

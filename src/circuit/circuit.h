@@ -13,6 +13,8 @@
 #include "layer.h"
 #include "tech.h"
 #include "design.h"
+#include "blocktype.h"
+#include "blocktypewell.h"
 #include "block.h"
 #include "iopin.h"
 #include "net.h"
@@ -55,10 +57,15 @@ class Circuit {
   void ReadDefFile(std::string const &name_of_file);
 #endif
 
-  // API to set grid value
+  /****API to set grid value****/
   void SetGridValue(double grid_value_x, double grid_value_y);
+  double GetGridValueX() const {return grid_value_x_;} // unit in micro
+  double GetGridValueY() const {return grid_value_y_;}
   void SetGridUsingMetalPitch();
 
+  /****API to set metal layers: deprecated
+   * now the metal layer information are all stored in openDB data structure
+   * ****/
   std::vector<MetalLayer> metal_list;
   std::unordered_map<std::string, int> metal_name_map;
   bool IsMetalLayerExist(std::string &metal_name);
@@ -68,17 +75,21 @@ class Circuit {
   MetalLayer *AddMetalLayer(std::string &metal_name);
   void ReportMetalLayers();
 
+  /****API for BlockType
+   * These are MACRO section in LEF
+   * ****/
   std::unordered_map<std::string, BlockType*> block_type_map;
-  // API to add new BlockType
   bool IsBlockTypeExist(std::string &block_type_name);
   BlockType *GetBlockType(std::string &block_type_name);
   BlockType *AddBlockType(std::string &block_type_name, unsigned int width, unsigned int height);
   void ReportBlockType();
   void CopyBlockType(Circuit &circuit);
 
+  /****API for Block
+   * These are COMPONENTS section in DEF
+   * ****/
   std::vector<Block> block_list;
   std::map<std::string, int> block_name_map;
-  // API to add new Block Instance
   bool IsBlockExist(std::string &block_name);
   int BlockIndex(std::string &block_name);
   Block *GetBlock(std::string &block_name);
@@ -86,10 +97,14 @@ class Circuit {
   void AddBlock(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, bool movable = true, BlockOrient orient= N);
   void AddBlock(std::string &block_name, BlockType *block_type, int llx = 0, int lly = 0, PlaceStatus place_status = UNPLACED, BlockOrient orient= N);
   void AddBlock(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, PlaceStatus place_status = UNPLACED, BlockOrient orient= N);
+  void ReportBlockList();
+  void ReportBlockMap();
 
+  /****API for IOPIN
+   * These are PINS section in DEF
+   * ****/
   std::vector<IOPin> pin_list;
   std::map<std::string, int> pin_name_map;
-  // API to add new IOPin
   void AddAbsIOPinType();
   bool IsIOPinExist(std::string &iopin_name);
   int IOPinIndex(std::string &iopin_name);
@@ -98,14 +113,20 @@ class Circuit {
   IOPin *AddIOPin(std::string &iopin_name, int lx, int ly);
   void ReportIOPin();
 
+  /****API for Nets
+   * These are NETS section in DEF
+   * ****/
   std::vector<Net> net_list;
   std::map<std::string, int> net_name_map;
-  // API to add new Net
   bool IsNetExist(std::string &net_name);
   int NetIndex(std::string &net_name);
   Net *GetNet(std::string &net_name);
   void AddToNetMap(std::string &net_name);
   Net *AddNet(std::string &net_name, double weight = 1);
+  void ReportNetList();
+  void ReportNetMap();
+
+  void ReportBriefSummary();
 
   double reset_signal_weight = 1;
   double normal_signal_weight = 1;
@@ -116,11 +137,15 @@ class Circuit {
   bool def_boundary_set = false;
   void SetBoundaryFromDef(int left, int right, int bottom, int top);
 
-  // API to add N/P-well technology information
+  /****API to add N/P-well technology information
+   * These are for CELL file
+   * ****/
   BlockTypeWell *AddBlockTypeWell(BlockType *blk_type_ptr, bool is_plug);
   BlockTypeWell *AddBlockTypeWell(std::string &blk_type_name, bool is_plug);
   void SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist);
   void SetPWellParams(double width, double spacing, double op_spacing, double max_plug_dist);
+  void ReadWellFile(std::string const &name_of_file);
+  void ReportWellShape();
 
   /*
   std::vector< Net > pseudo_net_list;
@@ -133,30 +158,21 @@ class Circuit {
    */
   // repulsive force can be created using an attractive force, a spring whose rest length in the current distance or even longer than the current distance
 
-  // read lef/def file using above member functions
-  double GridValueX() const {return grid_value_x_;} // unit in micro
-  double GridValueY() const {return grid_value_y_;}
-  void ReadWellFile(std::string const &name_of_file);
-  void ReportBlockList();
-  void ReportBlockMap();
-  void ReportNetList();
-  void ReportNetMap();
-  void ReportBriefSummary();
-
-  int MinWidth() const;
-  int MaxWidth() const;
-  int MinHeight() const;
-  int MaxHeight() const;
+  /****Other member functions****/
+  int MinWidth() const {return blk_min_width_;}
+  int MaxWidth() const {return  blk_max_width_;}
+  int MinHeight() const {return blk_min_height_;}
+  int MaxHeight() const {return  blk_max_height_;}
   unsigned long int TotArea() const {return tot_blk_area_;}
-  int TotBlockNum() const;
-  int TotMovableBlockNum() const;
+  int TotBlockNum() const {return block_list.size();}
+  int TotMovableBlockNum() const {return tot_mov_blk_num_;}
   unsigned int TotFixedBlkCnt() const {return block_list.size() - tot_mov_blk_num_;}
   double AveWidth() const {return double(tot_width_)/double(TotBlockNum());}
   double AveHeight() const {return double(tot_height_)/double(TotBlockNum());}
   double AveArea() const {return double(tot_blk_area_)/(double)TotBlockNum();}
-  double AveMovWidth() const;
-  double AveMovHeight() const;
-  double AveMovArea() const;
+  double AveMovWidth() const {return double(tot_mov_width_)/TotMovableBlockNum();}
+  double AveMovHeight() const {return double(tot_mov_height_)/TotMovableBlockNum();}
+  double AveMovArea() const {return double(tot_mov_block_area_)/TotMovableBlockNum();}
   double WhiteSpaceUsage() const {return double(TotArea())/(def_right-def_left)/(def_top-def_bottom);}
 
   void NetSortBlkPin();
@@ -169,7 +185,7 @@ class Circuit {
   double HPWLCtoC();
   void ReportHPWLCtoC();
 
-  // dump circuit to LEF/DEF file, readable by the the above ReadDefFile()
+  /****dump placement results to various file formats****/
   void WriteDefFileDebug(std::string const &name_of_file= "circuit.def");
   void GenMATLABScript(std::string const &name_of_file= "block_net_list.m");
   void SaveDefFile(std::string const &name_of_file, std::string const &def_file_name);
