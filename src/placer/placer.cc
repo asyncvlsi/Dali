@@ -135,6 +135,51 @@ void Placer::GenMATLABScript(std::string const &name_of_file) {
   ost.close();
 }
 
+void Placer::GenMATLABTable(std::string const &name_of_file) {
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+  ost << Left() << "\t" << Right() << "\t" << Right() << "\t" << Left() << "\t" << Bottom() << "\t" << Bottom() << "\t" << Top() << "\t" << Top() << "\n";
+  for (auto &block: circuit_->block_list) {
+    ost << block.LLX() << "\t"
+        << block.URX() << "\t"
+        << block.URX() << "\t"
+        << block.LLX() << "\t"
+        << block.LLY() << "\t"
+        << block.LLY() << "\t"
+        << block.URY() << "\t"
+        << block.URY() << "\n";
+  }
+
+}
+
+void Placer::GenMATLABWellTable(std::string const &name_of_file) {
+  std::string frame_file = name_of_file + "_outline.txt";
+  std::string unplug_file = name_of_file + "_unplug.txt";
+  std::string plug_file = name_of_file + "_plug.txt";
+  GenMATLABTable(frame_file);
+
+  std::ofstream ost(unplug_file.c_str());
+  Assert(ost.is_open(), "Cannot open output file: " + unplug_file);
+  for (auto &block: circuit_->block_list) {
+    auto well = block.Type()->GetWell();
+    if (well != nullptr) {
+      if (!well->IsPlug()) {
+        auto n_well_shape = well->GetNWellShape();
+        ost << block.LLX() + n_well_shape->LLX() << "\t"
+            << block.LLX() + n_well_shape->URX() << "\t"
+            << block.LLX() + n_well_shape->URX() << "\t"
+            << block.LLX() + n_well_shape->LLX() << "\t"
+            << block.LLY() + n_well_shape->LLY() << "\t"
+            << block.LLY() + n_well_shape->LLY() << "\t"
+            << block.LLY() + n_well_shape->URY() << "\t"
+            << block.LLY() + n_well_shape->URY() << "\n";
+      }
+    }
+  }
+
+  ost.close();
+}
+
 void Placer::GenMATLABScriptPlaced(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open output file: " + name_of_file);

@@ -43,8 +43,10 @@ class BlockTypeWell {
 
   void SetNWellShape(double lx, double ly, double ux, double uy);
   void SetNWellShape(Rect &rect);
+  Rect *GetNWellShape() {return n_well_;}
   void SetPWellShape(double lx, double ly, double ux, double uy);
   void SetPWellShape(Rect &rect);
+  Rect *GetPWellShape() {return p_well_;}
 
   void SetWellShape(bool is_n, double lx, double ly, double ux, double uy);
   void SetWellShape(bool is_n, Rect &rect);

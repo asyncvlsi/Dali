@@ -10,11 +10,10 @@
 ### Recommended compilation toolchain
   * GCC, version >= 7.4.0
   * Cmake, version >= 3.10.2
+  * GNU Make
 
 ### Pre-requisite for submodules: OpenDB
-  * Tcl/Tk, version >= ? (8.6.8)
-  * GCC, version >= ? (7.4.0)
-  * Cmake, version >= ? (3.10.2)
+  * Tcl/Tk-dev, version >= ? (8.6.8)
   * Bison, version >= ? (3.0.4)
   * Flex, version >= ? (2.6.4)
   * Swig, version >= ? (3.0.12)

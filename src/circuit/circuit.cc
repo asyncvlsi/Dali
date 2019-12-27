@@ -1038,10 +1038,10 @@ void Circuit::ReadWellFile(std::string const &name_of_file) {
               std::vector<std::string> shape_fields;
               StrSplit(line, shape_fields);
               try {
-                lx = std::stod(shape_fields[1])/grid_value_x_/def_distance_microns;
-                ly = std::stod(shape_fields[2])/grid_value_y_/def_distance_microns;
-                ux = std::stod(shape_fields[3])/grid_value_x_/def_distance_microns;
-                uy = std::stod(shape_fields[4])/grid_value_y_/def_distance_microns;
+                lx = std::stod(shape_fields[1])/grid_value_x_;
+                ly = std::stod(shape_fields[2])/grid_value_y_;
+                ux = std::stod(shape_fields[3])/grid_value_x_;
+                uy = std::stod(shape_fields[4])/grid_value_y_;
               } catch (...) {
                 Assert(false, "Invalid stod conversion:\n" + line);
               }
