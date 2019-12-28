@@ -71,6 +71,17 @@ struct Loc2D {
   explicit Loc2D(int initX, int initY): x(initX), y(initY) {};
 };
 
+template <class T>
+struct IndexLocPair{
+  int num;
+  T x;
+  T y;
+  explicit IndexLocPair(int num_init=0, T x_init=0, T y_init=0): num(num_init), x(x_init), y(y_init) {}
+  bool operator <(const IndexLocPair& rhs) {
+    return (x < rhs.x) || ((x == rhs.x) && (y < rhs.y));
+  }
+};
+
 void Assert(bool e, const std::string &error_message);
 void Warning(bool e, const std::string &warning_message);
 void StrSplit(std::string &line, std::vector<std::string> &res);

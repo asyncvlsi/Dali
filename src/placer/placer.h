@@ -65,9 +65,8 @@ public:
   void UpdateComponentsPlacementStatus();
   void IOPinPlacement();
 
-  void GenMATLABScript(std::string const &name_of_file = "block_net_list.m");
-  void GenMATLABTable(std::string const &name_of_file = "block.txt");
-  void GenMATLABWellTable(std::string const &name_of_file = "res");
+  void GenMATLABTable(std::string const &name_of_file = "block.txt") {circuit_->GenMATLABTable(name_of_file);}
+  void GenMATLABWellTable(std::string const &name_of_file = "res") {circuit_->GenMATLABWellTable(name_of_file);}
   void GenMATLABScriptPlaced(std::string const &name_of_file = "block_net_list.m");
   bool SaveNodeTerminal(std::string const &terminal_file = "terminal.txt", std::string const &node_file = "nodes.txt");
   void SaveDEFFile(std::string const &name_of_file = "circuit.def");

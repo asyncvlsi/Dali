@@ -5,18 +5,12 @@
 #include "LGTetris.h"
 #include "../../common/misc.h"
 
-struct DIYLess{
-  bool operator()(const indexLocPair a, const indexLocPair b) {
-    return (a.x < b.x) || ((a.x == b.x) && (a.y < b.y));
-  }
-} customLess;
-
 TetrisLegalizer::TetrisLegalizer(): Placer(), max_iteration_(5), current_iteration_(0), flipped_(false) {}
 
 void TetrisLegalizer::InitLegalizer() {
   std::vector<Block> &block_list = *BlockList();
-  indexLocPair init_pair(0,0,0);
-  ordered_list_.assign(block_list.size(), init_pair);
+  IndexLocPair<double> init_pair(0, 0, 0);
+  index_loc_list_.resize(block_list.size(), init_pair);
 }
 
 void TetrisLegalizer::SetMaxItr(int max_iteration) {
@@ -58,14 +52,14 @@ void TetrisLegalizer::FastShift(int failure_point) {
       block.IncreY(bottom_ - bounding_bottom);
     }
   } else {
-    double init_diff = ordered_list_[failure_point-1].x - ordered_list_[failure_point].x;
-    int failed_block = ordered_list_[failure_point].num;
+    double init_diff = index_loc_list_[failure_point-1].x - index_loc_list_[failure_point].x;
+    int failed_block = index_loc_list_[failure_point].num;
     bounding_left = block_list[failed_block].LLX();
-    int last_placed_block = ordered_list_[failure_point-1].num;
+    int last_placed_block = index_loc_list_[failure_point-1].num;
     int left_new = (int)std::round(block_list[last_placed_block].LLX());
     //std::cout << left_new << "  " << bounding_left << "\n";
-    for (size_t i=failure_point; i<ordered_list_.size(); ++i) {
-      int block_num = ordered_list_[i].num;
+    for (size_t i=failure_point; i<index_loc_list_.size(); ++i) {
+      int block_num = index_loc_list_[i].num;
       block_list[block_num].IncreX(left_new + init_diff - bounding_left);
     }
   }
@@ -114,14 +108,14 @@ bool TetrisLegalizer::TetrisLegal() {
 
   // 2. sort blocks based on their lower Left corners. Further optimization is doable here.
 
-  for (size_t i=0; i<ordered_list_.size(); ++i) {
-    ordered_list_[i].num = i;
-    ordered_list_[i].x = block_list[i].LLX();
-    ordered_list_[i].y = block_list[i].LLY();
+  for (size_t i=0; i<index_loc_list_.size(); ++i) {
+    index_loc_list_[i].num = i;
+    index_loc_list_[i].x = block_list[i].LLX();
+    index_loc_list_[i].y = block_list[i].LLY();
   }
-  std::sort(ordered_list_.begin(), ordered_list_.end(), customLess);
+  std::sort(index_loc_list_.begin(), index_loc_list_.end());
 
-  /*for (auto &&pair: ordered_list_) {
+  /*for (auto &&pair: index_loc_list_) {
     std::cout << block_list[pair.num].LLX() << "\n";
   }*/
 
@@ -136,9 +130,10 @@ bool TetrisLegalizer::TetrisLegal() {
   TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), 1, minWidth);
   int llx, lly;
   int width, height;
+  int block_num;
   //int count = 0;
-  for (size_t i=0; i<ordered_list_.size(); ++i) {
-    int block_num = ordered_list_[i].num;
+  for (size_t i=0; i<index_loc_list_.size(); ++i) {
+    block_num = index_loc_list_[i].num;
     width = block_list[block_num].Width();
     height = block_list[block_num].Height();
     /****

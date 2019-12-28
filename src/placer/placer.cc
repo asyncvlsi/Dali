@@ -50,8 +50,8 @@ bool Placer::IsBoundaryProper() {
 
 void Placer::SetBoundaryAuto() {
   Assert(circuit_ != nullptr, "Must set input circuit before setting boundaries");
-  long int tot_block_area = circuit_->TotArea();
-  int width = std::ceil(std::sqrt(tot_block_area/aspect_ratio_/filling_rate_));
+  unsigned long int tot_block_area = circuit_->TotArea();
+  int width = std::ceil(std::sqrt(double(tot_block_area)/aspect_ratio_/filling_rate_));
   int height = std::ceil(width * aspect_ratio_);
   std::cout << "Pre-set aspect ratio: " << aspect_ratio_ << "\n";
   aspect_ratio_ = height/(double)width;
@@ -62,7 +62,7 @@ void Placer::SetBoundaryAuto() {
   top_ = bottom_ + height;
   int area = height * width;
   std::cout << "Pre-set filling rate: " << filling_rate_ << "\n";
-  filling_rate_ = tot_block_area/(double)area;
+  filling_rate_ = double(tot_block_area)/area;
   std::cout << "Adjusted filling rate: " << filling_rate_ << "\n";
   Assert(IsBoundaryProper(), "Invalid boundary setting");
 }
@@ -71,8 +71,8 @@ void Placer::SetBoundary(int left, int right, int bottom, int top) {
   Assert(circuit_ != nullptr, "Must set input circuit before setting boundaries");
   Assert(left < right, "Invalid boundary setting: left boundary should be less than right boundary!");
   Assert(bottom < top, "Invalid boundary setting: bottom boundary should be less than top boundary!");
-  long int tot_block_area = circuit_->TotArea();
-  long int tot_area = (right - left) * (top - bottom);
+  unsigned long int tot_block_area = circuit_->TotArea();
+  unsigned long int tot_area = (right - left) * (top - bottom);
   Assert(tot_area >= tot_block_area, "Invalid boundary setting: given region has smaller area than total block area!");
   if (globalVerboseLevel >= LOG_INFO) {
     std::cout << "Pre-set filling rate: " << filling_rate_ << "\n";
@@ -123,61 +123,6 @@ void Placer::TakeOver(Placer *placer) {
   bottom_ = placer->Bottom();
   top_ = placer->Top();
   circuit_ = placer->GetCircuit();
-}
-
-void Placer::GenMATLABScript(std::string const &name_of_file) {
-  std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
-  ost << Left() << " " << Bottom() << " " << Right() - Left() << " " << Top() - Bottom() << "\n";
-  for (auto &&block: circuit_->block_list) {
-    ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";
-  }
-  ost.close();
-}
-
-void Placer::GenMATLABTable(std::string const &name_of_file) {
-  std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
-  ost << Left() << "\t" << Right() << "\t" << Right() << "\t" << Left() << "\t" << Bottom() << "\t" << Bottom() << "\t" << Top() << "\t" << Top() << "\n";
-  for (auto &block: circuit_->block_list) {
-    ost << block.LLX() << "\t"
-        << block.URX() << "\t"
-        << block.URX() << "\t"
-        << block.LLX() << "\t"
-        << block.LLY() << "\t"
-        << block.LLY() << "\t"
-        << block.URY() << "\t"
-        << block.URY() << "\n";
-  }
-
-}
-
-void Placer::GenMATLABWellTable(std::string const &name_of_file) {
-  std::string frame_file = name_of_file + "_outline.txt";
-  std::string unplug_file = name_of_file + "_unplug.txt";
-  std::string plug_file = name_of_file + "_plug.txt";
-  GenMATLABTable(frame_file);
-
-  std::ofstream ost(unplug_file.c_str());
-  Assert(ost.is_open(), "Cannot open output file: " + unplug_file);
-  for (auto &block: circuit_->block_list) {
-    auto well = block.Type()->GetWell();
-    if (well != nullptr) {
-      if (!well->IsPlug()) {
-        auto n_well_shape = well->GetNWellShape();
-        ost << block.LLX() + n_well_shape->LLX() << "\t"
-            << block.LLX() + n_well_shape->URX() << "\t"
-            << block.LLX() + n_well_shape->URX() << "\t"
-            << block.LLX() + n_well_shape->LLX() << "\t"
-            << block.LLY() + n_well_shape->LLY() << "\t"
-            << block.LLY() + n_well_shape->LLY() << "\t"
-            << block.LLY() + n_well_shape->URY() << "\t"
-            << block.LLY() + n_well_shape->URY() << "\n";
-      }
-    }
-  }
-
-  ost.close();
 }
 
 void Placer::GenMATLABScriptPlaced(std::string const &name_of_file) {

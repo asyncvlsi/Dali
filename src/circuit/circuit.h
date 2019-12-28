@@ -21,6 +21,7 @@
 #include "../opendb.h"
 
 class Circuit {
+  friend class Placer;
  private:
   // statistical data of the circuit
   unsigned long int tot_width_;
@@ -49,6 +50,10 @@ class Circuit {
   Circuit();
   ~Circuit();
 
+  /****API to initialize circuit
+   * 1. from openDB
+   * 2. from LEF/DEF directly
+   * ****/
 #ifdef USE_OPENDB
   explicit Circuit(odb::dbDatabase* db);
   void InitializeFromDB(odb::dbDatabase* db);
@@ -84,6 +89,17 @@ class Circuit {
   BlockType *AddBlockType(std::string &block_type_name, unsigned int width, unsigned int height);
   void ReportBlockType();
   void CopyBlockType(Circuit &circuit);
+
+  /****API for DIE AREA
+   * These are DIEAREA section in DEF
+   * ****/
+  int def_left = 0, def_right = 0, def_bottom = 0, def_top = 0;
+  void SetBoundary(int left, int right, int bottom, int top); // unit in grid value
+  void SetDieArea(int lower_x, int upper_x, int lower_y, int upper_y); // unit in um
+  int Left() {return def_left;}
+  int Right() {return def_right;}
+  int Bottom() {return def_bottom;}
+  int Top() {return def_top;}
 
   /****API for Block
    * These are COMPONENTS section in DEF
@@ -133,17 +149,15 @@ class Circuit {
   double manufacturing_grid = 0;
   int lef_database_microns = 0;
   int def_distance_microns = 0;
-  int def_left = 0, def_right = 0, def_bottom = 0, def_top = 0;
-  bool def_boundary_set = false;
-  void SetBoundaryFromDef(int left, int right, int bottom, int top);
 
   /****API to add N/P-well technology information
    * These are for CELL file
    * ****/
-  BlockTypeWell *AddBlockTypeWell(BlockType *blk_type_ptr, bool is_plug);
+  static BlockTypeWell *AddBlockTypeWell(BlockType *blk_type_ptr, bool is_plug);
   BlockTypeWell *AddBlockTypeWell(std::string &blk_type_name, bool is_plug);
   void SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist);
   void SetPWellParams(double width, double spacing, double op_spacing, double max_plug_dist);
+  Tech *GetTech() const {return tech_param_;}
   void ReadWellFile(std::string const &name_of_file);
   void ReportWellShape();
 
@@ -188,6 +202,8 @@ class Circuit {
   /****dump placement results to various file formats****/
   void WriteDefFileDebug(std::string const &name_of_file= "circuit.def");
   void GenMATLABScript(std::string const &name_of_file= "block_net_list.m");
+  void GenMATLABTable(std::string const &name_of_file = "block.txt");
+  void GenMATLABWellTable(std::string const &name_of_file = "res");
   void SaveDefFile(std::string const &name_of_file, std::string const &def_file_name);
   void SaveISPD(std::string const &name_of_file);
 };

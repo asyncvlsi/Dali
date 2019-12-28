@@ -37,8 +37,8 @@ void WellLayer::SetParams(double width, double spacing, double op_spacing, doubl
 }
 
 void WellLayer::Report() {
-  std::cout << "    Width:       " << Width()       << "\n"
-            << "    Spacing:     " << Spacing()     << "\n"
-            << "    OpSpacing:   " << OpSpacing()   << "\n"
-            << "    MaxPlugDist: " << MaxPlugDist() << "\n";
+  std::cout << "    Width:       " << Width()       << " um\n"
+            << "    Spacing:     " << Spacing()     << " um\n"
+            << "    OpSpacing:   " << OpSpacing()   << " um\n"
+            << "    MaxPlugDist: " << MaxPlugDist() << " um\n";
 }

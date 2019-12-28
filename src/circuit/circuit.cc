@@ -138,10 +138,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase* db) {
   //          << die_area.xMax() << "\n"
   //          << die_area.yMin() << "\n"
   //          << die_area.yMax() << "\n";
-  def_left = (int)std::round(die_area.xMin()/grid_value_x_/def_distance_microns);
-  def_right = (int)std::round(die_area.xMax()/grid_value_x_/def_distance_microns);
-  def_bottom = (int)std::round(die_area.yMin()/grid_value_y_/def_distance_microns);
-  def_top = (int)std::round(die_area.yMax()/grid_value_y_/def_distance_microns);
+  SetDieArea(die_area.xMin(), die_area.xMax(), die_area.yMin(), die_area.yMax());
   for (auto &&blk: top_level->getInsts()) {
     //std::cout << blk->getName() << "  " << blk->getMaster()->getName() << "\n";
     std::string blk_name(blk->getName());
@@ -682,13 +679,22 @@ void Circuit::ReportMetalLayers() {
   }
 }
 
-void Circuit::SetBoundaryFromDef(int left, int right, int bottom, int top) {
+void Circuit::SetBoundary(int left, int right, int bottom, int top) {
   Assert(right > left, "Right boundary is not larger than Left boundary?");
   Assert(top > bottom, "Top boundary is not larger than Bottom boundary?");
   def_left = left;
   def_right = right;
   def_bottom = bottom;
   def_top = top;
+}
+
+void Circuit::SetDieArea(int lower_x, int upper_x, int lower_y, int upper_y) {
+  Assert(grid_value_x_ > 0 && grid_value_y_ > 0, "Need to set positive grid values before setting placement boundary");
+  Assert( def_distance_microns > 0, "Need to set def_distance_microns before setting placement boundary");
+  SetBoundary((int)std::round(lower_x/grid_value_x_/def_distance_microns),
+              (int)std::round(upper_x/grid_value_x_/def_distance_microns),
+              (int)std::round(lower_y/grid_value_y_/def_distance_microns),
+              (int)std::round(upper_y/grid_value_y_/def_distance_microns));
 }
 
 BlockTypeWell *Circuit::AddBlockTypeWell(BlockType *blk_type_ptr, bool is_plug) {
@@ -1010,7 +1016,6 @@ void Circuit::ReadWellFile(std::string const &name_of_file) {
       std::vector<std::string> macro_fields;
       StrSplit(line, macro_fields);
       std::string end_macro_flag = "END " + macro_fields[1];
-      //std::cout << end_macro_flag << "\n";
       auto *cluster = new BlockTypeCluster();
       BlockTypeWell *plug = nullptr;
       BlockTypeWell *unplug = nullptr;
@@ -1045,7 +1050,13 @@ void Circuit::ReadWellFile(std::string const &name_of_file) {
               } catch (...) {
                 Assert(false, "Invalid stod conversion:\n" + line);
               }
+              auto blk_type = GetBlockType(version_fields[1]);
               well->SetWellShape(is_n, lx, ly, ux, uy);
+              if (is_n) {
+                well->SetNWellShape(0, ly, blk_type->Width(), blk_type->Height());
+              } else {
+                well->SetPWellShape(0, 0, blk_type->Width(), uy);
+              }
             }
           } while (line.find("END VERSION")==std::string::npos && !ist.eof());
         }
@@ -1056,8 +1067,8 @@ void Circuit::ReadWellFile(std::string const &name_of_file) {
     }
   }
   Assert(tech_param_ != nullptr, "N/P well technology information not found!");
-  tech_param_->Report();
-  ReportWellShape();
+  //tech_param_->Report();
+  //ReportWellShape();
 
   std::cout << "CELL file loading complete: " << name_of_file << "\n";
 }
@@ -1209,6 +1220,88 @@ void Circuit::GenMATLABScript(std::string const &name_of_file) {
   }
    */
   ost.close();
+}
+
+void Circuit::GenMATLABTable(std::string const &name_of_file) {
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+  ost << Left() << "\t" << Right() << "\t" << Right() << "\t" << Left() << "\t" << Bottom() << "\t" << Bottom() << "\t" << Top() << "\t" << Top() << "\n";
+  for (auto &block: block_list) {
+    ost << block.LLX() << "\t"
+        << block.URX() << "\t"
+        << block.URX() << "\t"
+        << block.LLX() << "\t"
+        << block.LLY() << "\t"
+        << block.LLY() << "\t"
+        << block.URY() << "\t"
+        << block.URY() << "\n";
+  }
+
+}
+
+void Circuit::GenMATLABWellTable(std::string const &name_of_file) {
+  std::string frame_file = name_of_file + "_outline.txt";
+  std::string unplug_file = name_of_file + "_unplug.txt";
+  std::string plug_file = name_of_file + "_plug.txt";
+  GenMATLABTable(frame_file);
+
+  std::ofstream ost(unplug_file.c_str());
+  Assert(ost.is_open(), "Cannot open output file: " + unplug_file);
+  std::ofstream ost1(plug_file.c_str());
+  Assert(ost1.is_open(), "Cannot open output file: " + plug_file);
+
+  BlockTypeWell *well;
+  Rect *n_well_shape, *p_well_shape;
+  for (auto &block: block_list) {
+    well = block.Type()->GetWell();
+    if (well != nullptr) {
+      if (!well->IsPlug()) {
+        n_well_shape = well->GetNWellShape();
+        p_well_shape = well->GetPWellShape();
+        ost << block.LLX() + n_well_shape->LLX() << "\t"
+            << block.LLX() + n_well_shape->URX() << "\t"
+            << block.LLX() + n_well_shape->URX() << "\t"
+            << block.LLX() + n_well_shape->LLX() << "\t"
+            << block.LLY() + n_well_shape->LLY() << "\t"
+            << block.LLY() + n_well_shape->LLY() << "\t"
+            << block.LLY() + n_well_shape->URY() << "\t"
+            << block.LLY() + n_well_shape->URY() << "\t"
+
+            << block.LLX() + p_well_shape->LLX() << "\t"
+            << block.LLX() + p_well_shape->URX() << "\t"
+            << block.LLX() + p_well_shape->URX() << "\t"
+            << block.LLX() + p_well_shape->LLX() << "\t"
+            << block.LLY() + p_well_shape->LLY() << "\t"
+            << block.LLY() + p_well_shape->LLY() << "\t"
+            << block.LLY() + p_well_shape->URY() << "\t"
+            << block.LLY() + p_well_shape->URY() << "\n";
+      } else {
+        n_well_shape = well->GetNWellShape();
+        p_well_shape = well->GetPWellShape();
+        ost1
+            << block.LLX() + n_well_shape->LLX() << "\t"
+            << block.LLX() + n_well_shape->URX() << "\t"
+            << block.LLX() + n_well_shape->URX() << "\t"
+            << block.LLX() + n_well_shape->LLX() << "\t"
+            << block.LLY() + n_well_shape->LLY() << "\t"
+            << block.LLY() + n_well_shape->LLY() << "\t"
+            << block.LLY() + n_well_shape->URY() << "\t"
+            << block.LLY() + n_well_shape->URY() << "\t"
+
+            << block.LLX() + p_well_shape->LLX() << "\t"
+            << block.LLX() + p_well_shape->URX() << "\t"
+            << block.LLX() + p_well_shape->URX() << "\t"
+            << block.LLX() + p_well_shape->LLX() << "\t"
+            << block.LLY() + p_well_shape->LLY() << "\t"
+            << block.LLY() + p_well_shape->LLY() << "\t"
+            << block.LLY() + p_well_shape->URY() << "\t"
+            << block.LLY() + p_well_shape->URY() << "\n";
+      }
+    }
+  }
+
+  ost.close();
+  ost1.close();
 }
 
 void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &def_file_name) {

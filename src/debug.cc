@@ -18,8 +18,8 @@ int main() {
 
   time_t Time = clock();
 
-  std::string lef_file_name = "Pbenchmark_10K.lef";
-  std::string def_file_name = "Pbenchmark_10K.def";
+  std::string lef_file_name = "Pbenchmark_1K.lef";
+  std::string def_file_name = "Pbenchmark_1K.def";
 
 #ifdef USE_OPENDB
   odb::dbDatabase* db = odb::dbDatabase::create();
@@ -66,13 +66,13 @@ int main() {
   legalizer->TakeOver(gb_placer);
   legalizer->StartPlacement();
   //legalizer->GenMATLABScript("legalizer_result.txt");
-  legalizer->GenMATLABWellTable("lg_result");
+  circuit.GenMATLABWellTable("lg_result");
   //legalizer->SaveDEFFile("circuit.def", def_file);
 
 #if TEST_WELL
   Placer *well_legalizer = new WellLegalizer;
   well_legalizer->TakeOver(gb_placer);
-
+  well_legalizer->StartPlacement();
   delete well_legalizer;
 #endif
 

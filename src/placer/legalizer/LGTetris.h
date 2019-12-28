@@ -17,20 +17,14 @@
 
 #include "../placer.h"
 #include "LGTetris/tetrisspace.h"
-
-struct indexLocPair{
-  int num;
-  double x;
-  double y;
-  explicit indexLocPair(int num_init=0, double x_init=0, double y_init=0): num(num_init), x(x_init), y(y_init) {}
-};
+#include "common/misc.h"
 
 class TetrisLegalizer: public Placer {
  private:
   int max_iteration_;
   int current_iteration_;
   bool flipped_;
-  std::vector< indexLocPair > ordered_list_;
+  std::vector<IndexLocPair<double> > index_loc_list_;
  public:
   TetrisLegalizer();
   void InitLegalizer();
