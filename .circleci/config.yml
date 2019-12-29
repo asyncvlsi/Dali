@@ -11,6 +11,10 @@ jobs:
           apt-get -q update -y
           apt-get -y install g++
           apt-get -y install cmake
+          apt-get -y install swig
+          apt-get -y install flex
+          apt-get -y install bison
+          apt-get -y install tcl-dev tk-dev
           mkdir build
           cd build
           cmake ..

@@ -27,7 +27,7 @@ struct BlockTypeCluster{
 
 class BlockTypeWell {
  private:
-  BlockType *block_type_;
+  BlockType *type_;
   bool is_plug_;
   Rect *n_well_, *p_well_;
   BlockTypeCluster *cluster_;
@@ -38,8 +38,11 @@ class BlockTypeWell {
   void SetCluster(BlockTypeCluster *cluster);
   BlockTypeCluster *GetCluster() const {return cluster_;}
 
+  BlockType *Type() {return type_;}
+
   void SetPlug(bool is_plug) {is_plug_ = is_plug;}
   bool IsPlug() const {return is_plug_;}
+  bool IsUnplug() const {return !is_plug_;}
 
   void SetNWellShape(double lx, double ly, double ux, double uy);
   void SetNWellShape(Rect &rect);

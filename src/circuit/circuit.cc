@@ -1124,19 +1124,19 @@ void Circuit::NetSortBlkPin() {
 }
 
 double Circuit::HPWLX() {
-  double HPWLX = 0;
+  double hpwlx = 0;
   for (auto &&net: net_list) {
-    HPWLX += net.HPWLX();
+    hpwlx += net.HPWLX();
   }
-  return HPWLX* GetGridValueX();
+  return hpwlx* GetGridValueX();
 }
 
 double Circuit::HPWLY() {
-  double HPWLY = 0;
+  double hpwly = 0;
   for (auto &&net: net_list) {
-    HPWLY += net.HPWLY();
+    hpwly += net.HPWLY();
   }
-  return HPWLY* GetGridValueY();
+  return hpwly* GetGridValueY();
 }
 
 double Circuit::HPWL() {
@@ -1148,19 +1148,19 @@ void Circuit::ReportHPWL() {
 }
 
 double Circuit::HPWLCtoCX() {
-  double HPWLCtoCX = 0;
+  double hpwl_c2c_x = 0;
   for (auto &&net: net_list) {
-    HPWLCtoCX += net.HPWLCtoCX()* GetGridValueX();
+    hpwl_c2c_x += net.HPWLCtoCX();
   }
-  return HPWLCtoCX;
+  return hpwl_c2c_x * GetGridValueX();
 }
 
 double Circuit::HPWLCtoCY() {
-  double HPWLCtoCY = 0;
+  double hpwl_c2c_y = 0;
   for (auto &&net: net_list) {
-    HPWLCtoCY += net.HPWLCtoCY()* GetGridValueY();
+    hpwl_c2c_y += net.HPWLCtoCY();
   }
-  return HPWLCtoCY;
+  return hpwl_c2c_y * GetGridValueY();
 }
 
 double Circuit::HPWLCtoC() {
@@ -1255,9 +1255,9 @@ void Circuit::GenMATLABWellTable(std::string const &name_of_file) {
   for (auto &block: block_list) {
     well = block.Type()->GetWell();
     if (well != nullptr) {
+      n_well_shape = well->GetNWellShape();
+      p_well_shape = well->GetPWellShape();
       if (!well->IsPlug()) {
-        n_well_shape = well->GetNWellShape();
-        p_well_shape = well->GetPWellShape();
         ost << block.LLX() + n_well_shape->LLX() << "\t"
             << block.LLX() + n_well_shape->URX() << "\t"
             << block.LLX() + n_well_shape->URX() << "\t"
@@ -1276,8 +1276,6 @@ void Circuit::GenMATLABWellTable(std::string const &name_of_file) {
             << block.LLY() + p_well_shape->URY() << "\t"
             << block.LLY() + p_well_shape->URY() << "\n";
       } else {
-        n_well_shape = well->GetNWellShape();
-        p_well_shape = well->GetPWellShape();
         ost1
             << block.LLX() + n_well_shape->LLX() << "\t"
             << block.LLX() + n_well_shape->URX() << "\t"

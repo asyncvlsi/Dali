@@ -26,7 +26,15 @@ void WellLegalizer::InitWellLegalizer() {
 }
 
 void WellLegalizer::SwitchToPlugType(Block &block) {
-
+  auto well = block.Type()->GetWell();
+  Assert(well != nullptr, "Block does not have a well, cannot switch to the plugged version: " + *block.Name());
+  if (well->IsUnplug()) {
+    auto type = block.Type();
+    auto cluster = well->GetCluster();
+    auto plugged_well = cluster->GetPlug();
+    Assert(cluster != nullptr || plugged_well == nullptr, "There is not plugged version of this BlockType: " + *type->Name());
+    block.SetType(plugged_well->Type());
+  }
 }
 
 void WellLegalizer::FindLocation(Block &block) {

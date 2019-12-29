@@ -40,7 +40,6 @@ class Block {
   BlockOrient orient_;
   BlockAux *aux_;
  public:
-  bool is_placed = false;
   Block(BlockType *type, std::pair<const std::string, int>* name_num_pair, int llx, int lly, bool movable = "true", BlockOrient orient = N);
   Block(BlockType *type, std::pair<const std::string, int>* name_num_pair, int llx, int lly, PlaceStatus place_state = UNPLACED, BlockOrient orient = N);
   std::vector<int> net_list;
@@ -50,35 +49,37 @@ class Block {
   int Num() const {return name_num_pair_->second;}
   int Width() const {return type_->Width();}
   int Height() const {return type_->Height();}
-  double LLX() const;
-  double LLY() const;
-  double URX() const;
-  double URY() const;
-  double X() const;
-  double Y() const;
+  double LLX() const {return llx_;}
+  double LLY() const {return lly_;}
+  double URX() const {return llx_ + Width();}
+  double URY() const {return lly_ + Height();}
+  double X() const {return llx_ + Width()/2.0;}
+  double Y() const {return lly_ + Height()/2.0;}
+  bool IsPlaced() const {return place_status_ == PLACED || place_status_ == FIXED;}
   PlaceStatus GetPlaceStatus() {return place_status_;}
-  bool IsMovable() const;
-  bool IsFixed() const;
+  bool IsMovable() const {return place_status_==UNPLACED || place_status_==PLACED;}
+  bool IsFixed() const {return !IsMovable();}
   unsigned long int Area() const {return type_->Area();}
   BlockOrient Orient() const {return orient_;}
-  BlockAux *Aux() {return aux_;}
+  BlockAux *Aux() const {return aux_;}
 
-  void SetLLX(double lower_left_x);
-  void SetLLY(double lower_left_y);
-  void SetURX(double upper_right_x);
-  void SetURY(double upper_right_y);
-  void SetCenterX(double center_x);
-  void SetCenterY(double center_y);
+  void SetType(BlockType *type) {Assert(type != nullptr, "Cannot set BlockType of a Block to NULL"); type_ = type;}
+  void SetLLX(double lower_left_x) {llx_ = lower_left_x;}
+  void SetLLY(double lower_left_y) {lly_ = lower_left_y;}
+  void SetURX(double upper_right_x) {llx_ = upper_right_x - Width();}
+  void SetURY(double upper_right_y) {lly_ = upper_right_y - Height();}
+  void SetCenterX(double center_x) {llx_ = center_x - Width()/2.0;}
+  void SetCenterY(double center_y) {lly_ = center_y - Height()/2.0;}
   void SetPlaceStatus(PlaceStatus place_status) {place_status_ = place_status;}
-  void SetOrient(BlockOrient &orient);
-  void SetAux(BlockAux *aux);
+  void SetOrient(BlockOrient &orient) {orient_ = orient;}
+  void SetAux(BlockAux *aux) {Assert(aux != nullptr, "When set auxiliary information, argument cannot be a nullptr"); aux_ = aux;}
   void SwapLoc(Block &blk);
 
-  void IncreX(double displacement);
-  void IncreY(double displacement);
+  void IncreX(double displacement) {llx_ += displacement;}
+  void IncreY(double displacement) {lly_ += displacement;}
   void IncreX(double displacement, double upper, double lower);
   void IncreY(double displacement, double upper, double lower);
-  bool IsOverlap(const Block &rhs) const;
+  bool IsOverlap(const Block &rhs) const {return !(LLX() > rhs.URX() || rhs.LLX() > URX() || LLY() > rhs.URY() || rhs.LLY() > URY());}
   bool IsOverlap(const Block *rhs) const {return IsOverlap(*rhs);}
   double OverlapArea(const Block &rhs) const;
   double OverlapArea(const Block *rhs) const;

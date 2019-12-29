@@ -1,1 +1,2 @@
-test/* linguist-documentation
+test/ linguist-documentation
+module/ linguist-documentation

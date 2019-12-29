@@ -43,17 +43,6 @@ class BlockType {
   bool Empty() const {return pin_list.empty();}
 
   void Report() const;
-
-  /*friend std::ostream& operator<<(std::ostream& os, const BlockType &block_type) {
-    os << "BlockType name: " << *block_type.Name() << "\n";
-    os << "  width, height: " << block_type.Width() << " " << block_type.Height() << "\n";
-    os << "  assigned key: " << block_type.Num() << "\n";
-    os << "  pin list:\n";
-    for( auto &&it: block_type.pin_name_num_map) {
-      os << "    " << it.first << " " << it.second << " (" << block_type.pin_list[it.second].XOffset() << ", " << block_type.pin_list[it.second].YOffset() << ")\n";
-    }
-    return os;
-  }*/
 };
 
 #endif //DALI_SRC_CIRCUIT_BLOCKTYPE_H_

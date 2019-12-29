@@ -130,7 +130,7 @@ void Placer::GenMATLABScriptPlaced(std::string const &name_of_file) {
   Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
   ost << Left() << " " << Bottom() << " " << Right() - Left() << " " << Top() - Bottom() << "\n";
   for (auto &&block: circuit_->block_list) {
-    if (block.is_placed) {
+    if (block.IsPlaced()) {
       ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";
     }
   }

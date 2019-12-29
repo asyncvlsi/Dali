@@ -77,7 +77,7 @@ struct IndexLocPair{
   T x;
   T y;
   explicit IndexLocPair(int num_init=0, T x_init=0, T y_init=0): num(num_init), x(x_init), y(y_init) {}
-  bool operator <(const IndexLocPair& rhs) {
+  bool operator <(const IndexLocPair& rhs) const {
     return (x < rhs.x) || ((x == rhs.x) && (y < rhs.y));
   }
 };

@@ -6,7 +6,7 @@
 #include "blocktypewell.h"
 
 BlockTypeWell::BlockTypeWell(BlockType *block_type):
-    block_type_(block_type),
+    type_(block_type),
     is_plug_(false),
     n_well_(nullptr),
     p_well_(nullptr),
@@ -63,7 +63,7 @@ void BlockTypeWell::SetWellShape(bool is_n, Rect &rect) {
 }
 
 void BlockTypeWell::Report() {
-  std::cout << "  Well of BlockType: " << *(block_type_->Name()) << "\n";
+  std::cout << "  Well of BlockType: " << *(type_->Name()) << "\n";
   std::cout << "    Plug: " << is_plug_ << "\n";
   if (n_well_ != nullptr) {
     std::cout << "    Nwell: " << n_well_->LLX() << "  " << n_well_->LLY() << "  " << n_well_->URX() << "  " << n_well_->URY() << "\n";
