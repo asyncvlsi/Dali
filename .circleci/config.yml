@@ -5,6 +5,10 @@ jobs:
      # Ubuntu 18
      docker:
        - image: ubuntu:18.04
+         environment:
+           TZ: "America/New_York"
+     environment:
+       TZ: "America/New_York"
      steps:
        - checkout
        - run: |
