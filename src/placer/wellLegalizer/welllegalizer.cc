@@ -18,6 +18,7 @@ void WellLegalizer::InitWellLegalizer() {
 
   n_max_plug_dist_ = std::ceil(n_well->MaxPlugDist()/circuit_->GetGridValueX());
   p_max_plug_dist_ = std::ceil(p_well->MaxPlugDist()/circuit_->GetGridValueX());
+  std::cout << n_max_plug_dist_ << "  " << p_max_plug_dist_ << "\n";
 
   Row tmp_row(Left(), INT_MAX, false);
   all_rows_.resize(Top()-Bottom()+1, tmp_row);
@@ -37,8 +38,33 @@ void WellLegalizer::SwitchToPlugType(Block &block) {
   }
 }
 
+void WellLegalizer::UseSpace(Block &block) {
+
+}
+
 void WellLegalizer::FindLocation(Block &block) {
 
+}
+
+void WellLegalizer::WellPlace(Block &block) {
+  /****
+   * 1. if there is no blocks on the left hand side of this block, switch the type to plugged
+   * ****/
+  int start_row = int(block.LLY()-Bottom());
+  int end_row = int(block.URY()-Bottom());
+  bool no_left_blocks = true;
+  for (int i=start_row; i<=end_row; ++i) {
+    if (all_rows_[i].dist < n_max_plug_dist_) {
+      no_left_blocks = false;
+      break;
+    }
+  }
+  if (no_left_blocks) {
+    SwitchToPlugType(block);
+  } else {
+    FindLocation(block);
+  }
+  UseSpace(block);
 }
 
 void WellLegalizer::StartPlacement() {
@@ -46,7 +72,9 @@ void WellLegalizer::StartPlacement() {
   std::cout << "Number of rows: " << all_rows_.size() << "\n";
   std::cout << "Number of blocks: " << index_loc_list_.size() << "\n";
 
-  std::cout << "Start Well Legalization\n";
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "Start Well Legalization\n";
+  }
   std::vector<Block> &block_list = *BlockList();
   for (size_t i=0; i<index_loc_list_.size(); ++i) {
     index_loc_list_[i].num = i;
@@ -54,21 +82,16 @@ void WellLegalizer::StartPlacement() {
     index_loc_list_[i].y = block_list[i].LLY();
   }
   std::sort(index_loc_list_.begin(), index_loc_list_.end());
-  int start_row=0, end_row=0;
   for (auto &pair: index_loc_list_) {
     auto &block = block_list[pair.num];
     if (block.IsFixed()) continue;
+    WellPlace(block);
+  }
 
-    start_row = int(block.LLY());
-    end_row = int(block.URY());
-    for (int i=start_row; i<=end_row; ++i) {
-      if (all_rows_[i].dist > n_max_plug_dist_) {
-        SwitchToPlugType(block);
-      } else {
-        FindLocation(block);
-      }
-    }
-
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "\033[0;36m"
+              << "Well Legalization complete!\n"
+              << "\033[0m";
   }
 
 }

@@ -87,8 +87,6 @@ void TetrisLegalizer::FlipPlacement() {
 }
 
 bool TetrisLegalizer::TetrisLegal() {
-  //draw_block_net_list("before_tetris_legalization.m");
-  std::cout << "Start LGTetris legalization" << std::endl;
   std::vector<Block> &block_list = *BlockList();
   // 1. move all blocks into placement region
   /*for (auto &&block: block_list) {
@@ -176,13 +174,16 @@ bool TetrisLegalizer::TetrisLegal() {
 
 
 void TetrisLegalizer::StartPlacement() {
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "Start LGTetris legalization\n";
+  }
   InitLegalizer();
   /*for (auto &&block: GetCircuit()->block_list) {
     block.IncreX((right_-left_)/2.0);
   }
   max_iteration_ = 2;
   GenMATLABScript("shift_result.txt");*/
-  bool is_successful;
+  bool is_successful = false;
   for (current_iteration_ = 0; current_iteration_<max_iteration_; ++current_iteration_) {
     // if a legal location is not found, need to reverse the legalization process
     is_successful = TetrisLegal();
@@ -199,6 +200,13 @@ void TetrisLegalizer::StartPlacement() {
   }
   if (flipped_) {
     FlipPlacement();
+  }
+  if (!is_successful) {
+    if (globalVerboseLevel >= LOG_CRITICAL) {
+      std::cout << "\033[0;31m"
+                << "LGTetris legalization fails\n"
+                << "\033[0m";
+    }
   }
   ReportHPWL(LOG_CRITICAL);
 }

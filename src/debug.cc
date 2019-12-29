@@ -66,15 +66,16 @@ int main() {
   legalizer->TakeOver(gb_placer);
   legalizer->StartPlacement();
   //legalizer->GenMATLABScript("legalizer_result.txt");
-  circuit.GenMATLABWellTable("lg_result");
   //legalizer->SaveDEFFile("circuit.def", def_file);
 
 #if TEST_WELL
   Placer *well_legalizer = new WellLegalizer;
   well_legalizer->TakeOver(gb_placer);
   well_legalizer->StartPlacement();
+  circuit.GenMATLABWellTable("lg_result");
   delete well_legalizer;
 #endif
+
 
   delete gb_placer;
   //delete d_placer;

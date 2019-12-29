@@ -30,7 +30,9 @@ class WellLegalizer: public Placer {
  public:
   void InitWellLegalizer();
   static void SwitchToPlugType(Block &block);
+  void UseSpace(Block &block);
   void FindLocation(Block &block);
+  void WellPlace(Block &block);
   void StartPlacement() override;
 };
 

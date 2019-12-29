@@ -38,7 +38,6 @@ public:
   void SetAspectRatio(double ratio = 1.0);
   double AspectRatio() const;
   void SetSpaceBlockRatio(double ratio);
-  double SpaceBlockRatio() const;
 
   std::vector<Block> *BlockList() {return &(circuit_->block_list);};
   std::vector<Net> *NetList() {return &(circuit_->net_list);};
@@ -108,13 +107,8 @@ inline void Placer::SetSpaceBlockRatio(double ratio) {
   filling_rate_ = 1./ratio;
 }
 
-inline double Placer::SpaceBlockRatio() const {
-  Warning(filling_rate_ < 1e-3, "Warning: filling rate too small, might lead to large numerical error.");
-  return 1.0/filling_rate_;
-}
-
 inline void Placer::NetSortBlkPin() {
-  Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWLX!");
+  Assert(circuit_ != nullptr, "No input circuit specified, cannot modify any circuits!");
   GetCircuit()->NetSortBlkPin();
 }
 
