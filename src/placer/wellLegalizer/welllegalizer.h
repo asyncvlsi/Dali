@@ -7,6 +7,8 @@
 
 #include "placer/placer.h"
 #include "common/misc.h"
+#include <vector>
+#include <set>
 
 /****
  * the structure row contains the following information:
@@ -26,12 +28,14 @@ class WellLegalizer: public Placer {
   int n_max_plug_dist_;
   int p_max_plug_dist_;
   std::vector<Row> all_rows_;
+  std::set<int> p_n_boundary;
   std::vector<IndexLocPair<int>> index_loc_list_;
  public:
   void InitWellLegalizer();
   static void SwitchToPlugType(Block &block);
-  void UseSpace(Block &block);
-  void FindLocation(Block &block);
+  bool IsSpaceAvail(int lx, int ly, int width, int height);
+  void UseSpace(int lx, int ly, int width, int height);
+  void FindLocation(Block &block, int &lx, int &ly);
   void WellPlace(Block &block);
   void StartPlacement() override;
 };

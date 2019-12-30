@@ -7,8 +7,8 @@
 Tech::Tech(): n_set_(false), p_set_(false), n_well_(nullptr), p_well_(nullptr) {}
 
 Tech::~Tech() {
-  free(n_well_);
-  free(p_well_);
+  delete(n_well_);
+  delete(p_well_);
 }
 
 void Tech::SetNWell(double width, double spacing, double op_spacing, double max_plug_dist) {

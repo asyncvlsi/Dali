@@ -43,6 +43,7 @@ class Circuit {
 
   Tech * tech_param_;
   Design * design_;
+  WellInfo well_info_;
 #ifdef USE_OPENDB
   odb::dbDatabase * db_;
 #endif
@@ -153,8 +154,9 @@ class Circuit {
   /****API to add N/P-well technology information
    * These are for CELL file
    * ****/
-  static BlockTypeWell *AddBlockTypeWell(BlockType *blk_type_ptr, bool is_plug);
-  BlockTypeWell *AddBlockTypeWell(std::string &blk_type_name, bool is_plug);
+  BlockTypeCluster *AddBlockTypeCluster();
+  BlockTypeWell *AddBlockTypeWell(BlockTypeCluster *cluster, BlockType *blk_type, bool is_plug);
+  BlockTypeWell *AddBlockTypeWell(BlockTypeCluster *cluster, std::string &blk_type_name, bool is_plug);
   void SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist);
   void SetPWellParams(double width, double spacing, double op_spacing, double max_plug_dist);
   Tech *GetTech() const {return tech_param_;}

@@ -697,15 +697,22 @@ void Circuit::SetDieArea(int lower_x, int upper_x, int lower_y, int upper_y) {
               (int)std::round(upper_y/grid_value_y_/def_distance_microns));
 }
 
-BlockTypeWell *Circuit::AddBlockTypeWell(BlockType *blk_type_ptr, bool is_plug) {
-  blk_type_ptr->well_ = new BlockTypeWell(blk_type_ptr);
-  blk_type_ptr->well_->SetPlug(is_plug);
-  return blk_type_ptr->well_;
+BlockTypeCluster *Circuit::AddBlockTypeCluster() {
+  well_info_.cluster_list_.emplace_back(nullptr, nullptr);
+  return &(well_info_.cluster_list_.back());
 }
 
-BlockTypeWell *Circuit::AddBlockTypeWell(std::string &blk_type_name, bool is_plug) {
+BlockTypeWell *Circuit::AddBlockTypeWell(BlockTypeCluster *cluster, BlockType *blk_type, bool is_plug) {
+  well_info_.well_list_.emplace_back(blk_type);
+  blk_type->well_ = &(well_info_.well_list_.back());
+  blk_type->well_->SetPlug(is_plug);
+  blk_type->well_->SetCluster(cluster);
+  return blk_type->well_;
+}
+
+BlockTypeWell *Circuit::AddBlockTypeWell(BlockTypeCluster *cluster, std::string &blk_type_name, bool is_plug) {
   BlockType *blk_type_ptr = GetBlockType(blk_type_name);
-  AddBlockTypeWell(blk_type_ptr, is_plug);
+  AddBlockTypeWell(cluster, blk_type_ptr, is_plug);
   return blk_type_ptr->well_;
 }
 
@@ -720,11 +727,9 @@ void Circuit::SetPWellParams(double width, double spacing, double op_spacing, do
 }
 
 void Circuit::ReportWellShape() {
-  for (auto &pair: block_type_map) {
-    BlockTypeWell *well = pair.second->GetWell();
-    if (well != nullptr) {
-      well->Report();
-    }
+  for (auto &cluster: well_info_.cluster_list_) {
+    cluster.GetPlug()->Report();
+    cluster.GetUnplug()->Report();
   }
 }
 
@@ -1016,9 +1021,7 @@ void Circuit::ReadWellFile(std::string const &name_of_file) {
       std::vector<std::string> macro_fields;
       StrSplit(line, macro_fields);
       std::string end_macro_flag = "END " + macro_fields[1];
-      auto *cluster = new BlockTypeCluster();
-      BlockTypeWell *plug = nullptr;
-      BlockTypeWell *unplug = nullptr;
+      auto cluster = AddBlockTypeCluster();
       do {
         getline(ist, line);
         if (line.find("VERSION")!=std::string::npos) {
@@ -1027,12 +1030,7 @@ void Circuit::ReadWellFile(std::string const &name_of_file) {
           getline(ist,line);
           bool is_plug = false;
           if (line.find("UNPLUG")==std::string::npos) is_plug = true;
-          BlockTypeWell *well = AddBlockTypeWell(version_fields[1], is_plug);
-          if (is_plug) {
-            plug = well;
-          } else {
-            unplug = well;
-          }
+          BlockTypeWell *well = AddBlockTypeWell(cluster, version_fields[1], is_plug);
           double lx=0, ly=0, ux=0, uy=0;
           bool is_n=false;
           do {
@@ -1061,8 +1059,6 @@ void Circuit::ReadWellFile(std::string const &name_of_file) {
           } while (line.find("END VERSION")==std::string::npos && !ist.eof());
         }
       } while (line.find(end_macro_flag)==std::string::npos && !ist.eof());
-      if (plug != nullptr) plug->SetCluster(cluster);
-      if (unplug != nullptr) unplug->SetCluster(cluster);
       Assert(!cluster->Empty(), "No plug/unplug version provided");
     }
   }

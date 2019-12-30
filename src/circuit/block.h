@@ -64,10 +64,11 @@ class Block {
   BlockAux *Aux() const {return aux_;}
 
   void SetType(BlockType *type) {Assert(type != nullptr, "Cannot set BlockType of a Block to NULL"); type_ = type;}
-  void SetLLX(double lower_left_x) {llx_ = lower_left_x;}
-  void SetLLY(double lower_left_y) {lly_ = lower_left_y;}
-  void SetURX(double upper_right_x) {llx_ = upper_right_x - Width();}
-  void SetURY(double upper_right_y) {lly_ = upper_right_y - Height();}
+  void SetLoc(double lx, double ly) {llx_ = lx; lly_ = ly;}
+  void SetLLX(double lx) { llx_ = lx;}
+  void SetLLY(double ly) { lly_ = ly;}
+  void SetURX(double ux) { llx_ = ux - Width();}
+  void SetURY(double uy) { lly_ = uy - Height();}
   void SetCenterX(double center_x) {llx_ = center_x - Width()/2.0;}
   void SetCenterY(double center_y) {lly_ = center_y - Height()/2.0;}
   void SetPlaceStatus(PlaceStatus place_status) {place_status_ = place_status;}

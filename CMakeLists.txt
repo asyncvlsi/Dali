@@ -8,7 +8,8 @@ project(DALI
 
 set(CMAKE_CXX_STANDARD 11)
 # The flag USE_OPENDB
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_OPENDB -std=c++11 -O3 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -DUSE_OPENDB -std=c++11 -O3 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
+#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_OPENDB -std=c++11 -O3 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
 #set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
 
 # Set the output directory of static libraries

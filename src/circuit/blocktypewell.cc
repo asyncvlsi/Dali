@@ -8,14 +8,8 @@
 BlockTypeWell::BlockTypeWell(BlockType *block_type):
     type_(block_type),
     is_plug_(false),
-    n_well_(nullptr),
-    p_well_(nullptr),
     cluster_(nullptr) {}
 
-BlockTypeWell::~BlockTypeWell() {
-  delete n_well_;
-  delete p_well_;
-}
 void BlockTypeWell::SetCluster(BlockTypeCluster *cluster) {
   Assert(cluster != nullptr, "Cannot set BlockTypeWell pointing to an empty cluster!");
   cluster_ = cluster;
@@ -24,30 +18,6 @@ void BlockTypeWell::SetCluster(BlockTypeCluster *cluster) {
   } else {
     cluster_->SetUnplug(this);
   }
-}
-
-void BlockTypeWell::SetNWellShape(double lx, double ly, double ux, double uy) {
-  if (n_well_== nullptr) {
-    n_well_ = new Rect(lx,ly,ux,uy);
-  } else {
-    n_well_->SetValue(lx,ly,ux,uy);
-  }
-}
-
-void BlockTypeWell::SetNWellShape(Rect &rect) {
-  SetNWellShape(rect.LLX(), rect.LLY(), rect.URX(), rect.URY());
-}
-
-void BlockTypeWell::SetPWellShape(double lx, double ly, double ux, double uy) {
-  if (p_well_== nullptr) {
-    p_well_ = new Rect(lx,ly,ux,uy);
-  } else {
-    p_well_->SetValue(lx,ly,ux,uy);
-  }
-}
-
-void BlockTypeWell::SetPWellShape(Rect &rect) {
-  SetPWellShape(rect.LLX(), rect.LLY(), rect.URX(), rect.URY());
 }
 
 void BlockTypeWell::SetWellShape(bool is_n, double lx, double ly, double ux, double uy) {
@@ -65,10 +35,6 @@ void BlockTypeWell::SetWellShape(bool is_n, Rect &rect) {
 void BlockTypeWell::Report() {
   std::cout << "  Well of BlockType: " << *(type_->Name()) << "\n";
   std::cout << "    Plug: " << is_plug_ << "\n";
-  if (n_well_ != nullptr) {
-    std::cout << "    Nwell: " << n_well_->LLX() << "  " << n_well_->LLY() << "  " << n_well_->URX() << "  " << n_well_->URY() << "\n";
-  }
-  if (p_well_ != nullptr) {
-    std::cout << "    Pwell: " << p_well_->LLX() << "  " << p_well_->LLY() << "  " << p_well_->URX() << "  " << p_well_->URY() << "\n";
-  }
+  std::cout << "    Nwell: " << n_rect_.LLX() << "  " << n_rect_.LLY() << "  " << n_rect_.URX() << "  " << n_rect_.URY() << "\n";
+  std::cout << "    Pwell: " << p_rect_.LLX() << "  " << p_rect_.LLY() << "  " << p_rect_.URX() << "  " << p_rect_.URY() << "\n";
 }

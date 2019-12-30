@@ -18,7 +18,6 @@ void WellLegalizer::InitWellLegalizer() {
 
   n_max_plug_dist_ = std::ceil(n_well->MaxPlugDist()/circuit_->GetGridValueX());
   p_max_plug_dist_ = std::ceil(p_well->MaxPlugDist()/circuit_->GetGridValueX());
-  std::cout << n_max_plug_dist_ << "  " << p_max_plug_dist_ << "\n";
 
   Row tmp_row(Left(), INT_MAX, false);
   all_rows_.resize(Top()-Bottom()+1, tmp_row);
@@ -38,20 +37,62 @@ void WellLegalizer::SwitchToPlugType(Block &block) {
   }
 }
 
-void WellLegalizer::UseSpace(Block &block) {
+bool WellLegalizer::IsSpaceAvail(int lx, int ly, int width, int height) {
+  unsigned int start_row = ly - Bottom();
+  unsigned int end_row = start_row + height;
 
+  if (end_row >= all_rows_.size()) return false;
+
+  bool is_avail = true;
+  for (unsigned int i=start_row; i<=end_row; ++i) {
+    if (all_rows_[i].start > lx) {
+      is_avail = false;
+      break;
+    }
+  }
+
+  return is_avail;
 }
 
-void WellLegalizer::FindLocation(Block &block) {
+void WellLegalizer::UseSpace(int lx, int ly, int width, int height) {
+  unsigned int start_row = ly - Bottom();
+  unsigned int end_row = start_row + height;
 
+  if (end_row >= all_rows_.size()) {
+    //std::cout << "  ly:     " << ly       << "\n"
+    //          << "  height: " << height   << "\n"
+    //          << "  top:    " << Top()    << "\n"
+    //          << "  bottom: " << Bottom() << "\n";
+    Assert(false, "Cannot use space out of range");
+  }
+
+  int end_x = lx + width;
+
+  for (unsigned int i=start_row; i<=end_row; ++i) {
+    all_rows_[i].start = end_x;
+  }
+}
+
+void WellLegalizer::FindLocation(Block &block, int &lx, int &ly) {
+  unsigned int start_row = ly - Bottom();
+  unsigned int end_row = start_row + block.Height();
+  if (end_row >= all_rows_.size()) {
+    ly = Top() - block.Height();
+    //std::cout << "  ly:     " << ly       << "\n"
+    //          << "  height: " << block.Height()   << "\n"
+    //          << "  top:    " << Top()    << "\n"
+    //          << "  bottom: " << Bottom() << "\n";
+  }
 }
 
 void WellLegalizer::WellPlace(Block &block) {
   /****
    * 1. if there is no blocks on the left hand side of this block, switch the type to plugged
+   * 2. if the current location is legal, use that space
+   * 3.   else find a new location
    * ****/
   int start_row = int(block.LLY()-Bottom());
-  int end_row = int(block.URY()-Bottom());
+  int end_row = start_row + block.Height();
   bool no_left_blocks = true;
   for (int i=start_row; i<=end_row; ++i) {
     if (all_rows_[i].dist < n_max_plug_dist_) {
@@ -61,10 +102,17 @@ void WellLegalizer::WellPlace(Block &block) {
   }
   if (no_left_blocks) {
     SwitchToPlugType(block);
-  } else {
-    FindLocation(block);
   }
-  UseSpace(block);
+  int lx = int(block.LLX());
+  int ly = int(block.LLY());
+  int width = block.Width();
+  int height = block.Height();
+  bool is_cur_loc_legal = IsSpaceAvail(lx, ly, width, height);
+  if (!is_cur_loc_legal) {
+    FindLocation(block, lx, ly);
+    block.SetLoc(lx, ly);
+  }
+  UseSpace(lx, ly, width, height);
 }
 
 void WellLegalizer::StartPlacement() {
@@ -86,6 +134,7 @@ void WellLegalizer::StartPlacement() {
     auto &block = block_list[pair.num];
     if (block.IsFixed()) continue;
     WellPlace(block);
+    //std::cout << block.LLX() << "  " << block.LLY() << "\n";
   }
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
