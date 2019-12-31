@@ -21,6 +21,8 @@ void WellLegalizer::InitWellLegalizer() {
   nn_spacing = std::ceil(n_layer->Spacing()/circuit_->GetGridValueX());
   pp_spacing = std::ceil(p_layer->Spacing()/circuit_->GetGridValueX());
   np_spacing = std::ceil(p_layer->OpSpacing()/circuit_->GetGridValueX());
+  n_min_width = std::ceil(n_layer->Width()/circuit_->GetGridValueX());
+  p_min_width = std::ceil(p_layer->Width()/circuit_->GetGridValueX());
 
   Row tmp_row(Left(), INT_MAX, false);
   all_rows_.resize(Top()-Bottom()+1, tmp_row);
@@ -54,12 +56,15 @@ bool WellLegalizer::IsSpaceLegal(Block const &block) {
   }
 
   bool is_avail = true;
+  // 1. check the overlap rule
   for (int i=start_row; i<=end_row; ++i) {
     if (all_rows_[i].start > lx) {
       is_avail = false;
       break;
     }
   }
+
+  // 2. check the NP well rule
 
   return is_avail;
 }
@@ -69,7 +74,7 @@ void WellLegalizer::UseSpace(Block const &block) {
    * Mark the space used by this block by changing the start point of available space in each related row
    * ****/
   int start_row = int(block.LLY() - Bottom());
-  int end_row = start_row + block.Height();
+  int end_row = start_row + block.Height() - 1;
   int lx = int(block.LLX());
 
   if (end_row >= int(all_rows_.size())) {
@@ -81,11 +86,11 @@ void WellLegalizer::UseSpace(Block const &block) {
   }
 
   int end_x = lx + block.Width();
-  int np_boundary_row = start_row + block.Type()->well_->GetPNBoundary();
+  int pn_boundary_row = start_row + block.Type()->well_->GetPNBoundary() - 1;
 
   for (int i=start_row; i<=end_row; ++i) {
     all_rows_[i].start = end_x;
-    all_rows_[i].is_n = (i <= np_boundary_row);
+    all_rows_[i].is_n = (i > pn_boundary_row);
   }
 }
 
@@ -124,36 +129,26 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
   int best_row = 0;
   int best_loc = INT_MIN;
   int min_cost = INT_MAX;
-  int n_height = block.Type()->well_->GetPNBoundary();
+  int p_height = block.Type()->well_->GetPNBoundary();
 
   int tmp_cost = INT_MAX;
   int tmp_end_row = 0;
-  int np_boundary_row = 0;
+  int pn_boundary_row = 0;
   int tmp_loc = INT_MIN;
   for (int tmp_row = start_row; tmp_row <= end_row; ++tmp_row) {
     // 1. find the non-overlap location
-    tmp_end_row = tmp_row + height;
+    tmp_end_row = tmp_row + height - 1;
     tmp_loc = Left();
     for (int i = tmp_row; i <= tmp_end_row; ++i){
       tmp_loc = std::max(tmp_loc, all_rows_[i].start);
     }
 
     // 2. legalize the location to respect well rules
-    np_boundary_row = tmp_row + n_height;
-    for (int i = tmp_row; i <= np_boundary_row; ++i){
-      if (all_rows_[i].start == Left()) continue;
-      if (all_rows_[i].is_n) {
-        if (tmp_loc > all_rows_[i].start && tmp_loc < all_rows_[i].start + nn_spacing) {
-          tmp_loc = all_rows_[i].start + nn_spacing;
-        }
-      } else {
-        if (tmp_loc > all_rows_[i].start && tmp_loc < all_rows_[i].start + np_spacing) {
-          tmp_loc = all_rows_[i].start + np_spacing;
-        }
-      }
-    }
 
-    for (int i = np_boundary_row + 1; i <= tmp_end_row; ++i) {
+    //    2.a check if the distance rule is satisfied
+    pn_boundary_row = tmp_row + p_height;
+    //    P well distance
+    for (int i = tmp_row; i <= pn_boundary_row; ++i) {
       if (all_rows_[i].start == Left()) continue;
       if (!all_rows_[i].is_n) {
         if (tmp_loc > all_rows_[i].start && tmp_loc < all_rows_[i].start + pp_spacing) {
@@ -166,7 +161,61 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
       }
     }
 
+    //    N well distance
+    for (int i = pn_boundary_row + 1; i <= tmp_end_row; ++i) {
+      if (all_rows_[i].start == Left()) continue;
+      if (all_rows_[i].is_n) {
+        if (tmp_loc > all_rows_[i].start && tmp_loc < all_rows_[i].start + nn_spacing) {
+          tmp_loc = all_rows_[i].start + nn_spacing;
+        }
+      } else {
+        if (tmp_loc > all_rows_[i].start && tmp_loc < all_rows_[i].start + np_spacing) {
+          tmp_loc = all_rows_[i].start + np_spacing;
+        }
+      }
+    }
+
+    //    2.b check if the min-width rule is satisfied.
+    //    P well min-width
+    int shared_length = 0;
+    for (int i = tmp_row; i <= pn_boundary_row; ++i) {
+      if (all_rows_[i].start == Left()) continue;
+      if (!(all_rows_[i].is_n) && all_rows_[i].start == tmp_loc) {
+        ++shared_length;
+      } else {
+        if (shared_length < p_min_width) {
+          tmp_loc += pp_spacing;
+          shared_length = 0;
+        }
+      }
+    }
+
+    shared_length = 0;
+    //    N well min-width
+    for (int i = pn_boundary_row + 1; i <= tmp_end_row; ++i) {
+      if (all_rows_[i].start == Left()) continue;
+      if (all_rows_[i].is_n && all_rows_[i].start == tmp_loc) {
+        ++shared_length;
+      } else {
+        if (shared_length < n_min_width) {
+          tmp_loc += nn_spacing;
+          shared_length = 0;
+        }
+      }
+    }
+
     tmp_cost = std::abs(tmp_loc - init_x) + std::abs(tmp_row + Bottom() - init_y);
+    bool is_abutted = false;
+    for (int i = tmp_row; i <= tmp_end_row; ++i){
+      if (all_rows_[i].start == tmp_loc) {
+        is_abutted = true;
+        break;
+      }
+    }
+
+    if (is_abutted) {
+      tmp_cost -= abutment_benefit;
+    }
     if (tmp_cost < min_cost) {
       best_loc = tmp_loc;
       best_row = tmp_row;
@@ -178,7 +227,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
   res.x = best_loc;
   res.y = best_row + Bottom();
 
-  std::cout << res.x << "  " << res.y << "  " << min_cost << "\n";
+  //std::cout << res.x << "  " << res.y << "  " << min_cost << "  " << block.Num() << "\n";
 
   return (min_cost < INT_MAX);
 }
@@ -201,7 +250,8 @@ void WellLegalizer::WellPlace(Block &block) {
   if (no_left_blocks) {
     SwitchToPlugType(block);
   }*/
-  bool is_cur_loc_legal = IsSpaceLegal(block);
+  //bool is_cur_loc_legal = IsSpaceLegal(block);
+  bool is_cur_loc_legal = false;
   int2d res(block.LLX(), block.LLY());
   if (!is_cur_loc_legal) {
     bool loc_found = FindLocation(block, res);
@@ -224,7 +274,9 @@ void WellLegalizer::StartPlacement() {
             << "    PP spacing: " << pp_spacing << "\n"
             << "    NP spacing: " << np_spacing << "\n"
             << "    MaxNDist:   " << n_max_plug_dist_ << "\n"
-            << "    MaxPDist:   " << p_max_plug_dist_ << "\n";
+            << "    MaxPDist:   " << p_max_plug_dist_ << "\n"
+            << "    MinNWidth:  " << n_min_width << "\n"
+            << "    MinPWidth:  " << p_min_width << "\n";
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "Start Well Legalization\n";
@@ -238,7 +290,9 @@ void WellLegalizer::StartPlacement() {
   std::sort(index_loc_list_.begin(), index_loc_list_.end());
   for (auto &pair: index_loc_list_) {
     auto &block = block_list[pair.num];
-    if (block.IsFixed()) continue;
+    if (block.IsFixed()) {
+      continue;
+    }
     WellPlace(block);
     //std::cout << block.LLX() << "  " << block.LLY() << "\n";
   }
@@ -248,5 +302,7 @@ void WellLegalizer::StartPlacement() {
               << "Well Legalization complete!\n"
               << "\033[0m";
   }
+
+  ReportHPWL(LOG_CRITICAL);
 
 }

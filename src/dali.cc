@@ -132,6 +132,10 @@ int main(int argc, char *argv[]) {
   circuit.ReadDefFile(def_file_name);
 #endif
 
+  if (!cell_file_name.empty()) {
+    circuit.ReadWellFile(cell_file_name);
+  }
+
   Time = clock() - Time;
   std::cout << "File loading complete, time: " << float(Time)/CLOCKS_PER_SEC << "s\n";
   circuit.ReportBriefSummary();
@@ -165,6 +169,13 @@ int main(int argc, char *argv[]) {
   time_t lg_time = clock() - gp_time;
   std::cout << "legalization complete, time: " << float(lg_time)/CLOCKS_PER_SEC << "s\n";
 
+  if (!cell_file_name.empty()) {
+    Placer *well_legalizer = new WellLegalizer;
+    well_legalizer->TakeOver(gb_placer);
+    well_legalizer->StartPlacement();
+    delete well_legalizer;
+  }
+
   delete gb_placer;
   //delete d_placer;
   delete legalizer;
@@ -180,10 +191,10 @@ int main(int argc, char *argv[]) {
 
 void ReportUsage() {
   std::cout << "\033[0;36m"
-            << "Usage: hpcc\n"
+            << "Usage: dali\n"
             << "  -lef        <file.lef>\n"
             << "  -def        <file.def>\n"
-            << "  -cell       <file.cell>\n"
+            << "  -cell       <file.cell> (optional, if provided, well legalization will be triggered)\n"
             << "  -o          <output_name>.def (optional, default name timestamp.def)\n"
             << "  -g/-grid    grid_value_x grid_value_y (optional, default metal1 and metal 2 pitch values)\n"
             << "  -d/-density density (optional, value interval (0,1], default 1)\n"

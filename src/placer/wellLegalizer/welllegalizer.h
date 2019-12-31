@@ -30,6 +30,9 @@ class WellLegalizer: public Placer {
   int nn_spacing;
   int pp_spacing;
   int np_spacing;
+  int n_min_width;
+  int p_min_width;
+  int abutment_benefit = 0;
   std::vector<Row> all_rows_;
   std::set<int> p_n_boundary;
   std::vector<IndexLocPair<int>> index_loc_list_;

@@ -18,8 +18,8 @@ int main() {
 
   time_t Time = clock();
 
-  std::string lef_file_name = "Pbenchmark_1K.lef";
-  std::string def_file_name = "Pbenchmark_1K.def";
+  std::string lef_file_name = "Pbenchmark_10K.lef";
+  std::string def_file_name = "Pbenchmark_10K.def";
 
 #ifdef USE_OPENDB
   odb::dbDatabase* db = odb::dbDatabase::create();
@@ -34,8 +34,8 @@ int main() {
 #endif
 
 #if TEST_WELL
-  std::string well_file_name("Pbenchmark_1K.cell");
-  circuit.ReadWellFile(well_file_name);
+  std::string cell_file_name("Pbenchmark_10K.cell");
+  circuit.ReadWellFile(cell_file_name);
 #endif
 
   std::cout << "File loading complete, time: " << double(Time)/CLOCKS_PER_SEC << "s\n";
