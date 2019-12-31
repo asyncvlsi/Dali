@@ -10,15 +10,15 @@ class Tech {
  private:
   bool n_set_;
   bool p_set_;
-  WellLayer *n_well_;
-  WellLayer *p_well_;
+  WellLayer *n_layer_;
+  WellLayer *p_layer_;
  public:
   Tech();
   ~Tech();
-  WellLayer *GetNWell() const {return n_well_;}
-  WellLayer *GetPWell() const {return p_well_;}
-  void SetNWell(double width, double spacing, double op_spacing, double max_plug_dist);
-  void SetPWell(double width, double spacing, double op_spacing, double max_plug_dist);
+  WellLayer *GetNLayer() const {return n_layer_;}
+  WellLayer *GetPLayer() const {return p_layer_;}
+  void SetNLayer(double width, double spacing, double op_spacing, double max_plug_dist);
+  void SetPLayer(double width, double spacing, double op_spacing, double max_plug_dist);
 
   void Report();
 };

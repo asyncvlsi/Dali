@@ -8,7 +8,7 @@
 
 MDBlkAux::MDBlkAux(Block* blk_ptr): BlockAux(blk_ptr), v_(0,0) {}
 
-Value2D MDBlkAux::GetForce(Block *blk) {
+double2d MDBlkAux::GetForce(Block *blk) {
   /****
    * A rectangle can be described by its (llx, lly,) (urx, ury), and using these four values, one can calculate the area;
    * The force between two blocks are in  proportional to the overlapping area, thus we need to find the overlap rectangle;
@@ -16,7 +16,7 @@ Value2D MDBlkAux::GetForce(Block *blk) {
    * If the center of two blocks are the same, the block with a lower number will move left, and the block with a higher number will move right;
    * Now we have the force amplitude and its direction, done.
    * ****/
-  Value2D force(0,0);
+  double2d force(0,0);
   double epsilon = 1e-5;
   if ((blk != GetBlock())&&(block_->IsOverlap(*blk))) {
     double force_amp;
@@ -26,11 +26,11 @@ Value2D MDBlkAux::GetForce(Block *blk) {
     lly = std::max(block_->LLY(), blk->LLY());
     ury = std::min(block_->URY(), blk->URY());
     force_amp = (urx - llx)*(ury - lly);
-    Value2D direction(block_->X() - blk->X(), block_->Y() - blk->Y());
+    double2d direction(block_->X() - blk->X(), block_->Y() - blk->Y());
     // default direction is center to center direction
     if ((std::fabs(direction.x) < epsilon) && (std::fabs(direction.y) < epsilon)) {
       // when the centers of two blocks are very close, chose a default direction to avoid numerical issues
-      Value2D default_direction(0,0);
+      double2d default_direction(0,0);
       if (block_->Num() < blk->Num()) {
         default_direction.x = -1;
       } else {

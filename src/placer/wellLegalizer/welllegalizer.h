@@ -27,15 +27,19 @@ class WellLegalizer: public Placer {
  private:
   int n_max_plug_dist_;
   int p_max_plug_dist_;
+  int nn_spacing;
+  int pp_spacing;
+  int np_spacing;
   std::vector<Row> all_rows_;
   std::set<int> p_n_boundary;
   std::vector<IndexLocPair<int>> index_loc_list_;
  public:
   void InitWellLegalizer();
   static void SwitchToPlugType(Block &block);
-  bool IsSpaceAvail(int lx, int ly, int width, int height);
-  void UseSpace(int lx, int ly, int width, int height);
-  void FindLocation(Block &block, int &lx, int &ly);
+  bool IsSpaceLegal(Block const &block);
+  void UseSpace(Block const &block);
+  void UpdatePNBoundary(Block const &block);
+  bool FindLocation(Block &block, int2d &res);
   void WellPlace(Block &block);
   void StartPlacement() override;
 };

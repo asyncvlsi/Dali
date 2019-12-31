@@ -14,15 +14,16 @@
 #include <cmath>
 #include <stdexcept>
 
+template <class T>
 struct Value2D {
-  double x;
-  double y;
-  explicit Value2D(double x_init=0, double y_init=0): x(x_init), y(y_init) {}
+  T x;
+  T y;
+  explicit Value2D(T x_init=0, T y_init=0): x(x_init), y(y_init) {}
 
   // assignment operator modifies object, therefore non-const
   Value2D& operator=(const Value2D& a) = default;
 
-  // addop. doesn't modify object. therefore const.
+  // add operator. doesn't modify object. therefore const.
   Value2D operator+(const Value2D& a) const {
     return Value2D(a.x+x, a.y+y);
   }
@@ -44,7 +45,7 @@ struct Value2D {
   }
 
   void Normalize() {
-    double amp = sqrt(x*x + y*y);
+    T amp = sqrt(x*x + y*y);
     x /= amp;
     y /= amp;
   }
@@ -65,11 +66,8 @@ struct Value2D {
   }
 };
 
-struct Loc2D {
-  int x;
-  int y;
-  explicit Loc2D(int initX, int initY): x(initX), y(initY) {};
-};
+typedef Value2D<double> double2d;
+typedef Value2D<int>    int2d;
 
 template <class T>
 struct IndexLocPair{

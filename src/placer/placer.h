@@ -32,11 +32,11 @@ public:
   virtual ~Placer();
 
   void SetInputCircuit(Circuit *circuit);
-  Circuit *GetCircuit();
+  Circuit *GetCircuit() {return circuit_;}
   void SetFillingRate(double rate = 2.0/3.0);
-  double FillingRate() const;
+  double FillingRate() const {return filling_rate_;}
   void SetAspectRatio(double ratio = 1.0);
-  double AspectRatio() const;
+  double AspectRatio() const {return aspect_ratio_;}
   void SetSpaceBlockRatio(double ratio);
 
   std::vector<Block> *BlockList() {return &(circuit_->block_list);};
@@ -74,14 +74,15 @@ public:
 
 inline void Placer::SetInputCircuit(Circuit *circuit) {
   Assert(circuit != nullptr, "Invalid input circuit: not allowed to set nullptr as an input!");
-  Assert(!circuit->block_list.empty(), "Invalid input circuit: empty block list!");
-  Warning(circuit->net_list.empty(), "Improper input circuit: empty net list, nothing to optimize during placement! But anyway...");
+  if (circuit->block_list.empty()) {
+    std::cout << "Invalid input circuit: empty block list, nothing to place!\n";
+    return;
+  }
+  if (circuit->net_list.empty()) {
+    std::cout << "Improper input circuit: empty net list, nothing to optimize during placement! But anyway...\n";
+    return;
+  }
   circuit_ = circuit;
-}
-
-inline Circuit *Placer::GetCircuit() {
-  Warning(circuit_ == nullptr, "Circuit is a nullptr!");
-  return  circuit_;
 }
 
 inline void Placer::SetFillingRate(double rate) {
@@ -89,17 +90,9 @@ inline void Placer::SetFillingRate(double rate) {
   filling_rate_ = rate;
 }
 
-inline double Placer::FillingRate() const {
-  return filling_rate_;
-}
-
 inline void Placer::SetAspectRatio(double ratio){
   Assert( ratio >= 0,"Invalid value: value should be in range (0, +infinity)");
   aspect_ratio_ = ratio;
-}
-
-inline double Placer::AspectRatio() const {
-  return aspect_ratio_;
 }
 
 inline void Placer::SetSpaceBlockRatio(double ratio) {

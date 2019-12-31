@@ -52,6 +52,8 @@ class BlockTypeWell {
   void SetPWellShape(Rect &rect) { p_rect_ =rect;}
   Rect *GetPWellShape() {return &(p_rect_);}
 
+  int GetPNBoundary() {return p_rect_.URY();}
+
   void SetWellShape(bool is_n, double lx, double ly, double ux, double uy);
   void SetWellShape(bool is_n, Rect &rect);
 

@@ -152,7 +152,7 @@ bool TetrisLegalizer::TetrisLegal() {
       block_list[block_num].SetLLX(llx);
       block_list[block_num].SetLLY(lly);
     } else {
-      Loc2D result_loc(0, 0);
+      int2d result_loc(0, 0);
       bool is_found = tetrisSpace.FindBlockLoc(llx, lly, width, height, result_loc);
       if (is_found) {
         block_list[block_num].SetLLX(result_loc.x);

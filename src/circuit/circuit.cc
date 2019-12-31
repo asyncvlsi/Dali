@@ -718,12 +718,12 @@ BlockTypeWell *Circuit::AddBlockTypeWell(BlockTypeCluster *cluster, std::string 
 
 void Circuit::SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist) {
   if (tech_param_== nullptr) tech_param_ = new Tech;
-  tech_param_->SetNWell(width, spacing, op_spacing, max_plug_dist);
+  tech_param_->SetNLayer(width, spacing, op_spacing, max_plug_dist);
 }
 
 void Circuit::SetPWellParams(double width, double spacing, double op_spacing, double max_plug_dist) {
   if (tech_param_== nullptr) tech_param_ = new Tech;
-  tech_param_->SetPWell(width, spacing, op_spacing, max_plug_dist);
+  tech_param_->SetPLayer(width, spacing, op_spacing, max_plug_dist);
 }
 
 void Circuit::ReportWellShape() {

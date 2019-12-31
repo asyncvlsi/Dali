@@ -103,7 +103,7 @@ bool TetrisSpace::IsSpaceAvail(int llx, int lly, int width, int height) {
   return all_row_avail;
 }
 
-bool TetrisSpace::FindBlockLoc(int llx, int lly, int width, int height, Loc2D &result_loc) {
+bool TetrisSpace::FindBlockLoc(int llx, int lly, int width, int height, int2d &result_loc) {
   if (llx < left_) {
     scan_line_ = left_;
   } else {
@@ -117,7 +117,7 @@ bool TetrisSpace::FindBlockLoc(int llx, int lly, int width, int height, Loc2D &r
   int top_row_to_check = (int)(free_segment_rows.size()) - (effective_height - 1);
   bool all_row_fail = true;
   int min_disp_x;
-  std::vector< Loc2D > candidate_list;
+  std::vector<int2d> candidate_list;
 
   int min_row = ToStartRow(std::max(bottom_, lly - 2*height));
   int max_row = ToEndRow(std::min(top_, lly + 2*height)) - height/row_height_;
@@ -156,7 +156,7 @@ bool TetrisSpace::FindBlockLoc(int llx, int lly, int width, int height, Loc2D &r
     if (min_row <= 0 && max_row >= top_row_to_check) break;
   }
 
-  Loc2D best_loc(-1, -1);
+  int2d best_loc(-1, -1);
   if (all_row_fail) { // need to change this in the future
     return false;
   }

@@ -16,15 +16,15 @@ class MDBlkAux: public BlockAux {
  private:
   BinIndex ll_index_, ur_index_;
  public:
-  Value2D v_;
+  double2d v_;
   explicit MDBlkAux(Block* blk_ptr);
   void SetVx(double vx);
   void SetVy(double vy);
   double Vx();
   double Vy();
-  void SetVelocity(Value2D velocity);
-  Value2D Velocity();
-  Value2D GetForce(Block *blk);
+  void SetVelocity(double2d velocity);
+  double2d Velocity();
+  double2d GetForce(Block *blk);
   BinIndex LLIndex();
   BinIndex URIndex();
   void SetLLIndex(BinIndex ll);
@@ -47,11 +47,11 @@ inline double MDBlkAux::Vy() {
   return v_.y;
 }
 
-inline void MDBlkAux::SetVelocity(Value2D velocity) {
+inline void MDBlkAux::SetVelocity(double2d velocity) {
   v_ = velocity;
 }
 
-inline Value2D MDBlkAux::Velocity() {
+inline double2d MDBlkAux::Velocity() {
   return v_;
 }
 

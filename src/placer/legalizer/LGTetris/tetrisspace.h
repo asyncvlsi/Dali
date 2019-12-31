@@ -29,7 +29,7 @@ public:
   void UseSpace(int llx, int lly, int width, int height);
   void FindCommonSegments(int startRowNum, int endRowNum, FreeSegmentList &commonSegments);
   bool IsSpaceAvail(int llx, int lly, int width, int height);
-  bool FindBlockLoc(int llx, int lly, int width, int height, Loc2D &result_loc);
+  bool FindBlockLoc(int llx, int lly, int width, int height, int2d &result_loc);
   void Show();
 };
 

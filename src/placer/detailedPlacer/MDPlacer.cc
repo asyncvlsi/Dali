@@ -138,8 +138,8 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
    * 2. Update the velocity, v_new = alpha * v_old + delta_v;
    * 3. Update the location of the block.
    * ****/
-  Value2D tot_force(0, 0);
-  Value2D force(0, 0);
+  double2d tot_force(0, 0);
+  double2d force(0, 0);
   std::vector<Block> &block_list = *BlockList();
   auto blk_aux = (MDBlkAux *)blk.Aux();
   int blk_num = blk.Num();
@@ -187,8 +187,8 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
   }
   tot_force.Incre(force);
 
-  Value2D velocity_incre = tot_force * learning_rate_;
-  Value2D velocity = blk_aux->Velocity() * momentum_term_;
+  double2d velocity_incre = tot_force * learning_rate_;
+  double2d velocity = blk_aux->Velocity() * momentum_term_;
   velocity += velocity_incre;
   blk_aux->SetVelocity(velocity);
 
