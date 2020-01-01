@@ -4,9 +4,15 @@
 
 #include "block.h"
 
-Block::Block(BlockType *type, std::pair<const std::string, int>* name_num_pair, int llx, int lly, bool movable, BlockOrient orient) : type_(
+Block::Block(BlockType *type,
+             std::pair<const std::string, int> *name_num_pair,
+             int llx,
+             int lly,
+             bool movable,
+             BlockOrient orient) : type_(
     type), name_num_pair_(name_num_pair), llx_(llx), lly_(lly), orient_(orient) {
-  Assert(name_num_pair != nullptr, "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
+  Assert(name_num_pair != nullptr,
+         "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
   aux_ = nullptr;
   if (movable) {
     place_status_ = UNPLACED;
@@ -15,9 +21,15 @@ Block::Block(BlockType *type, std::pair<const std::string, int>* name_num_pair, 
   }
 }
 
-Block::Block(BlockType *type, std::pair<const std::string, int>* name_num_pair, int llx, int lly, PlaceStatus place_state, BlockOrient orient) :
+Block::Block(BlockType *type,
+             std::pair<const std::string, int> *name_num_pair,
+             int llx,
+             int lly,
+             PlaceStatus place_state,
+             BlockOrient orient) :
     type_(type), name_num_pair_(name_num_pair), llx_(llx), lly_(lly), place_status_(place_state), orient_(orient) {
-  Assert(name_num_pair != nullptr, "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
+  Assert(name_num_pair != nullptr,
+         "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
   aux_ = nullptr;
 }
 
@@ -49,7 +61,7 @@ double Block::OverlapArea(const Block &rhs) const {
     urx = std::min(URX(), rhs.URX());
     lly = std::max(LLY(), rhs.LLY());
     ury = std::min(URY(), rhs.URY());
-    overlap_area = (urx - llx)*(ury - lly);
+    overlap_area = (urx - llx) * (ury - lly);
   }
   return overlap_area;
 }

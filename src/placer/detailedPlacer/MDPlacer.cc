@@ -12,6 +12,7 @@
  * ****/
 
 #include "MDPlacer.h"
+
 #include <algorithm>
 
 MDPlacer::MDPlacer(): learning_rate_(0.1), momentum_term_(0.9), max_iteration_num_(20), bin_width_(0), bin_height_(0), bin_cnt_x_(0), bin_cnt_y_(0) {}

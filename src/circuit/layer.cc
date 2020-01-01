@@ -4,21 +4,24 @@
 
 #include "layer.h"
 
-MetalLayer::MetalLayer(std::pair<const std::string, int>* name_num_ptr):
-                       Layer(),
-                       name_num_ptr_(name_num_ptr),
-                       area_(0),
-                       x_pitch_(0),
-                       y_pitch_(0),
-                       direction_(HORIZONTAL) {}
+MetalLayer::MetalLayer(std::pair<const std::string, int> *name_num_ptr) :
+    Layer(),
+    name_num_ptr_(name_num_ptr),
+    area_(0),
+    x_pitch_(0),
+    y_pitch_(0),
+    direction_(HORIZONTAL) {}
 
-MetalLayer::MetalLayer(double width, double spacing, std::pair<const std::string, int>* name_num_ptr, MetalDirection direction):
-                       Layer(width, spacing),
-                       name_num_ptr_(name_num_ptr),
-                       area_(0),
-                       x_pitch_(0),
-                       y_pitch_(0),
-                       direction_(direction) {}
+MetalLayer::MetalLayer(double width,
+                       double spacing,
+                       std::pair<const std::string, int> *name_num_ptr,
+                       MetalDirection direction) :
+    Layer(width, spacing),
+    name_num_ptr_(name_num_ptr),
+    area_(0),
+    x_pitch_(0),
+    y_pitch_(0),
+    direction_(direction) {}
 
 void MetalLayer::Report() {
   std::cout << "  MetalLayer Name: " << *Name() << "\n"
@@ -37,8 +40,8 @@ void WellLayer::SetParams(double width, double spacing, double op_spacing, doubl
 }
 
 void WellLayer::Report() {
-  std::cout << "    Width:       " << Width()       << " um\n"
-            << "    Spacing:     " << Spacing()     << " um\n"
-            << "    OpSpacing:   " << OpSpacing()   << " um\n"
+  std::cout << "    Width:       " << Width() << " um\n"
+            << "    Spacing:     " << Spacing() << " um\n"
+            << "    OpSpacing:   " << OpSpacing() << " um\n"
             << "    MaxPlugDist: " << MaxPlugDist() << " um\n";
 }

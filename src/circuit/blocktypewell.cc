@@ -6,7 +6,7 @@
 
 #include "common/misc.h"
 
-BlockTypeWell::BlockTypeWell(BlockType *block_type):
+BlockTypeWell::BlockTypeWell(BlockType *block_type) :
     type_(block_type),
     is_plug_(false),
     cluster_(nullptr) {}
@@ -25,7 +25,7 @@ void BlockTypeWell::SetWellShape(bool is_n, int lx, int ly, int ux, int uy) {
   if (is_n) {
     SetNWellShape(lx, ly, ux, uy);
   } else {
-    SetPWellShape(lx,ly,ux, uy);
+    SetPWellShape(lx, ly, ux, uy);
   }
 }
 
@@ -34,8 +34,10 @@ void BlockTypeWell::SetWellShape(bool is_n, RectI &rect) {
 }
 
 void BlockTypeWell::Report() {
-  std::cout << "  Well of BlockType: " << *(type_->Name()) << "\n";
-  std::cout << "    Plug: " << is_plug_ << "\n";
-  std::cout << "    Nwell: " << n_rect_.LLX() << "  " << n_rect_.LLY() << "  " << n_rect_.URX() << "  " << n_rect_.URY() << "\n";
-  std::cout << "    Pwell: " << p_rect_.LLX() << "  " << p_rect_.LLY() << "  " << p_rect_.URX() << "  " << p_rect_.URY() << "\n";
+  std::cout << "  Well of BlockType: " << *(type_->Name()) << "\n"
+            << "    Plug: " << is_plug_ << "\n"
+            << "    Nwell: " << n_rect_.LLX() << "  " << n_rect_.LLY() << "  " << n_rect_.URX() << "  " << n_rect_.URY()
+            << "\n"
+            << "    Pwell: " << p_rect_.LLX() << "  " << p_rect_.LLY() << "  " << p_rect_.URX() << "  " << p_rect_.URY()
+            << "\n";
 }

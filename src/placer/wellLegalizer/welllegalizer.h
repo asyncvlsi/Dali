@@ -5,8 +5,8 @@
 #ifndef DALI_SRC_PLACER_WELLLEGALIZER_WELLLEGALIZER_H_
 #define DALI_SRC_PLACER_WELLLEGALIZER_WELLLEGALIZER_H_
 
-#include <vector>
 #include <set>
+#include <vector>
 
 #include "common/misc.h"
 #include "placer/placer.h"
@@ -21,10 +21,11 @@ struct Row {
   int start;
   int dist;
   bool is_n;
-  explicit Row(int start_init = 0, int dist_init = INT_MAX, bool is_n_init = false): start(start_init), dist(dist_init), is_n(is_n_init) {}
+  explicit Row(int start_init = 0, int dist_init = INT_MAX, bool is_n_init = false)
+      : start(start_init), dist(dist_init), is_n(is_n_init) {}
 };
 
-class WellLegalizer: public Placer {
+class WellLegalizer : public Placer {
  private:
   int n_max_plug_dist_;
   int p_max_plug_dist_;

@@ -4,7 +4,7 @@
 
 #include "blockaux.h"
 
-BlockAux::BlockAux(Block *block): block_(block) {
+BlockAux::BlockAux(Block *block) : block_(block) {
   block->SetAux(this);
 }
 

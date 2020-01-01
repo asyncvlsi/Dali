@@ -6,10 +6,11 @@
 #define HPCC_SRC_PLACER_DETAILEDPLACER_MDPLACER_H_
 
 #include <vector>
-#include "../placer.h"
-#include "../../common/misc.h"
-#include "MDPlacer/mdblkaux.h"
+
+#include "common/misc.h"
 #include "MDPlacer/bin.h"
+#include "MDPlacer/mdblkaux.h"
+#include "placer/placer.h"
 
 class MDPlacer: public Placer {
  private:

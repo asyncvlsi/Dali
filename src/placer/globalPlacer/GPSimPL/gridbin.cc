@@ -6,7 +6,7 @@
 
 GridBin::GridBin() {
   index.init();
-  bottom =0;
+  bottom = 0;
   top = 0;
   left = 0;
   right = 0;
@@ -27,7 +27,7 @@ void GridBin::create_adjacent_bin_list(int grid_cnt_x, int grid_cnt_y) {
     tmp_index.y = index.y;
     adjacent_bin_index.push_back(tmp_index);
   }
-  if (index.x < grid_cnt_x-1) {
+  if (index.x < grid_cnt_x - 1) {
     tmp_index.x = index.x + 1;
     tmp_index.y = index.y;
     adjacent_bin_index.push_back(tmp_index);
@@ -37,7 +37,7 @@ void GridBin::create_adjacent_bin_list(int grid_cnt_x, int grid_cnt_y) {
     tmp_index.y = index.y - 1;
     adjacent_bin_index.push_back(tmp_index);
   }
-  if (index.y < grid_cnt_y-1) {
+  if (index.y < grid_cnt_y - 1) {
     tmp_index.x = index.x;
     tmp_index.y = index.y + 1;
     adjacent_bin_index.push_back(tmp_index);
@@ -50,8 +50,8 @@ void GridBin::create_adjacent_bin_list(int grid_cnt_x, int grid_cnt_y) {
 
 void GridBin::Report() {
   std::cout << "  block count: " << cell_list.size() << std::endl;
-  std::cout << "  block area:  " << cell_area        << std::endl;
-  std::cout << "  filling rate: "<< filling_rate     << std::endl;
-  std::cout << "  white space: " << white_space      << std::endl;
-  std::cout << "  over fill:   " << over_fill        << std::endl;
+  std::cout << "  block area:  " << cell_area << std::endl;
+  std::cout << "  filling rate: " << filling_rate << std::endl;
+  std::cout << "  white space: " << white_space << std::endl;
+  std::cout << "  over fill:   " << over_fill << std::endl;
 }

@@ -4,7 +4,7 @@
 
 #include "blockpinpair.h"
 
-BlockPinPair::BlockPinPair(Block *block, int pin): block_(block), pin_num_(pin) {}
+BlockPinPair::BlockPinPair(Block *block, int pin) : block_(block), pin_num_(pin) {}
 
 Block *BlockPinPair::GetBlock() const {
   return block_;
@@ -46,14 +46,14 @@ const std::string *BlockPinPair::PinName() const {
   return GetPin()->Name();
 }
 
-bool BlockPinPair::operator <(const BlockPinPair &rhs) const {
+bool BlockPinPair::operator<(const BlockPinPair &rhs) const {
   return (BlockNum() < rhs.BlockNum()) || ((BlockNum() == rhs.BlockNum()) && (PinNum() < rhs.PinNum()));
 }
 
-bool BlockPinPair::operator >(const BlockPinPair &rhs) const {
+bool BlockPinPair::operator>(const BlockPinPair &rhs) const {
   return (BlockNum() < rhs.BlockNum()) || ((BlockNum() == rhs.BlockNum()) && (PinNum() > rhs.PinNum()));
 }
 
-bool BlockPinPair::operator ==(const BlockPinPair &rhs) const {
+bool BlockPinPair::operator==(const BlockPinPair &rhs) const {
   return (BlockNum() == rhs.BlockNum()) && (PinNum() == rhs.PinNum());
 }

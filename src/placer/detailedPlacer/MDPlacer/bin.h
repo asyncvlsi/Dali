@@ -5,8 +5,8 @@
 #ifndef HPCC_BIN_HPP
 #define HPCC_BIN_HPP
 
-#include <unordered_set>
 #include <iostream>
+#include <unordered_set>
 
 struct BinIndex {
   int x;

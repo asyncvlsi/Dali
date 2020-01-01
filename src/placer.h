@@ -12,11 +12,11 @@
 #include "placer/globalPlacer/GPSimPL.h"
 
 /****Detailed placer****/
-#include "placer/detailedPlacer/DPLinear.h"
 #include "placer/detailedPlacer/DPAbacus.h"
-#include "placer/detailedPlacer/MDPlacer.h"
-#include "placer/detailedPlacer/DPSwap.h"
 #include "placer/detailedPlacer/DPAdam.h"
+#include "placer/detailedPlacer/DPLinear.h"
+#include "placer/detailedPlacer/DPSwap.h"
+#include "placer/detailedPlacer/MDPlacer.h"
 
 /****Legalizer****/
 #include "placer/legalizer/LGTetris.h"

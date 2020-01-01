@@ -5,12 +5,13 @@
 #ifndef HPCC_SRC_PLACER_DETAILEDPLACER_DPLINEAR_H_
 #define HPCC_SRC_PLACER_DETAILEDPLACER_DPLINEAR_H_
 
-#include <vector>
 #include <random>
-#include "../placer.h"
-#include "../globalPlacer/GPSimPL.h"
-#include "../../solver.h"
+#include <vector>
+
 #include "DPLinear/scaffoldnet.h"
+#include "placer/globalPlacer/GPSimPL.h"
+#include "placer/placer.h"
+#include "solver.h"
 
 typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat; // declares a row-major sparse matrix type of double
 typedef Eigen::Triplet<double> T; // A triplet is a simple object representing a non-zero entry as the triplet: row index, column index, value.

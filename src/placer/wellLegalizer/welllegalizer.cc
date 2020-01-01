@@ -17,17 +17,17 @@ void WellLegalizer::InitWellLegalizer() {
   Assert(n_layer != nullptr, "Well Legalization fail: no N well parameters found!");
   Assert(p_layer != nullptr, "Well Legalization fail: no P well parameters found!");
 
-  n_max_plug_dist_ = std::ceil(n_layer->MaxPlugDist()/circuit_->GetGridValueX());
-  p_max_plug_dist_ = std::ceil(p_layer->MaxPlugDist()/circuit_->GetGridValueX());
-  nn_spacing = std::ceil(n_layer->Spacing()/circuit_->GetGridValueX());
-  pp_spacing = std::ceil(p_layer->Spacing()/circuit_->GetGridValueX());
-  np_spacing = std::ceil(p_layer->OpSpacing()/circuit_->GetGridValueX());
-  n_min_width = std::ceil(n_layer->Width()/circuit_->GetGridValueX());
-  p_min_width = std::ceil(p_layer->Width()/circuit_->GetGridValueX());
+  n_max_plug_dist_ = std::ceil(n_layer->MaxPlugDist() / circuit_->GetGridValueX());
+  p_max_plug_dist_ = std::ceil(p_layer->MaxPlugDist() / circuit_->GetGridValueX());
+  nn_spacing = std::ceil(n_layer->Spacing() / circuit_->GetGridValueX());
+  pp_spacing = std::ceil(p_layer->Spacing() / circuit_->GetGridValueX());
+  np_spacing = std::ceil(p_layer->OpSpacing() / circuit_->GetGridValueX());
+  n_min_width = std::ceil(n_layer->Width() / circuit_->GetGridValueX());
+  p_min_width = std::ceil(p_layer->Width() / circuit_->GetGridValueX());
 
   Row tmp_row(Left(), INT_MAX, false);
-  all_rows_.resize(Top()-Bottom()+1, tmp_row);
-  IndexLocPair<int> tmp_index_loc_pair(0,0,0);
+  all_rows_.resize(Top() - Bottom() + 1, tmp_row);
+  IndexLocPair<int> tmp_index_loc_pair(0, 0, 0);
   index_loc_list_.resize(circuit_->block_list.size(), tmp_index_loc_pair);
 }
 
@@ -38,7 +38,8 @@ void WellLegalizer::SwitchToPlugType(Block &block) {
     auto type = block.Type();
     auto cluster = well->GetCluster();
     auto plugged_well = cluster->GetPlug();
-    Assert(cluster != nullptr || plugged_well == nullptr, "There is not plugged version of this BlockType: " + *type->Name());
+    Assert(cluster != nullptr || plugged_well == nullptr,
+           "There is not plugged version of this BlockType: " + *type->Name());
     block.SetType(plugged_well->Type());
   }
 }
@@ -58,7 +59,7 @@ bool WellLegalizer::IsSpaceLegal(Block const &block) {
 
   bool is_avail = true;
   // 1. check the overlap rule
-  for (int i=start_row; i<=end_row; ++i) {
+  for (int i = start_row; i <= end_row; ++i) {
     if (all_rows_[i].start > lx) {
       is_avail = false;
       break;
@@ -89,7 +90,7 @@ void WellLegalizer::UseSpace(Block const &block) {
   int end_x = lx + block.Width();
   int pn_boundary_row = start_row + block.Type()->well_->GetPNBoundary() - 1;
 
-  for (int i=start_row; i<=end_row; ++i) {
+  for (int i = start_row; i <= end_row; ++i) {
     all_rows_[i].start = end_x;
     all_rows_[i].is_n = (i > pn_boundary_row);
   }
@@ -100,9 +101,9 @@ void WellLegalizer::UpdatePNBoundary(Block const &block) {
    * 1. If the newly placed gate block the alignment line, remove those lines.
    * 2. Adding a new line, which is the P/N boundary of this block.
    * ****/
-  auto it_lower = p_n_boundary.lower_bound (block.LLY());
-  auto it_upper = p_n_boundary.upper_bound (block.URY());
-  p_n_boundary.erase(it_lower,it_upper);
+  auto it_lower = p_n_boundary.lower_bound(block.LLY());
+  auto it_upper = p_n_boundary.upper_bound(block.URY());
+  p_n_boundary.erase(it_lower, it_upper);
   p_n_boundary.insert(block.LLY() + block.Type()->well_->GetPNBoundary());
 }
 
@@ -119,7 +120,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
 
   int height = block.Height();
   int start_row = 0;
-  int end_row = Top()-Bottom()-height;
+  int end_row = Top() - Bottom() - height;
   //std::cout << "    Starting row: " << start_row << "\n"
   //          << "    Ending row:   " << end_row   << "\n"
   //          << "    Block Height: " << block.Height() << "\n"
@@ -140,7 +141,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
     // 1. find the non-overlap location
     tmp_end_row = tmp_row + height - 1;
     tmp_loc = Left();
-    for (int i = tmp_row; i <= tmp_end_row; ++i){
+    for (int i = tmp_row; i <= tmp_end_row; ++i) {
       tmp_loc = std::max(tmp_loc, all_rows_[i].start);
     }
 
@@ -207,7 +208,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
 
     tmp_cost = std::abs(tmp_loc - init_x) + std::abs(tmp_row + Bottom() - init_y);
     bool is_abutted = false;
-    for (int i = tmp_row; i <= tmp_end_row; ++i){
+    for (int i = tmp_row; i <= tmp_end_row; ++i) {
       if (all_rows_[i].start == tmp_loc) {
         is_abutted = true;
         break;
@@ -283,7 +284,7 @@ void WellLegalizer::StartPlacement() {
     std::cout << "Start Well Legalization\n";
   }
   std::vector<Block> &block_list = *BlockList();
-  for (size_t i=0; i<index_loc_list_.size(); ++i) {
+  for (size_t i = 0; i < index_loc_list_.size(); ++i) {
     index_loc_list_[i].num = i;
     index_loc_list_[i].x = block_list[i].LLX();
     index_loc_list_[i].y = block_list[i].LLY();

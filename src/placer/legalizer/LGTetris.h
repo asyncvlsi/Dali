@@ -15,11 +15,11 @@
 #ifndef HPCC_SRC_PLACER_LEGALIZER_LGTETRIS_H_
 #define HPCC_SRC_PLACER_LEGALIZER_LGTETRIS_H_
 
-#include "placer.h"
-#include "LGTetris/tetrisspace.h"
 #include "common/misc.h"
+#include "LGTetris/tetrisspace.h"
+#include "placer/placer.h"
 
-class TetrisLegalizer: public Placer {
+class TetrisLegalizer : public Placer {
  private:
   int max_iteration_;
   int current_iteration_;

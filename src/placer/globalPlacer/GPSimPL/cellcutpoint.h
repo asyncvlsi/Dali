@@ -9,17 +9,22 @@
 
 class CellCutPoint {
  public:
-  CellCutPoint();
-  CellCutPoint(double x0, double y0);
+  CellCutPoint() : x(0), y(0) {}
+  CellCutPoint(double x0, double y0) : x(x0), y(y0) {}
   double x;
   double y;
-  void init() {x = 0; y = 0;};
-  bool operator <(const CellCutPoint &rhs) const;
-  bool operator >(const CellCutPoint &rhs) const;
-  bool operator ==(const CellCutPoint &rhs) const;
-  friend std::ostream& operator<<(std::ostream& os, const CellCutPoint &cut_point) {
-    os << "(" << cut_point.x << ", " << cut_point.y << ")";
-    return os;
+  void init() {
+    x = 0;
+    y = 0;
+  };
+  bool operator<(const CellCutPoint &rhs) const {
+    return (x < rhs.x) || ((x == rhs.x) && (y < rhs.y));
+  }
+  bool operator>(const CellCutPoint &rhs) const {
+    return (x > rhs.x) || ((x == rhs.x) && (y > rhs.y));
+  }
+  bool operator==(const CellCutPoint &rhs) const {
+    return (x == rhs.x) && (y == rhs.y);
   }
 };
 

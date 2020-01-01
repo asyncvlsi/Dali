@@ -5,8 +5,9 @@
 #ifndef HPCC_SRC_PLACER_DETAILEDPLACER_DPSWAP_H_
 #define HPCC_SRC_PLACER_DETAILEDPLACER_DPSWAP_H_
 
-#include "MDPlacer.h"
 #include <unordered_set>
+
+#include "MDPlacer.h"
 #include "MDPlacer/bin.h"
 
 class DPSwap: public MDPlacer {

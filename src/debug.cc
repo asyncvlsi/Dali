@@ -2,12 +2,13 @@
 // Created by Yihang Yang on 2019-05-14.
 //
 
-#include <iostream>
-#include <vector>
 #include <ctime>
 
-#include "opendb.h"
+#include <iostream>
+#include <vector>
+
 #include "circuit.h"
+#include "opendb.h"
 #include "placer.h"
 
 VerboseLevel globalVerboseLevel = LOG_DEBUG;
@@ -23,7 +24,7 @@ int main() {
   std::string def_file_name = "Pbenchmark_10K.def";
 
 #ifdef USE_OPENDB
-  odb::dbDatabase* db = odb::dbDatabase::create();
+  odb::dbDatabase *db = odb::dbDatabase::create();
   std::vector<std::string> defFileVec;
   defFileVec.push_back(def_file_name);
   odb_read_lef(db, lef_file_name.c_str());
@@ -34,7 +35,7 @@ int main() {
   circuit.ReadDefFile(def_file_name);
 #endif
 
-  std::cout << "File loading complete, time: " << double(Time)/CLOCKS_PER_SEC << "s\n";
+  std::cout << "File loading complete, time: " << double(Time) / CLOCKS_PER_SEC << "s\n";
 
   circuit.ReportBriefSummary();
   //circuit.ReportBlockType();
@@ -74,7 +75,6 @@ int main() {
   delete well_legalizer;
 #endif
 
-
   delete gb_placer;
   //delete d_placer;
   delete legalizer;
@@ -84,7 +84,7 @@ int main() {
 #endif
 
   Time = clock() - Time;
-  std::cout << "Execution time " << double(Time)/CLOCKS_PER_SEC << "s.\n";
+  std::cout << "Execution time " << double(Time) / CLOCKS_PER_SEC << "s.\n";
 
   return 0;
 }

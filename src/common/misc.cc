@@ -22,7 +22,7 @@ void Warning(bool e, const std::string &warning_message) {
 }
 
 void StrSplit(std::string &line, std::vector<std::string> &res) {
-  static std::vector<char> delimiter_list {' ', ':', ';', '\t', '\r', '\n'};
+  static std::vector<char> delimiter_list{' ', ':', ';', '\t', '\r', '\n'};
 
   res.clear();
   std::string empty_str;
@@ -58,15 +58,15 @@ int FindFirstDigit(std::string &str) {
 
   int res = -1;
   int sz = str.size();
-  for (int i=0; i<sz; ++i) {
-    if (str[i]>='0' && str[i]<= '9') {
+  for (int i = 0; i < sz; ++i) {
+    if (str[i] >= '0' && str[i] <= '9') {
       res = i;
       break;
     }
   }
   if (res > 0) {
-    for (int i=res+1; i<sz; ++i) {
-      Assert(str[i]>='0'&&str[i]<='9', "Invalid naming convention: " + str);
+    for (int i = res + 1; i < sz; ++i) {
+      Assert(str[i] >= '0' && str[i] <= '9', "Invalid naming convention: " + str);
     }
   }
   return res;

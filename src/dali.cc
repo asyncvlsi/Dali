@@ -4,14 +4,14 @@
 
 #include <ctime>
 
-#include <iostream>
 #include <chrono>
-#include <ratio>
 #include <algorithm>
+#include <iostream>
+#include <ratio>
 
+#include "circuit.h"
 #include "common/global.h"
 #include "opendb.h"
-#include "circuit.h"
 #include "placer.h"
 
 VerboseLevel globalVerboseLevel = LOG_CRITICAL;
@@ -21,7 +21,7 @@ void ReportUsage();
 int main(int argc, char *argv[]) {
   using std::chrono::system_clock;
   system_clock::time_point today = system_clock::now();
-  std::time_t tt = system_clock::to_time_t (today);
+  std::time_t tt = system_clock::to_time_t(today);
   std::cout << "today is: " << ctime(&tt) << std::endl;
 
   if (argc < 5) {
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
   time_t Time = clock();
   Circuit circuit;
 
-  for( int i = 1; i < argc; ) {
+  for (int i = 1; i < argc;) {
     std::string arg(argv[i++]);
     if (arg == "-lef" && i < argc) {
       lef_file_name = std::string(argv[i++]);
@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
         ReportUsage();
         return 1;
       }
-    } else if ((arg=="-g" || arg=="-grid") && i < argc) {
+    } else if ((arg == "-g" || arg == "-grid") && i < argc) {
       str_x_grid = std::string(argv[i++]);
       str_y_grid = std::string(argv[i++]);
       try {
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
         ReportUsage();
         return 1;
       }
-    } else if ((arg=="-d" || arg=="-density") && i < argc) {
+    } else if ((arg == "-d" || arg == "-density") && i < argc) {
       str_target_density = std::string(argv[i++]);
       try {
         target_density = std::stod(str_target_density);
@@ -104,13 +104,13 @@ int main(int argc, char *argv[]) {
       } catch (...) {
         tmp = -1;
       }
-      if (tmp>5 || tmp<0) {
+      if (tmp > 5 || tmp < 0) {
         std::cout << "Invalid verbosity level\n";
         ReportUsage();
         return 0;
       }
-      globalVerboseLevel = (VerboseLevel)tmp;
-    } else if (arg=="-wp" && i < argc) {
+      globalVerboseLevel = (VerboseLevel) tmp;
+    } else if (arg == "-wp" && i < argc) {
       plot_file = std::string(argv[i++]);
       if (plot_file.empty()) {
         std::cout << "Invalid output name!\n";
@@ -124,14 +124,14 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if ((lef_file_name.empty())||(def_file_name.empty())) {
+  if ((lef_file_name.empty()) || (def_file_name.empty())) {
     std::cout << "Invalid input files!\n";
     ReportUsage();
     return 1;
   }
 
 #ifdef USE_OPENDB
-  odb::dbDatabase* db = odb::dbDatabase::create();
+  odb::dbDatabase *db = odb::dbDatabase::create();
   std::vector<std::string> defFileVec;
   defFileVec.push_back(def_file_name);
   odb_read_lef(db, lef_file_name.c_str());
@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
 #endif
 
   Time = clock() - Time;
-  std::cout << "File loading complete, time: " << float(Time)/CLOCKS_PER_SEC << "s\n";
+  std::cout << "File loading complete, time: " << float(Time) / CLOCKS_PER_SEC << "s\n";
   circuit.ReportBriefSummary();
   circuit.ReportHPWL();
 
@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
   time_t gp_time = clock() - Time;
-  std::cout << "global placement complete, time: " << float(gp_time)/CLOCKS_PER_SEC << "s\n";
+  std::cout << "global placement complete, time: " << float(gp_time) / CLOCKS_PER_SEC << "s\n";
 
   /*Placer *d_placer = new MDPlacer;
   d_placer->TakeOver(gb_placer);
@@ -173,7 +173,7 @@ int main(int argc, char *argv[]) {
   legalizer->TakeOver(gb_placer);
   legalizer->StartPlacement();
   time_t lg_time = clock() - gp_time;
-  std::cout << "legalization complete, time: " << float(lg_time)/CLOCKS_PER_SEC << "s\n";
+  std::cout << "legalization complete, time: " << float(lg_time) / CLOCKS_PER_SEC << "s\n";
 
   if (!cell_file_name.empty()) {
     circuit.ReadCellFile(cell_file_name);
@@ -192,7 +192,7 @@ int main(int argc, char *argv[]) {
   delete legalizer;
 
   Time = clock() - Time;
-  std::cout << "Execution time " << float(Time)/CLOCKS_PER_SEC << "s.\n";
+  std::cout << "Execution time " << float(Time) / CLOCKS_PER_SEC << "s.\n";
   if (!output_name.empty()) {
     circuit.SaveDefFile(output_name, def_file_name);
   }

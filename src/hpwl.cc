@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
   std::string str_grid_value_x, str_grid_value_y;
   std::string str_verbose_level;
 
-  for( int i = 1; i < argc; ) {
+  for (int i = 1; i < argc;) {
     std::string arg(argv[i++]);
     if (arg == "-lef" && i < argc) {
       lef_file_name = std::string(argv[i++]);
@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 
   Circuit circuit;
 #ifdef USE_OPENDB
-  odb::dbDatabase* db = odb::dbDatabase::create();
+  odb::dbDatabase *db = odb::dbDatabase::create();
   std::vector<std::string> defFileVec;
   defFileVec.push_back(def_file_name);
   odb_read_lef(db, lef_file_name.c_str());

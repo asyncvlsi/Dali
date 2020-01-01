@@ -5,12 +5,13 @@
 #ifndef HPCC_SRC_PLACER_DETAILEDPLACER_MDPLACER_MDBLKAUX_H_
 #define HPCC_SRC_PLACER_DETAILEDPLACER_MDPLACER_MDBLKAUX_H_
 
-#include <vector>
 #include <set>
-#include "../../../circuit/net.h"
-#include "../../../circuit/blockaux.h"
-#include "../../../common/misc.h"
+#include <vector>
+
 #include "bin.h"
+#include "circuit/net.h"
+#include "circuit/blockaux.h"
+#include "common/misc.h"
 
 class MDBlkAux: public BlockAux {
  private:

@@ -5,21 +5,21 @@
 #ifndef DALI_CIRCUIT_HPP
 #define DALI_CIRCUIT_HPP
 
-#include <vector>
-#include <set>
 #include <map>
+#include <set>
 #include <unordered_map>
+#include <vector>
 
-#include "status.h"
-#include "layer.h"
-#include "tech.h"
-#include "design.h"
+#include "block.h"
 #include "blocktype.h"
 #include "blocktypewell.h"
-#include "block.h"
+#include "design.h"
 #include "iopin.h"
+#include "layer.h"
 #include "net.h"
 #include "opendb.h"
+#include "status.h"
+#include "tech.h"
 
 class Circuit {
   friend class Placer;
@@ -42,11 +42,11 @@ class Circuit {
   double grid_value_x_;
   double grid_value_y_;
 
-  Tech * tech_param_;
-  Design * design_;
+  Tech *tech_param_;
+  Design *design_;
   WellInfo well_info_;
 #ifdef USE_OPENDB
-  odb::dbDatabase * db_;
+  odb::dbDatabase *db_;
 #endif
  public:
   Circuit();
@@ -57,8 +57,8 @@ class Circuit {
    * 2. from LEF/DEF directly
    * ****/
 #ifdef USE_OPENDB
-  explicit Circuit(odb::dbDatabase* db);
-  void InitializeFromDB(odb::dbDatabase* db);
+  explicit Circuit(odb::dbDatabase *db);
+  void InitializeFromDB(odb::dbDatabase *db);
 #else
   void ReadLefFile(std::string const &name_of_file);
   void ReadDefFile(std::string const &name_of_file);
@@ -66,8 +66,8 @@ class Circuit {
 
   /****API to set grid value****/
   void SetGridValue(double grid_value_x, double grid_value_y);
-  double GetGridValueX() const {return grid_value_x_;} // unit in micro
-  double GetGridValueY() const {return grid_value_y_;}
+  double GetGridValueX() const { return grid_value_x_; } // unit in micro
+  double GetGridValueY() const { return grid_value_y_; }
   void SetGridUsingMetalPitch();
 
   /****API to set metal layers: deprecated
@@ -85,7 +85,7 @@ class Circuit {
   /****API for BlockType
    * These are MACRO section in LEF
    * ****/
-  std::unordered_map<std::string, BlockType*> block_type_map;
+  std::unordered_map<std::string, BlockType *> block_type_map;
   bool IsBlockTypeExist(std::string &block_type_name);
   BlockType *GetBlockType(std::string &block_type_name);
   BlockType *AddBlockType(std::string &block_type_name, unsigned int width, unsigned int height);
@@ -98,10 +98,10 @@ class Circuit {
   int def_left = 0, def_right = 0, def_bottom = 0, def_top = 0;
   void SetBoundary(int left, int right, int bottom, int top); // unit in grid value
   void SetDieArea(int lower_x, int upper_x, int lower_y, int upper_y); // unit in um
-  int Left() {return def_left;}
-  int Right() {return def_right;}
-  int Bottom() {return def_bottom;}
-  int Top() {return def_top;}
+  int Left() { return def_left; }
+  int Right() { return def_right; }
+  int Bottom() { return def_bottom; }
+  int Top() { return def_top; }
 
   /****API for Block
    * These are COMPONENTS section in DEF
@@ -111,10 +111,30 @@ class Circuit {
   bool IsBlockExist(std::string &block_name);
   int BlockIndex(std::string &block_name);
   Block *GetBlock(std::string &block_name);
-  void AddBlock(std::string &block_name, BlockType *block_type, int llx = 0, int lly = 0, bool movable = true, BlockOrient orient= N);
-  void AddBlock(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, bool movable = true, BlockOrient orient= N);
-  void AddBlock(std::string &block_name, BlockType *block_type, int llx = 0, int lly = 0, PlaceStatus place_status = UNPLACED, BlockOrient orient= N);
-  void AddBlock(std::string &block_name, std::string &block_type_name, int llx = 0, int lly = 0, PlaceStatus place_status = UNPLACED, BlockOrient orient= N);
+  void AddBlock(std::string &block_name,
+                BlockType *block_type,
+                int llx = 0,
+                int lly = 0,
+                bool movable = true,
+                BlockOrient orient = N);
+  void AddBlock(std::string &block_name,
+                std::string &block_type_name,
+                int llx = 0,
+                int lly = 0,
+                bool movable = true,
+                BlockOrient orient = N);
+  void AddBlock(std::string &block_name,
+                BlockType *block_type,
+                int llx = 0,
+                int lly = 0,
+                PlaceStatus place_status = UNPLACED,
+                BlockOrient orient = N);
+  void AddBlock(std::string &block_name,
+                std::string &block_type_name,
+                int llx = 0,
+                int lly = 0,
+                PlaceStatus place_status = UNPLACED,
+                BlockOrient orient = N);
   void ReportBlockList();
   void ReportBlockMap();
 
@@ -160,7 +180,7 @@ class Circuit {
   BlockTypeWell *AddBlockTypeWell(BlockTypeCluster *cluster, std::string &blk_type_name, bool is_plug);
   void SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist);
   void SetPWellParams(double width, double spacing, double op_spacing, double max_plug_dist);
-  Tech *GetTech() const {return tech_param_;}
+  Tech *GetTech() const { return tech_param_; }
   void ReadCellFile(std::string const &name_of_file);
   void ReportWellShape();
 
@@ -176,21 +196,21 @@ class Circuit {
   // repulsive force can be created using an attractive force, a spring whose rest length in the current distance or even longer than the current distance
 
   /****Other member functions****/
-  int MinWidth() const {return blk_min_width_;}
-  int MaxWidth() const {return  blk_max_width_;}
-  int MinHeight() const {return blk_min_height_;}
-  int MaxHeight() const {return  blk_max_height_;}
-  unsigned long int TotArea() const {return tot_blk_area_;}
-  int TotBlockNum() const {return block_list.size();}
-  int TotMovableBlockNum() const {return tot_mov_blk_num_;}
-  unsigned int TotFixedBlkCnt() const {return block_list.size() - tot_mov_blk_num_;}
-  double AveWidth() const {return double(tot_width_)/double(TotBlockNum());}
-  double AveHeight() const {return double(tot_height_)/double(TotBlockNum());}
-  double AveArea() const {return double(tot_blk_area_)/(double)TotBlockNum();}
-  double AveMovWidth() const {return double(tot_mov_width_)/TotMovableBlockNum();}
-  double AveMovHeight() const {return double(tot_mov_height_)/TotMovableBlockNum();}
-  double AveMovArea() const {return double(tot_mov_block_area_)/TotMovableBlockNum();}
-  double WhiteSpaceUsage() const {return double(TotArea())/(def_right-def_left)/(def_top-def_bottom);}
+  int MinWidth() const { return blk_min_width_; }
+  int MaxWidth() const { return blk_max_width_; }
+  int MinHeight() const { return blk_min_height_; }
+  int MaxHeight() const { return blk_max_height_; }
+  unsigned long int TotArea() const { return tot_blk_area_; }
+  int TotBlockNum() const { return block_list.size(); }
+  int TotMovableBlockNum() const { return tot_mov_blk_num_; }
+  unsigned int TotFixedBlkCnt() const { return block_list.size() - tot_mov_blk_num_; }
+  double AveWidth() const { return double(tot_width_) / double(TotBlockNum()); }
+  double AveHeight() const { return double(tot_height_) / double(TotBlockNum()); }
+  double AveArea() const { return double(tot_blk_area_) / (double) TotBlockNum(); }
+  double AveMovWidth() const { return double(tot_mov_width_) / TotMovableBlockNum(); }
+  double AveMovHeight() const { return double(tot_mov_height_) / TotMovableBlockNum(); }
+  double AveMovArea() const { return double(tot_mov_block_area_) / TotMovableBlockNum(); }
+  double WhiteSpaceUsage() const { return double(TotArea()) / (def_right - def_left) / (def_top - def_bottom); }
 
   void NetSortBlkPin();
   double HPWLX();
@@ -203,8 +223,8 @@ class Circuit {
   void ReportHPWLCtoC();
 
   /****dump placement results to various file formats****/
-  void WriteDefFileDebug(std::string const &name_of_file= "circuit.def");
-  void GenMATLABScript(std::string const &name_of_file= "block_net_list.m");
+  void WriteDefFileDebug(std::string const &name_of_file = "circuit.def");
+  void GenMATLABScript(std::string const &name_of_file = "block_net_list.m");
   void GenMATLABTable(std::string const &name_of_file = "block.txt");
   void GenMATLABWellTable(std::string const &name_of_file = "res");
   void SaveDefFile(std::string const &name_of_file, std::string const &def_file_name);

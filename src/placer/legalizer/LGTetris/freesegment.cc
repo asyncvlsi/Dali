@@ -4,16 +4,16 @@
 
 #include "freesegment.h"
 
-FreeSegment::FreeSegment(int start, int stop): start_(start), end_(stop) {
+FreeSegment::FreeSegment(int start, int stop) : start_(start), end_(stop) {
   assert(start <= stop);
 }
 
-bool FreeSegment::SetPrev(FreeSegment* preFreeSeg_ptr) {
+bool FreeSegment::SetPrev(FreeSegment *preFreeSeg_ptr) {
   prev_ = preFreeSeg_ptr;
   return true;
 }
 
-bool FreeSegment::SetNext(FreeSegment* nextFreeSeg_ptr) {
+bool FreeSegment::SetNext(FreeSegment *nextFreeSeg_ptr) {
   next_ = nextFreeSeg_ptr;
   return true;
 }
@@ -30,12 +30,12 @@ bool FreeSegment::LinkSingleSeg(FreeSegment *seg_ptr) {
   return (SetNext(seg_ptr) && seg_ptr->SetPrev(this));
 }
 
-FreeSegment* FreeSegment::Next() {
+FreeSegment *FreeSegment::Next() {
   return next_;
 }
 
-FreeSegment* FreeSegment::Prev() {
-  return  prev_;
+FreeSegment *FreeSegment::Prev() {
+  return prev_;
 }
 
 void FreeSegment::SetSpan(int startLoc, int endLoc) {
@@ -49,18 +49,18 @@ void FreeSegment::SetSpan(int startLoc, int endLoc) {
 }
 
 int FreeSegment::Start() const {
-  return  start_;
+  return start_;
 }
 
 int FreeSegment::End() const {
-  return  end_;
+  return end_;
 }
 
 int FreeSegment::Length() const {
   return end_ - start_;
 }
 
-bool FreeSegment::IsOverlap(FreeSegment* seg) const {
+bool FreeSegment::IsOverlap(FreeSegment *seg) const {
   if ((Length() == 0) || (seg->Length() == 0)) {
     std::cout << "Length 0 segment?!\n";
     return false;
@@ -69,7 +69,7 @@ bool FreeSegment::IsOverlap(FreeSegment* seg) const {
   return !notOverlap;
 }
 
-bool FreeSegment::IsTouch(FreeSegment* seg) const {
+bool FreeSegment::IsTouch(FreeSegment *seg) const {
   if ((Length() == 0) || (seg->Length() == 0)) {
     std::cout << "Length 0 segment?!\n";
     return false;
@@ -77,7 +77,7 @@ bool FreeSegment::IsTouch(FreeSegment* seg) const {
   return (end_ == seg->Start()) || (start_ == seg->End());
 }
 
-bool FreeSegment::IsDominate(FreeSegment* seg) const {
+bool FreeSegment::IsDominate(FreeSegment *seg) const {
   /****
    * If this FreeSegment is on the right hand side of seg, and has common overlap length 0, return true
    *
@@ -88,7 +88,7 @@ bool FreeSegment::IsDominate(FreeSegment* seg) const {
   return (start_ >= seg->End());
 }
 
-bool FreeSegment::IsContain(FreeSegment* seg) const {
+bool FreeSegment::IsContain(FreeSegment *seg) const {
   /****
    * If this FreeSegment contains seg, return true
    * true condition:
@@ -100,11 +100,11 @@ bool FreeSegment::IsContain(FreeSegment* seg) const {
   return (start_ <= seg->Start()) && (end_ >= seg->End());
 }
 
-bool FreeSegment::IsSameStartEnd(FreeSegment* seg) const {
+bool FreeSegment::IsSameStartEnd(FreeSegment *seg) const {
   return (start_ == seg->Start()) && (end_ == seg->End());
 }
 
-FreeSegment* FreeSegment::SingleSegAnd(FreeSegment* seg) {
+FreeSegment *FreeSegment::SingleSegAnd(FreeSegment *seg) {
   if (!IsOverlap(seg)) {
     return nullptr;
   }
@@ -112,7 +112,7 @@ FreeSegment* FreeSegment::SingleSegAnd(FreeSegment* seg) {
   return result;
 }
 
-FreeSegment* FreeSegment::SingleSegOr(FreeSegment* seg) {
+FreeSegment *FreeSegment::SingleSegOr(FreeSegment *seg) {
   if ((Length() == 0) && (seg->Length() == 0)) {
     std::cout << "What?! two segments with Length 0 for OR operation\n";
     return nullptr;
@@ -145,8 +145,8 @@ FreeSegment* FreeSegment::SingleSegOr(FreeSegment* seg) {
 }
 
 void FreeSegment::Clear() {
-  FreeSegment* current = this;
-  FreeSegment* next = nullptr;
+  FreeSegment *current = this;
+  FreeSegment *next = nullptr;
   while (current != nullptr) {
     next = current->Next();
     delete current;

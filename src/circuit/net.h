@@ -61,10 +61,10 @@ class Net {
   double HPWLY();
   double HPWL();
 
-  double Left()   {return blk_pin_list[min_pin_x_].AbsX();}
-  double Right()  {return blk_pin_list[max_pin_x_].AbsX();}
-  double Bottom() {return blk_pin_list[min_pin_y_].AbsY();}
-  double Top()    {return blk_pin_list[max_pin_y_].AbsY();}
+  double Left() { return blk_pin_list[min_pin_x_].AbsX(); }
+  double Right() { return blk_pin_list[max_pin_x_].AbsX(); }
+  double Bottom() { return blk_pin_list[min_pin_y_].AbsY(); }
+  double Top() { return blk_pin_list[max_pin_y_].AbsY(); }
 
   void UpdateMaxMinCtoCX();
   void UpdateMaxMinCtoCY();

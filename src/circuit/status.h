@@ -29,7 +29,7 @@ enum BlockOrient {
 };
 
 BlockOrient StrToOrient(std::string &str_orient);
-BlockOrient StrToOrient(const char * str_orient);
+BlockOrient StrToOrient(const char *str_orient);
 std::string OrientStr(BlockOrient orient);
 
 enum PlaceStatus {
@@ -50,7 +50,7 @@ enum SignalDirection {
   FEEDTHRU_ = 3
 };
 
-SignalDirection  StrToSignalDirection(std::string &str_signal_direction);
+SignalDirection StrToSignalDirection(std::string &str_signal_direction);
 std::string SignalDirectionStr(SignalDirection signal_direction);
 
 #endif //DALI_SRC_CIRCUIT_STATUS_H_

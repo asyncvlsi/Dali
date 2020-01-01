@@ -5,7 +5,7 @@
 #ifndef DALI_SRC_SOLVER_H_
 #define DALI_SRC_SOLVER_H_
 
-#include "Eigen/Sparse"
 #include "Eigen/IterativeLinearSolvers"
+#include "Eigen/Sparse"
 
 #endif //DALI_SRC_SOLVER_H_

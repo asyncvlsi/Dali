@@ -8,12 +8,12 @@ project(DALI
 
 set(CMAKE_CXX_STANDARD 11)
 
-set(use_opendb TRUE)
+set(macro_names "-D USE_OPENDB")
 
 # The flag USE_OPENDB
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_OPENDB=${use_opendb} -std=c++11 -O3 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -DUSE_OPENDB=${use_opendb} -std=c++11 -O3 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DUSE_OPENDB=${use_opendb} -std=c++11 -O3 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${macro_names} -std=c++11 -O3 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g ${macro_names} -std=c++11 -O3 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${macro_names} -std=c++11 -O3 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
 
 # Set the output directory of static libraries
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
@@ -23,13 +23,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
 # Set a default build type if none was specified
 set(default_build_type "Release")
-if(NOT CMAKE_BUILD_TYPE)
+if (NOT CMAKE_BUILD_TYPE)
   message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
   set(CMAKE_BUILD_TYPE "${default_build_type}")
   # Set the possible values of build type for cmake-gui
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
       "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-endif()
+endif ()
 
 add_subdirectory(module/OpenDB
     EXCLUDE_FROM_ALL)
@@ -90,24 +90,24 @@ target_link_libraries(hpwl
 ######################################
 # Configure install destination directory
 ######################################
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR} CACHE PATH "installation path" FORCE)
-endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
 ######################################
 # Detect if $ACT_HOME exits, change the installation directory to ACT_HOME
 ######################################
 message(STATUS "Detecting environment variable ACT_HOME...")
-if(DEFINED ENV{ACT_HOME})
+if (DEFINED ENV{ACT_HOME})
   message(STATUS "Environment variable ACT_HOME detected: " $ENV{ACT_HOME})
-  if(FALSE)
+  if (FALSE)
     message(STATUS "Changing Installation directory to ACT_HOME")
     set(CMAKE_INSTALL_PREFIX $ENV{ACT_HOME} CACHE PATH "installation path" FORCE)
     message(STATUS "Current installation directory: " ${CMAKE_INSTALL_PREFIX})
-  endif()
-else()
+  endif ()
+else ()
   message(STATUS "Environment variable ACT_HOME not found")
-endif()
+endif ()
 
 ######################################
 # Install header files

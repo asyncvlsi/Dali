@@ -16,8 +16,8 @@ class Tech {
  public:
   Tech();
   ~Tech();
-  WellLayer *GetNLayer() const {return n_layer_;}
-  WellLayer *GetPLayer() const {return p_layer_;}
+  WellLayer *GetNLayer() const { return n_layer_; }
+  WellLayer *GetPLayer() const { return p_layer_; }
   void SetNLayer(double width, double spacing, double op_spacing, double max_plug_dist);
   void SetPLayer(double width, double spacing, double op_spacing, double max_plug_dist);
 

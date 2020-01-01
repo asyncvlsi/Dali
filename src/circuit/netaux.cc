@@ -4,7 +4,7 @@
 
 #include "netaux.h"
 
-NetAux::NetAux(Net *net): net_(net) {
+NetAux::NetAux(Net *net) : net_(net) {
   net_->SetAux(this);
 }
 

@@ -6,14 +6,15 @@
 
 #include "common/misc.h"
 
-SimPLBlockAux::SimPLBlockAux(Block *block): BlockAux(block) {}
+SimPLBlockAux::SimPLBlockAux(Block *block) : BlockAux(block) {}
 
 bool SimPLBlockAux::NetExist(Net *net) {
   return net_set.find(net) != net_set.end();
 }
 
 void SimPLBlockAux::InsertNet(Net *net) {
-  Assert(!NetExist(net), "Insertion not allowed: net " + *(net->Name()) + " has been in net_set of " + *(GetBlock()->Name()));
+  Assert(!NetExist(net),
+         "Insertion not allowed: net " + *(net->Name()) + " has been in net_set of " + *(GetBlock()->Name()));
   net_set.insert(net);
 }
 

@@ -13,7 +13,7 @@
 #include "freesegmentlist.h"
 
 class TetrisSpace {
-private:
+ private:
   int scan_line_;
   int left_;
   int right_;
@@ -21,10 +21,10 @@ private:
   int top_;
   int row_height_;
   int min_width_;
-  std::vector< FreeSegmentList > free_segment_rows;
+  std::vector<FreeSegmentList> free_segment_rows;
   /****derived data entry****/
   int tot_num_row_;
-public:
+ public:
   TetrisSpace(int left, int right, int bottom, int top, int rowHeight, int minWidth);
   int ToStartRow(int y_loc);
   int ToEndRow(int y_loc);
@@ -34,6 +34,5 @@ public:
   bool FindBlockLoc(int llx, int lly, int width, int height, int2d &result_loc);
   void Show();
 };
-
 
 #endif //HPCC_TETRISSPACE_H

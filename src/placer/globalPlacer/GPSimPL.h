@@ -19,10 +19,13 @@
 #include "GPSimPL/windowquadruple.h"
 #include "solver.h"
 
-typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat; // declares a row-major sparse matrix type of double
-typedef Eigen::Triplet<double> T; // A triplet is a simple object representing a non-zero entry as the triplet: row index, column index, value.
+// declares a row-major sparse matrix type of double
+typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat;
 
-class GPSimPL: public Placer {
+// A triplet is a simple object representing a non-zero entry as the triplet: row index, column index, value.
+typedef Eigen::Triplet<double> T;
+
+class GPSimPL : public Placer {
  protected:
   double HPWLX_new = 0;
   double HPWLY_new = 0;
@@ -47,35 +50,37 @@ class GPSimPL: public Placer {
  public:
   GPSimPL();
   GPSimPL(double aspectRatio, double fillingRate);
-  int TotBlockNum() { return GetCircuit()->TotBlockNum();};
-  void SetEpsilon() { width_epsilon = circuit_->AveMovWidth()/100.0;
-                      height_epsilon = circuit_->AveMovHeight()/100.0;};
-  double WidthEpsilon() {return width_epsilon;};
-  double HeightEpsilon() {return height_epsilon;};
+  int TotBlockNum() { return GetCircuit()->TotBlockNum(); };
+  void SetEpsilon() {
+    width_epsilon = circuit_->AveMovWidth() / 100.0;
+    height_epsilon = circuit_->AveMovHeight() / 100.0;
+  };
+  double WidthEpsilon() { return width_epsilon; };
+  double HeightEpsilon() { return height_epsilon; };
 
   std::minstd_rand0 generator{1};
   Eigen::VectorXd vx, vy;
   Eigen::VectorXd bx, by;
   SpMat Ax, Ay;
-  std::vector< double > x_anchor, y_anchor;
-  std::vector< T > coefficients;
+  std::vector<double> x_anchor, y_anchor;
+  std::vector<T> coefficients;
   //Eigen::ConjugateGradient  <SpMat, Eigen::Lower|Eigen::Upper> cgx;
   //Eigen::ConjugateGradient  <SpMat, Eigen::Lower|Eigen::Upper> cgy;
-  Eigen::ConjugateGradient  <SpMat, Eigen::Lower> cgx;
-  Eigen::ConjugateGradient  <SpMat, Eigen::Lower> cgy;
+  Eigen::ConjugateGradient<SpMat, Eigen::Lower> cgx;
+  Eigen::ConjugateGradient<SpMat, Eigen::Lower> cgy;
 
   void BlockLocInit();
   void CGInit();
   void InitCGFlags();
   void UpdateCGFlagsX();
-  void UpdateHPWLX() { HPWLX_new = HPWLX();};
-  void UpdateMaxMinX() {for (auto &&net: circuit_->net_list) net.UpdateMaxMinX();};
+  void UpdateHPWLX() { HPWLX_new = HPWLX(); };
+  void UpdateMaxMinX() { for (auto &&net: circuit_->net_list) net.UpdateMaxMinX(); };
   void UpdateMaxMinCtoCX();
   void UpdateCGFlagsY();
-  void UpdateHPWLY() { HPWLY_new = HPWLY();};
-  void UpdateMaxMinY() {for (auto &&net: circuit_->net_list) net.UpdateMaxMinY();};
+  void UpdateHPWLY() { HPWLY_new = HPWLY(); };
+  void UpdateMaxMinY() { for (auto &&net: circuit_->net_list) net.UpdateMaxMinY(); };
   void UpdateMaxMinCtoCY();
-  void AddMatrixElement(Net& net, int i, int j);
+  void AddMatrixElement(Net &net, int i, int j);
   void BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b);
   void BuildProblemB2BX();
   void BuildProblemB2BY();
@@ -88,8 +93,8 @@ class GPSimPL: public Placer {
   int grid_bin_width;
   int grid_cnt_y; // might distinguish the gird count in the x direction and y direction
   int grid_cnt_x;
-  std::vector< std::vector<GridBin> > grid_bin_matrix;
-  std::vector< std::vector<unsigned long int> > grid_bin_white_space_LUT;
+  std::vector<std::vector<GridBin> > grid_bin_matrix;
+  std::vector<std::vector<unsigned long int> > grid_bin_white_space_LUT;
   void InitGridBins();
   void InitWhiteSpaceLUT();
   unsigned long int LookUpWhiteSpace(GridBinIndex const &ll_index, GridBinIndex const &ur_index);
@@ -101,12 +106,12 @@ class GPSimPL: public Placer {
   void ClearGridBinFlag();
   void UpdateGridBinState();
 
-  std::vector< GridBinCluster > cluster_list;
+  std::vector<GridBinCluster> cluster_list;
   void ClusterOverfilledGridBin();
   void UpdateClusterArea();
   void UpdateClusterList();
 
-  std::queue < BoxBin > queue_box_bin;
+  std::queue<BoxBin> queue_box_bin;
   static double BlkOverlapArea(Block *node1, Block *node2);
   void FindMinimumBoxForLargestCluster();
   void SplitBox(BoxBin &box);
@@ -128,7 +133,7 @@ class GPSimPL: public Placer {
 
   void StartPlacement() override;
 
-  void DrawBlockNetList(std::string const &name_of_file= "block_net_list.txt");
+  void DrawBlockNetList(std::string const &name_of_file = "block_net_list.txt");
   void write_all_terminal_grid_bins(std::string const &name_of_file);
   void write_not_all_terminal_grid_bins(std::string const &name_of_file);
   void write_overfill_grid_bins(std::string const &name_of_file);

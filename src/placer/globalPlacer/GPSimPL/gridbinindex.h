@@ -8,32 +8,39 @@
 #include <iostream>
 #include <set>
 
-class GridBinIndex {
+struct GridBinIndex {
  public:
-  GridBinIndex();
-  GridBinIndex(int x0, int y0);
+  GridBinIndex() : x(0), y(0) {}
+  GridBinIndex(int x0, int y0) : x(x0), y(y0) {}
   int x;
   int y;
-  void init() {x = 0; y = 0;};
-  bool operator <(const GridBinIndex &rhs) const;
-  bool operator >(const GridBinIndex &rhs) const;
-  bool operator ==(const GridBinIndex &rhs) const;
-  /*friend std::ostream& operator<<(std::ostream& os, const GridBinIndex &index) {
-    os << "(" << index.x << ", " << index.y << ")";
-    return os;
-  }*/
+  void init() {
+    x = 0;
+    y = 0;
+  };
+  bool operator<(const GridBinIndex &rhs) const {
+    bool is_less = (x < rhs.x) || ((x == rhs.x) && (y < rhs.y));
+    return is_less;
+  }
+  bool operator>(const GridBinIndex &rhs) const {
+    bool is_great = (x > rhs.x) || ((x == rhs.x) && (y > rhs.y));
+    return is_great;
+  }
+  bool operator==(const GridBinIndex &rhs) const {
+    return ((x == rhs.x) && (y == rhs.y));
+  }
 };
 
-class GridBinCluster {
+struct GridBinCluster {
  public:
-  GridBinCluster();
+  GridBinCluster() : total_cell_area(0), total_white_space(0) {}
   unsigned long int total_cell_area;
   unsigned long int total_white_space;
   std::set<GridBinIndex> bin_set;
-  bool operator < (const GridBinCluster& rhs) const {
+  bool operator<(const GridBinCluster &rhs) const {
     return (total_cell_area < rhs.total_cell_area);
   }
-  bool operator > (const GridBinCluster& rhs) const {
+  bool operator>(const GridBinCluster &rhs) const {
     return (total_cell_area > rhs.total_cell_area);
   }
 };

@@ -52,18 +52,18 @@ bool Placer::IsBoundaryProper() {
 void Placer::SetBoundaryAuto() {
   Assert(circuit_ != nullptr, "Must set input circuit before setting boundaries");
   unsigned long int tot_block_area = circuit_->TotArea();
-  int width = std::ceil(std::sqrt(double(tot_block_area)/aspect_ratio_/filling_rate_));
+  int width = std::ceil(std::sqrt(double(tot_block_area) / aspect_ratio_ / filling_rate_));
   int height = std::ceil(width * aspect_ratio_);
   std::cout << "Pre-set aspect ratio: " << aspect_ratio_ << "\n";
-  aspect_ratio_ = height/(double)width;
+  aspect_ratio_ = height / (double) width;
   std::cout << "Adjusted aspect rate: " << aspect_ratio_ << "\n";
-  left_ = (int)(circuit_->AveWidth());
+  left_ = (int) (circuit_->AveWidth());
   right_ = left_ + width;
-  bottom_ = (int)(circuit_->AveWidth());
+  bottom_ = (int) (circuit_->AveWidth());
   top_ = bottom_ + height;
   int area = height * width;
   std::cout << "Pre-set filling rate: " << filling_rate_ << "\n";
-  filling_rate_ = double(tot_block_area)/area;
+  filling_rate_ = double(tot_block_area) / area;
   std::cout << "Adjusted filling rate: " << filling_rate_ << "\n";
   Assert(IsBoundaryProper(), "Invalid boundary setting");
 }
@@ -78,7 +78,7 @@ void Placer::SetBoundary(int left, int right, int bottom, int top) {
   if (globalVerboseLevel >= LOG_INFO) {
     std::cout << "Pre-set filling rate: " << filling_rate_ << "\n";
   }
-  filling_rate_ = (double)tot_block_area/(double)tot_area;
+  filling_rate_ = (double) tot_block_area / (double) tot_area;
   if (globalVerboseLevel >= LOG_INFO) {
     std::cout << "Adjusted filling rate: " << filling_rate_ << "\n";
   }
@@ -113,7 +113,7 @@ void Placer::UpdateAspectRatio() {
     }
     exit(1);
   }
-  aspect_ratio_ = (top_ - bottom_)/(double)(right_ - left_);
+  aspect_ratio_ = (top_ - bottom_) / (double) (right_ - left_);
 }
 
 void Placer::TakeOver(Placer *placer) {
@@ -145,20 +145,19 @@ bool Placer::SaveNodeTerminal(std::string const &terminal_file, std::string cons
   for (auto &&block: circuit_->block_list) {
     if (block.IsMovable()) {
       ost1 << block.X() << "\t" << block.Y() << "\n";
-    }
-    else {
+    } else {
       double low_x, low_y, width, height;
       width = block.Width();
       height = block.Height();
       low_x = block.LLX();
       low_y = block.LLY();
-      for (int j=0; j<height; j++) {
-        ost << low_x << "\t" << low_y+j << "\n";
-        ost << low_x+width << "\t" << low_y+j << "\n";
+      for (int j = 0; j < height; j++) {
+        ost << low_x << "\t" << low_y + j << "\n";
+        ost << low_x + width << "\t" << low_y + j << "\n";
       }
-      for (int j=0; j<width; j++) {
-        ost << low_x+j << "\t" << low_y << "\n";
-        ost << low_x+j << "\t" << low_y+height << "\n";
+      for (int j = 0; j < width; j++) {
+        ost << low_x + j << "\t" << low_y << "\n";
+        ost << low_x + j << "\t" << low_y + height << "\n";
       }
     }
   }
@@ -190,8 +189,8 @@ void Placer::SaveDEFFile(std::string const &name_of_file) {
         << *(block.Type()->Name()) << " + "
         << "PLACED"
         << " ("
-        << " " + std::to_string((int)(block.LLX()*circuit_->def_distance_microns* circuit_->GetGridValueX()))
-        << " " + std::to_string((int)(block.LLY()*circuit_->def_distance_microns* circuit_->GetGridValueY()))
+        << " " + std::to_string((int) (block.LLX() * circuit_->def_distance_microns * circuit_->GetGridValueX()))
+        << " " + std::to_string((int) (block.LLY() * circuit_->def_distance_microns * circuit_->GetGridValueY()))
         << " ) "
         << OrientStr(block.Orient()) + " ;\n";
   }
@@ -221,7 +220,7 @@ void Placer::SaveDEFFile(std::string const &name_of_file, std::string const &inp
   std::string line;
   // 1. print file header, copy from def file
   while (line.find("COMPONENTS") == std::string::npos && !ist.eof()) {
-    getline(ist,line);
+    getline(ist, line);
     ost << line << "\n";
   }
 
@@ -233,20 +232,20 @@ void Placer::SaveDEFFile(std::string const &name_of_file, std::string const &inp
         << *(block.Type()->Name()) << " + "
         << "PLACED"
         << " ("
-        << " " + std::to_string((int)(block.LLX()*circuit_->def_distance_microns* circuit_->GetGridValueX()))
-        << " " + std::to_string((int)(block.LLY()*circuit_->def_distance_microns* circuit_->GetGridValueY()))
+        << " " + std::to_string((int) (block.LLX() * circuit_->def_distance_microns * circuit_->GetGridValueX()))
+        << " " + std::to_string((int) (block.LLY() * circuit_->def_distance_microns * circuit_->GetGridValueY()))
         << " ) "
         << OrientStr(block.Orient()) + " ;\n";
   }
   ost << "END COMPONENTS\n";
   // jump to the end of components
   while (line.find("END COMPONENTS") == std::string::npos && !ist.eof()) {
-    getline(ist,line);
+    getline(ist, line);
   }
 
   // 3. print net, copy from def file
   while (!ist.eof()) {
-    getline(ist,line);
+    getline(ist, line);
     ost << line << "\n";
   }
   /*
@@ -270,10 +269,13 @@ void Placer::SaveDEFFile(std::string const &name_of_file, std::string const &inp
 
 void Placer::SanityCheck() {
   double epsilon = 1e-3;
-  Assert(filling_rate_ > epsilon, "Filling rate should be in a proper range, for example [0.1, 1], current value: " + std::to_string(filling_rate_));
+  Assert(filling_rate_ > epsilon,
+         "Filling rate should be in a proper range, for example [0.1, 1], current value: "
+             + std::to_string(filling_rate_));
   for (auto &&net: GetCircuit()->net_list) {
     Assert(!net.blk_pin_list.empty(), "Empty net?" + *net.Name());
   }
+  Assert(IsBoundaryProper(), "Improper boundary setting");
 }
 
 void Placer::UpdateComponentsPlacementStatus() {
@@ -303,14 +305,14 @@ void Placer::IOPinPlacement() {
     to_top = Top() - net_top;
     min_distance = std::min(std::min(to_left, to_right), std::min(to_bottom, to_top));
 
-    if (std::fabs(min_distance-to_left)<1e-10) {
-      iopin.SetLoc(Left(), (net_top+net_bottom)/2);
-    } else if (std::fabs(min_distance-to_right)<1e-10) {
-      iopin.SetLoc(Right(), (net_top+net_bottom)/2);
-    } else if (std::fabs(min_distance-to_bottom)<1e-10) {
-      iopin.SetLoc((net_left+net_right)/2,Bottom());
+    if (std::fabs(min_distance - to_left) < 1e-10) {
+      iopin.SetLoc(Left(), (net_top + net_bottom) / 2);
+    } else if (std::fabs(min_distance - to_right) < 1e-10) {
+      iopin.SetLoc(Right(), (net_top + net_bottom) / 2);
+    } else if (std::fabs(min_distance - to_bottom) < 1e-10) {
+      iopin.SetLoc((net_left + net_right) / 2, Bottom());
     } else {
-      iopin.SetLoc((net_left+net_right)/2,Top());
+      iopin.SetLoc((net_left + net_right) / 2, Top());
     }
   }
 }

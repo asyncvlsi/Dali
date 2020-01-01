@@ -3,8 +3,10 @@
 //
 
 #include "mdblkaux.h"
-#include <algorithm>
+
 #include <cmath>
+
+#include <algorithm>
 
 MDBlkAux::MDBlkAux(Block* blk_ptr): BlockAux(blk_ptr), v_(0,0) {}
 

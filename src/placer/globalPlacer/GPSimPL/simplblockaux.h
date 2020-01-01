@@ -10,10 +10,10 @@
 #include "circuit/net.h"
 #include "circuit/blockaux.h"
 
-class SimPLBlockAux: public BlockAux {
+class SimPLBlockAux : public BlockAux {
  public:
   explicit SimPLBlockAux(Block *block);
-  std::set< Net * > net_set;
+  std::set<Net *> net_set;
   bool NetExist(Net *net);
   void InsertNet(Net *net);
   int B2BRowSizeX();

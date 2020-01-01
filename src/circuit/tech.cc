@@ -4,11 +4,11 @@
 
 #include "tech.h"
 
-Tech::Tech(): n_set_(false), p_set_(false), n_layer_(nullptr), p_layer_(nullptr) {}
+Tech::Tech() : n_set_(false), p_set_(false), n_layer_(nullptr), p_layer_(nullptr) {}
 
 Tech::~Tech() {
-  delete(n_layer_);
-  delete(p_layer_);
+  delete (n_layer_);
+  delete (p_layer_);
 }
 
 void Tech::SetNLayer(double width, double spacing, double op_spacing, double max_plug_dist) {
