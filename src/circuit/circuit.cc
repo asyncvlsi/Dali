@@ -957,7 +957,7 @@ void Circuit::SetGridUsingMetalPitch() {
   SetGridValue(metal_list[0].PitchY(), metal_list[1].PitchX());
 }
 
-void Circuit::ReadWellFile(std::string const &name_of_file) {
+void Circuit::ReadCellFile(std::string const &name_of_file) {
   std::ifstream ist(name_of_file.c_str());
   Assert(ist.is_open(), "Cannot open input file: " + name_of_file);
   std::cout << "Loading CELL file: " << name_of_file << "\n";
@@ -1031,7 +1031,7 @@ void Circuit::ReadWellFile(std::string const &name_of_file) {
           bool is_plug = false;
           if (line.find("UNPLUG")==std::string::npos) is_plug = true;
           BlockTypeWell *well = AddBlockTypeWell(cluster, version_fields[1], is_plug);
-          double lx=0, ly=0, ux=0, uy=0;
+          int lx=0, ly=0, ux=0, uy=0;
           bool is_n=false;
           do {
             getline(ist,line);
@@ -1041,19 +1041,19 @@ void Circuit::ReadWellFile(std::string const &name_of_file) {
               std::vector<std::string> shape_fields;
               StrSplit(line, shape_fields);
               try {
-                lx = std::round(std::stod(shape_fields[1])/grid_value_x_);
-                ly = std::round(std::stod(shape_fields[2])/grid_value_y_);
-                ux = std::round(std::stod(shape_fields[3])/grid_value_x_);
-                uy = std::round(std::stod(shape_fields[4])/grid_value_y_);
+                lx = int(std::round(std::stod(shape_fields[1])/grid_value_x_));
+                ly = int(std::round(std::stod(shape_fields[2])/grid_value_y_));
+                ux = int(std::round(std::stod(shape_fields[3])/grid_value_x_));
+                uy = int(std::round(std::stod(shape_fields[4])/grid_value_y_));
               } catch (...) {
                 Assert(false, "Invalid stod conversion:\n" + line);
               }
               auto blk_type = GetBlockType(version_fields[1]);
               well->SetWellShape(is_n, lx, ly, ux, uy);
               if (is_n) {
-                well->SetNWellShape(0, ly, blk_type->Width(), blk_type->Height());
+                well->SetNWellShape(0, ly, int(blk_type->Width()), int(blk_type->Height()));
               } else {
-                well->SetPWellShape(0, 0, blk_type->Width(), uy);
+                well->SetPWellShape(0, 0, int(blk_type->Width()), uy);
               }
             }
           } while (line.find("END VERSION")==std::string::npos && !ist.eof());
@@ -1247,7 +1247,7 @@ void Circuit::GenMATLABWellTable(std::string const &name_of_file) {
   Assert(ost1.is_open(), "Cannot open output file: " + plug_file);
 
   BlockTypeWell *well;
-  Rect *n_well_shape, *p_well_shape;
+  RectI *n_well_shape, *p_well_shape;
   for (auto &block: block_list) {
     well = block.Type()->GetWell();
     if (well != nullptr) {

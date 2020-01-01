@@ -33,11 +33,6 @@ int main() {
   circuit.ReadDefFile(def_file_name);
 #endif
 
-#if TEST_WELL
-  std::string cell_file_name("Pbenchmark_10K.cell");
-  circuit.ReadWellFile(cell_file_name);
-#endif
-
   std::cout << "File loading complete, time: " << double(Time)/CLOCKS_PER_SEC << "s\n";
 
   circuit.ReportBriefSummary();
@@ -69,6 +64,8 @@ int main() {
   //legalizer->SaveDEFFile("circuit.def", def_file);
 
 #if TEST_WELL
+  std::string cell_file_name("Pbenchmark_10K.cell");
+  circuit.ReadCellFile(cell_file_name);
   Placer *well_legalizer = new WellLegalizer;
   well_legalizer->TakeOver(gb_placer);
   well_legalizer->StartPlacement();

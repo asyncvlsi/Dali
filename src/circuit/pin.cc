@@ -143,7 +143,7 @@ double Pin::YOffset(BlockOrient orient) const {
   return y_offset_[orient-N];
 }
 
-void Pin::AddRect(Rect &rect) {
+void Pin::AddRect(RectD &rect) {
   rect_list_.push_back(rect);
 }
 

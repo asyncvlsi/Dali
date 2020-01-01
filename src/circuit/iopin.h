@@ -6,11 +6,10 @@
 #define DALI_SRC_CIRCUIT_IOPIN_H_
 
 #include <string>
-#include "../common/misc.h"
+#include "common/misc.h"
 #include "net.h"
 #include "layer.h"
 #include "status.h"
-#include "rect.h"
 
 class IOPin {
  private:
@@ -18,7 +17,7 @@ class IOPin {
   Net *net_;
   SignalDirection direction_;
   MetalLayer *layer_;
-  Rect rect_;
+  RectD rect_;
   PlaceStatus place_status_;
   double lx_, ly_;
  public:
@@ -31,7 +30,7 @@ class IOPin {
   Net *GetNet() const {return net_;}
   SignalDirection Direction() const {return direction_;}
   MetalLayer *Layer() const {return layer_;}
-  Rect *GetRect() {return &rect_;}
+  RectD *GetRect() {return &rect_;}
   double X() {return lx_;}
   double Y() {return ly_;}
 

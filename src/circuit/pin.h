@@ -5,7 +5,7 @@
 #ifndef DALI_SRC_CIRCUIT_PIN_H_
 #define DALI_SRC_CIRCUIT_PIN_H_
 
-#include "rect.h"
+#include "common//misc.h"
 #include <vector>
 #include "status.h"
 #include "blocktype.h"
@@ -15,7 +15,7 @@ class BlockType;
 class Pin {
  private:
   /*** essential data entries ****/
-  std::vector<Rect> rect_list_;
+  std::vector<RectD> rect_list_;
   std::pair<const std::string, int>* name_num_pair_ptr_;
   BlockType *blk_type_;
   bool manual_set_;
@@ -33,7 +33,7 @@ class Pin {
   void SetOffset(double x_offset, double y_offset);
   double XOffset(BlockOrient orient=N) const;
   double YOffset(BlockOrient orient=N) const;
-  void AddRect(Rect &rect);
+  void AddRect(RectD &rect);
   void AddRect(double llx, double lly, double urx, double ury);
   bool Empty() const {return rect_list_.empty();}
   void Report() const;

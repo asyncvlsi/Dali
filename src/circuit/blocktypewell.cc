@@ -20,7 +20,7 @@ void BlockTypeWell::SetCluster(BlockTypeCluster *cluster) {
   }
 }
 
-void BlockTypeWell::SetWellShape(bool is_n, double lx, double ly, double ux, double uy) {
+void BlockTypeWell::SetWellShape(bool is_n, int lx, int ly, int ux, int uy) {
   if (is_n) {
     SetNWellShape(lx, ly, ux, uy);
   } else {
@@ -28,7 +28,7 @@ void BlockTypeWell::SetWellShape(bool is_n, double lx, double ly, double ux, dou
   }
 }
 
-void BlockTypeWell::SetWellShape(bool is_n, Rect &rect) {
+void BlockTypeWell::SetWellShape(bool is_n, RectI &rect) {
   SetWellShape(is_n, rect.LLX(), rect.LLY(), rect.URX(), rect.URY());
 }
 

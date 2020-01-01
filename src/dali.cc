@@ -35,6 +35,7 @@ int main(int argc, char *argv[]) {
   std::string str_verbose_level;
   std::string str_x_grid;
   std::string str_y_grid;
+  std::string plot_file;
   double x_grid = 0, y_grid = 0;
   double target_density = -1;
 
@@ -107,6 +108,13 @@ int main(int argc, char *argv[]) {
         return 0;
       }
       globalVerboseLevel = (VerboseLevel)tmp;
+    } else if (arg=="-wp" && i < argc) {
+      plot_file = std::string(argv[i++]);
+      if (plot_file.empty()) {
+        std::cout << "Invalid output name!\n";
+        ReportUsage();
+        return 1;
+      }
     } else {
       std::cout << "Unknown option for file reading\n";
       std::cout << arg << "\n";
@@ -131,10 +139,6 @@ int main(int argc, char *argv[]) {
   circuit.ReadLefFile(lef_file_name);
   circuit.ReadDefFile(def_file_name);
 #endif
-
-  if (!cell_file_name.empty()) {
-    circuit.ReadWellFile(cell_file_name);
-  }
 
   Time = clock() - Time;
   std::cout << "File loading complete, time: " << float(Time)/CLOCKS_PER_SEC << "s\n";
@@ -170,10 +174,15 @@ int main(int argc, char *argv[]) {
   std::cout << "legalization complete, time: " << float(lg_time)/CLOCKS_PER_SEC << "s\n";
 
   if (!cell_file_name.empty()) {
+    circuit.ReadCellFile(cell_file_name);
     Placer *well_legalizer = new WellLegalizer;
     well_legalizer->TakeOver(gb_placer);
     well_legalizer->StartPlacement();
     delete well_legalizer;
+
+    if (!plot_file.empty()) {
+      circuit.GenMATLABWellTable(plot_file);
+    }
   }
 
   delete gb_placer;
@@ -197,8 +206,9 @@ void ReportUsage() {
             << "  -cell       <file.cell> (optional, if provided, well legalization will be triggered)\n"
             << "  -o          <output_name>.def (optional, default name timestamp.def)\n"
             << "  -g/-grid    grid_value_x grid_value_y (optional, default metal1 and metal 2 pitch values)\n"
-            << "  -d/-density density (optional, value interval (0,1], default 1)\n"
+            << "  -d/-density density (optional, value interval (0,1], default min(1.2*space_utility, 1))\n"
             << "  -v          verbosity_level (optional, 0-5, default 0)\n"
+            << "  -wp         <file>.txt (optional, create files for N/P-well plotting, usually using MATLAB)\n"
             << "(order does not matter)"
             << "\033[0m\n";
 }

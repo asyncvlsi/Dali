@@ -160,7 +160,7 @@ class Circuit {
   void SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist);
   void SetPWellParams(double width, double spacing, double op_spacing, double max_plug_dist);
   Tech *GetTech() const {return tech_param_;}
-  void ReadWellFile(std::string const &name_of_file);
+  void ReadCellFile(std::string const &name_of_file);
   void ReportWellShape();
 
   /*

@@ -70,6 +70,24 @@ typedef Value2D<double> double2d;
 typedef Value2D<int>    int2d;
 
 template <class T>
+struct Rect {
+ private:
+  T llx_, lly_, urx_, ury_;
+ public:
+  Rect(): llx_(0), lly_(0), urx_(0), ury_(0) {}
+  Rect(T llx, T lly, T urx, T ury): llx_(llx), lly_(lly), urx_(urx), ury_(ury) {}
+  bool operator==(Rect<T> const &rhs) const {return (llx_ == rhs.llx_) && (lly_ == rhs.llx_) && (urx_ == rhs.llx_) && (ury_ == rhs.llx_);}
+  T LLX() const {return llx_;}
+  T LLY() const {return lly_;}
+  T URX() const {return urx_;}
+  T URY() const {return ury_;}
+  void SetValue(T llx, T lly, T urx, T ury) {llx_=llx;lly_=lly;urx_=urx;ury_=ury;}
+};
+
+typedef Rect<double> RectD;
+typedef Rect<int> RectI;
+
+template <class T>
 struct IndexLocPair{
   int num;
   T x;
