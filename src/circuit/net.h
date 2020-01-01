@@ -7,10 +7,11 @@
 
 #include <string>
 #include <vector>
+
 #include "block.h"
 #include "blockpinpair.h"
 #include "netaux.h"
-#include "../common/misc.h"
+#include "common/misc.h"
 
 class NetAux;
 

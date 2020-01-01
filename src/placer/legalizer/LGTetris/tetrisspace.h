@@ -5,10 +5,12 @@
 #ifndef HPCC_TETRISSPACE_H
 #define HPCC_TETRISSPACE_H
 
-#include <vector>
 #include <cmath>
+
+#include <vector>
+
+#include "common/misc.h"
 #include "freesegmentlist.h"
-#include "../../../common/misc.h"
 
 class TetrisSpace {
 private:

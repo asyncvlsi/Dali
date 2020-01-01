@@ -6,13 +6,15 @@
 #define DALI_SRC_COMMON_MISC_H_
 
 #include <cassert>
+#include <cmath>
+
+#include <stdexcept>
 #include <iostream>
 #include <sstream>
 #include <vector>
 #include <string>
+
 #include "global.h"
-#include <cmath>
-#include <stdexcept>
 
 template <class T>
 struct Value2D {

@@ -5,9 +5,11 @@
 #ifndef HPCC_FREESEGMENTLIST_H
 #define HPCC_FREESEGMENTLIST_H
 
-#include <iostream>
-#include <cassert>
 #include "freesegment.h"
+
+#include <cassert>
+
+#include <iostream>
 
 class FreeSegmentList {
 private:

@@ -13,6 +13,7 @@
  * ****/
 
 #include <iostream>
+
 #include "circuit.h"
 #include "common/global.h"
 

@@ -2,8 +2,9 @@
 // Created by Yihang Yang on 2019/12/23.
 //
 
-#include "common/misc.h"
 #include "blocktypewell.h"
+
+#include "common/misc.h"
 
 BlockTypeWell::BlockTypeWell(BlockType *block_type):
     type_(block_type),

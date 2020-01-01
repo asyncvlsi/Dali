@@ -6,6 +6,7 @@
 #define DALI_SRC_CIRCUIT_WELLBLKTYPEAUX_H_
 
 #include <list>
+
 #include "blocktype.h"
 #include "common/misc.h"
 

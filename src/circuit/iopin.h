@@ -6,6 +6,7 @@
 #define DALI_SRC_CIRCUIT_IOPIN_H_
 
 #include <string>
+
 #include "common/misc.h"
 #include "net.h"
 #include "layer.h"

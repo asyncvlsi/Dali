@@ -5,8 +5,9 @@
 #ifndef DALI_SRC_CIRCUIT_PIN_H_
 #define DALI_SRC_CIRCUIT_PIN_H_
 
-#include "common/misc.h"
 #include <vector>
+
+#include "common/misc.h"
 #include "status.h"
 #include "blocktype.h"
 

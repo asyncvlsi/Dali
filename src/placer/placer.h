@@ -8,8 +8,9 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#include "../circuit/circuit.h"
-#include "../common/global.h"
+
+#include "circuit/circuit.h"
+#include "common/global.h"
 
 class Placer {
  protected:

@@ -9,6 +9,7 @@
 #include <set>
 #include <map>
 #include <unordered_map>
+
 #include "status.h"
 #include "layer.h"
 #include "tech.h"
@@ -18,7 +19,7 @@
 #include "block.h"
 #include "iopin.h"
 #include "net.h"
-#include "../opendb.h"
+#include "opendb.h"
 
 class Circuit {
   friend class Placer;

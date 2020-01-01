@@ -5,9 +5,10 @@
 #ifndef HPCC_FREESEGMENT_H
 #define HPCC_FREESEGMENT_H
 
-#include <iostream>
 #include <cassert>
+
 #include <algorithm>
+#include <iostream>
 
 class FreeSegment {
 private:

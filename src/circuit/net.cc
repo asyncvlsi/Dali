@@ -2,9 +2,10 @@
 // Created by Yihang Yang on 2019-05-23.
 //
 
+#include <algorithm>
+
 #include "common/misc.h"
 #include "net.h"
-#include <algorithm>
 
 Net::Net(std::pair<const std::string, int> *name_num_pair_ptr, double weight): name_num_pair_ptr_(name_num_pair_ptr), weight_(weight) {
   cnt_fixed_ = 0;

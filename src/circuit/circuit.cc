@@ -2,13 +2,16 @@
 // Created by Yihang Yang on 2019-03-26.
 //
 
+#include "circuit.h"
+
+#include <climits>
 #include <cmath>
+
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <climits>
 #include <algorithm>
-#include "circuit.h"
+
 #include "status.h"
 
 Circuit::Circuit(): tot_width_(0), tot_height_(0), tot_blk_area_(0), tot_mov_width_(0), tot_mov_height_(0),

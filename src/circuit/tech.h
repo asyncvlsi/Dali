@@ -6,6 +6,7 @@
 #define DALI_SRC_CIRCUIT_TECH_H_
 
 #include "layer.h"
+
 class Tech {
  private:
   bool n_set_;

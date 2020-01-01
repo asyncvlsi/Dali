@@ -3,7 +3,8 @@
 //
 
 #include "LGTetris.h"
-#include "../../common/misc.h"
+
+#include "common/misc.h"
 
 TetrisLegalizer::TetrisLegalizer(): Placer(), max_iteration_(5), current_iteration_(0), flipped_(false) {}
 

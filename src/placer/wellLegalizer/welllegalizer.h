@@ -5,10 +5,11 @@
 #ifndef DALI_SRC_PLACER_WELLLEGALIZER_WELLLEGALIZER_H_
 #define DALI_SRC_PLACER_WELLLEGALIZER_WELLLEGALIZER_H_
 
-#include "placer/placer.h"
-#include "common/misc.h"
 #include <vector>
 #include <set>
+
+#include "common/misc.h"
+#include "placer/placer.h"
 
 /****
  * the structure row contains the following information:

@@ -5,11 +5,11 @@
 #ifndef DALI_BLOCK_HPP
 #define DALI_BLOCK_HPP
 
-
 #include <vector>
 #include <map>
 #include <string>
 #include <iostream>
+
 #include "status.h"
 #include "blockaux.h"
 #include "blocktype.h"

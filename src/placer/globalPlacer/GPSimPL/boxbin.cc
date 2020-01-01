@@ -2,8 +2,9 @@
 // Created by Yihang Yang on 2019-08-07.
 //
 
-#include <cmath>
 #include "boxbin.h"
+
+#include <cmath>
 
 BoxBin::BoxBin() {
   all_terminal = false;

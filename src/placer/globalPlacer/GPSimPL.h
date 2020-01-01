@@ -5,17 +5,19 @@
 #ifndef HPCC_SRC_PLACER_GLOBALPLACER_GPSIMPL_H_
 #define HPCC_SRC_PLACER_GLOBALPLACER_GPSIMPL_H_
 
+#include <cfloat>
+
 #include <queue>
 #include <random>
-#include <cfloat>
-#include "../placer.h"
-#include "../../solver.h"
-#include "GPSimPL/simplblockaux.h"
-#include "GPSimPL/gridbinindex.h"
-#include "GPSimPL/gridbin.h"
-#include "GPSimPL/windowquadruple.h"
+
+#include "placer/placer.h"
 #include "GPSimPL/boxbin.h"
 #include "GPSimPL/cellcutpoint.h"
+#include "GPSimPL/gridbinindex.h"
+#include "GPSimPL/gridbin.h"
+#include "GPSimPL/simplblockaux.h"
+#include "GPSimPL/windowquadruple.h"
+#include "solver.h"
 
 typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat; // declares a row-major sparse matrix type of double
 typedef Eigen::Triplet<double> T; // A triplet is a simple object representing a non-zero entry as the triplet: row index, column index, value.

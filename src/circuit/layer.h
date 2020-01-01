@@ -6,8 +6,9 @@
 #define DALI_SRC_CIRCUIT_LAYER_H_
 
 #include <string>
+
 #include "status.h"
-#include "../common/misc.h"
+#include "common/misc.h"
 
 class Layer {
  protected:

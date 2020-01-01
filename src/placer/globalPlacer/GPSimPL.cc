@@ -3,7 +3,9 @@
 //
 
 #include "GPSimPL.h"
+
 #include <cmath>
+
 #include <algorithm>
 
 GPSimPL::GPSimPL(): Placer() {

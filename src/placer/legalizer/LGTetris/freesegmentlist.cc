@@ -3,7 +3,8 @@
 //
 
 #include "freesegmentlist.h"
-#include "../../../common/misc.h"
+
+#include "common/misc.h"
 
 FreeSegmentList::FreeSegmentList() {
   head_ = nullptr;

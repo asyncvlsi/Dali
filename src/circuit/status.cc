@@ -3,6 +3,7 @@
 //
 
 #include "status.h"
+
 #include <iostream>
 
 MetalDirection StrToMetalDirection(std::string &str_metal_direction)  {

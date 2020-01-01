@@ -2,11 +2,13 @@
 // Created by Yihang Yang on 9/3/19.
 //
 
+#include <ctime>
+
 #include <iostream>
 #include <chrono>
 #include <ratio>
-#include <ctime>
 #include <algorithm>
+
 #include "common/global.h"
 #include "opendb.h"
 #include "circuit.h"

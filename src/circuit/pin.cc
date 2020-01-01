@@ -3,7 +3,8 @@
 //
 
 #include "pin.h"
-#include "../common/misc.h"
+
+#include "common/misc.h"
 
 Pin::Pin(std::pair<const std::string, int>* name_num_pair_ptr, BlockType *blk_type):
         name_num_pair_ptr_(name_num_pair_ptr),

@@ -5,12 +5,13 @@
 #ifndef DALI_SRC_OPENDB_H_
 #define DALI_SRC_OPENDB_H_
 
+#include <vector>
+
 #include "db.h"
 #include "lefin.h"
 #include "defin.h"
 #include "lefout.h"
 #include "defout.h"
-#include <vector>
 
 // the following functions come from OpenDB/src/swig/python/dbhelpers.i without any modification
 

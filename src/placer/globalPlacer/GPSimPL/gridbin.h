@@ -6,6 +6,7 @@
 #define HPCC_SRC_PLACER_GLOBALPLACER_GPSIMPL_GRIDBIN_H_
 
 #include <vector>
+
 #include "gridbinindex.h"
 
 class GridBin {

@@ -8,11 +8,12 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include "gridbinindex.h"
+
 #include "cellcutpoint.h"
+#include "circuit/block.h"
 #include "gridbin.h"
+#include "gridbinindex.h"
 #include "windowquadruple.h"
-#include "../../../circuit/block.h"
 
 class BoxBin {
  public:

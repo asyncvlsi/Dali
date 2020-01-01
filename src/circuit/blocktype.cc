@@ -3,7 +3,8 @@
 //
 
 #include "blocktype.h"
-#include "../common/misc.h"
+
+#include "common/misc.h"
 
 BlockType::BlockType(const std::string *name, unsigned int width, unsigned int height): name_(name), width_(width), height_(height), well_(nullptr) {}
 

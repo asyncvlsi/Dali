@@ -2,8 +2,9 @@
 // Created by Yihang Yang on 12/22/19.
 //
 
-#include <algorithm>
 #include "welllegalizer.h"
+
+#include <algorithm>
 
 void WellLegalizer::InitWellLegalizer() {
   Assert(circuit_ != nullptr, "Well Legalization fail: no input circuit!");
