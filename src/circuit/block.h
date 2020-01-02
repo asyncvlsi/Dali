@@ -109,20 +109,20 @@ class Block {
   void Report();
   void ReportNet();
 
-  /*friend std::ostream& operator<<(std::ostream& os, const Block &block) {
-    os << "Block Name: " << *block.Name() << "\n";
-    os << "Block Type: " << *(block.Type()->Name()) << "\n";
-    os << "Width and Height: " << block.Width() << " " << block.Height() << "\n";
-    os << "lower Left corner: " << block.LLX() << " " << block.LLY() << "\n";
-    os << "movability: " << block.IsMovable() << "\n";
-    os << "orientation: " << block.OrientStr() << "\n";
-    os << "assigned primary key: " << block.Num() << "\n";
-    return os;
-  }*/
-
   const std::string *TypeName() const { return type_->Name(); }
   std::string GetPlaceStatusStr() { return PlaceStatusStr(place_status_); }
   std::string LowerLeftCorner() { return "( " + std::to_string(LLX()) + " " + std::to_string(LLY()) + " )"; }
 };
+
+inline void Block::Report() {
+  std::cout << "  block name: " << *Name() << "\n"
+            << "    block type: " << *(Type()->Name()) << "\n"
+            << "    width and height: " << Width() << " " << Height() << "\n"
+            << "    lower left corner: " << llx_ << " " << lly_ << "\n"
+            << "    movable: " << IsMovable() << "\n"
+            << "    orientation: " << OrientStr(orient_) << "\n"
+            << "    assigned primary key: " << Num()
+            << "\n";
+}
 
 #endif //DALI_BLOCK_HPP

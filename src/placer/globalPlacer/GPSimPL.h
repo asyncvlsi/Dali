@@ -35,6 +35,9 @@ class GPSimPL : public Placer {
   bool HPWLY_converge = false;
   double cg_tolerance_ = 0.000000001;
   int cg_iteration_max_num_ = 100;
+  double error_x = DBL_MAX;
+  double error_y = DBL_MAX;
+  double error_threshold = 1e-5;
   double width_epsilon;
   double height_epsilon;
   double HPWL_intra_linearSolver_precision = 0.01;
@@ -58,14 +61,11 @@ class GPSimPL : public Placer {
   double WidthEpsilon() { return width_epsilon; };
   double HeightEpsilon() { return height_epsilon; };
 
-  std::minstd_rand0 generator{1};
   Eigen::VectorXd vx, vy;
   Eigen::VectorXd bx, by;
   SpMat Ax, Ay;
   std::vector<double> x_anchor, y_anchor;
   std::vector<T> coefficients;
-  //Eigen::ConjugateGradient  <SpMat, Eigen::Lower|Eigen::Upper> cgx;
-  //Eigen::ConjugateGradient  <SpMat, Eigen::Lower|Eigen::Upper> cgy;
   Eigen::ConjugateGradient<SpMat, Eigen::Lower> cgx;
   Eigen::ConjugateGradient<SpMat, Eigen::Lower> cgy;
 

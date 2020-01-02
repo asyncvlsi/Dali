@@ -36,6 +36,7 @@ void GPSimPL::InitCGFlags() {
 }
 
 void GPSimPL::BlockLocRandomInit() {
+  std::minstd_rand0 generator{1};
   int region_width = Right() - Left();
   int region_height = Top() - Bottom();
   std::uniform_real_distribution<double> distribution(0, 1);
@@ -52,8 +53,8 @@ void GPSimPL::BlockLocRandomInit() {
 }
 
 void GPSimPL::BlockLocCenterInit() {
-  double region_center_x = (Right() + Left())/2;
-  double region_center_y = (Top() + Bottom())/2;
+  double region_center_x = (Right() + Left())/2.0;
+  double region_center_y = (Top() + Bottom())/2.0;
   for (auto &&block: circuit_->block_list) {
     if (block.IsMovable()) {
       block.SetCenterX(region_center_x);
@@ -61,7 +62,7 @@ void GPSimPL::BlockLocCenterInit() {
     }
   }
   if (globalVerboseLevel >= LOG_INFO) {
-    std::cout << "Block location randomly uniform initialization complete\n";
+    std::cout << "Block location initialization complete\n";
   }
   ReportHPWL(LOG_INFO);
 }
@@ -322,9 +323,10 @@ void GPSimPL::SolveProblemX() {
   std::vector<Block> &block_list = *BlockList();
   cgx.compute(Ax);
   vx = cgx.solveWithGuess(bx, vx);
+  error_x = cgx.error();
   if (globalVerboseLevel >= LOG_DEBUG) {
     std::cout << "    #iterations:     " << cgx.iterations() << std::endl;
-    std::cout << "    estimated error: " << cgx.error() << std::endl;
+    std::cout << "    estimated error: " << error_x << std::endl;
   }
   for (long int num = 0; num < vx.size(); ++num) {
     if (block_list[num].IsMovable()) {
@@ -343,9 +345,10 @@ void GPSimPL::SolveProblemY() {
   std::vector<Block> &block_list = *BlockList();
   cgy.compute(Ay);
   vy = cgy.solveWithGuess(by, vy);
+  error_y = cgy.error();
   if (globalVerboseLevel >= LOG_DEBUG) {
     std::cout << "    #iterations:     " << cgy.iterations() << std::endl;
-    std::cout << "    estimated error: " << cgy.error() << std::endl;
+    std::cout << "    estimated error: " << error_y << std::endl;
   }
   for (long int num = 0; num < vy.size(); ++num) {
     if (block_list[num].IsMovable()) {
@@ -370,7 +373,7 @@ void GPSimPL::InitialPlacement() {
     BuildProblemB2BX();
     SolveProblemX();
     UpdateCGFlagsX();
-    if (HPWLX_converge) {
+    if (HPWLX_converge && i >= 10) {
       if (globalVerboseLevel >= LOG_DEBUG) {
         std::cout << "iterations x:     " << i << "\n";
       }
@@ -386,7 +389,7 @@ void GPSimPL::InitialPlacement() {
     BuildProblemB2BY(); // fill A and b
     SolveProblemY();// Solving:
     UpdateCGFlagsY();
-    if (HPWLY_converge) {
+    if (HPWLY_converge && i >= 10) {
       if (globalVerboseLevel >= LOG_DEBUG) {
         std::cout << "iterations y:     " << i << "\n";
       }
@@ -1157,7 +1160,9 @@ void GPSimPL::PlaceBlkInBox(BoxBin &box) {
               return p1.second < p2.second;
             });
   double total_length = 0;
-  for (auto &&cell_id: box.cell_list) total_length += block_list[cell_id].Width();
+  for (auto &&cell_id: box.cell_list) {
+    total_length += block_list[cell_id].Width();
+  }
   double cur_pos = 0;
   int box_width = box.right - box.left;
   int cell_num;
@@ -1173,7 +1178,9 @@ void GPSimPL::PlaceBlkInBox(BoxBin &box) {
               return p1.second < p2.second;
             });
   total_length = 0;
-  for (auto &&cell_id: box.cell_list) total_length += block_list[cell_id].Height();
+  for (auto &&cell_id: box.cell_list) {
+    total_length += block_list[cell_id].Height();
+  }
   cur_pos = 0;
   int box_height = box.top - box.bottom;
   for (auto &&pair: index_loc_list_y) {
@@ -1488,7 +1495,8 @@ void GPSimPL::StartPlacement() {
   SanityCheck();
   CGInit();
   LookAheadLgInit();
-  BlockLocCenterInit();
+  //BlockLocCenterInit();
+  BlockLocRandomInit();
   if (circuit_->net_list.empty()) {
     if (globalVerboseLevel >= LOG_CRITICAL) {
       std::cout << "\033[0;36m"
@@ -1506,7 +1514,7 @@ void GPSimPL::StartPlacement() {
     LookAheadLegalization();
     UpdateLALConvergeState();
     if (HPWL_LAL_converge) { // if HPWL sconverges
-      if (lal_iteration >= 20) {
+      if (lal_iteration >= 15) {
         if (globalVerboseLevel >= LOG_CRITICAL) {
           std::cout << "Iterative look-ahead legalization complete" << std::endl;
           std::cout << "Total number of iteration: " << lal_iteration + 1 << std::endl;

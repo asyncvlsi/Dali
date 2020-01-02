@@ -377,7 +377,6 @@ bool BoxBin::update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist,
   double cut_line_low, cut_line_high;
   double cut_line = 0;
   double ratio = 1 + double(box2_total_white_space) / double(box1_total_white_space);
-  //double tmp_ratio = 0;
   //TODO: this method can be accelerated
   Block *node;
   if (cut_direction_x) {
@@ -396,11 +395,11 @@ bool BoxBin::update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist,
         }
       }
       //std::cout << cell_area_low/(double)total_cell_area << "\n";
-      //tmp_ratio = double(total_cell_area)/double(cell_area_low);
+      double tmp_ratio = double(total_cell_area)/double(cell_area_low);
       //TODO: this precision has some influence on the final result
-      if (cell_area_low > total_cell_area / ratio) {
+      if (ratio > tmp_ratio) {
         cut_line_high = cut_line;
-      } else if (cell_area_low < total_cell_area / ratio) {
+      } else if (ratio < tmp_ratio) {
         cut_line_low = cut_line;
       } else {
         break;
@@ -435,10 +434,10 @@ bool BoxBin::update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist,
         }
       }
       //std::cout << cell_area_low/(double)total_cell_area << "\n";
-      //tmp_ratio = double(total_cell_area)/double(cell_area_low);
-      if (cell_area_low > total_cell_area / ratio) {
+      double tmp_ratio = double(total_cell_area)/double(cell_area_low);
+      if (ratio > tmp_ratio) {
         cut_line_high = cut_line;
-      } else if (cell_area_low < total_cell_area / ratio) {
+      } else if (ratio < tmp_ratio) {
         cut_line_low = cut_line;
       } else {
         break;

@@ -70,17 +70,6 @@ double Block::OverlapArea(const Block *rhs) const {
   return OverlapArea(*rhs);
 }
 
-void Block::Report() {
-  std::cout << "  block name: " << *Name() << "\n"
-            << "    block type: " << *(Type()->Name()) << "\n"
-            << "    width and height: " << Width() << " " << Height() << "\n"
-            << "    lower left corner: " << llx_ << " " << lly_ << "\n"
-            << "    movable: " << IsMovable() << "\n"
-            << "    orientation: " << OrientStr(orient_) << "\n"
-            << "    assigned primary key: " << Num()
-            << "\n";
-}
-
 void Block::ReportNet() {
   std::cout << *Name() << " connects to:\n";
   for (auto &&net_num: net_list) {

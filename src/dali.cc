@@ -150,6 +150,13 @@ int main(int argc, char *argv[]) {
   if (target_density == -1) {
     target_density = std::min(circuit.WhiteSpaceUsage() * 1.2, 1.0);
   }
+  if (circuit.WhiteSpaceUsage() > target_density) {
+    std::cout << "Cannot set target density smaller than average white space utility!\n"
+              << "  Average white space utility: " << circuit.WhiteSpaceUsage() << "\n"
+              << "  Target density:              " << target_density << "\n";
+
+    return 1;
+  }
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "target density: " << target_density << "\n";
   }
