@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 2019-08-07.
 //
 
-#ifndef HPCC_SRC_PLACER_GLOBALPLACER_GPSIMPL_BOXBIN_H_
-#define HPCC_SRC_PLACER_GLOBALPLACER_GPSIMPL_BOXBIN_H_
+#ifndef DALI_SRC_PLACER_GLOBALPLACER_GPSIMPL_BOXBIN_H_
+#define DALI_SRC_PLACER_GLOBALPLACER_GPSIMPL_BOXBIN_H_
 
 #include <iostream>
 #include <fstream>
@@ -88,4 +88,4 @@ class BoxBin {
   bool update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodelist, int &cut_line_w, int ave_blk_height);
 };
 
-#endif //HPCC_SRC_PLACER_GLOBALPLACER_GPSIMPL_BOXBIN_H_
+#endif //DALI_SRC_PLACER_GLOBALPLACER_GPSIMPL_BOXBIN_H_

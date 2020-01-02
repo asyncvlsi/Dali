@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 2019-05-20.
 //
 
-#ifndef HPCC_PLACERDLA_HPP
-#define HPCC_PLACERDLA_HPP
+#ifndef DALI_PLACERDLA_HPP
+#define DALI_PLACERDLA_HPP
 
 #include <vector>
 #include <queue>
@@ -56,4 +56,4 @@ public:
 };
 
 
-#endif //HPCC_PLACERDLA_HPP
+#endif //DALI_PLACERDLA_HPP

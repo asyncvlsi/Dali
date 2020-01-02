@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 9/11/2019.
 //
 
-#ifndef HPCC_SRC_PLACER_DETAILEDPLACER_MDPLACER_H_
-#define HPCC_SRC_PLACER_DETAILEDPLACER_MDPLACER_H_
+#ifndef DALI_SRC_PLACER_DETAILEDPLACER_MDPLACER_H_
+#define DALI_SRC_PLACER_DETAILEDPLACER_MDPLACER_H_
 
 #include <vector>
 
@@ -57,4 +57,4 @@ inline int MDPlacer::BinCountY() const {
   return bin_cnt_y_;
 }
 
-#endif //HPCC_SRC_PLACER_DETAILEDPLACER_MDPLACER_H_
+#endif //DALI_SRC_PLACER_DETAILEDPLACER_MDPLACER_H_

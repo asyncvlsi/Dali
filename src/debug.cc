@@ -13,7 +13,7 @@
 
 VerboseLevel globalVerboseLevel = LOG_DEBUG;
 
-#define TEST_WELL 1
+#define TEST_WELL 0
 
 int main() {
   Circuit circuit;

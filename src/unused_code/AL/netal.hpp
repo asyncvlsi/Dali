@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 2019-06-15.
 //
 
-#ifndef HPCC_NETAL_HPP
-#define HPCC_NETAL_HPP
+#ifndef DALI_NETAL_HPP
+#define DALI_NETAL_HPP
 
 #include "circuit/net.h"
 
@@ -22,4 +22,4 @@ public:
 };
 
 
-#endif //HPCC_NETAL_HPP
+#endif //DALI_NETAL_HPP

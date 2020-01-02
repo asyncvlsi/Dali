@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 9/3/19.
 //
 
-#ifndef HPCC_SRC_PLACER_DETAILEDPLACER_DPLINEAR_H_
-#define HPCC_SRC_PLACER_DETAILEDPLACER_DPLINEAR_H_
+#ifndef DALI_SRC_PLACER_DETAILEDPLACER_DPLINEAR_H_
+#define DALI_SRC_PLACER_DETAILEDPLACER_DPLINEAR_H_
 
 #include <random>
 #include <vector>
@@ -31,4 +31,4 @@ class DPLinear: public GPSimPL {
   void StartPlacement();
 };
 
-#endif //HPCC_SRC_PLACER_DETAILEDPLACER_DPLINEAR_H_
+#endif //DALI_SRC_PLACER_DETAILEDPLACER_DPLINEAR_H_

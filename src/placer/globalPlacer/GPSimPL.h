@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 8/4/2019.
 //
 
-#ifndef HPCC_SRC_PLACER_GLOBALPLACER_GPSIMPL_H_
-#define HPCC_SRC_PLACER_GLOBALPLACER_GPSIMPL_H_
+#ifndef DALI_SRC_PLACER_GLOBALPLACER_GPSIMPL_H_
+#define DALI_SRC_PLACER_GLOBALPLACER_GPSIMPL_H_
 
 #include <cfloat>
 
@@ -69,7 +69,8 @@ class GPSimPL : public Placer {
   Eigen::ConjugateGradient<SpMat, Eigen::Lower> cgx;
   Eigen::ConjugateGradient<SpMat, Eigen::Lower> cgy;
 
-  void BlockLocInit();
+  void BlockLocRandomInit();
+  void BlockLocCenterInit();
   void CGInit();
   void InitCGFlags();
   void UpdateCGFlagsX();
@@ -146,4 +147,4 @@ class GPSimPL : public Placer {
   void write_first_box_cell_bounding(std::string const &name_of_file);
 };
 
-#endif //HPCC_SRC_PLACER_GLOBALPLACER_GPSIMPL_H_
+#endif //DALI_SRC_PLACER_GLOBALPLACER_GPSIMPL_H_

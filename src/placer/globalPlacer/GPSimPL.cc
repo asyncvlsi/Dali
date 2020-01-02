@@ -35,7 +35,7 @@ void GPSimPL::InitCGFlags() {
   HPWLY_converge = false;
 }
 
-void GPSimPL::BlockLocInit() {
+void GPSimPL::BlockLocRandomInit() {
   int region_width = Right() - Left();
   int region_height = Top() - Bottom();
   std::uniform_real_distribution<double> distribution(0, 1);
@@ -43,6 +43,21 @@ void GPSimPL::BlockLocInit() {
     if (block.IsMovable()) {
       block.SetCenterX(Left() + region_width * distribution(generator));
       block.SetCenterY(Bottom() + region_height * distribution(generator));
+    }
+  }
+  if (globalVerboseLevel >= LOG_INFO) {
+    std::cout << "Block location randomly uniform initialization complete\n";
+  }
+  ReportHPWL(LOG_INFO);
+}
+
+void GPSimPL::BlockLocCenterInit() {
+  double region_center_x = (Right() + Left())/2;
+  double region_center_y = (Top() + Bottom())/2;
+  for (auto &&block: circuit_->block_list) {
+    if (block.IsMovable()) {
+      block.SetCenterX(region_center_x);
+      block.SetCenterY(region_center_y);
     }
   }
   if (globalVerboseLevel >= LOG_INFO) {
@@ -1473,7 +1488,7 @@ void GPSimPL::StartPlacement() {
   SanityCheck();
   CGInit();
   LookAheadLgInit();
-  BlockLocInit();
+  BlockLocCenterInit();
   if (circuit_->net_list.empty()) {
     if (globalVerboseLevel >= LOG_CRITICAL) {
       std::cout << "\033[0;36m"

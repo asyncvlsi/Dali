@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 2019-05-20.
 //
 
-#ifndef HPCC_BLOCKDLA_HPP
-#define HPCC_BLOCKDLA_HPP
+#ifndef DALI_BLOCKDLA_HPP
+#define DALI_BLOCKDLA_HPP
 
 #include <vector>
 #include <string>
@@ -53,4 +53,4 @@ public:
 
 
 
-#endif //HPCC_BLOCKDLA_HPP
+#endif //DALI_BLOCKDLA_HPP

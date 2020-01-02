@@ -9,7 +9,7 @@
 
 ### Recommended compilation toolchain
   * GCC, version >= 7.4.0
-  * Cmake, version >= 3.10.2
+  * CMake, version >= 3.10.2
   * GNU Make
 
 ### Pre-requisite for submodules: OpenDB

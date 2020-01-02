@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 2019-07-17.
 //
 
-#ifndef HPCC_FREESEGMENTLIST_H
-#define HPCC_FREESEGMENTLIST_H
+#ifndef DALI_FREESEGMENTLIST_H
+#define DALI_FREESEGMENTLIST_H
 
 #include "freesegment.h"
 
@@ -45,4 +45,4 @@ class FreeSegmentList {
   void Show();
 };
 
-#endif //HPCC_FREESEGMENTLIST_H
+#endif //DALI_FREESEGMENTLIST_H

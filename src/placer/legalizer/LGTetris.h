@@ -12,8 +12,8 @@
  * but who wants bad input? The Global placer and detailed placer should have done their job well;
  * ****/
 
-#ifndef HPCC_SRC_PLACER_LEGALIZER_LGTETRIS_H_
-#define HPCC_SRC_PLACER_LEGALIZER_LGTETRIS_H_
+#ifndef DALI_SRC_PLACER_LEGALIZER_LGTETRIS_H_
+#define DALI_SRC_PLACER_LEGALIZER_LGTETRIS_H_
 
 #include "common/misc.h"
 #include "LGTetris/tetrisspace.h"
@@ -36,4 +36,4 @@ class TetrisLegalizer : public Placer {
   void StartPlacement() override;
 };
 
-#endif //HPCC_SRC_PLACER_LEGALIZER_LGTETRIS_H_
+#endif //DALI_SRC_PLACER_LEGALIZER_LGTETRIS_H_

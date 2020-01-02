@@ -2,8 +2,8 @@
 // Created by yihan on 7/13/2019.
 //
 
-#ifndef HPCC_FREESEGMENT_H
-#define HPCC_FREESEGMENT_H
+#ifndef DALI_FREESEGMENT_H
+#define DALI_FREESEGMENT_H
 
 #include <cassert>
 
@@ -49,4 +49,4 @@ class FreeSegment {
   }
 };
 
-#endif //HPCC_FREESEGMENT_H
+#endif //DALI_FREESEGMENT_H

@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 2019-06-15.
 //
 
-#ifndef HPCC_BLOCKAL_HPP
-#define HPCC_BLOCKAL_HPP
+#ifndef DALI_BLOCKAL_HPP
+#define DALI_BLOCKAL_HPP
 
 #include <cmath>
 #include "circuit/block.h"
@@ -57,4 +57,4 @@ public:
 };
 
 
-#endif //HPCC_BLOCKAL_HPP
+#endif //DALI_BLOCKAL_HPP

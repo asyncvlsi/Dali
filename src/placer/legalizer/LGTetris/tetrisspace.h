@@ -2,8 +2,8 @@
 // Created by yihan on 7/12/2019.
 //
 
-#ifndef HPCC_TETRISSPACE_H
-#define HPCC_TETRISSPACE_H
+#ifndef DALI_TETRISSPACE_H
+#define DALI_TETRISSPACE_H
 
 #include <cmath>
 
@@ -35,4 +35,4 @@ class TetrisSpace {
   void Show();
 };
 
-#endif //HPCC_TETRISSPACE_H
+#endif //DALI_TETRISSPACE_H

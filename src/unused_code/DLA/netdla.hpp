@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 2019-06-01.
 //
 
-#ifndef HPCC_NETDLA_HPP
-#define HPCC_NETDLA_HPP
+#ifndef DALI_NETDLA_HPP
+#define DALI_NETDLA_HPP
 
 #include <string>
 #include "circuit/net.h"
@@ -19,4 +19,4 @@ public:
 };
 
 
-#endif //HPCC_NETDLA_HPP
+#endif //DALI_NETDLA_HPP

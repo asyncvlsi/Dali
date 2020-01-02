@@ -2,8 +2,8 @@
 // Created by Yihang on 10/21/2019.
 //
 
-#ifndef HPCC_SRC_PLACER_DETAILEDPLACER_DPSWAP_H_
-#define HPCC_SRC_PLACER_DETAILEDPLACER_DPSWAP_H_
+#ifndef DALI_SRC_PLACER_DETAILEDPLACER_DPSWAP_H_
+#define DALI_SRC_PLACER_DETAILEDPLACER_DPSWAP_H_
 
 #include <unordered_set>
 
@@ -32,4 +32,4 @@ inline void DPSwap::UpdateSwapThreshold(double hpwl) {
   global_swap_threshold = hpwl/100;
 }
 
-#endif //HPCC_SRC_PLACER_DETAILEDPLACER_DPSWAP_H_
+#endif //DALI_SRC_PLACER_DETAILEDPLACER_DPSWAP_H_

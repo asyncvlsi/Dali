@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 2019-05-20.
 //
 
-#ifndef HPCC_BIN_HPP
-#define HPCC_BIN_HPP
+#ifndef DALI_BIN_HPP
+#define DALI_BIN_HPP
 
 #include <iostream>
 #include <unordered_set>
@@ -103,4 +103,4 @@ inline void Bin::RemoveBlk(int blk_num) {
 }
 
 
-#endif //HPCC_BIN_HPP
+#endif //DALI_BIN_HPP
