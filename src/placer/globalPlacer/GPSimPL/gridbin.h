@@ -27,6 +27,8 @@ class GridBin {
   std::vector<int> cell_list;
   std::vector<int> terminal_list;
   std::vector<GridBinIndex> adjacent_bin_index;
+
+
   int LLX() { return left; }
   int LLY() { return bottom; }
   int URX() { return right; }

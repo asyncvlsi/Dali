@@ -31,11 +31,11 @@ class Circuit {
   unsigned long int tot_mov_width_;
   unsigned long int tot_mov_height_;
   unsigned long int tot_mov_block_area_;
-  int tot_mov_blk_num_;
-  int blk_min_width_;
-  int blk_max_width_;
-  int blk_min_height_;
-  int blk_max_height_;
+  unsigned int tot_mov_blk_num_;
+  unsigned int blk_min_width_;
+  unsigned int blk_max_width_;
+  unsigned int blk_min_height_;
+  unsigned int blk_max_height_;
 
   // Manufacturing Grid
   bool grid_set_;
@@ -196,20 +196,20 @@ class Circuit {
   // repulsive force can be created using an attractive force, a spring whose rest length in the current distance or even longer than the current distance
 
   /****Other member functions****/
-  int MinWidth() const { return blk_min_width_; }
-  int MaxWidth() const { return blk_max_width_; }
-  int MinHeight() const { return blk_min_height_; }
-  int MaxHeight() const { return blk_max_height_; }
+  unsigned int MinWidth() const { return blk_min_width_; }
+  unsigned int MaxWidth() const { return blk_max_width_; }
+  unsigned int MinHeight() const { return blk_min_height_; }
+  unsigned int MaxHeight() const { return blk_max_height_; }
   unsigned long int TotArea() const { return tot_blk_area_; }
-  int TotBlockNum() const { return block_list.size(); }
-  int TotMovableBlockNum() const { return tot_mov_blk_num_; }
+  unsigned int TotBlockNum() const { return block_list.size(); }
+  unsigned int TotMovableBlockNum() const { return tot_mov_blk_num_; }
   unsigned int TotFixedBlkCnt() const { return block_list.size() - tot_mov_blk_num_; }
   double AveWidth() const { return double(tot_width_) / double(TotBlockNum()); }
   double AveHeight() const { return double(tot_height_) / double(TotBlockNum()); }
-  double AveArea() const { return double(tot_blk_area_) / (double) TotBlockNum(); }
-  double AveMovWidth() const { return double(tot_mov_width_) / TotMovableBlockNum(); }
-  double AveMovHeight() const { return double(tot_mov_height_) / TotMovableBlockNum(); }
-  double AveMovArea() const { return double(tot_mov_block_area_) / TotMovableBlockNum(); }
+  double AveArea() const { return double(tot_blk_area_) / double(TotBlockNum()); }
+  double AveMovWidth() const { return double(tot_mov_width_) / tot_mov_blk_num_; }
+  double AveMovHeight() const { return double(tot_mov_height_) / tot_mov_blk_num_; }
+  double AveMovArea() const { return double(tot_mov_block_area_) / tot_mov_blk_num_; }
   double WhiteSpaceUsage() const { return double(TotArea()) / (def_right - def_left) / (def_top - def_bottom); }
 
   void NetSortBlkPin();
@@ -217,6 +217,7 @@ class Circuit {
   double HPWLY();
   double HPWL();
   void ReportHPWL();
+
   double HPWLCtoCX();
   double HPWLCtoCY();
   double HPWLCtoC();
@@ -229,6 +230,10 @@ class Circuit {
   void GenMATLABWellTable(std::string const &name_of_file = "res");
   void SaveDefFile(std::string const &name_of_file, std::string const &def_file_name);
   void SaveISPD(std::string const &name_of_file);
+
+  /****static functions****/
+  static void StrSplit(std::string &line, std::vector<std::string> &res);
+  static int FindFirstDigit(std::string &str);
 };
 
 #endif //DALI_CIRCUIT_HPP

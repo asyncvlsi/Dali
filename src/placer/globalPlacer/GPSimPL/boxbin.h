@@ -13,7 +13,17 @@
 #include "circuit/block.h"
 #include "gridbin.h"
 #include "gridbinindex.h"
-#include "windowquadruple.h"
+
+struct WindowQuadruple {
+  int llx, lly, urx, ury;
+  bool Cover(WindowQuadruple &rhs) {
+    return llx <= rhs.llx && lly <= rhs.lly && urx >= rhs.urx && ury >= rhs.ury;
+  }
+  bool AspectRatioInRange(double lo, double hi) {
+    double ratio = (ury - lly + 1) / double(urx - llx + 1);
+    return ratio <= hi && ratio >= lo;
+  }
+};
 
 class BoxBin {
  public:

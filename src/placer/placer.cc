@@ -37,15 +37,16 @@ double Placer::GetBlkHPWL(Block &blk) {
 }
 
 bool Placer::IsBoundaryProper() {
-  if (circuit_->MaxWidth() > Right() - Left()) {
-    std::cout << "Improper boundary: maximum cell width is larger than the width of placement region\n";
+  if (circuit_->MaxWidth() > (unsigned long int)(Right() - Left())) {
+    std::cout << "Improper boundary:\n"
+              << "    maximum cell width is larger than the width of placement region\n";
     return false;
   }
-  if (circuit_->MaxHeight() > Top() - Bottom()) {
-    std::cout << "Improper boundary: maximum cell height is larger than the height of placement region\n";
+  if (circuit_->MaxHeight() > (unsigned long int)(Top() - Bottom())) {
+    std::cout << "Improper boundary:\n"
+              << "    maximum cell height is larger than the height of placement region\n";
     return false;
   }
-
   return true;
 }
 

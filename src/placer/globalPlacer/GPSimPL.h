@@ -15,8 +15,6 @@
 #include "GPSimPL/cellcutpoint.h"
 #include "GPSimPL/gridbinindex.h"
 #include "GPSimPL/gridbin.h"
-#include "GPSimPL/simplblockaux.h"
-#include "GPSimPL/windowquadruple.h"
 #include "solver.h"
 
 // declares a row-major sparse matrix type of double
@@ -53,7 +51,7 @@ class GPSimPL : public Placer {
  public:
   GPSimPL();
   GPSimPL(double aspectRatio, double fillingRate);
-  int TotBlockNum() { return GetCircuit()->TotBlockNum(); };
+  unsigned int TotBlockNum() { return GetCircuit()->TotBlockNum(); };
   void SetEpsilon() {
     width_epsilon = circuit_->AveMovWidth() / 100.0;
     height_epsilon = circuit_->AveMovHeight() / 100.0;
