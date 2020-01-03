@@ -14,14 +14,15 @@
 VerboseLevel globalVerboseLevel = LOG_DEBUG;
 
 #define TEST_WELL 0
+#define PP 1
 
 int main() {
   Circuit circuit;
 
   time_t Time = clock();
 
-  std::string lef_file_name = "Pbenchmark_10K.lef";
-  std::string def_file_name = "Pbenchmark_10K.def";
+  std::string lef_file_name = "benchmark_10K.lef";
+  std::string def_file_name = "benchmark_10K.def";
 
 #ifdef USE_OPENDB
   odb::dbDatabase *db = odb::dbDatabase::create();
@@ -49,7 +50,7 @@ int main() {
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
   //gb_placer->GenMATLABScript("gb_result.txt");
-  gb_placer->GenMATLABTable("gb_result.txt");
+  //gb_placer->GenMATLABTable("gb_result.txt");
   //gb_placer->GenMATLABWellTable("gb_result");
   //gb_placer->SaveNodeTerminal();
   //gb_placer->SaveDEFFile("circuit.def", def_file);
@@ -59,14 +60,18 @@ int main() {
   d_placer->StartPlacement();
   d_placer->GenMATLABScript("dp_result.txt");*/
 
+#if PP
+  Placer *legalizer = new PushPullLegalizer;
+#else
   Placer *legalizer = new TetrisLegalizer;
+#endif
   legalizer->TakeOver(gb_placer);
   legalizer->StartPlacement();
-  //legalizer->GenMATLABScript("legalizer_result.txt");
+  legalizer->GenMATLABTable("lg_result.txt");
   //legalizer->SaveDEFFile("circuit.def", def_file);
 
 #if TEST_WELL
-  std::string cell_file_name("Pbenchmark_10K.cell");
+  std::string cell_file_name("benchmark_10K.cell");
   circuit.ReadCellFile(cell_file_name);
   Placer *well_legalizer = new WellLegalizer;
   well_legalizer->TakeOver(gb_placer);

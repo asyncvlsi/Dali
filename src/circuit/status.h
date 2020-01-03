@@ -1,5 +1,5 @@
 //
-// Created by yihang on 11/27/19.
+// Created by Yihang Yang on 11/27/19.
 //
 
 #ifndef DALI_SRC_CIRCUIT_STATUS_H_

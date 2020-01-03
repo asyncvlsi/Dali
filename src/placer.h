@@ -20,6 +20,7 @@
 
 /****Legalizer****/
 #include "placer/legalizer/LGTetris.h"
+#include "placer/legalizer/pushpulllegalizer.h"
 
 /****Well Legalizer****/
 #include "placer/wellLegalizer/welllegalizer.h"

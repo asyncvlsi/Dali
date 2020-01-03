@@ -49,17 +49,17 @@ bool WellLegalizer::IsSpaceLegal(Block const &block) {
    * 1. check whether any part of the space is used
    * 2. check whether NP well rules are disobeyed
    * ****/
-  int start_row = int(block.LLY() - Bottom());
-  int end_row = start_row + block.Height();
+  auto start_row = (unsigned int)(block.LLY() - Bottom());
+  unsigned int end_row = start_row + block.Height() - 1;
   int lx = int(block.LLX());
 
-  if (end_row >= int(all_rows_.size())) {
+  if (end_row >= all_rows_.size()) {
     return false;
   }
 
   bool is_avail = true;
   // 1. check the overlap rule
-  for (int i = start_row; i <= end_row; ++i) {
+  for (unsigned int i = start_row; i <= end_row; ++i) {
     if (all_rows_[i].start > lx) {
       is_avail = false;
       break;
@@ -75,11 +75,11 @@ void WellLegalizer::UseSpace(Block const &block) {
   /****
    * Mark the space used by this block by changing the start point of available space in each related row
    * ****/
-  int start_row = int(block.LLY() - Bottom());
-  int end_row = start_row + block.Height() - 1;
+  auto start_row = (unsigned int)(block.LLY() - Bottom());
+  unsigned int end_row = start_row + block.Height() - 1;
   int lx = int(block.LLX());
 
-  if (end_row >= int(all_rows_.size())) {
+  if (end_row >= all_rows_.size()) {
     //std::cout << "  ly:     " << int(block.LLY())       << "\n"
     //          << "  height: " << block.Height()   << "\n"
     //          << "  top:    " << Top()    << "\n"
@@ -87,10 +87,10 @@ void WellLegalizer::UseSpace(Block const &block) {
     Assert(false, "Cannot use space out of range");
   }
 
-  int end_x = lx + block.Width();
-  int pn_boundary_row = start_row + block.Type()->well_->GetPNBoundary() - 1;
+  int end_x = lx + int(block.Width());
+  unsigned int pn_boundary_row = start_row + block.Type()->well_->GetPNBoundary() - 1;
 
-  for (int i = start_row; i <= end_row; ++i) {
+  for (unsigned int i = start_row; i <= end_row; ++i) {
     all_rows_[i].start = end_x;
     all_rows_[i].is_n = (i > pn_boundary_row);
   }
@@ -118,7 +118,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
   int init_x = int(block.LLX());
   int init_y = int(block.LLY());
 
-  int height = block.Height();
+  int height = int(block.Height());
   int start_row = 0;
   int end_row = Top() - Bottom() - height;
   //std::cout << "    Starting row: " << start_row << "\n"

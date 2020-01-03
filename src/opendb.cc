@@ -1,5 +1,5 @@
 //
-// Created by yihang on 12/17/19.
+// Created by Yihang Yang on 12/17/19.
 //
 
 #include "opendb.h"

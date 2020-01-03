@@ -1,5 +1,5 @@
 //
-// Created by Yihang on 1/2/20.
+// Created by Yihang Yang on 1/2/20.
 //
 
 #ifndef DALI_SRC_PLACER_LEGALIZER_PUSHPULLLEGALIZER_H_
@@ -15,9 +15,11 @@ class PushPullLegalizer: public Placer {
  public:
   PushPullLegalizer();
   void InitLegalizer();
-  void PushBlock(Block &block);
+  bool IsSpaceLegal(Block const &block);
+  void UseSpace(Block const &block);
+  bool PushBlock(Block &block);
   void PushLegalization();
-  void PullBlock(Block &block);
+  bool PullBlock(Block &block);
   void PullLegalization();
   void StartPlacement() override;
 };
