@@ -31,7 +31,7 @@ class GPSimPL : public Placer {
   double HPWLY_old = DBL_MAX;
   bool HPWLX_converge = false;
   bool HPWLY_converge = false;
-  double cg_tolerance_ = 0.000000001;
+  double cg_tolerance_ = 1e-6;
   int cg_iteration_max_num_ = 100;
   double error_x = DBL_MAX;
   double error_y = DBL_MAX;
@@ -85,6 +85,9 @@ class GPSimPL : public Placer {
   void BuildProblemB2BY();
   void SolveProblemX();
   void SolveProblemY();
+  void PullBlockBackToRegionX();
+  void PullBlockBackToRegionY();
+  void PullBlockBackToRegion();
   void InitialPlacement();
 
   // look ahead legalization member function implemented below
@@ -132,10 +135,11 @@ class GPSimPL : public Placer {
 
   void StartPlacement() override;
 
+  void DumpResult();
   void DrawBlockNetList(std::string const &name_of_file = "block_net_list.txt");
   void write_all_terminal_grid_bins(std::string const &name_of_file);
-  void write_not_all_terminal_grid_bins(std::string const &name_of_file);
-  void write_overfill_grid_bins(std::string const &name_of_file);
+  void write_not_all_terminal_grid_bins(std::string const &name_of_file = "grid_bin_not_all_terminal.txt");
+  void write_overfill_grid_bins(std::string const &name_of_file="grid_bin_overfill.txt");
   void write_not_overfill_grid_bins(std::string const &name_of_file);
   void write_first_n_bin_cluster(std::string const &name_of_file, size_t n);
   void write_first_bin_cluster(std::string const &name_of_file);
