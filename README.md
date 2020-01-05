@@ -33,7 +33,10 @@ this will create a binary __dali__ in folder _bin_. You can also do
 to create a binary __hpwl__ to report Half-Perimeter Wirelength (HPWL). Based on the preference, one an also do
     
     $ make install
-Use cmake to specify the installation destination.
+Use cmake to specify the installation destination:
+
+    $ cmake .. -DCMAKE_INSTALL_PREFIX=path/to/installation
+The default installation destination is the repo directory.
 
 ### 3rd Party Module List
   * Eigen: sparse matrix iterative linear solver
