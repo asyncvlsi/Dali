@@ -210,7 +210,7 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
   bool is_movable0, is_movable1;
   if (is_x_direction) {
     for (auto &&net: circuit_->net_list) {
-      if (net.P() <= 1) continue;
+      if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
       inv_p = net.InvP();
       net.UpdateMaxMinX();
       max_pin_index = net.MaxBlkPinNumX();
@@ -267,7 +267,7 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
     //});
   } else {
     for (auto &&net: circuit_->net_list) {
-      if (net.P() <= 1) continue;
+      if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
       inv_p = net.InvP();
       net.UpdateMaxMinY();
       max_pin_index = net.MaxBlkPinNumY();
@@ -1558,15 +1558,21 @@ void GPSimPL::StartPlacement() {
     }
     return;
   }
+#if DEBUG
   DumpResult();
+#endif
   InitialPlacement();
+#if DEBUG
   DumpResult();
+#endif
   for (lal_iteration = 0; lal_iteration < look_ahead_iter_max; ++lal_iteration) {
     if (globalVerboseLevel >= LOG_DEBUG) {
       std::cout << lal_iteration << "-th iteration\n";
     }
     LookAheadLegalization();
+#if DEBUG
     DumpResult();
+#endif
     UpdateLALConvergeState();
     if (HPWL_LAL_converge) { // if HPWL sconverges
       if (lal_iteration >= 15) {
@@ -1581,7 +1587,9 @@ void GPSimPL::StartPlacement() {
       UpdateAnchorNetWeight();
     }
     QuadraticPlacementWithAnchor();
+#if DEBUG
     DumpResult();
+#endif
   }
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "\033[0;36m"

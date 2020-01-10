@@ -19,8 +19,11 @@ class PushPullLegalizer: public Placer {
   void UseSpace(Block const &block);
   bool PushBlock(Block &block);
   void PushLegalization();
-  bool PullBlock(Block &block);
-  void PullLegalization();
+  double GetPartialHPWL(Block &block, int x, int y);
+  bool PullBlockLeft(Block &block);
+  void PullLegalizationFromLeft();
+  bool PullBlockRight(Block &block);
+  void PullLegalizationFromRight();
   void StartPlacement() override;
 };
 

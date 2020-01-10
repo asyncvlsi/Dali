@@ -48,6 +48,7 @@ class GPSimPL : public Placer {
   bool HPWL_LAL_converge = false;
   double HPWL_inter_linearSolver_precision = 0.01;
   int number_of_cell_in_bin = 30;
+  int net_ignore_threshold = 100;
  public:
   GPSimPL();
   GPSimPL(double aspectRatio, double fillingRate);

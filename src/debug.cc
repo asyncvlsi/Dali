@@ -14,15 +14,15 @@
 VerboseLevel globalVerboseLevel = LOG_DEBUG;
 
 #define TEST_WELL 0
-#define PP 0
+#define PP 1
 
 int main() {
   Circuit circuit;
 
   time_t Time = clock();
 
-  std::string lef_file_name = "benchmark_200K.lef";
-  std::string def_file_name = "benchmark_200K.def";
+  std::string lef_file_name = "benchmark_1K.lef";
+  std::string def_file_name = "benchmark_1K.def";
 
 #ifdef USE_OPENDB
   odb::dbDatabase *db = odb::dbDatabase::create();

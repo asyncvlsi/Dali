@@ -1345,13 +1345,16 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
 
   std::string line;
   // 1. print file header, copy from def file
-  while (line.find("COMPONENTS") == std::string::npos && !ist.eof()) {
+  while (true) {
     getline(ist, line);
+    if (line.find("COMPONENTS") != std::string::npos || ist.eof()) {
+      break;
+    }
     ost << line << "\n";
   }
 
   // 2. print component
-  //std::cout << circuit_->blockList.size() << "\n";
+  ost << "COMPONENTS: " << block_list.size() << " ;\n";
   for (auto &&block: block_list) {
     ost << "- "
         << *block.Name() << " "
