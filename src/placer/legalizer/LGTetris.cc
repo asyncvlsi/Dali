@@ -150,14 +150,12 @@ bool TetrisLegalizer::TetrisLegal() {
     lly = (int) std::round(block_list[block_num].LLY());
     bool is_current_loc_legal = tetrisSpace.IsSpaceAvail(llx, lly, width, height);
     if (is_current_loc_legal) {
-      block_list[block_num].SetLLX(llx);
-      block_list[block_num].SetLLY(lly);
+      block_list[block_num].SetLoc(llx, lly);
     } else {
       int2d result_loc(0, 0);
       bool is_found = tetrisSpace.FindBlockLoc(llx, lly, width, height, result_loc);
       if (is_found) {
-        block_list[block_num].SetLLX(result_loc.x);
-        block_list[block_num].SetLLY(result_loc.y);
+        block_list[block_num].SetLoc(result_loc.x, result_loc.y);
       } else {
         FastShift(i);
         std::cout << "Tetris legalization iteration...\n";

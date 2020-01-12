@@ -352,7 +352,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
                 << "Using manufacturing grid as grid values\n";
     } else if (metal_list[0].PitchY() <= 0 || metal_list[1].PitchX() <= 0) {
       SetGridValue(manufacturing_grid, manufacturing_grid);
-      std::cout << "No enough metal layers to specify horizontal and vertical pitch\n"
+      std::cout << "Invalid metal pitch\n"
                 << "Using manufacturing grid as grid values\n";
     } else {
       SetGridUsingMetalPitch();
