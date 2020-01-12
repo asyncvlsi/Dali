@@ -9,7 +9,7 @@
 #include <algorithm>
 
 PushPullLegalizer::PushPullLegalizer()
-    : Placer(), is_push_(true) {}
+    : Placer(), is_push_(true), is_pull_from_left_(true), cur_iter_(0), max_iter_(5) {}
 
 void PushPullLegalizer::InitLegalizer() {
   row_start_.resize(Top() - Bottom() + 1, Left());
@@ -73,6 +73,10 @@ void PushPullLegalizer::UseSpace(Block const &block) {
   for (unsigned int i = start_row; i <= end_row; ++i) {
     row_start_[i] = end_x;
   }
+}
+
+void PushPullLegalizer::FastShift(unsigned int failure_point) {
+  
 }
 
 bool PushPullLegalizer::PushBlock(Block &block) {
@@ -150,7 +154,7 @@ bool PushPullLegalizer::PushBlock(Block &block) {
   return false;
 }
 
-void PushPullLegalizer::PushLegalization() {
+bool PushPullLegalizer::PushLegalizationFromLeft() {
   std::vector<Block> &block_list = *BlockList();
   for (size_t i = 0; i < index_loc_list_.size(); ++i) {
     index_loc_list_[i].num = i;
@@ -158,8 +162,11 @@ void PushPullLegalizer::PushLegalization() {
     index_loc_list_[i].y = block_list[i].LLY();
   }
   std::sort(index_loc_list_.begin(), index_loc_list_.end());
-  for (auto &pair: index_loc_list_) {
-    auto &block = block_list[pair.num];
+  unsigned int sz = index_loc_list_.size();
+  unsigned int block_num;
+  for (unsigned int i = 0; i < sz; ++i) {
+    block_num = index_loc_list_[i].num;
+    auto &block = block_list[block_num];
     if (block.IsFixed()) {
       continue;
     }
@@ -167,12 +174,23 @@ void PushPullLegalizer::PushLegalization() {
     if (!is_cur_loc_legal) {
       bool loc_found = PushBlock(block);
       if (!loc_found) {
-        Assert(false, "Cannot find legal location");
+        GenMATLABTable("lg_result.txt");
+        if (globalVerboseLevel >= LOG_CRITICAL) {
+          std::cout << "  WARNING:  " << cur_iter_ << "-iteration push legalization\n"
+                    << "        this may disturb the global placement, and may impact the placement quality\n";
+        }
+        FastShift(i);
+        return false;
       }
     }
     UseSpace(block);
-    std::cout << block.LLX() << "  " << block.LLY() << "\n";
+    //std::cout << block.LLX() << "  " << block.LLY() << "\n";
   }
+  return true;
+}
+
+bool PushPullLegalizer::PushLegalizationFromRight() {
+
 }
 
 double PushPullLegalizer::EstimatedHPWL(Block &block, int x, int y) {
@@ -181,10 +199,8 @@ double PushPullLegalizer::EstimatedHPWL(Block &block, int x, int y) {
   double min_x = x;
   double min_y = y;
   double tot_hpwl = 0;
-  Net *net = nullptr;
-  for (auto &&net_num: block.net_list) {
-    net = &(circuit_->net_list[net_num]);
-    for (auto &&blk_pin_pair: net->blk_pin_list) {
+  for (auto &net_num: block.net_list) {
+    for (auto &blk_pin_pair: circuit_->net_list[net_num].blk_pin_list) {
       if (blk_pin_pair.GetBlock() != &block) {
         min_x = std::min(min_x, blk_pin_pair.AbsX());
         min_y = std::min(min_y, blk_pin_pair.AbsY());
@@ -404,12 +420,25 @@ void PushPullLegalizer::StartPlacement() {
     std::cout << "Start PushPull Legalization\n";
   }
 
+  bool is_successful = true;
   if (is_push_) {
     if (globalVerboseLevel >= LOG_CRITICAL) {
       std::cout << "Push...\n";
     }
-    PushLegalization();
+    for (int i = 0; i < max_iter_; ++i) {
+      if (is_pull_from_left_) {
+        is_successful = PushLegalizationFromLeft();
+      } else {
+        is_successful = PushLegalizationFromRight();
+      }
+      if (is_successful) {
+        break;
+      }
+    }
     ReportHPWL(LOG_CRITICAL);
+  }
+  if (!is_successful) {
+    ClosePackLegalization();
   }
   /*if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "Pull...\n";
@@ -427,4 +456,14 @@ void PushPullLegalizer::StartPlacement() {
 
   ReportHPWL(LOG_CRITICAL);
 
+}
+
+bool PushPullLegalizer::ClosePackLegalization() {
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "  WARNING:  cannot complete normal legalization\n"
+              << "        Exception handler gets called, final legalization result may be poor\n"
+              << "        It is not guaranteed that this exception handler will succeed\n";
+  }
+
+  return true;
 }
