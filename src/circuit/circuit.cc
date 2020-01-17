@@ -1393,19 +1393,89 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   ist.close();
 }
 
-void Circuit::SaveISPD(std::string const &name_of_file) {
+void Circuit::SaveISPDNet(std::string const &name_of_file) {
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open file " + name_of_file);
+  for (auto &net: net_list) {
+    ost << "NetDegree : " << net.blk_pin_list.size() << "   " << *net.Name() << "\n";
+    for (auto &pair: net.blk_pin_list) {
+      ost << "\t" << *(pair.GetBlock()->Name()) << "\t";
+      if (pair.GetPin()->GetIOType()) {
+        ost << "I : ";
+      } else {
+        ost << "O : ";
+      }
+      ost << (pair.GetPin()->XOffset() - pair.GetBlock()->Type()->Width()/2.0) * def_distance_microns * grid_value_x_
+          << "\t"
+          << (pair.GetPin()->YOffset() - pair.GetBlock()->Type()->Height()/2.0) * def_distance_microns * grid_value_y_
+          << "\n";
+    }
+  }
+}
+
+void Circuit::SaveISPDPl(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file " + name_of_file);
   for (auto &&node: block_list) {
+    ost << *node.Name()
+        << "\t"
+        << int(node.LLX() * def_distance_microns * grid_value_x_)
+        << "\t"
+        << int(node.LLY() * def_distance_microns * grid_value_y_);
     if (node.IsMovable()) {
-      ost << *node.Name() << "\t" << int(node.LLX() * def_distance_microns * grid_value_x_) << "\t"
-          << int(node.LLY() * def_distance_microns * grid_value_y_) << "\t:\tN\n";
+       ost << "\t:\tN\n";
     } else {
-      ost << *node.Name() << "\t" << int(node.LLX() * def_distance_microns * grid_value_x_) << "\t"
-          << int(node.LLY() * def_distance_microns * grid_value_y_) << "\t:\tN\t/FIXED\n";
+      ost << "\t:\tN\t/FIXED\n";
     }
   }
   ost.close();
+}
+
+void Circuit::SaveISPDScl(std::string const &name_of_file) {
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open file " + name_of_file);
+#ifdef USE_OPENDB
+  if (db_ == nullptr) {
+    std::cout << "During saving bookshelf .scl file. No ROW info has been found!";
+    return;
+  }
+  auto rows = db_->getChip()->getBlock()->getRows();
+  ost << "NumRows : " << rows.size() << "\n\n";
+  for (auto &&row: rows) {
+    int origin_x=0, origin_y=0;
+    row->getOrigin(origin_x, origin_y);
+    auto site = row->getSite();
+    int height = site->getHeight();
+    int width = site->getWidth();
+    int num_sites = row->getSiteCount();
+    int spacing = row->getSpacing();
+    ost << "CoreRow Horizontal\n"
+        << "  Coordinate    :   " << origin_y << "\n"
+        << "  Height        :   " << height << "\n"
+        << "  Sitewidth     :   " << width << "\n"
+        << "  Sitespacing   :   " << spacing << "\n"
+        << "  Siteorient    :    1\n"
+        << "  Sitesymmetry  :    1\n"
+        << "  SubrowOrigin  :   " << origin_x <<"\tNumSites  :  " << num_sites << "\n"
+        << "End\n";
+  }
+#endif
+}
+
+void Circuit::SaveISPDWts(std::string const &name_of_file) {
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open file " + name_of_file);
+}
+
+void Circuit::SaveISPDAux(std::string const &name_of_file) {
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open file " + name_of_file);
+  ost << "RowBasedPlacement :  "
+      << "adaptec1.nodes  "
+      << "adaptec1.nets  "
+      << "adaptec1.wts  "
+      << "adaptec1.pl  "
+      << "adaptec1.scl";
 }
 
 void Circuit::StrSplit(std::string &line, std::vector<std::string> &res) {

@@ -229,7 +229,11 @@ class Circuit {
   void GenMATLABTable(std::string const &name_of_file = "block.txt");
   void GenMATLABWellTable(std::string const &name_of_file = "res");
   void SaveDefFile(std::string const &name_of_file, std::string const &def_file_name);
-  void SaveISPD(std::string const &name_of_file);
+  void SaveISPDNet(std::string const &name_of_file);
+  void SaveISPDPl(std::string const &name_of_file);
+  void SaveISPDScl(std::string const &name_of_file);
+  void SaveISPDWts(std::string const &name_of_file);
+  void SaveISPDAux(std::string const &name_of_file);
 
   /****static functions****/
   static void StrSplit(std::string &line, std::vector<std::string> &res);

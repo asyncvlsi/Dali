@@ -8,7 +8,8 @@
 
 Pin::Pin(std::pair<const std::string, int> *name_num_pair_ptr, BlockType *blk_type) :
     name_num_pair_ptr_(name_num_pair_ptr),
-    blk_type_(blk_type) {
+    blk_type_(blk_type),
+    is_input_(true) {
   manual_set_ = false;
   x_offset_.resize(8, 0);
   y_offset_.resize(8, 0);
@@ -16,7 +17,8 @@ Pin::Pin(std::pair<const std::string, int> *name_num_pair_ptr, BlockType *blk_ty
 
 Pin::Pin(std::pair<const std::string, int> *name_num_pair_ptr, BlockType *blk_type, double x_offset, double y_offset) :
     name_num_pair_ptr_(name_num_pair_ptr),
-    blk_type_(blk_type) {
+    blk_type_(blk_type),
+    is_input_(true) {
   manual_set_ = true;
   x_offset_.resize(8, 0);
   y_offset_.resize(8, 0);

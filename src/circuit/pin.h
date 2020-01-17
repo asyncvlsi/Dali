@@ -19,6 +19,8 @@ class Pin {
   std::vector<RectD> rect_list_;
   std::pair<const std::string, int> *name_num_pair_ptr_;
   BlockType *blk_type_;
+
+  bool is_input_;
   bool manual_set_;
   std::vector<double> x_offset_;
   std::vector<double> y_offset_;
@@ -36,6 +38,8 @@ class Pin {
   double YOffset(BlockOrient orient = N) const;
   void AddRect(RectD &rect);
   void AddRect(double llx, double lly, double urx, double ury);
+  bool GetIOType() const {return is_input_;}
+  void SetIOType(bool is_input) {is_input_ = is_input;}
   bool Empty() const { return rect_list_.empty(); }
   void Report() const;
 };
