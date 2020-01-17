@@ -12,19 +12,30 @@ class PushPullLegalizer: public Placer {
   std::vector<int> row_start_;
   bool is_push_;
   std::vector<IndexLocPair<int>> index_loc_list_;
+
+  bool is_pull_from_left_;
+  int cur_iter_;
+  int max_iter_;
+
  public:
   PushPullLegalizer();
   void InitLegalizer();
-  bool IsSpaceLegal(Block const &block);
+  bool IsSpaceLegal(Block &block);
   void UseSpace(Block const &block);
+  void FastShift(unsigned int failure_point);
+
   bool PushBlock(Block &block);
-  void PushLegalization();
-  double GetPartialHPWL(Block &block, int x, int y);
+  bool PushLegalizationFromLeft();
+  bool PushLegalizationFromRight();
+  double EstimatedHPWL(Block &block, int x, int y);
+
   bool PullBlockLeft(Block &block);
   void PullLegalizationFromLeft();
   bool PullBlockRight(Block &block);
   void PullLegalizationFromRight();
   void StartPlacement() override;
+
+  bool ClosePackLegalization();
 };
 
 #endif //DALI_SRC_PLACER_LEGALIZER_PUSHPULLLEGALIZER_H_

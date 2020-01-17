@@ -4,6 +4,8 @@
 
 #include "tetrisspace.h"
 
+#include <cfloat>
+
 TetrisSpace::TetrisSpace(int left, int right, int bottom, int top, int rowHeight, int minWidth) : scan_line_(left),
                                                                                                   left_(left),
                                                                                                   right_(right),
@@ -119,7 +121,7 @@ bool TetrisSpace::FindBlockLoc(int llx, int lly, int width, int height, int2d &r
   if (scan_line_ >= right_) {
     scan_line_ = right_;
   }
-  double min_cost = 1e30;
+  double min_cost = DBL_MAX;
   int effective_height = (int) (std::ceil((double) height / row_height_));
   int top_row_to_check = (int) (free_segment_rows.size()) - (effective_height - 1);
   bool all_row_fail = true;
