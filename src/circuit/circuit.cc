@@ -1393,9 +1393,30 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   ist.close();
 }
 
-void Circuit::SaveISPDNet(std::string const &name_of_file) {
+void Circuit::SaveBookshelfNode(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file " + name_of_file);
+  ost << "# this line is here just for ntuplace to recognize this file \n\n";
+  ost << "NumNodes : \t\t" << tot_mov_blk_num_ << "\n"
+      << "NumTerminals : \t\t" << block_list.size() - tot_mov_blk_num_ << "\n";
+  for (auto &block: block_list) {
+    ost << "\t" << *(block.Name())
+        << "\t" << block.Width()
+        << "\t" << block.Height()
+        << "\n";
+  }
+}
+
+void Circuit::SaveBookshelfNet(std::string const &name_of_file) {
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open file " + name_of_file);
+  unsigned int num_pins = 0;
+  for (auto &net: net_list) {
+    num_pins += net.blk_pin_list.size();
+  }
+  ost << "# this line is here just for ntuplace to recognize this file \n\n";
+  ost << "NumNets : " << net_list.size() << "\n"
+      << "NumPins : " << num_pins << "\n\n";
   for (auto &net: net_list) {
     ost << "NetDegree : " << net.blk_pin_list.size() << "   " << *net.Name() << "\n";
     for (auto &pair: net.blk_pin_list) {
@@ -1413,9 +1434,10 @@ void Circuit::SaveISPDNet(std::string const &name_of_file) {
   }
 }
 
-void Circuit::SaveISPDPl(std::string const &name_of_file) {
+void Circuit::SaveBookshelfPl(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file " + name_of_file);
+  ost << "# this line is here just for ntuplace to recognize this file \n\n";
   for (auto &&node: block_list) {
     ost << *node.Name()
         << "\t"
@@ -1431,7 +1453,7 @@ void Circuit::SaveISPDPl(std::string const &name_of_file) {
   ost.close();
 }
 
-void Circuit::SaveISPDScl(std::string const &name_of_file) {
+void Circuit::SaveBookshelfScl(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file " + name_of_file);
 #ifdef USE_OPENDB
@@ -1462,20 +1484,29 @@ void Circuit::SaveISPDScl(std::string const &name_of_file) {
 #endif
 }
 
-void Circuit::SaveISPDWts(std::string const &name_of_file) {
+void Circuit::SaveBookshelfWts(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file " + name_of_file);
 }
 
-void Circuit::SaveISPDAux(std::string const &name_of_file) {
-  std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open file " + name_of_file);
+void Circuit::SaveBookshelfAux(std::string const &name_of_file) {
+  std::string aux_name = name_of_file + ".aux";
+  std::ofstream ost(aux_name.c_str());
+  Assert(ost.is_open(), "Cannot open file " + aux_name);
   ost << "RowBasedPlacement :  "
-      << "adaptec1.nodes  "
-      << "adaptec1.nets  "
-      << "adaptec1.wts  "
-      << "adaptec1.pl  "
-      << "adaptec1.scl";
+      << name_of_file << ".nodes  "
+      << name_of_file << ".nets  "
+      << name_of_file << ".wts  "
+      << name_of_file << ".pl  "
+      << name_of_file << ".scl";
+}
+
+void Circuit::LoadBookshelfPl(std::string const &name_of_file) {
+  std::ofstream ist(name_of_file.c_str());
+  Assert(ist.is_open(), "Cannot open file " + name_of_file);
+  while (!ist.eof()) {
+    
+  }
 }
 
 void Circuit::StrSplit(std::string &line, std::vector<std::string> &res) {

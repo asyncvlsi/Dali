@@ -87,6 +87,14 @@ target_link_libraries(hpwl
     PRIVATE placer
     opendb)
 
+# Stand-alone LEFDEF to Bookshelf format tool, building from the placer library
+add_executable(lefdef2bookshelf
+    EXCLUDE_FROM_ALL
+    src/lefdef2bookshelf.cc)
+target_link_libraries(lefdef2bookshelf
+    PRIVATE placer
+    opendb)
+
 ######################################
 # Configure install destination directory
 ######################################
