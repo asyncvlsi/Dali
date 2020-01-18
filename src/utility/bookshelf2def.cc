@@ -1,19 +1,9 @@
 //
-// Created by Yihang Yang on 1/17/20.
-//
-
-//
-// Created by Yihang Yang on 9/24/19.
+// Created by Yihang Yang on 1/18/20.
 //
 
 /****
- * This is a stand-alone hpwl calculator, it will report:
- * 1. HPWL
- *    pin-to-pin
- *    center-to-center
- * 2. Weighted HPWL, a weight file needs to be provided
- *    pin-to-pin
- *    center-to-center
+ * This can extract location of cells from a bookshelf .pl file, and generate a new DEF file with these locations.
  * ****/
 
 #include <iostream>
@@ -26,13 +16,14 @@ VerboseLevel globalVerboseLevel = LOG_INFO;
 void ReportUsage();
 
 int main(int argc, char *argv[]) {
-  if (argc != 7) {
+  if (argc != 9) {
     ReportUsage();
     return 1;
   }
   std::string lef_file_name;
   std::string def_file_name;
-  std::string book_shelf_out;
+  std::string pl_file_name;
+  std::string out_def_name;
 
   for (int i = 1; i < argc;) {
     std::string arg(argv[i++]);
@@ -40,8 +31,10 @@ int main(int argc, char *argv[]) {
       lef_file_name = std::string(argv[i++]);
     } else if (arg == "-def" && i < argc) {
       def_file_name = std::string(argv[i++]);
-    } else if ((arg == "-bs" || arg == "-bookshelf") && i < argc) {
-      book_shelf_out = std::string(argv[i++]);
+    } else if (arg == "-pl" && i < argc) {
+      pl_file_name = std::string(argv[i++]);
+    } else if (arg == "-o" && i < argc) {
+      out_def_name = std::string(argv[i++]) + ".def";
     } else {
       std::cout << "Unknown command line option: " << argv[i] << "\n";
       return 1;
@@ -61,22 +54,19 @@ int main(int argc, char *argv[]) {
   circuit.ReadDefFile(def_file_name);
 #endif
   // might need to print out some circuit info here
-  circuit.SaveBookshelfNode(book_shelf_out + ".nodes");
-  circuit.SaveBookshelfNet(book_shelf_out + ".nets");
-  circuit.SaveBookshelfPl(book_shelf_out + ".pl");
-  circuit.SaveBookshelfScl(book_shelf_out + ".scl");
-  circuit.SaveBookshelfWts(book_shelf_out + ".wts");
-  circuit.SaveBookshelfAux(book_shelf_out);
+  circuit.LoadBookshelfPl(pl_file_name);
+  circuit.SaveDefFile(out_def_name, def_file_name);
 
   return 0;
 }
 
 void ReportUsage() {
   std::cout << "\033[0;36m"
-            << "Usage: lefdef2bookshelf\n"
+            << "Usage: bookshelf2def\n"
             << " -lef <file.lef>\n"
             << " -def <file.def>\n"
-            << " -bs/-bookshelf <output> (.aux .nets .nodes .pl .scl .wts file will be created)"
+            << " -pl  <file.pl>\n"
+            << " -o   <out_name>.def\n"
             << "(order does not matter)"
             << "\033[0m\n";
 }

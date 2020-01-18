@@ -82,7 +82,7 @@ target_link_libraries(dali-debug
 # Stand-alone hpwl calculator, building from the placer library
 add_executable(hpwl
     EXCLUDE_FROM_ALL
-    src/hpwl.cc)
+    src/utility/hpwl.cc)
 target_link_libraries(hpwl
     PRIVATE placer
     opendb)
@@ -90,8 +90,16 @@ target_link_libraries(hpwl
 # Stand-alone LEFDEF to Bookshelf format tool, building from the placer library
 add_executable(lefdef2bookshelf
     EXCLUDE_FROM_ALL
-    src/lefdef2bookshelf.cc)
+    src/utility/lefdef2bookshelf.cc)
 target_link_libraries(lefdef2bookshelf
+    PRIVATE placer
+    opendb)
+
+# Stand-alone LEFDEF to Bookshelf format tool, building from the placer library
+add_executable(bookshelf2def
+    EXCLUDE_FROM_ALL
+    src/utility/bookshelf2def.cc)
+target_link_libraries(bookshelf2def
     PRIVATE placer
     opendb)
 

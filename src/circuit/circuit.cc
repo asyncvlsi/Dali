@@ -1354,7 +1354,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   }
 
   // 2. print component
-  ost << "COMPONENTS: " << block_list.size() << " ;\n";
+  ost << "COMPONENTS " << block_list.size() << " ;\n";
   for (auto &&block: block_list) {
     ost << "- "
         << *block.Name() << " "
@@ -1401,8 +1401,8 @@ void Circuit::SaveBookshelfNode(std::string const &name_of_file) {
       << "NumTerminals : \t\t" << block_list.size() - tot_mov_blk_num_ << "\n";
   for (auto &block: block_list) {
     ost << "\t" << *(block.Name())
-        << "\t" << block.Width()
-        << "\t" << block.Height()
+        << "\t" << block.Width() * def_distance_microns * grid_value_x_
+        << "\t" << block.Height() * def_distance_microns * grid_value_y_
         << "\n";
   }
 }
@@ -1426,9 +1426,9 @@ void Circuit::SaveBookshelfNet(std::string const &name_of_file) {
       } else {
         ost << "O : ";
       }
-      ost << (pair.GetPin()->XOffset() - pair.GetBlock()->Type()->Width()/2.0) * def_distance_microns * grid_value_x_
+      ost << (pair.GetPin()->XOffset() - pair.GetBlock()->Type()->Width() / 2.0) * def_distance_microns * grid_value_x_
           << "\t"
-          << (pair.GetPin()->YOffset() - pair.GetBlock()->Type()->Height()/2.0) * def_distance_microns * grid_value_y_
+          << (pair.GetPin()->YOffset() - pair.GetBlock()->Type()->Height() / 2.0) * def_distance_microns * grid_value_y_
           << "\n";
     }
   }
@@ -1445,7 +1445,7 @@ void Circuit::SaveBookshelfPl(std::string const &name_of_file) {
         << "\t"
         << int(node.LLY() * def_distance_microns * grid_value_y_);
     if (node.IsMovable()) {
-       ost << "\t:\tN\n";
+      ost << "\t:\tN\n";
     } else {
       ost << "\t:\tN\t/FIXED\n";
     }
@@ -1464,7 +1464,7 @@ void Circuit::SaveBookshelfScl(std::string const &name_of_file) {
   auto rows = db_->getChip()->getBlock()->getRows();
   ost << "NumRows : " << rows.size() << "\n\n";
   for (auto &&row: rows) {
-    int origin_x=0, origin_y=0;
+    int origin_x = 0, origin_y = 0;
     row->getOrigin(origin_x, origin_y);
     auto site = row->getSite();
     int height = site->getHeight();
@@ -1478,7 +1478,7 @@ void Circuit::SaveBookshelfScl(std::string const &name_of_file) {
         << "  Sitespacing   :   " << spacing << "\n"
         << "  Siteorient    :    1\n"
         << "  Sitesymmetry  :    1\n"
-        << "  SubrowOrigin  :   " << origin_x <<"\tNumSites  :  " << num_sites << "\n"
+        << "  SubrowOrigin  :   " << origin_x << "\tNumSites  :  " << num_sites << "\n"
         << "End\n";
   }
 #endif
@@ -1502,10 +1502,28 @@ void Circuit::SaveBookshelfAux(std::string const &name_of_file) {
 }
 
 void Circuit::LoadBookshelfPl(std::string const &name_of_file) {
-  std::ofstream ist(name_of_file.c_str());
+  std::ifstream ist(name_of_file.c_str());
   Assert(ist.is_open(), "Cannot open file " + name_of_file);
+
+  std::string line;
+  std::vector<std::string> res;
+  double lx = 0;
+  double ly = 0;
+
   while (!ist.eof()) {
-    
+    getline(ist, line);
+    StrSplit(line, res);
+    if (res.size() >= 4) {
+      if (IsBlockExist(res[0])) {
+        try {
+          lx = std::stod(res[1]) / grid_value_x_ / def_distance_microns;
+          ly = std::stod(res[2]) / grid_value_y_ / def_distance_microns;
+          GetBlock(res[0])->SetLoc(lx, ly);
+        } catch (...) {
+          Assert(false, "Invalid stod conversion:\n\t" + line);
+        }
+      }
+    }
   }
 }
 
