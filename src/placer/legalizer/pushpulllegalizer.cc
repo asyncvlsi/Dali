@@ -190,7 +190,38 @@ bool PushPullLegalizer::PushLegalizationFromLeft() {
 }
 
 bool PushPullLegalizer::PushLegalizationFromRight() {
-
+  std::vector<Block> &block_list = *BlockList();
+  for (size_t i = 0; i < index_loc_list_.size(); ++i) {
+    index_loc_list_[i].num = i;
+    index_loc_list_[i].x = block_list[i].LLX();
+    index_loc_list_[i].y = block_list[i].LLY();
+  }
+  std::sort(index_loc_list_.begin(), index_loc_list_.end());
+  unsigned int sz = index_loc_list_.size();
+  unsigned int block_num;
+  for (unsigned int i = 0; i < sz; ++i) {
+    block_num = index_loc_list_[i].num;
+    auto &block = block_list[block_num];
+    if (block.IsFixed()) {
+      continue;
+    }
+    bool is_cur_loc_legal = IsSpaceLegal(block);
+    if (!is_cur_loc_legal) {
+      bool loc_found = PushBlock(block);
+      if (!loc_found) {
+        GenMATLABTable("lg_result.txt");
+        if (globalVerboseLevel >= LOG_CRITICAL) {
+          std::cout << "  WARNING:  " << cur_iter_ << "-iteration push legalization\n"
+                    << "        this may disturb the global placement, and may impact the placement quality\n";
+        }
+        FastShift(i);
+        return false;
+      }
+    }
+    UseSpace(block);
+    //std::cout << block.LLX() << "  " << block.LLY() << "\n";
+  }
+  return true;
 }
 
 double PushPullLegalizer::EstimatedHPWL(Block &block, int x, int y) {
@@ -420,12 +451,12 @@ void PushPullLegalizer::StartPlacement() {
     std::cout << "Start PushPull Legalization\n";
   }
 
-  bool is_successful = true;
-  if (is_push_) {
+  bool is_successful = false;
+  /*if (is_push_) {
     if (globalVerboseLevel >= LOG_CRITICAL) {
       std::cout << "Push...\n";
     }
-    for (int i = 0; i < max_iter_; ++i) {
+    for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
       if (is_pull_from_left_) {
         is_successful = PushLegalizationFromLeft();
       } else {
@@ -436,7 +467,7 @@ void PushPullLegalizer::StartPlacement() {
       }
     }
     ReportHPWL(LOG_CRITICAL);
-  }
+  }*/
   if (!is_successful) {
     ClosePackLegalization();
   }
@@ -464,6 +495,64 @@ bool PushPullLegalizer::ClosePackLegalization() {
               << "        Exception handler gets called, final legalization result may be poor\n"
               << "        It is not guaranteed that this exception handler will succeed\n";
   }
+  row_start_.assign(row_start_.size(), Left());
+  std::vector<Block> &block_list = *BlockList();
+  for (size_t i = 0; i < index_loc_list_.size(); ++i) {
+    index_loc_list_[i].num = i;
+    index_loc_list_[i].x = block_list[i].LLX();
+    index_loc_list_[i].y = block_list[i].LLY();
+    block_list[i].SetPlaceStatus(UNPLACED);
+  }
+  std::sort(index_loc_list_.begin(), index_loc_list_.end());
+  for (auto &pair: index_loc_list_) {
+    auto &block = block_list[pair.num];
+
+    int init_x = int(block.LLX());
+    int init_y = int(block.LLY());
+
+    int height = int(block.Height());
+    int width = int(block.Width());
+    int start_row = std::max(0, init_y - Bottom() - 2 * height);
+    //int end_row = Top() - Bottom() - height;
+    int end_row = std::min(Top() - Bottom() - height, init_y - Bottom() + 2 * height);
+
+    int best_row = 0;
+    int best_loc = INT_MIN;
+    double min_cost = DBL_MAX;
+    double tmp_cost;
+    int tmp_end_row = 0;
+    int tmp_x;
+    int tmp_y;
+
+    for (int tmp_row = start_row; tmp_row <= end_row; ++tmp_row) {
+      tmp_end_row = tmp_row + height - 1;
+      tmp_x = std::max(Left(), init_x - 1*width);
+      for (int i = tmp_row; i <= tmp_end_row; ++i) {
+        tmp_x = std::max(tmp_x, row_start_[i]);
+      }
+
+      tmp_y = tmp_row + Bottom();
+      //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
+
+      tmp_cost = std::abs(tmp_x - init_x) + std::abs(tmp_y - init_y);
+      if (tmp_cost < min_cost) {
+        best_loc = tmp_x;
+        best_row = tmp_row;
+        min_cost = tmp_cost;
+      }
+    }
+
+    int res_x = best_loc;
+    int res_y = best_row + Bottom();
+
+    //std::cout << res_x << "  " << res_y << "  " << min_cost << "  " << block.Num() << "\n";
+
+    block.SetLoc(res_x, res_y);
+
+    UseSpace(block);
+    block.SetPlaceStatus(PLACED);
+  }
+
 
   return true;
 }
