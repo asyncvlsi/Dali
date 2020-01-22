@@ -1240,6 +1240,92 @@ void GPSimPL::PlaceBlkInBox(BoxBin &box) {
   }
 }
 
+void GPSimPL::RoughLegalBlkInBox(BoxBin &box) {
+  std::vector<int> row_start;
+  row_start.assign(box.top - box.bottom + 1, box.left);
+
+  int sz = box.cell_list.size();
+  std::vector<IndexLocPair<int>> index_loc_list;
+  IndexLocPair<int> tmp_index_loc_pair(0, 0, 0);
+  index_loc_list.resize(sz, tmp_index_loc_pair);
+
+  std::vector<Block> &block_list = *BlockList();
+  int blk_num;
+  for (int i = 0; i < sz; ++i) {
+    blk_num = box.cell_list[i];
+    index_loc_list[i].num = blk_num;
+    index_loc_list[i].x = block_list[blk_num].LLX();
+    index_loc_list[i].y = block_list[blk_num].LLY();
+  }
+  std::sort(index_loc_list.begin(), index_loc_list.end());
+
+  int init_x;
+  int init_y;
+  int height;
+  int width;
+  int start_row;
+  int end_row;
+  int best_row;
+  int best_loc;
+  double min_cost;
+  double tmp_cost;
+  int tmp_end_row;
+  int tmp_x;
+  int tmp_y;
+
+  for (auto &pair: index_loc_list) {
+    auto &block = block_list[pair.num];
+
+    init_x = int(block.LLX());
+    init_y = int(block.LLY());
+
+    height = int(block.Height());
+    width = int(block.Width());
+    start_row = std::max(0, init_y - box.bottom - 2 * height);
+    end_row = std::min(box.top - box.bottom - height, init_y - box.bottom + 3 * height);
+
+    best_row = 0;
+    best_loc = INT_MIN;
+    min_cost = DBL_MAX;
+
+    for (int tmp_row = start_row; tmp_row <= end_row; ++tmp_row) {
+      tmp_end_row = tmp_row + height - 1;
+      tmp_x = std::max(box.left, init_x - 1*width);
+      for (int i = tmp_row; i <= tmp_end_row; ++i) {
+        tmp_x = std::max(tmp_x, row_start[i]);
+      }
+
+      tmp_y = tmp_row + box.bottom;
+      //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
+
+      tmp_cost = std::abs(tmp_x - init_x) + std::abs(tmp_y - init_y);
+      if (tmp_cost < min_cost) {
+        best_loc = tmp_x;
+        best_row = tmp_row;
+        min_cost = tmp_cost;
+      }
+    }
+
+    int res_x = best_loc;
+    int res_y = best_row + box.bottom;
+
+    //std::cout << res_x << "  " << res_y << "  " << min_cost << "  " << block.Num() << "\n";
+
+    block.SetLoc(res_x, res_y);
+
+    start_row = int(block.LLY()) - box.bottom;
+    end_row = start_row + int(block.Height()) - 1;
+
+    int end_x = int(block.URX());
+    for (int i = start_row; i <= end_row; ++i) {
+      row_start[i] = end_x;
+    }
+  }
+
+
+
+}
+
 double GPSimPL::BlkOverlapArea(Block *node1, Block *node2) {
   bool not_overlap;
   not_overlap = ((node1->LLX() >= node2->URX()) || (node1->LLY() >= node2->URY()))
@@ -1337,6 +1423,9 @@ void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
         }
       } else {
         PlaceBlkInBox(front_box);
+        if (lal_iteration >= 10) {
+          RoughLegalBlkInBox(front_box);
+        }
       }
     }
     box_Q.pop();
@@ -1359,6 +1448,9 @@ bool GPSimPL::RecursiveBisectionBlkSpreading() {
       /* if no terminals in side a box, do cell placement inside the box */
       //PlaceBlkInBoxBisection(box);
       PlaceBlkInBox(box);
+      if (lal_iteration >= 10) {
+        RoughLegalBlkInBox(box);
+      }
     } else {
       SplitBox(box);
     }

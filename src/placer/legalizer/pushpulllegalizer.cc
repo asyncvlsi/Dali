@@ -490,11 +490,6 @@ void PushPullLegalizer::StartPlacement() {
 }
 
 bool PushPullLegalizer::ClosePackLegalization() {
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "  WARNING:  cannot complete normal legalization\n"
-              << "        Exception handler gets called, final legalization result may be poor\n"
-              << "        It is not guaranteed that this exception handler will succeed\n";
-  }
   row_start_.assign(row_start_.size(), Left());
   std::vector<Block> &block_list = *BlockList();
   for (size_t i = 0; i < index_loc_list_.size(); ++i) {
@@ -504,25 +499,35 @@ bool PushPullLegalizer::ClosePackLegalization() {
     block_list[i].SetPlaceStatus(UNPLACED);
   }
   std::sort(index_loc_list_.begin(), index_loc_list_.end());
+
+  int init_x;
+  int init_y;
+  int height;
+  int width;
+  int start_row;
+  int end_row;
+  int best_row;
+  int best_loc;
+  double min_cost;
+  double tmp_cost;
+  int tmp_end_row;
+  int tmp_x;
+  int tmp_y;
+
   for (auto &pair: index_loc_list_) {
     auto &block = block_list[pair.num];
 
-    int init_x = int(block.LLX());
-    int init_y = int(block.LLY());
+    init_x = int(block.LLX());
+    init_y = int(block.LLY());
 
-    int height = int(block.Height());
-    int width = int(block.Width());
-    int start_row = std::max(0, init_y - Bottom() - 2 * height);
-    //int end_row = Top() - Bottom() - height;
-    int end_row = std::min(Top() - Bottom() - height, init_y - Bottom() + 2 * height);
+    height = int(block.Height());
+    width = int(block.Width());
+    start_row = std::max(0, init_y - Bottom() - 2 * height);
+    end_row = std::min(Top() - Bottom() - height, init_y - Bottom() + 3 * height);
 
-    int best_row = 0;
-    int best_loc = INT_MIN;
-    double min_cost = DBL_MAX;
-    double tmp_cost;
-    int tmp_end_row = 0;
-    int tmp_x;
-    int tmp_y;
+    best_row = 0;
+    best_loc = INT_MIN;
+    min_cost = DBL_MAX;
 
     for (int tmp_row = start_row; tmp_row <= end_row; ++tmp_row) {
       tmp_end_row = tmp_row + height - 1;

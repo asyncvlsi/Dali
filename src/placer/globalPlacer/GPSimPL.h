@@ -120,6 +120,7 @@ class GPSimPL : public Placer {
   void SplitBox(BoxBin &box);
   void SplitGridBox(BoxBin &box);
   void PlaceBlkInBox(BoxBin &box);
+  void RoughLegalBlkInBox(BoxBin &box);
   void PlaceBlkInBoxBisection(BoxBin &box);
   bool RecursiveBisectionBlkSpreading();
 
