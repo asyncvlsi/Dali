@@ -445,6 +445,9 @@ void PushPullLegalizer::PullLegalizationFromRight() {
 }
 
 void PushPullLegalizer::StartPlacement() {
+  double wall_time = get_wall_time();
+  double cpu_time = get_cpu_time();
+
   InitLegalizer();
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
@@ -486,6 +489,14 @@ void PushPullLegalizer::StartPlacement() {
   }
 
   ReportHPWL(LOG_CRITICAL);
+
+  wall_time = get_wall_time() - wall_time;
+  cpu_time = get_cpu_time() - cpu_time;
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "(wall time: "
+              << wall_time << "s, cpu time: "
+              << cpu_time << "s)\n";
+  }
 
 }
 

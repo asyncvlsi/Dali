@@ -11,6 +11,7 @@
 
 #include "circuit/circuit.h"
 #include "common/global.h"
+#include "common/timing.h"
 
 class Placer {
  protected:

@@ -172,6 +172,8 @@ bool TetrisLegalizer::TetrisLegal() {
 }
 
 void TetrisLegalizer::StartPlacement() {
+  double wall_time = get_wall_time();
+  double cpu_time = get_cpu_time();
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "Start LGTetris legalization\n";
   }
@@ -207,4 +209,9 @@ void TetrisLegalizer::StartPlacement() {
     }
   }
   ReportHPWL(LOG_CRITICAL);
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "(wall time: "
+              << wall_time << "s, cpu time: "
+              << cpu_time << "s)\n";
+  }
 }

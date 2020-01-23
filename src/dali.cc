@@ -11,6 +11,7 @@
 
 #include "circuit.h"
 #include "common/global.h"
+#include "common/timing.h"
 #include "opendb.h"
 #include "placer.h"
 
@@ -41,7 +42,8 @@ int main(int argc, char *argv[]) {
   double x_grid = 0, y_grid = 0;
   double target_density = -1;
 
-  time_t Time = clock();
+  double wall_time = get_wall_time();
+  double cpu_time = get_cpu_time();
   Circuit circuit;
 
   for (int i = 1; i < argc;) {
@@ -130,6 +132,8 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
+  double file_wall_time = get_wall_time();
+  double file_cpu_time = get_cpu_time();
 #ifdef USE_OPENDB
   odb::dbDatabase *db = odb::dbDatabase::create();
   std::vector<std::string> defFileVec;
@@ -142,8 +146,11 @@ int main(int argc, char *argv[]) {
   circuit.ReadDefFile(def_file_name);
 #endif
 
-  Time = clock() - Time;
-  std::cout << "File loading complete, time: " << float(Time) / CLOCKS_PER_SEC << "s\n";
+  file_wall_time = get_wall_time() - file_wall_time;
+  file_cpu_time = get_cpu_time() - file_cpu_time;
+  std::cout << "File loading complete\n(wall time: "
+            << file_wall_time << "s, cpu time: "
+            << file_cpu_time << "s)\n";
   circuit.ReportBriefSummary();
   circuit.ReportHPWL();
 
@@ -161,15 +168,13 @@ int main(int argc, char *argv[]) {
     std::cout << "target density: " << target_density << "\n";
   }
 
-  Time = clock();
+
   Placer *gb_placer = new GPSimPL;
   gb_placer->SetInputCircuit(&circuit);
   gb_placer->SetBoundaryDef();
   gb_placer->SetFillingRate(target_density);
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
-  time_t gp_time = clock() - Time;
-  std::cout << "global placement complete, time: " << float(gp_time) / CLOCKS_PER_SEC << "s\n";
 
   /*Placer *d_placer = new MDPlacer;
   d_placer->TakeOver(gb_placer);
@@ -179,8 +184,6 @@ int main(int argc, char *argv[]) {
   Placer *legalizer = new TetrisLegalizer;
   legalizer->TakeOver(gb_placer);
   legalizer->StartPlacement();
-  time_t lg_time = clock() - gp_time;
-  std::cout << "legalization complete, time: " << float(lg_time) / CLOCKS_PER_SEC << "s\n";
 
   if (!cell_file_name.empty()) {
     circuit.ReadCellFile(cell_file_name);
@@ -198,8 +201,11 @@ int main(int argc, char *argv[]) {
   //delete d_placer;
   delete legalizer;
 
-  Time = clock() - Time;
-  std::cout << "Execution time " << float(Time) / CLOCKS_PER_SEC << "s.\n";
+  wall_time = get_wall_time() - wall_time;
+  cpu_time = get_cpu_time() - cpu_time;
+  std::cout << "****End of placement (wall time:"
+            << wall_time << "s, cpu time: "
+            << cpu_time << "s)****\n";
   if (!output_name.empty()) {
     circuit.SaveDefFile(output_name, def_file_name);
   }

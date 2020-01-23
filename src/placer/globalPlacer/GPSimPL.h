@@ -131,7 +131,7 @@ class GPSimPL : public Placer {
   void BuildProblemB2BWithAnchorX();
   void BuildProblemB2BWithAnchorY();
   void QuadraticPlacementWithAnchor();
-  void UpdateAnchorNetWeight();
+  void UpdateAnchorNetWeight() {alpha = 0.01 * lal_iteration;}
 
   void CheckAndShift();
 

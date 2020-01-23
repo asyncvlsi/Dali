@@ -1241,10 +1241,11 @@ void GPSimPL::PlaceBlkInBox(BoxBin &box) {
 }
 
 void GPSimPL::RoughLegalBlkInBox(BoxBin &box) {
+  int sz = box.cell_list.size();
+  if (sz == 0) return;
   std::vector<int> row_start;
   row_start.assign(box.top - box.bottom + 1, box.left);
 
-  int sz = box.cell_list.size();
   std::vector<IndexLocPair<int>> index_loc_list;
   IndexLocPair<int> tmp_index_loc_pair(0, 0, 0);
   index_loc_list.resize(sz, tmp_index_loc_pair);
@@ -1272,6 +1273,9 @@ void GPSimPL::RoughLegalBlkInBox(BoxBin &box) {
   int tmp_end_row;
   int tmp_x;
   int tmp_y;
+
+  double min_x = right_;
+  double max_x = left_;
 
   for (auto &pair: index_loc_list) {
     auto &block = block_list[pair.num];
@@ -1313,6 +1317,9 @@ void GPSimPL::RoughLegalBlkInBox(BoxBin &box) {
 
     block.SetLoc(res_x, res_y);
 
+    min_x = std::min(min_x, res_x + width/2.0);
+    max_x = std::max(max_x, res_x + width/2.0);
+
     start_row = int(block.LLY()) - box.bottom;
     end_row = start_row + int(block.Height()) - 1;
 
@@ -1322,7 +1329,17 @@ void GPSimPL::RoughLegalBlkInBox(BoxBin &box) {
     }
   }
 
-
+  double span_x = max_x - min_x;
+  if (span_x >=0 && span_x < 1e-8) return;
+  double box_width = box.right - box.left;
+  if (span_x < 0) {
+    std::cout << span_x << "  " << index_loc_list.size() << "\n";
+  }
+  assert(span_x > 0);
+  for (auto &pair: index_loc_list) {
+    auto &block = block_list[pair.num];
+    block.SetCenterX((block.X() - min_x)/span_x*box_width + box.left);
+  }
 
 }
 
@@ -1423,9 +1440,7 @@ void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
         }
       } else {
         PlaceBlkInBox(front_box);
-        if (lal_iteration >= 10) {
-          RoughLegalBlkInBox(front_box);
-        }
+        //RoughLegalBlkInBox(front_box);
       }
     }
     box_Q.pop();
@@ -1448,9 +1463,7 @@ bool GPSimPL::RecursiveBisectionBlkSpreading() {
       /* if no terminals in side a box, do cell placement inside the box */
       //PlaceBlkInBoxBisection(box);
       PlaceBlkInBox(box);
-      if (lal_iteration >= 10) {
-        RoughLegalBlkInBox(box);
-      }
+      //RoughLegalBlkInBox(box);
     } else {
       SplitBox(box);
     }
@@ -1563,10 +1576,6 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
   ReportHPWL(LOG_INFO);
 }
 
-void GPSimPL::UpdateAnchorNetWeight() {
-  alpha = 0.01 * lal_iteration;
-}
-
 void GPSimPL::LookAheadLegalization() {
   BackUpBlkLoc();
   ClearGridBinFlag();
@@ -1634,6 +1643,8 @@ void GPSimPL::UpdateLALConvergeState() {
 }
 
 void GPSimPL::StartPlacement() {
+  double wall_time = get_wall_time();
+  double cpu_time = get_cpu_time();
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "Start global placement\n";
   }
@@ -1667,7 +1678,7 @@ void GPSimPL::StartPlacement() {
 #endif
     UpdateLALConvergeState();
     if (HPWL_LAL_converge) { // if HPWL sconverges
-      if (lal_iteration >= 15) {
+      if (lal_iteration >= 25) {
         if (globalVerboseLevel >= LOG_CRITICAL) {
           std::cout << "Iterative look-ahead legalization complete" << std::endl;
           std::cout << "Total number of iteration: " << lal_iteration + 1 << std::endl;
@@ -1692,6 +1703,13 @@ void GPSimPL::StartPlacement() {
   CheckAndShift();
   ReportHPWL(LOG_CRITICAL);
   //DrawBlockNetList("cg_result.txt");
+  wall_time = get_wall_time() - wall_time;
+  cpu_time = get_cpu_time() - cpu_time;
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "(wall time: "
+              << wall_time << "s, cpu time: "
+              << cpu_time << "s)\n";
+  }
 }
 
 void GPSimPL::DumpResult() {
