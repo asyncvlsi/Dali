@@ -19,10 +19,6 @@ void TetrisLegalizer::SetMaxItr(int max_iteration) {
   max_iteration_ = max_iteration;
 }
 
-void TetrisLegalizer::ResetItr() {
-  current_iteration_ = 0;
-}
-
 void TetrisLegalizer::FastShift(int failure_point) {
   /****
    * This method is to FastShift() the blocks following the failure_point (included) to reasonable locations in order to keep block orders

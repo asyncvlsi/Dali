@@ -206,8 +206,8 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
     //std::cout << "\n";
   }
 }
+#endif
 
-#else
 void Circuit::ReadLefFile(std::string const &name_of_file) {
   /****
   * This is a naive lef parser, it cannot cover all corner cases
@@ -659,7 +659,6 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
   }
   std::cout << "DEF file loading complete: " << name_of_file << "\n";
 }
-#endif
 
 bool Circuit::IsMetalLayerExist(std::string &metal_name) {
   return !(metal_name_map.find(metal_name) == metal_name_map.end());

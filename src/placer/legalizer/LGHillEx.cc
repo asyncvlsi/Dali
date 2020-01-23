@@ -2,31 +2,38 @@
 // Created by Yihang Yang on 1/2/20.
 //
 
-#include "pushpulllegalizer.h"
+#include "LGHillEx.h"
 
 #include <cfloat>
 
 #include <algorithm>
 
-PushPullLegalizer::PushPullLegalizer()
-    : Placer(), is_push_(true), is_pull_from_left_(true), cur_iter_(0), max_iter_(5) {}
+LGHillEx::LGHillEx()
+    : Placer(),
+      is_push_(true),
+      legalize_from_left_(true),
+      cur_iter_(0),
+      max_iter_(5),
+      k_width_(0.001),
+      k_height_(0.001),
+      k_left_(1) {}
 
-void PushPullLegalizer::InitLegalizer() {
-  row_start_.resize(Top() - Bottom() + 1, Left());
+void LGHillEx::InitLegalizer() {
+  row_start_.resize(top_ - bottom_ + 1, left_);
   IndexLocPair<int> tmp_index_loc_pair(0, 0, 0);
   index_loc_list_.resize(circuit_->block_list.size(), tmp_index_loc_pair);
 }
 
-bool PushPullLegalizer::IsSpaceLegal(Block &block) {
+bool LGHillEx::IsSpaceLegal(Block &block) {
   /****
  * check if the block is out of the placement region
  * check whether any part of the space is used
  * ****/
 
-  auto blk_left   = int(std::round(block.LLX()));
-  auto blk_right  = int(std::round(block.URX()));
+  auto blk_left = int(std::round(block.LLX()));
+  auto blk_right = int(std::round(block.URX()));
   auto blk_bottom = int(std::round(block.LLY()));
-  auto blk_top    = int(std::round(block.URY()));
+  auto blk_top = int(std::round(block.URY()));
 
 
   // 1. check whether the x location of this block is out of the region
@@ -55,7 +62,7 @@ bool PushPullLegalizer::IsSpaceLegal(Block &block) {
   return is_avail;
 }
 
-void PushPullLegalizer::UseSpace(Block const &block) {
+void LGHillEx::UseSpace(Block const &block) {
   /****
    * Mark the space used by this block by changing the start point of available space in each related row
    * ****/
@@ -75,11 +82,11 @@ void PushPullLegalizer::UseSpace(Block const &block) {
   }
 }
 
-void PushPullLegalizer::FastShift(unsigned int failure_point) {
-  
+void LGHillEx::FastShift(unsigned int failure_point) {
+
 }
 
-bool PushPullLegalizer::PushBlock(Block &block) {
+bool LGHillEx::PushBlock(Block &block) {
   /****
    * For each row:
    *    Find the non-overlap location
@@ -90,7 +97,7 @@ bool PushPullLegalizer::PushBlock(Block &block) {
   auto init_x = int(std::round(block.LLX()));
   auto init_y = int(std::round(block.LLY()));
   auto height = int(block.Height());
-  auto right_most  = right_ - int(block.Width());
+  auto right_most = right_ - int(block.Width());
   int start_row = 0;
   int end_row = Top() - Bottom() - height;
   //std::cout << "    Starting row: " << start_row << "\n"
@@ -154,7 +161,7 @@ bool PushPullLegalizer::PushBlock(Block &block) {
   return false;
 }
 
-bool PushPullLegalizer::PushLegalizationFromLeft() {
+bool LGHillEx::PushLegalizationFromLeft() {
   std::vector<Block> &block_list = *BlockList();
   for (size_t i = 0; i < index_loc_list_.size(); ++i) {
     index_loc_list_[i].num = i;
@@ -189,7 +196,7 @@ bool PushPullLegalizer::PushLegalizationFromLeft() {
   return true;
 }
 
-bool PushPullLegalizer::PushLegalizationFromRight() {
+bool LGHillEx::PushLegalizationFromRight() {
   std::vector<Block> &block_list = *BlockList();
   for (size_t i = 0; i < index_loc_list_.size(); ++i) {
     index_loc_list_[i].num = i;
@@ -224,7 +231,7 @@ bool PushPullLegalizer::PushLegalizationFromRight() {
   return true;
 }
 
-double PushPullLegalizer::EstimatedHPWL(Block &block, int x, int y) {
+double LGHillEx::EstimatedHPWL(Block &block, int x, int y) {
   double max_x = x;
   double max_y = y;
   double min_x = x;
@@ -245,7 +252,7 @@ double PushPullLegalizer::EstimatedHPWL(Block &block, int x, int y) {
   return tot_hpwl;
 }
 
-bool PushPullLegalizer::PullBlockLeft(Block &block) {
+bool LGHillEx::PullBlockLeft(Block &block) {
   /****
    * For each row:
    *    if the row is not used before, do not change the location of this block (this kind of block is termed starting_block)
@@ -317,7 +324,7 @@ bool PushPullLegalizer::PullBlockLeft(Block &block) {
   return false;
 }
 
-void PushPullLegalizer::PullLegalizationFromLeft() {
+void LGHillEx::PullLegalizationFromLeft() {
   row_start_.assign(row_start_.size(), Left());
   std::vector<Block> &block_list = *BlockList();
   for (size_t i = 0; i < index_loc_list_.size(); ++i) {
@@ -341,7 +348,7 @@ void PushPullLegalizer::PullLegalizationFromLeft() {
   }
 }
 
-bool PushPullLegalizer::PullBlockRight(Block &block) {
+bool LGHillEx::PullBlockRight(Block &block) {
   /****
    * For each row:
    *    if the row is not used before, do not change the location of this block (this kind of block is termed starting_block)
@@ -416,7 +423,7 @@ bool PushPullLegalizer::PullBlockRight(Block &block) {
   return false;
 }
 
-void PushPullLegalizer::PullLegalizationFromRight() {
+void LGHillEx::PullLegalizationFromRight() {
   row_start_.assign(row_start_.size(), Right());
   std::vector<Block> &block_list = *BlockList();
   for (size_t i = 0; i < index_loc_list_.size(); ++i) {
@@ -444,7 +451,329 @@ void PushPullLegalizer::PullLegalizationFromRight() {
   }
 }
 
-void PushPullLegalizer::StartPlacement() {
+bool LGHillEx::LocalLegalization() {
+  /****
+   * 1. first sort all the circuit based on their location and size
+   *    effective_loc = current_x - k_width_ * width - k_height_ * height;
+   * 2. for each cell, find the leftmost legal location, the location is left-bounded by:
+   *    left_bound = current_location - k_left_ * width;
+   * 3. local search range is bounded by
+   *    a). [left_bound, right_] (the range in the x direction)
+   *    b). [init_y - height, init_y + 2 * height] (the range in the y direction)
+   *    if legal location cannot be found in this range, extend the y_direction by height at each end
+   * 4. if still no legal location can be found, do Flip() then do the whole thing again till reach the maximum iteration
+   ****/
+  bool is_successful = true;
+  row_start_.assign(row_start_.size(), left_);
+  std::vector<Block> &block_list = *BlockList();
+
+  int sz = index_loc_list_.size();
+  for (int i = 0; i < sz; ++i) {
+    index_loc_list_[i].num = i;
+    index_loc_list_[i].x = block_list[i].LLX() - k_width_ * block_list[i].Width() - k_height_ * block_list[i].Height();
+    index_loc_list_[i].y = block_list[i].LLY();
+  }
+  std::sort(index_loc_list_.begin(), index_loc_list_.end());
+
+  double init_x;
+  double init_y;
+  int height;
+  int width;
+
+  int init_row;
+  int left_bound;
+
+  int max_search_row;
+  int search_start_row;
+  int search_end_row;
+
+  int best_row;
+  int best_loc_x;
+  double min_cost;
+
+  double tmp_cost;
+  int tmp_end_row;
+  int tmp_x;
+  int tmp_y;
+
+  for (int i = 0; i < sz; ++i) {
+    //std::cout << i << "\n";
+    auto &block = block_list[index_loc_list_[i].num];
+
+    init_x = block.LLX();
+    init_y = block.LLY();
+    height = int(block.Height());
+    width = int(block.Width());
+
+    left_bound = (int) std::round(init_x - k_left_ * width);
+
+    init_row = int(std::round(init_y) - bottom_);
+    max_search_row = top_ - bottom_ - height;
+
+    search_start_row = std::max(0, init_row - 2 * height);
+    search_end_row = std::min(max_search_row, init_row + 3 * height);
+
+    best_row = 0;
+    best_loc_x = INT_MIN;
+    min_cost = DBL_MAX;
+
+    for (int tmp_start_row = search_start_row; tmp_start_row <= search_end_row; ++tmp_start_row) {
+      tmp_end_row = tmp_start_row + height - 1;
+      tmp_x = std::max(left_, left_bound);
+
+      for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
+        tmp_x = std::max(tmp_x, row_start_[n]);
+      }
+
+      if (is_successful) {
+        if (tmp_x + width > right_) continue;
+      }
+
+      tmp_y = tmp_start_row + bottom_;
+      //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
+
+      tmp_cost = std::abs(tmp_x - init_x) + std::abs(tmp_y - init_y);
+      if (tmp_cost < min_cost) {
+        best_loc_x = tmp_x;
+        best_row = tmp_start_row;
+        min_cost = tmp_cost;
+      }
+    }
+
+    if (is_successful && (best_loc_x < left_)) {
+      int old_start_row = search_start_row;
+      int old_end_row = search_end_row;
+      do {
+        search_start_row = std::max(0, search_start_row - height);
+        search_end_row = std::min(max_search_row, search_end_row + height);
+        for (int tmp_start_row = search_start_row; tmp_start_row <= old_start_row; ++tmp_start_row) {
+          tmp_end_row = tmp_start_row + height - 1;
+          tmp_x = std::max(left_, left_bound);
+
+          for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
+            tmp_x = std::max(tmp_x, row_start_[n]);
+          }
+
+          if (tmp_x + width > right_) continue;
+
+          tmp_y = tmp_start_row + bottom_;
+          //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
+
+          tmp_cost = std::abs(tmp_x - init_x) + std::abs(tmp_y - init_y);
+          if (tmp_cost < min_cost) {
+            best_loc_x = tmp_x;
+            best_row = tmp_start_row;
+            min_cost = tmp_cost;
+          }
+        }
+        for (int tmp_start_row = old_end_row; tmp_start_row <= search_end_row; ++tmp_start_row) {
+          tmp_end_row = tmp_start_row + height - 1;
+          tmp_x = std::max(left_, left_bound);
+
+          for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
+            tmp_x = std::max(tmp_x, row_start_[n]);
+          }
+
+          if (tmp_x + width > right_) continue;
+
+          tmp_y = tmp_start_row + bottom_;
+          //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
+
+          tmp_cost = std::abs(tmp_x - init_x) + std::abs(tmp_y - init_y);
+          if (tmp_cost < min_cost) {
+            best_loc_x = tmp_x;
+            best_row = tmp_start_row;
+            min_cost = tmp_cost;
+          }
+        }
+
+        if (best_loc_x >= left_ && best_loc_x <= right_) break;
+
+      } while (search_start_row > 0 || search_end_row < max_search_row);
+
+      // if still cannot find a legal location, enter fail mode
+      if (best_loc_x < left_ || best_loc_x + width > right_) {
+        is_successful = false;
+        i -= 1;
+        continue;
+      }
+    }
+
+    int res_x = best_loc_x;
+    int res_y = best_row + bottom_;
+
+    //std::cout << res_x << "  " << res_y << "  " << min_cost << "  " << block.Num() << "\n";
+
+    block.SetLoc(res_x, res_y);
+
+    UseSpace(block);
+  }
+
+  return is_successful;
+}
+
+bool LGHillEx::LocalLegalizationRight() {
+  /****
+   * 1. first sort all the circuit based on their location and size
+   *    effective_loc = current_x - k_width_ * width - k_height_ * height;
+   * 2. for each cell, find the leftmost legal location, the location is left-bounded by:
+   *    left_bound = current_location - k_left_ * width;
+   * 3. local search range is bounded by
+   *    a). [left_bound, right_] (the range in the x direction)
+   *    b). [init_y - height, init_y + 2 * height] (the range in the y direction)
+   *    if legal location cannot be found in this range, extend the y_direction by height at each end
+   * 4. if still no legal location can be found, do Flip() then do the whole thing again till reach the maximum iteration
+   ****/
+  bool is_successful = true;
+  row_start_.assign(row_start_.size(), left_);
+  std::vector<Block> &block_list = *BlockList();
+
+  int sz = index_loc_list_.size();
+  for (int i = 0; i < sz; ++i) {
+    index_loc_list_[i].num = i;
+    index_loc_list_[i].x = block_list[i].LLX() - k_width_ * block_list[i].Width() - k_height_ * block_list[i].Height();
+    index_loc_list_[i].y = block_list[i].LLY();
+  }
+  std::sort(index_loc_list_.begin(), index_loc_list_.end());
+
+  double init_x;
+  double init_y;
+  int height;
+  int width;
+
+  int init_row;
+  int left_bound;
+
+  int max_search_row;
+  int search_start_row;
+  int search_end_row;
+
+  int best_row;
+  int best_loc_x;
+  double min_cost;
+
+  double tmp_cost;
+  int tmp_end_row;
+  int tmp_x;
+  int tmp_y;
+
+  for (int i = 0; i < sz; ++i) {
+    //std::cout << i << "\n";
+    auto &block = block_list[index_loc_list_[i].num];
+
+    init_x = block.LLX();
+    init_y = block.LLY();
+    height = int(block.Height());
+    width = int(block.Width());
+
+    left_bound = (int) std::round(init_x - k_left_ * width);
+
+    init_row = int(std::round(init_y) - bottom_);
+    max_search_row = top_ - bottom_ - height;
+
+    search_start_row = std::max(0, init_row - 2 * height);
+    search_end_row = std::min(max_search_row, init_row + 3 * height);
+
+    best_row = 0;
+    best_loc_x = INT_MIN;
+    min_cost = DBL_MAX;
+
+    for (int tmp_start_row = search_start_row; tmp_start_row <= search_end_row; ++tmp_start_row) {
+      tmp_end_row = tmp_start_row + height - 1;
+      tmp_x = std::max(left_, left_bound);
+
+      for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
+        tmp_x = std::max(tmp_x, row_start_[n]);
+      }
+
+      if (is_successful) {
+        if (tmp_x + width > right_) continue;
+      }
+
+      tmp_y = tmp_start_row + bottom_;
+      //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
+
+      tmp_cost = std::abs(tmp_x - init_x) + std::abs(tmp_y - init_y);
+      if (tmp_cost < min_cost) {
+        best_loc_x = tmp_x;
+        best_row = tmp_start_row;
+        min_cost = tmp_cost;
+      }
+    }
+
+    if (is_successful && (best_loc_x < left_)) {
+      int old_start_row = search_start_row;
+      int old_end_row = search_end_row;
+      do {
+        search_start_row = std::max(0, search_start_row - height);
+        search_end_row = std::min(max_search_row, search_end_row + height);
+        for (int tmp_start_row = search_start_row; tmp_start_row <= old_start_row; ++tmp_start_row) {
+          tmp_end_row = tmp_start_row + height - 1;
+          tmp_x = std::max(left_, left_bound);
+
+          for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
+            tmp_x = std::max(tmp_x, row_start_[n]);
+          }
+
+          if (tmp_x + width > right_) continue;
+
+          tmp_y = tmp_start_row + bottom_;
+          //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
+
+          tmp_cost = std::abs(tmp_x - init_x) + std::abs(tmp_y - init_y);
+          if (tmp_cost < min_cost) {
+            best_loc_x = tmp_x;
+            best_row = tmp_start_row;
+            min_cost = tmp_cost;
+          }
+        }
+        for (int tmp_start_row = old_end_row; tmp_start_row <= search_end_row; ++tmp_start_row) {
+          tmp_end_row = tmp_start_row + height - 1;
+          tmp_x = std::max(left_, left_bound);
+
+          for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
+            tmp_x = std::max(tmp_x, row_start_[n]);
+          }
+
+          if (tmp_x + width > right_) continue;
+
+          tmp_y = tmp_start_row + bottom_;
+          //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
+
+          tmp_cost = std::abs(tmp_x - init_x) + std::abs(tmp_y - init_y);
+          if (tmp_cost < min_cost) {
+            best_loc_x = tmp_x;
+            best_row = tmp_start_row;
+            min_cost = tmp_cost;
+          }
+        }
+
+        if (best_loc_x >= left_ && best_loc_x <= right_) break;
+
+      } while (search_start_row > 0 || search_end_row < max_search_row);
+
+      // if still cannot find a legal location, enter fail mode
+      if (best_loc_x < left_ || best_loc_x + width > right_) {
+        is_successful = false;
+        i -= 1;
+        continue;
+      }
+    }
+
+    int res_x = best_loc_x;
+    int res_y = best_row + bottom_;
+
+    //std::cout << res_x << "  " << res_y << "  " << min_cost << "  " << block.Num() << "\n";
+
+    block.SetLoc(res_x, res_y);
+
+    UseSpace(block);
+  }
+
+  return is_successful;
+}
+
+void LGHillEx::StartPlacement() {
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
 
@@ -454,33 +783,20 @@ void PushPullLegalizer::StartPlacement() {
     std::cout << "Start PushPull Legalization\n";
   }
 
-  bool is_successful = false;
-  /*if (is_push_) {
-    if (globalVerboseLevel >= LOG_CRITICAL) {
-      std::cout << "Push...\n";
+  //ShiftX((right_ - left_) / 2.0);
+
+  bool is_success = true;
+  for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
+    if (legalize_from_left_) {
+      is_success = LocalLegalization();
+    } else {
+      is_success = LocalLegalizationRight();
     }
-    for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
-      if (is_pull_from_left_) {
-        is_successful = PushLegalizationFromLeft();
-      } else {
-        is_successful = PushLegalizationFromRight();
-      }
-      if (is_successful) {
-        break;
-      }
+    legalize_from_left_ = !legalize_from_left_;
+    if (is_success) {
+      break;
     }
-    ReportHPWL(LOG_CRITICAL);
-  }*/
-  if (!is_successful) {
-    ClosePackLegalization();
   }
-  /*if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "Pull...\n";
-  }
-  PullLegalizationFromLeft();
-  ReportHPWL(LOG_CRITICAL);*/
-  //PullLegalizationFromRight();
-  //ReportHPWL(LOG_CRITICAL);
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "\033[0;36m"
@@ -498,77 +814,4 @@ void PushPullLegalizer::StartPlacement() {
               << cpu_time << "s)\n";
   }
 
-}
-
-bool PushPullLegalizer::ClosePackLegalization() {
-  row_start_.assign(row_start_.size(), Left());
-  std::vector<Block> &block_list = *BlockList();
-  for (size_t i = 0; i < index_loc_list_.size(); ++i) {
-    index_loc_list_[i].num = i;
-    index_loc_list_[i].x = block_list[i].LLX();
-    index_loc_list_[i].y = block_list[i].LLY();
-    block_list[i].SetPlaceStatus(UNPLACED);
-  }
-  std::sort(index_loc_list_.begin(), index_loc_list_.end());
-
-  int init_x;
-  int init_y;
-  int height;
-  int width;
-  int start_row;
-  int end_row;
-  int best_row;
-  int best_loc;
-  double min_cost;
-  double tmp_cost;
-  int tmp_end_row;
-  int tmp_x;
-  int tmp_y;
-
-  for (auto &pair: index_loc_list_) {
-    auto &block = block_list[pair.num];
-
-    init_x = int(block.LLX());
-    init_y = int(block.LLY());
-
-    height = int(block.Height());
-    width = int(block.Width());
-    start_row = std::max(0, init_y - Bottom() - 2 * height);
-    end_row = std::min(Top() - Bottom() - height, init_y - Bottom() + 3 * height);
-
-    best_row = 0;
-    best_loc = INT_MIN;
-    min_cost = DBL_MAX;
-
-    for (int tmp_row = start_row; tmp_row <= end_row; ++tmp_row) {
-      tmp_end_row = tmp_row + height - 1;
-      tmp_x = std::max(Left(), init_x - 1*width);
-      for (int i = tmp_row; i <= tmp_end_row; ++i) {
-        tmp_x = std::max(tmp_x, row_start_[i]);
-      }
-
-      tmp_y = tmp_row + Bottom();
-      //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
-
-      tmp_cost = std::abs(tmp_x - init_x) + std::abs(tmp_y - init_y);
-      if (tmp_cost < min_cost) {
-        best_loc = tmp_x;
-        best_row = tmp_row;
-        min_cost = tmp_cost;
-      }
-    }
-
-    int res_x = best_loc;
-    int res_y = best_row + Bottom();
-
-    //std::cout << res_x << "  " << res_y << "  " << min_cost << "  " << block.Num() << "\n";
-
-    block.SetLoc(res_x, res_y);
-
-    UseSpace(block);
-    block.SetPlaceStatus(PLACED);
-  }
-
-
-  return true;
 }

@@ -72,6 +72,10 @@ class Placer {
   bool SaveNodeTerminal(std::string const &terminal_file = "terminal.txt", std::string const &node_file = "nodes.txt");
   void SaveDEFFile(std::string const &name_of_file = "circuit.def");
   void SaveDEFFile(std::string const &name_of_file, std::string const &input_def_file);
+
+  /****for testing purposes****/
+  void ShiftX(double shift_x);
+  void ShiftY(double shift_y);
 };
 
 inline void Placer::SetInputCircuit(Circuit *circuit) {

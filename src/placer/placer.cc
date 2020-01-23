@@ -37,12 +37,12 @@ double Placer::GetBlkHPWL(Block &blk) {
 }
 
 bool Placer::IsBoundaryProper() {
-  if (circuit_->MaxWidth() > (unsigned long int)(Right() - Left())) {
+  if (circuit_->MaxWidth() > (unsigned long int) (Right() - Left())) {
     std::cout << "Improper boundary:\n"
               << "    maximum cell width is larger than the width of placement region\n";
     return false;
   }
-  if (circuit_->MaxHeight() > (unsigned long int)(Top() - Bottom())) {
+  if (circuit_->MaxHeight() > (unsigned long int) (Top() - Bottom())) {
     std::cout << "Improper boundary:\n"
               << "    maximum cell height is larger than the height of placement region\n";
     return false;
@@ -307,13 +307,25 @@ void Placer::IOPinPlacement() {
     min_distance = std::min(std::min(to_left, to_right), std::min(to_bottom, to_top));
 
     if (std::fabs(min_distance - to_left) < 1e-10) {
-      iopin.SetLoc(Left(), (net_top + net_bottom) / 2);
+      iopin.SetLoc(left_, (net_top + net_bottom) / 2);
     } else if (std::fabs(min_distance - to_right) < 1e-10) {
-      iopin.SetLoc(Right(), (net_top + net_bottom) / 2);
+      iopin.SetLoc(right_, (net_top + net_bottom) / 2);
     } else if (std::fabs(min_distance - to_bottom) < 1e-10) {
-      iopin.SetLoc((net_left + net_right) / 2, Bottom());
+      iopin.SetLoc((net_left + net_right) / 2, bottom_);
     } else {
-      iopin.SetLoc((net_left + net_right) / 2, Top());
+      iopin.SetLoc((net_left + net_right) / 2, top_);
     }
+  }
+}
+
+void Placer::ShiftX(double shift_x) {
+  for (auto &block: circuit_->block_list) {
+    block.IncreX(shift_x);
+  }
+}
+
+void Placer::ShiftY(double shift_y) {
+  for (auto &block: circuit_->block_list) {
+    block.IncreY(shift_y);
   }
 }

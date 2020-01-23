@@ -29,7 +29,7 @@ class TetrisLegalizer : public Placer {
   TetrisLegalizer();
   void InitLegalizer();
   void SetMaxItr(int max_iteration);
-  void ResetItr();
+  void ResetItr() {current_iteration_ = 0;}
   void FastShift(int failure_point);
   void FlipPlacement();
   bool TetrisLegal();

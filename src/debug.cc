@@ -15,14 +15,16 @@ VerboseLevel globalVerboseLevel = LOG_DEBUG;
 
 #define TEST_WELL 0
 #define PP 1
+#define TEST_ADA false
 
 int main() {
   Circuit circuit;
 
   time_t Time = clock();
 
-  std::string lef_file_name = "benchmark_100K.lef";
-  std::string def_file_name = "benchmark_100K.def";
+#if !TEST_ADA
+  std::string lef_file_name = "benchmark_10K.lef";
+  std::string def_file_name = "benchmark_10K.def";
 
 #ifdef USE_OPENDB
   odb::dbDatabase *db = odb::dbDatabase::create();
@@ -36,7 +38,17 @@ int main() {
   circuit.ReadDefFile(def_file_name);
 #endif
 
-  std::cout << "File loading complete, time: " << double(Time) / CLOCKS_PER_SEC << "s\n";
+#else
+  std::string adaptec1_lef = "../test/adaptec1/adaptec1.lef";
+  std::string adaptec1_def = "../test/adaptec1/adaptec1.def";
+
+  std::string lef_file, def_file;
+  circuit.SetGridValue(0.01,0.01);
+  circuit.ReadLefFile(adaptec1_lef);
+  circuit.ReadDefFile(adaptec1_def);
+#endif
+
+  std::cout << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << "s\n";
 
   circuit.ReportBriefSummary();
   //circuit.ReportBlockType();
@@ -60,7 +72,7 @@ int main() {
   d_placer->GenMATLABScript("dp_result.txt");*/
 
 #if PP
-  Placer *legalizer = new PushPullLegalizer;
+  Placer *legalizer = new LGHillEx;
 #else
   Placer *legalizer = new TetrisLegalizer;
 #endif
@@ -83,24 +95,12 @@ int main() {
   //delete d_placer;
   delete legalizer;
 
-#ifdef USE_OPENDB
+/*#ifdef USE_OPENDB
   odb::dbDatabase::destroy(db);
-#endif
+#endif*/
 
   Time = clock() - Time;
   std::cout << "Execution time " << double(Time) / CLOCKS_PER_SEC << "s.\n";
 
   return 0;
 }
-
-#ifndef USE_OPENDB
-void Test(Circuit &circuit) {
-  std::string adaptec1_lef = "../test/adaptec1/adaptec1.lef";
-  std::string adaptec1_def = "../test/adaptec1/adaptec1.def";
-
-  std::string lef_file, def_file;
-  circuit.SetGridValue(0.01,0.01);
-  circuit.ReadLefFile(adaptec1_lef);
-  circuit.ReadDefFile(adaptec1_def);
-}
-#endif

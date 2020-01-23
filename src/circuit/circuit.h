@@ -59,10 +59,10 @@ class Circuit {
 #ifdef USE_OPENDB
   explicit Circuit(odb::dbDatabase *db);
   void InitializeFromDB(odb::dbDatabase *db);
-#else
+#endif
   void ReadLefFile(std::string const &name_of_file);
   void ReadDefFile(std::string const &name_of_file);
-#endif
+
 
   /****API to set grid value****/
   void SetGridValue(double grid_value_x, double grid_value_y);
