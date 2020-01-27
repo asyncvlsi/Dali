@@ -38,12 +38,12 @@ class LGHillEx : public Placer {
   void PullLegalizationFromRight();
 
   bool IsCurrentLocLegal(Value2D<int> &loc, int width, int height);
-  bool FoundLoc(Value2D<int> &loc, int width, int height);
+  bool FindLoc(Value2D<int> &loc, int width, int height);
   void FastShift(int failure_point);
   bool LocalLegalization();
 
   bool IsCurrentLocLegalRight(Value2D<int> &loc, int width, int height);
-  bool FoundLocRight(Value2D<int> &loc, int width, int height);
+  bool FindLocRight(Value2D<int> &loc, int width, int height);
   void FastShiftRight(int failure_point);
   bool LocalLegalizationRight();
 

@@ -23,8 +23,8 @@ int main() {
   time_t Time = clock();
 
 #if !TEST_ADA
-  std::string lef_file_name = "benchmark_10K.lef";
-  std::string def_file_name = "benchmark_10K.def";
+  std::string lef_file_name = "benchmark_200K.lef";
+  std::string def_file_name = "benchmark_200K.def";
 
 #ifdef USE_OPENDB
   odb::dbDatabase *db = odb::dbDatabase::create();
@@ -58,7 +58,7 @@ int main() {
   gb_placer->SetInputCircuit(&circuit);
 
   gb_placer->SetBoundaryDef();
-  gb_placer->SetFillingRate(0.8);
+  gb_placer->SetFillingRate(0.8246132);
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
   gb_placer->GenMATLABTable("gb_result.txt");

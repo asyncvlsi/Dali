@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
   std::string lef_file_name;
   std::string def_file_name;
   std::string cell_file_name;
-  std::string output_name = std::to_string(tt) + ".def";
+  std::string output_name = "dali_out.def";
   std::string str_grid_value_x, str_grid_value_y;
   std::string str_target_density;
   std::string str_verbose_level;

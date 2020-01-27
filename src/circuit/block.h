@@ -99,6 +99,8 @@ class Block {
   void IncreY(double displacement) { lly_ += displacement; }
   void IncreX(double displacement, double upper, double lower);
   void IncreY(double displacement, double upper, double lower);
+  void DecreX(double displacement) { llx_ -= displacement; }
+  void DecreY(double displacement) { lly_ -= displacement; }
   bool IsOverlap(const Block &rhs) const {
     return !(LLX() > rhs.URX() || rhs.LLX() > URX() || LLY() > rhs.URY() || rhs.LLY() > URY());
   }
