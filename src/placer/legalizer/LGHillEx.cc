@@ -24,8 +24,6 @@ void LGHillEx::InitLegalizer() {
   index_loc_list_.resize(circuit_->block_list.size(), tmp_index_loc_pair);
 }
 
- * check whether any part of the space is used
-  auto blk_left = int(std::round(block.LLX()));
 void LGHillEx::UseSpace(Block const &block) {
   /****
    * Mark the space used by this block by changing the start point of available space in each related row
