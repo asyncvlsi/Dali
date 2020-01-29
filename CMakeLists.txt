@@ -54,6 +54,8 @@ file(GLOB SOURCES
     src/placer/detailedPlacer/MDPlacer/*.cc
     src/placer/legalizer/*.cc
     src/placer/legalizer/LGTetris/*.cc
+    src/placer/postLegalOptimizer/*.cc
+    src/placer/postLegalOptimizer/PLOSlide/*.cc
     src/placer/wellLegalizer/*.cc
     )
 

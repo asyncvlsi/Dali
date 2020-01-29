@@ -2,6 +2,8 @@
 // Created by Yihang Yang on 2019-05-23.
 //
 
+#include <cfloat>
+
 #include <algorithm>
 
 #include "common/misc.h"
@@ -14,77 +16,8 @@ Net::Net(std::pair<const std::string, int> *name_num_pair_ptr, double weight)
   min_pin_x_ = -1;
   max_pin_y_ = -1;
   min_pin_y_ = -1;
+  inv_p = 0;
   aux_ = nullptr;
-}
-
-const std::string *Net::Name() const {
-  return &(name_num_pair_ptr_->first);
-}
-
-int Net::Num() {
-  return name_num_pair_ptr_->second;
-}
-
-void Net::SetWeight(double weight) {
-  weight_ = weight;
-}
-
-double Net::Weight() const {
-  return weight_;
-}
-
-double Net::InvP() {
-  Assert(blk_pin_list.size() > 1, "Invalid net to calculate 1/(P-1)");
-  return 1.0 * weight_ / (double) (blk_pin_list.size() - 1);
-}
-
-int Net::P() {
-  return (int) blk_pin_list.size();
-}
-
-int Net::FixedCnt() {
-  return cnt_fixed_;
-}
-
-void Net::SetAux(NetAux *aux) {
-  Assert(aux != nullptr, "When set auxiliary information, argument cannot be a nullptr");
-  aux_ = aux;
-}
-
-NetAux *Net::Aux() {
-  return aux_;
-}
-
-int Net::MaxBlkPinNumX() {
-  return max_pin_x_;
-}
-
-int Net::MinBlkPinNumX() {
-  return min_pin_x_;
-}
-
-int Net::MaxBlkPinNumY() {
-  return max_pin_y_;
-}
-
-int Net::MinBlkPinNumY() {
-  return min_pin_y_;
-}
-
-Block *Net::MaxBlockX() {
-  return blk_pin_list[max_pin_x_].GetBlock();
-}
-
-Block *Net::MinBlockX() {
-  return blk_pin_list[min_pin_x_].GetBlock();
-}
-
-Block *Net::MaxBlockY() {
-  return blk_pin_list[max_pin_y_].GetBlock();
-}
-
-Block *Net::MinBlockY() {
-  return blk_pin_list[min_pin_y_].GetBlock();
 }
 
 void Net::AddBlockPinPair(Block *block_ptr, int pin_index) {
@@ -95,10 +28,12 @@ void Net::AddBlockPinPair(Block *block_ptr, int pin_index) {
   // because net list is stored as a vector, so the location of a net will change, thus here, we have to use Num() to
   // find a net, although a pointer to this net is more convenient.
   block_ptr->net_list.push_back(Num());
+  int p_minus_one = int(blk_pin_list.size()) - 1;
+  inv_p = p_minus_one > 0 ? 1.0 * weight_ / p_minus_one : 0;
 }
 
 void Net::XBoundExclude(Block *blk_ptr, double &x1, double &x2) {
-  double db_max = 1e30;
+  double db_max = DBL_MAX;
   x1 = -db_max;
   x2 = db_max;
   if (blk_pin_list.size() == 1) return;
@@ -154,6 +89,7 @@ void Net::SortBlkPinList() {
 }
 
 void Net::UpdateMaxMinX() {
+  if (blk_pin_list.empty()) return;
   max_pin_x_ = 0;
   min_pin_x_ = 0;
   double max_x = blk_pin_list[0].AbsX();
@@ -173,6 +109,7 @@ void Net::UpdateMaxMinX() {
 }
 
 void Net::UpdateMaxMinY() {
+  if (blk_pin_list.empty()) return;
   max_pin_y_ = 0;
   min_pin_y_ = 0;
   double max_y = blk_pin_list[0].AbsY();
@@ -191,11 +128,6 @@ void Net::UpdateMaxMinY() {
   }
 }
 
-void Net::UpdateMaxMin() {
-  UpdateMaxMinX();
-  UpdateMaxMinY();
-}
-
 double Net::HPWLX() {
   UpdateMaxMinX();
   double max_x = blk_pin_list[max_pin_x_].AbsX();
@@ -210,11 +142,8 @@ double Net::HPWLY() {
   return (max_y - min_y) * weight_;
 }
 
-double Net::HPWL() {
-  return HPWLX() + HPWLY();
-}
-
 void Net::UpdateMaxMinCtoCX() {
+  if (blk_pin_list.empty()) return;
   max_pin_x_ = 0;
   min_pin_x_ = 0;
   double max_x = blk_pin_list[0].GetBlock()->X();
@@ -234,6 +163,7 @@ void Net::UpdateMaxMinCtoCX() {
 }
 
 void Net::UpdateMaxMinCtoCY() {
+  if (blk_pin_list.empty()) return;
   max_pin_y_ = 0;
   min_pin_y_ = 0;
   double max_y = blk_pin_list[0].GetBlock()->Y();

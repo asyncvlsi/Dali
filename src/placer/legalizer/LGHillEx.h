@@ -10,7 +10,6 @@
 class LGHillEx : public Placer {
  private:
   std::vector<int> row_start_;
-  bool is_push_;
   std::vector<IndexLocPair<int>> index_loc_list_;
 
   bool legalize_from_left_;
@@ -38,7 +37,6 @@ class LGHillEx : public Placer {
   bool LocalLegalizationRight();
 
   double EstimatedHPWL(Block &block, int x, int y);
-  void PostLegalOptimization();
 
   void StartPlacement() override;
 

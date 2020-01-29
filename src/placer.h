@@ -22,6 +22,9 @@
 #include "placer/legalizer/LGTetris.h"
 #include "placer/legalizer/LGHillEx.h"
 
+/****Post Legalization Optimization****/
+#include "placer/postLegalOptimizer/PLOSlide.h"
+
 /****Well Legalizer****/
 #include "placer/wellLegalizer/welllegalizer.h"
 

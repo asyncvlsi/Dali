@@ -58,7 +58,7 @@ int main() {
   gb_placer->SetInputCircuit(&circuit);
 
   gb_placer->SetBoundaryDef();
-  gb_placer->SetFillingRate(0.8246132);
+  gb_placer->SetFillingRate(0.8);
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
   gb_placer->GenMATLABTable("gb_result.txt");
@@ -81,6 +81,11 @@ int main() {
   legalizer->GenMATLABTable("lg_result.txt");
   //legalizer->SaveDEFFile("circuit.def", def_file);
 
+  Placer *post_optimizer = new PLOSlide;
+  post_optimizer->TakeOver(legalizer);
+  post_optimizer->StartPlacement();
+  post_optimizer->GenMATLABTable("po_result.txt");
+
 #if TEST_WELL
   std::string cell_file_name("benchmark_10K.cell");
   circuit.ReadCellFile(cell_file_name);
@@ -94,6 +99,7 @@ int main() {
   delete gb_placer;
   //delete d_placer;
   delete legalizer;
+  delete post_optimizer;
 
 /*#ifdef USE_OPENDB
   odb::dbDatabase::destroy(db);

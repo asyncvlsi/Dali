@@ -10,7 +10,6 @@
 
 LGHillEx::LGHillEx()
     : Placer(),
-      is_push_(true),
       legalize_from_left_(true),
       cur_iter_(0),
       max_iter_(10),
@@ -571,35 +570,15 @@ double LGHillEx::EstimatedHPWL(Block &block, int x, int y) {
   return tot_hpwl;
 }
 
-void LGHillEx::PostLegalOptimization() {
-  row_start_.assign(row_start_.size(), right_);
-  std::vector<Block> &block_list = *BlockList();
-
-  int sz = index_loc_list_.size();
-  for (int i = 0; i < sz; ++i) {
-    index_loc_list_[i].num = i;
-    index_loc_list_[i].x = block_list[i].LLX();
-    index_loc_list_[i].y = block_list[i].LLY();
-  }
-  std::sort(index_loc_list_.begin(), index_loc_list_.end());
-
-  for (auto &pair: index_loc_list_) {
-    //std::cout << i << "\n";
-    auto &block = block_list[pair.num];
-
-  }
-
-}
-
 void LGHillEx::StartPlacement() {
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "Start LGHillEx Legalization\n";
+  }
+
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
 
   InitLegalizer();
-
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "Start PushPull Legalization\n";
-  }
 
   bool is_success = false;
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
@@ -622,19 +601,7 @@ void LGHillEx::StartPlacement() {
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "\033[0;36m"
-              << "PushPull Legalization complete (" << cur_iter_ + 1 << ")\n"
-              << "\033[0m";
-  }
-
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "Start Post-Legalization Optimization\n";
-  }
-
-  PostLegalOptimization();
-
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "\033[0;36m"
-              << "Post-Legalization Optimization complete\n"
+              << "LGHillEx Legalization complete (" << cur_iter_ + 1 << ")\n"
               << "\033[0m";
   }
 
@@ -647,5 +614,4 @@ void LGHillEx::StartPlacement() {
               << wall_time << "s, cpu time: "
               << cpu_time << "s)\n";
   }
-
 }

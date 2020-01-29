@@ -10,7 +10,7 @@
 
 #include "bin.h"
 #include "circuit/net.h"
-#include "circuit/blockaux.h"
+#include "circuit/block.h"
 #include "common/misc.h"
 
 class MDBlkAux: public BlockAux {

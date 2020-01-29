@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "blockaux.h"
 #include "blocktype.h"
 #include "common/misc.h"
 #include "status.h"
@@ -114,6 +113,14 @@ class Block {
   const std::string *TypeName() const { return type_->Name(); }
   std::string GetPlaceStatusStr() { return PlaceStatusStr(place_status_); }
   std::string LowerLeftCorner() { return "( " + std::to_string(LLX()) + " " + std::to_string(LLY()) + " )"; }
+};
+
+class BlockAux {
+ protected:
+  Block *block_;
+ public:
+  explicit BlockAux(Block *block) : block_(block) { block->SetAux(this); }
+  Block *GetBlock() { return block_; }
 };
 
 inline void Block::Report() {

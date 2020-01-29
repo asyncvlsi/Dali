@@ -288,32 +288,32 @@ void Placer::UpdateComponentsPlacementStatus() {
 void Placer::IOPinPlacement() {
   if (circuit_->pin_list.empty()) return;
   Net *net = nullptr;
-  double net_left, net_right, net_bottom, net_top;
+  double net_minx, net_maxx, net_miny, net_maxy;
   double to_left, to_right, to_bottom, to_top;
   double min_distance;
   for (auto &&iopin: circuit_->pin_list) {
     net = iopin.GetNet();
 
     net->UpdateMaxMin();
-    net_left = net->Left();
-    net_right = net->Right();
-    net_bottom = net->Bottom();
-    net_top = net->Top();
+    net_minx = net->MinX();
+    net_maxx = net->MaxX();
+    net_miny = net->MinY();
+    net_maxy = net->MaxY();
 
-    to_left = net_left - Left();
-    to_right = Right() - net_right;
-    to_bottom = net_bottom - Bottom();
-    to_top = Top() - net_top;
+    to_left = net_minx - left_;
+    to_right = right_ - net_maxx;
+    to_bottom = net_miny - bottom_;
+    to_top = top_ - net_maxy;
     min_distance = std::min(std::min(to_left, to_right), std::min(to_bottom, to_top));
 
     if (std::fabs(min_distance - to_left) < 1e-10) {
-      iopin.SetLoc(left_, (net_top + net_bottom) / 2);
+      iopin.SetLoc(left_, (net_maxy + net_miny) / 2);
     } else if (std::fabs(min_distance - to_right) < 1e-10) {
-      iopin.SetLoc(right_, (net_top + net_bottom) / 2);
+      iopin.SetLoc(right_, (net_maxy + net_miny) / 2);
     } else if (std::fabs(min_distance - to_bottom) < 1e-10) {
-      iopin.SetLoc((net_left + net_right) / 2, bottom_);
+      iopin.SetLoc((net_minx + net_maxx) / 2, bottom_);
     } else {
-      iopin.SetLoc((net_left + net_right) / 2, top_);
+      iopin.SetLoc((net_minx + net_maxx) / 2, top_);
     }
   }
 }
