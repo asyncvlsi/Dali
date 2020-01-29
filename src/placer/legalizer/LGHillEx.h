@@ -24,28 +24,21 @@ class LGHillEx : public Placer {
  public:
   LGHillEx();
   void InitLegalizer();
-  bool IsSpaceLegal(Block &block);
+
   void UseSpace(Block const &block);
-
-  bool PushBlock(Block &block);
-  bool PushLegalizationFromLeft();
-  bool PushLegalizationFromRight();
-  double EstimatedHPWL(Block &block, int x, int y);
-
-  bool PullBlockLeft(Block &block);
-  void PullLegalizationFromLeft();
-  bool PullBlockRight(Block &block);
-  void PullLegalizationFromRight();
-
   bool IsCurrentLocLegal(Value2D<int> &loc, int width, int height);
   bool FindLoc(Value2D<int> &loc, int width, int height);
   void FastShift(int failure_point);
   bool LocalLegalization();
 
+  void UseSpaceRight(Block const &block);
   bool IsCurrentLocLegalRight(Value2D<int> &loc, int width, int height);
   bool FindLocRight(Value2D<int> &loc, int width, int height);
   void FastShiftRight(int failure_point);
   bool LocalLegalizationRight();
+
+  double EstimatedHPWL(Block &block, int x, int y);
+  void PostLegalOptimization();
 
   void StartPlacement() override;
 
