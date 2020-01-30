@@ -10,26 +10,78 @@
 class BlockPinPair {
  private:
   Block *block_;
-  int pin_num_;
+  Pin *pin_;
  public:
-  BlockPinPair(Block *block, int pin);
+  BlockPinPair(Block *block, Pin *pin) : block_(block), pin_(pin) {}
+
   Block *GetBlock() const;
   int BlockNum() const;
+
   Pin *GetPin() const;
   int PinNum() const;
-  double XOffset();
-  double YOffset();
+
+  double XOffset() const;
+  double YOffset() const;
   double AbsX() const;
   double AbsY() const;
+
   const std::string *BlockName() const;
   const std::string *PinName() const;
+
+  // some boolean operators
   bool operator<(const BlockPinPair &rhs) const;
   bool operator>(const BlockPinPair &rhs) const;
   bool operator==(const BlockPinPair &rhs) const;
-  /*friend std::ostream& operator<<(std::ostream& os, const BlockPinPair &block_pin_pair) {
-    os << " (" << *(block_pin_pair.BlockName()) << " " << *(block_pin_pair.PinName()) << ") ";
-    return os;
-  }*/
 };
+
+inline Block *BlockPinPair::GetBlock() const {
+  return block_;
+}
+
+inline int BlockPinPair::BlockNum() const {
+  return block_->Num();
+}
+
+inline Pin *BlockPinPair::GetPin() const {
+  return pin_;
+}
+
+inline int BlockPinPair::PinNum() const {
+  return pin_->Num();
+}
+
+inline double BlockPinPair::XOffset() const {
+  return pin_->XOffset(block_->Orient());
+}
+
+inline double BlockPinPair::YOffset() const {
+  return pin_->YOffset(block_->Orient());
+}
+
+inline double BlockPinPair::AbsX() const {
+  return XOffset() + block_->LLX();
+}
+
+inline double BlockPinPair::AbsY() const {
+  return YOffset() + block_->LLY();
+}
+
+inline const std::string *BlockPinPair::BlockName() const {
+  return GetBlock()->Name();
+}
+
+inline const std::string *BlockPinPair::PinName() const {
+  return GetPin()->Name();
+}
+
+inline bool BlockPinPair::operator<(const BlockPinPair &rhs) const {
+  return (BlockNum() < rhs.BlockNum()) || ((BlockNum() == rhs.BlockNum()) && (PinNum() < rhs.PinNum()));
+}
+inline bool BlockPinPair::operator>(const BlockPinPair &rhs) const {
+  return (BlockNum() < rhs.BlockNum()) || ((BlockNum() == rhs.BlockNum()) && (PinNum() > rhs.PinNum()));
+}
+inline bool BlockPinPair::operator==(const BlockPinPair &rhs) const {
+  return (BlockNum() == rhs.BlockNum()) && (PinNum() == rhs.PinNum());
+}
 
 #endif //DALI_SRC_CIRCUIT_BLOCKPINPAIR_H_

@@ -200,8 +200,8 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
       std::string blk_name(iterm->getInst()->getName());
       std::string pin_name(iterm->getMTerm()->getName());
       Block *blk_ptr = GetBlock(blk_name);
-      int pin_num = blk_ptr->Type()->PinIndex(pin_name);
-      new_net->AddBlockPinPair(blk_ptr, pin_num);
+      auto pin = blk_ptr->Type()->GetPin(pin_name);
+      new_net->AddBlockPinPair(blk_ptr, pin);
     }
     //std::cout << "\n";
   }
@@ -645,8 +645,8 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
               continue;
             }
             Block *block = GetBlock(pin_field[i + 1]);
-            int pin_num = block->Type()->PinIndex(pin_field[i + 2]);
-            new_net->AddBlockPinPair(block, pin_num);
+            auto pin = block->Type()->GetPin(pin_field[i + 2]);
+            new_net->AddBlockPinPair(block, pin);
           }
           //std::cout << "\n";
           if (line.find(';') != std::string::npos) break;

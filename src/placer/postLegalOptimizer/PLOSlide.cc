@@ -38,12 +38,16 @@ void PLOSlide::StartPlacement() {
     net_aux_list_[i].UpdateMaxMinX();
   }
 
+  int pin_num;
+  double pin_offset_x;
   for (auto &pair: index_loc_list_) {
     auto &block = block_list[pair.num];
-    std::vector<int> net_bound_x;
+    std::vector<double> net_bound_x;
     for (auto &net_num: block.net_list) {
-      net_bound_x.push_back(net_aux_list_[net_num].MinX());
-      net_bound_x.push_back(net_aux_list_[net_num].MaxX());
+      pin_num = net_aux_list_[net_num].GetPinNum(block);
+      pin_offset_x = block.Type()->pin_list[pin_num].XOffset(block.Orient());
+      net_bound_x.push_back(net_aux_list_[net_num].MinX() - pin_offset_x);
+      net_bound_x.push_back(net_aux_list_[net_num].MaxX() - pin_offset_x);
     }
 
     std::sort(net_bound_x.begin(), net_bound_x.end()); // sort

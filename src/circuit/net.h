@@ -32,7 +32,7 @@ class Net {
   explicit Net(std::pair<const std::string, int> *name_num_pair_ptr, double weight = 1);
 
   // API to add block/pin pair
-  void AddBlockPinPair(Block *block_ptr, int pin_index);
+  void AddBlockPinPair(Block *block_ptr, Pin *pin);
 
   const std::string *Name() const { return &(name_num_pair_ptr_->first); }
   int Num() const { return name_num_pair_ptr_->second; }

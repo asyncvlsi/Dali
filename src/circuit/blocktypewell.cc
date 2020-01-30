@@ -6,6 +6,14 @@
 
 #include "common/misc.h"
 
+BlockTypeCluster::BlockTypeCluster() :
+    plug_(nullptr),
+    unplug_(nullptr) {}
+
+BlockTypeCluster::BlockTypeCluster(BlockTypeWell *plug, BlockTypeWell *unplug) :
+    plug_(plug),
+    unplug_(unplug) {}
+
 BlockTypeWell::BlockTypeWell(BlockType *block_type) :
     type_(block_type),
     is_plug_(false),

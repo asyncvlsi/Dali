@@ -7,7 +7,10 @@
 #include "common/misc.h"
 
 BlockType::BlockType(const std::string *name, unsigned int width, unsigned int height)
-    : name_(name), width_(width), height_(height), well_(nullptr) {}
+    : name_(name),
+      width_(width),
+      height_(height),
+      well_(nullptr) {}
 
 void BlockType::Report() const {
   std::cout << "  BlockType name: " << *Name() << "\n"
@@ -18,15 +21,6 @@ void BlockType::Report() const {
               << pin_list[it.second].YOffset() << ")\n";
   }
   std::cout << std::endl;
-}
-
-bool BlockType::PinExist(std::string &pin_name) {
-  return !(pin_name_num_map.find(pin_name) == pin_name_num_map.end());
-}
-
-int BlockType::PinIndex(std::string &pin_name) {
-  Assert(PinExist(pin_name), "Pin does not exist, cannot find its index: " + pin_name);
-  return pin_name_num_map.find(pin_name)->second;
 }
 
 Pin *BlockType::AddPin(std::string &pin_name) {
@@ -47,7 +41,11 @@ void BlockType::AddPin(std::string &pin_name, double x_offset, double y_offset) 
   pin_list.emplace_back(name_num_ptr, this, x_offset, y_offset);
 }
 
-void BlockType::SetWell(BlockTypeWell *well) {
-  Assert(well != nullptr, "When set auxiliary information, argument cannot be a nullptr");
-  well_ = well;
+Pin *BlockType::GetPin(std::string &pin_name) {
+  auto res = pin_name_num_map.find(pin_name);
+  if (res == pin_name_num_map.end()) {
+    return nullptr;
+  } else {
+    return &(pin_list[res->second]);
+  }
 }

@@ -16,18 +16,19 @@ struct BlockTypeCluster {
  private:
   BlockTypeWell *plug_;
   BlockTypeWell *unplug_;
+
  public:
-  BlockTypeCluster() : plug_(nullptr), unplug_(nullptr) {}
-  BlockTypeCluster(BlockTypeWell *plug, BlockTypeWell *unplug) : plug_(plug), unplug_(unplug) {}
-  void SetAll(BlockTypeWell *plug, BlockTypeWell *unplug) {
-    plug_ = plug;
-    unplug_ = unplug;
-  }
-  void SetPlug(BlockTypeWell *plug) { plug_ = plug; }
-  void SetUnplug(BlockTypeWell *unplug) { unplug_ = unplug; }
-  BlockTypeWell *GetPlug() const { return plug_; }
-  BlockTypeWell *GetUnplug() const { return unplug_; }
-  bool Empty() { return plug_ == nullptr && unplug_ == nullptr; }
+  BlockTypeCluster();
+  BlockTypeCluster(BlockTypeWell *plug, BlockTypeWell *unplug);
+
+  void SetAll(BlockTypeWell *plug, BlockTypeWell *unplug);
+  void SetPlug(BlockTypeWell *plug);
+  void SetUnplug(BlockTypeWell *unplug);
+
+  BlockTypeWell *GetPlug() const;
+  BlockTypeWell *GetUnplug() const;
+
+  bool Empty() const;
 };
 
 class BlockType;
@@ -37,27 +38,28 @@ class BlockTypeWell {
   BlockType *type_;
   bool is_plug_;
   RectI n_rect_, p_rect_;
+
  public:
   BlockTypeCluster *cluster_;
   explicit BlockTypeWell(BlockType *block_type);
 
   void SetCluster(BlockTypeCluster *cluster);
-  BlockTypeCluster *GetCluster() const { return cluster_; }
+  BlockTypeCluster *GetCluster() const;
 
-  BlockType *Type() { return type_; }
+  BlockType *Type();
 
-  void SetPlug(bool is_plug) { is_plug_ = is_plug; }
-  bool IsPlug() const { return is_plug_; }
-  bool IsUnplug() const { return !is_plug_; }
+  void SetPlug(bool is_plug);
+  bool IsPlug() const;
+  bool IsUnplug() const;
 
-  void SetNWellShape(int lx, int ly, int ux, int uy) { n_rect_.SetValue(lx, ly, ux, uy); }
-  void SetNWellShape(RectI &rect) { n_rect_ = rect; }
-  RectI *GetNWellShape() { return &(n_rect_); }
-  void SetPWellShape(int lx, int ly, int ux, int uy) { p_rect_.SetValue(lx, ly, ux, uy); }
-  void SetPWellShape(RectI &rect) { p_rect_ = rect; }
-  RectI *GetPWellShape() { return &(p_rect_); }
+  void SetNWellShape(int lx, int ly, int ux, int uy);
+  void SetNWellShape(RectI &rect);
+  RectI *GetNWellShape();
+  void SetPWellShape(int lx, int ly, int ux, int uy);
+  void SetPWellShape(RectI &rect);
+  RectI *GetPWellShape();
 
-  int GetPNBoundary() { return p_rect_.URY(); }
+  int GetPNBoundary();
 
   void SetWellShape(bool is_n, int lx, int ly, int ux, int uy);
   void SetWellShape(bool is_n, RectI &rect);
@@ -70,5 +72,78 @@ struct WellInfo {
   std::list<BlockTypeCluster> cluster_list_;
   WellInfo() = default;
 };
+
+inline void BlockTypeCluster::SetAll(BlockTypeWell *plug, BlockTypeWell *unplug) {
+  plug_ = plug;
+  unplug_ = unplug;
+}
+
+inline void BlockTypeCluster::SetPlug(BlockTypeWell *plug) {
+  plug_ = plug;
+}
+
+inline void BlockTypeCluster::SetUnplug(BlockTypeWell *unplug) {
+  unplug_ = unplug;
+}
+
+inline BlockTypeWell *BlockTypeCluster::GetPlug() const {
+  return plug_;
+}
+
+inline BlockTypeWell *BlockTypeCluster::GetUnplug() const {
+  return unplug_;
+}
+
+inline bool BlockTypeCluster::Empty() const {
+  return plug_ == nullptr && unplug_ == nullptr;
+}
+
+inline BlockTypeCluster *BlockTypeWell::GetCluster() const {
+  return cluster_;
+}
+
+inline BlockType *BlockTypeWell::Type() {
+  return type_;
+}
+
+inline void BlockTypeWell::SetPlug(bool is_plug) {
+  is_plug_ = is_plug;
+}
+
+inline bool BlockTypeWell::IsPlug() const {
+  return is_plug_;
+}
+
+inline bool BlockTypeWell::IsUnplug() const {
+  return !is_plug_;
+}
+
+inline void BlockTypeWell::SetNWellShape(int lx, int ly, int ux, int uy) {
+  n_rect_.SetValue(lx, ly, ux, uy);
+}
+
+inline void BlockTypeWell::SetNWellShape(RectI &rect) {
+  n_rect_ = rect;
+}
+
+inline RectI *BlockTypeWell::GetNWellShape() {
+  return &(n_rect_);
+}
+
+inline void BlockTypeWell::SetPWellShape(int lx, int ly, int ux, int uy) {
+  p_rect_.SetValue(lx, ly, ux, uy);
+}
+
+inline void BlockTypeWell::SetPWellShape(RectI &rect) {
+  p_rect_ = rect;
+}
+
+inline RectI *BlockTypeWell::GetPWellShape() {
+  return &(p_rect_);
+}
+
+inline int BlockTypeWell::GetPNBoundary() {
+  return p_rect_.URY();
+}
 
 #endif //DALI_SRC_CIRCUIT_WELLBLKTYPEAUX_H_

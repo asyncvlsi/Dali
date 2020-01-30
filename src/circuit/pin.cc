@@ -131,31 +131,3 @@ void Pin::CalculateOffset(double x_offset, double y_offset) {
   y_offset_[FE - N] = blk_type_->Width() - x_offset;
 
 }
-
-void Pin::SetOffset(double x_offset, double y_offset) {
-  CalculateOffset(x_offset, y_offset);
-  manual_set_ = true;
-}
-
-double Pin::XOffset(BlockOrient orient) const {
-  return x_offset_[orient - N];
-}
-
-double Pin::YOffset(BlockOrient orient) const {
-  return y_offset_[orient - N];
-}
-
-void Pin::AddRect(RectD &rect) {
-  rect_list_.push_back(rect);
-}
-
-void Pin::AddRect(double llx, double lly, double urx, double ury) {
-  if (rect_list_.empty()) {
-    CalculateOffset((llx + urx) / 2.0, (lly + ury) / 2.0);
-  }
-  rect_list_.emplace_back(llx, lly, urx, ury);
-}
-
-void Pin::Report() const {
-  std::cout << *Name() << " (" << XOffset() << ", " << YOffset() << ")";
-}

@@ -13,11 +13,11 @@
 
 class PLOSlideNetAux : public NetAux {
  private:
-  int max_x_;
-  int min_x_;
+  double max_x_;
+  double min_x_;
 
-  int max_y_;
-  int min_y_;
+  double max_y_;
+  double min_y_;
 
   std::unordered_map<Block *, int> blk2num_map_;
  public:
@@ -25,15 +25,18 @@ class PLOSlideNetAux : public NetAux {
   void UpdateMaxMinX();
   void UpdateMaxMinY();
 
-  void SetMaxX(int max_x) { max_x_ = max_x; }
-  void SetMinX(int min_x) { min_x_ = min_x; }
-  void SetMaxY(int max_y) { max_y_ = max_y; }
-  void SetMinY(int min_y) { min_y_ = min_y; }
+  void SetMaxX(double max_x) { max_x_ = max_x; }
+  void SetMinX(double min_x) { min_x_ = min_x; }
+  void SetMaxY(double max_y) { max_y_ = max_y; }
+  void SetMinY(double min_y) { min_y_ = min_y; }
 
-  int MaxX() const { return max_x_; }
-  int MinX() const { return min_x_; }
-  int MaxY() const { return max_y_; }
-  int MinY() const { return min_y_; }
+  double MaxX() const { return max_x_; }
+  double MinX() const { return min_x_; }
+  double MaxY() const { return max_y_; }
+  double MinY() const { return min_y_; }
+
+  int GetPinNum(Block *block);
+  int GetPinNum(Block &block) { return GetPinNum(&block); }
 
 };
 

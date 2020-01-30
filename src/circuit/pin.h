@@ -29,19 +29,71 @@ class Pin {
   Pin(std::pair<const std::string, int> *name_num_pair_ptr, BlockType *blk_type);
   Pin(std::pair<const std::string, int> *name_num_pair_ptr, BlockType *blk_type, double x_offset, double y_offset);
 
-  const std::string *Name() const { return &(name_num_pair_ptr_->first); }
-  int Num() const { return name_num_pair_ptr_->second; }
+  const std::string *Name() const;
+  int Num() const;
+
   void InitOffset();
   void CalculateOffset(double x_offset, double y_offset);
   void SetOffset(double x_offset, double y_offset);
   double XOffset(BlockOrient orient = N) const;
   double YOffset(BlockOrient orient = N) const;
+
   void AddRect(RectD &rect);
   void AddRect(double llx, double lly, double urx, double ury);
-  bool GetIOType() const {return is_input_;}
-  void SetIOType(bool is_input) {is_input_ = is_input;}
-  bool Empty() const { return rect_list_.empty(); }
+
+  bool GetIOType() const;
+  void SetIOType(bool is_input);
+
+  bool Empty() const;
   void Report() const;
 };
+
+inline const std::string *Pin::Name() const {
+  return &(name_num_pair_ptr_->first);
+}
+
+inline int Pin::Num() const {
+  return name_num_pair_ptr_->second;
+}
+
+inline void Pin::SetOffset(double x_offset, double y_offset) {
+  CalculateOffset(x_offset, y_offset);
+  manual_set_ = true;
+}
+
+inline double Pin::XOffset(BlockOrient orient) const {
+  return x_offset_[orient - N];
+}
+
+inline double Pin::YOffset(BlockOrient orient) const {
+  return y_offset_[orient - N];
+}
+
+inline void Pin::AddRect(RectD &rect) {
+  rect_list_.push_back(rect);
+}
+
+inline void Pin::AddRect(double llx, double lly, double urx, double ury) {
+  if (rect_list_.empty()) {
+    CalculateOffset((llx + urx) / 2.0, (lly + ury) / 2.0);
+  }
+  rect_list_.emplace_back(llx, lly, urx, ury);
+}
+
+inline bool Pin::GetIOType() const {
+  return is_input_;
+}
+
+inline void Pin::SetIOType(bool is_input) {
+  is_input_ = is_input;
+}
+
+inline bool Pin::Empty() const {
+  return rect_list_.empty();
+}
+
+inline void Pin::Report() const {
+  std::cout << *Name() << " (" << XOffset() << ", " << YOffset() << ")";
+}
 
 #endif //DALI_SRC_CIRCUIT_PIN_H_

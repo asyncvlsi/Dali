@@ -63,7 +63,6 @@ class Circuit {
   void ReadLefFile(std::string const &name_of_file);
   void ReadDefFile(std::string const &name_of_file);
 
-
   /****API to set grid value****/
   void SetGridValue(double grid_value_x, double grid_value_y);
   double GetGridValueX() const { return grid_value_x_; } // unit in micro
@@ -196,21 +195,21 @@ class Circuit {
   // repulsive force can be created using an attractive force, a spring whose rest length in the current distance or even longer than the current distance
 
   /****Other member functions****/
-  unsigned int MinWidth() const { return blk_min_width_; }
-  unsigned int MaxWidth() const { return blk_max_width_; }
-  unsigned int MinHeight() const { return blk_min_height_; }
-  unsigned int MaxHeight() const { return blk_max_height_; }
-  unsigned long int TotArea() const { return tot_blk_area_; }
-  unsigned int TotBlockNum() const { return block_list.size(); }
-  unsigned int TotMovableBlockNum() const { return tot_mov_blk_num_; }
-  unsigned int TotFixedBlkCnt() const { return block_list.size() - tot_mov_blk_num_; }
-  double AveWidth() const { return double(tot_width_) / double(TotBlockNum()); }
-  double AveHeight() const { return double(tot_height_) / double(TotBlockNum()); }
-  double AveArea() const { return double(tot_blk_area_) / double(TotBlockNum()); }
-  double AveMovWidth() const { return double(tot_mov_width_) / tot_mov_blk_num_; }
-  double AveMovHeight() const { return double(tot_mov_height_) / tot_mov_blk_num_; }
-  double AveMovArea() const { return double(tot_mov_block_area_) / tot_mov_blk_num_; }
-  double WhiteSpaceUsage() const { return double(TotArea()) / (def_right - def_left) / (def_top - def_bottom); }
+  unsigned int MinWidth() const;
+  unsigned int MaxWidth() const;
+  unsigned int MinHeight() const;
+  unsigned int MaxHeight() const;
+  unsigned long int TotArea() const;
+  unsigned int TotBlockNum() const;
+  unsigned int TotMovableBlockNum() const;
+  unsigned int TotFixedBlkCnt() const;
+  double AveWidth() const;
+  double AveHeight() const;
+  double AveArea() const;
+  double AveMovWidth() const;
+  double AveMovHeight() const;
+  double AveMovArea() const;
+  double WhiteSpaceUsage() const;
 
   void NetSortBlkPin();
   double HPWLX();
@@ -243,5 +242,37 @@ class Circuit {
   static void StrSplit(std::string &line, std::vector<std::string> &res);
   static int FindFirstDigit(std::string &str);
 };
+
+inline unsigned int Circuit::MinWidth() const { return blk_min_width_; }
+
+inline unsigned int Circuit::MaxWidth() const { return blk_max_width_; }
+
+inline unsigned int Circuit::MinHeight() const { return blk_min_height_; }
+
+inline unsigned int Circuit::MaxHeight() const { return blk_max_height_; }
+
+inline unsigned long int Circuit::TotArea() const { return tot_blk_area_; }
+
+inline unsigned int Circuit::TotBlockNum() const { return block_list.size(); }
+
+inline unsigned int Circuit::TotMovableBlockNum() const { return tot_mov_blk_num_; }
+
+inline unsigned int Circuit::TotFixedBlkCnt() const { return block_list.size() - tot_mov_blk_num_; }
+
+inline double Circuit::AveWidth() const { return double(tot_width_) / double(TotBlockNum()); }
+
+inline double Circuit::AveHeight() const { return double(tot_height_) / double(TotBlockNum()); }
+
+inline double Circuit::AveArea() const { return double(tot_blk_area_) / double(TotBlockNum()); }
+
+inline double Circuit::AveMovWidth() const { return double(tot_mov_width_) / tot_mov_blk_num_; }
+
+inline double Circuit::AveMovHeight() const { return double(tot_mov_height_) / tot_mov_blk_num_; }
+
+inline double Circuit::AveMovArea() const { return double(tot_mov_block_area_) / tot_mov_blk_num_; }
+
+inline double Circuit::WhiteSpaceUsage() const {
+  return double(TotArea()) / (def_right - def_left) / (def_top - def_bottom);
+}
 
 #endif //DALI_CIRCUIT_HPP

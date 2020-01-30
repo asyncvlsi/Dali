@@ -197,7 +197,9 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
   std::vector<Block> &block_list = *BlockList();
   size_t coefficients_capacity = coefficients.capacity();
   coefficients.resize(0);
-  for (int i = 0; i < int(b.size()); ++i) {
+
+  int sz = b.size();
+  for (int i = 0; i < sz; ++i) {
     b[i] = 0;
   }
 

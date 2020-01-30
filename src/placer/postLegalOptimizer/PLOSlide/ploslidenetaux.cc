@@ -15,12 +15,21 @@ void PLOSlideNetAux::Init() {
 
 void PLOSlideNetAux::UpdateMaxMinX() {
   net_->UpdateMaxMinX();
-  max_x_ = int(net_->MaxX());
-  min_x_ = int(net_->MinX());
+  max_x_ = net_->MaxX();
+  min_x_ = net_->MinX();
 }
 
 void PLOSlideNetAux::UpdateMaxMinY() {
   net_->UpdateMaxMinY();
-  max_y_ = int(net_->MaxY());
-  min_y_ = int(net_->MinY());
+  max_y_ = net_->MaxY();
+  min_y_ = net_->MinY();
+}
+
+int PLOSlideNetAux::GetPinNum(Block *block) {
+  auto res = blk2num_map_.find(block);
+  if (res == blk2num_map_.end()) {
+    return -1;
+  } else {
+    return res->second;
+  }
 }
