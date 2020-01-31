@@ -7,7 +7,12 @@
 #include <algorithm>
 
 void PLOSlide::InitPostLegalOptimizer() {
+  row_start_.assign(top_ - bottom_ + 1, left_);
+  net_aux_list_.reserve(circuit_->net_list.size());
 
+  for (auto &&net: circuit_->net_list) {
+    net_aux_list_.emplace_back(&net);
+  }
 }
 
 void PLOSlide::StartPlacement() {
@@ -35,17 +40,17 @@ void PLOSlide::StartPlacement() {
   int net_sz = int(net_list.size());
 
   for (int i = 0; i < net_sz; ++i) {
-    net_aux_list_[i].UpdateMaxMinX();
+    net_aux_list_[i].UpdateMaxMinLocX();
   }
 
-  int pin_num;
+  Pin *pin;
   double pin_offset_x;
   for (auto &pair: index_loc_list_) {
     auto &block = block_list[pair.num];
     std::vector<double> net_bound_x;
     for (auto &net_num: block.net_list) {
-      pin_num = net_aux_list_[net_num].GetPinNum(block);
-      pin_offset_x = block.Type()->pin_list[pin_num].XOffset(block.Orient());
+      pin = net_aux_list_[net_num].GetPin(block);
+      pin_offset_x = pin->XOffset(block.Orient());
       net_bound_x.push_back(net_aux_list_[net_num].MinX() - pin_offset_x);
       net_bound_x.push_back(net_aux_list_[net_num].MaxX() - pin_offset_x);
     }

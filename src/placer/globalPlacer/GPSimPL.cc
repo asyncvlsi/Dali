@@ -214,7 +214,7 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
     for (auto &&net: circuit_->net_list) {
       if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
       inv_p = net.InvP();
-      net.UpdateMaxMinX();
+      net.UpdateMaxMinIndexX();
       max_pin_index = net.MaxBlkPinNumX();
       min_pin_index = net.MinBlkPinNumX();
       for (int i = 0; i < int(net.blk_pin_list.size()); ++i) {
@@ -271,7 +271,7 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
     for (auto &&net: circuit_->net_list) {
       if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
       inv_p = net.InvP();
-      net.UpdateMaxMinY();
+      net.UpdateMaxMinIndexY();
       max_pin_index = net.MaxBlkPinNumY();
       min_pin_index = net.MinBlkPinNumY();
       for (int i = 0; i < int(net.blk_pin_list.size()); i++) {

@@ -44,7 +44,7 @@ void DPLinear::BuildProblemDPLinear(bool is_x_direction, Eigen::VectorXd &b) {
     for (auto &&net: net_list) {
       if (net.P() <= 1) continue;
       inv_p = net.InvP();
-      net.UpdateMaxMinX();
+      net.UpdateMaxMinIndexX();
       max_pin_index = net.MaxBlkPinNumX();
       min_pin_index = net.MinBlkPinNumX();
       for (size_t i = 0; i < net.blk_pin_list.size(); i++) {
@@ -107,7 +107,7 @@ void DPLinear::BuildProblemDPLinear(bool is_x_direction, Eigen::VectorXd &b) {
     for (auto &&net: net_list) {
       if (net.P() <= 1) continue;
       inv_p = net.InvP();
-      net.UpdateMaxMinY();
+      net.UpdateMaxMinIndexY();
       max_pin_index = net.MaxBlkPinNumY();
       min_pin_index = net.MinBlkPinNumY();
       for (size_t i = 0; i < net.blk_pin_list.size(); i++) {

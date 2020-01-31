@@ -4,6 +4,14 @@
 
 #include "layer.h"
 
+Layer::Layer() :
+    width_(0),
+    spacing_(0) {}
+
+Layer::Layer(double width, double spacing) :
+    width_(width),
+    spacing_(spacing) {}
+
 MetalLayer::MetalLayer(std::pair<const std::string, int> *name_num_ptr) :
     Layer(),
     name_num_ptr_(name_num_ptr),
@@ -30,6 +38,14 @@ void MetalLayer::Report() {
             << "    MinArea: " << Area() << "\n"
             << "    Direction: " << MetalDirectionStr(Direction()) << "\n"
             << "    Pitch: " << PitchX() << "  " << PitchY() << "\n";
+}
+
+WellLayer::WellLayer(double width, double spacing, double op_spacing, double max_plug_dist) :
+    Layer(width, spacing),
+    op_spacing_(op_spacing),
+    max_plug_dist_(max_plug_dist) {
+  Assert(op_spacing >= 0, "Negative opposite spacing?");
+  Assert(max_plug_dist_ >= 0, "Negative maximum plug distance?");
 }
 
 void WellLayer::SetParams(double width, double spacing, double op_spacing, double max_plug_dist) {

@@ -88,7 +88,7 @@ void Net::SortBlkPinList() {
   std::sort(blk_pin_list.begin(), blk_pin_list.end());
 }
 
-void Net::UpdateMaxMinX() {
+void Net::UpdateMaxMinIndexX() {
   if (blk_pin_list.empty()) return;
   max_pin_x_ = 0;
   min_pin_x_ = 0;
@@ -108,7 +108,7 @@ void Net::UpdateMaxMinX() {
   }
 }
 
-void Net::UpdateMaxMinY() {
+void Net::UpdateMaxMinIndexY() {
   if (blk_pin_list.empty()) return;
   max_pin_y_ = 0;
   min_pin_y_ = 0;
@@ -129,14 +129,14 @@ void Net::UpdateMaxMinY() {
 }
 
 double Net::HPWLX() {
-  UpdateMaxMinX();
+  UpdateMaxMinIndexX();
   double max_x = blk_pin_list[max_pin_x_].AbsX();
   double min_x = blk_pin_list[min_pin_x_].AbsX();
   return (max_x - min_x) * weight_;
 }
 
 double Net::HPWLY() {
-  UpdateMaxMinY();
+  UpdateMaxMinIndexY();
   double max_y = blk_pin_list[max_pin_y_].AbsY();
   double min_y = blk_pin_list[min_pin_y_].AbsY();
   return (max_y - min_y) * weight_;
@@ -183,8 +183,8 @@ void Net::UpdateMaxMinCtoCY() {
 }
 
 void Net::UpdateMaxMinCtoC() {
-  UpdateMaxMinX();
-  UpdateMaxMinY();
+  UpdateMaxMinIndexX();
+  UpdateMaxMinIndexY();
 }
 
 int Net::MaxPinCtoCX() {
@@ -293,4 +293,9 @@ double Net::HPWLCtoCY() {
 
 double Net::HPWLCtoC() {
   return HPWLCtoCX() + HPWLCtoCY();
+}
+
+NetAux::NetAux(Net *net) :
+    net_(net) {
+  net_->SetAux(this);
 }

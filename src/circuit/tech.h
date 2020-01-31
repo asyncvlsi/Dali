@@ -16,12 +16,20 @@ class Tech {
  public:
   Tech();
   ~Tech();
-  WellLayer *GetNLayer() const { return n_layer_; }
-  WellLayer *GetPLayer() const { return p_layer_; }
+  WellLayer *GetNLayer() const;
+  WellLayer *GetPLayer() const;
   void SetNLayer(double width, double spacing, double op_spacing, double max_plug_dist);
   void SetPLayer(double width, double spacing, double op_spacing, double max_plug_dist);
 
   void Report();
 };
+
+inline WellLayer *Tech::GetNLayer() const {
+  return n_layer_;
+}
+
+inline WellLayer *Tech::GetPLayer() const {
+  return p_layer_;
+}
 
 #endif //DALI_SRC_CIRCUIT_TECH_H_

@@ -30,32 +30,77 @@ class IOPin {
         double lx,
         double ly);
 
-  const std::string *Name() const { return &(name_num_pair_->first); }
-  int Num() const { return name_num_pair_->second; }
-  Net *GetNet() const { return net_; }
-  SignalDirection Direction() const { return direction_; }
-  MetalLayer *Layer() const { return layer_; }
-  RectD *GetRect() { return &rect_; }
-  double X() { return lx_; }
-  double Y() { return ly_; }
+  const std::string *Name() const;
+  int Num() const;
+  Net *GetNet() const;
+  SignalDirection Direction() const;
+  MetalLayer *Layer() const;
+  RectD *GetRect();
+  double X();
+  double Y();
 
-  void SetNet(Net *net) {
-    Assert(net != nullptr, "Cannot set attribute Net *net to nullptr");
-    net_ = net;
-  }
-  void SetDirection(SignalDirection direction) { direction_ = direction; }
-  void SetLayer(MetalLayer *layer) {
-    Assert(layer != nullptr, "Cannot set attribute MetalLayer *layer to nullptr");
-    layer_ = layer;
-  }
-  void SetRect(double llx, double lly, double urx, double ury) { rect_.SetValue(llx, lly, urx, ury); }
-  void SetLoc(double lx, double ly, PlaceStatus place_status = FIXED) {
-    lx_ = lx;
-    ly_ = ly;
-    place_status_ = place_status;
-  }
+  void SetNet(Net *net);
+  void SetDirection(SignalDirection direction);
+  void SetLayer(MetalLayer *layer);
+  void SetRect(double llx, double lly, double urx, double ury);
+  void SetLoc(double lx, double ly, PlaceStatus place_status = FIXED);
 
   void Report() const;
 };
+
+inline const std::string *IOPin::Name() const {
+  return &(name_num_pair_->first);
+}
+
+inline int IOPin::Num() const {
+  return name_num_pair_->second;
+}
+
+inline Net *IOPin::GetNet() const {
+  return net_;
+}
+
+inline SignalDirection IOPin::Direction() const {
+  return direction_;
+}
+
+inline MetalLayer *IOPin::Layer() const {
+  return layer_;
+}
+
+inline RectD *IOPin::GetRect() {
+  return &rect_;
+}
+
+inline double IOPin::X() {
+  return lx_;
+}
+
+inline double IOPin::Y() {
+  return ly_;
+}
+
+inline void IOPin::SetNet(Net *net) {
+  Assert(net != nullptr, "Cannot set attribute Net *net to nullptr");
+  net_ = net;
+}
+inline void IOPin::SetDirection(SignalDirection direction) {
+  direction_ = direction;
+}
+
+inline void IOPin::SetLayer(MetalLayer *layer) {
+  Assert(layer != nullptr, "Cannot set attribute MetalLayer *layer to nullptr");
+  layer_ = layer;
+}
+
+inline void IOPin::SetRect(double llx, double lly, double urx, double ury) {
+  rect_.SetValue(llx, lly, urx, ury);
+}
+
+inline void IOPin::SetLoc(double lx, double ly, PlaceStatus place_status) {
+  lx_ = lx;
+  ly_ = ly;
+  place_status_ = place_status;
+}
 
 #endif //DALI_SRC_CIRCUIT_IOPIN_H_

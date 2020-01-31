@@ -172,7 +172,7 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
   force.Init();
   std::vector<Net> &net_list = *NetList();
   for (auto &&net_num: blk.net_list) {
-    net_list[net_num].UpdateMaxMin();
+    net_list[net_num].UpdateMaxMinIndex();
     if (blk_num == net_list[net_num].MaxBlkPinNumX()) {
       force.x -= 1;
     }

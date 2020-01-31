@@ -74,11 +74,11 @@ class GPSimPL : public Placer {
   void InitCGFlags();
   void UpdateCGFlagsX();
   void UpdateHPWLX() { HPWLX_new = HPWLX(); };
-  void UpdateMaxMinX() { for (auto &&net: circuit_->net_list) net.UpdateMaxMinX(); };
+  void UpdateMaxMinX() { for (auto &&net: circuit_->net_list) net.UpdateMaxMinIndexX(); };
   void UpdateMaxMinCtoCX();
   void UpdateCGFlagsY();
   void UpdateHPWLY() { HPWLY_new = HPWLY(); };
-  void UpdateMaxMinY() { for (auto &&net: circuit_->net_list) net.UpdateMaxMinY(); };
+  void UpdateMaxMinY() { for (auto &&net: circuit_->net_list) net.UpdateMaxMinIndexY(); };
   void UpdateMaxMinCtoCY();
   void AddMatrixElement(Net &net, int i, int j);
   void BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b);

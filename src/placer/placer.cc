@@ -294,7 +294,7 @@ void Placer::IOPinPlacement() {
   for (auto &&iopin: circuit_->pin_list) {
     net = iopin.GetNet();
 
-    net->UpdateMaxMin();
+    net->UpdateMaxMinIndex();
     net_minx = net->MinX();
     net_maxx = net->MaxX();
     net_miny = net->MinY();
