@@ -243,33 +243,61 @@ class Circuit {
   static int FindFirstDigit(std::string &str);
 };
 
-inline unsigned int Circuit::MinWidth() const { return blk_min_width_; }
+inline unsigned int Circuit::MinWidth() const {
+  return blk_min_width_;
+}
 
-inline unsigned int Circuit::MaxWidth() const { return blk_max_width_; }
+inline unsigned int Circuit::MaxWidth() const {
+  return blk_max_width_;
+}
 
-inline unsigned int Circuit::MinHeight() const { return blk_min_height_; }
+inline unsigned int Circuit::MinHeight() const {
+  return blk_min_height_;
+}
 
-inline unsigned int Circuit::MaxHeight() const { return blk_max_height_; }
+inline unsigned int Circuit::MaxHeight() const {
+  return blk_max_height_;
+}
 
-inline unsigned long int Circuit::TotArea() const { return tot_blk_area_; }
+inline unsigned long int Circuit::TotArea() const {
+  return tot_blk_area_;
+}
 
-inline unsigned int Circuit::TotBlockNum() const { return block_list.size(); }
+inline unsigned int Circuit::TotBlockNum() const {
+  return block_list.size();
+}
 
-inline unsigned int Circuit::TotMovableBlockNum() const { return tot_mov_blk_num_; }
+inline unsigned int Circuit::TotMovableBlockNum() const {
+  return tot_mov_blk_num_;
+}
 
-inline unsigned int Circuit::TotFixedBlkCnt() const { return block_list.size() - tot_mov_blk_num_; }
+inline unsigned int Circuit::TotFixedBlkCnt() const {
+  return block_list.size() - tot_mov_blk_num_;
+}
 
-inline double Circuit::AveWidth() const { return double(tot_width_) / double(TotBlockNum()); }
+inline double Circuit::AveWidth() const {
+  return double(tot_width_) / double(TotBlockNum());
+}
 
-inline double Circuit::AveHeight() const { return double(tot_height_) / double(TotBlockNum()); }
+inline double Circuit::AveHeight() const {
+  return double(tot_height_) / double(TotBlockNum());
+}
 
-inline double Circuit::AveArea() const { return double(tot_blk_area_) / double(TotBlockNum()); }
+inline double Circuit::AveArea() const {
+  return double(tot_blk_area_) / double(TotBlockNum());
+}
 
-inline double Circuit::AveMovWidth() const { return double(tot_mov_width_) / tot_mov_blk_num_; }
+inline double Circuit::AveMovWidth() const {
+  return double(tot_mov_width_) / tot_mov_blk_num_;
+}
 
-inline double Circuit::AveMovHeight() const { return double(tot_mov_height_) / tot_mov_blk_num_; }
+inline double Circuit::AveMovHeight() const {
+  return double(tot_mov_height_) / tot_mov_blk_num_;
+}
 
-inline double Circuit::AveMovArea() const { return double(tot_mov_block_area_) / tot_mov_blk_num_; }
+inline double Circuit::AveMovArea() const {
+  return double(tot_mov_block_area_) / tot_mov_blk_num_;
+}
 
 inline double Circuit::WhiteSpaceUsage() const {
   return double(TotArea()) / (def_right - def_left) / (def_top - def_bottom);

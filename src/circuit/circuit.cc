@@ -784,7 +784,7 @@ void Circuit::CopyBlockType(Circuit &circuit) {
     blk_type_new = AddBlockType(type_name, blk_type->Width(), blk_type->Height());
     for (auto &&pin: blk_type->pin_list) {
       pin_name = *(pin.Name());
-      blk_type_new->AddPin(pin_name, pin.XOffset(), pin.YOffset());
+      blk_type_new->AddPin(pin_name, pin.OffsetX(), pin.OffsetY());
     }
   }
 }
@@ -1425,9 +1425,9 @@ void Circuit::SaveBookshelfNet(std::string const &name_of_file) {
       } else {
         ost << "O : ";
       }
-      ost << (pair.GetPin()->XOffset() - pair.GetBlock()->Type()->Width() / 2.0) * def_distance_microns * grid_value_x_
+      ost << (pair.GetPin()->OffsetX() - pair.GetBlock()->Type()->Width() / 2.0) * def_distance_microns * grid_value_x_
           << "\t"
-          << (pair.GetPin()->YOffset() - pair.GetBlock()->Type()->Height() / 2.0) * def_distance_microns * grid_value_y_
+          << (pair.GetPin()->OffsetY() - pair.GetBlock()->Type()->Height() / 2.0) * def_distance_microns * grid_value_y_
           << "\n";
     }
   }

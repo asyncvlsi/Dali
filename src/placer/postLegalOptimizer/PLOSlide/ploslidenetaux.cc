@@ -4,6 +4,8 @@
 
 #include "ploslidenetaux.h"
 
+#include <cfloat>
+
 PLOSlideNetAux::PLOSlideNetAux(Net *net) :
     NetAux(net),
     max_x_(0),
@@ -28,15 +30,47 @@ void PLOSlideNetAux::Init() {
 }
 
 void PLOSlideNetAux::UpdateMaxMinLocX() {
-  net_->UpdateMaxMinIndexX();
-  max_x_ = net_->MaxX();
-  min_x_ = net_->MinX();
+  if (blk2pin_map_.empty()) return;
+  max_x_ = DBL_MIN;
+  min_x_ = DBL_MAX;
+  double tmp_pin_loc = 0;
+
+  Block *blk;
+  Pin *pin;
+  for (auto &pair: blk2pin_map_) {
+    blk = pair.first;
+    pin = pair.second;
+
+    tmp_pin_loc = blk->LLX() + pin->OffsetX(blk->Orient());
+    if (max_x_ < tmp_pin_loc) {
+      max_x_ = tmp_pin_loc;
+    }
+    if (min_x_ > tmp_pin_loc) {
+      min_x_ = tmp_pin_loc;
+    }
+  }
 }
 
 void PLOSlideNetAux::UpdateMaxMinLocY() {
-  net_->UpdateMaxMinIndexY();
-  max_y_ = net_->MaxY();
-  min_y_ = net_->MinY();
+  if (blk2pin_map_.empty()) return;
+  max_y_ = DBL_MIN;
+  min_y_ = DBL_MAX;
+  double tmp_pin_loc = 0;
+
+  Block *blk;
+  Pin *pin;
+  for (auto &pair: blk2pin_map_) {
+    blk = pair.first;
+    pin = pair.second;
+
+    tmp_pin_loc = blk->LLY() + pin->OffsetY(blk->Orient());
+    if (max_y_ < tmp_pin_loc) {
+      max_y_ = tmp_pin_loc;
+    }
+    if (min_y_ > tmp_pin_loc) {
+      min_y_ = tmp_pin_loc;
+    }
+  }
 }
 
 Pin *PLOSlideNetAux::GetPin(Block *block) {

@@ -35,8 +35,8 @@ class Pin {
   void InitOffset();
   void CalculateOffset(double x_offset, double y_offset);
   void SetOffset(double x_offset, double y_offset);
-  double XOffset(BlockOrient orient = N) const;
-  double YOffset(BlockOrient orient = N) const;
+  double OffsetX(BlockOrient orient = N) const;
+  double OffsetY(BlockOrient orient = N) const;
 
   void AddRect(RectD &rect);
   void AddRect(double llx, double lly, double urx, double ury);
@@ -61,11 +61,11 @@ inline void Pin::SetOffset(double x_offset, double y_offset) {
   manual_set_ = true;
 }
 
-inline double Pin::XOffset(BlockOrient orient) const {
+inline double Pin::OffsetX(BlockOrient orient) const {
   return x_offset_[orient - N];
 }
 
-inline double Pin::YOffset(BlockOrient orient) const {
+inline double Pin::OffsetY(BlockOrient orient) const {
   return y_offset_[orient - N];
 }
 
@@ -93,7 +93,7 @@ inline bool Pin::Empty() const {
 }
 
 inline void Pin::Report() const {
-  std::cout << *Name() << " (" << XOffset() << ", " << YOffset() << ")";
+  std::cout << *Name() << " (" << OffsetX() << ", " << OffsetY() << ")";
 }
 
 #endif //DALI_SRC_CIRCUIT_PIN_H_

@@ -6,12 +6,43 @@
 
 #include <algorithm>
 
+PLOSlide::PLOSlide() {}
+
 void PLOSlide::InitPostLegalOptimizer() {
   row_start_.assign(top_ - bottom_ + 1, left_);
   net_aux_list_.reserve(circuit_->net_list.size());
 
   for (auto &&net: circuit_->net_list) {
     net_aux_list_.emplace_back(&net);
+  }
+}
+
+void PLOSlide::FindOptimalRegionX(Block &block, double &start, double &end) {
+  Pin *pin;
+  double pin_offset_x;
+  std::vector<double> net_bound_x;
+
+  double lo, hi;
+  for (auto &net_num: block.net_list) {
+    circuit_->net_list[net_num].XBoundExclude(block, lo, hi);
+    pin = net_aux_list_[net_num].GetPin(block);
+    pin_offset_x = pin->OffsetX(block.Orient());
+    net_bound_x.push_back(lo - pin_offset_x);
+    net_bound_x.push_back(hi - pin_offset_x);
+  }
+
+  std::sort(net_bound_x.begin(), net_bound_x.end()); // sort
+  auto p_x = std::unique(net_bound_x.begin(), net_bound_x.end()); // compact
+  net_bound_x.erase(p_x, net_bound_x.end()); // shrink
+
+  int sz = net_bound_x.size();
+  int mid = sz / 2;
+  if (sz % 2 == 1) {
+    start = net_bound_x[mid];
+    end = net_bound_x[mid];
+  } else {
+    start = net_bound_x[mid];
+    end = net_bound_x[mid-1];
   }
 }
 
@@ -36,28 +67,11 @@ void PLOSlide::StartPlacement() {
   }
   std::sort(index_loc_list_.begin(), index_loc_list_.end());
 
-  std::vector<Net> &net_list = *NetList();
-  int net_sz = int(net_list.size());
-
-  for (int i = 0; i < net_sz; ++i) {
-    net_aux_list_[i].UpdateMaxMinLocX();
-  }
-
-  Pin *pin;
-  double pin_offset_x;
+  double opt_region_s;
+  double opt_region_e;
   for (auto &pair: index_loc_list_) {
     auto &block = block_list[pair.num];
-    std::vector<double> net_bound_x;
-    for (auto &net_num: block.net_list) {
-      pin = net_aux_list_[net_num].GetPin(block);
-      pin_offset_x = pin->XOffset(block.Orient());
-      net_bound_x.push_back(net_aux_list_[net_num].MinX() - pin_offset_x);
-      net_bound_x.push_back(net_aux_list_[net_num].MaxX() - pin_offset_x);
-    }
-
-    std::sort(net_bound_x.begin(), net_bound_x.end()); // sort
-    auto p_x = std::unique(net_bound_x.begin(), net_bound_x.end()); // compact
-    net_bound_x.erase(p_x, net_bound_x.end()); // shrink
+    FindOptimalRegionX(block, opt_region_s, opt_region_e);
   }
 
   if (globalVerboseLevel >= LOG_CRITICAL) {

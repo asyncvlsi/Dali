@@ -32,56 +32,66 @@ void Net::AddBlockPinPair(Block *block_ptr, Pin *pin) {
   inv_p = p_minus_one > 0 ? 1.0 * weight_ / p_minus_one : 0;
 }
 
-void Net::XBoundExclude(Block *blk_ptr, double &x1, double &x2) {
-  double db_max = DBL_MAX;
-  x1 = -db_max;
-  x2 = db_max;
-  if (blk_pin_list.size() == 1) return;
-  max_pin_x_ = -1;
-  min_pin_x_ = -1;
-  double max_x = -db_max;
-  double min_x = db_max;
+void Net::XBoundExclude(Block *blk_ptr, double &lo, double &hi) {
+  /****
+   *
+   * ****/
+  lo = DBL_MIN;
+  hi = DBL_MAX;
+
+  int sz = blk_pin_list.size();
+  if (sz == 1) {
+    return;
+  }
+
+  double max_x = DBL_MIN;
+  double min_x = DBL_MAX;
   double tmp_pin_loc;
-  for (size_t i = 0; i < blk_pin_list.size(); ++i) {
-    if (blk_pin_list[i].GetBlock() == blk_ptr) continue;
-    tmp_pin_loc = blk_pin_list[i].AbsX();
+
+  for (auto &pair: blk_pin_list) {
+    if (pair.GetBlock() == blk_ptr) continue;
+    tmp_pin_loc = pair.AbsX();
     if (max_x < tmp_pin_loc) {
       max_x = tmp_pin_loc;
-      max_pin_x_ = i;
     }
     if (min_x > tmp_pin_loc) {
       min_x = tmp_pin_loc;
-      min_pin_x_ = i;
     }
   }
-  x1 = blk_pin_list[min_pin_x_].AbsX();
-  x2 = blk_pin_list[max_pin_x_].AbsX();
+
+  if (min_x <= max_x) {
+    lo = min_x;
+    hi = max_x;
+  }
 }
 
-void Net::YBoundExclude(Block *blk_ptr, double &y1, double &y2) {
-  double db_max = 1e30;
-  y1 = -db_max;
-  y2 = db_max;
-  if (blk_pin_list.size() == 1) return;
-  max_pin_y_ = -1;
-  min_pin_y_ = -1;
-  double max_y = -db_max;
-  double min_y = db_max;
+void Net::YBoundExclude(Block *blk_ptr, double &lo, double &hi) {
+  lo = DBL_MIN;
+  hi = DBL_MAX;
+
+  int sz = blk_pin_list.size();
+  if (sz == 1) {
+    return;
+  }
+
+  double max_y = DBL_MIN;
+  double min_y = DBL_MAX;
   double tmp_pin_loc;
-  for (size_t i = 0; i < blk_pin_list.size(); i++) {
-    if (blk_pin_list[i].GetBlock() == blk_ptr) continue;
-    tmp_pin_loc = blk_pin_list[i].GetBlock()->LLY() + blk_pin_list[i].YOffset();
+
+  for (auto &pair: blk_pin_list) {
+    if (pair.GetBlock() == blk_ptr) continue;
+    tmp_pin_loc = pair.AbsY();
     if (max_y < tmp_pin_loc) {
       max_y = tmp_pin_loc;
-      max_pin_y_ = i;
     }
     if (min_y > tmp_pin_loc) {
       min_y = tmp_pin_loc;
-      min_pin_y_ = i;
     }
   }
-  y1 = blk_pin_list[min_pin_y_].AbsY();
-  y2 = blk_pin_list[max_pin_y_].AbsY();
+  if (min_y <= max_y) {
+    lo = min_y;
+    hi = max_y;
+  }
 }
 
 void Net::SortBlkPinList() {

@@ -16,8 +16,11 @@ class PLOSlide : public Placer {
   std::vector<PLOSlideNetAux> net_aux_list_;
 
  public:
+  PLOSlide();
 
   void InitPostLegalOptimizer();
+  void FindOptimalRegionX(Block &block, double &start, double &end);
+
   void StartPlacement() override;
 
 };

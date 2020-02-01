@@ -51,11 +51,11 @@ inline int BlockPinPair::PinNum() const {
 }
 
 inline double BlockPinPair::XOffset() const {
-  return pin_->XOffset(block_->Orient());
+  return pin_->OffsetX(block_->Orient());
 }
 
 inline double BlockPinPair::YOffset() const {
-  return pin_->YOffset(block_->Orient());
+  return pin_->OffsetY(block_->Orient());
 }
 
 inline double BlockPinPair::AbsX() const {

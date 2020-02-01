@@ -44,8 +44,10 @@ class Net {
   void SetAux(NetAux *aux);
   NetAux *Aux() const;
 
-  void XBoundExclude(Block *blk_ptr, double &x1, double &x2);
-  void YBoundExclude(Block *blk_ptr, double &y1, double &y2);
+  void XBoundExclude(Block *blk_ptr, double &lo, double &hi);
+  void XBoundExclude(Block &blk_ptr, double &lo, double &hi);
+  void YBoundExclude(Block *blk_ptr, double &lo, double &hi);
+  void YBoundExclude(Block &blk_ptr, double &lo, double &hi);
 
   void SortBlkPinList();
   void UpdateMaxMinIndexX();
@@ -124,6 +126,14 @@ inline void Net::SetAux(NetAux *aux) {
 
 inline NetAux *Net::Aux() const {
   return aux_;
+}
+
+inline void Net::XBoundExclude(Block &blk_ptr, double &lo, double &hi) {
+  XBoundExclude(&blk_ptr, lo, hi);
+}
+
+inline void Net::YBoundExclude(Block &blk_ptr, double &lo, double &hi) {
+  YBoundExclude(&blk_ptr, lo, hi);
 }
 
 inline int Net::MaxBlkPinNumX() const {
