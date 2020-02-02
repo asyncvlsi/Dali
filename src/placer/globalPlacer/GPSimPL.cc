@@ -203,13 +203,30 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
     b[i] = 0;
   }
 
-  double center_weight = 0.03 / std::sqrt(block_list.size());
+  double center_weight = 0.03 / std::sqrt(sz);
   double weight_center_x = (Left() + Right()) / 2.0 * center_weight;
   double weight_center_y = (Bottom() + Top()) / 2.0 * center_weight;
 
-  double weight, inv_p, pin_loc0, pin_loc1, offset_diff;
-  int blk_num0, blk_num1, max_pin_index, min_pin_index;
-  bool is_movable0, is_movable1;
+  double weight;
+  double inv_p;
+
+  double pin_loc;
+  int blk_num;
+  bool is_movable;
+  double offset_diff;
+
+  int max_pin_index;
+  int blk_num_max;
+  double pin_loc_max;
+  bool is_movable_max;
+  double offset_max;
+
+  int min_pin_index;
+  int blk_num_min;
+  double pin_loc_min;
+  bool is_movable_min;
+  double offset_min;
+
   if (is_x_direction) {
     for (auto &&net: circuit_->net_list) {
       if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
@@ -217,111 +234,166 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
       net.UpdateMaxMinIndexX();
       max_pin_index = net.MaxBlkPinNumX();
       min_pin_index = net.MinBlkPinNumX();
-      for (int i = 0; i < int(net.blk_pin_list.size()); ++i) {
-        blk_num0 = net.blk_pin_list[i].BlockNum();
-        pin_loc0 = net.blk_pin_list[i].AbsX();
-        is_movable0 = net.blk_pin_list[i].GetBlock()->IsMovable();
-        for (int j = i + 1; j < int(net.blk_pin_list.size()); ++j) {
-          if (i != max_pin_index && i != min_pin_index) {
-            if (j != max_pin_index && j != min_pin_index) continue;
-          }
-          blk_num1 = net.blk_pin_list[j].BlockNum();
-          if (blk_num0 == blk_num1) continue;
-          pin_loc1 = net.blk_pin_list[j].AbsX();
-          is_movable1 = net.blk_pin_list[j].GetBlock()->IsMovable();
-          weight = inv_p / (std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
-          if (!is_movable0 && is_movable1) {
-            b[blk_num1] += (pin_loc0 - net.blk_pin_list[j].XOffset()) * weight;
-            coefficients.emplace_back(T(blk_num1, blk_num1, weight));
-          } else if (is_movable0 && !is_movable1) {
-            b[blk_num0] += (pin_loc1 - net.blk_pin_list[i].XOffset()) * weight;
-            coefficients.emplace_back(T(blk_num0, blk_num0, weight));
-          } else if (is_movable0 && is_movable1) {
-            coefficients.emplace_back(T(blk_num0, blk_num0, weight));
-            coefficients.emplace_back(T(blk_num1, blk_num1, weight));
-            if (blk_num0 > blk_num1) { // build a lower matrix
-              coefficients.emplace_back(T(blk_num0, blk_num1, -weight));
+
+      blk_num_max = net.blk_pin_list[max_pin_index].BlockNum();
+      pin_loc_max = net.blk_pin_list[max_pin_index].AbsX();
+      is_movable_max = net.blk_pin_list[max_pin_index].GetBlock()->IsMovable();
+      offset_max = net.blk_pin_list[max_pin_index].XOffset();
+
+      blk_num_min = net.blk_pin_list[min_pin_index].BlockNum();
+      pin_loc_min = net.blk_pin_list[min_pin_index].AbsX();
+      is_movable_min = net.blk_pin_list[min_pin_index].GetBlock()->IsMovable();
+      offset_min = net.blk_pin_list[min_pin_index].XOffset();
+
+
+      for (auto &pair: net.blk_pin_list) {
+        blk_num = pair.BlockNum();
+        pin_loc = pair.AbsX();
+        is_movable = pair.GetBlock()->IsMovable();
+
+        if (blk_num != blk_num_max) {
+          weight = inv_p / (std::fabs(pin_loc - pin_loc_max) + WidthEpsilon());
+          if (!is_movable && is_movable_max) {
+            b[blk_num_max] += (pin_loc - offset_max) * weight;
+            coefficients.emplace_back(blk_num_max, blk_num_max, weight);
+          } else if (is_movable && !is_movable_max) {
+            b[blk_num] += (pin_loc_max - offset_max) * weight;
+            coefficients.emplace_back(blk_num, blk_num, weight);
+          } else if (is_movable && is_movable_max) {
+            coefficients.emplace_back(blk_num, blk_num, weight);
+            coefficients.emplace_back(blk_num_max, blk_num_max, weight);
+            if (blk_num > blk_num_max) { // build a lower matrix
+              coefficients.emplace_back(blk_num, blk_num_max, -weight);
             } else {
-              coefficients.emplace_back(T(blk_num1, blk_num0, -weight));
+              coefficients.emplace_back(blk_num_max, blk_num, -weight);
             }
-            offset_diff = (net.blk_pin_list[j].XOffset() - net.blk_pin_list[i].XOffset()) * weight;
-            b[blk_num0] += offset_diff;
-            b[blk_num1] -= offset_diff;
-          } else {
-            continue;
+            offset_diff = (offset_max - pair.XOffset()) * weight;
+            b[blk_num] += offset_diff;
+            b[blk_num_max] -= offset_diff;
           }
         }
+
+        if ((blk_num != blk_num_max) && (blk_num != blk_num_min)) {
+          weight = inv_p / (std::fabs(pin_loc - pin_loc_min) + WidthEpsilon());
+          if (!is_movable && is_movable_min) {
+            b[blk_num_min] += (pin_loc - offset_min) * weight;
+            coefficients.emplace_back(blk_num_min, blk_num_min, weight);
+          } else if (is_movable && !is_movable_min) {
+            b[blk_num] += (pin_loc_min - offset_min) * weight;
+            coefficients.emplace_back(blk_num, blk_num, weight);
+          } else if (is_movable && is_movable_min) {
+            coefficients.emplace_back(blk_num, blk_num, weight);
+            coefficients.emplace_back(blk_num_min, blk_num_min, weight);
+            if (blk_num > blk_num_min) { // build a lower matrix
+              coefficients.emplace_back(blk_num, blk_num_min, -weight);
+            } else {
+              coefficients.emplace_back(blk_num_min, blk_num, -weight);
+            }
+            offset_diff = (offset_min - pair.XOffset()) * weight;
+            b[blk_num] += offset_diff;
+            b[blk_num_min] -= offset_diff;
+          }
+        }
+
       }
     }
-    for (size_t i = 0; i < block_list.size(); ++i) {
+    for (int i = 0; i < sz; ++i) {
       if (block_list[i].IsFixed()) {
-        coefficients.emplace_back(T(i, i, 1));
+        coefficients.emplace_back(i, i, 1);
         b[i] = block_list[i].LLX();
       } else {
         if (block_list[i].LLX() < Left() || block_list[i].URX() > Right()) {
-          coefficients.emplace_back(T(i, i, center_weight));
+          coefficients.emplace_back(i, i, center_weight);
           b[i] += weight_center_x;
         }
       }
     }
-    //std::sort(coefficients.begin(), coefficients.end(), [](T& t1, T& t2) {
-    //  return (t1.row() < t2.row() || (t1.row() == t2.row() && t1.col() < t2.col()) || (t1.row() == t2.row() && t1.col() == t2.col() && t1.value() < t2.value()));
-    //});
   } else {
-    for (auto &&net: circuit_->net_list) {
+    for (auto &net: circuit_->net_list) {
       if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
       inv_p = net.InvP();
       net.UpdateMaxMinIndexY();
       max_pin_index = net.MaxBlkPinNumY();
       min_pin_index = net.MinBlkPinNumY();
-      for (int i = 0; i < int(net.blk_pin_list.size()); i++) {
-        blk_num0 = net.blk_pin_list[i].BlockNum();
-        pin_loc0 = block_list[blk_num0].LLY() + net.blk_pin_list[i].YOffset();
-        is_movable0 = net.blk_pin_list[i].GetBlock()->IsMovable();
-        for (int j = i + 1; j < int(net.blk_pin_list.size()); j++) {
-          if ((i != max_pin_index) && (i != min_pin_index)) {
-            if ((j != max_pin_index) && (j != min_pin_index)) continue;
-          }
-          blk_num1 = net.blk_pin_list[j].BlockNum();
-          if (blk_num0 == blk_num1) continue;
-          pin_loc1 = block_list[blk_num1].LLY() + net.blk_pin_list[j].YOffset();
-          is_movable1 = net.blk_pin_list[j].GetBlock()->IsMovable();
-          weight = inv_p / (std::fabs(pin_loc0 - pin_loc1) + HeightEpsilon());
-          if (!is_movable0 && is_movable1) {
-            b[blk_num1] += (pin_loc0 - net.blk_pin_list[j].YOffset()) * weight;
-            coefficients.emplace_back(T(blk_num1, blk_num1, weight));
-          } else if (is_movable0 && !is_movable1) {
-            b[blk_num0] += (pin_loc1 - net.blk_pin_list[i].YOffset()) * weight;
-            coefficients.emplace_back(T(blk_num0, blk_num0, weight));
-          } else if (is_movable0 && is_movable1) {
-            coefficients.emplace_back(T(blk_num0, blk_num0, weight));
-            coefficients.emplace_back(T(blk_num1, blk_num1, weight));
-            if (blk_num0 > blk_num1) { // build a lower matrix
-              coefficients.emplace_back(T(blk_num0, blk_num1, -weight));
+
+      blk_num_max = net.blk_pin_list[max_pin_index].BlockNum();
+      pin_loc_max = net.blk_pin_list[max_pin_index].AbsY();
+      is_movable_max = net.blk_pin_list[max_pin_index].GetBlock()->IsMovable();
+      offset_max = net.blk_pin_list[max_pin_index].YOffset();
+
+      blk_num_min = net.blk_pin_list[min_pin_index].BlockNum();
+      pin_loc_min = net.blk_pin_list[min_pin_index].AbsY();
+      is_movable_min = net.blk_pin_list[min_pin_index].GetBlock()->IsMovable();
+      offset_min = net.blk_pin_list[min_pin_index].YOffset();
+
+      for (auto &pair: net.blk_pin_list) {
+        blk_num = pair.BlockNum();
+        pin_loc = pair.AbsY();
+        is_movable = pair.GetBlock()->IsMovable();
+
+        if (blk_num != blk_num_max) {
+          weight = inv_p / (std::fabs(pin_loc - pin_loc_max) + HeightEpsilon());
+          if (!is_movable && is_movable_max) {
+            b[blk_num_max] += (pin_loc - offset_max) * weight;
+            coefficients.emplace_back(blk_num_max, blk_num_max, weight);
+          } else if (is_movable && !is_movable_max) {
+            b[blk_num] += (pin_loc_max - offset_max) * weight;
+            coefficients.emplace_back(blk_num, blk_num, weight);
+          } else if (is_movable && is_movable_max) {
+            coefficients.emplace_back(blk_num, blk_num, weight);
+            coefficients.emplace_back(blk_num_max, blk_num_max, weight);
+            if (blk_num > blk_num_max) { // build a lower matrix
+              coefficients.emplace_back(blk_num, blk_num_max, -weight);
             } else {
-              coefficients.emplace_back(T(blk_num1, blk_num0, -weight));
+              coefficients.emplace_back(blk_num_max, blk_num, -weight);
             }
-            offset_diff = (net.blk_pin_list[j].YOffset() - net.blk_pin_list[i].YOffset()) * weight;
-            b[blk_num0] += offset_diff;
-            b[blk_num1] -= offset_diff;
-          } else {
-            continue;
+            offset_diff = (offset_max - pair.YOffset()) * weight;
+            b[blk_num] += offset_diff;
+            b[blk_num_max] -= offset_diff;
           }
         }
+
+        if ((blk_num != blk_num_max) && (blk_num != blk_num_min)) {
+          weight = inv_p / (std::fabs(pin_loc - pin_loc_min) + HeightEpsilon());
+          if (!is_movable && is_movable_min) {
+            b[blk_num_min] += (pin_loc - offset_min) * weight;
+            coefficients.emplace_back(blk_num_min, blk_num_min, weight);
+          } else if (is_movable && !is_movable_min) {
+            b[blk_num] += (pin_loc_min - offset_min) * weight;
+            coefficients.emplace_back(blk_num, blk_num, weight);
+          } else if (is_movable && is_movable_min) {
+            coefficients.emplace_back(blk_num, blk_num, weight);
+            coefficients.emplace_back(blk_num_min, blk_num_min, weight);
+            if (blk_num > blk_num_min) { // build a lower matrix
+              coefficients.emplace_back(blk_num, blk_num_min, -weight);
+            } else {
+              coefficients.emplace_back(blk_num_min, blk_num, -weight);
+            }
+            offset_diff = (offset_min - pair.YOffset()) * weight;
+            b[blk_num] += offset_diff;
+            b[blk_num_min] -= offset_diff;
+          }
+        }
+
       }
     }
-    for (size_t i = 0; i < block_list.size(); ++i) { // add the diagonal non-zero element for fixed blocks
+    for (int i = 0; i < sz; ++i) { // add the diagonal non-zero element for fixed blocks
       if (block_list[i].IsFixed()) {
-        coefficients.emplace_back(T(i, i, 1));
+        coefficients.emplace_back(i, i, 1);
         b[i] = block_list[i].LLY();
       } else {
         if (block_list[i].LLY() < Bottom() || block_list[i].URY() > Top()) {
-          coefficients.emplace_back(T(i, i, center_weight));
+          coefficients.emplace_back(i, i, center_weight);
           b[i] += weight_center_y;
         }
       }
     }
   }
+
+  /*std::sort(coefficients.begin(), coefficients.end(), [](T& t1, T& t2) {
+    return (t1.row() < t2.row() || (t1.row() == t2.row() && t1.col() < t2.col()) || (t1.row() == t2.row() && t1.col() == t2.col() && t1.value() < t2.value()));
+  });*/
+
   if (globalVerboseLevel >= LOG_WARNING) {
     if (coefficients_capacity != coefficients.capacity()) {
       std::cout << "WARNING: coefficients capacity changed!\n"
