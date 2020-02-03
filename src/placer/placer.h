@@ -49,10 +49,14 @@ class Placer {
   void SetBoundary(int left, int right, int bottom, int top);
   void SetBoundaryDef();
   void ReportBoundaries();
-  int Left() { return left_; };
-  int Right() { return right_; };
-  int Bottom() { return bottom_; };
-  int Top() { return top_; };
+
+  int RegionLeft();
+  int RegionRight();
+  int RegionBottom();
+  int RegionTop();
+  int RegionWidth();
+  int RegionHeight();
+
   void UpdateAspectRatio();
   void NetSortBlkPin();
   virtual void StartPlacement() = 0;
@@ -104,6 +108,30 @@ inline void Placer::SetAspectRatio(double ratio) {
 inline void Placer::SetSpaceBlockRatio(double ratio) {
   Assert(ratio >= 1, "Invalid value: value should be in range [1, +infinity)");
   filling_rate_ = 1. / ratio;
+}
+
+inline int Placer::RegionLeft() {
+  return left_;
+}
+
+inline int Placer::RegionRight() {
+  return right_;
+}
+
+inline int Placer::RegionBottom() {
+  return bottom_;
+}
+
+inline int Placer::RegionTop() {
+  return top_;
+}
+
+inline int Placer::RegionWidth() {
+  return right_ - left_;
+}
+
+inline int Placer::RegionHeight() {
+  return top_ - bottom_;
 }
 
 inline void Placer::NetSortBlkPin() {

@@ -122,7 +122,7 @@ bool TetrisLegalizer::TetrisLegal() {
   if (globalVerboseLevel >= LOG_INFO) {
     std::cout << "Building LGTetris space" << std::endl;
   }
-  TetrisSpace tetrisSpace(Left(), Right(), Bottom(), Top(), 1, minWidth);
+  TetrisSpace tetrisSpace(RegionLeft(), RegionRight(), RegionBottom(), RegionTop(), 1, minWidth);
   int llx, lly;
   int width, height;
   int block_num;

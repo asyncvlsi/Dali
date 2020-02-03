@@ -19,7 +19,8 @@ class PLOSlide : public Placer {
   PLOSlide();
 
   void InitPostLegalOptimizer();
-  void FindOptimalRegionX(Block &block, double &start, double &end);
+  void FindOptimalRegionX(Block &block, int &start, int &end);
+  void MoveBlkTowardOptimalRegion(Block &block, int start, int end);
 
   void StartPlacement() override;
 

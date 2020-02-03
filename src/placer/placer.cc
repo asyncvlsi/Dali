@@ -37,12 +37,12 @@ double Placer::GetBlkHPWL(Block &blk) {
 }
 
 bool Placer::IsBoundaryProper() {
-  if (circuit_->MaxWidth() > (unsigned long int) (Right() - Left())) {
+  if (circuit_->MaxWidth() > (unsigned long int) (RegionRight() - RegionLeft())) {
     std::cout << "Improper boundary:\n"
               << "    maximum cell width is larger than the width of placement region\n";
     return false;
   }
-  if (circuit_->MaxHeight() > (unsigned long int) (Top() - Bottom())) {
+  if (circuit_->MaxHeight() > (unsigned long int) (RegionTop() - RegionBottom())) {
     std::cout << "Improper boundary:\n"
               << "    maximum cell height is larger than the height of placement region\n";
     return false;
@@ -101,7 +101,7 @@ void Placer::SetBoundaryDef() {
 void Placer::ReportBoundaries() {
   if (globalVerboseLevel >= LOG_DEBUG) {
     std::cout << "Left, Right, Bottom, Top:\n";
-    std::cout << "  " << Left() << ", " << Right() << ", " << Bottom() << ", " << Top() << "\n";
+    std::cout << "  " << RegionLeft() << ", " << RegionRight() << ", " << RegionBottom() << ", " << RegionTop() << "\n";
   }
 }
 
@@ -120,17 +120,17 @@ void Placer::UpdateAspectRatio() {
 void Placer::TakeOver(Placer *placer) {
   aspect_ratio_ = placer->AspectRatio();
   filling_rate_ = placer->FillingRate();
-  left_ = placer->Left();
-  right_ = placer->Right();
-  bottom_ = placer->Bottom();
-  top_ = placer->Top();
+  left_ = placer->RegionLeft();
+  right_ = placer->RegionRight();
+  bottom_ = placer->RegionBottom();
+  top_ = placer->RegionTop();
   circuit_ = placer->GetCircuit();
 }
 
 void Placer::GenMATLABScriptPlaced(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
-  ost << Left() << " " << Bottom() << " " << Right() - Left() << " " << Top() - Bottom() << "\n";
+  ost << RegionLeft() << " " << RegionBottom() << " " << RegionRight() - RegionLeft() << " " << RegionTop() - RegionBottom() << "\n";
   for (auto &&block: circuit_->block_list) {
     if (block.IsPlaced()) {
       ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";

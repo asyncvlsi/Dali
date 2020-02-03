@@ -27,7 +27,7 @@ void LGHillEx::UseSpace(Block const &block) {
   /****
    * Mark the space used by this block by changing the start point of available space in each related row
    * ****/
-  auto start_row = (unsigned int) (block.LLY() - Bottom());
+  auto start_row = (unsigned int) (block.LLY() - RegionBottom());
   unsigned int end_row = start_row + block.Height() - 1;
   if (end_row >= row_start_.size()) {
     //std::cout << "  ly:     " << int(block.LLY())       << "\n"
@@ -281,7 +281,7 @@ bool LGHillEx::LocalLegalization() {
 }
 
 void LGHillEx::UseSpaceRight(Block const &block) {
-  auto start_row = int(block.LLY() - Bottom());
+  auto start_row = int(block.LLY() - RegionBottom());
   unsigned int end_row = start_row + block.Height() - 1;
   /*if (end_row >= row_start_.size()) {
     std::cout << "  ly:     " << block.LLY() << "\n"

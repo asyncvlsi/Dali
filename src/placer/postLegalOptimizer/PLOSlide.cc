@@ -17,7 +17,7 @@ void PLOSlide::InitPostLegalOptimizer() {
   }
 }
 
-void PLOSlide::FindOptimalRegionX(Block &block, double &start, double &end) {
+void PLOSlide::FindOptimalRegionX(Block &block, int &start, int &end) {
   Pin *pin;
   double pin_offset_x;
   std::vector<double> net_bound_x;
@@ -42,7 +42,34 @@ void PLOSlide::FindOptimalRegionX(Block &block, double &start, double &end) {
     end = net_bound_x[mid];
   } else {
     start = net_bound_x[mid];
-    end = net_bound_x[mid-1];
+    end = net_bound_x[mid - 1];
+  }
+}
+
+void PLOSlide::MoveBlkTowardOptimalRegion(Block &block, int start, int end) {
+  /****
+   * 1. In the x direction, the optimal region is [start, end]
+   * 2. If start >= current.x, do not move this block, because this member function only moves blocks leftwards
+   * 3. If current.x in [start, end], move this block leftwards as much as possible, but smaller than start
+   * 4. If current.x is large than end, move this block leftwards as much as possible, but smaller than start
+   * 5. 3&4 means => if (current.x > start), move this block leftward as much as possible, but smaller than start
+   * ****/
+  int start_row = int(block.LLY() - RegionBottom());
+  int end_row = int(start_row + block.Height() - 1);
+
+  assert(end_row >= int(row_start_.size()));
+
+  if (block.LLX() > start) {
+    int final_loc = start;
+    for (int i = start_row; i <= end_row; ++i) {
+      final_loc = std::max(final_loc, row_start_[i]);
+    }
+    block.SetLLX(final_loc);
+  }
+
+  int end_x = int(block.URX());
+  for (int i = start_row; i <= end_row; ++i) {
+    row_start_[i] = end_x;
   }
 }
 
@@ -56,7 +83,7 @@ void PLOSlide::StartPlacement() {
 
   InitPostLegalOptimizer();
 
-  row_start_.assign(row_start_.size(), right_);
+  row_start_.assign(row_start_.size(), RegionLeft());
   std::vector<Block> &block_list = *BlockList();
 
   int sz = index_loc_list_.size();
@@ -67,11 +94,13 @@ void PLOSlide::StartPlacement() {
   }
   std::sort(index_loc_list_.begin(), index_loc_list_.end());
 
-  double opt_region_s;
-  double opt_region_e;
+  double opt_region_start;
+  double opt_region_end;
   for (auto &pair: index_loc_list_) {
     auto &block = block_list[pair.num];
-    FindOptimalRegionX(block, opt_region_s, opt_region_e);
+    FindOptimalRegionX(block, opt_region_start, opt_region_end);
+
+    MoveBlkTowardOptimalRegion(block, opt_region_start, opt_region_end);
   }
 
   if (globalVerboseLevel >= LOG_CRITICAL) {

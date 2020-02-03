@@ -25,8 +25,8 @@ void WellLegalizer::InitWellLegalizer() {
   n_min_width = std::ceil(n_layer->Width() / circuit_->GetGridValueX());
   p_min_width = std::ceil(p_layer->Width() / circuit_->GetGridValueX());
 
-  Row tmp_row(Left(), INT_MAX, false);
-  all_rows_.resize(Top() - Bottom() + 1, tmp_row);
+  Row tmp_row(RegionLeft(), INT_MAX, false);
+  all_rows_.resize(RegionTop() - RegionBottom() + 1, tmp_row);
   IndexLocPair<int> tmp_index_loc_pair(0, 0, 0);
   index_loc_list_.resize(circuit_->block_list.size(), tmp_index_loc_pair);
 }
@@ -49,7 +49,7 @@ bool WellLegalizer::IsSpaceLegal(Block const &block) {
    * 1. check whether any part of the space is used
    * 2. check whether NP well rules are disobeyed
    * ****/
-  auto start_row = (unsigned int)(block.LLY() - Bottom());
+  auto start_row = (unsigned int)(block.LLY() - RegionBottom());
   unsigned int end_row = start_row + block.Height() - 1;
   int lx = int(block.LLX());
 
@@ -75,7 +75,7 @@ void WellLegalizer::UseSpace(Block const &block) {
   /****
    * Mark the space used by this block by changing the start point of available space in each related row
    * ****/
-  auto start_row = (unsigned int)(block.LLY() - Bottom());
+  auto start_row = (unsigned int)(block.LLY() - RegionBottom());
   unsigned int end_row = start_row + block.Height() - 1;
   int lx = int(block.LLX());
 
@@ -120,7 +120,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
 
   int height = int(block.Height());
   int start_row = 0;
-  int end_row = Top() - Bottom() - height;
+  int end_row = RegionTop() - RegionBottom() - height;
   //std::cout << "    Starting row: " << start_row << "\n"
   //          << "    Ending row:   " << end_row   << "\n"
   //          << "    Block Height: " << block.Height() << "\n"
@@ -140,7 +140,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
   for (int tmp_row = start_row; tmp_row <= end_row; ++tmp_row) {
     // 1. find the non-overlap location
     tmp_end_row = tmp_row + height - 1;
-    tmp_loc = Left();
+    tmp_loc = RegionLeft();
     for (int i = tmp_row; i <= tmp_end_row; ++i) {
       tmp_loc = std::max(tmp_loc, all_rows_[i].start);
     }
@@ -151,7 +151,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
     pn_boundary_row = tmp_row + p_height;
     //    P well distance
     for (int i = tmp_row; i <= pn_boundary_row; ++i) {
-      if (all_rows_[i].start == Left()) continue;
+      if (all_rows_[i].start == RegionLeft()) continue;
       if (!all_rows_[i].is_n) {
         if (tmp_loc > all_rows_[i].start && tmp_loc < all_rows_[i].start + pp_spacing) {
           tmp_loc = all_rows_[i].start + pp_spacing;
@@ -165,7 +165,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
 
     //    N well distance
     for (int i = pn_boundary_row + 1; i <= tmp_end_row; ++i) {
-      if (all_rows_[i].start == Left()) continue;
+      if (all_rows_[i].start == RegionLeft()) continue;
       if (all_rows_[i].is_n) {
         if (tmp_loc > all_rows_[i].start && tmp_loc < all_rows_[i].start + nn_spacing) {
           tmp_loc = all_rows_[i].start + nn_spacing;
@@ -181,7 +181,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
     //    P well min-width
     int shared_length = 0;
     for (int i = tmp_row; i <= pn_boundary_row; ++i) {
-      if (all_rows_[i].start == Left()) continue;
+      if (all_rows_[i].start == RegionLeft()) continue;
       if (!(all_rows_[i].is_n) && all_rows_[i].start == tmp_loc) {
         ++shared_length;
       } else {
@@ -195,7 +195,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
     shared_length = 0;
     //    N well min-width
     for (int i = pn_boundary_row + 1; i <= tmp_end_row; ++i) {
-      if (all_rows_[i].start == Left()) continue;
+      if (all_rows_[i].start == RegionLeft()) continue;
       if (all_rows_[i].is_n && all_rows_[i].start == tmp_loc) {
         ++shared_length;
       } else {
@@ -206,7 +206,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
       }
     }
 
-    tmp_cost = std::abs(tmp_loc - init_x) + std::abs(tmp_row + Bottom() - init_y);
+    tmp_cost = std::abs(tmp_loc - init_x) + std::abs(tmp_row + RegionBottom() - init_y);
     bool is_abutted = false;
     for (int i = tmp_row; i <= tmp_end_row; ++i) {
       if (all_rows_[i].start == tmp_loc) {
@@ -227,7 +227,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
   }
 
   res.x = best_loc;
-  res.y = best_row + Bottom();
+  res.y = best_row + RegionBottom();
 
   //std::cout << res.x << "  " << res.y << "  " << min_cost << "  " << block.Num() << "\n";
 

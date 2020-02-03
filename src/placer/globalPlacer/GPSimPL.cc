@@ -39,13 +39,13 @@ void GPSimPL::InitCGFlags() {
 
 void GPSimPL::BlockLocRandomInit() {
   std::minstd_rand0 generator{1};
-  int region_width = Right() - Left();
-  int region_height = Top() - Bottom();
+  int region_width = RegionWidth();
+  int region_height = RegionHeight();
   std::uniform_real_distribution<double> distribution(0, 1);
   for (auto &&block: circuit_->block_list) {
     if (block.IsMovable()) {
-      block.SetCenterX(Left() + region_width * distribution(generator));
-      block.SetCenterY(Bottom() + region_height * distribution(generator));
+      block.SetCenterX(RegionLeft() + region_width * distribution(generator));
+      block.SetCenterY(RegionBottom() + region_height * distribution(generator));
     }
   }
   if (globalVerboseLevel >= LOG_INFO) {
@@ -55,8 +55,8 @@ void GPSimPL::BlockLocRandomInit() {
 }
 
 void GPSimPL::BlockLocCenterInit() {
-  double region_center_x = (Right() + Left()) / 2.0;
-  double region_center_y = (Top() + Bottom()) / 2.0;
+  double region_center_x = (RegionRight() + RegionLeft()) / 2.0;
+  double region_center_y = (RegionTop() + RegionBottom()) / 2.0;
   for (auto &&block: circuit_->block_list) {
     if (block.IsMovable()) {
       block.SetCenterX(region_center_x);
@@ -204,8 +204,8 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
   }
 
   double center_weight = 0.03 / std::sqrt(sz);
-  double weight_center_x = (Left() + Right()) / 2.0 * center_weight;
-  double weight_center_y = (Bottom() + Top()) / 2.0 * center_weight;
+  double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
+  double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
 
   double weight;
   double inv_p;
@@ -302,7 +302,7 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
         coefficients.emplace_back(i, i, 1);
         b[i] = block_list[i].LLX();
       } else {
-        if (block_list[i].LLX() < Left() || block_list[i].URX() > Right()) {
+        if (block_list[i].LLX() < RegionLeft() || block_list[i].URX() > RegionRight()) {
           coefficients.emplace_back(i, i, center_weight);
           b[i] += weight_center_x;
         }
@@ -382,7 +382,7 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
         coefficients.emplace_back(i, i, 1);
         b[i] = block_list[i].LLY();
       } else {
-        if (block_list[i].LLY() < Bottom() || block_list[i].URY() > Top()) {
+        if (block_list[i].LLY() < RegionBottom() || block_list[i].URY() > RegionTop()) {
           coefficients.emplace_back(i, i, center_weight);
           b[i] += weight_center_y;
         }
@@ -445,11 +445,11 @@ void GPSimPL::PullBlockBackToRegion() {
   std::vector<Block> &block_list = *BlockList();
   for (unsigned int num = 0; num < vx.size(); ++num) {
     if (block_list[num].IsMovable()) {
-      if (vx[num] < Left()) {
-        vx[num] = Left();
+      if (vx[num] < RegionLeft()) {
+        vx[num] = RegionLeft();
       }
-      if (vx[num] > Right() - block_list[num].Width()) {
-        vx[num] = Right() - block_list[num].Width();
+      if (vx[num] > RegionRight() - block_list[num].Width()) {
+        vx[num] = RegionRight() - block_list[num].Width();
       }
     }
     block_list[num].SetLLX(vx[num]);
@@ -457,11 +457,11 @@ void GPSimPL::PullBlockBackToRegion() {
 
   for (long int num = 0; num < vy.size(); ++num) {
     if (block_list[num].IsMovable()) {
-      if (vy[num] < Bottom()) {
-        vy[num] = Bottom();
+      if (vy[num] < RegionBottom()) {
+        vy[num] = RegionBottom();
       }
-      if (vy[num] > Top() - block_list[num].Height()) {
-        vy[num] = Top() - block_list[num].Height();
+      if (vy[num] > RegionTop() - block_list[num].Height()) {
+        vy[num] = RegionTop() - block_list[num].Height();
       }
     }
     block_list[num].SetLLY(vy[num]);
@@ -540,8 +540,8 @@ void GPSimPL::InitGridBins() {
   // Part1
   grid_bin_height = int(std::round(std::sqrt(number_of_cell_in_bin * GetCircuit()->AveMovArea() / FillingRate())));
   grid_bin_width = grid_bin_height;
-  grid_cnt_y = std::ceil(double(Top() - Bottom()) / grid_bin_height);
-  grid_cnt_x = std::ceil(double(Right() - Left()) / grid_bin_width);
+  grid_cnt_y = std::ceil(double(RegionTop() - RegionBottom()) / grid_bin_height);
+  grid_cnt_x = std::ceil(double(RegionRight() - RegionLeft()) / grid_bin_width);
   std::cout << "Global placement bin width, height: " << grid_bin_width << "  " << grid_bin_height << "\n";
 
   std::vector<GridBin> temp_grid_bin_column(grid_cnt_y);
@@ -551,10 +551,10 @@ void GPSimPL::InitGridBins() {
   for (int i = 0; i < grid_cnt_x; i++) {
     for (int j = 0; j < grid_cnt_y; j++) {
       grid_bin_matrix[i][j].index = {i, j};
-      grid_bin_matrix[i][j].bottom = Bottom() + j * grid_bin_height;
-      grid_bin_matrix[i][j].top = Bottom() + (j + 1) * grid_bin_height;
-      grid_bin_matrix[i][j].left = Left() + i * grid_bin_width;
-      grid_bin_matrix[i][j].right = Left() + (i + 1) * grid_bin_width;
+      grid_bin_matrix[i][j].bottom = RegionBottom() + j * grid_bin_height;
+      grid_bin_matrix[i][j].top = RegionBottom() + (j + 1) * grid_bin_height;
+      grid_bin_matrix[i][j].left = RegionLeft() + i * grid_bin_width;
+      grid_bin_matrix[i][j].right = RegionLeft() + (i + 1) * grid_bin_width;
       grid_bin_matrix[i][j].white_space = grid_bin_matrix[i][j].Area();
       // at the very beginning, assuming the white space is the same as area
       grid_bin_matrix[i][j].create_adjacent_bin_list(grid_cnt_x, grid_cnt_y);
@@ -563,12 +563,12 @@ void GPSimPL::InitGridBins() {
 
   // make sure the top placement boundary is the same as the top of the topmost bins
   for (int i = 0; i < grid_cnt_x; ++i) {
-    grid_bin_matrix[i][grid_cnt_y - 1].top = Top();
+    grid_bin_matrix[i][grid_cnt_y - 1].top = RegionTop();
     grid_bin_matrix[i][grid_cnt_y - 1].white_space = grid_bin_matrix[i][grid_cnt_y - 1].Area();
   }
   // make sure the right placement boundary is the same as the right of the rightmost bins
   for (int i = 0; i < grid_cnt_y; ++i) {
-    grid_bin_matrix[grid_cnt_x - 1][i].right = Right();
+    grid_bin_matrix[grid_cnt_x - 1][i].right = RegionRight();
     grid_bin_matrix[grid_cnt_x - 1][i].white_space = grid_bin_matrix[grid_cnt_x - 1][i].Area();
   }
 
@@ -581,15 +581,15 @@ void GPSimPL::InitGridBins() {
   for (size_t i = 0; i < block_list.size(); i++) {
     /* find the left, right, bottom, top index of the grid */
     if (block_list[i].IsMovable()) continue;
-    fixed_blk_out_of_region = int(block_list[i].LLX()) >= Right() ||
-        int(block_list[i].URX()) <= Left() ||
-        int(block_list[i].LLY()) >= Top() ||
-        int(block_list[i].URY()) <= Bottom();
+    fixed_blk_out_of_region = int(block_list[i].LLX()) >= RegionRight() ||
+        int(block_list[i].URX()) <= RegionLeft() ||
+        int(block_list[i].LLY()) >= RegionTop() ||
+        int(block_list[i].URY()) <= RegionBottom();
     if (fixed_blk_out_of_region) continue;
-    left_index = (int) std::floor((block_list[i].LLX() - Left()) / grid_bin_width);
-    right_index = (int) std::floor((block_list[i].URX() - Left()) / grid_bin_width);
-    bottom_index = (int) std::floor((block_list[i].LLY() - Bottom()) / grid_bin_height);
-    top_index = (int) std::floor((block_list[i].URY() - Bottom()) / grid_bin_height);
+    left_index = (int) std::floor((block_list[i].LLX() - RegionLeft()) / grid_bin_width);
+    right_index = (int) std::floor((block_list[i].URX() - RegionLeft()) / grid_bin_width);
+    bottom_index = (int) std::floor((block_list[i].LLY() - RegionBottom()) / grid_bin_height);
+    top_index = (int) std::floor((block_list[i].URY() - RegionBottom()) / grid_bin_height);
     /* the grid boundaries might be the placement region boundaries
      * if a block touches the rightmost and topmost boundaries, the index need to be fixed
      * to make sure no memory access out of scope */
@@ -814,8 +814,8 @@ void GPSimPL::UpdateGridBinState() {
   int x_index, y_index;
   for (size_t i = 0; i < block_list.size(); i++) {
     if (block_list[i].IsFixed()) continue;
-    x_index = (int) std::floor((block_list[i].X() - Left()) / grid_bin_width);
-    y_index = (int) std::floor((block_list[i].Y() - Bottom()) / grid_bin_height);
+    x_index = (int) std::floor((block_list[i].X() - RegionLeft()) / grid_bin_width);
+    y_index = (int) std::floor((block_list[i].Y() - RegionBottom()) / grid_bin_height);
     if (x_index < 0) x_index = 0;
     if (x_index > grid_cnt_x - 1) x_index = grid_cnt_x - 1;
     if (y_index < 0) y_index = 0;
@@ -1799,11 +1799,10 @@ void GPSimPL::DumpResult() {
 void GPSimPL::DrawBlockNetList(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open input file " + name_of_file);
-  ost << Left() << " " << Bottom() << " " << Right() - Left() << " " << Top() - Bottom() << "\n";
+  ost << RegionLeft() << " " << RegionBottom() << " " << RegionRight() - RegionLeft() << " " << RegionTop() - RegionBottom() << "\n";
   std::vector<Block> &block_list = *BlockList();
   for (auto &&block: block_list) {
     ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";
-    //ost << block.X() << " " << block.Y() << " " << 1 << " " << 1 << "\n";
   }
   ost.close();
 }
@@ -1991,8 +1990,8 @@ void GPSimPL::write_first_box(std::string const &name_of_file) {
   BoxBin *R = &queue_box_bin.front();
   width = (R->ur_index.x - R->ll_index.x + 1) * grid_bin_width;
   height = (R->ur_index.y - R->ll_index.y + 1) * grid_bin_height;
-  low_x = R->ll_index.x * grid_bin_width + Left();
-  low_y = R->ll_index.y * grid_bin_height + Bottom();
+  low_x = R->ll_index.x * grid_bin_width + RegionLeft();
+  low_y = R->ll_index.y * grid_bin_height + RegionBottom();
   int step = 20;
   for (int j = 0; j < height; j += step) {
     ost << low_x << "\t" << low_y + j << "\n";

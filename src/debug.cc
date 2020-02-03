@@ -83,8 +83,8 @@ int main() {
 
   Placer *post_optimizer = new PLOSlide;
   post_optimizer->TakeOver(legalizer);
-  //post_optimizer->StartPlacement();
-  //post_optimizer->GenMATLABTable("po_result.txt");
+  post_optimizer->StartPlacement();
+  post_optimizer->GenMATLABTable("po_result.txt");
 
 #if TEST_WELL
   std::string cell_file_name("benchmark_10K.cell");
