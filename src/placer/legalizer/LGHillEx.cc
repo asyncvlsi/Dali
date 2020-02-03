@@ -572,7 +572,8 @@ double LGHillEx::EstimatedHPWL(Block &block, int x, int y) {
 
 void LGHillEx::StartPlacement() {
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "Start LGHillEx Legalization\n";
+    std::cout << "---------------------------------------\n"
+              << "Start LGHillEx Legalization\n";
   }
 
   double wall_time = get_wall_time();
@@ -614,4 +615,6 @@ void LGHillEx::StartPlacement() {
               << wall_time << "s, cpu time: "
               << cpu_time << "s)\n";
   }
+
+  ReportMemory(LOG_CRITICAL);
 }

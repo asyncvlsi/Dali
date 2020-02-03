@@ -25,40 +25,48 @@ typedef Eigen::Triplet<double> T;
 
 class GPSimPL : public Placer {
  protected:
+  // cached data
   double HPWLX_new = 0;
-  double HPWLY_new = 0;
   double HPWLX_old = DBL_MAX;
-  double HPWLY_old = DBL_MAX;
   bool HPWLX_converge = false;
+  double HPWLY_new = 0;
+  double HPWLY_old = DBL_MAX;
   bool HPWLY_converge = false;
+
+  // to configure CG solver
   double cg_tolerance_ = 1e-6;
-  int cg_iteration_max_num_ = 100;
+  int cg_iteration_max_num_ = 50;
   double error_x = DBL_MAX;
   double error_y = DBL_MAX;
-  double error_threshold = 1e-5;
+  double cg_total_hpwl_ = 0;
+
+  // to avoid divergence when calculating net weight
   double width_epsilon;
   double height_epsilon;
+
+  // for look ahead legalization
   double HPWL_intra_linearSolver_precision = 0.01;
   int b2b_update_max_iteration = 50;
   double alpha = 0.00;
-  int lal_iteration = 0;
-  int look_ahead_iter_max = 30;
+  int current_iteration_ = 0;
+  int max_iteration_ = 50;
+  double lal_total_hpwl_ = 0;
+
   double HPWL_LAL_new = 0;
   double HPWL_LAL_old = DBL_MAX;
   bool HPWL_LAL_converge = false;
   double HPWL_inter_linearSolver_precision = 0.01;
+
   int number_of_cell_in_bin = 30;
   int net_ignore_threshold = 100;
  public:
   GPSimPL();
   GPSimPL(double aspectRatio, double fillingRate);
-  unsigned int TotBlockNum() { return GetCircuit()->TotBlockNum(); };
-  void SetEpsilon() {
-    width_epsilon = circuit_->AveMovWidth() / 100.0;
-    height_epsilon = circuit_->AveMovHeight() / 100.0;
-  };
-  double WidthEpsilon() { return width_epsilon; };
-  double HeightEpsilon() { return height_epsilon; };
+
+  unsigned int TotBlockNum();
+  void SetEpsilon();
+  double WidthEpsilon();
+  double HeightEpsilon();
 
   Eigen::VectorXd vx, vy;
   Eigen::VectorXd bx, by;
@@ -73,12 +81,12 @@ class GPSimPL : public Placer {
   void CGInit();
   void InitCGFlags();
   void UpdateCGFlagsX();
-  void UpdateHPWLX() { HPWLX_new = HPWLX(); };
-  void UpdateMaxMinX() { for (auto &&net: circuit_->net_list) net.UpdateMaxMinIndexX(); };
+  void UpdateHPWLX();
+  void UpdateMaxMinX();
   void UpdateMaxMinCtoCX();
   void UpdateCGFlagsY();
-  void UpdateHPWLY() { HPWLY_new = HPWLY(); };
-  void UpdateMaxMinY() { for (auto &&net: circuit_->net_list) net.UpdateMaxMinIndexY(); };
+  void UpdateHPWLY();
+  void UpdateMaxMinY();
   void UpdateMaxMinCtoCY();
   void AddMatrixElement(Net &net, int i, int j);
   void BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b);
@@ -86,8 +94,6 @@ class GPSimPL : public Placer {
   void BuildProblemB2BY();
   void SolveProblemX();
   void SolveProblemY();
-  void PullBlockBackToRegionX();
-  void PullBlockBackToRegionY();
   void PullBlockBackToRegion();
   void InitialPlacement();
 
@@ -131,7 +137,7 @@ class GPSimPL : public Placer {
   void BuildProblemB2BWithAnchorX();
   void BuildProblemB2BWithAnchorY();
   void QuadraticPlacementWithAnchor();
-  void UpdateAnchorNetWeight() {alpha = 0.01 * lal_iteration;}
+  void UpdateAnchorNetWeight();
 
   void CheckAndShift();
 
@@ -141,7 +147,7 @@ class GPSimPL : public Placer {
   void DrawBlockNetList(std::string const &name_of_file = "block_net_list.txt");
   void write_all_terminal_grid_bins(std::string const &name_of_file);
   void write_not_all_terminal_grid_bins(std::string const &name_of_file = "grid_bin_not_all_terminal.txt");
-  void write_overfill_grid_bins(std::string const &name_of_file="grid_bin_overfill.txt");
+  void write_overfill_grid_bins(std::string const &name_of_file = "grid_bin_overfill.txt");
   void write_not_overfill_grid_bins(std::string const &name_of_file);
   void write_first_n_bin_cluster(std::string const &name_of_file, size_t n);
   void write_first_bin_cluster(std::string const &name_of_file);
@@ -150,5 +156,34 @@ class GPSimPL : public Placer {
   void write_first_box(std::string const &name_of_file);
   void write_first_box_cell_bounding(std::string const &name_of_file);
 };
+
+inline unsigned int GPSimPL::TotBlockNum() {
+  return GetCircuit()->TotBlockNum();
+}
+
+inline void GPSimPL::SetEpsilon() {
+  width_epsilon = circuit_->AveMovWidth() / 100.0;
+  height_epsilon = circuit_->AveMovHeight() / 100.0;
+}
+
+inline double GPSimPL::WidthEpsilon() {
+  return width_epsilon;
+}
+
+inline double GPSimPL::HeightEpsilon() {
+  return height_epsilon;
+}
+
+inline void GPSimPL::UpdateHPWLX() {
+  HPWLX_new = HPWLX();
+}
+
+inline void GPSimPL::UpdateHPWLY() {
+  HPWLY_new = HPWLY();
+}
+
+inline void GPSimPL::UpdateAnchorNetWeight() {
+  alpha = 0.01 * current_iteration_;
+}
 
 #endif //DALI_SRC_PLACER_GLOBALPLACER_GPSIMPL_H_

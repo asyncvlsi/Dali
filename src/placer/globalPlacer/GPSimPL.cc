@@ -8,8 +8,6 @@
 
 #include <algorithm>
 
-#define DEBUG 0
-
 GPSimPL::GPSimPL() : Placer() {
   grid_bin_height = 0;
   grid_bin_width = 0;
@@ -42,6 +40,11 @@ void GPSimPL::BlockLocRandomInit() {
   int region_width = RegionWidth();
   int region_height = RegionHeight();
   std::uniform_real_distribution<double> distribution(0, 1);
+
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "HPWL before initialization: " << circuit_->HPWL() << "\n";
+  }
+
   for (auto &&block: circuit_->block_list) {
     if (block.IsMovable()) {
       block.SetCenterX(RegionLeft() + region_width * distribution(generator));
@@ -51,7 +54,10 @@ void GPSimPL::BlockLocRandomInit() {
   if (globalVerboseLevel >= LOG_INFO) {
     std::cout << "Block location randomly uniform initialization complete\n";
   }
-  ReportHPWL(LOG_INFO);
+
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "HPWL after initialization: " << circuit_->HPWL() << "\n";
+  }
 }
 
 void GPSimPL::BlockLocCenterInit() {
@@ -113,6 +119,10 @@ void GPSimPL::UpdateCGFlagsX() {
   }
 }
 
+void GPSimPL::UpdateMaxMinX() {
+  for (auto &&net: circuit_->net_list) net.UpdateMaxMinIndexX();
+}
+
 void GPSimPL::UpdateMaxMinCtoCX() {
   HPWLX_new = 0;
   for (auto &&net: circuit_->net_list) {
@@ -139,6 +149,10 @@ void GPSimPL::UpdateCGFlagsY() {
     HPWLY_converge = (std::fabs(1 - HPWLY_new / HPWLY_old) < HPWL_intra_linearSolver_precision);
     HPWLY_old = HPWLY_new;
   }
+}
+
+void GPSimPL::UpdateMaxMinY() {
+  for (auto &&net: circuit_->net_list) net.UpdateMaxMinIndexY();
 }
 
 void GPSimPL::UpdateMaxMinCtoCY() {
@@ -244,7 +258,6 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
       pin_loc_min = net.blk_pin_list[min_pin_index].AbsX();
       is_movable_min = net.blk_pin_list[min_pin_index].GetBlock()->IsMovable();
       offset_min = net.blk_pin_list[min_pin_index].XOffset();
-
 
       for (auto &pair: net.blk_pin_list) {
         blk_num = pair.BlockNum();
@@ -421,6 +434,11 @@ void GPSimPL::SolveProblemX() {
     std::cout << "    #iterations:     " << cgx.iterations() << std::endl;
     std::cout << "    estimated error: " << error_x << std::endl;
   }
+
+  std::vector<Block> &block_list = *BlockList();
+  for (unsigned int num = 0; num < vx.size(); ++num) {
+    block_list[num].SetLLX(vx[num]);
+  }
 }
 
 void GPSimPL::SolveProblemY() {
@@ -431,14 +449,11 @@ void GPSimPL::SolveProblemY() {
     std::cout << "    #iterations:     " << cgy.iterations() << std::endl;
     std::cout << "    estimated error: " << error_y << std::endl;
   }
-}
 
-void GPSimPL::PullBlockBackToRegionX() {
-
-}
-
-void GPSimPL::PullBlockBackToRegionY() {
-
+  std::vector<Block> &block_list = *BlockList();
+  for (unsigned int num = 0; num < vy.size(); ++num) {
+    block_list[num].SetLLY(vy[num]);
+  }
 }
 
 void GPSimPL::PullBlockBackToRegion() {
@@ -473,7 +488,9 @@ void GPSimPL::InitialPlacement() {
 
   HPWLX_converge = false;
   HPWLX_old = DBL_MAX;
-  for (size_t i = 0; i < block_list.size(); ++i) vx[i] = block_list[i].LLX();
+  for (size_t i = 0; i < block_list.size(); ++i) {
+    vx[i] = block_list[i].LLX();
+  }
   for (int i = 0; i < b2b_update_max_iteration; ++i) {
     BuildProblemB2BX();
     SolveProblemX();
@@ -486,10 +503,11 @@ void GPSimPL::InitialPlacement() {
     }
   }
 
-  // Assembly:
   HPWLY_converge = false;
   HPWLY_old = DBL_MAX;
-  for (size_t i = 0; i < block_list.size(); ++i) vy[i] = block_list[i].LLY();
+  for (size_t i = 0; i < block_list.size(); ++i) {
+    vy[i] = block_list[i].LLY();
+  }
   for (int i = 0; i < b2b_update_max_iteration; ++i) {
     BuildProblemB2BY(); // fill A and b
     SolveProblemY();// Solving:
@@ -504,10 +522,11 @@ void GPSimPL::InitialPlacement() {
 
   PullBlockBackToRegion();
 
+  cg_total_hpwl_ = HPWLX_new + HPWLY_new;
+
   if (globalVerboseLevel >= LOG_INFO) {
     std::cout << "Initial Placement Complete\n";
   }
-  ReportHPWL(LOG_INFO);
 }
 
 void GPSimPL::InitGridBins() {
@@ -638,15 +657,6 @@ void GPSimPL::InitGridBins() {
       }
     }
   }
-#if DEBUG
-  write_not_all_terminal_grid_bins();
-  for (int x = grid_cnt_x - 1; x >= 0; --x) {
-    for (int y = 0; y < grid_cnt_y; ++y) {
-      std::cout << grid_bin_matrix[x][y].white_space << "\t";
-    }
-    std::cout << "\n";
-  }
-#endif
 }
 
 void GPSimPL::InitWhiteSpaceLUT() {
@@ -1368,7 +1378,7 @@ void GPSimPL::RoughLegalBlkInBox(BoxBin &box) {
 
     for (int tmp_row = start_row; tmp_row <= end_row; ++tmp_row) {
       tmp_end_row = tmp_row + height - 1;
-      tmp_x = std::max(box.left, init_x - 1*width);
+      tmp_x = std::max(box.left, init_x - 1 * width);
       for (int i = tmp_row; i <= tmp_end_row; ++i) {
         tmp_x = std::max(tmp_x, row_start[i]);
       }
@@ -1391,8 +1401,8 @@ void GPSimPL::RoughLegalBlkInBox(BoxBin &box) {
 
     block.SetLoc(res_x, res_y);
 
-    min_x = std::min(min_x, res_x + width/2.0);
-    max_x = std::max(max_x, res_x + width/2.0);
+    min_x = std::min(min_x, res_x + width / 2.0);
+    max_x = std::max(max_x, res_x + width / 2.0);
 
     start_row = int(block.LLY()) - box.bottom;
     end_row = start_row + int(block.Height()) - 1;
@@ -1404,7 +1414,7 @@ void GPSimPL::RoughLegalBlkInBox(BoxBin &box) {
   }
 
   double span_x = max_x - min_x;
-  if (span_x >=0 && span_x < 1e-8) return;
+  if (span_x >= 0 && span_x < 1e-8) return;
   double box_width = box.right - box.left;
   if (span_x < 0) {
     std::cout << span_x << "  " << index_loc_list.size() << "\n";
@@ -1412,7 +1422,7 @@ void GPSimPL::RoughLegalBlkInBox(BoxBin &box) {
   assert(span_x > 0);
   for (auto &pair: index_loc_list) {
     auto &block = block_list[pair.num];
-    block.SetCenterX((block.X() - min_x)/span_x*box_width + box.left);
+    block.SetCenterX((block.X() - min_x) / span_x * box_width + box.left);
   }
 
 }
@@ -1556,16 +1566,16 @@ void GPSimPL::BackUpBlkLoc() {
 
 void GPSimPL::UpdateAnchorLoc() {
   std::vector<Block> &block_list = *BlockList();
-  double tmp_value;
+  //double tmp_value;
   for (size_t i = 0; i < block_list.size(); ++i) {
     if (block_list[i].IsFixed()) continue;
-    tmp_value = x_anchor[i];
+    //tmp_value = x_anchor[i];
     x_anchor[i] = block_list[i].LLX();
-    block_list[i].SetLLX(tmp_value);
+    //block_list[i].SetLLX(tmp_value);
 
-    tmp_value = y_anchor[i];
+    //tmp_value = y_anchor[i];
     y_anchor[i] = block_list[i].LLY();
-    block_list[i].SetLLY(tmp_value);
+    //block_list[i].SetLLY(tmp_value);
   }
 }
 
@@ -1578,7 +1588,11 @@ void GPSimPL::BuildProblemB2BWithAnchorX() {
     if (block_list[i].IsFixed()) continue;
     pin_loc0 = block_list[i].LLX();
     pin_loc1 = x_anchor[i];
-    weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
+    if (std::fabs(pin_loc0 - pin_loc1) < 10) {
+      weight = alpha;
+    } else {
+      weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
+    }
     bx[i] += pin_loc1 * weight;
     coefficients.emplace_back(T(i, i, weight));
   }
@@ -1594,7 +1608,11 @@ void GPSimPL::BuildProblemB2BWithAnchorY() {
     if (block_list[i].IsFixed()) continue;
     pin_loc0 = block_list[i].LLY();
     pin_loc1 = y_anchor[i];
-    weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
+    if (std::fabs(pin_loc0 - pin_loc1) < 10) {
+      weight = alpha;
+    } else {
+      weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
+    }
     by[i] += pin_loc1 * weight;
     coefficients.emplace_back(T(i, i, weight));
   }
@@ -1624,6 +1642,7 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
       break;
     }
   }
+
   HPWLY_converge = false;
   HPWLY_old = DBL_MAX;
   for (size_t i = 0; i < block_list.size(); ++i) {
@@ -1642,12 +1661,13 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
     }
   }
 
+  cg_total_hpwl_ = HPWLX_new + HPWLY_new;
+
   PullBlockBackToRegion();
 
   if (globalVerboseLevel >= LOG_INFO) {
     std::cout << "Quadratic Placement With Anchor Complete\n";
   }
-  ReportHPWL(LOG_INFO);
 }
 
 void GPSimPL::LookAheadLegalization() {
@@ -1665,7 +1685,6 @@ void GPSimPL::LookAheadLegalization() {
   if (globalVerboseLevel >= LOG_INFO) {
     std::cout << "Look-ahead legalization complete\n";
   }
-  ReportHPWL(LOG_INFO);
 }
 
 void GPSimPL::CheckAndShift() {
@@ -1714,13 +1733,16 @@ void GPSimPL::UpdateLALConvergeState() {
     std::cout << "Converge is: " << HPWL_LAL_converge << "\n";
   }
   HPWL_LAL_old = HPWL_LAL_new;
+
+  lal_total_hpwl_ = HPWL_LAL_new;
 }
 
 void GPSimPL::StartPlacement() {
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "Start global placement\n";
+    std::cout << "---------------------------------------\n"
+              << "Start global placement\n";
   }
   SanityCheck();
   CGInit();
@@ -1735,27 +1757,30 @@ void GPSimPL::StartPlacement() {
     }
     return;
   }
-#if DEBUG
-  DumpResult();
-#endif
+
+  //DumpResult();
+
   InitialPlacement();
-#if DEBUG
-  DumpResult();
-#endif
-  for (lal_iteration = 0; lal_iteration < look_ahead_iter_max; ++lal_iteration) {
+
+  //DumpResult();
+
+  //std::cout << cg_total_hpwl_ << "  " << circuit_->HPWL() << "\n";
+
+  for (current_iteration_ = 0; current_iteration_ < max_iteration_; ++current_iteration_) {
     if (globalVerboseLevel >= LOG_DEBUG) {
-      std::cout << lal_iteration << "-th iteration\n";
+      std::cout << current_iteration_ << "-th iteration\n";
     }
     LookAheadLegalization();
-#if DEBUG
-    DumpResult();
-#endif
+    //DumpResult();
     UpdateLALConvergeState();
+    if (globalVerboseLevel >= LOG_CRITICAL) {
+      std::cout << "It " << current_iteration_ << ": \t" << cg_total_hpwl_ << "  " << lal_total_hpwl_ << "\n";
+    }
     if (HPWL_LAL_converge) { // if HPWL sconverges
-      if (lal_iteration >= 25) {
+      if (current_iteration_ >= 30) {
         if (globalVerboseLevel >= LOG_CRITICAL) {
           std::cout << "Iterative look-ahead legalization complete" << std::endl;
-          std::cout << "Total number of iteration: " << lal_iteration + 1 << std::endl;
+          std::cout << "Total number of iteration: " << current_iteration_ + 1 << std::endl;
         }
         break;
       }
@@ -1764,9 +1789,7 @@ void GPSimPL::StartPlacement() {
       UpdateAnchorNetWeight();
     }
     QuadraticPlacementWithAnchor();
-#if DEBUG
-    DumpResult();
-#endif
+    //DumpResult();
   }
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "\033[0;36m"
@@ -1777,6 +1800,7 @@ void GPSimPL::StartPlacement() {
   CheckAndShift();
   ReportHPWL(LOG_CRITICAL);
   //DrawBlockNetList("cg_result.txt");
+
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;
   if (globalVerboseLevel >= LOG_CRITICAL) {
@@ -1784,6 +1808,7 @@ void GPSimPL::StartPlacement() {
               << wall_time << "s, cpu time: "
               << cpu_time << "s)\n";
   }
+  ReportMemory(LOG_CRITICAL);
 }
 
 void GPSimPL::DumpResult() {
@@ -1791,15 +1816,16 @@ void GPSimPL::DumpResult() {
   static int counter = 0;
   std::cout << "DumpNum:" << counter << "\n";
   circuit_->GenMATLABTable("gb_result" + std::to_string(counter) + ".txt");
-  write_not_all_terminal_grid_bins("grid_bin_not_all_terminal" + std::to_string(counter) + ".txt");
-  write_overfill_grid_bins("grid_bin_overfill" + std::to_string(counter) + ".txt");
+  //write_not_all_terminal_grid_bins("grid_bin_not_all_terminal" + std::to_string(counter) + ".txt");
+  //write_overfill_grid_bins("grid_bin_overfill" + std::to_string(counter) + ".txt");
   ++counter;
 }
 
 void GPSimPL::DrawBlockNetList(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open input file " + name_of_file);
-  ost << RegionLeft() << " " << RegionBottom() << " " << RegionRight() - RegionLeft() << " " << RegionTop() - RegionBottom() << "\n";
+  ost << RegionLeft() << " " << RegionBottom() << " " << RegionRight() - RegionLeft() << " "
+      << RegionTop() - RegionBottom() << "\n";
   std::vector<Block> &block_list = *BlockList();
   for (auto &&block: block_list) {
     ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";

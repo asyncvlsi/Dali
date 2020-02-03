@@ -11,6 +11,7 @@
 
 #include "circuit/circuit.h"
 #include "common/global.h"
+#include "common/memory.h"
 #include "common/timing.h"
 
 class Placer {
@@ -60,10 +61,14 @@ class Placer {
   void UpdateAspectRatio();
   void NetSortBlkPin();
   virtual void StartPlacement() = 0;
+
   double HPWLX();
   double HPWLY();
   double HPWL();
+
   void ReportHPWL(VerboseLevel verbose_level = LOG_INFO);
+  static void ReportMemory(VerboseLevel verbose_level = LOG_INFO);
+
   void ReportHPWLCtoC();
   void TakeOver(Placer *placer);
   void SanityCheck();
@@ -158,6 +163,17 @@ inline void Placer::ReportHPWL(VerboseLevel verbose_level) {
   Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWL!");
   if (globalVerboseLevel >= verbose_level) {
     GetCircuit()->ReportHPWL();
+  }
+}
+
+inline void Placer::ReportMemory(VerboseLevel verbose_level) {
+  if (globalVerboseLevel >= verbose_level) {
+    auto peak_mem = getPeakRSS();
+    auto curr_mem = getCurrentRSS();
+    std::cout << "(peak memory: "
+              << (peak_mem >> 20u) << " MB, "
+              << " current memory: "
+              << (curr_mem >> 20u) << " MB)\n";
   }
 }
 

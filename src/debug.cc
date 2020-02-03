@@ -15,7 +15,7 @@ VerboseLevel globalVerboseLevel = LOG_DEBUG;
 
 #define TEST_WELL 0
 #define PP 1
-#define TEST_ADA false
+#define TEST_ADA 0
 
 int main() {
   Circuit circuit;
@@ -71,6 +71,7 @@ int main() {
   d_placer->StartPlacement();
   d_placer->GenMATLABScript("dp_result.txt");*/
 
+#if !TEST_ADA
 #if PP
   Placer *legalizer = new LGHillEx;
 #else
@@ -95,11 +96,12 @@ int main() {
   circuit.GenMATLABWellTable("lg_result");
   delete well_legalizer;
 #endif
-
-  delete gb_placer;
   //delete d_placer;
   delete legalizer;
   delete post_optimizer;
+#endif
+
+  delete gb_placer;
 
 /*#ifdef USE_OPENDB
   odb::dbDatabase::destroy(db);

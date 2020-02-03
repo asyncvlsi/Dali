@@ -154,7 +154,8 @@ void PLOSlide::OptimizationFromRight() {
 
 void PLOSlide::StartPlacement() {
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "Start Post-Legalization Optimization\n";
+    std::cout << "---------------------------------------\n"
+              << "Start Post-Legalization Optimization\n";
   }
 
   double wall_time = get_wall_time();
@@ -180,4 +181,6 @@ void PLOSlide::StartPlacement() {
               << wall_time << "s, cpu time: "
               << cpu_time << "s)\n";
   }
+
+  ReportMemory(LOG_CRITICAL);
 }

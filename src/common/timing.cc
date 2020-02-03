@@ -35,7 +35,7 @@ double get_cpu_time(){
 }
 
 //  Posix/Linux
-#else
+#elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__) || defined(__APPLE__)
 
 #include <sys/time.h>
 double get_wall_time() {
@@ -45,6 +45,11 @@ double get_wall_time() {
     return 0;
   }
   return (double) time.tv_sec + (double) time.tv_usec * 0.000001;
+}
+
+#else
+double get_wall_time() {
+  return 0;
 }
 
 #endif
