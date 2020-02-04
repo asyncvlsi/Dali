@@ -11,11 +11,11 @@
 #include "opendb.h"
 #include "placer.h"
 
-VerboseLevel globalVerboseLevel = LOG_DEBUG;
+VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 
 #define TEST_WELL 0
 #define PP 1
-#define TEST_ADA 0
+#define TEST_ADA 1
 
 int main() {
   Circuit circuit;
@@ -42,7 +42,6 @@ int main() {
   std::string adaptec1_lef = "../test/adaptec1/adaptec1.lef";
   std::string adaptec1_def = "../test/adaptec1/adaptec1.def";
 
-  std::string lef_file, def_file;
   circuit.SetGridValue(0.01,0.01);
   circuit.ReadLefFile(adaptec1_lef);
   circuit.ReadDefFile(adaptec1_def);
@@ -58,22 +57,21 @@ int main() {
   gb_placer->SetInputCircuit(&circuit);
 
   gb_placer->SetBoundaryDef();
-  gb_placer->SetFillingRate(0.8);
+  gb_placer->SetFillingRate(1);
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
   gb_placer->GenMATLABTable("gb_result.txt");
   //gb_placer->GenMATLABWellTable("gb_result");
   //gb_placer->SaveNodeTerminal();
-  //gb_placer->SaveDEFFile("circuit.def", def_file);
+  //gb_placer->SaveDEFFile("circuit.def", adaptec1_def);
 
   /*Placer *d_placer = new MDPlacer;
   d_placer->TakeOver(gb_placer);
   d_placer->StartPlacement();
   d_placer->GenMATLABScript("dp_result.txt");*/
 
-#if !TEST_ADA
 #if PP
-  Placer *legalizer = new LGHillEx;
+  Placer *legalizer = new LGTetrisEx;
 #else
   Placer *legalizer = new TetrisLegalizer;
 #endif
@@ -82,6 +80,7 @@ int main() {
   legalizer->GenMATLABTable("lg_result.txt");
   //legalizer->SaveDEFFile("circuit.def", def_file);
 
+#if !TEST_ADA
   Placer *post_optimizer = new PLOSlide;
   post_optimizer->TakeOver(legalizer);
   post_optimizer->StartPlacement();
@@ -97,11 +96,11 @@ int main() {
   delete well_legalizer;
 #endif
   //delete d_placer;
-  delete legalizer;
   delete post_optimizer;
 #endif
 
   delete gb_placer;
+  delete legalizer;
 
 /*#ifdef USE_OPENDB
   odb::dbDatabase::destroy(db);

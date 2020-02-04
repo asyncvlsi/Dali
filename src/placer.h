@@ -20,7 +20,7 @@
 
 /****Legalizer****/
 #include "placer/legalizer/LGTetris.h"
-#include "placer/legalizer/LGHillEx.h"
+#include "placer/legalizer/LGTetrisEx.h"
 
 /****Post Legalization Optimization****/
 #include "placer/postLegalOptimizer/PLOSlide.h"

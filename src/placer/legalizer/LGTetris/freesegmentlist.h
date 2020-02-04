@@ -20,7 +20,7 @@ class FreeSegmentList {
   /***derived data entries***/
  public:
   FreeSegmentList();
-  explicit FreeSegmentList(int start, int stop, int min_width);
+  FreeSegmentList(int start, int stop, int min_width);
   ~FreeSegmentList();
   size_t size() const;
   int Left() const;
@@ -44,5 +44,41 @@ class FreeSegmentList {
   int MinDispLoc(int llx, int width);
   void Show();
 };
+
+inline size_t FreeSegmentList::size() const {
+  return size_;
+}
+
+inline int FreeSegmentList::Left() const {
+  if (head_ == nullptr) {
+    std::cout << "Empty linked list, Left() not available\n";
+    assert(head_ != nullptr);
+  }
+  return head_->Start();
+}
+
+inline int FreeSegmentList::Right() const {
+  if (tail_ == nullptr) {
+    std::cout << "Empty linked list, Right() not available\n";
+    assert(tail_ != nullptr);
+  }
+  return tail_->End();
+}
+
+inline FreeSegment *FreeSegmentList::Head() const {
+  return head_;
+}
+
+inline FreeSegment *FreeSegmentList::Tail() const {
+  return tail_;
+}
+
+inline int FreeSegmentList::MinWidth() const {
+  return min_width_;
+}
+
+inline void FreeSegmentList::SetMinWidth(int initMinWidth) {
+  min_width_ = initMinWidth;
+}
 
 #endif //DALI_FREESEGMENTLIST_H

@@ -39,7 +39,7 @@ int TetrisSpace::ToStartRow(int y_loc) {
 
 int TetrisSpace::ToEndRow(int y_loc) {
   int relative_y = y_loc - bottom_;
-  int row_num = (y_loc - bottom_) / row_height_;
+  int row_num = relative_y / row_height_;
   if (relative_y % row_height_ == 0) {
     --row_num;
   }

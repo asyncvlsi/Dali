@@ -75,8 +75,8 @@ class Placer {
   void UpdateComponentsPlacementStatus();
   void IOPinPlacement();
 
-  void GenMATLABTable(std::string const &name_of_file = "block.txt") { circuit_->GenMATLABTable(name_of_file); }
-  void GenMATLABWellTable(std::string const &name_of_file = "res") { circuit_->GenMATLABWellTable(name_of_file); }
+  void GenMATLABTable(std::string const &name_of_file = "block.txt");
+  void GenMATLABWellTable(std::string const &name_of_file = "res");
   void GenMATLABScriptPlaced(std::string const &name_of_file = "block_net_list.m");
   bool SaveNodeTerminal(std::string const &terminal_file = "terminal.txt", std::string const &node_file = "nodes.txt");
   void SaveDEFFile(std::string const &name_of_file = "circuit.def");
@@ -180,6 +180,14 @@ inline void Placer::ReportMemory(VerboseLevel verbose_level) {
 inline void Placer::ReportHPWLCtoC() {
   Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWLCtoC!");
   GetCircuit()->ReportHPWLCtoC();
+}
+
+inline void Placer::GenMATLABTable(std::string const &name_of_file) {
+  circuit_->GenMATLABTable(name_of_file);
+}
+
+inline void Placer::GenMATLABWellTable(std::string const &name_of_file) {
+  circuit_->GenMATLABWellTable(name_of_file);
 }
 
 #endif //DALI_PLACERBASE_HPP

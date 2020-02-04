@@ -23,42 +23,6 @@ FreeSegmentList::~FreeSegmentList() {
   Clear();
 }
 
-size_t FreeSegmentList::size() const {
-  return size_;
-}
-
-int FreeSegmentList::Left() const {
-  if (head_ == nullptr) {
-    std::cout << "Empty linked list, Left() not available\n";
-    assert(head_ != nullptr);
-  }
-  return head_->Start();
-}
-
-int FreeSegmentList::Right() const {
-  if (tail_ == nullptr) {
-    std::cout << "Empty linked list, Right() not available\n";
-    assert(tail_ != nullptr);
-  }
-  return tail_->End();
-}
-
-FreeSegment *FreeSegmentList::Head() const {
-  return head_;
-}
-
-FreeSegment *FreeSegmentList::Tail() const {
-  return tail_;
-}
-
-int FreeSegmentList::MinWidth() const {
-  return min_width_;
-}
-
-void FreeSegmentList::SetMinWidth(int initMinWidth) {
-  min_width_ = initMinWidth;
-}
-
 void FreeSegmentList::Append(FreeSegment *segList) {
   /****push a list of freesegment into the linked list with some sanity check****/
   if (segList == nullptr) {

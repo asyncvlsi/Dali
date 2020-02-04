@@ -2,34 +2,174 @@
 // Created by Yihang Yang on 1/2/20.
 //
 
-#include "LGHillEx.h"
+#include "LGTetrisEx.h"
 
 #include <cfloat>
 
 #include <algorithm>
+#include <list>
 
-LGHillEx::LGHillEx()
+#include "placer/legalizer/LGTetris/freesegmentlist.h"
+
+LGTetrisEx::LGTetrisEx()
     : Placer(),
+      row_height_(1),
       legalize_from_left_(true),
       cur_iter_(0),
       max_iter_(10),
       k_width_(0.001),
       k_height_(0.001),
-      k_left_(1) {}
+      k_left_(1),
+      tot_num_rows_(0) {}
 
-void LGHillEx::InitLegalizer() {
-  row_start_.resize(top_ - bottom_ + 1, left_);
+void LGTetrisEx::MergeIntervals(std::vector<std::vector<int>> &intervals) {
+  /****
+   * This member function comes from a solution I submitted to LeetCode, lol
+   *
+   * If two intervals overlap with each other, these two intervals will be merged into one
+   *
+   * This member function can merge a list of intervals
+   * ****/
+  int sz = intervals.size();
+  if (sz <= 1) return;
+
+  std::sort(intervals.begin(),
+            intervals.end(),
+            [](std::vector<int> &inter1, std::vector<int> &inter2) {
+              return inter1[0] < inter2[0];
+            });
+
+  std::vector<std::vector<int>> res;
+
+  int begin = intervals[0][0];
+  int end = intervals[0][1];
+
+  std::vector<int> tmp(2, 0);
+  for (int i = 1; i < sz; ++i) {
+    if (end < intervals[i][0]) {
+      tmp[0] = begin;
+      tmp[1] = end;
+      res.push_back(tmp);
+      begin = intervals[i][0];
+    }
+    if (end < intervals[i][1]) {
+      end = intervals[i][1];
+    }
+  }
+
+  tmp[0] = begin;
+  tmp[1] = end;
+  res.push_back(tmp);
+
+  intervals = res;
+}
+
+void LGTetrisEx::InitLegalizer(int row_height) {
+  /****
+   * 1. calculate the number of rows for a given row_height
+   * 2. initialize white space available in rows
+   * 3. initialize block contour to be the left contour
+   * 4. allocate space for index_loc_list_
+   * ****/
+  row_height_ = row_height;
+  tot_num_rows_ = (top_ - bottom_) / row_height_ + 1;
+
+  std::vector<std::vector<std::vector<int>>> macro_segments;
+  macro_segments.resize(tot_num_rows_);
+  std::vector<int> tmp(2, 0);
+  for (auto &&block: circuit_->block_list) {
+    if (block.IsFixed()) {
+      int ly = int(std::floor(block.LLY()));
+      int uy = int(std::ceil(block.URY()));
+      int start_row = StartRow(ly);
+      int end_row = StartRow(uy);
+
+      if (start_row >= tot_num_rows_ || end_row < 0) continue;
+
+      start_row = std::max(0, start_row);
+      end_row = std::min(tot_num_rows_ - 1, end_row);
+
+      int lx = int(std::round(block.LLX()));
+      int ux = int(std::round(block.URX()));
+
+      tmp[0] = lx;
+      tmp[1] = ux;
+      for (int i = start_row; i <= end_row; ++i) {
+        macro_segments[i].push_back(tmp);
+      }
+    }
+  }
+  for (auto &intervals : macro_segments) {
+    MergeIntervals(intervals);
+  }
+
+  white_space_in_rows_.resize(tot_num_rows_);
+  for (int i = 0; i < tot_num_rows_; ++i) {
+    if (macro_segments[i].empty()) {
+      white_space_in_rows_[i].push_back(left_);
+      white_space_in_rows_[i].push_back(right_);
+      continue;
+    }
+    int segments_size = int(macro_segments[i].size());
+    for (int j = 0; j < segments_size; ++j) {
+      if (j>=1) {
+        if (macro_segments[i][j-1][1] <= left_ && macro_segments[i][j][0] >= right_) {
+          white_space_in_rows_[i].push_back(left_);
+          white_space_in_rows_[i].push_back(right_);
+          break;
+        }
+      }
+
+      auto &interval = macro_segments[i][j];
+      // if the right end of the interval is less than the RegionLeft(), continue
+      // because this interval cannot influence the white space
+      if (interval[1] <= left_) continue;
+
+      // if the left end of the interval is larger than the RegionRight(), break
+      // because all the following intervals cannot influence the white space
+      if (interval[0] > right_) break;
+
+      // if the left end of the interval is less than the RegionLeft()
+      // and the right end of the interval is less than the RegionRight()
+      // (we know the right end of the interval is larger than the RegionLeft() already)
+      if (interval[0] <= left_ && interval[1] < RegionRight()) {
+        white_space_in_rows_[i].push_back(interval[1]);
+        continue;
+      }
+
+      if (interval[0] > left_) {
+        if (white_space_in_rows_[i].empty()) {
+          white_space_in_rows_[i].push_back(left_);
+        }
+        white_space_in_rows_[i].push_back(interval[0]);
+        if (interval[1] < RegionRight()) {
+          white_space_in_rows_[i].push_back(interval[1]);
+        }
+        continue;
+      }
+    }
+    if (white_space_in_rows_[i].size() % 2 == 1) {
+      white_space_in_rows_[i].push_back(right_);
+    }
+  }
+
+  GenAvailSpace();
+
+  exit(1);
+
+  block_contour_.resize(tot_num_rows_, left_);
+
   IndexLocPair<int> tmp_index_loc_pair(0, 0, 0);
   index_loc_list_.resize(circuit_->block_list.size(), tmp_index_loc_pair);
 }
 
-void LGHillEx::UseSpace(Block const &block) {
+void LGTetrisEx::UseSpace(Block const &block) {
   /****
    * Mark the space used by this block by changing the start point of available space in each related row
    * ****/
   auto start_row = (unsigned int) (block.LLY() - RegionBottom());
   unsigned int end_row = start_row + block.Height() - 1;
-  if (end_row >= row_start_.size()) {
+  if (end_row >= block_contour_.size()) {
     //std::cout << "  ly:     " << int(block.LLY())       << "\n"
     //          << "  height: " << block.Height()   << "\n"
     //          << "  top:    " << Top()    << "\n"
@@ -39,11 +179,11 @@ void LGHillEx::UseSpace(Block const &block) {
 
   int end_x = int(block.URX());
   for (unsigned int i = start_row; i <= end_row; ++i) {
-    row_start_[i] = end_x;
+    block_contour_[i] = end_x;
   }
 }
 
-bool LGHillEx::IsCurrentLocLegal(Value2D<int> &loc, int width, int height) {
+bool LGTetrisEx::IsCurrentLocLegal(Value2D<int> &loc, int width, int height) {
   bool loc_out_range = (loc.x + width > right_) || (loc.x < left_) || (loc.y + height > top_) || (loc.y < bottom_);
   if (loc_out_range) {
     return false;
@@ -53,7 +193,7 @@ bool LGHillEx::IsCurrentLocLegal(Value2D<int> &loc, int width, int height) {
   int start_row = loc.y - bottom_;
   int end_row = start_row + height - 1;
   for (int i = start_row; i <= end_row; ++i) {
-    if (row_start_[i] > loc.x) {
+    if (block_contour_[i] > loc.x) {
       all_row_avail = false;
       break;
     }
@@ -62,7 +202,7 @@ bool LGHillEx::IsCurrentLocLegal(Value2D<int> &loc, int width, int height) {
   return all_row_avail;
 }
 
-bool LGHillEx::FindLoc(Value2D<int> &loc, int width, int height) {
+bool LGTetrisEx::FindLoc(Value2D<int> &loc, int width, int height) {
   bool is_successful = true;
 
   int init_row;
@@ -99,7 +239,7 @@ bool LGHillEx::FindLoc(Value2D<int> &loc, int width, int height) {
     tmp_x = std::max(left_, left_bound);
 
     for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
-      tmp_x = std::max(tmp_x, row_start_[n]);
+      tmp_x = std::max(tmp_x, block_contour_[n]);
     }
 
     //if (tmp_x + width > right_) continue;
@@ -125,7 +265,7 @@ bool LGHillEx::FindLoc(Value2D<int> &loc, int width, int height) {
       tmp_x = std::max(left_, left_bound);
 
       for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
-        tmp_x = std::max(tmp_x, row_start_[n]);
+        tmp_x = std::max(tmp_x, block_contour_[n]);
       }
 
       if (tmp_x + width > right_) continue;
@@ -145,7 +285,7 @@ bool LGHillEx::FindLoc(Value2D<int> &loc, int width, int height) {
       tmp_x = std::max(left_, left_bound);
 
       for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
-        tmp_x = std::max(tmp_x, row_start_[n]);
+        tmp_x = std::max(tmp_x, block_contour_[n]);
       }
 
       if (tmp_x + width > right_) continue;
@@ -172,7 +312,7 @@ bool LGHillEx::FindLoc(Value2D<int> &loc, int width, int height) {
   return is_successful;
 }
 
-void LGHillEx::FastShift(int failure_point) {
+void LGTetrisEx::FastShift(int failure_point) {
   /****
    * This method is to FastShift() the blocks following the failure_point (included)
    * to reasonable locations in order to keep block orders
@@ -210,7 +350,7 @@ void LGHillEx::FastShift(int failure_point) {
   }
 }
 
-bool LGHillEx::LocalLegalization() {
+bool LGTetrisEx::LocalLegalization() {
   /****
    * 1. first sort all the circuit based on their location and size from low to high
    *    effective_loc = current_lx - k_width_ * width - k_height_ * height;
@@ -225,7 +365,7 @@ bool LGHillEx::LocalLegalization() {
    * 4. if still no legal location can be found, do the reverse legalization procedure till reach the maximum iteration
    ****/
   bool is_successful = true;
-  row_start_.assign(row_start_.size(), left_);
+  block_contour_.assign(block_contour_.size(), left_);
   std::vector<Block> &block_list = *BlockList();
 
   int sz = index_loc_list_.size();
@@ -280,10 +420,10 @@ bool LGHillEx::LocalLegalization() {
   return is_successful;
 }
 
-void LGHillEx::UseSpaceRight(Block const &block) {
+void LGTetrisEx::UseSpaceRight(Block const &block) {
   auto start_row = int(block.LLY() - RegionBottom());
   unsigned int end_row = start_row + block.Height() - 1;
-  /*if (end_row >= row_start_.size()) {
+  /*if (end_row >= block_contour_.size()) {
     std::cout << "  ly:     " << block.LLY() << "\n"
               << "  height: " << block.Height() << "\n"
               << "  top:    " << Top() << "\n"
@@ -292,16 +432,16 @@ void LGHillEx::UseSpaceRight(Block const &block) {
     Assert(false, "Cannot use space out of range");
   }*/
 
-  assert(end_row < row_start_.size());
+  assert(end_row < block_contour_.size());
   assert(start_row >= 0);
 
   int end_x = int(block.LLX());
   for (unsigned int r = start_row; r <= end_row; ++r) {
-    row_start_[r] = end_x;
+    block_contour_[r] = end_x;
   }
 }
 
-bool LGHillEx::IsCurrentLocLegalRight(Value2D<int> &loc, int width, int height) {
+bool LGTetrisEx::IsCurrentLocLegalRight(Value2D<int> &loc, int width, int height) {
   bool loc_out_range = (loc.x > right_) || (loc.x - width < left_) || (loc.y + height > top_) || (loc.y < bottom_);
   //std::cout << loc.y + height << "  " << loc_out_range << "\n";
   if (loc_out_range) {
@@ -312,7 +452,7 @@ bool LGHillEx::IsCurrentLocLegalRight(Value2D<int> &loc, int width, int height) 
   int start_row = loc.y - bottom_;
   int end_row = start_row + height - 1;
   for (int i = start_row; i <= end_row; ++i) {
-    if (row_start_[i] < loc.x) {
+    if (block_contour_[i] < loc.x) {
       all_row_avail = false;
       break;
     }
@@ -321,7 +461,7 @@ bool LGHillEx::IsCurrentLocLegalRight(Value2D<int> &loc, int width, int height) 
   return all_row_avail;
 }
 
-bool LGHillEx::FindLocRight(Value2D<int> &loc, int width, int height) {
+bool LGTetrisEx::FindLocRight(Value2D<int> &loc, int width, int height) {
   bool is_successful = true;
 
   int init_row;
@@ -358,7 +498,7 @@ bool LGHillEx::FindLocRight(Value2D<int> &loc, int width, int height) {
     tmp_x = std::min(right_, right_bound);
 
     for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
-      tmp_x = std::min(tmp_x, row_start_[n]);
+      tmp_x = std::min(tmp_x, block_contour_[n]);
     }
 
     //if (tmp_x - width < left_) continue;
@@ -384,7 +524,7 @@ bool LGHillEx::FindLocRight(Value2D<int> &loc, int width, int height) {
       tmp_x = std::min(right_, right_bound);
 
       for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
-        tmp_x = std::min(tmp_x, row_start_[n]);
+        tmp_x = std::min(tmp_x, block_contour_[n]);
       }
 
       if (tmp_x - width < left_) continue;
@@ -404,7 +544,7 @@ bool LGHillEx::FindLocRight(Value2D<int> &loc, int width, int height) {
       tmp_x = std::min(right_, right_bound);
 
       for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
-        tmp_x = std::min(tmp_x, row_start_[n]);
+        tmp_x = std::min(tmp_x, block_contour_[n]);
       }
 
       if (tmp_x - width < left_) continue;
@@ -431,7 +571,7 @@ bool LGHillEx::FindLocRight(Value2D<int> &loc, int width, int height) {
   return is_successful;
 }
 
-void LGHillEx::FastShiftRight(int failure_point) {
+void LGTetrisEx::FastShiftRight(int failure_point) {
   /****
    * This method is to FastShift() the blocks following the failure_point (included)
    * to reasonable locations in order to keep block orders
@@ -469,7 +609,7 @@ void LGHillEx::FastShiftRight(int failure_point) {
   }
 }
 
-bool LGHillEx::LocalLegalizationRight() {
+bool LGTetrisEx::LocalLegalizationRight() {
   /****
    * 1. first sort all the circuit based on their location and size from high to low
    *    effective_loc = current_rx - k_width_ * width - k_height_ * height;
@@ -483,7 +623,7 @@ bool LGHillEx::LocalLegalizationRight() {
    *    if legal location cannot be found in this range, extend the y_direction by height at each end
    * 4. if still no legal location can be found, do the reverse legalization procedure till reach the maximum iteration
    ****/
-  row_start_.assign(row_start_.size(), right_);
+  block_contour_.assign(block_contour_.size(), right_);
   std::vector<Block> &block_list = *BlockList();
 
   int sz = index_loc_list_.size();
@@ -546,7 +686,7 @@ bool LGHillEx::LocalLegalizationRight() {
   return is_successful;
 }
 
-double LGHillEx::EstimatedHPWL(Block &block, int x, int y) {
+double LGTetrisEx::EstimatedHPWL(Block &block, int x, int y) {
   double max_x = x;
   double max_y = y;
   double min_x = x;
@@ -570,16 +710,20 @@ double LGHillEx::EstimatedHPWL(Block &block, int x, int y) {
   return tot_hpwl;
 }
 
-void LGHillEx::StartPlacement() {
+void LGTetrisEx::StartPlacement() {
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "---------------------------------------\n"
-              << "Start LGHillEx Legalization\n";
+              << "Start LGTetrisEx Legalization\n";
   }
 
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
 
-  InitLegalizer();
+  left_ = 459;
+  right_ = 10692 + 459;
+  bottom_ = 459;
+  top_ = 11127 + 12;
+  InitLegalizer(12);
 
   bool is_success = false;
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
@@ -602,7 +746,7 @@ void LGHillEx::StartPlacement() {
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "\033[0;36m"
-              << "LGHillEx Legalization complete (" << cur_iter_ + 1 << ")\n"
+              << "LGTetrisEx Legalization complete (" << cur_iter_ + 1 << ")\n"
               << "\033[0m";
   }
 
@@ -617,4 +761,31 @@ void LGHillEx::StartPlacement() {
   }
 
   ReportMemory(LOG_CRITICAL);
+}
+
+void LGTetrisEx::GenAvailSpace(std::string const &name_of_file) {
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+  ost << RegionLeft() << "\t"
+      << RegionRight() << "\t"
+      << RegionRight() << "\t"
+      << RegionLeft() << "\t"
+      << RegionBottom() << "\t"
+      << RegionBottom() << "\t"
+      << RegionTop() << "\t"
+      << RegionTop() << "\n";
+  for (int i = 0; i < tot_num_rows_; ++i) {
+    auto &row = white_space_in_rows_[i];
+    int sz = row.size();
+    for (int j = 0; j < sz; j += 2) {
+      ost << row[j] << "\t"
+          << row[j + 1] << "\t"
+          << row[j + 1] << "\t"
+          << row[j] << "\t"
+          << i * row_height_ + RegionBottom() << "\t"
+          << i * row_height_ + RegionBottom() << "\t"
+          << (i + 1) * row_height_ + RegionBottom() << "\t"
+          << (i + 1) * row_height_ + RegionBottom() << "\n";
+    }
+  }
 }

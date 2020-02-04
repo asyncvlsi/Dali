@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
   d_placer->StartPlacement();
   */
 
-  Placer *legalizer = new LGHillEx;
+  Placer *legalizer = new LGTetrisEx;
   legalizer->TakeOver(gb_placer);
   legalizer->StartPlacement();
 
