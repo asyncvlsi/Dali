@@ -9,7 +9,7 @@
  *          http://creativecommons.org/licenses/by/3.0/deed.en_US
  */
 
-#if defined(_WIN32) || defined(__CYGWIN__)
+#if defined(_WIN32)
 #include <windows.h>
 #include <psapi.h>
 
@@ -24,7 +24,7 @@
 #include <fcntl.h>
 #include <procfs.h>
 
-#elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
+#elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__) || defined(__unix__) || defined(__unix) || defined(unix)
 #include <cstdio>
 #include <cstdlib>
 
@@ -40,11 +40,11 @@
  * determined on this OS.
  */
 size_t getPeakRSS() {
-#if defined(_WIN32) || defined(__CYGWIN__)
+#if defined(_WIN32)
   /* Windows -------------------------------------------------- */
-    PROCESS_MEMORY_COUNTERS info;
-    GetProcessMemoryInfo( GetCurrentProcess( ), &info, sizeof(info) );
-    return (size_t)info.PeakWorkingSetSize;
+  PROCESS_MEMORY_COUNTERS info;
+  GetProcessMemoryInfo(GetCurrentProcess(), &info, sizeof(info));
+  return (size_t) info.PeakWorkingSetSize;
 
 #elif (defined(_AIX) || defined(__TOS__AIX__)) || (defined(__sun__) || defined(__sun) || defined(sun) && (defined(__SVR4) || defined(__svr4__)))
   /* AIX and Solaris ------------------------------------------ */
@@ -83,9 +83,9 @@ size_t getPeakRSS() {
 size_t getCurrentRSS() {
 #if defined(_WIN32)
   /* Windows -------------------------------------------------- */
-    PROCESS_MEMORY_COUNTERS info;
-    GetProcessMemoryInfo( GetCurrentProcess( ), &info, sizeof(info) );
-    return (size_t)info.WorkingSetSize;
+  PROCESS_MEMORY_COUNTERS info;
+  GetProcessMemoryInfo(GetCurrentProcess(), &info, sizeof(info));
+  return (size_t) info.WorkingSetSize;
 
 #elif defined(__APPLE__) && defined(__MACH__)
   /* OSX ------------------------------------------------------ */
@@ -96,7 +96,7 @@ size_t getCurrentRSS() {
         return (size_t)0L;      /* Can't access? */
     return (size_t)info.resident_size;
 
-#elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
+#elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__) || defined(__unix__) || defined(__unix) || defined(unix)
   /* Linux ---------------------------------------------------- */
   long rss = 0L;
   FILE *fp = NULL;
