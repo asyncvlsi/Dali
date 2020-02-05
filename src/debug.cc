@@ -15,7 +15,7 @@ VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 
 #define TEST_WELL 0
 #define PP 1
-#define TEST_ADA 1
+#define TEST_ADA 0
 
 int main() {
   Circuit circuit;

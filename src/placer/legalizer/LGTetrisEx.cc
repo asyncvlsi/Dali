@@ -155,7 +155,7 @@ void LGTetrisEx::InitLegalizer(int row_height) {
 
   GenAvailSpace();
 
-  exit(1);
+  //exit(1);
 
   block_contour_.resize(tot_num_rows_, left_);
 
@@ -719,11 +719,12 @@ void LGTetrisEx::StartPlacement() {
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
 
-  left_ = 459;
+  /*left_ = 459;
   right_ = 10692 + 459;
   bottom_ = 459;
   top_ = 11127 + 12;
-  InitLegalizer(12);
+  InitLegalizer(12);*/
+  InitLegalizer();
 
   bool is_success = false;
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {

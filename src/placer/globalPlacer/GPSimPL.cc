@@ -435,9 +435,11 @@ void GPSimPL::SolveProblemX() {
     std::cout << "    estimated error: " << error_x << std::endl;
   }
 
-  std::vector<Block> &block_list = *BlockList();
-  for (unsigned int num = 0; num < vx.size(); ++num) {
-    block_list[num].SetLLX(vx[num]);
+  int sz = vx.size();
+  auto it_block_list = BlockList()->begin();
+  Eigen::VectorXd::const_iterator ivx = vx.begin();
+  for (int num = 0; num < sz; ++num) {
+    it_block_list[num].SetLLX(ivx[num]);
   }
 }
 
@@ -450,36 +452,45 @@ void GPSimPL::SolveProblemY() {
     std::cout << "    estimated error: " << error_y << std::endl;
   }
 
-  std::vector<Block> &block_list = *BlockList();
-  for (unsigned int num = 0; num < vy.size(); ++num) {
-    block_list[num].SetLLY(vy[num]);
+  int sz = vy.size();
+  auto it_block_list = BlockList()->begin();
+  Eigen::VectorXd::const_iterator ivy = vy.begin();
+  for (int num = 0; num < sz; ++num) {
+    it_block_list[num].SetLLY(ivy[num]);
   }
 }
 
 void GPSimPL::PullBlockBackToRegion() {
-  std::vector<Block> &block_list = *BlockList();
-  for (unsigned int num = 0; num < vx.size(); ++num) {
-    if (block_list[num].IsMovable()) {
-      if (vx[num] < RegionLeft()) {
-        vx[num] = RegionLeft();
+  int sz = vx.size();
+  auto it_block_list = BlockList()->begin();
+  Eigen::VectorXd::iterator ivx = vx.begin();
+  Eigen::VectorXd::iterator ivy = vy.begin();
+
+  double blk_hi_bound_x;
+  double blk_hi_bound_y;
+
+  for (int num = 0; num < sz; ++num) {
+    if (it_block_list[num].IsMovable()) {
+      if (ivx[num] < RegionLeft()) {
+        ivx[num] = RegionLeft();
       }
-      if (vx[num] > RegionRight() - block_list[num].Width()) {
-        vx[num] = RegionRight() - block_list[num].Width();
+      blk_hi_bound_x = RegionRight() - it_block_list[num].Width();
+      if (ivx[num] > blk_hi_bound_x) {
+        ivx[num] = blk_hi_bound_x;
+      }
+
+      if (ivy[num] < RegionBottom()) {
+        ivy[num] = RegionBottom();
+      }
+      blk_hi_bound_y = RegionTop() - it_block_list[num].Height();
+      if (ivy[num] >  blk_hi_bound_y) {
+        ivy[num] = blk_hi_bound_y;
       }
     }
-    block_list[num].SetLLX(vx[num]);
   }
 
-  for (long int num = 0; num < vy.size(); ++num) {
-    if (block_list[num].IsMovable()) {
-      if (vy[num] < RegionBottom()) {
-        vy[num] = RegionBottom();
-      }
-      if (vy[num] > RegionTop() - block_list[num].Height()) {
-        vy[num] = RegionTop() - block_list[num].Height();
-      }
-    }
-    block_list[num].SetLLY(vy[num]);
+  for (int num = 0; num < sz; ++num) {
+    it_block_list[num].SetLoc(ivx[num], ivy[num]);
   }
 }
 
@@ -593,11 +604,12 @@ void GPSimPL::InitGridBins() {
 
 
   // Part3
-  std::vector<Block> &block_list = *BlockList();
+  auto block_list = BlockList()->begin();
+  int sz = int(BlockList()->size());
   int min_urx, max_llx, min_ury, max_lly;
   bool all_terminal, fixed_blk_out_of_region, blk_out_of_bin;
   int left_index, right_index, bottom_index, top_index;
-  for (size_t i = 0; i < block_list.size(); i++) {
+  for (int i = 0; i < sz; i++) {
     /* find the left, right, bottom, top index of the grid */
     if (block_list[i].IsMovable()) continue;
     fixed_blk_out_of_region = int(block_list[i].LLX()) >= RegionRight() ||
@@ -820,9 +832,10 @@ void GPSimPL::UpdateGridBinState() {
   // for each cell, find the index of the grid bin it should be in
   // note that in extreme cases, the index might be smaller than 0 or larger than the maximum allowed index
   // because the cell is on the boundaries, so we need to make some modifications for these extreme cases
-  std::vector<Block> &block_list = *BlockList();
+  auto block_list = BlockList()->begin();
+  int sz = int(BlockList()->size());
   int x_index, y_index;
-  for (size_t i = 0; i < block_list.size(); i++) {
+  for (int i = 0; i < sz; i++) {
     if (block_list[i].IsFixed()) continue;
     x_index = (int) std::floor((block_list[i].X() - RegionLeft()) / grid_bin_width);
     y_index = (int) std::floor((block_list[i].Y() - RegionBottom()) / grid_bin_height);
@@ -868,16 +881,6 @@ void GPSimPL::UpdateGridBinState() {
       }
     }
   }
-
-#if DEBUG
-  write_not_all_terminal_grid_bins();
-  for (int x = grid_cnt_x - 1; x >= 0; --x) {
-    for (int y = 0; y < grid_cnt_y; ++y) {
-      std::cout << grid_bin_matrix[x][y].white_space << "  " << grid_bin_matrix[x][y].cell_area << "\t";
-    }
-    std::cout << "\n";
-  }
-#endif
 }
 
 void GPSimPL::ClusterOverfilledGridBin() {
@@ -929,10 +932,10 @@ void GPSimPL::UpdateClusterArea() {
   /****
    * Calculate the total cell area and total white space in each cluster
    * ****/
-  for (auto &&cluster: cluster_list) {
+  for (auto &cluster: cluster_list) {
     cluster.total_cell_area = 0;
     cluster.total_white_space = 0;
-    for (auto &&index: cluster.bin_set) {
+    for (auto &index: cluster.bin_set) {
       cluster.total_cell_area += grid_bin_matrix[index.x][index.y].cell_area;
       cluster.total_white_space += grid_bin_matrix[index.x][index.y].white_space;
     }
@@ -978,7 +981,7 @@ void GPSimPL::FindMinimumBoxForLargestCluster() {
   R.ur_index.y = 0;
   // initialize a box with y cut-direction
   // identify the bounding box of the initial cluster
-  for (auto &&index: cluster_list[max_cluster].bin_set) {
+  for (auto &index: cluster_list[max_cluster].bin_set) {
     R.ll_index.x = std::min(R.ll_index.x, index.x);
     R.ur_index.x = std::max(R.ur_index.x, index.x);
     R.ll_index.y = std::min(R.ll_index.y, index.y);
@@ -1556,44 +1559,38 @@ bool GPSimPL::RecursiveBisectionBlkSpreading() {
   return true;
 }
 
-void GPSimPL::BackUpBlkLoc() {
-  std::vector<Block> &block_list = *BlockList();
-  for (size_t i = 0; i < block_list.size(); ++i) {
-    x_anchor[i] = block_list[i].LLX();
-    y_anchor[i] = block_list[i].LLY();
-  }
-}
-
 void GPSimPL::UpdateAnchorLoc() {
-  std::vector<Block> &block_list = *BlockList();
-  //double tmp_value;
-  for (size_t i = 0; i < block_list.size(); ++i) {
-    if (block_list[i].IsFixed()) continue;
-    //tmp_value = x_anchor[i];
-    x_anchor[i] = block_list[i].LLX();
-    //block_list[i].SetLLX(tmp_value);
+  auto block_list = BlockList()->begin();
+  auto sz = BlockList()->size();
+  auto it_x_anchor = x_anchor.begin();
+  auto it_y_anchor = y_anchor.begin();
 
-    //tmp_value = y_anchor[i];
-    y_anchor[i] = block_list[i].LLY();
-    //block_list[i].SetLLY(tmp_value);
+  for (size_t i = 0; i < sz; ++i) {
+    it_x_anchor[i] = block_list[i].LLX();
+    it_y_anchor[i] = block_list[i].LLY();
   }
 }
 
 void GPSimPL::BuildProblemB2BWithAnchorX() {
   BuildProblemB2BX();
-  std::vector<Block> &block_list = *BlockList();
+  auto block_list = BlockList()->begin();
+  auto sz = BlockList()->size();
+  auto it_x_anchor = x_anchor.begin();
+  auto it_bx = bx.begin();
+
   double weight = 0;
   double pin_loc0, pin_loc1;
-  for (size_t i = 0; i < block_list.size(); ++i) {
+  for (size_t i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) continue;
     pin_loc0 = block_list[i].LLX();
-    pin_loc1 = x_anchor[i];
-    if (std::fabs(pin_loc0 - pin_loc1) < 10) {
+    pin_loc1 = it_x_anchor[i];
+    /*if (std::fabs(pin_loc0 - pin_loc1) < 10) {
       weight = alpha;
     } else {
       weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
-    }
-    bx[i] += pin_loc1 * weight;
+    }*/
+    weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
+    it_bx[i] += pin_loc1 * weight;
     coefficients.emplace_back(T(i, i, weight));
   }
   Ax.setFromTriplets(coefficients.begin(), coefficients.end());
@@ -1601,19 +1598,24 @@ void GPSimPL::BuildProblemB2BWithAnchorX() {
 
 void GPSimPL::BuildProblemB2BWithAnchorY() {
   BuildProblemB2BY();
-  std::vector<Block> &block_list = *BlockList();
+  auto block_list = BlockList()->begin();
+  auto sz = BlockList()->size();
+  auto it_y_anchor = y_anchor.begin();
+  auto it_by = by.begin();
+
   double weight = 0;
   double pin_loc0, pin_loc1;
-  for (size_t i = 0; i < block_list.size(); ++i) {
+  for (size_t i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) continue;
     pin_loc0 = block_list[i].LLY();
-    pin_loc1 = y_anchor[i];
-    if (std::fabs(pin_loc0 - pin_loc1) < 10) {
+    pin_loc1 = it_y_anchor[i];
+    /*if (std::fabs(pin_loc0 - pin_loc1) < 10) {
       weight = alpha;
     } else {
       weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
-    }
-    by[i] += pin_loc1 * weight;
+    }*/
+    weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
+    it_by[i] += pin_loc1 * weight;
     coefficients.emplace_back(T(i, i, weight));
   }
   Ay.setFromTriplets(coefficients.begin(), coefficients.end());
@@ -1624,6 +1626,9 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
     std::cout << "alpha: " << alpha << "\n";
   }
   std::vector<Block> &block_list = *BlockList();
+
+  UpdateAnchorLoc();
+  UpdateAnchorNetWeight();
 
   HPWLX_converge = false;
   HPWLX_old = DBL_MAX;
@@ -1671,7 +1676,6 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
 }
 
 void GPSimPL::LookAheadLegalization() {
-  BackUpBlkLoc();
   ClearGridBinFlag();
   do {
     UpdateGridBinState();
@@ -1784,9 +1788,6 @@ void GPSimPL::StartPlacement() {
         }
         break;
       }
-    } else {
-      UpdateAnchorLoc();
-      UpdateAnchorNetWeight();
     }
     QuadraticPlacementWithAnchor();
     //DumpResult();

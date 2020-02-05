@@ -71,7 +71,7 @@ class GPSimPL : public Placer {
   Eigen::VectorXd vx, vy;
   Eigen::VectorXd bx, by;
   SpMat Ax, Ay;
-  std::vector<double> x_anchor, y_anchor;
+  Eigen::VectorXd x_anchor, y_anchor;
   std::vector<T> coefficients;
   Eigen::ConjugateGradient<SpMat, Eigen::Lower> cgx;
   Eigen::ConjugateGradient<SpMat, Eigen::Lower> cgy;
@@ -130,7 +130,6 @@ class GPSimPL : public Placer {
   void PlaceBlkInBoxBisection(BoxBin &box);
   bool RecursiveBisectionBlkSpreading();
 
-  void BackUpBlkLoc();
   void LookAheadLegalization();
   void UpdateLALConvergeState();
   void UpdateAnchorLoc();
