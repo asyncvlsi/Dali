@@ -719,11 +719,7 @@ void LGTetrisEx::StartPlacement() {
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
 
-  /*left_ = 459;
-  right_ = 10692 + 459;
-  bottom_ = 459;
-  top_ = 11127 + 12;
-  InitLegalizer(12);*/
+  //InitLegalizer(12);
   InitLegalizer();
 
   bool is_success = false;

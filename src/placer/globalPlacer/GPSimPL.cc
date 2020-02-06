@@ -1559,13 +1559,30 @@ bool GPSimPL::RecursiveBisectionBlkSpreading() {
   return true;
 }
 
+void GPSimPL::BackUpBlkLoc () {
+  std::vector<Block> &block_list = *BlockList();
+  for (size_t i=0; i<block_list.size(); ++i) {
+    x_anchor[i] = block_list[i].LLX();
+    y_anchor[i] = block_list[i].LLY();
+  }
+}
+
 void GPSimPL::UpdateAnchorLoc() {
   auto block_list = BlockList()->begin();
   auto sz = BlockList()->size();
   auto it_x_anchor = x_anchor.begin();
   auto it_y_anchor = y_anchor.begin();
 
+  //double tmp_value;
   for (size_t i = 0; i < sz; ++i) {
+    //tmp_value = block_list[i].LLX();
+    //block_list[i].SetLLX(it_x_anchor[i]);
+    //it_x_anchor[i] = tmp_value;
+
+    //tmp_value = block_list[i].LLY();
+    //block_list[i].SetLLY(it_y_anchor[i]);
+    //it_y_anchor[i] = tmp_value;
+
     it_x_anchor[i] = block_list[i].LLX();
     it_y_anchor[i] = block_list[i].LLY();
   }
@@ -1676,6 +1693,7 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
 }
 
 void GPSimPL::LookAheadLegalization() {
+  //BackUpBlkLoc();
   ClearGridBinFlag();
   do {
     UpdateGridBinState();
@@ -1762,11 +1780,11 @@ void GPSimPL::StartPlacement() {
     return;
   }
 
-  //DumpResult();
+  DumpResult();
 
   InitialPlacement();
 
-  //DumpResult();
+  DumpResult();
 
   //std::cout << cg_total_hpwl_ << "  " << circuit_->HPWL() << "\n";
 
@@ -1775,13 +1793,13 @@ void GPSimPL::StartPlacement() {
       std::cout << current_iteration_ << "-th iteration\n";
     }
     LookAheadLegalization();
-    //DumpResult();
+    DumpResult();
     UpdateLALConvergeState();
     if (globalVerboseLevel >= LOG_CRITICAL) {
       std::cout << "It " << current_iteration_ << ": \t" << cg_total_hpwl_ << "  " << lal_total_hpwl_ << "\n";
     }
     if (HPWL_LAL_converge) { // if HPWL sconverges
-      if (current_iteration_ >= 30) {
+      if (current_iteration_ >= 40) {
         if (globalVerboseLevel >= LOG_CRITICAL) {
           std::cout << "Iterative look-ahead legalization complete" << std::endl;
           std::cout << "Total number of iteration: " << current_iteration_ + 1 << std::endl;
@@ -1790,7 +1808,7 @@ void GPSimPL::StartPlacement() {
       }
     }
     QuadraticPlacementWithAnchor();
-    //DumpResult();
+    DumpResult();
   }
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "\033[0;36m"
@@ -1800,7 +1818,6 @@ void GPSimPL::StartPlacement() {
   LookAheadClose();
   CheckAndShift();
   ReportHPWL(LOG_CRITICAL);
-  //DrawBlockNetList("cg_result.txt");
 
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;

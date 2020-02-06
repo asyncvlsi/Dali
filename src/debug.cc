@@ -15,7 +15,7 @@ VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 
 #define TEST_WELL 0
 #define PP 1
-#define TEST_ADA 0
+#define TEST_ADA 1
 
 int main() {
   Circuit circuit;
@@ -45,6 +45,10 @@ int main() {
   circuit.SetGridValue(0.01,0.01);
   circuit.ReadLefFile(adaptec1_lef);
   circuit.ReadDefFile(adaptec1_def);
+  circuit.def_left = 459;
+  circuit.def_right = 10692 + 459;
+  circuit.def_bottom = 459;
+  circuit.def_top = 11127 + 12;
 #endif
 
   std::cout << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << "s\n";
@@ -62,8 +66,12 @@ int main() {
   gb_placer->StartPlacement();
   gb_placer->GenMATLABTable("gb_result.txt");
   //gb_placer->GenMATLABWellTable("gb_result");
-  //gb_placer->SaveNodeTerminal();
   //gb_placer->SaveDEFFile("circuit.def", adaptec1_def);
+
+#if TEST_ADA
+  circuit.SaveBookshelfPl("adaptec1bs.pl");
+  exit(128);
+#endif
 
   /*Placer *d_placer = new MDPlacer;
   d_placer->TakeOver(gb_placer);

@@ -130,6 +130,7 @@ class GPSimPL : public Placer {
   void PlaceBlkInBoxBisection(BoxBin &box);
   bool RecursiveBisectionBlkSpreading();
 
+  void BackUpBlkLoc();
   void LookAheadLegalization();
   void UpdateLALConvergeState();
   void UpdateAnchorLoc();
