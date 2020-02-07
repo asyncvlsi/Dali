@@ -12,7 +12,7 @@ set(macro_names "-D USE_OPENDB")
 
 # The flag USE_OPENDB
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${macro_names} -std=c++11 -O3 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g ${macro_names} -std=c++11 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g ${macro_names} -std=c++11 -O3 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${macro_names} -std=c++11 -O3 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
 
 # Set the output directory of static libraries

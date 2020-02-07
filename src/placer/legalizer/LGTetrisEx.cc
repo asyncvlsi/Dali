@@ -35,7 +35,7 @@ void LGTetrisEx::MergeIntervals(std::vector<std::vector<int>> &intervals) {
 
   std::sort(intervals.begin(),
             intervals.end(),
-            [](std::vector<int> &inter1, std::vector<int> &inter2) {
+            [](const std::vector<int> &inter1, const std::vector<int> &inter2) {
               return inter1[0] < inter2[0];
             });
 
@@ -555,7 +555,7 @@ bool LGTetrisEx::FindLocRight(Value2D<int> &loc, int width, int height) {
   }
 
   // if still cannot find a legal location, enter fail mode
-  is_successful = (best_loc_x - width >= left_) || (best_loc_x <= right_);
+  is_successful = (best_loc_x - width >= left_) && (best_loc_x <= right_);
 
   loc.x = best_loc_x;
   loc.y = best_row + bottom_;

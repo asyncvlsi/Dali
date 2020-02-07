@@ -154,8 +154,9 @@ int main(int argc, char *argv[]) {
   circuit.ReportBriefSummary();
   circuit.ReportHPWL();
 
+  double default_density = 0.8;
   if (target_density == -1) {
-    target_density = std::max(circuit.WhiteSpaceUsage(), 0.8);
+    target_density = std::max(circuit.WhiteSpaceUsage(), default_density);
   }
   if (circuit.WhiteSpaceUsage() > target_density) {
     std::cout << "Cannot set target density smaller than average white space utility!\n"
@@ -165,7 +166,11 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "target density: " << target_density << "\n";
+    std::cout << "target density: " << target_density;
+    if (target_density == default_density) {
+      std::cout << " (default)";
+    }
+    std::cout << "\n";
   }
 
   Placer *gb_placer = new GPSimPL;
