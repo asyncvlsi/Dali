@@ -7,9 +7,15 @@
 
 #include "placer/placer.h"
 
+struct seg {
+  int lo;
+  int hi;
+  seg(int lo_init, int hi_init) : lo(lo_init), hi(hi_init) {}
+};
+
 class LGTetrisEx : public Placer {
  private:
-  std::vector<std::vector<int>> white_space_in_rows_;
+  std::vector<std::vector<seg>> white_space_in_rows_;
   std::vector<int> block_contour_;
   std::vector<IndexLocPair<int>> index_loc_list_;
 
@@ -30,8 +36,14 @@ class LGTetrisEx : public Placer {
  public:
   LGTetrisEx();
 
+  void SetRowHeight(int row_height);
+  int RowHeight();
+  void SetMaxIteration(int max_iter);
+  void SetWidthHeightFactor(double k_width, double k_height);
+  void SetLeftBoundFactor(double k_left);
+
   static void MergeIntervals(std::vector<std::vector<int>> &intervals);
-  void InitLegalizer(int row_height = 1);
+  void InitLegalizer();
 
   int StartRow(int y_loc);
   int EndRow(int y_loc);
@@ -52,12 +64,17 @@ class LGTetrisEx : public Placer {
 
   void StartPlacement() override;
 
-  void SetMaxIteration(int max_iter);
-  void SetWidthHeightFactor(double k_width, double k_height);
-  void SetLeftBoundFactor(double k_left);
-
   void GenAvailSpace(std::string const &name_of_file = "avail_space.txt");
 };
+
+inline void LGTetrisEx::SetRowHeight(int row_height) {
+  Assert(row_height > 0, "Cannot set negative row height!");
+  row_height_ = row_height;
+}
+
+inline int LGTetrisEx::RowHeight() {
+  return row_height_;
+}
 
 inline int LGTetrisEx::StartRow(int y_loc) {
   int res = (y_loc - bottom_) / row_height_;

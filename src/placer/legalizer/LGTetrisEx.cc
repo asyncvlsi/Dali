@@ -64,36 +64,39 @@ void LGTetrisEx::MergeIntervals(std::vector<std::vector<int>> &intervals) {
   intervals = res;
 }
 
-void LGTetrisEx::InitLegalizer(int row_height) {
+void LGTetrisEx::InitLegalizer() {
   /****
    * 1. calculate the number of rows for a given row_height
    * 2. initialize white space available in rows
    * 3. initialize block contour to be the left contour
    * 4. allocate space for index_loc_list_
    * ****/
-  row_height_ = row_height;
   tot_num_rows_ = (top_ - bottom_) / row_height_ + 1;
 
   std::vector<std::vector<std::vector<int>>> macro_segments;
   macro_segments.resize(tot_num_rows_);
   std::vector<int> tmp(2, 0);
+  bool out_of_range;
   for (auto &&block: circuit_->block_list) {
-    if (block.IsFixed()) {
-      int ly = int(std::floor(block.LLY()));
-      int uy = int(std::ceil(block.URY()));
-      int start_row = StartRow(ly);
-      int end_row = StartRow(uy);
+    if (block.IsMovable()) continue;
+    int ly = int(std::floor(block.LLY()));
+    int uy = int(std::ceil(block.URY()));
+    int lx = int(std::floor(block.LLX()));
+    int ux = int(std::ceil(block.URX()));
 
-      if (start_row >= tot_num_rows_ || end_row < 0) continue;
+    out_of_range = (ly >= RegionTop()) || (uy <= RegionBottom()) || (lx >= RegionRight()) || (ux <= RegionLeft());
 
-      start_row = std::max(0, start_row);
-      end_row = std::min(tot_num_rows_ - 1, end_row);
+    if (out_of_range) continue;
 
-      int lx = int(std::round(block.LLX()));
-      int ux = int(std::round(block.URX()));
+    int start_row = StartRow(ly);
+    int end_row = EndRow(uy);
 
-      tmp[0] = lx;
-      tmp[1] = ux;
+    start_row = std::max(0, start_row);
+    end_row = std::min(tot_num_rows_ - 1, end_row);
+
+    tmp[0] = std::max(RegionLeft(), lx);
+    tmp[1] = std::min(RegionRight(), ux);
+    if (tmp[1] > tmp[0]) {
       for (int i = start_row; i <= end_row; ++i) {
         macro_segments[i].push_back(tmp);
       }
@@ -103,59 +106,46 @@ void LGTetrisEx::InitLegalizer(int row_height) {
     MergeIntervals(intervals);
   }
 
-  white_space_in_rows_.resize(tot_num_rows_);
+  std::vector<std::vector<int>> intermediate_seg_rows;
+  intermediate_seg_rows.resize(tot_num_rows_);
   for (int i = 0; i < tot_num_rows_; ++i) {
     if (macro_segments[i].empty()) {
-      white_space_in_rows_[i].push_back(left_);
-      white_space_in_rows_[i].push_back(right_);
+      intermediate_seg_rows[i].push_back(left_);
+      intermediate_seg_rows[i].push_back(right_);
       continue;
     }
     int segments_size = int(macro_segments[i].size());
     for (int j = 0; j < segments_size; ++j) {
-      if (j>=1) {
-        if (macro_segments[i][j-1][1] <= left_ && macro_segments[i][j][0] >= right_) {
-          white_space_in_rows_[i].push_back(left_);
-          white_space_in_rows_[i].push_back(right_);
-          break;
-        }
-      }
-
       auto &interval = macro_segments[i][j];
-      // if the right end of the interval is less than the RegionLeft(), continue
-      // because this interval cannot influence the white space
-      if (interval[1] <= left_) continue;
-
-      // if the left end of the interval is larger than the RegionRight(), break
-      // because all the following intervals cannot influence the white space
-      if (interval[0] > right_) break;
-
-      // if the left end of the interval is less than the RegionLeft()
-      // and the right end of the interval is less than the RegionRight()
-      // (we know the right end of the interval is larger than the RegionLeft() already)
-      if (interval[0] <= left_ && interval[1] < RegionRight()) {
-        white_space_in_rows_[i].push_back(interval[1]);
-        continue;
+      if (interval[0] == left_ && interval[1] < RegionRight()) {
+        intermediate_seg_rows[i].push_back(interval[1]);
       }
 
       if (interval[0] > left_) {
-        if (white_space_in_rows_[i].empty()) {
-          white_space_in_rows_[i].push_back(left_);
+        if (intermediate_seg_rows[i].empty()) {
+          intermediate_seg_rows[i].push_back(left_);
         }
-        white_space_in_rows_[i].push_back(interval[0]);
+        intermediate_seg_rows[i].push_back(interval[0]);
         if (interval[1] < RegionRight()) {
-          white_space_in_rows_[i].push_back(interval[1]);
+          intermediate_seg_rows[i].push_back(interval[1]);
         }
-        continue;
       }
     }
-    if (white_space_in_rows_[i].size() % 2 == 1) {
-      white_space_in_rows_[i].push_back(right_);
+    if (intermediate_seg_rows[i].size() % 2 == 1) {
+      intermediate_seg_rows[i].push_back(right_);
+    }
+  }
+
+  white_space_in_rows_.resize(tot_num_rows_);
+  for (int i = 0; i < tot_num_rows_; ++i) {
+    int len = int(intermediate_seg_rows[i].size());
+    white_space_in_rows_[i].reserve(len / 2);
+    for (int j = 0; j < len; j += 2) {
+      white_space_in_rows_[i].emplace_back(intermediate_seg_rows[i][j], intermediate_seg_rows[i][j + 1]);
     }
   }
 
   GenAvailSpace();
-
-  //exit(1);
 
   block_contour_.resize(tot_num_rows_, left_);
 
@@ -389,6 +379,8 @@ bool LGTetrisEx::LocalLegalization() {
   for (i = 0; i < sz; ++i) {
     //std::cout << i << "\n";
     auto &block = block_list[index_loc_list_[i].num];
+
+    if (block.IsFixed()) continue;
 
     init_x = int(block.LLX());
     init_y = int(block.LLY());
@@ -652,6 +644,7 @@ bool LGTetrisEx::LocalLegalizationRight() {
   for (i = 0; i < sz; ++i) {
     //std::cout << i << "\n";
     auto &block = block_list[index_loc_list_[i].num];
+    if (block.IsFixed()) continue;
 
     init_x = int(block.URX());
     init_y = int(block.LLY());
@@ -719,7 +712,6 @@ void LGTetrisEx::StartPlacement() {
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
 
-  //InitLegalizer(12);
   InitLegalizer();
 
   bool is_success = false;
@@ -773,16 +765,27 @@ void LGTetrisEx::GenAvailSpace(std::string const &name_of_file) {
       << RegionTop() << "\n";
   for (int i = 0; i < tot_num_rows_; ++i) {
     auto &row = white_space_in_rows_[i];
-    int sz = row.size();
-    for (int j = 0; j < sz; j += 2) {
-      ost << row[j] << "\t"
-          << row[j + 1] << "\t"
-          << row[j + 1] << "\t"
-          << row[j] << "\t"
+    for (auto &seg: row) {
+      ost << seg.lo << "\t"
+          << seg.hi << "\t"
+          << seg.hi << "\t"
+          << seg.lo << "\t"
           << i * row_height_ + RegionBottom() << "\t"
           << i * row_height_ + RegionBottom() << "\t"
           << (i + 1) * row_height_ + RegionBottom() << "\t"
           << (i + 1) * row_height_ + RegionBottom() << "\n";
     }
+  }
+
+  for (auto &block: circuit_->block_list) {
+    if (block.IsMovable()) continue;
+    ost << block.LLX() << "\t"
+        << block.URX() << "\t"
+        << block.URX() << "\t"
+        << block.LLX() << "\t"
+        << block.LLY() << "\t"
+        << block.LLY() << "\t"
+        << block.URY() << "\t"
+        << block.URY() << "\n";
   }
 }

@@ -14,42 +14,22 @@
 VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 
 #define TEST_WELL 0
-#define PP 1
-#define TEST_ADA 1
+#define TEST_PO 0
 
 int main() {
   Circuit circuit;
 
   time_t Time = clock();
 
-#if !TEST_ADA
   std::string lef_file_name = "benchmark_200K.lef";
   std::string def_file_name = "benchmark_200K.def";
 
-#ifdef USE_OPENDB
   odb::dbDatabase *db = odb::dbDatabase::create();
   std::vector<std::string> defFileVec;
   defFileVec.push_back(def_file_name);
   odb_read_lef(db, lef_file_name.c_str());
   odb_read_def(db, defFileVec);
   circuit.InitializeFromDB(db);
-#else
-  circuit.ReadLefFile(lef_file_name);
-  circuit.ReadDefFile(def_file_name);
-#endif
-
-#else
-  std::string adaptec1_lef = "../test/adaptec1/adaptec1.lef";
-  std::string adaptec1_def = "../test/adaptec1/adaptec1.def";
-
-  circuit.SetGridValue(0.01,0.01);
-  circuit.ReadLefFile(adaptec1_lef);
-  circuit.ReadDefFile(adaptec1_def);
-  circuit.def_left = 459;
-  circuit.def_right = 10692 + 459;
-  circuit.def_bottom = 459;
-  circuit.def_top = 11127 + 12;
-#endif
 
   std::cout << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << "s\n";
 
@@ -61,38 +41,31 @@ int main() {
   gb_placer->SetInputCircuit(&circuit);
 
   gb_placer->SetBoundaryDef();
-  gb_placer->SetFillingRate(1);
+  gb_placer->SetFillingRate(0.8);
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
   gb_placer->GenMATLABTable("gb_result.txt");
   //gb_placer->GenMATLABWellTable("gb_result");
   //gb_placer->SaveDEFFile("circuit.def", adaptec1_def);
 
-#if TEST_ADA
-  circuit.SaveBookshelfPl("adaptec1bs.pl");
-  exit(128);
-#endif
-
   /*Placer *d_placer = new MDPlacer;
   d_placer->TakeOver(gb_placer);
   d_placer->StartPlacement();
   d_placer->GenMATLABScript("dp_result.txt");*/
 
-#if PP
   Placer *legalizer = new LGTetrisEx;
-#else
-  Placer *legalizer = new TetrisLegalizer;
-#endif
   legalizer->TakeOver(gb_placer);
   legalizer->StartPlacement();
   legalizer->GenMATLABTable("lg_result.txt");
   //legalizer->SaveDEFFile("circuit.def", def_file);
 
-#if !TEST_ADA
+#if TEST_PO
   Placer *post_optimizer = new PLOSlide;
   post_optimizer->TakeOver(legalizer);
   post_optimizer->StartPlacement();
   post_optimizer->GenMATLABTable("po_result.txt");
+  delete post_optimizer;
+#endif
 
 #if TEST_WELL
   std::string cell_file_name("benchmark_10K.cell");
@@ -104,8 +77,7 @@ int main() {
   delete well_legalizer;
 #endif
   //delete d_placer;
-  delete post_optimizer;
-#endif
+
 
   delete gb_placer;
   delete legalizer;

@@ -483,7 +483,7 @@ void GPSimPL::PullBlockBackToRegion() {
         ivy[num] = RegionBottom();
       }
       blk_hi_bound_y = RegionTop() - it_block_list[num].Height();
-      if (ivy[num] >  blk_hi_bound_y) {
+      if (ivy[num] > blk_hi_bound_y) {
         ivy[num] = blk_hi_bound_y;
       }
     }
@@ -1559,9 +1559,9 @@ bool GPSimPL::RecursiveBisectionBlkSpreading() {
   return true;
 }
 
-void GPSimPL::BackUpBlkLoc () {
+void GPSimPL::BackUpBlkLoc() {
   std::vector<Block> &block_list = *BlockList();
-  for (size_t i=0; i<block_list.size(); ++i) {
+  for (size_t i = 0; i < block_list.size(); ++i) {
     x_anchor[i] = block_list[i].LLX();
     y_anchor[i] = block_list[i].LLY();
   }
@@ -1780,11 +1780,11 @@ void GPSimPL::StartPlacement() {
     return;
   }
 
-  DumpResult();
+  if (is_dump) DumpResult("rand_init.txt");
 
   InitialPlacement();
 
-  DumpResult();
+  if (is_dump) DumpResult("cg_result_0.txt");
 
   //std::cout << cg_total_hpwl_ << "  " << circuit_->HPWL() << "\n";
 
@@ -1793,13 +1793,13 @@ void GPSimPL::StartPlacement() {
       std::cout << current_iteration_ << "-th iteration\n";
     }
     LookAheadLegalization();
-    DumpResult();
+    if (is_dump) DumpResult("lal_result_" + std::to_string(current_iteration_) + ".txt");
     UpdateLALConvergeState();
     if (globalVerboseLevel >= LOG_CRITICAL) {
       std::cout << "It " << current_iteration_ << ": \t" << cg_total_hpwl_ << "  " << lal_total_hpwl_ << "\n";
     }
     if (HPWL_LAL_converge) { // if HPWL sconverges
-      if (current_iteration_ >= 40) {
+      if (current_iteration_ >= 30) {
         if (globalVerboseLevel >= LOG_CRITICAL) {
           std::cout << "Iterative look-ahead legalization complete" << std::endl;
           std::cout << "Total number of iteration: " << current_iteration_ + 1 << std::endl;
@@ -1808,7 +1808,7 @@ void GPSimPL::StartPlacement() {
       }
     }
     QuadraticPlacementWithAnchor();
-    DumpResult();
+    if (is_dump) DumpResult("lal_result_" + std::to_string(current_iteration_ + 1) + ".txt");
   }
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "\033[0;36m"
@@ -1829,11 +1829,11 @@ void GPSimPL::StartPlacement() {
   ReportMemory(LOG_CRITICAL);
 }
 
-void GPSimPL::DumpResult() {
+void GPSimPL::DumpResult(std::string const &name_of_file) {
   UpdateGridBinState();
   static int counter = 0;
-  std::cout << "DumpNum:" << counter << "\n";
-  circuit_->GenMATLABTable("gb_result" + std::to_string(counter) + ".txt");
+  //std::cout << "DumpNum:" << counter << "\n";
+  circuit_->GenMATLABTable(name_of_file);
   //write_not_all_terminal_grid_bins("grid_bin_not_all_terminal" + std::to_string(counter) + ".txt");
   //write_overfill_grid_bins("grid_bin_overfill" + std::to_string(counter) + ".txt");
   ++counter;

@@ -143,7 +143,8 @@ class GPSimPL : public Placer {
 
   void StartPlacement() override;
 
-  void DumpResult();
+  bool is_dump = false;
+  void DumpResult(std::string const &name_of_file);
   void DrawBlockNetList(std::string const &name_of_file = "block_net_list.txt");
   void write_all_terminal_grid_bins(std::string const &name_of_file);
   void write_not_all_terminal_grid_bins(std::string const &name_of_file = "grid_bin_not_all_terminal.txt");
