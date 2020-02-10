@@ -21,8 +21,8 @@ int main() {
 
   time_t Time = clock();
 
-  std::string lef_file_name = "benchmark_100K.lef";
-  std::string def_file_name = "benchmark_100K.def";
+  std::string lef_file_name = "benchmark_200K.lef";
+  std::string def_file_name = "benchmark_200K.def";
 
   odb::dbDatabase *db = odb::dbDatabase::create();
   std::vector<std::string> defFileVec;

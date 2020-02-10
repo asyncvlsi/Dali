@@ -141,6 +141,8 @@ class GPSimPL : public Placer {
 
   void CheckAndShift();
 
+  double tot_lal_time = 0;
+  double tot_cg_time = 0;
   void StartPlacement() override;
 
   bool is_dump = false;

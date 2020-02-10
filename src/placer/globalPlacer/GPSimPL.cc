@@ -495,6 +495,8 @@ void GPSimPL::PullBlockBackToRegion() {
 }
 
 void GPSimPL::InitialPlacement() {
+  double cpu_time = get_cpu_time();
+
   std::vector<Block> &block_list = *BlockList();
 
   HPWLX_converge = false;
@@ -538,6 +540,9 @@ void GPSimPL::InitialPlacement() {
   if (globalVerboseLevel >= LOG_INFO) {
     std::cout << "Initial Placement Complete\n";
   }
+
+  cpu_time = get_cpu_time() - cpu_time;
+  tot_cg_time += cpu_time;
 }
 
 void GPSimPL::InitGridBins() {
@@ -1639,6 +1644,8 @@ void GPSimPL::BuildProblemB2BWithAnchorY() {
 }
 
 void GPSimPL::QuadraticPlacementWithAnchor() {
+  double cpu_time = get_cpu_time();
+
   if (globalVerboseLevel >= LOG_DEBUG) {
     std::cout << "alpha: " << alpha << "\n";
   }
@@ -1690,9 +1697,14 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
   if (globalVerboseLevel >= LOG_INFO) {
     std::cout << "Quadratic Placement With Anchor Complete\n";
   }
+
+  cpu_time = get_cpu_time() - cpu_time;
+  tot_cg_time += cpu_time;
 }
 
 void GPSimPL::LookAheadLegalization() {
+  double cpu_time = get_cpu_time();
+
   //BackUpBlkLoc();
   ClearGridBinFlag();
   do {
@@ -1707,6 +1719,9 @@ void GPSimPL::LookAheadLegalization() {
   if (globalVerboseLevel >= LOG_INFO) {
     std::cout << "Look-ahead legalization complete\n";
   }
+
+  cpu_time = get_cpu_time() - cpu_time;
+  tot_lal_time += cpu_time;
 }
 
 void GPSimPL::CheckAndShift() {
@@ -1814,6 +1829,7 @@ void GPSimPL::StartPlacement() {
     std::cout << "\033[0;36m"
               << "Global Placement complete\n"
               << "\033[0m";
+    std::cout << "(cg time: " << tot_cg_time << ", lal time: " << tot_lal_time << ")\n";
   }
   LookAheadClose();
   CheckAndShift();
