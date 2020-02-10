@@ -661,7 +661,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
 }
 
 bool Circuit::IsMetalLayerExist(std::string &metal_name) {
-  return !(metal_name_map.find(metal_name) == metal_name_map.end());
+  return metal_name_map.find(metal_name) != metal_name_map.end();
 }
 
 int Circuit::MetalLayerIndex(std::string &metal_name) {
@@ -688,7 +688,7 @@ MetalLayer *Circuit::AddMetalLayer(std::string &metal_name) {
 }
 
 void Circuit::ReportMetalLayers() {
-  for (auto &&metal_layer: metal_list) {
+  for (auto &metal_layer: metal_list) {
     metal_layer.Report();
   }
 }
@@ -748,7 +748,7 @@ void Circuit::ReportWellShape() {
 }
 
 bool Circuit::IsBlockTypeExist(std::string &block_type_name) {
-  return !(block_type_map.find(block_type_name) == block_type_map.end());
+  return block_type_map.find(block_type_name) != block_type_map.end();
 }
 
 BlockType *Circuit::GetBlockType(std::string &block_type_name) {

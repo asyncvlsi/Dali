@@ -153,22 +153,28 @@ void LGTetrisEx::InitLegalizer() {
   index_loc_list_.resize(circuit_->block_list.size(), tmp_index_loc_pair);
 }
 
+bool LGTetrisEx::IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row) {
+
+}
+
 void LGTetrisEx::UseSpace(Block const &block) {
   /****
    * Mark the space used by this block by changing the start point of available space in each related row
    * ****/
-  auto start_row = (unsigned int) (block.LLY() - RegionBottom());
-  unsigned int end_row = start_row + block.Height() - 1;
-  if (end_row >= block_contour_.size()) {
-    //std::cout << "  ly:     " << int(block.LLY())       << "\n"
-    //          << "  height: " << block.Height()   << "\n"
-    //          << "  top:    " << Top()    << "\n"
-    //          << "  bottom: " << Bottom() << "\n";
+  int start_row = StartRow(int(block.LLY()));
+  int end_row = EndRow(int(block.URY()));
+  if (end_row >= int(block_contour_.size())) {
+    std::cout << "  ly:     " << int(block.LLY()) << "\n"
+              << "  height: " << block.Height() << "\n"
+              << "  top:    " << RegionTop() << "\n"
+              << "  bottom: " << RegionBottom() << "\n"
+              << "  name:   " << *block.Name() << "\n";
+    GenMATLABTable("lg_result.txt");
     Assert(false, "Cannot use space out of range");
   }
 
   int end_x = int(block.URX());
-  for (unsigned int i = start_row; i <= end_row; ++i) {
+  for (int i = start_row; i <= end_row; ++i) {
     block_contour_[i] = end_x;
   }
 }
@@ -180,8 +186,8 @@ bool LGTetrisEx::IsCurrentLocLegal(Value2D<int> &loc, int width, int height) {
   }
 
   bool all_row_avail = true;
-  int start_row = loc.y - bottom_;
-  int end_row = start_row + height - 1;
+  int start_row = StartRow(loc.y);
+  int end_row = EndRow(loc.y + height);
   for (int i = start_row; i <= end_row; ++i) {
     if (block_contour_[i] > loc.x) {
       all_row_avail = false;
@@ -214,8 +220,8 @@ bool LGTetrisEx::FindLoc(Value2D<int> &loc, int width, int height) {
   left_bound = (int) std::round(loc.x - k_left_ * width);
   //left_bound = loc.x;
 
-  init_row = int(loc.y - bottom_);
-  max_search_row = top_ - bottom_ - height;
+  init_row = StartRow(loc.y);
+  max_search_row = MaxRow(height);
 
   search_start_row = std::max(0, init_row - 4 * height);
   search_end_row = std::min(max_search_row, init_row + 5 * height);

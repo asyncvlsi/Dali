@@ -72,7 +72,7 @@ class Placer {
   void ReportHPWLCtoC();
   void TakeOver(Placer *placer);
   void SanityCheck();
-  void UpdateComponentsPlacementStatus();
+  void UpdateMovableBlkPlacementStatus();
   void IOPinPlacement();
 
   void GenMATLABTable(std::string const &name_of_file = "block.txt");

@@ -231,7 +231,7 @@ void Placer::SaveDEFFile(std::string const &name_of_file, std::string const &inp
     ost << "- "
         << *(block.Name()) << " "
         << *(block.Type()->Name()) << " + "
-        << "PLACED"
+        << block.GetPlaceStatusStr()
         << " ("
         << " " + std::to_string((int) (block.LLX() * circuit_->def_distance_microns * circuit_->GetGridValueX()))
         << " " + std::to_string((int) (block.LLY() * circuit_->def_distance_microns * circuit_->GetGridValueY()))
@@ -279,9 +279,11 @@ void Placer::SanityCheck() {
   Assert(IsBoundaryProper(), "Improper boundary setting");
 }
 
-void Placer::UpdateComponentsPlacementStatus() {
-  for (auto &&blk: circuit_->block_list) {
-    blk.SetPlaceStatus(PLACED);
+void Placer::UpdateMovableBlkPlacementStatus() {
+  for (auto &blk: circuit_->block_list) {
+    if (blk.IsMovable()) {
+      blk.SetPlaceStatus(PLACED);
+    }
   }
 }
 

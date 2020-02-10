@@ -1823,7 +1823,7 @@ void GPSimPL::StartPlacement() {
       }
     }
     QuadraticPlacementWithAnchor();
-    if (is_dump) DumpResult("lal_result_" + std::to_string(current_iteration_ + 1) + ".txt");
+    if (is_dump) DumpResult("cg_result_" + std::to_string(current_iteration_ + 1) + ".txt");
   }
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "\033[0;36m"
@@ -1833,6 +1833,7 @@ void GPSimPL::StartPlacement() {
   }
   LookAheadClose();
   CheckAndShift();
+  UpdateMovableBlkPlacementStatus();
   ReportHPWL(LOG_CRITICAL);
 
   wall_time = get_wall_time() - wall_time;

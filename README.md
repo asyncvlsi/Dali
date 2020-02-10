@@ -8,8 +8,8 @@
   * 32bit and 64bit version g++ also give different results
 
 ### Recommended compilation toolchain
-  * GCC, version >= 7.4.0
-  * CMake, version >= 3.10.2
+  * GCC, version >= 4.8.5
+  * CMake, version >= 3.9.6
   * GNU Make
 
 ### Pre-requisite for submodules: OpenDB

@@ -12,13 +12,19 @@
 
 VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 
+#define TEST_LG 1
+
 int main() {
   Circuit circuit;
 
   time_t Time = clock();
 
   std::string adaptec1_lef = "../test/adaptec1/adaptec1.lef";
+#if TEST_LG
+  std::string adaptec1_def = "adaptec1_pl.def";
+#else
   std::string adaptec1_def = "../test/adaptec1/adaptec1.def";
+#endif
 
   circuit.SetGridValue(0.01, 0.01);
   circuit.ReadLefFile(adaptec1_lef);
@@ -38,11 +44,13 @@ int main() {
   gb_placer.SetBoundaryDef();
   gb_placer.SetFillingRate(1);
   gb_placer.ReportBoundaries();
-  gb_placer.is_dump = true;
+  //gb_placer.is_dump = true;
+#if !TEST_LG
   gb_placer.StartPlacement();
-  gb_placer.GenMATLABTable("gb_result.txt");
   gb_placer.SaveDEFFile("adaptec1_pl.def", adaptec1_def);
   circuit.SaveBookshelfPl("adaptec1bs.pl");
+#endif
+  gb_placer.GenMATLABTable("gb_result.txt");
 
   LGTetrisEx legalizer;
   legalizer.TakeOver(&gb_placer);

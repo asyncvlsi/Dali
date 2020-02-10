@@ -56,6 +56,7 @@ class Block {
   std::vector<int> net_list;
 
   const std::string *Name() const;
+  std::string NameStr() const;
   BlockType *Type() const;
   int Num() const;
   unsigned int Width() const;
@@ -116,6 +117,10 @@ class BlockAux {
 
 inline const std::string *Block::Name() const {
   return &(name_num_pair_->first);
+}
+
+inline std::string Block::NameStr() const {
+  return std::string(name_num_pair_->first);
 }
 
 inline BlockType *Block::Type() const {
