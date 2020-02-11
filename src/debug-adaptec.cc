@@ -34,7 +34,7 @@ int main() {
   circuit.def_bottom = 459;
   circuit.def_top = 11127 + 12;
 
-  std::cout << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << "s\n";
+  std::cout << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << " s\n";
 
   circuit.ReportBriefSummary();
   circuit.ReportHPWL();

@@ -48,6 +48,9 @@ class LGTetrisEx : public Placer {
   int StartRow(int y_loc);
   int EndRow(int y_loc);
   int MaxRow(int height);
+  int HeightToRow(int height);
+  int LocToRow(int y_loc);
+  int RowToLoc(int row_num, int displacement = 0);
   bool IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row);
 
   void UseSpace(Block const &block);
@@ -93,6 +96,18 @@ inline int LGTetrisEx::EndRow(int y_loc) {
 
 inline int LGTetrisEx::MaxRow(int height) {
   return ((top_ - height) - bottom_) / row_height_;
+}
+
+inline int LGTetrisEx::HeightToRow(int height) {
+  return std::ceil(height/double(row_height_));
+}
+
+inline int LGTetrisEx::LocToRow(int y_loc) {
+  return (y_loc - bottom_) / row_height_;
+}
+
+inline int LGTetrisEx::RowToLoc(int row_num, int displacement) {
+  return row_num * row_height_ + bottom_ + displacement;
 }
 
 inline void LGTetrisEx::SetMaxIteration(int max_iter) {

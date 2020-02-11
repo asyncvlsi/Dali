@@ -36,7 +36,7 @@ int main() {
   odb_read_def(db, defFileVec);
   circuit.InitializeFromDB(db);
 
-  std::cout << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << "s\n";
+  std::cout << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << " s\n";
 
   circuit.ReportBriefSummary();
   //circuit.ReportBlockType();
