@@ -154,7 +154,33 @@ void LGTetrisEx::InitLegalizer() {
 }
 
 bool LGTetrisEx::IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row) {
+  assert(lo_x <= hi_x);
+  assert(lo_row >= 0);
+  assert(hi_row < int(white_space_in_rows_.size()));
 
+  bool is_all_row_legal = true;
+  bool is_tmp_row_legal;
+  int seg_count = 0;
+  for (int i = lo_row; i <= hi_row; ++i) {
+    seg_count = white_space_in_rows_[i].size();
+    is_tmp_row_legal = false;
+    for (int j = 0; j < seg_count; ++j) {
+      if (white_space_in_rows_[i][j].lo <= lo_x && white_space_in_rows_[i][j].hi >= hi_x) {
+        is_tmp_row_legal = true;
+        break;
+      }
+      if ((white_space_in_rows_[i][j].hi > lo_x && white_space_in_rows_[i][j].hi < hi_x)
+          || (white_space_in_rows_[i][j].lo > lo_x && white_space_in_rows_[i][j].lo < hi_x)) {
+        break;
+      }
+    }
+
+    if (!is_tmp_row_legal) {
+      is_all_row_legal = false;
+      break;
+    }
+  }
+  return is_all_row_legal;
 }
 
 void LGTetrisEx::UseSpace(Block const &block) {
@@ -254,7 +280,9 @@ bool LGTetrisEx::FindLoc(Value2D<int> &loc, int width, int height) {
   int best_row_legal = 0;
   int best_loc_x_legal = INT_MIN;
   double min_cost_legal = DBL_MAX;
-  if (best_loc_x < left_ || best_loc_x + width > right_) {
+  bool is_loc_legal = IsSpaceLegal(best_loc_x, best_loc_x + width, best_row, best_row + blk_row_height - 1);
+
+  if (!is_loc_legal) {
     int old_start_row = search_start_row;
     int old_end_row = search_end_row;
     int extended_range = cur_iter_ * blk_row_height;
@@ -278,7 +306,9 @@ bool LGTetrisEx::FindLoc(Value2D<int> &loc, int width, int height) {
         min_cost = tmp_cost;
       }
 
-      if (tmp_x + width <= right_) {
+      is_loc_legal = IsSpaceLegal(tmp_x, tmp_x + width, tmp_start_row, tmp_end_row);
+
+      if (is_loc_legal) {
         if (tmp_cost < min_cost_legal) {
           best_loc_x_legal = tmp_x;
           best_row_legal = tmp_start_row;
@@ -304,7 +334,9 @@ bool LGTetrisEx::FindLoc(Value2D<int> &loc, int width, int height) {
         min_cost = tmp_cost;
       }
 
-      if (tmp_x + width <= right_) {
+      is_loc_legal = IsSpaceLegal(tmp_x, tmp_x + width, tmp_start_row, tmp_end_row);
+
+      if (is_loc_legal) {
         if (tmp_cost < min_cost_legal) {
           best_loc_x_legal = tmp_x;
           best_row_legal = tmp_start_row;
@@ -515,6 +547,7 @@ bool LGTetrisEx::FindLocRight(Value2D<int> &loc, int width, int height) {
   best_loc_x = INT_MAX;
   min_cost = DBL_MAX;
 
+
   for (int tmp_start_row = search_start_row; tmp_start_row <= search_end_row; ++tmp_start_row) {
     tmp_end_row = tmp_start_row + blk_row_height - 1;
     tmp_x = std::min(right_, right_bound);
@@ -539,8 +572,9 @@ bool LGTetrisEx::FindLocRight(Value2D<int> &loc, int width, int height) {
   int best_row_legal = 0;
   int best_loc_x_legal = INT_MIN;
   double min_cost_legal = DBL_MAX;
+  bool is_loc_legal = IsSpaceLegal(best_loc_x-width, best_loc_x, best_row, best_row + blk_row_height - 1);
 
-  if (best_loc_x > right_ || best_loc_x - width < left_) {
+  if (!is_loc_legal) {
     int old_start_row = search_start_row;
     int old_end_row = search_end_row;
     int extended_range = cur_iter_ * blk_row_height;
@@ -564,7 +598,9 @@ bool LGTetrisEx::FindLocRight(Value2D<int> &loc, int width, int height) {
         min_cost = tmp_cost;
       }
 
-      if (tmp_x - width >= left_) {
+      is_loc_legal = IsSpaceLegal(tmp_x-width, tmp_x, tmp_start_row, tmp_end_row);
+
+      if (is_loc_legal) {
         if (tmp_cost < min_cost_legal) {
           best_loc_x_legal = tmp_x;
           best_row_legal = tmp_start_row;
@@ -590,7 +626,9 @@ bool LGTetrisEx::FindLocRight(Value2D<int> &loc, int width, int height) {
         min_cost = tmp_cost;
       }
 
-      if (tmp_x - width >= left_) {
+      is_loc_legal = IsSpaceLegal(tmp_x-width, tmp_x, tmp_start_row, tmp_end_row);
+
+      if (is_loc_legal) {
         if (tmp_cost < min_cost_legal) {
           best_loc_x_legal = tmp_x;
           best_row_legal = tmp_start_row;
