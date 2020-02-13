@@ -160,7 +160,11 @@ bool LGTetrisEx::IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row) {
 
   bool is_all_row_legal = true;
   bool is_tmp_row_legal;
+  bool is_partial_cover_lo;
+  bool is_partial_cover_hi;
+  bool is_before_seg;
   int seg_count = 0;
+
   for (int i = lo_row; i <= hi_row; ++i) {
     seg_count = white_space_in_rows_[i].size();
     is_tmp_row_legal = false;
@@ -169,8 +173,11 @@ bool LGTetrisEx::IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row) {
         is_tmp_row_legal = true;
         break;
       }
-      if ((white_space_in_rows_[i][j].hi > lo_x && white_space_in_rows_[i][j].hi < hi_x)
-          || (white_space_in_rows_[i][j].lo > lo_x && white_space_in_rows_[i][j].lo < hi_x)) {
+
+      is_partial_cover_lo = white_space_in_rows_[i][j].lo > lo_x && white_space_in_rows_[i][j].lo < hi_x;
+      is_partial_cover_hi = white_space_in_rows_[i][j].hi > lo_x && white_space_in_rows_[i][j].hi < hi_x;
+      is_before_seg = white_space_in_rows_[i][j].lo >= hi_x;
+      if (is_partial_cover_lo || is_partial_cover_hi || is_before_seg) {
         break;
       }
     }
@@ -189,7 +196,7 @@ void LGTetrisEx::UseSpace(Block const &block) {
    * ****/
   int start_row = StartRow(int(block.LLY()));
   int end_row = EndRow(int(block.URY()));
-  if (end_row >= int(block_contour_.size())) {
+  /*if (end_row >= int(block_contour_.size())) {
     std::cout << "  ly:     " << int(block.LLY()) << "\n"
               << "  height: " << block.Height() << "\n"
               << "  top:    " << RegionTop() << "\n"
@@ -197,7 +204,10 @@ void LGTetrisEx::UseSpace(Block const &block) {
               << "  name:   " << *block.Name() << "\n";
     GenMATLABTable("lg_result.txt");
     Assert(false, "Cannot use space out of range");
-  }
+  }*/
+
+  assert(end_row < int(block_contour_.size()));
+  assert(start_row >= 0);
 
   int end_x = int(block.URX());
   for (int i = start_row; i <= end_row; ++i) {
@@ -206,14 +216,15 @@ void LGTetrisEx::UseSpace(Block const &block) {
 }
 
 bool LGTetrisEx::IsCurrentLocLegal(Value2D<int> &loc, int width, int height) {
-  bool loc_out_range = (loc.x + width > right_) || (loc.x < left_) || (loc.y + height > top_) || (loc.y < bottom_);
-  if (loc_out_range) {
+  int start_row = StartRow(loc.y);
+  int end_row = EndRow(loc.y + height);
+
+  bool is_space_legal = IsSpaceLegal(loc.x, loc.x + width, start_row, end_row);
+  if (!is_space_legal) {
     return false;
   }
 
   bool all_row_avail = true;
-  int start_row = StartRow(loc.y);
-  int end_row = EndRow(loc.y + height);
   for (int i = start_row; i <= end_row; ++i) {
     if (block_contour_[i] > loc.x) {
       all_row_avail = false;
@@ -348,9 +359,13 @@ bool LGTetrisEx::FindLoc(Value2D<int> &loc, int width, int height) {
   }
 
   // if still cannot find a legal location, enter fail mode
-  is_successful = (best_loc_x >= left_) && (best_loc_x <= right_ - width);
+  is_successful = IsSpaceLegal(best_loc_x, best_loc_x + width,
+                               best_row, best_row + blk_row_height - 1);
   if (!is_successful) {
-    is_successful = (best_loc_x_legal >= left_) && (best_loc_x_legal <= right_ - width);
+    if (best_loc_x_legal >= left_ && best_loc_x_legal <= right_ - width) {
+      is_successful = IsSpaceLegal(best_loc_x_legal, best_loc_x_legal + width,
+                                   best_row_legal, best_row_legal + blk_row_height - 1);
+    }
     if (is_successful) {
       best_loc_x = best_loc_x_legal;
       best_row = best_row_legal;
@@ -496,15 +511,14 @@ void LGTetrisEx::UseSpaceRight(Block const &block) {
 }
 
 bool LGTetrisEx::IsCurrentLocLegalRight(Value2D<int> &loc, int width, int height) {
-  bool loc_out_range = (loc.x > right_) || (loc.x - width < left_) || (loc.y + height > top_) || (loc.y < bottom_);
-  //std::cout << loc.y + height << "  " << loc_out_range << "\n";
-  if (loc_out_range) {
+  bool is_space_legal = IsSpaceLegal(loc.x - width, loc.x, StartRow(loc.y), EndRow(loc.y + height));
+  if (!is_space_legal) {
     return false;
   }
 
   bool all_row_avail = true;
-  int start_row = loc.y - bottom_;
-  int end_row = start_row + height - 1;
+  int start_row = StartRow(loc.y);
+  int end_row = EndRow(loc.y + height);
   for (int i = start_row; i <= end_row; ++i) {
     if (block_contour_[i] < loc.x) {
       all_row_avail = false;
@@ -547,7 +561,6 @@ bool LGTetrisEx::FindLocRight(Value2D<int> &loc, int width, int height) {
   best_loc_x = INT_MAX;
   min_cost = DBL_MAX;
 
-
   for (int tmp_start_row = search_start_row; tmp_start_row <= search_end_row; ++tmp_start_row) {
     tmp_end_row = tmp_start_row + blk_row_height - 1;
     tmp_x = std::min(right_, right_bound);
@@ -570,9 +583,9 @@ bool LGTetrisEx::FindLocRight(Value2D<int> &loc, int width, int height) {
   }
 
   int best_row_legal = 0;
-  int best_loc_x_legal = INT_MIN;
+  int best_loc_x_legal = INT_MAX;
   double min_cost_legal = DBL_MAX;
-  bool is_loc_legal = IsSpaceLegal(best_loc_x-width, best_loc_x, best_row, best_row + blk_row_height - 1);
+  bool is_loc_legal = IsSpaceLegal(best_loc_x - width, best_loc_x, best_row, best_row + blk_row_height - 1);
 
   if (!is_loc_legal) {
     int old_start_row = search_start_row;
@@ -598,7 +611,7 @@ bool LGTetrisEx::FindLocRight(Value2D<int> &loc, int width, int height) {
         min_cost = tmp_cost;
       }
 
-      is_loc_legal = IsSpaceLegal(tmp_x-width, tmp_x, tmp_start_row, tmp_end_row);
+      is_loc_legal = IsSpaceLegal(tmp_x - width, tmp_x, tmp_start_row, tmp_end_row);
 
       if (is_loc_legal) {
         if (tmp_cost < min_cost_legal) {
@@ -626,7 +639,7 @@ bool LGTetrisEx::FindLocRight(Value2D<int> &loc, int width, int height) {
         min_cost = tmp_cost;
       }
 
-      is_loc_legal = IsSpaceLegal(tmp_x-width, tmp_x, tmp_start_row, tmp_end_row);
+      is_loc_legal = IsSpaceLegal(tmp_x - width, tmp_x, tmp_start_row, tmp_end_row);
 
       if (is_loc_legal) {
         if (tmp_cost < min_cost_legal) {
@@ -640,9 +653,13 @@ bool LGTetrisEx::FindLocRight(Value2D<int> &loc, int width, int height) {
   }
 
   // if still cannot find a legal location, enter fail mode
-  is_successful = (best_loc_x >= left_ + width) && (best_loc_x <= right_);
+  is_successful = IsSpaceLegal(best_loc_x - width, best_loc_x,
+                               best_row, best_row + blk_row_height - 1);
   if (!is_successful) {
-    is_successful = (best_loc_x_legal >= left_ + width) && (best_loc_x_legal <= right_);
+    if (best_loc_x_legal <= right_ && best_loc_x_legal >= left_ + width) {
+      is_successful = IsSpaceLegal(best_loc_x_legal - width, best_loc_x_legal,
+                                   best_row, best_row + blk_row_height - 1);
+    }
     if (is_successful) {
       best_loc_x = best_loc_x_legal;
       best_row = best_row_legal;
