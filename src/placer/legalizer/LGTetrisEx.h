@@ -51,16 +51,20 @@ class LGTetrisEx : public Placer {
   int HeightToRow(int height);
   int LocToRow(int y_loc);
   int RowToLoc(int row_num, int displacement = 0);
+  int AlignedLocToRow(int y_loc);
+  int AlignedLocToRow(double y_loc);
   bool IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row);
 
   void UseSpace(Block const &block);
   bool IsCurrentLocLegal(Value2D<int> &loc, int width, int height);
+  int WhiteSpaceBound(int lo_x, int hi_x, int lo_row, int hi_row);
   bool FindLoc(Value2D<int> &loc, int width, int height);
   void FastShift(int failure_point);
   bool LocalLegalization();
 
   void UseSpaceRight(Block const &block);
   bool IsCurrentLocLegalRight(Value2D<int> &loc, int width, int height);
+  int WhiteSpaceBoundRight(int lo_x, int hi_x, int lo_row, int hi_row);
   bool FindLocRight(Value2D<int> &loc, int width, int height);
   void FastShiftRight(int failure_point);
   bool LocalLegalizationRight();
@@ -99,7 +103,7 @@ inline int LGTetrisEx::MaxRow(int height) {
 }
 
 inline int LGTetrisEx::HeightToRow(int height) {
-  return std::ceil(height/double(row_height_));
+  return std::ceil(height / double(row_height_));
 }
 
 inline int LGTetrisEx::LocToRow(int y_loc) {
@@ -108,6 +112,20 @@ inline int LGTetrisEx::LocToRow(int y_loc) {
 
 inline int LGTetrisEx::RowToLoc(int row_num, int displacement) {
   return row_num * row_height_ + bottom_ + displacement;
+}
+
+inline int LGTetrisEx::AlignedLocToRow(int y_loc) {
+  int row_num = int(std::round((y_loc - bottom_) / (double) row_height_));
+  if (row_num < 0) row_num = 0;
+  if (row_num >= tot_num_rows_) row_num = tot_num_rows_ - 1;
+  return row_num * row_height_ + bottom_;
+}
+
+inline int LGTetrisEx::AlignedLocToRow(double y_loc) {
+  int row_num = int(std::round((y_loc - bottom_) / row_height_));
+  if (row_num < 0) row_num = 0;
+  if (row_num >= tot_num_rows_) row_num = tot_num_rows_ - 1;
+  return row_num * row_height_ + bottom_;
 }
 
 inline void LGTetrisEx::SetMaxIteration(int max_iter) {
