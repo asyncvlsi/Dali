@@ -1811,7 +1811,7 @@ void GPSimPL::StartPlacement() {
     if (is_dump) DumpResult("lal_result_" + std::to_string(current_iteration_) + ".txt");
     UpdateLALConvergeState();
     if (globalVerboseLevel >= LOG_CRITICAL) {
-      std::cout << "It " << current_iteration_ << ": \t" << cg_total_hpwl_ << "  " << lal_total_hpwl_ << "\n";
+      printf("It %d: \t%e  %e\n", current_iteration_, cg_total_hpwl_, lal_total_hpwl_);
     }
     if (HPWL_LAL_converge) { // if HPWL sconverges
       if (current_iteration_ >= 30) {
@@ -1829,7 +1829,7 @@ void GPSimPL::StartPlacement() {
     std::cout << "\033[0;36m"
               << "Global Placement complete\n"
               << "\033[0m";
-    std::cout << "(cg time: " << tot_cg_time << ", lal time: " << tot_lal_time << ")\n";
+    printf("(cg time: %.4fs, lal time: %.4fs)\n", tot_cg_time, tot_lal_time);
   }
   LookAheadClose();
   CheckAndShift();
@@ -1839,9 +1839,7 @@ void GPSimPL::StartPlacement() {
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "(wall time: "
-              << wall_time << "s, cpu time: "
-              << cpu_time << "s)\n";
+    printf("(wall time: %.4fs, cpu time: %.4fs)\n", wall_time, cpu_time);
   }
   ReportMemory(LOG_CRITICAL);
 }

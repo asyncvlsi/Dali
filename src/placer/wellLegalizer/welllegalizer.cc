@@ -6,6 +6,8 @@
 
 #include <algorithm>
 
+WellLegalizer::WellLegalizer() = default;
+
 void WellLegalizer::InitWellLegalizer() {
   Assert(circuit_ != nullptr, "Well Legalization fail: no input circuit!");
   Tech *tech_parm = circuit_->GetTech();
@@ -27,8 +29,8 @@ void WellLegalizer::InitWellLegalizer() {
 
   Row tmp_row(RegionLeft(), INT_MAX, false);
   all_rows_.resize(RegionTop() - RegionBottom() + 1, tmp_row);
-  IndexLocPair<int> tmp_index_loc_pair(0, 0, 0);
-  index_loc_list_.resize(circuit_->block_list.size(), tmp_index_loc_pair);
+
+  InitLegalizer();
 }
 
 void WellLegalizer::SwitchToPlugType(Block &block) {
@@ -75,22 +77,24 @@ void WellLegalizer::UseSpace(Block const &block) {
   /****
    * Mark the space used by this block by changing the start point of available space in each related row
    * ****/
-  auto start_row = (unsigned int)(block.LLY() - RegionBottom());
-  unsigned int end_row = start_row + block.Height() - 1;
-  int lx = int(block.LLX());
+  int start_row = StartRow(int(block.LLY()));
+  int end_row = EndRow(int(block.URY()));
 
-  if (end_row >= all_rows_.size()) {
+  /*if (end_row >= int(all_rows_.size())) {
     //std::cout << "  ly:     " << int(block.LLY())       << "\n"
     //          << "  height: " << block.Height()   << "\n"
     //          << "  top:    " << Top()    << "\n"
     //          << "  bottom: " << Bottom() << "\n";
     Assert(false, "Cannot use space out of range");
-  }
+  }*/
 
-  int end_x = lx + int(block.Width());
-  unsigned int pn_boundary_row = start_row + block.Type()->well_->GetPNBoundary() - 1;
+  assert(end_row < int(block_contour_.size()));
+  assert(start_row >= 0);
 
-  for (unsigned int i = start_row; i <= end_row; ++i) {
+  int end_x = int(block.URX());
+  int pn_boundary_row = start_row + block.Type()->well_->GetPNBoundary() - 1;
+
+  for (int i = start_row; i <= end_row; ++i) {
     all_rows_[i].start = end_x;
     all_rows_[i].is_n = (i > pn_boundary_row);
   }
@@ -268,6 +272,14 @@ void WellLegalizer::WellPlace(Block &block) {
 }
 
 void WellLegalizer::StartPlacement() {
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "---------------------------------------\n"
+              << "Start Well Legalization\n";
+  }
+
+  double wall_time = get_wall_time();
+  double cpu_time = get_cpu_time();
+
   InitWellLegalizer();
   std::cout << "  Number of rows: " << all_rows_.size() << "\n"
             << "  Number of blocks: " << index_loc_list_.size() << "\n"
@@ -280,9 +292,7 @@ void WellLegalizer::StartPlacement() {
             << "    MinNWidth:  " << n_min_width << "\n"
             << "    MinPWidth:  " << p_min_width << "\n";
 
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "Start Well Legalization\n";
-  }
+
   std::vector<Block> &block_list = *BlockList();
   for (size_t i = 0; i < index_loc_list_.size(); ++i) {
     index_loc_list_[i].num = i;
@@ -306,5 +316,15 @@ void WellLegalizer::StartPlacement() {
   }
 
   ReportHPWL(LOG_CRITICAL);
+
+  wall_time = get_wall_time() - wall_time;
+  cpu_time = get_cpu_time() - cpu_time;
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "(wall time: "
+              << wall_time << "s, cpu time: "
+              << cpu_time << "s)\n";
+  }
+
+  ReportMemory(LOG_CRITICAL);
 
 }

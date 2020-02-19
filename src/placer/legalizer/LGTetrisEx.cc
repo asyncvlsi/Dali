@@ -953,9 +953,7 @@ void LGTetrisEx::StartPlacement() {
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "(wall time: "
-              << wall_time << "s, cpu time: "
-              << cpu_time << "s)\n";
+    printf("(wall time: %.4fs, cpu time: %.4fs)\n", wall_time, cpu_time);
   }
 
   ReportMemory(LOG_CRITICAL);

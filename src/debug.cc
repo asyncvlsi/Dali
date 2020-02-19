@@ -13,9 +13,9 @@
 
 VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 
-#define TEST_WELL 0
-#define TEST_PO 0
 #define TEST_LG 0
+#define TEST_PO 0
+#define TEST_WELL 1
 
 int main() {
   Circuit circuit;
@@ -75,7 +75,7 @@ int main() {
 #endif
 
 #if TEST_WELL
-  std::string cell_file_name("benchmark_10K.cell");
+  std::string cell_file_name("benchmark_200K.cell");
   circuit.ReadCellFile(cell_file_name);
   Placer *well_legalizer = new WellLegalizer;
   well_legalizer->TakeOver(gb_placer);

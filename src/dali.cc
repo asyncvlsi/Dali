@@ -148,9 +148,8 @@ int main(int argc, char *argv[]) {
 
   file_wall_time = get_wall_time() - file_wall_time;
   file_cpu_time = get_cpu_time() - file_cpu_time;
-  std::cout << "File loading complete\n(wall time: "
-            << file_wall_time << "s, cpu time: "
-            << file_cpu_time << "s)\n";
+  std::cout << "File loading complete\n";
+  printf("(wall time: %.4fs, cpu time: %.4fs)\n", file_wall_time, file_cpu_time);
   circuit.ReportBriefSummary();
   circuit.ReportHPWL();
 
@@ -159,14 +158,14 @@ int main(int argc, char *argv[]) {
     target_density = std::max(circuit.WhiteSpaceUsage(), default_density);
   }
   if (circuit.WhiteSpaceUsage() > target_density) {
-    std::cout << "Cannot set target density smaller than average white space utility!\n"
-              << "  Average white space utility: " << circuit.WhiteSpaceUsage() << "\n"
-              << "  Target density:              " << target_density << "\n";
+    std::cout << "Cannot set target density smaller than average white space utility!\n";
+    printf("  Average white space utility: %.4f\n", circuit.WhiteSpaceUsage());
+    printf("  Target density: %.4f\n", target_density);
 
     return 1;
   }
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "target density: " << target_density;
+    printf("  Target density: %.4f", target_density);
     if (target_density == default_density) {
       std::cout << " (default)";
     }
@@ -207,9 +206,10 @@ int main(int argc, char *argv[]) {
 
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;
-  std::cout << "****End of placement (wall time:"
+  /*std::cout << "****End of placement (wall time:"
             << wall_time << "s, cpu time: "
-            << cpu_time << "s)****\n";
+            << cpu_time << "s)****\n";*/
+  printf("****End of placement (wall time: %.4fs, cpu time: %.4fs)****\n", wall_time, cpu_time);
   if (!output_name.empty()) {
     circuit.SaveDefFile(output_name, def_file_name);
   }

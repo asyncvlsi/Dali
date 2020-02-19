@@ -5,17 +5,12 @@
 #ifndef DALI_SRC_PLACER_LEGALIZER_LGTETRISEX_H_
 #define DALI_SRC_PLACER_LEGALIZER_LGTETRISEX_H_
 
+#include "common/misc.h"
 #include "placer/placer.h"
 
-struct seg {
-  int lo;
-  int hi;
-  seg(int lo_init, int hi_init) : lo(lo_init), hi(hi_init) {}
-};
-
 class LGTetrisEx : public Placer {
- private:
-  std::vector<std::vector<seg>> white_space_in_rows_;
+ protected:
+  std::vector<std::vector<SegI>> white_space_in_rows_;
   std::vector<int> block_contour_;
   std::vector<IndexLocPair<int>> index_loc_list_;
 
@@ -55,7 +50,7 @@ class LGTetrisEx : public Placer {
   int AlignedLocToRow(double y_loc);
   bool IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row);
 
-  void UseSpace(Block const &block);
+  virtual void UseSpace(Block const &block);
   bool IsCurrentLocLegal(Value2D<int> &loc, int width, int height);
   int WhiteSpaceBound(int lo_x, int hi_x, int lo_row, int hi_row);
   bool FindLoc(Value2D<int> &loc, int width, int height);
@@ -83,6 +78,20 @@ inline void LGTetrisEx::SetRowHeight(int row_height) {
 
 inline int LGTetrisEx::RowHeight() {
   return row_height_;
+}
+
+inline void LGTetrisEx::SetMaxIteration(int max_iter) {
+  assert(max_iter >= 0);
+  max_iter_ = max_iter;
+}
+
+inline void LGTetrisEx::SetWidthHeightFactor(double k_width, double k_height) {
+  k_width_ = k_width;
+  k_height_ = k_height;
+}
+
+inline void LGTetrisEx::SetLeftBoundFactor(double k_left) {
+  k_left_ = k_left;
 }
 
 inline int LGTetrisEx::StartRow(int y_loc) {
@@ -126,20 +135,6 @@ inline int LGTetrisEx::AlignedLocToRow(double y_loc) {
   if (row_num < 0) row_num = 0;
   if (row_num >= tot_num_rows_) row_num = tot_num_rows_ - 1;
   return row_num * row_height_ + bottom_;
-}
-
-inline void LGTetrisEx::SetMaxIteration(int max_iter) {
-  assert(max_iter >= 0);
-  max_iter_ = max_iter;
-}
-
-inline void LGTetrisEx::SetWidthHeightFactor(double k_width, double k_height) {
-  k_width_ = k_width;
-  k_height_ = k_height;
-}
-
-inline void LGTetrisEx::SetLeftBoundFactor(double k_left) {
-  k_left_ = k_left;
 }
 
 #endif //DALI_SRC_PLACER_LEGALIZER_LGTETRISEX_H_

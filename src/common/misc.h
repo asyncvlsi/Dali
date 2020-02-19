@@ -107,6 +107,15 @@ struct IndexLocPair {
   }
 };
 
+template<class T>
+struct Seg {
+  T lo;
+  T hi;
+  Seg(T lo_init, T hi_init) : lo(lo_init), hi(hi_init) {}
+};
+
+typedef Seg<int> SegI;
+
 inline void Assert(bool e, const std::string &error_message) {
   if (!e) {
     std::cout << "\033[0;31m" << "FATAL ERROR:" << "\n"
