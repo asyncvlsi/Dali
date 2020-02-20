@@ -201,7 +201,7 @@ bool LGTetrisEx::IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row) {
   return is_all_row_legal;
 }
 
-void LGTetrisEx::UseSpace(Block const &block) {
+void LGTetrisEx::UseSpaceLeft(Block const &block) {
   /****
    * Mark the space used by this block by changing the start point of available space in each related row
    * ****/
@@ -226,7 +226,7 @@ void LGTetrisEx::UseSpace(Block const &block) {
   }
 }
 
-bool LGTetrisEx::IsCurrentLocLegal(Value2D<int> &loc, int width, int height) {
+bool LGTetrisEx::IsCurrentLocLegalLeft(Value2D<int> &loc, int width, int height) {
   /****
    * Returns whether the current location is legal
    *
@@ -253,7 +253,7 @@ bool LGTetrisEx::IsCurrentLocLegal(Value2D<int> &loc, int width, int height) {
   return all_row_avail;
 }
 
-int LGTetrisEx::WhiteSpaceBound(int lo_x, int hi_x, int lo_row, int hi_row) {
+int LGTetrisEx::WhiteSpaceBoundLeft(int lo_x, int hi_x, int lo_row, int hi_row) {
   /****
    * Returns the left boundary of the white space region where this block should be placed
    *
@@ -287,7 +287,7 @@ int LGTetrisEx::WhiteSpaceBound(int lo_x, int hi_x, int lo_row, int hi_row) {
   return white_space_bound;
 }
 
-bool LGTetrisEx::FindLoc(Value2D<int> &loc, int width, int height) {
+bool LGTetrisEx::FindLocLeft(Value2D<int> &loc, int width, int height) {
   /****
    * Returns whether a legal location can be found, and put the final location to @params loc
    * ****/
@@ -326,7 +326,7 @@ bool LGTetrisEx::FindLoc(Value2D<int> &loc, int width, int height) {
   for (int tmp_start_row = search_start_row; tmp_start_row <= search_end_row; ++tmp_start_row) {
     tmp_end_row = tmp_start_row + blk_row_height - 1;
     //left_white_space_bound = left_;
-    left_white_space_bound = WhiteSpaceBound(loc.x, loc.x + width, tmp_start_row, tmp_end_row);
+    left_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_row, tmp_end_row);
 
     tmp_x = std::max(left_white_space_bound, left_block_bound);
 
@@ -358,7 +358,7 @@ bool LGTetrisEx::FindLoc(Value2D<int> &loc, int width, int height) {
     search_end_row = std::min(max_search_row, search_end_row + extended_range);
     for (int tmp_start_row = search_start_row; tmp_start_row < old_start_row; ++tmp_start_row) {
       tmp_end_row = tmp_start_row + blk_row_height - 1;
-      left_white_space_bound = WhiteSpaceBound(loc.x, loc.x + width, tmp_start_row, tmp_end_row);
+      left_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_row, tmp_end_row);
       tmp_x = std::max(left_white_space_bound, left_block_bound);
 
       for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
@@ -387,7 +387,7 @@ bool LGTetrisEx::FindLoc(Value2D<int> &loc, int width, int height) {
     }
     for (int tmp_start_row = old_end_row; tmp_start_row < search_end_row; ++tmp_start_row) {
       tmp_end_row = tmp_start_row + blk_row_height - 1;
-      left_white_space_bound = WhiteSpaceBound(loc.x, loc.x + width, tmp_start_row, tmp_end_row);
+      left_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_row, tmp_end_row);
       tmp_x = std::max(left_white_space_bound, left_block_bound);
 
       for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
@@ -437,9 +437,9 @@ bool LGTetrisEx::FindLoc(Value2D<int> &loc, int width, int height) {
   return is_successful;
 }
 
-void LGTetrisEx::FastShift(int failure_point) {
+void LGTetrisEx::FastShiftLeft(int failure_point) {
   /****
-   * This method is to FastShift() the blocks following the failure_point (included)
+   * This method is to FastShiftLeft() the blocks following the failure_point (included)
    * to reasonable locations in order to keep block orders
    *    1. when the current location of this block is illegal
    *    2. when there is no possible legal location on the right hand side of this block.
@@ -475,7 +475,7 @@ void LGTetrisEx::FastShift(int failure_point) {
   }
 }
 
-bool LGTetrisEx::LocalLegalization() {
+bool LGTetrisEx::LocalLegalizationLeft() {
   /****
    * 1. first sort all the circuit based on their location and size from low to high
    *    effective_loc = current_lx - k_width_ * width - k_height_ * height;
@@ -525,10 +525,10 @@ bool LGTetrisEx::LocalLegalization() {
     res.x = init_x;
     res.y = init_y;
 
-    is_current_loc_legal = IsCurrentLocLegal(res, width, height);
+    is_current_loc_legal = IsCurrentLocLegalLeft(res, width, height);
 
     if (!is_current_loc_legal) {
-      is_legal_loc_found = FindLoc(res, width, height);
+      is_legal_loc_found = FindLocLeft(res, width, height);
       if (!is_legal_loc_found) {
         is_successful = false;
         //std::cout << res.x << "  " << res.y << "  " << block.Num() << " left\n";
@@ -538,11 +538,11 @@ bool LGTetrisEx::LocalLegalization() {
 
     block.SetLoc(res.x, res.y);
 
-    UseSpace(block);
+    UseSpaceLeft(block);
   }
 
   /*if (!is_successful) {
-    FastShift(i);
+    FastShiftLeft(i);
   }*/
 
   return is_successful;
@@ -775,7 +775,7 @@ bool LGTetrisEx::FindLocRight(Value2D<int> &loc, int width, int height) {
 
 void LGTetrisEx::FastShiftRight(int failure_point) {
   /****
-   * This method is to FastShift() the blocks following the failure_point (included)
+   * This method is to FastShiftLeft() the blocks following the failure_point (included)
    * to reasonable locations in order to keep block orders
    *    1. when the current location of this block is illegal
    *    2. when there is no possible legal location on the right hand side of this block.
@@ -926,7 +926,7 @@ void LGTetrisEx::StartPlacement() {
   bool is_success = false;
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     if (legalize_from_left_) {
-      is_success = LocalLegalization();
+      is_success = LocalLegalizationLeft();
     } else {
       is_success = LocalLegalizationRight();
     }

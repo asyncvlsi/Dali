@@ -120,6 +120,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
     //std::cout << mac->getWidth()/grid_value_x_/lef_database_microns << "  " << mac->getHeight()/grid_value_y_/lef_database_microns << "\n";
     for (auto &&terminal: mac->getMTerms()) {
       std::string pin_name(terminal->getName());
+      //if (pin_name == "Vdd" || pin_name == "GND") continue;
       //std::cout << terminal->getName() << " " << terminal->getMPins().begin()->getGeometry().begin()->xMax()/grid_value_x/lef_database_microns << "\n";
       auto new_pin = blk_type->AddPin(pin_name);
       auto geo_shape = terminal->getMPins().begin()->getGeometry().begin();

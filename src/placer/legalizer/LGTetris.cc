@@ -21,7 +21,7 @@ void TetrisLegalizer::SetMaxItr(int max_iteration) {
 
 void TetrisLegalizer::FastShift(int failure_point) {
   /****
-   * This method is to FastShift() the blocks following the failure_point (included) to reasonable locations in order to keep block orders
+   * This method is to FastShiftLeft() the blocks following the failure_point (included) to reasonable locations in order to keep block orders
    *    1. tetrisSpace.IsSpaceAvail() fails to place a block when the current location of this block is illegal
    *    2. tetrisSpace.FindBlockLoc() fails to place a block when there is no possible legal location on the right hand side of this block,
    * if failure_point is the first block
@@ -138,7 +138,7 @@ bool TetrisLegalizer::TetrisLegal() {
      * 2. if the current location is illegal,
      *  FindBlockLoc() will find a legal location for this block, and mark that space used.
      * 3. If FindBlocLoc() fails to find a legal location,
-     *  FastShift() the remaining blocks to the right hand side of the last placed block, in order to keep block orders
+     *  FastShiftLeft() the remaining blocks to the right hand side of the last placed block, in order to keep block orders
      *  FlipPlacement() will flip the placement in the x-direction
      *  if current_iteration does not reach the maximum allowed number, then do the legalization in a reverse order
      * ****/

@@ -46,22 +46,22 @@ void WellLegalizer::SwitchToPlugType(Block &block) {
   }
 }
 
-bool WellLegalizer::IsSpaceLegal(Block const &block) {
+bool WellLegalizer::IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row) {
   /****
    * 1. check whether any part of the space is used
    * 2. check whether NP well rules are disobeyed
    * ****/
-  auto start_row = (unsigned int)(block.LLY() - RegionBottom());
-  unsigned int end_row = start_row + block.Height() - 1;
-  int lx = int(block.LLX());
+  int start_row = lo_row;
+  int end_row = hi_row;
+  int lx = lo_x;
 
-  if (end_row >= all_rows_.size()) {
+  if (end_row >= int(all_rows_.size())) {
     return false;
   }
 
   bool is_avail = true;
   // 1. check the overlap rule
-  for (unsigned int i = start_row; i <= end_row; ++i) {
+  for (int i = start_row; i <= end_row; ++i) {
     if (all_rows_[i].start > lx) {
       is_avail = false;
       break;
@@ -73,7 +73,7 @@ bool WellLegalizer::IsSpaceLegal(Block const &block) {
   return is_avail;
 }
 
-void WellLegalizer::UseSpace(Block const &block) {
+void WellLegalizer::UseSpaceLeft(Block const &block) {
   /****
    * Mark the space used by this block by changing the start point of available space in each related row
    * ****/
@@ -267,8 +267,110 @@ void WellLegalizer::WellPlace(Block &block) {
       Assert(false, "Cannot find legal location");
     }
   }
-  UseSpace(block);
+  UseSpaceLeft(block);
   //UpdatePNBoundary(block);
+}
+
+bool WellLegalizer::IsCurrentLocLegalLeft(Value2D<int> &loc, int width, int height) {
+  /****
+   * Returns whether the current location is legal
+   *
+   * 1. if the space itself is illegal, then return false
+   * 2. if the space covers placed blocks, then return false
+   * 3. otherwise, return true
+   * ****/
+  int start_row = StartRow(loc.y);
+  int end_row = EndRow(loc.y + height);
+
+  bool is_space_legal = IsSpaceLegal(loc.x, loc.x + width, start_row, end_row);
+  if (!is_space_legal) {
+    return false;
+  }
+
+  bool all_row_avail = true;
+  for (int i = start_row; i <= end_row; ++i) {
+    if (block_contour_[i] > loc.x) {
+      all_row_avail = false;
+      break;
+    }
+  }
+
+  return all_row_avail;
+}
+
+int WellLegalizer::WhiteSpaceBoundLeft(int lo_x, int hi_x, int lo_row, int hi_row) {
+
+}
+
+bool WellLegalizer::FindLocLeft(Value2D<int> &loc, int width, int height) {
+
+}
+
+bool WellLegalizer::WellLegalizationLeft() {
+  bool is_successful = true;
+  block_contour_.assign(block_contour_.size(), left_);
+  std::vector<Block> &block_list = *BlockList();
+
+  int sz = index_loc_list_.size();
+  for (int i = 0; i < sz; ++i) {
+    index_loc_list_[i].num = i;
+    index_loc_list_[i].x = block_list[i].LLX();
+    index_loc_list_[i].y = block_list[i].LLY();
+  }
+  std::sort(index_loc_list_.begin(), index_loc_list_.end());
+
+  double init_x;
+  double init_y;
+  int height;
+  int width;
+
+  Value2D<int> res;
+  bool is_current_loc_legal;
+  bool is_legal_loc_found;
+
+  for (auto &&pair: index_loc_list_) {
+    auto &block = block_list[pair.num];
+
+    if (block.IsFixed()) continue;
+
+    init_x = int(block.LLX());
+    init_y = AlignedLocToRow(block.LLY());
+    height = int(block.Height());
+    width = int(block.Width());
+
+    res.x = init_x;
+    res.y = init_y;
+
+    is_current_loc_legal = IsCurrentLocLegalLeft(res, width, height);
+
+    if (!is_current_loc_legal) {
+      is_legal_loc_found = FindLocLeft(res, width, height);
+      if (!is_legal_loc_found) {
+        is_successful = false;
+        //std::cout << res.x << "  " << res.y << "  " << block.Num() << " left\n";
+        //break;
+      }
+    }
+
+    block.SetLoc(res.x, res.y);
+
+    UseSpaceLeft(block);
+  }
+
+/*  for (auto &pair: index_loc_list_) {
+    auto &block = block_list[pair.num];
+    if (block.IsFixed()) {
+      continue;
+    }
+    WellPlace(block);
+    //std::cout << block.LLX() << "  " << block.LLY() << "\n";
+  }*/
+
+  return is_successful;
+}
+
+bool WellLegalizer::WellLegalizationRight() {
+
 }
 
 void WellLegalizer::StartPlacement() {
@@ -292,21 +394,24 @@ void WellLegalizer::StartPlacement() {
             << "    MinNWidth:  " << n_min_width << "\n"
             << "    MinPWidth:  " << p_min_width << "\n";
 
-
-  std::vector<Block> &block_list = *BlockList();
-  for (size_t i = 0; i < index_loc_list_.size(); ++i) {
-    index_loc_list_[i].num = i;
-    index_loc_list_[i].x = block_list[i].LLX();
-    index_loc_list_[i].y = block_list[i].LLY();
-  }
-  std::sort(index_loc_list_.begin(), index_loc_list_.end());
-  for (auto &pair: index_loc_list_) {
-    auto &block = block_list[pair.num];
-    if (block.IsFixed()) {
-      continue;
+  bool is_success = false;
+  for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
+    if (legalize_from_left_) {
+      is_success = WellLegalizationLeft();
+    } else {
+      is_success = WellLegalizationRight();
     }
-    WellPlace(block);
-    //std::cout << block.LLX() << "  " << block.LLY() << "\n";
+    legalize_from_left_ = !legalize_from_left_;
+    ++k_left_;
+    //GenMATLABTable("lg" + std::to_string(cur_iter_) + "_result.txt");
+    ReportHPWL(LOG_CRITICAL);
+    if (is_success) {
+      break;
+    }
+  }
+
+  if (!is_success) {
+    std::cout << "Well Legalization fails\n";
   }
 
   if (globalVerboseLevel >= LOG_CRITICAL) {

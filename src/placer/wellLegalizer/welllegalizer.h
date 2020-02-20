@@ -48,11 +48,19 @@ class WellLegalizer : public LGTetrisEx {
   void InitWellLegalizer();
 
   static void SwitchToPlugType(Block &block);
-  bool IsSpaceLegal(Block const &block);
-  void UseSpace(Block const &block) override;
+  bool IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row) override;
+  void UseSpaceLeft(Block const &block) override;
   void UpdatePNBoundary(Block const &block);
   bool FindLocation(Block &block, int2d &res);
   void WellPlace(Block &block);
+
+  bool IsCurrentLocLegalLeft(Value2D<int> &loc, int width, int height) override ;
+  int WhiteSpaceBoundLeft(int lo_x, int hi_x, int lo_row, int hi_row) override ;
+  bool FindLocLeft(Value2D<int> &loc, int width, int height) override ;
+  bool WellLegalizationLeft();
+
+  bool WellLegalizationRight();
+
   void StartPlacement() override;
 };
 
