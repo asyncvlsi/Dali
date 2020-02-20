@@ -223,6 +223,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
   lef_database_microns = 0;
   while ((lef_database_microns == 0) && !ist.eof()) {
     getline(ist, line);
+    if (!line.empty() && line[0] == '#') continue;
     if (line.find("DATABASE MICRONS") != std::string::npos) {
       std::vector<std::string> line_field;
       StrSplit(line, line_field);
@@ -235,12 +236,13 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
       }
     }
   }
-  //std::cout << "DATABASE MICRONS " << lef_database_microns << "\n";
+  std::cout << "DATABASE MICRONS " << lef_database_microns << "\n";
 
   // 2. find MANUFACTURINGGRID
   manufacturing_grid = 0;
   while ((manufacturing_grid <= 1e-10) && !ist.eof()) {
     getline(ist, line);
+    if (!line.empty() && line[0] == '#') continue;
     if (line.find("LAYER") != std::string::npos) {
       manufacturing_grid = 1.0 / lef_database_microns;
       std::cout << "  WARNING:\n  MANUFACTURINGGRID not specified explicitly, using 1.0/DATABASE MICRONS instead\n";
@@ -258,11 +260,15 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     }
   }
   Assert(manufacturing_grid > 0, "Cannot find or invalid MANUFACTURINGGRID");
-  //std::cout << "MANUFACTURINGGRID: " << grid_value_ << "\n";
+  std::cout << "MANUFACTURINGGRID: " << manufacturing_grid << "\n";
 
   // 3. read metal layer
   static std::vector<std::string> metal_identifier_list{"m", "M", "metal", "Metal"};
   while (!ist.eof()) {
+    if (!line.empty() && line[0] == '#') {
+      getline(ist, line);
+      continue;
+    }
     if (line.find("LAYER") != std::string::npos) {
       std::vector<std::string> layer_field;
       StrSplit(line, layer_field);
@@ -275,6 +281,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
         MetalLayer *metal_layer = AddMetalLayer(layer_field[1]);
         do {
           getline(ist, line);
+          if (!line.empty() && line[0] == '#') continue;
           if (line.find("DIRECTION") != std::string::npos) {
             std::vector<std::string> direction_field;
             StrSplit(line, direction_field);
@@ -358,21 +365,27 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     } else {
       SetGridUsingMetalPitch();
     }
+    std::cout << "Grid Value: " << grid_value_x_ << "  " << grid_value_y_ << "\n";
   }
 
   // 4. read block type information
   while (!ist.eof()) {
+    if (!line.empty() && line[0] == '#') {
+      getline(ist, line);
+      continue;
+    }
     if (line.find("MACRO") != std::string::npos) {
       std::vector<std::string> line_field;
       StrSplit(line, line_field);
       Assert(line_field.size() >= 2, "Invalid type name: expecting 2 fields\n" + line);
       std::string block_type_name = line_field[1];
-      //std::cout << block_type_name << "\n";
+      std::cout << block_type_name << "\n";
       BlockType *new_block_type = nullptr;
       int width = 0, height = 0;
       std::string end_macro_flag = "END " + line_field[1];
       do {
         getline(ist, line);
+        if (!line.empty() && line[0] == '#') continue;
         while ((width == 0) && (height == 0) && !ist.eof()) {
           if (line.find("SIZE") != std::string::npos) {
             std::vector<std::string> size_field;
@@ -402,11 +415,13 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
           // skip to "PORT" rectangle list
           do {
             getline(ist, line);
+            if (!line.empty() && line[0] == '#') continue;
           } while (line.find("PORT") == std::string::npos && !ist.eof());
 
           double llx = 0, lly = 0, urx = 0, ury = 0;
           do {
             getline(ist, line);
+            if (!line.empty() && line[0] == '#') continue;
             if (line.find("RECT") != std::string::npos) {
               //std::cout << line << "\n";
               std::vector<std::string> rect_field;

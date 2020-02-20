@@ -15,26 +15,32 @@ VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 
 #define TEST_LG 0
 #define TEST_PO 0
-#define TEST_WELL 1
+#define TEST_WELL 0
+#define USE_DB_PARSER 0
 
 int main() {
   Circuit circuit;
 
   time_t Time = clock();
 
-  std::string lef_file_name = "benchmark_200K.lef";
+  std::string lef_file_name = "act_benchmark_vdd_gnd/benchmark_10K.lef";
 #if TEST_LG
   std::string def_file_name = "benchmark_200K_dali.def";
 #else
-  std::string def_file_name = "benchmark_200K.def";
+  std::string def_file_name = "act_benchmark_vdd_gnd/benchmark_10K.def";
 #endif
 
+#if USE_DB_PARSER
   odb::dbDatabase *db = odb::dbDatabase::create();
   std::vector<std::string> defFileVec;
   defFileVec.push_back(def_file_name);
   odb_read_lef(db, lef_file_name.c_str());
   odb_read_def(db, defFileVec);
   circuit.InitializeFromDB(db);
+#else
+  circuit.ReadLefFile(lef_file_name);
+  circuit.ReadDefFile(def_file_name);
+#endif
 
   std::cout << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << " s\n";
 
@@ -46,11 +52,11 @@ int main() {
   gb_placer->SetInputCircuit(&circuit);
 
   gb_placer->SetBoundaryDef();
-  gb_placer->SetFillingRate(0.8);
+  gb_placer->SetFillingRate(0.7);
   gb_placer->ReportBoundaries();
 #if !TEST_LG
   gb_placer->StartPlacement();
-  gb_placer->SaveDEFFile("benchmark_200K_dali.def", def_file_name);
+  gb_placer->SaveDEFFile("benchmark_10K_dali.def", def_file_name);
 #endif
   gb_placer->GenMATLABTable("gb_result.txt");
   //gb_placer->GenMATLABWellTable("gb_result");

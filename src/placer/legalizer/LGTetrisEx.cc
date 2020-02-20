@@ -69,7 +69,7 @@ void LGTetrisEx::InitLegalizer() {
    * 3. initialize block contour to be the left contour
    * 4. allocate space for index_loc_list_
    * ****/
-  tot_num_rows_ = (top_ - bottom_) / row_height_ + 1;
+  tot_num_rows_ = (top_ - bottom_) / row_height_;
 
   std::vector<std::vector<std::vector<int>>> macro_segments;
   macro_segments.resize(tot_num_rows_);
@@ -207,17 +207,21 @@ void LGTetrisEx::UseSpaceLeft(Block const &block) {
    * ****/
   int start_row = StartRow(int(block.LLY()));
   int end_row = EndRow(int(block.URY()));
-  /*if (end_row >= int(block_contour_.size())) {
+  /*if (block.URY() > RegionTop()) {
     std::cout << "  ly:     " << int(block.LLY()) << "\n"
               << "  height: " << block.Height() << "\n"
               << "  top:    " << RegionTop() << "\n"
               << "  bottom: " << RegionBottom() << "\n"
-              << "  name:   " << *block.Name() << "\n";
+              << "  name:   " << *block.Name() << "\n"
+              << "  start_r:" << start_row << "\n"
+              << "  end_r:  " << end_row << "\n"
+              << "  tot_r:  " << tot_num_rows_ << "\n";
     GenMATLABTable("lg_result.txt");
     Assert(false, "Cannot use space out of range");
   }*/
 
-  assert(end_row < int(block_contour_.size()));
+  assert(block.URY() <= RegionTop());
+  assert(end_row < tot_num_rows_);
   assert(start_row >= 0);
 
   int end_x = int(block.URX());
@@ -560,7 +564,8 @@ void LGTetrisEx::UseSpaceRight(Block const &block) {
     Assert(false, "Cannot use space out of range");
   }*/
 
-  assert(end_row < int(block_contour_.size()));
+  assert(block.URY() <= RegionTop());
+  assert(end_row < tot_num_rows_);
   assert(start_row >= 0);
 
   int end_x = int(block.LLX());

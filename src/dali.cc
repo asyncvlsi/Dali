@@ -41,6 +41,7 @@ int main(int argc, char *argv[]) {
   std::string plot_file;
   double x_grid = 0, y_grid = 0;
   double target_density = -1;
+  bool use_naive = false;
 
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
@@ -48,7 +49,9 @@ int main(int argc, char *argv[]) {
 
   for (int i = 1; i < argc;) {
     std::string arg(argv[i++]);
-    if (arg == "-lef" && i < argc) {
+    if (arg == "-n" && i < argc) {
+      use_naive = true;
+    } else if (arg == "-lef" && i < argc) {
       lef_file_name = std::string(argv[i++]);
       if (lef_file_name.empty()) {
         std::cout << "Invalid input lef file!\n";
@@ -134,17 +137,22 @@ int main(int argc, char *argv[]) {
 
   double file_wall_time = get_wall_time();
   double file_cpu_time = get_cpu_time();
+  bool use_opendb = false;
+  if (!use_naive) {
 #ifdef USE_OPENDB
-  odb::dbDatabase *db = odb::dbDatabase::create();
-  std::vector<std::string> defFileVec;
-  defFileVec.push_back(def_file_name);
-  odb_read_lef(db, lef_file_name.c_str());
-  odb_read_def(db, defFileVec);
-  circuit.InitializeFromDB(db);
-#else
-  circuit.ReadLefFile(lef_file_name);
-  circuit.ReadDefFile(def_file_name);
+    odb::dbDatabase *db = odb::dbDatabase::create();
+    std::vector<std::string> defFileVec;
+    defFileVec.push_back(def_file_name);
+    odb_read_lef(db, lef_file_name.c_str());
+    odb_read_def(db, defFileVec);
+    circuit.InitializeFromDB(db);
+    use_opendb = true;
 #endif
+  }
+  if (use_naive || !use_opendb) {
+    circuit.ReadLefFile(lef_file_name);
+    circuit.ReadDefFile(def_file_name);
+  }
 
   file_wall_time = get_wall_time() - file_wall_time;
   file_cpu_time = get_cpu_time() - file_cpu_time;
@@ -220,6 +228,7 @@ int main(int argc, char *argv[]) {
 void ReportUsage() {
   std::cout << "\033[0;36m"
             << "Usage: dali\n"
+            << "  -n          (if this flag present, use naive LEF/DEF parser)\n"
             << "  -lef        <file.lef>\n"
             << "  -def        <file.def>\n"
             << "  -cell       <file.cell> (optional, if provided, well legalization will be triggered)\n"
