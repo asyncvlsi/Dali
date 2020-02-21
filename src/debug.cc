@@ -23,11 +23,11 @@ int main() {
 
   time_t Time = clock();
 
-  std::string lef_file_name = "act_benchmark_vdd_gnd/benchmark_10K.lef";
+  std::string lef_file_name = "ispd18_test3.input.lef";
 #if TEST_LG
   std::string def_file_name = "benchmark_200K_dali.def";
 #else
-  std::string def_file_name = "act_benchmark_vdd_gnd/benchmark_10K.def";
+  std::string def_file_name = "ispd18_test3.input.def";
 #endif
 
 #if USE_DB_PARSER
@@ -55,6 +55,7 @@ int main() {
   gb_placer->SetFillingRate(0.7);
   gb_placer->ReportBoundaries();
 #if !TEST_LG
+  //gb_placer->SaveDEFFile("ispd18_test3.dali.def", def_file_name);
   gb_placer->StartPlacement();
   gb_placer->SaveDEFFile("benchmark_10K_dali.def", def_file_name);
 #endif

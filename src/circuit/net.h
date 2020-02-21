@@ -35,6 +35,7 @@ class Net {
   void AddBlockPinPair(Block *block_ptr, Pin *pin);
 
   const std::string *Name() const;
+  std::string NameStr() const;
   int Num() const;
   void SetWeight(double weight);
   double Weight() const;
@@ -93,6 +94,10 @@ class NetAux {
 
 inline const std::string *Net::Name() const {
   return &(name_num_pair_ptr_->first);
+}
+
+inline std::string Net::NameStr() const {
+  return name_num_pair_ptr_->first;
 }
 
 inline int Net::Num() const {

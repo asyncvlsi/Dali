@@ -379,7 +379,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
       StrSplit(line, line_field);
       Assert(line_field.size() >= 2, "Invalid type name: expecting 2 fields\n" + line);
       std::string block_type_name = line_field[1];
-      std::cout << block_type_name << "\n";
+      //std::cout << block_type_name << "\n";
       BlockType *new_block_type = nullptr;
       int width = 0, height = 0;
       std::string end_macro_flag = "END " + line_field[1];
@@ -497,7 +497,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       }
     }
     if (!nets_section_exist) {
-      if (line.find("NETS") != std::string::npos) {
+      if ((line.find("NETS") != std::string::npos) && (line.find("SPECIALNETS") == std::string::npos)) {
         std::vector<std::string> nets_field;
         StrSplit(line, nets_field);
         Assert(nets_field.size() == 2, "Improper use of NETS?\n" + line);
@@ -633,6 +633,10 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
     getline(ist, line);
     // the following is a hack now, cannot handle all cases, probably need to use BISON in the future if necessary
     while ((line.find("END NETS") == std::string::npos) && !ist.eof()) {
+      if (!line.empty() && line[0] == '#') {
+        getline(ist, line);
+        continue;
+      }
       if (line.find('-') != std::string::npos) {
         //std::cout << line << "\n";
         std::vector<std::string> net_field;
@@ -648,6 +652,9 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         }
         while (true) {
           getline(ist, line);
+          if (!line.empty() && line[0] == '#') {
+            continue;
+          }
           //std::cout << line << "\n";
           std::vector<std::string> pin_field;
           StrSplit(line, pin_field);
@@ -660,6 +667,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
               GetIOPin(pin_field[i + 2])->SetNet(new_net);
               continue;
             }
+            //std::cout << net_field[1] << "  " << pin_field[i + 1] << "\n";
             Block *block = GetBlock(pin_field[i + 1]);
             auto pin = block->Type()->GetPin(pin_field[i + 2]);
             new_net->AddBlockPinPair(block, pin);
@@ -667,7 +675,10 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
           //std::cout << "\n";
           if (line.find(';') != std::string::npos) break;
         }
-        Assert(!new_net->blk_pin_list.empty(), "Net " + net_field[1] + " has no blk_pin_pair");
+        //Assert(!new_net->blk_pin_list.empty(), "Net " + net_field[1] + " has no blk_pin_pair");
+        if (new_net->blk_pin_list.empty()) {
+          NetListPopBack();
+        }
         //Warning(new_net->blk_pin_list.size() == 1, "Net " + net_field[1] + " has only one blk_pin_pair");
       }
       getline(ist, line);
@@ -971,6 +982,11 @@ Net *Circuit::AddNet(std::string &net_name, double weight) {
   std::pair<const std::string, int> *name_num_pair_ptr = &(*net_name_map.find(net_name));
   net_list.emplace_back(name_num_pair_ptr, weight);
   return &net_list.back();
+}
+
+void Circuit::NetListPopBack() {
+  net_name_map.erase(net_list.back().NameStr());
+  net_list.pop_back();
 }
 
 /*

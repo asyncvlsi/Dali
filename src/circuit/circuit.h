@@ -48,6 +48,7 @@ class Circuit {
 #ifdef USE_OPENDB
   odb::dbDatabase *db_;
 #endif
+
  public:
   Circuit();
   ~Circuit();
@@ -162,6 +163,9 @@ class Circuit {
   Net *AddNet(std::string &net_name, double weight = 1);
   void ReportNetList();
   void ReportNetMap();
+
+  /****Utility functions related to netlist management****/
+  void NetListPopBack();
 
   void ReportBriefSummary();
 
