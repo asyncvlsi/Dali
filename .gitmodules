@@ -6,3 +6,9 @@
 	path = module/eigen-git-mirror
 	url = https://github.com/eigenteam/eigen-git-mirror.git
 	branch = master
+[submodule "module/lef"]
+	path = module/lef
+	url = https://github.com/The-OpenROAD-Project/lef.git
+[submodule "module/def"]
+	path = module/def
+	url = https://github.com/The-OpenROAD-Project/def.git
