@@ -521,8 +521,8 @@ bool LGTetrisEx::LocalLegalizationLeft() {
 
     if (block.IsFixed()) continue;
 
-    init_x = int(block.LLX());
-    init_y = AlignedLocToRow(block.LLY());
+    init_x = int(std::round(block.LLX()));
+    init_y = AlignedLocToRowLoc(block.LLY());
     height = int(block.Height());
     width = int(block.Width());
 
@@ -861,8 +861,8 @@ bool LGTetrisEx::LocalLegalizationRight() {
     auto &block = block_list[index_loc_list_[i].num];
     if (block.IsFixed()) continue;
 
-    init_x = int(block.URX());
-    init_y = AlignedLocToRow(block.LLY());
+    init_x = int(std::round(block.URX()));
+    init_y = AlignedLocToRowLoc(block.LLY());
     height = int(block.Height());
     width = int(block.Width());
 

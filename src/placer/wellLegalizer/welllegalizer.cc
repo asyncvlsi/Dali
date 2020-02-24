@@ -271,6 +271,52 @@ void WellLegalizer::WellPlace(Block &block) {
   //UpdatePNBoundary(block);
 }
 
+bool WellLegalizer::IsCurrentLocWellRuleClean(int p_row, Value2D<int> &loc, int width, int height) {
+  /****
+   * Returns whether the current location respects Well rules
+   *
+   * 1. check N/P well distance to its left hand side neighbors
+   * ****/
+  bool is_well_rule_clean = true;
+  int bottom_row = StartRow(loc.y);
+  int boundary_row = bottom_row + p_row;
+  int top_row = EndRow(loc.y + height);
+
+  assert(boundary_row > bottom_row);
+  assert(top_row > boundary_row);
+
+  bool tmp_row_well_clean = false;
+  for (int i = bottom_row; i <= boundary_row; ++i) {
+    if (all_rows_[i].start == RegionLeft()) continue;
+    if (!all_rows_[i].is_n) {
+      tmp_row_well_clean = (loc.x > all_rows_[i].start && loc.x < all_rows_[i].start + pp_spacing);
+    } else {
+      tmp_row_well_clean = (loc.x > all_rows_[i].start && loc.x < all_rows_[i].start + np_spacing);
+    }
+    if (!tmp_row_well_clean) {
+      is_well_rule_clean = false;
+      break;
+    }
+  }
+
+  if (!is_well_rule_clean) {
+    for (int i = boundary_row + 1; i <= top_row; ++i) {
+      if (all_rows_[i].start == RegionLeft()) continue;
+      if (all_rows_[i].is_n) {
+        tmp_row_well_clean = (loc.x > all_rows_[i].start && loc.x < all_rows_[i].start + nn_spacing) ;
+      } else {
+        tmp_row_well_clean = (loc.x > all_rows_[i].start && loc.x < all_rows_[i].start + np_spacing) ;
+      }
+      if (!tmp_row_well_clean) {
+        is_well_rule_clean = false;
+        break;
+      }
+    }
+  }
+
+  return is_well_rule_clean;
+}
+
 bool WellLegalizer::IsCurrentLocLegalLeft(Value2D<int> &loc, int width, int height) {
   /****
    * Returns whether the current location is legal
@@ -279,23 +325,27 @@ bool WellLegalizer::IsCurrentLocLegalLeft(Value2D<int> &loc, int width, int heig
    * 2. if the space covers placed blocks, then return false
    * 3. otherwise, return true
    * ****/
+
+  bool is_current_loc_legal = true;
   int start_row = StartRow(loc.y);
   int end_row = EndRow(loc.y + height);
 
-  bool is_space_legal = IsSpaceLegal(loc.x, loc.x + width, start_row, end_row);
-  if (!is_space_legal) {
+  // 1. check if the space itself is legal
+  is_current_loc_legal = IsSpaceLegal(loc.x, loc.x + width, start_row, end_row);
+  if (!is_current_loc_legal) {
     return false;
   }
 
-  bool all_row_avail = true;
+  // 2. check if the space covers any placed blocks
+  is_current_loc_legal = true;
   for (int i = start_row; i <= end_row; ++i) {
     if (block_contour_[i] > loc.x) {
-      all_row_avail = false;
+      is_current_loc_legal = false;
       break;
     }
   }
 
-  return all_row_avail;
+  return is_current_loc_legal;
 }
 
 int WellLegalizer::WhiteSpaceBoundLeft(int lo_x, int hi_x, int lo_row, int hi_row) {
@@ -326,6 +376,7 @@ bool WellLegalizer::WellLegalizationLeft() {
 
   Value2D<int> res;
   bool is_current_loc_legal;
+  bool is_current_well_rule_legal;
   bool is_legal_loc_found;
 
   for (auto &&pair: index_loc_list_) {
@@ -333,8 +384,8 @@ bool WellLegalizer::WellLegalizationLeft() {
 
     if (block.IsFixed()) continue;
 
-    init_x = int(block.LLX());
-    init_y = AlignedLocToRow(block.LLY());
+    init_x = int(std::round(block.LLX()));
+    init_y = AlignedLocToRowLoc(block.LLY());
     height = int(block.Height());
     width = int(block.Width());
 
@@ -342,8 +393,13 @@ bool WellLegalizer::WellLegalizationLeft() {
     res.y = init_y;
 
     is_current_loc_legal = IsCurrentLocLegalLeft(res, width, height);
+    is_current_well_rule_legal = false;
+    if (is_current_loc_legal) {
+      int p_well_row = HeightToRow(block.Type()->well_->GetPNBoundary());
+      is_current_well_rule_legal = IsCurrentLocWellRuleClean(p_well_row, res, width, height);
+    }
 
-    if (!is_current_loc_legal) {
+    if (!is_current_loc_legal || !is_current_well_rule_legal) {
       is_legal_loc_found = FindLocLeft(res, width, height);
       if (!is_legal_loc_found) {
         is_successful = false;

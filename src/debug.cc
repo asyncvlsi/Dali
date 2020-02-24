@@ -15,7 +15,7 @@ VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 
 #define TEST_LG 0
 #define TEST_PO 0
-#define TEST_WELL 0
+#define TEST_WELL 1
 #define USE_DB_PARSER 0
 
 int main() {
@@ -23,11 +23,11 @@ int main() {
 
   time_t Time = clock();
 
-  std::string lef_file_name = "ispd18_test3.input.lef";
+  std::string lef_file_name = "benchmark_1K.lef";
 #if TEST_LG
   std::string def_file_name = "benchmark_200K_dali.def";
 #else
-  std::string def_file_name = "ispd18_test3.input.def";
+  std::string def_file_name = "benchmark_1K.def";
 #endif
 
 #if USE_DB_PARSER
@@ -57,7 +57,7 @@ int main() {
 #if !TEST_LG
   //gb_placer->SaveDEFFile("ispd18_test3.dali.def", def_file_name);
   gb_placer->StartPlacement();
-  gb_placer->SaveDEFFile("benchmark_10K_dali.def", def_file_name);
+  gb_placer->SaveDEFFile("benchmark_1K_dali.def", def_file_name);
 #endif
   gb_placer->GenMATLABTable("gb_result.txt");
   //gb_placer->GenMATLABWellTable("gb_result");
@@ -82,7 +82,7 @@ int main() {
 #endif
 
 #if TEST_WELL
-  std::string cell_file_name("benchmark_200K.cell");
+  std::string cell_file_name("benchmark_1K.cell");
   circuit.ReadCellFile(cell_file_name);
   Placer *well_legalizer = new WellLegalizer;
   well_legalizer->TakeOver(gb_placer);

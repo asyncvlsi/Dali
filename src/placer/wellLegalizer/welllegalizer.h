@@ -54,6 +54,7 @@ class WellLegalizer : public LGTetrisEx {
   bool FindLocation(Block &block, int2d &res);
   void WellPlace(Block &block);
 
+  bool IsCurrentLocWellRuleClean(int p_row, Value2D<int> &loc, int lo_row, int hi_row);
   bool IsCurrentLocLegalLeft(Value2D<int> &loc, int width, int height) override ;
   int WhiteSpaceBoundLeft(int lo_x, int hi_x, int lo_row, int hi_row) override ;
   bool FindLocLeft(Value2D<int> &loc, int width, int height) override ;

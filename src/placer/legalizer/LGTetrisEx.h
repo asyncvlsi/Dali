@@ -47,7 +47,7 @@ class LGTetrisEx : public Placer {
   int LocToRow(int y_loc);
   int RowToLoc(int row_num, int displacement = 0);
   int AlignedLocToRow(int y_loc);
-  int AlignedLocToRow(double y_loc);
+  int AlignedLocToRowLoc(double y_loc);
   virtual bool IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row);
 
   virtual void UseSpaceLeft(Block const &block);
@@ -130,7 +130,7 @@ inline int LGTetrisEx::AlignedLocToRow(int y_loc) {
   return row_num * row_height_ + bottom_;
 }
 
-inline int LGTetrisEx::AlignedLocToRow(double y_loc) {
+inline int LGTetrisEx::AlignedLocToRowLoc(double y_loc) {
   int row_num = int(std::round((y_loc - bottom_) / row_height_));
   if (row_num < 0) row_num = 0;
   if (row_num >= tot_num_rows_) row_num = tot_num_rows_ - 1;
