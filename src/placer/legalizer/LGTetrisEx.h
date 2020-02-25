@@ -51,13 +51,13 @@ class LGTetrisEx : public Placer {
   virtual bool IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row);
 
   virtual void UseSpaceLeft(Block const &block);
-  virtual bool IsCurrentLocLegalLeft(Value2D<int> &loc, int width, int height);
-  virtual int WhiteSpaceBoundLeft(int lo_x, int hi_x, int lo_row, int hi_row);
-  virtual bool FindLocLeft(Value2D<int> &loc, int width, int height);
+  bool IsCurrentLocLegalLeft(Value2D<int> &loc, int width, int height);
+  int WhiteSpaceBoundLeft(int lo_x, int hi_x, int lo_row, int hi_row);
+  bool FindLocLeft(Value2D<int> &loc, int width, int height);
   void FastShiftLeft(int failure_point);
   bool LocalLegalizationLeft();
 
-  void UseSpaceRight(Block const &block);
+  virtual void UseSpaceRight(Block const &block);
   bool IsCurrentLocLegalRight(Value2D<int> &loc, int width, int height);
   int WhiteSpaceBoundRight(int lo_x, int hi_x, int lo_row, int hi_row);
   bool FindLocRight(Value2D<int> &loc, int width, int height);

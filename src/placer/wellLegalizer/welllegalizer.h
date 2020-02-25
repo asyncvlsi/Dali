@@ -13,16 +13,14 @@
 
 /****
  * the structure row contains the following information:
- *  1. the starting point of available space
- *  2. the distant the the previous plug
- *  3. the type of well exposed at the starting point
+ *  1. the distant the the previous plug
+ *  2. the type of well exposed at the starting point
  * ****/
-struct Row {
-  int start;
+struct RowWellStatus {
   int dist;
   bool is_n;
-  explicit Row(int start_init = 0, int dist_init = INT_MAX, bool is_n_init = false)
-      : start(start_init), dist(dist_init), is_n(is_n_init) {}
+  explicit RowWellStatus(int dist_init = INT_MAX, bool is_n_init = false)
+      : dist(dist_init), is_n(is_n_init) {}
 };
 
 class WellLegalizer : public LGTetrisEx {
@@ -39,8 +37,10 @@ class WellLegalizer : public LGTetrisEx {
 
   int abutment_benefit = 0;
 
-  std::vector<Row> all_rows_;
+  std::vector<RowWellStatus> row_well_status_;
   std::set<int> p_n_boundary;
+
+  double well_mis_align_cost_factor;
 
  public:
   WellLegalizer();
@@ -48,22 +48,23 @@ class WellLegalizer : public LGTetrisEx {
   void InitWellLegalizer();
 
   static void SwitchToPlugType(Block &block);
-  bool IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row) override;
-  void UseSpaceLeft(Block const &block) override;
   void UpdatePNBoundary(Block const &block);
   bool FindLocation(Block &block, int2d &res);
   void WellPlace(Block &block);
 
-  bool IsCurrentLocWellRuleClean(int p_row, Value2D<int> &loc, int lo_row, int hi_row);
-  bool IsCurrentLocLegalLeft(Value2D<int> &loc, int width, int height) override ;
-  int WhiteSpaceBoundLeft(int lo_x, int hi_x, int lo_row, int hi_row) override ;
-  bool FindLocLeft(Value2D<int> &loc, int width, int height) override ;
+  void UseSpaceLeft(Block const &block) override;
+  bool IsCurrentLocLegalLeft(Value2D<int> &loc, int width, int height, int p_row);
+  bool IsCurrentLocLegalLeft(int loc_x, int width, int lo_row, int hi_row, int p_row);
+  bool FindLocLeft(Value2D<int> &loc, int width, int height, int p_row);
   bool WellLegalizationLeft();
 
+  void UseSpaceRight(Block const &block) override;
+  bool IsCurrentLocLegalRight(Value2D<int> &loc, int width, int height, int p_row);
+  bool IsCurrentLocLegalRight(int loc_x, int width, int lo_row, int hi_row, int p_row);
+  bool FindLocRight(Value2D<int> &loc, int width, int height, int p_row);
   bool WellLegalizationRight();
 
   void StartPlacement() override;
 };
-
 
 #endif //DALI_SRC_PLACER_WELLLEGALIZER_WELLLEGALIZER_H_

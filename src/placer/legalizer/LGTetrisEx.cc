@@ -553,8 +553,8 @@ bool LGTetrisEx::LocalLegalizationLeft() {
 }
 
 void LGTetrisEx::UseSpaceRight(Block const &block) {
-  int start_row = StartRow(int(block.LLY()));
-  int end_row = EndRow(int(block.URY()));
+  int start_row = StartRow((int) std::round(block.LLY()));
+  int end_row = EndRow((int) std::round(block.URY()));
   /*if (end_row >= block_contour_.size()) {
     std::cout << "  ly:     " << block.LLY() << "\n"
               << "  height: " << block.Height() << "\n"
@@ -764,7 +764,7 @@ bool LGTetrisEx::FindLocRight(Value2D<int> &loc, int width, int height) {
   if (!is_successful) {
     if (best_loc_x_legal <= right_ && best_loc_x_legal >= left_ + width) {
       is_successful = IsSpaceLegal(best_loc_x_legal - width, best_loc_x_legal,
-                                   best_row, best_row + blk_row_height - 1);
+                                   best_row_legal, best_row_legal + blk_row_height - 1);
     }
     if (is_successful) {
       best_loc_x = best_loc_x_legal;
