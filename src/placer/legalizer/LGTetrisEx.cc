@@ -505,8 +505,6 @@ bool LGTetrisEx::LocalLegalizationLeft() {
   }
   std::sort(index_loc_list_.begin(), index_loc_list_.end());
 
-  double init_x;
-  double init_y;
   int height;
   int width;
 
@@ -521,13 +519,10 @@ bool LGTetrisEx::LocalLegalizationLeft() {
 
     if (block.IsFixed()) continue;
 
-    init_x = int(std::round(block.LLX()));
-    init_y = AlignedLocToRowLoc(block.LLY());
+    res.x = int(std::round(block.LLX()));
+    res.y = AlignedLocToRowLoc(block.LLY());
     height = int(block.Height());
     width = int(block.Width());
-
-    res.x = init_x;
-    res.y = init_y;
 
     is_current_loc_legal = IsCurrentLocLegalLeft(res, width, height);
 
@@ -845,8 +840,6 @@ bool LGTetrisEx::LocalLegalizationRight() {
               return (lhs.x > rhs.x) || (lhs.x == rhs.x && lhs.y > rhs.y);
             });
 
-  int init_x;
-  int init_y;
   int height;
   int width;
 
@@ -861,13 +854,10 @@ bool LGTetrisEx::LocalLegalizationRight() {
     auto &block = block_list[index_loc_list_[i].num];
     if (block.IsFixed()) continue;
 
-    init_x = int(std::round(block.URX()));
-    init_y = AlignedLocToRowLoc(block.LLY());
+    res.x = int(std::round(block.URX()));
+    res.y = AlignedLocToRowLoc(block.LLY());
     height = int(block.Height());
     width = int(block.Width());
-
-    res.x = init_x;
-    res.y = init_y;
 
     is_current_loc_legal = IsCurrentLocLegalRight(res, width, height);
 
