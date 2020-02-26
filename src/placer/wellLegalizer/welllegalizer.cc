@@ -7,7 +7,7 @@
 #include <algorithm>
 
 WellLegalizer::WellLegalizer() : LGTetrisEx() {
-  max_iter_ = 2;
+  max_iter_ = 3;
   legalize_from_left_ = true;
 }
 
@@ -389,6 +389,7 @@ bool WellLegalizer::FindLocLeft(Value2D<int> &loc, int width, int height, int p_
   int tmp_y;
 
   bool is_well_aligned;
+  bool is_loc_legal;
 
   left_block_bound = (int) std::round(loc.x - k_left_ * width);
   //left_block_bound = loc.x;
@@ -412,17 +413,17 @@ bool WellLegalizer::FindLocLeft(Value2D<int> &loc, int width, int height, int p_
       tmp_x = std::max(tmp_x, block_contour_[n]);
     }
 
-    int first_n_row = tmp_start_row + p_row;
-    is_well_aligned = !row_well_status_[first_n_row - 1].is_n && row_well_status_[first_n_row].is_n;
-
     tmp_y = RowToLoc(tmp_start_row);
     //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
 
     tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y);
 
-    if (!is_well_aligned) {
+    /*int first_n_row = tmp_start_row + p_row;
+    is_well_aligned = !row_well_status_[first_n_row - 1].is_n && row_well_status_[first_n_row].is_n;
+    is_loc_legal = IsCurrentLocLegalLeft(tmp_x, width, tmp_start_row, tmp_end_row, p_row);
+    if (!is_loc_legal && !is_well_aligned) {
       tmp_cost += well_mis_align_cost_factor;
-    }
+    }*/
 
     if (tmp_cost < min_cost) {
       best_loc_x = tmp_x;
@@ -435,12 +436,12 @@ bool WellLegalizer::FindLocLeft(Value2D<int> &loc, int width, int height, int p_
   int best_loc_x_legal = INT_MIN;
   double min_cost_legal = DBL_MAX;
 
-  bool is_loc_legal = IsCurrentLocLegalLeft(best_loc_x, width, best_row, best_row + blk_row_height - 1, p_row);
+  is_loc_legal = IsCurrentLocLegalLeft(best_loc_x, width, best_row, best_row + blk_row_height - 1, p_row);
 
   if (!is_loc_legal) {
     int old_start_row = search_start_row;
     int old_end_row = search_end_row;
-    int extended_range = cur_iter_ * blk_row_height;
+    int extended_range = std::min(cur_iter_, 2) * blk_row_height;
     search_start_row = std::max(0, search_start_row - extended_range);
     search_end_row = std::min(max_search_row, search_end_row + extended_range);
     for (int tmp_start_row = search_start_row; tmp_start_row < old_start_row; ++tmp_start_row) {
@@ -756,6 +757,7 @@ bool WellLegalizer::FindLocRight(Value2D<int> &loc, int width, int height, int p
   int tmp_y;
 
   bool is_well_aligned;
+  bool is_loc_legal;
 
   right_block_bound = (int) std::round(loc.x + k_left_ * width);
   //right_block_bound = loc.x;
@@ -781,17 +783,15 @@ bool WellLegalizer::FindLocRight(Value2D<int> &loc, int width, int height, int p
       tmp_x = std::min(tmp_x, block_contour_[n]);
     }
 
-    int first_n_row = tmp_start_row + p_row;
-    is_well_aligned = !row_well_status_[first_n_row - 1].is_n && row_well_status_[first_n_row].is_n;
-
     tmp_y = RowToLoc(tmp_start_row);
-    //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
-
     tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y);
 
-    if (!is_well_aligned) {
+    /*int first_n_row = tmp_start_row + p_row;
+    is_well_aligned = !row_well_status_[first_n_row - 1].is_n && row_well_status_[first_n_row].is_n;
+    is_loc_legal = IsCurrentLocLegalRight(tmp_x - width, width, tmp_start_row, tmp_end_row, p_row);
+    if (!is_loc_legal && !is_well_aligned) {
       tmp_cost += well_mis_align_cost_factor;
-    }
+    }*/
 
     if (tmp_cost < min_cost) {
       best_loc_x = tmp_x;
@@ -803,13 +803,16 @@ bool WellLegalizer::FindLocRight(Value2D<int> &loc, int width, int height, int p
   int best_row_legal = 0;
   int best_loc_x_legal = INT_MAX;
   double min_cost_legal = DBL_MAX;
-  bool
-      is_loc_legal = IsCurrentLocLegalRight(best_loc_x - width, width, best_row, best_row + blk_row_height - 1, p_row);;
+  is_loc_legal = IsCurrentLocLegalRight(best_loc_x - width,
+                                             width,
+                                             best_row,
+                                             best_row + blk_row_height - 1,
+                                             p_row);;
 
   if (!is_loc_legal) {
     int old_start_row = search_start_row;
     int old_end_row = search_end_row;
-    int extended_range = cur_iter_ * blk_row_height;
+    int extended_range = std::min(cur_iter_, 2) * blk_row_height;
     search_start_row = std::max(0, search_start_row - extended_range);
     search_end_row = std::min(max_search_row, search_end_row + extended_range);
     for (int tmp_start_row = search_start_row; tmp_start_row < old_start_row; ++tmp_start_row) {
@@ -1001,7 +1004,7 @@ void WellLegalizer::StartPlacement() {
     }
     std::cout << "Current iteration: " << is_success << "  " << legalize_from_left_ << "\n";
     legalize_from_left_ = !legalize_from_left_;
-    ++k_left_;
+    //++k_left_;
     GenMATLABWellTable("lg" + std::to_string(cur_iter_) + "_result");
     ReportHPWL(LOG_CRITICAL);
     if (is_success) {

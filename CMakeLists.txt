@@ -105,11 +105,19 @@ target_link_libraries(lefdef2bookshelf
     PRIVATE placer
     opendb)
 
-# Stand-alone LEFDEF to Bookshelf format tool, building from the placer library
+# Stand-alone Bookshelf to LEFDEF format tool, building from the placer library
 add_executable(bookshelf2def
     EXCLUDE_FROM_ALL
     src/utility/bookshelf2def.cc)
 target_link_libraries(bookshelf2def
+    PRIVATE placer
+    opendb)
+
+# Stand-alone custom cell design to standard cell design tool
+add_executable(custom2standard
+    EXCLUDE_FROM_ALL
+    src/utility/custom2standard.cc)
+target_link_libraries(custom2standard
     PRIVATE placer
     opendb)
 

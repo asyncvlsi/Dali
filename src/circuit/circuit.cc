@@ -63,9 +63,9 @@ Circuit::Circuit(odb::dbDatabase *db)
 void Circuit::InitializeFromDB(odb::dbDatabase *db) {
   db_ = db;
   auto tech = db->getTech();
+  Assert(tech != nullptr, "No tech info specified!\n");
   auto lib = db->getLibs().begin();
-  auto chip = db->getChip();
-  auto top_level = chip->getBlock();
+  Assert(lib != db->getLibs().end(), "No lib info specified!");
 
   // 1. lef database microns
   lef_database_microns = tech->getDbUnitsPerMicron();
@@ -132,6 +132,9 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
     }
   }
 
+  auto chip = db->getChip();
+  if (chip == nullptr) return;
+  auto top_level = chip->getBlock();
   unsigned int components_count = 0, pins_count = 0, nets_count = 0;
   components_count = top_level->getInsts().size();
   pins_count = top_level->getBTerms().size();

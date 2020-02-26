@@ -1,7 +1,7 @@
 base_name = 'lg';
 boundary_file = append(base_name,'_result_outline.txt');
-unplug_file   = append(base_name,'lg_result_unplug.txt');
-plug_file     = append(base_name,'lg_result_plug.txt');
+unplug_file   = append(base_name,'_result_unplug.txt');
+plug_file     = append(base_name,'_result_plug.txt');
 
 axis auto equal
 % plot the placement boundary
