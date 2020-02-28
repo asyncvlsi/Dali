@@ -517,11 +517,11 @@ bool WellLegalizer::FindLocLeft(Value2D<int> &loc, int num, int width, int heigh
       min_cost = tmp_cost;
     }
 
-    if (num == 614) {
+    /*if (num == 614) {
       std::cout << "x: " << tmp_x << "\n"
                 << "y: " << RowToLoc(tmp_start_row) << "\n"
                 << "cost: " << tmp_cost << "\n";
-    }
+    }*/
 
   }
   is_successful = IsCurrentLocLegalLeft(best_loc_x,

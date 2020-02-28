@@ -6,7 +6,7 @@
 
 #include "common/misc.h"
 
-BlockType::BlockType(const std::string *name, unsigned int width, unsigned int height)
+BlockType::BlockType(const std::string *name, int width, int height)
     : name_(name),
       width_(width),
       height_(height),

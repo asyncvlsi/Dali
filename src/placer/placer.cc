@@ -37,12 +37,12 @@ double Placer::GetBlkHPWL(Block &blk) {
 }
 
 bool Placer::IsBoundaryProper() {
-  if (circuit_->MaxWidth() > (unsigned long int) (RegionRight() - RegionLeft())) {
+  if (circuit_->MaxWidth() > RegionRight() - RegionLeft()) {
     std::cout << "Improper boundary:\n"
               << "    maximum cell width is larger than the width of placement region\n";
     return false;
   }
-  if (circuit_->MaxHeight() > (unsigned long int) (RegionTop() - RegionBottom())) {
+  if (circuit_->MaxHeight() > RegionTop() - RegionBottom()) {
     std::cout << "Improper boundary:\n"
               << "    maximum cell height is larger than the height of placement region\n";
     return false;
@@ -52,7 +52,7 @@ bool Placer::IsBoundaryProper() {
 
 void Placer::SetBoundaryAuto() {
   Assert(circuit_ != nullptr, "Must set input circuit before setting boundaries");
-  unsigned long int tot_block_area = circuit_->TotArea();
+  long int tot_block_area = circuit_->TotArea();
   int width = std::ceil(std::sqrt(double(tot_block_area) / aspect_ratio_ / filling_rate_));
   int height = std::ceil(width * aspect_ratio_);
   std::cout << "Pre-set aspect ratio: " << aspect_ratio_ << "\n";

@@ -110,7 +110,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
   // 4. load all macro, or we say gate type
   //std::cout << lib->getName() << " lib\n";
   double llx = 0, lly = 0, urx = 0, ury = 0;
-  unsigned int width = 0, height = 0;
+  int width = 0, height = 0;
   for (auto &&mac: lib->getMasters()) {
     std::string blk_name(mac->getName());
     width = int(std::round((mac->getWidth() / grid_value_x_ / lef_database_microns)));
@@ -135,7 +135,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
   auto chip = db->getChip();
   if (chip == nullptr) return;
   auto top_level = chip->getBlock();
-  unsigned int components_count = 0, pins_count = 0, nets_count = 0;
+  int components_count = 0, pins_count = 0, nets_count = 0;
   components_count = top_level->getInsts().size();
   pins_count = top_level->getBTerms().size();
   nets_count = top_level->getNets().size();
@@ -786,7 +786,7 @@ BlockType *Circuit::GetBlockType(std::string &block_type_name) {
   return block_type_map.find(block_type_name)->second;
 }
 
-BlockType *Circuit::AddBlockType(std::string &block_type_name, unsigned int width, unsigned int height) {
+BlockType *Circuit::AddBlockType(std::string &block_type_name, int width, int height) {
   Assert(!IsBlockTypeExist(block_type_name),
          "BlockType exist, cannot create this block type again: " + block_type_name);
   auto ret = block_type_map.insert(std::pair<std::string, BlockType *>(block_type_name, nullptr));
@@ -874,7 +874,7 @@ void Circuit::AddBlock(std::string &block_name,
   block_list.emplace_back(block_type, name_num_pair_ptr, llx, lly, place_status, orient);
 
   // update statistics of blocks
-  unsigned long int old_tot_area = tot_blk_area_;
+  long int old_tot_area = tot_blk_area_;
   tot_blk_area_ += block_list.back().Area();
   Assert(old_tot_area < tot_blk_area_, "Total Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
   tot_width_ += block_list.back().Width();
@@ -1174,7 +1174,7 @@ void Circuit::ReportBriefSummary() {
               << "  nets: " << net_list.size() << "\n"
               << "  grid size x: " << grid_value_x_ << " um, grid size y: " << grid_value_y_ << " um\n"
               << "  total block area: " << tot_blk_area_ << "\n"
-              << "  total white space: " << (unsigned long int) (def_right - def_left) * (def_top - def_bottom) << "\n"
+              << "  total white space: " << (long int) (def_right - def_left) * (def_top - def_bottom) << "\n"
               << "    left:   " << def_left << "\n"
               << "    right:  " << def_right << "\n"
               << "    bottom: " << def_bottom << "\n"
@@ -1444,7 +1444,7 @@ void Circuit::SaveBookshelfNode(std::string const &name_of_file) {
 void Circuit::SaveBookshelfNet(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file " + name_of_file);
-  unsigned int num_pins = 0;
+  int num_pins = 0;
   for (auto &net: net_list) {
     num_pins += net.blk_pin_list.size();
   }

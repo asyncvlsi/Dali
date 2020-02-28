@@ -26,6 +26,7 @@
 #include "placer/postLegalOptimizer/PLOSlide.h"
 
 /****Well Legalizer****/
+#include "placer/wellLegalizer/clusterwelllegalizer.h"
 #include "placer/wellLegalizer/welllegalizer.h"
 
 #endif //DALI_SRC_PLACER_H_

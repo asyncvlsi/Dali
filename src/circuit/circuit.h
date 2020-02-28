@@ -25,17 +25,17 @@ class Circuit {
   friend class Placer;
  private:
   // statistical data of the circuit
-  unsigned long int tot_width_;
-  unsigned long int tot_height_;
-  unsigned long int tot_blk_area_;
-  unsigned long int tot_mov_width_;
-  unsigned long int tot_mov_height_;
-  unsigned long int tot_mov_block_area_;
-  unsigned int tot_mov_blk_num_;
-  unsigned int blk_min_width_;
-  unsigned int blk_max_width_;
-  unsigned int blk_min_height_;
-  unsigned int blk_max_height_;
+  long int tot_width_;
+  long int tot_height_;
+  long int tot_blk_area_;
+  long int tot_mov_width_;
+  long int tot_mov_height_;
+  long int tot_mov_block_area_;
+  int tot_mov_blk_num_;
+  int blk_min_width_;
+  int blk_max_width_;
+  int blk_min_height_;
+  int blk_max_height_;
 
   // Manufacturing Grid
   bool grid_set_;
@@ -88,7 +88,7 @@ class Circuit {
   std::unordered_map<std::string, BlockType *> block_type_map;
   bool IsBlockTypeExist(std::string &block_type_name);
   BlockType *GetBlockType(std::string &block_type_name);
-  BlockType *AddBlockType(std::string &block_type_name, unsigned int width, unsigned int height);
+  BlockType *AddBlockType(std::string &block_type_name, int width, int height);
   void ReportBlockType();
   void CopyBlockType(Circuit &circuit);
 
@@ -199,14 +199,14 @@ class Circuit {
   // repulsive force can be created using an attractive force, a spring whose rest length in the current distance or even longer than the current distance
 
   /****Other member functions****/
-  unsigned int MinWidth() const;
-  unsigned int MaxWidth() const;
-  unsigned int MinHeight() const;
-  unsigned int MaxHeight() const;
-  unsigned long int TotArea() const;
-  unsigned int TotBlockNum() const;
-  unsigned int TotMovableBlockNum() const;
-  unsigned int TotFixedBlkCnt() const;
+  int MinWidth() const;
+  int MaxWidth() const;
+  int MinHeight() const;
+  int MaxHeight() const;
+  long int TotArea() const;
+  int TotBlockNum() const;
+  int TotMovableBlockNum() const;
+  int TotFixedBlkCnt() const;
   double AveWidth() const;
   double AveHeight() const;
   double AveArea() const;
@@ -247,35 +247,35 @@ class Circuit {
   static int FindFirstDigit(std::string &str);
 };
 
-inline unsigned int Circuit::MinWidth() const {
+inline int Circuit::MinWidth() const {
   return blk_min_width_;
 }
 
-inline unsigned int Circuit::MaxWidth() const {
+inline int Circuit::MaxWidth() const {
   return blk_max_width_;
 }
 
-inline unsigned int Circuit::MinHeight() const {
+inline int Circuit::MinHeight() const {
   return blk_min_height_;
 }
 
-inline unsigned int Circuit::MaxHeight() const {
+inline int Circuit::MaxHeight() const {
   return blk_max_height_;
 }
 
-inline unsigned long int Circuit::TotArea() const {
+inline long int Circuit::TotArea() const {
   return tot_blk_area_;
 }
 
-inline unsigned int Circuit::TotBlockNum() const {
+inline int Circuit::TotBlockNum() const {
   return block_list.size();
 }
 
-inline unsigned int Circuit::TotMovableBlockNum() const {
+inline int Circuit::TotMovableBlockNum() const {
   return tot_mov_blk_num_;
 }
 
-inline unsigned int Circuit::TotFixedBlkCnt() const {
+inline int Circuit::TotFixedBlkCnt() const {
   return block_list.size() - tot_mov_blk_num_;
 }
 

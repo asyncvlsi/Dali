@@ -59,8 +59,8 @@ class Block {
   std::string NameStr() const;
   BlockType *Type() const;
   int Num() const;
-  unsigned int Width() const;
-  unsigned int Height() const;
+  int Width() const;
+  int Height() const;
   double LLX() const;
   double LLY() const;
   double URX() const;
@@ -131,11 +131,11 @@ inline int Block::Num() const {
   return name_num_pair_->second;
 }
 
-inline unsigned int Block::Width() const {
+inline int Block::Width() const {
   return type_->Width();
 }
 
-inline unsigned int Block::Height() const {
+inline int Block::Height() const {
   return type_->Height();
 }
 

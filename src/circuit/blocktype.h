@@ -18,14 +18,14 @@ class BlockType {
  private:
   /****essential data entries****/
   const std::string *name_;
-  unsigned int width_, height_;
+  int width_, height_;
 
  public:
   BlockTypeWell *well_;
   std::vector<Pin> pin_list;
   std::map<std::string, int> pin_name_num_map;
 
-  BlockType(const std::string *name, unsigned int width, unsigned int height);
+  BlockType(const std::string *name, int width, int height);
 
   void SetName(const std::string *name);
   const std::string *Name() const;
@@ -41,11 +41,11 @@ class BlockType {
   void SetWell(BlockTypeWell *well);
   BlockTypeWell *GetWell() const;
 
-  unsigned int Width() const;
-  unsigned int Height() const;
-  unsigned long int Area() const;
-  void SetWidth(unsigned int width);
-  void SetHeight(unsigned int height);
+  int Width() const;
+  int Height() const;
+  long int Area() const;
+  void SetWidth(int width);
+  void SetHeight(int height);
   bool Empty() const;
 
   void Report() const;
@@ -78,23 +78,23 @@ inline BlockTypeWell *BlockType::GetWell() const {
   return well_;
 }
 
-inline unsigned int BlockType::Width() const {
+inline int BlockType::Width() const {
   return width_;
 }
 
-inline unsigned int BlockType::Height() const {
+inline int BlockType::Height() const {
   return height_;
 }
 
-inline unsigned long int BlockType::Area() const {
+inline long int BlockType::Area() const {
   return width_ * height_;
 }
 
-inline void BlockType::SetWidth(unsigned int width) {
+inline void BlockType::SetWidth(int width) {
   width_ = width;
 }
 
-inline void BlockType::SetHeight(unsigned int height) {
+inline void BlockType::SetHeight(int height) {
   height_ = height;
 }
 

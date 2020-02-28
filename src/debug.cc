@@ -15,7 +15,8 @@ VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 
 #define TEST_LG 0
 #define TEST_PO 0
-#define TEST_WELL 1
+#define TEST_WELL 0
+#define TEST_CLUSTER_WELL 1
 #define USE_DB_PARSER 0
 
 int main() {
@@ -91,6 +92,14 @@ int main() {
   delete well_legalizer;
 #endif
   //delete d_placer;
+
+#if TEST_CLUSTER_WELL
+  Placer *cluster_well_legalizer = new WellLegalizer;
+  cluster_well_legalizer->TakeOver(gb_placer);
+  cluster_well_legalizer->StartPlacement();
+  circuit.GenMATLABWellTable("lg_result");
+  delete cluster_well_legalizer;
+#endif
 
 
   delete gb_placer;
