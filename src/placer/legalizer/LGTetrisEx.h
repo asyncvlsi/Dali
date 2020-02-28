@@ -50,14 +50,14 @@ class LGTetrisEx : public Placer {
   int AlignedLocToRowLoc(double y_loc);
   virtual bool IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row);
 
-  virtual void UseSpaceLeft(Block const &block);
+  void UseSpaceLeft(Block const &block);
   bool IsCurrentLocLegalLeft(Value2D<int> &loc, int width, int height);
   int WhiteSpaceBoundLeft(int lo_x, int hi_x, int lo_row, int hi_row);
   bool FindLocLeft(Value2D<int> &loc, int width, int height);
   void FastShiftLeft(int failure_point);
   bool LocalLegalizationLeft();
 
-  virtual void UseSpaceRight(Block const &block);
+  void UseSpaceRight(Block const &block);
   bool IsCurrentLocLegalRight(Value2D<int> &loc, int width, int height);
   int WhiteSpaceBoundRight(int lo_x, int hi_x, int lo_row, int hi_row);
   bool FindLocRight(Value2D<int> &loc, int width, int height);
