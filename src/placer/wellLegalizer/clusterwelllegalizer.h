@@ -25,24 +25,35 @@ struct BlockCluster {
   int ly;
   std::vector<Block *> blk_ptr_list;
 
+  // cached value;
+  int modified_lx;
+
+  int Width() const { return width; }
+  int Height() const { return height; }
+  int InnerUX() const { return modified_lx + width; }
+  double CenterY() const { return ly + height / 2.0; }
   void AppendBlock(Block &block);
   void OptimizeHeight();
-  void UpdateBlockLocationX();
+  void UpdateBlockLocation();
 };
 
 class ClusterWellLegalizer : public LGTetrisEx {
  private:
   int well_extension = 2;
   int plug_width = 4;
-  int max_well_length = 20;
+  int max_well_length = 40;
 
-  std::vector<BlockCluster *> row_cluster_status_;
+  double new_cluster_cost_threshold = 100;
+
+  std::vector<BlockCluster *> row_to_cluster_;
 
   std::unordered_set<BlockCluster *> cluster_set;
 
  public:
   ClusterWellLegalizer();
   void InitializeClusterLegalizer();
+  BlockCluster *CreateNewCluster();
+  void AddBlockToCluster(Block &block, BlockCluster *cluster);
   BlockCluster *FindClusterForBlock(Block &block);
   void StartPlacement() override;
 

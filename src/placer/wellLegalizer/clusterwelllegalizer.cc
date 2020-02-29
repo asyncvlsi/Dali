@@ -12,17 +12,19 @@ BlockCluster::BlockCluster(int well_extension_init, int plug_width_init) :
 
 void BlockCluster::AppendBlock(Block &block) {
   if (blk_ptr_list.empty()) {
-    lx = int(block.LLX());
-    ly = int(block.LLY());
+    lx = int(block.LLX()) - well_extension;
+    modified_lx = lx - well_extension - plug_width;
+    ly = int(block.LLY()) - well_extension;
     width = block.Width() + well_extension * 2 + plug_width;
     height = block.Height() + well_extension * 2;
-    blk_ptr_list.push_back(&block);
+  } else {
+    width += block.Width();
+    if (block.Height() > height) {
+      ly -= (block.Height() - height + 1) / 2;
+      height = block.Height() + well_extension * 2;
+    }
   }
-  width += block.Width();
-  if (block.Height() > height) {
-    height = block.Height() + well_extension * 2;
-  }
-
+  blk_ptr_list.push_back(&block);
 }
 
 void BlockCluster::OptimizeHeight() {
@@ -32,10 +34,11 @@ void BlockCluster::OptimizeHeight() {
 
 }
 
-void BlockCluster::UpdateBlockLocationX() {
-  int current_loc = well_extension;
+void BlockCluster::UpdateBlockLocation() {
+  int current_loc = lx;
   for (auto &blk_ptr: blk_ptr_list) {
     blk_ptr->SetLLX(current_loc);
+    blk_ptr->SetCenterY(this->CenterY());
     current_loc += blk_ptr->Width();
   }
 }
@@ -44,7 +47,27 @@ ClusterWellLegalizer::ClusterWellLegalizer() : LGTetrisEx() {}
 
 void ClusterWellLegalizer::InitializeClusterLegalizer() {
   InitLegalizer();
-  row_cluster_status_.resize(tot_num_rows_, nullptr);
+  row_to_cluster_.resize(tot_num_rows_, nullptr);
+}
+
+BlockCluster *ClusterWellLegalizer::CreateNewCluster() {
+  auto *new_cluster = new BlockCluster(well_extension, plug_width);
+  cluster_set.insert(new_cluster);
+  return new_cluster;
+}
+
+void ClusterWellLegalizer::AddBlockToCluster(Block &block, BlockCluster *cluster) {
+  /****
+   * Append the @param block to the @param cluster
+   * Update the row_to_cluster_
+   * ****/
+  cluster->AppendBlock(block);
+  int lo_row = StartRow((int) block.LLY());
+  int hi_row = EndRow((int) block.URY());
+
+  for (int i = lo_row; i <= hi_row; ++i) {
+    row_to_cluster_[i] = cluster;
+  }
 }
 
 BlockCluster *ClusterWellLegalizer::FindClusterForBlock(Block &block) {
@@ -53,17 +76,47 @@ BlockCluster *ClusterWellLegalizer::FindClusterForBlock(Block &block) {
    * Cost function is the displacement.
    * If there is no cluster nearby, create a new cluster, and return the new cluster.
    * If there are clusters nearby, but the displacement is too large, create a new cluster, and return the new cluster.
-   * If there are clusters nearby, and one of them gives the smallest cost, returns that cluster.
+   * If there are clusters nearby, and one of them gives the smallest cost but the length of cluster is not too long, returns that cluster.
    * ****/
+  int init_x = (int) block.LLX();
+  int init_y = (int) block.LLY();
+  int height = block.Height();
 
-  int lo_row = StartRow((int) block.LLY());
-  int hi_row = EndRow((int) block.URY());
+  int max_search_row = MaxRow(height);
+
+  int search_start_row = std::max(0, LocToRow(init_y - 2 * height));
+  int search_end_row = std::min(max_search_row, LocToRow(init_y + 3 * height));
 
   BlockCluster *res_cluster = nullptr;
-  for (int i = lo_row; i <= hi_row; ++i) {
-    
+  BlockCluster *pre_cluster = nullptr;
+  BlockCluster *cur_cluster = nullptr;
+
+  double min_cost = DBL_MAX;
+
+  for (int i = search_start_row; i <= search_end_row; ++i) {
+    cur_cluster = row_to_cluster_[i];
+    if (cur_cluster == pre_cluster) {
+      pre_cluster = cur_cluster;
+      continue;
+    }
+
+    double tmp_cost = std::fabs(cur_cluster->InnerUX() - init_x) + std::fabs(cur_cluster->CenterY() - block.Y());
+    if (cur_cluster->Width() + block.Width() > max_well_length) {
+      tmp_cost = DBL_MAX;
+    }
+
+    if (tmp_cost < min_cost) {
+      min_cost = tmp_cost;
+      res_cluster = cur_cluster;
+    }
+
   }
 
+  if (min_cost > new_cluster_cost_threshold) {
+    res_cluster = CreateNewCluster();
+  }
+
+  return res_cluster;
 }
 
 void ClusterWellLegalizer::StartPlacement() {
@@ -100,6 +153,11 @@ void ClusterWellLegalizer::StartPlacement() {
     if (block.IsFixed()) continue;
 
     BlockCluster *cluster = FindClusterForBlock(block);
+    AddBlockToCluster(block, cluster);
+  }
+
+  for (auto &cluster_ptr : cluster_set) {
+    cluster_ptr->UpdateBlockLocation();
   }
 
 

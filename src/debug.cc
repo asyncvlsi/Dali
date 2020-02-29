@@ -94,10 +94,10 @@ int main() {
   //delete d_placer;
 
 #if TEST_CLUSTER_WELL
-  Placer *cluster_well_legalizer = new WellLegalizer;
+  Placer *cluster_well_legalizer = new ClusterWellLegalizer;
   cluster_well_legalizer->TakeOver(gb_placer);
   cluster_well_legalizer->StartPlacement();
-  circuit.GenMATLABWellTable("lg_result");
+  circuit.GenMATLABTable("cl_result.txt");
   delete cluster_well_legalizer;
 #endif
 
