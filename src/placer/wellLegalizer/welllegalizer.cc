@@ -7,7 +7,7 @@
 #include <algorithm>
 
 WellLegalizer::WellLegalizer() : LGTetrisEx() {
-  max_iter_ = 10;
+  max_iter_ = 20;
   legalize_from_left_ = true;
 }
 

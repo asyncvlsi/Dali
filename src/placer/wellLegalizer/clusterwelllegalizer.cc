@@ -7,24 +7,24 @@
 #include <algorithm>
 
 BlockCluster::BlockCluster(int well_extension_init, int plug_width_init) :
-    well_extension(well_extension_init),
-    plug_width(plug_width_init) {}
+    well_extension_(well_extension_init),
+    plug_width_(plug_width_init) {}
 
 void BlockCluster::AppendBlock(Block &block) {
-  if (blk_ptr_list.empty()) {
-    lx = int(block.LLX()) - well_extension;
-    modified_lx = lx - well_extension - plug_width;
-    ly = int(block.LLY()) - well_extension;
-    width = block.Width() + well_extension * 2 + plug_width;
-    height = block.Height() + well_extension * 2;
+  if (blk_ptr_list_.empty()) {
+    lx_ = int(block.LLX()) - well_extension_;
+    modified_lx_ = lx_ - well_extension_ - plug_width_;
+    ly_ = int(block.LLY()) - well_extension_;
+    width_ = block.Width() + well_extension_ * 2 + plug_width_;
+    height_ = block.Height() + well_extension_ * 2;
   } else {
-    width += block.Width();
-    if (block.Height() > height) {
-      ly -= (block.Height() - height + 1) / 2;
-      height = block.Height() + well_extension * 2;
+    width_ += block.Width();
+    if (block.Height() > height_) {
+      ly_ -= (block.Height() - height_ + 1) / 2;
+      height_ = block.Height() + well_extension_ * 2;
     }
   }
-  blk_ptr_list.push_back(&block);
+  blk_ptr_list_.push_back(&block);
 }
 
 void BlockCluster::OptimizeHeight() {
@@ -35,8 +35,8 @@ void BlockCluster::OptimizeHeight() {
 }
 
 void BlockCluster::UpdateBlockLocation() {
-  int current_loc = lx;
-  for (auto &blk_ptr: blk_ptr_list) {
+  int current_loc = lx_;
+  for (auto &blk_ptr: blk_ptr_list_) {
     blk_ptr->SetLLX(current_loc);
     blk_ptr->SetCenterY(this->CenterY());
     current_loc += blk_ptr->Width();
@@ -45,6 +45,12 @@ void BlockCluster::UpdateBlockLocation() {
 
 ClusterWellLegalizer::ClusterWellLegalizer() : LGTetrisEx() {}
 
+ClusterWellLegalizer::~ClusterWellLegalizer() {
+  for (auto &cluster_ptr: cluster_set_) {
+    delete cluster_ptr;
+  }
+}
+
 void ClusterWellLegalizer::InitializeClusterLegalizer() {
   InitLegalizer();
   row_to_cluster_.resize(tot_num_rows_, nullptr);
@@ -52,7 +58,7 @@ void ClusterWellLegalizer::InitializeClusterLegalizer() {
 
 BlockCluster *ClusterWellLegalizer::CreateNewCluster() {
   auto *new_cluster = new BlockCluster(well_extension, plug_width);
-  cluster_set.insert(new_cluster);
+  cluster_set_.insert(new_cluster);
   return new_cluster;
 }
 
@@ -119,24 +125,7 @@ BlockCluster *ClusterWellLegalizer::FindClusterForBlock(Block &block) {
   return res_cluster;
 }
 
-void ClusterWellLegalizer::StartPlacement() {
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "---------------------------------------\n"
-              << "Start Well Legalization\n";
-  }
-
-  double wall_time = get_wall_time();
-  double cpu_time = get_cpu_time();
-
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "\033[0;36m"
-              << "Well Legalization complete!\n"
-              << "\033[0m";
-  }
-
-  /****---->****/
-  InitializeClusterLegalizer();
-
+void ClusterWellLegalizer::ClusterBlocks() {
   std::vector<Block> &block_list = *BlockList();
 
   int sz = index_loc_list_.size();
@@ -153,12 +142,198 @@ void ClusterWellLegalizer::StartPlacement() {
     if (block.IsFixed()) continue;
 
     BlockCluster *cluster = FindClusterForBlock(block);
+    assert(cluster != nullptr);
     AddBlockToCluster(block, cluster);
   }
+}
 
-  for (auto &cluster_ptr : cluster_set) {
+void ClusterWellLegalizer::UseSpaceLeft(int end_x, int lo_row, int hi_row) {
+  assert(lo_row >= 0);
+  assert(hi_row < tot_num_rows_);
+  for (int i = lo_row; i <= hi_row; ++i) {
+    block_contour_[i] = end_x;
+  }
+}
+
+bool ClusterWellLegalizer::LegalizeClusterLeft() {
+  bool is_successful = true;
+  block_contour_.assign(block_contour_.size(), left_);
+
+  int sz = cluster_loc_list_.size();
+  int i = 0;
+  for (auto &cluster_ptr: cluster_set_) {
+    cluster_loc_list_[i].clus_ptr = cluster_ptr;
+    cluster_loc_list_[i].x = cluster_ptr->LLX();
+    cluster_loc_list_[i].y = cluster_ptr->LLY();
+    //std::cout << i << "  " << cluster_ptr->LLX() << "  " << cluster_loc_list_[i].clus_ptr->LLX() << "\n";
+    ++i;
+  }
+  std::sort(cluster_loc_list_.begin(), cluster_loc_list_.end());
+
+  int height;
+  int width;
+
+  Value2D<int> res;
+  bool is_current_loc_legal;
+  bool is_legal_loc_found;
+
+  for (i = 0; i < sz; ++i) {
+    //std::cout << i << "\n";
+    auto cluster = cluster_loc_list_[i].clus_ptr;
+    assert(cluster != nullptr);
+
+    res.x = int(std::round(cluster->LLX()));
+    res.y = AlignedLocToRowLoc(cluster->LLY());
+    height = int(cluster->Height());
+    width = int(cluster->Width());
+
+    is_current_loc_legal = IsCurrentLocLegalLeft(res, width, height);
+
+    if (!is_current_loc_legal) {
+      is_legal_loc_found = FindLocLeft(res, width, height);
+      if (!is_legal_loc_found) {
+        is_successful = false;
+        //std::cout << res.x << "  " << res.y << "  " << cluster.Num() << " left\n";
+        //break;
+      }
+    }
+
+    cluster->SetLoc(res.x, res.y);
+
+    UseSpaceLeft(cluster->URX(), StartRow(cluster->LLY()), EndRow(cluster->URY()));
+  }
+
+  return is_successful;
+}
+
+void ClusterWellLegalizer::UseSpaceRight(int end_x, int lo_row, int hi_row) {
+  assert(lo_row >= 0);
+  assert(hi_row < tot_num_rows_);
+  for (int i = lo_row; i <= hi_row; ++i) {
+    block_contour_[i] = end_x;
+  }
+}
+
+bool ClusterWellLegalizer::LegalizeClusterRight() {
+  bool is_successful = true;
+  block_contour_.assign(block_contour_.size(), right_);
+
+  int sz = cluster_loc_list_.size();
+  int i = 0;
+  for (auto &cluster_ptr: cluster_set_) {
+    cluster_loc_list_[i].clus_ptr = cluster_ptr;
+    cluster_loc_list_[i].x = cluster_ptr->LLX();
+    cluster_loc_list_[i].y = cluster_ptr->LLY();
+    //std::cout << i << "  " << cluster_ptr->LLX() << "  " << cluster_loc_list_[i].clus_ptr->LLX() << "\n";
+    ++i;
+  }
+  std::sort(cluster_loc_list_.begin(),
+            cluster_loc_list_.end(),
+            [](const CluPtrLocPair &lhs, const CluPtrLocPair &rhs) {
+              return (lhs.x > rhs.x) || (lhs.x == rhs.x && lhs.y > rhs.y);
+            });
+
+  int height;
+  int width;
+
+  Value2D<int> res;
+  bool is_current_loc_legal;
+  bool is_legal_loc_found;
+
+  for (i = 0; i < sz; ++i) {
+    //std::cout << i << "\n";
+    auto cluster = cluster_loc_list_[i].clus_ptr;
+    assert(cluster != nullptr);
+
+    res.x = int(std::round(cluster->URX()));
+    res.y = AlignedLocToRowLoc(cluster->LLY());
+    height = int(cluster->Height());
+    width = int(cluster->Width());
+
+    is_current_loc_legal = IsCurrentLocLegalRight(res, width, height);
+
+    if (!is_current_loc_legal) {
+      is_legal_loc_found = FindLocRight(res, width, height);
+      if (!is_legal_loc_found) {
+        is_successful = false;
+        //std::cout << res.x << "  " << res.y << "  " << cluster.Num() << " left\n";
+        //break;
+      }
+    }
+
+    cluster->SetURX(res.x);
+    cluster->SetLLY(res.y);
+
+    UseSpaceRight(cluster->LLX(), StartRow(cluster->LLY()), EndRow(cluster->URY()));
+  }
+
+  return is_successful;
+}
+
+bool ClusterWellLegalizer::LegalizeCluster() {
+  CluPtrLocPair tmp_clu_ptr_pair(nullptr, 0, 0);
+  cluster_loc_list_.assign(cluster_set_.size(), tmp_clu_ptr_pair);
+
+  long int tot_cluster_area = 0;
+  for (auto &cluster: cluster_set_) {
+    tot_cluster_area += cluster->Area();
+  }
+
+  std::cout << "Total cluster area: " << tot_cluster_area << "\n";
+  std::cout << "Total region area : " << RegionHeight() * RegionWidth() << "\n";
+  std::cout << "            Ratio : " << double(tot_cluster_area) / RegionWidth() / RegionHeight() << "\n";
+
+
+  bool is_success = false;
+  for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
+    if (legalize_from_left_) {
+      is_success = LegalizeClusterLeft();
+    } else {
+      is_success = LegalizeClusterRight();
+    }
+    std::cout << cur_iter_ << "-th iteration: " << is_success << "\n";
+    UpdateBlockLocation();
+    legalize_from_left_ = !legalize_from_left_;
+    ++k_left_;
+    GenMatlabClusterTable("cl" + std::to_string(cur_iter_) + "_result");
+    ReportHPWL(LOG_CRITICAL);
+    if (is_success) {
+      break;
+    }
+  }
+  if (!is_success) {
+    std::cout << "Legalization fails\n";
+  }
+  return is_success;
+}
+
+void ClusterWellLegalizer::UpdateBlockLocation() {
+  for (auto &cluster_ptr : cluster_set_) {
     cluster_ptr->UpdateBlockLocation();
   }
+}
+
+void ClusterWellLegalizer::StartPlacement() {
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "---------------------------------------\n"
+              << "Start Well Legalization\n";
+  }
+
+  double wall_time = get_wall_time();
+  double cpu_time = get_cpu_time();
+
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "\033[0;36m"
+              << "Cluster Well Legalization complete!\n"
+              << "\033[0m";
+  }
+
+  /****---->****/
+  InitializeClusterLegalizer();
+  ClusterBlocks();
+  LegalizeCluster();
+  UpdateBlockLocation();
+
 
 
   /****<----****/
@@ -173,4 +348,27 @@ void ClusterWellLegalizer::StartPlacement() {
   }
 
   ReportMemory(LOG_CRITICAL);
+
+  GenMatlabClusterTable("cl_result");
+}
+
+void ClusterWellLegalizer::GenMatlabClusterTable(std::string const &name_of_file) {
+  std::string frame_file = name_of_file + "_outline.txt";
+  GenMATLABTable(frame_file);
+
+  std::string cluster_file = name_of_file + "_cluster.txt";
+  std::ofstream ost(cluster_file.c_str());
+  Assert(ost.is_open(), "Cannot open output file: " + cluster_file);
+
+  for (auto &cluster: cluster_set_) {
+    ost << cluster->LLX() << "\t"
+        << cluster->URX() << "\t"
+        << cluster->URX() << "\t"
+        << cluster->LLX() << "\t"
+        << cluster->LLY() << "\t"
+        << cluster->LLY() << "\t"
+        << cluster->URY() << "\t"
+        << cluster->URY() << "\n";
+  }
+  ost.close();
 }

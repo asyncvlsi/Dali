@@ -97,7 +97,6 @@ int main() {
   Placer *cluster_well_legalizer = new ClusterWellLegalizer;
   cluster_well_legalizer->TakeOver(gb_placer);
   cluster_well_legalizer->StartPlacement();
-  circuit.GenMATLABTable("cl_result.txt");
   delete cluster_well_legalizer;
 #endif
 

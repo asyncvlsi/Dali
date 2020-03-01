@@ -1304,7 +1304,7 @@ void Circuit::GenMATLABTable(std::string const &name_of_file) {
         << block.URY() << "\t"
         << block.URY() << "\n";
   }
-
+  ost.close();
 }
 
 void Circuit::GenMATLABWellTable(std::string const &name_of_file) {
