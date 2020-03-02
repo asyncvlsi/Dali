@@ -11,20 +11,20 @@ Tech::~Tech() {
   delete (p_layer_);
 }
 
-void Tech::SetNLayer(double width, double spacing, double op_spacing, double max_plug_dist) {
+void Tech::SetNLayer(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {
   if (n_set_) {
-    n_layer_->SetParams(width, spacing, op_spacing, max_plug_dist);
+    n_layer_->SetParams(width, spacing, op_spacing, max_plug_dist, overhang);
   } else {
-    n_layer_ = new WellLayer(width, spacing, op_spacing, max_plug_dist);
+    n_layer_ = new WellLayer(width, spacing, op_spacing, max_plug_dist, overhang);
     n_set_ = true;
   }
 }
 
-void Tech::SetPLayer(double width, double spacing, double op_spacing, double max_plug_dist) {
+void Tech::SetPLayer(double width, double spacing,double op_spacing, double max_plug_dist, double overhang) {
   if (p_set_) {
-    p_layer_->SetParams(width, spacing, op_spacing, max_plug_dist);
+    p_layer_->SetParams(width, spacing, op_spacing, max_plug_dist, overhang);
   } else {
-    p_layer_ = new WellLayer(width, spacing, op_spacing, max_plug_dist);
+    p_layer_ = new WellLayer(width, spacing, op_spacing, max_plug_dist, overhang);
     p_set_ = true;
   }
 }

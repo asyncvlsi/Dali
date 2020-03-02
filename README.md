@@ -1,14 +1,9 @@
 # Dali
 ## Hierarchical Placer for Custom Cell
 
-### Important
-  * Eigen gives different results for different C++ compilers, because floating point addition is not necessarily associative
-  * Recommended compiler: g++ (GNU Compiler Collection) version >= 4.8.5 
-  * g++ in MacOS is an alias of clang
-  * 32bit and 64bit version g++ also give different results
-
 ### Recommended compilation toolchain
-  * GCC, version >= 4.8.5
+  * Ubuntu 18.04
+  * GNU Compiler Collection (GCC), version >= 4.8.5
   * CMake, version >= 3.9.6
   * GNU Make
 
@@ -40,4 +35,10 @@ The default installation destination is the repo directory.
 
 ### 3rd Party Module List
   * Eigen: sparse matrix iterative linear solver
-  * OpenDB: LEF/DEF parser
+  * OpenDB
+  * Si2 open source LEF/DEF parser
+  
+### Miscellaneous
+  * Eigen gives different results for different C++ compilers, because floating point addition is not necessarily associative
+  * g++ in MacOS is an alias of clang instead of GCC
+  * 32bit and 64bit version g++ also give different results

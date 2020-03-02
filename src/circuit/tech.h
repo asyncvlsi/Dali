@@ -18,8 +18,8 @@ class Tech {
   ~Tech();
   WellLayer *GetNLayer() const;
   WellLayer *GetPLayer() const;
-  void SetNLayer(double width, double spacing, double op_spacing, double max_plug_dist);
-  void SetPLayer(double width, double spacing, double op_spacing, double max_plug_dist);
+  void SetNLayer(double width, double spacing, double op_spacing, double max_plug_dist, double overhang);
+  void SetPLayer(double width, double spacing, double op_spacing, double max_plug_dist, double overhang);
 
   void Report();
 };

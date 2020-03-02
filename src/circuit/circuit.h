@@ -181,9 +181,9 @@ class Circuit {
   BlockTypeCluster *AddBlockTypeCluster();
   BlockTypeWell *AddBlockTypeWell(BlockTypeCluster *cluster, BlockType *blk_type, bool is_plug);
   BlockTypeWell *AddBlockTypeWell(BlockTypeCluster *cluster, std::string &blk_type_name, bool is_plug);
-  void SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist);
-  void SetPWellParams(double width, double spacing, double op_spacing, double max_plug_dist);
-  Tech *GetTech() const { return tech_param_; }
+  void SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang);
+  void SetPWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang);
+  Tech *GetTech() const;
   void ReadCellFile(std::string const &name_of_file);
   void ReportWellShape();
 
@@ -305,6 +305,10 @@ inline double Circuit::AveMovArea() const {
 
 inline double Circuit::WhiteSpaceUsage() const {
   return double(TotArea()) / (def_right - def_left) / (def_top - def_bottom);
+}
+
+inline Tech *Circuit::GetTech() const {
+  return tech_param_;
 }
 
 #endif //DALI_CIRCUIT_HPP

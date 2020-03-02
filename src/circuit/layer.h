@@ -54,16 +54,19 @@ class WellLayer : public Layer {
  private:
   double op_spacing_;
   double max_plug_dist_;
+  double overhang_;
  public:
-  WellLayer(double width, double spacing, double op_spacing, double max_plug_dist);
+  WellLayer(double width, double spacing, double op_spacing, double max_plug_dist, double overhang);
   double Width() const;
   double Spacing() const;
   double OpSpacing() const;
   double MaxPlugDist() const;
+  double Overhang() const;
 
   void SetOpSpacing(double op_spacing);
   void SetMaxPlugDist(double max_plug_dist);
-  void SetParams(double width, double height, double op_spacing, double max_plug_dist);
+  void SetOverhang(double overhang);
+  void SetParams(double width, double height, double op_spacing, double max_plug_dist, double overhang);
   void Report();
 };
 
@@ -140,6 +143,10 @@ inline double WellLayer::MaxPlugDist() const {
   return max_plug_dist_;
 }
 
+inline double WellLayer::Overhang() const {
+  return overhang_;
+}
+
 inline void WellLayer::SetOpSpacing(double op_spacing) {
   Assert(op_spacing >= 0, "Negative opposite spacing?");
   op_spacing_ = op_spacing;
@@ -148,6 +155,11 @@ inline void WellLayer::SetOpSpacing(double op_spacing) {
 inline void WellLayer::SetMaxPlugDist(double max_plug_dist) {
   Assert(max_plug_dist >= 0, "Negative max plug distance?");
   max_plug_dist_ = max_plug_dist;
+}
+
+inline void WellLayer::SetOverhang(double overhang) {
+  Assert(overhang >= 0, "Negative well/diffusion overhang?");
+  overhang_ = overhang;
 }
 
 #endif //DALI_SRC_CIRCUIT_LAYER_H_

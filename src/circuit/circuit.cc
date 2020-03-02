@@ -760,14 +760,14 @@ BlockTypeWell *Circuit::AddBlockTypeWell(BlockTypeCluster *cluster, std::string 
   return blk_type_ptr->well_;
 }
 
-void Circuit::SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist) {
+void Circuit::SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {
   if (tech_param_ == nullptr) tech_param_ = new Tech;
-  tech_param_->SetNLayer(width, spacing, op_spacing, max_plug_dist);
+  tech_param_->SetNLayer(width, spacing, op_spacing, max_plug_dist, overhang);
 }
 
-void Circuit::SetPWellParams(double width, double spacing, double op_spacing, double max_plug_dist) {
+void Circuit::SetPWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {
   if (tech_param_ == nullptr) tech_param_ = new Tech;
-  tech_param_->SetPLayer(width, spacing, op_spacing, max_plug_dist);
+  tech_param_->SetPLayer(width, spacing, op_spacing, max_plug_dist, overhang);
 }
 
 void Circuit::ReportWellShape() {
@@ -1043,7 +1043,11 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
       bool is_n_well = (well_fields[1] == "nwell");
       if (!is_n_well) Assert(well_fields[1] == "pwell", "Unknow N/P well type: " + well_fields[1]);
       std::string end_layer_flag = "END " + well_fields[1];
-      double width = 0, spacing = 0, op_spacing = 0, max_plug_dist = 0;
+      double width = 0;
+      double spacing = 0;
+      double op_spacing = 0;
+      double max_plug_dist = 0;
+      double overhang;
       do {
         if (line.find("MINWIDTH") != std::string::npos) {
           StrSplit(line, well_fields);
@@ -1081,9 +1085,9 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
         getline(ist, line);
       } while (line.find(end_layer_flag) == std::string::npos && !ist.eof());
       if (is_n_well) {
-        SetNWellParams(width, spacing, op_spacing, max_plug_dist);
+        SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
       } else {
-        SetPWellParams(width, spacing, op_spacing, max_plug_dist);
+        SetPWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
       }
     }
 

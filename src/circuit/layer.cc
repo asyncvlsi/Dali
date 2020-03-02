@@ -40,19 +40,21 @@ void MetalLayer::Report() {
             << "    Pitch: " << PitchX() << "  " << PitchY() << "\n";
 }
 
-WellLayer::WellLayer(double width, double spacing, double op_spacing, double max_plug_dist) :
+WellLayer::WellLayer(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) :
     Layer(width, spacing),
     op_spacing_(op_spacing),
-    max_plug_dist_(max_plug_dist) {
+    max_plug_dist_(max_plug_dist),
+    overhang_(overhang) {
   Assert(op_spacing >= 0, "Negative opposite spacing?");
   Assert(max_plug_dist_ >= 0, "Negative maximum plug distance?");
 }
 
-void WellLayer::SetParams(double width, double spacing, double op_spacing, double max_plug_dist) {
+void WellLayer::SetParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {
   SetWidth(width);
   SetSpacing(spacing);
   SetOpSpacing(op_spacing);
   SetMaxPlugDist(max_plug_dist);
+  SetOverhang(overhang);
 }
 
 void WellLayer::Report() {
