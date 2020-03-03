@@ -61,5 +61,6 @@ void WellLayer::Report() {
   std::cout << "    Width:       " << Width() << " um\n"
             << "    Spacing:     " << Spacing() << " um\n"
             << "    OpSpacing:   " << OpSpacing() << " um\n"
-            << "    MaxPlugDist: " << MaxPlugDist() << " um\n";
+            << "    MaxPlugDist: " << MaxPlugDist() << " um\n"
+            << "    Overhang:    " << Overhang() << "um\n";
 }

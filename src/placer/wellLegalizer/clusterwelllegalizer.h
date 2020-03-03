@@ -12,9 +12,10 @@
 #include "placer/legalizer/LGTetrisEx.h"
 
 struct BlockCluster {
-  BlockCluster(int well_extension_init, int plug_width_init);
+  BlockCluster(int well_extension_x_init, int well_extension_y_init, int plug_width_init);
 
-  int well_extension_;
+  int well_extension_x_;
+  int well_extension_y_;
   int plug_width_;
 
   int p_well_height_;
@@ -68,11 +69,15 @@ struct CluPtrLocPair {
 
 class ClusterWellLegalizer : public LGTetrisEx {
  private:
-  int well_extension = 0;
+  int well_spacing_x = 0;
+  int well_spacing_y = 0;
+  int well_min_width = 0;
+  int well_extension_x = 0;
+  int well_extension_y = 0;
   int plug_width = 4;
   int max_well_length = 40;
 
-  double new_cluster_cost_threshold = 100;
+  double new_cluster_cost_threshold = 40;
 
   std::vector<BlockCluster *> row_to_cluster_;
 
@@ -100,6 +105,7 @@ class ClusterWellLegalizer : public LGTetrisEx {
   void StartPlacement() override;
 
   void GenMatlabClusterTable(std::string const &name_of_file);
+  void ReportWellRule();
 };
 
 #endif //DALI_SRC_PLACER_WELLLEGALIZER_CLUSTERWELLLEGALIZER_H_

@@ -95,6 +95,8 @@ int main() {
 
 #if TEST_CLUSTER_WELL
   Placer *cluster_well_legalizer = new ClusterWellLegalizer;
+  std::string cell_file_name("benchmark_1K.cell");
+  circuit.ReadCellFile(cell_file_name);
   cluster_well_legalizer->TakeOver(gb_placer);
   cluster_well_legalizer->StartPlacement();
   delete cluster_well_legalizer;

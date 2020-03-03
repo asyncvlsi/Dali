@@ -6,22 +6,23 @@
 
 #include <algorithm>
 
-BlockCluster::BlockCluster(int well_extension_init, int plug_width_init) :
-    well_extension_(well_extension_init),
+BlockCluster::BlockCluster(int well_extension_x_init, int well_extension_y_init, int plug_width_init) :
+    well_extension_x_(well_extension_x_init),
+    well_extension_y_(well_extension_y_init),
     plug_width_(plug_width_init) {}
 
 void BlockCluster::AppendBlock(Block &block) {
   if (blk_ptr_list_.empty()) {
-    lx_ = int(block.LLX()) - well_extension_;
-    modified_lx_ = lx_ - well_extension_ - plug_width_;
-    ly_ = int(block.LLY()) - well_extension_;
-    width_ = block.Width() + well_extension_ * 2 + plug_width_;
-    height_ = block.Height() + well_extension_ * 2;
+    lx_ = int(block.LLX()) - well_extension_x_;
+    modified_lx_ = lx_ - well_extension_x_ - plug_width_;
+    ly_ = int(block.LLY()) - well_extension_y_;
+    width_ = block.Width() + well_extension_x_ * 2 + plug_width_;
+    height_ = block.Height() + well_extension_y_ * 2;
   } else {
     width_ += block.Width();
     if (block.Height() > height_) {
       ly_ -= (block.Height() - height_ + 1) / 2;
-      height_ = block.Height() + well_extension_ * 2;
+      height_ = block.Height() + well_extension_y_ * 2;
     }
   }
   blk_ptr_list_.push_back(&block);
@@ -54,10 +55,19 @@ ClusterWellLegalizer::~ClusterWellLegalizer() {
 void ClusterWellLegalizer::InitializeClusterLegalizer() {
   InitLegalizer();
   row_to_cluster_.resize(tot_num_rows_, nullptr);
+  auto tech_params = circuit_->GetTech();
+  Assert(tech_params != nullptr, "No tech info found, well legalization cannot proceed!\n");
+  auto n_well_layer = tech_params->GetNLayer();
+  auto p_well_layer = tech_params->GetPLayer();
+  well_extension_x = std::ceil(n_well_layer->Overhang()/circuit_->GetGridValueX());
+  //well_extension_y = std::ceil((n_well_layer->Overhang())/circuit_->GetGridValueY());
+  //plug_width = std::ceil();
+  max_well_length = std::floor(n_well_layer->MaxPlugDist()/circuit_->GetGridValueX());
+  max_well_length = std::min(RegionWidth()/3, max_well_length);
 }
 
 BlockCluster *ClusterWellLegalizer::CreateNewCluster() {
-  auto *new_cluster = new BlockCluster(well_extension, plug_width);
+  auto *new_cluster = new BlockCluster(well_extension_x, well_extension_y, plug_width);
   cluster_set_.insert(new_cluster);
   return new_cluster;
 }
@@ -283,7 +293,6 @@ bool ClusterWellLegalizer::LegalizeCluster() {
   std::cout << "Total region area : " << RegionHeight() * RegionWidth() << "\n";
   std::cout << "            Ratio : " << double(tot_cluster_area) / RegionWidth() / RegionHeight() << "\n";
 
-
   bool is_success = false;
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     if (legalize_from_left_) {
@@ -322,14 +331,10 @@ void ClusterWellLegalizer::StartPlacement() {
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
 
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "\033[0;36m"
-              << "Cluster Well Legalization complete!\n"
-              << "\033[0m";
-  }
-
   /****---->****/
+
   InitializeClusterLegalizer();
+  ReportWellRule();
   ClusterBlocks();
   LegalizeCluster();
   UpdateBlockLocation();
@@ -337,6 +342,12 @@ void ClusterWellLegalizer::StartPlacement() {
 
 
   /****<----****/
+
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "\033[0;36m"
+              << "Cluster Well Legalization complete!\n"
+              << "\033[0m";
+  }
   ReportHPWL(LOG_CRITICAL);
 
   wall_time = get_wall_time() - wall_time;
@@ -371,4 +382,15 @@ void ClusterWellLegalizer::GenMatlabClusterTable(std::string const &name_of_file
         << cluster->URY() << "\n";
   }
   ost.close();
+}
+
+void ClusterWellLegalizer::ReportWellRule() {
+  std::cout << "  Number of rows: " << tot_num_rows_ << "\n"
+            << "  Number of blocks: " << index_loc_list_.size() << "\n"
+            << "  Well Rules:\n"
+            << "    WellSpacing: " << well_spacing_x << "\n"
+            << "    MaxDist:     " << max_well_length << "\n"
+            << "    WellWidth:   " << well_min_width << "\n"
+            << "    OverhangX:   " << well_extension_x << "\n"
+            << "    OverhangY:   " << well_extension_y << "\n";
 }

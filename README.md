@@ -8,7 +8,7 @@
   * GNU Make
 
 ### Pre-requisite for submodules: OpenDB
-  * Tcl/Tk-dev, version >= ? (8.6.8)
+  * Tcl/Tk-dev, version >= ? (8.6.8, may need to install this package manually)
   * Bison, version >= ? (3.0.4)
   * Flex, version >= ? (2.6.4)
   * Swig, version >= ? (3.0.12)
@@ -25,7 +25,7 @@ Minimum version requirement is unknown. Version numbers in parenthesis are used 
 this will create a binary __dali__ in folder _bin_. You can also do
     
     $ make hpwl
-to create a binary __hpwl__ to report Half-Perimeter Wirelength (HPWL). Based on the preference, one an also do
+to create a binary __hpwl__ to report Half-Perimeter Wire-length (HPWL). Based on the preference, one an also do
     
     $ make install
 Use cmake to specify the installation destination:

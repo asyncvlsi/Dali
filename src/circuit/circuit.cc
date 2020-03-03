@@ -1047,7 +1047,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
       double spacing = 0;
       double op_spacing = 0;
       double max_plug_dist = 0;
-      double overhang;
+      double overhang = 0;
       do {
         if (line.find("MINWIDTH") != std::string::npos) {
           StrSplit(line, well_fields);
@@ -1077,6 +1077,14 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
           StrSplit(line, well_fields);
           try {
             max_plug_dist = std::stod(well_fields[1]);
+          } catch (...) {
+            std::cout << line << std::endl;
+            Assert(false, "Invalid stod conversion: " + well_fields[1]);
+          }
+        } else if (line.find("MAXPLUGDIST") != std::string::npos) {
+          StrSplit(line, well_fields);
+          try {
+            overhang = std::stod(well_fields[1]);
           } catch (...) {
             std::cout << line << std::endl;
             Assert(false, "Invalid stod conversion: " + well_fields[1]);
