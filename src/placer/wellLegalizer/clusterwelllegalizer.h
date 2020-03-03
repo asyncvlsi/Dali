@@ -11,8 +11,8 @@
 #include "circuit/block.h"
 #include "placer/legalizer/LGTetrisEx.h"
 
-struct BlockCluster {
-  BlockCluster(int well_extension_x_init, int well_extension_y_init, int plug_width_init);
+struct BlkCluster {
+  BlkCluster(int well_extension_x_init, int well_extension_y_init, int plug_width_init);
 
   int well_extension_x_;
   int well_extension_y_;
@@ -57,10 +57,10 @@ struct BlockCluster {
 };
 
 struct CluPtrLocPair {
-  BlockCluster *clus_ptr;
+  BlkCluster *clus_ptr;
   int x;
   int y;
-  explicit CluPtrLocPair(BlockCluster *clus_ptr_init = nullptr, int x_init = 0, int y_init = 0)
+  explicit CluPtrLocPair(BlkCluster *clus_ptr_init = nullptr, int x_init = 0, int y_init = 0)
       : clus_ptr(clus_ptr_init), x(x_init), y(y_init) {}
   bool operator<(const CluPtrLocPair &rhs) const {
     return (x < rhs.x) || ((x == rhs.x) && (y < rhs.y));
@@ -79,10 +79,10 @@ class ClusterWellLegalizer : public LGTetrisEx {
 
   double new_cluster_cost_threshold = 40;
 
-  std::vector<BlockCluster *> row_to_cluster_;
+  std::vector<BlkCluster *> row_to_cluster_;
 
   std::vector<CluPtrLocPair> cluster_loc_list_;
-  std::unordered_set<BlockCluster *> cluster_set_;
+  std::unordered_set<BlkCluster *> cluster_set_;
 
  public:
   ClusterWellLegalizer();
@@ -90,9 +90,9 @@ class ClusterWellLegalizer : public LGTetrisEx {
 
   void InitializeClusterLegalizer();
 
-  BlockCluster *CreateNewCluster();
-  void AddBlockToCluster(Block &block, BlockCluster *cluster);
-  BlockCluster *FindClusterForBlock(Block &block);
+  BlkCluster *CreateNewCluster();
+  void AddBlockToCluster(Block &block, BlkCluster *cluster);
+  BlkCluster *FindClusterForBlock(Block &block);
   void ClusterBlocks();
 
   void UseSpaceLeft(int end_x, int lo_row, int hi_row);
@@ -102,6 +102,12 @@ class ClusterWellLegalizer : public LGTetrisEx {
   bool LegalizeCluster();
 
   void UpdateBlockLocation();
+
+  void BlockGlobalSwap();
+  void BlockVerticalSwap();
+  void LocalReorderInCluster(BlkCluster *cluster, int range = 4);
+  void LocalReorderAllClusters();
+
   void StartPlacement() override;
 
   void GenMatlabClusterTable(std::string const &name_of_file);

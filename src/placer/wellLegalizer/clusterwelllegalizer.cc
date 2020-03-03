@@ -6,12 +6,12 @@
 
 #include <algorithm>
 
-BlockCluster::BlockCluster(int well_extension_x_init, int well_extension_y_init, int plug_width_init) :
+BlkCluster::BlkCluster(int well_extension_x_init, int well_extension_y_init, int plug_width_init) :
     well_extension_x_(well_extension_x_init),
     well_extension_y_(well_extension_y_init),
     plug_width_(plug_width_init) {}
 
-void BlockCluster::AppendBlock(Block &block) {
+void BlkCluster::AppendBlock(Block &block) {
   if (blk_ptr_list_.empty()) {
     lx_ = int(block.LLX()) - well_extension_x_;
     modified_lx_ = lx_ - well_extension_x_ - plug_width_;
@@ -28,14 +28,14 @@ void BlockCluster::AppendBlock(Block &block) {
   blk_ptr_list_.push_back(&block);
 }
 
-void BlockCluster::OptimizeHeight() {
+void BlkCluster::OptimizeHeight() {
   /****
    * This function aligns all N/P well boundaries of cells inside a cluster
    * ****/
 
 }
 
-void BlockCluster::UpdateBlockLocation() {
+void BlkCluster::UpdateBlockLocation() {
   int current_loc = lx_;
   for (auto &blk_ptr: blk_ptr_list_) {
     blk_ptr->SetLLX(current_loc);
@@ -59,20 +59,31 @@ void ClusterWellLegalizer::InitializeClusterLegalizer() {
   Assert(tech_params != nullptr, "No tech info found, well legalization cannot proceed!\n");
   auto n_well_layer = tech_params->GetNLayer();
   auto p_well_layer = tech_params->GetPLayer();
-  well_extension_x = std::ceil(n_well_layer->Overhang()/circuit_->GetGridValueX());
+  well_extension_x = std::ceil(n_well_layer->Overhang() / circuit_->GetGridValueX());
   //well_extension_y = std::ceil((n_well_layer->Overhang())/circuit_->GetGridValueY());
   //plug_width = std::ceil();
-  max_well_length = std::floor(n_well_layer->MaxPlugDist()/circuit_->GetGridValueX());
-  max_well_length = std::min(RegionWidth()/3, max_well_length);
+  printf("Well max plug distance: %2.2e um \n", n_well_layer->MaxPlugDist());
+  printf("GridValueX: %2.2e um\n", circuit_->GetGridValueX());
+  max_well_length = std::floor(n_well_layer->MaxPlugDist() / circuit_->GetGridValueX());
+
+  if (max_well_length > RegionWidth()) {
+    max_well_length = RegionWidth();
+  } else if (max_well_length >= RegionWidth() / 2) {
+    max_well_length = RegionWidth() / 2;
+  } else if (max_well_length >= RegionWidth() / 3) {
+    max_well_length = RegionWidth() / 3;
+  }
+
+  new_cluster_cost_threshold = circuit_->MinHeight() * 5;
 }
 
-BlockCluster *ClusterWellLegalizer::CreateNewCluster() {
-  auto *new_cluster = new BlockCluster(well_extension_x, well_extension_y, plug_width);
+BlkCluster *ClusterWellLegalizer::CreateNewCluster() {
+  auto *new_cluster = new BlkCluster(well_extension_x, well_extension_y, plug_width);
   cluster_set_.insert(new_cluster);
   return new_cluster;
 }
 
-void ClusterWellLegalizer::AddBlockToCluster(Block &block, BlockCluster *cluster) {
+void ClusterWellLegalizer::AddBlockToCluster(Block &block, BlkCluster *cluster) {
   /****
    * Append the @param block to the @param cluster
    * Update the row_to_cluster_
@@ -86,7 +97,7 @@ void ClusterWellLegalizer::AddBlockToCluster(Block &block, BlockCluster *cluster
   }
 }
 
-BlockCluster *ClusterWellLegalizer::FindClusterForBlock(Block &block) {
+BlkCluster *ClusterWellLegalizer::FindClusterForBlock(Block &block) {
   /****
    * Returns the pointer to the cluster which gives the minimum cost.
    * Cost function is the displacement.
@@ -103,9 +114,9 @@ BlockCluster *ClusterWellLegalizer::FindClusterForBlock(Block &block) {
   int search_start_row = std::max(0, LocToRow(init_y - 2 * height));
   int search_end_row = std::min(max_search_row, LocToRow(init_y + 3 * height));
 
-  BlockCluster *res_cluster = nullptr;
-  BlockCluster *pre_cluster = nullptr;
-  BlockCluster *cur_cluster = nullptr;
+  BlkCluster *res_cluster = nullptr;
+  BlkCluster *pre_cluster = nullptr;
+  BlkCluster *cur_cluster = nullptr;
 
   double min_cost = DBL_MAX;
 
@@ -151,7 +162,7 @@ void ClusterWellLegalizer::ClusterBlocks() {
 
     if (block.IsFixed()) continue;
 
-    BlockCluster *cluster = FindClusterForBlock(block);
+    BlkCluster *cluster = FindClusterForBlock(block);
     assert(cluster != nullptr);
     AddBlockToCluster(block, cluster);
   }
@@ -169,7 +180,6 @@ bool ClusterWellLegalizer::LegalizeClusterLeft() {
   bool is_successful = true;
   block_contour_.assign(block_contour_.size(), left_);
 
-  int sz = cluster_loc_list_.size();
   int i = 0;
   for (auto &cluster_ptr: cluster_set_) {
     cluster_loc_list_[i].clus_ptr = cluster_ptr;
@@ -186,6 +196,7 @@ bool ClusterWellLegalizer::LegalizeClusterLeft() {
   Value2D<int> res;
   bool is_current_loc_legal;
   bool is_legal_loc_found;
+  int sz = cluster_loc_list_.size();
 
   for (i = 0; i < sz; ++i) {
     //std::cout << i << "\n";
@@ -322,6 +333,34 @@ void ClusterWellLegalizer::UpdateBlockLocation() {
   }
 }
 
+void ClusterWellLegalizer::BlockGlobalSwap() {
+
+}
+
+void ClusterWellLegalizer::BlockVerticalSwap() {
+
+}
+
+void ClusterWellLegalizer::LocalReorderInCluster(BlkCluster *cluster, int range) {
+
+}
+
+void ClusterWellLegalizer::LocalReorderAllClusters() {
+  int i = 0;
+  for (auto &cluster_ptr: cluster_set_) {
+    cluster_loc_list_[i].clus_ptr = cluster_ptr;
+    cluster_loc_list_[i].x = cluster_ptr->LLX();
+    cluster_loc_list_[i].y = cluster_ptr->LLY();
+    //std::cout << i << "  " << cluster_ptr->LLX() << "  " << cluster_loc_list_[i].clus_ptr->LLX() << "\n";
+    ++i;
+  }
+  std::sort(cluster_loc_list_.begin(), cluster_loc_list_.end());
+
+  for (auto &pair: cluster_loc_list_) {
+    LocalReorderInCluster(pair.clus_ptr);
+  }
+}
+
 void ClusterWellLegalizer::StartPlacement() {
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "---------------------------------------\n"
@@ -338,8 +377,6 @@ void ClusterWellLegalizer::StartPlacement() {
   ClusterBlocks();
   LegalizeCluster();
   UpdateBlockLocation();
-
-
 
   /****<----****/
 
@@ -390,6 +427,7 @@ void ClusterWellLegalizer::ReportWellRule() {
             << "  Well Rules:\n"
             << "    WellSpacing: " << well_spacing_x << "\n"
             << "    MaxDist:     " << max_well_length << "\n"
+            << "    (real):      " << std::floor(circuit_->GetTech()->GetNLayer()->MaxPlugDist() / circuit_->GetGridValueX()) << "\n"
             << "    WellWidth:   " << well_min_width << "\n"
             << "    OverhangX:   " << well_extension_x << "\n"
             << "    OverhangY:   " << well_extension_y << "\n";
