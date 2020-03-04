@@ -29,27 +29,26 @@ struct BlkCluster {
   // cached value;
   int modified_lx_;
 
-  int Width() const { return width_; }
-  int Height() const { return height_; }
-  long int Area() const { return (long int) width_ * (long int) height_; }
-  int InnerUX() const { return modified_lx_ + width_; }
-  int LLX() const { return lx_; }
-  int LLY() const { return ly_; }
-  int URX() const { return lx_ + width_; }
-  int URY() const { return ly_ + height_; }
-  double CenterX() const { return lx_ + width_ / 2.0; }
-  double CenterY() const { return ly_ + height_ / 2.0; }
+  int Width() const;
+  int Height() const;
+  long int Area() const;
+  int InnerUX() const;
+  int LLX() const;
+  int LLY() const;
+  int URX() const;
+  int URY() const;
+  double CenterX() const;
+  double CenterY() const;
 
-  void SetLLX(int lx) { lx_ = lx; }
-  void SetLLY(int ly) { ly_ = ly; }
-  void SetURX(int ux) { lx_ = ux - width_; }
-  void SetURY(int uy) { ly_ = uy - height_; }
-  void SetLoc(int lx, int ly) {
-    lx_ = lx;
-    ly_ = ly;
-  }
-  void SetCenterX(double center_x) { lx_ = (int) std::round(center_x - width_ / 2.0); }
-  void SetCenterY(double center_y) { ly_ = (int) std::round(center_y - height_ / 2.0); }
+  int size() const;
+
+  void SetLLX(int lx);
+  void SetLLY(int ly);
+  void SetURX(int ux);
+  void SetURY(int uy);
+  void SetLoc(int lx, int ly);
+  void SetCenterX(double center_x);
+  void SetCenterY(double center_y);
 
   void AppendBlock(Block &block);
   void OptimizeHeight();
@@ -105,7 +104,10 @@ class ClusterWellLegalizer : public LGTetrisEx {
 
   void BlockGlobalSwap();
   void BlockVerticalSwap();
-  void LocalReorderInCluster(BlkCluster *cluster, int range = 4);
+
+  double WireLengthCost(BlkCluster *cluster, int l, int r);
+  void FindBestPermutation(std::vector<Block *> &res, double &cost, BlkCluster *cluster, int l, int r);
+  void LocalReorderInCluster(BlkCluster *cluster, int range = 3);
   void LocalReorderAllClusters();
 
   void StartPlacement() override;
@@ -113,5 +115,78 @@ class ClusterWellLegalizer : public LGTetrisEx {
   void GenMatlabClusterTable(std::string const &name_of_file);
   void ReportWellRule();
 };
+
+inline int BlkCluster::Width() const {
+  return width_;
+}
+
+inline int BlkCluster::Height() const {
+  return height_;
+}
+
+inline long int BlkCluster::Area() const {
+  return (long int) width_ * (long int) height_;
+}
+
+inline int BlkCluster::InnerUX() const {
+  return modified_lx_ + width_;
+}
+
+inline int BlkCluster::LLX() const {
+  return lx_;
+}
+
+inline int BlkCluster::LLY() const {
+  return ly_;
+}
+
+inline int BlkCluster::URX() const {
+  return lx_ + width_;
+}
+
+inline int BlkCluster::URY() const {
+  return ly_ + height_;
+}
+
+inline double BlkCluster::CenterX() const {
+  return lx_ + width_ / 2.0;
+}
+
+inline double BlkCluster::CenterY() const {
+  return ly_ + height_ / 2.0;
+}
+
+inline int BlkCluster::size() const {
+  return blk_ptr_list_.size();
+}
+
+inline void BlkCluster::SetLLX(int lx) {
+  lx_ = lx;
+}
+
+inline void BlkCluster::SetLLY(int ly) {
+  ly_ = ly;
+}
+
+inline void BlkCluster::SetURX(int ux) {
+  lx_ = ux - width_;
+}
+
+inline void BlkCluster::SetURY(int uy) {
+  ly_ = uy - height_;
+}
+
+inline void BlkCluster::SetLoc(int lx, int ly) {
+  lx_ = lx;
+  ly_ = ly;
+}
+
+inline void BlkCluster::SetCenterX(double center_x) {
+  lx_ = (int) std::round(center_x - width_ / 2.0);
+}
+
+inline void BlkCluster::SetCenterY(double center_y) {
+  ly_ = (int) std::round(center_y - height_ / 2.0);
+}
 
 #endif //DALI_SRC_PLACER_WELLLEGALIZER_CLUSTERWELLLEGALIZER_H_

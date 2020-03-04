@@ -71,7 +71,7 @@ class Block {
   PlaceStatus GetPlaceStatus();
   bool IsMovable() const;
   bool IsFixed() const;
-  unsigned long int Area() const;
+  long int Area() const;
   BlockOrient Orient() const;
   BlockAux *Aux() const;
 
@@ -179,7 +179,7 @@ inline bool Block::IsFixed() const {
   return !IsMovable();
 }
 
-inline unsigned long int Block::Area() const {
+inline long int Block::Area() const {
   return type_->Area();
 }
 

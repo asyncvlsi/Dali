@@ -341,7 +341,84 @@ void ClusterWellLegalizer::BlockVerticalSwap() {
 
 }
 
+double ClusterWellLegalizer::WireLengthCost(BlkCluster *cluster, int l, int r) {
+  cluster->UpdateBlockLocation();
+  std::set<int> net_involved;
+  for (int i = l; i <= r; ++i) {
+    auto *blk = cluster->blk_ptr_list_[i];
+    for (auto &net_ptr: blk->net_list) {
+      net_involved.insert(net_ptr);
+    }
+  }
+
+  return WireLength(net_involved);
+}
+
+void ClusterWellLegalizer::FindBestPermutation(std::vector<Block *> &res,
+                                               double &cost,
+                                               BlkCluster *cluster,
+                                               int l,
+                                               int r) {
+  /****
+   * Returns the best permutation in @param res
+   * @param l is the left bound of the range
+   * @param r is the right bound of the range
+   * @param cluster points to the whole range, but we are only interested in the permutation of range [l,r]
+   * ****/
+
+  printf("l : %d, r: %d\n", l, r);
+
+  if (l == r) {
+    for (auto &blk_ptr: cluster->blk_ptr_list_) {
+      std::cout << blk_ptr->NameStr() << "  ";
+    }
+    std::cout << "\n";
+    double tmp_cost = WireLengthCost(cluster, l, r);
+    if (tmp_cost < cost) {
+      cost = tmp_cost;
+      for (int j = 0; j <= r - l; ++j) {
+        res[j] = cluster->blk_ptr_list_[l + j];
+      }
+    }
+  } else {
+    // Permutations made
+    auto &blk_list = cluster->blk_ptr_list_;
+    for (int i = l; i <= r; ++i) {
+
+      // Swapping done
+      std::swap(blk_list[l], blk_list[i]);
+
+      // Recursion called
+      FindBestPermutation(res, cost, cluster, l + 1, r);
+
+      //backtrack
+      std::swap(blk_list[l], blk_list[i]);
+    }
+  }
+
+}
+
 void ClusterWellLegalizer::LocalReorderInCluster(BlkCluster *cluster, int range) {
+  /****
+   * Enumerate all local permutations, @param range determines how big the local range is
+   * ****/
+
+  assert(range > 0);
+
+  int sz = cluster->size();
+  if (sz < 3) return;
+
+  int last_segment = sz - range;
+  std::vector<Block *> best_permutation;
+  best_permutation.assign(range, nullptr);
+  for (int i = 0; i <= last_segment; ++i) {
+    for (int j = 0; j < range; ++j) {
+      best_permutation[j] = cluster->blk_ptr_list_[i + j];
+    }
+    double best_cost = WireLengthCost(cluster, i, i + range - 1);
+    FindBestPermutation(best_permutation, best_cost, cluster, i, i + range - 1);
+    break;
+  }
 
 }
 
@@ -358,6 +435,7 @@ void ClusterWellLegalizer::LocalReorderAllClusters() {
 
   for (auto &pair: cluster_loc_list_) {
     LocalReorderInCluster(pair.clus_ptr);
+    break;
   }
 }
 
@@ -377,6 +455,7 @@ void ClusterWellLegalizer::StartPlacement() {
   ClusterBlocks();
   LegalizeCluster();
   UpdateBlockLocation();
+  LocalReorderAllClusters();
 
   /****<----****/
 
@@ -427,7 +506,8 @@ void ClusterWellLegalizer::ReportWellRule() {
             << "  Well Rules:\n"
             << "    WellSpacing: " << well_spacing_x << "\n"
             << "    MaxDist:     " << max_well_length << "\n"
-            << "    (real):      " << std::floor(circuit_->GetTech()->GetNLayer()->MaxPlugDist() / circuit_->GetGridValueX()) << "\n"
+            << "    (real):      "
+            << std::floor(circuit_->GetTech()->GetNLayer()->MaxPlugDist() / circuit_->GetGridValueX()) << "\n"
             << "    WellWidth:   " << well_min_width << "\n"
             << "    OverhangX:   " << well_extension_x << "\n"
             << "    OverhangY:   " << well_extension_y << "\n";

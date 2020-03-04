@@ -130,7 +130,8 @@ void Placer::TakeOver(Placer *placer) {
 void Placer::GenMATLABScriptPlaced(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
-  ost << RegionLeft() << " " << RegionBottom() << " " << RegionRight() - RegionLeft() << " " << RegionTop() - RegionBottom() << "\n";
+  ost << RegionLeft() << " " << RegionBottom() << " " << RegionRight() - RegionLeft() << " "
+      << RegionTop() - RegionBottom() << "\n";
   for (auto &&block: circuit_->block_list) {
     if (block.IsPlaced()) {
       ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";
@@ -330,4 +331,50 @@ void Placer::ShiftY(double shift_y) {
   for (auto &block: circuit_->block_list) {
     block.IncreY(shift_y);
   }
+}
+
+double Placer::WireLength(Net *net) {
+  return net->HPWL();
+}
+
+double Placer::WireLength(int net_num) {
+  Assert(net_num < int(circuit_->net_list.size()),
+         "Cannot evaluate Wire-length: net_num out of range: " + std::to_string(net_num));
+  return circuit_->net_list[net_num].HPWL();
+}
+
+double Placer::WireLength(std::vector<Net *> net_list) {
+  double res = 0;
+  for (auto &net_ptr: net_list) {
+    res += net_ptr->HPWL();
+  }
+  return res;
+}
+
+double Placer::WireLength(std::vector<int> net_num_list) {
+  double res = 0;
+  for (auto &net_num: net_num_list) {
+    Assert(net_num < int(circuit_->net_list.size()),
+           "Cannot evaluate Wire-length: net_num out of range: " + std::to_string(net_num));
+    res += circuit_->net_list[net_num].HPWL();
+  }
+  return res;
+}
+
+double Placer::WireLength(std::set<Net *> net_set) {
+  double res = 0;
+  for (auto &net_ptr: net_set) {
+    res += net_ptr->HPWL();
+  }
+  return res;
+}
+
+double Placer::WireLength(std::set<int> net_num_set) {
+  double res = 0;
+  for (auto &net_num: net_num_set) {
+    Assert(net_num < int(circuit_->net_list.size()),
+           "Cannot evaluate Wire-length: net_num out of range: " + std::to_string(net_num));
+    res += circuit_->net_list[net_num].HPWL();
+  }
+  return res;
 }

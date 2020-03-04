@@ -70,11 +70,22 @@ class Placer {
   static void ReportMemory(VerboseLevel verbose_level = LOG_INFO);
 
   void ReportHPWLCtoC();
+
   void TakeOver(Placer *placer);
   void SanityCheck();
   void UpdateMovableBlkPlacementStatus();
+
   void IOPinPlacement();
 
+  /****Wire-length Utility functions****/
+  double WireLength(Net *net);
+  double WireLength(int net_num);
+  double WireLength(std::vector<Net*> net_list);
+  double WireLength(std::vector<int> net_num_list);
+  double WireLength(std::set<Net*> net_set);
+  double WireLength(std::set<int> net_num_set);
+
+  /****File I/O member functions****/
   void GenMATLABTable(std::string const &name_of_file = "block.txt");
   void GenMATLABWellTable(std::string const &name_of_file = "res");
   void GenMATLABScriptPlaced(std::string const &name_of_file = "block_net_list.m");

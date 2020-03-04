@@ -87,7 +87,7 @@ inline int BlockType::Height() const {
 }
 
 inline long int BlockType::Area() const {
-  return width_ * height_;
+  return (long int)width_ * (long int)height_;
 }
 
 inline void BlockType::SetWidth(int width) {
