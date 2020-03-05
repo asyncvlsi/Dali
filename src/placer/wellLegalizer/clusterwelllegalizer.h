@@ -67,7 +67,7 @@ struct CluPtrLocPair {
 };
 
 class ClusterWellLegalizer : public LGTetrisEx {
- private:
+ protected:
   int well_spacing_x = 0;
   int well_spacing_y = 0;
   int well_min_width = 0;
@@ -106,7 +106,7 @@ class ClusterWellLegalizer : public LGTetrisEx {
   void BlockVerticalSwap();
 
   double WireLengthCost(BlkCluster *cluster, int l, int r);
-  void FindBestPermutation(std::vector<Block *> &res, double &cost, BlkCluster *cluster, int l, int r);
+  void FindBestPermutation(std::vector<Block *> &res, double &cost, BlkCluster *cluster, int l, int r, int range);
   void LocalReorderInCluster(BlkCluster *cluster, int range = 3);
   void LocalReorderAllClusters();
 
