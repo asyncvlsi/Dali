@@ -1803,27 +1803,27 @@ void GPSimPL::StartPlacement() {
 
   //std::cout << cg_total_hpwl_ << "  " << circuit_->HPWL() << "\n";
 
-  for (current_iteration_ = 0; current_iteration_ < max_iteration_; ++current_iteration_) {
+  for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     if (globalVerboseLevel >= LOG_DEBUG) {
-      std::cout << current_iteration_ << "-th iteration\n";
+      std::cout << cur_iter_ << "-th iteration\n";
     }
     LookAheadLegalization();
-    if (is_dump) DumpResult("lal_result_" + std::to_string(current_iteration_) + ".txt");
+    if (is_dump) DumpResult("lal_result_" + std::to_string(cur_iter_) + ".txt");
     UpdateLALConvergeState();
     if (globalVerboseLevel >= LOG_CRITICAL) {
-      printf("It %d: \t%e  %e\n", current_iteration_, cg_total_hpwl_, lal_total_hpwl_);
+      printf("It %d: \t%e  %e\n", cur_iter_, cg_total_hpwl_, lal_total_hpwl_);
     }
     if (HPWL_LAL_converge) { // if HPWL sconverges
-      if (current_iteration_ >= 30) {
+      if (cur_iter_ >= 30) {
         if (globalVerboseLevel >= LOG_CRITICAL) {
           std::cout << "Iterative look-ahead legalization complete" << std::endl;
-          std::cout << "Total number of iteration: " << current_iteration_ + 1 << std::endl;
+          std::cout << "Total number of iteration: " << cur_iter_ + 1 << std::endl;
         }
         break;
       }
     }
     QuadraticPlacementWithAnchor();
-    if (is_dump) DumpResult("cg_result_" + std::to_string(current_iteration_ + 1) + ".txt");
+    if (is_dump) DumpResult("cg_result_" + std::to_string(cur_iter_ + 1) + ".txt");
   }
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "\033[0;36m"
@@ -1832,7 +1832,7 @@ void GPSimPL::StartPlacement() {
     printf("(cg time: %.4fs, lal time: %.4fs)\n", tot_cg_time, tot_lal_time);
   }
   LookAheadClose();
-  CheckAndShift();
+  //CheckAndShift();
   UpdateMovableBlkPlacementStatus();
   ReportHPWL(LOG_CRITICAL);
 

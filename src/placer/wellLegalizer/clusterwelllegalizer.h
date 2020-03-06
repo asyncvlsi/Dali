@@ -98,7 +98,7 @@ class ClusterWellLegalizer : public LGTetrisEx {
   bool LegalizeClusterLeft();
   void UseSpaceRight(int end_x, int lo_row, int hi_row);
   bool LegalizeClusterRight();
-  bool LegalizeCluster();
+  bool LegalizeCluster(int iteration);
 
   void UpdateBlockLocation();
 

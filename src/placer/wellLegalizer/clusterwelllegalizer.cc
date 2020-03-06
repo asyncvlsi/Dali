@@ -73,11 +73,12 @@ void ClusterWellLegalizer::InitializeClusterLegalizer() {
   } else if (max_well_length >= RegionWidth() / 3) {
     max_well_length = RegionWidth() / 3;
   }*/
+  max_well_length = RegionWidth();
 
-  max_well_length = std::min(max_well_length, RegionWidth() / 7);
-  max_well_length = std::min(max_well_length, circuit_->MinWidth() * 7);
+  /*max_well_length = std::min(max_well_length, RegionWidth() / 7);
+  max_well_length = std::min(max_well_length, circuit_->MinWidth() * 7);*/
 
-  new_cluster_cost_threshold = circuit_->MinHeight() * 5;
+  new_cluster_cost_threshold = circuit_->MinHeight() * 10;
 }
 
 BlkCluster *ClusterWellLegalizer::CreateNewCluster() {
@@ -94,6 +95,8 @@ void ClusterWellLegalizer::AddBlockToCluster(Block &block, BlkCluster *cluster) 
   cluster->AppendBlock(block);
   int lo_row = StartRow((int) block.LLY());
   int hi_row = EndRow((int) block.URY());
+  lo_row = std::max(lo_row, 0);
+  hi_row = std::min(tot_num_rows_ - 1, hi_row);
 
   for (int i = lo_row; i <= hi_row; ++i) {
     row_to_cluster_[i] = cluster;
@@ -130,7 +133,10 @@ BlkCluster *ClusterWellLegalizer::FindClusterForBlock(Block &block) {
       continue;
     }
 
-    double tmp_cost = std::fabs(cur_cluster->InnerUX() - init_x) + std::fabs(cur_cluster->CenterY() - block.Y());
+    double cost_x = std::fabs(cur_cluster->InnerUX() - init_x);
+    double cost_y = std::fabs(cur_cluster->CenterY() - block.Y());
+
+    double tmp_cost = cost_x + cost_y;
     if (cur_cluster->Width() + block.Width() > max_well_length) {
       tmp_cost = DBL_MAX;
     }
@@ -150,6 +156,9 @@ BlkCluster *ClusterWellLegalizer::FindClusterForBlock(Block &block) {
 }
 
 void ClusterWellLegalizer::ClusterBlocks() {
+  cluster_set_.clear();
+  cluster_loc_list_.clear();
+
   std::vector<Block> &block_list = *BlockList();
 
   int sz = index_loc_list_.size();
@@ -294,7 +303,7 @@ bool ClusterWellLegalizer::LegalizeClusterRight() {
   return is_successful;
 }
 
-bool ClusterWellLegalizer::LegalizeCluster() {
+bool ClusterWellLegalizer::LegalizeCluster(int iteration) {
   CluPtrLocPair tmp_clu_ptr_pair(nullptr, 0, 0);
   cluster_loc_list_.assign(cluster_set_.size(), tmp_clu_ptr_pair);
 
@@ -308,7 +317,7 @@ bool ClusterWellLegalizer::LegalizeCluster() {
   std::cout << "            Ratio : " << double(tot_cluster_area) / RegionWidth() / RegionHeight() << "\n";
 
   bool is_success = false;
-  for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
+  for (cur_iter_ = 0; cur_iter_ < iteration; ++cur_iter_) {
     if (legalize_from_left_) {
       is_success = LegalizeClusterLeft();
     } else {
@@ -319,12 +328,12 @@ bool ClusterWellLegalizer::LegalizeCluster() {
     legalize_from_left_ = !legalize_from_left_;
     //++k_left_;
     //GenMatlabClusterTable("cl" + std::to_string(cur_iter_) + "_result");
-    //ReportHPWL(LOG_CRITICAL);
+    ReportHPWL(LOG_CRITICAL);
     if (is_success) {
       break;
     }
   }
-  std::cout << "Well legalization takes " << cur_iter_ + 1 << " iterations\n";
+  std::cout << "Well legalization takes " << cur_iter_ << " iterations\n";
   if (!is_success) {
     std::cout << "Legalization fails\n";
   }
@@ -470,7 +479,7 @@ void ClusterWellLegalizer::StartPlacement() {
   InitializeClusterLegalizer();
   ReportWellRule();
   ClusterBlocks();
-  LegalizeCluster();
+  LegalizeCluster(max_iter_);
   UpdateBlockLocation();
   LocalReorderAllClusters();
 

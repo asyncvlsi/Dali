@@ -177,7 +177,7 @@ void TetrisLegalizer::StartPlacement() {
   /*for (auto &&block: GetCircuit()->block_list) {
     block.IncreX((right_-left_)/2.0);
   }
-  max_iteration_ = 2;
+  max_iter_ = 2;
   GenMATLABScript("shift_result.txt");*/
   bool is_successful = false;
   for (current_iteration_ = 0; current_iteration_ < max_iteration_; ++current_iteration_) {

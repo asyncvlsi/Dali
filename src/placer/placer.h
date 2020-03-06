@@ -34,7 +34,7 @@ class Placer {
   Placer(double aspect_ratio, double filling_rate);
   virtual ~Placer();
 
-  void SetInputCircuit(Circuit *circuit);
+  virtual void SetInputCircuit(Circuit *circuit);
   Circuit *GetCircuit() { return circuit_; }
   void SetFillingRate(double rate = 2.0 / 3.0);
   double FillingRate() const { return filling_rate_; }

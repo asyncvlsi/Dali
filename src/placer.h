@@ -29,4 +29,7 @@
 #include "placer/wellLegalizer/clusterwelllegalizer.h"
 #include "placer/wellLegalizer/welllegalizer.h"
 
+/****Well Placement Flow****/
+#include "placer/wellPlaceFlow/wellplaceflow.h"
+
 #endif //DALI_SRC_PLACER_H_

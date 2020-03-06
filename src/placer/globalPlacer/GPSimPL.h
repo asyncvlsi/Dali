@@ -48,8 +48,8 @@ class GPSimPL : public Placer {
   double HPWL_intra_linearSolver_precision = 0.01;
   int b2b_update_max_iteration = 50;
   double alpha = 0.00;
-  int current_iteration_ = 0;
-  int max_iteration_ = 50;
+  int cur_iter_ = 0;
+  int max_iter_ = 50;
   double lal_total_hpwl_ = 0;
 
   double HPWL_LAL_new = 0;
@@ -186,7 +186,7 @@ inline void GPSimPL::UpdateHPWLY() {
 }
 
 inline void GPSimPL::UpdateAnchorNetWeight() {
-  alpha = 0.01 * current_iteration_;
+  alpha = 0.01 * cur_iter_;
 }
 
 #endif //DALI_SRC_PLACER_GLOBALPLACER_GPSIMPL_H_
