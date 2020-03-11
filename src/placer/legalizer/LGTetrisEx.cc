@@ -154,6 +154,11 @@ void LGTetrisEx::InitLegalizer() {
   index_loc_list_.resize(circuit_->block_list.size(), tmp_index_loc_pair);
 }
 
+void LGTetrisEx::InitLegalizerY() {
+  tot_num_cols_ = RegionRight() - RegionLeft();
+  block_contour_y_.resize(tot_num_cols_, bottom_);
+}
+
 bool LGTetrisEx::IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row) {
   /****
    * This member function checks if the region specified by [lo_x, hi_x] and [lo_row, hi_row] is legal or not
@@ -163,6 +168,7 @@ bool LGTetrisEx::IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row) {
    * To determine this space is legal, one just need to show that every row is legal
    * ****/
   assert(lo_x <= hi_x);
+  assert(lo_row <= hi_row);
 
   bool loc_out_range = (hi_x > right_) || (lo_x < left_) || (hi_row >= tot_num_rows_) || (lo_row < 0);
   if (loc_out_range) {
@@ -520,7 +526,7 @@ bool LGTetrisEx::LocalLegalizationLeft() {
     if (block.IsFixed()) continue;
 
     res.x = int(std::round(block.LLX()));
-    res.y = AlignedLocToRowLoc(block.LLY());
+    res.y = AlignLocToRowLoc(block.LLY());
     height = int(block.Height());
     width = int(block.Width());
 
@@ -855,7 +861,7 @@ bool LGTetrisEx::LocalLegalizationRight() {
     if (block.IsFixed()) continue;
 
     res.x = int(std::round(block.URX()));
-    res.y = AlignedLocToRowLoc(block.LLY());
+    res.y = AlignLocToRowLoc(block.LLY());
     height = int(block.Height());
     width = int(block.Width());
 
@@ -879,6 +885,513 @@ bool LGTetrisEx::LocalLegalizationRight() {
   /*if (!is_successful) {
     FastShiftRight(i);
   }*/
+
+  return is_successful;
+}
+
+void LGTetrisEx::UseSpaceBottom(Block const &block) {
+  int lo_col = LocToCol((int) std::round(block.LLX()));
+  int hi_col = LocToCol((int) std::round(block.URX()));
+  assert(lo_col >= 0);
+  assert(hi_col < tot_num_cols_);
+  int end_y = (int) block.URY();
+  for (int i = lo_col; i <= hi_col; ++i) {
+    block_contour_y_[i] = end_y;
+  }
+}
+
+bool LGTetrisEx::IsCurrentLocLegalBottom(Value2D<int> &loc, int width, int height) {
+  /****
+   * Returns whether the current location is legal
+   *
+   * 1. if the space itself is illegal, then return false
+   * 2. if the space covers placed blocks, then return false
+   * 3. otherwise, return true
+   * ****/
+  int start_row = StartRow(loc.y);
+  int end_row = EndRow(loc.y + height);
+
+  bool is_space_legal = IsSpaceLegal(loc.x, loc.x + width, start_row, end_row);
+  if (!is_space_legal) {
+    return false;
+  }
+
+  int start_col = StartCol(loc.x);
+  int end_col = EndCol(loc.x + width);
+  for (int i = start_col; i <= end_col; ++i) {
+    if (block_contour_y_[i] > loc.y) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool LGTetrisEx::FindLocBottom(Value2D<int> &loc, int width, int height) {
+  /****
+   * Returns whether a legal location can be found, and put the final location to @params loc
+   * ****/
+  bool is_successful;
+
+  int bottom_block_bound;
+  int bottom_white_space_bound;
+
+  int max_search_col;
+  int search_start_col;
+  int search_end_col;
+
+  int best_y;
+  int best_x;
+  double min_cost;
+
+  //bottom_block_bound = (int) std::round(loc.y - k_left_ * height);
+  bottom_block_bound = bottom_;
+
+  max_search_col = MaxCol(width);
+
+  search_start_col = std::max(0, LocToCol(loc.x - 4 * width));
+  search_end_col = std::min(max_search_col, LocToCol(loc.x + 5 * width));
+
+  best_x = INT_MIN;
+  best_y = INT_MIN;
+  min_cost = DBL_MAX;
+
+  for (int tmp_start_col = search_start_col; tmp_start_col <= search_end_col; ++tmp_start_col) {
+    int tmp_end_col = tmp_start_col + width - 1;
+    bottom_white_space_bound = bottom_;
+    //bottom_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_col, tmp_end_col);
+
+    int tmp_y = std::max(bottom_white_space_bound, bottom_block_bound);
+
+    for (int n = tmp_start_col; n <= tmp_end_col; ++n) {
+      tmp_y = std::max(tmp_y, block_contour_y_[n]);
+    }
+
+    int tmp_x = ColToLoc(tmp_start_col);
+    //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
+
+    //double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y);
+    double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y)
+        + (std::abs(tmp_x - left_)+std::abs(tmp_y - bottom_));
+    if (tmp_cost < min_cost) {
+      best_x = tmp_x;
+      best_y = tmp_y;
+      min_cost = tmp_cost;
+    }
+  }
+
+  int best_loc_x_legal = INT_MIN;
+  int best_loc_y_legal = INT_MIN;
+  bool legal_loc_found = false;
+  double min_cost_legal = DBL_MAX;
+  bool is_loc_legal =
+      IsSpaceLegal(best_x, best_x + width, StartRow(best_y), EndRow(best_y + height));
+
+  if (!is_loc_legal) {
+    int old_start_col = search_start_col;
+    int old_end_col = search_end_col;
+    int extended_range = cur_iter_ * width;
+    search_start_col = std::max(0, search_start_col - extended_range);
+    search_end_col = std::min(max_search_col, search_end_col + extended_range);
+    for (int tmp_start_col = search_start_col; tmp_start_col < old_start_col; ++tmp_start_col) {
+      int tmp_end_col = tmp_start_col + width - 1;
+      //bottom_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_col, tmp_end_col);
+      bottom_white_space_bound = bottom_;
+      int tmp_y = std::max(bottom_white_space_bound, bottom_block_bound);
+
+      for (int n = tmp_start_col; n <= tmp_end_col; ++n) {
+        tmp_y = std::max(tmp_y, block_contour_y_[n]);
+      }
+
+      int tmp_x = ColToLoc(tmp_start_col);
+      //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
+
+      //double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y);
+      double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y)
+          + (std::abs(tmp_x - left_)+std::abs(tmp_y - bottom_));
+      if (tmp_cost < min_cost) {
+        best_x = tmp_x;
+        best_y = tmp_y;
+        min_cost = tmp_cost;
+      }
+
+      is_loc_legal = IsSpaceLegal(tmp_x, tmp_x + width, StartRow(tmp_y), EndRow(tmp_y + height));
+
+      if (is_loc_legal) {
+        legal_loc_found = true;
+        if (tmp_cost < min_cost_legal) {
+          best_loc_x_legal = tmp_x;
+          best_loc_y_legal = tmp_y;
+          min_cost_legal = tmp_cost;
+        }
+      }
+    }
+    for (int tmp_start_col = old_end_col; tmp_start_col < search_end_col; ++tmp_start_col) {
+      int tmp_end_col = tmp_start_col + width - 1;
+      //bottom_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_col, tmp_end_col);
+      bottom_white_space_bound = bottom_;
+      int tmp_y = std::max(bottom_white_space_bound, bottom_block_bound);
+
+      for (int n = tmp_start_col; n <= tmp_end_col; ++n) {
+        tmp_y = std::max(tmp_y, block_contour_y_[n]);
+      }
+
+      int tmp_x = ColToLoc(tmp_start_col);
+      //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
+
+      //double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y);
+      double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y)
+          + (std::abs(tmp_x - left_)+std::abs(tmp_y - bottom_));
+      if (tmp_cost < min_cost) {
+        best_x = tmp_x;
+        best_y = tmp_y;
+        min_cost = tmp_cost;
+      }
+
+      is_loc_legal = IsSpaceLegal(tmp_x, tmp_x + width, StartRow(tmp_y), EndRow(tmp_y + height));
+
+      if (is_loc_legal) {
+        legal_loc_found = true;
+        if (tmp_cost < min_cost_legal) {
+          best_loc_x_legal = tmp_x;
+          best_loc_y_legal = tmp_y;
+          min_cost_legal = tmp_cost;
+        }
+      }
+    }
+
+  }
+
+  // if still cannot find a legal location, enter fail mode
+  Value2D<int> tmp_loc(best_x, best_y);
+  is_successful = IsCurrentLocLegalBottom(tmp_loc, width, height);
+  if (!is_successful) {
+    if (legal_loc_found) {
+      best_x = best_loc_x_legal;
+      best_y = best_loc_y_legal;
+    }
+  }
+
+  loc.x = best_x;
+  loc.y = best_y;
+
+  return is_successful;
+}
+
+bool LGTetrisEx::LocalLegalizationBottom() {
+  /****
+   * 1. first sort all the circuit based on their location and size from low to high
+   *    effective_loc = current_ly - k_width_ * width - k_height_ * height;
+   * 2. for each cell, find the bottommost legal location, the location is bottom-bounded by:
+   *    bottom_bound = current_ly - k_left_ * height;
+   *    and
+   *    bottom boundary of the placement region
+   * 3. local search range is bounded by
+   *    a). [bottom_bound, bottom_] (the range in the y direction)
+   *    b). [init_x - width, init_x + 2 * width] (the range in the x direction)
+   *    if legal location cannot be found in this range, extend the x_direction by width at each end
+   * 4. if still no legal location can be found, do the reverse legalization procedure till reach the maximum iteration
+   ****/
+  bool is_successful = true;
+  block_contour_y_.assign(block_contour_y_.size(), bottom_);
+  std::vector<Block> &block_list = *BlockList();
+
+  int sz = index_loc_list_.size();
+  for (int i = 0; i < sz; ++i) {
+    index_loc_list_[i].num = i;
+    index_loc_list_[i].x = block_list[i].LLX();
+    index_loc_list_[i].y = block_list[i].LLY() - k_width_ * block_list[i].Width() - k_height_ * block_list[i].Height();
+  }
+  std::sort(index_loc_list_.begin(),
+            index_loc_list_.end(),
+            [](const IndexLocPair<int> &lhs, const IndexLocPair<int> &rhs) {
+              return (lhs.y < rhs.y) || (lhs.y == rhs.y && lhs.x < rhs.x);
+            });
+
+  int height;
+  int width;
+
+  Value2D<int> res;
+  bool is_current_loc_legal;
+  bool is_legal_loc_found;
+
+  int i;
+  for (i = 0; i < sz; ++i) {
+    //std::cout << i << "\n";
+    auto &block = block_list[index_loc_list_[i].num];
+
+    if (block.IsFixed()) continue;
+
+    res.x = int(std::round(block.LLX()));
+    res.y = AlignLocToRowLoc(block.LLY());
+    height = int(block.Height());
+    width = int(block.Width());
+
+    is_current_loc_legal = IsCurrentLocLegalBottom(res, width, height);
+
+    if (!is_current_loc_legal) {
+      is_legal_loc_found = FindLocBottom(res, width, height);
+      if (!is_legal_loc_found) {
+        is_successful = false;
+        //std::cout << res.x << "  " << res.y << "  " << block.Num() << " left\n";
+        //break;
+      }
+    }
+
+    block.SetLoc(res.x, res.y);
+
+    UseSpaceBottom(block);
+  }
+
+  return is_successful;
+}
+
+void LGTetrisEx::UseSpaceTop(Block const &block) {
+  int lo_col = LocToCol((int) std::round(block.LLX()));
+  int hi_col = LocToCol((int) std::round(block.URX()));
+  assert(lo_col >= 0);
+  assert(hi_col < tot_num_cols_);
+  int end_y = (int) block.LLY();
+  for (int i = lo_col; i <= hi_col; ++i) {
+    block_contour_y_[i] = end_y;
+  }
+}
+
+bool LGTetrisEx::IsCurrentLocLegalTop(Value2D<int> &loc, int width, int height) {
+/****
+   * Returns whether the current location is legal
+   *
+   * 1. if the space itself is illegal, then return false
+   * 2. if the space covers placed blocks, then return false
+   * 3. otherwise, return true
+   * ****/
+  int start_row = StartRow(loc.y - height);
+  int end_row = EndRow(loc.y);
+
+  bool is_space_legal = IsSpaceLegal(loc.x, loc.x + width, start_row, end_row);
+  if (!is_space_legal) {
+    return false;
+  }
+
+  bool all_col_avail = true;
+  int start_col = StartCol(loc.x);
+  int end_col = EndCol(loc.x + width);
+  for (int i = start_col; i <= end_col; ++i) {
+    if (block_contour_y_[i] < loc.y) {
+      all_col_avail = false;
+      break;
+    }
+  }
+
+  return all_col_avail;
+}
+
+bool LGTetrisEx::FindLocTop(Value2D<int> &loc, int width, int height) {
+/****
+   * Returns whether a legal location can be found, and put the final location to @params loc
+   * ****/
+  bool is_successful;
+
+  int top_block_bound;
+  int top_white_space_bound;
+
+  int max_search_col;
+  int search_start_col;
+  int search_end_col;
+
+  int best_x;
+  int best_y;
+  double min_cost;
+
+  top_block_bound = (int) std::round(loc.y + k_left_ * height);
+  //top_block_bound = loc.x;
+
+  max_search_col = MaxCol(width);
+
+  search_start_col = std::max(0, LocToCol(loc.x - 4 * width));
+  search_end_col = std::min(max_search_col, LocToCol(loc.x + 5 * width));
+
+  best_x = INT_MIN;
+  best_y = INT_MIN;
+  min_cost = DBL_MAX;
+
+  for (int tmp_start_col = search_start_col; tmp_start_col <= search_end_col; ++tmp_start_col) {
+    int tmp_end_col = tmp_start_col + width - 1;
+    top_white_space_bound = top_;
+    //top_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_col, tmp_end_col);
+
+    int tmp_y = std::min(top_white_space_bound, top_block_bound);
+
+    for (int n = tmp_start_col; n <= tmp_end_col; ++n) {
+      tmp_y = std::min(tmp_y, block_contour_y_[n]);
+    }
+
+    int tmp_x = ColToLoc(tmp_start_col);
+    //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
+
+    //double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y);
+    double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y)
+        + (std::abs(tmp_x - right_) + std::abs(tmp_y - top_));
+    if (tmp_cost < min_cost) {
+      best_x = tmp_x;
+      best_y = tmp_y;
+      min_cost = tmp_cost;
+    }
+  }
+
+  int best_loc_x_legal = INT_MIN;
+  int best_loc_y_legal = INT_MIN;
+  bool legal_loc_found = false;
+  double min_cost_legal = DBL_MAX;
+  bool is_loc_legal =
+      IsSpaceLegal(best_x, best_x + width, StartRow(best_y), EndRow(best_y + height));
+
+  if (!is_loc_legal) {
+    int old_start_col = search_start_col;
+    int old_end_col = search_end_col;
+    int extended_range = cur_iter_ * width;
+    search_start_col = std::max(0, search_start_col - extended_range);
+    search_end_col = std::min(max_search_col, search_end_col + extended_range);
+    for (int tmp_start_col = search_start_col; tmp_start_col < old_start_col; ++tmp_start_col) {
+      int tmp_end_col = tmp_start_col + width - 1;
+      //top_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_col, tmp_end_col);
+      top_white_space_bound = top_;
+      int tmp_y = std::min(top_white_space_bound, top_block_bound);
+
+      for (int n = tmp_start_col; n <= tmp_end_col; ++n) {
+        tmp_y = std::min(tmp_y, block_contour_y_[n]);
+      }
+
+      int tmp_x = ColToLoc(tmp_start_col);
+      //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
+
+      //double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y);
+      double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y)
+          + (std::abs(tmp_x - right_) + std::abs(tmp_y - top_));
+      if (tmp_cost < min_cost) {
+        best_x = tmp_x;
+        best_y = tmp_y;
+        min_cost = tmp_cost;
+      }
+
+      Value2D<int> tmp_loc(tmp_x, tmp_y);
+      is_loc_legal = IsCurrentLocLegalTop(tmp_loc, width, height);
+
+      if (is_loc_legal) {
+        legal_loc_found = true;
+        if (tmp_cost < min_cost_legal) {
+          best_loc_x_legal = tmp_x;
+          best_loc_y_legal = tmp_y;
+          min_cost_legal = tmp_cost;
+        }
+      }
+    }
+    for (int tmp_start_col = old_end_col; tmp_start_col < search_end_col; ++tmp_start_col) {
+      int tmp_end_col = tmp_start_col + width - 1;
+      //top_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_col, tmp_end_col);
+      top_white_space_bound = top_;
+      int tmp_y = std::min(top_white_space_bound, top_block_bound);
+
+      for (int n = tmp_start_col; n <= tmp_end_col; ++n) {
+        tmp_y = std::min(tmp_y, block_contour_y_[n]);
+      }
+
+      int tmp_x = ColToLoc(tmp_start_col);
+      //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
+
+      //double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y);
+      double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y)
+          + (std::abs(tmp_x - right_) + std::abs(tmp_y - top_));
+      if (tmp_cost < min_cost) {
+        best_x = tmp_x;
+        best_y = tmp_y;
+        min_cost = tmp_cost;
+      }
+
+      Value2D<int> tmp_loc(tmp_x, tmp_y);
+      is_loc_legal = IsCurrentLocLegalTop(tmp_loc, width, height);
+
+      if (is_loc_legal) {
+        legal_loc_found = true;
+        if (tmp_cost < min_cost_legal) {
+          best_loc_x_legal = tmp_x;
+          best_loc_y_legal = tmp_y;
+          min_cost_legal = tmp_cost;
+        }
+      }
+    }
+
+  }
+
+  // if still cannot find a legal location, enter fail mode
+  Value2D<int> tmp_loc(best_x, best_y);
+  is_successful = IsCurrentLocLegalTop(tmp_loc, width, height);
+  if (!is_successful) {
+    is_successful = legal_loc_found;
+    if (is_successful) {
+      best_x = best_loc_x_legal;
+      best_y = best_loc_y_legal;
+    }
+  }
+
+  loc.x = best_x;
+  loc.y = best_y;
+
+  return is_successful;
+}
+
+bool LGTetrisEx::LocalLegalizationTop() {
+  bool is_successful = true;
+  block_contour_y_.assign(block_contour_y_.size(), top_);
+  std::vector<Block> &block_list = *BlockList();
+
+  int sz = index_loc_list_.size();
+  for (int i = 0; i < sz; ++i) {
+    index_loc_list_[i].num = i;
+    index_loc_list_[i].x = block_list[i].LLX();
+    index_loc_list_[i].y = block_list[i].URY() + k_width_ * block_list[i].Width() + k_height_ * block_list[i].Height();
+  }
+  std::sort(index_loc_list_.begin(),
+            index_loc_list_.end(),
+            [](const IndexLocPair<int> &lhs, const IndexLocPair<int> &rhs) {
+              return (lhs.y > rhs.y) || (lhs.y == rhs.y && lhs.x > rhs.x);
+            });
+
+  int height;
+  int width;
+
+  Value2D<int> res;
+  bool is_current_loc_legal;
+  bool is_legal_loc_found;
+
+  int i;
+  for (i = 0; i < sz; ++i) {
+    //std::cout << i << "\n";
+    auto &block = block_list[index_loc_list_[i].num];
+
+    if (block.IsFixed()) continue;
+
+    res.x = int(std::round(block.LLX()));
+    res.y = AlignLocToRowLoc(block.URY());
+    height = int(block.Height());
+    width = int(block.Width());
+
+    is_current_loc_legal = IsCurrentLocLegalTop(res, width, height);
+
+    if (!is_current_loc_legal) {
+      is_legal_loc_found = FindLocTop(res, width, height);
+      if (!is_legal_loc_found) {
+        is_successful = false;
+        //std::cout << res.x << "  " << res.y << "  " << block.Num() << " left\n";
+        //break;
+      }
+    }
+
+    block.SetLLX(res.x);
+    block.SetURY(res.y);
+
+    UseSpaceTop(block);
+  }
 
   return is_successful;
 }

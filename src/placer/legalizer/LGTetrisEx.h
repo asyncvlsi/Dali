@@ -12,6 +12,7 @@ class LGTetrisEx : public Placer {
  protected:
   std::vector<std::vector<SegI>> white_space_in_rows_;
   std::vector<int> block_contour_;
+  std::vector<int> block_contour_y_;
   std::vector<IndexLocPair<int>> index_loc_list_;
 
   int row_height_;
@@ -27,6 +28,7 @@ class LGTetrisEx : public Placer {
 
   //cached data
   int tot_num_rows_;
+  int tot_num_cols_;
 
  public:
   LGTetrisEx();
@@ -39,16 +41,23 @@ class LGTetrisEx : public Placer {
 
   static void MergeIntervals(std::vector<std::vector<int>> &intervals);
   void InitLegalizer();
+  void InitLegalizerY();
 
   int StartRow(int y_loc);
+  int StartCol(int x_loc);
   int EndRow(int y_loc);
+  int EndCol(int x_loc);
   int MaxRow(int height);
+  int MaxCol(int width);
   int HeightToRow(int height);
   int LocToRow(int y_loc);
+  int LocToCol(int x_loc);
   int RowToLoc(int row_num, int displacement = 0);
-  int AlignedLocToRow(int y_loc);
-  int AlignedLocToRowLoc(double y_loc);
-  virtual bool IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row);
+  int ColToLoc(int col_num, int displacement = 0);
+  int AlignLocToRow(int y_loc);
+  int AlignLocToRowLoc(double y_loc);
+  int AlignLocToColLoc(double x_loc);
+  bool IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row);
 
   void UseSpaceLeft(Block const &block);
   bool IsCurrentLocLegalLeft(Value2D<int> &loc, int width, int height);
@@ -63,6 +72,16 @@ class LGTetrisEx : public Placer {
   bool FindLocRight(Value2D<int> &loc, int width, int height);
   void FastShiftRight(int failure_point);
   bool LocalLegalizationRight();
+
+  void UseSpaceBottom(Block const &block);
+  bool IsCurrentLocLegalBottom(Value2D<int> &loc, int width, int height);
+  bool FindLocBottom(Value2D<int> &loc, int width, int height);
+  bool LocalLegalizationBottom();
+
+  void UseSpaceTop(Block const &block);
+  bool IsCurrentLocLegalTop(Value2D<int> &loc, int width, int height);
+  bool FindLocTop(Value2D<int> &loc, int width, int height);
+  bool LocalLegalizationTop();
 
   double EstimatedHPWL(Block &block, int x, int y);
 
@@ -98,6 +117,10 @@ inline int LGTetrisEx::StartRow(int y_loc) {
   return (y_loc - bottom_) / row_height_;
 }
 
+inline int LGTetrisEx::StartCol(int x_loc) {
+  return x_loc - left_;
+}
+
 inline int LGTetrisEx::EndRow(int y_loc) {
   int relative_y = y_loc - bottom_;
   int res = relative_y / row_height_;
@@ -107,8 +130,16 @@ inline int LGTetrisEx::EndRow(int y_loc) {
   return res;
 }
 
+inline int LGTetrisEx::EndCol(int x_loc) {
+  return x_loc - left_ - 1;
+}
+
 inline int LGTetrisEx::MaxRow(int height) {
   return ((top_ - height) - bottom_) / row_height_;
+}
+
+inline int LGTetrisEx::MaxCol(int width) {
+  return right_ - width - left_;
 }
 
 inline int LGTetrisEx::HeightToRow(int height) {
@@ -119,22 +150,37 @@ inline int LGTetrisEx::LocToRow(int y_loc) {
   return (y_loc - bottom_) / row_height_;
 }
 
+inline int LGTetrisEx::LocToCol(int x_loc) {
+  return x_loc - left_;
+}
+
 inline int LGTetrisEx::RowToLoc(int row_num, int displacement) {
   return row_num * row_height_ + bottom_ + displacement;
 }
 
-inline int LGTetrisEx::AlignedLocToRow(int y_loc) {
+inline int LGTetrisEx::ColToLoc(int col_num, int displacement) {
+  return col_num + left_ + displacement;
+}
+
+inline int LGTetrisEx::AlignLocToRow(int y_loc) {
   int row_num = int(std::round((y_loc - bottom_) / (double) row_height_));
   if (row_num < 0) row_num = 0;
   if (row_num >= tot_num_rows_) row_num = tot_num_rows_ - 1;
   return row_num * row_height_ + bottom_;
 }
 
-inline int LGTetrisEx::AlignedLocToRowLoc(double y_loc) {
-  int row_num = int(std::round((y_loc - bottom_) / row_height_));
+inline int LGTetrisEx::AlignLocToRowLoc(double y_loc) {
+  int row_num = (int) std::round((y_loc - bottom_) / row_height_);
   if (row_num < 0) row_num = 0;
   if (row_num >= tot_num_rows_) row_num = tot_num_rows_ - 1;
   return row_num * row_height_ + bottom_;
+}
+
+inline int LGTetrisEx::AlignLocToColLoc(double x_loc) {
+  int col_num = (int) std::round(x_loc - left_);
+  if (col_num < 0) col_num = 0;
+  if (col_num >= tot_num_cols_) col_num = tot_num_cols_ - 1;
+  return col_num + left_;
 }
 
 #endif //DALI_SRC_PLACER_LEGALIZER_LGTETRISEX_H_

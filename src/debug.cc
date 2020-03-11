@@ -24,12 +24,8 @@ int main() {
 
   time_t Time = clock();
 
-  std::string lef_file_name = "benchmark_1K.lef";
-#if TEST_LG
-  std::string def_file_name = "benchmark_200K_dali.def";
-#else
-  std::string def_file_name = "benchmark_1K.def";
-#endif
+  std::string lef_file_name = "benchmark_100K.lef";
+  std::string def_file_name = "benchmark_100K.def";
 
 #if USE_DB_PARSER
   odb::dbDatabase *db = odb::dbDatabase::create();
@@ -55,11 +51,8 @@ int main() {
   gb_placer->SetBoundaryDef();
   gb_placer->SetFillingRate(0.8);
   gb_placer->ReportBoundaries();
-#if !TEST_LG
-  //gb_placer->SaveDEFFile("ispd18_test3.dali.def", def_file_name);
   gb_placer->StartPlacement();
   //gb_placer->SaveDEFFile("benchmark_1K_dali.def", def_file_name);
-#endif
   gb_placer->GenMATLABTable("gb_result.txt");
   //gb_placer->GenMATLABWellTable("gb_result");
 
@@ -91,17 +84,15 @@ int main() {
   circuit.GenMATLABWellTable("lg_result");
   delete well_legalizer;
 #endif
-  //delete d_placer;
 
 #if TEST_CLUSTER_WELL
   Placer *cluster_well_legalizer = new ClusterWellLegalizer;
-  std::string cell_file_name("benchmark_1K.cell");
+  std::string cell_file_name("benchmark_100K.cell");
   circuit.ReadCellFile(cell_file_name);
   cluster_well_legalizer->TakeOver(gb_placer);
   cluster_well_legalizer->StartPlacement();
   delete cluster_well_legalizer;
 #endif
-
 
   delete gb_placer;
   delete legalizer;

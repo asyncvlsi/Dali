@@ -256,7 +256,9 @@ void WellLegalizer::WellPlace(Block &block) {
 }
 
 bool WellLegalizer::IsCurLocWellDistanceLeft(int loc_x, int lo_row, int hi_row, int p_row) {
-  // check if the N/P well distance to its left hand side neighbors are satisfied
+  /****
+   * Returns if the N/P well distance to its left hand side neighbors are satisfied
+   ****/
   int last_p_row = lo_row + p_row - 1;
   assert(last_p_row >= lo_row);
   assert(hi_row >= last_p_row);
@@ -403,7 +405,7 @@ bool WellLegalizer::IsCurrentLocLegalLeft(int loc_x, int width, int lo_row, int 
   // 1. check if the space itself is legal
   is_current_loc_legal = IsSpaceLegal(loc_x, loc_x + width, lo_row, hi_row);
   if (!is_current_loc_legal) {
-    std::cout << "Space illegal\n";
+    //std::cout << "Space illegal\n";
     return false;
   }
 
@@ -416,21 +418,21 @@ bool WellLegalizer::IsCurrentLocLegalLeft(int loc_x, int width, int lo_row, int 
     }
   }
   if (!is_current_loc_legal) {
-    std::cout << "Overlap illegal\n";
+    //std::cout << "Overlap illegal\n";
     return false;
   }
 
   // 3. check if the N/P well distance to its left hand side neighbors are satisfied
   bool is_well_distance_legal = IsCurLocWellDistanceLeft(loc_x, lo_row, hi_row, p_row);
   if (!is_well_distance_legal) {
-    std::cout << "Well distance illegal\n";
+    //std::cout << "Well distance illegal\n";
     return false;
   }
 
   // 4. check the N/P well minimum width rule
   bool is_well_min_width_legal = IsCurLocWellMinWidthLeft(loc_x, lo_row, hi_row, p_row);
   if (!is_well_min_width_legal) {
-    std::cout << "Min width illegal\n";
+    //std::cout << "Min width illegal\n";
     return false;
   }
 
@@ -563,7 +565,7 @@ bool WellLegalizer::WellLegalizationLeft() {
     if (block.IsFixed()) continue;
 
     res.x = int(std::round(block.LLX()));
-    res.y = AlignedLocToRowLoc(block.LLY());
+    res.y = AlignLocToRowLoc(block.LLY());
     height = int(block.Height());
     width = int(block.Width());
 
@@ -574,12 +576,12 @@ bool WellLegalizer::WellLegalizationLeft() {
     if (!is_current_loc_legal) {
       is_legal_loc_found = FindLocLeft(res, pair.num, width, height, p_well_row_height);
       if (!is_legal_loc_found) {
-        printf("LNum: %d, lx: %d, ly: %d\n", pair.num, res.x, res.y);
+        //printf("LNum: %d, lx: %d, ly: %d\n", pair.num, res.x, res.y);
         ++fail_count;
         is_successful = false;
       }
     }
-    printf("LNum final: %d, lx: %d, ly: %d\n", pair.num, res.x, res.y);
+    //printf("LNum final: %d, lx: %d, ly: %d\n", pair.num, res.x, res.y);
 
     block.SetLoc(res.x, res.y);
     MarkSpaceWellLeft(block, p_well_row_height);
@@ -755,7 +757,7 @@ bool WellLegalizer::IsCurrentLocLegalRight(int loc_x, int width, int lo_row, int
   // 1. check if the space itself is legal
   is_current_loc_legal = IsSpaceLegal(loc_x - width, loc_x, lo_row, hi_row);
   if (!is_current_loc_legal) {
-    std::cout << "Space illegal\n";
+    //std::cout << "Space illegal\n";
     return false;
   }
 
@@ -768,14 +770,14 @@ bool WellLegalizer::IsCurrentLocLegalRight(int loc_x, int width, int lo_row, int
     }
   }
   if (!is_current_loc_legal) {
-    std::cout << "Overlap illegal\n";
+    //std::cout << "Overlap illegal\n";
     return false;
   }
 
   // 3. check if the N/P well distance to its left hand side neighbors are satisfied
   bool is_well_distance_legal = IsCurLocWellDistanceRight(loc_x, lo_row, hi_row, p_row);
   if (!is_well_distance_legal) {
-    std::cout << "Well distance illegal\n";
+    //std::cout << "Well distance illegal\n";
     return false;
   }
 
@@ -783,7 +785,7 @@ bool WellLegalizer::IsCurrentLocLegalRight(int loc_x, int width, int lo_row, int
   // 4. check the N/P well minimum width rule
   bool is_well_min_width_legal = IsCurLocWellMinWidthRight(loc_x, lo_row, hi_row, p_row);
   if (!is_well_min_width_legal) {
-    std::cout << "Min width illegal\n";
+    //std::cout << "Min width illegal\n";
     return false;
   }
 
@@ -898,7 +900,7 @@ bool WellLegalizer::WellLegalizationRight() {
     if (block.IsFixed()) continue;
 
     res.x = int(std::round(block.URX()));
-    res.y = AlignedLocToRowLoc(block.LLY());
+    res.y = AlignLocToRowLoc(block.LLY());
     height = int(block.Height());
     width = int(block.Width());
 
@@ -911,7 +913,7 @@ bool WellLegalizer::WellLegalizationRight() {
       //printf("Num: %d, lx: %d, ly: %d\n", pair.num, res.x, res.y);
       is_legal_loc_found = FindLocRight(res, pair.num, width, height, p_well_row_height);
       if (!is_legal_loc_found) {
-        printf("RNum: %d, lx: %d, ly: %d\n", pair.num, res.x, res.y);
+        //printf("RNum: %d, lx: %d, ly: %d\n", pair.num, res.x, res.y);
         ++fail_count;
         is_successful = false;
       }

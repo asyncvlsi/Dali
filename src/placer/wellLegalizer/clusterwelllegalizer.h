@@ -79,6 +79,7 @@ class ClusterWellLegalizer : public LGTetrisEx {
   double new_cluster_cost_threshold = 40;
 
   std::vector<BlkCluster *> row_to_cluster_;
+  std::vector<BlkCluster *> col_to_cluster_;
 
   std::vector<CluPtrLocPair> cluster_loc_list_;
   std::unordered_set<BlkCluster *> cluster_set_;
@@ -98,6 +99,12 @@ class ClusterWellLegalizer : public LGTetrisEx {
   bool LegalizeClusterLeft();
   void UseSpaceRight(int end_x, int lo_row, int hi_row);
   bool LegalizeClusterRight();
+
+  void UseSpaceBottom(int end_y, int lo_row, int hi_row);
+  bool LegalizeClusterBottom();
+  void UseSpaceTop(int end_y, int lo_row, int hi_row);
+  bool LegalizeClusterTop();
+
   bool LegalizeCluster(int iteration);
 
   void UpdateBlockLocation();

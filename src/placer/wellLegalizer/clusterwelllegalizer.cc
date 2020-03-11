@@ -53,8 +53,14 @@ ClusterWellLegalizer::~ClusterWellLegalizer() {
 }
 
 void ClusterWellLegalizer::InitializeClusterLegalizer() {
+
+  // data structure initialization
   InitLegalizer();
+  InitLegalizerY();
   row_to_cluster_.resize(tot_num_rows_, nullptr);
+  col_to_cluster_.resize(tot_num_cols_, nullptr);
+
+  // parameters fetching
   auto tech_params = circuit_->GetTech();
   Assert(tech_params != nullptr, "No tech info found, well legalization cannot proceed!\n");
   auto n_well_layer = tech_params->GetNLayer();
@@ -66,6 +72,7 @@ void ClusterWellLegalizer::InitializeClusterLegalizer() {
   printf("GridValueX: %2.2e um\n", circuit_->GetGridValueX());
   max_well_length = std::floor(n_well_layer->MaxPlugDist() / circuit_->GetGridValueX());
 
+  // parameters setting
   /*if (max_well_length > RegionWidth()) {
     max_well_length = RegionWidth();
   } else if (max_well_length >= RegionWidth() / 2) {
@@ -73,10 +80,10 @@ void ClusterWellLegalizer::InitializeClusterLegalizer() {
   } else if (max_well_length >= RegionWidth() / 3) {
     max_well_length = RegionWidth() / 3;
   }*/
-  max_well_length = RegionWidth();
+  //max_well_length = RegionWidth();
 
-  /*max_well_length = std::min(max_well_length, RegionWidth() / 7);
-  max_well_length = std::min(max_well_length, circuit_->MinWidth() * 7);*/
+  max_well_length = std::min(max_well_length, RegionWidth() / 7);
+  max_well_length = std::min(max_well_length, circuit_->MinWidth() * 7);
 
   new_cluster_cost_threshold = circuit_->MinHeight() * 10;
 }
@@ -216,7 +223,7 @@ bool ClusterWellLegalizer::LegalizeClusterLeft() {
     assert(cluster != nullptr);
 
     res.x = int(std::round(cluster->LLX()));
-    res.y = AlignedLocToRowLoc(cluster->LLY());
+    res.y = AlignLocToRowLoc(cluster->LLY());
     height = int(cluster->Height());
     width = int(cluster->Width());
 
@@ -255,7 +262,7 @@ bool ClusterWellLegalizer::LegalizeClusterRight() {
   int i = 0;
   for (auto &cluster_ptr: cluster_set_) {
     cluster_loc_list_[i].clus_ptr = cluster_ptr;
-    cluster_loc_list_[i].x = cluster_ptr->LLX();
+    cluster_loc_list_[i].x = cluster_ptr->URX();
     cluster_loc_list_[i].y = cluster_ptr->LLY();
     //std::cout << i << "  " << cluster_ptr->LLX() << "  " << cluster_loc_list_[i].clus_ptr->LLX() << "\n";
     ++i;
@@ -279,7 +286,7 @@ bool ClusterWellLegalizer::LegalizeClusterRight() {
     assert(cluster != nullptr);
 
     res.x = int(std::round(cluster->URX()));
-    res.y = AlignedLocToRowLoc(cluster->LLY());
+    res.y = AlignLocToRowLoc(cluster->LLY());
     height = int(cluster->Height());
     width = int(cluster->Width());
 
@@ -303,6 +310,134 @@ bool ClusterWellLegalizer::LegalizeClusterRight() {
   return is_successful;
 }
 
+void ClusterWellLegalizer::UseSpaceBottom(int end_y, int lo_col, int hi_col) {
+  assert(lo_col >= 0);
+  assert(hi_col < tot_num_cols_);
+  for (int i = lo_col; i <= hi_col; ++i) {
+    block_contour_y_[i] = end_y;
+  }
+}
+
+bool ClusterWellLegalizer::LegalizeClusterBottom() {
+  bool is_successful = true;
+  block_contour_y_.assign(tot_num_cols_, bottom_);
+
+  int i = 0;
+  for (auto &cluster_ptr: cluster_set_) {
+    cluster_loc_list_[i].clus_ptr = cluster_ptr;
+    cluster_loc_list_[i].x = cluster_ptr->LLX();
+    cluster_loc_list_[i].y = cluster_ptr->LLY();
+    //std::cout << i << "  " << cluster_ptr->LLX() << "  " << cluster_loc_list_[i].clus_ptr->LLX() << "\n";
+    ++i;
+  }
+  std::sort(cluster_loc_list_.begin(),
+            cluster_loc_list_.end(),
+            [](const CluPtrLocPair &lhs, const CluPtrLocPair &rhs) {
+              return (lhs.y < rhs.y) || (lhs.y == rhs.y && lhs.x < rhs.x);
+            });
+
+  int height;
+  int width;
+
+  Value2D<int> res;
+  bool is_current_loc_legal;
+  bool is_legal_loc_found;
+  int sz = cluster_loc_list_.size();
+
+  for (i = 0; i < sz; ++i) {
+    //std::cout << i << "\n";
+    auto cluster = cluster_loc_list_[i].clus_ptr;
+    assert(cluster != nullptr);
+
+    res.x = AlignLocToColLoc(cluster->LLX());
+    res.y = AlignLocToRowLoc(cluster->LLY());
+    height = int(cluster->Height());
+    width = int(cluster->Width());
+
+    is_current_loc_legal = IsCurrentLocLegalBottom(res, width, height);
+    //std::cout << res.x << "  " << res.y << "  " << is_current_loc_legal << "\n";
+    is_current_loc_legal = false;
+    if (!is_current_loc_legal) {
+      is_legal_loc_found = FindLocBottom(res, width, height);
+      //std::cout << res.x << "  " << res.y << "\n";
+      if (!is_legal_loc_found) {
+        is_successful = false;
+        //break;
+      }
+    }
+
+    cluster->SetLoc(res.x, res.y);
+    //std::cout << cluster->LLX() - left_ << "  " << cluster->URX() - left_ << "  " << tot_num_cols_ << "\n";
+    UseSpaceBottom(cluster->URY(), StartCol(cluster->LLX()), EndCol(cluster->URX()));
+  }
+
+  return is_successful;
+}
+
+void ClusterWellLegalizer::UseSpaceTop(int end_y, int lo_col, int hi_col) {
+  assert(lo_col >= 0);
+  assert(hi_col < tot_num_cols_);
+  for (int i = lo_col; i <= hi_col; ++i) {
+    block_contour_y_[i] = end_y;
+  }
+}
+
+bool ClusterWellLegalizer::LegalizeClusterTop() {
+  bool is_successful = true;
+  block_contour_y_.assign(tot_num_cols_, top_);
+
+  int i = 0;
+  for (auto &cluster_ptr: cluster_set_) {
+    cluster_loc_list_[i].clus_ptr = cluster_ptr;
+    cluster_loc_list_[i].x = cluster_ptr->LLX();
+    cluster_loc_list_[i].y = cluster_ptr->URY();
+    //std::cout << i << "  " << cluster_ptr->LLX() << "  " << cluster_loc_list_[i].clus_ptr->LLX() << "\n";
+    ++i;
+  }
+  std::sort(cluster_loc_list_.begin(),
+            cluster_loc_list_.end(),
+            [](const CluPtrLocPair &lhs, const CluPtrLocPair &rhs) {
+              return (lhs.y > rhs.y) || (lhs.y == rhs.y && lhs.x > rhs.x);
+            });
+
+  int height;
+  int width;
+
+  Value2D<int> res;
+  bool is_current_loc_legal;
+  bool is_legal_loc_found;
+  int sz = cluster_loc_list_.size();
+
+  for (i = 0; i < sz; ++i) {
+    //std::cout << i << "\n";
+    auto cluster = cluster_loc_list_[i].clus_ptr;
+    assert(cluster != nullptr);
+
+    res.x = AlignLocToColLoc(cluster->LLX());
+    res.y = AlignLocToRowLoc(cluster->URY());
+    height = int(cluster->Height());
+    width = int(cluster->Width());
+
+    is_current_loc_legal = IsCurrentLocLegalTop(res, width, height);
+    is_current_loc_legal = false;
+    if (!is_current_loc_legal) {
+      is_legal_loc_found = FindLocTop(res, width, height);
+      if (!is_legal_loc_found) {
+        is_successful = false;
+        //std::cout << res.x << "  " << res.y << "  " << cluster.Num() << " left\n";
+        //break;
+      }
+    }
+
+    cluster->SetLLX(res.x);
+    cluster->SetURY(res.y);
+    //std::cout << cluster->LLX() - left_ << "  " << cluster->URX() - left_ << "  " << tot_num_cols_ << "\n";
+    UseSpaceTop(cluster->LLY(), StartCol(cluster->LLX()), EndCol(cluster->URX()));
+  }
+
+  return is_successful;
+}
+
 bool ClusterWellLegalizer::LegalizeCluster(int iteration) {
   CluPtrLocPair tmp_clu_ptr_pair(nullptr, 0, 0);
   cluster_loc_list_.assign(cluster_set_.size(), tmp_clu_ptr_pair);
@@ -317,15 +452,26 @@ bool ClusterWellLegalizer::LegalizeCluster(int iteration) {
   std::cout << "            Ratio : " << double(tot_cluster_area) / RegionWidth() / RegionHeight() << "\n";
 
   bool is_success = false;
-  for (cur_iter_ = 0; cur_iter_ < iteration; ++cur_iter_) {
+  for (cur_iter_ = 1; cur_iter_ < iteration; ++cur_iter_) {
     if (legalize_from_left_) {
-      is_success = LegalizeClusterLeft();
+      is_success = LegalizeClusterBottom();
+      UpdateBlockLocation();
+      GenMatlabClusterTable("clb" + std::to_string(cur_iter_) + "_result");
+      is_success = LegalizeClusterTop();
+      UpdateBlockLocation();
+      GenMatlabClusterTable("clt" + std::to_string(cur_iter_) + "_result");
     } else {
+      is_success = LegalizeClusterLeft();
+      UpdateBlockLocation();
+      GenMatlabClusterTable("cll" + std::to_string(cur_iter_) + "_result");
       is_success = LegalizeClusterRight();
+      UpdateBlockLocation();
+      GenMatlabClusterTable("clr" + std::to_string(cur_iter_) + "_result");
     }
     //std::cout << cur_iter_ << "-th iteration: " << is_success << "\n";
-    UpdateBlockLocation();
-    legalize_from_left_ = !legalize_from_left_;
+    if (cur_iter_ % 5 == 0) {
+      legalize_from_left_ = !legalize_from_left_;
+    }
     //++k_left_;
     //GenMatlabClusterTable("cl" + std::to_string(cur_iter_) + "_result");
     ReportHPWL(LOG_CRITICAL);
@@ -479,7 +625,7 @@ void ClusterWellLegalizer::StartPlacement() {
   InitializeClusterLegalizer();
   ReportWellRule();
   ClusterBlocks();
-  LegalizeCluster(max_iter_);
+  LegalizeCluster(20);
   UpdateBlockLocation();
   LocalReorderAllClusters();
 
