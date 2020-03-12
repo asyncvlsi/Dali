@@ -85,7 +85,7 @@ void ClusterWellLegalizer::InitializeClusterLegalizer() {
   max_well_length = std::min(max_well_length, RegionWidth() / 7);
   max_well_length = std::min(max_well_length, circuit_->MinWidth() * 7);
 
-  new_cluster_cost_threshold = circuit_->MinHeight() * 10;
+  new_cluster_cost_threshold = circuit_->MinHeight();
 }
 
 BlkCluster *ClusterWellLegalizer::CreateNewCluster() {
@@ -452,25 +452,28 @@ bool ClusterWellLegalizer::LegalizeCluster(int iteration) {
   std::cout << "            Ratio : " << double(tot_cluster_area) / RegionWidth() / RegionHeight() << "\n";
 
   bool is_success = false;
-  for (cur_iter_ = 1; cur_iter_ < iteration; ++cur_iter_) {
+  int counter = 0;
+  for (cur_iter_ = 0; cur_iter_ < iteration; ++cur_iter_) {
     if (legalize_from_left_) {
       is_success = LegalizeClusterBottom();
       UpdateBlockLocation();
-      GenMatlabClusterTable("clb" + std::to_string(cur_iter_) + "_result");
+      //GenMatlabClusterTable("clb" + std::to_string(cur_iter_) + "_result");
       is_success = LegalizeClusterTop();
       UpdateBlockLocation();
-      GenMatlabClusterTable("clt" + std::to_string(cur_iter_) + "_result");
+      //GenMatlabClusterTable("clt" + std::to_string(cur_iter_) + "_result");
     } else {
       is_success = LegalizeClusterLeft();
       UpdateBlockLocation();
-      GenMatlabClusterTable("cll" + std::to_string(cur_iter_) + "_result");
+      //GenMatlabClusterTable("cll" + std::to_string(cur_iter_) + "_result");
       is_success = LegalizeClusterRight();
       UpdateBlockLocation();
-      GenMatlabClusterTable("clr" + std::to_string(cur_iter_) + "_result");
+      //GenMatlabClusterTable("clr" + std::to_string(cur_iter_) + "_result");
     }
     //std::cout << cur_iter_ << "-th iteration: " << is_success << "\n";
-    if (cur_iter_ % 5 == 0) {
+    ++counter;
+    if (counter == 5) {
       legalize_from_left_ = !legalize_from_left_;
+      counter = 0;
     }
     //++k_left_;
     //GenMatlabClusterTable("cl" + std::to_string(cur_iter_) + "_result");
@@ -625,7 +628,13 @@ void ClusterWellLegalizer::StartPlacement() {
   InitializeClusterLegalizer();
   ReportWellRule();
   ClusterBlocks();
-  LegalizeCluster(20);
+
+  UpdateBlockLocation();
+  std::cout << "HPWL right after clustering\n";
+  ReportHPWL(LOG_CRITICAL);
+  //GenMatlabClusterTable("clu_result");
+  
+  LegalizeCluster(max_iter_);
   UpdateBlockLocation();
   LocalReorderAllClusters();
 
