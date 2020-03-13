@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "circuit/block.h"
+#include "common/displaceviewer.h"
 #include "placer/legalizer/LGTetrisEx.h"
 
 struct BlkCluster {
@@ -84,11 +85,15 @@ class ClusterWellLegalizer : public LGTetrisEx {
   std::vector<CluPtrLocPair> cluster_loc_list_;
   std::unordered_set<BlkCluster *> cluster_set_;
 
+  DisplaceViewer<int> *displace_viewer_ = nullptr;
  public:
   ClusterWellLegalizer();
   ~ClusterWellLegalizer() override;
 
   void InitializeClusterLegalizer();
+  void InitDisplaceViewer(int sz);
+  void UploadClusterXY();
+  void UploadClusterUV();
 
   BlkCluster *CreateNewCluster();
   void AddBlockToCluster(Block &block, BlkCluster *cluster);

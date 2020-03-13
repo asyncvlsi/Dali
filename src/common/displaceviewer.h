@@ -27,6 +27,7 @@ struct DisplaceViewer {
 
   void SetXY(int i, T x_val, T y_val);
   void SetUV(int i, T u_val, T v_val);
+  void SetXYFromDifference(int i, T x_prime, T y_prime);
 
   void SaveDisplacementVector(std::string const &name_of_file);
 };
@@ -53,6 +54,12 @@ template<class T>
 inline void DisplaceViewer<T>::SetUV(int i, T u_val, T v_val) {
   u_[i] = u_val;
   v_[i] = v_val;
+}
+
+template<class T>
+inline void DisplaceViewer<T>::SetXYFromDifference(int i, T x_prime, T y_prime) {
+  u_[i] = x_prime - x_[i];
+  v_[i] = y_prime - y_[i];
 }
 
 template<class T>

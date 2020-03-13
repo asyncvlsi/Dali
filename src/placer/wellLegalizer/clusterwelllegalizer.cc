@@ -50,6 +50,7 @@ ClusterWellLegalizer::~ClusterWellLegalizer() {
   for (auto &cluster_ptr: cluster_set_) {
     delete cluster_ptr;
   }
+  delete displace_viewer_;
 }
 
 void ClusterWellLegalizer::InitializeClusterLegalizer() {
@@ -86,6 +87,25 @@ void ClusterWellLegalizer::InitializeClusterLegalizer() {
   max_well_length = std::min(max_well_length, circuit_->MinWidth() * 7);
 
   new_cluster_cost_threshold = circuit_->MinHeight();
+}
+
+void ClusterWellLegalizer::InitDisplaceViewer(int sz) {
+  displace_viewer_ = new DisplaceViewer<int>;
+  displace_viewer_->SetSize(sz);
+}
+
+void ClusterWellLegalizer::UploadClusterXY() {
+  int counter = 0;
+  for (auto &cluster: cluster_set_) {
+    displace_viewer_->SetXY(counter++, cluster->LLX(), cluster->LLY());
+  }
+}
+
+void ClusterWellLegalizer::UploadClusterUV() {
+  int counter = 0;
+  for (auto &cluster: cluster_set_) {
+    displace_viewer_->SetXYFromDifference(counter++, cluster->LLX(), cluster->LLY());
+  }
 }
 
 BlkCluster *ClusterWellLegalizer::CreateNewCluster() {
@@ -629,6 +649,9 @@ void ClusterWellLegalizer::StartPlacement() {
   ReportWellRule();
   ClusterBlocks();
 
+  InitDisplaceViewer(cluster_set_.size());
+  UploadClusterXY();
+
   UpdateBlockLocation();
   std::cout << "HPWL right after clustering\n";
   ReportHPWL(LOG_CRITICAL);
@@ -637,6 +660,9 @@ void ClusterWellLegalizer::StartPlacement() {
   LegalizeCluster(max_iter_);
   UpdateBlockLocation();
   LocalReorderAllClusters();
+
+  UploadClusterUV();
+  displace_viewer_->SaveDisplacementVector("disp_result.txt");
 
   /****<----****/
 
