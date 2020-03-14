@@ -50,6 +50,8 @@ struct BlkCluster {
   void SetLoc(int lx, int ly);
   void SetCenterX(double center_x);
   void SetCenterY(double center_y);
+  void IncreX(int displacement);
+  void IncreY(int displacement);
 
   void AppendBlock(Block &block);
   void OptimizeHeight();
@@ -78,6 +80,7 @@ class ClusterWellLegalizer : public LGTetrisEx {
   int max_well_length = 40;
 
   double new_cluster_cost_threshold = 40;
+  int overlap_sot = 0;
 
   std::vector<BlkCluster *> row_to_cluster_;
   std::vector<BlkCluster *> col_to_cluster_;
@@ -89,6 +92,8 @@ class ClusterWellLegalizer : public LGTetrisEx {
  public:
   ClusterWellLegalizer();
   ~ClusterWellLegalizer() override;
+
+  int CostInitDisplacement(int x_new, int y_new, int x_old, int y_old);
 
   void InitializeClusterLegalizer();
   void InitDisplaceViewer(int sz);
@@ -106,8 +111,12 @@ class ClusterWellLegalizer : public LGTetrisEx {
   bool LegalizeClusterRight();
 
   void UseSpaceBottom(int end_y, int lo_row, int hi_row);
+  bool FindLocBottom(Value2D<int> &loc, int width, int height) override;
+  void FastShiftBottom(int failure_point);
   bool LegalizeClusterBottom();
+
   void UseSpaceTop(int end_y, int lo_row, int hi_row);
+  bool FindLocTop(Value2D<int> &loc, int width, int height) override;
   bool LegalizeClusterTop();
 
   bool LegalizeCluster(int iteration);
@@ -199,6 +208,18 @@ inline void BlkCluster::SetCenterX(double center_x) {
 
 inline void BlkCluster::SetCenterY(double center_y) {
   ly_ = (int) std::round(center_y - height_ / 2.0);
+}
+
+inline void BlkCluster::IncreX(int displacement) {
+  lx_ += displacement;
+}
+
+inline void BlkCluster::IncreY(int displacement) {
+  ly_ += displacement;
+}
+
+inline int ClusterWellLegalizer::CostInitDisplacement(int x_new, int y_new, int x_old, int y_old) {
+  return std::abs(x_new - x_old) + std::abs(y_new - y_old);
 }
 
 #endif //DALI_SRC_PLACER_WELLLEGALIZER_CLUSTERWELLLEGALIZER_H_

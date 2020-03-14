@@ -338,16 +338,177 @@ void ClusterWellLegalizer::UseSpaceBottom(int end_y, int lo_col, int hi_col) {
   }
 }
 
+bool ClusterWellLegalizer::FindLocBottom(Value2D<int> &loc, int width, int height) {
+  /****
+   * Returns whether a legal location can be found, and put the final location to @params loc
+   * ****/
+  bool is_successful;
+
+  int bottom_block_bound;
+  int bottom_white_space_bound;
+
+  int max_search_col;
+  int search_start_col;
+  int search_end_col;
+
+  int best_y;
+  int best_x;
+  double min_cost;
+  double cost_threshold = height;
+
+  //bottom_block_bound = (int) std::round(loc.y - k_left_ * height);
+  bottom_block_bound = bottom_;
+
+  max_search_col = MaxCol(width);
+
+  search_start_col = std::max(0, LocToCol(loc.x - 2*width));
+  search_end_col = std::min(max_search_col, LocToCol(loc.x + width));
+
+  best_x = INT_MIN;
+  best_y = INT_MIN;
+  min_cost = DBL_MAX;
+
+  for (int tmp_start_col = search_start_col; tmp_start_col <= search_end_col; ++tmp_start_col) {
+    int tmp_end_col = tmp_start_col + width - 1;
+    bottom_white_space_bound = bottom_;
+    //bottom_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_col, tmp_end_col);
+
+    int tmp_y = std::max(bottom_white_space_bound, bottom_block_bound);
+    for (int n = tmp_start_col; n <= tmp_end_col; ++n) {
+      tmp_y = std::max(tmp_y, block_contour_y_[n]);
+    }
+    int tmp_x = ColToLoc(tmp_start_col);
+
+    double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y);
+
+    if (tmp_cost < min_cost) {
+      best_x = tmp_x;
+      best_y = tmp_y;
+      min_cost = tmp_cost;
+    }
+  }
+
+  int best_loc_x_legal = INT_MIN;
+  int best_loc_y_legal = INT_MIN;
+  bool legal_loc_found = false;
+  double min_cost_legal = DBL_MAX;
+  bool is_loc_legal =
+      IsSpaceLegal(best_x, best_x + width, StartRow(best_y), EndRow(best_y + height));
+
+  if (!is_loc_legal) {
+    int old_start_col = search_start_col;
+    int old_end_col = search_end_col;
+    int extended_range = cur_iter_ * width;
+    search_start_col = std::max(0, search_start_col - extended_range);
+    search_end_col = std::min(max_search_col, search_end_col + extended_range);
+    for (int tmp_start_col = search_start_col; tmp_start_col < old_start_col; ++tmp_start_col) {
+      int tmp_end_col = tmp_start_col + width - 1;
+      //bottom_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_col, tmp_end_col);
+      bottom_white_space_bound = bottom_;
+      int tmp_y = std::max(bottom_white_space_bound, bottom_block_bound);
+
+      for (int n = tmp_start_col; n <= tmp_end_col; ++n) {
+        tmp_y = std::max(tmp_y, block_contour_y_[n]);
+      }
+
+      int tmp_x = ColToLoc(tmp_start_col);
+      //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
+
+      double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y);
+      if (tmp_cost < min_cost) {
+        best_x = tmp_x;
+        best_y = tmp_y;
+        min_cost = tmp_cost;
+      }
+
+      is_loc_legal = IsSpaceLegal(tmp_x, tmp_x + width, StartRow(tmp_y), EndRow(tmp_y + height));
+
+      if (is_loc_legal) {
+        legal_loc_found = true;
+        if (tmp_cost < min_cost_legal) {
+          best_loc_x_legal = tmp_x;
+          best_loc_y_legal = tmp_y;
+          min_cost_legal = tmp_cost;
+        }
+      }
+    }
+    for (int tmp_start_col = old_end_col; tmp_start_col < search_end_col; ++tmp_start_col) {
+      int tmp_end_col = tmp_start_col + width - 1;
+      //bottom_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_col, tmp_end_col);
+      bottom_white_space_bound = bottom_;
+      int tmp_y = std::max(bottom_white_space_bound, bottom_block_bound);
+
+      for (int n = tmp_start_col; n <= tmp_end_col; ++n) {
+        tmp_y = std::max(tmp_y, block_contour_y_[n]);
+      }
+
+      int tmp_x = ColToLoc(tmp_start_col);
+      //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
+
+      double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y);
+      if (tmp_cost < min_cost) {
+        best_x = tmp_x;
+        best_y = tmp_y;
+        min_cost = tmp_cost;
+      }
+
+      is_loc_legal = IsSpaceLegal(tmp_x, tmp_x + width, StartRow(tmp_y), EndRow(tmp_y + height));
+
+      if (is_loc_legal) {
+        legal_loc_found = true;
+        if (tmp_cost < min_cost_legal) {
+          best_loc_x_legal = tmp_x;
+          best_loc_y_legal = tmp_y;
+          min_cost_legal = tmp_cost;
+        }
+      }
+    }
+
+  }
+
+  // if still cannot find a legal location, enter fail mode
+  Value2D<int> tmp_loc(best_x, best_y);
+  is_successful = IsCurrentLocLegalBottom(tmp_loc, width, height);
+  if (!is_successful) {
+    if (legal_loc_found) {
+      best_x = best_loc_x_legal;
+      best_y = best_loc_y_legal;
+    }
+  }
+
+  loc.x = best_x;
+  loc.y = best_y;
+
+  return is_successful;
+}
+
+void ClusterWellLegalizer::FastShiftBottom(int failure_point) {
+  std::vector<BlkCluster *> cluster_list(cluster_set_.begin(), cluster_set_.end());
+  //std::cout << cluster_list.size() << "\n";
+  int bounding_bottom;
+  if (failure_point == 0) {
+    std::cout << "WARNING: unexpected case happens during legalization (failure point is 0)!\n";
+  } else {
+    int init_diff = cluster_loc_list_[failure_point - 1].y - cluster_loc_list_[failure_point].y;
+    bounding_bottom = cluster_loc_list_[failure_point].clus_ptr->LLY();
+    int bottom_new = cluster_loc_list_[failure_point - 1].clus_ptr->LLY();
+    int sz = cluster_loc_list_.size();
+    for (int i = failure_point; i < sz; ++i) {
+      cluster_list[i]->IncreY(bottom_new - bounding_bottom + init_diff);
+    }
+  }
+}
+
 bool ClusterWellLegalizer::LegalizeClusterBottom() {
   bool is_successful = true;
   block_contour_y_.assign(tot_num_cols_, bottom_);
 
+  // sort clusters based on their distance to the lower left corner
   int i = 0;
   for (auto &cluster_ptr: cluster_set_) {
     cluster_loc_list_[i].clus_ptr = cluster_ptr;
     cluster_loc_list_[i].x = cluster_ptr->LLX();
     cluster_loc_list_[i].y = cluster_ptr->LLY();
-    //std::cout << i << "  " << cluster_ptr->LLX() << "  " << cluster_loc_list_[i].clus_ptr->LLX() << "\n";
     ++i;
   }
   std::sort(cluster_loc_list_.begin(),
@@ -374,7 +535,7 @@ bool ClusterWellLegalizer::LegalizeClusterBottom() {
     height = int(cluster->Height());
     width = int(cluster->Width());
 
-    is_current_loc_legal = IsCurrentLocLegalBottom(res, width, height);
+    //is_current_loc_legal = IsCurrentLocLegalBottom(res, width, height);
     //std::cout << res.x << "  " << res.y << "  " << is_current_loc_legal << "\n";
     is_current_loc_legal = false;
     if (!is_current_loc_legal) {
@@ -387,9 +548,12 @@ bool ClusterWellLegalizer::LegalizeClusterBottom() {
     }
 
     cluster->SetLoc(res.x, res.y);
-    //std::cout << cluster->LLX() - left_ << "  " << cluster->URX() - left_ << "  " << tot_num_cols_ << "\n";
     UseSpaceBottom(cluster->URY(), StartCol(cluster->LLX()), EndCol(cluster->URX()));
   }
+
+  /*if (!is_successful) {
+    FastShiftBottom(i);
+  }*/
 
   return is_successful;
 }
@@ -400,6 +564,157 @@ void ClusterWellLegalizer::UseSpaceTop(int end_y, int lo_col, int hi_col) {
   for (int i = lo_col; i <= hi_col; ++i) {
     block_contour_y_[i] = end_y;
   }
+}
+
+bool ClusterWellLegalizer::FindLocTop(Value2D<int> &loc, int width, int height) {
+/****
+   * Returns whether a legal location can be found, and put the final location to @params loc
+   * ****/
+  bool is_successful;
+
+  int top_block_bound;
+  int top_white_space_bound;
+
+  int max_search_col;
+  int search_start_col;
+  int search_end_col;
+
+  int best_x;
+  int best_y;
+  double min_cost;
+
+  top_block_bound = (int) std::round(loc.y + k_left_ * height);
+  //top_block_bound = loc.x;
+
+  max_search_col = MaxCol(width);
+
+  search_start_col = std::max(0, LocToCol(loc.x - 2*width));
+  search_end_col = std::min(max_search_col, LocToCol(loc.x + width));
+
+  best_x = INT_MIN;
+  best_y = INT_MIN;
+  min_cost = DBL_MAX;
+
+  for (int tmp_start_col = search_start_col; tmp_start_col <= search_end_col; ++tmp_start_col) {
+    int tmp_end_col = tmp_start_col + width - 1;
+    top_white_space_bound = top_;
+    //top_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_col, tmp_end_col);
+
+    int tmp_y = std::min(top_white_space_bound, top_block_bound);
+
+    for (int n = tmp_start_col; n <= tmp_end_col; ++n) {
+      tmp_y = std::min(tmp_y, block_contour_y_[n]);
+    }
+
+    int tmp_x = ColToLoc(tmp_start_col);
+    //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
+
+    double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y);
+
+    if (tmp_cost < min_cost) {
+      best_x = tmp_x;
+      best_y = tmp_y;
+      min_cost = tmp_cost;
+    }
+  }
+
+  int best_loc_x_legal = INT_MIN;
+  int best_loc_y_legal = INT_MIN;
+  bool legal_loc_found = false;
+  double min_cost_legal = DBL_MAX;
+  bool is_loc_legal =
+      IsSpaceLegal(best_x, best_x + width, StartRow(best_y), EndRow(best_y + height));
+
+  if (!is_loc_legal) {
+    int old_start_col = search_start_col;
+    int old_end_col = search_end_col;
+    int extended_range = cur_iter_ * width;
+    search_start_col = std::max(0, search_start_col - extended_range);
+    search_end_col = std::min(max_search_col, search_end_col + extended_range);
+    for (int tmp_start_col = search_start_col; tmp_start_col < old_start_col; ++tmp_start_col) {
+      int tmp_end_col = tmp_start_col + width - 1;
+      //top_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_col, tmp_end_col);
+      top_white_space_bound = top_;
+      int tmp_y = std::min(top_white_space_bound, top_block_bound);
+
+      for (int n = tmp_start_col; n <= tmp_end_col; ++n) {
+        tmp_y = std::min(tmp_y, block_contour_y_[n]);
+      }
+
+      int tmp_x = ColToLoc(tmp_start_col);
+      //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
+
+      double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y);
+
+      if (tmp_cost < min_cost) {
+        best_x = tmp_x;
+        best_y = tmp_y;
+        min_cost = tmp_cost;
+      }
+
+      Value2D<int> tmp_loc(tmp_x, tmp_y);
+      is_loc_legal = IsCurrentLocLegalTop(tmp_loc, width, height);
+
+      if (is_loc_legal) {
+        legal_loc_found = true;
+        if (tmp_cost < min_cost_legal) {
+          best_loc_x_legal = tmp_x;
+          best_loc_y_legal = tmp_y;
+          min_cost_legal = tmp_cost;
+        }
+      }
+    }
+    for (int tmp_start_col = old_end_col; tmp_start_col < search_end_col; ++tmp_start_col) {
+      int tmp_end_col = tmp_start_col + width - 1;
+      //top_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_col, tmp_end_col);
+      top_white_space_bound = top_;
+      int tmp_y = std::min(top_white_space_bound, top_block_bound);
+
+      for (int n = tmp_start_col; n <= tmp_end_col; ++n) {
+        tmp_y = std::min(tmp_y, block_contour_y_[n]);
+      }
+
+      int tmp_x = ColToLoc(tmp_start_col);
+      //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
+
+      double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y);
+
+      if (tmp_cost < min_cost) {
+        best_x = tmp_x;
+        best_y = tmp_y;
+        min_cost = tmp_cost;
+      }
+
+      Value2D<int> tmp_loc(tmp_x, tmp_y);
+      is_loc_legal = IsCurrentLocLegalTop(tmp_loc, width, height);
+
+      if (is_loc_legal) {
+        legal_loc_found = true;
+        if (tmp_cost < min_cost_legal) {
+          best_loc_x_legal = tmp_x;
+          best_loc_y_legal = tmp_y;
+          min_cost_legal = tmp_cost;
+        }
+      }
+    }
+
+  }
+
+  // if still cannot find a legal location, enter fail mode
+  Value2D<int> tmp_loc(best_x, best_y);
+  is_successful = IsCurrentLocLegalTop(tmp_loc, width, height);
+  if (!is_successful) {
+    is_successful = legal_loc_found;
+    if (is_successful) {
+      best_x = best_loc_x_legal;
+      best_y = best_loc_y_legal;
+    }
+  }
+
+  loc.x = best_x;
+  loc.y = best_y;
+
+  return is_successful;
 }
 
 bool ClusterWellLegalizer::LegalizeClusterTop() {
@@ -438,7 +753,7 @@ bool ClusterWellLegalizer::LegalizeClusterTop() {
     height = int(cluster->Height());
     width = int(cluster->Width());
 
-    is_current_loc_legal = IsCurrentLocLegalTop(res, width, height);
+    //is_current_loc_legal = IsCurrentLocLegalTop(res, width, height);
     is_current_loc_legal = false;
     if (!is_current_loc_legal) {
       is_legal_loc_found = FindLocTop(res, width, height);
@@ -472,31 +787,21 @@ bool ClusterWellLegalizer::LegalizeCluster(int iteration) {
   std::cout << "            Ratio : " << double(tot_cluster_area) / RegionWidth() / RegionHeight() << "\n";
 
   bool is_success = false;
-  int counter = 0;
   for (cur_iter_ = 0; cur_iter_ < iteration; ++cur_iter_) {
     if (legalize_from_left_) {
       is_success = LegalizeClusterBottom();
       UpdateBlockLocation();
-      //GenMatlabClusterTable("clb" + std::to_string(cur_iter_) + "_result");
+      GenMatlabClusterTable("clb" + std::to_string(cur_iter_) + "_result");
+
+    } else {
       is_success = LegalizeClusterTop();
       UpdateBlockLocation();
-      //GenMatlabClusterTable("clt" + std::to_string(cur_iter_) + "_result");
-    } else {
-      is_success = LegalizeClusterLeft();
-      UpdateBlockLocation();
-      //GenMatlabClusterTable("cll" + std::to_string(cur_iter_) + "_result");
-      is_success = LegalizeClusterRight();
-      UpdateBlockLocation();
-      //GenMatlabClusterTable("clr" + std::to_string(cur_iter_) + "_result");
+      GenMatlabClusterTable("clt" + std::to_string(cur_iter_) + "_result");
     }
     //std::cout << cur_iter_ << "-th iteration: " << is_success << "\n";
-    ++counter;
-    if (counter == 5) {
-      legalize_from_left_ = !legalize_from_left_;
-      counter = 0;
-    }
+    legalize_from_left_ = !legalize_from_left_;
     //++k_left_;
-    //GenMatlabClusterTable("cl" + std::to_string(cur_iter_) + "_result");
+    GenMatlabClusterTable("cl" + std::to_string(cur_iter_) + "_result");
     ReportHPWL(LOG_CRITICAL);
     if (is_success) {
       break;
@@ -655,9 +960,9 @@ void ClusterWellLegalizer::StartPlacement() {
   UpdateBlockLocation();
   std::cout << "HPWL right after clustering\n";
   ReportHPWL(LOG_CRITICAL);
-  //GenMatlabClusterTable("clu_result");
-  
-  LegalizeCluster(max_iter_);
+  GenMatlabClusterTable("clu_result");
+
+  LegalizeCluster(1);
   UpdateBlockLocation();
   LocalReorderAllClusters();
 

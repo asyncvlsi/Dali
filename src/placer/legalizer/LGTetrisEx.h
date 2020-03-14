@@ -75,12 +75,12 @@ class LGTetrisEx : public Placer {
 
   void UseSpaceBottom(Block const &block);
   bool IsCurrentLocLegalBottom(Value2D<int> &loc, int width, int height);
-  bool FindLocBottom(Value2D<int> &loc, int width, int height);
+  virtual bool FindLocBottom(Value2D<int> &loc, int width, int height);
   bool LocalLegalizationBottom();
 
   void UseSpaceTop(Block const &block);
   bool IsCurrentLocLegalTop(Value2D<int> &loc, int width, int height);
-  bool FindLocTop(Value2D<int> &loc, int width, int height);
+  virtual bool FindLocTop(Value2D<int> &loc, int width, int height);
   bool LocalLegalizationTop();
 
   double EstimatedHPWL(Block &block, int x, int y);
