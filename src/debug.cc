@@ -16,7 +16,8 @@ VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 #define TEST_LG 0
 #define TEST_PO 0
 #define TEST_WELL 0
-#define TEST_CLUSTER_WELL 1
+#define TEST_CLUSTER_WELL 0
+#define TEST_STDCLUSTER_WELL 1
 #define USE_DB_PARSER 0
 
 int main() {
@@ -92,6 +93,15 @@ int main() {
   cluster_well_legalizer->TakeOver(gb_placer);
   cluster_well_legalizer->StartPlacement();
   delete cluster_well_legalizer;
+#endif
+
+#if TEST_STDCLUSTER_WELL
+  Placer *std_cluster_well_legalizer = new StandardClusterWellLegalizer;
+  std::string cell_file_name("benchmark_1K.cell");
+  circuit.ReadCellFile(cell_file_name);
+  std_cluster_well_legalizer->TakeOver(gb_placer);
+  std_cluster_well_legalizer->StartPlacement();
+  delete std_cluster_well_legalizer;
 #endif
 
   delete gb_placer;

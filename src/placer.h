@@ -27,6 +27,7 @@
 
 /****Well Legalizer****/
 #include "placer/wellLegalizer/clusterwelllegalizer.h"
+#include "placer/wellLegalizer/standardclusterwelllegalizer.h"
 #include "placer/wellLegalizer/welllegalizer.h"
 
 /****Well Placement Flow****/

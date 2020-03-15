@@ -6,44 +6,6 @@
 
 #include <algorithm>
 
-BlkCluster::BlkCluster(int well_extension_x_init, int well_extension_y_init, int plug_width_init) :
-    well_extension_x_(well_extension_x_init),
-    well_extension_y_(well_extension_y_init),
-    plug_width_(plug_width_init) {}
-
-void BlkCluster::AppendBlock(Block &block) {
-  if (blk_ptr_list_.empty()) {
-    lx_ = int(block.LLX()) - well_extension_x_;
-    modified_lx_ = lx_ - well_extension_x_ - plug_width_;
-    ly_ = int(block.LLY()) - well_extension_y_;
-    width_ = block.Width() + well_extension_x_ * 2 + plug_width_;
-    height_ = block.Height() + well_extension_y_ * 2;
-  } else {
-    width_ += block.Width();
-    if (block.Height() > height_) {
-      ly_ -= (block.Height() - height_ + 1) / 2;
-      height_ = block.Height() + well_extension_y_ * 2;
-    }
-  }
-  blk_ptr_list_.push_back(&block);
-}
-
-void BlkCluster::OptimizeHeight() {
-  /****
-   * This function aligns all N/P well boundaries of cells inside a cluster
-   * ****/
-
-}
-
-void BlkCluster::UpdateBlockLocation() {
-  int current_loc = lx_;
-  for (auto &blk_ptr: blk_ptr_list_) {
-    blk_ptr->SetLLX(current_loc);
-    blk_ptr->SetCenterY(this->CenterY());
-    current_loc += blk_ptr->Width();
-  }
-}
-
 ClusterWellLegalizer::ClusterWellLegalizer() : LGTetrisEx() {}
 
 ClusterWellLegalizer::~ClusterWellLegalizer() {
@@ -361,8 +323,8 @@ bool ClusterWellLegalizer::FindLocBottom(Value2D<int> &loc, int width, int heigh
 
   max_search_col = MaxCol(width);
 
-  search_start_col = std::max(0, LocToCol(loc.x - 2*width));
-  search_end_col = std::min(max_search_col, LocToCol(loc.x + width));
+  search_start_col = std::max(0, LocToCol(loc.x - 4 * width));
+  search_end_col = std::min(max_search_col, LocToCol(loc.x + 5 * width));
 
   best_x = INT_MIN;
   best_y = INT_MIN;
@@ -379,7 +341,7 @@ bool ClusterWellLegalizer::FindLocBottom(Value2D<int> &loc, int width, int heigh
     }
     int tmp_x = ColToLoc(tmp_start_col);
 
-    double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y);
+    double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y) + CostLeftBottomBoundary(tmp_x, tmp_y);
 
     if (tmp_cost < min_cost) {
       best_x = tmp_x;
@@ -414,7 +376,7 @@ bool ClusterWellLegalizer::FindLocBottom(Value2D<int> &loc, int width, int heigh
       int tmp_x = ColToLoc(tmp_start_col);
       //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
 
-      double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y);
+      double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y) + CostLeftBottomBoundary(tmp_x, tmp_y);
       if (tmp_cost < min_cost) {
         best_x = tmp_x;
         best_y = tmp_y;
@@ -445,7 +407,7 @@ bool ClusterWellLegalizer::FindLocBottom(Value2D<int> &loc, int width, int heigh
       int tmp_x = ColToLoc(tmp_start_col);
       //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
 
-      double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y);
+      double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y) + CostLeftBottomBoundary(tmp_x, tmp_y);
       if (tmp_cost < min_cost) {
         best_x = tmp_x;
         best_y = tmp_y;
@@ -588,8 +550,8 @@ bool ClusterWellLegalizer::FindLocTop(Value2D<int> &loc, int width, int height) 
 
   max_search_col = MaxCol(width);
 
-  search_start_col = std::max(0, LocToCol(loc.x - 2*width));
-  search_end_col = std::min(max_search_col, LocToCol(loc.x + width));
+  search_start_col = std::max(0, LocToCol(loc.x - 4 * width));
+  search_end_col = std::min(max_search_col, LocToCol(loc.x + 5 * width));
 
   best_x = INT_MIN;
   best_y = INT_MIN;
@@ -609,7 +571,7 @@ bool ClusterWellLegalizer::FindLocTop(Value2D<int> &loc, int width, int height) 
     int tmp_x = ColToLoc(tmp_start_col);
     //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
 
-    double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y);
+    double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y) + CostRightTopBoundary(tmp_x, tmp_y);
 
     if (tmp_cost < min_cost) {
       best_x = tmp_x;
@@ -644,7 +606,7 @@ bool ClusterWellLegalizer::FindLocTop(Value2D<int> &loc, int width, int height) 
       int tmp_x = ColToLoc(tmp_start_col);
       //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
 
-      double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y);
+      double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y) + CostRightTopBoundary(tmp_x, tmp_y);
 
       if (tmp_cost < min_cost) {
         best_x = tmp_x;
@@ -677,7 +639,7 @@ bool ClusterWellLegalizer::FindLocTop(Value2D<int> &loc, int width, int height) 
       int tmp_x = ColToLoc(tmp_start_col);
       //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
 
-      double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y);
+      double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y) + CostRightTopBoundary(tmp_x, tmp_y);
 
       if (tmp_cost < min_cost) {
         best_x = tmp_x;
@@ -787,21 +749,31 @@ bool ClusterWellLegalizer::LegalizeCluster(int iteration) {
   std::cout << "            Ratio : " << double(tot_cluster_area) / RegionWidth() / RegionHeight() << "\n";
 
   bool is_success = false;
+  int counter = 0;
   for (cur_iter_ = 0; cur_iter_ < iteration; ++cur_iter_) {
     if (legalize_from_left_) {
       is_success = LegalizeClusterBottom();
       UpdateBlockLocation();
-      GenMatlabClusterTable("clb" + std::to_string(cur_iter_) + "_result");
-
-    } else {
+      //GenMatlabClusterTable("clb" + std::to_string(cur_iter_) + "_result");
       is_success = LegalizeClusterTop();
       UpdateBlockLocation();
-      GenMatlabClusterTable("clt" + std::to_string(cur_iter_) + "_result");
+      //GenMatlabClusterTable("clt" + std::to_string(cur_iter_) + "_result");
+    } else {
+      is_success = LegalizeClusterLeft();
+      UpdateBlockLocation();
+      //GenMatlabClusterTable("cll" + std::to_string(cur_iter_) + "_result");
+      is_success = LegalizeClusterRight();
+      UpdateBlockLocation();
+      //GenMatlabClusterTable("clr" + std::to_string(cur_iter_) + "_result");
     }
     //std::cout << cur_iter_ << "-th iteration: " << is_success << "\n";
-    legalize_from_left_ = !legalize_from_left_;
+    ++counter;
+    if (counter == 5) {
+      legalize_from_left_ = !legalize_from_left_;
+      counter = 0;
+    }
     //++k_left_;
-    GenMatlabClusterTable("cl" + std::to_string(cur_iter_) + "_result");
+    //GenMatlabClusterTable("cl" + std::to_string(cur_iter_) + "_result");
     ReportHPWL(LOG_CRITICAL);
     if (is_success) {
       break;
@@ -962,7 +934,7 @@ void ClusterWellLegalizer::StartPlacement() {
   ReportHPWL(LOG_CRITICAL);
   GenMatlabClusterTable("clu_result");
 
-  LegalizeCluster(1);
+  LegalizeCluster(max_iter_);
   UpdateBlockLocation();
   LocalReorderAllClusters();
 
