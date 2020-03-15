@@ -8,7 +8,7 @@
   * GNU Make
 
 ### Pre-requisite for submodules: OpenDB
-  * Tcl/Tk-dev, version >= ? (8.6.8, may need to install this package manually instead of using _apt-get install_)
+  * Tcl/Tk-dev, version >= ? (8.6.8, may need to install this package manually instead of using `apt-get install`)
   * Bison, version >= ? (3.0.4)
   * Flex, version >= ? (2.6.4)
   * Swig, version >= ? (3.0.12)
