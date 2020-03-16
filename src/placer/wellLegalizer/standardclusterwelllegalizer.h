@@ -16,6 +16,7 @@ struct Cluster {
 
   int UsedSize() const;
   void SetUsedSize(int used_size);
+  void UseSpace(int width);
 
   void SetLLY(int ly);
   int LLY() const;
@@ -26,6 +27,7 @@ struct Cluster {
   int Height() const;
 
   void UpdateLocY();
+  void LegalizeX(int left);
 };
 
 struct ClusterColumn {
@@ -38,9 +40,12 @@ struct ClusterColumn {
 
   int clus_blk_cap_;
 
-  int Width();
+  int Width() const;
+  int LLX() const;
+  int URX() const;
 
   void AppendBlock(Block &blk);
+  void LegalizeCluster();
 };
 
 class StandardClusterWellLegalizer : public Placer {
@@ -64,6 +69,8 @@ class StandardClusterWellLegalizer : public Placer {
   void ClusterBlocks();
 
   void StartPlacement() override;
+
+  void GenMatlabClusterTable(std::string const &name_of_file);
 };
 
 inline int Cluster::UsedSize() const {
@@ -72,6 +79,10 @@ inline int Cluster::UsedSize() const {
 
 inline void Cluster::SetUsedSize(int used_size) {
   used_size_ = used_size;
+}
+
+inline void Cluster::UseSpace(int width) {
+  used_size_ += width;
 }
 
 inline void Cluster::SetLLY(int ly) {
@@ -98,8 +109,16 @@ inline int Cluster::Height() const {
   return height_;
 }
 
-inline int ClusterColumn::Width() {
+inline int ClusterColumn::Width() const {
   return width_;
+}
+
+inline int ClusterColumn::LLX() const {
+  return lx_;
+}
+
+inline int ClusterColumn::URX() const {
+  return ux_;
 }
 
 inline int StandardClusterWellLegalizer::LocToCol(int x) {
