@@ -12,7 +12,7 @@ void Cluster::UpdateLocY() {
   }
 }
 
-void Cluster::LegalizeX(int left) {
+void Cluster::LegalizeCompactX(int left) {
   std::sort(blk_list_.begin(),
             blk_list_.end(),
             [](const Block *blk_ptr0, const Block *blk_ptr1) {
@@ -25,12 +25,85 @@ void Cluster::LegalizeX(int left) {
   }
 }
 
+void Cluster::LegalizeLooseX(int left, int right) {
+  /****
+   * Legalize this cluster using the extended Tetris legalization algorithm
+   *
+   * 1. legalize blocks from left
+   * 2. if block contour goes out of the right boundary, legalize blocks from right
+   *
+   * if the total width of blocks in this cluster is smaller than the width of this cluster,
+   * two-rounds legalization is enough to make the final result legal.
+   * ****/
+  if (blk_list_.empty()) {
+    return;
+  }
+  std::sort(blk_list_.begin(),
+            blk_list_.end(),
+            [](const Block *blk_ptr0, const Block *blk_ptr1) {
+              return blk_ptr0->LLX() < blk_ptr1->LLX();
+            });
+  int block_contour = left;
+  int res_x;
+  for (auto &blk: blk_list_) {
+    res_x = std::max(block_contour, int(blk_list_[0]->LLX()));
+    blk->SetLLX(res_x);
+    block_contour = int(blk->URX());
+  }
+
+  if (block_contour > right) {
+    std::sort(blk_list_.begin(),
+              blk_list_.end(),
+              [](const Block *blk_ptr0, const Block *blk_ptr1) {
+                return blk_ptr0->URX() > blk_ptr1->URX();
+              });
+    block_contour = right;
+    for (auto &blk: blk_list_) {
+      res_x = std::min(block_contour, int(blk_list_[0]->URX()));
+      blk->SetURX(res_x);
+      block_contour = int(blk->LLX());
+    }
+  }
+}
+
 void ClusterColumn::AppendBlock(Block &blk) {
   bool is_new_cluster_needed = clusters_.empty();
   if (!is_new_cluster_needed) {
     bool is_not_in_top_cluster = clusters_.back().URY() <= blk.LLY();
     bool is_top_cluster_full = clusters_.back().UsedSize() + blk.Width() > width_;
     is_new_cluster_needed = is_not_in_top_cluster || is_top_cluster_full;
+  }
+
+  int width = blk.Width();
+  int height = blk.Height();
+  int init_y = (int) std::round(blk.LLY());
+  if (!clusters_.empty()) {
+    init_y = std::max(init_y, clusters_.back().URY());
+  }
+
+  if (is_new_cluster_needed) {
+    clusters_.emplace_back();
+    auto &top_cluster = clusters_.back();
+    top_cluster.blk_list_.reserve(clus_blk_cap_);
+    top_cluster.blk_list_.push_back(&blk);
+    top_cluster.SetUsedSize(width);
+    top_cluster.SetLLY(init_y);
+    top_cluster.SetHeight(height);
+  } else {
+    auto &top_cluster = clusters_.back();
+    top_cluster.blk_list_.push_back(&blk);
+    top_cluster.UseSpace(width);
+    if (height > top_cluster.Height()) {
+      top_cluster.SetHeight(height);
+    }
+  }
+}
+
+void ClusterColumn::AppendBlockClose(Block &blk) {
+  bool is_new_cluster_needed = clusters_.empty();
+  if (!is_new_cluster_needed) {
+    bool is_top_cluster_full = clusters_.back().UsedSize() + blk.Width() > width_;
+    is_new_cluster_needed = is_top_cluster_full;
   }
 
   int width = blk.Width();
@@ -57,7 +130,7 @@ void ClusterColumn::AppendBlock(Block &blk) {
 
 void ClusterColumn::LegalizeCluster() {
   for (auto &cluster: clusters_) {
-    cluster.LegalizeX(lx_);
+    cluster.LegalizeCompactX(lx_);
   }
 }
 
@@ -89,6 +162,7 @@ void StandardClusterWellLegalizer::Init() {
 
   int max_clusters_per_col = RegionHeight() / circuit_->MinHeight();
   clus_cols_.resize(tot_col_num_);
+  col_width_ = RegionWidth()/tot_col_num_;
   for (int i = 0; i < tot_col_num_; ++i) {
     clus_cols_[i].clusters_.reserve(max_clusters_per_col);
     clus_cols_[i].lx_ = RegionLeft() + i * col_width_;
@@ -135,6 +209,75 @@ void StandardClusterWellLegalizer::ClusterBlocks() {
   }
 }
 
+void StandardClusterWellLegalizer::ClusterBlocksLoose() {
+  std::vector<Block> &block_list = *BlockList();
+
+  int sz = index_loc_list_.size();
+  for (int i = 0; i < sz; ++i) {
+    index_loc_list_[i].num = i;
+    index_loc_list_[i].x = block_list[i].LLX();
+    index_loc_list_[i].y = block_list[i].LLY();
+  }
+  std::sort(index_loc_list_.begin(),
+            index_loc_list_.end(),
+            [](const IndexLocPair<int> &lhs, const IndexLocPair<int> &rhs) {
+              return (lhs.y < rhs.y) || (lhs.y == rhs.y && lhs.x < rhs.x);
+            });
+
+  for (int i = 0; i < sz; ++i) {
+    auto &block = block_list[index_loc_list_[i].num];
+    if (block.IsFixed()) continue;
+
+    int col_num = LocToCol((int) std::round(block.X()));
+    clus_cols_[col_num].AppendBlock(block);
+  }
+
+  for (auto &col: clus_cols_) {
+    //int current_ly = RegionBottom();
+    for (auto &cluster: col.clusters_) {
+      //cluster.SetLLY(current_ly);
+      cluster.UpdateLocY();
+      cluster.LegalizeLooseX(col.LLX(), col.URX());
+      //current_ly += cluster.Height();
+    }
+    //col.LegalizeCluster();
+  }
+}
+
+void StandardClusterWellLegalizer::ClusterBlocksCompact() {
+  std::vector<Block> &block_list = *BlockList();
+
+  int sz = index_loc_list_.size();
+  for (int i = 0; i < sz; ++i) {
+    index_loc_list_[i].num = i;
+    index_loc_list_[i].x = block_list[i].LLX();
+    index_loc_list_[i].y = block_list[i].LLY();
+  }
+  std::sort(index_loc_list_.begin(),
+            index_loc_list_.end(),
+            [](const IndexLocPair<int> &lhs, const IndexLocPair<int> &rhs) {
+              return (lhs.y < rhs.y) || (lhs.y == rhs.y && lhs.x < rhs.x);
+            });
+
+  for (int i = 0; i < sz; ++i) {
+    auto &block = block_list[index_loc_list_[i].num];
+    if (block.IsFixed()) continue;
+
+    int col_num = LocToCol((int) std::round(block.X()));
+    clus_cols_[col_num].AppendBlockClose(block);
+  }
+
+  for (auto &col: clus_cols_) {
+    int current_ly = RegionBottom();
+    for (auto &cluster: col.clusters_) {
+      cluster.SetLLY(current_ly);
+      cluster.UpdateLocY();
+      current_ly += cluster.Height();
+    }
+    col.LegalizeCluster();
+  }
+}
+
 void StandardClusterWellLegalizer::StartPlacement() {
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "---------------------------------------\n"
@@ -146,7 +289,9 @@ void StandardClusterWellLegalizer::StartPlacement() {
 
   /****---->****/
   Init();
-  ClusterBlocks();
+  //ClusterBlocks();
+  ClusterBlocksLoose();
+  //ClusterBlocksCompact();
 
   /****<----****/
 

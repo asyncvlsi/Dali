@@ -27,7 +27,8 @@ struct Cluster {
   int Height() const;
 
   void UpdateLocY();
-  void LegalizeX(int left);
+  void LegalizeCompactX(int left);
+  void LegalizeLooseX(int left, int right);
 };
 
 struct ClusterColumn {
@@ -45,6 +46,7 @@ struct ClusterColumn {
   int URX() const;
 
   void AppendBlock(Block &blk);
+  void AppendBlockClose(Block &blk);
   void LegalizeCluster();
 };
 
@@ -67,6 +69,8 @@ class StandardClusterWellLegalizer : public Placer {
 
   int LocToCol(int x);
   void ClusterBlocks();
+  void ClusterBlocksLoose();
+  void ClusterBlocksCompact();
 
   void StartPlacement() override;
 
