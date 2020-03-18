@@ -6,6 +6,25 @@
 
 #include <algorithm>
 
+void Cluster::ShiftBlockX(int x_disp) {
+  for (auto &blk_ptr: blk_list_) {
+    blk_ptr->IncreX(x_disp);
+  }
+}
+
+void Cluster::ShiftBlockY(int y_disp) {
+  for (auto &blk_ptr: blk_list_) {
+    blk_ptr->IncreY(y_disp);
+  }
+}
+
+void Cluster::ShiftBlock(int x_disp, int y_disp) {
+  for (auto &blk_ptr: blk_list_) {
+    blk_ptr->IncreX(x_disp);
+    blk_ptr->IncreY(y_disp);
+  }
+}
+
 void Cluster::UpdateLocY() {
   for (auto &blk_ptr: blk_list_) {
     blk_ptr->SetCenterY(CenterY());
@@ -66,74 +85,6 @@ void Cluster::LegalizeLooseX(int left, int right) {
   }
 }
 
-void ClusterColumn::AppendBlock(Block &blk) {
-  bool is_new_cluster_needed = clusters_.empty();
-  if (!is_new_cluster_needed) {
-    bool is_not_in_top_cluster = clusters_.back().URY() <= blk.LLY();
-    bool is_top_cluster_full = clusters_.back().UsedSize() + blk.Width() > width_;
-    is_new_cluster_needed = is_not_in_top_cluster || is_top_cluster_full;
-  }
-
-  int width = blk.Width();
-  int height = blk.Height();
-  int init_y = (int) std::round(blk.LLY());
-  if (!clusters_.empty()) {
-    init_y = std::max(init_y, clusters_.back().URY());
-  }
-
-  if (is_new_cluster_needed) {
-    clusters_.emplace_back();
-    auto &top_cluster = clusters_.back();
-    top_cluster.blk_list_.reserve(clus_blk_cap_);
-    top_cluster.blk_list_.push_back(&blk);
-    top_cluster.SetUsedSize(width);
-    top_cluster.SetLLY(init_y);
-    top_cluster.SetHeight(height);
-  } else {
-    auto &top_cluster = clusters_.back();
-    top_cluster.blk_list_.push_back(&blk);
-    top_cluster.UseSpace(width);
-    if (height > top_cluster.Height()) {
-      top_cluster.SetHeight(height);
-    }
-  }
-}
-
-void ClusterColumn::AppendBlockClose(Block &blk) {
-  bool is_new_cluster_needed = clusters_.empty();
-  if (!is_new_cluster_needed) {
-    bool is_top_cluster_full = clusters_.back().UsedSize() + blk.Width() > width_;
-    is_new_cluster_needed = is_top_cluster_full;
-  }
-
-  int width = blk.Width();
-  int height = blk.Height();
-  int init_y = (int) std::round(blk.LLY());
-
-  if (is_new_cluster_needed) {
-    clusters_.emplace_back();
-    auto &top_cluster = clusters_.back();
-    top_cluster.blk_list_.reserve(clus_blk_cap_);
-    top_cluster.blk_list_.push_back(&blk);
-    top_cluster.SetUsedSize(width);
-    top_cluster.SetLLY(init_y);
-    top_cluster.SetHeight(height);
-  } else {
-    auto &top_cluster = clusters_.back();
-    top_cluster.blk_list_.push_back(&blk);
-    top_cluster.UseSpace(width);
-    if (height > top_cluster.Height()) {
-      top_cluster.SetHeight(height);
-    }
-  }
-}
-
-void ClusterColumn::LegalizeCluster() {
-  for (auto &cluster: clusters_) {
-    cluster.LegalizeCompactX(lx_);
-  }
-}
-
 StandardClusterWellLegalizer::StandardClusterWellLegalizer() {
   max_unplug_length_ = 0;
   plug_cell_width_ = 0;
@@ -162,17 +113,97 @@ void StandardClusterWellLegalizer::Init() {
 
   int max_clusters_per_col = RegionHeight() / circuit_->MinHeight();
   clus_cols_.resize(tot_col_num_);
-  col_width_ = RegionWidth()/tot_col_num_;
+  col_width_ = RegionWidth() / tot_col_num_;
   for (int i = 0; i < tot_col_num_; ++i) {
-    clus_cols_[i].clusters_.reserve(max_clusters_per_col);
     clus_cols_[i].lx_ = RegionLeft() + i * col_width_;
     clus_cols_[i].ux_ = std::min(clus_cols_[i].lx_ + col_width_, RegionRight());
     clus_cols_[i].width_ = clus_cols_[i].ux_ - clus_cols_[i].lx_;
+    clus_cols_[i].contour_ = RegionBottom();
     clus_cols_[i].clus_blk_cap_ = clus_cols_[i].Width() / circuit_->MinWidth();
   }
+  cluster_list_.reserve(tot_col_num_ * max_clusters_per_col);
   printf("Maximum possible number of clusters in a column: %d\n", max_clusters_per_col);
 
   index_loc_list_.resize(circuit_->block_list.size());
+}
+
+void StandardClusterWellLegalizer::AppendBlockToCol(int col_num, Block &blk) {
+  auto &col = clus_cols_[col_num];
+  bool is_new_cluster_needed = (col.contour_ == RegionBottom());
+  if (!is_new_cluster_needed) {
+    bool is_not_in_top_cluster = col.contour_ <= blk.LLY();
+    bool is_top_cluster_full = col.top_cluster_->UsedSize() + blk.Width() > col.width_;
+    is_new_cluster_needed = is_not_in_top_cluster || is_top_cluster_full;
+  }
+
+  int width = blk.Width();
+  int height = blk.Height();
+  int init_y = (int) std::round(blk.LLY());
+  if (col.contour_ != RegionBottom()) {
+    init_y = std::max(init_y, col.contour_);
+  }
+
+  if (is_new_cluster_needed) {
+    cluster_list_.emplace_back();
+    auto &top_cluster = cluster_list_.back();
+    top_cluster.blk_list_.reserve(col.clus_blk_cap_);
+    top_cluster.blk_list_.push_back(&blk);
+    top_cluster.SetUsedSize(width);
+    top_cluster.SetLLY(init_y);
+    top_cluster.SetHeight(height);
+    top_cluster.SetLLX(col.LLX());
+    top_cluster.SetWidth(col.Width());
+
+    col.top_cluster_ = &top_cluster;
+    col.contour_ = top_cluster.URY();
+  } else {
+    auto &top_cluster = *(col.top_cluster_);
+    top_cluster.blk_list_.push_back(&blk);
+    top_cluster.UseSpace(width);
+    if (height > top_cluster.Height()) {
+      top_cluster.SetHeight(height);
+    }
+    col.contour_ = top_cluster.URY();
+  }
+}
+
+void StandardClusterWellLegalizer::AppendBlockToColClose(int col_num, Block &blk) {
+  auto &col = clus_cols_[col_num];
+  bool is_new_cluster_needed = (col.contour_ == RegionBottom());
+  if (!is_new_cluster_needed) {
+    bool is_top_cluster_full = col.top_cluster_->UsedSize() + blk.Width() > col.width_;
+    is_new_cluster_needed = is_top_cluster_full;
+  }
+
+  int width = blk.Width();
+  int height = blk.Height();
+  int init_y = (int) std::round(blk.LLY());
+  if (col.contour_ != RegionBottom()) {
+    init_y = std::max(init_y, col.contour_);
+  }
+
+  if (is_new_cluster_needed) {
+    cluster_list_.emplace_back();
+    auto &top_cluster = cluster_list_.back();
+    top_cluster.blk_list_.reserve(col.clus_blk_cap_);
+    top_cluster.blk_list_.push_back(&blk);
+    top_cluster.SetUsedSize(width);
+    top_cluster.SetLLY(init_y);
+    top_cluster.SetHeight(height);
+    top_cluster.SetLLX(col.LLX());
+    top_cluster.SetWidth(col.Width());
+
+    col.top_cluster_ = &top_cluster;
+    col.contour_ = top_cluster.URY();
+  } else {
+    auto &top_cluster = *(col.top_cluster_);
+    top_cluster.blk_list_.push_back(&blk);
+    top_cluster.UseSpace(width);
+    if (height > top_cluster.Height()) {
+      top_cluster.SetHeight(height);
+    }
+    col.contour_ = top_cluster.URY();
+  }
 }
 
 void StandardClusterWellLegalizer::ClusterBlocks() {
@@ -195,17 +226,19 @@ void StandardClusterWellLegalizer::ClusterBlocks() {
     if (block.IsFixed()) continue;
 
     int col_num = LocToCol((int) std::round(block.X()));
-    clus_cols_[col_num].AppendBlock(block);
+    AppendBlockToCol(col_num, block);
   }
 
   for (auto &col: clus_cols_) {
-    int current_ly = RegionBottom();
-    for (auto &cluster: col.clusters_) {
-      cluster.SetLLY(current_ly);
-      cluster.UpdateLocY();
-      current_ly += cluster.Height();
-    }
-    col.LegalizeCluster();
+    col.contour_ = RegionBottom();
+  }
+  for (auto &cluster: cluster_list_) {
+    int col_num = (cluster.LLX() - RegionLeft()) / col_width_;
+    auto &col = clus_cols_[col_num];
+    col.contour_ += cluster.Height();
+    cluster.SetLLY(col.contour_);
+    cluster.UpdateLocY();
+    cluster.LegalizeCompactX(cluster.LLX());
   }
 }
 
@@ -229,18 +262,14 @@ void StandardClusterWellLegalizer::ClusterBlocksLoose() {
     if (block.IsFixed()) continue;
 
     int col_num = LocToCol((int) std::round(block.X()));
-    clus_cols_[col_num].AppendBlock(block);
+    AppendBlockToCol(col_num, block);
   }
 
-  for (auto &col: clus_cols_) {
-    //int current_ly = RegionBottom();
-    for (auto &cluster: col.clusters_) {
-      //cluster.SetLLY(current_ly);
-      cluster.UpdateLocY();
-      cluster.LegalizeLooseX(col.LLX(), col.URX());
-      //current_ly += cluster.Height();
-    }
-    //col.LegalizeCluster();
+  for (auto &cluster: cluster_list_) {
+    //cluster.SetLLY(current_ly);
+    cluster.UpdateLocY();
+    cluster.LegalizeLooseX(cluster.LLX(), cluster.URX());
+    //current_ly += cluster.Height();
   }
 }
 
@@ -264,17 +293,80 @@ void StandardClusterWellLegalizer::ClusterBlocksCompact() {
     if (block.IsFixed()) continue;
 
     int col_num = LocToCol((int) std::round(block.X()));
-    clus_cols_[col_num].AppendBlockClose(block);
+    AppendBlockToColClose(col_num, block);
   }
 
   for (auto &col: clus_cols_) {
-    int current_ly = RegionBottom();
-    for (auto &cluster: col.clusters_) {
-      cluster.SetLLY(current_ly);
-      cluster.UpdateLocY();
-      current_ly += cluster.Height();
+    col.contour_ = RegionBottom();
+  }
+  for (auto &cluster: cluster_list_) {
+    int col_num = (cluster.LLX() - RegionLeft()) / col_width_;
+    auto &col = clus_cols_[col_num];
+    col.contour_ += cluster.Height();
+    cluster.SetLLY(col.contour_);
+    cluster.UpdateLocY();
+    cluster.LegalizeCompactX(cluster.LLX());
+  }
+}
+
+void StandardClusterWellLegalizer::TetrisLegalizeCluster() {
+  /****
+   * Legalize the location of all clusters using traditional Tetris legalization algorithm
+   * ****/
+
+  long int tot_cluster_area = 0;
+  long int tot_region_area = (long int) RegionWidth() * (long int) RegionHeight();
+
+  int tot_cluster_count = cluster_list_.size();
+  for (auto &cluster: cluster_list_) {
+    tot_cluster_area += (long int) cluster.Height() * (long int) cluster.Width();
+  }
+
+  double ratio = (double) tot_cluster_area / (double) tot_region_area;
+  std::cout << "  Total cluster area: " << tot_cluster_area << "\n";
+  std::cout << "  Total region area:  " << tot_region_area << "\n";
+  std::cout << "  Ratio: " << ratio << "\n";
+
+  std::vector<Cluster *> cluster_ptr_list;
+  cluster_ptr_list.resize(tot_cluster_count);
+  int counter = 0;
+  for (auto &cluster: cluster_list_) {
+    cluster_ptr_list[counter] = &cluster;
+    ++counter;
+  }
+  std::sort(cluster_ptr_list.begin(),
+            cluster_ptr_list.end(),
+            [](const Cluster *lhs, const Cluster *rhs) {
+              return (lhs->LLY() < rhs->LLY()) || (lhs->LLY() == rhs->LLY() && lhs->LLX() < rhs->LLX());
+            });
+
+  for (auto &col: clus_cols_) {
+    col.contour_ = RegionBottom();
+  }
+  //std::vector<bool> col_full(tot_col_num_, false);
+  int min_cost;
+  int min_col;
+  int init_x;
+  int init_y;
+  int res_x;
+  int res_y;
+  for (auto &cluster_ptr: cluster_ptr_list) {
+    min_cost = INT_MAX;
+    min_col = 0;
+    init_x = cluster_ptr->LLX();
+    init_y = cluster_ptr->LLY();
+    for (int i = 0; i < tot_col_num_; ++i) {
+      int tmp_cost = std::abs(init_x - clus_cols_[i].LLX()) + std::abs(init_y - clus_cols_[i].contour_);
+      if (tmp_cost < min_cost) {
+        min_cost = tmp_cost;
+        min_col = i;
+      }
     }
-    col.LegalizeCluster();
+    res_x = clus_cols_[min_col].LLX();
+    res_y = clus_cols_[min_col].contour_;
+    clus_cols_[min_col].contour_ += cluster_ptr->Height();
+    cluster_ptr->ShiftBlock(res_x - init_x, res_y - init_y);
+    cluster_ptr->SetLoc(res_x, res_y);
   }
 }
 
@@ -290,8 +382,10 @@ void StandardClusterWellLegalizer::StartPlacement() {
   /****---->****/
   Init();
   //ClusterBlocks();
-  ClusterBlocksLoose();
-  //ClusterBlocksCompact();
+  //ClusterBlocksLoose();
+  ClusterBlocksCompact();
+
+  TetrisLegalizeCluster();
 
   /****<----****/
 
@@ -322,17 +416,15 @@ void StandardClusterWellLegalizer::GenMatlabClusterTable(std::string const &name
   std::ofstream ost(cluster_file.c_str());
   Assert(ost.is_open(), "Cannot open output file: " + cluster_file);
 
-  for (auto &col: clus_cols_) {
-    for (auto &cluster: col.clusters_) {
-      ost << col.LLX() << "\t"
-          << col.URX() << "\t"
-          << col.URX() << "\t"
-          << col.LLX() << "\t"
-          << cluster.LLY() << "\t"
-          << cluster.LLY() << "\t"
-          << cluster.URY() << "\t"
-          << cluster.URY() << "\n";
-    }
+  for (auto &cluster: cluster_list_) {
+    ost << cluster.LLX() << "\t"
+        << cluster.URX() << "\t"
+        << cluster.URX() << "\t"
+        << cluster.LLX() << "\t"
+        << cluster.LLY() << "\t"
+        << cluster.LLY() << "\t"
+        << cluster.URY() << "\t"
+        << cluster.URY() << "\n";
   }
   ost.close();
 }

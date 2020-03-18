@@ -108,6 +108,18 @@ struct IndexLocPair {
 };
 
 template<class T>
+struct PtrLocPair {
+  T *ptr;
+  int x;
+  int y;
+  explicit PtrLocPair(T *ptr_init = nullptr, int x_init = 0, int y_init = 0)
+      : ptr(ptr_init), x(x_init), y(y_init) {}
+  bool operator<(const PtrLocPair &rhs) const {
+    return (x < rhs.x) || ((x == rhs.x) && (y < rhs.y));
+  }
+};
+
+template<class T>
 struct Seg {
   T lo;
   T hi;

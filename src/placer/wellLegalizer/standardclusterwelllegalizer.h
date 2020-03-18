@@ -6,17 +6,28 @@
 #define DALI_SRC_PLACER_WELLLEGALIZER_STANDARDCLUSTERWELLLEGALIZER_H_
 
 #include "block_cluster.h"
+#include "common/misc.h"
 #include "placer/placer.h"
 
 struct Cluster {
   std::vector<Block *> blk_list_;
   int used_size_;
+  int lx_;
+  int width_;
   int ly_;
   int height_;
 
   int UsedSize() const;
   void SetUsedSize(int used_size);
   void UseSpace(int width);
+
+  void SetLLX(int lx);
+  int LLX() const;
+  int URX() const;
+  double CenterX() const;
+
+  void SetWidth(int width);
+  int Width() const;
 
   void SetLLY(int ly);
   int LLY() const;
@@ -26,28 +37,28 @@ struct Cluster {
   void SetHeight(int height);
   int Height() const;
 
+  void SetLoc(int lx, int ly);
+
+  void ShiftBlockX(int x_disp);
+  void ShiftBlockY(int y_disp);
+  void ShiftBlock(int x_disp, int y_disp);
   void UpdateLocY();
   void LegalizeCompactX(int left);
   void LegalizeLooseX(int left, int right);
 };
 
 struct ClusterColumn {
-  std::vector<Cluster> clusters_;
   int lx_;
   int ux_;
   int width_;
-
-  int top_;
-
+  int contour_;
   int clus_blk_cap_;
+
+  Cluster *top_cluster_;
 
   int Width() const;
   int LLX() const;
   int URX() const;
-
-  void AppendBlock(Block &blk);
-  void AppendBlockClose(Block &blk);
-  void LegalizeCluster();
 };
 
 class StandardClusterWellLegalizer : public Placer {
@@ -60,6 +71,7 @@ class StandardClusterWellLegalizer : public Placer {
   int tot_col_num_;
 
   std::vector<IndexLocPair<int>> index_loc_list_;
+  std::vector<Cluster> cluster_list_;
   std::vector<ClusterColumn> clus_cols_;
 
  public:
@@ -68,9 +80,13 @@ class StandardClusterWellLegalizer : public Placer {
   void Init();
 
   int LocToCol(int x);
+  void AppendBlockToCol(int col_num, Block &blk);
+  void AppendBlockToColClose(int col_num, Block &blk);
   void ClusterBlocks();
   void ClusterBlocksLoose();
   void ClusterBlocksCompact();
+
+  void TetrisLegalizeCluster();
 
   void StartPlacement() override;
 
@@ -87,6 +103,30 @@ inline void Cluster::SetUsedSize(int used_size) {
 
 inline void Cluster::UseSpace(int width) {
   used_size_ += width;
+}
+
+inline void Cluster::SetLLX(int lx) {
+  lx_ = lx;
+}
+
+inline int Cluster::LLX() const {
+  return lx_;
+}
+
+inline int Cluster::URX() const {
+  return lx_ + width_;
+}
+
+inline double Cluster::CenterX() const {
+  return lx_ + width_/2.0;
+}
+
+inline void Cluster::SetWidth(int width) {
+  width_ = width;
+}
+
+inline int Cluster::Width() const {
+  return width_;
 }
 
 inline void Cluster::SetLLY(int ly) {
@@ -111,6 +151,11 @@ inline void Cluster::SetHeight(int height) {
 
 inline int Cluster::Height() const {
   return height_;
+}
+
+inline void Cluster::SetLoc(int lx, int ly) {
+  lx_ = lx;
+  ly_ = ly;
 }
 
 inline int ClusterColumn::Width() const {

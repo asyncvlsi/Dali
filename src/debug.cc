@@ -50,7 +50,7 @@ int main() {
   gb_placer->SetInputCircuit(&circuit);
 
   gb_placer->SetBoundaryDef();
-  gb_placer->SetFillingRate(0.8);
+  gb_placer->SetFillingRate(0.7);
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
   //gb_placer->SaveDEFFile("benchmark_1K_dali.def", def_file_name);
