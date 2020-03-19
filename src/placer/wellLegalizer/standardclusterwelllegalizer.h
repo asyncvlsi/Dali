@@ -22,6 +22,7 @@ struct Cluster {
   void UseSpace(int width);
 
   void SetLLX(int lx);
+  void SetURX(int ux);
   int LLX() const;
   int URX() const;
   double CenterX() const;
@@ -30,6 +31,7 @@ struct Cluster {
   int Width() const;
 
   void SetLLY(int ly);
+  void SetURY(int uy);
   int LLY() const;
   int URY() const;
   double CenterY() const;
@@ -49,11 +51,12 @@ struct Cluster {
 
 struct ClusterColumn {
   int lx_;
-  int ux_;
   int width_;
-  int contour_;
-  int clus_blk_cap_;
+  int max_blk_capacity_per_cluster_;
 
+  int contour_;
+  int used_height_;
+  int cluster_count_;
   Cluster *top_cluster_;
 
   int Width() const;
@@ -86,6 +89,7 @@ class StandardClusterWellLegalizer : public Placer {
   void ClusterBlocksLoose();
   void ClusterBlocksCompact();
 
+  void TrialClusterLegalization();
   void TetrisLegalizeCluster();
 
   void StartPlacement() override;
@@ -107,6 +111,10 @@ inline void Cluster::UseSpace(int width) {
 
 inline void Cluster::SetLLX(int lx) {
   lx_ = lx;
+}
+
+inline void Cluster::SetURX(int ux) {
+  lx_ = ux - width_;
 }
 
 inline int Cluster::LLX() const {
@@ -131,6 +139,10 @@ inline int Cluster::Width() const {
 
 inline void Cluster::SetLLY(int ly) {
   ly_ = ly;
+}
+
+inline void Cluster::SetURY(int uy) {
+  ly_ = uy - height_;
 }
 
 inline int Cluster::LLY() const {
@@ -167,7 +179,7 @@ inline int ClusterColumn::LLX() const {
 }
 
 inline int ClusterColumn::URX() const {
-  return ux_;
+  return lx_ + width_;
 }
 
 inline int StandardClusterWellLegalizer::LocToCol(int x) {

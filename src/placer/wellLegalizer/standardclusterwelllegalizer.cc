@@ -116,11 +116,13 @@ void StandardClusterWellLegalizer::Init() {
   col_width_ = RegionWidth() / tot_col_num_;
   for (int i = 0; i < tot_col_num_; ++i) {
     clus_cols_[i].lx_ = RegionLeft() + i * col_width_;
-    clus_cols_[i].ux_ = std::min(clus_cols_[i].lx_ + col_width_, RegionRight());
-    clus_cols_[i].width_ = clus_cols_[i].ux_ - clus_cols_[i].lx_;
+    clus_cols_[i].width_ = col_width_;
     clus_cols_[i].contour_ = RegionBottom();
-    clus_cols_[i].clus_blk_cap_ = clus_cols_[i].Width() / circuit_->MinWidth();
+    clus_cols_[i].used_height_ = 0;
+    clus_cols_[i].cluster_count_ = 0;
+    clus_cols_[i].max_blk_capacity_per_cluster_ = clus_cols_[i].Width() / circuit_->MinWidth();
   }
+  clus_cols_[tot_col_num_ - 1].width_ = RegionRight() - clus_cols_[tot_col_num_ - 1].lx_;
   cluster_list_.reserve(tot_col_num_ * max_clusters_per_col);
   printf("Maximum possible number of clusters in a column: %d\n", max_clusters_per_col);
 
@@ -143,28 +145,31 @@ void StandardClusterWellLegalizer::AppendBlockToCol(int col_num, Block &blk) {
     init_y = std::max(init_y, col.contour_);
   }
 
+  Cluster *top_cluster;
   if (is_new_cluster_needed) {
     cluster_list_.emplace_back();
-    auto &top_cluster = cluster_list_.back();
-    top_cluster.blk_list_.reserve(col.clus_blk_cap_);
-    top_cluster.blk_list_.push_back(&blk);
-    top_cluster.SetUsedSize(width);
-    top_cluster.SetLLY(init_y);
-    top_cluster.SetHeight(height);
-    top_cluster.SetLLX(col.LLX());
-    top_cluster.SetWidth(col.Width());
+    top_cluster = &(cluster_list_.back());
+    top_cluster->blk_list_.reserve(col.max_blk_capacity_per_cluster_);
+    top_cluster->blk_list_.push_back(&blk);
+    top_cluster->SetUsedSize(width);
+    top_cluster->SetLLY(init_y);
+    top_cluster->SetHeight(height);
+    top_cluster->SetLLX(col.LLX());
+    top_cluster->SetWidth(col.Width());
 
-    col.top_cluster_ = &top_cluster;
-    col.contour_ = top_cluster.URY();
+    col.top_cluster_ = top_cluster;
+    col.cluster_count_ += 1;
+    col.used_height_ += top_cluster->Height();
   } else {
-    auto &top_cluster = *(col.top_cluster_);
-    top_cluster.blk_list_.push_back(&blk);
-    top_cluster.UseSpace(width);
-    if (height > top_cluster.Height()) {
-      top_cluster.SetHeight(height);
+    top_cluster = col.top_cluster_;
+    top_cluster->blk_list_.push_back(&blk);
+    top_cluster->UseSpace(width);
+    if (height > top_cluster->Height()) {
+      col.used_height_ += height - top_cluster->Height();
+      top_cluster->SetHeight(height);
     }
-    col.contour_ = top_cluster.URY();
   }
+  col.contour_ = top_cluster->URY();
 }
 
 void StandardClusterWellLegalizer::AppendBlockToColClose(int col_num, Block &blk) {
@@ -182,28 +187,31 @@ void StandardClusterWellLegalizer::AppendBlockToColClose(int col_num, Block &blk
     init_y = std::max(init_y, col.contour_);
   }
 
+  Cluster *top_cluster;
   if (is_new_cluster_needed) {
     cluster_list_.emplace_back();
-    auto &top_cluster = cluster_list_.back();
-    top_cluster.blk_list_.reserve(col.clus_blk_cap_);
-    top_cluster.blk_list_.push_back(&blk);
-    top_cluster.SetUsedSize(width);
-    top_cluster.SetLLY(init_y);
-    top_cluster.SetHeight(height);
-    top_cluster.SetLLX(col.LLX());
-    top_cluster.SetWidth(col.Width());
+    top_cluster = &(cluster_list_.back());
+    top_cluster->blk_list_.reserve(col.max_blk_capacity_per_cluster_);
+    top_cluster->blk_list_.push_back(&blk);
+    top_cluster->SetUsedSize(width);
+    top_cluster->SetLLY(init_y);
+    top_cluster->SetHeight(height);
+    top_cluster->SetLLX(col.LLX());
+    top_cluster->SetWidth(col.Width());
 
-    col.top_cluster_ = &top_cluster;
-    col.contour_ = top_cluster.URY();
+    col.top_cluster_ = top_cluster;
+    col.cluster_count_ += 1;
+    col.used_height_ += top_cluster->Height();
   } else {
-    auto &top_cluster = *(col.top_cluster_);
-    top_cluster.blk_list_.push_back(&blk);
-    top_cluster.UseSpace(width);
-    if (height > top_cluster.Height()) {
-      top_cluster.SetHeight(height);
+    top_cluster = col.top_cluster_;
+    top_cluster->blk_list_.push_back(&blk);
+    top_cluster->UseSpace(width);
+    if (height > top_cluster->Height()) {
+      col.used_height_ += height - top_cluster->Height();
+      top_cluster->SetHeight(height);
     }
-    col.contour_ = top_cluster.URY();
   }
+  col.contour_ = top_cluster->URY();
 }
 
 void StandardClusterWellLegalizer::ClusterBlocks() {
@@ -309,15 +317,74 @@ void StandardClusterWellLegalizer::ClusterBlocksCompact() {
   }
 }
 
+void StandardClusterWellLegalizer::TrialClusterLegalization() {
+  /****
+   * Legalize the location of all clusters using extended Tetris legalization algorithm in columns where usage does not exceed capacity
+   * Closely pack the column from bottom to top if its usage exceeds its capacity
+   * ****/
+
+  std::vector<std::vector<Cluster *>> clusters_in_column(tot_col_num_);
+  for (int i = 0; i < tot_col_num_; ++i) {
+    clusters_in_column[i].reserve(clus_cols_[i].cluster_count_);
+  }
+
+  for (auto &cluster: cluster_list_) {
+    int col_num = LocToCol((int) std::round(cluster.LLX()));
+    clusters_in_column[col_num].emplace_back(&cluster);
+  }
+
+  // sort clusters in each column based on the lower left corner
+  for (int i = 0; i < tot_col_num_; ++i) {
+    auto &col = clus_cols_[i];
+    auto &cluster_list = clusters_in_column[i];
+    if (col.contour_ <= RegionTop()) continue;
+
+    //std::cout << "used height/RegionHeight(): " << col.used_height_ / RegionHeight() << "\n";
+    if (col.used_height_ <= RegionHeight()) {
+      std::sort(cluster_list.begin(),
+                cluster_list.end(),
+                [](const Cluster *lhs, const Cluster *rhs) {
+                  return (lhs->LLY() > rhs->LLY());
+                });
+      int cluster_contour = RegionTop();
+      int res_y;
+      int init_y;
+      for (auto &cluster: cluster_list) {
+        init_y = cluster->URY();
+        res_y = std::min(cluster_contour, cluster->URY());
+        cluster->SetURY(res_y);
+        cluster_contour = cluster->LLY();
+        cluster->ShiftBlockY(res_y - init_y);
+      }
+    } else {
+      std::sort(clusters_in_column[i].begin(),
+                clusters_in_column[i].end(),
+                [](const Cluster *lhs, const Cluster *rhs) {
+                  return (lhs->LLY() < rhs->LLY());
+                });
+      int cluster_contour = RegionBottom();
+      int res_y;
+      int init_y;
+      for (auto &cluster: cluster_list) {
+        init_y = cluster->LLY();
+        res_y = cluster_contour;
+        cluster->SetLLY(res_y);
+        cluster_contour += cluster->Height();
+        cluster->ShiftBlockY(res_y - init_y);
+      }
+    }
+  }
+}
+
 void StandardClusterWellLegalizer::TetrisLegalizeCluster() {
   /****
    * Legalize the location of all clusters using traditional Tetris legalization algorithm
    * ****/
 
+  // calculate the area ratio
   long int tot_cluster_area = 0;
   long int tot_region_area = (long int) RegionWidth() * (long int) RegionHeight();
 
-  int tot_cluster_count = cluster_list_.size();
   for (auto &cluster: cluster_list_) {
     tot_cluster_area += (long int) cluster.Height() * (long int) cluster.Width();
   }
@@ -327,8 +394,9 @@ void StandardClusterWellLegalizer::TetrisLegalizeCluster() {
   std::cout << "  Total region area:  " << tot_region_area << "\n";
   std::cout << "  Ratio: " << ratio << "\n";
 
-  std::vector<Cluster *> cluster_ptr_list;
-  cluster_ptr_list.resize(tot_cluster_count);
+  // sort cluster based on the lower left corner
+  int tot_cluster_count = cluster_list_.size();
+  std::vector<Cluster *> cluster_ptr_list(tot_cluster_count, nullptr);
   int counter = 0;
   for (auto &cluster: cluster_list_) {
     cluster_ptr_list[counter] = &cluster;
@@ -340,10 +408,13 @@ void StandardClusterWellLegalizer::TetrisLegalizeCluster() {
               return (lhs->LLY() < rhs->LLY()) || (lhs->LLY() == rhs->LLY() && lhs->LLX() < rhs->LLX());
             });
 
+  // initialize the cluster contour of each column
   for (auto &col: clus_cols_) {
     col.contour_ = RegionBottom();
   }
-  //std::vector<bool> col_full(tot_col_num_, false);
+  std::vector<bool> col_full(tot_col_num_, false);
+
+  // find a legal location for each cluster
   int min_cost;
   int min_col;
   int init_x;
@@ -357,6 +428,9 @@ void StandardClusterWellLegalizer::TetrisLegalizeCluster() {
     init_y = cluster_ptr->LLY();
     for (int i = 0; i < tot_col_num_; ++i) {
       int tmp_cost = std::abs(init_x - clus_cols_[i].LLX()) + std::abs(init_y - clus_cols_[i].contour_);
+      if (clus_cols_[i].contour_ + cluster_ptr->Height() > RegionTop()) {
+        tmp_cost = INT_MAX;
+      }
       if (tmp_cost < min_cost) {
         min_cost = tmp_cost;
         min_col = i;
@@ -382,10 +456,11 @@ void StandardClusterWellLegalizer::StartPlacement() {
   /****---->****/
   Init();
   //ClusterBlocks();
-  //ClusterBlocksLoose();
-  ClusterBlocksCompact();
+  ClusterBlocksLoose();
+  //ClusterBlocksCompact();
 
-  TetrisLegalizeCluster();
+  TrialClusterLegalization();
+  //TetrisLegalizeCluster();
 
   /****<----****/
 
