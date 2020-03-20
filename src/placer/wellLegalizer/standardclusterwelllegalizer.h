@@ -47,6 +47,8 @@ struct Cluster {
   void UpdateLocY();
   void LegalizeCompactX(int left);
   void LegalizeLooseX(int left, int right);
+
+  void UpdateBlockLocationCompact();
 };
 
 struct ClusterColumn {
@@ -92,6 +94,18 @@ class StandardClusterWellLegalizer : public Placer {
   void TrialClusterLegalization();
   void TetrisLegalizeCluster();
 
+  double WireLengthCost(Cluster *cluster, int l, int r, int left_bound, int right_bound);
+  void FindBestLocalOrder(std::vector<Block *> &res,
+                          double &cost,
+                          Cluster *cluster,
+                          int l,
+                          int r,
+                          int left_bound,
+                          int right_bound,
+                          int range);
+  void LocalReorderInCluster(Cluster *cluster, int range = 3);
+  void LocalReorderAllClusters();
+
   void StartPlacement() override;
 
   void GenMatlabClusterTable(std::string const &name_of_file);
@@ -126,7 +140,7 @@ inline int Cluster::URX() const {
 }
 
 inline double Cluster::CenterX() const {
-  return lx_ + width_/2.0;
+  return lx_ + width_ / 2.0;
 }
 
 inline void Cluster::SetWidth(int width) {
@@ -154,7 +168,7 @@ inline int Cluster::URY() const {
 }
 
 inline double Cluster::CenterY() const {
-  return ly_ + height_/2.0;
+  return ly_ + height_ / 2.0;
 }
 
 inline void Cluster::SetHeight(int height) {

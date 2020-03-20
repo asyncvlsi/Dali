@@ -85,6 +85,20 @@ void Cluster::LegalizeLooseX(int left, int right) {
   }
 }
 
+void Cluster::UpdateBlockLocationCompact() {
+  std::sort(blk_list_.begin(),
+            blk_list_.end(),
+            [](const Block *blk_ptr0, const Block *blk_ptr1) {
+              return blk_ptr0->LLX() < blk_ptr1->LLX();
+            });
+  int current_x = lx_;
+  for (auto &blk: blk_list_) {
+    blk->SetLLX(current_x);
+    blk->SetCenterY(CenterY());
+    current_x += blk->Width();
+  }
+}
+
 StandardClusterWellLegalizer::StandardClusterWellLegalizer() {
   max_unplug_length_ = 0;
   plug_cell_width_ = 0;
@@ -444,6 +458,164 @@ void StandardClusterWellLegalizer::TetrisLegalizeCluster() {
   }
 }
 
+double StandardClusterWellLegalizer::WireLengthCost(Cluster *cluster, int l, int r, int left_bound, int right_bound) {
+  /****
+   * Returns the wire-length cost of the small group from l-th element to r-th element in this cluster
+   * "for each order, we keep the left and right boundaries of the group and evenly distribute the cells inside the group.
+   * Since we have the Single-Segment Clustering technique to take care of the cell positions,
+   * we do not pay much attention to the exact positions of the cells during Local Re-ordering."
+   * from "An Efficient and Effective Detailed Placement Algorithm"
+   * ****/
+
+  int num_of_blks = r - l + 1;
+  if (num_of_blks <= 1) return 0;
+
+  cluster->blk_list_[l]->SetLLX(left_bound);
+  cluster->blk_list_[r]->SetURX(right_bound);
+  int tot_blk_width = 0;
+  for (int i = l; i <= r; ++i) {
+    tot_blk_width += cluster->blk_list_[i]->Width();
+  }
+
+  int gap = (right_bound - left_bound - tot_blk_width) / (num_of_blks - 1);
+  int left_contour = left_bound + gap + cluster->blk_list_[l]->Width();
+  for (int i = l + 1; i < r; ++i) {
+    auto *blk = cluster->blk_list_[i];
+    blk->SetLLX(left_contour);
+    left_contour += blk->Width() + gap;
+  }
+
+  std::set<Net *> net_involved;
+  for (int i = l; i <= r; ++i) {
+    auto *blk = cluster->blk_list_[i];
+    for (auto &net_num: blk->net_list) {
+      if (circuit_->net_list[net_num].P() < 100) {
+        net_involved.insert(&(circuit_->net_list[net_num]));
+      }
+    }
+  }
+
+  double res = 0;
+  for (auto &net: net_involved) {
+    res += net->HPWL();
+  }
+
+  return res;
+}
+
+void StandardClusterWellLegalizer::FindBestLocalOrder(std::vector<Block *> &res,
+                                                      double &cost,
+                                                      Cluster *cluster,
+                                                      int l,
+                                                      int r,
+                                                      int left_bound,
+                                                      int right_bound,
+                                                      int range) {
+  /****
+  * Returns the best permutation in @param res
+  * @param cost records the cost function associated with the best permutation
+  * @param l is the left bound of the range
+  * @param r is the right bound of the range
+  * @param cluster points to the whole range, but we are only interested in the permutation of range [l,r]
+  * ****/
+
+  //printf("l : %d, r: %d\n", l, r);
+
+  if (l == r) {
+    /*for (auto &blk_ptr: cluster->blk_ptr_list_) {
+      std::cout << blk_ptr->NameStr() << "  ";
+    }
+    std::cout << "\n";*/
+    int tmp_l = r - range + 1;
+    double tmp_cost = WireLengthCost(cluster, tmp_l, r, left_bound, right_bound);
+    if (tmp_cost < cost) {
+      cost = tmp_cost;
+      for (int j = 0; j < range; ++j) {
+        res[j] = cluster->blk_list_[tmp_l + j];
+      }
+    }
+  } else {
+    // Permutations made
+    auto &blk_list = cluster->blk_list_;
+    for (int i = l; i <= r; ++i) {
+      // Swapping done
+      std::swap(blk_list[l], blk_list[i]
+      );
+
+      // Recursion called
+      FindBestLocalOrder(res, cost, cluster, l + 1, r, left_bound, right_bound, range);
+
+      //backtrack
+      std::swap(blk_list[l], blk_list[i]
+      );
+    }
+  }
+
+}
+
+void StandardClusterWellLegalizer::LocalReorderInCluster(Cluster *cluster, int range) {
+  /****
+   * Enumerate all local permutations, @param range determines how big the local range is
+   * ****/
+
+  assert(range > 0);
+
+  int sz = cluster->blk_list_.size();
+  if (sz < 3) return;
+
+  int last_segment = sz - range;
+  std::vector<Block *> best_permutation(range, nullptr);
+  for (int l = 0; l <= last_segment; ++l) {
+    for (int j = 0; j < range; ++j) {
+      best_permutation[j] = cluster->blk_list_[l + j];
+    }
+    int r = l + range - 1;
+    double best_cost = DBL_MAX;
+    int left_bound = (int) cluster->blk_list_[l]->LLX();
+    int right_bound = (int) cluster->blk_list_[r]->URX();
+    FindBestLocalOrder(best_permutation, best_cost, cluster, l, r, left_bound, right_bound, range);
+    for (int j = 0; j < range; ++j) {
+      cluster->blk_list_[l + j] = best_permutation[j];
+    }
+
+    cluster->blk_list_[l]->SetLLX(left_bound);
+    cluster->blk_list_[r]->SetURX(right_bound);
+    int tot_blk_width = 0;
+    for (int i = l; i <= r; ++i) {
+      tot_blk_width += cluster->blk_list_[i]->Width();
+    }
+
+    int gap = (right_bound - left_bound - tot_blk_width) / (r - l);
+    int left_contour = left_bound + cluster->blk_list_[l]->Width() + gap;
+    for (int i = l + 1; i < r; ++i) {
+      auto *blk = cluster->blk_list_[i];
+      blk->SetLLX(left_contour);
+      left_contour += blk->Width() + gap;
+    }
+  }
+
+}
+
+void StandardClusterWellLegalizer::LocalReorderAllClusters() {
+  // sort cluster based on the lower left corner
+  int tot_cluster_count = cluster_list_.size();
+  std::vector<Cluster *> cluster_ptr_list(tot_cluster_count, nullptr);
+  int counter = 0;
+  for (auto &cluster: cluster_list_) {
+    cluster_ptr_list[counter] = &cluster;
+    ++counter;
+  }
+  std::sort(cluster_ptr_list.begin(),
+            cluster_ptr_list.end(),
+            [](const Cluster *lhs, const Cluster *rhs) {
+              return (lhs->LLY() < rhs->LLY()) || (lhs->LLY() == rhs->LLY() && lhs->LLX() < rhs->LLX());
+            });
+
+  for (auto &cluster_ptr: cluster_ptr_list) {
+    LocalReorderInCluster(cluster_ptr);
+  }
+}
+
 void StandardClusterWellLegalizer::StartPlacement() {
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "---------------------------------------\n"
@@ -458,8 +630,11 @@ void StandardClusterWellLegalizer::StartPlacement() {
   //ClusterBlocks();
   ClusterBlocksLoose();
   //ClusterBlocksCompact();
+  ReportHPWL(LOG_CRITICAL);
 
-  TrialClusterLegalization();
+  //TrialClusterLegalization();
+  //ReportHPWL(LOG_CRITICAL);
+  LocalReorderAllClusters();
   //TetrisLegalizeCluster();
 
   /****<----****/
