@@ -94,14 +94,16 @@ class StandardClusterWellLegalizer : public Placer {
   void TrialClusterLegalization();
   void TetrisLegalizeCluster();
 
-  double WireLengthCost(Cluster *cluster, int l, int r, int left_bound, int right_bound);
+  double WireLengthCost(Cluster *cluster, int l, int r);
   void FindBestLocalOrder(std::vector<Block *> &res,
                           double &cost,
                           Cluster *cluster,
+                          int cur,
                           int l,
                           int r,
                           int left_bound,
                           int right_bound,
+                          int gap,
                           int range);
   void LocalReorderInCluster(Cluster *cluster, int range = 3);
   void LocalReorderAllClusters();
