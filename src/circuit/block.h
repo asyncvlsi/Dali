@@ -31,13 +31,15 @@ class BlockAux;
 
 class Block {
  protected:
-  /* essential data entries */
-  BlockType *type_;
-  std::pair<const std::string, int> *name_num_pair_;
-  double llx_, lly_; // lower Left corner
-  PlaceStatus place_status_;
-  BlockOrient orient_;
-  BlockAux *aux_;
+  /**** essential data entries ***/
+  BlockType *type_; // type
+  int height_; // cached height, also used to store effective height
+  std::pair<const std::string, int> *name_num_pair_; // name for finding its index in block_list
+  double llx_; // lower x coordinate
+  double lly_; // lower y coordinate
+  PlaceStatus place_status_; // placement status, i.e, PLACED, FIXED, UNPLACED
+  BlockOrient orient_; // orientation, normally, N or FS
+  BlockAux *aux_; // points to auxiliary information if needed
 
  public:
   Block(BlockType *type,
@@ -60,6 +62,8 @@ class Block {
   BlockType *Type() const;
   int Num() const;
   int Width() const;
+  void SetHeight(int height);
+  void SetHeightFromType();
   int Height() const;
   double LLX() const;
   double LLY() const;
@@ -88,12 +92,12 @@ class Block {
   void SetAux(BlockAux *aux);
   void SwapLoc(Block &blk);
 
-  void IncreX(double displacement);
-  void IncreY(double displacement);
-  void IncreX(double displacement, double upper, double lower);
-  void IncreY(double displacement, double upper, double lower);
-  void DecreX(double displacement);
-  void DecreY(double displacement);
+  void IncreaseX(double displacement);
+  void IncreaseY(double displacement);
+  void IncreaseX(double displacement, double upper, double lower);
+  void IncreaseY(double displacement, double upper, double lower);
+  void DecreaseX(double displacement);
+  void DecreaseY(double displacement);
   bool IsOverlap(const Block &rhs) const;
   bool IsOverlap(const Block *rhs) const;
   double OverlapArea(const Block &rhs) const;
@@ -135,8 +139,16 @@ inline int Block::Width() const {
   return type_->Width();
 }
 
+inline void Block::SetHeight(int height) {
+  height_ = height;
+}
+
+inline void Block::SetHeightFromType() {
+  height_ = type_->Height();
+}
+
 inline int Block::Height() const {
-  return type_->Height();
+  return height_;
 }
 
 inline double Block::LLX() const {
@@ -238,19 +250,19 @@ inline void Block::SetAux(BlockAux *aux) {
   aux_ = aux;
 }
 
-inline void Block::IncreX(double displacement) {
+inline void Block::IncreaseX(double displacement) {
   llx_ += displacement;
 }
 
-inline void Block::IncreY(double displacement) {
+inline void Block::IncreaseY(double displacement) {
   lly_ += displacement;
 }
 
-inline void Block::DecreX(double displacement) {
+inline void Block::DecreaseX(double displacement) {
   llx_ -= displacement;
 }
 
-inline void Block::DecreY(double displacement) {
+inline void Block::DecreaseY(double displacement) {
   lly_ -= displacement;
 }
 

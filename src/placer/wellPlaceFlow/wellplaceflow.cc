@@ -29,10 +29,6 @@ void WellPlaceFlow::StartPlacement() {
     return;
   }
 
-  well_legalizer_.TakeOver(this);
-  well_legalizer_.InitializeClusterLegalizer();
-  well_legalizer_.ReportWellRule();
-
   InitialPlacement();
   //std::cout << cg_total_hpwl_ << "  " << circuit_->HPWL() << "\n";
 
@@ -45,12 +41,14 @@ void WellPlaceFlow::StartPlacement() {
     if (globalVerboseLevel >= LOG_CRITICAL) {
       printf("It %d: \t%e  %e\n", cur_iter_, cg_total_hpwl_, lal_total_hpwl_);
     }
-    if (cur_iter_ > 10) {
-      well_legalizer_.ClusterBlocks();
-      well_legalizer_.LegalizeCluster(4 );
-      well_legalizer_.UpdateBlockLocation();
-      well_legalizer_.LocalReorderAllClusters();
-      well_legalizer_.GenMatlabClusterTable("cl" + std::to_string(cur_iter_) + "_result");
+    if (cur_iter_ > 15) {
+      LGTetrisEx legalizer;
+      legalizer.TakeOver(this);
+      legalizer.StartPlacement();
+
+      StandardClusterWellLegalizer well_legalizer;
+      well_legalizer.TakeOver(this);
+      well_legalizer.StartPlacement();
     }
     if (HPWL_LAL_converge) { // if HPWL sconverges
       if (cur_iter_ >= 30) {

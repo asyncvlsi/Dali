@@ -193,8 +193,8 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
   velocity += velocity_incre;
   blk_aux->SetVelocity(velocity);
 
-  blk.IncreX(velocity.x, RegionRight(), RegionLeft());
-  blk.IncreY(velocity.y, RegionTop(), RegionBottom());
+  blk.IncreaseX(velocity.x, RegionRight(), RegionLeft());
+  blk.IncreaseY(velocity.y, RegionTop(), RegionBottom());
 }
 
 void MDPlacer::StartPlacement() {

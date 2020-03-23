@@ -45,8 +45,8 @@ void TetrisLegalizer::FastShift(int failure_point) {
       }
     }
     for (auto &&block: block_list) {
-      block.IncreX(left_ - bounding_left);
-      block.IncreY(bottom_ - bounding_bottom);
+      block.IncreaseX(left_ - bounding_left);
+      block.IncreaseY(bottom_ - bounding_bottom);
     }
   } else {
     double init_diff = index_loc_list_[failure_point - 1].x - index_loc_list_[failure_point].x;
@@ -57,7 +57,7 @@ void TetrisLegalizer::FastShift(int failure_point) {
     //std::cout << left_new << "  " << bounding_left << "\n";
     for (size_t i = failure_point; i < index_loc_list_.size(); ++i) {
       int block_num = index_loc_list_[i].num;
-      block_list[block_num].IncreX(left_new + init_diff - bounding_left);
+      block_list[block_num].IncreaseX(left_new + init_diff - bounding_left);
     }
   }
 }
@@ -175,7 +175,7 @@ void TetrisLegalizer::StartPlacement() {
   }
   InitLegalizer();
   /*for (auto &&block: GetCircuit()->block_list) {
-    block.IncreX((right_-left_)/2.0);
+    block.IncreaseX((right_-left_)/2.0);
   }
   max_iter_ = 2;
   GenMATLABScript("shift_result.txt");*/

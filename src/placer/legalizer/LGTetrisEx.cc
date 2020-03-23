@@ -479,7 +479,7 @@ void LGTetrisEx::FastShiftLeft(int failure_point) {
     for (int i = failure_point; i < sz; ++i) {
       block_num = index_loc_list_[i].num;
       if (block_list[block_num].IsMovable()) {
-        block_list[block_num].IncreX(left_new - bounding_left + init_diff);
+        block_list[block_num].IncreaseX(left_new - bounding_left + init_diff);
       }
     }
   }
@@ -811,7 +811,7 @@ void LGTetrisEx::FastShiftRight(int failure_point) {
     for (int i = failure_point; i < sz; ++i) {
       block_num = index_loc_list_[i].num;
       if (block_list[block_num].IsMovable()) {
-        block_list[block_num].DecreX(right_new - bounding_right + init_diff);
+        block_list[block_num].DecreaseX(right_new - bounding_right + init_diff);
       }
     }
   }

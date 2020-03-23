@@ -8,20 +8,20 @@
 
 void Cluster::ShiftBlockX(int x_disp) {
   for (auto &blk_ptr: blk_list_) {
-    blk_ptr->IncreX(x_disp);
+    blk_ptr->IncreaseX(x_disp);
   }
 }
 
 void Cluster::ShiftBlockY(int y_disp) {
   for (auto &blk_ptr: blk_list_) {
-    blk_ptr->IncreY(y_disp);
+    blk_ptr->IncreaseY(y_disp);
   }
 }
 
 void Cluster::ShiftBlock(int x_disp, int y_disp) {
   for (auto &blk_ptr: blk_list_) {
-    blk_ptr->IncreX(x_disp);
-    blk_ptr->IncreY(y_disp);
+    blk_ptr->IncreaseX(x_disp);
+    blk_ptr->IncreaseY(y_disp);
   }
 }
 
@@ -646,7 +646,7 @@ void StandardClusterWellLegalizer::StartPlacement() {
   }
 
   ReportMemory(LOG_CRITICAL);
-  GenMatlabClusterTable("sc_result");
+  //GenMatlabClusterTable("sc_result");
 }
 
 void StandardClusterWellLegalizer::GenMatlabClusterTable(std::string const &name_of_file) {

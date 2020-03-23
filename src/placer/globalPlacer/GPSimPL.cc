@@ -1756,8 +1756,8 @@ void GPSimPL::CheckAndShift() {
   double delta_y = bottom_ + margin_y / 2 - bottom_most;
 
   for (auto &&blk: circuit_->block_list) {
-    blk.IncreX(delta_x);
-    blk.IncreY(delta_y);
+    blk.IncreaseX(delta_x);
+    blk.IncreaseY(delta_y);
   }
 }
 

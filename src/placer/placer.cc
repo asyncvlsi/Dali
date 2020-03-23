@@ -323,12 +323,12 @@ void Placer::IOPinPlacement() {
 
 void Placer::ShiftX(double shift_x) {
   for (auto &block: circuit_->block_list) {
-    block.IncreX(shift_x);
+    block.IncreaseX(shift_x);
   }
 }
 
 void Placer::ShiftY(double shift_y) {
   for (auto &block: circuit_->block_list) {
-    block.IncreY(shift_y);
+    block.IncreaseY(shift_y);
   }
 }

@@ -6,11 +6,10 @@
 #define DALI_SRC_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_
 
 #include "placer/globalPlacer/GPSimPL.h"
-#include "placer/wellLegalizer/clusterwelllegalizer.h"
+#include "placer/legalizer/LGTetrisEx.h"
+#include "placer/wellLegalizer/standardclusterwelllegalizer.h"
 
 class WellPlaceFlow : public GPSimPL {
- private:
-  ClusterWellLegalizer well_legalizer_;
  public:
   WellPlaceFlow();
 

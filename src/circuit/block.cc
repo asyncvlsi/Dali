@@ -9,8 +9,9 @@ Block::Block(BlockType *type,
              int llx,
              int lly,
              bool movable,
-             BlockOrient orient) : type_(
-    type), name_num_pair_(name_num_pair), llx_(llx), lly_(lly), orient_(orient) {
+             BlockOrient orient) :
+    type_(type), name_num_pair_(name_num_pair), llx_(llx), lly_(lly), orient_(orient) {
+  height_ = type_->Height();
   Assert(name_num_pair != nullptr,
          "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
   aux_ = nullptr;
@@ -28,6 +29,7 @@ Block::Block(BlockType *type,
              PlaceStatus place_state,
              BlockOrient orient) :
     type_(type), name_num_pair_(name_num_pair), llx_(llx), lly_(lly), place_status_(place_state), orient_(orient) {
+  height_ = type_->Height();
   Assert(name_num_pair != nullptr,
          "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
   aux_ = nullptr;
@@ -42,7 +44,7 @@ void Block::SwapLoc(Block &blk) {
   blk.SetLLY(tmp_y);
 }
 
-void Block::IncreX(double displacement, double upper, double lower) {
+void Block::IncreaseX(double displacement, double upper, double lower) {
   llx_ += displacement;
   double real_upper = upper - Width();
   if (llx_ < lower) {
@@ -52,7 +54,7 @@ void Block::IncreX(double displacement, double upper, double lower) {
   }
 }
 
-void Block::IncreY(double displacement, double upper, double lower) {
+void Block::IncreaseY(double displacement, double upper, double lower) {
   lly_ += displacement;
   double real_upper = upper - Height();
   if (lly_ < lower) {
