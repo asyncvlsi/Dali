@@ -108,6 +108,8 @@ class StandardClusterWellLegalizer : public Placer {
   void LocalReorderInCluster(Cluster *cluster, int range = 3);
   void LocalReorderAllClusters();
 
+  void SingleSegmentClusteringOptimization();
+
   void StartPlacement() override;
 
   void GenMatlabClusterTable(std::string const &name_of_file);

@@ -607,6 +607,10 @@ void StandardClusterWellLegalizer::LocalReorderAllClusters() {
   }
 }
 
+void StandardClusterWellLegalizer::SingleSegmentClusteringOptimization() {
+  
+}
+
 void StandardClusterWellLegalizer::StartPlacement() {
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "---------------------------------------\n"

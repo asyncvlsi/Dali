@@ -13,6 +13,8 @@ class Tech {
   bool p_set_;
   WellLayer *n_layer_;
   WellLayer *p_layer_;
+  double same_diff_spacing_;
+  double any_diff_spacing_;
  public:
   Tech();
   ~Tech();
@@ -20,6 +22,7 @@ class Tech {
   WellLayer *GetPLayer() const;
   void SetNLayer(double width, double spacing, double op_spacing, double max_plug_dist, double overhang);
   void SetPLayer(double width, double spacing, double op_spacing, double max_plug_dist, double overhang);
+  void SetDiffSpacing(double same_diff, double any_diff);
 
   void Report();
 };

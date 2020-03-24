@@ -20,9 +20,9 @@ int main() {
 
   time_t Time = clock();
 
-  std::string lef_file_name = "benchmark_100K.lef";
-  std::string def_file_name = "benchmark_100K.def";
-  std::string cell_file_name = "benchmark_100K.cell";
+  std::string lef_file_name = "benchmark_200K.lef";
+  std::string def_file_name = "benchmark_200K.def";
+  std::string cell_file_name = "benchmark_200K.cell";
 
 #if USE_DB_PARSER
   odb::dbDatabase *db = odb::dbDatabase::create();
@@ -52,6 +52,8 @@ int main() {
   well_place_flow.ReportBoundaries();
   well_place_flow.StartPlacement();
   well_place_flow.GenMATLABTable("gb_result.txt");
+
+  well_place_flow.SaveDEFFile("benchmark_200K_dali.def", def_file_name);
 
   Time = clock() - Time;
   std::cout << "Execution time " << double(Time) / CLOCKS_PER_SEC << "s.\n";
