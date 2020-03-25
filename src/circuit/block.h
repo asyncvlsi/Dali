@@ -33,7 +33,8 @@ class Block {
  protected:
   /**** essential data entries ***/
   BlockType *type_; // type
-  int height_; // cached height, also used to store effective height
+  int eff_height_; // cached height, also used to store effective height
+  long int eff_area_; // cached effective area
   std::pair<const std::string, int> *name_num_pair_; // name for finding its index in block_list
   double llx_; // lower x coordinate
   double lly_; // lower y coordinate
@@ -140,15 +141,17 @@ inline int Block::Width() const {
 }
 
 inline void Block::SetHeight(int height) {
-  height_ = height;
+  eff_height_ = height;
+  eff_area_ = eff_height_ * type_->Width();
 }
 
 inline void Block::SetHeightFromType() {
-  height_ = type_->Height();
+  eff_height_ = type_->Height();
+  eff_area_ = type_->Area();
 }
 
 inline int Block::Height() const {
-  return height_;
+  return eff_height_;
 }
 
 inline double Block::LLX() const {
@@ -192,7 +195,7 @@ inline bool Block::IsFixed() const {
 }
 
 inline long int Block::Area() const {
-  return type_->Area();
+  return eff_area_;
 }
 
 inline BlockOrient Block::Orient() const {

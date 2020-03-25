@@ -10,6 +10,7 @@ BlockType::BlockType(const std::string *name, int width, int height)
     : name_(name),
       width_(width),
       height_(height),
+      area_(width_*height_),
       well_(nullptr) {}
 
 void BlockType::Report() const {

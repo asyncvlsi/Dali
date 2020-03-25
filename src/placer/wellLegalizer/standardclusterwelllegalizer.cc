@@ -630,6 +630,7 @@ void StandardClusterWellLegalizer::StartPlacement() {
   TrialClusterLegalization();
   ReportHPWL(LOG_CRITICAL);
   LocalReorderAllClusters();
+  //ReportHPWL(LOG_CRITICAL);
   //TetrisLegalizeCluster();
 
   /****<----****/
@@ -650,7 +651,7 @@ void StandardClusterWellLegalizer::StartPlacement() {
   }
 
   ReportMemory(LOG_CRITICAL);
-  //GenMatlabClusterTable("sc_result");
+  GenMatlabClusterTable("sc_result");
 }
 
 void StandardClusterWellLegalizer::GenMatlabClusterTable(std::string const &name_of_file) {

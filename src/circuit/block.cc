@@ -10,8 +10,13 @@ Block::Block(BlockType *type,
              int lly,
              bool movable,
              BlockOrient orient) :
-    type_(type), name_num_pair_(name_num_pair), llx_(llx), lly_(lly), orient_(orient) {
-  height_ = type_->Height();
+    type_(type),
+    name_num_pair_(name_num_pair),
+    llx_(llx),
+    lly_(lly),
+    orient_(orient) {
+  eff_height_ = type_->Height();
+  eff_area_ = type_->Area();
   Assert(name_num_pair != nullptr,
          "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
   aux_ = nullptr;
@@ -28,8 +33,14 @@ Block::Block(BlockType *type,
              int lly,
              PlaceStatus place_state,
              BlockOrient orient) :
-    type_(type), name_num_pair_(name_num_pair), llx_(llx), lly_(lly), place_status_(place_state), orient_(orient) {
-  height_ = type_->Height();
+    type_(type),
+    name_num_pair_(name_num_pair),
+    llx_(llx),
+    lly_(lly),
+    place_status_(place_state),
+    orient_(orient) {
+  eff_height_ = type_->Height();
+  eff_area_ = type_->Area();
   Assert(name_num_pair != nullptr,
          "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
   aux_ = nullptr;

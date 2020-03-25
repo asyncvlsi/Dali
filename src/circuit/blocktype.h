@@ -19,6 +19,7 @@ class BlockType {
   /****essential data entries****/
   const std::string *name_;
   int width_, height_;
+  long int area_;
 
  public:
   BlockTypeWell *well_;
@@ -41,11 +42,13 @@ class BlockType {
   void SetWell(BlockTypeWell *well);
   BlockTypeWell *GetWell() const;
 
-  int Width() const;
-  int Height() const;
-  long int Area() const;
   void SetWidth(int width);
+  int Width() const;
+
   void SetHeight(int height);
+  int Height() const;
+
+  long int Area() const;
   bool Empty() const;
 
   void Report() const;
@@ -78,8 +81,18 @@ inline BlockTypeWell *BlockType::GetWell() const {
   return well_;
 }
 
+inline void BlockType::SetWidth(int width) {
+  width_ = width;
+  area_ = width_ * height_;
+}
+
 inline int BlockType::Width() const {
   return width_;
+}
+
+inline void BlockType::SetHeight(int height) {
+  height_ = height;
+  area_ = width_ * height_;
 }
 
 inline int BlockType::Height() const {
@@ -87,15 +100,7 @@ inline int BlockType::Height() const {
 }
 
 inline long int BlockType::Area() const {
-  return (long int)width_ * (long int)height_;
-}
-
-inline void BlockType::SetWidth(int width) {
-  width_ = width;
-}
-
-inline void BlockType::SetHeight(int height) {
-  height_ = height;
+  return area_;
 }
 
 inline bool BlockType::Empty() const {
