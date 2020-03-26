@@ -41,6 +41,7 @@ class Circuit {
   bool grid_set_;
   double grid_value_x_;
   double grid_value_y_;
+  double row_height_;
 
   Tech *tech_param_;
   Design *design_;
@@ -66,9 +67,12 @@ class Circuit {
 
   /****API to set grid value****/
   void SetGridValue(double grid_value_x, double grid_value_y);
-  double GetGridValueX() const { return grid_value_x_; } // unit in micro
-  double GetGridValueY() const { return grid_value_y_; }
+  double GetGridValueX() const; // unit in micro
+  double GetGridValueY() const;
   void SetGridUsingMetalPitch();
+  void SetRowHeight(double row_height);
+  double GetDBRowHeight() const;
+  int GetIntRowHeight() const;
 
   /****API to set metal layers: deprecated
    * now the metal layer information are all stored in openDB data structure
@@ -247,6 +251,26 @@ class Circuit {
   static int FindFirstDigit(std::string &str);
 };
 
+inline double Circuit::GetGridValueX() const {
+  return grid_value_x_;
+} // unit in micro
+
+inline double Circuit::GetGridValueY() const {
+  return grid_value_y_;
+}
+
+inline void Circuit::SetRowHeight(double row_height) {
+  row_height_ = row_height;
+}
+
+inline double Circuit::GetDBRowHeight() const {
+  return row_height_;
+}
+
+inline int Circuit::GetIntRowHeight() const {
+  return (int)std::round(row_height_/grid_value_y_);
+}
+
 inline int Circuit::MinWidth() const {
   return blk_min_width_;
 }
@@ -276,7 +300,7 @@ inline int Circuit::TotMovableBlockNum() const {
 }
 
 inline int Circuit::TotFixedBlkCnt() const {
-  return block_list.size() - tot_mov_blk_num_;
+  return (int) block_list.size() - tot_mov_blk_num_;
 }
 
 inline double Circuit::AveWidth() const {

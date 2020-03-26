@@ -27,6 +27,7 @@ void Cluster::ShiftBlock(int x_disp, int y_disp) {
 
 void Cluster::UpdateLocY() {
   for (auto &blk_ptr: blk_list_) {
+    //blk_ptr->SetLLY(LLY());
     blk_ptr->SetCenterY(CenterY());
   }
 }
@@ -630,7 +631,16 @@ void StandardClusterWellLegalizer::StartPlacement() {
   TrialClusterLegalization();
   ReportHPWL(LOG_CRITICAL);
   LocalReorderAllClusters();
-  //ReportHPWL(LOG_CRITICAL);
+  ReportHPWL(LOG_CRITICAL);
+  LocalReorderAllClusters();
+  ReportHPWL(LOG_CRITICAL);
+  LocalReorderAllClusters();
+  ReportHPWL(LOG_CRITICAL);
+  LocalReorderAllClusters();
+  ReportHPWL(LOG_CRITICAL);
+  LocalReorderAllClusters();
+  ReportHPWL(LOG_CRITICAL);
+  LocalReorderAllClusters();
   //TetrisLegalizeCluster();
 
   /****<----****/

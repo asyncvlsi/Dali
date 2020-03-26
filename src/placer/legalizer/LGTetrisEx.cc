@@ -69,6 +69,7 @@ void LGTetrisEx::InitLegalizer() {
    * 3. initialize block contour to be the left contour
    * 4. allocate space for index_loc_list_
    * ****/
+  row_height_ = circuit_->GetIntRowHeight();
   tot_num_rows_ = (top_ - bottom_) / row_height_;
 
   std::vector<std::vector<std::vector<int>>> macro_segments;

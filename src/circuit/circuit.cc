@@ -106,19 +106,24 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
     }
     SetGridValue(grid_value_x, grid_value_y);
   }
+  auto site = lib->getSites().begin();
+  SetRowHeight(site->getHeight() / double(lef_database_microns));
+  //std::cout << site->getName() << "  " << site->getWidth() / double(lef_database_microns) << "  " << row_height_ << "\n";
+  double residual = std::fmod(row_height_, grid_value_y_);
+  Assert(residual<1e-6, "Site height is not integer multiple of grid value in Y");
 
   // 4. load all macro, or we say gate type
   //std::cout << lib->getName() << " lib\n";
   double llx = 0, lly = 0, urx = 0, ury = 0;
   int width = 0, height = 0;
-  for (auto &&mac: lib->getMasters()) {
-    std::string blk_name(mac->getName());
-    width = int(std::round((mac->getWidth() / grid_value_x_ / lef_database_microns)));
-    height = int(std::round((mac->getHeight() / grid_value_y_ / lef_database_microns)));
+  for (auto &&macro: lib->getMasters()) {
+    std::string blk_name(macro->getName());
+    width = int(std::round((macro->getWidth() / grid_value_x_ / lef_database_microns)));
+    height = int(std::round((macro->getHeight() / grid_value_y_ / lef_database_microns)));
     auto blk_type = AddBlockType(blk_name, width, height);
-    //std::cout << mac->getName() << "\n";
-    //std::cout << mac->getWidth()/grid_value_x_/lef_database_microns << "  " << mac->getHeight()/grid_value_y_/lef_database_microns << "\n";
-    for (auto &&terminal: mac->getMTerms()) {
+    //std::cout << macro->getName() << "\n";
+    //std::cout << macro->getWidth()/grid_value_x_/lef_database_microns << "  " << macro->getHeight()/grid_value_y_/lef_database_microns << "\n";
+    for (auto &&terminal: macro->getMTerms()) {
       std::string pin_name(terminal->getName());
       //if (pin_name == "Vdd" || pin_name == "GND") continue;
       //std::cout << terminal->getName() << " " << terminal->getMPins().begin()->getGeometry().begin()->xMax()/grid_value_x/lef_database_microns << "\n";
