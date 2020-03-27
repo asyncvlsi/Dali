@@ -14,42 +14,15 @@
 
 #include "status.h"
 
-Circuit::Circuit() : tot_width_(0),
-                     tot_height_(0),
-                     tot_blk_area_(0),
-                     tot_mov_width_(0),
-                     tot_mov_height_(0),
-                     tot_mov_block_area_(0),
-                     tot_mov_blk_num_(0),
-                     blk_min_width_(INT_MAX),
-                     blk_max_width_(0),
-                     blk_min_height_(INT_MAX),
-                     blk_max_height_(0),
-                     grid_set_(false),
-                     grid_value_x_(0),
-                     grid_value_y_(0) {
+Circuit::Circuit() {
   AddAbsIOPinType();
 #ifdef USE_OPENDB
   db_ = nullptr;
 #endif
 }
 
-Circuit::~Circuit() {
-  /****
-   * This destructor free the memory allocated for unordered_map<key, *T>
-   * because T is initialized by
-   *    auto *T = new T();
-   * ****/
-  for (auto &pair: block_type_map) {
-    delete pair.second;
-  }
-}
-
 #ifdef USE_OPENDB
-Circuit::Circuit(odb::dbDatabase *db)
-    : tot_width_(0), tot_height_(0), tot_blk_area_(0), tot_mov_width_(0), tot_mov_height_(0),
-      tot_mov_block_area_(0), tot_mov_blk_num_(0), blk_min_width_(INT_MAX), blk_max_width_(0),
-      blk_min_height_(INT_MAX), blk_max_height_(0), grid_set_(false), grid_value_x_(0), grid_value_y_(0) {
+Circuit::Circuit(odb::dbDatabase *db) {
   AddAbsIOPinType();
   db_ = db;
   InitializeFromDB(db);
@@ -63,7 +36,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
   Assert(lib != db->getLibs().end(), "No lib info specified!");
 
   // 1. lef database microns
-  lef_database_microns = tech->getDbUnitsPerMicron();
+  tech_.lef_database_microns = tech->getDbUnitsPerMicron();
   //std::cout << tech->getDbUnitsPerMicron() << "\n";
   //std::cout << tech->getLefUnits() << "\n";
   //std::cout << top_level->getDefUnits() << "\n";
@@ -71,13 +44,13 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
   // 2. manufacturing grid
   if (tech->hasManufacturingGrid()) {
     //std::cout << "Mangrid" << tech->getManufacturingGrid() << "\n";
-    manufacturing_grid = tech->getManufacturingGrid() / double(lef_database_microns);
+    tech_.manufacturing_grid = tech->getManufacturingGrid() / double(tech_.lef_database_microns);
   } else {
-    manufacturing_grid = 1.0 / lef_database_microns;
+    tech_.manufacturing_grid = 1.0 / tech_.lef_database_microns;
   }
 
   // 3. find the first and second metal layer pitch
-  if (!grid_set_) {
+  if (!tech_.grid_set_) {
     double grid_value_x = -1, grid_value_y = -1;
     Assert(tech->getRoutingLayerCount() >= 2, "Needs at least one metal layer to find metal pitch");
     for (auto &&layer: tech->getLayers()) {
@@ -88,23 +61,23 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
           layer_name == "M1" ||
           layer_name == "Metal1" ||
           layer_name == "METAL1") {
-        grid_value_y = (layer->getWidth() + layer->getSpacing()) / double(lef_database_microns);
+        grid_value_y = (layer->getWidth() + layer->getSpacing()) / double(tech_.lef_database_microns);
         //std::cout << (layer->getWidth() + layer->getSpacing()) / double(lef_database_microns) << "\n";
       } else if (layer_name == "m2" ||
           layer_name == "metal2" ||
           layer_name == "M2" ||
           layer_name == "Metal2" ||
           layer_name == "METAL2") {
-        grid_value_x = (layer->getWidth() + layer->getSpacing()) / double(lef_database_microns);
+        grid_value_x = (layer->getWidth() + layer->getSpacing()) / double(tech_.lef_database_microns);
         //std::cout << (layer->getWidth() + layer->getSpacing()) / double(lef_database_microns) << "\n";
       }
     }
     SetGridValue(grid_value_x, grid_value_y);
   }
   auto site = lib->getSites().begin();
-  SetRowHeight(site->getHeight() / double(lef_database_microns));
+  SetRowHeight(site->getHeight() / double(tech_.lef_database_microns));
   //std::cout << site->getName() << "  " << site->getWidth() / double(lef_database_microns) << "  " << row_height_ << "\n";
-  double residual = std::fmod(row_height_, grid_value_y_);
+  double residual = std::fmod(tech_.row_height_, tech_.grid_value_y_);
   Assert(residual < 1e-6, "Site height is not integer multiple of grid value in Y");
 
   // 4. load all macro, or we say gate type
@@ -113,8 +86,8 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
   int width = 0, height = 0;
   for (auto &&macro: lib->getMasters()) {
     std::string blk_name(macro->getName());
-    width = int(std::round((macro->getWidth() / grid_value_x_ / lef_database_microns)));
-    height = int(std::round((macro->getHeight() / grid_value_y_ / lef_database_microns)));
+    width = int(std::round((macro->getWidth() / tech_.grid_value_x_ / tech_.lef_database_microns)));
+    height = int(std::round((macro->getHeight() / tech_.grid_value_y_ / tech_.lef_database_microns)));
     auto blk_type = AddBlockType(blk_name, width, height);
     //std::cout << macro->getName() << "\n";
     //std::cout << macro->getWidth()/grid_value_x_/lef_database_microns << "  " << macro->getHeight()/grid_value_y_/lef_database_microns << "\n";
@@ -124,10 +97,10 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
       //std::cout << terminal->getName() << " " << terminal->getMPins().begin()->getGeometry().begin()->xMax()/grid_value_x/lef_database_microns << "\n";
       auto new_pin = blk_type->AddPin(pin_name);
       auto geo_shape = terminal->getMPins().begin()->getGeometry().begin();
-      llx = geo_shape->xMin() / grid_value_x_ / lef_database_microns;
-      urx = geo_shape->xMax() / grid_value_x_ / lef_database_microns;
-      lly = geo_shape->yMin() / grid_value_y_ / lef_database_microns;
-      ury = geo_shape->yMax() / grid_value_y_ / lef_database_microns;
+      llx = geo_shape->xMin() / tech_.grid_value_x_ / tech_.lef_database_microns;
+      urx = geo_shape->xMax() / tech_.grid_value_x_ / tech_.lef_database_microns;
+      lly = geo_shape->yMin() / tech_.grid_value_y_ / tech_.lef_database_microns;
+      ury = geo_shape->yMax() / tech_.grid_value_y_ / tech_.lef_database_microns;
       new_pin->AddRect(llx, lly, urx, ury);
     }
   }
@@ -151,7 +124,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
   //std::cout << db->getChip()->getBlock()->getBTerms().size() << "\n";
   // 5. load all gates
   int llx_int = 0, lly_int = 0;
-  def_distance_microns = top_level->getDefUnits();
+  design_.def_distance_microns = top_level->getDefUnits();
   odb::adsRect die_area;
   top_level->getDieArea(die_area);
   //std::cout << die_area.xMin() << "\n"
@@ -164,8 +137,8 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
     std::string blk_name(blk->getName());
     std::string blk_type_name(blk->getMaster()->getName());
     blk->getLocation(llx_int, lly_int);
-    llx_int = (int) std::round(llx_int / grid_value_x_ / def_distance_microns);
-    lly_int = (int) std::round(lly_int / grid_value_y_ / def_distance_microns);
+    llx_int = (int) std::round(llx_int / tech_.grid_value_x_ / design_.def_distance_microns);
+    lly_int = (int) std::round(lly_int / tech_.grid_value_y_ / design_.def_distance_microns);
     std::string place_status(blk->getPlacementStatus().getString());
     std::string orient(blk->getOrient().getString());
     AddBlock(blk_name, blk_type_name, llx_int, lly_int, StrToPlaceStatus(place_status), StrToOrient(orient));
@@ -195,7 +168,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
   for (auto &&net: top_level->getNets()) {
     //std::cout << net->getName() << "\n";
     std::string net_name(net->getName());
-    auto new_net = AddNet(net_name, normal_signal_weight);
+    auto new_net = AddNet(net_name, design_.normal_signal_weight);
     for (auto &&bterm: net->getBTerms()) {
       //std::cout << "  ( PIN " << bterm->getName() << ")  \t";
     }
@@ -223,8 +196,8 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
   std::string line;
 
   // 1. find DATABASE MICRONS
-  lef_database_microns = 0;
-  while ((lef_database_microns == 0) && !ist.eof()) {
+  tech_.lef_database_microns = 0;
+  while ((tech_.lef_database_microns == 0) && !ist.eof()) {
     getline(ist, line);
     if (!line.empty() && line[0] == '#') continue;
     if (line.find("DATABASE MICRONS") != std::string::npos) {
@@ -232,22 +205,22 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
       StrSplit(line, line_field);
       Assert(line_field.size() >= 3, "Invalid UNITS declaration: expecting 3 fields");
       try {
-        lef_database_microns = std::stoi(line_field[2]);
+        tech_.lef_database_microns = std::stoi(line_field[2]);
       } catch (...) {
         std::cout << line << "\n";
         Assert(false, "Invalid stoi conversion:" + line_field[2]);
       }
     }
   }
-  std::cout << "DATABASE MICRONS " << lef_database_microns << "\n";
+  std::cout << "DATABASE MICRONS " << tech_.lef_database_microns << "\n";
 
   // 2. find MANUFACTURINGGRID
-  manufacturing_grid = 0;
-  while ((manufacturing_grid <= 1e-10) && !ist.eof()) {
+  tech_.manufacturing_grid = 0;
+  while ((tech_.manufacturing_grid <= 1e-10) && !ist.eof()) {
     getline(ist, line);
     if (!line.empty() && line[0] == '#') continue;
     if (line.find("LAYER") != std::string::npos) {
-      manufacturing_grid = 1.0 / lef_database_microns;
+      tech_.manufacturing_grid = 1.0 / tech_.lef_database_microns;
       std::cout << "  WARNING:\n  MANUFACTURINGGRID not specified explicitly, using 1.0/DATABASE MICRONS instead\n";
     }
     if (line.find("MANUFACTURINGGRID") != std::string::npos) {
@@ -255,15 +228,15 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
       StrSplit(line, grid_field);
       Assert(grid_field.size() >= 2, "Invalid MANUFACTURINGGRID declaration: expecting 2 fields");
       try {
-        manufacturing_grid = std::stod(grid_field[1]);
+        tech_.manufacturing_grid = std::stod(grid_field[1]);
       } catch (...) {
         Assert(false, "Invalid stod conversion:\n" + line);
       }
       break;
     }
   }
-  Assert(manufacturing_grid > 0, "Cannot find or invalid MANUFACTURINGGRID");
-  std::cout << "MANUFACTURINGGRID: " << manufacturing_grid << "\n";
+  Assert(tech_.manufacturing_grid > 0, "Cannot find or invalid MANUFACTURINGGRID");
+  std::cout << "MANUFACTURINGGRID: " << tech_.manufacturing_grid << "\n";
 
   // 3. read metal layer
   static std::vector<std::string> metal_identifier_list{"m", "M", "metal", "Metal"};
@@ -356,19 +329,19 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     if (line.find("VIA") != std::string::npos || line.find("MACRO") != std::string::npos) break;
   }
   //ReportMetalLayers();
-  if (!grid_set_) {
-    if (metal_list.size() < 2) {
-      SetGridValue(manufacturing_grid, manufacturing_grid);
+  if (!tech_.grid_set_) {
+    if (tech_.metal_list.size() < 2) {
+      SetGridValue(tech_.manufacturing_grid, tech_.manufacturing_grid);
       std::cout << "No enough metal layers to specify horizontal and vertical pitch\n"
                 << "Using manufacturing grid as grid values\n";
-    } else if (metal_list[0].PitchY() <= 0 || metal_list[1].PitchX() <= 0) {
-      SetGridValue(manufacturing_grid, manufacturing_grid);
+    } else if (tech_.metal_list[0].PitchY() <= 0 || tech_.metal_list[1].PitchX() <= 0) {
+      SetGridValue(tech_.manufacturing_grid, tech_.manufacturing_grid);
       std::cout << "Invalid metal pitch\n"
                 << "Using manufacturing grid as grid values\n";
     } else {
       SetGridUsingMetalPitch();
     }
-    std::cout << "Grid Value: " << grid_value_x_ << "  " << grid_value_y_ << "\n";
+    std::cout << "Grid Value: " << tech_.grid_value_x_ << "  " << tech_.grid_value_y_ << "\n";
   }
 
   // 4. read block type information
@@ -394,8 +367,8 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
             std::vector<std::string> size_field;
             StrSplit(line, size_field);
             try {
-              width = (int) (std::round(std::stod(size_field[1]) / grid_value_x_));
-              height = (int) (std::round(std::stod(size_field[3]) / grid_value_y_));
+              width = (int) (std::round(std::stod(size_field[1]) / tech_.grid_value_x_));
+              height = (int) (std::round(std::stod(size_field[3]) / tech_.grid_value_y_));
             } catch (...) {
               Assert(false, "Invalid stod conversion:\n" + line);
             }
@@ -431,10 +404,10 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
               StrSplit(line, rect_field);
               Assert(rect_field.size() >= 5, "Invalid rect definition: expecting 5 fields\n" + line);
               try {
-                llx = std::stod(rect_field[1]) / grid_value_x_;
-                lly = std::stod(rect_field[2]) / grid_value_y_;
-                urx = std::stod(rect_field[3]) / grid_value_x_;
-                ury = std::stod(rect_field[4]) / grid_value_y_;
+                llx = std::stod(rect_field[1]) / tech_.grid_value_x_;
+                lly = std::stod(rect_field[2]) / tech_.grid_value_y_;
+                urx = std::stod(rect_field[3]) / tech_.grid_value_x_;
+                ury = std::stod(rect_field[4]) / tech_.grid_value_y_;
               } catch (...) {
                 Assert(false, "Invalid stod conversion:\n" + line);
               }
@@ -523,21 +496,21 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
   design_.net_list.reserve(nets_count);
 
   // find UNITS DISTANCE MICRONS
-  def_distance_microns = 0;
-  while ((def_distance_microns == 0) && !ist.eof()) {
+  design_.def_distance_microns = 0;
+  while ((design_.def_distance_microns == 0) && !ist.eof()) {
     getline(ist, line);
     if (line.find("DISTANCE MICRONS") != std::string::npos) {
       std::vector<std::string> line_field;
       StrSplit(line, line_field);
       Assert(line_field.size() >= 4, "Invalid UNITS declaration: expecting 4 fields");
       try {
-        def_distance_microns = std::stoi(line_field[3]);
+        design_.def_distance_microns = std::stoi(line_field[3]);
       } catch (...) {
         Assert(false, "Invalid stoi conversion (UNITS DISTANCE MICRONS):\n" + line);
       }
     }
   }
-  Assert(def_distance_microns > 0, "Invalid/null UNITS DISTANCE MICRONS: " + std::to_string(def_distance_microns));
+  Assert(design_.def_distance_microns > 0, "Invalid/null UNITS DISTANCE MICRONS: " + std::to_string(design_.def_distance_microns));
   //std::cout << "DISTANCE MICRONS " << def_distance_microns << "\n";
 
   // find DIEAREA
@@ -553,10 +526,10 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       //std::cout << line << "\n";
       Assert(die_area_field.size() >= 9, "Invalid UNITS declaration: expecting 9 fields");
       try {
-        def_left = (int) std::round(std::stoi(die_area_field[2]) / grid_value_x_ / def_distance_microns);
-        def_bottom = (int) std::round(std::stoi(die_area_field[3]) / grid_value_y_ / def_distance_microns);
-        def_right = (int) std::round(std::stoi(die_area_field[6]) / grid_value_x_ / def_distance_microns);
-        def_top = (int) std::round(std::stoi(die_area_field[7]) / grid_value_y_ / def_distance_microns);
+        def_left = (int) std::round(std::stoi(die_area_field[2]) / tech_.grid_value_x_ / design_.def_distance_microns);
+        def_bottom = (int) std::round(std::stoi(die_area_field[3]) / tech_.grid_value_y_ / design_.def_distance_microns);
+        def_right = (int) std::round(std::stoi(die_area_field[6]) / tech_.grid_value_x_ / design_.def_distance_microns);
+        def_top = (int) std::round(std::stoi(die_area_field[7]) / tech_.grid_value_y_ / design_.def_distance_microns);
         SetBoundary(def_left, def_right, def_bottom, def_top);
       } catch (...) {
         Assert(false, "Invalid stoi conversion (DIEAREA):\n" + line);
@@ -592,8 +565,8 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         BlockOrient orient = StrToOrient(block_declare_field[9]);
         int llx = 0, lly = 0;
         try {
-          llx = (int) std::round(std::stoi(block_declare_field[6]) / grid_value_x_ / def_distance_microns);
-          lly = (int) std::round(std::stoi(block_declare_field[7]) / grid_value_y_ / def_distance_microns);
+          llx = (int) std::round(std::stoi(block_declare_field[6]) / tech_.grid_value_x_ / design_.def_distance_microns);
+          lly = (int) std::round(std::stoi(block_declare_field[7]) / tech_.grid_value_y_ / design_.def_distance_microns);
         } catch (...) {
           Assert(false, "Invalid stoi conversion:\n" + line);
         }
@@ -650,9 +623,9 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         Net *new_net = nullptr;
         if (net_field[1].find("Reset") != std::string::npos) {
           //std::cout << net_field[1] << "\n";
-          new_net = AddNet(net_field[1], reset_signal_weight);
+          new_net = AddNet(net_field[1], design_.reset_signal_weight);
         } else {
-          new_net = AddNet(net_field[1], normal_signal_weight);
+          new_net = AddNet(net_field[1], design_.normal_signal_weight);
         }
         while (true) {
           getline(ist, line);
@@ -692,26 +665,26 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
 }
 
 bool Circuit::IsMetalLayerExist(std::string &metal_name) {
-  return metal_name_map.find(metal_name) != metal_name_map.end();
+  return tech_.metal_name_map.find(metal_name) != tech_.metal_name_map.end();
 }
 
 int Circuit::MetalLayerIndex(std::string &metal_name) {
   Assert(IsMetalLayerExist(metal_name), "MetalLayer does not exist, cannot find it: " + metal_name);
-  return metal_name_map.find(metal_name)->second;
+  return tech_.metal_name_map.find(metal_name)->second;
 }
 
 MetalLayer *Circuit::GetMetalLayer(std::string &metal_name) {
   Assert(IsMetalLayerExist(metal_name), "MetalLayer does not exist, cannot find it: " + metal_name);
-  return &metal_list[MetalLayerIndex(metal_name)];
+  return &tech_.metal_list[MetalLayerIndex(metal_name)];
 }
 
 MetalLayer *Circuit::AddMetalLayer(std::string &metal_name, double width, double spacing) {
   Assert(!IsMetalLayerExist(metal_name), "MetalLayer exist, cannot create this MetalLayer again: " + metal_name);
-  int map_size = metal_name_map.size();
-  auto ret = metal_name_map.insert(std::pair<std::string, int>(metal_name, map_size));
+  int map_size = tech_.metal_name_map.size();
+  auto ret = tech_.metal_name_map.insert(std::pair<std::string, int>(metal_name, map_size));
   std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
-  metal_list.emplace_back(width, spacing, name_num_pair_ptr);
-  return &(metal_list.back());
+  tech_.metal_list.emplace_back(width, spacing, name_num_pair_ptr);
+  return &(tech_.metal_list.back());
 }
 
 MetalLayer *Circuit::AddMetalLayer(std::string &metal_name) {
@@ -719,7 +692,7 @@ MetalLayer *Circuit::AddMetalLayer(std::string &metal_name) {
 }
 
 void Circuit::ReportMetalLayers() {
-  for (auto &metal_layer: metal_list) {
+  for (auto &metal_layer: tech_.metal_list) {
     metal_layer.Report();
   }
 }
@@ -734,12 +707,12 @@ void Circuit::SetBoundary(int left, int right, int bottom, int top) {
 }
 
 void Circuit::SetDieArea(int lower_x, int upper_x, int lower_y, int upper_y) {
-  Assert(grid_value_x_ > 0 && grid_value_y_ > 0, "Need to set positive grid values before setting placement boundary");
-  Assert(def_distance_microns > 0, "Need to set def_distance_microns before setting placement boundary");
-  SetBoundary((int) std::round(lower_x / grid_value_x_ / def_distance_microns),
-              (int) std::round(upper_x / grid_value_x_ / def_distance_microns),
-              (int) std::round(lower_y / grid_value_y_ / def_distance_microns),
-              (int) std::round(upper_y / grid_value_y_ / def_distance_microns));
+  Assert(tech_.grid_value_x_ > 0 && tech_.grid_value_y_ > 0, "Need to set positive grid values before setting placement boundary");
+  Assert(design_.def_distance_microns > 0, "Need to set def_distance_microns before setting placement boundary");
+  SetBoundary((int) std::round(lower_x / tech_.grid_value_x_ / design_.def_distance_microns),
+              (int) std::round(upper_x / tech_.grid_value_x_ / design_.def_distance_microns),
+              (int) std::round(lower_y / tech_.grid_value_y_ / design_.def_distance_microns),
+              (int) std::round(upper_y / tech_.grid_value_y_ / design_.def_distance_microns));
 }
 
 BlockTypeCluster *Circuit::AddBlockTypeCluster() {
@@ -762,15 +735,15 @@ BlockTypeWell *Circuit::AddBlockTypeWell(BlockTypeCluster *cluster, std::string 
 }
 
 void Circuit::SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {
-  tech_param_.SetNLayer(width, spacing, op_spacing, max_plug_dist, overhang);
+  tech_.SetNLayer(width, spacing, op_spacing, max_plug_dist, overhang);
 }
 
 void Circuit::SetPWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {
-  tech_param_.SetPLayer(width, spacing, op_spacing, max_plug_dist, overhang);
+  tech_.SetPLayer(width, spacing, op_spacing, max_plug_dist, overhang);
 }
 
 void Circuit::SetLegalizerSpacing(double same_spacing, double any_spacing) {
-  tech_param_.SetDiffSpacing(same_spacing, any_spacing);
+  tech_.SetDiffSpacing(same_spacing, any_spacing);
 }
 
 void Circuit::ReportWellShape() {
@@ -781,18 +754,18 @@ void Circuit::ReportWellShape() {
 }
 
 bool Circuit::IsBlockTypeExist(std::string &block_type_name) {
-  return block_type_map.find(block_type_name) != block_type_map.end();
+  return tech_.block_type_map.find(block_type_name) != tech_.block_type_map.end();
 }
 
 BlockType *Circuit::GetBlockType(std::string &block_type_name) {
   Assert(IsBlockTypeExist(block_type_name), "BlockType not exist, cannot find it: " + block_type_name);
-  return block_type_map.find(block_type_name)->second;
+  return tech_.block_type_map.find(block_type_name)->second;
 }
 
 BlockType *Circuit::AddBlockType(std::string &block_type_name, int width, int height) {
   Assert(!IsBlockTypeExist(block_type_name),
          "BlockType exist, cannot create this block type again: " + block_type_name);
-  auto ret = block_type_map.insert(std::pair<std::string, BlockType *>(block_type_name, nullptr));
+  auto ret = tech_.block_type_map.insert(std::pair<std::string, BlockType *>(block_type_name, nullptr));
   auto tmp_ptr = new BlockType(&(ret.first->first), width, height);
   ret.first->second = tmp_ptr;
   if (tmp_ptr->Area() > INT_MAX) tmp_ptr->Report();
@@ -800,8 +773,8 @@ BlockType *Circuit::AddBlockType(std::string &block_type_name, int width, int he
 }
 
 void Circuit::ReportBlockType() {
-  std::cout << "Total BlockType: " << block_type_map.size() << std::endl;
-  for (auto &pair: block_type_map) {
+  std::cout << "Total BlockType: " << tech_.block_type_map.size() << std::endl;
+  for (auto &pair: tech_.block_type_map) {
     pair.second->Report();
   }
 }
@@ -810,7 +783,7 @@ void Circuit::CopyBlockType(Circuit &circuit) {
   BlockType *blk_type = nullptr;
   BlockType *blk_type_new = nullptr;
   std::string type_name, pin_name;
-  for (auto &item: circuit.block_type_map) {
+  for (auto &item: circuit.tech_.block_type_map) {
     blk_type = item.second;
     type_name = *(blk_type->Name());
     if (type_name == "PIN") continue;
@@ -877,31 +850,31 @@ void Circuit::AddBlock(std::string &block_name,
   design_.block_list.emplace_back(block_type, name_num_pair_ptr, llx, lly, place_status, orient);
 
   // update statistics of blocks
-  long int old_tot_area = tot_blk_area_;
-  tot_blk_area_ += design_.block_list.back().Area();
-  Assert(old_tot_area < tot_blk_area_, "Total Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
-  tot_width_ += design_.block_list.back().Width();
-  tot_height_ += design_.block_list.back().Height();
+  long int old_tot_area = design_.tot_blk_area_;
+  design_.tot_blk_area_ += design_.block_list.back().Area();
+  Assert(old_tot_area < design_.tot_blk_area_, "Total Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
+  design_.tot_width_ += design_.block_list.back().Width();
+  design_.tot_height_ += design_.block_list.back().Height();
   if (design_.block_list.back().IsMovable()) {
-    ++tot_mov_blk_num_;
-    old_tot_area = tot_mov_block_area_;
-    tot_mov_block_area_ += design_.block_list.back().Area();
-    Assert(old_tot_area < tot_mov_block_area_,
+    ++design_.tot_mov_blk_num_;
+    old_tot_area = design_.tot_mov_block_area_;
+    design_.tot_mov_block_area_ += design_.block_list.back().Area();
+    Assert(old_tot_area < design_.tot_mov_block_area_,
            "Total Movable Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
-    tot_mov_width_ += design_.block_list.back().Width();
-    tot_mov_height_ += design_.block_list.back().Height();
+    design_.tot_mov_width_ += design_.block_list.back().Width();
+    design_.tot_mov_height_ += design_.block_list.back().Height();
   }
-  if (design_.block_list.back().Height() < blk_min_height_) {
-    blk_min_height_ = design_.block_list.back().Height();
+  if (design_.block_list.back().Height() < design_.blk_min_height_) {
+    design_.blk_min_height_ = design_.block_list.back().Height();
   }
-  if (design_.block_list.back().Height() > blk_max_height_) {
-    blk_max_height_ = design_.block_list.back().Height();
+  if (design_.block_list.back().Height() > design_.blk_max_height_) {
+    design_.blk_max_height_ = design_.block_list.back().Height();
   }
-  if (design_.block_list.back().Width() < blk_min_width_) {
-    blk_min_width_ = design_.block_list.back().Width();
+  if (design_.block_list.back().Width() < design_.blk_min_width_) {
+    design_.blk_min_width_ = design_.block_list.back().Width();
   }
-  if (design_.block_list.back().Width() > blk_min_width_) {
-    blk_max_width_ = design_.block_list.back().Width();
+  if (design_.block_list.back().Width() > design_.blk_min_width_) {
+    design_.blk_max_width_ = design_.block_list.back().Width();
   }
 }
 
@@ -1021,14 +994,14 @@ void Circuit::RemoveAllPseudoNets() {
 void Circuit::SetGridValue(double grid_value_x, double grid_value_y) {
   Assert(grid_value_x > 0, "grid_value_x must be a positive real number!");
   Assert(grid_value_y > 0, "grid_value_y must be a positive real number!");
-  Assert(!grid_set_, "once set, grid_value cannot be changed!");
-  grid_value_x_ = grid_value_x;
-  grid_value_y_ = grid_value_y;
-  grid_set_ = true;
+  Assert(!tech_.grid_set_, "once set, grid_value cannot be changed!");
+  tech_.grid_value_x_ = grid_value_x;
+  tech_.grid_value_y_ = grid_value_y;
+  tech_.grid_set_ = true;
 }
 
 void Circuit::SetGridUsingMetalPitch() {
-  SetGridValue(metal_list[0].PitchY(), metal_list[1].PitchX());
+  SetGridValue(tech_.metal_list[0].PitchY(), tech_.metal_list[1].PitchX());
 }
 
 void Circuit::ReadCellFile(std::string const &name_of_file) {
@@ -1155,10 +1128,10 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
               std::vector<std::string> shape_fields;
               StrSplit(line, shape_fields);
               try {
-                lx = int(std::round(std::stod(shape_fields[1]) / grid_value_x_));
-                ly = int(std::round(std::stod(shape_fields[2]) / grid_value_y_));
-                ux = int(std::round(std::stod(shape_fields[3]) / grid_value_x_));
-                uy = int(std::round(std::stod(shape_fields[4]) / grid_value_y_));
+                lx = int(std::round(std::stod(shape_fields[1]) / tech_.grid_value_x_));
+                ly = int(std::round(std::stod(shape_fields[2]) / tech_.grid_value_y_));
+                ux = int(std::round(std::stod(shape_fields[3]) / tech_.grid_value_x_));
+                uy = int(std::round(std::stod(shape_fields[4]) / tech_.grid_value_y_));
               } catch (...) {
                 Assert(false, "Invalid stod conversion:\n" + line);
               }
@@ -1176,8 +1149,8 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
       Assert(!cluster->Empty(), "No plug/unplug version provided");
     }
   }
-  Assert(!tech_param_.Empty(), "N/P well technology information not found!");
-  //tech_param_->Report();
+  Assert(!tech_.IsWellInfoSet(), "N/P well technology information not found!");
+  //tech_->Report();
   //ReportWellShape();
 
   std::cout << "CELL file loading complete: " << name_of_file << "\n";
@@ -1215,8 +1188,8 @@ void Circuit::ReportBriefSummary() {
     std::cout << "  movable blocks: " << TotMovableBlockNum() << "\n"
               << "  blocks: " << TotBlockNum() << "\n"
               << "  nets: " << design_.net_list.size() << "\n"
-              << "  grid size x: " << grid_value_x_ << " um, grid size y: " << grid_value_y_ << " um\n"
-              << "  total block area: " << tot_blk_area_ << "\n"
+              << "  grid size x: " << tech_.grid_value_x_ << " um, grid size y: " << tech_.grid_value_y_ << " um\n"
+              << "  total block area: " << design_.tot_blk_area_ << "\n"
               << "  total white space: " << (long int) (Right() - Left()) * (long int) (Top() - Bottom()) << "\n"
               << "    left:   " << Left() << "\n"
               << "    right:  " << Right() << "\n"
@@ -1292,8 +1265,8 @@ void Circuit::WriteDefFileDebug(std::string const &name_of_file) {
         << *(block.Name()) << " "
         << *(block.Type()->Name()) << " + "
         << "PLACED" << " "
-        << "( " + std::to_string((int) (block.LLX() * def_distance_microns * grid_value_x_)) + " "
-            + std::to_string((int) (block.LLY() * def_distance_microns * grid_value_y_)) + " )" << " "
+        << "( " + std::to_string((int) (block.LLX() * design_.def_distance_microns * tech_.grid_value_x_)) + " "
+            + std::to_string((int) (block.LLY() * design_.def_distance_microns * tech_.grid_value_y_)) + " )" << " "
         << OrientStr(block.Orient()) + " ;\n";
   }
   ost << "END COMPONENTS\n";
@@ -1437,8 +1410,8 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
         << *block.Name() << " "
         << *(block.Type()->Name()) << " + "
         << "PLACED" << " "
-        << "( " + std::to_string((int) (block.LLX() * def_distance_microns * grid_value_x_)) + " "
-            + std::to_string((int) (block.LLY() * def_distance_microns * grid_value_y_)) + " )" << " "
+        << "( " + std::to_string((int) (block.LLX() * design_.def_distance_microns * tech_.grid_value_x_)) + " "
+            + std::to_string((int) (block.LLY() * design_.def_distance_microns * tech_.grid_value_y_)) + " )" << " "
         << OrientStr(block.Orient()) + " ;\n";
   }
   ost << "END COMPONENTS\n";
@@ -1474,12 +1447,12 @@ void Circuit::SaveBookshelfNode(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file " + name_of_file);
   ost << "# this line is here just for ntuplace to recognize this file \n\n";
-  ost << "NumNodes : \t\t" << tot_mov_blk_num_ << "\n"
-      << "NumTerminals : \t\t" << design_.block_list.size() - tot_mov_blk_num_ << "\n";
+  ost << "NumNodes : \t\t" << design_.tot_mov_blk_num_ << "\n"
+      << "NumTerminals : \t\t" << design_.block_list.size() - design_.tot_mov_blk_num_ << "\n";
   for (auto &block: design_.block_list) {
     ost << "\t" << *(block.Name())
-        << "\t" << block.Width() * def_distance_microns * grid_value_x_
-        << "\t" << block.Height() * def_distance_microns * grid_value_y_
+        << "\t" << block.Width() * design_.def_distance_microns * tech_.grid_value_x_
+        << "\t" << block.Height() * design_.def_distance_microns * tech_.grid_value_y_
         << "\n";
   }
 }
@@ -1503,9 +1476,9 @@ void Circuit::SaveBookshelfNet(std::string const &name_of_file) {
       } else {
         ost << "O : ";
       }
-      ost << (pair.GetPin()->OffsetX() - pair.GetBlock()->Type()->Width() / 2.0) * def_distance_microns * grid_value_x_
+      ost << (pair.GetPin()->OffsetX() - pair.GetBlock()->Type()->Width() / 2.0) * design_.def_distance_microns * tech_.grid_value_x_
           << "\t"
-          << (pair.GetPin()->OffsetY() - pair.GetBlock()->Type()->Height() / 2.0) * def_distance_microns * grid_value_y_
+          << (pair.GetPin()->OffsetY() - pair.GetBlock()->Type()->Height() / 2.0) * design_.def_distance_microns * tech_.grid_value_y_
           << "\n";
     }
   }
@@ -1518,9 +1491,9 @@ void Circuit::SaveBookshelfPl(std::string const &name_of_file) {
   for (auto &node: design_.block_list) {
     ost << *node.Name()
         << "\t"
-        << int(node.LLX() * def_distance_microns * grid_value_x_)
+        << int(node.LLX() * design_.def_distance_microns * tech_.grid_value_x_)
         << "\t"
-        << int(node.LLY() * def_distance_microns * grid_value_y_);
+        << int(node.LLY() * design_.def_distance_microns * tech_.grid_value_y_);
     if (node.IsMovable()) {
       ost << "\t:\tN\n";
     } else {
@@ -1593,8 +1566,8 @@ void Circuit::LoadBookshelfPl(std::string const &name_of_file) {
     if (res.size() >= 4) {
       if (IsBlockExist(res[0])) {
         try {
-          lx = std::stod(res[1]) / grid_value_x_ / def_distance_microns;
-          ly = std::stod(res[2]) / grid_value_y_ / def_distance_microns;
+          lx = std::stod(res[1]) / tech_.grid_value_x_ / design_.def_distance_microns;
+          ly = std::stod(res[2]) / tech_.grid_value_y_ / design_.def_distance_microns;
           GetBlock(res[0])->SetLoc(lx, ly);
         } catch (...) {
           Assert(false, "Invalid stod conversion:\n\t" + line);

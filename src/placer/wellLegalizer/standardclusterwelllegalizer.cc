@@ -126,6 +126,7 @@ void StandardClusterWellLegalizer::Init() {
   tot_col_num_ = std::ceil(RegionWidth() / (double) col_width_);
   printf("Total number of cluster columns: %d\n", tot_col_num_);
 
+  //std::cout << RegionHeight() << "  " << circuit_->MinHeight() << "\n";
   int max_clusters_per_col = RegionHeight() / circuit_->MinHeight();
   clus_cols_.resize(tot_col_num_);
   col_width_ = RegionWidth() / tot_col_num_;
@@ -610,7 +611,7 @@ void StandardClusterWellLegalizer::LocalReorderAllClusters() {
 }
 
 void StandardClusterWellLegalizer::SingleSegmentClusteringOptimization() {
-  
+
 }
 
 void StandardClusterWellLegalizer::StartPlacement() {

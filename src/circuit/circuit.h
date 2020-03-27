@@ -23,37 +23,16 @@
 
 class Circuit {
   friend class Placer;
- private:
-  // statistical data of the circuit
-  long int tot_width_;
-  long int tot_height_;
-  long int tot_blk_area_;
-  long int tot_mov_width_;
-  long int tot_mov_height_;
-  long int tot_mov_block_area_;
-  int tot_mov_blk_num_;
-  int blk_min_width_;
-  int blk_max_width_;
-  int blk_min_height_;
-  int blk_max_height_;
+ public:
+  Tech tech_; // information in LEF can CELL
+  Design design_; // information in DEF
+  WellInfo well_info_; //
 
-  // Manufacturing Grid
-  bool grid_set_;
-  double grid_value_x_;
-  double grid_value_y_;
-  double row_height_;
-
-  Tech tech_param_;
-  Design design_;
-  WellInfo well_info_;
 #ifdef USE_OPENDB
   odb::dbDatabase *db_;
 #endif
 
- public:
   Circuit();
-  ~Circuit();
-
   /****API to initialize circuit
    * 1. from openDB
    * 2. from LEF/DEF directly
@@ -66,9 +45,9 @@ class Circuit {
   void ReadDefFile(std::string const &name_of_file);
 
   /****API to set grid value****/
-  void SetGridValue(double grid_value_x, double grid_value_y);
   double GetGridValueX() const; // unit in micro
   double GetGridValueY() const;
+  void SetGridValue(double grid_value_x, double grid_value_y);
   void SetGridUsingMetalPitch();
   void SetRowHeight(double row_height);
   double GetDBRowHeight() const;
@@ -77,8 +56,8 @@ class Circuit {
   /****API to set metal layers: deprecated
    * now the metal layer information are all stored in openDB data structure
    * ****/
-  std::vector<MetalLayer> metal_list;
-  std::unordered_map<std::string, int> metal_name_map;
+  std::vector<MetalLayer> *MetalList();
+  std::unordered_map<std::string, int> *MetalNameMap();
   bool IsMetalLayerExist(std::string &metal_name);
   int MetalLayerIndex(std::string &metal_name);
   MetalLayer *GetMetalLayer(std::string &metal_name);
@@ -89,7 +68,7 @@ class Circuit {
   /****API for BlockType
    * These are MACRO section in LEF
    * ****/
-  std::unordered_map<std::string, BlockType *> block_type_map;
+  std::unordered_map<std::string, BlockType *> *BlockTypeMap();
   bool IsBlockTypeExist(std::string &block_type_name);
   BlockType *GetBlockType(std::string &block_type_name);
   BlockType *AddBlockType(std::string &block_type_name, int width, int height);
@@ -99,12 +78,12 @@ class Circuit {
   /****API for DIE AREA
    * These are DIEAREA section in DEF
    * ****/
-  void SetBoundary(int left, int right, int bottom, int top); // unit in grid value
-  void SetDieArea(int lower_x, int upper_x, int lower_y, int upper_y); // unit in um
   int Left() const;
   int Right() const;
   int Bottom() const;
   int Top() const;
+  void SetBoundary(int left, int right, int bottom, int top); // unit in grid value
+  void SetDieArea(int lower_x, int upper_x, int lower_y, int upper_y); // unit in manufacturing grid
 
   /****API for Block
    * These are COMPONENTS section in DEF
@@ -169,12 +148,6 @@ class Circuit {
 
   void ReportBriefSummary();
 
-  double reset_signal_weight = 1;
-  double normal_signal_weight = 1;
-  double manufacturing_grid = 0;
-  int lef_database_microns = 0;
-  int def_distance_microns = 0;
-
   /****API to add N/P-well technology information
    * These are for CELL file
    * ****/
@@ -188,6 +161,7 @@ class Circuit {
   void ReadCellFile(std::string const &name_of_file);
   void ReportWellShape();
 
+  /****API to add virtual nets for timing driven placement****/
   /*
   std::vector< Net > pseudo_net_list;
   std::map<std::string, size_t> pseudo_net_name_map;
@@ -199,7 +173,7 @@ class Circuit {
    */
   // repulsive force can be created using an attractive force, a spring whose rest length in the current distance or even longer than the current distance
 
-  /****Other member functions****/
+  /****member functions to obtain statical values****/
   int MinWidth() const;
   int MaxWidth() const;
   int MinHeight() const;
@@ -216,12 +190,14 @@ class Circuit {
   double AveMovArea() const;
   double WhiteSpaceUsage() const;
 
+  /****Utility member functions****/
   void NetSortBlkPin();
+  // calculating HPWL from precise pin locations
   double HPWLX();
   double HPWLY();
   double HPWL();
   void ReportHPWL();
-
+  // calculating HPWL from the center of cells
   double HPWLCtoCX();
   double HPWLCtoCY();
   double HPWLCtoC();
@@ -249,23 +225,35 @@ class Circuit {
 };
 
 inline double Circuit::GetGridValueX() const {
-  return grid_value_x_;
+  return tech_.grid_value_x_;
 } // unit in micro
 
 inline double Circuit::GetGridValueY() const {
-  return grid_value_y_;
+  return tech_.grid_value_y_;
 }
 
 inline void Circuit::SetRowHeight(double row_height) {
-  row_height_ = row_height;
+  tech_.row_height_ = row_height;
 }
 
 inline double Circuit::GetDBRowHeight() const {
-  return row_height_;
+  return tech_.row_height_;
 }
 
 inline int Circuit::GetIntRowHeight() const {
-  return (int) std::round(row_height_ / grid_value_y_);
+  return (int) std::round(tech_.row_height_ / tech_.grid_value_y_);
+}
+
+inline std::vector<MetalLayer> *Circuit::MetalList() {
+  return &tech_.metal_list;
+}
+
+inline std::unordered_map<std::string, int> *Circuit::MetalNameMap() {
+  return &tech_.metal_name_map;
+}
+
+inline std::unordered_map<std::string, BlockType *> *Circuit::BlockTypeMap() {
+  return &tech_.block_type_map;
 }
 
 inline int Circuit::Left() const {
@@ -297,23 +285,23 @@ inline std::vector<Net> *Circuit::GetNetList() {
 }
 
 inline int Circuit::MinWidth() const {
-  return blk_min_width_;
+  return design_.blk_min_width_;
 }
 
 inline int Circuit::MaxWidth() const {
-  return blk_max_width_;
+  return design_.blk_max_width_;
 }
 
 inline int Circuit::MinHeight() const {
-  return blk_min_height_;
+  return design_.blk_min_height_;
 }
 
 inline int Circuit::MaxHeight() const {
-  return blk_max_height_;
+  return design_.blk_max_height_;
 }
 
 inline long int Circuit::TotArea() const {
-  return tot_blk_area_;
+  return design_.tot_blk_area_;
 }
 
 inline int Circuit::TotBlockNum() const {
@@ -321,35 +309,35 @@ inline int Circuit::TotBlockNum() const {
 }
 
 inline int Circuit::TotMovableBlockNum() const {
-  return tot_mov_blk_num_;
+  return design_.tot_mov_blk_num_;
 }
 
 inline int Circuit::TotFixedBlkCnt() const {
-  return (int) design_.block_list.size() - tot_mov_blk_num_;
+  return (int) design_.block_list.size() - design_.tot_mov_blk_num_;
 }
 
 inline double Circuit::AveWidth() const {
-  return double(tot_width_) / double(TotBlockNum());
+  return double(design_.tot_width_) / double(TotBlockNum());
 }
 
 inline double Circuit::AveHeight() const {
-  return double(tot_height_) / double(TotBlockNum());
+  return double(design_.tot_height_) / double(TotBlockNum());
 }
 
 inline double Circuit::AveArea() const {
-  return double(tot_blk_area_) / double(TotBlockNum());
+  return double(design_.tot_blk_area_) / double(TotBlockNum());
 }
 
 inline double Circuit::AveMovWidth() const {
-  return double(tot_mov_width_) / tot_mov_blk_num_;
+  return double(design_.tot_mov_width_) / design_.tot_mov_blk_num_;
 }
 
 inline double Circuit::AveMovHeight() const {
-  return double(tot_mov_height_) / tot_mov_blk_num_;
+  return double(design_.tot_mov_height_) / design_.tot_mov_blk_num_;
 }
 
 inline double Circuit::AveMovArea() const {
-  return double(tot_mov_block_area_) / tot_mov_blk_num_;
+  return double(design_.tot_mov_block_area_) / design_.tot_mov_blk_num_;
 }
 
 inline double Circuit::WhiteSpaceUsage() const {
@@ -357,7 +345,7 @@ inline double Circuit::WhiteSpaceUsage() const {
 }
 
 inline Tech *Circuit::GetTech() {
-  return &tech_param_;
+  return &tech_;
 }
 
 #endif //DALI_CIRCUIT_HPP

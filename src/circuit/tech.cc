@@ -7,6 +7,16 @@
 Tech::Tech() : n_set_(false), p_set_(false), n_layer_(nullptr), p_layer_(nullptr) {}
 
 Tech::~Tech() {
+  /****
+  * This destructor free the memory allocated for unordered_map<key, *T>
+  * because T is initialized by
+  *    auto *T = new T();
+  * ****/
+  for (auto &pair: block_type_map) {
+    delete pair.second;
+  }
+
+  // free the space for well layers
   delete (n_layer_);
   delete (p_layer_);
 }
