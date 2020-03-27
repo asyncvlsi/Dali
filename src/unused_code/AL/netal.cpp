@@ -29,7 +29,7 @@ double net_al_t::dhpwlx() {
   double max_x = block->dllx() + pin_list[0].x_offset();
   double min_x = block->dllx() + pin_list[0].x_offset();
 
-  for (auto &&pin: pin_list) {
+  for (auto &pin: pin_list) {
     if (pin.get_block() == nullptr) {
       std::cout << "Error!\n";
       std::cout << "attribute block_t* _block is nullptr, it should points to the block containing this pin\n";
@@ -57,7 +57,7 @@ double net_al_t::dhpwly() {
   double max_y = block->dlly() + pin_list[0].y_offset();
   double min_y = block->dlly() + pin_list[0].y_offset();
 
-  for (auto &&pin: pin_list) {
+  for (auto &pin: pin_list) {
     if (pin.get_block() == nullptr) {
       std::cout << "Error!\n";
       std::cout << "attribute block_t* _block is nullptr, it should points to the block containing this pin\n";

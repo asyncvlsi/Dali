@@ -560,7 +560,7 @@ bool WellLegalizer::WellLegalizationLeft() {
   bool is_current_loc_legal;
   bool is_legal_loc_found;
 
-  for (auto &&pair: index_loc_list_) {
+  for (auto &pair: index_loc_list_) {
     auto &block = block_list[pair.num];
     if (block.IsFixed()) continue;
 
@@ -895,7 +895,7 @@ bool WellLegalizer::WellLegalizationRight() {
   bool is_current_loc_legal;
   bool is_legal_loc_found;
 
-  for (auto &&pair: index_loc_list_) {
+  for (auto &pair: index_loc_list_) {
     auto &block = block_list[pair.num];
     if (block.IsFixed()) continue;
 

@@ -38,13 +38,13 @@ void BoxBin::update_cell_area(std::vector<Block> &Nodelist) {
   /*
   int temp_total_cell_area = 0;
   Block *node;
-  for (auto &&cell_id: cell_list) {
+  for (auto &cell_id: cell_list) {
     node = &Nodelist[cell_id];
     temp_total_cell_area += node->Area();
   }
   std::cout << "Total cell area: " << total_cell_area << "  " << temp_total_cell_area << "\n";
   temp_total_cell_area = 0;
-  for (auto &&node: Nodelist) {
+  for (auto &node: Nodelist) {
     if (node.isterminal()) continue;
     if ((node.x0 >= ll_point.x) && (node.x0 < ur_point.x) && (node.y0 >= ll_point.y) && (node.y0 < ur_point.y)) {
       temp_total_cell_area += node.Area();
@@ -55,7 +55,7 @@ void BoxBin::update_cell_area(std::vector<Block> &Nodelist) {
 
   Block *node;
   total_cell_area = 0;
-  for (auto &&cell_id: cell_list) {
+  for (auto &cell_id: cell_list) {
     node = &Nodelist[cell_id];
     total_cell_area += node->Area();
   }
@@ -163,7 +163,7 @@ void BoxBin::UpdateCellList(std::vector<std::vector<GridBin> > &grid_bin_matrix)
   cell_list.clear();
   for (int x = ll_index.x; x <= ur_index.x; x++) {
     for (int y = ll_index.y; y <= ur_index.y; y++) {
-      for (auto &&cell_id: grid_bin_matrix[x][y].cell_list) {
+      for (auto &cell_id: grid_bin_matrix[x][y].cell_list) {
         cell_list.push_back(cell_id);
       }
     }
@@ -184,7 +184,7 @@ void BoxBin::update_terminal_list_white_space(std::vector<Block> &Nodelist, std:
   bool not_overlap;
   Block *node;
   total_white_space = (right - left) * (top - bottom);
-  for (auto &&terminal_id: box_terminal_list) {
+  for (auto &terminal_id: box_terminal_list) {
     node = &Nodelist[terminal_id];
     node_llx = (int) node->LLX();
     node_lly = (int) node->LLY();
@@ -219,7 +219,7 @@ void BoxBin::UpdateObsBoundary(std::vector<Block> &block_list) {
   vertical_obstacle_boundaries.clear();
   horizontal_obstacle_boundaries.clear();
   Block *node;
-  for (auto &&terminal_id: terminal_list) {
+  for (auto &terminal_id: terminal_list) {
     node = &block_list[terminal_id];
     if ((left < node->LLX()) && (right > node->LLX())) {
       vertical_obstacle_boundaries.push_back((int) node->LLX());
@@ -269,12 +269,12 @@ void BoxBin::UpdateObsBoundary(std::vector<Block> &block_list) {
   }
   /*
   std::cout << "Horizontal_obs_boundaries: ";
-  for (auto &&boundary: horizontal_obstacle_boundaries) {
+  for (auto &boundary: horizontal_obstacle_boundaries) {
     std::cout << boundary << " ";
   }
   std::cout << "\n";
   std::cout << "Vertical_obs_boundaries: ";
-  for (auto &&boundary: vertical_obstacle_boundaries) {
+  for (auto &boundary: vertical_obstacle_boundaries) {
     std::cout << boundary << " ";
   }
   std::cout << "\n";
@@ -288,7 +288,7 @@ bool BoxBin::write_cell_in_box(std::string const &NameOfFile, std::vector<Block>
     std::cout << "Cannot open file" << NameOfFile << "\n";
     return false;
   }
-  for (auto &&cell_id: cell_list) {
+  for (auto &cell_id: cell_list) {
     if (Nodelist[cell_id].IsMovable()) {
       ost << Nodelist[cell_id].X() << "\t" << Nodelist[cell_id].Y() << "\n";
     }
@@ -388,7 +388,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist,
       //std::cout << i << "\n";
       cell_area_low = 0;
       cut_line = (cut_line_low + cut_line_high) / 2;
-      for (auto &&cell_id: cell_list) {
+      for (auto &cell_id: cell_list) {
         node = &Nodelist[cell_id];
         if (node->Y() < cut_line) {
           cell_area_low += node->Area();
@@ -410,7 +410,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist,
     cut_ll_point.y = cut_line;
     cut_ur_point.y = cut_line;
     //std::cout << cut_line << " LLY " << ll_point.y << " URY " << ll_point.y << "\n";
-    for (auto &&cell_id: cell_list) {
+    for (auto &cell_id: cell_list) {
       node = &Nodelist[cell_id];
       if (node->Y() < cut_line) {
         cell_list_low.push_back(cell_id);
@@ -427,7 +427,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist,
       //std::cout << i << "\n";
       cell_area_low = 0;
       cut_line = (cut_line_low + cut_line_high) / 2;
-      for (auto &&cell_id: cell_list) {
+      for (auto &cell_id: cell_list) {
         node = &Nodelist[cell_id];
         if (node->X() < cut_line) {
           cell_area_low += node->Area();
@@ -448,7 +448,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist,
     cut_ll_point.x = cut_line;
     cut_ur_point.x = cut_line;
     //std::cout << cut_line << " LLX " << ll_point.x << " URX " << ur_point.x << "\n";
-    for (auto &&cell_id: cell_list) {
+    for (auto &cell_id: cell_list) {
       node = &Nodelist[cell_id];
       if (node->X() < cut_line) {
         cell_list_low.push_back(cell_id);

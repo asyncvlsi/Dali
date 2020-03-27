@@ -101,7 +101,7 @@ void Block::Report() {
 
 void Block::ReportNet() {
   std::cout << *Name() << " connects to:\n";
-  for (auto &&net_num: net_list) {
+  for (auto &net_num: net_list) {
     std::cout << net_num << "  ";
   }
   std::cout << "\n";

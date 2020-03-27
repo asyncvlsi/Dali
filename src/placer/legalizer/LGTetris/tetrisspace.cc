@@ -19,7 +19,7 @@ TetrisSpace::TetrisSpace(int left, int right, int bottom, int top, int rowHeight
     FreeSegmentList tmpRow;
     free_segment_rows.push_back(tmpRow);
   }
-  for (auto &&row:free_segment_rows) {
+  for (auto &row:free_segment_rows) {
     auto *seg_ptr = new FreeSegment(left_, right_);
     row.PushBack(seg_ptr);
     row.SetMinWidth(min_width_);
@@ -169,7 +169,7 @@ bool TetrisSpace::FindBlockLoc(int llx, int lly, int width, int height, int2d &r
   if (all_row_fail) { // need to change this in the future
     return false;
   }
-  for (auto &&loc: candidate_list) {
+  for (auto &loc: candidate_list) {
     if (loc.x == -1 && loc.y == -1) {
       continue;
     }
@@ -191,7 +191,7 @@ bool TetrisSpace::FindBlockLoc(int llx, int lly, int width, int height, int2d &r
 }
 
 void TetrisSpace::Show() {
-  for (auto &&row: free_segment_rows) {
+  for (auto &row: free_segment_rows) {
     row.Show();
   }
 }

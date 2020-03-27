@@ -42,7 +42,7 @@ void GridBin::create_adjacent_bin_list(int grid_cnt_x, int grid_cnt_y) {
     tmp_index.y = index.y + 1;
     adjacent_bin_index.push_back(tmp_index);
   }
-  /*for (auto &&neighbor: adjacent_bin_index) {
+  /*for (auto &neighbor: adjacent_bin_index) {
     std::cout << neighbor.x << "  " << neighbor.y << ",  ";
   }
   std::cout << "\n";*/

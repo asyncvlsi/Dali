@@ -41,7 +41,7 @@ bool placer_al_t::set_input_circuit(circuit_t *circuit) {
   _movable_block_num = 0;
   _width_epsilon = 0;
   _height_epsilon = 0;
-  for (auto &&block: circuit->block_list) {
+  for (auto &block: circuit->block_list) {
     block_al_t block_al;
     block_al.retrieve_info_from_database(block);
     block_list.push_back(block_al);
@@ -60,10 +60,10 @@ bool placer_al_t::set_input_circuit(circuit_t *circuit) {
   _width_epsilon /= _movable_block_num*100;
   _height_epsilon /= _movable_block_num*100;
 
-  for (auto &&net: circuit->net_list) {
+  for (auto &net: circuit->net_list) {
     net_al_t net_al;
     net_al.retrieve_info_from_database(net);
-    for (auto &&pin: net.pin_list) {
+    for (auto &pin: net.pin_list) {
       int block_num = circuit->block_name_map.find(pin.get_block()->Name())->second;
       block_al_t *block_al_ptr = &block_list[block_num];
       pin_t pin_al(pin.x_offset(), pin.y_offset(), block_al_ptr);
@@ -89,7 +89,7 @@ void placer_al_t::uniform_initialization() {
 
   std::default_random_engine generator{0};
   std::uniform_real_distribution<float> distribution(0, 1);
-  for (auto &&node: block_list) {
+  for (auto &node: block_list) {
     if (!node.is_movable()) continue;
     node.set_center_dx(left() + Nx*distribution(generator));
     node.set_center_dy(bottom() + Ny*distribution(generator));
@@ -122,7 +122,7 @@ void placer_al_t::cg_init() {
     Ay[i].push_back(tempWT);
   }
   size_t tempnodenum0, tempnodenum1;
-  for (auto &&net: net_list) {
+  for (auto &net: net_list) {
     if (net.p()<=1) continue;
     for (size_t j=0; j<net.pin_list.size(); j++) {
       tempnodenum0 = net.pin_list[j].get_block()->Num();
@@ -156,7 +156,7 @@ void placer_al_t::build_problem_clique_x() {
   double weightx, invp, temppinlocx0, temppinlocx1, tempdiffoffset;
   size_t tempnodenum0, tempnodenum1;
 
-  for (auto &&net: net_list) {
+  for (auto &net: net_list) {
     //std::cout << i << "\n";
     if (net.p() <= 1) continue;
     invp = net.inv_p();
@@ -217,7 +217,7 @@ void placer_al_t::build_problem_clique_y() {
   double weighty, invp, temppinlocy0, temppinlocy1, tempdiffoffset;
   size_t tempnodenum0, tempnodenum1;
 
-  for (auto &&net: net_list) {
+  for (auto &net: net_list) {
     //std::cout << i << "\n";
     if (net.p() <= 1) continue;
     invp = net.inv_p();
@@ -265,14 +265,14 @@ void placer_al_t::build_problem_clique_y() {
 
 void placer_al_t::update_HPWL_x() {
   HPWLX_new = 0;
-  for (auto &&net: net_list) {
+  for (auto &net: net_list) {
     HPWLX_new += net.dhpwlx();
   }
 }
 
 void placer_al_t::update_max_min_node_x() {
   HPWLX_new = 0;
-  for (auto &&net: net_list) {
+  for (auto &net: net_list) {
     HPWLX_new += net.dhpwlx();
   }
   //std::cout << "HPWLX_old: " << HPWLX_old << "\n";
@@ -300,7 +300,7 @@ void placer_al_t::build_problem_b2b_x() {
   weight_tuple tempWT;
   double weight_x, inv_p, temp_pin_loc_x0, temp_pin_loc_x1, temp_diff_offset;
   size_t temp_node_num0, temp_node_num1, max_pindex_x, min_pindex_x;
-  for (auto &&net: net_list) {
+  for (auto &net: net_list) {
     if (net.p()<=1) {
       continue;
     }
@@ -372,7 +372,7 @@ void placer_al_t::build_problem_b2b_x_nooffset() {
   double weightx, invp, temppinlocx0, temppinlocx1;
   size_t tempnodenum0, tempnodenum1, maxpindex_x, minpindex_x;
 
-  for (auto &&net: net_list) {
+  for (auto &net: net_list) {
     if (net.p()<=1) continue;
     invp = net.inv_p();
     maxpindex_x = net.max_pin_index_x();
@@ -428,7 +428,7 @@ void placer_al_t::build_problem_b2b_x_nooffset() {
 void placer_al_t::update_HPWL_y() {
   // update the y direction max and min node in each net
   HPWLY_new = 0;
-  for (auto &&net: net_list) {
+  for (auto &net: net_list) {
     HPWLY_new += net.dhpwly();
   }
 }
@@ -436,7 +436,7 @@ void placer_al_t::update_HPWL_y() {
 void placer_al_t::update_max_min_node_y() {
   // update the y direction max and min node in each net
   HPWLY_new = 0;
-  for (auto &&net: net_list) {
+  for (auto &net: net_list) {
     HPWLY_new += net.dhpwly();
   }
   //std::cout << "HPWLY_old: " << HPWLY_old << "\n";
@@ -463,7 +463,7 @@ void placer_al_t::build_problem_b2b_y() {
   weight_tuple tempWT;
   double weighty, inv_p, temp_pin_loc_y0, temp_pin_loc_y1, temp_diff_offset;
   size_t temp_node_num0, temp_node_num1, max_pindex_y, min_pindex_y;
-  for (auto &&net: net_list) {
+  for (auto &net: net_list) {
     if (net.p()<=1) {
       continue;
     }
@@ -534,7 +534,7 @@ void placer_al_t::build_problem_b2b_y_nooffset() {
   weight_tuple tempWT;
   double weighty, invp, temppinlocy0, temppinlocy1;
   size_t tempnodenum0, tempnodenum1, maxpindex_y, minpindex_y;
-  for (auto &&net: net_list) {
+  for (auto &net: net_list) {
     if (net.p()<=1) continue;
     invp = net.inv_p();
     maxpindex_y = net.max_pin_index_y();
@@ -712,7 +712,7 @@ void placer_al_t::cg_close() {
 
 void placer_al_t::add_boundary_list() {
   int max_width=0, max_height=0;
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     // find maximum Width and maximum Height
     if (!block.is_movable()) {
       continue;
@@ -781,7 +781,7 @@ void placer_al_t::add_boundary_list() {
 void placer_al_t::initialize_bin_list(){
   // initialize the bin_list, build up the bin_list matrix
   int max_width=0, max_height=0;
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     // find maximum Width and maximum Height
     if (!block.is_movable()) {
       continue;
@@ -825,8 +825,8 @@ bool placer_al_t::draw_bin_list(std::string const &filename) {
     std::cout << "Cannot open output file: " << filename << "\n";
     return false;
   }
-  for (auto &&bin_column: bin_list) {
-    for (auto &&bin: bin_column) {
+  for (auto &bin_column: bin_list) {
+    for (auto &bin: bin_column) {
       ost << "rectangle('Position',[" << bin.left() << " " << bin.bottom() << " " << bin.width() << " " << bin.height() << "],'LineWidth',1)\n";
     }
   }
@@ -839,13 +839,13 @@ bool placer_al_t::draw_bin_list(std::string const &filename) {
 
 void placer_al_t::shift_cg_solution_to_region_center() {
   double leftmost = block_list[0].dllx(), bottommost = block_list[0].dlly(), rightmost = block_list[0].durx(), topmost = block_list[0].dury();
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     if (block.dllx() < leftmost) leftmost = block.dllx();
     if (block.dlly() < bottommost) bottommost = block.dlly();
     if (block.durx() > rightmost) rightmost = block.durx();
     if (block.dury() > topmost) topmost = block.dury();
   }
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     block.set_dllx(block.dllx() - leftmost + 1/2.0*(right() + left() - rightmost + leftmost));
     block.set_dlly(block.dlly() - bottommost + 1/2.0*(top() + bottom() - topmost + bottommost));
   }
@@ -857,11 +857,11 @@ bool placer_al_t::draw_block_net_list(std::string const &filename) {
     std::cout << "Cannot open output file: " << filename << "\n";
     return false;
   }
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     ost << "rectangle('Position',[" << block.dllx() << " " << block.dlly() << " " << block.width() << " " << block.height() << "], 'LineWidth', 1, 'EdgeColor','blue')\n";
   }
   block_al_t *block_ptr0, *block_ptr1;
-  for (auto &&net: net_list) {
+  for (auto &net: net_list) {
     for (size_t i=0; i<net.pin_list.size(); i++) {
       block_ptr0 = (block_al_t *)net.pin_list[i].get_block();
       for (size_t j=i+1; j<net.pin_list.size(); j++) {
@@ -887,7 +887,7 @@ void placer_al_t::expansion_legalization() {
   b_bottom = top();
   int max_height = 0;
   int max_width = 0;
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     if (block.is_movable()) {
       if (block.dx() < b_left) {
         b_left = block.dx();
@@ -917,7 +917,7 @@ void placer_al_t::expansion_legalization() {
   double mod_left = (left() + right())/2.0 - mod_region_width/2.0;
   double mod_bottom = (bottom() + top())/2.0 - mod_region_height/2.0;
 
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     if (block.is_movable()) {
       block.set_center_dx(mod_left + (block.dx() - b_left)/box_width * mod_region_width);
       block.set_center_dy(mod_bottom + (block.dy() - b_bottom)/box_height * mod_region_height);
@@ -927,7 +927,7 @@ void placer_al_t::expansion_legalization() {
   /*
   double gravity_center_x = 0;
   double gravity_center_y = 0;
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     if (block.is_movable()) {
       gravity_center_x += block.dx();
       gravity_center_y += block.dy();
@@ -935,7 +935,7 @@ void placer_al_t::expansion_legalization() {
   }
   gravity_center_x /= block_list.size();
   gravity_center_y /= block_list.size();
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     if (block.is_movable()) {
       block.set_center_dx(block.dx() - (gravity_center_x - (right() - left())/2.0));
       block.set_center_dy(block.dy() - (gravity_center_y - (top() - bottom())/2.0));
@@ -949,8 +949,8 @@ void placer_al_t::update_block_in_bin() {
   double leftmost=bin_list[0][0].left(), bottommost=bin_list[0][0].bottom();
   int X_bin_list_size = bin_list.size(), Y_bin_list_size = bin_list[0].size();
   int L,B,R,T; // left, bottom, right, top of the cell in which bin
-  for (auto &&bin_column: bin_list) {
-    for (auto &&bin: bin_column) {
+  for (auto &bin_column: bin_list) {
+    for (auto &bin: bin_column) {
       bin.CIB.clear();
     }
   }
@@ -989,7 +989,7 @@ bool placer_al_t::check_legal() {
         return false;
       }
     }
-    for (auto &&boundary: boundary_list) {
+    for (auto &boundary: boundary_list) {
       if (block_list[i].is_overlap(boundary)) {
         return false;
       }
@@ -999,7 +999,7 @@ bool placer_al_t::check_legal() {
 }
 
 void placer_al_t::integerize() {
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     block.set_dllx((int)block.dllx());
     block.set_dlly((int)block.dlly());
   }
@@ -1008,7 +1008,7 @@ void placer_al_t::integerize() {
 void placer_al_t::update_velocity() {
   double rij, overlap = 0, areai;
   double maxv1 = 15, maxv2 = 20;
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     block.vx = 0;
     block.vy = 0;
   }
@@ -1031,7 +1031,7 @@ void placer_al_t::update_velocity() {
       if ((y>=0)&&(y<Ybinlistsize)) {
         for (int x=L-1; x<=R+1; x++) {
           if ((x>=0)&&(x<Xbinlistsize)) {
-            for (auto &&cell_num_in_bin: bin_list[x][y].CIB) {
+            for (auto &cell_num_in_bin: bin_list[x][y].CIB) {
               if (i==(size_t)cell_num_in_bin) continue;
               temp_physical_neighbor_set.insert(cell_num_in_bin);
             }
@@ -1040,7 +1040,7 @@ void placer_al_t::update_velocity() {
       }
     }
 
-    for (auto &&block_num: temp_physical_neighbor_set) {
+    for (auto &block_num: temp_physical_neighbor_set) {
       overlap = block_list[i].overlap_area(block_list[block_num]);
       rij = sqrt(pow(block_list[i].dx() - block_list[block_num].dx(), 2) + pow(block_list[i].dy()-block_list[block_num].dy(), 2));
       block_list[i].vx += maxv1*overlap*(block_list[i].dx() - block_list[block_num].dx())/rij; // the maximum velocity of each cell is 5 at maxmimum
@@ -1078,7 +1078,7 @@ void placer_al_t::update_velocity() {
 void placer_al_t::update_velocity_force_damping() {
   double rij, overlap = 0, areai;
   double maxv1 = 5, maxv2 = 30;
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     block.vx = 0;
     block.vy = 0;
   }
@@ -1101,7 +1101,7 @@ void placer_al_t::update_velocity_force_damping() {
       if ((y>=0)&&(y<Ybinlistsize)) {
         for (int x=L-1; x<=R+1; x++) {
           if ((x>=0)&&(x<Xbinlistsize)) {
-            for (auto &&cell_num_in_bin: bin_list[x][y].CIB) {
+            for (auto &cell_num_in_bin: bin_list[x][y].CIB) {
               if (i==(size_t)cell_num_in_bin) continue;
               temp_physical_neighbor_set.insert(cell_num_in_bin);
             }
@@ -1112,7 +1112,7 @@ void placer_al_t::update_velocity_force_damping() {
 
     double force_x = 0;
     double force_y = 0;
-    for (auto &&block_num: temp_physical_neighbor_set) {
+    for (auto &block_num: temp_physical_neighbor_set) {
       overlap = block_list[i].overlap_area(block_list[block_num]);
       rij = sqrt(pow(block_list[i].dx() - block_list[block_num].dx(), 2) + pow(block_list[i].dy()-block_list[block_num].dy(), 2));
       force_x += maxv1*overlap*(block_list[i].dx() - block_list[block_num].dx())/rij;
@@ -1144,7 +1144,7 @@ void placer_al_t::update_velocity_force_damping() {
 }
 
 void placer_al_t::update_position() {
-  for (auto &&block:block_list) {
+  for (auto &block:block_list) {
     block.update_loc(time_step);
   }
 }
@@ -1182,7 +1182,7 @@ void placer_al_t::diffusion_with_gravity() {
   for (int i=0; i<max_legalization_iteration; i++) {
     update_block_in_bin();
     update_velocity();
-    for (auto &&block: block_list) {
+    for (auto &block: block_list) {
       if (i%2==0) {
         block.add_gravity_vx(-1);
       } else {

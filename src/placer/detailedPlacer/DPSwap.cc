@@ -26,7 +26,7 @@ double DPSwap::GetOverlap(Block &blk) {
   std::unordered_set<int> near_blk_set;
   for (int i=ll.x; i<=ur.x; ++i) {
     for (int j=ll.y; j<=ur.y; ++j) {
-      for (auto &&num: bin_matrix[i][j].block_set) {
+      for (auto &num: bin_matrix[i][j].block_set) {
         if (num == blk_num) continue;
         near_blk_set.insert(num);
       }
@@ -34,7 +34,7 @@ double DPSwap::GetOverlap(Block &blk) {
   }
 
   double total_overlap = 0;
-  for (auto &&num: near_blk_set) {
+  for (auto &num: near_blk_set) {
     total_overlap += blk.OverlapArea(block_list[num]);
   }
 
@@ -61,14 +61,14 @@ void DPSwap::GlobalSwap() {
   double benefit, best_num, best_benefit;
   double cell_cost;
   bool found_good_enough_swap;
-  for (auto &&blk: block_list) {
+  for (auto &blk: block_list) {
     std::unordered_set<int> optimal_region;
     FindOptimalRegion(blk, optimal_region);
     best_benefit = 0;
     cell_cost = GetBlkHPWL(blk) + GetOverlap(blk);
     found_good_enough_swap = false;
     best_num = -1;
-    for (auto &&num: optimal_region) {
+    for (auto &num: optimal_region) {
       benefit = SwapCostChange(blk, block_list[num], cell_cost);
       if (benefit > best_benefit) {
         best_num = num;

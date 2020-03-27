@@ -10,9 +10,9 @@ PLOSlide::PLOSlide() {}
 
 void PLOSlide::InitPostLegalOptimizer() {
   row_start_.assign(top_ - bottom_ + 1, left_);
-  net_aux_list_.reserve(circuit_->net_list.size());
+  net_aux_list_.reserve(NetList()->size());
 
-  for (auto &&net: circuit_->net_list) {
+  for (auto &net: *NetList()) {
     net_aux_list_.emplace_back(&net);
   }
 }
@@ -23,8 +23,9 @@ void PLOSlide::FindOptimalRegionX(Block &block, int &start, int &end) {
   std::vector<double> net_bound_x;
 
   double lo, hi;
+  auto &net_list = *(NetList());
   for (auto &net_num: block.net_list) {
-    circuit_->net_list[net_num].XBoundExclude(block, lo, hi);
+    net_list[net_num].XBoundExclude(block, lo, hi);
     pin = net_aux_list_[net_num].GetPin(block);
     pin_offset_x = pin->OffsetX(block.Orient());
     net_bound_x.push_back(lo - pin_offset_x);

@@ -65,7 +65,7 @@ bool block_dla_t::is_queued() {
 
 void block_dla_t::add_to_neb_list(block_dla_t *block_dla, double net_weight) {
   bool is_new_block_in_neb = false;
-  for (auto &&neb: neb_list) {
+  for (auto &neb: neb_list) {
     if (block_dla == neb.block) {
       is_new_block_in_neb = true;
       neb.total_wire_weight += net_weight;
@@ -96,7 +96,7 @@ void block_dla_t::sort_neb_list() {
 
 void block_dla_t::add_to_net(net_dla_t *net_dla) {
   bool is_in_net = false;
-  for (auto &&net_ptr: net) {
+  for (auto &net_ptr: net) {
     if (net_ptr == net_dla) {
       is_in_net = true;
     }
@@ -132,7 +132,7 @@ double block_dla_t::overlap_area(const  block_dla_t &rhs) const{
 
 int block_dla_t::wire_length_during_dla() {
   int WL = 0;
-  for (auto &&net_ptr: net) {
+  for (auto &net_ptr: net) {
     WL += net_ptr->hpwl_during_dla();
   }
   return WL;

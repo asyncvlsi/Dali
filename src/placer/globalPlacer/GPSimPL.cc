@@ -45,7 +45,7 @@ void GPSimPL::BlockLocRandomInit() {
     std::cout << "HPWL before initialization: " << circuit_->HPWL() << "\n";
   }
 
-  for (auto &&block: circuit_->block_list) {
+  for (auto &block: *BlockList()) {
     if (block.IsMovable()) {
       block.SetCenterX(RegionLeft() + region_width * distribution(generator));
       block.SetCenterY(RegionBottom() + region_height * distribution(generator));
@@ -63,7 +63,7 @@ void GPSimPL::BlockLocRandomInit() {
 void GPSimPL::BlockLocCenterInit() {
   double region_center_x = (RegionRight() + RegionLeft()) / 2.0;
   double region_center_y = (RegionTop() + RegionBottom()) / 2.0;
-  for (auto &&block: circuit_->block_list) {
+  for (auto &block: *BlockList()) {
     if (block.IsMovable()) {
       block.SetCenterX(region_center_x);
       block.SetCenterY(region_center_y);
@@ -77,7 +77,7 @@ void GPSimPL::BlockLocCenterInit() {
 
 void GPSimPL::CGInit() {
   SetEpsilon(); // set a small value for net weight dividend to avoid divergence
-  int sz = circuit_->block_list.size();
+  int sz = BlockList()->size();
   vx.resize(sz);
   vy.resize(sz);
   bx.resize(sz);
@@ -94,7 +94,7 @@ void GPSimPL::CGInit() {
 
   int coefficient_size = 0;
   int net_sz = 0;
-  for (auto &&net: circuit_->net_list) {
+  for (auto &net: *NetList()) {
     net_sz = net.P();
     // if a net has size n, then in total, there will be (2(n-2)+1)*4 non-zero entries in the matrix
     if (net_sz > 1) coefficient_size += ((net_sz - 2) * 2 + 1) * 4;
@@ -120,12 +120,14 @@ void GPSimPL::UpdateCGFlagsX() {
 }
 
 void GPSimPL::UpdateMaxMinX() {
-  for (auto &&net: circuit_->net_list) net.UpdateMaxMinIndexX();
+  for (auto &net: *NetList()) {
+    net.UpdateMaxMinIndexX();
+  }
 }
 
 void GPSimPL::UpdateMaxMinCtoCX() {
   HPWLX_new = 0;
-  for (auto &&net: circuit_->net_list) {
+  for (auto &net: *NetList()) {
     HPWLX_new += net.HPWLCtoCX();
   }
   //std::cout << "HPWLX_old: " << HPWLX_old << "\n";
@@ -152,13 +154,15 @@ void GPSimPL::UpdateCGFlagsY() {
 }
 
 void GPSimPL::UpdateMaxMinY() {
-  for (auto &&net: circuit_->net_list) net.UpdateMaxMinIndexY();
+  for (auto &net: *NetList()) {
+    net.UpdateMaxMinIndexY();
+  }
 }
 
 void GPSimPL::UpdateMaxMinCtoCY() {
   // update the y direction max and min node in each net
   HPWLY_new = 0;
-  for (auto &&net: circuit_->net_list) {
+  for (auto &net: *NetList()) {
     HPWLY_new += net.HPWLCtoCY();
   }
   //std::cout << "HPWLY_old: " << HPWLY_old << "\n";
@@ -242,7 +246,7 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
   double offset_min;
 
   if (is_x_direction) {
-    for (auto &&net: circuit_->net_list) {
+    for (auto &&net: *NetList()) {
       if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
       inv_p = net.InvP();
       net.UpdateMaxMinIndexX();
@@ -322,7 +326,7 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
       }
     }
   } else {
-    for (auto &net: circuit_->net_list) {
+    for (auto &net: *NetList()) {
       if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
       inv_p = net.InvP();
       net.UpdateMaxMinIndexY();
@@ -722,8 +726,8 @@ void GPSimPL::LookAheadClose() {
 }
 
 void GPSimPL::ClearGridBinFlag() {
-  for (auto &&bin_column: grid_bin_matrix) {
-    for (auto &&bin: bin_column) bin.global_placed = false;
+  for (auto &bin_column: grid_bin_matrix) {
+    for (auto &bin: bin_column) bin.global_placed = false;
   }
 }
 
@@ -826,8 +830,8 @@ void GPSimPL::UpdateGridBinState() {
    * ****/
 
   // clean the old data
-  for (auto &&bin_column:grid_bin_matrix) {
-    for (auto &&bin:bin_column) {
+  for (auto &bin_column:grid_bin_matrix) {
+    for (auto &bin:bin_column) {
       bin.cell_list.clear();
       bin.cell_area = 0;
       bin.over_fill = false;
@@ -859,8 +863,8 @@ void GPSimPL::UpdateGridBinState() {
    * ****/
   //TODO: the third criterion might be changed in the next
   bool over_fill = false;
-  for (auto &&bin_column: grid_bin_matrix) {
-    for (auto &&bin: bin_column) {
+  for (auto &bin_column: grid_bin_matrix) {
+    for (auto &bin: bin_column) {
       if (bin.global_placed) {
         bin.over_fill = false;
         continue;
@@ -872,8 +876,8 @@ void GPSimPL::UpdateGridBinState() {
         if (bin.filling_rate > FillingRate()) bin.over_fill = true;
       }
       if (!bin.OverFill()) {
-        for (auto &&cell_num: bin.cell_list) {
-          for (auto &&terminal_num: bin.terminal_list) {
+        for (auto &cell_num: bin.cell_list) {
+          for (auto &terminal_num: bin.terminal_list) {
             over_fill = block_list[cell_num].IsOverlap(block_list[terminal_num]);
             if (over_fill) {
               bin.over_fill = true;
@@ -914,7 +918,7 @@ void GPSimPL::ClusterOverfilledGridBin() {
       while (!Q.empty()) {
         b = Q.front();
         Q.pop();
-        for (auto &&index: grid_bin_matrix[b.x][b.y].adjacent_bin_index) {
+        for (auto &index: grid_bin_matrix[b.x][b.y].adjacent_bin_index) {
           GridBin &bin = grid_bin_matrix[index.x][index.y];
           if (!bin.cluster_visited && bin.over_fill) {
             if (cnt > 3) {
@@ -1280,7 +1284,7 @@ void GPSimPL::PlaceBlkInBox(BoxBin &box) {
   cell_box_height = box.ur_point.y - cell_box_bottom;
   Block *cell;
 
-  for (auto &&cell_id: box.cell_list) {
+  for (auto &cell_id: box.cell_list) {
     cell = &block_list[cell_id];
     cell->SetCenterX((cell->X() - cell_box_left)/cell_box_width * (box.right - box.left) + box.left);
     cell->SetCenterY((cell->Y() - cell_box_bottom)/cell_box_height * (box.top - box.bottom) + box.bottom);
@@ -1302,13 +1306,13 @@ void GPSimPL::PlaceBlkInBox(BoxBin &box) {
               return p1.second < p2.second;
             });
   double total_length = 0;
-  for (auto &&cell_id: box.cell_list) {
+  for (auto &cell_id: box.cell_list) {
     total_length += block_list[cell_id].Width();
   }
   double cur_pos = 0;
   int box_width = box.right - box.left;
   int cell_num;
-  for (auto &&pair: index_loc_list_x) {
+  for (auto &pair: index_loc_list_x) {
     cell_num = pair.first;
     block_list[cell_num].SetCenterX(box.left + cur_pos / total_length * box_width);
     cur_pos += block_list[cell_num].Width();
@@ -1320,12 +1324,12 @@ void GPSimPL::PlaceBlkInBox(BoxBin &box) {
               return p1.second < p2.second;
             });
   total_length = 0;
-  for (auto &&cell_id: box.cell_list) {
+  for (auto &cell_id: box.cell_list) {
     total_length += block_list[cell_id].Height();
   }
   cur_pos = 0;
   int box_height = box.top - box.bottom;
-  for (auto &&pair: index_loc_list_y) {
+  for (auto &pair: index_loc_list_y) {
     cell_num = pair.first;
     block_list[cell_num].SetCenterY(box.bottom + cur_pos / total_length * box_height);
     cur_pos += block_list[cell_num].Height();
@@ -1525,7 +1529,7 @@ void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
       // shift cells to the center of the final box
       if (max_cell_num_in_box == 1) {
         Block *cell;
-        for (auto &&cell_id: front_box.cell_list) {
+        for (auto &cell_id: front_box.cell_list) {
           cell = &block_list[cell_id];
           cell->SetCenterX((front_box.left + front_box.right) / 2.0);
           cell->SetCenterY((front_box.bottom + front_box.top) / 2.0);
@@ -1742,7 +1746,7 @@ void GPSimPL::CheckAndShift() {
   double bottom_most = INT_MAX;
   double top_most = INT_MIN;
 
-  for (auto &&blk: circuit_->block_list) {
+  for (auto &blk: *BlockList()) {
     left_most = std::min(left_most, blk.LLX());
     right_most = std::max(right_most, blk.URX());
     bottom_most = std::min(bottom_most, blk.LLY());
@@ -1755,7 +1759,7 @@ void GPSimPL::CheckAndShift() {
   double delta_x = left_ + margin_x / 10 - left_most;
   double delta_y = bottom_ + margin_y / 2 - bottom_most;
 
-  for (auto &&blk: circuit_->block_list) {
+  for (auto &blk: *BlockList()) {
     blk.IncreaseX(delta_x);
     blk.IncreaseY(delta_y);
   }
@@ -1786,7 +1790,7 @@ void GPSimPL::StartPlacement() {
   LookAheadLgInit();
   //BlockLocCenterInit();
   BlockLocRandomInit();
-  if (circuit_->net_list.empty()) {
+  if (NetList()->empty()) {
     if (globalVerboseLevel >= LOG_CRITICAL) {
       std::cout << "\033[0;36m"
                 << "Global Placement complete\n"
@@ -1860,7 +1864,7 @@ void GPSimPL::DrawBlockNetList(std::string const &name_of_file) {
   ost << RegionLeft() << " " << RegionBottom() << " " << RegionRight() - RegionLeft() << " "
       << RegionTop() - RegionBottom() << "\n";
   std::vector<Block> &block_list = *BlockList();
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";
   }
   ost.close();
@@ -1870,8 +1874,8 @@ void GPSimPL::write_all_terminal_grid_bins(std::string const &name_of_file) {
   /* this is a member function for testing, print grid bins where the flag "all_terminal" is true */
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file" + name_of_file);
-  for (auto &&bin_column: grid_bin_matrix) {
-    for (auto &&bin: bin_column) {
+  for (auto &bin_column: grid_bin_matrix) {
+    for (auto &bin: bin_column) {
       double low_x, low_y, width, height;
       width = bin.right - bin.left;
       height = bin.top - bin.bottom;
@@ -1898,8 +1902,8 @@ void GPSimPL::write_not_all_terminal_grid_bins(std::string const &name_of_file) 
   /* this is a member function for testing, print grid bins where the flag "all_terminal" is false */
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file" + name_of_file);
-  for (auto &&bin_column: grid_bin_matrix) {
-    for (auto &&bin: bin_column) {
+  for (auto &bin_column: grid_bin_matrix) {
+    for (auto &bin: bin_column) {
       double low_x, low_y, width, height;
       width = bin.right - bin.left;
       height = bin.top - bin.bottom;
@@ -1926,8 +1930,8 @@ void GPSimPL::write_overfill_grid_bins(std::string const &name_of_file) {
   /* this is a member function for testing, print grid bins where the flag "over_fill" is true */
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file" + name_of_file);
-  for (auto &&bin_column: grid_bin_matrix) {
-    for (auto &&bin: bin_column) {
+  for (auto &bin_column: grid_bin_matrix) {
+    for (auto &bin: bin_column) {
       double low_x, low_y, width, height;
       width = bin.right - bin.left;
       height = bin.top - bin.bottom;
@@ -1954,8 +1958,8 @@ void GPSimPL::write_not_overfill_grid_bins(std::string const &name_of_file) {
   /* this is a member function for testing, print grid bins where the flag "over_fill" is false */
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file" + name_of_file);
-  for (auto &&bin_column: grid_bin_matrix) {
-    for (auto &&bin: bin_column) {
+  for (auto &bin_column: grid_bin_matrix) {
+    for (auto &bin: bin_column) {
       double low_x, low_y, width, height;
       width = bin.right - bin.left;
       height = bin.top - bin.bottom;
@@ -1983,7 +1987,7 @@ void GPSimPL::write_first_n_bin_cluster(std::string const &name_of_file, size_t 
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file" + name_of_file);
   for (size_t i = 0; i < n; i++) {
-    for (auto &&index: cluster_list[i].bin_set) {
+    for (auto &index: cluster_list[i].bin_set) {
       double low_x, low_y, width, height;
       GridBin *GridBin = &grid_bin_matrix[index.x][index.y];
       width = GridBin->right - GridBin->left;
@@ -2014,7 +2018,7 @@ void GPSimPL::write_first_bin_cluster(std::string const &name_of_file) {
 void GPSimPL::write_n_bin_cluster(std::string const &name_of_file, size_t n) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file" + name_of_file);
-  for (auto &&index: cluster_list[n].bin_set) {
+  for (auto &index: cluster_list[n].bin_set) {
     double low_x, low_y, width, height;
     GridBin *GridBin = &grid_bin_matrix[index.x][index.y];
     width = GridBin->right - GridBin->left;

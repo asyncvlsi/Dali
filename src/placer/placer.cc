@@ -29,8 +29,8 @@ Placer::~Placer() = default;
 
 double Placer::GetBlkHPWL(Block &blk) {
   double hpwl = 0;
-  std::vector<Net> &net_list = GetCircuit()->net_list;
-  for (auto &&idx: blk.net_list) {
+  std::vector<Net> &net_list = *(NetList());
+  for (auto &idx: blk.net_list) {
     hpwl += net_list[idx].HPWL();
   }
   return hpwl;
@@ -91,10 +91,10 @@ void Placer::SetBoundary(int left, int right, int bottom, int top) {
 }
 
 void Placer::SetBoundaryDef() {
-  left_ = GetCircuit()->def_left;
-  right_ = GetCircuit()->def_right;
-  bottom_ = GetCircuit()->def_bottom;
-  top_ = GetCircuit()->def_top;
+  left_ = GetCircuit()->Left();
+  right_ = GetCircuit()->Right();
+  bottom_ = GetCircuit()->Bottom();
+  top_ = GetCircuit()->Top();
   Assert(IsBoundaryProper(), "Invalid boundary setting");
 }
 
@@ -132,7 +132,7 @@ void Placer::GenMATLABScriptPlaced(std::string const &name_of_file) {
   Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
   ost << RegionLeft() << " " << RegionBottom() << " " << RegionRight() - RegionLeft() << " "
       << RegionTop() - RegionBottom() << "\n";
-  for (auto &&block: circuit_->block_list) {
+  for (auto &block: *BlockList()) {
     if (block.IsPlaced()) {
       ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";
     }
@@ -144,7 +144,7 @@ bool Placer::SaveNodeTerminal(std::string const &terminal_file, std::string cons
   std::ofstream ost(terminal_file.c_str());
   std::ofstream ost1(node_file.c_str());
   Assert(ost.is_open() && ost1.is_open(), "Cannot open file " + terminal_file + " or " + node_file);
-  for (auto &&block: circuit_->block_list) {
+  for (auto &block: *BlockList()) {
     if (block.IsMovable()) {
       ost1 << block.X() << "\t" << block.Y() << "\n";
     } else {
@@ -183,9 +183,9 @@ void Placer::SaveDEFFile(std::string const &name_of_file) {
   // no tracks?
 
   // 2. print component
-  std::cout << circuit_->block_list.size() << "\n";
-  ost << "COMPONENTS " << circuit_->block_list.size() << " ;\n";
-  for (auto &&block: circuit_->block_list) {
+  std::cout << BlockList()->size() << "\n";
+  ost << "COMPONENTS " << BlockList()->size() << " ;\n";
+  for (auto &block: *BlockList()) {
     ost << "- "
         << *(block.Name()) << " "
         << *(block.Type()->Name()) << " + "
@@ -199,12 +199,12 @@ void Placer::SaveDEFFile(std::string const &name_of_file) {
   ost << "END COMPONENTS\n";
 
   // 3. print net
-  ost << "NETS " << circuit_->net_list.size() << " ;\n";
-  for (auto &&net: circuit_->net_list) {
+  ost << "NETS " << NetList()->size() << " ;\n";
+  for (auto &net: *NetList()) {
     ost << "- "
         << *(net.Name()) << "\n";
     ost << " ";
-    for (auto &&pin_pair: net.blk_pin_list) {
+    for (auto &pin_pair: net.blk_pin_list) {
       ost << " ( " << *(pin_pair.BlockName()) << " " << *(pin_pair.PinName()) << " ) ";
     }
     ost << "\n" << " ;\n";
@@ -228,7 +228,7 @@ void Placer::SaveDEFFile(std::string const &name_of_file, std::string const &inp
 
   // 2. print component
   //std::cout << _circuit->block_list.size() << "\n";
-  for (auto &&block: circuit_->block_list) {
+  for (auto &block: *BlockList()) {
     ost << "- "
         << *(block.Name()) << " "
         << *(block.Type()->Name()) << " + "
@@ -252,11 +252,11 @@ void Placer::SaveDEFFile(std::string const &name_of_file, std::string const &inp
   }
   /*
   ost << "NETS " << net_list.size() << " ;\n";
-  for (auto &&net: net_list) {
+  for (auto &net: net_list) {
     ost << "- "
         << net.name() << "\n";
     ost << " ";
-    for (auto &&pin: net.pin_list) {
+    for (auto &pin: net.iopin_list) {
       ost << " " << pin.pin_name();
     }
     ost << "\n" << " ;\n";
@@ -274,14 +274,14 @@ void Placer::SanityCheck() {
   Assert(filling_rate_ > epsilon,
          "Filling rate should be in a proper range, for example [0.1, 1], current value: "
              + std::to_string(filling_rate_));
-  for (auto &&net: GetCircuit()->net_list) {
+  for (auto &net: *NetList()) {
     Assert(!net.blk_pin_list.empty(), "Empty net?" + *net.Name());
   }
   Assert(IsBoundaryProper(), "Improper boundary setting");
 }
 
 void Placer::UpdateMovableBlkPlacementStatus() {
-  for (auto &blk: circuit_->block_list) {
+  for (auto &blk: *BlockList()) {
     if (blk.IsMovable()) {
       blk.SetPlaceStatus(PLACED);
     }
@@ -289,12 +289,12 @@ void Placer::UpdateMovableBlkPlacementStatus() {
 }
 
 void Placer::IOPinPlacement() {
-  if (circuit_->pin_list.empty()) return;
+  if (circuit_->GetIOPinList()->empty()) return;
   Net *net = nullptr;
   double net_minx, net_maxx, net_miny, net_maxy;
   double to_left, to_right, to_bottom, to_top;
   double min_distance;
-  for (auto &&iopin: circuit_->pin_list) {
+  for (auto &iopin: *(circuit_->GetIOPinList())) {
     net = iopin.GetNet();
 
     net->UpdateMaxMinIndex();
@@ -322,13 +322,13 @@ void Placer::IOPinPlacement() {
 }
 
 void Placer::ShiftX(double shift_x) {
-  for (auto &block: circuit_->block_list) {
+  for (auto &block: *BlockList()) {
     block.IncreaseX(shift_x);
   }
 }
 
 void Placer::ShiftY(double shift_y) {
-  for (auto &block: circuit_->block_list) {
+  for (auto &block: *BlockList()) {
     block.IncreaseY(shift_y);
   }
 }

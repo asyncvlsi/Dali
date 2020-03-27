@@ -42,8 +42,8 @@ class Placer {
   double AspectRatio() const { return aspect_ratio_; }
   void SetSpaceBlockRatio(double ratio);
 
-  std::vector<Block> *BlockList() { return &(circuit_->block_list); };
-  std::vector<Net> *NetList() { return &(circuit_->net_list); };
+  std::vector<Block> *BlockList() { return circuit_->GetBlockList(); }
+  std::vector<Net> *NetList() { return circuit_->GetNetList(); }
 
   bool IsBoundaryProper();
   void SetBoundaryAuto();
@@ -92,13 +92,12 @@ class Placer {
 
 inline void Placer::SetInputCircuit(Circuit *circuit) {
   Assert(circuit != nullptr, "Invalid input circuit: not allowed to set nullptr as an input!");
-  if (circuit->block_list.empty()) {
+  if (circuit->GetBlockList()->empty()) {
     std::cout << "Invalid input circuit: empty block list, nothing to place!\n";
     return;
   }
-  if (circuit->net_list.empty()) {
+  if (circuit->GetNetList()->empty()) {
     std::cout << "Improper input circuit: empty net list, nothing to optimize during placement! But anyway...\n";
-    return;
   }
   circuit_ = circuit;
 }

@@ -24,6 +24,7 @@ class Tech {
   void SetPLayer(double width, double spacing, double op_spacing, double max_plug_dist, double overhang);
   void SetDiffSpacing(double same_diff, double any_diff);
 
+  bool Empty() const;
   void Report();
 };
 
@@ -33,6 +34,10 @@ inline WellLayer *Tech::GetNLayer() const {
 
 inline WellLayer *Tech::GetPLayer() const {
   return p_layer_;
+}
+
+inline bool Tech::Empty() const {
+  return (GetNLayer() == nullptr) && (GetPLayer() == nullptr);
 }
 
 #endif //DALI_SRC_CIRCUIT_TECH_H_

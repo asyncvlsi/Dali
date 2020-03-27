@@ -9,7 +9,7 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
   int blk_num0, blk_num1, max_pin_index, min_pin_index;
   bool is_movable0, is_movable1;
   if (is_x_direction) {
-    for (auto &&net: circuit_->net_list) {
+    for (auto &net: circuit_->net_list) {
       if (net.P() <= 1) continue;
       inv_p = net.InvP();
       net.UpdateMaxMinX();

@@ -76,7 +76,7 @@ void LGTetrisEx::InitLegalizer() {
   macro_segments.resize(tot_num_rows_);
   std::vector<int> tmp(2, 0);
   bool out_of_range;
-  for (auto &&block: circuit_->block_list) {
+  for (auto &block: *BlockList()) {
     if (block.IsMovable()) continue;
     int ly = int(std::floor(block.LLY()));
     int uy = int(std::ceil(block.URY()));
@@ -152,7 +152,7 @@ void LGTetrisEx::InitLegalizer() {
   block_contour_.resize(tot_num_rows_, left_);
 
   IndexLocPair<int> tmp_index_loc_pair(0, 0, 0);
-  index_loc_list_.resize(circuit_->block_list.size(), tmp_index_loc_pair);
+  index_loc_list_.resize(BlockList()->size(), tmp_index_loc_pair);
 }
 
 void LGTetrisEx::InitLegalizerY() {
@@ -973,7 +973,7 @@ bool LGTetrisEx::FindLocBottom(Value2D<int> &loc, int width, int height) {
 
     //double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y);
     double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y)
-        + (std::abs(tmp_x - left_)+std::abs(tmp_y - bottom_));
+        + (std::abs(tmp_x - left_) + std::abs(tmp_y - bottom_));
     if (tmp_cost < min_cost) {
       best_x = tmp_x;
       best_y = tmp_y;
@@ -1009,7 +1009,7 @@ bool LGTetrisEx::FindLocBottom(Value2D<int> &loc, int width, int height) {
 
       //double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y);
       double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y)
-          + (std::abs(tmp_x - left_)+std::abs(tmp_y - bottom_));
+          + (std::abs(tmp_x - left_) + std::abs(tmp_y - bottom_));
       if (tmp_cost < min_cost) {
         best_x = tmp_x;
         best_y = tmp_y;
@@ -1042,7 +1042,7 @@ bool LGTetrisEx::FindLocBottom(Value2D<int> &loc, int width, int height) {
 
       //double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y);
       double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y)
-          + (std::abs(tmp_x - left_)+std::abs(tmp_y - bottom_));
+          + (std::abs(tmp_x - left_) + std::abs(tmp_y - bottom_));
       if (tmp_cost < min_cost) {
         best_x = tmp_x;
         best_y = tmp_y;
@@ -1404,8 +1404,9 @@ double LGTetrisEx::EstimatedHPWL(Block &block, int x, int y) {
   double min_y = y;
   double tot_hpwl = 0;
   Net *net;
+  auto &net_list = *NetList();
   for (auto &net_num: block.net_list) {
-    net = &(circuit_->net_list[net_num]);
+    net = &(net_list[net_num]);
     if (net->P() > 100) continue;
     for (auto &blk_pin_pair: net->blk_pin_list) {
       if (blk_pin_pair.GetBlock() != &block) {
@@ -1493,7 +1494,7 @@ void LGTetrisEx::GenAvailSpace(std::string const &name_of_file) {
     }
   }
 
-  for (auto &block: circuit_->block_list) {
+  for (auto &block: *BlockList()) {
     if (block.IsMovable()) continue;
     ost << block.LLX() << "\t"
         << block.URX() << "\t"

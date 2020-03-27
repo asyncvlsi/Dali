@@ -39,12 +39,12 @@ void TetrisLegalizer::FastShift(int failure_point) {
     double bounding_bottom;
     bounding_left = block_list[0].LLX();
     bounding_bottom = block_list[0].LLY();
-    for (auto &&block: block_list) {
+    for (auto &block: block_list) {
       if (block.LLY() < bounding_bottom) {
         bounding_bottom = block.LLY();
       }
     }
-    for (auto &&block: block_list) {
+    for (auto &block: block_list) {
       block.IncreaseX(left_ - bounding_left);
       block.IncreaseY(bottom_ - bounding_bottom);
     }
@@ -77,7 +77,7 @@ void TetrisLegalizer::FlipPlacement() {
    * ****/
   flipped_ = !flipped_;
   int sum_left_right = left_ + right_;
-  for (auto &&block: GetCircuit()->block_list) {
+  for (auto &block: *(GetCircuit()->GetBlockList())) {
     block.SetLLX(sum_left_right - block.URX());
   }
   //GenMATLABScript("flip_result.txt");
@@ -86,7 +86,7 @@ void TetrisLegalizer::FlipPlacement() {
 bool TetrisLegalizer::TetrisLegal() {
   std::vector<Block> &block_list = *BlockList();
   // 1. move all blocks into placement region
-  /*for (auto &&block: block_list) {
+  /*for (auto &block: block_list) {
     if (block.LLX() < Left()) {
       block.SetLLX(Left());
     }
@@ -110,7 +110,7 @@ bool TetrisLegalizer::TetrisLegal() {
   }
   std::sort(index_loc_list_.begin(), index_loc_list_.end());
 
-  /*for (auto &&pair: index_loc_list_) {
+  /*for (auto &pair: index_loc_list_) {
     std::cout << block_list[pair.num].LLX() << "\n";
   }*/
 
@@ -174,7 +174,7 @@ void TetrisLegalizer::StartPlacement() {
     std::cout << "Start LGTetris legalization\n";
   }
   InitLegalizer();
-  /*for (auto &&block: GetCircuit()->block_list) {
+  /*for (auto &block: GetCircuit()->block_list) {
     block.IncreaseX((right_-left_)/2.0);
   }
   max_iter_ = 2;

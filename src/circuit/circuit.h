@@ -43,8 +43,8 @@ class Circuit {
   double grid_value_y_;
   double row_height_;
 
-  Tech *tech_param_;
-  Design *design_;
+  Tech tech_param_;
+  Design design_;
   WellInfo well_info_;
 #ifdef USE_OPENDB
   odb::dbDatabase *db_;
@@ -99,19 +99,17 @@ class Circuit {
   /****API for DIE AREA
    * These are DIEAREA section in DEF
    * ****/
-  int def_left = 0, def_right = 0, def_bottom = 0, def_top = 0;
   void SetBoundary(int left, int right, int bottom, int top); // unit in grid value
   void SetDieArea(int lower_x, int upper_x, int lower_y, int upper_y); // unit in um
-  int Left() { return def_left; }
-  int Right() { return def_right; }
-  int Bottom() { return def_bottom; }
-  int Top() { return def_top; }
+  int Left() const;
+  int Right() const;
+  int Bottom() const;
+  int Top() const;
 
   /****API for Block
    * These are COMPONENTS section in DEF
    * ****/
-  std::vector<Block> block_list;
-  std::map<std::string, int> block_name_map;
+  std::vector<Block> *GetBlockList();
   bool IsBlockExist(std::string &block_name);
   int BlockIndex(std::string &block_name);
   Block *GetBlock(std::string &block_name);
@@ -145,8 +143,7 @@ class Circuit {
   /****API for IOPIN
    * These are PINS section in DEF
    * ****/
-  std::vector<IOPin> pin_list;
-  std::map<std::string, int> pin_name_map;
+  std::vector<IOPin> *GetIOPinList();
   void AddAbsIOPinType();
   bool IsIOPinExist(std::string &iopin_name);
   int IOPinIndex(std::string &iopin_name);
@@ -158,8 +155,7 @@ class Circuit {
   /****API for Nets
    * These are NETS section in DEF
    * ****/
-  std::vector<Net> net_list;
-  std::map<std::string, int> net_name_map;
+  std::vector<Net> *GetNetList();
   bool IsNetExist(std::string &net_name);
   int NetIndex(std::string &net_name);
   Net *GetNet(std::string &net_name);
@@ -187,7 +183,8 @@ class Circuit {
   BlockTypeWell *AddBlockTypeWell(BlockTypeCluster *cluster, std::string &blk_type_name, bool is_plug);
   void SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang);
   void SetPWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang);
-  Tech *GetTech() const;
+  void SetLegalizerSpacing(double same_spacing, double any_spacing);
+  Tech *GetTech();
   void ReadCellFile(std::string const &name_of_file);
   void ReportWellShape();
 
@@ -268,7 +265,35 @@ inline double Circuit::GetDBRowHeight() const {
 }
 
 inline int Circuit::GetIntRowHeight() const {
-  return (int)std::round(row_height_/grid_value_y_);
+  return (int) std::round(row_height_ / grid_value_y_);
+}
+
+inline int Circuit::Left() const {
+  return design_.def_left;
+}
+
+inline int Circuit::Right() const {
+  return design_.def_right;
+}
+
+inline int Circuit::Bottom() const {
+  return design_.def_bottom;
+}
+
+inline int Circuit::Top() const {
+  return design_.def_top;
+}
+
+inline std::vector<Block> *Circuit::GetBlockList() {
+  return &(design_.block_list);
+}
+
+inline std::vector<IOPin> *Circuit::GetIOPinList() {
+  return &(design_.iopin_list);
+}
+
+inline std::vector<Net> *Circuit::GetNetList() {
+  return &(design_.net_list);
 }
 
 inline int Circuit::MinWidth() const {
@@ -292,7 +317,7 @@ inline long int Circuit::TotArea() const {
 }
 
 inline int Circuit::TotBlockNum() const {
-  return block_list.size();
+  return design_.block_list.size();
 }
 
 inline int Circuit::TotMovableBlockNum() const {
@@ -300,7 +325,7 @@ inline int Circuit::TotMovableBlockNum() const {
 }
 
 inline int Circuit::TotFixedBlkCnt() const {
-  return (int) block_list.size() - tot_mov_blk_num_;
+  return (int) design_.block_list.size() - tot_mov_blk_num_;
 }
 
 inline double Circuit::AveWidth() const {
@@ -328,11 +353,11 @@ inline double Circuit::AveMovArea() const {
 }
 
 inline double Circuit::WhiteSpaceUsage() const {
-  return double(TotArea()) / (def_right - def_left) / (def_top - def_bottom);
+  return double(TotArea()) / (Right() - Left()) / (Top() - Bottom());
 }
 
-inline Tech *Circuit::GetTech() const {
-  return tech_param_;
+inline Tech *Circuit::GetTech() {
+  return &tech_param_;
 }
 
 #endif //DALI_CIRCUIT_HPP

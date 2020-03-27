@@ -32,17 +32,17 @@ bool placer_dla_t::set_input_circuit(circuit_t *circuit) {
   }
 
   _circuit = circuit;
-  for (auto &&block: circuit->block_list) {
+  for (auto &block: circuit->block_list) {
     block_dla_t block_dla;
     block_dla.retrieve_info_from_database(block);
     block_list.push_back(block_dla);
     //std::cout << block_dla << "\n";
   }
 
-  for (auto &&net: circuit->net_list) {
+  for (auto &net: circuit->net_list) {
     net_dla_t net_dla;
     net_dla.retrieve_info_from_database(net);
-    for (auto &&pin: net.pin_list) {
+    for (auto &pin: net.pin_list) {
       int block_num = circuit->block_name_map.find(pin.get_block()->Name())->second;
       block_dla_t *block_dla_ptr = &block_list[block_num];
       pin_t pin_dla(pin.x_offset(), pin.y_offset(), block_dla_ptr);
@@ -55,7 +55,7 @@ bool placer_dla_t::set_input_circuit(circuit_t *circuit) {
 
 void placer_dla_t::add_boundary_list() {
   int max_width=0, max_height=0;
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     // find maximum Width and maximum Height
     if (!block.is_movable()) {
       continue;
@@ -124,7 +124,7 @@ void placer_dla_t::add_boundary_list() {
 void placer_dla_t::initialize_bin_list(){
   // initialize the bin_list, build up the bin_list matrix
   int max_width=0, max_height=0;
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     // find maximum Width and maximum Height
     if (!block.is_movable()) {
       continue;
@@ -165,8 +165,8 @@ void placer_dla_t::initialize_bin_list(){
 void placer_dla_t::update_neighbor_list() {
   // update the list of neighbor and the wire numbers connected to its neighbor, and the nets connected to this cell
   block_dla_t *block_dla1, *block_dla2;
-  for (auto &&net: net_list) {
-    for (auto &&pin: net.pin_list) {
+  for (auto &net: net_list) {
+    for (auto &pin: net.pin_list) {
       block_dla1 = (block_dla_t *)(pin.get_block());
       block_dla1->add_to_net(&net);
     }
@@ -179,29 +179,29 @@ void placer_dla_t::update_neighbor_list() {
       }
     }
   }
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     block.sort_neb_list();
   }
   /*
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     std::cout << "Block: " << block.name() << " is connected to net: ";
-    for (auto &&net_ptr: block.net) {
+    for (auto &net_ptr: block.net) {
       std::cout << net_ptr->name() << " ";
     }
     std::cout << "\t";
 
     std::cout << "In total " << block.total_net() << " net(s).\n";
   }
-  for (auto &&net: net_list) {
+  for (auto &net: net_list) {
     std::cout << "Net " << net.name() << " connects cells: ";
-    for (auto &&pin: net.pin_list_) {
+    for (auto &pin: net.pin_list_) {
       std::cout << "\t" <<  pin.get_block()->name();
     }
     std::cout << "\n";
   }
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     double total_wire_weight = 0;
-    for (auto &&neb: block.neb_list) {
+    for (auto &neb: block.neb_list) {
       std::cout << "Block " << block.name() << " is connected to " << neb.block->Name() << " with wire numbers " << neb.total_wire_weight << "\n";
       total_wire_weight += neb.total_wire_weight;
     }
@@ -213,7 +213,7 @@ void placer_dla_t::update_neighbor_list() {
 void placer_dla_t::prioritize_block_to_place(){
   // creat a new cell list block_to_place_queue to store the sorted block_list based on the number of wires connecting to the cell
   std::vector<std::pair <int, int>> pair_list;
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     pair_list.emplace_back(std::make_pair(block.num(), block.total_net()));
   }
   int max_wire_index;
@@ -230,7 +230,7 @@ void placer_dla_t::prioritize_block_to_place(){
     pair_list[max_wire_index] = tmp_pair;
   }
 
-  for (auto &&pair: pair_list) {
+  for (auto &pair: pair_list) {
     //std::cout << pair.first << " is connected to " << pair.second << " nets\n";
     block_to_place_queue.push(pair.first); // the queue of sorted cell list
   }
@@ -311,7 +311,7 @@ bool placer_dla_t::is_legal(int first_blk_num) {
   block_dla_t *block = &block_list[first_blk_num];
   block_dla_t *block_tmp;
   if (virtual_bin_boundary.overlap_area(*block) < block->area()) {
-    for (auto &&block_index: block_out_of_bin) {
+    for (auto &block_index: block_out_of_bin) {
       block_tmp = &block_list[block_index];
       if ((block != block_tmp)&&(block->is_overlap(*block_tmp))) {
         return false;
@@ -340,7 +340,7 @@ bool placer_dla_t::is_legal(int first_blk_num) {
       if (bin_list[x][y].CIB.empty()) {
         continue;
       }
-      for (auto &&block_index: bin_list[x][y].CIB) {
+      for (auto &block_index: bin_list[x][y].CIB) {
         block_tmp = &block_list[block_index];
         if ((block != block_tmp)&&(block->is_overlap(*block_tmp))) {
           return false;
@@ -489,8 +489,8 @@ bool placer_dla_t::draw_bin_list(std::string const &filename) {
     std::cout << "Cannot open output file: " << filename << "\n";
     return false;
   }
-  for (auto &&bin_column: bin_list) {
-    for (auto &&bin: bin_column) {
+  for (auto &bin_column: bin_list) {
+    for (auto &bin: bin_column) {
       ost << "rectangle('Position',[" << bin.left() << " " << bin.bottom() << " " << bin.width() << " " << bin.height() << "],'LineWidth',1)\n";
     }
   }
@@ -507,10 +507,10 @@ bool placer_dla_t::draw_block_net_list(std::string const &filename) {
     std::cout << "Cannot open output file: " << filename << "\n";
     return false;
   }
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     ost << "rectangle('Position',[" << block.llx() << " " << block.lly() << " " << block.width() << " " << block.height() << "], 'LineWidth',3)\n";
   }
-  for (auto &&net: net_list) {
+  for (auto &net: net_list) {
 		for (size_t i=0; i<net.pin_list.size(); i++) {
 			for (size_t j=i+1; j<net.pin_list.size(); j++) {
 				ost << "line([" << net.pin_list[i].abs_x() << "," << net.pin_list[j].abs_x() << "],[" << net.pin_list[i].abs_y() << "," << net.pin_list[j].abs_y() << "],'lineWidth', 0.5)\n";
@@ -530,12 +530,12 @@ bool placer_dla_t::draw_placed_blocks(std::string const &filename) {
     std::cout << "Cannot open output file: " << filename << "\n";
     return false;
   }
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     if (block.is_placed()) {
       ost << "rectangle('Position',[" << block.llx() << " " << block.lly() << " " << block.width() << " " << block.height() << "], 'LineWidth',3)%" << block.num() << "\n";
     }
   }
-  for (auto &&net: net_list) {
+  for (auto &net: net_list) {
     for (size_t i=0; i<net.pin_list.size(); i++) {
       auto *block_dla1 = (block_dla_t *)net.pin_list[i].get_block();
       for (size_t j=i+1; j<net.pin_list.size(); j++) {
@@ -560,7 +560,7 @@ bool placer_dla_t::output_result(std::string const &filename) {
     std::cout << "Cannot open output file: " << filename << "\n";
     return false;
   }
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     ost << "\t" << block.name() << "\t" << block.llx() << "\t" << block.lly() << "\t : N\n";
   }
   ost.close();

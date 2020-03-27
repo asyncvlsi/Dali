@@ -32,8 +32,6 @@ Circuit::Circuit() : tot_width_(0),
 #ifdef USE_OPENDB
   db_ = nullptr;
 #endif
-  tech_param_ = nullptr;
-  design_ = nullptr;
 }
 
 Circuit::~Circuit() {
@@ -42,10 +40,9 @@ Circuit::~Circuit() {
    * because T is initialized by
    *    auto *T = new T();
    * ****/
-  for (auto &&pair: block_type_map) {
+  for (auto &pair: block_type_map) {
     delete pair.second;
   }
-  delete tech_param_;
 }
 
 #ifdef USE_OPENDB
@@ -55,8 +52,6 @@ Circuit::Circuit(odb::dbDatabase *db)
       blk_min_height_(INT_MAX), blk_max_height_(0), grid_set_(false), grid_value_x_(0), grid_value_y_(0) {
   AddAbsIOPinType();
   db_ = db;
-  tech_param_ = nullptr;
-  design_ = nullptr;
   InitializeFromDB(db);
 }
 
@@ -110,7 +105,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
   SetRowHeight(site->getHeight() / double(lef_database_microns));
   //std::cout << site->getName() << "  " << site->getWidth() / double(lef_database_microns) << "  " << row_height_ << "\n";
   double residual = std::fmod(row_height_, grid_value_y_);
-  Assert(residual<1e-6, "Site height is not integer multiple of grid value in Y");
+  Assert(residual < 1e-6, "Site height is not integer multiple of grid value in Y");
 
   // 4. load all macro, or we say gate type
   //std::cout << lib->getName() << " lib\n";
@@ -144,9 +139,9 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
   components_count = top_level->getInsts().size();
   pins_count = top_level->getBTerms().size();
   nets_count = top_level->getNets().size();
-  block_list.reserve(components_count + pins_count);
-  pin_list.reserve(pins_count);
-  net_list.reserve(nets_count);
+  design_.block_list.reserve(components_count + pins_count);
+  design_.iopin_list.reserve(pins_count);
+  design_.net_list.reserve(nets_count);
 
   std::cout << "components count: " << components_count << "\n"
             << "pin count:        " << pins_count << "\n"
@@ -523,9 +518,9 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
   }
   ist.clear();
   ist.seekg(0, std::ios::beg);
-  block_list.reserve(components_count + pins_count);
-  pin_list.reserve(pins_count);
-  net_list.reserve(nets_count);
+  design_.block_list.reserve(components_count + pins_count);
+  design_.iopin_list.reserve(pins_count);
+  design_.net_list.reserve(nets_count);
 
   // find UNITS DISTANCE MICRONS
   def_distance_microns = 0;
@@ -546,10 +541,10 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
   //std::cout << "DISTANCE MICRONS " << def_distance_microns << "\n";
 
   // find DIEAREA
-  def_left = 0;
-  def_right = 0;
-  def_bottom = 0;
-  def_top = 0;
+  int def_left = 0;
+  int def_right = 0;
+  int def_bottom = 0;
+  int def_top = 0;
   while ((def_left == 0) && (def_right == 0) && (def_bottom == 0) && (def_top == 0) && !ist.eof()) {
     getline(ist, line);
     if (line.find("DIEAREA") != std::string::npos) {
@@ -562,6 +557,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         def_bottom = (int) std::round(std::stoi(die_area_field[3]) / grid_value_y_ / def_distance_microns);
         def_right = (int) std::round(std::stoi(die_area_field[6]) / grid_value_x_ / def_distance_microns);
         def_top = (int) std::round(std::stoi(die_area_field[7]) / grid_value_y_ / def_distance_microns);
+        SetBoundary(def_left, def_right, def_bottom, def_top);
       } catch (...) {
         Assert(false, "Invalid stoi conversion (DIEAREA):\n" + line);
       }
@@ -731,10 +727,10 @@ void Circuit::ReportMetalLayers() {
 void Circuit::SetBoundary(int left, int right, int bottom, int top) {
   Assert(right > left, "Right boundary is not larger than Left boundary?");
   Assert(top > bottom, "Top boundary is not larger than Bottom boundary?");
-  def_left = left;
-  def_right = right;
-  def_bottom = bottom;
-  def_top = top;
+  design_.def_left = left;
+  design_.def_right = right;
+  design_.def_bottom = bottom;
+  design_.def_top = top;
 }
 
 void Circuit::SetDieArea(int lower_x, int upper_x, int lower_y, int upper_y) {
@@ -766,13 +762,15 @@ BlockTypeWell *Circuit::AddBlockTypeWell(BlockTypeCluster *cluster, std::string 
 }
 
 void Circuit::SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {
-  if (tech_param_ == nullptr) tech_param_ = new Tech;
-  tech_param_->SetNLayer(width, spacing, op_spacing, max_plug_dist, overhang);
+  tech_param_.SetNLayer(width, spacing, op_spacing, max_plug_dist, overhang);
 }
 
 void Circuit::SetPWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {
-  if (tech_param_ == nullptr) tech_param_ = new Tech;
-  tech_param_->SetPLayer(width, spacing, op_spacing, max_plug_dist, overhang);
+  tech_param_.SetPLayer(width, spacing, op_spacing, max_plug_dist, overhang);
+}
+
+void Circuit::SetLegalizerSpacing(double same_spacing, double any_spacing) {
+  tech_param_.SetDiffSpacing(same_spacing, any_spacing);
 }
 
 void Circuit::ReportWellShape() {
@@ -803,7 +801,7 @@ BlockType *Circuit::AddBlockType(std::string &block_type_name, int width, int he
 
 void Circuit::ReportBlockType() {
   std::cout << "Total BlockType: " << block_type_map.size() << std::endl;
-  for (auto &&pair: block_type_map) {
+  for (auto &pair: block_type_map) {
     pair.second->Report();
   }
 }
@@ -812,12 +810,12 @@ void Circuit::CopyBlockType(Circuit &circuit) {
   BlockType *blk_type = nullptr;
   BlockType *blk_type_new = nullptr;
   std::string type_name, pin_name;
-  for (auto &&item: circuit.block_type_map) {
+  for (auto &item: circuit.block_type_map) {
     blk_type = item.second;
     type_name = *(blk_type->Name());
     if (type_name == "PIN") continue;
     blk_type_new = AddBlockType(type_name, blk_type->Width(), blk_type->Height());
-    for (auto &&pin: blk_type->pin_list) {
+    for (auto &pin: blk_type->pin_list) {
       pin_name = *(pin.Name());
       blk_type_new->AddPin(pin_name, pin.OffsetX(), pin.OffsetY());
     }
@@ -825,19 +823,19 @@ void Circuit::CopyBlockType(Circuit &circuit) {
 }
 
 bool Circuit::IsBlockExist(std::string &block_name) {
-  return !(block_name_map.find(block_name) == block_name_map.end());
+  return !(design_.block_name_map.find(block_name) == design_.block_name_map.end());
 }
 
 int Circuit::BlockIndex(std::string &block_name) {
-  auto ret = block_name_map.find(block_name);
-  if (ret == block_name_map.end()) {
+  auto ret = design_.block_name_map.find(block_name);
+  if (ret == design_.block_name_map.end()) {
     Assert(false, "Block does not exist, cannot find its index: " + block_name);
   }
   return ret->second;
 }
 
 Block *Circuit::GetBlock(std::string &block_name) {
-  return &block_list[BlockIndex(block_name)];
+  return &design_.block_list[BlockIndex(block_name)];
 }
 
 void Circuit::AddBlock(std::string &block_name,
@@ -871,39 +869,39 @@ void Circuit::AddBlock(std::string &block_name,
                        int lly,
                        PlaceStatus place_status,
                        BlockOrient orient) {
-  Assert(net_list.empty(), "Cannot add new Block, because net_list now is not empty");
+  Assert(design_.net_list.empty(), "Cannot add new Block, because net_list now is not empty");
   Assert(!IsBlockExist(block_name), "Block exists, cannot create this block again: " + block_name);
-  int map_size = block_name_map.size();
-  auto ret = block_name_map.insert(std::pair<std::string, int>(block_name, map_size));
+  int map_size = design_.block_name_map.size();
+  auto ret = design_.block_name_map.insert(std::pair<std::string, int>(block_name, map_size));
   std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
-  block_list.emplace_back(block_type, name_num_pair_ptr, llx, lly, place_status, orient);
+  design_.block_list.emplace_back(block_type, name_num_pair_ptr, llx, lly, place_status, orient);
 
   // update statistics of blocks
   long int old_tot_area = tot_blk_area_;
-  tot_blk_area_ += block_list.back().Area();
+  tot_blk_area_ += design_.block_list.back().Area();
   Assert(old_tot_area < tot_blk_area_, "Total Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
-  tot_width_ += block_list.back().Width();
-  tot_height_ += block_list.back().Height();
-  if (block_list.back().IsMovable()) {
+  tot_width_ += design_.block_list.back().Width();
+  tot_height_ += design_.block_list.back().Height();
+  if (design_.block_list.back().IsMovable()) {
     ++tot_mov_blk_num_;
     old_tot_area = tot_mov_block_area_;
-    tot_mov_block_area_ += block_list.back().Area();
+    tot_mov_block_area_ += design_.block_list.back().Area();
     Assert(old_tot_area < tot_mov_block_area_,
            "Total Movable Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
-    tot_mov_width_ += block_list.back().Width();
-    tot_mov_height_ += block_list.back().Height();
+    tot_mov_width_ += design_.block_list.back().Width();
+    tot_mov_height_ += design_.block_list.back().Height();
   }
-  if (block_list.back().Height() < blk_min_height_) {
-    blk_min_height_ = block_list.back().Height();
+  if (design_.block_list.back().Height() < blk_min_height_) {
+    blk_min_height_ = design_.block_list.back().Height();
   }
-  if (block_list.back().Height() > blk_max_height_) {
-    blk_max_height_ = block_list.back().Height();
+  if (design_.block_list.back().Height() > blk_max_height_) {
+    blk_max_height_ = design_.block_list.back().Height();
   }
-  if (block_list.back().Width() < blk_min_width_) {
-    blk_min_width_ = block_list.back().Width();
+  if (design_.block_list.back().Width() < blk_min_width_) {
+    blk_min_width_ = design_.block_list.back().Width();
   }
-  if (block_list.back().Width() > blk_min_width_) {
-    blk_max_width_ = block_list.back().Width();
+  if (design_.block_list.back().Width() > blk_min_width_) {
+    blk_max_width_ = design_.block_list.back().Width();
   }
 }
 
@@ -925,76 +923,76 @@ void Circuit::AddAbsIOPinType() {
 }
 
 bool Circuit::IsIOPinExist(std::string &iopin_name) {
-  return !(pin_name_map.find(iopin_name) == pin_name_map.end());
+  return !(design_.iopin_name_map.find(iopin_name) == design_.iopin_name_map.end());
 }
 
 int Circuit::IOPinIndex(std::string &iopin_name) {
-  auto ret = pin_name_map.find(iopin_name);
-  if (ret == pin_name_map.end()) {
+  auto ret = design_.iopin_name_map.find(iopin_name);
+  if (ret == design_.iopin_name_map.end()) {
     Assert(false, "IOPIN does not exist, cannot find its index: " + iopin_name);
   }
   return ret->second;
 }
 
 IOPin *Circuit::GetIOPin(std::string &iopin_name) {
-  return &pin_list[IOPinIndex(iopin_name)];
+  return &design_.iopin_list[IOPinIndex(iopin_name)];
 }
 
 IOPin *Circuit::AddIOPin(std::string &iopin_name) {
-  Assert(net_list.empty(), "Cannot add new IOPIN, because net_list now is not empty");
+  Assert(design_.net_list.empty(), "Cannot add new IOPIN, because net_list now is not empty");
   Assert(!IsIOPinExist(iopin_name), "IOPin exists, cannot create this IOPin again: " + iopin_name);
-  int map_size = pin_name_map.size();
-  auto ret = pin_name_map.insert(std::pair<std::string, int>(iopin_name, map_size));
+  int map_size = design_.iopin_name_map.size();
+  auto ret = design_.iopin_name_map.insert(std::pair<std::string, int>(iopin_name, map_size));
   std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
-  pin_list.emplace_back(name_num_pair_ptr);
-  return &(pin_list.back());
+  design_.iopin_list.emplace_back(name_num_pair_ptr);
+  return &(design_.iopin_list.back());
 }
 
 IOPin *Circuit::AddIOPin(std::string &iopin_name, int lx, int ly) {
-  Assert(net_list.empty(), "Cannot add new IOPIN, because net_list now is not empty");
+  Assert(design_.net_list.empty(), "Cannot add new IOPIN, because net_list now is not empty");
   Assert(!IsIOPinExist(iopin_name), "IOPin exists, cannot create this IOPin again: " + iopin_name);
-  int map_size = pin_name_map.size();
-  auto ret = pin_name_map.insert(std::pair<std::string, int>(iopin_name, map_size));
+  int map_size = design_.iopin_name_map.size();
+  auto ret = design_.iopin_name_map.insert(std::pair<std::string, int>(iopin_name, map_size));
   std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
-  pin_list.emplace_back(name_num_pair_ptr, lx, ly);
-  return &(pin_list.back());
+  design_.iopin_list.emplace_back(name_num_pair_ptr, lx, ly);
+  return &(design_.iopin_list.back());
 }
 
 void Circuit::ReportIOPin() {
-  for (auto &&iopin: pin_list) {
+  for (auto &iopin: design_.iopin_list) {
     iopin.Report();
   }
 }
 
 bool Circuit::IsNetExist(std::string &net_name) {
-  return !(net_name_map.find(net_name) == net_name_map.end());
+  return !(design_.net_name_map.find(net_name) == design_.net_name_map.end());
 }
 
 int Circuit::NetIndex(std::string &net_name) {
   Assert(IsNetExist(net_name), "Net does not exist, cannot find its index: " + net_name);
-  return net_name_map.find(net_name)->second;
+  return design_.net_name_map.find(net_name)->second;
 }
 
 Net *Circuit::GetNet(std::string &net_name) {
-  return &net_list[NetIndex(net_name)];
+  return &design_.net_list[NetIndex(net_name)];
 }
 
 void Circuit::AddToNetMap(std::string &net_name) {
-  int map_size = net_name_map.size();
-  net_name_map.insert(std::pair<std::string, int>(net_name, map_size));
+  int map_size = design_.net_name_map.size();
+  design_.net_name_map.insert(std::pair<std::string, int>(net_name, map_size));
 }
 
 Net *Circuit::AddNet(std::string &net_name, double weight) {
   Assert(!IsNetExist(net_name), "Net exists, cannot create this net again: " + net_name);
   AddToNetMap(net_name);
-  std::pair<const std::string, int> *name_num_pair_ptr = &(*net_name_map.find(net_name));
-  net_list.emplace_back(name_num_pair_ptr, weight);
-  return &net_list.back();
+  std::pair<const std::string, int> *name_num_pair_ptr = &(*design_.net_name_map.find(net_name));
+  design_.net_list.emplace_back(name_num_pair_ptr, weight);
+  return &design_.net_list.back();
 }
 
 void Circuit::NetListPopBack() {
-  net_name_map.erase(net_list.back().NameStr());
-  net_list.pop_back();
+  design_.net_name_map.erase(design_.net_list.back().NameStr());
+  design_.net_list.pop_back();
 }
 
 /*
@@ -1043,64 +1041,92 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
     getline(ist, line);
     if (line.empty()) continue;
     if (line.find("LAYER") != std::string::npos) {
-      std::vector<std::string> well_fields;
-      StrSplit(line, well_fields);
-      bool is_n_well = (well_fields[1] == "nwell");
-      if (!is_n_well) Assert(well_fields[1] == "pwell", "Unknow N/P well type: " + well_fields[1]);
-      std::string end_layer_flag = "END " + well_fields[1];
-      double width = 0;
-      double spacing = 0;
-      double op_spacing = 0;
-      double max_plug_dist = 0;
-      double overhang = 0;
-      do {
-        if (line.find("MINWIDTH") != std::string::npos) {
-          StrSplit(line, well_fields);
-          try {
-            width = std::stod(well_fields[1]);
-          } catch (...) {
-            std::cout << line << std::endl;
-            Assert(false, "Invalid stod conversion: " + well_fields[1]);
+      if (line.find("LEGALIZER") != std::string::npos) {
+        std::vector<std::string> legalizer_fields;
+        double same_diff_spacing = 0;
+        double any_diff_spacing = 0;
+        do {
+          getline(ist, line);
+          StrSplit(line, legalizer_fields);
+          Assert(legalizer_fields.size() == 2, "Expect: SPACING + Value, get: " + line);
+          if (legalizer_fields[0] == "SAME_DIFF_SPACING") {
+            try {
+              same_diff_spacing = std::stod(legalizer_fields[1]);
+            } catch (...) {
+              std::cout << line << std::endl;
+              Assert(false, "Invalid stod conversion: " + legalizer_fields[1]);
+            }
+          } else if (legalizer_fields[0] == "ANY_DIFF_SPACING") {
+            try {
+              any_diff_spacing = std::stod(legalizer_fields[1]);
+            } catch (...) {
+              std::cout << line << std::endl;
+              Assert(false, "Invalid stod conversion: " + legalizer_fields[1]);
+            }
           }
-        } else if (line.find("OPPOSPACING") != std::string::npos) {
-          StrSplit(line, well_fields);
-          try {
-            op_spacing = std::stod(well_fields[1]);
-          } catch (...) {
-            std::cout << line << std::endl;
-            Assert(false, "Invalid stod conversion: " + well_fields[1]);
-          }
-        } else if (line.find("SPACING") != std::string::npos) {
-          StrSplit(line, well_fields);
-          try {
-            spacing = std::stod(well_fields[1]);
-          } catch (...) {
-            std::cout << line << std::endl;
-            Assert(false, "Invalid stod conversion: " + well_fields[1]);
-          }
-        } else if (line.find("MAXPLUGDIST") != std::string::npos) {
-          StrSplit(line, well_fields);
-          try {
-            max_plug_dist = std::stod(well_fields[1]);
-          } catch (...) {
-            std::cout << line << std::endl;
-            Assert(false, "Invalid stod conversion: " + well_fields[1]);
-          }
-        } else if (line.find("MAXPLUGDIST") != std::string::npos) {
-          StrSplit(line, well_fields);
-          try {
-            overhang = std::stod(well_fields[1]);
-          } catch (...) {
-            std::cout << line << std::endl;
-            Assert(false, "Invalid stod conversion: " + well_fields[1]);
-          }
-        } else {}
-        getline(ist, line);
-      } while (line.find(end_layer_flag) == std::string::npos && !ist.eof());
-      if (is_n_well) {
-        SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
+        } while (line.find("END LEGALIZER") == std::string::npos && !ist.eof());
+        //std::cout << "same diff spacing: " << same_diff_spacing << "\n any diff spacing: " << any_diff_spacing << "\n";
+        SetLegalizerSpacing(same_diff_spacing, any_diff_spacing);
       } else {
-        SetPWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
+        std::vector<std::string> well_fields;
+        StrSplit(line, well_fields);
+        bool is_n_well = (well_fields[1] == "nwell");
+        if (!is_n_well) Assert(well_fields[1] == "pwell", "Unknow N/P well type: " + well_fields[1]);
+        std::string end_layer_flag = "END " + well_fields[1];
+        double width = 0;
+        double spacing = 0;
+        double op_spacing = 0;
+        double max_plug_dist = 0;
+        double overhang = 0;
+        do {
+          if (line.find("MINWIDTH") != std::string::npos) {
+            StrSplit(line, well_fields);
+            try {
+              width = std::stod(well_fields[1]);
+            } catch (...) {
+              std::cout << line << std::endl;
+              Assert(false, "Invalid stod conversion: " + well_fields[1]);
+            }
+          } else if (line.find("OPPOSPACING") != std::string::npos) {
+            StrSplit(line, well_fields);
+            try {
+              op_spacing = std::stod(well_fields[1]);
+            } catch (...) {
+              std::cout << line << std::endl;
+              Assert(false, "Invalid stod conversion: " + well_fields[1]);
+            }
+          } else if (line.find("SPACING") != std::string::npos) {
+            StrSplit(line, well_fields);
+            try {
+              spacing = std::stod(well_fields[1]);
+            } catch (...) {
+              std::cout << line << std::endl;
+              Assert(false, "Invalid stod conversion: " + well_fields[1]);
+            }
+          } else if (line.find("MAXPLUGDIST") != std::string::npos) {
+            StrSplit(line, well_fields);
+            try {
+              max_plug_dist = std::stod(well_fields[1]);
+            } catch (...) {
+              std::cout << line << std::endl;
+              Assert(false, "Invalid stod conversion: " + well_fields[1]);
+            }
+          } else if (line.find("MAXPLUGDIST") != std::string::npos) {
+            StrSplit(line, well_fields);
+            try {
+              overhang = std::stod(well_fields[1]);
+            } catch (...) {
+              std::cout << line << std::endl;
+              Assert(false, "Invalid stod conversion: " + well_fields[1]);
+            }
+          } else {}
+          getline(ist, line);
+        } while (line.find(end_layer_flag) == std::string::npos && !ist.eof());
+        if (is_n_well) {
+          SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
+        } else {
+          SetPWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
+        }
       }
     }
 
@@ -1150,7 +1176,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
       Assert(!cluster->Empty(), "No plug/unplug version provided");
     }
   }
-  Assert(tech_param_ != nullptr, "N/P well technology information not found!");
+  Assert(!tech_param_.Empty(), "N/P well technology information not found!");
   //tech_param_->Report();
   //ReportWellShape();
 
@@ -1158,28 +1184,28 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
 }
 
 void Circuit::ReportBlockList() {
-  for (auto &&block: block_list) {
+  for (auto &block: design_.block_list) {
     block.Report();
   }
 }
 
 void Circuit::ReportBlockMap() {
-  for (auto &&it: block_name_map) {
+  for (auto &it: design_.block_name_map) {
     std::cout << it.first << " " << it.second << "\n";
   }
 }
 
 void Circuit::ReportNetList() {
-  for (auto &&net: net_list) {
+  for (auto &net: design_.net_list) {
     std::cout << *net.Name() << "  " << net.Weight() << "\n";
-    for (auto &&block_pin_pair: net.blk_pin_list) {
+    for (auto &block_pin_pair: net.blk_pin_list) {
       std::cout << "\t" << " (" << *(block_pin_pair.BlockName()) << " " << *(block_pin_pair.PinName()) << ") " << "\n";
     }
   }
 }
 
 void Circuit::ReportNetMap() {
-  for (auto &&it: net_name_map) {
+  for (auto &it: design_.net_name_map) {
     std::cout << it.first << " " << it.second << "\n";
   }
 }
@@ -1188,27 +1214,27 @@ void Circuit::ReportBriefSummary() {
   if (globalVerboseLevel >= LOG_INFO) {
     std::cout << "  movable blocks: " << TotMovableBlockNum() << "\n"
               << "  blocks: " << TotBlockNum() << "\n"
-              << "  nets: " << net_list.size() << "\n"
+              << "  nets: " << design_.net_list.size() << "\n"
               << "  grid size x: " << grid_value_x_ << " um, grid size y: " << grid_value_y_ << " um\n"
               << "  total block area: " << tot_blk_area_ << "\n"
-              << "  total white space: " << (long int) (def_right - def_left) * (def_top - def_bottom) << "\n"
-              << "    left:   " << def_left << "\n"
-              << "    right:  " << def_right << "\n"
-              << "    bottom: " << def_bottom << "\n"
-              << "    top:    " << def_top << "\n"
+              << "  total white space: " << (long int) (Right() - Left()) * (long int) (Top() - Bottom()) << "\n"
+              << "    left:   " << Left() << "\n"
+              << "    right:  " << Right() << "\n"
+              << "    bottom: " << Bottom() << "\n"
+              << "    top:    " << Top() << "\n"
               << "  white space utility: " << WhiteSpaceUsage() << "\n";
   }
 }
 
 void Circuit::NetSortBlkPin() {
-  for (auto &&net: net_list) {
+  for (auto &net: design_.net_list) {
     net.SortBlkPinList();
   }
 }
 
 double Circuit::HPWLX() {
   double hpwlx = 0;
-  for (auto &&net: net_list) {
+  for (auto &net: design_.net_list) {
     hpwlx += net.HPWLX();
   }
   return hpwlx * GetGridValueX();
@@ -1216,7 +1242,7 @@ double Circuit::HPWLX() {
 
 double Circuit::HPWLY() {
   double hpwly = 0;
-  for (auto &&net: net_list) {
+  for (auto &net: design_.net_list) {
     hpwly += net.HPWLY();
   }
   return hpwly * GetGridValueY();
@@ -1232,7 +1258,7 @@ void Circuit::ReportHPWL() {
 
 double Circuit::HPWLCtoCX() {
   double hpwl_c2c_x = 0;
-  for (auto &&net: net_list) {
+  for (auto &net: design_.net_list) {
     hpwl_c2c_x += net.HPWLCtoCX();
   }
   return hpwl_c2c_x * GetGridValueX();
@@ -1240,7 +1266,7 @@ double Circuit::HPWLCtoCX() {
 
 double Circuit::HPWLCtoCY() {
   double hpwl_c2c_y = 0;
-  for (auto &&net: net_list) {
+  for (auto &net: design_.net_list) {
     hpwl_c2c_y += net.HPWLCtoCY();
   }
   return hpwl_c2c_y * GetGridValueY();
@@ -1261,7 +1287,7 @@ void Circuit::WriteDefFileDebug(std::string const &name_of_file) {
   // need some header here
 
 
-  for (auto &&block: block_list) {
+  for (auto &block: design_.block_list) {
     ost << "- "
         << *(block.Name()) << " "
         << *(block.Type()->Name()) << " + "
@@ -1272,12 +1298,12 @@ void Circuit::WriteDefFileDebug(std::string const &name_of_file) {
   }
   ost << "END COMPONENTS\n";
 
-  ost << "NETS " << net_list.size() << " ;\n";
-  for (auto &&net: net_list) {
+  ost << "NETS " << design_.net_list.size() << " ;\n";
+  for (auto &net: design_.net_list) {
     ost << "- "
         << *(net.Name()) << "\n";
     ost << " ";
-    for (auto &&pin_pair: net.blk_pin_list) {
+    for (auto &pin_pair: net.blk_pin_list) {
       ost << " ( " << *(pin_pair.BlockName()) << " " << *(pin_pair.PinName()) << " ) ";
     }
     ost << "\n" << " ;\n";
@@ -1291,14 +1317,14 @@ void Circuit::WriteDefFileDebug(std::string const &name_of_file) {
 void Circuit::GenMATLABScript(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
-  for (auto &&block: block_list) {
+  for (auto &block: design_.block_list) {
     ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";
   }
   /*
-  for (auto &&net: net_list) {
-    for (size_t i=0; i<net.pin_list.size(); i++) {
-      for (size_t j=i+1; j<net.pin_list.size(); j++) {
-        ost << "line([" << net.pin_list[i].abs_x() << "," << net.pin_list[j].abs_x() << "],[" << net.pin_list[i].abs_y() << "," << net.pin_list[j].abs_y() << "],'lineWidth', 0.5)\n";
+  for (auto &net: net_list) {
+    for (size_t i=0; i<net.iopin_list.size(); i++) {
+      for (size_t j=i+1; j<net.iopin_list.size(); j++) {
+        ost << "line([" << net.iopin_list[i].abs_x() << "," << net.iopin_list[j].abs_x() << "],[" << net.iopin_list[i].abs_y() << "," << net.iopin_list[j].abs_y() << "],'lineWidth', 0.5)\n";
       }
     }
   }
@@ -1311,7 +1337,7 @@ void Circuit::GenMATLABTable(std::string const &name_of_file) {
   Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
   ost << Left() << "\t" << Right() << "\t" << Right() << "\t" << Left() << "\t" << Bottom() << "\t" << Bottom() << "\t"
       << Top() << "\t" << Top() << "\n";
-  for (auto &block: block_list) {
+  for (auto &block: design_.block_list) {
     ost << block.LLX() << "\t"
         << block.URX() << "\t"
         << block.URX() << "\t"
@@ -1337,7 +1363,7 @@ void Circuit::GenMATLABWellTable(std::string const &name_of_file) {
 
   BlockTypeWell *well;
   RectI *n_well_shape, *p_well_shape;
-  for (auto &block: block_list) {
+  for (auto &block: design_.block_list) {
     well = block.Type()->GetWell();
     if (well != nullptr) {
       n_well_shape = well->GetNWellShape();
@@ -1405,8 +1431,8 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   }
 
   // 2. print component
-  ost << "COMPONENTS " << block_list.size() << " ;\n";
-  for (auto &&block: block_list) {
+  ost << "COMPONENTS " << design_.block_list.size() << " ;\n";
+  for (auto &block: design_.block_list) {
     ost << "- "
         << *block.Name() << " "
         << *(block.Type()->Name()) << " + "
@@ -1428,11 +1454,11 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   }
   /*
   ost << "NETS " << netList.size() << " ;\n";
-  for (auto &&net: netList) {
+  for (auto &net: netList) {
     ost << "- "
         << net.name() << "\n";
     ost << " ";
-    for (auto &&pin: net.pin_list) {
+    for (auto &pin: net.iopin_list) {
       ost << " " << pin.pin_name();
     }
     ost << "\n" << " ;\n";
@@ -1449,8 +1475,8 @@ void Circuit::SaveBookshelfNode(std::string const &name_of_file) {
   Assert(ost.is_open(), "Cannot open file " + name_of_file);
   ost << "# this line is here just for ntuplace to recognize this file \n\n";
   ost << "NumNodes : \t\t" << tot_mov_blk_num_ << "\n"
-      << "NumTerminals : \t\t" << block_list.size() - tot_mov_blk_num_ << "\n";
-  for (auto &block: block_list) {
+      << "NumTerminals : \t\t" << design_.block_list.size() - tot_mov_blk_num_ << "\n";
+  for (auto &block: design_.block_list) {
     ost << "\t" << *(block.Name())
         << "\t" << block.Width() * def_distance_microns * grid_value_x_
         << "\t" << block.Height() * def_distance_microns * grid_value_y_
@@ -1462,13 +1488,13 @@ void Circuit::SaveBookshelfNet(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file " + name_of_file);
   int num_pins = 0;
-  for (auto &net: net_list) {
+  for (auto &net: design_.net_list) {
     num_pins += net.blk_pin_list.size();
   }
   ost << "# this line is here just for ntuplace to recognize this file \n\n";
-  ost << "NumNets : " << net_list.size() << "\n"
+  ost << "NumNets : " << design_.net_list.size() << "\n"
       << "NumPins : " << num_pins << "\n\n";
-  for (auto &net: net_list) {
+  for (auto &net: design_.net_list) {
     ost << "NetDegree : " << net.blk_pin_list.size() << "   " << *net.Name() << "\n";
     for (auto &pair: net.blk_pin_list) {
       ost << "\t" << *(pair.GetBlock()->Name()) << "\t";
@@ -1489,7 +1515,7 @@ void Circuit::SaveBookshelfPl(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file " + name_of_file);
   ost << "# this line is here just for ntuplace to recognize this file \n\n";
-  for (auto &&node: block_list) {
+  for (auto &node: design_.block_list) {
     ost << *node.Name()
         << "\t"
         << int(node.LLX() * def_distance_microns * grid_value_x_)
@@ -1585,9 +1611,9 @@ void Circuit::StrSplit(std::string &line, std::vector<std::string> &res) {
   std::string empty_str;
   bool is_delimiter, old_is_delimiter = true;
   int current_field = -1;
-  for (auto &&c: line) {
+  for (auto &c: line) {
     is_delimiter = false;
-    for (auto &&delimiter: delimiter_list) {
+    for (auto &delimiter: delimiter_list) {
       if (c == delimiter) {
         is_delimiter = true;
         break;

@@ -24,11 +24,11 @@ void MDPlacer::CreateBlkAuxList() {
    * ****/
   std::vector<Block> &block_list = *BlockList();
   blk_aux_list.reserve(block_list.size());
-  for (auto &&block: block_list) {
+  for (auto &block: block_list) {
     blk_aux_list.emplace_back(&block);
   }
 
-  /*for (auto &&blk_aux: blk_aux_list) {
+  /*for (auto &blk_aux: blk_aux_list) {
     blk_aux.ReportNet();
   }*/
 }
@@ -61,10 +61,10 @@ void MDPlacer::InitGridBin() {
     }
   }
 
-  for (auto &&bin_column: bin_matrix) {
+  for (auto &bin_column: bin_matrix) {
     bin_column[bin_cnt_y_ - 1].SetTop(RegionTop());
   }
-  for (auto &&grid_bin: bin_matrix[bin_cnt_x_ - 1]) {
+  for (auto &grid_bin: bin_matrix[bin_cnt_x_ - 1]) {
     grid_bin.SetRight(RegionRight());
   }
 }
@@ -73,7 +73,7 @@ void MDPlacer::UpdateBinMatrix() {
   std::vector<Block> &block_list = *BlockList();
   MDBlkAux *blk_aux = nullptr;
   BinIndex ll, ur;
-  for (auto &&blk: block_list) {
+  for (auto &blk: block_list) {
     blk_aux = (MDBlkAux *)blk.Aux();
     ll = LowLocToIndex(blk.LLX(), blk.LLY());
     ur = HighLocToIndex(blk.URX(), blk.URY());
@@ -150,18 +150,18 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
   std::unordered_set<int> near_blk_set;
   for (int i=ll.x; i<=ur.x; ++i) {
     for (int j=ll.y; j<=ur.y; ++j) {
-      for (auto &&num: bin_matrix[i][j].block_set) {
+      for (auto &num: bin_matrix[i][j].block_set) {
         if (num == blk_num) continue;
         near_blk_set.insert(num);
       }
     }
   }
-  for (auto &&num: near_blk_set) {
+  for (auto &num: near_blk_set) {
     force = blk_aux->GetForce(&block_list[num]);
     tot_force.Incre(force);
   }
 
-  /*for (auto &&block: block_list) {
+  /*for (auto &block: block_list) {
     if (&block == &blk) continue;
     force = blk_aux->GetForce(&block);
     tot_force.Incre(force);
@@ -171,7 +171,7 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
 
   force.Init();
   std::vector<Net> &net_list = *NetList();
-  for (auto &&net_num: blk.net_list) {
+  for (auto &net_num: blk.net_list) {
     net_list[net_num].UpdateMaxMinIndex();
     if (blk_num == net_list[net_num].MaxBlkPinNumX()) {
       force.x -= 1;
@@ -207,7 +207,7 @@ void MDPlacer::StartPlacement() {
   UpdateBinMatrix();
   for (int i=0; i<max_iteration_num_; ++i) {
     ReportHPWL(LOG_INFO);
-    for (auto &&block: block_list) {
+    for (auto &block: block_list) {
       UpdateVelocityLoc(block);
       UpdateBin(block);
     }

@@ -141,7 +141,7 @@ void StandardClusterWellLegalizer::Init() {
   cluster_list_.reserve(tot_col_num_ * max_clusters_per_col);
   printf("Maximum possible number of clusters in a column: %d\n", max_clusters_per_col);
 
-  index_loc_list_.resize(circuit_->block_list.size());
+  index_loc_list_.resize(BlockList()->size());
 }
 
 void StandardClusterWellLegalizer::AppendBlockToCol(int col_num, Block &blk) {
@@ -468,12 +468,13 @@ double StandardClusterWellLegalizer::WireLengthCost(Cluster *cluster, int l, int
    * from "An Efficient and Effective Detailed Placement Algorithm"
    * ****/
 
+  auto &net_list = *NetList();
   std::set<Net *> net_involved;
   for (int i = l; i <= r; ++i) {
     auto *blk = cluster->blk_list_[i];
     for (auto &net_num: blk->net_list) {
-      if (circuit_->net_list[net_num].P() < 100) {
-        net_involved.insert(&(circuit_->net_list[net_num]));
+      if (net_list[net_num].P() < 100) {
+        net_involved.insert(&(net_list[net_num]));
       }
     }
   }

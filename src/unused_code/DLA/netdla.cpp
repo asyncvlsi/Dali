@@ -38,7 +38,7 @@ int net_dla_t::hpwl_during_dla() {
   int max_y = pin_list[first_placed_block_index].abs_y();
   int min_y = pin_list[first_placed_block_index].abs_y();
 
-  for (auto &&pin: pin_list) {
+  for (auto &pin: pin_list) {
     blockDla = (block_dla_t *)pin.get_block();
     if (blockDla->is_placed()) {
       if (max_x < pin.abs_x()) {

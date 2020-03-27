@@ -17,7 +17,7 @@ void BlockType::Report() const {
   std::cout << "  BlockType name: " << *Name() << "\n"
             << "    width, height: " << Width() << " " << Height() << "\n"
             << "    pin list:\n";
-  for (auto &&it: pin_name_num_map) {
+  for (auto &it: pin_name_num_map) {
     std::cout << "      " << it.first << " " << it.second << " (" << pin_list[it.second].OffsetX() << ", "
               << pin_list[it.second].OffsetY() << ")\n";
   }

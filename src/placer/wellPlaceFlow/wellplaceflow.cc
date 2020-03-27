@@ -20,7 +20,7 @@ void WellPlaceFlow::StartPlacement() {
   LookAheadLgInit();
   //BlockLocCenterInit();
   BlockLocRandomInit();
-  if (circuit_->net_list.empty()) {
+  if (NetList()->empty()) {
     if (globalVerboseLevel >= LOG_CRITICAL) {
       std::cout << "\033[0;36m"
                 << "Global Placement complete\n"

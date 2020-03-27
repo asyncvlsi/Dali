@@ -259,7 +259,7 @@ double Net::HPWLCtoCX() {
   double max_x = block->X();
   double min_x = block->X();
 
-  for (auto &&pin: blk_pin_list) {
+  for (auto &pin: blk_pin_list) {
     if (pin.GetBlock() == nullptr) {
       std::cout << "Error!\n";
       std::cout << "attribute block_t* _block is nullptr, it should points to the block containing this pin\n";
@@ -283,7 +283,7 @@ double Net::HPWLCtoCY() {
   double max_y = block->Y();
   double min_y = block->Y();
 
-  for (auto &&pin: blk_pin_list) {
+  for (auto &pin: blk_pin_list) {
     if (pin.GetBlock() == nullptr) {
       std::cout << "Error!\n";
       std::cout << "attribute block_t* _block is nullptr, it should points to the block containing this pin\n";
