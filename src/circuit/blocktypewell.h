@@ -60,6 +60,8 @@ class BlockTypeWell {
   RectI *GetPWellShape();
 
   int GetPNBoundary();
+  int GetNWellHeight();
+  int GetPWellHeight();
 
   void SetWellShape(bool is_n, int lx, int ly, int ux, int uy);
   void SetWellShape(bool is_n, RectI &rect);
@@ -144,6 +146,14 @@ inline RectI *BlockTypeWell::GetPWellShape() {
 
 inline int BlockTypeWell::GetPNBoundary() {
   return p_rect_.URY();
+}
+
+inline int BlockTypeWell::GetNWellHeight() {
+  return n_rect_.Height();
+}
+
+inline int BlockTypeWell::GetPWellHeight() {
+  return p_rect_.Height();
 }
 
 #endif //DALI_SRC_CIRCUIT_WELLBLKTYPEAUX_H_

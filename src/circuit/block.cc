@@ -4,6 +4,14 @@
 
 #include "block.h"
 
+Block::Block() : type_(nullptr),
+                 name_num_pair_(nullptr),
+                 llx_(0),
+                 lly_(0),
+                 place_status_(UNPLACED),
+                 orient_(N),
+                 aux_(nullptr) {}
+
 Block::Block(BlockType *type,
              std::pair<const std::string, int> *name_num_pair,
              int llx,

@@ -41,8 +41,11 @@ class Block {
   PlaceStatus place_status_; // placement status, i.e, PLACED, FIXED, UNPLACED
   BlockOrient orient_; // orientation, normally, N or FS
   BlockAux *aux_; // points to auxiliary information if needed
-
  public:
+  /****this constructor is for the developer only****/
+  Block();
+
+  /****Constructors for users****/
   Block(BlockType *type,
         std::pair<const std::string, int> *name_num_pair,
         int llx,
@@ -58,6 +61,7 @@ class Block {
 
   std::vector<int> net_list;
 
+  /****member functions for attributes access****/
   const std::string *Name() const;
   std::string NameStr() const;
   BlockType *Type() const;
@@ -80,6 +84,7 @@ class Block {
   BlockOrient Orient() const;
   BlockAux *Aux() const;
 
+  void SetNameNumPair(std::pair<const std::string, int> *name_num_pair);
   void SetType(BlockType *type);
   void SetLoc(double lx, double ly);
   void SetLLX(double lx);
@@ -89,8 +94,9 @@ class Block {
   void SetCenterX(double center_x);
   void SetCenterY(double center_y);
   void SetPlaceStatus(PlaceStatus place_status);
-  void SetOrient(BlockOrient &orient);
+  void SetOrient(BlockOrient const &orient);
   void SetAux(BlockAux *aux);
+
   void SwapLoc(Block &blk);
 
   void IncreaseX(double displacement);
@@ -104,6 +110,7 @@ class Block {
   double OverlapArea(const Block &rhs) const;
   double OverlapArea(const Block *rhs) const;
 
+  /****Report info in this block, for debugging****/
   void Report();
   void ReportNet();
 
@@ -206,9 +213,15 @@ inline BlockAux *Block::Aux() const {
   return aux_;
 }
 
+inline void Block::SetNameNumPair(std::pair<const std::string, int> *name_num_pair) {
+  name_num_pair_ = name_num_pair;
+}
+
 inline void Block::SetType(BlockType *type) {
   Assert(type != nullptr, "Cannot set BlockType of a Block to NULL");
   type_ = type;
+  eff_height_ = type_->Height();
+  eff_area_ = type_->Area();
 }
 
 inline void Block::SetLoc(double lx, double ly) {
@@ -244,7 +257,7 @@ inline void Block::SetPlaceStatus(PlaceStatus place_status) {
   place_status_ = place_status;
 }
 
-inline void Block::SetOrient(BlockOrient &orient) {
+inline void Block::SetOrient(BlockOrient const &orient) {
   orient_ = orient;
 }
 

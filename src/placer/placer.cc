@@ -191,8 +191,10 @@ void Placer::SaveDEFFile(std::string const &name_of_file) {
         << *(block.Type()->Name()) << " + "
         << "PLACED"
         << " ("
-        << " " + std::to_string((int) (block.LLX() * circuit_->design_.def_distance_microns * circuit_->GetGridValueX()))
-        << " " + std::to_string((int) (block.LLY() * circuit_->design_.def_distance_microns * circuit_->GetGridValueY()))
+        << " "
+            + std::to_string((int) (block.LLX() * circuit_->design_.def_distance_microns * circuit_->GetGridValueX()))
+        << " "
+            + std::to_string((int) (block.LLY() * circuit_->design_.def_distance_microns * circuit_->GetGridValueY()))
         << " ) "
         << OrientStr(block.Orient()) + " ;\n";
   }
@@ -214,59 +216,7 @@ void Placer::SaveDEFFile(std::string const &name_of_file) {
 }
 
 void Placer::SaveDEFFile(std::string const &name_of_file, std::string const &input_def_file) {
-  std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
-  std::ifstream ist(input_def_file.c_str());
-  Assert(ist.is_open(), "Cannot open output file: " + input_def_file);
-
-  std::string line;
-  // 1. print file header, copy from def file
-  while (line.find("COMPONENTS") == std::string::npos && !ist.eof()) {
-    getline(ist, line);
-    ost << line << "\n";
-  }
-
-  // 2. print component
-  //std::cout << _circuit->block_list.size() << "\n";
-  for (auto &block: *BlockList()) {
-    ost << "- "
-        << *(block.Name()) << " "
-        << *(block.Type()->Name()) << " + "
-        << block.GetPlaceStatusStr()
-        << " ("
-        << " " + std::to_string((int) (block.LLX() * circuit_->design_.def_distance_microns * circuit_->GetGridValueX()))
-        << " " + std::to_string((int) (block.LLY() * circuit_->design_.def_distance_microns * circuit_->GetGridValueY()))
-        << " ) "
-        << OrientStr(block.Orient()) + " ;\n";
-  }
-  ost << "END COMPONENTS\n";
-  // jump to the end of components
-  while (line.find("END COMPONENTS") == std::string::npos && !ist.eof()) {
-    getline(ist, line);
-  }
-
-  // 3. print net, copy from def file
-  while (!ist.eof()) {
-    getline(ist, line);
-    ost << line << "\n";
-  }
-  /*
-  ost << "NETS " << net_list.size() << " ;\n";
-  for (auto &net: net_list) {
-    ost << "- "
-        << net.name() << "\n";
-    ost << " ";
-    for (auto &pin: net.iopin_list) {
-      ost << " " << pin.pin_name();
-    }
-    ost << "\n" << " ;\n";
-  }
-  ost << "END NETS\n\n";
-  ost << "END DESIGN\n";
-   */
-
-  ost.close();
-  ist.close();
+  circuit_->SaveDefFile(name_of_file, input_def_file);
 }
 
 void Placer::SanityCheck() {

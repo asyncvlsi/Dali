@@ -6,16 +6,23 @@
 #define DALI_SRC_PLACER_WELLLEGALIZER_STANDARDCLUSTERWELLLEGALIZER_H_
 
 #include "block_cluster.h"
+#include "circuit/block.h"
 #include "common/misc.h"
 #include "placer/placer.h"
 
 struct Cluster {
+  bool is_orient_N_ = true;
   std::vector<Block *> blk_list_;
+  Block *tap_cell_;
   int used_size_;
+
   int lx_;
-  int width_;
   int ly_;
+  int width_;
   int height_;
+
+  int p_well_height_ = 0;
+  int n_well_height_ = 0;
 
   int UsedSize() const;
   void SetUsedSize(int used_size);
@@ -37,7 +44,10 @@ struct Cluster {
   double CenterY() const;
 
   void SetHeight(int height);
+  void UpdateHeightFromNPWell(int p_well_height, int n_well_height);
   int Height() const;
+  int PHeight() const;
+  int NHeight() const;
 
   void SetLoc(int lx, int ly);
 
@@ -47,6 +57,8 @@ struct Cluster {
   void UpdateLocY();
   void LegalizeCompactX(int left);
   void LegalizeLooseX(int left, int right);
+  void SetOrient(bool is_orient_N);
+  void UpdateWellTapCell(Block &tap_cell);
 
   void UpdateBlockLocationCompact();
 };
@@ -68,8 +80,10 @@ struct ClusterColumn {
 
 class StandardClusterWellLegalizer : public Placer {
  private:
+  bool is_first_row_orient_N_ = true;
+
   int max_unplug_length_;
-  int plug_cell_width_;
+  int well_tap_cell_width_;
 
   int max_cluster_width_;
   int col_width_;
@@ -77,12 +91,14 @@ class StandardClusterWellLegalizer : public Placer {
 
   std::vector<IndexLocPair<int>> index_loc_list_;
   std::vector<Cluster> cluster_list_;
-  std::vector<ClusterColumn> clus_cols_;
+  std::vector<ClusterColumn> column_list_;
 
  public:
   StandardClusterWellLegalizer();
 
   void Init();
+
+  void SetFirstRowOrientN(bool is_N);
 
   int LocToCol(int x);
   void AppendBlockToCol(int col_num, Block &blk);
@@ -109,6 +125,9 @@ class StandardClusterWellLegalizer : public Placer {
   void LocalReorderAllClusters();
 
   void SingleSegmentClusteringOptimization();
+
+  void UpdateClusterOrient();
+  void InsertWellTapAroundMiddle();
 
   void StartPlacement() override;
 
@@ -179,8 +198,22 @@ inline void Cluster::SetHeight(int height) {
   height_ = height;
 }
 
+inline void Cluster::UpdateHeightFromNPWell(int p_well_height, int n_well_height) {
+  p_well_height_ = std::max(p_well_height_, p_well_height);
+  n_well_height_ = std::max(n_well_height_, n_well_height);
+  height_ = p_well_height_ + n_well_height_;
+}
+
 inline int Cluster::Height() const {
   return height_;
+}
+
+inline int Cluster::PHeight() const {
+  return p_well_height_;
+}
+
+inline int Cluster::NHeight() const {
+  return n_well_height_;
 }
 
 inline void Cluster::SetLoc(int lx, int ly) {
@@ -198,6 +231,10 @@ inline int ClusterColumn::LLX() const {
 
 inline int ClusterColumn::URX() const {
   return lx_ + width_;
+}
+
+inline void StandardClusterWellLegalizer::SetFirstRowOrientN(bool is_N) {
+  is_first_row_orient_N_ = is_N;
 }
 
 inline int StandardClusterWellLegalizer::LocToCol(int x) {

@@ -44,6 +44,8 @@ class Circuit {
   void ReadLefFile(std::string const &name_of_file);
   void ReadDefFile(std::string const &name_of_file);
 
+  void ReadCellFile(std::string const &name_of_file);
+
   /****API to set grid value****/
   double GetGridValueX() const; // unit in micro
   double GetGridValueY() const;
@@ -158,7 +160,6 @@ class Circuit {
   void SetPWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang);
   void SetLegalizerSpacing(double same_spacing, double any_spacing);
   Tech *GetTech();
-  void ReadCellFile(std::string const &name_of_file);
   void ReportWellShape();
 
   /****API to add virtual nets for timing driven placement****/

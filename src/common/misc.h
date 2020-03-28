@@ -85,6 +85,8 @@ struct Rect {
   T LLY() const { return lly_; }
   T URX() const { return urx_; }
   T URY() const { return ury_; }
+  T Height() const { return ury_ - lly_; }
+  T Width() const { return urx_ - llx_; }
   void SetValue(T llx, T lly, T urx, T ury) {
     llx_ = llx;
     lly_ = lly;

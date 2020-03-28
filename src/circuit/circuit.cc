@@ -80,15 +80,18 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
   double residual = std::fmod(tech_.row_height_, tech_.grid_value_y_);
   Assert(residual < 1e-6, "Site height is not integer multiple of grid value in Y");
 
-  // 4. load all macro, or we say gate type
+  // 4. load all macros, aka gate types, block types, cell types
   //std::cout << lib->getName() << " lib\n";
   double llx = 0, lly = 0, urx = 0, ury = 0;
   int width = 0, height = 0;
   for (auto &&macro: lib->getMasters()) {
-    std::string blk_name(macro->getName());
+    std::string macro_name(macro->getName());
     width = int(std::round((macro->getWidth() / tech_.grid_value_x_ / tech_.lef_database_microns)));
     height = int(std::round((macro->getHeight() / tech_.grid_value_y_ / tech_.lef_database_microns)));
-    auto blk_type = AddBlockType(blk_name, width, height);
+    auto blk_type = AddBlockType(macro_name, width, height);
+    if (macro_name.find("welltap") != std::string::npos) {
+      tech_.well_tap_cell_ = blk_type;
+    }
     //std::cout << macro->getName() << "\n";
     //std::cout << macro->getWidth()/grid_value_x_/lef_database_microns << "  " << macro->getHeight()/grid_value_y_/lef_database_microns << "\n";
     for (auto &&terminal: macro->getMTerms()) {
@@ -104,6 +107,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
       new_pin->AddRect(llx, lly, urx, ury);
     }
   }
+  //tech_.well_tap_cell_->Report();
 
   auto chip = db->getChip();
   if (chip == nullptr) return;
@@ -122,6 +126,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
 
   //std::cout << db->getChip()->getBlock()->getName() << "\n";
   //std::cout << db->getChip()->getBlock()->getBTerms().size() << "\n";
+
   // 5. load all gates
   int llx_int = 0, lly_int = 0;
   design_.def_distance_microns = top_level->getDefUnits();
@@ -510,7 +515,8 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       }
     }
   }
-  Assert(design_.def_distance_microns > 0, "Invalid/null UNITS DISTANCE MICRONS: " + std::to_string(design_.def_distance_microns));
+  Assert(design_.def_distance_microns > 0,
+         "Invalid/null UNITS DISTANCE MICRONS: " + std::to_string(design_.def_distance_microns));
   //std::cout << "DISTANCE MICRONS " << def_distance_microns << "\n";
 
   // find DIEAREA
@@ -527,7 +533,8 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       Assert(die_area_field.size() >= 9, "Invalid UNITS declaration: expecting 9 fields");
       try {
         def_left = (int) std::round(std::stoi(die_area_field[2]) / tech_.grid_value_x_ / design_.def_distance_microns);
-        def_bottom = (int) std::round(std::stoi(die_area_field[3]) / tech_.grid_value_y_ / design_.def_distance_microns);
+        def_bottom =
+            (int) std::round(std::stoi(die_area_field[3]) / tech_.grid_value_y_ / design_.def_distance_microns);
         def_right = (int) std::round(std::stoi(die_area_field[6]) / tech_.grid_value_x_ / design_.def_distance_microns);
         def_top = (int) std::round(std::stoi(die_area_field[7]) / tech_.grid_value_y_ / design_.def_distance_microns);
         SetBoundary(def_left, def_right, def_bottom, def_top);
@@ -565,8 +572,10 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         BlockOrient orient = StrToOrient(block_declare_field[9]);
         int llx = 0, lly = 0;
         try {
-          llx = (int) std::round(std::stoi(block_declare_field[6]) / tech_.grid_value_x_ / design_.def_distance_microns);
-          lly = (int) std::round(std::stoi(block_declare_field[7]) / tech_.grid_value_y_ / design_.def_distance_microns);
+          llx =
+              (int) std::round(std::stoi(block_declare_field[6]) / tech_.grid_value_x_ / design_.def_distance_microns);
+          lly =
+              (int) std::round(std::stoi(block_declare_field[7]) / tech_.grid_value_y_ / design_.def_distance_microns);
         } catch (...) {
           Assert(false, "Invalid stoi conversion:\n" + line);
         }
@@ -707,7 +716,8 @@ void Circuit::SetBoundary(int left, int right, int bottom, int top) {
 }
 
 void Circuit::SetDieArea(int lower_x, int upper_x, int lower_y, int upper_y) {
-  Assert(tech_.grid_value_x_ > 0 && tech_.grid_value_y_ > 0, "Need to set positive grid values before setting placement boundary");
+  Assert(tech_.grid_value_x_ > 0 && tech_.grid_value_y_ > 0,
+         "Need to set positive grid values before setting placement boundary");
   Assert(design_.def_distance_microns > 0, "Need to set def_distance_microns before setting placement boundary");
   SetBoundary((int) std::round(lower_x / tech_.grid_value_x_ / design_.def_distance_microns),
               (int) std::round(upper_x / tech_.grid_value_x_ / design_.def_distance_microns),
@@ -1320,6 +1330,16 @@ void Circuit::GenMATLABTable(std::string const &name_of_file) {
         << block.URY() << "\t"
         << block.URY() << "\n";
   }
+  for (auto &block: design_.well_tap_list) {
+    ost << block.LLX() << "\t"
+        << block.URX() << "\t"
+        << block.URX() << "\t"
+        << block.LLX() << "\t"
+        << block.LLY() << "\t"
+        << block.LLY() << "\t"
+        << block.URY() << "\t"
+        << block.URY() << "\n";
+  }
   ost.close();
 }
 
@@ -1341,7 +1361,7 @@ void Circuit::GenMATLABWellTable(std::string const &name_of_file) {
     if (well != nullptr) {
       n_well_shape = well->GetNWellShape();
       p_well_shape = well->GetPWellShape();
-      if (!well->IsPlug()) {
+      if (block.Orient() == N) {
         ost << block.LLX() + n_well_shape->LLX() << "\t"
             << block.LLX() + n_well_shape->URX() << "\t"
             << block.LLX() + n_well_shape->URX() << "\t"
@@ -1359,9 +1379,35 @@ void Circuit::GenMATLABWellTable(std::string const &name_of_file) {
             << block.LLY() + p_well_shape->LLY() << "\t"
             << block.LLY() + p_well_shape->URY() << "\t"
             << block.LLY() + p_well_shape->URY() << "\n";
-      } else {
-        ost1
+      } else if (block.Orient() == FS) {
+        ost << block.LLX() + n_well_shape->LLX() << "\t"
+            << block.LLX() + n_well_shape->URX() << "\t"
+            << block.LLX() + n_well_shape->URX() << "\t"
             << block.LLX() + n_well_shape->LLX() << "\t"
+            << block.URY() - n_well_shape->LLY() << "\t"
+            << block.URY() - n_well_shape->LLY() << "\t"
+            << block.URY() - n_well_shape->URY() << "\t"
+            << block.URY() - n_well_shape->URY() << "\t"
+
+            << block.LLX() + p_well_shape->LLX() << "\t"
+            << block.LLX() + p_well_shape->URX() << "\t"
+            << block.LLX() + p_well_shape->URX() << "\t"
+            << block.LLX() + p_well_shape->LLX() << "\t"
+            << block.URY() - p_well_shape->LLY() << "\t"
+            << block.URY() - p_well_shape->LLY() << "\t"
+            << block.URY() - p_well_shape->URY() << "\t"
+            << block.URY() - p_well_shape->URY() << "\n";
+      }
+    }
+  }
+
+  for (auto &block: design_.well_tap_list) {
+    well = block.Type()->GetWell();
+    if (well != nullptr) {
+      n_well_shape = well->GetNWellShape();
+      p_well_shape = well->GetPWellShape();
+      if (block.Orient() == N) {
+        ost << block.LLX() + n_well_shape->LLX() << "\t"
             << block.LLX() + n_well_shape->URX() << "\t"
             << block.LLX() + n_well_shape->URX() << "\t"
             << block.LLX() + n_well_shape->LLX() << "\t"
@@ -1378,6 +1424,24 @@ void Circuit::GenMATLABWellTable(std::string const &name_of_file) {
             << block.LLY() + p_well_shape->LLY() << "\t"
             << block.LLY() + p_well_shape->URY() << "\t"
             << block.LLY() + p_well_shape->URY() << "\n";
+      } else if (block.Orient() == FS) {
+        ost << block.LLX() + n_well_shape->LLX() << "\t"
+            << block.LLX() + n_well_shape->URX() << "\t"
+            << block.LLX() + n_well_shape->URX() << "\t"
+            << block.LLX() + n_well_shape->LLX() << "\t"
+            << block.URY() - n_well_shape->LLY() << "\t"
+            << block.URY() - n_well_shape->LLY() << "\t"
+            << block.URY() - n_well_shape->URY() << "\t"
+            << block.URY() - n_well_shape->URY() << "\t"
+
+            << block.LLX() + p_well_shape->LLX() << "\t"
+            << block.LLX() + p_well_shape->URX() << "\t"
+            << block.LLX() + p_well_shape->URX() << "\t"
+            << block.LLX() + p_well_shape->LLX() << "\t"
+            << block.URY() - p_well_shape->LLY() << "\t"
+            << block.URY() - p_well_shape->LLY() << "\t"
+            << block.URY() - p_well_shape->URY() << "\t"
+            << block.URY() - p_well_shape->URY() << "\n";
       }
     }
   }
@@ -1404,8 +1468,17 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   }
 
   // 2. print component
-  ost << "COMPONENTS " << design_.block_list.size() << " ;\n";
+  ost << "COMPONENTS " << design_.block_list.size() + design_.well_tap_list.size() << " ;\n";
   for (auto &block: design_.block_list) {
+    ost << "- "
+        << *block.Name() << " "
+        << *(block.Type()->Name()) << " + "
+        << "PLACED" << " "
+        << "( " + std::to_string((int) (block.LLX() * design_.def_distance_microns * tech_.grid_value_x_)) + " "
+            + std::to_string((int) (block.LLY() * design_.def_distance_microns * tech_.grid_value_y_)) + " )" << " "
+        << OrientStr(block.Orient()) + " ;\n";
+  }
+  for (auto &block: design_.well_tap_list) {
     ost << "- "
         << *block.Name() << " "
         << *(block.Type()->Name()) << " + "
@@ -1476,9 +1549,11 @@ void Circuit::SaveBookshelfNet(std::string const &name_of_file) {
       } else {
         ost << "O : ";
       }
-      ost << (pair.GetPin()->OffsetX() - pair.GetBlock()->Type()->Width() / 2.0) * design_.def_distance_microns * tech_.grid_value_x_
+      ost << (pair.GetPin()->OffsetX() - pair.GetBlock()->Type()->Width() / 2.0) * design_.def_distance_microns
+          * tech_.grid_value_x_
           << "\t"
-          << (pair.GetPin()->OffsetY() - pair.GetBlock()->Type()->Height() / 2.0) * design_.def_distance_microns * tech_.grid_value_y_
+          << (pair.GetPin()->OffsetY() - pair.GetBlock()->Type()->Height() / 2.0) * design_.def_distance_microns
+              * tech_.grid_value_y_
           << "\n";
     }
   }

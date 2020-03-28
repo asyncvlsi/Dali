@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "block.h"
 #include "blocktype.h"
 #include "layer.h"
 
@@ -28,6 +29,7 @@ class Tech {
 
   /****macros****/
   std::unordered_map<std::string, BlockType *> block_type_map;
+  BlockType *well_tap_cell_ = nullptr;
 
   /****row height****/
   double row_height_ = 0;
@@ -43,6 +45,9 @@ class Tech {
   /********/
   Tech();
   ~Tech();
+
+  BlockType *WellTapCell();
+
   WellLayer *GetNLayer() const;
   WellLayer *GetPLayer() const;
   void SetNLayer(double width, double spacing, double op_spacing, double max_plug_dist, double overhang);
@@ -52,6 +57,10 @@ class Tech {
   bool IsWellInfoSet() const;
   void Report();
 };
+
+inline BlockType *Tech::WellTapCell() {
+  return well_tap_cell_;
+}
 
 inline WellLayer *Tech::GetNLayer() const {
   return n_layer_;
