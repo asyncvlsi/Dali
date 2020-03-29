@@ -652,20 +652,22 @@ void StandardClusterWellLegalizer::SingleSegmentClusteringOptimization() {
 
 }
 
-void StandardClusterWellLegalizer::UpdateClusterOrient() {
-  std::vector<std::vector<Cluster *>> clusters_in_column(tot_col_num_);
+void StandardClusterWellLegalizer::UpdateClusterInColumn() {
   for (int i = 0; i < tot_col_num_; ++i) {
-    clusters_in_column[i].reserve(column_list_[i].cluster_count_);
+    column_list_[i].cluster_list_.clear();
+    column_list_[i].cluster_list_.reserve(column_list_[i].cluster_count_);
   }
 
   for (auto &cluster: cluster_list_) {
     int col_num = LocToCol((int) std::round(cluster.LLX()));
-    clusters_in_column[col_num].emplace_back(&cluster);
+    column_list_[col_num].cluster_list_.emplace_back(&cluster);
   }
+}
 
-  for (auto &col: clusters_in_column) {
+void StandardClusterWellLegalizer::UpdateClusterOrient() {
+  for (auto &col: column_list_) {
     bool is_orient_N = is_first_row_orient_N_;
-    for (auto &clus_ptr: col) {
+    for (auto &clus_ptr: col.cluster_list_) {
       clus_ptr->SetOrient(is_orient_N);
       is_orient_N = !is_orient_N;
     }
@@ -705,21 +707,16 @@ void StandardClusterWellLegalizer::StartPlacement() {
   ClusterBlocksLoose();
   //ClusterBlocksCompact();
   ReportHPWL(LOG_CRITICAL);
-  UpdateClusterOrient();
 
   TrialClusterLegalization();
   ReportHPWL(LOG_CRITICAL);
-  LocalReorderAllClusters();
-  ReportHPWL(LOG_CRITICAL);
-  LocalReorderAllClusters();
-  ReportHPWL(LOG_CRITICAL);
-  LocalReorderAllClusters();
-  ReportHPWL(LOG_CRITICAL);
-  LocalReorderAllClusters();
-  ReportHPWL(LOG_CRITICAL);
-  LocalReorderAllClusters();
-  ReportHPWL(LOG_CRITICAL);
-  LocalReorderAllClusters();
+
+  UpdateClusterInColumn();
+  UpdateClusterOrient();
+  for (int i = 0; i < 6; ++i) {
+    LocalReorderAllClusters();
+    ReportHPWL(LOG_CRITICAL);
+  }
   //TetrisLegalizeCluster();
 
   InsertWellTapAroundMiddle();
@@ -763,5 +760,97 @@ void StandardClusterWellLegalizer::GenMatlabClusterTable(std::string const &name
         << cluster.URY() << "\t"
         << cluster.URY() << "\n";
   }
+  ost.close();
+}
+
+void StandardClusterWellLegalizer::GenMATLABWellTable(std::string const &name_of_file) {
+  circuit_->GenMATLABWellTable(name_of_file);
+
+  std::string p_file = name_of_file + "_pwell.txt";
+  std::ofstream ostp(p_file.c_str());
+  Assert(ostp.is_open(), "Cannot open output file: " + p_file);
+
+  std::string n_file = name_of_file + "_nwell.txt";
+  std::ofstream ostn(n_file.c_str());
+  Assert(ostn.is_open(), "Cannot open output file: " + n_file);
+
+  for (auto &col: column_list_) {
+    std::vector<int> pn_edge_list;
+    pn_edge_list.reserve(col.cluster_list_.size() + 2);
+    pn_edge_list.push_back(RegionBottom());
+    for (auto &cluster: col.cluster_list_) {
+      pn_edge_list.push_back(cluster->LLY() + cluster->PNEdge());
+    }
+    pn_edge_list.push_back(RegionTop());
+
+    bool is_p_well_rect = col.is_first_row_orient_N_;
+    int lx = col.LLX();
+    int ux = col.URX();
+    int ly;
+    int uy;
+    int rect_count = (int)pn_edge_list.size() - 1;
+    for (int i=0; i<rect_count ; ++i) {
+      ly = pn_edge_list[i];
+      uy = pn_edge_list[i+1];
+      if (is_p_well_rect) {
+        ostp << lx << "\t"
+             << ux << "\t"
+             << ux << "\t"
+             << lx << "\t"
+             << ly << "\t"
+             << ly << "\t"
+             << uy << "\t"
+             << uy << "\n";
+      } else {
+        ostn << lx << "\t"
+             << ux << "\t"
+             << ux << "\t"
+             << lx << "\t"
+             << ly << "\t"
+             << ly << "\t"
+             << uy << "\t"
+             << uy << "\n";
+      }
+      is_p_well_rect = !is_p_well_rect;
+    }
+  }
+  ostp.close();
+  ostn.close();
+}
+
+void StandardClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, std::string const &input_def_file) {
+  circuit_->SaveDefFile(name_of_file + ".def", input_def_file);
+
+  std::string rect_file_name = name_of_file + "_well.rect";
+  std::ofstream ost(rect_file_name.c_str());
+  Assert(ost.is_open(), "Cannot open output file: " + rect_file_name);
+
+  for (auto &col: column_list_) {
+    std::vector<int> pn_edge_list;
+    pn_edge_list.reserve(col.cluster_list_.size() + 2);
+    pn_edge_list.push_back(RegionBottom());
+    for (auto &cluster: col.cluster_list_) {
+      pn_edge_list.push_back(cluster->LLY() + cluster->PNEdge());
+    }
+    pn_edge_list.push_back(RegionTop());
+
+    bool is_p_well_rect = col.is_first_row_orient_N_;
+    int lx = col.LLX();
+    int ux = col.URX();
+    int ly;
+    int uy;
+    int rect_count = (int)pn_edge_list.size() - 1;
+    for (int i=0; i<rect_count ; ++i) {
+      ly = pn_edge_list[i];
+      uy = pn_edge_list[i+1];
+      if (is_p_well_rect) {
+        ost << "pwell " << lx << " " << ly << " " << ux << " " << uy << "\n";
+      } else {
+        ost << "nwell " << lx << " " << ly << " " << ux << " " << uy << "\n";
+      }
+      is_p_well_rect = !is_p_well_rect;
+    }
+  }
+
   ost.close();
 }

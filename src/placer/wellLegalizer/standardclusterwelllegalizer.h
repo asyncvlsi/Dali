@@ -48,6 +48,7 @@ struct Cluster {
   int Height() const;
   int PHeight() const;
   int NHeight() const;
+  int PNEdge() const;
 
   void SetLoc(int lx, int ly);
 
@@ -72,6 +73,10 @@ struct ClusterColumn {
   int used_height_;
   int cluster_count_;
   Cluster *top_cluster_;
+  std::vector<Cluster *> cluster_list_;
+
+  bool is_first_row_orient_N_ = true;
+  std::vector<RectI> well_rect_list_;
 
   int Width() const;
   int LLX() const;
@@ -126,12 +131,15 @@ class StandardClusterWellLegalizer : public Placer {
 
   void SingleSegmentClusteringOptimization();
 
+  void UpdateClusterInColumn();
   void UpdateClusterOrient();
   void InsertWellTapAroundMiddle();
 
   void StartPlacement() override;
 
   void GenMatlabClusterTable(std::string const &name_of_file);
+  void GenMATLABWellTable(std::string const &name_of_file) override;
+  void EmitDEFWellFile(std::string const &name_of_file, std::string const &input_def_file) override;
 };
 
 inline int Cluster::UsedSize() const {
@@ -214,6 +222,13 @@ inline int Cluster::PHeight() const {
 
 inline int Cluster::NHeight() const {
   return n_well_height_;
+}
+
+inline int Cluster::PNEdge() const {
+  /****
+   * Returns the P/N well edge to the bottom of this cluster
+   * ****/
+  return is_orient_N_ ? PHeight() : NHeight();
 }
 
 inline void Cluster::SetLoc(int lx, int ly) {

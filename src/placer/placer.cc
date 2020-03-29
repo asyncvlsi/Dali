@@ -219,6 +219,10 @@ void Placer::SaveDEFFile(std::string const &name_of_file, std::string const &inp
   circuit_->SaveDefFile(name_of_file, input_def_file);
 }
 
+void Placer::EmitDEFWellFile(std::string const &name_of_file, std::string const &input_def_file) {
+  circuit_->SaveDefFile(name_of_file, input_def_file);
+}
+
 void Placer::SanityCheck() {
   double epsilon = 1e-3;
   Assert(filling_rate_ > epsilon,
