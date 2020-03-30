@@ -146,6 +146,8 @@ void StandardClusterWellLegalizer::Init() {
   auto n_well_layer = tech->GetNLayer();
   printf("Well max plug distance: %2.2e um \n", n_well_layer->MaxPlugDist());
   printf("GridValueX: %2.2e um\n", circuit_->GetGridValueX());
+  well_spacing_ = std::ceil(n_well_layer->Spacing() / circuit_->GetGridValueX());
+  printf("Well spacing: %2.2e um, %d\n", n_well_layer->Spacing(), well_spacing_);
   max_unplug_length_ = std::floor(n_well_layer->MaxPlugDist() / circuit_->GetGridValueX());
   well_tap_cell_width_ = tech->WellTapCell()->Width();
   printf("Well tap cell width: %d\n", well_tap_cell_width_);
@@ -170,9 +172,14 @@ void StandardClusterWellLegalizer::Init() {
     column_list_[i].cluster_count_ = 0;
     column_list_[i].max_blk_capacity_per_cluster_ = column_list_[i].Width() / circuit_->MinWidth();
   }
-  column_list_[tot_col_num_ - 1].width_ = RegionRight() - column_list_[tot_col_num_ - 1].lx_;
+  column_list_.back().width_ = RegionRight() - column_list_.back().lx_;
   cluster_list_.reserve(tot_col_num_ * max_clusters_per_col);
   printf("Maximum possible number of clusters in a column: %d\n", max_clusters_per_col);
+
+  well_tap_cell_ = (circuit_->tech_.well_tap_cell_);
+  auto *tap_cell_well = well_tap_cell_->GetWell();
+  tap_cell_p_height_ = tap_cell_well->GetPWellHeight();
+  tap_cell_n_height_ = tap_cell_well->GetNWellHeight();
 
   index_loc_list_.resize(BlockList()->size());
 }
@@ -193,15 +200,16 @@ void StandardClusterWellLegalizer::AppendBlockToCol(int col_num, Block &blk) {
   }
 
   Cluster *top_cluster;
-  auto *well = blk.Type()->GetWell();
-  int p_well_height = well->GetPWellHeight();
-  int n_well_height = well->GetNWellHeight();
+  auto *blk_well = blk.Type()->GetWell();
+  int p_well_height = blk_well->GetPWellHeight();
+  int n_well_height = blk_well->GetNWellHeight();
   if (is_new_cluster_needed) {
     cluster_list_.emplace_back();
     top_cluster = &(cluster_list_.back());
     top_cluster->blk_list_.reserve(col.max_blk_capacity_per_cluster_);
     top_cluster->blk_list_.push_back(&blk);
     top_cluster->SetUsedSize(width + well_tap_cell_width_);
+    top_cluster->UpdateHeightFromNPWell(tap_cell_p_height_,tap_cell_n_height_);
     top_cluster->SetLLY(init_y);
     top_cluster->SetLLX(col.LLX());
     top_cluster->SetWidth(col.Width());
@@ -247,6 +255,7 @@ void StandardClusterWellLegalizer::AppendBlockToColClose(int col_num, Block &blk
     top_cluster->blk_list_.reserve(col.max_blk_capacity_per_cluster_);
     top_cluster->blk_list_.push_back(&blk);
     top_cluster->SetUsedSize(width + well_tap_cell_width_);
+    top_cluster->UpdateHeightFromNPWell(tap_cell_p_height_,tap_cell_n_height_);
     top_cluster->SetLLY(init_y);
     top_cluster->SetLLX(col.LLX());
     top_cluster->SetWidth(col.Width());
@@ -788,10 +797,10 @@ void StandardClusterWellLegalizer::GenMATLABWellTable(std::string const &name_of
     int ux = col.URX();
     int ly;
     int uy;
-    int rect_count = (int)pn_edge_list.size() - 1;
-    for (int i=0; i<rect_count ; ++i) {
+    int rect_count = (int) pn_edge_list.size() - 1;
+    for (int i = 0; i < rect_count; ++i) {
       ly = pn_edge_list[i];
-      uy = pn_edge_list[i+1];
+      uy = pn_edge_list[i + 1];
       if (is_p_well_rect) {
         ostp << lx << "\t"
              << ux << "\t"
@@ -839,14 +848,14 @@ void StandardClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_fi
     int ux = col.URX();
     int ly;
     int uy;
-    int rect_count = (int)pn_edge_list.size() - 1;
-    for (int i=0; i<rect_count ; ++i) {
+    int rect_count = (int) pn_edge_list.size() - 1;
+    for (int i = 0; i < rect_count; ++i) {
       ly = pn_edge_list[i];
-      uy = pn_edge_list[i+1];
+      uy = pn_edge_list[i + 1];
       if (is_p_well_rect) {
-        ost << "pwell " << lx << " " << ly << " " << ux << " " << uy << "\n";
+        ost << "pwell GND " << lx << " " << ly << " " << ux << " " << uy << "\n";
       } else {
-        ost << "nwell " << lx << " " << ly << " " << ux << " " << uy << "\n";
+        ost << "nwell Vdd " << lx << " " << ly << " " << ux << " " << uy << "\n";
       }
       is_p_well_rect = !is_p_well_rect;
     }

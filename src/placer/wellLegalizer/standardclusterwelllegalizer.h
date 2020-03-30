@@ -89,10 +89,15 @@ class StandardClusterWellLegalizer : public Placer {
 
   int max_unplug_length_;
   int well_tap_cell_width_;
+  int well_spacing_;
 
   int max_cluster_width_;
   int col_width_;
   int tot_col_num_;
+
+  BlockType *well_tap_cell_;
+  int tap_cell_p_height_;
+  int tap_cell_n_height_;
 
   std::vector<IndexLocPair<int>> index_loc_list_;
   std::vector<Cluster> cluster_list_;
