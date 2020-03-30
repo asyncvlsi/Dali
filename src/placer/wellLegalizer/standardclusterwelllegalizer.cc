@@ -166,13 +166,13 @@ void StandardClusterWellLegalizer::Init() {
   col_width_ = RegionWidth() / tot_col_num_;
   for (int i = 0; i < tot_col_num_; ++i) {
     column_list_[i].lx_ = RegionLeft() + i * col_width_;
-    column_list_[i].width_ = col_width_;
+    column_list_[i].width_ = col_width_ - well_spacing_;
     column_list_[i].contour_ = RegionBottom();
     column_list_[i].used_height_ = 0;
     column_list_[i].cluster_count_ = 0;
     column_list_[i].max_blk_capacity_per_cluster_ = column_list_[i].Width() / circuit_->MinWidth();
   }
-  column_list_.back().width_ = RegionRight() - column_list_.back().lx_;
+  //column_list_.back().width_ = RegionRight() - column_list_.back().lx_;
   cluster_list_.reserve(tot_col_num_ * max_clusters_per_col);
   printf("Maximum possible number of clusters in a column: %d\n", max_clusters_per_col);
 
