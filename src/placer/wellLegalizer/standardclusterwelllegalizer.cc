@@ -209,7 +209,7 @@ void StandardClusterWellLegalizer::AppendBlockToCol(int col_num, Block &blk) {
     top_cluster->blk_list_.reserve(col.max_blk_capacity_per_cluster_);
     top_cluster->blk_list_.push_back(&blk);
     top_cluster->SetUsedSize(width + well_tap_cell_width_);
-    top_cluster->UpdateHeightFromNPWell(tap_cell_p_height_,tap_cell_n_height_);
+    top_cluster->UpdateHeightFromNPWell(tap_cell_p_height_, tap_cell_n_height_);
     top_cluster->SetLLY(init_y);
     top_cluster->SetLLX(col.LLX());
     top_cluster->SetWidth(col.Width());
@@ -255,7 +255,7 @@ void StandardClusterWellLegalizer::AppendBlockToColClose(int col_num, Block &blk
     top_cluster->blk_list_.reserve(col.max_blk_capacity_per_cluster_);
     top_cluster->blk_list_.push_back(&blk);
     top_cluster->SetUsedSize(width + well_tap_cell_width_);
-    top_cluster->UpdateHeightFromNPWell(tap_cell_p_height_,tap_cell_n_height_);
+    top_cluster->UpdateHeightFromNPWell(tap_cell_p_height_, tap_cell_n_height_);
     top_cluster->SetLLY(init_y);
     top_cluster->SetLLX(col.LLX());
     top_cluster->SetWidth(col.Width());
@@ -742,9 +742,7 @@ void StandardClusterWellLegalizer::StartPlacement() {
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "(wall time: "
-              << wall_time << "s, cpu time: "
-              << cpu_time << "s)\n";
+    printf("(wall time: %.4fs, cpu time: %.4fs)\n", wall_time, cpu_time);
   }
 
   ReportMemory(LOG_CRITICAL);
@@ -828,8 +826,19 @@ void StandardClusterWellLegalizer::GenMATLABWellTable(std::string const &name_of
 }
 
 void StandardClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, std::string const &input_def_file) {
+  /****
+   * Emit three files:
+   * 1. def file, well tap cells are included in this DEF file
+   * 2. rect file including all N/P well rectangles
+   * 3. cluster file including all cluster shapes
+   * ****/
+
+  // emit def file
   circuit_->SaveDefFile(name_of_file + ".def", input_def_file);
 
+  double factor_x = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_x_;
+  double factor_y = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_y_;
+  // emit rect file
   std::string rect_file_name = name_of_file + "_well.rect";
   std::ofstream ost(rect_file_name.c_str());
   Assert(ost.is_open(), "Cannot open output file: " + rect_file_name);
@@ -853,13 +862,43 @@ void StandardClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_fi
       ly = pn_edge_list[i];
       uy = pn_edge_list[i + 1];
       if (is_p_well_rect) {
-        ost << "pwell GND " << lx << " " << ly << " " << ux << " " << uy << "\n";
+        ost << "pwell GND ";
       } else {
-        ost << "nwell Vdd " << lx << " " << ly << " " << ux << " " << uy << "\n";
+        ost << "nwell Vdd ";
       }
+      ost << (int) (lx * factor_x) << " "
+          << (int) (ly * factor_y) << " "
+          << (int) (ux * factor_x) << " "
+          << (int) (uy * factor_y) << "\n";
       is_p_well_rect = !is_p_well_rect;
     }
   }
-
   ost.close();
+
+  std::string cluster_file_name = name_of_file + "_router.cluster";
+  std::ofstream ost1(cluster_file_name.c_str());
+  Assert(ost1.is_open(), "Cannot open output file: " + cluster_file_name);
+
+  for (int i = 0; i < tot_col_num_; ++i) {
+    std::string column_name = "column" + std::to_string(i);
+    ost1 << "STRIP " << column_name << "\n";
+
+    auto &col = column_list_[i];
+    ost1 << "  "
+         << (int) (col.LLX() * factor_x) << "  "
+         << (int) (col.URX() * factor_x) << "  ";
+    if (col.is_first_row_orient_N_) {
+      ost1 << "GND\n";
+    } else {
+      ost1 << "Vdd\n";
+    }
+    for (auto &cluster: col.cluster_list_) {
+      ost1 << "  "
+           << (int) (cluster->LLY() * factor_y) << "  "
+           << (int) (cluster->URY() * factor_y) << "\n";
+    }
+
+    ost1 << "END " << column_name << "\n\n";
+  }
+  ost1.close();
 }

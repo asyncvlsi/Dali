@@ -1469,23 +1469,29 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
 
   // 2. print component
   ost << "COMPONENTS " << design_.block_list.size() + design_.well_tap_list.size() << " ;\n";
+  double factor_x = design_.def_distance_microns * tech_.grid_value_x_;
+  double factor_y = design_.def_distance_microns * tech_.grid_value_y_;
   for (auto &block: design_.block_list) {
     ost << "- "
         << *block.Name() << " "
         << *(block.Type()->Name()) << " + "
         << "PLACED" << " "
-        << "( " + std::to_string((int) (block.LLX() * design_.def_distance_microns * tech_.grid_value_x_)) + " "
-            + std::to_string((int) (block.LLY() * design_.def_distance_microns * tech_.grid_value_y_)) + " )" << " "
-        << OrientStr(block.Orient()) + " ;\n";
+        << "( "
+        << (int) (block.LLX() * factor_x) << " " << (int) (block.LLY() * factor_y)
+        << " ) "
+        << OrientStr(block.Orient())
+        << " ;\n";
   }
   for (auto &block: design_.well_tap_list) {
     ost << "- "
         << *block.Name() << " "
         << *(block.Type()->Name()) << " + "
         << "PLACED" << " "
-        << "( " + std::to_string((int) (block.LLX() * design_.def_distance_microns * tech_.grid_value_x_)) + " "
-            + std::to_string((int) (block.LLY() * design_.def_distance_microns * tech_.grid_value_y_)) + " )" << " "
-        << OrientStr(block.Orient()) + " ;\n";
+        << "( "
+        << (int) (block.LLX() * factor_x) << " " << (int) (block.LLY() * factor_y)
+        << " ) "
+        << OrientStr(block.Orient())
+        << " ;\n";
   }
   ost << "END COMPONENTS\n";
   // jump to the end of components
