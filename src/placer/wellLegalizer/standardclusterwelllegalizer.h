@@ -14,12 +14,14 @@ struct Cluster {
   bool is_orient_N_ = true;
   std::vector<Block *> blk_list_;
   Block *tap_cell_;
-  int used_size_;
 
   int lx_;
   int ly_;
   int width_;
   int height_;
+
+  int used_size_;
+  int usable_width_; // to ensure a proper well tap cell location can be found
 
   int p_well_height_ = 0;
   int n_well_height_ = 0;
@@ -106,7 +108,7 @@ class StandardClusterWellLegalizer : public Placer {
  public:
   StandardClusterWellLegalizer();
 
-  void Init();
+  void Init(int cluster_width = 0);
 
   void SetFirstRowOrientN(bool is_N);
 

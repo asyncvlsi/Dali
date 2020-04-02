@@ -36,6 +36,8 @@ add_subdirectory(module/OpenDB
 
 include_directories(
         src
+        module/def
+        module/lef
         module/eigen-git-mirror
         module/OpenDB/include/lef56
         module/OpenDB/include/opendb
@@ -43,7 +45,7 @@ include_directories(
 
 # All used circuit and placer source code
 file(GLOB SOURCES
-        src/opendb.cc
+        src/common/opendb.cc
         src/common/*.cc
         src/circuit/*.cc
         src/placer/*.cc

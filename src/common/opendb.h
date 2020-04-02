@@ -1,9 +1,10 @@
 //
 // Created by Yihang Yang on 12/17/19.
+// all of the following functions come from OpenDB/src/swig/python/dbhelpers.i
 //
 
-#ifndef DALI_SRC_OPENDB_H_
-#define DALI_SRC_OPENDB_H_
+#ifndef DALI_SRC_COMMON_OPENDB_H_
+#define DALI_SRC_COMMON_OPENDB_H_
 
 #include <vector>
 
@@ -13,7 +14,6 @@
 #include "lefin.h"
 #include "lefout.h"
 
-// the following functions come from OpenDB/src/swig/python/dbhelpers.i without any modification
 
 odb::dbLib *odb_read_lef(odb::dbDatabase *db, const char *path);
 
@@ -33,4 +33,4 @@ int odb_write_def(odb::dbBlock *block, const char *path, odb::defout::Version ve
 
 int odb_write_lef(odb::dbLib *lib, const char *path);
 
-#endif //DALI_SRC_OPENDB_H_
+#endif //DALI_SRC_COMMON_OPENDB_H_

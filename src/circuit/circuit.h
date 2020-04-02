@@ -13,20 +13,21 @@
 #include "block.h"
 #include "blocktype.h"
 #include "blocktypewell.h"
+#include "common/opendb.h"
+#include "common/si2lefdef.h"
 #include "design.h"
 #include "iopin.h"
 #include "layer.h"
 #include "net.h"
-#include "opendb.h"
 #include "status.h"
 #include "tech.h"
 
 class Circuit {
   friend class Placer;
  public:
-  Tech tech_; // information in LEF can CELL
+  Tech tech_; // information in LEF and CELL
   Design design_; // information in DEF
-  WellInfo well_info_; //
+  WellInfo well_info_; // maybe redundant
 
 #ifdef USE_OPENDB
   odb::dbDatabase *db_;

@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "circuit.h"
-#include "opendb.h"
+#include "common/opendb.h"
 #include "placer.h"
 
 VerboseLevel globalVerboseLevel = LOG_CRITICAL;

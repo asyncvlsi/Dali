@@ -141,21 +141,23 @@ StandardClusterWellLegalizer::StandardClusterWellLegalizer() {
   tot_col_num_ = 0;
 }
 
-void StandardClusterWellLegalizer::Init() {
+void StandardClusterWellLegalizer::Init(int cluster_width) {
   // parameters fetching
   auto tech = circuit_->GetTech();
   Assert(tech != nullptr, "No tech info found, well legalization cannot proceed!\n");
+
   auto n_well_layer = tech->GetNLayer();
-  printf("Well max plug distance: %2.2e um \n", n_well_layer->MaxPlugDist());
-  printf("GridValueX: %2.2e um\n", circuit_->GetGridValueX());
   well_spacing_ = std::ceil(n_well_layer->Spacing() / circuit_->GetGridValueX());
-  printf("Well spacing: %2.2e um, %d\n", n_well_layer->Spacing(), well_spacing_);
-  max_unplug_length_ = std::floor(n_well_layer->MaxPlugDist() / circuit_->GetGridValueX());
+  max_unplug_length_ = 2 * (int) std::floor(n_well_layer->MaxPlugDist() / circuit_->GetGridValueX());
   well_tap_cell_width_ = tech->WellTapCell()->Width();
+
+  printf("Well max plug distance: %2.2e um, %d \n", n_well_layer->MaxPlugDist(), max_unplug_length_);
+  printf("GridValueX: %2.2e um\n", circuit_->GetGridValueX());
+  printf("Well spacing: %2.2e um, %d\n", n_well_layer->Spacing(), well_spacing_);
   printf("Well tap cell width: %d\n", well_tap_cell_width_);
 
   max_cluster_width_ = max_unplug_length_;
-  col_width_ = max_unplug_length_;
+  col_width_ = max_unplug_length_ + well_spacing_;
   if (col_width_ > RegionWidth()) {
     col_width_ = RegionWidth();
   }
