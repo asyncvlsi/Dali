@@ -57,9 +57,9 @@ struct Cluster {
   void ShiftBlock(int x_disp, int y_disp);
   void UpdateLocY();
   void LegalizeCompactX(int left);
-  void LegalizeLooseX(int left, int right);
+  void LegalizeLooseX();
   void SetOrient(bool is_orient_N);
-  void UpdateWellTapCell(Block &tap_cell);
+  void InsertWellTapCell(Block &tap_cell);
 
   void UpdateBlockLocationCompact();
 };
@@ -117,7 +117,7 @@ class StandardClusterWellLegalizer : public Placer {
   void ClusterBlocksLoose();
   void ClusterBlocksCompact();
 
-  void TrialClusterLegalization();
+  bool TrialClusterLegalization();
   void TetrisLegalizeCluster();
 
   double WireLengthCost(Cluster *cluster, int l, int r);

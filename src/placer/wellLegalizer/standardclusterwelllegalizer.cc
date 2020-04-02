@@ -46,7 +46,7 @@ void Cluster::LegalizeCompactX(int left) {
   }
 }
 
-void Cluster::LegalizeLooseX(int left, int right) {
+void Cluster::LegalizeLooseX() {
   /****
    * Legalize this cluster using the extended Tetris legalization algorithm
    *
@@ -56,6 +56,7 @@ void Cluster::LegalizeLooseX(int left, int right) {
    * if the total width of blocks in this cluster is smaller than the width of this cluster,
    * two-rounds legalization is enough to make the final result legal.
    * ****/
+
   if (blk_list_.empty()) {
     return;
   }
@@ -64,23 +65,24 @@ void Cluster::LegalizeLooseX(int left, int right) {
             [](const Block *blk_ptr0, const Block *blk_ptr1) {
               return blk_ptr0->LLX() < blk_ptr1->LLX();
             });
-  int block_contour = left;
+  int block_contour = lx_;
   int res_x;
   for (auto &blk: blk_list_) {
-    res_x = std::max(block_contour, int(blk_list_[0]->LLX()));
+    res_x = std::max(block_contour, int(blk->LLX()));
     blk->SetLLX(res_x);
     block_contour = int(blk->URX());
   }
 
-  if (block_contour > right) {
+  int ux = lx_ + width_;
+  if (block_contour > ux) {
     std::sort(blk_list_.begin(),
               blk_list_.end(),
               [](const Block *blk_ptr0, const Block *blk_ptr1) {
                 return blk_ptr0->URX() > blk_ptr1->URX();
               });
-    block_contour = right;
+    block_contour = ux;
     for (auto &blk: blk_list_) {
-      res_x = std::min(block_contour, int(blk_list_[0]->URX()));
+      res_x = std::min(block_contour, int(blk->URX()));
       blk->SetURX(res_x);
       block_contour = int(blk->LLX());
     }
@@ -100,10 +102,10 @@ void Cluster::SetOrient(bool is_orient_N) {
   }
 }
 
-void Cluster::UpdateWellTapCell(Block &tap_cell) {
+void Cluster::InsertWellTapCell(Block &tap_cell) {
   tap_cell_ = &tap_cell;
   blk_list_.emplace_back(tap_cell_);
-  tap_cell.SetCenterX(lx_ + width_ / 2.0);
+  tap_cell_->SetCenterX(lx_ + width_ / 2.0);
   auto *well = tap_cell.Type()->GetWell();
   int p_well_height = well->GetPWellHeight();
   int n_well_height = well->GetNWellHeight();
@@ -114,7 +116,7 @@ void Cluster::UpdateWellTapCell(Block &tap_cell) {
     tap_cell.SetOrient(FS);
     tap_cell.SetLLY(ly_ + n_well_height_ - n_well_height);
   }
-  LegalizeLooseX(lx_, lx_ + width_);
+  LegalizeLooseX();
 }
 
 void Cluster::UpdateBlockLocationCompact() {
@@ -339,7 +341,7 @@ void StandardClusterWellLegalizer::ClusterBlocksLoose() {
   for (auto &cluster: cluster_list_) {
     //cluster.SetLLY(current_ly);
     cluster.UpdateLocY();
-    cluster.LegalizeLooseX(cluster.LLX(), cluster.URX());
+    cluster.LegalizeLooseX();
     //current_ly += cluster.Height();
   }
 }
@@ -380,12 +382,13 @@ void StandardClusterWellLegalizer::ClusterBlocksCompact() {
   }
 }
 
-void StandardClusterWellLegalizer::TrialClusterLegalization() {
+bool StandardClusterWellLegalizer::TrialClusterLegalization() {
   /****
    * Legalize the location of all clusters using extended Tetris legalization algorithm in columns where usage does not exceed capacity
    * Closely pack the column from bottom to top if its usage exceeds its capacity
    * ****/
 
+  bool res = true;
   std::vector<std::vector<Cluster *>> clusters_in_column(tot_col_num_);
   for (int i = 0; i < tot_col_num_; ++i) {
     clusters_in_column[i].reserve(column_list_[i].cluster_count_);
@@ -435,8 +438,11 @@ void StandardClusterWellLegalizer::TrialClusterLegalization() {
         cluster_contour += cluster->Height();
         cluster->ShiftBlockY(res_y - init_y);
       }
+      res = false;
     }
   }
+
+  return res;
 }
 
 void StandardClusterWellLegalizer::TetrisLegalizeCluster() {
@@ -697,7 +703,7 @@ void StandardClusterWellLegalizer::InsertWellTapAroundMiddle() {
     auto ret = circuit_->design_.block_name_map.insert(std::pair<std::string, int>(block_name, map_size));
     auto *name_num_pair_ptr = &(*ret.first);
     tap_cell.SetNameNumPair(name_num_pair_ptr);
-    cluster.UpdateWellTapCell(tap_cell);
+    cluster.InsertWellTapCell(tap_cell);
   }
 }
 
@@ -711,13 +717,14 @@ void StandardClusterWellLegalizer::StartPlacement() {
   double cpu_time = get_cpu_time();
 
   /****---->****/
+  bool is_success;
   Init();
   //ClusterBlocks();
   ClusterBlocksLoose();
   //ClusterBlocksCompact();
   ReportHPWL(LOG_CRITICAL);
 
-  TrialClusterLegalization();
+  is_success = TrialClusterLegalization();
   ReportHPWL(LOG_CRITICAL);
 
   UpdateClusterInColumn();
@@ -730,14 +737,19 @@ void StandardClusterWellLegalizer::StartPlacement() {
 
   InsertWellTapAroundMiddle();
 
-  /****<----****/
-
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "\033[0;36m"
-              << "Standard Cluster Well Legalization complete!\n"
-              << "\033[0m";
+    if (is_success) {
+      std::cout << "\033[0;36m"
+                << "Standard Cluster Well Legalization complete!\n"
+                << "\033[0m";
+    } else {
+      std::cout << "\033[0;36m"
+                << "Standard Cluster Well Legalization fail!\n"
+                << "\033[0m";
+    }
   }
   ReportHPWL(LOG_CRITICAL);
+  /****<----****/
 
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;
@@ -875,6 +887,7 @@ void StandardClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_fi
   }
   ost.close();
 
+  // emit cluster file
   std::string cluster_file_name = name_of_file + "_router.cluster";
   std::ofstream ost1(cluster_file_name.c_str());
   Assert(ost1.is_open(), "Cannot open output file: " + cluster_file_name);
@@ -892,6 +905,7 @@ void StandardClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_fi
     } else {
       ost1 << "Vdd\n";
     }
+
     for (auto &cluster: col.cluster_list_) {
       ost1 << "  "
            << (int) (cluster->LLY() * factor_y) << "  "
