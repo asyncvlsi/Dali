@@ -1778,7 +1778,7 @@ void GPSimPL::UpdateLALConvergeState() {
   lal_total_hpwl_ = HPWL_LAL_new;
 }
 
-void GPSimPL::StartPlacement() {
+bool GPSimPL::StartPlacement() {
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
   if (globalVerboseLevel >= LOG_CRITICAL) {
@@ -1796,7 +1796,7 @@ void GPSimPL::StartPlacement() {
                 << "Global Placement complete\n"
                 << "\033[0m";
     }
-    return;
+    return true;
   }
 
   if (is_dump) DumpResult("rand_init.txt");
@@ -1846,6 +1846,8 @@ void GPSimPL::StartPlacement() {
     printf("(wall time: %.4fs, cpu time: %.4fs)\n", wall_time, cpu_time);
   }
   ReportMemory(LOG_CRITICAL);
+
+  return true;
 }
 
 void GPSimPL::DumpResult(std::string const &name_of_file) {

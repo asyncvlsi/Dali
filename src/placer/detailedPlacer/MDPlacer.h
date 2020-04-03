@@ -38,7 +38,7 @@ class MDPlacer: public Placer {
   void BinRegionRemove(int blk_num, BinIndex &ll, BinIndex &ur);
   void BinRegionAdd(int blk_num, BinIndex &ll, BinIndex &ur);
   void UpdateBin(Block &blk);
-  void StartPlacement() override;
+  bool StartPlacement() override;
 };
 
 inline int MDPlacer::BinWidth() const {

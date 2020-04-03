@@ -13,7 +13,7 @@ class WellPlaceFlow : public GPSimPL {
  public:
   WellPlaceFlow();
 
-  void StartPlacement() override;
+  bool StartPlacement() override;
 };
 
 #endif //DALI_SRC_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_

@@ -25,7 +25,7 @@ class DPSwap: public MDPlacer {
   void GlobalSwap();
   void VerticalSwap();
   void LocalReOrder();
-  void StartPlacement() override;
+  bool StartPlacement() override;
 };
 
 inline void DPSwap::UpdateSwapThreshold(double hpwl) {

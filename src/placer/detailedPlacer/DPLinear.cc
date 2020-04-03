@@ -200,7 +200,7 @@ void DPLinear::BuildProblemDPLinearY() {
   Ay.setFromTriplets(coefficients.begin(), coefficients.end());
 }
 
-void DPLinear::StartPlacement() {
+bool DPLinear::StartPlacement() {
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "Start detailed placement\n";
   }
@@ -252,4 +252,6 @@ void DPLinear::StartPlacement() {
     std::cout << "Quadratic Placement With Anchor Complete\n";
   }
   ReportHPWL(LOG_INFO);
+
+  return true;
 }

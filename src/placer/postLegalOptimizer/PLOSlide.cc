@@ -153,7 +153,7 @@ void PLOSlide::OptimizationFromRight() {
   }
 }
 
-void PLOSlide::StartPlacement() {
+bool PLOSlide::StartPlacement() {
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "---------------------------------------\n"
               << "Start Post-Legalization Optimization\n";
@@ -184,4 +184,6 @@ void PLOSlide::StartPlacement() {
   }
 
   ReportMemory(LOG_CRITICAL);
+
+  return true;
 }

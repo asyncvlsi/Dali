@@ -912,7 +912,7 @@ void ClusterWellLegalizer::LocalReorderAllClusters() {
   }
 }
 
-void ClusterWellLegalizer::StartPlacement() {
+bool ClusterWellLegalizer::StartPlacement() {
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "---------------------------------------\n"
               << "Start Well Legalization\n";
@@ -962,6 +962,8 @@ void ClusterWellLegalizer::StartPlacement() {
   ReportMemory(LOG_CRITICAL);
 
   GenMatlabClusterTable("cl_result");
+
+  return true;
 }
 
 void ClusterWellLegalizer::GenMatlabClusterTable(std::string const &name_of_file) {

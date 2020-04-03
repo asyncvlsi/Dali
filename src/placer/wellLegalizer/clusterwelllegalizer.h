@@ -77,7 +77,7 @@ class ClusterWellLegalizer : public LGTetrisEx {
   void LocalReorderInCluster(BlkCluster *cluster, int range = 3);
   void LocalReorderAllClusters();
 
-  void StartPlacement() override;
+  bool StartPlacement() override;
 
   void GenMatlabClusterTable(std::string const &name_of_file);
   void ReportWellRule();

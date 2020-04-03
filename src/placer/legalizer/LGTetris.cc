@@ -167,7 +167,7 @@ bool TetrisLegalizer::TetrisLegal() {
   return true;
 }
 
-void TetrisLegalizer::StartPlacement() {
+bool TetrisLegalizer::StartPlacement() {
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
   if (globalVerboseLevel >= LOG_CRITICAL) {
@@ -210,4 +210,6 @@ void TetrisLegalizer::StartPlacement() {
               << wall_time << "s, cpu time: "
               << cpu_time << "s)\n";
   }
+
+  return true;
 }

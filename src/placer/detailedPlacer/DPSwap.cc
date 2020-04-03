@@ -95,7 +95,7 @@ void DPSwap::LocalReOrder() {
 
 }
 
-void DPSwap::StartPlacement() {
+bool DPSwap::StartPlacement() {
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "Start DPSwap\n";
   }
@@ -121,4 +121,6 @@ void DPSwap::StartPlacement() {
     hpwl_converge = (std::fabs(1 - hpwl_new/hpwl) < hpwl_converge_criterion_);
     if (i>5 && hpwl_converge) break;
   }
+
+  return true;
 }

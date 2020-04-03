@@ -148,7 +148,7 @@ void StandardClusterWellLegalizer::Init(int cluster_width) {
 
   auto n_well_layer = tech->GetNLayer();
   well_spacing_ = std::ceil(n_well_layer->Spacing() / circuit_->GetGridValueX());
-  max_unplug_length_ = 2 * (int) std::floor(n_well_layer->MaxPlugDist() / circuit_->GetGridValueX());
+  max_unplug_length_ = 3 * (int) std::floor(n_well_layer->MaxPlugDist() / circuit_->GetGridValueX());
   well_tap_cell_width_ = tech->WellTapCell()->Width();
 
   printf("Well max plug distance: %2.2e um, %d \n", n_well_layer->MaxPlugDist(), max_unplug_length_);
@@ -156,8 +156,16 @@ void StandardClusterWellLegalizer::Init(int cluster_width) {
   printf("Well spacing: %2.2e um, %d\n", n_well_layer->Spacing(), well_spacing_);
   printf("Well tap cell width: %d\n", well_tap_cell_width_);
 
+  int max_cell_width = 0;
+  for (auto &blk: *BlockList()) {
+    if (blk.IsMovable()) {
+      max_cell_width = std::max(max_cell_width, blk.Width());
+    }
+  }
+  printf("Max cell width: %d\n", max_cell_width);
+
   max_cluster_width_ = max_unplug_length_;
-  col_width_ = max_unplug_length_ + well_spacing_;
+  col_width_ = max_unplug_length_ - max_cell_width + well_spacing_;
   if (col_width_ > RegionWidth()) {
     col_width_ = RegionWidth();
   }
@@ -229,7 +237,7 @@ void StandardClusterWellLegalizer::AppendBlockToCol(int col_num, Block &blk) {
     if (p_well_height > top_cluster->PHeight() || n_well_height > top_cluster->NHeight()) {
       int old_height = top_cluster->Height();
       top_cluster->UpdateHeightFromNPWell(p_well_height, n_well_height);
-      col.used_height_ += old_height - top_cluster->Height();
+      col.used_height_ += top_cluster->Height() - old_height;
     }
   }
   col.contour_ = top_cluster->URY();
@@ -275,7 +283,7 @@ void StandardClusterWellLegalizer::AppendBlockToColClose(int col_num, Block &blk
     if (p_well_height > top_cluster->PHeight() || n_well_height > top_cluster->NHeight()) {
       int old_height = top_cluster->Height();
       top_cluster->UpdateHeightFromNPWell(p_well_height, n_well_height);
-      col.used_height_ += old_height - top_cluster->Height();
+      col.used_height_ += top_cluster->Height() - old_height;
     }
   }
   col.contour_ = top_cluster->URY();
@@ -371,16 +379,13 @@ void StandardClusterWellLegalizer::ClusterBlocksCompact() {
     AppendBlockToColClose(col_num, block);
   }
 
-  for (auto &col: column_list_) {
-    col.contour_ = RegionBottom();
-  }
   for (auto &cluster: cluster_list_) {
-    int col_num = (cluster.LLX() - RegionLeft()) / col_width_;
+    /*int col_num = (cluster.LLX() - RegionLeft()) / col_width_;
     auto &col = column_list_[col_num];
     col.contour_ += cluster.Height();
-    cluster.SetLLY(col.contour_);
+    cluster.SetLLY(col.contour_);*/
     cluster.UpdateLocY();
-    cluster.LegalizeCompactX(cluster.LLX());
+    cluster.LegalizeLooseX();
   }
 }
 
@@ -407,12 +412,12 @@ bool StandardClusterWellLegalizer::TrialClusterLegalization() {
     auto &cluster_list = clusters_in_column[i];
     if (col.contour_ <= RegionTop()) continue;
 
-    //std::cout << "used height/RegionHeight(): " << col.used_height_ / RegionHeight() << "\n";
+    //std::cout << "used height/RegionHeight(): " << col.used_height_ / (double) RegionHeight() << "\n";
     if (col.used_height_ <= RegionHeight()) {
       std::sort(cluster_list.begin(),
                 cluster_list.end(),
                 [](const Cluster *lhs, const Cluster *rhs) {
-                  return (lhs->LLY() > rhs->LLY());
+                  return (lhs->URY() > rhs->URY());
                 });
       int cluster_contour = RegionTop();
       int res_y;
@@ -693,7 +698,9 @@ void StandardClusterWellLegalizer::UpdateClusterOrient() {
 
 void StandardClusterWellLegalizer::InsertWellTapAroundMiddle() {
   auto &tap_cell_list = circuit_->design_.well_tap_list;
+  tap_cell_list.clear();
   tap_cell_list.reserve(cluster_list_.size());
+  circuit_->design_.tap_name_map.clear();
 
   int counter = 0;
   for (auto &cluster: cluster_list_) {
@@ -701,15 +708,15 @@ void StandardClusterWellLegalizer::InsertWellTapAroundMiddle() {
     tap_cell_list.emplace_back();
     auto &tap_cell = tap_cell_list.back();
     tap_cell.SetType(circuit_->tech_.WellTapCell());
-    int map_size = circuit_->design_.block_name_map.size();
-    auto ret = circuit_->design_.block_name_map.insert(std::pair<std::string, int>(block_name, map_size));
+    int map_size = circuit_->design_.tap_name_map.size();
+    auto ret = circuit_->design_.tap_name_map.insert(std::pair<std::string, int>(block_name, map_size));
     auto *name_num_pair_ptr = &(*ret.first);
     tap_cell.SetNameNumPair(name_num_pair_ptr);
     cluster.InsertWellTapCell(tap_cell);
   }
 }
 
-void StandardClusterWellLegalizer::StartPlacement() {
+bool StandardClusterWellLegalizer::StartPlacement() {
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "---------------------------------------\n"
               << "Start Standard Cluster Well Legalization\n";
@@ -719,7 +726,7 @@ void StandardClusterWellLegalizer::StartPlacement() {
   double cpu_time = get_cpu_time();
 
   /****---->****/
-  bool is_success;
+  bool is_success = true;
   Init();
   //ClusterBlocks();
   ClusterBlocksLoose();
@@ -737,7 +744,7 @@ void StandardClusterWellLegalizer::StartPlacement() {
   }
   //TetrisLegalizeCluster();
 
-  InsertWellTapAroundMiddle();
+  //InsertWellTapAroundMiddle();
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
     if (is_success) {
@@ -761,6 +768,8 @@ void StandardClusterWellLegalizer::StartPlacement() {
 
   ReportMemory(LOG_CRITICAL);
   GenMatlabClusterTable("sc_result");
+
+  return is_success;
 }
 
 void StandardClusterWellLegalizer::GenMatlabClusterTable(std::string const &name_of_file) {

@@ -142,7 +142,7 @@ class StandardClusterWellLegalizer : public Placer {
   void UpdateClusterOrient();
   void InsertWellTapAroundMiddle();
 
-  void StartPlacement() override;
+  bool StartPlacement() override;
 
   void GenMatlabClusterTable(std::string const &name_of_file);
   void GenMATLABWellTable(std::string const &name_of_file) override;

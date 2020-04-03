@@ -197,7 +197,7 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
   blk.IncreaseY(velocity.y, RegionTop(), RegionBottom());
 }
 
-void MDPlacer::StartPlacement() {
+bool MDPlacer::StartPlacement() {
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "Start MDPlacer\n";
   }
@@ -216,4 +216,6 @@ void MDPlacer::StartPlacement() {
     std::cout << "MDPlacer Complete\n";
   }
   ReportHPWL(LOG_INFO);
+
+  return true;
 }

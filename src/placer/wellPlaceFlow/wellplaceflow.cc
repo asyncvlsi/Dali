@@ -8,7 +8,7 @@
 
 WellPlaceFlow::WellPlaceFlow() : GPSimPL() {}
 
-void WellPlaceFlow::StartPlacement() {
+bool WellPlaceFlow::StartPlacement() {
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
   if (globalVerboseLevel >= LOG_CRITICAL) {
@@ -26,7 +26,7 @@ void WellPlaceFlow::StartPlacement() {
                 << "Global Placement complete\n"
                 << "\033[0m";
     }
-    return;
+    return true;
   }
 
   InitialPlacement();
@@ -48,7 +48,10 @@ void WellPlaceFlow::StartPlacement() {
 
       StandardClusterWellLegalizer well_legalizer;
       well_legalizer.TakeOver(this);
-      well_legalizer.StartPlacement();
+      bool is_success = well_legalizer.StartPlacement();
+      if (!is_success) {
+        filling_rate_ = filling_rate_ * 0.99;
+      }
     }
     if (HPWL_LAL_converge) { // if HPWL sconverges
       if (cur_iter_ >= 30) {
@@ -79,4 +82,6 @@ void WellPlaceFlow::StartPlacement() {
     printf("(wall time: %.4fs, cpu time: %.4fs)\n", wall_time, cpu_time);
   }
   ReportMemory(LOG_CRITICAL);
+
+  return true;
 }

@@ -85,7 +85,7 @@ class LGTetrisEx : public Placer {
 
   double EstimatedHPWL(Block &block, int x, int y);
 
-  void StartPlacement() override;
+  bool StartPlacement() override;
 
   void GenAvailSpace(std::string const &name_of_file = "avail_space.txt");
 };

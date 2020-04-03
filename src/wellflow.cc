@@ -53,7 +53,7 @@ int main() {
   well_place_flow.StartPlacement();
   well_place_flow.GenMATLABTable("gb_result.txt");
 
-  well_place_flow.SaveDEFFile("benchmark_200K_dali.def", def_file_name);
+  well_place_flow.EmitDEFWellFile("benchmark_200K_dali", def_file_name);
 
   Time = clock() - Time;
   std::cout << "Execution time " << double(Time) / CLOCKS_PER_SEC << "s.\n";

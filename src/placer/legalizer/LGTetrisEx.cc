@@ -1422,7 +1422,7 @@ double LGTetrisEx::EstimatedHPWL(Block &block, int x, int y) {
   return tot_hpwl;
 }
 
-void LGTetrisEx::StartPlacement() {
+bool LGTetrisEx::StartPlacement() {
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "---------------------------------------\n"
               << "Start LGTetrisEx Legalization\n";
@@ -1467,6 +1467,8 @@ void LGTetrisEx::StartPlacement() {
   }
 
   ReportMemory(LOG_CRITICAL);
+
+  return true;
 }
 
 void LGTetrisEx::GenAvailSpace(std::string const &name_of_file) {

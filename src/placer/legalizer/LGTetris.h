@@ -33,7 +33,7 @@ class TetrisLegalizer : public Placer {
   void FastShift(int failure_point);
   void FlipPlacement();
   bool TetrisLegal();
-  void StartPlacement() override;
+  bool StartPlacement() override;
 };
 
 #endif //DALI_SRC_PLACER_LEGALIZER_LGTETRIS_H_

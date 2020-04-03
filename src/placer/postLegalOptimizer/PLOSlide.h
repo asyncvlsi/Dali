@@ -27,7 +27,7 @@ class PLOSlide : public Placer {
   void MoveBlkTowardOptimalRegionRight(Block &block, int start, int end);
   void OptimizationFromRight();
 
-  void StartPlacement() override;
+  bool StartPlacement() override;
 
 };
 

@@ -930,7 +930,7 @@ bool WellLegalizer::WellLegalizationRight() {
   return is_successful;
 }
 
-void WellLegalizer::StartPlacement() {
+bool WellLegalizer::StartPlacement() {
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "---------------------------------------\n"
               << "Start Well Legalization\n";
@@ -992,4 +992,5 @@ void WellLegalizer::StartPlacement() {
 
   ReportMemory(LOG_CRITICAL);
 
+  return true;
 }

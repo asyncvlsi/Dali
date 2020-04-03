@@ -60,7 +60,7 @@ class Placer {
 
   void UpdateAspectRatio();
   void NetSortBlkPin();
-  virtual void StartPlacement() = 0;
+  virtual bool StartPlacement() = 0;
 
   double HPWLX();
   double HPWLY();
@@ -79,7 +79,7 @@ class Placer {
 
   /****File I/O member functions****/
   void GenMATLABTable(std::string const &name_of_file = "block.txt");
-  virtual void GenMATLABWellTable(std::string const &name_of_file = "res");
+  virtual void GenMATLABWellTable(std::string const &name_of_file);
   void GenMATLABScriptPlaced(std::string const &name_of_file = "block_net_list.m");
   bool SaveNodeTerminal(std::string const &terminal_file = "terminal.txt", std::string const &node_file = "nodes.txt");
   void SaveDEFFile(std::string const &name_of_file = "circuit.def");

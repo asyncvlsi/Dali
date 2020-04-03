@@ -29,6 +29,7 @@ class Design {
   std::vector<Block> block_list;
   std::map<std::string, int> block_name_map;
   std::vector<Block> well_tap_list;
+  std::map<std::string, int> tap_name_map;
 
   /****list of IO Pins****/
   std::vector<IOPin> iopin_list;

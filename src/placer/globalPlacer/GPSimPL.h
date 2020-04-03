@@ -143,7 +143,7 @@ class GPSimPL : public Placer {
 
   double tot_lal_time = 0;
   double tot_cg_time = 0;
-  void StartPlacement() override;
+  bool StartPlacement() override;
 
   bool is_dump = false;
   void DumpResult(std::string const &name_of_file);

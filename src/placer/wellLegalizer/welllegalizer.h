@@ -76,7 +76,7 @@ class WellLegalizer : public LGTetrisEx {
   bool FindLocRight(Value2D<int> &loc, int num, int width, int height, int p_row);
   bool WellLegalizationRight();
 
-  void StartPlacement() override;
+  bool StartPlacement() override;
 };
 
 #endif //DALI_SRC_PLACER_WELLLEGALIZER_WELLLEGALIZER_H_
