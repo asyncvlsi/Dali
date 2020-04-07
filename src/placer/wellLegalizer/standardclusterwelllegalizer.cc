@@ -452,11 +452,12 @@ bool StandardClusterWellLegalizer::TrialClusterLegalization() {
   return res;
 }
 
-void StandardClusterWellLegalizer::TetrisLegalizeCluster() {
+bool StandardClusterWellLegalizer::TetrisLegalizeCluster() {
   /****
    * Legalize the location of all clusters using traditional Tetris legalization algorithm
    * ****/
 
+  bool is_success = false;
   // calculate the area ratio
   long int tot_cluster_area = 0;
   long int tot_region_area = (long int) RegionWidth() * (long int) RegionHeight();
@@ -512,12 +513,18 @@ void StandardClusterWellLegalizer::TetrisLegalizeCluster() {
         min_col = i;
       }
     }
-    res_x = column_list_[min_col].LLX();
-    res_y = column_list_[min_col].contour_;
-    column_list_[min_col].contour_ += cluster_ptr->Height();
-    cluster_ptr->ShiftBlock(res_x - init_x, res_y - init_y);
-    cluster_ptr->SetLoc(res_x, res_y);
+    if (min_cost < INT_MAX) {
+      res_x = column_list_[min_col].LLX();
+      res_y = column_list_[min_col].contour_;
+      column_list_[min_col].contour_ += cluster_ptr->Height();
+      cluster_ptr->ShiftBlock(res_x - init_x, res_y - init_y);
+      cluster_ptr->SetLoc(res_x, res_y);
+    } else {
+      is_success = false;
+    }
   }
+
+  return is_success;
 }
 
 double StandardClusterWellLegalizer::WireLengthCost(Cluster *cluster, int l, int r) {
@@ -716,6 +723,62 @@ void StandardClusterWellLegalizer::InsertWellTapAroundMiddle() {
   }
 }
 
+void StandardClusterWellLegalizer::ClearCachedData() {
+  for (auto &block: *BlockList()) {
+    block.SetOrient(N);
+  }
+
+  for (int i = 0; i < tot_col_num_; ++i) {
+    column_list_[i].contour_ = RegionBottom();
+    column_list_[i].used_height_ = 0;
+    column_list_[i].cluster_count_ = 0;
+
+    column_list_[i].cluster_list_.clear();
+    column_list_[i].top_cluster_ = nullptr;
+  }
+
+  cluster_list_.clear();
+}
+
+bool StandardClusterWellLegalizer::WellLegalize() {
+  ClearCachedData();
+  bool is_success;
+
+  ClusterBlocksLoose();
+  //ClusterBlocksCompact();
+  ReportHPWL(LOG_CRITICAL);
+
+  is_success = TrialClusterLegalization();
+  ReportHPWL(LOG_CRITICAL);
+  /*if (!is_success) {
+    is_success = TetrisLegalizeCluster();
+    ReportHPWL(LOG_CRITICAL);
+  }*/
+
+  UpdateClusterInColumn();
+  UpdateClusterOrient();
+  for (int i = 0; i < 6; ++i) {
+    LocalReorderAllClusters();
+    ReportHPWL(LOG_CRITICAL);
+  }
+
+  InsertWellTapAroundMiddle();
+
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    if (is_success) {
+      std::cout << "\033[0;36m"
+                << "Standard Cluster Well Legalization complete!\n"
+                << "\033[0m";
+    } else {
+      std::cout << "\033[0;36m"
+                << "Standard Cluster Well Legalization fail!\n"
+                << "\033[0m";
+    }
+  }
+
+  return is_success;
+}
+
 bool StandardClusterWellLegalizer::StartPlacement() {
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "---------------------------------------\n"
@@ -735,6 +798,10 @@ bool StandardClusterWellLegalizer::StartPlacement() {
 
   is_success = TrialClusterLegalization();
   ReportHPWL(LOG_CRITICAL);
+/*  if (!is_success) {
+    is_success = TetrisLegalizeCluster();
+    ReportHPWL(LOG_CRITICAL);
+  }*/
 
   UpdateClusterInColumn();
   UpdateClusterOrient();
@@ -742,9 +809,8 @@ bool StandardClusterWellLegalizer::StartPlacement() {
     LocalReorderAllClusters();
     ReportHPWL(LOG_CRITICAL);
   }
-  //TetrisLegalizeCluster();
 
-  //InsertWellTapAroundMiddle();
+  InsertWellTapAroundMiddle();
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
     if (is_success) {

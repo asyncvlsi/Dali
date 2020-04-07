@@ -10,10 +10,13 @@
 #include "placer/wellLegalizer/standardclusterwelllegalizer.h"
 
 class WellPlaceFlow : public GPSimPL {
+  StandardClusterWellLegalizer well_legalizer_;
  public:
   WellPlaceFlow();
 
   bool StartPlacement() override;
+
+  void EmitDEFWellFile(std::string const &name_of_file, std::string const &input_def_file) override;
 };
 
 #endif //DALI_SRC_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_

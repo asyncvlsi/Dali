@@ -32,12 +32,15 @@ bool WellPlaceFlow::StartPlacement() {
   InitialPlacement();
   //std::cout << cg_total_hpwl_ << "  " << circuit_->HPWL() << "\n";
 
+  well_legalizer_.TakeOver(this);
+  well_legalizer_.Init();
+  bool old_success = false;
+
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     if (globalVerboseLevel >= LOG_DEBUG) {
       std::cout << cur_iter_ << "-th iteration\n";
     }
     LookAheadLegalization();
-    UpdateLALConvergeState();
     if (globalVerboseLevel >= LOG_CRITICAL) {
       printf("It %d: \t%e  %e\n", cur_iter_, cg_total_hpwl_, lal_total_hpwl_);
     }
@@ -46,13 +49,22 @@ bool WellPlaceFlow::StartPlacement() {
       legalizer.TakeOver(this);
       legalizer.StartPlacement();
 
-      StandardClusterWellLegalizer well_legalizer;
+      /*StandardClusterWellLegalizer well_legalizer;
       well_legalizer.TakeOver(this);
-      bool is_success = well_legalizer.StartPlacement();
-      if (!is_success) {
+      bool is_success = well_legalizer.StartPlacement();*/
+      bool is_success = well_legalizer_.WellLegalize();
+      well_legalizer_.GenMatlabClusterTable("sc_result");
+      well_legalizer_.GenMATLABWellTable("scw");
+      if (!is_success && !old_success) {
         filling_rate_ = filling_rate_ * 0.99;
+        std::cout << "Adjusted filling rate: " << filling_rate_ << "\n";
+        std::cout << "White space usage: " << circuit_->WhiteSpaceUsage() << "\n";
+      }
+      if (!old_success) {
+        old_success = is_success;
       }
     }
+    UpdateLALConvergeState();
     if (HPWL_LAL_converge) { // if HPWL sconverges
       if (cur_iter_ >= 30) {
         if (globalVerboseLevel >= LOG_CRITICAL) {
@@ -63,8 +75,8 @@ bool WellPlaceFlow::StartPlacement() {
       }
     }
     QuadraticPlacementWithAnchor();
-
   }
+
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "\033[0;36m"
               << "Global Placement complete\n"
@@ -84,4 +96,8 @@ bool WellPlaceFlow::StartPlacement() {
   ReportMemory(LOG_CRITICAL);
 
   return true;
+}
+
+void WellPlaceFlow::EmitDEFWellFile(std::string const &name_of_file, std::string const &input_def_file) {
+  well_legalizer_.EmitDEFWellFile(name_of_file, input_def_file);
 }

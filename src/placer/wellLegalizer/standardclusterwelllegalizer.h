@@ -120,7 +120,7 @@ class StandardClusterWellLegalizer : public Placer {
   void ClusterBlocksCompact();
 
   bool TrialClusterLegalization();
-  void TetrisLegalizeCluster();
+  bool TetrisLegalizeCluster();
 
   double WireLengthCost(Cluster *cluster, int l, int r);
   void FindBestLocalOrder(std::vector<Block *> &res,
@@ -141,6 +141,9 @@ class StandardClusterWellLegalizer : public Placer {
   void UpdateClusterInColumn();
   void UpdateClusterOrient();
   void InsertWellTapAroundMiddle();
+
+  void ClearCachedData();
+  bool WellLegalize();
 
   bool StartPlacement() override;
 

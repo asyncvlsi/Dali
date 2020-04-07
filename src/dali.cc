@@ -4,8 +4,8 @@
 
 #include <ctime>
 
-#include <chrono>
 #include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <ratio>
 
@@ -32,20 +32,20 @@ int main(int argc, char *argv[]) {
   std::string lef_file_name;
   std::string def_file_name;
   std::string cell_file_name;
-  std::string output_name = "dali_out.def";
+  std::string output_name = "dali_out";
   std::string str_grid_value_x, str_grid_value_y;
   std::string str_target_density;
   std::string str_verbose_level;
   std::string str_x_grid;
   std::string str_y_grid;
-  std::string plot_file;
   double x_grid = 0, y_grid = 0;
   double target_density = -1;
   bool use_naive = false;
 
+  Circuit circuit;
+
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
-  Circuit circuit;
 
   for (int i = 1; i < argc;) {
     std::string arg(argv[i++]);
@@ -115,13 +115,6 @@ int main(int argc, char *argv[]) {
         return 0;
       }
       globalVerboseLevel = (VerboseLevel) tmp;
-    } else if (arg == "-wp" && i < argc) {
-      plot_file = std::string(argv[i++]);
-      if (plot_file.empty()) {
-        std::cout << "Invalid output name!\n";
-        ReportUsage();
-        return 1;
-      }
     } else {
       std::cout << "Unknown option for file reading\n";
       std::cout << arg << "\n";
@@ -161,7 +154,7 @@ int main(int argc, char *argv[]) {
   circuit.ReportBriefSummary();
   circuit.ReportHPWL();
 
-  double default_density = 0.8;
+  double default_density = 0.7;
   if (target_density == -1) {
     target_density = std::max(circuit.WhiteSpaceUsage(), default_density);
   }
@@ -180,47 +173,46 @@ int main(int argc, char *argv[]) {
     std::cout << "\n";
   }
 
-  Placer *gb_placer = new GPSimPL;
-  gb_placer->SetInputCircuit(&circuit);
-  gb_placer->SetBoundaryDef();
-  gb_placer->SetFillingRate(target_density);
-  gb_placer->ReportBoundaries();
-  gb_placer->StartPlacement();
+  // Non-iterative placement flow
+  if (cell_file_name.empty()) {
+    Placer *gb_placer = new GPSimPL;
+    gb_placer->SetInputCircuit(&circuit);
+    gb_placer->SetBoundaryDef();
+    gb_placer->SetFillingRate(target_density);
+    gb_placer->ReportBoundaries();
+    gb_placer->StartPlacement();
 
-  /*Placer *d_placer = new MDPlacer;
-  d_placer->TakeOver(gb_placer);
-  d_placer->StartPlacement();
-  */
+    Placer *legalizer = new LGTetrisEx;
+    legalizer->TakeOver(gb_placer);
+    legalizer->StartPlacement();
 
-  Placer *legalizer = new LGTetrisEx;
-  legalizer->TakeOver(gb_placer);
-  legalizer->StartPlacement();
-
-  if (!cell_file_name.empty()) {
-    circuit.ReadCellFile(cell_file_name);
-    Placer *well_legalizer = new WellLegalizer;
-    well_legalizer->TakeOver(gb_placer);
-    well_legalizer->StartPlacement();
-    delete well_legalizer;
-
-    if (!plot_file.empty()) {
-      circuit.GenMATLABWellTable(plot_file);
+    if (!output_name.empty()) {
+      circuit.SaveDefFile(output_name + ".def", def_file_name);
     }
-  }
 
-  delete gb_placer;
-  //delete d_placer;
-  delete legalizer;
+    delete gb_placer;
+    delete legalizer;
+  } else {
+    circuit.ReadCellFile(cell_file_name);
+
+    auto *well_place_flow = new WellPlaceFlow;
+    well_place_flow->SetInputCircuit(&circuit);
+
+    well_place_flow->SetBoundaryDef();
+    well_place_flow->SetFillingRate(target_density);
+    well_place_flow->ReportBoundaries();
+    well_place_flow->StartPlacement();
+
+    if (!output_name.empty()) {
+      well_place_flow->EmitDEFWellFile(output_name, def_file_name);
+    }
+    delete well_place_flow;
+  }
 
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;
-  /*std::cout << "****End of placement (wall time:"
-            << wall_time << "s, cpu time: "
-            << cpu_time << "s)****\n";*/
+
   printf("****End of placement (wall time: %.4fs, cpu time: %.4fs)****\n", wall_time, cpu_time);
-  if (!output_name.empty()) {
-    circuit.SaveDefFile(output_name, def_file_name);
-  }
 
   return 0;
 }
@@ -230,13 +222,12 @@ void ReportUsage() {
             << "Usage: dali\n"
             << "  -lef        <file.lef>\n"
             << "  -def        <file.def>\n"
-            << "  -cell       <file.cell> (optional, if provided, well legalization will be triggered)\n"
-            << "  -o          <output_name>.def (optional, default name timestamp.def)\n"
-            << "  -g/-grid    grid_value_x grid_value_y (optional, default metal1 and metal 2 pitch values)\n"
-            << "  -d/-density density (optional, value interval (0,1], default min(1.2*space_utility, 1))\n"
+            << "  -cell       <file.cell> (optional, if provided, iterative well placement flow will be triggered)\n"
+            << "  -o          <output_name>.def (optional, default output file name dali_out.def)\n"
+            << "  -g/-grid    grid_value_x grid_value_y (optional, default metal1 and metal2 pitch values)\n"
+            << "  -d/-density density (optional, value interval (0,1], default max(space_utility, 0.7))\n"
             << "  -n          (optional, if this flag is present, then use naive LEF/DEF parser)\n"
             << "  -v          verbosity_level (optional, 0-5, default 0)\n"
-            << "  -wp         <file>.txt (optional, create files for N/P-well plotting, usually using MATLAB)\n"
-            << "(order does not matter)"
+            << "(flag order does not matter)"
             << "\033[0m\n";
 }
