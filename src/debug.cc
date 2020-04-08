@@ -25,8 +25,8 @@ int main() {
 
   time_t Time = clock();
 
-  std::string lef_file_name = "benchmark_200K.lef";
-  std::string def_file_name = "benchmark_200K.def";
+  std::string lef_file_name = "benchmark_1K.lef";
+  std::string def_file_name = "benchmark_1K.def";
 
 #if USE_DB_PARSER
   odb::dbDatabase *db = odb::dbDatabase::create();
@@ -97,7 +97,7 @@ int main() {
 
 #if TEST_STDCLUSTER_WELL
   Placer *std_cluster_well_legalizer = new StandardClusterWellLegalizer;
-  std::string cell_file_name("benchmark_200K.cell");
+  std::string cell_file_name("benchmark_1K.cell");
   circuit.ReadCellFile(cell_file_name);
   std_cluster_well_legalizer->TakeOver(gb_placer);
   std_cluster_well_legalizer->StartPlacement();

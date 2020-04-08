@@ -57,7 +57,7 @@ struct Cluster {
   void ShiftBlockX(int x_disp);
   void ShiftBlockY(int y_disp);
   void ShiftBlock(int x_disp, int y_disp);
-  void UpdateLocY();
+  void UpdateBlockLocY();
   void LegalizeCompactX(int left);
   void LegalizeLooseX();
   void SetOrient(bool is_orient_N);
@@ -74,8 +74,11 @@ struct ClusterColumn {
   int contour_;
   int used_height_;
   int cluster_count_;
-  Cluster *top_cluster_;
-  std::vector<Cluster *> cluster_list_;
+  Cluster *front_cluster_;
+  std::vector<Cluster> cluster_list_;
+
+  int block_count_;
+  std::vector<Block *> block_list_;
 
   bool is_first_row_orient_N_ = true;
   std::vector<RectI> well_rect_list_;
@@ -102,7 +105,7 @@ class StandardClusterWellLegalizer : public Placer {
   int tap_cell_n_height_;
 
   std::vector<IndexLocPair<int>> index_loc_list_;
-  std::vector<Cluster> cluster_list_;
+  //std::vector<Cluster> cluster_list_;
   std::vector<ClusterColumn> column_list_;
 
  public:
@@ -113,11 +116,17 @@ class StandardClusterWellLegalizer : public Placer {
   void SetFirstRowOrientN(bool is_N);
 
   int LocToCol(int x);
-  void AppendBlockToCol(int col_num, Block &blk);
+  void AssignBlockToStrip();
+
+  void AppendBlockToColBottomUp(ClusterColumn &col, Block &blk);
+  void AppendBlockToColBottomUp(int col_num, Block &blk);
+  void AppendBlockToColTopDown(ClusterColumn &col, Block &blk);
+  void AppendBlockToColTopDown(int col_num, Block &blk);
   void AppendBlockToColClose(int col_num, Block &blk);
-  void ClusterBlocks();
-  void ClusterBlocksLoose();
-  void ClusterBlocksCompact();
+
+  void BlockClustering();
+  void BlockClusteringLoose();
+  void BlockClusteringCompact();
 
   bool TrialClusterLegalization();
   bool TetrisLegalizeCluster();
@@ -138,7 +147,6 @@ class StandardClusterWellLegalizer : public Placer {
 
   void SingleSegmentClusteringOptimization();
 
-  void UpdateClusterInColumn();
   void UpdateClusterOrient();
   void InsertWellTapAroundMiddle();
 

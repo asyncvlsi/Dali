@@ -20,10 +20,13 @@ class Design {
   int def_distance_microns = 0;
 
   /****die area****/
-  int def_left = 0;
-  int def_right = 0;
-  int def_bottom = 0;
-  int def_top = 0;
+  int def_left = 0; // unit is grid value x
+  int def_right = 0; // unit is grid value x
+  int def_bottom = 0; // unit is grid value y
+  int def_top = 0; // unit is grid value y
+
+  int die_area_offset_x = 0; // unit is manufacturing grid
+  int die_area_offset_y = 0; // unit is manufacturing grid
 
   /****list of instances****/
   std::vector<Block> block_list;

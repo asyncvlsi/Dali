@@ -53,6 +53,8 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
   if (!tech_.grid_set_) {
     double grid_value_x = -1, grid_value_y = -1;
     Assert(tech->getRoutingLayerCount() >= 2, "Needs at least one metal layer to find metal pitch");
+    odb::dbTechLayer *m1_layer = nullptr;
+    odb::dbTechLayer *m2_layer = nullptr;
     for (auto &&layer: tech->getLayers()) {
       //std::cout << layer->getNumber() << "  " << layer->getName() << "  " << layer->getType() << "\n";
       std::string layer_name(layer->getName());
@@ -61,16 +63,32 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
           layer_name == "M1" ||
           layer_name == "Metal1" ||
           layer_name == "METAL1") {
-        grid_value_y = (layer->getWidth() + layer->getSpacing()) / double(tech_.lef_database_microns);
-        //std::cout << (layer->getWidth() + layer->getSpacing()) / double(lef_database_microns) << "\n";
+        m1_layer = layer;
+        std::cout << (layer->getWidth() + layer->getSpacing()) / double(tech_.lef_database_microns) << "\n";
       } else if (layer_name == "m2" ||
           layer_name == "metal2" ||
           layer_name == "M2" ||
           layer_name == "Metal2" ||
           layer_name == "METAL2") {
-        grid_value_x = (layer->getWidth() + layer->getSpacing()) / double(tech_.lef_database_microns);
-        //std::cout << (layer->getWidth() + layer->getSpacing()) / double(lef_database_microns) << "\n";
+        m2_layer = layer;
+        std::cout << (layer->getWidth() + layer->getSpacing()) / double(tech_.lef_database_microns) << "\n";
       }
+    }
+    if (m1_layer != nullptr && m2_layer != nullptr) {
+      if (m1_layer->getDirection() == odb::dbTechLayerDir::HORIZONTAL &&
+          m2_layer->getDirection() == odb::dbTechLayerDir::VERTICAL) {
+        grid_value_x = (m2_layer->getWidth() + m2_layer->getSpacing()) / double(tech_.lef_database_microns);
+        grid_value_y = (m1_layer->getWidth() + m1_layer->getSpacing()) / double(tech_.lef_database_microns);
+      } else if (m1_layer->getDirection() == odb::dbTechLayerDir::VERTICAL &&
+          m2_layer->getDirection() == odb::dbTechLayerDir::HORIZONTAL) {
+        grid_value_x = (m1_layer->getWidth() + m1_layer->getSpacing()) / double(tech_.lef_database_microns);
+        grid_value_y = (m2_layer->getWidth() + m2_layer->getSpacing()) / double(tech_.lef_database_microns);
+      } else {
+        Assert(false, "layer metal1 and layer m2 must have different orientations\n");
+      }
+      std::cout << grid_value_x << "  " << grid_value_y << "\n";
+    } else {
+      Assert(false, "Cannot find layer metal1 and layer metal2");
     }
     SetGridValue(grid_value_x, grid_value_y);
   }
@@ -136,7 +154,12 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
   //          << die_area.xMax() << "\n"
   //          << die_area.yMin() << "\n"
   //          << die_area.yMax() << "\n";
-  SetDieArea(die_area.xMin(), die_area.xMax(), die_area.yMin(), die_area.yMax());
+  design_.die_area_offset_x = die_area.xMin();
+  design_.die_area_offset_y = die_area.yMin();
+  SetDieArea(die_area.xMin() - die_area.xMin(),
+             die_area.xMax() - die_area.xMin(),
+             die_area.yMin() - die_area.yMin(),
+             die_area.yMax() - die_area.yMin());
   for (auto &&blk: top_level->getInsts()) {
     //std::cout << blk->getName() << "  " << blk->getMaster()->getName() << "\n";
     std::string blk_name(blk->getName());
@@ -148,20 +171,6 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
     std::string orient(blk->getOrient().getString());
     AddBlock(blk_name, blk_type_name, llx_int, lly_int, StrToPlaceStatus(place_status), StrToOrient(orient));
   }
-  /*
-  auto res = db->getChip()->getBlock()->findInst("LL_327_acx1");
-  int x,y;
-  res->getOrigin(x,y);
-  std::cout << x << "  " << y << " origin\n";
-  res->getLocation(x,y);
-  std::cout << x << "  " << y << " location\n";
-  std::cout << res->getOrient().getString() << " orient\n";
-  std::string orient(res->getOrient().getString());
-  std::cout << StrToOrient(orient) << "\n";
-  std::cout << res->getPlacementStatus().getString() << " placement status\n";
-  std::string place_status(res->getPlacementStatus().getString());
-  std::cout << StrToPlaceStatus(place_status) << "\n";
-   */
 
   for (auto &&term: top_level->getBTerms()) {
     //std::cout << term->getName() << "\n";
@@ -1477,7 +1486,8 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
         << *(block.Type()->Name()) << " + "
         << "PLACED" << " "
         << "( "
-        << (int) (block.LLX() * factor_x) << " " << (int) (block.LLY() * factor_y)
+        << (int) (block.LLX() * factor_x) + design_.die_area_offset_x << " "
+        << (int) (block.LLY() * factor_y) + design_.die_area_offset_y
         << " ) "
         << OrientStr(block.Orient())
         << " ;\n";
@@ -1488,7 +1498,8 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
         << *(block.Type()->Name()) << " + "
         << "PLACED" << " "
         << "( "
-        << (int) (block.LLX() * factor_x) << " " << (int) (block.LLY() * factor_y)
+        << (int) (block.LLX() * factor_x) + design_.die_area_offset_x << " "
+        << (int) (block.LLY() * factor_y) + design_.die_area_offset_y
         << " ) "
         << OrientStr(block.Orient())
         << " ;\n";
