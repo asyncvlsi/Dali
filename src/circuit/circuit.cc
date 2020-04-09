@@ -64,14 +64,14 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
           layer_name == "Metal1" ||
           layer_name == "METAL1") {
         m1_layer = layer;
-        std::cout << (layer->getWidth() + layer->getSpacing()) / double(tech_.lef_database_microns) << "\n";
+        //std::cout << (layer->getWidth() + layer->getSpacing()) / double(tech_.lef_database_microns) << "\n";
       } else if (layer_name == "m2" ||
           layer_name == "metal2" ||
           layer_name == "M2" ||
           layer_name == "Metal2" ||
           layer_name == "METAL2") {
         m2_layer = layer;
-        std::cout << (layer->getWidth() + layer->getSpacing()) / double(tech_.lef_database_microns) << "\n";
+        //std::cout << (layer->getWidth() + layer->getSpacing()) / double(tech_.lef_database_microns) << "\n";
       }
     }
     if (m1_layer != nullptr && m2_layer != nullptr) {
@@ -86,7 +86,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
       } else {
         Assert(false, "layer metal1 and layer m2 must have different orientations\n");
       }
-      std::cout << grid_value_x << "  " << grid_value_y << "\n";
+      //std::cout << grid_value_x << "  " << grid_value_y << "\n";
     } else {
       Assert(false, "Cannot find layer metal1 and layer metal2");
     }

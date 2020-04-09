@@ -46,7 +46,8 @@ struct Cluster {
   double CenterY() const;
 
   void SetHeight(int height);
-  void UpdateHeightFromNPWell(int p_well_height, int n_well_height);
+  void UpdateWellHeightFromBottom(int p_well_height, int n_well_height);
+  void UpdateWellHeightFromTop(int p_well_height, int n_well_height);
   int Height() const;
   int PHeight() const;
   int NHeight() const;
@@ -59,6 +60,7 @@ struct Cluster {
   void ShiftBlock(int x_disp, int y_disp);
   void UpdateBlockLocY();
   void LegalizeCompactX(int left);
+  void LegalizeCompactX();
   void LegalizeLooseX();
   void SetOrient(bool is_orient_N);
   void InsertWellTapCell(Block &tap_cell);
@@ -76,6 +78,7 @@ struct ClusterColumn {
   int cluster_count_;
   Cluster *front_cluster_;
   std::vector<Cluster> cluster_list_;
+  bool is_bottom_up_ = false;
 
   int block_count_;
   std::vector<Block *> block_list_;
@@ -119,10 +122,9 @@ class StandardClusterWellLegalizer : public Placer {
   void AssignBlockToStrip();
 
   void AppendBlockToColBottomUp(ClusterColumn &col, Block &blk);
-  void AppendBlockToColBottomUp(int col_num, Block &blk);
   void AppendBlockToColTopDown(ClusterColumn &col, Block &blk);
-  void AppendBlockToColTopDown(int col_num, Block &blk);
-  void AppendBlockToColClose(int col_num, Block &blk);
+  void AppendBlockToColBottomUpClose(ClusterColumn &col, Block &blk);
+  void AppendBlockToColTopDownClose(ClusterColumn &col, Block &blk);
 
   void BlockClustering();
   void BlockClusteringLoose();
@@ -224,10 +226,26 @@ inline void Cluster::SetHeight(int height) {
   height_ = height;
 }
 
-inline void Cluster::UpdateHeightFromNPWell(int p_well_height, int n_well_height) {
+inline void Cluster::UpdateWellHeightFromBottom(int p_well_height, int n_well_height) {
+  /****
+   * Update the height of this cluster with the lower y of this cluster fixed.
+   * So even if the height changes, the lower y of this cluster does not need be changed.
+   * ****/
   p_well_height_ = std::max(p_well_height_, p_well_height);
   n_well_height_ = std::max(n_well_height_, n_well_height);
   height_ = p_well_height_ + n_well_height_;
+}
+
+inline void Cluster::UpdateWellHeightFromTop(int p_well_height, int n_well_height) {
+  /****
+   * Update the height of this cluster with the upper y of this cluster fixed.
+   * So if the height changes, then the lower y of this cluster should also be changed.
+   * ****/
+  int old_height = height_;
+  p_well_height_ = std::max(p_well_height_, p_well_height);
+  n_well_height_ = std::max(n_well_height_, n_well_height);
+  height_ = p_well_height_ + n_well_height_;
+  ly_ -= (height_ - old_height);
 }
 
 inline int Cluster::Height() const {
