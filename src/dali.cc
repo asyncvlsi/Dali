@@ -195,18 +195,27 @@ int main(int argc, char *argv[]) {
   } else {
     circuit.ReadCellFile(cell_file_name);
 
-    auto *well_place_flow = new WellPlaceFlow;
-    well_place_flow->SetInputCircuit(&circuit);
+    Placer *gb_placer = new GPSimPL;
+    gb_placer->SetInputCircuit(&circuit);
+    gb_placer->SetBoundaryDef();
+    gb_placer->SetFillingRate(target_density);
+    gb_placer->ReportBoundaries();
+    gb_placer->StartPlacement();
 
-    well_place_flow->SetBoundaryDef();
-    well_place_flow->SetFillingRate(target_density);
-    well_place_flow->ReportBoundaries();
-    well_place_flow->StartPlacement();
+    Placer *legalizer = new LGTetrisEx;
+    legalizer->TakeOver(gb_placer);
+    legalizer->StartPlacement();
+
+    auto *well_legalizer = new StdClusterWellLegalizer;
+    well_legalizer->TakeOver(gb_placer);
+    well_legalizer->StartPlacement();
 
     if (!output_name.empty()) {
-      well_place_flow->EmitDEFWellFile(output_name, def_file_name);
+      well_legalizer->EmitDEFWellFile(output_name, def_file_name);
     }
-    delete well_place_flow;
+    delete well_legalizer;
+    delete gb_placer;
+    delete legalizer;
   }
 
   wall_time = get_wall_time() - wall_time;

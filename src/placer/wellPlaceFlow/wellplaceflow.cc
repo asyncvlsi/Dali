@@ -49,7 +49,7 @@ bool WellPlaceFlow::StartPlacement() {
       legalizer.TakeOver(this);
       legalizer.StartPlacement();
 
-      /*StandardClusterWellLegalizer well_legalizer;
+      /*StdClusterWellLegalizer well_legalizer;
       well_legalizer.TakeOver(this);
       bool is_success = well_legalizer.StartPlacement();*/
       bool is_success = well_legalizer_.WellLegalize();

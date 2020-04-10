@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 3/14/20.
 //
 
-#ifndef DALI_SRC_PLACER_WELLLEGALIZER_STANDARDCLUSTERWELLLEGALIZER_H_
-#define DALI_SRC_PLACER_WELLLEGALIZER_STANDARDCLUSTERWELLLEGALIZER_H_
+#ifndef DALI_SRC_PLACER_WELLLEGALIZER_STDCLUSTERWELLLEGALIZER_H_
+#define DALI_SRC_PLACER_WELLLEGALIZER_STDCLUSTERWELLLEGALIZER_H_
 
 #include "block_cluster.h"
 #include "circuit/block.h"
@@ -11,21 +11,28 @@
 #include "placer/placer.h"
 
 struct Cluster {
-  bool is_orient_N_ = true;
-  std::vector<Block *> blk_list_;
+  bool is_orient_N_ = true; // orientation of this cluster
+  std::vector<Block *> blk_list_; // list of blocks in this cluster
+
+  /**** number of tap cells needed, and pointers to tap cells ****/
+  int tap_cell_num_ = 0;
   Block *tap_cell_;
 
+  /**** x/y coordinates and dimension ****/
   int lx_;
   int ly_;
   int width_;
   int height_;
 
+  /**** total width of cells in this cluster, including reserved space for tap cells ****/
   int used_size_;
   int usable_width_; // to ensure a proper well tap cell location can be found
 
+  /**** maximum p-well height and n-well height ****/
   int p_well_height_ = 0;
   int n_well_height_ = 0;
 
+  /**** member functions ****/
   int UsedSize() const;
   void SetUsedSize(int used_size);
   void UseSpace(int width);
@@ -63,7 +70,7 @@ struct Cluster {
   void LegalizeCompactX();
   void LegalizeLooseX();
   void SetOrient(bool is_orient_N);
-  void InsertWellTapCell(Block &tap_cell);
+  void InsertWellTapCell(Block &tap_cell, int loc);
 
   void UpdateBlockLocationCompact();
 };
@@ -91,7 +98,7 @@ struct ClusterColumn {
   int URX() const;
 };
 
-class StandardClusterWellLegalizer : public Placer {
+class StdClusterWellLegalizer : public Placer {
  private:
   bool is_first_row_orient_N_ = true;
 
@@ -111,8 +118,11 @@ class StandardClusterWellLegalizer : public Placer {
   //std::vector<Cluster> cluster_list_;
   std::vector<ClusterColumn> column_list_;
 
+  /****parameters for legalization****/
+  int max_iter_ = 5;
+
  public:
-  StandardClusterWellLegalizer();
+  StdClusterWellLegalizer();
 
   void Init(int cluster_width = 0);
 
@@ -123,12 +133,17 @@ class StandardClusterWellLegalizer : public Placer {
 
   void AppendBlockToColBottomUp(ClusterColumn &col, Block &blk);
   void AppendBlockToColTopDown(ClusterColumn &col, Block &blk);
-  void AppendBlockToColBottomUpClose(ClusterColumn &col, Block &blk);
-  void AppendBlockToColTopDownClose(ClusterColumn &col, Block &blk);
+  void AppendBlockToColBottomUpCompact(ClusterColumn &col, Block &blk);
+  void AppendBlockToColTopDownCompact(ClusterColumn &col, Block &blk);
 
-  void BlockClustering();
-  void BlockClusteringLoose();
-  void BlockClusteringCompact();
+  bool StripLegalizationBottomUp(ClusterColumn &col);
+  bool StripLegalizationTopDown(ClusterColumn &col);
+  bool StripLegalizationBottomUpCompact(ClusterColumn &col);
+  bool StripLegalizationTopDownCompact(ClusterColumn &col);
+
+  bool BlockClustering();
+  bool BlockClusteringLoose();
+  bool BlockClusteringCompact();
 
   bool TrialClusterLegalization();
   bool TetrisLegalizeCluster();
@@ -150,7 +165,7 @@ class StandardClusterWellLegalizer : public Placer {
   void SingleSegmentClusteringOptimization();
 
   void UpdateClusterOrient();
-  void InsertWellTapAroundMiddle();
+  void InsertWellTap();
 
   void ClearCachedData();
   bool WellLegalize();
@@ -284,11 +299,11 @@ inline int ClusterColumn::URX() const {
   return lx_ + width_;
 }
 
-inline void StandardClusterWellLegalizer::SetFirstRowOrientN(bool is_N) {
+inline void StdClusterWellLegalizer::SetFirstRowOrientN(bool is_N) {
   is_first_row_orient_N_ = is_N;
 }
 
-inline int StandardClusterWellLegalizer::LocToCol(int x) {
+inline int StdClusterWellLegalizer::LocToCol(int x) {
   int col_num = (x - RegionLeft()) / col_width_;
   if (col_num < 0) {
     col_num = 0;
@@ -299,4 +314,4 @@ inline int StandardClusterWellLegalizer::LocToCol(int x) {
   return col_num;
 }
 
-#endif //DALI_SRC_PLACER_WELLLEGALIZER_STANDARDCLUSTERWELLLEGALIZER_H_
+#endif //DALI_SRC_PLACER_WELLLEGALIZER_STDCLUSTERWELLLEGALIZER_H_

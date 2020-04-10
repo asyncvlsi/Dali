@@ -2,7 +2,7 @@
 // Created by Yihang Yang on 3/14/20.
 //
 
-#include "standardclusterwelllegalizer.h"
+#include "stdclusterwelllegalizer.h"
 
 #include <algorithm>
 
@@ -115,10 +115,10 @@ void Cluster::SetOrient(bool is_orient_N) {
   }
 }
 
-void Cluster::InsertWellTapCell(Block &tap_cell) {
+void Cluster::InsertWellTapCell(Block &tap_cell, int loc) {
   tap_cell_ = &tap_cell;
   blk_list_.emplace_back(tap_cell_);
-  tap_cell_->SetCenterX(lx_ + width_ / 2.0);
+  tap_cell_->SetCenterX(loc);
   auto *well = tap_cell.Type()->GetWell();
   int p_well_height = well->GetPWellHeight();
   int n_well_height = well->GetNWellHeight();
@@ -129,7 +129,6 @@ void Cluster::InsertWellTapCell(Block &tap_cell) {
     tap_cell.SetOrient(FS);
     tap_cell.SetLLY(ly_ + n_well_height_ - n_well_height);
   }
-  LegalizeLooseX();
 }
 
 void Cluster::UpdateBlockLocationCompact() {
@@ -146,7 +145,7 @@ void Cluster::UpdateBlockLocationCompact() {
   }
 }
 
-StandardClusterWellLegalizer::StandardClusterWellLegalizer() {
+StdClusterWellLegalizer::StdClusterWellLegalizer() {
   max_unplug_length_ = 0;
   well_tap_cell_width_ = 0;
   max_cluster_width_ = 0;
@@ -154,14 +153,14 @@ StandardClusterWellLegalizer::StandardClusterWellLegalizer() {
   tot_col_num_ = 0;
 }
 
-void StandardClusterWellLegalizer::Init(int cluster_width) {
+void StdClusterWellLegalizer::Init(int cluster_width) {
   // parameters fetching
   auto tech = circuit_->GetTech();
   Assert(tech != nullptr, "No tech info found, well legalization cannot proceed!\n");
 
   auto n_well_layer = tech->GetNLayer();
   well_spacing_ = std::ceil(n_well_layer->Spacing() / circuit_->GetGridValueX());
-  max_unplug_length_ = 3 * (int) std::floor(n_well_layer->MaxPlugDist() / circuit_->GetGridValueX());
+  max_unplug_length_ = (int) std::floor(n_well_layer->MaxPlugDist() / circuit_->GetGridValueX());
   well_tap_cell_width_ = tech->WellTapCell()->Width();
 
   printf("Well max plug distance: %2.2e um, %d \n", n_well_layer->MaxPlugDist(), max_unplug_length_);
@@ -177,8 +176,18 @@ void StandardClusterWellLegalizer::Init(int cluster_width) {
   }
   printf("Max cell width: %d\n", max_cell_width);
 
-  max_cluster_width_ = max_unplug_length_;
-  col_width_ = max_unplug_length_ - max_cell_width + well_spacing_;
+  if (cluster_width <= 0) {
+    std::cout << "Using default cluster width: 3*max_unplug_length_\n";
+    max_cluster_width_ = max_unplug_length_ * 3;
+  } else {
+    if (cluster_width < max_cluster_width_) {
+      std::cout << "WARNING:\n"
+                << "  Specified cluster width is smaller than max_unplug_length_, "
+                << "  space is wasted, may not be able to successfully complete well legalization\n";
+    }
+    max_cluster_width_ = cluster_width;
+  }
+  col_width_ = max_cluster_width_ - max_cell_width + well_spacing_;
   if (col_width_ > RegionWidth()) {
     col_width_ = RegionWidth();
   }
@@ -210,7 +219,7 @@ void StandardClusterWellLegalizer::Init(int cluster_width) {
   index_loc_list_.resize(BlockList()->size());
 }
 
-void StandardClusterWellLegalizer::AssignBlockToStrip() {
+void StdClusterWellLegalizer::AssignBlockToStrip() {
   // assign blocks to strips
   for (int i = 0; i < tot_col_num_; ++i) {
     column_list_[i].block_count_ = 0;
@@ -232,7 +241,7 @@ void StandardClusterWellLegalizer::AssignBlockToStrip() {
   }
 }
 
-void StandardClusterWellLegalizer::AppendBlockToColBottomUp(ClusterColumn &col, Block &blk) {
+void StdClusterWellLegalizer::AppendBlockToColBottomUp(ClusterColumn &col, Block &blk) {
   bool is_no_cluster_in_col = (col.contour_ == RegionBottom());
   bool is_new_cluster_needed = is_no_cluster_in_col;
   if (!is_new_cluster_needed) {
@@ -279,7 +288,7 @@ void StandardClusterWellLegalizer::AppendBlockToColBottomUp(ClusterColumn &col, 
   col.contour_ = front_cluster->URY();
 }
 
-void StandardClusterWellLegalizer::AppendBlockToColTopDown(ClusterColumn &col, Block &blk) {
+void StdClusterWellLegalizer::AppendBlockToColTopDown(ClusterColumn &col, Block &blk) {
   bool is_no_cluster_in_col = (col.contour_ == RegionTop());
   bool is_new_cluster_needed = is_no_cluster_in_col;
   if (!is_new_cluster_needed) {
@@ -326,7 +335,7 @@ void StandardClusterWellLegalizer::AppendBlockToColTopDown(ClusterColumn &col, B
   col.contour_ = front_cluster->LLY();
 }
 
-void StandardClusterWellLegalizer::AppendBlockToColBottomUpClose(ClusterColumn &col, Block &blk) {
+void StdClusterWellLegalizer::AppendBlockToColBottomUpCompact(ClusterColumn &col, Block &blk) {
   bool is_new_cluster_needed = (col.contour_ == RegionBottom());
   if (!is_new_cluster_needed) {
     bool is_top_cluster_full = col.front_cluster_->UsedSize() + blk.Width() > col.width_;
@@ -371,7 +380,7 @@ void StandardClusterWellLegalizer::AppendBlockToColBottomUpClose(ClusterColumn &
   col.contour_ = front_cluster->URY();
 }
 
-void StandardClusterWellLegalizer::AppendBlockToColTopDownClose(ClusterColumn &col, Block &blk) {
+void StdClusterWellLegalizer::AppendBlockToColTopDownCompact(ClusterColumn &col, Block &blk) {
   bool is_new_cluster_needed = (col.contour_ == RegionTop());
   if (!is_new_cluster_needed) {
     bool is_top_cluster_full = col.front_cluster_->UsedSize() + blk.Width() > col.width_;
@@ -416,46 +425,121 @@ void StandardClusterWellLegalizer::AppendBlockToColTopDownClose(ClusterColumn &c
   col.contour_ = front_cluster->LLY();
 }
 
-void StandardClusterWellLegalizer::BlockClustering() {
+bool StdClusterWellLegalizer::StripLegalizationBottomUp(ClusterColumn &col) {
+  col.cluster_list_.clear();
+  col.contour_ = RegionBottom();
+  col.used_height_ = 0;
+  col.cluster_count_ = 0;
+  col.front_cluster_ = nullptr;
+  col.is_bottom_up_ = true;
+
+  std::sort(col.block_list_.begin(),
+            col.block_list_.end(),
+            [](const Block *lhs, const Block *rhs) {
+              return (lhs->LLY() < rhs->LLY()) || (lhs->LLY() == rhs->LLY() && lhs->LLX() < rhs->LLX());
+            });
+  for (auto &blk_ptr: col.block_list_) {
+    if (blk_ptr->IsFixed()) continue;
+    AppendBlockToColBottomUp(col, *blk_ptr);
+  }
+
+  return col.contour_ <= RegionTop();
+}
+
+bool StdClusterWellLegalizer::StripLegalizationTopDown(ClusterColumn &col) {
+  col.cluster_list_.clear();
+  col.contour_ = RegionTop();
+  col.used_height_ = 0;
+  col.cluster_count_ = 0;
+  col.front_cluster_ = nullptr;
+  col.is_bottom_up_ = false;
+
+  std::sort(col.block_list_.begin(),
+            col.block_list_.end(),
+            [](const Block *lhs, const Block *rhs) {
+              return (lhs->URY() > rhs->URY()) || (lhs->URY() == rhs->URY() && lhs->LLX() < rhs->LLX());
+            });
+  for (auto &blk_ptr: col.block_list_) {
+    if (blk_ptr->IsFixed()) continue;
+    AppendBlockToColTopDown(col, *blk_ptr);
+  }
+
+  /*std::cout << "Reverse clustering: ";
+  if (col.contour_ >= RegionBottom()) {
+    std::cout << "success\n";
+  } else {
+    std::cout << "fail\n";
+  }*/
+
+  return col.contour_ >= RegionBottom();
+}
+
+bool StdClusterWellLegalizer::StripLegalizationBottomUpCompact(ClusterColumn &col) {
+  col.cluster_list_.clear();
+  col.contour_ = RegionBottom();
+  col.used_height_ = 0;
+  col.cluster_count_ = 0;
+  col.front_cluster_ = nullptr;
+  col.is_bottom_up_ = true;
+
+  std::sort(col.block_list_.begin(),
+            col.block_list_.end(),
+            [](const Block *lhs, const Block *rhs) {
+              return (lhs->LLY() < rhs->LLY()) || (lhs->LLY() == rhs->LLY() && lhs->LLX() < rhs->LLX());
+            });
+  for (auto &blk_ptr: col.block_list_) {
+    if (blk_ptr->IsFixed()) continue;
+    AppendBlockToColBottomUpCompact(col, *blk_ptr);
+  }
+
+  return col.contour_ <= RegionTop();
+}
+
+bool StdClusterWellLegalizer::StripLegalizationTopDownCompact(ClusterColumn &col) {
+  col.cluster_list_.clear();
+  col.contour_ = RegionTop();
+  col.used_height_ = 0;
+  col.cluster_count_ = 0;
+  col.front_cluster_ = nullptr;
+  col.is_bottom_up_ = false;
+
+  std::sort(col.block_list_.begin(),
+            col.block_list_.end(),
+            [](const Block *lhs, const Block *rhs) {
+              return (lhs->URY() > rhs->URY()) || (lhs->URY() == rhs->URY() && lhs->LLX() < rhs->LLX());
+            });
+  for (auto &blk_ptr: col.block_list_) {
+    if (blk_ptr->IsFixed()) continue;
+    AppendBlockToColTopDownCompact(col, *blk_ptr);
+  }
+
+  /*std::cout << "Reverse clustering: ";
+  if (col.contour_ >= RegionBottom()) {
+    std::cout << "success\n";
+  } else {
+    std::cout << "fail\n";
+  }*/
+
+  return col.contour_ >= RegionBottom();
+}
+
+bool StdClusterWellLegalizer::BlockClustering() {
+  /****
+   * Clustering blocks in each strip
+   * After clustering, close pack clusters from bottom to top
+   ****/
+  bool res = true;
   for (auto &col: column_list_) {
-    std::sort(col.block_list_.begin(),
-              col.block_list_.end(),
-              [](const Block *lhs, const Block *rhs) {
-                return (lhs->LLY() < rhs->LLY()) || (lhs->LLY() == rhs->LLY() && lhs->LLX() < rhs->LLX());
-              });
-    for (auto &blk_ptr: col.block_list_) {
-      if (blk_ptr->IsFixed()) continue;
-      AppendBlockToColBottomUp(col, *blk_ptr);
-    }
-    col.is_bottom_up_ = true;
-
-    if (col.contour_ > RegionTop()) {
-      std::cout << "Reverse clustering: ";
-
-      col.cluster_list_.clear();
-      col.contour_ = RegionTop();
-      col.used_height_ = 0;
-      col.cluster_count_ = 0;
-      col.front_cluster_ = nullptr;
-      col.is_bottom_up_ = false;
-
-      std::sort(col.block_list_.begin(),
-                col.block_list_.end(),
-                [](const Block *lhs, const Block *rhs) {
-                  return (lhs->URY() > rhs->URY()) || (lhs->URY() == rhs->URY() && lhs->LLX() < rhs->LLX());
-                });
-      for (auto &blk_ptr: col.block_list_) {
-        if (blk_ptr->IsFixed()) continue;
-        AppendBlockToColTopDown(col, *blk_ptr);
-      }
-
-      if (col.contour_ >= RegionBottom()) {
-        std::cout << "success\n";
-      } else {
-        std::cout << "fail\n";
+    bool is_success = true;
+    for (int i = 0; i < max_iter_; ++i) {
+      is_success = StripLegalizationBottomUp(col);
+      if (!is_success) {
+        is_success = StripLegalizationTopDown(col);
       }
     }
+    res = res && is_success;
 
+    // close pack clusters from bottom to top
     col.contour_ = RegionBottom();
     if (col.is_bottom_up_) {
       for (auto &cluster: col.cluster_list_) {
@@ -475,112 +559,62 @@ void StandardClusterWellLegalizer::BlockClustering() {
       }
     }
   }
+  return res;
 }
 
-void StandardClusterWellLegalizer::BlockClusteringLoose() {
+bool StdClusterWellLegalizer::BlockClusteringLoose() {
   /****
    * Clustering blocks in each strip
+   * After clustering, leave clusters as they are
    * ****/
+
+  bool res = true;
   for (auto &col: column_list_) {
-    std::sort(col.block_list_.begin(),
-              col.block_list_.end(),
-              [](const Block *lhs, const Block *rhs) {
-                return (lhs->LLY() < rhs->LLY()) || (lhs->LLY() == rhs->LLY() && lhs->LLX() < rhs->LLX());
-              });
-    for (auto &blk_ptr: col.block_list_) {
-      if (blk_ptr->IsFixed()) continue;
-      AppendBlockToColBottomUp(col, *blk_ptr);
-    }
-    col.is_bottom_up_ = true;
-
-    if (col.contour_ > RegionTop()) {
-      std::cout << "Reverse clustering: ";
-
-      col.cluster_list_.clear();
-      col.contour_ = RegionTop();
-      col.used_height_ = 0;
-      col.cluster_count_ = 0;
-      col.front_cluster_ = nullptr;
-      col.is_bottom_up_ = false;
-
-      std::sort(col.block_list_.begin(),
-                col.block_list_.end(),
-                [](const Block *lhs, const Block *rhs) {
-                  return (lhs->URY() > rhs->URY()) || (lhs->URY() == rhs->URY() && lhs->LLX() < rhs->LLX());
-                });
-      for (auto &blk_ptr: col.block_list_) {
-        if (blk_ptr->IsFixed()) continue;
-        AppendBlockToColTopDown(col, *blk_ptr);
-      }
-
-      if (col.contour_ >= RegionBottom()) {
-        std::cout << "success\n";
-      } else {
-        std::cout << "fail\n";
+    bool is_success = true;
+    for (int i = 0; i < max_iter_; ++i) {
+      is_success = StripLegalizationBottomUp(col);
+      if (!is_success) {
+        is_success = StripLegalizationTopDown(col);
       }
     }
+    res = res && is_success;
 
     for (auto &cluster: col.cluster_list_) {
-      //cluster.SetLLY(current_ly);
-      cluster.UpdateBlockLocY();
-      cluster.LegalizeLooseX();
-      //current_ly += cluster.Height();
-    }
-  }
-}
-
-void StandardClusterWellLegalizer::BlockClusteringCompact() {
-  for (auto &col: column_list_) {
-    std::sort(col.block_list_.begin(),
-              col.block_list_.end(),
-              [](const Block *lhs, const Block *rhs) {
-                return (lhs->LLY() < rhs->LLY()) || (lhs->LLY() == rhs->LLY() && lhs->LLX() < rhs->LLX());
-              });
-    for (auto &blk_ptr: col.block_list_) {
-      if (blk_ptr->IsFixed()) continue;
-      AppendBlockToColBottomUpClose(col, *blk_ptr);
-    }
-    col.is_bottom_up_ = true;
-
-    if (col.contour_ > RegionTop()) {
-      std::cout << "Reverse clustering: ";
-
-      col.cluster_list_.clear();
-      col.contour_ = RegionTop();
-      col.used_height_ = 0;
-      col.cluster_count_ = 0;
-      col.front_cluster_ = nullptr;
-      col.is_bottom_up_ = false;
-
-      std::sort(col.block_list_.begin(),
-                col.block_list_.end(),
-                [](const Block *lhs, const Block *rhs) {
-                  return (lhs->URY() > rhs->URY()) || (lhs->URY() == rhs->URY() && lhs->LLX() < rhs->LLX());
-                });
-      for (auto &blk_ptr: col.block_list_) {
-        if (blk_ptr->IsFixed()) continue;
-        AppendBlockToColTopDownClose(col, *blk_ptr);
-      }
-
-      if (col.contour_ >= RegionBottom()) {
-        std::cout << "success\n";
-      } else {
-        std::cout << "fail\n";
-      }
-    }
-
-    for (auto &cluster: col.cluster_list_) {
-      /*int col_num = (cluster.LLX() - RegionLeft()) / col_width_;
-      auto &col = column_list_[col_num];
-      col.contour_ += cluster.Height();
-      cluster.SetLLY(col.contour_);*/
       cluster.UpdateBlockLocY();
       cluster.LegalizeLooseX();
     }
   }
+
+  return res;
 }
 
-bool StandardClusterWellLegalizer::TrialClusterLegalization() {
+bool StdClusterWellLegalizer::BlockClusteringCompact() {
+  /****
+   * Clustering blocks in each strip in a compact way
+   * After clustering, leave clusters as they are
+   * ****/
+
+  bool res = true;
+  for (auto &col: column_list_) {
+    bool is_success = true;
+    for (int i = 0; i < max_iter_; ++i) {
+      is_success = StripLegalizationBottomUpCompact(col);
+      if (!is_success) {
+        is_success = StripLegalizationTopDownCompact(col);
+      }
+    }
+    res = res && is_success;
+
+    for (auto &cluster: col.cluster_list_) {
+      cluster.UpdateBlockLocY();
+      cluster.LegalizeLooseX();
+    }
+  }
+
+  return res;
+}
+
+bool StdClusterWellLegalizer::TrialClusterLegalization() {
   /****
    * Legalize the location of all clusters using extended Tetris legalization algorithm in columns where usage does not exceed capacity
    * Closely pack the column from bottom to top if its usage exceeds its capacity
@@ -645,7 +679,7 @@ bool StandardClusterWellLegalizer::TrialClusterLegalization() {
   return res;
 }
 
-bool StandardClusterWellLegalizer::TetrisLegalizeCluster() {
+bool StdClusterWellLegalizer::TetrisLegalizeCluster() {
   /****
    * Legalize the location of all clusters using traditional Tetris legalization algorithm
    * ****/
@@ -726,7 +760,7 @@ bool StandardClusterWellLegalizer::TetrisLegalizeCluster() {
   return is_success;
 }
 
-double StandardClusterWellLegalizer::WireLengthCost(Cluster *cluster, int l, int r) {
+double StdClusterWellLegalizer::WireLengthCost(Cluster *cluster, int l, int r) {
   /****
    * Returns the wire-length cost of the small group from l-th element to r-th element in this cluster
    * "for each order, we keep the left and right boundaries of the group and evenly distribute the cells inside the group.
@@ -756,16 +790,16 @@ double StandardClusterWellLegalizer::WireLengthCost(Cluster *cluster, int l, int
   return hpwl_x * circuit_->GetGridValueX() + hpwl_y * circuit_->GetGridValueY();
 }
 
-void StandardClusterWellLegalizer::FindBestLocalOrder(std::vector<Block *> &res,
-                                                      double &cost,
-                                                      Cluster *cluster,
-                                                      int cur,
-                                                      int l,
-                                                      int r,
-                                                      int left_bound,
-                                                      int right_bound,
-                                                      int gap,
-                                                      int range) {
+void StdClusterWellLegalizer::FindBestLocalOrder(std::vector<Block *> &res,
+                                                 double &cost,
+                                                 Cluster *cluster,
+                                                 int cur,
+                                                 int l,
+                                                 int r,
+                                                 int left_bound,
+                                                 int right_bound,
+                                                 int gap,
+                                                 int range) {
   /****
   * Returns the best permutation in @param res
   * @param cost records the cost function associated with the best permutation
@@ -811,7 +845,7 @@ void StandardClusterWellLegalizer::FindBestLocalOrder(std::vector<Block *> &res,
 
 }
 
-void StandardClusterWellLegalizer::LocalReorderInCluster(Cluster *cluster, int range) {
+void StdClusterWellLegalizer::LocalReorderInCluster(Cluster *cluster, int range) {
   /****
    * Enumerate all local permutations, @param range determines how big the local range is
    * ****/
@@ -858,7 +892,7 @@ void StandardClusterWellLegalizer::LocalReorderInCluster(Cluster *cluster, int r
 
 }
 
-void StandardClusterWellLegalizer::LocalReorderAllClusters() {
+void StdClusterWellLegalizer::LocalReorderAllClusters() {
   // sort cluster based on the lower left corner
   int tot_cluster_count = 0;
   for (auto &col: column_list_) {
@@ -883,11 +917,11 @@ void StandardClusterWellLegalizer::LocalReorderAllClusters() {
   }
 }
 
-void StandardClusterWellLegalizer::SingleSegmentClusteringOptimization() {
+void StdClusterWellLegalizer::SingleSegmentClusteringOptimization() {
 
 }
 
-void StandardClusterWellLegalizer::UpdateClusterOrient() {
+void StdClusterWellLegalizer::UpdateClusterOrient() {
   for (auto &col: column_list_) {
     bool is_orient_N = is_first_row_orient_N_;
     if (col.is_bottom_up_) {
@@ -905,7 +939,7 @@ void StandardClusterWellLegalizer::UpdateClusterOrient() {
   }
 }
 
-void StandardClusterWellLegalizer::InsertWellTapAroundMiddle() {
+void StdClusterWellLegalizer::InsertWellTap() {
   auto &tap_cell_list = circuit_->design_.well_tap_list;
   tap_cell_list.clear();
   int tot_cluster_count = 0;
@@ -918,20 +952,27 @@ void StandardClusterWellLegalizer::InsertWellTapAroundMiddle() {
   int counter = 0;
   for (auto &col: column_list_) {
     for (auto &cluster: col.cluster_list_) {
-      std::string block_name = "__well_tap__" + std::to_string(counter++);
-      tap_cell_list.emplace_back();
-      auto &tap_cell = tap_cell_list.back();
-      tap_cell.SetType(circuit_->tech_.WellTapCell());
-      int map_size = circuit_->design_.tap_name_map.size();
-      auto ret = circuit_->design_.tap_name_map.insert(std::pair<std::string, int>(block_name, map_size));
-      auto *name_num_pair_ptr = &(*ret.first);
-      tap_cell.SetNameNumPair(name_num_pair_ptr);
-      cluster.InsertWellTapCell(tap_cell);
+      int num_of_tap_cell = (int) std::ceil(col.Width() / (1.5 * max_unplug_length_));
+      int step = cluster.Width() / (num_of_tap_cell + 1);
+      int tap_cell_loc = cluster.LLX() + step;
+      for (int i = 0; i < num_of_tap_cell; ++i) {
+        std::string block_name = "__well_tap__" + std::to_string(counter++);
+        tap_cell_list.emplace_back();
+        auto &tap_cell = tap_cell_list.back();
+        tap_cell.SetType(circuit_->tech_.WellTapCell());
+        int map_size = circuit_->design_.tap_name_map.size();
+        auto ret = circuit_->design_.tap_name_map.insert(std::pair<std::string, int>(block_name, map_size));
+        auto *name_num_pair_ptr = &(*ret.first);
+        tap_cell.SetNameNumPair(name_num_pair_ptr);
+        cluster.InsertWellTapCell(tap_cell, tap_cell_loc);
+        tap_cell_loc += step;
+      }
+      cluster.LegalizeLooseX();
     }
   }
 }
 
-void StandardClusterWellLegalizer::ClearCachedData() {
+void StdClusterWellLegalizer::ClearCachedData() {
   for (auto &block: *BlockList()) {
     block.SetOrient(N);
   }
@@ -948,29 +989,21 @@ void StandardClusterWellLegalizer::ClearCachedData() {
   //cluster_list_.clear();
 }
 
-bool StandardClusterWellLegalizer::WellLegalize() {
+bool StdClusterWellLegalizer::WellLegalize() {
   ClearCachedData();
   bool is_success;
 
-  BlockClusteringLoose();
-  //BlockClusteringCompact();
+  AssignBlockToStrip();
+  is_success = BlockClusteringLoose();
   ReportHPWL(LOG_CRITICAL);
 
-  is_success = TrialClusterLegalization();
-  ReportHPWL(LOG_CRITICAL);
-  /*if (!is_success) {
-    is_success = TetrisLegalizeCluster();
-    ReportHPWL(LOG_CRITICAL);
-  }*/
-
-  //UpdateClusterInColumn();
   UpdateClusterOrient();
   for (int i = 0; i < 6; ++i) {
     LocalReorderAllClusters();
     ReportHPWL(LOG_CRITICAL);
   }
 
-  InsertWellTapAroundMiddle();
+  InsertWellTap();
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
     if (is_success) {
@@ -987,7 +1020,7 @@ bool StandardClusterWellLegalizer::WellLegalize() {
   return is_success;
 }
 
-bool StandardClusterWellLegalizer::StartPlacement() {
+bool StdClusterWellLegalizer::StartPlacement() {
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "---------------------------------------\n"
               << "Start Standard Cluster Well Legalization\n";
@@ -1019,7 +1052,7 @@ bool StandardClusterWellLegalizer::StartPlacement() {
     ReportHPWL(LOG_CRITICAL);
   }
 
-  InsertWellTapAroundMiddle();
+  InsertWellTap();
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
     if (is_success) {
@@ -1047,7 +1080,7 @@ bool StandardClusterWellLegalizer::StartPlacement() {
   return is_success;
 }
 
-void StandardClusterWellLegalizer::GenMatlabClusterTable(std::string const &name_of_file) {
+void StdClusterWellLegalizer::GenMatlabClusterTable(std::string const &name_of_file) {
   std::string frame_file = name_of_file + "_outline.txt";
   GenMATLABTable(frame_file);
 
@@ -1070,7 +1103,7 @@ void StandardClusterWellLegalizer::GenMatlabClusterTable(std::string const &name
   ost.close();
 }
 
-void StandardClusterWellLegalizer::GenMATLABWellTable(std::string const &name_of_file) {
+void StdClusterWellLegalizer::GenMATLABWellTable(std::string const &name_of_file) {
   circuit_->GenMATLABWellTable(name_of_file);
 
   std::string p_file = name_of_file + "_pwell.txt";
@@ -1135,7 +1168,7 @@ void StandardClusterWellLegalizer::GenMATLABWellTable(std::string const &name_of
   ostn.close();
 }
 
-void StandardClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, std::string const &input_def_file) {
+void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, std::string const &input_def_file) {
   /****
    * Emit three files:
    * 1. def file, well tap cells are included in this DEF file

@@ -7,10 +7,10 @@
 
 #include "placer/globalPlacer/GPSimPL.h"
 #include "placer/legalizer/LGTetrisEx.h"
-#include "placer/wellLegalizer/standardclusterwelllegalizer.h"
+#include "placer/wellLegalizer/stdclusterwelllegalizer.h"
 
 class WellPlaceFlow : public GPSimPL {
-  StandardClusterWellLegalizer well_legalizer_;
+  StdClusterWellLegalizer well_legalizer_;
  public:
   WellPlaceFlow();
 
