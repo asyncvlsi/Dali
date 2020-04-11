@@ -46,9 +46,9 @@ void ClusterWellLegalizer::InitializeClusterLegalizer() {
   //max_well_length = RegionWidth();
 
   max_well_length = std::min(max_well_length, RegionWidth() / 7);
-  max_well_length = std::min(max_well_length, circuit_->MinWidth() * 7);
+  max_well_length = std::min(max_well_length, circuit_->MinBlkWidth() * 7);
 
-  new_cluster_cost_threshold = circuit_->MinHeight();
+  new_cluster_cost_threshold = circuit_->MinBlkHeight();
 }
 
 void ClusterWellLegalizer::InitDisplaceViewer(int sz) {

@@ -46,6 +46,7 @@ class Circuit {
   void ReadDefFile(std::string const &name_of_file);
 
   void ReadCellFile(std::string const &name_of_file);
+  void LoadFakeCellFile();
 
   /****API to set grid value****/
   double GetGridValueX() const; // unit in micro
@@ -176,20 +177,20 @@ class Circuit {
   // repulsive force can be created using an attractive force, a spring whose rest length in the current distance or even longer than the current distance
 
   /****member functions to obtain statical values****/
-  int MinWidth() const;
-  int MaxWidth() const;
-  int MinHeight() const;
-  int MaxHeight() const;
-  long int TotArea() const;
-  int TotBlockNum() const;
+  int MinBlkWidth() const;
+  int MaxBlkWidth() const;
+  int MinBlkHeight() const;
+  int MaxBlkHeight() const;
+  long int TotBlkArea() const;
+  int TotBlkNum() const;
   int TotMovableBlockNum() const;
   int TotFixedBlkCnt() const;
-  double AveWidth() const;
-  double AveHeight() const;
-  double AveArea() const;
-  double AveMovWidth() const;
-  double AveMovHeight() const;
-  double AveMovArea() const;
+  double AveBlkWidth() const;
+  double AveBlkHeight() const;
+  double AveBlkArea() const;
+  double AveMovBlkWidth() const;
+  double AveMovBlkHeight() const;
+  double AveMovBlkArea() const;
   double WhiteSpaceUsage() const;
 
   /****Utility member functions****/
@@ -286,27 +287,27 @@ inline std::vector<Net> *Circuit::GetNetList() {
   return &(design_.net_list);
 }
 
-inline int Circuit::MinWidth() const {
+inline int Circuit::MinBlkWidth() const {
   return design_.blk_min_width_;
 }
 
-inline int Circuit::MaxWidth() const {
+inline int Circuit::MaxBlkWidth() const {
   return design_.blk_max_width_;
 }
 
-inline int Circuit::MinHeight() const {
+inline int Circuit::MinBlkHeight() const {
   return design_.blk_min_height_;
 }
 
-inline int Circuit::MaxHeight() const {
+inline int Circuit::MaxBlkHeight() const {
   return design_.blk_max_height_;
 }
 
-inline long int Circuit::TotArea() const {
+inline long int Circuit::TotBlkArea() const {
   return design_.tot_blk_area_;
 }
 
-inline int Circuit::TotBlockNum() const {
+inline int Circuit::TotBlkNum() const {
   return design_.block_list.size();
 }
 
@@ -318,32 +319,32 @@ inline int Circuit::TotFixedBlkCnt() const {
   return (int) design_.block_list.size() - design_.tot_mov_blk_num_;
 }
 
-inline double Circuit::AveWidth() const {
-  return double(design_.tot_width_) / double(TotBlockNum());
+inline double Circuit::AveBlkWidth() const {
+  return double(design_.tot_width_) / double(TotBlkNum());
 }
 
-inline double Circuit::AveHeight() const {
-  return double(design_.tot_height_) / double(TotBlockNum());
+inline double Circuit::AveBlkHeight() const {
+  return double(design_.tot_height_) / double(TotBlkNum());
 }
 
-inline double Circuit::AveArea() const {
-  return double(design_.tot_blk_area_) / double(TotBlockNum());
+inline double Circuit::AveBlkArea() const {
+  return double(design_.tot_blk_area_) / double(TotBlkNum());
 }
 
-inline double Circuit::AveMovWidth() const {
+inline double Circuit::AveMovBlkWidth() const {
   return double(design_.tot_mov_width_) / design_.tot_mov_blk_num_;
 }
 
-inline double Circuit::AveMovHeight() const {
+inline double Circuit::AveMovBlkHeight() const {
   return double(design_.tot_mov_height_) / design_.tot_mov_blk_num_;
 }
 
-inline double Circuit::AveMovArea() const {
+inline double Circuit::AveMovBlkArea() const {
   return double(design_.tot_mov_block_area_) / design_.tot_mov_blk_num_;
 }
 
 inline double Circuit::WhiteSpaceUsage() const {
-  return double(TotArea()) / (Right() - Left()) / (Top() - Bottom());
+  return double(TotBlkArea()) / (Right() - Left()) / (Top() - Bottom());
 }
 
 inline Tech *Circuit::GetTech() {

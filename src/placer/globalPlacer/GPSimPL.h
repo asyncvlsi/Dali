@@ -161,12 +161,12 @@ class GPSimPL : public Placer {
 };
 
 inline unsigned int GPSimPL::TotBlockNum() {
-  return GetCircuit()->TotBlockNum();
+  return GetCircuit()->TotBlkNum();
 }
 
 inline void GPSimPL::SetEpsilon() {
-  width_epsilon = circuit_->AveMovWidth() / 100.0;
-  height_epsilon = circuit_->AveMovHeight() / 100.0;
+  width_epsilon = circuit_->AveMovBlkWidth() / 100.0;
+  height_epsilon = circuit_->AveMovBlkHeight() / 100.0;
 }
 
 inline double GPSimPL::WidthEpsilon() {

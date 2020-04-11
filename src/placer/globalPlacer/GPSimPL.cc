@@ -577,7 +577,7 @@ void GPSimPL::InitGridBins() {
    * ****/
 
   // Part1
-  grid_bin_height = int(std::round(std::sqrt(number_of_cell_in_bin * GetCircuit()->AveMovArea() / FillingRate())));
+  grid_bin_height = int(std::round(std::sqrt(number_of_cell_in_bin * GetCircuit()->AveMovBlkArea() / FillingRate())));
   grid_bin_width = grid_bin_height;
   grid_cnt_y = std::ceil(double(RegionTop() - RegionBottom()) / grid_bin_height);
   grid_cnt_x = std::ceil(double(RegionRight() - RegionLeft()) / grid_bin_width);
@@ -1492,8 +1492,8 @@ void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
       box2.top = front_box.top;
       box2.right = front_box.right;
 
-      int ave_blk_height = std::ceil(GetCircuit()->AveMovHeight());
-      //std::cout << "Average block height: " << ave_blk_height << "  " << GetCircuit()->AveMovHeight() << "\n";
+      int ave_blk_height = std::ceil(GetCircuit()->AveMovBlkHeight());
+      //std::cout << "Average block height: " << ave_blk_height << "  " << GetCircuit()->AveMovBlkHeight() << "\n";
       front_box.cut_direction_x = (front_box.top - front_box.bottom > ave_blk_height);
       int cut_line_w = 0; // cut-line for White space
       front_box.update_cut_point_cell_list_low_high_leaf(block_list, cut_line_w, ave_blk_height);

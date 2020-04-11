@@ -37,12 +37,12 @@ double Placer::GetBlkHPWL(Block &blk) {
 }
 
 bool Placer::IsBoundaryProper() {
-  if (circuit_->MaxWidth() > RegionRight() - RegionLeft()) {
+  if (circuit_->MaxBlkWidth() > RegionRight() - RegionLeft()) {
     std::cout << "Improper boundary:\n"
               << "    maximum cell width is larger than the width of placement region\n";
     return false;
   }
-  if (circuit_->MaxHeight() > RegionTop() - RegionBottom()) {
+  if (circuit_->MaxBlkHeight() > RegionTop() - RegionBottom()) {
     std::cout << "Improper boundary:\n"
               << "    maximum cell height is larger than the height of placement region\n";
     return false;
@@ -52,15 +52,15 @@ bool Placer::IsBoundaryProper() {
 
 void Placer::SetBoundaryAuto() {
   Assert(circuit_ != nullptr, "Must set input circuit before setting boundaries");
-  long int tot_block_area = circuit_->TotArea();
+  long int tot_block_area = circuit_->TotBlkArea();
   int width = std::ceil(std::sqrt(double(tot_block_area) / aspect_ratio_ / filling_rate_));
   int height = std::ceil(width * aspect_ratio_);
   std::cout << "Pre-set aspect ratio: " << aspect_ratio_ << "\n";
   aspect_ratio_ = height / (double) width;
   std::cout << "Adjusted aspect rate: " << aspect_ratio_ << "\n";
-  left_ = (int) (circuit_->AveWidth());
+  left_ = (int) (circuit_->AveBlkWidth());
   right_ = left_ + width;
-  bottom_ = (int) (circuit_->AveWidth());
+  bottom_ = (int) (circuit_->AveBlkWidth());
   top_ = bottom_ + height;
   int area = height * width;
   std::cout << "Pre-set filling rate: " << filling_rate_ << "\n";
@@ -73,7 +73,7 @@ void Placer::SetBoundary(int left, int right, int bottom, int top) {
   Assert(circuit_ != nullptr, "Must set input circuit before setting boundaries");
   Assert(left < right, "Invalid boundary setting: left boundary should be less than right boundary!");
   Assert(bottom < top, "Invalid boundary setting: bottom boundary should be less than top boundary!");
-  unsigned long int tot_block_area = circuit_->TotArea();
+  unsigned long int tot_block_area = circuit_->TotBlkArea();
   unsigned long int tot_area = (right - left) * (top - bottom);
   Assert(tot_area >= tot_block_area, "Invalid boundary setting: given region has smaller area than total block area!");
   if (globalVerboseLevel >= LOG_INFO) {

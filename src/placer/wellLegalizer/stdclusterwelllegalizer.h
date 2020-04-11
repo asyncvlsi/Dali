@@ -8,6 +8,7 @@
 #include "block_cluster.h"
 #include "circuit/block.h"
 #include "common/misc.h"
+#include "placer/legalizer/LGTetrisEx.h"
 #include "placer/placer.h"
 
 struct Cluster {
@@ -75,7 +76,7 @@ struct Cluster {
   void UpdateBlockLocationCompact();
 };
 
-struct ClusterColumn {
+struct ClusterStrip {
   int lx_;
   int width_;
   int max_blk_capacity_per_cluster_;
@@ -102,27 +103,36 @@ class StdClusterWellLegalizer : public Placer {
  private:
   bool is_first_row_orient_N_ = true;
 
+  /**** well parameters ****/
   int max_unplug_length_;
   int well_tap_cell_width_;
   int well_spacing_;
 
-  int max_cluster_width_;
-  int col_width_;
-  int tot_col_num_;
+  /**** strip parameters ****/
+  int strip_width_;
+  int tot_strip_num_;
 
+  /**** well tap cell parameters ****/
   BlockType *well_tap_cell_;
   int tap_cell_p_height_;
   int tap_cell_n_height_;
 
-  std::vector<IndexLocPair<int>> index_loc_list_;
-  //std::vector<Cluster> cluster_list_;
-  std::vector<ClusterColumn> column_list_;
+  std::vector<IndexLocPair<int>> index_loc_list_; // list of index loc pair for location sort
+  std::vector<ClusterStrip> strip_list_; // list of strips
+
+  /**** row information ****/
+  int row_height_;
+  int tot_num_rows_;
+  std::vector<std::vector<SegI>> white_space_in_rows_; // white space in each row
 
   /****parameters for legalization****/
   int max_iter_ = 5;
 
  public:
   StdClusterWellLegalizer();
+
+  int StartRow(int y_loc);
+  int EndRow(int y_loc);
 
   void Init(int cluster_width = 0);
 
@@ -131,15 +141,15 @@ class StdClusterWellLegalizer : public Placer {
   int LocToCol(int x);
   void AssignBlockToStrip();
 
-  void AppendBlockToColBottomUp(ClusterColumn &col, Block &blk);
-  void AppendBlockToColTopDown(ClusterColumn &col, Block &blk);
-  void AppendBlockToColBottomUpCompact(ClusterColumn &col, Block &blk);
-  void AppendBlockToColTopDownCompact(ClusterColumn &col, Block &blk);
+  void AppendBlockToColBottomUp(ClusterStrip &col, Block &blk);
+  void AppendBlockToColTopDown(ClusterStrip &col, Block &blk);
+  void AppendBlockToColBottomUpCompact(ClusterStrip &col, Block &blk);
+  void AppendBlockToColTopDownCompact(ClusterStrip &col, Block &blk);
 
-  bool StripLegalizationBottomUp(ClusterColumn &col);
-  bool StripLegalizationTopDown(ClusterColumn &col);
-  bool StripLegalizationBottomUpCompact(ClusterColumn &col);
-  bool StripLegalizationTopDownCompact(ClusterColumn &col);
+  bool StripLegalizationBottomUp(ClusterStrip &col);
+  bool StripLegalizationTopDown(ClusterStrip &col);
+  bool StripLegalizationBottomUpCompact(ClusterStrip &col);
+  bool StripLegalizationTopDownCompact(ClusterStrip &col);
 
   bool BlockClustering();
   bool BlockClusteringLoose();
@@ -175,6 +185,9 @@ class StdClusterWellLegalizer : public Placer {
   void GenMatlabClusterTable(std::string const &name_of_file);
   void GenMATLABWellTable(std::string const &name_of_file) override;
   void EmitDEFWellFile(std::string const &name_of_file, std::string const &input_def_file) override;
+
+  /**** member functions for debugging ****/
+  void GenAvailSpace(std::string const &name_of_file = "avail_space.txt");
 };
 
 inline int Cluster::UsedSize() const {
@@ -287,16 +300,29 @@ inline void Cluster::SetLoc(int lx, int ly) {
   ly_ = ly;
 }
 
-inline int ClusterColumn::Width() const {
+inline int ClusterStrip::Width() const {
   return width_;
 }
 
-inline int ClusterColumn::LLX() const {
+inline int ClusterStrip::LLX() const {
   return lx_;
 }
 
-inline int ClusterColumn::URX() const {
+inline int ClusterStrip::URX() const {
   return lx_ + width_;
+}
+
+inline int StdClusterWellLegalizer::StartRow(int y_loc) {
+  return (y_loc - bottom_) / row_height_;
+}
+
+inline int StdClusterWellLegalizer::EndRow(int y_loc) {
+  int relative_y = y_loc - bottom_;
+  int res = relative_y / row_height_;
+  if (relative_y % row_height_ == 0) {
+    --res;
+  }
+  return res;
 }
 
 inline void StdClusterWellLegalizer::SetFirstRowOrientN(bool is_N) {
@@ -304,12 +330,12 @@ inline void StdClusterWellLegalizer::SetFirstRowOrientN(bool is_N) {
 }
 
 inline int StdClusterWellLegalizer::LocToCol(int x) {
-  int col_num = (x - RegionLeft()) / col_width_;
+  int col_num = (x - RegionLeft()) / strip_width_;
   if (col_num < 0) {
     col_num = 0;
   }
-  if (col_num >= tot_col_num_) {
-    col_num = tot_col_num_ - 1;
+  if (col_num >= tot_strip_num_) {
+    col_num = tot_strip_num_ - 1;
   }
   return col_num;
 }

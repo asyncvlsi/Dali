@@ -34,8 +34,8 @@ void MDPlacer::CreateBlkAuxList() {
 }
 
 void MDPlacer::InitGridBin() {
-  bin_width_ = GetCircuit()->MinWidth();
-  bin_height_ = GetCircuit()->MinHeight();
+  bin_width_ = GetCircuit()->MinBlkWidth();
+  bin_height_ = GetCircuit()->MinBlkHeight();
   bin_cnt_x_ = std::ceil((double)(RegionRight() - RegionLeft()) / bin_width_);
   bin_cnt_y_ = std::ceil((double)(RegionTop() - RegionBottom()) / bin_height_);
   

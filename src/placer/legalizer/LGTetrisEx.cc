@@ -136,7 +136,7 @@ void LGTetrisEx::InitLegalizer() {
   }
 
   white_space_in_rows_.resize(tot_num_rows_);
-  int min_blk_width = int(circuit_->MinWidth());
+  int min_blk_width = int(circuit_->MinBlkWidth());
   for (int i = 0; i < tot_num_rows_; ++i) {
     int len = int(intermediate_seg_rows[i].size());
     white_space_in_rows_[i].reserve(len / 2);

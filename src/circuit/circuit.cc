@@ -1175,6 +1175,37 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
   std::cout << "CELL file loading complete: " << name_of_file << "\n";
 }
 
+void Circuit::LoadFakeCellFile() {
+  /****
+   * Creates fake NP-well information for testing purposes
+   * ****/
+
+  // 1. create fake well tap cell
+  std::string tap_cell_name("welltap_svt");
+  AddBlockType(tap_cell_name, MinBlkWidth(), MinBlkHeight());
+
+  // 2. create fake well parameters
+  double fake_same_diff_spacing = 0;
+  double fake_any_diff_spacing = 0;
+  SetLegalizerSpacing(fake_same_diff_spacing, fake_any_diff_spacing);
+
+  double width = 0;
+  double spacing = 0;
+  double op_spacing = 0;
+  double max_plug_dist = 0;
+  double overhang = 0;
+
+  spacing = AveMovBlkWidth() * 3;
+  op_spacing = AveMovBlkWidth() * 3;
+  max_plug_dist = AveMovBlkWidth() * 10;
+
+  SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
+  SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
+
+  // 3. create fake NP-well geometries for each BlockType
+
+}
+
 void Circuit::ReportBlockList() {
   for (auto &block: design_.block_list) {
     block.Report();
@@ -1205,7 +1236,7 @@ void Circuit::ReportNetMap() {
 void Circuit::ReportBriefSummary() {
   if (globalVerboseLevel >= LOG_INFO) {
     std::cout << "  movable blocks: " << TotMovableBlockNum() << "\n"
-              << "  blocks: " << TotBlockNum() << "\n"
+              << "  blocks: " << TotBlkNum() << "\n"
               << "  nets: " << design_.net_list.size() << "\n"
               << "  grid size x: " << tech_.grid_value_x_ << " um, grid size y: " << tech_.grid_value_y_ << " um\n"
               << "  total block area: " << design_.tot_blk_area_ << "\n"
