@@ -12,7 +12,7 @@
 
 VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 
-#define TEST_LG 0
+#define TEST_LG 1
 #define TEST_WLG 1
 
 int main() {
@@ -34,10 +34,11 @@ int main() {
   circuit.design_.def_right = 10692 + 459;
   circuit.design_.def_bottom = 459;
   circuit.design_.def_top = 11127 + 12;
+  //circuit.GenMATLABTable("_result.txt");
 
 #if TEST_WLG
-  circuit.LoadFakeCellFile();
-  circuit.ReportWellShape();
+  circuit.LoadImaginaryCellFile();
+  //circuit.ReportWellShape();
 #endif
 
   std::cout << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << " s\n";
@@ -60,7 +61,7 @@ int main() {
 
   LGTetrisEx legalizer;
   legalizer.TakeOver(&gb_placer);
-  legalizer.SetRowHeight(1);
+  legalizer.SetRowHeight(12);
   legalizer.StartPlacement();
   legalizer.GenAvailSpace("as_result.txt");
   legalizer.GenMATLABTable("lg_result.txt");

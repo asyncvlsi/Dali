@@ -533,6 +533,8 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
   int def_right = 0;
   int def_bottom = 0;
   int def_top = 0;
+  double factor_x = tech_.grid_value_x_ * design_.def_distance_microns;
+  double factor_y = tech_.grid_value_y_ * design_.def_distance_microns;
   while ((def_left == 0) && (def_right == 0) && (def_bottom == 0) && (def_top == 0) && !ist.eof()) {
     getline(ist, line);
     if (line.find("DIEAREA") != std::string::npos) {
@@ -541,11 +543,10 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       //std::cout << line << "\n";
       Assert(die_area_field.size() >= 9, "Invalid UNITS declaration: expecting 9 fields");
       try {
-        def_left = (int) std::round(std::stoi(die_area_field[2]) / tech_.grid_value_x_ / design_.def_distance_microns);
-        def_bottom =
-            (int) std::round(std::stoi(die_area_field[3]) / tech_.grid_value_y_ / design_.def_distance_microns);
-        def_right = (int) std::round(std::stoi(die_area_field[6]) / tech_.grid_value_x_ / design_.def_distance_microns);
-        def_top = (int) std::round(std::stoi(die_area_field[7]) / tech_.grid_value_y_ / design_.def_distance_microns);
+        def_left = (int) std::round(std::stoi(die_area_field[2]) / factor_x);
+        def_bottom = (int) std::round(std::stoi(die_area_field[3]) / factor_y);
+        def_right = (int) std::round(std::stoi(die_area_field[6]) / factor_x);
+        def_top = (int) std::round(std::stoi(die_area_field[7]) / factor_y);
         SetBoundary(def_left, def_right, def_bottom, def_top);
       } catch (...) {
         Assert(false, "Invalid stoi conversion (DIEAREA):\n" + line);
@@ -581,10 +582,8 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         BlockOrient orient = StrToOrient(block_declare_field[9]);
         int llx = 0, lly = 0;
         try {
-          llx =
-              (int) std::round(std::stoi(block_declare_field[6]) / tech_.grid_value_x_ / design_.def_distance_microns);
-          lly =
-              (int) std::round(std::stoi(block_declare_field[7]) / tech_.grid_value_y_ / design_.def_distance_microns);
+          llx = (int) std::round(std::stoi(block_declare_field[6]) / factor_x);
+          lly = (int) std::round(std::stoi(block_declare_field[7]) / factor_y);
         } catch (...) {
           Assert(false, "Invalid stoi conversion:\n" + line);
         }
@@ -1175,7 +1174,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
   std::cout << "CELL file loading complete: " << name_of_file << "\n";
 }
 
-void Circuit::LoadFakeCellFile() {
+void Circuit::LoadImaginaryCellFile() {
   /****
    * Creates fake NP-well information for testing purposes
    * ****/
@@ -1522,7 +1521,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
     ost << "- "
         << *block.Name() << " "
         << *(block.Type()->Name()) << " + "
-        << "PLACED" << " "
+        << block.GetPlaceStatusStr() << " "
         << "( "
         << (int) (block.LLX() * factor_x) + design_.die_area_offset_x << " "
         << (int) (block.LLY() * factor_y) + design_.die_area_offset_y

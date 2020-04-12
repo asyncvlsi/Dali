@@ -16,6 +16,7 @@ class LGTetrisEx : public Placer {
   std::vector<IndexLocPair<int>> index_loc_list_;
 
   int row_height_;
+  bool row_height_set_;
 
   bool legalize_from_left_;
 
@@ -93,6 +94,7 @@ class LGTetrisEx : public Placer {
 inline void LGTetrisEx::SetRowHeight(int row_height) {
   Assert(row_height > 0, "Cannot set negative row height!");
   row_height_ = row_height;
+  row_height_set_ = true;
 }
 
 inline int LGTetrisEx::RowHeight() {

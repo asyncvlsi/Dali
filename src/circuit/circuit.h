@@ -46,7 +46,7 @@ class Circuit {
   void ReadDefFile(std::string const &name_of_file);
 
   void ReadCellFile(std::string const &name_of_file);
-  void LoadFakeCellFile();
+  void LoadImaginaryCellFile();
 
   /****API to set grid value****/
   double GetGridValueX() const; // unit in micro

@@ -11,10 +11,11 @@
 
 LGTetrisEx::LGTetrisEx()
     : Placer(),
-      row_height_(1),
+      row_height_(0),
+      row_height_set_(false),
       legalize_from_left_(true),
       cur_iter_(0),
-      max_iter_(100),
+      max_iter_(20),
       k_width_(0.001),
       k_height_(0.001),
       k_left_(1),
@@ -69,7 +70,10 @@ void LGTetrisEx::InitLegalizer() {
    * 3. initialize block contour to be the left contour
    * 4. allocate space for index_loc_list_
    * ****/
-  row_height_ = circuit_->GetIntRowHeight();
+
+  if (!row_height_set_) {
+    row_height_ = circuit_->GetIntRowHeight();
+  }
   tot_num_rows_ = (top_ - bottom_) / row_height_;
 
   std::vector<std::vector<std::vector<int>>> macro_segments;
@@ -147,7 +151,7 @@ void LGTetrisEx::InitLegalizer() {
     }
   }
 
-  //GenAvailSpace();
+  GenAvailSpace();
 
   block_contour_.resize(tot_num_rows_, left_);
 
@@ -1472,6 +1476,7 @@ bool LGTetrisEx::StartPlacement() {
 }
 
 void LGTetrisEx::GenAvailSpace(std::string const &name_of_file) {
+  std::cout << "Generating available space, dump result to: " << name_of_file << "\n";
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
   ost << RegionLeft() << "\t"
