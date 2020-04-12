@@ -767,7 +767,7 @@ void Circuit::SetLegalizerSpacing(double same_spacing, double any_spacing) {
 
 void Circuit::ReportWellShape() {
   for (auto &cluster: well_info_.cluster_list_) {
-    cluster.GetPlug()->Report();
+    //cluster.GetPlug()->Report();
     cluster.GetUnplug()->Report();
   }
 }
@@ -1157,9 +1157,9 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
               auto blk_type = GetBlockType(version_fields[1]);
               well->SetWellShape(is_n, lx, ly, ux, uy);
               if (is_n) {
-                well->SetNWellShape(0, ly, int(blk_type->Width()), int(blk_type->Height()));
+                well->SetNWellShape(0, ly, blk_type->Width(), blk_type->Height());
               } else {
-                well->SetPWellShape(0, 0, int(blk_type->Width()), uy);
+                well->SetPWellShape(0, 0, blk_type->Width(), uy);
               }
             }
           } while (line.find("END VERSION") == std::string::npos && !ist.eof());
@@ -1203,7 +1203,14 @@ void Circuit::LoadFakeCellFile() {
   SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
 
   // 3. create fake NP-well geometries for each BlockType
-
+  for (auto &pair : tech_.block_type_map) {
+    auto *blk_type = pair.second;
+    auto cluster = AddBlockTypeCluster();
+    BlockTypeWell *well = AddBlockTypeWell(cluster, blk_type, false);
+    int np_edge = blk_type->Height() / 2;
+    well->SetNWellShape(0, np_edge, blk_type->Width(), blk_type->Height());
+    well->SetPWellShape(0, 0, blk_type->Width(), np_edge);
+  }
 }
 
 void Circuit::ReportBlockList() {

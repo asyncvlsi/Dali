@@ -13,6 +13,7 @@
 VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 
 #define TEST_LG 0
+#define TEST_WLG 1
 
 int main() {
   Circuit circuit;
@@ -29,10 +30,15 @@ int main() {
   circuit.SetGridValue(0.01, 0.01);
   circuit.ReadLefFile(adaptec1_lef);
   circuit.ReadDefFile(adaptec1_def);
-  circuit.def_left = 459;
-  circuit.def_right = 10692 + 459;
-  circuit.def_bottom = 459;
-  circuit.def_top = 11127 + 12;
+  circuit.design_.def_left = 459;
+  circuit.design_.def_right = 10692 + 459;
+  circuit.design_.def_bottom = 459;
+  circuit.design_.def_top = 11127 + 12;
+
+#if TEST_WLG
+  circuit.LoadFakeCellFile();
+  circuit.ReportWellShape();
+#endif
 
   std::cout << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << " s\n";
 
@@ -54,11 +60,21 @@ int main() {
 
   LGTetrisEx legalizer;
   legalizer.TakeOver(&gb_placer);
-  legalizer.SetRowHeight(12);
+  legalizer.SetRowHeight(1);
   legalizer.StartPlacement();
   legalizer.GenAvailSpace("as_result.txt");
   legalizer.GenMATLABTable("lg_result.txt");
   //legalizer->SaveDEFFile("circuit.def", def_file);
+
+#if TEST_WLG
+  auto *well_legalizer = new StdClusterWellLegalizer;
+  well_legalizer->TakeOver(&gb_placer);
+  well_legalizer->StartPlacement();
+  well_legalizer->GenMATLABTable("sc_result.txt");
+  well_legalizer->GenMATLABWellTable("scw");
+  well_legalizer->EmitDEFWellFile("circuit", adaptec1_def);
+  delete well_legalizer;
+#endif
 
   Time = clock() - Time;
   std::cout << "Execution time " << double(Time) / CLOCKS_PER_SEC << "s.\n";
