@@ -346,7 +346,8 @@ void StdClusterWellLegalizer::AppendBlockToColBottomUp(ClusterStrip &col, Block 
     front_cluster = &(col.cluster_list_.back());
     front_cluster->blk_list_.reserve(col.max_blk_capacity_per_cluster_);
     front_cluster->blk_list_.push_back(&blk);
-    front_cluster->SetUsedSize(width + well_tap_cell_width_);
+    int num_of_tap_cell = (int) std::ceil(col.Width() / (1.5 * max_unplug_length_));
+    front_cluster->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_);
     front_cluster->UpdateWellHeightFromBottom(tap_cell_p_height_, tap_cell_n_height_);
     front_cluster->UpdateWellHeightFromBottom(p_well_height, n_well_height);
     front_cluster->SetLLY(init_y);
@@ -393,7 +394,8 @@ void StdClusterWellLegalizer::AppendBlockToColTopDown(ClusterStrip &col, Block &
     front_cluster = &(col.cluster_list_.back());
     front_cluster->blk_list_.reserve(col.max_blk_capacity_per_cluster_);
     front_cluster->blk_list_.push_back(&blk);
-    front_cluster->SetUsedSize(width + well_tap_cell_width_);
+    int num_of_tap_cell = (int) std::ceil(col.Width() / (1.5 * max_unplug_length_));
+    front_cluster->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_);
     front_cluster->UpdateWellHeightFromTop(tap_cell_p_height_, tap_cell_n_height_);
     front_cluster->UpdateWellHeightFromTop(p_well_height, n_well_height);
     front_cluster->SetURY(init_y);
@@ -438,7 +440,8 @@ void StdClusterWellLegalizer::AppendBlockToColBottomUpCompact(ClusterStrip &col,
     front_cluster = &(col.cluster_list_.back());
     front_cluster->blk_list_.reserve(col.max_blk_capacity_per_cluster_);
     front_cluster->blk_list_.push_back(&blk);
-    front_cluster->SetUsedSize(width + well_tap_cell_width_);
+    int num_of_tap_cell = (int) std::ceil(col.Width() / (1.5 * max_unplug_length_));
+    front_cluster->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_);
     front_cluster->UpdateWellHeightFromBottom(tap_cell_p_height_, tap_cell_n_height_);
     front_cluster->SetLLY(init_y);
     front_cluster->SetLLX(col.LLX());
@@ -483,7 +486,8 @@ void StdClusterWellLegalizer::AppendBlockToColTopDownCompact(ClusterStrip &col, 
     front_cluster = &(col.cluster_list_.back());
     front_cluster->blk_list_.reserve(col.max_blk_capacity_per_cluster_);
     front_cluster->blk_list_.push_back(&blk);
-    front_cluster->SetUsedSize(width + well_tap_cell_width_);
+    int num_of_tap_cell = (int) std::ceil(col.Width() / (1.5 * max_unplug_length_));
+    front_cluster->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_);
     front_cluster->UpdateWellHeightFromTop(tap_cell_p_height_, tap_cell_n_height_);
     front_cluster->UpdateWellHeightFromTop(p_well_height, n_well_height);
     front_cluster->SetURY(init_y);
