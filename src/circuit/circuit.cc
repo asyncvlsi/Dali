@@ -1239,49 +1239,21 @@ void Circuit::ReportNetMap() {
   }
 }
 
-void Circuit::UpdateNetFanoutHisto(std::vector<int> *histo_x) {
-  if (histo_x != nullptr) {
-    design_.net_fanout_histo_x_.clear();
-    int sz = histo_x->size();
-    design_.net_fanout_histo_x_.assign(sz, 0);
-    for (int i = 0; i < sz; ++i) {
-      design_.net_fanout_histo_x_.push_back((*histo_x)[i]);
-    }
-  }
-
-  int sz = int(design_.net_fanout_histo_x_.size());
-  design_.net_fanout_histo_y_.assign(sz, 0);
-  design_.net_fanout_histo_percent_.assign(sz, 0);
+void Circuit::UpdateNetHPWLHisto() {
+  int bin_count = (int) design_.net_histogram_.fanout_x_.size();
+  design_.net_histogram_.fanout_hpwl_.assign(bin_count, 0);
+  design_.net_histogram_.fanout_hpwl_per_pin_.assign(bin_count, 0);
   for (auto &net: design_.net_list) {
     int net_size = net.P();
-    design_.UpdateNetFanoutHisto(net_size);
+    double hpwl_x = net.HPWLX() * tech_.grid_value_x_;
+    double hpwl_y = net.HPWLY() * tech_.grid_value_y_;
+    design_.UpdateNetHPWLHisto(net_size, hpwl_x + hpwl_y);
   }
 
-  int tot_count = design_.net_list.size();
-  for (int i = 0; i < sz; ++i) {
-    design_.net_fanout_histo_percent_[i] = 100 * design_.net_fanout_histo_y_[i] / (double) tot_count;
+  design_.net_histogram_.tot_hpwl_ = 0;
+  for (int i = 0; i < bin_count; ++i) {
+    design_.net_histogram_.tot_hpwl_ += design_.net_histogram_.fanout_hpwl_[i];
   }
-}
-
-void Circuit::ReportNetFanoutHisto() {
-  int sz = design_.net_fanout_histo_y_.size();
-  for (int i = 0; i < sz - 1; ++i) {
-    int lo = design_.net_fanout_histo_x_[i];
-    int hi = design_.net_fanout_histo_x_[i + 1] - 1;
-    if (lo == hi) {
-      printf("%d : %d (%2.1f %%) nets\n", lo,
-             design_.net_fanout_histo_y_[i],
-             design_.net_fanout_histo_percent_[i]);
-    } else {
-      printf("%d - %d : %d (%2.1f %%) nets\n", lo, hi,
-             design_.net_fanout_histo_y_[i],
-             design_.net_fanout_histo_percent_[i]);
-    }
-  }
-  printf("%d+ : %d (%2.1f %%) nets\n",
-         design_.net_fanout_histo_x_[sz - 1],
-         design_.net_fanout_histo_y_[sz - 1],
-         design_.net_fanout_histo_percent_[sz - 1]);
 }
 
 void Circuit::ReportBriefSummary() {
@@ -1322,12 +1294,80 @@ double Circuit::HPWLY() {
   return hpwly * GetGridValueY();
 }
 
-double Circuit::HPWL() {
-  return HPWLX() + HPWLY();
+void Circuit::ReportHPWLHistogramLinear(int bin_num) {
+  std::vector<double> hpwl_list;
+  double min_hpwl = DBL_MAX;
+  double max_hpwl = DBL_MIN;
+  hpwl_list.reserve(design_.net_list.size());
+  for (auto &net:design_.net_list) {
+    double tmp_hpwl = net.HPWLX() * tech_.grid_value_x_ + net.HPWLY() * tech_.grid_value_y_;
+    hpwl_list.push_back(tmp_hpwl);
+    min_hpwl = std::min(min_hpwl, tmp_hpwl);
+    max_hpwl = std::max(max_hpwl, tmp_hpwl);
+  }
+
+  double step = (max_hpwl - min_hpwl) / bin_num;
+  std::vector<int> count(bin_num, 0);
+  for (auto &hpwl: hpwl_list) {
+    int tmp_num = (int) std::floor((hpwl - min_hpwl) / step);
+    if (tmp_num == bin_num) {
+      tmp_num = bin_num - 1;
+    }
+    ++count[tmp_num];
+  }
+
+  int tot_count = design_.net_list.size();
+  printf("===================================================================\n");
+  printf("     HPWL interval       Count\n");
+  for (int i = 0; i < bin_num; ++i) {
+    double lo = min_hpwl + step * i;
+    double hi = lo + step;
+    printf("  [%.1e, %.1e) %8d  ", lo, hi, count[i]);
+    int percent = std::ceil(50 * count[i] / (double) tot_count);
+    for (int j=0; j<percent; ++j) {
+      printf("+");
+    }
+    printf("\n");
+  }
+  printf("===================================================================\n");
 }
 
-void Circuit::ReportHPWL() {
-  std::cout << "  Current HPWL: " << std::scientific << HPWLX() + HPWLY() << " um\n";
+void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
+  std::vector<double> hpwl_list;
+  double min_hpwl = DBL_MAX;
+  double max_hpwl = DBL_MIN;
+  hpwl_list.reserve(design_.net_list.size());
+  for (auto &net:design_.net_list) {
+    double tmp_hpwl = std::log10(net.HPWLX() * tech_.grid_value_x_ + net.HPWLY() * tech_.grid_value_y_);
+    hpwl_list.push_back(tmp_hpwl);
+    min_hpwl = std::min(min_hpwl, tmp_hpwl);
+    max_hpwl = std::max(max_hpwl, tmp_hpwl);
+  }
+
+  double step = (max_hpwl - min_hpwl) / bin_num;
+  std::vector<int> count(bin_num, 0);
+  for (auto &hpwl: hpwl_list) {
+    int tmp_num = (int) std::floor((hpwl - min_hpwl) / step);
+    if (tmp_num == bin_num) {
+      tmp_num = bin_num - 1;
+    }
+    ++count[tmp_num];
+  }
+
+  int tot_count = design_.net_list.size();
+  printf("===================================================================\n");
+  printf("     HPWL interval       Count\n");
+  for (int i = 0; i < bin_num; ++i) {
+    double lo = std::pow(10, min_hpwl + step * i);
+    double hi = std::pow(10, min_hpwl + step * (i + 1));
+    printf("  [%.1e, %.1e) %8d  ", lo, hi, count[i]);
+    int percent = std::ceil(50 * count[i] / (double) tot_count);
+    for (int j=0; j<percent; ++j) {
+      printf("+");
+    }
+    printf("\n");
+  }
+  printf("===================================================================\n");
 }
 
 double Circuit::HPWLCtoCX() {

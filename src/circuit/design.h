@@ -14,6 +14,16 @@
 #include "iopin.h"
 #include "net.h"
 
+struct NetHistogram {
+  std::vector<int> fanout_x_{2, 3, 4, 20, 40, 80, 160};
+  std::vector<int> fanout_y_;
+  std::vector<double> fanout_percent_;
+  std::vector<double> fanout_hpwl_;
+  std::vector<double> fanout_hpwl_per_pin_; // (HPWL of a net)/(size of a net)
+  int tot_net_count_;
+  double tot_hpwl_;
+};
+
 class Design {
  public:
   /****def distance microns****/
@@ -43,9 +53,7 @@ class Design {
   double normal_signal_weight = 1;
   std::vector<Net> net_list;
   std::map<std::string, int> net_name_map;
-  std::vector<int> net_fanout_histo_x_{2,3,4,20,40,80,160};
-  std::vector<int> net_fanout_histo_y_;
-  std::vector<double> net_fanout_histo_percent_;
+  NetHistogram net_histogram_;
 
   /****statistical data of the circuit****/
   long int tot_width_ = 0;
@@ -60,7 +68,10 @@ class Design {
   int blk_min_height_ = INT_MAX;
   int blk_max_height_ = INT_MIN;
 
-  void UpdateNetFanoutHisto(int net_size);
+  void UpdateFanoutHisto(int net_size);
+  void InitNetFanoutHisto(std::vector<int> *histo_x = nullptr);
+  void UpdateNetHPWLHisto(int net_size, double hpwl);
+  void ReportNetFanoutHisto();
 };
 
 #endif //DALI_SRC_CIRCUIT_DESIGN_H_

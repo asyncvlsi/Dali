@@ -146,8 +146,9 @@ class Circuit {
   Net *AddNet(std::string &net_name, double weight = 1);
   void ReportNetList();
   void ReportNetMap();
-  void UpdateNetFanoutHisto(std::vector<int> *histo_x = nullptr);
-  void ReportNetFanoutHisto();
+  void InitNetFanoutHisto(std::vector<int> *histo_x = nullptr);
+  void UpdateNetHPWLHisto();
+  void UpdateReportNetFanoutHisto();
 
   /****Utility functions related to netlist management****/
   void NetListPopBack();
@@ -202,6 +203,8 @@ class Circuit {
   double HPWLY();
   double HPWL();
   void ReportHPWL();
+  void ReportHPWLHistogramLinear(int bin_num = 10);
+  void ReportHPWLHistogramLogarithm(int bin_num = 10);
   // calculating HPWL from the center of cells
   double HPWLCtoCX();
   double HPWLCtoCY();
@@ -289,6 +292,16 @@ inline std::vector<Net> *Circuit::GetNetList() {
   return &(design_.net_list);
 }
 
+inline void Circuit::InitNetFanoutHisto(std::vector<int> *histo_x) {
+  design_.InitNetFanoutHisto(histo_x);
+  design_.ReportNetFanoutHisto();
+}
+
+inline void Circuit::UpdateReportNetFanoutHisto() {
+  UpdateNetHPWLHisto();
+  design_.ReportNetFanoutHisto();
+}
+
 inline int Circuit::MinBlkWidth() const {
   return design_.blk_min_width_;
 }
@@ -351,6 +364,14 @@ inline double Circuit::WhiteSpaceUsage() const {
 
 inline Tech *Circuit::GetTech() {
   return &tech_;
+}
+
+inline double Circuit::HPWL() {
+  return HPWLX() + HPWLY();
+}
+
+inline void Circuit::ReportHPWL() {
+  printf("  Current HPWL: %e um\n", HPWL());
 }
 
 #endif //DALI_CIRCUIT_HPP

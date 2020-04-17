@@ -35,8 +35,7 @@ int main() {
   odb_read_lef(db, lef_file_name.c_str());
   odb_read_def(db, defFileVec);
   circuit.InitializeFromDB(db);
-  circuit.UpdateNetFanoutHisto();
-  circuit.ReportNetFanoutHisto();
+  circuit.InitNetFanoutHisto();
 #else
   circuit.ReadLefFile(lef_file_name);
   circuit.ReadDefFile(def_file_name);
@@ -58,6 +57,7 @@ int main() {
   //gb_placer->SaveDEFFile("benchmark_1K_dali.def", def_file_name);
   gb_placer->GenMATLABTable("gb_result.txt");
   //gb_placer->GenMATLABWellTable("gb_result");
+  circuit.UpdateReportNetFanoutHisto();
 
   /*Placer *d_placer = new MDPlacer;
   d_placer->TakeOver(gb_placer);
@@ -69,6 +69,9 @@ int main() {
   legalizer->StartPlacement();
   legalizer->GenMATLABTable("lg_result.txt");
   //legalizer->SaveDEFFile("circuit.def", def_file);
+  circuit.UpdateReportNetFanoutHisto();
+  circuit.ReportHPWLHistogramLinear();
+  circuit.ReportHPWLHistogramLogarithm();
 
 #if TEST_PO
   Placer *post_optimizer = new PLOSlide;
