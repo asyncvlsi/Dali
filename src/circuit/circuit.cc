@@ -1318,6 +1318,7 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
 
   int tot_count = design_.net_list.size();
   printf("===================================================================\n");
+  printf("Linear scale bins\n");
   printf("     HPWL interval       Count\n");
   for (int i = 0; i < bin_num; ++i) {
     double lo = min_hpwl + step * i;
@@ -1356,6 +1357,7 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
 
   int tot_count = design_.net_list.size();
   printf("===================================================================\n");
+  printf("Log scale bins\n");
   printf("     HPWL interval       Count\n");
   for (int i = 0; i < bin_num; ++i) {
     double lo = std::pow(10, min_hpwl + step * i);
