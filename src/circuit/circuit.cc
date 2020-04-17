@@ -1239,6 +1239,51 @@ void Circuit::ReportNetMap() {
   }
 }
 
+void Circuit::UpdateNetFanoutHisto(std::vector<int> *histo_x) {
+  if (histo_x != nullptr) {
+    design_.net_fanout_histo_x_.clear();
+    int sz = histo_x->size();
+    design_.net_fanout_histo_x_.assign(sz, 0);
+    for (int i = 0; i < sz; ++i) {
+      design_.net_fanout_histo_x_.push_back((*histo_x)[i]);
+    }
+  }
+
+  int sz = int(design_.net_fanout_histo_x_.size());
+  design_.net_fanout_histo_y_.assign(sz, 0);
+  design_.net_fanout_histo_percent_.assign(sz, 0);
+  for (auto &net: design_.net_list) {
+    int net_size = net.P();
+    design_.UpdateNetFanoutHisto(net_size);
+  }
+
+  int tot_count = design_.net_list.size();
+  for (int i = 0; i < sz; ++i) {
+    design_.net_fanout_histo_percent_[i] = 100 * design_.net_fanout_histo_y_[i] / (double) tot_count;
+  }
+}
+
+void Circuit::ReportNetFanoutHisto() {
+  int sz = design_.net_fanout_histo_y_.size();
+  for (int i = 0; i < sz - 1; ++i) {
+    int lo = design_.net_fanout_histo_x_[i];
+    int hi = design_.net_fanout_histo_x_[i + 1] - 1;
+    if (lo == hi) {
+      printf("%d : %d (%2.1f %%) nets\n", lo,
+             design_.net_fanout_histo_y_[i],
+             design_.net_fanout_histo_percent_[i]);
+    } else {
+      printf("%d - %d : %d (%2.1f %%) nets\n", lo, hi,
+             design_.net_fanout_histo_y_[i],
+             design_.net_fanout_histo_percent_[i]);
+    }
+  }
+  printf("%d+ : %d (%2.1f %%) nets\n",
+         design_.net_fanout_histo_x_[sz - 1],
+         design_.net_fanout_histo_y_[sz - 1],
+         design_.net_fanout_histo_percent_[sz - 1]);
+}
+
 void Circuit::ReportBriefSummary() {
   if (globalVerboseLevel >= LOG_INFO) {
     std::cout << "  movable blocks: " << TotMovableBlockNum() << "\n"

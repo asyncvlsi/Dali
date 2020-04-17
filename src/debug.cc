@@ -35,6 +35,8 @@ int main() {
   odb_read_lef(db, lef_file_name.c_str());
   odb_read_def(db, defFileVec);
   circuit.InitializeFromDB(db);
+  circuit.UpdateNetFanoutHisto();
+  circuit.ReportNetFanoutHisto();
 #else
   circuit.ReadLefFile(lef_file_name);
   circuit.ReadDefFile(def_file_name);

@@ -43,6 +43,9 @@ class Design {
   double normal_signal_weight = 1;
   std::vector<Net> net_list;
   std::map<std::string, int> net_name_map;
+  std::vector<int> net_fanout_histo_x_{2,3,4,20,40,80,160};
+  std::vector<int> net_fanout_histo_y_;
+  std::vector<double> net_fanout_histo_percent_;
 
   /****statistical data of the circuit****/
   long int tot_width_ = 0;
@@ -56,6 +59,8 @@ class Design {
   int blk_max_width_ = INT_MIN;
   int blk_min_height_ = INT_MAX;
   int blk_max_height_ = INT_MIN;
+
+  void UpdateNetFanoutHisto(int net_size);
 };
 
 #endif //DALI_SRC_CIRCUIT_DESIGN_H_

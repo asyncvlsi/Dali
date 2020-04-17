@@ -146,6 +146,8 @@ class Circuit {
   Net *AddNet(std::string &net_name, double weight = 1);
   void ReportNetList();
   void ReportNetMap();
+  void UpdateNetFanoutHisto(std::vector<int> *histo_x = nullptr);
+  void ReportNetFanoutHisto();
 
   /****Utility functions related to netlist management****/
   void NetListPopBack();
