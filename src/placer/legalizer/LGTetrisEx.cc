@@ -151,7 +151,7 @@ void LGTetrisEx::InitLegalizer() {
     }
   }
 
-  GenAvailSpace();
+  //GenAvailSpace();
 
   block_contour_.resize(tot_num_rows_, left_);
 

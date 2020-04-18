@@ -16,6 +16,8 @@
 
 #include "global.h"
 
+void PrintSoftwareStatement();
+
 template<class T>
 struct Value2D {
   T x;

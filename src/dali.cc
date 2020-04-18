@@ -20,6 +20,8 @@ VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 void ReportUsage();
 
 int main(int argc, char *argv[]) {
+  PrintSoftwareStatement();
+
   using std::chrono::system_clock;
   system_clock::time_point today = system_clock::now();
   std::time_t tt = system_clock::to_time_t(today);
@@ -150,9 +152,13 @@ int main(int argc, char *argv[]) {
   file_wall_time = get_wall_time() - file_wall_time;
   file_cpu_time = get_cpu_time() - file_cpu_time;
   std::cout << "File loading complete\n";
-  printf("(wall time: %.4fs, cpu time: %.4fs)\n", file_wall_time, file_cpu_time);
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("(wall time: %.4fs, cpu time: %.4fs)\n", file_wall_time, file_cpu_time);
+  }
   circuit.ReportBriefSummary();
-  circuit.ReportHPWL();
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    circuit.ReportHPWL();
+  }
 
   double default_density = 0.7;
   if (target_density == -1) {
@@ -162,7 +168,6 @@ int main(int argc, char *argv[]) {
     std::cout << "Cannot set target density smaller than average white space utility!\n";
     printf("  Average white space utility: %.4f\n", circuit.WhiteSpaceUsage());
     printf("  Target density: %.4f\n", target_density);
-
     return 1;
   }
   if (globalVerboseLevel >= LOG_CRITICAL) {
@@ -217,6 +222,10 @@ int main(int argc, char *argv[]) {
     delete gb_placer;
     delete legalizer;
   }
+  circuit.InitNetFanoutHisto();
+  circuit.UpdateReportNetFanoutHisto();
+  circuit.ReportHPWLHistogramLinear();
+  circuit.ReportHPWLHistogramLogarithm();
 
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;
@@ -236,7 +245,7 @@ void ReportUsage() {
             << "  -g/-grid    grid_value_x grid_value_y (optional, default metal1 and metal2 pitch values)\n"
             << "  -d/-density density (optional, value interval (0,1], default max(space_utility, 0.7))\n"
             << "  -n          (optional, if this flag is present, then use naive LEF/DEF parser)\n"
-            << "  -v          verbosity_level (optional, 0-5, default 0)\n"
+            << "  -v          verbosity_level (optional, 0-5, default 1)\n"
             << "(flag order does not matter)"
             << "\033[0m\n";
 }

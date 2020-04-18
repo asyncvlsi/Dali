@@ -92,6 +92,8 @@ void Design::UpdateNetHPWLHisto(int net_size, double hpwl) {
 
 void Design::ReportNetFanoutHisto() {
   int sz = net_histogram_.fanout_y_.size();
+  printf("\n");
+  printf("                           Net histogram\n");
   printf("===================================================================\n");
   printf("   Net         Count    Percent/%%      HPWL(um)      HPWL/netsize\n");
   for (int i = 0; i < sz - 1; ++i) {
@@ -104,7 +106,7 @@ void Design::ReportNetFanoutHisto() {
              net_histogram_.fanout_hpwl_[i],
              net_histogram_.fanout_hpwl_per_pin_[i]);
     } else {
-      printf("%4d -%4d %8d       %4.1f         %.2e        %.2e\n", lo, hi,
+      printf("%4d-%-4d  %8d       %4.1f         %.2e        %.2e\n", lo, hi,
              net_histogram_.fanout_y_[i],
              net_histogram_.fanout_percent_[i],
              net_histogram_.fanout_hpwl_[i],
@@ -118,4 +120,5 @@ void Design::ReportNetFanoutHisto() {
          net_histogram_.fanout_hpwl_[sz - 1],
          net_histogram_.fanout_hpwl_per_pin_[sz - 1]);
   printf("===================================================================\n");
+  printf("\n");
 }

@@ -153,7 +153,7 @@ class Circuit {
   /****Utility functions related to netlist management****/
   void NetListPopBack();
 
-  void ReportBriefSummary();
+  void ReportBriefSummary() const;
 
   /****API to add N/P-well technology information
    * These are for CELL file
@@ -294,7 +294,6 @@ inline std::vector<Net> *Circuit::GetNetList() {
 
 inline void Circuit::InitNetFanoutHisto(std::vector<int> *histo_x) {
   design_.InitNetFanoutHisto(histo_x);
-  design_.ReportNetFanoutHisto();
 }
 
 inline void Circuit::UpdateReportNetFanoutHisto() {

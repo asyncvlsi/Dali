@@ -244,10 +244,12 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
   max_unplug_length_ = (int) std::floor(n_well_layer->MaxPlugDist() / circuit_->GetGridValueX());
   well_tap_cell_width_ = tech->WellTapCell()->Width();
 
-  printf("Well max plug distance: %2.2e um, %d \n", n_well_layer->MaxPlugDist(), max_unplug_length_);
-  printf("GridValueX: %2.2e um\n", circuit_->GetGridValueX());
-  printf("Well spacing: %2.2e um, %d\n", n_well_layer->Spacing(), well_spacing_);
-  printf("Well tap cell width: %d\n", well_tap_cell_width_);
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("Well max plug distance: %2.2e um, %d \n", n_well_layer->MaxPlugDist(), max_unplug_length_);
+    printf("GridValueX: %2.2e um\n", circuit_->GetGridValueX());
+    printf("Well spacing: %2.2e um, %d\n", n_well_layer->Spacing(), well_spacing_);
+    printf("Well tap cell width: %d\n", well_tap_cell_width_);
+  }
 
   int max_cell_width = 0;
   for (auto &blk: *BlockList()) {
@@ -255,16 +257,22 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
       max_cell_width = std::max(max_cell_width, blk.Width());
     }
   }
-  printf("Max cell width: %d\n", max_cell_width);
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("Max cell width: %d\n", max_cell_width);
+  }
 
   if (cluster_width <= 0) {
-    std::cout << "Using default cluster width: 3*max_unplug_length_\n";
+    if (globalVerboseLevel >= LOG_CRITICAL) {
+      std::cout << "Using default cluster width: 3*max_unplug_length_\n";
+    }
     strip_width_ = max_unplug_length_ * 3;
   } else {
     if (cluster_width < max_unplug_length_) {
-      std::cout << "WARNING:\n"
-                << "  Specified cluster width is smaller than max_unplug_length_, "
-                << "  space is wasted, may not be able to successfully complete well legalization\n";
+      if (globalVerboseLevel >= LOG_WARNING) {
+        std::cout << "WARNING:\n"
+                  << "  Specified cluster width is smaller than max_unplug_length_, "
+                  << "  space is wasted, may not be able to successfully complete well legalization\n";
+      }
     }
     strip_width_ = cluster_width;
   }
@@ -273,7 +281,9 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
     strip_width_ = RegionWidth();
   }
   tot_strip_num_ = std::ceil(RegionWidth() / (double) strip_width_);
-  printf("Total number of cluster columns: %d\n", tot_strip_num_);
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("Total number of cluster columns: %d\n", tot_strip_num_);
+  }
 
   //std::cout << RegionHeight() << "  " << circuit_->MinBlkHeight() << "\n";
   int max_clusters_per_col = RegionHeight() / circuit_->MinBlkHeight();
@@ -290,7 +300,9 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
   }
   //strip_list_.back().width_ = RegionRight() - strip_list_.back().lx_;
   //cluster_list_.reserve(tot_strip_num_ * max_clusters_per_col);
-  printf("Maximum possible number of clusters in a column: %d\n", max_clusters_per_col);
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("Maximum possible number of clusters in a column: %d\n", max_clusters_per_col);
+  }
 
   well_tap_cell_ = (circuit_->tech_.well_tap_cell_);
   auto *tap_cell_well = well_tap_cell_->GetWell();
@@ -1025,6 +1037,10 @@ void StdClusterWellLegalizer::UpdateClusterOrient() {
 }
 
 void StdClusterWellLegalizer::InsertWellTap() {
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "Inserting well tap cell\n";
+  }
+
   auto &tap_cell_list = circuit_->design_.well_tap_list;
   tap_cell_list.clear();
   int tot_cluster_count = 0;
@@ -1035,9 +1051,11 @@ void StdClusterWellLegalizer::InsertWellTap() {
   circuit_->design_.tap_name_map.clear();
 
   int counter = 0;
+  int tot_tap_cell_num = 0;
   for (auto &col: strip_list_) {
     for (auto &cluster: col.cluster_list_) {
       int num_of_tap_cell = (int) std::ceil(col.Width() / (1.5 * max_unplug_length_));
+      tot_tap_cell_num += num_of_tap_cell;
       int step = cluster.Width() / (num_of_tap_cell + 1);
       int tap_cell_loc = cluster.LLX() + step;
       for (int i = 0; i < num_of_tap_cell; ++i) {
@@ -1054,6 +1072,9 @@ void StdClusterWellLegalizer::InsertWellTap() {
       }
       cluster.LegalizeLooseX();
     }
+  }
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("Inserting complete: %d well tap cell created\n", tot_tap_cell_num);
   }
 }
 
@@ -1138,6 +1159,7 @@ bool StdClusterWellLegalizer::StartPlacement() {
   }
 
   InsertWellTap();
+  ReportHPWL(LOG_CRITICAL);
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
     if (is_success) {
@@ -1150,7 +1172,6 @@ bool StdClusterWellLegalizer::StartPlacement() {
                 << "\033[0m";
     }
   }
-  ReportHPWL(LOG_CRITICAL);
   /****<----****/
 
   wall_time = get_wall_time() - wall_time;
@@ -1268,6 +1289,9 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, s
   double factor_y = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_y_;
   // emit rect file
   std::string rect_file_name = name_of_file + "_well.rect";
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("Writing N/P-well rect file '%s'\n", rect_file_name.c_str());
+  }
   std::ofstream ost(rect_file_name.c_str());
   Assert(ost.is_open(), "Cannot open output file: " + rect_file_name);
 
@@ -1312,9 +1336,15 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, s
     }
   }
   ost.close();
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("N/P-well rect file '%s' is written\n", rect_file_name.c_str());
+  }
 
   // emit cluster file
   std::string cluster_file_name = name_of_file + "_router.cluster";
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("Writing cluster rect file '%s' for router\n", rect_file_name.c_str());
+  }
   std::ofstream ost1(cluster_file_name.c_str());
   Assert(ost1.is_open(), "Cannot open output file: " + cluster_file_name);
 
@@ -1341,6 +1371,9 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, s
     ost1 << "END " << column_name << "\n\n";
   }
   ost1.close();
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("Cluster rect file '%s' for router is written\n", rect_file_name.c_str());
+  }
 }
 
 void StdClusterWellLegalizer::GenAvailSpace(std::string const &name_of_file) {

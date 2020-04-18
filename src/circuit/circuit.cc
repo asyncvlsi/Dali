@@ -138,9 +138,11 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
   design_.iopin_list.reserve(pins_count);
   design_.net_list.reserve(nets_count);
 
-  std::cout << "components count: " << components_count << "\n"
-            << "pin count:        " << pins_count << "\n"
-            << "nets count:       " << nets_count << "\n";
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "components count: " << components_count << "\n"
+              << "pin count:        " << pins_count << "\n"
+              << "nets count:       " << nets_count << "\n";
+  }
 
   //std::cout << db->getChip()->getBlock()->getName() << "\n";
   //std::cout << db->getChip()->getBlock()->getBTerms().size() << "\n";
@@ -1256,7 +1258,7 @@ void Circuit::UpdateNetHPWLHisto() {
   }
 }
 
-void Circuit::ReportBriefSummary() {
+void Circuit::ReportBriefSummary() const {
   if (globalVerboseLevel >= LOG_INFO) {
     std::cout << "  movable blocks: " << TotMovableBlockNum() << "\n"
               << "  blocks: " << TotBlkNum() << "\n"
@@ -1317,20 +1319,22 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
   }
 
   int tot_count = design_.net_list.size();
+  printf("\n");
+  printf("                  HPWL histogram (linear scale bins)\n");
   printf("===================================================================\n");
-  printf("Linear scale bins\n");
-  printf("     HPWL interval       Count\n");
+  printf("   HPWL(um) interval     Count\n");
   for (int i = 0; i < bin_num; ++i) {
     double lo = min_hpwl + step * i;
     double hi = lo + step;
     printf("  [%.1e, %.1e) %8d  ", lo, hi, count[i]);
     int percent = std::ceil(50 * count[i] / (double) tot_count);
-    for (int j=0; j<percent; ++j) {
-      printf("+");
+    for (int j = 0; j < percent; ++j) {
+      printf("*");
     }
     printf("\n");
   }
   printf("===================================================================\n");
+  printf("\n");
 }
 
 void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
@@ -1356,20 +1360,22 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
   }
 
   int tot_count = design_.net_list.size();
+  printf("\n");
+  printf("                  HPWL histogram (log scale bins)\n");
   printf("===================================================================\n");
-  printf("Log scale bins\n");
-  printf("     HPWL interval       Count\n");
+  printf("   HPWL(um) interval     Count\n");
   for (int i = 0; i < bin_num; ++i) {
     double lo = std::pow(10, min_hpwl + step * i);
     double hi = std::pow(10, min_hpwl + step * (i + 1));
     printf("  [%.1e, %.1e) %8d  ", lo, hi, count[i]);
     int percent = std::ceil(50 * count[i] / (double) tot_count);
-    for (int j=0; j<percent; ++j) {
-      printf("+");
+    for (int j = 0; j < percent; ++j) {
+      printf("*");
     }
     printf("\n");
   }
   printf("===================================================================\n");
+  printf("\n");
 }
 
 double Circuit::HPWLCtoCX() {
@@ -1584,6 +1590,9 @@ void Circuit::GenMATLABWellTable(std::string const &name_of_file) {
 }
 
 void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &def_file_name) {
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("Writing DEF file '%s'\n", name_of_file.c_str());
+  }
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file " + name_of_file);
 
@@ -1655,6 +1664,10 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
    */
   ost.close();
   ist.close();
+
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("DEF file '%s' is written\n", name_of_file.c_str());
+  }
 }
 
 void Circuit::SaveBookshelfNode(std::string const &name_of_file) {

@@ -581,7 +581,9 @@ void GPSimPL::InitGridBins() {
   grid_bin_width = grid_bin_height;
   grid_cnt_y = std::ceil(double(RegionTop() - RegionBottom()) / grid_bin_height);
   grid_cnt_x = std::ceil(double(RegionRight() - RegionLeft()) / grid_bin_width);
-  std::cout << "Global placement bin width, height: " << grid_bin_width << "  " << grid_bin_height << "\n";
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "Global placement bin width, height: " << grid_bin_width << "  " << grid_bin_height << "\n";
+  }
 
   std::vector<GridBin> temp_grid_bin_column(grid_cnt_y);
   grid_bin_matrix.resize(grid_cnt_x, temp_grid_bin_column);
