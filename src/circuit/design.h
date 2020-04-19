@@ -24,19 +24,18 @@ struct NetHistogram {
   double tot_hpwl_;
 };
 
-class Design {
- public:
+struct Design {
   /****def distance microns****/
   int def_distance_microns = 0;
 
   /****die area****/
-  int def_left = 0; // unit is grid value x
-  int def_right = 0; // unit is grid value x
-  int def_bottom = 0; // unit is grid value y
-  int def_top = 0; // unit is grid value y
+  int region_left_ = 0; // unit is grid value x
+  int region_right_ = 0; // unit is grid value x
+  int region_bottom_ = 0; // unit is grid value y
+  int region_top_ = 0; // unit is grid value y
 
-  int die_area_offset_x = 0; // unit is manufacturing grid
-  int die_area_offset_y = 0; // unit is manufacturing grid
+  int die_area_offset_x_ = 0; // unit is manufacturing grid
+  int die_area_offset_y_ = 0; // unit is manufacturing grid
 
   /****list of instances****/
   std::vector<Block> block_list;

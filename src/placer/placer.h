@@ -51,12 +51,12 @@ class Placer {
   void SetBoundaryDef();
   void ReportBoundaries();
 
-  int RegionLeft();
-  int RegionRight();
-  int RegionBottom();
-  int RegionTop();
-  int RegionWidth();
-  int RegionHeight();
+  int RegionLeft() const;
+  int RegionRight() const;
+  int RegionBottom() const;
+  int RegionTop() const;
+  int RegionWidth() const;
+  int RegionHeight() const;
 
   void UpdateAspectRatio();
   void NetSortBlkPin();
@@ -118,27 +118,27 @@ inline void Placer::SetSpaceBlockRatio(double ratio) {
   filling_rate_ = 1. / ratio;
 }
 
-inline int Placer::RegionLeft() {
+inline int Placer::RegionLeft() const {
   return left_;
 }
 
-inline int Placer::RegionRight() {
+inline int Placer::RegionRight() const {
   return right_;
 }
 
-inline int Placer::RegionBottom() {
+inline int Placer::RegionBottom() const {
   return bottom_;
 }
 
-inline int Placer::RegionTop() {
+inline int Placer::RegionTop() const {
   return top_;
 }
 
-inline int Placer::RegionWidth() {
+inline int Placer::RegionWidth() const {
   return right_ - left_;
 }
 
-inline int Placer::RegionHeight() {
+inline int Placer::RegionHeight() const {
   return top_ - bottom_;
 }
 

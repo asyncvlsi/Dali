@@ -221,8 +221,8 @@ void LGTetrisEx::UseSpaceLeft(Block const &block) {
   /*if (block.URY() > RegionTop()) {
     std::cout << "  ly:     " << int(block.LLY()) << "\n"
               << "  height: " << block.Height() << "\n"
-              << "  top:    " << RegionTop() << "\n"
-              << "  bottom: " << RegionBottom() << "\n"
+              << "  top:    " << RegionURY() << "\n"
+              << "  bottom: " << RegionLLY() << "\n"
               << "  name:   " << *block.Name() << "\n"
               << "  start_r:" << start_row << "\n"
               << "  end_r:  " << end_row << "\n"

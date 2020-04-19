@@ -82,10 +82,10 @@ class Circuit {
   /****API for DIE AREA
    * These are DIEAREA section in DEF
    * ****/
-  int Left() const;
-  int Right() const;
-  int Bottom() const;
-  int Top() const;
+  int RegionLLX() const;
+  int RegionURX() const;
+  int RegionLLY() const;
+  int RegionURY() const;
   void SetBoundary(int left, int right, int bottom, int top); // unit in grid value
   void SetDieArea(int lower_x, int upper_x, int lower_y, int upper_y); // unit in manufacturing grid
 
@@ -271,20 +271,20 @@ inline std::unordered_map<std::string, BlockType *> *Circuit::BlockTypeMap() {
   return &tech_.block_type_map;
 }
 
-inline int Circuit::Left() const {
-  return design_.def_left;
+inline int Circuit::RegionLLX() const {
+  return design_.region_left_;
 }
 
-inline int Circuit::Right() const {
-  return design_.def_right;
+inline int Circuit::RegionURX() const {
+  return design_.region_right_;
 }
 
-inline int Circuit::Bottom() const {
-  return design_.def_bottom;
+inline int Circuit::RegionLLY() const {
+  return design_.region_bottom_;
 }
 
-inline int Circuit::Top() const {
-  return design_.def_top;
+inline int Circuit::RegionURY() const {
+  return design_.region_top_;
 }
 
 inline std::vector<Block> *Circuit::GetBlockList() {
@@ -365,7 +365,7 @@ inline double Circuit::AveMovBlkArea() const {
 }
 
 inline double Circuit::WhiteSpaceUsage() const {
-  return double(TotBlkArea()) / (Right() - Left()) / (Top() - Bottom());
+  return double(TotBlkArea()) / (RegionURX() - RegionLLX()) / (RegionURY() - RegionLLY());
 }
 
 inline Tech *Circuit::GetTech() {

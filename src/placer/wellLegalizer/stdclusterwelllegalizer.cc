@@ -303,7 +303,7 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
     strip_list_[i].max_blk_capacity_per_cluster_ = strip_list_[i].Width() / circuit_->MinBlkWidth();
     strip_list_[i].cluster_list_.reserve(max_clusters_per_col);
   }
-  //strip_list_.back().width_ = RegionRight() - strip_list_.back().lx_;
+  //strip_list_.back().width_ = RegionURX() - strip_list_.back().lx_;
   //cluster_list_.reserve(tot_strip_num_ * max_clusters_per_col);
   if (globalVerboseLevel >= LOG_CRITICAL) {
     printf("Maximum possible number of clusters in a column: %d\n", max_clusters_per_col);
@@ -567,7 +567,7 @@ bool StdClusterWellLegalizer::StripLegalizationTopDown(ClusterStrip &col) {
   }
 
   /*std::cout << "Reverse clustering: ";
-  if (col.contour_ >= RegionBottom()) {
+  if (col.contour_ >= RegionLLY()) {
     std::cout << "success\n";
   } else {
     std::cout << "fail\n";
@@ -616,7 +616,7 @@ bool StdClusterWellLegalizer::StripLegalizationTopDownCompact(ClusterStrip &col)
   }
 
   /*std::cout << "Reverse clustering: ";
-  if (col.contour_ >= RegionBottom()) {
+  if (col.contour_ >= RegionLLY()) {
     std::cout << "success\n";
   } else {
     std::cout << "fail\n";
@@ -1333,10 +1333,10 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, s
       } else {
         ost << "nwell Vdd ";
       }
-      ost << (int) (lx * factor_x) + circuit_->design_.die_area_offset_x << " "
-          << (int) (ly * factor_y) + circuit_->design_.die_area_offset_y << " "
-          << (int) (ux * factor_x) + circuit_->design_.die_area_offset_x << " "
-          << (int) (uy * factor_y) + circuit_->design_.die_area_offset_y << "\n";
+      ost << (int) (lx * factor_x) + circuit_->design_.die_area_offset_x_ << " "
+          << (int) (ly * factor_y) + circuit_->design_.die_area_offset_y_ << " "
+          << (int) (ux * factor_x) + circuit_->design_.die_area_offset_x_ << " "
+          << (int) (uy * factor_y) + circuit_->design_.die_area_offset_y_ << "\n";
       is_p_well_rect = !is_p_well_rect;
     }
   }
@@ -1359,8 +1359,8 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, s
 
     auto &col = strip_list_[i];
     ost1 << "  "
-         << (int) (col.LLX() * factor_x) + circuit_->design_.die_area_offset_x << "  "
-         << (int) (col.URX() * factor_x) + circuit_->design_.die_area_offset_x << "  ";
+         << (int) (col.LLX() * factor_x) + circuit_->design_.die_area_offset_x_ << "  "
+         << (int) (col.URX() * factor_x) + circuit_->design_.die_area_offset_x_ << "  ";
     if (col.is_first_row_orient_N_) {
       ost1 << "GND\n";
     } else {
@@ -1369,8 +1369,8 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, s
 
     for (auto &cluster: col.cluster_list_) {
       ost1 << "  "
-           << (int) (cluster.LLY() * factor_y) + circuit_->design_.die_area_offset_y << "  "
-           << (int) (cluster.URY() * factor_y) + circuit_->design_.die_area_offset_y << "\n";
+           << (int) (cluster.LLY() * factor_y) + circuit_->design_.die_area_offset_y_ << "  "
+           << (int) (cluster.URY() * factor_y) + circuit_->design_.die_area_offset_y_ << "\n";
     }
 
     ost1 << "END " << column_name << "\n\n";

@@ -91,10 +91,10 @@ void Placer::SetBoundary(int left, int right, int bottom, int top) {
 }
 
 void Placer::SetBoundaryDef() {
-  left_ = GetCircuit()->Left();
-  right_ = GetCircuit()->Right();
-  bottom_ = GetCircuit()->Bottom();
-  top_ = GetCircuit()->Top();
+  left_ = GetCircuit()->RegionLLX();
+  right_ = GetCircuit()->RegionURX();
+  bottom_ = GetCircuit()->RegionLLY();
+  top_ = GetCircuit()->RegionURY();
   Assert(IsBoundaryProper(), "Invalid boundary setting");
 }
 

@@ -30,10 +30,10 @@ int main() {
   circuit.SetGridValue(0.01, 0.01);
   circuit.ReadLefFile(adaptec1_lef);
   circuit.ReadDefFile(adaptec1_def);
-  circuit.design_.def_left = 459;
-  circuit.design_.def_right = 10692 + 459;
-  circuit.design_.def_bottom = 459;
-  circuit.design_.def_top = 11127 + 12;
+  circuit.design_.region_left_ = 459;
+  circuit.design_.region_right_ = 10692 + 459;
+  circuit.design_.region_bottom_ = 459;
+  circuit.design_.region_top_ = 11127 + 12;
   //circuit.GenMATLABTable("_result.txt");
 
   std::cout << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << " s\n";

@@ -156,8 +156,8 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
   //          << die_area.xMax() << "\n"
   //          << die_area.yMin() << "\n"
   //          << die_area.yMax() << "\n";
-  design_.die_area_offset_x = die_area.xMin();
-  design_.die_area_offset_y = die_area.yMin();
+  design_.die_area_offset_x_ = die_area.xMin();
+  design_.die_area_offset_y_ = die_area.yMin();
   SetDieArea(die_area.xMin() - die_area.xMin(),
              die_area.xMax() - die_area.xMin(),
              die_area.yMin() - die_area.yMin(),
@@ -555,7 +555,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       }
     }
   }
-  //std::cout << "DIEAREA ( " << def_left << " " << def_bottom << " ) ( " << def_right << " " << def_top << " )\n";
+  //std::cout << "DIEAREA ( " << region_left_ << " " << region_bottom_ << " ) ( " << region_right_ << " " << region_top_ << " )\n";
 
   // find COMPONENTS
   if (component_section_exist) {
@@ -716,23 +716,26 @@ void Circuit::ReportMetalLayers() {
   }
 }
 
-void Circuit::SetBoundary(int left, int right, int bottom, int top) {
+inline void Circuit::SetBoundary(int left, int right, int bottom, int top) {
   Assert(right > left, "Right boundary is not larger than Left boundary?");
   Assert(top > bottom, "Top boundary is not larger than Bottom boundary?");
-  design_.def_left = left;
-  design_.def_right = right;
-  design_.def_bottom = bottom;
-  design_.def_top = top;
+  design_.region_left_ = left;
+  design_.region_right_ = right;
+  design_.region_bottom_ = bottom;
+  design_.region_top_ = top;
 }
 
 void Circuit::SetDieArea(int lower_x, int upper_x, int lower_y, int upper_y) {
   Assert(tech_.grid_value_x_ > 0 && tech_.grid_value_y_ > 0,
          "Need to set positive grid values before setting placement boundary");
-  Assert(design_.def_distance_microns > 0, "Need to set def_distance_microns before setting placement boundary");
-  SetBoundary((int) std::round(lower_x / tech_.grid_value_x_ / design_.def_distance_microns),
-              (int) std::round(upper_x / tech_.grid_value_x_ / design_.def_distance_microns),
-              (int) std::round(lower_y / tech_.grid_value_y_ / design_.def_distance_microns),
-              (int) std::round(upper_y / tech_.grid_value_y_ / design_.def_distance_microns));
+  Assert(design_.def_distance_microns > 0,
+         "Need to set def_distance_microns before setting placement boundary using Circuit::SetDieArea()");
+  double factor_x = tech_.grid_value_x_ * design_.def_distance_microns;
+  double factor_y = tech_.grid_value_y_ * design_.def_distance_microns;
+  SetBoundary((int) std::round(lower_x / factor_x),
+              (int) std::round(upper_x / factor_x),
+              (int) std::round(lower_y / factor_y),
+              (int) std::round(upper_y / factor_y));
 }
 
 BlockTypeCluster *Circuit::AddBlockTypeCluster() {
@@ -1265,11 +1268,12 @@ void Circuit::ReportBriefSummary() const {
               << "  nets: " << design_.net_list.size() << "\n"
               << "  grid size x: " << tech_.grid_value_x_ << " um, grid size y: " << tech_.grid_value_y_ << " um\n"
               << "  total block area: " << design_.tot_blk_area_ << "\n"
-              << "  total white space: " << (long int) (Right() - Left()) * (long int) (Top() - Bottom()) << "\n"
-              << "    left:   " << Left() << "\n"
-              << "    right:  " << Right() << "\n"
-              << "    bottom: " << Bottom() << "\n"
-              << "    top:    " << Top() << "\n"
+              << "  total white space: "
+              << (long int) (RegionURX() - RegionLLX()) * (long int) (RegionURY() - RegionLLY()) << "\n"
+              << "    left:   " << RegionLLX() << "\n"
+              << "    right:  " << RegionURX() << "\n"
+              << "    bottom: " << RegionLLY() << "\n"
+              << "    top:    " << RegionURY() << "\n"
               << "  white space utility: " << WhiteSpaceUsage() << "\n";
   }
 }
@@ -1457,8 +1461,14 @@ void Circuit::GenMATLABScript(std::string const &name_of_file) {
 void Circuit::GenMATLABTable(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
-  ost << Left() << "\t" << Right() << "\t" << Right() << "\t" << Left() << "\t" << Bottom() << "\t" << Bottom() << "\t"
-      << Top() << "\t" << Top() << "\n";
+  ost << RegionLLX() << "\t"
+      << RegionURX() << "\t"
+      << RegionURX() << "\t"
+      << RegionLLX() << "\t"
+      << RegionLLY() << "\t"
+      << RegionLLY() << "\t"
+      << RegionURY() << "\t"
+      << RegionURY() << "\n";
   for (auto &block: design_.block_list) {
     ost << block.LLX() << "\t"
         << block.URX() << "\t"
@@ -1619,8 +1629,8 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
         << *(block.Type()->Name()) << " + "
         << block.GetPlaceStatusStr() << " "
         << "( "
-        << (int) (block.LLX() * factor_x) + design_.die_area_offset_x << " "
-        << (int) (block.LLY() * factor_y) + design_.die_area_offset_y
+        << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
+        << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
         << " ) "
         << OrientStr(block.Orient())
         << " ;\n";
@@ -1631,8 +1641,8 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
         << *(block.Type()->Name()) << " + "
         << "PLACED" << " "
         << "( "
-        << (int) (block.LLX() * factor_x) + design_.die_area_offset_x << " "
-        << (int) (block.LLY() * factor_y) + design_.die_area_offset_y
+        << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
+        << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
         << " ) "
         << OrientStr(block.Orient())
         << " ;\n";
