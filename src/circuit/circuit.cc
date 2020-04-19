@@ -1183,7 +1183,7 @@ void Circuit::LoadImaginaryCellFile() {
 
   // 1. create fake well tap cell
   std::string tap_cell_name("welltap_svt");
-  AddBlockType(tap_cell_name, MinBlkWidth(), MinBlkHeight());
+  tech_.well_tap_cell_ = AddBlockType(tap_cell_name, MinBlkWidth(), MinBlkHeight());
 
   // 2. create fake well parameters
   double fake_same_diff_spacing = 0;
@@ -1196,9 +1196,9 @@ void Circuit::LoadImaginaryCellFile() {
   double max_plug_dist = 0;
   double overhang = 0;
 
-  spacing = AveMovBlkWidth() * 3;
-  op_spacing = AveMovBlkWidth() * 3;
-  max_plug_dist = AveMovBlkWidth() * 10;
+  spacing = MinBlkWidth() * tech_.grid_value_x_;
+  op_spacing = MinBlkWidth() * tech_.grid_value_x_;
+  max_plug_dist = AveMovBlkWidth() * 10 * tech_.grid_value_x_;
 
   SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
   SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);

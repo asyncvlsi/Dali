@@ -241,6 +241,8 @@ inline double Circuit::GetGridValueY() const {
 }
 
 inline void Circuit::SetRowHeight(double row_height) {
+  Assert(row_height > 0, "Setting row height to a negative value?");
+  tech_.row_height_set_ = true;
   tech_.row_height_ = row_height;
 }
 
@@ -249,7 +251,12 @@ inline double Circuit::GetDBRowHeight() const {
 }
 
 inline int Circuit::GetIntRowHeight() const {
-  return (int) std::round(tech_.row_height_ / tech_.grid_value_y_);
+  if (tech_.row_height_set_) {
+    return (int) std::round(tech_.row_height_ / tech_.grid_value_y_);
+  } else {
+    std::cout << "Row height not set, cannot retrieve its value\n";
+    exit(1);
+  }
 }
 
 inline std::vector<MetalLayer> *Circuit::MetalList() {

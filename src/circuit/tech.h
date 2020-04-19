@@ -33,6 +33,7 @@ class Tech {
 
   /****row height****/
   double row_height_ = 0;
+  bool row_height_set_ = false;
 
   /****N/P well info****/
   bool n_set_;
@@ -46,7 +47,7 @@ class Tech {
   Tech();
   ~Tech();
 
-  BlockType *WellTapCell();
+  BlockType *WellTapCell() const;
 
   WellLayer *GetNLayer() const;
   WellLayer *GetPLayer() const;
@@ -58,7 +59,7 @@ class Tech {
   void Report();
 };
 
-inline BlockType *Tech::WellTapCell() {
+inline BlockType *Tech::WellTapCell() const {
   return well_tap_cell_;
 }
 

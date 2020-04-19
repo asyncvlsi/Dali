@@ -121,6 +121,7 @@ class StdClusterWellLegalizer : public Placer {
   std::vector<ClusterStrip> strip_list_; // list of strips
 
   /**** row information ****/
+  bool row_height_set_;
   int row_height_;
   int tot_num_rows_;
   std::vector<std::vector<SegI>> white_space_in_rows_; // white space in each row
@@ -131,6 +132,7 @@ class StdClusterWellLegalizer : public Placer {
  public:
   StdClusterWellLegalizer();
 
+  void SetRowHeight(int row_height);
   int StartRow(int y_loc);
   int EndRow(int y_loc);
 
@@ -310,6 +312,12 @@ inline int ClusterStrip::LLX() const {
 
 inline int ClusterStrip::URX() const {
   return lx_ + width_;
+}
+
+inline void StdClusterWellLegalizer::SetRowHeight(int row_height) {
+  Assert(row_height > 0, "Setting row height to a negative value?");
+  row_height_set_ = true;
+  row_height_ = row_height;
 }
 
 inline int StdClusterWellLegalizer::StartRow(int y_loc) {

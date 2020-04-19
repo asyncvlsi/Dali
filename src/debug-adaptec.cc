@@ -36,11 +36,6 @@ int main() {
   circuit.design_.def_top = 11127 + 12;
   //circuit.GenMATLABTable("_result.txt");
 
-#if TEST_WLG
-  circuit.LoadImaginaryCellFile();
-  //circuit.ReportWellShape();
-#endif
-
   std::cout << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << " s\n";
 
   circuit.ReportBriefSummary();
@@ -49,7 +44,7 @@ int main() {
   GPSimPL gb_placer;
   gb_placer.SetInputCircuit(&circuit);
   gb_placer.SetBoundaryDef();
-  gb_placer.SetFillingRate(1);
+  gb_placer.SetFillingRate(0.9);
   gb_placer.ReportBoundaries();
   //gb_placer.is_dump = true;
 #if !TEST_LG
@@ -63,13 +58,16 @@ int main() {
   legalizer.TakeOver(&gb_placer);
   legalizer.SetRowHeight(12);
   legalizer.StartPlacement();
-  legalizer.GenAvailSpace("as_result.txt");
+  //legalizer.GenAvailSpace("as_result.txt");
   legalizer.GenMATLABTable("lg_result.txt");
   //legalizer->SaveDEFFile("circuit.def", def_file);
 
 #if TEST_WLG
+  circuit.LoadImaginaryCellFile();
+  //circuit.ReportWellShape();
   auto *well_legalizer = new StdClusterWellLegalizer;
   well_legalizer->TakeOver(&gb_placer);
+  well_legalizer->SetRowHeight(1);
   well_legalizer->StartPlacement();
   well_legalizer->GenMATLABTable("sc_result.txt");
   well_legalizer->GenMATLABWellTable("scw");

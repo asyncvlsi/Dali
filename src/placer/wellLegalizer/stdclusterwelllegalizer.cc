@@ -150,11 +150,14 @@ StdClusterWellLegalizer::StdClusterWellLegalizer() {
   well_tap_cell_width_ = 0;
   strip_width_ = 0;
   tot_strip_num_ = 0;
+  row_height_set_ = false;
 }
 
 void StdClusterWellLegalizer::Init(int cluster_width) {
   // initialize row height and white space segments
-  row_height_ = circuit_->GetIntRowHeight();
+  if (!row_height_set_) {
+    row_height_ = circuit_->GetIntRowHeight();
+  }
   tot_num_rows_ = (top_ - bottom_) / row_height_;
 
   std::vector<std::vector<std::vector<int>>> macro_segments;
@@ -242,6 +245,8 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
   int op_well_spacing = std::ceil(n_well_layer->OpSpacing() / circuit_->GetGridValueX());
   well_spacing_ = std::max(same_well_spacing, op_well_spacing);
   max_unplug_length_ = (int) std::floor(n_well_layer->MaxPlugDist() / circuit_->GetGridValueX());
+  auto well_tap_cell = tech->WellTapCell();
+  Assert(well_tap_cell!= nullptr, "Cannot find the type of well tap cell\n");
   well_tap_cell_width_ = tech->WellTapCell()->Width();
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
