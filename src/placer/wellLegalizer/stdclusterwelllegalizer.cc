@@ -246,7 +246,7 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
   well_spacing_ = std::max(same_well_spacing, op_well_spacing);
   max_unplug_length_ = (int) std::floor(n_well_layer->MaxPlugDist() / circuit_->GetGridValueX());
   auto well_tap_cell = tech->WellTapCell();
-  Assert(well_tap_cell!= nullptr, "Cannot find the type of well tap cell\n");
+  Assert(well_tap_cell != nullptr, "Cannot find the type of well tap cell\n");
   well_tap_cell_width_ = tech->WellTapCell()->Width();
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
@@ -339,6 +339,50 @@ void StdClusterWellLegalizer::AssignBlockToStrip() {
   }
 }
 
+void StdClusterWellLegalizer::UpdateAvailableSpaceInCluster(Cluster *cluster) {
+  int lo_row = StartRow(cluster->LLY());
+  int hi_row = EndRow(cluster->URY());
+  int lo_x = cluster->LLX();
+  int hi_x = cluster->URX();
+  std::vector<SegI> res;
+
+  for (int i = lo_row; i <= hi_row; ++i) {
+    std::vector<SegI> tmp_avail_space;
+
+  }
+}
+
+void StdClusterWellLegalizer::CreateFrontClusterBottomUp(ClusterStrip &col, Block &blk) {
+  /****
+   * Creates a RangeCluster based on
+   *    1. available space in this column
+   *    2. the position of the block requires new cluster
+   * ****/
+
+  int lo_row = StartRow((int) std::round(blk.LLY()));
+  int hi_row = EndRow((int) std::round(blk.URY()));
+  int lo_x = (int) std::round(blk.LLX());
+  int hi_x = (int) std::round(blk.URX());
+
+  lo_row = std::max(0, lo_row);
+  hi_row = std::min(tot_num_rows_ - 1, hi_row);
+
+  col.cluster_list_.emplace_back();
+  Cluster *front_cluster = &(col.cluster_list_.back());
+
+  int lx = col.LLX();
+  int ux = col.URX();
+  if (lo_row < tot_num_rows_) {
+    int tmp_lx;
+    int tmp_ux;
+    for (int i = lo_row; i <= hi_row; ++i) {
+
+    }
+  }
+
+  col.front_cluster_set_.emplace(lx, ux, front_cluster);
+}
+
 void StdClusterWellLegalizer::AppendBlockToColBottomUp(ClusterStrip &col, Block &blk) {
   bool is_no_cluster_in_col = (col.contour_ == RegionBottom());
   bool is_new_cluster_needed = is_no_cluster_in_col;
@@ -370,6 +414,7 @@ void StdClusterWellLegalizer::AppendBlockToColBottomUp(ClusterStrip &col, Block 
     front_cluster->SetLLY(init_y);
     front_cluster->SetLLX(col.LLX());
     front_cluster->SetWidth(col.Width());
+    UpdateAvailableSpaceInCluster(front_cluster);
 
     col.front_cluster_ = front_cluster;
     col.cluster_count_ += 1;

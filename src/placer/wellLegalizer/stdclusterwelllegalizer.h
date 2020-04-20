@@ -33,6 +33,9 @@ struct Cluster {
   int p_well_height_ = 0;
   int n_well_height_ = 0;
 
+  /**** available space segments in this cluster ****/
+  std::vector<SegI> white_space_;
+
   /**** member functions ****/
   int UsedSize() const;
   void SetUsedSize(int used_size);
@@ -76,6 +79,13 @@ struct Cluster {
   void UpdateBlockLocationCompact();
 };
 
+struct RangeCluster {
+  int lx_;
+  int ux_;
+  Cluster *cluster_;
+  RangeCluster(int lx, int ux, Cluster *cluster) : lx_(lx), ux_(ux), cluster_(cluster) {}
+};
+
 struct ClusterStrip {
   int lx_;
   int width_;
@@ -85,6 +95,7 @@ struct ClusterStrip {
   int used_height_;
   int cluster_count_;
   Cluster *front_cluster_;
+  std::set<RangeCluster> front_cluster_set_;
   std::vector<Cluster> cluster_list_;
   bool is_bottom_up_ = false;
 
@@ -142,6 +153,8 @@ class StdClusterWellLegalizer : public Placer {
 
   int LocToCol(int x);
   void AssignBlockToStrip();
+  void UpdateAvailableSpaceInCluster(Cluster *cluster);
+  void CreateFrontClusterBottomUp(ClusterStrip &col, Block &blk);
 
   void AppendBlockToColBottomUp(ClusterStrip &col, Block &blk);
   void AppendBlockToColTopDown(ClusterStrip &col, Block &blk);

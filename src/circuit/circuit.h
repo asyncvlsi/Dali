@@ -86,6 +86,8 @@ class Circuit {
   int RegionURX() const;
   int RegionLLY() const;
   int RegionURY() const;
+  int RegionWidth() const;
+  int RegionHeight() const;
   void SetBoundary(int left, int right, int bottom, int top); // unit in grid value
   void SetDieArea(int lower_x, int upper_x, int lower_y, int upper_y); // unit in manufacturing grid
 
@@ -285,6 +287,14 @@ inline int Circuit::RegionLLY() const {
 
 inline int Circuit::RegionURY() const {
   return design_.region_top_;
+}
+
+inline int Circuit::RegionWidth() const {
+  return design_.region_right_ - design_.region_left_;
+}
+
+inline int Circuit::RegionHeight() const {
+  return design_.region_top_ - design_.region_bottom_;
 }
 
 inline std::vector<Block> *Circuit::GetBlockList() {
