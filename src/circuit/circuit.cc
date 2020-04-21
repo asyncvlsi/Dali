@@ -1199,6 +1199,7 @@ void Circuit::LoadImaginaryCellFile() {
   double max_plug_dist = 0;
   double overhang = 0;
 
+  width = MinBlkHeight() / 2.0 * tech_.grid_value_y_;
   spacing = MinBlkWidth() * tech_.grid_value_x_;
   op_spacing = MinBlkWidth() * tech_.grid_value_x_;
   max_plug_dist = AveMovBlkWidth() * 10 * tech_.grid_value_x_;
@@ -1467,7 +1468,10 @@ void Circuit::GenMATLABTable(std::string const &name_of_file) {
       << RegionLLY() << "\t"
       << RegionLLY() << "\t"
       << RegionURY() << "\t"
-      << RegionURY() << "\n";
+      << RegionURY() << "\t"
+      << 1 << "\t"
+      << 1 << "\t"
+      << 1 << "\n";
   for (auto &block: design_.block_list) {
     ost << block.LLX() << "\t"
         << block.URX() << "\t"
@@ -1476,7 +1480,10 @@ void Circuit::GenMATLABTable(std::string const &name_of_file) {
         << block.LLY() << "\t"
         << block.LLY() << "\t"
         << block.URY() << "\t"
-        << block.URY() << "\n";
+        << block.URY() << "\t"
+        << 0 << "\t"
+        << 1 << "\t"
+        << 1 << "\n";
   }
   for (auto &block: design_.well_tap_list) {
     ost << block.LLX() << "\t"
@@ -1486,7 +1493,10 @@ void Circuit::GenMATLABTable(std::string const &name_of_file) {
         << block.LLY() << "\t"
         << block.LLY() << "\t"
         << block.URY() << "\t"
-        << block.URY() << "\n";
+        << block.URY() << "\t"
+        << 0 << "\t"
+        << 1 << "\t"
+        << 1 << "\n";
   }
   ost.close();
 }

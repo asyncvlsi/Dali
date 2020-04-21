@@ -33,9 +33,6 @@ struct Cluster {
   int p_well_height_ = 0;
   int n_well_height_ = 0;
 
-  /**** available space segments in this cluster ****/
-  std::vector<SegI> white_space_;
-
   /**** member functions ****/
   int UsedSize() const;
   void SetUsedSize(int used_size);
@@ -79,23 +76,17 @@ struct Cluster {
   void UpdateBlockLocationCompact();
 };
 
-struct RangeCluster {
+struct Strip {
   int lx_;
-  int ux_;
-  Cluster *cluster_;
-  RangeCluster(int lx, int ux, Cluster *cluster) : lx_(lx), ux_(ux), cluster_(cluster) {}
-};
-
-struct ClusterStrip {
-  int lx_;
+  int ly_;
   int width_;
+  int height_;
   int max_blk_capacity_per_cluster_;
 
   int contour_;
   int used_height_;
   int cluster_count_;
   Cluster *front_cluster_;
-  std::set<RangeCluster> front_cluster_set_;
   std::vector<Cluster> cluster_list_;
   bool is_bottom_up_ = false;
 
@@ -105,9 +96,32 @@ struct ClusterStrip {
   bool is_first_row_orient_N_ = true;
   std::vector<RectI> well_rect_list_;
 
+  int LLX() const { return lx_; }
+  int LLY() const { return ly_; }
+  int URX() const { return lx_ + width_; }
+  int URY() const { return ly_ + height_; }
+  int Width() const { return width_; }
+  int Height() const { return height_; }
+};
+
+struct ClusterStrip {
+  int lx_;
+  int width_;
+
+  int block_count_;
+  std::vector<Block *> block_list_;
+
+  std::vector<RectI> well_rect_list_;
+
+  std::vector<std::vector<SegI>> white_space_; // white space in each row
+  std::vector<Strip> strip_list_;
+
   int Width() const;
   int LLX() const;
   int URX() const;
+  Strip *GetStripMatchSeg(SegI seg, int y_loc);
+  Strip *GetStripMatchBlk(Block *blk_ptr);
+  void AssignBlockToSimpleStrip();
 };
 
 class StdClusterWellLegalizer : public Placer {
@@ -120,8 +134,9 @@ class StdClusterWellLegalizer : public Placer {
   int well_spacing_;
 
   /**** strip parameters ****/
+  int max_cell_width_;
   int strip_width_;
-  int tot_strip_num_;
+  int tot_col_num_;
 
   /**** well tap cell parameters ****/
   BlockType *well_tap_cell_;
@@ -129,7 +144,7 @@ class StdClusterWellLegalizer : public Placer {
   int tap_cell_n_height_;
 
   std::vector<IndexLocPair<int>> index_loc_list_; // list of index loc pair for location sort
-  std::vector<ClusterStrip> strip_list_; // list of strips
+  std::vector<ClusterStrip> col_list_; // list of strips
 
   /**** row information ****/
   bool row_height_set_;
@@ -146,32 +161,33 @@ class StdClusterWellLegalizer : public Placer {
   void SetRowHeight(int row_height);
   int StartRow(int y_loc);
   int EndRow(int y_loc);
+  int RowToLoc(int row_num, int displacement = 0);
+
+  void InitAvailSpace();
+  void FetchNPWellParams();
+  void UpdateWhiteSpaceInCol(ClusterStrip &col);
+  void DecomposeToSimpleStrip();
 
   void Init(int cluster_width = 0);
 
   void SetFirstRowOrientN(bool is_N);
 
   int LocToCol(int x);
-  void AssignBlockToStrip();
-  void UpdateAvailableSpaceInCluster(Cluster *cluster);
-  void CreateFrontClusterBottomUp(ClusterStrip &col, Block &blk);
+  void AssignBlockToColBasedOnWhiteSpace();
 
-  void AppendBlockToColBottomUp(ClusterStrip &col, Block &blk);
-  void AppendBlockToColTopDown(ClusterStrip &col, Block &blk);
-  void AppendBlockToColBottomUpCompact(ClusterStrip &col, Block &blk);
-  void AppendBlockToColTopDownCompact(ClusterStrip &col, Block &blk);
+  void AppendBlockToColBottomUp(Strip &strip, Block &blk);
+  void AppendBlockToColTopDown(Strip &strip, Block &blk);
+  void AppendBlockToColBottomUpCompact(Strip &strip, Block &blk);
+  void AppendBlockToColTopDownCompact(Strip &strip, Block &blk);
 
-  bool StripLegalizationBottomUp(ClusterStrip &col);
-  bool StripLegalizationTopDown(ClusterStrip &col);
-  bool StripLegalizationBottomUpCompact(ClusterStrip &col);
-  bool StripLegalizationTopDownCompact(ClusterStrip &col);
+  bool StripLegalizationBottomUp(Strip &strip);
+  bool StripLegalizationTopDown(Strip &strip);
+  bool StripLegalizationBottomUpCompact(Strip &strip);
+  bool StripLegalizationTopDownCompact(Strip &strip);
 
   bool BlockClustering();
   bool BlockClusteringLoose();
   bool BlockClusteringCompact();
-
-  bool TrialClusterLegalization();
-  bool TetrisLegalizeCluster();
 
   double WireLengthCost(Cluster *cluster, int l, int r);
   void FindBestLocalOrder(std::vector<Block *> &res,
@@ -203,6 +219,8 @@ class StdClusterWellLegalizer : public Placer {
 
   /**** member functions for debugging ****/
   void GenAvailSpace(std::string const &name_of_file = "avail_space.txt");
+  void GenAvailSpaceInCols(std::string const &name_of_file = "avail_space.txt");
+  void GenSimpleStrips(std::string const &name_of_file = "strip_space.txt");
 };
 
 inline int Cluster::UsedSize() const {
@@ -346,6 +364,10 @@ inline int StdClusterWellLegalizer::EndRow(int y_loc) {
   return res;
 }
 
+inline int StdClusterWellLegalizer::RowToLoc(int row_num, int displacement) {
+  return row_num * row_height_ + bottom_ + displacement;
+}
+
 inline void StdClusterWellLegalizer::SetFirstRowOrientN(bool is_N) {
   is_first_row_orient_N_ = is_N;
 }
@@ -355,8 +377,8 @@ inline int StdClusterWellLegalizer::LocToCol(int x) {
   if (col_num < 0) {
     col_num = 0;
   }
-  if (col_num >= tot_strip_num_) {
-    col_num = tot_strip_num_ - 1;
+  if (col_num >= tot_col_num_) {
+    col_num = tot_col_num_ - 1;
   }
   return col_num;
 }

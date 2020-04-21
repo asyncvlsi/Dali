@@ -127,7 +127,22 @@ template<class T>
 struct Seg {
   T lo;
   T hi;
-  Seg(T lo_init, T hi_init) : lo(lo_init), hi(hi_init) {}
+  explicit Seg(T lo_init = 0, T hi_init = 0) : lo(lo_init), hi(hi_init) {}
+  T Span() const {
+    return hi - lo;
+  }
+  bool Overlap(Seg<T> const &rhs) {
+    return (lo < rhs.hi) && (hi > rhs.lo);
+  }
+  Seg<T> *Joint(Seg<T> const &rhs) {
+    Seg<T> *res = nullptr;
+    if (Overlap(rhs)) {
+      res = new Seg<T>();
+      res->lo = std::max(lo, rhs.lo);
+      res->hi = std::min(hi, rhs.hi);
+    }
+    return res;
+  }
 };
 
 typedef Seg<int> SegI;
