@@ -58,7 +58,7 @@ int main() {
   //gb_placer->SaveDEFFile("benchmark_1K_dali.def", def_file_name);
   gb_placer->GenMATLABTable("gb_result.txt");
   //gb_placer->GenMATLABWellTable("gb_result");
-  //circuit.UpdateReportNetFanoutHisto();
+  //circuit.ReportNetFanoutHisto();
 
   /*Placer *d_placer = new MDPlacer;
   d_placer->TakeOver(gb_placer);
@@ -111,7 +111,7 @@ int main() {
 #endif
 
   circuit.InitNetFanoutHisto();
-  circuit.UpdateReportNetFanoutHisto();
+  circuit.ReportNetFanoutHisto();
   circuit.ReportHPWLHistogramLinear();
   circuit.ReportHPWLHistogramLogarithm();
 

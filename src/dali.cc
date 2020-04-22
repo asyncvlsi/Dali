@@ -223,7 +223,7 @@ int main(int argc, char *argv[]) {
     delete legalizer;
   }
   circuit.InitNetFanoutHisto();
-  circuit.UpdateReportNetFanoutHisto();
+  circuit.ReportNetFanoutHisto();
   circuit.ReportHPWLHistogramLinear();
   circuit.ReportHPWLHistogramLogarithm();
 

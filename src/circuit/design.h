@@ -15,13 +15,16 @@
 #include "net.h"
 
 struct NetHistogram {
-  std::vector<int> fanout_x_{2, 3, 4, 20, 40, 80, 160};
-  std::vector<int> fanout_y_;
-  std::vector<double> fanout_percent_;
-  std::vector<double> fanout_hpwl_;
-  std::vector<double> fanout_hpwl_per_pin_; // (HPWL of a net)/(size of a net)
+  std::vector<int> bin_list_{2, 3, 4, 20, 40, 80, 160};
+  std::vector<int> count_;
+  std::vector<double> percent_;
+  std::vector<double> sum_hpwl_;
+  std::vector<double> ave_hpwl_;
+  std::vector<double> min_hpwl_;
+  std::vector<double> max_hpwl_;
   int tot_net_count_;
   double tot_hpwl_;
+  double hpwl_unit_;
 };
 
 struct Design {

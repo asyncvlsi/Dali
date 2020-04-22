@@ -147,7 +147,7 @@ void Cluster::UpdateBlockLocationCompact() {
 
 Strip *ClusterStrip::GetStripMatchSeg(SegI seg, int y_loc) {
   Strip *res = nullptr;
-  for (auto &strip: strip_list_) {
+  for (auto &&strip: strip_list_) {
     if ((strip.URY() == y_loc) && (strip.LLX() == seg.lo) && (strip.URX() == seg.hi)) {
       res = &strip;
       break;
@@ -160,7 +160,7 @@ Strip *ClusterStrip::GetStripMatchBlk(Block *blk_ptr) {
   Strip *res = nullptr;
   double center_x = blk_ptr->X();
   double center_y = blk_ptr->Y();
-  for (auto &strip: strip_list_) {
+  for (auto &&strip: strip_list_) {
     if ((strip.LLY() <= center_y) &&
         (strip.URY() > center_y) &&
         (strip.LLX() <= center_x) &&
@@ -169,26 +169,37 @@ Strip *ClusterStrip::GetStripMatchBlk(Block *blk_ptr) {
       break;
     }
   }
+  return res;
+}
 
-  if (res == nullptr) {
-    double min_distance = INT_MAX;
-    for (auto &strip: strip_list_) {
-      double tmp_distance = 0;
-      if ((strip.LLX() <= center_x) && (strip.URX() > center_x)) {
-        tmp_distance = std::min(std::abs(center_y - strip.LLY()), std::abs(center_y - strip.URY()));
-      } else if ((strip.LLY() <= center_y) && (strip.URY() > center_y)) {
-        tmp_distance = std::min(std::abs(center_x - strip.LLX()), std::abs(center_x - strip.URX()));
-      } else {
-        tmp_distance = std::min(std::abs(center_y - strip.LLY()), std::abs(center_y - strip.URY())) +
-            std::min(std::abs(center_x - strip.LLX()), std::abs(center_x - strip.URX()));
-      }
-      if (tmp_distance < min_distance) {
-        min_distance = tmp_distance;
-        res = &strip;
-      }
+Strip *ClusterStrip::GetStripClosestToBlk(Block *blk_ptr, double &distance) {
+  Strip *res;
+  double center_x = blk_ptr->X();
+  double center_y = blk_ptr->Y();
+  double min_distance = DBL_MAX;
+  for (auto &&strip: strip_list_) {
+    double tmp_distance;
+    if ((strip.LLY() <= center_y) &&
+        (strip.URY() > center_y) &&
+        (strip.LLX() <= center_x) &&
+        (strip.URX() > center_x)) {
+      res = &strip;
+      tmp_distance = 0;
+    } else if ((strip.LLX() <= center_x) && (strip.URX() > center_x)) {
+      tmp_distance = std::min(std::abs(center_y - strip.LLY()), std::abs(center_y - strip.URY()));
+    } else if ((strip.LLY() <= center_y) && (strip.URY() > center_y)) {
+      tmp_distance = std::min(std::abs(center_x - strip.LLX()), std::abs(center_x - strip.URX()));
+    } else {
+      tmp_distance = std::min(std::abs(center_x - strip.LLX()), std::abs(center_x - strip.URX()))
+          + std::min(std::abs(center_y - strip.LLY()), std::abs(center_y - strip.URY()));
+    }
+    if (tmp_distance < min_distance) {
+      min_distance = tmp_distance;
+      res = &strip;
     }
   }
-  assert(res != nullptr);
+
+  distance = min_distance;
   return res;
 }
 
@@ -199,7 +210,8 @@ void ClusterStrip::AssignBlockToSimpleStrip() {
   }
 
   for (auto &blk_ptr: block_list_) {
-    auto strip = GetStripMatchBlk(blk_ptr);
+    double tmp_dist;
+    auto strip = GetStripClosestToBlk(blk_ptr, tmp_dist);
     strip->block_count_++;
   }
 
@@ -208,7 +220,8 @@ void ClusterStrip::AssignBlockToSimpleStrip() {
   }
 
   for (auto &blk_ptr: block_list_) {
-    auto strip = GetStripMatchBlk(blk_ptr);
+    double tmp_dist;
+    auto strip = GetStripClosestToBlk(blk_ptr, tmp_dist);
     strip->block_list_.push_back(blk_ptr);
   }
 }
@@ -378,11 +391,11 @@ void StdClusterWellLegalizer::DecomposeToSimpleStrip() {
     }
   }
 
-  for (auto &col: col_list_) {
+  /*for (auto &col: col_list_) {
     for (auto &strip: col.strip_list_) {
       strip.height_ -= row_height_;
     }
-  }
+  }*/
 
   GenSimpleStrips();
 }
@@ -450,26 +463,58 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
 
 void StdClusterWellLegalizer::AssignBlockToColBasedOnWhiteSpace() {
   // assign blocks to columns
-  std::vector<int> block_column_assign(BlockList()->size(), 0);
+  int sz = (int) BlockList()->size();
+  std::vector<int> block_column_assign(sz, -1);
   for (int i = 0; i < tot_col_num_; ++i) {
     col_list_[i].block_count_ = 0;
     col_list_[i].block_list_.clear();
   }
 
-  for (auto &block: *BlockList()) {
-    if (block.IsFixed()) continue;
-    int col_num = LocToCol((int) std::round(block.X()));
-    col_list_[col_num].block_count_++;
+  std::vector<Block> &block_list = *BlockList();
+  for (int i = 0; i < sz; ++i) {
+    if (block_list[i].IsFixed()) continue;
+    int col_num = LocToCol((int) std::round(block_list[i].X()));
+
+    std::vector<int> pos_col;
+    std::vector<double> distance;
+    if (col_num > 0) {
+      pos_col.push_back(col_num - 1);
+      distance.push_back(0);
+    }
+    pos_col.push_back(col_num);
+    distance.push_back(0);
+    if (col_num < tot_col_num_ - 1) {
+      pos_col.push_back(col_num + 1);
+      distance.push_back(0);
+    }
+
+    Strip *strip = nullptr;
+    double min_dist = DBL_MAX;
+    for (auto &num: pos_col) {
+      double tmp_dist;
+      auto res = col_list_[num].GetStripClosestToBlk(&block_list[i], tmp_dist);
+      if (tmp_dist < min_dist) {
+        strip = res;
+        col_num = num;
+        min_dist = tmp_dist;
+      }
+    }
+    if (strip != nullptr) {
+      col_list_[col_num].block_count_++;
+      block_column_assign[i] = col_num;
+    }
   }
   for (int i = 0; i < tot_col_num_; ++i) {
     int capacity = col_list_[i].block_count_;
     col_list_[i].block_list_.reserve(capacity);
   }
 
-  for (auto &block: *BlockList()) {
-    if (block.IsFixed()) continue;
-    int col_num = LocToCol((int) std::round(block.X()));
-    col_list_[col_num].block_list_.push_back(&block);
+  for (int i = 0; i < sz; ++i) {
+    if (block_list[i].IsFixed()) continue;
+    int col_num = block_column_assign[i];
+    if (col_num >= 0) {
+      col_list_[col_num].block_list_.push_back(&block_list[i]);
+    }
   }
 
   for (auto &col:col_list_) {
@@ -524,8 +569,8 @@ void StdClusterWellLegalizer::AppendBlockToColBottomUp(Strip &strip, Block &blk)
 }
 
 void StdClusterWellLegalizer::AppendBlockToColTopDown(Strip &strip, Block &blk) {
-  bool is_no_cluster_in_col = (strip.contour_ == strip.URY());
-  bool is_new_cluster_needed = is_no_cluster_in_col;
+  bool is_no_cluster = strip.cluster_list_.empty();
+  bool is_new_cluster_needed = is_no_cluster;
   if (!is_new_cluster_needed) {
     bool is_not_in_top_cluster = strip.contour_ >= blk.URY();
     bool is_top_cluster_full = strip.front_cluster_->UsedSize() + blk.Width() > strip.width_;
@@ -534,9 +579,7 @@ void StdClusterWellLegalizer::AppendBlockToColTopDown(Strip &strip, Block &blk) 
 
   int width = blk.Width();
   int init_y = (int) std::round(blk.URY());
-  if (strip.contour_ != strip.URY()) {
-    init_y = std::min(init_y, strip.contour_);
-  }
+  init_y = std::min(init_y, strip.contour_);
 
   Cluster *front_cluster;
   auto *blk_well = blk.Type()->GetWell();
@@ -580,9 +623,7 @@ void StdClusterWellLegalizer::AppendBlockToColBottomUpCompact(Strip &strip, Bloc
 
   int width = blk.Width();
   int init_y = (int) std::round(blk.LLY());
-  if (strip.contour_ != strip.LLY()) {
-    init_y = std::max(init_y, strip.contour_);
-  }
+  init_y = std::max(init_y, strip.contour_);
 
   Cluster *front_cluster;
   auto *well = blk.Type()->GetWell();
@@ -626,9 +667,7 @@ void StdClusterWellLegalizer::AppendBlockToColTopDownCompact(Strip &strip, Block
 
   int width = blk.Width();
   int init_y = (int) std::round(blk.URY());
-  if (strip.contour_ != strip.URY()) {
-    init_y = std::min(init_y, strip.contour_);
-  }
+  init_y = std::min(init_y, strip.contour_);
 
   Cluster *front_cluster;
   auto *well = blk.Type()->GetWell();
@@ -681,7 +720,7 @@ bool StdClusterWellLegalizer::StripLegalizationBottomUp(Strip &strip) {
     AppendBlockToColBottomUp(strip, *blk_ptr);
   }
 
-  return strip.contour_ <= RegionTop();
+  return strip.contour_ <= strip.URY();
 }
 
 bool StdClusterWellLegalizer::StripLegalizationTopDown(Strip &strip) {
@@ -709,7 +748,7 @@ bool StdClusterWellLegalizer::StripLegalizationTopDown(Strip &strip) {
     std::cout << "fail\n";
   }*/
 
-  return strip.contour_ >= RegionBottom();
+  return strip.contour_ >= strip.LLY();
 }
 
 bool StdClusterWellLegalizer::StripLegalizationBottomUpCompact(Strip &strip) {

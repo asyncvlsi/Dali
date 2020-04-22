@@ -121,6 +121,7 @@ struct ClusterStrip {
   int URX() const;
   Strip *GetStripMatchSeg(SegI seg, int y_loc);
   Strip *GetStripMatchBlk(Block *blk_ptr);
+  Strip *GetStripClosestToBlk(Block *blk_ptr, double &distance);
   void AssignBlockToSimpleStrip();
 };
 
@@ -153,7 +154,7 @@ class StdClusterWellLegalizer : public Placer {
   std::vector<std::vector<SegI>> white_space_in_rows_; // white space in each row
 
   /****parameters for legalization****/
-  int max_iter_ = 5;
+  int max_iter_ = 10;
 
  public:
   StdClusterWellLegalizer();

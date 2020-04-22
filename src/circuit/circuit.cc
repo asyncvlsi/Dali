@@ -1246,19 +1246,22 @@ void Circuit::ReportNetMap() {
 }
 
 void Circuit::UpdateNetHPWLHisto() {
-  int bin_count = (int) design_.net_histogram_.fanout_x_.size();
-  design_.net_histogram_.fanout_hpwl_.assign(bin_count, 0);
-  design_.net_histogram_.fanout_hpwl_per_pin_.assign(bin_count, 0);
+  int bin_count = (int) design_.net_histogram_.bin_list_.size();
+  design_.net_histogram_.sum_hpwl_.assign(bin_count, 0);
+  design_.net_histogram_.ave_hpwl_.assign(bin_count, 0);
+  design_.net_histogram_.min_hpwl_.assign(bin_count, DBL_MAX);
+  design_.net_histogram_.max_hpwl_.assign(bin_count, DBL_MIN);
+
   for (auto &net: design_.net_list) {
     int net_size = net.P();
-    double hpwl_x = net.HPWLX() * tech_.grid_value_x_;
-    double hpwl_y = net.HPWLY() * tech_.grid_value_y_;
+    double hpwl_x = net.HPWLX();
+    double hpwl_y = net.HPWLY() * tech_.grid_value_y_ / tech_.grid_value_x_;
     design_.UpdateNetHPWLHisto(net_size, hpwl_x + hpwl_y);
   }
 
   design_.net_histogram_.tot_hpwl_ = 0;
   for (int i = 0; i < bin_count; ++i) {
-    design_.net_histogram_.tot_hpwl_ += design_.net_histogram_.fanout_hpwl_[i];
+    design_.net_histogram_.tot_hpwl_ += design_.net_histogram_.sum_hpwl_[i];
   }
 }
 
@@ -1305,8 +1308,9 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
   double min_hpwl = DBL_MAX;
   double max_hpwl = DBL_MIN;
   hpwl_list.reserve(design_.net_list.size());
+  double factor = tech_.grid_value_y_ / tech_.grid_value_x_;
   for (auto &net:design_.net_list) {
-    double tmp_hpwl = net.HPWLX() * tech_.grid_value_x_ + net.HPWLY() * tech_.grid_value_y_;
+    double tmp_hpwl = net.HPWLX() + net.HPWLY() * factor;
     hpwl_list.push_back(tmp_hpwl);
     min_hpwl = std::min(min_hpwl, tmp_hpwl);
     max_hpwl = std::max(max_hpwl, tmp_hpwl);
@@ -1326,7 +1330,7 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
   printf("\n");
   printf("                  HPWL histogram (linear scale bins)\n");
   printf("===================================================================\n");
-  printf("   HPWL(um) interval     Count\n");
+  printf("   HPWL interval         Count\n");
   for (int i = 0; i < bin_num; ++i) {
     double lo = min_hpwl + step * i;
     double hi = lo + step;
@@ -1338,6 +1342,7 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
     printf("\n");
   }
   printf("===================================================================\n");
+  printf(" * HPWL unit, grid value in X: %.2e um\n", tech_.grid_value_x_);
   printf("\n");
 }
 
@@ -1346,8 +1351,9 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
   double min_hpwl = DBL_MAX;
   double max_hpwl = DBL_MIN;
   hpwl_list.reserve(design_.net_list.size());
+  double factor = tech_.grid_value_y_ / tech_.grid_value_x_;
   for (auto &net:design_.net_list) {
-    double tmp_hpwl = std::log10(net.HPWLX() * tech_.grid_value_x_ + net.HPWLY() * tech_.grid_value_y_);
+    double tmp_hpwl = std::log10(net.HPWLX() + net.HPWLY() * factor);
     hpwl_list.push_back(tmp_hpwl);
     min_hpwl = std::min(min_hpwl, tmp_hpwl);
     max_hpwl = std::max(max_hpwl, tmp_hpwl);
@@ -1367,7 +1373,7 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
   printf("\n");
   printf("                  HPWL histogram (log scale bins)\n");
   printf("===================================================================\n");
-  printf("   HPWL(um) interval     Count\n");
+  printf("   HPWL interval         Count\n");
   for (int i = 0; i < bin_num; ++i) {
     double lo = std::pow(10, min_hpwl + step * i);
     double hi = std::pow(10, min_hpwl + step * (i + 1));
@@ -1379,6 +1385,7 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
     printf("\n");
   }
   printf("===================================================================\n");
+  printf(" * HPWL unit, grid value in X: %.2e um\n", tech_.grid_value_x_);
   printf("\n");
 }
 

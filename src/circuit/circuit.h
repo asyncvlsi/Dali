@@ -150,7 +150,7 @@ class Circuit {
   void ReportNetMap();
   void InitNetFanoutHisto(std::vector<int> *histo_x = nullptr);
   void UpdateNetHPWLHisto();
-  void UpdateReportNetFanoutHisto();
+  void ReportNetFanoutHisto();
 
   /****Utility functions related to netlist management****/
   void NetListPopBack();
@@ -311,9 +311,10 @@ inline std::vector<Net> *Circuit::GetNetList() {
 
 inline void Circuit::InitNetFanoutHisto(std::vector<int> *histo_x) {
   design_.InitNetFanoutHisto(histo_x);
+  design_.net_histogram_.hpwl_unit_ = tech_.grid_value_x_;
 }
 
-inline void Circuit::UpdateReportNetFanoutHisto() {
+inline void Circuit::ReportNetFanoutHisto() {
   UpdateNetHPWLHisto();
   design_.ReportNetFanoutHisto();
 }
