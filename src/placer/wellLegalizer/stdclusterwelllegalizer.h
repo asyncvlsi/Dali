@@ -190,6 +190,8 @@ class StdClusterWellLegalizer : public Placer {
   bool BlockClusteringLoose();
   bool BlockClusteringCompact();
 
+  bool TrialClusterLegalization();
+
   double WireLengthCost(Cluster *cluster, int l, int r);
   void FindBestLocalOrder(std::vector<Block *> &res,
                           double &cost,

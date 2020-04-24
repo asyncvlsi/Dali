@@ -897,6 +897,75 @@ bool StdClusterWellLegalizer::BlockClusteringCompact() {
   return res;
 }
 
+bool StdClusterWellLegalizer::TrialClusterLegalization() {
+  /****
+   * Legalize the location of all clusters using extended Tetris legalization algorithm in columns where usage does not exceed capacity
+   * Closely pack the column from bottom to top if its usage exceeds its capacity
+   * ****/
+
+  bool res = true;
+  std::vector<std::vector<Cluster *>> clusters_in_column(tot_col_num_);
+  for (int i = 0; i < tot_col_num_; ++i) {
+    clusters_in_column[i].reserve(0); // need to fix here
+  }
+
+  for (auto &col: col_list_) {
+    for (auto &strip: col.strip_list_) {
+      for (auto &cluster: strip.cluster_list_) {
+        int col_num = LocToCol((int) std::round(cluster.LLX()));
+        clusters_in_column[col_num].emplace_back(&cluster);
+      }
+    }
+  }
+
+  // sort clusters in each column based on the lower left corner
+  for (int i = 0; i < tot_col_num_; ++i) {
+    auto &col = col_list_[i];
+    for (auto &strip: col.strip_list_) {
+      auto &cluster_list = clusters_in_column[i];
+      if (strip.contour_ <= strip.URY()) continue;
+
+      //std::cout << "used height/RegionHeight(): " << col.used_height_ / (double) RegionHeight() << "\n";
+      if (strip.used_height_ <= RegionHeight()) {
+        std::sort(cluster_list.begin(),
+                  cluster_list.end(),
+                  [](const Cluster *lhs, const Cluster *rhs) {
+                    return (lhs->URY() > rhs->URY());
+                  });
+        int cluster_contour = RegionTop();
+        int res_y;
+        int init_y;
+        for (auto &cluster: cluster_list) {
+          init_y = cluster->URY();
+          res_y = std::min(cluster_contour, cluster->URY());
+          cluster->SetURY(res_y);
+          cluster_contour = cluster->LLY();
+          cluster->ShiftBlockY(res_y - init_y);
+        }
+      } else {
+        std::sort(clusters_in_column[i].begin(),
+                  clusters_in_column[i].end(),
+                  [](const Cluster *lhs, const Cluster *rhs) {
+                    return (lhs->LLY() < rhs->LLY());
+                  });
+        int cluster_contour = RegionBottom();
+        int res_y;
+        int init_y;
+        for (auto &cluster: cluster_list) {
+          init_y = cluster->LLY();
+          res_y = cluster_contour;
+          cluster->SetLLY(res_y);
+          cluster_contour += cluster->Height();
+          cluster->ShiftBlockY(res_y - init_y);
+        }
+        res = false;
+      }
+    }
+  }
+
+  return res;
+}
+
 double StdClusterWellLegalizer::WireLengthCost(Cluster *cluster, int l, int r) {
   /****
    * Returns the wire-length cost of the small group from l-th element to r-th element in this cluster
