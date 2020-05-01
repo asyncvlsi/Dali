@@ -66,6 +66,8 @@ class BlockTypeWell {
   void SetWellShape(bool is_n, int lx, int ly, int ux, int uy);
   void SetWellShape(bool is_n, RectI &rect);
 
+  bool IsNPWellAbutted();
+
   void Report();
 };
 
@@ -154,6 +156,10 @@ inline int BlockTypeWell::GetNWellHeight() {
 
 inline int BlockTypeWell::GetPWellHeight() {
   return p_rect_.Height();
+}
+
+inline bool BlockTypeWell::IsNPWellAbutted() {
+  return p_rect_.URY() == n_rect_.LLY();
 }
 
 #endif //DALI_SRC_CIRCUIT_WELLBLKTYPEAUX_H_

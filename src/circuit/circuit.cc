@@ -1167,6 +1167,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
               }
             }
           } while (line.find("END VERSION") == std::string::npos && !ist.eof());
+          Assert(well->IsNPWellAbutted(), "N/P well not abutted: " + version_fields[1]);
         }
       } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
       Assert(!cluster->Empty(), "No plug/unplug version provided");

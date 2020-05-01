@@ -4,6 +4,7 @@
 
 #include "opendb.h"
 
+#include <iostream>
 #include <libgen.h>
 
 using namespace odb;

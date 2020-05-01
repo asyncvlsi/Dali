@@ -8,7 +8,7 @@ void PrintSoftwareStatement() {
   std::cout << "\n\n"
                "+--------------------------------------------------+\n"
                "|                                                  |\n"
-               "|         Dali: custom cell placement flow         |\n"
+               "|         Dali: grided cell placement flow         |\n"
                "|                                                  |\n"
                "|         Department of Electrical Engineering     |\n"
                "|         Yale University                          |\n"

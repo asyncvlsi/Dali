@@ -3,6 +3,7 @@
 //
 
 #include <ctime>
+#include <unistd.h>
 
 #include <iostream>
 #include <vector>
@@ -33,6 +34,7 @@ int main() {
   odb::dbDatabase *db = odb::dbDatabase::create();
   std::vector<std::string> defFileVec;
   defFileVec.push_back(def_file_name);
+  dup2(1, 2); // redirect log of OpenDB parser from stderr to stdout, because this stderr log is annoying
   odb_read_lef(db, lef_file_name.c_str());
   odb_read_def(db, defFileVec);
   circuit.InitializeFromDB(db);
