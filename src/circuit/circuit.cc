@@ -1617,7 +1617,7 @@ void Circuit::GenMATLABWellTable(std::string const &name_of_file) {
 
 void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &def_file_name) {
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("Writing DEF file '%s'\n", name_of_file.c_str());
+    printf("Writing DEF file '%s', ", name_of_file.c_str());
   }
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file " + name_of_file);
@@ -1692,7 +1692,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   ist.close();
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("DEF file '%s' is written\n", name_of_file.c_str());
+    printf("done\n");
   }
 }
 

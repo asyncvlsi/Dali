@@ -1407,7 +1407,7 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, s
   // emit rect file
   std::string rect_file_name = name_of_file + "_well.rect";
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("Writing N/P-well rect file '%s'\n", rect_file_name.c_str());
+    printf("Writing N/P-well rect file '%s', ", rect_file_name.c_str());
   }
   std::ofstream ost(rect_file_name.c_str());
   Assert(ost.is_open(), "Cannot open output file: " + rect_file_name);
@@ -1456,13 +1456,13 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, s
   }
   ost.close();
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("N/P-well rect file '%s' is written\n", rect_file_name.c_str());
+    printf("done\n");
   }
 
   // emit cluster file
   std::string cluster_file_name = name_of_file + "_router.cluster";
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("Writing cluster rect file '%s' for router\n", rect_file_name.c_str());
+    printf("Writing cluster rect file '%s' for router, ", rect_file_name.c_str());
   }
   std::ofstream ost1(cluster_file_name.c_str());
   Assert(ost1.is_open(), "Cannot open output file: " + cluster_file_name);
@@ -1493,7 +1493,7 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, s
   }
   ost1.close();
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("Cluster rect file '%s' for router is written\n", rect_file_name.c_str());
+    printf("done\n");
   }
 }
 

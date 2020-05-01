@@ -42,7 +42,7 @@ int main() {
   circuit.ReadDefFile(def_file_name);
 #endif
 
-  std::cout << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << " s\n";
+  std::cout << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << " s" << std::endl;
   printf("  Average white space utility: %.4f\n", circuit.WhiteSpaceUsage());
   circuit.ReportBriefSummary();
   //circuit.ReportBlockType();
