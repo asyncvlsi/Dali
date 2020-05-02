@@ -720,6 +720,10 @@ bool StdClusterWellLegalizer::StripLegalizationBottomUp(Strip &strip) {
     AppendBlockToColBottomUp(strip, *blk_ptr);
   }
 
+  for (auto &cluster: strip.cluster_list_) {
+    cluster.UpdateBlockLocY();
+  }
+
   return strip.contour_ <= strip.URY();
 }
 
@@ -739,6 +743,10 @@ bool StdClusterWellLegalizer::StripLegalizationTopDown(Strip &strip) {
   for (auto &blk_ptr: strip.block_list_) {
     if (blk_ptr->IsFixed()) continue;
     AppendBlockToColTopDown(strip, *blk_ptr);
+  }
+
+  for (auto &cluster: strip.cluster_list_) {
+    cluster.UpdateBlockLocY();
   }
 
   /*std::cout << "Reverse clustering: ";
@@ -769,6 +777,10 @@ bool StdClusterWellLegalizer::StripLegalizationBottomUpCompact(Strip &strip) {
     AppendBlockToColBottomUpCompact(strip, *blk_ptr);
   }
 
+  for (auto &cluster: strip.cluster_list_) {
+    cluster.UpdateBlockLocY();
+  }
+
   return strip.contour_ <= RegionTop();
 }
 
@@ -788,6 +800,10 @@ bool StdClusterWellLegalizer::StripLegalizationTopDownCompact(Strip &strip) {
   for (auto &blk_ptr: strip.block_list_) {
     if (blk_ptr->IsFixed()) continue;
     AppendBlockToColTopDownCompact(strip, *blk_ptr);
+  }
+
+  for (auto &cluster: strip.cluster_list_) {
+    cluster.UpdateBlockLocY();
   }
 
   /*std::cout << "Reverse clustering: ";
@@ -868,11 +884,11 @@ bool StdClusterWellLegalizer::BlockClusteringLoose() {
         }
       }
       res = res && is_success;
-      if (is_success) {
+      /*if (is_success) {
         printf("strip legalization success, %d\n", i);
       } else {
         printf("strip legalization fail, %d\n", i);
-      }
+      }*/
 
       for (auto &cluster: strip.cluster_list_) {
         cluster.UpdateBlockLocY();
@@ -1278,7 +1294,7 @@ bool StdClusterWellLegalizer::StartPlacement() {
   Init();
   AssignBlockToColBasedOnWhiteSpace();
   //BlockClustering();
-  BlockClusteringLoose();
+  is_success = BlockClusteringLoose();
   //BlockClusteringCompact();
   ReportHPWL(LOG_CRITICAL);
 

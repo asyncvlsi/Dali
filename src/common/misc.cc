@@ -8,7 +8,7 @@ void PrintSoftwareStatement() {
   std::cout << "\n\n"
                "+--------------------------------------------------+\n"
                "|                                                  |\n"
-               "|         Dali: grided cell placement flow         |\n"
+               "|         Dali: gridded cell placement flow        |\n"
                "|                                                  |\n"
                "|         Department of Electrical Engineering     |\n"
                "|         Yale University                          |\n"
@@ -21,6 +21,6 @@ void PrintSoftwareStatement() {
                "|         THERE IS NO WARRANTY                     |\n"
                "|                                                  |\n"
                "|                                                  |\n"
-               "+--------------------------------------------------+\n"
-               "\n\n";
+               "+--------------------------------------------------+\n";
+  std::cout << "  build time: " << __DATE__ << " " << __TIME__ << "\n\n";
 }
