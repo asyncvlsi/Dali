@@ -37,7 +37,10 @@ class BlockTypeWell {
  private:
   BlockType *type_;
   bool is_plug_;
+  bool is_n_set_ = false;
+  bool is_p_set_ = false;
   RectI n_rect_, p_rect_;
+  int p_n_edge_ = 0;
 
  public:
   BlockTypeCluster *cluster_;
@@ -59,7 +62,7 @@ class BlockTypeWell {
   void SetPWellShape(RectI &rect);
   RectI *GetPWellShape();
 
-  int GetPNBoundary();
+  int GetPNBoundary() const;
   int GetNWellHeight();
   int GetPWellHeight();
 
@@ -123,11 +126,23 @@ inline bool BlockTypeWell::IsUnplug() const {
 }
 
 inline void BlockTypeWell::SetNWellShape(int lx, int ly, int ux, int uy) {
+  is_n_set_ = true;
   n_rect_.SetValue(lx, ly, ux, uy);
+  if (is_p_set_) {
+    Assert(n_rect_.LLY() == p_rect_.URY(), "N/P-well not abutted");
+  } else {
+    p_n_edge_ = n_rect_.LLY();
+  }
 }
 
 inline void BlockTypeWell::SetNWellShape(RectI &rect) {
+  is_n_set_ = true;
   n_rect_ = rect;
+  if (is_p_set_) {
+    Assert(n_rect_.LLY() == p_rect_.URY(), "N/P-well not abutted");
+  } else {
+    p_n_edge_ = n_rect_.LLY();
+  }
 }
 
 inline RectI *BlockTypeWell::GetNWellShape() {
@@ -135,19 +150,31 @@ inline RectI *BlockTypeWell::GetNWellShape() {
 }
 
 inline void BlockTypeWell::SetPWellShape(int lx, int ly, int ux, int uy) {
+  is_p_set_ = true;
   p_rect_.SetValue(lx, ly, ux, uy);
+  if (is_n_set_) {
+    Assert(n_rect_.LLY() == p_rect_.URY(), "N/P-well not abutted");
+  } else {
+    p_n_edge_ = p_rect_.URY();
+  }
 }
 
 inline void BlockTypeWell::SetPWellShape(RectI &rect) {
+  is_p_set_ = true;
   p_rect_ = rect;
+  if (is_n_set_) {
+    Assert(n_rect_.LLY() == p_rect_.URY(), "N/P-well not abutted");
+  } else {
+    p_n_edge_ = p_rect_.URY();
+  }
 }
 
 inline RectI *BlockTypeWell::GetPWellShape() {
   return &(p_rect_);
 }
 
-inline int BlockTypeWell::GetPNBoundary() {
-  return p_rect_.URY();
+inline int BlockTypeWell::GetPNBoundary() const {
+  return p_n_edge_;
 }
 
 inline int BlockTypeWell::GetNWellHeight() {
@@ -159,7 +186,10 @@ inline int BlockTypeWell::GetPWellHeight() {
 }
 
 inline bool BlockTypeWell::IsNPWellAbutted() {
-  return p_rect_.URY() == n_rect_.LLY();
+  if (is_p_set_ && is_n_set_) {
+    return p_rect_.URY() == n_rect_.LLY();
+  }
+  return true;
 }
 
 #endif //DALI_SRC_CIRCUIT_WELLBLKTYPEAUX_H_

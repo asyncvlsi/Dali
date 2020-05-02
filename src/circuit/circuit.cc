@@ -117,6 +117,8 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
       //if (pin_name == "Vdd" || pin_name == "GND") continue;
       //std::cout << terminal->getName() << " " << terminal->getMPins().begin()->getGeometry().begin()->xMax()/grid_value_x/lef_database_microns << "\n";
       auto new_pin = blk_type->AddPin(pin_name);
+      Assert(!terminal->getMPins().empty(), "No physical pins, Macro: " + *blk_type->Name() + ", pin: " + pin_name);
+      Assert(!terminal->getMPins().begin()->getGeometry().empty(), "No geometries provided for pin");
       auto geo_shape = terminal->getMPins().begin()->getGeometry().begin();
       llx = geo_shape->xMin() / tech_.grid_value_x_ / tech_.lef_database_microns;
       urx = geo_shape->xMax() / tech_.grid_value_x_ / tech_.lef_database_microns;
