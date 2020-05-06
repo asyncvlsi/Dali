@@ -218,7 +218,8 @@ class Circuit {
   void GenMATLABScript(std::string const &name_of_file = "block_net_list.m");
   void GenMATLABTable(std::string const &name_of_file = "block.txt");
   void GenMATLABWellTable(std::string const &name_of_file = "res");
-  void SaveDefFile(std::string const &name_of_file, std::string const &def_file_name);
+  void SaveDefFile(std::string const &name_of_file, std::string const &def_file_name, bool is_complete_version = true);
+  void SaveInstanceDefFile(std::string const &name_of_file, std::string const &def_file_name);
 
   /****some Bookshelf IO APIs****/
   void SaveBookshelfNode(std::string const &name_of_file);

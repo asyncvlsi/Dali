@@ -1618,12 +1618,22 @@ void Circuit::GenMATLABWellTable(std::string const &name_of_file) {
   ost1.close();
 }
 
-void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &def_file_name) {
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("Writing DEF file '%s', ", name_of_file.c_str());
+void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &def_file_name, bool is_complete_version) {
+  std::string file_name;
+  if (is_complete_version) {
+    file_name = name_of_file + ".def";
+  } else {
+    file_name = name_of_file + "_trim.def";
   }
-  std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open file " + name_of_file);
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    if (is_complete_version) {
+      printf("Writing DEF file '%s', ", file_name.c_str());
+    } else {
+      printf("Writing trimmed DEF file '%s', ", file_name.c_str());
+    }
+  }
+  std::ofstream ost(file_name.c_str());
+  Assert(ost.is_open(), "Cannot open file " + file_name);
 
   std::ifstream ist(def_file_name.c_str());
   Assert(ist.is_open(), "Cannot open file " + def_file_name);
@@ -1639,9 +1649,23 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   }
 
   // 2. print component
-  ost << "COMPONENTS " << design_.block_list.size() + design_.well_tap_list.size() << " ;\n";
   double factor_x = design_.def_distance_microns * tech_.grid_value_x_;
   double factor_y = design_.def_distance_microns * tech_.grid_value_y_;
+  if (is_complete_version) {
+    ost << "COMPONENTS " << design_.block_list.size() + design_.well_tap_list.size() << " ;\n";
+  } else {
+    ost << "COMPONENTS " << design_.block_list.size() + design_.well_tap_list.size() + 1 << " ;\n";
+    ost << "- "
+        << "npwells "
+        << name_of_file + "well + "
+        << PlaceStatusStr(COVER) << " "
+        << "( "
+        << (int) (RegionLLX() * factor_x) + design_.die_area_offset_x_ << " "
+        << (int) (RegionLLY() * factor_y) + design_.die_area_offset_y_
+        << " ) "
+        << "N"
+        << " ;\n";
+  }
   for (auto &block: design_.block_list) {
     ost << "- "
         << *block.Name() << " "
@@ -1673,10 +1697,15 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   }
 
   // 3. print net, copy from def file
-  while (!ist.eof()) {
-    getline(ist, line);
-    ost << line << "\n";
+  if (is_complete_version) {
+    while (!ist.eof()) {
+      getline(ist, line);
+      ost << line << "\n";
+    }
+  } else {
+    ost << "END DESIGN\n";
   }
+
   /*
   ost << "NETS " << netList.size() << " ;\n";
   for (auto &net: netList) {
@@ -1697,6 +1726,10 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   if (globalVerboseLevel >= LOG_CRITICAL) {
     printf("done\n");
   }
+}
+
+void Circuit::SaveInstanceDefFile(std::string const &name_of_file, std::string const &def_file_name) {
+  SaveDefFile(name_of_file, def_file_name, false);
 }
 
 void Circuit::SaveBookshelfNode(std::string const &name_of_file) {

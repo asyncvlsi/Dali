@@ -939,7 +939,7 @@ bool StdClusterWellLegalizer::TrialClusterLegalization(Strip &strip) {
   // sort clusters in each column based on the lower left corner
   std::vector<Cluster *> cluster_list;
   cluster_list.resize(strip.cluster_count_, nullptr);
-  for (int i=0; i<strip.cluster_count_; ++i) {
+  for (int i = 0; i < strip.cluster_count_; ++i) {
     cluster_list[i] = &strip.cluster_list_[i];
   }
 
@@ -1434,18 +1434,24 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, s
    * ****/
 
   // emit def file
-  circuit_->SaveDefFile(name_of_file + ".def", input_def_file);
+  circuit_->SaveDefFile(name_of_file, input_def_file);
+  circuit_->SaveInstanceDefFile(name_of_file, input_def_file);
 
   double factor_x = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_x_;
   double factor_y = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_y_;
   // emit rect file
-  std::string rect_file_name = name_of_file + "_well.rect";
+  std::string rect_file_name = name_of_file + "well.rect";
   if (globalVerboseLevel >= LOG_CRITICAL) {
     printf("Writing N/P-well rect file '%s', ", rect_file_name.c_str());
   }
   std::ofstream ost(rect_file_name.c_str());
   Assert(ost.is_open(), "Cannot open output file: " + rect_file_name);
 
+  ost << "bbox "
+      << (int) (RegionLeft() * factor_x) + circuit_->design_.die_area_offset_x_ << " "
+      << (int) (RegionBottom() * factor_y) + circuit_->design_.die_area_offset_y_ << " "
+      << (int) (RegionRight() * factor_x) + circuit_->design_.die_area_offset_x_ << " "
+      << (int) (RegionTop() * factor_y) + circuit_->design_.die_area_offset_y_ << "\n";
   for (auto &col: col_list_) {
     for (auto &strip: col.strip_list_) {
       std::vector<int> pn_edge_list;
@@ -1476,9 +1482,9 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, s
         ly = pn_edge_list[i];
         uy = pn_edge_list[i + 1];
         if (is_p_well_rect) {
-          ost << "pwell GND ";
+          ost << "rect GND pwell ";
         } else {
-          ost << "nwell Vdd ";
+          ost << "rect Vdd nwell ";
         }
         ost << (int) (lx * factor_x) + circuit_->design_.die_area_offset_x_ << " "
             << (int) (ly * factor_y) + circuit_->design_.die_area_offset_y_ << " "
@@ -1496,7 +1502,7 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, s
   // emit cluster file
   std::string cluster_file_name = name_of_file + "_router.cluster";
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("Writing cluster rect file '%s' for router, ", rect_file_name.c_str());
+    printf("Writing cluster rect file '%s' for router, ", cluster_file_name.c_str());
   }
   std::ofstream ost1(cluster_file_name.c_str());
   Assert(ost1.is_open(), "Cannot open output file: " + cluster_file_name);
