@@ -401,11 +401,17 @@ void StdClusterWellLegalizer::DecomposeToSimpleStrip() {
 }
 
 void StdClusterWellLegalizer::Init(int cluster_width) {
-  // initialize row height and white space segments
-  InitAvailSpace();
-
   // fetch parameters about N/P-well
   FetchNPWellParams();
+
+  // temporarily change left and right boundary to reserve space
+  printf("left: %d, right: %d, width: %d\n", left_, right_, RegionWidth());
+  left_ += well_spacing_;
+  right_ -= well_spacing_;
+  printf("left: %d, right: %d, width: %d\n", left_, right_, RegionWidth());
+
+  // initialize row height and white space segments
+  InitAvailSpace();
 
   max_cell_width_ = 0;
   for (auto &blk: *BlockList()) {
@@ -432,6 +438,7 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
     }
     strip_width_ = cluster_width;
   }
+
   strip_width_ = strip_width_ - max_cell_width_ + well_spacing_;
   if (strip_width_ > RegionWidth()) {
     strip_width_ = RegionWidth();
@@ -454,11 +461,18 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
   GenAvailSpaceInCols();
   //col_list_.back().width_ = RegionURX() - col_list_.back().lx_;
   //cluster_list_.reserve(tot_col_num_ * max_clusters_per_col);
+
+  // restore left and right boundaries back
+  left_ -= well_spacing_;
+  right_ += well_spacing_;
+  printf("left: %d, right: %d\n", left_, right_);
   if (globalVerboseLevel >= LOG_CRITICAL) {
     printf("Maximum possible number of clusters in a column: %d\n", max_clusters_per_col);
   }
 
   index_loc_list_.resize(BlockList()->size());
+  // temporarily change left and right boundary to reserve space
+
 }
 
 void StdClusterWellLegalizer::AssignBlockToColBasedOnWhiteSpace() {
