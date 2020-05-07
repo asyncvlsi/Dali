@@ -219,7 +219,7 @@ void Placer::SaveDEFFile(std::string const &name_of_file, std::string const &inp
   circuit_->SaveDefFile(name_of_file, input_def_file);
 }
 
-void Placer::EmitDEFWellFile(std::string const &name_of_file, std::string const &input_def_file) {
+void Placer::EmitDEFWellFile(std::string const &name_of_file, std::string const &input_def_file, int well_emit_mode) {
   circuit_->SaveDefFile(name_of_file, input_def_file);
 }
 

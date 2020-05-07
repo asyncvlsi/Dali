@@ -108,7 +108,7 @@ int main() {
   std_cluster_well_legalizer->StartPlacement();
   std_cluster_well_legalizer->GenMATLABTable("sc_result.txt");
   std_cluster_well_legalizer->GenMATLABWellTable("scw");
-  std_cluster_well_legalizer->EmitDEFWellFile("circuit", def_file_name);
+  std_cluster_well_legalizer->EmitDEFWellFile("circuit", def_file_name, 1);
   delete std_cluster_well_legalizer;
 #endif
 

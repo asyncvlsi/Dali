@@ -405,10 +405,10 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
   FetchNPWellParams();
 
   // temporarily change left and right boundary to reserve space
-  printf("left: %d, right: %d, width: %d\n", left_, right_, RegionWidth());
+  //printf("left: %d, right: %d, width: %d\n", left_, right_, RegionWidth());
   left_ += well_spacing_;
   right_ -= well_spacing_;
-  printf("left: %d, right: %d, width: %d\n", left_, right_, RegionWidth());
+  //printf("left: %d, right: %d, width: %d\n", left_, right_, RegionWidth());
 
   // initialize row height and white space segments
   InitAvailSpace();
@@ -465,7 +465,7 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
   // restore left and right boundaries back
   left_ -= well_spacing_;
   right_ += well_spacing_;
-  printf("left: %d, right: %d\n", left_, right_);
+  //printf("left: %d, right: %d\n", left_, right_);
   if (globalVerboseLevel >= LOG_CRITICAL) {
     printf("Maximum possible number of clusters in a column: %d\n", max_clusters_per_col);
   }
@@ -1439,27 +1439,47 @@ void StdClusterWellLegalizer::GenMATLABWellTable(std::string const &name_of_file
   ostn.close();
 }
 
-void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, std::string const &input_def_file) {
+void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file,
+                                              std::string const &input_def_file,
+                                              int well_emit_mode) {
   /****
    * Emit three files:
    * 1. def file, well tap cells are included in this DEF file
    * 2. rect file including all N/P well rectangles
    * 3. cluster file including all cluster shapes
+   *
+   * @param well_mode
+   * 0: emit both N-well and P-well
+   * 1: emit N-well only
+   * 2: emit P-well only
    * ****/
 
   // emit def file
   circuit_->SaveDefFile(name_of_file, input_def_file);
   circuit_->SaveInstanceDefFile(name_of_file, input_def_file);
 
-  double factor_x = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_x_;
-  double factor_y = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_y_;
+
   // emit rect file
   std::string rect_file_name = name_of_file + "well.rect";
   if (globalVerboseLevel >= LOG_CRITICAL) {
     printf("Writing N/P-well rect file '%s', ", rect_file_name.c_str());
   }
+
+  switch (well_emit_mode) {
+    case 0:printf("emit N/P wells, ");
+      break;
+    case 1:printf("emit N wells, ");
+      break;
+    case 2:printf("emit P wells, ");
+      break;
+    default:Assert(false, "Invalid value for well_emit_mode in StdClusterWellLegalizer::EmitDEFWellFile()");
+  }
+
   std::ofstream ost(rect_file_name.c_str());
   Assert(ost.is_open(), "Cannot open output file: " + rect_file_name);
+
+  double factor_x = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_x_;
+  double factor_y = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_y_;
 
   ost << "bbox "
       << (int) (RegionLeft() * factor_x) + circuit_->design_.die_area_offset_x_ << " "
@@ -1496,15 +1516,18 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, s
         ly = pn_edge_list[i];
         uy = pn_edge_list[i + 1];
         if (is_p_well_rect) {
+          is_p_well_rect = !is_p_well_rect;
+          if (well_emit_mode == 1) continue;
           ost << "rect GND pwell ";
         } else {
+          is_p_well_rect = !is_p_well_rect;
+          if (well_emit_mode == 2) continue;
           ost << "rect Vdd nwell ";
         }
         ost << (int) (lx * factor_x) + circuit_->design_.die_area_offset_x_ << " "
             << (int) (ly * factor_y) + circuit_->design_.die_area_offset_y_ << " "
             << (int) (ux * factor_x) + circuit_->design_.die_area_offset_x_ << " "
             << (int) (uy * factor_y) + circuit_->design_.die_area_offset_y_ << "\n";
-        is_p_well_rect = !is_p_well_rect;
       }
     }
   }
