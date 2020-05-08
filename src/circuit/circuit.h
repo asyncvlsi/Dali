@@ -216,8 +216,8 @@ class Circuit {
   /****dump placement results to various file formats****/
   void WriteDefFileDebug(std::string const &name_of_file = "circuit.def");
   void GenMATLABScript(std::string const &name_of_file = "block_net_list.m");
-  void GenMATLABTable(std::string const &name_of_file = "block.txt");
-  void GenMATLABWellTable(std::string const &name_of_file = "res");
+  void GenMATLABTable(std::string const &name_of_file = "block.txt", bool only_well_tap = false);
+  void GenMATLABWellTable(std::string const &name_of_file = "res", bool only_well_tap = false);
   void SaveDefFile(std::string const &name_of_file, std::string const &def_file_name, bool is_complete_version = true);
   void SaveDefWell(std::string const &name_of_file, std::string const &def_file_name);
   void SaveInstanceDefFile(std::string const &name_of_file, std::string const &def_file_name);

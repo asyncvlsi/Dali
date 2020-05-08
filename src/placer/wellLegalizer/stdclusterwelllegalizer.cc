@@ -1224,10 +1224,11 @@ void StdClusterWellLegalizer::InsertWellTap() {
   for (auto &col: col_list_) {
     for (auto &strip: col.strip_list_) {
       for (auto &cluster: strip.cluster_list_) {
-        tot_tap_cell_num += 2;
-        int step = cluster.Width() + well_tap_cell_->Width();
-        int tap_cell_loc = cluster.LLX() - well_tap_cell_->Width();
-        for (int i = 0; i < 2; ++i) {
+        int tap_cell_num = std::ceil(cluster.Width() / (double) max_unplug_length_);
+        tot_tap_cell_num += tap_cell_num;
+        int step = 2 * max_unplug_length_;
+        int tap_cell_loc = cluster.LLX() - well_tap_cell_->Width() / 2;
+        for (int i = 0; i < tap_cell_num; ++i) {
           std::string block_name = "__well_tap__" + std::to_string(counter++);
           tap_cell_list.emplace_back();
           auto &tap_cell = tap_cell_list.back();
@@ -1375,8 +1376,8 @@ void StdClusterWellLegalizer::GenMatlabClusterTable(std::string const &name_of_f
   ost.close();
 }
 
-void StdClusterWellLegalizer::GenMATLABWellTable(std::string const &name_of_file) {
-  circuit_->GenMATLABWellTable(name_of_file);
+void StdClusterWellLegalizer::GenMATLABWellTable(std::string const &name_of_file, int well_emit_mode) {
+  circuit_->GenMATLABWellTable(name_of_file, true);
 
   std::string p_file = name_of_file + "_pwell.txt";
   std::ofstream ostp(p_file.c_str());
@@ -1416,23 +1417,27 @@ void StdClusterWellLegalizer::GenMATLABWellTable(std::string const &name_of_file
         ly = pn_edge_list[i];
         uy = pn_edge_list[i + 1];
         if (is_p_well_rect) {
-          ostp << lx << "\t"
-               << ux << "\t"
-               << ux << "\t"
-               << lx << "\t"
-               << ly << "\t"
-               << ly << "\t"
-               << uy << "\t"
-               << uy << "\n";
+          if (well_emit_mode != 1) {
+            ostp << lx << "\t"
+                 << ux << "\t"
+                 << ux << "\t"
+                 << lx << "\t"
+                 << ly << "\t"
+                 << ly << "\t"
+                 << uy << "\t"
+                 << uy << "\n";
+          }
         } else {
-          ostn << lx << "\t"
-               << ux << "\t"
-               << ux << "\t"
-               << lx << "\t"
-               << ly << "\t"
-               << ly << "\t"
-               << uy << "\t"
-               << uy << "\n";
+          if (well_emit_mode != 2) {
+            ostn << lx << "\t"
+                 << ux << "\t"
+                 << ux << "\t"
+                 << lx << "\t"
+                 << ly << "\t"
+                 << ly << "\t"
+                 << uy << "\t"
+                 << uy << "\n";
+          }
         }
         is_p_well_rect = !is_p_well_rect;
       }
@@ -1440,6 +1445,149 @@ void StdClusterWellLegalizer::GenMATLABWellTable(std::string const &name_of_file
   }
   ostp.close();
   ostn.close();
+
+  GenMATLABNPPPTable(name_of_file);
+}
+
+void StdClusterWellLegalizer::GenMATLABNPPPTable(const std::string &name_of_file) {
+  std::string np_file = name_of_file + "_np.txt";
+  std::ofstream ostnp(np_file.c_str());
+  Assert(ostnp.is_open(), "Cannot open output file: " + np_file);
+
+  std::string pp_file = name_of_file + "_pp.txt";
+  std::ofstream ostpp(pp_file.c_str());
+  Assert(ostpp.is_open(), "Cannot open output file: " + pp_file);
+
+  int adjust_width = well_tap_cell_->Width();
+
+  for (auto &col: col_list_) {
+    for (auto &strip: col.strip_list_) {
+      // draw NP and PP shapes from N/P-edge to N/P-edge
+      std::vector<int> pn_edge_list;
+      pn_edge_list.reserve(strip.cluster_list_.size() + 2);
+      if (strip.is_bottom_up_) {
+        pn_edge_list.push_back(RegionBottom());
+      } else {
+        pn_edge_list.push_back(RegionTop());
+      }
+      for (auto &cluster: strip.cluster_list_) {
+        pn_edge_list.push_back(cluster.LLY() + cluster.PNEdge());
+      }
+      if (strip.is_bottom_up_) {
+        pn_edge_list.push_back(RegionTop());
+      } else {
+        pn_edge_list.push_back(RegionBottom());
+        std::reverse(pn_edge_list.begin(), pn_edge_list.end());
+      }
+
+      bool is_p_well_rect = strip.is_first_row_orient_N_;
+      int lx = col.LLX();
+      int ux = col.URX();
+      int ly;
+      int uy;
+      int rect_count = (int) pn_edge_list.size() - 1;
+      for (int i = 0; i < rect_count; ++i) {
+        ly = pn_edge_list[i];
+        uy = pn_edge_list[i + 1];
+        if (is_p_well_rect) {
+          ostnp << lx + adjust_width << "\t"
+                << ux - adjust_width << "\t"
+                << ux - adjust_width << "\t"
+                << lx + adjust_width << "\t"
+                << ly << "\t"
+                << ly << "\t"
+                << uy << "\t"
+                << uy << "\n";
+        } else {
+          ostpp << lx + adjust_width << "\t"
+                << ux - adjust_width << "\t"
+                << ux - adjust_width << "\t"
+                << lx + adjust_width << "\t"
+                << ly << "\t"
+                << ly << "\t"
+                << uy << "\t"
+                << uy << "\n";
+        }
+        is_p_well_rect = !is_p_well_rect;
+      }
+
+      // draw NP and PP shapes from well-tap cell to well-tap cell
+      std::vector<int> well_tap_top_bottom_list;
+      well_tap_top_bottom_list.reserve(strip.cluster_list_.size() + 2);
+      if (strip.is_bottom_up_) {
+        well_tap_top_bottom_list.push_back(RegionBottom());
+      } else {
+        well_tap_top_bottom_list.push_back(RegionTop());
+      }
+      for (auto &cluster: strip.cluster_list_) {
+        if (strip.is_bottom_up_) {
+          well_tap_top_bottom_list.push_back(cluster.blk_list_[0]->LLY());
+          well_tap_top_bottom_list.push_back(cluster.blk_list_[0]->URY());
+        } else {
+          well_tap_top_bottom_list.push_back(cluster.blk_list_[0]->URY());
+          well_tap_top_bottom_list.push_back(cluster.blk_list_[0]->LLY());
+        }
+      }
+      if (strip.is_bottom_up_) {
+        well_tap_top_bottom_list.push_back(RegionTop());
+      } else {
+        well_tap_top_bottom_list.push_back(RegionBottom());
+        std::reverse(well_tap_top_bottom_list.begin(), well_tap_top_bottom_list.end());
+      }
+      Assert(well_tap_top_bottom_list.size()%2==0, "Impossible to get an even number of well tap cell edges");
+
+      is_p_well_rect = strip.is_first_row_orient_N_;
+      int lx0 = col.LLX();
+      int ux0 = lx + adjust_width;
+      int ux1 = col.URX();
+      int lx1 = ux1 - adjust_width;
+      rect_count = (int) well_tap_top_bottom_list.size() - 1;
+      for (int i = 0; i < rect_count; i += 2) {
+        ly = well_tap_top_bottom_list[i];
+        uy = well_tap_top_bottom_list[i + 1];
+        if (uy > ly) {
+          if (is_p_well_rect) {
+            ostpp << lx0 << "\t"
+                  << ux0 << "\t"
+                  << ux0 << "\t"
+                  << lx0 << "\t"
+                  << ly << "\t"
+                  << ly << "\t"
+                  << uy << "\t"
+                  << uy << "\n";
+            ostpp << lx1 << "\t"
+                  << ux1 << "\t"
+                  << ux1 << "\t"
+                  << lx1 << "\t"
+                  << ly << "\t"
+                  << ly << "\t"
+                  << uy << "\t"
+                  << uy << "\n";
+          } else {
+            ostnp << lx0 << "\t"
+                  << ux0 << "\t"
+                  << ux0 << "\t"
+                  << lx0 << "\t"
+                  << ly << "\t"
+                  << ly << "\t"
+                  << uy << "\t"
+                  << uy << "\n";
+            ostnp << lx1 << "\t"
+                  << ux1 << "\t"
+                  << ux1 << "\t"
+                  << lx1 << "\t"
+                  << ly << "\t"
+                  << ly << "\t"
+                  << uy << "\t"
+                  << uy << "\n";
+          }
+        }
+        is_p_well_rect = !is_p_well_rect;
+      }
+    }
+  }
+  ostnp.close();
+  ostpp.close();
 }
 
 void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file,

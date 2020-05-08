@@ -217,7 +217,8 @@ class StdClusterWellLegalizer : public Placer {
   bool StartPlacement() override;
 
   void GenMatlabClusterTable(std::string const &name_of_file);
-  void GenMATLABWellTable(std::string const &name_of_file) override;
+  void GenMATLABWellTable(std::string const &name_of_file, int well_emit_mode) override;
+  void GenMATLABNPPPTable(std::string const &name_of_file);
   void EmitDEFWellFile(std::string const &name_of_file, std::string const &input_def_file, int well_emit_mode) override;
 
   /**** member functions for debugging ****/

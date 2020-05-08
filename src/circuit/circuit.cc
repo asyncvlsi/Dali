@@ -1468,7 +1468,7 @@ void Circuit::GenMATLABScript(std::string const &name_of_file) {
   ost.close();
 }
 
-void Circuit::GenMATLABTable(std::string const &name_of_file) {
+void Circuit::GenMATLABTable(std::string const &name_of_file, bool only_well_tap) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
   ost << RegionLLX() << "\t"
@@ -1482,18 +1482,20 @@ void Circuit::GenMATLABTable(std::string const &name_of_file) {
       << 1 << "\t"
       << 1 << "\t"
       << 1 << "\n";
-  for (auto &block: design_.block_list) {
-    ost << block.LLX() << "\t"
-        << block.URX() << "\t"
-        << block.URX() << "\t"
-        << block.LLX() << "\t"
-        << block.LLY() << "\t"
-        << block.LLY() << "\t"
-        << block.URY() << "\t"
-        << block.URY() << "\t"
-        << 0 << "\t"
-        << 1 << "\t"
-        << 1 << "\n";
+  if (!only_well_tap) {
+    for (auto &block: design_.block_list) {
+      ost << block.LLX() << "\t"
+          << block.URX() << "\t"
+          << block.URX() << "\t"
+          << block.LLX() << "\t"
+          << block.LLY() << "\t"
+          << block.LLY() << "\t"
+          << block.URY() << "\t"
+          << block.URY() << "\t"
+          << 0 << "\t"
+          << 1 << "\t"
+          << 1 << "\n";
+    }
   }
   for (auto &block: design_.well_tap_list) {
     ost << block.LLX() << "\t"
@@ -1511,60 +1513,59 @@ void Circuit::GenMATLABTable(std::string const &name_of_file) {
   ost.close();
 }
 
-void Circuit::GenMATLABWellTable(std::string const &name_of_file) {
+void Circuit::GenMATLABWellTable(std::string const &name_of_file, bool only_well_tap) {
   std::string frame_file = name_of_file + "_outline.txt";
   std::string unplug_file = name_of_file + "_unplug.txt";
-  std::string plug_file = name_of_file + "_plug.txt";
-  GenMATLABTable(frame_file);
+  GenMATLABTable(frame_file, only_well_tap);
 
   std::ofstream ost(unplug_file.c_str());
   Assert(ost.is_open(), "Cannot open output file: " + unplug_file);
-  std::ofstream ost1(plug_file.c_str());
-  Assert(ost1.is_open(), "Cannot open output file: " + plug_file);
 
   BlockTypeWell *well;
   RectI *n_well_shape, *p_well_shape;
-  for (auto &block: design_.block_list) {
-    well = block.Type()->GetWell();
-    if (well != nullptr) {
-      n_well_shape = well->GetNWellShape();
-      p_well_shape = well->GetPWellShape();
-      if (block.Orient() == N) {
-        ost << block.LLX() + n_well_shape->LLX() << "\t"
-            << block.LLX() + n_well_shape->URX() << "\t"
-            << block.LLX() + n_well_shape->URX() << "\t"
-            << block.LLX() + n_well_shape->LLX() << "\t"
-            << block.LLY() + n_well_shape->LLY() << "\t"
-            << block.LLY() + n_well_shape->LLY() << "\t"
-            << block.LLY() + n_well_shape->URY() << "\t"
-            << block.LLY() + n_well_shape->URY() << "\t"
+  if (!only_well_tap) {
+    for (auto &block: design_.block_list) {
+      well = block.Type()->GetWell();
+      if (well != nullptr) {
+        n_well_shape = well->GetNWellShape();
+        p_well_shape = well->GetPWellShape();
+        if (block.Orient() == N) {
+          ost << block.LLX() + n_well_shape->LLX() << "\t"
+              << block.LLX() + n_well_shape->URX() << "\t"
+              << block.LLX() + n_well_shape->URX() << "\t"
+              << block.LLX() + n_well_shape->LLX() << "\t"
+              << block.LLY() + n_well_shape->LLY() << "\t"
+              << block.LLY() + n_well_shape->LLY() << "\t"
+              << block.LLY() + n_well_shape->URY() << "\t"
+              << block.LLY() + n_well_shape->URY() << "\t"
 
-            << block.LLX() + p_well_shape->LLX() << "\t"
-            << block.LLX() + p_well_shape->URX() << "\t"
-            << block.LLX() + p_well_shape->URX() << "\t"
-            << block.LLX() + p_well_shape->LLX() << "\t"
-            << block.LLY() + p_well_shape->LLY() << "\t"
-            << block.LLY() + p_well_shape->LLY() << "\t"
-            << block.LLY() + p_well_shape->URY() << "\t"
-            << block.LLY() + p_well_shape->URY() << "\n";
-      } else if (block.Orient() == FS) {
-        ost << block.LLX() + n_well_shape->LLX() << "\t"
-            << block.LLX() + n_well_shape->URX() << "\t"
-            << block.LLX() + n_well_shape->URX() << "\t"
-            << block.LLX() + n_well_shape->LLX() << "\t"
-            << block.URY() - n_well_shape->LLY() << "\t"
-            << block.URY() - n_well_shape->LLY() << "\t"
-            << block.URY() - n_well_shape->URY() << "\t"
-            << block.URY() - n_well_shape->URY() << "\t"
+              << block.LLX() + p_well_shape->LLX() << "\t"
+              << block.LLX() + p_well_shape->URX() << "\t"
+              << block.LLX() + p_well_shape->URX() << "\t"
+              << block.LLX() + p_well_shape->LLX() << "\t"
+              << block.LLY() + p_well_shape->LLY() << "\t"
+              << block.LLY() + p_well_shape->LLY() << "\t"
+              << block.LLY() + p_well_shape->URY() << "\t"
+              << block.LLY() + p_well_shape->URY() << "\n";
+        } else if (block.Orient() == FS) {
+          ost << block.LLX() + n_well_shape->LLX() << "\t"
+              << block.LLX() + n_well_shape->URX() << "\t"
+              << block.LLX() + n_well_shape->URX() << "\t"
+              << block.LLX() + n_well_shape->LLX() << "\t"
+              << block.URY() - n_well_shape->LLY() << "\t"
+              << block.URY() - n_well_shape->LLY() << "\t"
+              << block.URY() - n_well_shape->URY() << "\t"
+              << block.URY() - n_well_shape->URY() << "\t"
 
-            << block.LLX() + p_well_shape->LLX() << "\t"
-            << block.LLX() + p_well_shape->URX() << "\t"
-            << block.LLX() + p_well_shape->URX() << "\t"
-            << block.LLX() + p_well_shape->LLX() << "\t"
-            << block.URY() - p_well_shape->LLY() << "\t"
-            << block.URY() - p_well_shape->LLY() << "\t"
-            << block.URY() - p_well_shape->URY() << "\t"
-            << block.URY() - p_well_shape->URY() << "\n";
+              << block.LLX() + p_well_shape->LLX() << "\t"
+              << block.LLX() + p_well_shape->URX() << "\t"
+              << block.LLX() + p_well_shape->URX() << "\t"
+              << block.LLX() + p_well_shape->LLX() << "\t"
+              << block.URY() - p_well_shape->LLY() << "\t"
+              << block.URY() - p_well_shape->LLY() << "\t"
+              << block.URY() - p_well_shape->URY() << "\t"
+              << block.URY() - p_well_shape->URY() << "\n";
+        }
       }
     }
   }
@@ -1615,7 +1616,6 @@ void Circuit::GenMATLABWellTable(std::string const &name_of_file) {
   }
 
   ost.close();
-  ost1.close();
 }
 
 void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &def_file_name, bool is_complete_version) {
@@ -1629,7 +1629,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
     if (is_complete_version) {
       printf("Writing DEF file '%s', ", file_name.c_str());
     } else {
-      printf("Writing trimmed DEF file '%s', ", file_name.c_str());
+      printf("Writing trimmed DEF file (for debugging) '%s', ", file_name.c_str());
     }
   }
   std::ofstream ost(file_name.c_str());
@@ -1729,7 +1729,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
 }
 
 void Circuit::SaveDefWell(std::string const &name_of_file, std::string const &def_file_name) {
-  printf("Writing WellTap Network DEF file '%s', ", name_of_file.c_str());
+  printf("Writing WellTap Network DEF file (for debugging) '%s', ", name_of_file.c_str());
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file " + name_of_file);
 
@@ -1779,14 +1779,14 @@ void Circuit::SaveDefWell(std::string const &name_of_file, std::string const &de
   ost << "- ggnndd\n";
   ost << " ";
   for (auto &block: design_.well_tap_list) {
-    ost << " ( " << block.NameStr() << " GND )";
+    ost << " ( " << block.NameStr() << " g0 )";
   }
   ost << "\n" << " ;\n";
   //Vdd
   ost << "- vvdddd\n";
   ost << " ";
   for (auto &block: design_.well_tap_list) {
-    ost << " ( " << block.NameStr() << " Vdd )";
+    ost << " ( " << block.NameStr() << " v0 )";
   }
   ost << "\n" << " ;\n";
 

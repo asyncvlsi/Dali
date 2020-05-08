@@ -54,7 +54,7 @@ bool WellPlaceFlow::StartPlacement() {
       bool is_success = well_legalizer.StartPlacement();*/
       bool is_success = well_legalizer_.WellLegalize();
       well_legalizer_.GenMatlabClusterTable("sc_result");
-      well_legalizer_.GenMATLABWellTable("scw");
+      well_legalizer_.GenMATLABWellTable("scw", 0);
       if (!is_success && !old_success) {
         filling_rate_ = filling_rate_ * 0.99;
         std::cout << "Adjusted filling rate: " << filling_rate_ << "\n";
@@ -98,6 +98,8 @@ bool WellPlaceFlow::StartPlacement() {
   return true;
 }
 
-void WellPlaceFlow::EmitDEFWellFile(std::string const &name_of_file, std::string const &input_def_file, int well_emit_mode) {
+void WellPlaceFlow::EmitDEFWellFile(std::string const &name_of_file,
+                                    std::string const &input_def_file,
+                                    int well_emit_mode) {
   well_legalizer_.EmitDEFWellFile(name_of_file, input_def_file, well_emit_mode);
 }

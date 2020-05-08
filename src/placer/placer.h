@@ -78,13 +78,15 @@ class Placer {
   void IOPinPlacement();
 
   /****File I/O member functions****/
-  void GenMATLABTable(std::string const &name_of_file = "block.txt");
-  virtual void GenMATLABWellTable(std::string const &name_of_file);
+  void GenMATLABTable(std::string const &name_of_file);
+  virtual void GenMATLABWellTable(std::string const &name_of_file, int well_emit_mode = 0);
   void GenMATLABScriptPlaced(std::string const &name_of_file = "block_net_list.m");
   bool SaveNodeTerminal(std::string const &terminal_file = "terminal.txt", std::string const &node_file = "nodes.txt");
   void SaveDEFFile(std::string const &name_of_file = "circuit.def");
   void SaveDEFFile(std::string const &name_of_file, std::string const &input_def_file);
-  virtual void EmitDEFWellFile(std::string const &name_of_file, std::string const &input_def_file, int well_emit_mode = 0);
+  virtual void EmitDEFWellFile(std::string const &name_of_file,
+                               std::string const &input_def_file,
+                               int well_emit_mode = 0);
 
   /****for testing purposes****/
   void ShiftX(double shift_x);
@@ -189,7 +191,7 @@ inline void Placer::GenMATLABTable(std::string const &name_of_file) {
   circuit_->GenMATLABTable(name_of_file);
 }
 
-inline void Placer::GenMATLABWellTable(std::string const &name_of_file) {
+inline void Placer::GenMATLABWellTable(std::string const &name_of_file, int well_emit_mode) {
   circuit_->GenMATLABWellTable(name_of_file);
 }
 
