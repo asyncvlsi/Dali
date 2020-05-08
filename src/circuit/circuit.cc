@@ -1728,6 +1728,79 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   }
 }
 
+void Circuit::SaveDefWell(std::string const &name_of_file, std::string const &def_file_name) {
+  printf("Writing WellTap Network DEF file '%s', ", name_of_file.c_str());
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open file " + name_of_file);
+
+  std::ifstream ist(def_file_name.c_str());
+  Assert(ist.is_open(), "Cannot open file " + def_file_name);
+
+  std::string line;
+  // 1. print file header, copy from def file
+  while (true) {
+    getline(ist, line);
+    if (line.find("DESIGN") != std::string::npos || ist.eof()) {
+      ost << "DESIGN WellTapNetwork ;\n";
+      continue;
+    }
+    if (line.find("COMPONENTS") != std::string::npos || ist.eof()) {
+      break;
+    }
+    ost << line << "\n";
+  }
+
+  // 2. print well tap cells
+  double factor_x = design_.def_distance_microns * tech_.grid_value_x_;
+  double factor_y = design_.def_distance_microns * tech_.grid_value_y_;
+  ost << "COMPONENTS " << design_.well_tap_list.size() << " ;\n";
+  for (auto &block: design_.well_tap_list) {
+    ost << "- "
+        << *block.Name() << " "
+        << *(block.Type()->Name()) << " + "
+        << "PLACED" << " "
+        << "( "
+        << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
+        << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
+        << " ) "
+        << OrientStr(block.Orient())
+        << " ;\n";
+  }
+  ost << "END COMPONENTS\n";
+  // jump to the end of components
+  while (line.find("END COMPONENTS") == std::string::npos && !ist.eof()) {
+    getline(ist, line);
+  }
+
+  // 3. print net, copy from def file
+
+  ost << "\nNETS 2 ;\n";
+  // GND
+  ost << "- ggnndd\n";
+  ost << " ";
+  for (auto &block: design_.well_tap_list) {
+    ost << " ( " << block.NameStr() << " GND )";
+  }
+  ost << "\n" << " ;\n";
+  //Vdd
+  ost << "- vvdddd\n";
+  ost << " ";
+  for (auto &block: design_.well_tap_list) {
+    ost << " ( " << block.NameStr() << " Vdd )";
+  }
+  ost << "\n" << " ;\n";
+
+  ost << "END NETS\n\n";
+  ost << "END DESIGN\n";
+
+  ost.close();
+  ist.close();
+
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("done\n");
+  }
+}
+
 void Circuit::SaveInstanceDefFile(std::string const &name_of_file, std::string const &def_file_name) {
   SaveDefFile(name_of_file, def_file_name, false);
 }

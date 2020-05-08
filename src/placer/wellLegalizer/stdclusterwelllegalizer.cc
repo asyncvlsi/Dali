@@ -354,10 +354,14 @@ void StdClusterWellLegalizer::UpdateWhiteSpaceInCol(ClusterStrip &col) {
       auto tmp_seg = strip_seg.Joint(seg);
       if (tmp_seg != nullptr) {
         if (tmp_seg->lo - seg.lo < max_cell_width_ * 2 + well_spacing_) {
-          tmp_seg->lo = seg.lo;
+          if (tmp_seg->hi - seg.lo < 2 * max_unplug_length_) {
+            tmp_seg->lo = seg.lo;
+          }
         }
         if (seg.hi - tmp_seg->hi < max_cell_width_ * 2 + well_spacing_) {
-          tmp_seg->hi = seg.hi;
+          if (seg.hi - tmp_seg->lo < 2 * max_unplug_length_) {
+            tmp_seg->hi = seg.hi;
+          }
         }
         if (tmp_seg->Span() < max_cell_width_ * 2 && tmp_seg->Span() < seg.Span()) continue;;
         col.white_space_[i].push_back(*tmp_seg);
@@ -427,7 +431,7 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
     if (globalVerboseLevel >= LOG_CRITICAL) {
       std::cout << "Using default cluster width: 3*max_unplug_length_\n";
     }
-    strip_width_ = max_unplug_length_ * 3;
+    strip_width_ = max_unplug_length_ * 2;
   } else {
     if (cluster_width < max_unplug_length_) {
       if (globalVerboseLevel >= LOG_WARNING) {
@@ -439,7 +443,7 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
     strip_width_ = cluster_width;
   }
 
-  strip_width_ = strip_width_ - max_cell_width_ + well_spacing_;
+  strip_width_ = strip_width_ + well_spacing_;
   if (strip_width_ > RegionWidth()) {
     strip_width_ = RegionWidth();
   }
@@ -1220,11 +1224,10 @@ void StdClusterWellLegalizer::InsertWellTap() {
   for (auto &col: col_list_) {
     for (auto &strip: col.strip_list_) {
       for (auto &cluster: strip.cluster_list_) {
-        int num_of_tap_cell = (int) std::ceil(cluster.Width() / (1.5 * max_unplug_length_));
-        tot_tap_cell_num += num_of_tap_cell;
-        int step = cluster.Width() / (num_of_tap_cell + 1);
-        int tap_cell_loc = cluster.LLX() + step;
-        for (int i = 0; i < num_of_tap_cell; ++i) {
+        tot_tap_cell_num += 2;
+        int step = cluster.Width() + well_tap_cell_->Width();
+        int tap_cell_loc = cluster.LLX() - well_tap_cell_->Width();
+        for (int i = 0; i < 2; ++i) {
           std::string block_name = "__well_tap__" + std::to_string(counter++);
           tap_cell_list.emplace_back();
           auto &tap_cell = tap_cell_list.back();
@@ -1457,6 +1460,7 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file,
   // emit def file
   circuit_->SaveDefFile(name_of_file, input_def_file);
   circuit_->SaveInstanceDefFile(name_of_file, input_def_file);
+  circuit_->SaveDefWell(name_of_file + "_welltapnetwork.def", input_def_file);
 
 
   // emit rect file
