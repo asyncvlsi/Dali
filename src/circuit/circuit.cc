@@ -1801,6 +1801,73 @@ void Circuit::SaveDefWell(std::string const &name_of_file, std::string const &de
   }
 }
 
+void Circuit::SaveDefPPNPWell(std::string const &name_of_file, std::string const &def_file_name) {
+  std::string file_name = name_of_file + "_ppnpwell.def";
+  printf("Writing PPNPWell DEF file (for debugging) '%s', ", file_name.c_str());
+  std::ofstream ost(file_name.c_str());
+  Assert(ost.is_open(), "Cannot open file " + file_name);
+
+  std::ifstream ist(def_file_name.c_str());
+  Assert(ist.is_open(), "Cannot open file " + def_file_name);
+
+  std::string line;
+  // 1. print file header, copy from def file
+  while (true) {
+    getline(ist, line);
+    if (line.find("DESIGN") != std::string::npos || ist.eof()) {
+      ost << "DESIGN PPNPWell ;\n";
+      continue;
+    }
+    if (line.find("COMPONENTS") != std::string::npos || ist.eof()) {
+      break;
+    }
+    ost << line << "\n";
+  }
+
+  // 2. print well tap cells
+  double factor_x = design_.def_distance_microns * tech_.grid_value_x_;
+  double factor_y = design_.def_distance_microns * tech_.grid_value_y_;
+  ost << "COMPONENTS " << 2 << " ;\n";
+  ost << "- "
+      << "npwells "
+      << name_of_file + "well + "
+      << PlaceStatusStr(COVER) << " "
+      << "( "
+      << (int) (RegionLLX() * factor_x) + design_.die_area_offset_x_ << " "
+      << (int) (RegionLLY() * factor_y) + design_.die_area_offset_y_
+      << " ) "
+      << "N"
+      << " ;\n";
+  ost << "- "
+      << "ppnps "
+      << name_of_file + "ppnp + "
+      << PlaceStatusStr(COVER) << " "
+      << "( "
+      << (int) (RegionLLX() * factor_x) + design_.die_area_offset_x_ << " "
+      << (int) (RegionLLY() * factor_y) + design_.die_area_offset_y_
+      << " ) "
+      << "N"
+      << " ;\n";
+  ost << "END COMPONENTS\n";
+  // jump to the end of components
+  while (line.find("END COMPONENTS") == std::string::npos && !ist.eof()) {
+    getline(ist, line);
+  }
+
+  // 3. print net, copy from def file
+
+  ost << "\nNETS 0 ;\n";
+  ost << "END NETS\n\n";
+  ost << "END DESIGN\n";
+
+  ost.close();
+  ist.close();
+
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("done\n");
+  }
+}
+
 void Circuit::SaveInstanceDefFile(std::string const &name_of_file, std::string const &def_file_name) {
   SaveDefFile(name_of_file, def_file_name, false);
 }

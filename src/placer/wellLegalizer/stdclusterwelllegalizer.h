@@ -218,8 +218,9 @@ class StdClusterWellLegalizer : public Placer {
 
   void GenMatlabClusterTable(std::string const &name_of_file);
   void GenMATLABWellTable(std::string const &name_of_file, int well_emit_mode) override;
-  void GenMATLABNPPPTable(std::string const &name_of_file);
+  void GenPPNP(std::string const &name_of_file);
   void EmitDEFWellFile(std::string const &name_of_file, std::string const &input_def_file, int well_emit_mode) override;
+  void EmitPPNP(std::string const &name_of_file);
 
   /**** member functions for debugging ****/
   void GenAvailSpace(std::string const &name_of_file = "avail_space.txt");

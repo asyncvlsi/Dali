@@ -1446,10 +1446,10 @@ void StdClusterWellLegalizer::GenMATLABWellTable(std::string const &name_of_file
   ostp.close();
   ostn.close();
 
-  GenMATLABNPPPTable(name_of_file);
+  GenPPNP(name_of_file);
 }
 
-void StdClusterWellLegalizer::GenMATLABNPPPTable(const std::string &name_of_file) {
+void StdClusterWellLegalizer::GenPPNP(const std::string &name_of_file) {
   std::string np_file = name_of_file + "_np.txt";
   std::ofstream ostnp(np_file.c_str());
   Assert(ostnp.is_open(), "Cannot open output file: " + np_file);
@@ -1534,7 +1534,7 @@ void StdClusterWellLegalizer::GenMATLABNPPPTable(const std::string &name_of_file
         well_tap_top_bottom_list.push_back(RegionBottom());
         std::reverse(well_tap_top_bottom_list.begin(), well_tap_top_bottom_list.end());
       }
-      Assert(well_tap_top_bottom_list.size()%2==0, "Impossible to get an even number of well tap cell edges");
+      Assert(well_tap_top_bottom_list.size() % 2 == 0, "Impossible to get an even number of well tap cell edges");
 
       is_p_well_rect = strip.is_first_row_orient_N_;
       int lx0 = col.LLX();
@@ -1609,6 +1609,8 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file,
   circuit_->SaveDefFile(name_of_file, input_def_file);
   circuit_->SaveInstanceDefFile(name_of_file, input_def_file);
   circuit_->SaveDefWell(name_of_file + "_welltapnetwork.def", input_def_file);
+  circuit_->SaveDefPPNPWell(name_of_file, input_def_file);
+  EmitPPNP(name_of_file);
 
 
   // emit rect file
@@ -1721,6 +1723,133 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file,
     }
   }
   ost1.close();
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("done\n");
+  }
+}
+
+void StdClusterWellLegalizer::EmitPPNP(std::string const &name_of_file) {
+  // emit rect file
+  std::string rect_file_name = name_of_file + "ppnp.rect";
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("Writing PP and NP rect file '%s', ", rect_file_name.c_str());
+  }
+
+  std::ofstream ost(rect_file_name.c_str());
+  Assert(ost.is_open(), "Cannot open output file: " + rect_file_name);
+
+  double factor_x = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_x_;
+  double factor_y = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_y_;
+
+  ost << "bbox "
+      << (int) (RegionLeft() * factor_x) + circuit_->design_.die_area_offset_x_ << " "
+      << (int) (RegionBottom() * factor_y) + circuit_->design_.die_area_offset_y_ << " "
+      << (int) (RegionRight() * factor_x) + circuit_->design_.die_area_offset_x_ << " "
+      << (int) (RegionTop() * factor_y) + circuit_->design_.die_area_offset_y_ << "\n";
+
+  int adjust_width = well_tap_cell_->Width();
+
+  for (auto &col: col_list_) {
+    for (auto &strip: col.strip_list_) {
+      // draw NP and PP shapes from N/P-edge to N/P-edge
+      std::vector<int> pn_edge_list;
+      pn_edge_list.reserve(strip.cluster_list_.size() + 2);
+      if (strip.is_bottom_up_) {
+        pn_edge_list.push_back(RegionBottom());
+      } else {
+        pn_edge_list.push_back(RegionTop());
+      }
+      for (auto &cluster: strip.cluster_list_) {
+        pn_edge_list.push_back(cluster.LLY() + cluster.PNEdge());
+      }
+      if (strip.is_bottom_up_) {
+        pn_edge_list.push_back(RegionTop());
+      } else {
+        pn_edge_list.push_back(RegionBottom());
+        std::reverse(pn_edge_list.begin(), pn_edge_list.end());
+      }
+
+      bool is_p_well_rect = strip.is_first_row_orient_N_;
+      int lx = col.LLX();
+      int ux = col.URX();
+      int ly;
+      int uy;
+      int rect_count = (int) pn_edge_list.size() - 1;
+      for (int i = 0; i < rect_count; ++i) {
+        ly = pn_edge_list[i];
+        uy = pn_edge_list[i + 1];
+        if (is_p_well_rect) {
+          ost << "rect # nndiff ";
+        } else {
+          ost << "rect # ppdiff ";
+        }
+        ost << (lx + adjust_width) * factor_x + circuit_->design_.die_area_offset_x_ << "\t"
+            << ly * factor_y + circuit_->design_.die_area_offset_y_ << "\t"
+            << (ux - adjust_width) * factor_x + circuit_->design_.die_area_offset_x_ << "\t"
+            << uy * factor_y + circuit_->design_.die_area_offset_y_ << "\n";
+
+        is_p_well_rect = !is_p_well_rect;
+      }
+
+      // draw NP and PP shapes from well-tap cell to well-tap cell
+      std::vector<int> well_tap_top_bottom_list;
+      well_tap_top_bottom_list.reserve(strip.cluster_list_.size() + 2);
+      if (strip.is_bottom_up_) {
+        well_tap_top_bottom_list.push_back(RegionBottom());
+      } else {
+        well_tap_top_bottom_list.push_back(RegionTop());
+      }
+      for (auto &cluster: strip.cluster_list_) {
+        if (strip.is_bottom_up_) {
+          well_tap_top_bottom_list.push_back(cluster.blk_list_[0]->LLY());
+          well_tap_top_bottom_list.push_back(cluster.blk_list_[0]->URY());
+        } else {
+          well_tap_top_bottom_list.push_back(cluster.blk_list_[0]->URY());
+          well_tap_top_bottom_list.push_back(cluster.blk_list_[0]->LLY());
+        }
+      }
+      if (strip.is_bottom_up_) {
+        well_tap_top_bottom_list.push_back(RegionTop());
+      } else {
+        well_tap_top_bottom_list.push_back(RegionBottom());
+        std::reverse(well_tap_top_bottom_list.begin(), well_tap_top_bottom_list.end());
+      }
+      Assert(well_tap_top_bottom_list.size() % 2 == 0, "Impossible to get an even number of well tap cell edges");
+
+      is_p_well_rect = strip.is_first_row_orient_N_;
+      int lx0 = col.LLX();
+      int ux0 = lx + adjust_width;
+      int ux1 = col.URX();
+      int lx1 = ux1 - adjust_width;
+      rect_count = (int) well_tap_top_bottom_list.size() - 1;
+      for (int i = 0; i < rect_count; i += 2) {
+        ly = well_tap_top_bottom_list[i];
+        uy = well_tap_top_bottom_list[i + 1];
+        if (uy > ly) {
+          if (is_p_well_rect) {
+            ost << "rect # nndiff ";
+          } else {
+            ost << "rect # ppdiff ";
+          }
+          ost << lx0 * factor_x + circuit_->design_.die_area_offset_x_ << "\t"
+              << ly * factor_y + circuit_->design_.die_area_offset_y_ << "\t"
+              << ux0 * factor_x + circuit_->design_.die_area_offset_x_ << "\t"
+              << uy * factor_y + circuit_->design_.die_area_offset_y_ << "\n";
+          if (is_p_well_rect) {
+            ost << "rect # nndiff ";
+          } else {
+            ost << "rect # ppdiff ";
+          }
+          ost << lx1 * factor_x + circuit_->design_.die_area_offset_x_ << "\t"
+              << ly * factor_y + circuit_->design_.die_area_offset_y_ << "\t"
+              << ux1 * factor_x + circuit_->design_.die_area_offset_x_ << "\t"
+              << uy * factor_y + circuit_->design_.die_area_offset_y_ << "\n";
+        }
+        is_p_well_rect = !is_p_well_rect;
+      }
+    }
+  }
+  ost.close();
   if (globalVerboseLevel >= LOG_CRITICAL) {
     printf("done\n");
   }
