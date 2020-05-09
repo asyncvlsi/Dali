@@ -59,7 +59,7 @@ void Cluster::LegalizeCompactX() {
   }
 }
 
-void Cluster::LegalizeLooseX() {
+void Cluster::LegalizeLooseX(int space_to_well_tap) {
   /****
    * Legalize this cluster using the extended Tetris legalization algorithm
    *
@@ -84,6 +84,9 @@ void Cluster::LegalizeLooseX() {
     res_x = std::max(block_contour, int(blk->LLX()));
     blk->SetLLX(res_x);
     block_contour = int(blk->URX());
+    if (blk->Type() == tap_cell_->Type()) {
+      block_contour += space_to_well_tap;
+    }
   }
 
   int ux = lx_ + width_;
@@ -98,6 +101,9 @@ void Cluster::LegalizeLooseX() {
       res_x = std::min(block_contour, int(blk->URX()));
       blk->SetURX(res_x);
       block_contour = int(blk->LLX());
+      if (blk->Type() == tap_cell_->Type()) {
+        block_contour -= space_to_well_tap;
+      }
     }
   }
 }
@@ -407,6 +413,7 @@ void StdClusterWellLegalizer::DecomposeToSimpleStrip() {
 void StdClusterWellLegalizer::Init(int cluster_width) {
   // fetch parameters about N/P-well
   FetchNPWellParams();
+  space_to_well_tap_ = 1;
 
   // temporarily change left and right boundary to reserve space
   //printf("left: %d, right: %d, width: %d\n", left_, right_, RegionWidth());
@@ -429,7 +436,7 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
 
   if (cluster_width <= 0) {
     if (globalVerboseLevel >= LOG_CRITICAL) {
-      std::cout << "Using default cluster width: 3*max_unplug_length_\n";
+      std::cout << "Using default cluster width: 2*max_unplug_length_\n";
     }
     strip_width_ = max_unplug_length_ * 2;
   } else {
@@ -456,6 +463,9 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
   int max_clusters_per_col = RegionHeight() / circuit_->MinBlkHeight();
   col_list_.resize(tot_col_num_);
   strip_width_ = RegionWidth() / tot_col_num_;
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("Cluster width: %2.2e um\n", strip_width_ * circuit_->tech_.grid_value_x_);
+  }
   for (int i = 0; i < tot_col_num_; ++i) {
     col_list_[i].lx_ = RegionLeft() + i * strip_width_;
     col_list_[i].width_ = strip_width_ - well_spacing_;
@@ -563,7 +573,7 @@ void StdClusterWellLegalizer::AppendBlockToColBottomUp(Strip &strip, Block &blk)
     front_cluster->blk_list_.reserve(strip.max_blk_capacity_per_cluster_);
     front_cluster->blk_list_.push_back(&blk);
     int num_of_tap_cell = (int) std::ceil(strip.Width() / (1.5 * max_unplug_length_));
-    front_cluster->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_);
+    front_cluster->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_ + num_of_tap_cell * space_to_well_tap_);
     front_cluster->UpdateWellHeightFromBottom(tap_cell_p_height_, tap_cell_n_height_);
     front_cluster->UpdateWellHeightFromBottom(p_well_height, n_well_height);
     front_cluster->SetLLY(init_y);
@@ -609,7 +619,7 @@ void StdClusterWellLegalizer::AppendBlockToColTopDown(Strip &strip, Block &blk) 
     front_cluster->blk_list_.reserve(strip.max_blk_capacity_per_cluster_);
     front_cluster->blk_list_.push_back(&blk);
     int num_of_tap_cell = (int) std::ceil(strip.Width() / (1.5 * max_unplug_length_));
-    front_cluster->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_);
+    front_cluster->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_ + num_of_tap_cell * space_to_well_tap_);
     front_cluster->UpdateWellHeightFromTop(tap_cell_p_height_, tap_cell_n_height_);
     front_cluster->UpdateWellHeightFromTop(p_well_height, n_well_height);
     front_cluster->SetURY(init_y);
@@ -653,7 +663,7 @@ void StdClusterWellLegalizer::AppendBlockToColBottomUpCompact(Strip &strip, Bloc
     front_cluster->blk_list_.reserve(strip.max_blk_capacity_per_cluster_);
     front_cluster->blk_list_.push_back(&blk);
     int num_of_tap_cell = (int) std::ceil(strip.Width() / (1.5 * max_unplug_length_));
-    front_cluster->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_);
+    front_cluster->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_ + num_of_tap_cell * space_to_well_tap_);
     front_cluster->UpdateWellHeightFromBottom(tap_cell_p_height_, tap_cell_n_height_);
     front_cluster->SetLLY(init_y);
     front_cluster->SetLLX(strip.LLX());
@@ -697,7 +707,7 @@ void StdClusterWellLegalizer::AppendBlockToColTopDownCompact(Strip &strip, Block
     front_cluster->blk_list_.reserve(strip.max_blk_capacity_per_cluster_);
     front_cluster->blk_list_.push_back(&blk);
     int num_of_tap_cell = (int) std::ceil(strip.Width() / (1.5 * max_unplug_length_));
-    front_cluster->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_);
+    front_cluster->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_ + num_of_tap_cell * space_to_well_tap_);
     front_cluster->UpdateWellHeightFromTop(tap_cell_p_height_, tap_cell_n_height_);
     front_cluster->UpdateWellHeightFromTop(p_well_height, n_well_height);
     front_cluster->SetURY(init_y);
@@ -1240,7 +1250,7 @@ void StdClusterWellLegalizer::InsertWellTap() {
           cluster.InsertWellTapCell(tap_cell, tap_cell_loc);
           tap_cell_loc += step;
         }
-        cluster.LegalizeLooseX();
+        cluster.LegalizeLooseX(space_to_well_tap_);
       }
     }
   }
@@ -1308,6 +1318,9 @@ bool StdClusterWellLegalizer::StartPlacement() {
   double cpu_time = get_cpu_time();
 
   /****---->****/
+  bottom_ += 1;
+  top_ -= 1;
+
   bool is_success = true;
   Init();
   AssignBlockToColBasedOnWhiteSpace();
@@ -1325,6 +1338,9 @@ bool StdClusterWellLegalizer::StartPlacement() {
 
   InsertWellTap();
   ReportHPWL(LOG_CRITICAL);
+
+  bottom_ -= 1;
+  top_ += 1;
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
     if (is_success) {
@@ -1377,7 +1393,7 @@ void StdClusterWellLegalizer::GenMatlabClusterTable(std::string const &name_of_f
 }
 
 void StdClusterWellLegalizer::GenMATLABWellTable(std::string const &name_of_file, int well_emit_mode) {
-  circuit_->GenMATLABWellTable(name_of_file, true);
+  circuit_->GenMATLABWellTable(name_of_file, false);
 
   std::string p_file = name_of_file + "_pwell.txt";
   std::ofstream ostp(p_file.c_str());

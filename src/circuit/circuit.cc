@@ -1706,20 +1706,6 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
     ost << "END DESIGN\n";
   }
 
-  /*
-  ost << "NETS " << netList.size() << " ;\n";
-  for (auto &net: netList) {
-    ost << "- "
-        << net.name() << "\n";
-    ost << " ";
-    for (auto &pin: net.iopin_list) {
-      ost << " " << pin.pin_name();
-    }
-    ost << "\n" << " ;\n";
-  }
-  ost << "END NETS\n\n";
-  ost << "END DESIGN\n";
-   */
   ost.close();
   ist.close();
 

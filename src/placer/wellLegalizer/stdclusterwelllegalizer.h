@@ -69,7 +69,7 @@ struct Cluster {
   void UpdateBlockLocY();
   void LegalizeCompactX(int left);
   void LegalizeCompactX();
-  void LegalizeLooseX();
+  void LegalizeLooseX(int space_to_well_tap = 0);
   void SetOrient(bool is_orient_N);
   void InsertWellTapCell(Block &tap_cell, int loc);
 
@@ -143,6 +143,7 @@ class StdClusterWellLegalizer : public Placer {
   BlockType *well_tap_cell_;
   int tap_cell_p_height_;
   int tap_cell_n_height_;
+  int space_to_well_tap_ = 0;
 
   std::vector<IndexLocPair<int>> index_loc_list_; // list of index loc pair for location sort
   std::vector<ClusterStrip> col_list_; // list of strips
