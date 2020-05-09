@@ -1826,7 +1826,7 @@ void StdClusterWellLegalizer::EmitPPNP(std::string const &name_of_file) {
         ly = well_tap_top_bottom_list[i];
         uy = well_tap_top_bottom_list[i + 1];
         if (uy > ly) {
-          if (is_p_well_rect) {
+          if (!is_p_well_rect) {
             ost << "rect # nndiff ";
           } else {
             ost << "rect # ppdiff ";
@@ -1835,7 +1835,7 @@ void StdClusterWellLegalizer::EmitPPNP(std::string const &name_of_file) {
               << ly * factor_y + circuit_->design_.die_area_offset_y_ << "\t"
               << ux0 * factor_x + circuit_->design_.die_area_offset_x_ << "\t"
               << uy * factor_y + circuit_->design_.die_area_offset_y_ << "\n";
-          if (is_p_well_rect) {
+          if (!is_p_well_rect) {
             ost << "rect # nndiff ";
           } else {
             ost << "rect # ppdiff ";
