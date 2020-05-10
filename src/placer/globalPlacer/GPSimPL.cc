@@ -1819,7 +1819,7 @@ bool GPSimPL::StartPlacement() {
     if (globalVerboseLevel >= LOG_CRITICAL) {
       printf("It %d: \t%e  %e\n", cur_iter_, cg_total_hpwl_, lal_total_hpwl_);
     }
-    if (HPWL_LAL_converge) { // if HPWL sconverges
+    if (HPWL_LAL_converge) { // if HPWL converges
       if (cur_iter_ >= 30) {
         if (globalVerboseLevel >= LOG_CRITICAL) {
           std::cout << "Iterative look-ahead legalization complete" << std::endl;

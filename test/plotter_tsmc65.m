@@ -3,6 +3,8 @@ boundary_file = append(base_name,'_outline.txt');
 unplug_file   = append(base_name,'_unplug.txt');
 p_file        = append(base_name,'_pwell.txt');
 n_file        = append(base_name,'_nwell.txt');
+pp_file        = append(base_name,'_pp.txt');
+np_file        = append(base_name,'_np.txt');
 
 axis auto equal
 % plot the placement boundary
@@ -24,21 +26,6 @@ transp_well   = 0.2;
 color_n = 'green';
 color_p = 'yellow';
 
-% plot the unpluged cell
-origin = readmatrix(unplug_file);
-a = transpose(origin);
-[numRows,~] = size(a);
-if (numRows>=16)
-    nx = a(1:4,:);
-    ny = a(5:8,:);
-    patch(nx,ny,color_n,'EdgeColor','none', 'FaceAlpha', transp_unplug);
-    hold on
-    px = a(9:12,:);
-    py = a(13:16,:);
-    patch(px,py,color_p,'EdgeColor','none', 'FaceAlpha', transp_unplug);
-    hold on
-end
-
 % plot the p-well
 origin = readmatrix(p_file);
 a = transpose(origin);
@@ -58,7 +45,44 @@ a = transpose(origin);
 if (numRows>=8)
     nx = a(1:4,:);
     ny = a(5:8,:);
-    patch(nx,ny,color_n,'EdgeColor','none', 'FaceAlpha', transp_well);
+    patch(nx,ny, 'white', 'FaceAlpha', 0.1, 'LineStyle',':', 'LineWidth', 1.2);
+    hold on
+end
+
+% plot the unpluged cell
+origin = readmatrix(unplug_file);
+a = transpose(origin);
+[numRows,~] = size(a);
+if (numRows>=16)
+    nx = a(1:4,:);
+    ny = a(5:8,:);
+    patch(nx,ny,color_n,'EdgeColor','none', 'FaceAlpha', 0.2);
+    hold on
+    px = a(9:12,:);
+    py = a(13:16,:);
+    patch(px,py,color_p,'EdgeColor','none', 'FaceAlpha', 0.2);
+    hold on
+end
+
+% plot the pp
+origin = readmatrix(pp_file);
+a = transpose(origin);
+[numRows,~] = size(a);
+if (numRows>=8)
+    nx = a(1:4,:);
+    ny = a(5:8,:);
+    patch(nx,ny,color_p,'EdgeColor','none', 'FaceAlpha', 0.4);
+    hold on
+end
+
+% plot the np
+origin = readmatrix(np_file);
+a = transpose(origin);
+[numRows,~] = size(a);
+if (numRows>=8)
+    nx = a(1:4,:);
+    ny = a(5:8,:);
+    patch(nx,ny,color_n,'EdgeColor','none', 'FaceAlpha', 0.4);
     hold on
 end
 

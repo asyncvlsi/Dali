@@ -156,13 +156,10 @@ inline void Assert(bool e, const std::string &error_message) {
 }
 
 inline void Warning(bool e, const std::string &warning_message) {
-  if (globalVerboseLevel >= LOG_WARNING) {
-    if (e) {
-      std::cout << "WARNING:" << "\n"
-                << "    " << warning_message << std::endl;
-    }
+  if (e) {
+    std::cout << "WARNING:" << "\n"
+              << "    " << warning_message << std::endl;
   }
-
 }
 
 class NotImplementedException : public std::logic_error {

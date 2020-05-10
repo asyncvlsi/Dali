@@ -76,7 +76,6 @@ int main(int argc, char *argv[]) {
       }
     } else if (arg == "-o" && i < argc) {
       output_name = std::string(argv[i++]);
-      output_name += ".def";
       if (output_name.empty()) {
         std::cout << "Invalid output name!\n";
         ReportUsage();
@@ -171,6 +170,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("  Average white space utility: %.4f\n", circuit.WhiteSpaceUsage());
     printf("  Target density: %.4f", target_density);
     if (target_density == default_density) {
       std::cout << " (default)";
@@ -178,7 +178,6 @@ int main(int argc, char *argv[]) {
     std::cout << "\n";
   }
 
-  // Non-iterative placement flow
   if (cell_file_name.empty()) {
     Placer *gb_placer = new GPSimPL;
     gb_placer->SetInputCircuit(&circuit);
@@ -216,7 +215,7 @@ int main(int argc, char *argv[]) {
     well_legalizer->StartPlacement();
 
     if (!output_name.empty()) {
-      well_legalizer->EmitDEFWellFile(output_name, def_file_name);
+      well_legalizer->EmitDEFWellFile(output_name, def_file_name, 1);
     }
     delete well_legalizer;
     delete gb_placer;

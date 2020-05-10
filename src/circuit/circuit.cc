@@ -1314,9 +1314,11 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
   double factor = tech_.grid_value_y_ / tech_.grid_value_x_;
   for (auto &net:design_.net_list) {
     double tmp_hpwl = net.HPWLX() + net.HPWLY() * factor;
-    hpwl_list.push_back(tmp_hpwl);
-    min_hpwl = std::min(min_hpwl, tmp_hpwl);
-    max_hpwl = std::max(max_hpwl, tmp_hpwl);
+    if (net.P() >= 1) {
+      hpwl_list.push_back(tmp_hpwl);
+      min_hpwl = std::min(min_hpwl, tmp_hpwl);
+      max_hpwl = std::max(max_hpwl, tmp_hpwl);
+    }
   }
 
   double step = (max_hpwl - min_hpwl) / bin_num;
@@ -1356,10 +1358,13 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
   hpwl_list.reserve(design_.net_list.size());
   double factor = tech_.grid_value_y_ / tech_.grid_value_x_;
   for (auto &net:design_.net_list) {
-    double tmp_hpwl = std::log10(net.HPWLX() + net.HPWLY() * factor);
-    hpwl_list.push_back(tmp_hpwl);
-    min_hpwl = std::min(min_hpwl, tmp_hpwl);
-    max_hpwl = std::max(max_hpwl, tmp_hpwl);
+    double tmp_hpwl = net.HPWLX() + net.HPWLY() * factor;
+    if (tmp_hpwl > 0) {
+      double log_hpwl = std::log10(tmp_hpwl);
+      hpwl_list.push_back(log_hpwl);
+      min_hpwl = std::min(min_hpwl, log_hpwl);
+      max_hpwl = std::max(max_hpwl, log_hpwl);
+    }
   }
 
   double step = (max_hpwl - min_hpwl) / bin_num;

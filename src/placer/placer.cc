@@ -229,7 +229,7 @@ void Placer::SanityCheck() {
          "Filling rate should be in a proper range, for example [0.1, 1], current value: "
              + std::to_string(filling_rate_));
   for (auto &net: *NetList()) {
-    Assert(!net.blk_pin_list.empty(), "Empty net?" + *net.Name());
+    Warning(net.blk_pin_list.empty(), "Empty net or this net only contains a unplaced IOPIN: " + *net.Name());
   }
   Assert(IsBoundaryProper(), "Improper boundary setting");
 }

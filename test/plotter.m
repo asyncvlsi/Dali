@@ -1,13 +1,19 @@
 axis auto equal
 
-origin = readmatrix('lg_result_outline.txt');
+origin = readmatrix('sc_result.txt');
 a = transpose(origin);
 
-boundary_x = a(1:4,1);
-boundary_y = a(5:8,1);
-patch(boundary_x, boundary_y, 'white')
-hold on
+boundary_x = a(1:4,:);
+boundary_y = a(5:8,:);
+tmp_color = a(9:11,:);
+[m,n] = size(tmp_color);
+tmp_color = transpose(tmp_color);
 
-x = a(1:4,2:end);
-y = a(5:8,2:end);
-patch(x,y,'cyan')
+color=zeros(n,1,3);
+for i=1:n
+   color(i,1,1) = tmp_color(i,1);
+   color(i,1,2) = tmp_color(i,2);
+   color(i,1,3) = tmp_color(i,3);
+end
+
+patch(boundary_x, boundary_y, color);

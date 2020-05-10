@@ -112,10 +112,10 @@ int main() {
   delete std_cluster_well_legalizer;
 #endif
 
-  /*circuit.InitNetFanoutHisto();
+  circuit.InitNetFanoutHisto();
   circuit.ReportNetFanoutHisto();
   circuit.ReportHPWLHistogramLinear();
-  circuit.ReportHPWLHistogramLogarithm();*/
+  circuit.ReportHPWLHistogramLogarithm();
 
   delete gb_placer;
   delete legalizer;

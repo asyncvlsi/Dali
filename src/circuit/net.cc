@@ -139,6 +139,7 @@ void Net::UpdateMaxMinIndexY() {
 }
 
 double Net::HPWLX() {
+  if (blk_pin_list.empty()) return 0;
   UpdateMaxMinIndexX();
   double max_x = blk_pin_list[max_pin_x_].AbsX();
   double min_x = blk_pin_list[min_pin_x_].AbsX();
@@ -146,6 +147,7 @@ double Net::HPWLX() {
 }
 
 double Net::HPWLY() {
+  if (blk_pin_list.empty()) return 0;
   UpdateMaxMinIndexY();
   double max_y = blk_pin_list[max_pin_y_].AbsY();
   double min_y = blk_pin_list[min_pin_y_].AbsY();
@@ -254,7 +256,7 @@ int Net::MinPinCtoCY() {
 }
 
 double Net::HPWLCtoCX() {
-  Assert(!blk_pin_list.empty(), "Net contains no pin: " + *Name());
+  if (blk_pin_list.empty()) return 0;
   auto *block = blk_pin_list[0].GetBlock();
   double max_x = block->X();
   double min_x = block->X();
@@ -278,7 +280,7 @@ double Net::HPWLCtoCX() {
 }
 
 double Net::HPWLCtoCY() {
-  Assert(!blk_pin_list.empty(), "Net contains no pin: " + *Name());
+  if (blk_pin_list.empty()) return 0;
   auto *block = blk_pin_list[0].GetBlock();
   double max_y = block->Y();
   double min_y = block->Y();

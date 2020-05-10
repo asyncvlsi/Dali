@@ -1,4 +1,4 @@
-base_name = 'cl';
+base_name = 'sc';
 block_file = append(base_name,'_result_outline.txt');
 cluster_file   = append(base_name,'_result_cluster.txt');
 
