@@ -129,7 +129,7 @@ class Circuit {
    * These are PINS section in DEF
    * ****/
   std::vector<IOPin> *GetIOPinList();
-  void AddAbsIOPinType();
+  void AddDummyIOPinType();
   bool IsIOPinExist(std::string &iopin_name);
   int IOPinIndex(std::string &iopin_name);
   IOPin *GetIOPin(std::string &iopin_name);
@@ -145,7 +145,7 @@ class Circuit {
   int NetIndex(std::string &net_name);
   Net *GetNet(std::string &net_name);
   void AddToNetMap(std::string &net_name);
-  Net *AddNet(std::string &net_name, double weight = 1);
+  Net *AddNet(std::string &net_name, int capacity, double weight);
   void ReportNetList();
   void ReportNetMap();
   void InitNetFanoutHisto(std::vector<int> *histo_x = nullptr);

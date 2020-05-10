@@ -29,7 +29,8 @@ class Net {
   NetAux *aux_;
  public:
   std::vector<BlockPinPair> blk_pin_list;
-  explicit Net(std::pair<const std::string, int> *name_num_pair_ptr, double weight = 1);
+
+  Net(std::pair<const std::string, int> *name_num_pair_ptr, int capacity, double weight);
 
   // API to add block/pin pair
   void AddBlockPinPair(Block *block_ptr, Pin *pin);

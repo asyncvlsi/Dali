@@ -48,6 +48,7 @@ int main() {
   printf("  Average white space utility: %.4f\n", circuit.WhiteSpaceUsage());
   circuit.ReportBriefSummary();
   //circuit.ReportBlockType();
+  //circuit.ReportIOPin();
   circuit.ReportHPWL();
 
   Placer *gb_placer = new GPSimPL;
@@ -108,14 +109,16 @@ int main() {
   std_cluster_well_legalizer->StartPlacement();
   std_cluster_well_legalizer->GenMATLABTable("sc_result.txt");
   std_cluster_well_legalizer->GenMATLABWellTable("scw", 1);
+
+  std_cluster_well_legalizer->NaiveIOPinPlacement();
   std_cluster_well_legalizer->EmitDEFWellFile("circuit", def_file_name, 1);
   delete std_cluster_well_legalizer;
 #endif
 
-  circuit.InitNetFanoutHisto();
+  /*circuit.InitNetFanoutHisto();
   circuit.ReportNetFanoutHisto();
   circuit.ReportHPWLHistogramLinear();
-  circuit.ReportHPWLHistogramLogarithm();
+  circuit.ReportHPWLHistogramLogarithm();*/
 
   delete gb_placer;
   delete legalizer;

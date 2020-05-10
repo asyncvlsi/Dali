@@ -15,7 +15,7 @@
 #include "status.h"
 
 Circuit::Circuit() {
-  AddAbsIOPinType();
+  AddDummyIOPinType();
 #ifdef USE_OPENDB
   db_ = nullptr;
 #endif
@@ -23,7 +23,7 @@ Circuit::Circuit() {
 
 #ifdef USE_OPENDB
 Circuit::Circuit(odb::dbDatabase *db) {
-  AddAbsIOPinType();
+  AddDummyIOPinType();
   db_ = db;
   InitializeFromDB(db);
 }
@@ -41,12 +41,28 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
   //std::cout << tech->getLefUnits() << "\n";
   //std::cout << top_level->getDefUnits() << "\n";
 
-  // 2. manufacturing grid
+  // 2. manufacturing grid and metals
   if (tech->hasManufacturingGrid()) {
     //std::cout << "Mangrid" << tech->getManufacturingGrid() << "\n";
     tech_.manufacturing_grid = tech->getManufacturingGrid() / double(tech_.lef_database_microns);
   } else {
     tech_.manufacturing_grid = 1.0 / tech_.lef_database_microns;
+  }
+  for (auto &&layer: tech->getLayers()) {
+    if (layer->getType() == 0) {
+      //std::cout << layer->getNumber() << "  " << layer->getName() << "  " << layer->getType() << " ";
+      std::string metal_layer_name(layer->getName());
+      double min_width = layer->getWidth() / (double) tech_.lef_database_microns;
+      double min_spacing = layer->getSpacing() / (double) tech_.lef_database_microns;
+      //std::cout << min_width << "  " << min_spacing << "  ";
+      auto *metal_layer = AddMetalLayer(metal_layer_name, min_width, min_spacing);
+      if (layer->hasArea()) {
+        //std::cout << layer->getArea();
+        double min_area = layer->getArea();
+        metal_layer->SetArea(min_area);
+      }
+      //std::cout << "\n";
+    }
   }
 
   // 3. find the first and second metal layer pitch
@@ -176,19 +192,31 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
     AddBlock(blk_name, blk_type_name, llx_int, lly_int, StrToPlaceStatus(place_status), StrToOrient(orient));
   }
 
-  for (auto &&term: top_level->getBTerms()) {
-    //std::cout << term->getName() << "\n";
-    std::string pin_name(term->getName());
-    AddIOPin(pin_name);
+  for (auto &&iopin: top_level->getBTerms()) {
+    //std::cout << iopin->getName() << "\n";
+    std::string iopin_name(iopin->getName());
+    int iopin_x = 0;
+    int iopin_y = 0;
+    bool is_loc_set = iopin->getFirstPinLocation(iopin_x, iopin_y);
+    if (is_loc_set) {
+      AddIOPin(iopin_name, iopin_x, iopin_x);
+    } else {
+      AddIOPin(iopin_name);
+    }
   }
 
   //std::cout << "Nets:\n";
   for (auto &&net: top_level->getNets()) {
     //std::cout << net->getName() << "\n";
     std::string net_name(net->getName());
-    auto new_net = AddNet(net_name, design_.normal_signal_weight);
+    int net_cap = int(net->getITermCount() + net->getBTermCount());
+    auto new_net = AddNet(net_name, net_cap, design_.normal_signal_weight);
     for (auto &&bterm: net->getBTerms()) {
       //std::cout << "  ( PIN " << bterm->getName() << ")  \t";
+      std::string iopin_name(bterm->getName());
+      IOPin *iopin = GetIOPin(iopin_name);
+      Net *io_net = GetNet(net_name);
+      iopin->SetNet(io_net);
     }
     for (auto &&iterm: net->getITerms()) {
       //std::cout << "  (" << iterm->getInst()->getName() << "  " << iterm->getMTerm()->getName() << ")  \t";
@@ -642,11 +670,12 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         Assert(net_field.size() >= 2, "Invalid net declaration, expecting at least: - netName\n" + line);
         //std::cout << "\t" << net_field[0] << " " << net_field[1] << "\n";
         Net *new_net = nullptr;
+        std::cout << "Circuit::ReadDefFile(), this naive parser is broken, please do not use it\n";
         if (net_field[1].find("Reset") != std::string::npos) {
           //std::cout << net_field[1] << "\n";
-          new_net = AddNet(net_field[1], design_.reset_signal_weight);
+          new_net = AddNet(net_field[1], 100, design_.reset_signal_weight);
         } else {
-          new_net = AddNet(net_field[1], design_.normal_signal_weight);
+          new_net = AddNet(net_field[1], 100, design_.normal_signal_weight);
         }
         while (true) {
           getline(ist, line);
@@ -913,11 +942,12 @@ void Circuit::AddBlock(std::string &block_name,
   AddBlock(block_name, block_type, llx, lly, place_status, orient);
 }
 
-void Circuit::AddAbsIOPinType() {
+void Circuit::AddDummyIOPinType() {
   std::string iopin_type_name("PIN");
   auto io_pin_type = AddBlockType(iopin_type_name, 0, 0);
   std::string tmp_pin_name("pin");
   io_pin_type->AddPin(tmp_pin_name, 0, 0);
+  tech_.io_dummy_blk_type_ = io_pin_type;
 }
 
 bool Circuit::IsIOPinExist(std::string &iopin_name) {
@@ -953,6 +983,11 @@ IOPin *Circuit::AddIOPin(std::string &iopin_name, int lx, int ly) {
   auto ret = design_.iopin_name_map.insert(std::pair<std::string, int>(iopin_name, map_size));
   std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
   design_.iopin_list.emplace_back(name_num_pair_ptr, lx, ly);
+  design_.fixed_io_count_ += 1;
+
+  // add a dummy cell corresponding to this IOPIN to block_list.
+  AddBlock(iopin_name, tech_.io_dummy_blk_type_, lx, ly, false, N);
+
   return &(design_.iopin_list.back());
 }
 
@@ -980,11 +1015,17 @@ void Circuit::AddToNetMap(std::string &net_name) {
   design_.net_name_map.insert(std::pair<std::string, int>(net_name, map_size));
 }
 
-Net *Circuit::AddNet(std::string &net_name, double weight) {
+Net *Circuit::AddNet(std::string &net_name, int capacity, double weight) {
+  /****
+   * Returns a pointer to the newly created Net.
+   * @param net_name: name of the net
+   * @param capacity: maximum number of possible pins in this net
+   * @param weight:   weight of this net
+   * ****/
   Assert(!IsNetExist(net_name), "Net exists, cannot create this net again: " + net_name);
   AddToNetMap(net_name);
   std::pair<const std::string, int> *name_num_pair_ptr = &(*design_.net_name_map.find(net_name));
-  design_.net_list.emplace_back(name_num_pair_ptr, weight);
+  design_.net_list.emplace_back(name_num_pair_ptr, capacity, weight);
   return &design_.net_list.back();
 }
 
@@ -1657,9 +1698,11 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   double factor_x = design_.def_distance_microns * tech_.grid_value_x_;
   double factor_y = design_.def_distance_microns * tech_.grid_value_y_;
   if (is_complete_version) {
-    ost << "COMPONENTS " << design_.block_list.size() + design_.well_tap_list.size() << " ;\n";
+    ost << "COMPONENTS " << design_.block_list.size() - design_.fixed_io_count_ + design_.well_tap_list.size()
+        << " ;\n";
   } else {
-    ost << "COMPONENTS " << design_.block_list.size() + design_.well_tap_list.size() + 1 << " ;\n";
+    ost << "COMPONENTS " << design_.block_list.size() - design_.fixed_io_count_ + design_.well_tap_list.size() + 1
+        << " ;\n";
     ost << "- "
         << "npwells "
         << name_of_file + "well + "
@@ -1672,6 +1715,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
         << " ;\n";
   }
   for (auto &block: design_.block_list) {
+    if (block.Type() == tech_.io_dummy_blk_type_) continue;
     ost << "- "
         << *block.Name() << " "
         << *(block.Type()->Name()) << " + "
@@ -1701,8 +1745,55 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
     getline(ist, line);
   }
 
-  // 3. print net, copy from def file
+  // 3. print PIN
+  ost << "\n";
+  ost << "PINS " << design_.iopin_list.size() << " ;\n";
+  Assert(!tech_.metal_list.empty(), "Need metal layer info to generate PIN location\n");
+  std::string metal_name = *(tech_.metal_list[0].Name());
+  int half_width = std::ceil(tech_.metal_list[0].MinHeight() / 2.0 * design_.def_distance_microns);
+  int height = std::ceil(tech_.metal_list[0].Width() * design_.def_distance_microns);
+  for (auto &iopin: design_.iopin_list) {
+    ost << "- "
+        << *iopin.Name()
+        << " + NET "
+        << iopin.GetNet()->NameStr()
+        << " + DIRECTION INPUT + USE SIGNAL";
+    if (iopin.IsPlaced()) {
+      ost << "\n  + LAYER "
+          << metal_name
+          << " ( "
+          << -half_width << " "
+          << 0 << " ) "
+          << " ( "
+          << half_width << " "
+          << height << " ) ";
+      ost << "\n  + PLACED ( "
+          << iopin.X() * factor_x + design_.die_area_offset_x_ << " "
+          << iopin.Y() * factor_y + design_.die_area_offset_y_
+          << " ) ";
+      if (iopin.X() == design_.region_left_) {
+        ost << "E";
+      } else if (iopin.X() == design_.region_right_) {
+        ost << "W";
+      } else if (iopin.Y() == design_.region_bottom_) {
+        ost << "N";
+      } else {
+        ost << "S";
+      }
+    }
+    ost << " ;\n";
+  }
+  ost << "END PINS\n\n";
+
+  // 4. print net, copy from def file
+  while (true) {
+    getline(ist, line);
+    if (line.find("NETS") != std::string::npos || ist.eof()) {
+      break;
+    }
+  }
   if (is_complete_version) {
+    ost << line << "\n";
     while (!ist.eof()) {
       getline(ist, line);
       ost << line << "\n";

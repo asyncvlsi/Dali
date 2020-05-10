@@ -9,7 +9,7 @@
 #include "common/misc.h"
 #include "net.h"
 
-Net::Net(std::pair<const std::string, int> *name_num_pair_ptr, double weight)
+Net::Net(std::pair<const std::string, int> *name_num_pair_ptr, int capacity, double weight)
     : name_num_pair_ptr_(name_num_pair_ptr), weight_(weight) {
   cnt_fixed_ = 0;
   max_pin_x_ = -1;
@@ -18,18 +18,28 @@ Net::Net(std::pair<const std::string, int> *name_num_pair_ptr, double weight)
   min_pin_y_ = -1;
   inv_p = 0;
   aux_ = nullptr;
+  blk_pin_list.reserve(capacity);
 }
 
 void Net::AddBlockPinPair(Block *block_ptr, Pin *pin) {
-  blk_pin_list.emplace_back(block_ptr, pin);
-  if (!block_ptr->IsMovable()) {
-    ++cnt_fixed_;
+  if (blk_pin_list.size() < blk_pin_list.capacity()) {
+    blk_pin_list.emplace_back(block_ptr, pin);
+    if (!block_ptr->IsMovable()) {
+      ++cnt_fixed_;
+    }
+    // because net list is stored as a vector, so the location of a net will change, thus here, we have to use Num() to
+    // find a net, although a pointer to this net is more convenient.
+    block_ptr->net_list.push_back(Num());
+    int p_minus_one = int(blk_pin_list.size()) - 1;
+    inv_p = p_minus_one > 0 ? 1.0 * weight_ / p_minus_one : 0;
+  } else {
+    std::cout << "Net capacity is full: " << blk_pin_list.capacity() << ", cannot add more pin to this net:\n";
+    std::cout << "net name: " << *Name() << ", net weight: " << Weight() << "\n";
+    for (auto &block_pin_pair: blk_pin_list) {
+      std::cout << "\t" << " (" << *(block_pin_pair.BlockName()) << " " << *(block_pin_pair.PinName()) << ") " << "\n";
+    }
+    exit(1);
   }
-  // because net list is stored as a vector, so the location of a net will change, thus here, we have to use Num() to
-  // find a net, although a pointer to this net is more convenient.
-  block_ptr->net_list.push_back(Num());
-  int p_minus_one = int(blk_pin_list.size()) - 1;
-  inv_p = p_minus_one > 0 ? 1.0 * weight_ / p_minus_one : 0;
 }
 
 void Net::XBoundExclude(Block *blk_ptr, double &lo, double &hi) {

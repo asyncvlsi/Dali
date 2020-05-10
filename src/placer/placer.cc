@@ -229,7 +229,7 @@ void Placer::SanityCheck() {
          "Filling rate should be in a proper range, for example [0.1, 1], current value: "
              + std::to_string(filling_rate_));
   for (auto &net: *NetList()) {
-    Warning(net.blk_pin_list.empty(), "Empty net or this net only contains a unplaced IOPIN: " + *net.Name());
+    Warning(net.blk_pin_list.empty(), "Empty net or this net only contains unplaced IOPINs: " + *net.Name());
   }
   Assert(IsBoundaryProper(), "Improper boundary setting");
 }
@@ -242,14 +242,17 @@ void Placer::UpdateMovableBlkPlacementStatus() {
   }
 }
 
-void Placer::IOPinPlacement() {
+void Placer::NaiveIOPinPlacement() {
   if (circuit_->GetIOPinList()->empty()) return;
+  std::cout << circuit_->GetIOPinList()->size() << "\n";
   Net *net = nullptr;
   double net_minx, net_maxx, net_miny, net_maxy;
   double to_left, to_right, to_bottom, to_top;
   double min_distance;
   for (auto &iopin: *(circuit_->GetIOPinList())) {
     net = iopin.GetNet();
+    if (net->blk_pin_list.empty()) continue;
+    //std::cout << net->NameStr() << "\n";
 
     net->UpdateMaxMinIndex();
     net_minx = net->MinX();
@@ -264,13 +267,13 @@ void Placer::IOPinPlacement() {
     min_distance = std::min(std::min(to_left, to_right), std::min(to_bottom, to_top));
 
     if (std::fabs(min_distance - to_left) < 1e-10) {
-      iopin.SetLoc(left_, (net_maxy + net_miny) / 2);
+      iopin.SetLoc(left_, (net_maxy + net_miny) / 2, PLACED);
     } else if (std::fabs(min_distance - to_right) < 1e-10) {
-      iopin.SetLoc(right_, (net_maxy + net_miny) / 2);
+      iopin.SetLoc(right_, (net_maxy + net_miny) / 2, PLACED);
     } else if (std::fabs(min_distance - to_bottom) < 1e-10) {
-      iopin.SetLoc((net_minx + net_maxx) / 2, bottom_);
+      iopin.SetLoc((net_minx + net_maxx) / 2, bottom_, PLACED);
     } else {
-      iopin.SetLoc((net_minx + net_maxx) / 2, top_);
+      iopin.SetLoc((net_minx + net_maxx) / 2, top_, PLACED);
     }
   }
 }

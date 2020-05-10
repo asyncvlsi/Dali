@@ -1747,6 +1747,9 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file,
 
 void StdClusterWellLegalizer::EmitPPNP(std::string const &name_of_file) {
   // emit rect file
+  std::string NP_name = "nplus";
+  std::string PP_name = "pplus";
+
   std::string rect_file_name = name_of_file + "ppnp.rect";
   if (globalVerboseLevel >= LOG_CRITICAL) {
     printf("Writing PP and NP rect file '%s', ", rect_file_name.c_str());
@@ -1796,9 +1799,9 @@ void StdClusterWellLegalizer::EmitPPNP(std::string const &name_of_file) {
         ly = pn_edge_list[i];
         uy = pn_edge_list[i + 1];
         if (is_p_well_rect) {
-          ost << "rect # nndiff ";
+          ost << "rect # " << NP_name << " ";
         } else {
-          ost << "rect # ppdiff ";
+          ost << "rect # " << PP_name << " ";
         }
         ost << (lx + adjust_width) * factor_x + circuit_->design_.die_area_offset_x_ << "\t"
             << ly * factor_y + circuit_->design_.die_area_offset_y_ << "\t"
@@ -1844,18 +1847,18 @@ void StdClusterWellLegalizer::EmitPPNP(std::string const &name_of_file) {
         uy = well_tap_top_bottom_list[i + 1];
         if (uy > ly) {
           if (!is_p_well_rect) {
-            ost << "rect # nndiff ";
+            ost << "rect # " << NP_name << " ";
           } else {
-            ost << "rect # ppdiff ";
+            ost << "rect # " << PP_name << " ";
           }
           ost << lx0 * factor_x + circuit_->design_.die_area_offset_x_ << "\t"
               << ly * factor_y + circuit_->design_.die_area_offset_y_ << "\t"
               << ux0 * factor_x + circuit_->design_.die_area_offset_x_ << "\t"
               << uy * factor_y + circuit_->design_.die_area_offset_y_ << "\n";
           if (!is_p_well_rect) {
-            ost << "rect # nndiff ";
+            ost << "rect # " << NP_name << " ";
           } else {
-            ost << "rect # ppdiff ";
+            ost << "rect # " << PP_name << " ";
           }
           ost << lx1 * factor_x + circuit_->design_.die_area_offset_x_ << "\t"
               << ly * factor_y + circuit_->design_.die_area_offset_y_ << "\t"

@@ -75,18 +75,18 @@ class Placer {
   void SanityCheck();
   void UpdateMovableBlkPlacementStatus();
 
-  void IOPinPlacement();
+  void NaiveIOPinPlacement();
 
   /****File I/O member functions****/
   void GenMATLABTable(std::string const &name_of_file);
-  virtual void GenMATLABWellTable(std::string const &name_of_file, int well_emit_mode = 0);
+  virtual void GenMATLABWellTable(std::string const &name_of_file, int well_emit_mode);
   void GenMATLABScriptPlaced(std::string const &name_of_file = "block_net_list.m");
   bool SaveNodeTerminal(std::string const &terminal_file = "terminal.txt", std::string const &node_file = "nodes.txt");
   void SaveDEFFile(std::string const &name_of_file = "circuit.def");
   void SaveDEFFile(std::string const &name_of_file, std::string const &input_def_file);
   virtual void EmitDEFWellFile(std::string const &name_of_file,
                                std::string const &input_def_file,
-                               int well_emit_mode = 0);
+                               int well_emit_mode);
 
   /****for testing purposes****/
   void ShiftX(double shift_x);

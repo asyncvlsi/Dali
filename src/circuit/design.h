@@ -49,6 +49,7 @@ struct Design {
   /****list of IO Pins****/
   std::vector<IOPin> iopin_list;
   std::map<std::string, int> iopin_name_map;
+  int fixed_io_count_ = 0;
 
   /****list of nets****/
   double reset_signal_weight = 1;

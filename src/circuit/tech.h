@@ -29,6 +29,7 @@ class Tech {
 
   /****macros****/
   std::unordered_map<std::string, BlockType *> block_type_map;
+  BlockType *io_dummy_blk_type_ = nullptr;
   BlockType *well_tap_cell_ = nullptr;
 
   /****row height****/

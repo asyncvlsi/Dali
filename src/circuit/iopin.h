@@ -36,14 +36,15 @@ class IOPin {
   SignalDirection Direction() const;
   MetalLayer *Layer() const;
   RectD *GetRect();
-  double X();
-  double Y();
+  bool IsPlaced() const;
+  double X() const;
+  double Y() const;
 
   void SetNet(Net *net);
   void SetDirection(SignalDirection direction);
   void SetLayer(MetalLayer *layer);
   void SetRect(double llx, double lly, double urx, double ury);
-  void SetLoc(double lx, double ly, PlaceStatus place_status = FIXED);
+  void SetLoc(double lx, double ly, PlaceStatus place_status = PLACED);
 
   void Report() const;
 };
@@ -72,11 +73,15 @@ inline RectD *IOPin::GetRect() {
   return &rect_;
 }
 
-inline double IOPin::X() {
+inline bool IOPin::IsPlaced() const {
+  return place_status_ == FIXED || place_status_ == PLACED;
+}
+
+inline double IOPin::X() const {
   return lx_;
 }
 
-inline double IOPin::Y() {
+inline double IOPin::Y() const {
   return ly_;
 }
 

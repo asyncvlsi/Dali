@@ -20,14 +20,14 @@ class Layer {
   Layer(double width, double spacing);
   void SetWidth(double width);
   void SetSpacing(double spacing);
-  double Width();
-  double Spacing();
+  double Width() const;
+  double Spacing() const;
 };
 
 class MetalLayer : public Layer {
  private:
   std::pair<const std::string, int> *name_num_ptr_;
-  double area_;
+  double min_area_;
   double x_pitch_;
   double y_pitch_;
   MetalDirection direction_;
@@ -43,9 +43,10 @@ class MetalLayer : public Layer {
   void SetDirection(MetalDirection metal_direction);
   const std::string *Name() const;
   int Num() const;
-  double Area();
-  double PitchX();
-  double PitchY();
+  double Area() const;
+  double MinHeight() const;
+  double PitchX() const;
+  double PitchY() const;
   MetalDirection Direction();
   void Report();
 };
@@ -80,17 +81,17 @@ inline void Layer::SetSpacing(double spacing) {
   spacing_ = spacing;
 }
 
-inline double Layer::Width() {
+inline double Layer::Width() const {
   return width_;
 }
 
-inline double Layer::Spacing() {
+inline double Layer::Spacing() const {
   return spacing_;
 }
 
 inline void MetalLayer::SetArea(double area) {
   Assert(area >= 0, "Negative minarea?");
-  area_ = area;
+  min_area_ = area;
 }
 
 inline void MetalLayer::SetPitch(double x_pitch, double y_pitch) {
@@ -111,15 +112,19 @@ inline int MetalLayer::Num() const {
   return name_num_ptr_->second;
 }
 
-inline double MetalLayer::Area() {
-  return area_;
+inline double MetalLayer::Area() const {
+  return min_area_;
 }
 
-inline double MetalLayer::PitchX() {
+inline double MetalLayer::MinHeight() const {
+  return min_area_ / width_;
+}
+
+inline double MetalLayer::PitchX() const {
   return x_pitch_;
 }
 
-inline double MetalLayer::PitchY() {
+inline double MetalLayer::PitchY() const {
   return y_pitch_;
 }
 
