@@ -1350,6 +1350,7 @@ bool StdClusterWellLegalizer::StartPlacement() {
     } else {
       std::cout << "\033[0;36m"
                 << "Standard Cluster Well Legalization fail!\n"
+                << "Please try lower density"
                 << "\033[0m";
     }
   }
