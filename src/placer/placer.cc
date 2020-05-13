@@ -244,7 +244,7 @@ void Placer::UpdateMovableBlkPlacementStatus() {
 
 void Placer::NaiveIOPinPlacement() {
   if (circuit_->GetIOPinList()->empty()) return;
-  //std::cout << circuit_->GetIOPinList()->size() << "\n";
+  std::cout << circuit_->GetIOPinList()->size() << "\n";
   Net *net = nullptr;
   double net_minx, net_maxx, net_miny, net_maxy;
   double to_left, to_right, to_bottom, to_top;
