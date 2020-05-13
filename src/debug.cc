@@ -55,7 +55,7 @@ int main() {
   gb_placer->SetInputCircuit(&circuit);
 
   gb_placer->SetBoundaryDef();
-  gb_placer->SetFillingRate(0.62);
+  gb_placer->SetFillingRate(0.63);
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
   //gb_placer->SaveDEFFile("benchmark_1K_dali.def", def_file_name);
@@ -102,19 +102,22 @@ int main() {
 #endif
 
 #if TEST_STDCLUSTER_WELL
-  Placer *std_cluster_well_legalizer = new StdClusterWellLegalizer;
+  StdClusterWellLegalizer std_cluster_well_legalizer;
   std::string cell_file_name("processor.cell");
   circuit.ReadCellFile(cell_file_name);
-  std_cluster_well_legalizer->TakeOver(gb_placer);
-  std_cluster_well_legalizer->StartPlacement();
-  std_cluster_well_legalizer->GenMATLABTable("sc_result.txt");
-  std_cluster_well_legalizer->GenMATLABWellTable("scw", 1);
+  std_cluster_well_legalizer.TakeOver(gb_placer);
+  std_cluster_well_legalizer.StartPlacement();
+  std_cluster_well_legalizer.GenMatlabClusterTable("sc_result");
+  std_cluster_well_legalizer.GenMATLABTable("sc_result.txt");
+  std_cluster_well_legalizer.GenMATLABWellTable("scw", 1);
 
-  std_cluster_well_legalizer->NaiveIOPinPlacement();
-  std_cluster_well_legalizer->EmitDEFWellFile("circuit", def_file_name, 1);
-  delete std_cluster_well_legalizer;
+  std_cluster_well_legalizer.NaiveIOPinPlacement();
+  std_cluster_well_legalizer.EmitDEFWellFile("circuit", def_file_name, 1);
 #endif
 
+  circuit.SaveDefFile("circuit", "", def_file_name, 1, 1, 2, 1);
+  circuit.SaveDefFile("circuit", "_io", def_file_name, 1, 1, 1, 1);
+  circuit.SaveDefFile("circuit", "_filling", def_file_name, 1, 4, 2, 1);
   /*circuit.InitNetFanoutHisto();
   circuit.ReportNetFanoutHisto();
   circuit.ReportHPWLHistogramLinear();

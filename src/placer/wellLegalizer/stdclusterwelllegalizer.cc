@@ -84,7 +84,7 @@ void Cluster::LegalizeLooseX(int space_to_well_tap) {
     res_x = std::max(block_contour, int(blk->LLX()));
     blk->SetLLX(res_x);
     block_contour = int(blk->URX());
-    if (blk->Type() == tap_cell_->Type()) {
+    if ((tap_cell_ != nullptr) && (blk->Type() == tap_cell_->Type())) {
       block_contour += space_to_well_tap;
     }
   }
@@ -101,7 +101,7 @@ void Cluster::LegalizeLooseX(int space_to_well_tap) {
       res_x = std::min(block_contour, int(blk->URX()));
       blk->SetURX(res_x);
       block_contour = int(blk->LLX());
-      if (blk->Type() == tap_cell_->Type()) {
+      if ((tap_cell_ != nullptr) && (blk->Type() == tap_cell_->Type())) {
         block_contour -= space_to_well_tap;
       }
     }
@@ -1242,6 +1242,7 @@ void StdClusterWellLegalizer::InsertWellTap() {
           std::string block_name = "__well_tap__" + std::to_string(counter++);
           tap_cell_list.emplace_back();
           auto &tap_cell = tap_cell_list.back();
+          tap_cell.SetPlaceStatus(PLACED);
           tap_cell.SetType(circuit_->tech_.WellTapCell());
           int map_size = circuit_->design_.tap_name_map.size();
           auto ret = circuit_->design_.tap_name_map.insert(std::pair<std::string, int>(block_name, map_size));
@@ -1363,7 +1364,6 @@ bool StdClusterWellLegalizer::StartPlacement() {
   }
 
   ReportMemory(LOG_CRITICAL);
-  GenMatlabClusterTable("sc_result");
 
   return is_success;
 }
@@ -1612,8 +1612,8 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file,
                                               int well_emit_mode) {
   /****
    * Emit three files:
-   * 1. def file, well tap cells are included in this DEF file
-   * 2. rect file including all N/P well rectangles
+   * 1. rect file including all N/P well rectangles
+   * 2. rect file including all NP/PP rectangles
    * 3. cluster file including all cluster shapes
    *
    * @param well_mode
@@ -1622,141 +1622,26 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file,
    * 2: emit P-well only
    * ****/
 
-  // emit def file
-  circuit_->SaveDefFile(name_of_file, input_def_file);
-  circuit_->SaveInstanceDefFile(name_of_file, input_def_file);
-  circuit_->SaveDefWell(name_of_file + "_welltapnetwork.def", input_def_file);
-  circuit_->SaveDefPPNPWell(name_of_file, input_def_file);
-  EmitPPNP(name_of_file);
-
-
-  // emit rect file
-  std::string rect_file_name = name_of_file + "well.rect";
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("Writing N/P-well rect file '%s', ", rect_file_name.c_str());
-  }
-
-  switch (well_emit_mode) {
-    case 0:printf("emit N/P wells, ");
-      break;
-    case 1:printf("emit N wells, ");
-      break;
-    case 2:printf("emit P wells, ");
-      break;
-    default:Assert(false, "Invalid value for well_emit_mode in StdClusterWellLegalizer::EmitDEFWellFile()");
-  }
-
-  std::ofstream ost(rect_file_name.c_str());
-  Assert(ost.is_open(), "Cannot open output file: " + rect_file_name);
-
-  double factor_x = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_x_;
-  double factor_y = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_y_;
-
-  ost << "bbox "
-      << (int) (RegionLeft() * factor_x) + circuit_->design_.die_area_offset_x_ << " "
-      << (int) (RegionBottom() * factor_y) + circuit_->design_.die_area_offset_y_ << " "
-      << (int) (RegionRight() * factor_x) + circuit_->design_.die_area_offset_x_ << " "
-      << (int) (RegionTop() * factor_y) + circuit_->design_.die_area_offset_y_ << "\n";
-  for (auto &col: col_list_) {
-    for (auto &strip: col.strip_list_) {
-      std::vector<int> pn_edge_list;
-      if (strip.is_bottom_up_) {
-        pn_edge_list.reserve(strip.cluster_list_.size() + 2);
-        pn_edge_list.push_back(RegionBottom());
-      } else {
-        pn_edge_list.reserve(strip.cluster_list_.size() + 2);
-        pn_edge_list.push_back(RegionTop());
-      }
-      for (auto &cluster: strip.cluster_list_) {
-        pn_edge_list.push_back(cluster.LLY() + cluster.PNEdge());
-      }
-      if (strip.is_bottom_up_) {
-        pn_edge_list.push_back(RegionTop());
-      } else {
-        pn_edge_list.push_back(RegionBottom());
-        std::reverse(pn_edge_list.begin(), pn_edge_list.end());
-      }
-
-      bool is_p_well_rect = strip.is_first_row_orient_N_;
-      int lx = strip.LLX();
-      int ux = strip.URX();
-      int ly;
-      int uy;
-      int rect_count = (int) pn_edge_list.size() - 1;
-      for (int i = 0; i < rect_count; ++i) {
-        ly = pn_edge_list[i];
-        uy = pn_edge_list[i + 1];
-        if (is_p_well_rect) {
-          is_p_well_rect = !is_p_well_rect;
-          if (well_emit_mode == 1) continue;
-          ost << "rect GND pwell ";
-        } else {
-          is_p_well_rect = !is_p_well_rect;
-          if (well_emit_mode == 2) continue;
-          ost << "rect Vdd nwell ";
-        }
-        ost << (int) (lx * factor_x) + circuit_->design_.die_area_offset_x_ << " "
-            << (int) (ly * factor_y) + circuit_->design_.die_area_offset_y_ << " "
-            << (int) (ux * factor_x) + circuit_->design_.die_area_offset_x_ << " "
-            << (int) (uy * factor_y) + circuit_->design_.die_area_offset_y_ << "\n";
-      }
-    }
-  }
-  ost.close();
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("done\n");
-  }
-
-  // emit cluster file
-  std::string cluster_file_name = name_of_file + "_router.cluster";
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("Writing cluster rect file '%s' for router, ", cluster_file_name.c_str());
-  }
-  std::ofstream ost1(cluster_file_name.c_str());
-  Assert(ost1.is_open(), "Cannot open output file: " + cluster_file_name);
-
-  for (int i = 0; i < tot_col_num_; ++i) {
-    std::string column_name = "column" + std::to_string(i);
-    ost1 << "STRIP " << column_name << "\n";
-
-    auto &col = col_list_[i];
-    for (auto &strip: col.strip_list_) {
-      ost1 << "  "
-           << (int) (col.LLX() * factor_x) + circuit_->design_.die_area_offset_x_ << "  "
-           << (int) (col.URX() * factor_x) + circuit_->design_.die_area_offset_x_ << "  ";
-      if (strip.is_first_row_orient_N_) {
-        ost1 << "GND\n";
-      } else {
-        ost1 << "Vdd\n";
-      }
-
-      for (auto &cluster: strip.cluster_list_) {
-        ost1 << "  "
-             << (int) (cluster.LLY() * factor_y) + circuit_->design_.die_area_offset_y_ << "  "
-             << (int) (cluster.URY() * factor_y) + circuit_->design_.die_area_offset_y_ << "\n";
-      }
-
-      ost1 << "END " << column_name << "\n\n";
-    }
-  }
-  ost1.close();
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("done\n");
-  }
+  //circuit_->SaveDefFile(name_of_file, input_def_file);
+  //circuit_->SaveInstanceDefFile(name_of_file, input_def_file);
+  //circuit_->SaveDefWell(name_of_file + "_welltapnetwork.def", input_def_file, false);
+  //circuit_->SaveDefPPNPWell(name_of_file, input_def_file);
+  EmitPPNPRect(name_of_file + "ppnp.rect");
+  EmitWellRect(name_of_file + "well.rect", well_emit_mode);
+  EmitClusterRect(name_of_file + "_router.cluster");
 }
 
-void StdClusterWellLegalizer::EmitPPNP(std::string const &name_of_file) {
+void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
   // emit rect file
   std::string NP_name = "nplus";
   std::string PP_name = "pplus";
 
-  std::string rect_file_name = name_of_file + "ppnp.rect";
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("Writing PP and NP rect file '%s', ", rect_file_name.c_str());
+    printf("Writing PP and NP rect file '%s', ", name_of_file.c_str());
   }
 
-  std::ofstream ost(rect_file_name.c_str());
-  Assert(ost.is_open(), "Cannot open output file: " + rect_file_name);
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
 
   double factor_x = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_x_;
   double factor_y = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_y_;
@@ -1867,6 +1752,127 @@ void StdClusterWellLegalizer::EmitPPNP(std::string const &name_of_file) {
         }
         is_p_well_rect = !is_p_well_rect;
       }
+    }
+  }
+  ost.close();
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("done\n");
+  }
+}
+
+void StdClusterWellLegalizer::EmitWellRect(std::string const &name_of_file, int well_emit_mode) {
+  // emit rect file
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("Writing N/P-well rect file '%s', ", name_of_file.c_str());
+  }
+
+  switch (well_emit_mode) {
+    case 0:printf("emit N/P wells, ");
+      break;
+    case 1:printf("emit N wells, ");
+      break;
+    case 2:printf("emit P wells, ");
+      break;
+    default:Assert(false, "Invalid value for well_emit_mode in StdClusterWellLegalizer::EmitDEFWellFile()");
+  }
+
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+
+  double factor_x = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_x_;
+  double factor_y = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_y_;
+
+  ost << "bbox "
+      << (int) (RegionLeft() * factor_x) + circuit_->design_.die_area_offset_x_ << " "
+      << (int) (RegionBottom() * factor_y) + circuit_->design_.die_area_offset_y_ << " "
+      << (int) (RegionRight() * factor_x) + circuit_->design_.die_area_offset_x_ << " "
+      << (int) (RegionTop() * factor_y) + circuit_->design_.die_area_offset_y_ << "\n";
+  for (auto &col: col_list_) {
+    for (auto &strip: col.strip_list_) {
+      std::vector<int> pn_edge_list;
+      if (strip.is_bottom_up_) {
+        pn_edge_list.reserve(strip.cluster_list_.size() + 2);
+        pn_edge_list.push_back(RegionBottom());
+      } else {
+        pn_edge_list.reserve(strip.cluster_list_.size() + 2);
+        pn_edge_list.push_back(RegionTop());
+      }
+      for (auto &cluster: strip.cluster_list_) {
+        pn_edge_list.push_back(cluster.LLY() + cluster.PNEdge());
+      }
+      if (strip.is_bottom_up_) {
+        pn_edge_list.push_back(RegionTop());
+      } else {
+        pn_edge_list.push_back(RegionBottom());
+        std::reverse(pn_edge_list.begin(), pn_edge_list.end());
+      }
+
+      bool is_p_well_rect = strip.is_first_row_orient_N_;
+      int lx = strip.LLX();
+      int ux = strip.URX();
+      int ly;
+      int uy;
+      int rect_count = (int) pn_edge_list.size() - 1;
+      for (int i = 0; i < rect_count; ++i) {
+        ly = pn_edge_list[i];
+        uy = pn_edge_list[i + 1];
+        if (is_p_well_rect) {
+          is_p_well_rect = !is_p_well_rect;
+          if (well_emit_mode == 1) continue;
+          ost << "rect GND pwell ";
+        } else {
+          is_p_well_rect = !is_p_well_rect;
+          if (well_emit_mode == 2) continue;
+          ost << "rect Vdd nwell ";
+        }
+        ost << (int) (lx * factor_x) + circuit_->design_.die_area_offset_x_ << " "
+            << (int) (ly * factor_y) + circuit_->design_.die_area_offset_y_ << " "
+            << (int) (ux * factor_x) + circuit_->design_.die_area_offset_x_ << " "
+            << (int) (uy * factor_y) + circuit_->design_.die_area_offset_y_ << "\n";
+      }
+    }
+  }
+  ost.close();
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("done\n");
+  }
+}
+
+void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
+  /****
+   * Emits a rect file for power routing
+   * ****/
+
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("Writing cluster rect file '%s' for router, ", name_of_file.c_str());
+  }
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+
+  double factor_x = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_x_;
+  double factor_y = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_y_;
+  for (int i = 0; i < tot_col_num_; ++i) {
+    std::string column_name = "column" + std::to_string(i);
+    ost << "STRIP " << column_name << "\n";
+
+    auto &col = col_list_[i];
+    for (auto &strip: col.strip_list_) {
+      ost << "  "
+          << (int) (col.LLX() * factor_x) + circuit_->design_.die_area_offset_x_ << "  "
+          << (int) (col.URX() * factor_x) + circuit_->design_.die_area_offset_x_ << "  ";
+      if (strip.is_first_row_orient_N_) {
+        ost << "GND\n";
+      } else {
+        ost << "Vdd\n";
+      }
+
+      for (auto &cluster: strip.cluster_list_) {
+        ost << "  "
+            << (int) (cluster.LLY() * factor_y) + circuit_->design_.die_area_offset_y_ << "  "
+            << (int) (cluster.URY() * factor_y) + circuit_->design_.die_area_offset_y_ << "\n";
+      }
+
+      ost << "END " << column_name << "\n\n";
     }
   }
   ost.close();

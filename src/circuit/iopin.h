@@ -19,14 +19,16 @@ class IOPin {
   SignalDirection direction_;
   MetalLayer *layer_;
   RectD rect_;
+  PlaceStatus init_place_status_;
   PlaceStatus place_status_;
   double lx_, ly_;
+  BlockOrient orient_;
  public:
   explicit IOPin(std::pair<const std::string, int> *name_num_pair);
   IOPin(std::pair<const std::string, int> *name_num_pair, double lx, double ly);
   IOPin(std::pair<const std::string, int> *name_num_pair,
         SignalDirection direction,
-        PlaceStatus place_status,
+        PlaceStatus init_place_status,
         double lx,
         double ly);
 
@@ -37,6 +39,7 @@ class IOPin {
   MetalLayer *Layer() const;
   RectD *GetRect();
   bool IsPlaced() const;
+  bool IsPrePlaced() const;
   double X() const;
   double Y() const;
 
@@ -75,6 +78,10 @@ inline RectD *IOPin::GetRect() {
 
 inline bool IOPin::IsPlaced() const {
   return place_status_ == FIXED || place_status_ == PLACED;
+}
+
+inline bool IOPin::IsPrePlaced() const {
+  return init_place_status_ == FIXED || init_place_status_ == PLACED;
 }
 
 inline double IOPin::X() const {

@@ -221,6 +221,10 @@ int main(int argc, char *argv[]) {
     delete gb_placer;
     delete legalizer;
   }
+  circuit.SaveDefFile(output_name, "", def_file_name, 1, 1, 2, 1);
+  circuit.SaveDefFile(output_name, "_io", def_file_name, 1, 1, 1, 1);
+  circuit.SaveDefFile(output_name, "_filling", def_file_name, 1, 4, 2, 1);
+
   circuit.InitNetFanoutHisto();
   circuit.ReportNetFanoutHisto();
   circuit.ReportHPWLHistogramLinear();
