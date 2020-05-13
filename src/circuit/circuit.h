@@ -219,7 +219,9 @@ class Circuit {
   void GenMATLABTable(std::string const &name_of_file = "block.txt", bool only_well_tap = false);
   void GenMATLABWellTable(std::string const &name_of_file = "res", bool only_well_tap = false);
   void SaveDefFile(std::string const &name_of_file, std::string const &def_file_name, bool is_complete_version = true);
-  void SaveDefWell(std::string const &name_of_file, std::string const &def_file_name);
+  void SaveDefFile(std::string const &base_name, std::string const &name_padding, std::string const &def_file_name, int save_floorplan, int save_cell, int save_iopin, int save_net);
+  void SaveIODefFile(std::string const &name_of_file, std::string const &def_file_name);
+  void SaveDefWell(std::string const &name_of_file, std::string const &def_file_name, bool is_no_normal_cell = true);
   void SaveDefPPNPWell(std::string const &name_of_file, std::string const &def_file_name);
   void SaveInstanceDefFile(std::string const &name_of_file, std::string const &def_file_name);
 

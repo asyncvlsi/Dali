@@ -4,6 +4,7 @@
 
 #include "circuit.h"
 
+#include <chrono>
 #include <climits>
 #include <cmath>
 
@@ -1758,7 +1759,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
         << " + NET "
         << iopin.GetNet()->NameStr()
         << " + DIRECTION INPUT + USE SIGNAL";
-    if (iopin.IsPlaced()) {
+    if (iopin.IsPrePlaced()) {
       ost << "\n  + LAYER "
           << metal_name
           << " ( "
@@ -1810,7 +1811,537 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   }
 }
 
-void Circuit::SaveDefWell(std::string const &name_of_file, std::string const &def_file_name) {
+void Circuit::SaveDefFile(std::string const &base_name,
+                          std::string const &name_padding,
+                          std::string const &def_file_name,
+                          int save_floorplan,
+                          int save_cell,
+                          int save_iopin,
+                          int save_net) {
+  /****
+   * Universal function for saving DEF file
+   * @param, output def file name, ".def" extension is added automatically
+   * @param, input def file
+   * @param, save_floorplan,
+   *    case 0, floorplan not saved
+   *    case 1, floorplan saved
+   *    otherwise, report an error message
+   * @param, save_cell,
+   *    case 0, no cells are saved
+   *    case 1, save all normal cells, regardless of the placement status
+   *    case 2, save only well tap cells
+   *    case 3, save all normal cells + dummy cell for well filling
+   *    case 4, save all normal cells + dummy cell for well filling + dummy cell for n/p-plus filling
+   *    case 5, save all placed cells
+   *    otherwise, report an error message
+   * @param, save_iopin
+   *    case 0, no IOPINs are saved
+   *    case 1, save all IOPINs
+   *    case 2, save all IOPINs with status before IO placement
+   *    otherwise, report an error message
+   * @param, save_net
+   *    case 0, no nets are saved
+   *    case 1, save all nets
+   *    case 2, save nets containing saved cells and IOPINs
+   *    case 3, save power nets for well tap cell
+   *    otherwise, report an error message
+   * ****/
+  std::string file_name = base_name + name_padding + ".def";
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("Writing DEF file '%s', ", file_name.c_str());
+  }
+  std::ofstream ost(file_name.c_str());
+  Assert(ost.is_open(), "Cannot open file " + file_name);
+  std::ifstream ist(def_file_name.c_str());
+  Assert(ist.is_open(), "Cannot open file " + def_file_name);
+
+  using std::chrono::system_clock;
+  system_clock::time_point today = system_clock::now();
+  std::time_t tt = system_clock::to_time_t(today);
+  ost << "##################################################\n";
+  ost << "#  created by: Dali, build time: " << __DATE__ << " " << __TIME__ << "\n";
+  ost << "#  time: " << ctime(&tt);
+  ost << "##################################################\n";
+
+  std::string line;
+  // 1. floorplanning
+  while (true) {
+    getline(ist, line);
+    if (line.find("COMPONENTS") != std::string::npos || ist.eof()) {
+      break;
+    }
+    ost << line << "\n";
+  }
+
+  // 2. COMPONENT
+  double factor_x = design_.def_distance_microns * tech_.grid_value_x_;
+  double factor_y = design_.def_distance_microns * tech_.grid_value_y_;
+  switch (save_cell) {
+    case 0: { // no cells are saved
+      ost << "COMPONENTS 0 ;\n";
+      break;
+    }
+    case 1: { // save all normal cells, regardless of the placement status
+      int cell_count = 0;
+      for (auto &block: design_.block_list) {
+        if (block.Type() == tech_.io_dummy_blk_type_) continue;
+        ++cell_count;
+      }
+      cell_count += design_.well_tap_list.size();
+      ost << "COMPONENTS " << cell_count << " ;\n";
+      for (auto &block: design_.block_list) {
+        if (block.Type() == tech_.io_dummy_blk_type_) continue;
+        ost << "- "
+            << *(block.Name()) << " "
+            << *(block.Type()->Name()) << " + "
+            << block.GetPlaceStatusStr() << " "
+            << "( "
+            << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
+            << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
+            << " ) "
+            << OrientStr(block.Orient())
+            << " ;\n";
+      }
+      for (auto &block: design_.well_tap_list) {
+        ost << "- "
+            << *(block.Name()) << " "
+            << *(block.Type()->Name()) << " + "
+            << block.GetPlaceStatusStr() << " "
+            << "( "
+            << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
+            << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
+            << " ) "
+            << OrientStr(block.Orient())
+            << " ;\n";
+      }
+      break;
+    }
+    case 2: { // save only well tap cells
+      int cell_count = design_.well_tap_list.size();
+      ost << "COMPONENTS " << cell_count << " ;\n";
+      for (auto &block: design_.well_tap_list) {
+        ost << "- "
+            << *(block.Name()) << " "
+            << *(block.Type()->Name()) << " + "
+            << block.GetPlaceStatusStr() << " "
+            << "( "
+            << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
+            << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
+            << " ) "
+            << OrientStr(block.Orient())
+            << " ;\n";
+      }
+      break;
+    }
+    case 3: { // save all normal cells + dummy cell for well filling
+      int cell_count = 0;
+      for (auto &block: design_.block_list) {
+        if (block.Type() == tech_.io_dummy_blk_type_) continue;
+        ++cell_count;
+      }
+      cell_count += design_.well_tap_list.size();
+      cell_count += 1;
+      ost << "COMPONENTS " << cell_count << " ;\n";
+      ost << "- "
+          << "npwells "
+          << base_name + "well + "
+          << PlaceStatusStr(COVER) << " "
+          << "( "
+          << (int) (RegionLLX() * factor_x) + design_.die_area_offset_x_ << " "
+          << (int) (RegionLLY() * factor_y) + design_.die_area_offset_y_
+          << " ) "
+          << "N"
+          << " ;\n";
+
+      for (auto &block: design_.block_list) {
+        if (block.Type() == tech_.io_dummy_blk_type_) continue;
+        ost << "- "
+            << *(block.Name()) << " "
+            << *(block.Type()->Name()) << " + "
+            << block.GetPlaceStatusStr() << " "
+            << "( "
+            << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
+            << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
+            << " ) "
+            << OrientStr(block.Orient())
+            << " ;\n";
+      }
+      for (auto &block: design_.well_tap_list) {
+        ost << "- "
+            << *(block.Name()) << " "
+            << *(block.Type()->Name()) << " + "
+            << block.GetPlaceStatusStr() << " "
+            << "( "
+            << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
+            << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
+            << " ) "
+            << OrientStr(block.Orient())
+            << " ;\n";
+      }
+      break;
+    }
+    case 4: { // save all normal cells + dummy cell for well filling + dummy cell for n/p-plus filling
+      int cell_count = 0;
+      for (auto &block: design_.block_list) {
+        if (block.Type() == tech_.io_dummy_blk_type_) continue;
+        ++cell_count;
+      }
+      cell_count += design_.well_tap_list.size();
+      cell_count += 2;
+      ost << "COMPONENTS " << cell_count << " ;\n";
+      ost << "- "
+          << "npwells "
+          << base_name + "well + "
+          << PlaceStatusStr(COVER) << " "
+          << "( "
+          << (int) (RegionLLX() * factor_x) + design_.die_area_offset_x_ << " "
+          << (int) (RegionLLY() * factor_y) + design_.die_area_offset_y_
+          << " ) "
+          << "N"
+          << " ;\n";
+      ost << "- "
+          << "ppnps "
+          << base_name + "ppnp + "
+          << PlaceStatusStr(COVER) << " "
+          << "( "
+          << (int) (RegionLLX() * factor_x) + design_.die_area_offset_x_ << " "
+          << (int) (RegionLLY() * factor_y) + design_.die_area_offset_y_
+          << " ) "
+          << "N"
+          << " ;\n";
+
+      for (auto &block: design_.block_list) {
+        if (block.Type() == tech_.io_dummy_blk_type_) continue;
+        ost << "- "
+            << *(block.Name()) << " "
+            << *(block.Type()->Name()) << " + "
+            << block.GetPlaceStatusStr() << " "
+            << "( "
+            << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
+            << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
+            << " ) "
+            << OrientStr(block.Orient())
+            << " ;\n";
+      }
+      for (auto &block: design_.well_tap_list) {
+        ost << "- "
+            << *(block.Name()) << " "
+            << *(block.Type()->Name()) << " + "
+            << block.GetPlaceStatusStr() << " "
+            << "( "
+            << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
+            << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
+            << " ) "
+            << OrientStr(block.Orient())
+            << " ;\n";
+      }
+      break;
+    }
+    case 5: { // save all placed cells
+      int cell_count = 0;
+      for (auto &block: design_.block_list) {
+        if (block.Type() == tech_.io_dummy_blk_type_) continue;
+        if (block.GetPlaceStatus() == UNPLACED) continue;
+        ++cell_count;
+      }
+      cell_count += design_.well_tap_list.size();
+      ost << "COMPONENTS " << cell_count << " ;\n";
+      for (auto &block: design_.block_list) {
+        if (block.Type() == tech_.io_dummy_blk_type_) continue;
+        if (block.GetPlaceStatus() == UNPLACED) continue;
+        ost << "- "
+            << *(block.Name()) << " "
+            << *(block.Type()->Name()) << " + "
+            << block.GetPlaceStatusStr() << " "
+            << "( "
+            << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
+            << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
+            << " ) "
+            << OrientStr(block.Orient())
+            << " ;\n";
+      }
+      for (auto &block: design_.well_tap_list) {
+        ost << "- "
+            << *(block.Name()) << " "
+            << *(block.Type()->Name()) << " + "
+            << block.GetPlaceStatusStr() << " "
+            << "( "
+            << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
+            << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
+            << " ) "
+            << OrientStr(block.Orient())
+            << " ;\n";
+      }
+      break;
+    }
+    default: {
+      Assert(false, "Invalid value setting for @param save_cell in Circuit::SaveDefFile()\n");
+    }
+
+  }
+  ost << "END COMPONENTS\n\n";
+
+  // 3. PIN
+  switch (save_iopin) {
+    case 0: { // no IOPINs are saved
+      ost << "PINS 0 ;\n";
+      break;
+    }
+    case 1: { // save all IOPINs
+      ost << "PINS " << design_.iopin_list.size() << " ;\n";
+      Assert(!tech_.metal_list.empty(), "Need metal layer info to generate PIN location\n");
+      std::string metal_name = *(tech_.metal_list[0].Name());
+      int half_width = std::ceil(tech_.metal_list[0].MinHeight() / 2.0 * design_.def_distance_microns);
+      int height = std::ceil(tech_.metal_list[0].Width() * design_.def_distance_microns);
+      for (auto &iopin: design_.iopin_list) {
+        ost << "- "
+            << *iopin.Name()
+            << " + NET "
+            << iopin.GetNet()->NameStr()
+            << " + DIRECTION INPUT + USE SIGNAL";
+        if (iopin.IsPlaced()) {
+          ost << "\n  + LAYER "
+              << metal_name
+              << " ( "
+              << -half_width << " "
+              << 0 << " ) "
+              << " ( "
+              << half_width << " "
+              << height << " ) ";
+          ost << "\n  + PLACED ( "
+              << iopin.X() * factor_x + design_.die_area_offset_x_ << " "
+              << iopin.Y() * factor_y + design_.die_area_offset_y_
+              << " ) ";
+          if (iopin.X() == design_.region_left_) {
+            ost << "E";
+          } else if (iopin.X() == design_.region_right_) {
+            ost << "W";
+          } else if (iopin.Y() == design_.region_bottom_) {
+            ost << "N";
+          } else {
+            ost << "S";
+          }
+        }
+        ost << " ;\n";
+      }
+      break;
+    }
+    case 2: { // save all IOPINs with status before IO placement
+      ost << "PINS " << design_.iopin_list.size() << " ;\n";
+      Assert(!tech_.metal_list.empty(), "Need metal layer info to generate PIN location\n");
+      std::string metal_name = *(tech_.metal_list[0].Name());
+      int half_width = std::ceil(tech_.metal_list[0].MinHeight() / 2.0 * design_.def_distance_microns);
+      int height = std::ceil(tech_.metal_list[0].Width() * design_.def_distance_microns);
+      for (auto &iopin: design_.iopin_list) {
+        ost << "- "
+            << *iopin.Name()
+            << " + NET "
+            << iopin.GetNet()->NameStr()
+            << " + DIRECTION INPUT + USE SIGNAL";
+        if (iopin.IsPrePlaced()) {
+          ost << "\n  + LAYER "
+              << metal_name
+              << " ( "
+              << -half_width << " "
+              << 0 << " ) "
+              << " ( "
+              << half_width << " "
+              << height << " ) ";
+          ost << "\n  + PLACED ( "
+              << iopin.X() * factor_x + design_.die_area_offset_x_ << " "
+              << iopin.Y() * factor_y + design_.die_area_offset_y_
+              << " ) ";
+          if (iopin.X() == design_.region_left_) {
+            ost << "E";
+          } else if (iopin.X() == design_.region_right_) {
+            ost << "W";
+          } else if (iopin.Y() == design_.region_bottom_) {
+            ost << "N";
+          } else {
+            ost << "S";
+          }
+        }
+        ost << " ;\n";
+      }
+      break;
+    }
+    default: {
+      Assert(false, "Invalid value setting for @param save_iopin in Circuit::SaveDefFile()\n");
+    }
+  }
+  ost << "END PINS\n\n";
+
+  switch (save_net) {
+    case 0: { // no nets are saved
+      ost << "NETS 0 ;";
+      break;
+    }
+    case 1: { // save all nets
+      ost << "NETS " << design_.net_list.size() << " ;\n";
+      for (auto &net: design_.net_list) {
+        ost << "- " << *(net.Name()) << "\n";
+        ost << " ";
+        for (auto &pin_pair: net.blk_pin_list) {
+          ost << " ( " << *(pin_pair.BlockName()) << " " << *(pin_pair.PinName()) << " ) ";
+        }
+        ost << "\n" << " ;\n";
+      }
+      break;
+    }
+    case 2: { // save nets containing saved cells and IOPINs
+      break;
+    }
+    case 3: {// save power nets for well tap cell
+      ost << "\nNETS 2 ;\n";
+      // GND
+      ost << "- ggnndd\n";
+      ost << " ";
+      for (auto &block: design_.well_tap_list) {
+        ost << " ( " << block.NameStr() << " g0 )";
+      }
+      ost << "\n" << " ;\n";
+      //Vdd
+      ost << "- vvdddd\n";
+      ost << " ";
+      for (auto &block: design_.well_tap_list) {
+        ost << " ( " << block.NameStr() << " v0 )";
+      }
+      ost << "\n" << " ;\n";
+      break;
+    }
+    default: {
+      Assert(false, "Invalid value setting for @param save_net in Circuit::SaveDefFile()\n");
+    }
+  }
+  ost << "END NETS\n\n";
+
+  ost << "END DESIGN\n";
+
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("done\n");
+  }
+}
+
+void Circuit::SaveIODefFile(std::string const &name_of_file, std::string const &def_file_name) {
+  std::string file_name;
+  file_name = name_of_file + "_io.def";
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("Writing IO DEF file '%s', ", file_name.c_str());
+  }
+  std::ofstream ost(file_name.c_str());
+  Assert(ost.is_open(), "Cannot open file " + file_name);
+
+  std::ifstream ist(def_file_name.c_str());
+  Assert(ist.is_open(), "Cannot open file " + def_file_name);
+
+  std::string line;
+  // 1. print file header, copy from def file
+  while (true) {
+    getline(ist, line);
+    if (line.find("COMPONENTS") != std::string::npos || ist.eof()) {
+      break;
+    }
+    ost << line << "\n";
+  }
+
+  // 2. print component
+  double factor_x = design_.def_distance_microns * tech_.grid_value_x_;
+  double factor_y = design_.def_distance_microns * tech_.grid_value_y_;
+  ost << "COMPONENTS " << design_.block_list.size() - design_.fixed_io_count_ + design_.well_tap_list.size()
+      << " ;\n";
+  for (auto &block: design_.block_list) {
+    if (block.Type() == tech_.io_dummy_blk_type_) continue;
+    ost << "- "
+        << *block.Name() << " "
+        << *(block.Type()->Name()) << " + "
+        << block.GetPlaceStatusStr() << " "
+        << "( "
+        << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
+        << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
+        << " ) "
+        << OrientStr(block.Orient())
+        << " ;\n";
+  }
+  for (auto &block: design_.well_tap_list) {
+    ost << "- "
+        << *block.Name() << " "
+        << *(block.Type()->Name()) << " + "
+        << "PLACED" << " "
+        << "( "
+        << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
+        << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
+        << " ) "
+        << OrientStr(block.Orient())
+        << " ;\n";
+  }
+  ost << "END COMPONENTS\n";
+  // jump to the end of components
+  while (line.find("END COMPONENTS") == std::string::npos && !ist.eof()) {
+    getline(ist, line);
+  }
+
+  // 3. print PIN
+  ost << "\n";
+  ost << "PINS " << design_.iopin_list.size() << " ;\n";
+  Assert(!tech_.metal_list.empty(), "Need metal layer info to generate PIN location\n");
+  std::string metal_name = *(tech_.metal_list[0].Name());
+  int half_width = std::ceil(tech_.metal_list[0].MinHeight() / 2.0 * design_.def_distance_microns);
+  int height = std::ceil(tech_.metal_list[0].Width() * design_.def_distance_microns);
+  for (auto &iopin: design_.iopin_list) {
+    ost << "- "
+        << *iopin.Name()
+        << " + NET "
+        << iopin.GetNet()->NameStr()
+        << " + DIRECTION INPUT + USE SIGNAL";
+    if (iopin.IsPlaced()) {
+      ost << "\n  + LAYER "
+          << metal_name
+          << " ( "
+          << -half_width << " "
+          << 0 << " ) "
+          << " ( "
+          << half_width << " "
+          << height << " ) ";
+      ost << "\n  + PLACED ( "
+          << iopin.X() * factor_x + design_.die_area_offset_x_ << " "
+          << iopin.Y() * factor_y + design_.die_area_offset_y_
+          << " ) ";
+      if (iopin.X() == design_.region_left_) {
+        ost << "E";
+      } else if (iopin.X() == design_.region_right_) {
+        ost << "W";
+      } else if (iopin.Y() == design_.region_bottom_) {
+        ost << "N";
+      } else {
+        ost << "S";
+      }
+    }
+    ost << " ;\n";
+  }
+  ost << "END PINS\n\n";
+
+  // 4. print net, copy from def file
+  while (true) {
+    getline(ist, line);
+    if (line.find("NETS") != std::string::npos || ist.eof()) {
+      break;
+    }
+  }
+  ost << line << "\n";
+  while (!ist.eof()) {
+    getline(ist, line);
+    ost << line << "\n";
+  }
+
+  ost.close();
+  ist.close();
+
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    printf("done\n");
+  }
+}
+
+void Circuit::SaveDefWell(std::string const &name_of_file, std::string const &def_file_name, bool is_no_normal_cell) {
   printf("Writing WellTap Network DEF file (for debugging) '%s', ", name_of_file.c_str());
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file " + name_of_file);
@@ -1835,7 +2366,11 @@ void Circuit::SaveDefWell(std::string const &name_of_file, std::string const &de
   // 2. print well tap cells
   double factor_x = design_.def_distance_microns * tech_.grid_value_x_;
   double factor_y = design_.def_distance_microns * tech_.grid_value_y_;
-  ost << "COMPONENTS " << design_.well_tap_list.size() << " ;\n";
+  if (is_no_normal_cell) {
+    ost << "COMPONENTS " << design_.well_tap_list.size() << " ;\n";
+  } else {
+    ost << "COMPONENTS " << design_.block_list.size() + design_.well_tap_list.size() << " ;\n";
+  }
   for (auto &block: design_.well_tap_list) {
     ost << "- "
         << *block.Name() << " "
@@ -1847,6 +2382,21 @@ void Circuit::SaveDefWell(std::string const &name_of_file, std::string const &de
         << " ) "
         << OrientStr(block.Orient())
         << " ;\n";
+  }
+  if (!is_no_normal_cell) {
+    for (auto &block: design_.block_list) {
+      if (block.Type() == tech_.io_dummy_blk_type_) continue;
+      ost << "- "
+          << *block.Name() << " "
+          << *(block.Type()->Name()) << " + "
+          << block.GetPlaceStatusStr() << " "
+          << "( "
+          << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
+          << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
+          << " ) "
+          << OrientStr(block.Orient())
+          << " ;\n";
+    }
   }
   ost << "END COMPONENTS\n";
   // jump to the end of components
