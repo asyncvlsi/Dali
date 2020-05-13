@@ -84,7 +84,7 @@ void Cluster::LegalizeLooseX(int space_to_well_tap) {
     res_x = std::max(block_contour, int(blk->LLX()));
     blk->SetLLX(res_x);
     block_contour = int(blk->URX());
-    if (blk->Type() == tap_cell_->Type()) {
+    if ((tap_cell_ != nullptr) && (blk->Type() == tap_cell_->Type())) {
       block_contour += space_to_well_tap;
     }
   }
@@ -101,7 +101,7 @@ void Cluster::LegalizeLooseX(int space_to_well_tap) {
       res_x = std::min(block_contour, int(blk->URX()));
       blk->SetURX(res_x);
       block_contour = int(blk->LLX());
-      if (blk->Type() == tap_cell_->Type()) {
+      if ((tap_cell_ != nullptr) && (blk->Type() == tap_cell_->Type())) {
         block_contour -= space_to_well_tap;
       }
     }
