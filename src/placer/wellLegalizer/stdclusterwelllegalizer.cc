@@ -407,7 +407,7 @@ void StdClusterWellLegalizer::DecomposeToSimpleStrip() {
     }
   }*/
 
-  GenSimpleStrips();
+  //GenSimpleStrips();
 }
 
 void StdClusterWellLegalizer::Init(int cluster_width) {
@@ -472,7 +472,7 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
     UpdateWhiteSpaceInCol(col_list_[i]);
   }
   DecomposeToSimpleStrip();
-  GenAvailSpaceInCols();
+  //GenAvailSpaceInCols();
   //col_list_.back().width_ = RegionURX() - col_list_.back().lx_;
   //cluster_list_.reserve(tot_col_num_ * max_clusters_per_col);
 
