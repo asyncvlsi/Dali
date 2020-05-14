@@ -75,7 +75,7 @@ class Placer {
   void SanityCheck();
   void UpdateMovableBlkPlacementStatus();
 
-  void NaiveIOPinPlacement();
+  void SimpleIOPinPlacement(int pin_metal_layer);
 
   /****File I/O member functions****/
   void GenMATLABTable(std::string const &name_of_file);

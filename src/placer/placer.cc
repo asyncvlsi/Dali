@@ -2,10 +2,13 @@
 // Created by Yihang Yang on 2019-05-23.
 //
 
+#include "placer.h"
+
 #include <cmath>
 
+#include <algorithm>
+
 #include "common/misc.h"
-#include "placer.h"
 
 Placer::Placer() {
   aspect_ratio_ = 0;
@@ -242,13 +245,21 @@ void Placer::UpdateMovableBlkPlacementStatus() {
   }
 }
 
-void Placer::NaiveIOPinPlacement() {
+void Placer::SimpleIOPinPlacement(int pin_metal_layer) {
   if (circuit_->GetIOPinList()->empty()) return;
+  Assert(pin_metal_layer < (int) circuit_->tech_.metal_list.size(),
+         "wrong metal layer provided for Placer::SimpleIOPinPlacement()");
   //std::cout << circuit_->GetIOPinList()->size() << "\n";
   Net *net = nullptr;
   double net_minx, net_maxx, net_miny, net_maxy;
   double to_left, to_right, to_bottom, to_top;
   double min_distance;
+
+  std::vector<IOPin *> l_edge;
+  std::vector<IOPin *> r_edge;
+  std::vector<IOPin *> b_edge;
+  std::vector<IOPin *> t_edge;
+
   for (auto &iopin: *(circuit_->GetIOPinList())) {
     net = iopin.GetNet();
     if (net->blk_pin_list.empty()) continue;
@@ -268,14 +279,85 @@ void Placer::NaiveIOPinPlacement() {
 
     if (std::fabs(min_distance - to_left) < 1e-10) {
       iopin.SetLoc(left_, (net_maxy + net_miny) / 2, PLACED);
+      l_edge.push_back(&iopin);
     } else if (std::fabs(min_distance - to_right) < 1e-10) {
       iopin.SetLoc(right_, (net_maxy + net_miny) / 2, PLACED);
+      r_edge.push_back(&iopin);
     } else if (std::fabs(min_distance - to_bottom) < 1e-10) {
       iopin.SetLoc((net_minx + net_maxx) / 2, bottom_, PLACED);
+      b_edge.push_back(&iopin);
     } else {
       iopin.SetLoc((net_minx + net_maxx) / 2, top_, PLACED);
+      t_edge.push_back(&iopin);
     }
   }
+
+  int lo;
+  int hi;
+  int sz;
+  int step;
+
+  //printf("IOPIN on left: %d\n", l_edge.size());
+  if (!l_edge.empty()) {
+    std::sort(l_edge.begin(),
+              l_edge.end(),
+              [](const IOPin *lhs, const IOPin *rhs) {
+                return (lhs->Y() < rhs->Y());
+              });
+    lo = bottom_;
+    hi = top_;
+    sz = l_edge.size();
+    step = (hi - lo) / (sz + 1);
+    for (int i = 0; i < sz; ++i) {
+      l_edge[i]->SetLoc(left_, (i+1)*step);
+    }
+  }
+  //printf("IOPIN on right: %d\n", r_edge.size());
+  if (!r_edge.empty()) {
+    std::sort(r_edge.begin(),
+              r_edge.end(),
+              [](const IOPin *lhs, const IOPin *rhs) {
+                return (lhs->Y() < rhs->Y());
+              });
+    lo = bottom_;
+    hi = top_;
+    sz = r_edge.size();
+    step = (hi - lo) / (sz + 1);
+    for (int i = 0; i < sz; ++i) {
+      r_edge[i]->SetLoc(right_, (i+1)*step);
+    }
+  }
+  //printf("IOPIN on bottom: %d\n", b_edge.size());
+  if (!b_edge.empty()) {
+    std::sort(b_edge.begin(),
+              b_edge.end(),
+              [](const IOPin *lhs, const IOPin *rhs) {
+                return (lhs->X() < rhs->X());
+              });
+    lo = left_;
+    hi = right_;
+    sz = b_edge.size();
+    step = (hi - lo) / (sz + 1);
+    for (int i = 0; i < sz; ++i) {
+      b_edge[i]->SetLoc((i+1)*step, bottom_);
+    }
+  }
+  //printf("IOPIN on top: %d\n", t_edge.size());
+  if (!t_edge.empty()) {
+    std::sort(t_edge.begin(),
+              t_edge.end(),
+              [](const IOPin *lhs, const IOPin *rhs) {
+                return (lhs->X() < rhs->X());
+              });
+    lo = left_;
+    hi = right_;
+    sz = t_edge.size();
+    step = (hi - lo) / (sz + 1);
+    for (int i = 0; i < sz; ++i) {
+      t_edge[i]->SetLoc( (i+1)*step, top_);
+    }
+  }
+
 }
 
 void Placer::ShiftX(double shift_x) {

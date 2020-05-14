@@ -2090,9 +2090,9 @@ void Circuit::SaveDefFile(std::string const &base_name,
     case 1: { // save all IOPINs
       ost << "PINS " << design_.iopin_list.size() << " ;\n";
       Assert(!tech_.metal_list.empty(), "Need metal layer info to generate PIN location\n");
-      std::string metal_name = *(tech_.metal_list[0].Name());
-      int half_width = std::ceil(tech_.metal_list[0].MinHeight() / 2.0 * design_.def_distance_microns);
-      int height = std::ceil(tech_.metal_list[0].Width() * design_.def_distance_microns);
+      std::string metal_name = *(tech_.metal_list[4].Name());
+      int half_width = std::ceil(tech_.metal_list[4].MinHeight() / 2.0 * design_.def_distance_microns);
+      int height = std::ceil(tech_.metal_list[4].Width() * design_.def_distance_microns);
       for (auto &iopin: design_.iopin_list) {
         ost << "- "
             << *iopin.Name()
@@ -2173,7 +2173,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
 
   switch (save_net) {
     case 0: { // no nets are saved
-      ost << "NETS 0 ;";
+      ost << "NETS 0 ;\n";
       break;
     }
     case 1: { // save all nets

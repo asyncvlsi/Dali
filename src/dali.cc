@@ -193,6 +193,7 @@ int main(int argc, char *argv[]) {
     if (!output_name.empty()) {
       circuit.SaveDefFile(output_name + ".def", def_file_name);
     }
+    legalizer->SimpleIOPinPlacement(1);
 
     delete gb_placer;
     delete legalizer;
@@ -217,13 +218,14 @@ int main(int argc, char *argv[]) {
     if (!output_name.empty()) {
       well_legalizer->EmitDEFWellFile(output_name, def_file_name, 1);
     }
+    well_legalizer->SimpleIOPinPlacement(1);
     delete well_legalizer;
     delete gb_placer;
     delete legalizer;
   }
   circuit.SaveDefFile(output_name, "", def_file_name, 1, 1, 2, 1);
   circuit.SaveDefFile(output_name, "_io", def_file_name, 1, 1, 1, 1);
-  circuit.SaveDefFile(output_name, "_filling", def_file_name, 1, 4, 2, 1);
+  circuit.SaveDefFile(output_name, "_filling", def_file_name, 1, 4, 2, 0);
 
   circuit.InitNetFanoutHisto();
   circuit.ReportNetFanoutHisto();
