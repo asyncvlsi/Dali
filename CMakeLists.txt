@@ -10,6 +10,8 @@ set(CMAKE_CXX_STANDARD 11)
 
 set(macro_names "-D USE_OPENDB")
 
+find_package(TCL REQUIRED)
+
 # The flag USE_OPENDB
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${macro_names} -std=c++11 -O3 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g ${macro_names} -std=c++11 -O3 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
@@ -35,6 +37,7 @@ add_subdirectory(module/OpenDB
         EXCLUDE_FROM_ALL)
 
 include_directories(
+        ${TCL_INCLUDE_PATH}
         src
         module/def
         module/lef
@@ -163,8 +166,8 @@ install(DIRECTORY src/ DESTINATION ${INLUDE_DESTIN}/dali COMPONENT Development F
 ######################################
 # Install binary
 ######################################
-#install(TARGETS dali
-#    DESTINATION bin)
+install(TARGETS dali
+    DESTINATION bin)
 
 ######################################
 # Install library
