@@ -199,11 +199,19 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
     int iopin_x = 0;
     int iopin_y = 0;
     bool is_loc_set = iopin->getFirstPinLocation(iopin_x, iopin_y);
+    IOPin *pin = nullptr;
     if (is_loc_set) {
-      AddIOPin(iopin_name, iopin_x, iopin_x);
+      pin = AddIOPin(iopin_name, iopin_x, iopin_x);
     } else {
-      AddIOPin(iopin_name);
+      pin = AddIOPin(iopin_name);
     }
+    std::string str_sig_use(iopin->getSigType().getString());
+    SignalUse sig_use = StrToSignalUse(str_sig_use);
+    pin->SetUse(sig_use);
+
+    std::string str_sig_dir(iopin->getIoType().getString());
+    SignalDirection sig_dir = StrToSignalDirection(str_sig_dir);
+    pin->SetDirection(sig_dir);
   }
 
   //std::cout << "Nets:\n";
@@ -2090,15 +2098,16 @@ void Circuit::SaveDefFile(std::string const &base_name,
     case 1: { // save all IOPINs
       ost << "PINS " << design_.iopin_list.size() << " ;\n";
       Assert(!tech_.metal_list.empty(), "Need metal layer info to generate PIN location\n");
-      std::string metal_name = *(tech_.metal_list[4].Name());
-      int half_width = std::ceil(tech_.metal_list[4].MinHeight() / 2.0 * design_.def_distance_microns);
-      int height = std::ceil(tech_.metal_list[4].Width() * design_.def_distance_microns);
+      std::string metal_name = *(tech_.metal_list[3].Name());
+      int half_width = std::ceil(tech_.metal_list[3].MinHeight() / 2.0 * design_.def_distance_microns);
+      int height = std::ceil(tech_.metal_list[3].Width() * design_.def_distance_microns);
       for (auto &iopin: design_.iopin_list) {
         ost << "- "
             << *iopin.Name()
             << " + NET "
             << iopin.GetNet()->NameStr()
-            << " + DIRECTION INPUT + USE SIGNAL";
+            << " + DIRECTION " << SignalDirectionStr(iopin.Direction())
+            << " + USE " << SignalUseStr(iopin.Use());
         if (iopin.IsPlaced()) {
           ost << "\n  + LAYER "
               << metal_name
@@ -2137,7 +2146,8 @@ void Circuit::SaveDefFile(std::string const &base_name,
             << *iopin.Name()
             << " + NET "
             << iopin.GetNet()->NameStr()
-            << " + DIRECTION INPUT + USE SIGNAL";
+            << " + DIRECTION " << SignalDirectionStr(iopin.Direction())
+            << " + USE " << SignalUseStr(iopin.Use());
         if (iopin.IsPrePlaced()) {
           ost << "\n  + LAYER "
               << metal_name

@@ -190,10 +190,7 @@ int main(int argc, char *argv[]) {
     legalizer->TakeOver(gb_placer);
     legalizer->StartPlacement();
 
-    if (!output_name.empty()) {
-      circuit.SaveDefFile(output_name + ".def", def_file_name);
-    }
-    legalizer->SimpleIOPinPlacement(1);
+    legalizer->SimpleIOPinPlacement(3);
 
     delete gb_placer;
     delete legalizer;
@@ -216,9 +213,9 @@ int main(int argc, char *argv[]) {
     well_legalizer->StartPlacement();
 
     if (!output_name.empty()) {
-      well_legalizer->EmitDEFWellFile(output_name, def_file_name, 1);
+      well_legalizer->EmitDEFWellFile(output_name, 1);
     }
-    well_legalizer->SimpleIOPinPlacement(1);
+    well_legalizer->SimpleIOPinPlacement(3);
     delete well_legalizer;
     delete gb_placer;
     delete legalizer;

@@ -179,7 +179,7 @@ Strip *ClusterStrip::GetStripMatchBlk(Block *blk_ptr) {
 }
 
 Strip *ClusterStrip::GetStripClosestToBlk(Block *blk_ptr, double &distance) {
-  Strip *res;
+  Strip *res = nullptr;
   double center_x = blk_ptr->X();
   double center_y = blk_ptr->Y();
   double min_distance = DBL_MAX;
@@ -1607,9 +1607,7 @@ void StdClusterWellLegalizer::GenPPNP(const std::string &name_of_file) {
   ostpp.close();
 }
 
-void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file,
-                                              std::string const &input_def_file,
-                                              int well_emit_mode) {
+void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode) {
   /****
    * Emit three files:
    * 1. rect file including all N/P well rectangles
@@ -1622,10 +1620,6 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file,
    * 2: emit P-well only
    * ****/
 
-  //circuit_->SaveDefFile(name_of_file, input_def_file);
-  //circuit_->SaveInstanceDefFile(name_of_file, input_def_file);
-  //circuit_->SaveDefWell(name_of_file + "_welltapnetwork.def", input_def_file, false);
-  //circuit_->SaveDefPPNPWell(name_of_file, input_def_file);
   EmitPPNPRect(name_of_file + "ppnp.rect");
   EmitWellRect(name_of_file + "well.rect", well_emit_mode);
   EmitClusterRect(name_of_file + "_router.cluster");

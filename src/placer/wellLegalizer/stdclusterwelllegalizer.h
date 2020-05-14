@@ -220,7 +220,7 @@ class StdClusterWellLegalizer : public Placer {
   void GenMatlabClusterTable(std::string const &name_of_file);
   void GenMATLABWellTable(std::string const &name_of_file, int well_emit_mode) override;
   void GenPPNP(std::string const &name_of_file);
-  void EmitDEFWellFile(std::string const &name_of_file, std::string const &input_def_file, int well_emit_mode) override;
+  void EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode);
   void EmitPPNPRect(std::string const &name_of_file);
   void EmitWellRect(std::string const &name_of_file, int well_emit_mode);
   void EmitClusterRect(std::string const &name_of_file);

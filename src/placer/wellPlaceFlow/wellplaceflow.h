@@ -16,7 +16,7 @@ class WellPlaceFlow : public GPSimPL {
 
   bool StartPlacement() override;
 
-  void EmitDEFWellFile(std::string const &name_of_file, std::string const &input_def_file, int well_emit_mode) override;
+  void EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode);
 };
 
 #endif //DALI_SRC_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_

@@ -112,7 +112,7 @@ int main() {
   std_cluster_well_legalizer.GenMATLABWellTable("scw", 1);
 
   std_cluster_well_legalizer.SimpleIOPinPlacement(1);
-  std_cluster_well_legalizer.EmitDEFWellFile("circuit", def_file_name, 1);
+  std_cluster_well_legalizer.EmitDEFWellFile("circuit", 1);
 #endif
 
   circuit.SaveDefFile("circuit", "", def_file_name, 1, 1, 2, 1);

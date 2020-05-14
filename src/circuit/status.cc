@@ -169,3 +169,55 @@ std::string SignalDirectionStr(SignalDirection signal_direction) {
   }
   return s;
 }
+
+SignalUse StrToSignalUse(std::string &str_signal_use) {
+  SignalUse signal_use = SIGNAL_;
+  if (str_signal_use == "SIGNAL") {
+    signal_use = SIGNAL_;
+  } else if (str_signal_use == "POWER") {
+    signal_use = POWER_;
+  } else if (str_signal_use == "GROUND") {
+    signal_use = GROUND_;
+  } else if (str_signal_use == "CLOCK") {
+    signal_use = CLOCK_;
+  } else if (str_signal_use == "TIEOFF") {
+    signal_use = TIEOFF_;
+  } else if (str_signal_use == "ANALOG") {
+    signal_use = ANALOG_;
+  } else if (str_signal_use == "SCAN") {
+    signal_use = SCAN_;
+  } else if (str_signal_use == "RESET") {
+    signal_use = RESET_;
+  } else {
+    std::cout << "Unknown SignalUse: " << str_signal_use << std::endl;
+    exit(0);
+  }
+  return signal_use;
+}
+
+std::string SignalUseStr(SignalUse signal_use) {
+  std::string s;
+  switch (signal_use) {
+    case 0: { s = "SIGNAL"; }
+      break;
+    case 1: { s = "POWER"; }
+      break;
+    case 2: { s = "GROUND"; }
+      break;
+    case 3: { s = "CLOCK"; }
+      break;
+    case 4: { s = "TIEOFF"; }
+      break;
+    case 5: { s = "ANALOG"; }
+      break;
+    case 6: { s = "SCAN"; }
+      break;
+    case 7: { s = "RESET"; }
+      break;
+    default: {
+      std::cout << "IOPIN signal use error! This should never happen!" << std::endl;
+      exit(1);
+    }
+  }
+  return s;
+}

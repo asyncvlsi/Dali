@@ -53,4 +53,18 @@ enum SignalDirection {
 SignalDirection StrToSignalDirection(std::string &str_signal_direction);
 std::string SignalDirectionStr(SignalDirection signal_direction);
 
+enum SignalUse {
+  SIGNAL_ = 0,
+  POWER_ = 1,
+  GROUND_ = 2,
+  CLOCK_ = 3,
+  TIEOFF_ = 4,
+  ANALOG_ = 5,
+  SCAN_ = 6,
+  RESET_ = 7
+};
+
+SignalUse StrToSignalUse(std::string &str_signal_use);
+std::string SignalUseStr(SignalUse signal_use);
+
 #endif //DALI_SRC_CIRCUIT_STATUS_H_

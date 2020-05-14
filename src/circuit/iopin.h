@@ -17,6 +17,7 @@ class IOPin {
   std::pair<const std::string, int> *name_num_pair_;
   Net *net_;
   SignalDirection direction_;
+  SignalUse use_;
   MetalLayer *layer_;
   RectD rect_;
   PlaceStatus init_place_status_;
@@ -36,6 +37,7 @@ class IOPin {
   int Num() const;
   Net *GetNet() const;
   SignalDirection Direction() const;
+  SignalUse Use() const {return  use_;}
   MetalLayer *Layer() const;
   RectD *GetRect();
   bool IsPlaced() const;
@@ -45,6 +47,7 @@ class IOPin {
 
   void SetNet(Net *net);
   void SetDirection(SignalDirection direction);
+  void SetUse(SignalUse use) { use_ = use; }
   void SetLayer(MetalLayer *layer);
   void SetRect(double llx, double lly, double urx, double ury);
   void SetLoc(double lx, double ly, PlaceStatus place_status = PLACED);
