@@ -35,8 +35,8 @@ class Pin {
   void InitOffset();
   void CalculateOffset(double x_offset, double y_offset);
   void SetOffset(double x_offset, double y_offset);
-  double OffsetX(BlockOrient orient = N) const;
-  double OffsetY(BlockOrient orient = N) const;
+  double OffsetX(BlockOrient orient = N_) const;
+  double OffsetY(BlockOrient orient = N_) const;
 
   void AddRect(RectD &rect);
   void AddRect(double llx, double lly, double urx, double ury);
@@ -62,11 +62,11 @@ inline void Pin::SetOffset(double x_offset, double y_offset) {
 }
 
 inline double Pin::OffsetX(BlockOrient orient) const {
-  return x_offset_[orient - N];
+  return x_offset_[orient - N_];
 }
 
 inline double Pin::OffsetY(BlockOrient orient) const {
-  return y_offset_[orient - N];
+  return y_offset_[orient - N_];
 }
 
 inline void Pin::AddRect(RectD &rect) {

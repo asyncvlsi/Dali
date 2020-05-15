@@ -47,8 +47,8 @@ void Pin::CalculateOffset(double x_offset, double y_offset) {
    *    x' = width - x;
    *    y' = height - y;
    ****/
-  x_offset_[S - N] = blk_type_->Width() - x_offset;
-  y_offset_[S - N] = blk_type_->Height() - y_offset;
+  x_offset_[S_ - N_] = blk_type_->Width() - x_offset;
+  y_offset_[S_ - N_] = blk_type_->Height() - y_offset;
 
   /****
    * rotate 90 degree counterclockwise
@@ -62,8 +62,8 @@ void Pin::CalculateOffset(double x_offset, double y_offset) {
    *    x' = height - y;
    *    y' = x;
    * ****/
-  x_offset_[W - N] = blk_type_->Height() - y_offset;
-  y_offset_[W - N] = x_offset;
+  x_offset_[W_ - N_] = blk_type_->Height() - y_offset;
+  y_offset_[W_ - N_] = x_offset;
 
 
   /****
@@ -78,15 +78,15 @@ void Pin::CalculateOffset(double x_offset, double y_offset) {
    *    x' = y;
    *    y' = width - x;
    * ****/
-  x_offset_[E - N] = y_offset;
-  y_offset_[E - N] = blk_type_->Width() - x_offset;
+  x_offset_[E_ - N_] = y_offset;
+  y_offset_[E_ - N_] = blk_type_->Width() - x_offset;
 
   /****
    * Flip along the line through the middle of width
    *    x' = width - x; y = y;
    * ****/
-  x_offset_[FN - N] = blk_type_->Width() - x_offset;
-  y_offset_[FN - N] = y_offset;
+  x_offset_[FN_ - N_] = blk_type_->Width() - x_offset;
+  y_offset_[FN_ - N_] = y_offset;
 
   /****
    * rotate 180 degree counterclockwise
@@ -99,8 +99,8 @@ void Pin::CalculateOffset(double x_offset, double y_offset) {
    *    x' = x;
    *    y' = height - y;
    * ****/
-  x_offset_[FS - N] = x_offset;
-  y_offset_[FS - N] = blk_type_->Height() - y_offset;
+  x_offset_[FS_ - N_] = x_offset;
+  y_offset_[FS_ - N_] = blk_type_->Height() - y_offset;
 
   /****
    * rotate 90 degree counterclockwise
@@ -113,8 +113,8 @@ void Pin::CalculateOffset(double x_offset, double y_offset) {
    *    x' = y
    *    y' = x;
    * ****/
-  x_offset_[FW - N] = y_offset;
-  y_offset_[FW - N] = x_offset;
+  x_offset_[FW_ - N_] = y_offset;
+  y_offset_[FW_ - N_] = x_offset;
 
   /****
    * rotate 270 degree counterclockwise
@@ -127,7 +127,7 @@ void Pin::CalculateOffset(double x_offset, double y_offset) {
    *    x' = height - y;
    *    y = width - x;
    * ****/
-  x_offset_[FE - N] = blk_type_->Height() - y_offset;
-  y_offset_[FE - N] = blk_type_->Width() - x_offset;
+  x_offset_[FE_ - N_] = blk_type_->Height() - y_offset;
+  y_offset_[FE_ - N_] = blk_type_->Width() - x_offset;
 
 }

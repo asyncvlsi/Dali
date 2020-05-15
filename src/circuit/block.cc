@@ -8,9 +8,10 @@ Block::Block() : type_(nullptr),
                  name_num_pair_(nullptr),
                  llx_(0),
                  lly_(0),
-                 place_status_(UNPLACED),
-                 orient_(N),
-                 aux_(nullptr) {}
+                 place_status_(UNPLACED_),
+                 orient_(N_),
+                 aux_(nullptr) {
+}
 
 Block::Block(BlockType *type,
              std::pair<const std::string, int> *name_num_pair,
@@ -29,9 +30,9 @@ Block::Block(BlockType *type,
          "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
   aux_ = nullptr;
   if (movable) {
-    place_status_ = UNPLACED;
+    place_status_ = UNPLACED_;
   } else {
-    place_status_ = FIXED;
+    place_status_ = FIXED_;
   }
 }
 
@@ -113,9 +114,4 @@ void Block::ReportNet() {
     std::cout << net_num << "  ";
   }
   std::cout << "\n";
-}
-
-BlockAux::BlockAux(Block *block) :
-    block_(block) {
-  block->SetAux(this);
 }

@@ -240,7 +240,7 @@ void Placer::SanityCheck() {
 void Placer::UpdateMovableBlkPlacementStatus() {
   for (auto &blk: *BlockList()) {
     if (blk.IsMovable()) {
-      blk.SetPlaceStatus(PLACED);
+      blk.SetPlaceStatus(PLACED_);
     }
   }
 }
@@ -278,16 +278,16 @@ void Placer::SimpleIOPinPlacement(int pin_metal_layer) {
     min_distance = std::min(std::min(to_left, to_right), std::min(to_bottom, to_top));
 
     if (std::fabs(min_distance - to_left) < 1e-10) {
-      iopin.SetLoc(left_, (net_maxy + net_miny) / 2, PLACED);
+      iopin.SetLoc(left_, (net_maxy + net_miny) / 2, PLACED_);
       l_edge.push_back(&iopin);
     } else if (std::fabs(min_distance - to_right) < 1e-10) {
-      iopin.SetLoc(right_, (net_maxy + net_miny) / 2, PLACED);
+      iopin.SetLoc(right_, (net_maxy + net_miny) / 2, PLACED_);
       r_edge.push_back(&iopin);
     } else if (std::fabs(min_distance - to_bottom) < 1e-10) {
-      iopin.SetLoc((net_minx + net_maxx) / 2, bottom_, PLACED);
+      iopin.SetLoc((net_minx + net_maxx) / 2, bottom_, PLACED_);
       b_edge.push_back(&iopin);
     } else {
-      iopin.SetLoc((net_minx + net_maxx) / 2, top_, PLACED);
+      iopin.SetLoc((net_minx + net_maxx) / 2, top_, PLACED_);
       t_edge.push_back(&iopin);
     }
   }

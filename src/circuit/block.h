@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 2019-05-23.
 //
 
-#ifndef DALI_BLOCK_HPP
-#define DALI_BLOCK_HPP
+#ifndef DALI_BLOCK_H
+#define DALI_BLOCK_H
 
 #include <iostream>
 #include <map>
@@ -51,263 +51,98 @@ class Block {
         int llx,
         int lly,
         bool movable = "true",
-        BlockOrient orient = N);
+        BlockOrient orient = N_);
   Block(BlockType *type,
         std::pair<const std::string, int> *name_num_pair,
         int llx,
         int lly,
-        PlaceStatus place_state = UNPLACED,
-        BlockOrient orient = N);
+        PlaceStatus place_state = UNPLACED_,
+        BlockOrient orient = N_);
 
   std::vector<int> net_list;
 
   /****member functions for attributes access****/
-  const std::string *Name() const;
-  std::string NameStr() const;
-  BlockType *Type() const;
-  int Num() const;
-  int Width() const;
-  void SetHeight(int height);
-  void SetHeightFromType();
-  int Height() const;
-  double LLX() const;
-  double LLY() const;
-  double URX() const;
-  double URY() const;
-  double X() const;
-  double Y() const;
-  bool IsPlaced() const;
-  PlaceStatus GetPlaceStatus();
-  bool IsMovable() const;
-  bool IsFixed() const;
-  long int Area() const;
-  BlockOrient Orient() const;
-  BlockAux *Aux() const;
+  const std::string *Name() const { return &(name_num_pair_->first); }
+  std::string NameStr() const { return std::string(name_num_pair_->first); }
+  BlockType *Type() const { return type_; }
+  int Num() const { return name_num_pair_->second; }
+  int Width() const { return type_->Width(); }
+  void SetHeight(int height) {
+    eff_height_ = height;
+    eff_area_ = eff_height_ * type_->Width();
+  }
+  void SetHeightFromType() {
+    eff_height_ = type_->Height();
+    eff_area_ = type_->Area();
+  }
+  int Height() const { return eff_height_; }
+  double LLX() const { return llx_; }
+  double LLY() const { return lly_; }
+  double URX() const { return llx_ + Width(); }
+  double URY() const { return lly_ + Height(); }
+  double X() const { return llx_ + Width() / 2.0; }
+  double Y() const { return lly_ + Height() / 2.0; }
+  bool IsPlaced() const { return place_status_ == PLACED_ || place_status_ == FIXED_ || place_status_ == COVER_; }
+  PlaceStatus GetPlaceStatus() { return place_status_; }
+  bool IsMovable() const { return place_status_ == UNPLACED_ || place_status_ == PLACED_; }
+  bool IsFixed() const { return !IsMovable(); }
+  long int Area() const { return eff_area_; }
+  BlockOrient Orient() const { return orient_; }
+  BlockAux *Aux() const { return aux_; }
 
-  void SetNameNumPair(std::pair<const std::string, int> *name_num_pair);
-  void SetType(BlockType *type);
-  void SetLoc(double lx, double ly);
-  void SetLLX(double lx);
-  void SetLLY(double ly);
-  void SetURX(double ux);
-  void SetURY(double uy);
-  void SetCenterX(double center_x);
-  void SetCenterY(double center_y);
-  void SetPlaceStatus(PlaceStatus place_status);
-  void SetOrient(BlockOrient const &orient);
-  void SetAux(BlockAux *aux);
+  void SetNameNumPair(std::pair<const std::string, int> *name_num_pair) { name_num_pair_ = name_num_pair; }
+  void SetType(BlockType *type) {
+    Assert(type != nullptr, "Cannot set BlockType of a Block to NULL");
+    type_ = type;
+    eff_height_ = type_->Height();
+    eff_area_ = type_->Area();
+  }
+  void SetLoc(double lx, double ly) {
+    llx_ = lx;
+    lly_ = ly;
+  }
+  void SetLLX(double lx) { llx_ = lx; }
+  void SetLLY(double ly) { lly_ = ly; }
+  void SetURX(double ux) { llx_ = ux - Width(); }
+  void SetURY(double uy) { lly_ = uy - Height(); }
+  void SetCenterX(double center_x) { llx_ = center_x - Width() / 2.0; }
+  void SetCenterY(double center_y) { lly_ = center_y - Height() / 2.0; }
+  void SetPlaceStatus(PlaceStatus place_status) { place_status_ = place_status; }
+  void SetOrient(BlockOrient const &orient) { orient_ = orient; }
+  void SetAux(BlockAux *aux) {
+    Assert(aux != nullptr, "When set auxiliary information, argument cannot be a nullptr");
+    aux_ = aux;
+  }
 
   void SwapLoc(Block &blk);
 
-  void IncreaseX(double displacement);
-  void IncreaseY(double displacement);
+  void IncreaseX(double displacement) { llx_ += displacement; }
+  void IncreaseY(double displacement) { lly_ += displacement; }
   void IncreaseX(double displacement, double upper, double lower);
   void IncreaseY(double displacement, double upper, double lower);
-  void DecreaseX(double displacement);
-  void DecreaseY(double displacement);
-  bool IsOverlap(const Block &rhs) const;
-  bool IsOverlap(const Block *rhs) const;
+  void DecreaseX(double displacement) { llx_ -= displacement; }
+  void DecreaseY(double displacement) { lly_ -= displacement; }
+  bool IsOverlap(const Block &rhs) const {
+    return !(LLX() > rhs.URX() || rhs.LLX() > URX() || LLY() > rhs.URY() || rhs.LLY() > URY());
+  }
+  bool IsOverlap(const Block *rhs) const { return IsOverlap(*rhs); }
   double OverlapArea(const Block &rhs) const;
-  double OverlapArea(const Block *rhs) const;
+  double OverlapArea(const Block *rhs) const { return OverlapArea(*rhs); }
 
   /****Report info in this block, for debugging****/
   void Report();
   void ReportNet();
 
-  const std::string *TypeName() const;
-  std::string GetPlaceStatusStr();
-  std::string LowerLeftCorner();
+  std::string GetPlaceStatusStr() { return PlaceStatusStr(place_status_); }
+  std::string LowerLeftCorner() { return "( " + std::to_string(LLX()) + " " + std::to_string(LLY()) + " )"; }
 };
 
 class BlockAux {
  protected:
   Block *block_;
  public:
-  explicit BlockAux(Block *block);
-  Block *GetBlock();
+  explicit BlockAux(Block *block) {block->SetAux(this);}
+  Block *GetBlock() { return block_; }
 };
 
-inline const std::string *Block::Name() const {
-  return &(name_num_pair_->first);
-}
-
-inline std::string Block::NameStr() const {
-  return std::string(name_num_pair_->first);
-}
-
-inline BlockType *Block::Type() const {
-  return type_;
-}
-
-inline int Block::Num() const {
-  return name_num_pair_->second;
-}
-
-inline int Block::Width() const {
-  return type_->Width();
-}
-
-inline void Block::SetHeight(int height) {
-  eff_height_ = height;
-  eff_area_ = eff_height_ * type_->Width();
-}
-
-inline void Block::SetHeightFromType() {
-  eff_height_ = type_->Height();
-  eff_area_ = type_->Area();
-}
-
-inline int Block::Height() const {
-  return eff_height_;
-}
-
-inline double Block::LLX() const {
-  return llx_;
-}
-
-inline double Block::LLY() const {
-  return lly_;
-}
-
-inline double Block::URX() const {
-  return llx_ + Width();
-}
-
-inline double Block::URY() const {
-  return lly_ + Height();
-}
-
-inline double Block::X() const {
-  return llx_ + Width() / 2.0;
-}
-
-inline double Block::Y() const {
-  return lly_ + Height() / 2.0;
-}
-
-inline bool Block::IsPlaced() const {
-  return place_status_ == PLACED || place_status_ == FIXED;
-}
-
-inline PlaceStatus Block::GetPlaceStatus() {
-  return place_status_;
-}
-
-inline bool Block::IsMovable() const {
-  return place_status_ == UNPLACED || place_status_ == PLACED;
-}
-
-inline bool Block::IsFixed() const {
-  return !IsMovable();
-}
-
-inline long int Block::Area() const {
-  return eff_area_;
-}
-
-inline BlockOrient Block::Orient() const {
-  return orient_;
-}
-
-inline BlockAux *Block::Aux() const {
-  return aux_;
-}
-
-inline void Block::SetNameNumPair(std::pair<const std::string, int> *name_num_pair) {
-  name_num_pair_ = name_num_pair;
-}
-
-inline void Block::SetType(BlockType *type) {
-  Assert(type != nullptr, "Cannot set BlockType of a Block to NULL");
-  type_ = type;
-  eff_height_ = type_->Height();
-  eff_area_ = type_->Area();
-}
-
-inline void Block::SetLoc(double lx, double ly) {
-  llx_ = lx;
-  lly_ = ly;
-}
-
-inline void Block::SetLLX(double lx) {
-  llx_ = lx;
-}
-
-inline void Block::SetLLY(double ly) {
-  lly_ = ly;
-}
-
-inline void Block::SetURX(double ux) {
-  llx_ = ux - Width();
-}
-
-inline void Block::SetURY(double uy) {
-  lly_ = uy - Height();
-}
-
-inline void Block::SetCenterX(double center_x) {
-  llx_ = center_x - Width() / 2.0;
-}
-
-inline void Block::SetCenterY(double center_y) {
-  lly_ = center_y - Height() / 2.0;
-}
-
-inline void Block::SetPlaceStatus(PlaceStatus place_status) {
-  place_status_ = place_status;
-}
-
-inline void Block::SetOrient(BlockOrient const &orient) {
-  orient_ = orient;
-}
-
-inline void Block::SetAux(BlockAux *aux) {
-  Assert(aux != nullptr, "When set auxiliary information, argument cannot be a nullptr");
-  aux_ = aux;
-}
-
-inline void Block::IncreaseX(double displacement) {
-  llx_ += displacement;
-}
-
-inline void Block::IncreaseY(double displacement) {
-  lly_ += displacement;
-}
-
-inline void Block::DecreaseX(double displacement) {
-  llx_ -= displacement;
-}
-
-inline void Block::DecreaseY(double displacement) {
-  lly_ -= displacement;
-}
-
-inline bool Block::IsOverlap(const Block &rhs) const {
-  return !(LLX() > rhs.URX() || rhs.LLX() > URX() || LLY() > rhs.URY() || rhs.LLY() > URY());
-}
-
-inline bool Block::IsOverlap(const Block *rhs) const {
-  return IsOverlap(*rhs);
-}
-
-inline double Block::OverlapArea(const Block *rhs) const {
-  return OverlapArea(*rhs);
-}
-
-inline const std::string *Block::TypeName() const {
-  return type_->Name();
-}
-
-inline std::string Block::GetPlaceStatusStr() {
-  return PlaceStatusStr(place_status_);
-}
-
-inline std::string Block::LowerLeftCorner() {
-  return "( " + std::to_string(LLX()) + " " + std::to_string(LLY()) + " )";
-}
-
-inline Block *BlockAux::GetBlock() {
-  return block_;
-}
-
-#endif //DALI_BLOCK_HPP
+#endif //DALI_BLOCK_H

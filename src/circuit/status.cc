@@ -7,15 +7,15 @@
 #include <iostream>
 
 MetalDirection StrToMetalDirection(std::string &str_metal_direction) {
-  MetalDirection metal_direction = HORIZONTAL;
+  MetalDirection metal_direction = HORIZONTAL_;
   if (str_metal_direction == "HORIZONTAL") {
-    metal_direction = HORIZONTAL;
+    metal_direction = HORIZONTAL_;
   } else if (str_metal_direction == "VERTICAL") {
-    metal_direction = VERTICAL;
+    metal_direction = VERTICAL_;
   } else if (str_metal_direction == "DIAG45") {
-    metal_direction = DIAG45;
+    metal_direction = DIAG45_;
   } else if (str_metal_direction == "DIAG135") {
-    metal_direction = DIAG135;
+    metal_direction = DIAG135_;
   } else {
     std::cout << "Unknown MetalLayer direction: " << str_metal_direction << std::endl;
     exit(1);
@@ -43,23 +43,23 @@ std::string MetalDirectionStr(MetalDirection metal_direction) {
 }
 
 BlockOrient StrToOrient(std::string &str_orient) {
-  BlockOrient orient = N;
+  BlockOrient orient = N_;
   if (str_orient == "N" || str_orient == "R0") {
-    orient = N;
+    orient = N_;
   } else if (str_orient == "S" || str_orient == "R180") {
-    orient = S;
+    orient = S_;
   } else if (str_orient == "W" || str_orient == "R90") {
-    orient = W;
+    orient = W_;
   } else if (str_orient == "E" || str_orient == "R270") {
-    orient = E;
+    orient = E_;
   } else if (str_orient == "FN" || str_orient == "MY") {
-    orient = FN;
+    orient = FN_;
   } else if (str_orient == "FS" || str_orient == "MX") {
-    orient = FS;
+    orient = FS_;
   } else if (str_orient == "FW" || str_orient == "MX90" || str_orient == "MXR90") {
-    orient = FW;
+    orient = FW_;
   } else if (str_orient == "FE" || str_orient == "MY90" || str_orient == "MYR90") {
-    orient = FE;
+    orient = FE_;
   } else {
     std::cout << "Unknown Block orientation: " << str_orient << std::endl;
     exit(1);
@@ -95,17 +95,17 @@ std::string OrientStr(BlockOrient orient) {
 }
 
 PlaceStatus StrToPlaceStatus(std::string &str_place_status) {
-  PlaceStatus place_status = UNPLACED;
+  PlaceStatus place_status = UNPLACED_;
   if (str_place_status == "COVER") {
-    place_status = COVER;
+    place_status = COVER_;
   } else if (str_place_status == "FIXED" || str_place_status == "LOCKED" || str_place_status == "FIRM") {
-    place_status = FIXED;
+    place_status = FIXED_;
   } else if (str_place_status == "PLACED" || str_place_status == "SUGGESTED") {
-    place_status = PLACED;
+    place_status = PLACED_;
   } else if (str_place_status == "UNPLACED" || str_place_status == "NONE") {
-    place_status = UNPLACED;
+    place_status = UNPLACED_;
   } else if (str_place_status == "NULL_STATE") {
-    place_status = NULL_STATE;
+    place_status = NULL_STATE_;
   } else {
     std::cout << "Unknown placement status: " << str_place_status << std::endl;
     exit(1);

@@ -617,7 +617,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
              "Invalid block declaration, expecting at least: - compName modelName ;\n" + line);
       //std::cout << block_declare_field[0] << " " << block_declare_field[1] << "\n";
       if (block_declare_field.size() == 3) {
-        AddBlock(block_declare_field[1], block_declare_field[2], 0, 0, UNPLACED, N);
+        AddBlock(block_declare_field[1], block_declare_field[2], 0, 0, UNPLACED_, N_);
       } else if (block_declare_field.size() == 10) {
         PlaceStatus place_status = StrToPlaceStatus(block_declare_field[4]);
         BlockOrient orient = StrToOrient(block_declare_field[9]);
@@ -882,9 +882,9 @@ void Circuit::AddBlock(std::string &block_name,
                        BlockOrient orient) {
   PlaceStatus place_status;
   if (movable) {
-    place_status = UNPLACED;
+    place_status = UNPLACED_;
   } else {
-    place_status = FIXED;
+    place_status = FIXED_;
   }
   AddBlock(block_name, block_type, llx, lly, place_status, orient);
 }
@@ -995,7 +995,7 @@ IOPin *Circuit::AddIOPin(std::string &iopin_name, int lx, int ly) {
   design_.fixed_io_count_ += 1;
 
   // add a dummy cell corresponding to this IOPIN to block_list.
-  AddBlock(iopin_name, tech_.io_dummy_blk_type_, lx, ly, false, N);
+  AddBlock(iopin_name, tech_.io_dummy_blk_type_, lx, ly, false, N_);
 
   return &(design_.iopin_list.back());
 }
@@ -1584,7 +1584,7 @@ void Circuit::GenMATLABWellTable(std::string const &name_of_file, bool only_well
       if (well != nullptr) {
         n_well_shape = well->GetNWellShape();
         p_well_shape = well->GetPWellShape();
-        if (block.Orient() == N) {
+        if (block.Orient() == N_) {
           ost << block.LLX() + n_well_shape->LLX() << "\t"
               << block.LLX() + n_well_shape->URX() << "\t"
               << block.LLX() + n_well_shape->URX() << "\t"
@@ -1602,7 +1602,7 @@ void Circuit::GenMATLABWellTable(std::string const &name_of_file, bool only_well
               << block.LLY() + p_well_shape->LLY() << "\t"
               << block.LLY() + p_well_shape->URY() << "\t"
               << block.LLY() + p_well_shape->URY() << "\n";
-        } else if (block.Orient() == FS) {
+        } else if (block.Orient() == FS_) {
           ost << block.LLX() + n_well_shape->LLX() << "\t"
               << block.LLX() + n_well_shape->URX() << "\t"
               << block.LLX() + n_well_shape->URX() << "\t"
@@ -1630,7 +1630,7 @@ void Circuit::GenMATLABWellTable(std::string const &name_of_file, bool only_well
     if (well != nullptr) {
       n_well_shape = well->GetNWellShape();
       p_well_shape = well->GetPWellShape();
-      if (block.Orient() == N) {
+      if (block.Orient() == N_) {
         ost << block.LLX() + n_well_shape->LLX() << "\t"
             << block.LLX() + n_well_shape->URX() << "\t"
             << block.LLX() + n_well_shape->URX() << "\t"
@@ -1648,7 +1648,7 @@ void Circuit::GenMATLABWellTable(std::string const &name_of_file, bool only_well
             << block.LLY() + p_well_shape->LLY() << "\t"
             << block.LLY() + p_well_shape->URY() << "\t"
             << block.LLY() + p_well_shape->URY() << "\n";
-      } else if (block.Orient() == FS) {
+      } else if (block.Orient() == FS_) {
         ost << block.LLX() + n_well_shape->LLX() << "\t"
             << block.LLX() + n_well_shape->URX() << "\t"
             << block.LLX() + n_well_shape->URX() << "\t"
@@ -1715,7 +1715,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
     ost << "- "
         << "npwells "
         << name_of_file + "well + "
-        << PlaceStatusStr(COVER) << " "
+        << PlaceStatusStr(COVER_) << " "
         << "( "
         << (int) (RegionLLX() * factor_x) + design_.die_area_offset_x_ << " "
         << (int) (RegionLLY() * factor_y) + design_.die_area_offset_y_
@@ -1953,7 +1953,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       ost << "- "
           << "npwells "
           << base_name + "well + "
-          << PlaceStatusStr(COVER) << " "
+          << PlaceStatusStr(COVER_) << " "
           << "( "
           << (int) (RegionLLX() * factor_x) + design_.die_area_offset_x_ << " "
           << (int) (RegionLLY() * factor_y) + design_.die_area_offset_y_
@@ -2000,7 +2000,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       ost << "- "
           << "npwells "
           << base_name + "well + "
-          << PlaceStatusStr(COVER) << " "
+          << PlaceStatusStr(COVER_) << " "
           << "( "
           << (int) (RegionLLX() * factor_x) + design_.die_area_offset_x_ << " "
           << (int) (RegionLLY() * factor_y) + design_.die_area_offset_y_
@@ -2010,7 +2010,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       ost << "- "
           << "ppnps "
           << base_name + "ppnp + "
-          << PlaceStatusStr(COVER) << " "
+          << PlaceStatusStr(COVER_) << " "
           << "( "
           << (int) (RegionLLX() * factor_x) + design_.die_area_offset_x_ << " "
           << (int) (RegionLLY() * factor_y) + design_.die_area_offset_y_
@@ -2049,14 +2049,14 @@ void Circuit::SaveDefFile(std::string const &base_name,
       int cell_count = 0;
       for (auto &block: design_.block_list) {
         if (block.Type() == tech_.io_dummy_blk_type_) continue;
-        if (block.GetPlaceStatus() == UNPLACED) continue;
+        if (block.GetPlaceStatus() == UNPLACED_) continue;
         ++cell_count;
       }
       cell_count += design_.well_tap_list.size();
       ost << "COMPONENTS " << cell_count << " ;\n";
       for (auto &block: design_.block_list) {
         if (block.Type() == tech_.io_dummy_blk_type_) continue;
-        if (block.GetPlaceStatus() == UNPLACED) continue;
+        if (block.GetPlaceStatus() == UNPLACED_) continue;
         ost << "- "
             << *(block.Name()) << " "
             << *(block.Type()->Name()) << " + "
@@ -2473,7 +2473,7 @@ void Circuit::SaveDefPPNPWell(std::string const &name_of_file, std::string const
   ost << "- "
       << "npwells "
       << name_of_file + "well + "
-      << PlaceStatusStr(COVER) << " "
+      << PlaceStatusStr(COVER_) << " "
       << "( "
       << (int) (RegionLLX() * factor_x) + design_.die_area_offset_x_ << " "
       << (int) (RegionLLY() * factor_y) + design_.die_area_offset_y_
@@ -2483,7 +2483,7 @@ void Circuit::SaveDefPPNPWell(std::string const &name_of_file, std::string const
   ost << "- "
       << "ppnps "
       << name_of_file + "ppnp + "
-      << PlaceStatusStr(COVER) << " "
+      << PlaceStatusStr(COVER_) << " "
       << "( "
       << (int) (RegionLLX() * factor_x) + design_.die_area_offset_x_ << " "
       << (int) (RegionLLY() * factor_y) + design_.die_area_offset_y_

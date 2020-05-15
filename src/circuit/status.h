@@ -8,24 +8,24 @@
 #include <string>
 
 enum MetalDirection {
-  HORIZONTAL = 0,
-  VERTICAL = 1,
-  DIAG45 = 2,
-  DIAG135 = 3
+  HORIZONTAL_ = 0,
+  VERTICAL_ = 1,
+  DIAG45_ = 2,
+  DIAG135_ = 3
 };
 
 MetalDirection StrToMetalDirection(std::string &str_metal_direction);
 std::string MetalDirectionStr(MetalDirection metal_direction);
 
 enum BlockOrient {
-  N = 0,
-  S = 1,
-  W = 2,
-  E = 3,
-  FN = 4,
-  FS = 5,
-  FW = 6,
-  FE = 7
+  N_ = 0,
+  S_ = 1,
+  W_ = 2,
+  E_ = 3,
+  FN_ = 4,
+  FS_ = 5,
+  FW_ = 6,
+  FE_ = 7
 };
 
 BlockOrient StrToOrient(std::string &str_orient);
@@ -33,11 +33,11 @@ BlockOrient StrToOrient(const char *str_orient);
 std::string OrientStr(BlockOrient orient);
 
 enum PlaceStatus {
-  COVER = 0,
-  FIXED = 1,
-  PLACED = 2,
-  UNPLACED = 3,
-  NULL_STATE = 4
+  COVER_ = 0,
+  FIXED_ = 1,
+  PLACED_ = 2,
+  UNPLACED_ = 3,
+  NULL_STATE_ = 4
 };
 
 PlaceStatus StrToPlaceStatus(std::string &str_place_status);

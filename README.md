@@ -2,7 +2,7 @@
 ## Hierarchical Placer for Custom Cell
 
 ### Recommended compilation toolchain
-  * Ubuntu 18.04
+  * Ubuntu >= 18.04
   * GNU Compiler Collection (GCC), version >= 4.8.5
   * CMake, version >= 3.9.6
   * GNU Make
@@ -36,7 +36,7 @@ The default installation destination is the repo directory.
 ### 3rd Party Module List
   * Eigen: sparse matrix iterative linear solver
   * OpenDB
-  * Si2 open source LEF/DEF parser
+  * Si2: open source LEF/DEF parser
   
 ### Miscellaneous
   * Eigen gives different results for different C++ compilers, because floating point addition is not necessarily associative

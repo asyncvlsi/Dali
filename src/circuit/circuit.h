@@ -103,25 +103,25 @@ class Circuit {
                 int llx = 0,
                 int lly = 0,
                 bool movable = true,
-                BlockOrient orient = N);
+                BlockOrient orient = N_);
   void AddBlock(std::string &block_name,
                 std::string &block_type_name,
                 int llx = 0,
                 int lly = 0,
                 bool movable = true,
-                BlockOrient orient = N);
+                BlockOrient orient = N_);
   void AddBlock(std::string &block_name,
                 BlockType *block_type,
                 int llx = 0,
                 int lly = 0,
-                PlaceStatus place_status = UNPLACED,
-                BlockOrient orient = N);
+                PlaceStatus place_status = UNPLACED_,
+                BlockOrient orient = N_);
   void AddBlock(std::string &block_name,
                 std::string &block_type_name,
                 int llx = 0,
                 int lly = 0,
-                PlaceStatus place_status = UNPLACED,
-                BlockOrient orient = N);
+                PlaceStatus place_status = UNPLACED_,
+                BlockOrient orient = N_);
   void ReportBlockList();
   void ReportBlockMap();
 

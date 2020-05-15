@@ -37,7 +37,7 @@ class MetalLayer : public Layer {
   MetalLayer(double width,
              double spacing,
              std::pair<const std::string, int> *name_num_ptr,
-             MetalDirection direction = HORIZONTAL);
+             MetalDirection direction = HORIZONTAL_);
   void SetArea(double area);
   void SetPitch(double x_pitch, double y_pitch);
   void SetDirection(MetalDirection metal_direction);

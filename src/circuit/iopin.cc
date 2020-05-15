@@ -9,8 +9,8 @@ IOPin::IOPin(std::pair<const std::string, int> *name_num_pair) :
     net_(nullptr),
     direction_(INPUT_),
     layer_(nullptr),
-    init_place_status_(UNPLACED),
-    place_status_(UNPLACED),
+    init_place_status_(UNPLACED_),
+    place_status_(UNPLACED_),
     lx_(0),
     ly_(0) {}
 
@@ -19,8 +19,8 @@ IOPin::IOPin(std::pair<const std::string, int> *name_num_pair, double lx, double
     net_(nullptr),
     direction_(INPUT_),
     layer_(nullptr),
-    init_place_status_(PLACED),
-    place_status_(PLACED),
+    init_place_status_(PLACED_),
+    place_status_(PLACED_),
     lx_(lx),
     ly_(ly) {}
 

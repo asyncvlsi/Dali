@@ -50,7 +50,7 @@ class IOPin {
   void SetUse(SignalUse use) { use_ = use; }
   void SetLayer(MetalLayer *layer);
   void SetRect(double llx, double lly, double urx, double ury);
-  void SetLoc(double lx, double ly, PlaceStatus place_status = PLACED);
+  void SetLoc(double lx, double ly, PlaceStatus place_status = PLACED_);
 
   void Report() const;
 };
@@ -80,11 +80,11 @@ inline RectD *IOPin::GetRect() {
 }
 
 inline bool IOPin::IsPlaced() const {
-  return place_status_ == FIXED || place_status_ == PLACED;
+  return place_status_ == FIXED_ || place_status_ == PLACED_;
 }
 
 inline bool IOPin::IsPrePlaced() const {
-  return init_place_status_ == FIXED || init_place_status_ == PLACED;
+  return init_place_status_ == FIXED_ || init_place_status_ == PLACED_;
 }
 
 inline double IOPin::X() const {

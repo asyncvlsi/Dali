@@ -111,7 +111,7 @@ void Cluster::LegalizeLooseX(int space_to_well_tap) {
 void Cluster::SetOrient(bool is_orient_N) {
   if (is_orient_N_ != is_orient_N) {
     is_orient_N_ = is_orient_N;
-    BlockOrient orient = is_orient_N_ ? N : FS;
+    BlockOrient orient = is_orient_N_ ? N_ : FS_;
     double y_flip_axis = ly_ + height_ / 2.0;
     for (auto &blk_ptr: blk_list_) {
       double ly_to_axis = y_flip_axis - blk_ptr->LLY();
@@ -129,10 +129,10 @@ void Cluster::InsertWellTapCell(Block &tap_cell, int loc) {
   int p_well_height = well->GetPWellHeight();
   int n_well_height = well->GetNWellHeight();
   if (is_orient_N_) {
-    tap_cell.SetOrient(N);
+    tap_cell.SetOrient(N_);
     tap_cell.SetLLY(ly_ + p_well_height_ - p_well_height);
   } else {
-    tap_cell.SetOrient(FS);
+    tap_cell.SetOrient(FS_);
     tap_cell.SetLLY(ly_ + n_well_height_ - n_well_height);
   }
 }
@@ -1242,7 +1242,7 @@ void StdClusterWellLegalizer::InsertWellTap() {
           std::string block_name = "__well_tap__" + std::to_string(counter++);
           tap_cell_list.emplace_back();
           auto &tap_cell = tap_cell_list.back();
-          tap_cell.SetPlaceStatus(PLACED);
+          tap_cell.SetPlaceStatus(PLACED_);
           tap_cell.SetType(circuit_->tech_.WellTapCell());
           int map_size = circuit_->design_.tap_name_map.size();
           auto ret = circuit_->design_.tap_name_map.insert(std::pair<std::string, int>(block_name, map_size));
@@ -1262,7 +1262,7 @@ void StdClusterWellLegalizer::InsertWellTap() {
 
 void StdClusterWellLegalizer::ClearCachedData() {
   for (auto &block: *BlockList()) {
-    block.SetOrient(N);
+    block.SetOrient(N_);
   }
 
   for (auto &col: col_list_) {
