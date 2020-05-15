@@ -7,11 +7,11 @@
 #include "common/misc.h"
 
 BlockType::BlockType(const std::string *name, int width, int height)
-    : name_(name),
+    : pname_(name),
       width_(width),
       height_(height),
-      area_(width_*height_),
-      well_(nullptr) {}
+      area_((long int) width_ * (long int) height_),
+      ptr_well_(nullptr) {}
 
 void BlockType::Report() const {
   std::cout << "  BlockType name: " << *Name() << "\n"

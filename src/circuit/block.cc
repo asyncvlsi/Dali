@@ -4,31 +4,31 @@
 
 #include "block.h"
 
-Block::Block() : type_(nullptr),
+Block::Block() : ptype_(nullptr),
                  name_num_pair_(nullptr),
                  llx_(0),
                  lly_(0),
                  place_status_(UNPLACED_),
                  orient_(N_),
-                 aux_(nullptr) {
+                 paux_(nullptr) {
 }
 
-Block::Block(BlockType *type,
+Block::Block(BlockType *ptype,
              std::pair<const std::string, int> *name_num_pair,
              int llx,
              int lly,
              bool movable,
              BlockOrient orient) :
-    type_(type),
+    ptype_(ptype),
     name_num_pair_(name_num_pair),
     llx_(llx),
     lly_(lly),
     orient_(orient) {
-  eff_height_ = type_->Height();
-  eff_area_ = type_->Area();
+  eff_height_ = ptype_->Height();
+  eff_area_ = ptype_->Area();
   Assert(name_num_pair != nullptr,
          "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
-  aux_ = nullptr;
+  paux_ = nullptr;
   if (movable) {
     place_status_ = UNPLACED_;
   } else {
@@ -36,23 +36,23 @@ Block::Block(BlockType *type,
   }
 }
 
-Block::Block(BlockType *type,
+Block::Block(BlockType *ptype,
              std::pair<const std::string, int> *name_num_pair,
              int llx,
              int lly,
              PlaceStatus place_state,
              BlockOrient orient) :
-    type_(type),
+    ptype_(ptype),
     name_num_pair_(name_num_pair),
     llx_(llx),
     lly_(lly),
     place_status_(place_state),
     orient_(orient) {
-  eff_height_ = type_->Height();
-  eff_area_ = type_->Area();
+  eff_height_ = ptype_->Height();
+  eff_area_ = ptype_->Area();
   Assert(name_num_pair != nullptr,
          "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
-  aux_ = nullptr;
+  paux_ = nullptr;
 }
 
 void Block::SwapLoc(Block &blk) {

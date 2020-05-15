@@ -32,7 +32,7 @@ class BlockAux;
 class Block {
  protected:
   /**** essential data entries ***/
-  BlockType *type_; // type
+  BlockType *ptype_; // type
   int eff_height_; // cached height, also used to store effective height
   long int eff_area_; // cached effective area
   std::pair<const std::string, int> *name_num_pair_; // name for finding its index in block_list
@@ -40,19 +40,19 @@ class Block {
   double lly_; // lower y coordinate
   PlaceStatus place_status_; // placement status, i.e, PLACED, FIXED, UNPLACED
   BlockOrient orient_; // orientation, normally, N or FS
-  BlockAux *aux_; // points to auxiliary information if needed
+  BlockAux *paux_; // points to auxiliary information if needed
  public:
   /****this constructor is for the developer only****/
   Block();
 
   /****Constructors for users****/
-  Block(BlockType *type,
+  Block(BlockType *ptype,
         std::pair<const std::string, int> *name_num_pair,
         int llx,
         int lly,
         bool movable = "true",
         BlockOrient orient = N_);
-  Block(BlockType *type,
+  Block(BlockType *ptype,
         std::pair<const std::string, int> *name_num_pair,
         int llx,
         int lly,
@@ -64,16 +64,16 @@ class Block {
   /****member functions for attributes access****/
   const std::string *Name() const { return &(name_num_pair_->first); }
   std::string NameStr() const { return std::string(name_num_pair_->first); }
-  BlockType *Type() const { return type_; }
+  BlockType *Type() const { return ptype_; }
   int Num() const { return name_num_pair_->second; }
-  int Width() const { return type_->Width(); }
+  int Width() const { return ptype_->Width(); }
   void SetHeight(int height) {
     eff_height_ = height;
-    eff_area_ = eff_height_ * type_->Width();
+    eff_area_ = eff_height_ * ptype_->Width();
   }
   void SetHeightFromType() {
-    eff_height_ = type_->Height();
-    eff_area_ = type_->Area();
+    eff_height_ = ptype_->Height();
+    eff_area_ = ptype_->Area();
   }
   int Height() const { return eff_height_; }
   double LLX() const { return llx_; }
@@ -88,14 +88,14 @@ class Block {
   bool IsFixed() const { return !IsMovable(); }
   long int Area() const { return eff_area_; }
   BlockOrient Orient() const { return orient_; }
-  BlockAux *Aux() const { return aux_; }
+  BlockAux *Aux() const { return paux_; }
 
   void SetNameNumPair(std::pair<const std::string, int> *name_num_pair) { name_num_pair_ = name_num_pair; }
   void SetType(BlockType *type) {
     Assert(type != nullptr, "Cannot set BlockType of a Block to NULL");
-    type_ = type;
-    eff_height_ = type_->Height();
-    eff_area_ = type_->Area();
+    ptype_ = type;
+    eff_height_ = ptype_->Height();
+    eff_area_ = ptype_->Area();
   }
   void SetLoc(double lx, double ly) {
     llx_ = lx;
@@ -111,7 +111,7 @@ class Block {
   void SetOrient(BlockOrient const &orient) { orient_ = orient; }
   void SetAux(BlockAux *aux) {
     Assert(aux != nullptr, "When set auxiliary information, argument cannot be a nullptr");
-    aux_ = aux;
+    paux_ = aux;
   }
 
   void SwapLoc(Block &blk);
@@ -139,10 +139,10 @@ class Block {
 
 class BlockAux {
  protected:
-  Block *block_;
+  Block *pblk_;
  public:
-  explicit BlockAux(Block *block) {block->SetAux(this);}
-  Block *GetBlock() { return block_; }
+  explicit BlockAux(Block *pblk) { pblk->SetAux(this); }
+  Block *GetBlock() { return pblk_; }
 };
 
 #endif //DALI_BLOCK_H

@@ -333,8 +333,8 @@ void StdClusterWellLegalizer::FetchNPWellParams() {
   int op_well_spacing = std::ceil(n_well_layer->OpSpacing() / circuit_->GetGridValueX());
   well_spacing_ = std::max(same_well_spacing, op_well_spacing);
   max_unplug_length_ = (int) std::floor(n_well_layer->MaxPlugDist() / circuit_->GetGridValueX());
-  auto well_tap_cell = tech->WellTapCell();
-  Assert(well_tap_cell != nullptr, "Cannot find the type of well tap cell\n");
+  well_tap_cell_ = tech->WellTapCell();
+  Assert(well_tap_cell_ != nullptr, "Cannot find the definition of well tap cell, well legalization cannot proceed\n");
   well_tap_cell_width_ = tech->WellTapCell()->Width();
 
   if (globalVerboseLevel >= LOG_CRITICAL) {

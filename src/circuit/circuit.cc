@@ -785,16 +785,16 @@ BlockTypeCluster *Circuit::AddBlockTypeCluster() {
 
 BlockTypeWell *Circuit::AddBlockTypeWell(BlockTypeCluster *cluster, BlockType *blk_type, bool is_plug) {
   well_info_.well_list_.emplace_back(blk_type);
-  blk_type->well_ = &(well_info_.well_list_.back());
-  blk_type->well_->SetPlug(is_plug);
-  blk_type->well_->SetCluster(cluster);
-  return blk_type->well_;
+  blk_type->ptr_well_ = &(well_info_.well_list_.back());
+  blk_type->ptr_well_->SetPlug(is_plug);
+  blk_type->ptr_well_->SetCluster(cluster);
+  return blk_type->ptr_well_;
 }
 
 BlockTypeWell *Circuit::AddBlockTypeWell(BlockTypeCluster *cluster, std::string &blk_type_name, bool is_plug) {
   BlockType *blk_type_ptr = GetBlockType(blk_type_name);
   AddBlockTypeWell(cluster, blk_type_ptr, is_plug);
-  return blk_type_ptr->well_;
+  return blk_type_ptr->ptr_well_;
 }
 
 void Circuit::SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {
