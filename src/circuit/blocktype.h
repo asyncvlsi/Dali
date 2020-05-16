@@ -8,11 +8,11 @@
 #include <map>
 #include <vector>
 
+#include "common/misc.h"
 #include "pin.h"
-#include "blocktypewell.h"
 
 class Pin;
-class BlockTypeWell;
+struct BlockTypeWell;
 
 class BlockType {
  private:

@@ -7,9 +7,9 @@
 
 #include <vector>
 
+#include "blocktype.h"
 #include "common/misc.h"
 #include "status.h"
-#include "blocktype.h"
 
 class BlockType;
 
