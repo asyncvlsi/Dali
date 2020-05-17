@@ -1,5 +1,5 @@
 # Dali
-## Hierarchical Placer for Custom Cell
+## Gridded Cell Placement Flow
 
 ### Recommended compilation toolchain
   * Ubuntu >= 18.04

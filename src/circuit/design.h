@@ -41,15 +41,16 @@ struct Design {
   int die_area_offset_y_ = 0; // unit is manufacturing grid
 
   /****list of instances****/
-  std::vector<Block> block_list;
+  std::vector<Block> block_list; // block list consists of blocks and dummy blocks for pre-placed IOPINs
   std::map<std::string, int> block_name_map;
   std::vector<Block> well_tap_list;
   std::map<std::string, int> tap_name_map;
+  int blk_count_ = 0;
 
   /****list of IO Pins****/
   std::vector<IOPin> iopin_list;
   std::map<std::string, int> iopin_name_map;
-  int fixed_io_count_ = 0;
+  int pre_placed_io_count_ = 0;
 
   /****list of nets****/
   double reset_signal_weight = 1;

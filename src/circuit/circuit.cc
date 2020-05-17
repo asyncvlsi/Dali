@@ -201,9 +201,9 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
     bool is_loc_set = iopin->getFirstPinLocation(iopin_x, iopin_y);
     IOPin *pin = nullptr;
     if (is_loc_set) {
-      pin = AddIOPin(iopin_name, iopin_x, iopin_x);
+      pin = AddPlacedIOPin(iopin_name, iopin_x, iopin_x);
     } else {
-      pin = AddIOPin(iopin_name);
+      pin = AddUnplacedIOPin(iopin_name);
     }
     std::string str_sig_use(iopin->getSigType().getString());
     SignalUse sig_use = StrToSignalUse(str_sig_use);
@@ -650,8 +650,8 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         std::vector<std::string> io_pin_field;
         StrSplit(line, io_pin_field);
         //IOPin *iopin = nullptr;
-        //iopin = AddIOPin(io_pin_field[1]);
-        AddIOPin(io_pin_field[1]);
+        //iopin = AddUnplacedIOPin(io_pin_field[1]);
+        AddUnplacedIOPin(io_pin_field[1]);
       }
       getline(ist, line);
     }
@@ -723,20 +723,6 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
   std::cout << "DEF file loading complete: " << name_of_file << "\n";
 }
 
-bool Circuit::IsMetalLayerExist(std::string &metal_name) {
-  return tech_.metal_name_map.find(metal_name) != tech_.metal_name_map.end();
-}
-
-int Circuit::MetalLayerIndex(std::string &metal_name) {
-  Assert(IsMetalLayerExist(metal_name), "MetalLayer does not exist, cannot find it: " + metal_name);
-  return tech_.metal_name_map.find(metal_name)->second;
-}
-
-MetalLayer *Circuit::GetMetalLayer(std::string &metal_name) {
-  Assert(IsMetalLayerExist(metal_name), "MetalLayer does not exist, cannot find it: " + metal_name);
-  return &tech_.metal_list[MetalLayerIndex(metal_name)];
-}
-
 MetalLayer *Circuit::AddMetalLayer(std::string &metal_name, double width, double spacing) {
   Assert(!IsMetalLayerExist(metal_name), "MetalLayer exist, cannot create this MetalLayer again: " + metal_name);
   int map_size = tech_.metal_name_map.size();
@@ -746,41 +732,10 @@ MetalLayer *Circuit::AddMetalLayer(std::string &metal_name, double width, double
   return &(tech_.metal_list.back());
 }
 
-MetalLayer *Circuit::AddMetalLayer(std::string &metal_name) {
-  return AddMetalLayer(metal_name, 0, 0);
-}
-
 void Circuit::ReportMetalLayers() {
   for (auto &metal_layer: tech_.metal_list) {
     metal_layer.Report();
   }
-}
-
-inline void Circuit::SetBoundary(int left, int right, int bottom, int top) {
-  Assert(right > left, "Right boundary is not larger than Left boundary?");
-  Assert(top > bottom, "Top boundary is not larger than Bottom boundary?");
-  design_.region_left_ = left;
-  design_.region_right_ = right;
-  design_.region_bottom_ = bottom;
-  design_.region_top_ = top;
-}
-
-void Circuit::SetDieArea(int lower_x, int upper_x, int lower_y, int upper_y) {
-  Assert(tech_.grid_value_x_ > 0 && tech_.grid_value_y_ > 0,
-         "Need to set positive grid values before setting placement boundary");
-  Assert(design_.def_distance_microns > 0,
-         "Need to set def_distance_microns before setting placement boundary using Circuit::SetDieArea()");
-  double factor_x = tech_.grid_value_x_ * design_.def_distance_microns;
-  double factor_y = tech_.grid_value_y_ * design_.def_distance_microns;
-  SetBoundary((int) std::round(lower_x / factor_x),
-              (int) std::round(upper_x / factor_x),
-              (int) std::round(lower_y / factor_y),
-              (int) std::round(upper_y / factor_y));
-}
-
-BlockTypeCluster *Circuit::AddBlockTypeCluster() {
-  well_info_.cluster_list_.emplace_back(nullptr, nullptr);
-  return &(well_info_.cluster_list_.back());
 }
 
 BlockTypeWell *Circuit::AddBlockTypeWell(BlockTypeCluster *cluster, BlockType *blk_type, bool is_plug) {
@@ -791,38 +746,11 @@ BlockTypeWell *Circuit::AddBlockTypeWell(BlockTypeCluster *cluster, BlockType *b
   return blk_type->ptr_well_;
 }
 
-BlockTypeWell *Circuit::AddBlockTypeWell(BlockTypeCluster *cluster, std::string &blk_type_name, bool is_plug) {
-  BlockType *blk_type_ptr = GetBlockType(blk_type_name);
-  AddBlockTypeWell(cluster, blk_type_ptr, is_plug);
-  return blk_type_ptr->ptr_well_;
-}
-
-void Circuit::SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {
-  tech_.SetNLayer(width, spacing, op_spacing, max_plug_dist, overhang);
-}
-
-void Circuit::SetPWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {
-  tech_.SetPLayer(width, spacing, op_spacing, max_plug_dist, overhang);
-}
-
-void Circuit::SetLegalizerSpacing(double same_spacing, double any_spacing) {
-  tech_.SetDiffSpacing(same_spacing, any_spacing);
-}
-
 void Circuit::ReportWellShape() {
   for (auto &cluster: well_info_.cluster_list_) {
     //cluster.GetPlug()->Report();
     cluster.GetUnplug()->Report();
   }
-}
-
-bool Circuit::IsBlockTypeExist(std::string &block_type_name) {
-  return tech_.block_type_map.find(block_type_name) != tech_.block_type_map.end();
-}
-
-BlockType *Circuit::GetBlockType(std::string &block_type_name) {
-  Assert(IsBlockTypeExist(block_type_name), "BlockType not exist, cannot find it: " + block_type_name);
-  return tech_.block_type_map.find(block_type_name)->second;
 }
 
 BlockType *Circuit::AddBlockType(std::string &block_type_name, int width, int height) {
@@ -879,14 +807,15 @@ void Circuit::AddBlock(std::string &block_name,
                        int llx,
                        int lly,
                        bool movable,
-                       BlockOrient orient) {
+                       BlockOrient orient,
+                       bool is_real_cel) {
   PlaceStatus place_status;
   if (movable) {
     place_status = UNPLACED_;
   } else {
     place_status = FIXED_;
   }
-  AddBlock(block_name, block_type, llx, lly, place_status, orient);
+  AddBlock(block_name, block_type, llx, lly, place_status, orient, is_real_cel);
 }
 
 void Circuit::AddBlock(std::string &block_name,
@@ -894,9 +823,10 @@ void Circuit::AddBlock(std::string &block_name,
                        int llx,
                        int lly,
                        bool movable,
-                       BlockOrient orient) {
+                       BlockOrient orient,
+                       bool is_real_cel) {
   BlockType *block_type = GetBlockType(block_type_name);
-  AddBlock(block_name, block_type, llx, lly, movable, orient);
+  AddBlock(block_name, block_type, llx, lly, movable, orient, is_real_cel);
 }
 
 void Circuit::AddBlock(std::string &block_name,
@@ -904,7 +834,8 @@ void Circuit::AddBlock(std::string &block_name,
                        int llx,
                        int lly,
                        PlaceStatus place_status,
-                       BlockOrient orient) {
+                       BlockOrient orient,
+                       bool is_real_cel) {
   Assert(design_.net_list.empty(), "Cannot add new Block, because net_list now is not empty");
   Assert(!IsBlockExist(block_name), "Block exists, cannot create this block again: " + block_name);
   int map_size = design_.block_name_map.size();
@@ -918,6 +849,9 @@ void Circuit::AddBlock(std::string &block_name,
   Assert(old_tot_area < design_.tot_blk_area_, "Total Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
   design_.tot_width_ += design_.block_list.back().Width();
   design_.tot_height_ += design_.block_list.back().Height();
+  if (is_real_cel) {
+    ++design_.blk_count_;
+  }
   if (design_.block_list.back().IsMovable()) {
     ++design_.tot_mov_blk_num_;
     old_tot_area = design_.tot_mov_block_area_;
@@ -946,9 +880,10 @@ void Circuit::AddBlock(std::string &block_name,
                        int llx,
                        int lly,
                        PlaceStatus place_status,
-                       BlockOrient orient) {
+                       BlockOrient orient,
+                       bool is_real_cel) {
   BlockType *block_type = GetBlockType(block_type_name);
-  AddBlock(block_name, block_type, llx, lly, place_status, orient);
+  AddBlock(block_name, block_type, llx, lly, place_status, orient, is_real_cel);
 }
 
 void Circuit::AddDummyIOPinType() {
@@ -975,7 +910,7 @@ IOPin *Circuit::GetIOPin(std::string &iopin_name) {
   return &design_.iopin_list[IOPinIndex(iopin_name)];
 }
 
-IOPin *Circuit::AddIOPin(std::string &iopin_name) {
+IOPin *Circuit::AddUnplacedIOPin(std::string &iopin_name) {
   Assert(design_.net_list.empty(), "Cannot add new IOPIN, because net_list now is not empty");
   Assert(!IsIOPinExist(iopin_name), "IOPin exists, cannot create this IOPin again: " + iopin_name);
   int map_size = design_.iopin_name_map.size();
@@ -985,19 +920,27 @@ IOPin *Circuit::AddIOPin(std::string &iopin_name) {
   return &(design_.iopin_list.back());
 }
 
-IOPin *Circuit::AddIOPin(std::string &iopin_name, int lx, int ly) {
+IOPin *Circuit::AddPlacedIOPin(std::string &iopin_name, int lx, int ly) {
   Assert(design_.net_list.empty(), "Cannot add new IOPIN, because net_list now is not empty");
   Assert(!IsIOPinExist(iopin_name), "IOPin exists, cannot create this IOPin again: " + iopin_name);
   int map_size = design_.iopin_name_map.size();
   auto ret = design_.iopin_name_map.insert(std::pair<std::string, int>(iopin_name, map_size));
   std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
   design_.iopin_list.emplace_back(name_num_pair_ptr, lx, ly);
-  design_.fixed_io_count_ += 1;
+  design_.pre_placed_io_count_ += 1;
 
   // add a dummy cell corresponding to this IOPIN to block_list.
-  AddBlock(iopin_name, tech_.io_dummy_blk_type_, lx, ly, false, N_);
+  AddBlock(iopin_name, tech_.io_dummy_blk_type_, lx, ly, false, N_, false);
 
   return &(design_.iopin_list.back());
+}
+
+IOPin *Circuit::AddIOPin(std::string &iopin_name, PlaceStatus place_status, int lx, int ly) {
+  if (place_status == UNPLACED_) {
+    AddUnplacedIOPin(iopin_name);
+  } else {
+    AddPlacedIOPin(iopin_name, lx, ly);
+  }
 }
 
 void Circuit::ReportIOPin() {
@@ -1463,14 +1406,6 @@ double Circuit::HPWLCtoCY() {
   return hpwl_c2c_y * GetGridValueY();
 }
 
-double Circuit::HPWLCtoC() {
-  return HPWLCtoCX() + HPWLCtoCY();
-}
-
-void Circuit::ReportHPWLCtoC() {
-  std::cout << "HPWLCtoC: " << HPWLCtoC() << "\n";
-}
-
 void Circuit::WriteDefFileDebug(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file " + name_of_file);
@@ -1707,10 +1642,10 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   double factor_x = design_.def_distance_microns * tech_.grid_value_x_;
   double factor_y = design_.def_distance_microns * tech_.grid_value_y_;
   if (is_complete_version) {
-    ost << "COMPONENTS " << design_.block_list.size() - design_.fixed_io_count_ + design_.well_tap_list.size()
+    ost << "COMPONENTS " << design_.block_list.size() - design_.pre_placed_io_count_ + design_.well_tap_list.size()
         << " ;\n";
   } else {
-    ost << "COMPONENTS " << design_.block_list.size() - design_.fixed_io_count_ + design_.well_tap_list.size() + 1
+    ost << "COMPONENTS " << design_.block_list.size() - design_.pre_placed_io_count_ + design_.well_tap_list.size() + 1
         << " ;\n";
     ost << "- "
         << "npwells "
@@ -2257,7 +2192,7 @@ void Circuit::SaveIODefFile(std::string const &name_of_file, std::string const &
   // 2. print component
   double factor_x = design_.def_distance_microns * tech_.grid_value_x_;
   double factor_y = design_.def_distance_microns * tech_.grid_value_y_;
-  ost << "COMPONENTS " << design_.block_list.size() - design_.fixed_io_count_ + design_.well_tap_list.size()
+  ost << "COMPONENTS " << design_.block_list.size() - design_.pre_placed_io_count_ + design_.well_tap_list.size()
       << " ;\n";
   for (auto &block: design_.block_list) {
     if (block.Type() == tech_.io_dummy_blk_type_) continue;
