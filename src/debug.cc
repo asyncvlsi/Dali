@@ -27,8 +27,8 @@ int main() {
 
   time_t Time = clock();
 
-  std::string lef_file_name = "processor.lef";
-  std::string def_file_name = "processor.def";
+  std::string lef_file_name = "benchmark_1K.lef";
+  std::string def_file_name = "benchmark_1K.def";
 
 #if USE_DB_PARSER
   odb::dbDatabase *db = odb::dbDatabase::create();
@@ -55,7 +55,7 @@ int main() {
   gb_placer->SetInputCircuit(&circuit);
 
   gb_placer->SetBoundaryDef();
-  gb_placer->SetFillingRate(0.63);
+  gb_placer->SetFillingRate(0.70);
   gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
   //gb_placer->SaveDEFFile("benchmark_1K_dali.def", def_file_name);
@@ -103,13 +103,13 @@ int main() {
 
 #if TEST_STDCLUSTER_WELL
   StdClusterWellLegalizer std_cluster_well_legalizer;
-  std::string cell_file_name("processor.cell");
+  std::string cell_file_name("benchmark_1K.cell");
   circuit.ReadCellFile(cell_file_name);
   std_cluster_well_legalizer.TakeOver(gb_placer);
   std_cluster_well_legalizer.StartPlacement();
-  std_cluster_well_legalizer.GenMatlabClusterTable("sc_result");
+  //std_cluster_well_legalizer.GenMatlabClusterTable("sc_result");
   std_cluster_well_legalizer.GenMATLABTable("sc_result.txt");
-  std_cluster_well_legalizer.GenMATLABWellTable("scw", 1);
+  std_cluster_well_legalizer.GenMATLABWellTable("scw", 0);
 
   std_cluster_well_legalizer.SimpleIOPinPlacement(1);
   std_cluster_well_legalizer.EmitDEFWellFile("circuit", 1);
