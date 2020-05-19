@@ -2041,8 +2041,8 @@ void Circuit::SaveDefFile(std::string const &base_name,
             << *iopin.Name()
             << " + NET "
             << iopin.GetNet()->NameStr()
-            << " + DIRECTION " << SignalDirectionStr(iopin.Direction())
-            << " + USE " << SignalUseStr(iopin.Use());
+            << " + DIRECTION " << SignalDirectionStr(iopin.SigDirection())
+            << " + USE " << SignalUseStr(iopin.SigUse());
         if (iopin.IsPlaced()) {
           ost << "\n  + LAYER "
               << metal_name
@@ -2081,8 +2081,8 @@ void Circuit::SaveDefFile(std::string const &base_name,
             << *iopin.Name()
             << " + NET "
             << iopin.GetNet()->NameStr()
-            << " + DIRECTION " << SignalDirectionStr(iopin.Direction())
-            << " + USE " << SignalUseStr(iopin.Use());
+            << " + DIRECTION " << SignalDirectionStr(iopin.SigDirection())
+            << " + USE " << SignalUseStr(iopin.SigUse());
         if (iopin.IsPrePlaced()) {
           ost << "\n  + LAYER "
               << metal_name
