@@ -29,8 +29,8 @@ class Tech {
 
   /****macros****/
   std::unordered_map<std::string, BlockType *> block_type_map;
-  BlockType *io_dummy_blk_type_ = nullptr;
-  BlockType *well_tap_cell_ = nullptr;
+  BlockType *io_dummy_blk_type_ptr_ = nullptr;
+  BlockType *well_tap_cell_ptr_ = nullptr;
 
   /****row height****/
   double row_height_ = 0;
@@ -39,8 +39,8 @@ class Tech {
   /****N/P well info****/
   bool n_set_;
   bool p_set_;
-  WellLayer *n_layer_;
-  WellLayer *p_layer_;
+  WellLayer *n_layer_ptr_;
+  WellLayer *p_layer_ptr_;
   double same_diff_spacing_;
   double any_diff_spacing_;
 
@@ -48,32 +48,16 @@ class Tech {
   Tech();
   ~Tech();
 
-  BlockType *WellTapCell() const;
+  BlockType *WellTapCell() const { return well_tap_cell_ptr_; }
 
-  WellLayer *GetNLayer() const;
-  WellLayer *GetPLayer() const;
+  WellLayer *GetNLayer() const { return n_layer_ptr_; }
+  WellLayer *GetPLayer() const { return p_layer_ptr_; }
   void SetNLayer(double width, double spacing, double op_spacing, double max_plug_dist, double overhang);
   void SetPLayer(double width, double spacing, double op_spacing, double max_plug_dist, double overhang);
   void SetDiffSpacing(double same_diff, double any_diff);
 
-  bool IsWellInfoSet() const;
+  bool IsWellInfoSet() const { return (GetNLayer() == nullptr) && (GetPLayer() == nullptr); }
   void Report();
 };
-
-inline BlockType *Tech::WellTapCell() const {
-  return well_tap_cell_;
-}
-
-inline WellLayer *Tech::GetNLayer() const {
-  return n_layer_;
-}
-
-inline WellLayer *Tech::GetPLayer() const {
-  return p_layer_;
-}
-
-inline bool Tech::IsWellInfoSet() const {
-  return (GetNLayer() == nullptr) && (GetPLayer() == nullptr);
-}
 
 #endif //DALI_SRC_CIRCUIT_TECH_H_

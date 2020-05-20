@@ -10,20 +10,20 @@
 #include "net.h"
 
 Net::Net(std::pair<const std::string, int> *name_num_pair_ptr, int capacity, double weight)
-    : pname_num_pair_(name_num_pair_ptr), weight_(weight) {
+    : name_num_pair_ptr_(name_num_pair_ptr), weight_(weight) {
   cnt_fixed_ = 0;
   max_pin_x_ = -1;
   min_pin_x_ = -1;
   max_pin_y_ = -1;
   min_pin_y_ = -1;
   inv_p_ = 0;
-  paux_ = nullptr;
+  aux_ptr_ = nullptr;
   blk_pin_list.reserve(capacity);
 }
 
-void Net::AddBlockPinPair(Block *block_ptr, Pin *pin) {
+void Net::AddBlockPinPair(Block *block_ptr, Pin *pin_ptr) {
   if (blk_pin_list.size() < blk_pin_list.capacity()) {
-    blk_pin_list.emplace_back(block_ptr, pin);
+    blk_pin_list.emplace_back(block_ptr, pin_ptr);
     if (!block_ptr->IsMovable()) {
       ++cnt_fixed_;
     }
@@ -33,7 +33,7 @@ void Net::AddBlockPinPair(Block *block_ptr, Pin *pin) {
     int p_minus_one = int(blk_pin_list.size()) - 1;
     inv_p_ = p_minus_one > 0 ? 1.0 * weight_ / p_minus_one : 0;
   } else {
-    std::cout << "Net capacity is full: " << blk_pin_list.capacity() << ", cannot add more pin to this net:\n";
+    std::cout << "Pre-assigned net capacity is full: " << blk_pin_list.capacity() << ", cannot add more pin to this net:\n";
     std::cout << "net name: " << *Name() << ", net weight: " << Weight() << "\n";
     for (auto &block_pin_pair: blk_pin_list) {
       std::cout << "\t" << " (" << *(block_pin_pair.BlockName()) << " " << *(block_pin_pair.PinName()) << ") " << "\n";

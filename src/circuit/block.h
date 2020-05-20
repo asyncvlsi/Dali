@@ -32,48 +32,49 @@ class BlockAux;
 class Block {
  protected:
   /**** essential data entries ***/
-  BlockType *ptype_; // type
+  BlockType *type_ptr_; // type
   int eff_height_; // cached height, also used to store effective height
   long int eff_area_; // cached effective area
-  std::pair<const std::string, int> *pname_num_pair_; // name for finding its index in block_list
+  std::pair<const std::string, int> *name_num_pair_ptr_; // name for finding its index in block_list
   double llx_; // lower x coordinate
   double lly_; // lower y coordinate
   PlaceStatus place_status_; // placement status, i.e, PLACED, FIXED, UNPLACED
   BlockOrient orient_; // orientation, normally, N or FS
-  BlockAux *paux_; // points to auxiliary information if needed
+  BlockAux *aux_ptr_; // points to auxiliary information if needed
  public:
   /****this constructor is for the developer only****/
   Block();
 
   /****Constructors for users****/
-  Block(BlockType *ptype,
-        std::pair<const std::string, int> *name_num_pair,
+  Block(BlockType *type_ptr,
+        std::pair<const std::string, int> *name_num_pair_ptr,
         int llx,
         int lly,
         bool movable = "true",
         BlockOrient orient = N_);
-  Block(BlockType *ptype,
-        std::pair<const std::string, int> *name_num_pair,
+  Block(BlockType *type_ptr,
+        std::pair<const std::string, int> *name_num_pair_ptr,
         int llx,
         int lly,
         PlaceStatus place_state = UNPLACED_,
         BlockOrient orient = N_);
 
+  /****the list of nets connect to this cell****/
   std::vector<int> net_list;
 
   /****member functions for attributes access****/
-  const std::string *Name() const { return &(pname_num_pair_->first); }
-  std::string NameStr() const { return std::string(pname_num_pair_->first); }
-  BlockType *Type() const { return ptype_; }
-  int Num() const { return pname_num_pair_->second; }
-  int Width() const { return ptype_->Width(); }
+  const std::string *Name() const { return &(name_num_pair_ptr_->first); }
+  std::string NameStr() const { return std::string(name_num_pair_ptr_->first); }
+  BlockType *Type() const { return type_ptr_; }
+  int Num() const { return name_num_pair_ptr_->second; }
+  int Width() const { return type_ptr_->Width(); }
   void SetHeight(int height) {
     eff_height_ = height;
-    eff_area_ = eff_height_ * ptype_->Width();
+    eff_area_ = eff_height_ * type_ptr_->Width();
   }
   void SetHeightFromType() {
-    eff_height_ = ptype_->Height();
-    eff_area_ = ptype_->Area();
+    eff_height_ = type_ptr_->Height();
+    eff_area_ = type_ptr_->Area();
   }
   int Height() const { return eff_height_; }
   double LLX() const { return llx_; }
@@ -88,14 +89,14 @@ class Block {
   bool IsFixed() const { return !IsMovable(); }
   long int Area() const { return eff_area_; }
   BlockOrient Orient() const { return orient_; }
-  BlockAux *Aux() const { return paux_; }
+  BlockAux *Aux() const { return aux_ptr_; }
 
-  void SetNameNumPair(std::pair<const std::string, int> *name_num_pair) { pname_num_pair_ = name_num_pair; }
-  void SetType(BlockType *type) {
-    Assert(type != nullptr, "Cannot set BlockType of a Block to NULL");
-    ptype_ = type;
-    eff_height_ = ptype_->Height();
-    eff_area_ = ptype_->Area();
+  void SetNameNumPair(std::pair<const std::string, int> *name_num_pair_ptr) { name_num_pair_ptr_ = name_num_pair_ptr; }
+  void SetType(BlockType *type_ptr) {
+    Assert(type_ptr != nullptr, "Cannot set BlockType of a Block to NULL");
+    type_ptr_ = type_ptr;
+    eff_height_ = type_ptr_->Height();
+    eff_area_ = type_ptr_->Area();
   }
   void SetLoc(double lx, double ly) {
     llx_ = lx;
@@ -111,7 +112,7 @@ class Block {
   void SetOrient(BlockOrient const &orient) { orient_ = orient; }
   void SetAux(BlockAux *aux) {
     Assert(aux != nullptr, "When set auxiliary information, argument cannot be a nullptr");
-    paux_ = aux;
+    aux_ptr_ = aux;
   }
 
   void SwapLoc(Block &blk);
@@ -133,16 +134,16 @@ class Block {
   void Report();
   void ReportNet();
 
-  std::string GetPlaceStatusStr() { return PlaceStatusStr(place_status_); }
-  std::string LowerLeftCorner() { return "( " + std::to_string(LLX()) + " " + std::to_string(LLY()) + " )"; }
+  std::string GetPlaceStatusStr() const { return PlaceStatusStr(place_status_); }
+  std::string LowerLeftCorner() const { return "( " + std::to_string(LLX()) + " " + std::to_string(LLY()) + " )"; }
 };
 
 class BlockAux {
  protected:
-  Block *pblk_;
+  Block *blk_ptr_;
  public:
-  explicit BlockAux(Block *pblk) { pblk->SetAux(this); }
-  Block *GetBlock() { return pblk_; }
+  explicit BlockAux(Block *blk_ptr) : blk_ptr_(blk_ptr) { blk_ptr->SetAux(this); }
+  Block *GetBlock() const { return blk_ptr_; }
 };
 
 #endif //DALI_BLOCK_H

@@ -6,12 +6,12 @@
 
 #include "common/misc.h"
 
-BlockType::BlockType(const std::string *name, int width, int height)
-    : pname_(name),
+BlockType::BlockType(const std::string *name_ptr, int width, int height)
+    : name_ptr_(name_ptr),
       width_(width),
       height_(height),
       area_((long int) width_ * (long int) height_),
-      ptr_well_(nullptr) {}
+      well_ptr_(nullptr) {}
 
 void BlockType::Report() const {
   std::cout << "  BlockType name: " << *Name() << "\n"

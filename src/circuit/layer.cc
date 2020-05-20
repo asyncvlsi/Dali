@@ -14,9 +14,9 @@ Layer::Layer(double width, double spacing) :
   Assert(width > 0 && spacing > 0, "Negative width or spacing?\n");
 }
 
-MetalLayer::MetalLayer(std::pair<const std::string, int> *name_num_ptr) :
+MetalLayer::MetalLayer(std::pair<const std::string, int> *name_num_pair_ptr) :
     Layer(),
-    pname_num_pair_(name_num_ptr),
+    name_num_pair_ptr_(name_num_pair_ptr),
     min_area_(0),
     x_pitch_(0),
     y_pitch_(0),
@@ -24,10 +24,10 @@ MetalLayer::MetalLayer(std::pair<const std::string, int> *name_num_ptr) :
 
 MetalLayer::MetalLayer(double width,
                        double spacing,
-                       std::pair<const std::string, int> *name_num_ptr,
+                       std::pair<const std::string, int> *name_num_pair_ptr,
                        MetalDirection direction) :
     Layer(width, spacing),
-    pname_num_pair_(name_num_ptr),
+    name_num_pair_ptr_(name_num_pair_ptr),
     min_area_(0),
     x_pitch_(0),
     y_pitch_(0),

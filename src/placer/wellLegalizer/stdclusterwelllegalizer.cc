@@ -344,7 +344,7 @@ void StdClusterWellLegalizer::FetchNPWellParams() {
     printf("Well tap cell width: %d\n", well_tap_cell_width_);
   }
 
-  well_tap_cell_ = (circuit_->tech_.well_tap_cell_);
+  well_tap_cell_ = (circuit_->tech_.well_tap_cell_ptr_);
   auto *tap_cell_well = well_tap_cell_->GetWell();
   tap_cell_p_height_ = tap_cell_well->GetPWellHeight();
   tap_cell_n_height_ = tap_cell_well->GetNWellHeight();

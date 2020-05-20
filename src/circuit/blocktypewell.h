@@ -14,56 +14,57 @@ struct BlockTypeWell;
 
 struct BlockTypeCluster {
  private:
-  BlockTypeWell *ptr_plug_;
-  BlockTypeWell *ptr_unplug_;
+  BlockTypeWell *plug_cell_ptr_;
+  BlockTypeWell *unplug_cell_ptr_;
 
  public:
-  BlockTypeCluster() : ptr_plug_(nullptr), ptr_unplug_(nullptr) {}
-  BlockTypeCluster(BlockTypeWell *ptr_plug, BlockTypeWell *ptr_unplug) :
-      ptr_plug_(ptr_plug),
-      ptr_unplug_(ptr_unplug) {}
+  BlockTypeCluster() : plug_cell_ptr_(nullptr), unplug_cell_ptr_(nullptr) {}
+  BlockTypeCluster(BlockTypeWell *plug_cell_ptr, BlockTypeWell *unplug_cell_ptr) :
+      plug_cell_ptr_(plug_cell_ptr),
+      unplug_cell_ptr_(unplug_cell_ptr) {}
 
-  void SetAll(BlockTypeWell *ptr_plug, BlockTypeWell *ptr_unplug) {
-    ptr_plug_ = ptr_plug;
-    ptr_unplug_ = ptr_unplug;
+  void SetAll(BlockTypeWell *plug_cell_ptr, BlockTypeWell *unplug_cell_ptr) {
+    plug_cell_ptr_ = plug_cell_ptr;
+    unplug_cell_ptr_ = unplug_cell_ptr;
   }
-  void SetPlug(BlockTypeWell *ptr_plug) { ptr_plug_ = ptr_plug; }
-  void SetUnplug(BlockTypeWell *ptr_unplug) { ptr_unplug_ = ptr_unplug; }
+  void SetPlug(BlockTypeWell *plug_cell_ptr) { plug_cell_ptr_ = plug_cell_ptr; }
+  void SetUnplug(BlockTypeWell *unplug_cell_ptr) { unplug_cell_ptr_ = unplug_cell_ptr; }
 
-  BlockTypeWell *GetPlug() const { return ptr_plug_; }
-  BlockTypeWell *GetUnplug() const { return ptr_unplug_; }
+  BlockTypeWell *GetPlug() const { return plug_cell_ptr_; }
+  BlockTypeWell *GetUnplug() const { return unplug_cell_ptr_; }
 
-  bool Empty() const { return ptr_plug_ == nullptr && ptr_unplug_ == nullptr; }
+  bool Empty() const { return plug_cell_ptr_ == nullptr && unplug_cell_ptr_ == nullptr; }
 };
 
 class BlockType;
 
 struct BlockTypeWell {
-  BlockType *ptype_;
+  BlockType *type_ptr_;
   bool is_plug_;
   bool is_n_set_ = false;
   bool is_p_set_ = false;
   RectI n_rect_, p_rect_;
   int p_n_edge_ = 0;
-  BlockTypeCluster *pcluster_;
+  BlockTypeCluster *cluster_ptr_;
 
-  explicit BlockTypeWell(BlockType *block_type) :
-      ptype_(block_type),
+  explicit BlockTypeWell(BlockType *type_ptr) :
+      type_ptr_(type_ptr),
       is_plug_(false),
-      pcluster_(nullptr) {}
+      cluster_ptr_(nullptr) {}
 
-  void SetCluster(BlockTypeCluster *cluster) {
-    Assert(cluster != nullptr, "Cannot set BlockTypeWell pointing to an empty cluster!");
-    pcluster_ = cluster;
+  void SetCluster(BlockTypeCluster *cluster_ptr) {
+    Assert(cluster_ptr != nullptr,
+           "Cannot set BlockTypeWell pointing to an empty cluster: BlockTypeWell::SetCluster()");
+    cluster_ptr_ = cluster_ptr;
     if (is_plug_) {
-      pcluster_->SetPlug(this);
+      cluster_ptr_->SetPlug(this);
     } else {
-      pcluster_->SetUnplug(this);
+      cluster_ptr_->SetUnplug(this);
     }
   }
-  BlockTypeCluster *GetCluster() const { return pcluster_; }
+  BlockTypeCluster *GetCluster() const { return cluster_ptr_; }
 
-  BlockType *Type() const { return ptype_; }
+  BlockType *Type() const { return type_ptr_; }
 
   void SetPlug(bool is_plug) { is_plug_ = is_plug; }
   bool IsPlug() const { return is_plug_; }
@@ -131,14 +132,11 @@ struct BlockTypeWell {
   }
 
   void Report() const {
-    std::cout << "  Well of BlockType: " << *(ptype_->Name()) << "\n"
-              << "    Plug: " << is_plug_ << "\n"
-              << "    Nwell: " << n_rect_.LLX() << "  " << n_rect_.LLY() << "  " << n_rect_.URX() << "  "
-              << n_rect_.URY()
-              << "\n"
-              << "    Pwell: " << p_rect_.LLX() << "  " << p_rect_.LLY() << "  " << p_rect_.URX() << "  "
-              << p_rect_.URY()
-              << "\n";
+    std::cout
+        << "  Well of BlockType: " << *(type_ptr_->Name()) << "\n"
+        << "    Plug: " << is_plug_ << "\n"
+        << "    Nwell: " << n_rect_.LLX() << "  " << n_rect_.LLY() << "  " << n_rect_.URX() << "  " << n_rect_.URY() << "\n"
+        << "    Pwell: " << p_rect_.LLX() << "  " << p_rect_.LLY() << "  " << p_rect_.URX() << "  " << p_rect_.URY() << "\n";
   }
 };
 

@@ -18,23 +18,23 @@
 Circuit::Circuit() {
   AddDummyIOPinType();
 #ifdef USE_OPENDB
-  db_ = nullptr;
+  db_ptr_ = nullptr;
 #endif
 }
 
 #ifdef USE_OPENDB
-Circuit::Circuit(odb::dbDatabase *db) {
+Circuit::Circuit(odb::dbDatabase *db_ptr) {
   AddDummyIOPinType();
-  db_ = db;
-  InitializeFromDB(db);
+  db_ptr_ = db_ptr;
+  InitializeFromDB(db_ptr);
 }
 
-void Circuit::InitializeFromDB(odb::dbDatabase *db) {
-  db_ = db;
-  auto tech = db->getTech();
+void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
+  db_ptr_ = db_ptr;
+  auto tech = db_ptr->getTech();
   Assert(tech != nullptr, "No tech info specified!\n");
-  auto lib = db->getLibs().begin();
-  Assert(lib != db->getLibs().end(), "No lib info specified!");
+  auto lib = db_ptr->getLibs().begin();
+  Assert(lib != db_ptr->getLibs().end(), "No lib info specified!");
 
   // 1. lef database microns
   tech_.lef_database_microns = tech->getDbUnitsPerMicron();
@@ -125,7 +125,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
     height = int(std::round((macro->getHeight() / tech_.grid_value_y_ / tech_.lef_database_microns)));
     auto blk_type = AddBlockType(macro_name, width, height);
     if (macro_name.find("welltap") != std::string::npos) {
-      tech_.well_tap_cell_ = blk_type;
+      tech_.well_tap_cell_ptr_ = blk_type;
     }
     //std::cout << macro->getName() << "\n";
     //std::cout << macro->getWidth()/grid_value_x_/lef_database_microns << "  " << macro->getHeight()/grid_value_y_/lef_database_microns << "\n";
@@ -146,7 +146,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
   }
   //tech_.well_tap_cell_->Report();
 
-  auto chip = db->getChip();
+  auto chip = db_ptr->getChip();
   if (chip == nullptr) return;
   auto top_level = chip->getBlock();
   int components_count = 0, pins_count = 0, nets_count = 0;
@@ -746,10 +746,10 @@ void Circuit::ReportMetalLayers() {
 
 BlockTypeWell *Circuit::AddBlockTypeWell(BlockTypeCluster *cluster, BlockType *blk_type, bool is_plug) {
   well_info_.well_list_.emplace_back(blk_type);
-  blk_type->ptr_well_ = &(well_info_.well_list_.back());
-  blk_type->ptr_well_->SetPlug(is_plug);
-  blk_type->ptr_well_->SetCluster(cluster);
-  return blk_type->ptr_well_;
+  blk_type->well_ptr_ = &(well_info_.well_list_.back());
+  blk_type->well_ptr_->SetPlug(is_plug);
+  blk_type->well_ptr_->SetCluster(cluster);
+  return blk_type->well_ptr_;
 }
 
 void Circuit::ReportWellShape() {
@@ -809,7 +809,7 @@ Block *Circuit::GetBlock(std::string &block_name) {
 }
 
 void Circuit::AddBlock(std::string &block_name,
-                       BlockType *block_type,
+                       BlockType *block_type_ptr,
                        int llx,
                        int lly,
                        bool movable,
@@ -821,7 +821,7 @@ void Circuit::AddBlock(std::string &block_name,
   } else {
     place_status = FIXED_;
   }
-  AddBlock(block_name, block_type, llx, lly, place_status, orient, is_real_cel);
+  AddBlock(block_name, block_type_ptr, llx, lly, place_status, orient, is_real_cel);
 }
 
 void Circuit::AddBlock(std::string &block_name,
@@ -836,7 +836,7 @@ void Circuit::AddBlock(std::string &block_name,
 }
 
 void Circuit::AddBlock(std::string &block_name,
-                       BlockType *block_type,
+                       BlockType *block_type_ptr,
                        int llx,
                        int lly,
                        PlaceStatus place_status,
@@ -847,7 +847,7 @@ void Circuit::AddBlock(std::string &block_name,
   int map_size = design_.block_name_map.size();
   auto ret = design_.block_name_map.insert(std::pair<std::string, int>(block_name, map_size));
   std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
-  design_.block_list.emplace_back(block_type, name_num_pair_ptr, llx, lly, place_status, orient);
+  design_.block_list.emplace_back(block_type_ptr, name_num_pair_ptr, llx, lly, place_status, orient);
 
   // update statistics of blocks
   long int old_tot_area = design_.tot_blk_area_;
@@ -904,7 +904,7 @@ void Circuit::AddDummyIOPinType() {
   std::string tmp_pin_name("pin");
   Pin *pin = io_pin_type->AddPin(tmp_pin_name);
   pin->AddRect(0, 0, 0, 0);
-  tech_.io_dummy_blk_type_ = io_pin_type;
+  tech_.io_dummy_blk_type_ptr_ = io_pin_type;
 }
 
 bool Circuit::IsIOPinExist(std::string &iopin_name) {
@@ -943,16 +943,16 @@ IOPin *Circuit::AddPlacedIOPin(std::string &iopin_name, int lx, int ly) {
   design_.pre_placed_io_count_ += 1;
 
   // add a dummy cell corresponding to this IOPIN to block_list.
-  AddBlock(iopin_name, tech_.io_dummy_blk_type_, lx, ly, false, N_, false);
+  AddBlock(iopin_name, tech_.io_dummy_blk_type_ptr_, lx, ly, false, N_, false);
 
   return &(design_.iopin_list.back());
 }
 
 IOPin *Circuit::AddIOPin(std::string &iopin_name, PlaceStatus place_status, int lx, int ly) {
   if (place_status == UNPLACED_) {
-    AddUnplacedIOPin(iopin_name);
+    return AddUnplacedIOPin(iopin_name);
   } else {
-    AddPlacedIOPin(iopin_name, lx, ly);
+    return AddPlacedIOPin(iopin_name, lx, ly);
   }
 }
 
@@ -1195,7 +1195,7 @@ void Circuit::LoadImaginaryCellFile() {
 
   // 1. create fake well tap cell
   std::string tap_cell_name("welltap_svt");
-  tech_.well_tap_cell_ = AddBlockType(tap_cell_name, MinBlkWidth(), MinBlkHeight());
+  tech_.well_tap_cell_ptr_ = AddBlockType(tap_cell_name, MinBlkWidth(), MinBlkHeight());
 
   // 2. create fake well parameters
   double fake_same_diff_spacing = 0;
@@ -1672,7 +1672,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
         << " ;\n";
   }
   for (auto &block: design_.block_list) {
-    if (block.Type() == tech_.io_dummy_blk_type_) continue;
+    if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
     ost << "- "
         << *block.Name() << " "
         << *(block.Type()->Name()) << " + "
@@ -1840,13 +1840,13 @@ void Circuit::SaveDefFile(std::string const &base_name,
     case 1: { // save all normal cells, regardless of the placement status
       int cell_count = 0;
       for (auto &block: design_.block_list) {
-        if (block.Type() == tech_.io_dummy_blk_type_) continue;
+        if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
         ++cell_count;
       }
       cell_count += design_.well_tap_list.size();
       ost << "COMPONENTS " << cell_count << " ;\n";
       for (auto &block: design_.block_list) {
-        if (block.Type() == tech_.io_dummy_blk_type_) continue;
+        if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
         ost << "- "
             << *(block.Name()) << " "
             << *(block.Type()->Name()) << " + "
@@ -1892,7 +1892,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
     case 3: { // save all normal cells + dummy cell for well filling
       int cell_count = 0;
       for (auto &block: design_.block_list) {
-        if (block.Type() == tech_.io_dummy_blk_type_) continue;
+        if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
         ++cell_count;
       }
       cell_count += design_.well_tap_list.size();
@@ -1910,7 +1910,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
           << " ;\n";
 
       for (auto &block: design_.block_list) {
-        if (block.Type() == tech_.io_dummy_blk_type_) continue;
+        if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
         ost << "- "
             << *(block.Name()) << " "
             << *(block.Type()->Name()) << " + "
@@ -1939,7 +1939,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
     case 4: { // save all normal cells + dummy cell for well filling + dummy cell for n/p-plus filling
       int cell_count = 0;
       for (auto &block: design_.block_list) {
-        if (block.Type() == tech_.io_dummy_blk_type_) continue;
+        if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
         ++cell_count;
       }
       cell_count += design_.well_tap_list.size();
@@ -1967,7 +1967,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
           << " ;\n";
 
       for (auto &block: design_.block_list) {
-        if (block.Type() == tech_.io_dummy_blk_type_) continue;
+        if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
         ost << "- "
             << *(block.Name()) << " "
             << *(block.Type()->Name()) << " + "
@@ -1996,14 +1996,14 @@ void Circuit::SaveDefFile(std::string const &base_name,
     case 5: { // save all placed cells
       int cell_count = 0;
       for (auto &block: design_.block_list) {
-        if (block.Type() == tech_.io_dummy_blk_type_) continue;
+        if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
         if (block.GetPlaceStatus() == UNPLACED_) continue;
         ++cell_count;
       }
       cell_count += design_.well_tap_list.size();
       ost << "COMPONENTS " << cell_count << " ;\n";
       for (auto &block: design_.block_list) {
-        if (block.Type() == tech_.io_dummy_blk_type_) continue;
+        if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
         if (block.GetPlaceStatus() == UNPLACED_) continue;
         ost << "- "
             << *(block.Name()) << " "
@@ -2143,7 +2143,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
           ost << " ( PIN " << *(iopin->Name()) << " ) ";
         }
         for (auto &pin_pair: net.blk_pin_list) {
-          if (pin_pair.GetBlock()->Type() == tech_.io_dummy_blk_type_) continue;
+          if (pin_pair.GetBlock()->Type() == tech_.io_dummy_blk_type_ptr_) continue;
           ost << " ( " << *(pin_pair.BlockName()) << " " << *(pin_pair.PinName()) << " ) ";
         }
         ost << "\n" << " ;\n";
@@ -2213,7 +2213,7 @@ void Circuit::SaveIODefFile(std::string const &name_of_file, std::string const &
   ost << "COMPONENTS " << design_.block_list.size() - design_.pre_placed_io_count_ + design_.well_tap_list.size()
       << " ;\n";
   for (auto &block: design_.block_list) {
-    if (block.Type() == tech_.io_dummy_blk_type_) continue;
+    if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
     ost << "- "
         << *block.Name() << " "
         << *(block.Type()->Name()) << " + "
@@ -2348,7 +2348,7 @@ void Circuit::SaveDefWell(std::string const &name_of_file, std::string const &de
   }
   if (!is_no_normal_cell) {
     for (auto &block: design_.block_list) {
-      if (block.Type() == tech_.io_dummy_blk_type_) continue;
+      if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
       ost << "- "
           << *block.Name() << " "
           << *(block.Type()->Name()) << " + "
@@ -2533,11 +2533,11 @@ void Circuit::SaveBookshelfScl(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file " + name_of_file);
 #ifdef USE_OPENDB
-  if (db_ == nullptr) {
+  if (db_ptr_ == nullptr) {
     std::cout << "During saving bookshelf .scl file. No ROW info has been found!";
     return;
   }
-  auto rows = db_->getChip()->getBlock()->getRows();
+  auto rows = db_ptr_->getChip()->getBlock()->getRows();
   ost << "NumRows : " << rows.size() << "\n\n";
   for (auto &&row: rows) {
     int origin_x = 0, origin_y = 0;

@@ -30,7 +30,7 @@ class Circuit {
   WellInfo well_info_; // maybe redundant
 
 #ifdef USE_OPENDB
-  odb::dbDatabase *db_;
+  odb::dbDatabase *db_ptr_;
 #endif
 
   Circuit();
@@ -39,8 +39,8 @@ class Circuit {
    * 2. from LEF/DEF directly
    * ****/
 #ifdef USE_OPENDB
-  explicit Circuit(odb::dbDatabase *db);
-  void InitializeFromDB(odb::dbDatabase *db);
+  explicit Circuit(odb::dbDatabase *db_ptr);
+  void InitializeFromDB(odb::dbDatabase *db_ptr);
 #endif
   void ReadLefFile(std::string const &name_of_file);
   void ReadDefFile(std::string const &name_of_file);
@@ -145,7 +145,7 @@ class Circuit {
   int BlockIndex(std::string &block_name);
   Block *GetBlock(std::string &block_name);
   void AddBlock(std::string &block_name,
-                BlockType *block_type,
+                BlockType *block_type_ptr,
                 int llx = 0,
                 int lly = 0,
                 bool movable = true,
@@ -159,7 +159,7 @@ class Circuit {
                 BlockOrient orient = N_,
                 bool is_real_cel = true);
   void AddBlock(std::string &block_name,
-                BlockType *block_type,
+                BlockType *block_type_ptr,
                 int llx = 0,
                 int lly = 0,
                 PlaceStatus place_status = UNPLACED_,
@@ -225,7 +225,7 @@ class Circuit {
   BlockTypeWell *AddBlockTypeWell(BlockTypeCluster *cluster, std::string &blk_type_name, bool is_plug) {
     BlockType *blk_type_ptr = GetBlockType(blk_type_name);
     AddBlockTypeWell(cluster, blk_type_ptr, is_plug);
-    return blk_type_ptr->ptr_well_;
+    return blk_type_ptr->well_ptr_;
   }
   void SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {
     tech_.SetNLayer(width, spacing, op_spacing, max_plug_dist, overhang);

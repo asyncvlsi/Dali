@@ -4,7 +4,7 @@
 
 #include "tech.h"
 
-Tech::Tech() : n_set_(false), p_set_(false), n_layer_(nullptr), p_layer_(nullptr) {}
+Tech::Tech() : n_set_(false), p_set_(false), n_layer_ptr_(nullptr), p_layer_ptr_(nullptr) {}
 
 Tech::~Tech() {
   /****
@@ -17,24 +17,24 @@ Tech::~Tech() {
   }
 
   // free the space for well layers
-  delete (n_layer_);
-  delete (p_layer_);
+  delete (n_layer_ptr_);
+  delete (p_layer_ptr_);
 }
 
 void Tech::SetNLayer(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {
   if (n_set_) {
-    n_layer_->SetParams(width, spacing, op_spacing, max_plug_dist, overhang);
+    n_layer_ptr_->SetParams(width, spacing, op_spacing, max_plug_dist, overhang);
   } else {
-    n_layer_ = new WellLayer(width, spacing, op_spacing, max_plug_dist, overhang);
+    n_layer_ptr_ = new WellLayer(width, spacing, op_spacing, max_plug_dist, overhang);
     n_set_ = true;
   }
 }
 
 void Tech::SetPLayer(double width, double spacing,double op_spacing, double max_plug_dist, double overhang) {
   if (p_set_) {
-    p_layer_->SetParams(width, spacing, op_spacing, max_plug_dist, overhang);
+    p_layer_ptr_->SetParams(width, spacing, op_spacing, max_plug_dist, overhang);
   } else {
-    p_layer_ = new WellLayer(width, spacing, op_spacing, max_plug_dist, overhang);
+    p_layer_ptr_ = new WellLayer(width, spacing, op_spacing, max_plug_dist, overhang);
     p_set_ = true;
   }
 }
@@ -47,10 +47,10 @@ void Tech::SetDiffSpacing(double same_diff, double any_diff) {
 void Tech::Report() {
   if (n_set_) {
     std::cout << "  Layer name: nwell\n";
-    n_layer_->Report();
+    n_layer_ptr_->Report();
   }
   if (p_set_) {
     std::cout << "  Layer name: pwell\n";
-    p_layer_->Report();
+    p_layer_ptr_->Report();
   }
 }

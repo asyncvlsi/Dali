@@ -20,20 +20,20 @@ double2d MDBlkAux::GetForce(Block *blk) {
    * ****/
   double2d force(0,0);
   double epsilon = 1e-5;
-  if ((blk != GetBlock())&&(pblk_->IsOverlap(*blk))) {
+  if ((blk != GetBlock())&&(blk_ptr_->IsOverlap(*blk))) {
     double force_amp;
     double llx, urx, lly, ury;
-    llx = std::max(pblk_->LLX(), blk->LLX());
-    urx = std::min(pblk_->URX(), blk->URX());
-    lly = std::max(pblk_->LLY(), blk->LLY());
-    ury = std::min(pblk_->URY(), blk->URY());
+    llx = std::max(blk_ptr_->LLX(), blk->LLX());
+    urx = std::min(blk_ptr_->URX(), blk->URX());
+    lly = std::max(blk_ptr_->LLY(), blk->LLY());
+    ury = std::min(blk_ptr_->URY(), blk->URY());
     force_amp = (urx - llx)*(ury - lly);
-    double2d direction(pblk_->X() - blk->X(), pblk_->Y() - blk->Y());
+    double2d direction(blk_ptr_->X() - blk->X(), blk_ptr_->Y() - blk->Y());
     // default direction is center to center direction
     if ((std::fabs(direction.x) < epsilon) && (std::fabs(direction.y) < epsilon)) {
       // when the centers of two blocks are very close, chose a default direction to avoid numerical issues
       double2d default_direction(0,0);
-      if (pblk_->Num() < blk->Num()) {
+      if (blk_ptr_->Num() < blk->Num()) {
         default_direction.x = -1;
       } else {
         default_direction.x = 1;

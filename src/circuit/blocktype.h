@@ -17,22 +17,22 @@ struct BlockTypeWell;
 class BlockType {
  private:
   /****essential data entries****/
-  const std::string *pname_;
+  const std::string *name_ptr_;
   int width_, height_;
   long int area_;
 
  public:
-  BlockTypeWell *ptr_well_;
+  BlockTypeWell *well_ptr_;
   std::vector<Pin> pin_list;
   std::map<std::string, int> pin_name_num_map;
 
-  BlockType(const std::string *name, int width, int height);
+  BlockType(const std::string *name_ptr, int width, int height);
 
-  void SetName(const std::string *pname) {
-    assert(pname != nullptr);
-    pname_ = pname;
+  void SetName(const std::string *name_ptr) {
+    Assert(name_ptr != nullptr, "Cannot set @param name_ptr to nullptr in function: BlockType::SetName()\n");
+    name_ptr_ = name_ptr;
   }
-  const std::string *Name() const { return pname_; }
+  const std::string *Name() const { return name_ptr_; }
 
   bool IsPinExist(std::string &pin_name) {
     return pin_name_num_map.find(pin_name) != pin_name_num_map.end();
@@ -47,11 +47,11 @@ class BlockType {
 
   Pin *GetPin(std::string &pin_name);
 
-  void SetWell(BlockTypeWell *ptr_well) {
-    Assert(ptr_well != nullptr, "Cannot set well info to nullptr");
-    ptr_well_ = ptr_well;
+  void SetWell(BlockTypeWell *well_ptr) {
+    Assert(well_ptr != nullptr, "Cannot set @param well_ptr to nullptr in function: BlockType::SetWell()");
+    well_ptr_ = well_ptr;
   }
-  BlockTypeWell *GetWell() const { return ptr_well_; }
+  BlockTypeWell *GetWell() const { return well_ptr_; }
 
   void SetWidth(int width) {
     width_ = width;

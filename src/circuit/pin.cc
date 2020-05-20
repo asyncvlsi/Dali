@@ -6,18 +6,18 @@
 
 #include "common/misc.h"
 
-Pin::Pin(std::pair<const std::string, int> *name_num_pair_ptr, BlockType *blk_type) :
-    pname_num_pair_(name_num_pair_ptr),
-    blk_type_(blk_type),
+Pin::Pin(std::pair<const std::string, int> *name_num_pair_ptr, BlockType *blk_type_ptr) :
+    name_num_pair_ptr_(name_num_pair_ptr),
+    blk_type_ptr_(blk_type_ptr),
     is_input_(true) {
   manual_set_ = false;
   x_offset_.resize(8, 0);
   y_offset_.resize(8, 0);
 }
 
-Pin::Pin(std::pair<const std::string, int> *name_num_pair_ptr, BlockType *blk_type, double x_offset, double y_offset) :
-    pname_num_pair_(name_num_pair_ptr),
-    blk_type_(blk_type),
+Pin::Pin(std::pair<const std::string, int> *name_num_pair_ptr, BlockType *blk_type_ptr, double x_offset, double y_offset) :
+    name_num_pair_ptr_(name_num_pair_ptr),
+    blk_type_ptr_(blk_type_ptr),
     is_input_(true) {
   manual_set_ = true;
   x_offset_.resize(8, 0);
@@ -47,8 +47,8 @@ void Pin::CalculateOffset(double x_offset, double y_offset) {
    *    x' = width - x;
    *    y' = height - y;
    ****/
-  x_offset_[S_ - N_] = blk_type_->Width() - x_offset;
-  y_offset_[S_ - N_] = blk_type_->Height() - y_offset;
+  x_offset_[S_ - N_] = blk_type_ptr_->Width() - x_offset;
+  y_offset_[S_ - N_] = blk_type_ptr_->Height() - y_offset;
 
   /****
    * rotate 90 degree counterclockwise
@@ -62,7 +62,7 @@ void Pin::CalculateOffset(double x_offset, double y_offset) {
    *    x' = height - y;
    *    y' = x;
    * ****/
-  x_offset_[W_ - N_] = blk_type_->Height() - y_offset;
+  x_offset_[W_ - N_] = blk_type_ptr_->Height() - y_offset;
   y_offset_[W_ - N_] = x_offset;
 
 
@@ -79,13 +79,13 @@ void Pin::CalculateOffset(double x_offset, double y_offset) {
    *    y' = width - x;
    * ****/
   x_offset_[E_ - N_] = y_offset;
-  y_offset_[E_ - N_] = blk_type_->Width() - x_offset;
+  y_offset_[E_ - N_] = blk_type_ptr_->Width() - x_offset;
 
   /****
    * Flip along the line through the middle of width
    *    x' = width - x; y = y;
    * ****/
-  x_offset_[FN_ - N_] = blk_type_->Width() - x_offset;
+  x_offset_[FN_ - N_] = blk_type_ptr_->Width() - x_offset;
   y_offset_[FN_ - N_] = y_offset;
 
   /****
@@ -100,7 +100,7 @@ void Pin::CalculateOffset(double x_offset, double y_offset) {
    *    y' = height - y;
    * ****/
   x_offset_[FS_ - N_] = x_offset;
-  y_offset_[FS_ - N_] = blk_type_->Height() - y_offset;
+  y_offset_[FS_ - N_] = blk_type_ptr_->Height() - y_offset;
 
   /****
    * rotate 90 degree counterclockwise
@@ -127,7 +127,7 @@ void Pin::CalculateOffset(double x_offset, double y_offset) {
    *    x' = height - y;
    *    y = width - x;
    * ****/
-  x_offset_[FE_ - N_] = blk_type_->Height() - y_offset;
-  y_offset_[FE_ - N_] = blk_type_->Width() - x_offset;
+  x_offset_[FE_ - N_] = blk_type_ptr_->Height() - y_offset;
+  y_offset_[FE_ - N_] = blk_type_ptr_->Width() - x_offset;
 
 }

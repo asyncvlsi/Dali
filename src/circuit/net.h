@@ -18,7 +18,7 @@ class IOPin;
 
 class Net {
  protected:
-  std::pair<const std::string, int> *pname_num_pair_;
+  std::pair<const std::string, int> *name_num_pair_ptr_;
   double weight_;
   int cnt_fixed_;
 
@@ -28,7 +28,7 @@ class Net {
   double inv_p_; // 1.0/(p-1), where p is the number of pins connected by this net
 
   // auxiliary information
-  NetAux *paux_;
+  NetAux *aux_ptr_;
  public:
   std::vector<BlockPinPair> blk_pin_list;
   std::vector<IOPin *> iopin_list;
@@ -36,12 +36,12 @@ class Net {
   Net(std::pair<const std::string, int> *name_num_pair_ptr, int capacity, double weight);
 
   // API to add block/pin pair
-  void AddBlockPinPair(Block *block_ptr, Pin *pin);
+  void AddBlockPinPair(Block *block_ptr, Pin *pin_ptr);
   void AddIOPin(IOPin *io_pin) { iopin_list.push_back(io_pin); }
 
-  const std::string *Name() const { return &(pname_num_pair_->first); }
-  std::string NameStr() const { return pname_num_pair_->first; }
-  int Num() const { return pname_num_pair_->second; }
+  const std::string *Name() const { return &(name_num_pair_ptr_->first); }
+  std::string NameStr() const { return name_num_pair_ptr_->first; }
+  int Num() const { return name_num_pair_ptr_->second; }
   void SetWeight(double weight) { weight_ = weight; }
   double Weight() const { return weight_; }
   double InvP() const { return inv_p_; }
@@ -49,9 +49,9 @@ class Net {
   int FixedCnt() const { return cnt_fixed_; }
   void SetAux(NetAux *aux) {
     Assert(aux != nullptr, "Cannot set @param aux to nullptr in void Net::SetAux()\n");
-    paux_ = aux;
+    aux_ptr_ = aux;
   }
-  NetAux *Aux() const { return paux_; }
+  NetAux *Aux() const { return aux_ptr_; }
 
   void XBoundExclude(Block *blk_ptr, double &lo, double &hi);
   void XBoundExclude(Block &blk_ptr, double &lo, double &hi) {
@@ -102,10 +102,10 @@ class Net {
 
 class NetAux {
  protected:
-  Net *net_;
+  Net *net_ptr_;
  public:
-  explicit NetAux(Net *net) : net_(net) { net_->SetAux(this); }
-  Net *GetNet() const { return net_; }
+  explicit NetAux(Net *net_ptr) : net_ptr_(net_ptr) { net_ptr_->SetAux(this); }
+  Net *GetNet() const { return net_ptr_; }
 };
 
 #endif //DALI_NET_HPP
