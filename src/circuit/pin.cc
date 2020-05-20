@@ -7,7 +7,7 @@
 #include "common/misc.h"
 
 Pin::Pin(std::pair<const std::string, int> *name_num_pair_ptr, BlockType *blk_type) :
-    name_num_pair_ptr_(name_num_pair_ptr),
+    pname_num_pair_(name_num_pair_ptr),
     blk_type_(blk_type),
     is_input_(true) {
   manual_set_ = false;
@@ -16,7 +16,7 @@ Pin::Pin(std::pair<const std::string, int> *name_num_pair_ptr, BlockType *blk_ty
 }
 
 Pin::Pin(std::pair<const std::string, int> *name_num_pair_ptr, BlockType *blk_type, double x_offset, double y_offset) :
-    name_num_pair_ptr_(name_num_pair_ptr),
+    pname_num_pair_(name_num_pair_ptr),
     blk_type_(blk_type),
     is_input_(true) {
   manual_set_ = true;

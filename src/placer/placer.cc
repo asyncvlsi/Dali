@@ -235,6 +235,12 @@ void Placer::SanityCheck() {
     Warning(net.blk_pin_list.empty(), "Empty net or this net only contains unplaced IOPINs: " + *net.Name());
   }
   Assert(IsBoundaryProper(), "Improper boundary setting");
+  for (auto &pair: circuit_->tech_.block_type_map) {
+    BlockType *pblk_type = pair.second;
+    for (auto &pin: pblk_type->pin_list) {
+      Assert(!pin.RectEmpty(), "No RECT found for pin: " + *(pblk_type->Name()) + "::" + *(pin.Name()));
+    }
+  }
 }
 
 void Placer::UpdateMovableBlkPlacementStatus() {

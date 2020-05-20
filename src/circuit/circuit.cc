@@ -469,7 +469,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
               new_pin->AddRect(llx, lly, urx, ury);
             }
           } while (line.find(end_pin_flag) == std::string::npos && !ist.eof());
-          Assert(!new_pin->Empty(), "Pin has no RECTs: " + *new_pin->Name());
+          Assert(!new_pin->RectEmpty(), "Pin has no RECTs: " + *new_pin->Name());
         }
       } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
       Assert(!new_block_type->Empty(), "MACRO has no PINs: " + *new_block_type->Name());
@@ -887,10 +887,17 @@ void Circuit::AddBlock(std::string &block_name,
 }
 
 void Circuit::AddDummyIOPinType() {
+  /****
+   * This member function adds a dummy BlockType for IOPINs.
+   * The name of this dummy BlockType is "PIN", and it contains one cell pin with name "pin".
+   * The size of "PIN" BlockType is 0 (width) and 0(height).
+   * The relative location of the only cell pin "pin" is (0,0) with size 0.
+   * ****/
   std::string iopin_type_name("PIN");
   auto io_pin_type = AddBlockType(iopin_type_name, 0, 0);
   std::string tmp_pin_name("pin");
-  io_pin_type->AddPin(tmp_pin_name, 0, 0);
+  Pin *pin = io_pin_type->AddPin(tmp_pin_name);
+  pin->AddRect(0, 0, 0, 0);
   tech_.io_dummy_blk_type_ = io_pin_type;
 }
 
