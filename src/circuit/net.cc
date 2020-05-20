@@ -10,14 +10,14 @@
 #include "net.h"
 
 Net::Net(std::pair<const std::string, int> *name_num_pair_ptr, int capacity, double weight)
-    : name_num_pair_ptr_(name_num_pair_ptr), weight_(weight) {
+    : pname_num_pair_(name_num_pair_ptr), weight_(weight) {
   cnt_fixed_ = 0;
   max_pin_x_ = -1;
   min_pin_x_ = -1;
   max_pin_y_ = -1;
   min_pin_y_ = -1;
-  inv_p = 0;
-  aux_ = nullptr;
+  inv_p_ = 0;
+  paux_ = nullptr;
   blk_pin_list.reserve(capacity);
 }
 
@@ -31,7 +31,7 @@ void Net::AddBlockPinPair(Block *block_ptr, Pin *pin) {
     // find a net, although a pointer to this net is more convenient.
     block_ptr->net_list.push_back(Num());
     int p_minus_one = int(blk_pin_list.size()) - 1;
-    inv_p = p_minus_one > 0 ? 1.0 * weight_ / p_minus_one : 0;
+    inv_p_ = p_minus_one > 0 ? 1.0 * weight_ / p_minus_one : 0;
   } else {
     std::cout << "Net capacity is full: " << blk_pin_list.capacity() << ", cannot add more pin to this net:\n";
     std::cout << "net name: " << *Name() << ", net weight: " << Weight() << "\n";
@@ -311,13 +311,4 @@ double Net::HPWLCtoCY() {
   }
 
   return (max_y - min_y) * weight_;
-}
-
-double Net::HPWLCtoC() {
-  return HPWLCtoCX() + HPWLCtoCY();
-}
-
-NetAux::NetAux(Net *net) :
-    net_(net) {
-  net_->SetAux(this);
 }

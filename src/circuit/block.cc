@@ -5,7 +5,7 @@
 #include "block.h"
 
 Block::Block() : ptype_(nullptr),
-                 name_num_pair_(nullptr),
+                 pname_num_pair_(nullptr),
                  llx_(0),
                  lly_(0),
                  place_status_(UNPLACED_),
@@ -20,7 +20,7 @@ Block::Block(BlockType *ptype,
              bool movable,
              BlockOrient orient) :
     ptype_(ptype),
-    name_num_pair_(name_num_pair),
+    pname_num_pair_(name_num_pair),
     llx_(llx),
     lly_(lly),
     orient_(orient) {
@@ -43,7 +43,7 @@ Block::Block(BlockType *ptype,
              PlaceStatus place_state,
              BlockOrient orient) :
     ptype_(ptype),
-    name_num_pair_(name_num_pair),
+    pname_num_pair_(name_num_pair),
     llx_(llx),
     lly_(lly),
     place_status_(place_state),

@@ -35,7 +35,7 @@ class Block {
   BlockType *ptype_; // type
   int eff_height_; // cached height, also used to store effective height
   long int eff_area_; // cached effective area
-  std::pair<const std::string, int> *name_num_pair_; // name for finding its index in block_list
+  std::pair<const std::string, int> *pname_num_pair_; // name for finding its index in block_list
   double llx_; // lower x coordinate
   double lly_; // lower y coordinate
   PlaceStatus place_status_; // placement status, i.e, PLACED, FIXED, UNPLACED
@@ -62,10 +62,10 @@ class Block {
   std::vector<int> net_list;
 
   /****member functions for attributes access****/
-  const std::string *Name() const { return &(name_num_pair_->first); }
-  std::string NameStr() const { return std::string(name_num_pair_->first); }
+  const std::string *Name() const { return &(pname_num_pair_->first); }
+  std::string NameStr() const { return std::string(pname_num_pair_->first); }
   BlockType *Type() const { return ptype_; }
-  int Num() const { return name_num_pair_->second; }
+  int Num() const { return pname_num_pair_->second; }
   int Width() const { return ptype_->Width(); }
   void SetHeight(int height) {
     eff_height_ = height;
@@ -90,7 +90,7 @@ class Block {
   BlockOrient Orient() const { return orient_; }
   BlockAux *Aux() const { return paux_; }
 
-  void SetNameNumPair(std::pair<const std::string, int> *name_num_pair) { name_num_pair_ = name_num_pair; }
+  void SetNameNumPair(std::pair<const std::string, int> *name_num_pair) { pname_num_pair_ = name_num_pair; }
   void SetType(BlockType *type) {
     Assert(type != nullptr, "Cannot set BlockType of a Block to NULL");
     ptype_ = type;

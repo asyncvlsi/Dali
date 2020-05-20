@@ -42,7 +42,7 @@ void GPSimPL::BlockLocRandomInit() {
   std::uniform_real_distribution<double> distribution(0, 1);
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "HPWL before initialization: " << circuit_->HPWL() << "\n";
+    printf("HPWL before initialization: %e\n", circuit_->HPWL());
   }
 
   for (auto &block: *BlockList()) {
@@ -56,7 +56,7 @@ void GPSimPL::BlockLocRandomInit() {
   }
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "HPWL after initialization: " << circuit_->HPWL() << "\n";
+    printf("HPWL after initialization: %e\n", circuit_->HPWL());
   }
 }
 

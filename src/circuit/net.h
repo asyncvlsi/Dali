@@ -16,17 +16,17 @@ class NetAux;
 
 class Net {
  protected:
-  std::pair<const std::string, int> *name_num_pair_ptr_;
+  std::pair<const std::string, int> *pname_num_pair_;
   double weight_;
   int cnt_fixed_;
 
   // cached data
   int max_pin_x_, min_pin_x_;
   int max_pin_y_, min_pin_y_;
-  double inv_p;
+  double inv_p_; // 1.0/(p-1), where p is the number of pins connected by this net
 
   // auxiliary information
-  NetAux *aux_;
+  NetAux *paux_;
  public:
   std::vector<BlockPinPair> blk_pin_list;
 
@@ -35,43 +35,54 @@ class Net {
   // API to add block/pin pair
   void AddBlockPinPair(Block *block_ptr, Pin *pin);
 
-  const std::string *Name() const;
-  std::string NameStr() const;
-  int Num() const;
-  void SetWeight(double weight);
-  double Weight() const;
-  double InvP() const;
-  int P() const;
-  int FixedCnt() const;
-  void SetAux(NetAux *aux);
-  NetAux *Aux() const;
+  const std::string *Name() const { return &(pname_num_pair_->first); }
+  std::string NameStr() const { return pname_num_pair_->first; }
+  int Num() const { return pname_num_pair_->second; }
+  void SetWeight(double weight) { weight_ = weight; }
+  double Weight() const { return weight_; }
+  double InvP() const { return inv_p_; }
+  int P() const { return (int) blk_pin_list.size(); }
+  int FixedCnt() const { return cnt_fixed_; }
+  void SetAux(NetAux *aux) {
+    Assert(aux != nullptr, "Cannot set @param aux to nullptr in void Net::SetAux()\n");
+    paux_ = aux;
+  }
+  NetAux *Aux() const { return paux_; }
 
   void XBoundExclude(Block *blk_ptr, double &lo, double &hi);
-  void XBoundExclude(Block &blk_ptr, double &lo, double &hi);
+  void XBoundExclude(Block &blk_ptr, double &lo, double &hi) {
+    XBoundExclude(&blk_ptr, lo, hi);
+  }
+
   void YBoundExclude(Block *blk_ptr, double &lo, double &hi);
-  void YBoundExclude(Block &blk_ptr, double &lo, double &hi);
+  void YBoundExclude(Block &blk_ptr, double &lo, double &hi) {
+    YBoundExclude(&blk_ptr, lo, hi);
+  }
 
   void SortBlkPinList();
   void UpdateMaxMinIndexX();
   void UpdateMaxMinIndexY();
-  void UpdateMaxMinIndex();
+  void UpdateMaxMinIndex() {
+    UpdateMaxMinIndexX();
+    UpdateMaxMinIndexY();
+  }
 
-  int MaxBlkPinNumX() const;
-  int MinBlkPinNumX() const;
-  int MaxBlkPinNumY() const;
-  int MinBlkPinNumY() const;
-  Block *MaxBlockX() const;
-  Block *MinBlockX() const;
-  Block *MaxBlockY() const;
-  Block *MinBlockY() const;
+  int MaxBlkPinNumX() const { return max_pin_x_; }
+  int MinBlkPinNumX() const { return min_pin_x_; }
+  int MaxBlkPinNumY() const { return max_pin_y_; }
+  int MinBlkPinNumY() const { return min_pin_y_; }
+  Block *MaxBlockX() const { return blk_pin_list[max_pin_x_].GetBlock(); }
+  Block *MinBlockX() const { return blk_pin_list[min_pin_x_].GetBlock(); }
+  Block *MaxBlockY() const { return blk_pin_list[max_pin_y_].GetBlock(); }
+  Block *MinBlockY() const { return blk_pin_list[min_pin_y_].GetBlock(); }
   double HPWLX();
   double HPWLY();
-  double HPWL();
+  double HPWL() { return HPWLX() + HPWLY(); }
 
-  double MinX() const;
-  double MaxX() const;
-  double MinY() const;
-  double MaxY() const;
+  double MinX() const { return blk_pin_list[min_pin_x_].AbsX(); }
+  double MaxX() const { return blk_pin_list[max_pin_x_].AbsX(); }
+  double MinY() const { return blk_pin_list[min_pin_y_].AbsY(); }
+  double MaxY() const { return blk_pin_list[max_pin_y_].AbsY(); }
 
   void UpdateMaxMinCtoCX();
   void UpdateMaxMinCtoCY();
@@ -82,125 +93,15 @@ class Net {
   int MinPinCtoCY();
   double HPWLCtoCX();
   double HPWLCtoCY();
-  double HPWLCtoC();
+  double HPWLCtoC() { return HPWLCtoCX() + HPWLCtoCY(); }
 };
 
 class NetAux {
  protected:
   Net *net_;
  public:
-  explicit NetAux(Net *net);
-  Net *GetNet() const;
+  explicit NetAux(Net *net) : net_(net) { net_->SetAux(this); }
+  Net *GetNet() const { return net_; }
 };
-
-inline const std::string *Net::Name() const {
-  return &(name_num_pair_ptr_->first);
-}
-
-inline std::string Net::NameStr() const {
-  return name_num_pair_ptr_->first;
-}
-
-inline int Net::Num() const {
-  return name_num_pair_ptr_->second;
-}
-
-inline void Net::SetWeight(double weight) {
-  weight_ = weight;
-}
-
-inline double Net::Weight() const {
-  return weight_;
-}
-
-inline double Net::InvP() const {
-  return inv_p;
-}
-
-inline int Net::P() const {
-  return (int) blk_pin_list.size();
-}
-
-inline int Net::FixedCnt() const {
-  return cnt_fixed_;
-}
-
-inline void Net::SetAux(NetAux *aux) {
-  assert(aux != nullptr);
-  aux_ = aux;
-}
-
-inline NetAux *Net::Aux() const {
-  return aux_;
-}
-
-inline void Net::XBoundExclude(Block &blk_ptr, double &lo, double &hi) {
-  XBoundExclude(&blk_ptr, lo, hi);
-}
-
-inline void Net::YBoundExclude(Block &blk_ptr, double &lo, double &hi) {
-  YBoundExclude(&blk_ptr, lo, hi);
-}
-
-inline int Net::MaxBlkPinNumX() const {
-  return max_pin_x_;
-}
-
-inline void Net::UpdateMaxMinIndex() {
-  UpdateMaxMinIndexX();
-  UpdateMaxMinIndexY();
-}
-
-inline int Net::MinBlkPinNumX() const {
-  return min_pin_x_;
-}
-
-inline int Net::MaxBlkPinNumY() const {
-  return max_pin_y_;
-}
-
-inline int Net::MinBlkPinNumY() const {
-  return min_pin_y_;
-}
-
-inline Block *Net::MaxBlockX() const {
-  return blk_pin_list[max_pin_x_].GetBlock();
-}
-
-inline Block *Net::MinBlockX() const {
-  return blk_pin_list[min_pin_x_].GetBlock();
-}
-
-inline Block *Net::MaxBlockY() const {
-  return blk_pin_list[max_pin_y_].GetBlock();
-}
-
-inline Block *Net::MinBlockY() const {
-  return blk_pin_list[min_pin_y_].GetBlock();
-}
-
-inline double Net::HPWL() {
-  return HPWLX() + HPWLY();
-}
-
-inline double Net::MinX() const {
-  return blk_pin_list[min_pin_x_].AbsX();
-}
-
-inline double Net::MaxX() const {
-  return blk_pin_list[max_pin_x_].AbsX();
-}
-
-inline double Net::MinY() const {
-  return blk_pin_list[min_pin_y_].AbsY();
-}
-
-inline double Net::MaxY() const {
-  return blk_pin_list[max_pin_y_].AbsY();
-}
-
-inline Net *NetAux::GetNet() const {
-  return net_;
-}
 
 #endif //DALI_NET_HPP

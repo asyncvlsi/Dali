@@ -16,7 +16,7 @@ Layer::Layer(double width, double spacing) :
 
 MetalLayer::MetalLayer(std::pair<const std::string, int> *name_num_ptr) :
     Layer(),
-    name_num_ptr_(name_num_ptr),
+    pname_num_pair_(name_num_ptr),
     min_area_(0),
     x_pitch_(0),
     y_pitch_(0),
@@ -27,7 +27,7 @@ MetalLayer::MetalLayer(double width,
                        std::pair<const std::string, int> *name_num_ptr,
                        MetalDirection direction) :
     Layer(width, spacing),
-    name_num_ptr_(name_num_ptr),
+    pname_num_pair_(name_num_ptr),
     min_area_(0),
     x_pitch_(0),
     y_pitch_(0),
