@@ -12,6 +12,8 @@
 #include "layer.h"
 #include "status.h"
 
+class Net;
+
 class IOPin {
  private:
   std::pair<const std::string, int> *name_num_pair_;

@@ -11,8 +11,10 @@
 #include "block.h"
 #include "blockpinpair.h"
 #include "common/misc.h"
+#include "iopin.h"
 
 class NetAux;
+class IOPin;
 
 class Net {
  protected:
@@ -29,11 +31,13 @@ class Net {
   NetAux *paux_;
  public:
   std::vector<BlockPinPair> blk_pin_list;
+  std::vector<IOPin *> iopin_list;
 
   Net(std::pair<const std::string, int> *name_num_pair_ptr, int capacity, double weight);
 
   // API to add block/pin pair
   void AddBlockPinPair(Block *block_ptr, Pin *pin);
+  void AddIOPin(IOPin *io_pin) { iopin_list.push_back(io_pin); }
 
   const std::string *Name() const { return &(pname_num_pair_->first); }
   std::string NameStr() const { return pname_num_pair_->first; }

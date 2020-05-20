@@ -226,6 +226,12 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db) {
       IOPin *iopin = GetIOPin(iopin_name);
       Net *io_net = GetNet(net_name);
       iopin->SetNet(io_net);
+      io_net->AddIOPin(iopin);
+      if (iopin->IsPrePlaced()) {
+        Block *blk_ptr = GetBlock(iopin_name);
+        Pin *pin = &(blk_ptr->Type()->pin_list[0]);
+        io_net->AddBlockPinPair(blk_ptr, pin);
+      }
     }
     for (auto &&iterm: net->getITerms()) {
       //std::cout << "  (" << iterm->getInst()->getName() << "  " << iterm->getMTerm()->getName() << ")  \t";
@@ -2133,7 +2139,11 @@ void Circuit::SaveDefFile(std::string const &base_name,
       for (auto &net: design_.net_list) {
         ost << "- " << *(net.Name()) << "\n";
         ost << " ";
+        for (auto &iopin: net.iopin_list) {
+          ost << " ( PIN " << *(iopin->Name()) << " ) ";
+        }
         for (auto &pin_pair: net.blk_pin_list) {
+          if (pin_pair.GetBlock()->Type() == tech_.io_dummy_blk_type_) continue;
           ost << " ( " << *(pin_pair.BlockName()) << " " << *(pin_pair.PinName()) << " ) ";
         }
         ost << "\n" << " ;\n";
@@ -2141,6 +2151,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       break;
     }
     case 2: { // save nets containing saved cells and IOPINs
+      Assert(false, "This part has not been implemented\n");
       break;
     }
     case 3: {// save power nets for well tap cell
