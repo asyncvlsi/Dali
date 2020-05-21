@@ -43,6 +43,7 @@ int main(int argc, char *argv[]) {
   double x_grid = 0, y_grid = 0;
   double target_density = -1;
   bool use_naive = false;
+  int io_metal_layer = 0;
 
   Circuit circuit;
 
@@ -99,6 +100,15 @@ int main(int argc, char *argv[]) {
         target_density = std::stod(str_target_density);
       } catch (...) {
         std::cout << "Invalid target density!\n";
+        ReportUsage();
+        return 1;
+      }
+    } else if (arg == "iolayerd" && i < argc) {
+      std::string str_metal_layer_num = std::string(argv[i++]);
+      try {
+        io_metal_layer = std::stoi(str_metal_layer_num) - 1;
+      } catch (...) {
+        std::cout << "Invalid metal layer number!\n";
         ReportUsage();
         return 1;
       }
@@ -215,7 +225,7 @@ int main(int argc, char *argv[]) {
     if (!output_name.empty()) {
       well_legalizer->EmitDEFWellFile(output_name, 1);
     }
-    well_legalizer->SimpleIOPinPlacement(3);
+    well_legalizer->SimpleIOPinPlacement(io_metal_layer);
     delete well_legalizer;
     delete gb_placer;
     delete legalizer;
@@ -247,6 +257,7 @@ void ReportUsage() {
             << "  -g/-grid    grid_value_x grid_value_y (optional, default metal1 and metal2 pitch values)\n"
             << "  -d/-density density (optional, value interval (0,1], default max(space_utility, 0.7))\n"
             << "  -n          (optional, if this flag is present, then use naive LEF/DEF parser)\n"
+            << "  -iolayer    metal_layer_num (optional, default 1 for m1)\n"
             << "  -v          verbosity_level (optional, 0-5, default 1)\n"
             << "(flag order does not matter)"
             << "\033[0m\n";

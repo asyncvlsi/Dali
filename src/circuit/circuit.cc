@@ -2046,9 +2046,6 @@ void Circuit::SaveDefFile(std::string const &base_name,
     case 1: { // save all IOPINs
       ost << "PINS " << design_.iopin_list.size() << " ;\n";
       Assert(!tech_.metal_list.empty(), "Need metal layer info to generate PIN location\n");
-      std::string metal_name = *(tech_.metal_list[3].Name());
-      int half_width = std::ceil(tech_.metal_list[3].MinHeight() / 2.0 * design_.def_distance_microns);
-      int height = std::ceil(tech_.metal_list[3].Width() * design_.def_distance_microns);
       for (auto &iopin: design_.iopin_list) {
         ost << "- "
             << *iopin.Name()
@@ -2057,6 +2054,9 @@ void Circuit::SaveDefFile(std::string const &base_name,
             << " + DIRECTION " << SignalDirectionStr(iopin.SigDirection())
             << " + USE " << SignalUseStr(iopin.SigUse());
         if (iopin.IsPlaced()) {
+          std::string metal_name = *(iopin.Layer()->Name());
+          int half_width = std::ceil(iopin.Layer()->MinHeight() / 2.0 * design_.def_distance_microns);
+          int height = std::ceil(iopin.Layer()->Width() * design_.def_distance_microns);
           ost << "\n  + LAYER "
               << metal_name
               << " ( "

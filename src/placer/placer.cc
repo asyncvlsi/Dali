@@ -254,7 +254,7 @@ void Placer::UpdateMovableBlkPlacementStatus() {
 void Placer::SimpleIOPinPlacement(int pin_metal_layer) {
   if (circuit_->GetIOPinList()->empty()) return;
   Assert(pin_metal_layer < (int) circuit_->tech_.metal_list.size(),
-         "wrong metal layer provided for Placer::SimpleIOPinPlacement()");
+         "Invalid metal layer provided for Placer::SimpleIOPinPlacement()");
   //std::cout << circuit_->GetIOPinList()->size() << "\n";
   Net *net = nullptr;
   double net_minx, net_maxx, net_miny, net_maxy;
@@ -267,6 +267,8 @@ void Placer::SimpleIOPinPlacement(int pin_metal_layer) {
   std::vector<IOPin *> t_edge;
 
   for (auto &iopin: *(circuit_->GetIOPinList())) {
+    if (iopin.IsPrePlaced()) continue;
+    iopin.SetLayer(&(circuit_->tech_.metal_list[pin_metal_layer]));
     net = iopin.GetNet();
     if (net->blk_pin_list.empty()) continue;
     //std::cout << net->NameStr() << "\n";
