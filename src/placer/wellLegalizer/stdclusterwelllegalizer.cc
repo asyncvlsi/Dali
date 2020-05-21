@@ -1386,12 +1386,23 @@ bool StdClusterWellLegalizer::StartPlacement() {
 
 void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
   long int tot_std_blk_area = 0;
-  int max_height = 0;
-  for (auto &pair: circuit_->tech_.block_type_map) {
-    if (pair.second->Height() > max_height) {
-      max_height = pair.second->Height();
+  int max_n_height = 0;
+  int max_p_height = 0;
+  for (auto &blk: circuit_->design_.block_list) {
+    if (blk.Type()->GetWell()->GetNWellHeight() > max_n_height) {
+      max_n_height = blk.Type()->GetWell()->GetNWellHeight();
+    }
+    if (blk.Type()->GetWell()->GetPWellHeight() > max_p_height) {
+      max_p_height = blk.Type()->GetWell()->GetPWellHeight();
     }
   }
+  if (circuit_->tech_.well_tap_cell_ptr_->GetWell()->GetNWellHeight() > max_n_height) {
+    max_n_height = circuit_->tech_.well_tap_cell_ptr_->GetWell()->GetNWellHeight();
+  }
+  if (circuit_->tech_.well_tap_cell_ptr_->GetWell()->GetPWellHeight() > max_p_height) {
+    max_p_height = circuit_->tech_.well_tap_cell_ptr_->GetWell()->GetPWellHeight();
+  }
+  int max_height = max_n_height + max_p_height;
 
   long int tot_eff_blk_area = 0;
   for (auto &col: col_list_) {
