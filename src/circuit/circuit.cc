@@ -57,6 +57,9 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
       double min_spacing = layer->getSpacing() / (double) tech_.lef_database_microns;
       //std::cout << min_width << "  " << min_spacing << "  ";
       auto *metal_layer = AddMetalLayer(metal_layer_name, min_width, min_spacing);
+      std::string str_direct(layer->getDirection().getString());
+      MetalDirection direct = StrToMetalDirection(str_direct);
+      metal_layer->SetDirection(direct);
       if (layer->hasArea()) {
         //std::cout << layer->getArea();
         double min_area = layer->getArea();

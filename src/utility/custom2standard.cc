@@ -11,6 +11,12 @@
 
 VerboseLevel globalVerboseLevel = LOG_INFO;
 
+struct TypeLayerBBox {
+  BlockType *blk_type;
+  double ly;
+  double uy;
+};
+
 void ReportUsage();
 
 int main(int argc, char *argv[]) {
@@ -43,8 +49,18 @@ int main(int argc, char *argv[]) {
   circuit.ReadLefFile(lef_file_name);
 #endif
 
+  MetalLayer *hor_layer = nullptr;
+  for (auto &metal_layer: circuit.tech_.metal_list) {
+    if (metal_layer.Direction() == HORIZONTAL_) {
+      hor_layer = &metal_layer;
+      std::cout << "Horizontal metal layer is: " << *hor_layer->Name() << "\n";
+      break;
+    }
+  }
+  std::vector<TypeLayerBBox> bbox_list(circuit.tech_.block_type_map.size());
+
   double max_height = 0;
-  for (auto &pair: circuit.block_type_map) {
+  for (auto &pair: circuit.tech_.block_type_map) {
     if (pair.second->Height() > max_height) {
       max_height = pair.second->Height();
     }

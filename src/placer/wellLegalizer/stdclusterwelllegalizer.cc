@@ -1379,7 +1379,43 @@ bool StdClusterWellLegalizer::StartPlacement() {
 
   ReportMemory(LOG_CRITICAL);
 
+  ReportEffectiveSpaceUtilization();
+
   return is_success;
+}
+
+void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
+  long int tot_std_blk_area = 0;
+  int max_height = 0;
+  for (auto &pair: circuit_->tech_.block_type_map) {
+    if (pair.second->Height() > max_height) {
+      max_height = pair.second->Height();
+    }
+  }
+
+  long int tot_eff_blk_area = 0;
+  for (auto &col: col_list_) {
+    for (auto &strip: col.strip_list_) {
+      for (auto &cluster: strip.cluster_list_) {
+        long int eff_height = cluster.Height();
+        long int tot_cell_width = 0;
+        for (auto &blk_ptr: cluster.blk_list_) {
+          tot_cell_width += blk_ptr->Width();
+        }
+        tot_eff_blk_area += tot_cell_width * eff_height;
+        tot_std_blk_area += tot_cell_width * max_height;
+      }
+    }
+  }
+  double factor = circuit_->tech_.grid_value_x_ * circuit_->tech_.grid_value_y_;
+  std::cout << "Total placement area: " << ((long int) RegionWidth() * (long int) RegionHeight()) * factor << "um^2\n";
+  std::cout << "Total block area: " << circuit_->TotBlkArea() * factor << " ("
+            << circuit_->TotBlkArea() / (double) RegionWidth() / (double) RegionHeight() << ") um^2\n";
+  std::cout << "Total effective block area: " << tot_eff_blk_area * factor << " ("
+            << tot_eff_blk_area / (double) RegionWidth() / (double) RegionHeight() << ") um^2\n";
+  std::cout << "Total standard block area (lower bound):" << tot_std_blk_area * factor << " ("
+            << tot_std_blk_area / (double) RegionWidth() / (double) RegionHeight() << ") um^2\n";
+
 }
 
 void StdClusterWellLegalizer::GenMatlabClusterTable(std::string const &name_of_file) {

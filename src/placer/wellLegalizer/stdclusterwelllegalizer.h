@@ -217,6 +217,9 @@ class StdClusterWellLegalizer : public Placer {
 
   bool StartPlacement() override;
 
+  void ReportEffectiveSpaceUtilization();
+
+  /****member function for file IO****/
   void GenMatlabClusterTable(std::string const &name_of_file);
   void GenMATLABWellTable(std::string const &name_of_file, int well_emit_mode) override;
   void GenPPNP(std::string const &name_of_file);
