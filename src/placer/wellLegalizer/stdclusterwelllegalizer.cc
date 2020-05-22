@@ -1913,8 +1913,8 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
     auto &col = col_list_[i];
     for (auto &strip: col.strip_list_) {
       ost << "  "
-          << (int) (col.LLX() * factor_x) + circuit_->design_.die_area_offset_x_ << "  "
-          << (int) (col.URX() * factor_x) + circuit_->design_.die_area_offset_x_ << "  ";
+          << (int) (strip.LLX() * factor_x) + circuit_->design_.die_area_offset_x_ << "  "
+          << (int) (strip.URX() * factor_x) + circuit_->design_.die_area_offset_x_ << "  ";
       if (strip.is_first_row_orient_N_) {
         ost << "GND\n";
       } else {

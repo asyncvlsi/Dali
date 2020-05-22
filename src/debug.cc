@@ -109,6 +109,7 @@ int main() {
   std_cluster_well_legalizer.StartPlacement();
   //std_cluster_well_legalizer.GenMatlabClusterTable("sc_result");
   std_cluster_well_legalizer.GenMATLABTable("sc_result.txt");
+  std_cluster_well_legalizer.GenMatlabClusterTable("sc_result");
   std_cluster_well_legalizer.GenMATLABWellTable("scw", 0);
 
   std_cluster_well_legalizer.SimpleIOPinPlacement(0);
