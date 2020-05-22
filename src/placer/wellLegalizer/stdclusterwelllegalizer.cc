@@ -1419,7 +1419,7 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
     }
   }
   double factor = circuit_->tech_.grid_value_x_ * circuit_->tech_.grid_value_y_;
-  std::cout << "Total placement area: " << ((long int) RegionWidth() * (long int) RegionHeight()) * factor << "um^2\n";
+  std::cout << "Total placement area: " << ((long int) RegionWidth() * (long int) RegionHeight()) * factor << " um^2\n";
   std::cout << "Total block area: " << circuit_->TotBlkArea() * factor << " ("
             << circuit_->TotBlkArea() / (double) RegionWidth() / (double) RegionHeight() << ") um^2\n";
   std::cout << "Total effective block area: " << tot_eff_blk_area * factor << " ("

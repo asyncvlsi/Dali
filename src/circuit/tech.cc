@@ -39,12 +39,7 @@ void Tech::SetPLayer(double width, double spacing,double op_spacing, double max_
   }
 }
 
-void Tech::SetDiffSpacing(double same_diff, double any_diff) {
-  same_diff_spacing_ = same_diff;
-  any_diff_spacing_ = any_diff;
-}
-
-void Tech::Report() {
+void Tech::Report() const {
   if (n_set_) {
     std::cout << "  Layer name: nwell\n";
     n_layer_ptr_->Report();
