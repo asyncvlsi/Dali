@@ -1486,8 +1486,8 @@ void StdClusterWellLegalizer::GenMATLABWellTable(std::string const &name_of_file
       }
 
       bool is_p_well_rect = strip.is_first_row_orient_N_;
-      int lx = col.LLX();
-      int ux = col.URX();
+      int lx = strip.LLX();
+      int ux = strip.URX();
       int ly;
       int uy;
       int rect_count = (int) pn_edge_list.size() - 1;
@@ -1559,8 +1559,8 @@ void StdClusterWellLegalizer::GenPPNP(const std::string &name_of_file) {
       }
 
       bool is_p_well_rect = strip.is_first_row_orient_N_;
-      int lx = col.LLX();
-      int ux = col.URX();
+      int lx = strip.LLX();
+      int ux = strip.URX();
       int ly;
       int uy;
       int rect_count = (int) pn_edge_list.size() - 1;
@@ -1615,9 +1615,9 @@ void StdClusterWellLegalizer::GenPPNP(const std::string &name_of_file) {
       Assert(well_tap_top_bottom_list.size() % 2 == 0, "Impossible to get an even number of well tap cell edges");
 
       is_p_well_rect = strip.is_first_row_orient_N_;
-      int lx0 = col.LLX();
+      int lx0 = strip.LLX();
       int ux0 = lx + adjust_width;
-      int ux1 = col.URX();
+      int ux1 = strip.URX();
       int lx1 = ux1 - adjust_width;
       rect_count = (int) well_tap_top_bottom_list.size() - 1;
       for (int i = 0; i < rect_count; i += 2) {
