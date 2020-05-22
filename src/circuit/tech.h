@@ -54,10 +54,13 @@ class Tech {
   WellLayer *GetPLayer() const { return p_layer_ptr_; }
   void SetNLayer(double width, double spacing, double op_spacing, double max_plug_dist, double overhang);
   void SetPLayer(double width, double spacing, double op_spacing, double max_plug_dist, double overhang);
-  void SetDiffSpacing(double same_diff, double any_diff);
+  void SetDiffSpacing(double same_diff, double any_diff) {
+    same_diff_spacing_ = same_diff;
+    any_diff_spacing_ = any_diff;
+  }
 
   bool IsWellInfoSet() const { return (GetNLayer() == nullptr) && (GetPLayer() == nullptr); }
-  void Report();
+  void Report() const;
 };
 
 #endif //DALI_SRC_CIRCUIT_TECH_H_

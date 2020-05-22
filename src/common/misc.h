@@ -16,7 +16,26 @@
 
 #include "global.h"
 
-void PrintSoftwareStatement();
+inline void PrintSoftwareStatement() {
+  std::cout << "\n"
+            << "+----------------------------------------------+\n"
+            << "|                                              |\n"
+            << "|     Dali: gridded cell placement flow        |\n"
+            << "|                                              |\n"
+            << "|     Department of Electrical Engineering     |\n"
+            << "|     Yale University                          |\n"
+            << "|                                              |\n"
+            << "|     Developed by                             |\n"
+            << "|     Yihang Yang, Rajit Manohar               |\n"
+            << "|                                              |\n"
+            << "|     This program is for academic use and     |\n"
+            << "|     testing only                             |\n"
+            << "|     THERE IS NO WARRANTY                     |\n"
+            << "|                                              |\n"
+            << "|     build time: " << __DATE__ << " " << __TIME__ << "         |\n"
+            << "|                                              |\n"
+            << "+----------------------------------------------+\n\n";
+}
 
 template<class T>
 struct Value2D {
