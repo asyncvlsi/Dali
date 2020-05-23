@@ -216,12 +216,48 @@ int main(int argc, char *argv[]) {
           Circuit::StrSplit(line, line_field);
           std::string pin_name = line_field[1];
           std::string end_pin_flag = "END " + pin_name;
-          if (pin_name != "Vdd" && pin_name != "GND") {
-            ost << line << "\n";
-          }
+          ost << line << "\n";
+          bool hlayer_vdd_found = false;
+          bool hlayer_gnd_found = false;
           do {
             getline(ist, line);
-            if (pin_name == "Vdd" || pin_name == "GND") continue;
+            if (pin_name == "GND") {
+              std::string layer_mark = "LAYER " + *(hor_layer->Name());
+              if (line.find(layer_mark) != std::string::npos) {
+                hlayer_gnd_found = true;
+                ost << line << "\n";
+                ost << "        RECT " << 0.0 << " " << 0.0 << " "
+                    << bbox_ptr->blk_type->Width() * circuit.GetGridValueX() << " " << hor_layer->Width() << " ;\n";
+                continue;
+              }
+            } else if (pin_name == "Vdd") {
+              std::string layer_mark = "LAYER " + *(hor_layer->Name());
+              if (line.find(layer_mark) != std::string::npos) {
+                hlayer_vdd_found = true;
+                ost << line << "\n";
+                ost << "        RECT " << 0.0 << " " << std_height - hor_layer->Width() << " "
+                    << bbox_ptr->blk_type->Width() * circuit.GetGridValueX() << " " << std_height << " ;\n";
+                continue;
+              }
+            }
+
+            if (line.find("END") != std::string::npos && line.find(end_pin_flag) == std::string::npos ) {
+              if (pin_name == "GND") {
+                if (!hlayer_gnd_found) {
+                  ost << "        LAYER " << *hor_layer->Name() << " ;\n";
+                  ost << "        RECT " << 0.0 << " " << 0.0 << " "
+                      << bbox_ptr->blk_type->Width() * circuit.GetGridValueX() << " " << hor_layer->Width() << " ;\n";
+                }
+              } else if (pin_name == "Vdd") {
+                if (!hlayer_vdd_found) {
+                  ost << "        LAYER " << *hor_layer->Name() << " ;\n";
+                  ost << "        RECT " << 0.0 << " " << std_height - hor_layer->Width() << " "
+                      << bbox_ptr->blk_type->Width() * circuit.GetGridValueX() << " " << std_height << " ;\n";
+                }
+
+              } else {}
+            }
+
             if (line.find("RECT ") != std::string::npos) {
               Circuit::StrSplit(line, line_field);
               std::string str_ly = line_field[2];
@@ -234,29 +270,9 @@ int main(int argc, char *argv[]) {
             } else {
               ost << line << "\n";
             }
+
           } while (line.find(end_pin_flag) == std::string::npos && !ist.eof());
         } else {
-          if (line.find(end_macro_flag) != std::string::npos) {
-            ost << "    PIN GND\n"
-                   "        DIRECTION INPUT ;\n"
-                   "        USE POWER ;\n"
-                   "        PORT\n"
-                   "        LAYER " << *hor_layer->Name() << " ;\n";
-            ost << "        RECT " << 0.0 << " " << 0.0 << " "
-                << bbox_ptr->blk_type->Width() * circuit.GetGridValueX() << " " << hor_layer->Width() << " ;\n";
-            ost << "        END\n"
-                << "    END GND\n";
-
-            ost << "    PIN Vdd\n"
-                   "        DIRECTION INPUT ;\n"
-                   "        USE POWER ;\n"
-                   "        PORT\n"
-                   "        LAYER " << *hor_layer->Name() << " ;\n";
-            ost << "        RECT " << 0.0 << " " << std_height - hor_layer->Width() << " "
-                << bbox_ptr->blk_type->Width() * circuit.GetGridValueX() << " " << std_height << " ;\n";
-            ost << "        END\n"
-                << "    END Vdd\n";
-          }
           ost << line << "\n";
         }
       } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
