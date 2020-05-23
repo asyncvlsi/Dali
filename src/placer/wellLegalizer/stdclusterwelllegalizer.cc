@@ -1389,11 +1389,13 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
   int max_n_height = 0;
   int max_p_height = 0;
   for (auto &blk: circuit_->design_.block_list) {
-    if (blk.Type()->GetWell()->GetNWellHeight() > max_n_height) {
-      max_n_height = blk.Type()->GetWell()->GetNWellHeight();
+    BlockType *type = blk.Type();
+    if (type == circuit_->tech_.io_dummy_blk_type_ptr_) continue;;
+    if (type->GetWell()->GetNWellHeight() > max_n_height) {
+      max_n_height = type->GetWell()->GetNWellHeight();
     }
-    if (blk.Type()->GetWell()->GetPWellHeight() > max_p_height) {
-      max_p_height = blk.Type()->GetWell()->GetPWellHeight();
+    if (type->GetWell()->GetPWellHeight() > max_p_height) {
+      max_p_height = type->GetWell()->GetPWellHeight();
     }
   }
   if (circuit_->tech_.well_tap_cell_ptr_->GetWell()->GetNWellHeight() > max_n_height) {
