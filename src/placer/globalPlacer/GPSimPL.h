@@ -63,10 +63,13 @@ class GPSimPL : public Placer {
   GPSimPL();
   GPSimPL(double aspectRatio, double fillingRate);
 
-  unsigned int TotBlockNum();
-  void SetEpsilon();
-  double WidthEpsilon();
-  double HeightEpsilon();
+  unsigned int TotBlockNum() { return GetCircuit()->TotBlkNum(); }
+  void SetEpsilon() {
+    width_epsilon = circuit_->AveMovBlkWidth() / 100.0;
+    height_epsilon = circuit_->AveMovBlkHeight() / 100.0;
+  }
+  double WidthEpsilon() { return width_epsilon; }
+  double HeightEpsilon() { return height_epsilon; }
 
   Eigen::VectorXd vx, vy;
   Eigen::VectorXd bx, by;
@@ -81,11 +84,11 @@ class GPSimPL : public Placer {
   void CGInit();
   void InitCGFlags();
   void UpdateCGFlagsX();
-  void UpdateHPWLX();
+  void UpdateHPWLX() { HPWLX_new = HPWLX(); }
   void UpdateMaxMinX();
   void UpdateMaxMinCtoCX();
   void UpdateCGFlagsY();
-  void UpdateHPWLY();
+  void UpdateHPWLY() { HPWLY_new = HPWLY(); }
   void UpdateMaxMinY();
   void UpdateMaxMinCtoCY();
   void AddMatrixElement(Net &net, int i, int j);
@@ -137,7 +140,7 @@ class GPSimPL : public Placer {
   void BuildProblemB2BWithAnchorX();
   void BuildProblemB2BWithAnchorY();
   void QuadraticPlacementWithAnchor();
-  void UpdateAnchorNetWeight();
+  void UpdateAnchorNetWeight() { alpha = 0.01 * cur_iter_; }
 
   void CheckAndShift();
 
@@ -159,34 +162,5 @@ class GPSimPL : public Placer {
   void write_first_box(std::string const &name_of_file);
   void write_first_box_cell_bounding(std::string const &name_of_file);
 };
-
-inline unsigned int GPSimPL::TotBlockNum() {
-  return GetCircuit()->TotBlkNum();
-}
-
-inline void GPSimPL::SetEpsilon() {
-  width_epsilon = circuit_->AveMovBlkWidth() / 100.0;
-  height_epsilon = circuit_->AveMovBlkHeight() / 100.0;
-}
-
-inline double GPSimPL::WidthEpsilon() {
-  return width_epsilon;
-}
-
-inline double GPSimPL::HeightEpsilon() {
-  return height_epsilon;
-}
-
-inline void GPSimPL::UpdateHPWLX() {
-  HPWLX_new = HPWLX();
-}
-
-inline void GPSimPL::UpdateHPWLY() {
-  HPWLY_new = HPWLY();
-}
-
-inline void GPSimPL::UpdateAnchorNetWeight() {
-  alpha = 0.01 * cur_iter_;
-}
 
 #endif //DALI_SRC_PLACER_GLOBALPLACER_GPSIMPL_H_

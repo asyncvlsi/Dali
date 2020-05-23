@@ -1908,6 +1908,10 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
 
   double factor_x = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_x_;
   double factor_y = circuit_->design_.def_distance_microns * circuit_->tech_.grid_value_y_;
+  //std::cout << "Actual x span: "
+  //          << RegionLeft() * factor_x + +circuit_->design_.die_area_offset_x_ << "  "
+  //          << (col_list_.back().strip_list_[0].URX() + well_spacing_) * factor_x + circuit_->design_.die_area_offset_x_
+  //          << "\n";
   for (int i = 0; i < tot_col_num_; ++i) {
     std::string column_name = "column" + std::to_string(i);
     ost << "STRIP " << column_name << "\n";
@@ -1923,10 +1927,20 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
         ost << "Vdd\n";
       }
 
-      for (auto &cluster: strip.cluster_list_) {
-        ost << "  "
-            << (int) (cluster.LLY() * factor_y) + circuit_->design_.die_area_offset_y_ << "  "
-            << (int) (cluster.URY() * factor_y) + circuit_->design_.die_area_offset_y_ << "\n";
+      if (strip.is_bottom_up_) {
+        for (auto &cluster: strip.cluster_list_) {
+          ost << "  "
+              << (int) (cluster.LLY() * factor_y) + circuit_->design_.die_area_offset_y_ << "  "
+              << (int) (cluster.URY() * factor_y) + circuit_->design_.die_area_offset_y_ << "\n";
+        }
+      } else {
+        int sz = strip.cluster_list_.size();
+        for (int j= sz-1; j>=0; --j) {
+          auto &cluster = strip.cluster_list_[j];
+          ost << "  "
+              << (int) (cluster.LLY() * factor_y) + circuit_->design_.die_area_offset_y_ << "  "
+              << (int) (cluster.URY() * factor_y) + circuit_->design_.die_area_offset_y_ << "\n";
+        }
       }
 
       ost << "END " << column_name << "\n\n";
