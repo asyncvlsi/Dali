@@ -34,34 +34,60 @@ struct Cluster {
   int n_well_height_ = 0;
 
   /**** member functions ****/
-  int UsedSize() const;
-  void SetUsedSize(int used_size);
-  void UseSpace(int width);
+  int UsedSize() const { return used_size_; }
+  void SetUsedSize(int used_size) { used_size_ = used_size; }
+  void UseSpace(int width) { used_size_ += width; }
 
-  void SetLLX(int lx);
-  void SetURX(int ux);
-  int LLX() const;
-  int URX() const;
-  double CenterX() const;
+  void SetLLX(int lx) { lx_ = lx; }
+  void SetURX(int ux) { lx_ = ux - width_; }
+  int LLX() const { return lx_; }
+  int URX() const { return lx_ + width_; }
+  double CenterX() const { return lx_ + width_ / 2.0; }
 
-  void SetWidth(int width);
-  int Width() const;
+  void SetWidth(int width) { width_ = width; }
+  int Width() const { return width_; }
 
-  void SetLLY(int ly);
-  void SetURY(int uy);
-  int LLY() const;
-  int URY() const;
-  double CenterY() const;
+  void SetLLY(int ly) { ly_ = ly; }
+  void SetURY(int uy) { ly_ = uy - height_; }
+  int LLY() const { return ly_; }
+  int URY() const { return ly_ + height_; }
+  double CenterY() const { return ly_ + height_ / 2.0; }
 
-  void SetHeight(int height);
-  void UpdateWellHeightFromBottom(int p_well_height, int n_well_height);
-  void UpdateWellHeightFromTop(int p_well_height, int n_well_height);
-  int Height() const;
-  int PHeight() const;
-  int NHeight() const;
-  int PNEdge() const;
+  void SetHeight(int height) { height_ = height; }
+  void UpdateWellHeightFromBottom(int p_well_height, int n_well_height) {
+    /****
+     * Update the height of this cluster with the lower y of this cluster fixed.
+     * So even if the height changes, the lower y of this cluster does not need be changed.
+     * ****/
+    p_well_height_ = std::max(p_well_height_, p_well_height);
+    n_well_height_ = std::max(n_well_height_, n_well_height);
+    height_ = p_well_height_ + n_well_height_;
+  }
+  void UpdateWellHeightFromTop(int p_well_height, int n_well_height) {
+    /****
+     * Update the height of this cluster with the upper y of this cluster fixed.
+     * So if the height changes, then the lower y of this cluster should also be changed.
+     * ****/
+    int old_height = height_;
+    p_well_height_ = std::max(p_well_height_, p_well_height);
+    n_well_height_ = std::max(n_well_height_, n_well_height);
+    height_ = p_well_height_ + n_well_height_;
+    ly_ -= (height_ - old_height);
+  }
+  int Height() const { return height_; }
+  int PHeight() const { return p_well_height_; }
+  int NHeight() const { return n_well_height_; }
+  int PNEdge() const {
+    /****
+     * Returns the P/N well edge to the bottom of this cluster
+     * ****/
+    return is_orient_N_ ? PHeight() : NHeight();
+  }
 
-  void SetLoc(int lx, int ly);
+  void SetLoc(int lx, int ly) {
+    lx_ = lx;
+    ly_ = ly;
+  }
 
   void ShiftBlockX(int x_disp);
   void ShiftBlockY(int y_disp);
@@ -116,9 +142,9 @@ struct ClusterStrip {
   std::vector<std::vector<SegI>> white_space_; // white space in each row
   std::vector<Strip> strip_list_;
 
-  int Width() const;
-  int LLX() const;
-  int URX() const;
+  int Width() const { return width_; }
+  int LLX() const { return lx_; }
+  int URX() const { return lx_ + width_; }
   Strip *GetStripMatchSeg(SegI seg, int y_loc);
   Strip *GetStripMatchBlk(Block *blk_ptr);
   Strip *GetStripClosestToBlk(Block *blk_ptr, double &distance);
@@ -160,10 +186,32 @@ class StdClusterWellLegalizer : public Placer {
  public:
   StdClusterWellLegalizer();
 
-  void SetRowHeight(int row_height);
-  int StartRow(int y_loc);
-  int EndRow(int y_loc);
-  int RowToLoc(int row_num, int displacement = 0);
+  void SetRowHeight(int row_height) {
+    Assert(row_height > 0, "Setting row height to a negative value? StdClusterWellLegalizer::SetRowHeight()\n");
+    row_height_set_ = true;
+    row_height_ = row_height;
+  }
+  int StartRow(int y_loc) { return (y_loc - bottom_) / row_height_; }
+  int EndRow(int y_loc) {
+    int relative_y = y_loc - bottom_;
+    int res = relative_y / row_height_;
+    if (relative_y % row_height_ == 0) {
+      --res;
+    }
+    return res;
+  }
+  int RowToLoc(int row_num, int displacement = 0) { return row_num * row_height_ + bottom_ + displacement; }
+  void SetFirstRowOrientN(bool is_N) { is_first_row_orient_N_ = is_N; }
+  int LocToCol(int x) {
+    int col_num = (x - RegionLeft()) / strip_width_;
+    if (col_num < 0) {
+      col_num = 0;
+    }
+    if (col_num >= tot_col_num_) {
+      col_num = tot_col_num_ - 1;
+    }
+    return col_num;
+  }
 
   void InitAvailSpace();
   void FetchNPWellParams();
@@ -172,9 +220,6 @@ class StdClusterWellLegalizer : public Placer {
 
   void Init(int cluster_width = 0);
 
-  void SetFirstRowOrientN(bool is_N);
-
-  int LocToCol(int x);
   void AssignBlockToColBasedOnWhiteSpace();
 
   void AppendBlockToColBottomUp(Strip &strip, Block &blk);
@@ -233,165 +278,5 @@ class StdClusterWellLegalizer : public Placer {
   void GenAvailSpaceInCols(std::string const &name_of_file = "avail_space.txt");
   void GenSimpleStrips(std::string const &name_of_file = "strip_space.txt");
 };
-
-inline int Cluster::UsedSize() const {
-  return used_size_;
-}
-
-inline void Cluster::SetUsedSize(int used_size) {
-  used_size_ = used_size;
-}
-
-inline void Cluster::UseSpace(int width) {
-  used_size_ += width;
-}
-
-inline void Cluster::SetLLX(int lx) {
-  lx_ = lx;
-}
-
-inline void Cluster::SetURX(int ux) {
-  lx_ = ux - width_;
-}
-
-inline int Cluster::LLX() const {
-  return lx_;
-}
-
-inline int Cluster::URX() const {
-  return lx_ + width_;
-}
-
-inline double Cluster::CenterX() const {
-  return lx_ + width_ / 2.0;
-}
-
-inline void Cluster::SetWidth(int width) {
-  width_ = width;
-}
-
-inline int Cluster::Width() const {
-  return width_;
-}
-
-inline void Cluster::SetLLY(int ly) {
-  ly_ = ly;
-}
-
-inline void Cluster::SetURY(int uy) {
-  ly_ = uy - height_;
-}
-
-inline int Cluster::LLY() const {
-  return ly_;
-}
-
-inline int Cluster::URY() const {
-  return ly_ + height_;
-}
-
-inline double Cluster::CenterY() const {
-  return ly_ + height_ / 2.0;
-}
-
-inline void Cluster::SetHeight(int height) {
-  height_ = height;
-}
-
-inline void Cluster::UpdateWellHeightFromBottom(int p_well_height, int n_well_height) {
-  /****
-   * Update the height of this cluster with the lower y of this cluster fixed.
-   * So even if the height changes, the lower y of this cluster does not need be changed.
-   * ****/
-  p_well_height_ = std::max(p_well_height_, p_well_height);
-  n_well_height_ = std::max(n_well_height_, n_well_height);
-  height_ = p_well_height_ + n_well_height_;
-}
-
-inline void Cluster::UpdateWellHeightFromTop(int p_well_height, int n_well_height) {
-  /****
-   * Update the height of this cluster with the upper y of this cluster fixed.
-   * So if the height changes, then the lower y of this cluster should also be changed.
-   * ****/
-  int old_height = height_;
-  p_well_height_ = std::max(p_well_height_, p_well_height);
-  n_well_height_ = std::max(n_well_height_, n_well_height);
-  height_ = p_well_height_ + n_well_height_;
-  ly_ -= (height_ - old_height);
-}
-
-inline int Cluster::Height() const {
-  return height_;
-}
-
-inline int Cluster::PHeight() const {
-  return p_well_height_;
-}
-
-inline int Cluster::NHeight() const {
-  return n_well_height_;
-}
-
-inline int Cluster::PNEdge() const {
-  /****
-   * Returns the P/N well edge to the bottom of this cluster
-   * ****/
-  return is_orient_N_ ? PHeight() : NHeight();
-}
-
-inline void Cluster::SetLoc(int lx, int ly) {
-  lx_ = lx;
-  ly_ = ly;
-}
-
-inline int ClusterStrip::Width() const {
-  return width_;
-}
-
-inline int ClusterStrip::LLX() const {
-  return lx_;
-}
-
-inline int ClusterStrip::URX() const {
-  return lx_ + width_;
-}
-
-inline void StdClusterWellLegalizer::SetRowHeight(int row_height) {
-  Assert(row_height > 0, "Setting row height to a negative value?");
-  row_height_set_ = true;
-  row_height_ = row_height;
-}
-
-inline int StdClusterWellLegalizer::StartRow(int y_loc) {
-  return (y_loc - bottom_) / row_height_;
-}
-
-inline int StdClusterWellLegalizer::EndRow(int y_loc) {
-  int relative_y = y_loc - bottom_;
-  int res = relative_y / row_height_;
-  if (relative_y % row_height_ == 0) {
-    --res;
-  }
-  return res;
-}
-
-inline int StdClusterWellLegalizer::RowToLoc(int row_num, int displacement) {
-  return row_num * row_height_ + bottom_ + displacement;
-}
-
-inline void StdClusterWellLegalizer::SetFirstRowOrientN(bool is_N) {
-  is_first_row_orient_N_ = is_N;
-}
-
-inline int StdClusterWellLegalizer::LocToCol(int x) {
-  int col_num = (x - RegionLeft()) / strip_width_;
-  if (col_num < 0) {
-    col_num = 0;
-  }
-  if (col_num >= tot_col_num_) {
-    col_num = tot_col_num_ - 1;
-  }
-  return col_num;
-}
 
 #endif //DALI_SRC_PLACER_WELLLEGALIZER_STDCLUSTERWELLLEGALIZER_H_

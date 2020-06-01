@@ -115,8 +115,8 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   auto site = lib->getSites().begin();
   SetRowHeight(site->getHeight() / double(tech_.lef_database_microns));
   //std::cout << site->getName() << "  " << site->getWidth() / double(lef_database_microns) << "  " << row_height_ << "\n";
-  double residual = std::fmod(tech_.row_height_, tech_.grid_value_y_);
-  Assert(residual < 1e-6, "Site height is not integer multiple of grid value in Y");
+  double residual = tech_.row_height_ - std::round(tech_.row_height_/tech_.grid_value_y_) * tech_.grid_value_y_;
+  Assert(std::fabs(residual) < 1e-6, "Site height is not integer multiple of grid value in Y");
 
   // 4. load all macros, aka gate types, block types, cell types
   //std::cout << lib->getName() << " lib\n";

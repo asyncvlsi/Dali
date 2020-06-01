@@ -34,8 +34,8 @@ class GPSimPL : public Placer {
   bool HPWLY_converge = false;
 
   // to configure CG solver
-  double cg_tolerance_ = 1e-6;
-  int cg_iteration_max_num_ = 50;
+  double cg_tolerance_ = 1e-7;
+  int cg_iteration_max_num_ = 100;
   double error_x = DBL_MAX;
   double error_y = DBL_MAX;
   double cg_total_hpwl_ = 0;
@@ -46,10 +46,10 @@ class GPSimPL : public Placer {
 
   // for look ahead legalization
   double HPWL_intra_linearSolver_precision = 0.01;
-  int b2b_update_max_iteration = 50;
+  int b2b_update_max_iteration = 100;
   double alpha = 0.00;
   int cur_iter_ = 0;
-  int max_iter_ = 50;
+  int max_iter_ = 100;
   double lal_total_hpwl_ = 0;
 
   double HPWL_LAL_new = 0;
@@ -68,8 +68,8 @@ class GPSimPL : public Placer {
     width_epsilon = circuit_->AveMovBlkWidth() / 100.0;
     height_epsilon = circuit_->AveMovBlkHeight() / 100.0;
   }
-  double WidthEpsilon() { return width_epsilon; }
-  double HeightEpsilon() { return height_epsilon; }
+  double WidthEpsilon() const { return width_epsilon; }
+  double HeightEpsilon() const { return height_epsilon; }
 
   Eigen::VectorXd vx, vy;
   Eigen::VectorXd bx, by;
@@ -140,7 +140,7 @@ class GPSimPL : public Placer {
   void BuildProblemB2BWithAnchorX();
   void BuildProblemB2BWithAnchorY();
   void QuadraticPlacementWithAnchor();
-  void UpdateAnchorNetWeight() { alpha = 0.01 * cur_iter_; }
+  void UpdateAnchorNetWeight() { alpha = 0.005 * cur_iter_; }
 
   void CheckAndShift();
 

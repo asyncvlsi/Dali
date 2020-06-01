@@ -33,6 +33,7 @@ int main(int argc, char *argv[]) {
   std::string lef_file_name;
   std::string cel_file_name;
   std::string out_file_name;
+  int mode = 0;
 
   for (int i = 1; i < argc;) {
     std::string arg(argv[i++]);
@@ -40,6 +41,18 @@ int main(int argc, char *argv[]) {
       lef_file_name = std::string(argv[i++]);
     } else if (arg == "-cell" && i < argc) {
       cel_file_name = std::string(argv[i++]);
+    } else if (arg == "-m" && i < argc) {
+      std::string str_mode = std::string(argv[i++]);
+      try {
+        mode = std::stoi(str_mode);
+      } catch (...) {
+        mode = 0;
+      }
+      if (mode > 3 || mode < 0) {
+        std::cout << "Invalid mode level\n";
+        ReportUsage();
+        return 0;
+      }
     } else if (arg == "-o" && i < argc) {
       out_file_name = std::string(argv[i++]);
     } else {
@@ -80,6 +93,7 @@ int main(int argc, char *argv[]) {
       break;
     }
   } while (!ist.eof());
+
   while (!ist.eof()) {
     if (line.find("MACRO") != std::string::npos) {
       Circuit::StrSplit(line, line_field);
@@ -123,8 +137,19 @@ int main(int argc, char *argv[]) {
       double type_height = type->Height() * circuit.GetGridValueY();
       double pitch = hor_layer->Width() + hor_layer->Spacing();
       //std::cout << "pitch: " << pitch << "\n";
-      type_bbox.p_extra = std::max(pitch - type_bbox.lo, 0.0);
-      type_bbox.n_extra = std::max((pitch + type_bbox.hi) - type_height, 0.0);
+      if (mode == 0) {
+        type_bbox.p_extra = std::max(pitch - type_bbox.lo, 0.0);
+        type_bbox.n_extra = std::max((pitch + type_bbox.hi) - type_height, 0.0);
+      } else if (mode == 1) {
+        type_bbox.p_extra = 0;
+        type_bbox.n_extra = 0;
+      } else if (mode == 2) {
+        type_bbox.p_extra = pitch;
+        type_bbox.n_extra = pitch;
+      } else if (mode == 3) {
+        type_bbox.p_extra = 0;
+        type_bbox.n_extra = pitch;
+      }
       std::cout << *(type->Name()) << "  " << "size: 0 " << type_height << "\n";
       std::cout << "  " << *(hor_layer->Name()) << " y bbox: " << type_bbox.lo << " " << type_bbox.hi << "\n";
       std::cout << "  n/p extra: " << type_bbox.n_extra << " " << type_bbox.p_extra << "\n";
@@ -223,7 +248,7 @@ int main(int argc, char *argv[]) {
             getline(ist, line);
             if (pin_name == "GND") {
               std::string layer_mark = "LAYER " + *(hor_layer->Name());
-              if (line.find(layer_mark) != std::string::npos) {
+              if (mode == 0 && line.find(layer_mark) != std::string::npos) {
                 hlayer_gnd_found = true;
                 ost << line << "\n";
                 ost << "        RECT " << 0.0 << " " << 0.0 << " "
@@ -232,7 +257,7 @@ int main(int argc, char *argv[]) {
               }
             } else if (pin_name == "Vdd") {
               std::string layer_mark = "LAYER " + *(hor_layer->Name());
-              if (line.find(layer_mark) != std::string::npos) {
+              if (mode == 0 && line.find(layer_mark) != std::string::npos) {
                 hlayer_vdd_found = true;
                 ost << line << "\n";
                 ost << "        RECT " << 0.0 << " " << std_height - hor_layer->Width() << " "
@@ -243,13 +268,13 @@ int main(int argc, char *argv[]) {
 
             if (line.find("END") != std::string::npos && line.find(end_pin_flag) == std::string::npos ) {
               if (pin_name == "GND") {
-                if (!hlayer_gnd_found) {
+                if (mode == 0 && !hlayer_gnd_found) {
                   ost << "        LAYER " << *hor_layer->Name() << " ;\n";
                   ost << "        RECT " << 0.0 << " " << 0.0 << " "
                       << bbox_ptr->blk_type->Width() * circuit.GetGridValueX() << " " << hor_layer->Width() << " ;\n";
                 }
               } else if (pin_name == "Vdd") {
-                if (!hlayer_vdd_found) {
+                if (mode == 0 && !hlayer_vdd_found) {
                   ost << "        LAYER " << *hor_layer->Name() << " ;\n";
                   ost << "        RECT " << 0.0 << " " << std_height - hor_layer->Width() << " "
                       << bbox_ptr->blk_type->Width() * circuit.GetGridValueX() << " " << std_height << " ;\n";
@@ -291,6 +316,7 @@ void ReportUsage() {
             << "Usage: custom2standard\n"
             << " -lef <file.lef>\n"
             << " -cell <file.cell>\n"
+            << " -m mode_level (default 0)\n"
             << " -o   <file>.lef\n"
             << "(order does not matter)"
             << "\033[0m\n";

@@ -20,9 +20,10 @@ int main() {
 
   time_t Time = clock();
 
-  std::string lef_file_name = "benchmark_100K.lef";
-  std::string def_file_name = "benchmark_100K.def";
-  std::string cel_file_name = "benchmark_100K.cell";
+  std::string lef_file_name = "processor1000.lef";
+  std::string def_file_name = "processor1000.def";
+  std::string cel_file_name = "processor1000.cell";
+  std::string out_file_name = "circuit1000";
 
 #if USE_DB_PARSER
   odb::dbDatabase *db = odb::dbDatabase::create();
@@ -48,12 +49,13 @@ int main() {
   well_place_flow.SetInputCircuit(&circuit);
 
   well_place_flow.SetBoundaryDef();
-  well_place_flow.SetFillingRate(0.7);
+  well_place_flow.SetFillingRate(0.67);
   well_place_flow.ReportBoundaries();
   well_place_flow.StartPlacement();
   well_place_flow.GenMATLABTable("gb_result.txt");
 
-  well_place_flow.EmitDEFWellFile("benchmark_10K_dali", def_file_name);
+  well_place_flow.EmitDEFWellFile(out_file_name, 1);
+  circuit.SaveDefFile(out_file_name, "", def_file_name, 1, 1, 2, 1);
 
   Time = clock() - Time;
   std::cout << "Execution time " << double(Time) / CLOCKS_PER_SEC << "s.\n";

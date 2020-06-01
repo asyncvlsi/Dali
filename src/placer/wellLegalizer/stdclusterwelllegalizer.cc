@@ -401,6 +401,10 @@ void StdClusterWellLegalizer::DecomposeToSimpleStrip() {
     }
   }
 
+  col_list_[tot_col_num_ - 1].strip_list_[0].width_ =
+      RegionRight() - col_list_[tot_col_num_ - 1].strip_list_[0].LLX() - well_spacing_;
+  col_list_[tot_col_num_ - 1].strip_list_[0].max_blk_capacity_per_cluster_ =
+      col_list_[tot_col_num_ - 1].strip_list_[0].width_ / circuit_->MinBlkWidth();
   /*for (auto &col: col_list_) {
     for (auto &strip: col.strip_list_) {
       strip.height_ -= row_height_;
@@ -413,7 +417,7 @@ void StdClusterWellLegalizer::DecomposeToSimpleStrip() {
 void StdClusterWellLegalizer::Init(int cluster_width) {
   // fetch parameters about N/P-well
   FetchNPWellParams();
-  space_to_well_tap_ = 1;
+  space_to_well_tap_ = 0;
 
   // temporarily change left and right boundary to reserve space
   //printf("left: %d, right: %d, width: %d\n", left_, right_, RegionWidth());
@@ -1296,8 +1300,6 @@ bool StdClusterWellLegalizer::WellLegalize() {
     ReportHPWL(LOG_CRITICAL);
   }
 
-  InsertWellTap();
-
   if (globalVerboseLevel >= LOG_CRITICAL) {
     if (is_success) {
       std::cout << "\033[0;36m"
@@ -1379,7 +1381,7 @@ bool StdClusterWellLegalizer::StartPlacement() {
 
   ReportMemory(LOG_CRITICAL);
 
-  ReportEffectiveSpaceUtilization();
+  //ReportEffectiveSpaceUtilization();
 
   return is_success;
 }
@@ -1935,7 +1937,7 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
         }
       } else {
         int sz = strip.cluster_list_.size();
-        for (int j= sz-1; j>=0; --j) {
+        for (int j = sz - 1; j >= 0; --j) {
           auto &cluster = strip.cluster_list_[j];
           ost << "  "
               << (int) (cluster.LLY() * factor_y) + circuit_->design_.die_area_offset_y_ << "  "
