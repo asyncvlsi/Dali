@@ -47,8 +47,8 @@ void GPSimPL::BlockLocRandomInit() {
 
   for (auto &block: *BlockList()) {
     if (block.IsMovable()) {
-      block.SetCenterX(RegionLeft() + region_width * distribution(generator));
-      block.SetCenterY(RegionBottom() + region_height * distribution(generator));
+      block.setCenterX(RegionLeft() + region_width * distribution(generator));
+      block.setCenterY(RegionBottom() + region_height * distribution(generator));
     }
   }
   if (globalVerboseLevel >= LOG_INFO) {
@@ -65,8 +65,8 @@ void GPSimPL::BlockLocCenterInit() {
   double region_center_y = (RegionTop() + RegionBottom()) / 2.0;
   for (auto &block: *BlockList()) {
     if (block.IsMovable()) {
-      block.SetCenterX(region_center_x);
-      block.SetCenterY(region_center_y);
+      block.setCenterX(region_center_x);
+      block.setCenterY(region_center_y);
     }
   }
   if (globalVerboseLevel >= LOG_INFO) {
@@ -443,7 +443,7 @@ void GPSimPL::SolveProblemX() {
   auto it_block_list = BlockList()->begin();
   Eigen::VectorXd::const_iterator ivx = vx.begin();
   for (int num = 0; num < sz; ++num) {
-    it_block_list[num].SetLLX(ivx[num]);
+    it_block_list[num].setLLX(ivx[num]);
   }
 }
 
@@ -460,7 +460,7 @@ void GPSimPL::SolveProblemY() {
   auto it_block_list = BlockList()->begin();
   Eigen::VectorXd::const_iterator ivy = vy.begin();
   for (int num = 0; num < sz; ++num) {
-    it_block_list[num].SetLLY(ivy[num]);
+    it_block_list[num].setLLY(ivy[num]);
   }
 }
 
@@ -1316,7 +1316,7 @@ void GPSimPL::PlaceBlkInBox(BoxBin &box) {
   int cell_num;
   for (auto &pair: index_loc_list_x) {
     cell_num = pair.first;
-    block_list[cell_num].SetCenterX(box.left + cur_pos / total_length * box_width);
+    block_list[cell_num].setCenterX(box.left + cur_pos / total_length * box_width);
     cur_pos += block_list[cell_num].Width();
   }
 
@@ -1333,7 +1333,7 @@ void GPSimPL::PlaceBlkInBox(BoxBin &box) {
   int box_height = box.top - box.bottom;
   for (auto &pair: index_loc_list_y) {
     cell_num = pair.first;
-    block_list[cell_num].SetCenterY(box.bottom + cur_pos / total_length * box_height);
+    block_list[cell_num].setCenterY(box.bottom + cur_pos / total_length * box_height);
     cur_pos += block_list[cell_num].Height();
   }
 }
@@ -1436,7 +1436,7 @@ void GPSimPL::RoughLegalBlkInBox(BoxBin &box) {
   assert(span_x > 0);
   for (auto &pair: index_loc_list) {
     auto &block = block_list[pair.num];
-    block.SetCenterX((block.X() - min_x) / span_x * box_width + box.left);
+    block.setCenterX((block.X() - min_x) / span_x * box_width + box.left);
   }
 
 }
@@ -1533,8 +1533,8 @@ void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
         Block *cell;
         for (auto &cell_id: front_box.cell_list) {
           cell = &block_list[cell_id];
-          cell->SetCenterX((front_box.left + front_box.right) / 2.0);
-          cell->SetCenterY((front_box.bottom + front_box.top) / 2.0);
+          cell->setCenterX((front_box.left + front_box.right) / 2.0);
+          cell->setCenterY((front_box.bottom + front_box.top) / 2.0);
         }
       } else {
         PlaceBlkInBox(front_box);

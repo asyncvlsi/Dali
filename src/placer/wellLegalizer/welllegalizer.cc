@@ -46,14 +46,14 @@ void WellLegalizer::InitWellLegalizer() {
 
 void WellLegalizer::SwitchToPlugType(Block &block) {
   auto well = block.Type()->GetWell();
-  Assert(well != nullptr, "Block does not have a well, cannot switch to the plugged version: " + *block.Name());
+  Assert(well != nullptr, "Block does not have a well, cannot switch to the plugged version: " + *block.ConstName());
   if (well->IsUnplug()) {
     auto type = block.Type();
     auto cluster = well->GetCluster();
     auto plugged_well = cluster->GetPlug();
     Assert(cluster != nullptr || plugged_well == nullptr,
            "There is not plugged version of this BlockType: " + *type->Name());
-    block.SetType(plugged_well->Type());
+    block.setType(plugged_well->Type());
   }
 }
 
@@ -919,8 +919,8 @@ bool WellLegalizer::WellLegalizationRight() {
       }
     }
 
-    block.SetURX(res.x);
-    block.SetLLY(res.y);
+    block.setURX(res.x);
+    block.setLLY(res.y);
 
     MarkSpaceWellRight(block, p_well_row_height);
   }

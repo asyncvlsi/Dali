@@ -29,7 +29,7 @@ void Cluster::UpdateBlockLocY() {
   //Assert(p_well_height_ + n_well_height_ == height_, "Inconsistency occurs: p_well_height + n_Well_height != height\n");
   for (auto &blk_ptr: blk_list_) {
     auto *well = blk_ptr->Type()->GetWell();
-    blk_ptr->SetLLY(ly_ + p_well_height_ - well->GetPWellHeight());
+    blk_ptr->setLLY(ly_ + p_well_height_ - well->GetPWellHeight());
   }
 }
 
@@ -41,7 +41,7 @@ void Cluster::LegalizeCompactX(int left) {
             });
   int current_x = left;
   for (auto &blk: blk_list_) {
-    blk->SetLLX(current_x);
+    blk->setLLX(current_x);
     current_x += blk->Width();
   }
 }
@@ -54,7 +54,7 @@ void Cluster::LegalizeCompactX() {
             });
   int current_x = lx_;
   for (auto &blk: blk_list_) {
-    blk->SetLLX(current_x);
+    blk->setLLX(current_x);
     current_x += blk->Width();
   }
 }
@@ -82,7 +82,7 @@ void Cluster::LegalizeLooseX(int space_to_well_tap) {
   int res_x;
   for (auto &blk: blk_list_) {
     res_x = std::max(block_contour, int(blk->LLX()));
-    blk->SetLLX(res_x);
+    blk->setLLX(res_x);
     block_contour = int(blk->URX());
     if ((tap_cell_ != nullptr) && (blk->Type() == tap_cell_->Type())) {
       block_contour += space_to_well_tap;
@@ -99,7 +99,7 @@ void Cluster::LegalizeLooseX(int space_to_well_tap) {
     block_contour = ux;
     for (auto &blk: blk_list_) {
       res_x = std::min(block_contour, int(blk->URX()));
-      blk->SetURX(res_x);
+      blk->setURX(res_x);
       block_contour = int(blk->LLX());
       if ((tap_cell_ != nullptr) && (blk->Type() == tap_cell_->Type())) {
         block_contour -= space_to_well_tap;
@@ -115,8 +115,8 @@ void Cluster::SetOrient(bool is_orient_N) {
     double y_flip_axis = ly_ + height_ / 2.0;
     for (auto &blk_ptr: blk_list_) {
       double ly_to_axis = y_flip_axis - blk_ptr->LLY();
-      blk_ptr->SetOrient(orient);
-      blk_ptr->SetURY(y_flip_axis + ly_to_axis);
+      blk_ptr->setOrient(orient);
+      blk_ptr->setURY(y_flip_axis + ly_to_axis);
     }
   }
 }
@@ -124,16 +124,16 @@ void Cluster::SetOrient(bool is_orient_N) {
 void Cluster::InsertWellTapCell(Block &tap_cell, int loc) {
   tap_cell_ = &tap_cell;
   blk_list_.emplace_back(tap_cell_);
-  tap_cell_->SetCenterX(loc);
+  tap_cell_->setCenterX(loc);
   auto *well = tap_cell.Type()->GetWell();
   int p_well_height = well->GetPWellHeight();
   int n_well_height = well->GetNWellHeight();
   if (is_orient_N_) {
-    tap_cell.SetOrient(N_);
-    tap_cell.SetLLY(ly_ + p_well_height_ - p_well_height);
+    tap_cell.setOrient(N_);
+    tap_cell.setLLY(ly_ + p_well_height_ - p_well_height);
   } else {
-    tap_cell.SetOrient(FS_);
-    tap_cell.SetLLY(ly_ + n_well_height_ - n_well_height);
+    tap_cell.setOrient(FS_);
+    tap_cell.setLLY(ly_ + n_well_height_ - n_well_height);
   }
 }
 
@@ -145,8 +145,8 @@ void Cluster::UpdateBlockLocationCompact() {
             });
   int current_x = lx_;
   for (auto &blk: blk_list_) {
-    blk->SetLLX(current_x);
-    blk->SetCenterY(CenterY());
+    blk->setLLX(current_x);
+    blk->setCenterY(CenterY());
     current_x += blk->Width();
   }
 }
@@ -1049,7 +1049,7 @@ double StdClusterWellLegalizer::WireLengthCost(Cluster *cluster, int l, int r) {
   std::set<Net *> net_involved;
   for (int i = l; i <= r; ++i) {
     auto *blk = cluster->blk_list_[i];
-    for (auto &net_num: blk->net_list) {
+    for (auto &net_num: *blk->NetList()) {
       if (net_list[net_num].P() < 100) {
         net_involved.insert(&(net_list[net_num]));
       }
@@ -1087,13 +1087,13 @@ void StdClusterWellLegalizer::FindBestLocalOrder(std::vector<Block *> &res,
   //printf("l : %d, r: %d\n", l, r);
 
   if (cur == r) {
-    cluster->blk_list_[l]->SetLLX(left_bound);
-    cluster->blk_list_[r]->SetURX(right_bound);
+    cluster->blk_list_[l]->setLLX(left_bound);
+    cluster->blk_list_[r]->setURX(right_bound);
 
     int left_contour = left_bound + gap + cluster->blk_list_[l]->Width();
     for (int i = l + 1; i < r; ++i) {
       auto *blk = cluster->blk_list_[i];
-      blk->SetLLX(left_contour);
+      blk->setLLX(left_contour);
       left_contour += blk->Width() + gap;
     }
 
@@ -1156,12 +1156,12 @@ void StdClusterWellLegalizer::LocalReorderInCluster(Cluster *cluster, int range)
       cluster->blk_list_[l + j] = res_local_order[j];
     }
 
-    cluster->blk_list_[l]->SetLLX(left_bound);
-    cluster->blk_list_[r]->SetURX(right_bound);
+    cluster->blk_list_[l]->setLLX(left_bound);
+    cluster->blk_list_[r]->setURX(right_bound);
     int left_contour = left_bound + cluster->blk_list_[l]->Width() + gap;
     for (int i = l + 1; i < r; ++i) {
       auto *blk = cluster->blk_list_[i];
-      blk->SetLLX(left_contour);
+      blk->setLLX(left_contour);
       left_contour += blk->Width() + gap;
     }
   }
@@ -1250,12 +1250,12 @@ void StdClusterWellLegalizer::InsertWellTap() {
           std::string block_name = "__well_tap__" + std::to_string(counter++);
           tap_cell_list.emplace_back();
           auto &tap_cell = tap_cell_list.back();
-          tap_cell.SetPlaceStatus(PLACED_);
-          tap_cell.SetType(circuit_->tech_.WellTapCell());
+          tap_cell.setPlacementStatus(PLACED_);
+          tap_cell.setType(circuit_->tech_.WellTapCell());
           int map_size = circuit_->design_.tap_name_map.size();
           auto ret = circuit_->design_.tap_name_map.insert(std::pair<std::string, int>(block_name, map_size));
           auto *name_num_pair_ptr = &(*ret.first);
-          tap_cell.SetNameNumPair(name_num_pair_ptr);
+          tap_cell.setNameNumPair(name_num_pair_ptr);
           cluster.InsertWellTapCell(tap_cell, tap_cell_loc);
           tap_cell_loc += step;
         }
@@ -1270,7 +1270,7 @@ void StdClusterWellLegalizer::InsertWellTap() {
 
 void StdClusterWellLegalizer::ClearCachedData() {
   for (auto &block: *BlockList()) {
-    block.SetOrient(N_);
+    block.setOrient(N_);
   }
 
   for (auto &col: col_list_) {

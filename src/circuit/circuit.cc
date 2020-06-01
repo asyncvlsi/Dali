@@ -166,8 +166,15 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
               << "nets count:       " << nets_count << "\n";
   }
 
-  //std::cout << db->getChip()->getBlock()->getName() << "\n";
-  //std::cout << db->getChip()->getBlock()->getBTerms().size() << "\n";
+  for (auto &&track_set: top_level->getTrackGrids()) {
+    std::cout << track_set->getTechLayer()->getName() << "\n";
+    int x_grid_pattern = 0;
+    int y_grid_pattern = 0;
+    x_grid_pattern = track_set->getNumGridPatternsX();
+    y_grid_pattern = track_set->getNumGridPatternsY();
+    std::cout << "x grid pattern: " << x_grid_pattern << "\n";
+    std::cout << "y grid pattern: " << y_grid_pattern << "\n";
+  }
 
   // 5. load all gates
   int llx_int = 0, lly_int = 0;
@@ -1431,7 +1438,7 @@ void Circuit::WriteDefFileDebug(std::string const &name_of_file) {
 
   for (auto &block: design_.block_list) {
     ost << "- "
-        << *(block.Name()) << " "
+        << *(block.ConstName()) << " "
         << *(block.Type()->Name()) << " + "
         << "PLACED" << " "
         << "( " + std::to_string((int) (block.LLX() * design_.def_distance_microns * tech_.grid_value_x_)) + " "
@@ -1677,7 +1684,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   for (auto &block: design_.block_list) {
     if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
     ost << "- "
-        << *block.Name() << " "
+        << *block.ConstName() << " "
         << *(block.Type()->Name()) << " + "
         << block.GetPlaceStatusStr() << " "
         << "( "
@@ -1689,7 +1696,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   }
   for (auto &block: design_.well_tap_list) {
     ost << "- "
-        << *block.Name() << " "
+        << *block.ConstName() << " "
         << *(block.Type()->Name()) << " + "
         << "PLACED" << " "
         << "( "
@@ -1851,7 +1858,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       for (auto &block: design_.block_list) {
         if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
         ost << "- "
-            << *(block.Name()) << " "
+            << *(block.ConstName()) << " "
             << *(block.Type()->Name()) << " + "
             << block.GetPlaceStatusStr() << " "
             << "( "
@@ -1863,7 +1870,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       }
       for (auto &block: design_.well_tap_list) {
         ost << "- "
-            << *(block.Name()) << " "
+            << *(block.ConstName()) << " "
             << *(block.Type()->Name()) << " + "
             << block.GetPlaceStatusStr() << " "
             << "( "
@@ -1880,7 +1887,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       ost << "COMPONENTS " << cell_count << " ;\n";
       for (auto &block: design_.well_tap_list) {
         ost << "- "
-            << *(block.Name()) << " "
+            << *(block.ConstName()) << " "
             << *(block.Type()->Name()) << " + "
             << block.GetPlaceStatusStr() << " "
             << "( "
@@ -1915,7 +1922,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       for (auto &block: design_.block_list) {
         if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
         ost << "- "
-            << *(block.Name()) << " "
+            << *(block.ConstName()) << " "
             << *(block.Type()->Name()) << " + "
             << block.GetPlaceStatusStr() << " "
             << "( "
@@ -1927,7 +1934,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       }
       for (auto &block: design_.well_tap_list) {
         ost << "- "
-            << *(block.Name()) << " "
+            << *(block.ConstName()) << " "
             << *(block.Type()->Name()) << " + "
             << block.GetPlaceStatusStr() << " "
             << "( "
@@ -1972,7 +1979,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       for (auto &block: design_.block_list) {
         if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
         ost << "- "
-            << *(block.Name()) << " "
+            << *(block.ConstName()) << " "
             << *(block.Type()->Name()) << " + "
             << block.GetPlaceStatusStr() << " "
             << "( "
@@ -1984,7 +1991,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       }
       for (auto &block: design_.well_tap_list) {
         ost << "- "
-            << *(block.Name()) << " "
+            << *(block.ConstName()) << " "
             << *(block.Type()->Name()) << " + "
             << block.GetPlaceStatusStr() << " "
             << "( "
@@ -2000,16 +2007,16 @@ void Circuit::SaveDefFile(std::string const &base_name,
       int cell_count = 0;
       for (auto &block: design_.block_list) {
         if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
-        if (block.GetPlaceStatus() == UNPLACED_) continue;
+        if (block.PlacementStatus() == UNPLACED_) continue;
         ++cell_count;
       }
       cell_count += design_.well_tap_list.size();
       ost << "COMPONENTS " << cell_count << " ;\n";
       for (auto &block: design_.block_list) {
         if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
-        if (block.GetPlaceStatus() == UNPLACED_) continue;
+        if (block.PlacementStatus() == UNPLACED_) continue;
         ost << "- "
-            << *(block.Name()) << " "
+            << *(block.ConstName()) << " "
             << *(block.Type()->Name()) << " + "
             << block.GetPlaceStatusStr() << " "
             << "( "
@@ -2021,7 +2028,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       }
       for (auto &block: design_.well_tap_list) {
         ost << "- "
-            << *(block.Name()) << " "
+            << *(block.ConstName()) << " "
             << *(block.Type()->Name()) << " + "
             << block.GetPlaceStatusStr() << " "
             << "( "
@@ -2163,14 +2170,14 @@ void Circuit::SaveDefFile(std::string const &base_name,
       ost << "- ggnndd\n";
       ost << " ";
       for (auto &block: design_.well_tap_list) {
-        ost << " ( " << block.NameStr() << " g0 )";
+        ost << " ( " << block.Name() << " g0 )";
       }
       ost << "\n" << " ;\n";
       //Vdd
       ost << "- vvdddd\n";
       ost << " ";
       for (auto &block: design_.well_tap_list) {
-        ost << " ( " << block.NameStr() << " v0 )";
+        ost << " ( " << block.Name() << " v0 )";
       }
       ost << "\n" << " ;\n";
       break;
@@ -2218,7 +2225,7 @@ void Circuit::SaveIODefFile(std::string const &name_of_file, std::string const &
   for (auto &block: design_.block_list) {
     if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
     ost << "- "
-        << *block.Name() << " "
+        << *block.ConstName() << " "
         << *(block.Type()->Name()) << " + "
         << block.GetPlaceStatusStr() << " "
         << "( "
@@ -2230,7 +2237,7 @@ void Circuit::SaveIODefFile(std::string const &name_of_file, std::string const &
   }
   for (auto &block: design_.well_tap_list) {
     ost << "- "
-        << *block.Name() << " "
+        << *block.ConstName() << " "
         << *(block.Type()->Name()) << " + "
         << "PLACED" << " "
         << "( "
@@ -2339,7 +2346,7 @@ void Circuit::SaveDefWell(std::string const &name_of_file, std::string const &de
   }
   for (auto &block: design_.well_tap_list) {
     ost << "- "
-        << *block.Name() << " "
+        << *block.ConstName() << " "
         << *(block.Type()->Name()) << " + "
         << "PLACED" << " "
         << "( "
@@ -2353,7 +2360,7 @@ void Circuit::SaveDefWell(std::string const &name_of_file, std::string const &de
     for (auto &block: design_.block_list) {
       if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
       ost << "- "
-          << *block.Name() << " "
+          << *block.ConstName() << " "
           << *(block.Type()->Name()) << " + "
           << block.GetPlaceStatusStr() << " "
           << "( "
@@ -2377,14 +2384,14 @@ void Circuit::SaveDefWell(std::string const &name_of_file, std::string const &de
   ost << "- ggnndd\n";
   ost << " ";
   for (auto &block: design_.well_tap_list) {
-    ost << " ( " << block.NameStr() << " g0 )";
+    ost << " ( " << block.Name() << " g0 )";
   }
   ost << "\n" << " ;\n";
   //Vdd
   ost << "- vvdddd\n";
   ost << " ";
   for (auto &block: design_.well_tap_list) {
-    ost << " ( " << block.NameStr() << " v0 )";
+    ost << " ( " << block.Name() << " v0 )";
   }
   ost << "\n" << " ;\n";
 
@@ -2477,7 +2484,7 @@ void Circuit::SaveBookshelfNode(std::string const &name_of_file) {
   ost << "NumNodes : \t\t" << design_.tot_mov_blk_num_ << "\n"
       << "NumTerminals : \t\t" << design_.block_list.size() - design_.tot_mov_blk_num_ << "\n";
   for (auto &block: design_.block_list) {
-    ost << "\t" << *(block.Name())
+    ost << "\t" << *(block.ConstName())
         << "\t" << block.Width() * design_.def_distance_microns * tech_.grid_value_x_
         << "\t" << block.Height() * design_.def_distance_microns * tech_.grid_value_y_
         << "\n";
@@ -2497,7 +2504,7 @@ void Circuit::SaveBookshelfNet(std::string const &name_of_file) {
   for (auto &net: design_.net_list) {
     ost << "NetDegree : " << net.blk_pin_list.size() << "   " << *net.Name() << "\n";
     for (auto &pair: net.blk_pin_list) {
-      ost << "\t" << *(pair.GetBlock()->Name()) << "\t";
+      ost << "\t" << *(pair.GetBlock()->ConstName()) << "\t";
       if (pair.GetPin()->GetIOType()) {
         ost << "I : ";
       } else {
@@ -2518,7 +2525,7 @@ void Circuit::SaveBookshelfPl(std::string const &name_of_file) {
   Assert(ost.is_open(), "Cannot open file " + name_of_file);
   ost << "# this line is here just for ntuplace to recognize this file \n\n";
   for (auto &node: design_.block_list) {
-    ost << *node.Name()
+    ost << *node.ConstName()
         << "\t"
         << int(node.LLX() * design_.def_distance_microns * tech_.grid_value_x_)
         << "\t"

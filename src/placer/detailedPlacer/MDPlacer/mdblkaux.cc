@@ -20,7 +20,7 @@ double2d MDBlkAux::GetForce(Block *blk) {
    * ****/
   double2d force(0,0);
   double epsilon = 1e-5;
-  if ((blk != GetBlock())&&(blk_ptr_->IsOverlap(*blk))) {
+  if ((blk != getBlockPtr())&&(blk_ptr_->IsOverlap(*blk))) {
     double force_amp;
     double llx, urx, lly, ury;
     llx = std::max(blk_ptr_->LLX(), blk->LLX());

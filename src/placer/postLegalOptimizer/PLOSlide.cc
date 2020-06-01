@@ -24,7 +24,7 @@ void PLOSlide::FindOptimalRegionX(Block &block, int &start, int &end) {
 
   double lo, hi;
   auto &net_list = *(NetList());
-  for (auto &net_num: block.net_list) {
+  for (auto &net_num: *block.NetList()) {
     net_list[net_num].XBoundExclude(block, lo, hi);
     pin = net_aux_list_[net_num].GetPin(block);
     pin_offset_x = pin->OffsetX(block.Orient());
@@ -65,7 +65,7 @@ void PLOSlide::MoveBlkTowardOptimalRegion(Block &block, int start, int end) {
     for (int i = start_row; i <= end_row; ++i) {
       final_loc = std::max(final_loc, row_start_[i]);
     }
-    block.SetLLX(final_loc);
+    block.setLLX(final_loc);
   }
 
   int end_x = int(block.URX());
@@ -117,7 +117,7 @@ void PLOSlide::MoveBlkTowardOptimalRegionRight(Block &block, int start, int end)
     for (int i = start_row; i <= end_row; ++i) {
       final_loc = std::min(final_loc, row_start_[i]);
     }
-    block.SetURX(final_loc);
+    block.setURX(final_loc);
   }
 
   int end_x = int(block.LLX());

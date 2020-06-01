@@ -38,8 +38,8 @@ void BlkCluster::OptimizeHeight() {
 void BlkCluster::UpdateBlockLocation() {
   int current_loc = lx_;
   for (auto &blk_ptr: blk_ptr_list_) {
-    blk_ptr->SetLLX(current_loc);
-    blk_ptr->SetCenterY(this->CenterY());
+    blk_ptr->setLLX(current_loc);
+    blk_ptr->setCenterY(this->CenterY());
     current_loc += blk_ptr->Width();
   }
 }

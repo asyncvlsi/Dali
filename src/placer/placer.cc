@@ -33,7 +33,7 @@ Placer::~Placer() = default;
 double Placer::GetBlkHPWL(Block &blk) {
   double hpwl = 0;
   std::vector<Net> &net_list = *(NetList());
-  for (auto &idx: blk.net_list) {
+  for (auto &idx: *blk.NetList()) {
     hpwl += net_list[idx].HPWL();
   }
   return hpwl;
@@ -190,7 +190,7 @@ void Placer::SaveDEFFile(std::string const &name_of_file) {
   ost << "COMPONENTS " << BlockList()->size() << " ;\n";
   for (auto &block: *BlockList()) {
     ost << "- "
-        << *(block.Name()) << " "
+        << *(block.ConstName()) << " "
         << *(block.Type()->Name()) << " + "
         << "PLACED"
         << " ("
@@ -246,7 +246,7 @@ void Placer::SanityCheck() {
 void Placer::UpdateMovableBlkPlacementStatus() {
   for (auto &blk: *BlockList()) {
     if (blk.IsMovable()) {
-      blk.SetPlaceStatus(PLACED_);
+      blk.setPlacementStatus(PLACED_);
     }
   }
 }

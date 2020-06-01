@@ -25,10 +25,10 @@ class BlockPinPair {
   double AbsX() const { return XOffset() + blk_ptr_->LLX(); }
   double AbsY() const { return YOffset() + blk_ptr_->LLY(); }
 
-  const std::string *BlockName() const { return blk_ptr_->Name(); }
+  const std::string *BlockName() const { return blk_ptr_->ConstName(); }
   const std::string *PinName() const { return pin_ptr_->Name(); }
 
-  // boolean operators
+  // some boolean operators
   bool operator<(const BlockPinPair &rhs) const {
     return (BlockNum() < rhs.BlockNum()) || ((BlockNum() == rhs.BlockNum()) && (PinNum() < rhs.PinNum()));
   }

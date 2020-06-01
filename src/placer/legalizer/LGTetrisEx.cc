@@ -881,8 +881,8 @@ bool LGTetrisEx::LocalLegalizationRight() {
       }
     }
 
-    block.SetURX(res.x);
-    block.SetLLY(res.y);
+    block.setURX(res.x);
+    block.setLLY(res.y);
 
     UseSpaceRight(block);
   }
@@ -1392,8 +1392,8 @@ bool LGTetrisEx::LocalLegalizationTop() {
       }
     }
 
-    block.SetLLX(res.x);
-    block.SetURY(res.y);
+    block.setLLX(res.x);
+    block.setURY(res.y);
 
     UseSpaceTop(block);
   }
@@ -1409,7 +1409,7 @@ double LGTetrisEx::EstimatedHPWL(Block &block, int x, int y) {
   double tot_hpwl = 0;
   Net *net;
   auto &net_list = *NetList();
-  for (auto &net_num: block.net_list) {
+  for (auto &net_num: *block.NetList()) {
     net = &(net_list[net_num]);
     if (net->P() > 100) continue;
     for (auto &blk_pin_pair: net->blk_pin_list) {

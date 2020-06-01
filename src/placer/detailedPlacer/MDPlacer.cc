@@ -74,7 +74,7 @@ void MDPlacer::UpdateBinMatrix() {
   MDBlkAux *blk_aux = nullptr;
   BinIndex ll, ur;
   for (auto &blk: block_list) {
-    blk_aux = (MDBlkAux *)blk.Aux();
+    blk_aux = (MDBlkAux *) blk.AuxPtr();
     ll = LowLocToIndex(blk.LLX(), blk.LLY());
     ur = HighLocToIndex(blk.URX(), blk.URY());
     BinRegionAdd(blk.Num(), ll, ur);
@@ -119,7 +119,7 @@ void MDPlacer::BinRegionAdd(int blk_num, BinIndex &ll, BinIndex &ur) {
 
 void MDPlacer::UpdateBin(Block &blk) {
   std::vector<BinIndex> index_list;
-  auto blk_aux = (MDBlkAux *)blk.Aux();
+  auto blk_aux = (MDBlkAux *) blk.AuxPtr();
   BinIndex new_ll = LowLocToIndex(blk.LLX(), blk.LLY());
   BinIndex new_ur = HighLocToIndex(blk.URX(), blk.URY());
   BinIndex old_ll = blk_aux->LLIndex();
@@ -142,7 +142,7 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
   double2d tot_force(0, 0);
   double2d force(0, 0);
   std::vector<Block> &block_list = *BlockList();
-  auto blk_aux = (MDBlkAux *)blk.Aux();
+  auto blk_aux = (MDBlkAux *) blk.AuxPtr();
   int blk_num = blk.Num();
   BinIndex ll = blk_aux->LLIndex();
   BinIndex ur = blk_aux->URIndex();
@@ -167,11 +167,11 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
     tot_force.Incre(force);
   }*/
 
-  tot_force *= 1.0/blk.Area();
+  tot_force *= 1.0/ blk.Area();
 
   force.Init();
   std::vector<Net> &net_list = *NetList();
-  for (auto &net_num: blk.net_list) {
+  for (auto &net_num: *blk.NetList()) {
     net_list[net_num].UpdateMaxMinIndex();
     if (blk_num == net_list[net_num].MaxBlkPinNumX()) {
       force.x -= 1;

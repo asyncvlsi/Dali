@@ -60,8 +60,8 @@ void Block::SwapLoc(Block &blk) {
   double tmp_y = lly_;
   llx_ = blk.LLX();
   lly_ = blk.LLY();
-  blk.SetLLX(tmp_x);
-  blk.SetLLY(tmp_y);
+  blk.setLLX(tmp_x);
+  blk.setLLY(tmp_y);
 }
 
 void Block::IncreaseX(double displacement, double upper, double lower) {
@@ -84,21 +84,21 @@ void Block::IncreaseY(double displacement, double upper, double lower) {
   }
 }
 
-double Block::OverlapArea(const Block &rhs) const {
+double Block::OverlapArea(const Block &blk) const {
   double overlap_area = 0;
-  if (IsOverlap(rhs)) {
+  if (IsOverlap(blk)) {
     double llx, urx, lly, ury;
-    llx = std::max(LLX(), rhs.LLX());
-    urx = std::min(URX(), rhs.URX());
-    lly = std::max(LLY(), rhs.LLY());
-    ury = std::min(URY(), rhs.URY());
+    llx = std::max(LLX(), blk.LLX());
+    urx = std::min(URX(), blk.URX());
+    lly = std::max(LLY(), blk.LLY());
+    ury = std::min(URY(), blk.URY());
     overlap_area = (urx - llx) * (ury - lly);
   }
   return overlap_area;
 }
 
 void Block::Report() {
-  std::cout << "  block name: " << *Name() << "\n"
+  std::cout << "  block name: " << *ConstName() << "\n"
             << "    block type: " << *(Type()->Name()) << "\n"
             << "    width and height: " << Width() << " " << Height() << "\n"
             << "    lower left corner: " << llx_ << " " << lly_ << "\n"
@@ -109,8 +109,8 @@ void Block::Report() {
 }
 
 void Block::ReportNet() {
-  std::cout << *Name() << " connects to:\n";
-  for (auto &net_num: net_list) {
+  std::cout << *ConstName() << " connects to:\n";
+  for (auto &net_num: net_list_) {
     std::cout << net_num << "  ";
   }
   std::cout << "\n";

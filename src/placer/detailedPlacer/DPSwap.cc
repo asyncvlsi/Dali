@@ -18,7 +18,7 @@ void DPSwap::FindOptimalRegion(Block &blk, std::unordered_set<int> &optimal_regi
 
 double DPSwap::GetOverlap(Block &blk) {
   std::vector<Block> &block_list = *BlockList();
-  auto blk_aux = (MDBlkAux *)blk.Aux();
+  auto blk_aux = (MDBlkAux *) blk.AuxPtr();
   int blk_num = blk.Num();
   BinIndex ll = blk_aux->LLIndex();
   BinIndex ur = blk_aux->URIndex();
