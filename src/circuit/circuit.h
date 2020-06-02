@@ -62,12 +62,8 @@ class Circuit {
     return tech_.row_height_;
   }
   int GetIntRowHeight() const {
-    if (tech_.row_height_set_) {
-      return (int) std::round(tech_.row_height_ / tech_.grid_value_y_);
-    } else {
-      std::cout << "Row height not set, cannot retrieve its value\n";
-      exit(1);
-    }
+    Assert(tech_.row_height_set_, "Row height not set, cannot retrieve its value: Circuit::GetIntRowHeight()\n");
+    return (int) std::round(tech_.row_height_ / tech_.grid_value_y_);
   }
 
   /****API to set metal layers: deprecated
@@ -225,7 +221,7 @@ class Circuit {
   BlockTypeWell *AddBlockTypeWell(BlockTypeCluster *cluster, std::string &blk_type_name, bool is_plug) {
     BlockType *blk_type_ptr = GetBlockType(blk_type_name);
     AddBlockTypeWell(cluster, blk_type_ptr, is_plug);
-    return blk_type_ptr->well_ptr_;
+    return blk_type_ptr->WellPtr();
   }
   void SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {
     tech_.SetNLayer(width, spacing, op_spacing, max_plug_dist, overhang);

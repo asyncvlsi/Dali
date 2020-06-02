@@ -1,5 +1,5 @@
 //
-// Created by Yihang Yang on 2020-01-30.
+// Created by Yihang Yang on 2019-05-23.
 //
 
 #include "block.h"
@@ -98,8 +98,8 @@ double Block::OverlapArea(const Block &blk) const {
 }
 
 void Block::Report() {
-  std::cout << "  block name: " << *ConstName() << "\n"
-            << "    block type: " << *(Type()->Name()) << "\n"
+  std::cout << "  block name: " << *NamePtr() << "\n"
+            << "    block type: " << *(Type()->NamePtr()) << "\n"
             << "    width and height: " << Width() << " " << Height() << "\n"
             << "    lower left corner: " << llx_ << " " << lly_ << "\n"
             << "    movable: " << IsMovable() << "\n"
@@ -109,7 +109,7 @@ void Block::Report() {
 }
 
 void Block::ReportNet() {
-  std::cout << *ConstName() << " connects to:\n";
+  std::cout << *NamePtr() << " connects to:\n";
   for (auto &net_num: net_list_) {
     std::cout << net_num << "  ";
   }

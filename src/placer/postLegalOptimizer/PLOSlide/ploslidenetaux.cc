@@ -23,8 +23,8 @@ void PLOSlideNetAux::Init() {
   Block *blk_ptr;
   Pin *pin_ptr;
   for (int i = 0; i < sz; ++i) {
-    blk_ptr = net_ptr_->blk_pin_list[i].GetBlock();
-    pin_ptr = net_ptr_->blk_pin_list[i].GetPin();
+    blk_ptr = net_ptr_->blk_pin_list[i].BlkPtr();
+    pin_ptr = net_ptr_->blk_pin_list[i].PinPtr();
     blk2pin_map_.insert(std::make_pair(blk_ptr, pin_ptr));
   }
 }

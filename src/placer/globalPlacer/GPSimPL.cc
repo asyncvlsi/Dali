@@ -180,21 +180,21 @@ void GPSimPL::AddMatrixElement(Net &net, int i, int j) {
   double weight, inv_p, pin_loc0, pin_loc1, offset_diff;
   int blk_num0, blk_num1;
   bool is_movable0, is_movable1;
-  blk_num0 = net.blk_pin_list[i].BlockNum();
+  blk_num0 = net.blk_pin_list[i].BlkNum();
   pin_loc0 = net.blk_pin_list[i].AbsX();
-  is_movable0 = net.blk_pin_list[i].GetBlock()->IsMovable();
+  is_movable0 = net.blk_pin_list[i].BlkPtr()->IsMovable();
 
   inv_p = net.InvP();
-  blk_num1 = net.blk_pin_list[j].BlockNum();
+  blk_num1 = net.blk_pin_list[j].BlkNum();
   if (blk_num0 == blk_num1) return;
   pin_loc1 = net.blk_pin_list[j].AbsX();
-  is_movable1 = net.blk_pin_list[j].GetBlock()->IsMovable();
+  is_movable1 = net.blk_pin_list[j].BlkPtr()->IsMovable();
   weight = inv_p / (std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
   if (!is_movable0 && is_movable1) {
-    bx[blk_num1] += (pin_loc0 - net.blk_pin_list[j].XOffset()) * weight;
+    bx[blk_num1] += (pin_loc0 - net.blk_pin_list[j].OffsetX()) * weight;
     coefficients.emplace_back(T(blk_num1, blk_num1, weight));
   } else if (is_movable0 && !is_movable1) {
-    bx[blk_num0] += (pin_loc1 - net.blk_pin_list[i].XOffset()) * weight;
+    bx[blk_num0] += (pin_loc1 - net.blk_pin_list[i].OffsetX()) * weight;
     coefficients.emplace_back(T(blk_num0, blk_num0, weight));
   } else if (is_movable0 && is_movable1) {
     coefficients.emplace_back(T(blk_num0, blk_num0, weight));
@@ -204,7 +204,7 @@ void GPSimPL::AddMatrixElement(Net &net, int i, int j) {
     } else {
       coefficients.emplace_back(T(blk_num1, blk_num0, -weight));
     }
-    offset_diff = (net.blk_pin_list[j].XOffset() - net.blk_pin_list[i].XOffset()) * weight;
+    offset_diff = (net.blk_pin_list[j].OffsetX() - net.blk_pin_list[i].OffsetX()) * weight;
     bx[blk_num0] += offset_diff;
     bx[blk_num1] -= offset_diff;
   } else {
@@ -253,20 +253,20 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
       max_pin_index = net.MaxBlkPinNumX();
       min_pin_index = net.MinBlkPinNumX();
 
-      blk_num_max = net.blk_pin_list[max_pin_index].BlockNum();
+      blk_num_max = net.blk_pin_list[max_pin_index].BlkNum();
       pin_loc_max = net.blk_pin_list[max_pin_index].AbsX();
-      is_movable_max = net.blk_pin_list[max_pin_index].GetBlock()->IsMovable();
-      offset_max = net.blk_pin_list[max_pin_index].XOffset();
+      is_movable_max = net.blk_pin_list[max_pin_index].BlkPtr()->IsMovable();
+      offset_max = net.blk_pin_list[max_pin_index].OffsetX();
 
-      blk_num_min = net.blk_pin_list[min_pin_index].BlockNum();
+      blk_num_min = net.blk_pin_list[min_pin_index].BlkNum();
       pin_loc_min = net.blk_pin_list[min_pin_index].AbsX();
-      is_movable_min = net.blk_pin_list[min_pin_index].GetBlock()->IsMovable();
-      offset_min = net.blk_pin_list[min_pin_index].XOffset();
+      is_movable_min = net.blk_pin_list[min_pin_index].BlkPtr()->IsMovable();
+      offset_min = net.blk_pin_list[min_pin_index].OffsetX();
 
       for (auto &pair: net.blk_pin_list) {
-        blk_num = pair.BlockNum();
+        blk_num = pair.BlkNum();
         pin_loc = pair.AbsX();
-        is_movable = pair.GetBlock()->IsMovable();
+        is_movable = pair.BlkPtr()->IsMovable();
 
         if (blk_num != blk_num_max) {
           weight = inv_p / (std::fabs(pin_loc - pin_loc_max) + WidthEpsilon());
@@ -284,7 +284,7 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
             } else {
               coefficients.emplace_back(blk_num_max, blk_num, -weight);
             }
-            offset_diff = (offset_max - pair.XOffset()) * weight;
+            offset_diff = (offset_max - pair.OffsetX()) * weight;
             b[blk_num] += offset_diff;
             b[blk_num_max] -= offset_diff;
           }
@@ -306,7 +306,7 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
             } else {
               coefficients.emplace_back(blk_num_min, blk_num, -weight);
             }
-            offset_diff = (offset_min - pair.XOffset()) * weight;
+            offset_diff = (offset_min - pair.OffsetX()) * weight;
             b[blk_num] += offset_diff;
             b[blk_num_min] -= offset_diff;
           }
@@ -333,20 +333,20 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
       max_pin_index = net.MaxBlkPinNumY();
       min_pin_index = net.MinBlkPinNumY();
 
-      blk_num_max = net.blk_pin_list[max_pin_index].BlockNum();
+      blk_num_max = net.blk_pin_list[max_pin_index].BlkNum();
       pin_loc_max = net.blk_pin_list[max_pin_index].AbsY();
-      is_movable_max = net.blk_pin_list[max_pin_index].GetBlock()->IsMovable();
-      offset_max = net.blk_pin_list[max_pin_index].YOffset();
+      is_movable_max = net.blk_pin_list[max_pin_index].BlkPtr()->IsMovable();
+      offset_max = net.blk_pin_list[max_pin_index].OffsetY();
 
-      blk_num_min = net.blk_pin_list[min_pin_index].BlockNum();
+      blk_num_min = net.blk_pin_list[min_pin_index].BlkNum();
       pin_loc_min = net.blk_pin_list[min_pin_index].AbsY();
-      is_movable_min = net.blk_pin_list[min_pin_index].GetBlock()->IsMovable();
-      offset_min = net.blk_pin_list[min_pin_index].YOffset();
+      is_movable_min = net.blk_pin_list[min_pin_index].BlkPtr()->IsMovable();
+      offset_min = net.blk_pin_list[min_pin_index].OffsetY();
 
       for (auto &pair: net.blk_pin_list) {
-        blk_num = pair.BlockNum();
+        blk_num = pair.BlkNum();
         pin_loc = pair.AbsY();
-        is_movable = pair.GetBlock()->IsMovable();
+        is_movable = pair.BlkPtr()->IsMovable();
 
         if (blk_num != blk_num_max) {
           weight = inv_p / (std::fabs(pin_loc - pin_loc_max) + HeightEpsilon());
@@ -364,7 +364,7 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
             } else {
               coefficients.emplace_back(blk_num_max, blk_num, -weight);
             }
-            offset_diff = (offset_max - pair.YOffset()) * weight;
+            offset_diff = (offset_max - pair.OffsetY()) * weight;
             b[blk_num] += offset_diff;
             b[blk_num_max] -= offset_diff;
           }
@@ -386,7 +386,7 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
             } else {
               coefficients.emplace_back(blk_num_min, blk_num, -weight);
             }
-            offset_diff = (offset_min - pair.YOffset()) * weight;
+            offset_diff = (offset_min - pair.OffsetY()) * weight;
             b[blk_num] += offset_diff;
             b[blk_num_min] -= offset_diff;
           }

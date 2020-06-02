@@ -48,30 +48,30 @@ void DPLinear::BuildProblemDPLinear(bool is_x_direction, Eigen::VectorXd &b) {
       max_pin_index = net.MaxBlkPinNumX();
       min_pin_index = net.MinBlkPinNumX();
       for (size_t i = 0; i < net.blk_pin_list.size(); i++) {
-        blk_num0 = net.blk_pin_list[i].BlockNum();
-        pin_loc0 = block_list[blk_num0].LLX() + net.blk_pin_list[i].XOffset();
-        is_movable0 = net.blk_pin_list[i].GetBlock()->IsMovable();
+        blk_num0 = net.blk_pin_list[i].BlkNum();
+        pin_loc0 = block_list[blk_num0].LLX() + net.blk_pin_list[i].OffsetX();
+        is_movable0 = net.blk_pin_list[i].BlkPtr()->IsMovable();
         for (size_t j = i + 1; j < net.blk_pin_list.size(); j++) {
           if ((i != max_pin_index) && (i != min_pin_index)) {
             if ((j != max_pin_index) && (j != min_pin_index)) continue;
           }
-          blk_num1 = net.blk_pin_list[j].BlockNum();
+          blk_num1 = net.blk_pin_list[j].BlkNum();
           if (blk_num0 == blk_num1) continue;
-          pin_loc1 = block_list[blk_num1].LLX() + net.blk_pin_list[j].XOffset();
-          is_movable1 = net.blk_pin_list[j].GetBlock()->IsMovable();
+          pin_loc1 = block_list[blk_num1].LLX() + net.blk_pin_list[j].OffsetX();
+          is_movable1 = net.blk_pin_list[j].BlkPtr()->IsMovable();
           weight = inv_p / (std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon()) * (1-r);
           if (!is_movable0 && is_movable1) {
-            b[blk_num1] += (pin_loc0 - net.blk_pin_list[j].XOffset()) * weight;
+            b[blk_num1] += (pin_loc0 - net.blk_pin_list[j].OffsetX()) * weight;
             coefficients.emplace_back(T(blk_num1, blk_num1, weight));
           } else if (is_movable0 && !is_movable1) {
-            b[blk_num0] += (pin_loc1 - net.blk_pin_list[i].XOffset()) * weight ;
+            b[blk_num0] += (pin_loc1 - net.blk_pin_list[i].OffsetX()) * weight ;
             coefficients.emplace_back(T(blk_num0, blk_num0, weight));
           } else if (is_movable0 && is_movable1) {
             coefficients.emplace_back(T(blk_num0, blk_num0, weight));
             coefficients.emplace_back(T(blk_num1, blk_num1, weight));
             coefficients.emplace_back(T(blk_num0, blk_num1, -weight));
             coefficients.emplace_back(T(blk_num1, blk_num0, -weight));
-            offset_diff = (net.blk_pin_list[j].XOffset() - net.blk_pin_list[i].XOffset()) * weight;
+            offset_diff = (net.blk_pin_list[j].OffsetX() - net.blk_pin_list[i].OffsetX()) * weight;
             b[blk_num0] += offset_diff;
             b[blk_num1] -= offset_diff;
           } else {
@@ -111,30 +111,30 @@ void DPLinear::BuildProblemDPLinear(bool is_x_direction, Eigen::VectorXd &b) {
       max_pin_index = net.MaxBlkPinNumY();
       min_pin_index = net.MinBlkPinNumY();
       for (size_t i = 0; i < net.blk_pin_list.size(); i++) {
-        blk_num0 = net.blk_pin_list[i].BlockNum();
-        pin_loc0 = block_list[blk_num0].LLY() + net.blk_pin_list[i].YOffset();
-        is_movable0 = net.blk_pin_list[i].GetBlock()->IsMovable();
+        blk_num0 = net.blk_pin_list[i].BlkNum();
+        pin_loc0 = block_list[blk_num0].LLY() + net.blk_pin_list[i].OffsetY();
+        is_movable0 = net.blk_pin_list[i].BlkPtr()->IsMovable();
         for (size_t j = i + 1; j < net.blk_pin_list.size(); j++) {
           if ((i != max_pin_index) && (i != min_pin_index)) {
             if ((j != max_pin_index) && (j != min_pin_index)) continue;
           }
-          blk_num1 = net.blk_pin_list[j].BlockNum();
+          blk_num1 = net.blk_pin_list[j].BlkNum();
           if (blk_num0 == blk_num1) continue;
-          pin_loc1 = block_list[blk_num1].LLY() + net.blk_pin_list[j].YOffset();
-          is_movable1 = net.blk_pin_list[j].GetBlock()->IsMovable();
+          pin_loc1 = block_list[blk_num1].LLY() + net.blk_pin_list[j].OffsetY();
+          is_movable1 = net.blk_pin_list[j].BlkPtr()->IsMovable();
           weight = inv_p / (std::fabs(pin_loc0 - pin_loc1) + HeightEpsilon()) * (1-r);
           if (!is_movable0 && is_movable1) {
-            b[blk_num1] += (pin_loc0 - net.blk_pin_list[j].YOffset()) * weight;
+            b[blk_num1] += (pin_loc0 - net.blk_pin_list[j].OffsetY()) * weight;
             coefficients.emplace_back(T(blk_num1, blk_num1, weight));
           } else if (is_movable0 && !is_movable1) {
-            b[blk_num0] += (pin_loc1 - net.blk_pin_list[i].YOffset()) * weight;
+            b[blk_num0] += (pin_loc1 - net.blk_pin_list[i].OffsetY()) * weight;
             coefficients.emplace_back(T(blk_num0, blk_num0, weight));
           } else if (is_movable0 && is_movable1) {
             coefficients.emplace_back(T(blk_num0, blk_num0, weight));
             coefficients.emplace_back(T(blk_num1, blk_num1, weight));
             coefficients.emplace_back(T(blk_num0, blk_num1, -weight));
             coefficients.emplace_back(T(blk_num1, blk_num0, -weight));
-            offset_diff = (net.blk_pin_list[j].YOffset() - net.blk_pin_list[i].YOffset()) * weight;
+            offset_diff = (net.blk_pin_list[j].OffsetY() - net.blk_pin_list[i].OffsetY()) * weight;
             b[blk_num0] += offset_diff;
             b[blk_num1] -= offset_diff;
           } else {

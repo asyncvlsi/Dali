@@ -1,5 +1,5 @@
 //
-// Created by Yihang Yang on 2019/12/23.
+// Created by Yihang Yang on 2019-12-23.
 //
 
 #ifndef DALI_SRC_CIRCUIT_BLOCKTYPEWELL_H_
@@ -133,7 +133,7 @@ struct BlockTypeWell {
 
   void Report() const {
     std::cout
-        << "  Well of BlockType: " << *(type_ptr_->Name()) << "\n"
+        << "  Well of BlockType: " << *(type_ptr_->NamePtr()) << "\n"
         << "    Plug: " << is_plug_ << "\n"
         << "    Nwell: " << n_rect_.LLX() << "  " << n_rect_.LLY() << "  " << n_rect_.URX() << "  " << n_rect_.URY() << "\n"
         << "    Pwell: " << p_rect_.LLX() << "  " << p_rect_.LLY() << "  " << p_rect_.URX() << "  " << p_rect_.URY() << "\n";

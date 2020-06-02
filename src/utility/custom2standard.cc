@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
       std::string type_name = line_field[1];
       std::string end_macro_flag = "END " + type_name;
       BlockType *type = circuit.GetBlockType(type_name);
-      double np_boundary = type->GetWell()->GetPNBoundary() * circuit.GetGridValueY();
+      double np_boundary = type->WellPtr()->GetPNBoundary() * circuit.GetGridValueY();
       TypeLayerBBox type_bbox(type, np_boundary, np_boundary);
       do {
         getline(ist, line);
@@ -150,7 +150,7 @@ int main(int argc, char *argv[]) {
         type_bbox.p_extra = 0;
         type_bbox.n_extra = pitch;
       }
-      std::cout << *(type->Name()) << "  " << "size: 0 " << type_height << "\n";
+      std::cout << *(type->NamePtr()) << "  " << "size: 0 " << type_height << "\n";
       std::cout << "  " << *(hor_layer->Name()) << " y bbox: " << type_bbox.lo << " " << type_bbox.hi << "\n";
       std::cout << "  n/p extra: " << type_bbox.n_extra << " " << type_bbox.p_extra << "\n";
       bbox_list.push_back(type_bbox);
@@ -165,8 +165,8 @@ int main(int argc, char *argv[]) {
   for (auto &type_bbox: bbox_list) {
     BlockType *type = type_bbox.blk_type;
     if (type == circuit.tech_.io_dummy_blk_type_ptr_) continue;
-    double n_height = type->GetWell()->GetNWellHeight() * circuit.GetGridValueY() + type_bbox.n_extra;
-    double p_height = type->GetWell()->GetPWellHeight() * circuit.GetGridValueY() + type_bbox.p_extra;
+    double n_height = type->WellPtr()->GetNWellHeight() * circuit.GetGridValueY() + type_bbox.n_extra;
+    double p_height = type->WellPtr()->GetPWellHeight() * circuit.GetGridValueY() + type_bbox.p_extra;
     std_n_height = std::max(std_n_height, n_height);
     std_p_height = std::max(std_p_height, p_height);
   }
@@ -223,14 +223,14 @@ int main(int argc, char *argv[]) {
 
       TypeLayerBBox *bbox_ptr = nullptr;
       for (auto &bbox: bbox_list) {
-        if (*(bbox.blk_type->Name()) == type_name) {
+        if (*(bbox.blk_type->NamePtr()) == type_name) {
           bbox_ptr = &bbox;
           break;
         }
       }
       Assert(bbox_ptr != nullptr, "Cannot find type?");
 
-      double type_p_height = circuit.GetBlockType(type_name)->GetWell()->GetPWellHeight() * circuit.GetGridValueY();
+      double type_p_height = circuit.GetBlockType(type_name)->WellPtr()->GetPWellHeight() * circuit.GetGridValueY();
       double height_diff = std_p_height - type_p_height;
       do {
         getline(ist, line);

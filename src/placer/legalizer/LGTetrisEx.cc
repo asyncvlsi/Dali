@@ -1413,7 +1413,7 @@ double LGTetrisEx::EstimatedHPWL(Block &block, int x, int y) {
     net = &(net_list[net_num]);
     if (net->P() > 100) continue;
     for (auto &blk_pin_pair: net->blk_pin_list) {
-      if (blk_pin_pair.GetBlock() != &block) {
+      if (blk_pin_pair.BlkPtr() != &block) {
         min_x = std::min(min_x, blk_pin_pair.AbsX());
         min_y = std::min(min_y, blk_pin_pair.AbsY());
         max_x = std::max(max_x, blk_pin_pair.AbsX());

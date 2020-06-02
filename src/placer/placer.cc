@@ -190,8 +190,8 @@ void Placer::SaveDEFFile(std::string const &name_of_file) {
   ost << "COMPONENTS " << BlockList()->size() << " ;\n";
   for (auto &block: *BlockList()) {
     ost << "- "
-        << *(block.ConstName()) << " "
-        << *(block.Type()->Name()) << " + "
+        << *(block.NamePtr()) << " "
+        << *(block.Type()->NamePtr()) << " + "
         << "PLACED"
         << " ("
         << " "
@@ -210,7 +210,7 @@ void Placer::SaveDEFFile(std::string const &name_of_file) {
         << *(net.Name()) << "\n";
     ost << " ";
     for (auto &pin_pair: net.blk_pin_list) {
-      ost << " ( " << *(pin_pair.BlockName()) << " " << *(pin_pair.PinName()) << " ) ";
+      ost << " ( " << *(pin_pair.BlockNamePtr()) << " " << *(pin_pair.PinNamePtr()) << " ) ";
     }
     ost << "\n" << " ;\n";
   }
@@ -236,9 +236,9 @@ void Placer::SanityCheck() {
   }
   Assert(IsBoundaryProper(), "Improper boundary setting");
   for (auto &pair: circuit_->tech_.block_type_map) {
-    BlockType *pblk_type = pair.second;
-    for (auto &pin: pblk_type->pin_list) {
-      Assert(!pin.RectEmpty(), "No RECT found for pin: " + *(pblk_type->Name()) + "::" + *(pin.Name()));
+    BlockType *blk_type_ptr = pair.second;
+    for (auto &pin: *(blk_type_ptr->PinList())) {
+      Assert(!pin.RectEmpty(), "No RECT found for pin: " + *(blk_type_ptr->NamePtr()) + "::" + *(pin.Name()));
     }
   }
 }

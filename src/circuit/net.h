@@ -30,7 +30,7 @@ class Net {
   // auxiliary information
   NetAux *aux_ptr_;
  public:
-  std::vector<BlockPinPair> blk_pin_list;
+  std::vector<BlkPinPair> blk_pin_list;
   std::vector<IOPin *> iopin_list;
 
   Net(std::pair<const std::string, int> *name_num_pair_ptr, int capacity, double weight);
@@ -75,10 +75,10 @@ class Net {
   int MinBlkPinNumX() const { return min_pin_x_; }
   int MaxBlkPinNumY() const { return max_pin_y_; }
   int MinBlkPinNumY() const { return min_pin_y_; }
-  Block *MaxBlockX() const { return blk_pin_list[max_pin_x_].GetBlock(); }
-  Block *MinBlockX() const { return blk_pin_list[min_pin_x_].GetBlock(); }
-  Block *MaxBlockY() const { return blk_pin_list[max_pin_y_].GetBlock(); }
-  Block *MinBlockY() const { return blk_pin_list[min_pin_y_].GetBlock(); }
+  Block *MaxBlockX() const { return blk_pin_list[max_pin_x_].BlkPtr(); }
+  Block *MinBlockX() const { return blk_pin_list[min_pin_x_].BlkPtr(); }
+  Block *MaxBlockY() const { return blk_pin_list[max_pin_y_].BlkPtr(); }
+  Block *MinBlockY() const { return blk_pin_list[min_pin_y_].BlkPtr(); }
   double HPWLX();
   double HPWLY();
   double HPWL() { return HPWLX() + HPWLY(); }

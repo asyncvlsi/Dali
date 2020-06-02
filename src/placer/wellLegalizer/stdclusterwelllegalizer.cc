@@ -28,7 +28,7 @@ void Cluster::ShiftBlock(int x_disp, int y_disp) {
 void Cluster::UpdateBlockLocY() {
   //Assert(p_well_height_ + n_well_height_ == height_, "Inconsistency occurs: p_well_height + n_Well_height != height\n");
   for (auto &blk_ptr: blk_list_) {
-    auto *well = blk_ptr->Type()->GetWell();
+    auto *well = blk_ptr->Type()->WellPtr();
     blk_ptr->setLLY(ly_ + p_well_height_ - well->GetPWellHeight());
   }
 }
@@ -125,7 +125,7 @@ void Cluster::InsertWellTapCell(Block &tap_cell, int loc) {
   tap_cell_ = &tap_cell;
   blk_list_.emplace_back(tap_cell_);
   tap_cell_->setCenterX(loc);
-  auto *well = tap_cell.Type()->GetWell();
+  auto *well = tap_cell.Type()->WellPtr();
   int p_well_height = well->GetPWellHeight();
   int n_well_height = well->GetNWellHeight();
   if (is_orient_N_) {
@@ -345,7 +345,7 @@ void StdClusterWellLegalizer::FetchNPWellParams() {
   }
 
   well_tap_cell_ = (circuit_->tech_.well_tap_cell_ptr_);
-  auto *tap_cell_well = well_tap_cell_->GetWell();
+  auto *tap_cell_well = well_tap_cell_->WellPtr();
   tap_cell_p_height_ = tap_cell_well->GetPWellHeight();
   tap_cell_n_height_ = tap_cell_well->GetNWellHeight();
 }
@@ -568,7 +568,7 @@ void StdClusterWellLegalizer::AppendBlockToColBottomUp(Strip &strip, Block &blk)
   init_y = std::max(init_y, strip.contour_);
 
   Cluster *front_cluster;
-  auto *blk_well = blk.Type()->GetWell();
+  auto *blk_well = blk.Type()->WellPtr();
   int p_well_height = blk_well->GetPWellHeight();
   int n_well_height = blk_well->GetNWellHeight();
   if (is_new_cluster_needed) {
@@ -615,7 +615,7 @@ void StdClusterWellLegalizer::AppendBlockToColTopDown(Strip &strip, Block &blk) 
   init_y = std::min(init_y, strip.contour_);
 
   Cluster *front_cluster;
-  auto *blk_well = blk.Type()->GetWell();
+  auto *blk_well = blk.Type()->WellPtr();
   int p_well_height = blk_well->GetPWellHeight();
   int n_well_height = blk_well->GetNWellHeight();
   if (is_new_cluster_needed) {
@@ -660,7 +660,7 @@ void StdClusterWellLegalizer::AppendBlockToColBottomUpCompact(Strip &strip, Bloc
   init_y = std::max(init_y, strip.contour_);
 
   Cluster *front_cluster;
-  auto *well = blk.Type()->GetWell();
+  auto *well = blk.Type()->WellPtr();
   int p_well_height = well->GetPWellHeight();
   int n_well_height = well->GetNWellHeight();
   if (is_new_cluster_needed) {
@@ -705,7 +705,7 @@ void StdClusterWellLegalizer::AppendBlockToColTopDownCompact(Strip &strip, Block
   init_y = std::min(init_y, strip.contour_);
 
   Cluster *front_cluster;
-  auto *well = blk.Type()->GetWell();
+  auto *well = blk.Type()->WellPtr();
   int p_well_height = well->GetPWellHeight();
   int n_well_height = well->GetNWellHeight();
   if (is_new_cluster_needed) {
@@ -1393,18 +1393,18 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
   for (auto &blk: circuit_->design_.block_list) {
     BlockType *type = blk.Type();
     if (type == circuit_->tech_.io_dummy_blk_type_ptr_) continue;;
-    if (type->GetWell()->GetNWellHeight() > max_n_height) {
-      max_n_height = type->GetWell()->GetNWellHeight();
+    if (type->WellPtr()->GetNWellHeight() > max_n_height) {
+      max_n_height = type->WellPtr()->GetNWellHeight();
     }
-    if (type->GetWell()->GetPWellHeight() > max_p_height) {
-      max_p_height = type->GetWell()->GetPWellHeight();
+    if (type->WellPtr()->GetPWellHeight() > max_p_height) {
+      max_p_height = type->WellPtr()->GetPWellHeight();
     }
   }
-  if (circuit_->tech_.well_tap_cell_ptr_->GetWell()->GetNWellHeight() > max_n_height) {
-    max_n_height = circuit_->tech_.well_tap_cell_ptr_->GetWell()->GetNWellHeight();
+  if (circuit_->tech_.well_tap_cell_ptr_->WellPtr()->GetNWellHeight() > max_n_height) {
+    max_n_height = circuit_->tech_.well_tap_cell_ptr_->WellPtr()->GetNWellHeight();
   }
-  if (circuit_->tech_.well_tap_cell_ptr_->GetWell()->GetPWellHeight() > max_p_height) {
-    max_p_height = circuit_->tech_.well_tap_cell_ptr_->GetWell()->GetPWellHeight();
+  if (circuit_->tech_.well_tap_cell_ptr_->WellPtr()->GetPWellHeight() > max_p_height) {
+    max_p_height = circuit_->tech_.well_tap_cell_ptr_->WellPtr()->GetPWellHeight();
   }
   int max_height = max_n_height + max_p_height;
 
