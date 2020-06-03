@@ -5,11 +5,13 @@
 #ifndef DALI_SRC_CIRCUIT_TECH_H_
 #define DALI_SRC_CIRCUIT_TECH_H_
 
+#include <list>
 #include <unordered_map>
 #include <vector>
 
 #include "block.h"
 #include "blocktype.h"
+#include "blocktypewell.h"
 #include "layer.h"
 
 class Tech {
@@ -29,6 +31,7 @@ class Tech {
 
   /****macros****/
   std::unordered_map<std::string, BlockType *> block_type_map;
+  std::list<BlockTypeWell> well_list_;
   BlockType *io_dummy_blk_type_ptr_ = nullptr;
   BlockType *well_tap_cell_ptr_ = nullptr;
 

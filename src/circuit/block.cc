@@ -99,7 +99,7 @@ double Block::OverlapArea(const Block &blk) const {
 
 void Block::Report() {
   std::cout << "  block name: " << *NamePtr() << "\n"
-            << "    block type: " << *(Type()->NamePtr()) << "\n"
+            << "    block type: " << *(TypePtr()->NamePtr()) << "\n"
             << "    width and height: " << Width() << " " << Height() << "\n"
             << "    lower left corner: " << llx_ << " " << lly_ << "\n"
             << "    movable: " << IsMovable() << "\n"

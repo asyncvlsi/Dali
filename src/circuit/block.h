@@ -67,7 +67,7 @@ class Block {
   std::string Name() const { return std::string(name_num_pair_ptr_->first); }
 
   // get BlockType of this Block
-  BlockType *Type() const { return type_ptr_; }
+  BlockType *TypePtr() const { return type_ptr_; }
 
   // get the index of this Block in the vector of instances
   int Num() const { return name_num_pair_ptr_->second; }

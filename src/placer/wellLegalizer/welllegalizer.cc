@@ -44,19 +44,6 @@ void WellLegalizer::InitWellLegalizer() {
   }
 }
 
-void WellLegalizer::SwitchToPlugType(Block &block) {
-  auto well = block.Type()->WellPtr();
-  Assert(well != nullptr, "Block does not have a well, cannot switch to the plugged version: " + *block.NamePtr());
-  if (well->IsUnplug()) {
-    auto type = block.Type();
-    auto cluster = well->GetCluster();
-    auto plugged_well = cluster->GetPlug();
-    Assert(cluster != nullptr || plugged_well == nullptr,
-           "There is not plugged version of this BlockType: " + *type->NamePtr());
-    block.setType(plugged_well->Type());
-  }
-}
-
 void WellLegalizer::MarkSpaceWellLeft(Block const &block, int p_row) {
   /****
    * Mark the space used by this block by changing the start point of available space in each related row
@@ -92,7 +79,7 @@ void WellLegalizer::UpdatePNBoundary(Block const &block) {
   auto it_lower = p_n_boundary_.lower_bound(block.LLY());
   auto it_upper = p_n_boundary_.upper_bound(block.URY());
   p_n_boundary_.erase(it_lower, it_upper);
-  p_n_boundary_.insert(block.LLY() + block.Type()->WellPtr()->GetPNBoundary());
+  p_n_boundary_.insert(block.LLY() + block.TypePtr()->WellPtr()->PNBoundary());
 }
 
 bool WellLegalizer::FindLocation(Block &block, int2d &res) {
@@ -119,7 +106,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
   int best_row = 0;
   int best_loc = INT_MIN;
   int min_cost = INT_MAX;
-  int p_height = block.Type()->WellPtr()->GetPNBoundary();
+  int p_height = block.TypePtr()->WellPtr()->PNBoundary();
 
   int tmp_cost = INT_MAX;
   int tmp_end_row = 0;
@@ -569,7 +556,7 @@ bool WellLegalizer::WellLegalizationLeft() {
     height = int(block.Height());
     width = int(block.Width());
 
-    p_well_row_height = HeightToRow(block.Type()->WellPtr()->GetPNBoundary());
+    p_well_row_height = HeightToRow(block.TypePtr()->WellPtr()->PNBoundary());
 
     is_current_loc_legal = IsCurrentLocLegalLeft(res, width, height, p_well_row_height);
 
@@ -904,7 +891,7 @@ bool WellLegalizer::WellLegalizationRight() {
     height = int(block.Height());
     width = int(block.Width());
 
-    p_well_row_height = HeightToRow(block.Type()->WellPtr()->GetPNBoundary());
+    p_well_row_height = HeightToRow(block.TypePtr()->WellPtr()->PNBoundary());
 
     //std::cout << block.Num() << "\n";
     is_current_loc_legal = IsCurrentLocLegalRight(res, width, height, p_well_row_height);

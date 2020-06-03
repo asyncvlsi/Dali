@@ -27,10 +27,9 @@ class Circuit {
  public:
   Tech tech_; // information in LEF and CELL
   Design design_; // information in DEF
-  WellInfo well_info_; // maybe redundant
 
 #ifdef USE_OPENDB
-  odb::dbDatabase *db_ptr_;
+  odb::dbDatabase *db_ptr_; // pointer to openDB database
 #endif
 
   Circuit();
@@ -50,7 +49,9 @@ class Circuit {
 
   /****API to set grid value****/
   void SetGridValue(double grid_value_x, double grid_value_y);
-  void SetGridUsingMetalPitch();
+  void SetGridUsingMetalPitch() {
+    SetGridValue(tech_.metal_list[0].PitchY(), tech_.metal_list[1].PitchX());
+  }
   double GetGridValueX() const { return tech_.grid_value_x_; } // unit in micro
   double GetGridValueY() const { return tech_.grid_value_y_; }
   void SetRowHeight(double row_height) {
@@ -213,15 +214,10 @@ class Circuit {
   /****API to add N/P-well technology information
    * These are for CELL file
    * ****/
-  BlockTypeCluster *AddBlockTypeCluster() {
-    well_info_.cluster_list_.emplace_back(nullptr, nullptr);
-    return &(well_info_.cluster_list_.back());
-  }
-  BlockTypeWell *AddBlockTypeWell(BlockTypeCluster *cluster, BlockType *blk_type, bool is_plug);
-  BlockTypeWell *AddBlockTypeWell(BlockTypeCluster *cluster, std::string &blk_type_name, bool is_plug) {
+  BlockTypeWell *AddBlockTypeWell(BlockType *blk_type);
+  BlockTypeWell *AddBlockTypeWell(std::string &blk_type_name) {
     BlockType *blk_type_ptr = GetBlockType(blk_type_name);
-    AddBlockTypeWell(cluster, blk_type_ptr, is_plug);
-    return blk_type_ptr->WellPtr();
+    return AddBlockTypeWell(blk_type_ptr);
   }
   void SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {
     tech_.SetNLayer(width, spacing, op_spacing, max_plug_dist, overhang);

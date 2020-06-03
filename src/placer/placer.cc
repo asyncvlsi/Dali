@@ -191,7 +191,7 @@ void Placer::SaveDEFFile(std::string const &name_of_file) {
   for (auto &block: *BlockList()) {
     ost << "- "
         << *(block.NamePtr()) << " "
-        << *(block.Type()->NamePtr()) << " + "
+        << *(block.TypePtr()->NamePtr()) << " + "
         << "PLACED"
         << " ("
         << " "

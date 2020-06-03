@@ -54,7 +54,6 @@ class WellLegalizer : public LGTetrisEx {
 
   void InitWellLegalizer();
 
-  static void SwitchToPlugType(Block &block);
   void UpdatePNBoundary(Block const &block);
   bool FindLocation(Block &block, int2d &res);
   void WellPlace(Block &block);

@@ -115,7 +115,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   auto site = lib->getSites().begin();
   SetRowHeight(site->getHeight() / double(tech_.lef_database_microns));
   //std::cout << site->getName() << "  " << site->getWidth() / double(lef_database_microns) << "  " << row_height_ << "\n";
-  double residual = tech_.row_height_ - std::round(tech_.row_height_/tech_.grid_value_y_) * tech_.grid_value_y_;
+  double residual = tech_.row_height_ - std::round(tech_.row_height_ / tech_.grid_value_y_) * tech_.grid_value_y_;
   Assert(std::fabs(residual) < 1e-6, "Site height is not integer multiple of grid value in Y");
 
   // 4. load all macros, aka gate types, block types, cell types
@@ -239,7 +239,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
       io_net->AddIOPin(iopin);
       if (iopin->IsPrePlaced()) {
         Block *blk_ptr = GetBlock(iopin_name);
-        Pin *pin = &(blk_ptr->Type()->pin_list_[0]);
+        Pin *pin = &(blk_ptr->TypePtr()->pin_list_[0]);
         io_net->AddBlockPinPair(blk_ptr, pin);
       }
     }
@@ -248,7 +248,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
       std::string blk_name(iterm->getInst()->getName());
       std::string pin_name(iterm->getMTerm()->getName());
       Block *blk_ptr = GetBlock(blk_name);
-      auto pin = blk_ptr->Type()->GetPinPtr(pin_name);
+      auto pin = blk_ptr->TypePtr()->GetPinPtr(pin_name);
       new_net->AddBlockPinPair(blk_ptr, pin);
     }
     //std::cout << "\n";
@@ -721,7 +721,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
             }
             //std::cout << net_field[1] << "  " << pin_field[i + 1] << "\n";
             Block *block = GetBlock(pin_field[i + 1]);
-            auto pin = block->Type()->GetPinPtr(pin_field[i + 2]);
+            auto pin = block->TypePtr()->GetPinPtr(pin_field[i + 2]);
             new_net->AddBlockPinPair(block, pin);
           }
           //std::cout << "\n";
@@ -754,18 +754,15 @@ void Circuit::ReportMetalLayers() {
   }
 }
 
-BlockTypeWell *Circuit::AddBlockTypeWell(BlockTypeCluster *cluster, BlockType *blk_type, bool is_plug) {
-  well_info_.well_list_.emplace_back(blk_type);
-  blk_type->well_ptr_ = &(well_info_.well_list_.back());
-  blk_type->well_ptr_->SetPlug(is_plug);
-  blk_type->well_ptr_->SetCluster(cluster);
+BlockTypeWell *Circuit::AddBlockTypeWell(BlockType *blk_type) {
+  tech_.well_list_.emplace_back(blk_type);
+  blk_type->well_ptr_ = &(tech_.well_list_.back());
   return blk_type->well_ptr_;
 }
 
 void Circuit::ReportWellShape() {
-  for (auto &cluster: well_info_.cluster_list_) {
-    //cluster.GetPlug()->Report();
-    cluster.GetUnplug()->Report();
+  for (auto &blk_type_well: tech_.well_list_) {
+    blk_type_well.Report();
   }
 }
 
@@ -1041,10 +1038,6 @@ void Circuit::SetGridValue(double grid_value_x, double grid_value_y) {
   tech_.grid_set_ = true;
 }
 
-void Circuit::SetGridUsingMetalPitch() {
-  SetGridValue(tech_.metal_list[0].PitchY(), tech_.metal_list[1].PitchX());
-}
-
 void Circuit::ReadCellFile(std::string const &name_of_file) {
   std::ifstream ist(name_of_file.c_str());
   Assert(ist.is_open(), "Cannot open input file: " + name_of_file);
@@ -1149,23 +1142,18 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
       std::vector<std::string> macro_fields;
       StrSplit(line, macro_fields);
       std::string end_macro_flag = "END " + macro_fields[1];
-      auto cluster = AddBlockTypeCluster();
+      BlockTypeWell *well = AddBlockTypeWell(macro_fields[1]);
+      auto blk_type = GetBlockType(macro_fields[1]);
       do {
         getline(ist, line);
-        if (line.find("VERSION") != std::string::npos) {
-          std::vector<std::string> version_fields;
-          StrSplit(line, version_fields);
-          getline(ist, line);
-          bool is_plug = false;
-          if (line.find("UNPLUG") == std::string::npos) is_plug = true;
-          BlockTypeWell *well = AddBlockTypeWell(cluster, version_fields[1], is_plug);
-          int lx = 0, ly = 0, ux = 0, uy = 0;
-          bool is_n = false;
+        bool is_n = false;
+        if (line.find("LAYER") != std::string::npos) {
           do {
-            getline(ist, line);
             if (line.find("nwell") != std::string::npos) {
               is_n = true;
-            } else if (line.find("RECT") != std::string::npos) {
+            }
+            if (line.find("RECT") != std::string::npos) {
+              int lx = 0, ly = 0, ux = 0, uy = 0;
               std::vector<std::string> shape_fields;
               StrSplit(line, shape_fields);
               try {
@@ -1176,19 +1164,18 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
               } catch (...) {
                 Assert(false, "Invalid stod conversion:\n" + line);
               }
-              auto blk_type = GetBlockType(version_fields[1]);
-              well->SetWellShape(is_n, lx, ly, ux, uy);
+              well->setWellRect(is_n, lx, ly, ux, uy);
               if (is_n) {
-                well->SetNWellShape(0, ly, blk_type->Width(), blk_type->Height());
+                well->setNWellRect(0, ly, blk_type->Width(), blk_type->Height());
               } else {
-                well->SetPWellShape(0, 0, blk_type->Width(), uy);
+                well->setPWellRect(0, 0, blk_type->Width(), uy);
               }
             }
+            getline(ist, line);
           } while (line.find("END VERSION") == std::string::npos && !ist.eof());
-          Assert(well->IsNPWellAbutted(), "N/P well not abutted: " + version_fields[1]);
         }
       } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
-      Assert(!cluster->Empty(), "No plug/unplug version provided");
+      Assert(well->IsNPWellAbutted(), "N/P well not abutted: " + macro_fields[1]);
     }
   }
   Assert(!tech_.IsWellInfoSet(), "N/P well technology information not found!");
@@ -1229,11 +1216,10 @@ void Circuit::LoadImaginaryCellFile() {
   // 3. create fake NP-well geometries for each BlockType
   for (auto &pair : tech_.block_type_map) {
     auto *blk_type = pair.second;
-    auto cluster = AddBlockTypeCluster();
-    BlockTypeWell *well = AddBlockTypeWell(cluster, blk_type, false);
+    BlockTypeWell *well = AddBlockTypeWell(blk_type);
     int np_edge = blk_type->Height() / 2;
-    well->SetNWellShape(0, np_edge, blk_type->Width(), blk_type->Height());
-    well->SetPWellShape(0, 0, blk_type->Width(), np_edge);
+    well->setNWellRect(0, np_edge, blk_type->Width(), blk_type->Height());
+    well->setPWellRect(0, 0, blk_type->Width(), np_edge);
   }
 }
 
@@ -1253,7 +1239,8 @@ void Circuit::ReportNetList() {
   for (auto &net: design_.net_list) {
     std::cout << *net.Name() << "  " << net.Weight() << "\n";
     for (auto &block_pin_pair: net.blk_pin_list) {
-      std::cout << "\t" << " (" << *(block_pin_pair.BlockNamePtr()) << " " << *(block_pin_pair.PinNamePtr()) << ") " << "\n";
+      std::cout << "\t" << " (" << *(block_pin_pair.BlockNamePtr()) << " " << *(block_pin_pair.PinNamePtr()) << ") "
+                << "\n";
     }
   }
 }
@@ -1439,7 +1426,7 @@ void Circuit::WriteDefFileDebug(std::string const &name_of_file) {
   for (auto &block: design_.block_list) {
     ost << "- "
         << *(block.NamePtr()) << " "
-        << *(block.Type()->NamePtr()) << " + "
+        << *(block.TypePtr()->NamePtr()) << " + "
         << "PLACED" << " "
         << "( " + std::to_string((int) (block.LLX() * design_.def_distance_microns * tech_.grid_value_x_)) + " "
             + std::to_string((int) (block.LLY() * design_.def_distance_microns * tech_.grid_value_y_)) + " )" << " "
@@ -1538,10 +1525,10 @@ void Circuit::GenMATLABWellTable(std::string const &name_of_file, bool only_well
   RectI *n_well_shape, *p_well_shape;
   if (!only_well_tap) {
     for (auto &block: design_.block_list) {
-      well = block.Type()->WellPtr();
+      well = block.TypePtr()->WellPtr();
       if (well != nullptr) {
-        n_well_shape = well->GetNWellShape();
-        p_well_shape = well->GetPWellShape();
+        n_well_shape = well->NWellRectPtr();
+        p_well_shape = well->PWellRectPtr();
         if (block.Orient() == N_) {
           ost << block.LLX() + n_well_shape->LLX() << "\t"
               << block.LLX() + n_well_shape->URX() << "\t"
@@ -1584,10 +1571,10 @@ void Circuit::GenMATLABWellTable(std::string const &name_of_file, bool only_well
   }
 
   for (auto &block: design_.well_tap_list) {
-    well = block.Type()->WellPtr();
+    well = block.TypePtr()->WellPtr();
     if (well != nullptr) {
-      n_well_shape = well->GetNWellShape();
-      p_well_shape = well->GetPWellShape();
+      n_well_shape = well->NWellRectPtr();
+      p_well_shape = well->PWellRectPtr();
       if (block.Orient() == N_) {
         ost << block.LLX() + n_well_shape->LLX() << "\t"
             << block.LLX() + n_well_shape->URX() << "\t"
@@ -1682,10 +1669,10 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
         << " ;\n";
   }
   for (auto &block: design_.block_list) {
-    if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
+    if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
     ost << "- "
         << *block.NamePtr() << " "
-        << *(block.Type()->NamePtr()) << " + "
+        << *(block.TypePtr()->NamePtr()) << " + "
         << block.GetPlaceStatusStr() << " "
         << "( "
         << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
@@ -1697,7 +1684,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   for (auto &block: design_.well_tap_list) {
     ost << "- "
         << *block.NamePtr() << " "
-        << *(block.Type()->NamePtr()) << " + "
+        << *(block.TypePtr()->NamePtr()) << " + "
         << "PLACED" << " "
         << "( "
         << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
@@ -1850,16 +1837,16 @@ void Circuit::SaveDefFile(std::string const &base_name,
     case 1: { // save all normal cells, regardless of the placement status
       int cell_count = 0;
       for (auto &block: design_.block_list) {
-        if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
+        if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
         ++cell_count;
       }
       cell_count += design_.well_tap_list.size();
       ost << "COMPONENTS " << cell_count << " ;\n";
       for (auto &block: design_.block_list) {
-        if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
+        if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
         ost << "- "
             << *(block.NamePtr()) << " "
-            << *(block.Type()->NamePtr()) << " + "
+            << *(block.TypePtr()->NamePtr()) << " + "
             << block.GetPlaceStatusStr() << " "
             << "( "
             << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
@@ -1871,7 +1858,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       for (auto &block: design_.well_tap_list) {
         ost << "- "
             << *(block.NamePtr()) << " "
-            << *(block.Type()->NamePtr()) << " + "
+            << *(block.TypePtr()->NamePtr()) << " + "
             << block.GetPlaceStatusStr() << " "
             << "( "
             << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
@@ -1888,7 +1875,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       for (auto &block: design_.well_tap_list) {
         ost << "- "
             << *(block.NamePtr()) << " "
-            << *(block.Type()->NamePtr()) << " + "
+            << *(block.TypePtr()->NamePtr()) << " + "
             << block.GetPlaceStatusStr() << " "
             << "( "
             << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
@@ -1902,7 +1889,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
     case 3: { // save all normal cells + dummy cell for well filling
       int cell_count = 0;
       for (auto &block: design_.block_list) {
-        if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
+        if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
         ++cell_count;
       }
       cell_count += design_.well_tap_list.size();
@@ -1920,10 +1907,10 @@ void Circuit::SaveDefFile(std::string const &base_name,
           << " ;\n";
 
       for (auto &block: design_.block_list) {
-        if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
+        if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
         ost << "- "
             << *(block.NamePtr()) << " "
-            << *(block.Type()->NamePtr()) << " + "
+            << *(block.TypePtr()->NamePtr()) << " + "
             << block.GetPlaceStatusStr() << " "
             << "( "
             << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
@@ -1935,7 +1922,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       for (auto &block: design_.well_tap_list) {
         ost << "- "
             << *(block.NamePtr()) << " "
-            << *(block.Type()->NamePtr()) << " + "
+            << *(block.TypePtr()->NamePtr()) << " + "
             << block.GetPlaceStatusStr() << " "
             << "( "
             << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
@@ -1949,7 +1936,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
     case 4: { // save all normal cells + dummy cell for well filling + dummy cell for n/p-plus filling
       int cell_count = 0;
       for (auto &block: design_.block_list) {
-        if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
+        if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
         ++cell_count;
       }
       cell_count += design_.well_tap_list.size();
@@ -1977,10 +1964,10 @@ void Circuit::SaveDefFile(std::string const &base_name,
           << " ;\n";
 
       for (auto &block: design_.block_list) {
-        if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
+        if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
         ost << "- "
             << *(block.NamePtr()) << " "
-            << *(block.Type()->NamePtr()) << " + "
+            << *(block.TypePtr()->NamePtr()) << " + "
             << block.GetPlaceStatusStr() << " "
             << "( "
             << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
@@ -1992,7 +1979,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       for (auto &block: design_.well_tap_list) {
         ost << "- "
             << *(block.NamePtr()) << " "
-            << *(block.Type()->NamePtr()) << " + "
+            << *(block.TypePtr()->NamePtr()) << " + "
             << block.GetPlaceStatusStr() << " "
             << "( "
             << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
@@ -2006,18 +1993,18 @@ void Circuit::SaveDefFile(std::string const &base_name,
     case 5: { // save all placed cells
       int cell_count = 0;
       for (auto &block: design_.block_list) {
-        if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
+        if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
         if (block.PlacementStatus() == UNPLACED_) continue;
         ++cell_count;
       }
       cell_count += design_.well_tap_list.size();
       ost << "COMPONENTS " << cell_count << " ;\n";
       for (auto &block: design_.block_list) {
-        if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
+        if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
         if (block.PlacementStatus() == UNPLACED_) continue;
         ost << "- "
             << *(block.NamePtr()) << " "
-            << *(block.Type()->NamePtr()) << " + "
+            << *(block.TypePtr()->NamePtr()) << " + "
             << block.GetPlaceStatusStr() << " "
             << "( "
             << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
@@ -2029,7 +2016,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       for (auto &block: design_.well_tap_list) {
         ost << "- "
             << *(block.NamePtr()) << " "
-            << *(block.Type()->NamePtr()) << " + "
+            << *(block.TypePtr()->NamePtr()) << " + "
             << block.GetPlaceStatusStr() << " "
             << "( "
             << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
@@ -2153,7 +2140,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
           ost << " ( PIN " << *(iopin->Name()) << " ) ";
         }
         for (auto &pin_pair: net.blk_pin_list) {
-          if (pin_pair.BlkPtr()->Type() == tech_.io_dummy_blk_type_ptr_) continue;
+          if (pin_pair.BlkPtr()->TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
           ost << " ( " << *(pin_pair.BlockNamePtr()) << " " << *(pin_pair.PinNamePtr()) << " ) ";
         }
         ost << "\n" << " ;\n";
@@ -2223,10 +2210,10 @@ void Circuit::SaveIODefFile(std::string const &name_of_file, std::string const &
   ost << "COMPONENTS " << design_.block_list.size() - design_.pre_placed_io_count_ + design_.well_tap_list.size()
       << " ;\n";
   for (auto &block: design_.block_list) {
-    if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
+    if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
     ost << "- "
         << *block.NamePtr() << " "
-        << *(block.Type()->NamePtr()) << " + "
+        << *(block.TypePtr()->NamePtr()) << " + "
         << block.GetPlaceStatusStr() << " "
         << "( "
         << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
@@ -2238,7 +2225,7 @@ void Circuit::SaveIODefFile(std::string const &name_of_file, std::string const &
   for (auto &block: design_.well_tap_list) {
     ost << "- "
         << *block.NamePtr() << " "
-        << *(block.Type()->NamePtr()) << " + "
+        << *(block.TypePtr()->NamePtr()) << " + "
         << "PLACED" << " "
         << "( "
         << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
@@ -2347,7 +2334,7 @@ void Circuit::SaveDefWell(std::string const &name_of_file, std::string const &de
   for (auto &block: design_.well_tap_list) {
     ost << "- "
         << *block.NamePtr() << " "
-        << *(block.Type()->NamePtr()) << " + "
+        << *(block.TypePtr()->NamePtr()) << " + "
         << "PLACED" << " "
         << "( "
         << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
@@ -2358,10 +2345,10 @@ void Circuit::SaveDefWell(std::string const &name_of_file, std::string const &de
   }
   if (!is_no_normal_cell) {
     for (auto &block: design_.block_list) {
-      if (block.Type() == tech_.io_dummy_blk_type_ptr_) continue;
+      if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
       ost << "- "
           << *block.NamePtr() << " "
-          << *(block.Type()->NamePtr()) << " + "
+          << *(block.TypePtr()->NamePtr()) << " + "
           << block.GetPlaceStatusStr() << " "
           << "( "
           << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_ << " "
@@ -2510,10 +2497,10 @@ void Circuit::SaveBookshelfNet(std::string const &name_of_file) {
       } else {
         ost << "O : ";
       }
-      ost << (pair.PinPtr()->OffsetX() - pair.BlkPtr()->Type()->Width() / 2.0) * design_.def_distance_microns
+      ost << (pair.PinPtr()->OffsetX() - pair.BlkPtr()->TypePtr()->Width() / 2.0) * design_.def_distance_microns
           * tech_.grid_value_x_
           << "\t"
-          << (pair.PinPtr()->OffsetY() - pair.BlkPtr()->Type()->Height() / 2.0) * design_.def_distance_microns
+          << (pair.PinPtr()->OffsetY() - pair.BlkPtr()->TypePtr()->Height() / 2.0) * design_.def_distance_microns
               * tech_.grid_value_y_
           << "\n";
     }

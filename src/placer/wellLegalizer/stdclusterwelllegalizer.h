@@ -186,6 +186,8 @@ class StdClusterWellLegalizer : public Placer {
  public:
   StdClusterWellLegalizer();
 
+  void CheckWellExistence();
+
   void SetRowHeight(int row_height) {
     Assert(row_height > 0, "Setting row height to a negative value? StdClusterWellLegalizer::SetRowHeight()\n");
     row_height_set_ = true;
