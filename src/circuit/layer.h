@@ -55,6 +55,10 @@ class MetalLayer : public Layer {
     x_pitch_ = x_pitch;
     y_pitch_ = y_pitch;
   }
+  void SetPitchAuto() {
+    x_pitch_ = width_ + spacing_;
+    y_pitch_ = width_ + spacing_;
+  }
   void SetDirection(MetalDirection direction) { direction_ = direction; }
   const std::string *Name() const { return &(name_num_pair_ptr_->first); }
   int Num() const { return name_num_pair_ptr_->second; }
@@ -62,8 +66,8 @@ class MetalLayer : public Layer {
   double MinHeight() const { return min_area_ / width_; }
   double PitchX() const { return x_pitch_; }
   double PitchY() const { return y_pitch_; }
-  MetalDirection Direction() { return direction_; }
-  void Report();
+  MetalDirection Direction() const { return direction_; }
+  void Report() const;
 };
 
 class WellLayer : public Layer {

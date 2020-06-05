@@ -195,9 +195,9 @@ void Placer::SaveDEFFile(std::string const &name_of_file) {
         << "PLACED"
         << " ("
         << " "
-            + std::to_string((int) (block.LLX() * circuit_->design_.def_distance_microns * circuit_->GetGridValueX()))
+            + std::to_string((int) (block.LLX() * circuit_->design_.def_distance_microns * circuit_->GridValueX()))
         << " "
-            + std::to_string((int) (block.LLY() * circuit_->design_.def_distance_microns * circuit_->GetGridValueY()))
+            + std::to_string((int) (block.LLY() * circuit_->design_.def_distance_microns * circuit_->GridValueY()))
         << " ) "
         << OrientStr(block.Orient()) + " ;\n";
   }

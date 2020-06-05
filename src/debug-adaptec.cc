@@ -27,7 +27,7 @@ int main() {
   std::string adaptec1_def = "../test/adaptec1/adaptec1.def";
 #endif
 
-  circuit.SetGridValue(0.01, 0.01);
+  circuit.setGridValue(0.01, 0.01);
   circuit.ReadLefFile(adaptec1_lef);
   circuit.ReadDefFile(adaptec1_def);
   circuit.design_.region_left_ = 459;

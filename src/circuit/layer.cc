@@ -33,7 +33,7 @@ MetalLayer::MetalLayer(double width,
     y_pitch_(0),
     direction_(direction) {}
 
-void MetalLayer::Report() {
+void MetalLayer::Report() const {
   std::cout << "  MetalLayer Name: " << *Name() << "\n"
             << "    Assigned Num: " << Num() << "\n"
             << "    Width and Spacing: " << Width() << " " << Spacing() << "\n"

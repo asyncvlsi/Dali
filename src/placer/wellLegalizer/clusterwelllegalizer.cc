@@ -24,16 +24,16 @@ void ClusterWellLegalizer::InitializeClusterLegalizer() {
   col_to_cluster_.resize(tot_num_cols_, nullptr);
 
   // parameters fetching
-  auto tech_params = circuit_->GetTech();
+  auto tech_params = circuit_->getTech();
   Assert(tech_params != nullptr, "No tech info found, well legalization cannot proceed!\n");
   auto n_well_layer = tech_params->GetNLayer();
   auto p_well_layer = tech_params->GetPLayer();
-  well_extension_x = std::ceil(n_well_layer->Overhang() / circuit_->GetGridValueX());
+  well_extension_x = std::ceil(n_well_layer->Overhang() / circuit_->GridValueX());
   //well_extension_y = std::ceil((n_well_layer->Overhang())/circuit_->GetGridValueY());
   //plug_width = std::ceil();
   printf("Well max plug distance: %2.2e um \n", n_well_layer->MaxPlugDist());
-  printf("GridValueX: %2.2e um\n", circuit_->GetGridValueX());
-  max_well_length = std::floor(n_well_layer->MaxPlugDist() / circuit_->GetGridValueX());
+  printf("GridValueX: %2.2e um\n", circuit_->GridValueX());
+  max_well_length = std::floor(n_well_layer->MaxPlugDist() / circuit_->GridValueX());
 
   // parameters setting
   /*if (max_well_length > RegionWidth()) {
@@ -994,7 +994,7 @@ void ClusterWellLegalizer::ReportWellRule() {
             << "    WellSpacing: " << well_spacing_x << "\n"
             << "    MaxDist:     " << max_well_length << "\n"
             << "    (real):      "
-            << std::floor(circuit_->GetTech()->GetNLayer()->MaxPlugDist() / circuit_->GetGridValueX()) << "\n"
+            << std::floor(circuit_->getTech()->GetNLayer()->MaxPlugDist() / circuit_->GridValueX()) << "\n"
             << "    WellWidth:   " << well_min_width << "\n"
             << "    OverhangX:   " << well_extension_x << "\n"
             << "    OverhangY:   " << well_extension_y << "\n";

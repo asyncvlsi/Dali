@@ -13,7 +13,7 @@ WellLegalizer::WellLegalizer() : LGTetrisEx() {
 
 void WellLegalizer::InitWellLegalizer() {
   Assert(circuit_ != nullptr, "Well Legalization fail: no input circuit!");
-  Tech *tech_parm = circuit_->GetTech();
+  Tech *tech_parm = circuit_->getTech();
   Assert(tech_parm != nullptr, "Well Legalization fail: no technology parameters found!");
 
   WellLayer *n_layer, *p_layer;
@@ -22,13 +22,13 @@ void WellLegalizer::InitWellLegalizer() {
   Assert(n_layer != nullptr, "Well Legalization fail: no N well parameters found!");
   Assert(p_layer != nullptr, "Well Legalization fail: no P well parameters found!");
 
-  n_max_plug_dist_ = std::ceil(n_layer->MaxPlugDist() / circuit_->GetGridValueX());
-  p_max_plug_dist_ = std::ceil(p_layer->MaxPlugDist() / circuit_->GetGridValueX());
-  nn_spacing_ = std::ceil(n_layer->Spacing() / circuit_->GetGridValueX());
-  pp_spacing_ = std::ceil(p_layer->Spacing() / circuit_->GetGridValueX());
-  np_spacing_ = std::ceil(p_layer->OpSpacing() / circuit_->GetGridValueX());
-  n_min_width_ = std::ceil(n_layer->Width() / circuit_->GetGridValueX());
-  p_min_width_ = std::ceil(p_layer->Width() / circuit_->GetGridValueX());
+  n_max_plug_dist_ = std::ceil(n_layer->MaxPlugDist() / circuit_->GridValueX());
+  p_max_plug_dist_ = std::ceil(p_layer->MaxPlugDist() / circuit_->GridValueX());
+  nn_spacing_ = std::ceil(n_layer->Spacing() / circuit_->GridValueX());
+  pp_spacing_ = std::ceil(p_layer->Spacing() / circuit_->GridValueX());
+  np_spacing_ = std::ceil(p_layer->OpSpacing() / circuit_->GridValueX());
+  n_min_width_ = std::ceil(n_layer->Width() / circuit_->GridValueX());
+  p_min_width_ = std::ceil(p_layer->Width() / circuit_->GridValueX());
 
   RowWellStatus tmp_row_well_status(INT_MAX, false);
   row_well_status_.resize(RegionTop() - RegionBottom() + 1, tmp_row_well_status);

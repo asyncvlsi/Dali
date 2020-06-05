@@ -29,6 +29,44 @@ Circuit::Circuit(odb::dbDatabase *db_ptr) {
   InitializeFromDB(db_ptr);
 }
 
+void Circuit::LoadImaginaryCellFile() {
+  /****
+   * Creates fake NP-well information for testing purposes
+   * ****/
+
+  // 1. create fake well tap cell
+  std::string tap_cell_name("welltap_svt");
+  tech_.well_tap_cell_ptr_ = AddBlockType(tap_cell_name, MinBlkWidth(), MinBlkHeight());
+
+  // 2. create fake well parameters
+  double fake_same_diff_spacing = 0;
+  double fake_any_diff_spacing = 0;
+  SetLegalizerSpacing(fake_same_diff_spacing, fake_any_diff_spacing);
+
+  double width = 0;
+  double spacing = 0;
+  double op_spacing = 0;
+  double max_plug_dist = 0;
+  double overhang = 0;
+
+  width = MinBlkHeight() / 2.0 * tech_.grid_value_y_;
+  spacing = MinBlkWidth() * tech_.grid_value_x_;
+  op_spacing = MinBlkWidth() * tech_.grid_value_x_;
+  max_plug_dist = AveMovBlkWidth() * 10 * tech_.grid_value_x_;
+
+  SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
+  SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
+
+  // 3. create fake NP-well geometries for each BlockType
+  for (auto &pair : tech_.block_type_map) {
+    auto *blk_type = pair.second;
+    BlockTypeWell *well = AddBlockTypeWell(blk_type);
+    int np_edge = blk_type->Height() / 2;
+    well->setNWellRect(0, np_edge, blk_type->Width(), blk_type->Height());
+    well->setPWellRect(0, 0, blk_type->Width(), np_edge);
+  }
+}
+
 void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   db_ptr_ = db_ptr;
   auto tech = db_ptr->getTech();
@@ -56,15 +94,14 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
       double min_width = layer->getWidth() / (double) tech_.lef_database_microns;
       double min_spacing = layer->getSpacing() / (double) tech_.lef_database_microns;
       //std::cout << min_width << "  " << min_spacing << "  ";
-      auto *metal_layer = AddMetalLayer(metal_layer_name, min_width, min_spacing);
       std::string str_direct(layer->getDirection().getString());
       MetalDirection direct = StrToMetalDirection(str_direct);
-      metal_layer->SetDirection(direct);
+      double min_area = 0;
       if (layer->hasArea()) {
         //std::cout << layer->getArea();
-        double min_area = layer->getArea();
-        metal_layer->SetArea(min_area);
+        min_area = layer->getArea();
       }
+      AddMetalLayer(metal_layer_name, min_width, min_spacing, min_area, min_width + min_spacing, min_width + min_spacing, direct);
       //std::cout << "\n";
     }
   }
@@ -110,10 +147,10 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
     } else {
       Assert(false, "Cannot find layer metal1 and layer metal2");
     }
-    SetGridValue(grid_value_x, grid_value_y);
+    setGridValue(grid_value_x, grid_value_y);
   }
   auto site = lib->getSites().begin();
-  SetRowHeight(site->getHeight() / double(tech_.lef_database_microns));
+  setRowHeight(site->getHeight() / double(tech_.lef_database_microns));
   //std::cout << site->getName() << "  " << site->getWidth() / double(lef_database_microns) << "  " << row_height_ << "\n";
   double residual = tech_.row_height_ - std::round(tech_.row_height_ / tech_.grid_value_y_) * tech_.grid_value_y_;
   Assert(std::fabs(residual) < 1e-6, "Site height is not integer multiple of grid value in Y");
@@ -203,6 +240,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
     AddBlock(blk_name, blk_type_name, llx_int, lly_int, StrToPlaceStatus(place_status), StrToOrient(orient));
   }
 
+  // 6. load all IOPINs
   for (auto &&iopin: top_level->getBTerms()) {
     //std::cout << iopin->getName() << "\n";
     std::string iopin_name(iopin->getName());
@@ -224,6 +262,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
     pin->SetDirection(sig_dir);
   }
 
+  // 7. load all NETs
   //std::cout << "Nets:\n";
   for (auto &&net: top_level->getNets()) {
     //std::cout << net->getName() << "\n";
@@ -402,15 +441,15 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
   //ReportMetalLayers();
   if (!tech_.grid_set_) {
     if (tech_.metal_list.size() < 2) {
-      SetGridValue(tech_.manufacturing_grid, tech_.manufacturing_grid);
+      setGridValue(tech_.manufacturing_grid, tech_.manufacturing_grid);
       std::cout << "No enough metal layers to specify horizontal and vertical pitch\n"
                 << "Using manufacturing grid as grid values\n";
     } else if (tech_.metal_list[0].PitchY() <= 0 || tech_.metal_list[1].PitchX() <= 0) {
-      SetGridValue(tech_.manufacturing_grid, tech_.manufacturing_grid);
+      setGridValue(tech_.manufacturing_grid, tech_.manufacturing_grid);
       std::cout << "Invalid metal pitch\n"
                 << "Using manufacturing grid as grid values\n";
     } else {
-      SetGridUsingMetalPitch();
+      setGridUsingMetalPitch();
     }
     std::cout << "Grid Value: " << tech_.grid_value_x_ << "  " << tech_.grid_value_y_ << "\n";
   }
@@ -739,6 +778,182 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
   std::cout << "DEF file loading complete: " << name_of_file << "\n";
 }
 
+void Circuit::ReadCellFile(std::string const &name_of_file) {
+  std::ifstream ist(name_of_file.c_str());
+  Assert(ist.is_open(), "Cannot open input file: " + name_of_file);
+  std::cout << "Loading CELL file: " << name_of_file << "\n";
+  std::string line;
+
+  while (!ist.eof()) {
+    getline(ist, line);
+    if (line.empty()) continue;
+    if (line.find("LAYER") != std::string::npos) {
+      if (line.find("LEGALIZER") != std::string::npos) {
+        std::vector<std::string> legalizer_fields;
+        double same_diff_spacing = 0;
+        double any_diff_spacing = 0;
+        do {
+          getline(ist, line);
+          StrSplit(line, legalizer_fields);
+          Assert(legalizer_fields.size() == 2, "Expect: SPACING + Value, get: " + line);
+          if (legalizer_fields[0] == "SAME_DIFF_SPACING") {
+            try {
+              same_diff_spacing = std::stod(legalizer_fields[1]);
+            } catch (...) {
+              std::cout << line << std::endl;
+              Assert(false, "Invalid stod conversion: " + legalizer_fields[1]);
+            }
+          } else if (legalizer_fields[0] == "ANY_DIFF_SPACING") {
+            try {
+              any_diff_spacing = std::stod(legalizer_fields[1]);
+            } catch (...) {
+              std::cout << line << std::endl;
+              Assert(false, "Invalid stod conversion: " + legalizer_fields[1]);
+            }
+          }
+        } while (line.find("END LEGALIZER") == std::string::npos && !ist.eof());
+        //std::cout << "same diff spacing: " << same_diff_spacing << "\n any diff spacing: " << any_diff_spacing << "\n";
+        SetLegalizerSpacing(same_diff_spacing, any_diff_spacing);
+      } else {
+        std::vector<std::string> well_fields;
+        StrSplit(line, well_fields);
+        bool is_n_well = (well_fields[1] == "nwell");
+        if (!is_n_well) Assert(well_fields[1] == "pwell", "Unknow N/P well type: " + well_fields[1]);
+        std::string end_layer_flag = "END " + well_fields[1];
+        double width = 0;
+        double spacing = 0;
+        double op_spacing = 0;
+        double max_plug_dist = 0;
+        double overhang = 0;
+        do {
+          if (line.find("MINWIDTH") != std::string::npos) {
+            StrSplit(line, well_fields);
+            try {
+              width = std::stod(well_fields[1]);
+            } catch (...) {
+              std::cout << line << std::endl;
+              Assert(false, "Invalid stod conversion: " + well_fields[1]);
+            }
+          } else if (line.find("OPPOSPACING") != std::string::npos) {
+            StrSplit(line, well_fields);
+            try {
+              op_spacing = std::stod(well_fields[1]);
+            } catch (...) {
+              std::cout << line << std::endl;
+              Assert(false, "Invalid stod conversion: " + well_fields[1]);
+            }
+          } else if (line.find("SPACING") != std::string::npos) {
+            StrSplit(line, well_fields);
+            try {
+              spacing = std::stod(well_fields[1]);
+            } catch (...) {
+              std::cout << line << std::endl;
+              Assert(false, "Invalid stod conversion: " + well_fields[1]);
+            }
+          } else if (line.find("MAXPLUGDIST") != std::string::npos) {
+            StrSplit(line, well_fields);
+            try {
+              max_plug_dist = std::stod(well_fields[1]);
+            } catch (...) {
+              std::cout << line << std::endl;
+              Assert(false, "Invalid stod conversion: " + well_fields[1]);
+            }
+          } else if (line.find("MAXPLUGDIST") != std::string::npos) {
+            StrSplit(line, well_fields);
+            try {
+              overhang = std::stod(well_fields[1]);
+            } catch (...) {
+              std::cout << line << std::endl;
+              Assert(false, "Invalid stod conversion: " + well_fields[1]);
+            }
+          } else {}
+          getline(ist, line);
+        } while (line.find(end_layer_flag) == std::string::npos && !ist.eof());
+        if (is_n_well) {
+          SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
+        } else {
+          SetPWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
+        }
+      }
+    }
+
+    if (line.find("MACRO") != std::string::npos) {
+      //std::cout << line << "\n";
+      std::vector<std::string> macro_fields;
+      StrSplit(line, macro_fields);
+      std::string end_macro_flag = "END " + macro_fields[1];
+      BlockTypeWell *well = AddBlockTypeWell(macro_fields[1]);
+      auto blk_type = GetBlockType(macro_fields[1]);
+      do {
+        getline(ist, line);
+        bool is_n = false;
+        if (line.find("LAYER") != std::string::npos) {
+          do {
+            if (line.find("nwell") != std::string::npos) {
+              is_n = true;
+            }
+            if (line.find("RECT") != std::string::npos) {
+              int lx = 0, ly = 0, ux = 0, uy = 0;
+              std::vector<std::string> shape_fields;
+              StrSplit(line, shape_fields);
+              try {
+                lx = int(std::round(std::stod(shape_fields[1]) / tech_.grid_value_x_));
+                ly = int(std::round(std::stod(shape_fields[2]) / tech_.grid_value_y_));
+                ux = int(std::round(std::stod(shape_fields[3]) / tech_.grid_value_x_));
+                uy = int(std::round(std::stod(shape_fields[4]) / tech_.grid_value_y_));
+              } catch (...) {
+                Assert(false, "Invalid stod conversion:\n" + line);
+              }
+              well->setWellRect(is_n, lx, ly, ux, uy);
+              if (is_n) {
+                well->setNWellRect(0, ly, blk_type->Width(), blk_type->Height());
+              } else {
+                well->setPWellRect(0, 0, blk_type->Width(), uy);
+              }
+            }
+            getline(ist, line);
+          } while (line.find("END VERSION") == std::string::npos && !ist.eof());
+        }
+      } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
+      Assert(well->IsNPWellAbutted(), "N/P well not abutted: " + macro_fields[1]);
+    }
+  }
+  Assert(!tech_.IsWellInfoSet(), "N/P well technology information not found!");
+  //tech_->Report();
+  //ReportWellShape();
+
+  std::cout << "CELL file loading complete: " << name_of_file << "\n";
+}
+
+void Circuit::setGridValue(double grid_value_x, double grid_value_y) {
+  Assert(grid_value_x > 0, "grid_value_x must be a positive real number! Circuit::setGridValue()");
+  Assert(grid_value_y > 0, "grid_value_y must be a positive real number! Circuit::setGridValue()");
+  Assert(!tech_.grid_set_, "once set, grid_value cannot be changed! Circuit::setGridValue()");
+  tech_.grid_value_x_ = grid_value_x;
+  tech_.grid_value_y_ = grid_value_y;
+  tech_.grid_set_ = true;
+}
+
+void Circuit::setGridUsingMetalPitch() {
+  Assert(tech_.metal_list.size() >= 2,
+         "No enough metal layer for determining grid value in x and y! Circuit::setGridUsingMetalPitch()");
+  MetalLayer *hor_layer = nullptr;
+  MetalLayer *ver_layer = nullptr;
+  for (auto &metal_layer: tech_.metal_list) {
+    if (hor_layer == nullptr && metal_layer.Direction() == HORIZONTAL_) {
+      hor_layer = &metal_layer;
+    }
+    if (ver_layer == nullptr && metal_layer.Direction() == VERTICAL_) {
+      ver_layer = &metal_layer;
+    }
+  }
+  Assert(hor_layer != nullptr, "Cannot find a horizontal metal layer! Circuit::setGridUsingMetalPitch()");
+  Assert(ver_layer != nullptr, "Cannot find a vertical metal layer! Circuit::setGridUsingMetalPitch()");
+  //std::cout << "vertical layer: " << *ver_layer->Name() << "  " << ver_layer->PitchX() << "\n";
+  //std::cout << "horizontal layer: " << *hor_layer->Name() << "  " << hor_layer->PitchY() << "\n";
+  setGridValue(ver_layer->PitchX(), hor_layer->PitchY());
+}
+
 MetalLayer *Circuit::AddMetalLayer(std::string &metal_name, double width, double spacing) {
   Assert(!IsMetalLayerExist(metal_name), "MetalLayer exist, cannot create this MetalLayer again: " + metal_name);
   int map_size = tech_.metal_name_map.size();
@@ -746,6 +961,23 @@ MetalLayer *Circuit::AddMetalLayer(std::string &metal_name, double width, double
   std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
   tech_.metal_list.emplace_back(width, spacing, name_num_pair_ptr);
   return &(tech_.metal_list.back());
+}
+
+void Circuit::AddMetalLayer(std::string &metal_name,
+                            double width,
+                            double spacing,
+                            double min_area,
+                            double pitch_x,
+                            double pitch_y,
+                            MetalDirection metal_direction) {
+  Assert(!IsMetalLayerExist(metal_name), "MetalLayer exist, cannot create this MetalLayer again: " + metal_name);
+  int map_size = tech_.metal_name_map.size();
+  auto ret = tech_.metal_name_map.insert(std::pair<std::string, int>(metal_name, map_size));
+  std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
+  tech_.metal_list.emplace_back(width, spacing, name_num_pair_ptr);
+  tech_.metal_list.back().SetArea(min_area);
+  tech_.metal_list.back().SetPitch(pitch_x, pitch_y);
+  tech_.metal_list.back().SetDirection(metal_direction);
 }
 
 void Circuit::ReportMetalLayers() {
@@ -1029,200 +1261,6 @@ void Circuit::RemoveAllPseudoNets() {
 }
  */
 
-void Circuit::SetGridValue(double grid_value_x, double grid_value_y) {
-  Assert(grid_value_x > 0, "grid_value_x must be a positive real number!");
-  Assert(grid_value_y > 0, "grid_value_y must be a positive real number!");
-  Assert(!tech_.grid_set_, "once set, grid_value cannot be changed!");
-  tech_.grid_value_x_ = grid_value_x;
-  tech_.grid_value_y_ = grid_value_y;
-  tech_.grid_set_ = true;
-}
-
-void Circuit::ReadCellFile(std::string const &name_of_file) {
-  std::ifstream ist(name_of_file.c_str());
-  Assert(ist.is_open(), "Cannot open input file: " + name_of_file);
-  std::cout << "Loading CELL file: " << name_of_file << "\n";
-  std::string line;
-
-  while (!ist.eof()) {
-    getline(ist, line);
-    if (line.empty()) continue;
-    if (line.find("LAYER") != std::string::npos) {
-      if (line.find("LEGALIZER") != std::string::npos) {
-        std::vector<std::string> legalizer_fields;
-        double same_diff_spacing = 0;
-        double any_diff_spacing = 0;
-        do {
-          getline(ist, line);
-          StrSplit(line, legalizer_fields);
-          Assert(legalizer_fields.size() == 2, "Expect: SPACING + Value, get: " + line);
-          if (legalizer_fields[0] == "SAME_DIFF_SPACING") {
-            try {
-              same_diff_spacing = std::stod(legalizer_fields[1]);
-            } catch (...) {
-              std::cout << line << std::endl;
-              Assert(false, "Invalid stod conversion: " + legalizer_fields[1]);
-            }
-          } else if (legalizer_fields[0] == "ANY_DIFF_SPACING") {
-            try {
-              any_diff_spacing = std::stod(legalizer_fields[1]);
-            } catch (...) {
-              std::cout << line << std::endl;
-              Assert(false, "Invalid stod conversion: " + legalizer_fields[1]);
-            }
-          }
-        } while (line.find("END LEGALIZER") == std::string::npos && !ist.eof());
-        //std::cout << "same diff spacing: " << same_diff_spacing << "\n any diff spacing: " << any_diff_spacing << "\n";
-        SetLegalizerSpacing(same_diff_spacing, any_diff_spacing);
-      } else {
-        std::vector<std::string> well_fields;
-        StrSplit(line, well_fields);
-        bool is_n_well = (well_fields[1] == "nwell");
-        if (!is_n_well) Assert(well_fields[1] == "pwell", "Unknow N/P well type: " + well_fields[1]);
-        std::string end_layer_flag = "END " + well_fields[1];
-        double width = 0;
-        double spacing = 0;
-        double op_spacing = 0;
-        double max_plug_dist = 0;
-        double overhang = 0;
-        do {
-          if (line.find("MINWIDTH") != std::string::npos) {
-            StrSplit(line, well_fields);
-            try {
-              width = std::stod(well_fields[1]);
-            } catch (...) {
-              std::cout << line << std::endl;
-              Assert(false, "Invalid stod conversion: " + well_fields[1]);
-            }
-          } else if (line.find("OPPOSPACING") != std::string::npos) {
-            StrSplit(line, well_fields);
-            try {
-              op_spacing = std::stod(well_fields[1]);
-            } catch (...) {
-              std::cout << line << std::endl;
-              Assert(false, "Invalid stod conversion: " + well_fields[1]);
-            }
-          } else if (line.find("SPACING") != std::string::npos) {
-            StrSplit(line, well_fields);
-            try {
-              spacing = std::stod(well_fields[1]);
-            } catch (...) {
-              std::cout << line << std::endl;
-              Assert(false, "Invalid stod conversion: " + well_fields[1]);
-            }
-          } else if (line.find("MAXPLUGDIST") != std::string::npos) {
-            StrSplit(line, well_fields);
-            try {
-              max_plug_dist = std::stod(well_fields[1]);
-            } catch (...) {
-              std::cout << line << std::endl;
-              Assert(false, "Invalid stod conversion: " + well_fields[1]);
-            }
-          } else if (line.find("MAXPLUGDIST") != std::string::npos) {
-            StrSplit(line, well_fields);
-            try {
-              overhang = std::stod(well_fields[1]);
-            } catch (...) {
-              std::cout << line << std::endl;
-              Assert(false, "Invalid stod conversion: " + well_fields[1]);
-            }
-          } else {}
-          getline(ist, line);
-        } while (line.find(end_layer_flag) == std::string::npos && !ist.eof());
-        if (is_n_well) {
-          SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
-        } else {
-          SetPWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
-        }
-      }
-    }
-
-    if (line.find("MACRO") != std::string::npos) {
-      //std::cout << line << "\n";
-      std::vector<std::string> macro_fields;
-      StrSplit(line, macro_fields);
-      std::string end_macro_flag = "END " + macro_fields[1];
-      BlockTypeWell *well = AddBlockTypeWell(macro_fields[1]);
-      auto blk_type = GetBlockType(macro_fields[1]);
-      do {
-        getline(ist, line);
-        bool is_n = false;
-        if (line.find("LAYER") != std::string::npos) {
-          do {
-            if (line.find("nwell") != std::string::npos) {
-              is_n = true;
-            }
-            if (line.find("RECT") != std::string::npos) {
-              int lx = 0, ly = 0, ux = 0, uy = 0;
-              std::vector<std::string> shape_fields;
-              StrSplit(line, shape_fields);
-              try {
-                lx = int(std::round(std::stod(shape_fields[1]) / tech_.grid_value_x_));
-                ly = int(std::round(std::stod(shape_fields[2]) / tech_.grid_value_y_));
-                ux = int(std::round(std::stod(shape_fields[3]) / tech_.grid_value_x_));
-                uy = int(std::round(std::stod(shape_fields[4]) / tech_.grid_value_y_));
-              } catch (...) {
-                Assert(false, "Invalid stod conversion:\n" + line);
-              }
-              well->setWellRect(is_n, lx, ly, ux, uy);
-              if (is_n) {
-                well->setNWellRect(0, ly, blk_type->Width(), blk_type->Height());
-              } else {
-                well->setPWellRect(0, 0, blk_type->Width(), uy);
-              }
-            }
-            getline(ist, line);
-          } while (line.find("END VERSION") == std::string::npos && !ist.eof());
-        }
-      } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
-      Assert(well->IsNPWellAbutted(), "N/P well not abutted: " + macro_fields[1]);
-    }
-  }
-  Assert(!tech_.IsWellInfoSet(), "N/P well technology information not found!");
-  //tech_->Report();
-  //ReportWellShape();
-
-  std::cout << "CELL file loading complete: " << name_of_file << "\n";
-}
-
-void Circuit::LoadImaginaryCellFile() {
-  /****
-   * Creates fake NP-well information for testing purposes
-   * ****/
-
-  // 1. create fake well tap cell
-  std::string tap_cell_name("welltap_svt");
-  tech_.well_tap_cell_ptr_ = AddBlockType(tap_cell_name, MinBlkWidth(), MinBlkHeight());
-
-  // 2. create fake well parameters
-  double fake_same_diff_spacing = 0;
-  double fake_any_diff_spacing = 0;
-  SetLegalizerSpacing(fake_same_diff_spacing, fake_any_diff_spacing);
-
-  double width = 0;
-  double spacing = 0;
-  double op_spacing = 0;
-  double max_plug_dist = 0;
-  double overhang = 0;
-
-  width = MinBlkHeight() / 2.0 * tech_.grid_value_y_;
-  spacing = MinBlkWidth() * tech_.grid_value_x_;
-  op_spacing = MinBlkWidth() * tech_.grid_value_x_;
-  max_plug_dist = AveMovBlkWidth() * 10 * tech_.grid_value_x_;
-
-  SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
-  SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
-
-  // 3. create fake NP-well geometries for each BlockType
-  for (auto &pair : tech_.block_type_map) {
-    auto *blk_type = pair.second;
-    BlockTypeWell *well = AddBlockTypeWell(blk_type);
-    int np_edge = blk_type->Height() / 2;
-    well->setNWellRect(0, np_edge, blk_type->Width(), blk_type->Height());
-    well->setPWellRect(0, 0, blk_type->Width(), np_edge);
-  }
-}
-
 void Circuit::ReportBlockList() {
   for (auto &block: design_.block_list) {
     block.Report();
@@ -1298,7 +1336,7 @@ double Circuit::HPWLX() {
   for (auto &net: design_.net_list) {
     hpwlx += net.HPWLX();
   }
-  return hpwlx * GetGridValueX();
+  return hpwlx * GridValueX();
 }
 
 double Circuit::HPWLY() {
@@ -1306,7 +1344,7 @@ double Circuit::HPWLY() {
   for (auto &net: design_.net_list) {
     hpwly += net.HPWLY();
   }
-  return hpwly * GetGridValueY();
+  return hpwly * GridValueY();
 }
 
 void Circuit::ReportHPWLHistogramLinear(int bin_num) {
@@ -1405,7 +1443,7 @@ double Circuit::HPWLCtoCX() {
   for (auto &net: design_.net_list) {
     hpwl_c2c_x += net.HPWLCtoCX();
   }
-  return hpwl_c2c_x * GetGridValueX();
+  return hpwl_c2c_x * GridValueX();
 }
 
 double Circuit::HPWLCtoCY() {
@@ -1413,7 +1451,7 @@ double Circuit::HPWLCtoCY() {
   for (auto &net: design_.net_list) {
     hpwl_c2c_y += net.HPWLCtoCY();
   }
-  return hpwl_c2c_y * GetGridValueY();
+  return hpwl_c2c_y * GridValueY();
 }
 
 void Circuit::WriteDefFileDebug(std::string const &name_of_file) {

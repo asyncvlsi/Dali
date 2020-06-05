@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
     odb_read_def(db, defFileVec);
     circuit.InitializeFromDB(db);
   } else {
-    circuit.SetGridValue(x_grid, y_grid);
+    circuit.setGridValue(x_grid, y_grid);
     circuit.ReadLefFile(lef_file_name);
     circuit.ReadDefFile(def_file_name);
   }

@@ -72,7 +72,7 @@ void LGTetrisEx::InitLegalizer() {
    * ****/
 
   if (!row_height_set_) {
-    row_height_ = circuit_->GetIntRowHeight();
+    row_height_ = circuit_->getINTRowHeight();
   }
   tot_num_rows_ = (top_ - bottom_) / row_height_;
 

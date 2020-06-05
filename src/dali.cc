@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
       try {
         x_grid = std::stod(str_x_grid);
         y_grid = std::stod(str_y_grid);
-        circuit.SetGridValue(x_grid, y_grid);
+        circuit.setGridValue(x_grid, y_grid);
       } catch (...) {
         std::cout << "Invalid input files!\n";
         ReportUsage();

@@ -22,9 +22,34 @@
 #include "status.h"
 #include "tech.h"
 
+/****
+ * The class Circuit is an abstract of a circuit graph.
+ * It contains two main parts:
+ *  1. technology, this part contains information in LEF and CELL
+ *  2. design, this part contains information in DEF
+ *
+ * To create a Circuit instance, one can simply do:
+ * a).
+ *  Circuit circuit;
+ *  circuit.InitializeFromDB(opendb_ptr);
+ * b).
+ *  Circuit circuit(opendb_ptr);
+ *
+ * To build a Circuit instance using API, one need to follow these major steps in sequence:
+ *  1. set lef database microns
+ *  2. set manufacturing grid and create metals
+ *  3. set grid value in x and y direction
+ *  4. create all macros
+ *  5. create all INSTANCEs
+ *  6. create all IOPINs
+ *  7. create all NETs
+ *  8. create well rect for macros
+ * To know more detail about how to do this, take a look at comments in member function void InitializeFromDB().
+ * ****/
+
 class Circuit {
   friend class Placer;
- public:
+ private:
   Tech tech_; // information in LEF and CELL
   Design design_; // information in DEF
 
@@ -32,61 +57,111 @@ class Circuit {
   odb::dbDatabase *db_ptr_; // pointer to openDB database
 #endif
 
+  // create fake N/P-well info for cells
+  void LoadImaginaryCellFile();
+
+ public:
+
   Circuit();
   /****API to initialize circuit
    * 1. from openDB
-   * 2. from LEF/DEF directly
+   * 2. from LEF/DEF directly using a naive parser
    * ****/
 #ifdef USE_OPENDB
+  // constructor using openDB database
   explicit Circuit(odb::dbDatabase *db_ptr);
+
+  // initialize a blank circuit from openDB database
   void InitializeFromDB(odb::dbDatabase *db_ptr);
 #endif
+
+  // simple LEF parser, do not recommend to use
   void ReadLefFile(std::string const &name_of_file);
+
+  // simple DEF parser, do not recommend to use
   void ReadDefFile(std::string const &name_of_file);
 
+  // simple CELL parser
   void ReadCellFile(std::string const &name_of_file);
-  void LoadImaginaryCellFile();
+
+  /****API to retrieve technology and design****/
+  // get technology info
+  Tech *getTech() { return &tech_; }
+
+  // get design info
+  Design *getDesign() { return &design_; }
 
   /****API to set grid value****/
-  void SetGridValue(double grid_value_x, double grid_value_y);
-  void SetGridUsingMetalPitch() {
-    SetGridValue(tech_.metal_list[0].PitchY(), tech_.metal_list[1].PitchX());
-  }
-  double GetGridValueX() const { return tech_.grid_value_x_; } // unit in micro
-  double GetGridValueY() const { return tech_.grid_value_y_; }
-  void SetRowHeight(double row_height) {
-    Assert(row_height > 0, "Setting row height to a negative value?");
+  // set grid values in x and y direction
+  void setGridValue(double grid_value_x, double grid_value_y);
+
+  // set grid values using the first horizontal and vertical metal layer pitches
+  void setGridUsingMetalPitch();
+
+  // get the grid value in x direction, unit is usually in micro
+  double GridValueX() const { return tech_.grid_value_x_; }
+
+  // get the grid value in y direction, unit is usually in micro
+  double GridValueY() const { return tech_.grid_value_y_; }
+
+  // set the row height,
+  void setRowHeight(double row_height) {
+    Assert(row_height > 0, "Setting row height to a negative value? Circuit::setRowHeight()");
     tech_.row_height_set_ = true;
     tech_.row_height_ = row_height;
   }
-  double GetDBRowHeight() const {
-    return tech_.row_height_;
-  }
-  int GetIntRowHeight() const {
-    Assert(tech_.row_height_set_, "Row height not set, cannot retrieve its value: Circuit::GetIntRowHeight()\n");
+
+  // get the row height in micro
+  double getDBRowHeight() const { return tech_.row_height_; }
+
+  // get the row height in grid value y
+  int getINTRowHeight() const {
+    Assert(tech_.row_height_set_, "Row height not set, cannot retrieve its value: Circuit::getINTRowHeight()\n");
     return (int) std::round(tech_.row_height_ / tech_.grid_value_y_);
   }
 
   /****API to set metal layers: deprecated
    * now the metal layer information are all stored in openDB data structure
    * ****/
-  std::vector<MetalLayer> *MetalList() { return &tech_.metal_list; }
+  // get the pointer to the list of metal layers
+  std::vector<MetalLayer> *MetalListPtr() { return &tech_.metal_list; }
+
+  // get the pointer to the name map of metal layers
   std::unordered_map<std::string, int> *MetalNameMap() { return &tech_.metal_name_map; }
+
+  // check if a metal layer with given name exists or not
   bool IsMetalLayerExist(std::string &metal_name) {
     return tech_.metal_name_map.find(metal_name) != tech_.metal_name_map.end();
   }
+
+  // get the index of a metal layer
   int MetalLayerIndex(std::string &metal_name) {
     Assert(IsMetalLayerExist(metal_name), "MetalLayer does not exist, cannot find it: " + metal_name);
     return tech_.metal_name_map.find(metal_name)->second;
   }
-  MetalLayer *GetMetalLayer(std::string &metal_name) {
+
+  // get a pointer to the metal layer with a given name
+  MetalLayer *GetMetalLayerPtr(std::string &metal_name) {
     Assert(IsMetalLayerExist(metal_name), "MetalLayer does not exist, cannot find it: " + metal_name);
     return &tech_.metal_list[MetalLayerIndex(metal_name)];
   }
+
+  // add a metal layer, not recommend to use
   MetalLayer *AddMetalLayer(std::string &metal_name, double width, double spacing);
-  MetalLayer *AddMetalLayer(std::string &metal_name) {
-    return AddMetalLayer(metal_name, 0, 0);
-  }
+
+  // add a metal layer, not recommend to use
+  MetalLayer *AddMetalLayer(std::string &metal_name) {return AddMetalLayer(metal_name, 0, 0);}
+
+  // add a metal layer
+  void AddMetalLayer(std::string &metal_name,
+                     double width,
+                     double spacing,
+                     double min_area,
+                     double pitch_x,
+                     double pitch_y,
+                     MetalDirection metal_direction);
+
+  // report metal layer information for debugging purposes
   void ReportMetalLayers();
 
   /****API for BlockType
@@ -228,7 +303,6 @@ class Circuit {
   void SetLegalizerSpacing(double same_spacing, double any_spacing) {
     tech_.SetDiffSpacing(same_spacing, any_spacing);
   }
-  Tech *GetTech() { return &tech_; }
   void ReportWellShape();
 
   /****API to add virtual nets for timing driven placement****/
@@ -274,8 +348,8 @@ class Circuit {
   // calculating HPWL from the center of cells
   double HPWLCtoCX();
   double HPWLCtoCY();
-  double HPWLCtoC() {return HPWLCtoCX() + HPWLCtoCY();}
-  void ReportHPWLCtoC() {printf("  Current HPWL: %e um\n", HPWLCtoC());}
+  double HPWLCtoC() { return HPWLCtoCX() + HPWLCtoCY(); }
+  void ReportHPWLCtoC() { printf("  Current HPWL: %e um\n", HPWLCtoC()); }
 
   /****dump placement results to various file formats****/
   void WriteDefFileDebug(std::string const &name_of_file = "circuit.def");
