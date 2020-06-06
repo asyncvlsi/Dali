@@ -17,8 +17,8 @@
 class Tech {
  public:
   /****manufacturing grid****/
-  double manufacturing_grid = 0;
-  int lef_database_microns = 0;
+  double manufacturing_grid_ = 0;
+  int database_microns_ = 0;
 
   /****grid value in X and Y****/
   bool grid_set_ = false;
@@ -26,11 +26,11 @@ class Tech {
   double grid_value_y_ = 0;
 
   /****metal layers****/
-  std::vector<MetalLayer> metal_list;
-  std::unordered_map<std::string, int> metal_name_map;
+  std::vector<MetalLayer> metal_list_;
+  std::unordered_map<std::string, int> metal_name_map_;
 
   /****macros****/
-  std::unordered_map<std::string, BlockType *> block_type_map;
+  std::unordered_map<std::string, BlockType *> block_type_map_;
   std::list<BlockTypeWell> well_list_;
   BlockType *io_dummy_blk_type_ptr_ = nullptr;
   BlockType *well_tap_cell_ptr_ = nullptr;

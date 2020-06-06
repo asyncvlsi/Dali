@@ -235,7 +235,7 @@ void Placer::SanityCheck() {
     Warning(net.blk_pin_list.empty(), "Empty net or this net only contains unplaced IOPINs: " + *net.Name());
   }
   Assert(IsBoundaryProper(), "Improper boundary setting");
-  for (auto &pair: circuit_->tech_.block_type_map) {
+  for (auto &pair: circuit_->tech_.block_type_map_) {
     BlockType *blk_type_ptr = pair.second;
     for (auto &pin: *(blk_type_ptr->PinList())) {
       Assert(!pin.RectEmpty(), "No RECT found for pin: " + *(blk_type_ptr->NamePtr()) + "::" + *(pin.Name()));
@@ -253,7 +253,7 @@ void Placer::UpdateMovableBlkPlacementStatus() {
 
 void Placer::SimpleIOPinPlacement(int pin_metal_layer) {
   if (circuit_->GetIOPinList()->empty()) return;
-  Assert(pin_metal_layer < (int) circuit_->tech_.metal_list.size(),
+  Assert(pin_metal_layer < (int) circuit_->tech_.metal_list_.size(),
          "Invalid metal layer provided for Placer::SimpleIOPinPlacement()");
   //std::cout << circuit_->GetIOPinList()->size() << "\n";
   Net *net = nullptr;
@@ -268,7 +268,7 @@ void Placer::SimpleIOPinPlacement(int pin_metal_layer) {
 
   for (auto &iopin: *(circuit_->GetIOPinList())) {
     if (iopin.IsPrePlaced()) continue;
-    iopin.SetLayer(&(circuit_->tech_.metal_list[pin_metal_layer]));
+    iopin.SetLayer(&(circuit_->tech_.metal_list_[pin_metal_layer]));
     net = iopin.GetNet();
     if (net->blk_pin_list.empty()) continue;
     //std::cout << net->NameStr() << "\n";

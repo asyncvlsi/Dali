@@ -12,7 +12,7 @@ Tech::~Tech() {
   * because T is initialized by
   *    auto *T = new T();
   * ****/
-  for (auto &pair: block_type_map) {
+  for (auto &pair: block_type_map_) {
     delete pair.second;
   }
 

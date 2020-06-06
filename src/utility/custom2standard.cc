@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
 #endif
 
   MetalLayer *hor_layer = nullptr;
-  for (auto &metal_layer: circuit.tech_.metal_list) {
+  for (auto &metal_layer: circuit.tech_.metal_list_) {
     if (metal_layer.Direction() == HORIZONTAL_) {
       hor_layer = &metal_layer;
       std::cout << "Horizontal metal layer is: " << *hor_layer->Name() << "\n";
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
     }
   }
   std::vector<TypeLayerBBox> bbox_list;
-  bbox_list.reserve(circuit.tech_.block_type_map.size());
+  bbox_list.reserve(circuit.tech_.block_type_map_.size());
   std::ifstream ist;
   ist.open(lef_file_name.c_str());
   Assert(ist.is_open(), "Cannot open file " + lef_file_name);

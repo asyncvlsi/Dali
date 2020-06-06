@@ -58,7 +58,7 @@ void Circuit::LoadImaginaryCellFile() {
   SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
 
   // 3. create fake NP-well geometries for each BlockType
-  for (auto &pair : tech_.block_type_map) {
+  for (auto &pair : tech_.block_type_map_) {
     auto *blk_type = pair.second;
     BlockTypeWell *well = AddBlockTypeWell(blk_type);
     int np_edge = blk_type->Height() / 2;
@@ -75,7 +75,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   Assert(lib != db_ptr->getLibs().end(), "No lib info specified!");
 
   // 1. lef database microns
-  tech_.lef_database_microns = tech->getDbUnitsPerMicron();
+  setDatabaseMicron(tech->getDbUnitsPerMicron());
   //std::cout << tech->getDbUnitsPerMicron() << "\n";
   //std::cout << tech->getLefUnits() << "\n";
   //std::cout << top_level->getDefUnits() << "\n";
@@ -83,16 +83,16 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   // 2. manufacturing grid and metals
   if (tech->hasManufacturingGrid()) {
     //std::cout << "Mangrid" << tech->getManufacturingGrid() << "\n";
-    tech_.manufacturing_grid = tech->getManufacturingGrid() / double(tech_.lef_database_microns);
+    setManufacturingGrid(tech->getManufacturingGrid() / double(tech_.database_microns_));
   } else {
-    tech_.manufacturing_grid = 1.0 / tech_.lef_database_microns;
+    setManufacturingGrid(1.0 / tech_.database_microns_);
   }
   for (auto &&layer: tech->getLayers()) {
     if (layer->getType() == 0) {
       //std::cout << layer->getNumber() << "  " << layer->getName() << "  " << layer->getType() << " ";
       std::string metal_layer_name(layer->getName());
-      double min_width = layer->getWidth() / (double) tech_.lef_database_microns;
-      double min_spacing = layer->getSpacing() / (double) tech_.lef_database_microns;
+      double min_width = layer->getWidth() / (double) tech_.database_microns_;
+      double min_spacing = layer->getSpacing() / (double) tech_.database_microns_;
       //std::cout << min_width << "  " << min_spacing << "  ";
       std::string str_direct(layer->getDirection().getString());
       MetalDirection direct = StrToMetalDirection(str_direct);
@@ -106,54 +106,13 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
     }
   }
 
-  // 3. find the first and second metal layer pitch
+  // 3. set grid value using metal pitches, and set row height
   if (!tech_.grid_set_) {
-    double grid_value_x = -1, grid_value_y = -1;
-    Assert(tech->getRoutingLayerCount() >= 2, "Needs at least one metal layer to find metal pitch");
-    odb::dbTechLayer *m1_layer = nullptr;
-    odb::dbTechLayer *m2_layer = nullptr;
-    for (auto &&layer: tech->getLayers()) {
-      //std::cout << layer->getNumber() << "  " << layer->getName() << "  " << layer->getType() << "\n";
-      std::string layer_name(layer->getName());
-      if (layer_name == "m1" ||
-          layer_name == "metal1" ||
-          layer_name == "M1" ||
-          layer_name == "Metal1" ||
-          layer_name == "METAL1") {
-        m1_layer = layer;
-        //std::cout << (layer->getWidth() + layer->getSpacing()) / double(tech_.lef_database_microns) << "\n";
-      } else if (layer_name == "m2" ||
-          layer_name == "metal2" ||
-          layer_name == "M2" ||
-          layer_name == "Metal2" ||
-          layer_name == "METAL2") {
-        m2_layer = layer;
-        //std::cout << (layer->getWidth() + layer->getSpacing()) / double(tech_.lef_database_microns) << "\n";
-      }
-    }
-    if (m1_layer != nullptr && m2_layer != nullptr) {
-      if (m1_layer->getDirection() == odb::dbTechLayerDir::HORIZONTAL &&
-          m2_layer->getDirection() == odb::dbTechLayerDir::VERTICAL) {
-        grid_value_x = (m2_layer->getWidth() + m2_layer->getSpacing()) / double(tech_.lef_database_microns);
-        grid_value_y = (m1_layer->getWidth() + m1_layer->getSpacing()) / double(tech_.lef_database_microns);
-      } else if (m1_layer->getDirection() == odb::dbTechLayerDir::VERTICAL &&
-          m2_layer->getDirection() == odb::dbTechLayerDir::HORIZONTAL) {
-        grid_value_x = (m1_layer->getWidth() + m1_layer->getSpacing()) / double(tech_.lef_database_microns);
-        grid_value_y = (m2_layer->getWidth() + m2_layer->getSpacing()) / double(tech_.lef_database_microns);
-      } else {
-        Assert(false, "layer metal1 and layer m2 must have different orientations\n");
-      }
-      //std::cout << grid_value_x << "  " << grid_value_y << "\n";
-    } else {
-      Assert(false, "Cannot find layer metal1 and layer metal2");
-    }
-    setGridValue(grid_value_x, grid_value_y);
+    setGridUsingMetalPitch();
   }
   auto site = lib->getSites().begin();
-  setRowHeight(site->getHeight() / double(tech_.lef_database_microns));
+  setRowHeightManufactureGrid(site->getHeight());
   //std::cout << site->getName() << "  " << site->getWidth() / double(lef_database_microns) << "  " << row_height_ << "\n";
-  double residual = tech_.row_height_ - std::round(tech_.row_height_ / tech_.grid_value_y_) * tech_.grid_value_y_;
-  Assert(std::fabs(residual) < 1e-6, "Site height is not integer multiple of grid value in Y");
 
   // 4. load all macros, aka gate types, block types, cell types
   //std::cout << lib->getName() << " lib\n";
@@ -161,8 +120,8 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   int width = 0, height = 0;
   for (auto &&macro: lib->getMasters()) {
     std::string macro_name(macro->getName());
-    width = int(std::round((macro->getWidth() / tech_.grid_value_x_ / tech_.lef_database_microns)));
-    height = int(std::round((macro->getHeight() / tech_.grid_value_y_ / tech_.lef_database_microns)));
+    width = int(std::round((macro->getWidth() / tech_.grid_value_x_ / tech_.database_microns_)));
+    height = int(std::round((macro->getHeight() / tech_.grid_value_y_ / tech_.database_microns_)));
     auto blk_type = AddBlockType(macro_name, width, height);
     if (macro_name.find("welltap") != std::string::npos) {
       tech_.well_tap_cell_ptr_ = blk_type;
@@ -177,11 +136,11 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
       Assert(!terminal->getMPins().empty(), "No physical pins, Macro: " + *blk_type->NamePtr() + ", pin: " + pin_name);
       Assert(!terminal->getMPins().begin()->getGeometry().empty(), "No geometries provided for pin");
       auto geo_shape = terminal->getMPins().begin()->getGeometry().begin();
-      llx = geo_shape->xMin() / tech_.grid_value_x_ / tech_.lef_database_microns;
-      urx = geo_shape->xMax() / tech_.grid_value_x_ / tech_.lef_database_microns;
-      lly = geo_shape->yMin() / tech_.grid_value_y_ / tech_.lef_database_microns;
-      ury = geo_shape->yMax() / tech_.grid_value_y_ / tech_.lef_database_microns;
-      new_pin->AddRect(llx, lly, urx, ury);
+      llx = geo_shape->xMin() / tech_.grid_value_x_ / tech_.database_microns_;
+      urx = geo_shape->xMax() / tech_.grid_value_x_ / tech_.database_microns_;
+      lly = geo_shape->yMin() / tech_.grid_value_y_ / tech_.database_microns_;
+      ury = geo_shape->yMax() / tech_.grid_value_y_ / tech_.database_microns_;
+      AddBlkTypePinRect(new_pin,llx, lly, urx, ury);
     }
   }
   //tech_.well_tap_cell_->Report();
@@ -306,8 +265,8 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
   std::string line;
 
   // 1. find DATABASE MICRONS
-  tech_.lef_database_microns = 0;
-  while ((tech_.lef_database_microns == 0) && !ist.eof()) {
+  tech_.database_microns_ = 0;
+  while ((tech_.database_microns_ == 0) && !ist.eof()) {
     getline(ist, line);
     if (!line.empty() && line[0] == '#') continue;
     if (line.find("DATABASE MICRONS") != std::string::npos) {
@@ -315,22 +274,22 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
       StrSplit(line, line_field);
       Assert(line_field.size() >= 3, "Invalid UNITS declaration: expecting 3 fields");
       try {
-        tech_.lef_database_microns = std::stoi(line_field[2]);
+        tech_.database_microns_ = std::stoi(line_field[2]);
       } catch (...) {
         std::cout << line << "\n";
         Assert(false, "Invalid stoi conversion:" + line_field[2]);
       }
     }
   }
-  std::cout << "DATABASE MICRONS " << tech_.lef_database_microns << "\n";
+  std::cout << "DATABASE MICRONS " << tech_.database_microns_ << "\n";
 
   // 2. find MANUFACTURINGGRID
-  tech_.manufacturing_grid = 0;
-  while ((tech_.manufacturing_grid <= 1e-10) && !ist.eof()) {
+  tech_.manufacturing_grid_ = 0;
+  while ((tech_.manufacturing_grid_ <= 1e-10) && !ist.eof()) {
     getline(ist, line);
     if (!line.empty() && line[0] == '#') continue;
     if (line.find("LAYER") != std::string::npos) {
-      tech_.manufacturing_grid = 1.0 / tech_.lef_database_microns;
+      tech_.manufacturing_grid_ = 1.0 / tech_.database_microns_;
       std::cout << "  WARNING:\n  MANUFACTURINGGRID not specified explicitly, using 1.0/DATABASE MICRONS instead\n";
     }
     if (line.find("MANUFACTURINGGRID") != std::string::npos) {
@@ -338,15 +297,15 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
       StrSplit(line, grid_field);
       Assert(grid_field.size() >= 2, "Invalid MANUFACTURINGGRID declaration: expecting 2 fields");
       try {
-        tech_.manufacturing_grid = std::stod(grid_field[1]);
+        tech_.manufacturing_grid_ = std::stod(grid_field[1]);
       } catch (...) {
         Assert(false, "Invalid stod conversion:\n" + line);
       }
       break;
     }
   }
-  Assert(tech_.manufacturing_grid > 0, "Cannot find or invalid MANUFACTURINGGRID");
-  std::cout << "MANUFACTURINGGRID: " << tech_.manufacturing_grid << "\n";
+  Assert(tech_.manufacturing_grid_ > 0, "Cannot find or invalid MANUFACTURINGGRID");
+  std::cout << "MANUFACTURINGGRID: " << tech_.manufacturing_grid_ << "\n";
 
   // 3. read metal layer
   static std::vector<std::string> metal_identifier_list{"m", "M", "metal", "Metal"};
@@ -440,12 +399,12 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
   }
   //ReportMetalLayers();
   if (!tech_.grid_set_) {
-    if (tech_.metal_list.size() < 2) {
-      setGridValue(tech_.manufacturing_grid, tech_.manufacturing_grid);
+    if (tech_.metal_list_.size() < 2) {
+      setGridValue(tech_.manufacturing_grid_, tech_.manufacturing_grid_);
       std::cout << "No enough metal layers to specify horizontal and vertical pitch\n"
                 << "Using manufacturing grid as grid values\n";
-    } else if (tech_.metal_list[0].PitchY() <= 0 || tech_.metal_list[1].PitchX() <= 0) {
-      setGridValue(tech_.manufacturing_grid, tech_.manufacturing_grid);
+    } else if (tech_.metal_list_[0].PitchY() <= 0 || tech_.metal_list_[1].PitchX() <= 0) {
+      setGridValue(tech_.manufacturing_grid_, tech_.manufacturing_grid_);
       std::cout << "Invalid metal pitch\n"
                 << "Using manufacturing grid as grid values\n";
     } else {
@@ -929,17 +888,18 @@ void Circuit::setGridValue(double grid_value_x, double grid_value_y) {
   Assert(grid_value_x > 0, "grid_value_x must be a positive real number! Circuit::setGridValue()");
   Assert(grid_value_y > 0, "grid_value_y must be a positive real number! Circuit::setGridValue()");
   Assert(!tech_.grid_set_, "once set, grid_value cannot be changed! Circuit::setGridValue()");
+  //printf("  grid value x: %.4e, grid value y: %.4e\n", grid_value_x, grid_value_y);
   tech_.grid_value_x_ = grid_value_x;
   tech_.grid_value_y_ = grid_value_y;
   tech_.grid_set_ = true;
 }
 
 void Circuit::setGridUsingMetalPitch() {
-  Assert(tech_.metal_list.size() >= 2,
+  Assert(tech_.metal_list_.size() >= 2,
          "No enough metal layer for determining grid value in x and y! Circuit::setGridUsingMetalPitch()");
   MetalLayer *hor_layer = nullptr;
   MetalLayer *ver_layer = nullptr;
-  for (auto &metal_layer: tech_.metal_list) {
+  for (auto &metal_layer: tech_.metal_list_) {
     if (hor_layer == nullptr && metal_layer.Direction() == HORIZONTAL_) {
       hor_layer = &metal_layer;
     }
@@ -956,11 +916,11 @@ void Circuit::setGridUsingMetalPitch() {
 
 MetalLayer *Circuit::AddMetalLayer(std::string &metal_name, double width, double spacing) {
   Assert(!IsMetalLayerExist(metal_name), "MetalLayer exist, cannot create this MetalLayer again: " + metal_name);
-  int map_size = tech_.metal_name_map.size();
-  auto ret = tech_.metal_name_map.insert(std::pair<std::string, int>(metal_name, map_size));
+  int map_size = tech_.metal_name_map_.size();
+  auto ret = tech_.metal_name_map_.insert(std::pair<std::string, int>(metal_name, map_size));
   std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
-  tech_.metal_list.emplace_back(width, spacing, name_num_pair_ptr);
-  return &(tech_.metal_list.back());
+  tech_.metal_list_.emplace_back(width, spacing, name_num_pair_ptr);
+  return &(tech_.metal_list_.back());
 }
 
 void Circuit::AddMetalLayer(std::string &metal_name,
@@ -971,17 +931,17 @@ void Circuit::AddMetalLayer(std::string &metal_name,
                             double pitch_y,
                             MetalDirection metal_direction) {
   Assert(!IsMetalLayerExist(metal_name), "MetalLayer exist, cannot create this MetalLayer again: " + metal_name);
-  int map_size = tech_.metal_name_map.size();
-  auto ret = tech_.metal_name_map.insert(std::pair<std::string, int>(metal_name, map_size));
+  int map_size = tech_.metal_name_map_.size();
+  auto ret = tech_.metal_name_map_.insert(std::pair<std::string, int>(metal_name, map_size));
   std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
-  tech_.metal_list.emplace_back(width, spacing, name_num_pair_ptr);
-  tech_.metal_list.back().SetArea(min_area);
-  tech_.metal_list.back().SetPitch(pitch_x, pitch_y);
-  tech_.metal_list.back().SetDirection(metal_direction);
+  tech_.metal_list_.emplace_back(width, spacing, name_num_pair_ptr);
+  tech_.metal_list_.back().SetArea(min_area);
+  tech_.metal_list_.back().SetPitch(pitch_x, pitch_y);
+  tech_.metal_list_.back().SetDirection(metal_direction);
 }
 
 void Circuit::ReportMetalLayers() {
-  for (auto &metal_layer: tech_.metal_list) {
+  for (auto &metal_layer: tech_.metal_list_) {
     metal_layer.Report();
   }
 }
@@ -1001,7 +961,7 @@ void Circuit::ReportWellShape() {
 BlockType *Circuit::AddBlockType(std::string &block_type_name, int width, int height) {
   Assert(!IsBlockTypeExist(block_type_name),
          "BlockType exist, cannot create this block type again: " + block_type_name);
-  auto ret = tech_.block_type_map.insert(std::pair<std::string, BlockType *>(block_type_name, nullptr));
+  auto ret = tech_.block_type_map_.insert(std::pair<std::string, BlockType *>(block_type_name, nullptr));
   auto tmp_ptr = new BlockType(&(ret.first->first), width, height);
   ret.first->second = tmp_ptr;
   if (tmp_ptr->Area() > INT_MAX) tmp_ptr->Report();
@@ -1009,8 +969,8 @@ BlockType *Circuit::AddBlockType(std::string &block_type_name, int width, int he
 }
 
 void Circuit::ReportBlockType() {
-  std::cout << "Total BlockType: " << tech_.block_type_map.size() << std::endl;
-  for (auto &pair: tech_.block_type_map) {
+  std::cout << "Total BlockType: " << tech_.block_type_map_.size() << std::endl;
+  for (auto &pair: tech_.block_type_map_) {
     pair.second->Report();
   }
 }
@@ -1019,7 +979,7 @@ void Circuit::CopyBlockType(Circuit &circuit) {
   BlockType *blk_type = nullptr;
   BlockType *blk_type_new = nullptr;
   std::string type_name, pin_name;
-  for (auto &item: circuit.tech_.block_type_map) {
+  for (auto &item: circuit.tech_.block_type_map_) {
     blk_type = item.second;
     type_name = *(blk_type->NamePtr());
     if (type_name == "PIN") continue;
@@ -1740,10 +1700,10 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   // 3. print PIN
   ost << "\n";
   ost << "PINS " << design_.iopin_list.size() << " ;\n";
-  Assert(!tech_.metal_list.empty(), "Need metal layer info to generate PIN location\n");
-  std::string metal_name = *(tech_.metal_list[0].Name());
-  int half_width = std::ceil(tech_.metal_list[0].MinHeight() / 2.0 * design_.def_distance_microns);
-  int height = std::ceil(tech_.metal_list[0].Width() * design_.def_distance_microns);
+  Assert(!tech_.metal_list_.empty(), "Need metal layer info to generate PIN location\n");
+  std::string metal_name = *(tech_.metal_list_[0].Name());
+  int half_width = std::ceil(tech_.metal_list_[0].MinHeight() / 2.0 * design_.def_distance_microns);
+  int height = std::ceil(tech_.metal_list_[0].Width() * design_.def_distance_microns);
   for (auto &iopin: design_.iopin_list) {
     ost << "- "
         << *iopin.Name()
@@ -2080,7 +2040,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
     }
     case 1: { // save all IOPINs
       ost << "PINS " << design_.iopin_list.size() << " ;\n";
-      Assert(!tech_.metal_list.empty(), "Need metal layer info to generate PIN location\n");
+      Assert(!tech_.metal_list_.empty(), "Need metal layer info to generate PIN location\n");
       for (auto &iopin: design_.iopin_list) {
         ost << "- "
             << *iopin.Name()
@@ -2120,10 +2080,10 @@ void Circuit::SaveDefFile(std::string const &base_name,
     }
     case 2: { // save all IOPINs with status before IO placement
       ost << "PINS " << design_.iopin_list.size() << " ;\n";
-      Assert(!tech_.metal_list.empty(), "Need metal layer info to generate PIN location\n");
-      std::string metal_name = *(tech_.metal_list[0].Name());
-      int half_width = std::ceil(tech_.metal_list[0].MinHeight() / 2.0 * design_.def_distance_microns);
-      int height = std::ceil(tech_.metal_list[0].Width() * design_.def_distance_microns);
+      Assert(!tech_.metal_list_.empty(), "Need metal layer info to generate PIN location\n");
+      std::string metal_name = *(tech_.metal_list_[0].Name());
+      int half_width = std::ceil(tech_.metal_list_[0].MinHeight() / 2.0 * design_.def_distance_microns);
+      int height = std::ceil(tech_.metal_list_[0].Width() * design_.def_distance_microns);
       for (auto &iopin: design_.iopin_list) {
         ost << "- "
             << *iopin.Name()
@@ -2281,10 +2241,10 @@ void Circuit::SaveIODefFile(std::string const &name_of_file, std::string const &
   // 3. print PIN
   ost << "\n";
   ost << "PINS " << design_.iopin_list.size() << " ;\n";
-  Assert(!tech_.metal_list.empty(), "Need metal layer info to generate PIN location\n");
-  std::string metal_name = *(tech_.metal_list[0].Name());
-  int half_width = std::ceil(tech_.metal_list[0].MinHeight() / 2.0 * design_.def_distance_microns);
-  int height = std::ceil(tech_.metal_list[0].Width() * design_.def_distance_microns);
+  Assert(!tech_.metal_list_.empty(), "Need metal layer info to generate PIN location\n");
+  std::string metal_name = *(tech_.metal_list_[0].Name());
+  int half_width = std::ceil(tech_.metal_list_[0].MinHeight() / 2.0 * design_.def_distance_microns);
+  int height = std::ceil(tech_.metal_list_[0].Width() * design_.def_distance_microns);
   for (auto &iopin: design_.iopin_list) {
     ost << "- "
         << *iopin.Name()

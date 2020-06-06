@@ -91,8 +91,26 @@ class Circuit {
   // get design info
   Design *getDesign() { return &design_; }
 
+  /****API to set and get database unit****/
+  // set database microns
+  void setDatabaseMicron(int database_micron) {
+    Assert(database_micron > 0, "Cannot set negative database microns: Circuit::setDatabaseMicron()");
+    tech_.database_microns_ = database_micron;
+  }
+
+  int DatabaseMicron() const { return tech_.database_microns_; }
+
+  // set manufacturing grid
+  void setManufacturingGrid(double manufacture_grid) {
+    Assert(manufacture_grid > 0, "Cannot set negative manufacturing grid: Circuit::setManufacturingGrid()");
+    tech_.manufacturing_grid_ = manufacture_grid;
+  }
+
+  // get manufacturing grid
+  double ManufacturingGrid() const { return tech_.manufacturing_grid_; }
+
   /****API to set grid value****/
-  // set grid values in x and y direction
+  // set grid values in x and y direction, unit in micron
   void setGridValue(double grid_value_x, double grid_value_y);
 
   // set grid values using the first horizontal and vertical metal layer pitches
@@ -104,11 +122,18 @@ class Circuit {
   // get the grid value in y direction, unit is usually in micro
   double GridValueY() const { return tech_.grid_value_y_; }
 
-  // set the row height,
-  void setRowHeight(double row_height) {
+  // set the row height, unit in micron
+  void setRowHeightMicron(double row_height) {
     Assert(row_height > 0, "Setting row height to a negative value? Circuit::setRowHeight()");
     tech_.row_height_set_ = true;
     tech_.row_height_ = row_height;
+  }
+
+  // set the row height, unit in manufacturing grid
+  void setRowHeightManufactureGrid(int row_height) {
+    double residual = tech_.row_height_ - std::round(tech_.row_height_ / tech_.grid_value_y_) * tech_.grid_value_y_;
+    Assert(std::fabs(residual) < 1e-6, "Site height is not integer multiple of grid value in Y");
+    setRowHeightMicron(row_height / double(tech_.database_microns_));
   }
 
   // get the row height in micro
@@ -124,33 +149,33 @@ class Circuit {
    * now the metal layer information are all stored in openDB data structure
    * ****/
   // get the pointer to the list of metal layers
-  std::vector<MetalLayer> *MetalListPtr() { return &tech_.metal_list; }
+  std::vector<MetalLayer> *MetalListPtr() { return &tech_.metal_list_; }
 
   // get the pointer to the name map of metal layers
-  std::unordered_map<std::string, int> *MetalNameMap() { return &tech_.metal_name_map; }
+  std::unordered_map<std::string, int> *MetalNameMap() { return &tech_.metal_name_map_; }
 
   // check if a metal layer with given name exists or not
   bool IsMetalLayerExist(std::string &metal_name) {
-    return tech_.metal_name_map.find(metal_name) != tech_.metal_name_map.end();
+    return tech_.metal_name_map_.find(metal_name) != tech_.metal_name_map_.end();
   }
 
   // get the index of a metal layer
   int MetalLayerIndex(std::string &metal_name) {
     Assert(IsMetalLayerExist(metal_name), "MetalLayer does not exist, cannot find it: " + metal_name);
-    return tech_.metal_name_map.find(metal_name)->second;
+    return tech_.metal_name_map_.find(metal_name)->second;
   }
 
   // get a pointer to the metal layer with a given name
   MetalLayer *GetMetalLayerPtr(std::string &metal_name) {
     Assert(IsMetalLayerExist(metal_name), "MetalLayer does not exist, cannot find it: " + metal_name);
-    return &tech_.metal_list[MetalLayerIndex(metal_name)];
+    return &tech_.metal_list_[MetalLayerIndex(metal_name)];
   }
 
   // add a metal layer, not recommend to use
   MetalLayer *AddMetalLayer(std::string &metal_name, double width, double spacing);
 
   // add a metal layer, not recommend to use
-  MetalLayer *AddMetalLayer(std::string &metal_name) {return AddMetalLayer(metal_name, 0, 0);}
+  MetalLayer *AddMetalLayer(std::string &metal_name) { return AddMetalLayer(metal_name, 0, 0); }
 
   // add a metal layer
   void AddMetalLayer(std::string &metal_name,
@@ -167,16 +192,60 @@ class Circuit {
   /****API for BlockType
    * These are MACRO section in LEF
    * ****/
-  std::unordered_map<std::string, BlockType *> *BlockTypeMap() { return &tech_.block_type_map; }
+  // get the pointer to the unordered BlockType map
+  std::unordered_map<std::string, BlockType *> *BlockTypeMap() { return &tech_.block_type_map_; }
+
+  // check if a BlockType with a given name exists or not
   bool IsBlockTypeExist(std::string &block_type_name) {
-    return tech_.block_type_map.find(block_type_name) != tech_.block_type_map.end();
+    return tech_.block_type_map_.find(block_type_name) != tech_.block_type_map_.end();
   }
+
+  // get the pointer to the BlockType with a given name, if not exist, return nullptr;
   BlockType *GetBlockType(std::string &block_type_name) {
-    Assert(IsBlockTypeExist(block_type_name), "BlockType not exist, cannot find it: " + block_type_name);
-    return tech_.block_type_map.find(block_type_name)->second;
+    auto res = tech_.block_type_map_.find(block_type_name);
+    return res != tech_.block_type_map_.end() ? res->second : nullptr;
   }
+
+  // add a BlockType with name, with, and height. The return value is a pointer to this new BlockType for adding pins. Unit in grid value.
   BlockType *AddBlockType(std::string &block_type_name, int width, int height);
+
+  // add a cell pin with a given name to a BlockType, this method is not the optimal one, but it is very safe to use.
+  Pin *AddBlkTypePin(std::string &block_type_name, std::string &pin_name) {
+    BlockType *blk_type_ptr = GetBlockType(block_type_name);
+    Assert(blk_type_ptr != nullptr, "Cannot add BlockType pins because there is no such a BlockType: " + block_type_name);
+    return blk_type_ptr->AddPin(pin_name);
+  }
+
+  // add a cell pin with a given name to a BlockType, users must guarantee the pointer @param is valid.
+  static Pin *AddBlkTypePin(BlockType *blk_type_ptr, std::string &pin_name) {
+    return blk_type_ptr->AddPin(pin_name);
+  }
+
+  // add a rectangle to a block pin, this method is not the optimal one, but it is very safe to use. Unit in grid value.
+  void AddBlkTypePinRect(std::string &block_type_name, std::string &pin_name, double llx, double lly, double urx, double ury) {
+    BlockType *blk_type_ptr = GetBlockType(block_type_name);
+    Assert(blk_type_ptr != nullptr, "Cannot add BlockType pins because there is no such a BlockType: " + block_type_name);
+    Pin *pin_ptr = blk_type_ptr->GetPinPtr(pin_name);
+    Assert(pin_ptr != nullptr, "Cannot add BlockType pins because there is no such a pin: " + block_type_name + "::" + pin_name);
+    pin_ptr->AddRect(llx, lly, urx, ury);
+  }
+
+  // add a rectangle to a block pin, users must guarantee the pointer @param is valid. Unit in grid value.
+  static void AddBlkTypePinRect(Pin *pin_ptr, double llx, double lly, double urx, double ury) {
+    pin_ptr->AddRect(llx, lly, urx, ury);
+  }
+
+  // example to add a BlockType instance to a Circuit instance
+  // std::string blk_type_name = "nand2";
+  // int width = 4;
+  // int height = 8;
+
+
+
+  // report the whole BlockType list for debugging purposes.
   void ReportBlockType();
+
+  // create BlockTypes by copying from another Circuit instance.
   void CopyBlockType(Circuit &circuit);
 
   /****API for DIE AREA
