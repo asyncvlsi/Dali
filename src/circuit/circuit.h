@@ -189,10 +189,9 @@ class Circuit {
   // report metal layer information for debugging purposes
   void ReportMetalLayers();
 
-  /****API for BlockType
-   * These are MACRO section in LEF
-   * ****/
-  // get the pointer to the unordered BlockType map
+  /****API for BlockType****/
+
+  // get the pointer to the unordered BlockType map.
   std::unordered_map<std::string, BlockType *> *BlockTypeMap() { return &tech_.block_type_map_; }
 
   // check if a BlockType with a given name exists or not
@@ -200,14 +199,17 @@ class Circuit {
     return tech_.block_type_map_.find(block_type_name) != tech_.block_type_map_.end();
   }
 
-  // get the pointer to the BlockType with a given name, if not exist, return nullptr;
+  // get the pointer to the BlockType with a given name, if not exist, return nullptr.
   BlockType *GetBlockType(std::string &block_type_name) {
     auto res = tech_.block_type_map_.find(block_type_name);
     return res != tech_.block_type_map_.end() ? res->second : nullptr;
   }
 
   // add a BlockType with name, with, and height. The return value is a pointer to this new BlockType for adding pins. Unit in grid value.
-  BlockType *AddBlockType(std::string &block_type_name, int width, int height);
+  BlockType *AddBlockTypeWithGridUnit(std::string &block_type_name, int width, int height);
+
+  // add a BlockType with name, with, and height. The return value is a pointer to this new BlockType for adding pins. Unit in grid value.
+  BlockType *AddWellTapBlockTypeWithGridUnit(std::string &block_type_name, int width, int height);
 
   // add a cell pin with a given name to a BlockType, this method is not the optimal one, but it is very safe to use.
   Pin *AddBlkTypePin(std::string &block_type_name, std::string &pin_name) {
@@ -234,13 +236,6 @@ class Circuit {
   static void AddBlkTypePinRect(Pin *pin_ptr, double llx, double lly, double urx, double ury) {
     pin_ptr->AddRect(llx, lly, urx, ury);
   }
-
-  // example to add a BlockType instance to a Circuit instance
-  // std::string blk_type_name = "nand2";
-  // int width = 4;
-  // int height = 8;
-
-
 
   // report the whole BlockType list for debugging purposes.
   void ReportBlockType();
@@ -277,6 +272,9 @@ class Circuit {
                 (int) std::round(lower_y / factor_y),
                 (int) std::round(upper_y / factor_y));
   }
+
+  // Before adding COMPONENTs, IOPINs, and NETs, user need to specify how many instances there are.
+  void setListCapacity(int components_count, int pins_count, int nets_count);
 
   /****API for Block
    * These are COMPONENTS section in DEF

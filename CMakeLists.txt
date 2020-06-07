@@ -63,6 +63,7 @@ file(GLOB SOURCES
         src/placer/postLegalOptimizer/PLOSlide/*.cc
         src/placer/wellLegalizer/*.cc
         src/placer/wellPlaceFlow/*.cc
+        src/example_code/*.cc
         )
 
 # Create a library, static libraries are controlled by ARCHIVE_OUTPUT_DIRECTORY property

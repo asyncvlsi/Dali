@@ -36,7 +36,7 @@ void Circuit::LoadImaginaryCellFile() {
 
   // 1. create fake well tap cell
   std::string tap_cell_name("welltap_svt");
-  tech_.well_tap_cell_ptr_ = AddBlockType(tap_cell_name, MinBlkWidth(), MinBlkHeight());
+  tech_.well_tap_cell_ptr_ = AddBlockTypeWithGridUnit(tap_cell_name, MinBlkWidth(), MinBlkHeight());
 
   // 2. create fake well parameters
   double fake_same_diff_spacing = 0;
@@ -101,15 +101,19 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
         //std::cout << layer->getArea();
         min_area = layer->getArea();
       }
-      AddMetalLayer(metal_layer_name, min_width, min_spacing, min_area, min_width + min_spacing, min_width + min_spacing, direct);
+      AddMetalLayer(metal_layer_name,
+                    min_width,
+                    min_spacing,
+                    min_area,
+                    min_width + min_spacing,
+                    min_width + min_spacing,
+                    direct);
       //std::cout << "\n";
     }
   }
 
   // 3. set grid value using metal pitches, and set row height
-  if (!tech_.grid_set_) {
-    setGridUsingMetalPitch();
-  }
+  setGridUsingMetalPitch();
   auto site = lib->getSites().begin();
   setRowHeightManufactureGrid(site->getHeight());
   //std::cout << site->getName() << "  " << site->getWidth() / double(lef_database_microns) << "  " << row_height_ << "\n";
@@ -122,9 +126,11 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
     std::string macro_name(macro->getName());
     width = int(std::round((macro->getWidth() / tech_.grid_value_x_ / tech_.database_microns_)));
     height = int(std::round((macro->getHeight() / tech_.grid_value_y_ / tech_.database_microns_)));
-    auto blk_type = AddBlockType(macro_name, width, height);
+    BlockType *blk_type = nullptr;
     if (macro_name.find("welltap") != std::string::npos) {
-      tech_.well_tap_cell_ptr_ = blk_type;
+      blk_type = AddWellTapBlockTypeWithGridUnit(macro_name, width, height);
+    } else {
+      blk_type = AddBlockTypeWithGridUnit(macro_name, width, height);
     }
     //std::cout << macro->getName() << "\n";
     //std::cout << macro->getWidth()/grid_value_x_/lef_database_microns << "  " << macro->getHeight()/grid_value_y_/lef_database_microns << "\n";
@@ -140,7 +146,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
       urx = geo_shape->xMax() / tech_.grid_value_x_ / tech_.database_microns_;
       lly = geo_shape->yMin() / tech_.grid_value_y_ / tech_.database_microns_;
       ury = geo_shape->yMax() / tech_.grid_value_y_ / tech_.database_microns_;
-      AddBlkTypePinRect(new_pin,llx, lly, urx, ury);
+      AddBlkTypePinRect(new_pin, llx, lly, urx, ury);
     }
   }
   //tech_.well_tap_cell_->Report();
@@ -152,13 +158,11 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   components_count = top_level->getInsts().size();
   pins_count = top_level->getBTerms().size();
   nets_count = top_level->getNets().size();
-  design_.block_list.reserve(components_count + pins_count);
-  design_.iopin_list.reserve(pins_count);
-  design_.net_list.reserve(nets_count);
+  setListCapacity(components_count, pins_count, nets_count);
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "components count: " << components_count << "\n"
-              << "pin count:        " << pins_count << "\n"
+              << "pins count:        " << pins_count << "\n"
               << "nets count:       " << nets_count << "\n";
   }
 
@@ -441,7 +445,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
             } catch (...) {
               Assert(false, "Invalid stod conversion:\n" + line);
             }
-            new_block_type = AddBlockType(block_type_name, width, height);
+            new_block_type = AddBlockTypeWithGridUnit(block_type_name, width, height);
             //std::cout << "  type width, height: " << new_block_type->Width() << " " << new_block_type->Height() << "\n";
           }
           getline(ist, line);
@@ -885,6 +889,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
 }
 
 void Circuit::setGridValue(double grid_value_x, double grid_value_y) {
+  if (tech_.grid_set_) return;
   Assert(grid_value_x > 0, "grid_value_x must be a positive real number! Circuit::setGridValue()");
   Assert(grid_value_y > 0, "grid_value_y must be a positive real number! Circuit::setGridValue()");
   Assert(!tech_.grid_set_, "once set, grid_value cannot be changed! Circuit::setGridValue()");
@@ -958,7 +963,7 @@ void Circuit::ReportWellShape() {
   }
 }
 
-BlockType *Circuit::AddBlockType(std::string &block_type_name, int width, int height) {
+BlockType *Circuit::AddBlockTypeWithGridUnit(std::string &block_type_name, int width, int height) {
   Assert(!IsBlockTypeExist(block_type_name),
          "BlockType exist, cannot create this block type again: " + block_type_name);
   auto ret = tech_.block_type_map_.insert(std::pair<std::string, BlockType *>(block_type_name, nullptr));
@@ -966,6 +971,21 @@ BlockType *Circuit::AddBlockType(std::string &block_type_name, int width, int he
   ret.first->second = tmp_ptr;
   if (tmp_ptr->Area() > INT_MAX) tmp_ptr->Report();
   return tmp_ptr;
+}
+
+BlockType *Circuit::AddWellTapBlockTypeWithGridUnit(std::string &block_type_name, int width, int height) {
+  BlockType *well_tap_ptr = AddBlockTypeWithGridUnit(block_type_name, width, height);
+  tech_.well_tap_cell_ptr_ = well_tap_ptr;
+  return well_tap_ptr;
+}
+
+void Circuit::setListCapacity(int components_count, int pins_count, int nets_count) {
+  Assert(components_count >= 0, "Negative number of components?");
+  Assert(pins_count >= 0, "Negative number of IOPINs?");
+  Assert(nets_count>=0, "Negative number of NETs?");
+  design_.block_list.reserve(components_count + pins_count);
+  design_.iopin_list.reserve(pins_count);
+  design_.net_list.reserve(nets_count);
 }
 
 void Circuit::ReportBlockType() {
@@ -983,7 +1003,7 @@ void Circuit::CopyBlockType(Circuit &circuit) {
     blk_type = item.second;
     type_name = *(blk_type->NamePtr());
     if (type_name == "PIN") continue;
-    blk_type_new = AddBlockType(type_name, blk_type->Width(), blk_type->Height());
+    blk_type_new = AddBlockTypeWithGridUnit(type_name, blk_type->Width(), blk_type->Height());
     for (auto &pin: blk_type->pin_list_) {
       pin_name = *(pin.Name());
       blk_type_new->AddPin(pin_name, pin.OffsetX(), pin.OffsetY());
@@ -1042,6 +1062,7 @@ void Circuit::AddBlock(std::string &block_name,
                        BlockOrient orient,
                        bool is_real_cel) {
   Assert(design_.net_list.empty(), "Cannot add new Block, because net_list now is not empty");
+  Assert(design_.block_list.size() < design_.block_list.capacity(), "Cannot add new Block, because block list is full");
   Assert(!IsBlockExist(block_name), "Block exists, cannot create this block again: " + block_name);
   int map_size = design_.block_name_map.size();
   auto ret = design_.block_name_map.insert(std::pair<std::string, int>(block_name, map_size));
@@ -1099,7 +1120,7 @@ void Circuit::AddDummyIOPinType() {
    * The relative location of the only cell pin "pin" is (0,0) with size 0.
    * ****/
   std::string iopin_type_name("PIN");
-  auto io_pin_type = AddBlockType(iopin_type_name, 0, 0);
+  auto io_pin_type = AddBlockTypeWithGridUnit(iopin_type_name, 0, 0);
   std::string tmp_pin_name("pin");
   Pin *pin = io_pin_type->AddPin(tmp_pin_name);
   pin->AddRect(0, 0, 0, 0);
