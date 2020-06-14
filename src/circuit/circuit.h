@@ -60,6 +60,51 @@ class Circuit {
   // create fake N/P-well info for cells
   void LoadImaginaryCellFile();
 
+  // custom residual function, return: x - round(x/y) * y
+  static double Residual(double x, double y) {
+    return x - std::round(x / y) * y;
+  }
+
+  // add a BlockType with name, with, and height. The return value is a pointer to this new BlockType for adding pins. Unit in grid value.
+  BlockType *AddBlockTypeWithGridUnit(std::string &block_type_name, int width, int height);
+
+  // add a BlockType with name, with, and height. The return value is a pointer to this new BlockType for adding pins. Unit in grid value.
+  BlockType *AddWellTapBlockTypeWithGridUnit(std::string &block_type_name, int width, int height);
+
+  // add a metal layer with name and size, unit in micron.
+  MetalLayer *AddMetalLayer(std::string &metal_name, double width, double spacing);
+
+  // add a metal layer with name;
+  MetalLayer *AddMetalLayer(std::string &metal_name) { return AddMetalLayer(metal_name, 0, 0); }
+
+  // set the boundary of the placement region, unit is in corresponding grid value.
+  void SetBoundary(int left, int bottom, int right, int top) {
+    Assert(right > left, "Right boundary is not larger than Left boundary?");
+    Assert(top > bottom, "Top boundary is not larger than Bottom boundary?");
+    design_.region_left_ = left;
+    design_.region_right_ = right;
+    design_.region_bottom_ = bottom;
+    design_.region_top_ = top;
+  }
+
+  // create a block instance using a pointer to its type
+  void AddBlock(std::string &block_name,
+                BlockType *block_type_ptr,
+                int llx = 0,
+                int lly = 0,
+                PlaceStatus place_status = UNPLACED_,
+                BlockOrient orient = N_,
+                bool is_real_cel = true);
+
+  // create a dummy BlockType for IOPins.
+  void AddDummyIOPinBlockType();
+
+  // add an unplaced IOPin.
+  IOPin *AddUnplacedIOPin(std::string &iopin_name);
+
+  // add a placed IOPin.
+  IOPin *AddPlacedIOPin(std::string &iopin_name, int lx, int ly);
+
  public:
 
   Circuit();
@@ -91,6 +136,10 @@ class Circuit {
   // get design info
   Design *getDesign() { return &design_; }
 
+
+  /************************************************
+   * The following APIs are for setting information in LEF
+   * ************************************************/
   /****API to set and get database unit****/
   // set database microns
   void setDatabaseMicron(int database_micron) {
@@ -123,17 +172,12 @@ class Circuit {
   double GridValueY() const { return tech_.grid_value_y_; }
 
   // set the row height, unit in micron
-  void setRowHeightMicron(double row_height) {
+  void setRowHeight(double row_height) {
     Assert(row_height > 0, "Setting row height to a negative value? Circuit::setRowHeight()");
+    double residual = Residual(row_height, tech_.grid_value_y_);
+    Assert(std::fabs(residual) < 1e-6, "Site height is not integer multiple of grid value in Y");
     tech_.row_height_set_ = true;
     tech_.row_height_ = row_height;
-  }
-
-  // set the row height, unit in manufacturing grid
-  void setRowHeightManufactureGrid(int row_height) {
-    double residual = tech_.row_height_ - std::round(tech_.row_height_ / tech_.grid_value_y_) * tech_.grid_value_y_;
-    Assert(std::fabs(residual) < 1e-6, "Site height is not integer multiple of grid value in Y");
-    setRowHeightMicron(row_height / double(tech_.database_microns_));
   }
 
   // get the row height in micro
@@ -171,13 +215,7 @@ class Circuit {
     return &tech_.metal_list_[MetalLayerIndex(metal_name)];
   }
 
-  // add a metal layer, not recommend to use
-  MetalLayer *AddMetalLayer(std::string &metal_name, double width, double spacing);
-
-  // add a metal layer, not recommend to use
-  MetalLayer *AddMetalLayer(std::string &metal_name) { return AddMetalLayer(metal_name, 0, 0); }
-
-  // add a metal layer
+  // add a metal layer, unit in micron.
   void AddMetalLayer(std::string &metal_name,
                      double width,
                      double spacing,
@@ -205,35 +243,43 @@ class Circuit {
     return res != tech_.block_type_map_.end() ? res->second : nullptr;
   }
 
-  // add a BlockType with name, with, and height. The return value is a pointer to this new BlockType for adding pins. Unit in grid value.
-  BlockType *AddBlockTypeWithGridUnit(std::string &block_type_name, int width, int height);
+  // add a BlockType with name, with, and height. The return value is a pointer to this new BlockType for adding pins. Unit in micron.
+  BlockType *AddBlockType(std::string &block_type_name, double width, double height);
 
-  // add a BlockType with name, with, and height. The return value is a pointer to this new BlockType for adding pins. Unit in grid value.
-  BlockType *AddWellTapBlockTypeWithGridUnit(std::string &block_type_name, int width, int height);
+  // add a BlockType with name, with, and height. The return value is a pointer to this new BlockType for adding pins. Unit in micron.
+  BlockType *AddWellTapBlockType(std::string &block_type_name, double width, double height);
 
   // add a cell pin with a given name to a BlockType, this method is not the optimal one, but it is very safe to use.
   Pin *AddBlkTypePin(std::string &block_type_name, std::string &pin_name) {
     BlockType *blk_type_ptr = GetBlockType(block_type_name);
-    Assert(blk_type_ptr != nullptr, "Cannot add BlockType pins because there is no such a BlockType: " + block_type_name);
+    Assert(blk_type_ptr != nullptr,
+           "Cannot add BlockType pins because there is no such a BlockType: " + block_type_name);
     return blk_type_ptr->AddPin(pin_name);
   }
 
   // add a cell pin with a given name to a BlockType, users must guarantee the pointer @param is valid.
-  static Pin *AddBlkTypePin(BlockType *blk_type_ptr, std::string &pin_name) {
+  Pin *AddBlkTypePin(BlockType *blk_type_ptr, std::string &pin_name) {
     return blk_type_ptr->AddPin(pin_name);
   }
 
   // add a rectangle to a block pin, this method is not the optimal one, but it is very safe to use. Unit in grid value.
-  void AddBlkTypePinRect(std::string &block_type_name, std::string &pin_name, double llx, double lly, double urx, double ury) {
+  void AddBlkTypePinRect(std::string &block_type_name,
+                         std::string &pin_name,
+                         double llx,
+                         double lly,
+                         double urx,
+                         double ury) {
     BlockType *blk_type_ptr = GetBlockType(block_type_name);
-    Assert(blk_type_ptr != nullptr, "Cannot add BlockType pins because there is no such a BlockType: " + block_type_name);
+    Assert(blk_type_ptr != nullptr,
+           "Cannot add BlockType pins because there is no such a BlockType: " + block_type_name);
     Pin *pin_ptr = blk_type_ptr->GetPinPtr(pin_name);
-    Assert(pin_ptr != nullptr, "Cannot add BlockType pins because there is no such a pin: " + block_type_name + "::" + pin_name);
+    Assert(pin_ptr != nullptr,
+           "Cannot add BlockType pins because there is no such a pin: " + block_type_name + "::" + pin_name);
     pin_ptr->AddRect(llx, lly, urx, ury);
   }
 
   // add a rectangle to a block pin, users must guarantee the pointer @param is valid. Unit in grid value.
-  static void AddBlkTypePinRect(Pin *pin_ptr, double llx, double lly, double urx, double ury) {
+  void AddBlkTypePinRect(Pin *pin_ptr, double llx, double lly, double urx, double ury) {
     pin_ptr->AddRect(llx, lly, urx, ury);
   }
 
@@ -243,24 +289,29 @@ class Circuit {
   // create BlockTypes by copying from another Circuit instance.
   void CopyBlockType(Circuit &circuit);
 
+  /************************************************
+   * End of APIs for LEF
+   * ************************************************/
+
+  /************************************************
+   * The following APIs are for setting information in DEF
+   * ************************************************/
+
   /****API for DIE AREA
    * These are DIEAREA section in DEF
    * ****/
-  int RegionLLX() const { return design_.region_left_; }
-  int RegionURX() const { return design_.region_right_; }
-  int RegionLLY() const { return design_.region_bottom_; }
-  int RegionURY() const { return design_.region_top_; }
-  int RegionWidth() const { return design_.region_right_ - design_.region_left_; }
-  int RegionHeight() const { return design_.region_top_ - design_.region_bottom_; }
-  void SetBoundary(int left, int right, int bottom, int top) { // unit in grid value
-    Assert(right > left, "Right boundary is not larger than Left boundary?");
-    Assert(top > bottom, "Top boundary is not larger than Bottom boundary?");
-    design_.region_left_ = left;
-    design_.region_right_ = right;
-    design_.region_bottom_ = bottom;
-    design_.region_top_ = top;
+
+  // set DEF UNITS DISTANCE MICRONS
+  void setUnitsDistanceMicrons(int distance_microns) {
+    Assert(distance_microns > 0, "Negative distance micron?");
+    design_.def_distance_microns = distance_microns;
   }
-  void SetDieArea(int lower_x, int upper_x, int lower_y, int upper_y) { // unit in manufacturing grid
+
+  // return DEF UNITS DISTANCE MICRONS
+  int DistanceMicrons() const { return design_.def_distance_microns; }
+
+  // set die area, unit in manufacturing grid
+  void setDieArea(int lower_x, int lower_y, int upper_x, int upper_y) { // unit in manufacturing grid
     Assert(tech_.grid_value_x_ > 0 && tech_.grid_value_y_ > 0,
            "Need to set positive grid values before setting placement boundary");
     Assert(design_.def_distance_microns > 0,
@@ -268,10 +319,28 @@ class Circuit {
     double factor_x = tech_.grid_value_x_ * design_.def_distance_microns;
     double factor_y = tech_.grid_value_y_ * design_.def_distance_microns;
     SetBoundary((int) std::round(lower_x / factor_x),
-                (int) std::round(upper_x / factor_x),
                 (int) std::round(lower_y / factor_y),
+                (int) std::round(upper_x / factor_x),
                 (int) std::round(upper_y / factor_y));
   }
+
+  // return lower x of the placement region, unit is grid value in x.
+  int RegionLLX() const { return design_.region_left_; }
+
+  // return upper x of the placement region, unit is grid value in x.
+  int RegionURX() const { return design_.region_right_; }
+
+  // return lower y of the placement region, unit is grid value in y.
+  int RegionLLY() const { return design_.region_bottom_; }
+
+  // return upper y of the placement region, unit is grid value in y.
+  int RegionURY() const { return design_.region_top_; }
+
+  // return width of the placement region, unit is grid value in x.
+  int RegionWidth() const { return design_.region_right_ - design_.region_left_; }
+
+  // return height of the placement region, unit is grid value in y.
+  int RegionHeight() const { return design_.region_top_ - design_.region_bottom_; }
 
   // Before adding COMPONENTs, IOPINs, and NETs, user need to specify how many instances there are.
   void setListCapacity(int components_count, int pins_count, int nets_count);
@@ -279,31 +348,26 @@ class Circuit {
   /****API for Block
    * These are COMPONENTS section in DEF
    * ****/
+
+  // get the pointer to the block list.
   std::vector<Block> *GetBlockList() { return &(design_.block_list); }
-  bool IsBlockExist(std::string &block_name);
-  int BlockIndex(std::string &block_name);
-  Block *GetBlock(std::string &block_name);
-  void AddBlock(std::string &block_name,
-                BlockType *block_type_ptr,
-                int llx = 0,
-                int lly = 0,
-                bool movable = true,
-                BlockOrient orient = N_,
-                bool is_real_cel = true);
-  void AddBlock(std::string &block_name,
-                std::string &block_type_name,
-                int llx = 0,
-                int lly = 0,
-                bool movable = true,
-                BlockOrient orient = N_,
-                bool is_real_cel = true);
-  void AddBlock(std::string &block_name,
-                BlockType *block_type_ptr,
-                int llx = 0,
-                int lly = 0,
-                PlaceStatus place_status = UNPLACED_,
-                BlockOrient orient = N_,
-                bool is_real_cel = true);
+
+  // check if a block with the given name exists or not.
+  bool IsBlockExist(std::string &block_name) {
+    return !(design_.block_name_map.find(block_name) == design_.block_name_map.end());
+  }
+
+  // returns the index of a block with a given name. Users must guarantee the given name is valid.
+  int BlockIndex(std::string &block_name) {
+    return design_.block_name_map.find(block_name)->second;
+  }
+
+  // returns a pointer to the block with a given name. Users must guarantee the given name is valid.
+  Block *GetBlock(std::string &block_name) {
+    return &design_.block_list[BlockIndex(block_name)];
+  }
+
+  // create a block instance using the name of its type
   void AddBlock(std::string &block_name,
                 std::string &block_type_name,
                 int llx = 0,
@@ -311,20 +375,44 @@ class Circuit {
                 PlaceStatus place_status = UNPLACED_,
                 BlockOrient orient = N_,
                 bool is_real_cel = true);
+
+  // report the whole Block list for debugging purposes.
   void ReportBlockList();
+
+  // report the whole Block map for debugging purposes.
   void ReportBlockMap();
 
   /****API for IOPIN
    * These are PINS section in DEF
    * ****/
+
+  // get the pointer to the IOPin list.
   std::vector<IOPin> *GetIOPinList() { return &(design_.iopin_list); }
-  void AddDummyIOPinType();
-  bool IsIOPinExist(std::string &iopin_name);
-  int IOPinIndex(std::string &iopin_name);
-  IOPin *GetIOPin(std::string &iopin_name);
-  IOPin *AddUnplacedIOPin(std::string &iopin_name);
-  IOPin *AddPlacedIOPin(std::string &iopin_name, int lx, int ly);
-  IOPin *AddIOPin(std::string &iopin_name, PlaceStatus place_status, int lx, int ly);
+
+  // check if an IOPin with a given name exists or not.
+  bool IsIOPinExist(std::string &iopin_name) {
+    return !(design_.iopin_name_map.find(iopin_name) == design_.iopin_name_map.end());
+  }
+
+  // return the index to the IOPin with a given name. Users must guarantee the given name is valid.
+  int IOPinIndex(std::string &iopin_name) {
+    return design_.iopin_name_map.find(iopin_name)->second;
+  }
+
+  // returns a pointer to the IOPin with a given name. Users must guarantee the given name is valid.
+  IOPin *GetIOPin(std::string &iopin_name) {
+    return &design_.iopin_list[IOPinIndex(iopin_name)];
+  }
+
+  // add an INPin
+  IOPin *AddIOPin(std::string &iopin_name,
+                  PlaceStatus place_status,
+                  SignalUse signal_use,
+                  SignalDirection signal_direction,
+                  int lx = 0,
+                  int ly = 0);
+
+  // report the whole IOPin list for debugging purposes.
   void ReportIOPin();
 
   /****API for Nets
@@ -347,6 +435,10 @@ class Circuit {
     UpdateNetHPWLHisto();
     design_.ReportNetFanoutHisto();
   }
+
+  /************************************************
+   * End of API for DEF
+   * ************************************************/
 
   /****Utility functions related to netlist management****/
   void NetListPopBack();

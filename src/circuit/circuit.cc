@@ -16,7 +16,7 @@
 #include "status.h"
 
 Circuit::Circuit() {
-  AddDummyIOPinType();
+  AddDummyIOPinBlockType();
 #ifdef USE_OPENDB
   db_ptr_ = nullptr;
 #endif
@@ -24,7 +24,7 @@ Circuit::Circuit() {
 
 #ifdef USE_OPENDB
 Circuit::Circuit(odb::dbDatabase *db_ptr) {
-  AddDummyIOPinType();
+  AddDummyIOPinBlockType();
   db_ptr_ = db_ptr;
   InitializeFromDB(db_ptr);
 }
@@ -115,22 +115,23 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   // 3. set grid value using metal pitches, and set row height
   setGridUsingMetalPitch();
   auto site = lib->getSites().begin();
-  setRowHeightManufactureGrid(site->getHeight());
-  //std::cout << site->getName() << "  " << site->getWidth() / double(lef_database_microns) << "  " << row_height_ << "\n";
+  double row_height = site->getHeight() / double(tech_.database_microns_);
+  setRowHeight(row_height);
+  //std::cout << site->getName() << "  " << site->getWidth() / double(tech_.database_microns_) << "  " << tech_.row_height_ << "\n";
 
   // 4. load all macros, aka gate types, block types, cell types
   //std::cout << lib->getName() << " lib\n";
   double llx = 0, lly = 0, urx = 0, ury = 0;
-  int width = 0, height = 0;
+  double width = 0, height = 0;
   for (auto &&macro: lib->getMasters()) {
     std::string macro_name(macro->getName());
-    width = int(std::round((macro->getWidth() / tech_.grid_value_x_ / tech_.database_microns_)));
-    height = int(std::round((macro->getHeight() / tech_.grid_value_y_ / tech_.database_microns_)));
+    width = macro->getWidth() / (double) tech_.database_microns_;
+    height = macro->getHeight() / (double) tech_.database_microns_;
     BlockType *blk_type = nullptr;
     if (macro_name.find("welltap") != std::string::npos) {
-      blk_type = AddWellTapBlockTypeWithGridUnit(macro_name, width, height);
+      blk_type = AddWellTapBlockType(macro_name, width, height);
     } else {
-      blk_type = AddBlockTypeWithGridUnit(macro_name, width, height);
+      blk_type = AddBlockType(macro_name, width, height);
     }
     //std::cout << macro->getName() << "\n";
     //std::cout << macro->getWidth()/grid_value_x_/lef_database_microns << "  " << macro->getHeight()/grid_value_y_/lef_database_microns << "\n";
@@ -138,7 +139,6 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
       std::string pin_name(terminal->getName());
       //if (pin_name == "Vdd" || pin_name == "GND") continue;
       //std::cout << terminal->getName() << " " << terminal->getMPins().begin()->getGeometry().begin()->xMax()/grid_value_x/lef_database_microns << "\n";
-      auto new_pin = blk_type->AddPin(pin_name);
       Assert(!terminal->getMPins().empty(), "No physical pins, Macro: " + *blk_type->NamePtr() + ", pin: " + pin_name);
       Assert(!terminal->getMPins().begin()->getGeometry().empty(), "No geometries provided for pin");
       auto geo_shape = terminal->getMPins().begin()->getGeometry().begin();
@@ -146,6 +146,8 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
       urx = geo_shape->xMax() / tech_.grid_value_x_ / tech_.database_microns_;
       lly = geo_shape->yMin() / tech_.grid_value_y_ / tech_.database_microns_;
       ury = geo_shape->yMax() / tech_.grid_value_y_ / tech_.database_microns_;
+
+      Pin *new_pin = AddBlkTypePin(blk_type, pin_name);
       AddBlkTypePinRect(new_pin, llx, lly, urx, ury);
     }
   }
@@ -158,6 +160,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   components_count = top_level->getInsts().size();
   pins_count = top_level->getBTerms().size();
   nets_count = top_level->getNets().size();
+
   setListCapacity(components_count, pins_count, nets_count);
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
@@ -178,7 +181,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
 
   // 5. load all gates
   int llx_int = 0, lly_int = 0;
-  design_.def_distance_microns = top_level->getDefUnits();
+  setUnitsDistanceMicrons(top_level->getDefUnits());
   odb::adsRect die_area;
   top_level->getDieArea(die_area);
   //std::cout << die_area.xMin() << "\n"
@@ -187,9 +190,9 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   //          << die_area.yMax() << "\n";
   design_.die_area_offset_x_ = die_area.xMin();
   design_.die_area_offset_y_ = die_area.yMin();
-  SetDieArea(die_area.xMin() - die_area.xMin(),
-             die_area.xMax() - die_area.xMin(),
+  setDieArea(die_area.xMin() - die_area.xMin(),
              die_area.yMin() - die_area.yMin(),
+             die_area.xMax() - die_area.xMin(),
              die_area.yMax() - die_area.yMin());
   for (auto &&blk: top_level->getInsts()) {
     //std::cout << blk->getName() << "  " << blk->getMaster()->getName() << "\n";
@@ -210,19 +213,17 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
     int iopin_x = 0;
     int iopin_y = 0;
     bool is_loc_set = iopin->getFirstPinLocation(iopin_x, iopin_y);
-    IOPin *pin = nullptr;
-    if (is_loc_set) {
-      pin = AddPlacedIOPin(iopin_name, iopin_x, iopin_x);
-    } else {
-      pin = AddUnplacedIOPin(iopin_name);
-    }
     std::string str_sig_use(iopin->getSigType().getString());
     SignalUse sig_use = StrToSignalUse(str_sig_use);
-    pin->SetUse(sig_use);
 
     std::string str_sig_dir(iopin->getIoType().getString());
     SignalDirection sig_dir = StrToSignalDirection(str_sig_dir);
-    pin->SetDirection(sig_dir);
+
+    if (is_loc_set) {
+      AddIOPin(iopin_name, PLACED_, sig_use, sig_dir, iopin_x, iopin_x);
+    } else {
+      AddIOPin(iopin_name, UNPLACED_, sig_use, sig_dir);
+    }
   }
 
   // 7. load all NETs
@@ -606,7 +607,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         def_bottom = (int) std::round(std::stoi(die_area_field[3]) / factor_y);
         def_right = (int) std::round(std::stoi(die_area_field[6]) / factor_x);
         def_top = (int) std::round(std::stoi(die_area_field[7]) / factor_y);
-        SetBoundary(def_left, def_right, def_bottom, def_top);
+        SetBoundary(def_left, def_bottom, def_right, def_top);
       } catch (...) {
         Assert(false, "Invalid stoi conversion (DIEAREA):\n" + line);
       }
@@ -973,16 +974,40 @@ BlockType *Circuit::AddBlockTypeWithGridUnit(std::string &block_type_name, int w
   return tmp_ptr;
 }
 
+BlockType *Circuit::AddBlockType(std::string &block_type_name, double width, double height) {
+  double residual = Residual(width, tech_.grid_value_x_);
+  Assert(residual < 1e-6, "BlockType width is not integer multiple of grid value in X: " + block_type_name);
+
+  residual = Residual(height, tech_.grid_value_y_);
+  Assert(residual < 1e-6, "BlockType height is not integer multiple of grid value in Y: " + block_type_name);
+
+  int gridded_width = (int) std::round(width / tech_.grid_value_x_);
+  int gridded_height = (int) std::round(height / tech_.grid_value_y_);
+  return AddBlockTypeWithGridUnit(block_type_name, gridded_width, gridded_height);
+}
+
 BlockType *Circuit::AddWellTapBlockTypeWithGridUnit(std::string &block_type_name, int width, int height) {
   BlockType *well_tap_ptr = AddBlockTypeWithGridUnit(block_type_name, width, height);
   tech_.well_tap_cell_ptr_ = well_tap_ptr;
   return well_tap_ptr;
 }
 
+BlockType *Circuit::AddWellTapBlockType(std::string &block_type_name, double width, double height) {
+  double residual = Residual(width, tech_.grid_value_x_);
+  Assert(residual < 1e-6, "BlockType width is not integer multiple of grid value in X: " + block_type_name);
+
+  residual = Residual(height, tech_.grid_value_y_);
+  Assert(residual < 1e-6, "BlockType height is not integer multiple of grid value in Y: " + block_type_name);
+
+  int gridded_width = (int) std::round(width / tech_.grid_value_x_);
+  int gridded_height = (int) std::round(height / tech_.grid_value_y_);
+  return AddWellTapBlockTypeWithGridUnit(block_type_name, gridded_width, gridded_height);
+}
+
 void Circuit::setListCapacity(int components_count, int pins_count, int nets_count) {
   Assert(components_count >= 0, "Negative number of components?");
   Assert(pins_count >= 0, "Negative number of IOPINs?");
-  Assert(nets_count>=0, "Negative number of NETs?");
+  Assert(nets_count >= 0, "Negative number of NETs?");
   design_.block_list.reserve(components_count + pins_count);
   design_.iopin_list.reserve(pins_count);
   design_.net_list.reserve(nets_count);
@@ -1009,49 +1034,6 @@ void Circuit::CopyBlockType(Circuit &circuit) {
       blk_type_new->AddPin(pin_name, pin.OffsetX(), pin.OffsetY());
     }
   }
-}
-
-bool Circuit::IsBlockExist(std::string &block_name) {
-  return !(design_.block_name_map.find(block_name) == design_.block_name_map.end());
-}
-
-int Circuit::BlockIndex(std::string &block_name) {
-  auto ret = design_.block_name_map.find(block_name);
-  if (ret == design_.block_name_map.end()) {
-    Assert(false, "Block does not exist, cannot find its index: " + block_name);
-  }
-  return ret->second;
-}
-
-Block *Circuit::GetBlock(std::string &block_name) {
-  return &design_.block_list[BlockIndex(block_name)];
-}
-
-void Circuit::AddBlock(std::string &block_name,
-                       BlockType *block_type_ptr,
-                       int llx,
-                       int lly,
-                       bool movable,
-                       BlockOrient orient,
-                       bool is_real_cel) {
-  PlaceStatus place_status;
-  if (movable) {
-    place_status = UNPLACED_;
-  } else {
-    place_status = FIXED_;
-  }
-  AddBlock(block_name, block_type_ptr, llx, lly, place_status, orient, is_real_cel);
-}
-
-void Circuit::AddBlock(std::string &block_name,
-                       std::string &block_type_name,
-                       int llx,
-                       int lly,
-                       bool movable,
-                       BlockOrient orient,
-                       bool is_real_cel) {
-  BlockType *block_type = GetBlockType(block_type_name);
-  AddBlock(block_name, block_type, llx, lly, movable, orient, is_real_cel);
 }
 
 void Circuit::AddBlock(std::string &block_name,
@@ -1112,7 +1094,7 @@ void Circuit::AddBlock(std::string &block_name,
   AddBlock(block_name, block_type, llx, lly, place_status, orient, is_real_cel);
 }
 
-void Circuit::AddDummyIOPinType() {
+void Circuit::AddDummyIOPinBlockType() {
   /****
    * This member function adds a dummy BlockType for IOPINs.
    * The name of this dummy BlockType is "PIN", and it contains one cell pin with name "pin".
@@ -1125,22 +1107,6 @@ void Circuit::AddDummyIOPinType() {
   Pin *pin = io_pin_type->AddPin(tmp_pin_name);
   pin->AddRect(0, 0, 0, 0);
   tech_.io_dummy_blk_type_ptr_ = io_pin_type;
-}
-
-bool Circuit::IsIOPinExist(std::string &iopin_name) {
-  return !(design_.iopin_name_map.find(iopin_name) == design_.iopin_name_map.end());
-}
-
-int Circuit::IOPinIndex(std::string &iopin_name) {
-  auto ret = design_.iopin_name_map.find(iopin_name);
-  if (ret == design_.iopin_name_map.end()) {
-    Assert(false, "IOPIN does not exist, cannot find its index: " + iopin_name);
-  }
-  return ret->second;
-}
-
-IOPin *Circuit::GetIOPin(std::string &iopin_name) {
-  return &design_.iopin_list[IOPinIndex(iopin_name)];
 }
 
 IOPin *Circuit::AddUnplacedIOPin(std::string &iopin_name) {
@@ -1163,17 +1129,21 @@ IOPin *Circuit::AddPlacedIOPin(std::string &iopin_name, int lx, int ly) {
   design_.pre_placed_io_count_ += 1;
 
   // add a dummy cell corresponding to this IOPIN to block_list.
-  AddBlock(iopin_name, tech_.io_dummy_blk_type_ptr_, lx, ly, false, N_, false);
+  AddBlock(iopin_name, tech_.io_dummy_blk_type_ptr_, lx, ly, PLACED_, N_, false);
 
   return &(design_.iopin_list.back());
 }
 
-IOPin *Circuit::AddIOPin(std::string &iopin_name, PlaceStatus place_status, int lx, int ly) {
+IOPin *Circuit::AddIOPin(std::string &iopin_name, PlaceStatus place_status, SignalUse signal_use, SignalDirection signal_direction, int lx, int ly) {
+  IOPin *io_pin = nullptr;
   if (place_status == UNPLACED_) {
-    return AddUnplacedIOPin(iopin_name);
+    io_pin = AddUnplacedIOPin(iopin_name);
   } else {
-    return AddPlacedIOPin(iopin_name, lx, ly);
+    io_pin = AddPlacedIOPin(iopin_name, lx, ly);
   }
+  io_pin->SetUse(signal_use);
+  io_pin->SetDirection(signal_direction);
+  return io_pin;
 }
 
 void Circuit::ReportIOPin() {

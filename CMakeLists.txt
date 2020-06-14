@@ -136,6 +136,14 @@ target_link_libraries(custom2standard
         PRIVATE placer
         opendb)
 
+# Stand-alone custom cell design to standard cell design tool
+add_executable(1create_circuit
+        EXCLUDE_FROM_ALL
+        src/example_code/1create_circuit.cc)
+target_link_libraries(1create_circuit
+        PRIVATE placer
+        opendb)
+
 ######################################
 # Configure install destination directory
 ######################################

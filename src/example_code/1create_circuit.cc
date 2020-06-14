@@ -14,6 +14,8 @@
 
 #include "circuit.h"
 
+VerboseLevel globalVerboseLevel = LOG_CRITICAL;
+
 int main() {
   std::cout << "Example of creating a Circuit instance\n";
 
@@ -33,7 +35,54 @@ int main() {
 
   // set grid value and row height
   circuit.setGridValue(0.2, 0.2);
-  circuit.setRowHeightMicron(0.2);
+  circuit.setRowHeight(0.2);
 
-  //
+  // add block type "NAND2"
+  std::string inv_type_name = "INV2";
+  double inv_width = 0.8;
+  double inv_height = 1.6;
+  BlockType *inv_ptr = circuit.AddBlockType(inv_type_name, inv_width, inv_height);
+
+  // add cell pins
+  std::string in_name = "IN";
+  double in_lx = 0.0;
+  double in_ly = 0.7;
+  double in_ux = 0.2;
+  double in_uy = 0.9;
+  Pin *in_pin_ptr = circuit.AddBlkTypePin(inv_ptr, in_name);
+  circuit.AddBlkTypePinRect(in_pin_ptr, in_lx, in_ly, in_ux, in_uy);
+
+  std::string out_name = "OUT";
+  double out_lx = 0.6;
+  double out_ly = 0.7;
+  double out_ux = 0.8;
+  double out_uy = 0.9;
+  Pin *out_pin_ptr = circuit.AddBlkTypePin(inv_ptr, out_name);
+  circuit.AddBlkTypePinRect(out_pin_ptr, out_lx, out_ly, out_ux, out_uy);
+
+  // set DEF Units distance microns, which would be better the same as LEF database micron.
+  circuit.setUnitsDistanceMicrons(1000);
+
+  // set die area
+  int die_left = 0.0 * circuit.DistanceMicrons();
+  int die_bottom = 0.0 * circuit.DistanceMicrons();
+  int die_right = 10.0 * circuit.DistanceMicrons();
+  int die_top = 10.0 * circuit.DistanceMicrons();
+  circuit.setDieArea(die_left, die_bottom, die_right, die_top);
+
+  // specify how many instances there are.
+  circuit.setListCapacity(2, 2, 1);
+
+  // add block instances
+  std::string inv1_name = "inv1";
+  circuit.AddBlock(inv1_name, inv_type_name, 0, 0, UNPLACED_, N_, true);
+  std::string inv2_name = "inv2";
+  circuit.AddBlock(inv2_name, inv_type_name, 0, 0, UNPLACED_, N_, true);
+
+  // add IOPIN
+  std::string chip_in = "io_in";
+  circuit.AddIOPin(chip_in, UNPLACED_, SIGNAL_, INPUT_, 0, 0);
+  std::string chip_out = "io_out";
+  circuit.AddIOPin(chip_out, UNPLACED_, SIGNAL_, OUTPUT_, 0, 0);
+
 }
