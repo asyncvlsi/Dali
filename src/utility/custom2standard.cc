@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
       Circuit::StrSplit(line, line_field);
       std::string type_name = line_field[1];
       std::string end_macro_flag = "END " + type_name;
-      BlockType *type = circuit.GetBlockType(type_name);
+      BlockType *type = circuit.getBlockType(type_name);
       double np_boundary = type->WellPtr()->PNBoundary() * circuit.GridValueY();
       TypeLayerBBox type_bbox(type, np_boundary, np_boundary);
       do {
@@ -230,7 +230,7 @@ int main(int argc, char *argv[]) {
       }
       Assert(bbox_ptr != nullptr, "Cannot find type?");
 
-      double type_p_height = circuit.GetBlockType(type_name)->WellPtr()->PHeight() * circuit.GridValueY();
+      double type_p_height = circuit.getBlockType(type_name)->WellPtr()->PHeight() * circuit.GridValueY();
       double height_diff = std_p_height - type_p_height;
       do {
         getline(ist, line);

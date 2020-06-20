@@ -66,7 +66,7 @@ class BlockType {
 
   // get the pointer to the pin with the given name
   // if such a pin does not exist, the return value is nullptr
-  Pin *GetPinPtr(std::string &pin_name) {
+  Pin *getPinPtr(std::string &pin_name) {
     auto res = pin_name_num_map_.find(pin_name);
     return res == pin_name_num_map_.end() ? nullptr : &(pin_list_[res->second]);
   }

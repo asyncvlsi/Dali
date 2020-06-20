@@ -21,7 +21,6 @@ void BlockType::Report() const {
     std::cout << "      " << it.first << " " << it.second << " (" << pin_list_[it.second].OffsetX() << ", "
               << pin_list_[it.second].OffsetY() << ")\n";
   }
-  std::cout << std::endl;
 }
 
 Pin *BlockType::AddPin(std::string &pin_name) {

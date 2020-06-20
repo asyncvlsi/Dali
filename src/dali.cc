@@ -234,8 +234,8 @@ int main(int argc, char *argv[]) {
   circuit.SaveDefFile(output_name, "_io", def_file_name, 1, 1, 1, 1);
   circuit.SaveDefFile(output_name, "_filling", def_file_name, 1, 4, 2, 0);
 
-  circuit.InitNetFanoutHisto();
-  circuit.ReportNetFanoutHisto();
+  circuit.InitNetFanoutHistogram();
+  circuit.ReportNetFanoutHistogram();
   circuit.ReportHPWLHistogramLinear();
   circuit.ReportHPWLHistogramLogarithm();
 

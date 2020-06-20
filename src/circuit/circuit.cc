@@ -231,28 +231,18 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   for (auto &&net: top_level->getNets()) {
     //std::cout << net->getName() << "\n";
     std::string net_name(net->getName());
-    int net_cap = int(net->getITermCount() + net->getBTermCount());
-    auto new_net = AddNet(net_name, net_cap, design_.normal_signal_weight);
+    int net_capacity = int(net->getITermCount() + net->getBTermCount());
+    AddNet(net_name, net_capacity, design_.normal_signal_weight);
     for (auto &&bterm: net->getBTerms()) {
       //std::cout << "  ( PIN " << bterm->getName() << ")  \t";
       std::string iopin_name(bterm->getName());
-      IOPin *iopin = GetIOPin(iopin_name);
-      Net *io_net = GetNet(net_name);
-      iopin->SetNet(io_net);
-      io_net->AddIOPin(iopin);
-      if (iopin->IsPrePlaced()) {
-        Block *blk_ptr = GetBlock(iopin_name);
-        Pin *pin = &(blk_ptr->TypePtr()->pin_list_[0]);
-        io_net->AddBlockPinPair(blk_ptr, pin);
-      }
+      AddIOPinToNet(iopin_name, net_name);
     }
     for (auto &&iterm: net->getITerms()) {
       //std::cout << "  (" << iterm->getInst()->getName() << "  " << iterm->getMTerm()->getName() << ")  \t";
       std::string blk_name(iterm->getInst()->getName());
       std::string pin_name(iterm->getMTerm()->getName());
-      Block *blk_ptr = GetBlock(blk_name);
-      auto pin = blk_ptr->TypePtr()->GetPinPtr(pin_name);
-      new_net->AddBlockPinPair(blk_ptr, pin);
+      AddBlkPinToNet(blk_name, pin_name, net_name);
     }
     //std::cout << "\n";
   }
@@ -719,21 +709,19 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
           for (size_t i = 0; i < pin_field.size(); i += 4) {
             //std::cout << "     " << pin_field[i+1] << " " << pin_field[i+2];
             if (pin_field[i + 1] == "PIN") {
-              GetIOPin(pin_field[i + 2])->SetNet(new_net);
+              getIOPin(pin_field[i + 2])->SetNet(new_net);
               continue;
             }
             //std::cout << net_field[1] << "  " << pin_field[i + 1] << "\n";
-            Block *block = GetBlock(pin_field[i + 1]);
-            auto pin = block->TypePtr()->GetPinPtr(pin_field[i + 2]);
+            Block *block = getBlockPtr(pin_field[i + 1]);
+            auto pin = block->TypePtr()->getPinPtr(pin_field[i + 2]);
             new_net->AddBlockPinPair(block, pin);
           }
           //std::cout << "\n";
           if (line.find(';') != std::string::npos) break;
         }
         //Assert(!new_net->blk_pin_list.empty(), "Net " + net_field[1] + " has no blk_pin_pair");
-        if (new_net->blk_pin_list.empty()) {
-          NetListPopBack();
-        }
+        Assert(!(new_net->blk_pin_list.empty()), "Canot add a net with no block-pin pair");
         //Warning(new_net->blk_pin_list.size() == 1, "Net " + net_field[1] + " has only one blk_pin_pair");
       }
       getline(ist, line);
@@ -847,7 +835,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
       StrSplit(line, macro_fields);
       std::string end_macro_flag = "END " + macro_fields[1];
       BlockTypeWell *well = AddBlockTypeWell(macro_fields[1]);
-      auto blk_type = GetBlockType(macro_fields[1]);
+      auto blk_type = getBlockType(macro_fields[1]);
       do {
         getline(ist, line);
         bool is_n = false;
@@ -947,9 +935,11 @@ void Circuit::AddMetalLayer(std::string &metal_name,
 }
 
 void Circuit::ReportMetalLayers() {
+  std::cout << "Total MetalLayer: " << tech_.metal_list_.size() << "\n";
   for (auto &metal_layer: tech_.metal_list_) {
     metal_layer.Report();
   }
+  std::cout << "\n";
 }
 
 BlockTypeWell *Circuit::AddBlockTypeWell(BlockType *blk_type) {
@@ -1018,6 +1008,7 @@ void Circuit::ReportBlockType() {
   for (auto &pair: tech_.block_type_map_) {
     pair.second->Report();
   }
+  std::cout << "\n";
 }
 
 void Circuit::CopyBlockType(Circuit &circuit) {
@@ -1090,7 +1081,7 @@ void Circuit::AddBlock(std::string &block_name,
                        PlaceStatus place_status,
                        BlockOrient orient,
                        bool is_real_cel) {
-  BlockType *block_type = GetBlockType(block_type_name);
+  BlockType *block_type = getBlockType(block_type_name);
   AddBlock(block_name, block_type, llx, lly, place_status, orient, is_real_cel);
 }
 
@@ -1147,27 +1138,11 @@ IOPin *Circuit::AddIOPin(std::string &iopin_name, PlaceStatus place_status, Sign
 }
 
 void Circuit::ReportIOPin() {
+  std::cout << "Total IOPin: " << design_.iopin_list.size() << "\n";
   for (auto &iopin: design_.iopin_list) {
     iopin.Report();
   }
-}
-
-bool Circuit::IsNetExist(std::string &net_name) {
-  return !(design_.net_name_map.find(net_name) == design_.net_name_map.end());
-}
-
-int Circuit::NetIndex(std::string &net_name) {
-  Assert(IsNetExist(net_name), "Net does not exist, cannot find its index: " + net_name);
-  return design_.net_name_map.find(net_name)->second;
-}
-
-Net *Circuit::GetNet(std::string &net_name) {
-  return &design_.net_list[NetIndex(net_name)];
-}
-
-void Circuit::AddToNetMap(std::string &net_name) {
-  int map_size = design_.net_name_map.size();
-  design_.net_name_map.insert(std::pair<std::string, int>(net_name, map_size));
+  std::cout << "\n";
 }
 
 Net *Circuit::AddNet(std::string &net_name, int capacity, double weight) {
@@ -1178,15 +1153,30 @@ Net *Circuit::AddNet(std::string &net_name, int capacity, double weight) {
    * @param weight:   weight of this net
    * ****/
   Assert(!IsNetExist(net_name), "Net exists, cannot create this net again: " + net_name);
-  AddToNetMap(net_name);
+  int map_size = design_.net_name_map.size();
+  design_.net_name_map.insert(std::pair<std::string, int>(net_name, map_size));
   std::pair<const std::string, int> *name_num_pair_ptr = &(*design_.net_name_map.find(net_name));
   design_.net_list.emplace_back(name_num_pair_ptr, capacity, weight);
   return &design_.net_list.back();
 }
 
-void Circuit::NetListPopBack() {
-  design_.net_name_map.erase(design_.net_list.back().NameStr());
-  design_.net_list.pop_back();
+void Circuit::AddIOPinToNet(std::string &iopin_name, std::string &net_name) {
+  IOPin *iopin = getIOPin(iopin_name);
+  Net *io_net = getNetPtr(net_name);
+  iopin->SetNet(io_net);
+  io_net->AddIOPin(iopin);
+  if (iopin->IsPrePlaced()) {
+    Block *blk_ptr = getBlockPtr(iopin_name);
+    Pin *pin = &(blk_ptr->TypePtr()->pin_list_[0]);
+    io_net->AddBlockPinPair(blk_ptr, pin);
+  }
+}
+
+void Circuit::AddBlkPinToNet(std::string &blk_name, std::string &pin_name, std::string &net_name) {
+  Block *blk_ptr = getBlockPtr(blk_name);
+  Pin *pin = blk_ptr->TypePtr()->getPinPtr(pin_name);
+  Net *net = getNetPtr(net_name);
+  net->AddBlockPinPair(blk_ptr, pin);
 }
 
 /*
@@ -1213,9 +1203,11 @@ void Circuit::RemoveAllPseudoNets() {
  */
 
 void Circuit::ReportBlockList() {
+  std::cout << "Total Block: " << design_.block_list.size() << "\n";
   for (auto &block: design_.block_list) {
     block.Report();
   }
+  std::cout << "\n";
 }
 
 void Circuit::ReportBlockMap() {
@@ -1225,13 +1217,15 @@ void Circuit::ReportBlockMap() {
 }
 
 void Circuit::ReportNetList() {
+  std::cout << "Total Net: " << design_.net_list.size() << "\n";
   for (auto &net: design_.net_list) {
-    std::cout << *net.Name() << "  " << net.Weight() << "\n";
+    std::cout << "  " << *net.Name() << "  " << net.Weight() << "\n";
     for (auto &block_pin_pair: net.blk_pin_list) {
       std::cout << "\t" << " (" << *(block_pin_pair.BlockNamePtr()) << " " << *(block_pin_pair.PinNamePtr()) << ") "
                 << "\n";
     }
   }
+  std::cout << "\n";
 }
 
 void Circuit::ReportNetMap() {
@@ -1240,7 +1234,7 @@ void Circuit::ReportNetMap() {
   }
 }
 
-void Circuit::UpdateNetHPWLHisto() {
+void Circuit::UpdateNetHPWLHistogram() {
   int bin_count = (int) design_.net_histogram_.bin_list_.size();
   design_.net_histogram_.sum_hpwl_.assign(bin_count, 0);
   design_.net_histogram_.ave_hpwl_.assign(bin_count, 0);
@@ -1264,6 +1258,7 @@ void Circuit::ReportBriefSummary() const {
   if (globalVerboseLevel >= LOG_INFO) {
     std::cout << "  movable blocks: " << TotMovableBlockNum() << "\n"
               << "  blocks: " << TotBlkNum() << "\n"
+              << "  iopins: " << design_.iopin_list.size() << "\n"
               << "  nets: " << design_.net_list.size() << "\n"
               << "  grid size x: " << tech_.grid_value_x_ << " um, grid size y: " << tech_.grid_value_y_ << " um\n"
               << "  total block area: " << design_.tot_blk_area_ << "\n"
@@ -2580,7 +2575,7 @@ void Circuit::LoadBookshelfPl(std::string const &name_of_file) {
         try {
           lx = std::stod(res[1]) / tech_.grid_value_x_ / design_.def_distance_microns;
           ly = std::stod(res[2]) / tech_.grid_value_y_ / design_.def_distance_microns;
-          GetBlock(res[0])->SetLoc(lx, ly);
+          getBlockPtr(res[0])->SetLoc(lx, ly);
         } catch (...) {
           Assert(false, "Invalid stod conversion:\n\t" + line);
         }

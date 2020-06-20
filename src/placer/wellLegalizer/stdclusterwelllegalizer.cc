@@ -241,7 +241,7 @@ StdClusterWellLegalizer::StdClusterWellLegalizer() {
 }
 
 void StdClusterWellLegalizer::CheckWellExistence() {
-  for (auto &blk: *(circuit_->GetBlockList())) {
+  for (auto &blk: *(circuit_->getBlockList())) {
     if (blk.IsMovable()) {
       Assert(blk.TypePtr()->WellPtr() != nullptr, "Cannot find well info for cell: " + blk.Name());
     }

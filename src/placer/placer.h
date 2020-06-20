@@ -36,11 +36,11 @@ class Placer {
 
   virtual void SetInputCircuit(Circuit *circuit) {
     Assert(circuit != nullptr, "Invalid input circuit: not allowed to set nullptr as an input!");
-    if (circuit->GetBlockList()->empty()) {
+    if (circuit->getBlockList()->empty()) {
       std::cout << "Invalid input circuit: empty block list, nothing to place!\n";
       return;
     }
-    if (circuit->GetNetList()->empty()) {
+    if (circuit->getNetList()->empty()) {
       std::cout << "Improper input circuit: empty net list, nothing to optimize during placement! But anyway...\n";
     }
     circuit_ = circuit;
@@ -61,8 +61,8 @@ class Placer {
     filling_rate_ = 1. / ratio;
   }
 
-  std::vector<Block> *BlockList() { return circuit_->GetBlockList(); }
-  std::vector<Net> *NetList() { return circuit_->GetNetList(); }
+  std::vector<Block> *BlockList() { return circuit_->getBlockList(); }
+  std::vector<Net> *NetList() { return circuit_->getNetList(); }
 
   bool IsBoundaryProper();
   void SetBoundaryAuto();

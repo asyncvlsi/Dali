@@ -77,7 +77,7 @@ void TetrisLegalizer::FlipPlacement() {
    * ****/
   flipped_ = !flipped_;
   int sum_left_right = left_ + right_;
-  for (auto &block: *(GetCircuit()->GetBlockList())) {
+  for (auto &block: *(GetCircuit()->getBlockList())) {
     block.setLLX(sum_left_right - block.URX());
   }
   //GenMATLABScript("flip_result.txt");

@@ -210,7 +210,7 @@ class Circuit {
   }
 
   // get a pointer to the metal layer with a given name
-  MetalLayer *GetMetalLayerPtr(std::string &metal_name) {
+  MetalLayer *getMetalLayerPtr(std::string &metal_name) {
     Assert(IsMetalLayerExist(metal_name), "MetalLayer does not exist, cannot find it: " + metal_name);
     return &tech_.metal_list_[MetalLayerIndex(metal_name)];
   }
@@ -238,7 +238,7 @@ class Circuit {
   }
 
   // get the pointer to the BlockType with a given name, if not exist, return nullptr.
-  BlockType *GetBlockType(std::string &block_type_name) {
+  BlockType *getBlockType(std::string &block_type_name) {
     auto res = tech_.block_type_map_.find(block_type_name);
     return res != tech_.block_type_map_.end() ? res->second : nullptr;
   }
@@ -251,7 +251,7 @@ class Circuit {
 
   // add a cell pin with a given name to a BlockType, this method is not the optimal one, but it is very safe to use.
   Pin *AddBlkTypePin(std::string &block_type_name, std::string &pin_name) {
-    BlockType *blk_type_ptr = GetBlockType(block_type_name);
+    BlockType *blk_type_ptr = getBlockType(block_type_name);
     Assert(blk_type_ptr != nullptr,
            "Cannot add BlockType pins because there is no such a BlockType: " + block_type_name);
     return blk_type_ptr->AddPin(pin_name);
@@ -269,10 +269,10 @@ class Circuit {
                          double lly,
                          double urx,
                          double ury) {
-    BlockType *blk_type_ptr = GetBlockType(block_type_name);
+    BlockType *blk_type_ptr = getBlockType(block_type_name);
     Assert(blk_type_ptr != nullptr,
            "Cannot add BlockType pins because there is no such a BlockType: " + block_type_name);
-    Pin *pin_ptr = blk_type_ptr->GetPinPtr(pin_name);
+    Pin *pin_ptr = blk_type_ptr->getPinPtr(pin_name);
     Assert(pin_ptr != nullptr,
            "Cannot add BlockType pins because there is no such a pin: " + block_type_name + "::" + pin_name);
     pin_ptr->AddRect(llx, lly, urx, ury);
@@ -350,7 +350,7 @@ class Circuit {
    * ****/
 
   // get the pointer to the block list.
-  std::vector<Block> *GetBlockList() { return &(design_.block_list); }
+  std::vector<Block> *getBlockList() { return &(design_.block_list); }
 
   // check if a block with the given name exists or not.
   bool IsBlockExist(std::string &block_name) {
@@ -363,7 +363,7 @@ class Circuit {
   }
 
   // returns a pointer to the block with a given name. Users must guarantee the given name is valid.
-  Block *GetBlock(std::string &block_name) {
+  Block *getBlockPtr(std::string &block_name) {
     return &design_.block_list[BlockIndex(block_name)];
   }
 
@@ -387,20 +387,20 @@ class Circuit {
    * ****/
 
   // get the pointer to the IOPin list.
-  std::vector<IOPin> *GetIOPinList() { return &(design_.iopin_list); }
+  std::vector<IOPin> *getIOPinList() { return &(design_.iopin_list); }
 
   // check if an IOPin with a given name exists or not.
   bool IsIOPinExist(std::string &iopin_name) {
     return !(design_.iopin_name_map.find(iopin_name) == design_.iopin_name_map.end());
   }
 
-  // return the index to the IOPin with a given name. Users must guarantee the given name is valid.
+  // returns the index of the IOPin with a given name. Users must guarantee the given name is valid.
   int IOPinIndex(std::string &iopin_name) {
     return design_.iopin_name_map.find(iopin_name)->second;
   }
 
   // returns a pointer to the IOPin with a given name. Users must guarantee the given name is valid.
-  IOPin *GetIOPin(std::string &iopin_name) {
+  IOPin *getIOPin(std::string &iopin_name) {
     return &design_.iopin_list[IOPinIndex(iopin_name)];
   }
 
@@ -418,21 +418,52 @@ class Circuit {
   /****API for Nets
    * These are NETS section in DEF
    * ****/
-  std::vector<Net> *GetNetList() { return &(design_.net_list); }
-  bool IsNetExist(std::string &net_name);
-  int NetIndex(std::string &net_name);
-  Net *GetNet(std::string &net_name);
-  void AddToNetMap(std::string &net_name);
-  Net *AddNet(std::string &net_name, int capacity, double weight);
+
+  // get the pointer to the net list.
+  std::vector<Net> *getNetList() { return &(design_.net_list); }
+
+  // check if a Net with a given name exists or not.
+  bool IsNetExist(std::string &net_name) {
+    return !(design_.net_name_map.find(net_name) == design_.net_name_map.end());
+  }
+
+  // returns the index of the Net with a given name. Users must guarantee the given name is valid.
+  int NetIndex(std::string &net_name) {
+    return design_.net_name_map.find(net_name)->second;
+  }
+
+  // returns a pointer to the Net with a given name. Users must guarantee the given name is valid.
+  Net *getNetPtr(std::string &net_name) {
+    return &design_.net_list[NetIndex(net_name)];
+  }
+
+  // add a net with given name and capacity (number of cell pins), net weight is default 1.
+  Net *AddNet(std::string &net_name, int capacity, double weight = 1);
+
+  // add a IOPin to a net.
+  void AddIOPinToNet(std::string &iopin_name, std::string &net_name);
+
+  // add a block pin to a net.
+  void AddBlkPinToNet(std::string &blk_name, std::string &pin_name, std::string &net_name);
+
+  // report the net list.
   void ReportNetList();
+
+  // report the net map for debugging purposes.
   void ReportNetMap();
-  void InitNetFanoutHisto(std::vector<int> *histo_x = nullptr) {
+
+  // initialize data structure for net fanout histogram
+  void InitNetFanoutHistogram(std::vector<int> *histo_x = nullptr) {
     design_.InitNetFanoutHisto(histo_x);
     design_.net_histogram_.hpwl_unit_ = tech_.grid_value_x_;
   }
-  void UpdateNetHPWLHisto();
-  void ReportNetFanoutHisto() {
-    UpdateNetHPWLHisto();
+
+  // update HPWL values for the net fanout histogram
+  void UpdateNetHPWLHistogram();
+
+  // report the net fanout histogram
+  void ReportNetFanoutHistogram() {
+    UpdateNetHPWLHistogram();
     design_.ReportNetFanoutHisto();
   }
 
@@ -440,9 +471,7 @@ class Circuit {
    * End of API for DEF
    * ************************************************/
 
-  /****Utility functions related to netlist management****/
-  void NetListPopBack();
-
+  // report brief summary of this circuit.
   void ReportBriefSummary() const;
 
   /****API to add N/P-well technology information
@@ -450,7 +479,7 @@ class Circuit {
    * ****/
   BlockTypeWell *AddBlockTypeWell(BlockType *blk_type);
   BlockTypeWell *AddBlockTypeWell(std::string &blk_type_name) {
-    BlockType *blk_type_ptr = GetBlockType(blk_type_name);
+    BlockType *blk_type_ptr = getBlockType(blk_type_name);
     return AddBlockTypeWell(blk_type_ptr);
   }
   void SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {

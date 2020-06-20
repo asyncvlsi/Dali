@@ -71,7 +71,7 @@ int main() {
   circuit.setDieArea(die_left, die_bottom, die_right, die_top);
 
   // specify how many instances there are.
-  circuit.setListCapacity(2, 2, 1);
+  circuit.setListCapacity(2, 2, 3);
 
   // add block instances
   std::string inv1_name = "inv1";
@@ -85,4 +85,28 @@ int main() {
   std::string chip_out = "io_out";
   circuit.AddIOPin(chip_out, UNPLACED_, SIGNAL_, OUTPUT_, 0, 0);
 
+  // add net
+  std::string net_in_name = "net_in";
+  circuit.AddNet(net_in_name, 2);
+  circuit.AddIOPinToNet(chip_in, net_in_name);
+  circuit.AddBlkPinToNet(inv1_name, in_name, net_in_name);
+
+  std::string net_between_name = "net_between";
+  circuit.AddNet(net_between_name, 2);
+  circuit.AddBlkPinToNet(inv1_name, out_name, net_between_name);
+  circuit.AddBlkPinToNet(inv2_name, in_name, net_between_name);
+
+  std::string net_out_name = "net_out";
+  circuit.AddNet(net_out_name,2);
+  circuit.AddBlkPinToNet(inv2_name, out_name, net_out_name);
+  circuit.AddIOPinToNet(chip_out, net_out_name);
+
+  // Report circuit detail
+  circuit.ReportMetalLayers();
+  circuit.ReportBlockType();
+  circuit.ReportBlockList();
+  circuit.ReportIOPin();
+  circuit.ReportNetList();
+
+  return 0;
 }
