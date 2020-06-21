@@ -63,7 +63,7 @@ class GPSimPL : public Placer {
   GPSimPL();
   GPSimPL(double aspectRatio, double fillingRate);
 
-  unsigned int TotBlockNum() { return GetCircuit()->TotBlkNum(); }
+  unsigned int TotBlockNum() { return GetCircuit()->TotBlkCount(); }
   void SetEpsilon() {
     width_epsilon = circuit_->AveMovBlkWidth() / 100.0;
     height_epsilon = circuit_->AveMovBlkHeight() / 100.0;

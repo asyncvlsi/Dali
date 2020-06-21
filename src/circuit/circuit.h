@@ -105,6 +105,16 @@ class Circuit {
   // add a placed IOPin.
   IOPin *AddPlacedIOPin(std::string &iopin_name, int lx, int ly);
 
+  // create well information container for a given BlockType.
+  BlockTypeWell *AddBlockTypeWell(BlockType *blk_type);
+
+  /****static functions****/
+  // splits a line into many words
+  static void StrSplit(std::string &line, std::vector<std::string> &res);
+
+  // finds the first number in a string.
+  static int FindFirstNumber(std::string &str);
+
  public:
 
   Circuit();
@@ -138,7 +148,7 @@ class Circuit {
 
 
   /************************************************
-   * The following APIs are for setting information in LEF
+   * The following APIs are for in LEF
    * ************************************************/
   /****API to set and get database unit****/
   // set database microns
@@ -294,7 +304,7 @@ class Circuit {
    * ************************************************/
 
   /************************************************
-   * The following APIs are for setting information in DEF
+   * The following APIs are for DEF
    * ************************************************/
 
   /****API for DIE AREA
@@ -446,7 +456,7 @@ class Circuit {
   // add a block pin to a net.
   void AddBlkPinToNet(std::string &blk_name, std::string &pin_name, std::string &net_name);
 
-  // report the net list.
+  // report the net list for debugging purposes.
   void ReportNetList();
 
   // report the net map for debugging purposes.
@@ -474,23 +484,37 @@ class Circuit {
   // report brief summary of this circuit.
   void ReportBriefSummary() const;
 
-  /****API to add N/P-well technology information
-   * These are for CELL file
-   * ****/
-  BlockTypeWell *AddBlockTypeWell(BlockType *blk_type);
+  /************************************************
+   * The following APIs are for in LEF
+   * ************************************************/
+
+  // set N-well layer parameters
+  void SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {
+    tech_.SetNLayer(width, spacing, op_spacing, max_plug_dist, overhang);
+  }
+
+  // set P-well layer parameters
+  void SetPWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {
+    tech_.SetPLayer(width, spacing, op_spacing, max_plug_dist, overhang);
+  }
+
+  // TODO: discuss with Rajit about the necessity of the parameter ANY_SPACING in CELL file.
+  // set same_spacing (NN and PP) and any_spacing (NP). This member function will be depreciated
+  void SetLegalizerSpacing(double same_spacing, double any_spacing) {
+    tech_.SetDiffSpacing(same_spacing, any_spacing);
+  }
+
+  // create well information container for a given BlockType.
   BlockTypeWell *AddBlockTypeWell(std::string &blk_type_name) {
     BlockType *blk_type_ptr = getBlockType(blk_type_name);
     return AddBlockTypeWell(blk_type_ptr);
   }
-  void SetNWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {
-    tech_.SetNLayer(width, spacing, op_spacing, max_plug_dist, overhang);
-  }
-  void SetPWellParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {
-    tech_.SetPLayer(width, spacing, op_spacing, max_plug_dist, overhang);
-  }
-  void SetLegalizerSpacing(double same_spacing, double any_spacing) {
-    tech_.SetDiffSpacing(same_spacing, any_spacing);
-  }
+
+  // TODO: discuss with Rajit about the necessity of having N/P-wells not fully covering the prBoundary of a given cell.
+  // set the N/P-well shape of a given BlockType, unit in micron.
+  void setWellRect(std::string &blk_type_name, bool is_N, double lx, double ly, double ux, double uy);
+
+  // report the well shape for each BlockType for debugging purposes.
   void ReportWellShape();
 
   /****API to add virtual nets for timing driven placement****/
@@ -505,46 +529,94 @@ class Circuit {
    */
   // repulsive force can be created using an attractive force, a spring whose rest length in the current distance or even longer than the current distance
 
-  /****member functions to obtain statical values****/
+  /****member functions to obtain some useful values****/
+
+  // returns the minimum width of blocks.
   int MinBlkWidth() const { return design_.blk_min_width_; }
+
+  // returns the maximum width of blocks, for checking if the placement region is too narrow, and so on.
   int MaxBlkWidth() const { return design_.blk_max_width_; }
+
+  // returns the minimum height of blocks.
   int MinBlkHeight() const { return design_.blk_min_height_; }
+
+  // returns the maximum height of blocks, for checking if the placement region is too short, and so on.
   int MaxBlkHeight() const { return design_.blk_max_height_; }
+
+  // returns the total block area, for checking if the placement region is big enough.
   long int TotBlkArea() const { return design_.tot_blk_area_; }
-  int TotBlkNum() const { return design_.blk_count_; }
-  int TotMovableBlockNum() const { return design_.tot_mov_blk_num_; }
+
+  // returns the total number of blocks.
+  int TotBlkCount() const { return design_.blk_count_; }
+
+  // returns the total number of movable blocks.
+  int TotMovableBlockCount() const { return design_.tot_mov_blk_num_; }
+
+  // returns the total number of fixed blocks.
   int TotFixedBlkCnt() const { return (int) design_.block_list.size() - design_.tot_mov_blk_num_; }
-  double AveBlkWidth() const { return double(design_.tot_width_) / double(TotBlkNum()); }
-  double AveBlkHeight() const { return double(design_.tot_height_) / double(TotBlkNum()); }
-  double AveBlkArea() const { return double(design_.tot_blk_area_) / double(TotBlkNum()); }
-  double AveMovBlkWidth() const { return double(design_.tot_mov_width_) / design_.tot_mov_blk_num_; }
-  double AveMovBlkHeight() const { return double(design_.tot_mov_height_) / design_.tot_mov_blk_num_; }
-  double AveMovBlkArea() const { return double(design_.tot_mov_block_area_) / design_.tot_mov_blk_num_; }
+
+  // returns the average width of blocks.
+  double AveBlkWidth() const { return double(design_.tot_width_) / double(TotBlkCount()); }
+
+  // returns the average height of blocks.
+  double AveBlkHeight() const { return double(design_.tot_height_) / double(TotBlkCount()); }
+
+  // returns the average area of blocks.
+  double AveBlkArea() const { return double(design_.tot_blk_area_) / double(TotBlkCount()); }
+
+  // returns the average width of movable blocks.
+  double AveMovBlkWidth() const { return double(design_.tot_mov_width_) / TotMovableBlockCount(); }
+
+  // returns the average height of movable blocks.
+  double AveMovBlkHeight() const { return double(design_.tot_mov_height_) / TotMovableBlockCount(); }
+
+  // returns the average area of movable blocks.
+  double AveMovBlkArea() const { return double(design_.tot_mov_block_area_) / TotMovableBlockCount(); }
+
+  // returns the white space usage ratio.
   double WhiteSpaceUsage() const {
-    return double(TotBlkArea()) / (RegionURX() - RegionLLX()) / (RegionURY() - RegionLLY());
+    return double(TotBlkArea()) / double(RegionURX() - RegionLLX()) / double(RegionURY() - RegionLLY());
   }
 
   /****Utility member functions****/
   void NetSortBlkPin();
-  // calculating HPWL from precise pin locations
+
+  // returns HPWL in the x direction, considering cell pin offsets, unit in micron.
   double HPWLX();
+
+  // returns HPWL in the y direction, considering cell pin offsets, unit in micron.
   double HPWLY();
+
+  // returns total HPWL, considering cell pin offsets, unit in micron.
   double HPWL() { return HPWLX() + HPWLY(); }
+
+  // simple function to report HPWL.
   void ReportHPWL() { printf("  Current HPWL: %e um\n", HPWL()); }
+
+  // report the histogram of HPWL using linear bins.
   void ReportHPWLHistogramLinear(int bin_num = 10);
+
+  // report the histogram of HPWL using logarithmic bins.
   void ReportHPWLHistogramLogarithm(int bin_num = 10);
-  // calculating HPWL from the center of cells
+
+  // returns HPWL in the x direction, assuming cell pins are in the cell, unit in micron.
   double HPWLCtoCX();
+
+  // returns HPWL in the y direction, assuming cell pins are in the cell, unit in micron.
   double HPWLCtoCY();
+
+  // returns total HPWL, assuming cell pins are in the cell, unit in micron.
   double HPWLCtoC() { return HPWLCtoCX() + HPWLCtoCY(); }
+
+  // simple function to report HPWL.
   void ReportHPWLCtoC() { printf("  Current HPWL: %e um\n", HPWLCtoC()); }
 
-  /****dump placement results to various file formats****/
-  void WriteDefFileDebug(std::string const &name_of_file = "circuit.def");
-  void GenMATLABScript(std::string const &name_of_file = "block_net_list.m");
+  /****save placement results to various file formats****/
   void GenMATLABTable(std::string const &name_of_file = "block.txt", bool only_well_tap = false);
   void GenMATLABWellTable(std::string const &name_of_file = "res", bool only_well_tap = false);
   void SaveDefFile(std::string const &name_of_file, std::string const &def_file_name, bool is_complete_version = true);
+
+  // save def file for users.
   void SaveDefFile(std::string const &base_name,
                    std::string const &name_padding,
                    std::string const &def_file_name,
@@ -552,6 +624,8 @@ class Circuit {
                    int save_cell,
                    int save_iopin,
                    int save_net);
+
+
   void SaveIODefFile(std::string const &name_of_file, std::string const &def_file_name);
   void SaveDefWell(std::string const &name_of_file, std::string const &def_file_name, bool is_no_normal_cell = true);
   void SaveDefPPNPWell(std::string const &name_of_file, std::string const &def_file_name);
@@ -565,10 +639,6 @@ class Circuit {
   void SaveBookshelfWts(std::string const &name_of_file);
   void SaveBookshelfAux(std::string const &name_of_file);
   void LoadBookshelfPl(std::string const &name_of_file);
-
-  /****static functions****/
-  static void StrSplit(std::string &line, std::vector<std::string> &res);
-  static int FindFirstDigit(std::string &str);
 };
 
 #endif //DALI_CIRCUIT_HPP

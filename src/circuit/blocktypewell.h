@@ -57,17 +57,6 @@ struct BlockTypeWell {
     }
   }
 
-  // set the rect of N-well
-  void setNWellRect(RectI &rect) {
-    is_n_set_ = true;
-    n_rect_ = rect;
-    if (is_p_set_) {
-      Assert(n_rect_.LLY() == p_rect_.URY(), "N/P-well not abutted");
-    } else {
-      p_n_edge_ = n_rect_.LLY();
-    }
-  }
-
   // get the pointer to the rect of N-well
   RectI *NWellRectPtr() { return &(n_rect_); }
 
@@ -82,17 +71,6 @@ struct BlockTypeWell {
     }
   }
 
-  // set the rect of P-well
-  void setPWellRect(RectI &rect) {
-    is_p_set_ = true;
-    p_rect_ = rect;
-    if (is_n_set_) {
-      Assert(n_rect_.LLY() == p_rect_.URY(), "N/P-well not abutted");
-    } else {
-      p_n_edge_ = p_rect_.URY();
-    }
-  }
-
   // get the pointer to the rect of P-well
   RectI *PWellRectPtr() { return &(p_rect_); }
 
@@ -100,10 +78,10 @@ struct BlockTypeWell {
   int PNBoundary() const { return p_n_edge_; }
 
   // get the height of N-well
-  int NHeight() const { return n_rect_.Height(); }
+  int NHeight() const { return type_ptr_->Height() - p_n_edge_; }
 
   // get the height of P-well
-  int PHeight() const { return p_rect_.Height(); }
+  int PHeight() const { return p_n_edge_; }
 
   // set the rect of N or P well
   void setWellRect(bool is_n, int lx, int ly, int ux, int uy) {

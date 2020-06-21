@@ -313,7 +313,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
       std::vector<std::string> layer_field;
       StrSplit(line, layer_field);
       Assert(layer_field.size() == 2, "Invalid LAYER, expect only: LAYER layerName\n\tgot: " + line);
-      int first_digit_pos = FindFirstDigit(layer_field[1]);
+      int first_digit_pos = FindFirstNumber(layer_field[1]);
       std::string metal_id(layer_field[1], 0, first_digit_pos);
       if (std::find(metal_identifier_list.begin(), metal_identifier_list.end(), metal_id)
           != metal_identifier_list.end()) {
@@ -845,29 +845,23 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
               is_n = true;
             }
             if (line.find("RECT") != std::string::npos) {
-              int lx = 0, ly = 0, ux = 0, uy = 0;
+              double lx = 0, ly = 0, ux = 0, uy = 0;
               std::vector<std::string> shape_fields;
               StrSplit(line, shape_fields);
               try {
-                lx = int(std::round(std::stod(shape_fields[1]) / tech_.grid_value_x_));
-                ly = int(std::round(std::stod(shape_fields[2]) / tech_.grid_value_y_));
-                ux = int(std::round(std::stod(shape_fields[3]) / tech_.grid_value_x_));
-                uy = int(std::round(std::stod(shape_fields[4]) / tech_.grid_value_y_));
+                lx = std::stod(shape_fields[1]);
+                ly = std::stod(shape_fields[2]);
+                ux = std::stod(shape_fields[3]);
+                uy = std::stod(shape_fields[4]);
               } catch (...) {
                 Assert(false, "Invalid stod conversion:\n" + line);
               }
-              well->setWellRect(is_n, lx, ly, ux, uy);
-              if (is_n) {
-                well->setNWellRect(0, ly, blk_type->Width(), blk_type->Height());
-              } else {
-                well->setPWellRect(0, 0, blk_type->Width(), uy);
-              }
+              setWellRect(macro_fields[1], is_n, lx, ly, ux, uy);
             }
             getline(ist, line);
           } while (line.find("END VERSION") == std::string::npos && !ist.eof());
         }
       } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
-      Assert(well->IsNPWellAbutted(), "N/P well not abutted: " + macro_fields[1]);
     }
   }
   Assert(!tech_.IsWellInfoSet(), "N/P well technology information not found!");
@@ -946,6 +940,18 @@ BlockTypeWell *Circuit::AddBlockTypeWell(BlockType *blk_type) {
   tech_.well_list_.emplace_back(blk_type);
   blk_type->well_ptr_ = &(tech_.well_list_.back());
   return blk_type->well_ptr_;
+}
+
+void Circuit::setWellRect(std::string &blk_type_name, bool is_N, double lx, double ly, double ux, double uy) {
+  BlockType *blk_type_ptr = getBlockType(blk_type_name);
+  Assert(blk_type_ptr != nullptr, "Cannot find BlockType with name: " + blk_type_name);
+  int lx_grid = int(std::round(lx / tech_.grid_value_x_));
+  int ly_grid = int(std::round(ly / tech_.grid_value_y_));
+  int ux_grid = int(std::round(ux / tech_.grid_value_x_));
+  int uy_grid = int(std::round(uy / tech_.grid_value_y_));
+  BlockTypeWell *well = blk_type_ptr->WellPtr();
+  Assert(well != nullptr, "Well uninitialized for BlockType: " + blk_type_name);
+  well->setWellRect(is_N, lx_grid, ly_grid, ux_grid, uy_grid);
 }
 
 void Circuit::ReportWellShape() {
@@ -1125,7 +1131,12 @@ IOPin *Circuit::AddPlacedIOPin(std::string &iopin_name, int lx, int ly) {
   return &(design_.iopin_list.back());
 }
 
-IOPin *Circuit::AddIOPin(std::string &iopin_name, PlaceStatus place_status, SignalUse signal_use, SignalDirection signal_direction, int lx, int ly) {
+IOPin *Circuit::AddIOPin(std::string &iopin_name,
+                         PlaceStatus place_status,
+                         SignalUse signal_use,
+                         SignalDirection signal_direction,
+                         int lx,
+                         int ly) {
   IOPin *io_pin = nullptr;
   if (place_status == UNPLACED_) {
     io_pin = AddUnplacedIOPin(iopin_name);
@@ -1256,8 +1267,8 @@ void Circuit::UpdateNetHPWLHistogram() {
 
 void Circuit::ReportBriefSummary() const {
   if (globalVerboseLevel >= LOG_INFO) {
-    std::cout << "  movable blocks: " << TotMovableBlockNum() << "\n"
-              << "  blocks: " << TotBlkNum() << "\n"
+    std::cout << "  movable blocks: " << TotMovableBlockCount() << "\n"
+              << "  blocks: " << TotBlkCount() << "\n"
               << "  iopins: " << design_.iopin_list.size() << "\n"
               << "  nets: " << design_.net_list.size() << "\n"
               << "  grid size x: " << tech_.grid_value_x_ << " um, grid size y: " << tech_.grid_value_y_ << " um\n"
@@ -1398,58 +1409,6 @@ double Circuit::HPWLCtoCY() {
     hpwl_c2c_y += net.HPWLCtoCY();
   }
   return hpwl_c2c_y * GridValueY();
-}
-
-void Circuit::WriteDefFileDebug(std::string const &name_of_file) {
-  std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open file " + name_of_file);
-
-  // need some header here
-
-
-  for (auto &block: design_.block_list) {
-    ost << "- "
-        << *(block.NamePtr()) << " "
-        << *(block.TypePtr()->NamePtr()) << " + "
-        << "PLACED" << " "
-        << "( " + std::to_string((int) (block.LLX() * design_.def_distance_microns * tech_.grid_value_x_)) + " "
-            + std::to_string((int) (block.LLY() * design_.def_distance_microns * tech_.grid_value_y_)) + " )" << " "
-        << OrientStr(block.Orient()) + " ;\n";
-  }
-  ost << "END COMPONENTS\n";
-
-  ost << "NETS " << design_.net_list.size() << " ;\n";
-  for (auto &net: design_.net_list) {
-    ost << "- "
-        << *(net.Name()) << "\n";
-    ost << " ";
-    for (auto &pin_pair: net.blk_pin_list) {
-      ost << " ( " << *(pin_pair.BlockNamePtr()) << " " << *(pin_pair.PinNamePtr()) << " ) ";
-    }
-    ost << "\n" << " ;\n";
-  }
-  ost << "END NETS\n\n";
-  ost << "END DESIGN\n";
-
-  ost.close();
-}
-
-void Circuit::GenMATLABScript(std::string const &name_of_file) {
-  std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
-  for (auto &block: design_.block_list) {
-    ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";
-  }
-  /*
-  for (auto &net: net_list) {
-    for (size_t i=0; i<net.iopin_list.size(); i++) {
-      for (size_t j=i+1; j<net.iopin_list.size(); j++) {
-        ost << "line([" << net.iopin_list[i].abs_x() << "," << net.iopin_list[j].abs_x() << "],[" << net.iopin_list[i].abs_y() << "," << net.iopin_list[j].abs_y() << "],'lineWidth', 0.5)\n";
-      }
-    }
-  }
-   */
-  ost.close();
 }
 
 void Circuit::GenMATLABTable(std::string const &name_of_file, bool only_well_tap) {
@@ -2613,7 +2572,7 @@ void Circuit::StrSplit(std::string &line, std::vector<std::string> &res) {
   }
 }
 
-int Circuit::FindFirstDigit(std::string &str) {
+int Circuit::FindFirstNumber(std::string &str) {
   /****
    * this function assumes that the input string is a concatenation of
    * a pure English char string, and a pure digit string
