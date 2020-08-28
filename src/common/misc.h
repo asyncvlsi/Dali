@@ -14,7 +14,17 @@
 #include <vector>
 #include <string>
 
+#include <boost/log/core.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/utility/setup/file.hpp>
+#include <boost/log/trivial.hpp>
+
 #include "global.h"
+
+inline void InitBoostLogging(int severe, std::string log_file_name="dali.log") {
+  boost::log::add_file_log(log_file_name);
+  boost::log::core::get()->set_filter(boost::log::trivial::severity >= boost::log::trivial::info);
+}
 
 inline void PrintSoftwareStatement() {
   std::cout << "\n"

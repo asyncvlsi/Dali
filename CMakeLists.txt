@@ -11,6 +11,11 @@ set(CMAKE_CXX_STANDARD 11)
 set(macro_names "-D USE_OPENDB")
 
 find_package(TCL REQUIRED)
+find_package(Boost 1.73.0 COMPONENTS log REQUIRED)
+message(STATUS "boost lib path: ${Boost_LIBRARY_DIRS}")
+message(STATUS "boost inc path: ${Boost_INCLUDE_DIR}")
+message(STATUS "boost libs: ${Boost_LIBRARIES}")
+link_libraries(${Boost_LIBRARIES})
 
 # The flag USE_OPENDB
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${macro_names} -std=c++11 -O3 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
@@ -38,6 +43,7 @@ add_subdirectory(module/OpenDB
 
 include_directories(
         ${TCL_INCLUDE_PATH}
+        ${Boost_INCLUDE_DIRS}
         src
         module/def
         module/lef
@@ -78,7 +84,8 @@ add_executable(dali
         src/dali.cc)
 target_link_libraries(dali
         PRIVATE placer
-        opendb)
+        opendb
+        ${Boost_LIBRARIES})
 
 # Debugging executable, building from the placer library
 add_executable(dali-debug
