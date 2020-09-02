@@ -15,15 +15,38 @@ VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 
 #define USE_DB_PARSER 1
 
-int main() {
+int main(int argc, char *argv[]) {
   Circuit circuit;
 
   time_t Time = clock();
 
-  std::string lef_file_name = "processor1000.lef";
-  std::string def_file_name = "processor1000.def";
-  std::string cel_file_name = "processor1000.cell";
-  std::string out_file_name = "circuit1000";
+  std::string lef_file_name = "out.lef";
+  std::string def_file_name = "out.def";
+  std::string cel_file_name = "out.cell";
+  std::string out_file_name = "circuit";
+  int gc = 30;
+  int it_num = 200;
+
+  for (int i = 1; i < argc;) {
+    std::string arg(argv[i++]);
+    if (arg == "-gc" && i < argc) { // grid cap
+      std::string str_gc = std::string(argv[i++]);
+      try {
+        gc = std::stoi(str_gc);
+      } catch (...) {
+        std::cout << "Invalid input!\n";
+        return 1;
+      }
+    } else if (arg == "-itnum" && i < argc) { // iteration number
+      std::string str_itnum = std::string(argv[i++]);
+      try {
+        it_num = std::stoi(str_itnum);
+      } catch (...) {
+        std::cout << "Invalid input!\n";
+        return 1;
+      }
+    }
+  }
 
 #if USE_DB_PARSER
   odb::dbDatabase *db = odb::dbDatabase::create();
@@ -47,7 +70,8 @@ int main() {
 
   WellPlaceFlow well_place_flow;
   well_place_flow.SetInputCircuit(&circuit);
-
+  well_place_flow.SetGridCapacity(gc);
+  well_place_flow.SetIteration(it_num);
   well_place_flow.SetBoundaryDef();
   well_place_flow.SetFillingRate(0.67);
   well_place_flow.ReportBoundaries();

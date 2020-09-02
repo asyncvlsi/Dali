@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(macro_names "-D USE_OPENDB")
 
 find_package(TCL REQUIRED)
-find_package(Boost 1.73.0 COMPONENTS log REQUIRED)
+find_package(Boost 1.71.0 COMPONENTS log REQUIRED)
 message(STATUS "boost lib path: ${Boost_LIBRARY_DIRS}")
 message(STATUS "boost inc path: ${Boost_INCLUDE_DIR}")
 message(STATUS "boost libs: ${Boost_LIBRARIES}")
