@@ -34,8 +34,8 @@ class GPSimPL : public Placer {
   bool HPWLY_converge = false;
 
   // to configure CG solver
-  double cg_tolerance_ = 1e-10;
-  int cg_iteration_max_num_ = 300;
+  double cg_tolerance_ = 1e-7;
+  int cg_iteration_max_num_ = 100;
   double error_x = DBL_MAX;
   double error_y = DBL_MAX;
   double cg_total_hpwl_ = 0;

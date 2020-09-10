@@ -27,8 +27,8 @@ int main() {
 
   time_t Time = clock();
 
-  std::string lef_file_name = "processor.lef";
-  std::string def_file_name = "processor.def";
+  std::string lef_file_name = "1dgrid10000.lef";
+  std::string def_file_name = "1dgrid10000.def";
 
 #if USE_DB_PARSER
   odb::dbDatabase *db = odb::dbDatabase::create();
@@ -103,7 +103,7 @@ int main() {
 
 #if TEST_STDCLUSTER_WELL
   StdClusterWellLegalizer std_cluster_well_legalizer;
-  std::string cell_file_name("processor.cell");
+  std::string cell_file_name("1dgrid10000.cell");
   circuit.ReadCellFile(cell_file_name);
   std_cluster_well_legalizer.TakeOver(gb_placer);
   std_cluster_well_legalizer.StartPlacement();
@@ -126,6 +126,8 @@ int main() {
 
   delete gb_placer;
   delete legalizer;
+
+  circuit.SaveOptimalRegionDistance();
 
 /*#ifdef USE_OPENDB
   odb::dbDatabase::destroy(db);

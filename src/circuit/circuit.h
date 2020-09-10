@@ -599,6 +599,9 @@ class Circuit {
   // report the histogram of HPWL using logarithmic bins.
   void ReportHPWLHistogramLogarithm(int bin_num = 10);
 
+  // create a file to save distance to optimal region for each cell
+  void SaveOptimalRegionDistance(std::string file_name = "optimal_region_distance.txt");
+
   // returns HPWL in the x direction, assuming cell pins are in the cell, unit in micron.
   double HPWLCtoCX();
 

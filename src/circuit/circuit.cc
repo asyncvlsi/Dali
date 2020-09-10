@@ -14,6 +14,7 @@
 #include <string>
 
 #include "status.h"
+#include "common/optregdist.h"
 
 Circuit::Circuit() {
   AddDummyIOPinBlockType();
@@ -1393,6 +1394,12 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
   printf("===================================================================\n");
   printf(" * HPWL unit, grid value in X: %.2e um\n", tech_.grid_value_x_);
   printf("\n");
+}
+
+void Circuit::SaveOptimalRegionDistance(std::string file_name) {
+  OptRegDist distance_calculator;
+  distance_calculator.circuit_ = this;
+  distance_calculator.SaveFile(file_name);
 }
 
 double Circuit::HPWLCtoCX() {

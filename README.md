@@ -8,7 +8,7 @@
   * GNU Make
 
 ### Pre-requisite for submodules: OpenDB
-  * Boost, version >= 1.73 (lower version may work, not tested)
+  * Boost, version >= 1.71.0 (lower version may work, not tested)
   * Tcl/Tk-dev, version >= ? (8.6.8, may need to install this package manually instead of using `apt-get install`)
   * Bison, version >= ? (3.0.4)
   * Flex, version >= ? (2.6.4)

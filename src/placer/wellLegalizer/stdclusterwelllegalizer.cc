@@ -1362,7 +1362,7 @@ bool StdClusterWellLegalizer::StartPlacement() {
   //circuit_->GenMATLABWellTable("lop", false);
   //GenMatlabClusterTable("lop_result");
 
-  InsertWellTap();
+  //InsertWellTap();
   //circuit_->GenMATLABWellTable("wtc", false);
   //GenMatlabClusterTable("wtc_result");
   ReportHPWL(LOG_CRITICAL);
