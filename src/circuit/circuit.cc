@@ -1568,6 +1568,35 @@ void Circuit::GenMATLABWellTable(std::string const &name_of_file, bool only_well
   ost.close();
 }
 
+void Circuit::GenLongNetTable(std::string const &name_of_file) {
+  std::ofstream ost(name_of_file.c_str());
+  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+
+  int multi_factor = 5;
+  double threshold = multi_factor * AveBlkHeight();
+  int count = 0;
+  double ave_hpwl = 0;
+  for (auto &net: design_.net_list) {
+    double hpwl = net.HPWL();
+    if (hpwl > threshold) {
+      ave_hpwl += hpwl;
+      ++count;
+      for (auto &blk_pin: net.blk_pin_list) {
+        ost << blk_pin.AbsX() << "\t"
+            << blk_pin.AbsY() << "\t";
+      }
+      ost << "\n";
+    }
+  }
+  ave_hpwl /= count;
+  std::cout << "Long net report: \n"
+            << "  threshold: " << multi_factor << " " << threshold << "\n"
+            << "  count:     " << count << "\n"
+            << "  ave_hpwl:  " << ave_hpwl << "\n";
+
+  ost.close();
+}
+
 void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &def_file_name, bool is_complete_version) {
   std::string file_name;
   if (is_complete_version) {

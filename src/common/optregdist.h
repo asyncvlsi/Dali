@@ -27,7 +27,7 @@ struct OptRegDist {
         }
       }
 
-      // find max/min of x/y this net without this block
+      // find max/min x/y of this net without this block
       double min_x = 1e10;
       double max_x = -1e10;
       double min_y = 1e10;
@@ -82,7 +82,7 @@ struct OptRegDist {
     Assert(ost.is_open(), "Cannot open file " + file_name);
 
     if (circuit_ == nullptr) return;
-    double ave_size = circuit_->AveBlkWidth();
+    double ave_size = circuit_->AveBlkHeight();
     double lx = DBL_MAX;
     double ly = DBL_MAX;
     double ux = DBL_MAX;
@@ -108,7 +108,7 @@ struct OptRegDist {
       }
       ost << res/ave_size << "\n";
     }
-    std::cout << "average cell width: " << circuit_->AveBlkWidth() << "\n";
+    std::cout << "average cell width: " << ave_size << "\n";
   }
 };
 

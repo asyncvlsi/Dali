@@ -60,6 +60,7 @@ int main() {
   gb_placer->StartPlacement();
   //gb_placer->SaveDEFFile("benchmark_1K_dali.def", def_file_name);
   gb_placer->GenMATLABTable("gb_result.txt");
+  circuit.GenLongNetTable("gb_longnet.txt");
   //gb_placer->GenMATLABWellTable("gb_result");
   //circuit.ReportNetFanoutHisto();
 
@@ -72,6 +73,7 @@ int main() {
   legalizer->TakeOver(gb_placer);
   legalizer->StartPlacement();
   legalizer->GenMATLABTable("lg_result.txt");
+  circuit.GenLongNetTable("lg_longnet.txt");
   //legalizer->SaveDEFFile("circuit.def", def_file);
 
 #if TEST_PO
@@ -109,6 +111,7 @@ int main() {
   std_cluster_well_legalizer.StartPlacement();
   //std_cluster_well_legalizer.GenMatlabClusterTable("sc_result");
   std_cluster_well_legalizer.GenMATLABTable("sc_result.txt");
+  circuit.GenLongNetTable("sc_longnet.txt");
   std_cluster_well_legalizer.GenMatlabClusterTable("sc_result");
   std_cluster_well_legalizer.GenMATLABWellTable("scw", 0);
 

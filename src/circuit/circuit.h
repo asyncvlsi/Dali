@@ -617,6 +617,7 @@ class Circuit {
   /****save placement results to various file formats****/
   void GenMATLABTable(std::string const &name_of_file = "block.txt", bool only_well_tap = false);
   void GenMATLABWellTable(std::string const &name_of_file = "res", bool only_well_tap = false);
+  void GenLongNetTable(std::string const &name_of_file);
   void SaveDefFile(std::string const &name_of_file, std::string const &def_file_name, bool is_complete_version = true);
 
   // save def file for users.

@@ -1209,6 +1209,61 @@ void StdClusterWellLegalizer::LocalReorderAllClusters() {
 }
 
 void StdClusterWellLegalizer::SingleSegmentClusteringOptimization() {
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "Start single segment clustering\n";
+  }
+
+  for (auto &col: col_list_) {
+    for (auto &strip: col.strip_list_) {
+      for (auto &cluster: strip.cluster_list_) {
+        int num_old_cluster = cluster.blk_list_.size();
+        std::vector<SegCluster> old_cluster(num_old_cluster);
+        for (int i=0; i<num_old_cluster; ++i) {
+          old_cluster[i].blk_index.push_back(i);
+          old_cluster[i].circuit_ = circuit_;
+          old_cluster[i].cluster_ = &cluster;
+          old_cluster[i].UpdateBoundList();
+          old_cluster[i].SortBounds();
+          old_cluster[i].UpdateLLX();
+        }
+
+        bool is_overlap = false;
+        do {
+          std::vector<SegCluster> new_cluster;
+          new_cluster.push_back(old_cluster[0]);
+          int j=0;
+          while (j+1<num_old_cluster) {
+            if (new_cluster.back().Overlap(old_cluster[j+1])) {
+              new_cluster.back().Merge(old_cluster[j+1]);
+            } else {
+              new_cluster.push_back(old_cluster[j+1]);
+            }
+            j += 1;
+          }
+          int new_count = new_cluster.size();
+          num_old_cluster = new_count;
+          for (int i=0; i<new_count; ++i) {
+            old_cluster[i].CopyFrom(new_cluster[i]);
+          }
+
+          is_overlap = false;
+          for (int i=0; i<new_count-1; ++i) {
+            if (old_cluster[i].Overlap(old_cluster[i+1])) {
+              is_overlap = true;
+              break;
+            }
+          }
+
+          //std::cout << is_overlap << "\n";
+
+        } while (is_overlap);
+
+        for (int i=0; i<num_old_cluster; ++i) {
+          old_cluster[i].PlaceBlk();
+        }
+      }
+    }
+  }
 
 }
 
@@ -1355,10 +1410,15 @@ bool StdClusterWellLegalizer::StartPlacement() {
   //circuit_->GenMATLABWellTable("ori", false);
   //GenMatlabClusterTable("ori_result");
   ReportHPWL(LOG_CRITICAL);
+  if (globalVerboseLevel >= LOG_CRITICAL) {
+    std::cout << "Start local reordering\n";
+  }
   for (int i = 0; i < 6; ++i) {
     LocalReorderAllClusters();
     ReportHPWL(LOG_CRITICAL);
   }
+  SingleSegmentClusteringOptimization();
+  ReportHPWL(LOG_CRITICAL);
   //circuit_->GenMATLABWellTable("lop", false);
   //GenMatlabClusterTable("lop_result");
 

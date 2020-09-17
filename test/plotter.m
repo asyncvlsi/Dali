@@ -1,6 +1,10 @@
 axis auto equal
 
-origin = readmatrix('sc_result.txt');
+longnet = true;
+base_name = 'gb';
+block_file = append(base_name,'_result.txt');
+
+origin = readmatrix(block_file);
 a = transpose(origin);
 
 boundary_x = a(1:4,:);
@@ -17,3 +21,16 @@ for i=1:n
 end
 
 patch(boundary_x, boundary_y, color);
+
+if longnet
+    hold on;
+    net_file   = append(base_name,'_longnet.txt');
+    origin = readmatrix(net_file);
+    a = transpose(origin);
+
+    X1 = a(1,:);
+    Y1 = a(2,:);
+    X2 = a(3,:);
+    Y2 = a(4,:);
+    line([X1; X2], [Y1; Y2], 'Color', 'red'); % line or plot, both works
+end

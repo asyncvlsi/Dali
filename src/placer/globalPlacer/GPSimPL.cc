@@ -8,6 +8,8 @@
 
 #include <algorithm>
 
+#include <unsupported/Eigen/SparseExtra>
+
 GPSimPL::GPSimPL() : Placer() {
   grid_bin_height = 0;
   grid_bin_width = 0;
@@ -226,6 +228,9 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
   double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
 
   double weight;
+  double weight_adjust;
+  double decay_length = 5 * circuit_->AveBlkHeight();
+  double adjust_factor = 1.5;
   double inv_p;
 
   double pin_loc;
@@ -269,7 +274,9 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
         is_movable = pair.BlkPtr()->IsMovable();
 
         if (blk_num != blk_num_max) {
-          weight = inv_p / (std::fabs(pin_loc - pin_loc_max) + WidthEpsilon());
+          double distance = std::fabs(pin_loc - pin_loc_max);
+          weight_adjust = adjust_factor * (1 - exp(-distance / decay_length));
+          weight = inv_p / (distance + WidthEpsilon()) * weight_adjust;
           if (!is_movable && is_movable_max) {
             b[blk_num_max] += (pin_loc - offset_max) * weight;
             coefficients.emplace_back(blk_num_max, blk_num_max, weight);
@@ -291,7 +298,9 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
         }
 
         if ((blk_num != blk_num_max) && (blk_num != blk_num_min)) {
-          weight = inv_p / (std::fabs(pin_loc - pin_loc_min) + WidthEpsilon());
+          double distance = std::fabs(pin_loc - pin_loc_max);
+          weight_adjust = adjust_factor * (1 - exp(-distance / decay_length));
+          weight = inv_p / (distance + WidthEpsilon()) * weight_adjust;
           if (!is_movable && is_movable_min) {
             b[blk_num_min] += (pin_loc - offset_min) * weight;
             coefficients.emplace_back(blk_num_min, blk_num_min, weight);
@@ -349,7 +358,9 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
         is_movable = pair.BlkPtr()->IsMovable();
 
         if (blk_num != blk_num_max) {
-          weight = inv_p / (std::fabs(pin_loc - pin_loc_max) + HeightEpsilon());
+          double distance = std::fabs(pin_loc - pin_loc_max);
+          weight_adjust = adjust_factor * (1 - exp(-distance / decay_length));
+          weight = inv_p / (distance + HeightEpsilon()) * weight_adjust;
           if (!is_movable && is_movable_max) {
             b[blk_num_max] += (pin_loc - offset_max) * weight;
             coefficients.emplace_back(blk_num_max, blk_num_max, weight);
@@ -371,7 +382,9 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
         }
 
         if ((blk_num != blk_num_max) && (blk_num != blk_num_min)) {
-          weight = inv_p / (std::fabs(pin_loc - pin_loc_min) + HeightEpsilon());
+          double distance = std::fabs(pin_loc - pin_loc_max);
+          weight_adjust = adjust_factor * (1 - exp(-distance / decay_length));
+          weight = inv_p / (distance + HeightEpsilon()) * weight_adjust;
           if (!is_movable && is_movable_min) {
             b[blk_num_min] += (pin_loc - offset_min) * weight;
             coefficients.emplace_back(blk_num_min, blk_num_min, weight);
@@ -423,6 +436,14 @@ void GPSimPL::BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b) {
 void GPSimPL::BuildProblemB2BX() {
   BuildProblemB2B(true, bx);
   Ax.setFromTriplets(coefficients.begin(), coefficients.end());
+//  static int count = 0;
+//  count += 1;
+//  if (count == 100) {
+//    bool s = saveMarket(Ax, "sparse_matrices");
+//    if (s) {
+//      std::cout << "Sparse matrix saved successfully\n";
+//    }
+//  }
 }
 
 void GPSimPL::BuildProblemB2BY() {

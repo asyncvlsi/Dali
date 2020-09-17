@@ -281,4 +281,112 @@ class StdClusterWellLegalizer : public Placer {
   void GenSimpleStrips(std::string const &name_of_file = "strip_space.txt");
 };
 
+struct SegCluster {
+  Circuit *circuit_;
+  Cluster *cluster_;
+  std::vector<int> blk_index;
+  std::vector<double> bound_list;
+  int width;
+  double opt_lo;
+  double opt_hi;
+  int llx;
+
+  void UpdateBoundList() {
+    bound_list.clear();
+    auto &net_list = circuit_->getDesign()->net_list;
+    width = 0;
+    for (auto &index: blk_index) {
+      Block *blk = cluster_->blk_list_[index];
+      for (auto &it: *(blk->NetList())) {
+        // find offset
+        double offset_x = DBL_MAX;
+        for (auto &blk_pin: net_list[it].blk_pin_list) {
+          if (blk_pin.BlkPtr() == blk) {
+            offset_x = blk_pin.OffsetX();
+            break;
+          }
+        }
+
+        // find max/min x of this net without this block
+        double min_x = 1e10, max_x = -1e10;
+        for (auto &blk_pin: net_list[it].blk_pin_list) {
+          if (blk_pin.BlkPtr() == blk) {
+            continue;
+          } else {
+            if (blk_pin.AbsX() < min_x) {
+              min_x = blk_pin.AbsX();
+            }
+            if (blk_pin.AbsX() > max_x) {
+              max_x = blk_pin.AbsX();
+            }
+          }
+        }
+        bound_list.push_back(min_x - offset_x - width);
+        bound_list.push_back(max_x - offset_x - width);
+      }
+      width += blk->Width();
+    }
+  }
+
+  void SortBounds() {
+    std::sort(bound_list.begin(), bound_list.end());
+    int lo_index = int(bound_list.size()-1)/2;
+    int hi_index = lo_index;
+    if (bound_list.size()%2==0) {
+      hi_index += 1;
+    }
+    opt_lo = bound_list[lo_index];
+    opt_hi = bound_list[hi_index];
+  }
+
+  void CopyFrom(SegCluster &sc) {
+    circuit_ = sc.circuit_;
+    cluster_ = sc.cluster_;
+    blk_index.clear();
+    for (auto &it: sc.blk_index) {
+      blk_index.push_back(it);
+    }
+
+    bound_list.clear();
+    for (auto &it: sc.bound_list) {
+      bound_list.push_back(it);
+    }
+
+    width = sc.width;
+    opt_lo = sc.opt_lo;
+    opt_hi = sc.opt_hi;
+    llx = sc.llx;
+  }
+
+  bool Overlap(SegCluster &sc) const {
+    // the SegCluster in the argument is supposed to be on the right side of this SegCluster
+    return sc.llx < llx + width;
+  }
+
+  void Merge(SegCluster &sc) {
+    for (auto &it: sc.blk_index) {
+      blk_index.push_back(it);
+    }
+    for (auto &bound: sc.bound_list) {
+      bound_list.push_back(bound-width);
+    }
+    width += sc.width;
+    SortBounds();
+    UpdateLLX();
+  }
+
+  void UpdateLLX() {
+    llx = (int)std::round((opt_lo + opt_hi)/2.0);
+  }
+
+  void PlaceBlk() {
+    int cur_loc = llx;
+    for (auto &index: blk_index) {
+      Block *blk = cluster_->blk_list_[index];
+      blk->setLLX(cur_loc);
+      cur_loc += blk->Width();
+    }
+  }
+};
+
 #endif //DALI_SRC_PLACER_WELLLEGALIZER_STDCLUSTERWELLLEGALIZER_H_
