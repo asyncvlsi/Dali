@@ -10,6 +10,8 @@
 #include <queue>
 #include <random>
 
+#include <galois/Galois.h>
+
 #include "placer/placer.h"
 #include "GPSimPL/boxbin.h"
 #include "GPSimPL/cellcutpoint.h"
@@ -34,8 +36,8 @@ class GPSimPL : public Placer {
   bool HPWLY_converge = false;
 
   // to configure CG solver
-  double cg_tolerance_ = 1e-7;
-  int cg_iteration_max_num_ = 100;
+  double cg_tolerance_ = 1e-11;
+  int cg_iteration_max_num_ = 200;
   double error_x = DBL_MAX;
   double error_y = DBL_MAX;
   double cg_total_hpwl_ = 0;
@@ -59,6 +61,11 @@ class GPSimPL : public Placer {
 
   int number_of_cell_in_bin = 15;
   int net_ignore_threshold = 100;
+
+  // weight adjust factor
+  double adjust_factor = 1.5;
+  double base_factor = 0;
+  double decay_factor = 5;
  public:
   GPSimPL();
   GPSimPL(double aspectRatio, double fillingRate);
@@ -75,9 +82,9 @@ class GPSimPL : public Placer {
   Eigen::VectorXd bx, by;
   SpMat Ax, Ay;
   Eigen::VectorXd x_anchor, y_anchor;
-  std::vector<T> coefficients;
-  Eigen::ConjugateGradient<SpMat, Eigen::Lower> cgx;
-  Eigen::ConjugateGradient<SpMat, Eigen::Lower> cgy;
+  std::vector<T> coefficientsx, coefficientsy;
+  Eigen::ConjugateGradient<SpMat, Eigen::Lower|Eigen::Upper> cgx;
+  Eigen::ConjugateGradient<SpMat, Eigen::Lower|Eigen::Upper> cgy;
 
   void BlockLocRandomInit();
   void BlockLocCenterInit();
@@ -91,8 +98,7 @@ class GPSimPL : public Placer {
   void UpdateHPWLY() { HPWLY_new = HPWLY(); }
   void UpdateMaxMinY();
   void UpdateMaxMinCtoCY();
-  void AddMatrixElement(Net &net, int i, int j);
-  void BuildProblemB2B(bool is_x_direction, Eigen::VectorXd &b);
+  void AddMatrixElement(Net &net, int i, int j, std::vector<T> &coefficients);
   void BuildProblemB2BX();
   void BuildProblemB2BY();
   void SolveProblemX();

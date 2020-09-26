@@ -32,8 +32,8 @@ void DPLinear::BuildProblemDPLinear(bool is_x_direction, Eigen::VectorXd &b) {
    * ****/
   std::vector<Block> &block_list = *BlockList();
   std::vector<Net> &net_list = *NetList();
-  size_t coefficients_capacity = coefficients.capacity();
-  coefficients.resize(0);
+  size_t coefficients_capacity = coefficientsx.capacity();
+  coefficientsx.resize(0);
   for (long int i = 0; i < b.size(); i++) {
     b[i] = 0;
   }
@@ -62,15 +62,15 @@ void DPLinear::BuildProblemDPLinear(bool is_x_direction, Eigen::VectorXd &b) {
           weight = inv_p / (std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon()) * (1-r);
           if (!is_movable0 && is_movable1) {
             b[blk_num1] += (pin_loc0 - net.blk_pin_list[j].OffsetX()) * weight;
-            coefficients.emplace_back(T(blk_num1, blk_num1, weight));
+            coefficientsx.emplace_back(T(blk_num1, blk_num1, weight));
           } else if (is_movable0 && !is_movable1) {
             b[blk_num0] += (pin_loc1 - net.blk_pin_list[i].OffsetX()) * weight ;
-            coefficients.emplace_back(T(blk_num0, blk_num0, weight));
+            coefficientsx.emplace_back(T(blk_num0, blk_num0, weight));
           } else if (is_movable0 && is_movable1) {
-            coefficients.emplace_back(T(blk_num0, blk_num0, weight));
-            coefficients.emplace_back(T(blk_num1, blk_num1, weight));
-            coefficients.emplace_back(T(blk_num0, blk_num1, -weight));
-            coefficients.emplace_back(T(blk_num1, blk_num0, -weight));
+            coefficientsx.emplace_back(T(blk_num0, blk_num0, weight));
+            coefficientsx.emplace_back(T(blk_num1, blk_num1, weight));
+            coefficientsx.emplace_back(T(blk_num0, blk_num1, -weight));
+            coefficientsx.emplace_back(T(blk_num1, blk_num0, -weight));
             offset_diff = (net.blk_pin_list[j].OffsetX() - net.blk_pin_list[i].OffsetX()) * weight;
             b[blk_num0] += offset_diff;
             b[blk_num1] -= offset_diff;
@@ -88,10 +88,10 @@ void DPLinear::BuildProblemDPLinear(bool is_x_direction, Eigen::VectorXd &b) {
       pin_loc1 = scaffold_net.XAbsLoc1();
       weight = scaffold_net.Weight()/(std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon()) * r;
 
-      coefficients.emplace_back(T(blk_num0, blk_num0, weight ));
-      coefficients.emplace_back(T(blk_num1, blk_num1, weight));
-      coefficients.emplace_back(T(blk_num0, blk_num1, -weight));
-      coefficients.emplace_back(T(blk_num1, blk_num0, -weight));
+      coefficientsx.emplace_back(T(blk_num0, blk_num0, weight ));
+      coefficientsx.emplace_back(T(blk_num1, blk_num1, weight));
+      coefficientsx.emplace_back(T(blk_num0, blk_num1, -weight));
+      coefficientsx.emplace_back(T(blk_num1, blk_num0, -weight));
       offset_diff = (scaffold_net.XOffset1() - scaffold_net.XOffset0()) * weight;
       b[blk_num0] += offset_diff;
       b[blk_num1] -= offset_diff;
@@ -99,7 +99,7 @@ void DPLinear::BuildProblemDPLinear(bool is_x_direction, Eigen::VectorXd &b) {
 
     for (size_t i = 0; i < block_list.size(); ++i) {
       if (block_list[i].IsFixed()) {
-        coefficients.emplace_back(T(i, i, 1));
+        coefficientsx.emplace_back(T(i, i, 1));
         b[i] = block_list[i].LLX();
       }
     }
@@ -125,15 +125,15 @@ void DPLinear::BuildProblemDPLinear(bool is_x_direction, Eigen::VectorXd &b) {
           weight = inv_p / (std::fabs(pin_loc0 - pin_loc1) + HeightEpsilon()) * (1-r);
           if (!is_movable0 && is_movable1) {
             b[blk_num1] += (pin_loc0 - net.blk_pin_list[j].OffsetY()) * weight;
-            coefficients.emplace_back(T(blk_num1, blk_num1, weight));
+            coefficientsy.emplace_back(T(blk_num1, blk_num1, weight));
           } else if (is_movable0 && !is_movable1) {
             b[blk_num0] += (pin_loc1 - net.blk_pin_list[i].OffsetY()) * weight;
-            coefficients.emplace_back(T(blk_num0, blk_num0, weight));
+            coefficientsy.emplace_back(T(blk_num0, blk_num0, weight));
           } else if (is_movable0 && is_movable1) {
-            coefficients.emplace_back(T(blk_num0, blk_num0, weight));
-            coefficients.emplace_back(T(blk_num1, blk_num1, weight));
-            coefficients.emplace_back(T(blk_num0, blk_num1, -weight));
-            coefficients.emplace_back(T(blk_num1, blk_num0, -weight));
+            coefficientsy.emplace_back(T(blk_num0, blk_num0, weight));
+            coefficientsy.emplace_back(T(blk_num1, blk_num1, weight));
+            coefficientsy.emplace_back(T(blk_num0, blk_num1, -weight));
+            coefficientsy.emplace_back(T(blk_num1, blk_num0, -weight));
             offset_diff = (net.blk_pin_list[j].OffsetY() - net.blk_pin_list[i].OffsetY()) * weight;
             b[blk_num0] += offset_diff;
             b[blk_num1] -= offset_diff;
@@ -151,10 +151,10 @@ void DPLinear::BuildProblemDPLinear(bool is_x_direction, Eigen::VectorXd &b) {
       pin_loc1 = scaffold_net.YAbsLoc1();
       weight = scaffold_net.Weight()/(std::fabs(pin_loc0 - pin_loc1) + HeightEpsilon()) * r;
 
-      coefficients.emplace_back(T(blk_num0, blk_num0, weight * r));
-      coefficients.emplace_back(T(blk_num1, blk_num1, weight * r));
-      coefficients.emplace_back(T(blk_num0, blk_num1, -weight * r));
-      coefficients.emplace_back(T(blk_num1, blk_num0, -weight * r));
+      coefficientsy.emplace_back(T(blk_num0, blk_num0, weight * r));
+      coefficientsy.emplace_back(T(blk_num1, blk_num1, weight * r));
+      coefficientsy.emplace_back(T(blk_num0, blk_num1, -weight * r));
+      coefficientsy.emplace_back(T(blk_num1, blk_num0, -weight * r));
       offset_diff = (scaffold_net.YOffset1() - scaffold_net.YOffset0()) * weight;
       b[blk_num0] += offset_diff * r;
       b[blk_num1] -= offset_diff * r;
@@ -162,16 +162,16 @@ void DPLinear::BuildProblemDPLinear(bool is_x_direction, Eigen::VectorXd &b) {
 
     for (size_t i = 0; i < block_list.size(); ++i) { // add the diagonal non-zero element for fixed blocks
       if (block_list[i].IsFixed()) {
-        coefficients.emplace_back(T(i, i, 1));
+        coefficientsy.emplace_back(T(i, i, 1));
         b[i] = block_list[i].LLY();
       }
     }
   }
   if (globalVerboseLevel >= LOG_WARNING) {
-    if (coefficients_capacity != coefficients.capacity()) {
+    if (coefficients_capacity != coefficientsx.capacity()) {
       std::cout << "WARNING: coefficients capacity changed!\n";
       std::cout << "\told capacity: " << coefficients_capacity << "\n";
-      std::cout << "\tnew capacity: " << coefficients.size() << "\n";
+      std::cout << "\tnew capacity: " << coefficientsx.size() << "\n";
     }
   }
 }
@@ -181,11 +181,11 @@ void DPLinear::BuildProblemDPLinearX() {
   std::vector<Block> &block_list = *BlockList();
   for (size_t i = 0; i < block_list.size(); ++i) {
     if (block_list[i].IsMovable()) {
-      coefficients.emplace_back(T(i, i, 0.1));
+      coefficientsx.emplace_back(T(i, i, 0.1));
       bx[i] = block_list[i].LLX() * 0.1;
     }
   }
-  Ax.setFromTriplets(coefficients.begin(), coefficients.end());
+  Ax.setFromTriplets(coefficientsx.begin(), coefficientsx.end());
 }
 
 void DPLinear::BuildProblemDPLinearY() {
@@ -193,11 +193,11 @@ void DPLinear::BuildProblemDPLinearY() {
   std::vector<Block> &block_list = *BlockList();
   for (size_t i = 0; i < block_list.size(); ++i) { // add the diagonal non-zero element for fixed blocks
     if (block_list[i].IsMovable()) {
-      coefficients.emplace_back(T(i, i, 0.1));
+      coefficientsy.emplace_back(T(i, i, 0.1));
       by[i] = block_list[i].LLY() * 0.1;
     }
   }
-  Ay.setFromTriplets(coefficients.begin(), coefficients.end());
+  Ay.setFromTriplets(coefficientsy.begin(), coefficientsy.end());
 }
 
 bool DPLinear::StartPlacement() {

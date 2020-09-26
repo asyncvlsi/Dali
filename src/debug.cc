@@ -8,6 +8,8 @@
 #include <iostream>
 #include <vector>
 
+#include <galois/Galois.h>
+
 #include "circuit.h"
 #include "common/opendb.h"
 #include "placer.h"
@@ -25,10 +27,20 @@ int main() {
   PrintSoftwareStatement();
   Circuit circuit;
 
-  time_t Time = clock();
+  int num_of_thread = 2;
+  galois::SharedMemSys G;
+  //galois::preAlloc(num_of_thread * 2);
+  galois::setActiveThreads(num_of_thread);
+  printf("Galois thread %d\n", num_of_thread);
 
-  std::string lef_file_name = "1dgrid10000.lef";
-  std::string def_file_name = "1dgrid10000.def";
+  Eigen::initParallel();
+  Eigen::setNbThreads(1);
+  printf("Eigen thread %d\n", Eigen::nbThreads());
+
+  double wall_time = get_wall_time();
+
+  std::string lef_file_name = "processor100.lef";
+  std::string def_file_name = "processor100.def";
 
 #if USE_DB_PARSER
   odb::dbDatabase *db = odb::dbDatabase::create();
@@ -44,7 +56,7 @@ int main() {
   circuit.ReadDefFile(def_file_name);
 #endif
 
-  std::cout << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << " s" << std::endl;
+  std::cout << "File loading complete, time: " << double(get_wall_time() - wall_time)  << " s" << std::endl;
   printf("  Average white space utility: %.4f\n", circuit.WhiteSpaceUsage());
   circuit.ReportBriefSummary();
   //circuit.ReportBlockType();
@@ -105,7 +117,7 @@ int main() {
 
 #if TEST_STDCLUSTER_WELL
   StdClusterWellLegalizer std_cluster_well_legalizer;
-  std::string cell_file_name("1dgrid10000.cell");
+  std::string cell_file_name("processor100.cell");
   circuit.ReadCellFile(cell_file_name);
   std_cluster_well_legalizer.TakeOver(gb_placer);
   std_cluster_well_legalizer.StartPlacement();
@@ -136,8 +148,8 @@ int main() {
   odb::dbDatabase::destroy(db);
 #endif*/
 
-  Time = clock() - Time;
-  std::cout << "Execution time " << double(Time) / CLOCKS_PER_SEC << "s.\n";
+  wall_time = get_wall_time() - wall_time;
+  std::cout << "Execution time " << wall_time << "s.\n";
 
   return 0;
 }

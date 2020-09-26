@@ -1417,7 +1417,7 @@ bool StdClusterWellLegalizer::StartPlacement() {
     LocalReorderAllClusters();
     ReportHPWL(LOG_CRITICAL);
   }
-  SingleSegmentClusteringOptimization();
+  //SingleSegmentClusteringOptimization();
   ReportHPWL(LOG_CRITICAL);
   //circuit_->GenMATLABWellTable("lop", false);
   //GenMatlabClusterTable("lop_result");

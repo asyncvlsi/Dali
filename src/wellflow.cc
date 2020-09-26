@@ -7,6 +7,8 @@
 #include <iostream>
 #include <vector>
 
+#include <galois//Galois.h>
+
 #include "circuit.h"
 #include "common/opendb.h"
 #include "placer.h"
@@ -16,6 +18,11 @@ VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 #define USE_DB_PARSER 1
 
 int main(int argc, char *argv[]) {
+  int num_of_thread = 2;
+  galois::SharedMemSys G;
+  galois::preAlloc(num_of_thread * 2);
+  galois::setActiveThreads(num_of_thread);
+
   Circuit circuit;
 
   time_t Time = clock();
