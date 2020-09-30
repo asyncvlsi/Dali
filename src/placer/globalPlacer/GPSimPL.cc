@@ -8,7 +8,10 @@
 
 #include <algorithm>
 
+#include <omp.h>
 #include <unsupported/Eigen/SparseExtra>
+
+extern galois::SharedMemSys *G;
 
 GPSimPL::GPSimPL() : Placer() {
   grid_bin_height = 0;
@@ -215,6 +218,8 @@ void GPSimPL::AddMatrixElement(Net &net, int i, int j, std::vector<T> &coefficie
 }
 
 void GPSimPL::BuildProblemB2BX() {
+  double wall_time = get_wall_time();
+
   std::vector<Block> &block_list = *BlockList();
   size_t coefficients_capacity = coefficientsx.capacity();
   coefficientsx.resize(0);
@@ -342,7 +347,9 @@ void GPSimPL::BuildProblemB2BX() {
     }
   }
 
-  Ax.setFromTriplets(coefficientsx.begin(), coefficientsx.end());
+  wall_time = get_wall_time() - wall_time;
+  tot_triplets_time_x += wall_time;
+
 //  static int count = 0;
 //  count += 1;
 //  if (count == 100) {
@@ -354,6 +361,8 @@ void GPSimPL::BuildProblemB2BX() {
 }
 
 void GPSimPL::BuildProblemB2BY() {
+  double wall_time = get_wall_time();
+
   std::vector<Block> &block_list = *BlockList();
   size_t coefficients_capacity = coefficientsy.capacity();
   coefficientsy.resize(0);
@@ -481,10 +490,17 @@ void GPSimPL::BuildProblemB2BY() {
     }
   }
 
-  Ay.setFromTriplets(coefficientsy.begin(), coefficientsy.end());
+  wall_time = get_wall_time() - wall_time;
+  tot_triplets_time_y += wall_time;
 }
 
 void GPSimPL::SolveProblemX() {
+  double wall_time = get_wall_time();
+  Ax.setFromTriplets(coefficientsx.begin(), coefficientsx.end());
+  wall_time = get_wall_time() - wall_time;
+  tot_matrix_from_triplets_x += wall_time;
+
+  wall_time = get_wall_time();
   cgx.compute(Ax); // Ax * vx = bx
   vx = cgx.solveWithGuess(bx, vx);
   error_x = cgx.error();
@@ -492,15 +508,26 @@ void GPSimPL::SolveProblemX() {
     std::cout << "    #iterations:     " << cgx.iterations() << std::endl;
     std::cout << "    estimated error: " << error_x << std::endl;
   }
+  wall_time = get_wall_time() - wall_time;
+  tot_cg_solver_time_x += wall_time;
 
+  wall_time = get_wall_time();
   int sz = vx.size();
   auto it_block_list = BlockList()->begin();
   for (int num = 0; num < sz; ++num) {
     it_block_list[num].setLLX(vx[num]);
   }
+  wall_time = get_wall_time() - wall_time;
+  tot_loc_update_time_x += wall_time;
 }
 
 void GPSimPL::SolveProblemY() {
+  double wall_time = get_wall_time();
+  Ay.setFromTriplets(coefficientsy.begin(), coefficientsy.end());
+  wall_time = get_wall_time() - wall_time;
+  tot_matrix_from_triplets_y += wall_time;
+
+  wall_time = get_wall_time();
   cgy.compute(Ay);
   vy = cgy.solveWithGuess(by, vy);
   error_y = cgy.error();
@@ -508,12 +535,17 @@ void GPSimPL::SolveProblemY() {
     std::cout << "    #iterations:     " << cgy.iterations() << std::endl;
     std::cout << "    estimated error: " << error_y << std::endl;
   }
+  wall_time = get_wall_time() - wall_time;
+  tot_cg_solver_time_y += wall_time;
 
+  wall_time = get_wall_time();
   int sz = vy.size();
   auto it_block_list = BlockList()->begin();
   for (int num = 0; num < sz; ++num) {
     it_block_list[num].setLLY(vy[num]);
   }
+  wall_time = get_wall_time() - wall_time;
+  tot_loc_update_time_y += wall_time;
 }
 
 void GPSimPL::PullBlockBackToRegion() {
@@ -1649,6 +1681,9 @@ void GPSimPL::UpdateAnchorLoc() {
 
 void GPSimPL::BuildProblemB2BWithAnchorX() {
   BuildProblemB2BX();
+
+  double wall_time = get_wall_time();
+
   auto block_list = BlockList()->begin();
   auto sz = BlockList()->size();
 
@@ -1667,11 +1702,15 @@ void GPSimPL::BuildProblemB2BWithAnchorX() {
     bx[i] += pin_loc1 * weight;
     coefficientsx.emplace_back(T(i, i, weight));
   }
-  Ax.setFromTriplets(coefficientsx.begin(), coefficientsx.end());
+  wall_time = get_wall_time() - wall_time;
+  tot_triplets_time_x += wall_time;
 }
 
 void GPSimPL::BuildProblemB2BWithAnchorY() {
   BuildProblemB2BY();
+
+  double wall_time = get_wall_time();
+
   auto block_list = BlockList()->begin();
   auto sz = BlockList()->size();
 
@@ -1690,10 +1729,15 @@ void GPSimPL::BuildProblemB2BWithAnchorY() {
     by[i] += pin_loc1 * weight;
     coefficientsy.emplace_back(T(i, i, weight));
   }
-  Ay.setFromTriplets(coefficientsy.begin(), coefficientsy.end());
+  wall_time = get_wall_time() - wall_time;
+  tot_triplets_time_y += wall_time;
 }
 
 void GPSimPL::QuadraticPlacementWithAnchor() {
+  omp_set_nested(1);
+  omp_set_dynamic(0);
+  int avail_threads_num = omp_get_max_threads();
+  std::cout << "total threads: " << avail_threads_num << "\n";
   double wall_time = get_wall_time();
 
   if (globalVerboseLevel >= LOG_DEBUG) {
@@ -1704,87 +1748,97 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
   UpdateAnchorLoc();
   UpdateAnchorNetWeight();
 
-//  HPWLX_converge = false;
-//  HPWLX_old = DBL_MAX;
-//  for (size_t i = 0; i < block_list.size(); ++i) {
-//    vx[i] = block_list[i].LLX();
-//  }
-//  UpdateMaxMinX();
-//  for (int i = 0; i < 50; ++i) {
-//    BuildProblemB2BWithAnchorX();
-//    SolveProblemX();
-//    UpdateCGFlagsX();
-//    if (HPWLX_converge && i >= 2) {
-//      if (globalVerboseLevel >= LOG_DEBUG) {
-//        std::cout << "iterations x:     " << i << "\n";
-//      }
-//      break;
-//    }
-//  }
-//
-//  HPWLY_converge = false;
-//  HPWLY_old = DBL_MAX;
-//  for (size_t i = 0; i < block_list.size(); ++i) {
-//    vy[i] = block_list[i].LLY();
-//  }
-//  UpdateMaxMinY();
-//  for (int i = 0; i < 50; ++i) {
-//    BuildProblemB2BWithAnchorY();
-//    SolveProblemY();
-//    UpdateCGFlagsY();
-//    if (HPWLY_converge && i >= 2) {
-//      if (globalVerboseLevel >= LOG_DEBUG) {
-//        std::cout << "iterations y:     " << i << "\n";
-//      }
-//      break;
-//    }
-//  }
+#pragma omp parallel num_threads(2)
+  {
+    //printf("OpenMP threads, %d\n", omp_get_num_threads());
+    if (omp_get_thread_num() == 0) {
+      omp_set_num_threads(avail_threads_num/2);
+      std::cout << "threads in branch 0: " << omp_get_max_threads() << " Eigen threads: " << Eigen::nbThreads() << "\n";
+      HPWLX_converge = false;
+      HPWLX_old = DBL_MAX;
+      for (size_t i = 0; i < block_list.size(); ++i) {
+        vx[i] = block_list[i].LLX();
+      }
+      UpdateMaxMinX();
+      for (int i = 0; i < 50; ++i) {
+        BuildProblemB2BWithAnchorX();
+        SolveProblemX();
+        UpdateCGFlagsX();
+        if (HPWLX_converge && i >= 2) {
+          if (globalVerboseLevel >= LOG_DEBUG) {
+            std::cout << "iterations x:     " << i << "\n";
+          }
+          break;
+        }
+      }
+    } else {
+      omp_set_num_threads(avail_threads_num/2);
+      std::cout << "threads in branch 1: " << omp_get_max_threads() << " Eigen threads: " << Eigen::nbThreads() << "\n";
+      HPWLY_converge = false;
+      HPWLY_old = DBL_MAX;
+      for (size_t i = 0; i < block_list.size(); ++i) {
+        vy[i] = block_list[i].LLY();
+      }
+      UpdateMaxMinY();
+      for (int i = 0; i < 50; ++i) {
+        BuildProblemB2BWithAnchorY();
+        SolveProblemY();
+        UpdateCGFlagsY();
+        if (HPWLY_converge && i >= 2) {
+          if (globalVerboseLevel >= LOG_DEBUG) {
+            std::cout << "iterations y:     " << i << "\n";
+          }
+          break;
+        }
+      }
+    }
+  }
 
-  galois::on_each(
-      [&](const unsigned tid, const unsigned numT) {
-        if (numT == 0) Assert(false, "Assign 0 threads to Galois?");
-        if (tid == 0) {
-          HPWLX_converge = false;
-          HPWLX_old = DBL_MAX;
-          for (size_t i = 0; i < block_list.size(); ++i) {
-            vx[i] = block_list[i].LLX();
-          }
-          UpdateMaxMinX();
-          for (int i = 0; i < 50; ++i) {
-            BuildProblemB2BWithAnchorX();
-            SolveProblemX();
-            UpdateCGFlagsX();
-            if (HPWLX_converge && i >= 2) {
-              if (globalVerboseLevel >= LOG_DEBUG) {
-                std::cout << "iterations x:     " << i << "\n";
-              }
-              break;
-            }
-          }
-        }
-        if (tid == 1 || numT == 1) {
-          HPWLY_converge = false;
-          HPWLY_old = DBL_MAX;
-          for (size_t i = 0; i < block_list.size(); ++i) {
-            vy[i] = block_list[i].LLY();
-          }
-          UpdateMaxMinY();
-          for (int i = 0; i < 50; ++i) {
-            BuildProblemB2BWithAnchorY();
-            SolveProblemY();
-            UpdateCGFlagsY();
-            if (HPWLY_converge && i >= 2) {
-              if (globalVerboseLevel >= LOG_DEBUG) {
-                std::cout << "iterations y:     " << i << "\n";
-              }
-              break;
-            }
-          }
-        }
-      } // operator
-      ,
-      galois::loopname("sum_in_for_each_with_push_atomic") // options
-  );
+//  galois::on_each(
+//      [&](const unsigned tid, const unsigned numT) {
+//        if (numT == 0) Assert(false, "Assign 0 threads to Galois?");
+//        if (tid == 0) {
+//          HPWLX_converge = false;
+//          HPWLX_old = DBL_MAX;
+//          for (size_t i = 0; i < block_list.size(); ++i) {
+//            vx[i] = block_list[i].LLX();
+//          }
+//          UpdateMaxMinX();
+//          for (int i = 0; i < 50; ++i) {
+//            BuildProblemB2BWithAnchorX();
+//            SolveProblemX();
+//            UpdateCGFlagsX();
+//            if (HPWLX_converge && i >= 2) {
+//              if (globalVerboseLevel >= LOG_DEBUG) {
+//                std::cout << "iterations x:     " << i << "\n";
+//              }
+//              break;
+//            }
+//          }
+//        }
+//        if (tid == 1 || numT == 1) {
+//          HPWLY_converge = false;
+//          HPWLY_old = DBL_MAX;
+//          for (size_t i = 0; i < block_list.size(); ++i) {
+//            vy[i] = block_list[i].LLY();
+//          }
+//          UpdateMaxMinY();
+//          for (int i = 0; i < 50; ++i) {
+//            BuildProblemB2BWithAnchorY();
+//            SolveProblemY();
+//            UpdateCGFlagsY();
+//            if (HPWLY_converge && i >= 2) {
+//              if (globalVerboseLevel >= LOG_DEBUG) {
+//                std::cout << "iterations y:     " << i << "\n";
+//              }
+//              break;
+//            }
+//          }
+//        }
+//      } // operator
+//      ,
+//      galois::loopname("sum_in_for_each_with_push_atomic") // options
+//  );
 
   cg_total_hpwl_ = HPWLX_new + HPWLY_new;
 
@@ -1800,6 +1854,7 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
 
   wall_time = get_wall_time() - wall_time;
   tot_cg_time += wall_time;
+  omp_set_nested(0);
 }
 
 void GPSimPL::LookAheadLegalization() {
@@ -1930,6 +1985,26 @@ bool GPSimPL::StartPlacement() {
               << "Global Placement complete\n"
               << "\033[0m";
     printf("(cg time: %.4fs, lal time: %.4fs)\n", tot_cg_time, tot_lal_time);
+    printf("total triplets time: %.4fs, %.4fs, %.4fs\n",
+           tot_triplets_time_x,
+           tot_triplets_time_y,
+           tot_triplets_time_x + tot_triplets_time_y);
+    printf("total matrix from triplets time: %.4fs, %.4fs, %.4fs\n",
+           tot_matrix_from_triplets_x,
+           tot_matrix_from_triplets_y,
+           tot_matrix_from_triplets_x + tot_matrix_from_triplets_y);
+    printf("total cg solver time: %.4fs, %.4fs, %.4fs\n",
+           tot_cg_solver_time_x,
+           tot_cg_solver_time_y,
+           tot_cg_solver_time_x + tot_cg_solver_time_y);
+    printf("total loc update time: %.4fs, %.4fs, %.4fs\n",
+           tot_loc_update_time_x,
+           tot_loc_update_time_y,
+           tot_loc_update_time_x + tot_loc_update_time_y);
+    double tot_time_x = tot_triplets_time_x + tot_matrix_from_triplets_x + tot_cg_solver_time_x + tot_loc_update_time_x;
+    double tot_time_y = tot_triplets_time_y + tot_matrix_from_triplets_y + tot_cg_solver_time_y + tot_loc_update_time_y;
+    printf("total x/y time: %.4fs, %.4fs, %.4fs\n", tot_time_x, tot_time_y, tot_time_x + tot_time_y);
+    printf("total time: %.4fs\n", tot_time_x + tot_time_y);
   }
   LookAheadClose();
   //CheckAndShift();

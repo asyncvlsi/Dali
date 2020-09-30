@@ -86,6 +86,15 @@ class GPSimPL : public Placer {
   Eigen::ConjugateGradient<SpMat, Eigen::Lower|Eigen::Upper> cgx;
   Eigen::ConjugateGradient<SpMat, Eigen::Lower|Eigen::Upper> cgy;
 
+  double tot_triplets_time_x = 0;
+  double tot_triplets_time_y = 0;
+  double tot_matrix_from_triplets_x = 0;
+  double tot_matrix_from_triplets_y = 0;
+  double tot_cg_solver_time_x = 0;
+  double tot_cg_solver_time_y = 0;
+  double tot_loc_update_time_x = 0;
+  double tot_loc_update_time_y = 0;
+
   void BlockLocRandomInit();
   void BlockLocCenterInit();
   void CGInit();

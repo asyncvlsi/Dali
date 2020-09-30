@@ -27,14 +27,14 @@ int main() {
   PrintSoftwareStatement();
   Circuit circuit;
 
-  int num_of_thread = 2;
-  galois::SharedMemSys G;
+  //int num_of_thread = 6;
+  //galois::SharedMemSys G;
   //galois::preAlloc(num_of_thread * 2);
-  galois::setActiveThreads(num_of_thread);
-  printf("Galois thread %d\n", num_of_thread);
+  //galois::setActiveThreads(num_of_thread);
+  //printf("Galois thread %d\n", num_of_thread);
 
   Eigen::initParallel();
-  Eigen::setNbThreads(1);
+  //Eigen::setNbThreads(2);
   printf("Eigen thread %d\n", Eigen::nbThreads());
 
   double wall_time = get_wall_time();

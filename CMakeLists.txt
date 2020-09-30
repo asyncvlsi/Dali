@@ -23,15 +23,15 @@ find_package(OpenMP REQUIRED)
 ######################################
 # Detect if $GALOIS_HOME exists, which is the path to Galois installation
 ######################################
-message(STATUS "Detecting environment variable GALOIS_HOME...")
-if (DEFINED ENV{GALOIS_HOME})
-    message(STATUS "Environment variable GALOIS_INSTALL detected: " $ENV{GALOIS_HOME})
-else ()
-    message(STATUS "Environment variable GALOIS_HOME not found")
-endif ()
-list(APPEND CMAKE_PREFIX_PATH $ENV{GALOIS_HOME})
-find_package(Galois REQUIRED)
-link_libraries(galois_shmem)
+#message(STATUS "Detecting environment variable GALOIS_HOME...")
+#if (DEFINED ENV{GALOIS_HOME})
+#    message(STATUS "Environment variable GALOIS_INSTALL detected: " $ENV{GALOIS_HOME})
+#else ()
+#    message(STATUS "Environment variable GALOIS_HOME not found")
+#endif ()
+#list(APPEND CMAKE_PREFIX_PATH $ENV{GALOIS_HOME})
+#find_package(Galois REQUIRED)
+#link_libraries(galois_shmem)
 
 # The flag USE_OPENDB
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${macro_names} -std=c++14 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
