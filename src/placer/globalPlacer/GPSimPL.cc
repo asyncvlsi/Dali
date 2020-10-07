@@ -11,8 +11,6 @@
 #include <omp.h>
 #include <unsupported/Eigen/SparseExtra>
 
-extern galois::SharedMemSys *G;
-
 GPSimPL::GPSimPL() : Placer() {
   grid_bin_height = 0;
   grid_bin_width = 0;
@@ -220,6 +218,8 @@ void GPSimPL::AddMatrixElement(Net &net, int i, int j, std::vector<T> &coefficie
 void GPSimPL::BuildProblemB2BX() {
   double wall_time = get_wall_time();
 
+  std::vector<Net> &net_list = *NetList();
+
   std::vector<Block> &block_list = *BlockList();
   size_t coefficients_capacity = coefficientsx.capacity();
   coefficientsx.resize(0);
@@ -255,7 +255,7 @@ void GPSimPL::BuildProblemB2BX() {
   bool is_movable_min;
   double offset_min;
 
-  for (auto &&net: *NetList()) {
+  for (auto &net: net_list) {
     if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
     inv_p = net.InvP();
     net.UpdateMaxMinIndexX();
@@ -324,9 +324,9 @@ void GPSimPL::BuildProblemB2BX() {
           bx[blk_num_min] -= offset_diff;
         }
       }
-
     }
   }
+
   for (int i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) {
       coefficientsx.emplace_back(i, i, 1);
@@ -1748,9 +1748,9 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
   UpdateAnchorLoc();
   UpdateAnchorNetWeight();
 
-#pragma omp parallel num_threads(2)
+#pragma omp parallel num_threads(std::min(omp_get_max_threads(), 2))
   {
-    //printf("OpenMP threads, %d\n", omp_get_num_threads());
+    printf("OpenMP threads, %d\n", omp_get_num_threads());
     if (omp_get_thread_num() == 0) {
       omp_set_num_threads(avail_threads_num/2);
       std::cout << "threads in branch 0: " << omp_get_max_threads() << " Eigen threads: " << Eigen::nbThreads() << "\n";
@@ -1771,7 +1771,8 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
           break;
         }
       }
-    } else {
+    }
+    if (omp_get_thread_num() == 1 || omp_get_num_threads() == 1) {
       omp_set_num_threads(avail_threads_num/2);
       std::cout << "threads in branch 1: " << omp_get_max_threads() << " Eigen threads: " << Eigen::nbThreads() << "\n";
       HPWLY_converge = false;

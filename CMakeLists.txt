@@ -6,12 +6,12 @@ cmake_minimum_required(VERSION 3.9)
 project(Dali
         LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 set(macro_names "-D USE_OPENDB")
 
 find_package(TCL REQUIRED)
-find_package(Boost 1.71.0 COMPONENTS log REQUIRED)
+find_package(Boost 1.58.0 COMPONENTS log REQUIRED)
 message(STATUS "Boost library path: ${Boost_LIBRARY_DIRS}")
 message(STATUS "Boost include path: ${Boost_INCLUDE_DIR}")
 message(STATUS "Boost libs: ${Boost_LIBRARIES}")
@@ -19,24 +19,23 @@ link_libraries(${Boost_LIBRARIES})
 
 find_package(OpenMP REQUIRED)
 
-
 ######################################
-# Detect if $GALOIS_HOME exists, which is the path to Galois installation
+# Detect if $GALOIS_INSTALL_DIR exists, which is the path to Galois installation
 ######################################
-#message(STATUS "Detecting environment variable GALOIS_HOME...")
-#if (DEFINED ENV{GALOIS_HOME})
-#    message(STATUS "Environment variable GALOIS_INSTALL detected: " $ENV{GALOIS_HOME})
+#message(STATUS "Detecting environment variable GALOIS_INSTALL_DIR...")
+#if (DEFINED ENV{GALOIS_INSTALL_DIR})
+#    message(STATUS "Environment variable GALOIS_INSTALL detected: " $ENV{GALOIS_INSTALL_DIR})
 #else ()
-#    message(STATUS "Environment variable GALOIS_HOME not found")
+#    message(STATUS "Environment variable GALOIS_INSTALL_DIR not found")
 #endif ()
-#list(APPEND CMAKE_PREFIX_PATH $ENV{GALOIS_HOME})
+#list(APPEND CMAKE_PREFIX_PATH $ENV{GALOIS_INSTALL_DIR})
 #find_package(Galois REQUIRED)
-#link_libraries(galois_shmem)
+#link_libraries(Galois::shmem)
 
 # The flag USE_OPENDB
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${macro_names} -std=c++14 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g ${macro_names} -std=c++14 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${macro_names} -std=c++14 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${macro_names} -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g ${macro_names} -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${macro_names} -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
 
 # Set the output directory of static libraries
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
@@ -94,11 +93,6 @@ file(GLOB SOURCES
 add_library(placer
         STATIC
         ${SOURCES})
-
-add_executable(trial
-        src/trial.cc)
-target_link_libraries(trial
-        PRIVATE placer)
 
 # Stand-alone placer, building from the placer library
 add_executable(dali

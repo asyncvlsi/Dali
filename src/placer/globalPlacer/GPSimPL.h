@@ -10,8 +10,6 @@
 #include <queue>
 #include <random>
 
-#include <galois/Galois.h>
-
 #include "placer/placer.h"
 #include "GPSimPL/boxbin.h"
 #include "GPSimPL/cellcutpoint.h"

@@ -8,8 +8,6 @@
 #include <iostream>
 #include <vector>
 
-#include <galois/Galois.h>
-
 #include "circuit.h"
 #include "common/opendb.h"
 #include "placer.h"
@@ -27,11 +25,15 @@ int main() {
   PrintSoftwareStatement();
   Circuit circuit;
 
-  //int num_of_thread = 6;
+  //int num_of_thread_galois = 6;
   //galois::SharedMemSys G;
   //galois::preAlloc(num_of_thread * 2);
-  //galois::setActiveThreads(num_of_thread);
+  //galois::setActiveThreads(num_of_thread_galois);
+
   //printf("Galois thread %d\n", num_of_thread);
+
+  int num_of_thread_openmp = 1;
+  omp_set_num_threads(num_of_thread_openmp);
 
   Eigen::initParallel();
   //Eigen::setNbThreads(2);

@@ -9,8 +9,6 @@
 #include <iostream>
 #include <ratio>
 
-#include <galois//Galois.h>
-
 #include "circuit.h"
 #include "common/global.h"
 #include "common/timing.h"
@@ -23,11 +21,6 @@ void ReportUsage();
 
 int main(int argc, char *argv[]) {
   PrintSoftwareStatement();
-
-  int num_of_thread = 2;
-  galois::SharedMemSys G;
-  galois::preAlloc(num_of_thread * 2);
-  galois::setActiveThreads(num_of_thread);
 
   using std::chrono::system_clock;
   system_clock::time_point today = system_clock::now();
