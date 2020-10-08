@@ -185,7 +185,7 @@ void DPLinear::BuildProblemDPLinearX() {
       bx[i] = block_list[i].LLX() * 0.1;
     }
   }
-  Ax.setFromTriplets(coefficientsx.begin(), coefficientsx.end());
+  //Ax.setFromTriplets(coefficientsx.begin(), coefficientsx.end());
 }
 
 void DPLinear::BuildProblemDPLinearY() {

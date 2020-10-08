@@ -174,6 +174,12 @@ struct Seg {
   }
 };
 
+struct IndexVal {
+  int col;
+  double val;
+  IndexVal(int col_init, double val_init) : col(col_init), val(val_init) {}
+};
+
 typedef Seg<int> SegI;
 
 inline void Assert(bool e, const std::string &error_message) {

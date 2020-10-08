@@ -10,6 +10,7 @@
 #include <queue>
 #include <random>
 
+#include "common/misc.h"
 #include "placer/placer.h"
 #include "GPSimPL/boxbin.h"
 #include "GPSimPL/cellcutpoint.h"
@@ -22,6 +23,9 @@ typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat;
 
 // A triplet is a simple object representing a non-zero entry as the triplet: row index, column index, value.
 typedef Eigen::Triplet<double> T;
+
+// A "doublet" is a simple object representing a non-zero entry as: column index, value, for a given row index.
+typedef IndexVal D;
 
 class GPSimPL : public Placer {
  protected:
@@ -76,11 +80,20 @@ class GPSimPL : public Placer {
   double WidthEpsilon() const { return width_epsilon; }
   double HeightEpsilon() const { return height_epsilon; }
 
+  std::vector<int> Ax_row_size;
+  std::vector<int> Ay_row_size;
+  std::vector<std::vector<D>> ADx;
+  std::vector<std::vector<D>> ADy;
+
   Eigen::VectorXd vx, vy;
   Eigen::VectorXd bx, by;
-  SpMat Ax, Ay;
+  SpMat *Ax;
+  SpMat Ay;
   Eigen::VectorXd x_anchor, y_anchor;
-  std::vector<T> coefficientsx, coefficientsy;
+  bool x_anchor_set = false;
+  bool y_anchor_set = false;
+  std::vector<T> coefficientsx;
+  std::vector<T> coefficientsy;
   Eigen::ConjugateGradient<SpMat, Eigen::Lower|Eigen::Upper> cgx;
   Eigen::ConjugateGradient<SpMat, Eigen::Lower|Eigen::Upper> cgy;
 
@@ -150,7 +163,6 @@ class GPSimPL : public Placer {
   void LookAheadLegalization();
   void UpdateLALConvergeState();
   void UpdateAnchorLoc();
-  void BuildProblemB2BWithAnchorX();
   void BuildProblemB2BWithAnchorY();
   void QuadraticPlacementWithAnchor();
   void UpdateAnchorNetWeight() { alpha = 0.005 * cur_iter_; }
