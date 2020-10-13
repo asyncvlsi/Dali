@@ -32,8 +32,8 @@ int main() {
 
   //printf("Galois thread %d\n", num_of_thread);
 
-  int num_of_thread_openmp = 6;
-  omp_set_num_threads(num_of_thread_openmp);
+  //int num_of_thread_openmp = 6;
+  //omp_set_num_threads(num_of_thread_openmp);
 
   Eigen::initParallel();
   //Eigen::setNbThreads(2);

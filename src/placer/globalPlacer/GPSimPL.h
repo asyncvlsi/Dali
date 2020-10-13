@@ -87,7 +87,7 @@ class GPSimPL : public Placer {
 
   Eigen::VectorXd vx, vy;
   Eigen::VectorXd bx, by;
-  SpMat *Ax;
+  SpMat Ax;
   SpMat Ay;
   Eigen::VectorXd x_anchor, y_anchor;
   bool x_anchor_set = false;

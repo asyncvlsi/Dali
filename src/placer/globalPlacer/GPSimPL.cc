@@ -89,7 +89,7 @@ void GPSimPL::CGInit() {
   vy.resize(sz);
   bx.resize(sz);
   by.resize(sz);
-  //Ax.resize(sz, sz);
+  Ax.resize(sz, sz);
   Ay.resize(sz, sz);
   x_anchor.resize(sz);
   y_anchor.resize(sz);
@@ -112,6 +112,7 @@ void GPSimPL::CGInit() {
   // this is to reserve space for anchor in the center of the placement region
   coefficient_size += sz;
   //coefficientsx.reserve(coefficient_size);
+  Ax.reserve(coefficient_size);
   coefficientsy.reserve(coefficient_size);
 }
 
@@ -493,9 +494,8 @@ void GPSimPL::BuildProblemB2BX() {
     Ax_row_size[i] = ADx[i].size();
   }
 
-  delete Ax;
-  Ax = new SpMat(sz, sz);
-  Ax->reserve(Ax_row_size);
+  Ax.setZero();
+  Ax.reserve(Ax_row_size);
 
 #pragma omp parallel for
   for (int i = 0; i < sz; ++i) {
@@ -505,7 +505,7 @@ void GPSimPL::BuildProblemB2BX() {
            return d0.col < d1.col;
          });
     for (auto &d: ADx[i]) {
-      Ax->insertBackUncompressed(i, d.col) = d.val;
+      Ax.insertBackUncompressed(i, d.col) = d.val;
     }
   }
   //Ax->makeCompressed();
@@ -666,7 +666,7 @@ void GPSimPL::SolveProblemX() {
   tot_matrix_from_triplets_x += wall_time;
 
   wall_time = get_wall_time();
-  cgx.compute(*Ax); // Ax * vx = bx
+  cgx.compute(Ax); // Ax * vx = bx
   vx = cgx.solveWithGuess(bx, vx);
   error_x = cgx.error();
   if (globalVerboseLevel >= LOG_DEBUG) {
