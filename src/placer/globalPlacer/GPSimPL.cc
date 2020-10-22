@@ -223,292 +223,131 @@ void GPSimPL::AddMatrixElement(Net &net, int i, int j, std::vector<T> &coefficie
 void GPSimPL::BuildProblemB2BX() {
   double wall_time = get_wall_time();
 
-  UpdateMaxMinX();
   std::vector<Net> &net_list = *NetList();
 
   std::vector<Block> &block_list = *BlockList();
-//  size_t coefficients_capacity = coefficientsx.capacity();
-//  coefficientsx.resize(0);
-  int sz = block_list.size();
+  size_t coefficients_capacity = coefficientsx.capacity();
+  coefficientsx.resize(0);
+
+  int sz = bx.size();
+  for (int i = 0; i < sz; ++i) {
+    bx[i] = 0;
+  }
 
   double center_weight = 0.03 / std::sqrt(sz);
   double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
+  double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
+
+  double weight;
+  double weight_adjust;
+  double inv_p;
   double decay_length = decay_factor * circuit_->AveBlkHeight();
 
-#pragma omp parallel for
-  for (int i = 0; i < sz; ++i) { // for each row, i.e. block, in the sparse matrix
-    double weight;
-    double weight_adjust;
-    double inv_p;
+  double pin_loc;
+  int blk_num;
+  bool is_movable;
+  double offset_diff;
 
-    Block &block = block_list[i];
-    int blk_num0 = block.Num();
+  int max_pin_index;
+  int blk_num_max;
+  double pin_loc_max;
+  bool is_movable_max;
+  double offset_max;
 
-    ADx[blk_num0].clear(); // clear this row
-    bx[blk_num0] = 0;
+  int min_pin_index;
+  int blk_num_min;
+  double pin_loc_min;
+  bool is_movable_min;
+  double offset_min;
 
-    std::unordered_map<int, int> col_index_map; // check if an col index exists or not
+  for (auto &net: net_list) {
+    if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
+    inv_p = net.InvP();
+    net.UpdateMaxMinIndexX();
+    max_pin_index = net.MaxBlkPinNumX();
+    min_pin_index = net.MinBlkPinNumX();
 
-    // if this block is fixed
-    if (block.IsFixed()) {
-      ADx[blk_num0].emplace_back(blk_num0, 1);
-      bx[blk_num0] = block_list[blk_num0].LLX();
-      continue;
-    }
+    blk_num_max = net.blk_pin_list[max_pin_index].BlkNum();
+    pin_loc_max = net.blk_pin_list[max_pin_index].AbsX();
+    is_movable_max = net.blk_pin_list[max_pin_index].BlkPtr()->IsMovable();
+    offset_max = net.blk_pin_list[max_pin_index].OffsetX();
 
-    // if anchor exists
-    if (x_anchor_set) {
-      double pin_loc0 = block.LLX();
-      double pin_loc1 = x_anchor[blk_num0];
-      weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
+    blk_num_min = net.blk_pin_list[min_pin_index].BlkNum();
+    pin_loc_min = net.blk_pin_list[min_pin_index].AbsX();
+    is_movable_min = net.blk_pin_list[min_pin_index].BlkPtr()->IsMovable();
+    offset_min = net.blk_pin_list[min_pin_index].OffsetX();
 
-      if (col_index_map.find(blk_num0) == col_index_map.end()) {
-        col_index_map[blk_num0] = ADx[blk_num0].size();
-        ADx[blk_num0].emplace_back(blk_num0, weight);
-      } else {
-        int index = col_index_map[blk_num0];
-        ADx[blk_num0][index].val += weight;
-      }
-      bx[blk_num0] += pin_loc1 * weight;
-    }
+    for (auto &pair: net.blk_pin_list) {
+      blk_num = pair.BlkNum();
+      pin_loc = pair.AbsX();
+      is_movable = pair.BlkPtr()->IsMovable();
 
-    // if this block is out of placement region,
-    // then add a net, pulling this block to the placement region center
-    if (block.LLX() < RegionLeft() || block.URX() > RegionRight()) {
-      if (col_index_map.find(blk_num0) == col_index_map.end()) {
-        col_index_map[blk_num0] = ADx[blk_num0].size();
-        ADx[blk_num0].emplace_back(blk_num0, center_weight);
-      } else {
-        int index = col_index_map[blk_num0];
-        ADx[blk_num0][index].val += center_weight;
-      }
-      bx[blk_num0] += weight_center_x;
-    }
-
-    // for each net containing this block
-    for (auto &net_id: *(block.NetList())) {
-      Net &net = net_list[net_id];
-      if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
-      inv_p = net.InvP();
-
-      // information of the max pin in this net
-      int max_pin_index = net.MaxBlkPinNumX();
-      int blk_num_max = net.blk_pin_list[max_pin_index].BlkNum();
-      double pin_loc_max = net.blk_pin_list[max_pin_index].AbsX();
-      bool is_movable_max = net.blk_pin_list[max_pin_index].BlkPtr()->IsMovable();
-      double offset_max = net.blk_pin_list[max_pin_index].OffsetX();
-
-      // information of the min pin in this net
-      int min_pin_index = net.MinBlkPinNumX();
-      int blk_num_min = net.blk_pin_list[min_pin_index].BlkNum();
-      double pin_loc_min = net.blk_pin_list[min_pin_index].AbsX();
-      bool is_movable_min = net.blk_pin_list[min_pin_index].BlkPtr()->IsMovable();
-      double offset_min = net.blk_pin_list[min_pin_index].OffsetX();
-
-      if (blk_num0 == blk_num_max) {
-        // if this block contains the max pin, calculate weights to all pins
-        for (auto &pair: net.blk_pin_list) {
-          int blk_num1 = pair.BlkNum();
-          if (blk_num1 == blk_num0) continue; // for blocks except max pin itself
-
-          double pin_loc = pair.AbsX();
-          bool is_movable = pair.BlkPtr()->IsMovable();
-          double distance = std::fabs(pin_loc - pin_loc_max);
-          weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
-          weight = inv_p / (distance + WidthEpsilon()) * weight_adjust;
-
-          if (!is_movable) {
-            // if this block is not movable,
-            // then it just contributes values to
-            // Ax[blk_num0][blk_num0], and bx[blk_num0]
-            bx[blk_num0] += (pin_loc - offset_max) * weight;
-            if (col_index_map.find(blk_num0) == col_index_map.end()) {
-              col_index_map[blk_num0] = ADx[blk_num0].size();
-              ADx[blk_num0].emplace_back(blk_num0, weight);
-            } else {
-              int index = col_index_map[blk_num0];
-              ADx[blk_num0][index].val += weight;
-            }
-          } else {
-            // if this block is movable,
-            // then it contributes values to
-            // Ax[blk_num0][blk_num0], Ax[blk_num0][blk_num1], and bx[blk_num0]
-
-            // Ax[blk_num0][blk_num0]
-            if (col_index_map.find(blk_num0) == col_index_map.end()) {
-              col_index_map[blk_num0] = ADx[blk_num0].size();
-              ADx[blk_num0].emplace_back(blk_num0, weight);
-            } else {
-              int index = col_index_map[blk_num0];
-              ADx[blk_num0][index].val += weight;
-            }
-
-            // Ax[blk_num0][blk_num1]
-            if (col_index_map.find(blk_num1) == col_index_map.end()) {
-              col_index_map[blk_num1] = ADx[blk_num0].size();
-              ADx[blk_num0].emplace_back(blk_num1, -weight);
-            } else {
-              int index = col_index_map[blk_num1];
-              ADx[blk_num0][index].val -= weight;
-            }
-
-            double offset_diff = (pair.OffsetX() - offset_max) * weight;
-            bx[blk_num0] += offset_diff;
-          }
+      if (blk_num != blk_num_max) {
+        double distance = std::fabs(pin_loc - pin_loc_max);
+        weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
+        weight = inv_p / (distance + WidthEpsilon()) * weight_adjust;
+        if (!is_movable && is_movable_max) {
+          bx[blk_num_max] += (pin_loc - offset_max) * weight;
+          coefficientsx.emplace_back(blk_num_max, blk_num_max, weight);
+        } else if (is_movable && !is_movable_max) {
+          bx[blk_num] += (pin_loc_max - offset_max) * weight;
+          coefficientsx.emplace_back(blk_num, blk_num, weight);
+        } else if (is_movable && is_movable_max) {
+          coefficientsx.emplace_back(blk_num, blk_num, weight);
+          coefficientsx.emplace_back(blk_num_max, blk_num_max, weight);
+          coefficientsx.emplace_back(blk_num, blk_num_max, -weight);
+          coefficientsx.emplace_back(blk_num_max, blk_num, -weight);
+          offset_diff = (offset_max - pair.OffsetX()) * weight;
+          bx[blk_num] += offset_diff;
+          bx[blk_num_max] -= offset_diff;
         }
-      } else if (blk_num0 == blk_num_min) {
-        // if this block contains the min pin, calculate weights to all pins
-        for (auto &pair: net.blk_pin_list) {
-          int blk_num1 = pair.BlkNum();
-          if (blk_num1 == blk_num_min) continue; // for blocks except min pin itself
+      }
 
-          double pin_loc = pair.AbsX();
-          bool is_movable = pair.BlkPtr()->IsMovable();
-          double distance = std::fabs(pin_loc - pin_loc_min);
-          weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
-          weight = inv_p / (distance + WidthEpsilon()) * weight_adjust;
-
-          if (!is_movable) {
-            // if this block is not movable,
-            // then it just contributes values to
-            // Ax[blk_num0][blk_num0], and bx[blk_num0]
-            bx[blk_num0] += (pin_loc - offset_min) * weight;
-            if (col_index_map.find(blk_num0) == col_index_map.end()) {
-              col_index_map[blk_num0] = ADx[blk_num0].size();
-              ADx[blk_num0].emplace_back(blk_num0, weight);
-            } else {
-              int index = col_index_map[blk_num0];
-              ADx[blk_num0][index].val += weight;
-            }
-          } else {
-            // if this block is movable,
-            // then it contributes values to
-            // Ax[blk_num0][blk_num0], Ax[blk_num0][blk_num1], and bx[blk_num0]
-
-            // Ax[blk_num0][blk_num0]
-            if (col_index_map.find(blk_num0) == col_index_map.end()) {
-              col_index_map[blk_num0] = ADx[blk_num0].size();
-              ADx[blk_num0].emplace_back(blk_num0, weight);
-            } else {
-              int index = col_index_map[blk_num0];
-              ADx[blk_num0][index].val += weight;
-            }
-
-            // Ax[blk_num0][blk_num1]
-            if (col_index_map.find(blk_num1) == col_index_map.end()) {
-              col_index_map[blk_num1] = ADx[blk_num0].size();
-              ADx[blk_num0].emplace_back(blk_num1, -weight);
-            } else {
-              int index = col_index_map[blk_num1];
-              ADx[blk_num0][index].val -= weight;
-            }
-
-            double offset_diff = (pair.OffsetX() - offset_min) * weight;
-            bx[blk_num0] += offset_diff;
-          }
-        }
-      } else {
-        // calculate weights to max and min pin
-        for (auto &pair: net.blk_pin_list) {
-          int blk_num1 = pair.BlkNum();
-          if (blk_num1 != blk_num0) continue; // just focus on this block it self
-
-          double pin_loc = pair.AbsX();
-          bool is_movable = pair.BlkPtr()->IsMovable();
-
-          // weight between this block and the max pin, this block is movable for sure
-          double distance = std::fabs(pin_loc - pin_loc_max);
-          weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
-          weight = inv_p / (distance + WidthEpsilon()) * weight_adjust;
-
-          if (!is_movable_max) {
-            // if the max block is not movable,
-            // then it just contributes values to
-            // Ax[blk_num0][blk_num0], and bx[blk_num0]
-            bx[blk_num0] += (pin_loc_max - pair.OffsetX()) * weight;
-          } else {
-            // if the max block is movable,
-            // then it contributes values to
-            // Ax[blk_num0][blk_num0], Ax[blk_num0][blk_num_max], and bx[blk_num0]
-
-            // Ax[blk_num0][blk_num_max]
-            if (col_index_map.find(blk_num_max) == col_index_map.end()) {
-              col_index_map[blk_num_max] = ADx[blk_num0].size();
-              ADx[blk_num0].emplace_back(blk_num_max, -weight);
-            } else {
-              int index = col_index_map[blk_num_max];
-              ADx[blk_num0][index].val -= weight;
-            }
-
-            double offset_diff = (offset_max - pair.OffsetX()) * weight;
-            bx[blk_num0] += offset_diff;
-          }
-
-          // Ax[blk_num0][blk_num0]
-          if (col_index_map.find(blk_num0) == col_index_map.end()) {
-            col_index_map[blk_num0] = ADx[blk_num0].size();
-            ADx[blk_num0].emplace_back(blk_num0, weight);
-          } else {
-            int index = col_index_map[blk_num0];
-            ADx[blk_num0][index].val += weight;
-          }
-
-          // weight between this block and the min pin
-          distance = std::fabs(pin_loc - pin_loc_min);
-          weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
-          weight = inv_p / (distance + WidthEpsilon()) * weight_adjust;
-          if (!is_movable_min) {
-            // if the min block is not movable,
-            // then it just contributes values to
-            // Ax[blk_num0][blk_num0], and bx[blk_num0]
-            bx[blk_num0] += (pin_loc_min - pair.OffsetX()) * weight;
-          } else {
-            // if the min block is movable,
-            // then it contributes values to
-            // Ax[blk_num0][blk_num0], Ax[blk_num0][blk_num_min], and bx[blk_num0]
-
-            // Ax[blk_num0][blk_num_min]
-            if (col_index_map.find(blk_num_min) == col_index_map.end()) {
-              col_index_map[blk_num_min] = ADx[blk_num0].size();
-              ADx[blk_num0].emplace_back(blk_num_min, -weight);
-            } else {
-              int index = col_index_map[blk_num_min];
-              ADx[blk_num0][index].val -= weight;
-            }
-
-            double offset_diff = (offset_min - pair.OffsetX()) * weight;
-            bx[blk_num0] += offset_diff;
-          }
-
-          // Ax[blk_num0][blk_num0]
-          if (col_index_map.find(blk_num0) == col_index_map.end()) {
-            col_index_map[blk_num0] = ADx[blk_num0].size();
-            ADx[blk_num0].emplace_back(blk_num0, weight);
-          } else {
-            int index = col_index_map[blk_num0];
-            ADx[blk_num0][index].val += weight;
-          }
+      if ((blk_num != blk_num_max) && (blk_num != blk_num_min)) {
+        double distance = std::fabs(pin_loc - pin_loc_max);
+        weight_adjust = adjust_factor * (1 - exp(-distance / decay_length));
+        weight = inv_p / (distance + WidthEpsilon()) * weight_adjust;
+        if (!is_movable && is_movable_min) {
+          bx[blk_num_min] += (pin_loc - offset_min) * weight;
+          coefficientsx.emplace_back(blk_num_min, blk_num_min, weight);
+        } else if (is_movable && !is_movable_min) {
+          bx[blk_num] += (pin_loc_min - offset_min) * weight;
+          coefficientsx.emplace_back(blk_num, blk_num, weight);
+        } else if (is_movable && is_movable_min) {
+          coefficientsx.emplace_back(blk_num, blk_num, weight);
+          coefficientsx.emplace_back(blk_num_min, blk_num_min, weight);
+          //if (blk_num > blk_num_min) { // build a lower matrix
+          coefficientsx.emplace_back(blk_num, blk_num_min, -weight);
+          //} else {
+          coefficientsx.emplace_back(blk_num_min, blk_num, -weight);
+          //}
+          offset_diff = (offset_min - pair.OffsetX()) * weight;
+          bx[blk_num] += offset_diff;
+          bx[blk_num_min] -= offset_diff;
         }
       }
     }
-    Ax_row_size[i] = ADx[i].size();
   }
 
-  Ax.setZero();
-  Ax.reserve(Ax_row_size);
-
-#pragma omp parallel for
   for (int i = 0; i < sz; ++i) {
-    sort(ADx[i].begin(),
-         ADx[i].end(),
-         [](const D &d0, const D &d1) {
-           return d0.col < d1.col;
-         });
-    for (auto &d: ADx[i]) {
-      Ax.insertBackUncompressed(i, d.col) = d.val;
+    if (block_list[i].IsFixed()) {
+      coefficientsx.emplace_back(i, i, 1);
+      bx[i] = block_list[i].LLX();
+    } else {
+      if (block_list[i].LLX() < RegionLeft() || block_list[i].URX() > RegionRight()) {
+        coefficientsx.emplace_back(i, i, center_weight);
+        bx[i] += weight_center_x;
+      }
     }
   }
-  //Ax->makeCompressed();
+
+  if (globalVerboseLevel >= LOG_WARNING) {
+    if (coefficients_capacity != coefficientsx.capacity()) {
+      std::cout << "WARNING: coefficients capacity changed!\n"
+                << "\told capacity: " << coefficients_capacity << "\n"
+                << "\tnew capacity: " << coefficientsx.size() << "\n";
+    }
+  }
 
   wall_time = get_wall_time() - wall_time;
   tot_triplets_time_x += wall_time;
@@ -516,7 +355,7 @@ void GPSimPL::BuildProblemB2BX() {
 //  static int count = 0;
 //  count += 1;
 //  if (count == 100) {
-//    bool s = saveMarket(*Ax, "sparse_matrices");
+//    bool s = saveMarket(Ax, "sparse_matrices");
 //    if (s) {
 //      std::cout << "Sparse matrix saved successfully\n";
 //    }
@@ -659,9 +498,622 @@ void GPSimPL::BuildProblemB2BY() {
   tot_triplets_time_y += wall_time;
 }
 
+void GPSimPL::BuildProblemStarModelX() {
+  double wall_time = get_wall_time();
+
+  std::vector<Net> &net_list = *NetList();
+
+  std::vector<Block> &block_list = *BlockList();
+  size_t coefficients_capacity = coefficientsx.capacity();
+  coefficientsx.resize(0);
+
+  int sz = bx.size();
+  for (int i = 0; i < sz; ++i) {
+    bx[i] = 0;
+  }
+
+  double center_weight = 0.03 / std::sqrt(sz);
+  double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
+  double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
+
+  double weight;
+  double weight_adjust;
+  double inv_p;
+  double decay_length = decay_factor * circuit_->AveBlkHeight();
+
+  double pin_loc;
+  int blk_num;
+  bool is_movable;
+  double offset_diff;
+
+  int driver_blk_num;
+  double driver_pin_loc;
+  bool driver_is_movable;
+  double driver_offset;
+
+  for (auto &net: net_list) {
+    if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
+    inv_p = net.InvP();
+
+    // assuming the 0-th pin in the net is the driver pin
+    driver_blk_num = net.blk_pin_list[0].BlkNum();
+    driver_pin_loc = net.blk_pin_list[0].AbsX();
+    driver_is_movable = net.blk_pin_list[0].BlkPtr()->IsMovable();
+    driver_offset = net.blk_pin_list[0].OffsetX();
+
+    for (auto &pair: net.blk_pin_list) {
+      blk_num = pair.BlkNum();
+      pin_loc = pair.AbsX();
+      is_movable = pair.BlkPtr()->IsMovable();
+
+      if (blk_num != driver_blk_num) {
+        double distance = std::fabs(pin_loc - driver_pin_loc);
+        weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
+        weight = inv_p / (distance + WidthEpsilon()) * weight_adjust;
+        //weight = inv_p / (distance + WidthEpsilon());
+        if (!is_movable && driver_is_movable) {
+          bx[0] += (pin_loc - driver_offset) * weight;
+          coefficientsx.emplace_back(driver_blk_num, driver_blk_num, weight);
+        } else if (is_movable && !driver_is_movable) {
+          bx[blk_num] += (driver_pin_loc - driver_offset) * weight;
+          coefficientsx.emplace_back(blk_num, blk_num, weight);
+        } else if (is_movable && driver_is_movable) {
+          coefficientsx.emplace_back(blk_num, blk_num, weight);
+          coefficientsx.emplace_back(driver_blk_num, driver_blk_num, weight);
+          coefficientsx.emplace_back(blk_num, driver_blk_num, -weight);
+          coefficientsx.emplace_back(driver_blk_num, blk_num, -weight);
+          offset_diff = (driver_offset - pair.OffsetX()) * weight;
+          bx[blk_num] += offset_diff;
+          bx[driver_blk_num] -= offset_diff;
+        }
+      }
+    }
+  }
+
+  for (int i = 0; i < sz; ++i) {
+    if (block_list[i].IsFixed()) {
+      coefficientsx.emplace_back(i, i, 1);
+      bx[i] = block_list[i].LLX();
+    } else {
+      if (block_list[i].LLX() < RegionLeft() || block_list[i].URX() > RegionRight()) {
+        coefficientsx.emplace_back(i, i, center_weight);
+        bx[i] += weight_center_x;
+      }
+    }
+  }
+
+  if (globalVerboseLevel >= LOG_WARNING) {
+    if (coefficients_capacity != coefficientsx.capacity()) {
+      std::cout << "WARNING: coefficients capacity changed!\n"
+                << "\told capacity: " << coefficients_capacity << "\n"
+                << "\tnew capacity: " << coefficientsx.size() << "\n";
+    }
+  }
+
+  wall_time = get_wall_time() - wall_time;
+  tot_triplets_time_x += wall_time;
+}
+
+void GPSimPL::BuildProblemStarModelY() {
+  double wall_time = get_wall_time();
+
+  std::vector<Net> &net_list = *NetList();
+
+  std::vector<Block> &block_list = *BlockList();
+  size_t coefficients_capacity = coefficientsy.capacity();
+  coefficientsy.resize(0);
+
+  int sz = by.size();
+  for (int i = 0; i < sz; ++i) {
+    by[i] = 0;
+  }
+
+  double center_weight = 0.03 / std::sqrt(sz);
+  double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
+  double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
+
+  double weight;
+  double weight_adjust;
+  double inv_p;
+  double decay_length = decay_factor * circuit_->AveBlkHeight();
+
+  double pin_loc;
+  int blk_num;
+  bool is_movable;
+  double offset_diff;
+
+  int driver_blk_num;
+  double driver_pin_loc;
+  bool driver_is_movable;
+  double driver_offset;
+
+  for (auto &net: net_list) {
+    if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
+    inv_p = net.InvP();
+
+    // assuming the 0-th pin in the net is the driver pin
+    driver_blk_num = net.blk_pin_list[0].BlkNum();
+    driver_pin_loc = net.blk_pin_list[0].AbsY();
+    driver_is_movable = net.blk_pin_list[0].BlkPtr()->IsMovable();
+    driver_offset = net.blk_pin_list[0].OffsetY();
+
+    for (auto &pair: net.blk_pin_list) {
+      blk_num = pair.BlkNum();
+      pin_loc = pair.AbsY();
+      is_movable = pair.BlkPtr()->IsMovable();
+
+      if (blk_num != driver_blk_num) {
+        double distance = std::fabs(pin_loc - driver_pin_loc);
+        weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
+        weight = inv_p / (distance + HeightEpsilon()) * weight_adjust;
+        //weight = inv_p / (distance + HeightEpsilon());
+        if (!is_movable && driver_is_movable) {
+          by[0] += (pin_loc - driver_offset) * weight;
+          coefficientsy.emplace_back(driver_blk_num, driver_blk_num, weight);
+        } else if (is_movable && !driver_is_movable) {
+          by[blk_num] += (driver_pin_loc - driver_offset) * weight;
+          coefficientsy.emplace_back(blk_num, blk_num, weight);
+        } else if (is_movable && driver_is_movable) {
+          coefficientsy.emplace_back(blk_num, blk_num, weight);
+          coefficientsy.emplace_back(driver_blk_num, driver_blk_num, weight);
+          coefficientsy.emplace_back(blk_num, driver_blk_num, -weight);
+          coefficientsy.emplace_back(driver_blk_num, blk_num, -weight);
+          offset_diff = (driver_offset - pair.OffsetY()) * weight;
+          by[blk_num] += offset_diff;
+          by[driver_blk_num] -= offset_diff;
+        }
+      }
+    }
+  }
+
+  for (int i = 0; i < sz; ++i) { // add the diagonal non-zero element for fixed blocks
+    if (block_list[i].IsFixed()) {
+      coefficientsy.emplace_back(i, i, 1);
+      by[i] = block_list[i].LLY();
+    } else {
+      if (block_list[i].LLY() < RegionBottom() || block_list[i].URY() > RegionTop()) {
+        coefficientsy.emplace_back(i, i, center_weight);
+        by[i] += weight_center_y;
+      }
+    }
+  }
+
+  wall_time = get_wall_time() - wall_time;
+  tot_triplets_time_y += wall_time;
+}
+
+void GPSimPL::BuildProblemHPWLX() {
+  double wall_time = get_wall_time();
+
+  std::vector<Net> &net_list = *NetList();
+
+  std::vector<Block> &block_list = *BlockList();
+  size_t coefficients_capacity = coefficientsx.capacity();
+  coefficientsx.resize(0);
+
+  int sz = bx.size();
+  for (int i = 0; i < sz; ++i) {
+    bx[i] = 0;
+  }
+
+  double center_weight = 0.03 / std::sqrt(sz);
+  double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
+  double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
+
+  double weight;
+  double weight_adjust;
+  double inv_p;
+  double decay_length = decay_factor * circuit_->AveBlkHeight();
+
+  int max_pin_index;
+  int blk_num_max;
+  double pin_loc_max;
+  bool is_movable_max;
+  double offset_max;
+
+  int min_pin_index;
+  int blk_num_min;
+  double pin_loc_min;
+  bool is_movable_min;
+  double offset_min;
+
+  for (auto &net: net_list) {
+    if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
+    inv_p = net.InvP();
+    net.UpdateMaxMinIndexX();
+    max_pin_index = net.MaxBlkPinNumX();
+    min_pin_index = net.MinBlkPinNumX();
+
+    blk_num_max = net.blk_pin_list[max_pin_index].BlkNum();
+    pin_loc_max = net.blk_pin_list[max_pin_index].AbsX();
+    is_movable_max = net.blk_pin_list[max_pin_index].BlkPtr()->IsMovable();
+    offset_max = net.blk_pin_list[max_pin_index].OffsetX();
+
+    blk_num_min = net.blk_pin_list[min_pin_index].BlkNum();
+    pin_loc_min = net.blk_pin_list[min_pin_index].AbsX();
+    is_movable_min = net.blk_pin_list[min_pin_index].BlkPtr()->IsMovable();
+    offset_min = net.blk_pin_list[min_pin_index].OffsetX();
+
+    double distance = std::fabs(pin_loc_min - pin_loc_max);
+    //weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
+    //weight = inv_p / (distance + WidthEpsilon()) * weight_adjust;
+    weight = inv_p / (distance + WidthEpsilon());
+    if (!is_movable_min && is_movable_max) {
+      bx[blk_num_max] += (pin_loc_min - offset_max) * weight;
+      coefficientsx.emplace_back(blk_num_max, blk_num_max, weight);
+    } else if (is_movable_min && !is_movable_max) {
+      bx[blk_num_min] += (pin_loc_max - offset_max) * weight;
+      coefficientsx.emplace_back(blk_num_min, blk_num_min, weight);
+    } else if (is_movable_min && is_movable_max) {
+      coefficientsx.emplace_back(blk_num_min, blk_num_min, weight);
+      coefficientsx.emplace_back(blk_num_max, blk_num_max, weight);
+      coefficientsx.emplace_back(blk_num_min, blk_num_max, -weight);
+      coefficientsx.emplace_back(blk_num_max, blk_num_min, -weight);
+      double offset_diff = (offset_max - offset_min) * weight;
+      bx[blk_num_min] += offset_diff;
+      bx[blk_num_max] -= offset_diff;
+    }
+  }
+
+  for (int i = 0; i < sz; ++i) {
+    if (block_list[i].IsFixed()) {
+      coefficientsx.emplace_back(i, i, 1);
+      bx[i] = block_list[i].LLX();
+    } else {
+      if (block_list[i].LLX() < RegionLeft() || block_list[i].URX() > RegionRight()) {
+        coefficientsx.emplace_back(i, i, center_weight);
+        bx[i] += weight_center_x;
+      }
+    }
+  }
+
+  if (globalVerboseLevel >= LOG_WARNING) {
+    if (coefficients_capacity != coefficientsx.capacity()) {
+      std::cout << "WARNING: coefficients capacity changed!\n"
+                << "\told capacity: " << coefficients_capacity << "\n"
+                << "\tnew capacity: " << coefficientsx.size() << "\n";
+    }
+  }
+
+  wall_time = get_wall_time() - wall_time;
+  tot_triplets_time_x += wall_time;
+}
+
+void GPSimPL::BuildProblemHPWLY() {
+  double wall_time = get_wall_time();
+
+  std::vector<Block> &block_list = *BlockList();
+  size_t coefficients_capacity = coefficientsy.capacity();
+  coefficientsy.resize(0);
+
+  int sz = by.size();
+  for (int i = 0; i < sz; ++i) {
+    by[i] = 0;
+  }
+
+  double center_weight = 0.03 / std::sqrt(sz);
+  double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
+  double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
+
+  double weight;
+  double weight_adjust;
+  double inv_p;
+  double decay_length = decay_factor * circuit_->AveBlkHeight();
+
+  int max_pin_index;
+  int blk_num_max;
+  double pin_loc_max;
+  bool is_movable_max;
+  double offset_max;
+
+  int min_pin_index;
+  int blk_num_min;
+  double pin_loc_min;
+  bool is_movable_min;
+  double offset_min;
+
+  for (auto &net: *NetList()) {
+    if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
+    inv_p = net.InvP();
+    net.UpdateMaxMinIndexY();
+    max_pin_index = net.MaxBlkPinNumY();
+    min_pin_index = net.MinBlkPinNumY();
+
+    blk_num_max = net.blk_pin_list[max_pin_index].BlkNum();
+    pin_loc_max = net.blk_pin_list[max_pin_index].AbsY();
+    is_movable_max = net.blk_pin_list[max_pin_index].BlkPtr()->IsMovable();
+    offset_max = net.blk_pin_list[max_pin_index].OffsetY();
+
+    blk_num_min = net.blk_pin_list[min_pin_index].BlkNum();
+    pin_loc_min = net.blk_pin_list[min_pin_index].AbsY();
+    is_movable_min = net.blk_pin_list[min_pin_index].BlkPtr()->IsMovable();
+    offset_min = net.blk_pin_list[min_pin_index].OffsetY();
+
+    double distance = std::fabs(pin_loc_min - pin_loc_max);
+    //weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
+    //weight = inv_p / (distance + HeightEpsilon()) * weight_adjust;
+    weight = inv_p / (distance + HeightEpsilon());
+    if (!is_movable_min && is_movable_max) {
+      by[blk_num_max] += (pin_loc_min - offset_max) * weight;
+      coefficientsy.emplace_back(blk_num_max, blk_num_max, weight);
+    } else if (is_movable_min && !is_movable_max) {
+      by[blk_num_min] += (pin_loc_max - offset_max) * weight;
+      coefficientsy.emplace_back(blk_num_min, blk_num_min, weight);
+    } else if (is_movable_min && is_movable_max) {
+      coefficientsy.emplace_back(blk_num_min, blk_num_min, weight);
+      coefficientsy.emplace_back(blk_num_max, blk_num_max, weight);
+      coefficientsy.emplace_back(blk_num_min, blk_num_max, -weight);
+      coefficientsy.emplace_back(blk_num_max, blk_num_min, -weight);
+      double offset_diff = (offset_max - offset_min) * weight;
+      by[blk_num_min] += offset_diff;
+      by[blk_num_max] -= offset_diff;
+    }
+  }
+  for (int i = 0; i < sz; ++i) { // add the diagonal non-zero element for fixed blocks
+    if (block_list[i].IsFixed()) {
+      coefficientsy.emplace_back(i, i, 1);
+      by[i] = block_list[i].LLY();
+    } else {
+      if (block_list[i].LLY() < RegionBottom() || block_list[i].URY() > RegionTop()) {
+        coefficientsy.emplace_back(i, i, center_weight);
+        by[i] += weight_center_y;
+      }
+    }
+  }
+
+  if (globalVerboseLevel >= LOG_WARNING) {
+    if (coefficients_capacity != coefficientsy.capacity()) {
+      std::cout << "WARNING: coefficients capacity changed!\n"
+                << "\told capacity: " << coefficients_capacity << "\n"
+                << "\tnew capacity: " << coefficientsy.size() << "\n";
+    }
+  }
+
+  wall_time = get_wall_time() - wall_time;
+  tot_triplets_time_y += wall_time;
+}
+
+void GPSimPL::BuildProblemStarHPWLX() {
+  double wall_time = get_wall_time();
+
+  std::vector<Net> &net_list = *NetList();
+
+  std::vector<Block> &block_list = *BlockList();
+  size_t coefficients_capacity = coefficientsx.capacity();
+  coefficientsx.resize(0);
+
+  int sz = bx.size();
+  for (int i = 0; i < sz; ++i) {
+    bx[i] = 0;
+  }
+
+  double center_weight = 0.03 / std::sqrt(sz);
+  double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
+  double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
+
+  double weight;
+  double weight_adjust;
+  double inv_p;
+  double decay_length = decay_factor * circuit_->AveBlkHeight();
+
+  double pin_loc;
+  int blk_num;
+  bool is_movable;
+  double offset_diff;
+
+  int driver_blk_num;
+  double driver_pin_loc;
+  bool driver_is_movable;
+  double driver_offset;
+
+  for (auto &net: net_list) {
+    if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
+    inv_p = net.InvP();
+
+    // assuming the 0-th pin in the net is the driver pin
+    driver_blk_num = net.blk_pin_list[0].BlkNum();
+    driver_pin_loc = net.blk_pin_list[0].AbsX();
+    driver_is_movable = net.blk_pin_list[0].BlkPtr()->IsMovable();
+    driver_offset = net.blk_pin_list[0].OffsetX();
+
+    net.UpdateMaxMinIndexX();
+    int max_pin_index = net.MaxBlkPinNumX();
+    int min_pin_index = net.MinBlkPinNumX();
+
+    int blk_num_max = net.blk_pin_list[max_pin_index].BlkNum();
+    double pin_loc_max = net.blk_pin_list[max_pin_index].AbsX();
+    bool is_movable_max = net.blk_pin_list[max_pin_index].BlkPtr()->IsMovable();
+    double offset_max = net.blk_pin_list[max_pin_index].OffsetX();
+
+    int blk_num_min = net.blk_pin_list[min_pin_index].BlkNum();
+    double pin_loc_min = net.blk_pin_list[min_pin_index].AbsX();
+    bool is_movable_min = net.blk_pin_list[min_pin_index].BlkPtr()->IsMovable();
+    double offset_min = net.blk_pin_list[min_pin_index].OffsetX();
+
+    for (auto &pair: net.blk_pin_list) {
+      blk_num = pair.BlkNum();
+      pin_loc = pair.AbsX();
+      is_movable = pair.BlkPtr()->IsMovable();
+
+      if (blk_num != driver_blk_num) {
+        double distance = std::fabs(pin_loc - driver_pin_loc);
+        weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
+        weight = inv_p / (distance + WidthEpsilon()) * weight_adjust;
+        //weight = inv_p / (distance + WidthEpsilon());
+        double adjust = 1.0;
+        if (driver_blk_num == blk_num_max) {
+          adjust = (driver_pin_loc - pin_loc) / (driver_pin_loc - pin_loc_min + WidthEpsilon());
+        } else if (driver_blk_num == blk_num_min) {
+          adjust = (pin_loc - driver_pin_loc) / (pin_loc_max - driver_pin_loc + WidthEpsilon());
+        } else {
+          if (pin_loc > driver_pin_loc) {
+            adjust = (pin_loc - driver_pin_loc) / (pin_loc_max - driver_pin_loc + WidthEpsilon());
+          } else {
+            adjust = (driver_pin_loc - pin_loc) / (driver_pin_loc - pin_loc_min + WidthEpsilon());
+          }
+        }
+        weight *= adjust;
+        if (!is_movable && driver_is_movable) {
+          bx[0] += (pin_loc - driver_offset) * weight;
+          coefficientsx.emplace_back(driver_blk_num, driver_blk_num, weight);
+        } else if (is_movable && !driver_is_movable) {
+          bx[blk_num] += (driver_pin_loc - driver_offset) * weight;
+          coefficientsx.emplace_back(blk_num, blk_num, weight);
+        } else if (is_movable && driver_is_movable) {
+          coefficientsx.emplace_back(blk_num, blk_num, weight);
+          coefficientsx.emplace_back(driver_blk_num, driver_blk_num, weight);
+          coefficientsx.emplace_back(blk_num, driver_blk_num, -weight);
+          coefficientsx.emplace_back(driver_blk_num, blk_num, -weight);
+          offset_diff = (driver_offset - pair.OffsetX()) * weight;
+          bx[blk_num] += offset_diff;
+          bx[driver_blk_num] -= offset_diff;
+        }
+      }
+    }
+  }
+
+  for (int i = 0; i < sz; ++i) {
+    if (block_list[i].IsFixed()) {
+      coefficientsx.emplace_back(i, i, 1);
+      bx[i] = block_list[i].LLX();
+    } else {
+      if (block_list[i].LLX() < RegionLeft() || block_list[i].URX() > RegionRight()) {
+        coefficientsx.emplace_back(i, i, center_weight);
+        bx[i] += weight_center_x;
+      }
+    }
+  }
+
+  if (globalVerboseLevel >= LOG_WARNING) {
+    if (coefficients_capacity != coefficientsx.capacity()) {
+      std::cout << "WARNING: coefficients capacity changed!\n"
+                << "\told capacity: " << coefficients_capacity << "\n"
+                << "\tnew capacity: " << coefficientsx.size() << "\n";
+    }
+  }
+
+  wall_time = get_wall_time() - wall_time;
+  tot_triplets_time_x += wall_time;
+}
+
+void GPSimPL::BuildProblemStarHPWLY() {
+  double wall_time = get_wall_time();
+
+  std::vector<Net> &net_list = *NetList();
+
+  std::vector<Block> &block_list = *BlockList();
+  size_t coefficients_capacity = coefficientsy.capacity();
+  coefficientsy.resize(0);
+
+  int sz = by.size();
+  for (int i = 0; i < sz; ++i) {
+    by[i] = 0;
+  }
+
+  double center_weight = 0.03 / std::sqrt(sz);
+  double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
+  double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
+
+  double weight;
+  double weight_adjust;
+  double inv_p;
+  double decay_length = decay_factor * circuit_->AveBlkHeight();
+
+  double pin_loc;
+  int blk_num;
+  bool is_movable;
+  double offset_diff;
+
+  int driver_blk_num;
+  double driver_pin_loc;
+  bool driver_is_movable;
+  double driver_offset;
+
+  for (auto &net: net_list) {
+    if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
+    inv_p = net.InvP();
+
+    // assuming the 0-th pin in the net is the driver pin
+    driver_blk_num = net.blk_pin_list[0].BlkNum();
+    driver_pin_loc = net.blk_pin_list[0].AbsY();
+    driver_is_movable = net.blk_pin_list[0].BlkPtr()->IsMovable();
+    driver_offset = net.blk_pin_list[0].OffsetY();
+
+    net.UpdateMaxMinIndexY();
+    int max_pin_index = net.MaxBlkPinNumY();
+    int min_pin_index = net.MinBlkPinNumY();
+
+    int blk_num_max = net.blk_pin_list[max_pin_index].BlkNum();
+    double pin_loc_max = net.blk_pin_list[max_pin_index].AbsY();
+    bool is_movable_max = net.blk_pin_list[max_pin_index].BlkPtr()->IsMovable();
+    double offset_max = net.blk_pin_list[max_pin_index].OffsetY();
+
+    int blk_num_min = net.blk_pin_list[min_pin_index].BlkNum();
+    double pin_loc_min = net.blk_pin_list[min_pin_index].AbsY();
+    bool is_movable_min = net.blk_pin_list[min_pin_index].BlkPtr()->IsMovable();
+    double offset_min = net.blk_pin_list[min_pin_index].OffsetY();
+
+    for (auto &pair: net.blk_pin_list) {
+      blk_num = pair.BlkNum();
+      pin_loc = pair.AbsY();
+      is_movable = pair.BlkPtr()->IsMovable();
+
+      if (blk_num != driver_blk_num) {
+        double distance = std::fabs(pin_loc - driver_pin_loc);
+        weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
+        weight = inv_p / (distance + HeightEpsilon()) * weight_adjust;
+        //weight = inv_p / (distance + HeightEpsilon());
+        double adjust = 1.0;
+        if (driver_blk_num == blk_num_max) {
+          adjust = (driver_pin_loc - pin_loc) / (driver_pin_loc - pin_loc_min + HeightEpsilon());
+        } else if (driver_blk_num == blk_num_min) {
+          adjust = (pin_loc - driver_pin_loc) / (pin_loc_max - driver_pin_loc + HeightEpsilon());
+        } else {
+          if (pin_loc > driver_pin_loc) {
+            adjust = (pin_loc - driver_pin_loc) / (pin_loc_max - driver_pin_loc + HeightEpsilon());
+          } else {
+            adjust = (driver_pin_loc - pin_loc) / (driver_pin_loc - pin_loc_min + HeightEpsilon());
+          }
+        }
+        weight *= adjust;
+        if (!is_movable && driver_is_movable) {
+          by[0] += (pin_loc - driver_offset) * weight;
+          coefficientsy.emplace_back(driver_blk_num, driver_blk_num, weight);
+        } else if (is_movable && !driver_is_movable) {
+          by[blk_num] += (driver_pin_loc - driver_offset) * weight;
+          coefficientsy.emplace_back(blk_num, blk_num, weight);
+        } else if (is_movable && driver_is_movable) {
+          coefficientsy.emplace_back(blk_num, blk_num, weight);
+          coefficientsy.emplace_back(driver_blk_num, driver_blk_num, weight);
+          coefficientsy.emplace_back(blk_num, driver_blk_num, -weight);
+          coefficientsy.emplace_back(driver_blk_num, blk_num, -weight);
+          offset_diff = (driver_offset - pair.OffsetY()) * weight;
+          by[blk_num] += offset_diff;
+          by[driver_blk_num] -= offset_diff;
+        }
+      }
+    }
+  }
+
+  for (int i = 0; i < sz; ++i) { // add the diagonal non-zero element for fixed blocks
+    if (block_list[i].IsFixed()) {
+      coefficientsy.emplace_back(i, i, 1);
+      by[i] = block_list[i].LLY();
+    } else {
+      if (block_list[i].LLY() < RegionBottom() || block_list[i].URY() > RegionTop()) {
+        coefficientsy.emplace_back(i, i, center_weight);
+        by[i] += weight_center_y;
+      }
+    }
+  }
+
+  wall_time = get_wall_time() - wall_time;
+  tot_triplets_time_y += wall_time;
+}
+
 void GPSimPL::SolveProblemX() {
   double wall_time = get_wall_time();
-  //Ax.setFromTriplets(coefficientsx.begin(), coefficientsx.end());
+  Ax.setFromTriplets(coefficientsx.begin(), coefficientsx.end());
   wall_time = get_wall_time() - wall_time;
   tot_matrix_from_triplets_x += wall_time;
 
@@ -756,7 +1208,15 @@ void GPSimPL::InitialPlacement() {
     vx[i] = block_list[i].LLX();
   }
   for (int i = 0; i < b2b_update_max_iteration; ++i) {
-    BuildProblemB2BX();
+    if (net_model == 0) {
+      BuildProblemB2BX();
+    } else if (net_model == 1) {
+      BuildProblemStarModelX();
+    } else if (net_model == 2) {
+      BuildProblemHPWLX();
+    } else {
+      BuildProblemStarHPWLX();
+    }
     SolveProblemX();
     UpdateCGFlagsX();
     if (HPWLX_converge && i >= 10) {
@@ -773,7 +1233,15 @@ void GPSimPL::InitialPlacement() {
     vy[i] = block_list[i].LLY();
   }
   for (int i = 0; i < b2b_update_max_iteration; ++i) {
-    BuildProblemB2BY(); // fill A and b
+    if (net_model == 0) {
+      BuildProblemB2BY(); // fill A and b
+    } else if (net_model == 1) {
+      BuildProblemStarModelY();
+    } else if (net_model == 2) {
+      BuildProblemHPWLY();
+    } else {
+      BuildProblemStarHPWLY();
+    }
     SolveProblemY();// Solving:
     UpdateCGFlagsY();
     if (HPWLY_converge && i >= 10) {
@@ -1847,8 +2315,51 @@ void GPSimPL::UpdateAnchorLoc() {
   y_anchor_set = true;
 }
 
+void GPSimPL::BuildProblemB2BWithAnchorX() {
+  if (net_model == 0) {
+    BuildProblemB2BX();
+  } else if (net_model == 1) {
+    BuildProblemStarModelX();
+  } else if (net_model == 2) {
+    BuildProblemHPWLX();
+  } else {
+    BuildProblemStarHPWLX();
+  }
+
+  double wall_time = get_wall_time();
+
+  auto block_list = BlockList()->begin();
+  auto sz = BlockList()->size();
+
+  double weight = 0;
+  double pin_loc0, pin_loc1;
+  for (size_t i = 0; i < sz; ++i) {
+    if (block_list[i].IsFixed()) continue;
+    pin_loc0 = block_list[i].LLX();
+    pin_loc1 = x_anchor[i];
+    /*if (std::fabs(pin_loc0 - pin_loc1) < 10) {
+      weight = alpha;
+    } else {
+      weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
+    }*/
+    weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
+    bx[i] += pin_loc1 * weight;
+    coefficientsx.emplace_back(T(i, i, weight));
+  }
+  wall_time = get_wall_time() - wall_time;
+  tot_triplets_time_x += wall_time;
+}
+
 void GPSimPL::BuildProblemB2BWithAnchorY() {
-  BuildProblemB2BY();
+  if (net_model == 0) {
+    BuildProblemB2BY(); // fill A and b
+  } else if (net_model == 1) {
+    BuildProblemStarModelY();
+  } else if (net_model == 2) {
+    BuildProblemHPWLY();
+  } else {
+    BuildProblemStarHPWLY();
+  }
 
   double wall_time = get_wall_time();
 
@@ -1902,7 +2413,7 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
       }
       UpdateMaxMinX();
       for (int i = 0; i < 50; ++i) {
-        BuildProblemB2BX();
+        BuildProblemB2BWithAnchorX();
         SolveProblemX();
         UpdateCGFlagsX();
         if (HPWLX_converge && i >= 2) {
@@ -2050,7 +2561,7 @@ bool GPSimPL::StartPlacement() {
 
   InitialPlacement();
 
-  if (is_dump) DumpResult("cg_result_0.txt");
+  if (true) DumpResult("cg_result_0.txt");
 
   //std::cout << cg_total_hpwl_ << "  " << circuit_->HPWL() << "\n";
 
@@ -2065,7 +2576,7 @@ bool GPSimPL::StartPlacement() {
       printf("It %d: \t%e  %e\n", cur_iter_, cg_total_hpwl_, lal_total_hpwl_);
     }
     if (HPWL_LAL_converge) { // if HPWL converges
-      if (cur_iter_ >= 80) {
+      if (cur_iter_ >= 30) {
         if (globalVerboseLevel >= LOG_CRITICAL) {
           std::cout << "Iterative look-ahead legalization complete" << std::endl;
           std::cout << "Total number of iteration: " << cur_iter_ + 1 << std::endl;
@@ -2074,7 +2585,7 @@ bool GPSimPL::StartPlacement() {
       }
     }
     QuadraticPlacementWithAnchor();
-    if (is_dump) DumpResult("cg_result_" + std::to_string(cur_iter_ + 1) + ".txt");
+    if (true) DumpResult("cg_result_" + std::to_string(cur_iter_ + 1) + ".txt");
   }
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "\033[0;36m"

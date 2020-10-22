@@ -32,11 +32,11 @@ int main() {
 
   //printf("Galois thread %d\n", num_of_thread);
 
-  //int num_of_thread_openmp = 6;
-  //omp_set_num_threads(num_of_thread_openmp);
+  int num_of_thread_openmp = 1;
+  omp_set_num_threads(num_of_thread_openmp);
 
   Eigen::initParallel();
-  //Eigen::setNbThreads(2);
+  Eigen::setNbThreads(1);
   printf("Eigen thread %d\n", Eigen::nbThreads());
 
   double wall_time = get_wall_time();
@@ -136,10 +136,10 @@ int main() {
   circuit.SaveDefFile("circuit", "", def_file_name, 1, 1, 2, 1);
   circuit.SaveDefFile("circuit", "_io", def_file_name, 1, 1, 1, 1);
   circuit.SaveDefFile("circuit", "_filling", def_file_name, 1, 4, 2, 1);
-  /*circuit.InitNetFanoutHisto();
-  circuit.ReportNetFanoutHisto();
+  circuit.InitNetFanoutHistogram();
+  circuit.ReportNetFanoutHistogram();
   circuit.ReportHPWLHistogramLinear();
-  circuit.ReportHPWLHistogramLogarithm();*/
+  circuit.ReportHPWLHistogramLogarithm();
 
   delete gb_placer;
   delete legalizer;

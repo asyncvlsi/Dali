@@ -106,6 +106,7 @@ class GPSimPL : public Placer {
   double tot_loc_update_time_x = 0;
   double tot_loc_update_time_y = 0;
 
+  int net_model = 0; // 0: b2b; 1: star; 2:HPWL; 3: StarHPWL
   void BlockLocRandomInit();
   void BlockLocCenterInit();
   void CGInit();
@@ -121,6 +122,12 @@ class GPSimPL : public Placer {
   void AddMatrixElement(Net &net, int i, int j, std::vector<T> &coefficients);
   void BuildProblemB2BX();
   void BuildProblemB2BY();
+  void BuildProblemStarModelX();
+  void BuildProblemStarModelY();
+  void BuildProblemHPWLX();
+  void BuildProblemHPWLY();
+  void BuildProblemStarHPWLX();
+  void BuildProblemStarHPWLY();
   void SolveProblemX();
   void SolveProblemY();
   void PullBlockBackToRegion();
@@ -163,9 +170,20 @@ class GPSimPL : public Placer {
   void LookAheadLegalization();
   void UpdateLALConvergeState();
   void UpdateAnchorLoc();
+  void BuildProblemB2BWithAnchorX();
   void BuildProblemB2BWithAnchorY();
   void QuadraticPlacementWithAnchor();
-  void UpdateAnchorNetWeight() { alpha = 0.005 * cur_iter_; }
+  void UpdateAnchorNetWeight() {
+    if (net_model==0) {
+      alpha = 0.005 * cur_iter_;
+    } else if (net_model==1) {
+      alpha = 0.002 * cur_iter_;
+    } else if (net_model==2) {
+      alpha = 0.005 * cur_iter_;
+    } else {
+      alpha = 0.002 * cur_iter_;
+    }
+  }
 
   void CheckAndShift();
 
