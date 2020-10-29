@@ -31,6 +31,7 @@ class Net {
   NetAux *aux_ptr_;
  public:
   std::vector<BlkPinPair> blk_pin_list;
+  int driver_pin_index = -1;
   std::vector<IOPin *> iopin_list;
 
   Net(std::pair<const std::string, int> *name_num_pair_ptr, int capacity, double weight);

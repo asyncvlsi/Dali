@@ -37,7 +37,7 @@ class Block {
   std::pair<const std::string, int> *name_num_pair_ptr_; // name for finding its index in block_list
   double llx_; // lower x coordinate, data type double, for global placement
   double lly_; // lower y coordinate
-  std::vector<int> net_list_; // the list of nets connect to this cell
+  std::vector<int> net_list_; // the list of nets connected to this cell
   PlaceStatus place_status_; // placement status, i.e, PLACED, FIXED, UNPLACED
   BlockOrient orient_; // orientation, normally, N or FS
   BlockAux *aux_ptr_; // points to auxiliary information if needed

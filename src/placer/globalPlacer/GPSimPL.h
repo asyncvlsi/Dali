@@ -96,6 +96,10 @@ class GPSimPL : public Placer {
   std::vector<T> coefficientsy;
   Eigen::ConjugateGradient<SpMat, Eigen::Lower|Eigen::Upper> cgx;
   Eigen::ConjugateGradient<SpMat, Eigen::Lower|Eigen::Upper> cgy;
+  std::vector<std::vector<BlkPairNets*>> pair_connect;
+  std::vector<BlkPairNets> diagonal_pair;
+  std::vector<SpMat::InnerIterator> SpMat_diag_x;
+  std::vector<SpMat::InnerIterator> SpMat_diag_y;
 
   double tot_triplets_time_x = 0;
   double tot_triplets_time_y = 0;
@@ -106,9 +110,10 @@ class GPSimPL : public Placer {
   double tot_loc_update_time_x = 0;
   double tot_loc_update_time_y = 0;
 
-  int net_model = 0; // 0: b2b; 1: star; 2:HPWL; 3: StarHPWL
+  int net_model = 3; // 0: b2b; 1: star; 2:HPWL; 3: StarHPWL
   void BlockLocRandomInit();
   void BlockLocCenterInit();
+  void DriverLoadPairInit();
   void CGInit();
   void InitCGFlags();
   void UpdateCGFlagsX();

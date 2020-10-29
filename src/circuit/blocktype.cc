@@ -23,13 +23,14 @@ void BlockType::Report() const {
   }
 }
 
-Pin *BlockType::AddPin(std::string &pin_name) {
+Pin *BlockType::AddPin(std::string &pin_name, bool is_input) {
   bool pin_not_exist = (pin_name_num_map_.find(pin_name) == pin_name_num_map_.end());
   Assert(pin_not_exist,
          "Cannot add this pin in BlockType: " + *NamePtr() + ", because this pin exists in blk_pin_list: " + pin_name);
   pin_name_num_map_.insert(std::pair<std::string, int>(pin_name, pin_list_.size()));
   std::pair<const std::string, int> *name_num_ptr = &(*pin_name_num_map_.find(pin_name));
   pin_list_.emplace_back(name_num_ptr, this);
+  pin_list_.back().SetIOType(is_input);
   return &pin_list_.back();
 }
 

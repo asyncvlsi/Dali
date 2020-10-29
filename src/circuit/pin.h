@@ -54,7 +54,7 @@ class Pin {
     rect_list_.emplace_back(llx, lly, urx, ury);
   }
 
-  bool GetIOType() const { return is_input_; }
+  bool IsInput() const { return is_input_; }
   void SetIOType(bool is_input) { is_input_ = is_input; }
 
   bool RectEmpty() const { return rect_list_.empty(); }

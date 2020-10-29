@@ -24,6 +24,7 @@ Net::Net(std::pair<const std::string, int> *name_num_pair_ptr, int capacity, dou
 void Net::AddBlockPinPair(Block *block_ptr, Pin *pin_ptr) {
   if (blk_pin_list.size() < blk_pin_list.capacity()) {
     blk_pin_list.emplace_back(block_ptr, pin_ptr);
+    if (!(pin_ptr->IsInput())) driver_pin_index = int(blk_pin_list.size())-1;
     if (!block_ptr->IsMovable()) {
       ++cnt_fixed_;
     }

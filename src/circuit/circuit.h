@@ -10,6 +10,9 @@
 #include <unordered_map>
 #include <vector>
 
+#include <boost/functional/hash.hpp>
+
+#include "blkpairnets.h"
 #include "block.h"
 #include "blocktype.h"
 #include "blocktypewell.h"
@@ -118,6 +121,9 @@ class Circuit {
  public:
 
   Circuit();
+  std::vector<BlkPairNets> blk_pair_net_list_; // lower triangle of the driver-load pair
+  std::unordered_map<std::pair<int, int>, int, boost::hash<std::pair<int, int>>> blk_pair_map_;
+
   /****API to initialize circuit
    * 1. from openDB
    * 2. from LEF/DEF directly using a naive parser
@@ -260,16 +266,16 @@ class Circuit {
   BlockType *AddWellTapBlockType(std::string &block_type_name, double width, double height);
 
   // add a cell pin with a given name to a BlockType, this method is not the optimal one, but it is very safe to use.
-  Pin *AddBlkTypePin(std::string &block_type_name, std::string &pin_name) {
+  Pin *AddBlkTypePin(std::string &block_type_name, std::string &pin_name, bool is_input) {
     BlockType *blk_type_ptr = getBlockType(block_type_name);
     Assert(blk_type_ptr != nullptr,
            "Cannot add BlockType pins because there is no such a BlockType: " + block_type_name);
-    return blk_type_ptr->AddPin(pin_name);
+    return blk_type_ptr->AddPin(pin_name, is_input);
   }
 
   // add a cell pin with a given name to a BlockType, users must guarantee the pointer @param is valid.
-  Pin *AddBlkTypePin(BlockType *blk_type_ptr, std::string &pin_name) {
-    return blk_type_ptr->AddPin(pin_name);
+  Pin *AddBlkTypePin(BlockType *blk_type_ptr, std::string &pin_name, bool is_input) {
+    return blk_type_ptr->AddPin(pin_name, is_input);
   }
 
   // add a rectangle to a block pin, this method is not the optimal one, but it is very safe to use. Unit in grid value.
@@ -361,6 +367,7 @@ class Circuit {
 
   // get the pointer to the block list.
   std::vector<Block> *getBlockList() { return &(design_.block_list); }
+  std::vector<Block> &BlockListRef() { return design_.block_list; }
 
   // check if a block with the given name exists or not.
   bool IsBlockExist(std::string &block_name) {
@@ -431,6 +438,7 @@ class Circuit {
 
   // get the pointer to the net list.
   std::vector<Net> *getNetList() { return &(design_.net_list); }
+  std::vector<Net> &NetListRef() { return design_.net_list; }
 
   // check if a Net with a given name exists or not.
   bool IsNetExist(std::string &net_name) {
@@ -579,6 +587,7 @@ class Circuit {
   }
 
   /****Utility member functions****/
+  void BuildBlkPairNets();
   void NetSortBlkPin();
 
   // returns HPWL in the x direction, considering cell pin offsets, unit in micron.
@@ -628,7 +637,6 @@ class Circuit {
                    int save_cell,
                    int save_iopin,
                    int save_net);
-
 
   void SaveIODefFile(std::string const &name_of_file, std::string const &def_file_name);
   void SaveDefWell(std::string const &name_of_file, std::string const &def_file_name, bool is_no_normal_cell = true);

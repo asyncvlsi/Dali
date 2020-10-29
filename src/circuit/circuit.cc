@@ -148,7 +148,15 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
       lly = geo_shape->yMin() / tech_.grid_value_y_ / tech_.database_microns_;
       ury = geo_shape->yMax() / tech_.grid_value_y_ / tech_.database_microns_;
 
-      Pin *new_pin = AddBlkTypePin(blk_type, pin_name);
+      bool is_input = true;
+      if (terminal->getIoType() == odb::dbIoType::INPUT) {
+        is_input = true;
+      } else if (terminal->getIoType() == odb::dbIoType::OUTPUT) {
+        is_input = false;
+      } else {
+        Assert(false, "Unsupported terminal IO type\n");
+      }
+      Pin *new_pin = AddBlkTypePin(blk_type, pin_name, is_input);
       AddBlkTypePinRect(new_pin, llx, lly, urx, ury);
     }
   }
@@ -452,7 +460,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
           std::string pin_name = pin_field[1];
           std::string end_pin_flag = "END " + pin_name;
           Pin *new_pin = nullptr;
-          new_pin = new_block_type->AddPin(pin_name);
+          new_pin = new_block_type->AddPin(pin_name, true);
           // skip to "PORT" rectangle list
           do {
             getline(ist, line);
@@ -1102,7 +1110,8 @@ void Circuit::AddDummyIOPinBlockType() {
   std::string iopin_type_name("PIN");
   auto io_pin_type = AddBlockTypeWithGridUnit(iopin_type_name, 0, 0);
   std::string tmp_pin_name("pin");
-  Pin *pin = io_pin_type->AddPin(tmp_pin_name);
+  // TO-DO, the value of @param is_input may not be true
+  Pin *pin = io_pin_type->AddPin(tmp_pin_name, true);
   pin->AddRect(0, 0, 0, 0);
   tech_.io_dummy_blk_type_ptr_ = io_pin_type;
 }
@@ -1281,6 +1290,81 @@ void Circuit::ReportBriefSummary() const {
               << "    top:    " << RegionURY() << "\n"
               << "  white space utility: " << WhiteSpaceUsage() << "\n";
   }
+}
+
+void Circuit::BuildBlkPairNets() {
+  // for each net, we decompose it, and enumerate all driver-load pair
+  for (auto &net: design_.net_list) {
+    //std::cout << net.NameStr() << "\n";
+    int sz = net.blk_pin_list.size();
+    int driver_index = -1;
+    // find if there is a driver pin in this net
+    // if a net contains a unplaced IOPin, then there might be no driver pin, this case is ignored for now
+    // we also assume there is only one driver pin
+    for (int i = 0; i < sz; ++i) {
+      BlkPinPair &blk_pin_pair = net.blk_pin_list[i];
+      if (!(blk_pin_pair.pin_ptr_->IsInput())) {
+        driver_index = i;
+        break;
+      }
+    }
+    if (driver_index == -1) continue;
+
+    int driver_blk_num = net.blk_pin_list[driver_index].BlkNum();
+    for (int i = 0; i < sz; ++i) {
+      if (i == driver_index) continue;
+      int load_blk_num = net.blk_pin_list[i].BlkNum();
+      if (driver_blk_num == load_blk_num) continue;
+      int num0 = std::max(driver_blk_num, load_blk_num);
+      int num1 = std::min(driver_blk_num, load_blk_num);
+      std::pair<int, int> key = std::make_pair(num0, num1);
+      if (blk_pair_map_.find(key) == blk_pair_map_.end()) {
+        int val = int(blk_pair_net_list_.size());
+        blk_pair_map_.insert({key, val});
+        blk_pair_net_list_.emplace_back(num0, num1);
+      }
+      int pair_index = blk_pair_map_[key];
+      int load_index = i;
+      blk_pair_net_list_[pair_index].edges.emplace_back(&net, driver_index, load_index);
+    }
+  }
+
+  // sort driver-load pair for better memory access
+//  std::sort(blk_pair_net_list_.begin(),
+//            blk_pair_net_list_.end(),
+//            [](const BlkPairNets &blk_pair0, const BlkPairNets &blk_pair1) {
+//              if ((blk_pair0.blk_num0 < blk_pair1.blk_num0) ||
+//                  (blk_pair0.blk_num0 == blk_pair1.blk_num0 && blk_pair0.blk_num1 < blk_pair1.blk_num1)) {
+//                return true;
+//              }
+//            });
+//  blk_pair_map_.clear();
+//  int pair_net_sz = blk_pair_net_list_.size();
+//  for (int i = 0; i < pair_net_sz; ++i) {
+//    int num0 = blk_pair_net_list_[i].blk_num0;
+//    int num1 = blk_pair_net_list_[i].blk_num1;
+//    std::pair<int, int> key = std::make_pair(num0, num1);
+//    blk_pair_map_.insert({key, i});
+//  }
+
+//  std::ofstream ost("test.txt");
+//  //int pair_net_sz = blk_pair_net_list_.size();
+//  for (int i=0; i<pair_net_sz; ++i) {
+//    int num0 = blk_pair_net_list_[i].blk_num0;
+//    int num1 = blk_pair_net_list_[i].blk_num1;
+//    ost << "-(" << num0 << " " << design_.block_list[num0].Name() << ", "
+//                << num1 << " " << design_.block_list[num1].Name() << ")" << "\n";
+//    for (auto &edge: blk_pair_net_list_[i].edges) {
+//      Net *net_ptr = edge.net;
+//      int d_index = edge.d;
+//      int l_index = edge.l;
+//      ost << "\t" << *(net_ptr->blk_pin_list[d_index].BlockNamePtr())
+//          << "  " << *(net_ptr->blk_pin_list[d_index].PinNamePtr())
+//          << ", " << *(net_ptr->blk_pin_list[l_index].BlockNamePtr())
+//          << "  " << *(net_ptr->blk_pin_list[l_index].PinNamePtr()) << "\n";
+//    }
+//    if (i>10) break;
+//  }
 }
 
 void Circuit::NetSortBlkPin() {
@@ -2471,7 +2555,7 @@ void Circuit::SaveBookshelfNet(std::string const &name_of_file) {
     ost << "NetDegree : " << net.blk_pin_list.size() << "   " << *net.Name() << "\n";
     for (auto &pair: net.blk_pin_list) {
       ost << "\t" << *(pair.BlkPtr()->NamePtr()) << "\t";
-      if (pair.PinPtr()->GetIOType()) {
+      if (pair.PinPtr()->IsInput()) {
         ost << "I : ";
       } else {
         ost << "O : ";

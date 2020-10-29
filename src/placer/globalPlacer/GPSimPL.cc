@@ -48,7 +48,7 @@ void GPSimPL::BlockLocRandomInit() {
     printf("HPWL before initialization: %e\n", circuit_->HPWL());
   }
 
-  for (auto &block: *BlockList()) {
+  for (auto &block: circuit_->BlockListRef()) {
     if (block.IsMovable()) {
       block.setCenterX(RegionLeft() + region_width * distribution(generator));
       block.setCenterY(RegionBottom() + region_height * distribution(generator));
@@ -66,7 +66,7 @@ void GPSimPL::BlockLocRandomInit() {
 void GPSimPL::BlockLocCenterInit() {
   double region_center_x = (RegionRight() + RegionLeft()) / 2.0;
   double region_center_y = (RegionTop() + RegionBottom()) / 2.0;
-  for (auto &block: *BlockList()) {
+  for (auto &block: circuit_->BlockListRef()) {
     if (block.IsMovable()) {
       block.setCenterX(region_center_x);
       block.setCenterY(region_center_y);
@@ -76,6 +76,132 @@ void GPSimPL::BlockLocCenterInit() {
     std::cout << "Block location initialization complete\n";
   }
   ReportHPWL(LOG_INFO);
+}
+
+void GPSimPL::DriverLoadPairInit() {
+  std::vector<BlkPairNets> &pair_list = circuit_->blk_pair_net_list_;
+  std::unordered_map<std::pair<int, int>, int, boost::hash<std::pair<int, int>>> &pair_map = circuit_->blk_pair_map_;
+  std::vector<Block> &block_list = circuit_->BlockListRef();
+  int sz = block_list.size();
+
+  pair_connect.resize(sz);
+  for (auto &blk_pair: pair_list) {
+    int num0 = blk_pair.blk_num0;
+    int num1 = blk_pair.blk_num1;
+    //std::cout << num0 << " " << num1 << "\n";
+    pair_connect[num0].push_back(&blk_pair);
+    pair_connect[num1].push_back(&blk_pair);
+  }
+
+  diagonal_pair.clear();
+  diagonal_pair.reserve(sz);
+  for (int i = 0; i < sz; ++i) {
+    diagonal_pair.emplace_back(i, i);
+    pair_connect[i].push_back(&(diagonal_pair[i]));
+    std::sort(pair_connect[i].begin(),
+              pair_connect[i].end(),
+              [](const BlkPairNets *blk_pair0, const BlkPairNets *blk_pair1) {
+                if (blk_pair0->blk_num0 == blk_pair1->blk_num0) {
+                  return blk_pair0->blk_num1 < blk_pair1->blk_num1;
+                } else {
+                  return blk_pair0->blk_num0 < blk_pair1->blk_num0;
+                }
+              });
+  }
+
+  std::vector<int> row_size(sz, 1);
+  for (int i = 0; i < sz; ++i) {
+    for (auto &blk_pair: pair_connect[i]) {
+      int num0 = blk_pair->blk_num0;
+      int num1 = blk_pair->blk_num1;
+      if (num0 == num1) continue;
+      if (block_list[num0].IsMovable() && block_list[num1].IsMovable()) {
+        ++row_size[i];
+      }
+    }
+  }
+  Ax.reserve(row_size);
+  SpMat_diag_x.resize(sz);
+  for (int i = 0; i < sz; ++i) {
+    for (auto &blk_pair: pair_connect[i]) {
+      int num0 = blk_pair->blk_num0;
+      int num1 = blk_pair->blk_num1;
+      if (block_list[num0].IsMovable() && block_list[num1].IsMovable()) {
+        int col;
+        if (num0 == i) {
+          col = num1;
+        } else {
+          col = num0;
+        }
+        Ax.insertBackUncompressed(i, col) = 0;
+      }
+    }
+    std::pair<int, int> key = std::make_pair(0, 0);
+    for (SpMat::InnerIterator it(Ax, i); it; ++it) {
+      int row = it.row();
+      int col = it.col();
+      if (row == col) {
+        SpMat_diag_x[i] = it;
+        continue;
+      }
+      key.first = std::max(row, col);
+      key.second = std::min(row, col);
+      if (pair_map.find(key) == pair_map.end()) {
+        std::cout << row << " " << col << std::endl;
+        Assert(false, "Cannot find block pair in the database, something wrong happens\n");
+      }
+      int pair_index = pair_map[key];
+      if (pair_list[pair_index].blk_num0 == row) {
+        pair_list[pair_index].it01x = it;
+      } else {
+        pair_list[pair_index].it10x = it;
+      }
+    }
+  }
+
+  Ay.reserve(row_size);
+  SpMat_diag_y.resize(sz);
+  for (int i = 0; i < sz; ++i) {
+    for (auto &blk_pair: pair_connect[i]) {
+      int num0 = blk_pair->blk_num0;
+      int num1 = blk_pair->blk_num1;
+      if (block_list[num0].IsMovable() && block_list[num1].IsMovable()) {
+        int col;
+        if (num0 == i) {
+          col = num1;
+        } else {
+          col = num0;
+        }
+        Ay.insertBackUncompressed(i, col) = 0;
+      }
+    }
+    std::pair<int, int> key = std::make_pair(0, 0);
+    for (SpMat::InnerIterator it(Ay, i); it; ++it) {
+      int row = it.row();
+      int col = it.col();
+      if (row == col) {
+        SpMat_diag_y[i] = it;
+        continue;
+      }
+      key.first = std::max(row, col);
+      key.second = std::min(row, col);
+      if (pair_map.find(key) == pair_map.end()) {
+        std::cout << row << " " << col << std::endl;
+        Assert(false, "Cannot find block pair in the database, something wrong happens\n");
+      }
+      int pair_index = pair_map[key];
+      if (pair_list[pair_index].blk_num0 == row) {
+        pair_list[pair_index].it01y = it;
+      } else {
+        pair_list[pair_index].it10y = it;
+      }
+    }
+  }
+
+//  std::cout << SpMat_diag_x[0].value() << "\n";
+//  SpMat_diag_x[0].valueRef() = 1;
+//  std::cout << SpMat_diag_x[0].value() << "\n";
+//  exit(1);
 }
 
 void GPSimPL::CGInit() {
@@ -129,8 +255,11 @@ void GPSimPL::UpdateCGFlagsX() {
 }
 
 void GPSimPL::UpdateMaxMinX() {
-  for (auto &net: *NetList()) {
-    net.UpdateMaxMinIndexX();
+  std::vector<Net> &net_list = circuit_->NetListRef();
+  int sz = net_list.size();
+#pragma omp parallel for
+  for (int i = 0; i < sz; ++i) {
+    net_list[i].UpdateMaxMinIndexX();
   }
 }
 
@@ -163,8 +292,11 @@ void GPSimPL::UpdateCGFlagsY() {
 }
 
 void GPSimPL::UpdateMaxMinY() {
-  for (auto &net: *NetList()) {
-    net.UpdateMaxMinIndexY();
+  std::vector<Net> &net_list = circuit_->NetListRef();
+  int sz = net_list.size();
+#pragma omp parallel for
+  for (int i = 0; i < sz; ++i) {
+    net_list[i].UpdateMaxMinIndexY();
   }
 }
 
@@ -225,7 +357,7 @@ void GPSimPL::BuildProblemB2BX() {
 
   std::vector<Net> &net_list = *NetList();
 
-  std::vector<Block> &block_list = *BlockList();
+  std::vector<Block> &block_list = circuit_->BlockListRef();
   size_t coefficients_capacity = coefficientsx.capacity();
   coefficientsx.resize(0);
 
@@ -367,7 +499,7 @@ void GPSimPL::BuildProblemB2BY() {
 
   UpdateMaxMinY();
 
-  std::vector<Block> &block_list = *BlockList();
+  std::vector<Block> &block_list = circuit_->BlockListRef();
   size_t coefficients_capacity = coefficientsy.capacity();
   coefficientsy.resize(0);
 
@@ -503,7 +635,7 @@ void GPSimPL::BuildProblemStarModelX() {
 
   std::vector<Net> &net_list = *NetList();
 
-  std::vector<Block> &block_list = *BlockList();
+  std::vector<Block> &block_list = circuit_->BlockListRef();
   size_t coefficients_capacity = coefficientsx.capacity();
   coefficientsx.resize(0);
 
@@ -599,7 +731,7 @@ void GPSimPL::BuildProblemStarModelY() {
 
   std::vector<Net> &net_list = *NetList();
 
-  std::vector<Block> &block_list = *BlockList();
+  std::vector<Block> &block_list = circuit_->BlockListRef();
   size_t coefficients_capacity = coefficientsy.capacity();
   coefficientsy.resize(0);
 
@@ -687,7 +819,7 @@ void GPSimPL::BuildProblemHPWLX() {
 
   std::vector<Net> &net_list = *NetList();
 
-  std::vector<Block> &block_list = *BlockList();
+  std::vector<Block> &block_list = circuit_->BlockListRef();
   size_t coefficients_capacity = coefficientsx.capacity();
   coefficientsx.resize(0);
 
@@ -782,7 +914,7 @@ void GPSimPL::BuildProblemHPWLX() {
 void GPSimPL::BuildProblemHPWLY() {
   double wall_time = get_wall_time();
 
-  std::vector<Block> &block_list = *BlockList();
+  std::vector<Block> &block_list = circuit_->BlockListRef();
   size_t coefficients_capacity = coefficientsy.capacity();
   coefficientsy.resize(0);
 
@@ -875,12 +1007,10 @@ void GPSimPL::BuildProblemHPWLY() {
 
 void GPSimPL::BuildProblemStarHPWLX() {
   double wall_time = get_wall_time();
+  UpdateMaxMinX();
 
-  std::vector<Net> &net_list = *NetList();
-
-  std::vector<Block> &block_list = *BlockList();
-  size_t coefficients_capacity = coefficientsx.capacity();
-  coefficientsx.resize(0);
+  std::vector<Net> &net_list = circuit_->NetListRef();
+  std::vector<Block> &block_list = circuit_->BlockListRef();
 
   int sz = bx.size();
   for (int i = 0; i < sz; ++i) {
@@ -891,104 +1021,115 @@ void GPSimPL::BuildProblemStarHPWLX() {
   double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
   double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
 
-  double weight;
-  double weight_adjust;
-  double inv_p;
   double decay_length = decay_factor * circuit_->AveBlkHeight();
 
-  double pin_loc;
-  int blk_num;
-  bool is_movable;
-  double offset_diff;
+  int pair_sz = circuit_->blk_pair_net_list_.size();
+#pragma omp parallel for
+  for (int i = 0; i < pair_sz; ++i) {
+    BlkPairNets &blk_pair = circuit_->blk_pair_net_list_[i];
+    blk_pair.ClearX();
+    for (auto &edge: blk_pair.edges) {
+      Net &net = *(edge.net);
+      int d = edge.d;
+      int l = edge.l;
+      int driver_blk_num = net.blk_pin_list[d].BlkNum();
+      double driver_pin_loc = net.blk_pin_list[d].AbsX();
+      bool driver_is_movable = net.blk_pin_list[d].BlkPtr()->IsMovable();
+      double driver_offset = net.blk_pin_list[d].OffsetX();
 
-  int driver_blk_num;
-  double driver_pin_loc;
-  bool driver_is_movable;
-  double driver_offset;
+      int load_blk_num = net.blk_pin_list[l].BlkNum();
+      double load_pin_loc = net.blk_pin_list[l].AbsX();
+      bool load_is_movable = net.blk_pin_list[l].BlkPtr()->IsMovable();
+      double load_offset = net.blk_pin_list[l].OffsetX();
 
-  for (auto &net: net_list) {
-    if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
-    inv_p = net.InvP();
+      int max_pin_index = net.MaxBlkPinNumX();
+      int min_pin_index = net.MinBlkPinNumX();
 
-    // assuming the 0-th pin in the net is the driver pin
-    driver_blk_num = net.blk_pin_list[0].BlkNum();
-    driver_pin_loc = net.blk_pin_list[0].AbsX();
-    driver_is_movable = net.blk_pin_list[0].BlkPtr()->IsMovable();
-    driver_offset = net.blk_pin_list[0].OffsetX();
+      int blk_num_max = net.blk_pin_list[max_pin_index].BlkNum();
+      double pin_loc_max = net.blk_pin_list[max_pin_index].AbsX();
+      bool is_movable_max = net.blk_pin_list[max_pin_index].BlkPtr()->IsMovable();
+      double offset_max = net.blk_pin_list[max_pin_index].OffsetX();
 
-    net.UpdateMaxMinIndexX();
-    int max_pin_index = net.MaxBlkPinNumX();
-    int min_pin_index = net.MinBlkPinNumX();
+      int blk_num_min = net.blk_pin_list[min_pin_index].BlkNum();
+      double pin_loc_min = net.blk_pin_list[min_pin_index].AbsX();
+      bool is_movable_min = net.blk_pin_list[min_pin_index].BlkPtr()->IsMovable();
+      double offset_min = net.blk_pin_list[min_pin_index].OffsetX();
 
-    int blk_num_max = net.blk_pin_list[max_pin_index].BlkNum();
-    double pin_loc_max = net.blk_pin_list[max_pin_index].AbsX();
-    bool is_movable_max = net.blk_pin_list[max_pin_index].BlkPtr()->IsMovable();
-    double offset_max = net.blk_pin_list[max_pin_index].OffsetX();
-
-    int blk_num_min = net.blk_pin_list[min_pin_index].BlkNum();
-    double pin_loc_min = net.blk_pin_list[min_pin_index].AbsX();
-    bool is_movable_min = net.blk_pin_list[min_pin_index].BlkPtr()->IsMovable();
-    double offset_min = net.blk_pin_list[min_pin_index].OffsetX();
-
-    for (auto &pair: net.blk_pin_list) {
-      blk_num = pair.BlkNum();
-      pin_loc = pair.AbsX();
-      is_movable = pair.BlkPtr()->IsMovable();
-
-      if (blk_num != driver_blk_num) {
-        double distance = std::fabs(pin_loc - driver_pin_loc);
-        weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
-        weight = inv_p / (distance + WidthEpsilon()) * weight_adjust;
-        //weight = inv_p / (distance + WidthEpsilon());
-        double adjust = 1.0;
-        if (driver_blk_num == blk_num_max) {
-          adjust = (driver_pin_loc - pin_loc) / (driver_pin_loc - pin_loc_min + WidthEpsilon());
-        } else if (driver_blk_num == blk_num_min) {
-          adjust = (pin_loc - driver_pin_loc) / (pin_loc_max - driver_pin_loc + WidthEpsilon());
+      double distance = std::fabs(load_pin_loc - driver_pin_loc);
+      double weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
+      double inv_p = net.InvP();
+      double weight = inv_p / (distance + WidthEpsilon()) * weight_adjust;
+      //weight = inv_p / (distance + WidthEpsilon());
+      double adjust = 1.0;
+      if (driver_blk_num == blk_num_max) {
+        adjust = (driver_pin_loc - load_pin_loc) / (driver_pin_loc - pin_loc_min + WidthEpsilon());
+      } else if (driver_blk_num == blk_num_min) {
+        adjust = (load_pin_loc - driver_pin_loc) / (pin_loc_max - driver_pin_loc + WidthEpsilon());
+      } else {
+        if (load_pin_loc > driver_pin_loc) {
+          adjust = (load_pin_loc - driver_pin_loc) / (pin_loc_max - driver_pin_loc + WidthEpsilon());
         } else {
-          if (pin_loc > driver_pin_loc) {
-            adjust = (pin_loc - driver_pin_loc) / (pin_loc_max - driver_pin_loc + WidthEpsilon());
-          } else {
-            adjust = (driver_pin_loc - pin_loc) / (driver_pin_loc - pin_loc_min + WidthEpsilon());
-          }
+          adjust = (driver_pin_loc - load_pin_loc) / (driver_pin_loc - pin_loc_min + WidthEpsilon());
         }
-        weight *= adjust;
-        if (!is_movable && driver_is_movable) {
-          bx[0] += (pin_loc - driver_offset) * weight;
-          coefficientsx.emplace_back(driver_blk_num, driver_blk_num, weight);
-        } else if (is_movable && !driver_is_movable) {
-          bx[blk_num] += (driver_pin_loc - driver_offset) * weight;
-          coefficientsx.emplace_back(blk_num, blk_num, weight);
-        } else if (is_movable && driver_is_movable) {
-          coefficientsx.emplace_back(blk_num, blk_num, weight);
-          coefficientsx.emplace_back(driver_blk_num, driver_blk_num, weight);
-          coefficientsx.emplace_back(blk_num, driver_blk_num, -weight);
-          coefficientsx.emplace_back(driver_blk_num, blk_num, -weight);
-          offset_diff = (driver_offset - pair.OffsetX()) * weight;
-          bx[blk_num] += offset_diff;
-          bx[driver_blk_num] -= offset_diff;
+      }
+      weight *= adjust;
+      if (!load_is_movable && driver_is_movable) {
+        if (driver_blk_num == blk_pair.blk_num0) {
+          blk_pair.b0x += (load_pin_loc - driver_offset) * weight;
+          blk_pair.e00x += weight;
+        } else {
+          blk_pair.b1x += (load_pin_loc - driver_offset) * weight;
+          blk_pair.e11x += weight;
+        }
+      } else if (load_is_movable && !driver_is_movable) {
+        if (load_blk_num == blk_pair.blk_num0) {
+          blk_pair.b0x += (driver_pin_loc - driver_offset) * weight;
+          blk_pair.e00x += weight;
+        } else {
+          blk_pair.b1x += (driver_pin_loc - driver_offset) * weight;
+          blk_pair.e11x += weight;
+        }
+      } else if (load_is_movable && driver_is_movable) {
+        double offset_diff = (driver_offset - load_offset) * weight;
+        blk_pair.e00x += weight;
+        blk_pair.e01x -= weight;
+        blk_pair.e10x -= weight;
+        blk_pair.e11x += weight;
+        if (driver_blk_num == blk_pair.blk_num0) {
+          blk_pair.b0x -= offset_diff;
+          blk_pair.b1x += offset_diff;
+        } else {
+          blk_pair.b0x += offset_diff;
+          blk_pair.b1x -= offset_diff;
         }
       }
     }
+    blk_pair.WriteX();
   }
 
+#pragma omp parallel for
   for (int i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) {
-      coefficientsx.emplace_back(i, i, 1);
+      SpMat_diag_x[i].valueRef() = 1;
       bx[i] = block_list[i].LLX();
     } else {
+      double diag_val = 0;
+      double b = 0;
+      for (auto &blk_pair: pair_connect[i]) {
+        if (i == blk_pair->blk_num0) {
+          diag_val += blk_pair->e00x;
+          b += blk_pair->b0x;
+        } else {
+          diag_val += blk_pair->e11x;
+          b += blk_pair->b1x;
+        }
+      }
+      SpMat_diag_x[i].valueRef() = diag_val;
+      bx[i] = b;
       if (block_list[i].LLX() < RegionLeft() || block_list[i].URX() > RegionRight()) {
-        coefficientsx.emplace_back(i, i, center_weight);
+        SpMat_diag_x[i].valueRef() += center_weight;
         bx[i] += weight_center_x;
       }
-    }
-  }
-
-  if (globalVerboseLevel >= LOG_WARNING) {
-    if (coefficients_capacity != coefficientsx.capacity()) {
-      std::cout << "WARNING: coefficients capacity changed!\n"
-                << "\told capacity: " << coefficients_capacity << "\n"
-                << "\tnew capacity: " << coefficientsx.size() << "\n";
     }
   }
 
@@ -1001,7 +1142,7 @@ void GPSimPL::BuildProblemStarHPWLY() {
 
   std::vector<Net> &net_list = *NetList();
 
-  std::vector<Block> &block_list = *BlockList();
+  std::vector<Block> &block_list = circuit_->BlockListRef();
   size_t coefficients_capacity = coefficientsy.capacity();
   coefficientsy.resize(0);
 
@@ -1113,7 +1254,7 @@ void GPSimPL::BuildProblemStarHPWLY() {
 
 void GPSimPL::SolveProblemX() {
   double wall_time = get_wall_time();
-  Ax.setFromTriplets(coefficientsx.begin(), coefficientsx.end());
+  //Ax.setFromTriplets(coefficientsx.begin(), coefficientsx.end());
   wall_time = get_wall_time() - wall_time;
   tot_matrix_from_triplets_x += wall_time;
 
@@ -1200,7 +1341,7 @@ void GPSimPL::PullBlockBackToRegion() {
 void GPSimPL::InitialPlacement() {
   double wall_time = get_wall_time();
 
-  std::vector<Block> &block_list = *BlockList();
+  std::vector<Block> &block_list = circuit_->BlockListRef();
 
   HPWLX_converge = false;
   HPWLX_old = DBL_MAX;
@@ -1696,7 +1837,7 @@ void GPSimPL::FindMinimumBoxForLargestCluster() {
     }
   }
 
-  std::vector<Block> &block_list = *BlockList();
+  std::vector<Block> &block_list = circuit_->BlockListRef();
 
   BoxBin R;
   R.cut_direction_x = false;
@@ -1757,7 +1898,7 @@ void GPSimPL::FindMinimumBoxForLargestCluster() {
 }
 
 void GPSimPL::SplitBox(BoxBin &box) {
-  std::vector<Block> &block_list = *BlockList();
+  std::vector<Block> &block_list = circuit_->BlockListRef();
   bool flag_bisection_complete;
   int dominating_box_flag; // indicate whether there is a dominating BoxBin
   BoxBin box1, box2;
@@ -1898,7 +2039,7 @@ void GPSimPL::SplitBox(BoxBin &box) {
 }
 
 void GPSimPL::SplitGridBox(BoxBin &box) {
-  std::vector<Block> &block_list = *BlockList();
+  std::vector<Block> &block_list = circuit_->BlockListRef();
   BoxBin box1, box2;
   box1.left = box.left;
   box1.bottom = box.bottom;
@@ -1989,7 +2130,7 @@ void GPSimPL::SplitGridBox(BoxBin &box) {
 }
 
 void GPSimPL::PlaceBlkInBox(BoxBin &box) {
-  std::vector<Block> &block_list = *BlockList();
+  std::vector<Block> &block_list = circuit_->BlockListRef();
   /* this is the simplest version, just linearly move cells in the cell_box to the grid box
   * non-linearity is not considered yet*/
 
@@ -2063,7 +2204,7 @@ void GPSimPL::RoughLegalBlkInBox(BoxBin &box) {
   IndexLocPair<int> tmp_index_loc_pair(0, 0, 0);
   index_loc_list.resize(sz, tmp_index_loc_pair);
 
-  std::vector<Block> &block_list = *BlockList();
+  std::vector<Block> &block_list = circuit_->BlockListRef();
   int blk_num;
   for (int i = 0; i < sz; ++i) {
     blk_num = box.cell_list[i];
@@ -2190,7 +2331,7 @@ double GPSimPL::BlkOverlapArea(Block *node1, Block *node2) {
 }
 
 void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
-  std::vector<Block> &block_list = *BlockList();
+  std::vector<Block> &block_list = circuit_->BlockListRef();
   /* keep bisect a grid bin until the leaf bin has less than say 2 nodes? */
   size_t max_cell_num_in_box = 10;
   box.cut_direction_x = true;
@@ -2286,7 +2427,7 @@ bool GPSimPL::RecursiveBisectionBlkSpreading() {
 }
 
 void GPSimPL::BackUpBlkLoc() {
-  std::vector<Block> &block_list = *BlockList();
+  std::vector<Block> &block_list = circuit_->BlockListRef();
   for (size_t i = 0; i < block_list.size(); ++i) {
     x_anchor[i] = block_list[i].LLX();
     y_anchor[i] = block_list[i].LLY();
@@ -2337,14 +2478,13 @@ void GPSimPL::BuildProblemB2BWithAnchorX() {
     if (block_list[i].IsFixed()) continue;
     pin_loc0 = block_list[i].LLX();
     pin_loc1 = x_anchor[i];
-    /*if (std::fabs(pin_loc0 - pin_loc1) < 10) {
-      weight = alpha;
-    } else {
-      weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
-    }*/
     weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + WidthEpsilon());
     bx[i] += pin_loc1 * weight;
-    coefficientsx.emplace_back(T(i, i, weight));
+    if (net_model == 3) {
+      SpMat_diag_x[i].valueRef() += weight;
+    } else {
+      coefficientsx.emplace_back(T(i, i, weight));
+    }
   }
   wall_time = get_wall_time() - wall_time;
   tot_triplets_time_x += wall_time;
@@ -2395,7 +2535,7 @@ void GPSimPL::QuadraticPlacementWithAnchor() {
   if (globalVerboseLevel >= LOG_DEBUG) {
     std::cout << "alpha: " << alpha << "\n";
   }
-  std::vector<Block> &block_list = *BlockList();
+  std::vector<Block> &block_list = circuit_->BlockListRef();
 
   UpdateAnchorLoc();
   UpdateAnchorNetWeight();
@@ -2504,7 +2644,7 @@ void GPSimPL::CheckAndShift() {
   double bottom_most = INT_MAX;
   double top_most = INT_MIN;
 
-  for (auto &blk: *BlockList()) {
+  for (auto &blk: circuit_->BlockListRef()) {
     left_most = std::min(left_most, blk.LLX());
     right_most = std::max(right_most, blk.URX());
     bottom_most = std::min(bottom_most, blk.LLY());
@@ -2517,7 +2657,7 @@ void GPSimPL::CheckAndShift() {
   double delta_x = left_ + margin_x / 10 - left_most;
   double delta_y = bottom_ + margin_y / 2 - bottom_most;
 
-  for (auto &blk: *BlockList()) {
+  for (auto &blk: circuit_->BlockListRef()) {
     blk.IncreaseX(delta_x);
     blk.IncreaseY(delta_y);
   }
@@ -2557,11 +2697,15 @@ bool GPSimPL::StartPlacement() {
     return true;
   }
 
+  if (net_model == 3) {
+    DriverLoadPairInit();
+  }
+
   if (is_dump) DumpResult("rand_init.txt");
 
   InitialPlacement();
 
-  if (true) DumpResult("cg_result_0.txt");
+  if (is_dump) DumpResult("cg_result_0.txt");
 
   //std::cout << cg_total_hpwl_ << "  " << circuit_->HPWL() << "\n";
 
@@ -2585,7 +2729,7 @@ bool GPSimPL::StartPlacement() {
       }
     }
     QuadraticPlacementWithAnchor();
-    if (true) DumpResult("cg_result_" + std::to_string(cur_iter_ + 1) + ".txt");
+    if (is_dump) DumpResult("cg_result_" + std::to_string(cur_iter_ + 1) + ".txt");
   }
   if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "\033[0;36m"
@@ -2643,7 +2787,7 @@ void GPSimPL::DrawBlockNetList(std::string const &name_of_file) {
   Assert(ost.is_open(), "Cannot open input file " + name_of_file);
   ost << RegionLeft() << " " << RegionBottom() << " " << RegionRight() - RegionLeft() << " "
       << RegionTop() - RegionBottom() << "\n";
-  std::vector<Block> &block_list = *BlockList();
+  std::vector<Block> &block_list = circuit_->BlockListRef();
   for (auto &block: block_list) {
     ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " " << block.Height() << "\n";
   }

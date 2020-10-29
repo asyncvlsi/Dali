@@ -20,10 +20,9 @@
  * ****/
 
 struct BlkPinPair {
- private:
   Block *blk_ptr_;
   Pin *pin_ptr_;
- public:
+
   BlkPinPair(Block *block_ptr, Pin *pin_ptr) : blk_ptr_(block_ptr), pin_ptr_(pin_ptr) {}
 
   // get the pointer to the block

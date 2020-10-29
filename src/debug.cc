@@ -32,11 +32,11 @@ int main() {
 
   //printf("Galois thread %d\n", num_of_thread);
 
-  int num_of_thread_openmp = 1;
-  omp_set_num_threads(num_of_thread_openmp);
+  //int num_of_thread_openmp = 1;
+  //omp_set_num_threads(num_of_thread_openmp);
 
   Eigen::initParallel();
-  Eigen::setNbThreads(1);
+  //Eigen::setNbThreads(1);
   printf("Eigen thread %d\n", Eigen::nbThreads());
 
   double wall_time = get_wall_time();
@@ -64,6 +64,7 @@ int main() {
   //circuit.ReportBlockType();
   //circuit.ReportIOPin();
   circuit.ReportHPWL();
+  circuit.BuildBlkPairNets();
 
   Placer *gb_placer = new GPSimPL;
   gb_placer->SetInputCircuit(&circuit);

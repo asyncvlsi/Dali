@@ -59,7 +59,7 @@ class BlockType {
 
   // return a pointer to a newly allocated location for a Pin with a given name
   // if this member function is used to create pins, one needs to set pin shapes using the return pointer
-  Pin *AddPin(std::string &pin_name);
+  Pin *AddPin(std::string &pin_name, bool is_input);
 
   // add a pin with a given name and x/y offset
   void AddPin(std::string &pin_name, double x_offset, double y_offset);
