@@ -39,7 +39,7 @@ class GPSimPL : public Placer {
 
   // to configure CG solver
   double cg_tolerance_ = 1e-11;
-  int cg_iteration_max_num_ = 200;
+  int cg_iteration_max_num_ = 50;
   double error_x = DBL_MAX;
   double error_y = DBL_MAX;
   double cg_total_hpwl_ = 0;
@@ -50,7 +50,7 @@ class GPSimPL : public Placer {
 
   // for look ahead legalization
   double HPWL_intra_linearSolver_precision = 0.01;
-  int b2b_update_max_iteration = 100;
+  int b2b_update_max_iteration = 10;
   double alpha = 0.00;
   int cur_iter_ = 0;
   int max_iter_ = 100;
@@ -61,13 +61,16 @@ class GPSimPL : public Placer {
   bool HPWL_LAL_converge = false;
   double HPWL_inter_linearSolver_precision = 0.01;
 
-  int number_of_cell_in_bin = 15;
+  int number_of_cell_in_bin = 30;
   int net_ignore_threshold = 100;
 
   // weight adjust factor
   double adjust_factor = 1.5;
   double base_factor = 0;
-  double decay_factor = 5;
+  double decay_factor = 12;
+
+  // lal parameters
+  int cluster_upper_size = 3;
  public:
   GPSimPL();
   GPSimPL(double aspectRatio, double fillingRate);
@@ -110,7 +113,7 @@ class GPSimPL : public Placer {
   double tot_loc_update_time_x = 0;
   double tot_loc_update_time_y = 0;
 
-  int net_model = 3; // 0: b2b; 1: star; 2:HPWL; 3: StarHPWL
+  int net_model = 0; // 0: b2b; 1: star; 2:HPWL; 3: StarHPWL
   void BlockLocRandomInit();
   void BlockLocCenterInit();
   void DriverLoadPairInit();
@@ -196,7 +199,7 @@ class GPSimPL : public Placer {
   double tot_cg_time = 0;
   bool StartPlacement() override;
 
-  bool is_dump = false;
+  bool is_dump = true;
   void DumpResult(std::string const &name_of_file);
   void DrawBlockNetList(std::string const &name_of_file = "block_net_list.txt");
   void write_all_terminal_grid_bins(std::string const &name_of_file);

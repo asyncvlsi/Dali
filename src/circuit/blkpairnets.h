@@ -26,6 +26,7 @@ struct BlkPairNets {
   std::vector<BlkBlkEdge> edges;
   int blk_num0;
   int blk_num1;
+
   double e00x;
   double e01x;
   double e10x;
@@ -56,6 +57,21 @@ struct BlkPairNets {
     if (blk_num0!=blk_num1) {
       it01x.valueRef() = e01x;
       it10x.valueRef() = e10x;
+    }
+  }
+
+  void ClearY() {
+    e00y = 0;
+    e01y = 0;
+    e10y = 0;
+    e11y = 0;
+    b0y = 0;
+    b1y = 0;
+  }
+  void WriteY() {
+    if (blk_num0!=blk_num1) {
+      it01y.valueRef() = e01y;
+      it10y.valueRef() = e10y;
     }
   }
 };

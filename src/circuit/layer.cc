@@ -11,7 +11,7 @@ Layer::Layer() :
 Layer::Layer(double width, double spacing) :
     width_(width),
     spacing_(spacing) {
-  Assert(width > 0 && spacing > 0, "Negative width or spacing?\n");
+  Assert(width >= 0 && spacing >= 0, "Negative width or spacing?\n");
 }
 
 MetalLayer::MetalLayer(std::pair<const std::string, int> *name_num_pair_ptr) :

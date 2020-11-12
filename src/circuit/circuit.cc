@@ -154,7 +154,8 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
       } else if (terminal->getIoType() == odb::dbIoType::OUTPUT) {
         is_input = false;
       } else {
-        Assert(false, "Unsupported terminal IO type\n");
+        is_input = false;
+        //Assert(false, "Unsupported terminal IO type\n");
       }
       Pin *new_pin = AddBlkTypePin(blk_type, pin_name, is_input);
       AddBlkTypePinRect(new_pin, llx, lly, urx, ury);
@@ -197,17 +198,25 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   //          << die_area.xMax() << "\n"
   //          << die_area.yMin() << "\n"
   //          << die_area.yMax() << "\n";
-  design_.die_area_offset_x_ = die_area.xMin();
-  design_.die_area_offset_y_ = die_area.yMin();
-  setDieArea(die_area.xMin() - die_area.xMin(),
-             die_area.yMin() - die_area.yMin(),
-             die_area.xMax() - die_area.xMin(),
-             die_area.yMax() - die_area.yMin());
+  //design_.die_area_offset_x_ = die_area.xMin()/10;
+  //design_.die_area_offset_y_ = die_area.yMin()/10;
+  //setDieArea((die_area.xMin() - die_area.xMin())/10,
+  //           (die_area.yMin() - die_area.yMin())/10,
+  //           (die_area.xMax() - die_area.xMin())/10,
+  //           (die_area.yMax() - die_area.yMin())/10);
+  design_.die_area_offset_x_ = 0;
+  design_.die_area_offset_y_ = 0;
+  setDieArea(die_area.xMin()/10,
+             die_area.yMin()/10,
+             die_area.xMax()/10,
+             die_area.yMax()/10);
   for (auto &&blk: top_level->getInsts()) {
     //std::cout << blk->getName() << "  " << blk->getMaster()->getName() << "\n";
     std::string blk_name(blk->getName());
     std::string blk_type_name(blk->getMaster()->getName());
     blk->getLocation(llx_int, lly_int);
+    llx_int /= 10;
+    lly_int /= 10;
     llx_int = (int) std::round(llx_int / tech_.grid_value_x_ / design_.def_distance_microns);
     lly_int = (int) std::round(lly_int / tech_.grid_value_y_ / design_.def_distance_microns);
     std::string place_status(blk->getPlacementStatus().getString());
@@ -697,7 +706,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         Assert(net_field.size() >= 2, "Invalid net declaration, expecting at least: - netName\n" + line);
         //std::cout << "\t" << net_field[0] << " " << net_field[1] << "\n";
         Net *new_net = nullptr;
-        std::cout << "Circuit::ReadDefFile(), this naive parser is broken, please do not use it\n";
+        //std::cout << "Circuit::ReadDefFile(), this naive parser is broken, please do not use it\n";
         if (net_field[1].find("Reset") != std::string::npos) {
           //std::cout << net_field[1] << "\n";
           new_net = AddNet(net_field[1], 100, design_.reset_signal_weight);
