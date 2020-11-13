@@ -238,7 +238,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
     SignalDirection sig_dir = StrToSignalDirection(str_sig_dir);
 
     if (is_loc_set) {
-      AddIOPin(iopin_name, PLACED_, sig_use, sig_dir, iopin_x, iopin_x);
+      AddIOPin(iopin_name, PLACED_, sig_use, sig_dir, iopin_x, iopin_y);
     } else {
       AddIOPin(iopin_name, UNPLACED_, sig_use, sig_dir);
     }
@@ -998,6 +998,20 @@ BlockType *Circuit::AddBlockType(std::string &block_type_name, double width, dou
   int gridded_width = (int) std::round(width / tech_.grid_value_x_);
   int gridded_height = (int) std::round(height / tech_.grid_value_y_);
   return AddBlockTypeWithGridUnit(block_type_name, gridded_width, gridded_height);
+}
+
+void Circuit::SetBlockTypeSize(BlockType *blk_type_ptr, double width, double height) {
+  Assert(blk_type_ptr!=nullptr, "Set size for an nullptr object?");
+  double residual = Residual(width, tech_.grid_value_x_);
+  Assert(residual < 1e-6, "BlockType width is not integer multiple of grid value in X: " + blk_type_ptr->Name());
+
+  residual = Residual(height, tech_.grid_value_y_);
+  Assert(residual < 1e-6, "BlockType height is not integer multiple of grid value in Y: " + blk_type_ptr->Name());
+
+  int gridded_width = (int) std::round(width / GridValueX());
+  int gridded_height = (int) std::round(height / GridValueY());
+  blk_type_ptr->setSize(gridded_width, gridded_height);
+
 }
 
 BlockType *Circuit::AddWellTapBlockTypeWithGridUnit(std::string &block_type_name, int width, int height) {

@@ -16,8 +16,8 @@
 #include "block.h"
 #include "blocktype.h"
 #include "blocktypewell.h"
-#include "common/opendb.h"
-#include "common/si2lefdef.h"
+//#include "common/opendb.h"
+//#include "common/si2lefdef.h"
 #include "design.h"
 #include "iopin.h"
 #include "layer.h"
@@ -88,6 +88,7 @@ class Circuit {
     design_.region_right_ = right;
     design_.region_bottom_ = bottom;
     design_.region_top_ = top;
+    design_.die_area_set_ = true;
   }
 
   // create a block instance using a pointer to its type
@@ -148,10 +149,11 @@ class Circuit {
   /****API to retrieve technology and design****/
   // get technology info
   Tech *getTech() { return &tech_; }
+  Tech &getTechRef() { return tech_; }
 
   // get design info
   Design *getDesign() { return &design_; }
-
+  Design &getDesignRef() { return design_; }
 
   /************************************************
    * The following APIs are for in LEF
@@ -182,10 +184,16 @@ class Circuit {
   void setGridUsingMetalPitch();
 
   // get the grid value in x direction, unit is usually in micro
-  double GridValueX() const { return tech_.grid_value_x_; }
+  double GridValueX() const {
+    Assert(tech_.grid_set_, "Need to set grid value before use");
+    return tech_.grid_value_x_;
+  }
 
   // get the grid value in y direction, unit is usually in micro
-  double GridValueY() const { return tech_.grid_value_y_; }
+  double GridValueY() const {
+    Assert(tech_.grid_set_, "Need to set grid value before use");
+    return tech_.grid_value_y_;
+  }
 
   // set the row height, unit in micron
   void setRowHeight(double row_height) {
@@ -261,6 +269,8 @@ class Circuit {
 
   // add a BlockType with name, with, and height. The return value is a pointer to this new BlockType for adding pins. Unit in micron.
   BlockType *AddBlockType(std::string &block_type_name, double width, double height);
+
+  void SetBlockTypeSize(BlockType *blk_type_ptr, double width, double height);
 
   // add a BlockType with name, with, and height. The return value is a pointer to this new BlockType for adding pins. Unit in micron.
   BlockType *AddWellTapBlockType(std::string &block_type_name, double width, double height);

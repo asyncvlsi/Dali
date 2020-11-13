@@ -47,6 +47,9 @@ class Tech {
   double same_diff_spacing_;
   double any_diff_spacing_;
 
+  /****temporary data for Si2 LEF/DEF parser****/
+  BlockType* last_blk_type_=nullptr;
+
   /********/
   Tech();
   ~Tech();

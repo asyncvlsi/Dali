@@ -8,7 +8,7 @@ project(Dali
 
 set(CMAKE_CXX_STANDARD 17)
 
-set(macro_names "-D USE_OPENDB")
+#set(macro_names "-D USE_OPENDB")
 
 find_package(TCL REQUIRED)
 find_package(Boost 1.58.0 COMPONENTS log REQUIRED)
@@ -53,18 +53,27 @@ if (NOT CMAKE_BUILD_TYPE)
             "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif ()
 
-add_subdirectory(module/OpenDB
-        EXCLUDE_FROM_ALL)
+set(LEF_INCLUDE /home/yihang/Application/lefdef/lef/install/include)
+set(DEF_INCLUDE /home/yihang/Application/lefdef/def/install/include)
+LINK_DIRECTORIES(/home/yihang/Application/lefdef/lef/install/lib)
+LINK_DIRECTORIES(/home/yihang/Application/lefdef/def/install/lib)
+link_libraries(liblef.a)
+link_libraries(libdef.a)
+
+#add_subdirectory(module/OpenDB
+#        EXCLUDE_FROM_ALL)
 
 include_directories(
         ${TCL_INCLUDE_PATH}
         ${Boost_INCLUDE_DIRS}
+        ${LEF_INCLUDE}
+        ${DEF_INCLUDE}
         src
-        module/def
-        module/lef
         module/eigen-git-mirror
-        module/OpenDB/include/lef56
-        module/OpenDB/include/opendb
+        #module/def
+        #module/lef
+        #module/OpenDB/include/lef56
+        #module/OpenDB/include/opendb
 )
 
 # All used circuit and placer source code
@@ -99,7 +108,7 @@ add_executable(dali
         src/dali.cc)
 target_link_libraries(dali
         PRIVATE placer
-        opendb
+        #opendb
         ${Boost_LIBRARIES})
 
 # Debugging executable, building from the placer library
@@ -108,7 +117,7 @@ add_executable(dali-debug
         src/debug.cc)
 target_link_libraries(dali-debug
         PRIVATE placer
-        opendb
+        #opendb
         OpenMP::OpenMP_CXX)
 
 # Debugging executable, building from the placer library
@@ -117,7 +126,8 @@ add_executable(wellflow
         src/wellflow.cc)
 target_link_libraries(wellflow
         PRIVATE placer
-        opendb)
+        #opendb
+        )
 
 # Debugging executable, building from the placer library
 add_executable(adaptec-debug
@@ -125,7 +135,8 @@ add_executable(adaptec-debug
         src/debug-adaptec.cc)
 target_link_libraries(adaptec-debug
         PRIVATE placer
-        opendb)
+        #opendb
+        )
 
 # Stand-alone hpwl calculator, building from the placer library
 add_executable(hpwl

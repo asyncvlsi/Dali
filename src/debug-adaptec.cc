@@ -8,13 +8,14 @@
 #include <iostream>
 
 #include "circuit.h"
+#include "common/si2lefdef.h"
 #include "placer.h"
 
 VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 
 #define TEST_LG 0
 #define TEST_WLG 0
-#define USE_DB_PARSER 1
+#define USE_DB_PARSER 0
 
 int main() {
   Circuit circuit;
@@ -23,14 +24,18 @@ int main() {
   int num_of_thread_openmp = 1;
   omp_set_num_threads(num_of_thread_openmp);
 
-  std::string adaptec1_lef = "ISPD2005/adaptec2.lef";
+  std::string adaptec1_lef = "ISPD2005/adaptec1.lef";
 #if TEST_LG
   std::string adaptec1_def = "adaptec1_pl.def";
 #else
-  std::string adaptec1_def = "ISPD2005/adaptec2.def";
+  std::string adaptec1_def = "ISPD2005/adaptec1.def";
 #endif
 
   circuit.setGridValue(0.01, 0.01);
+  readLef(adaptec1_lef, circuit);
+  readDef(adaptec1_def, circuit);
+  //circuit.ReportBlockType();
+  //circuit.ReportNetList();
 #if USE_DB_PARSER
   odb::dbDatabase *db = odb::dbDatabase::create();
   std::vector<std::string> defFileVec;
@@ -40,8 +45,8 @@ int main() {
   odb_read_def(db, defFileVec);
   circuit.InitializeFromDB(db);
 #else
-  circuit.ReadLefFile(adaptec1_lef);
-  circuit.ReadDefFile(adaptec1_def);
+  //circuit.ReadLefFile(adaptec1_lef);
+  //circuit.ReadDefFile(adaptec1_def);
 #endif
 
   //circuit.getDesign()->region_left_ = 459;
@@ -64,7 +69,7 @@ int main() {
 #if !TEST_LG
   gb_placer.StartPlacement();
   gb_placer.SaveDEFFile("adaptec1_pl.def", adaptec1_def);
-  circuit.SaveBookshelfPl("adaptec2bs.pl");
+  circuit.SaveBookshelfPl("adaptec1bs.pl");
 #endif
   gb_placer.GenMATLABTable("gb_result.txt");
 

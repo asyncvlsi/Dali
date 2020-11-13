@@ -45,6 +45,7 @@ class BlockType {
 
   // get the pointer to the const name
   const std::string *NamePtr() const { return name_ptr_; }
+  std::string Name() const { return *name_ptr_; }
 
   // check if a pin with a given name exists in this BlockType or not
   bool IsPinExist(std::string &pin_name) {
@@ -91,6 +92,12 @@ class BlockType {
 
   // set the height of this BlockType and update its area
   void setHeight(int height) {
+    height_ = height;
+    area_ = (long int) width_ * (long int) height_;
+  }
+
+  void setSize(int width, int height) {
+    width_ = width;
     height_ = height;
     area_ = (long int) width_ * (long int) height_;
   }

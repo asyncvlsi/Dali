@@ -28,6 +28,9 @@ struct NetHistogram {
 };
 
 struct Design {
+  /****design name****/
+  std::string name_;
+
   /****def distance microns****/
   int def_distance_microns = 0;
 
@@ -36,6 +39,7 @@ struct Design {
   int region_right_ = 0; // unit is grid value x
   int region_bottom_ = 0; // unit is grid value y
   int region_top_ = 0; // unit is grid value y
+  bool die_area_set_ = false;
 
   int die_area_offset_x_ = 0; // unit is manufacturing grid
   int die_area_offset_y_ = 0; // unit is manufacturing grid
@@ -51,13 +55,17 @@ struct Design {
   std::vector<IOPin> iopin_list;
   std::map<std::string, int> iopin_name_map;
   int pre_placed_io_count_ = 0;
+  int iopin_count_ = 0;
 
   /****list of nets****/
   double reset_signal_weight = 1;
   double normal_signal_weight = 1;
   std::vector<Net> net_list;
+  int net_count_ = 0;
   std::map<std::string, int> net_name_map;
   NetHistogram net_histogram_;
+  /****temporary data for Si2 LEF/DEF parser****/
+  Net* last_net_=nullptr;
 
   /****statistical data of the circuit****/
   long int tot_width_ = 0;
