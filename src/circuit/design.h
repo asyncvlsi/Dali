@@ -64,8 +64,6 @@ struct Design {
   int net_count_ = 0;
   std::map<std::string, int> net_name_map;
   NetHistogram net_histogram_;
-  /****temporary data for Si2 LEF/DEF parser****/
-  Net* last_net_=nullptr;
 
   /****statistical data of the circuit****/
   long int tot_width_ = 0;

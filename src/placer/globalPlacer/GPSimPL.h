@@ -66,8 +66,8 @@ class GPSimPL : public Placer {
 
   // weight adjust factor
   double adjust_factor = 1.5;
-  double base_factor = 0;
-  double decay_factor = 12;
+  double base_factor = 0.5;
+  double decay_factor = 24;
 
   // lal parameters
   int cluster_upper_size = 3;
@@ -148,6 +148,12 @@ class GPSimPL : public Placer {
   int grid_cnt_x;
   std::vector<std::vector<GridBin> > grid_bin_matrix;
   std::vector<std::vector<unsigned long int> > grid_bin_white_space_LUT;
+
+  double UpdateGridBinState_time = 0;
+  double UpdateClusterList_time = 0;
+  double FindMinimumBoxForLargestCluster_time = 0;
+  double RecursiveBisectionBlkSpreading_time = 0;
+
   void InitGridBins();
   void InitWhiteSpaceLUT();
   unsigned long int LookUpWhiteSpace(GridBinIndex const &ll_index, GridBinIndex const &ur_index);

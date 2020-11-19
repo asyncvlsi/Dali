@@ -139,8 +139,8 @@ int getLefPins(lefrCallbackType_e type, lefiPin *pin, lefiUserData userData) {
       int itemType = pin->port(i)->itemType(j);
       if (itemType == lefiGeomRectE) {
         double llx = pin->port(i)->getRect(j)->xl / circuit.GridValueX();
-        double lly = pin->port(i)->getRect(j)->yl / circuit.GridValueY();
         double urx = pin->port(i)->getRect(j)->xh / circuit.GridValueX();
+        double lly = pin->port(i)->getRect(j)->yl / circuit.GridValueY();
         double ury = pin->port(i)->getRect(j)->yh / circuit.GridValueY();
         //std::cout << "  PORT: " << llx << "  " << lly << "  " << urx << "  " << ury << "  " << "\n";
         circuit.AddBlkTypePinRect(new_pin, llx, lly, urx, ury);
@@ -341,7 +341,12 @@ int getDefComponents(defrCallbackType_e type, defiComponent *comp, defiUserData 
     place_status = PLACED_;
   } else if (comp->isUnplaced()) {
     place_status = UNPLACED_;
-  } else {}
+    llx_int = 0;
+    lly_int = 0;
+  } else {
+    llx_int = 0;
+    lly_int = 0;
+  }
   circuit.AddBlock(blk_name, blk_type_name, llx_int, lly_int, place_status, StrToOrient(orient));
 
   return 0;

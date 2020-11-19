@@ -8,16 +8,32 @@ project(Dali
 
 set(CMAKE_CXX_STANDARD 17)
 
-#set(macro_names "-D USE_OPENDB")
-
-find_package(TCL REQUIRED)
+######################################
+# Detect if Boost library exists
+######################################
 find_package(Boost 1.58.0 COMPONENTS log REQUIRED)
 message(STATUS "Boost library path: ${Boost_LIBRARY_DIRS}")
 message(STATUS "Boost include path: ${Boost_INCLUDE_DIR}")
 message(STATUS "Boost libs: ${Boost_LIBRARIES}")
 link_libraries(${Boost_LIBRARIES})
 
+######################################
+# Detect if OpenMP library exists
+######################################
 find_package(OpenMP REQUIRED)
+
+######################################
+# Detect if $ACT_HOME exits
+######################################
+message(STATUS "Detecting environment variable ACT_HOME...")
+if (DEFINED ENV{ACT_HOME})
+    message(STATUS "Environment variable ACT_HOME detected: " $ENV{ACT_HOME})
+else ()
+    message(FATAL_ERROR "Environment variable ACT_HOME not found")
+endif ()
+set(ACT_INCLUDE $ENV{ACT_HOME}/include)
+LINK_DIRECTORIES(/$ENV{ACT_HOME}/lib)
+link_libraries(libact.a)
 
 ######################################
 # Detect if $GALOIS_INSTALL_DIR exists, which is the path to Galois installation
@@ -32,10 +48,9 @@ find_package(OpenMP REQUIRED)
 #find_package(Galois REQUIRED)
 #link_libraries(Galois::shmem)
 
-# The flag USE_OPENDB
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${macro_names} -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g ${macro_names} -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${macro_names} -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
 
 # Set the output directory of static libraries
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
@@ -64,21 +79,15 @@ link_libraries(libdef.a)
 #        EXCLUDE_FROM_ALL)
 
 include_directories(
-        ${TCL_INCLUDE_PATH}
         ${Boost_INCLUDE_DIRS}
         ${LEF_INCLUDE}
         ${DEF_INCLUDE}
         src
         module/eigen-git-mirror
-        #module/def
-        #module/lef
-        #module/OpenDB/include/lef56
-        #module/OpenDB/include/opendb
 )
 
 # All used circuit and placer source code
 file(GLOB SOURCES
-        src/common/opendb.cc
         src/common/*.cc
         src/circuit/*.cc
         src/placer/*.cc
@@ -108,7 +117,6 @@ add_executable(dali
         src/dali.cc)
 target_link_libraries(dali
         PRIVATE placer
-        #opendb
         ${Boost_LIBRARIES})
 
 # Debugging executable, building from the placer library
@@ -117,7 +125,6 @@ add_executable(dali-debug
         src/debug.cc)
 target_link_libraries(dali-debug
         PRIVATE placer
-        #opendb
         OpenMP::OpenMP_CXX)
 
 # Debugging executable, building from the placer library
@@ -126,7 +133,6 @@ add_executable(wellflow
         src/wellflow.cc)
 target_link_libraries(wellflow
         PRIVATE placer
-        #opendb
         )
 
 # Debugging executable, building from the placer library
@@ -135,7 +141,6 @@ add_executable(adaptec-debug
         src/debug-adaptec.cc)
 target_link_libraries(adaptec-debug
         PRIVATE placer
-        #opendb
         )
 
 # Stand-alone hpwl calculator, building from the placer library
@@ -144,7 +149,7 @@ add_executable(hpwl
         src/utility/hpwl.cc)
 target_link_libraries(hpwl
         PRIVATE placer
-        opendb)
+        )
 
 # Stand-alone LEFDEF to Bookshelf format tool, building from the placer library
 add_executable(lefdef2bookshelf
@@ -152,7 +157,7 @@ add_executable(lefdef2bookshelf
         src/utility/lefdef2bookshelf.cc)
 target_link_libraries(lefdef2bookshelf
         PRIVATE placer
-        opendb)
+        )
 
 # Stand-alone Bookshelf to LEFDEF format tool, building from the placer library
 add_executable(bookshelf2def
@@ -160,7 +165,7 @@ add_executable(bookshelf2def
         src/utility/bookshelf2def.cc)
 target_link_libraries(bookshelf2def
         PRIVATE placer
-        opendb)
+        )
 
 # Stand-alone custom cell design to standard cell design tool
 add_executable(custom2standard
@@ -168,7 +173,7 @@ add_executable(custom2standard
         src/utility/custom2standard.cc)
 target_link_libraries(custom2standard
         PRIVATE placer
-        opendb)
+        )
 
 # Stand-alone custom cell design to standard cell design tool
 add_executable(1create_circuit
@@ -176,7 +181,7 @@ add_executable(1create_circuit
         src/example_code/1create_circuit.cc)
 target_link_libraries(1create_circuit
         PRIVATE placer
-        opendb)
+        )
 
 ######################################
 # Configure install destination directory
@@ -186,18 +191,12 @@ if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
 ######################################
-# Detect if $ACT_HOME exits, change the installation directory to ACT_HOME
+# Change FALSE to TRUE if you want to change the installation directory to ${ACT_HOME}
 ######################################
-message(STATUS "Detecting environment variable ACT_HOME...")
-if (DEFINED ENV{ACT_HOME})
-    message(STATUS "Environment variable ACT_HOME detected: " $ENV{ACT_HOME})
-    if (FALSE)
-        message(STATUS "Changing Installation directory to ACT_HOME")
-        set(CMAKE_INSTALL_PREFIX $ENV{ACT_HOME} CACHE PATH "installation path" FORCE)
-        message(STATUS "Current installation directory: " ${CMAKE_INSTALL_PREFIX})
-    endif ()
-else ()
-    message(STATUS "Environment variable ACT_HOME not found")
+if (FALSE)
+    message(STATUS "Changing Installation directory to ACT_HOME")
+    set(CMAKE_INSTALL_PREFIX $ENV{ACT_HOME} CACHE PATH "installation path" FORCE)
+    message(STATUS "Current installation directory: " ${CMAKE_INSTALL_PREFIX})
 endif ()
 
 ######################################

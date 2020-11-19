@@ -7,14 +7,11 @@
   * CMake, version >= 3.9.6
   * GNU Make
 
-### Pre-requisite for submodules: OpenDB
+### Pre-requisite
   * Boost, version >= 1.71.0 (lower version may work, not tested)
-  * Tcl/Tk-dev, version >= ? (8.6.8, may need to install this package manually instead of using `apt-get install`)
-  * Bison, version >= ? (3.0.4)
-  * Flex, version >= ? (2.6.4)
-  * Swig, version >= ? (3.0.12)
-
-Minimum version requirement is unknown. Version numbers in parenthesis are used by the developer.
+  * LEF/DEF parser: [LEF parser](https://github.com/The-OpenROAD-Project/lef) and [DEF parser](https://github.com/The-OpenROAD-Project/def)
+  * OpenMP
+  * [Galois](https://github.com/IntelligentSoftwareSystems/Galois)
   
 ### Clone repo and compile
     $ git clone --recursive https://github.com/Yang-Yihang/Dali.git
@@ -36,7 +33,6 @@ The default installation destination is the repo directory.
 
 ### 3rd Party Module List
   * Eigen: sparse matrix iterative linear solver
-  * OpenDB
   * Si2: open source LEF/DEF parser
   
 ### Miscellaneous

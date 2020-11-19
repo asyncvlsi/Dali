@@ -1,14 +1,4 @@
-[submodule "module/OpenDB"]
-	path = module/OpenDB
-	url = https://github.com/The-OpenROAD-Project/OpenDB.git
-	branch = master
 [submodule "module/eigen-git-mirror"]
 	path = module/eigen-git-mirror
 	url = https://github.com/eigenteam/eigen-git-mirror.git
 	branch = master
-[submodule "module/lef"]
-	path = module/lef
-	url = https://github.com/The-OpenROAD-Project/lef.git
-[submodule "module/def"]
-	path = module/def
-	url = https://github.com/The-OpenROAD-Project/def.git

@@ -1299,7 +1299,7 @@ void Circuit::UpdateNetHPWLHistogram() {
 }
 
 void Circuit::ReportBriefSummary() const {
-  if (globalVerboseLevel >= LOG_INFO) {
+  if (globalVerboseLevel >= LOG_CRITICAL) {
     std::cout << "  movable blocks: " << TotMovableBlockCount() << "\n"
               << "  blocks: " << TotBlkCount() << "\n"
               << "  iopins: " << design_.iopin_list.size() << "\n"

@@ -24,17 +24,18 @@ int main() {
   int num_of_thread_openmp = 1;
   omp_set_num_threads(num_of_thread_openmp);
 
-  std::string adaptec1_lef = "ISPD2005/adaptec1.lef";
+  std::string adaptec1_lef = "ISPD2005/adaptec3.lef";
 #if TEST_LG
   std::string adaptec1_def = "adaptec1_pl.def";
 #else
-  std::string adaptec1_def = "ISPD2005/adaptec1.def";
+  std::string adaptec1_def = "ISPD2005/adaptec3.def";
 #endif
 
   circuit.setGridValue(0.01, 0.01);
   readLef(adaptec1_lef, circuit);
   readDef(adaptec1_def, circuit);
   //circuit.ReportBlockType();
+  //circuit.ReportBlockList();
   //circuit.ReportNetList();
 #if USE_DB_PARSER
   odb::dbDatabase *db = odb::dbDatabase::create();
@@ -69,7 +70,7 @@ int main() {
 #if !TEST_LG
   gb_placer.StartPlacement();
   gb_placer.SaveDEFFile("adaptec1_pl.def", adaptec1_def);
-  circuit.SaveBookshelfPl("adaptec1bs.pl");
+  circuit.SaveBookshelfPl("adaptec3bs.pl");
 #endif
   gb_placer.GenMATLABTable("gb_result.txt");
 

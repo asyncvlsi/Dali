@@ -1721,6 +1721,8 @@ void GPSimPL::UpdateGridBinState() {
    * so we need to update them when necessary
    * ****/
 
+  double wall_time = get_wall_time();
+
   // clean the old data
   for (auto &bin_column:grid_bin_matrix) {
     for (auto &bin:bin_column) {
@@ -1733,9 +1735,12 @@ void GPSimPL::UpdateGridBinState() {
   // for each cell, find the index of the grid bin it should be in
   // note that in extreme cases, the index might be smaller than 0 or larger than the maximum allowed index
   // because the cell is on the boundaries, so we need to make some modifications for these extreme cases
-  auto block_list = BlockList()->begin();
-  int sz = int(BlockList()->size());
-  int x_index, y_index;
+  std::vector<Block> &block_list = circuit_->BlockListRef();
+  int sz = int(block_list.size());
+  int x_index = 0;
+  int y_index = 0;
+
+  double for_time = get_wall_time();
   for (int i = 0; i < sz; i++) {
     if (block_list[i].IsFixed()) continue;
     x_index = (int) std::floor((block_list[i].X() - RegionLeft()) / grid_bin_width);
@@ -1747,6 +1752,9 @@ void GPSimPL::UpdateGridBinState() {
     grid_bin_matrix[x_index][y_index].cell_list.push_back(i);
     grid_bin_matrix[x_index][y_index].cell_area += block_list[i].Area();
   }
+  for_time = get_wall_time() - for_time;
+  std::cout << "for time: " << for_time << "s\n";
+  //exit(1);
 
   /**** below is the criterion to decide whether a grid bin is over_filled or not
    * 1. if this bin if fully occupied by fixed blocks, but its cell_list is non-empty, which means there is some cells overlap with this grid bin, we say it is over_fill
@@ -1782,6 +1790,7 @@ void GPSimPL::UpdateGridBinState() {
       }
     }
   }
+  UpdateGridBinState_time += get_wall_time() - wall_time;
 }
 
 void GPSimPL::ClusterOverfilledGridBin() {
@@ -1844,8 +1853,10 @@ void GPSimPL::UpdateClusterArea() {
 }
 
 void GPSimPL::UpdateClusterList() {
+  double wall_time = get_wall_time();
   ClusterOverfilledGridBin();
   UpdateClusterArea();
+  UpdateClusterList_time += get_wall_time() - wall_time;
 }
 
 void GPSimPL::FindMinimumBoxForLargestCluster() {
@@ -1857,6 +1868,8 @@ void GPSimPL::FindMinimumBoxForLargestCluster() {
    * Part 1
    * find the index of the maximum cluster
    * ****/
+
+  double wall_time = get_wall_time();
 
   // clear the queue_box_bin
   while (!queue_box_bin.empty()) queue_box_bin.pop();
@@ -1929,6 +1942,7 @@ void GPSimPL::FindMinimumBoxForLargestCluster() {
     }
   }
 
+  FindMinimumBoxForLargestCluster_time += get_wall_time() - wall_time;
 }
 
 void GPSimPL::SplitBox(BoxBin &box) {
@@ -2437,6 +2451,9 @@ void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
 
 bool GPSimPL::RecursiveBisectionBlkSpreading() {
   /* keep splitting the biggest box to many small boxes, and keep update the shape of each box and cells should be assigned to the box */
+
+  double wall_time = get_wall_time();
+
   while (!queue_box_bin.empty()) {
     if (queue_box_bin.empty()) break;
     BoxBin &box = queue_box_bin.front();
@@ -2457,6 +2474,8 @@ bool GPSimPL::RecursiveBisectionBlkSpreading() {
     }
     queue_box_bin.pop();
   }
+
+  RecursiveBisectionBlkSpreading_time += get_wall_time() - wall_time;
   return true;
 }
 
@@ -2647,6 +2666,7 @@ void GPSimPL::LookAheadLegalization() {
     UpdateClusterList();
     FindMinimumBoxForLargestCluster();
     RecursiveBisectionBlkSpreading();
+    std::cout << "cluster count: " << cluster_list.size() << "\n";
   } while (!cluster_list.empty());
 
   UpdateHPWLX();
@@ -2657,6 +2677,11 @@ void GPSimPL::LookAheadLegalization() {
 
   cpu_time = get_cpu_time() - cpu_time;
   tot_lal_time += cpu_time;
+
+  printf("(UpdateGridBinState time: %.4fs)\n", UpdateGridBinState_time);
+  printf("(UpdateClusterList time: %.4fs)\n", UpdateClusterList_time);
+  printf("(FindMinimumBoxForLargestCluster time: %.4fs)\n", FindMinimumBoxForLargestCluster_time);
+  printf("(RecursiveBisectionBlkSpreading time: %.4fs)\n", RecursiveBisectionBlkSpreading_time);
 }
 
 void GPSimPL::CheckAndShift() {
@@ -2753,7 +2778,7 @@ bool GPSimPL::StartPlacement() {
       printf("It %d: \t%e  %e\n", cur_iter_, cg_total_hpwl_, lal_total_hpwl_);
     }
     if (HPWL_LAL_converge) { // if HPWL converges
-      if (cur_iter_ >= 50) {
+      if (cur_iter_ >= 80) {
         if (globalVerboseLevel >= LOG_CRITICAL) {
           std::cout << "Iterative look-ahead legalization complete" << std::endl;
           std::cout << "Total number of iteration: " << cur_iter_ + 1 << std::endl;
@@ -2806,7 +2831,7 @@ bool GPSimPL::StartPlacement() {
 }
 
 void GPSimPL::DumpResult(std::string const &name_of_file) {
-  UpdateGridBinState();
+  //UpdateGridBinState();
   static int counter = 0;
   //std::cout << "DumpNum:" << counter << "\n";
   circuit_->GenMATLABTable(name_of_file);
