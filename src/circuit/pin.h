@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "blocktype.h"
+#include "common/logging.h"
 #include "common/misc.h"
 #include "status.h"
 
@@ -59,7 +60,7 @@ class Pin {
 
   bool RectEmpty() const { return rect_list_.empty(); }
   void Report() const {
-    std::cout << *Name() << " (" << OffsetX() << ", " << OffsetY() << ")";
+    BOOST_LOG_TRIVIAL(info)   << *Name() << " (" << OffsetX() << ", " << OffsetY() << ")";
   }
 };
 

@@ -10,7 +10,6 @@
 #include <string>
 
 #include "circuit/circuit.h"
-#include "common/global.h"
 #include "common/memory.h"
 #include "common/timing.h"
 
@@ -37,11 +36,11 @@ class Placer {
   virtual void SetInputCircuit(Circuit *circuit) {
     Assert(circuit != nullptr, "Invalid input circuit: not allowed to set nullptr as an input!");
     if (circuit->getBlockList()->empty()) {
-      std::cout << "Invalid input circuit: empty block list, nothing to place!\n";
+      BOOST_LOG_TRIVIAL(info)   << "Invalid input circuit: empty block list, nothing to place!\n";
       return;
     }
     if (circuit->getNetList()->empty()) {
-      std::cout << "Improper input circuit: empty net list, nothing to optimize during placement! But anyway...\n";
+      BOOST_LOG_TRIVIAL(info)   << "Improper input circuit: empty net list, nothing to optimize during placement! But anyway...\n";
     }
     circuit_ = circuit;
   }
@@ -97,21 +96,17 @@ class Placer {
     return GetCircuit()->WeightedHPWL();
   }
 
-  void ReportHPWL(VerboseLevel verbose_level = LOG_INFO) {
+  void ReportHPWL() {
     Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWL!");
-    if (globalVerboseLevel >= verbose_level) {
-      GetCircuit()->ReportHPWL();
-    }
+    circuit_->ReportHPWL();
   }
-  static void ReportMemory(VerboseLevel verbose_level = LOG_INFO) {
-    if (globalVerboseLevel >= verbose_level) {
-      auto peak_mem = getPeakRSS();
-      auto curr_mem = getCurrentRSS();
-      std::cout << "(peak memory: "
-                << (peak_mem >> 20u) << " MB, "
-                << " current memory: "
-                << (curr_mem >> 20u) << " MB)\n";
-    }
+  static void ReportMemory() {
+    auto peak_mem = getPeakRSS();
+    auto curr_mem = getCurrentRSS();
+    BOOST_LOG_TRIVIAL(info)   << "(peak memory: "
+                              << (peak_mem >> 20u) << " MB, "
+                              << " current memory: "
+                              << (curr_mem >> 20u) << " MB)\n";
   }
 
   void ReportHPWLCtoC() {

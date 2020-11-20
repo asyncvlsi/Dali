@@ -219,7 +219,7 @@ void LGTetrisEx::UseSpaceLeft(Block const &block) {
   int start_row = StartRow(int(block.LLY()));
   int end_row = EndRow(int(block.URY()));
   /*if (block.URY() > RegionTop()) {
-    std::cout << "  ly:     " << int(block.LLY()) << "\n"
+    BOOST_LOG_TRIVIAL(info)   << "  ly:     " << int(block.LLY()) << "\n"
               << "  height: " << block.Height() << "\n"
               << "  top:    " << RegionURY() << "\n"
               << "  bottom: " << RegionLLY() << "\n"
@@ -471,14 +471,14 @@ void LGTetrisEx::FastShiftLeft(int failure_point) {
   std::vector<Block> &block_list = *BlockList();
   double bounding_left;
   if (failure_point == 0) {
-    std::cout << "WARNING: unexpected case happens during legalization (failure point is 0)!\n";
+    BOOST_LOG_TRIVIAL(info) << "WARNING: unexpected case happens during legalization (failure point is 0)!\n";
   } else {
     double init_diff = index_loc_list_[failure_point - 1].x - index_loc_list_[failure_point].x;
     int failed_block = index_loc_list_[failure_point].num;
     bounding_left = block_list[failed_block].LLX();
     int last_placed_block = index_loc_list_[failure_point - 1].num;
     int left_new = (int) std::round(block_list[last_placed_block].LLX());
-    //std::cout << left_new << "  " << bounding_left << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << left_new << "  " << bounding_left << "\n";
     int sz = index_loc_list_.size();
     int block_num;
     for (int i = failure_point; i < sz; ++i) {
@@ -525,7 +525,7 @@ bool LGTetrisEx::LocalLegalizationLeft() {
 
   int i;
   for (i = 0; i < sz; ++i) {
-    //std::cout << i << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << i << "\n";
     auto &block = block_list[index_loc_list_[i].num];
 
     if (block.IsFixed()) continue;
@@ -541,7 +541,7 @@ bool LGTetrisEx::LocalLegalizationLeft() {
       is_legal_loc_found = FindLocLeft(res, width, height);
       if (!is_legal_loc_found) {
         is_successful = false;
-        //std::cout << res.x << "  " << res.y << "  " << block.Num() << " left\n";
+        //BOOST_LOG_TRIVIAL(info)   << res.x << "  " << res.y << "  " << block.Num() << " left\n";
         //break;
       }
     }
@@ -562,7 +562,7 @@ void LGTetrisEx::UseSpaceRight(Block const &block) {
   int start_row = StartRow((int) std::round(block.LLY()));
   int end_row = EndRow((int) std::round(block.URY()));
   /*if (end_row >= block_contour_.size()) {
-    std::cout << "  ly:     " << block.LLY() << "\n"
+    BOOST_LOG_TRIVIAL(info)   << "  ly:     " << block.LLY() << "\n"
               << "  height: " << block.Height() << "\n"
               << "  top:    " << Top() << "\n"
               << "  bottom: " << Bottom() << "\n"
@@ -803,14 +803,14 @@ void LGTetrisEx::FastShiftRight(int failure_point) {
   std::vector<Block> &block_list = *BlockList();
   double bounding_right;
   if (failure_point == 0) {
-    std::cout << "WARNING: unexpected case happens during legalization (reverse failure point is 0)!\n";
+    BOOST_LOG_TRIVIAL(info) << "WARNING: unexpected case happens during legalization (reverse failure point is 0)!\n";
 
   } else {
     double init_diff = index_loc_list_[failure_point - 1].x - index_loc_list_[failure_point].x;
     bounding_right = index_loc_list_[failure_point].x;
     int last_placed_block = index_loc_list_[failure_point - 1].num;
     int right_new = (int) std::round(block_list[last_placed_block].URX());
-    //std::cout << left_new << "  " << bounding_left << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << left_new << "  " << bounding_left << "\n";
     int sz = index_loc_list_.size();
     int block_num = -1;
     for (int i = failure_point; i < sz; ++i) {
@@ -861,7 +861,7 @@ bool LGTetrisEx::LocalLegalizationRight() {
   bool is_successful = true;
   int i;
   for (i = 0; i < sz; ++i) {
-    //std::cout << i << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << i << "\n";
     auto &block = block_list[index_loc_list_[i].num];
     if (block.IsFixed()) continue;
 
@@ -876,7 +876,7 @@ bool LGTetrisEx::LocalLegalizationRight() {
       is_legal_loc_found = FindLocRight(res, width, height);
       if (!is_legal_loc_found) {
         is_successful = false;
-        //std::cout << res.x << "  " << res.y << "  " << block.Num() << " right\n";
+        //BOOST_LOG_TRIVIAL(info)   << res.x << "  " << res.y << "  " << block.Num() << " right\n";
         //break;
       }
     }
@@ -1122,7 +1122,7 @@ bool LGTetrisEx::LocalLegalizationBottom() {
 
   int i;
   for (i = 0; i < sz; ++i) {
-    //std::cout << i << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << i << "\n";
     auto &block = block_list[index_loc_list_[i].num];
 
     if (block.IsFixed()) continue;
@@ -1138,7 +1138,7 @@ bool LGTetrisEx::LocalLegalizationBottom() {
       is_legal_loc_found = FindLocBottom(res, width, height);
       if (!is_legal_loc_found) {
         is_successful = false;
-        //std::cout << res.x << "  " << res.y << "  " << block.Num() << " left\n";
+        //BOOST_LOG_TRIVIAL(info)   << res.x << "  " << res.y << "  " << block.Num() << " left\n";
         //break;
       }
     }
@@ -1371,7 +1371,7 @@ bool LGTetrisEx::LocalLegalizationTop() {
 
   int i;
   for (i = 0; i < sz; ++i) {
-    //std::cout << i << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << i << "\n";
     auto &block = block_list[index_loc_list_[i].num];
 
     if (block.IsFixed()) continue;
@@ -1387,7 +1387,7 @@ bool LGTetrisEx::LocalLegalizationTop() {
       is_legal_loc_found = FindLocTop(res, width, height);
       if (!is_legal_loc_found) {
         is_successful = false;
-        //std::cout << res.x << "  " << res.y << "  " << block.Num() << " left\n";
+        //BOOST_LOG_TRIVIAL(info)   << res.x << "  " << res.y << "  " << block.Num() << " left\n";
         //break;
       }
     }
@@ -1427,10 +1427,8 @@ double LGTetrisEx::EstimatedHPWL(Block &block, int x, int y) {
 }
 
 bool LGTetrisEx::StartPlacement() {
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "---------------------------------------\n"
-              << "Start LGTetrisEx Legalization\n";
-  }
+  BOOST_LOG_TRIVIAL(info) << "---------------------------------------\n"
+                          << "Start LGTetrisEx Legalization\n";
 
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
@@ -1447,36 +1445,32 @@ bool LGTetrisEx::StartPlacement() {
     legalize_from_left_ = !legalize_from_left_;
     ++k_left_;
     //GenMATLABTable("lg" + std::to_string(cur_iter_) + "_result.txt");
-    ReportHPWL(LOG_CRITICAL);
+    ReportHPWL();
     if (is_success) {
       break;
     }
   }
   if (!is_success) {
-    std::cout << "Legalization fails\n";
+    BOOST_LOG_TRIVIAL(info) << "Legalization fails\n";
   }
 
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "\033[0;36m"
-              << "LGTetrisEx Legalization complete (" << cur_iter_ + 1 << ")\n"
-              << "\033[0m";
-  }
+  BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
+                          << "LGTetrisEx Legalization complete (" << cur_iter_ + 1 << ")\n"
+                          << "\033[0m";
 
-  ReportHPWL(LOG_CRITICAL);
+  ReportHPWL();
 
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("(wall time: %.4fs, cpu time: %.4fs)\n", wall_time, cpu_time);
-  }
+  BOOST_LOG_TRIVIAL(info) << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
 
-  ReportMemory(LOG_CRITICAL);
+  ReportMemory();
 
   return true;
 }
 
 void LGTetrisEx::GenAvailSpace(std::string const &name_of_file) {
-  std::cout << "Generating available space, dump result to: " << name_of_file << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Generating available space, dump result to: " << name_of_file << "\n";
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
   ost << RegionLeft() << "\t"

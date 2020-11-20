@@ -30,14 +30,14 @@ int main() {
   //galois::preAlloc(num_of_thread * 2);
   //galois::setActiveThreads(num_of_thread_galois);
 
-  //printf("Galois thread %d\n", num_of_thread);
+  //BOOST_LOG_TRIVIAL(info)  <<"Galois thread %d\n", num_of_thread);
 
   int num_of_thread_openmp = 6;
   omp_set_num_threads(num_of_thread_openmp);
 
   Eigen::initParallel();
   //Eigen::setNbThreads(1);
-  printf("Eigen thread %d\n", Eigen::nbThreads());
+  BOOST_LOG_TRIVIAL(info)  <<"Eigen thread %d\n", Eigen::nbThreads());
 
   double wall_time = get_wall_time();
 
@@ -58,8 +58,8 @@ int main() {
   circuit.ReadDefFile(def_file_name);
 #endif
 
-  std::cout << "File loading complete, time: " << double(get_wall_time() - wall_time)  << " s" << std::endl;
-  printf("  Average white space utility: %.4f\n", circuit.WhiteSpaceUsage());
+  BOOST_LOG_TRIVIAL(info)   << "File loading complete, time: " << double(get_wall_time() - wall_time)  << " s" << std::endl;
+  BOOST_LOG_TRIVIAL(info)  <<"  Average white space utility: %.4f\n", circuit.WhiteSpaceUsage());
   circuit.ReportBriefSummary();
   //circuit.ReportBlockType();
   //circuit.ReportIOPin();
@@ -152,7 +152,7 @@ int main() {
 #endif*/
 
   wall_time = get_wall_time() - wall_time;
-  std::cout << "Execution time " << wall_time << "s.\n";
+  BOOST_LOG_TRIVIAL(info)   << "Execution time " << wall_time << "s.\n";
 
   return 0;
 }

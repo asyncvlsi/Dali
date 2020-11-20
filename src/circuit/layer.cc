@@ -34,7 +34,7 @@ MetalLayer::MetalLayer(double width,
     direction_(direction) {}
 
 void MetalLayer::Report() const {
-  std::cout << "  MetalLayer Name: " << *Name() << "\n"
+  BOOST_LOG_TRIVIAL(info)   << "  MetalLayer Name: " << *Name() << "\n"
             << "    Assigned Num: " << Num() << "\n"
             << "    Width and Spacing: " << Width() << " " << Spacing() << "\n"
             << "    MinArea: " << Area() << "\n"
@@ -60,7 +60,7 @@ void WellLayer::SetParams(double width, double spacing, double op_spacing, doubl
 }
 
 void WellLayer::Report() {
-  std::cout << "    Width:       " << Width() << " um\n"
+  BOOST_LOG_TRIVIAL(info)   << "    Width:       " << Width() << " um\n"
             << "    Spacing:     " << Spacing() << " um\n"
             << "    OpSpacing:   " << OpSpacing() << " um\n"
             << "    MaxPlugDist: " << MaxPlugDist() << " um\n"

@@ -21,13 +21,13 @@ placer_dla_t::placer_dla_t(double aspectRatio, double fillingRate): placer_t(asp
 
 bool placer_dla_t::set_input_circuit(circuit_t *circuit) {
   if (circuit->block_list.empty()) {
-    std::cout << "Error!\n";
-    std::cout << "Invalid input circuit: empty block list!\n";
+    BOOST_LOG_TRIVIAL(info)   << "Error!\n";
+    BOOST_LOG_TRIVIAL(info)   << "Invalid input circuit: empty block list!\n";
     return false;
   }
   if (circuit->net_list.empty()) {
-    std::cout << "Error!\n";
-    std::cout << "Invalid input circuit: empty net list!\n";
+    BOOST_LOG_TRIVIAL(info)   << "Error!\n";
+    BOOST_LOG_TRIVIAL(info)   << "Invalid input circuit: empty net list!\n";
     return false;
   }
 
@@ -36,7 +36,7 @@ bool placer_dla_t::set_input_circuit(circuit_t *circuit) {
     block_dla_t block_dla;
     block_dla.retrieve_info_from_database(block);
     block_list.push_back(block_dla);
-    //std::cout << block_dla << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << block_dla << "\n";
   }
 
   for (auto &net: circuit->net_list) {
@@ -184,28 +184,28 @@ void placer_dla_t::update_neighbor_list() {
   }
   /*
   for (auto &block: block_list) {
-    std::cout << "Block: " << block.name() << " is connected to net: ";
+    BOOST_LOG_TRIVIAL(info)   << "Block: " << block.name() << " is connected to net: ";
     for (auto &net_ptr: block.net) {
-      std::cout << net_ptr->name() << " ";
+      BOOST_LOG_TRIVIAL(info)   << net_ptr->name() << " ";
     }
-    std::cout << "\t";
+    BOOST_LOG_TRIVIAL(info)   << "\t";
 
-    std::cout << "In total " << block.total_net() << " net(s).\n";
+    BOOST_LOG_TRIVIAL(info)   << "In total " << block.total_net() << " net(s).\n";
   }
   for (auto &net: net_list) {
-    std::cout << "Net " << net.name() << " connects cells: ";
+    BOOST_LOG_TRIVIAL(info)   << "Net " << net.name() << " connects cells: ";
     for (auto &pin: net.pin_list_) {
-      std::cout << "\t" <<  pin.get_block()->name();
+      BOOST_LOG_TRIVIAL(info)   << "\t" <<  pin.get_block()->name();
     }
-    std::cout << "\n";
+    BOOST_LOG_TRIVIAL(info)   << "\n";
   }
   for (auto &block: block_list) {
     double total_wire_weight = 0;
     for (auto &neb: block.neb_list) {
-      std::cout << "Block " << block.name() << " is connected to " << neb.block->Name() << " with wire numbers " << neb.total_wire_weight << "\n";
+      BOOST_LOG_TRIVIAL(info)   << "Block " << block.name() << " is connected to " << neb.block->Name() << " with wire numbers " << neb.total_wire_weight << "\n";
       total_wire_weight += neb.total_wire_weight;
     }
-    std::cout << block.Num() << " is connected to " << total_wire_weight << " wire(s)\n";
+    BOOST_LOG_TRIVIAL(info)   << block.Num() << " is connected to " << total_wire_weight << " wire(s)\n";
   }
    */
 }
@@ -231,7 +231,7 @@ void placer_dla_t::prioritize_block_to_place(){
   }
 
   for (auto &pair: pair_list) {
-    //std::cout << pair.first << " is connected to " << pair.second << " nets\n";
+    //BOOST_LOG_TRIVIAL(info)   << pair.first << " is connected to " << pair.second << " nets\n";
     block_to_place_queue.push(pair.first); // the queue of sorted cell list
   }
 
@@ -243,10 +243,10 @@ void placer_dla_t::update_bin_list(int first_blk_num) {
   double block_left = block_list[first_blk_num].llx(), block_right = block_list[first_blk_num].urx();
   double block_bottom = block_list[first_blk_num].lly(), block_top = block_list[first_blk_num].ury();
 
-  //std::cout << "Block: " << first_blk_num << " is in bins: ";
+  //BOOST_LOG_TRIVIAL(info)   << "Block: " << first_blk_num << " is in bins: ";
   if (virtual_bin_boundary.overlap_area(block_list[first_blk_num]) < block_list[first_blk_num].area()) {
     block_out_of_bin.push_back(first_blk_num);
-    //std::cout << "-1 -1; ";
+    //BOOST_LOG_TRIVIAL(info)   << "-1 -1; ";
   }
   int L,B,R,T; // block_left, block_bottom, block_right, block_top of the cell in which bin
   L = std::floor((block_left - left_most)/bin_width);
@@ -267,7 +267,7 @@ void placer_dla_t::update_bin_list(int first_blk_num) {
   }
   for (int x=L; x<=R; x++) {
     for (int y=B; y<=T; y++) {
-      //std::cout << x << " " << y << "; ";
+      //BOOST_LOG_TRIVIAL(info)   << x << " " << y << "; ";
       bin_list[x][y].CIB.push_back(first_blk_num);
       bin_index tmp_bin_loc(x,y);
       block_list[first_blk_num].bin.push_back(tmp_bin_loc);
@@ -298,8 +298,8 @@ bool placer_dla_t::random_release_from_boundaries(int boundary_num, block_dla_t 
       block.set_lly(bottom() - 1*(top() - bottom()));
       break;
     default:
-      std::cout << "Error\n!";
-      std::cout << "Invalid release boundaries\n";
+      BOOST_LOG_TRIVIAL(info)   << "Error\n!";
+      BOOST_LOG_TRIVIAL(info)   << "Invalid release boundaries\n";
       return false;
   }
   return true;
@@ -422,10 +422,10 @@ bool placer_dla_t::DLA() {
   block_list[first_blk_num].set_queued(true);
   int num_of_node_placed = 0;
   while (!Q_place.empty()) {
-    std::cout << "Number of blocks in current queue: " << Q_place.size() << "\n";
+    BOOST_LOG_TRIVIAL(info)   << "Number of blocks in current queue: " << Q_place.size() << "\n";
     first_blk_num = Q_place.front();
     Q_place.pop();
-    std::cout << "Placing block: " << block_list[first_blk_num].name() << "\n";
+    BOOST_LOG_TRIVIAL(info)   << "Placing block: " << block_list[first_blk_num].name() << "\n";
     for (size_t j=0; j<block_list[first_blk_num].neb_list.size(); j++) {
       tmp_num = block_list[first_blk_num].neb_list[j].block->num();
       if (block_list[tmp_num].is_queued()){
@@ -459,7 +459,7 @@ bool placer_dla_t::DLA() {
       }
     }
   }
-  //std::cout << "Total WireLength after placement is " <<  TotalWireLength(block_list, net_list) << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << "Total WireLength after placement is " <<  TotalWireLength(block_list, net_list) << "\n";
   return true;
 }
 
@@ -486,7 +486,7 @@ void placer_dla_t::report_placement_result() {
 bool placer_dla_t::draw_bin_list(std::string const &filename) {
   std::ofstream ost(filename.c_str());
   if (ost.is_open()==0) {
-    std::cout << "Cannot open output file: " << filename << "\n";
+    BOOST_LOG_TRIVIAL(info)   << "Cannot open output file: " << filename << "\n";
     return false;
   }
   for (auto &bin_column: bin_list) {
@@ -504,7 +504,7 @@ bool placer_dla_t::draw_bin_list(std::string const &filename) {
 bool placer_dla_t::draw_block_net_list(std::string const &filename) {
   std::ofstream ost(filename.c_str());
   if (ost.is_open()==0) {
-    std::cout << "Cannot open output file: " << filename << "\n";
+    BOOST_LOG_TRIVIAL(info)   << "Cannot open output file: " << filename << "\n";
     return false;
   }
   for (auto &block: block_list) {
@@ -527,7 +527,7 @@ bool placer_dla_t::draw_block_net_list(std::string const &filename) {
 bool placer_dla_t::draw_placed_blocks(std::string const &filename) {
   std::ofstream ost(filename.c_str());
   if (ost.is_open()==0) {
-    std::cout << "Cannot open output file: " << filename << "\n";
+    BOOST_LOG_TRIVIAL(info)   << "Cannot open output file: " << filename << "\n";
     return false;
   }
   for (auto &block: block_list) {
@@ -557,7 +557,7 @@ bool placer_dla_t::draw_placed_blocks(std::string const &filename) {
 bool placer_dla_t::output_result(std::string const &filename) {
   std::ofstream ost(filename.c_str());
   if (ost.is_open()==0) {
-    std::cout << "Cannot open output file: " << filename << "\n";
+    BOOST_LOG_TRIVIAL(info)   << "Cannot open output file: " << filename << "\n";
     return false;
   }
   for (auto &block: block_list) {

@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
         x_grid = std::stod(str_x_grid);
         y_grid = std::stod(str_y_grid);
       } catch (...) {
-        std::cout << "Invalid input files!\n";
+        BOOST_LOG_TRIVIAL(info)   << "Invalid input files!\n";
         ReportUsage();
         return 1;
       }
@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
     } else if (arg == "-db" && i < argc) {
       use_db = true;
     } else {
-      std::cout << "Unknown command line option: " << argv[i] << "\n";
+      BOOST_LOG_TRIVIAL(info)   << "Unknown command line option: " << argv[i] << "\n";
       return 1;
     }
   }
@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
 }
 
 void ReportUsage() {
-  std::cout << "\033[0;36m"
+  BOOST_LOG_TRIVIAL(info)   << "\033[0;36m"
             << "Usage: bookshelf2def\n"
             << " -lef <file.lef>\n"
             << " -def <file.def>\n"

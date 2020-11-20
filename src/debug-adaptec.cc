@@ -8,16 +8,15 @@
 #include <iostream>
 
 #include "circuit.h"
+#include "common/logging.h"
 #include "common/si2lefdef.h"
 #include "placer.h"
 
-VerboseLevel globalVerboseLevel = LOG_CRITICAL;
-
 #define TEST_LG 0
 #define TEST_WLG 0
-#define USE_DB_PARSER 0
 
 int main() {
+  init_logging_and_formatting(boost::log::trivial::info);
   Circuit circuit;
 
   time_t Time = clock();
@@ -37,18 +36,6 @@ int main() {
   //circuit.ReportBlockType();
   //circuit.ReportBlockList();
   //circuit.ReportNetList();
-#if USE_DB_PARSER
-  odb::dbDatabase *db = odb::dbDatabase::create();
-  std::vector<std::string> defFileVec;
-  defFileVec.push_back(adaptec1_def);
-  dup2(1, 2); // redirect log of OpenDB parser from stderr to stdout, because this stderr log is annoying
-  odb_read_lef(db, adaptec1_lef.c_str());
-  odb_read_def(db, defFileVec);
-  circuit.InitializeFromDB(db);
-#else
-  //circuit.ReadLefFile(adaptec1_lef);
-  //circuit.ReadDefFile(adaptec1_def);
-#endif
 
   //circuit.getDesign()->region_left_ = 459;
   //circuit.getDesign()->region_right_ = 10692 + 459;
@@ -56,7 +43,7 @@ int main() {
   //circuit.getDesign()->region_top_ = 11127 + 12;
   //circuit.GenMATLABTable("_result.txt");
 
-  std::cout << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << " s\n";
+  BOOST_LOG_TRIVIAL(info) << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << " s" << std::endl;
 
   circuit.ReportBriefSummary();
   circuit.ReportHPWL();
@@ -98,7 +85,7 @@ int main() {
 #endif
 
   Time = clock() - Time;
-  std::cout << "Execution time " << double(Time) / CLOCKS_PER_SEC << "s.\n";
+  BOOST_LOG_TRIVIAL(info) << "Execution time " << double(Time) / CLOCKS_PER_SEC << "s." << std::endl;
 
   return 0;
 }

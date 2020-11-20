@@ -9,14 +9,14 @@
 
 int getLefUnits(lefrCallbackType_e type, lefiUnits *units, lefiUserData userData) {
   if (type != lefrUnitsCbkType) {
-    std::cout << "Type is not lefrUnitsCbkType!" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Type is not lefrUnitsCbkType!" << std::endl;
     exit(2);
   }
   if (units->hasDatabase()) {
     Circuit &circuit = *((Circuit *) userData);
     double number = units->databaseNumber();
     circuit.setDatabaseMicron(int(number));
-    std::cout << "DATABASE MICRONS " << units->databaseNumber() << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "DATABASE MICRONS " << units->databaseNumber() << std::endl;
   } else {
     Assert(false, "No DATABASE MICRONS provided in the UNITS section?");
   }
@@ -25,38 +25,38 @@ int getLefUnits(lefrCallbackType_e type, lefiUnits *units, lefiUserData userData
 
 int getLefManufacturingGrid(lefrCallbackType_e type, double number, lefiUserData userData) {
   if (type != lefrManufacturingCbkType) {
-    std::cout << "Type is not lefrPinCbkType!" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Type is not lefrPinCbkType!" << std::endl;
     exit(2);
   }
   Circuit &circuit = *((Circuit *) userData);
   circuit.setManufacturingGrid(number);
-  std::cout << "MANUFACTURINGGRID " << number << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "MANUFACTURINGGRID " << number << std::endl;
 
   return 0;
 }
 
 int getLefLayers(lefrCallbackType_e type, lefiLayer *layer, lefiUserData userData) {
   if (type != lefrLayerCbkType) {
-    std::cout << "Type is not lefrLayerCbkType!" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Type is not lefrLayerCbkType!" << std::endl;
     exit(2);
   }
 
   if (strcmp(layer->type(), "ROUTING") == 0) { // routing layer
     std::string metal_layer_name(layer->name());
-    std::cout << metal_layer_name << "\n";
+    BOOST_LOG_TRIVIAL(info) << metal_layer_name << "\n";
     double min_width = layer->width();
     if (layer->hasMinwidth()) {
       min_width = layer->minwidth();
     }
     double min_spacing = layer->spacing(0);
-    std::cout << min_width << "  " << min_spacing << "  ";
+    BOOST_LOG_TRIVIAL(info) << min_width << "  " << min_spacing << "  ";
     std::string str_direct(layer->direction());
-    std::cout << str_direct << "\n";
+    BOOST_LOG_TRIVIAL(info) << str_direct << "\n";
     MetalDirection direct = StrToMetalDirection(str_direct);
     double min_area = 0;
     if (layer->hasArea()) {
       min_area = layer->area();
-      std::cout << min_area;
+      BOOST_LOG_TRIVIAL(info) << min_area;
     }
     Circuit &circuit = *((Circuit *) userData);
     circuit.AddMetalLayer(metal_layer_name,
@@ -66,7 +66,7 @@ int getLefLayers(lefrCallbackType_e type, lefiLayer *layer, lefiUserData userDat
                           min_width + min_spacing,
                           min_width + min_spacing,
                           direct);
-    //std::cout << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << "\n";
   }
 
   return 0;
@@ -74,14 +74,14 @@ int getLefLayers(lefrCallbackType_e type, lefiLayer *layer, lefiUserData userDat
 
 int siteCB(lefrCallbackType_e type, lefiSite *site, lefiUserData userData) {
   if (type != lefrSiteCbkType) {
-    std::cout << "Type is not lefrSiteCbkType!" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Type is not lefrSiteCbkType!" << std::endl;
     exit(2);
   }
   if (site->lefiSite::hasSize()) {
     Circuit &circuit = *((Circuit *) userData);
     circuit.setGridValue(site->sizeX(), site->sizeY());
-    //std::cout << "SITE SIZE " << site->lefiSite::sizeX() << "  " << site->lefiSite::sizeY() << "\n";
-    //std::cout << circuit.GridValueX() << "  " << circuit.GridValueY() << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << "SITE SIZE " << site->lefiSite::sizeX() << "  " << site->lefiSite::sizeY() << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << circuit.GridValueX() << "  " << circuit.GridValueY() << "\n";
   } else {
     Assert(false, "SITE SIZE information not provided");
   }
@@ -90,7 +90,7 @@ int siteCB(lefrCallbackType_e type, lefiSite *site, lefiUserData userData) {
 
 int macroBeginCB(lefrCallbackType_e type, const char *macroName, lefiUserData userData) {
   if (type != lefrMacroBeginCbkType) {
-    std::cout << "Type is not lefrMacroBeginCbkType!" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Type is not lefrMacroBeginCbkType!" << std::endl;
     exit(2);
   }
   Circuit &circuit = *((Circuit *) userData);
@@ -102,13 +102,13 @@ int macroBeginCB(lefrCallbackType_e type, const char *macroName, lefiUserData us
   } else {
     tmpMacro = circuit.AddBlockType(tmpMacroName, 0, 0);
   }
-  //std::cout << tmpMacro->Name() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << tmpMacro->Name() << "\n";
   return 0;
 }
 
 int getLefPins(lefrCallbackType_e type, lefiPin *pin, lefiUserData userData) {
   if (type != lefrPinCbkType) {
-    std::cout << "Type is not lefrPinCbkType!" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Type is not lefrPinCbkType!" << std::endl;
     exit(2);
   }
   Circuit &circuit = *((Circuit *) userData);
@@ -117,9 +117,9 @@ int getLefPins(lefrCallbackType_e type, lefiPin *pin, lefiUserData userData) {
   Assert(tmpMacro != nullptr, "tmp macro cannot be a nullptr when setting macro pin info");
   std::string tmpMacroName = circuit.getTechRef().last_blk_type_->Name();
 
-  //std::cout << "This is a lef pin callback\n";
+  //BOOST_LOG_TRIVIAL(info)   << "This is a lef pin callback\n";
   std::string pin_name(pin->name());
-  //std::cout << "  " << pin_name << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << "  " << pin_name << "\n";
   //if (pin_name == "Vdd" || pin_name == "GND") continue;
   Assert(pin->numPorts() > 0, "No physical pins, Macro: " + tmpMacroName + ", pin: " + pin_name);
   bool is_input = true;
@@ -142,7 +142,7 @@ int getLefPins(lefrCallbackType_e type, lefiPin *pin, lefiUserData userData) {
         double urx = pin->port(i)->getRect(j)->xh / circuit.GridValueX();
         double lly = pin->port(i)->getRect(j)->yl / circuit.GridValueY();
         double ury = pin->port(i)->getRect(j)->yh / circuit.GridValueY();
-        //std::cout << "  PORT: " << llx << "  " << lly << "  " << urx << "  " << ury << "  " << "\n";
+        //BOOST_LOG_TRIVIAL(info)   << "  PORT: " << llx << "  " << lly << "  " << urx << "  " << ury << "  " << "\n";
         circuit.AddBlkTypePinRect(new_pin, llx, lly, urx, ury);
       }
     }
@@ -156,7 +156,7 @@ int getLefMacros(lefrCallbackType_e type, lefiMacro *macro, lefiUserData userDat
    * This callback function is called after Pin and OBS, but before macrosEND.
    * ****/
   if ((type != lefrMacroCbkType)) {
-    std::cout << "Type is not lefrMacroCbkType!" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Type is not lefrMacroCbkType!" << std::endl;
     exit(2);
   }
 
@@ -170,7 +170,7 @@ int getLefMacros(lefrCallbackType_e type, lefiMacro *macro, lefiUserData userDat
   BlockType *&tmpMacro = circuit.getTechRef().last_blk_type_;
   circuit.SetBlockTypeSize(tmpMacro, sizeX, sizeY);
 
-  //std::cout << "MACRO " << tmpMacro->Name() << "\n"
+  //BOOST_LOG_TRIVIAL(info)   << "MACRO " << tmpMacro->Name() << "\n"
   //          << "  ORIGIN " << originX << " " << originY << " ;\n"
   //          << "  SIZE   " << sizeX << " " << sizeY << " ;\n";
 
@@ -179,13 +179,13 @@ int getLefMacros(lefrCallbackType_e type, lefiMacro *macro, lefiUserData userDat
 
 int macroEndCB(lefrCallbackType_e type, const char *macroName, lefiUserData userData) {
   if (type != lefrMacroEndCbkType) {
-    std::cout << "Type is not lefrMacroEndCbkType!" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Type is not lefrMacroEndCbkType!" << std::endl;
     exit(2);
   }
   Circuit &circuit = *((Circuit *) userData);
   BlockType *&tmpMacro = circuit.getTechRef().last_blk_type_;
   Assert(tmpMacro != nullptr, "A MACRO end before begin?");
-  //std::cout << "END " << tmpMacro->Name() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << "END " << tmpMacro->Name() << "\n";
   tmpMacro = nullptr;
 
   return 0;
@@ -209,13 +209,13 @@ void readLef(std::string &lefFileName, Circuit &circuit) {
 
   FILE *f;
   if ((f = fopen(lefFileName.c_str(), "r")) == nullptr) {
-    std::cout << "Couldn't open lef file" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Couldn't open lef file" << std::endl;
     exit(2);
   }
 
   int res = lefrRead(f, lefFileName.c_str(), (lefiUserData) &circuit);
   if (res != 0) {
-    std::cout << "LEF parser returns an error!" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "LEF parser returns an error!" << std::endl;
     exit(2);
   }
   fclose(f);
@@ -225,7 +225,7 @@ void readLef(std::string &lefFileName, Circuit &circuit) {
 
 int designCB(defrCallbackType_e type, const char *designName, defiUserData userData) {
   if (type != defrDesignStartCbkType) {
-    std::cout << "Type is not defrDesignStartCbkType!" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Type is not defrDesignStartCbkType!" << std::endl;
     exit(2);
   }
   if (!designName || !*designName) {
@@ -233,39 +233,39 @@ int designCB(defrCallbackType_e type, const char *designName, defiUserData userD
   }
   Circuit &circuit = *((Circuit *) userData);
   circuit.getDesignRef().name_ = std::string(designName);
-  std::cout << circuit.getDesignRef().name_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << circuit.getDesignRef().name_ << "\n";
   return 0;
 }
 
 int getDefUnits(defrCallbackType_e type, double number, defiUserData userData) {
   if (type != defrUnitsCbkType) {
-    std::cout << "Type is not defrUnitsCbkType!" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Type is not defrUnitsCbkType!" << std::endl;
     exit(2);
   }
   Circuit &circuit = *((Circuit *) userData);
   circuit.setUnitsDistanceMicrons(int(number));
-  std::cout << "UNITS DISTANCE MICRONS " << circuit.DistanceMicrons() << " ;" << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "UNITS DISTANCE MICRONS " << circuit.DistanceMicrons() << " ;" << std::endl;
   return 0;
 }
 
 int getDefDieArea(defrCallbackType_e type, defiBox *box, defiUserData userData) {
   if (type != defrDieAreaCbkType) {
-    std::cout << "Type is not defrDieAreaCbkType!" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Type is not defrDieAreaCbkType!" << std::endl;
     exit(1);
   }
   Circuit &circuit = *((Circuit *) userData);
   if (!circuit.getDesignRef().die_area_set_) {
     circuit.setDieArea(box->xl(), box->yl(), box->xh(), box->yh());
-    std::cout << circuit.RegionLLX() << "  " << circuit.RegionLLY() << "  " << circuit.RegionURX() << "  "
-              << circuit.RegionURY() << "\n";
+    BOOST_LOG_TRIVIAL(info) << circuit.RegionLLX() << "  " << circuit.RegionLLY() << "  " << circuit.RegionURX() << "  "
+                            << circuit.RegionURY() << "\n";
   } else {
     int components_count = circuit.getDesignRef().blk_count_;
     int pins_count = circuit.getDesignRef().iopin_count_;
     int nets_count = circuit.getDesignRef().net_count_;
     circuit.setListCapacity(components_count, pins_count, nets_count);
-    std::cout << "components count: " << components_count << "\n"
-              << "pins count:        " << pins_count << "\n"
-              << "nets count:       " << nets_count << "\n";
+    BOOST_LOG_TRIVIAL(info) << "components count: " << components_count << "\n"
+                            << "pins count:        " << pins_count << "\n"
+                            << "nets count:       " << nets_count << "\n";
   }
   return 0;
 }
@@ -299,7 +299,7 @@ int countNumberCB(defrCallbackType_e type, int num, defiUserData userData) {
 
 int getDefTracks(defrCallbackType_e type, defiTrack *track, defiUserData userData) {
   if (type != defrTrackCbkType) {
-    std::cout << "Type is not defrTrackCbkType!" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Type is not defrTrackCbkType!" << std::endl;
     exit(2);
   }
 
@@ -308,7 +308,7 @@ int getDefTracks(defrCallbackType_e type, defiTrack *track, defiUserData userDat
 
 int getDefComponents(defrCallbackType_e type, defiComponent *comp, defiUserData userData) {
   if (type != defrComponentCbkType) {
-    std::cout << "Type is not defrComponentCbkType!" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Type is not defrComponentCbkType!" << std::endl;
     exit(1);
   }
 
@@ -323,14 +323,14 @@ int getDefComponents(defrCallbackType_e type, defiComponent *comp, defiUserData 
     Assert(false, "Component macro name is null, terminate parsing.\n");
   }
   std::string blk_type_name(comp->name());
-  //std::cout << "ID: " << comp->id() << " NAME: " << comp->name() << "\n";
-  //std::cout << circuit.GridValueX() << "  " << circuit.GridValueY() << "\n";
-  //std::cout << comp->placementX() << "  " << comp->placementY() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << "ID: " << comp->id() << " NAME: " << comp->name() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << circuit.GridValueX() << "  " << circuit.GridValueY() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << comp->placementX() << "  " << comp->placementY() << "\n";
   int llx_int =
       (int) std::round(comp->placementX() / circuit.GridValueX() / circuit.DistanceMicrons());
   int lly_int =
       (int) std::round(comp->placementY() / circuit.GridValueY() / circuit.DistanceMicrons());
-  //std::cout << llx_int << "  " << lly_int << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << llx_int << "  " << lly_int << "\n";
   std::string orient(std::string(comp->placementOrientStr()));
   PlaceStatus place_status = UNPLACED_;
   if (comp->isFixed()) {
@@ -354,7 +354,7 @@ int getDefComponents(defrCallbackType_e type, defiComponent *comp, defiUserData 
 
 int getDefIOPins(defrCallbackType_e type, defiPin *pin, defiUserData userData) {
   if (type != defrPinCbkType) {
-    std::cout << "Type is not defrPinCbkType!" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Type is not defrPinCbkType!" << std::endl;
     exit(1);
   }
 
@@ -417,7 +417,7 @@ int getDefIOPins(defrCallbackType_e type, defiPin *pin, defiUserData userData) {
 
 int getDefNets(defrCallbackType_e type, defiNet *net, defiUserData userData) {
   if (type != defrNetCbkType) {
-    std::cout << "Type is not defrNetCbkType!" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Type is not defrNetCbkType!" << std::endl;
     exit(2);
   }
 
@@ -427,24 +427,24 @@ int getDefNets(defrCallbackType_e type, defiNet *net, defiUserData userData) {
   circuit.AddNet(net_name, net_capacity, circuit.getDesignRef().normal_signal_weight);
 
   //TO-DO: IOPIN in nets not added
-  //std::cout << "- " << net_name;
+  //BOOST_LOG_TRIVIAL(info)   << "- " << net_name;
   for (int i = 0; i < net->numConnections(); i++) {
     std::string blk_name(net->instance(i));
     std::string pin_name(net->pin(i));
     circuit.AddBlkPinToNet(blk_name, pin_name, net_name);
-    //std::cout << " ( " << blk_name << ", " << pin_name << " ) ";
+    //BOOST_LOG_TRIVIAL(info)   << " ( " << blk_name << ", " << pin_name << " ) ";
   }
-  //std::cout << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << "\n";
 
   return 0;
 }
 
 int getDefVoid(defrCallbackType_e type, void *dummy, defiUserData userData) {
   if (type != defrDesignEndCbkType) {
-    std::cout << "Type is not defrDesignEndCbkType!" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Type is not defrDesignEndCbkType!" << std::endl;
     exit(2);
   }
-  std::cout << "END of DEF\n";
+  BOOST_LOG_TRIVIAL(info) << "END of DEF\n";
   return 0;
 }
 
@@ -463,13 +463,13 @@ void readDef(std::string &defFileName, Circuit &circuit) {
 
   FILE *f;
   if ((f = fopen(defFileName.c_str(), "r")) == nullptr) {
-    std::cout << "Couldn't open def file" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Couldn't open def file" << std::endl;
     exit(2);
   }
 
   int res = defrRead(f, defFileName.c_str(), (defiUserData) &circuit, 1);
   if (res != 0) {
-    std::cout << "DEF parser returns an error in round 1!" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "DEF parser returns an error in round 1!" << std::endl;
     exit(2);
   }
   fclose(f);
@@ -488,12 +488,12 @@ void readDef(std::string &defFileName, Circuit &circuit) {
 
   //defrSetDesignEndCbk(getDefVoid);
   if ((f = fopen(defFileName.c_str(), "r")) == nullptr) {
-    std::cout << "Couldn't open def file" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Couldn't open def file" << std::endl;
     exit(2);
   }
   res = defrRead(f, defFileName.c_str(), (defiUserData) &circuit, 1);
   if (res != 0) {
-    std::cout << "DEF parser returns an error in round 2!" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "DEF parser returns an error in round 2!" << std::endl;
     exit(2);
   }
   fclose(f);

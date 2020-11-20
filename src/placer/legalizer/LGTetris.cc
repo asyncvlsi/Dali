@@ -54,7 +54,7 @@ void TetrisLegalizer::FastShift(int failure_point) {
     bounding_left = block_list[failed_block].LLX();
     int last_placed_block = index_loc_list_[failure_point - 1].num;
     int left_new = (int) std::round(block_list[last_placed_block].LLX());
-    //std::cout << left_new << "  " << bounding_left << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << left_new << "  " << bounding_left << "\n";
     for (size_t i = failure_point; i < index_loc_list_.size(); ++i) {
       int block_num = index_loc_list_[i].num;
       block_list[block_num].IncreaseX(left_new + init_diff - bounding_left);
@@ -111,7 +111,7 @@ bool TetrisLegalizer::TetrisLegal() {
   std::sort(index_loc_list_.begin(), index_loc_list_.end());
 
   /*for (auto &pair: index_loc_list_) {
-    std::cout << block_list[pair.num].LLX() << "\n";
+    BOOST_LOG_TRIVIAL(info)   << block_list[pair.num].LLX() << "\n";
   }*/
 
   // 3. initialize the data structure to store row usage
@@ -119,9 +119,7 @@ bool TetrisLegalizer::TetrisLegal() {
   int minWidth = GetCircuit()->MinBlkWidth();
   //int minHeight = GetCircuit()->MinBlkHeight();
 
-  if (globalVerboseLevel >= LOG_INFO) {
-    std::cout << "Building LGTetris space" << std::endl;
-  }
+  BOOST_LOG_TRIVIAL(info) << "Building LGTetris space" << std::endl;
   TetrisSpace tetrisSpace(RegionLeft(), RegionRight(), RegionBottom(), RegionTop(), 1, minWidth);
   int llx, lly;
   int width, height;
@@ -154,13 +152,13 @@ bool TetrisLegalizer::TetrisLegal() {
         block_list[block_num].SetLoc(result_loc.x, result_loc.y);
       } else {
         FastShift(i);
-        std::cout << "Tetris legalization iteration...\n";
+        BOOST_LOG_TRIVIAL(info) << "Tetris legalization iteration...\n";
         return false;
       }
     }
     /*block_list[block_num].is_placed = true;
     std::string file_name = std::to_string(count);
-    std::cout << count << "  " << is_current_loc_legal << "\n";
+    BOOST_LOG_TRIVIAL(info)   << count << "  " << is_current_loc_legal << "\n";
      GenMATLABScriptPlaced(file_name);*/
     //count++;
   }
@@ -170,9 +168,7 @@ bool TetrisLegalizer::TetrisLegal() {
 bool TetrisLegalizer::StartPlacement() {
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "Start LGTetris legalization\n";
-  }
+  BOOST_LOG_TRIVIAL(info) << "Start LGTetris legalization\n";
   InitLegalizer();
   /*for (auto &block: GetCircuit()->block_list) {
     block.IncreaseX((right_-left_)/2.0);
@@ -186,11 +182,9 @@ bool TetrisLegalizer::StartPlacement() {
     if (!is_successful) {
       FlipPlacement();
     } else {
-      if (globalVerboseLevel >= LOG_CRITICAL) {
-        std::cout << "\033[0;36m"
-                  << "Tetris legalization complete!\n"
-                  << "\033[0m";
-      }
+      BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
+                              << "Tetris legalization complete!\n"
+                              << "\033[0m";
       break;
     }
   }
@@ -198,18 +192,14 @@ bool TetrisLegalizer::StartPlacement() {
     FlipPlacement();
   }
   if (!is_successful) {
-    if (globalVerboseLevel >= LOG_CRITICAL) {
-      std::cout << "\033[0;31m"
-                << "LGTetris legalization fails\n"
-                << "\033[0m";
-    }
+    BOOST_LOG_TRIVIAL(info) << "\033[0;31m"
+                            << "LGTetris legalization fails\n"
+                            << "\033[0m";
   }
-  ReportHPWL(LOG_CRITICAL);
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "(wall time: "
-              << wall_time << "s, cpu time: "
-              << cpu_time << "s)\n";
-  }
+  ReportHPWL();
+  BOOST_LOG_TRIVIAL(info) << "(wall time: "
+                          << wall_time << "s, cpu time: "
+                          << cpu_time << "s)\n";
 
   return true;
 }

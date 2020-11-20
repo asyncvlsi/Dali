@@ -12,7 +12,6 @@
 #include "circuit.h"
 #include "common/global.h"
 #include "common/timing.h"
-#include "common/opendb.h"
 #include "placer.h"
 
 VerboseLevel globalVerboseLevel = LOG_CRITICAL;
@@ -25,7 +24,7 @@ int main(int argc, char *argv[]) {
   using std::chrono::system_clock;
   system_clock::time_point today = system_clock::now();
   std::time_t tt = system_clock::to_time_t(today);
-  std::cout << "today is: " << ctime(&tt) << std::endl;
+  BOOST_LOG_TRIVIAL(info)   << "today is: " << ctime(&tt) << std::endl;
 
   if (argc < 5) {
     ReportUsage();
@@ -57,28 +56,28 @@ int main(int argc, char *argv[]) {
     } else if (arg == "-lef" && i < argc) {
       lef_file_name = std::string(argv[i++]);
       if (lef_file_name.empty()) {
-        std::cout << "Invalid input lef file!\n";
+        BOOST_LOG_TRIVIAL(info)   << "Invalid input lef file!\n";
         ReportUsage();
         return 1;
       }
     } else if (arg == "-def" && i < argc) {
       def_file_name = std::string(argv[i++]);
       if (def_file_name.empty()) {
-        std::cout << "Invalid input def file!\n";
+        BOOST_LOG_TRIVIAL(info)   << "Invalid input def file!\n";
         ReportUsage();
         return 1;
       }
     } else if (arg == "-cell" && i < argc) {
       cell_file_name = std::string(argv[i++]);
       if (cell_file_name.empty()) {
-        std::cout << "Invalid input cell file!\n";
+        BOOST_LOG_TRIVIAL(info)   << "Invalid input cell file!\n";
         ReportUsage();
         return 1;
       }
     } else if (arg == "-o" && i < argc) {
       output_name = std::string(argv[i++]);
       if (output_name.empty()) {
-        std::cout << "Invalid output name!\n";
+        BOOST_LOG_TRIVIAL(info)   << "Invalid output name!\n";
         ReportUsage();
         return 1;
       }
@@ -90,7 +89,7 @@ int main(int argc, char *argv[]) {
         y_grid = std::stod(str_y_grid);
         circuit.setGridValue(x_grid, y_grid);
       } catch (...) {
-        std::cout << "Invalid input files!\n";
+        BOOST_LOG_TRIVIAL(info)   << "Invalid input files!\n";
         ReportUsage();
         return 1;
       }
@@ -99,7 +98,7 @@ int main(int argc, char *argv[]) {
       try {
         target_density = std::stod(str_target_density);
       } catch (...) {
-        std::cout << "Invalid target density!\n";
+        BOOST_LOG_TRIVIAL(info)   << "Invalid target density!\n";
         ReportUsage();
         return 1;
       }
@@ -108,7 +107,7 @@ int main(int argc, char *argv[]) {
       try {
         io_metal_layer = std::stoi(str_metal_layer_num) - 1;
       } catch (...) {
-        std::cout << "Invalid metal layer number!\n";
+        BOOST_LOG_TRIVIAL(info)   << "Invalid metal layer number!\n";
         ReportUsage();
         return 1;
       }
@@ -121,20 +120,20 @@ int main(int argc, char *argv[]) {
         tmp = -1;
       }
       if (tmp > 5 || tmp < 0) {
-        std::cout << "Invalid verbosity level\n";
+        BOOST_LOG_TRIVIAL(info)   << "Invalid verbosity level\n";
         ReportUsage();
         return 0;
       }
       globalVerboseLevel = (VerboseLevel) tmp;
     } else {
-      std::cout << "Unknown option for file reading\n";
-      std::cout << arg << "\n";
+      BOOST_LOG_TRIVIAL(info)   << "Unknown option for file reading\n";
+      BOOST_LOG_TRIVIAL(info)   << arg << "\n";
       return 1;
     }
   }
 
   if ((lef_file_name.empty()) || (def_file_name.empty())) {
-    std::cout << "Invalid input files!\n";
+    BOOST_LOG_TRIVIAL(info)   << "Invalid input files!\n";
     ReportUsage();
     return 1;
   }
@@ -160,9 +159,9 @@ int main(int argc, char *argv[]) {
 
   file_wall_time = get_wall_time() - file_wall_time;
   file_cpu_time = get_cpu_time() - file_cpu_time;
-  std::cout << "File loading complete\n";
+  BOOST_LOG_TRIVIAL(info)   << "File loading complete\n";
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("(wall time: %.4fs, cpu time: %.4fs)\n", file_wall_time, file_cpu_time);
+    BOOST_LOG_TRIVIAL(info)  <<"(wall time: %.4fs, cpu time: %.4fs)\n", file_wall_time, file_cpu_time);
   }
   circuit.ReportBriefSummary();
   if (globalVerboseLevel >= LOG_CRITICAL) {
@@ -174,18 +173,18 @@ int main(int argc, char *argv[]) {
     target_density = std::max(circuit.WhiteSpaceUsage(), default_density);
   }
   if (circuit.WhiteSpaceUsage() > target_density) {
-    std::cout << "Cannot set target density smaller than average white space utility!\n";
-    printf("  Average white space utility: %.4f\n", circuit.WhiteSpaceUsage());
-    printf("  Target density: %.4f\n", target_density);
+    BOOST_LOG_TRIVIAL(info)   << "Cannot set target density smaller than average white space utility!\n";
+    BOOST_LOG_TRIVIAL(info)  <<"  Average white space utility: %.4f\n", circuit.WhiteSpaceUsage());
+    BOOST_LOG_TRIVIAL(info)  <<"  Target density: %.4f\n", target_density);
     return 1;
   }
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("  Average white space utility: %.4f\n", circuit.WhiteSpaceUsage());
-    printf("  Target density: %.4f", target_density);
+    BOOST_LOG_TRIVIAL(info)  <<"  Average white space utility: %.4f\n", circuit.WhiteSpaceUsage());
+    BOOST_LOG_TRIVIAL(info)  <<"  Target density: %.4f", target_density);
     if (target_density == default_density) {
-      std::cout << " (default)";
+      BOOST_LOG_TRIVIAL(info)   << " (default)";
     }
-    std::cout << "\n";
+    BOOST_LOG_TRIVIAL(info)   << "\n";
   }
 
   if (cell_file_name.empty()) {
@@ -242,13 +241,13 @@ int main(int argc, char *argv[]) {
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;
 
-  printf("****End of placement (wall time: %.4fs, cpu time: %.4fs)****\n", wall_time, cpu_time);
+  BOOST_LOG_TRIVIAL(info)  <<"****End of placement (wall time: %.4fs, cpu time: %.4fs)****\n", wall_time, cpu_time);
 
   return 0;
 }
 
 void ReportUsage() {
-  std::cout << "\033[0;36m"
+  BOOST_LOG_TRIVIAL(info)   << "\033[0;36m"
             << "Usage: dali\n"
             << "  -lef        <file.lef>\n"
             << "  -def        <file.def>\n"

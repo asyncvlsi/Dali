@@ -4,6 +4,8 @@
 
 #include "gridbin.h"
 
+#include "common/logging.h"
+
 GridBin::GridBin() {
   index.init();
   bottom = 0;
@@ -43,13 +45,13 @@ void GridBin::create_adjacent_bin_list(int grid_cnt_x, int grid_cnt_y) {
     adjacent_bin_index.push_back(tmp_index);
   }
   /*for (auto &neighbor: adjacent_bin_index) {
-    std::cout << neighbor.x << "  " << neighbor.y << ",  ";
+    BOOST_LOG_TRIVIAL(info)   << neighbor.x << "  " << neighbor.y << ",  ";
   }
-  std::cout << "\n";*/
+  BOOST_LOG_TRIVIAL(info)   << "\n";*/
 }
 
 void GridBin::Report() {
-  std::cout << "  block count: " << cell_list.size() << "\n"
+  BOOST_LOG_TRIVIAL(info)   << "  block count: " << cell_list.size() << "\n"
             << "  block area:  " << cell_area << "\n"
             << "  filling rate: " << filling_rate << "\n"
             << "  white space: " << white_space << "\n"

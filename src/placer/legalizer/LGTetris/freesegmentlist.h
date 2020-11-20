@@ -51,7 +51,7 @@ inline size_t FreeSegmentList::size() const {
 
 inline int FreeSegmentList::Left() const {
   if (head_ == nullptr) {
-    std::cout << "Empty linked list, Left() not available\n";
+    BOOST_LOG_TRIVIAL(info)   << "Empty linked list, Left() not available\n";
     assert(head_ != nullptr);
   }
   return head_->Start();
@@ -59,7 +59,7 @@ inline int FreeSegmentList::Left() const {
 
 inline int FreeSegmentList::Right() const {
   if (tail_ == nullptr) {
-    std::cout << "Empty linked list, Right() not available\n";
+    BOOST_LOG_TRIVIAL(info)   << "Empty linked list, Right() not available\n";
     assert(tail_ != nullptr);
   }
   return tail_->End();

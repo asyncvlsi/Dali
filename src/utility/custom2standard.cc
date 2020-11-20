@@ -49,14 +49,14 @@ int main(int argc, char *argv[]) {
         mode = 0;
       }
       if (mode > 3 || mode < 0) {
-        std::cout << "Invalid mode level\n";
+        BOOST_LOG_TRIVIAL(info)   << "Invalid mode level\n";
         ReportUsage();
         return 0;
       }
     } else if (arg == "-o" && i < argc) {
       out_file_name = std::string(argv[i++]);
     } else {
-      std::cout << "Unknown command line option: " << argv[i] << "\n";
+      BOOST_LOG_TRIVIAL(info)   << "Unknown command line option: " << argv[i] << "\n";
       return 1;
     }
   }
@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
   for (auto &metal_layer: circuit.tech_.metal_list_) {
     if (metal_layer.Direction() == HORIZONTAL_) {
       hor_layer = &metal_layer;
-      std::cout << "Horizontal metal layer is: " << *hor_layer->Name() << "\n";
+      BOOST_LOG_TRIVIAL(info)   << "Horizontal metal layer is: " << *hor_layer->Name() << "\n";
       break;
     }
   }
@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
             if (line.find("LAYER ") != std::string::npos) {
               Circuit::StrSplit(line, line_field);
               pin_layer = line_field[1];
-              //std::cout << pin_layer << " " << (pin_layer == *(hor_layer->Name())) << "\n";
+              //BOOST_LOG_TRIVIAL(info)   << pin_layer << " " << (pin_layer == *(hor_layer->Name())) << "\n";
             }
             if (line.find("RECT ") != std::string::npos && pin_layer == *(hor_layer->Name())) {
               Circuit::StrSplit(line, line_field);
@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
               double ly = std::stod(str_ly);
               std::string str_uy = line_field[4];
               double uy = std::stod(str_uy);
-              //std::cout << ly << " " << uy << "\n";
+              //BOOST_LOG_TRIVIAL(info)   << ly << " " << uy << "\n";
               if (ly < type_bbox.lo) {
                 type_bbox.lo = ly;
               }
@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
       } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
       double type_height = type->Height() * circuit.GridValueY();
       double pitch = hor_layer->Width() + hor_layer->Spacing();
-      //std::cout << "pitch: " << pitch << "\n";
+      //BOOST_LOG_TRIVIAL(info)   << "pitch: " << pitch << "\n";
       if (mode == 0) {
         type_bbox.p_extra = std::max(pitch - type_bbox.lo, 0.0);
         type_bbox.n_extra = std::max((pitch + type_bbox.hi) - type_height, 0.0);
@@ -150,9 +150,9 @@ int main(int argc, char *argv[]) {
         type_bbox.p_extra = 0;
         type_bbox.n_extra = pitch;
       }
-      std::cout << *(type->NamePtr()) << "  " << "size: 0 " << type_height << "\n";
-      std::cout << "  " << *(hor_layer->Name()) << " y bbox: " << type_bbox.lo << " " << type_bbox.hi << "\n";
-      std::cout << "  n/p extra: " << type_bbox.n_extra << " " << type_bbox.p_extra << "\n";
+      BOOST_LOG_TRIVIAL(info)   << *(type->NamePtr()) << "  " << "size: 0 " << type_height << "\n";
+      BOOST_LOG_TRIVIAL(info)   << "  " << *(hor_layer->Name()) << " y bbox: " << type_bbox.lo << " " << type_bbox.hi << "\n";
+      BOOST_LOG_TRIVIAL(info)   << "  n/p extra: " << type_bbox.n_extra << " " << type_bbox.p_extra << "\n";
       bbox_list.push_back(type_bbox);
     }
     getline(ist, line);
@@ -171,9 +171,9 @@ int main(int argc, char *argv[]) {
     std_p_height = std::max(std_p_height, p_height);
   }
   std_height = std_n_height + std_p_height;
-  std::cout << "Maximum N-well height is: " << std_n_height << "\n";
-  std::cout << "Maximum P-well height is: " << std_p_height << "\n";
-  std::cout << "Standard height is: " << std_height << "\n";
+  BOOST_LOG_TRIVIAL(info)   << "Maximum N-well height is: " << std_n_height << "\n";
+  BOOST_LOG_TRIVIAL(info)   << "Maximum P-well height is: " << std_p_height << "\n";
+  BOOST_LOG_TRIVIAL(info)   << "Standard height is: " << std_height << "\n";
 
   ist.open(lef_file_name.c_str());
   Assert(ist.is_open(), "Cannot open file " + lef_file_name);
@@ -219,7 +219,7 @@ int main(int argc, char *argv[]) {
       Circuit::StrSplit(line, line_field);
       std::string type_name = line_field[1];
       std::string end_macro_flag = "END " + type_name;
-      std::cout << "modifying " << type_name << "\n";
+      BOOST_LOG_TRIVIAL(info)   << "modifying " << type_name << "\n";
 
       TypeLayerBBox *bbox_ptr = nullptr;
       for (auto &bbox: bbox_list) {
@@ -312,7 +312,7 @@ int main(int argc, char *argv[]) {
 }
 
 void ReportUsage() {
-  std::cout << "\033[0;36m"
+  BOOST_LOG_TRIVIAL(info)   << "\033[0;36m"
             << "Usage: custom2standard\n"
             << " -lef <file.lef>\n"
             << " -cell <file.cell>\n"

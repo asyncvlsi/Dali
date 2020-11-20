@@ -40,6 +40,6 @@ IOPin::IOPin(std::pair<const std::string, int> *name_num_pair_ptr,
 
 void IOPin::Report() const {
   std::string net_name = (net_ptr_ == nullptr) ? "NA" : *(net_ptr_->Name());
-  std::cout << "  I/O PIN name: " << *Name() << "\n"
+  BOOST_LOG_TRIVIAL(info)   << "  I/O PIN name: " << *Name() << "\n"
             << "    Net connected: " << net_name << "\n";
 }

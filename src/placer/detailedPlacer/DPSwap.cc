@@ -24,8 +24,8 @@ double DPSwap::GetOverlap(Block &blk) {
   BinIndex ur = blk_aux->URIndex();
 
   std::unordered_set<int> near_blk_set;
-  for (int i=ll.x; i<=ur.x; ++i) {
-    for (int j=ll.y; j<=ur.y; ++j) {
+  for (int i = ll.x; i <= ur.x; ++i) {
+    for (int j = ll.y; j <= ur.y; ++j) {
       for (auto &num: bin_matrix[i][j].block_set) {
         if (num == blk_num) continue;
         near_blk_set.insert(num);
@@ -88,7 +88,6 @@ void DPSwap::GlobalSwap() {
 
 void DPSwap::VerticalSwap() {
 
-
 }
 
 void DPSwap::LocalReOrder() {
@@ -96,9 +95,7 @@ void DPSwap::LocalReOrder() {
 }
 
 bool DPSwap::StartPlacement() {
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "Start DPSwap\n";
-  }
+  BOOST_LOG_TRIVIAL(info) << "Start DPSwap\n";
   CreateBlkAuxList();
   InitGridBin();
   UpdateBinMatrix();
@@ -106,20 +103,20 @@ bool DPSwap::StartPlacement() {
   double hpwl_new;
   bool hpwl_converge = false;
   SingleSegmentCluster();
-  for (int i=0; ; ++i) {
+  for (int i = 0;; ++i) {
     GlobalSwap();
     VerticalSwap();
     LocalReOrder();
     hpwl_new = WeightedHPWL();
-    hpwl_converge = (std::fabs(1 - hpwl_new/hpwl) < hpwl_converge_criterion_);
+    hpwl_converge = (std::fabs(1 - hpwl_new / hpwl) < hpwl_converge_criterion_);
     UpdateSwapThreshold(hpwl_new);
-    if (i>5 && hpwl_converge) break;
+    if (i > 5 && hpwl_converge) break;
   }
-  for (int i=0; ; ++i) {
+  for (int i = 0;; ++i) {
     SingleSegmentCluster();
     hpwl_new = WeightedHPWL();
-    hpwl_converge = (std::fabs(1 - hpwl_new/hpwl) < hpwl_converge_criterion_);
-    if (i>5 && hpwl_converge) break;
+    hpwl_converge = (std::fabs(1 - hpwl_new / hpwl) < hpwl_converge_criterion_);
+    if (i > 5 && hpwl_converge) break;
   }
 
   return true;

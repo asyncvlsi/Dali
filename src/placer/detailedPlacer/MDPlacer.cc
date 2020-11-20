@@ -15,7 +15,14 @@
 
 #include <algorithm>
 
-MDPlacer::MDPlacer(): learning_rate_(0.1), momentum_term_(0.9), max_iteration_num_(20), bin_width_(0), bin_height_(0), bin_cnt_x_(0), bin_cnt_y_(0) {}
+MDPlacer::MDPlacer()
+    : learning_rate_(0.1),
+      momentum_term_(0.9),
+      max_iteration_num_(20),
+      bin_width_(0),
+      bin_height_(0),
+      bin_cnt_x_(0),
+      bin_cnt_y_(0) {}
 
 void MDPlacer::CreateBlkAuxList() {
   /****
@@ -36,14 +43,14 @@ void MDPlacer::CreateBlkAuxList() {
 void MDPlacer::InitGridBin() {
   bin_width_ = GetCircuit()->MinBlkWidth();
   bin_height_ = GetCircuit()->MinBlkHeight();
-  bin_cnt_x_ = std::ceil((double)(RegionRight() - RegionLeft()) / bin_width_);
-  bin_cnt_y_ = std::ceil((double)(RegionTop() - RegionBottom()) / bin_height_);
-  
-  std::cout << "bin_width: " << bin_width_ << "\n";
-  std::cout << "bin_height: " << bin_height_ << "\n";
-  std::cout << "bin_cnt_x: " << bin_cnt_x_ << "\n";
-  std::cout << "bin_cnt_y: " << bin_cnt_y_ << "\n";
-  
+  bin_cnt_x_ = std::ceil((double) (RegionRight() - RegionLeft()) / bin_width_);
+  bin_cnt_y_ = std::ceil((double) (RegionTop() - RegionBottom()) / bin_height_);
+
+  BOOST_LOG_TRIVIAL(info) << "bin_width: " << bin_width_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "bin_height: " << bin_height_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "bin_cnt_x: " << bin_cnt_x_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "bin_cnt_y: " << bin_cnt_y_ << "\n";
+
   std::vector<Bin> tmp_bin_column(bin_cnt_y_);
   bin_matrix.reserve(bin_cnt_x_);
   for (int i = 0; i < bin_cnt_x_; i++) {
@@ -52,12 +59,12 @@ void MDPlacer::InitGridBin() {
 
   /* for each grid bin, we need to initialize the attributes, including index, boundaries, area, and potential available white space
    * the adjacent bin list is created for the convenience of overfilled bin clustering */
-  for (int i=0; i<(int)(bin_matrix.size()); i++) {
-    for (int j = 0; j <(int)(bin_matrix[i].size()); j++) {
+  for (int i = 0; i < (int) (bin_matrix.size()); i++) {
+    for (int j = 0; j < (int) (bin_matrix[i].size()); j++) {
       bin_matrix[i][j].SetBottom(RegionBottom() + j * bin_height_);
-      bin_matrix[i][j].SetTop(RegionBottom() + (j+1) * bin_height_);
+      bin_matrix[i][j].SetTop(RegionBottom() + (j + 1) * bin_height_);
       bin_matrix[i][j].SetLeft(RegionLeft() + i * bin_width_);
-      bin_matrix[i][j].SetRight(RegionLeft() + (i+1) * bin_width_);
+      bin_matrix[i][j].SetRight(RegionLeft() + (i + 1) * bin_width_);
     }
   }
 
@@ -85,33 +92,33 @@ void MDPlacer::UpdateBinMatrix() {
 
 BinIndex MDPlacer::LowLocToIndex(double llx, double lly) {
   BinIndex result;
-  result.x = std::floor((llx - RegionLeft())/BinWidth());
+  result.x = std::floor((llx - RegionLeft()) / BinWidth());
   result.x = std::max(result.x, 0);
-  result.y = std::floor((lly - RegionBottom())/BinHeight());
+  result.y = std::floor((lly - RegionBottom()) / BinHeight());
   result.y = std::max(result.y, 0);
   return result;
 }
 
 BinIndex MDPlacer::HighLocToIndex(double urx, double ury) {
   BinIndex result;
-  result.x = std::ceil((urx - RegionLeft())/BinWidth());
-  result.x = std::min(result.x, BinCountX()-1);
-  result.y = std::ceil((ury - RegionBottom())/BinHeight());
-  result.y = std::min(result.y, BinCountY()-1);
+  result.x = std::ceil((urx - RegionLeft()) / BinWidth());
+  result.x = std::min(result.x, BinCountX() - 1);
+  result.y = std::ceil((ury - RegionBottom()) / BinHeight());
+  result.y = std::min(result.y, BinCountY() - 1);
   return result;
 }
 
 void MDPlacer::BinRegionRemove(int blk_num, BinIndex &ll, BinIndex &ur) {
-  for (int i=ll.x; i<=ur.x; ++i) {
-    for (int j=ll.y; j<=ur.y; ++j) {
+  for (int i = ll.x; i <= ur.x; ++i) {
+    for (int j = ll.y; j <= ur.y; ++j) {
       bin_matrix[i][j].RemoveBlk(blk_num);
     }
   }
 }
 
 void MDPlacer::BinRegionAdd(int blk_num, BinIndex &ll, BinIndex &ur) {
-  for (int i=ll.x; i<=ur.x; ++i) {
-    for (int j=ll.y; j<=ur.y; ++j) {
+  for (int i = ll.x; i <= ur.x; ++i) {
+    for (int j = ll.y; j <= ur.y; ++j) {
       bin_matrix[i][j].AddBlk(blk_num);
     }
   }
@@ -148,8 +155,8 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
   BinIndex ur = blk_aux->URIndex();
 
   std::unordered_set<int> near_blk_set;
-  for (int i=ll.x; i<=ur.x; ++i) {
-    for (int j=ll.y; j<=ur.y; ++j) {
+  for (int i = ll.x; i <= ur.x; ++i) {
+    for (int j = ll.y; j <= ur.y; ++j) {
       for (auto &num: bin_matrix[i][j].block_set) {
         if (num == blk_num) continue;
         near_blk_set.insert(num);
@@ -167,7 +174,7 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
     tot_force.Incre(force);
   }*/
 
-  tot_force *= 1.0/ blk.Area();
+  tot_force *= 1.0 / blk.Area();
 
   force.Init();
   std::vector<Net> &net_list = *NetList();
@@ -198,24 +205,20 @@ void MDPlacer::UpdateVelocityLoc(Block &blk) {
 }
 
 bool MDPlacer::StartPlacement() {
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "Start MDPlacer\n";
-  }
+  BOOST_LOG_TRIVIAL(info) << "Start MDPlacer\n";
   CreateBlkAuxList();
   std::vector<Block> &block_list = *BlockList();
   InitGridBin();
   UpdateBinMatrix();
-  for (int i=0; i<max_iteration_num_; ++i) {
-    ReportHPWL(LOG_INFO);
+  for (int i = 0; i < max_iteration_num_; ++i) {
+    ReportHPWL();
     for (auto &block: block_list) {
       UpdateVelocityLoc(block);
       UpdateBin(block);
     }
   }
-  if (globalVerboseLevel >= LOG_INFO) {
-    std::cout << "MDPlacer Complete\n";
-  }
-  ReportHPWL(LOG_INFO);
+  BOOST_LOG_TRIVIAL(info) << "MDPlacer Complete\n";
+  ReportHPWL();
 
   return true;
 }

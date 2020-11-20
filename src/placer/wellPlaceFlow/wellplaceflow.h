@@ -16,11 +16,11 @@ class WellPlaceFlow : public GPSimPL {
 
   void SetGridCapacity(int gc) {
     number_of_cell_in_bin = gc;
-    printf("Bin area: %d average cell area\n", number_of_cell_in_bin);
+    BOOST_LOG_TRIVIAL(info) << "Bin area: " << number_of_cell_in_bin << " average cell area\n";
   }
   void SetIteration(int it_num) {
     cg_iteration_ = it_num;
-    printf("Max number of iteration: %d \n", cg_iteration_);
+    BOOST_LOG_TRIVIAL(info) << "Max number of iteration: " << cg_iteration_ << " \n";
   }
   bool StartPlacement() override;
 

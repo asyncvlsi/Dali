@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "circuit/circuit.h"
+#include "logging.h"
 
 struct OptRegDist {
   Circuit *circuit_ = nullptr;
@@ -57,17 +58,17 @@ struct OptRegDist {
     }
     std::sort(loc_list_x.begin(), loc_list_x.end());
     std::sort(loc_list_y.begin(), loc_list_y.end());
-    int lo_index = int(loc_list_x.size()-1)/2;
+    int lo_index = int(loc_list_x.size() - 1) / 2;
     int hi_index = lo_index;
-    if (loc_list_x.size()%2==0) {
+    if (loc_list_x.size() % 2 == 0) {
       hi_index += 1;
     }
     lx = loc_list_x[lo_index];
     ux = loc_list_x[hi_index];
 
-    lo_index = int(loc_list_y.size()-1)/2;
+    lo_index = int(loc_list_y.size() - 1) / 2;
     hi_index = lo_index;
-    if (loc_list_y.size()%2==0) {
+    if (loc_list_y.size() % 2 == 0) {
       hi_index += 1;
     }
     ly = loc_list_y[lo_index];
@@ -75,18 +76,13 @@ struct OptRegDist {
   }
 
   void SaveFile(std::string &file_name) const {
-    if (globalVerboseLevel >= LOG_CRITICAL) {
-      printf("Writing optimal region distance file '%s', ", file_name.c_str());
-    }
+    BOOST_LOG_TRIVIAL(info) << "Writing optimal region distance file: " << file_name;
     std::ofstream ost(file_name.c_str());
     Assert(ost.is_open(), "Cannot open file " + file_name);
 
     if (circuit_ == nullptr) return;
     double ave_size = circuit_->AveBlkHeight();
-    double lx = DBL_MAX;
-    double ly = DBL_MAX;
-    double ux = DBL_MAX;
-    double uy = DBL_MAX;
+    double lx, ly, ux, uy;
     double llx, lly;
     double res;
     for (auto &blk: circuit_->getDesign()->block_list) {
@@ -106,9 +102,10 @@ struct OptRegDist {
         double y_distance = std::min(std::fabs(lly - ly), std::fabs(lly - uy));
         res = std::sqrt(x_distance * x_distance + y_distance * y_distance);
       }
-      ost << res/ave_size << "\n";
+      ost << res / ave_size << "\n";
     }
-    std::cout << "average cell width: " << ave_size << "\n";
+    BOOST_LOG_TRIVIAL(info) << ", done\n";
+    BOOST_LOG_TRIVIAL(info) << "average cell width: " << ave_size << "\n";
   }
 };
 

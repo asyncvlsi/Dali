@@ -10,6 +10,7 @@
 
 #include "block.h"
 #include "blockpinpair.h"
+#include "common/logging.h"
 #include "common/misc.h"
 #include "iopin.h"
 

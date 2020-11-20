@@ -41,11 +41,11 @@ void Tech::SetPLayer(double width, double spacing,double op_spacing, double max_
 
 void Tech::Report() const {
   if (n_set_) {
-    std::cout << "  Layer name: nwell\n";
+    BOOST_LOG_TRIVIAL(info)   << "  Layer name: nwell\n";
     n_layer_ptr_->Report();
   }
   if (p_set_) {
-    std::cout << "  Layer name: pwell\n";
+    BOOST_LOG_TRIVIAL(info)   << "  Layer name: pwell\n";
     p_layer_ptr_->Report();
   }
 }

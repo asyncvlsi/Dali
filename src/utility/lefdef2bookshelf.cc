@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
     } else if ((arg == "-bs" || arg == "-bookshelf") && i < argc) {
       book_shelf_out = std::string(argv[i++]);
     } else {
-      std::cout << "Unknown command line option: " << argv[i] << "\n";
+      BOOST_LOG_TRIVIAL(info)   << "Unknown command line option: " << argv[i] << "\n";
       return 1;
     }
   }
@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
 }
 
 void ReportUsage() {
-  std::cout << "\033[0;36m"
+  BOOST_LOG_TRIVIAL(info)   << "\033[0;36m"
             << "Usage: lefdef2bookshelf\n"
             << " -lef <file.lef>\n"
             << " -def <file.def>\n"

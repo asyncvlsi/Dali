@@ -41,13 +41,13 @@ double Placer::GetBlkHPWL(Block &blk) {
 
 bool Placer::IsBoundaryProper() {
   if (circuit_->MaxBlkWidth() > RegionRight() - RegionLeft()) {
-    std::cout << "Improper boundary:\n"
-              << "    maximum cell width is larger than the width of placement region\n";
+    BOOST_LOG_TRIVIAL(info) << "Improper boundary:\n"
+                            << "    maximum cell width is larger than the width of placement region\n";
     return false;
   }
   if (circuit_->MaxBlkHeight() > RegionTop() - RegionBottom()) {
-    std::cout << "Improper boundary:\n"
-              << "    maximum cell height is larger than the height of placement region\n";
+    BOOST_LOG_TRIVIAL(info) << "Improper boundary:\n"
+                            << "    maximum cell height is larger than the height of placement region\n";
     return false;
   }
   return true;
@@ -58,17 +58,17 @@ void Placer::SetBoundaryAuto() {
   long int tot_block_area = circuit_->TotBlkArea();
   int width = std::ceil(std::sqrt(double(tot_block_area) / aspect_ratio_ / filling_rate_));
   int height = std::ceil(width * aspect_ratio_);
-  std::cout << "Pre-set aspect ratio: " << aspect_ratio_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Pre-set aspect ratio: " << aspect_ratio_ << "\n";
   aspect_ratio_ = height / (double) width;
-  std::cout << "Adjusted aspect rate: " << aspect_ratio_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Adjusted aspect rate: " << aspect_ratio_ << "\n";
   left_ = (int) (circuit_->AveBlkWidth());
   right_ = left_ + width;
   bottom_ = (int) (circuit_->AveBlkWidth());
   top_ = bottom_ + height;
   int area = height * width;
-  std::cout << "Pre-set filling rate: " << filling_rate_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Pre-set filling rate: " << filling_rate_ << "\n";
   filling_rate_ = double(tot_block_area) / area;
-  std::cout << "Adjusted filling rate: " << filling_rate_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Adjusted filling rate: " << filling_rate_ << "\n";
   Assert(IsBoundaryProper(), "Invalid boundary setting");
 }
 
@@ -79,13 +79,9 @@ void Placer::SetBoundary(int left, int right, int bottom, int top) {
   unsigned long int tot_block_area = circuit_->TotBlkArea();
   unsigned long int tot_area = (right - left) * (top - bottom);
   Assert(tot_area >= tot_block_area, "Invalid boundary setting: given region has smaller area than total block area!");
-  if (globalVerboseLevel >= LOG_INFO) {
-    std::cout << "Pre-set filling rate: " << filling_rate_ << "\n";
-  }
+  BOOST_LOG_TRIVIAL(info) << "Pre-set filling rate: " << filling_rate_ << "\n";
   filling_rate_ = (double) tot_block_area / (double) tot_area;
-  if (globalVerboseLevel >= LOG_INFO) {
-    std::cout << "Adjusted filling rate: " << filling_rate_ << "\n";
-  }
+  BOOST_LOG_TRIVIAL(info) << "Adjusted filling rate: " << filling_rate_ << "\n";
   left_ = left;
   right_ = right;
   bottom_ = bottom;
@@ -102,19 +98,19 @@ void Placer::SetBoundaryDef() {
 }
 
 void Placer::ReportBoundaries() {
-  if (globalVerboseLevel >= LOG_DEBUG) {
-    std::cout << "Left, Right, Bottom, Top:\n";
-    std::cout << "  " << RegionLeft() << ", " << RegionRight() << ", " << RegionBottom() << ", " << RegionTop() << "\n";
-  }
+  BOOST_LOG_TRIVIAL(info) << "Left, Right, Bottom, Top:\n";
+  BOOST_LOG_TRIVIAL(info) << "  "
+                          << RegionLeft() << ", "
+                          << RegionRight() << ", "
+                          << RegionBottom() << ", "
+                          << RegionTop() << "\n";
 }
 
 void Placer::UpdateAspectRatio() {
   if ((right_ - left_ == 0) || (top_ - bottom_ == 0)) {
-    if (globalVerboseLevel >= LOG_ERROR) {
-      std::cout << "Error!\n"
-                << "Zero Height or Width of placement region!\n";
-      ReportBoundaries();
-    }
+    BOOST_LOG_TRIVIAL(fatal) << "Error!\n"
+                             << "Zero Height or Width of placement region!\n";
+    ReportBoundaries();
     exit(1);
   }
   aspect_ratio_ = (top_ - bottom_) / (double) (right_ - left_);
@@ -186,7 +182,7 @@ void Placer::SaveDEFFile(std::string const &name_of_file) {
   // no tracks?
 
   // 2. print component
-  std::cout << BlockList()->size() << "\n";
+  BOOST_LOG_TRIVIAL(info) << BlockList()->size() << "\n";
   ost << "COMPONENTS " << BlockList()->size() << " ;\n";
   for (auto &block: *BlockList()) {
     ost << "- "
@@ -223,7 +219,8 @@ void Placer::SaveDEFFile(std::string const &name_of_file, std::string const &inp
 }
 
 void Placer::EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode) {
-  std::cout << "virtual function Placer::EmitDEFWellFile() does nothing, you should not use this member function\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "virtual function Placer::EmitDEFWellFile() does nothing, you should not use this member function\n";
 }
 
 void Placer::SanityCheck() {
@@ -255,7 +252,7 @@ void Placer::SimpleIOPinPlacement(int pin_metal_layer) {
   if (circuit_->getIOPinList()->empty()) return;
   Assert(pin_metal_layer < (int) circuit_->tech_.metal_list_.size(),
          "Invalid metal layer provided for Placer::SimpleIOPinPlacement()");
-  //std::cout << circuit_->GetIOPinList()->size() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << circuit_->GetIOPinList()->size() << "\n";
   Net *net = nullptr;
   double net_minx, net_maxx, net_miny, net_maxy;
   double to_left, to_right, to_bottom, to_top;
@@ -271,7 +268,7 @@ void Placer::SimpleIOPinPlacement(int pin_metal_layer) {
     iopin.SetLayer(&(circuit_->tech_.metal_list_[pin_metal_layer]));
     net = iopin.GetNet();
     if (net->blk_pin_list.empty()) continue;
-    //std::cout << net->NameStr() << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << net->NameStr() << "\n";
 
     net->UpdateMaxMinIndex();
     net_minx = net->MinX();
@@ -305,7 +302,7 @@ void Placer::SimpleIOPinPlacement(int pin_metal_layer) {
   int sz;
   int step;
 
-  //printf("IOPIN on left: %d\n", l_edge.size());
+  //BOOST_LOG_TRIVIAL(info)  <<"IOPIN on left: %d\n", l_edge.size());
   if (!l_edge.empty()) {
     std::sort(l_edge.begin(),
               l_edge.end(),
@@ -317,10 +314,10 @@ void Placer::SimpleIOPinPlacement(int pin_metal_layer) {
     sz = l_edge.size();
     step = (hi - lo) / (sz + 1);
     for (int i = 0; i < sz; ++i) {
-      l_edge[i]->SetLoc(left_, (i+1)*step);
+      l_edge[i]->SetLoc(left_, (i + 1) * step);
     }
   }
-  //printf("IOPIN on right: %d\n", r_edge.size());
+  //BOOST_LOG_TRIVIAL(info)  <<"IOPIN on right: %d\n", r_edge.size());
   if (!r_edge.empty()) {
     std::sort(r_edge.begin(),
               r_edge.end(),
@@ -332,10 +329,10 @@ void Placer::SimpleIOPinPlacement(int pin_metal_layer) {
     sz = r_edge.size();
     step = (hi - lo) / (sz + 1);
     for (int i = 0; i < sz; ++i) {
-      r_edge[i]->SetLoc(right_, (i+1)*step);
+      r_edge[i]->SetLoc(right_, (i + 1) * step);
     }
   }
-  //printf("IOPIN on bottom: %d\n", b_edge.size());
+  //BOOST_LOG_TRIVIAL(info)  <<"IOPIN on bottom: %d\n", b_edge.size());
   if (!b_edge.empty()) {
     std::sort(b_edge.begin(),
               b_edge.end(),
@@ -347,10 +344,10 @@ void Placer::SimpleIOPinPlacement(int pin_metal_layer) {
     sz = b_edge.size();
     step = (hi - lo) / (sz + 1);
     for (int i = 0; i < sz; ++i) {
-      b_edge[i]->SetLoc((i+1)*step, bottom_);
+      b_edge[i]->SetLoc((i + 1) * step, bottom_);
     }
   }
-  //printf("IOPIN on top: %d\n", t_edge.size());
+  //BOOST_LOG_TRIVIAL(info)  <<"IOPIN on top: %d\n", t_edge.size());
   if (!t_edge.empty()) {
     std::sort(t_edge.begin(),
               t_edge.end(),
@@ -362,7 +359,7 @@ void Placer::SimpleIOPinPlacement(int pin_metal_layer) {
     sz = t_edge.size();
     step = (hi - lo) / (sz + 1);
     for (int i = 0; i < sz; ++i) {
-      t_edge[i]->SetLoc( (i+1)*step, top_);
+      t_edge[i]->SetLoc((i + 1) * step, top_);
     }
   }
 

@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "common/logging.h"
 #include "common/misc.h"
 #include "status.h"
 

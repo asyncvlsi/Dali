@@ -6,6 +6,8 @@
 
 #include <algorithm>
 
+#include "common/logging.h"
+
 PLOSlide::PLOSlide() {}
 
 void PLOSlide::InitPostLegalOptimizer() {
@@ -154,10 +156,8 @@ void PLOSlide::OptimizationFromRight() {
 }
 
 bool PLOSlide::StartPlacement() {
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "---------------------------------------\n"
-              << "Start Post-Legalization Optimization\n";
-  }
+  BOOST_LOG_TRIVIAL(info) << "---------------------------------------\n"
+                          << "Start Post-Legalization Optimization\n";
 
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
@@ -167,23 +167,19 @@ bool PLOSlide::StartPlacement() {
   OptimizationFromLeft();
   OptimizationFromRight();
 
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "\033[0;36m"
-              << "Post-Legalization Optimization complete\n"
-              << "\033[0m";
-  }
+  BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
+                          << "Post-Legalization Optimization complete\n"
+                          << "\033[0m";
 
-  ReportHPWL(LOG_CRITICAL);
+  ReportHPWL();
 
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "(wall time: "
-              << wall_time << "s, cpu time: "
-              << cpu_time << "s)\n";
-  }
+  BOOST_LOG_TRIVIAL(info) << "(wall time: "
+                          << wall_time << "s, cpu time: "
+                          << cpu_time << "s)\n";
 
-  ReportMemory(LOG_CRITICAL);
+  ReportMemory();
 
   return true;
 }

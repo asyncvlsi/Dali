@@ -14,10 +14,8 @@
 
 #include "circuit.h"
 
-VerboseLevel globalVerboseLevel = LOG_CRITICAL;
-
 int main() {
-  std::cout << "Example of creating a Circuit instance\n";
+  BOOST_LOG_TRIVIAL(info) << "Example of creating a Circuit instance\n";
 
   // create a blank circuit
   Circuit circuit;
@@ -97,7 +95,7 @@ int main() {
   circuit.AddBlkPinToNet(inv2_name, in_name, net_between_name);
 
   std::string net_out_name = "net_out";
-  circuit.AddNet(net_out_name,2);
+  circuit.AddNet(net_out_name, 2);
   circuit.AddBlkPinToNet(inv2_name, out_name, net_out_name);
   circuit.AddIOPinToNet(chip_out, net_out_name);
 

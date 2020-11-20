@@ -27,13 +27,13 @@ double placer_al_t::height_epsilon() {
 
 bool placer_al_t::set_input_circuit(circuit_t *circuit) {
   if (circuit->block_list.empty()) {
-    std::cout << "Error!\n";
-    std::cout << "Invalid input circuit: empty block list!\n";
+    BOOST_LOG_TRIVIAL(info)   << "Error!\n";
+    BOOST_LOG_TRIVIAL(info)   << "Invalid input circuit: empty block list!\n";
     return false;
   }
   if (circuit->net_list.empty()) {
-    std::cout << "Error!\n";
-    std::cout << "Invalid input circuit: empty net list!\n";
+    BOOST_LOG_TRIVIAL(info)   << "Error!\n";
+    BOOST_LOG_TRIVIAL(info)   << "Invalid input circuit: empty net list!\n";
     return false;
   }
 
@@ -45,7 +45,7 @@ bool placer_al_t::set_input_circuit(circuit_t *circuit) {
     block_al_t block_al;
     block_al.retrieve_info_from_database(block);
     block_list.push_back(block_al);
-    //std::cout << block_dla << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << block_dla << "\n";
     if (block_al.is_movable()) {
       ++_movable_block_num;
       _width_epsilon += block.width();
@@ -53,8 +53,8 @@ bool placer_al_t::set_input_circuit(circuit_t *circuit) {
     }
   }
   if (_movable_block_num == 0) {
-    std::cout << "Error!\n";
-    std::cout << "No movable blocks in circuit!\n";
+    BOOST_LOG_TRIVIAL(info)   << "Error!\n";
+    BOOST_LOG_TRIVIAL(info)   << "No movable blocks in circuit!\n";
     return false;
   }
   _width_epsilon /= _movable_block_num*100;
@@ -157,7 +157,7 @@ void placer_al_t::build_problem_clique_x() {
   size_t tempnodenum0, tempnodenum1;
 
   for (auto &net: net_list) {
-    //std::cout << i << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << i << "\n";
     if (net.p() <= 1) continue;
     invp = net.inv_p();
     for (size_t j=0; j<net.pin_list.size(); j++) {
@@ -218,7 +218,7 @@ void placer_al_t::build_problem_clique_y() {
   size_t tempnodenum0, tempnodenum1;
 
   for (auto &net: net_list) {
-    //std::cout << i << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << i << "\n";
     if (net.p() <= 1) continue;
     invp = net.inv_p();
     for (size_t j=0; j<net.pin_list.size(); j++) {
@@ -275,9 +275,9 @@ void placer_al_t::update_max_min_node_x() {
   for (auto &net: net_list) {
     HPWLX_new += net.dhpwlx();
   }
-  //std::cout << "HPWLX_old: " << HPWLX_old << "\n";
-  //std::cout << "HPWLX_new: " << HPWLX_new << "\n";
-  //std::cout << 1 - HPWLX_new/HPWLX_old << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << "HPWLX_old: " << HPWLX_old << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << "HPWLX_new: " << HPWLX_new << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << 1 - HPWLX_new/HPWLX_old << "\n";
   if (HPWLX_new == 0) { // this is for 1 degree net, this happens in extremely rare cases
     HPWLx_converge = true;
   } else {
@@ -405,7 +405,7 @@ void placer_al_t::build_problem_b2b_x_nooffset() {
           tempWT.weight = -weightx;
           kx[tempnodenum0]++;
           /*if (kx[tempnodenum0] == Ax[tempnodenum0].size()) {
-            std::cout << tempnodenum0 << " " << kx[tempnodenum0] << " Overflowx\n";
+            BOOST_LOG_TRIVIAL(info)   << tempnodenum0 << " " << kx[tempnodenum0] << " Overflowx\n";
           }*/
           Ax[tempnodenum0][kx[tempnodenum0]] = tempWT;
 
@@ -413,7 +413,7 @@ void placer_al_t::build_problem_b2b_x_nooffset() {
           tempWT.weight = -weightx;
           kx[tempnodenum1]++;
           /*if (kx[tempnodenum1] == Ax[tempnodenum1].size()) {
-            std::cout << tempnodenum1 << " " << kx[tempnodenum1] << " Overflowx\n";
+            BOOST_LOG_TRIVIAL(info)   << tempnodenum1 << " " << kx[tempnodenum1] << " Overflowx\n";
           }*/
           Ax[tempnodenum1][kx[tempnodenum1]] = tempWT;
 
@@ -439,9 +439,9 @@ void placer_al_t::update_max_min_node_y() {
   for (auto &net: net_list) {
     HPWLY_new += net.dhpwly();
   }
-  //std::cout << "HPWLY_old: " << HPWLY_old << "\n";
-  //std::cout << "HPWLY_new: " << HPWLY_new << "\n";
-  //std::cout << 1 - HPWLY_new/HPWLY_old << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << "HPWLY_old: " << HPWLY_old << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << "HPWLY_new: " << HPWLY_new << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << 1 - HPWLY_new/HPWLY_old << "\n";
   if (HPWLY_new == 0) { // this is for 1 degree net, this happens in extremely rare cases
     HPWLy_converge = true;
   } else {
@@ -567,7 +567,7 @@ void placer_al_t::build_problem_b2b_y_nooffset() {
           tempWT.weight = -weighty;
           ky[tempnodenum0]++;
           /*if (ky[tempnodenum0] == Ay[tempnodenum0].size()) {
-            std::cout << tempnodenum0 << " " << ky[tempnodenum0] << " Overflowy\n";
+            BOOST_LOG_TRIVIAL(info)   << tempnodenum0 << " " << ky[tempnodenum0] << " Overflowy\n";
           }*/
           Ay[tempnodenum0][ky[tempnodenum0]] = tempWT;
 
@@ -575,7 +575,7 @@ void placer_al_t::build_problem_b2b_y_nooffset() {
           tempWT.weight = -weighty;
           ky[tempnodenum1]++;
           /*if (ky[tempnodenum1] == Ay[tempnodenum1].size()) {
-            std::cout << tempnodenum1 << " " << ky[tempnodenum1] << " Overflowy\n";
+            BOOST_LOG_TRIVIAL(info)   << tempnodenum1 << " " << ky[tempnodenum1] << " Overflowy\n";
           }*/
           Ay[tempnodenum1][ky[tempnodenum1]] = tempWT;
 
@@ -651,7 +651,7 @@ void placer_al_t::CG_solver(std::string const &dimension, std::vector< std::vect
       solution_distance += z[i]*z[i]/JP[i]/JP[i];
       rsnew += z[i]*z[i]/JP[i];
     }
-    //std::cout << "solution_distance: " << solution_distance/movable_block_num() << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << "solution_distance: " << solution_distance/movable_block_num() << "\n";
     if (solution_distance/movable_block_num() < cg_precision) break;
     beta = rsnew/rsold;
     for (size_t i=0; i<movable_block_num(); i++) {
@@ -665,11 +665,11 @@ void placer_al_t::CG_solver(std::string const &dimension, std::vector< std::vect
     for (size_t i=0; i<movable_block_num(); i++) {
       if (block_list[i].dllx() < left()) {
         block_list[i].set_center_dx(left() + block_list[i].width()/2.0 + 1);
-        //std::cout << i << "\n";
+        //BOOST_LOG_TRIVIAL(info)   << i << "\n";
       }
       else if (block_list[i].urx() > right()) {
         block_list[i].set_center_dx(right() - block_list[i].width()/2.0 - 1);
-        //std::cout << i << "\n";
+        //BOOST_LOG_TRIVIAL(info)   << i << "\n";
       }
       else {
         continue;
@@ -680,11 +680,11 @@ void placer_al_t::CG_solver(std::string const &dimension, std::vector< std::vect
     for (size_t i=0; i<movable_block_num(); i++) {
       if (block_list[i].dlly() < bottom()) {
         block_list[i].set_center_dy(bottom() + block_list[i].height()/2.0 + 1);
-        //std::cout << i << "\n";
+        //BOOST_LOG_TRIVIAL(info)   << i << "\n";
       }
       else if (block_list[i].ury() > top()) {
         block_list[i].set_center_dy(top() - block_list[i].height()/2.0 - 1);
-        //std::cout << i << "\n";
+        //BOOST_LOG_TRIVIAL(info)   << i << "\n";
       }
       else {
         continue;
@@ -822,7 +822,7 @@ void placer_al_t::initialize_bin_list(){
 bool placer_al_t::draw_bin_list(std::string const &filename) {
   std::ofstream ost(filename.c_str());
   if (ost.is_open()==0) {
-    std::cout << "Cannot open output file: " << filename << "\n";
+    BOOST_LOG_TRIVIAL(info)   << "Cannot open output file: " << filename << "\n";
     return false;
   }
   for (auto &bin_column: bin_list) {
@@ -854,7 +854,7 @@ void placer_al_t::shift_cg_solution_to_region_center() {
 bool placer_al_t::draw_block_net_list(std::string const &filename) {
   std::ofstream ost(filename.c_str());
   if (ost.is_open()==0) {
-    std::cout << "Cannot open output file: " << filename << "\n";
+    BOOST_LOG_TRIVIAL(info)   << "Cannot open output file: " << filename << "\n";
     return false;
   }
   for (auto &block: block_list) {
@@ -1163,18 +1163,18 @@ bool placer_al_t::legalization() {
     if (check_legal()) {
       integerize();
       if (check_legal()) {
-        std::cout << i << " iterations\n";
+        BOOST_LOG_TRIVIAL(info)   << i << " iterations\n";
         break;
       }
     }
     diffusion_legalization();
     if (time_step > 1) time_step -= 1;
     if (i==max_legalization_iteration-1) {
-      std::cout << "Molecular-dynamic legalization finish\n";
+      BOOST_LOG_TRIVIAL(info)   << "Molecular-dynamic legalization finish\n";
       return false;
     }
   }
-  std::cout << "Molecular-dynamic legalization succeeds\n";
+  BOOST_LOG_TRIVIAL(info)   << "Molecular-dynamic legalization succeeds\n";
   return true;
 }
 
@@ -1201,18 +1201,18 @@ bool placer_al_t::gravity_legalization() {
     if (check_legal()) {
       integerize();
       if (check_legal()) {
-        std::cout << i << " iterations\n";
+        BOOST_LOG_TRIVIAL(info)   << i << " iterations\n";
         break;
       }
     }
     diffusion_legalization();
     if (time_step > 1) time_step -= 1;
     if (i==max_legalization_iteration-1) {
-      std::cout << "Gravity legalization finish\n";
+      BOOST_LOG_TRIVIAL(info)   << "Gravity legalization finish\n";
       return false;
     }
   }
-  std::cout << "Gravity legalization succeeds\n";
+  BOOST_LOG_TRIVIAL(info)   << "Gravity legalization succeeds\n";
   return true;
 }
 
@@ -1240,11 +1240,11 @@ bool placer_al_t::start_placement() {
       update_max_min_node_y();
     }
     if (HPWLx_converge && HPWLy_converge)  {
-      std::cout << i << " iterations in cg\n";
+      BOOST_LOG_TRIVIAL(info)   << i << " iterations in cg\n";
       break;
     }
   }
-  std::cout << "Initial Placement Complete\n";
+  BOOST_LOG_TRIVIAL(info)   << "Initial Placement Complete\n";
   report_hpwl();
 
   shift_cg_solution_to_region_center();
@@ -1255,7 +1255,7 @@ bool placer_al_t::start_placement() {
     gravity_legalization();
   }
   post_legalization_optimization();
-  std::cout << "Legalization Complete\n";
+  BOOST_LOG_TRIVIAL(info)   << "Legalization Complete\n";
   report_hpwl();
   //draw_bin_list();
   //draw_block_net_list();
@@ -1275,5 +1275,5 @@ void placer_al_t::report_placement_result() {
 void placer_al_t::report_hpwl() {
   update_HPWL_x();
   update_HPWL_y();
-  std::cout << "HPWL: " << HPWLX_new + HPWLY_new << "\n";
+  BOOST_LOG_TRIVIAL(info)   << "HPWL: " << HPWLX_new + HPWLY_new << "\n";
 }

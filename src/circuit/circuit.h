@@ -16,8 +16,7 @@
 #include "block.h"
 #include "blocktype.h"
 #include "blocktypewell.h"
-//#include "common/opendb.h"
-//#include "common/si2lefdef.h"
+#include "common/logging.h"
 #include "design.h"
 #include "iopin.h"
 #include "layer.h"
@@ -610,7 +609,9 @@ class Circuit {
   double WeightedHPWL() { return WeightedHPWLX() + WeightedHPWLY(); }
 
   // simple function to report HPWL.
-  void ReportHPWL() { printf("  Current weighted HPWL: %e um\n", WeightedHPWL()); }
+  void ReportHPWL() {
+    BOOST_LOG_TRIVIAL(info) << "  Current weighted HPWL: " << WeightedHPWL() << " um\n";
+  }
 
   // report the histogram of HPWL using linear bins.
   void ReportHPWLHistogramLinear(int bin_num = 10);
@@ -631,7 +632,7 @@ class Circuit {
   double HPWLCtoC() { return HPWLCtoCX() + HPWLCtoCY(); }
 
   // simple function to report HPWL.
-  void ReportHPWLCtoC() { printf("  Current HPWL: %e um\n", HPWLCtoC()); }
+  void ReportHPWLCtoC() { BOOST_LOG_TRIVIAL(info)  <<"  Current HPWL: "<< HPWLCtoC() << " um\n"; }
 
   /****save placement results to various file formats****/
   void GenMATLABTable(std::string const &name_of_file = "block.txt", bool only_well_tap = false);

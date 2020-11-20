@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <iostream>
 
+#include "common/logging.h"
+
 class FreeSegment {
  private:
   int start_;
@@ -57,7 +59,7 @@ inline FreeSegment *FreeSegment::Prev() {
 
 inline void FreeSegment::SetSpan(int startLoc, int endLoc) {
   if (startLoc > endLoc) {
-    std::cout << "Cannot set the span of a segment with start larger than End, Start" << startLoc
+    BOOST_LOG_TRIVIAL(info)   << "Cannot set the span of a segment with start larger than End, Start" << startLoc
               << " End: " << endLoc << std::endl;
     assert(startLoc <= endLoc);
   }
@@ -79,7 +81,7 @@ inline int FreeSegment::Length() const {
 
 inline bool FreeSegment::IsOverlap(FreeSegment *seg) const {
   if ((Length() == 0) || (seg->Length() == 0)) {
-    std::cout << "Length 0 segment?!\n";
+    BOOST_LOG_TRIVIAL(info)   << "Length 0 segment?!\n";
     return false;
   }
   bool notOverlap = (end_ <= seg->Start()) || (start_ >= seg->End());
@@ -88,7 +90,7 @@ inline bool FreeSegment::IsOverlap(FreeSegment *seg) const {
 
 inline bool FreeSegment::IsTouch(FreeSegment *seg) const {
   if ((Length() == 0) || (seg->Length() == 0)) {
-    std::cout << "Length 0 segment?!\n";
+    BOOST_LOG_TRIVIAL(info)   << "Length 0 segment?!\n";
     return false;
   }
   return (end_ == seg->Start()) || (start_ == seg->End());

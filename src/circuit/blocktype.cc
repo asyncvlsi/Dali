@@ -4,8 +4,6 @@
 
 #include "blocktype.h"
 
-#include "common/misc.h"
-
 BlockType::BlockType(const std::string *name_ptr, int width, int height)
     : name_ptr_(name_ptr),
       width_(width),
@@ -14,11 +12,11 @@ BlockType::BlockType(const std::string *name_ptr, int width, int height)
       well_ptr_(nullptr) {}
 
 void BlockType::Report() const {
-  std::cout << "  BlockType name: " << *NamePtr() << "\n"
+  BOOST_LOG_TRIVIAL(info)   << "  BlockType name: " << *NamePtr() << "\n"
             << "    width, height: " << Width() << " " << Height() << "\n"
             << "    pin list:\n";
   for (auto &it: pin_name_num_map_) {
-    std::cout << "      " << it.first << " " << it.second << " (" << pin_list_[it.second].OffsetX() << ", "
+    BOOST_LOG_TRIVIAL(info)   << "      " << it.first << " " << it.second << " (" << pin_list_[it.second].OffsetX() << ", "
               << pin_list_[it.second].OffsetY() << ")\n";
   }
 }

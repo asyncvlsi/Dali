@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "blocktype.h"
+#include "common/logging.h"
 #include "common/misc.h"
 #include "status.h"
 

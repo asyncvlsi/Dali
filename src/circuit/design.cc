@@ -19,7 +19,7 @@ void Design::UpdateFanoutHisto(int net_size) {
     int m = l + (r - l) / 2;
     if (net_histogram_.bin_list_[m] == net_size) {
       ++net_histogram_.count_[m];
-      //std::cout << bin_list_[m] << " " << bin_list_[m+1] << " " << net_size << "\n";
+      //BOOST_LOG_TRIVIAL(info)   << bin_list_[m] << " " << bin_list_[m+1] << " " << net_size << "\n";
       return;
     }
     if (net_histogram_.bin_list_[m] > net_size) {
@@ -28,7 +28,7 @@ void Design::UpdateFanoutHisto(int net_size) {
       l = m + 1;
     }
   }
-  //std::cout << bin_list_[l] << " " << bin_list_[r] << " " << net_size << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << bin_list_[l] << " " << bin_list_[r] << " " << net_size << "\n";
   ++net_histogram_.count_[l];
 }
 
@@ -116,43 +116,43 @@ void Design::ReportNetFanoutHisto() {
     }
   }
 
-  printf("\n");
-  printf("                                         Net histogram\n");
-  printf("=================================================================================================\n");
-  printf("   Net         Count    Percent/%%      sum HPWL        ave HPWL        min HPWL        max HPWL\n");
+  BOOST_LOG_TRIVIAL(info) << "\n";
+  BOOST_LOG_TRIVIAL(info) << "                                         Net histogram\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "=================================================================================================\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "   Net         Count    Percent/%%      sum HPWL        ave HPWL        min HPWL        max HPWL\n";
   for (int i = 0; i < sz - 1; ++i) {
     int lo = net_histogram_.bin_list_[i];
     int hi = net_histogram_.bin_list_[i + 1] - 1;
     if (lo == hi) {
-      printf("%4d       %8d       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
-             lo,
-             net_histogram_.count_[i],
-             net_histogram_.percent_[i],
-             net_histogram_.sum_hpwl_[i],
-             net_histogram_.ave_hpwl_[i],
-             net_histogram_.min_hpwl_[i],
-             net_histogram_.max_hpwl_[i]);
+      BOOST_LOG_TRIVIAL(info) << lo << "       "
+                              << net_histogram_.count_[i] << "       "
+                              << net_histogram_.percent_[i] << "         "
+                              << net_histogram_.sum_hpwl_[i] << "        "
+                              << net_histogram_.ave_hpwl_[i] << "        "
+                              << net_histogram_.min_hpwl_[i] << "        "
+                              << net_histogram_.max_hpwl_[i] << "\n";
     } else {
-      printf("%4d-%-4d  %8d       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
-             lo, hi,
-             net_histogram_.count_[i],
-             net_histogram_.percent_[i],
-             net_histogram_.sum_hpwl_[i],
-             net_histogram_.ave_hpwl_[i],
-             net_histogram_.min_hpwl_[i],
-             net_histogram_.max_hpwl_[i]);
+      BOOST_LOG_TRIVIAL(info) << lo << "-" << hi << "  "
+                              << net_histogram_.count_[i] << "       "
+                              << net_histogram_.percent_[i] << "         "
+                              << net_histogram_.sum_hpwl_[i] << "        "
+                              << net_histogram_.ave_hpwl_[i] << "        "
+                              << net_histogram_.min_hpwl_[i] << "        "
+                              << net_histogram_.max_hpwl_[i] << "\n";
     }
   }
-  printf("%4d+      %8d       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
-         net_histogram_.bin_list_[sz - 1],
-         net_histogram_.count_[sz - 1],
-         net_histogram_.percent_[sz - 1],
-         net_histogram_.sum_hpwl_[sz - 1],
-         net_histogram_.ave_hpwl_[sz - 1],
-         net_histogram_.min_hpwl_[sz - 1],
-         net_histogram_.max_hpwl_[sz - 1]);
-  printf("=================================================================================================\n");
-  printf(" * HPWL unit, grid value in X: %.2e um\n", net_histogram_.hpwl_unit_);
-  printf("\n");
-  //printf("%f\n", net_histogram_.tot_hpwl_ * 0.18);
+  BOOST_LOG_TRIVIAL(info) << net_histogram_.bin_list_[sz - 1] << "+      "
+                          << net_histogram_.count_[sz - 1] << "       "
+                          << net_histogram_.percent_[sz - 1] << "         "
+                          << net_histogram_.sum_hpwl_[sz - 1] << "        "
+                          << net_histogram_.ave_hpwl_[sz - 1] << "        "
+                          << net_histogram_.min_hpwl_[sz - 1] << "        "
+                          << net_histogram_.max_hpwl_[sz - 1] << "\n";
+
+  BOOST_LOG_TRIVIAL(info)
+    << "=================================================================================================\n";
+  BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: " << net_histogram_.hpwl_unit_ << " um\n";
+  BOOST_LOG_TRIVIAL(info) << "\n";
 }

@@ -21,8 +21,8 @@ void net_al_t::retrieve_info_from_database(net_t &net) {
 
 double net_al_t::dhpwlx() {
   if (pin_list.empty()) {
-    std::cout << "Error!\n";
-    std::cout << "net contains no pin\n";
+    BOOST_LOG_TRIVIAL(info)   << "Error!\n";
+    BOOST_LOG_TRIVIAL(info)   << "net contains no pin\n";
     assert(!pin_list.empty());
   }
   auto *block = (block_al_t *)(pin_list[0].get_block());
@@ -31,8 +31,8 @@ double net_al_t::dhpwlx() {
 
   for (auto &pin: pin_list) {
     if (pin.get_block() == nullptr) {
-      std::cout << "Error!\n";
-      std::cout << "attribute block_t* _block is nullptr, it should points to the block containing this pin\n";
+      BOOST_LOG_TRIVIAL(info)   << "Error!\n";
+      BOOST_LOG_TRIVIAL(info)   << "attribute block_t* _block is nullptr, it should points to the block containing this pin\n";
       assert(pin.get_block() != nullptr);
     }
     block = (block_al_t *)(pin.get_block());
@@ -49,8 +49,8 @@ double net_al_t::dhpwlx() {
 
 double net_al_t::dhpwly() {
   if (pin_list.empty()) {
-    std::cout << "Error!\n";
-    std::cout << "net contains no pin\n";
+    BOOST_LOG_TRIVIAL(info)   << "Error!\n";
+    BOOST_LOG_TRIVIAL(info)   << "net contains no pin\n";
     assert(!pin_list.empty());
   }
   auto *block = (block_al_t *)(pin_list[0].get_block());
@@ -59,8 +59,8 @@ double net_al_t::dhpwly() {
 
   for (auto &pin: pin_list) {
     if (pin.get_block() == nullptr) {
-      std::cout << "Error!\n";
-      std::cout << "attribute block_t* _block is nullptr, it should points to the block containing this pin\n";
+      BOOST_LOG_TRIVIAL(info)   << "Error!\n";
+      BOOST_LOG_TRIVIAL(info)   << "attribute block_t* _block is nullptr, it should points to the block containing this pin\n";
       assert(pin.get_block() != nullptr);
     }
     block = (block_al_t *)(pin.get_block());

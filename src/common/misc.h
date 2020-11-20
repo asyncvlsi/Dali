@@ -14,39 +14,6 @@
 #include <vector>
 #include <string>
 
-#include <boost/log/core.hpp>
-#include <boost/log/expressions.hpp>
-#include <boost/log/utility/setup/file.hpp>
-#include <boost/log/trivial.hpp>
-
-#include "global.h"
-
-inline void InitBoostLogging(int severe, std::string log_file_name="dali.log") {
-  boost::log::add_file_log(log_file_name);
-  boost::log::core::get()->set_filter(boost::log::trivial::severity >= boost::log::trivial::info);
-}
-
-inline void PrintSoftwareStatement() {
-  std::cout << "\n"
-            << "+----------------------------------------------+\n"
-            << "|                                              |\n"
-            << "|     Dali: gridded cell placement flow        |\n"
-            << "|                                              |\n"
-            << "|     Department of Electrical Engineering     |\n"
-            << "|     Yale University                          |\n"
-            << "|                                              |\n"
-            << "|     Developed by                             |\n"
-            << "|     Yihang Yang, Rajit Manohar               |\n"
-            << "|                                              |\n"
-            << "|     This program is for academic use and     |\n"
-            << "|     testing only                             |\n"
-            << "|     THERE IS NO WARRANTY                     |\n"
-            << "|                                              |\n"
-            << "|     build time: " << __DATE__ << " " << __TIME__ << "         |\n"
-            << "|                                              |\n"
-            << "+----------------------------------------------+\n\n";
-}
-
 template<class T>
 struct Value2D {
   T x;
@@ -181,21 +148,6 @@ struct IndexVal {
 };
 
 typedef Seg<int> SegI;
-
-inline void Assert(bool e, const std::string &error_message) {
-  if (!e) {
-    std::cout << "\033[0;31m" << "FATAL ERROR:" << "\n"
-              << "    " << error_message << "\033[0m" << std::endl;
-    exit(1);
-  }
-}
-
-inline void Warning(bool e, const std::string &warning_message) {
-  if (e) {
-    std::cout << "WARNING:" << "\n"
-              << "    " << warning_message << std::endl;
-  }
-}
 
 class NotImplementedException : public std::logic_error {
  public:

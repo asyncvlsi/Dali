@@ -345,12 +345,14 @@ void StdClusterWellLegalizer::FetchNPWellParams() {
   Assert(well_tap_cell_ != nullptr, "Cannot find the definition of well tap cell, well legalization cannot proceed\n");
   well_tap_cell_width_ = tech->WellTapCell()->Width();
 
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("Well max plug distance: %2.2e um, %d \n", n_well_layer->MaxPlugDist(), max_unplug_length_);
-    printf("GridValueX: %2.2e um\n", circuit_->GridValueX());
-    printf("Well spacing: %2.2e um, %d\n", n_well_layer->Spacing(), well_spacing_);
-    printf("Well tap cell width: %d\n", well_tap_cell_width_);
-  }
+  BOOST_LOG_TRIVIAL(info) << "Well max plug distance: "
+                          << n_well_layer->MaxPlugDist() << " um, "
+                          << max_unplug_length_ << " \n";
+  BOOST_LOG_TRIVIAL(info) << "GridValueX: " << circuit_->GridValueX() << " um\n";
+  BOOST_LOG_TRIVIAL(info) << "Well spacing: "
+                          << n_well_layer->Spacing() << " um, "
+                          << well_spacing_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Well tap cell width: " << well_tap_cell_width_ << "\n";
 
   well_tap_cell_ = (circuit_->getTech()->well_tap_cell_ptr_);
   auto *tap_cell_well = well_tap_cell_->WellPtr();
@@ -431,10 +433,10 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
   space_to_well_tap_ = 0;
 
   // temporarily change left and right boundary to reserve space
-  //printf("left: %d, right: %d, width: %d\n", left_, right_, RegionWidth());
+  //BOOST_LOG_TRIVIAL(info)  <<"left: %d, right: %d, width: %d\n", left_, right_, RegionWidth());
   left_ += well_spacing_;
   right_ -= well_spacing_;
-  //printf("left: %d, right: %d, width: %d\n", left_, right_, RegionWidth());
+  //BOOST_LOG_TRIVIAL(info)  <<"left: %d, right: %d, width: %d\n", left_, right_, RegionWidth());
 
   // initialize row height and white space segments
   InitAvailSpace();
@@ -445,22 +447,16 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
       max_cell_width_ = std::max(max_cell_width_, blk.Width());
     }
   }
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("Max cell width: %d\n", max_cell_width_);
-  }
+  BOOST_LOG_TRIVIAL(info) << "Max cell width: " << max_cell_width_ << "\n";
 
   if (cluster_width <= 0) {
-    if (globalVerboseLevel >= LOG_CRITICAL) {
-      std::cout << "Using default cluster width: 2*max_unplug_length_\n";
-    }
+    BOOST_LOG_TRIVIAL(info) << "Using default cluster width: 2*max_unplug_length_\n";
     strip_width_ = max_unplug_length_ * 2;
   } else {
     if (cluster_width < max_unplug_length_) {
-      if (globalVerboseLevel >= LOG_WARNING) {
-        std::cout << "WARNING:\n"
-                  << "  Specified cluster width is smaller than max_unplug_length_, "
-                  << "  space is wasted, may not be able to successfully complete well legalization\n";
-      }
+      BOOST_LOG_TRIVIAL(warning) << "WARNING:\n"
+                                 << "  Specified cluster width is smaller than max_unplug_length_, "
+                                 << "  space is wasted, may not be able to successfully complete well legalization\n";
     }
     strip_width_ = cluster_width;
   }
@@ -470,17 +466,13 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
     strip_width_ = RegionWidth();
   }
   tot_col_num_ = std::ceil(RegionWidth() / (double) strip_width_);
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("Total number of cluster columns: %d\n", tot_col_num_);
-  }
+  BOOST_LOG_TRIVIAL(info) << "Total number of cluster columns: " << tot_col_num_ << "\n";
 
-  //std::cout << RegionHeight() << "  " << circuit_->MinBlkHeight() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << RegionHeight() << "  " << circuit_->MinBlkHeight() << "\n";
   int max_clusters_per_col = RegionHeight() / circuit_->MinBlkHeight();
   col_list_.resize(tot_col_num_);
   strip_width_ = RegionWidth() / tot_col_num_;
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("Cluster width: %2.2e um\n", strip_width_ * circuit_->GridValueX());
-  }
+  BOOST_LOG_TRIVIAL(info) << "Cluster width: " << strip_width_ * circuit_->GridValueX() << " um\n";
   for (int i = 0; i < tot_col_num_; ++i) {
     col_list_[i].lx_ = RegionLeft() + i * strip_width_;
     col_list_[i].width_ = strip_width_ - well_spacing_;
@@ -494,10 +486,8 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
   // restore left and right boundaries back
   left_ -= well_spacing_;
   right_ += well_spacing_;
-  //printf("left: %d, right: %d\n", left_, right_);
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("Maximum possible number of clusters in a column: %d\n", max_clusters_per_col);
-  }
+  //BOOST_LOG_TRIVIAL(info)  <<"left: %d, right: %d\n", left_, right_);
+  BOOST_LOG_TRIVIAL(info) << "Maximum possible number of clusters in a column: " << max_clusters_per_col << "\n";
 
   index_loc_list_.resize(BlockList()->size());
   // temporarily change left and right boundary to reserve space
@@ -796,11 +786,11 @@ bool StdClusterWellLegalizer::StripLegalizationTopDown(Strip &strip) {
     cluster.UpdateBlockLocY();
   }
 
-  /*std::cout << "Reverse clustering: ";
+  /*BOOST_LOG_TRIVIAL(info)   << "Reverse clustering: ";
   if (strip.contour_ >= RegionLLY()) {
-    std::cout << "success\n";
+    BOOST_LOG_TRIVIAL(info)   << "success\n";
   } else {
-    std::cout << "fail\n";
+    BOOST_LOG_TRIVIAL(info)   << "fail\n";
   }*/
 
   return strip.contour_ >= strip.LLY();
@@ -853,11 +843,11 @@ bool StdClusterWellLegalizer::StripLegalizationTopDownCompact(Strip &strip) {
     cluster.UpdateBlockLocY();
   }
 
-  /*std::cout << "Reverse clustering: ";
+  /*BOOST_LOG_TRIVIAL(info)   << "Reverse clustering: ";
   if (strip.contour_ >= RegionLLY()) {
-    std::cout << "success\n";
+    BOOST_LOG_TRIVIAL(info)   << "success\n";
   } else {
-    std::cout << "fail\n";
+    BOOST_LOG_TRIVIAL(info)   << "fail\n";
   }*/
 
   return strip.contour_ >= RegionBottom();
@@ -932,9 +922,9 @@ bool StdClusterWellLegalizer::BlockClusteringLoose() {
       }
       res = res && is_success;
       /*if (is_success) {
-        printf("strip legalization success, %d\n", i);
+        BOOST_LOG_TRIVIAL(info)  <<"strip legalization success, %d\n", i);
       } else {
-        printf("strip legalization fail, %d\n", i);
+        BOOST_LOG_TRIVIAL(info)  <<"strip legalization fail, %d\n", i);
       }*/
 
       for (auto &cluster: strip.cluster_list_) {
@@ -990,7 +980,7 @@ bool StdClusterWellLegalizer::TrialClusterLegalization(Strip &strip) {
     cluster_list[i] = &strip.cluster_list_[i];
   }
 
-  //std::cout << "used height/RegionHeight(): " << col.used_height_ / (double) RegionHeight() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << "used height/RegionHeight(): " << col.used_height_ / (double) RegionHeight() << "\n";
   if (strip.used_height_ <= RegionHeight()) {
     if (strip.is_bottom_up_) {
       std::sort(cluster_list.begin(),
@@ -1095,7 +1085,7 @@ void StdClusterWellLegalizer::FindBestLocalOrder(std::vector<Block *> &res,
   * @param cluster points to the whole range, but we are only interested in the permutation of range [l,r]
   * ****/
 
-  //printf("l : %d, r: %d\n", l, r);
+  //BOOST_LOG_TRIVIAL(info)  <<"l : %d, r: %d\n", l, r);
 
   if (cur == r) {
     cluster->blk_list_[l]->setLLX(left_bound);
@@ -1209,16 +1199,14 @@ void StdClusterWellLegalizer::LocalReorderAllClusters() {
 }
 
 void StdClusterWellLegalizer::SingleSegmentClusteringOptimization() {
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "Start single segment clustering\n";
-  }
+  BOOST_LOG_TRIVIAL(info) << "Start single segment clustering\n";
 
   for (auto &col: col_list_) {
     for (auto &strip: col.strip_list_) {
       for (auto &cluster: strip.cluster_list_) {
         int num_old_cluster = cluster.blk_list_.size();
         std::vector<SegCluster> old_cluster(num_old_cluster);
-        for (int i=0; i<num_old_cluster; ++i) {
+        for (int i = 0; i < num_old_cluster; ++i) {
           old_cluster[i].blk_index.push_back(i);
           old_cluster[i].circuit_ = circuit_;
           old_cluster[i].cluster_ = &cluster;
@@ -1231,34 +1219,34 @@ void StdClusterWellLegalizer::SingleSegmentClusteringOptimization() {
         do {
           std::vector<SegCluster> new_cluster;
           new_cluster.push_back(old_cluster[0]);
-          int j=0;
-          while (j+1<num_old_cluster) {
-            if (new_cluster.back().Overlap(old_cluster[j+1])) {
-              new_cluster.back().Merge(old_cluster[j+1]);
+          int j = 0;
+          while (j + 1 < num_old_cluster) {
+            if (new_cluster.back().Overlap(old_cluster[j + 1])) {
+              new_cluster.back().Merge(old_cluster[j + 1]);
             } else {
-              new_cluster.push_back(old_cluster[j+1]);
+              new_cluster.push_back(old_cluster[j + 1]);
             }
             j += 1;
           }
           int new_count = new_cluster.size();
           num_old_cluster = new_count;
-          for (int i=0; i<new_count; ++i) {
+          for (int i = 0; i < new_count; ++i) {
             old_cluster[i].CopyFrom(new_cluster[i]);
           }
 
           is_overlap = false;
-          for (int i=0; i<new_count-1; ++i) {
-            if (old_cluster[i].Overlap(old_cluster[i+1])) {
+          for (int i = 0; i < new_count - 1; ++i) {
+            if (old_cluster[i].Overlap(old_cluster[i + 1])) {
               is_overlap = true;
               break;
             }
           }
 
-          //std::cout << is_overlap << "\n";
+          //BOOST_LOG_TRIVIAL(info)   << is_overlap << "\n";
 
         } while (is_overlap);
 
-        for (int i=0; i<num_old_cluster; ++i) {
+        for (int i = 0; i < num_old_cluster; ++i) {
           old_cluster[i].PlaceBlk();
         }
       }
@@ -1288,9 +1276,7 @@ void StdClusterWellLegalizer::UpdateClusterOrient() {
 }
 
 void StdClusterWellLegalizer::InsertWellTap() {
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "Inserting well tap cell\n";
-  }
+  BOOST_LOG_TRIVIAL(info) << "Inserting well tap cell\n";
 
   auto &tap_cell_list = circuit_->getDesign()->well_tap_list;
   tap_cell_list.clear();
@@ -1329,9 +1315,7 @@ void StdClusterWellLegalizer::InsertWellTap() {
       }
     }
   }
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("Inserting complete: %d well tap cell created\n", tot_tap_cell_num);
-  }
+  BOOST_LOG_TRIVIAL(info) << "Inserting complete: " << tot_tap_cell_num << " well tap cell created\n";
 }
 
 void StdClusterWellLegalizer::ClearCachedData() {
@@ -1358,34 +1342,30 @@ bool StdClusterWellLegalizer::WellLegalize() {
 
   AssignBlockToColBasedOnWhiteSpace();
   is_success = BlockClusteringLoose();
-  ReportHPWL(LOG_CRITICAL);
+  ReportHPWL();
 
   UpdateClusterOrient();
   for (int i = 0; i < 6; ++i) {
     LocalReorderAllClusters();
-    ReportHPWL(LOG_CRITICAL);
+    ReportHPWL();
   }
 
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    if (is_success) {
-      std::cout << "\033[0;36m"
-                << "Standard Cluster Well Legalization complete!\n"
-                << "\033[0m";
-    } else {
-      std::cout << "\033[0;36m"
-                << "Standard Cluster Well Legalization fail!\n"
-                << "\033[0m";
-    }
+  if (is_success) {
+    BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
+                            << "Standard Cluster Well Legalization complete!\n"
+                            << "\033[0m";
+  } else {
+    BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
+                            << "Standard Cluster Well Legalization fail!\n"
+                            << "\033[0m";
   }
 
   return is_success;
 }
 
 bool StdClusterWellLegalizer::StartPlacement() {
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "---------------------------------------\n"
-              << "Start Standard Cluster Well Legalization\n";
-  }
+  BOOST_LOG_TRIVIAL(info) << "---------------------------------------\n"
+                          << "Start Standard Cluster Well Legalization\n";
 
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
@@ -1402,55 +1382,51 @@ bool StdClusterWellLegalizer::StartPlacement() {
   //BlockClustering();
   is_success = BlockClusteringLoose();
   //BlockClusteringCompact();
-  ReportHPWL(LOG_CRITICAL);
+  ReportHPWL();
   //circuit_->GenMATLABWellTable("clu", false);
   //GenMatlabClusterTable("clu_result");
 
   UpdateClusterOrient();
   //circuit_->GenMATLABWellTable("ori", false);
   //GenMatlabClusterTable("ori_result");
-  ReportHPWL(LOG_CRITICAL);
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "Start local reordering\n";
-  }
+  ReportHPWL();
+  BOOST_LOG_TRIVIAL(info) << "Start local reordering\n";
   for (int i = 0; i < 6; ++i) {
     LocalReorderAllClusters();
-    ReportHPWL(LOG_CRITICAL);
+    ReportHPWL();
   }
   //SingleSegmentClusteringOptimization();
-  ReportHPWL(LOG_CRITICAL);
+  ReportHPWL();
   //circuit_->GenMATLABWellTable("lop", false);
   //GenMatlabClusterTable("lop_result");
 
   //InsertWellTap();
   //circuit_->GenMATLABWellTable("wtc", false);
   //GenMatlabClusterTable("wtc_result");
-  ReportHPWL(LOG_CRITICAL);
+  ReportHPWL();
 
   bottom_ -= 1;
   top_ += 1;
 
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    if (is_success) {
-      std::cout << "\033[0;36m"
-                << "Standard Cluster Well Legalization complete!\n"
-                << "\033[0m";
-    } else {
-      std::cout << "\033[0;36m"
-                << "Standard Cluster Well Legalization fail!\n"
-                << "Please try lower density"
-                << "\033[0m";
-    }
+  if (is_success) {
+    BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
+                            << "Standard Cluster Well Legalization complete!\n"
+                            << "\033[0m";
+  } else {
+    BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
+                            << "Standard Cluster Well Legalization fail!\n"
+                            << "Please try lower density"
+                            << "\033[0m";
   }
   /****<----****/
 
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("(wall time: %.4fs, cpu time: %.4fs)\n", wall_time, cpu_time);
-  }
+  BOOST_LOG_TRIVIAL(info) << "(wall time: "
+                          << wall_time << "s, cpu time: "
+                          << cpu_time << "s)\n";
 
-  ReportMemory(LOG_CRITICAL);
+  ReportMemory();
 
   //ReportEffectiveSpaceUtilization();
 
@@ -1494,13 +1470,14 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
     }
   }
   double factor = circuit_->getTech()->grid_value_x_ * circuit_->getTech()->grid_value_y_;
-  std::cout << "Total placement area: " << ((long int) RegionWidth() * (long int) RegionHeight()) * factor << " um^2\n";
-  std::cout << "Total block area: " << circuit_->TotBlkArea() * factor << " ("
-            << circuit_->TotBlkArea() / (double) RegionWidth() / (double) RegionHeight() << ") um^2\n";
-  std::cout << "Total effective block area: " << tot_eff_blk_area * factor << " ("
-            << tot_eff_blk_area / (double) RegionWidth() / (double) RegionHeight() << ") um^2\n";
-  std::cout << "Total standard block area (lower bound):" << tot_std_blk_area * factor << " ("
-            << tot_std_blk_area / (double) RegionWidth() / (double) RegionHeight() << ") um^2\n";
+  BOOST_LOG_TRIVIAL(info) << "Total placement area: " << ((long int) RegionWidth() * (long int) RegionHeight()) * factor
+                          << " um^2\n";
+  BOOST_LOG_TRIVIAL(info) << "Total block area: " << circuit_->TotBlkArea() * factor << " ("
+                          << circuit_->TotBlkArea() / (double) RegionWidth() / (double) RegionHeight() << ") um^2\n";
+  BOOST_LOG_TRIVIAL(info) << "Total effective block area: " << tot_eff_blk_area * factor << " ("
+                          << tot_eff_blk_area / (double) RegionWidth() / (double) RegionHeight() << ") um^2\n";
+  BOOST_LOG_TRIVIAL(info) << "Total standard block area (lower bound):" << tot_std_blk_area * factor << " ("
+                          << tot_std_blk_area / (double) RegionWidth() / (double) RegionHeight() << ") um^2\n";
 
 }
 
@@ -1766,9 +1743,7 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
   std::string NP_name = "nplus";
   std::string PP_name = "pplus";
 
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("Writing PP and NP rect file '%s', ", name_of_file.c_str());
-  }
+  BOOST_LOG_TRIVIAL(info) << "Writing PP and NP rect file: " << name_of_file;
 
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
@@ -1885,23 +1860,19 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
     }
   }
   ost.close();
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("done\n");
-  }
+  BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
 void StdClusterWellLegalizer::EmitWellRect(std::string const &name_of_file, int well_emit_mode) {
   // emit rect file
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("Writing N/P-well rect file '%s', ", name_of_file.c_str());
-  }
+  BOOST_LOG_TRIVIAL(info) << "Writing N/P-well rect file: " << name_of_file;
 
   switch (well_emit_mode) {
-    case 0:printf("emit N/P wells, ");
+    case 0:BOOST_LOG_TRIVIAL(info) << "emit N/P wells, ";
       break;
-    case 1:printf("emit N wells, ");
+    case 1:BOOST_LOG_TRIVIAL(info) << "emit N wells, ";
       break;
-    case 2:printf("emit P wells, ");
+    case 2:BOOST_LOG_TRIVIAL(info) << "emit P wells, ";
       break;
     default:Assert(false, "Invalid value for well_emit_mode in StdClusterWellLegalizer::EmitDEFWellFile()");
   }
@@ -1963,9 +1934,7 @@ void StdClusterWellLegalizer::EmitWellRect(std::string const &name_of_file, int 
     }
   }
   ost.close();
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("done\n");
-  }
+  BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
 void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
@@ -1973,15 +1942,13 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
    * Emits a rect file for power routing
    * ****/
 
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("Writing cluster rect file '%s' for router, ", name_of_file.c_str());
-  }
+  BOOST_LOG_TRIVIAL(info) << "Writing cluster rect file: " << name_of_file << " for router, ";
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
 
   double factor_x = circuit_->getDesign()->def_distance_microns * circuit_->getTech()->grid_value_x_;
   double factor_y = circuit_->getDesign()->def_distance_microns * circuit_->getTech()->grid_value_y_;
-  //std::cout << "Actual x span: "
+  //BOOST_LOG_TRIVIAL(info)   << "Actual x span: "
   //          << RegionLeft() * factor_x + +circuit_->getDesign()->die_area_offset_x_ << "  "
   //          << (col_list_.back().strip_list_[0].URX() + well_spacing_) * factor_x + circuit_->getDesign()->die_area_offset_x_
   //          << "\n";
@@ -2020,9 +1987,7 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
     }
   }
   ost.close();
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("done\n");
-  }
+  BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
 void StdClusterWellLegalizer::GenAvailSpace(std::string const &name_of_file) {

@@ -18,9 +18,6 @@
 
 Circuit::Circuit() {
   AddDummyIOPinBlockType();
-#ifdef USE_OPENDB
-  db_ptr_ = nullptr;
-#endif
 }
 
 #ifdef USE_OPENDB
@@ -77,29 +74,29 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
 
   // 1. lef database microns
   setDatabaseMicron(tech->getDbUnitsPerMicron());
-  //std::cout << tech->getDbUnitsPerMicron() << "\n";
-  //std::cout << tech->getLefUnits() << "\n";
-  //std::cout << top_level->getDefUnits() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << tech->getDbUnitsPerMicron() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << tech->getLefUnits() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << top_level->getDefUnits() << "\n";
 
   // 2. manufacturing grid and metals
   if (tech->hasManufacturingGrid()) {
-    //std::cout << "Mangrid" << tech->getManufacturingGrid() << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << "Mangrid" << tech->getManufacturingGrid() << "\n";
     setManufacturingGrid(tech->getManufacturingGrid() / double(tech_.database_microns_));
   } else {
     setManufacturingGrid(1.0 / tech_.database_microns_);
   }
   for (auto &&layer: tech->getLayers()) {
     if (layer->getType() == 0) {
-      //std::cout << layer->getNumber() << "  " << layer->getName() << "  " << layer->getType() << " ";
+      //BOOST_LOG_TRIVIAL(info)   << layer->getNumber() << "  " << layer->getName() << "  " << layer->getType() << " ";
       std::string metal_layer_name(layer->getName());
       double min_width = layer->getWidth() / (double) tech_.database_microns_;
       double min_spacing = layer->getSpacing() / (double) tech_.database_microns_;
-      //std::cout << min_width << "  " << min_spacing << "  ";
+      //BOOST_LOG_TRIVIAL(info)   << min_width << "  " << min_spacing << "  ";
       std::string str_direct(layer->getDirection().getString());
       MetalDirection direct = StrToMetalDirection(str_direct);
       double min_area = 0;
       if (layer->hasArea()) {
-        //std::cout << layer->getArea();
+        //BOOST_LOG_TRIVIAL(info)   << layer->getArea();
         min_area = layer->getArea();
       }
       AddMetalLayer(metal_layer_name,
@@ -109,7 +106,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
                     min_width + min_spacing,
                     min_width + min_spacing,
                     direct);
-      //std::cout << "\n";
+      //BOOST_LOG_TRIVIAL(info)   << "\n";
     }
   }
 
@@ -118,10 +115,10 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   auto site = lib->getSites().begin();
   double row_height = site->getHeight() / double(tech_.database_microns_);
   setRowHeight(row_height);
-  //std::cout << site->getName() << "  " << site->getWidth() / double(tech_.database_microns_) << "  " << tech_.row_height_ << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << site->getName() << "  " << site->getWidth() / double(tech_.database_microns_) << "  " << tech_.row_height_ << "\n";
 
   // 4. load all macros, aka gate types, block types, cell types
-  //std::cout << lib->getName() << " lib\n";
+  //BOOST_LOG_TRIVIAL(info)   << lib->getName() << " lib\n";
   double llx = 0, lly = 0, urx = 0, ury = 0;
   double width = 0, height = 0;
   for (auto &&macro: lib->getMasters()) {
@@ -134,12 +131,12 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
     } else {
       blk_type = AddBlockType(macro_name, width, height);
     }
-    //std::cout << macro->getName() << "\n";
-    //std::cout << macro->getWidth()/grid_value_x_/lef_database_microns << "  " << macro->getHeight()/grid_value_y_/lef_database_microns << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << macro->getName() << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << macro->getWidth()/grid_value_x_/lef_database_microns << "  " << macro->getHeight()/grid_value_y_/lef_database_microns << "\n";
     for (auto &&terminal: macro->getMTerms()) {
       std::string pin_name(terminal->getName());
       //if (pin_name == "Vdd" || pin_name == "GND") continue;
-      //std::cout << terminal->getName() << " " << terminal->getMPins().begin()->getGeometry().begin()->xMax()/grid_value_x/lef_database_microns << "\n";
+      //BOOST_LOG_TRIVIAL(info)   << terminal->getName() << " " << terminal->getMPins().begin()->getGeometry().begin()->xMax()/grid_value_x/lef_database_microns << "\n";
       Assert(!terminal->getMPins().empty(), "No physical pins, Macro: " + *blk_type->NamePtr() + ", pin: " + pin_name);
       Assert(!terminal->getMPins().begin()->getGeometry().empty(), "No geometries provided for pin");
       auto geo_shape = terminal->getMPins().begin()->getGeometry().begin();
@@ -174,19 +171,19 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   setListCapacity(components_count, pins_count, nets_count);
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "components count: " << components_count << "\n"
+    BOOST_LOG_TRIVIAL(info)   << "components count: " << components_count << "\n"
               << "pins count:        " << pins_count << "\n"
               << "nets count:       " << nets_count << "\n";
   }
 
   for (auto &&track_set: top_level->getTrackGrids()) {
-    std::cout << track_set->getTechLayer()->getName() << "\n";
+    BOOST_LOG_TRIVIAL(info)   << track_set->getTechLayer()->getName() << "\n";
     int x_grid_pattern = 0;
     int y_grid_pattern = 0;
     x_grid_pattern = track_set->getNumGridPatternsX();
     y_grid_pattern = track_set->getNumGridPatternsY();
-    std::cout << "x grid pattern: " << x_grid_pattern << "\n";
-    std::cout << "y grid pattern: " << y_grid_pattern << "\n";
+    BOOST_LOG_TRIVIAL(info)   << "x grid pattern: " << x_grid_pattern << "\n";
+    BOOST_LOG_TRIVIAL(info)   << "y grid pattern: " << y_grid_pattern << "\n";
   }
 
   // 5. load all gates
@@ -194,7 +191,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   setUnitsDistanceMicrons(top_level->getDefUnits());
   odb::adsRect die_area;
   top_level->getDieArea(die_area);
-  //std::cout << die_area.xMin() << "\n"
+  //BOOST_LOG_TRIVIAL(info)   << die_area.xMin() << "\n"
   //          << die_area.xMax() << "\n"
   //          << die_area.yMin() << "\n"
   //          << die_area.yMax() << "\n";
@@ -211,7 +208,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
              die_area.xMax()/10,
              die_area.yMax()/10);
   for (auto &&blk: top_level->getInsts()) {
-    //std::cout << blk->getName() << "  " << blk->getMaster()->getName() << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << blk->getName() << "  " << blk->getMaster()->getName() << "\n";
     std::string blk_name(blk->getName());
     std::string blk_type_name(blk->getMaster()->getName());
     blk->getLocation(llx_int, lly_int);
@@ -226,7 +223,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
 
   // 6. load all IOPINs
   for (auto &&iopin: top_level->getBTerms()) {
-    //std::cout << iopin->getName() << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << iopin->getName() << "\n";
     std::string iopin_name(iopin->getName());
     int iopin_x = 0;
     int iopin_y = 0;
@@ -245,24 +242,24 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   }
 
   // 7. load all NETs
-  //std::cout << "Nets:\n";
+  //BOOST_LOG_TRIVIAL(info)   << "Nets:\n";
   for (auto &&net: top_level->getNets()) {
-    //std::cout << net->getName() << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << net->getName() << "\n";
     std::string net_name(net->getName());
     int net_capacity = int(net->getITermCount() + net->getBTermCount());
     AddNet(net_name, net_capacity, design_.normal_signal_weight);
     for (auto &&bterm: net->getBTerms()) {
-      //std::cout << "  ( PIN " << bterm->getName() << ")  \t";
+      //BOOST_LOG_TRIVIAL(info)   << "  ( PIN " << bterm->getName() << ")  \t";
       std::string iopin_name(bterm->getName());
       AddIOPinToNet(iopin_name, net_name);
     }
     for (auto &&iterm: net->getITerms()) {
-      //std::cout << "  (" << iterm->getInst()->getName() << "  " << iterm->getMTerm()->getName() << ")  \t";
+      //BOOST_LOG_TRIVIAL(info)   << "  (" << iterm->getInst()->getName() << "  " << iterm->getMTerm()->getName() << ")  \t";
       std::string blk_name(iterm->getInst()->getName());
       std::string pin_name(iterm->getMTerm()->getName());
       AddBlkPinToNet(blk_name, pin_name, net_name);
     }
-    //std::cout << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << "\n";
   }
 }
 #endif
@@ -274,7 +271,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
   * ****/
   std::ifstream ist(name_of_file.c_str());
   Assert(ist.is_open(), "Cannot open input file: " + name_of_file);
-  std::cout << "Loading LEF file" << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Loading LEF file" << "\n";
   std::string line;
 
   // 1. find DATABASE MICRONS
@@ -289,12 +286,12 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
       try {
         tech_.database_microns_ = std::stoi(line_field[2]);
       } catch (...) {
-        std::cout << line << "\n";
+        BOOST_LOG_TRIVIAL(info) << line << "\n";
         Assert(false, "Invalid stoi conversion:" + line_field[2]);
       }
     }
   }
-  std::cout << "DATABASE MICRONS " << tech_.database_microns_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "DATABASE MICRONS " << tech_.database_microns_ << "\n";
 
   // 2. find MANUFACTURINGGRID
   tech_.manufacturing_grid_ = 0;
@@ -303,7 +300,8 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     if (!line.empty() && line[0] == '#') continue;
     if (line.find("LAYER") != std::string::npos) {
       tech_.manufacturing_grid_ = 1.0 / tech_.database_microns_;
-      std::cout << "  WARNING:\n  MANUFACTURINGGRID not specified explicitly, using 1.0/DATABASE MICRONS instead\n";
+      BOOST_LOG_TRIVIAL(info)
+        << "  WARNING:\n  MANUFACTURINGGRID not specified explicitly, using 1.0/DATABASE MICRONS instead\n";
     }
     if (line.find("MANUFACTURINGGRID") != std::string::npos) {
       std::vector<std::string> grid_field;
@@ -318,7 +316,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     }
   }
   Assert(tech_.manufacturing_grid_ > 0, "Cannot find or invalid MANUFACTURINGGRID");
-  std::cout << "MANUFACTURINGGRID: " << tech_.manufacturing_grid_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "MANUFACTURINGGRID: " << tech_.manufacturing_grid_ << "\n";
 
   // 3. read metal layer
   static std::vector<std::string> metal_identifier_list{"m", "M", "metal", "Metal"};
@@ -414,16 +412,16 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
   if (!tech_.grid_set_) {
     if (tech_.metal_list_.size() < 2) {
       setGridValue(tech_.manufacturing_grid_, tech_.manufacturing_grid_);
-      std::cout << "No enough metal layers to specify horizontal and vertical pitch\n"
-                << "Using manufacturing grid as grid values\n";
+      BOOST_LOG_TRIVIAL(info) << "No enough metal layers to specify horizontal and vertical pitch\n"
+                              << "Using manufacturing grid as grid values\n";
     } else if (tech_.metal_list_[0].PitchY() <= 0 || tech_.metal_list_[1].PitchX() <= 0) {
       setGridValue(tech_.manufacturing_grid_, tech_.manufacturing_grid_);
-      std::cout << "Invalid metal pitch\n"
-                << "Using manufacturing grid as grid values\n";
+      BOOST_LOG_TRIVIAL(info) << "Invalid metal pitch\n"
+                              << "Using manufacturing grid as grid values\n";
     } else {
       setGridUsingMetalPitch();
     }
-    std::cout << "Grid Value: " << tech_.grid_value_x_ << "  " << tech_.grid_value_y_ << "\n";
+    BOOST_LOG_TRIVIAL(info) << "Grid Value: " << tech_.grid_value_x_ << "  " << tech_.grid_value_y_ << "\n";
   }
 
   // 4. read block type information
@@ -437,7 +435,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
       StrSplit(line, line_field);
       Assert(line_field.size() >= 2, "Invalid type name: expecting 2 fields\n" + line);
       std::string block_type_name = line_field[1];
-      //std::cout << block_type_name << "\n";
+      //BOOST_LOG_TRIVIAL(info)   << block_type_name << "\n";
       BlockType *new_block_type = nullptr;
       int width = 0, height = 0;
       std::string end_macro_flag = "END " + line_field[1];
@@ -455,7 +453,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
               Assert(false, "Invalid stod conversion:\n" + line);
             }
             new_block_type = AddBlockTypeWithGridUnit(block_type_name, width, height);
-            //std::cout << "  type width, height: " << new_block_type->Width() << " " << new_block_type->Height() << "\n";
+            //BOOST_LOG_TRIVIAL(info)   << "  type width, height: " << new_block_type->Width() << " " << new_block_type->Height() << "\n";
           }
           getline(ist, line);
         }
@@ -481,7 +479,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
             getline(ist, line);
             if (!line.empty() && line[0] == '#') continue;
             if (line.find("RECT") != std::string::npos) {
-              //std::cout << line << "\n";
+              //BOOST_LOG_TRIVIAL(info)   << line << "\n";
               std::vector<std::string> rect_field;
               StrSplit(line, rect_field);
               Assert(rect_field.size() >= 5, "Invalid rect definition: expecting 5 fields\n" + line);
@@ -503,7 +501,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     }
     getline(ist, line);
   }
-  std::cout << "LEF file loading complete: " << name_of_file << "\n";
+  BOOST_LOG_TRIVIAL(info) << "LEF file loading complete: " << name_of_file << "\n";
   //ReportBlockType();
 }
 
@@ -514,7 +512,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
    * ****/
   std::ifstream ist(name_of_file.c_str());
   Assert(ist.is_open(), "Cannot open input file: " + name_of_file);
-  std::cout << "Loading DEF file" << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "Loading DEF file" << std::endl;
   std::string line;
 
   bool component_section_exist = false;
@@ -533,7 +531,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         Assert(components_field.size() == 2, "Improper use of COMPONENTS?\n" + line);
         try {
           components_count = std::stoi(components_field[1]);
-          std::cout << "COMPONENTS:  " << components_count << "\n";
+          BOOST_LOG_TRIVIAL(info) << "COMPONENTS:  " << components_count << "\n";
           component_section_exist = true;
         } catch (...) {
           Assert(false, "Invalid stoi conversion:\n" + line);
@@ -547,7 +545,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         Assert(pins_field.size() == 2, "Improper use of PINS?\n" + line);
         try {
           pins_count = std::stoi(pins_field[1]);
-          std::cout << "PINS:  " << pins_count << "\n";
+          BOOST_LOG_TRIVIAL(info) << "PINS:  " << pins_count << "\n";
           pins_section_exist = true;
         } catch (...) {
           Assert(false, "Invalid stoi conversion:\n" + line);
@@ -561,7 +559,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         Assert(nets_field.size() == 2, "Improper use of NETS?\n" + line);
         try {
           nets_count = std::stoi(nets_field[1]);
-          std::cout << "NETS:  " << nets_count << "\n";
+          BOOST_LOG_TRIVIAL(info) << "NETS:  " << nets_count << "\n";
           nets_section_exist = true;
         } catch (...) {
           Assert(false, "Invalid stoi conversion:\n" + line);
@@ -594,7 +592,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
   }
   Assert(design_.def_distance_microns > 0,
          "Invalid/null UNITS DISTANCE MICRONS: " + std::to_string(design_.def_distance_microns));
-  //std::cout << "DISTANCE MICRONS " << def_distance_microns << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << "DISTANCE MICRONS " << def_distance_microns << "\n";
 
   // find DIEAREA
   int def_left = 0;
@@ -608,7 +606,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
     if (line.find("DIEAREA") != std::string::npos) {
       std::vector<std::string> die_area_field;
       StrSplit(line, die_area_field);
-      //std::cout << line << "\n";
+      //BOOST_LOG_TRIVIAL(info)   << line << "\n";
       Assert(die_area_field.size() >= 9, "Invalid UNITS declaration: expecting 9 fields");
       try {
         def_left = (int) std::round(std::stoi(die_area_field[2]) / factor_x);
@@ -621,19 +619,19 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       }
     }
   }
-  //std::cout << "DIEAREA ( " << region_left_ << " " << region_bottom_ << " ) ( " << region_right_ << " " << region_top_ << " )\n";
+  //BOOST_LOG_TRIVIAL(info)   << "DIEAREA ( " << region_left_ << " " << region_bottom_ << " ) ( " << region_right_ << " " << region_top_ << " )\n";
 
   // find COMPONENTS
   if (component_section_exist) {
     while ((line.find("COMPONENTS") == std::string::npos) && !ist.eof()) {
       getline(ist, line);
     }
-    //std::cout << line << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << line << "\n";
     getline(ist, line);
 
     // a). parse the body of components
     while ((line.find("END COMPONENTS") == std::string::npos) && !ist.eof()) {
-      //std::cout << line << "\t";
+      //BOOST_LOG_TRIVIAL(info)   << line << "\t";
       std::vector<std::string> block_declare_field;
       StrSplit(line, block_declare_field);
       if (block_declare_field.size() <= 1) {
@@ -642,7 +640,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       }
       Assert(block_declare_field.size() >= 3,
              "Invalid block declaration, expecting at least: - compName modelName ;\n" + line);
-      //std::cout << block_declare_field[0] << " " << block_declare_field[1] << "\n";
+      //BOOST_LOG_TRIVIAL(info)   << block_declare_field[0] << " " << block_declare_field[1] << "\n";
       if (block_declare_field.size() == 3) {
         AddBlock(block_declare_field[1], block_declare_field[2], 0, 0, UNPLACED_, N_);
       } else if (block_declare_field.size() == 10) {
@@ -668,12 +666,12 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
     while ((line.find("PINS") == std::string::npos) && !ist.eof()) {
       getline(ist, line);
     }
-    //std::cout << line << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << line << "\n";
     getline(ist, line);
 
     while ((line.find("END PINS") == std::string::npos) && !ist.eof()) {
       if (line.find('-') != std::string::npos && line.find("NET") != std::string::npos) {
-        //std::cout << line << "\n";
+        //BOOST_LOG_TRIVIAL(info)   << line << "\n";
         std::vector<std::string> io_pin_field;
         StrSplit(line, io_pin_field);
         //IOPin *iopin = nullptr;
@@ -691,7 +689,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
     // a). find the number of nets
     std::vector<std::string> nets_size_field;
     StrSplit(line, nets_size_field);
-    //std::cout << line << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << line << "\n";
     getline(ist, line);
     // the following is a hack now, cannot handle all cases, probably need to use BISON in the future if necessary
     while ((line.find("END NETS") == std::string::npos) && !ist.eof()) {
@@ -700,15 +698,15 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         continue;
       }
       if (line.find('-') != std::string::npos) {
-        //std::cout << line << "\n";
+        //BOOST_LOG_TRIVIAL(info)   << line << "\n";
         std::vector<std::string> net_field;
         StrSplit(line, net_field);
         Assert(net_field.size() >= 2, "Invalid net declaration, expecting at least: - netName\n" + line);
-        //std::cout << "\t" << net_field[0] << " " << net_field[1] << "\n";
+        //BOOST_LOG_TRIVIAL(info)   << "\t" << net_field[0] << " " << net_field[1] << "\n";
         Net *new_net = nullptr;
-        //std::cout << "Circuit::ReadDefFile(), this naive parser is broken, please do not use it\n";
+        //BOOST_LOG_TRIVIAL(info)   << "Circuit::ReadDefFile(), this naive parser is broken, please do not use it\n";
         if (net_field[1].find("Reset") != std::string::npos) {
-          //std::cout << net_field[1] << "\n";
+          //BOOST_LOG_TRIVIAL(info)   << net_field[1] << "\n";
           new_net = AddNet(net_field[1], 100, design_.reset_signal_weight);
         } else {
           new_net = AddNet(net_field[1], 100, design_.normal_signal_weight);
@@ -718,24 +716,24 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
           if (!line.empty() && line[0] == '#') {
             continue;
           }
-          //std::cout << line << "\n";
+          //BOOST_LOG_TRIVIAL(info)   << line << "\n";
           std::vector<std::string> pin_field;
           StrSplit(line, pin_field);
           if ((pin_field.size() % 4 != 0)) {
             Assert(false, "Invalid net declaration, expecting 4n fields, where n >= 2:\n" + line);
           }
           for (size_t i = 0; i < pin_field.size(); i += 4) {
-            //std::cout << "     " << pin_field[i+1] << " " << pin_field[i+2];
+            //BOOST_LOG_TRIVIAL(info)   << "     " << pin_field[i+1] << " " << pin_field[i+2];
             if (pin_field[i + 1] == "PIN") {
               getIOPin(pin_field[i + 2])->SetNet(new_net);
               continue;
             }
-            //std::cout << net_field[1] << "  " << pin_field[i + 1] << "\n";
+            //BOOST_LOG_TRIVIAL(info)   << net_field[1] << "  " << pin_field[i + 1] << "\n";
             Block *block = getBlockPtr(pin_field[i + 1]);
             auto pin = block->TypePtr()->getPinPtr(pin_field[i + 2]);
             new_net->AddBlockPinPair(block, pin);
           }
-          //std::cout << "\n";
+          //BOOST_LOG_TRIVIAL(info)   << "\n";
           if (line.find(';') != std::string::npos) break;
         }
         //Assert(!new_net->blk_pin_list.empty(), "Net " + net_field[1] + " has no blk_pin_pair");
@@ -745,13 +743,13 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       getline(ist, line);
     }
   }
-  std::cout << "DEF file loading complete: " << name_of_file << "\n";
+  BOOST_LOG_TRIVIAL(info) << "DEF file loading complete: " << name_of_file << "\n";
 }
 
 void Circuit::ReadCellFile(std::string const &name_of_file) {
   std::ifstream ist(name_of_file.c_str());
   Assert(ist.is_open(), "Cannot open input file: " + name_of_file);
-  std::cout << "Loading CELL file: " << name_of_file << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Loading CELL file: " << name_of_file << "\n";
   std::string line;
 
   while (!ist.eof()) {
@@ -770,19 +768,19 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
             try {
               same_diff_spacing = std::stod(legalizer_fields[1]);
             } catch (...) {
-              std::cout << line << std::endl;
+              BOOST_LOG_TRIVIAL(info) << line << std::endl;
               Assert(false, "Invalid stod conversion: " + legalizer_fields[1]);
             }
           } else if (legalizer_fields[0] == "ANY_DIFF_SPACING") {
             try {
               any_diff_spacing = std::stod(legalizer_fields[1]);
             } catch (...) {
-              std::cout << line << std::endl;
+              BOOST_LOG_TRIVIAL(info) << line << std::endl;
               Assert(false, "Invalid stod conversion: " + legalizer_fields[1]);
             }
           }
         } while (line.find("END LEGALIZER") == std::string::npos && !ist.eof());
-        //std::cout << "same diff spacing: " << same_diff_spacing << "\n any diff spacing: " << any_diff_spacing << "\n";
+        //BOOST_LOG_TRIVIAL(info)   << "same diff spacing: " << same_diff_spacing << "\n any diff spacing: " << any_diff_spacing << "\n";
         SetLegalizerSpacing(same_diff_spacing, any_diff_spacing);
       } else {
         std::vector<std::string> well_fields;
@@ -801,7 +799,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
             try {
               width = std::stod(well_fields[1]);
             } catch (...) {
-              std::cout << line << std::endl;
+              BOOST_LOG_TRIVIAL(info) << line << std::endl;
               Assert(false, "Invalid stod conversion: " + well_fields[1]);
             }
           } else if (line.find("OPPOSPACING") != std::string::npos) {
@@ -809,7 +807,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
             try {
               op_spacing = std::stod(well_fields[1]);
             } catch (...) {
-              std::cout << line << std::endl;
+              BOOST_LOG_TRIVIAL(info) << line << std::endl;
               Assert(false, "Invalid stod conversion: " + well_fields[1]);
             }
           } else if (line.find("SPACING") != std::string::npos) {
@@ -817,7 +815,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
             try {
               spacing = std::stod(well_fields[1]);
             } catch (...) {
-              std::cout << line << std::endl;
+              BOOST_LOG_TRIVIAL(info) << line << std::endl;
               Assert(false, "Invalid stod conversion: " + well_fields[1]);
             }
           } else if (line.find("MAXPLUGDIST") != std::string::npos) {
@@ -825,7 +823,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
             try {
               max_plug_dist = std::stod(well_fields[1]);
             } catch (...) {
-              std::cout << line << std::endl;
+              BOOST_LOG_TRIVIAL(info) << line << std::endl;
               Assert(false, "Invalid stod conversion: " + well_fields[1]);
             }
           } else if (line.find("MAXPLUGDIST") != std::string::npos) {
@@ -833,7 +831,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
             try {
               overhang = std::stod(well_fields[1]);
             } catch (...) {
-              std::cout << line << std::endl;
+              BOOST_LOG_TRIVIAL(info) << line << std::endl;
               Assert(false, "Invalid stod conversion: " + well_fields[1]);
             }
           } else {}
@@ -848,7 +846,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
     }
 
     if (line.find("MACRO") != std::string::npos) {
-      //std::cout << line << "\n";
+      //BOOST_LOG_TRIVIAL(info)   << line << "\n";
       std::vector<std::string> macro_fields;
       StrSplit(line, macro_fields);
       std::string end_macro_flag = "END " + macro_fields[1];
@@ -886,7 +884,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
   //tech_->Report();
   //ReportWellShape();
 
-  std::cout << "CELL file loading complete: " << name_of_file << "\n";
+  BOOST_LOG_TRIVIAL(info) << "CELL file loading complete: " << name_of_file << "\n";
 }
 
 void Circuit::setGridValue(double grid_value_x, double grid_value_y) {
@@ -894,7 +892,7 @@ void Circuit::setGridValue(double grid_value_x, double grid_value_y) {
   Assert(grid_value_x > 0, "grid_value_x must be a positive real number! Circuit::setGridValue()");
   Assert(grid_value_y > 0, "grid_value_y must be a positive real number! Circuit::setGridValue()");
   Assert(!tech_.grid_set_, "once set, grid_value cannot be changed! Circuit::setGridValue()");
-  //printf("  grid value x: %.4e, grid value y: %.4e\n", grid_value_x, grid_value_y);
+  //BOOST_LOG_TRIVIAL(info) << "  grid value x: " << grid_value_x << ", grid value y: " << grid_value_y << "\n";
   tech_.grid_value_x_ = grid_value_x;
   tech_.grid_value_y_ = grid_value_y;
   tech_.grid_set_ = true;
@@ -915,8 +913,8 @@ void Circuit::setGridUsingMetalPitch() {
   }
   Assert(hor_layer != nullptr, "Cannot find a horizontal metal layer! Circuit::setGridUsingMetalPitch()");
   Assert(ver_layer != nullptr, "Cannot find a vertical metal layer! Circuit::setGridUsingMetalPitch()");
-  //std::cout << "vertical layer: " << *ver_layer->Name() << "  " << ver_layer->PitchX() << "\n";
-  //std::cout << "horizontal layer: " << *hor_layer->Name() << "  " << hor_layer->PitchY() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << "vertical layer: " << *ver_layer->Name() << "  " << ver_layer->PitchX() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << "horizontal layer: " << *hor_layer->Name() << "  " << hor_layer->PitchY() << "\n";
   setGridValue(ver_layer->PitchX(), hor_layer->PitchY());
 }
 
@@ -947,11 +945,11 @@ void Circuit::AddMetalLayer(std::string &metal_name,
 }
 
 void Circuit::ReportMetalLayers() {
-  std::cout << "Total MetalLayer: " << tech_.metal_list_.size() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Total MetalLayer: " << tech_.metal_list_.size() << "\n";
   for (auto &metal_layer: tech_.metal_list_) {
     metal_layer.Report();
   }
-  std::cout << "\n";
+  BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
 BlockTypeWell *Circuit::AddBlockTypeWell(BlockType *blk_type) {
@@ -1001,7 +999,7 @@ BlockType *Circuit::AddBlockType(std::string &block_type_name, double width, dou
 }
 
 void Circuit::SetBlockTypeSize(BlockType *blk_type_ptr, double width, double height) {
-  Assert(blk_type_ptr!=nullptr, "Set size for an nullptr object?");
+  Assert(blk_type_ptr != nullptr, "Set size for an nullptr object?");
   double residual = Residual(width, tech_.grid_value_x_);
   Assert(residual < 1e-6, "BlockType width is not integer multiple of grid value in X: " + blk_type_ptr->Name());
 
@@ -1042,11 +1040,11 @@ void Circuit::setListCapacity(int components_count, int pins_count, int nets_cou
 }
 
 void Circuit::ReportBlockType() {
-  std::cout << "Total BlockType: " << tech_.block_type_map_.size() << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "Total BlockType: " << tech_.block_type_map_.size() << std::endl;
   for (auto &pair: tech_.block_type_map_) {
     pair.second->Report();
   }
-  std::cout << "\n";
+  BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
 void Circuit::CopyBlockType(Circuit &circuit) {
@@ -1182,11 +1180,11 @@ IOPin *Circuit::AddIOPin(std::string &iopin_name,
 }
 
 void Circuit::ReportIOPin() {
-  std::cout << "Total IOPin: " << design_.iopin_list.size() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Total IOPin: " << design_.iopin_list.size() << "\n";
   for (auto &iopin: design_.iopin_list) {
     iopin.Report();
   }
-  std::cout << "\n";
+  BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
 Net *Circuit::AddNet(std::string &net_name, int capacity, double weight) {
@@ -1247,34 +1245,35 @@ void Circuit::RemoveAllPseudoNets() {
  */
 
 void Circuit::ReportBlockList() {
-  std::cout << "Total Block: " << design_.block_list.size() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Total Block: " << design_.block_list.size() << "\n";
   for (auto &block: design_.block_list) {
     block.Report();
   }
-  std::cout << "\n";
+  BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
 void Circuit::ReportBlockMap() {
   for (auto &it: design_.block_name_map) {
-    std::cout << it.first << " " << it.second << "\n";
+    BOOST_LOG_TRIVIAL(info) << it.first << " " << it.second << "\n";
   }
 }
 
 void Circuit::ReportNetList() {
-  std::cout << "Total Net: " << design_.net_list.size() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Total Net: " << design_.net_list.size() << "\n";
   for (auto &net: design_.net_list) {
-    std::cout << "  " << *net.Name() << "  " << net.Weight() << "\n";
+    BOOST_LOG_TRIVIAL(info) << "  " << *net.Name() << "  " << net.Weight() << "\n";
     for (auto &block_pin_pair: net.blk_pin_list) {
-      std::cout << "\t" << " (" << *(block_pin_pair.BlockNamePtr()) << " " << *(block_pin_pair.PinNamePtr()) << ") "
-                << "\n";
+      BOOST_LOG_TRIVIAL(info) << "\t" << " (" << *(block_pin_pair.BlockNamePtr()) << " "
+                              << *(block_pin_pair.PinNamePtr()) << ") "
+                              << "\n";
     }
   }
-  std::cout << "\n";
+  BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
 void Circuit::ReportNetMap() {
   for (auto &it: design_.net_name_map) {
-    std::cout << it.first << " " << it.second << "\n";
+    BOOST_LOG_TRIVIAL(info) << it.first << " " << it.second << "\n";
   }
 }
 
@@ -1299,26 +1298,25 @@ void Circuit::UpdateNetHPWLHistogram() {
 }
 
 void Circuit::ReportBriefSummary() const {
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    std::cout << "  movable blocks: " << TotMovableBlockCount() << "\n"
-              << "  blocks: " << TotBlkCount() << "\n"
-              << "  iopins: " << design_.iopin_list.size() << "\n"
-              << "  nets: " << design_.net_list.size() << "\n"
-              << "  grid size x: " << tech_.grid_value_x_ << " um, grid size y: " << tech_.grid_value_y_ << " um\n"
-              << "  total block area: " << design_.tot_blk_area_ << "\n"
-              << "  total white space: " << (long int) RegionWidth() * (long int) RegionHeight() << "\n"
-              << "    left:   " << RegionLLX() << "\n"
-              << "    right:  " << RegionURX() << "\n"
-              << "    bottom: " << RegionLLY() << "\n"
-              << "    top:    " << RegionURY() << "\n"
-              << "  white space utility: " << WhiteSpaceUsage() << "\n";
-  }
+  BOOST_LOG_TRIVIAL(info)
+    << "  movable blocks: " << TotMovableBlockCount() << "\n"
+    << "  blocks: " << TotBlkCount() << "\n"
+    << "  iopins: " << design_.iopin_list.size() << "\n"
+    << "  nets: " << design_.net_list.size() << "\n"
+    << "  grid size x: " << tech_.grid_value_x_ << " um, grid size y: " << tech_.grid_value_y_ << " um\n"
+    << "  total block area: " << design_.tot_blk_area_ << "\n"
+    << "  total white space: " << (long int) RegionWidth() * (long int) RegionHeight() << "\n"
+    << "    left:   " << RegionLLX() << "\n"
+    << "    right:  " << RegionURX() << "\n"
+    << "    bottom: " << RegionLLY() << "\n"
+    << "    top:    " << RegionURY() << "\n"
+    << "  white space utility: " << WhiteSpaceUsage() << "\n";
 }
 
 void Circuit::BuildBlkPairNets() {
   // for each net, we decompose it, and enumerate all driver-load pair
   for (auto &net: design_.net_list) {
-    //std::cout << net.NameStr() << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << net.NameStr() << "\n";
     int sz = net.blk_pin_list.size();
     int driver_index = -1;
     // find if there is a driver pin in this net
@@ -1438,23 +1436,23 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
   }
 
   int tot_count = design_.net_list.size();
-  printf("\n");
-  printf("                  HPWL histogram (linear scale bins)\n");
-  printf("===================================================================\n");
-  printf("   HPWL interval         Count\n");
+  BOOST_LOG_TRIVIAL(info) << "\n";
+  BOOST_LOG_TRIVIAL(info) << "                  HPWL histogram (linear scale bins)\n";
+  BOOST_LOG_TRIVIAL(info) << "===================================================================\n";
+  BOOST_LOG_TRIVIAL(info) << "   HPWL interval         Count\n";
   for (int i = 0; i < bin_num; ++i) {
     double lo = min_hpwl + step * i;
     double hi = lo + step;
-    printf("  [%.1e, %.1e) %8d  ", lo, hi, count[i]);
+    BOOST_LOG_TRIVIAL(info) << "  [" << lo << ", " << hi << ") " << count[i] << "  ";
     int percent = std::ceil(50 * count[i] / (double) tot_count);
     for (int j = 0; j < percent; ++j) {
-      printf("*");
+      BOOST_LOG_TRIVIAL(info) << "*";
     }
-    printf("\n");
+    BOOST_LOG_TRIVIAL(info) << "\n";
   }
-  printf("===================================================================\n");
-  printf(" * HPWL unit, grid value in X: %.2e um\n", tech_.grid_value_x_);
-  printf("\n");
+  BOOST_LOG_TRIVIAL(info) << "===================================================================\n";
+  BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: " << tech_.grid_value_x_ << " um\n";
+  BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
 void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
@@ -1484,23 +1482,23 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
   }
 
   int tot_count = design_.net_list.size();
-  printf("\n");
-  printf("                  HPWL histogram (log scale bins)\n");
-  printf("===================================================================\n");
-  printf("   HPWL interval         Count\n");
+  BOOST_LOG_TRIVIAL(info) << "\n";
+  BOOST_LOG_TRIVIAL(info) << "                  HPWL histogram (log scale bins)\n";
+  BOOST_LOG_TRIVIAL(info) << "===================================================================\n";
+  BOOST_LOG_TRIVIAL(info) << "   HPWL interval         Count\n";
   for (int i = 0; i < bin_num; ++i) {
     double lo = std::pow(10, min_hpwl + step * i);
     double hi = std::pow(10, min_hpwl + step * (i + 1));
-    printf("  [%.1e, %.1e) %8d  ", lo, hi, count[i]);
+    BOOST_LOG_TRIVIAL(info) << "  [" << lo << ", " << hi << ") " << count[i] << "  ";
     int percent = std::ceil(50 * count[i] / (double) tot_count);
     for (int j = 0; j < percent; ++j) {
-      printf("*");
+      BOOST_LOG_TRIVIAL(info) << "*";
     }
-    printf("\n");
+    BOOST_LOG_TRIVIAL(info) << "\n";
   }
-  printf("===================================================================\n");
-  printf(" * HPWL unit, grid value in X: %.2e um\n", tech_.grid_value_x_);
-  printf("\n");
+  BOOST_LOG_TRIVIAL(info) << "===================================================================\n";
+  BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: " << tech_.grid_value_x_ << " um\n";
+  BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
 void Circuit::SaveOptimalRegionDistance(std::string file_name) {
@@ -1696,10 +1694,10 @@ void Circuit::GenLongNetTable(std::string const &name_of_file) {
     }
   }
   ave_hpwl /= count;
-  std::cout << "Long net report: \n"
-            << "  threshold: " << multi_factor << " " << threshold << "\n"
-            << "  count:     " << count << "\n"
-            << "  ave_hpwl:  " << ave_hpwl << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Long net report: \n"
+                          << "  threshold: " << multi_factor << " " << threshold << "\n"
+                          << "  count:     " << count << "\n"
+                          << "  ave_hpwl:  " << ave_hpwl << "\n";
 
   ost.close();
 }
@@ -1711,13 +1709,13 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   } else {
     file_name = name_of_file + "_trim.def";
   }
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    if (is_complete_version) {
-      printf("Writing DEF file '%s', ", file_name.c_str());
-    } else {
-      printf("Writing trimmed DEF file (for debugging) '%s', ", file_name.c_str());
-    }
+  if (is_complete_version) {
+    BOOST_LOG_TRIVIAL(info) << "Writing DEF file: ";
+  } else {
+    BOOST_LOG_TRIVIAL(info) << "Writing trimmed DEF file (for debugging): ";
   }
+  BOOST_LOG_TRIVIAL(info) << file_name;
+
   std::ofstream ost(file_name.c_str());
   Assert(ost.is_open(), "Cannot open file " + file_name);
 
@@ -1845,9 +1843,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   ost.close();
   ist.close();
 
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("done\n");
-  }
+  BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
 void Circuit::SaveDefFile(std::string const &base_name,
@@ -1886,9 +1882,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
    *    otherwise, report an error message
    * ****/
   std::string file_name = base_name + name_padding + ".def";
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("Writing DEF file '%s', ", file_name.c_str());
-  }
+  BOOST_LOG_TRIVIAL(info) << "Writing DEF file: " << file_name;
   std::ofstream ost(file_name.c_str());
   Assert(ost.is_open(), "Cannot open file " + file_name);
   std::ifstream ist(def_file_name.c_str());
@@ -2263,17 +2257,14 @@ void Circuit::SaveDefFile(std::string const &base_name,
 
   ost << "END DESIGN\n";
 
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("done\n");
-  }
+  BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
 void Circuit::SaveIODefFile(std::string const &name_of_file, std::string const &def_file_name) {
   std::string file_name;
   file_name = name_of_file + "_io.def";
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("Writing IO DEF file '%s', ", file_name.c_str());
-  }
+  BOOST_LOG_TRIVIAL(info) << "Writing IO DEF file: " << file_name;
+
   std::ofstream ost(file_name.c_str());
   Assert(ost.is_open(), "Cannot open file " + file_name);
 
@@ -2382,13 +2373,11 @@ void Circuit::SaveIODefFile(std::string const &name_of_file, std::string const &
   ost.close();
   ist.close();
 
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("done\n");
-  }
+  BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
 void Circuit::SaveDefWell(std::string const &name_of_file, std::string const &def_file_name, bool is_no_normal_cell) {
-  printf("Writing WellTap Network DEF file (for debugging) '%s', ", name_of_file.c_str());
+  BOOST_LOG_TRIVIAL(info) << "Writing WellTap Network DEF file (for debugging): " << name_of_file;
   std::ofstream ost(name_of_file.c_str());
   Assert(ost.is_open(), "Cannot open file " + name_of_file);
 
@@ -2474,14 +2463,12 @@ void Circuit::SaveDefWell(std::string const &name_of_file, std::string const &de
   ost.close();
   ist.close();
 
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("done\n");
-  }
+  BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
 void Circuit::SaveDefPPNPWell(std::string const &name_of_file, std::string const &def_file_name) {
   std::string file_name = name_of_file + "_ppnpwell.def";
-  printf("Writing PPNPWell DEF file (for debugging) '%s', ", file_name.c_str());
+  BOOST_LOG_TRIVIAL(info) << "Writing PPNPWell DEF file (for debugging): " << file_name;
   std::ofstream ost(file_name.c_str());
   Assert(ost.is_open(), "Cannot open file " + file_name);
 
@@ -2541,9 +2528,7 @@ void Circuit::SaveDefPPNPWell(std::string const &name_of_file, std::string const
   ost.close();
   ist.close();
 
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    printf("done\n");
-  }
+  BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
 void Circuit::SaveInstanceDefFile(std::string const &name_of_file, std::string const &def_file_name) {
@@ -2617,7 +2602,7 @@ void Circuit::SaveBookshelfScl(std::string const &name_of_file) {
   Assert(ost.is_open(), "Cannot open file " + name_of_file);
 #ifdef USE_OPENDB
   if (db_ptr_ == nullptr) {
-    std::cout << "During saving bookshelf .scl file. No ROW info has been found!";
+    BOOST_LOG_TRIVIAL(info)   << "During saving bookshelf .scl file. No ROW info has been found!";
     return;
   }
   auto rows = db_ptr_->getChip()->getBlock()->getRows();

@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
       try {
         gc = std::stoi(str_gc);
       } catch (...) {
-        std::cout << "Invalid input!\n";
+        BOOST_LOG_TRIVIAL(info)   << "Invalid input!\n";
         return 1;
       }
     } else if (arg == "-itnum" && i < argc) { // iteration number
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
       try {
         it_num = std::stoi(str_itnum);
       } catch (...) {
-        std::cout << "Invalid input!\n";
+        BOOST_LOG_TRIVIAL(info)   << "Invalid input!\n";
         return 1;
       }
     }
@@ -69,8 +69,8 @@ int main(int argc, char *argv[]) {
 
   circuit.ReadCellFile(cel_file_name);
 
-  std::cout << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << " s\n";
-  printf("  Average white space utility: %.4f\n", circuit.WhiteSpaceUsage());
+  BOOST_LOG_TRIVIAL(info)   << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << " s\n";
+  BOOST_LOG_TRIVIAL(info)  <<"  Average white space utility: %.4f\n", circuit.WhiteSpaceUsage());
   circuit.ReportBriefSummary();
   //circuit.ReportBlockType();
   circuit.ReportHPWL();
@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
   circuit.SaveDefFile(out_file_name, "", def_file_name, 1, 1, 2, 1);
 
   Time = clock() - Time;
-  std::cout << "Execution time " << double(Time) / CLOCKS_PER_SEC << "s.\n";
+  BOOST_LOG_TRIVIAL(info)   << "Execution time " << double(Time) / CLOCKS_PER_SEC << "s.\n";
 
   return 0;
 }

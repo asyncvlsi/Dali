@@ -8,6 +8,7 @@
 #include <list>
 
 #include "blocktype.h"
+#include "common//logging.h"
 #include "common/misc.h"
 
 /****
@@ -107,7 +108,7 @@ struct BlockTypeWell {
 
   // report the information of N/P-well for debugging purposes
   void Report() const {
-    std::cout
+    BOOST_LOG_TRIVIAL(info)
         << "  Well of BlockType: " << *(type_ptr_->NamePtr()) << "\n"
         << "    Nwell: " << n_rect_.LLX() << "  " << n_rect_.LLY() << "  " << n_rect_.URX() << "  " << n_rect_.URY() << "\n"
         << "    Pwell: " << p_rect_.LLX() << "  " << p_rect_.LLY() << "  " << p_rect_.URX() << "  " << p_rect_.URY() << "\n";

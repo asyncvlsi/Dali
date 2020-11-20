@@ -98,7 +98,7 @@ double Block::OverlapArea(const Block &blk) const {
 }
 
 void Block::Report() {
-  std::cout << "  block name: " << *NamePtr() << "\n"
+  BOOST_LOG_TRIVIAL(info)   << "  block name: " << *NamePtr() << "\n"
             << "    block type: " << *(TypePtr()->NamePtr()) << "\n"
             << "    width and height: " << Width() << " " << Height() << "\n"
             << "    lower left corner: " << llx_ << " " << lly_ << "\n"
@@ -109,9 +109,9 @@ void Block::Report() {
 }
 
 void Block::ReportNet() {
-  std::cout << *NamePtr() << " connects to:\n";
+  BOOST_LOG_TRIVIAL(info)   << *NamePtr() << " connects to:\n";
   for (auto &net_num: net_list_) {
-    std::cout << net_num << "  ";
+    BOOST_LOG_TRIVIAL(info)   << net_num << "  ";
   }
-  std::cout << "\n";
+  BOOST_LOG_TRIVIAL(info)   << "\n";
 }
