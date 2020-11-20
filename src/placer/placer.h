@@ -84,17 +84,17 @@ class Placer {
   }
   virtual bool StartPlacement() = 0;
 
-  double HPWLX() {
-    Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWLX!");
-    return GetCircuit()->HPWLX();
+  double WeightedHPWLX() {
+    Assert(circuit_ != nullptr, "No input circuit specified, cannot compute WeightedHPWLX!");
+    return GetCircuit()->WeightedHPWLX();
   }
-  double HPWLY() {
-    Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWLY!");
-    return GetCircuit()->HPWLY();
+  double WeightedHPWLY() {
+    Assert(circuit_ != nullptr, "No input circuit specified, cannot compute WeightedHPWLY!");
+    return GetCircuit()->WeightedHPWLY();
   }
-  double HPWL() {
+  double WeightedHPWL() {
     Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWL!");
-    return GetCircuit()->HPWL();
+    return GetCircuit()->WeightedHPWL();
   }
 
   void ReportHPWL(VerboseLevel verbose_level = LOG_INFO) {

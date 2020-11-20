@@ -80,9 +80,9 @@ class Net {
   Block *MinBlockX() const { return blk_pin_list[min_pin_x_].BlkPtr(); }
   Block *MaxBlockY() const { return blk_pin_list[max_pin_y_].BlkPtr(); }
   Block *MinBlockY() const { return blk_pin_list[min_pin_y_].BlkPtr(); }
-  double HPWLX();
-  double HPWLY();
-  double HPWL() { return HPWLX() + HPWLY(); }
+  double WeightedHPWLX();
+  double WeightedHPWLY();
+  double WeightedHPWL() { return WeightedHPWLX() + WeightedHPWLY(); }
 
   double MinX() const { return blk_pin_list[min_pin_x_].AbsX(); }
   double MaxX() const { return blk_pin_list[max_pin_x_].AbsX(); }

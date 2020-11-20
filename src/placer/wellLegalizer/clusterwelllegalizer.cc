@@ -815,7 +815,7 @@ double ClusterWellLegalizer::WireLengthCost(BlkCluster *cluster, int l, int r) {
 
   double res = 0;
   for (auto &net: net_involved) {
-    res += net->HPWL();
+    res += net->WeightedHPWL();
   }
 
   return res;

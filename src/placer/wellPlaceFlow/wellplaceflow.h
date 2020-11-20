@@ -19,8 +19,8 @@ class WellPlaceFlow : public GPSimPL {
     printf("Bin area: %d average cell area\n", number_of_cell_in_bin);
   }
   void SetIteration(int it_num) {
-    cg_iteration_max_num_ = it_num;
-    printf("Max number of iteration: %d \n", cg_iteration_max_num_);
+    cg_iteration_ = it_num;
+    printf("Max number of iteration: %d \n", cg_iteration_);
   }
   bool StartPlacement() override;
 

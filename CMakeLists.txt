@@ -48,6 +48,38 @@ link_libraries(libact.a)
 #find_package(Galois REQUIRED)
 #link_libraries(Galois::shmem)
 
+######################################
+# Set the installation path of LEF parser and DEF parser,
+# and check if the liblef and libdef library can be found or not
+######################################
+set(LEF_ROOT /home/yihang/Application/lefdef/lef/install)
+set(DEF_ROOT /home/yihang/Application/lefdef/def/install)
+LINK_DIRECTORIES(${LEF_ROOT}/lib)
+LINK_DIRECTORIES(${DEF_ROOT}/lib)
+find_library(LEF_LIBRARY
+        NAMES lef
+        PATHS ${LEF_ROOT}/lib
+        REQUIRED)
+if (NOT LEF_LIBRARY)
+    message(FATAL_ERROR "liblef.a is not found")
+else ()
+    message(STATUS "liblef.a found")
+endif()
+
+find_library(DEF_LIBRARY
+        NAMES def
+        PATHS ${DEF_ROOT}/lib
+        REQUIRED)
+if (NOT DEF_LIBRARY)
+    message(FATAL_ERROR "libdef.a is not found")
+else ()
+    message(STATUS "libdef.a found")
+endif()
+link_libraries(liblef.a)
+link_libraries(libdef.a)
+
+
+# Set C++ compilation flags and options
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
@@ -68,20 +100,10 @@ if (NOT CMAKE_BUILD_TYPE)
             "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif ()
 
-set(LEF_INCLUDE /home/yihang/Application/lefdef/lef/install/include)
-set(DEF_INCLUDE /home/yihang/Application/lefdef/def/install/include)
-LINK_DIRECTORIES(/home/yihang/Application/lefdef/lef/install/lib)
-LINK_DIRECTORIES(/home/yihang/Application/lefdef/def/install/lib)
-link_libraries(liblef.a)
-link_libraries(libdef.a)
-
-#add_subdirectory(module/OpenDB
-#        EXCLUDE_FROM_ALL)
-
 include_directories(
         ${Boost_INCLUDE_DIRS}
-        ${LEF_INCLUDE}
-        ${DEF_INCLUDE}
+        ${LEF_ROOT}/include
+        ${DEF_ROOT}/include
         src
         module/eigen-git-mirror
 )
@@ -94,7 +116,6 @@ file(GLOB SOURCES
         src/placer/globalPlacer/*.cc
         src/placer/globalPlacer/GPSimPL/*.cc
         src/placer/detailedPlacer/*.cc
-        src/placer/detailedPlacer/DPLinear/*.cc
         src/placer/detailedPlacer/MDPlacer/*.cc
         src/placer/legalizer/*.cc
         src/placer/legalizer/LGTetris/*.cc

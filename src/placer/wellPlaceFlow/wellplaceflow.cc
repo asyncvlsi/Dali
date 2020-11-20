@@ -17,7 +17,7 @@ bool WellPlaceFlow::StartPlacement() {
   }
   SanityCheck();
   CGInit();
-  LookAheadLgInit();
+  LALInit();
   //BlockLocCenterInit();
   BlockLocRandomInit();
   if (NetList()->empty()) {
@@ -29,7 +29,8 @@ bool WellPlaceFlow::StartPlacement() {
     return true;
   }
 
-  InitialPlacement();
+  double eval_res = QuadraticPlacement(net_model_update_stop_criterion_);
+  lower_bound_hpwl_.push_back(eval_res);
   //std::cout << cg_total_hpwl_ << "  " << circuit_->HPWL() << "\n";
 
   //well_legalizer_.TakeOver(this);
@@ -40,7 +41,8 @@ bool WellPlaceFlow::StartPlacement() {
     if (globalVerboseLevel >= LOG_DEBUG) {
       std::cout << cur_iter_ << "-th iteration\n";
     }
-    LookAheadLegalization();
+    eval_res = LookAheadLegalization();
+    upper_bound_hpwl_.push_back(eval_res);
     if (cur_iter_ > 50) {
       LGTetrisEx legalizer;
       legalizer.TakeOver(this);
@@ -61,20 +63,18 @@ bool WellPlaceFlow::StartPlacement() {
         old_success = is_success;
       }*/
     }
-    UpdateLALConvergeState();
     if (globalVerboseLevel >= LOG_CRITICAL) {
-      printf("It %d: \t%e  %e\n", cur_iter_, cg_total_hpwl_, lal_total_hpwl_);
+      printf("It %d: \t%e  %e\n", cur_iter_, lower_bound_hpwl_.back(), upper_bound_hpwl_.back());
     }
-    if (HPWL_LAL_converge) { // if HPWL converges
-      if (cur_iter_ >= 80) {
-        if (globalVerboseLevel >= LOG_CRITICAL) {
-          std::cout << "Iterative look-ahead legalization complete" << std::endl;
-          std::cout << "Total number of iteration: " << cur_iter_ + 1 << std::endl;
-        }
-        break;
+    if (IsPlacementConverge()) { // if HPWL converges
+      if (globalVerboseLevel >= LOG_CRITICAL) {
+        std::cout << "Iterative look-ahead legalization complete" << std::endl;
+        std::cout << "Total number of iteration: " << cur_iter_ + 1 << std::endl;
       }
+      break;
     }
-    QuadraticPlacementWithAnchor();
+    eval_res = QuadraticPlacementWithAnchor(net_model_update_stop_criterion_);
+    lower_bound_hpwl_.push_back(eval_res);
   }
 
   if (globalVerboseLevel >= LOG_CRITICAL) {
@@ -83,7 +83,7 @@ bool WellPlaceFlow::StartPlacement() {
               << "\033[0m";
     printf("(cg time: %.4fs, lal time: %.4fs)\n", tot_cg_time, tot_lal_time);
   }
-  LookAheadClose();
+  LALClose();
   //CheckAndShift();
   UpdateMovableBlkPlacementStatus();
   ReportHPWL(LOG_CRITICAL);

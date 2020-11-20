@@ -1287,8 +1287,8 @@ void Circuit::UpdateNetHPWLHistogram() {
 
   for (auto &net: design_.net_list) {
     int net_size = net.P();
-    double hpwl_x = net.HPWLX();
-    double hpwl_y = net.HPWLY() * tech_.grid_value_y_ / tech_.grid_value_x_;
+    double hpwl_x = net.WeightedHPWLX();
+    double hpwl_y = net.WeightedHPWLY() * tech_.grid_value_y_ / tech_.grid_value_x_;
     design_.UpdateNetHPWLHisto(net_size, hpwl_x + hpwl_y);
   }
 
@@ -1396,18 +1396,18 @@ void Circuit::NetSortBlkPin() {
   }
 }
 
-double Circuit::HPWLX() {
+double Circuit::WeightedHPWLX() {
   double hpwlx = 0;
   for (auto &net: design_.net_list) {
-    hpwlx += net.HPWLX();
+    hpwlx += net.WeightedHPWLX();
   }
   return hpwlx * GridValueX();
 }
 
-double Circuit::HPWLY() {
+double Circuit::WeightedHPWLY() {
   double hpwly = 0;
   for (auto &net: design_.net_list) {
-    hpwly += net.HPWLY();
+    hpwly += net.WeightedHPWLY();
   }
   return hpwly * GridValueY();
 }
@@ -1419,7 +1419,7 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
   hpwl_list.reserve(design_.net_list.size());
   double factor = tech_.grid_value_y_ / tech_.grid_value_x_;
   for (auto &net:design_.net_list) {
-    double tmp_hpwl = net.HPWLX() + net.HPWLY() * factor;
+    double tmp_hpwl = net.WeightedHPWLX() + net.WeightedHPWLY() * factor;
     if (net.P() >= 1) {
       hpwl_list.push_back(tmp_hpwl);
       min_hpwl = std::min(min_hpwl, tmp_hpwl);
@@ -1464,7 +1464,7 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
   hpwl_list.reserve(design_.net_list.size());
   double factor = tech_.grid_value_y_ / tech_.grid_value_x_;
   for (auto &net:design_.net_list) {
-    double tmp_hpwl = net.HPWLX() + net.HPWLY() * factor;
+    double tmp_hpwl = net.WeightedHPWLX() + net.WeightedHPWLY() * factor;
     if (tmp_hpwl > 0) {
       double log_hpwl = std::log10(tmp_hpwl);
       hpwl_list.push_back(log_hpwl);
@@ -1684,7 +1684,7 @@ void Circuit::GenLongNetTable(std::string const &name_of_file) {
   int count = 0;
   double ave_hpwl = 0;
   for (auto &net: design_.net_list) {
-    double hpwl = net.HPWL();
+    double hpwl = net.WeightedHPWL();
     if (hpwl > threshold) {
       ave_hpwl += hpwl;
       ++count;

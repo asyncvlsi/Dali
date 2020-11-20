@@ -54,8 +54,8 @@ int main(int argc, char *argv[]) {
   circuit.ReadDefFile(def_file_name);
 #endif
   // might need to print out some circuit info here
-  double hpwl_x = circuit.HPWLX();
-  double hpwl_y = circuit.HPWLY();
+  double hpwl_x = circuit.WeightedHPWLX();
+  double hpwl_y = circuit.WeightedHPWLY();
   std::cout << "Pin-to-Pin HPWL\n"
             << "  HPWL in the x direction: " << hpwl_x << "\n"
             << "  HPWL in the y direction: " << hpwl_y << "\n"

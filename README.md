@@ -8,10 +8,11 @@
   * GNU Make
 
 ### Pre-requisite
-  * Boost, version >= 1.71.0 (lower version may work, not tested)
+  * Boost, version >= 1.58.0 (lower version may work, not tested)
   * LEF/DEF parser: [LEF parser](https://github.com/The-OpenROAD-Project/lef) and [DEF parser](https://github.com/The-OpenROAD-Project/def)
   * OpenMP
   * [Galois](https://github.com/IntelligentSoftwareSystems/Galois)
+  * [ACT](https://github.com/asyncvlsi/act)
   
 ### Clone repo and compile
     $ git clone --recursive https://github.com/Yang-Yihang/Dali.git

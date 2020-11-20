@@ -149,7 +149,7 @@ void Net::UpdateMaxMinIndexY() {
   }
 }
 
-double Net::HPWLX() {
+double Net::WeightedHPWLX() {
   if (blk_pin_list.size() <= 1) return 0;
   UpdateMaxMinIndexX();
   double max_x = blk_pin_list[max_pin_x_].AbsX();
@@ -157,7 +157,7 @@ double Net::HPWLX() {
   return (max_x - min_x) * weight_;
 }
 
-double Net::HPWLY() {
+double Net::WeightedHPWLY() {
   if (blk_pin_list.size() <= 1) return 0;
   UpdateMaxMinIndexY();
   double max_y = blk_pin_list[max_pin_y_].AbsY();

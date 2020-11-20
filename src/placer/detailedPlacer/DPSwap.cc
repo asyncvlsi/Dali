@@ -110,14 +110,14 @@ bool DPSwap::StartPlacement() {
     GlobalSwap();
     VerticalSwap();
     LocalReOrder();
-    hpwl_new = HPWL();
+    hpwl_new = WeightedHPWL();
     hpwl_converge = (std::fabs(1 - hpwl_new/hpwl) < hpwl_converge_criterion_);
     UpdateSwapThreshold(hpwl_new);
     if (i>5 && hpwl_converge) break;
   }
   for (int i=0; ; ++i) {
     SingleSegmentCluster();
-    hpwl_new = HPWL();
+    hpwl_new = WeightedHPWL();
     hpwl_converge = (std::fabs(1 - hpwl_new/hpwl) < hpwl_converge_criterion_);
     if (i>5 && hpwl_converge) break;
   }

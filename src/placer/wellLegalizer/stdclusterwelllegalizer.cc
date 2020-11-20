@@ -1070,8 +1070,8 @@ double StdClusterWellLegalizer::WireLengthCost(Cluster *cluster, int l, int r) {
   double hpwl_x = 0;
   double hpwl_y = 0;
   for (auto &net: net_involved) {
-    hpwl_x += net->HPWLX();
-    hpwl_y += net->HPWLY();
+    hpwl_x += net->WeightedHPWLX();
+    hpwl_y += net->WeightedHPWLY();
   }
 
   return hpwl_x * circuit_->GridValueX() + hpwl_y * circuit_->GridValueY();

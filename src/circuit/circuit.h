@@ -601,16 +601,16 @@ class Circuit {
   void NetSortBlkPin();
 
   // returns HPWL in the x direction, considering cell pin offsets, unit in micron.
-  double HPWLX();
+  double WeightedHPWLX();
 
   // returns HPWL in the y direction, considering cell pin offsets, unit in micron.
-  double HPWLY();
+  double WeightedHPWLY();
 
   // returns total HPWL, considering cell pin offsets, unit in micron.
-  double HPWL() { return HPWLX() + HPWLY(); }
+  double WeightedHPWL() { return WeightedHPWLX() + WeightedHPWLY(); }
 
   // simple function to report HPWL.
-  void ReportHPWL() { printf("  Current HPWL: %e um\n", HPWL()); }
+  void ReportHPWL() { printf("  Current weighted HPWL: %e um\n", WeightedHPWL()); }
 
   // report the histogram of HPWL using linear bins.
   void ReportHPWLHistogramLinear(int bin_num = 10);

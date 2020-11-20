@@ -34,7 +34,7 @@ double Placer::GetBlkHPWL(Block &blk) {
   double hpwl = 0;
   std::vector<Net> &net_list = *(NetList());
   for (auto &idx: *blk.NetList()) {
-    hpwl += net_list[idx].HPWL();
+    hpwl += net_list[idx].WeightedHPWL();
   }
   return hpwl;
 }

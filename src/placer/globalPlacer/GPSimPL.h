@@ -29,40 +29,39 @@ typedef IndexVal D;
 
 class GPSimPL : public Placer {
  protected:
-  // cached data
-  double HPWLX_new = 0;
-  double HPWLX_old = DBL_MAX;
-  bool HPWLX_converge = false;
-  double HPWLY_new = 0;
-  double HPWLY_old = DBL_MAX;
-  bool HPWLY_converge = false;
+  /**** storing the lower and upper bound of hpwl along x and y direction ****/
+  double init_hpwl_x_ = DBL_MAX;
+  double init_hpwl_y_ = DBL_MAX;
+  double init_hpwl_ = DBL_MAX;
+  std::vector<double> lower_bound_hpwlx_;
+  std::vector<double> lower_bound_hpwly_;
+  std::vector<double> lower_bound_hpwl_;
+  std::vector<double> upper_bound_hpwlx_;
+  std::vector<double> upper_bound_hpwly_;
+  std::vector<double> upper_bound_hpwl_;
 
-  // to configure CG solver
-  double cg_tolerance_ = 1e-11;
-  int cg_iteration_max_num_ = 50;
-  double error_x = DBL_MAX;
-  double error_y = DBL_MAX;
-  double cg_total_hpwl_ = 0;
+  /**** parameters for CG solver optimization configuration ****/
+  double cg_tolerance_ = 1e-15; // this is to make sure cg_tolerance is the same for different machines
+  int cg_iteration_ = 5; // cg solver runs this amount of iterations to optimize the quadratic metric everytime
+  int cg_iteration_max_num_ = 200; // cg solver runs at most this amount of iterations to optimize the quadratic metric
+  double cg_stop_criterion_ = 0.005; // cg solver stops if the cost change is less than this value for 3 iterations
+  double alpha = 0.00; // net weight for anchor pseudo-net
+  double net_model_update_stop_criterion_ = 0.005; // stop update net model if the cost change is less than this value for 3 iterations
 
-  // to avoid divergence when calculating net weight
-  double width_epsilon;
-  double height_epsilon;
+  /**** two small positive numbers used to avoid divergence when calculating net weights ****/
+  double epsilon_factor_ = 100;
+  double width_epsilon_; // this value is 1/epsilon_factor_ times the average movable cell width
+  double height_epsilon_; // this value is 1/epsilon_factor_ times the average movable cell height
 
   // for look ahead legalization
-  double HPWL_intra_linearSolver_precision = 0.01;
-  int b2b_update_max_iteration = 10;
-  double alpha = 0.00;
+  int b2b_update_max_iteration = 50;
   int cur_iter_ = 0;
   int max_iter_ = 100;
-  double lal_total_hpwl_ = 0;
-
-  double HPWL_LAL_new = 0;
-  double HPWL_LAL_old = DBL_MAX;
-  bool HPWL_LAL_converge = false;
-  double HPWL_inter_linearSolver_precision = 0.01;
-
   int number_of_cell_in_bin = 30;
   int net_ignore_threshold = 100;
+  double simpl_LAL_converge_criterion_ = 0.001;
+  double polar_converge_criterion_ = 0.08;
+  int convergence_criteria_ = 1;
 
   // weight adjust factor
   double adjust_factor = 1.5;
@@ -77,11 +76,9 @@ class GPSimPL : public Placer {
 
   unsigned int TotBlockNum() { return GetCircuit()->TotBlkCount(); }
   void SetEpsilon() {
-    width_epsilon = circuit_->AveMovBlkWidth() / 100.0;
-    height_epsilon = circuit_->AveMovBlkHeight() / 100.0;
+    width_epsilon_ = circuit_->AveMovBlkWidth() / epsilon_factor_;
+    height_epsilon_ = circuit_->AveMovBlkHeight() / epsilon_factor_;
   }
-  double WidthEpsilon() const { return width_epsilon; }
-  double HeightEpsilon() const { return height_epsilon; }
 
   std::vector<int> Ax_row_size;
   std::vector<int> Ay_row_size;
@@ -118,16 +115,8 @@ class GPSimPL : public Placer {
   void BlockLocCenterInit();
   void DriverLoadPairInit();
   void CGInit();
-  void InitCGFlags();
-  void UpdateCGFlagsX();
-  void UpdateHPWLX() { HPWLX_new = HPWLX(); }
   void UpdateMaxMinX();
-  void UpdateMaxMinCtoCX();
-  void UpdateCGFlagsY();
-  void UpdateHPWLY() { HPWLY_new = HPWLY(); }
   void UpdateMaxMinY();
-  void UpdateMaxMinCtoCY();
-  void AddMatrixElement(Net &net, int i, int j, std::vector<T> &coefficients);
   void BuildProblemB2BX();
   void BuildProblemB2BY();
   void BuildProblemStarModelX();
@@ -136,10 +125,13 @@ class GPSimPL : public Placer {
   void BuildProblemHPWLY();
   void BuildProblemStarHPWLX();
   void BuildProblemStarHPWLY();
-  void SolveProblemX();
-  void SolveProblemY();
+  double OptimizeQuadraticMetricX(double cg_stop_criterion);
+  double OptimizeQuadraticMetricY(double cg_stop_criterion);
   void PullBlockBackToRegion();
-  void InitialPlacement();
+
+  void BuildProblemX();
+  void BuildProblemY();
+  double QuadraticPlacement(double net_model_update_stop_criterion);
 
   // look ahead legalization member function implemented below
   int grid_bin_height;
@@ -160,8 +152,8 @@ class GPSimPL : public Placer {
   unsigned long int LookUpWhiteSpace(WindowQuadruple &window);
   unsigned long int LookUpBlkArea(WindowQuadruple &window);
   unsigned long int WindowArea(WindowQuadruple &window);
-  void LookAheadLgInit();
-  void LookAheadClose();
+  void LALInit();
+  void LALClose();
   void ClearGridBinFlag();
   void UpdateGridBinState();
 
@@ -181,15 +173,14 @@ class GPSimPL : public Placer {
   bool RecursiveBisectionBlkSpreading();
 
   void BackUpBlkLoc();
-  void LookAheadLegalization();
-  void UpdateLALConvergeState();
+  double LookAheadLegalization();
   void UpdateAnchorLoc();
-  void BuildProblemB2BWithAnchorX();
-  void BuildProblemB2BWithAnchorY();
-  void QuadraticPlacementWithAnchor();
+  void BuildProblemWithAnchorX();
+  void BuildProblemWithAnchorY();
+  double QuadraticPlacementWithAnchor(double net_model_update_stop_criterion);
   void UpdateAnchorNetWeight() {
     if (net_model==0) {
-      alpha = 0.005 * cur_iter_;
+      alpha = 0.01 * cur_iter_;
     } else if (net_model==1) {
       alpha = 0.002 * cur_iter_;
     } else if (net_model==2) {
@@ -200,6 +191,8 @@ class GPSimPL : public Placer {
   }
 
   void CheckAndShift();
+
+  bool IsPlacementConverge();
 
   double tot_lal_time = 0;
   double tot_cg_time = 0;
@@ -218,6 +211,8 @@ class GPSimPL : public Placer {
   void write_all_bin_cluster(const std::string &name_of_file);
   void write_first_box(std::string const &name_of_file);
   void write_first_box_cell_bounding(std::string const &name_of_file);
+
+  static bool IsSeriesConverge(std::vector<double> &data, int window_size, double tolerance);
 };
 
 #endif //DALI_SRC_PLACER_GLOBALPLACER_GPSIMPL_H_
