@@ -15,6 +15,7 @@ find_package(Boost 1.71.0 COMPONENTS filesystem log log_setup REQUIRED)
 message(STATUS "Boost library path: ${Boost_LIBRARY_DIRS}")
 message(STATUS "Boost include path: ${Boost_INCLUDE_DIR}")
 message(STATUS "Boost libs: ${Boost_LIBRARIES}")
+include_directories(${Boost_INCLUDE_DIRS})
 link_libraries(${Boost_LIBRARIES})
 
 ######################################
@@ -31,8 +32,17 @@ if (DEFINED ENV{ACT_HOME})
 else ()
     message(FATAL_ERROR "Environment variable ACT_HOME not found")
 endif ()
-set(ACT_INCLUDE $ENV{ACT_HOME}/include)
-LINK_DIRECTORIES(/$ENV{ACT_HOME}/lib)
+include_directories($ENV{ACT_HOME}/include)
+link_directories($ENV{ACT_HOME}/lib)
+find_library(ACT_LIBRARY
+        NAMES act
+        PATHS $ENV{ACT_HOME}/lib
+        REQUIRED)
+if (NOT ACT_LIBRARY)
+    message(FATAL_ERROR "libact.a is not found")
+else ()
+    message(STATUS "libact.a found")
+endif()
 link_libraries(libact.a)
 
 ######################################
@@ -49,33 +59,45 @@ link_libraries(libact.a)
 #link_libraries(Galois::shmem)
 
 ######################################
-# Set the installation path of LEF parser and DEF parser,
+# detect the installation path of LEF parser and DEF parser,
 # and check if the liblef and libdef library can be found or not
 ######################################
-set(LEF_ROOT /home/yihang/Application/lefdef/lef/install)
-set(DEF_ROOT /home/yihang/Application/lefdef/def/install)
-LINK_DIRECTORIES(${LEF_ROOT}/lib)
-LINK_DIRECTORIES(${DEF_ROOT}/lib)
+message(STATUS "Detecting environment variable LEF_ROOT...")
+if (DEFINED ENV{LEF_ROOT})
+    message(STATUS "Environment variable LEF_ROOT detected: " $ENV{LEF_ROOT})
+else ()
+    message(FATAL_ERROR "Environment variable LEF_ROOT not found")
+endif ()
+include_directories($ENV{LEF_ROOT}/include)
+link_directories($ENV{LEF_ROOT}/lib)
 find_library(LEF_LIBRARY
         NAMES lef
-        PATHS ${LEF_ROOT}/lib
+        PATHS $ENV{LEF_ROOT}/lib
         REQUIRED)
 if (NOT LEF_LIBRARY)
     message(FATAL_ERROR "liblef.a is not found")
 else ()
     message(STATUS "liblef.a found")
 endif()
+link_libraries(liblef.a)
 
+message(STATUS "Detecting environment variable DEF_ROOT...")
+if (DEFINED ENV{DEF_ROOT})
+    message(STATUS "Environment variable LEF_ROOT detected: " $ENV{DEF_ROOT})
+else ()
+    message(FATAL_ERROR "Environment variable DEF_ROOT not found")
+endif ()
+include_directories($ENV{DEF_ROOT}/include)
+link_directories($ENV{DEF_ROOT}/lib)
 find_library(DEF_LIBRARY
         NAMES def
-        PATHS ${DEF_ROOT}/lib
+        PATHS $ENV{DEF_ROOT}/lib
         REQUIRED)
 if (NOT DEF_LIBRARY)
     message(FATAL_ERROR "libdef.a is not found")
 else ()
     message(STATUS "libdef.a found")
 endif()
-link_libraries(liblef.a)
 link_libraries(libdef.a)
 
 
@@ -101,9 +123,6 @@ if (NOT CMAKE_BUILD_TYPE)
 endif ()
 
 include_directories(
-        ${Boost_INCLUDE_DIRS}
-        ${LEF_ROOT}/include
-        ${DEF_ROOT}/include
         src
         module/eigen-git-mirror
 )
