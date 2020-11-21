@@ -4,6 +4,11 @@
 
 #include "logging.h"
 
+namespace logging = boost::log;
+namespace keywords = boost::log::keywords;
+
+namespace dali {
+
 void init_logging_and_formatting(boost::log::trivial::severity_level sl) {
   std::string base_name = "dali";
   std::string extension = ".log";
@@ -35,4 +40,6 @@ void init_logging_and_formatting(boost::log::trivial::severity_level sl) {
 
 // write floating-point values in scientific notation.
   BOOST_LOG_TRIVIAL(info) << std::scientific << std::setprecision(4);
+}
+
 }

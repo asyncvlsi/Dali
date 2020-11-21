@@ -4,6 +4,8 @@
 
 #include "iopin.h"
 
+namespace dali {
+
 IOPin::IOPin(std::pair<const std::string, int> *name_num_pair_ptr) :
     name_num_pair_ptr_(name_num_pair_ptr),
     net_ptr_(nullptr),
@@ -40,6 +42,8 @@ IOPin::IOPin(std::pair<const std::string, int> *name_num_pair_ptr,
 
 void IOPin::Report() const {
   std::string net_name = (net_ptr_ == nullptr) ? "NA" : *(net_ptr_->Name());
-  BOOST_LOG_TRIVIAL(info)   << "  I/O PIN name: " << *Name() << "\n"
-            << "    Net connected: " << net_name << "\n";
+  BOOST_LOG_TRIVIAL(info) << "  I/O PIN name: " << *Name() << "\n"
+                          << "    Net connected: " << net_name << "\n";
+}
+
 }

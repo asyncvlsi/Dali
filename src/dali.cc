@@ -10,13 +10,10 @@
 #include <ratio>
 
 #include "circuit.h"
-#include "common/global.h"
 #include "common/timing.h"
 #include "placer.h"
 
-VerboseLevel globalVerboseLevel = LOG_CRITICAL;
-
-void ReportUsage();
+using namespace dali;
 
 int main(int argc, char *argv[]) {
   PrintSoftwareStatement();
@@ -24,10 +21,10 @@ int main(int argc, char *argv[]) {
   using std::chrono::system_clock;
   system_clock::time_point today = system_clock::now();
   std::time_t tt = system_clock::to_time_t(today);
-  BOOST_LOG_TRIVIAL(info)   << "today is: " << ctime(&tt) << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "today is: " << ctime(&tt) << std::endl;
 
   if (argc < 5) {
-    ReportUsage();
+    ReportDaliUsage();
     return 1;
   }
   std::string lef_file_name;
@@ -56,29 +53,29 @@ int main(int argc, char *argv[]) {
     } else if (arg == "-lef" && i < argc) {
       lef_file_name = std::string(argv[i++]);
       if (lef_file_name.empty()) {
-        BOOST_LOG_TRIVIAL(info)   << "Invalid input lef file!\n";
-        ReportUsage();
+        BOOST_LOG_TRIVIAL(info) << "Invalid input lef file!\n";
+        ReportDaliUsage();
         return 1;
       }
     } else if (arg == "-def" && i < argc) {
       def_file_name = std::string(argv[i++]);
       if (def_file_name.empty()) {
-        BOOST_LOG_TRIVIAL(info)   << "Invalid input def file!\n";
-        ReportUsage();
+        BOOST_LOG_TRIVIAL(info) << "Invalid input def file!\n";
+        ReportDaliUsage();
         return 1;
       }
     } else if (arg == "-cell" && i < argc) {
       cell_file_name = std::string(argv[i++]);
       if (cell_file_name.empty()) {
-        BOOST_LOG_TRIVIAL(info)   << "Invalid input cell file!\n";
-        ReportUsage();
+        BOOST_LOG_TRIVIAL(info) << "Invalid input cell file!\n";
+        ReportDaliUsage();
         return 1;
       }
     } else if (arg == "-o" && i < argc) {
       output_name = std::string(argv[i++]);
       if (output_name.empty()) {
-        BOOST_LOG_TRIVIAL(info)   << "Invalid output name!\n";
-        ReportUsage();
+        BOOST_LOG_TRIVIAL(info) << "Invalid output name!\n";
+        ReportDaliUsage();
         return 1;
       }
     } else if ((arg == "-g" || arg == "-grid") && i < argc) {
@@ -89,8 +86,8 @@ int main(int argc, char *argv[]) {
         y_grid = std::stod(str_y_grid);
         circuit.setGridValue(x_grid, y_grid);
       } catch (...) {
-        BOOST_LOG_TRIVIAL(info)   << "Invalid input files!\n";
-        ReportUsage();
+        BOOST_LOG_TRIVIAL(info) << "Invalid input files!\n";
+        ReportDaliUsage();
         return 1;
       }
     } else if ((arg == "-d" || arg == "-density") && i < argc) {
@@ -98,8 +95,8 @@ int main(int argc, char *argv[]) {
       try {
         target_density = std::stod(str_target_density);
       } catch (...) {
-        BOOST_LOG_TRIVIAL(info)   << "Invalid target density!\n";
-        ReportUsage();
+        BOOST_LOG_TRIVIAL(info) << "Invalid target density!\n";
+        ReportDaliUsage();
         return 1;
       }
     } else if (arg == "iolayerd" && i < argc) {
@@ -107,8 +104,8 @@ int main(int argc, char *argv[]) {
       try {
         io_metal_layer = std::stoi(str_metal_layer_num) - 1;
       } catch (...) {
-        BOOST_LOG_TRIVIAL(info)   << "Invalid metal layer number!\n";
-        ReportUsage();
+        BOOST_LOG_TRIVIAL(info) << "Invalid metal layer number!\n";
+        ReportDaliUsage();
         return 1;
       }
     } else if (arg == "-v" && i < argc) {
@@ -120,21 +117,21 @@ int main(int argc, char *argv[]) {
         tmp = -1;
       }
       if (tmp > 5 || tmp < 0) {
-        BOOST_LOG_TRIVIAL(info)   << "Invalid verbosity level\n";
-        ReportUsage();
+        BOOST_LOG_TRIVIAL(info) << "Invalid verbosity level\n";
+        ReportDaliUsage();
         return 0;
       }
-      globalVerboseLevel = (VerboseLevel) tmp;
+      // TODO : verbose level
     } else {
-      BOOST_LOG_TRIVIAL(info)   << "Unknown option for file reading\n";
-      BOOST_LOG_TRIVIAL(info)   << arg << "\n";
+      BOOST_LOG_TRIVIAL(info) << "Unknown option for file reading\n";
+      BOOST_LOG_TRIVIAL(info) << arg << "\n";
       return 1;
     }
   }
 
   if ((lef_file_name.empty()) || (def_file_name.empty())) {
-    BOOST_LOG_TRIVIAL(info)   << "Invalid input files!\n";
-    ReportUsage();
+    BOOST_LOG_TRIVIAL(info) << "Invalid input files!\n";
+    ReportDaliUsage();
     return 1;
   }
 
@@ -159,33 +156,27 @@ int main(int argc, char *argv[]) {
 
   file_wall_time = get_wall_time() - file_wall_time;
   file_cpu_time = get_cpu_time() - file_cpu_time;
-  BOOST_LOG_TRIVIAL(info)   << "File loading complete\n";
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    BOOST_LOG_TRIVIAL(info)  <<"(wall time: %.4fs, cpu time: %.4fs)\n", file_wall_time, file_cpu_time);
-  }
+  BOOST_LOG_TRIVIAL(info) << "File loading complete\n";
+  BOOST_LOG_TRIVIAL(info) << "(wall time: " << file_wall_time << "s, cpu time: " << file_cpu_time << "s)\n";
   circuit.ReportBriefSummary();
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    circuit.ReportHPWL();
-  }
+  circuit.ReportHPWL();
 
   double default_density = 0.7;
   if (target_density == -1) {
     target_density = std::max(circuit.WhiteSpaceUsage(), default_density);
   }
   if (circuit.WhiteSpaceUsage() > target_density) {
-    BOOST_LOG_TRIVIAL(info)   << "Cannot set target density smaller than average white space utility!\n";
-    BOOST_LOG_TRIVIAL(info)  <<"  Average white space utility: %.4f\n", circuit.WhiteSpaceUsage());
-    BOOST_LOG_TRIVIAL(info)  <<"  Target density: %.4f\n", target_density);
+    BOOST_LOG_TRIVIAL(info) << "Cannot set target density smaller than average white space utility!\n";
+    BOOST_LOG_TRIVIAL(info) << "  Average white space utility: " << circuit.WhiteSpaceUsage() << "\n";
+    BOOST_LOG_TRIVIAL(info) << "  Target density: " << target_density << "\n";
     return 1;
   }
-  if (globalVerboseLevel >= LOG_CRITICAL) {
-    BOOST_LOG_TRIVIAL(info)  <<"  Average white space utility: %.4f\n", circuit.WhiteSpaceUsage());
-    BOOST_LOG_TRIVIAL(info)  <<"  Target density: %.4f", target_density);
-    if (target_density == default_density) {
-      BOOST_LOG_TRIVIAL(info)   << " (default)";
-    }
-    BOOST_LOG_TRIVIAL(info)   << "\n";
+  BOOST_LOG_TRIVIAL(info) << "  Average white space utility: " << circuit.WhiteSpaceUsage() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "  Target density: " << target_density;
+  if (target_density == default_density) {
+    BOOST_LOG_TRIVIAL(info) << " (default)";
   }
+  BOOST_LOG_TRIVIAL(info) << "\n";
 
   if (cell_file_name.empty()) {
     Placer *gb_placer = new GPSimPL;
@@ -241,23 +232,9 @@ int main(int argc, char *argv[]) {
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;
 
-  BOOST_LOG_TRIVIAL(info)  <<"****End of placement (wall time: %.4fs, cpu time: %.4fs)****\n", wall_time, cpu_time);
+  BOOST_LOG_TRIVIAL(info) << "****End of placement "
+                          << "(wall time: " << wall_time << "s, "
+                          << "cpu time: " << cpu_time << "s)****\n";
 
   return 0;
-}
-
-void ReportUsage() {
-  BOOST_LOG_TRIVIAL(info)   << "\033[0;36m"
-            << "Usage: dali\n"
-            << "  -lef        <file.lef>\n"
-            << "  -def        <file.def>\n"
-            << "  -cell       <file.cell> (optional, if provided, iterative well placement flow will be triggered)\n"
-            << "  -o          <output_name>.def (optional, default output file name dali_out.def)\n"
-            << "  -g/-grid    grid_value_x grid_value_y (optional, default metal1 and metal2 pitch values)\n"
-            << "  -d/-density density (optional, value interval (0,1], default max(space_utility, 0.7))\n"
-            << "  -n          (optional, if this flag is present, then use naive LEF/DEF parser)\n"
-            << "  -iolayer    metal_layer_num (optional, default 1 for m1)\n"
-            << "  -v          verbosity_level (optional, 0-5, default 1)\n"
-            << "(flag order does not matter)"
-            << "\033[0m\n";
 }

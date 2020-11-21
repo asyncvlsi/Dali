@@ -8,6 +8,8 @@
 
 #include "common/logging.h"
 
+namespace dali {
+
 WellLegalizer::WellLegalizer() : LGTetrisEx() {
   max_iter_ = 20;
   legalize_from_left_ = true;
@@ -976,4 +978,6 @@ bool WellLegalizer::StartPlacement() {
   ReportMemory();
 
   return true;
+}
+
 }

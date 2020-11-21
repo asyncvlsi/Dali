@@ -4,6 +4,8 @@
 
 #include "DPSwap.h"
 
+namespace dali {
+
 DPSwap::DPSwap() {
   global_swap_threshold = 0;
 }
@@ -120,4 +122,6 @@ bool DPSwap::StartPlacement() {
   }
 
   return true;
+}
+
 }

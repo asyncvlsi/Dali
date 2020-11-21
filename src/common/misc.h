@@ -14,6 +14,8 @@
 #include <vector>
 #include <string>
 
+namespace dali {
+
 template<class T>
 struct Value2D {
   T x;
@@ -153,5 +155,7 @@ class NotImplementedException : public std::logic_error {
  public:
   NotImplementedException() : std::logic_error("Function not yet implemented.") {};
 };
+
+}
 
 #endif //DALI_SRC_COMMON_MISC_H_

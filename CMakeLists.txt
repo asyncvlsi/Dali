@@ -35,7 +35,7 @@ endif ()
 include_directories($ENV{ACT_HOME}/include)
 link_directories($ENV{ACT_HOME}/lib)
 find_library(ACT_LIBRARY
-        NAMES act
+        NAMES act actpass
         PATHS $ENV{ACT_HOME}/lib
         REQUIRED)
 if (NOT ACT_LIBRARY)
@@ -43,7 +43,7 @@ if (NOT ACT_LIBRARY)
 else ()
     message(STATUS "libact.a found")
 endif()
-link_libraries(libact.a)
+link_libraries(libact.a libactpass.a)
 
 ######################################
 # Detect if $GALOIS_INSTALL_DIR exists, which is the path to Galois installation

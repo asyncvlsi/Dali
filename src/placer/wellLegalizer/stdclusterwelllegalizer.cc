@@ -6,6 +6,8 @@
 
 #include <algorithm>
 
+namespace dali {
+
 void Cluster::ShiftBlockX(int x_disp) {
   for (auto &blk_ptr: blk_list_) {
     blk_ptr->IncreaseX(x_disp);
@@ -342,7 +344,8 @@ void StdClusterWellLegalizer::FetchNPWellParams() {
   well_spacing_ = std::max(same_well_spacing, op_well_spacing);
   max_unplug_length_ = (int) std::floor(n_well_layer->MaxPlugDist() / circuit_->GridValueX());
   well_tap_cell_ = tech->WellTapCell();
-  Assert(well_tap_cell_ != nullptr, "Cannot find the definition of well tap cell, well legalization cannot proceed\n");
+  Assert(well_tap_cell_ != nullptr,
+         "Cannot find the definition of well tap cell, well legalization cannot proceed\n");
   well_tap_cell_width_ = tech->WellTapCell()->Width();
 
   BOOST_LOG_TRIVIAL(info) << "Well max plug distance: "
@@ -2130,4 +2133,6 @@ void StdClusterWellLegalizer::GenSimpleStrips(std::string const &name_of_file) {
         << 1 << "\t"
         << 1 << "\n";
   }
+}
+
 }

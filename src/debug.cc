@@ -9,10 +9,7 @@
 #include <vector>
 
 #include "circuit.h"
-#include "common/opendb.h"
 #include "placer.h"
-
-VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 
 #define TEST_LG 0
 #define TEST_PO 0
@@ -20,6 +17,8 @@ VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 #define TEST_CLUSTER_WELL 0
 #define TEST_STDCLUSTER_WELL 1
 #define USE_DB_PARSER 1
+
+using namespace dali;
 
 int main() {
   PrintSoftwareStatement();

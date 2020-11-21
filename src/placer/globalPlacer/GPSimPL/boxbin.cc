@@ -6,6 +6,8 @@
 
 #include <cmath>
 
+namespace dali {
+
 BoxBin::BoxBin() {
   all_terminal = false;
   cut_direction_x = false;
@@ -113,7 +115,7 @@ bool BoxBin::write_box_boundary(std::string const &NameOfFile) {
   std::ofstream ost;
   ost.open(NameOfFile.c_str(), std::ios::app);
   if (ost.is_open() == 0) {
-    BOOST_LOG_TRIVIAL(info)   << "Cannot open file" << NameOfFile << "\n";
+    BOOST_LOG_TRIVIAL(info) << "Cannot open file" << NameOfFile << "\n";
     return false;
   }
   double low_x, low_y, width, height;
@@ -138,7 +140,7 @@ bool BoxBin::write_cell_region(std::string const &NameOfFile) {
   std::ofstream ost;
   ost.open(NameOfFile.c_str(), std::ios::app);
   if (ost.is_open() == 0) {
-    BOOST_LOG_TRIVIAL(info)   << "Cannot open file" << NameOfFile << "\n";
+    BOOST_LOG_TRIVIAL(info) << "Cannot open file" << NameOfFile << "\n";
     return false;
   }
   double low_x, low_y, width, height;
@@ -285,7 +287,7 @@ bool BoxBin::write_cell_in_box(std::string const &NameOfFile, std::vector<Block>
   std::ofstream ost;
   ost.open(NameOfFile.c_str(), std::ios::app);
   if (ost.is_open() == 0) {
-    BOOST_LOG_TRIVIAL(info)   << "Cannot open file" << NameOfFile << "\n";
+    BOOST_LOG_TRIVIAL(info) << "Cannot open file" << NameOfFile << "\n";
     return false;
   }
   for (auto &cell_id: cell_list) {
@@ -395,7 +397,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist,
         }
       }
       //BOOST_LOG_TRIVIAL(info)   << cell_area_low/(double)total_cell_area << "\n";
-      double tmp_ratio = double(total_cell_area)/double(cell_area_low);
+      double tmp_ratio = double(total_cell_area) / double(cell_area_low);
       //TODO: this precision has some influence on the final result
       if (ratio > tmp_ratio) {
         cut_line_high = cut_line;
@@ -434,7 +436,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist,
         }
       }
       //BOOST_LOG_TRIVIAL(info)   << cell_area_low/(double)total_cell_area << "\n";
-      double tmp_ratio = double(total_cell_area)/double(cell_area_low);
+      double tmp_ratio = double(total_cell_area) / double(cell_area_low);
       if (ratio > tmp_ratio) {
         cut_line_high = cut_line;
       } else if (ratio < tmp_ratio) {
@@ -621,4 +623,6 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodeli
     cut_line_w = left + (int) ((double(total_cell_area_low) / double(total_cell_area)) * (right - left));
   }
   return true;
+}
+
 }

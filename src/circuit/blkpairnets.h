@@ -11,12 +11,13 @@
 
 #include "net.h"
 
+namespace dali {
 // declares a row-major sparse matrix type of double
 typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat;
 
 struct BlkBlkEdge {
-  BlkBlkEdge(Net* net_ptr, int d_index, int l_index): net(net_ptr), d(d_index), l(l_index) {}
-  Net* net; // the pointer to the net containing two blocks
+  BlkBlkEdge(Net *net_ptr, int d_index, int l_index) : net(net_ptr), d(d_index), l(l_index) {}
+  Net *net; // the pointer to the net containing two blocks
   int d; // driver index
   int l; // load index
 };
@@ -54,7 +55,7 @@ struct BlkPairNets {
     b1x = 0;
   }
   void WriteX() {
-    if (blk_num0!=blk_num1) {
+    if (blk_num0 != blk_num1) {
       it01x.valueRef() = e01x;
       it10x.valueRef() = e10x;
     }
@@ -69,11 +70,13 @@ struct BlkPairNets {
     b1y = 0;
   }
   void WriteY() {
-    if (blk_num0!=blk_num1) {
+    if (blk_num0 != blk_num1) {
       it01y.valueRef() = e01y;
       it10y.valueRef() = e10y;
     }
   }
 };
+
+}
 
 #endif //DALI_SRC_CIRCUIT_BLKPAIRNETS_H_

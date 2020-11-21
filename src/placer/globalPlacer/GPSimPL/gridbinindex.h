@@ -8,6 +8,8 @@
 #include <iostream>
 #include <set>
 
+namespace dali {
+
 struct GridBinIndex {
  public:
   GridBinIndex() : x(0), y(0) {}
@@ -44,5 +46,7 @@ struct GridBinCluster {
     return (total_cell_area > rhs.total_cell_area);
   }
 };
+
+}
 
 #endif //DALI_SRC_PLACER_GLOBALPLACER_GPSIMPL_GRIDBININDEX_H_

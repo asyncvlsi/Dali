@@ -11,6 +11,8 @@
 #include "common/misc.h"
 #include "placer/legalizer/LGTetrisEx.h"
 
+namespace dali {
+
 /****
  * the structure row contains the following information:
  *  1. the distant the the previous plug
@@ -77,5 +79,7 @@ class WellLegalizer : public LGTetrisEx {
 
   bool StartPlacement() override;
 };
+
+}
 
 #endif //DALI_SRC_PLACER_WELLLEGALIZER_WELLLEGALIZER_H_

@@ -14,6 +14,8 @@
 #include "gridbin.h"
 #include "gridbinindex.h"
 
+namespace dali {
+
 struct WindowQuadruple {
   int llx, lly, urx, ury;
   bool Cover(WindowQuadruple &rhs) {
@@ -97,5 +99,7 @@ class BoxBin {
                                            unsigned long int &box2_total_white_space);
   bool update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodelist, int &cut_line_w, int ave_blk_height);
 };
+
+}
 
 #endif //DALI_SRC_PLACER_GLOBALPLACER_GPSIMPL_BOXBIN_H_

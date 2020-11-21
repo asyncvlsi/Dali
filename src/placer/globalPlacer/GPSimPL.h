@@ -18,6 +18,8 @@
 #include "GPSimPL/gridbin.h"
 #include "solver.h"
 
+namespace dali {
+
 // declares a row-major sparse matrix type of double
 typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat;
 
@@ -46,7 +48,8 @@ class GPSimPL : public Placer {
   int cg_iteration_max_num_ = 200; // cg solver runs at most this amount of iterations to optimize the quadratic metric
   double cg_stop_criterion_ = 0.01; // cg solver stops if the cost change is less than this value for 3 iterations
   double alpha = 0.00; // net weight for anchor pseudo-net
-  double net_model_update_stop_criterion_ = 0.01; // stop update net model if the cost change is less than this value for 3 iterations
+  double net_model_update_stop_criterion_ =
+      0.01; // stop update net model if the cost change is less than this value for 3 iterations
 
   /**** two small positive numbers used to avoid divergence when calculating net weights ****/
   double epsilon_factor_ = 100;
@@ -94,9 +97,9 @@ class GPSimPL : public Placer {
   bool y_anchor_set = false;
   std::vector<T> coefficientsx;
   std::vector<T> coefficientsy;
-  Eigen::ConjugateGradient<SpMat, Eigen::Lower|Eigen::Upper> cgx;
-  Eigen::ConjugateGradient<SpMat, Eigen::Lower|Eigen::Upper> cgy;
-  std::vector<std::vector<BlkPairNets*>> pair_connect;
+  Eigen::ConjugateGradient<SpMat, Eigen::Lower | Eigen::Upper> cgx;
+  Eigen::ConjugateGradient<SpMat, Eigen::Lower | Eigen::Upper> cgy;
+  std::vector<std::vector<BlkPairNets *>> pair_connect;
   std::vector<BlkPairNets> diagonal_pair;
   std::vector<SpMat::InnerIterator> SpMat_diag_x;
   std::vector<SpMat::InnerIterator> SpMat_diag_y;
@@ -179,11 +182,11 @@ class GPSimPL : public Placer {
   void BuildProblemWithAnchorY();
   double QuadraticPlacementWithAnchor(double net_model_update_stop_criterion);
   void UpdateAnchorNetWeight() {
-    if (net_model==0) {
+    if (net_model == 0) {
       alpha = 0.01 * cur_iter_;
-    } else if (net_model==1) {
+    } else if (net_model == 1) {
       alpha = 0.002 * cur_iter_;
-    } else if (net_model==2) {
+    } else if (net_model == 2) {
       alpha = 0.005 * cur_iter_;
     } else {
       alpha = 0.002 * cur_iter_;
@@ -214,5 +217,7 @@ class GPSimPL : public Placer {
 
   static bool IsSeriesConverge(std::vector<double> &data, int window_size, double tolerance);
 };
+
+}
 
 #endif //DALI_SRC_PLACER_GLOBALPLACER_GPSIMPL_H_

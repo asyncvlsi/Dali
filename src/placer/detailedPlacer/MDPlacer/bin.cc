@@ -4,6 +4,8 @@
 
 #include "bin.h"
 
+namespace dali {
+
 Bin::Bin() {
   left_ = 0;
   bottom_ = 0;
@@ -13,3 +15,5 @@ Bin::Bin() {
 
 Bin::Bin(int left, int bottom, int right, int top) : left_(left), bottom_(bottom), right_(right),
                                                      top_(top) {}
+
+}

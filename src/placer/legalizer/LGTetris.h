@@ -19,6 +19,8 @@
 #include "LGTetris/tetrisspace.h"
 #include "placer/placer.h"
 
+namespace dali {
+
 class TetrisLegalizer : public Placer {
  private:
   int max_iteration_;
@@ -29,11 +31,13 @@ class TetrisLegalizer : public Placer {
   TetrisLegalizer();
   void InitLegalizer();
   void SetMaxItr(int max_iteration);
-  void ResetItr() {current_iteration_ = 0;}
+  void ResetItr() { current_iteration_ = 0; }
   void FastShift(int failure_point);
   void FlipPlacement();
   bool TetrisLegal();
   bool StartPlacement() override;
 };
+
+}
 
 #endif //DALI_SRC_PLACER_LEGALIZER_LGTETRIS_H_

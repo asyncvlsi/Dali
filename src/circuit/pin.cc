@@ -4,6 +4,8 @@
 
 #include "pin.h"
 
+namespace dali {
+
 Pin::Pin(std::pair<const std::string, int> *name_num_pair_ptr, BlockType *blk_type_ptr) :
     name_num_pair_ptr_(name_num_pair_ptr),
     blk_type_ptr_(blk_type_ptr),
@@ -13,7 +15,10 @@ Pin::Pin(std::pair<const std::string, int> *name_num_pair_ptr, BlockType *blk_ty
   y_offset_.resize(8, 0);
 }
 
-Pin::Pin(std::pair<const std::string, int> *name_num_pair_ptr, BlockType *blk_type_ptr, double x_offset, double y_offset) :
+Pin::Pin(std::pair<const std::string, int> *name_num_pair_ptr,
+         BlockType *blk_type_ptr,
+         double x_offset,
+         double y_offset) :
     name_num_pair_ptr_(name_num_pair_ptr),
     blk_type_ptr_(blk_type_ptr),
     is_input_(true) {
@@ -129,3 +134,6 @@ void Pin::CalculateOffset(double x_offset, double y_offset) {
   y_offset_[FE_ - N_] = blk_type_ptr_->Width() - x_offset;
 
 }
+
+}
+

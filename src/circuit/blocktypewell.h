@@ -11,6 +11,8 @@
 #include "common//logging.h"
 #include "common/misc.h"
 
+namespace dali {
+
 /****
  * This struct BlockTypeWell provides the N/P-well geometries for a BlockType.
  * Assumptions:
@@ -42,7 +44,7 @@ struct BlockTypeWell {
   RectI p_rect_; // P-well rect
   int p_n_edge_ = 0; // cached N/P-well boundary
 
-  explicit BlockTypeWell(BlockType *type_ptr) : type_ptr_(type_ptr){}
+  explicit BlockTypeWell(BlockType *type_ptr) : type_ptr_(type_ptr) {}
 
   // get the pointer to the BlockType this well belongs to
   BlockType *BlkTypePtr() const { return type_ptr_; }
@@ -109,10 +111,14 @@ struct BlockTypeWell {
   // report the information of N/P-well for debugging purposes
   void Report() const {
     BOOST_LOG_TRIVIAL(info)
-        << "  Well of BlockType: " << *(type_ptr_->NamePtr()) << "\n"
-        << "    Nwell: " << n_rect_.LLX() << "  " << n_rect_.LLY() << "  " << n_rect_.URX() << "  " << n_rect_.URY() << "\n"
-        << "    Pwell: " << p_rect_.LLX() << "  " << p_rect_.LLY() << "  " << p_rect_.URX() << "  " << p_rect_.URY() << "\n";
+      << "  Well of BlockType: " << *(type_ptr_->NamePtr()) << "\n"
+      << "    Nwell: " << n_rect_.LLX() << "  " << n_rect_.LLY() << "  " << n_rect_.URX() << "  " << n_rect_.URY()
+      << "\n"
+      << "    Pwell: " << p_rect_.LLX() << "  " << p_rect_.LLY() << "  " << p_rect_.URX() << "  " << p_rect_.URY()
+      << "\n";
   }
 };
+
+}
 
 #endif //DALI_SRC_CIRCUIT_BLOCKTYPEWELL_H_

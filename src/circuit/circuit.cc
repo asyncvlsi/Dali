@@ -16,6 +16,8 @@
 #include "status.h"
 #include "common/optregdist.h"
 
+namespace dali {
+
 Circuit::Circuit() {
   AddDummyIOPinBlockType();
 }
@@ -1071,7 +1073,8 @@ void Circuit::AddBlock(std::string &block_name,
                        BlockOrient orient,
                        bool is_real_cel) {
   Assert(design_.net_list.empty(), "Cannot add new Block, because net_list now is not empty");
-  Assert(design_.block_list.size() < design_.block_list.capacity(), "Cannot add new Block, because block list is full");
+  Assert(design_.block_list.size() < design_.block_list.capacity(),
+         "Cannot add new Block, because block list is full");
   Assert(!IsBlockExist(block_name), "Block exists, cannot create this block again: " + block_name);
   int map_size = design_.block_name_map.size();
   auto ret = design_.block_name_map.insert(std::pair<std::string, int>(block_name, map_size));
@@ -1081,7 +1084,8 @@ void Circuit::AddBlock(std::string &block_name,
   // update statistics of blocks
   long int old_tot_area = design_.tot_blk_area_;
   design_.tot_blk_area_ += design_.block_list.back().Area();
-  Assert(old_tot_area < design_.tot_blk_area_, "Total Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
+  Assert(old_tot_area < design_.tot_blk_area_,
+         "Total Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
   design_.tot_width_ += design_.block_list.back().Width();
   design_.tot_height_ += design_.block_list.back().Height();
   if (is_real_cel) {
@@ -2722,4 +2726,6 @@ int Circuit::FindFirstNumber(std::string &str) {
     }
   }
   return res;
+}
+
 }

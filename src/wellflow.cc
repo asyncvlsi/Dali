@@ -10,10 +10,7 @@
 #include <galois//Galois.h>
 
 #include "circuit.h"
-#include "common/opendb.h"
 #include "placer.h"
-
-VerboseLevel globalVerboseLevel = LOG_CRITICAL;
 
 #define USE_DB_PARSER 1
 

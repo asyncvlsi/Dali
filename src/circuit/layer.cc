@@ -4,6 +4,8 @@
 
 #include "layer.h"
 
+namespace dali {
+
 Layer::Layer() :
     width_(0),
     spacing_(0) {}
@@ -34,12 +36,12 @@ MetalLayer::MetalLayer(double width,
     direction_(direction) {}
 
 void MetalLayer::Report() const {
-  BOOST_LOG_TRIVIAL(info)   << "  MetalLayer Name: " << *Name() << "\n"
-            << "    Assigned Num: " << Num() << "\n"
-            << "    Width and Spacing: " << Width() << " " << Spacing() << "\n"
-            << "    MinArea: " << Area() << "\n"
-            << "    Direction: " << MetalDirectionStr(Direction()) << "\n"
-            << "    Pitch: " << PitchX() << "  " << PitchY() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "  MetalLayer Name: " << *Name() << "\n"
+                          << "    Assigned Num: " << Num() << "\n"
+                          << "    Width and Spacing: " << Width() << " " << Spacing() << "\n"
+                          << "    MinArea: " << Area() << "\n"
+                          << "    Direction: " << MetalDirectionStr(Direction()) << "\n"
+                          << "    Pitch: " << PitchX() << "  " << PitchY() << "\n";
 }
 
 WellLayer::WellLayer(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) :
@@ -60,9 +62,11 @@ void WellLayer::SetParams(double width, double spacing, double op_spacing, doubl
 }
 
 void WellLayer::Report() {
-  BOOST_LOG_TRIVIAL(info)   << "    Width:       " << Width() << " um\n"
-            << "    Spacing:     " << Spacing() << " um\n"
-            << "    OpSpacing:   " << OpSpacing() << " um\n"
-            << "    MaxPlugDist: " << MaxPlugDist() << " um\n"
-            << "    Overhang:    " << Overhang() << "um\n";
+  BOOST_LOG_TRIVIAL(info) << "    Width:       " << Width() << " um\n"
+                          << "    Spacing:     " << Spacing() << " um\n"
+                          << "    OpSpacing:   " << OpSpacing() << " um\n"
+                          << "    MaxPlugDist: " << MaxPlugDist() << " um\n"
+                          << "    Overhang:    " << Overhang() << "um\n";
+}
+
 }

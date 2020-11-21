@@ -13,6 +13,8 @@
 #include "layer.h"
 #include "status.h"
 
+namespace dali {
+
 class Net;
 
 class IOPin {
@@ -36,25 +38,25 @@ class IOPin {
         double lx,
         double ly);
 
-  const std::string *Name() const {return &(name_num_pair_ptr_->first);}
-  int Num() const {return name_num_pair_ptr_->second;}
-  Net *GetNet() const {return net_ptr_;}
-  SignalDirection SigDirection() const {return direction_;}
-  SignalUse SigUse() const {return  use_;}
-  MetalLayer *Layer() const {return layer_ptr_;}
-  RectD *GetRect() {return &rect_;}
-  bool IsPlaced() const {return place_status_ == FIXED_ || place_status_ == PLACED_;}
-  bool IsPrePlaced() const{return init_place_status_ == FIXED_ || init_place_status_ == PLACED_;}
-  double X() const {return lx_;}
-  double Y() const {return ly_;}
+  const std::string *Name() const { return &(name_num_pair_ptr_->first); }
+  int Num() const { return name_num_pair_ptr_->second; }
+  Net *GetNet() const { return net_ptr_; }
+  SignalDirection SigDirection() const { return direction_; }
+  SignalUse SigUse() const { return use_; }
+  MetalLayer *Layer() const { return layer_ptr_; }
+  RectD *GetRect() { return &rect_; }
+  bool IsPlaced() const { return place_status_ == FIXED_ || place_status_ == PLACED_; }
+  bool IsPrePlaced() const { return init_place_status_ == FIXED_ || init_place_status_ == PLACED_; }
+  double X() const { return lx_; }
+  double Y() const { return ly_; }
 
   void SetNet(Net *net_ptr) {
     Assert(net_ptr != nullptr, "Cannot set @param net_ptr to nullptr in function: IOPin::SetNet()");
     net_ptr_ = net_ptr;
   }
-  void SetDirection(SignalDirection direction) {direction_ = direction;}
+  void SetDirection(SignalDirection direction) { direction_ = direction; }
   void SetUse(SignalUse use) { use_ = use; }
-  void SetLayer(MetalLayer *layer_ptr){
+  void SetLayer(MetalLayer *layer_ptr) {
     Assert(layer_ptr != nullptr, "Cannot set @param layer_ptr to nullptr in function: IOPin::SetLayer()");
     layer_ptr_ = layer_ptr;
   }
@@ -69,5 +71,7 @@ class IOPin {
 
   void Report() const;
 };
+
+}
 
 #endif //DALI_SRC_CIRCUIT_IOPIN_H_

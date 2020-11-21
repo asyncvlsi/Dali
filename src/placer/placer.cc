@@ -10,6 +10,8 @@
 
 #include "common/misc.h"
 
+namespace dali {
+
 Placer::Placer() {
   aspect_ratio_ = 0;
   filling_rate_ = 0;
@@ -78,7 +80,8 @@ void Placer::SetBoundary(int left, int right, int bottom, int top) {
   Assert(bottom < top, "Invalid boundary setting: bottom boundary should be less than top boundary!");
   unsigned long int tot_block_area = circuit_->TotBlkArea();
   unsigned long int tot_area = (right - left) * (top - bottom);
-  Assert(tot_area >= tot_block_area, "Invalid boundary setting: given region has smaller area than total block area!");
+  Assert(tot_area >= tot_block_area,
+         "Invalid boundary setting: given region has smaller area than total block area!");
   BOOST_LOG_TRIVIAL(info) << "Pre-set filling rate: " << filling_rate_ << "\n";
   filling_rate_ = (double) tot_block_area / (double) tot_area;
   BOOST_LOG_TRIVIAL(info) << "Adjusted filling rate: " << filling_rate_ << "\n";
@@ -375,4 +378,6 @@ void Placer::ShiftY(double shift_y) {
   for (auto &block: *BlockList()) {
     block.IncreaseY(shift_y);
   }
+}
+
 }

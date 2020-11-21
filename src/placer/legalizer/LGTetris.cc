@@ -6,6 +6,8 @@
 
 #include "common/misc.h"
 
+namespace dali {
+
 TetrisLegalizer::TetrisLegalizer() : Placer(), max_iteration_(5), current_iteration_(0), flipped_(false) {}
 
 void TetrisLegalizer::InitLegalizer() {
@@ -202,4 +204,6 @@ bool TetrisLegalizer::StartPlacement() {
                           << cpu_time << "s)\n";
 
   return true;
+}
+
 }

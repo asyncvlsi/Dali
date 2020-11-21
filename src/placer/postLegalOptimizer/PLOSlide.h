@@ -8,6 +8,8 @@
 #include "PLOSlide/ploslidenetaux.h"
 #include "placer/placer.h"
 
+namespace dali {
+
 class PLOSlide : public Placer {
  private:
   std::vector<int> row_start_;
@@ -30,5 +32,7 @@ class PLOSlide : public Placer {
   bool StartPlacement() override;
 
 };
+
+}
 
 #endif //DALI_SRC_PLACER_POSTLEGALOPTIMIZER_PLOSLIDE_H_

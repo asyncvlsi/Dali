@@ -11,6 +11,8 @@
 #include "common/misc.h"
 #include "status.h"
 
+namespace dali {
+
 class Layer {
  protected:
   double width_;
@@ -97,5 +99,7 @@ class WellLayer : public Layer {
   void SetParams(double width, double height, double op_spacing, double max_plug_dist, double overhang);
   void Report();
 };
+
+}
 
 #endif //DALI_SRC_CIRCUIT_LAYER_H_

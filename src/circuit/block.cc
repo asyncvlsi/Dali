@@ -4,6 +4,8 @@
 
 #include "block.h"
 
+namespace dali {
+
 Block::Block() : type_ptr_(nullptr),
                  name_num_pair_ptr_(nullptr),
                  llx_(0),
@@ -98,20 +100,22 @@ double Block::OverlapArea(const Block &blk) const {
 }
 
 void Block::Report() {
-  BOOST_LOG_TRIVIAL(info)   << "  block name: " << *NamePtr() << "\n"
-            << "    block type: " << *(TypePtr()->NamePtr()) << "\n"
-            << "    width and height: " << Width() << " " << Height() << "\n"
-            << "    lower left corner: " << llx_ << " " << lly_ << "\n"
-            << "    movable: " << IsMovable() << "\n"
-            << "    orientation: " << OrientStr(orient_) << "\n"
-            << "    assigned primary key: " << Num()
-            << "\n";
+  BOOST_LOG_TRIVIAL(info) << "  block name: " << *NamePtr() << "\n"
+                          << "    block type: " << *(TypePtr()->NamePtr()) << "\n"
+                          << "    width and height: " << Width() << " " << Height() << "\n"
+                          << "    lower left corner: " << llx_ << " " << lly_ << "\n"
+                          << "    movable: " << IsMovable() << "\n"
+                          << "    orientation: " << OrientStr(orient_) << "\n"
+                          << "    assigned primary key: " << Num()
+                          << "\n";
 }
 
 void Block::ReportNet() {
-  BOOST_LOG_TRIVIAL(info)   << *NamePtr() << " connects to:\n";
+  BOOST_LOG_TRIVIAL(info) << *NamePtr() << " connects to:\n";
   for (auto &net_num: net_list_) {
-    BOOST_LOG_TRIVIAL(info)   << net_num << "  ";
+    BOOST_LOG_TRIVIAL(info) << net_num << "  ";
   }
-  BOOST_LOG_TRIVIAL(info)   << "\n";
+  BOOST_LOG_TRIVIAL(info) << "\n";
+}
+
 }

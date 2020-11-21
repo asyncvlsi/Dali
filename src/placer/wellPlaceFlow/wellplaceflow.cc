@@ -6,6 +6,8 @@
 
 #include <placer/placer.h>
 
+namespace dali {
+
 WellPlaceFlow::WellPlaceFlow() : GPSimPL() {}
 
 bool WellPlaceFlow::StartPlacement() {
@@ -91,4 +93,6 @@ bool WellPlaceFlow::StartPlacement() {
 
 void WellPlaceFlow::EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode) {
   well_legalizer_.EmitDEFWellFile(name_of_file, well_emit_mode);
+}
+
 }

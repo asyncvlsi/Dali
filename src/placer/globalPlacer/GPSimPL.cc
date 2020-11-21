@@ -13,6 +13,8 @@
 
 #include "common/logging.h"
 
+namespace dali {
+
 GPSimPL::GPSimPL() : Placer() {
   grid_bin_height = 0;
   grid_bin_width = 0;
@@ -3078,4 +3080,6 @@ bool GPSimPL::IsSeriesConverge(std::vector<double> &data, int window_size, doubl
   }
   double ratio = max_val / min_val - 1;
   return ratio < tolerance;
+}
+
 }

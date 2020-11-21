@@ -14,6 +14,8 @@
 #include "iopin.h"
 #include "net.h"
 
+namespace dali {
+
 struct NetHistogram {
   std::vector<int> bin_list_{2, 3, 4, 20, 40, 80, 160};
   std::vector<int> count_;
@@ -83,5 +85,7 @@ struct Design {
   void UpdateNetHPWLHisto(int net_size, double hpwl);
   void ReportNetFanoutHisto();
 };
+
+}
 
 #endif //DALI_SRC_CIRCUIT_DESIGN_H_

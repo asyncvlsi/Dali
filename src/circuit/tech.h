@@ -14,6 +14,8 @@
 #include "blocktypewell.h"
 #include "layer.h"
 
+namespace dali {
+
 class Tech {
  public:
   /****manufacturing grid****/
@@ -48,7 +50,7 @@ class Tech {
   double any_diff_spacing_;
 
   /****temporary data for Si2 LEF/DEF parser****/
-  BlockType* last_blk_type_=nullptr;
+  BlockType *last_blk_type_ = nullptr;
 
   /********/
   Tech();
@@ -68,5 +70,7 @@ class Tech {
   bool IsWellInfoSet() const { return (GetNLayer() == nullptr) && (GetPLayer() == nullptr); }
   void Report() const;
 };
+
+}
 
 #endif //DALI_SRC_CIRCUIT_TECH_H_

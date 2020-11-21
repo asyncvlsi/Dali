@@ -8,6 +8,8 @@
 #include "common/misc.h"
 #include "placer/placer.h"
 
+namespace dali {
+
 class LGTetrisEx : public Placer {
  protected:
   std::vector<std::vector<SegI>> white_space_in_rows_;
@@ -64,14 +66,14 @@ class LGTetrisEx : public Placer {
     }
     return res;
   }
-  int EndCol(int x_loc) {return x_loc - left_ - 1;}
-  int MaxRow(int height) {return ((top_ - height) - bottom_) / row_height_;}
-  int MaxCol(int width) {return right_ - width - left_;}
-  int HeightToRow(int height) const {return std::ceil(height / double(row_height_));}
-  int LocToRow(int y_loc) {return (y_loc - bottom_) / row_height_;}
-  int LocToCol(int x_loc) {return x_loc - left_;}
-  int RowToLoc(int row_num, int displacement = 0) {return row_num * row_height_ + bottom_ + displacement;}
-  int ColToLoc(int col_num, int displacement = 0) {return col_num + left_ + displacement;}
+  int EndCol(int x_loc) { return x_loc - left_ - 1; }
+  int MaxRow(int height) { return ((top_ - height) - bottom_) / row_height_; }
+  int MaxCol(int width) { return right_ - width - left_; }
+  int HeightToRow(int height) const { return std::ceil(height / double(row_height_)); }
+  int LocToRow(int y_loc) { return (y_loc - bottom_) / row_height_; }
+  int LocToCol(int x_loc) { return x_loc - left_; }
+  int RowToLoc(int row_num, int displacement = 0) { return row_num * row_height_ + bottom_ + displacement; }
+  int ColToLoc(int col_num, int displacement = 0) { return col_num + left_ + displacement; }
   int AlignLocToRow(int y_loc) {
     int row_num = int(std::round((y_loc - bottom_) / (double) row_height_));
     if (row_num < 0) row_num = 0;
@@ -122,5 +124,7 @@ class LGTetrisEx : public Placer {
 
   void GenAvailSpace(std::string const &name_of_file = "avail_space.txt");
 };
+
+}
 
 #endif //DALI_SRC_PLACER_LEGALIZER_LGTETRISEX_H_

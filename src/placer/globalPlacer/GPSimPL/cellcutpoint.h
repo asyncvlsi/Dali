@@ -7,6 +7,8 @@
 
 #include <iostream>
 
+namespace dali {
+
 struct CellCutPoint {
   CellCutPoint() : x(0), y(0) {}
   CellCutPoint(double x0, double y0) : x(x0), y(y0) {}
@@ -27,5 +29,7 @@ struct CellCutPoint {
     return (x == rhs.x) && (y == rhs.y);
   }
 };
+
+}
 
 #endif //DALI_SRC_PLACER_GLOBALPLACER_GPSIMPL_CELLCUTPOINT_H_

@@ -10,14 +10,16 @@
 
 #include "common/logging.h"
 
+namespace dali {
+
 struct BinIndex {
   int x;
   int y;
-  explicit BinIndex(int i=0, int j=0): x(i), y(j){}
-  bool operator<(const BinIndex& a) const {
-    return (x < a.x) || ((x == a.x)&&(y < a.y));
+  explicit BinIndex(int i = 0, int j = 0) : x(i), y(j) {}
+  bool operator<(const BinIndex &a) const {
+    return (x < a.x) || ((x == a.x) && (y < a.y));
   }
-  bool operator==(const BinIndex& a) const {
+  bool operator==(const BinIndex &a) const {
     return (x == a.x) && (y == a.y);
   }
 };
@@ -84,24 +86,26 @@ inline int Bin::Width() const {
 }
 
 inline int Bin::Height() const {
-  return  top_ - bottom_;
+  return top_ - bottom_;
 }
 
 inline void Bin::AddBlk(int blk_num) {
   //BOOST_LOG_TRIVIAL(info)   << block_set.size() << std::endl;
-  if(block_set.find(blk_num) != block_set.end()) {
-    BOOST_LOG_TRIVIAL(info)   << "Error, block already in set!" << std::endl;
+  if (block_set.find(blk_num) != block_set.end()) {
+    BOOST_LOG_TRIVIAL(info) << "Error, block already in set!" << std::endl;
     exit(1);
   }
   block_set.insert(blk_num);
 }
 
 inline void Bin::RemoveBlk(int blk_num) {
-  if(block_set.find(blk_num) == block_set.end()) {
-    BOOST_LOG_TRIVIAL(info)   << "Error, block not in set, cannot be removed!" << std::endl;
+  if (block_set.find(blk_num) == block_set.end()) {
+    BOOST_LOG_TRIVIAL(info) << "Error, block not in set, cannot be removed!" << std::endl;
     exit(1);
   }
   block_set.erase(blk_num);
+}
+
 }
 
 

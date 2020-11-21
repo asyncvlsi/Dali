@@ -14,6 +14,8 @@
 #include "common/misc.h"
 #include "iopin.h"
 
+namespace dali {
+
 class NetAux;
 class IOPin;
 
@@ -109,5 +111,7 @@ class NetAux {
   explicit NetAux(Net *net_ptr) : net_ptr_(net_ptr) { net_ptr_->SetAux(this); }
   Net *GetNet() const { return net_ptr_; }
 };
+
+}
 
 #endif //DALI_NET_HPP

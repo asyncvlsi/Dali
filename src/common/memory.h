@@ -5,7 +5,11 @@
 #ifndef DALI_SRC_COMMON_MEMORY_H_
 #define DALI_SRC_COMMON_MEMORY_H_
 
+namespace dali {
+
 size_t getPeakRSS();
 size_t getCurrentRSS();
+
+}
 
 #endif //DALI_SRC_COMMON_MEMORY_H_

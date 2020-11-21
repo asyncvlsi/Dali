@@ -4,6 +4,8 @@
 
 #include "block_cluster.h"
 
+namespace dali {
+
 BlkCluster::BlkCluster() = default;
 
 BlkCluster::BlkCluster(int well_extension_x_init, int well_extension_y_init, int plug_width_init) :
@@ -42,4 +44,6 @@ void BlkCluster::UpdateBlockLocation() {
     blk_ptr->setCenterY(this->CenterY());
     current_loc += blk_ptr->Width();
   }
+}
+
 }

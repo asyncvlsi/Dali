@@ -7,6 +7,9 @@
 
 #include <iostream>
 
+//#include <act/act.h>
+//#include <config.h>
+
 #include "circuit.h"
 #include "common/logging.h"
 #include "common/si2lefdef.h"
@@ -15,9 +18,15 @@
 #define TEST_LG 0
 #define TEST_WLG 0
 
-int main() {
+using namespace dali;
+
+int main(int argc, char **argv) {
   init_logging_and_formatting(boost::log::trivial::info);
   Circuit circuit;
+
+  //Act::Init(&argc, &argv);
+  //std::string config_file = "dali_gp.conf";
+  //config_read(config_file.c_str());
 
   time_t Time = clock();
   int num_of_thread_openmp = 1;

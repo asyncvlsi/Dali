@@ -4,8 +4,10 @@
 
 #include "si2lefdef.h"
 
-#include "defrReader.hpp"
-#include "lefrReader.hpp"
+#include <defrReader.hpp>
+#include <lefrReader.hpp>
+
+namespace dali {
 
 int getLefUnits(lefrCallbackType_e type, lefiUnits *units, lefiUserData userData) {
   if (type != lefrUnitsCbkType) {
@@ -501,4 +503,6 @@ void readDef(std::string &defFileName, Circuit &circuit) {
   //numPins = readPinCnt;
 
   defrClear();
+}
+
 }

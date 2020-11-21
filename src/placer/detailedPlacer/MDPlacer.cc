@@ -15,6 +15,8 @@
 
 #include <algorithm>
 
+namespace dali {
+
 MDPlacer::MDPlacer()
     : learning_rate_(0.1),
       momentum_term_(0.9),
@@ -221,4 +223,6 @@ bool MDPlacer::StartPlacement() {
   ReportHPWL();
 
   return true;
+}
+
 }

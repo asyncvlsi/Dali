@@ -6,6 +6,8 @@
 
 #include "common/logging.h"
 
+namespace dali {
+
 GridBin::GridBin() {
   index.init();
   bottom = 0;
@@ -51,9 +53,11 @@ void GridBin::create_adjacent_bin_list(int grid_cnt_x, int grid_cnt_y) {
 }
 
 void GridBin::Report() {
-  BOOST_LOG_TRIVIAL(info)   << "  block count: " << cell_list.size() << "\n"
-            << "  block area:  " << cell_area << "\n"
-            << "  filling rate: " << filling_rate << "\n"
-            << "  white space: " << white_space << "\n"
-            << "  over fill:   " << over_fill << "\n";
+  BOOST_LOG_TRIVIAL(info) << "  block count: " << cell_list.size() << "\n"
+                          << "  block area:  " << cell_area << "\n"
+                          << "  filling rate: " << filling_rate << "\n"
+                          << "  white space: " << white_space << "\n"
+                          << "  over fill:   " << over_fill << "\n";
+}
+
 }

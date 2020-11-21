@@ -6,6 +6,8 @@
 
 #include <cfloat>
 
+namespace dali {
+
 PLOSlideNetAux::PLOSlideNetAux(Net *net) :
     NetAux(net),
     max_x_(0),
@@ -77,4 +79,6 @@ Pin *PLOSlideNetAux::GetPin(Block *block) {
   auto res = blk2pin_map_.find(block);
   Assert(res != blk2pin_map_.end(), "Cannot find the block in the net!");
   return res->second;
+}
+
 }

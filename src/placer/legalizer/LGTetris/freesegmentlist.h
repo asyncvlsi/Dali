@@ -11,6 +11,8 @@
 
 #include <iostream>
 
+namespace dali {
+
 class FreeSegmentList {
  private:
   FreeSegment *head_;
@@ -22,13 +24,27 @@ class FreeSegmentList {
   FreeSegmentList();
   FreeSegmentList(int start, int stop, int min_width);
   ~FreeSegmentList();
-  size_t size() const;
-  int Left() const;
-  int Right() const;
-  FreeSegment *Head() const;
-  FreeSegment *Tail() const;
-  int MinWidth() const;
-  void SetMinWidth(int initMinWidth);
+  size_t size() const {
+    return size_;
+  }
+  int Left() const {
+    if (head_ == nullptr) {
+      BOOST_LOG_TRIVIAL(info) << "Empty linked list, Left() not available\n";
+      assert(head_ != nullptr);
+    }
+    return head_->Start();
+  }
+  int Right() const {
+    if (tail_ == nullptr) {
+      BOOST_LOG_TRIVIAL(info) << "Empty linked list, Right() not available\n";
+      assert(tail_ != nullptr);
+    }
+    return tail_->End();
+  }
+  FreeSegment *Head() const {return head_;}
+  FreeSegment *Tail() const {return tail_;}
+  int MinWidth() const {return min_width_;}
+  void SetMinWidth(int initMinWidth) {min_width_ = initMinWidth;}
   void Append(FreeSegment *segList);
   bool EmplaceBack(int start, int end);
   void PushBack(FreeSegment *seg);
@@ -45,40 +61,6 @@ class FreeSegmentList {
   void Show();
 };
 
-inline size_t FreeSegmentList::size() const {
-  return size_;
-}
-
-inline int FreeSegmentList::Left() const {
-  if (head_ == nullptr) {
-    BOOST_LOG_TRIVIAL(info)   << "Empty linked list, Left() not available\n";
-    assert(head_ != nullptr);
-  }
-  return head_->Start();
-}
-
-inline int FreeSegmentList::Right() const {
-  if (tail_ == nullptr) {
-    BOOST_LOG_TRIVIAL(info)   << "Empty linked list, Right() not available\n";
-    assert(tail_ != nullptr);
-  }
-  return tail_->End();
-}
-
-inline FreeSegment *FreeSegmentList::Head() const {
-  return head_;
-}
-
-inline FreeSegment *FreeSegmentList::Tail() const {
-  return tail_;
-}
-
-inline int FreeSegmentList::MinWidth() const {
-  return min_width_;
-}
-
-inline void FreeSegmentList::SetMinWidth(int initMinWidth) {
-  min_width_ = initMinWidth;
 }
 
 #endif //DALI_FREESEGMENTLIST_H

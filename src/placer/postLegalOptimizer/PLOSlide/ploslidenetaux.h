@@ -11,6 +11,8 @@
 #include "circuit/block.h"
 #include "circuit/net.h"
 
+namespace dali {
+
 class PLOSlideNetAux : public NetAux {
  private:
   double max_x_;
@@ -72,6 +74,8 @@ inline double PLOSlideNetAux::MaxY() const {
 
 inline double PLOSlideNetAux::MinY() const {
   return min_y_;
+}
+
 }
 
 #endif //DALI_SRC_PLACER_POSTLEGALOPTIMIZER_PLOSLIDE_PLOSLIDENETAUX_H_

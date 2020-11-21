@@ -12,6 +12,8 @@
 #include "common/misc.h"
 #include "status.h"
 
+namespace dali {
+
 class BlockType;
 
 class Pin {
@@ -63,5 +65,7 @@ class Pin {
     BOOST_LOG_TRIVIAL(info)   << *Name() << " (" << OffsetX() << ", " << OffsetY() << ")";
   }
 };
+
+}
 
 #endif //DALI_SRC_CIRCUIT_PIN_H_

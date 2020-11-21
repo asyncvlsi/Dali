@@ -13,6 +13,8 @@
 #include "common/displaceviewer.h"
 #include "placer/legalizer/LGTetrisEx.h"
 
+namespace dali {
+
 class ClusterWellLegalizer : public LGTetrisEx {
  protected:
   int well_spacing_x = 0;
@@ -37,9 +39,15 @@ class ClusterWellLegalizer : public LGTetrisEx {
   ClusterWellLegalizer();
   ~ClusterWellLegalizer() override;
 
-  static int CostInitDisplacement(int x_new, int y_new, int x_old, int y_old);
-  int CostLeftBottomBoundary(int x, int y);
-  int CostRightTopBoundary(int x, int y);
+  static int CostInitDisplacement(int x_new, int y_new, int x_old, int y_old) {
+    return std::abs(x_new - x_old) + std::abs(y_new - y_old);
+  }
+  int CostLeftBottomBoundary(int x, int y) {
+    return std::abs(x - left_) + std::abs(y - bottom_);
+  }
+  int CostRightTopBoundary(int x, int y) {
+    return std::abs(right_ - x) + std::abs(top_ - y);
+  }
 
   void InitializeClusterLegalizer();
   void InitDisplaceViewer(int sz);
@@ -83,16 +91,6 @@ class ClusterWellLegalizer : public LGTetrisEx {
   void ReportWellRule();
 };
 
-inline int ClusterWellLegalizer::CostInitDisplacement(int x_new, int y_new, int x_old, int y_old) {
-  return std::abs(x_new - x_old) + std::abs(y_new - y_old);
-}
-
-inline int ClusterWellLegalizer::CostLeftBottomBoundary(int x, int y) {
-  return std::abs(x - left_) + std::abs(y - bottom_);
-}
-
-inline int ClusterWellLegalizer::CostRightTopBoundary(int x, int y) {
-  return std::abs(right_ - x) + std::abs(top_ - y);
 }
 
 #endif //DALI_SRC_PLACER_WELLLEGALIZER_CLUSTERWELLLEGALIZER_H_

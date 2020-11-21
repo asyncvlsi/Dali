@@ -8,6 +8,8 @@
 
 #include "common/logging.h"
 
+namespace dali {
+
 PLOSlide::PLOSlide() {}
 
 void PLOSlide::InitPostLegalOptimizer() {
@@ -182,4 +184,6 @@ bool PLOSlide::StartPlacement() {
   ReportMemory();
 
   return true;
+}
+
 }

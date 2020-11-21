@@ -13,12 +13,14 @@
 #include "circuit/block.h"
 #include "common/misc.h"
 
-class MDBlkAux: public BlockAux {
+namespace dali {
+
+class MDBlkAux : public BlockAux {
  private:
   BinIndex ll_index_, ur_index_;
  public:
   double2d v_;
-  explicit MDBlkAux(Block* blk_ptr);
+  explicit MDBlkAux(Block *blk_ptr);
   void SetVx(double vx);
   void SetVy(double vy);
   double Vx();
@@ -70,6 +72,8 @@ inline void MDBlkAux::SetLLIndex(BinIndex ll) {
 
 inline void MDBlkAux::SetURIndex(BinIndex ur) {
   ur_index_ = ur;
+}
+
 }
 
 #endif //DALI_SRC_PLACER_DETAILEDPLACER_MDPLACER_MDBLKAUX_H_

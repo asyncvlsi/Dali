@@ -11,6 +11,8 @@
 #include "placer/legalizer/LGTetrisEx.h"
 #include "placer/placer.h"
 
+namespace dali {
+
 struct Cluster {
   bool is_orient_N_ = true; // orientation of this cluster
   std::vector<Block *> blk_list_; // list of blocks in this cluster
@@ -330,9 +332,9 @@ struct SegCluster {
 
   void SortBounds() {
     std::sort(bound_list.begin(), bound_list.end());
-    int lo_index = int(bound_list.size()-1)/2;
+    int lo_index = int(bound_list.size() - 1) / 2;
     int hi_index = lo_index;
-    if (bound_list.size()%2==0) {
+    if (bound_list.size() % 2 == 0) {
       hi_index += 1;
     }
     opt_lo = bound_list[lo_index];
@@ -368,7 +370,7 @@ struct SegCluster {
       blk_index.push_back(it);
     }
     for (auto &bound: sc.bound_list) {
-      bound_list.push_back(bound-width);
+      bound_list.push_back(bound - width);
     }
     width += sc.width;
     SortBounds();
@@ -376,7 +378,7 @@ struct SegCluster {
   }
 
   void UpdateLLX() {
-    llx = (int)std::round((opt_lo + opt_hi)/2.0);
+    llx = (int) std::round((opt_lo + opt_hi) / 2.0);
   }
 
   void PlaceBlk() {
@@ -388,5 +390,7 @@ struct SegCluster {
     }
   }
 };
+
+}
 
 #endif //DALI_SRC_PLACER_WELLLEGALIZER_STDCLUSTERWELLLEGALIZER_H_

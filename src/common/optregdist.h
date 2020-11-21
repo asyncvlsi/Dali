@@ -10,6 +10,8 @@
 #include "circuit/circuit.h"
 #include "logging.h"
 
+namespace dali {
+
 struct OptRegDist {
   Circuit *circuit_ = nullptr;
   void FindOptimalRegionX(Block &blk, double &lx, double &ly, double &ux, double &uy) const {
@@ -108,5 +110,7 @@ struct OptRegDist {
     BOOST_LOG_TRIVIAL(info) << "average cell width: " << ave_size << "\n";
   }
 };
+
+}
 
 #endif //DALI_SRC_COMMON_OPTREGDIST_H_

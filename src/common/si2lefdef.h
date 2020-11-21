@@ -7,7 +7,11 @@
 
 #include "circuit/circuit.h"
 
+namespace dali {
+
 void readLef(std::string &lefFileName, Circuit &circuit);
 void readDef(std::string &defFileName, Circuit &circuit);
+
+}
 
 #endif //DALI_SRC_COMMON_SI2LEFDEF_H_

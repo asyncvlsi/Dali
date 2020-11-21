@@ -9,6 +9,8 @@
 #include "common/misc.h"
 #include "net.h"
 
+namespace dali {
+
 Net::Net(std::pair<const std::string, int> *name_num_pair_ptr, int capacity, double weight)
     : name_num_pair_ptr_(name_num_pair_ptr), weight_(weight) {
   cnt_fixed_ = 0;
@@ -24,7 +26,7 @@ Net::Net(std::pair<const std::string, int> *name_num_pair_ptr, int capacity, dou
 void Net::AddBlockPinPair(Block *block_ptr, Pin *pin_ptr) {
   if (blk_pin_list.size() < blk_pin_list.capacity()) {
     blk_pin_list.emplace_back(block_ptr, pin_ptr);
-    if (!(pin_ptr->IsInput())) driver_pin_index = int(blk_pin_list.size())-1;
+    if (!(pin_ptr->IsInput())) driver_pin_index = int(blk_pin_list.size()) - 1;
     if (!block_ptr->IsMovable()) {
       ++cnt_fixed_;
     }
@@ -34,10 +36,12 @@ void Net::AddBlockPinPair(Block *block_ptr, Pin *pin_ptr) {
     int p_minus_one = int(blk_pin_list.size()) - 1;
     inv_p_ = p_minus_one > 0 ? 1.0 * weight_ / p_minus_one : 0;
   } else {
-    BOOST_LOG_TRIVIAL(info)   << "Pre-assigned net capacity is full: " << blk_pin_list.capacity() << ", cannot add more pin to this net:\n";
-    BOOST_LOG_TRIVIAL(info)   << "net name: " << *Name() << ", net weight: " << Weight() << "\n";
+    BOOST_LOG_TRIVIAL(info) << "Pre-assigned net capacity is full: " << blk_pin_list.capacity()
+                            << ", cannot add more pin to this net:\n";
+    BOOST_LOG_TRIVIAL(info) << "net name: " << *Name() << ", net weight: " << Weight() << "\n";
     for (auto &block_pin_pair: blk_pin_list) {
-      BOOST_LOG_TRIVIAL(info)   << "\t" << " (" << *(block_pin_pair.BlockNamePtr()) << " " << *(block_pin_pair.PinNamePtr()) << ") " << "\n";
+      BOOST_LOG_TRIVIAL(info) << "\t" << " (" << *(block_pin_pair.BlockNamePtr()) << " "
+                              << *(block_pin_pair.PinNamePtr()) << ") " << "\n";
     }
     exit(1);
   }
@@ -274,8 +278,9 @@ double Net::HPWLCtoCX() {
 
   for (auto &pin: blk_pin_list) {
     if (pin.BlkPtr() == nullptr) {
-      BOOST_LOG_TRIVIAL(info)   << "Error!\n";
-      BOOST_LOG_TRIVIAL(info)   << "attribute block_t* _block is nullptr, it should points to the block containing this pin\n";
+      BOOST_LOG_TRIVIAL(info) << "Error!\n";
+      BOOST_LOG_TRIVIAL(info)
+        << "attribute block_t* _block is nullptr, it should points to the block containing this pin\n";
       assert(pin.BlkPtr() != nullptr);
     }
     block = pin.BlkPtr();
@@ -298,8 +303,9 @@ double Net::HPWLCtoCY() {
 
   for (auto &pin: blk_pin_list) {
     if (pin.BlkPtr() == nullptr) {
-      BOOST_LOG_TRIVIAL(info)   << "Error!\n";
-      BOOST_LOG_TRIVIAL(info)   << "attribute block_t* _block is nullptr, it should points to the block containing this pin\n";
+      BOOST_LOG_TRIVIAL(info) << "Error!\n";
+      BOOST_LOG_TRIVIAL(info)
+        << "attribute block_t* _block is nullptr, it should points to the block containing this pin\n";
       assert(pin.BlkPtr() != nullptr);
     }
     block = pin.BlkPtr();
@@ -313,3 +319,6 @@ double Net::HPWLCtoCY() {
 
   return (max_y - min_y) * weight_;
 }
+
+}
+

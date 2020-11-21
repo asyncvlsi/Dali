@@ -14,6 +14,8 @@
 
 #include "circuit.h"
 
+using namespace dali;
+
 int main() {
   BOOST_LOG_TRIVIAL(info) << "Example of creating a Circuit instance\n";
 

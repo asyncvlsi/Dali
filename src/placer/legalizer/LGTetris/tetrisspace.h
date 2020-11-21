@@ -12,6 +12,8 @@
 #include "common/misc.h"
 #include "freesegmentlist.h"
 
+namespace dali {
+
 class TetrisSpace {
  private:
   int scan_line_;
@@ -34,5 +36,7 @@ class TetrisSpace {
   bool FindBlockLoc(int llx, int lly, int width, int height, int2d &result_loc);
   void Show();
 };
+
+}
 
 #endif //DALI_TETRISSPACE_H

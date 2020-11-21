@@ -7,6 +7,8 @@
 
 #include "block.h"
 
+namespace dali {
+
 /****
  * BlockPinPair is a simple struct containing:
  *  a pointer to a Block, representing a gate or an IOPIN
@@ -66,5 +68,7 @@ struct BlkPinPair {
     return (BlkNum() == rhs.BlkNum()) && (PinNum() == rhs.PinNum());
   }
 };
+
+}
 
 #endif //DALI_SRC_CIRCUIT_BLOCKPINPAIR_H_

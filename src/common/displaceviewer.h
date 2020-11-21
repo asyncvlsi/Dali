@@ -11,6 +11,8 @@
 
 #include "misc.h"
 
+namespace dali {
+
 template<class T>
 struct DisplaceViewer {
  private:
@@ -53,5 +55,7 @@ struct DisplaceViewer {
     ost.close();
   }
 };
+
+}
 
 #endif //DALI_SRC_COMMON_DISPLACEVIEWER_H_

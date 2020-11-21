@@ -10,7 +10,9 @@
 #include "MDPlacer.h"
 #include "MDPlacer/bin.h"
 
-class DPSwap: public MDPlacer {
+namespace dali {
+
+class DPSwap : public MDPlacer {
  private:
   double hpwl_converge_criterion_ = 0.01;
   double global_swap_threshold;
@@ -29,7 +31,9 @@ class DPSwap: public MDPlacer {
 };
 
 inline void DPSwap::UpdateSwapThreshold(double hpwl) {
-  global_swap_threshold = hpwl/100;
+  global_swap_threshold = hpwl / 100;
+}
+
 }
 
 #endif //DALI_SRC_PLACER_DETAILEDPLACER_DPSWAP_H_

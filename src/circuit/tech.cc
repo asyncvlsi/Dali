@@ -4,6 +4,8 @@
 
 #include "tech.h"
 
+namespace dali {
+
 Tech::Tech() : n_set_(false), p_set_(false), n_layer_ptr_(nullptr), p_layer_ptr_(nullptr) {}
 
 Tech::~Tech() {
@@ -30,7 +32,7 @@ void Tech::SetNLayer(double width, double spacing, double op_spacing, double max
   }
 }
 
-void Tech::SetPLayer(double width, double spacing,double op_spacing, double max_plug_dist, double overhang) {
+void Tech::SetPLayer(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {
   if (p_set_) {
     p_layer_ptr_->SetParams(width, spacing, op_spacing, max_plug_dist, overhang);
   } else {
@@ -41,11 +43,13 @@ void Tech::SetPLayer(double width, double spacing,double op_spacing, double max_
 
 void Tech::Report() const {
   if (n_set_) {
-    BOOST_LOG_TRIVIAL(info)   << "  Layer name: nwell\n";
+    BOOST_LOG_TRIVIAL(info) << "  Layer name: nwell\n";
     n_layer_ptr_->Report();
   }
   if (p_set_) {
-    BOOST_LOG_TRIVIAL(info)   << "  Layer name: pwell\n";
+    BOOST_LOG_TRIVIAL(info) << "  Layer name: pwell\n";
     p_layer_ptr_->Report();
   }
+}
+
 }

@@ -20,11 +20,6 @@
 #include <boost/log/utility/setup/file.hpp>
 #include <boost/log/utility/setup/common_attributes.hpp>
 
-namespace logging = boost::log;
-namespace keywords = boost::log::keywords;
-
-void init_logging_and_formatting(boost::log::trivial::severity_level sl = boost::log::trivial::info);
-
 inline boost::log::record_ostream &operator<<(boost::log::record_ostream &p, std::vector<double> &v) {
   p << "[";
   for (size_t i = 0; i < v.size(); ++i) {
@@ -35,6 +30,10 @@ inline boost::log::record_ostream &operator<<(boost::log::record_ostream &p, std
   p << "]";
   return p;
 }
+
+namespace dali {
+
+void init_logging_and_formatting(boost::log::trivial::severity_level sl = boost::log::trivial::info);
 
 inline void Assert(bool e, const std::string &error_message) {
   if (!e) {
@@ -70,6 +69,24 @@ inline void PrintSoftwareStatement() {
                           << "|     build time: " << __DATE__ << " " << __TIME__ << "         |\n"
                           << "|                                              |\n"
                           << "+----------------------------------------------+\n\n";
+}
+
+inline void ReportDaliUsage() {
+  BOOST_LOG_TRIVIAL(info)   << "\033[0;36m"
+                            << "Usage: dali\n"
+                            << "  -lef        <file.lef>\n"
+                            << "  -def        <file.def>\n"
+                            << "  -cell       <file.cell> (optional, if provided, iterative well placement flow will be triggered)\n"
+                            << "  -o          <output_name>.def (optional, default output file name dali_out.def)\n"
+                            << "  -g/-grid    grid_value_x grid_value_y (optional, default metal1 and metal2 pitch values)\n"
+                            << "  -d/-density density (optional, value interval (0,1], default max(space_utility, 0.7))\n"
+                            << "  -n          (optional, if this flag is present, then use naive LEF/DEF parser)\n"
+                            << "  -iolayer    metal_layer_num (optional, default 1 for m1)\n"
+                            << "  -v          verbosity_level (optional, 0-5, default 1)\n"
+                            << "(flag order does not matter)"
+                            << "\033[0m\n";
+}
+
 }
 
 #endif //DALI_SRC_COMMON_LOGGING_H_

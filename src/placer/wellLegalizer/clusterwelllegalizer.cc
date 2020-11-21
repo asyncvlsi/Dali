@@ -6,6 +6,8 @@
 
 #include <algorithm>
 
+namespace dali {
+
 ClusterWellLegalizer::ClusterWellLegalizer() : LGTetrisEx() {}
 
 ClusterWellLegalizer::~ClusterWellLegalizer() {
@@ -994,4 +996,6 @@ void ClusterWellLegalizer::ReportWellRule() {
                           << "    WellWidth:   " << well_min_width << "\n"
                           << "    OverhangX:   " << well_extension_x << "\n"
                           << "    OverhangY:   " << well_extension_y << "\n";
+}
+
 }

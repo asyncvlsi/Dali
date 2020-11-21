@@ -12,11 +12,13 @@
 #include "MDPlacer/mdblkaux.h"
 #include "placer/placer.h"
 
-class MDPlacer: public Placer {
+namespace dali {
+
+class MDPlacer : public Placer {
  private:
   double learning_rate_;
   double momentum_term_;
-  int max_iteration_num_ ;
+  int max_iteration_num_;
   int bin_width_;
   int bin_height_;
   int bin_cnt_x_;
@@ -55,6 +57,8 @@ inline int MDPlacer::BinCountX() const {
 
 inline int MDPlacer::BinCountY() const {
   return bin_cnt_y_;
+}
+
 }
 
 #endif //DALI_SRC_PLACER_DETAILEDPLACER_MDPLACER_H_

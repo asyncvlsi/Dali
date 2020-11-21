@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <list>
 
+namespace dali {
+
 LGTetrisEx::LGTetrisEx()
     : Placer(),
       row_height_(0),
@@ -1506,4 +1508,6 @@ void LGTetrisEx::GenAvailSpace(std::string const &name_of_file) {
         << block.URY() << "\t"
         << block.URY() << "\n";
   }
+}
+
 }

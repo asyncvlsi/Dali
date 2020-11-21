@@ -26,6 +26,8 @@
  * The bounding rectangle width and height should be a multiple of the placement grid to allow for abutting cells.
  * ****/
 
+namespace dali {
+
 class BlockAux;
 
 class Block {
@@ -238,5 +240,7 @@ class BlockAux {
   // get the pointer pointing to the Block it belongs to
   Block *getBlockPtr() const { return blk_ptr_; }
 };
+
+}
 
 #endif //DALI_BLOCK_H

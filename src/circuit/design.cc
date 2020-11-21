@@ -6,6 +6,8 @@
 
 #include <cfloat>
 
+namespace dali {
+
 void Design::UpdateFanoutHisto(int net_size) {
   /****
    * Increment the count of net in the corresponding bin using binary search
@@ -155,4 +157,6 @@ void Design::ReportNetFanoutHisto() {
     << "=================================================================================================\n";
   BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: " << net_histogram_.hpwl_unit_ << " um\n";
   BOOST_LOG_TRIVIAL(info) << "\n";
+}
+
 }

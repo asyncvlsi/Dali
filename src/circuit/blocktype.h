@@ -12,6 +12,8 @@
 #include "common/misc.h"
 #include "pin.h"
 
+namespace dali {
+
 /****
  * The class BlockType is an abstraction of a kind of gate, like INV, NAND, C-element
  * Here are the attributes of BlockType:
@@ -118,5 +120,7 @@ class BlockType {
   // report the information of this BlockType for debugging purposes
   void Report() const;
 };
+
+}
 
 #endif //DALI_SRC_CIRCUIT_BLOCKTYPE_H_

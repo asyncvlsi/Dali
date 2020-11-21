@@ -7,6 +7,8 @@
 
 #include <string>
 
+namespace dali {
+
 enum MetalDirection {
   HORIZONTAL_ = 0,
   VERTICAL_ = 1,
@@ -66,5 +68,7 @@ enum SignalUse {
 
 SignalUse StrToSignalUse(std::string &str_signal_use);
 std::string SignalUseStr(SignalUse signal_use);
+
+}
 
 #endif //DALI_SRC_CIRCUIT_STATUS_H_

@@ -9,6 +9,8 @@
 
 #include "gridbinindex.h"
 
+namespace dali {
+
 class GridBin {
  public:
   GridBin();
@@ -28,7 +30,6 @@ class GridBin {
   std::vector<int> terminal_list;
   std::vector<GridBinIndex> adjacent_bin_index;
 
-
   int LLX() { return left; }
   int LLY() { return bottom; }
   int URX() { return right; }
@@ -41,5 +42,7 @@ class GridBin {
   void create_adjacent_bin_list(int grid_cnt_x, int grid_cnt_y);
   void Report();
 };
+
+}
 
 #endif //DALI_SRC_PLACER_GLOBALPLACER_GPSIMPL_GRIDBIN_H_

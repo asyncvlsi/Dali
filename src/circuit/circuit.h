@@ -24,6 +24,9 @@
 #include "status.h"
 #include "tech.h"
 
+namespace dali {
+
+}
 /****
  * The class Circuit is an abstract of a circuit graph.
  * It contains two main parts:
@@ -48,6 +51,8 @@
  *  8. create well rect for macros
  * To know more detail about how to do this, take a look at comments in member function void InitializeFromDB().
  * ****/
+
+namespace dali {
 
 class Circuit {
   friend class Placer;
@@ -663,5 +668,7 @@ class Circuit {
   void SaveBookshelfAux(std::string const &name_of_file);
   void LoadBookshelfPl(std::string const &name_of_file);
 };
+
+}
 
 #endif //DALI_CIRCUIT_HPP

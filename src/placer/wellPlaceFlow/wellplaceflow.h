@@ -9,6 +9,8 @@
 #include "placer/legalizer/LGTetrisEx.h"
 #include "placer/wellLegalizer/stdclusterwelllegalizer.h"
 
+namespace dali {
+
 class WellPlaceFlow : public GPSimPL {
   StdClusterWellLegalizer well_legalizer_;
  public:
@@ -26,5 +28,7 @@ class WellPlaceFlow : public GPSimPL {
 
   void EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode) override;
 };
+
+}
 
 #endif //DALI_SRC_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_
