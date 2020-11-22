@@ -28,8 +28,8 @@ Block::Block(BlockType *type_ptr,
     orient_(orient) {
   eff_height_ = type_ptr_->Height();
   eff_area_ = type_ptr_->Area();
-  Assert(name_num_pair_ptr != nullptr,
-         "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
+  DaliExpects(name_num_pair_ptr != nullptr,
+              "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
   aux_ptr_ = nullptr;
   if (movable) {
     place_status_ = UNPLACED_;
@@ -52,8 +52,8 @@ Block::Block(BlockType *type_ptr,
     orient_(orient) {
   eff_height_ = type_ptr_->Height();
   eff_area_ = type_ptr_->Area();
-  Assert(name_num_pair_ptr != nullptr,
-         "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
+  DaliExpects(name_num_pair_ptr != nullptr,
+              "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
   aux_ptr_ = nullptr;
 }
 

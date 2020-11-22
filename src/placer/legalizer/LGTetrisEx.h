@@ -37,13 +37,13 @@ class LGTetrisEx : public Placer {
   LGTetrisEx();
 
   void SetRowHeight(int row_height) {
-    Assert(row_height > 0, "Cannot set negative row height!");
+    DaliExpects(row_height > 0, "Cannot set negative row height!");
     row_height_ = row_height;
     row_height_set_ = true;
   }
   int RowHeight() const { return row_height_; }
   void SetMaxIteration(int max_iter) {
-    Assert(max_iter >= 0, "Cannot set negative maximum iteration @prarm max_iter: LGTetrisEx::SetMaxIteration()\n");
+    DaliExpects(max_iter >= 0, "Cannot set negative maximum iteration @prarm max_iter: LGTetrisEx::SetMaxIteration()\n");
     max_iter_ = max_iter;
   }
   void SetWidthHeightFactor(double k_width, double k_height) {

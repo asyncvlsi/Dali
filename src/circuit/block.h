@@ -148,7 +148,7 @@ class Block {
 
   // set the BlockType of this Block
   void setType(BlockType *type_ptr) {
-    Assert(type_ptr != nullptr, "Cannot set BlockType of a Block to NULL: BLock::setType()\n");
+    DaliExpects(type_ptr != nullptr, "Cannot set BlockType of a Block to NULL: BLock::setType()\n");
     type_ptr_ = type_ptr;
     eff_height_ = type_ptr_->Height();
     eff_area_ = type_ptr_->Area();
@@ -186,7 +186,7 @@ class Block {
 
   // set the pointer to the auxiliary information
   void setAux(BlockAux *aux) {
-    Assert(aux != nullptr, "When setting auxiliary information, the argument cannot be a nullptr: Block::setAux()");
+    DaliExpects(aux != nullptr, "When setting auxiliary information, the argument cannot be a nullptr: Block::setAux()");
     aux_ptr_ = aux;
   }
 

@@ -77,7 +77,7 @@ void PLOSlideNetAux::UpdateMaxMinLocY() {
 
 Pin *PLOSlideNetAux::GetPin(Block *block) {
   auto res = blk2pin_map_.find(block);
-  Assert(res != blk2pin_map_.end(), "Cannot find the block in the net!");
+  DaliExpects(res != blk2pin_map_.end(), "Cannot find the block in the net!");
   return res->second;
 }
 

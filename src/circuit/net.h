@@ -52,7 +52,7 @@ class Net {
   int P() const { return (int) blk_pin_list.size(); }
   int FixedCnt() const { return cnt_fixed_; }
   void SetAux(NetAux *aux) {
-    Assert(aux != nullptr, "Cannot set @param aux to nullptr in void Net::SetAux()\n");
+    DaliExpects(aux != nullptr, "Cannot set @param aux to nullptr in void Net::SetAux()\n");
     aux_ptr_ = aux;
   }
   NetAux *Aux() const { return aux_ptr_; }

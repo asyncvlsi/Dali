@@ -272,7 +272,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
   * Please use other APIs to build a circuit if necessary
   * ****/
   std::ifstream ist(name_of_file.c_str());
-  Assert(ist.is_open(), "Cannot open input file: " + name_of_file);
+  DaliExpects(ist.is_open(), "Cannot open input file: " + name_of_file);
   BOOST_LOG_TRIVIAL(info) << "Loading LEF file" << "\n";
   std::string line;
 
@@ -284,12 +284,12 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     if (line.find("DATABASE MICRONS") != std::string::npos) {
       std::vector<std::string> line_field;
       StrSplit(line, line_field);
-      Assert(line_field.size() >= 3, "Invalid UNITS declaration: expecting 3 fields");
+      DaliExpects(line_field.size() >= 3, "Invalid UNITS declaration: expecting 3 fields");
       try {
         tech_.database_microns_ = std::stoi(line_field[2]);
       } catch (...) {
         BOOST_LOG_TRIVIAL(info) << line << "\n";
-        Assert(false, "Invalid stoi conversion:" + line_field[2]);
+        DaliExpects(false, "Invalid stoi conversion:" + line_field[2]);
       }
     }
   }
@@ -308,16 +308,16 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     if (line.find("MANUFACTURINGGRID") != std::string::npos) {
       std::vector<std::string> grid_field;
       StrSplit(line, grid_field);
-      Assert(grid_field.size() >= 2, "Invalid MANUFACTURINGGRID declaration: expecting 2 fields");
+      DaliExpects(grid_field.size() >= 2, "Invalid MANUFACTURINGGRID declaration: expecting 2 fields");
       try {
         tech_.manufacturing_grid_ = std::stod(grid_field[1]);
       } catch (...) {
-        Assert(false, "Invalid stod conversion:\n" + line);
+        DaliExpects(false, "Invalid stod conversion:\n" + line);
       }
       break;
     }
   }
-  Assert(tech_.manufacturing_grid_ > 0, "Cannot find or invalid MANUFACTURINGGRID");
+  DaliExpects(tech_.manufacturing_grid_ > 0, "Cannot find or invalid MANUFACTURINGGRID");
   BOOST_LOG_TRIVIAL(info) << "MANUFACTURINGGRID: " << tech_.manufacturing_grid_ << "\n";
 
   // 3. read metal layer
@@ -330,7 +330,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     if (line.find("LAYER") != std::string::npos) {
       std::vector<std::string> layer_field;
       StrSplit(line, layer_field);
-      Assert(layer_field.size() == 2, "Invalid LAYER, expect only: LAYER layerName\n\tgot: " + line);
+      DaliExpects(layer_field.size() == 2, "Invalid LAYER, expect only: LAYER layerName\n\tgot: " + line);
       int first_digit_pos = FindFirstNumber(layer_field[1]);
       std::string metal_id(layer_field[1], 0, first_digit_pos);
       if (std::find(metal_identifier_list.begin(), metal_identifier_list.end(), metal_id)
@@ -343,19 +343,19 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
           if (line.find("DIRECTION") != std::string::npos) {
             std::vector<std::string> direction_field;
             StrSplit(line, direction_field);
-            Assert(direction_field.size() >= 2, "Invalid DIRECTION\n" + line);
+            DaliExpects(direction_field.size() >= 2, "Invalid DIRECTION\n" + line);
             MetalDirection direction = StrToMetalDirection(direction_field[1]);
             metal_layer->SetDirection(direction);
           }
           if (line.find("AREA") != std::string::npos) {
             std::vector<std::string> area_field;
             StrSplit(line, area_field);
-            Assert(area_field.size() >= 2, "Invalid AREA\n" + line);
+            DaliExpects(area_field.size() >= 2, "Invalid AREA\n" + line);
             try {
               double area = std::stod(area_field[1]);
               metal_layer->SetArea(area);
             } catch (...) {
-              Assert(false, "Invalid stod conversion\n" + line);
+              DaliExpects(false, "Invalid stod conversion\n" + line);
             }
           }
           if (line.find("WIDTH") != std::string::npos) {
@@ -366,7 +366,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
               double width = std::stod(width_field[1]);
               metal_layer->SetWidth(width);
             } catch (...) {
-              Assert(false, "Invalid stod conversion:\n" + line);
+              DaliExpects(false, "Invalid stod conversion:\n" + line);
             }
           }
           if (line.find("SPACING") != std::string::npos &&
@@ -374,25 +374,25 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
               line.find("ENDOFLINE") == std::string::npos) {
             std::vector<std::string> spacing_field;
             StrSplit(line, spacing_field);
-            Assert(spacing_field.size() >= 2, "Invalid SPACING\n" + line);
+            DaliExpects(spacing_field.size() >= 2, "Invalid SPACING\n" + line);
             try {
               double spacing = std::stod(spacing_field[1]);
               metal_layer->SetSpacing(spacing);
             } catch (...) {
-              Assert(false, "Invalid stod conversion:\n" + line);
+              DaliExpects(false, "Invalid stod conversion:\n" + line);
             }
           }
           if (line.find("PITCH") != std::string::npos) {
             std::vector<std::string> pitch_field;
             StrSplit(line, pitch_field);
             int pch_sz = pitch_field.size();
-            Assert(pch_sz >= 2, "Invalid PITCH\n" + line);
+            DaliExpects(pch_sz >= 2, "Invalid PITCH\n" + line);
             if (pch_sz == 2) {
               try {
                 double pitch = std::stod(pitch_field[1]);
                 metal_layer->SetPitch(pitch, pitch);
               } catch (...) {
-                Assert(false, "Invalid stod conversion:\n" + line);
+                DaliExpects(false, "Invalid stod conversion:\n" + line);
               }
             } else {
               try {
@@ -400,7 +400,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
                 double y_pitch = std::stod(pitch_field[2]);
                 metal_layer->SetPitch(x_pitch, y_pitch);
               } catch (...) {
-                Assert(false, "Invalid stod conversion:\n" + line);
+                DaliExpects(false, "Invalid stod conversion:\n" + line);
               }
             }
           }
@@ -435,7 +435,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     if (line.find("MACRO") != std::string::npos) {
       std::vector<std::string> line_field;
       StrSplit(line, line_field);
-      Assert(line_field.size() >= 2, "Invalid type name: expecting 2 fields\n" + line);
+      DaliExpects(line_field.size() >= 2, "Invalid type name: expecting 2 fields\n" + line);
       std::string block_type_name = line_field[1];
       //BOOST_LOG_TRIVIAL(info)   << block_type_name << "\n";
       BlockType *new_block_type = nullptr;
@@ -452,7 +452,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
               width = (int) (std::round(std::stod(size_field[1]) / tech_.grid_value_x_));
               height = (int) (std::round(std::stod(size_field[3]) / tech_.grid_value_y_));
             } catch (...) {
-              Assert(false, "Invalid stod conversion:\n" + line);
+              DaliExpects(false, "Invalid stod conversion:\n" + line);
             }
             new_block_type = AddBlockTypeWithGridUnit(block_type_name, width, height);
             //BOOST_LOG_TRIVIAL(info)   << "  type width, height: " << new_block_type->Width() << " " << new_block_type->Height() << "\n";
@@ -464,7 +464,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
           std::vector<std::string> pin_field;
 
           StrSplit(line, pin_field);
-          Assert(pin_field.size() >= 2, "Invalid pin name: expecting 2 fields\n" + line);
+          DaliExpects(pin_field.size() >= 2, "Invalid pin name: expecting 2 fields\n" + line);
 
           std::string pin_name = pin_field[1];
           std::string end_pin_flag = "END " + pin_name;
@@ -484,22 +484,22 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
               //BOOST_LOG_TRIVIAL(info)   << line << "\n";
               std::vector<std::string> rect_field;
               StrSplit(line, rect_field);
-              Assert(rect_field.size() >= 5, "Invalid rect definition: expecting 5 fields\n" + line);
+              DaliExpects(rect_field.size() >= 5, "Invalid rect definition: expecting 5 fields\n" + line);
               try {
                 llx = std::stod(rect_field[1]) / tech_.grid_value_x_;
                 lly = std::stod(rect_field[2]) / tech_.grid_value_y_;
                 urx = std::stod(rect_field[3]) / tech_.grid_value_x_;
                 ury = std::stod(rect_field[4]) / tech_.grid_value_y_;
               } catch (...) {
-                Assert(false, "Invalid stod conversion:\n" + line);
+                DaliExpects(false, "Invalid stod conversion:\n" + line);
               }
               new_pin->AddRect(llx, lly, urx, ury);
             }
           } while (line.find(end_pin_flag) == std::string::npos && !ist.eof());
-          Assert(!new_pin->RectEmpty(), "Pin has no RECTs: " + *new_pin->Name());
+          DaliExpects(!new_pin->RectEmpty(), "Pin has no RECTs: " + *new_pin->Name());
         }
       } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
-      Assert(!new_block_type->Empty(), "MACRO has no PINs: " + *new_block_type->NamePtr());
+      DaliExpects(!new_block_type->Empty(), "MACRO has no PINs: " + *new_block_type->NamePtr());
     }
     getline(ist, line);
   }
@@ -513,7 +513,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
    * Please use other APIs to build a circuit if this naive def parser cannot satisfy your needs
    * ****/
   std::ifstream ist(name_of_file.c_str());
-  Assert(ist.is_open(), "Cannot open input file: " + name_of_file);
+  DaliExpects(ist.is_open(), "Cannot open input file: " + name_of_file);
   BOOST_LOG_TRIVIAL(info) << "Loading DEF file" << std::endl;
   std::string line;
 
@@ -530,13 +530,13 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       if (line.find("COMPONENTS") != std::string::npos) {
         std::vector<std::string> components_field;
         StrSplit(line, components_field);
-        Assert(components_field.size() == 2, "Improper use of COMPONENTS?\n" + line);
+        DaliExpects(components_field.size() == 2, "Improper use of COMPONENTS?\n" + line);
         try {
           components_count = std::stoi(components_field[1]);
           BOOST_LOG_TRIVIAL(info) << "COMPONENTS:  " << components_count << "\n";
           component_section_exist = true;
         } catch (...) {
-          Assert(false, "Invalid stoi conversion:\n" + line);
+          DaliExpects(false, "Invalid stoi conversion:\n" + line);
         }
       }
     }
@@ -544,13 +544,13 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       if (line.find("PINS") != std::string::npos) {
         std::vector<std::string> pins_field;
         StrSplit(line, pins_field);
-        Assert(pins_field.size() == 2, "Improper use of PINS?\n" + line);
+        DaliExpects(pins_field.size() == 2, "Improper use of PINS?\n" + line);
         try {
           pins_count = std::stoi(pins_field[1]);
           BOOST_LOG_TRIVIAL(info) << "PINS:  " << pins_count << "\n";
           pins_section_exist = true;
         } catch (...) {
-          Assert(false, "Invalid stoi conversion:\n" + line);
+          DaliExpects(false, "Invalid stoi conversion:\n" + line);
         }
       }
     }
@@ -558,13 +558,13 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       if ((line.find("NETS") != std::string::npos) && (line.find("SPECIALNETS") == std::string::npos)) {
         std::vector<std::string> nets_field;
         StrSplit(line, nets_field);
-        Assert(nets_field.size() == 2, "Improper use of NETS?\n" + line);
+        DaliExpects(nets_field.size() == 2, "Improper use of NETS?\n" + line);
         try {
           nets_count = std::stoi(nets_field[1]);
           BOOST_LOG_TRIVIAL(info) << "NETS:  " << nets_count << "\n";
           nets_section_exist = true;
         } catch (...) {
-          Assert(false, "Invalid stoi conversion:\n" + line);
+          DaliExpects(false, "Invalid stoi conversion:\n" + line);
         }
       }
     }
@@ -584,16 +584,16 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
     if (line.find("DISTANCE MICRONS") != std::string::npos) {
       std::vector<std::string> line_field;
       StrSplit(line, line_field);
-      Assert(line_field.size() >= 4, "Invalid UNITS declaration: expecting 4 fields");
+      DaliExpects(line_field.size() >= 4, "Invalid UNITS declaration: expecting 4 fields");
       try {
         design_.def_distance_microns = std::stoi(line_field[3]);
       } catch (...) {
-        Assert(false, "Invalid stoi conversion (UNITS DISTANCE MICRONS):\n" + line);
+        DaliExpects(false, "Invalid stoi conversion (UNITS DISTANCE MICRONS):\n" + line);
       }
     }
   }
-  Assert(design_.def_distance_microns > 0,
-         "Invalid/null UNITS DISTANCE MICRONS: " + std::to_string(design_.def_distance_microns));
+  DaliExpects(design_.def_distance_microns > 0,
+              "Invalid/null UNITS DISTANCE MICRONS: " + std::to_string(design_.def_distance_microns));
   //BOOST_LOG_TRIVIAL(info)   << "DISTANCE MICRONS " << def_distance_microns << "\n";
 
   // find DIEAREA
@@ -609,7 +609,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       std::vector<std::string> die_area_field;
       StrSplit(line, die_area_field);
       //BOOST_LOG_TRIVIAL(info)   << line << "\n";
-      Assert(die_area_field.size() >= 9, "Invalid UNITS declaration: expecting 9 fields");
+      DaliExpects(die_area_field.size() >= 9, "Invalid UNITS declaration: expecting 9 fields");
       try {
         def_left = (int) std::round(std::stoi(die_area_field[2]) / factor_x);
         def_bottom = (int) std::round(std::stoi(die_area_field[3]) / factor_y);
@@ -617,7 +617,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         def_top = (int) std::round(std::stoi(die_area_field[7]) / factor_y);
         SetBoundary(def_left, def_bottom, def_right, def_top);
       } catch (...) {
-        Assert(false, "Invalid stoi conversion (DIEAREA):\n" + line);
+        DaliExpects(false, "Invalid stoi conversion (DIEAREA):\n" + line);
       }
     }
   }
@@ -640,8 +640,8 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         getline(ist, line);
         continue;
       }
-      Assert(block_declare_field.size() >= 3,
-             "Invalid block declaration, expecting at least: - compName modelName ;\n" + line);
+      DaliExpects(block_declare_field.size() >= 3,
+                  "Invalid block declaration, expecting at least: - compName modelName ;\n" + line);
       //BOOST_LOG_TRIVIAL(info)   << block_declare_field[0] << " " << block_declare_field[1] << "\n";
       if (block_declare_field.size() == 3) {
         AddBlock(block_declare_field[1], block_declare_field[2], 0, 0, UNPLACED_, N_);
@@ -653,11 +653,11 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
           llx = (int) std::round(std::stoi(block_declare_field[6]) / factor_x);
           lly = (int) std::round(std::stoi(block_declare_field[7]) / factor_y);
         } catch (...) {
-          Assert(false, "Invalid stoi conversion:\n" + line);
+          DaliExpects(false, "Invalid stoi conversion:\n" + line);
         }
         AddBlock(block_declare_field[1], block_declare_field[2], llx, lly, place_status, orient);
       } else {
-        Assert(false, "Unknown block declaration!");
+        DaliExpects(false, "Unknown block declaration!");
       }
       getline(ist, line);
     }
@@ -703,7 +703,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         //BOOST_LOG_TRIVIAL(info)   << line << "\n";
         std::vector<std::string> net_field;
         StrSplit(line, net_field);
-        Assert(net_field.size() >= 2, "Invalid net declaration, expecting at least: - netName\n" + line);
+        DaliExpects(net_field.size() >= 2, "Invalid net declaration, expecting at least: - netName\n" + line);
         //BOOST_LOG_TRIVIAL(info)   << "\t" << net_field[0] << " " << net_field[1] << "\n";
         Net *new_net = nullptr;
         //BOOST_LOG_TRIVIAL(info)   << "Circuit::ReadDefFile(), this naive parser is broken, please do not use it\n";
@@ -722,7 +722,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
           std::vector<std::string> pin_field;
           StrSplit(line, pin_field);
           if ((pin_field.size() % 4 != 0)) {
-            Assert(false, "Invalid net declaration, expecting 4n fields, where n >= 2:\n" + line);
+            DaliExpects(false, "Invalid net declaration, expecting 4n fields, where n >= 2:\n" + line);
           }
           for (size_t i = 0; i < pin_field.size(); i += 4) {
             //BOOST_LOG_TRIVIAL(info)   << "     " << pin_field[i+1] << " " << pin_field[i+2];
@@ -739,7 +739,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
           if (line.find(';') != std::string::npos) break;
         }
         //Assert(!new_net->blk_pin_list.empty(), "Net " + net_field[1] + " has no blk_pin_pair");
-        Assert(!(new_net->blk_pin_list.empty()), "Canot add a net with no block-pin pair");
+        DaliExpects(!(new_net->blk_pin_list.empty()), "Canot add a net with no block-pin pair");
         //Warning(new_net->blk_pin_list.size() == 1, "Net " + net_field[1] + " has only one blk_pin_pair");
       }
       getline(ist, line);
@@ -750,7 +750,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
 
 void Circuit::ReadCellFile(std::string const &name_of_file) {
   std::ifstream ist(name_of_file.c_str());
-  Assert(ist.is_open(), "Cannot open input file: " + name_of_file);
+  DaliExpects(ist.is_open(), "Cannot open input file: " + name_of_file);
   BOOST_LOG_TRIVIAL(info) << "Loading CELL file: " << name_of_file << "\n";
   std::string line;
 
@@ -765,20 +765,20 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
         do {
           getline(ist, line);
           StrSplit(line, legalizer_fields);
-          Assert(legalizer_fields.size() == 2, "Expect: SPACING + Value, get: " + line);
+          DaliExpects(legalizer_fields.size() == 2, "Expect: SPACING + Value, get: " + line);
           if (legalizer_fields[0] == "SAME_DIFF_SPACING") {
             try {
               same_diff_spacing = std::stod(legalizer_fields[1]);
             } catch (...) {
               BOOST_LOG_TRIVIAL(info) << line << std::endl;
-              Assert(false, "Invalid stod conversion: " + legalizer_fields[1]);
+              DaliExpects(false, "Invalid stod conversion: " + legalizer_fields[1]);
             }
           } else if (legalizer_fields[0] == "ANY_DIFF_SPACING") {
             try {
               any_diff_spacing = std::stod(legalizer_fields[1]);
             } catch (...) {
               BOOST_LOG_TRIVIAL(info) << line << std::endl;
-              Assert(false, "Invalid stod conversion: " + legalizer_fields[1]);
+              DaliExpects(false, "Invalid stod conversion: " + legalizer_fields[1]);
             }
           }
         } while (line.find("END LEGALIZER") == std::string::npos && !ist.eof());
@@ -788,7 +788,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
         std::vector<std::string> well_fields;
         StrSplit(line, well_fields);
         bool is_n_well = (well_fields[1] == "nwell");
-        if (!is_n_well) Assert(well_fields[1] == "pwell", "Unknow N/P well type: " + well_fields[1]);
+        if (!is_n_well) DaliExpects(well_fields[1] == "pwell", "Unknow N/P well type: " + well_fields[1]);
         std::string end_layer_flag = "END " + well_fields[1];
         double width = 0;
         double spacing = 0;
@@ -802,7 +802,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
               width = std::stod(well_fields[1]);
             } catch (...) {
               BOOST_LOG_TRIVIAL(info) << line << std::endl;
-              Assert(false, "Invalid stod conversion: " + well_fields[1]);
+              DaliExpects(false, "Invalid stod conversion: " + well_fields[1]);
             }
           } else if (line.find("OPPOSPACING") != std::string::npos) {
             StrSplit(line, well_fields);
@@ -810,7 +810,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
               op_spacing = std::stod(well_fields[1]);
             } catch (...) {
               BOOST_LOG_TRIVIAL(info) << line << std::endl;
-              Assert(false, "Invalid stod conversion: " + well_fields[1]);
+              DaliExpects(false, "Invalid stod conversion: " + well_fields[1]);
             }
           } else if (line.find("SPACING") != std::string::npos) {
             StrSplit(line, well_fields);
@@ -818,7 +818,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
               spacing = std::stod(well_fields[1]);
             } catch (...) {
               BOOST_LOG_TRIVIAL(info) << line << std::endl;
-              Assert(false, "Invalid stod conversion: " + well_fields[1]);
+              DaliExpects(false, "Invalid stod conversion: " + well_fields[1]);
             }
           } else if (line.find("MAXPLUGDIST") != std::string::npos) {
             StrSplit(line, well_fields);
@@ -826,7 +826,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
               max_plug_dist = std::stod(well_fields[1]);
             } catch (...) {
               BOOST_LOG_TRIVIAL(info) << line << std::endl;
-              Assert(false, "Invalid stod conversion: " + well_fields[1]);
+              DaliExpects(false, "Invalid stod conversion: " + well_fields[1]);
             }
           } else if (line.find("MAXPLUGDIST") != std::string::npos) {
             StrSplit(line, well_fields);
@@ -834,7 +834,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
               overhang = std::stod(well_fields[1]);
             } catch (...) {
               BOOST_LOG_TRIVIAL(info) << line << std::endl;
-              Assert(false, "Invalid stod conversion: " + well_fields[1]);
+              DaliExpects(false, "Invalid stod conversion: " + well_fields[1]);
             }
           } else {}
           getline(ist, line);
@@ -872,7 +872,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
                 ux = std::stod(shape_fields[3]);
                 uy = std::stod(shape_fields[4]);
               } catch (...) {
-                Assert(false, "Invalid stod conversion:\n" + line);
+                DaliExpects(false, "Invalid stod conversion:\n" + line);
               }
               setWellRect(macro_fields[1], is_n, lx, ly, ux, uy);
             }
@@ -882,7 +882,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
       } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
     }
   }
-  Assert(!tech_.IsWellInfoSet(), "N/P well technology information not found!");
+  DaliExpects(!tech_.IsWellInfoSet(), "N/P well technology information not found!");
   //tech_->Report();
   //ReportWellShape();
 
@@ -891,9 +891,9 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
 
 void Circuit::setGridValue(double grid_value_x, double grid_value_y) {
   if (tech_.grid_set_) return;
-  Assert(grid_value_x > 0, "grid_value_x must be a positive real number! Circuit::setGridValue()");
-  Assert(grid_value_y > 0, "grid_value_y must be a positive real number! Circuit::setGridValue()");
-  Assert(!tech_.grid_set_, "once set, grid_value cannot be changed! Circuit::setGridValue()");
+  DaliExpects(grid_value_x > 0, "grid_value_x must be a positive real number! Circuit::setGridValue()");
+  DaliExpects(grid_value_y > 0, "grid_value_y must be a positive real number! Circuit::setGridValue()");
+  DaliExpects(!tech_.grid_set_, "once set, grid_value cannot be changed! Circuit::setGridValue()");
   //BOOST_LOG_TRIVIAL(info) << "  grid value x: " << grid_value_x << ", grid value y: " << grid_value_y << "\n";
   tech_.grid_value_x_ = grid_value_x;
   tech_.grid_value_y_ = grid_value_y;
@@ -901,8 +901,8 @@ void Circuit::setGridValue(double grid_value_x, double grid_value_y) {
 }
 
 void Circuit::setGridUsingMetalPitch() {
-  Assert(tech_.metal_list_.size() >= 2,
-         "No enough metal layer for determining grid value in x and y! Circuit::setGridUsingMetalPitch()");
+  DaliExpects(tech_.metal_list_.size() >= 2,
+              "No enough metal layer for determining grid value in x and y! Circuit::setGridUsingMetalPitch()");
   MetalLayer *hor_layer = nullptr;
   MetalLayer *ver_layer = nullptr;
   for (auto &metal_layer: tech_.metal_list_) {
@@ -913,15 +913,15 @@ void Circuit::setGridUsingMetalPitch() {
       ver_layer = &metal_layer;
     }
   }
-  Assert(hor_layer != nullptr, "Cannot find a horizontal metal layer! Circuit::setGridUsingMetalPitch()");
-  Assert(ver_layer != nullptr, "Cannot find a vertical metal layer! Circuit::setGridUsingMetalPitch()");
+  DaliExpects(hor_layer != nullptr, "Cannot find a horizontal metal layer! Circuit::setGridUsingMetalPitch()");
+  DaliExpects(ver_layer != nullptr, "Cannot find a vertical metal layer! Circuit::setGridUsingMetalPitch()");
   //BOOST_LOG_TRIVIAL(info)   << "vertical layer: " << *ver_layer->Name() << "  " << ver_layer->PitchX() << "\n";
   //BOOST_LOG_TRIVIAL(info)   << "horizontal layer: " << *hor_layer->Name() << "  " << hor_layer->PitchY() << "\n";
   setGridValue(ver_layer->PitchX(), hor_layer->PitchY());
 }
 
 MetalLayer *Circuit::AddMetalLayer(std::string &metal_name, double width, double spacing) {
-  Assert(!IsMetalLayerExist(metal_name), "MetalLayer exist, cannot create this MetalLayer again: " + metal_name);
+  DaliExpects(!IsMetalLayerExist(metal_name), "MetalLayer exist, cannot create this MetalLayer again: " + metal_name);
   int map_size = tech_.metal_name_map_.size();
   auto ret = tech_.metal_name_map_.insert(std::pair<std::string, int>(metal_name, map_size));
   std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
@@ -936,7 +936,7 @@ void Circuit::AddMetalLayer(std::string &metal_name,
                             double pitch_x,
                             double pitch_y,
                             MetalDirection metal_direction) {
-  Assert(!IsMetalLayerExist(metal_name), "MetalLayer exist, cannot create this MetalLayer again: " + metal_name);
+  DaliExpects(!IsMetalLayerExist(metal_name), "MetalLayer exist, cannot create this MetalLayer again: " + metal_name);
   int map_size = tech_.metal_name_map_.size();
   auto ret = tech_.metal_name_map_.insert(std::pair<std::string, int>(metal_name, map_size));
   std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
@@ -962,13 +962,13 @@ BlockTypeWell *Circuit::AddBlockTypeWell(BlockType *blk_type) {
 
 void Circuit::setWellRect(std::string &blk_type_name, bool is_N, double lx, double ly, double ux, double uy) {
   BlockType *blk_type_ptr = getBlockType(blk_type_name);
-  Assert(blk_type_ptr != nullptr, "Cannot find BlockType with name: " + blk_type_name);
+  DaliExpects(blk_type_ptr != nullptr, "Cannot find BlockType with name: " + blk_type_name);
   int lx_grid = int(std::round(lx / tech_.grid_value_x_));
   int ly_grid = int(std::round(ly / tech_.grid_value_y_));
   int ux_grid = int(std::round(ux / tech_.grid_value_x_));
   int uy_grid = int(std::round(uy / tech_.grid_value_y_));
   BlockTypeWell *well = blk_type_ptr->WellPtr();
-  Assert(well != nullptr, "Well uninitialized for BlockType: " + blk_type_name);
+  DaliExpects(well != nullptr, "Well uninitialized for BlockType: " + blk_type_name);
   well->setWellRect(is_N, lx_grid, ly_grid, ux_grid, uy_grid);
 }
 
@@ -979,8 +979,8 @@ void Circuit::ReportWellShape() {
 }
 
 BlockType *Circuit::AddBlockTypeWithGridUnit(std::string &block_type_name, int width, int height) {
-  Assert(!IsBlockTypeExist(block_type_name),
-         "BlockType exist, cannot create this block type again: " + block_type_name);
+  DaliExpects(!IsBlockTypeExist(block_type_name),
+              "BlockType exist, cannot create this block type again: " + block_type_name);
   auto ret = tech_.block_type_map_.insert(std::pair<std::string, BlockType *>(block_type_name, nullptr));
   auto tmp_ptr = new BlockType(&(ret.first->first), width, height);
   ret.first->second = tmp_ptr;
@@ -990,10 +990,10 @@ BlockType *Circuit::AddBlockTypeWithGridUnit(std::string &block_type_name, int w
 
 BlockType *Circuit::AddBlockType(std::string &block_type_name, double width, double height) {
   double residual = Residual(width, tech_.grid_value_x_);
-  Assert(residual < 1e-6, "BlockType width is not integer multiple of grid value in X: " + block_type_name);
+  DaliExpects(residual < 1e-6, "BlockType width is not integer multiple of grid value in X: " + block_type_name);
 
   residual = Residual(height, tech_.grid_value_y_);
-  Assert(residual < 1e-6, "BlockType height is not integer multiple of grid value in Y: " + block_type_name);
+  DaliExpects(residual < 1e-6, "BlockType height is not integer multiple of grid value in Y: " + block_type_name);
 
   int gridded_width = (int) std::round(width / tech_.grid_value_x_);
   int gridded_height = (int) std::round(height / tech_.grid_value_y_);
@@ -1001,12 +1001,12 @@ BlockType *Circuit::AddBlockType(std::string &block_type_name, double width, dou
 }
 
 void Circuit::SetBlockTypeSize(BlockType *blk_type_ptr, double width, double height) {
-  Assert(blk_type_ptr != nullptr, "Set size for an nullptr object?");
+  DaliExpects(blk_type_ptr != nullptr, "Set size for an nullptr object?");
   double residual = Residual(width, tech_.grid_value_x_);
-  Assert(residual < 1e-6, "BlockType width is not integer multiple of grid value in X: " + blk_type_ptr->Name());
+  DaliExpects(residual < 1e-6, "BlockType width is not integer multiple of grid value in X: " + blk_type_ptr->Name());
 
   residual = Residual(height, tech_.grid_value_y_);
-  Assert(residual < 1e-6, "BlockType height is not integer multiple of grid value in Y: " + blk_type_ptr->Name());
+  DaliExpects(residual < 1e-6, "BlockType height is not integer multiple of grid value in Y: " + blk_type_ptr->Name());
 
   int gridded_width = (int) std::round(width / GridValueX());
   int gridded_height = (int) std::round(height / GridValueY());
@@ -1022,10 +1022,10 @@ BlockType *Circuit::AddWellTapBlockTypeWithGridUnit(std::string &block_type_name
 
 BlockType *Circuit::AddWellTapBlockType(std::string &block_type_name, double width, double height) {
   double residual = Residual(width, tech_.grid_value_x_);
-  Assert(residual < 1e-6, "BlockType width is not integer multiple of grid value in X: " + block_type_name);
+  DaliExpects(residual < 1e-6, "BlockType width is not integer multiple of grid value in X: " + block_type_name);
 
   residual = Residual(height, tech_.grid_value_y_);
-  Assert(residual < 1e-6, "BlockType height is not integer multiple of grid value in Y: " + block_type_name);
+  DaliExpects(residual < 1e-6, "BlockType height is not integer multiple of grid value in Y: " + block_type_name);
 
   int gridded_width = (int) std::round(width / tech_.grid_value_x_);
   int gridded_height = (int) std::round(height / tech_.grid_value_y_);
@@ -1033,9 +1033,9 @@ BlockType *Circuit::AddWellTapBlockType(std::string &block_type_name, double wid
 }
 
 void Circuit::setListCapacity(int components_count, int pins_count, int nets_count) {
-  Assert(components_count >= 0, "Negative number of components?");
-  Assert(pins_count >= 0, "Negative number of IOPINs?");
-  Assert(nets_count >= 0, "Negative number of NETs?");
+  DaliExpects(components_count >= 0, "Negative number of components?");
+  DaliExpects(pins_count >= 0, "Negative number of IOPINs?");
+  DaliExpects(nets_count >= 0, "Negative number of NETs?");
   design_.block_list.reserve(components_count + pins_count);
   design_.iopin_list.reserve(pins_count);
   design_.net_list.reserve(nets_count);
@@ -1072,10 +1072,10 @@ void Circuit::AddBlock(std::string &block_name,
                        PlaceStatus place_status,
                        BlockOrient orient,
                        bool is_real_cel) {
-  Assert(design_.net_list.empty(), "Cannot add new Block, because net_list now is not empty");
-  Assert(design_.block_list.size() < design_.block_list.capacity(),
-         "Cannot add new Block, because block list is full");
-  Assert(!IsBlockExist(block_name), "Block exists, cannot create this block again: " + block_name);
+  DaliExpects(design_.net_list.empty(), "Cannot add new Block, because net_list now is not empty");
+  DaliExpects(design_.block_list.size() < design_.block_list.capacity(),
+              "Cannot add new Block, because block list is full");
+  DaliExpects(!IsBlockExist(block_name), "Block exists, cannot create this block again: " + block_name);
   int map_size = design_.block_name_map.size();
   auto ret = design_.block_name_map.insert(std::pair<std::string, int>(block_name, map_size));
   std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
@@ -1084,8 +1084,8 @@ void Circuit::AddBlock(std::string &block_name,
   // update statistics of blocks
   long int old_tot_area = design_.tot_blk_area_;
   design_.tot_blk_area_ += design_.block_list.back().Area();
-  Assert(old_tot_area < design_.tot_blk_area_,
-         "Total Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
+  DaliExpects(old_tot_area < design_.tot_blk_area_,
+              "Total Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
   design_.tot_width_ += design_.block_list.back().Width();
   design_.tot_height_ += design_.block_list.back().Height();
   if (is_real_cel) {
@@ -1095,8 +1095,8 @@ void Circuit::AddBlock(std::string &block_name,
     ++design_.tot_mov_blk_num_;
     old_tot_area = design_.tot_mov_block_area_;
     design_.tot_mov_block_area_ += design_.block_list.back().Area();
-    Assert(old_tot_area < design_.tot_mov_block_area_,
-           "Total Movable Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
+    DaliExpects(old_tot_area < design_.tot_mov_block_area_,
+                "Total Movable Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
     design_.tot_mov_width_ += design_.block_list.back().Width();
     design_.tot_mov_height_ += design_.block_list.back().Height();
   }
@@ -1142,8 +1142,8 @@ void Circuit::AddDummyIOPinBlockType() {
 }
 
 IOPin *Circuit::AddUnplacedIOPin(std::string &iopin_name) {
-  Assert(design_.net_list.empty(), "Cannot add new IOPIN, because net_list now is not empty");
-  Assert(!IsIOPinExist(iopin_name), "IOPin exists, cannot create this IOPin again: " + iopin_name);
+  DaliExpects(design_.net_list.empty(), "Cannot add new IOPIN, because net_list now is not empty");
+  DaliExpects(!IsIOPinExist(iopin_name), "IOPin exists, cannot create this IOPin again: " + iopin_name);
   int map_size = design_.iopin_name_map.size();
   auto ret = design_.iopin_name_map.insert(std::pair<std::string, int>(iopin_name, map_size));
   std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
@@ -1152,8 +1152,8 @@ IOPin *Circuit::AddUnplacedIOPin(std::string &iopin_name) {
 }
 
 IOPin *Circuit::AddPlacedIOPin(std::string &iopin_name, int lx, int ly) {
-  Assert(design_.net_list.empty(), "Cannot add new IOPIN, because net_list now is not empty");
-  Assert(!IsIOPinExist(iopin_name), "IOPin exists, cannot create this IOPin again: " + iopin_name);
+  DaliExpects(design_.net_list.empty(), "Cannot add new IOPIN, because net_list now is not empty");
+  DaliExpects(!IsIOPinExist(iopin_name), "IOPin exists, cannot create this IOPin again: " + iopin_name);
   int map_size = design_.iopin_name_map.size();
   auto ret = design_.iopin_name_map.insert(std::pair<std::string, int>(iopin_name, map_size));
   std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
@@ -1198,7 +1198,7 @@ Net *Circuit::AddNet(std::string &net_name, int capacity, double weight) {
    * @param capacity: maximum number of possible pins in this net
    * @param weight:   weight of this net
    * ****/
-  Assert(!IsNetExist(net_name), "Net exists, cannot create this net again: " + net_name);
+  DaliExpects(!IsNetExist(net_name), "Net exists, cannot create this net again: " + net_name);
   int map_size = design_.net_name_map.size();
   design_.net_name_map.insert(std::pair<std::string, int>(net_name, map_size));
   std::pair<const std::string, int> *name_num_pair_ptr = &(*design_.net_name_map.find(net_name));
@@ -1529,7 +1529,7 @@ double Circuit::HPWLCtoCY() {
 
 void Circuit::GenMATLABTable(std::string const &name_of_file, bool only_well_tap) {
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
   ost << RegionLLX() << "\t"
       << RegionURX() << "\t"
       << RegionURX() << "\t"
@@ -1578,7 +1578,7 @@ void Circuit::GenMATLABWellTable(std::string const &name_of_file, bool only_well
   GenMATLABTable(frame_file, only_well_tap);
 
   std::ofstream ost(unplug_file.c_str());
-  Assert(ost.is_open(), "Cannot open output file: " + unplug_file);
+  DaliExpects(ost.is_open(), "Cannot open output file: " + unplug_file);
 
   BlockTypeWell *well;
   RectI *n_well_shape, *p_well_shape;
@@ -1679,7 +1679,7 @@ void Circuit::GenMATLABWellTable(std::string const &name_of_file, bool only_well
 
 void Circuit::GenLongNetTable(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
   int multi_factor = 5;
   double threshold = multi_factor * AveBlkHeight();
@@ -1714,17 +1714,16 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
     file_name = name_of_file + "_trim.def";
   }
   if (is_complete_version) {
-    BOOST_LOG_TRIVIAL(info) << "Writing DEF file: ";
+    BOOST_LOG_TRIVIAL(info) << "Writing DEF file: " << file_name << "\n";
   } else {
-    BOOST_LOG_TRIVIAL(info) << "Writing trimmed DEF file (for debugging): ";
+    BOOST_LOG_TRIVIAL(info) << "Writing trimmed DEF file (for debugging): " << file_name << "\n";
   }
-  BOOST_LOG_TRIVIAL(info) << file_name;
 
   std::ofstream ost(file_name.c_str());
-  Assert(ost.is_open(), "Cannot open file " + file_name);
+  DaliExpects(ost.is_open(), "Cannot open file " + file_name);
 
   std::ifstream ist(def_file_name.c_str());
-  Assert(ist.is_open(), "Cannot open file " + def_file_name);
+  DaliExpects(ist.is_open(), "Cannot open file " + def_file_name);
 
   std::string line;
   // 1. print file header, copy from def file
@@ -1790,7 +1789,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   // 3. print PIN
   ost << "\n";
   ost << "PINS " << design_.iopin_list.size() << " ;\n";
-  Assert(!tech_.metal_list_.empty(), "Need metal layer info to generate PIN location\n");
+  DaliExpects(!tech_.metal_list_.empty(), "Need metal layer info to generate PIN location\n");
   std::string metal_name = *(tech_.metal_list_[0].Name());
   int half_width = std::ceil(tech_.metal_list_[0].MinHeight() / 2.0 * design_.def_distance_microns);
   int height = std::ceil(tech_.metal_list_[0].Width() * design_.def_distance_microns);
@@ -1847,7 +1846,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   ost.close();
   ist.close();
 
-  BOOST_LOG_TRIVIAL(info) << ", done\n";
+  BOOST_LOG_TRIVIAL(info) << "    DEF writing done\n";
 }
 
 void Circuit::SaveDefFile(std::string const &base_name,
@@ -1888,9 +1887,9 @@ void Circuit::SaveDefFile(std::string const &base_name,
   std::string file_name = base_name + name_padding + ".def";
   BOOST_LOG_TRIVIAL(info) << "Writing DEF file: " << file_name;
   std::ofstream ost(file_name.c_str());
-  Assert(ost.is_open(), "Cannot open file " + file_name);
+  DaliExpects(ost.is_open(), "Cannot open file " + file_name);
   std::ifstream ist(def_file_name.c_str());
-  Assert(ist.is_open(), "Cannot open file " + def_file_name);
+  DaliExpects(ist.is_open(), "Cannot open file " + def_file_name);
 
   using std::chrono::system_clock;
   system_clock::time_point today = system_clock::now();
@@ -2112,7 +2111,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       break;
     }
     default: {
-      Assert(false, "Invalid value setting for @param save_cell in Circuit::SaveDefFile()\n");
+      DaliExpects(false, "Invalid value setting for @param save_cell in Circuit::SaveDefFile()\n");
     }
 
   }
@@ -2126,7 +2125,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
     }
     case 1: { // save all IOPINs
       ost << "PINS " << design_.iopin_list.size() << " ;\n";
-      Assert(!tech_.metal_list_.empty(), "Need metal layer info to generate PIN location\n");
+      DaliExpects(!tech_.metal_list_.empty(), "Need metal layer info to generate PIN location\n");
       for (auto &iopin: design_.iopin_list) {
         ost << "- "
             << *iopin.Name()
@@ -2166,7 +2165,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
     }
     case 2: { // save all IOPINs with status before IO placement
       ost << "PINS " << design_.iopin_list.size() << " ;\n";
-      Assert(!tech_.metal_list_.empty(), "Need metal layer info to generate PIN location\n");
+      DaliExpects(!tech_.metal_list_.empty(), "Need metal layer info to generate PIN location\n");
       std::string metal_name = *(tech_.metal_list_[0].Name());
       int half_width = std::ceil(tech_.metal_list_[0].MinHeight() / 2.0 * design_.def_distance_microns);
       int height = std::ceil(tech_.metal_list_[0].Width() * design_.def_distance_microns);
@@ -2205,7 +2204,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       break;
     }
     default: {
-      Assert(false, "Invalid value setting for @param save_iopin in Circuit::SaveDefFile()\n");
+      DaliExpects(false, "Invalid value setting for @param save_iopin in Circuit::SaveDefFile()\n");
     }
   }
   ost << "END PINS\n\n";
@@ -2232,7 +2231,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       break;
     }
     case 2: { // save nets containing saved cells and IOPINs
-      Assert(false, "This part has not been implemented\n");
+      DaliExpects(false, "This part has not been implemented\n");
       break;
     }
     case 3: {// save power nets for well tap cell
@@ -2254,7 +2253,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
       break;
     }
     default: {
-      Assert(false, "Invalid value setting for @param save_net in Circuit::SaveDefFile()\n");
+      DaliExpects(false, "Invalid value setting for @param save_net in Circuit::SaveDefFile()\n");
     }
   }
   ost << "END NETS\n\n";
@@ -2270,10 +2269,10 @@ void Circuit::SaveIODefFile(std::string const &name_of_file, std::string const &
   BOOST_LOG_TRIVIAL(info) << "Writing IO DEF file: " << file_name;
 
   std::ofstream ost(file_name.c_str());
-  Assert(ost.is_open(), "Cannot open file " + file_name);
+  DaliExpects(ost.is_open(), "Cannot open file " + file_name);
 
   std::ifstream ist(def_file_name.c_str());
-  Assert(ist.is_open(), "Cannot open file " + def_file_name);
+  DaliExpects(ist.is_open(), "Cannot open file " + def_file_name);
 
   std::string line;
   // 1. print file header, copy from def file
@@ -2324,7 +2323,7 @@ void Circuit::SaveIODefFile(std::string const &name_of_file, std::string const &
   // 3. print PIN
   ost << "\n";
   ost << "PINS " << design_.iopin_list.size() << " ;\n";
-  Assert(!tech_.metal_list_.empty(), "Need metal layer info to generate PIN location\n");
+  DaliExpects(!tech_.metal_list_.empty(), "Need metal layer info to generate PIN location\n");
   std::string metal_name = *(tech_.metal_list_[0].Name());
   int half_width = std::ceil(tech_.metal_list_[0].MinHeight() / 2.0 * design_.def_distance_microns);
   int height = std::ceil(tech_.metal_list_[0].Width() * design_.def_distance_microns);
@@ -2383,10 +2382,10 @@ void Circuit::SaveIODefFile(std::string const &name_of_file, std::string const &
 void Circuit::SaveDefWell(std::string const &name_of_file, std::string const &def_file_name, bool is_no_normal_cell) {
   BOOST_LOG_TRIVIAL(info) << "Writing WellTap Network DEF file (for debugging): " << name_of_file;
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open file " + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open file " + name_of_file);
 
   std::ifstream ist(def_file_name.c_str());
-  Assert(ist.is_open(), "Cannot open file " + def_file_name);
+  DaliExpects(ist.is_open(), "Cannot open file " + def_file_name);
 
   std::string line;
   // 1. print file header, copy from def file
@@ -2474,10 +2473,10 @@ void Circuit::SaveDefPPNPWell(std::string const &name_of_file, std::string const
   std::string file_name = name_of_file + "_ppnpwell.def";
   BOOST_LOG_TRIVIAL(info) << "Writing PPNPWell DEF file (for debugging): " << file_name;
   std::ofstream ost(file_name.c_str());
-  Assert(ost.is_open(), "Cannot open file " + file_name);
+  DaliExpects(ost.is_open(), "Cannot open file " + file_name);
 
   std::ifstream ist(def_file_name.c_str());
-  Assert(ist.is_open(), "Cannot open file " + def_file_name);
+  DaliExpects(ist.is_open(), "Cannot open file " + def_file_name);
 
   std::string line;
   // 1. print file header, copy from def file
@@ -2541,7 +2540,7 @@ void Circuit::SaveInstanceDefFile(std::string const &name_of_file, std::string c
 
 void Circuit::SaveBookshelfNode(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open file " + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open file " + name_of_file);
   ost << "# this line is here just for ntuplace to recognize this file \n\n";
   ost << "NumNodes : \t\t" << design_.tot_mov_blk_num_ << "\n"
       << "NumTerminals : \t\t" << design_.block_list.size() - design_.tot_mov_blk_num_ << "\n";
@@ -2555,7 +2554,7 @@ void Circuit::SaveBookshelfNode(std::string const &name_of_file) {
 
 void Circuit::SaveBookshelfNet(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open file " + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open file " + name_of_file);
   int num_pins = 0;
   for (auto &net: design_.net_list) {
     num_pins += net.blk_pin_list.size();
@@ -2584,7 +2583,7 @@ void Circuit::SaveBookshelfNet(std::string const &name_of_file) {
 
 void Circuit::SaveBookshelfPl(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open file " + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open file " + name_of_file);
   ost << "# this line is here just for ntuplace to recognize this file \n\n";
   for (auto &node: design_.block_list) {
     ost << *node.NamePtr()
@@ -2603,7 +2602,7 @@ void Circuit::SaveBookshelfPl(std::string const &name_of_file) {
 
 void Circuit::SaveBookshelfScl(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open file " + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open file " + name_of_file);
 #ifdef USE_OPENDB
   if (db_ptr_ == nullptr) {
     BOOST_LOG_TRIVIAL(info)   << "During saving bookshelf .scl file. No ROW info has been found!";
@@ -2634,13 +2633,13 @@ void Circuit::SaveBookshelfScl(std::string const &name_of_file) {
 
 void Circuit::SaveBookshelfWts(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open file " + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open file " + name_of_file);
 }
 
 void Circuit::SaveBookshelfAux(std::string const &name_of_file) {
   std::string aux_name = name_of_file + ".aux";
   std::ofstream ost(aux_name.c_str());
-  Assert(ost.is_open(), "Cannot open file " + aux_name);
+  DaliExpects(ost.is_open(), "Cannot open file " + aux_name);
   ost << "RowBasedPlacement :  "
       << name_of_file << ".nodes  "
       << name_of_file << ".nets  "
@@ -2651,7 +2650,7 @@ void Circuit::SaveBookshelfAux(std::string const &name_of_file) {
 
 void Circuit::LoadBookshelfPl(std::string const &name_of_file) {
   std::ifstream ist(name_of_file.c_str());
-  Assert(ist.is_open(), "Cannot open file " + name_of_file);
+  DaliExpects(ist.is_open(), "Cannot open file " + name_of_file);
 
   std::string line;
   std::vector<std::string> res;
@@ -2668,7 +2667,7 @@ void Circuit::LoadBookshelfPl(std::string const &name_of_file) {
           ly = std::stod(res[2]) / tech_.grid_value_y_ / design_.def_distance_microns;
           getBlockPtr(res[0])->SetLoc(lx, ly);
         } catch (...) {
-          Assert(false, "Invalid stod conversion:\n\t" + line);
+          DaliExpects(false, "Invalid stod conversion:\n\t" + line);
         }
       }
     }
@@ -2722,7 +2721,7 @@ int Circuit::FindFirstNumber(std::string &str) {
   }
   if (res > 0) {
     for (int i = res + 1; i < sz; ++i) {
-      Assert(str[i] >= '0' && str[i] <= '9', "Invalid naming convention: " + str);
+      DaliExpects(str[i] >= '0' && str[i] <= '9', "Invalid naming convention: " + str);
     }
   }
   return res;

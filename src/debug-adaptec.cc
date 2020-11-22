@@ -21,7 +21,7 @@
 using namespace dali;
 
 int main(int argc, char **argv) {
-  init_logging_and_formatting(boost::log::trivial::info);
+  init_logging(boost::log::trivial::trace);
   Circuit circuit;
 
   //Act::Init(&argc, &argv);

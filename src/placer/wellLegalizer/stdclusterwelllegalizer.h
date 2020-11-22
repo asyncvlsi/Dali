@@ -191,7 +191,7 @@ class StdClusterWellLegalizer : public Placer {
   void CheckWellExistence();
 
   void SetRowHeight(int row_height) {
-    Assert(row_height > 0, "Setting row height to a negative value? StdClusterWellLegalizer::SetRowHeight()\n");
+    DaliExpects(row_height > 0, "Setting row height to a negative value? StdClusterWellLegalizer::SetRowHeight()\n");
     row_height_set_ = true;
     row_height_ = row_height;
   }

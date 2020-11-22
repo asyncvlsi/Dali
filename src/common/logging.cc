@@ -1,23 +1,31 @@
 //
-// Created by yihang on 11/20/20.
+// Created by yihang on 11/21/20.
 //
 
 #include "logging.h"
 
+namespace dali {
+
 namespace logging = boost::log;
 namespace keywords = boost::log::keywords;
 
-namespace dali {
-
-void init_logging_and_formatting(boost::log::trivial::severity_level sl) {
+void init_logging(boost::log::trivial::severity_level sl) {
   std::string base_name = "dali";
   std::string extension = ".log";
   std::string file_name;
-  for (int i = 0; i < 1024; ++i) {
-    file_name = base_name + std::to_string(i) + extension;
+
+  int upper_limits = 2048;
+  for (int i = 0; i < upper_limits; ++i) {
+    file_name += base_name;
+    file_name += std::to_string(i);
+    file_name += extension;
     if (!boost::filesystem::exists(file_name)) {
       break;
     }
+    file_name.clear();
+  }
+  if (file_name.empty()) {
+    file_name = "dali_out_of_bounds.log";
   }
 
   auto file_sink = logging::add_file_log

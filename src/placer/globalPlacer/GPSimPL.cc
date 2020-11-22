@@ -156,7 +156,7 @@ void GPSimPL::DriverLoadPairInit() {
       key.second = std::min(row, col);
       if (pair_map.find(key) == pair_map.end()) {
         BOOST_LOG_TRIVIAL(info) << row << " " << col << std::endl;
-        Assert(false, "Cannot find block pair in the database, something wrong happens\n");
+        DaliExpects(false, "Cannot find block pair in the database, something wrong happens\n");
       }
       int pair_index = pair_map[key];
       if (pair_list[pair_index].blk_num0 == row) {
@@ -195,7 +195,7 @@ void GPSimPL::DriverLoadPairInit() {
       key.second = std::min(row, col);
       if (pair_map.find(key) == pair_map.end()) {
         BOOST_LOG_TRIVIAL(info) << row << " " << col << std::endl;
-        Assert(false, "Cannot find block pair in the database, something wrong happens\n");
+        DaliExpects(false, "Cannot find block pair in the database, something wrong happens\n");
       }
       int pair_index = pair_map[key];
       if (pair_list[pair_index].blk_num0 == row) {
@@ -1205,8 +1205,7 @@ double GPSimPL::OptimizeQuadraticMetricX(double cg_stop_criterion) {
     if (eval_history.size() >= 3) {
       bool is_converge = IsSeriesConverge(eval_history, 3, cg_stop_criterion);
       if (is_converge) {
-        BOOST_LOG_TRIVIAL(info) << eval_history << "\n";
-        BOOST_LOG_TRIVIAL(info) << "  WeightedHPWLX converge\n";
+        BOOST_LOG_TRIVIAL(trace) << "      Metric optimization in X, sequence: " << eval_history << "\n";
         break;
       }
     }
@@ -1222,7 +1221,7 @@ double GPSimPL::OptimizeQuadraticMetricX(double cg_stop_criterion) {
   wall_time = get_wall_time() - wall_time;
   tot_loc_update_time_x += wall_time;
 
-  Assert(!eval_history.empty(), "Cannot return a valid value because the result is not evaluated!");
+  DaliExpects(!eval_history.empty(), "Cannot return a valid value because the result is not evaluated!");
   return eval_history.back();
 }
 
@@ -1252,8 +1251,7 @@ double GPSimPL::OptimizeQuadraticMetricY(double cg_stop_criterion) {
     if (eval_history.size() >= 3) {
       bool is_converge = IsSeriesConverge(eval_history, 3, cg_stop_criterion);
       if (is_converge) {
-        BOOST_LOG_TRIVIAL(info) << eval_history << "\n";
-        BOOST_LOG_TRIVIAL(info) << "  WeightedHPWLY converge\n";
+        BOOST_LOG_TRIVIAL(trace) << "      Metric optimization in Y, sequence: " << eval_history << "\n";
         break;
       }
     }
@@ -1268,7 +1266,7 @@ double GPSimPL::OptimizeQuadraticMetricY(double cg_stop_criterion) {
   wall_time = get_wall_time() - wall_time;
   tot_loc_update_time_y += wall_time;
 
-  Assert(!eval_history.empty(), "Cannot return a valid value because the result is not evaluated!");
+  DaliExpects(!eval_history.empty(), "Cannot return a valid value because the result is not evaluated!");
   return eval_history.back();
 }
 
@@ -1340,22 +1338,20 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
 
   std::vector<double> eval_history_x;
   for (int i = 0; i < b2b_update_max_iteration; ++i) {
+    BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
     BuildProblemX();
     double evaluate_result = OptimizeQuadraticMetricX(cg_stop_criterion_);
     eval_history_x.push_back(evaluate_result);
-    BOOST_LOG_TRIVIAL(info) << "Iterative net model update, WeightedHPWLX: " << evaluate_result << "\n";
     if (eval_history_x.size() >= 3) {
       bool is_converge = IsSeriesConverge(eval_history_x, 3, net_model_update_stop_criterion);
       if (is_converge) {
-        BOOST_LOG_TRIVIAL(info) << "Iterative net model update converge in X\n";
-        BOOST_LOG_TRIVIAL(info) << eval_history_x << "\n";
-        BOOST_LOG_TRIVIAL(debug) << "iterations x:     " << i << "\n";
+        BOOST_LOG_TRIVIAL(trace) << "  Optimization summary X, iterations x: " << i << ", " << eval_history_x << "\n";
         break;
       }
     }
   }
-  Assert(!eval_history_x.empty(),
-         "Cannot return a valid value because the result is not evaluated in GPSimPL::QuadraticPlacement()!");
+  DaliExpects(!eval_history_x.empty(),
+              "Cannot return a valid value because the result is not evaluated in GPSimPL::QuadraticPlacement()!");
   lower_bound_hpwlx_.push_back(eval_history_x.back());
 
   for (size_t i = 0; i < block_list.size(); ++i) {
@@ -1363,22 +1359,20 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
   }
   std::vector<double> eval_history_y;
   for (int i = 0; i < b2b_update_max_iteration; ++i) {
+    BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
     BuildProblemY();
     double evaluate_result = OptimizeQuadraticMetricY(cg_stop_criterion_);
     eval_history_y.push_back(evaluate_result);
-    BOOST_LOG_TRIVIAL(info) << "Iterative net model update, WeightedHPWLY: " << evaluate_result << "\n";
     if (eval_history_y.size() >= 3) {
       bool is_converge = IsSeriesConverge(eval_history_y, 3, net_model_update_stop_criterion);
       if (is_converge) {
-        BOOST_LOG_TRIVIAL(info) << "Iterative net model update converge in Y\n";
-        BOOST_LOG_TRIVIAL(info) << eval_history_y << "\n";
-        BOOST_LOG_TRIVIAL(debug) << "iterations y:     " << i << "\n";
+        BOOST_LOG_TRIVIAL(trace) << "  Optimization summary Y, iterations y: " << i << ", " << eval_history_y << "\n";
         break;
       }
     }
   }
-  Assert(!eval_history_y.empty(),
-         "Cannot return a valid value because the result is not evaluated in GPSimPL::QuadraticPlacement()!");
+  DaliExpects(!eval_history_y.empty(),
+              "Cannot return a valid value because the result is not evaluated in GPSimPL::QuadraticPlacement()!");
   lower_bound_hpwly_.push_back(eval_history_y.back());
 
   PullBlockBackToRegion();
@@ -2294,7 +2288,7 @@ void GPSimPL::RoughLegalBlkInBox(BoxBin &box) {
   if (span_x < 0) {
     BOOST_LOG_TRIVIAL(info) << span_x << "  " << index_loc_list.size() << "\n";
   }
-  assert(span_x > 0);
+  DaliExpects(span_x > 0, "Expect span_x > 0!");
   for (auto &pair: index_loc_list) {
     auto &block = block_list[pair.num];
     block.setCenterX((block.X() - min_x) / span_x * box_width + box.left);
@@ -2436,30 +2430,27 @@ bool GPSimPL::RecursiveBisectionBlkSpreading() {
   return true;
 }
 
-void GPSimPL::BackUpBlkLoc() {
+void GPSimPL::BackUpBlockLocation() {
   std::vector<Block> &block_list = circuit_->BlockListRef();
-  for (size_t i = 0; i < block_list.size(); ++i) {
+  size_t sz = block_list.size();
+  for (size_t i = 0; i < sz; ++i) {
     x_anchor[i] = block_list[i].LLX();
     y_anchor[i] = block_list[i].LLY();
   }
 }
 
-void GPSimPL::UpdateAnchorLoc() {
-  auto block_list = BlockList()->begin();
-  auto sz = BlockList()->size();
+void GPSimPL::UpdateAnchorLocation() {
+  std::vector<Block> &block_list = circuit_->BlockListRef();
+  size_t sz = block_list.size();
 
-  //double tmp_value;
   for (size_t i = 0; i < sz; ++i) {
-    //tmp_value = block_list[i].LLX();
-    //block_list[i].SetLLX(it_x_anchor[i]);
-    //it_x_anchor[i] = tmp_value;
-
-    //tmp_value = block_list[i].LLY();
-    //block_list[i].SetLLY(it_y_anchor[i]);
-    //it_y_anchor[i] = tmp_value;
-
+    double tmp_loc_x = x_anchor[i];
     x_anchor[i] = block_list[i].LLX();
+    block_list[i].setLLX(tmp_loc_x);
+
+    double tmp_loc_y = y_anchor[i];
     y_anchor[i] = block_list[i].LLY();
+    block_list[i].setLLY(tmp_loc_y);
   }
 
   x_anchor_set = true;
@@ -2480,8 +2471,8 @@ void GPSimPL::BuildProblemWithAnchorX() {
 
   double wall_time = get_wall_time();
 
-  auto block_list = BlockList()->begin();
-  auto sz = BlockList()->size();
+  std::vector<Block> &block_list = circuit_->BlockListRef();
+  size_t sz = block_list.size();
 
   double weight = 0;
   double pin_loc0, pin_loc1;
@@ -2515,8 +2506,8 @@ void GPSimPL::BuildProblemWithAnchorY() {
 
   double wall_time = get_wall_time();
 
-  auto block_list = BlockList()->begin();
-  auto sz = BlockList()->size();
+  std::vector<Block> &block_list = circuit_->BlockListRef();
+  size_t sz = block_list.size();
 
   double weight = 0;
   double pin_loc0, pin_loc1;
@@ -2543,11 +2534,11 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
   //BOOST_LOG_TRIVIAL(info)   << "total threads: " << avail_threads_num << "\n";
   double wall_time = get_wall_time();
 
-  BOOST_LOG_TRIVIAL(debug) << "alpha: " << alpha << "\n";
   std::vector<Block> &block_list = circuit_->BlockListRef();
 
-  UpdateAnchorLoc();
+  UpdateAnchorLocation();
   UpdateAnchorNetWeight();
+  BOOST_LOG_TRIVIAL(trace) << "alpha: " << alpha << "\n";
 
 #pragma omp parallel num_threads(std::min(omp_get_max_threads(), 2))
   {
@@ -2560,21 +2551,21 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
       }
       std::vector<double> eval_history_x;
       for (int i = 0; i < b2b_update_max_iteration; ++i) {
+        BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
         BuildProblemWithAnchorX();
         double evaluate_result = OptimizeQuadraticMetricX(cg_stop_criterion_);
         eval_history_x.push_back(evaluate_result);
-        BOOST_LOG_TRIVIAL(info) << "Iterative net model update, WeightedHPWLX: " << evaluate_result << "\n";
+        //BOOST_LOG_TRIVIAL(trace) << "\tIterative net model update, WeightedHPWLX: " << evaluate_result << "\n";
         if (eval_history_x.size() >= 3) {
           bool is_converge = IsSeriesConverge(eval_history_x, 3, net_model_update_stop_criterion);
           if (is_converge) {
-            BOOST_LOG_TRIVIAL(info) << eval_history_x << "\n";
-            BOOST_LOG_TRIVIAL(info) << "Iterative net model update converge in X\n";
+            BOOST_LOG_TRIVIAL(trace) << "  Optimization summary X, iterations x: " << i << ", " << eval_history_x << "\n";
             break;
           }
         }
       }
-      Assert(!eval_history_x.empty(),
-             "Cannot return a valid value because the result is not evaluated in GPSimPL::QuadraticPlacement()!");
+      DaliExpects(!eval_history_x.empty(),
+                  "Cannot return a valid value because the result is not evaluated in GPSimPL::QuadraticPlacement()!");
       lower_bound_hpwlx_.push_back(eval_history_x.back());
     }
     if (omp_get_thread_num() == 1 || omp_get_num_threads() == 1) {
@@ -2585,28 +2576,27 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
       }
       std::vector<double> eval_history_y;
       for (int i = 0; i < b2b_update_max_iteration; ++i) {
+        BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
         BuildProblemWithAnchorY();
         double evaluate_result = OptimizeQuadraticMetricY(cg_stop_criterion_);
         eval_history_y.push_back(evaluate_result);
-        BOOST_LOG_TRIVIAL(info) << "Iterative net model update, WeightedHPWLY: " << evaluate_result << "\n";
         if (eval_history_y.size() >= 3) {
           bool is_converge = IsSeriesConverge(eval_history_y, 3, net_model_update_stop_criterion);
           if (is_converge) {
-            BOOST_LOG_TRIVIAL(info) << eval_history_y << "\n";
-            BOOST_LOG_TRIVIAL(info) << "Iterative net model update converge in Y\n";
+            BOOST_LOG_TRIVIAL(trace) << "  Optimization summary Y, iterations y: " << i << ", " << eval_history_y << "\n";
             break;
           }
         }
       }
-      Assert(!eval_history_y.empty(),
-             "Cannot return a valid value because the result is not evaluated in GPSimPL::QuadraticPlacement()!");
+      DaliExpects(!eval_history_y.empty(),
+                  "Cannot return a valid value because the result is not evaluated in GPSimPL::QuadraticPlacement()!");
       lower_bound_hpwly_.push_back(eval_history_y.back());
     }
   }
 
   PullBlockBackToRegion();
 
-  BOOST_LOG_TRIVIAL(info) << "Quadratic Placement With Anchor Complete\n";
+  BOOST_LOG_TRIVIAL(debug) << "Quadratic Placement With Anchor Complete\n";
 
 //  for (size_t i = 0; i < 10; ++i) {
 //    BOOST_LOG_TRIVIAL(info)   << vx[i] << "  " << vy[i] << "\n";
@@ -2616,14 +2606,14 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
   tot_cg_time += wall_time;
   omp_set_nested(0);
 
-  if (is_dump) DumpResult("cg_result_" + std::to_string(cur_iter_ + 1) + ".txt");
+  if (is_dump) DumpResult("cg_result_" + std::to_string(cur_iter_) + ".txt");
   return lower_bound_hpwlx_.back() + lower_bound_hpwly_.back();
 }
 
 double GPSimPL::LookAheadLegalization() {
   double cpu_time = get_cpu_time();
 
-  //BackUpBlkLoc();
+  BackUpBlockLocation();
   ClearGridBinFlag();
   do {
     UpdateGridBinState();
@@ -2637,18 +2627,18 @@ double GPSimPL::LookAheadLegalization() {
   upper_bound_hpwlx_.push_back(evaluate_result_x);
   double evaluate_result_y = WeightedHPWLY();
   upper_bound_hpwly_.push_back(evaluate_result_y);
-  BOOST_LOG_TRIVIAL(info) << "Look-ahead legalization complete\n";
+  BOOST_LOG_TRIVIAL(debug) << "Look-ahead legalization complete\n";
 
   cpu_time = get_cpu_time() - cpu_time;
   tot_lal_time += cpu_time;
 
   if (is_dump) DumpResult("lal_result_" + std::to_string(cur_iter_) + ".txt");
 
-  BOOST_LOG_TRIVIAL(info) << "(UpdateGridBinState time: " << UpdateGridBinState_time << "s)\n";
-  BOOST_LOG_TRIVIAL(info) << "(UpdateClusterList time: " << UpdateClusterList_time << "s)\n";
-  BOOST_LOG_TRIVIAL(info) << "(FindMinimumBoxForLargestCluster time: " << FindMinimumBoxForLargestCluster_time
-                          << "s)\n";
-  BOOST_LOG_TRIVIAL(info) << "(RecursiveBisectionBlkSpreading time: " << RecursiveBisectionBlkSpreading_time << "s)\n";
+  BOOST_LOG_TRIVIAL(debug) << "(UpdateGridBinState time: " << UpdateGridBinState_time << "s)\n";
+  BOOST_LOG_TRIVIAL(debug) << "(UpdateClusterList time: " << UpdateClusterList_time << "s)\n";
+  BOOST_LOG_TRIVIAL(debug) << "(FindMinimumBoxForLargestCluster time: " << FindMinimumBoxForLargestCluster_time
+                           << "s)\n";
+  BOOST_LOG_TRIVIAL(debug) << "(RecursiveBisectionBlkSpreading time: " << RecursiveBisectionBlkSpreading_time << "s)\n";
 
   return evaluate_result_x + evaluate_result_y;
 }
@@ -2726,7 +2716,7 @@ bool GPSimPL::IsPlacementConverge() {
       res = (lower_bound < upper_bound) && (upper_bound / lower_bound - 1 < polar_converge_criterion_);
     }
   } else {
-    Assert(false, "Unknown Convergence Criteria!");
+    DaliExpects(false, "Unknown Convergence Criteria!");
   }
 
   return res;
@@ -2736,8 +2726,8 @@ bool GPSimPL::StartPlacement() {
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
 
-  BOOST_LOG_TRIVIAL(info) << "---------------------------------------\n"
-                          << "Start global placement\n";
+  BOOST_LOG_TRIVIAL(info) << "---------------------------------------\n";
+  BOOST_LOG_TRIVIAL(info) << "Start global placement\n";
 
   SanityCheck();
   CGInit();
@@ -2749,23 +2739,34 @@ bool GPSimPL::StartPlacement() {
   }
 
   if (NetList()->empty()) {
-    BOOST_LOG_TRIVIAL(info) << "Net list empty\n"
-                            << "\033[0;36m"
-                            << "Global Placement complete\n"
-                            << "\033[0m";
+    BOOST_LOG_TRIVIAL(info) << "Net list empty\n";
+    BOOST_LOG_TRIVIAL(info) << "\033[0;36m Global Placement complete\033[0m\n";
     return true;
   }
 
+  // initial placement
+  BOOST_LOG_TRIVIAL(debug) << cur_iter_ << "-th iteration\n";
   double eval_res = QuadraticPlacement(net_model_update_stop_criterion_);
   lower_bound_hpwl_.push_back(eval_res);
+  eval_res = LookAheadLegalization();
+  upper_bound_hpwl_.push_back(eval_res);
+  BOOST_LOG_TRIVIAL(info) << "It " << cur_iter_ << ": \t"
+                          << std::scientific << std::setprecision(4)
+                          << lower_bound_hpwl_.back() << " "
+                          << upper_bound_hpwl_.back() << "\n";
 
-  for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
-    BOOST_LOG_TRIVIAL(info) << cur_iter_ << "-th iteration\n";
+  for (cur_iter_ = 1; cur_iter_ < max_iter_; ++cur_iter_) {
+    BOOST_LOG_TRIVIAL(debug) << "----------------------------------------------\n";
+    BOOST_LOG_TRIVIAL(debug) << cur_iter_ << "-th iteration\n";
+
+    eval_res = QuadraticPlacementWithAnchor(net_model_update_stop_criterion_);
+    lower_bound_hpwl_.push_back(eval_res);
 
     eval_res = LookAheadLegalization();
     upper_bound_hpwl_.push_back(eval_res);
 
     BOOST_LOG_TRIVIAL(info) << "It " << cur_iter_ << ": \t"
+                            << std::scientific << std::setprecision(4)
                             << lower_bound_hpwl_.back() << " "
                             << upper_bound_hpwl_.back() << "\n";
 
@@ -2774,18 +2775,13 @@ bool GPSimPL::StartPlacement() {
       BOOST_LOG_TRIVIAL(info) << "Total number of iteration: " << cur_iter_ + 1 << "\n";
       break;
     }
-
-    eval_res = QuadraticPlacementWithAnchor(net_model_update_stop_criterion_);
-    lower_bound_hpwl_.push_back(eval_res);
   }
   int num_it = lower_bound_hpwl_.size();
   BOOST_LOG_TRIVIAL(info) << "Random init: " << init_hpwl_ << "\n";
-  BOOST_LOG_TRIVIAL(info) << "Lower bound: " << lower_bound_hpwl_ << "\n";
-  BOOST_LOG_TRIVIAL(info) << "Upper bound: " << upper_bound_hpwl_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Lower bound:\n  " << lower_bound_hpwl_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Upper bound:\n  " << upper_bound_hpwl_ << "\n";
 
-  BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
-                          << "Global Placement complete\n"
-                          << "\033[0m";
+  BOOST_LOG_TRIVIAL(info) << "\033[0;36m Global Placement complete\033[0m\n";
   BOOST_LOG_TRIVIAL(info) << "(cg time: " << tot_cg_time << "s, lal time: " << tot_lal_time << "s)\n";
   BOOST_LOG_TRIVIAL(info) << "total triplets time: "
                           << tot_triplets_time_x << "s, "
@@ -2834,7 +2830,7 @@ void GPSimPL::DumpResult(std::string const &name_of_file) {
 
 void GPSimPL::DrawBlockNetList(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open input file " + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open input file " + name_of_file);
   ost << RegionLeft() << " " << RegionBottom() << " " << RegionRight() - RegionLeft() << " "
       << RegionTop() - RegionBottom() << "\n";
   std::vector<Block> &block_list = circuit_->BlockListRef();
@@ -2847,7 +2843,7 @@ void GPSimPL::DrawBlockNetList(std::string const &name_of_file) {
 void GPSimPL::write_all_terminal_grid_bins(std::string const &name_of_file) {
   /* this is a member function for testing, print grid bins where the flag "all_terminal" is true */
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open file" + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
   for (auto &bin_column: grid_bin_matrix) {
     for (auto &bin: bin_column) {
       double low_x, low_y, width, height;
@@ -2875,7 +2871,7 @@ void GPSimPL::write_all_terminal_grid_bins(std::string const &name_of_file) {
 void GPSimPL::write_not_all_terminal_grid_bins(std::string const &name_of_file) {
   /* this is a member function for testing, print grid bins where the flag "all_terminal" is false */
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open file" + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
   for (auto &bin_column: grid_bin_matrix) {
     for (auto &bin: bin_column) {
       double low_x, low_y, width, height;
@@ -2903,7 +2899,7 @@ void GPSimPL::write_not_all_terminal_grid_bins(std::string const &name_of_file) 
 void GPSimPL::write_overfill_grid_bins(std::string const &name_of_file) {
   /* this is a member function for testing, print grid bins where the flag "over_fill" is true */
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open file" + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
   for (auto &bin_column: grid_bin_matrix) {
     for (auto &bin: bin_column) {
       double low_x, low_y, width, height;
@@ -2931,7 +2927,7 @@ void GPSimPL::write_overfill_grid_bins(std::string const &name_of_file) {
 void GPSimPL::write_not_overfill_grid_bins(std::string const &name_of_file) {
   /* this is a member function for testing, print grid bins where the flag "over_fill" is false */
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open file" + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
   for (auto &bin_column: grid_bin_matrix) {
     for (auto &bin: bin_column) {
       double low_x, low_y, width, height;
@@ -2959,7 +2955,7 @@ void GPSimPL::write_not_overfill_grid_bins(std::string const &name_of_file) {
 void GPSimPL::write_first_n_bin_cluster(std::string const &name_of_file, size_t n) {
   /* this is a member function for testing, print the first n over_filled clusters */
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open file" + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
   for (size_t i = 0; i < n; i++) {
     for (auto &index: cluster_list[i].bin_set) {
       double low_x, low_y, width, height;
@@ -2991,7 +2987,7 @@ void GPSimPL::write_first_bin_cluster(std::string const &name_of_file) {
 
 void GPSimPL::write_n_bin_cluster(std::string const &name_of_file, size_t n) {
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open file" + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
   for (auto &index: cluster_list[n].bin_set) {
     double low_x, low_y, width, height;
     GridBin *GridBin = &grid_bin_matrix[index.x][index.y];
@@ -3022,7 +3018,7 @@ void GPSimPL::write_all_bin_cluster(const std::string &name_of_file) {
 void GPSimPL::write_first_box(std::string const &name_of_file) {
   /* this is a member function for testing, print the first n over_filled clusters */
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open file" + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
   double low_x, low_y, width, height;
   BoxBin *R = &queue_box_bin.front();
   width = (R->ur_index.x - R->ll_index.x + 1) * grid_bin_width;
@@ -3044,7 +3040,7 @@ void GPSimPL::write_first_box(std::string const &name_of_file) {
 void GPSimPL::write_first_box_cell_bounding(std::string const &name_of_file) {
   /* this is a member function for testing, print the bounding box of cells in which all cells should be placed into corresponding boxes */
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open file" + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
   double low_x, low_y, width, height;
   BoxBin *R = &queue_box_bin.front();
   width = R->ur_point.x - R->ll_point.x;
@@ -3074,7 +3070,7 @@ bool GPSimPL::IsSeriesConverge(std::vector<double> &data, int window_size, doubl
     max_val = std::max(max_val, data[sz - 1 - i]);
     min_val = std::min(min_val, data[sz - 1 - i]);
   }
-  Assert(max_val >= 0 && min_val >= 0, "Do not support negative data series!");
+  DaliExpects(max_val >= 0 && min_val >= 0, "Do not support negative data series!");
   if (max_val < 1e-10 && min_val <= 1e-10) {
     return true;
   }

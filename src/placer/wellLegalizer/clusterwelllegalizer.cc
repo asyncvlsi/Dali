@@ -27,7 +27,7 @@ void ClusterWellLegalizer::InitializeClusterLegalizer() {
 
   // parameters fetching
   auto tech_params = circuit_->getTech();
-  Assert(tech_params != nullptr, "No tech info found, well legalization cannot proceed!\n");
+  DaliExpects(tech_params != nullptr, "No tech info found, well legalization cannot proceed!\n");
   auto n_well_layer = tech_params->GetNLayer();
   auto p_well_layer = tech_params->GetPLayer();
   well_extension_x = std::ceil(n_well_layer->Overhang() / circuit_->GridValueX());
@@ -969,7 +969,7 @@ void ClusterWellLegalizer::GenMatlabClusterTable(std::string const &name_of_file
 
   std::string cluster_file = name_of_file + "_cluster.txt";
   std::ofstream ost(cluster_file.c_str());
-  Assert(ost.is_open(), "Cannot open output file: " + cluster_file);
+  DaliExpects(ost.is_open(), "Cannot open output file: " + cluster_file);
 
   for (auto &cluster: cluster_set_) {
     ost << cluster->LLX() << "\t"

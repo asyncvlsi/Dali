@@ -151,8 +151,8 @@ void FreeSegmentList::RemoveSeg(FreeSegment *seg_in_list) { // don't remove, tra
   *    c). if the segment to remove has real prev and next, i.e., not nullptr, remove this segment,
   *        and connect its prev with its next
   ****/
-  Assert(seg_in_list != nullptr, "Remove Empty pointer? Be careful, you can only remove nodes in the linked list");
-  Assert(!Empty(), "Nothing to remove from an Empty list!");
+  DaliExpects(seg_in_list != nullptr, "Remove Empty pointer? Be careful, you can only remove nodes in the linked list");
+  DaliExpects(!Empty(), "Nothing to remove from an Empty list!");
   FreeSegment *current = seg_in_list;
   if (size() == 1) {
     head_ = nullptr;
@@ -272,7 +272,7 @@ int FreeSegmentList::MinDispLoc(int llx, int width) {
    * We assume any segment in this list has a length longer than block width
    * llx is not used now, might be used in the future
    * ****/
-  Assert(Head()->Length() >= width, "Segment length should be longer than block width");
+  DaliExpects(Head()->Length() >= width, "Segment length should be longer than block width");
   return Head()->Start();
 }
 

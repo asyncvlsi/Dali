@@ -51,13 +51,13 @@ class IOPin {
   double Y() const { return ly_; }
 
   void SetNet(Net *net_ptr) {
-    Assert(net_ptr != nullptr, "Cannot set @param net_ptr to nullptr in function: IOPin::SetNet()");
+    DaliExpects(net_ptr != nullptr, "Cannot set @param net_ptr to nullptr in function: IOPin::SetNet()");
     net_ptr_ = net_ptr;
   }
   void SetDirection(SignalDirection direction) { direction_ = direction; }
   void SetUse(SignalUse use) { use_ = use; }
   void SetLayer(MetalLayer *layer_ptr) {
-    Assert(layer_ptr != nullptr, "Cannot set @param layer_ptr to nullptr in function: IOPin::SetLayer()");
+    DaliExpects(layer_ptr != nullptr, "Cannot set @param layer_ptr to nullptr in function: IOPin::SetLayer()");
     layer_ptr_ = layer_ptr;
   }
   void SetRect(double llx, double lly, double urx, double ury) {

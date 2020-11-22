@@ -245,7 +245,7 @@ StdClusterWellLegalizer::StdClusterWellLegalizer() {
 void StdClusterWellLegalizer::CheckWellExistence() {
   for (auto &blk: *(circuit_->getBlockList())) {
     if (blk.IsMovable()) {
-      Assert(blk.TypePtr()->WellPtr() != nullptr, "Cannot find well info for cell: " + blk.Name());
+      DaliExpects(blk.TypePtr()->WellPtr() != nullptr, "Cannot find well info for cell: " + blk.Name());
     }
   }
 }
@@ -336,7 +336,7 @@ void StdClusterWellLegalizer::InitAvailSpace() {
 
 void StdClusterWellLegalizer::FetchNPWellParams() {
   auto tech = circuit_->getTech();
-  Assert(tech != nullptr, "No tech info found, well legalization cannot proceed!\n");
+  DaliExpects(tech != nullptr, "No tech info found, well legalization cannot proceed!\n");
 
   auto n_well_layer = tech->GetNLayer();
   int same_well_spacing = std::ceil(n_well_layer->Spacing() / circuit_->GridValueX());
@@ -344,8 +344,8 @@ void StdClusterWellLegalizer::FetchNPWellParams() {
   well_spacing_ = std::max(same_well_spacing, op_well_spacing);
   max_unplug_length_ = (int) std::floor(n_well_layer->MaxPlugDist() / circuit_->GridValueX());
   well_tap_cell_ = tech->WellTapCell();
-  Assert(well_tap_cell_ != nullptr,
-         "Cannot find the definition of well tap cell, well legalization cannot proceed\n");
+  DaliExpects(well_tap_cell_ != nullptr,
+              "Cannot find the definition of well tap cell, well legalization cannot proceed\n");
   well_tap_cell_width_ = tech->WellTapCell()->Width();
 
   BOOST_LOG_TRIVIAL(info) << "Well max plug distance: "
@@ -1490,7 +1490,7 @@ void StdClusterWellLegalizer::GenMatlabClusterTable(std::string const &name_of_f
 
   std::string cluster_file = name_of_file + "_cluster.txt";
   std::ofstream ost(cluster_file.c_str());
-  Assert(ost.is_open(), "Cannot open output file: " + cluster_file);
+  DaliExpects(ost.is_open(), "Cannot open output file: " + cluster_file);
 
   for (auto &col:col_list_) {
     for (auto &strip: col.strip_list_) {
@@ -1514,11 +1514,11 @@ void StdClusterWellLegalizer::GenMATLABWellTable(std::string const &name_of_file
 
   std::string p_file = name_of_file + "_pwell.txt";
   std::ofstream ostp(p_file.c_str());
-  Assert(ostp.is_open(), "Cannot open output file: " + p_file);
+  DaliExpects(ostp.is_open(), "Cannot open output file: " + p_file);
 
   std::string n_file = name_of_file + "_nwell.txt";
   std::ofstream ostn(n_file.c_str());
-  Assert(ostn.is_open(), "Cannot open output file: " + n_file);
+  DaliExpects(ostn.is_open(), "Cannot open output file: " + n_file);
 
   for (auto &col: col_list_) {
     for (auto &strip: col.strip_list_) {
@@ -1585,11 +1585,11 @@ void StdClusterWellLegalizer::GenMATLABWellTable(std::string const &name_of_file
 void StdClusterWellLegalizer::GenPPNP(const std::string &name_of_file) {
   std::string np_file = name_of_file + "_np.txt";
   std::ofstream ostnp(np_file.c_str());
-  Assert(ostnp.is_open(), "Cannot open output file: " + np_file);
+  DaliExpects(ostnp.is_open(), "Cannot open output file: " + np_file);
 
   std::string pp_file = name_of_file + "_pp.txt";
   std::ofstream ostpp(pp_file.c_str());
-  Assert(ostpp.is_open(), "Cannot open output file: " + pp_file);
+  DaliExpects(ostpp.is_open(), "Cannot open output file: " + pp_file);
 
   int adjust_width = well_tap_cell_->Width();
 
@@ -1667,7 +1667,7 @@ void StdClusterWellLegalizer::GenPPNP(const std::string &name_of_file) {
         well_tap_top_bottom_list.push_back(RegionBottom());
         std::reverse(well_tap_top_bottom_list.begin(), well_tap_top_bottom_list.end());
       }
-      Assert(well_tap_top_bottom_list.size() % 2 == 0, "Impossible to get an even number of well tap cell edges");
+      DaliExpects(well_tap_top_bottom_list.size() % 2 == 0, "Impossible to get an even number of well tap cell edges");
 
       is_p_well_rect = strip.is_first_row_orient_N_;
       int lx0 = strip.LLX();
@@ -1749,7 +1749,7 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
   BOOST_LOG_TRIVIAL(info) << "Writing PP and NP rect file: " << name_of_file;
 
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
   double factor_x = circuit_->getDesign()->def_distance_microns * circuit_->getTech()->grid_value_x_;
   double factor_y = circuit_->getDesign()->def_distance_microns * circuit_->getTech()->grid_value_y_;
@@ -1827,7 +1827,7 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
         well_tap_top_bottom_list.push_back(RegionBottom());
         std::reverse(well_tap_top_bottom_list.begin(), well_tap_top_bottom_list.end());
       }
-      Assert(well_tap_top_bottom_list.size() % 2 == 0, "Impossible to get an even number of well tap cell edges");
+      DaliExpects(well_tap_top_bottom_list.size() % 2 == 0, "Impossible to get an even number of well tap cell edges");
 
       is_p_well_rect = strip.is_first_row_orient_N_;
       int lx0 = strip.LLX();
@@ -1877,11 +1877,11 @@ void StdClusterWellLegalizer::EmitWellRect(std::string const &name_of_file, int 
       break;
     case 2:BOOST_LOG_TRIVIAL(info) << "emit P wells, ";
       break;
-    default:Assert(false, "Invalid value for well_emit_mode in StdClusterWellLegalizer::EmitDEFWellFile()");
+    default:DaliExpects(false, "Invalid value for well_emit_mode in StdClusterWellLegalizer::EmitDEFWellFile()");
   }
 
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
   double factor_x = circuit_->getDesign()->def_distance_microns * circuit_->getTech()->grid_value_x_;
   double factor_y = circuit_->getDesign()->def_distance_microns * circuit_->getTech()->grid_value_y_;
@@ -1947,7 +1947,7 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
 
   BOOST_LOG_TRIVIAL(info) << "Writing cluster rect file: " << name_of_file << " for router, ";
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
   double factor_x = circuit_->getDesign()->def_distance_microns * circuit_->getTech()->grid_value_x_;
   double factor_y = circuit_->getDesign()->def_distance_microns * circuit_->getTech()->grid_value_y_;
@@ -1995,7 +1995,7 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
 
 void StdClusterWellLegalizer::GenAvailSpace(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
   ost << RegionLeft() << "\t"
       << RegionRight() << "\t"
       << RegionRight() << "\t"
@@ -2042,7 +2042,7 @@ void StdClusterWellLegalizer::GenAvailSpace(std::string const &name_of_file) {
 
 void StdClusterWellLegalizer::GenAvailSpaceInCols(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
   ost << RegionLeft() << "\t"
       << RegionRight() << "\t"
       << RegionRight() << "\t"
@@ -2091,7 +2091,7 @@ void StdClusterWellLegalizer::GenAvailSpaceInCols(std::string const &name_of_fil
 
 void StdClusterWellLegalizer::GenSimpleStrips(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
   ost << RegionLeft() << "\t"
       << RegionRight() << "\t"
       << RegionRight() << "\t"

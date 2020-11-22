@@ -17,7 +17,7 @@ void TetrisLegalizer::InitLegalizer() {
 }
 
 void TetrisLegalizer::SetMaxItr(int max_iteration) {
-  Assert(max_iteration > 0, "Invalid max_iteration value, value must be greater than 0");
+  DaliExpects(max_iteration > 0, "Invalid max_iteration value, value must be greater than 0");
   max_iteration_ = max_iteration;
 }
 

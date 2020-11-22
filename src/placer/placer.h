@@ -36,7 +36,7 @@ class Placer {
   virtual ~Placer();
 
   virtual void SetInputCircuit(Circuit *circuit) {
-    Assert(circuit != nullptr, "Invalid input circuit: not allowed to set nullptr as an input!");
+    DaliExpects(circuit != nullptr, "Invalid input circuit: not allowed to set nullptr as an input!");
     if (circuit->getBlockList()->empty()) {
       BOOST_LOG_TRIVIAL(info) << "Invalid input circuit: empty block list, nothing to place!\n";
       return;
@@ -49,17 +49,17 @@ class Placer {
   }
   Circuit *GetCircuit() { return circuit_; }
   void SetFillingRate(double rate = 2.0 / 3.0) {
-    Assert((rate <= 1) && (rate > 0), "Invalid value: value should be in range (0, 1]");
+    DaliExpects((rate <= 1) && (rate > 0), "Invalid value: value should be in range (0, 1]");
     filling_rate_ = rate;
   }
   double FillingRate() const { return filling_rate_; }
   void SetAspectRatio(double ratio = 1.0) {
-    Assert(ratio >= 0, "Invalid value: value should be in range (0, +infinity)");
+    DaliExpects(ratio >= 0, "Invalid value: value should be in range (0, +infinity)");
     aspect_ratio_ = ratio;
   }
   double AspectRatio() const { return aspect_ratio_; }
   void SetSpaceBlockRatio(double ratio) {
-    Assert(ratio >= 1, "Invalid value: value should be in range [1, +infinity)");
+    DaliExpects(ratio >= 1, "Invalid value: value should be in range [1, +infinity)");
     filling_rate_ = 1. / ratio;
   }
 
@@ -81,26 +81,26 @@ class Placer {
 
   void UpdateAspectRatio();
   void NetSortBlkPin() {
-    Assert(circuit_ != nullptr, "No input circuit specified, cannot modify any circuits!");
+    DaliExpects(circuit_ != nullptr, "No input circuit specified, cannot modify any circuits!");
     GetCircuit()->NetSortBlkPin();
   }
   virtual bool StartPlacement() = 0;
 
   double WeightedHPWLX() {
-    Assert(circuit_ != nullptr, "No input circuit specified, cannot compute WeightedHPWLX!");
+    DaliExpects(circuit_ != nullptr, "No input circuit specified, cannot compute WeightedHPWLX!");
     return GetCircuit()->WeightedHPWLX();
   }
   double WeightedHPWLY() {
-    Assert(circuit_ != nullptr, "No input circuit specified, cannot compute WeightedHPWLY!");
+    DaliExpects(circuit_ != nullptr, "No input circuit specified, cannot compute WeightedHPWLY!");
     return GetCircuit()->WeightedHPWLY();
   }
   double WeightedHPWL() {
-    Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWL!");
+    DaliExpects(circuit_ != nullptr, "No input circuit specified, cannot compute HPWL!");
     return GetCircuit()->WeightedHPWL();
   }
 
   void ReportHPWL() {
-    Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWL!");
+    DaliExpects(circuit_ != nullptr, "No input circuit specified, cannot compute HPWL!");
     circuit_->ReportHPWL();
   }
   static void ReportMemory() {
@@ -113,7 +113,7 @@ class Placer {
   }
 
   void ReportHPWLCtoC() {
-    Assert(circuit_ != nullptr, "No input circuit specified, cannot compute HPWLCtoC!");
+    DaliExpects(circuit_ != nullptr, "No input circuit specified, cannot compute HPWLCtoC!");
     GetCircuit()->ReportHPWLCtoC();
   }
 

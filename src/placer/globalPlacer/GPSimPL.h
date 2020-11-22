@@ -43,16 +43,15 @@ class GPSimPL : public Placer {
   std::vector<double> upper_bound_hpwl_;
 
   /**** parameters for CG solver optimization configuration ****/
-  double cg_tolerance_ = 1e-15; // this is to make sure cg_tolerance is the same for different machines
+  double cg_tolerance_ = 1e-35; // this is to make sure cg_tolerance is the same for different machines
   int cg_iteration_ = 5; // cg solver runs this amount of iterations to optimize the quadratic metric everytime
   int cg_iteration_max_num_ = 200; // cg solver runs at most this amount of iterations to optimize the quadratic metric
   double cg_stop_criterion_ = 0.01; // cg solver stops if the cost change is less than this value for 3 iterations
   double alpha = 0.00; // net weight for anchor pseudo-net
-  double net_model_update_stop_criterion_ =
-      0.01; // stop update net model if the cost change is less than this value for 3 iterations
+  double net_model_update_stop_criterion_ = 0.01; // stop update net model if the cost change is less than this value for 3 iterations
 
   /**** two small positive numbers used to avoid divergence when calculating net weights ****/
-  double epsilon_factor_ = 100;
+  double epsilon_factor_ = 2.0/3.0;
   double width_epsilon_; // this value is 1/epsilon_factor_ times the average movable cell width
   double height_epsilon_; // this value is 1/epsilon_factor_ times the average movable cell height
 
@@ -175,15 +174,15 @@ class GPSimPL : public Placer {
   void PlaceBlkInBoxBisection(BoxBin &box);
   bool RecursiveBisectionBlkSpreading();
 
-  void BackUpBlkLoc();
+  void BackUpBlockLocation();
   double LookAheadLegalization();
-  void UpdateAnchorLoc();
+  void UpdateAnchorLocation();
   void BuildProblemWithAnchorX();
   void BuildProblemWithAnchorY();
   double QuadraticPlacementWithAnchor(double net_model_update_stop_criterion);
   void UpdateAnchorNetWeight() {
     if (net_model == 0) {
-      alpha = 0.01 * cur_iter_;
+      alpha = 0.04 * cur_iter_;
     } else if (net_model == 1) {
       alpha = 0.002 * cur_iter_;
     } else if (net_model == 2) {

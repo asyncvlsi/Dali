@@ -20,7 +20,7 @@ int getLefUnits(lefrCallbackType_e type, lefiUnits *units, lefiUserData userData
     circuit.setDatabaseMicron(int(number));
     BOOST_LOG_TRIVIAL(info) << "DATABASE MICRONS " << units->databaseNumber() << std::endl;
   } else {
-    Assert(false, "No DATABASE MICRONS provided in the UNITS section?");
+    DaliExpects(false, "No DATABASE MICRONS provided in the UNITS section?");
   }
   return 0;
 }
@@ -85,7 +85,7 @@ int siteCB(lefrCallbackType_e type, lefiSite *site, lefiUserData userData) {
     //BOOST_LOG_TRIVIAL(info)   << "SITE SIZE " << site->lefiSite::sizeX() << "  " << site->lefiSite::sizeY() << "\n";
     //BOOST_LOG_TRIVIAL(info)   << circuit.GridValueX() << "  " << circuit.GridValueY() << "\n";
   } else {
-    Assert(false, "SITE SIZE information not provided");
+    DaliExpects(false, "SITE SIZE information not provided");
   }
   return 0;
 }
@@ -98,7 +98,7 @@ int macroBeginCB(lefrCallbackType_e type, const char *macroName, lefiUserData us
   Circuit &circuit = *((Circuit *) userData);
   std::string tmpMacroName(macroName);
   BlockType *&tmpMacro = circuit.getTechRef().last_blk_type_;
-  Assert(tmpMacro == nullptr, "Expect an nullptr");
+  DaliExpects(tmpMacro == nullptr, "Expect an nullptr");
   if (tmpMacroName.find("welltap") != std::string::npos) {
     tmpMacro = circuit.AddWellTapBlockType(tmpMacroName, 0, 0);
   } else {
@@ -116,14 +116,14 @@ int getLefPins(lefrCallbackType_e type, lefiPin *pin, lefiUserData userData) {
   Circuit &circuit = *((Circuit *) userData);
   Tech &tech = circuit.getTechRef();
   BlockType *&tmpMacro = circuit.getTechRef().last_blk_type_;
-  Assert(tmpMacro != nullptr, "tmp macro cannot be a nullptr when setting macro pin info");
+  DaliExpects(tmpMacro != nullptr, "tmp macro cannot be a nullptr when setting macro pin info");
   std::string tmpMacroName = circuit.getTechRef().last_blk_type_->Name();
 
   //BOOST_LOG_TRIVIAL(info)   << "This is a lef pin callback\n";
   std::string pin_name(pin->name());
   //BOOST_LOG_TRIVIAL(info)   << "  " << pin_name << "\n";
   //if (pin_name == "Vdd" || pin_name == "GND") continue;
-  Assert(pin->numPorts() > 0, "No physical pins, Macro: " + tmpMacroName + ", pin: " + pin_name);
+  DaliExpects(pin->numPorts() > 0, "No physical pins, Macro: " + tmpMacroName + ", pin: " + pin_name);
   bool is_input = true;
   if (strcmp(pin->direction(), "INPUT") == 0) {
     is_input = true;
@@ -167,7 +167,7 @@ int getLefMacros(lefrCallbackType_e type, lefiMacro *macro, lefiUserData userDat
   double sizeX = macro->sizeX();
   double sizeY = macro->sizeY();
 
-  Assert(originX == 0 && originY == 0, "Only support originX and originY equal 0");
+  DaliExpects(originX == 0 && originY == 0, "Only support originX and originY equal 0");
   Circuit &circuit = *((Circuit *) userData);
   BlockType *&tmpMacro = circuit.getTechRef().last_blk_type_;
   circuit.SetBlockTypeSize(tmpMacro, sizeX, sizeY);
@@ -186,7 +186,7 @@ int macroEndCB(lefrCallbackType_e type, const char *macroName, lefiUserData user
   }
   Circuit &circuit = *((Circuit *) userData);
   BlockType *&tmpMacro = circuit.getTechRef().last_blk_type_;
-  Assert(tmpMacro != nullptr, "A MACRO end before begin?");
+  DaliExpects(tmpMacro != nullptr, "A MACRO end before begin?");
   //BOOST_LOG_TRIVIAL(info)   << "END " << tmpMacro->Name() << "\n";
   tmpMacro = nullptr;
 
@@ -231,7 +231,7 @@ int designCB(defrCallbackType_e type, const char *designName, defiUserData userD
     exit(2);
   }
   if (!designName || !*designName) {
-    Assert(false, "Design name is null, terminate parsing.\n");
+    DaliExpects(false, "Design name is null, terminate parsing.\n");
   }
   Circuit &circuit = *((Circuit *) userData);
   circuit.getDesignRef().name_ = std::string(designName);
@@ -293,7 +293,7 @@ int countNumberCB(defrCallbackType_e type, int num, defiUserData userData) {
     }
     default : {
       name = "BOGUS";
-      Assert(false, "Unsupported callback types");
+      DaliExpects(false, "Unsupported callback types");
     }
   }
   return 0;
@@ -315,14 +315,14 @@ int getDefComponents(defrCallbackType_e type, defiComponent *comp, defiUserData 
   }
 
   Circuit &circuit = *((Circuit *) userData);
-  Assert(circuit.getDesignRef().die_area_set_, "Die area not provided, cannot proceed");
+  DaliExpects(circuit.getDesignRef().die_area_set_, "Die area not provided, cannot proceed");
 
   if (!comp->id() || !*comp->id()) {
-    Assert(false, "Component name is null, terminate parsing.\n");
+    DaliExpects(false, "Component name is null, terminate parsing.\n");
   }
   std::string blk_name(comp->id());
   if (!comp->name() || !*comp->name()) {
-    Assert(false, "Component macro name is null, terminate parsing.\n");
+    DaliExpects(false, "Component macro name is null, terminate parsing.\n");
   }
   std::string blk_type_name(comp->name());
   //BOOST_LOG_TRIVIAL(info)   << "ID: " << comp->id() << " NAME: " << comp->name() << "\n";
@@ -398,7 +398,7 @@ int getDefIOPins(defrCallbackType_e type, defiPin *pin, defiUserData userData) {
   if (pin->hasUse()) {
     str_sig_use = std::string(pin->use());
   }
-  Assert(!str_sig_use.empty(), "Please provide IOPIN use");
+  DaliExpects(!str_sig_use.empty(), "Please provide IOPIN use");
   SignalUse sig_use = StrToSignalUse(str_sig_use);
 
   std::string str_sig_dir;

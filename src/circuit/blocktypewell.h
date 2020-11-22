@@ -54,7 +54,7 @@ struct BlockTypeWell {
     is_n_set_ = true;
     n_rect_.SetValue(lx, ly, ux, uy);
     if (is_p_set_) {
-      Assert(n_rect_.LLY() == p_rect_.URY(), "N/P-well not abutted");
+      DaliExpects(n_rect_.LLY() == p_rect_.URY(), "N/P-well not abutted");
     } else {
       p_n_edge_ = n_rect_.LLY();
     }
@@ -68,7 +68,7 @@ struct BlockTypeWell {
     is_p_set_ = true;
     p_rect_.SetValue(lx, ly, ux, uy);
     if (is_n_set_) {
-      Assert(n_rect_.LLY() == p_rect_.URY(), "N/P-well not abutted");
+      DaliExpects(n_rect_.LLY() == p_rect_.URY(), "N/P-well not abutted");
     } else {
       p_n_edge_ = p_rect_.URY();
     }

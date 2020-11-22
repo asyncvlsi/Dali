@@ -42,7 +42,7 @@ class BlockType {
 
   // set the name of this BlockType
   void setName(const std::string *name_ptr) {
-    Assert(name_ptr != nullptr, "Cannot set @param name_ptr to nullptr in function: BlockType::SetName()\n");
+    DaliExpects(name_ptr != nullptr, "Cannot set @param name_ptr to nullptr in function: BlockType::SetName()\n");
     name_ptr_ = name_ptr;
   }
 
@@ -57,7 +57,7 @@ class BlockType {
 
   // return the index of a pin with a given name
   int PinIndex(std::string &pin_name) {
-    Assert(IsPinExist(pin_name), "Pin does not exist, cannot find its index: " + pin_name);
+    DaliExpects(IsPinExist(pin_name), "Pin does not exist, cannot find its index: " + pin_name);
     return pin_name_num_map_.find(pin_name)->second;
   }
 
@@ -77,7 +77,7 @@ class BlockType {
 
   // set the N/P-well information for this BlockType
   void setWell(BlockTypeWell *well_ptr) {
-    Assert(well_ptr != nullptr, "Cannot set @param well_ptr to nullptr in function: BlockType::SetWell()");
+    DaliExpects(well_ptr != nullptr, "Cannot set @param well_ptr to nullptr in function: BlockType::SetWell()");
     well_ptr_ = well_ptr;
   }
 

@@ -15,6 +15,10 @@
 
 using namespace dali;
 
+void PrintSoftwareStatement();
+void ReportUsage();
+
+
 int main(int argc, char *argv[]) {
   PrintSoftwareStatement();
 
@@ -24,7 +28,7 @@ int main(int argc, char *argv[]) {
   BOOST_LOG_TRIVIAL(info) << "today is: " << ctime(&tt) << std::endl;
 
   if (argc < 5) {
-    ReportDaliUsage();
+    ReportUsage();
     return 1;
   }
   std::string lef_file_name;
@@ -54,28 +58,28 @@ int main(int argc, char *argv[]) {
       lef_file_name = std::string(argv[i++]);
       if (lef_file_name.empty()) {
         BOOST_LOG_TRIVIAL(info) << "Invalid input lef file!\n";
-        ReportDaliUsage();
+        ReportUsage();
         return 1;
       }
     } else if (arg == "-def" && i < argc) {
       def_file_name = std::string(argv[i++]);
       if (def_file_name.empty()) {
         BOOST_LOG_TRIVIAL(info) << "Invalid input def file!\n";
-        ReportDaliUsage();
+        ReportUsage();
         return 1;
       }
     } else if (arg == "-cell" && i < argc) {
       cell_file_name = std::string(argv[i++]);
       if (cell_file_name.empty()) {
         BOOST_LOG_TRIVIAL(info) << "Invalid input cell file!\n";
-        ReportDaliUsage();
+        ReportUsage();
         return 1;
       }
     } else if (arg == "-o" && i < argc) {
       output_name = std::string(argv[i++]);
       if (output_name.empty()) {
         BOOST_LOG_TRIVIAL(info) << "Invalid output name!\n";
-        ReportDaliUsage();
+        ReportUsage();
         return 1;
       }
     } else if ((arg == "-g" || arg == "-grid") && i < argc) {
@@ -87,7 +91,7 @@ int main(int argc, char *argv[]) {
         circuit.setGridValue(x_grid, y_grid);
       } catch (...) {
         BOOST_LOG_TRIVIAL(info) << "Invalid input files!\n";
-        ReportDaliUsage();
+        ReportUsage();
         return 1;
       }
     } else if ((arg == "-d" || arg == "-density") && i < argc) {
@@ -96,7 +100,7 @@ int main(int argc, char *argv[]) {
         target_density = std::stod(str_target_density);
       } catch (...) {
         BOOST_LOG_TRIVIAL(info) << "Invalid target density!\n";
-        ReportDaliUsage();
+        ReportUsage();
         return 1;
       }
     } else if (arg == "iolayerd" && i < argc) {
@@ -105,7 +109,7 @@ int main(int argc, char *argv[]) {
         io_metal_layer = std::stoi(str_metal_layer_num) - 1;
       } catch (...) {
         BOOST_LOG_TRIVIAL(info) << "Invalid metal layer number!\n";
-        ReportDaliUsage();
+        ReportUsage();
         return 1;
       }
     } else if (arg == "-v" && i < argc) {
@@ -118,7 +122,7 @@ int main(int argc, char *argv[]) {
       }
       if (tmp > 5 || tmp < 0) {
         BOOST_LOG_TRIVIAL(info) << "Invalid verbosity level\n";
-        ReportDaliUsage();
+        ReportUsage();
         return 0;
       }
       // TODO : verbose level
@@ -131,7 +135,7 @@ int main(int argc, char *argv[]) {
 
   if ((lef_file_name.empty()) || (def_file_name.empty())) {
     BOOST_LOG_TRIVIAL(info) << "Invalid input files!\n";
-    ReportDaliUsage();
+    ReportUsage();
     return 1;
   }
 
@@ -237,4 +241,41 @@ int main(int argc, char *argv[]) {
                           << "cpu time: " << cpu_time << "s)****\n";
 
   return 0;
+}
+
+void ReportUsage() {
+  BOOST_LOG_TRIVIAL(info)   << "\033[0;36m"
+                            << "Usage: dali\n"
+                            << "  -lef        <file.lef>\n"
+                            << "  -def        <file.def>\n"
+                            << "  -cell       <file.cell> (optional, if provided, iterative well placement flow will be triggered)\n"
+                            << "  -o          <output_name>.def (optional, default output file name dali_out.def)\n"
+                            << "  -g/-grid    grid_value_x grid_value_y (optional, default metal1 and metal2 pitch values)\n"
+                            << "  -d/-density density (optional, value interval (0,1], default max(space_utility, 0.7))\n"
+                            << "  -n          (optional, if this flag is present, then use naive LEF/DEF parser)\n"
+                            << "  -iolayer    metal_layer_num (optional, default 1 for m1)\n"
+                            << "  -v          verbosity_level (optional, 0-5, default 1)\n"
+                            << "(flag order does not matter)"
+                            << "\033[0m\n";
+}
+
+void PrintSoftwareStatement() {
+  BOOST_LOG_TRIVIAL(info) << "\n"
+                          << "+----------------------------------------------+\n"
+                          << "|                                              |\n"
+                          << "|     Dali: gridded cell placement flow        |\n"
+                          << "|                                              |\n"
+                          << "|     Department of Electrical Engineering     |\n"
+                          << "|     Yale University                          |\n"
+                          << "|                                              |\n"
+                          << "|     Developed by                             |\n"
+                          << "|     Yihang Yang, Rajit Manohar               |\n"
+                          << "|                                              |\n"
+                          << "|     This program is for academic use and     |\n"
+                          << "|     testing only                             |\n"
+                          << "|     THERE IS NO WARRANTY                     |\n"
+                          << "|                                              |\n"
+                          << "|     build time: " << __DATE__ << " " << __TIME__ << "         |\n"
+                          << "|                                              |\n"
+                          << "+----------------------------------------------+\n\n";
 }

@@ -35,7 +35,7 @@ int TetrisSpace::ToStartRow(int y_loc) {
     BOOST_LOG_TRIVIAL(info) << "  y_loc out of range, y_loc, bottom_, top_: " << y_loc << "  " << bottom_ << "  "
                             << top_
                             << std::endl;
-    Assert(false, "ToStartRow conversion fail");
+    DaliExpects(false, "ToStartRow conversion fail");
   }
   return (row_num);
 }
@@ -55,7 +55,7 @@ int TetrisSpace::ToEndRow(int y_loc) {
     BOOST_LOG_TRIVIAL(info) << "  row height:" << row_height_ << std::endl;
     BOOST_LOG_TRIVIAL(info) << "  row num: " << row_num << std::endl;
     BOOST_LOG_TRIVIAL(info) << "  total row num: " << tot_num_row_ << std::endl;
-    Assert(false, "ToEndRow conversion fail");
+    DaliExpects(false, "ToEndRow conversion fail");
   }
   return (row_num);
 }

@@ -22,11 +22,11 @@ class Layer {
   Layer();
   Layer(double width, double spacing);
   void SetWidth(double width) {
-    Assert(width >= 0, "Negative width not allowed: Layer::SetWidth()\n");
+    DaliExpects(width >= 0, "Negative width not allowed: Layer::SetWidth()\n");
     width_ = width;
   }
   void SetSpacing(double spacing) {
-    Assert(spacing >= 0, "Negative spacing not allowed: Layer::SetSpacing()\n");
+    DaliExpects(spacing >= 0, "Negative spacing not allowed: Layer::SetSpacing()\n");
     spacing_ = spacing;
   }
   double Width() const { return width_; }
@@ -50,11 +50,11 @@ class MetalLayer : public Layer {
              std::pair<const std::string, int> *name_num_pair_ptr,
              MetalDirection direction = HORIZONTAL_);
   void SetArea(double area) {
-    Assert(area >= 0, "Negative minarea?");
+    DaliExpects(area >= 0, "Negative minarea?");
     min_area_ = area;
   }
   void SetPitch(double x_pitch, double y_pitch) {
-    Assert(x_pitch >= 0 && y_pitch >= 0, "Negative metal pitch?");
+    DaliExpects(x_pitch >= 0 && y_pitch >= 0, "Negative metal pitch?");
     x_pitch_ = x_pitch;
     y_pitch_ = y_pitch;
   }
@@ -85,15 +85,15 @@ class WellLayer : public Layer {
   double Overhang() const { return overhang_; }
 
   void SetOpSpacing(double op_spacing) {
-    Assert(op_spacing >= 0, "Negative opposite spacing not allowed: WellLayer::SetOpSpacing\n");
+    DaliExpects(op_spacing >= 0, "Negative opposite spacing not allowed: WellLayer::SetOpSpacing\n");
     op_spacing_ = op_spacing;
   }
   void SetMaxPlugDist(double max_plug_dist) {
-    Assert(max_plug_dist >= 0, "Negative max plug distance not allowed: WellLayer::SetMaxPlugDist\n");
+    DaliExpects(max_plug_dist >= 0, "Negative max plug distance not allowed: WellLayer::SetMaxPlugDist\n");
     max_plug_dist_ = max_plug_dist;
   }
   void SetOverhang(double overhang) {
-    Assert(overhang >= 0, "Negative well/diffusion overhang not allowed: WellLayer::SetOverhang()\n");
+    DaliExpects(overhang >= 0, "Negative well/diffusion overhang not allowed: WellLayer::SetOverhang()\n");
     overhang_ = overhang;
   }
   void SetParams(double width, double height, double op_spacing, double max_plug_dist, double overhang);

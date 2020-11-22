@@ -33,9 +33,9 @@ inline boost::log::record_ostream &operator<<(boost::log::record_ostream &p, std
 
 namespace dali {
 
-void init_logging_and_formatting(boost::log::trivial::severity_level sl = boost::log::trivial::info);
+void init_logging(boost::log::trivial::severity_level sl = boost::log::trivial::info);
 
-inline void Assert(bool e, const std::string &error_message) {
+inline void DaliExpects(bool e, const std::string &error_message) {
   if (!e) {
     BOOST_LOG_TRIVIAL(fatal) << "\033[0;31m" << "FATAL ERROR:" << "\n"
                              << "    " << error_message << "\033[0m" << std::endl;
@@ -43,48 +43,11 @@ inline void Assert(bool e, const std::string &error_message) {
   }
 }
 
-inline void Warning(bool e, const std::string &warning_message) {
+inline void DaliWarns(bool e, const std::string &warning_message) {
   if (e) {
     BOOST_LOG_TRIVIAL(warning) << "WARNING:" << "\n"
                                << "    " << warning_message << std::endl;
   }
-}
-
-inline void PrintSoftwareStatement() {
-  BOOST_LOG_TRIVIAL(info) << "\n"
-                          << "+----------------------------------------------+\n"
-                          << "|                                              |\n"
-                          << "|     Dali: gridded cell placement flow        |\n"
-                          << "|                                              |\n"
-                          << "|     Department of Electrical Engineering     |\n"
-                          << "|     Yale University                          |\n"
-                          << "|                                              |\n"
-                          << "|     Developed by                             |\n"
-                          << "|     Yihang Yang, Rajit Manohar               |\n"
-                          << "|                                              |\n"
-                          << "|     This program is for academic use and     |\n"
-                          << "|     testing only                             |\n"
-                          << "|     THERE IS NO WARRANTY                     |\n"
-                          << "|                                              |\n"
-                          << "|     build time: " << __DATE__ << " " << __TIME__ << "         |\n"
-                          << "|                                              |\n"
-                          << "+----------------------------------------------+\n\n";
-}
-
-inline void ReportDaliUsage() {
-  BOOST_LOG_TRIVIAL(info)   << "\033[0;36m"
-                            << "Usage: dali\n"
-                            << "  -lef        <file.lef>\n"
-                            << "  -def        <file.def>\n"
-                            << "  -cell       <file.cell> (optional, if provided, iterative well placement flow will be triggered)\n"
-                            << "  -o          <output_name>.def (optional, default output file name dali_out.def)\n"
-                            << "  -g/-grid    grid_value_x grid_value_y (optional, default metal1 and metal2 pitch values)\n"
-                            << "  -d/-density density (optional, value interval (0,1], default max(space_utility, 0.7))\n"
-                            << "  -n          (optional, if this flag is present, then use naive LEF/DEF parser)\n"
-                            << "  -iolayer    metal_layer_num (optional, default 1 for m1)\n"
-                            << "  -v          verbosity_level (optional, 0-5, default 1)\n"
-                            << "(flag order does not matter)"
-                            << "\033[0m\n";
 }
 
 }

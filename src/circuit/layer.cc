@@ -13,7 +13,7 @@ Layer::Layer() :
 Layer::Layer(double width, double spacing) :
     width_(width),
     spacing_(spacing) {
-  Assert(width >= 0 && spacing >= 0, "Negative width or spacing?\n");
+  DaliExpects(width >= 0 && spacing >= 0, "Negative width or spacing?\n");
 }
 
 MetalLayer::MetalLayer(std::pair<const std::string, int> *name_num_pair_ptr) :
@@ -49,8 +49,8 @@ WellLayer::WellLayer(double width, double spacing, double op_spacing, double max
     op_spacing_(op_spacing),
     max_plug_dist_(max_plug_dist),
     overhang_(overhang) {
-  Assert(op_spacing >= 0, "Negative opposite spacing?");
-  Assert(max_plug_dist_ >= 0, "Negative maximum plug distance?");
+  DaliExpects(op_spacing >= 0, "Negative opposite spacing?");
+  DaliExpects(max_plug_dist_ >= 0, "Negative maximum plug distance?");
 }
 
 void WellLayer::SetParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang) {

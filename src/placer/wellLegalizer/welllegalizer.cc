@@ -16,15 +16,15 @@ WellLegalizer::WellLegalizer() : LGTetrisEx() {
 }
 
 void WellLegalizer::InitWellLegalizer() {
-  Assert(circuit_ != nullptr, "Well Legalization fail: no input circuit!");
+  DaliExpects(circuit_ != nullptr, "Well Legalization fail: no input circuit!");
   Tech *tech_parm = circuit_->getTech();
-  Assert(tech_parm != nullptr, "Well Legalization fail: no technology parameters found!");
+  DaliExpects(tech_parm != nullptr, "Well Legalization fail: no technology parameters found!");
 
   WellLayer *n_layer, *p_layer;
   n_layer = tech_parm->GetNLayer();
   p_layer = tech_parm->GetPLayer();
-  Assert(n_layer != nullptr, "Well Legalization fail: no N well parameters found!");
-  Assert(p_layer != nullptr, "Well Legalization fail: no P well parameters found!");
+  DaliExpects(n_layer != nullptr, "Well Legalization fail: no N well parameters found!");
+  DaliExpects(p_layer != nullptr, "Well Legalization fail: no P well parameters found!");
 
   n_max_plug_dist_ = std::ceil(n_layer->MaxPlugDist() / circuit_->GridValueX());
   p_max_plug_dist_ = std::ceil(p_layer->MaxPlugDist() / circuit_->GridValueX());
@@ -239,7 +239,7 @@ void WellLegalizer::WellPlace(Block &block) {
     if (loc_found) {
       block.SetLoc(res.x, res.y);
     } else {
-      Assert(false, "Cannot find legal location");
+      DaliExpects(false, "Cannot find legal location");
     }
   }
   UseSpaceLeft(block);

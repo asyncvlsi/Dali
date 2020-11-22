@@ -30,7 +30,7 @@ Pin::Pin(std::pair<const std::string, int> *name_num_pair_ptr,
 }
 
 void Pin::InitOffset() {
-  Assert(!rect_list_.empty(), "Empty rect_list cannot set x_offset_ and y_offset_!");
+  DaliExpects(!rect_list_.empty(), "Empty rect_list cannot set x_offset_ and y_offset_!");
   if (!manual_set_) {
     CalculateOffset((rect_list_[0].LLX() + rect_list_[0].URX()) / 2.0,
                     (rect_list_[0].LLY() + rect_list_[0].URY()) / 2.0);

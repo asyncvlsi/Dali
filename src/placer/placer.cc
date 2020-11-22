@@ -56,7 +56,7 @@ bool Placer::IsBoundaryProper() {
 }
 
 void Placer::SetBoundaryAuto() {
-  Assert(circuit_ != nullptr, "Must set input circuit before setting boundaries");
+  DaliExpects(circuit_ != nullptr, "Must set input circuit before setting boundaries");
   long int tot_block_area = circuit_->TotBlkArea();
   int width = std::ceil(std::sqrt(double(tot_block_area) / aspect_ratio_ / filling_rate_));
   int height = std::ceil(width * aspect_ratio_);
@@ -71,17 +71,17 @@ void Placer::SetBoundaryAuto() {
   BOOST_LOG_TRIVIAL(info) << "Pre-set filling rate: " << filling_rate_ << "\n";
   filling_rate_ = double(tot_block_area) / area;
   BOOST_LOG_TRIVIAL(info) << "Adjusted filling rate: " << filling_rate_ << "\n";
-  Assert(IsBoundaryProper(), "Invalid boundary setting");
+  DaliExpects(IsBoundaryProper(), "Invalid boundary setting");
 }
 
 void Placer::SetBoundary(int left, int right, int bottom, int top) {
-  Assert(circuit_ != nullptr, "Must set input circuit before setting boundaries");
-  Assert(left < right, "Invalid boundary setting: left boundary should be less than right boundary!");
-  Assert(bottom < top, "Invalid boundary setting: bottom boundary should be less than top boundary!");
+  DaliExpects(circuit_ != nullptr, "Must set input circuit before setting boundaries");
+  DaliExpects(left < right, "Invalid boundary setting: left boundary should be less than right boundary!");
+  DaliExpects(bottom < top, "Invalid boundary setting: bottom boundary should be less than top boundary!");
   unsigned long int tot_block_area = circuit_->TotBlkArea();
   unsigned long int tot_area = (right - left) * (top - bottom);
-  Assert(tot_area >= tot_block_area,
-         "Invalid boundary setting: given region has smaller area than total block area!");
+  DaliExpects(tot_area >= tot_block_area,
+              "Invalid boundary setting: given region has smaller area than total block area!");
   BOOST_LOG_TRIVIAL(info) << "Pre-set filling rate: " << filling_rate_ << "\n";
   filling_rate_ = (double) tot_block_area / (double) tot_area;
   BOOST_LOG_TRIVIAL(info) << "Adjusted filling rate: " << filling_rate_ << "\n";
@@ -89,7 +89,7 @@ void Placer::SetBoundary(int left, int right, int bottom, int top) {
   right_ = right;
   bottom_ = bottom;
   top_ = top;
-  Assert(IsBoundaryProper(), "Invalid boundary setting");
+  DaliExpects(IsBoundaryProper(), "Invalid boundary setting");
 }
 
 void Placer::SetBoundaryDef() {
@@ -97,7 +97,7 @@ void Placer::SetBoundaryDef() {
   right_ = GetCircuit()->RegionURX();
   bottom_ = GetCircuit()->RegionLLY();
   top_ = GetCircuit()->RegionURY();
-  Assert(IsBoundaryProper(), "Invalid boundary setting");
+  DaliExpects(IsBoundaryProper(), "Invalid boundary setting");
 }
 
 void Placer::ReportBoundaries() {
@@ -131,7 +131,7 @@ void Placer::TakeOver(Placer *placer) {
 
 void Placer::GenMATLABScriptPlaced(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
   ost << RegionLeft() << " " << RegionBottom() << " " << RegionRight() - RegionLeft() << " "
       << RegionTop() - RegionBottom() << "\n";
   for (auto &block: *BlockList()) {
@@ -145,7 +145,7 @@ void Placer::GenMATLABScriptPlaced(std::string const &name_of_file) {
 bool Placer::SaveNodeTerminal(std::string const &terminal_file, std::string const &node_file) {
   std::ofstream ost(terminal_file.c_str());
   std::ofstream ost1(node_file.c_str());
-  Assert(ost.is_open() && ost1.is_open(), "Cannot open file " + terminal_file + " or " + node_file);
+  DaliExpects(ost.is_open() && ost1.is_open(), "Cannot open file " + terminal_file + " or " + node_file);
   for (auto &block: *BlockList()) {
     if (block.IsMovable()) {
       ost1 << block.X() << "\t" << block.Y() << "\n";
@@ -172,7 +172,7 @@ bool Placer::SaveNodeTerminal(std::string const &terminal_file, std::string cons
 
 void Placer::SaveDEFFile(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
-  Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
   // 1. print file header?
   ost << "VERSION 5.8 ;\n"
@@ -228,17 +228,17 @@ void Placer::EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode
 
 void Placer::SanityCheck() {
   double epsilon = 1e-3;
-  Assert(filling_rate_ > epsilon,
-         "Filling rate should be in a proper range, for example [0.1, 1], current value: "
-             + std::to_string(filling_rate_));
+  DaliExpects(filling_rate_ > epsilon,
+              "Filling rate should be in a proper range, for example [0.1, 1], current value: "
+                  + std::to_string(filling_rate_));
   for (auto &net: *NetList()) {
-    Warning(net.blk_pin_list.empty(), "Empty net or this net only contains unplaced IOPINs: " + *net.Name());
+    DaliWarns(net.blk_pin_list.empty(), "Empty net or this net only contains unplaced IOPINs: " + *net.Name());
   }
-  Assert(IsBoundaryProper(), "Improper boundary setting");
+  DaliExpects(IsBoundaryProper(), "Improper boundary setting");
   for (auto &pair: circuit_->tech_.block_type_map_) {
     BlockType *blk_type_ptr = pair.second;
     for (auto &pin: *(blk_type_ptr->PinList())) {
-      Assert(!pin.RectEmpty(), "No RECT found for pin: " + *(blk_type_ptr->NamePtr()) + "::" + *(pin.Name()));
+      DaliExpects(!pin.RectEmpty(), "No RECT found for pin: " + *(blk_type_ptr->NamePtr()) + "::" + *(pin.Name()));
     }
   }
 }
@@ -253,8 +253,8 @@ void Placer::UpdateMovableBlkPlacementStatus() {
 
 void Placer::SimpleIOPinPlacement(int pin_metal_layer) {
   if (circuit_->getIOPinList()->empty()) return;
-  Assert(pin_metal_layer < (int) circuit_->tech_.metal_list_.size(),
-         "Invalid metal layer provided for Placer::SimpleIOPinPlacement()");
+  DaliExpects(pin_metal_layer < (int) circuit_->tech_.metal_list_.size(),
+              "Invalid metal layer provided for Placer::SimpleIOPinPlacement()");
   //BOOST_LOG_TRIVIAL(info)   << circuit_->GetIOPinList()->size() << "\n";
   Net *net = nullptr;
   double net_minx, net_maxx, net_miny, net_maxy;

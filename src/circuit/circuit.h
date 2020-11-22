@@ -86,8 +86,8 @@ class Circuit {
 
   // set the boundary of the placement region, unit is in corresponding grid value.
   void SetBoundary(int left, int bottom, int right, int top) {
-    Assert(right > left, "Right boundary is not larger than Left boundary?");
-    Assert(top > bottom, "Top boundary is not larger than Bottom boundary?");
+    DaliExpects(right > left, "Right boundary is not larger than Left boundary?");
+    DaliExpects(top > bottom, "Top boundary is not larger than Bottom boundary?");
     design_.region_left_ = left;
     design_.region_right_ = right;
     design_.region_bottom_ = bottom;
@@ -165,7 +165,7 @@ class Circuit {
   /****API to set and get database unit****/
   // set database microns
   void setDatabaseMicron(int database_micron) {
-    Assert(database_micron > 0, "Cannot set negative database microns: Circuit::setDatabaseMicron()");
+    DaliExpects(database_micron > 0, "Cannot set negative database microns: Circuit::setDatabaseMicron()");
     tech_.database_microns_ = database_micron;
   }
 
@@ -173,7 +173,7 @@ class Circuit {
 
   // set manufacturing grid
   void setManufacturingGrid(double manufacture_grid) {
-    Assert(manufacture_grid > 0, "Cannot set negative manufacturing grid: Circuit::setManufacturingGrid()");
+    DaliExpects(manufacture_grid > 0, "Cannot set negative manufacturing grid: Circuit::setManufacturingGrid()");
     tech_.manufacturing_grid_ = manufacture_grid;
   }
 
@@ -189,21 +189,21 @@ class Circuit {
 
   // get the grid value in x direction, unit is usually in micro
   double GridValueX() const {
-    Assert(tech_.grid_set_, "Need to set grid value before use");
+    DaliExpects(tech_.grid_set_, "Need to set grid value before use");
     return tech_.grid_value_x_;
   }
 
   // get the grid value in y direction, unit is usually in micro
   double GridValueY() const {
-    Assert(tech_.grid_set_, "Need to set grid value before use");
+    DaliExpects(tech_.grid_set_, "Need to set grid value before use");
     return tech_.grid_value_y_;
   }
 
   // set the row height, unit in micron
   void setRowHeight(double row_height) {
-    Assert(row_height > 0, "Setting row height to a negative value? Circuit::setRowHeight()");
+    DaliExpects(row_height > 0, "Setting row height to a negative value? Circuit::setRowHeight()");
     double residual = Residual(row_height, tech_.grid_value_y_);
-    Assert(std::fabs(residual) < 1e-6, "Site height is not integer multiple of grid value in Y");
+    DaliExpects(std::fabs(residual) < 1e-6, "Site height is not integer multiple of grid value in Y");
     tech_.row_height_set_ = true;
     tech_.row_height_ = row_height;
   }
@@ -213,7 +213,7 @@ class Circuit {
 
   // get the row height in grid value y
   int getINTRowHeight() const {
-    Assert(tech_.row_height_set_, "Row height not set, cannot retrieve its value: Circuit::getINTRowHeight()\n");
+    DaliExpects(tech_.row_height_set_, "Row height not set, cannot retrieve its value: Circuit::getINTRowHeight()\n");
     return (int) std::round(tech_.row_height_ / tech_.grid_value_y_);
   }
 
@@ -233,13 +233,13 @@ class Circuit {
 
   // get the index of a metal layer
   int MetalLayerIndex(std::string &metal_name) {
-    Assert(IsMetalLayerExist(metal_name), "MetalLayer does not exist, cannot find it: " + metal_name);
+    DaliExpects(IsMetalLayerExist(metal_name), "MetalLayer does not exist, cannot find it: " + metal_name);
     return tech_.metal_name_map_.find(metal_name)->second;
   }
 
   // get a pointer to the metal layer with a given name
   MetalLayer *getMetalLayerPtr(std::string &metal_name) {
-    Assert(IsMetalLayerExist(metal_name), "MetalLayer does not exist, cannot find it: " + metal_name);
+    DaliExpects(IsMetalLayerExist(metal_name), "MetalLayer does not exist, cannot find it: " + metal_name);
     return &tech_.metal_list_[MetalLayerIndex(metal_name)];
   }
 
@@ -282,8 +282,8 @@ class Circuit {
   // add a cell pin with a given name to a BlockType, this method is not the optimal one, but it is very safe to use.
   Pin *AddBlkTypePin(std::string &block_type_name, std::string &pin_name, bool is_input) {
     BlockType *blk_type_ptr = getBlockType(block_type_name);
-    Assert(blk_type_ptr != nullptr,
-           "Cannot add BlockType pins because there is no such a BlockType: " + block_type_name);
+    DaliExpects(blk_type_ptr != nullptr,
+                "Cannot add BlockType pins because there is no such a BlockType: " + block_type_name);
     return blk_type_ptr->AddPin(pin_name, is_input);
   }
 
@@ -300,11 +300,11 @@ class Circuit {
                          double urx,
                          double ury) {
     BlockType *blk_type_ptr = getBlockType(block_type_name);
-    Assert(blk_type_ptr != nullptr,
-           "Cannot add BlockType pins because there is no such a BlockType: " + block_type_name);
+    DaliExpects(blk_type_ptr != nullptr,
+                "Cannot add BlockType pins because there is no such a BlockType: " + block_type_name);
     Pin *pin_ptr = blk_type_ptr->getPinPtr(pin_name);
-    Assert(pin_ptr != nullptr,
-           "Cannot add BlockType pins because there is no such a pin: " + block_type_name + "::" + pin_name);
+    DaliExpects(pin_ptr != nullptr,
+                "Cannot add BlockType pins because there is no such a pin: " + block_type_name + "::" + pin_name);
     pin_ptr->AddRect(llx, lly, urx, ury);
   }
 
@@ -333,7 +333,7 @@ class Circuit {
 
   // set DEF UNITS DISTANCE MICRONS
   void setUnitsDistanceMicrons(int distance_microns) {
-    Assert(distance_microns > 0, "Negative distance micron?");
+    DaliExpects(distance_microns > 0, "Negative distance micron?");
     design_.def_distance_microns = distance_microns;
   }
 
@@ -342,10 +342,10 @@ class Circuit {
 
   // set die area, unit in manufacturing grid
   void setDieArea(int lower_x, int lower_y, int upper_x, int upper_y) { // unit in manufacturing grid
-    Assert(tech_.grid_value_x_ > 0 && tech_.grid_value_y_ > 0,
-           "Need to set positive grid values before setting placement boundary");
-    Assert(design_.def_distance_microns > 0,
-           "Need to set def_distance_microns before setting placement boundary using Circuit::SetDieArea()");
+    DaliExpects(tech_.grid_value_x_ > 0 && tech_.grid_value_y_ > 0,
+                "Need to set positive grid values before setting placement boundary");
+    DaliExpects(design_.def_distance_microns > 0,
+                "Need to set def_distance_microns before setting placement boundary using Circuit::SetDieArea()");
     double factor_x = tech_.grid_value_x_ * design_.def_distance_microns;
     double factor_y = tech_.grid_value_y_ * design_.def_distance_microns;
     SetBoundary((int) std::round(lower_x / factor_x),

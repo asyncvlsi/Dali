@@ -48,7 +48,7 @@ struct DisplaceViewer {
 
   void SaveDisplacementVector(std::string const &name_of_file) {
     std::ofstream ost(name_of_file.c_str());
-    Assert(ost.is_open(), "Cannot open output file: " + name_of_file);
+    DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
     for (int i = 0; i < sz_; ++i) {
       ost << x_[i] << "  " << y_[i] << "  " << u_[i] << "  " << v_[i] << "\n";
     }
