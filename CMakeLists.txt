@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD 17)
 ######################################
 # Detect if Boost library exists
 ######################################
-find_package(Boost 1.71.0 COMPONENTS filesystem log log_setup REQUIRED)
+find_package(Boost 1.71.0 COMPONENTS filesystem log_setup log REQUIRED)
 message(STATUS "Boost library path: ${Boost_LIBRARY_DIRS}")
 message(STATUS "Boost include path: ${Boost_INCLUDE_DIR}")
 message(STATUS "Boost libs: ${Boost_LIBRARIES}")
@@ -123,26 +123,25 @@ if (NOT CMAKE_BUILD_TYPE)
 endif ()
 
 include_directories(
-        src
+        ${CMAKE_CURRENT_SOURCE_DIR}
         module/eigen-git-mirror
 )
 
 # All used circuit and placer source code
 file(GLOB SOURCES
-        src/common/*.cc
-        src/circuit/*.cc
-        src/placer/*.cc
-        src/placer/globalPlacer/*.cc
-        src/placer/globalPlacer/GPSimPL/*.cc
-        src/placer/detailedPlacer/*.cc
-        src/placer/detailedPlacer/MDPlacer/*.cc
-        src/placer/legalizer/*.cc
-        src/placer/legalizer/LGTetris/*.cc
-        src/placer/postLegalOptimizer/*.cc
-        src/placer/postLegalOptimizer/PLOSlide/*.cc
-        src/placer/wellLegalizer/*.cc
-        src/placer/wellPlaceFlow/*.cc
-        src/example_code/*.cc
+        dali/common/*.cc
+        dali/circuit/*.cc
+        dali/placer/*.cc
+        dali/placer/globalPlacer/*.cc
+        dali/placer/globalPlacer/GPSimPL/*.cc
+        dali/placer/detailedPlacer/*.cc
+        dali/placer/detailedPlacer/MDPlacer/*.cc
+        dali/placer/legalizer/*.cc
+        dali/placer/legalizer/LGTetris/*.cc
+        dali/placer/postLegalOptimizer/*.cc
+        dali/placer/postLegalOptimizer/PLOSlide/*.cc
+        dali/placer/wellLegalizer/*.cc
+        dali/placer/wellPlaceFlow/*.cc
         )
 
 # Create a library, static libraries are controlled by ARCHIVE_OUTPUT_DIRECTORY property
@@ -154,71 +153,63 @@ add_library(dalilib
 
 # Stand-alone placer, building from the dalilib library
 add_executable(dali
-        src/dali.cc)
+        dali/dali.cc)
 target_link_libraries(dali
         PRIVATE dalilib
         ${Boost_LIBRARIES})
 
 # Debugging executable, building from the dalilib library
 add_executable(dali-debug
-        EXCLUDE_FROM_ALL
-        src/debug.cc)
+        dali/debug.cc)
 target_link_libraries(dali-debug
         PRIVATE dalilib
         OpenMP::OpenMP_CXX)
 
 # Debugging executable, building from the dalilib library
 add_executable(wellflow
-        EXCLUDE_FROM_ALL
-        src/wellflow.cc)
+        dali/wellflow.cc)
 target_link_libraries(wellflow
         PRIVATE dalilib
         )
 
 # Debugging executable, building from the dalilib library
 add_executable(adaptec-debug
-        EXCLUDE_FROM_ALL
-        src/debug-adaptec.cc)
+        dali/debug-adaptec.cc)
 target_link_libraries(adaptec-debug
         PRIVATE dalilib
         )
 
 # Stand-alone hpwl calculator, building from the dalilib library
 add_executable(hpwl
-        EXCLUDE_FROM_ALL
-        src/utility/hpwl.cc)
+        dali/utility/hpwl.cc)
 target_link_libraries(hpwl
         PRIVATE dalilib
         )
 
 # Stand-alone LEFDEF to Bookshelf format tool, building from the dalilib library
 add_executable(lefdef2bookshelf
-        EXCLUDE_FROM_ALL
-        src/utility/lefdef2bookshelf.cc)
+        dali/utility/lefdef2bookshelf.cc)
 target_link_libraries(lefdef2bookshelf
         PRIVATE dalilib
         )
 
 # Stand-alone Bookshelf to LEFDEF format tool, building from the dalilib library
 add_executable(bookshelf2def
-        EXCLUDE_FROM_ALL
-        src/utility/bookshelf2def.cc)
+        dali/utility/bookshelf2def.cc)
 target_link_libraries(bookshelf2def
         PRIVATE dalilib
         )
 
 # Stand-alone custom cell design to standard cell design tool
 add_executable(custom2standard
-        EXCLUDE_FROM_ALL
-        src/utility/custom2standard.cc)
+        dali/utility/custom2standard.cc)
 target_link_libraries(custom2standard
         PRIVATE dalilib
         )
 
 # Stand-alone custom cell design to standard cell design tool
 add_executable(1create_circuit
-        EXCLUDE_FROM_ALL
-        src/example_code/1create_circuit.cc)
+        dali/example_code/1create_circuit.cc)
 target_link_libraries(1create_circuit
         PRIVATE dalilib
         )
