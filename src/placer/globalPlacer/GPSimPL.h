@@ -61,7 +61,7 @@ class GPSimPL : public Placer {
   int max_iter_ = 100;
   int number_of_cell_in_bin = 30;
   int net_ignore_threshold = 100;
-  double simpl_LAL_converge_criterion_ = 0.001;
+  double simpl_LAL_converge_criterion_ = 0.005;
   double polar_converge_criterion_ = 0.08;
   int convergence_criteria_ = 1;
 
@@ -172,6 +172,7 @@ class GPSimPL : public Placer {
   void PlaceBlkInBox(BoxBin &box);
   void RoughLegalBlkInBox(BoxBin &box);
   void PlaceBlkInBoxBisection(BoxBin &box);
+  void UpdateGridBinBlocks(BoxBin &box);
   bool RecursiveBisectionBlkSpreading();
 
   void BackUpBlockLocation();
@@ -200,7 +201,7 @@ class GPSimPL : public Placer {
   double tot_cg_time = 0;
   bool StartPlacement() override;
 
-  bool is_dump = true;
+  bool is_dump = false;
   void DumpResult(std::string const &name_of_file);
   void DrawBlockNetList(std::string const &name_of_file = "block_net_list.txt");
   void write_all_terminal_grid_bins(std::string const &name_of_file);

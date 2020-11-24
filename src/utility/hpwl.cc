@@ -15,11 +15,10 @@
 #include <iostream>
 
 #include "circuit.h"
-#include "common/global.h"
-
-VerboseLevel globalVerboseLevel = LOG_INFO;
 
 void ReportUsage();
+
+using namespace dali;
 
 int main(int argc, char *argv[]) {
   if (argc != 5) {

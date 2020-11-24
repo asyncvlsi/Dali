@@ -105,6 +105,9 @@ void BoxBin::UpdateCellAreaWhiteSpaceFillingRate(std::vector<std::vector<unsigne
 }
 
 void BoxBin::ExpandBox(int grid_cnt_x, int grid_cnt_y) {
+  if (ll_index.x==0 && ll_index.y==0 && ur_index.x == grid_cnt_x - 1 && ur_index.y == grid_cnt_y - 1) {
+    BOOST_LOG_TRIVIAL(fatal) << "Reach maximum, cannot further expand\n";
+  }
   if (ll_index.x > 0) --ll_index.x;
   if (ll_index.y > 0) --ll_index.y;
   if (ur_index.x < grid_cnt_x - 1) ++ur_index.x;
@@ -168,6 +171,9 @@ void BoxBin::UpdateCellList(std::vector<std::vector<GridBin> > &grid_bin_matrix)
       for (auto &cell_id: grid_bin_matrix[x][y].cell_list) {
         cell_list.push_back(cell_id);
       }
+      grid_bin_matrix[x][y].cell_list.clear();
+      grid_bin_matrix[x][y].cell_area = 0;
+      grid_bin_matrix[x][y].over_fill = false;
     }
   }
 }
@@ -175,7 +181,7 @@ void BoxBin::UpdateCellList(std::vector<std::vector<GridBin> > &grid_bin_matrix)
 void BoxBin::update_boundaries(std::vector<std::vector<GridBin> > &grid_bin_matrix) {
   left = grid_bin_matrix[ll_index.x][ll_index.y].left;
   bottom = grid_bin_matrix[ll_index.x][ll_index.y].bottom;
-  right = grid_bin_matrix[ur_index.x][ur_index.y].right;;
+  right = grid_bin_matrix[ur_index.x][ur_index.y].right;
   top = grid_bin_matrix[ur_index.x][ur_index.y].top;
 }
 

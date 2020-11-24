@@ -257,7 +257,7 @@ void GPSimPL::CGInit() {
 void GPSimPL::UpdateMaxMinX() {
   std::vector<Net> &net_list = circuit_->NetListRef();
   int sz = net_list.size();
-#pragma omp parallel for
+#pragma omp parallel for default(none) shared(net_list, sz)
   for (int i = 0; i < sz; ++i) {
     net_list[i].UpdateMaxMinIndexX();
   }
@@ -266,7 +266,7 @@ void GPSimPL::UpdateMaxMinX() {
 void GPSimPL::UpdateMaxMinY() {
   std::vector<Net> &net_list = circuit_->NetListRef();
   int sz = net_list.size();
-#pragma omp parallel for
+#pragma omp parallel for default(none) shared(net_list, sz)
   for (int i = 0; i < sz; ++i) {
     net_list[i].UpdateMaxMinIndexY();
   }
@@ -914,23 +914,17 @@ void GPSimPL::BuildProblemStarHPWLX() {
   double wall_time = get_wall_time();
   UpdateMaxMinX();
 
-  std::vector<Net> &net_list = circuit_->NetListRef();
-  std::vector<Block> &block_list = circuit_->BlockListRef();
-
   int sz = bx.size();
   for (int i = 0; i < sz; ++i) {
     bx[i] = 0;
   }
 
-  double center_weight = 0.03 / std::sqrt(sz);
-  double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
-
   double decay_length = decay_factor * circuit_->AveBlkHeight();
-
-  int pair_sz = circuit_->blk_pair_net_list_.size();
-#pragma omp parallel for
+  std::vector<BlkPairNets> &blk_pair_net_list = circuit_->blk_pair_net_list_;
+  int pair_sz = blk_pair_net_list.size();
+#pragma omp parallel for default(none) shared(blk_pair_net_list, decay_length, pair_sz)
   for (int i = 0; i < pair_sz; ++i) {
-    BlkPairNets &blk_pair = circuit_->blk_pair_net_list_[i];
+    BlkPairNets &blk_pair = blk_pair_net_list[i];
     blk_pair.ClearX();
     for (auto &edge: blk_pair.edges) {
       Net &net = *(edge.net);
@@ -1014,7 +1008,10 @@ void GPSimPL::BuildProblemStarHPWLX() {
     blk_pair.WriteX();
   }
 
-#pragma omp parallel for
+  double center_weight = 0.03 / std::sqrt(sz);
+  double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
+  std::vector<Block> &block_list = circuit_->BlockListRef();
+#pragma omp parallel for default(none) shared(block_list, sz, center_weight, weight_center_x)
   for (int i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) {
       SpMat_diag_x[i].valueRef() = 1;
@@ -1048,22 +1045,15 @@ void GPSimPL::BuildProblemStarHPWLY() {
   double wall_time = get_wall_time();
   UpdateMaxMinY();
 
-  std::vector<Net> &net_list = circuit_->NetListRef();
-  std::vector<Block> &block_list = circuit_->BlockListRef();
-  std::vector<BlkPairNets> &blk_pair_net_list = circuit_->blk_pair_net_list_;
-
   int sz = by.size();
   for (int i = 0; i < sz; ++i) {
     by[i] = 0;
   }
 
-  double center_weight = 0.03 / std::sqrt(sz);
-  double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
-
   double decay_length = decay_factor * circuit_->AveBlkHeight();
-
+  std::vector<BlkPairNets> &blk_pair_net_list = circuit_->blk_pair_net_list_;
   int pair_sz = blk_pair_net_list.size();
-#pragma omp parallel for
+#pragma omp parallel for default(none) shared(blk_pair_net_list, decay_length, pair_sz)
   for (int i = 0; i < pair_sz; ++i) {
     BlkPairNets &blk_pair = blk_pair_net_list[i];
     blk_pair.ClearY();
@@ -1149,7 +1139,10 @@ void GPSimPL::BuildProblemStarHPWLY() {
     blk_pair.WriteY();
   }
 
-#pragma omp parallel for
+  double center_weight = 0.03 / std::sqrt(sz);
+  double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
+  std::vector<Block> &block_list = circuit_->BlockListRef();
+#pragma omp parallel for default(none) shared(block_list, sz, center_weight, weight_center_y)
   for (int i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) {
       SpMat_diag_y[i].valueRef() = 1;
@@ -1828,10 +1821,12 @@ void GPSimPL::FindMinimumBoxForLargestCluster() {
 
   // Part 1
   int max_cluster = 0;
+  unsigned long int max_cluster_area = 0;
   int list_sz = cluster_list.size();
   for (int i = 0; i < list_sz; ++i) {
-    if (cluster_list[i].total_cell_area > cluster_list[max_cluster].total_cell_area) {
+    if (cluster_list[i].total_cell_area > max_cluster_area) {
       max_cluster = i;
+      max_cluster_area = cluster_list[i].total_cell_area;
     }
   }
 
@@ -2150,11 +2145,15 @@ void GPSimPL::PlaceBlkInBox(BoxBin &box) {
   int sz = box.cell_list.size();
   std::vector<std::pair<int, double>> index_loc_list_x(sz);
   std::vector<std::pair<int, double>> index_loc_list_y(sz);
+  GridBin &grid_bin = grid_bin_matrix[box.ll_index.x][box.ll_index.y];
   for (int i = 0; i < sz; ++i) {
-    index_loc_list_x[i].first = box.cell_list[i];
-    index_loc_list_x[i].second = block_list[box.cell_list[i]].X();
-    index_loc_list_y[i].first = box.cell_list[i];
-    index_loc_list_y[i].second = block_list[box.cell_list[i]].Y();
+    int blk_num = box.cell_list[i];
+    index_loc_list_x[i].first = blk_num;
+    index_loc_list_x[i].second = block_list[blk_num].X();
+    index_loc_list_y[i].first = blk_num;
+    index_loc_list_y[i].second = block_list[blk_num].Y();
+    grid_bin.cell_list.push_back(blk_num);
+    grid_bin.cell_area += block_list[blk_num].Area();
   }
 
   std::sort(index_loc_list_x.begin(),
@@ -2400,23 +2399,54 @@ void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
   }
 }
 
+void GPSimPL::UpdateGridBinBlocks(BoxBin &box) {
+  /****
+   * Update the block list, area, and overfilled state of a box bin if this box is also a grid bin box
+   * ****/
+
+  // if this box is not a grid bin, then do nothing
+  if (box.ll_index == box.ur_index) {
+    int x_index = box.ll_index.x;
+    int y_index = box.ll_index.y;
+    GridBin &grid_bin = grid_bin_matrix[x_index][y_index];
+    if (grid_bin.left == box.left &&
+        grid_bin.bottom == box.bottom &&
+        grid_bin.right == box.right &&
+        grid_bin.top == box.top) {
+      grid_bin.cell_list.clear();
+      grid_bin.cell_area = 0;
+      grid_bin.over_fill = false;
+
+      std::vector<Block> &block_list = circuit_->BlockListRef();
+      for (auto &blk_num : box.cell_list) {
+        grid_bin.cell_list.push_back(blk_num);
+        grid_bin.cell_area += block_list[blk_num].Area();
+      }
+    }
+  }
+
+}
+
 bool GPSimPL::RecursiveBisectionBlkSpreading() {
   /* keep splitting the biggest box to many small boxes, and keep update the shape of each box and cells should be assigned to the box */
 
   double wall_time = get_wall_time();
 
   while (!queue_box_bin.empty()) {
+    //std::cout << queue_box_bin.size() << "\n";
     if (queue_box_bin.empty()) break;
     BoxBin &box = queue_box_bin.front();
-    /* when the box is a grid bin box or a smaller box with no terminals inside, start moving cells to the box */
-    /* if there is terminals inside a box, keep splitting it */
+    // start moving cells to the box, if
+    // (a) the box is a grid bin box or a smaller box
+    // (b) and with no fixed macros inside
     if (box.ll_index == box.ur_index) {
-      if (box.IsContainFixedBlk()) {
+      //UpdateGridBinBlocks(box);
+      if (box.IsContainFixedBlk()) { // if there is a fixed macro inside a box, keep splitting the box
         SplitGridBox(box);
         queue_box_bin.pop();
         continue;
       }
-      /* if no terminals in side a box, do cell placement inside the box */
+      /* if no terminals inside a box, do cell placement inside the box */
       //PlaceBlkInBoxBisection(box);
       PlaceBlkInBox(box);
       //RoughLegalBlkInBox(box);
@@ -2559,7 +2589,8 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
         if (eval_history_x.size() >= 3) {
           bool is_converge = IsSeriesConverge(eval_history_x, 3, net_model_update_stop_criterion);
           if (is_converge) {
-            BOOST_LOG_TRIVIAL(trace) << "  Optimization summary X, iterations x: " << i << ", " << eval_history_x << "\n";
+            BOOST_LOG_TRIVIAL(trace) << "  Optimization summary X, iterations x: " << i << ", " << eval_history_x
+                                     << "\n";
             break;
           }
         }
@@ -2583,7 +2614,8 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
         if (eval_history_y.size() >= 3) {
           bool is_converge = IsSeriesConverge(eval_history_y, 3, net_model_update_stop_criterion);
           if (is_converge) {
-            BOOST_LOG_TRIVIAL(trace) << "  Optimization summary Y, iterations y: " << i << ", " << eval_history_y << "\n";
+            BOOST_LOG_TRIVIAL(trace) << "  Optimization summary Y, iterations y: " << i << ", " << eval_history_y
+                                     << "\n";
             break;
           }
         }
@@ -2615,12 +2647,12 @@ double GPSimPL::LookAheadLegalization() {
 
   BackUpBlockLocation();
   ClearGridBinFlag();
+  UpdateGridBinState();
   do {
-    UpdateGridBinState();
     UpdateClusterList();
     FindMinimumBoxForLargestCluster();
     RecursiveBisectionBlkSpreading();
-    //BOOST_LOG_TRIVIAL(info)   << "cluster count: " << cluster_list.size() << "\n";
+    //BOOST_LOG_TRIVIAL(info) << "cluster count: " << cluster_list.size() << "\n";
   } while (!cluster_list.empty());
 
   double evaluate_result_x = WeightedHPWLX();
@@ -2778,8 +2810,8 @@ bool GPSimPL::StartPlacement() {
   }
   int num_it = lower_bound_hpwl_.size();
   BOOST_LOG_TRIVIAL(info) << "Random init: " << init_hpwl_ << "\n";
-  BOOST_LOG_TRIVIAL(info) << "Lower bound:\n  " << lower_bound_hpwl_ << "\n";
-  BOOST_LOG_TRIVIAL(info) << "Upper bound:\n  " << upper_bound_hpwl_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Lower bound: " << lower_bound_hpwl_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Upper bound: " << upper_bound_hpwl_ << "\n";
 
   BOOST_LOG_TRIVIAL(info) << "\033[0;36m Global Placement complete\033[0m\n";
   BOOST_LOG_TRIVIAL(info) << "(cg time: " << tot_cg_time << "s, lal time: " << tot_lal_time << "s)\n";
@@ -2804,7 +2836,7 @@ bool GPSimPL::StartPlacement() {
   BOOST_LOG_TRIVIAL(info) << "total x/y time: "
                           << tot_time_x << "s, "
                           << tot_time_y << "s, "
-                          << tot_time_x << "s\n";
+                          << tot_time_x + tot_time_y << "s\n";
   LALClose();
   //CheckAndShift();
   UpdateMovableBlkPlacementStatus();

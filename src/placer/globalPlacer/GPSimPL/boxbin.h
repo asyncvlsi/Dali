@@ -64,7 +64,7 @@ class BoxBin {
     terminal_list = grid_bin_matrix[ll_index.x][ll_index.y].terminal_list;
   };
   /* UpdateFixedBlkList can only be called when the box is a grid_bin_box */
-  bool IsContainFixedBlk() { return !terminal_list.empty(); };
+  bool IsContainFixedBlk() const { return !terminal_list.empty(); };
 
   std::vector<int> vertical_obstacle_boundaries;
   std::vector<int> horizontal_obstacle_boundaries;

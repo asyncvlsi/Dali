@@ -7,8 +7,7 @@
 
 #include <iostream>
 
-//#include <act/act.h>
-//#include <config.h>
+#include <config.h>
 
 #include "circuit.h"
 #include "common/logging.h"
@@ -24,9 +23,10 @@ int main(int argc, char **argv) {
   init_logging(boost::log::trivial::trace);
   Circuit circuit;
 
-  //Act::Init(&argc, &argv);
   //std::string config_file = "dali_gp.conf";
   //config_read(config_file.c_str());
+  //std::string dump_file = "dali_gp_dump.conf";
+  //FILE *fp = fopen(dump_file.c_str(), "w+");
 
   time_t Time = clock();
   int num_of_thread_openmp = 1;

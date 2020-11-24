@@ -35,7 +35,7 @@ endif ()
 include_directories($ENV{ACT_HOME}/include)
 link_directories($ENV{ACT_HOME}/lib)
 find_library(ACT_LIBRARY
-        NAMES act actpass
+        NAMES act vlsilib
         PATHS $ENV{ACT_HOME}/lib
         REQUIRED)
 if (NOT ACT_LIBRARY)
@@ -43,7 +43,7 @@ if (NOT ACT_LIBRARY)
 else ()
     message(STATUS "libact.a found")
 endif()
-link_libraries(libact.a libactpass.a)
+link_libraries(libact.a libvlsilib.a)
 
 ######################################
 # Detect if $GALOIS_INSTALL_DIR exists, which is the path to Galois installation
@@ -147,64 +147,64 @@ file(GLOB SOURCES
 
 # Create a library, static libraries are controlled by ARCHIVE_OUTPUT_DIRECTORY property
 # Shared libraries are controlled by LIBRARY_OUTPUT_DIRECTORY
-# This placer library is not necessary, this library is created because we need to put it somewhere in $ACT_HOME or $CAD_HOME
-add_library(placer
+# This dalilib library is not necessary, this library is created because we need to put it somewhere in $ACT_HOME or $CAD_HOME
+add_library(dalilib
         STATIC
         ${SOURCES})
 
-# Stand-alone placer, building from the placer library
+# Stand-alone placer, building from the dalilib library
 add_executable(dali
         src/dali.cc)
 target_link_libraries(dali
-        PRIVATE placer
+        PRIVATE dalilib
         ${Boost_LIBRARIES})
 
-# Debugging executable, building from the placer library
+# Debugging executable, building from the dalilib library
 add_executable(dali-debug
         EXCLUDE_FROM_ALL
         src/debug.cc)
 target_link_libraries(dali-debug
-        PRIVATE placer
+        PRIVATE dalilib
         OpenMP::OpenMP_CXX)
 
-# Debugging executable, building from the placer library
+# Debugging executable, building from the dalilib library
 add_executable(wellflow
         EXCLUDE_FROM_ALL
         src/wellflow.cc)
 target_link_libraries(wellflow
-        PRIVATE placer
+        PRIVATE dalilib
         )
 
-# Debugging executable, building from the placer library
+# Debugging executable, building from the dalilib library
 add_executable(adaptec-debug
         EXCLUDE_FROM_ALL
         src/debug-adaptec.cc)
 target_link_libraries(adaptec-debug
-        PRIVATE placer
+        PRIVATE dalilib
         )
 
-# Stand-alone hpwl calculator, building from the placer library
+# Stand-alone hpwl calculator, building from the dalilib library
 add_executable(hpwl
         EXCLUDE_FROM_ALL
         src/utility/hpwl.cc)
 target_link_libraries(hpwl
-        PRIVATE placer
+        PRIVATE dalilib
         )
 
-# Stand-alone LEFDEF to Bookshelf format tool, building from the placer library
+# Stand-alone LEFDEF to Bookshelf format tool, building from the dalilib library
 add_executable(lefdef2bookshelf
         EXCLUDE_FROM_ALL
         src/utility/lefdef2bookshelf.cc)
 target_link_libraries(lefdef2bookshelf
-        PRIVATE placer
+        PRIVATE dalilib
         )
 
-# Stand-alone Bookshelf to LEFDEF format tool, building from the placer library
+# Stand-alone Bookshelf to LEFDEF format tool, building from the dalilib library
 add_executable(bookshelf2def
         EXCLUDE_FROM_ALL
         src/utility/bookshelf2def.cc)
 target_link_libraries(bookshelf2def
-        PRIVATE placer
+        PRIVATE dalilib
         )
 
 # Stand-alone custom cell design to standard cell design tool
@@ -212,7 +212,7 @@ add_executable(custom2standard
         EXCLUDE_FROM_ALL
         src/utility/custom2standard.cc)
 target_link_libraries(custom2standard
-        PRIVATE placer
+        PRIVATE dalilib
         )
 
 # Stand-alone custom cell design to standard cell design tool
@@ -220,7 +220,7 @@ add_executable(1create_circuit
         EXCLUDE_FROM_ALL
         src/example_code/1create_circuit.cc)
 target_link_libraries(1create_circuit
-        PRIVATE placer
+        PRIVATE dalilib
         )
 
 ######################################
@@ -242,8 +242,8 @@ endif ()
 ######################################
 # Install header files
 ######################################
-set(INLUDE_DESTIN include)
-install(DIRECTORY src/ DESTINATION ${INLUDE_DESTIN}/dali COMPONENT Development FILES_MATCHING PATTERN "*.h")
+set(INCLUDE_DESTIN include)
+install(DIRECTORY dali/ DESTINATION ${INCLUDE_DESTIN}/dali COMPONENT Development FILES_MATCHING PATTERN "*.h")
 
 ######################################
 # Install binary
@@ -254,5 +254,5 @@ install(TARGETS dali
 ######################################
 # Install library
 ######################################
-install(TARGETS placer
+install(TARGETS dalilib
         DESTINATION lib)
