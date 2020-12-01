@@ -5,6 +5,10 @@
 #ifndef DALI_SRC_SOLVER_H_
 #define DALI_SRC_SOLVER_H_
 
+#ifdef USE_MKL
+  #define EIGEN_USE_MKL_ALL
+#endif
+
 #include "Eigen/IterativeLinearSolvers"
 #include "Eigen/Sparse"
 

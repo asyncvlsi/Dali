@@ -16,12 +16,11 @@
 #define TEST_WELL 0
 #define TEST_CLUSTER_WELL 0
 #define TEST_STDCLUSTER_WELL 1
-#define USE_DB_PARSER 1
 
 using namespace dali;
 
 int main() {
-  PrintSoftwareStatement();
+  //PrintSoftwareStatement();
   Circuit circuit;
 
   //int num_of_thread_galois = 6;
@@ -36,29 +35,17 @@ int main() {
 
   Eigen::initParallel();
   //Eigen::setNbThreads(1);
-  BOOST_LOG_TRIVIAL(info)  <<"Eigen thread %d\n", Eigen::nbThreads());
+  BOOST_LOG_TRIVIAL(info)  <<"Eigen thread " << Eigen::nbThreads() << "\n";
 
   double wall_time = get_wall_time();
 
   std::string lef_file_name = "processor100.lef";
   std::string def_file_name = "processor100.def";
 
-#if USE_DB_PARSER
-  odb::dbDatabase *db = odb::dbDatabase::create();
-  std::vector<std::string> defFileVec;
-  defFileVec.push_back(def_file_name);
-  dup2(1, 2); // redirect log of OpenDB parser from stderr to stdout, because this stderr log is annoying
-  odb_read_lef(db, lef_file_name.c_str());
-  odb_read_def(db, defFileVec);
-  circuit.InitializeFromDB(db);
-  //circuit.InitNetFanoutHisto();
-#else
-  circuit.ReadLefFile(lef_file_name);
-  circuit.ReadDefFile(def_file_name);
-#endif
+  // read LEF/DEF
 
   BOOST_LOG_TRIVIAL(info)   << "File loading complete, time: " << double(get_wall_time() - wall_time)  << " s" << std::endl;
-  BOOST_LOG_TRIVIAL(info)  <<"  Average white space utility: %.4f\n", circuit.WhiteSpaceUsage());
+  BOOST_LOG_TRIVIAL(info)  <<"  Average white space utility: " << circuit.WhiteSpaceUsage() << "\n";
   circuit.ReportBriefSummary();
   //circuit.ReportBlockType();
   //circuit.ReportIOPin();

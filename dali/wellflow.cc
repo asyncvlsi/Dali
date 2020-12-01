@@ -7,7 +7,7 @@
 #include <iostream>
 #include <vector>
 
-#include <galois//Galois.h>
+//#include <galois/Galois.h>
 
 #include "circuit.h"
 #include "placer.h"
@@ -16,11 +16,12 @@
 
 int main(int argc, char *argv[]) {
   int num_of_thread = 2;
-  galois::SharedMemSys G;
-  galois::preAlloc(num_of_thread * 2);
-  galois::setActiveThreads(num_of_thread);
+  
+  //galois::SharedMemSys G;
+  //galois::preAlloc(num_of_thread * 2);
+  //galois::setActiveThreads(num_of_thread);
 
-  Circuit circuit;
+  dali::Circuit circuit;
 
   time_t Time = clock();
 
@@ -52,27 +53,17 @@ int main(int argc, char *argv[]) {
     }
   }
 
-#if USE_DB_PARSER
-  odb::dbDatabase *db = odb::dbDatabase::create();
-  std::vector<std::string> defFileVec;
-  defFileVec.push_back(def_file_name);
-  odb_read_lef(db, lef_file_name.c_str());
-  odb_read_def(db, defFileVec);
-  circuit.InitializeFromDB(db);
-#else
-  circuit.ReadLefFile(lef_file_name);
-  circuit.ReadDefFile(def_file_name);
-#endif
+  // load LEF/DEF
 
   circuit.ReadCellFile(cel_file_name);
 
   BOOST_LOG_TRIVIAL(info)   << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << " s\n";
-  BOOST_LOG_TRIVIAL(info)  <<"  Average white space utility: %.4f\n", circuit.WhiteSpaceUsage());
+  BOOST_LOG_TRIVIAL(info)  <<"  Average white space utility: " << circuit.WhiteSpaceUsage() << "\n";
   circuit.ReportBriefSummary();
   //circuit.ReportBlockType();
   circuit.ReportHPWL();
 
-  WellPlaceFlow well_place_flow;
+  dali::WellPlaceFlow well_place_flow;
   well_place_flow.SetInputCircuit(&circuit);
   well_place_flow.SetGridCapacity(gc);
   well_place_flow.SetIteration(it_num);

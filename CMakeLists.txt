@@ -100,11 +100,22 @@ else ()
 endif()
 link_libraries(libdef.a)
 
+######################################
+# find MKL installation
+######################################
+message(STATUS "Detecting environment variable MKLROOT...")
+set(MKL_FLAGS "")
+if (DEFINED ENV{MKLROOT})
+    message(STATUS "Environment variable MKLROOT detected: " $ENV{MKLROOT})
+    set(MKL_FLAGS "-DUSE_MKL -m64 -I$ENV{MKLROOT}/include -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_gnu_thread.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lgomp -lpthread -lm -ldl")
+else ()
+    message(STATUS "Environment variable MKLROOT not found")
+endif ()
 
 # Set C++ compilation flags and options
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MKL_FLAGS} -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${MKL_FLAGS} -g -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${MKL_FLAGS} -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
 
 # Set the output directory of static libraries
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
@@ -160,6 +171,7 @@ target_link_libraries(dali
 
 # Debugging executable, building from the dalilib library
 add_executable(dali-debug
+        EXCLUDE_FROM_ALL
         dali/debug.cc)
 target_link_libraries(dali-debug
         PRIVATE dalilib
@@ -167,6 +179,7 @@ target_link_libraries(dali-debug
 
 # Debugging executable, building from the dalilib library
 add_executable(wellflow
+        EXCLUDE_FROM_ALL
         dali/wellflow.cc)
 target_link_libraries(wellflow
         PRIVATE dalilib
@@ -174,6 +187,7 @@ target_link_libraries(wellflow
 
 # Debugging executable, building from the dalilib library
 add_executable(adaptec-debug
+        EXCLUDE_FROM_ALL
         dali/debug-adaptec.cc)
 target_link_libraries(adaptec-debug
         PRIVATE dalilib
@@ -181,6 +195,7 @@ target_link_libraries(adaptec-debug
 
 # Stand-alone hpwl calculator, building from the dalilib library
 add_executable(hpwl
+        EXCLUDE_FROM_ALL
         dali/utility/hpwl.cc)
 target_link_libraries(hpwl
         PRIVATE dalilib
@@ -188,6 +203,7 @@ target_link_libraries(hpwl
 
 # Stand-alone LEFDEF to Bookshelf format tool, building from the dalilib library
 add_executable(lefdef2bookshelf
+        EXCLUDE_FROM_ALL
         dali/utility/lefdef2bookshelf.cc)
 target_link_libraries(lefdef2bookshelf
         PRIVATE dalilib
@@ -195,6 +211,7 @@ target_link_libraries(lefdef2bookshelf
 
 # Stand-alone Bookshelf to LEFDEF format tool, building from the dalilib library
 add_executable(bookshelf2def
+        EXCLUDE_FROM_ALL
         dali/utility/bookshelf2def.cc)
 target_link_libraries(bookshelf2def
         PRIVATE dalilib
@@ -202,6 +219,7 @@ target_link_libraries(bookshelf2def
 
 # Stand-alone custom cell design to standard cell design tool
 add_executable(custom2standard
+        EXCLUDE_FROM_ALL
         dali/utility/custom2standard.cc)
 target_link_libraries(custom2standard
         PRIVATE dalilib
@@ -209,6 +227,7 @@ target_link_libraries(custom2standard
 
 # Stand-alone custom cell design to standard cell design tool
 add_executable(1create_circuit
+        EXCLUDE_FROM_ALL
         dali/example_code/1create_circuit.cc)
 target_link_libraries(1create_circuit
         PRIVATE dalilib
