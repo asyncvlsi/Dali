@@ -28,9 +28,11 @@ int main(int argc, char **argv) {
   //std::string dump_file = "dali_gp_dump.conf";
   //FILE *fp = fopen(dump_file.c_str(), "w+");
 
+  Eigen::initParallel();
+  //Eigen::setNbThreads(1);
+  BOOST_LOG_TRIVIAL(info)  <<"Eigen thread " << Eigen::nbThreads() << "\n";
+
   time_t Time = clock();
-  int num_of_thread_openmp = 1;
-  omp_set_num_threads(num_of_thread_openmp);
 
   std::string adaptec1_lef = "ISPD2005/adaptec1.lef";
 #if TEST_LG
