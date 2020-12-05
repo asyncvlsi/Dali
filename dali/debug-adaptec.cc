@@ -23,10 +23,14 @@ int main(int argc, char **argv) {
   init_logging(boost::log::trivial::trace);
   Circuit circuit;
 
-  //std::string config_file = "dali_gp.conf";
+  //std::string config_file = "dali.conf";
   //config_read(config_file.c_str());
-  //std::string dump_file = "dali_gp_dump.conf";
+  //std::string dump_file = "dali_dump.conf";
   //FILE *fp = fopen(dump_file.c_str(), "w+");
+  //config_dump(fp);
+
+  int num_of_thread_openmp = 1;
+  omp_set_num_threads(num_of_thread_openmp);
 
   Eigen::initParallel();
   //Eigen::setNbThreads(1);

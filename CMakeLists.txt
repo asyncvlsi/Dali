@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD 17)
 ######################################
 # Detect if Boost library exists
 ######################################
+set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.71.0 COMPONENTS filesystem log_setup log REQUIRED)
 message(STATUS "Boost library path: ${Boost_LIBRARY_DIRS}")
 message(STATUS "Boost include path: ${Boost_INCLUDE_DIR}")
@@ -101,21 +102,30 @@ endif()
 link_libraries(libdef.a)
 
 ######################################
-# find MKL installation
+# for building a standalone static executable
 ######################################
-message(STATUS "Detecting environment variable MKLROOT...")
-set(MKL_FLAGS "")
-if (DEFINED ENV{MKLROOT})
-    message(STATUS "Environment variable MKLROOT detected: " $ENV{MKLROOT})
-    set(MKL_FLAGS "-DUSE_MKL -m64 -I$ENV{MKLROOT}/include -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_gnu_thread.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lgomp -lpthread -lm -ldl")
-else ()
-    message(STATUS "Environment variable MKLROOT not found")
-endif ()
+set(BUILD_STATIC_EXECUTABLES FALSE)
+if(BUILD_STATIC_EXECUTABLES)
+    set(CMAKE_EXE_LINKER_FLAGS -static)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+    set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS)       # remove -Wl,-Bdynamic
+    set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
+    set(CMAKE_SHARED_LIBRARY_C_FLAGS)         # remove -fPIC
+    set(CMAKE_SHARED_LIBRARY_CXX_FLAGS)
+    set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS)    # remove -rdynamic
+    set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS)
+    # Maybe this works as well, haven't tried yet.
+    # set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS FALSE)
+else(BUILD_STATIC_EXECUTABLES)
+    # Set RPATH to use for installed targets; append linker search path
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LOFAR_LIBDIR}")
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+endif(BUILD_STATIC_EXECUTABLES)
 
 # Set C++ compilation flags and options
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MKL_FLAGS} -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${MKL_FLAGS} -g -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${MKL_FLAGS} -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
 
 # Set the output directory of static libraries
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
