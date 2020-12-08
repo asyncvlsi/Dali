@@ -448,7 +448,7 @@ bool ClusterWellLegalizer::FindLocBottom(Value2D<int> &loc, int width, int heigh
 
 void ClusterWellLegalizer::FastShiftBottom(int failure_point) {
   std::vector<BlkCluster *> cluster_list(cluster_set_.begin(), cluster_set_.end());
-  //BOOST_LOG_TRIVIAL(info)   << cluster_list.size() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << cluster_set.size() << "\n";
   int bounding_bottom;
   if (failure_point == 0) {
     BOOST_LOG_TRIVIAL(info) << "WARNING: unexpected case happens during legalization (failure point is 0)!\n";

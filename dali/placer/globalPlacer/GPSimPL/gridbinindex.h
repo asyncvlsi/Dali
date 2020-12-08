@@ -8,6 +8,8 @@
 #include <iostream>
 #include <set>
 
+#include <boost/functional/hash.hpp>
+
 namespace dali {
 
 struct GridBinIndex {
@@ -33,6 +35,24 @@ struct GridBinIndex {
   }
 };
 
+struct GridBinIndexHasher {
+  std::size_t operator()(const GridBinIndex& k) const {
+    using boost::hash_value;
+    using boost::hash_combine;
+
+    // Start with a hash value of 0    .
+    std::size_t seed = 0;
+
+    // Modify 'seed' by XORing and bit-shifting in
+    // one member of 'Key' after the other:
+    hash_combine(seed,hash_value(k.x));
+    hash_combine(seed,hash_value(k.y));
+
+    // Return the result.
+    return seed;
+  }
+};
+
 struct GridBinCluster {
  public:
   GridBinCluster() : total_cell_area(0), total_white_space(0) {}
@@ -44,6 +64,9 @@ struct GridBinCluster {
   }
   bool operator>(const GridBinCluster &rhs) const {
     return (total_cell_area > rhs.total_cell_area);
+  }
+  bool operator==(const GridBinCluster &rhs) const {
+    return (total_cell_area == rhs.total_cell_area);
   }
 };
 

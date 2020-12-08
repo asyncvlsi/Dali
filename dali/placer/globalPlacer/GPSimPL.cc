@@ -1735,10 +1735,14 @@ void GPSimPL::UpdateGridBinState() {
         continue;
       }
       if (bin.IsAllFixedBlk()) {
-        if (!bin.cell_list.empty()) bin.over_fill = true;
+        if (!bin.cell_list.empty()) {
+          bin.over_fill = true;
+        }
       } else {
         bin.filling_rate = double(bin.cell_area) / double(bin.white_space);
-        if (bin.filling_rate > FillingRate()) bin.over_fill = true;
+        if (bin.filling_rate > FillingRate()) {
+          bin.over_fill = true;
+        }
       }
       if (!bin.OverFill()) {
         for (auto &cell_num: bin.cell_list) {
@@ -1758,21 +1762,18 @@ void GPSimPL::UpdateGridBinState() {
   UpdateGridBinState_time += get_wall_time() - wall_time;
 }
 
-void GPSimPL::ClusterOverfilledGridBin() {
-  /****
-   * this function is to cluster overfilled grid bins, and sort them based on total cell area
-   * the algorithm to cluster overfilled grid bins is breadth first search
-   * ****/
-  cluster_list.clear();
+void GPSimPL::UpdateClusterList() {
+  double wall_time = get_wall_time();
+  cluster_set.clear();
+
   int m = (int) grid_bin_matrix.size(); // number of rows
   int n = (int) grid_bin_matrix[0].size(); // number of columns
-
   for (int i = 0; i < m; ++i) {
     for (int j = 0; j < n; ++j) grid_bin_matrix[i][j].cluster_visited = false;
   }
-  int cnt;
-  for (int i = 0; i < m; i++) {
-    for (int j = 0; j < n; j++) {
+  int cnt = 0;
+  for (int i = 0; i < m; ++i) {
+    for (int j = 0; j < n; ++j) {
       if (grid_bin_matrix[i][j].cluster_visited || !grid_bin_matrix[i][j].over_fill) continue;
       GridBinIndex b(i, j);
       GridBinCluster H;
@@ -1788,7 +1789,8 @@ void GPSimPL::ClusterOverfilledGridBin() {
           GridBin &bin = grid_bin_matrix[index.x][index.y];
           if (!bin.cluster_visited && bin.over_fill) {
             if (cnt > cluster_upper_size) {
-              cluster_list.push_back(H);
+              UpdateClusterArea(H);
+              cluster_set.insert(H);
               break;
             }
             bin.cluster_visited = true;
@@ -1798,30 +1800,81 @@ void GPSimPL::ClusterOverfilledGridBin() {
           }
         }
       }
-      cluster_list.push_back(H);
+      UpdateClusterArea(H);
+      cluster_set.insert(H);
     }
   }
-}
-
-void GPSimPL::UpdateClusterArea() {
-  /****
-   * Calculate the total cell area and total white space in each cluster
-   * ****/
-  for (auto &cluster: cluster_list) {
-    cluster.total_cell_area = 0;
-    cluster.total_white_space = 0;
-    for (auto &index: cluster.bin_set) {
-      cluster.total_cell_area += grid_bin_matrix[index.x][index.y].cell_area;
-      cluster.total_white_space += grid_bin_matrix[index.x][index.y].white_space;
-    }
-  }
-}
-
-void GPSimPL::UpdateClusterList() {
-  double wall_time = get_wall_time();
-  ClusterOverfilledGridBin();
-  UpdateClusterArea();
   UpdateClusterList_time += get_wall_time() - wall_time;
+}
+
+void GPSimPL::UpdateLargestCluster() {
+  if (cluster_set.empty()) return;
+
+  for (auto it = cluster_set.begin(); it != cluster_set.end();) {
+    bool is_contact = true;
+
+    // if there is no grid bin has been roughly legalized, then this cluster is the largest one for sure
+    for (auto &index : it->bin_set) {
+      if (grid_bin_matrix[index.x][index.y].global_placed) {
+        is_contact = false;
+      }
+    }
+    if (is_contact) break;
+
+    // initialize a list to store all indices in this cluster
+    // initialize a map to store the visited flag during bfs
+    std::vector<GridBinIndex> grid_bin_list;
+    grid_bin_list.reserve(it->bin_set.size());
+    std::unordered_map<GridBinIndex, bool, GridBinIndexHasher> grid_bin_visited;
+    for (auto &index : it->bin_set) {
+      grid_bin_list.push_back(index);
+      grid_bin_visited.insert({index, false});
+    }
+
+    std::sort(grid_bin_list.begin(),
+              grid_bin_list.end(),
+              [](const GridBinIndex &index1, const GridBinIndex &index2) {
+                return (index1.x < index2.x) || (index1.x == index2.x && index1.y < index2.y);
+              });
+
+    int cnt = 0;
+    for (auto &grid_index : grid_bin_list) {
+      int i = grid_index.x;
+      int j = grid_index.y;
+      if (grid_bin_visited[grid_index]) continue; // if this grid bin has been visited continue
+      if (grid_bin_matrix[i][j].global_placed) continue; // if this grid bin has been roughly legalized
+      GridBinIndex b(i, j);
+      GridBinCluster H;
+      H.bin_set.insert(b);
+      grid_bin_visited[grid_index] = true;
+      cnt = 0;
+      std::queue<GridBinIndex> Q;
+      Q.push(b);
+      while (!Q.empty()) {
+        b = Q.front();
+        Q.pop();
+        for (auto &index: grid_bin_matrix[b.x][b.y].adjacent_bin_index) {
+          if (grid_bin_visited.find(index)==grid_bin_visited.end()) continue; // this index is not in the cluster
+          if (grid_bin_visited[index]) continue; // this index has been visited
+          if (grid_bin_matrix[index.x][index.y].global_placed) continue; // if this grid bin has been roughly legalized
+          GridBin &bin = grid_bin_matrix[index.x][index.y];
+          if (cnt > cluster_upper_size) {
+            UpdateClusterArea(H);
+            cluster_set.insert(H);
+            break;
+          }
+          grid_bin_visited[index] = true;
+          H.bin_set.insert(index);
+          ++cnt;
+          Q.push(index);
+        }
+      }
+      UpdateClusterArea(H);
+      cluster_set.insert(H);
+    }
+
+    it = cluster_set.erase(it);
+  }
 }
 
 void GPSimPL::FindMinimumBoxForLargestCluster() {
@@ -1838,19 +1891,9 @@ void GPSimPL::FindMinimumBoxForLargestCluster() {
 
   // clear the queue_box_bin
   while (!queue_box_bin.empty()) queue_box_bin.pop();
-  if (cluster_list.empty()) return;
+  if (cluster_set.empty()) return;
 
   // Part 1
-  int max_cluster = 0;
-  unsigned long int max_cluster_area = 0;
-  int list_sz = cluster_list.size();
-  for (int i = 0; i < list_sz; ++i) {
-    if (cluster_list[i].total_cell_area > max_cluster_area) {
-      max_cluster = i;
-      max_cluster_area = cluster_list[i].total_cell_area;
-    }
-  }
-
   std::vector<Block> &block_list = circuit_->BlockListRef();
 
   BoxBin R;
@@ -1862,7 +1905,8 @@ void GPSimPL::FindMinimumBoxForLargestCluster() {
   R.ur_index.y = 0;
   // initialize a box with y cut-direction
   // identify the bounding box of the initial cluster
-  for (auto &index: cluster_list[max_cluster].bin_set) {
+  auto it = cluster_set.begin();
+  for (auto &index: it->bin_set) {
     R.ll_index.x = std::min(R.ll_index.x, index.x);
     R.ur_index.x = std::max(R.ur_index.x, index.x);
     R.ll_index.y = std::min(R.ll_index.y, index.y);
@@ -2669,12 +2713,13 @@ double GPSimPL::LookAheadLegalization() {
   BackUpBlockLocation();
   ClearGridBinFlag();
   UpdateGridBinState();
+  UpdateClusterList();
   do {
-    UpdateClusterList();
+    UpdateLargestCluster();
     FindMinimumBoxForLargestCluster();
     RecursiveBisectionBlkSpreading();
-    //BOOST_LOG_TRIVIAL(info) << "cluster count: " << cluster_list.size() << "\n";
-  } while (!cluster_list.empty());
+    //BOOST_LOG_TRIVIAL(info) << "cluster count: " << cluster_set.size() << "\n";
+  } while (!cluster_set.empty());
 
   double evaluate_result_x = WeightedHPWLX();
   upper_bound_hpwlx_.push_back(evaluate_result_x);
@@ -3009,8 +3054,9 @@ void GPSimPL::write_first_n_bin_cluster(std::string const &name_of_file, size_t 
   /* this is a member function for testing, print the first n over_filled clusters */
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
-  for (size_t i = 0; i < n; i++) {
-    for (auto &index: cluster_list[i].bin_set) {
+  auto it = cluster_set.begin();
+  for (size_t i = 0; i < n; ++i, --it) {
+    for (auto &index: it->bin_set) {
       double low_x, low_y, width, height;
       GridBin *GridBin = &grid_bin_matrix[index.x][index.y];
       width = GridBin->right - GridBin->left;
@@ -3038,34 +3084,9 @@ void GPSimPL::write_first_bin_cluster(std::string const &name_of_file) {
   write_first_n_bin_cluster(name_of_file, 1);
 }
 
-void GPSimPL::write_n_bin_cluster(std::string const &name_of_file, size_t n) {
-  std::ofstream ost(name_of_file.c_str());
-  DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
-  for (auto &index: cluster_list[n].bin_set) {
-    double low_x, low_y, width, height;
-    GridBin *GridBin = &grid_bin_matrix[index.x][index.y];
-    width = GridBin->right - GridBin->left;
-    height = GridBin->top - GridBin->bottom;
-    low_x = GridBin->left;
-    low_y = GridBin->bottom;
-    int step = 40;
-    if (GridBin->OverFill()) {
-      for (int j = 0; j < height; j += step) {
-        ost << low_x << "\t" << low_y + j << "\n";
-        ost << low_x + width << "\t" << low_y + j << "\n";
-      }
-      for (int j = 0; j < width; j += step) {
-        ost << low_x + j << "\t" << low_y << "\n";
-        ost << low_x + j << "\t" << low_y + height << "\n";
-      }
-    }
-  }
-  ost.close();
-}
-
 void GPSimPL::write_all_bin_cluster(const std::string &name_of_file) {
   /* this is a member function for testing, print all over_filled clusters */
-  write_first_n_bin_cluster(name_of_file, cluster_list.size());
+  write_first_n_bin_cluster(name_of_file, cluster_set.size());
 }
 
 void GPSimPL::write_first_box(std::string const &name_of_file) {

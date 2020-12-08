@@ -9,6 +9,9 @@
 
 #include <queue>
 #include <random>
+#include <set>
+#include <map>
+#include <vector>
 
 #include "dali/common/misc.h"
 #include "dali/placer/placer.h"
@@ -144,6 +147,8 @@ class GPSimPL : public Placer {
   std::vector<std::vector<unsigned long int> > grid_bin_white_space_LUT;
 
   double UpdateGridBinState_time = 0;
+  double ClusterOverfilledGridBin_time = 0;
+  double UpdateClusterArea_time = 0;
   double UpdateClusterList_time = 0;
   double FindMinimumBoxForLargestCluster_time = 0;
   double RecursiveBisectionBlkSpreading_time = 0;
@@ -159,13 +164,20 @@ class GPSimPL : public Placer {
   void ClearGridBinFlag();
   void UpdateGridBinState();
 
-  std::vector<GridBinCluster> cluster_list;
-  void ClusterOverfilledGridBin();
-  void UpdateClusterArea();
+  std::multiset<GridBinCluster, std::greater<>> cluster_set;
+  void UpdateClusterArea(GridBinCluster &cluster) {
+    cluster.total_cell_area = 0;
+    cluster.total_white_space = 0;
+    for (auto &index: cluster.bin_set) {
+      cluster.total_cell_area += grid_bin_matrix[index.x][index.y].cell_area;
+      cluster.total_white_space += grid_bin_matrix[index.x][index.y].white_space;
+    }
+  }
   void UpdateClusterList();
 
   std::queue<BoxBin> queue_box_bin;
   static double BlkOverlapArea(Block *node1, Block *node2);
+  void UpdateLargestCluster();
   void FindMinimumBoxForLargestCluster();
   void SplitBox(BoxBin &box);
   void SplitGridBox(BoxBin &box);
@@ -210,7 +222,6 @@ class GPSimPL : public Placer {
   void write_not_overfill_grid_bins(std::string const &name_of_file);
   void write_first_n_bin_cluster(std::string const &name_of_file, size_t n);
   void write_first_bin_cluster(std::string const &name_of_file);
-  void write_n_bin_cluster(std::string const &name_of_file, size_t n);
   void write_all_bin_cluster(const std::string &name_of_file);
   void write_first_box(std::string const &name_of_file);
   void write_first_box_cell_bounding(std::string const &name_of_file);
