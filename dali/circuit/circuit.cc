@@ -273,7 +273,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
   * ****/
   std::ifstream ist(name_of_file.c_str());
   DaliExpects(ist.is_open(), "Cannot open input file: " + name_of_file);
-  BOOST_LOG_TRIVIAL(info) << "Loading LEF file";
+  BOOST_LOG_TRIVIAL(info) << "Loading LEF file" << "\n";
   std::string line;
 
   // 1. find DATABASE MICRONS
@@ -288,12 +288,12 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
       try {
         tech_.database_microns_ = std::stoi(line_field[2]);
       } catch (...) {
-        BOOST_LOG_TRIVIAL(info) << line;
+        BOOST_LOG_TRIVIAL(info) << line << "\n";
         DaliExpects(false, "Invalid stoi conversion:" + line_field[2]);
       }
     }
   }
-  BOOST_LOG_TRIVIAL(info) << "DATABASE MICRONS " << tech_.database_microns_;
+  BOOST_LOG_TRIVIAL(info) << "DATABASE MICRONS " << tech_.database_microns_ << "\n";
 
   // 2. find MANUFACTURINGGRID
   tech_.manufacturing_grid_ = 0;
@@ -303,7 +303,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     if (line.find("LAYER") != std::string::npos) {
       tech_.manufacturing_grid_ = 1.0 / tech_.database_microns_;
       BOOST_LOG_TRIVIAL(info)
-        << "  WARNING:  MANUFACTURINGGRID not specified explicitly, using 1.0/DATABASE MICRONS instead";
+        << "  WARNING:\n  MANUFACTURINGGRID not specified explicitly, using 1.0/DATABASE MICRONS instead\n";
     }
     if (line.find("MANUFACTURINGGRID") != std::string::npos) {
       std::vector<std::string> grid_field;
@@ -312,13 +312,13 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
       try {
         tech_.manufacturing_grid_ = std::stod(grid_field[1]);
       } catch (...) {
-        DaliExpects(false, "Invalid stod conversion:" + line);
+        DaliExpects(false, "Invalid stod conversion:\n" + line);
       }
       break;
     }
   }
   DaliExpects(tech_.manufacturing_grid_ > 0, "Cannot find or invalid MANUFACTURINGGRID");
-  BOOST_LOG_TRIVIAL(info) << "MANUFACTURINGGRID: " << tech_.manufacturing_grid_;
+  BOOST_LOG_TRIVIAL(info) << "MANUFACTURINGGRID: " << tech_.manufacturing_grid_ << "\n";
 
   // 3. read metal layer
   static std::vector<std::string> metal_identifier_list{"m", "M", "metal", "Metal"};
@@ -330,7 +330,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     if (line.find("LAYER") != std::string::npos) {
       std::vector<std::string> layer_field;
       StrSplit(line, layer_field);
-      DaliExpects(layer_field.size() == 2, "Invalid LAYER, expect only: LAYER layerName,\tgot: " + line);
+      DaliExpects(layer_field.size() == 2, "Invalid LAYER, expect only: LAYER layerName\n\tgot: " + line);
       int first_digit_pos = FindFirstNumber(layer_field[1]);
       std::string metal_id(layer_field[1], 0, first_digit_pos);
       if (std::find(metal_identifier_list.begin(), metal_identifier_list.end(), metal_id)
@@ -343,19 +343,19 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
           if (line.find("DIRECTION") != std::string::npos) {
             std::vector<std::string> direction_field;
             StrSplit(line, direction_field);
-            DaliExpects(direction_field.size() >= 2, "Invalid DIRECTION: " + line);
+            DaliExpects(direction_field.size() >= 2, "Invalid DIRECTION\n" + line);
             MetalDirection direction = StrToMetalDirection(direction_field[1]);
             metal_layer->SetDirection(direction);
           }
           if (line.find("AREA") != std::string::npos) {
             std::vector<std::string> area_field;
             StrSplit(line, area_field);
-            DaliExpects(area_field.size() >= 2, "Invalid AREA: " + line);
+            DaliExpects(area_field.size() >= 2, "Invalid AREA\n" + line);
             try {
               double area = std::stod(area_field[1]);
               metal_layer->SetArea(area);
             } catch (...) {
-              DaliExpects(false, "Invalid stod conversion: " + line);
+              DaliExpects(false, "Invalid stod conversion\n" + line);
             }
           }
           if (line.find("WIDTH") != std::string::npos) {
@@ -366,7 +366,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
               double width = std::stod(width_field[1]);
               metal_layer->SetWidth(width);
             } catch (...) {
-              DaliExpects(false, "Invalid stod conversion: " + line);
+              DaliExpects(false, "Invalid stod conversion:\n" + line);
             }
           }
           if (line.find("SPACING") != std::string::npos &&
@@ -374,25 +374,25 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
               line.find("ENDOFLINE") == std::string::npos) {
             std::vector<std::string> spacing_field;
             StrSplit(line, spacing_field);
-            DaliExpects(spacing_field.size() >= 2, "Invalid SPACING: " + line);
+            DaliExpects(spacing_field.size() >= 2, "Invalid SPACING\n" + line);
             try {
               double spacing = std::stod(spacing_field[1]);
               metal_layer->SetSpacing(spacing);
             } catch (...) {
-              DaliExpects(false, "Invalid stod conversion: " + line);
+              DaliExpects(false, "Invalid stod conversion:\n" + line);
             }
           }
           if (line.find("PITCH") != std::string::npos) {
             std::vector<std::string> pitch_field;
             StrSplit(line, pitch_field);
             int pch_sz = pitch_field.size();
-            DaliExpects(pch_sz >= 2, "Invalid PITCH: " + line);
+            DaliExpects(pch_sz >= 2, "Invalid PITCH\n" + line);
             if (pch_sz == 2) {
               try {
                 double pitch = std::stod(pitch_field[1]);
                 metal_layer->SetPitch(pitch, pitch);
               } catch (...) {
-                DaliExpects(false, "Invalid stod conversion: " + line);
+                DaliExpects(false, "Invalid stod conversion:\n" + line);
               }
             } else {
               try {
@@ -400,7 +400,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
                 double y_pitch = std::stod(pitch_field[2]);
                 metal_layer->SetPitch(x_pitch, y_pitch);
               } catch (...) {
-                DaliExpects(false, "Invalid stod conversion: " + line);
+                DaliExpects(false, "Invalid stod conversion:\n" + line);
               }
             }
           }
@@ -414,15 +414,16 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
   if (!tech_.grid_set_) {
     if (tech_.metal_list_.size() < 2) {
       setGridValue(tech_.manufacturing_grid_, tech_.manufacturing_grid_);
-      BOOST_LOG_TRIVIAL(info) << "No enough metal layers to specify horizontal and vertical pitch "
-                              << "Using manufacturing grid as grid values";
+      BOOST_LOG_TRIVIAL(info) << "No enough metal layers to specify horizontal and vertical pitch\n"
+                              << "Using manufacturing grid as grid values\n";
     } else if (tech_.metal_list_[0].PitchY() <= 0 || tech_.metal_list_[1].PitchX() <= 0) {
       setGridValue(tech_.manufacturing_grid_, tech_.manufacturing_grid_);
-      BOOST_LOG_TRIVIAL(info) << "Invalid metal pitch. Using manufacturing grid as grid values";
+      BOOST_LOG_TRIVIAL(info) << "Invalid metal pitch\n"
+                              << "Using manufacturing grid as grid values\n";
     } else {
       setGridUsingMetalPitch();
     }
-    BOOST_LOG_TRIVIAL(info) << "Grid Value: " << tech_.grid_value_x_ << "  " << tech_.grid_value_y_;
+    BOOST_LOG_TRIVIAL(info) << "Grid Value: " << tech_.grid_value_x_ << "  " << tech_.grid_value_y_ << "\n";
   }
 
   // 4. read block type information
@@ -434,9 +435,9 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     if (line.find("MACRO") != std::string::npos) {
       std::vector<std::string> line_field;
       StrSplit(line, line_field);
-      DaliExpects(line_field.size() >= 2, "Invalid type name: expecting 2 fields: " + line);
+      DaliExpects(line_field.size() >= 2, "Invalid type name: expecting 2 fields\n" + line);
       std::string block_type_name = line_field[1];
-      //BOOST_LOG_TRIVIAL(info)   << block_type_name;
+      //BOOST_LOG_TRIVIAL(info)   << block_type_name << "\n";
       BlockType *new_block_type = nullptr;
       int width = 0, height = 0;
       std::string end_macro_flag = "END " + line_field[1];
@@ -451,10 +452,10 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
               width = (int) (std::round(std::stod(size_field[1]) / tech_.grid_value_x_));
               height = (int) (std::round(std::stod(size_field[3]) / tech_.grid_value_y_));
             } catch (...) {
-              DaliExpects(false, "Invalid stod conversion: " + line);
+              DaliExpects(false, "Invalid stod conversion:\n" + line);
             }
             new_block_type = AddBlockTypeWithGridUnit(block_type_name, width, height);
-            //BOOST_LOG_TRIVIAL(info)   << "  type width, height: " << new_block_type->Width() << " " << new_block_type->Height();
+            //BOOST_LOG_TRIVIAL(info)   << "  type width, height: " << new_block_type->Width() << " " << new_block_type->Height() << "\n";
           }
           getline(ist, line);
         }
@@ -463,7 +464,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
           std::vector<std::string> pin_field;
 
           StrSplit(line, pin_field);
-          DaliExpects(pin_field.size() >= 2, "Invalid pin name: expecting 2 fields: " + line);
+          DaliExpects(pin_field.size() >= 2, "Invalid pin name: expecting 2 fields\n" + line);
 
           std::string pin_name = pin_field[1];
           std::string end_pin_flag = "END " + pin_name;
@@ -480,17 +481,17 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
             getline(ist, line);
             if (!line.empty() && line[0] == '#') continue;
             if (line.find("RECT") != std::string::npos) {
-              //BOOST_LOG_TRIVIAL(info)   << line;
+              //BOOST_LOG_TRIVIAL(info)   << line << "\n";
               std::vector<std::string> rect_field;
               StrSplit(line, rect_field);
-              DaliExpects(rect_field.size() >= 5, "Invalid rect definition: expecting 5 fields: " + line);
+              DaliExpects(rect_field.size() >= 5, "Invalid rect definition: expecting 5 fields\n" + line);
               try {
                 llx = std::stod(rect_field[1]) / tech_.grid_value_x_;
                 lly = std::stod(rect_field[2]) / tech_.grid_value_y_;
                 urx = std::stod(rect_field[3]) / tech_.grid_value_x_;
                 ury = std::stod(rect_field[4]) / tech_.grid_value_y_;
               } catch (...) {
-                DaliExpects(false, "Invalid stod conversion: " + line);
+                DaliExpects(false, "Invalid stod conversion:\n" + line);
               }
               new_pin->AddRect(llx, lly, urx, ury);
             }
@@ -502,7 +503,7 @@ void Circuit::ReadLefFile(std::string const &name_of_file) {
     }
     getline(ist, line);
   }
-  BOOST_LOG_TRIVIAL(info) << "LEF file loading complete: " << name_of_file;
+  BOOST_LOG_TRIVIAL(info) << "LEF file loading complete: " << name_of_file << "\n";
   //ReportBlockType();
 }
 
@@ -513,7 +514,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
    * ****/
   std::ifstream ist(name_of_file.c_str());
   DaliExpects(ist.is_open(), "Cannot open input file: " + name_of_file);
-  BOOST_LOG_TRIVIAL(info) << "Loading DEF file";
+  BOOST_LOG_TRIVIAL(info) << "Loading DEF file" << std::endl;
   std::string line;
 
   bool component_section_exist = false;
@@ -529,13 +530,13 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       if (line.find("COMPONENTS") != std::string::npos) {
         std::vector<std::string> components_field;
         StrSplit(line, components_field);
-        DaliExpects(components_field.size() == 2, "Improper use of COMPONENTS? " + line);
+        DaliExpects(components_field.size() == 2, "Improper use of COMPONENTS?\n" + line);
         try {
           components_count = std::stoi(components_field[1]);
-          BOOST_LOG_TRIVIAL(info) << "COMPONENTS:  " << components_count;
+          BOOST_LOG_TRIVIAL(info) << "COMPONENTS:  " << components_count << "\n";
           component_section_exist = true;
         } catch (...) {
-          DaliExpects(false, "Invalid stoi conversion: " + line);
+          DaliExpects(false, "Invalid stoi conversion:\n" + line);
         }
       }
     }
@@ -543,13 +544,13 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       if (line.find("PINS") != std::string::npos) {
         std::vector<std::string> pins_field;
         StrSplit(line, pins_field);
-        DaliExpects(pins_field.size() == 2, "Improper use of PINS? " + line);
+        DaliExpects(pins_field.size() == 2, "Improper use of PINS?\n" + line);
         try {
           pins_count = std::stoi(pins_field[1]);
-          BOOST_LOG_TRIVIAL(info) << "PINS:  " << pins_count;
+          BOOST_LOG_TRIVIAL(info) << "PINS:  " << pins_count << "\n";
           pins_section_exist = true;
         } catch (...) {
-          DaliExpects(false, "Invalid stoi conversion: " + line);
+          DaliExpects(false, "Invalid stoi conversion:\n" + line);
         }
       }
     }
@@ -557,13 +558,13 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       if ((line.find("NETS") != std::string::npos) && (line.find("SPECIALNETS") == std::string::npos)) {
         std::vector<std::string> nets_field;
         StrSplit(line, nets_field);
-        DaliExpects(nets_field.size() == 2, "Improper use of NETS? " + line);
+        DaliExpects(nets_field.size() == 2, "Improper use of NETS?\n" + line);
         try {
           nets_count = std::stoi(nets_field[1]);
-          BOOST_LOG_TRIVIAL(info) << "NETS:  " << nets_count;
+          BOOST_LOG_TRIVIAL(info) << "NETS:  " << nets_count << "\n";
           nets_section_exist = true;
         } catch (...) {
-          DaliExpects(false, "Invalid stoi conversion: " + line);
+          DaliExpects(false, "Invalid stoi conversion:\n" + line);
         }
       }
     }
@@ -587,13 +588,13 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       try {
         design_.def_distance_microns = std::stoi(line_field[3]);
       } catch (...) {
-        DaliExpects(false, "Invalid stoi conversion (UNITS DISTANCE MICRONS): " + line);
+        DaliExpects(false, "Invalid stoi conversion (UNITS DISTANCE MICRONS):\n" + line);
       }
     }
   }
   DaliExpects(design_.def_distance_microns > 0,
               "Invalid/null UNITS DISTANCE MICRONS: " + std::to_string(design_.def_distance_microns));
-  //BOOST_LOG_TRIVIAL(info)   << "DISTANCE MICRONS " << def_distance_microns;
+  //BOOST_LOG_TRIVIAL(info)   << "DISTANCE MICRONS " << def_distance_microns << "\n";
 
   // find DIEAREA
   int def_left = 0;
@@ -607,7 +608,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
     if (line.find("DIEAREA") != std::string::npos) {
       std::vector<std::string> die_area_field;
       StrSplit(line, die_area_field);
-      //BOOST_LOG_TRIVIAL(info)   << line;
+      //BOOST_LOG_TRIVIAL(info)   << line << "\n";
       DaliExpects(die_area_field.size() >= 9, "Invalid UNITS declaration: expecting 9 fields");
       try {
         def_left = (int) std::round(std::stoi(die_area_field[2]) / factor_x);
@@ -616,18 +617,18 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         def_top = (int) std::round(std::stoi(die_area_field[7]) / factor_y);
         SetBoundary(def_left, def_bottom, def_right, def_top);
       } catch (...) {
-        DaliExpects(false, "Invalid stoi conversion (DIEAREA): " + line);
+        DaliExpects(false, "Invalid stoi conversion (DIEAREA):\n" + line);
       }
     }
   }
-  //BOOST_LOG_TRIVIAL(info)   << "DIEAREA ( " << region_left_ << " " << region_bottom_ << " ) ( " << region_right_ << " " << region_top_ << " )";
+  //BOOST_LOG_TRIVIAL(info)   << "DIEAREA ( " << region_left_ << " " << region_bottom_ << " ) ( " << region_right_ << " " << region_top_ << " )\n";
 
   // find COMPONENTS
   if (component_section_exist) {
     while ((line.find("COMPONENTS") == std::string::npos) && !ist.eof()) {
       getline(ist, line);
     }
-    //BOOST_LOG_TRIVIAL(info)   << line;
+    //BOOST_LOG_TRIVIAL(info)   << line << "\n";
     getline(ist, line);
 
     // a). parse the body of components
@@ -640,8 +641,8 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         continue;
       }
       DaliExpects(block_declare_field.size() >= 3,
-                  "Invalid block declaration, expecting at least: - compName modelName ; " + line);
-      //BOOST_LOG_TRIVIAL(info)   << block_declare_field[0] << " " << block_declare_field[1];
+                  "Invalid block declaration, expecting at least: - compName modelName ;\n" + line);
+      //BOOST_LOG_TRIVIAL(info)   << block_declare_field[0] << " " << block_declare_field[1] << "\n";
       if (block_declare_field.size() == 3) {
         AddBlock(block_declare_field[1], block_declare_field[2], 0, 0, UNPLACED_, N_);
       } else if (block_declare_field.size() == 10) {
@@ -652,7 +653,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
           llx = (int) std::round(std::stoi(block_declare_field[6]) / factor_x);
           lly = (int) std::round(std::stoi(block_declare_field[7]) / factor_y);
         } catch (...) {
-          DaliExpects(false, "Invalid stoi conversion: " + line);
+          DaliExpects(false, "Invalid stoi conversion:\n" + line);
         }
         AddBlock(block_declare_field[1], block_declare_field[2], llx, lly, place_status, orient);
       } else {
@@ -667,12 +668,12 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
     while ((line.find("PINS") == std::string::npos) && !ist.eof()) {
       getline(ist, line);
     }
-    //BOOST_LOG_TRIVIAL(info)   << line;
+    //BOOST_LOG_TRIVIAL(info)   << line << "\n";
     getline(ist, line);
 
     while ((line.find("END PINS") == std::string::npos) && !ist.eof()) {
       if (line.find('-') != std::string::npos && line.find("NET") != std::string::npos) {
-        //BOOST_LOG_TRIVIAL(info)   << line;
+        //BOOST_LOG_TRIVIAL(info)   << line << "\n";
         std::vector<std::string> io_pin_field;
         StrSplit(line, io_pin_field);
         //IOPin *iopin = nullptr;
@@ -690,7 +691,7 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
     // a). find the number of nets
     std::vector<std::string> nets_size_field;
     StrSplit(line, nets_size_field);
-    //BOOST_LOG_TRIVIAL(info)   << line;
+    //BOOST_LOG_TRIVIAL(info)   << line << "\n";
     getline(ist, line);
     // the following is a hack now, cannot handle all cases, probably need to use BISON in the future if necessary
     while ((line.find("END NETS") == std::string::npos) && !ist.eof()) {
@@ -699,15 +700,15 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
         continue;
       }
       if (line.find('-') != std::string::npos) {
-        //BOOST_LOG_TRIVIAL(info)   << line;
+        //BOOST_LOG_TRIVIAL(info)   << line << "\n";
         std::vector<std::string> net_field;
         StrSplit(line, net_field);
-        DaliExpects(net_field.size() >= 2, "Invalid net declaration, expecting at least: - netName, got: " + line);
-        //BOOST_LOG_TRIVIAL(info)   << "\t" << net_field[0] << " " << net_field[1];
+        DaliExpects(net_field.size() >= 2, "Invalid net declaration, expecting at least: - netName\n" + line);
+        //BOOST_LOG_TRIVIAL(info)   << "\t" << net_field[0] << " " << net_field[1] << "\n";
         Net *new_net = nullptr;
-        //BOOST_LOG_TRIVIAL(info)   << "Circuit::ReadDefFile(), this naive parser is broken, please do not use it";
+        //BOOST_LOG_TRIVIAL(info)   << "Circuit::ReadDefFile(), this naive parser is broken, please do not use it\n";
         if (net_field[1].find("Reset") != std::string::npos) {
-          //BOOST_LOG_TRIVIAL(info)   << net_field[1];
+          //BOOST_LOG_TRIVIAL(info)   << net_field[1] << "\n";
           new_net = AddNet(net_field[1], 100, design_.reset_signal_weight);
         } else {
           new_net = AddNet(net_field[1], 100, design_.normal_signal_weight);
@@ -717,11 +718,11 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
           if (!line.empty() && line[0] == '#') {
             continue;
           }
-          //BOOST_LOG_TRIVIAL(info)   << line;
+          //BOOST_LOG_TRIVIAL(info)   << line << "\n";
           std::vector<std::string> pin_field;
           StrSplit(line, pin_field);
           if ((pin_field.size() % 4 != 0)) {
-            DaliExpects(false, "Invalid net declaration, expecting 4n fields, where n >= 2: " + line);
+            DaliExpects(false, "Invalid net declaration, expecting 4n fields, where n >= 2:\n" + line);
           }
           for (size_t i = 0; i < pin_field.size(); i += 4) {
             //BOOST_LOG_TRIVIAL(info)   << "     " << pin_field[i+1] << " " << pin_field[i+2];
@@ -729,11 +730,12 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
               getIOPin(pin_field[i + 2])->SetNet(new_net);
               continue;
             }
-            //BOOST_LOG_TRIVIAL(info)   << net_field[1] << "  " << pin_field[i + 1];
+            //BOOST_LOG_TRIVIAL(info)   << net_field[1] << "  " << pin_field[i + 1] << "\n";
             Block *block = getBlockPtr(pin_field[i + 1]);
             auto pin = block->TypePtr()->getPinPtr(pin_field[i + 2]);
             new_net->AddBlockPinPair(block, pin);
           }
+          //BOOST_LOG_TRIVIAL(info)   << "\n";
           if (line.find(';') != std::string::npos) break;
         }
         //Assert(!new_net->blk_pin_list.empty(), "Net " + net_field[1] + " has no blk_pin_pair");
@@ -743,13 +745,13 @@ void Circuit::ReadDefFile(std::string const &name_of_file) {
       getline(ist, line);
     }
   }
-  BOOST_LOG_TRIVIAL(info) << "DEF file loading complete: " << name_of_file;
+  BOOST_LOG_TRIVIAL(info) << "DEF file loading complete: " << name_of_file << "\n";
 }
 
 void Circuit::ReadCellFile(std::string const &name_of_file) {
   std::ifstream ist(name_of_file.c_str());
   DaliExpects(ist.is_open(), "Cannot open input file: " + name_of_file);
-  BOOST_LOG_TRIVIAL(info) << "Loading CELL file: " << name_of_file;
+  BOOST_LOG_TRIVIAL(info) << "Loading CELL file: " << name_of_file << "\n";
   std::string line;
 
   while (!ist.eof()) {
@@ -768,19 +770,19 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
             try {
               same_diff_spacing = std::stod(legalizer_fields[1]);
             } catch (...) {
-              BOOST_LOG_TRIVIAL(info) << line;
+              BOOST_LOG_TRIVIAL(info) << line << std::endl;
               DaliExpects(false, "Invalid stod conversion: " + legalizer_fields[1]);
             }
           } else if (legalizer_fields[0] == "ANY_DIFF_SPACING") {
             try {
               any_diff_spacing = std::stod(legalizer_fields[1]);
             } catch (...) {
-              BOOST_LOG_TRIVIAL(info) << line;
+              BOOST_LOG_TRIVIAL(info) << line << std::endl;
               DaliExpects(false, "Invalid stod conversion: " + legalizer_fields[1]);
             }
           }
         } while (line.find("END LEGALIZER") == std::string::npos && !ist.eof());
-        //BOOST_LOG_TRIVIAL(info)   << "same diff spacing: " << same_diff_spacing << ", any diff spacing: " << any_diff_spacing;
+        //BOOST_LOG_TRIVIAL(info)   << "same diff spacing: " << same_diff_spacing << "\n any diff spacing: " << any_diff_spacing << "\n";
         SetLegalizerSpacing(same_diff_spacing, any_diff_spacing);
       } else {
         std::vector<std::string> well_fields;
@@ -799,7 +801,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
             try {
               width = std::stod(well_fields[1]);
             } catch (...) {
-              BOOST_LOG_TRIVIAL(info) << line;
+              BOOST_LOG_TRIVIAL(info) << line << std::endl;
               DaliExpects(false, "Invalid stod conversion: " + well_fields[1]);
             }
           } else if (line.find("OPPOSPACING") != std::string::npos) {
@@ -807,7 +809,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
             try {
               op_spacing = std::stod(well_fields[1]);
             } catch (...) {
-              BOOST_LOG_TRIVIAL(info) << line;
+              BOOST_LOG_TRIVIAL(info) << line << std::endl;
               DaliExpects(false, "Invalid stod conversion: " + well_fields[1]);
             }
           } else if (line.find("SPACING") != std::string::npos) {
@@ -815,7 +817,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
             try {
               spacing = std::stod(well_fields[1]);
             } catch (...) {
-              BOOST_LOG_TRIVIAL(info) << line;
+              BOOST_LOG_TRIVIAL(info) << line << std::endl;
               DaliExpects(false, "Invalid stod conversion: " + well_fields[1]);
             }
           } else if (line.find("MAXPLUGDIST") != std::string::npos) {
@@ -823,7 +825,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
             try {
               max_plug_dist = std::stod(well_fields[1]);
             } catch (...) {
-              BOOST_LOG_TRIVIAL(info) << line;
+              BOOST_LOG_TRIVIAL(info) << line << std::endl;
               DaliExpects(false, "Invalid stod conversion: " + well_fields[1]);
             }
           } else if (line.find("MAXPLUGDIST") != std::string::npos) {
@@ -831,7 +833,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
             try {
               overhang = std::stod(well_fields[1]);
             } catch (...) {
-              BOOST_LOG_TRIVIAL(info) << line;
+              BOOST_LOG_TRIVIAL(info) << line << std::endl;
               DaliExpects(false, "Invalid stod conversion: " + well_fields[1]);
             }
           } else {}
@@ -846,7 +848,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
     }
 
     if (line.find("MACRO") != std::string::npos) {
-      //BOOST_LOG_TRIVIAL(info)   << line;
+      //BOOST_LOG_TRIVIAL(info)   << line << "\n";
       std::vector<std::string> macro_fields;
       StrSplit(line, macro_fields);
       std::string end_macro_flag = "END " + macro_fields[1];
@@ -870,7 +872,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
                 ux = std::stod(shape_fields[3]);
                 uy = std::stod(shape_fields[4]);
               } catch (...) {
-                DaliExpects(false, "Invalid stod conversion: " + line);
+                DaliExpects(false, "Invalid stod conversion:\n" + line);
               }
               setWellRect(macro_fields[1], is_n, lx, ly, ux, uy);
             }
@@ -884,7 +886,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
   //tech_->Report();
   //ReportWellShape();
 
-  BOOST_LOG_TRIVIAL(info) << "CELL file loading complete: " << name_of_file;
+  BOOST_LOG_TRIVIAL(info) << "CELL file loading complete: " << name_of_file << "\n";
 }
 
 void Circuit::setGridValue(double grid_value_x, double grid_value_y) {
@@ -892,7 +894,7 @@ void Circuit::setGridValue(double grid_value_x, double grid_value_y) {
   DaliExpects(grid_value_x > 0, "grid_value_x must be a positive real number! Circuit::setGridValue()");
   DaliExpects(grid_value_y > 0, "grid_value_y must be a positive real number! Circuit::setGridValue()");
   DaliExpects(!tech_.grid_set_, "once set, grid_value cannot be changed! Circuit::setGridValue()");
-  //BOOST_LOG_TRIVIAL(info) << "  grid value x: " << grid_value_x << ", grid value y: " << grid_value_y;
+  //BOOST_LOG_TRIVIAL(info) << "  grid value x: " << grid_value_x << ", grid value y: " << grid_value_y << "\n";
   tech_.grid_value_x_ = grid_value_x;
   tech_.grid_value_y_ = grid_value_y;
   tech_.grid_set_ = true;
@@ -913,8 +915,8 @@ void Circuit::setGridUsingMetalPitch() {
   }
   DaliExpects(hor_layer != nullptr, "Cannot find a horizontal metal layer! Circuit::setGridUsingMetalPitch()");
   DaliExpects(ver_layer != nullptr, "Cannot find a vertical metal layer! Circuit::setGridUsingMetalPitch()");
-  //BOOST_LOG_TRIVIAL(info)   << "vertical layer: " << *ver_layer->Name() << "  " << ver_layer->PitchX();
-  //BOOST_LOG_TRIVIAL(info)   << "horizontal layer: " << *hor_layer->Name() << "  " << hor_layer->PitchY();
+  //BOOST_LOG_TRIVIAL(info)   << "vertical layer: " << *ver_layer->Name() << "  " << ver_layer->PitchX() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << "horizontal layer: " << *hor_layer->Name() << "  " << hor_layer->PitchY() << "\n";
   setGridValue(ver_layer->PitchX(), hor_layer->PitchY());
 }
 
@@ -945,10 +947,11 @@ void Circuit::AddMetalLayer(std::string &metal_name,
 }
 
 void Circuit::ReportMetalLayers() {
-  BOOST_LOG_TRIVIAL(info) << "Total MetalLayer: " << tech_.metal_list_.size();
+  BOOST_LOG_TRIVIAL(info) << "Total MetalLayer: " << tech_.metal_list_.size() << "\n";
   for (auto &metal_layer: tech_.metal_list_) {
     metal_layer.Report();
   }
+  BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
 BlockTypeWell *Circuit::AddBlockTypeWell(BlockType *blk_type) {
@@ -1039,10 +1042,11 @@ void Circuit::setListCapacity(int components_count, int pins_count, int nets_cou
 }
 
 void Circuit::ReportBlockType() {
-  BOOST_LOG_TRIVIAL(info) << "Total BlockType: " << tech_.block_type_map_.size();
+  BOOST_LOG_TRIVIAL(info) << "Total BlockType: " << tech_.block_type_map_.size() << std::endl;
   for (auto &pair: tech_.block_type_map_) {
     pair.second->Report();
   }
+  BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
 void Circuit::CopyBlockType(Circuit &circuit) {
@@ -1180,10 +1184,11 @@ IOPin *Circuit::AddIOPin(std::string &iopin_name,
 }
 
 void Circuit::ReportIOPin() {
-  BOOST_LOG_TRIVIAL(info) << "Total IOPin: " << design_.iopin_list.size();
+  BOOST_LOG_TRIVIAL(info) << "Total IOPin: " << design_.iopin_list.size() << "\n";
   for (auto &iopin: design_.iopin_list) {
     iopin.Report();
   }
+  BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
 Net *Circuit::AddNet(std::string &net_name, int capacity, double weight) {
@@ -1244,32 +1249,35 @@ void Circuit::RemoveAllPseudoNets() {
  */
 
 void Circuit::ReportBlockList() {
-  BOOST_LOG_TRIVIAL(info) << "Total Block: " << design_.block_list.size();
+  BOOST_LOG_TRIVIAL(info) << "Total Block: " << design_.block_list.size() << "\n";
   for (auto &block: design_.block_list) {
     block.Report();
   }
+  BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
 void Circuit::ReportBlockMap() {
   for (auto &it: design_.block_name_map) {
-    BOOST_LOG_TRIVIAL(info) << it.first << " " << it.second;
+    BOOST_LOG_TRIVIAL(info) << it.first << " " << it.second << "\n";
   }
 }
 
 void Circuit::ReportNetList() {
-  BOOST_LOG_TRIVIAL(info) << "Total Net: " << design_.net_list.size();
+  BOOST_LOG_TRIVIAL(info) << "Total Net: " << design_.net_list.size() << "\n";
   for (auto &net: design_.net_list) {
-    BOOST_LOG_TRIVIAL(info) << "  " << *net.Name() << "  " << net.Weight();
+    BOOST_LOG_TRIVIAL(info) << "  " << *net.Name() << "  " << net.Weight() << "\n";
     for (auto &block_pin_pair: net.blk_pin_list) {
       BOOST_LOG_TRIVIAL(info) << "\t" << " (" << *(block_pin_pair.BlockNamePtr()) << " "
-                              << *(block_pin_pair.PinNamePtr()) << ") ";
+                              << *(block_pin_pair.PinNamePtr()) << ") "
+                              << "\n";
     }
   }
+  BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
 void Circuit::ReportNetMap() {
   for (auto &it: design_.net_name_map) {
-    BOOST_LOG_TRIVIAL(info) << it.first << " " << it.second;
+    BOOST_LOG_TRIVIAL(info) << it.first << " " << it.second << "\n";
   }
 }
 
@@ -1306,13 +1314,13 @@ void Circuit::ReportBriefSummary() const {
     << "    right:  " << RegionURX() << "\n"
     << "    bottom: " << RegionLLY() << "\n"
     << "    top:    " << RegionURY() << "\n"
-    << "  white space utility: " << WhiteSpaceUsage();
+    << "  white space utility: " << WhiteSpaceUsage() << "\n";
 }
 
 void Circuit::BuildBlkPairNets() {
   // for each net, we decompose it, and enumerate all driver-load pair
   for (auto &net: design_.net_list) {
-    //BOOST_LOG_TRIVIAL(info)   << net.NameStr();
+    //BOOST_LOG_TRIVIAL(info)   << net.NameStr() << "\n";
     int sz = net.blk_pin_list.size();
     int driver_index = -1;
     // find if there is a driver pin in this net
@@ -1370,7 +1378,7 @@ void Circuit::BuildBlkPairNets() {
 //    int num0 = blk_pair_net_list_[i].blk_num0;
 //    int num1 = blk_pair_net_list_[i].blk_num1;
 //    ost << "-(" << num0 << " " << design_.block_list[num0].Name() << ", "
-//                << num1 << " " << design_.block_list[num1].Name() << ")";
+//                << num1 << " " << design_.block_list[num1].Name() << ")" << "\n";
 //    for (auto &edge: blk_pair_net_list_[i].edges) {
 //      Net *net_ptr = edge.net;
 //      int d_index = edge.d;
@@ -1378,7 +1386,7 @@ void Circuit::BuildBlkPairNets() {
 //      ost << "\t" << *(net_ptr->blk_pin_list[d_index].BlockNamePtr())
 //          << "  " << *(net_ptr->blk_pin_list[d_index].PinNamePtr())
 //          << ", " << *(net_ptr->blk_pin_list[l_index].BlockNamePtr())
-//          << "  " << *(net_ptr->blk_pin_list[l_index].PinNamePtr());
+//          << "  " << *(net_ptr->blk_pin_list[l_index].PinNamePtr()) << "\n";
 //    }
 //    if (i>10) break;
 //  }
@@ -1432,10 +1440,10 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
   }
 
   int tot_count = design_.net_list.size();
-  BOOST_LOG_TRIVIAL(info) << " ";
-  BOOST_LOG_TRIVIAL(info) << "                  HPWL histogram (linear scale bins)";
-  BOOST_LOG_TRIVIAL(info) << "===================================================================";
-  BOOST_LOG_TRIVIAL(info) << "   HPWL interval         Count";
+  BOOST_LOG_TRIVIAL(info) << "\n";
+  BOOST_LOG_TRIVIAL(info) << "                  HPWL histogram (linear scale bins)\n";
+  BOOST_LOG_TRIVIAL(info) << "===================================================================\n";
+  BOOST_LOG_TRIVIAL(info) << "   HPWL interval         Count\n";
   for (int i = 0; i < bin_num; ++i) {
     double lo = min_hpwl + step * i;
     double hi = lo + step;
@@ -1444,11 +1452,11 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
     for (int j = 0; j < percent; ++j) {
       BOOST_LOG_TRIVIAL(info) << "*";
     }
-    BOOST_LOG_TRIVIAL(info) << " ";
+    BOOST_LOG_TRIVIAL(info) << "\n";
   }
-  BOOST_LOG_TRIVIAL(info) << "===================================================================";
-  BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: " << tech_.grid_value_x_ << " um";
-  BOOST_LOG_TRIVIAL(info) << " ";
+  BOOST_LOG_TRIVIAL(info) << "===================================================================\n";
+  BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: " << tech_.grid_value_x_ << " um\n";
+  BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
 void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
@@ -1478,10 +1486,10 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
   }
 
   int tot_count = design_.net_list.size();
-  BOOST_LOG_TRIVIAL(info) << " ";
-  BOOST_LOG_TRIVIAL(info) << "                  HPWL histogram (log scale bins)";
-  BOOST_LOG_TRIVIAL(info) << "===================================================================";
-  BOOST_LOG_TRIVIAL(info) << "   HPWL interval         Count";
+  BOOST_LOG_TRIVIAL(info) << "\n";
+  BOOST_LOG_TRIVIAL(info) << "                  HPWL histogram (log scale bins)\n";
+  BOOST_LOG_TRIVIAL(info) << "===================================================================\n";
+  BOOST_LOG_TRIVIAL(info) << "   HPWL interval         Count\n";
   for (int i = 0; i < bin_num; ++i) {
     double lo = std::pow(10, min_hpwl + step * i);
     double hi = std::pow(10, min_hpwl + step * (i + 1));
@@ -1490,11 +1498,11 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
     for (int j = 0; j < percent; ++j) {
       BOOST_LOG_TRIVIAL(info) << "*";
     }
-    BOOST_LOG_TRIVIAL(info) << " ";
+    BOOST_LOG_TRIVIAL(info) << "\n";
   }
-  BOOST_LOG_TRIVIAL(info) << "===================================================================";
-  BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: " << tech_.grid_value_x_ << " um";
-  BOOST_LOG_TRIVIAL(info) << " ";
+  BOOST_LOG_TRIVIAL(info) << "===================================================================\n";
+  BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: " << tech_.grid_value_x_ << " um\n";
+  BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
 void Circuit::SaveOptimalRegionDistance(std::string file_name) {
@@ -1693,7 +1701,7 @@ void Circuit::GenLongNetTable(std::string const &name_of_file) {
   BOOST_LOG_TRIVIAL(info) << "Long net report: \n"
                           << "  threshold: " << multi_factor << " " << threshold << "\n"
                           << "  count:     " << count << "\n"
-                          << "  ave_hpwl:  " << ave_hpwl;
+                          << "  ave_hpwl:  " << ave_hpwl << "\n";
 
   ost.close();
 }
@@ -1706,9 +1714,9 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
     file_name = name_of_file + "_trim.def";
   }
   if (is_complete_version) {
-    BOOST_LOG_TRIVIAL(info) << "Writing DEF file: " << file_name;
+    BOOST_LOG_TRIVIAL(info) << "Writing DEF file: " << file_name << "\n";
   } else {
-    BOOST_LOG_TRIVIAL(info) << "Writing trimmed DEF file (for debugging): " << file_name;
+    BOOST_LOG_TRIVIAL(info) << "Writing trimmed DEF file (for debugging): " << file_name << "\n";
   }
 
   std::ofstream ost(file_name.c_str());
@@ -1838,7 +1846,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
   ost.close();
   ist.close();
 
-  BOOST_LOG_TRIVIAL(info) << "    DEF writing done";
+  BOOST_LOG_TRIVIAL(info) << "    DEF writing done\n";
 }
 
 void Circuit::SaveDefFile(std::string const &base_name,
@@ -2252,7 +2260,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
 
   ost << "END DESIGN\n";
 
-  BOOST_LOG_TRIVIAL(info) << ", done";
+  BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
 void Circuit::SaveIODefFile(std::string const &name_of_file, std::string const &def_file_name) {
@@ -2368,7 +2376,7 @@ void Circuit::SaveIODefFile(std::string const &name_of_file, std::string const &
   ost.close();
   ist.close();
 
-  BOOST_LOG_TRIVIAL(info) << ", done";
+  BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
 void Circuit::SaveDefWell(std::string const &name_of_file, std::string const &def_file_name, bool is_no_normal_cell) {
@@ -2458,7 +2466,7 @@ void Circuit::SaveDefWell(std::string const &name_of_file, std::string const &de
   ost.close();
   ist.close();
 
-  BOOST_LOG_TRIVIAL(info) << ", done";
+  BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
 void Circuit::SaveDefPPNPWell(std::string const &name_of_file, std::string const &def_file_name) {
@@ -2523,7 +2531,7 @@ void Circuit::SaveDefPPNPWell(std::string const &name_of_file, std::string const
   ost.close();
   ist.close();
 
-  BOOST_LOG_TRIVIAL(info) << ", done";
+  BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
 void Circuit::SaveInstanceDefFile(std::string const &name_of_file, std::string const &def_file_name) {
