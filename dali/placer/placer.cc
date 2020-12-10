@@ -43,11 +43,13 @@ double Placer::GetBlkHPWL(Block &blk) {
 
 bool Placer::IsBoundaryProper() {
   if (circuit_->MaxBlkWidth() > RegionRight() - RegionLeft()) {
-    BOOST_LOG_TRIVIAL(info) << "Improper boundary: maximum cell width is larger than the width of placement region";
+    BOOST_LOG_TRIVIAL(info) << "Improper boundary:\n"
+                            << "    maximum cell width is larger than the width of placement region\n";
     return false;
   }
   if (circuit_->MaxBlkHeight() > RegionTop() - RegionBottom()) {
-    BOOST_LOG_TRIVIAL(info) << "Improper boundary: maximum cell height is larger than the height of placement region";
+    BOOST_LOG_TRIVIAL(info) << "Improper boundary:\n"
+                            << "    maximum cell height is larger than the height of placement region\n";
     return false;
   }
   return true;
@@ -58,17 +60,17 @@ void Placer::SetBoundaryAuto() {
   long int tot_block_area = circuit_->TotBlkArea();
   int width = std::ceil(std::sqrt(double(tot_block_area) / aspect_ratio_ / filling_rate_));
   int height = std::ceil(width * aspect_ratio_);
-  BOOST_LOG_TRIVIAL(info) << "Pre-set aspect ratio: " << aspect_ratio_;
+  BOOST_LOG_TRIVIAL(info) << "Pre-set aspect ratio: " << aspect_ratio_ << "\n";
   aspect_ratio_ = height / (double) width;
-  BOOST_LOG_TRIVIAL(info) << "Adjusted aspect rate: " << aspect_ratio_;
+  BOOST_LOG_TRIVIAL(info) << "Adjusted aspect rate: " << aspect_ratio_ << "\n";
   left_ = (int) (circuit_->AveBlkWidth());
   right_ = left_ + width;
   bottom_ = (int) (circuit_->AveBlkWidth());
   top_ = bottom_ + height;
   int area = height * width;
-  BOOST_LOG_TRIVIAL(info) << "Pre-set filling rate: " << filling_rate_;
+  BOOST_LOG_TRIVIAL(info) << "Pre-set filling rate: " << filling_rate_ << "\n";
   filling_rate_ = double(tot_block_area) / area;
-  BOOST_LOG_TRIVIAL(info) << "Adjusted filling rate: " << filling_rate_;
+  BOOST_LOG_TRIVIAL(info) << "Adjusted filling rate: " << filling_rate_ << "\n";
   DaliExpects(IsBoundaryProper(), "Invalid boundary setting");
 }
 
@@ -80,9 +82,9 @@ void Placer::SetBoundary(int left, int right, int bottom, int top) {
   unsigned long int tot_area = (right - left) * (top - bottom);
   DaliExpects(tot_area >= tot_block_area,
               "Invalid boundary setting: given region has smaller area than total block area!");
-  BOOST_LOG_TRIVIAL(info) << "Pre-set filling rate: " << filling_rate_;
+  BOOST_LOG_TRIVIAL(info) << "Pre-set filling rate: " << filling_rate_ << "\n";
   filling_rate_ = (double) tot_block_area / (double) tot_area;
-  BOOST_LOG_TRIVIAL(info) << "Adjusted filling rate: " << filling_rate_;
+  BOOST_LOG_TRIVIAL(info) << "Adjusted filling rate: " << filling_rate_ << "\n";
   left_ = left;
   right_ = right;
   bottom_ = bottom;
@@ -99,17 +101,18 @@ void Placer::SetBoundaryDef() {
 }
 
 void Placer::ReportBoundaries() {
-  BOOST_LOG_TRIVIAL(info) << "Left, Right, Bottom, Top:";
+  BOOST_LOG_TRIVIAL(info) << "Left, Right, Bottom, Top:\n";
   BOOST_LOG_TRIVIAL(info) << "  "
                           << RegionLeft() << ", "
                           << RegionRight() << ", "
                           << RegionBottom() << ", "
-                          << RegionTop();
+                          << RegionTop() << "\n";
 }
 
 void Placer::UpdateAspectRatio() {
   if ((right_ - left_ == 0) || (top_ - bottom_ == 0)) {
-    BOOST_LOG_TRIVIAL(fatal) << "Error: Zero Height or Width of placement region!";
+    BOOST_LOG_TRIVIAL(fatal) << "Error!\n"
+                             << "Zero Height or Width of placement region!\n";
     ReportBoundaries();
     exit(1);
   }
@@ -182,7 +185,7 @@ void Placer::SaveDEFFile(std::string const &name_of_file) {
   // no tracks?
 
   // 2. print component
-  BOOST_LOG_TRIVIAL(info) << BlockList()->size();
+  BOOST_LOG_TRIVIAL(info) << BlockList()->size() << "\n";
   ost << "COMPONENTS " << BlockList()->size() << " ;\n";
   for (auto &block: *BlockList()) {
     ost << "- "
@@ -220,7 +223,7 @@ void Placer::SaveDEFFile(std::string const &name_of_file, std::string const &inp
 
 void Placer::EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode) {
   BOOST_LOG_TRIVIAL(info)
-    << "virtual function Placer::EmitDEFWellFile() does nothing, you should not use this member function";
+    << "virtual function Placer::EmitDEFWellFile() does nothing, you should not use this member function\n";
 }
 
 void Placer::SanityCheck() {
@@ -252,7 +255,7 @@ void Placer::SimpleIOPinPlacement(int pin_metal_layer) {
   if (circuit_->getIOPinList()->empty()) return;
   DaliExpects(pin_metal_layer < (int) circuit_->tech_.metal_list_.size(),
               "Invalid metal layer provided for Placer::SimpleIOPinPlacement()");
-  //BOOST_LOG_TRIVIAL(info)   << circuit_->GetIOPinList()->size();
+  //BOOST_LOG_TRIVIAL(info)   << circuit_->GetIOPinList()->size() << "\n";
   Net *net = nullptr;
   double net_minx, net_maxx, net_miny, net_maxy;
   double to_left, to_right, to_bottom, to_top;
@@ -268,7 +271,7 @@ void Placer::SimpleIOPinPlacement(int pin_metal_layer) {
     iopin.SetLayer(&(circuit_->tech_.metal_list_[pin_metal_layer]));
     net = iopin.GetNet();
     if (net->blk_pin_list.empty()) continue;
-    //BOOST_LOG_TRIVIAL(info)   << net->NameStr();
+    //BOOST_LOG_TRIVIAL(info)   << net->NameStr() << "\n";
 
     net->UpdateMaxMinIndex();
     net_minx = net->MinX();

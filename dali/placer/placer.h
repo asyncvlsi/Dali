@@ -38,12 +38,12 @@ class Placer {
   virtual void SetInputCircuit(Circuit *circuit) {
     DaliExpects(circuit != nullptr, "Invalid input circuit: not allowed to set nullptr as an input!");
     if (circuit->getBlockList()->empty()) {
-      BOOST_LOG_TRIVIAL(info) << "Invalid input circuit: empty block list, nothing to place!";
+      BOOST_LOG_TRIVIAL(info) << "Invalid input circuit: empty block list, nothing to place!\n";
       return;
     }
     if (circuit->getNetList()->empty()) {
       BOOST_LOG_TRIVIAL(info)
-        << "Improper input circuit: empty net list, nothing to optimize during placement! But anyway...";
+        << "Improper input circuit: empty net list, nothing to optimize during placement! But anyway...\n";
     }
     circuit_ = circuit;
   }
@@ -109,7 +109,7 @@ class Placer {
     BOOST_LOG_TRIVIAL(info) << "(peak memory: "
                             << (peak_mem >> 20u) << " MB, "
                             << " current memory: "
-                            << (curr_mem >> 20u) << " MB)";
+                            << (curr_mem >> 20u) << " MB)\n";
   }
 
   void ReportHPWLCtoC() {

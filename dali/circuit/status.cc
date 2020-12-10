@@ -21,7 +21,7 @@ MetalDirection StrToMetalDirection(std::string &str_metal_direction) {
   } else if (str_metal_direction == "DIAG135") {
     metal_direction = DIAG135_;
   } else {
-    BOOST_LOG_TRIVIAL(fatal) << "Unknown MetalLayer direction: " << str_metal_direction << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Unknown MetalLayer direction: " << str_metal_direction << std::endl;
     exit(1);
   }
   return metal_direction;
@@ -39,7 +39,7 @@ std::string MetalDirectionStr(MetalDirection metal_direction) {
     case 3: { s = "DIAG135"; }
       break;
     default: {
-      BOOST_LOG_TRIVIAL(fatal) << "MetalLayer direction error! This should never happen!" << std::endl;
+      BOOST_LOG_TRIVIAL(info) << "MetalLayer direction error! This should never happen!" << std::endl;
       exit(1);
     }
   }
@@ -65,7 +65,7 @@ BlockOrient StrToOrient(std::string &str_orient) {
   } else if (str_orient == "FE" || str_orient == "MY90" || str_orient == "MYR90") {
     orient = FE_;
   } else {
-    BOOST_LOG_TRIVIAL(fatal) << "Unknown Block orientation: " << str_orient << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Unknown Block orientation: " << str_orient << std::endl;
     exit(1);
   }
   return orient;
@@ -91,7 +91,7 @@ std::string OrientStr(BlockOrient orient) {
     case 7: { s = "FE"; }
       break;
     default: {
-      BOOST_LOG_TRIVIAL(fatal) << "Block orientation error! This should never happen!" << std::endl;
+      BOOST_LOG_TRIVIAL(info) << "Block orientation error! This should never happen!" << std::endl;
       exit(1);
     }
   }
@@ -111,7 +111,7 @@ PlaceStatus StrToPlaceStatus(std::string &str_place_status) {
   } else if (str_place_status == "NULL_STATE") {
     place_status = NULL_STATE_;
   } else {
-    BOOST_LOG_TRIVIAL(fatal) << "Unknown placement status: " << str_place_status << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Unknown placement status: " << str_place_status << std::endl;
     exit(1);
   }
   return place_status;
@@ -131,7 +131,7 @@ std::string PlaceStatusStr(PlaceStatus place_status) {
     case 4: { s = "NULL_STATE"; }
       break;
     default: {
-      BOOST_LOG_TRIVIAL(fatal) << "Unit placement state error! This should never happen!" << std::endl;
+      BOOST_LOG_TRIVIAL(info) << "Unit placement state error! This should never happen!" << std::endl;
       exit(1);
     }
   }
@@ -149,8 +149,8 @@ SignalDirection StrToSignalDirection(std::string &str_signal_direction) {
   } else if (str_signal_direction == "FEEDTHRU") {
     signal_direction = FEEDTHRU_;
   } else {
-    BOOST_LOG_TRIVIAL(fatal) << "Unknown SignalDirection: " << str_signal_direction << std::endl;
-    exit(1);
+    BOOST_LOG_TRIVIAL(info) << "Unknown SignalDirection: " << str_signal_direction << std::endl;
+    exit(0);
   }
   return signal_direction;
 }
@@ -167,7 +167,7 @@ std::string SignalDirectionStr(SignalDirection signal_direction) {
     case 3: { s = "FEEDTHRU"; }
       break;
     default: {
-      BOOST_LOG_TRIVIAL(fatal) << "IOPIN signal direction error! This should never happen!" << std::endl;
+      BOOST_LOG_TRIVIAL(info) << "IOPIN signal direction error! This should never happen!" << std::endl;
       exit(1);
     }
   }
@@ -193,8 +193,8 @@ SignalUse StrToSignalUse(std::string &str_signal_use) {
   } else if (str_signal_use == "RESET") {
     signal_use = RESET_;
   } else {
-    BOOST_LOG_TRIVIAL(fatal) << "Unknown SignalUse: " << str_signal_use << std::endl;
-    exit(1);
+    BOOST_LOG_TRIVIAL(info) << "Unknown SignalUse: " << str_signal_use << std::endl;
+    exit(0);
   }
   return signal_use;
 }
@@ -219,7 +219,7 @@ std::string SignalUseStr(SignalUse signal_use) {
     case 7: { s = "RESET"; }
       break;
     default: {
-      BOOST_LOG_TRIVIAL(fatal) << "IOPIN signal use error! This should never happen!" << std::endl;
+      BOOST_LOG_TRIVIAL(info) << "IOPIN signal use error! This should never happen!" << std::endl;
       exit(1);
     }
   }

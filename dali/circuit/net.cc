@@ -38,11 +38,11 @@ void Net::AddBlockPinPair(Block *block_ptr, Pin *pin_ptr) {
     inv_p_ = p_minus_one > 0 ? 1.0 * weight_ / p_minus_one : 0;
   } else {
     BOOST_LOG_TRIVIAL(info) << "Pre-assigned net capacity is full: " << blk_pin_list.capacity()
-                            << ", cannot add more pin to this net:";
-    BOOST_LOG_TRIVIAL(info) << "net name: " << *Name() << ", net weight: " << Weight();
+                            << ", cannot add more pin to this net:\n";
+    BOOST_LOG_TRIVIAL(info) << "net name: " << *Name() << ", net weight: " << Weight() << "\n";
     for (auto &block_pin_pair: blk_pin_list) {
       BOOST_LOG_TRIVIAL(info) << "\t" << " (" << *(block_pin_pair.BlockNamePtr()) << " "
-                              << *(block_pin_pair.PinNamePtr()) << ") ";
+                              << *(block_pin_pair.PinNamePtr()) << ") " << "\n";
     }
     exit(1);
   }
@@ -279,9 +279,9 @@ double Net::HPWLCtoCX() {
 
   for (auto &pin: blk_pin_list) {
     if (pin.BlkPtr() == nullptr) {
-      BOOST_LOG_TRIVIAL(error) << "Error!";
-      BOOST_LOG_TRIVIAL(error)
-        << "attribute block_t* _block is nullptr, it should points to the block containing this pin";
+      BOOST_LOG_TRIVIAL(info) << "Error!\n";
+      BOOST_LOG_TRIVIAL(info)
+        << "attribute block_t* _block is nullptr, it should points to the block containing this pin\n";
       assert(pin.BlkPtr() != nullptr);
     }
     block = pin.BlkPtr();
@@ -304,8 +304,8 @@ double Net::HPWLCtoCY() {
 
   for (auto &pin: blk_pin_list) {
     if (pin.BlkPtr() == nullptr) {
-      BOOST_LOG_TRIVIAL(error) << "Error!";
-      BOOST_LOG_TRIVIAL(error)
+      BOOST_LOG_TRIVIAL(info) << "Error!\n";
+      BOOST_LOG_TRIVIAL(info)
         << "attribute block_t* _block is nullptr, it should points to the block containing this pin\n";
       assert(pin.BlkPtr() != nullptr);
     }

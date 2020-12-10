@@ -76,13 +76,13 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
 
   // 1. lef database microns
   setDatabaseMicron(tech->getDbUnitsPerMicron());
-  //BOOST_LOG_TRIVIAL(info)   << tech->getDbUnitsPerMicron();
-  //BOOST_LOG_TRIVIAL(info)   << tech->getLefUnits();
-  //BOOST_LOG_TRIVIAL(info)   << top_level->getDefUnits();
+  //BOOST_LOG_TRIVIAL(info)   << tech->getDbUnitsPerMicron() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << tech->getLefUnits() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << top_level->getDefUnits() << "\n";
 
   // 2. manufacturing grid and metals
   if (tech->hasManufacturingGrid()) {
-    //BOOST_LOG_TRIVIAL(info)   << "Mangrid" << tech->getManufacturingGrid();
+    //BOOST_LOG_TRIVIAL(info)   << "Mangrid" << tech->getManufacturingGrid() << "\n";
     setManufacturingGrid(tech->getManufacturingGrid() / double(tech_.database_microns_));
   } else {
     setManufacturingGrid(1.0 / tech_.database_microns_);
@@ -120,7 +120,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   //BOOST_LOG_TRIVIAL(info)   << site->getName() << "  " << site->getWidth() / double(tech_.database_microns_) << "  " << tech_.row_height_ << "\n";
 
   // 4. load all macros, aka gate types, block types, cell types
-  //BOOST_LOG_TRIVIAL(info)   << lib->getName() << " lib";
+  //BOOST_LOG_TRIVIAL(info)   << lib->getName() << " lib\n";
   double llx = 0, lly = 0, urx = 0, ury = 0;
   double width = 0, height = 0;
   for (auto &&macro: lib->getMasters()) {
@@ -133,12 +133,12 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
     } else {
       blk_type = AddBlockType(macro_name, width, height);
     }
-    //BOOST_LOG_TRIVIAL(info)   << macro->getName();
-    //BOOST_LOG_TRIVIAL(info)   << macro->getWidth()/grid_value_x_/lef_database_microns << "  " << macro->getHeight()/grid_value_y_/lef_database_microns;
+    //BOOST_LOG_TRIVIAL(info)   << macro->getName() << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << macro->getWidth()/grid_value_x_/lef_database_microns << "  " << macro->getHeight()/grid_value_y_/lef_database_microns << "\n";
     for (auto &&terminal: macro->getMTerms()) {
       std::string pin_name(terminal->getName());
       //if (pin_name == "Vdd" || pin_name == "GND") continue;
-      //BOOST_LOG_TRIVIAL(info)   << terminal->getName() << " " << terminal->getMPins().begin()->getGeometry().begin()->xMax()/grid_value_x/lef_database_microns;
+      //BOOST_LOG_TRIVIAL(info)   << terminal->getName() << " " << terminal->getMPins().begin()->getGeometry().begin()->xMax()/grid_value_x/lef_database_microns << "\n";
       Assert(!terminal->getMPins().empty(), "No physical pins, Macro: " + *blk_type->NamePtr() + ", pin: " + pin_name);
       Assert(!terminal->getMPins().begin()->getGeometry().empty(), "No geometries provided for pin");
       auto geo_shape = terminal->getMPins().begin()->getGeometry().begin();
@@ -175,17 +175,17 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   if (globalVerboseLevel >= LOG_CRITICAL) {
     BOOST_LOG_TRIVIAL(info)   << "components count: " << components_count << "\n"
               << "pins count:        " << pins_count << "\n"
-              << "nets count:       " << nets_count;
+              << "nets count:       " << nets_count << "\n";
   }
 
   for (auto &&track_set: top_level->getTrackGrids()) {
-    BOOST_LOG_TRIVIAL(info)   << track_set->getTechLayer()->getName();
+    BOOST_LOG_TRIVIAL(info)   << track_set->getTechLayer()->getName() << "\n";
     int x_grid_pattern = 0;
     int y_grid_pattern = 0;
     x_grid_pattern = track_set->getNumGridPatternsX();
     y_grid_pattern = track_set->getNumGridPatternsY();
-    BOOST_LOG_TRIVIAL(info)   << "x grid pattern: " << x_grid_pattern;
-    BOOST_LOG_TRIVIAL(info)   << "y grid pattern: " << y_grid_pattern;
+    BOOST_LOG_TRIVIAL(info)   << "x grid pattern: " << x_grid_pattern << "\n";
+    BOOST_LOG_TRIVIAL(info)   << "y grid pattern: " << y_grid_pattern << "\n";
   }
 
   // 5. load all gates
@@ -196,7 +196,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   //BOOST_LOG_TRIVIAL(info)   << die_area.xMin() << "\n"
   //          << die_area.xMax() << "\n"
   //          << die_area.yMin() << "\n"
-  //          << die_area.yMax();
+  //          << die_area.yMax() << "\n";
   //design_.die_area_offset_x_ = die_area.xMin()/10;
   //design_.die_area_offset_y_ = die_area.yMin()/10;
   //setDieArea((die_area.xMin() - die_area.xMin())/10,
@@ -210,7 +210,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
              die_area.xMax()/10,
              die_area.yMax()/10);
   for (auto &&blk: top_level->getInsts()) {
-    //BOOST_LOG_TRIVIAL(info)   << blk->getName() << "  " << blk->getMaster()->getName();
+    //BOOST_LOG_TRIVIAL(info)   << blk->getName() << "  " << blk->getMaster()->getName() << "\n";
     std::string blk_name(blk->getName());
     std::string blk_type_name(blk->getMaster()->getName());
     blk->getLocation(llx_int, lly_int);
@@ -225,7 +225,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
 
   // 6. load all IOPINs
   for (auto &&iopin: top_level->getBTerms()) {
-    //BOOST_LOG_TRIVIAL(info)   << iopin->getName();
+    //BOOST_LOG_TRIVIAL(info)   << iopin->getName() << "\n";
     std::string iopin_name(iopin->getName());
     int iopin_x = 0;
     int iopin_y = 0;
@@ -244,9 +244,9 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   }
 
   // 7. load all NETs
-  //BOOST_LOG_TRIVIAL(info)   << "Nets:";
+  //BOOST_LOG_TRIVIAL(info)   << "Nets:\n";
   for (auto &&net: top_level->getNets()) {
-    //BOOST_LOG_TRIVIAL(info)   << net->getName();
+    //BOOST_LOG_TRIVIAL(info)   << net->getName() << "\n";
     std::string net_name(net->getName());
     int net_capacity = int(net->getITermCount() + net->getBTermCount());
     AddNet(net_name, net_capacity, design_.normal_signal_weight);

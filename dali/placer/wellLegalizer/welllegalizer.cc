@@ -60,7 +60,7 @@ void WellLegalizer::MarkSpaceWellLeft(Block const &block, int p_row) {
     //BOOST_LOG_TRIVIAL(info)   << "  ly:     " << int(block.LLY())       << "\n"
     //          << "  height: " << block.Height()   << "\n"
     //          << "  top:    " << Top()    << "\n"
-    //          << "  bottom: " << Bottom();
+    //          << "  bottom: " << Bottom() << "\n";
     Assert(false, "Cannot use space out of range");
   }*/
 
@@ -105,7 +105,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
   //          << "    Block Height: " << block.Height() << "\n"
   //          << "    Top of the placement region " << Top() << "\n"
   //          << "    Number of rows: " << row_well_status_.size() << "\n"
-  //          << "    LX and LY: " << int(block.LLX()) << "  " << int(block.LLY());
+  //          << "    LX and LY: " << int(block.LLX()) << "  " << int(block.LLY()) << "\n";
 
   int best_row = 0;
   int best_loc = INT_MIN;
@@ -208,7 +208,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
   res.x = best_loc;
   res.y = best_row + RegionBottom();
 
-  //BOOST_LOG_TRIVIAL(info)   << res.x << "  " << res.y << "  " << min_cost << "  " << block.Num();
+  //BOOST_LOG_TRIVIAL(info)   << res.x << "  " << res.y << "  " << min_cost << "  " << block.Num() << "\n";
 
   return (min_cost < INT_MAX);
 }
@@ -396,7 +396,7 @@ bool WellLegalizer::IsCurrentLocLegalLeft(int loc_x, int width, int lo_row, int 
   // 1. check if the space itself is legal
   is_current_loc_legal = IsSpaceLegal(loc_x, loc_x + width, lo_row, hi_row);
   if (!is_current_loc_legal) {
-    //BOOST_LOG_TRIVIAL(info)   << "Space illegal";
+    //BOOST_LOG_TRIVIAL(info)   << "Space illegal\n";
     return false;
   }
 
@@ -409,21 +409,21 @@ bool WellLegalizer::IsCurrentLocLegalLeft(int loc_x, int width, int lo_row, int 
     }
   }
   if (!is_current_loc_legal) {
-    //BOOST_LOG_TRIVIAL(info)   << "Overlap illegal";
+    //BOOST_LOG_TRIVIAL(info)   << "Overlap illegal\n";
     return false;
   }
 
   // 3. check if the N/P well distance to its left hand side neighbors are satisfied
   bool is_well_distance_legal = IsCurLocWellDistanceLeft(loc_x, lo_row, hi_row, p_row);
   if (!is_well_distance_legal) {
-    //BOOST_LOG_TRIVIAL(info)   << "Well distance illegal";
+    //BOOST_LOG_TRIVIAL(info)   << "Well distance illegal\n";
     return false;
   }
 
   // 4. check the N/P well minimum width rule
   bool is_well_min_width_legal = IsCurLocWellMinWidthLeft(loc_x, lo_row, hi_row, p_row);
   if (!is_well_min_width_legal) {
-    //BOOST_LOG_TRIVIAL(info)   << "Min width illegal";
+    //BOOST_LOG_TRIVIAL(info)   << "Min width illegal\n";
     return false;
   }
 
@@ -513,7 +513,7 @@ bool WellLegalizer::FindLocLeft(Value2D<int> &loc, int num, int width, int heigh
     /*if (num == 614) {
       BOOST_LOG_TRIVIAL(info)   << "x: " << tmp_x << "\n"
                 << "y: " << RowToLoc(tmp_start_row) << "\n"
-                << "cost: " << tmp_cost;
+                << "cost: " << tmp_cost << "\n";
     }*/
 
   }

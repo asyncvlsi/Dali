@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD 17)
 # Detect if Boost library exists
 ######################################
 set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost 1.58.0 COMPONENTS filesystem log_setup log REQUIRED)
+find_package(Boost 1.71.0 COMPONENTS filesystem log_setup log REQUIRED)
 message(STATUS "Boost library path: ${Boost_LIBRARY_DIRS}")
 message(STATUS "Boost include path: ${Boost_INCLUDE_DIR}")
 message(STATUS "Boost libs: ${Boost_LIBRARIES}")

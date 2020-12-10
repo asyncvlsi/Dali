@@ -33,7 +33,7 @@ void init_logging(boost::log::trivial::severity_level sl) {
           keywords::file_name = file_name,
           keywords::format = "[%TimeStamp%] [%ThreadID%] [%Severity%] %Message%"
       );
-  //file_sink->locked_backend()->set_auto_newline_mode(logging::sinks::auto_newline_mode::disabled_auto_newline);
+  file_sink->locked_backend()->set_auto_newline_mode(logging::sinks::auto_newline_mode::disabled_auto_newline);
   file_sink->locked_backend()->auto_flush(false);
 
   logging::core::get()->set_filter
@@ -43,7 +43,7 @@ void init_logging(boost::log::trivial::severity_level sl) {
 
   logging::add_common_attributes();
   auto console_sink = logging::add_console_log(std::cout, boost::log::keywords::format = "%Message%");
-  //console_sink->locked_backend()->set_auto_newline_mode(logging::sinks::auto_newline_mode::disabled_auto_newline);
+  console_sink->locked_backend()->set_auto_newline_mode(logging::sinks::auto_newline_mode::disabled_auto_newline);
   console_sink->locked_backend()->auto_flush(false);
 
 // write floating-point values in scientific notation.
