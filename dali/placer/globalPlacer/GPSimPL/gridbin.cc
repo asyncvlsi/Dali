@@ -46,10 +46,6 @@ void GridBin::create_adjacent_bin_list(int grid_cnt_x, int grid_cnt_y) {
     tmp_index.y = index.y + 1;
     adjacent_bin_index.push_back(tmp_index);
   }
-  /*for (auto &neighbor: adjacent_bin_index) {
-    BOOST_LOG_TRIVIAL(info)   << neighbor.x << "  " << neighbor.y << ",  ";
-  }
-  BOOST_LOG_TRIVIAL(info)   << "\n";*/
 }
 
 void GridBin::Report() {
@@ -57,7 +53,7 @@ void GridBin::Report() {
                           << "  block area:  " << cell_area << "\n"
                           << "  filling rate: " << filling_rate << "\n"
                           << "  white space: " << white_space << "\n"
-                          << "  over fill:   " << over_fill << "\n";
+                          << "  over fill:   " << over_fill;
 }
 
 }

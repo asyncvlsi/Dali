@@ -61,7 +61,7 @@ inline FreeSegment *FreeSegment::Prev() {
 
 inline void FreeSegment::SetSpan(int startLoc, int endLoc) {
   if (startLoc > endLoc) {
-    BOOST_LOG_TRIVIAL(info) << "Cannot set the span of a segment with start larger than End, Start" << startLoc
+    BOOST_LOG_TRIVIAL(fatal) << "Cannot set the span of a segment with start larger than End, Start" << startLoc
                             << " End: " << endLoc << std::endl;
     assert(startLoc <= endLoc);
   }

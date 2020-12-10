@@ -615,7 +615,7 @@ class Circuit {
 
   // simple function to report HPWL.
   void ReportHPWL() {
-    BOOST_LOG_TRIVIAL(info) << "  Current weighted HPWL: " << WeightedHPWL() << " um\n";
+    BOOST_LOG_TRIVIAL(info) << "  Current weighted HPWL: " << WeightedHPWL() << " um";
   }
 
   // report the histogram of HPWL using linear bins.
@@ -637,7 +637,7 @@ class Circuit {
   double HPWLCtoC() { return HPWLCtoCX() + HPWLCtoCY(); }
 
   // simple function to report HPWL.
-  void ReportHPWLCtoC() { BOOST_LOG_TRIVIAL(info)  <<"  Current HPWL: "<< HPWLCtoC() << " um\n"; }
+  void ReportHPWLCtoC() { BOOST_LOG_TRIVIAL(info)  <<"  Current HPWL: "<< HPWLCtoC() << " um"; }
 
   /****save placement results to various file formats****/
   void GenMATLABTable(std::string const &name_of_file = "block.txt", bool only_well_tap = false);

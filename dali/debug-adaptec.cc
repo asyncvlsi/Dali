@@ -34,15 +34,15 @@ int main(int argc, char **argv) {
 
   Eigen::initParallel();
   //Eigen::setNbThreads(1);
-  BOOST_LOG_TRIVIAL(info)  <<"Eigen thread " << Eigen::nbThreads() << "\n";
+  BOOST_LOG_TRIVIAL(info)  <<"Eigen thread " << Eigen::nbThreads();
 
-  time_t Time = clock();
+  double wall_time_start = get_wall_time();
 
-  std::string adaptec1_lef = "ISPD2005/adaptec4.lef";
+  std::string adaptec1_lef = "ISPD2005/adaptec1.lef";
 #if TEST_LG
   std::string adaptec1_def = "adaptec1_pl.def";
 #else
-  std::string adaptec1_def = "ISPD2005/adaptec4.def";
+  std::string adaptec1_def = "ISPD2005/adaptec1.def";
 #endif
 
   circuit.setGridValue(0.01, 0.01);
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
   //circuit.getDesign()->region_top_ = 11127 + 12;
   //circuit.GenMATLABTable("_result.txt");
 
-  BOOST_LOG_TRIVIAL(info) << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << " s" << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "File loading complete, time: " << get_wall_time() - wall_time_start << " s";
 
   circuit.ReportBriefSummary();
   circuit.ReportHPWL();
@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
 #if !TEST_LG
   gb_placer.StartPlacement();
   gb_placer.SaveDEFFile("adaptec1_pl.def", adaptec1_def);
-  circuit.SaveBookshelfPl("adaptec4bs.pl");
+  circuit.SaveBookshelfPl("adaptec1bs.pl");
 #endif
   gb_placer.GenMATLABTable("gb_result.txt");
 
@@ -99,8 +99,7 @@ int main(int argc, char **argv) {
   delete well_legalizer;
 #endif
 
-  Time = clock() - Time;
-  BOOST_LOG_TRIVIAL(info) << "Execution time " << double(Time) / CLOCKS_PER_SEC << "s." << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "Execution time " << get_wall_time() - wall_time_start << "s";
 
   return 0;
 }

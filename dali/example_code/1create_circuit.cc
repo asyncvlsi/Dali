@@ -17,7 +17,7 @@
 using namespace dali;
 
 int main() {
-  BOOST_LOG_TRIVIAL(info) << "Example of creating a Circuit instance\n";
+  BOOST_LOG_TRIVIAL(info) << "Example of creating a Circuit instance";
 
   // create a blank circuit
   Circuit circuit;

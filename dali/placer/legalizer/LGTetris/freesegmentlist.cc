@@ -28,7 +28,7 @@ FreeSegmentList::~FreeSegmentList() {
 void FreeSegmentList::Append(FreeSegment *segList) {
   /****push a list of freesegment into the linked list with some sanity check****/
   if (segList == nullptr) {
-    BOOST_LOG_TRIVIAL(info) << "push nullptr to linked list?\n";
+    BOOST_LOG_TRIVIAL(info) << "push nullptr to linked list?";
     assert(segList != nullptr);
   } else {
     if (head_ == nullptr) {
@@ -55,8 +55,7 @@ bool FreeSegmentList::EmplaceBack(int start, int end) {
   } else {
     if (start < Right()) {
       BOOST_LOG_TRIVIAL(info) << "Illegal segment emplace back, Start: " << start
-                              << " is required to be no less than the Right End of current linked list: " << Right()
-                              << "\n";
+                              << " is required to be no less than the Right End of current linked list: " << Right();
       return false;
     }
     tail_->LinkSingleSeg(seg_ptr);
@@ -69,12 +68,12 @@ bool FreeSegmentList::EmplaceBack(int start, int end) {
 void FreeSegmentList::PushBack(FreeSegment *seg) {
   /****push a single free segment into the linked list****/
   if (seg == nullptr) {
-    BOOST_LOG_TRIVIAL(info) << "push nullptr to linked list?\n";
+    BOOST_LOG_TRIVIAL(info) << "push nullptr to linked list?";
     assert(seg != nullptr);
   }
   if (seg->Next() != nullptr) {
     BOOST_LOG_TRIVIAL(info)
-      << "argument has more than one nodes inside, please use method Append() instead of PushBack\n";
+      << "argument has more than one nodes inside, please use method Append() instead of PushBack";
     assert(seg->Next() == nullptr);
   }
   if (Empty()) {
@@ -254,7 +253,7 @@ bool FreeSegmentList::IsSpaceAvail(int x_loc, int width) {
    * ****/
   FreeSegment target(x_loc, x_loc + width);
   bool is_avail = false;
-  //BOOST_LOG_TRIVIAL(info)   << Head() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << Head();
   for (auto *current = Head(); current != nullptr; current = current->Next()) {
     if (current->IsContain(&target)) {
       is_avail = true;

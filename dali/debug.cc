@@ -35,7 +35,7 @@ int main() {
 
   Eigen::initParallel();
   //Eigen::setNbThreads(1);
-  BOOST_LOG_TRIVIAL(info)  <<"Eigen thread " << Eigen::nbThreads() << "\n";
+  BOOST_LOG_TRIVIAL(info)  <<"Eigen thread " << Eigen::nbThreads();
 
   double wall_time = get_wall_time();
 
@@ -44,8 +44,8 @@ int main() {
 
   // read LEF/DEF
 
-  BOOST_LOG_TRIVIAL(info)   << "File loading complete, time: " << double(get_wall_time() - wall_time)  << " s" << std::endl;
-  BOOST_LOG_TRIVIAL(info)  <<"  Average white space utility: " << circuit.WhiteSpaceUsage() << "\n";
+  BOOST_LOG_TRIVIAL(info)   << "File loading complete, time: " << double(get_wall_time() - wall_time)  << " s";
+  BOOST_LOG_TRIVIAL(info)  <<"  Average white space utility: " << circuit.WhiteSpaceUsage();
   circuit.ReportBriefSummary();
   //circuit.ReportBlockType();
   //circuit.ReportIOPin();
@@ -138,7 +138,7 @@ int main() {
 #endif*/
 
   wall_time = get_wall_time() - wall_time;
-  BOOST_LOG_TRIVIAL(info)   << "Execution time " << wall_time << "s.\n";
+  BOOST_LOG_TRIVIAL(info)   << "Execution time " << wall_time << "s";
 
   return 0;
 }
