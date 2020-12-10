@@ -18,7 +18,7 @@ int getLefUnits(lefrCallbackType_e type, lefiUnits *units, lefiUserData userData
     Circuit &circuit = *((Circuit *) userData);
     double number = units->databaseNumber();
     circuit.setDatabaseMicron(int(number));
-    BOOST_LOG_TRIVIAL(info) << "DATABASE MICRONS " << units->databaseNumber() << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "DATABASE MICRONS " << units->databaseNumber();
   } else {
     DaliExpects(false, "No DATABASE MICRONS provided in the UNITS section?");
   }
@@ -32,7 +32,7 @@ int getLefManufacturingGrid(lefrCallbackType_e type, double number, lefiUserData
   }
   Circuit &circuit = *((Circuit *) userData);
   circuit.setManufacturingGrid(number);
-  BOOST_LOG_TRIVIAL(info) << "MANUFACTURINGGRID " << number << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "MANUFACTURINGGRID " << number;
 
   return 0;
 }
@@ -45,7 +45,7 @@ int getLefLayers(lefrCallbackType_e type, lefiLayer *layer, lefiUserData userDat
 
   if (strcmp(layer->type(), "ROUTING") == 0) { // routing layer
     std::string metal_layer_name(layer->name());
-    BOOST_LOG_TRIVIAL(info) << metal_layer_name << "\n";
+    BOOST_LOG_TRIVIAL(info) << metal_layer_name;
     double min_width = layer->width();
     if (layer->hasMinwidth()) {
       min_width = layer->minwidth();
@@ -53,7 +53,7 @@ int getLefLayers(lefrCallbackType_e type, lefiLayer *layer, lefiUserData userDat
     double min_spacing = layer->spacing(0);
     BOOST_LOG_TRIVIAL(info) << min_width << "  " << min_spacing << "  ";
     std::string str_direct(layer->direction());
-    BOOST_LOG_TRIVIAL(info) << str_direct << "\n";
+    BOOST_LOG_TRIVIAL(info) << str_direct;
     MetalDirection direct = StrToMetalDirection(str_direct);
     double min_area = 0;
     if (layer->hasArea()) {
@@ -68,7 +68,6 @@ int getLefLayers(lefrCallbackType_e type, lefiLayer *layer, lefiUserData userDat
                           min_width + min_spacing,
                           min_width + min_spacing,
                           direct);
-    //BOOST_LOG_TRIVIAL(info)   << "\n";
   }
 
   return 0;
@@ -82,8 +81,8 @@ int siteCB(lefrCallbackType_e type, lefiSite *site, lefiUserData userData) {
   if (site->lefiSite::hasSize()) {
     Circuit &circuit = *((Circuit *) userData);
     circuit.setGridValue(site->sizeX(), site->sizeY());
-    //BOOST_LOG_TRIVIAL(info)   << "SITE SIZE " << site->lefiSite::sizeX() << "  " << site->lefiSite::sizeY() << "\n";
-    //BOOST_LOG_TRIVIAL(info)   << circuit.GridValueX() << "  " << circuit.GridValueY() << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << "SITE SIZE " << site->lefiSite::sizeX() << "  " << site->lefiSite::sizeY();
+    //BOOST_LOG_TRIVIAL(info)   << circuit.GridValueX() << "  " << circuit.GridValueY();
   } else {
     DaliExpects(false, "SITE SIZE information not provided");
   }
@@ -104,7 +103,7 @@ int macroBeginCB(lefrCallbackType_e type, const char *macroName, lefiUserData us
   } else {
     tmpMacro = circuit.AddBlockType(tmpMacroName, 0, 0);
   }
-  //BOOST_LOG_TRIVIAL(info)   << tmpMacro->Name() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << tmpMacro->Name();
   return 0;
 }
 
@@ -119,9 +118,9 @@ int getLefPins(lefrCallbackType_e type, lefiPin *pin, lefiUserData userData) {
   DaliExpects(tmpMacro != nullptr, "tmp macro cannot be a nullptr when setting macro pin info");
   std::string tmpMacroName = circuit.getTechRef().last_blk_type_->Name();
 
-  //BOOST_LOG_TRIVIAL(info)   << "This is a lef pin callback\n";
+  //BOOST_LOG_TRIVIAL(info)   << "This is a lef pin callback";
   std::string pin_name(pin->name());
-  //BOOST_LOG_TRIVIAL(info)   << "  " << pin_name << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << "  " << pin_name;
   //if (pin_name == "Vdd" || pin_name == "GND") continue;
   DaliExpects(pin->numPorts() > 0, "No physical pins, Macro: " + tmpMacroName + ", pin: " + pin_name);
   bool is_input = true;
@@ -131,7 +130,7 @@ int getLefPins(lefrCallbackType_e type, lefiPin *pin, lefiUserData userData) {
     is_input = false;
   } else {
     is_input = false;
-    //Assert(false, "Unsupported terminal IO type\n");
+    //Assert(false, "Unsupported terminal IO type");
   }
   Pin *new_pin = circuit.AddBlkTypePin(tmpMacro, pin_name, is_input);
   int numPorts = pin->numPorts();
@@ -144,7 +143,7 @@ int getLefPins(lefrCallbackType_e type, lefiPin *pin, lefiUserData userData) {
         double urx = pin->port(i)->getRect(j)->xh / circuit.GridValueX();
         double lly = pin->port(i)->getRect(j)->yl / circuit.GridValueY();
         double ury = pin->port(i)->getRect(j)->yh / circuit.GridValueY();
-        //BOOST_LOG_TRIVIAL(info)   << "  PORT: " << llx << "  " << lly << "  " << urx << "  " << ury << "  " << "\n";
+        //BOOST_LOG_TRIVIAL(info)   << "  PORT: " << llx << "  " << lly << "  " << urx << "  " << ury";
         circuit.AddBlkTypePinRect(new_pin, llx, lly, urx, ury);
       }
     }
@@ -174,7 +173,7 @@ int getLefMacros(lefrCallbackType_e type, lefiMacro *macro, lefiUserData userDat
 
   //BOOST_LOG_TRIVIAL(info)   << "MACRO " << tmpMacro->Name() << "\n"
   //          << "  ORIGIN " << originX << " " << originY << " ;\n"
-  //          << "  SIZE   " << sizeX << " " << sizeY << " ;\n";
+  //          << "  SIZE   " << sizeX << " " << sizeY;
 
   return 0;
 }
@@ -187,7 +186,7 @@ int macroEndCB(lefrCallbackType_e type, const char *macroName, lefiUserData user
   Circuit &circuit = *((Circuit *) userData);
   BlockType *&tmpMacro = circuit.getTechRef().last_blk_type_;
   DaliExpects(tmpMacro != nullptr, "A MACRO end before begin?");
-  //BOOST_LOG_TRIVIAL(info)   << "END " << tmpMacro->Name() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << "END " << tmpMacro->Name();
   tmpMacro = nullptr;
 
   return 0;
@@ -231,11 +230,11 @@ int designCB(defrCallbackType_e type, const char *designName, defiUserData userD
     exit(2);
   }
   if (!designName || !*designName) {
-    DaliExpects(false, "Design name is null, terminate parsing.\n");
+    DaliExpects(false, "Design name is null, terminate parsing.");
   }
   Circuit &circuit = *((Circuit *) userData);
   circuit.getDesignRef().name_ = std::string(designName);
-  BOOST_LOG_TRIVIAL(info) << circuit.getDesignRef().name_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << circuit.getDesignRef().name_;
   return 0;
 }
 
@@ -246,7 +245,7 @@ int getDefUnits(defrCallbackType_e type, double number, defiUserData userData) {
   }
   Circuit &circuit = *((Circuit *) userData);
   circuit.setUnitsDistanceMicrons(int(number));
-  BOOST_LOG_TRIVIAL(info) << "UNITS DISTANCE MICRONS " << circuit.DistanceMicrons() << " ;" << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "UNITS DISTANCE MICRONS " << circuit.DistanceMicrons() << " ;";
   return 0;
 }
 
@@ -259,7 +258,7 @@ int getDefDieArea(defrCallbackType_e type, defiBox *box, defiUserData userData) 
   if (!circuit.getDesignRef().die_area_set_) {
     circuit.setDieArea(box->xl(), box->yl(), box->xh(), box->yh());
     BOOST_LOG_TRIVIAL(info) << circuit.RegionLLX() << "  " << circuit.RegionLLY() << "  " << circuit.RegionURX() << "  "
-                            << circuit.RegionURY() << "\n";
+                            << circuit.RegionURY();
   } else {
     int components_count = circuit.getDesignRef().blk_count_;
     int pins_count = circuit.getDesignRef().iopin_count_;
@@ -267,7 +266,7 @@ int getDefDieArea(defrCallbackType_e type, defiBox *box, defiUserData userData) 
     circuit.setListCapacity(components_count, pins_count, nets_count);
     BOOST_LOG_TRIVIAL(info) << "components count: " << components_count << "\n"
                             << "pins count:        " << pins_count << "\n"
-                            << "nets count:       " << nets_count << "\n";
+                            << "nets count:       " << nets_count;
   }
   return 0;
 }
@@ -318,21 +317,21 @@ int getDefComponents(defrCallbackType_e type, defiComponent *comp, defiUserData 
   DaliExpects(circuit.getDesignRef().die_area_set_, "Die area not provided, cannot proceed");
 
   if (!comp->id() || !*comp->id()) {
-    DaliExpects(false, "Component name is null, terminate parsing.\n");
+    DaliExpects(false, "Component name is null, terminate parsing.");
   }
   std::string blk_name(comp->id());
   if (!comp->name() || !*comp->name()) {
-    DaliExpects(false, "Component macro name is null, terminate parsing.\n");
+    DaliExpects(false, "Component macro name is null, terminate parsing.");
   }
   std::string blk_type_name(comp->name());
-  //BOOST_LOG_TRIVIAL(info)   << "ID: " << comp->id() << " NAME: " << comp->name() << "\n";
-  //BOOST_LOG_TRIVIAL(info)   << circuit.GridValueX() << "  " << circuit.GridValueY() << "\n";
-  //BOOST_LOG_TRIVIAL(info)   << comp->placementX() << "  " << comp->placementY() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << "ID: " << comp->id() << " NAME: " << comp->name();
+  //BOOST_LOG_TRIVIAL(info)   << circuit.GridValueX() << "  " << circuit.GridValueY();
+  //BOOST_LOG_TRIVIAL(info)   << comp->placementX() << "  " << comp->placementY();
   int llx_int =
       (int) std::round(comp->placementX() / circuit.GridValueX() / circuit.DistanceMicrons());
   int lly_int =
       (int) std::round(comp->placementY() / circuit.GridValueY() / circuit.DistanceMicrons());
-  //BOOST_LOG_TRIVIAL(info)   << llx_int << "  " << lly_int << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << llx_int << "  " << lly_int;
   std::string orient(std::string(comp->placementOrientStr()));
   PlaceStatus place_status = UNPLACED_;
   if (comp->isFixed()) {
@@ -436,7 +435,6 @@ int getDefNets(defrCallbackType_e type, defiNet *net, defiUserData userData) {
     circuit.AddBlkPinToNet(blk_name, pin_name, net_name);
     //BOOST_LOG_TRIVIAL(info)   << " ( " << blk_name << ", " << pin_name << " ) ";
   }
-  //BOOST_LOG_TRIVIAL(info)   << "\n";
 
   return 0;
 }
@@ -446,7 +444,7 @@ int getDefVoid(defrCallbackType_e type, void *dummy, defiUserData userData) {
     BOOST_LOG_TRIVIAL(info) << "Type is not defrDesignEndCbkType!" << std::endl;
     exit(2);
   }
-  BOOST_LOG_TRIVIAL(info) << "END of DEF\n";
+  BOOST_LOG_TRIVIAL(info) << "END of DEF";
   return 0;
 }
 

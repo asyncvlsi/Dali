@@ -39,7 +39,7 @@ void GPSimPL::BlockLocRandomInit() {
   int region_height = RegionHeight();
   std::uniform_real_distribution<double> distribution(0, 1);
 
-  BOOST_LOG_TRIVIAL(info) << "HPWL before initialization: " << circuit_->WeightedHPWL() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "HPWL before initialization: " << circuit_->WeightedHPWL();
 
   for (auto &block: circuit_->BlockListRef()) {
     if (block.IsMovable()) {
@@ -47,12 +47,12 @@ void GPSimPL::BlockLocRandomInit() {
       block.setCenterY(RegionBottom() + region_height * distribution(generator));
     }
   }
-  BOOST_LOG_TRIVIAL(info) << "Block location uniform initialization complete\n";
+  BOOST_LOG_TRIVIAL(info) << "Block location uniform initialization complete";
 
   init_hpwl_x_ = circuit_->WeightedHPWLX();
   init_hpwl_y_ = circuit_->WeightedHPWLY();
   init_hpwl_ = init_hpwl_x_ + init_hpwl_y_;
-  BOOST_LOG_TRIVIAL(info) << "HPWL after initialization: " << init_hpwl_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "HPWL after initialization: " << init_hpwl_;
 
   if (is_dump) DumpResult("rand_init.txt");
 }
@@ -77,11 +77,11 @@ void GPSimPL::BlockLocCenterInit() {
     block.setCenterX(region_center_x);
     block.setCenterY(region_center_y);
   }
-  BOOST_LOG_TRIVIAL(info) << "Block location gaussian initialization complete\n";
+  BOOST_LOG_TRIVIAL(info) << "Block location gaussian initialization complete";
   init_hpwl_x_ = circuit_->WeightedHPWLX();
   init_hpwl_y_ = circuit_->WeightedHPWLY();
   init_hpwl_ = init_hpwl_x_ + init_hpwl_y_;
-  BOOST_LOG_TRIVIAL(info) << "HPWL after initialization: " << init_hpwl_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "HPWL after initialization: " << init_hpwl_;
 
   if (is_dump) DumpResult("rand_init.txt");
 }
@@ -96,7 +96,7 @@ void GPSimPL::DriverLoadPairInit() {
   for (auto &blk_pair: pair_list) {
     int num0 = blk_pair.blk_num0;
     int num1 = blk_pair.blk_num1;
-    //BOOST_LOG_TRIVIAL(info)   << num0 << " " << num1 << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << num0 << " " << num1;
     pair_connect[num0].push_back(&blk_pair);
     pair_connect[num1].push_back(&blk_pair);
   }
@@ -155,8 +155,8 @@ void GPSimPL::DriverLoadPairInit() {
       key.first = std::max(row, col);
       key.second = std::min(row, col);
       if (pair_map.find(key) == pair_map.end()) {
-        BOOST_LOG_TRIVIAL(info) << row << " " << col << std::endl;
-        DaliExpects(false, "Cannot find block pair in the database, something wrong happens\n");
+        BOOST_LOG_TRIVIAL(info) << row << " " << col;
+        DaliExpects(false, "Cannot find block pair in the database, something wrong happens");
       }
       int pair_index = pair_map[key];
       if (pair_list[pair_index].blk_num0 == row) {
@@ -195,7 +195,7 @@ void GPSimPL::DriverLoadPairInit() {
       key.second = std::min(row, col);
       if (pair_map.find(key) == pair_map.end()) {
         BOOST_LOG_TRIVIAL(info) << row << " " << col << std::endl;
-        DaliExpects(false, "Cannot find block pair in the database, something wrong happens\n");
+        DaliExpects(false, "Cannot find block pair in the database, something wrong happens");
       }
       int pair_index = pair_map[key];
       if (pair_list[pair_index].blk_num0 == row) {
@@ -206,9 +206,9 @@ void GPSimPL::DriverLoadPairInit() {
     }
   }
 
-//  BOOST_LOG_TRIVIAL(info)   << SpMat_diag_x[0].value() << "\n";
+//  BOOST_LOG_TRIVIAL(info)   << SpMat_diag_x[0].value();
 //  SpMat_diag_x[0].valueRef() = 1;
-//  BOOST_LOG_TRIVIAL(info)   << SpMat_diag_x[0].value() << "\n";
+//  BOOST_LOG_TRIVIAL(info)   << SpMat_diag_x[0].value();
 //  exit(1);
 }
 
@@ -395,7 +395,7 @@ void GPSimPL::BuildProblemB2BX() {
   if (coefficients_capacity != coefficientsx.capacity()) {
     BOOST_LOG_TRIVIAL(warning) << "WARNING: coefficients capacity changed!\n"
                                << "\told capacity: " << coefficients_capacity << "\n"
-                               << "\tnew capacity: " << coefficientsx.size() << "\n";
+                               << "\tnew capacity: " << coefficientsx.size();
   }
 
   wall_time = get_wall_time() - wall_time;
@@ -406,7 +406,7 @@ void GPSimPL::BuildProblemB2BX() {
 //  if (count == 100) {
 //    bool s = saveMarket(Ax, "sparse_matrices");
 //    if (s) {
-//      BOOST_LOG_TRIVIAL(info)   << "Sparse matrix saved successfully\n";
+//      BOOST_LOG_TRIVIAL(info)   << "Sparse matrix saved successfully";
 //    }
 //  }
 }
@@ -534,7 +534,7 @@ void GPSimPL::BuildProblemB2BY() {
   if (coefficients_capacity != coefficientsy.capacity()) {
     BOOST_LOG_TRIVIAL(warning) << "WARNING: coefficients capacity changed!\n"
                                << "\told capacity: " << coefficients_capacity << "\n"
-                               << "\tnew capacity: " << coefficientsy.size() << "\n";
+                               << "\tnew capacity: " << coefficientsy.size();
   }
 
   wall_time = get_wall_time() - wall_time;
@@ -628,7 +628,7 @@ void GPSimPL::BuildProblemStarModelX() {
   if (coefficients_capacity != coefficientsx.capacity()) {
     BOOST_LOG_TRIVIAL(warning) << "WARNING: coefficients capacity changed!\n"
                                << "\told capacity: " << coefficients_capacity << "\n"
-                               << "\tnew capacity: " << coefficientsx.size() << "\n";
+                               << "\tnew capacity: " << coefficientsx.size();
   }
 
   wall_time = get_wall_time() - wall_time;
@@ -811,7 +811,7 @@ void GPSimPL::BuildProblemHPWLX() {
   if (coefficients_capacity != coefficientsx.capacity()) {
     BOOST_LOG_TRIVIAL(warning) << "WARNING: coefficients capacity changed!\n"
                                << "\told capacity: " << coefficients_capacity << "\n"
-                               << "\tnew capacity: " << coefficientsx.size() << "\n";
+                               << "\tnew capacity: " << coefficientsx.size();
   }
 
   wall_time = get_wall_time() - wall_time;
@@ -903,7 +903,7 @@ void GPSimPL::BuildProblemHPWLY() {
   if (coefficients_capacity != coefficientsy.capacity()) {
     BOOST_LOG_TRIVIAL(warning) << "WARNING: coefficients capacity changed!\n"
                                << "\told capacity: " << coefficients_capacity << "\n"
-                               << "\tnew capacity: " << coefficientsy.size() << "\n";
+                               << "\tnew capacity: " << coefficientsy.size();
   }
 
   wall_time = get_wall_time() - wall_time;
@@ -1198,7 +1198,7 @@ double GPSimPL::OptimizeQuadraticMetricX(double cg_stop_criterion) {
     if (eval_history.size() >= 3) {
       bool is_converge = IsSeriesConverge(eval_history, 3, cg_stop_criterion);
       if (is_converge) {
-        BOOST_LOG_TRIVIAL(trace) << "      Metric optimization in X, sequence: " << eval_history << "\n";
+        BOOST_LOG_TRIVIAL(trace) << "      Metric optimization in X, sequence: " << eval_history;
         break;
       }
     }
@@ -1244,7 +1244,7 @@ double GPSimPL::OptimizeQuadraticMetricY(double cg_stop_criterion) {
     if (eval_history.size() >= 3) {
       bool is_converge = IsSeriesConverge(eval_history, 3, cg_stop_criterion);
       if (is_converge) {
-        BOOST_LOG_TRIVIAL(trace) << "      Metric optimization in Y, sequence: " << eval_history << "\n";
+        BOOST_LOG_TRIVIAL(trace) << "      Metric optimization in Y, sequence: " << eval_history;
         break;
       }
     }
@@ -1332,7 +1332,7 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
     //BOOST_LOG_TRIVIAL(info)  <<"OpenMP threads, %d\n", omp_get_num_threads());
     if (omp_get_thread_num() == 0) {
       omp_set_num_threads(avail_threads_num / 2);
-      BOOST_LOG_TRIVIAL(info)   << "threads in branch x: " << omp_get_max_threads() << " Eigen threads: " << Eigen::nbThreads() << "\n";
+      BOOST_LOG_TRIVIAL(info)   << "threads in branch x: " << omp_get_max_threads() << " Eigen threads: " << Eigen::nbThreads();
 
       std::vector<Block> &block_list = circuit_->BlockListRef();
       for (size_t i = 0; i < block_list.size(); ++i) {
@@ -1341,15 +1341,14 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
 
       std::vector<double> eval_history_x;
       for (int i = 0; i < b2b_update_max_iteration; ++i) {
-        BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
+        BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update";
         BuildProblemX();
         double evaluate_result = OptimizeQuadraticMetricX(cg_stop_criterion_);
         eval_history_x.push_back(evaluate_result);
         if (eval_history_x.size() >= 3) {
           bool is_converge = IsSeriesConverge(eval_history_x, 3, net_model_update_stop_criterion);
           if (is_converge) {
-            BOOST_LOG_TRIVIAL(trace) << "  Optimization summary X, iterations x: " << i << ", " << eval_history_x
-                                     << "\n";
+            BOOST_LOG_TRIVIAL(trace) << "  Optimization summary X, iterations x: " << i << ", " << eval_history_x;
             break;
           }
         }
@@ -1361,7 +1360,7 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
 
     if (omp_get_thread_num() == 1 || omp_get_num_threads() == 1) {
       omp_set_num_threads(avail_threads_num / 2);
-      BOOST_LOG_TRIVIAL(info) << "threads in branch y: " << omp_get_max_threads() << " Eigen threads: " << Eigen::nbThreads() << "\n";
+      BOOST_LOG_TRIVIAL(info) << "threads in branch y: " << omp_get_max_threads() << " Eigen threads: " << Eigen::nbThreads();
 
       std::vector<Block> &block_list = circuit_->BlockListRef();
       for (size_t i = 0; i < block_list.size(); ++i) {
@@ -1369,15 +1368,14 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
       }
       std::vector<double> eval_history_y;
       for (int i = 0; i < b2b_update_max_iteration; ++i) {
-        BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
+        BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update";
         BuildProblemY();
         double evaluate_result = OptimizeQuadraticMetricY(cg_stop_criterion_);
         eval_history_y.push_back(evaluate_result);
         if (eval_history_y.size() >= 3) {
           bool is_converge = IsSeriesConverge(eval_history_y, 3, net_model_update_stop_criterion);
           if (is_converge) {
-            BOOST_LOG_TRIVIAL(trace) << "  Optimization summary Y, iterations y: " << i << ", " << eval_history_y
-                                     << "\n";
+            BOOST_LOG_TRIVIAL(trace) << "  Optimization summary Y, iterations y: " << i << ", " << eval_history_y;
             break;
           }
         }
@@ -1390,7 +1388,7 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
 
   PullBlockBackToRegion();
 
-  BOOST_LOG_TRIVIAL(info) << "Initial Placement Complete\n";
+  BOOST_LOG_TRIVIAL(info) << "Initial Placement Complete";
 
   wall_time = get_wall_time() - wall_time;
   tot_cg_time += wall_time;
@@ -1435,7 +1433,7 @@ void GPSimPL::InitGridBins() {
   grid_cnt_x = std::ceil(double(RegionRight() - RegionLeft()) / grid_bin_width);
   BOOST_LOG_TRIVIAL(info) << "Global placement bin width, height: "
                           << grid_bin_width << "  "
-                          << grid_bin_height << "\n";
+                          << grid_bin_height;
 
   std::vector<GridBin> temp_grid_bin_column(grid_cnt_y);
   grid_bin_matrix.resize(grid_cnt_x, temp_grid_bin_column);
@@ -1718,7 +1716,7 @@ void GPSimPL::UpdateGridBinState() {
     grid_bin_matrix[x_index][y_index].cell_area += block_list[i].Area();
   }
   //for_time = get_wall_time() - for_time;
-  //BOOST_LOG_TRIVIAL(info)   << "for time: " << for_time << "s\n";
+  //BOOST_LOG_TRIVIAL(info)   << "for time: " << for_time << "s";
   //exit(1);
 
   /**** below is the criterion to decide whether a grid bin is over_filled or not
@@ -1921,7 +1919,7 @@ void GPSimPL::FindMinimumBoxForLargestCluster() {
     } else {
       break;
     }
-    //BOOST_LOG_TRIVIAL(info)   << R.total_white_space << "  " << R.filling_rate << "  " << FillingRate() << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << R.total_white_space << "  " << R.filling_rate << "  " << FillingRate();
   }
 
   R.total_white_space = LookUpWhiteSpace(R.ll_index, R.ur_index);
@@ -1944,8 +1942,8 @@ void GPSimPL::FindMinimumBoxForLargestCluster() {
     }
   }
   queue_box_bin.push(R);
-  //BOOST_LOG_TRIVIAL(info)   << "Bounding box total white space: " << queue_box_bin.front().total_white_space << "\n";
-  //BOOST_LOG_TRIVIAL(info)   << "Bounding box total cell area: " << queue_box_bin.front().total_cell_area << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << "Bounding box total white space: " << queue_box_bin.front().total_white_space;
+  //BOOST_LOG_TRIVIAL(info)   << "Bounding box total cell area: " << queue_box_bin.front().total_cell_area;
 
   for (int kx = R.ll_index.x; kx <= R.ur_index.x; ++kx) {
     for (int ky = R.ll_index.y; ky <= R.ur_index.y; ++ky) {
@@ -2004,8 +2002,8 @@ void GPSimPL::SplitBox(BoxBin &box) {
   }
   box1.update_cell_area_white_space(grid_bin_matrix);
   box2.update_cell_area_white_space(grid_bin_matrix);
-  //BOOST_LOG_TRIVIAL(info)   << box1.ll_index_ << box1.ur_index_ << "\n";
-  //BOOST_LOG_TRIVIAL(info)   << box2.ll_index_ << box2.ur_index_ << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << box1.ll_index_ << box1.ur_index_;
+  //BOOST_LOG_TRIVIAL(info)   << box2.ll_index_ << box2.ur_index_;
   //box1.update_all_terminal(grid_bin_matrix);
   //box2.update_all_terminal(grid_bin_matrix);
   // if the white space in one bin is dominating the other, ignore the smaller one
@@ -2021,9 +2019,9 @@ void GPSimPL::SplitBox(BoxBin &box) {
   box2.update_boundaries(grid_bin_matrix);
 
   if (dominating_box_flag == 0) {
-    //BOOST_LOG_TRIVIAL(info)   << "cell list size: " << box.cell_list.size() << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << "cell list size: " << box.cell_list.size();
     //box.update_cell_area(block_list);
-    //BOOST_LOG_TRIVIAL(info)   << "total_cell_area: " << box.total_cell_area << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << "total_cell_area: " << box.total_cell_area;
     box.update_cut_point_cell_list_low_high(block_list, box1.total_white_space, box2.total_white_space);
     box1.cell_list = box.cell_list_low;
     box2.cell_list = box.cell_list_high;
@@ -2044,12 +2042,12 @@ void GPSimPL::SplitBox(BoxBin &box) {
     }
 
     /*if ((box1.left < LEFT) || (box1.bottom < BOTTOM)) {
-      BOOST_LOG_TRIVIAL(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM << "\n";
-      BOOST_LOG_TRIVIAL(info)   << box1.left << " " << box1.bottom << "\n";
+      BOOST_LOG_TRIVIAL(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM;
+      BOOST_LOG_TRIVIAL(info)   << box1.left << " " << box1.bottom;
     }
     if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
-      BOOST_LOG_TRIVIAL(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM << "\n";
-      BOOST_LOG_TRIVIAL(info)   << box2.left << " " << box2.bottom << "\n";
+      BOOST_LOG_TRIVIAL(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM;
+      BOOST_LOG_TRIVIAL(info)   << box2.left << " " << box2.bottom;
     }*/
 
     queue_box_bin.push(box1);
@@ -2069,8 +2067,8 @@ void GPSimPL::SplitBox(BoxBin &box) {
     }
 
     /*if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
-      BOOST_LOG_TRIVIAL(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM << "\n";
-      BOOST_LOG_TRIVIAL(info)   << box2.left << " " << box2.bottom << "\n";
+      BOOST_LOG_TRIVIAL(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM;
+      BOOST_LOG_TRIVIAL(info)   << box2.left << " " << box2.bottom;
     }*/
 
     queue_box_bin.push(box2);
@@ -2087,8 +2085,8 @@ void GPSimPL::SplitBox(BoxBin &box) {
     }
 
     /*if ((box1.left < LEFT) || (box1.bottom < BOTTOM)) {
-      BOOST_LOG_TRIVIAL(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM << "\n";
-      BOOST_LOG_TRIVIAL(info)   << box1.left << " " << box1.bottom << "\n";
+      BOOST_LOG_TRIVIAL(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM;
+      BOOST_LOG_TRIVIAL(info)   << box1.left << " " << box1.bottom;
     }*/
 
     queue_box_bin.push(box1);
@@ -2330,7 +2328,7 @@ void GPSimPL::RoughLegalBlkInBox(BoxBin &box) {
     int res_x = best_loc;
     int res_y = best_row + box.bottom;
 
-    //BOOST_LOG_TRIVIAL(info)   << res_x << "  " << res_y << "  " << min_cost << "  " << block.Num() << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << res_x << "  " << res_y << "  " << min_cost << "  " << block.Num();
 
     block.SetLoc(res_x, res_y);
 
@@ -2350,7 +2348,7 @@ void GPSimPL::RoughLegalBlkInBox(BoxBin &box) {
   if (span_x >= 0 && span_x < 1e-8) return;
   double box_width = box.right - box.left;
   if (span_x < 0) {
-    BOOST_LOG_TRIVIAL(info) << span_x << "  " << index_loc_list.size() << "\n";
+    BOOST_LOG_TRIVIAL(info) << span_x << "  " << index_loc_list.size();
   }
   DaliExpects(span_x > 0, "Expect span_x > 0!");
   for (auto &pair: index_loc_list) {
@@ -2401,7 +2399,7 @@ void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
   std::queue<BoxBin> box_Q;
   box_Q.push(box);
   while (!box_Q.empty()) {
-    //BOOST_LOG_TRIVIAL(info)   << " Q.size: " << box_Q.size() << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << " Q.size: " << box_Q.size();
     BoxBin &front_box = box_Q.front();
     if (front_box.cell_list.size() > max_cell_num_in_box) {
       // split box and push it to box_Q
@@ -2414,7 +2412,7 @@ void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
       box2.right = front_box.right;
 
       int ave_blk_height = std::ceil(GetCircuit()->AveMovBlkHeight());
-      //BOOST_LOG_TRIVIAL(info)   << "Average block height: " << ave_blk_height << "  " << GetCircuit()->AveMovBlkHeight() << "\n";
+      //BOOST_LOG_TRIVIAL(info)   << "Average block height: " << ave_blk_height << "  " << GetCircuit()->AveMovBlkHeight();
       front_box.cut_direction_x = (front_box.top - front_box.bottom > ave_blk_height);
       int cut_line_w = 0; // cut-line for White space
       front_box.update_cut_point_cell_list_low_high_leaf(block_list, cut_line_w, ave_blk_height);
@@ -2498,7 +2496,7 @@ bool GPSimPL::RecursiveBisectionBlkSpreading() {
   double wall_time = get_wall_time();
 
   while (!queue_box_bin.empty()) {
-    //std::cout << queue_box_bin.size() << "\n";
+    //std::cout << queue_box_bin.size();
     if (queue_box_bin.empty()) break;
     BoxBin &box = queue_box_bin.front();
     // start moving cells to the box, if
@@ -2626,36 +2624,35 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
   omp_set_nested(1);
   omp_set_dynamic(0);
   int avail_threads_num = omp_get_max_threads();
-  //BOOST_LOG_TRIVIAL(info)   << "total threads: " << avail_threads_num << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << "total threads: " << avail_threads_num;
   double wall_time = get_wall_time();
 
   std::vector<Block> &block_list = circuit_->BlockListRef();
 
   UpdateAnchorLocation();
   UpdateAnchorNetWeight();
-  BOOST_LOG_TRIVIAL(trace) << "alpha: " << alpha << "\n";
+  BOOST_LOG_TRIVIAL(trace) << "alpha: " << alpha;
 
 #pragma omp parallel num_threads(std::min(omp_get_max_threads(), 2))
   {
     //BOOST_LOG_TRIVIAL(info)  <<"OpenMP threads, %d\n", omp_get_num_threads());
     if (omp_get_thread_num() == 0) {
       omp_set_num_threads(avail_threads_num / 2);
-      BOOST_LOG_TRIVIAL(info)   << "threads in branch x: " << omp_get_max_threads() << " Eigen threads: " << Eigen::nbThreads() << "\n";
+      BOOST_LOG_TRIVIAL(info)   << "threads in branch x: " << omp_get_max_threads() << " Eigen threads: " << Eigen::nbThreads();
       for (size_t i = 0; i < block_list.size(); ++i) {
         vx[i] = block_list[i].LLX();
       }
       std::vector<double> eval_history_x;
       for (int i = 0; i < b2b_update_max_iteration; ++i) {
-        BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
+        BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update";
         BuildProblemWithAnchorX();
         double evaluate_result = OptimizeQuadraticMetricX(cg_stop_criterion_);
         eval_history_x.push_back(evaluate_result);
-        //BOOST_LOG_TRIVIAL(trace) << "\tIterative net model update, WeightedHPWLX: " << evaluate_result << "\n";
+        //BOOST_LOG_TRIVIAL(trace) << "\tIterative net model update, WeightedHPWLX: " << evaluate_result;
         if (eval_history_x.size() >= 3) {
           bool is_converge = IsSeriesConverge(eval_history_x, 3, net_model_update_stop_criterion);
           if (is_converge) {
-            BOOST_LOG_TRIVIAL(trace) << "  Optimization summary X, iterations x: " << i << ", " << eval_history_x
-                                     << "\n";
+            BOOST_LOG_TRIVIAL(trace) << "  Optimization summary X, iterations x: " << i << ", " << eval_history_x;
             break;
           }
         }
@@ -2666,21 +2663,20 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
     }
     if (omp_get_thread_num() == 1 || omp_get_num_threads() == 1) {
       omp_set_num_threads(avail_threads_num / 2);
-      BOOST_LOG_TRIVIAL(info)   << "threads in branch y: " << omp_get_max_threads() << " Eigen threads: " << Eigen::nbThreads() << "\n";
+      BOOST_LOG_TRIVIAL(info)   << "threads in branch y: " << omp_get_max_threads() << " Eigen threads: " << Eigen::nbThreads();
       for (size_t i = 0; i < block_list.size(); ++i) {
         vy[i] = block_list[i].LLY();
       }
       std::vector<double> eval_history_y;
       for (int i = 0; i < b2b_update_max_iteration; ++i) {
-        BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
+        BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update";
         BuildProblemWithAnchorY();
         double evaluate_result = OptimizeQuadraticMetricY(cg_stop_criterion_);
         eval_history_y.push_back(evaluate_result);
         if (eval_history_y.size() >= 3) {
           bool is_converge = IsSeriesConverge(eval_history_y, 3, net_model_update_stop_criterion);
           if (is_converge) {
-            BOOST_LOG_TRIVIAL(trace) << "  Optimization summary Y, iterations y: " << i << ", " << eval_history_y
-                                     << "\n";
+            BOOST_LOG_TRIVIAL(trace) << "  Optimization summary Y, iterations y: " << i << ", " << eval_history_y;
             break;
           }
         }
@@ -2693,10 +2689,10 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
 
   PullBlockBackToRegion();
 
-  BOOST_LOG_TRIVIAL(debug) << "Quadratic Placement With Anchor Complete\n";
+  BOOST_LOG_TRIVIAL(debug) << "Quadratic Placement With Anchor Complete";
 
 //  for (size_t i = 0; i < 10; ++i) {
-//    BOOST_LOG_TRIVIAL(info)   << vx[i] << "  " << vy[i] << "\n";
+//    BOOST_LOG_TRIVIAL(info)   << vx[i] << "  " << vy[i];
 //  }
 
   wall_time = get_wall_time() - wall_time;
@@ -2718,25 +2714,24 @@ double GPSimPL::LookAheadLegalization() {
     UpdateLargestCluster();
     FindMinimumBoxForLargestCluster();
     RecursiveBisectionBlkSpreading();
-    //BOOST_LOG_TRIVIAL(info) << "cluster count: " << cluster_set.size() << "\n";
+    //BOOST_LOG_TRIVIAL(info) << "cluster count: " << cluster_set.size();
   } while (!cluster_set.empty());
 
   double evaluate_result_x = WeightedHPWLX();
   upper_bound_hpwlx_.push_back(evaluate_result_x);
   double evaluate_result_y = WeightedHPWLY();
   upper_bound_hpwly_.push_back(evaluate_result_y);
-  BOOST_LOG_TRIVIAL(debug) << "Look-ahead legalization complete\n";
+  BOOST_LOG_TRIVIAL(debug) << "Look-ahead legalization complete";
 
   cpu_time = get_cpu_time() - cpu_time;
   tot_lal_time += cpu_time;
 
   if (is_dump) DumpResult("lal_result_" + std::to_string(cur_iter_) + ".txt");
 
-  BOOST_LOG_TRIVIAL(debug) << "(UpdateGridBinState time: " << UpdateGridBinState_time << "s)\n";
-  BOOST_LOG_TRIVIAL(debug) << "(UpdateClusterList time: " << UpdateClusterList_time << "s)\n";
-  BOOST_LOG_TRIVIAL(debug) << "(FindMinimumBoxForLargestCluster time: " << FindMinimumBoxForLargestCluster_time
-                           << "s)\n";
-  BOOST_LOG_TRIVIAL(debug) << "(RecursiveBisectionBlkSpreading time: " << RecursiveBisectionBlkSpreading_time << "s)\n";
+  BOOST_LOG_TRIVIAL(debug) << "(UpdateGridBinState time: " << UpdateGridBinState_time << "s)";
+  BOOST_LOG_TRIVIAL(debug) << "(UpdateClusterList time: " << UpdateClusterList_time << "s)";
+  BOOST_LOG_TRIVIAL(debug) << "(FindMinimumBoxForLargestCluster time: " << FindMinimumBoxForLargestCluster_time << "s)";
+  BOOST_LOG_TRIVIAL(debug) << "(RecursiveBisectionBlkSpreading time: " << RecursiveBisectionBlkSpreading_time << "s)";
 
   return evaluate_result_x + evaluate_result_y;
 }
@@ -2824,8 +2819,8 @@ bool GPSimPL::StartPlacement() {
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
 
-  BOOST_LOG_TRIVIAL(info) << "---------------------------------------\n";
-  BOOST_LOG_TRIVIAL(info) << "Start global placement\n";
+  BOOST_LOG_TRIVIAL(info) << "---------------------------------------";
+  BOOST_LOG_TRIVIAL(info) << "Start global placement";
 
   SanityCheck();
   CGInit();
@@ -2837,13 +2832,13 @@ bool GPSimPL::StartPlacement() {
   }
 
   if (NetList()->empty()) {
-    BOOST_LOG_TRIVIAL(info) << "Net list empty\n";
-    BOOST_LOG_TRIVIAL(info) << "\033[0;36m Global Placement complete\033[0m\n";
+    BOOST_LOG_TRIVIAL(info) << "Net list empty";
+    BOOST_LOG_TRIVIAL(info) << "\033[0;36m Global Placement complete\033[0m";
     return true;
   }
 
   // initial placement
-  BOOST_LOG_TRIVIAL(debug) << cur_iter_ << "-th iteration\n";
+  BOOST_LOG_TRIVIAL(debug) << cur_iter_ << "-th iteration";
   double eval_res = QuadraticPlacement(net_model_update_stop_criterion_);
   lower_bound_hpwl_.push_back(eval_res);
   eval_res = LookAheadLegalization();
@@ -2851,11 +2846,11 @@ bool GPSimPL::StartPlacement() {
   BOOST_LOG_TRIVIAL(info) << "It " << cur_iter_ << ": \t"
                           << std::scientific << std::setprecision(4)
                           << lower_bound_hpwl_.back() << " "
-                          << upper_bound_hpwl_.back() << "\n";
+                          << upper_bound_hpwl_.back() << "";
 
   for (cur_iter_ = 1; cur_iter_ < max_iter_; ++cur_iter_) {
-    BOOST_LOG_TRIVIAL(debug) << "----------------------------------------------\n";
-    BOOST_LOG_TRIVIAL(debug) << cur_iter_ << "-th iteration\n";
+    BOOST_LOG_TRIVIAL(debug) << "----------------------------------------------";
+    BOOST_LOG_TRIVIAL(debug) << cur_iter_ << "-th iteration";
 
     eval_res = QuadraticPlacementWithAnchor(net_model_update_stop_criterion_);
     lower_bound_hpwl_.push_back(eval_res);
@@ -2866,43 +2861,43 @@ bool GPSimPL::StartPlacement() {
     BOOST_LOG_TRIVIAL(info) << "It " << cur_iter_ << ": \t"
                             << std::scientific << std::setprecision(4)
                             << lower_bound_hpwl_.back() << " "
-                            << upper_bound_hpwl_.back() << "\n";
+                            << upper_bound_hpwl_.back();
 
     if (IsPlacementConverge() || cur_iter_ == max_iter_ - 1) { // if HPWL converges
-      BOOST_LOG_TRIVIAL(info) << "Iterative look-ahead legalization complete\n";
-      BOOST_LOG_TRIVIAL(info) << "Total number of iteration: " << cur_iter_ + 1 << "\n";
+      BOOST_LOG_TRIVIAL(info) << "Iterative look-ahead legalization complete";
+      BOOST_LOG_TRIVIAL(info) << "Total number of iteration: " << cur_iter_ + 1;
       break;
     }
   }
   int num_it = lower_bound_hpwl_.size();
-  BOOST_LOG_TRIVIAL(info) << "Random init: " << init_hpwl_ << "\n";
-  BOOST_LOG_TRIVIAL(info) << "Lower bound: " << lower_bound_hpwl_ << "\n";
-  BOOST_LOG_TRIVIAL(info) << "Upper bound: " << upper_bound_hpwl_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Random init: " << init_hpwl_;
+  BOOST_LOG_TRIVIAL(info) << "Lower bound: " << lower_bound_hpwl_;
+  BOOST_LOG_TRIVIAL(info) << "Upper bound: " << upper_bound_hpwl_;
 
-  BOOST_LOG_TRIVIAL(info) << "\033[0;36m Global Placement complete\033[0m\n";
-  BOOST_LOG_TRIVIAL(info) << "(cg time: " << tot_cg_time << "s, lal time: " << tot_lal_time << "s)\n";
+  BOOST_LOG_TRIVIAL(info) << "\033[0;36m Global Placement complete\033[0m";
+  BOOST_LOG_TRIVIAL(info) << "(cg time: " << tot_cg_time << "s, lal time: " << tot_lal_time << "s)";
   BOOST_LOG_TRIVIAL(info) << "total triplets time: "
                           << tot_triplets_time_x << "s, "
                           << tot_triplets_time_y << "s, "
-                          << tot_triplets_time_x + tot_triplets_time_y << "s\n";
+                          << tot_triplets_time_x + tot_triplets_time_y << "s";
   BOOST_LOG_TRIVIAL(info) << "total matrix from triplets time: "
                           << tot_matrix_from_triplets_x << "s, "
                           << tot_matrix_from_triplets_y << "s, "
-                          << tot_matrix_from_triplets_x + tot_matrix_from_triplets_y << "s\n";
+                          << tot_matrix_from_triplets_x + tot_matrix_from_triplets_y << "s";
   BOOST_LOG_TRIVIAL(info) << "total cg solver time: "
                           << tot_cg_solver_time_x << "s, "
                           << tot_cg_solver_time_y << "s, "
-                          << tot_cg_solver_time_x + tot_cg_solver_time_y << "s\n";
+                          << tot_cg_solver_time_x + tot_cg_solver_time_y << "s";
   BOOST_LOG_TRIVIAL(info) << "total loc update time: "
                           << tot_loc_update_time_x << "s, "
                           << tot_loc_update_time_y << "s, "
-                          << tot_loc_update_time_x + tot_loc_update_time_y << "s\n";
+                          << tot_loc_update_time_x + tot_loc_update_time_y << "s";
   double tot_time_x = tot_triplets_time_x + tot_matrix_from_triplets_x + tot_cg_solver_time_x + tot_loc_update_time_x;
   double tot_time_y = tot_triplets_time_y + tot_matrix_from_triplets_y + tot_cg_solver_time_y + tot_loc_update_time_y;
   BOOST_LOG_TRIVIAL(info) << "total x/y time: "
                           << tot_time_x << "s, "
                           << tot_time_y << "s, "
-                          << tot_time_x + tot_time_y << "s\n";
+                          << tot_time_x + tot_time_y << "s";
   LALClose();
   //CheckAndShift();
   UpdateMovableBlkPlacementStatus();
@@ -2910,7 +2905,7 @@ bool GPSimPL::StartPlacement() {
 
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;
-  BOOST_LOG_TRIVIAL(info) << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
+  BOOST_LOG_TRIVIAL(info) << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)";
   ReportMemory();
 
   return true;
@@ -2919,7 +2914,7 @@ bool GPSimPL::StartPlacement() {
 void GPSimPL::DumpResult(std::string const &name_of_file) {
   //UpdateGridBinState();
   static int counter = 0;
-  //BOOST_LOG_TRIVIAL(info)   << "DumpNum:" << counter << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << "DumpNum:" << counter;
   circuit_->GenMATLABTable(name_of_file);
   //write_not_all_terminal_grid_bins("grid_bin_not_all_terminal" + std::to_string(counter) + ".txt");
   //write_overfill_grid_bins("grid_bin_overfill" + std::to_string(counter) + ".txt");
