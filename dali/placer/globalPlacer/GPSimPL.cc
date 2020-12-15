@@ -74,8 +74,8 @@ void GPSimPL::BlockLocCenterInit() {
     x = std::min(x, (double) RegionRight());
     y = std::max(y, (double) RegionBottom());
     y = std::min(y, (double) RegionTop());
-    block.setCenterX(region_center_x);
-    block.setCenterY(region_center_y);
+    block.setCenterX(x);
+    block.setCenterY(y);
   }
   BOOST_LOG_TRIVIAL(info) << "Block location gaussian initialization complete\n";
   init_hpwl_x_ = circuit_->WeightedHPWLX();

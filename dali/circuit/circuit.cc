@@ -1447,12 +1447,17 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
   for (int i = 0; i < bin_num; ++i) {
     double lo = min_hpwl + step * i;
     double hi = lo + step;
-    BOOST_LOG_TRIVIAL(info) << "  [" << lo << ", " << hi << ") " << count[i] << "  ";
+
+    std::string buffer(1024, '\0');
+    int written_length = sprintf(&buffer[0], "  [%.1e, %.1e) %8d  ", lo, hi, count[i]);
+    buffer.resize(written_length);
+
     int percent = std::ceil(50 * count[i] / (double) tot_count);
     for (int j = 0; j < percent; ++j) {
-      BOOST_LOG_TRIVIAL(info) << "*";
+      buffer.push_back('*');
     }
-    BOOST_LOG_TRIVIAL(info) << "\n";
+    buffer.push_back('\n');
+    BOOST_LOG_TRIVIAL(info) << buffer;
   }
   BOOST_LOG_TRIVIAL(info) << "===================================================================\n";
   BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: " << tech_.grid_value_x_ << " um\n";
@@ -1493,12 +1498,17 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
   for (int i = 0; i < bin_num; ++i) {
     double lo = std::pow(10, min_hpwl + step * i);
     double hi = std::pow(10, min_hpwl + step * (i + 1));
-    BOOST_LOG_TRIVIAL(info) << "  [" << lo << ", " << hi << ") " << count[i] << "  ";
+
+    std::string buffer(1024, '\0');
+    int written_length = sprintf(&buffer[0], "  [%.1e, %.1e) %8d  ", lo, hi, count[i]);
+    buffer.resize(written_length);
+
     int percent = std::ceil(50 * count[i] / (double) tot_count);
     for (int j = 0; j < percent; ++j) {
-      BOOST_LOG_TRIVIAL(info) << "*";
+      buffer.push_back('*');
     }
-    BOOST_LOG_TRIVIAL(info) << "\n";
+    buffer.push_back('\n');
+    BOOST_LOG_TRIVIAL(info) << buffer;
   }
   BOOST_LOG_TRIVIAL(info) << "===================================================================\n";
   BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: " << tech_.grid_value_x_ << " um\n";

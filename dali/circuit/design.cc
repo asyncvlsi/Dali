@@ -5,6 +5,7 @@
 #include "design.h"
 
 #include <cfloat>
+#include <cstdio>
 
 namespace dali {
 
@@ -123,40 +124,53 @@ void Design::ReportNetFanoutHisto() {
   BOOST_LOG_TRIVIAL(info)
     << "=================================================================================================\n";
   BOOST_LOG_TRIVIAL(info)
-    << "   Net         Count    Percent/%%      sum HPWL        ave HPWL        min HPWL        max HPWL\n";
+    << "  Net         Count     Percent/%      sum HPWL        ave HPWL        min HPWL        max HPWL\n";
+
   for (int i = 0; i < sz - 1; ++i) {
     int lo = net_histogram_.bin_list_[i];
     int hi = net_histogram_.bin_list_[i + 1] - 1;
+    std::string buffer(1024, '\0');
+    int written_length = 0;
     if (lo == hi) {
-      BOOST_LOG_TRIVIAL(info) << lo << "       "
-                              << net_histogram_.count_[i] << "       "
-                              << net_histogram_.percent_[i] << "         "
-                              << net_histogram_.sum_hpwl_[i] << "        "
-                              << net_histogram_.ave_hpwl_[i] << "        "
-                              << net_histogram_.min_hpwl_[i] << "        "
-                              << net_histogram_.max_hpwl_[i] << "\n";
+      written_length = sprintf(&buffer[0],"%4d       %8d       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
+             lo,
+             net_histogram_.count_[i],
+             net_histogram_.percent_[i],
+             net_histogram_.sum_hpwl_[i],
+             net_histogram_.ave_hpwl_[i],
+             net_histogram_.min_hpwl_[i],
+             net_histogram_.max_hpwl_[i]);
     } else {
-      BOOST_LOG_TRIVIAL(info) << lo << "-" << hi << "  "
-                              << net_histogram_.count_[i] << "       "
-                              << net_histogram_.percent_[i] << "         "
-                              << net_histogram_.sum_hpwl_[i] << "        "
-                              << net_histogram_.ave_hpwl_[i] << "        "
-                              << net_histogram_.min_hpwl_[i] << "        "
-                              << net_histogram_.max_hpwl_[i] << "\n";
+      written_length = sprintf(&buffer[0],"%4d-%-4d  %8d       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
+             lo, hi,
+             net_histogram_.count_[i],
+             net_histogram_.percent_[i],
+             net_histogram_.sum_hpwl_[i],
+             net_histogram_.ave_hpwl_[i],
+             net_histogram_.min_hpwl_[i],
+             net_histogram_.max_hpwl_[i]);
     }
+    buffer.resize(written_length);
+    BOOST_LOG_TRIVIAL(info) << buffer;
   }
-  BOOST_LOG_TRIVIAL(info) << net_histogram_.bin_list_[sz - 1] << "+      "
-                          << net_histogram_.count_[sz - 1] << "       "
-                          << net_histogram_.percent_[sz - 1] << "         "
-                          << net_histogram_.sum_hpwl_[sz - 1] << "        "
-                          << net_histogram_.ave_hpwl_[sz - 1] << "        "
-                          << net_histogram_.min_hpwl_[sz - 1] << "        "
-                          << net_histogram_.max_hpwl_[sz - 1] << "\n";
+  std::string buffer(1024, '\0');
+  int written_length = 0;
+  written_length = sprintf(&buffer[0],"%4d+      %8d       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
+         net_histogram_.bin_list_[sz - 1],
+         net_histogram_.count_[sz - 1],
+         net_histogram_.percent_[sz - 1],
+         net_histogram_.sum_hpwl_[sz - 1],
+         net_histogram_.ave_hpwl_[sz - 1],
+         net_histogram_.min_hpwl_[sz - 1],
+         net_histogram_.max_hpwl_[sz - 1]);
+  buffer.resize(written_length);
+  BOOST_LOG_TRIVIAL(info) << buffer;
 
   BOOST_LOG_TRIVIAL(info)
     << "=================================================================================================\n";
   BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: " << net_histogram_.hpwl_unit_ << " um\n";
   BOOST_LOG_TRIVIAL(info) << "\n";
+  //printf("%f\n", net_histogram_.tot_hpwl_ * 0.18);
 }
 
 }

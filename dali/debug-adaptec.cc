@@ -21,6 +21,25 @@ using namespace dali;
 
 int main(int argc, char **argv) {
   init_logging(boost::log::trivial::trace);
+
+  double epsilon_factor_ = 2.0/3.0;
+  for (int i = 1; i < argc;) {
+    std::string arg(argv[i++]);
+    if ((arg == "-anchor") && i < argc) {
+      std::string tmp_str = std::string(argv[i++]);
+      try {
+        epsilon_factor_ = std::stod(tmp_str);
+      } catch (...) {
+        std::cout << "Invalid value!\n";
+        return 1;
+      }
+    } else {
+      std::cout << "Unknown option for file reading\n";
+      std::cout << arg << "\n";
+      return 1;
+    }
+  }
+
   Circuit circuit;
 
   //std::string config_file = "dali.conf";
@@ -37,12 +56,13 @@ int main(int argc, char **argv) {
   BOOST_LOG_TRIVIAL(info)  <<"Eigen thread " << Eigen::nbThreads() << "\n";
 
   time_t Time = clock();
+  double wall_time = get_wall_time();
 
-  std::string adaptec1_lef = "ISPD2005/adaptec4.lef";
+  std::string adaptec1_lef = "ISPD2005/adaptec1.lef";
 #if TEST_LG
   std::string adaptec1_def = "adaptec1_pl.def";
 #else
-  std::string adaptec1_def = "ISPD2005/adaptec4.def";
+  std::string adaptec1_def = "ISPD2005/adaptec1.def";
 #endif
 
   circuit.setGridValue(0.01, 0.01);
@@ -64,6 +84,8 @@ int main(int argc, char **argv) {
   circuit.ReportHPWL();
 
   GPSimPL gb_placer;
+  //gb_placer.epsilon_factor_ = epsilon_factor_;
+  //BOOST_LOG_TRIVIAL(info) << "Factor: " << gb_placer.epsilon_factor_ << "\n";
   gb_placer.SetInputCircuit(&circuit);
   gb_placer.SetBoundaryDef();
   gb_placer.SetFillingRate(1);
@@ -72,9 +94,9 @@ int main(int argc, char **argv) {
 #if !TEST_LG
   gb_placer.StartPlacement();
   gb_placer.SaveDEFFile("adaptec1_pl.def", adaptec1_def);
-  circuit.SaveBookshelfPl("adaptec4bs.pl");
+  //circuit.SaveBookshelfPl("adaptec1bs.pl");
 #endif
-  gb_placer.GenMATLABTable("gb_result.txt");
+  //gb_placer.GenMATLABTable("gb_result.txt");
 
   /*
   LGTetrisEx legalizer;
@@ -99,8 +121,15 @@ int main(int argc, char **argv) {
   delete well_legalizer;
 #endif
 
+  //circuit.InitNetFanoutHistogram();
+  //circuit.ReportNetFanoutHistogram();
+  //circuit.ReportHPWLHistogramLinear();
+  //circuit.ReportHPWLHistogramLogarithm();
+
   Time = clock() - Time;
-  BOOST_LOG_TRIVIAL(info) << "Execution time " << double(Time) / CLOCKS_PER_SEC << "s." << std::endl;
+  wall_time = get_wall_time() - wall_time;
+  BOOST_LOG_TRIVIAL(info) << "Execution time " << double(Time) / CLOCKS_PER_SEC << "s.\n";
+  BOOST_LOG_TRIVIAL(info) << "Wall time " << wall_time << "s.\n";
 
   return 0;
 }

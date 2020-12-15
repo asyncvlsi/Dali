@@ -12,6 +12,7 @@
 
 namespace dali {
 
+// optimal region distance
 struct OptRegDist {
   Circuit *circuit_ = nullptr;
   void FindOptimalRegionX(Block &blk, double &lx, double &ly, double &ux, double &uy) const {
