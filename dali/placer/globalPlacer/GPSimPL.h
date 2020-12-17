@@ -50,13 +50,16 @@ class GPSimPL : public Placer {
   int cg_iteration_ = 10; // cg solver runs this amount of iterations to optimize the quadratic metric everytime
   int cg_iteration_max_num_ = 300; // cg solver runs at most this amount of iterations to optimize the quadratic metric
   double cg_stop_criterion_ = 0.01; // cg solver stops if the cost change is less than this value for 3 iterations
-  double alpha = 0.00; // net weight for anchor pseudo-net
   double net_model_update_stop_criterion_ = 0.01; // stop update net model if the cost change is less than this value for 3 iterations
 
   /**** two small positive numbers used to avoid divergence when calculating net weights ****/
-  double epsilon_factor_ = 2.0/3.0;
+  double epsilon_factor_ = 1.0;
   double width_epsilon_; // this value is 1/epsilon_factor_ times the average movable cell width
   double height_epsilon_; // this value is 1/epsilon_factor_ times the average movable cell height
+
+  /**** anchor weight ****/
+  double alpha = 0.00; // net weight for anchor pseudo-net
+  double alpha_step = 0.03;
 
   // for look ahead legalization
   int b2b_update_max_iteration = 50;
@@ -71,18 +74,18 @@ class GPSimPL : public Placer {
   // weight adjust factor
   double adjust_factor = 1.5;
   double base_factor = 0.5;
-  double decay_factor = 24;
+  double decay_factor = 2;
 
   // lal parameters
-  int cluster_upper_size = 3;
+  //int cluster_upper_size = 3;
  public:
   GPSimPL();
   GPSimPL(double aspectRatio, double fillingRate);
 
-  unsigned int TotBlockNum() { return GetCircuit()->TotBlkCount(); }
+  int cluster_upper_size = 3;
   void SetEpsilon() {
-    width_epsilon_ = circuit_->AveMovBlkWidth() / epsilon_factor_;
-    height_epsilon_ = circuit_->AveMovBlkHeight() / epsilon_factor_;
+    width_epsilon_ = circuit_->AveMovBlkWidth() * epsilon_factor_;
+    height_epsilon_ = circuit_->AveMovBlkHeight() * epsilon_factor_;
   }
 
   std::vector<int> Ax_row_size;
@@ -195,7 +198,7 @@ class GPSimPL : public Placer {
   double QuadraticPlacementWithAnchor(double net_model_update_stop_criterion);
   void UpdateAnchorNetWeight() {
     if (net_model == 0) {
-      alpha = 0.04 * cur_iter_;
+      alpha = alpha_step * cur_iter_;
     } else if (net_model == 1) {
       alpha = 0.002 * cur_iter_;
     } else if (net_model == 2) {

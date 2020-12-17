@@ -22,19 +22,19 @@ using namespace dali;
 int main(int argc, char **argv) {
   init_logging(boost::log::trivial::trace);
 
-  double epsilon_factor_ = 2.0/3.0;
+  double tune_param;
   for (int i = 1; i < argc;) {
     std::string arg(argv[i++]);
-    if ((arg == "-anchor") && i < argc) {
+    if ((arg == "-param") && i < argc) {
       std::string tmp_str = std::string(argv[i++]);
       try {
-        epsilon_factor_ = std::stod(tmp_str);
+        tune_param = std::stod(tmp_str);
       } catch (...) {
         std::cout << "Invalid value!\n";
         return 1;
       }
     } else {
-      std::cout << "Unknown option for file reading\n";
+      std::cout << "Unknown options\n";
       std::cout << arg << "\n";
       return 1;
     }
@@ -84,8 +84,8 @@ int main(int argc, char **argv) {
   circuit.ReportHPWL();
 
   GPSimPL gb_placer;
-  //gb_placer.epsilon_factor_ = epsilon_factor_;
-  //BOOST_LOG_TRIVIAL(info) << "Factor: " << gb_placer.epsilon_factor_ << "\n";
+  //gb_placer.cluster_upper_size = tune_param;
+  BOOST_LOG_TRIVIAL(info) << "tune_param: " << tune_param << "\n";
   gb_placer.SetInputCircuit(&circuit);
   gb_placer.SetBoundaryDef();
   gb_placer.SetFillingRate(1);
@@ -93,10 +93,10 @@ int main(int argc, char **argv) {
   //gb_placer.is_dump = true;
 #if !TEST_LG
   gb_placer.StartPlacement();
-  gb_placer.SaveDEFFile("adaptec1_pl.def", adaptec1_def);
-  //circuit.SaveBookshelfPl("adaptec1bs.pl");
+  //gb_placer.SaveDEFFile("adaptec1_pl.def", adaptec1_def);
+  circuit.SaveBookshelfPl("adaptec1bs.pl");
 #endif
-  //gb_placer.GenMATLABTable("gb_result.txt");
+  gb_placer.GenMATLABTable("gb_result.txt");
 
   /*
   LGTetrisEx legalizer;
@@ -130,6 +130,7 @@ int main(int argc, char **argv) {
   wall_time = get_wall_time() - wall_time;
   BOOST_LOG_TRIVIAL(info) << "Execution time " << double(Time) / CLOCKS_PER_SEC << "s.\n";
   BOOST_LOG_TRIVIAL(info) << "Wall time " << wall_time << "s.\n";
+  BOOST_LOG_TRIVIAL(info) << "tune_param: " << tune_param << "\n";
 
   return 0;
 }

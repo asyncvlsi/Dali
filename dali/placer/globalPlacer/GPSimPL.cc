@@ -288,7 +288,6 @@ void GPSimPL::BuildProblemB2BX() {
 
   double center_weight = 0.03 / std::sqrt(sz);
   double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
-  double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
 
   double weight;
   double weight_adjust;
@@ -298,6 +297,7 @@ void GPSimPL::BuildProblemB2BX() {
   double pin_loc;
   int blk_num;
   bool is_movable;
+  double offset;
   double offset_diff;
 
   int max_pin_index;
@@ -333,46 +333,47 @@ void GPSimPL::BuildProblemB2BX() {
       blk_num = pair.BlkNum();
       pin_loc = pair.AbsX();
       is_movable = pair.BlkPtr()->IsMovable();
+      offset = pair.OffsetX();
 
       if (blk_num != blk_num_max) {
         double distance = std::fabs(pin_loc - pin_loc_max);
         weight = inv_p / (distance + width_epsilon_);
-        weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
-        weight *= weight_adjust;
+        //weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
+        //weight *= weight_adjust;
         if (!is_movable && is_movable_max) {
           bx[blk_num_max] += (pin_loc - offset_max) * weight;
           coefficientsx.emplace_back(blk_num_max, blk_num_max, weight);
         } else if (is_movable && !is_movable_max) {
-          bx[blk_num] += (pin_loc_max - pair.OffsetX()) * weight;
+          bx[blk_num] += (pin_loc_max - offset) * weight;
           coefficientsx.emplace_back(blk_num, blk_num, weight);
         } else if (is_movable && is_movable_max) {
           coefficientsx.emplace_back(blk_num, blk_num, weight);
           coefficientsx.emplace_back(blk_num_max, blk_num_max, weight);
           coefficientsx.emplace_back(blk_num, blk_num_max, -weight);
           coefficientsx.emplace_back(blk_num_max, blk_num, -weight);
-          offset_diff = (offset_max - pair.OffsetX()) * weight;
+          offset_diff = (offset_max - offset) * weight;
           bx[blk_num] += offset_diff;
           bx[blk_num_max] -= offset_diff;
         }
       }
 
       if ((blk_num != blk_num_max) && (blk_num != blk_num_min)) {
-        double distance = std::fabs(pin_loc - pin_loc_max);
+        double distance = std::fabs(pin_loc - pin_loc_min);
         weight = inv_p / (distance + width_epsilon_);
-        weight_adjust = adjust_factor * (1 - exp(-distance / decay_length));
-        weight *= weight_adjust;
+        //weight_adjust = adjust_factor * (1 - exp(-distance / decay_length));
+        //weight *= weight_adjust;
         if (!is_movable && is_movable_min) {
           bx[blk_num_min] += (pin_loc - offset_min) * weight;
           coefficientsx.emplace_back(blk_num_min, blk_num_min, weight);
         } else if (is_movable && !is_movable_min) {
-          bx[blk_num] += (pin_loc_min - pair.OffsetX()) * weight;
+          bx[blk_num] += (pin_loc_min - offset) * weight;
           coefficientsx.emplace_back(blk_num, blk_num, weight);
         } else if (is_movable && is_movable_min) {
           coefficientsx.emplace_back(blk_num, blk_num, weight);
           coefficientsx.emplace_back(blk_num_min, blk_num_min, weight);
           coefficientsx.emplace_back(blk_num, blk_num_min, -weight);
           coefficientsx.emplace_back(blk_num_min, blk_num, -weight);
-          offset_diff = (offset_min - pair.OffsetX()) * weight;
+          offset_diff = (offset_min - offset) * weight;
           bx[blk_num] += offset_diff;
           bx[blk_num_min] -= offset_diff;
         }
@@ -426,7 +427,6 @@ void GPSimPL::BuildProblemB2BY() {
   }
 
   double center_weight = 0.03 / std::sqrt(sz);
-  double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
   double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
 
   double weight;
@@ -437,6 +437,7 @@ void GPSimPL::BuildProblemB2BY() {
   double pin_loc;
   int blk_num;
   bool is_movable;
+  double offset;
   double offset_diff;
 
   int max_pin_index;
@@ -472,46 +473,47 @@ void GPSimPL::BuildProblemB2BY() {
       blk_num = pair.BlkNum();
       pin_loc = pair.AbsY();
       is_movable = pair.BlkPtr()->IsMovable();
+      offset = pair.OffsetY();
 
       if (blk_num != blk_num_max) {
         double distance = std::fabs(pin_loc - pin_loc_max);
         weight = inv_p / (distance + height_epsilon_);
-        weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
-        weight *= weight_adjust;
+        //weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
+        //weight *= weight_adjust;
         if (!is_movable && is_movable_max) {
           by[blk_num_max] += (pin_loc - offset_max) * weight;
           coefficientsy.emplace_back(blk_num_max, blk_num_max, weight);
         } else if (is_movable && !is_movable_max) {
-          by[blk_num] += (pin_loc_max - pair.OffsetY()) * weight;
+          by[blk_num] += (pin_loc_max - offset) * weight;
           coefficientsy.emplace_back(blk_num, blk_num, weight);
         } else if (is_movable && is_movable_max) {
           coefficientsy.emplace_back(blk_num, blk_num, weight);
           coefficientsy.emplace_back(blk_num_max, blk_num_max, weight);
           coefficientsy.emplace_back(blk_num, blk_num_max, -weight);
           coefficientsy.emplace_back(blk_num_max, blk_num, -weight);
-          offset_diff = (offset_max - pair.OffsetY()) * weight;
+          offset_diff = (offset_max - offset) * weight;
           by[blk_num] += offset_diff;
           by[blk_num_max] -= offset_diff;
         }
       }
 
       if ((blk_num != blk_num_max) && (blk_num != blk_num_min)) {
-        double distance = std::fabs(pin_loc - pin_loc_max);
+        double distance = std::fabs(pin_loc - pin_loc_min);
         weight = inv_p / (distance + height_epsilon_);
-        weight_adjust = adjust_factor * (1 - exp(-distance / decay_length));
-        weight *= weight_adjust;
+        //weight_adjust = adjust_factor * (1 - exp(-distance / decay_length));
+        //weight *= weight_adjust;
         if (!is_movable && is_movable_min) {
           by[blk_num_min] += (pin_loc - offset_min) * weight;
           coefficientsy.emplace_back(blk_num_min, blk_num_min, weight);
         } else if (is_movable && !is_movable_min) {
-          by[blk_num] += (pin_loc_min - pair.OffsetY()) * weight;
+          by[blk_num] += (pin_loc_min - offset) * weight;
           coefficientsy.emplace_back(blk_num, blk_num, weight);
         } else if (is_movable && is_movable_min) {
           coefficientsy.emplace_back(blk_num, blk_num, weight);
           coefficientsy.emplace_back(blk_num_min, blk_num_min, weight);
           coefficientsy.emplace_back(blk_num, blk_num_min, -weight);
           coefficientsy.emplace_back(blk_num_min, blk_num, -weight);
-          offset_diff = (offset_min - pair.OffsetY()) * weight;
+          offset_diff = (offset_min - offset) * weight;
           by[blk_num] += offset_diff;
           by[blk_num_min] -= offset_diff;
         }
