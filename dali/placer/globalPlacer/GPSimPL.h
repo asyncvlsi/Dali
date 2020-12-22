@@ -49,7 +49,7 @@ class GPSimPL : public Placer {
   double cg_tolerance_ = 1e-35; // this is to make sure cg_tolerance is the same for different machines
   int cg_iteration_ = 10; // cg solver runs this amount of iterations to optimize the quadratic metric everytime
   int cg_iteration_max_num_ = 300; // cg solver runs at most this amount of iterations to optimize the quadratic metric
-  double cg_stop_criterion_ = 0.01; // cg solver stops if the cost change is less than this value for 3 iterations
+  double cg_stop_criterion_ = 0.0025; // cg solver stops if the cost change is less than this value for 3 iterations
   double net_model_update_stop_criterion_ = 0.01; // stop update net model if the cost change is less than this value for 3 iterations
 
   /**** two small positive numbers used to avoid divergence when calculating net weights ****/
@@ -77,12 +77,11 @@ class GPSimPL : public Placer {
   double decay_factor = 2;
 
   // lal parameters
-  //int cluster_upper_size = 3;
+  int cluster_upper_size = 3;
  public:
   GPSimPL();
   GPSimPL(double aspectRatio, double fillingRate);
 
-  int cluster_upper_size = 3;
   void SetEpsilon() {
     width_epsilon_ = circuit_->AveMovBlkWidth() * epsilon_factor_;
     height_epsilon_ = circuit_->AveMovBlkHeight() * epsilon_factor_;

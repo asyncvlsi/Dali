@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
   circuit.ReportHPWL();
 
   GPSimPL gb_placer;
-  //gb_placer.cluster_upper_size = tune_param;
+  //gb_placer.net_model_update_stop_criterion_ = tune_param;
   BOOST_LOG_TRIVIAL(info) << "tune_param: " << tune_param << "\n";
   gb_placer.SetInputCircuit(&circuit);
   gb_placer.SetBoundaryDef();
