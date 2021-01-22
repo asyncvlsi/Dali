@@ -48,18 +48,18 @@ class GPSimPL : public Placer {
   /**** parameters for CG solver optimization configuration ****/
   double cg_tolerance_ = 1e-35; // this is to make sure cg_tolerance is the same for different machines
   int cg_iteration_ = 10; // cg solver runs this amount of iterations to optimize the quadratic metric everytime
-  int cg_iteration_max_num_ = 300; // cg solver runs at most this amount of iterations to optimize the quadratic metric
+  int cg_iteration_max_num_ = 1000; // cg solver runs at most this amount of iterations to optimize the quadratic metric, this number should be adaptive to circuit size
   double cg_stop_criterion_ = 0.0025; // cg solver stops if the cost change is less than this value for 3 iterations
   double net_model_update_stop_criterion_ = 0.01; // stop update net model if the cost change is less than this value for 3 iterations
 
   /**** two small positive numbers used to avoid divergence when calculating net weights ****/
-  double epsilon_factor_ = 1.0;
+  double epsilon_factor_ = 1.5;
   double width_epsilon_; // this value is 1/epsilon_factor_ times the average movable cell width
   double height_epsilon_; // this value is 1/epsilon_factor_ times the average movable cell height
 
   /**** anchor weight ****/
-  double alpha = 0.00; // net weight for anchor pseudo-net
-  double alpha_step = 0.03;
+  double alpha = 0.00; // pseudo-net weight additional factor for anchor pseudo-net
+  double alpha_step = 0.00;
 
   // for look ahead legalization
   int b2b_update_max_iteration = 50;
@@ -73,7 +73,7 @@ class GPSimPL : public Placer {
 
   // weight adjust factor
   double adjust_factor = 1.5;
-  double base_factor = 0.5;
+  double base_factor = 0.0;
   double decay_factor = 2;
 
   // lal parameters
@@ -87,6 +87,10 @@ class GPSimPL : public Placer {
     height_epsilon_ = circuit_->AveMovBlkHeight() * epsilon_factor_;
   }
 
+  double weight_modulation(double init_weight, double norm_distance, double center, double dispersion) {
+    return init_weight / (1+exp((norm_distance-center)/dispersion));
+  }
+
   std::vector<int> Ax_row_size;
   std::vector<int> Ay_row_size;
   std::vector<std::vector<D>> ADx;
@@ -97,6 +101,7 @@ class GPSimPL : public Placer {
   SpMat Ax;
   SpMat Ay;
   Eigen::VectorXd x_anchor, y_anchor;
+  Eigen::VectorXd x_anchor_weight, y_anchor_weight;
   bool x_anchor_set = false;
   bool y_anchor_set = false;
   std::vector<T> coefficientsx;
@@ -192,12 +197,22 @@ class GPSimPL : public Placer {
   void BackUpBlockLocation();
   double LookAheadLegalization();
   void UpdateAnchorLocation();
+  void UpdateAnchorNetWeight();
   void BuildProblemWithAnchorX();
   void BuildProblemWithAnchorY();
   double QuadraticPlacementWithAnchor(double net_model_update_stop_criterion);
-  void UpdateAnchorNetWeight() {
+  void UpdateAnchorAlpha() {
     if (net_model == 0) {
-      alpha = alpha_step * cur_iter_;
+      if (0 <= cur_iter_ && cur_iter_ < 5) {
+        alpha_step = 0.005;
+      } else if (cur_iter_ < 10) {
+        alpha_step = 0.01;
+      } else if (cur_iter_ < 15) {
+        alpha_step = 0.02;
+      } else {
+        alpha_step = 0.03;
+      }
+      alpha += alpha_step;
     } else if (net_model == 1) {
       alpha = 0.002 * cur_iter_;
     } else if (net_model == 2) {
@@ -217,6 +232,7 @@ class GPSimPL : public Placer {
 
   bool is_dump = false;
   void DumpResult(std::string const &name_of_file);
+  void DumpLookAheadDisplacement(std::string const &base_name, int mode);
   void DrawBlockNetList(std::string const &name_of_file = "block_net_list.txt");
   void write_all_terminal_grid_bins(std::string const &name_of_file);
   void write_not_all_terminal_grid_bins(std::string const &name_of_file = "grid_bin_not_all_terminal.txt");
@@ -229,6 +245,7 @@ class GPSimPL : public Placer {
   void write_first_box_cell_bounding(std::string const &name_of_file);
 
   static bool IsSeriesConverge(std::vector<double> &data, int window_size, double tolerance);
+  static bool IsSeriesOscillate(std::vector<double> &data, int window_size);
 };
 
 }

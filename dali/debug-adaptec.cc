@@ -71,11 +71,6 @@ int main(int argc, char **argv) {
   //circuit.ReportBlockType();
   //circuit.ReportBlockList();
   //circuit.ReportNetList();
-
-  //circuit.getDesign()->region_left_ = 459;
-  //circuit.getDesign()->region_right_ = 10692 + 459;
-  //circuit.getDesign()->region_bottom_ = 459;
-  //circuit.getDesign()->region_top_ = 11127 + 12;
   //circuit.GenMATLABTable("_result.txt");
 
   BOOST_LOG_TRIVIAL(info) << "File loading complete, time: " << double(clock() - Time) / CLOCKS_PER_SEC << " s" << std::endl;
@@ -90,7 +85,7 @@ int main(int argc, char **argv) {
   gb_placer.SetBoundaryDef();
   gb_placer.SetFillingRate(1);
   gb_placer.ReportBoundaries();
-  //gb_placer.is_dump = true;
+  gb_placer.is_dump = false;
 #if !TEST_LG
   gb_placer.StartPlacement();
   //gb_placer.SaveDEFFile("adaptec1_pl.def", adaptec1_def);

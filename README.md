@@ -9,7 +9,7 @@
 
 ### Pre-requisite
   * Boost, version >= 1.71.0 (lower version may work, not tested)
-  * LEF/DEF parser: [LEF parser](https://github.com/The-OpenROAD-Project/lef) and [DEF parser](https://github.com/The-OpenROAD-Project/def)
+  * LEF/DEF parser: [LEF parser](https://github.com/The-OpenROAD-Project/lef) and [DEF parser](https://github.com/The-OpenROAD-Project/def). Using `cmake .. -DCMAKE_INSTALL_PREFIX=path/to/install` tp specify the installation destination.
   * OpenMP
   * [Galois](https://github.com/IntelligentSoftwareSystems/Galois)
   * [ACT](https://github.com/asyncvlsi/act)

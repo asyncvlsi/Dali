@@ -231,6 +231,8 @@ void GPSimPL::CGInit() {
   Ay.resize(sz, sz);
   x_anchor.resize(sz);
   y_anchor.resize(sz);
+  x_anchor_weight.resize(sz);
+  y_anchor_weight.resize(sz);
 
   cgx.setMaxIterations(cg_iteration_);
   cgx.setTolerance(cg_tolerance_);
@@ -1199,12 +1201,17 @@ double GPSimPL::OptimizeQuadraticMetricX(double cg_stop_criterion) {
     //BOOST_LOG_TRIVIAL(info)  <<"  %d WeightedHPWLX: %e\n", i, evaluate_result);
     if (eval_history.size() >= 3) {
       bool is_converge = IsSeriesConverge(eval_history, 3, cg_stop_criterion);
+      bool is_oscillate = IsSeriesOscillate(eval_history, 5);
       if (is_converge) {
-        BOOST_LOG_TRIVIAL(trace) << "      Metric optimization in X, sequence: " << eval_history << "\n";
+        break;
+      }
+      if (is_oscillate) {
+        BOOST_LOG_TRIVIAL(trace) << "oscillation detected\n";
         break;
       }
     }
   }
+  BOOST_LOG_TRIVIAL(trace) << "      Metric optimization in X, sequence: " << eval_history << "\n";
   wall_time = get_wall_time() - wall_time;
   tot_cg_solver_time_x += wall_time;
 
@@ -1245,12 +1252,17 @@ double GPSimPL::OptimizeQuadraticMetricY(double cg_stop_criterion) {
     //BOOST_LOG_TRIVIAL(info)  <<"  %d WeightedHPWLY: %e\n", i, evaluate_result);
     if (eval_history.size() >= 3) {
       bool is_converge = IsSeriesConverge(eval_history, 3, cg_stop_criterion);
+      bool is_oscillate = IsSeriesOscillate(eval_history, 5);
       if (is_converge) {
-        BOOST_LOG_TRIVIAL(trace) << "      Metric optimization in Y, sequence: " << eval_history << "\n";
+        break;
+      }
+      if (is_oscillate) {
+        BOOST_LOG_TRIVIAL(trace) << "oscillation detected\n";
         break;
       }
     }
   }
+  BOOST_LOG_TRIVIAL(trace) << "      Metric optimization in Y, sequence: " << eval_history << "\n";
   wall_time = get_wall_time() - wall_time;
   tot_cg_solver_time_y += wall_time;
 
@@ -1334,7 +1346,7 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
     //BOOST_LOG_TRIVIAL(info)  <<"OpenMP threads, %d\n", omp_get_num_threads());
     if (omp_get_thread_num() == 0) {
       omp_set_num_threads(avail_threads_num / 2);
-      BOOST_LOG_TRIVIAL(info)   << "threads in branch x: " << omp_get_max_threads() << " Eigen threads: " << Eigen::nbThreads() << "\n";
+      BOOST_LOG_TRIVIAL(trace)   << "threads in branch x: " << omp_get_max_threads() << " Eigen threads: " << Eigen::nbThreads() << "\n";
 
       std::vector<Block> &block_list = circuit_->BlockListRef();
       for (size_t i = 0; i < block_list.size(); ++i) {
@@ -1342,20 +1354,25 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
       }
 
       std::vector<double> eval_history_x;
-      for (int i = 0; i < b2b_update_max_iteration; ++i) {
+      int b2b_update_it_x = 0;
+      for (b2b_update_it_x = 0; b2b_update_it_x < b2b_update_max_iteration; ++b2b_update_it_x) {
         BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
         BuildProblemX();
         double evaluate_result = OptimizeQuadraticMetricX(cg_stop_criterion_);
         eval_history_x.push_back(evaluate_result);
         if (eval_history_x.size() >= 3) {
           bool is_converge = IsSeriesConverge(eval_history_x, 3, net_model_update_stop_criterion);
+          bool is_oscillate = IsSeriesOscillate(eval_history_x, 5);
           if (is_converge) {
-            BOOST_LOG_TRIVIAL(trace) << "  Optimization summary X, iterations x: " << i << ", " << eval_history_x
-                                     << "\n";
+            break;
+          }
+          if (is_oscillate) {
+            BOOST_LOG_TRIVIAL(trace) << "Net model update oscillation detected X\n";
             break;
           }
         }
       }
+      BOOST_LOG_TRIVIAL(trace) << "  Optimization summary X, iterations x: " << b2b_update_it_x << ", " << eval_history_x << "\n";
       DaliExpects(!eval_history_x.empty(),
                   "Cannot return a valid value because the result is not evaluated in GPSimPL::QuadraticPlacement()!");
       lower_bound_hpwlx_.push_back(eval_history_x.back());
@@ -1363,27 +1380,32 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
 
     if (omp_get_thread_num() == 1 || omp_get_num_threads() == 1) {
       omp_set_num_threads(avail_threads_num / 2);
-      BOOST_LOG_TRIVIAL(info) << "threads in branch y: " << omp_get_max_threads() << " Eigen threads: " << Eigen::nbThreads() << "\n";
+      BOOST_LOG_TRIVIAL(trace) << "threads in branch y: " << omp_get_max_threads() << " Eigen threads: " << Eigen::nbThreads() << "\n";
 
       std::vector<Block> &block_list = circuit_->BlockListRef();
       for (size_t i = 0; i < block_list.size(); ++i) {
         vy[i] = block_list[i].LLY();
       }
       std::vector<double> eval_history_y;
-      for (int i = 0; i < b2b_update_max_iteration; ++i) {
+      int b2b_update_it_y = 0;
+      for (b2b_update_it_y = 0; b2b_update_it_y < b2b_update_max_iteration; ++b2b_update_it_y) {
         BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
         BuildProblemY();
         double evaluate_result = OptimizeQuadraticMetricY(cg_stop_criterion_);
         eval_history_y.push_back(evaluate_result);
         if (eval_history_y.size() >= 3) {
           bool is_converge = IsSeriesConverge(eval_history_y, 3, net_model_update_stop_criterion);
+          bool is_oscillate = IsSeriesOscillate(eval_history_y, 5);
           if (is_converge) {
-            BOOST_LOG_TRIVIAL(trace) << "  Optimization summary Y, iterations y: " << i << ", " << eval_history_y
-                                     << "\n";
+            break;
+          }
+          if (is_oscillate) {
+            BOOST_LOG_TRIVIAL(trace) << "Net model update oscillation detected Y\n";
             break;
           }
         }
       }
+      BOOST_LOG_TRIVIAL(trace) << "  Optimization summary Y, iterations y: " << b2b_update_it_y << ", " << eval_history_y << "\n";
       DaliExpects(!eval_history_y.empty(),
                   "Cannot return a valid value because the result is not evaluated in GPSimPL::QuadraticPlacement()!");
       lower_bound_hpwly_.push_back(eval_history_y.back());
@@ -2554,6 +2576,35 @@ void GPSimPL::UpdateAnchorLocation() {
   y_anchor_set = true;
 }
 
+void GPSimPL::UpdateAnchorNetWeight() {
+  std::vector<Block> &block_list = circuit_->BlockListRef();
+  size_t sz = block_list.size();
+
+  // X direction
+  double weight = 0;
+  double pin_loc0, pin_loc1;
+  double ave_height = circuit_->AveBlkHeight();
+  for (size_t i = 0; i < sz; ++i) {
+    if (block_list[i].IsFixed()) continue;
+    pin_loc0 = block_list[i].LLX();
+    pin_loc1 = x_anchor[i];
+    double displacement = std::fabs(pin_loc0 - pin_loc1);
+    weight = alpha / (displacement + width_epsilon_);
+    x_anchor_weight[i] = weight;
+  }
+
+  // Y direction
+  weight = 0;
+  for (size_t i = 0; i < sz; ++i) {
+    if (block_list[i].IsFixed()) continue;
+    pin_loc0 = block_list[i].LLY();
+    pin_loc1 = y_anchor[i];
+    double displacement = std::fabs(pin_loc0 - pin_loc1);
+    weight = alpha / (displacement + width_epsilon_);
+    y_anchor_weight[i] = weight;
+  }
+}
+
 void GPSimPL::BuildProblemWithAnchorX() {
   UpdateMaxMinX();
   if (net_model == 0) {
@@ -2634,7 +2685,8 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
   std::vector<Block> &block_list = circuit_->BlockListRef();
 
   UpdateAnchorLocation();
-  UpdateAnchorNetWeight();
+  UpdateAnchorAlpha();
+  //UpdateAnchorNetWeight();
   BOOST_LOG_TRIVIAL(trace) << "alpha: " << alpha << "\n";
 
 #pragma omp parallel num_threads(std::min(omp_get_max_threads(), 2))
@@ -2642,12 +2694,13 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
     //BOOST_LOG_TRIVIAL(info)  <<"OpenMP threads, %d\n", omp_get_num_threads());
     if (omp_get_thread_num() == 0) {
       omp_set_num_threads(avail_threads_num / 2);
-      BOOST_LOG_TRIVIAL(info)   << "threads in branch x: " << omp_get_max_threads() << " Eigen threads: " << Eigen::nbThreads() << "\n";
+      BOOST_LOG_TRIVIAL(trace)   << "threads in branch x: " << omp_get_max_threads() << " Eigen threads: " << Eigen::nbThreads() << "\n";
       for (size_t i = 0; i < block_list.size(); ++i) {
         vx[i] = block_list[i].LLX();
       }
       std::vector<double> eval_history_x;
-      for (int i = 0; i < b2b_update_max_iteration; ++i) {
+      int b2b_update_it_x = 0;
+      for (b2b_update_it_x = 0; b2b_update_it_x < b2b_update_max_iteration; ++b2b_update_it_x) {
         BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
         BuildProblemWithAnchorX();
         double evaluate_result = OptimizeQuadraticMetricX(cg_stop_criterion_);
@@ -2655,38 +2708,47 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
         //BOOST_LOG_TRIVIAL(trace) << "\tIterative net model update, WeightedHPWLX: " << evaluate_result << "\n";
         if (eval_history_x.size() >= 3) {
           bool is_converge = IsSeriesConverge(eval_history_x, 3, net_model_update_stop_criterion);
+          bool is_oscillate = IsSeriesOscillate(eval_history_x, 5);
           if (is_converge) {
-            BOOST_LOG_TRIVIAL(trace) << "  Optimization summary X, iterations x: " << i << ", " << eval_history_x
-                                     << "\n";
+            break;
+          }
+          if (is_oscillate) {
+            BOOST_LOG_TRIVIAL(trace) << "Net model update oscillation detected X\n";
             break;
           }
         }
       }
+      BOOST_LOG_TRIVIAL(trace) << "  Optimization summary X, iterations x: " << b2b_update_it_x << ", " << eval_history_x << "\n";
       DaliExpects(!eval_history_x.empty(),
                   "Cannot return a valid value because the result is not evaluated in GPSimPL::QuadraticPlacement()!");
       lower_bound_hpwlx_.push_back(eval_history_x.back());
     }
     if (omp_get_thread_num() == 1 || omp_get_num_threads() == 1) {
       omp_set_num_threads(avail_threads_num / 2);
-      BOOST_LOG_TRIVIAL(info)   << "threads in branch y: " << omp_get_max_threads() << " Eigen threads: " << Eigen::nbThreads() << "\n";
+      BOOST_LOG_TRIVIAL(trace)   << "threads in branch y: " << omp_get_max_threads() << " Eigen threads: " << Eigen::nbThreads() << "\n";
       for (size_t i = 0; i < block_list.size(); ++i) {
         vy[i] = block_list[i].LLY();
       }
       std::vector<double> eval_history_y;
-      for (int i = 0; i < b2b_update_max_iteration; ++i) {
+      int b2b_update_it_y = 0;
+      for (b2b_update_it_y = 0; b2b_update_it_y < b2b_update_max_iteration; ++b2b_update_it_y) {
         BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
         BuildProblemWithAnchorY();
         double evaluate_result = OptimizeQuadraticMetricY(cg_stop_criterion_);
         eval_history_y.push_back(evaluate_result);
         if (eval_history_y.size() >= 3) {
           bool is_converge = IsSeriesConverge(eval_history_y, 3, net_model_update_stop_criterion);
+          bool is_oscillate = IsSeriesOscillate(eval_history_y, 5);
           if (is_converge) {
-            BOOST_LOG_TRIVIAL(trace) << "  Optimization summary Y, iterations y: " << i << ", " << eval_history_y
-                                     << "\n";
+            break;
+          }
+          if (is_oscillate) {
+            BOOST_LOG_TRIVIAL(trace) << "Net model update oscillation detected Y\n";
             break;
           }
         }
       }
+      BOOST_LOG_TRIVIAL(trace) << "  Optimization summary Y, iterations y: " << b2b_update_it_y << ", " << eval_history_y << "\n";
       DaliExpects(!eval_history_y.empty(),
                   "Cannot return a valid value because the result is not evaluated in GPSimPL::QuadraticPlacement()!");
       lower_bound_hpwly_.push_back(eval_history_y.back());
@@ -2733,6 +2795,7 @@ double GPSimPL::LookAheadLegalization() {
   tot_lal_time += cpu_time;
 
   if (is_dump) DumpResult("lal_result_" + std::to_string(cur_iter_) + ".txt");
+  if (is_dump) DumpLookAheadDisplacement("displace_" + std::to_string(cur_iter_), 1);
 
   BOOST_LOG_TRIVIAL(debug) << "(UpdateGridBinState time: " << UpdateGridBinState_time << "s)\n";
   BOOST_LOG_TRIVIAL(debug) << "(UpdateClusterList time: " << UpdateClusterList_time << "s)\n";
@@ -2926,6 +2989,57 @@ void GPSimPL::DumpResult(std::string const &name_of_file) {
   //write_not_all_terminal_grid_bins("grid_bin_not_all_terminal" + std::to_string(counter) + ".txt");
   //write_overfill_grid_bins("grid_bin_overfill" + std::to_string(counter) + ".txt");
   ++counter;
+}
+
+void GPSimPL::DumpLookAheadDisplacement(std::string const &base_name, int mode) {
+  /****
+   * Dump the displacement of all cells during look ahead legalization.
+   * @param mode:
+   *    if 0: dump displacement for MATLAB visualization (quiver/vector plot)
+   *    if 1: dump displacement for distribution analysis, unit in average cell height
+   *    if 2: dump both
+   * ****/
+
+  if (mode < 0 || mode > 2) return;
+  if (mode==0 || mode == 2) {
+    std::string name_of_file = base_name + "quiver.txt";
+    std::ofstream ost(name_of_file.c_str());
+    DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
+
+    DaliExpects(circuit_ != nullptr, "Set input circuit before starting anything GPSimPL::DumpLookAheadDisplacement()");
+    std::vector<Block> &block_list = circuit_->BlockListRef();
+    size_t sz = circuit_->getDesignRef().blk_count_;
+    for (size_t i = 0; i < sz; ++i) {
+      double x = x_anchor[i] + block_list[i].Width() / 2.0;
+      double y = y_anchor[i] + +block_list[i].Height() / 2.0;
+      double u = block_list[i].X() - x;
+      double v = block_list[i].Y() - y;
+      ost << x << "\t" << y << "\t";
+      ost << u << "\t" << v << "\t";
+      ost << "\n";
+    }
+    ost.close();
+  }
+
+  if (mode==1 || mode==2) {
+    std::string name_of_file = base_name + "hist.txt";
+    std::ofstream ost(name_of_file.c_str());
+    DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
+
+    DaliExpects(circuit_ != nullptr, "Set input circuit before starting anything GPSimPL::DumpLookAheadDisplacement()");
+    double ave_height = circuit_->AveMovBlkHeight();
+    std::vector<Block> &block_list = circuit_->BlockListRef();
+    size_t sz = circuit_->getDesignRef().blk_count_;
+    for (size_t i = 0; i < sz; ++i) {
+      double x = x_anchor[i] + block_list[i].Width() / 2.0;
+      double y = y_anchor[i] + +block_list[i].Height() / 2.0;
+      double u = block_list[i].X() - x;
+      double v = block_list[i].Y() - y;
+      double displacement = sqrt(u*u + v*v);
+      ost << displacement/ave_height << "\n";
+    }
+    ost.close();
+  }
 }
 
 void GPSimPL::DrawBlockNetList(std::string const &name_of_file) {
@@ -3152,6 +3266,39 @@ bool GPSimPL::IsSeriesConverge(std::vector<double> &data, int window_size, doubl
   }
   double ratio = max_val / min_val - 1;
   return ratio < tolerance;
+}
+
+bool GPSimPL::IsSeriesOscillate(std::vector<double> &data, int length) {
+  /****
+   * Returns if the given series of data is oscillating or not.
+   * We will only look at the last several data points @param length.
+   * ****/
+
+  // if the given length is too short, we cannot know whether it is oscillating or not.
+  if (length < 3) return false;
+
+  // if the given data series is short than the length, we cannot know whether it is oscillating or not.
+  int sz = (int) data.size();
+  if (sz < length) {
+    return false;
+  }
+
+  // this vector keeps track of the increasing trend (true) and descreasing trend (false).
+  std::vector<bool> trend(length-1, false);
+  for (int i=0; i<length-1; ++i) {
+    trend[i] = data[sz-1-i] > data[sz-2-i];
+  }
+  std::reverse(trend.begin(), trend.end());
+
+  bool is_oscillate = true;
+  for (int i=0; i<length-2; ++i) {
+    if (trend[i]==trend[i+1]) {
+      is_oscillate = false;
+      break;
+    }
+  }
+
+  return is_oscillate;
 }
 
 }

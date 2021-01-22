@@ -18,7 +18,7 @@ int getLefUnits(lefrCallbackType_e type, lefiUnits *units, lefiUserData userData
     Circuit &circuit = *((Circuit *) userData);
     double number = units->databaseNumber();
     circuit.setDatabaseMicron(int(number));
-    BOOST_LOG_TRIVIAL(info) << "DATABASE MICRONS " << units->databaseNumber() << std::endl;
+    BOOST_LOG_TRIVIAL(trace) << "DATABASE MICRONS " << units->databaseNumber() << std::endl;
   } else {
     DaliExpects(false, "No DATABASE MICRONS provided in the UNITS section?");
   }
@@ -32,33 +32,64 @@ int getLefManufacturingGrid(lefrCallbackType_e type, double number, lefiUserData
   }
   Circuit &circuit = *((Circuit *) userData);
   circuit.setManufacturingGrid(number);
-  BOOST_LOG_TRIVIAL(info) << "MANUFACTURINGGRID " << number << std::endl;
+  BOOST_LOG_TRIVIAL(trace) << "MANUFACTURINGGRID " << number << std::endl;
 
   return 0;
 }
 
 int getLefLayers(lefrCallbackType_e type, lefiLayer *layer, lefiUserData userData) {
   if (type != lefrLayerCbkType) {
-    BOOST_LOG_TRIVIAL(info) << "Type is not lefrLayerCbkType!" << std::endl;
+    BOOST_LOG_TRIVIAL(fatal) << "Type is not lefrLayerCbkType!" << std::endl;
     exit(2);
   }
 
   if (strcmp(layer->type(), "ROUTING") == 0) { // routing layer
     std::string metal_layer_name(layer->name());
-    BOOST_LOG_TRIVIAL(info) << metal_layer_name << "\n";
+    BOOST_LOG_TRIVIAL(trace) << metal_layer_name << "\n";
     double min_width = layer->width();
     if (layer->hasMinwidth()) {
       min_width = layer->minwidth();
     }
-    double min_spacing = layer->spacing(0);
-    BOOST_LOG_TRIVIAL(info) << min_width << "  " << min_spacing << "  ";
+    DaliExpects(min_width > 0, "layer min-width cannot be correctly identified: " + metal_layer_name);
+    double min_spacing = -1.0;
+    if (layer->numSpacing() > 0) {
+      min_spacing = layer->spacing(0);
+    } else if (layer->numSpacingTable() > 0) {
+      auto spTable = layer->spacingTable(0);
+      if (spTable->isParallel() == 1) {
+        auto parallel = spTable->parallel();
+        //std::cout << "  SPACINGTABLE\n";
+        //std::cout << "  PARALLELRUNLENGTH\n\t";
+        //for (int j = 0; j < parallel->numLength(); ++j) {
+        //  std::cout << parallel->length(j) << "\t";
+        //}
+        //std::cout << "\n";
+        //for (int j = 0; j < parallel->numWidth(); ++j) {
+        //  std::cout << parallel->width(j) << "\t";
+        //  for (int k = 0; k < parallel->numLength(); ++k) {
+        //    std::cout << parallel->widthSpacing(j, k) << "\t";
+        //  }
+        //  std::cout << "\n";
+        //}
+        BOOST_LOG_TRIVIAL(trace) << "Using min-spacing from the spacing table\n";
+        DaliExpects(parallel->numLength()>0 && parallel->numWidth()>0, "Spacing table is too small to obtain the min-spacing");
+        min_spacing = parallel->widthSpacing(0, 0);
+      } else {
+        std::cout << "unsupported spacing table!\n";
+      }
+    } else {
+      DaliExpects(false, "layer min-spacing not specified: " + metal_layer_name);
+    }
+    DaliExpects(min_spacing > 0, "Negative min-spacing?");
+
+    BOOST_LOG_TRIVIAL(trace) << min_width << "  " << min_spacing << "  ";
     std::string str_direct(layer->direction());
-    BOOST_LOG_TRIVIAL(info) << str_direct << "\n";
+    BOOST_LOG_TRIVIAL(trace) << str_direct << "\n";
     MetalDirection direct = StrToMetalDirection(str_direct);
     double min_area = 0;
     if (layer->hasArea()) {
       min_area = layer->area();
-      BOOST_LOG_TRIVIAL(info) << min_area;
+      BOOST_LOG_TRIVIAL(trace) << min_area;
     }
     Circuit &circuit = *((Circuit *) userData);
     circuit.AddMetalLayer(metal_layer_name,
@@ -82,6 +113,7 @@ int siteCB(lefrCallbackType_e type, lefiSite *site, lefiUserData userData) {
   if (site->lefiSite::hasSize()) {
     Circuit &circuit = *((Circuit *) userData);
     circuit.setGridValue(site->sizeX(), site->sizeY());
+    circuit.setRowHeight(site->sizeY());
     //BOOST_LOG_TRIVIAL(info)   << "SITE SIZE " << site->lefiSite::sizeX() << "  " << site->lefiSite::sizeY() << "\n";
     //BOOST_LOG_TRIVIAL(info)   << circuit.GridValueX() << "  " << circuit.GridValueY() << "\n";
   } else {
@@ -246,7 +278,7 @@ int getDefUnits(defrCallbackType_e type, double number, defiUserData userData) {
   }
   Circuit &circuit = *((Circuit *) userData);
   circuit.setUnitsDistanceMicrons(int(number));
-  BOOST_LOG_TRIVIAL(info) << "UNITS DISTANCE MICRONS " << circuit.DistanceMicrons() << " ;" << std::endl;
+  BOOST_LOG_TRIVIAL(trace) << "UNITS DISTANCE MICRONS " << circuit.DistanceMicrons() << " ;" << std::endl;
   return 0;
 }
 
@@ -258,12 +290,15 @@ int getDefDieArea(defrCallbackType_e type, defiBox *box, defiUserData userData) 
   Circuit &circuit = *((Circuit *) userData);
   if (!circuit.getDesignRef().die_area_set_) {
     circuit.setDieArea(box->xl(), box->yl(), box->xh(), box->yh());
-    BOOST_LOG_TRIVIAL(info) << circuit.RegionLLX() << "  " << circuit.RegionLLY() << "  " << circuit.RegionURX() << "  "
+    BOOST_LOG_TRIVIAL(info) << "Placement region: "
+                            << circuit.RegionLLX() << "  "
+                            << circuit.RegionLLY() << "  "
+                            << circuit.RegionURX() << "  "
                             << circuit.RegionURY() << "\n";
   } else {
-    int components_count = circuit.getDesignRef().blk_count_;
-    int pins_count = circuit.getDesignRef().iopin_count_;
-    int nets_count = circuit.getDesignRef().net_count_;
+    int components_count = circuit.getDesignRef().def_blk_count_;
+    int pins_count = circuit.getDesignRef().def_iopin_count_;
+    int nets_count = circuit.getDesignRef().def_net_count_;
     circuit.setListCapacity(components_count, pins_count, nets_count);
     BOOST_LOG_TRIVIAL(info) << "components count: " << components_count << "\n"
                             << "pins count:        " << pins_count << "\n"
@@ -278,17 +313,17 @@ int countNumberCB(defrCallbackType_e type, int num, defiUserData userData) {
   switch (type) {
     case defrComponentStartCbkType : {
       name = "COMPONENTS";
-      circuit.getDesignRef().blk_count_ = num;
+      circuit.getDesignRef().def_blk_count_ = num;
       break;
     }
     case defrStartPinsCbkType : {
       name = "PINS";
-      circuit.getDesignRef().iopin_count_ = num;
+      circuit.getDesignRef().def_iopin_count_ = num;
       break;
     }
     case defrNetStartCbkType : {
       name = "NETS";
-      circuit.getDesignRef().net_count_ = num;
+      circuit.getDesignRef().def_net_count_ = num;
       break;
     }
     default : {
@@ -433,10 +468,14 @@ int getDefNets(defrCallbackType_e type, defiNet *net, defiUserData userData) {
   for (int i = 0; i < net->numConnections(); i++) {
     std::string blk_name(net->instance(i));
     std::string pin_name(net->pin(i));
-    circuit.AddBlkPinToNet(blk_name, pin_name, net_name);
-    //BOOST_LOG_TRIVIAL(info)   << " ( " << blk_name << ", " << pin_name << " ) ";
+    if (blk_name == "PIN") {
+      circuit.AddIOPinToNet(pin_name, net_name);
+    } else {
+      circuit.AddBlkPinToNet(blk_name, pin_name, net_name);
+    }
+    //BOOST_LOG_TRIVIAL(info) << " ( " << blk_name << ", " << pin_name << " ) ";
   }
-  //BOOST_LOG_TRIVIAL(info)   << "\n";
+  //BOOST_LOG_TRIVIAL(info) << "\n";
 
   return 0;
 }
@@ -446,7 +485,7 @@ int getDefVoid(defrCallbackType_e type, void *dummy, defiUserData userData) {
     BOOST_LOG_TRIVIAL(info) << "Type is not defrDesignEndCbkType!" << std::endl;
     exit(2);
   }
-  BOOST_LOG_TRIVIAL(info) << "END of DEF\n";
+  BOOST_LOG_TRIVIAL(trace) << "END of DEF\n";
   return 0;
 }
 

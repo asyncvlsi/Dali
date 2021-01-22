@@ -9,6 +9,8 @@
 #include <vector>
 
 #include "circuit.h"
+#include "common/logging.h"
+#include "common/si2lefdef.h"
 #include "placer.h"
 
 #define TEST_LG 0
@@ -20,7 +22,7 @@
 using namespace dali;
 
 int main() {
-  //PrintSoftwareStatement();
+  init_logging(boost::log::trivial::trace);
   Circuit circuit;
 
   //int num_of_thread_galois = 6;
@@ -30,7 +32,7 @@ int main() {
 
   //BOOST_LOG_TRIVIAL(info)  <<"Galois thread %d\n", num_of_thread);
 
-  int num_of_thread_openmp = 6;
+  int num_of_thread_openmp = 1;
   omp_set_num_threads(num_of_thread_openmp);
 
   Eigen::initParallel();
@@ -43,8 +45,10 @@ int main() {
   std::string def_file_name = "processor100.def";
 
   // read LEF/DEF
+  readLef(lef_file_name, circuit);
+  readDef(def_file_name, circuit);
 
-  BOOST_LOG_TRIVIAL(info)   << "File loading complete, time: " << double(get_wall_time() - wall_time)  << " s" << std::endl;
+  BOOST_LOG_TRIVIAL(info)  << "File loading complete, time: " << double(get_wall_time() - wall_time)  << " s" << std::endl;
   BOOST_LOG_TRIVIAL(info)  <<"  Average white space utility: " << circuit.WhiteSpaceUsage() << "\n";
   circuit.ReportBriefSummary();
   //circuit.ReportBlockType();
@@ -52,16 +56,16 @@ int main() {
   circuit.ReportHPWL();
   circuit.BuildBlkPairNets();
 
-  Placer *gb_placer = new GPSimPL;
-  gb_placer->SetInputCircuit(&circuit);
-
-  gb_placer->SetBoundaryDef();
-  gb_placer->SetFillingRate(0.67);
-  gb_placer->ReportBoundaries();
-  gb_placer->StartPlacement();
-  //gb_placer->SaveDEFFile("benchmark_1K_dali.def", def_file_name);
-  gb_placer->GenMATLABTable("gb_result.txt");
-  circuit.GenLongNetTable("gb_longnet.txt");
+  GPSimPL gb_placer;
+  gb_placer.SetInputCircuit(&circuit);
+  gb_placer.is_dump = true;
+  gb_placer.SetBoundaryDef();
+  gb_placer.SetFillingRate(0.69);
+  gb_placer.ReportBoundaries();
+  gb_placer.StartPlacement();
+  //gb_placer.SaveDEFFile("benchmark_1K_dali.def", def_file_name);
+  gb_placer.GenMATLABTable("gb_result.txt");
+  //circuit.GenLongNetTable("gb_longnet.txt");
   //gb_placer->GenMATLABWellTable("gb_result");
   //circuit.ReportNetFanoutHisto();
 
@@ -71,10 +75,10 @@ int main() {
   d_placer->GenMATLABScript("dp_result.txt");*/
 
   Placer *legalizer = new LGTetrisEx;
-  legalizer->TakeOver(gb_placer);
+  legalizer->TakeOver(&gb_placer);
   legalizer->StartPlacement();
   legalizer->GenMATLABTable("lg_result.txt");
-  circuit.GenLongNetTable("lg_longnet.txt");
+  //circuit.GenLongNetTable("lg_longnet.txt");
   //legalizer->SaveDEFFile("circuit.def", def_file);
 
 #if TEST_PO
@@ -108,13 +112,13 @@ int main() {
   StdClusterWellLegalizer std_cluster_well_legalizer;
   std::string cell_file_name("processor100.cell");
   circuit.ReadCellFile(cell_file_name);
-  std_cluster_well_legalizer.TakeOver(gb_placer);
+  std_cluster_well_legalizer.TakeOver(&gb_placer);
   std_cluster_well_legalizer.StartPlacement();
   //std_cluster_well_legalizer.GenMatlabClusterTable("sc_result");
   std_cluster_well_legalizer.GenMATLABTable("sc_result.txt");
-  circuit.GenLongNetTable("sc_longnet.txt");
   std_cluster_well_legalizer.GenMatlabClusterTable("sc_result");
   std_cluster_well_legalizer.GenMATLABWellTable("scw", 0);
+  //circuit.GenLongNetTable("sc_longnet.txt");
 
   std_cluster_well_legalizer.SimpleIOPinPlacement(0);
   std_cluster_well_legalizer.EmitDEFWellFile("circuit", 1);
@@ -128,10 +132,9 @@ int main() {
   circuit.ReportHPWLHistogramLinear();
   circuit.ReportHPWLHistogramLogarithm();
 
-  delete gb_placer;
   delete legalizer;
 
-  circuit.SaveOptimalRegionDistance();
+  //circuit.SaveOptimalRegionDistance();
 
 /*#ifdef USE_OPENDB
   odb::dbDatabase::destroy(db);

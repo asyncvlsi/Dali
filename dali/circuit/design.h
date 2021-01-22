@@ -51,19 +51,22 @@ struct Design {
   std::map<std::string, int> block_name_map;
   std::vector<Block> well_tap_list;
   std::map<std::string, int> tap_name_map;
-  int blk_count_ = 0;
+  int blk_count_ = 0; // number of blocks added by calling the AddBlock() API
+  int def_blk_count_ = 0; // number of blocks given in DEF, these two numbers are supposed to be the same
 
   /****list of IO Pins****/
   std::vector<IOPin> iopin_list;
   std::map<std::string, int> iopin_name_map;
   int pre_placed_io_count_ = 0;
   int iopin_count_ = 0;
+  int def_iopin_count_ = 0;
 
   /****list of nets****/
   double reset_signal_weight = 1;
   double normal_signal_weight = 1;
   std::vector<Net> net_list;
   int net_count_ = 0;
+  int def_net_count_ =0;
   std::map<std::string, int> net_name_map;
   NetHistogram net_histogram_;
 

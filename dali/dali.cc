@@ -10,7 +10,8 @@
 #include <ratio>
 
 #include "circuit.h"
-#include "common/timing.h"
+#include "common/logging.h"
+#include "common/si2lefdef.h"
 #include "placer.h"
 
 using namespace dali;
@@ -20,7 +21,11 @@ void ReportUsage();
 
 
 int main(int argc, char *argv[]) {
+  init_logging(boost::log::trivial::info);
   PrintSoftwareStatement();
+
+  int num_of_thread_openmp = 1;
+  omp_set_num_threads(num_of_thread_openmp);
 
   using std::chrono::system_clock;
   system_clock::time_point today = system_clock::now();
@@ -141,22 +146,10 @@ int main(int argc, char *argv[]) {
 
   double file_wall_time = get_wall_time();
   double file_cpu_time = get_cpu_time();
-  bool use_opendb = false;
-  if (!use_naive) {
-#ifdef USE_OPENDB
-    odb::dbDatabase *db = odb::dbDatabase::create();
-    std::vector<std::string> defFileVec;
-    defFileVec.push_back(def_file_name);
-    odb_read_lef(db, lef_file_name.c_str());
-    odb_read_def(db, defFileVec);
-    circuit.InitializeFromDB(db);
-    use_opendb = true;
-#endif
-  }
-  if (use_naive || !use_opendb) {
-    circuit.ReadLefFile(lef_file_name);
-    circuit.ReadDefFile(def_file_name);
-  }
+
+  // read LEF/DEF
+  readLef(lef_file_name, circuit);
+  readDef(def_file_name, circuit);
 
   file_wall_time = get_wall_time() - file_wall_time;
   file_cpu_time = get_cpu_time() - file_cpu_time;
@@ -215,6 +208,9 @@ int main(int argc, char *argv[]) {
     auto *well_legalizer = new StdClusterWellLegalizer;
     well_legalizer->TakeOver(gb_placer);
     well_legalizer->StartPlacement();
+    well_legalizer->GenMATLABTable("sc_result.txt");
+    well_legalizer->GenMatlabClusterTable("sc_result");
+    well_legalizer->GenMATLABWellTable("scw", 0);
 
     if (!output_name.empty()) {
       well_legalizer->EmitDEFWellFile(output_name, 1);

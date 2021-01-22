@@ -92,7 +92,7 @@ void Cluster::LegalizeLooseX(int space_to_well_tap) {
   }
 
   int ux = lx_ + width_;
-  if (block_contour > ux) {
+  //if (block_contour > ux) {
     std::sort(blk_list_.begin(),
               blk_list_.end(),
               [](const Block *blk_ptr0, const Block *blk_ptr1) {
@@ -107,7 +107,7 @@ void Cluster::LegalizeLooseX(int space_to_well_tap) {
         block_contour -= space_to_well_tap;
       }
     }
-  }
+  //}
 }
 
 void Cluster::SetOrient(bool is_orient_N) {
@@ -414,10 +414,10 @@ void StdClusterWellLegalizer::DecomposeToSimpleStrip() {
     }
   }
 
-  col_list_[tot_col_num_ - 1].strip_list_[0].width_ =
-      RegionRight() - col_list_[tot_col_num_ - 1].strip_list_[0].LLX() - well_spacing_;
-  col_list_[tot_col_num_ - 1].strip_list_[0].max_blk_capacity_per_cluster_ =
-      col_list_[tot_col_num_ - 1].strip_list_[0].width_ / circuit_->MinBlkWidth();
+  //col_list_[tot_col_num_ - 1].strip_list_[0].width_ =
+  //    RegionRight() - col_list_[tot_col_num_ - 1].strip_list_[0].LLX() - well_spacing_;
+  //col_list_[tot_col_num_ - 1].strip_list_[0].max_blk_capacity_per_cluster_ =
+  //    col_list_[tot_col_num_ - 1].strip_list_[0].width_ / circuit_->MinBlkWidth();
   /*for (auto &col: col_list_) {
     for (auto &strip: col.strip_list_) {
       strip.height_ -= row_height_;
@@ -433,13 +433,13 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
 
   // fetch parameters about N/P-well
   FetchNPWellParams();
-  space_to_well_tap_ = 0;
+  space_to_well_tap_ = 1;
 
   // temporarily change left and right boundary to reserve space
-  //BOOST_LOG_TRIVIAL(info)  <<"left: %d, right: %d, width: %d\n", left_, right_, RegionWidth());
+  //BOOST_LOG_TRIVIAL(trace) << "left: %d, right: %d, width: %d\n", left_, right_, RegionWidth());
   left_ += well_spacing_;
   right_ -= well_spacing_;
-  //BOOST_LOG_TRIVIAL(info)  <<"left: %d, right: %d, width: %d\n", left_, right_, RegionWidth());
+  //BOOST_LOG_TRIVIAL(trace) << "left: %d, right: %d, width: %d\n", left_, right_, RegionWidth());
 
   // initialize row height and white space segments
   InitAvailSpace();
@@ -1297,7 +1297,8 @@ void StdClusterWellLegalizer::InsertWellTap() {
   for (auto &col: col_list_) {
     for (auto &strip: col.strip_list_) {
       for (auto &cluster: strip.cluster_list_) {
-        int tap_cell_num = std::ceil(cluster.Width() / (double) max_unplug_length_);
+        //int tap_cell_num = std::ceil(cluster.Width() / (double) max_unplug_length_);
+        int tap_cell_num = 2;
         tot_tap_cell_num += tap_cell_num;
         int step = 2 * max_unplug_length_;
         int tap_cell_loc = cluster.LLX() - well_tap_cell_->Width() / 2;
@@ -1322,7 +1323,7 @@ void StdClusterWellLegalizer::InsertWellTap() {
 }
 
 void StdClusterWellLegalizer::ClearCachedData() {
-  for (auto &block: *BlockList()) {
+  for (auto &block: circuit_->BlockListRef()) {
     block.setOrient(N_);
   }
 
@@ -1340,7 +1341,7 @@ void StdClusterWellLegalizer::ClearCachedData() {
 }
 
 bool StdClusterWellLegalizer::WellLegalize() {
-  ClearCachedData();
+  //ClearCachedData();
   bool is_success;
 
   AssignBlockToColBasedOnWhiteSpace();
@@ -1393,7 +1394,7 @@ bool StdClusterWellLegalizer::StartPlacement() {
   //circuit_->GenMATLABWellTable("ori", false);
   //GenMatlabClusterTable("ori_result");
   ReportHPWL();
-  BOOST_LOG_TRIVIAL(info) << "Start local reordering\n";
+  //BOOST_LOG_TRIVIAL(info) << "Start local reordering\n";
   for (int i = 0; i < 6; ++i) {
     LocalReorderAllClusters();
     ReportHPWL();
@@ -1403,7 +1404,7 @@ bool StdClusterWellLegalizer::StartPlacement() {
   //circuit_->GenMATLABWellTable("lop", false);
   //GenMatlabClusterTable("lop_result");
 
-  //InsertWellTap();
+  InsertWellTap();
   //circuit_->GenMATLABWellTable("wtc", false);
   //GenMatlabClusterTable("wtc_result");
   ReportHPWL();

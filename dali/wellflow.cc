@@ -10,12 +10,16 @@
 //#include <galois/Galois.h>
 
 #include "circuit.h"
+#include "common/logging.h"
+#include "common/si2lefdef.h"
 #include "placer.h"
 
-#define USE_DB_PARSER 1
+using namespace dali;
 
 int main(int argc, char *argv[]) {
-  int num_of_thread = 2;
+  init_logging(boost::log::trivial::info);
+  int num_of_thread = 1;
+  omp_set_num_threads(num_of_thread);
   
   //galois::SharedMemSys G;
   //galois::preAlloc(num_of_thread * 2);
@@ -25,35 +29,14 @@ int main(int argc, char *argv[]) {
 
   time_t Time = clock();
 
-  std::string lef_file_name = "out.lef";
-  std::string def_file_name = "out.def";
-  std::string cel_file_name = "out.cell";
+  std::string lef_file_name = "processor1000.lef";
+  std::string def_file_name = "processor1000.def";
+  std::string cel_file_name = "processor1000.cell";
   std::string out_file_name = "circuit";
-  int gc = 30;
-  int it_num = 200;
-
-  for (int i = 1; i < argc;) {
-    std::string arg(argv[i++]);
-    if (arg == "-gc" && i < argc) { // grid cap
-      std::string str_gc = std::string(argv[i++]);
-      try {
-        gc = std::stoi(str_gc);
-      } catch (...) {
-        BOOST_LOG_TRIVIAL(info)   << "Invalid input!\n";
-        return 1;
-      }
-    } else if (arg == "-itnum" && i < argc) { // iteration number
-      std::string str_itnum = std::string(argv[i++]);
-      try {
-        it_num = std::stoi(str_itnum);
-      } catch (...) {
-        BOOST_LOG_TRIVIAL(info)   << "Invalid input!\n";
-        return 1;
-      }
-    }
-  }
 
   // load LEF/DEF
+  readLef(lef_file_name, circuit);
+  readDef(def_file_name, circuit);
 
   circuit.ReadCellFile(cel_file_name);
 
@@ -65,8 +48,6 @@ int main(int argc, char *argv[]) {
 
   dali::WellPlaceFlow well_place_flow;
   well_place_flow.SetInputCircuit(&circuit);
-  well_place_flow.SetGridCapacity(gc);
-  well_place_flow.SetIteration(it_num);
   well_place_flow.SetBoundaryDef();
   well_place_flow.SetFillingRate(0.67);
   well_place_flow.ReportBoundaries();
