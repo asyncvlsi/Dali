@@ -1302,19 +1302,19 @@ void Circuit::UpdateNetHPWLHistogram() {
 }
 
 void Circuit::ReportBriefSummary() const {
-  BOOST_LOG_TRIVIAL(info)
-    << "  movable blocks: " << TotMovableBlockCount() << "\n"
-    << "  blocks: " << TotBlkCount() << "\n"
-    << "  iopins: " << design_.iopin_list.size() << "\n"
-    << "  nets: " << design_.net_list.size() << "\n"
-    << "  grid size x: " << tech_.grid_value_x_ << " um, grid size y: " << tech_.grid_value_y_ << " um\n"
-    << "  total block area: " << design_.tot_blk_area_ << "\n"
-    << "  total white space: " << (long int) RegionWidth() * (long int) RegionHeight() << "\n"
-    << "    left:   " << RegionLLX() << "\n"
-    << "    right:  " << RegionURX() << "\n"
-    << "    bottom: " << RegionLLY() << "\n"
-    << "    top:    " << RegionURY() << "\n"
-    << "  white space utility: " << WhiteSpaceUsage() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "  movable blocks: " << TotMovableBlockCount() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "  blocks: " << TotBlkCount() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "  iopins: " << design_.iopin_list.size() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "  nets: " << design_.net_list.size() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "  grid size x/y: " << tech_.grid_value_x_ << ", " << tech_.grid_value_y_ << " um\n";
+  BOOST_LOG_TRIVIAL(info) << "  total block area: " << design_.tot_blk_area_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "  total white space: " << (long int) RegionWidth() * (long int) RegionHeight() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "    left:   " << RegionLLX() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "    right:  " << RegionURX() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "    bottom: " << RegionLLY() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "    top:    " << RegionURY() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "  average movable width, height: " << AveMovBlkWidth() << ", " << AveMovBlkHeight() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "  white space utility: " << WhiteSpaceUsage() << "\n";
 }
 
 void Circuit::BuildBlkPairNets() {

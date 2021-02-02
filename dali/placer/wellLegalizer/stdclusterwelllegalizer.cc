@@ -93,20 +93,20 @@ void Cluster::LegalizeLooseX(int space_to_well_tap) {
 
   int ux = lx_ + width_;
   //if (block_contour > ux) {
-    std::sort(blk_list_.begin(),
-              blk_list_.end(),
-              [](const Block *blk_ptr0, const Block *blk_ptr1) {
-                return blk_ptr0->URX() > blk_ptr1->URX();
-              });
-    block_contour = ux;
-    for (auto &blk: blk_list_) {
-      res_x = std::min(block_contour, int(blk->URX()));
-      blk->setURX(res_x);
-      block_contour = int(blk->LLX());
-      if ((tap_cell_ != nullptr) && (blk->TypePtr() == tap_cell_->TypePtr())) {
-        block_contour -= space_to_well_tap;
-      }
+  std::sort(blk_list_.begin(),
+            blk_list_.end(),
+            [](const Block *blk_ptr0, const Block *blk_ptr1) {
+              return blk_ptr0->URX() > blk_ptr1->URX();
+            });
+  block_contour = ux;
+  for (auto &blk: blk_list_) {
+    res_x = std::min(block_contour, int(blk->URX()));
+    blk->setURX(res_x);
+    block_contour = int(blk->LLX());
+    if ((tap_cell_ != nullptr) && (blk->TypePtr() == tap_cell_->TypePtr())) {
+      block_contour -= space_to_well_tap;
     }
+  }
   //}
 }
 
@@ -242,6 +242,24 @@ StdClusterWellLegalizer::StdClusterWellLegalizer() {
   row_height_set_ = false;
 }
 
+void StdClusterWellLegalizer::LoadConf(std::string const &config_file) {
+  config_read(config_file.c_str());
+  std::string variable;
+
+  variable = "dali.StdClusterWellLegalizer.strip_width_factor_";
+  if (config_exists(variable.c_str()) == 1) {
+    strip_width_factor_ = config_get_real(variable.c_str());
+  }
+  variable = "dali.StdClusterWellLegalizer.space_to_well_tap_";
+  if (config_exists(variable.c_str()) == 1) {
+    space_to_well_tap_ = config_get_int(variable.c_str());
+  }
+  variable = "dali.StdClusterWellLegalizer.max_iter_";
+  if (config_exists(variable.c_str()) == 1) {
+    max_iter_ = config_get_int(variable.c_str());
+  }
+}
+
 void StdClusterWellLegalizer::CheckWellExistence() {
   for (auto &blk: *(circuit_->getBlockList())) {
     if (blk.IsMovable()) {
@@ -373,12 +391,12 @@ void StdClusterWellLegalizer::UpdateWhiteSpaceInCol(ClusterStrip &col) {
       auto tmp_seg = strip_seg.Joint(seg);
       if (tmp_seg != nullptr) {
         if (tmp_seg->lo - seg.lo < max_cell_width_ * 2 + well_spacing_) {
-          if (tmp_seg->hi - seg.lo < 2 * max_unplug_length_) {
+          if (tmp_seg->hi - seg.lo < strip_width_factor_ * max_unplug_length_) {
             tmp_seg->lo = seg.lo;
           }
         }
         if (seg.hi - tmp_seg->hi < max_cell_width_ * 2 + well_spacing_) {
-          if (seg.hi - tmp_seg->lo < 2 * max_unplug_length_) {
+          if (seg.hi - tmp_seg->lo < strip_width_factor_ * max_unplug_length_) {
             tmp_seg->hi = seg.hi;
           }
         }
@@ -433,7 +451,6 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
 
   // fetch parameters about N/P-well
   FetchNPWellParams();
-  space_to_well_tap_ = 1;
 
   // temporarily change left and right boundary to reserve space
   //BOOST_LOG_TRIVIAL(trace) << "left: %d, right: %d, width: %d\n", left_, right_, RegionWidth());
@@ -454,7 +471,7 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
 
   if (cluster_width <= 0) {
     BOOST_LOG_TRIVIAL(info) << "Using default cluster width: 2*max_unplug_length_\n";
-    strip_width_ = max_unplug_length_ * 2;
+    strip_width_ = (int) std::round(max_unplug_length_ * strip_width_factor_);
   } else {
     if (cluster_width < max_unplug_length_) {
       BOOST_LOG_TRIVIAL(warning) << "WARNING:\n"

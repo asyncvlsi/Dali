@@ -34,6 +34,7 @@ inline boost::log::record_ostream &operator<<(boost::log::record_ostream &p, std
 namespace dali {
 
 void init_logging(boost::log::trivial::severity_level sl = boost::log::trivial::info);
+void close_logging();
 
 inline void DaliExpects(bool e, const std::string &error_message) {
   if (!e) {

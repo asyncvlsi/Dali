@@ -164,6 +164,7 @@ class StdClusterWellLegalizer : public Placer {
 
   /**** strip parameters ****/
   int max_cell_width_;
+  double strip_width_factor_ = 2.0;
   int strip_width_;
   int tot_col_num_;
 
@@ -171,7 +172,7 @@ class StdClusterWellLegalizer : public Placer {
   BlockType *well_tap_cell_;
   int tap_cell_p_height_;
   int tap_cell_n_height_;
-  int space_to_well_tap_;
+  int space_to_well_tap_ = 0;
 
   std::vector<IndexLocPair<int>> index_loc_list_; // list of index loc pair for location sort
   std::vector<ClusterStrip> col_list_; // list of strips
@@ -187,6 +188,7 @@ class StdClusterWellLegalizer : public Placer {
 
  public:
   StdClusterWellLegalizer();
+  void LoadConf(std::string const &config_file) override;
 
   void CheckWellExistence();
 

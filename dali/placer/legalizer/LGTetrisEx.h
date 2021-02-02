@@ -5,6 +5,7 @@
 #ifndef DALI_SRC_PLACER_LEGALIZER_LGTETRISEX_H_
 #define DALI_SRC_PLACER_LEGALIZER_LGTETRISEX_H_
 
+#include "dali/common/displaceviewer.h"
 #include "dali/common/misc.h"
 #include "dali/placer/placer.h"
 
@@ -32,6 +33,10 @@ class LGTetrisEx : public Placer {
   //cached data
   int tot_num_rows_;
   int tot_num_cols_;
+
+  // displacement visualization
+  bool view_displacement_ = false;
+  DisplaceViewer<double> *displace_viewer_ = nullptr;
 
  public:
   LGTetrisEx();
@@ -123,6 +128,13 @@ class LGTetrisEx : public Placer {
   bool StartPlacement() override;
 
   void GenAvailSpace(std::string const &name_of_file = "avail_space.txt");
+
+  void InitDispViewer();
+  void IsPrintDisplacement(bool view_displacement = false) {
+    view_displacement_ = view_displacement;
+    InitDispViewer();
+  }
+  void GenDisplacement(std::string const &name_of_file = "disp_result.txt");
 };
 
 }

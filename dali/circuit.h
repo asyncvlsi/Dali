@@ -6,5 +6,6 @@
 #define DALI_SRC_CIRCUIT_H_
 
 #include "circuit/circuit.h"
+#include "common/si2lefdef.h"
 
 #endif //DALI_SRC_CIRCUIT_H_

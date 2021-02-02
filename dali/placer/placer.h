@@ -9,6 +9,8 @@
 #include <iostream>
 #include <string>
 
+#include <config.h>
+
 #include "dali/circuit/circuit.h"
 #include "dali/common/memory.h"
 #include "dali/common/timing.h"
@@ -33,7 +35,11 @@ class Placer {
  public:
   Placer();
   Placer(double aspect_ratio, double filling_rate);
-  virtual ~Placer();
+  virtual ~Placer() = default;
+
+  virtual void LoadConf(std::string const &config_file) {
+    BOOST_LOG_TRIVIAL(warning) << "This is a virtual function, which is not supposed to be called directly\n";
+  };
 
   virtual void SetInputCircuit(Circuit *circuit) {
     DaliExpects(circuit != nullptr, "Invalid input circuit: not allowed to set nullptr as an input!");

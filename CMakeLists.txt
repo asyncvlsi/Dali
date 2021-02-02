@@ -44,7 +44,7 @@ if (NOT ACT_LIBRARY)
 else ()
     message(STATUS "libact.a found")
 endif()
-link_libraries(libact.a libvlsilib.a)
+link_libraries(libact.a libvlsilib.a libactscm.a libactscmcli.a)
 
 ######################################
 # Detect if $GALOIS_INSTALL_DIR exists, which is the path to Galois installation
@@ -150,8 +150,9 @@ include_directories(
 
 # All used circuit and placer source code
 file(GLOB SOURCES
-        dali/common/*.cc
         dali/circuit/*.cc
+        dali/common/*.cc
+        dali/daliscm/*.cc
         dali/placer/*.cc
         dali/placer/globalPlacer/*.cc
         dali/placer/globalPlacer/GPSimPL/*.cc
@@ -186,6 +187,18 @@ add_executable(dali-debug
 target_link_libraries(dali-debug
         PRIVATE dalilib
         OpenMP::OpenMP_CXX)
+
+# Debugging executable, building from the dalilib library
+add_executable(dali-scm
+        EXCLUDE_FROM_ALL
+        dali/dali_scm.cc)
+target_link_libraries(dali-scm
+        PRIVATE dalilib
+        actscm
+        actscmcli
+        ${CMAKE_DL_LIBS}
+        edit
+        )
 
 # Debugging executable, building from the dalilib library
 add_executable(wellflow

@@ -9,7 +9,15 @@ namespace dali {
 namespace logging = boost::log;
 namespace keywords = boost::log::keywords;
 
+typedef boost::log::sinks::synchronous_sink< boost::log::sinks::text_file_backend > file_sink_t;
+boost::shared_ptr< file_sink_t > g_file_sink = nullptr;
+
+typedef boost::log::sinks::synchronous_sink< boost::log::sinks::basic_text_ostream_backend<char> > console_sink_t;
+boost::shared_ptr< console_sink_t > g_console_sink = nullptr;
+
 void init_logging(boost::log::trivial::severity_level sl) {
+  close_logging();
+
   std::string base_name = "dali";
   std::string extension = ".log";
   std::string file_name;
@@ -28,13 +36,13 @@ void init_logging(boost::log::trivial::severity_level sl) {
     file_name = "dali_out_of_bounds.log";
   }
 
-  auto file_sink = logging::add_file_log
+  g_file_sink = logging::add_file_log
       (
           keywords::file_name = file_name,
           keywords::format = "[%TimeStamp%] [%ThreadID%] [%Severity%] %Message%"
       );
-  file_sink->locked_backend()->set_auto_newline_mode(logging::sinks::auto_newline_mode::disabled_auto_newline);
-  file_sink->locked_backend()->auto_flush(false);
+  g_file_sink->locked_backend()->set_auto_newline_mode(logging::sinks::auto_newline_mode::disabled_auto_newline);
+  g_file_sink->locked_backend()->auto_flush(false);
 
   logging::core::get()->set_filter
       (
@@ -42,12 +50,23 @@ void init_logging(boost::log::trivial::severity_level sl) {
       );
 
   logging::add_common_attributes();
-  auto console_sink = logging::add_console_log(std::cout, boost::log::keywords::format = "%Message%");
-  console_sink->locked_backend()->set_auto_newline_mode(logging::sinks::auto_newline_mode::disabled_auto_newline);
-  console_sink->locked_backend()->auto_flush(false);
+  g_console_sink = logging::add_console_log(std::cout, boost::log::keywords::format = "%Message%");
+  g_console_sink->locked_backend()->set_auto_newline_mode(logging::sinks::auto_newline_mode::disabled_auto_newline);
+  g_console_sink->locked_backend()->auto_flush(false);
 
 // write floating-point values in scientific notation.
-  BOOST_LOG_TRIVIAL(info) << std::scientific << std::setprecision(4);
+//  BOOST_LOG_TRIVIAL(trace) << std::scientific << std::setprecision(4);
+}
+
+void close_logging() {
+  if (g_file_sink != nullptr) {
+    boost::log::core::get()->remove_sink(g_file_sink);
+    g_file_sink.reset();
+  }
+  if (g_console_sink != nullptr) {
+    boost::log::core::get()->remove_sink(g_console_sink);
+    g_console_sink.reset();
+  }
 }
 
 }

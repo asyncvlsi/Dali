@@ -243,7 +243,7 @@ void readLef(std::string &lefFileName, Circuit &circuit) {
 
   FILE *f;
   if ((f = fopen(lefFileName.c_str(), "r")) == nullptr) {
-    BOOST_LOG_TRIVIAL(info) << "Couldn't open lef file" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Couldn't open lef file: " << lefFileName << std::endl;
     exit(2);
   }
 

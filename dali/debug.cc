@@ -23,6 +23,7 @@ using namespace dali;
 
 int main() {
   init_logging(boost::log::trivial::trace);
+  init_logging(boost::log::trivial::trace);
   Circuit circuit;
 
   //int num_of_thread_galois = 6;
@@ -41,8 +42,8 @@ int main() {
 
   double wall_time = get_wall_time();
 
-  std::string lef_file_name = "processor100.lef";
-  std::string def_file_name = "processor100.def";
+  std::string lef_file_name = "processor.lef";
+  std::string def_file_name = "processor.def";
 
   // read LEF/DEF
   readLef(lef_file_name, circuit);
@@ -56,9 +57,12 @@ int main() {
   circuit.ReportHPWL();
   circuit.BuildBlkPairNets();
 
+  std::string config_file = "dali.conf";
+
   GPSimPL gb_placer;
+  gb_placer.LoadConf(config_file);
   gb_placer.SetInputCircuit(&circuit);
-  gb_placer.is_dump = true;
+  gb_placer.is_dump = false;
   gb_placer.SetBoundaryDef();
   gb_placer.SetFillingRate(0.69);
   gb_placer.ReportBoundaries();
@@ -74,10 +78,12 @@ int main() {
   d_placer->StartPlacement();
   d_placer->GenMATLABScript("dp_result.txt");*/
 
-  Placer *legalizer = new LGTetrisEx;
-  legalizer->TakeOver(&gb_placer);
-  legalizer->StartPlacement();
-  legalizer->GenMATLABTable("lg_result.txt");
+  LGTetrisEx legalizer;
+  legalizer.TakeOver(&gb_placer);
+  legalizer.IsPrintDisplacement(true);
+  legalizer.StartPlacement();
+  legalizer.GenMATLABTable("lg_result.txt");
+  legalizer.GenDisplacement("disp_result.txt");
   //circuit.GenLongNetTable("lg_longnet.txt");
   //legalizer->SaveDEFFile("circuit.def", def_file);
 
@@ -110,7 +116,7 @@ int main() {
 
 #if TEST_STDCLUSTER_WELL
   StdClusterWellLegalizer std_cluster_well_legalizer;
-  std::string cell_file_name("processor100.cell");
+  std::string cell_file_name("processor.cell");
   circuit.ReadCellFile(cell_file_name);
   std_cluster_well_legalizer.TakeOver(&gb_placer);
   std_cluster_well_legalizer.StartPlacement();
@@ -131,8 +137,6 @@ int main() {
   circuit.ReportNetFanoutHistogram();
   circuit.ReportHPWLHistogramLinear();
   circuit.ReportHPWLHistogramLogarithm();
-
-  delete legalizer;
 
   //circuit.SaveOptimalRegionDistance();
 

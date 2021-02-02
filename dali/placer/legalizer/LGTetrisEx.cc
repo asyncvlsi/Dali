@@ -1510,4 +1510,33 @@ void LGTetrisEx::GenAvailSpace(std::string const &name_of_file) {
   }
 }
 
+void LGTetrisEx::InitDispViewer() {
+  if (!view_displacement_) return;
+
+  // create a displacement viewer and reserve space
+  displace_viewer_ = new DisplaceViewer<double>;
+  std::vector<Block> &block_list = circuit_->BlockListRef();
+  displace_viewer_->SetSize(block_list.size());
+
+  // update location before legalization
+  int counter = 0;
+  for (auto &block: block_list) {
+    displace_viewer_->SetXY(counter++, block.X(), block.Y());
+  }
+}
+
+void LGTetrisEx::GenDisplacement(std::string const &name_of_file) {
+  if (!view_displacement_) return;
+
+  // update displacement for each cell
+  std::vector<Block> &block_list = circuit_->BlockListRef();
+  int counter = 0;
+  for (auto &block: block_list) {
+    displace_viewer_->SetXYFromDifference(counter++, block.X(), block.Y());
+  }
+
+  // save displacement result
+  displace_viewer_->SaveDisplacementVector("disp_result.txt");
+}
+
 }

@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "logging.h"
 #include "misc.h"
 
 namespace dali {
@@ -16,7 +17,7 @@ namespace dali {
 template<class T>
 struct DisplaceViewer {
  private:
-  int sz_;
+  int sz_ = 0;
   std::vector<T> x_;
   std::vector<T> y_;
   std::vector<T> u_;

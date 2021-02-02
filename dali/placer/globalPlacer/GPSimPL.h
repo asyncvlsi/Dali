@@ -62,11 +62,11 @@ class GPSimPL : public Placer {
   double alpha_step = 0.00;
 
   // for look ahead legalization
-  int b2b_update_max_iteration = 50;
+  int b2b_update_max_iteration_ = 50;
   int cur_iter_ = 0;
   int max_iter_ = 100;
-  int number_of_cell_in_bin = 30;
-  int net_ignore_threshold = 100;
+  int number_of_cell_in_bin_ = 30;
+  int net_ignore_threshold_ = 100;
   double simpl_LAL_converge_criterion_ = 0.005;
   double polar_converge_criterion_ = 0.08;
   int convergence_criteria_ = 1;
@@ -81,6 +81,8 @@ class GPSimPL : public Placer {
  public:
   GPSimPL();
   GPSimPL(double aspectRatio, double fillingRate);
+
+  void LoadConf(std::string const &config_file) override;
 
   void SetEpsilon() {
     width_epsilon_ = circuit_->AveMovBlkWidth() * epsilon_factor_;

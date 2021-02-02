@@ -12,6 +12,7 @@
 #include <unsupported/Eigen/SparseExtra>
 
 #include "dali/common/logging.h"
+#include "dali/placer/legalizer/LGTetrisEx.h"
 
 namespace dali {
 
@@ -31,6 +32,58 @@ GPSimPL::GPSimPL(double aspectRatio, double fillingRate) : Placer(aspectRatio, f
   grid_cnt_x = 0;
   width_epsilon_ = 0;
   height_epsilon_ = 0;
+}
+
+void GPSimPL::LoadConf(std::string const &config_file) {
+  config_read(config_file.c_str());
+  std::string variable;
+
+  variable = "dali.GPSimPL.cg_iteration_";
+  if (config_exists(variable.c_str())==1) {
+    cg_iteration_ = config_get_int(variable.c_str());
+  }
+  variable = "dali.GPSimPL.cg_iteration_max_num_";
+  if (config_exists(variable.c_str())==1) {
+    cg_iteration_max_num_ = config_get_int(variable.c_str());
+  }
+  variable = "dali.GPSimPL.cg_stop_criterion_";
+  if (config_exists(variable.c_str())==1) {
+    cg_stop_criterion_ = config_get_real(variable.c_str());
+  }
+  variable = "dali.GPSimPL.net_model_update_stop_criterion_";
+  if (config_exists(variable.c_str())==1) {
+    net_model_update_stop_criterion_ = config_get_real(variable.c_str());
+  }
+
+  variable = "dali.GPSimPL.b2b_update_max_iteration_";
+  if (config_exists(variable.c_str())==1) {
+    b2b_update_max_iteration_ = config_get_int(variable.c_str());
+  }
+  variable = "dali.GPSimPL.max_iter_";
+  if (config_exists(variable.c_str())==1) {
+    max_iter_ = config_get_int(variable.c_str());
+  }
+  variable = "dali.GPSimPL.number_of_cell_in_bin_";
+  if (config_exists(variable.c_str())==1) {
+    number_of_cell_in_bin_ = config_get_int(variable.c_str());
+  }
+  variable = "dali.GPSimPL.net_ignore_threshold_";
+  if (config_exists(variable.c_str())==1) {
+    net_ignore_threshold_ = config_get_int(variable.c_str());
+  }
+
+  variable = "dali.GPSimPL.simpl_LAL_converge_criterion_";
+  if (config_exists(variable.c_str())==1) {
+    simpl_LAL_converge_criterion_ = config_get_real(variable.c_str());
+  }
+  variable = "dali.GPSimPL.polar_converge_criterion_";
+  if (config_exists(variable.c_str())==1) {
+    polar_converge_criterion_ = config_get_real(variable.c_str());
+  }
+  variable = "dali.GPSimPL.convergence_criteria_";
+  if (config_exists(variable.c_str())==1) {
+    convergence_criteria_ = config_get_int(variable.c_str());
+  }
 }
 
 void GPSimPL::BlockLocRandomInit() {
@@ -315,7 +368,7 @@ void GPSimPL::BuildProblemB2BX() {
   double offset_min;
 
   for (auto &net: net_list) {
-    if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
+    if (net.P() <= 1 || net.P() >= net_ignore_threshold_) continue;
     inv_p = net.InvP();
     net.UpdateMaxMinIndexX();
     max_pin_index = net.MaxBlkPinNumX();
@@ -455,7 +508,7 @@ void GPSimPL::BuildProblemB2BY() {
   double offset_min;
 
   for (auto &net: *NetList()) {
-    if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
+    if (net.P() <= 1 || net.P() >= net_ignore_threshold_) continue;
     inv_p = net.InvP();
     //net.UpdateMaxMinIndexY();
     max_pin_index = net.MaxBlkPinNumY();
@@ -579,7 +632,7 @@ void GPSimPL::BuildProblemStarModelX() {
   double driver_offset;
 
   for (auto &net: net_list) {
-    if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
+    if (net.P() <= 1 || net.P() >= net_ignore_threshold_) continue;
     inv_p = net.InvP();
 
     // assuming the 0-th pin in the net is the driver pin
@@ -673,7 +726,7 @@ void GPSimPL::BuildProblemStarModelY() {
   double driver_offset;
 
   for (auto &net: net_list) {
-    if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
+    if (net.P() <= 1 || net.P() >= net_ignore_threshold_) continue;
     inv_p = net.InvP();
 
     // assuming the 0-th pin in the net is the driver pin
@@ -763,7 +816,7 @@ void GPSimPL::BuildProblemHPWLX() {
   double offset_min;
 
   for (auto &net: net_list) {
-    if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
+    if (net.P() <= 1 || net.P() >= net_ignore_threshold_) continue;
     inv_p = net.InvP();
     net.UpdateMaxMinIndexX();
     max_pin_index = net.MaxBlkPinNumX();
@@ -856,7 +909,7 @@ void GPSimPL::BuildProblemHPWLY() {
   double offset_min;
 
   for (auto &net: *NetList()) {
-    if (net.P() <= 1 || net.P() >= net_ignore_threshold) continue;
+    if (net.P() <= 1 || net.P() >= net_ignore_threshold_) continue;
     inv_p = net.InvP();
     net.UpdateMaxMinIndexY();
     max_pin_index = net.MaxBlkPinNumY();
@@ -1355,7 +1408,7 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
 
       std::vector<double> eval_history_x;
       int b2b_update_it_x = 0;
-      for (b2b_update_it_x = 0; b2b_update_it_x < b2b_update_max_iteration; ++b2b_update_it_x) {
+      for (b2b_update_it_x = 0; b2b_update_it_x < b2b_update_max_iteration_; ++b2b_update_it_x) {
         BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
         BuildProblemX();
         double evaluate_result = OptimizeQuadraticMetricX(cg_stop_criterion_);
@@ -1388,7 +1441,7 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
       }
       std::vector<double> eval_history_y;
       int b2b_update_it_y = 0;
-      for (b2b_update_it_y = 0; b2b_update_it_y < b2b_update_max_iteration; ++b2b_update_it_y) {
+      for (b2b_update_it_y = 0; b2b_update_it_y < b2b_update_max_iteration_; ++b2b_update_it_y) {
         BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
         BuildProblemY();
         double evaluate_result = OptimizeQuadraticMetricY(cg_stop_criterion_);
@@ -1427,10 +1480,10 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
 
 void GPSimPL::InitGridBins() {
   /****
-   * This function initialize the grid bin matrix, each bin has an area which can accommodate around number_of_cell_in_bin # of cells
+   * This function initialize the grid bin matrix, each bin has an area which can accommodate around number_of_cell_in_bin_ # of cells
    * Part1
    * grid_bin_height and grid_bin_width is determined by the following formula:
-   *    grid_bin_height = sqrt(number_of_cell_in_bin * average_area / filling_rate)
+   *    grid_bin_height = sqrt(number_of_cell_in_bin_ * average_area / filling_rate)
    * the number of bins in the y-direction is given by:
    *    grid_cnt_y = (Top() - Bottom())/grid_bin_height
    *    grid_cnt_x = (Right() - Left())/grid_bin_width
@@ -1453,7 +1506,7 @@ void GPSimPL::InitGridBins() {
    * ****/
 
   // Part1
-  grid_bin_height = int(std::round(std::sqrt(number_of_cell_in_bin * GetCircuit()->AveMovBlkArea() / FillingRate())));
+  grid_bin_height = int(std::round(std::sqrt(number_of_cell_in_bin_ * GetCircuit()->AveMovBlkArea() / FillingRate())));
   grid_bin_width = grid_bin_height;
   grid_cnt_y = std::ceil(double(RegionTop() - RegionBottom()) / grid_bin_height);
   grid_cnt_x = std::ceil(double(RegionRight() - RegionLeft()) / grid_bin_width);
@@ -2700,7 +2753,7 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
       }
       std::vector<double> eval_history_x;
       int b2b_update_it_x = 0;
-      for (b2b_update_it_x = 0; b2b_update_it_x < b2b_update_max_iteration; ++b2b_update_it_x) {
+      for (b2b_update_it_x = 0; b2b_update_it_x < b2b_update_max_iteration_; ++b2b_update_it_x) {
         BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
         BuildProblemWithAnchorX();
         double evaluate_result = OptimizeQuadraticMetricX(cg_stop_criterion_);
@@ -2731,7 +2784,7 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
       }
       std::vector<double> eval_history_y;
       int b2b_update_it_y = 0;
-      for (b2b_update_it_y = 0; b2b_update_it_y < b2b_update_max_iteration; ++b2b_update_it_y) {
+      for (b2b_update_it_y = 0; b2b_update_it_y < b2b_update_max_iteration_; ++b2b_update_it_y) {
         BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
         BuildProblemWithAnchorY();
         double evaluate_result = OptimizeQuadraticMetricY(cg_stop_criterion_);
@@ -2784,6 +2837,10 @@ double GPSimPL::LookAheadLegalization() {
     RecursiveBisectionBlkSpreading();
     //BOOST_LOG_TRIVIAL(info) << "cluster count: " << cluster_set.size() << "\n";
   } while (!cluster_set.empty());
+
+  //LGTetrisEx legalizer;
+  //legalizer.TakeOver(this);
+  //legalizer.StartPlacement();
 
   double evaluate_result_x = WeightedHPWLX();
   upper_bound_hpwlx_.push_back(evaluate_result_x);
@@ -2933,7 +2990,7 @@ bool GPSimPL::StartPlacement() {
                             << lower_bound_hpwl_.back() << " "
                             << upper_bound_hpwl_.back() << "\n";
 
-    if (IsPlacementConverge() || cur_iter_ == max_iter_ - 1) { // if HPWL converges
+    if (cur_iter_ >= 40 && (IsPlacementConverge() || cur_iter_ == max_iter_ - 1)) { // if HPWL converges
       BOOST_LOG_TRIVIAL(info) << "Iterative look-ahead legalization complete\n";
       BOOST_LOG_TRIVIAL(info) << "Total number of iteration: " << cur_iter_ + 1 << "\n";
       break;

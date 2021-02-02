@@ -30,8 +30,6 @@ Placer::Placer(double aspect_ratio, double filling_rate) : aspect_ratio_(aspect_
   circuit_ = nullptr;
 }
 
-Placer::~Placer() = default;
-
 double Placer::GetBlkHPWL(Block &blk) {
   double hpwl = 0;
   std::vector<Net> &net_list = *(NetList());
