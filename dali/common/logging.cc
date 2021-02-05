@@ -1,5 +1,5 @@
 //
-// Created by yihang on 11/21/20.
+// Created by Yihang Yang on 11/21/20.
 //
 
 #include "logging.h"

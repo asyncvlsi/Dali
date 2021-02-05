@@ -123,9 +123,14 @@ else(BUILD_STATIC_EXECUTABLES)
 endif(BUILD_STATIC_EXECUTABLES)
 
 # Set C++ compilation flags and options
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17 -O3 -fopenmp -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
+set(EXTRA_FLAGS "")
+if (APPLE)
+    set(EXTRA_FLAGS "${EXTRA_FLAGS} -Xpreprocessor")
+endif()
+set(CFLAGS "${CFLAGS} -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3 ${EXTRA_FLAGS} -fopenmp ${CFLAGS}")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -std=c++17 -O3 ${EXTRA_FLAGS} -fopenmp ${CFLAGS}")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17 -O3 ${EXTRA_FLAGS} -fopenmp ${CFLAGS}")
 
 # Set the output directory of static libraries
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
@@ -145,8 +150,7 @@ endif ()
 
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}
-        module/eigen-git-mirror
-)
+        module/eigen-git-mirror)
 
 # All used circuit and placer source code
 file(GLOB SOURCES
@@ -178,7 +182,7 @@ add_executable(dali
         dali/dali.cc)
 target_link_libraries(dali
         PRIVATE dalilib
-        ${Boost_LIBRARIES})
+        OpenMP::OpenMP_CXX)
 
 # Debugging executable, building from the dalilib library
 add_executable(dali-debug
@@ -198,7 +202,7 @@ target_link_libraries(dali-scm
         actscmcli
         ${CMAKE_DL_LIBS}
         edit
-        )
+        OpenMP::OpenMP_CXX)
 
 # Debugging executable, building from the dalilib library
 add_executable(wellflow
@@ -206,7 +210,7 @@ add_executable(wellflow
         dali/wellflow.cc)
 target_link_libraries(wellflow
         PRIVATE dalilib
-        )
+        OpenMP::OpenMP_CXX)
 
 # Debugging executable, building from the dalilib library
 add_executable(adaptec-debug
@@ -214,47 +218,42 @@ add_executable(adaptec-debug
         dali/debug-adaptec.cc)
 target_link_libraries(adaptec-debug
         PRIVATE dalilib
-        )
+        OpenMP::OpenMP_CXX)
 
 # Stand-alone hpwl calculator, building from the dalilib library
 add_executable(hpwl
         EXCLUDE_FROM_ALL
         dali/utility/hpwl.cc)
 target_link_libraries(hpwl
-        PRIVATE dalilib
-        )
+        PRIVATE dalilib)
 
 # Stand-alone LEFDEF to Bookshelf format tool, building from the dalilib library
 add_executable(lefdef2bookshelf
         EXCLUDE_FROM_ALL
         dali/utility/lefdef2bookshelf.cc)
 target_link_libraries(lefdef2bookshelf
-        PRIVATE dalilib
-        )
+        PRIVATE dalilib)
 
 # Stand-alone Bookshelf to LEFDEF format tool, building from the dalilib library
 add_executable(bookshelf2def
         EXCLUDE_FROM_ALL
         dali/utility/bookshelf2def.cc)
 target_link_libraries(bookshelf2def
-        PRIVATE dalilib
-        )
+        PRIVATE dalilib)
 
 # Stand-alone custom cell design to standard cell design tool
 add_executable(custom2standard
         EXCLUDE_FROM_ALL
         dali/utility/custom2standard.cc)
 target_link_libraries(custom2standard
-        PRIVATE dalilib
-        )
+        PRIVATE dalilib)
 
 # Stand-alone custom cell design to standard cell design tool
 add_executable(1create_circuit
         EXCLUDE_FROM_ALL
         dali/example_code/1create_circuit.cc)
 target_link_libraries(1create_circuit
-        PRIVATE dalilib
-        )
+        PRIVATE dalilib)
 
 ######################################
 # Configure install destination directory

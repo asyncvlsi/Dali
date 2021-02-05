@@ -1,5 +1,5 @@
 //
-// Created by yihang on 1/27/21.
+// Created by Yihang Yang on 1/27/21.
 //
 
 #include "dali/daliscm/daliscm.h"

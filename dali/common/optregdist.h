@@ -1,5 +1,5 @@
 //
-// Created by yihang on 9/9/20.
+// Created by Yihang Yang on 9/9/20.
 //
 
 #ifndef DALI_SRC_COMMON_OPTREGDIST_H_

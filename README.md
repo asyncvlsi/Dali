@@ -9,8 +9,8 @@
 
 ### Pre-requisite
   * Boost, version >= 1.71.0 (lower version may work, not tested)
-  * LEF/DEF parser: [LEF parser](https://github.com/The-OpenROAD-Project/lef) and [DEF parser](https://github.com/The-OpenROAD-Project/def). Using `cmake .. -DCMAKE_INSTALL_PREFIX=path/to/install` tp specify the installation destination.
-  * OpenMP
+  * LEF/DEF parser: [LEF parser](https://github.com/The-OpenROAD-Project/lef) and [DEF parser](https://github.com/The-OpenROAD-Project/def). Using `cmake .. -DCMAKE_INSTALL_PREFIX=path/to/install` to specify the installation destination. This LEF/DEF parser requires BISON (>= 3.0.4)
+  * OpenMP (for MacOS user, `libomp` from Homebrew will work)
   * [Galois](https://github.com/IntelligentSoftwareSystems/Galois)
   * [ACT](https://github.com/asyncvlsi/act)
   

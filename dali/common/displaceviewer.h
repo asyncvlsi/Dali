@@ -1,5 +1,5 @@
 //
-// Created by yihang on 3/11/20.
+// Created by Yihang Yang on 3/11/20.
 //
 
 #ifndef DALI_SRC_COMMON_DISPLACEVIEWER_H_
