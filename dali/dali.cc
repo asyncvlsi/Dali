@@ -208,9 +208,9 @@ int main(int argc, char *argv[]) {
     auto *well_legalizer = new StdClusterWellLegalizer;
     well_legalizer->TakeOver(gb_placer);
     well_legalizer->StartPlacement();
-    well_legalizer->GenMATLABTable("sc_result.txt");
-    well_legalizer->GenMatlabClusterTable("sc_result");
-    well_legalizer->GenMATLABWellTable("scw", 0);
+    //well_legalizer->GenMATLABTable("sc_result.txt");
+    //well_legalizer->GenMatlabClusterTable("sc_result");
+    //well_legalizer->GenMATLABWellTable("scw", 0);
 
     if (!output_name.empty()) {
       well_legalizer->EmitDEFWellFile(output_name, 1);

@@ -268,7 +268,8 @@ class Circuit {
   // get the pointer to the BlockType with a given name, if not exist, return nullptr.
   BlockType *getBlockType(std::string &block_type_name) {
     auto res = tech_.block_type_map_.find(block_type_name);
-    return res != tech_.block_type_map_.end() ? res->second : nullptr;
+    DaliExpects(res != tech_.block_type_map_.end(), "Cannot find block_type_name: " + block_type_name);
+    return  res->second;
   }
 
   // add a BlockType with name, with, and height. The return value is a pointer to this new BlockType for adding pins. Unit in micron.
