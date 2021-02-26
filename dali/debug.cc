@@ -42,29 +42,31 @@ int main() {
 
   double wall_time = get_wall_time();
 
-  std::string lef_file_name = "processor.lef";
-  std::string def_file_name = "processor.def";
+  std::string lef_file_name = "ICCAD2020/out.lef";
+  std::string def_file_name = "ICCAD2020/out.def";
+  std::string cell_file_name("ICCAD2020/out.cell");
 
-  // read LEF/DEF
-  readLef(lef_file_name, circuit);
-  readDef(def_file_name, circuit);
+  // read LEF/DEF/CELL
+  circuit.ReadLefFile(lef_file_name);
+  circuit.ReadDefFile(def_file_name);
+  circuit.ReadCellFile(cell_file_name);
 
-  BOOST_LOG_TRIVIAL(info)  << "File loading complete, time: " << double(get_wall_time() - wall_time)  << " s" << std::endl;
-  BOOST_LOG_TRIVIAL(info)  <<"  Average white space utility: " << circuit.WhiteSpaceUsage() << "\n";
+  BOOST_LOG_TRIVIAL(info)  << "File loading complete, time: " << double(get_wall_time() - wall_time)  << " s\n";
+  BOOST_LOG_TRIVIAL(info)  << "  Average white space utility: " << circuit.WhiteSpaceUsage() << std::endl;
   circuit.ReportBriefSummary();
   //circuit.ReportBlockType();
   //circuit.ReportIOPin();
   circuit.ReportHPWL();
   circuit.BuildBlkPairNets();
 
-  std::string config_file = "dali.conf";
+  //std::string config_file = "dali.conf";
 
   GPSimPL gb_placer;
-  gb_placer.LoadConf(config_file);
+  //gb_placer.LoadConf(config_file);
   gb_placer.SetInputCircuit(&circuit);
   gb_placer.is_dump = false;
   gb_placer.SetBoundaryDef();
-  gb_placer.SetFillingRate(0.69);
+  gb_placer.SetFillingRate(0.65);
   gb_placer.ReportBoundaries();
   gb_placer.StartPlacement();
   //gb_placer.SaveDEFFile("benchmark_1K_dali.def", def_file_name);
@@ -116,9 +118,8 @@ int main() {
 
 #if TEST_STDCLUSTER_WELL
   StdClusterWellLegalizer std_cluster_well_legalizer;
-  std::string cell_file_name("processor.cell");
-  circuit.ReadCellFile(cell_file_name);
   std_cluster_well_legalizer.TakeOver(&gb_placer);
+  std_cluster_well_legalizer.SetStripPartitionMode(SCAVENGE);
   std_cluster_well_legalizer.StartPlacement();
   //std_cluster_well_legalizer.GenMatlabClusterTable("sc_result");
   std_cluster_well_legalizer.GenMATLABTable("sc_result.txt");

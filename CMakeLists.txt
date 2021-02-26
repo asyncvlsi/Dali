@@ -182,7 +182,7 @@ add_executable(dali
         dali/dali.cc)
 target_link_libraries(dali
         PRIVATE dalilib
-        OpenMP::OpenMP_CXX)
+        )
 
 # Debugging executable, building from the dalilib library
 add_executable(dali-debug

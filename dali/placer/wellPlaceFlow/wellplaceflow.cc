@@ -31,18 +31,21 @@ bool WellPlaceFlow::StartPlacement() {
   lower_bound_hpwl_.push_back(eval_res);
   //BOOST_LOG_TRIVIAL(info)   << cg_total_hpwl_ << "  " << circuit_->HPWL() << "\n";
 
-  well_legalizer_.TakeOver(this);
-  well_legalizer_.Init();
   bool old_success = false;
-  max_iter_ = 80;
+  max_iter_ = 50;
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     BOOST_LOG_TRIVIAL(trace) << cur_iter_ << "-th iteration\n";
     eval_res = LookAheadLegalization();
     upper_bound_hpwl_.push_back(eval_res);
-    if (cur_iter_ > 50) {
+    if (cur_iter_ > 10) {
       LGTetrisEx legalizer;
       legalizer.TakeOver(this);
       legalizer.StartPlacement();
+
+      StdClusterWellLegalizer well_legalizer;
+      well_legalizer.TakeOver(this);
+      well_legalizer.SetStripPartitionMode(SCAVENGE);
+      well_legalizer.WellLegalize();
       upper_bound_hpwl_.back() = circuit_->WeightedHPWL();
 
       //StdClusterWellLegalizer well_legalizer;
@@ -76,6 +79,7 @@ bool WellPlaceFlow::StartPlacement() {
   ReportHPWL();
 
   well_legalizer_.TakeOver(this);
+  well_legalizer_.SetStripPartitionMode(SCAVENGE);
   well_legalizer_.StartPlacement();
 
   wall_time = get_wall_time() - wall_time;

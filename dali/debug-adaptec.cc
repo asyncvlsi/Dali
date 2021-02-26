@@ -65,9 +65,9 @@ int main(int argc, char **argv) {
   std::string adaptec1_def = "ISPD2005/adaptec1.def";
 #endif
 
-  circuit.setGridValue(0.01, 0.01);
-  readLef(adaptec1_lef, circuit);
-  readDef(adaptec1_def, circuit);
+  circuit.SetGridValue(0.01, 0.01);
+  ReadLEF(adaptec1_lef, circuit);
+  ReadDEF(adaptec1_def, circuit);
   //circuit.ReportBlockType();
   //circuit.ReportBlockList();
   //circuit.ReportNetList();
@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
   legalizer.TakeOver(&gb_placer);
   legalizer.SetRowHeight(12);
   legalizer.StartPlacement();
-  //legalizer.GenAvailSpace("as_result.txt");
+  //legalizer.PlotAvailSpace("as_result.txt");
   legalizer.GenMATLABTable("lg_result.txt");
   //legalizer->SaveDEFFile("circuit.def", def_file);
    */

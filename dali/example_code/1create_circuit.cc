@@ -34,7 +34,7 @@ int main() {
   circuit.AddMetalLayer(metal_layer_name, 0.1, 0.1, 0.042, 0.2, 0.2, HORIZONTAL_);
 
   // set grid value and row height
-  circuit.setGridValue(0.2, 0.2);
+  circuit.SetGridValue(0.2, 0.2);
   circuit.setRowHeight(0.2);
 
   // add block type "NAND2"

@@ -112,10 +112,10 @@ int siteCB(lefrCallbackType_e type, lefiSite *site, lefiUserData userData) {
   }
   if (site->lefiSite::hasSize()) {
     Circuit &circuit = *((Circuit *) userData);
-    circuit.setGridValue(site->sizeX(), site->sizeY());
+    circuit.SetGridValue(site->sizeX(), site->sizeY());
     circuit.setRowHeight(site->sizeY());
-    //BOOST_LOG_TRIVIAL(info)   << "SITE SIZE " << site->lefiSite::sizeX() << "  " << site->lefiSite::sizeY() << "\n";
-    //BOOST_LOG_TRIVIAL(info)   << circuit.GridValueX() << "  " << circuit.GridValueY() << "\n";
+    BOOST_LOG_TRIVIAL(info)   << "SITE SIZE " << site->lefiSite::sizeX() << "  " << site->lefiSite::sizeY() << "\n";
+    BOOST_LOG_TRIVIAL(info)   << circuit.GridValueX() << "  " << circuit.GridValueY() << "\n";
   } else {
     DaliExpects(false, "SITE SIZE information not provided");
   }
@@ -225,11 +225,12 @@ int macroEndCB(lefrCallbackType_e type, const char *macroName, lefiUserData user
   return 0;
 }
 
-void readLef(std::string &lefFileName, Circuit &circuit) {
+void ReadLEF(std::string const &lef_file_name, Circuit *circuit) {
+  DaliExpects(circuit != nullptr, "Cannot read LEF file for a null Circuit instance");
   //lefrInit();
   lefrInitSession(1);
 
-  lefrSetUserData((lefiUserData) &circuit);
+  lefrSetUserData((lefiUserData) circuit);
 
   lefrSetUnitsCbk(getLefUnits);
   lefrSetManufacturingCbk(getLefManufacturingGrid);
@@ -242,12 +243,12 @@ void readLef(std::string &lefFileName, Circuit &circuit) {
   lefrSetMacroEndCbk(macroEndCB);
 
   FILE *f;
-  if ((f = fopen(lefFileName.c_str(), "r")) == nullptr) {
-    BOOST_LOG_TRIVIAL(info) << "Couldn't open lef file: " << lefFileName << std::endl;
+  if ((f = fopen(lef_file_name.c_str(), "r")) == nullptr) {
+    BOOST_LOG_TRIVIAL(info) << "Couldn't open lef file: " << lef_file_name << std::endl;
     exit(2);
   }
 
-  int res = lefrRead(f, lefFileName.c_str(), (lefiUserData) &circuit);
+  int res = lefrRead(f, lef_file_name.c_str(), (lefiUserData) circuit);
   if (res != 0) {
     BOOST_LOG_TRIVIAL(info) << "LEF parser returns an error!" << std::endl;
     exit(2);
@@ -489,12 +490,14 @@ int getDefVoid(defrCallbackType_e type, void *dummy, defiUserData userData) {
   return 0;
 }
 
-void readDef(std::string &defFileName, Circuit &circuit) {
+void ReadDEF(std::string const &def_file_name, Circuit *circuit) {
+  DaliExpects(circuit != nullptr, "Cannot read DEF file for a null Circuit instance");
+
   defrInit();
   defrReset();
 
   defrInitSession(1);
-  defrSetUserData((defiUserData) &circuit);
+  defrSetUserData((defiUserData) circuit);
   defrSetDesignCbk(designCB);
   defrSetUnitsCbk(getDefUnits);
   defrSetDieAreaCbk(getDefDieArea);
@@ -503,12 +506,12 @@ void readDef(std::string &defFileName, Circuit &circuit) {
   defrSetStartPinsCbk(countNumberCB);
 
   FILE *f;
-  if ((f = fopen(defFileName.c_str(), "r")) == nullptr) {
+  if ((f = fopen(def_file_name.c_str(), "r")) == nullptr) {
     BOOST_LOG_TRIVIAL(info) << "Couldn't open def file" << std::endl;
     exit(2);
   }
 
-  int res = defrRead(f, defFileName.c_str(), (defiUserData) &circuit, 1);
+  int res = defrRead(f, def_file_name.c_str(), (defiUserData) circuit, 1);
   if (res != 0) {
     BOOST_LOG_TRIVIAL(info) << "DEF parser returns an error in round 1!" << std::endl;
     exit(2);
@@ -516,7 +519,7 @@ void readDef(std::string &defFileName, Circuit &circuit) {
   fclose(f);
 
   defrInitSession(2);
-  defrSetUserData((defiUserData) &circuit);
+  defrSetUserData((defiUserData) circuit);
   //defrSetDesignCbk(designCB);
   //defrSetUnitsCbk(getDefUnits);
   defrSetDieAreaCbk(getDefDieArea);
@@ -528,11 +531,11 @@ void readDef(std::string &defFileName, Circuit &circuit) {
   defrSetNetCbk(getDefNets);
 
   //defrSetDesignEndCbk(getDefVoid);
-  if ((f = fopen(defFileName.c_str(), "r")) == nullptr) {
+  if ((f = fopen(def_file_name.c_str(), "r")) == nullptr) {
     BOOST_LOG_TRIVIAL(info) << "Couldn't open def file" << std::endl;
     exit(2);
   }
-  res = defrRead(f, defFileName.c_str(), (defiUserData) &circuit, 1);
+  res = defrRead(f, def_file_name.c_str(), (defiUserData) circuit, 1);
   if (res != 0) {
     BOOST_LOG_TRIVIAL(info) << "DEF parser returns an error in round 2!" << std::endl;
     exit(2);

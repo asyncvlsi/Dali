@@ -1,5 +1,5 @@
 //
-// Created by Yihang Yang on 3/14/20.
+// Created by Yihang Yang on 3/14/2020.
 //
 
 #ifndef DALI_SRC_PLACER_WELLLEGALIZER_STDCLUSTERWELLLEGALIZER_H_
@@ -153,6 +153,11 @@ struct ClusterStrip {
   void AssignBlockToSimpleStrip();
 };
 
+enum StripPartitionMode {
+  STRICT = 0,
+  SCAVENGE = 1
+};
+
 class StdClusterWellLegalizer : public Placer {
  private:
   bool is_first_row_orient_N_ = true;
@@ -167,6 +172,7 @@ class StdClusterWellLegalizer : public Placer {
   double strip_width_factor_ = 2.0;
   int strip_width_;
   int tot_col_num_;
+  StripPartitionMode strip_mode_ = STRICT;
 
   /**** well tap cell parameters ****/
   BlockType *well_tap_cell_;
@@ -191,6 +197,8 @@ class StdClusterWellLegalizer : public Placer {
   void LoadConf(std::string const &config_file) override;
 
   void CheckWellExistence();
+
+  void SetStripPartitionMode(StripPartitionMode mode) { strip_mode_ = mode; }
 
   void SetRowHeight(int row_height) {
     DaliExpects(row_height > 0, "Setting row height to a negative value? StdClusterWellLegalizer::SetRowHeight()\n");
@@ -280,9 +288,9 @@ class StdClusterWellLegalizer : public Placer {
   void EmitClusterRect(std::string const &name_of_file);
 
   /**** member functions for debugging ****/
-  void GenAvailSpace(std::string const &name_of_file = "avail_space.txt");
-  void GenAvailSpaceInCols(std::string const &name_of_file = "avail_space.txt");
-  void GenSimpleStrips(std::string const &name_of_file = "strip_space.txt");
+  void PlotAvailSpace(std::string const &name_of_file = "avail_space.txt");
+  void PlotAvailSpaceInCols(std::string const &name_of_file = "avail_space.txt");
+  void PlotSimpleStrips(std::string const &name_of_file = "strip_space.txt");
 };
 
 struct SegCluster {

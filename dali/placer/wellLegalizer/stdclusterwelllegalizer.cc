@@ -349,7 +349,7 @@ void StdClusterWellLegalizer::InitAvailSpace() {
     }
   }
 
-  //GenAvailSpace();
+  //PlotAvailSpace();
 }
 
 void StdClusterWellLegalizer::FetchNPWellParams() {
@@ -442,12 +442,11 @@ void StdClusterWellLegalizer::DecomposeToSimpleStrip() {
     }
   }*/
 
-  //GenSimpleStrips();
+  //PlotSimpleStrips();
 }
 
 void StdClusterWellLegalizer::Init(int cluster_width) {
   CheckWellExistence();
-
 
   // fetch parameters about N/P-well
   FetchNPWellParams();
@@ -498,9 +497,12 @@ void StdClusterWellLegalizer::Init(int cluster_width) {
     col_list_[i].width_ = strip_width_ - well_spacing_;
     UpdateWhiteSpaceInCol(col_list_[i]);
   }
+  if (strip_mode_ == SCAVENGE) {
+    col_list_.back().width_ = RegionRight() - col_list_.back().lx_;
+    UpdateWhiteSpaceInCol(col_list_.back());
+  }
   DecomposeToSimpleStrip();
-  //GenAvailSpaceInCols();
-  //col_list_.back().width_ = RegionURX() - col_list_.back().lx_;
+  //PlotAvailSpaceInCols();
   //cluster_list_.reserve(tot_col_num_ * max_clusters_per_col);
 
   // restore left and right boundaries back
@@ -1317,7 +1319,7 @@ void StdClusterWellLegalizer::InsertWellTap() {
         //int tap_cell_num = std::ceil(cluster.Width() / (double) max_unplug_length_);
         int tap_cell_num = 2;
         tot_tap_cell_num += tap_cell_num;
-        int step = 2 * max_unplug_length_;
+        int step = cluster.Width();
         int tap_cell_loc = cluster.LLX() - well_tap_cell_->Width() / 2;
         for (int i = 0; i < tap_cell_num; ++i) {
           std::string block_name = "__well_tap__" + std::to_string(counter++);
@@ -1358,18 +1360,12 @@ void StdClusterWellLegalizer::ClearCachedData() {
 }
 
 bool StdClusterWellLegalizer::WellLegalize() {
-  //ClearCachedData();
-  bool is_success;
-
+  bool is_success = true;
+  Init();
   AssignBlockToColBasedOnWhiteSpace();
   is_success = BlockClusteringLoose();
+  //BlockClusteringCompact();
   ReportHPWL();
-
-  UpdateClusterOrient();
-  for (int i = 0; i < 6; ++i) {
-    LocalReorderAllClusters();
-    ReportHPWL();
-  }
 
   if (is_success) {
     BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
@@ -2011,7 +2007,7 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
   BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
-void StdClusterWellLegalizer::GenAvailSpace(std::string const &name_of_file) {
+void StdClusterWellLegalizer::PlotAvailSpace(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
   ost << RegionLeft() << "\t"
@@ -2058,7 +2054,7 @@ void StdClusterWellLegalizer::GenAvailSpace(std::string const &name_of_file) {
   }
 }
 
-void StdClusterWellLegalizer::GenAvailSpaceInCols(std::string const &name_of_file) {
+void StdClusterWellLegalizer::PlotAvailSpaceInCols(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
   ost << RegionLeft() << "\t"
@@ -2107,7 +2103,7 @@ void StdClusterWellLegalizer::GenAvailSpaceInCols(std::string const &name_of_fil
   }
 }
 
-void StdClusterWellLegalizer::GenSimpleStrips(std::string const &name_of_file) {
+void StdClusterWellLegalizer::PlotSimpleStrips(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
   ost << RegionLeft() << "\t"

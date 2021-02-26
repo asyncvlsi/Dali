@@ -14,19 +14,13 @@
 #include <string>
 
 #include "dali/common/optregdist.h"
+#include "dali/common/si2lefdef.h"
 #include "status.h"
 
 namespace dali {
 
 Circuit::Circuit() {
   AddDummyIOPinBlockType();
-}
-
-#ifdef USE_OPENDB
-Circuit::Circuit(odb::dbDatabase *db_ptr) {
-  AddDummyIOPinBlockType();
-  db_ptr_ = db_ptr;
-  InitializeFromDB(db_ptr);
 }
 
 void Circuit::LoadImaginaryCellFile() {
@@ -65,6 +59,13 @@ void Circuit::LoadImaginaryCellFile() {
     well->setNWellRect(0, np_edge, blk_type->Width(), blk_type->Height());
     well->setPWellRect(0, 0, blk_type->Width(), np_edge);
   }
+}
+
+#ifdef USE_OPENDB
+Circuit::Circuit(odb::dbDatabase *db_ptr) {
+  AddDummyIOPinBlockType();
+  db_ptr_ = db_ptr;
+  InitializeFromDB(db_ptr);
 }
 
 void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
@@ -267,485 +268,11 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
 #endif
 
 void Circuit::ReadLefFile(std::string const &name_of_file) {
-  /****
-  * This is a naive lef parser, it cannot cover all corner cases
-  * Please use other APIs to build a circuit if necessary
-  * ****/
-  std::ifstream ist(name_of_file.c_str());
-  DaliExpects(ist.is_open(), "Cannot open input file: " + name_of_file);
-  BOOST_LOG_TRIVIAL(info) << "Loading LEF file" << "\n";
-  std::string line;
-
-  // 1. find DATABASE MICRONS
-  tech_.database_microns_ = 0;
-  while ((tech_.database_microns_ == 0) && !ist.eof()) {
-    getline(ist, line);
-    if (!line.empty() && line[0] == '#') continue;
-    if (line.find("DATABASE MICRONS") != std::string::npos) {
-      std::vector<std::string> line_field;
-      StrSplit(line, line_field);
-      DaliExpects(line_field.size() >= 3, "Invalid UNITS declaration: expecting 3 fields");
-      try {
-        tech_.database_microns_ = std::stoi(line_field[2]);
-      } catch (...) {
-        BOOST_LOG_TRIVIAL(info) << line << "\n";
-        DaliExpects(false, "Invalid stoi conversion:" + line_field[2]);
-      }
-    }
-  }
-  BOOST_LOG_TRIVIAL(info) << "DATABASE MICRONS " << tech_.database_microns_ << "\n";
-
-  // 2. find MANUFACTURINGGRID
-  tech_.manufacturing_grid_ = 0;
-  while ((tech_.manufacturing_grid_ <= 1e-10) && !ist.eof()) {
-    getline(ist, line);
-    if (!line.empty() && line[0] == '#') continue;
-    if (line.find("LAYER") != std::string::npos) {
-      tech_.manufacturing_grid_ = 1.0 / tech_.database_microns_;
-      BOOST_LOG_TRIVIAL(info)
-        << "  WARNING:\n  MANUFACTURINGGRID not specified explicitly, using 1.0/DATABASE MICRONS instead\n";
-    }
-    if (line.find("MANUFACTURINGGRID") != std::string::npos) {
-      std::vector<std::string> grid_field;
-      StrSplit(line, grid_field);
-      DaliExpects(grid_field.size() >= 2, "Invalid MANUFACTURINGGRID declaration: expecting 2 fields");
-      try {
-        tech_.manufacturing_grid_ = std::stod(grid_field[1]);
-      } catch (...) {
-        DaliExpects(false, "Invalid stod conversion:\n" + line);
-      }
-      break;
-    }
-  }
-  DaliExpects(tech_.manufacturing_grid_ > 0, "Cannot find or invalid MANUFACTURINGGRID");
-  BOOST_LOG_TRIVIAL(info) << "MANUFACTURINGGRID: " << tech_.manufacturing_grid_ << "\n";
-
-  // 3. read metal layer
-  static std::vector<std::string> metal_identifier_list{"m", "M", "metal", "Metal"};
-  while (!ist.eof()) {
-    if (!line.empty() && line[0] == '#') {
-      getline(ist, line);
-      continue;
-    }
-    if (line.find("LAYER") != std::string::npos) {
-      std::vector<std::string> layer_field;
-      StrSplit(line, layer_field);
-      DaliExpects(layer_field.size() == 2, "Invalid LAYER, expect only: LAYER layerName\n\tgot: " + line);
-      int first_digit_pos = FindFirstNumber(layer_field[1]);
-      std::string metal_id(layer_field[1], 0, first_digit_pos);
-      if (std::find(metal_identifier_list.begin(), metal_identifier_list.end(), metal_id)
-          != metal_identifier_list.end()) {
-        std::string end_layer_flag = "END " + layer_field[1];
-        MetalLayer *metal_layer = AddMetalLayer(layer_field[1]);
-        do {
-          getline(ist, line);
-          if (!line.empty() && line[0] == '#') continue;
-          if (line.find("DIRECTION") != std::string::npos) {
-            std::vector<std::string> direction_field;
-            StrSplit(line, direction_field);
-            DaliExpects(direction_field.size() >= 2, "Invalid DIRECTION\n" + line);
-            MetalDirection direction = StrToMetalDirection(direction_field[1]);
-            metal_layer->SetDirection(direction);
-          }
-          if (line.find("AREA") != std::string::npos) {
-            std::vector<std::string> area_field;
-            StrSplit(line, area_field);
-            DaliExpects(area_field.size() >= 2, "Invalid AREA\n" + line);
-            try {
-              double area = std::stod(area_field[1]);
-              metal_layer->SetArea(area);
-            } catch (...) {
-              DaliExpects(false, "Invalid stod conversion\n" + line);
-            }
-          }
-          if (line.find("WIDTH") != std::string::npos) {
-            std::vector<std::string> width_field;
-            StrSplit(line, width_field);
-            if (width_field.size() != 2) continue;
-            try {
-              double width = std::stod(width_field[1]);
-              metal_layer->SetWidth(width);
-            } catch (...) {
-              DaliExpects(false, "Invalid stod conversion:\n" + line);
-            }
-          }
-          if (line.find("SPACING") != std::string::npos &&
-              line.find("SPACINGTABLE") == std::string::npos &&
-              line.find("ENDOFLINE") == std::string::npos) {
-            std::vector<std::string> spacing_field;
-            StrSplit(line, spacing_field);
-            DaliExpects(spacing_field.size() >= 2, "Invalid SPACING\n" + line);
-            try {
-              double spacing = std::stod(spacing_field[1]);
-              metal_layer->SetSpacing(spacing);
-            } catch (...) {
-              DaliExpects(false, "Invalid stod conversion:\n" + line);
-            }
-          }
-          if (line.find("PITCH") != std::string::npos) {
-            std::vector<std::string> pitch_field;
-            StrSplit(line, pitch_field);
-            int pch_sz = pitch_field.size();
-            DaliExpects(pch_sz >= 2, "Invalid PITCH\n" + line);
-            if (pch_sz == 2) {
-              try {
-                double pitch = std::stod(pitch_field[1]);
-                metal_layer->SetPitch(pitch, pitch);
-              } catch (...) {
-                DaliExpects(false, "Invalid stod conversion:\n" + line);
-              }
-            } else {
-              try {
-                double x_pitch = std::stod(pitch_field[1]);
-                double y_pitch = std::stod(pitch_field[2]);
-                metal_layer->SetPitch(x_pitch, y_pitch);
-              } catch (...) {
-                DaliExpects(false, "Invalid stod conversion:\n" + line);
-              }
-            }
-          }
-        } while (line.find(end_layer_flag) == std::string::npos && !ist.eof());
-      }
-    }
-    getline(ist, line);
-    if (line.find("VIA") != std::string::npos || line.find("MACRO") != std::string::npos) break;
-  }
-  //ReportMetalLayers();
-  if (!tech_.grid_set_) {
-    if (tech_.metal_list_.size() < 2) {
-      setGridValue(tech_.manufacturing_grid_, tech_.manufacturing_grid_);
-      BOOST_LOG_TRIVIAL(info) << "No enough metal layers to specify horizontal and vertical pitch\n"
-                              << "Using manufacturing grid as grid values\n";
-    } else if (tech_.metal_list_[0].PitchY() <= 0 || tech_.metal_list_[1].PitchX() <= 0) {
-      setGridValue(tech_.manufacturing_grid_, tech_.manufacturing_grid_);
-      BOOST_LOG_TRIVIAL(info) << "Invalid metal pitch\n"
-                              << "Using manufacturing grid as grid values\n";
-    } else {
-      setGridUsingMetalPitch();
-    }
-    BOOST_LOG_TRIVIAL(info) << "Grid Value: " << tech_.grid_value_x_ << "  " << tech_.grid_value_y_ << "\n";
-  }
-
-  // 4. read block type information
-  while (!ist.eof()) {
-    if (!line.empty() && line[0] == '#') {
-      getline(ist, line);
-      continue;
-    }
-    if (line.find("MACRO") != std::string::npos) {
-      std::vector<std::string> line_field;
-      StrSplit(line, line_field);
-      DaliExpects(line_field.size() >= 2, "Invalid type name: expecting 2 fields\n" + line);
-      std::string block_type_name = line_field[1];
-      //BOOST_LOG_TRIVIAL(info)   << block_type_name << "\n";
-      BlockType *new_block_type = nullptr;
-      int width = 0, height = 0;
-      std::string end_macro_flag = "END " + line_field[1];
-      do {
-        getline(ist, line);
-        if (!line.empty() && line[0] == '#') continue;
-        while ((width == 0) && (height == 0) && !ist.eof()) {
-          if (line.find("SIZE") != std::string::npos) {
-            std::vector<std::string> size_field;
-            StrSplit(line, size_field);
-            try {
-              width = (int) (std::round(std::stod(size_field[1]) / tech_.grid_value_x_));
-              height = (int) (std::round(std::stod(size_field[3]) / tech_.grid_value_y_));
-            } catch (...) {
-              DaliExpects(false, "Invalid stod conversion:\n" + line);
-            }
-            new_block_type = AddBlockTypeWithGridUnit(block_type_name, width, height);
-            //BOOST_LOG_TRIVIAL(info)   << "  type width, height: " << new_block_type->Width() << " " << new_block_type->Height() << "\n";
-          }
-          getline(ist, line);
-        }
-
-        if (line.find("PIN") != std::string::npos) {
-          std::vector<std::string> pin_field;
-
-          StrSplit(line, pin_field);
-          DaliExpects(pin_field.size() >= 2, "Invalid pin name: expecting 2 fields\n" + line);
-
-          std::string pin_name = pin_field[1];
-          std::string end_pin_flag = "END " + pin_name;
-          Pin *new_pin = nullptr;
-          new_pin = new_block_type->AddPin(pin_name, true);
-          // skip to "PORT" rectangle list
-          do {
-            getline(ist, line);
-            if (!line.empty() && line[0] == '#') continue;
-          } while (line.find("PORT") == std::string::npos && !ist.eof());
-
-          double llx = 0, lly = 0, urx = 0, ury = 0;
-          do {
-            getline(ist, line);
-            if (!line.empty() && line[0] == '#') continue;
-            if (line.find("RECT") != std::string::npos) {
-              //BOOST_LOG_TRIVIAL(info)   << line << "\n";
-              std::vector<std::string> rect_field;
-              StrSplit(line, rect_field);
-              DaliExpects(rect_field.size() >= 5, "Invalid rect definition: expecting 5 fields\n" + line);
-              try {
-                llx = std::stod(rect_field[1]) / tech_.grid_value_x_;
-                lly = std::stod(rect_field[2]) / tech_.grid_value_y_;
-                urx = std::stod(rect_field[3]) / tech_.grid_value_x_;
-                ury = std::stod(rect_field[4]) / tech_.grid_value_y_;
-              } catch (...) {
-                DaliExpects(false, "Invalid stod conversion:\n" + line);
-              }
-              new_pin->AddRect(llx, lly, urx, ury);
-            }
-          } while (line.find(end_pin_flag) == std::string::npos && !ist.eof());
-          DaliExpects(!new_pin->RectEmpty(), "Pin has no RECTs: " + *new_pin->Name());
-        }
-      } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
-      DaliExpects(!new_block_type->Empty(), "MACRO has no PINs: " + *new_block_type->NamePtr());
-    }
-    getline(ist, line);
-  }
-  BOOST_LOG_TRIVIAL(info) << "LEF file loading complete: " << name_of_file << "\n";
-  //ReportBlockType();
+  ReadLEF(name_of_file, this);
 }
 
 void Circuit::ReadDefFile(std::string const &name_of_file) {
-  /****
-   * This is a naive def parser, it cannot cover all corner cases
-   * Please use other APIs to build a circuit if this naive def parser cannot satisfy your needs
-   * ****/
-  std::ifstream ist(name_of_file.c_str());
-  DaliExpects(ist.is_open(), "Cannot open input file: " + name_of_file);
-  BOOST_LOG_TRIVIAL(info) << "Loading DEF file" << std::endl;
-  std::string line;
-
-  bool component_section_exist = false;
-  int components_count = 0;
-  bool pins_section_exist = false;
-  int pins_count = 0;
-  bool nets_section_exist = false;
-  int nets_count = 0;
-
-  while (!ist.eof()) {
-    getline(ist, line);
-    if (!component_section_exist) {
-      if (line.find("COMPONENTS") != std::string::npos) {
-        std::vector<std::string> components_field;
-        StrSplit(line, components_field);
-        DaliExpects(components_field.size() == 2, "Improper use of COMPONENTS?\n" + line);
-        try {
-          components_count = std::stoi(components_field[1]);
-          BOOST_LOG_TRIVIAL(info) << "COMPONENTS:  " << components_count << "\n";
-          component_section_exist = true;
-        } catch (...) {
-          DaliExpects(false, "Invalid stoi conversion:\n" + line);
-        }
-      }
-    }
-    if (!pins_section_exist) {
-      if (line.find("PINS") != std::string::npos) {
-        std::vector<std::string> pins_field;
-        StrSplit(line, pins_field);
-        DaliExpects(pins_field.size() == 2, "Improper use of PINS?\n" + line);
-        try {
-          pins_count = std::stoi(pins_field[1]);
-          BOOST_LOG_TRIVIAL(info) << "PINS:  " << pins_count << "\n";
-          pins_section_exist = true;
-        } catch (...) {
-          DaliExpects(false, "Invalid stoi conversion:\n" + line);
-        }
-      }
-    }
-    if (!nets_section_exist) {
-      if ((line.find("NETS") != std::string::npos) && (line.find("SPECIALNETS") == std::string::npos)) {
-        std::vector<std::string> nets_field;
-        StrSplit(line, nets_field);
-        DaliExpects(nets_field.size() == 2, "Improper use of NETS?\n" + line);
-        try {
-          nets_count = std::stoi(nets_field[1]);
-          BOOST_LOG_TRIVIAL(info) << "NETS:  " << nets_count << "\n";
-          nets_section_exist = true;
-        } catch (...) {
-          DaliExpects(false, "Invalid stoi conversion:\n" + line);
-        }
-      }
-    }
-
-    if (component_section_exist && pins_section_exist && nets_section_exist) break;
-  }
-  ist.clear();
-  ist.seekg(0, std::ios::beg);
-  design_.block_list.reserve(components_count + pins_count);
-  design_.iopin_list.reserve(pins_count);
-  design_.net_list.reserve(nets_count);
-
-  // find UNITS DISTANCE MICRONS
-  design_.def_distance_microns = 0;
-  while ((design_.def_distance_microns == 0) && !ist.eof()) {
-    getline(ist, line);
-    if (line.find("DISTANCE MICRONS") != std::string::npos) {
-      std::vector<std::string> line_field;
-      StrSplit(line, line_field);
-      DaliExpects(line_field.size() >= 4, "Invalid UNITS declaration: expecting 4 fields");
-      try {
-        design_.def_distance_microns = std::stoi(line_field[3]);
-      } catch (...) {
-        DaliExpects(false, "Invalid stoi conversion (UNITS DISTANCE MICRONS):\n" + line);
-      }
-    }
-  }
-  DaliExpects(design_.def_distance_microns > 0,
-              "Invalid/null UNITS DISTANCE MICRONS: " + std::to_string(design_.def_distance_microns));
-  //BOOST_LOG_TRIVIAL(info)   << "DISTANCE MICRONS " << def_distance_microns << "\n";
-
-  // find DIEAREA
-  int def_left = 0;
-  int def_right = 0;
-  int def_bottom = 0;
-  int def_top = 0;
-  double factor_x = tech_.grid_value_x_ * design_.def_distance_microns;
-  double factor_y = tech_.grid_value_y_ * design_.def_distance_microns;
-  while ((def_left == 0) && (def_right == 0) && (def_bottom == 0) && (def_top == 0) && !ist.eof()) {
-    getline(ist, line);
-    if (line.find("DIEAREA") != std::string::npos) {
-      std::vector<std::string> die_area_field;
-      StrSplit(line, die_area_field);
-      //BOOST_LOG_TRIVIAL(info)   << line << "\n";
-      DaliExpects(die_area_field.size() >= 9, "Invalid UNITS declaration: expecting 9 fields");
-      try {
-        def_left = (int) std::round(std::stoi(die_area_field[2]) / factor_x);
-        def_bottom = (int) std::round(std::stoi(die_area_field[3]) / factor_y);
-        def_right = (int) std::round(std::stoi(die_area_field[6]) / factor_x);
-        def_top = (int) std::round(std::stoi(die_area_field[7]) / factor_y);
-        SetBoundary(def_left, def_bottom, def_right, def_top);
-      } catch (...) {
-        DaliExpects(false, "Invalid stoi conversion (DIEAREA):\n" + line);
-      }
-    }
-  }
-  //BOOST_LOG_TRIVIAL(info)   << "DIEAREA ( " << region_left_ << " " << region_bottom_ << " ) ( " << region_right_ << " " << region_top_ << " )\n";
-
-  // find COMPONENTS
-  if (component_section_exist) {
-    while ((line.find("COMPONENTS") == std::string::npos) && !ist.eof()) {
-      getline(ist, line);
-    }
-    //BOOST_LOG_TRIVIAL(info)   << line << "\n";
-    getline(ist, line);
-
-    // a). parse the body of components
-    while ((line.find("END COMPONENTS") == std::string::npos) && !ist.eof()) {
-      //BOOST_LOG_TRIVIAL(info)   << line << "\t";
-      std::vector<std::string> block_declare_field;
-      StrSplit(line, block_declare_field);
-      if (block_declare_field.size() <= 1) {
-        getline(ist, line);
-        continue;
-      }
-      DaliExpects(block_declare_field.size() >= 3,
-                  "Invalid block declaration, expecting at least: - compName modelName ;\n" + line);
-      //BOOST_LOG_TRIVIAL(info)   << block_declare_field[0] << " " << block_declare_field[1] << "\n";
-      if (block_declare_field.size() == 3) {
-        AddBlock(block_declare_field[1], block_declare_field[2], 0, 0, UNPLACED_, N_);
-      } else if (block_declare_field.size() == 10) {
-        PlaceStatus place_status = StrToPlaceStatus(block_declare_field[4]);
-        BlockOrient orient = StrToOrient(block_declare_field[9]);
-        int llx = 0, lly = 0;
-        try {
-          llx = (int) std::round(std::stoi(block_declare_field[6]) / factor_x);
-          lly = (int) std::round(std::stoi(block_declare_field[7]) / factor_y);
-        } catch (...) {
-          DaliExpects(false, "Invalid stoi conversion:\n" + line);
-        }
-        AddBlock(block_declare_field[1], block_declare_field[2], llx, lly, place_status, orient);
-      } else {
-        DaliExpects(false, "Unknown block declaration!");
-      }
-      getline(ist, line);
-    }
-  }
-
-  // find PINS
-  if (pins_section_exist) {
-    while ((line.find("PINS") == std::string::npos) && !ist.eof()) {
-      getline(ist, line);
-    }
-    //BOOST_LOG_TRIVIAL(info)   << line << "\n";
-    getline(ist, line);
-
-    while ((line.find("END PINS") == std::string::npos) && !ist.eof()) {
-      if (line.find('-') != std::string::npos && line.find("NET") != std::string::npos) {
-        //BOOST_LOG_TRIVIAL(info)   << line << "\n";
-        std::vector<std::string> io_pin_field;
-        StrSplit(line, io_pin_field);
-        //IOPin *iopin = nullptr;
-        //iopin = AddUnplacedIOPin(io_pin_field[1]);
-        AddUnplacedIOPin(io_pin_field[1]);
-      }
-      getline(ist, line);
-    }
-  }
-
-  if (nets_section_exist) {
-    while (line.find("NETS") == std::string::npos && !ist.eof()) {
-      getline(ist, line);
-    }
-    // a). find the number of nets
-    std::vector<std::string> nets_size_field;
-    StrSplit(line, nets_size_field);
-    //BOOST_LOG_TRIVIAL(info)   << line << "\n";
-    getline(ist, line);
-    // the following is a hack now, cannot handle all cases, probably need to use BISON in the future if necessary
-    while ((line.find("END NETS") == std::string::npos) && !ist.eof()) {
-      if (!line.empty() && line[0] == '#') {
-        getline(ist, line);
-        continue;
-      }
-      if (line.find('-') != std::string::npos) {
-        //BOOST_LOG_TRIVIAL(info)   << line << "\n";
-        std::vector<std::string> net_field;
-        StrSplit(line, net_field);
-        DaliExpects(net_field.size() >= 2, "Invalid net declaration, expecting at least: - netName\n" + line);
-        //BOOST_LOG_TRIVIAL(info)   << "\t" << net_field[0] << " " << net_field[1] << "\n";
-        Net *new_net = nullptr;
-        //BOOST_LOG_TRIVIAL(info)   << "Circuit::ReadDefFile(), this naive parser is broken, please do not use it\n";
-        if (net_field[1].find("Reset") != std::string::npos) {
-          //BOOST_LOG_TRIVIAL(info)   << net_field[1] << "\n";
-          new_net = AddNet(net_field[1], 100, design_.reset_signal_weight);
-        } else {
-          new_net = AddNet(net_field[1], 100, design_.normal_signal_weight);
-        }
-        while (true) {
-          getline(ist, line);
-          if (!line.empty() && line[0] == '#') {
-            continue;
-          }
-          //BOOST_LOG_TRIVIAL(info)   << line << "\n";
-          std::vector<std::string> pin_field;
-          StrSplit(line, pin_field);
-          if ((pin_field.size() % 4 != 0)) {
-            DaliExpects(false, "Invalid net declaration, expecting 4n fields, where n >= 2:\n" + line);
-          }
-          for (size_t i = 0; i < pin_field.size(); i += 4) {
-            //BOOST_LOG_TRIVIAL(info)   << "     " << pin_field[i+1] << " " << pin_field[i+2];
-            if (pin_field[i + 1] == "PIN") {
-              getIOPin(pin_field[i + 2])->SetNet(new_net);
-              continue;
-            }
-            //BOOST_LOG_TRIVIAL(info)   << net_field[1] << "  " << pin_field[i + 1] << "\n";
-            Block *block = getBlockPtr(pin_field[i + 1]);
-            auto pin = block->TypePtr()->getPinPtr(pin_field[i + 2]);
-            new_net->AddBlockPinPair(block, pin);
-          }
-          //BOOST_LOG_TRIVIAL(info)   << "\n";
-          if (line.find(';') != std::string::npos) break;
-        }
-        //Assert(!new_net->blk_pin_list.empty(), "Net " + net_field[1] + " has no blk_pin_pair");
-        DaliExpects(!(new_net->blk_pin_list.empty()), "Canot add a net with no block-pin pair");
-        //Warning(new_net->blk_pin_list.size() == 1, "Net " + net_field[1] + " has only one blk_pin_pair");
-      }
-      getline(ist, line);
-    }
-  }
-  BOOST_LOG_TRIVIAL(info) << "DEF file loading complete: " << name_of_file << "\n";
+  ReadDEF(name_of_file, this);
 }
 
 void Circuit::ReadCellFile(std::string const &name_of_file) {
@@ -889,20 +416,20 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
   BOOST_LOG_TRIVIAL(info) << "CELL file loading complete: " << name_of_file << "\n";
 }
 
-void Circuit::setGridValue(double grid_value_x, double grid_value_y) {
+void Circuit::SetGridValue(double grid_value_x, double grid_value_y) {
   if (tech_.grid_set_) return;
-  DaliExpects(grid_value_x > 0, "grid_value_x must be a positive real number! Circuit::setGridValue()");
-  DaliExpects(grid_value_y > 0, "grid_value_y must be a positive real number! Circuit::setGridValue()");
-  DaliExpects(!tech_.grid_set_, "once set, grid_value cannot be changed! Circuit::setGridValue()");
+  DaliExpects(grid_value_x > 0, "grid_value_x must be a positive real number! Circuit::SetGridValue()");
+  DaliExpects(grid_value_y > 0, "grid_value_y must be a positive real number! Circuit::SetGridValue()");
+  DaliExpects(!tech_.grid_set_, "once set, grid_value cannot be changed! Circuit::SetGridValue()");
   //BOOST_LOG_TRIVIAL(info) << "  grid value x: " << grid_value_x << ", grid value y: " << grid_value_y << "\n";
   tech_.grid_value_x_ = grid_value_x;
   tech_.grid_value_y_ = grid_value_y;
   tech_.grid_set_ = true;
 }
 
-void Circuit::setGridUsingMetalPitch() {
+void Circuit::SetGridUsingMetalPitch() {
   DaliExpects(tech_.metal_list_.size() >= 2,
-              "No enough metal layer for determining grid value in x and y! Circuit::setGridUsingMetalPitch()");
+              "No enough metal layer for determining grid value in x and y! Circuit::SetGridUsingMetalPitch()");
   MetalLayer *hor_layer = nullptr;
   MetalLayer *ver_layer = nullptr;
   for (auto &metal_layer: tech_.metal_list_) {
@@ -913,11 +440,11 @@ void Circuit::setGridUsingMetalPitch() {
       ver_layer = &metal_layer;
     }
   }
-  DaliExpects(hor_layer != nullptr, "Cannot find a horizontal metal layer! Circuit::setGridUsingMetalPitch()");
-  DaliExpects(ver_layer != nullptr, "Cannot find a vertical metal layer! Circuit::setGridUsingMetalPitch()");
+  DaliExpects(hor_layer != nullptr, "Cannot find a horizontal metal layer! Circuit::SetGridUsingMetalPitch()");
+  DaliExpects(ver_layer != nullptr, "Cannot find a vertical metal layer! Circuit::SetGridUsingMetalPitch()");
   //BOOST_LOG_TRIVIAL(info)   << "vertical layer: " << *ver_layer->Name() << "  " << ver_layer->PitchX() << "\n";
   //BOOST_LOG_TRIVIAL(info)   << "horizontal layer: " << *hor_layer->Name() << "  " << hor_layer->PitchY() << "\n";
-  setGridValue(ver_layer->PitchX(), hor_layer->PitchY());
+  SetGridValue(ver_layer->PitchX(), hor_layer->PitchY());
 }
 
 MetalLayer *Circuit::AddMetalLayer(std::string &metal_name, double width, double spacing) {

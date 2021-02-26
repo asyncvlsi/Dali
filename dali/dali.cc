@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
       try {
         x_grid = std::stod(str_x_grid);
         y_grid = std::stod(str_y_grid);
-        circuit.setGridValue(x_grid, y_grid);
+        circuit.SetGridValue(x_grid, y_grid);
       } catch (...) {
         BOOST_LOG_TRIVIAL(info) << "Invalid input files!\n";
         ReportUsage();
@@ -148,8 +148,8 @@ int main(int argc, char *argv[]) {
   double file_cpu_time = get_cpu_time();
 
   // read LEF/DEF
-  readLef(lef_file_name, circuit);
-  readDef(def_file_name, circuit);
+  circuit.ReadLefFile(lef_file_name);
+  circuit.ReadDefFile(def_file_name);
 
   file_wall_time = get_wall_time() - file_wall_time;
   file_cpu_time = get_cpu_time() - file_cpu_time;

@@ -1,5 +1,5 @@
 //
-// Created by Yihang Yang on 2019-03-26.
+// Created by Yihang Yang on 3/23/2019.
 //
 
 #ifndef DALI_CIRCUIT_HPP
@@ -24,9 +24,6 @@
 #include "status.h"
 #include "tech.h"
 
-namespace dali {
-
-}
 /****
  * The class Circuit is an abstract of a circuit graph.
  * It contains two main parts:
@@ -141,10 +138,8 @@ class Circuit {
   void InitializeFromDB(odb::dbDatabase *db_ptr);
 #endif
 
-  // simple LEF parser, do not recommend to use
+  // LEF/DEF loader
   void ReadLefFile(std::string const &name_of_file);
-
-  // simple DEF parser, do not recommend to use
   void ReadDefFile(std::string const &name_of_file);
 
   // simple CELL parser
@@ -182,10 +177,10 @@ class Circuit {
 
   /****API to set grid value****/
   // set grid values in x and y direction, unit in micron
-  void setGridValue(double grid_value_x, double grid_value_y);
+  void SetGridValue(double grid_value_x, double grid_value_y);
 
   // set grid values using the first horizontal and vertical metal layer pitches
-  void setGridUsingMetalPitch();
+  void SetGridUsingMetalPitch();
 
   // get the grid value in x direction, unit is usually in micro
   double GridValueX() const {
@@ -202,6 +197,7 @@ class Circuit {
   // set the row height, unit in micron
   void setRowHeight(double row_height) {
     DaliExpects(row_height > 0, "Setting row height to a negative value? Circuit::setRowHeight()");
+    std::cout << row_height << "  " << tech_.grid_value_y_ <<"\n";
     double residual = Residual(row_height, tech_.grid_value_y_);
     DaliExpects(std::fabs(residual) < 1e-6, "Site height is not integer multiple of grid value in Y");
     tech_.row_height_set_ = true;
