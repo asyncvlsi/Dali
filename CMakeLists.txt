@@ -249,10 +249,10 @@ target_link_libraries(custom2standard
         PRIVATE dalilib)
 
 # Stand-alone custom cell design to standard cell design tool
-add_executable(1create_circuit
+add_executable(create_circuit
         EXCLUDE_FROM_ALL
-        dali/example_code/1create_circuit.cc)
-target_link_libraries(1create_circuit
+        dali/example_code/create_circuit.cc)
+target_link_libraries(create_circuit
         PRIVATE dalilib)
 
 ######################################

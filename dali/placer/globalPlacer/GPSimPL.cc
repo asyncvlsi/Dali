@@ -2990,7 +2990,7 @@ bool GPSimPL::StartPlacement() {
                             << lower_bound_hpwl_.back() << " "
                             << upper_bound_hpwl_.back() << "\n";
 
-    if (cur_iter_ >= 40 && (IsPlacementConverge() || cur_iter_ == max_iter_ - 1)) { // if HPWL converges
+    if (IsPlacementConverge()) { // if HPWL converges
       BOOST_LOG_TRIVIAL(info) << "Iterative look-ahead legalization complete\n";
       BOOST_LOG_TRIVIAL(info) << "Total number of iteration: " << cur_iter_ + 1 << "\n";
       break;

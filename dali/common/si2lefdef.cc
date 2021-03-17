@@ -225,7 +225,7 @@ int macroEndCB(lefrCallbackType_e type, const char *macroName, lefiUserData user
   return 0;
 }
 
-void ReadLEF(std::string const &lef_file_name, Circuit *circuit) {
+void ReadLef(std::string const &lef_file_name, Circuit *circuit) {
   DaliExpects(circuit != nullptr, "Cannot read LEF file for a null Circuit instance");
   //lefrInit();
   lefrInitSession(1);
@@ -490,7 +490,7 @@ int getDefVoid(defrCallbackType_e type, void *dummy, defiUserData userData) {
   return 0;
 }
 
-void ReadDEF(std::string const &def_file_name, Circuit *circuit) {
+void ReadDef(std::string const &def_file_name, Circuit *circuit) {
   DaliExpects(circuit != nullptr, "Cannot read DEF file for a null Circuit instance");
 
   defrInit();

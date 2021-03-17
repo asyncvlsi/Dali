@@ -10,7 +10,7 @@
 
 #include "circuit.h"
 #include "common/global.h"
-
+//TODO: fix this
 VerboseLevel globalVerboseLevel = LOG_INFO;
 
 void ReportUsage();

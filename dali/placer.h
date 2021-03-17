@@ -11,16 +11,9 @@
 /****Global placer****/
 #include "dali/placer/globalPlacer/GPSimPL.h"
 
-/****Detailed placer****/
-#include "dali/placer/detailedPlacer/DPSwap.h"
-#include "dali/placer/detailedPlacer/MDPlacer.h"
-
 /****Legalizer****/
 #include "dali/placer/legalizer/LGTetris.h"
 #include "dali/placer/legalizer/LGTetrisEx.h"
-
-/****Post Legalization Optimization****/
-#include "dali/placer/postLegalOptimizer/PLOSlide.h"
 
 /****Well Legalizer****/
 #include "dali/placer/wellLegalizer/clusterwelllegalizer.h"

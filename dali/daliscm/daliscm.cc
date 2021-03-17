@@ -1,5 +1,5 @@
 //
-// Created by Yihang Yang on 2021-01-28.
+// Created by Yihang Yang on 1/27/21.
 //
 
 #include "daliscm.h"
@@ -50,45 +50,44 @@ void ConstructDaliFlow() {
   if (!all_steps.empty()) return;
 
   all_steps.reserve(20);
-  AddStep(initDali_str);
-  AddStep(readLEF_str);
-  AddStep(readDEF_str);
-  AddStep(readCell_str);
-  AddStep(loadConf_str);
-  AddStep(setDensity_str);
-  AddStep(globalPlace_str);
-  AddStep(legalize_str);
-  AddStep(wellLegalize_str);
-  AddStep(savePlace_str);
-  AddStep(closeDali_str);
+  AddStep(kInitDaliStr);
+  AddStep(kReadLefStr);
+  AddStep(kReadDefStr);
+  AddStep(kReadCellStr);
+  AddStep(kLoadConfStr);
+  AddStep(kSetDensityStr);
+  AddStep(kGlobalPlaceStr);
+  AddStep(kLegalizeStr);
+  AddStep(kWellLegalizeStr);
+  AddStep(kSavePlaceStr);
+  AddStep(kCloseDaliStr);
 
-  AddTransition(initDali_str, readLEF_str);
-  AddTransition(readLEF_str, readDEF_str);
-  AddTransition(readDEF_str, readCell_str);
-  AddTransition(readCell_str, loadConf_str);
-  AddTransition(readCell_str, setDensity_str);
-  AddTransition(loadConf_str, setDensity_str);
-  AddTransition(setDensity_str, globalPlace_str);
-  AddTransition(globalPlace_str, legalize_str);
-  AddTransition(legalize_str, wellLegalize_str);
-  AddTransition(wellLegalize_str, savePlace_str);
-  AddTransition(savePlace_str, closeDali_str);
-  AddTransition(closeDali_str, initDali_str);
+  AddTransition(kInitDaliStr, kReadLefStr);
+  AddTransition(kReadLefStr, kReadDefStr);
+  AddTransition(kReadDefStr, kReadCellStr);
+  AddTransition(kReadCellStr, kLoadConfStr);
+  AddTransition(kReadCellStr, kSetDensityStr);
+  AddTransition(kLoadConfStr, kSetDensityStr);
+  AddTransition(kSetDensityStr, kGlobalPlaceStr);
+  AddTransition(kGlobalPlaceStr, kLegalizeStr);
+  AddTransition(kLegalizeStr, kWellLegalizeStr);
+  AddTransition(kWellLegalizeStr, kSavePlaceStr);
+  AddTransition(kSavePlaceStr, kCloseDaliStr);
 
-  for (auto &step_ptr: all_steps) {
+  /*for (auto &step_ptr: all_steps) {
     std::cout << "Step name: " << step_ptr->cmd << "\n";
     std::cout << "    Legal next step: ";
     for (auto &next_step_ptr: step_ptr->next) {
       std::cout << next_step_ptr->cmd << "  ";
     }
     std::cout << "\n";
-  }
+  }*/
 }
 
 bool CheckStepLegal(const char *step_to_execute) {
   if (cur_step == nullptr) {
-    if (step_to_execute != initDali_str) {
-      printf("Next legal step: %s", initDali_str);
+    if (step_to_execute != kInitDaliStr) {
+      printf("Next legal step: %s\n", kInitDaliStr);
       return false;
     }
     return true;
@@ -104,21 +103,11 @@ bool CheckStepLegal(const char *step_to_execute) {
   return false;
 }
 
-int process_runtest(int argc, char **argv) {
-  if (argc > 1) {
-    printf("Tama is a %s.\n", argv[1]);
-  } else {
-    printf("Tama is a cat.\n");
-  }
-
-  return 1;
-}
-
 int process_initDali(int argc, char **argv) {
   ConstructDaliFlow();
+  if (!CheckStepLegal(kInitDaliStr)) return 0;
+  cur_step = step_map[kInitDaliStr];
 
-  if (!CheckStepLegal(initDali_str)) return 0;
-  cur_step = step_map[initDali_str];
   // initialize verbosity level
   int verbose_level = 3;
   for (int i = 1; i < argc;) {
@@ -151,7 +140,7 @@ int process_initDali(int argc, char **argv) {
       break;
     default:DaliExpects(false, "This is not supposed to happen");
   }
-  init_logging(s_lvl);
+  InitLogging(s_lvl);
 
   // instantiate a Circuit
   if (circuit != nullptr) {
@@ -185,8 +174,8 @@ int process_initDali(int argc, char **argv) {
 }
 
 int process_readLef(int argc, char **argv) {
-  if (!CheckStepLegal(readLEF_str)) return 0;
-  cur_step = step_map[readLEF_str];
+  if (!CheckStepLegal(kReadLefStr)) return 0;
+  cur_step = step_map[kReadLefStr];
   if (circuit == nullptr) {
     printf("Please initialize Dali before reading LEF file\n");
     return 0;
@@ -214,7 +203,7 @@ int process_readLef(int argc, char **argv) {
     }
     std::string lef_file(argv[1]);
 
-    ReadLEF(lef_file, circuit);
+    ReadLef(lef_file, circuit);
     read_lef_done = true;
   } else {
     printf("Usage: readLEF <lefFile> [-g grid_value_x, grid_value_y]\n");
@@ -224,8 +213,8 @@ int process_readLef(int argc, char **argv) {
 }
 
 int process_readDef(int argc, char **argv) {
-  if (!CheckStepLegal(readDEF_str)) return 0;
-  cur_step = step_map[readDEF_str];
+  if (!CheckStepLegal(kReadDefStr)) return 0;
+  cur_step = step_map[kReadDefStr];
 
   if (circuit == nullptr) {
     printf("Please initialize Dali before reading DEF file\n");
@@ -238,7 +227,7 @@ int process_readDef(int argc, char **argv) {
       return 0;
     }
     def_file_name = std::string(argv[1]);
-    ReadDEF(def_file_name, circuit);
+    ReadDef(def_file_name, circuit);
     read_def_done = true;
   } else {
     printf("Usage: readDEF <defFile>\n");
@@ -248,8 +237,8 @@ int process_readDef(int argc, char **argv) {
 }
 
 int process_readCell(int argc, char **argv) {
-  if (!CheckStepLegal(readCell_str)) return 0;
-  cur_step = step_map[readCell_str];
+  if (!CheckStepLegal(kReadCellStr)) return 0;
+  cur_step = step_map[kReadCellStr];
 
   if (circuit == nullptr) {
     printf("Please initialize Dali before reading CELL file\n");
@@ -276,8 +265,8 @@ int process_readCell(int argc, char **argv) {
 }
 
 int process_loadConf(int argc, char **argv) {
-  if (!CheckStepLegal(loadConf_str)) return 0;
-  cur_step = step_map[loadConf_str];
+  if (!CheckStepLegal(kLoadConfStr)) return 0;
+  cur_step = step_map[kLoadConfStr];
 
   if (gp == nullptr || lg == nullptr || wlg == nullptr) {
     printf("Please initialize Dali before loading placement configuration file\n");
@@ -296,8 +285,8 @@ int process_loadConf(int argc, char **argv) {
 }
 
 int process_setDensity(int argc, char **argv) {
-  if (!CheckStepLegal(setDensity_str)) return 0;
-  cur_step = step_map[setDensity_str];
+  if (!CheckStepLegal(kSetDensityStr)) return 0;
+  cur_step = step_map[kSetDensityStr];
 
   if (gp == nullptr) {
     printf("Please initialize Dali before specifying placement target density");
@@ -319,8 +308,8 @@ int process_setDensity(int argc, char **argv) {
 }
 
 int process_globalPlace(int argc, char **argv) {
-  if (!CheckStepLegal(globalPlace_str)) return 0;
-  cur_step = step_map[globalPlace_str];
+  if (!CheckStepLegal(kGlobalPlaceStr)) return 0;
+  cur_step = step_map[kGlobalPlaceStr];
 
   gp->SetInputCircuit(circuit);
   gp->SetBoundaryDef();
@@ -331,8 +320,8 @@ int process_globalPlace(int argc, char **argv) {
 }
 
 int process_legalize(int argc, char **argv) {
-  if (!CheckStepLegal(legalize_str)) return 0;
-  cur_step = step_map[legalize_str];
+  if (!CheckStepLegal(kLegalizeStr)) return 0;
+  cur_step = step_map[kLegalizeStr];
 
   lg->TakeOver(gp);
   lg->StartPlacement();
@@ -340,8 +329,8 @@ int process_legalize(int argc, char **argv) {
 }
 
 int process_wellLegalize(int argc, char **argv) {
-  if (!CheckStepLegal(wellLegalize_str)) return 0;
-  cur_step = step_map[wellLegalize_str];
+  if (!CheckStepLegal(kWellLegalizeStr)) return 0;
+  cur_step = step_map[kWellLegalizeStr];
 
   wlg->TakeOver(gp);
   wlg->StartPlacement();
@@ -349,8 +338,8 @@ int process_wellLegalize(int argc, char **argv) {
 }
 
 int process_savePlace(int argc, char **argv) {
-  if (!CheckStepLegal(savePlace_str)) return 0;
-  cur_step = step_map[savePlace_str];
+  if (!CheckStepLegal(kSavePlaceStr)) return 0;
+  cur_step = step_map[kSavePlaceStr];
 
   if (circuit == nullptr) {
     printf("Please initialize Dali before saving DEF file\n");
@@ -368,10 +357,9 @@ int process_savePlace(int argc, char **argv) {
 }
 
 int process_closeDali(int argc, char **argv) {
-  if (!CheckStepLegal(closeDali_str)) return 0;
   cur_step = nullptr;
 
-  close_logging();
+  CloseLogging();
 
   if (circuit!=nullptr) free(circuit);
   circuit = nullptr;
@@ -389,12 +377,6 @@ int process_closeDali(int argc, char **argv) {
   read_lef_done = false;
   read_def_done = false;
   read_cell_done = false;
-
-  step_map.clear();
-  for (auto &step_ptr: all_steps) {
-    free(step_ptr);
-  }
-  all_steps.clear();
 
   printf("Dali closed\n");
   return 1;

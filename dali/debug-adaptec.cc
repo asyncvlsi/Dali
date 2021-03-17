@@ -20,7 +20,7 @@
 using namespace dali;
 
 int main(int argc, char **argv) {
-  init_logging(boost::log::trivial::trace);
+  InitLogging(boost::log::trivial::trace);
 
   double tune_param;
   for (int i = 1; i < argc;) {
@@ -66,8 +66,8 @@ int main(int argc, char **argv) {
 #endif
 
   circuit.SetGridValue(0.01, 0.01);
-  ReadLEF(adaptec1_lef, circuit);
-  ReadDEF(adaptec1_def, circuit);
+  circuit.ReadLefFile(adaptec1_lef);
+  circuit.ReadDefFile(adaptec1_def);
   //circuit.ReportBlockType();
   //circuit.ReportBlockList();
   //circuit.ReportNetList();

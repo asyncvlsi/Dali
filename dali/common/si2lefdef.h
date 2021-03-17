@@ -1,5 +1,5 @@
 //
-// Created by Yihang Yang on 4/1/2020.
+// Created by Yihang Yang on 11/12/2020.
 //
 
 #ifndef DALI_SRC_COMMON_SI2LEFDEF_H_
@@ -9,8 +9,8 @@
 
 namespace dali {
 
-void ReadLEF(std::string const &lef_file_name, Circuit *circuit);
-void ReadDEF(std::string const &def_file_name, Circuit *circuit);
+void ReadLef(std::string const &lef_file_name, Circuit *circuit);
+void ReadDef(std::string const &def_file_name, Circuit *circuit);
 
 }
 

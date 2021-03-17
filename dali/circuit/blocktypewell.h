@@ -1,5 +1,5 @@
 //
-// Created by Yihang Yang on 2019-12-23.
+// Created by Yihang Yang on 12/23/19.
 //
 
 #ifndef DALI_SRC_CIRCUIT_BLOCKTYPEWELL_H_

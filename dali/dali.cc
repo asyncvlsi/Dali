@@ -21,7 +21,7 @@ void ReportUsage();
 
 
 int main(int argc, char *argv[]) {
-  init_logging(boost::log::trivial::info);
+  InitLogging(boost::log::trivial::info);
   PrintSoftwareStatement();
 
   int num_of_thread_openmp = 1;

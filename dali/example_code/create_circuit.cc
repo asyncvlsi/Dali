@@ -1,5 +1,5 @@
 //
-// Created by Yihang Yang on 2020-06-07.
+// Created by Yihang Yang on 6/7/20.
 //
 
 /**** the following is an example to add a BlockType with one cell pin to a Circuit
@@ -17,6 +17,7 @@
 using namespace dali;
 
 int main() {
+  InitLogging();
   BOOST_LOG_TRIVIAL(info) << "Example of creating a Circuit instance\n";
 
   // create a blank circuit

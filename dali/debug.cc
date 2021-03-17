@@ -1,5 +1,5 @@
 //
-// Created by Yihang Yang on 2019-05-14.
+// Created by Yihang Yang on 5/14/19.
 //
 
 #include <ctime>
@@ -22,8 +22,8 @@
 using namespace dali;
 
 int main() {
-  init_logging(boost::log::trivial::trace);
-  init_logging(boost::log::trivial::trace);
+  InitLogging(boost::log::trivial::trace);
+  InitLogging(boost::log::trivial::trace);
   Circuit circuit;
 
   //int num_of_thread_galois = 6;

@@ -1,5 +1,5 @@
 //
-// Created by Yihang Yang on 2019-03-26.
+// Created by Yihang Yang on 3/23/19.
 //
 
 #include "circuit.h"
@@ -268,11 +268,11 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
 #endif
 
 void Circuit::ReadLefFile(std::string const &name_of_file) {
-  ReadLEF(name_of_file, this);
+  ReadLef(name_of_file, this);
 }
 
 void Circuit::ReadDefFile(std::string const &name_of_file) {
-  ReadDEF(name_of_file, this);
+  ReadDef(name_of_file, this);
 }
 
 void Circuit::ReadCellFile(std::string const &name_of_file) {

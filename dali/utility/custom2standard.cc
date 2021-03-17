@@ -10,7 +10,7 @@
 #include "circuit.h"
 #include "common/global.h"
 #include "common/misc.h"
-
+//TODO: fix this
 VerboseLevel globalVerboseLevel = LOG_INFO;
 
 struct TypeLayerBBox {

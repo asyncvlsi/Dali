@@ -1,5 +1,5 @@
 //
-// Created by Yihang Yang on 3/14/2020.
+// Created by Yihang Yang on 3/14/20.
 //
 
 #ifndef DALI_SRC_PLACER_WELLLEGALIZER_STDCLUSTERWELLLEGALIZER_H_

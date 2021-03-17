@@ -1,5 +1,5 @@
 //
-// Created by Yihang Yang on 2019-07-17.
+// Created by Yihang Yang on 7/17/19.
 //
 
 #ifndef DALI_FREESEGMENTLIST_H

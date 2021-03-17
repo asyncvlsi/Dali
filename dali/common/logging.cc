@@ -15,8 +15,8 @@ boost::shared_ptr< file_sink_t > g_file_sink = nullptr;
 typedef boost::log::sinks::synchronous_sink< boost::log::sinks::basic_text_ostream_backend<char> > console_sink_t;
 boost::shared_ptr< console_sink_t > g_console_sink = nullptr;
 
-void init_logging(boost::log::trivial::severity_level sl) {
-  close_logging();
+void InitLogging(boost::log::trivial::severity_level sl) {
+  CloseLogging();
 
   std::string base_name = "dali";
   std::string extension = ".log";
@@ -58,7 +58,7 @@ void init_logging(boost::log::trivial::severity_level sl) {
 //  BOOST_LOG_TRIVIAL(trace) << std::scientific << std::setprecision(4);
 }
 
-void close_logging() {
+void CloseLogging() {
   if (g_file_sink != nullptr) {
     boost::log::core::get()->remove_sink(g_file_sink);
     g_file_sink.reset();

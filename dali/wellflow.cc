@@ -15,7 +15,7 @@
 using namespace dali;
 
 int main(int argc, char *argv[]) {
-  init_logging(boost::log::trivial::info);
+  InitLogging(boost::log::trivial::info);
   int num_of_thread = 1;
   omp_set_num_threads(num_of_thread);
 

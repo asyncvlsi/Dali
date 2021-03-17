@@ -1,5 +1,5 @@
 //
-// Created by Yihang Yang on 2019-08-07.
+// Created by Yihang Yang on 8/7/19.
 //
 
 #ifndef DALI_SRC_PLACER_GLOBALPLACER_GPSIMPL_BOXBIN_H_

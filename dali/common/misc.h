@@ -1,5 +1,5 @@
 //
-// Created by Yihang Yang on 2019-07-25.
+// Created by Yihang Yang on 7/25/19.
 //
 
 #ifndef DALI_SRC_COMMON_MISC_H_
