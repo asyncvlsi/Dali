@@ -304,7 +304,7 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
     if (layer.GetType() == phydb::ROUTING) {
       std::string layer_name = layer.GetName();
 
-      float pitch_x = -1, pitch_y = -1;
+      double pitch_x = -1, pitch_y = -1;
       layer.GetPitch(pitch_x, pitch_y);
 
       double min_width = layer.GetMinWidth();
@@ -313,8 +313,13 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
       }
       DaliExpects(min_width > 0, "MinWidth and Width not found in PhyDB for layer: " + layer_name);
 
-      // TODO: check min spacing
-      double min_spacing = layer.GetEolSpacings()->at(0).GetSpacing();
+      double min_spacing = 0;
+      auto &spacing_table = *(layer.GetSpacingTable());
+      if (spacing_table.GetNRow() >= 1 && spacing_table.GetNCol() >= 1) {
+        min_spacing = spacing_table.GetSpacingAt(0, 0);
+      } else {
+        min_spacing = layer.GetSpacing();
+      }
       DaliExpects(min_spacing > 0, "MinSpacing not found in PhyDB for layer: " + layer_name);
 
       double min_area = layer.GetArea();
@@ -438,14 +443,62 @@ void Circuit::LoadDesign(phydb::PhyDB *phy_db_ptr) {
       AddIOPinToNet(iopin_name, net_name);
     }
     int sz = comp_names.size();
-    for (int i=0; i<sz; ++i) {
+    for (int i = 0; i < sz; ++i) {
       AddBlkPinToNet(comp_names[i], pin_names[i], net_name);
     }
   }
 }
 
 void Circuit::LoadWell(phydb::PhyDB *phy_db_ptr) {
+  auto &phy_db_tech = *(phy_db_ptr->GetTechPtr());
+  if (!phy_db_tech.IsWellInfoSet()) {
+    BOOST_LOG_TRIVIAL(info) << "N/P-Well layer info not found in PhyDB\n";
+    return;
+  }
 
+  double same_diff_spacing = 0, any_diff_spacing = 0;
+  phy_db_tech.GetDiffWellSpacing(same_diff_spacing, any_diff_spacing);
+  SetLegalizerSpacing(same_diff_spacing, any_diff_spacing);
+
+  auto *n_well_layer = phy_db_tech.GetNwellLayerPtr();
+  if (n_well_layer != nullptr) {
+    double width = n_well_layer->GetWidth();
+    double spacing = n_well_layer->GetSpacing();
+    double op_spacing = n_well_layer->GetOpSpacing();
+    double max_plug_dist = n_well_layer->GetMaxPlugDist();
+    double overhang = n_well_layer->GetOverhang();
+    SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
+  }
+
+  auto *p_well_layer = phy_db_tech.GetPwellLayerPtr();
+  if (p_well_layer != nullptr) {
+    double width = p_well_layer->GetWidth();
+    double spacing = p_well_layer->GetSpacing();
+    double op_spacing = p_well_layer->GetOpSpacing();
+    double max_plug_dist = p_well_layer->GetMaxPlugDist();
+    double overhang = p_well_layer->GetOverhang();
+    SetPWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
+  }
+
+  for (auto &macro: phy_db_tech.GetMacrosRef()) {
+    std::string macro_name(macro.GetName());
+    double width = macro.GetWidth();
+    double height = macro.GetHeight();
+    BlockType *blk_type = getBlockType(macro_name);
+    auto *macro_well = macro.GetWellPtr();
+    DaliExpects(macro_well!= nullptr, "No well info provided for MACRO: " + macro_name);
+    BlockTypeWell *well = AddBlockTypeWell(macro_name);
+
+    auto *n_rect = macro_well->GetNwellRectPtr();
+    auto *p_rect = macro_well->GetPwellRectPtr();
+    DaliExpects(n_rect!= nullptr || p_rect!= nullptr, "N/P-well geometries not provided for MACRO: " + macro_name);
+    if (n_rect != nullptr) {
+      setWellRect(macro_name, true, n_rect->LLX(), n_rect->LLY(), n_rect->URX(), n_rect->URY());
+    }
+    if (p_rect !=nullptr) {
+      setWellRect(macro_name, false, p_rect->LLX(), p_rect->LLY(), p_rect->URX(), p_rect->URY());
+    }
+  }
 }
 
 void Circuit::InitializeFromPhyDB(phydb::PhyDB *phy_db_ptr) {
@@ -453,6 +506,7 @@ void Circuit::InitializeFromPhyDB(phydb::PhyDB *phy_db_ptr) {
 
   LoadTech(phy_db_ptr);
   LoadDesign(phy_db_ptr);
+  LoadWell(phy_db_ptr);
 }
 
 void Circuit::ReadLefFile(std::string const &name_of_file) {

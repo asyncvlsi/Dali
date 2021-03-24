@@ -23,8 +23,6 @@ using namespace dali;
 
 int main() {
   InitLogging(boost::log::trivial::trace);
-  InitLogging(boost::log::trivial::trace);
-  Circuit circuit;
 
   //int num_of_thread_galois = 6;
   //galois::SharedMemSys G;
@@ -44,9 +42,16 @@ int main() {
 
   std::string lef_file_name = "ICCAD2020/out.lef";
   std::string def_file_name = "ICCAD2020/out.def";
-  std::string cell_file_name("ICCAD2020/out.cell");
+  std::string cell_file_name ="ICCAD2020/out.cell";
 
   // read LEF/DEF/CELL
+  //phydb::PhyDB phy_db;
+  //phy_db.ReadLef(lef_file_name);
+  //phy_db.ReadDef(def_file_name);
+  //phy_db.ReadCell(cell_file_name);
+
+  Circuit circuit;
+  circuit.InitializeFromPhyDB(&phy_db);
   circuit.ReadLefFile(lef_file_name);
   circuit.ReadDefFile(def_file_name);
   circuit.ReadCellFile(cell_file_name);
