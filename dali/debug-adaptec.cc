@@ -8,6 +8,7 @@
 #include <iostream>
 
 #include <config.h>
+#include <phydb/phydb.h>
 
 #include "circuit.h"
 #include "common/logging.h"
@@ -40,8 +41,6 @@ int main(int argc, char **argv) {
     }
   }
 
-  Circuit circuit;
-
   //std::string config_file = "dali.conf";
   //config_read(config_file.c_str());
   //std::string dump_file = "dali_dump.conf";
@@ -65,9 +64,16 @@ int main(int argc, char **argv) {
   std::string adaptec1_def = "ISPD2005/adaptec1.def";
 #endif
 
-  circuit.SetGridValue(0.01, 0.01);
-  circuit.ReadLefFile(adaptec1_lef);
-  circuit.ReadDefFile(adaptec1_def);
+  phydb::PhyDB phy_db;
+  phy_db.SetPlacementGrids(0.01, 0.01);
+  phy_db.ReadLef(adaptec1_lef);
+  phy_db.ReadDef(adaptec1_def);
+
+  Circuit circuit;
+  circuit.InitializeFromPhyDB(&phy_db);
+  //circuit.SetGridValue(0.01, 0.01);
+  //circuit.ReadLefFile(adaptec1_lef);
+  //circuit.ReadDefFile(adaptec1_def);
   //circuit.ReportBlockType();
   //circuit.ReportBlockList();
   //circuit.ReportNetList();

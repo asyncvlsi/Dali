@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <boost/functional/hash.hpp>
+#include <phydb/phydb.h>
 
 #include "blkpairnets.h"
 #include "block.h"
@@ -60,6 +61,8 @@ class Circuit {
 #ifdef USE_OPENDB
   odb::dbDatabase *db_ptr_; // pointer to openDB database
 #endif
+
+  phydb::PhyDB *phy_db_ptr_;
 
   // create fake N/P-well info for cells
   void LoadImaginaryCellFile();
@@ -113,12 +116,12 @@ class Circuit {
   // create well information container for a given BlockType.
   BlockTypeWell *AddBlockTypeWell(BlockType *blk_type);
 
-  /****static functions****/
+  /****helper functions****/
   // splits a line into many words
-  static void StrSplit(std::string &line, std::vector<std::string> &res);
+  void StrSplit(std::string &line, std::vector<std::string> &res);
 
   // finds the first number in a string.
-  static int FindFirstNumber(std::string &str);
+  int FindFirstNumber(std::string &str);
 
  public:
 
@@ -137,6 +140,11 @@ class Circuit {
   // initialize a blank circuit from openDB database
   void InitializeFromDB(odb::dbDatabase *db_ptr);
 #endif
+
+  void LoadTech(phydb::PhyDB *phy_db_ptr); // LEF
+  void LoadDesign(phydb::PhyDB *phy_db_ptr); // DEF
+  void LoadWell(phydb::PhyDB *phy_db_ptr); // CELL
+  void InitializeFromPhyDB(phydb::PhyDB *phy_db_ptr);
 
   // LEF/DEF loader
   void ReadLefFile(std::string const &name_of_file);
@@ -345,6 +353,10 @@ class Circuit {
                 "Need to set def_distance_microns before setting placement boundary using Circuit::SetDieArea()");
     double factor_x = tech_.grid_value_x_ * design_.def_distance_microns;
     double factor_y = tech_.grid_value_y_ * design_.def_distance_microns;
+    DaliExpects(lower_x % (int) std::round(factor_x) == 0, "expects the left boundary coordinate is integer multiple of grid_value_x");
+    DaliExpects(lower_y % (int) std::round(factor_y) == 0, "expects the bottom boundary coordinate is integer multiple of grid_value_y");
+    DaliExpects(upper_x % (int) std::round(factor_x) == 0, "expects the right boundary coordinate is integer multiple of grid_value_x");
+    DaliExpects(upper_y % (int) std::round(factor_y) == 0, "expects the top boundary coordinate is integer multiple of grid_value_y");
     SetBoundary((int) std::round(lower_x / factor_x),
                 (int) std::round(lower_y / factor_y),
                 (int) std::round(upper_x / factor_x),
@@ -504,7 +516,7 @@ class Circuit {
   void ReportBriefSummary() const;
 
   /************************************************
-   * The following APIs are for in LEF
+   * The following APIs are for in CELL
    * ************************************************/
 
   // set N-well layer parameters

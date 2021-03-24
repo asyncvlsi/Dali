@@ -38,7 +38,7 @@ void CloseLogging();
 
 inline void DaliExpects(bool e, const std::string &error_message) {
   if (!e) {
-    BOOST_LOG_TRIVIAL(fatal) << "\033[0;31m" << "FATAL ERROR:" << "\n"
+    BOOST_LOG_TRIVIAL(fatal) << "\033[0;31m" << "Dali FATAL ERROR:" << "\n"
                              << "    " << error_message << "\033[0m" << std::endl;
     exit(1);
   }
@@ -46,7 +46,7 @@ inline void DaliExpects(bool e, const std::string &error_message) {
 
 inline void DaliWarns(bool e, const std::string &warning_message) {
   if (e) {
-    BOOST_LOG_TRIVIAL(warning) << "WARNING:" << "\n"
+    BOOST_LOG_TRIVIAL(warning) << "Dali WARNING:" << "\n"
                                << "    " << warning_message << std::endl;
   }
 }

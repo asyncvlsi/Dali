@@ -267,6 +267,194 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
 }
 #endif
 
+void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
+  auto &phy_db_tech = *(phy_db_ptr->GetTechPtr());
+
+  // 1. lef database microns and manufacturing grid
+  DaliExpects(phy_db_tech.GetDatabaseMicron() > 0, "Bad DATABASE MICRONS from PhyDB");
+  setDatabaseMicron(phy_db_tech.GetDatabaseMicron());
+  BOOST_LOG_TRIVIAL(info) << "DATABASE MICRONS " << tech_.database_microns_ << "\n";
+  if (phy_db_tech.GetManufacturingGrid() > 1e-6) {
+    setManufacturingGrid(phy_db_tech.GetManufacturingGrid());
+  } else {
+    setManufacturingGrid(1.0 / tech_.database_microns_);
+  }
+  BOOST_LOG_TRIVIAL(info) << "MANUFACTURINGGRID " << tech_.manufacturing_grid_ << "\n";
+
+  // 2. placement grid and metal layers
+  double placement_grid_value_x = 0, placement_grid_value_y = 0;
+  bool is_placement_grid_set = phy_db_tech.GetPlacementGrids(placement_grid_value_x, placement_grid_value_y);
+  if (is_placement_grid_set) {
+    SetGridValue(placement_grid_value_x, placement_grid_value_y);
+  } else {
+    BOOST_LOG_TRIVIAL(info) << "Placement grid not set in PhyDB\n";
+    BOOST_LOG_TRIVIAL(info) << "Checking Sites\n";
+    auto &sites = phy_db_tech.GetSitesRef();
+    if (!sites.empty()) {
+      placement_grid_value_x = sites[0].GetWidth();
+      placement_grid_value_y = sites[0].GetHeight();
+      SetGridValue(placement_grid_value_x, placement_grid_value_y);
+      setRowHeight(placement_grid_value_y);
+    } else {
+      BOOST_LOG_TRIVIAL(info) << "No Sites found\n";
+    }
+  }
+
+  for (auto &layer: phy_db_tech.GetLayersRef()) {
+    if (layer.GetType() == phydb::ROUTING) {
+      std::string layer_name = layer.GetName();
+
+      float pitch_x = -1, pitch_y = -1;
+      layer.GetPitch(pitch_x, pitch_y);
+
+      double min_width = layer.GetMinWidth();
+      if (min_width <= 0) {
+        min_width = layer.GetWidth();
+      }
+      DaliExpects(min_width > 0, "MinWidth and Width not found in PhyDB for layer: " + layer_name);
+
+      // TODO: check min spacing
+      double min_spacing = layer.GetEolSpacings()->at(0).GetSpacing();
+      DaliExpects(min_spacing > 0, "MinSpacing not found in PhyDB for layer: " + layer_name);
+
+      double min_area = layer.GetArea();
+      DaliExpects(min_area >= 0, "Dali expects a non-negative MinArea for layer: " + layer_name);
+
+      auto direction = MetalDirection(layer.GetDirection());
+      AddMetalLayer(layer_name, min_width, min_spacing, min_area, pitch_x, pitch_y, direction);
+    }
+  }
+  if (!tech_.grid_set_) {
+    SetGridUsingMetalPitch();
+  }
+
+  // 3. load all macros
+  for (auto &macro: phy_db_tech.GetMacrosRef()) {
+    std::string macro_name(macro.GetName());
+    double width = macro.GetWidth();
+    double height = macro.GetHeight();
+    BlockType *blk_type = nullptr;
+    if (macro_name.find("welltap") != std::string::npos) {
+      blk_type = AddWellTapBlockType(macro_name, width, height);
+    } else {
+      blk_type = AddBlockType(macro_name, width, height);
+    }
+    auto &macro_pins = macro.GetPinsRef();
+    for (auto &pin: macro_pins) {
+      std::string pin_name(pin.GetName());
+      if (pin_name == "Vdd" || pin_name == "GND") continue;
+
+      bool is_input = true;
+      auto pin_direction = pin.GetDirection();
+      is_input = (pin_direction == phydb::INPUT);
+      Pin *new_pin = blk_type->AddPin(pin_name, is_input);
+
+      auto &layer_rects = pin.GetLayerRectRef();
+      DaliExpects(!layer_rects.empty(), "No physical pins, Macro: " + *blk_type->NamePtr() + ", pin: " + pin_name);
+      for (auto &layer_rect: layer_rects) {
+        auto &rects = layer_rect.GetRects();
+        for (auto &rect: rects) {
+          double llx = rect.LLX() / tech_.grid_value_x_;
+          double urx = rect.URX() / tech_.grid_value_x_;
+          double lly = rect.LLY() / tech_.grid_value_y_;
+          double ury = rect.URY() / tech_.grid_value_y_;
+          new_pin->AddRect(llx, lly, urx, ury);
+        }
+      }
+      DaliExpects(!new_pin->RectEmpty(),
+                  "No geometries provided for pin " + pin_name + " in Macro: " + *blk_type->NamePtr());
+    }
+  }
+}
+
+void Circuit::LoadDesign(phydb::PhyDB *phy_db_ptr) {
+  auto &phy_db_design = *(phy_db_ptr->GetDesignPtr());
+
+  // 1. reserve space for COMPONENTS, IOPINS, and NETS
+  int components_count = 0, pins_count = 0, nets_count = 0;
+  auto &components = phy_db_design.GetComponentsRef();
+  components_count = components.size();
+  auto &iopins = phy_db_design.GetIoPinsRef();
+  pins_count = iopins.size();
+  auto &nets = phy_db_design.GetNetsRef();
+  nets_count = nets.size();
+  setListCapacity(components_count, pins_count, nets_count);
+
+  BOOST_LOG_TRIVIAL(info) << "components count: " << components_count << "\n"
+                          << "pins count:        " << pins_count << "\n"
+                          << "nets count:       " << nets_count << "\n";
+
+
+  // 2. load UNITS DISTANCE MICRONS and DIEAREA
+  setUnitsDistanceMicrons(phy_db_design.GetUnitsDistanceMicrons());
+  auto die_area = phy_db_design.GetDieArea();
+  design_.die_area_offset_x_ = 0;
+  design_.die_area_offset_y_ = 0;
+  setDieArea(die_area.LLX(), die_area.LLY(), die_area.URX(), die_area.URY());
+
+  // 3. load all components
+  for (auto &comp: components) {
+    std::string blk_name(comp.GetName());
+    std::string blk_type_name(comp.GetMacroName());
+    auto location = comp.GetLocation();
+    int llx = location.x;
+    int lly = location.y;
+    llx = (int) std::round(llx / tech_.grid_value_x_ / design_.def_distance_microns);
+    llx = (int) std::round(llx / tech_.grid_value_y_ / design_.def_distance_microns);
+    auto place_status = PlaceStatus(comp.GetPlacementStatus());
+    auto orient = BlockOrient(comp.GetOrientation());
+    AddBlock(blk_name, blk_type_name, llx, lly, place_status, orient);
+  }
+
+  // 4. load all IOPINs
+  for (auto &iopin: iopins) {
+    std::string iopin_name(iopin.GetName());
+    auto location = iopin.GetLocation();
+    int iopin_x = location.x;
+    int iopin_y = location.y;
+    bool is_loc_set = (iopin.GetPlacementStatus() != phydb::UNPLACED);
+    auto sig_use = SignalUse(iopin.GetUse());
+    auto sig_dir = SignalDirection(iopin.GetDirection());
+
+    if (is_loc_set) {
+      AddIOPin(iopin_name, PLACED_, sig_use, sig_dir, iopin_x, iopin_y);
+    } else {
+      AddIOPin(iopin_name, UNPLACED_, sig_use, sig_dir);
+    }
+  }
+
+  // 5. load all NETs
+  for (auto &net: nets) {
+    std::string net_name(net.GetName());
+    auto &comp_names = net.GetComponentNamesRef();
+    auto &pin_names = net.GetPinNamesRef();
+    auto &iopin_names = net.GetIoPinNamesRef();
+    DaliExpects(comp_names.size() == pin_names.size(),
+                "number of components does not equal to number of pins in NET: " + net_name);
+    int net_capacity = int(comp_names.size() + iopin_names.size());
+    AddNet(net_name, net_capacity, design_.normal_signal_weight);
+
+    for (auto &iopin_name: iopin_names) {
+      AddIOPinToNet(iopin_name, net_name);
+    }
+    int sz = comp_names.size();
+    for (int i=0; i<sz; ++i) {
+      AddBlkPinToNet(comp_names[i], pin_names[i], net_name);
+    }
+  }
+}
+
+void Circuit::LoadWell(phydb::PhyDB *phy_db_ptr) {
+
+}
+
+void Circuit::InitializeFromPhyDB(phydb::PhyDB *phy_db_ptr) {
+  phy_db_ptr_ = phy_db_ptr;
+
+  LoadTech(phy_db_ptr);
+  LoadDesign(phy_db_ptr);
+}
+
 void Circuit::ReadLefFile(std::string const &name_of_file) {
   ReadLef(name_of_file, this);
 }
@@ -533,7 +721,8 @@ void Circuit::SetBlockTypeSize(BlockType *blk_type_ptr, double width, double hei
   DaliExpects(residual < 1e-6, "BlockType width is not integer multiple of grid value in X: " + blk_type_ptr->Name());
 
   residual = Residual(height, tech_.grid_value_y_);
-  DaliExpects(residual < 1e-6, "BlockType height is not integer multiple of grid value in Y: " + blk_type_ptr->Name());
+  DaliExpects(residual < 1e-6,
+              "BlockType height is not integer multiple of grid value in Y: " + blk_type_ptr->Name());
 
   int gridded_width = (int) std::round(width / GridValueX());
   int gridded_height = (int) std::round(height / GridValueY());
@@ -659,7 +848,7 @@ void Circuit::AddDummyIOPinBlockType() {
    * The size of "PIN" BlockType is 0 (width) and 0(height).
    * The relative location of the only cell pin "pin" is (0,0) with size 0.
    * ****/
-  std::string iopin_type_name("PIN");
+  std::string iopin_type_name("__PIN__");
   auto io_pin_type = AddBlockTypeWithGridUnit(iopin_type_name, 0, 0);
   std::string tmp_pin_name("pin");
   // TO-DO, the value of @param is_input may not be true
@@ -840,7 +1029,8 @@ void Circuit::ReportBriefSummary() const {
   BOOST_LOG_TRIVIAL(info) << "    right:  " << RegionURX() << "\n";
   BOOST_LOG_TRIVIAL(info) << "    bottom: " << RegionLLY() << "\n";
   BOOST_LOG_TRIVIAL(info) << "    top:    " << RegionURY() << "\n";
-  BOOST_LOG_TRIVIAL(info) << "  average movable width, height: " << AveMovBlkWidth() << ", " << AveMovBlkHeight() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "  average movable width, height: " << AveMovBlkWidth() << ", " << AveMovBlkHeight()
+                          << "\n";
   BOOST_LOG_TRIVIAL(info) << "  white space utility: " << WhiteSpaceUsage() << "\n";
 }
 
@@ -1279,7 +1469,8 @@ void Circuit::SaveDefFile(std::string const &name_of_file, std::string const &de
     ost << "COMPONENTS " << design_.block_list.size() - design_.pre_placed_io_count_ + design_.well_tap_list.size()
         << " ;\n";
   } else {
-    ost << "COMPONENTS " << design_.block_list.size() - design_.pre_placed_io_count_ + design_.well_tap_list.size() + 1
+    ost << "COMPONENTS "
+        << design_.block_list.size() - design_.pre_placed_io_count_ + design_.well_tap_list.size() + 1
         << " ;\n";
     ost << "- "
         << "npwells "

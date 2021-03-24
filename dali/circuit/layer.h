@@ -96,7 +96,7 @@ class WellLayer : public Layer {
     DaliExpects(overhang >= 0, "Negative well/diffusion overhang not allowed: WellLayer::SetOverhang()\n");
     overhang_ = overhang;
   }
-  void SetParams(double width, double height, double op_spacing, double max_plug_dist, double overhang);
+  void SetParams(double width, double spacing, double op_spacing, double max_plug_dist, double overhang);
   void Report();
 };
 

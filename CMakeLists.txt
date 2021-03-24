@@ -44,7 +44,7 @@ if (NOT ACT_LIBRARY)
 else ()
     message(STATUS "libact.a found")
 endif()
-link_libraries(libact.a libvlsilib.a libactscm.a libactscmcli.a)
+link_libraries(libact.a libvlsilib.a libactscm.a libactscmcli.a libphydb.a)
 
 ######################################
 # Detect if $GALOIS_INSTALL_DIR exists, which is the path to Galois installation
@@ -154,6 +154,7 @@ include_directories(
 
 # All used circuit and placer source code
 file(GLOB SOURCES
+        dali/dali.cc
         dali/circuit/*.cc
         dali/common/*.cc
         dali/daliscm/*.cc
@@ -179,7 +180,7 @@ add_library(dalilib
 
 # Stand-alone placer, building from the dalilib library
 add_executable(dali
-        dali/dali.cc)
+        dali/dali_standalone.cc)
 target_link_libraries(dali
         PRIVATE dalilib
         )
