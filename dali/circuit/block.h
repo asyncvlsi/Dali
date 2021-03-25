@@ -64,10 +64,10 @@ class Block {
 
   /****member functions for attributes access****/
   // get the Block name
-  const std::string *NamePtr() const { return &(name_num_pair_ptr_->first); }
+  const std::string *NamePtr() { return &(name_num_pair_ptr_->first); }
 
   // get the Block name
-  std::string Name() const { return std::string(name_num_pair_ptr_->first); }
+  std::string Name() { return std::string(name_num_pair_ptr_->first); }
 
   // get BlockType of this Block
   BlockType *TypePtr() const { return type_ptr_; }

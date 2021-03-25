@@ -57,12 +57,20 @@ class Pin {
     rect_list_.emplace_back(llx, lly, urx, ury);
   }
 
+  void AddRectOnly(double llx, double lly, double urx, double ury) {
+    rect_list_.emplace_back(llx, lly, urx, ury);
+  }
+
   bool IsInput() const { return is_input_; }
   void SetIOType(bool is_input) { is_input_ = is_input; }
 
   bool RectEmpty() const { return rect_list_.empty(); }
   void Report() const {
-    BOOST_LOG_TRIVIAL(info)   << *Name() << " (" << OffsetX() << ", " << OffsetY() << ")";
+    BOOST_LOG_TRIVIAL(info) << *Name() << " (" << OffsetX() << ", " << OffsetY() << ")";
+    for (int i=0; i<8; ++i) {
+      BOOST_LOG_TRIVIAL(info) << "   (" << x_offset_[i] << ", " << y_offset_[i] << ")";
+    }
+    BOOST_LOG_TRIVIAL(info) << "\n";
   }
 };
 

@@ -1407,7 +1407,7 @@ bool StdClusterWellLegalizer::StartPlacement() {
   //circuit_->GenMATLABWellTable("ori", false);
   //GenMatlabClusterTable("ori_result");
   ReportHPWL();
-  //BOOST_LOG_TRIVIAL(info) << "Start local reordering\n";
+  BOOST_LOG_TRIVIAL(info) << "Start local reordering\n";
   for (int i = 0; i < 6; ++i) {
     LocalReorderAllClusters();
     ReportHPWL();

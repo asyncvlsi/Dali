@@ -129,12 +129,12 @@ int macroBeginCB(lefrCallbackType_e type, const char *macroName, lefiUserData us
   }
   Circuit &circuit = *((Circuit *) userData);
   std::string tmpMacroName(macroName);
-  BlockType *&tmpMacro = circuit.getTechRef().last_blk_type_;
+  auto &tmpMacro = circuit.getTechRef().last_blk_type_;
   DaliExpects(tmpMacro == nullptr, "Expect an nullptr");
   if (tmpMacroName.find("welltap") != std::string::npos) {
-    tmpMacro = circuit.AddWellTapBlockType(tmpMacroName, 0, 0);
+    circuit.getTechRef().last_blk_type_ = circuit.AddWellTapBlockType(tmpMacroName, 0, 0);
   } else {
-    tmpMacro = circuit.AddBlockType(tmpMacroName, 0, 0);
+    circuit.getTechRef().last_blk_type_ = circuit.AddBlockType(tmpMacroName, 0, 0);
   }
   //BOOST_LOG_TRIVIAL(info)   << tmpMacro->Name() << "\n";
   return 0;
@@ -147,7 +147,7 @@ int getLefPins(lefrCallbackType_e type, lefiPin *pin, lefiUserData userData) {
   }
   Circuit &circuit = *((Circuit *) userData);
   Tech &tech = circuit.getTechRef();
-  BlockType *&tmpMacro = circuit.getTechRef().last_blk_type_;
+  auto &tmpMacro = circuit.getTechRef().last_blk_type_;
   DaliExpects(tmpMacro != nullptr, "tmp macro cannot be a nullptr when setting macro pin info");
   std::string tmpMacroName = circuit.getTechRef().last_blk_type_->Name();
 
@@ -177,7 +177,7 @@ int getLefPins(lefrCallbackType_e type, lefiPin *pin, lefiUserData userData) {
         double lly = pin->port(i)->getRect(j)->yl / circuit.GridValueY();
         double ury = pin->port(i)->getRect(j)->yh / circuit.GridValueY();
         //BOOST_LOG_TRIVIAL(info)   << "  PORT: " << llx << "  " << lly << "  " << urx << "  " << ury << "  " << "\n";
-        circuit.AddBlkTypePinRect(new_pin, llx, lly, urx, ury);
+        new_pin->AddRectOnly(llx, lly, urx, ury);
       }
     }
   }
@@ -201,7 +201,7 @@ int getLefMacros(lefrCallbackType_e type, lefiMacro *macro, lefiUserData userDat
 
   DaliExpects(originX == 0 && originY == 0, "Only support originX and originY equal 0");
   Circuit &circuit = *((Circuit *) userData);
-  BlockType *&tmpMacro = circuit.getTechRef().last_blk_type_;
+  auto &tmpMacro = circuit.getTechRef().last_blk_type_;
   circuit.SetBlockTypeSize(tmpMacro, sizeX, sizeY);
 
   //BOOST_LOG_TRIVIAL(info)   << "MACRO " << tmpMacro->Name() << "\n"
@@ -217,9 +217,13 @@ int macroEndCB(lefrCallbackType_e type, const char *macroName, lefiUserData user
     exit(2);
   }
   Circuit &circuit = *((Circuit *) userData);
-  BlockType *&tmpMacro = circuit.getTechRef().last_blk_type_;
+  auto &tmpMacro = circuit.getTechRef().last_blk_type_;
   DaliExpects(tmpMacro != nullptr, "A MACRO end before begin?");
   //BOOST_LOG_TRIVIAL(info)   << "END " << tmpMacro->Name() << "\n";
+  for (auto &pin: *(tmpMacro->PinList())) {
+    pin.InitOffset();
+  }
+
   tmpMacro = nullptr;
 
   return 0;
@@ -229,7 +233,6 @@ void ReadLef(std::string const &lef_file_name, Circuit *circuit) {
   DaliExpects(circuit != nullptr, "Cannot read LEF file for a null Circuit instance");
   //lefrInit();
   lefrInitSession(1);
-
   lefrSetUserData((lefiUserData) circuit);
 
   lefrSetUnitsCbk(getLefUnits);
@@ -238,8 +241,8 @@ void ReadLef(std::string const &lef_file_name, Circuit *circuit) {
   lefrSetSiteCbk(siteCB);
 
   lefrSetMacroBeginCbk(macroBeginCB);
-  lefrSetPinCbk(getLefPins);
   lefrSetMacroCbk(getLefMacros);
+  lefrSetPinCbk(getLefPins);
   lefrSetMacroEndCbk(macroEndCB);
 
   FILE *f;

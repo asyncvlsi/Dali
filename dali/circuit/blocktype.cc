@@ -18,9 +18,10 @@ void BlockType::Report() const {
                           << "    width, height: " << Width() << " " << Height() << "\n"
                           << "    pin list:\n";
   for (auto &it: pin_name_num_map_) {
-    BOOST_LOG_TRIVIAL(info) << "      " << it.first << " " << it.second << " (" << pin_list_[it.second].OffsetX()
-                            << ", "
-                            << pin_list_[it.second].OffsetY() << ")\n";
+    //BOOST_LOG_TRIVIAL(info) << "      " << it.first << " " << it.second << " (" << pin_list_[it.second].OffsetX()
+    //                        << ", "
+    //                        << pin_list_[it.second].OffsetY() << ")\n";
+    pin_list_[it.second].Report();
   }
 }
 

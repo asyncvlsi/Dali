@@ -347,7 +347,7 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
     auto &macro_pins = macro.GetPinsRef();
     for (auto &pin: macro_pins) {
       std::string pin_name(pin.GetName());
-      if (pin_name == "Vdd" || pin_name == "GND") continue;
+      //if (pin_name == "Vdd" || pin_name == "GND") continue;
 
       bool is_input = true;
       auto pin_direction = pin.GetDirection();
@@ -363,11 +363,14 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
           double urx = rect.URX() / tech_.grid_value_x_;
           double lly = rect.LLY() / tech_.grid_value_y_;
           double ury = rect.URY() / tech_.grid_value_y_;
-          new_pin->AddRect(llx, lly, urx, ury);
+          new_pin->AddRectOnly(llx, lly, urx, ury);
         }
       }
       DaliExpects(!new_pin->RectEmpty(),
                   "No geometries provided for pin " + pin_name + " in Macro: " + *blk_type->NamePtr());
+    }
+    for (auto &pin: *(blk_type->PinList())) {
+      pin.InitOffset();
     }
   }
 }
@@ -486,22 +489,23 @@ void Circuit::LoadWell(phydb::PhyDB *phy_db_ptr) {
     double height = macro.GetHeight();
     BlockType *blk_type = getBlockType(macro_name);
     auto *macro_well = macro.GetWellPtr();
-    DaliExpects(macro_well!= nullptr, "No well info provided for MACRO: " + macro_name);
+    DaliExpects(macro_well != nullptr, "No well info provided for MACRO: " + macro_name);
     BlockTypeWell *well = AddBlockTypeWell(macro_name);
 
     auto *n_rect = macro_well->GetNwellRectPtr();
     auto *p_rect = macro_well->GetPwellRectPtr();
-    DaliExpects(n_rect!= nullptr || p_rect!= nullptr, "N/P-well geometries not provided for MACRO: " + macro_name);
+    DaliExpects(n_rect != nullptr || p_rect != nullptr, "N/P-well geometries not provided for MACRO: " + macro_name);
     if (n_rect != nullptr) {
       setWellRect(macro_name, true, n_rect->LLX(), n_rect->LLY(), n_rect->URX(), n_rect->URY());
     }
-    if (p_rect !=nullptr) {
+    if (p_rect != nullptr) {
       setWellRect(macro_name, false, p_rect->LLX(), p_rect->LLY(), p_rect->URX(), p_rect->URY());
     }
   }
 }
 
 void Circuit::InitializeFromPhyDB(phydb::PhyDB *phy_db_ptr) {
+  DaliExpects(phy_db_ptr != nullptr, "Dali cannot initialize from a nullptr");
   phy_db_ptr_ = phy_db_ptr;
 
   LoadTech(phy_db_ptr);
