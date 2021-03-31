@@ -57,17 +57,18 @@ int main(int argc, char **argv) {
   time_t Time = clock();
   double wall_time = get_wall_time();
 
-  std::string adaptec1_lef = "ISPD2005/adaptec1.lef";
+  std::string adaptec1_lef = "ISPD2005/bigblue4.lef";
 #if TEST_LG
   std::string adaptec1_def = "adaptec1_pl.def";
 #else
-  std::string adaptec1_def = "ISPD2005/adaptec1.def";
+  std::string adaptec1_def = "ISPD2005/bigblue4.def";
 #endif
 
   phydb::PhyDB phy_db;
   phy_db.SetPlacementGrids(0.01, 0.01);
   phy_db.ReadLef(adaptec1_lef);
   phy_db.ReadDef(adaptec1_def);
+  Placer::ReportMemory();
 
   Circuit circuit;
   circuit.InitializeFromPhyDB(&phy_db);
@@ -85,7 +86,7 @@ int main(int argc, char **argv) {
   circuit.ReportHPWL();
 
   GPSimPL gb_placer;
-  //gb_placer.net_model_update_stop_criterion_ = tune_param;
+  //gb_placer_.net_model_update_stop_criterion_ = tune_param;
   BOOST_LOG_TRIVIAL(info) << "tune_param: " << tune_param << "\n";
   gb_placer.SetInputCircuit(&circuit);
   gb_placer.SetBoundaryDef();
@@ -94,26 +95,26 @@ int main(int argc, char **argv) {
   gb_placer.is_dump = false;
 #if !TEST_LG
   gb_placer.StartPlacement();
-  //gb_placer.SaveDEFFile("adaptec1_pl.def", adaptec1_def);
+  //gb_placer_.SaveDEFFile("adaptec1_pl.def", adaptec1_def);
   circuit.SaveBookshelfPl("adaptec1bs.pl");
 #endif
   gb_placer.GenMATLABTable("gb_result.txt");
 
   /*
-  LGTetrisEx legalizer;
-  legalizer.TakeOver(&gb_placer);
-  legalizer.SetRowHeight(12);
-  legalizer.StartPlacement();
-  //legalizer.PlotAvailSpace("as_result.txt");
-  legalizer.GenMATLABTable("lg_result.txt");
-  //legalizer->SaveDEFFile("circuit.def", def_file);
+  LGTetrisEx legalizer_;
+  legalizer_.TakeOver(&gb_placer_);
+  legalizer_.SetRowHeight(12);
+  legalizer_.StartPlacement();
+  //legalizer_.PlotAvailSpace("as_result.txt");
+  legalizer_.GenMATLABTable("lg_result.txt");
+  //legalizer_->SaveDEFFile("circuit.def", def_file);
    */
 
 #if TEST_WLG
   circuit.LoadImaginaryCellFile();
   //circuit.ReportWellShape();
   auto *well_legalizer = new StdClusterWellLegalizer;
-  well_legalizer->TakeOver(&gb_placer);
+  well_legalizer->TakeOver(&gb_placer_);
   well_legalizer->SetRowHeight(1);
   well_legalizer->StartPlacement();
   well_legalizer->GenMATLABTable("sc_result.txt");

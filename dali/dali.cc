@@ -27,50 +27,66 @@ void Dali::StartPlacement(double density, int number_of_threads) {
 
   //std::string config_file = "dali.conf";
 
-  GPSimPL gb_placer;
-  //gb_placer.LoadConf(config_file);
-  gb_placer.SetInputCircuit(&circuit_);
-  gb_placer.is_dump = false;
-  gb_placer.SetBoundaryDef();
-  gb_placer.SetFillingRate(density);
-  gb_placer.ReportBoundaries();
-  gb_placer.StartPlacement();
-  //gb_placer.SaveDEFFile("benchmark_1K_dali.def", def_file_name);
-  gb_placer.GenMATLABTable("gb_result.txt");
+  //gb_placer_.LoadConf(config_file);
+  gb_placer_.SetInputCircuit(&circuit_);
+  gb_placer_.is_dump = false;
+  gb_placer_.SetBoundaryDef();
+  gb_placer_.SetFillingRate(density);
+  gb_placer_.ReportBoundaries();
+  gb_placer_.StartPlacement();
+  //gb_placer_.SaveDEFFile("benchmark_1K_dali.def", def_file_name);
+  gb_placer_.GenMATLABTable("gb_result.txt");
   //circuit.GenLongNetTable("gb_longnet.txt");
-  //gb_placer->GenMATLABWellTable("gb_result");
+  //gb_placer_->GenMATLABWellTable("gb_result");
   //circuit.ReportNetFanoutHisto();
 
-  LGTetrisEx legalizer;
-  legalizer.TakeOver(&gb_placer);
-  legalizer.IsPrintDisplacement(true);
-  legalizer.StartPlacement();
-  legalizer.GenMATLABTable("lg_result.txt");
-  legalizer.GenDisplacement("disp_result.txt");
+  legalizer_.TakeOver(&gb_placer_);
+  legalizer_.IsPrintDisplacement(true);
+  legalizer_.StartPlacement();
+  legalizer_.GenMATLABTable("lg_result.txt");
+  legalizer_.GenDisplacement("disp_result.txt");
   //circuit.GenLongNetTable("lg_longnet.txt");
-  //legalizer->SaveDEFFile("circuit.def", def_file);
+  //legalizer_->SaveDEFFile("circuit.def", def_file);
 
-  StdClusterWellLegalizer std_cluster_well_legalizer;
-  std_cluster_well_legalizer.TakeOver(&gb_placer);
-  std_cluster_well_legalizer.SetStripPartitionMode(SCAVENGE);
-  std_cluster_well_legalizer.StartPlacement();
-  //std_cluster_well_legalizer.GenMatlabClusterTable("sc_result");
-  std_cluster_well_legalizer.GenMATLABTable("sc_result.txt");
-  std_cluster_well_legalizer.GenMatlabClusterTable("sc_result");
-  std_cluster_well_legalizer.GenMATLABWellTable("scw", 0);
+  well_legalizer_.TakeOver(&gb_placer_);
+  well_legalizer_.SetStripPartitionMode(SCAVENGE);
+  well_legalizer_.StartPlacement();
+  //well_legalizer_.GenMatlabClusterTable("sc_result");
+  well_legalizer_.GenMATLABTable("sc_result.txt");
+  well_legalizer_.GenMatlabClusterTable("sc_result");
+  well_legalizer_.GenMATLABWellTable("scw", 0);
   //circuit.GenLongNetTable("sc_longnet.txt");
 
-  //std_cluster_well_legalizer.SimpleIOPinPlacement(0);
-  std_cluster_well_legalizer.EmitDEFWellFile("circuit", 1);
+  //well_legalizer_.SimpleIOPinPlacement(0);
+  well_legalizer_.EmitDEFWellFile("circuit", 1);
 }
 
 void Dali::ExportToPhyDB() {
-  // 1. update component locations
+  // 1. COMPONENTS
+  ExportComponentsToPhyDB();
+  // TODO 2. IOPINs
+
+  // 3. MiniRows
+  ExportMiniRowsToPhyDB();
+  // TODO 4. NPPP and Well
+  ExportNpPpWellToPhyDB();
+}
+
+void Dali::ExportToDEF(std::string &input_def_file_full_name, std::string output_def_name) {
+  circuit_.SaveDefFile(output_def_name, "", input_def_file_full_name, 1, 1, 2, 1);
+  circuit_.SaveDefFile(output_def_name, "_io", input_def_file_full_name, 1, 1, 1, 1);
+  circuit_.SaveDefFile(output_def_name, "_filling", input_def_file_full_name, 1, 4, 2, 1);
+  circuit_.InitNetFanoutHistogram();
+  circuit_.ReportNetFanoutHistogram();
+  circuit_.ReportHPWLHistogramLinear();
+  circuit_.ReportHPWLHistogramLogarithm();
+}
+
+void Dali::ExportComponentsToPhyDB() {
   double factor_x = circuit_.DistanceMicrons() * circuit_.GridValueX();
   double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
-  int cell_count = 0;
 
-  // 1.a existing components
+  // a. existing components
   for (auto &block: circuit_.BlockListRef()) {
     if (block.TypePtr() == circuit_.getTechRef().io_dummy_blk_type_ptr_) continue;
     std::string comp_name = block.Name();
@@ -86,7 +102,7 @@ void Dali::ExportToPhyDB() {
     comp_ptr->SetOrientation(orient);
   }
 
-  // 1.b well tap cells
+  // b. well tap cells
   for (auto &block: circuit_.getDesignRef().well_tap_list) {
     std::string comp_name = block.Name();
     std::string macro_name = *(block.TypePtr()->NamePtr());
@@ -97,21 +113,50 @@ void Dali::ExportToPhyDB() {
 
     phy_db_ptr_->AddComponent(comp_name, macro_name, place_status, lx, ly, orient);
   }
-
-
-  // TODO 2. IOPINs
-
-  // TODO 3. Mini-rows
 }
 
-void Dali::ExportToDEF(std::string &input_def_file_full_name, std::string output_def_name) {
-  circuit_.SaveDefFile(output_def_name, "", input_def_file_full_name, 1, 1, 2, 1);
-  circuit_.SaveDefFile(output_def_name, "_io", input_def_file_full_name, 1, 1, 1, 1);
-  circuit_.SaveDefFile(output_def_name, "_filling", input_def_file_full_name, 1, 4, 2, 1);
-  circuit_.InitNetFanoutHistogram();
-  circuit_.ReportNetFanoutHistogram();
-  circuit_.ReportHPWLHistogramLinear();
-  circuit_.ReportHPWLHistogramLogarithm();
+void Dali::ExportMiniRowsToPhyDB() {
+  double factor_x = circuit_.DistanceMicrons() * circuit_.GridValueX();
+  double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
+
+  int counter = 0;
+  for (int i = 0; i < well_legalizer_.tot_col_num_; ++i) {
+    auto &col = well_legalizer_.col_list_[i];
+    for (auto &strip: col.strip_list_) {
+      std::string column_name = "column" + std::to_string(counter++);
+      std::string bot_signal_;
+      if (strip.is_first_row_orient_N_) {
+        bot_signal_ = "GND";
+      } else {
+        bot_signal_ = "Vdd";
+      }
+      phydb::ClusterCol *col_ptr = phy_db_ptr_->AddClusterCol(column_name, bot_signal_);
+
+      int col_lx = (int) (strip.LLX() * factor_x) + circuit_.getDesign()->die_area_offset_x_;
+      int col_ux = (int) (strip.URX() * factor_x) + circuit_.getDesign()->die_area_offset_x_;
+      col_ptr->SetXRange(col_lx, col_ux);
+
+      if (strip.is_bottom_up_) {
+        for (auto &cluster: strip.cluster_list_) {
+          int row_ly = (int) (cluster.LLY() * factor_y) + circuit_.getDesign()->die_area_offset_y_;
+          int row_uy = (int) (cluster.URY() * factor_y) + circuit_.getDesign()->die_area_offset_y_;
+          col_ptr->AddRow(row_ly, row_uy);
+        }
+      } else {
+        int sz = strip.cluster_list_.size();
+        for (int j = sz - 1; j >= 0; --j) {
+          auto &cluster = strip.cluster_list_[j];
+          int row_ly = (int) (cluster.LLY() * factor_y) + circuit_.getDesign()->die_area_offset_y_;
+          int row_uy = (int) (cluster.URY() * factor_y) + circuit_.getDesign()->die_area_offset_y_;
+          col_ptr->AddRow(row_ly, row_uy);
+        }
+      }
+    }
+  }
+}
+
+void Dali::ExportNpPpWellToPhyDB() {
+
 }
 
 }

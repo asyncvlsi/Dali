@@ -388,9 +388,9 @@ void Circuit::LoadDesign(phydb::PhyDB *phy_db_ptr) {
   nets_count = nets.size();
   setListCapacity(components_count, pins_count, nets_count);
 
-  BOOST_LOG_TRIVIAL(info) << "components count: " << components_count << "\n"
-                          << "pins count:        " << pins_count << "\n"
-                          << "nets count:       " << nets_count << "\n";
+  BOOST_LOG_TRIVIAL(info) << "components count: " << components_count << "\n";
+  BOOST_LOG_TRIVIAL(info) << "pins count:        " << pins_count << "\n";
+  BOOST_LOG_TRIVIAL(info) << "nets count:       " << nets_count << "\n";
 
 
   // 2. load UNITS DISTANCE MICRONS and DIEAREA

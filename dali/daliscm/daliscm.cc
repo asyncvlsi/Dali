@@ -157,13 +157,13 @@ int process_initDali(int argc, char **argv) {
   }
   gp = new GPSimPL;
 
-  // instantiate a legalizer
+  // instantiate a legalizer_
   if (lg != nullptr) {
     free(lg);
   }
   lg = new LGTetrisEx;
 
-  // instantiate a well legalizer
+  // instantiate a well legalizer_
   if (wlg != nullptr) {
     free(wlg);
   }

@@ -2838,9 +2838,9 @@ double GPSimPL::LookAheadLegalization() {
     //BOOST_LOG_TRIVIAL(info) << "cluster count: " << cluster_set.size() << "\n";
   } while (!cluster_set.empty());
 
-  //LGTetrisEx legalizer;
-  //legalizer.TakeOver(this);
-  //legalizer.StartPlacement();
+  //LGTetrisEx legalizer_;
+  //legalizer_.TakeOver(this);
+  //legalizer_.StartPlacement();
 
   double evaluate_result_x = WeightedHPWLX();
   upper_bound_hpwlx_.push_back(evaluate_result_x);
@@ -2868,7 +2868,7 @@ void GPSimPL::CheckAndShift() {
   /****
    * This method is helpful when a circuit does not have any fixed blocks.
    * In this case, the shift of the whole circuit does not influence HPWL and overlap.
-   * But if the circuit is placed close to the right placement boundary, it give very few change to legalizer if cells close
+   * But if the circuit is placed close to the right placement boundary, it give very few change to legalizer_ if cells close
    * to the right boundary need to find different locations.
    *
    * 1. Find the leftmost, rightmost, topmost, bottommost cell edges

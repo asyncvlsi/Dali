@@ -159,6 +159,7 @@ enum StripPartitionMode {
 };
 
 class StdClusterWellLegalizer : public Placer {
+  friend class Dali;
  private:
   bool is_first_row_orient_N_ = true;
 
