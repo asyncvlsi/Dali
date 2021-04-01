@@ -14,6 +14,7 @@ namespace dali {
 
 class Dali {
   public:
+    Dali(phydb::PhyDB *phy_db_ptr, std::string sl);
     Dali(phydb::PhyDB *phy_db_ptr, boost::log::trivial::severity_level sl);
 
     void StartPlacement(double density, int number_of_threads = 1);

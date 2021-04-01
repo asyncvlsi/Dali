@@ -6,6 +6,13 @@
 
 namespace dali {
 
+Dali::Dali(phydb::PhyDB *phy_db_ptr, std::string sl) {
+  auto boost_sl = StrNumToLoggingLevel(sl);
+  InitLogging(boost_sl);
+  phy_db_ptr_ = phy_db_ptr;
+  circuit_.InitializeFromPhyDB(phy_db_ptr);
+}
+
 Dali::Dali(phydb::PhyDB *phy_db_ptr, boost::log::trivial::severity_level sl) {
   InitLogging(sl);
   phy_db_ptr_ = phy_db_ptr;
@@ -16,9 +23,9 @@ void Dali::StartPlacement(double density, int number_of_threads) {
   int num_of_thread_openmp = number_of_threads;
   omp_set_num_threads(num_of_thread_openmp);
   Eigen::initParallel();
-  BOOST_LOG_TRIVIAL(info)  <<"Eigen thread " << Eigen::nbThreads() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Eigen thread " << Eigen::nbThreads() << "\n";
 
-  BOOST_LOG_TRIVIAL(info)  << "  Average white space utility: " << circuit_.WhiteSpaceUsage() << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "  Average white space utility: " << circuit_.WhiteSpaceUsage() << std::endl;
   circuit_.ReportBriefSummary();
   //circuit.ReportBlockType();
   //circuit.ReportIOPin();
@@ -100,8 +107,8 @@ void Dali::ExportComponentsToPhyDB() {
     auto orient = phydb::CompOrient(block.Orient());
 
     phydb::Component *comp_ptr = phy_db_ptr_->GetComponentPtr(comp_name);
-    DaliExpects(comp_ptr!= nullptr, "No component in PhyDB with name: " + comp_name);
-    comp_ptr->SetLocation(lx ,ly);
+    DaliExpects(comp_ptr != nullptr, "No component in PhyDB with name: " + comp_name);
+    comp_ptr->SetLocation(lx, ly);
     comp_ptr->SetPlacementStatus(place_status);
     comp_ptr->SetOrientation(orient);
   }

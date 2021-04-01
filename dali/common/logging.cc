@@ -9,11 +9,32 @@ namespace dali {
 namespace logging = boost::log;
 namespace keywords = boost::log::keywords;
 
-typedef boost::log::sinks::synchronous_sink< boost::log::sinks::text_file_backend > file_sink_t;
-boost::shared_ptr< file_sink_t > g_file_sink = nullptr;
+typedef boost::log::sinks::synchronous_sink<boost::log::sinks::text_file_backend> file_sink_t;
+boost::shared_ptr<file_sink_t> g_file_sink = nullptr;
 
-typedef boost::log::sinks::synchronous_sink< boost::log::sinks::basic_text_ostream_backend<char> > console_sink_t;
-boost::shared_ptr< console_sink_t > g_console_sink = nullptr;
+typedef boost::log::sinks::synchronous_sink<boost::log::sinks::basic_text_ostream_backend<char> > console_sink_t;
+boost::shared_ptr<console_sink_t> g_console_sink = nullptr;
+
+boost::log::trivial::severity_level StrNumToLoggingLevel(std::string sl_str) {
+  int level = -1;
+  try {
+    level = std::stoi(sl_str);
+  } catch (...) {
+    std::cout << "Invalid dali verbosity level (0-5)!\n";
+    exit(1);
+  }
+
+  switch (level) {
+    case 0  :return boost::log::trivial::severity_level::fatal;
+    case 1  :return boost::log::trivial::severity_level::error;
+    case 2  :return boost::log::trivial::severity_level::warning;
+    case 3  :return boost::log::trivial::severity_level::info;
+    case 4  :return boost::log::trivial::severity_level::debug;
+    case 5  :return boost::log::trivial::severity_level::trace;
+    default :std::cout << "Invalid dali verbosity level (0-5)!\n";
+      exit(1);
+  }
+}
 
 void InitLogging(boost::log::trivial::severity_level sl) {
   CloseLogging();

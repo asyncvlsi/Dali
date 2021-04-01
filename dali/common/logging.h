@@ -33,6 +33,7 @@ inline boost::log::record_ostream &operator<<(boost::log::record_ostream &p, std
 
 namespace dali {
 
+boost::log::trivial::severity_level StrNumToLoggingLevel(std::string sl_str);
 void InitLogging(boost::log::trivial::severity_level sl = boost::log::trivial::info);
 void CloseLogging();
 
