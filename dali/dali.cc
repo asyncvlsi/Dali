@@ -57,15 +57,19 @@ void Dali::StartPlacement(double density, int number_of_threads) {
   well_legalizer_.GenMATLABWellTable("scw", 0);
   //circuit.GenLongNetTable("sc_longnet.txt");
 
-  //well_legalizer_.SimpleIOPinPlacement(0);
+  //well_legalizer_.SimpleIoPinPlacement(0);
   well_legalizer_.EmitDEFWellFile("circuit", 1);
+}
+
+void Dali::SimpleIoPinPlacement(std::string metal_layer) {
+  well_legalizer_.SimpleIoPinPlacement(metal_layer);
 }
 
 void Dali::ExportToPhyDB() {
   // 1. COMPONENTS
   ExportComponentsToPhyDB();
-  // TODO 2. IOPINs
-
+  // 2. IOPINs
+  ExportIoPinsToPhyDB();
   // 3. MiniRows
   ExportMiniRowsToPhyDB();
   // TODO 4. NPPP and Well
@@ -112,6 +116,39 @@ void Dali::ExportComponentsToPhyDB() {
     auto orient = phydb::CompOrient(block.Orient());
 
     phy_db_ptr_->AddComponent(comp_name, macro_name, place_status, lx, ly, orient);
+  }
+}
+
+void Dali::ExportIoPinsToPhyDB() {
+  DaliExpects(!circuit_.getTechRef().metal_list_.empty(), "Need metal layer info to generate PIN location\n");
+  double factor_x = circuit_.DistanceMicrons() * circuit_.GridValueX();
+  double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
+
+  for (auto &iopin: circuit_.getDesignRef().iopin_list) {
+    if (!iopin.IsPrePlaced() && iopin.IsPlaced()) {
+      std::string metal_name = *(iopin.Layer()->Name());
+      int half_width = std::ceil(iopin.Layer()->MinHeight() / 2.0 * circuit_.DistanceMicrons());
+      int height = std::ceil(iopin.Layer()->Width() * circuit_.DistanceMicrons());
+
+      std::string iopin_name = *(iopin.Name());
+      DaliExpects(phy_db_ptr_->IsIoPinExist(iopin_name), "IOPIN not in PhyDB? " + iopin_name);
+      phydb::IOPin *iopin_ptr = phy_db_ptr_->GetIoPinPtr(iopin_name);
+      iopin_ptr->SetShape(metal_name, -half_width, 0, half_width, height);
+
+      int pin_x = (int) (iopin.X() * factor_x) + circuit_.getDesignRef().die_area_offset_x_;
+      int pin_y = (int) (iopin.Y() * factor_y) + circuit_.getDesignRef().die_area_offset_y_;
+      phydb::CompOrient pin_orient;
+      if (iopin.X() == circuit_.getDesignRef().region_left_) {
+        pin_orient = phydb::E;
+      } else if (iopin.X() == circuit_.getDesignRef().region_right_) {
+        pin_orient = phydb::W;
+      } else if (iopin.Y() == circuit_.getDesignRef().region_bottom_) {
+        pin_orient = phydb::N;
+      } else {
+        pin_orient = phydb::S;
+      }
+      iopin_ptr->SetPlacement(phydb::PLACED, pin_x, pin_y, pin_orient);
+    }
   }
 }
 

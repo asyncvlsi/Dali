@@ -249,10 +249,11 @@ void Placer::UpdateMovableBlkPlacementStatus() {
   }
 }
 
-void Placer::SimpleIOPinPlacement(int pin_metal_layer) {
+void Placer::SimpleIoPinPlacement(std::string metal_layer) {
+  DaliExpects(circuit_->IsMetalLayerExist(metal_layer), "Metal layer does not exist: " + metal_layer);
+  MetalLayer *layer_ptr = circuit_->getMetalLayerPtr(metal_layer);
   if (circuit_->getIOPinList()->empty()) return;
-  DaliExpects(pin_metal_layer < (int) circuit_->tech_.metal_list_.size(),
-              "Invalid metal layer provided for Placer::SimpleIOPinPlacement()");
+
   //BOOST_LOG_TRIVIAL(info)   << circuit_->GetIOPinList()->size() << "\n";
   Net *net = nullptr;
   double net_minx, net_maxx, net_miny, net_maxy;
@@ -264,9 +265,10 @@ void Placer::SimpleIOPinPlacement(int pin_metal_layer) {
   std::vector<IOPin *> b_edge;
   std::vector<IOPin *> t_edge;
 
+
   for (auto &iopin: *(circuit_->getIOPinList())) {
     if (iopin.IsPrePlaced()) continue;
-    iopin.SetLayer(&(circuit_->tech_.metal_list_[pin_metal_layer]));
+    iopin.SetLayer(layer_ptr);
     net = iopin.GetNet();
     if (net->blk_pin_list.empty()) continue;
     //BOOST_LOG_TRIVIAL(info)   << net->NameStr() << "\n";
