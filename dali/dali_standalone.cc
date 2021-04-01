@@ -187,7 +187,7 @@ int main(int argc, char *argv[]) {
     legalizer->TakeOver(gb_placer);
     legalizer->StartPlacement();
 
-    legalizer->SimpleIoPinPlacement(3);
+    legalizer->SimpleIoPinPlacement("3");
 
     delete gb_placer;
     delete legalizer;
@@ -215,7 +215,7 @@ int main(int argc, char *argv[]) {
     if (!output_name.empty()) {
       well_legalizer->EmitDEFWellFile(output_name, 1);
     }
-    well_legalizer->SimpleIoPinPlacement(io_metal_layer);
+    well_legalizer->SimpleIoPinPlacement("io_metal_layer");
     delete well_legalizer;
     delete gb_placer;
     delete legalizer;
