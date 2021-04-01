@@ -9,7 +9,7 @@
 #include <iostream>
 #include <string>
 
-#include <config.h>
+#include <common/config.h>
 
 #include "dali/circuit/circuit.h"
 #include "dali/common/memory.h"

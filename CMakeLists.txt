@@ -266,7 +266,7 @@ endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 ######################################
 # Change FALSE to TRUE if you want to change the installation directory to ${ACT_HOME}
 ######################################
-if (FALSE)
+if (TRUE)
     message(STATUS "Changing Installation directory to ACT_HOME")
     set(CMAKE_INSTALL_PREFIX $ENV{ACT_HOME} CACHE PATH "installation path" FORCE)
     message(STATUS "Current installation directory: " ${CMAKE_INSTALL_PREFIX})
@@ -277,6 +277,7 @@ endif ()
 ######################################
 set(INCLUDE_DESTIN include)
 install(DIRECTORY dali/ DESTINATION ${INCLUDE_DESTIN}/dali COMPONENT Development FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY dali/../module/eigen-git-mirror/Eigen/ DESTINATION ${INCLUDE_DESTIN}/dali/Eigen)
 
 ######################################
 # Install binary
