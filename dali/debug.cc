@@ -39,6 +39,7 @@ int main() {
 
   dali.ExportToPhyDB();
   //phy_db.GetDesignPtr()->ReportIoPins();
+  dali.Close();
 
   wall_time = get_wall_time() - wall_time;
   BOOST_LOG_TRIVIAL(info)   << "Execution time " << wall_time << "s.\n";

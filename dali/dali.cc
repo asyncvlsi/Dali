@@ -83,6 +83,10 @@ void Dali::ExportToPhyDB() {
   ExportNpPpWellToPhyDB();
 }
 
+void Dali::Close() {
+  CloseLogging();
+}
+
 void Dali::ExportToDEF(std::string &input_def_file_full_name, std::string output_def_name) {
   circuit_.SaveDefFile(output_def_name, "", input_def_file_full_name, 1, 1, 2, 1);
   circuit_.SaveDefFile(output_def_name, "_io", input_def_file_full_name, 1, 1, 1, 1);

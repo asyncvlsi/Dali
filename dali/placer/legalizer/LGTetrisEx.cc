@@ -1537,6 +1537,7 @@ void LGTetrisEx::GenDisplacement(std::string const &name_of_file) {
 
   // save displacement result
   displace_viewer_->SaveDisplacementVector("disp_result.txt");
+  free(displace_viewer_);
 }
 
 }

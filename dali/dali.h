@@ -20,6 +20,7 @@ class Dali {
     void StartPlacement(double density, int number_of_threads = 1);
     void SimpleIoPinPlacement(std::string metal_layer);
     void ExportToPhyDB();
+    void Close();
 
     void ExportToDEF(std::string &input_def_file_full_name, std::string output_def_name = "circuit");
 
