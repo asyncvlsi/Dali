@@ -8,6 +8,10 @@ project(Dali
 
 set(CMAKE_CXX_STANDARD 17)
 
+include_directories(
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        module/eigen-git-mirror)
+
 ######################################
 # Detect if Boost library exists
 ######################################
@@ -123,14 +127,32 @@ else(BUILD_STATIC_EXECUTABLES)
 endif(BUILD_STATIC_EXECUTABLES)
 
 # Set C++ compilation flags and options
-set(EXTRA_FLAGS "")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+
+# Set a default build type if none was specified
+set(default_build_type "RELEASE")
+if (NOT CMAKE_BUILD_TYPE)
+    message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
+    set(CMAKE_BUILD_TYPE "${default_build_type}")
+    # Set the possible values of build type for cmake-gui
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+            "DEBUG" "RELEASE")
+endif ()
+
+if(CMAKE_BUILD_TYPE MATCHES DEBUG)
+    message(STATUS "DEBUG build type")
+endif(CMAKE_BUILD_TYPE MATCHES DEBUG)
+
+if(CMAKE_BUILD_TYPE MATCHES RELEASE)
+    message(STATUS "RELEASE build type")
+endif(CMAKE_BUILD_TYPE MATCHES RELEASE)
+
 if (APPLE)
-    set(EXTRA_FLAGS "${EXTRA_FLAGS} -Xpreprocessor")
+    add_compile_options(-Xpreprocessor)
 endif()
-set(CFLAGS "${CFLAGS} -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3 ${EXTRA_FLAGS} -fopenmp ${CFLAGS}")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -std=c++17 -O3 ${EXTRA_FLAGS} -fopenmp ${CFLAGS}")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17 -O3 ${EXTRA_FLAGS} -fopenmp ${CFLAGS}")
+add_compile_options(-fopenmp)
+add_compile_options(-Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic)
 
 # Set the output directory of static libraries
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
@@ -147,10 +169,6 @@ if (NOT CMAKE_BUILD_TYPE)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
             "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif ()
-
-include_directories(
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        module/eigen-git-mirror)
 
 # All used circuit and placer source code
 file(GLOB SOURCES
