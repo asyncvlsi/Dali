@@ -7,20 +7,20 @@
 #include <iostream>
 #include <iomanip>
 
-#include "circuit.h"
-#include "common/global.h"
+#include "dali/circuit.h"
+#include "dali/common/logging.h"
 #include "common/misc.h"
-//TODO: fix this
-VerboseLevel globalVerboseLevel = LOG_INFO;
+
+using namespace dali;
 
 struct TypeLayerBBox {
-  BlockType *blk_type;
-  double lo;
-  double hi;
-  double n_extra;
-  double p_extra;
-  double pn_edge;
-  TypeLayerBBox(BlockType *type, double l, double h) : blk_type(type), lo(l), hi(h), pn_edge(-1) {}
+    BlockType *blk_type;
+    double lo;
+    double hi;
+    double n_extra;
+    double p_extra;
+    double pn_edge;
+    TypeLayerBBox(BlockType *type, double l, double h) : blk_type(type), lo(l), hi(h), pn_edge(-1) {}
 };
 
 void ReportUsage();
@@ -49,42 +49,34 @@ int main(int argc, char *argv[]) {
         mode = 0;
       }
       if (mode > 3 || mode < 0) {
-        BOOST_LOG_TRIVIAL(info)   << "Invalid mode level\n";
+        BOOST_LOG_TRIVIAL(info) << "Invalid mode level\n";
         ReportUsage();
         return 0;
       }
     } else if (arg == "-o" && i < argc) {
       out_file_name = std::string(argv[i++]);
     } else {
-      BOOST_LOG_TRIVIAL(info)   << "Unknown command line option: " << argv[i] << "\n";
+      BOOST_LOG_TRIVIAL(info) << "Unknown command line option: " << argv[i] << "\n";
       return 1;
     }
   }
 
   Circuit circuit;
-#ifdef USE_OPENDB
-  odb::dbDatabase *db = odb::dbDatabase::create();
-  std::vector<std::string> defFileVec;
-  odb_read_lef(db, lef_file_name.c_str());
-  circuit.InitializeFromDB(db);
-  circuit.ReadCellFile(cel_file_name);
-#else
   circuit.ReadLefFile(lef_file_name);
-#endif
 
   MetalLayer *hor_layer = nullptr;
-  for (auto &metal_layer: circuit.tech_.metal_list_) {
+  for (auto &metal_layer: circuit.getTechRef().metal_list_) {
     if (metal_layer.Direction() == HORIZONTAL_) {
       hor_layer = &metal_layer;
-      BOOST_LOG_TRIVIAL(info)   << "Horizontal metal layer is: " << *hor_layer->Name() << "\n";
+      BOOST_LOG_TRIVIAL(info) << "Horizontal metal layer is: " << *hor_layer->Name() << "\n";
       break;
     }
   }
   std::vector<TypeLayerBBox> bbox_list;
-  bbox_list.reserve(circuit.tech_.block_type_map_.size());
+  bbox_list.reserve(circuit.getTechRef().block_type_map_.size());
   std::ifstream ist;
   ist.open(lef_file_name.c_str());
-  Assert(ist.is_open(), "Cannot open file " + lef_file_name);
+  DaliExpects(ist.is_open(), "Cannot open file " + lef_file_name);
   std::string line;
   std::vector<std::string> line_field;
   do {
@@ -96,7 +88,7 @@ int main(int argc, char *argv[]) {
 
   while (!ist.eof()) {
     if (line.find("MACRO") != std::string::npos) {
-      Circuit::StrSplit(line, line_field);
+      StrSplit(line, line_field);
       std::string type_name = line_field[1];
       std::string end_macro_flag = "END " + type_name;
       BlockType *type = circuit.getBlockType(type_name);
@@ -105,7 +97,7 @@ int main(int argc, char *argv[]) {
       do {
         getline(ist, line);
         if (line.find("PIN ") != std::string::npos) {
-          Circuit::StrSplit(line, line_field);
+          StrSplit(line, line_field);
           std::string pin_name = line_field[1];
           std::string end_pin_flag = "END " + pin_name;
           std::string pin_layer;
@@ -113,12 +105,12 @@ int main(int argc, char *argv[]) {
             getline(ist, line);
             if (pin_name == "Vdd" || pin_name == "GND") continue;
             if (line.find("LAYER ") != std::string::npos) {
-              Circuit::StrSplit(line, line_field);
+              StrSplit(line, line_field);
               pin_layer = line_field[1];
               //BOOST_LOG_TRIVIAL(info)   << pin_layer << " " << (pin_layer == *(hor_layer->Name())) << "\n";
             }
             if (line.find("RECT ") != std::string::npos && pin_layer == *(hor_layer->Name())) {
-              Circuit::StrSplit(line, line_field);
+              StrSplit(line, line_field);
               std::string str_ly = line_field[2];
               double ly = std::stod(str_ly);
               std::string str_uy = line_field[4];
@@ -150,9 +142,10 @@ int main(int argc, char *argv[]) {
         type_bbox.p_extra = 0;
         type_bbox.n_extra = pitch;
       }
-      BOOST_LOG_TRIVIAL(info)   << *(type->NamePtr()) << "  " << "size: 0 " << type_height << "\n";
-      BOOST_LOG_TRIVIAL(info)   << "  " << *(hor_layer->Name()) << " y bbox: " << type_bbox.lo << " " << type_bbox.hi << "\n";
-      BOOST_LOG_TRIVIAL(info)   << "  n/p extra: " << type_bbox.n_extra << " " << type_bbox.p_extra << "\n";
+      BOOST_LOG_TRIVIAL(info) << *(type->NamePtr()) << "  " << "size: 0 " << type_height << "\n";
+      BOOST_LOG_TRIVIAL(info) << "  " << *(hor_layer->Name()) << " y bbox: " << type_bbox.lo << " " << type_bbox.hi
+                              << "\n";
+      BOOST_LOG_TRIVIAL(info) << "  n/p extra: " << type_bbox.n_extra << " " << type_bbox.p_extra << "\n";
       bbox_list.push_back(type_bbox);
     }
     getline(ist, line);
@@ -164,23 +157,23 @@ int main(int argc, char *argv[]) {
   double std_height = 0;
   for (auto &type_bbox: bbox_list) {
     BlockType *type = type_bbox.blk_type;
-    if (type == circuit.tech_.io_dummy_blk_type_ptr_) continue;
+    if (type == circuit.getTechRef().io_dummy_blk_type_ptr_) continue;
     double n_height = type->WellPtr()->NHeight() * circuit.GridValueY() + type_bbox.n_extra;
     double p_height = type->WellPtr()->PHeight() * circuit.GridValueY() + type_bbox.p_extra;
     std_n_height = std::max(std_n_height, n_height);
     std_p_height = std::max(std_p_height, p_height);
   }
   std_height = std_n_height + std_p_height;
-  BOOST_LOG_TRIVIAL(info)   << "Maximum N-well height is: " << std_n_height << "\n";
-  BOOST_LOG_TRIVIAL(info)   << "Maximum P-well height is: " << std_p_height << "\n";
-  BOOST_LOG_TRIVIAL(info)   << "Standard height is: " << std_height << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Maximum N-well height is: " << std_n_height << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Maximum P-well height is: " << std_p_height << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Standard height is: " << std_height << "\n";
 
   ist.open(lef_file_name.c_str());
-  Assert(ist.is_open(), "Cannot open file " + lef_file_name);
+  DaliExpects(ist.is_open(), "Cannot open file " + lef_file_name);
 
   std::ofstream ost;
   ost.open((out_file_name + ".lef").c_str());
-  Assert(ost.is_open(), "Cannot open file " + out_file_name);
+  DaliExpects(ost.is_open(), "Cannot open file " + out_file_name);
 
   bool is_core_site_found = false;
   do {
@@ -190,7 +183,7 @@ int main(int argc, char *argv[]) {
       do {
         getline(ist, line);
         if (line.find("SIZE") != std::string::npos) {
-          Circuit::StrSplit(line, line_field);
+          StrSplit(line, line_field);
           ost << "    " << line_field[0] << " " << line_field[1] << " " << line_field[2] << " " << std::fixed
               << std::setprecision(6) << std_height
               << " ;\n";
@@ -216,10 +209,10 @@ int main(int argc, char *argv[]) {
   while (!ist.eof()) {
     if (line.find("MACRO") != std::string::npos) {
       ost << line << "\n";
-      Circuit::StrSplit(line, line_field);
+      StrSplit(line, line_field);
       std::string type_name = line_field[1];
       std::string end_macro_flag = "END " + type_name;
-      BOOST_LOG_TRIVIAL(info)   << "modifying " << type_name << "\n";
+      BOOST_LOG_TRIVIAL(info) << "modifying " << type_name << "\n";
 
       TypeLayerBBox *bbox_ptr = nullptr;
       for (auto &bbox: bbox_list) {
@@ -235,10 +228,10 @@ int main(int argc, char *argv[]) {
       do {
         getline(ist, line);
         if (line.find("SIZE") != std::string::npos) {
-          Circuit::StrSplit(line, line_field);
+          StrSplit(line, line_field);
           ost << "    " << line_field[0] << " " << line_field[1] << " " << line_field[2] << " " << std_height << " ;\n";
         } else if (line.find("PIN ") != std::string::npos) {
-          Circuit::StrSplit(line, line_field);
+          StrSplit(line, line_field);
           std::string pin_name = line_field[1];
           std::string end_pin_flag = "END " + pin_name;
           ost << line << "\n";
@@ -266,7 +259,7 @@ int main(int argc, char *argv[]) {
               }
             }
 
-            if (line.find("END") != std::string::npos && line.find(end_pin_flag) == std::string::npos ) {
+            if (line.find("END") != std::string::npos && line.find(end_pin_flag) == std::string::npos) {
               if (pin_name == "GND") {
                 if (mode == 0 && !hlayer_gnd_found) {
                   ost << "        LAYER " << *hor_layer->Name() << " ;\n";
@@ -284,7 +277,7 @@ int main(int argc, char *argv[]) {
             }
 
             if (line.find("RECT ") != std::string::npos) {
-              Circuit::StrSplit(line, line_field);
+              StrSplit(line, line_field);
               std::string str_ly = line_field[2];
               double ly = std::stod(str_ly);
               std::string str_uy = line_field[4];
@@ -312,12 +305,12 @@ int main(int argc, char *argv[]) {
 }
 
 void ReportUsage() {
-  BOOST_LOG_TRIVIAL(info)   << "\033[0;36m"
-            << "Usage: custom2standard\n"
-            << " -lef <file.lef>\n"
-            << " -cell <file.cell>\n"
-            << " -m mode_level (default 0)\n"
-            << " -o   <file>.lef\n"
-            << "(order does not matter)"
-            << "\033[0m\n";
+  BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
+                          << "Usage: custom2standard\n"
+                          << " -lef <file.lef>\n"
+                          << " -cell <file.cell>\n"
+                          << " -m mode_level (default 0)\n"
+                          << " -o   <file>.lef\n"
+                          << "(order does not matter)"
+                          << "\033[0m\n";
 }

@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-#include <config.h>
+#include <common/config.h>
 #include <phydb/phydb.h>
 
 #include "circuit.h"

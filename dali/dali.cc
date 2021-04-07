@@ -7,7 +7,7 @@
 namespace dali {
 
 Dali::Dali(phydb::PhyDB *phy_db_ptr, std::string sl) {
-  auto boost_sl = StrNumToLoggingLevel(sl);
+  auto boost_sl = StrToLoggingLevel(sl);
   InitLogging(boost_sl);
   phy_db_ptr_ = phy_db_ptr;
   circuit_.InitializeFromPhyDB(phy_db_ptr);

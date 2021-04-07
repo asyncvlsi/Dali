@@ -15,7 +15,7 @@ boost::shared_ptr<file_sink_t> g_file_sink = nullptr;
 typedef boost::log::sinks::synchronous_sink<boost::log::sinks::basic_text_ostream_backend<char> > console_sink_t;
 boost::shared_ptr<console_sink_t> g_console_sink = nullptr;
 
-boost::log::trivial::severity_level StrNumToLoggingLevel(std::string sl_str) {
+boost::log::trivial::severity_level StrToLoggingLevel(std::string sl_str) {
   int level = -1;
   try {
     level = std::stoi(sl_str);

@@ -13,22 +13,6 @@ include_directories(
         module/eigen-git-mirror)
 
 ######################################
-# Detect if Boost library exists
-######################################
-#set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost 1.71.0 COMPONENTS filesystem log_setup log REQUIRED)
-message(STATUS "Boost library path: ${Boost_LIBRARY_DIRS}")
-message(STATUS "Boost include path: ${Boost_INCLUDE_DIR}")
-message(STATUS "Boost libs: ${Boost_LIBRARIES}")
-include_directories(${Boost_INCLUDE_DIRS})
-link_libraries(${Boost_LIBRARIES})
-
-######################################
-# Detect if OpenMP library exists
-######################################
-find_package(OpenMP REQUIRED)
-
-######################################
 # Detect if $ACT_HOME exits
 ######################################
 message(STATUS "Detecting environment variable ACT_HOME...")
@@ -40,28 +24,15 @@ endif ()
 include_directories($ENV{ACT_HOME}/include)
 link_directories($ENV{ACT_HOME}/lib)
 find_library(ACT_LIBRARY
-        NAMES act vlsilib
+        NAMES act vlsilib actscm actscmcli phydb
         PATHS $ENV{ACT_HOME}/lib
         REQUIRED)
 if (NOT ACT_LIBRARY)
     message(FATAL_ERROR "libact.a is not found")
 else ()
     message(STATUS "libact.a found")
-endif()
-link_libraries(libact.a libvlsilib.a libactscm.a libactscmcli.a libphydb.a)
-
-######################################
-# Detect if $GALOIS_INSTALL_DIR exists, which is the path to Galois installation
-######################################
-#message(STATUS "Detecting environment variable GALOIS_INSTALL_DIR...")
-#if (DEFINED ENV{GALOIS_INSTALL_DIR})
-#    message(STATUS "Environment variable GALOIS_INSTALL detected: " $ENV{GALOIS_INSTALL_DIR})
-#else ()
-#    message(STATUS "Environment variable GALOIS_INSTALL_DIR not found")
-#endif ()
-#list(APPEND CMAKE_PREFIX_PATH $ENV{GALOIS_INSTALL_DIR})
-#find_package(Galois REQUIRED)
-#link_libraries(Galois::shmem)
+endif ()
+#link_libraries(libact.a libvlsilib.a libactscm.a libactscmcli.a libphydb.a)
 
 ######################################
 # detect the installation path of LEF parser and DEF parser,
@@ -83,8 +54,8 @@ if (NOT LEF_LIBRARY)
     message(FATAL_ERROR "liblef.a is not found")
 else ()
     message(STATUS "liblef.a found")
-endif()
-link_libraries(liblef.a)
+endif ()
+#link_libraries(liblef.a)
 
 message(STATUS "Detecting environment variable DEF_ROOT...")
 if (DEFINED ENV{DEF_ROOT})
@@ -102,29 +73,45 @@ if (NOT DEF_LIBRARY)
     message(FATAL_ERROR "libdef.a is not found")
 else ()
     message(STATUS "libdef.a found")
-endif()
-link_libraries(libdef.a)
+endif ()
+#link_libraries(libdef.a)
+
+######################################
+# Detect if OpenMP library exists
+######################################
+find_package(OpenMP REQUIRED)
+
+######################################
+# Detect if Boost library exists
+######################################
+#set(Boost_USE_STATIC_LIBS ON)
+find_package(Boost 1.71.0 COMPONENTS log_setup log filesystem REQUIRED)
+message(STATUS "Boost library path: ${Boost_LIBRARY_DIRS}")
+message(STATUS "Boost include path: ${Boost_INCLUDE_DIR}")
+message(STATUS "Boost libs: ${Boost_LIBRARIES}")
+include_directories(${Boost_INCLUDE_DIRS})
+#link_libraries(${Boost_LIBRARIES})
 
 ######################################
 # for building a standalone static executable
 ######################################
-set(BUILD_STATIC_EXECUTABLES FALSE)
-if(BUILD_STATIC_EXECUTABLES)
-    set(CMAKE_EXE_LINKER_FLAGS -static)
-    set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
-    set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS)       # remove -Wl,-Bdynamic
-    set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
-    set(CMAKE_SHARED_LIBRARY_C_FLAGS)         # remove -fPIC
-    set(CMAKE_SHARED_LIBRARY_CXX_FLAGS)
-    set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS)    # remove -rdynamic
-    set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS)
-    # Maybe this works as well, haven't tried yet.
-    # set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS FALSE)
-else(BUILD_STATIC_EXECUTABLES)
-    # Set RPATH to use for installed targets; append linker search path
-    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LOFAR_LIBDIR}")
-    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-endif(BUILD_STATIC_EXECUTABLES)
+#set(BUILD_STATIC_EXECUTABLES FALSE)
+#if(BUILD_STATIC_EXECUTABLES)
+#    set(CMAKE_EXE_LINKER_FLAGS -static)
+#    set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+#    set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS)       # remove -Wl,-Bdynamic
+#    set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
+#    set(CMAKE_SHARED_LIBRARY_C_FLAGS)         # remove -fPIC
+#    set(CMAKE_SHARED_LIBRARY_CXX_FLAGS)
+#    set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS)    # remove -rdynamic
+#    set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS)
+#    # Maybe this works as well, haven't tried yet.
+#    # set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS FALSE)
+#else(BUILD_STATIC_EXECUTABLES)
+#    # Set RPATH to use for installed targets; append linker search path
+#    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LOFAR_LIBDIR}")
+#    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+#endif(BUILD_STATIC_EXECUTABLES)
 
 # Set C++ compilation flags and options
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
@@ -140,17 +127,17 @@ if (NOT CMAKE_BUILD_TYPE)
             "DEBUG" "RELEASE")
 endif ()
 
-if(CMAKE_BUILD_TYPE MATCHES DEBUG)
+if (CMAKE_BUILD_TYPE MATCHES DEBUG)
     message(STATUS "DEBUG build type")
-endif(CMAKE_BUILD_TYPE MATCHES DEBUG)
+endif (CMAKE_BUILD_TYPE MATCHES DEBUG)
 
-if(CMAKE_BUILD_TYPE MATCHES RELEASE)
+if (CMAKE_BUILD_TYPE MATCHES RELEASE)
     message(STATUS "RELEASE build type")
-endif(CMAKE_BUILD_TYPE MATCHES RELEASE)
+endif (CMAKE_BUILD_TYPE MATCHES RELEASE)
 
 if (APPLE)
     add_compile_options(-Xpreprocessor)
-endif()
+endif ()
 add_compile_options(-fopenmp)
 add_compile_options(-Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic)
 
@@ -159,16 +146,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
 # Set the output directory of executables
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
-
-# Set a default build type if none was specified
-set(default_build_type "Release")
-if (NOT CMAKE_BUILD_TYPE)
-    message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
-    set(CMAKE_BUILD_TYPE "${default_build_type}")
-    # Set the possible values of build type for cmake-gui
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
-            "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-endif ()
 
 # All used circuit and placer source code
 file(GLOB SOURCES
@@ -195,49 +172,38 @@ file(GLOB SOURCES
 add_library(dalilib
         STATIC
         ${SOURCES})
+target_link_libraries(dalilib
+        act vlsilib actscm actscmcli phydb
+        lef.a def
+        ${Boost_LIBRARIES}
+        OpenMP::OpenMP_CXX)
 
 # Stand-alone placer, building from the dalilib library
 add_executable(dali
         dali/dali_standalone.cc)
 target_link_libraries(dali
-        PRIVATE dalilib
-        OpenMP::OpenMP_CXX)
+        PRIVATE dalilib)
 
 # Debugging executable, building from the dalilib library
 add_executable(dali-debug
         EXCLUDE_FROM_ALL
         dali/debug.cc)
 target_link_libraries(dali-debug
-        PRIVATE dalilib
-        OpenMP::OpenMP_CXX)
-
-# Debugging executable, building from the dalilib library
-add_executable(dali-scm
-        EXCLUDE_FROM_ALL
-        dali/dali_scm.cc)
-target_link_libraries(dali-scm
-        PRIVATE dalilib
-        actscm
-        actscmcli
-        ${CMAKE_DL_LIBS}
-        edit
-        OpenMP::OpenMP_CXX)
+        PRIVATE dalilib)
 
 # Debugging executable, building from the dalilib library
 add_executable(wellflow
         EXCLUDE_FROM_ALL
         dali/wellflow.cc)
 target_link_libraries(wellflow
-        PRIVATE dalilib
-        OpenMP::OpenMP_CXX)
+        PRIVATE dalilib)
 
 # Debugging executable, building from the dalilib library
 add_executable(adaptec-debug
         EXCLUDE_FROM_ALL
         dali/debug-adaptec.cc)
 target_link_libraries(adaptec-debug
-        PRIVATE dalilib
-        OpenMP::OpenMP_CXX)
+        PRIVATE dalilib)
 
 # Stand-alone hpwl calculator, building from the dalilib library
 add_executable(hpwl
@@ -301,7 +267,7 @@ install(DIRECTORY dali/../module/eigen-git-mirror/Eigen/ DESTINATION ${INCLUDE_D
 # Install binary
 ######################################
 install(TARGETS dali
-    DESTINATION bin)
+        DESTINATION bin)
 
 ######################################
 # Install library

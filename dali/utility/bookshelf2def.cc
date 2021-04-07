@@ -8,12 +8,12 @@
 
 #include <iostream>
 
-#include "circuit.h"
-#include "common/global.h"
-//TODO: fix this
-VerboseLevel globalVerboseLevel = LOG_INFO;
+#include "dali/circuit.h"
+#include "dali/common/logging.h"
 
 void ReportUsage();
+
+using namespace dali;
 
 int main(int argc, char *argv[]) {
   /*if (argc != 9) {
@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
         x_grid = std::stod(str_x_grid);
         y_grid = std::stod(str_y_grid);
       } catch (...) {
-        BOOST_LOG_TRIVIAL(info)   << "Invalid input files!\n";
+        BOOST_LOG_TRIVIAL(info) << "Invalid input files!\n";
         ReportUsage();
         return 1;
       }
@@ -55,24 +55,15 @@ int main(int argc, char *argv[]) {
     } else if (arg == "-db" && i < argc) {
       use_db = true;
     } else {
-      BOOST_LOG_TRIVIAL(info)   << "Unknown command line option: " << argv[i] << "\n";
+      BOOST_LOG_TRIVIAL(info) << "Unknown command line option: " << argv[i] << "\n";
       return 1;
     }
   }
 
   Circuit circuit;
-  if (use_db) {
-    odb::dbDatabase *db = odb::dbDatabase::create();
-    std::vector<std::string> defFileVec;
-    defFileVec.push_back(def_file_name);
-    odb_read_lef(db, lef_file_name.c_str());
-    odb_read_def(db, defFileVec);
-    circuit.InitializeFromDB(db);
-  } else {
-    circuit.SetGridValue(x_grid, y_grid);
-    circuit.ReadLefFile(lef_file_name);
-    circuit.ReadDefFile(def_file_name);
-  }
+  circuit.SetGridValue(x_grid, y_grid);
+  circuit.ReadLefFile(lef_file_name);
+  circuit.ReadDefFile(def_file_name);
   circuit.LoadBookshelfPl(pl_file_name);
   circuit.SaveDefFile(out_def_name, def_file_name);
 
@@ -80,14 +71,14 @@ int main(int argc, char *argv[]) {
 }
 
 void ReportUsage() {
-  BOOST_LOG_TRIVIAL(info)   << "\033[0;36m"
-            << "Usage: bookshelf2def\n"
-            << " -lef <file.lef>\n"
-            << " -def <file.def>\n"
-            << " -pl  <file.pl>\n"
-            << " -g/-grid grid_value_x grid_value_y\n"
-            << " -o   <out_name>.def\n"
-            << " -db (optional, use Naive parser by default)\n"
-            << "(order does not matter)"
-            << "\033[0m\n";
+  BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
+                          << "Usage: bookshelf2def\n"
+                          << " -lef <file.lef>\n"
+                          << " -def <file.def>\n"
+                          << " -pl  <file.pl>\n"
+                          << " -g/-grid grid_value_x grid_value_y\n"
+                          << " -o   <out_name>.def\n"
+                          << " -db (optional, use Naive parser by default)\n"
+                          << "(order does not matter)"
+                          << "\033[0m\n";
 }

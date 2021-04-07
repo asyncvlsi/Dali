@@ -14,7 +14,7 @@
 //TODO: fix this
 #include <iostream>
 
-#include "circuit.h"
+#include "dali/circuit.h"
 
 void ReportUsage();
 

@@ -8,11 +8,11 @@
 #include <cassert>
 #include <cmath>
 
-#include <stdexcept>
 #include <iostream>
 #include <sstream>
-#include <vector>
+#include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace dali {
 
@@ -155,6 +155,13 @@ class NotImplementedException : public std::logic_error {
  public:
   NotImplementedException() : std::logic_error("Function not yet implemented.") {};
 };
+
+/****helper functions****/
+// splits a line into many words
+void StrSplit(std::string &line, std::vector<std::string> &res);
+
+// finds the first number in a string.
+int FindFirstNumber(std::string &str);
 
 }
 

@@ -115,14 +115,6 @@ class Circuit {
 
   // create well information container for a given BlockType.
   BlockTypeWell *AddBlockTypeWell(BlockType *blk_type);
-
-  /****helper functions****/
-  // splits a line into many words
-  void StrSplit(std::string &line, std::vector<std::string> &res);
-
-  // finds the first number in a string.
-  int FindFirstNumber(std::string &str);
-
  public:
 
   Circuit();
