@@ -21,9 +21,9 @@ using namespace dali;
 int main() {
   double wall_time = get_wall_time();
 
-  std::string lef_file_name = "processor.lef";
-  std::string def_file_name = "processor.def";
-  std::string cell_file_name ="processor.cell";
+  std::string lef_file_name = "ICCAD2020/processor1000.lef";
+  std::string def_file_name = "ICCAD2020/processor1000.def";
+  std::string cell_file_name ="ICCAD2020/processor1000.cell";
 
   // read LEF/DEF/CELL
   phydb::PhyDB phy_db;
@@ -33,16 +33,15 @@ int main() {
 
   // initialize Dali
   Dali dali(&phy_db, boost::log::trivial::info);
-  dali.StartPlacement(0.65);
+  dali.StartPlacement(0.69);
   dali.SimpleIoPinPlacement("m1");
   dali.ExportToDEF(def_file_name);
 
   dali.ExportToPhyDB();
-  //phy_db.GetDesignPtr()->ReportIoPins();
-  dali.Close();
 
   wall_time = get_wall_time() - wall_time;
   BOOST_LOG_TRIVIAL(info)   << "Execution time " << wall_time << "s.\n";
+  dali.Close();
 
   return 0;
 }

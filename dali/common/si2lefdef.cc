@@ -176,7 +176,7 @@ int getLefPins(lefrCallbackType_e type, lefiPin *pin, lefiUserData userData) {
         double urx = pin->port(i)->getRect(j)->xh / circuit.GridValueX();
         double lly = pin->port(i)->getRect(j)->yl / circuit.GridValueY();
         double ury = pin->port(i)->getRect(j)->yh / circuit.GridValueY();
-        //BOOST_LOG_TRIVIAL(info)   << "  PORT: " << llx << "  " << lly << "  " << urx << "  " << ury << "  " << "\n";
+        //BOOST_LOG_TRIVIAL(info)   << "  PORT: " << lx << "  " << lly << "  " << urx << "  " << ury << "  " << "\n";
         new_pin->AddRectOnly(llx, lly, urx, ury);
       }
     }

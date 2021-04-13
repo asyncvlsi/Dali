@@ -24,7 +24,7 @@ endif ()
 include_directories($ENV{ACT_HOME}/include)
 link_directories($ENV{ACT_HOME}/lib)
 find_library(ACT_LIBRARY
-        NAMES act vlsilib actscm actscmcli phydb
+        NAMES act vlsilib phydb
         PATHS $ENV{ACT_HOME}/lib
         REQUIRED)
 if (NOT ACT_LIBRARY)
@@ -32,7 +32,6 @@ if (NOT ACT_LIBRARY)
 else ()
     message(STATUS "libact.a found")
 endif ()
-#link_libraries(libact.a libvlsilib.a libactscm.a libactscmcli.a libphydb.a)
 
 ######################################
 # detect the installation path of LEF parser and DEF parser,
@@ -152,7 +151,6 @@ file(GLOB SOURCES
         dali/dali.cc
         dali/circuit/*.cc
         dali/common/*.cc
-        dali/daliscm/*.cc
         dali/placer/*.cc
         dali/placer/globalPlacer/*.cc
         dali/placer/globalPlacer/GPSimPL/*.cc
@@ -173,8 +171,8 @@ add_library(dalilib
         STATIC
         ${SOURCES})
 target_link_libraries(dalilib
-        act vlsilib actscm actscmcli phydb
-        lef.a def
+        act vlsilib phydb
+        lef def
         ${Boost_LIBRARIES}
         OpenMP::OpenMP_CXX)
 

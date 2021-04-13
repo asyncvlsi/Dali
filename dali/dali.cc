@@ -47,6 +47,7 @@ void Dali::StartPlacement(double density, int number_of_threads) {
   //gb_placer_->GenMATLABWellTable("gb_result");
   //circuit.ReportNetFanoutHisto();
 
+  /*
   legalizer_.TakeOver(&gb_placer_);
   legalizer_.IsPrintDisplacement(true);
   legalizer_.StartPlacement();
@@ -54,9 +55,10 @@ void Dali::StartPlacement(double density, int number_of_threads) {
   legalizer_.GenDisplacement("disp_result.txt");
   //circuit.GenLongNetTable("lg_longnet.txt");
   //legalizer_->SaveDEFFile("circuit.def", def_file);
+  */
 
   well_legalizer_.TakeOver(&gb_placer_);
-  well_legalizer_.SetStripPartitionMode(SCAVENGE);
+  well_legalizer_.SetStripePartitionMode(SCAVENGE);
   well_legalizer_.StartPlacement();
   //well_legalizer_.GenMatlabClusterTable("sc_result");
   well_legalizer_.GenMATLABTable("sc_result.txt");
@@ -170,7 +172,7 @@ void Dali::ExportMiniRowsToPhyDB() {
   int counter = 0;
   for (int i = 0; i < well_legalizer_.tot_col_num_; ++i) {
     auto &col = well_legalizer_.col_list_[i];
-    for (auto &strip: col.strip_list_) {
+    for (auto &strip: col.stripe_list_) {
       std::string column_name = "column" + std::to_string(counter++);
       std::string bot_signal_;
       if (strip.is_first_row_orient_N_) {

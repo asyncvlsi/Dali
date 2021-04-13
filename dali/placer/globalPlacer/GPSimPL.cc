@@ -1749,7 +1749,7 @@ unsigned long int GPSimPL::WindowArea(WindowQuadruple &window) {
     }
   }
   /*
-  for (int i=window.llx; i<=window.urx; ++i) {
+  for (int i=window.lx; i<=window.urx; ++i) {
     for (int j=window.lly; j<=window.ury; ++j) {
       res += grid_bin_matrix[i][j].Area();
     }

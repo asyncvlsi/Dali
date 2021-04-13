@@ -122,7 +122,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
 
   // 4. load all macros, aka gate types, block types, cell types
   //BOOST_LOG_TRIVIAL(info)   << lib->getName() << " lib\n";
-  double llx = 0, lly = 0, urx = 0, ury = 0;
+  double lx = 0, lly = 0, urx = 0, ury = 0;
   double width = 0, height = 0;
   for (auto &&macro: lib->getMasters()) {
     std::string macro_name(macro->getName());
@@ -143,7 +143,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
       Assert(!terminal->getMPins().empty(), "No physical pins, Macro: " + *blk_type->NamePtr() + ", pin: " + pin_name);
       Assert(!terminal->getMPins().begin()->getGeometry().empty(), "No geometries provided for pin");
       auto geo_shape = terminal->getMPins().begin()->getGeometry().begin();
-      llx = geo_shape->xMin() / tech_.grid_value_x_ / tech_.database_microns_;
+      lx = geo_shape->xMin() / tech_.grid_value_x_ / tech_.database_microns_;
       urx = geo_shape->xMax() / tech_.grid_value_x_ / tech_.database_microns_;
       lly = geo_shape->yMin() / tech_.grid_value_y_ / tech_.database_microns_;
       ury = geo_shape->yMax() / tech_.grid_value_y_ / tech_.database_microns_;
@@ -158,7 +158,7 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
         //Assert(false, "Unsupported terminal IO type\n");
       }
       Pin *new_pin = AddBlkTypePin(blk_type, pin_name, is_input);
-      AddBlkTypePinRect(new_pin, llx, lly, urx, ury);
+      AddBlkTypePinRect(new_pin, lx, lly, urx, ury);
     }
   }
   //tech_.well_tap_cell_->Report();

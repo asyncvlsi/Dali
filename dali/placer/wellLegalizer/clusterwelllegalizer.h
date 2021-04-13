@@ -8,7 +8,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "block_cluster.h"
+#include "blockcluster.h"
 #include "dali/circuit/block.h"
 #include "dali/common/displaceviewer.h"
 #include "dali/placer/legalizer/LGTetrisEx.h"
