@@ -1045,7 +1045,7 @@ void StdClusterWellLegalizer::SingleSegmentClusteringOptimization() {
 
           is_overlap = false;
           for (int i = 0; i < new_count - 1; ++i) {
-            if (old_cluster[i].Overlap(old_cluster[i + 1])) {
+            if (old_cluster[i].IsOnLeft(old_cluster[i + 1])) {
               is_overlap = true;
               break;
             }
@@ -1056,7 +1056,7 @@ void StdClusterWellLegalizer::SingleSegmentClusteringOptimization() {
         } while (is_overlap);
 
         for (int i = 0; i < num_old_cluster; ++i) {
-          old_cluster[i].PlaceBlock();
+          old_cluster[i].UpdateBlockLocation();
         }
       }
     }

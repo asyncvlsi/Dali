@@ -21,9 +21,9 @@ using namespace dali;
 int main() {
   double wall_time = get_wall_time();
 
-  std::string lef_file_name = "ICCAD2020/processor1000.lef";
-  std::string def_file_name = "ICCAD2020/processor1000.def";
-  std::string cell_file_name ="ICCAD2020/processor1000.cell";
+  std::string lef_file_name = "ICCAD2020/processor.lef";
+  std::string def_file_name = "ICCAD2020/processor.def";
+  std::string cell_file_name ="ICCAD2020/processor.cell";
 
   // read LEF/DEF/CELL
   phydb::PhyDB phy_db;

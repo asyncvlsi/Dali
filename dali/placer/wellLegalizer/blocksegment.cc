@@ -14,7 +14,7 @@ void BlockSegment::Merge(BlockSegment &sc, int lower_bound, int upper_bound) {
     blk_list.push_back(sc.blk_list[i]);
     initial_loc.push_back(sc.initial_loc[i]);
   }
-  width += sc.width;
+  width_ += sc.Width();
 
   std::vector<double> anchor;
   int accumulative_width = 0;
@@ -23,23 +23,23 @@ void BlockSegment::Merge(BlockSegment &sc, int lower_bound, int upper_bound) {
     anchor.push_back(initial_loc[i] - accumulative_width);
     accumulative_width += blk_list[i]->Width();
   }
-  DaliExpects(width == accumulative_width, "Something is wrong, width does not match, BlockSegment::Merge()");
+  DaliExpects(width_ == accumulative_width, "Something is wrong, width does not match, BlockSegment::Merge()");
 
   double sum = 0;
   for (auto &num: anchor) {
     sum += num;
   }
-  lx = (int)std::round(sum/sz);
-  if (lx < lower_bound) {
-    lx = lower_bound;
+  lx_ = (int)std::round(sum/sz);
+  if (lx_ < lower_bound) {
+    lx_ = lower_bound;
   }
-  if (lx + width > upper_bound) {
-    lx = upper_bound - width;
+  if (lx_ + width_ > upper_bound) {
+    lx_ = upper_bound - width_;
   }
 }
 
-void BlockSegment::PlaceBlock() {
-  int cur_loc = lx;
+void BlockSegment::UpdateBlockLocation() {
+  int cur_loc = lx_;
   for (auto &blk: blk_list) {
     blk->setLLX(cur_loc);
     cur_loc += blk->Width();

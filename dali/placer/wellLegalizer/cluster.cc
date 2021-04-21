@@ -190,8 +190,8 @@ void Cluster::MinDisplacementLegalization() {
 
     BlockSegment *cur_seg = &(segments[seg_sz-1]);
     BlockSegment *prev_seg = &(segments[seg_sz-2]);
-    //std::cout << prev_seg->Overlap(*cur_seg) << " ";
-    while (prev_seg->Overlap(*cur_seg)) {
+    //std::cout << prev_seg->IsOnLeft(*cur_seg) << " ";
+    while (prev_seg->IsOnLeft(*cur_seg)) {
       prev_seg->Merge(*cur_seg, lower_bound, upper_bound);
       segments.pop_back();
 
@@ -205,7 +205,7 @@ void Cluster::MinDisplacementLegalization() {
   //int count = 0;
   //std::cout << "...";
   for (auto &seg: segments) {
-    seg.PlaceBlock();
+    seg.UpdateBlockLocation();
     //count += seg.blk_list.size();
     //std::cout << seg.blk_list.size() << " ";
     //seg.Report();

@@ -10,23 +10,26 @@
 namespace dali {
 
 struct BlockSegment {
-    BlockSegment(Block *blk_ptr, int loc) : lx(loc), width(blk_ptr->Width()) {
+  private:
+    int lx_;
+    int width_;
+  public:
+    BlockSegment(Block *blk_ptr, int loc) : lx_(loc), width_(blk_ptr->Width()) {
       blk_list.push_back(blk_ptr);
       initial_loc.push_back(loc);
     }
-    int lx;
-    int width;
     std::vector<Block *> blk_list;
     std::vector<double> initial_loc;
 
-    int LX() const { return lx; }
-    int UX() const { return lx + width; }
+    int LX() const { return lx_; }
+    int UX() const { return lx_ + width_; }
+    int Width() const { return width_; }
 
-    bool Overlap(BlockSegment &sc) const {
+    bool IsOnLeft(BlockSegment &sc) const {
       return sc.LX() < UX();
     }
     void Merge(BlockSegment &sc, int lower_bound, int upper_bound);
-    void PlaceBlock();
+    void UpdateBlockLocation();
 
     void Report() const;
 };

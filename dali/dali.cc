@@ -144,7 +144,7 @@ void Dali::ExportIoPinsToPhyDB() {
       int height = std::ceil(iopin.Layer()->Width() * circuit_.DistanceMicrons());
 
       std::string iopin_name = *(iopin.Name());
-      DaliExpects(phy_db_ptr_->IsIoPinExist(iopin_name), "IOPIN not in PhyDB? " + iopin_name);
+      DaliExpects(phy_db_ptr_->IsIoPinExisting(iopin_name), "IOPIN not in PhyDB? " + iopin_name);
       phydb::IOPin *iopin_ptr = phy_db_ptr_->GetIoPinPtr(iopin_name);
       iopin_ptr->SetShape(metal_name, -half_width, 0, half_width, height);
 
