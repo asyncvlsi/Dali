@@ -19,29 +19,29 @@
 using namespace dali;
 
 int main() {
-  double wall_time = get_wall_time();
+    double wall_time = get_wall_time();
 
-  std::string lef_file_name = "ICCAD2020/processor.lef";
-  std::string def_file_name = "ICCAD2020/processor.def";
-  std::string cell_file_name ="ICCAD2020/processor.cell";
+    std::string lef_file_name = "ICCAD2020/processor100.lef";
+    std::string def_file_name = "ICCAD2020/processor100.def";
+    std::string cell_file_name = "ICCAD2020/processor100.cell";
 
-  // read LEF/DEF/CELL
-  phydb::PhyDB phy_db;
-  phy_db.ReadLef(lef_file_name);
-  phy_db.ReadDef(def_file_name);
-  phy_db.ReadCell(cell_file_name);
+    // read LEF/DEF/CELL
+    phydb::PhyDB phy_db;
+    phy_db.ReadLef(lef_file_name);
+    phy_db.ReadDef(def_file_name);
+    phy_db.ReadCell(cell_file_name);
 
-  // initialize Dali
-  Dali dali(&phy_db, boost::log::trivial::info);
-  dali.StartPlacement(0.69);
-  dali.SimpleIoPinPlacement("m1");
-  dali.ExportToDEF(def_file_name);
+    // initialize Dali
+    Dali dali(&phy_db, boost::log::trivial::info);
+    dali.StartPlacement(0.69);
+    dali.SimpleIoPinPlacement("m1");
+    dali.ExportToDEF(def_file_name);
 
-  dali.ExportToPhyDB();
+    dali.ExportToPhyDB();
 
-  wall_time = get_wall_time() - wall_time;
-  BOOST_LOG_TRIVIAL(info)   << "Execution time " << wall_time << "s.\n";
-  dali.Close();
+    wall_time = get_wall_time() - wall_time;
+    BOOST_LOG_TRIVIAL(info) << "Execution time " << wall_time << "s.\n";
+    dali.Close();
 
-  return 0;
+    return 0;
 }

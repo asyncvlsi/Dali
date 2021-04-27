@@ -213,7 +213,7 @@ void Cluster::MinDisplacementLegalization() {
     //std::cout << "--" << count << "\n";
 }
 
-double Cluster::AverageNpBoundaryLoc() {
+void Cluster::UpdateMinDisplacementLLY() {
     DaliExpects(blk_list_.size() == blk_initial_location_.size(),
                 "Block count does not equal initial location count\n");
     double sum = 0;
@@ -221,7 +221,11 @@ double Cluster::AverageNpBoundaryLoc() {
         double init_np_boundary = init_loc.y;
         sum += init_np_boundary;
     }
-    return sum/(int)(blk_initial_location_.size());
+    min_displacement_lly_ = sum / (int) (blk_initial_location_.size()) - PHeight();
+}
+
+double Cluster::MinDisplacementLLY() const{
+    return min_displacement_lly_;
 }
 
 void ClusterSegment::Merge(ClusterSegment &sc, int lower_bound, int upper_bound) {
@@ -232,33 +236,35 @@ void ClusterSegment::Merge(ClusterSegment &sc, int lower_bound, int upper_bound)
     height_ += sc.Height();
 
     sz = (int) cluster_list.size();
-    size_t anchor_size = 0;
+    int anchor_size = 0;
     for (auto &cluster_ptr: cluster_list) {
-        anchor_size += cluster_ptr->blk_list_.size();
+        anchor_size += (int) cluster_ptr->blk_list_.size();
     }
     std::vector<double> anchor;
     anchor.reserve(anchor_size);
-    int accumulative_height = 0;
+    int accumulative_d = 0;
     for (int i = 0; i < sz; ++i) {
         for (auto &init_loc: cluster_list[i]->blk_initial_location_) {
             double init_np_boundary = init_loc.y;
-            anchor.push_back(init_np_boundary + accumulative_height);
+            anchor.push_back(init_np_boundary - accumulative_d);
         }
-        accumulative_height += cluster_list[i]->NHeight();
+        accumulative_d += cluster_list[i]->NHeight();
         if (i + 1 < sz) {
-            accumulative_height += cluster_list[i + 1]->PHeight();
+            accumulative_d += cluster_list[i + 1]->PHeight();
         } else {
-            accumulative_height += cluster_list[0]->PHeight();
+            accumulative_d += cluster_list[0]->PHeight();
         }
     }
-    DaliExpects(height_ == accumulative_height,
+    DaliExpects(height_ == accumulative_d,
                 "Something is wrong, height does not match, ClusterSegment::Merge()");
 
-    double sum = 0;
+    long double sum = 0;
     for (auto &num: anchor) {
         sum += num;
     }
-    ly_ = (int) std::round(sum / sz);
+    int first_np_boundary = (int) std::round(sum / anchor_size);
+
+    ly_ = first_np_boundary - cluster_list[0]->PHeight();
     if (ly_ < lower_bound) {
         ly_ = lower_bound;
     }
@@ -268,18 +274,12 @@ void ClusterSegment::Merge(ClusterSegment &sc, int lower_bound, int upper_bound)
 }
 
 void ClusterSegment::UpdateClusterLocation() {
-    int cur_np_boundary = ly_;
+    int cur_y = ly_;
     int sz = (int) cluster_list.size();
     for (int i = 0; i < sz; ++i) {
-        int lly = cur_np_boundary - cluster_list[i]->PHeight();
-        cluster_list[i]->SetLLY(lly);
+        cluster_list[i]->SetLLY(cur_y);
         cluster_list[i]->UpdateBlockLocY();
-        cur_np_boundary += cluster_list[i]->NHeight();
-        if (i + 1 < sz) {
-            cur_np_boundary += cluster_list[i + 1]->PHeight();
-        } else {
-            cur_np_boundary += cluster_list[0]->PHeight();
-        }
+        cur_y += cluster_list[i]->Height();
     }
 }
 

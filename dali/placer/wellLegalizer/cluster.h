@@ -34,6 +34,9 @@ struct Cluster {
     int p_well_height_ = 0;
     int n_well_height_ = 0;
 
+    /**** lly which gives minimal displacement ****/
+    double min_displacement_lly_ = DBL_MIN;
+
     /**** member functions ****/
     int UsedSize() const { return used_size_; }
     void SetUsedSize(int used_size) { used_size_ = used_size; }
@@ -108,7 +111,8 @@ struct Cluster {
     void UpdateBlockLocationCompact();
 
     void MinDisplacementLegalization();
-    double AverageNpBoundaryLoc();
+    void UpdateMinDisplacementLLY();
+    double MinDisplacementLLY() const;
 };
 
 struct ClusterSegment {

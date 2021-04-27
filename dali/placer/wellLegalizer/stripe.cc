@@ -10,27 +10,25 @@
 namespace dali {
 
 void Stripe::MinDisplacementAdjustment() {
+    for (auto &cluster: cluster_list_) {
+        cluster.UpdateMinDisplacementLLY();
+    }
+
+    std::sort(cluster_list_.begin(),
+              cluster_list_.end(),
+              [](const Cluster &cluster0, const Cluster &cluster1) {
+                  return cluster0.MinDisplacementLLY() < cluster1.MinDisplacementLLY();
+              });
+
     std::vector<ClusterSegment> segments;
 
-    int sz = (int)cluster_list_.size();
+    int sz = (int) cluster_list_.size();
     int lower_bound = ly_;
     int upper_bound = ly_ + height_;
-    //std::cout << sz << "--";
-    int i = 0;
-    if (is_bottom_up_) {
-        i = 0;
-    } else {
-        i = sz - 1;
-    }
-    while (true) {
+    for (int i = 0; i < sz; ++i) {
         // create a segment which contains only this block
-        if (is_bottom_up_) {
-            if (i >= sz) break;
-        } else {
-            if (i < 0) break;
-        }
         Cluster &cluster = cluster_list_[i];
-        double init_y = cluster.AverageNpBoundaryLoc() - cluster.PHeight();
+        double init_y = cluster.MinDisplacementLLY();
         if (init_y < lower_bound) {
             init_y = lower_bound;
         }
@@ -48,7 +46,6 @@ void Stripe::MinDisplacementAdjustment() {
 
         ClusterSegment *cur_seg = &(segments[seg_sz - 1]);
         ClusterSegment *prev_seg = &(segments[seg_sz - 2]);
-        //std::cout << prev_seg->IsNotOnLeft(*cur_seg) << " ";
         while (prev_seg->IsNotOnBottom(*cur_seg)) {
             prev_seg->Merge(*cur_seg, lower_bound, upper_bound);
             segments.pop_back();
@@ -58,23 +55,11 @@ void Stripe::MinDisplacementAdjustment() {
             cur_seg = &(segments[seg_sz - 1]);
             prev_seg = &(segments[seg_sz - 2]);
         }
-
-        if (is_bottom_up_) {
-            i += 1;
-        } else {
-            i -= 1;
-        }
     }
 
-    //int count = 0;
-    //std::cout << "...";
     for (auto &seg: segments) {
         seg.UpdateClusterLocation();
-        //count += seg.blk_list.size();
-        //std::cout << seg.blk_list.size() << " ";
-        //seg.Report();
     }
-    //std::cout << "--" << count << "\n";
 }
 
 Stripe *ClusterStripe::GetStripeMatchSeg(SegI seg, int y_loc) {
