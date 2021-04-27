@@ -883,8 +883,8 @@ bool LGTetrisEx::LocalLegalizationRight() {
       }
     }
 
-    block.setURX(res.x);
-    block.setLLY(res.y);
+      block.SetURX(res.x);
+      block.SetLLY(res.y);
 
     UseSpaceRight(block);
   }
@@ -1394,8 +1394,8 @@ bool LGTetrisEx::LocalLegalizationTop() {
       }
     }
 
-    block.setLLX(res.x);
-    block.setURY(res.y);
+      block.SetLLX(res.x);
+      block.SetURY(res.y);
 
     UseSpaceTop(block);
   }

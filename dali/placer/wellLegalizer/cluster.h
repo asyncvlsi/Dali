@@ -56,43 +56,43 @@ struct Cluster {
 
     void SetHeight(int height) { height_ = height; }
     void UpdateWellHeightFromBottom(int p_well_height, int n_well_height) {
-      /****
-       * Update the height of this cluster with the lower y of this cluster fixed.
-       * So even if the height changes, the lower y of this cluster does not need be changed.
-       * ****/
-      p_well_height_ = std::max(p_well_height_, p_well_height);
-      n_well_height_ = std::max(n_well_height_, n_well_height);
-      height_ = p_well_height_ + n_well_height_;
+        /****
+         * Update the height of this cluster with the lower y of this cluster fixed.
+         * So even if the height changes, the lower y of this cluster does not need be changed.
+         * ****/
+        p_well_height_ = std::max(p_well_height_, p_well_height);
+        n_well_height_ = std::max(n_well_height_, n_well_height);
+        height_ = p_well_height_ + n_well_height_;
     }
     void UpdateWellHeightFromTop(int p_well_height, int n_well_height) {
-      /****
-       * Update the height of this cluster with the upper y of this cluster fixed.
-       * So if the height changes, then the lower y of this cluster should also be changed.
-       * ****/
-      int old_height = height_;
-      p_well_height_ = std::max(p_well_height_, p_well_height);
-      n_well_height_ = std::max(n_well_height_, n_well_height);
-      height_ = p_well_height_ + n_well_height_;
-      ly_ -= (height_ - old_height);
+        /****
+         * Update the height of this cluster with the upper y of this cluster fixed.
+         * So if the height changes, then the lower y of this cluster should also be changed.
+         * ****/
+        int old_height = height_;
+        p_well_height_ = std::max(p_well_height_, p_well_height);
+        n_well_height_ = std::max(n_well_height_, n_well_height);
+        height_ = p_well_height_ + n_well_height_;
+        ly_ -= (height_ - old_height);
     }
     int Height() const { return height_; }
     int PHeight() const { return p_well_height_; }
     int NHeight() const { return n_well_height_; }
     int PNEdge() const {
-      /****
-       * Returns the P/N well edge to the bottom of this cluster
-       * ****/
-      return is_orient_N_ ? PHeight() : NHeight();
+        /****
+         * Returns the P/N well edge to the bottom of this cluster
+         * ****/
+        return is_orient_N_ ? PHeight() : NHeight();
     }
 
     void SetLoc(int lx, int ly) {
-      lx_ = lx;
-      ly_ = ly;
+        lx_ = lx;
+        ly_ = ly;
     }
 
     void AddBlock(Block *blk_ptr) {
-      blk_list_.push_back(blk_ptr);
-      blk_initial_location_.emplace_back(blk_ptr->LLX(), blk_ptr->LLY());
+        blk_list_.push_back(blk_ptr);
+        blk_initial_location_.emplace_back(blk_ptr->LLX(), blk_ptr->LLY() + blk_ptr->TypePtr()->WellPtr()->PHeight());
     }
 
     void ShiftBlockX(int x_disp);
@@ -108,6 +108,28 @@ struct Cluster {
     void UpdateBlockLocationCompact();
 
     void MinDisplacementLegalization();
+    double AverageNpBoundaryLoc();
+};
+
+struct ClusterSegment {
+  private:
+    int ly_;
+    int height_;
+  public:
+    ClusterSegment(Cluster *cluster_ptr, int loc) : ly_(loc), height_(cluster_ptr->Height()) {
+        cluster_list.push_back(cluster_ptr);
+    }
+    std::vector<Cluster *> cluster_list;
+
+    int LY() const { return ly_; }
+    int UY() const { return ly_ + height_; }
+    int Height() const { return height_; }
+
+    bool IsNotOnBottom(ClusterSegment &sc) const {
+        return sc.LY() < UY();
+    }
+    void Merge(ClusterSegment &sc, int lower_bound, int upper_bound);
+    void UpdateClusterLocation();
 };
 
 }

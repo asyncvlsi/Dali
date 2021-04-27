@@ -244,7 +244,7 @@ void Placer::SanityCheck() {
 void Placer::UpdateMovableBlkPlacementStatus() {
   for (auto &blk: *BlockList()) {
     if (blk.IsMovable()) {
-      blk.setPlacementStatus(PLACED_);
+        blk.SetPlacementStatus(PLACED_);
     }
   }
 }

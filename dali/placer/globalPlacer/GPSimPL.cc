@@ -96,8 +96,8 @@ void GPSimPL::BlockLocRandomInit() {
 
   for (auto &block: circuit_->BlockListRef()) {
     if (block.IsMovable()) {
-      block.setCenterX(RegionLeft() + region_width * distribution(generator));
-      block.setCenterY(RegionBottom() + region_height * distribution(generator));
+        block.SetCenterX(RegionLeft() + region_width * distribution(generator));
+        block.SetCenterY(RegionBottom() + region_height * distribution(generator));
     }
   }
   BOOST_LOG_TRIVIAL(info) << "Block location uniform initialization complete\n";
@@ -127,8 +127,8 @@ void GPSimPL::BlockLocCenterInit() {
     x = std::min(x, (double) RegionRight());
     y = std::max(y, (double) RegionBottom());
     y = std::min(y, (double) RegionTop());
-    block.setCenterX(x);
-    block.setCenterY(y);
+      block.SetCenterX(x);
+      block.SetCenterY(y);
   }
   BOOST_LOG_TRIVIAL(info) << "Block location gaussian initialization complete\n";
   init_hpwl_x_ = circuit_->WeightedHPWLX();
@@ -1247,7 +1247,7 @@ double GPSimPL::OptimizeQuadraticMetricX(double cg_stop_criterion) {
   for (int i = 0; i < max_rounds; ++i) {
     vx = cgx.solveWithGuess(bx, vx);
     for (int num = 0; num < sz; ++num) {
-      block_list[num].setLLX(vx[num]);
+        block_list[num].SetLLX(vx[num]);
     }
     double evaluate_result = WeightedHPWLX();
     eval_history.push_back(evaluate_result);
@@ -1271,7 +1271,7 @@ double GPSimPL::OptimizeQuadraticMetricX(double cg_stop_criterion) {
   wall_time = get_wall_time();
 
   for (int num = 0; num < sz; ++num) {
-    block_list[num].setLLX(vx[num]);
+      block_list[num].SetLLX(vx[num]);
   }
   wall_time = get_wall_time() - wall_time;
   tot_loc_update_time_x += wall_time;
@@ -1298,7 +1298,7 @@ double GPSimPL::OptimizeQuadraticMetricY(double cg_stop_criterion) {
   for (int i = 0; i < max_rounds; ++i) {
     vy = cgy.solveWithGuess(by, vy);
     for (int num = 0; num < sz; ++num) {
-      block_list[num].setLLY(vy[num]);
+        block_list[num].SetLLY(vy[num]);
     }
     double evaluate_result = WeightedHPWLY();
     eval_history.push_back(evaluate_result);
@@ -1321,7 +1321,7 @@ double GPSimPL::OptimizeQuadraticMetricY(double cg_stop_criterion) {
 
   wall_time = get_wall_time();
   for (int num = 0; num < sz; ++num) {
-    block_list[num].setLLY(vy[num]);
+      block_list[num].SetLLY(vy[num]);
   }
   wall_time = get_wall_time() - wall_time;
   tot_loc_update_time_y += wall_time;
@@ -2312,7 +2312,7 @@ void GPSimPL::PlaceBlkInBox(BoxBin &box) {
   int cell_num;
   for (auto &pair: index_loc_list_x) {
     cell_num = pair.first;
-    block_list[cell_num].setCenterX(box.left + cur_pos / total_length * box_width);
+      block_list[cell_num].SetCenterX(box.left + cur_pos / total_length * box_width);
     cur_pos += block_list[cell_num].Width();
   }
 
@@ -2329,7 +2329,7 @@ void GPSimPL::PlaceBlkInBox(BoxBin &box) {
   int box_height = box.top - box.bottom;
   for (auto &pair: index_loc_list_y) {
     cell_num = pair.first;
-    block_list[cell_num].setCenterY(box.bottom + cur_pos / total_length * box_height);
+      block_list[cell_num].SetCenterY(box.bottom + cur_pos / total_length * box_height);
     cur_pos += block_list[cell_num].Height();
   }
 }
@@ -2432,7 +2432,7 @@ void GPSimPL::RoughLegalBlkInBox(BoxBin &box) {
   DaliExpects(span_x > 0, "Expect span_x > 0!");
   for (auto &pair: index_loc_list) {
     auto &block = block_list[pair.num];
-    block.setCenterX((block.X() - min_x) / span_x * box_width + box.left);
+      block.SetCenterX((block.X() - min_x) / span_x * box_width + box.left);
   }
 
 }
@@ -2529,8 +2529,8 @@ void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
         Block *cell;
         for (auto &cell_id: front_box.cell_list) {
           cell = &block_list[cell_id];
-          cell->setCenterX((front_box.left + front_box.right) / 2.0);
-          cell->setCenterY((front_box.bottom + front_box.top) / 2.0);
+            cell->SetCenterX((front_box.left + front_box.right) / 2.0);
+            cell->SetCenterY((front_box.bottom + front_box.top) / 2.0);
         }
       } else {
         PlaceBlkInBox(front_box);
@@ -2618,11 +2618,11 @@ void GPSimPL::UpdateAnchorLocation() {
   for (size_t i = 0; i < sz; ++i) {
     double tmp_loc_x = x_anchor[i];
     x_anchor[i] = block_list[i].LLX();
-    block_list[i].setLLX(tmp_loc_x);
+      block_list[i].SetLLX(tmp_loc_x);
 
     double tmp_loc_y = y_anchor[i];
     y_anchor[i] = block_list[i].LLY();
-    block_list[i].setLLY(tmp_loc_y);
+      block_list[i].SetLLY(tmp_loc_y);
   }
 
   x_anchor_set = true;

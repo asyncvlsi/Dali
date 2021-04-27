@@ -62,8 +62,8 @@ void Block::SwapLoc(Block &blk) {
   double tmp_y = lly_;
   llx_ = blk.LLX();
   lly_ = blk.LLY();
-  blk.setLLX(tmp_x);
-  blk.setLLY(tmp_y);
+    blk.SetLLX(tmp_x);
+    blk.SetLLY(tmp_y);
 }
 
 void Block::IncreaseX(double displacement, double upper, double lower) {

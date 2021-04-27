@@ -15,8 +15,8 @@ struct BlockSegment {
     int width_;
   public:
     BlockSegment(Block *blk_ptr, int loc) : lx_(loc), width_(blk_ptr->Width()) {
-      blk_list.push_back(blk_ptr);
-      initial_loc.push_back(loc);
+        blk_list.push_back(blk_ptr);
+        initial_loc.push_back(loc);
     }
     std::vector<Block *> blk_list;
     std::vector<double> initial_loc;
@@ -25,8 +25,8 @@ struct BlockSegment {
     int UX() const { return lx_ + width_; }
     int Width() const { return width_; }
 
-    bool IsOnLeft(BlockSegment &sc) const {
-      return sc.LX() < UX();
+    bool IsNotOnLeft(BlockSegment &sc) const {
+        return sc.LX() < UX();
     }
     void Merge(BlockSegment &sc, int lower_bound, int upper_bound);
     void UpdateBlockLocation();

@@ -37,6 +37,8 @@ struct Stripe {
     int URY() const { return ly_ + height_; }
     int Width() const { return width_; }
     int Height() const { return height_; }
+
+    void MinDisplacementAdjustment();
 };
 
 struct ClusterStripe {

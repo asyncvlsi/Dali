@@ -23,15 +23,9 @@ else ()
 endif ()
 include_directories($ENV{ACT_HOME}/include)
 link_directories($ENV{ACT_HOME}/lib)
-find_library(ACT_LIBRARY
-        NAMES act vlsilib phydb
-        PATHS $ENV{ACT_HOME}/lib
-        REQUIRED)
-if (NOT ACT_LIBRARY)
-    message(FATAL_ERROR "libact.a is not found")
-else ()
-    message(STATUS "libact.a found")
-endif ()
+find_library(ACT_LIBRARY NAMES act PATHS $ENV{ACT_HOME}/lib REQUIRED)
+find_library(ACTVLSILIB_LIBRARY NAMES vlsilib PATHS $ENV{ACT_HOME}/lib REQUIRED)
+find_library(PHYDB_LIBRARY NAMES phydb PATHS $ENV{ACT_HOME}/lib REQUIRED)
 
 ######################################
 # detect the installation path of LEF parser and DEF parser,
@@ -45,16 +39,7 @@ else ()
 endif ()
 include_directories($ENV{LEF_ROOT}/include)
 link_directories($ENV{LEF_ROOT}/lib)
-find_library(LEF_LIBRARY
-        NAMES lef
-        PATHS $ENV{LEF_ROOT}/lib
-        REQUIRED)
-if (NOT LEF_LIBRARY)
-    message(FATAL_ERROR "liblef.a is not found")
-else ()
-    message(STATUS "liblef.a found")
-endif ()
-#link_libraries(liblef.a)
+find_library(LEF_LIBRARY NAMES lef PATHS $ENV{LEF_ROOT}/lib REQUIRED)
 
 message(STATUS "Detecting environment variable DEF_ROOT...")
 if (DEFINED ENV{DEF_ROOT})
@@ -64,16 +49,7 @@ else ()
 endif ()
 include_directories($ENV{DEF_ROOT}/include)
 link_directories($ENV{DEF_ROOT}/lib)
-find_library(DEF_LIBRARY
-        NAMES def
-        PATHS $ENV{DEF_ROOT}/lib
-        REQUIRED)
-if (NOT DEF_LIBRARY)
-    message(FATAL_ERROR "libdef.a is not found")
-else ()
-    message(STATUS "libdef.a found")
-endif ()
-#link_libraries(libdef.a)
+find_library(DEF_LIBRARY NAMES def PATHS $ENV{DEF_ROOT}/lib REQUIRED)
 
 ######################################
 # Detect if OpenMP library exists
@@ -113,7 +89,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 #endif(BUILD_STATIC_EXECUTABLES)
 
 # Set C++ compilation flags and options
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O3")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
 # Set a default build type if none was specified
@@ -171,8 +147,8 @@ add_library(dalilib
         STATIC
         ${SOURCES})
 target_link_libraries(dalilib
-        act vlsilib phydb
-        lef def
+        ${ACT_LIBRARY} ${ACTVLSILIB_LIBRARY} ${PHYDB_LIBRARY}
+        ${LEF_LIBRARY} ${DEF_LIBRARY}
         ${Boost_LIBRARIES}
         OpenMP::OpenMP_CXX)
 

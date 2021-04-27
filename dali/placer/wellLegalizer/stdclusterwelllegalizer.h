@@ -39,7 +39,7 @@ class StdClusterWellLegalizer : public Placer {
     int tap_cell_n_height_;
     int space_to_well_tap_ = 1;
 
-    std::vector<IndexLocPair < int>> index_loc_list_; // list of index loc pair for location sort
+    std::vector<IndexLocPair<int>> index_loc_list_; // list of index loc pair for location sort
     std::vector<ClusterStripe> col_list_; // list of stripes
 
     /**** row information ****/
@@ -63,30 +63,31 @@ class StdClusterWellLegalizer : public Placer {
     void SetStripePartitionMode(StripePartitionMode mode) { stripe_mode_ = mode; }
 
     void SetRowHeight(int row_height) {
-      DaliExpects(row_height > 0, "Setting row height to a negative value? StdClusterWellLegalizer::SetRowHeight()\n");
-      row_height_set_ = true;
-      row_height_ = row_height;
+        DaliExpects(row_height > 0,
+                    "Setting row height to a negative value? StdClusterWellLegalizer::SetRowHeight()\n");
+        row_height_set_ = true;
+        row_height_ = row_height;
     }
     int StartRow(int y_loc) { return (y_loc - bottom_) / row_height_; }
     int EndRow(int y_loc) {
-      int relative_y = y_loc - bottom_;
-      int res = relative_y / row_height_;
-      if (relative_y % row_height_ == 0) {
-        --res;
-      }
-      return res;
+        int relative_y = y_loc - bottom_;
+        int res = relative_y / row_height_;
+        if (relative_y % row_height_ == 0) {
+            --res;
+        }
+        return res;
     }
     int RowToLoc(int row_num, int displacement = 0) { return row_num * row_height_ + bottom_ + displacement; }
     void SetFirstRowOrientN(bool is_N) { is_first_row_orient_N_ = is_N; }
     int LocToCol(int x) {
-      int col_num = (x - RegionLeft()) / stripe_width_;
-      if (col_num < 0) {
-        col_num = 0;
-      }
-      if (col_num >= tot_col_num_) {
-        col_num = tot_col_num_ - 1;
-      }
-      return col_num;
+        int col_num = (x - RegionLeft()) / stripe_width_;
+        if (col_num < 0) {
+            col_num = 0;
+        }
+        if (col_num >= tot_col_num_) {
+            col_num = tot_col_num_ - 1;
+        }
+        return col_num;
     }
 
     void DetectAvailSpace();

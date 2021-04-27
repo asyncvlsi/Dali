@@ -80,14 +80,14 @@ class Block {
 
   // set the effective height of this Block, which can be different from the height of its type
   // effective area is also updated at the same time
-  void setHeight(int height) {
+  void SetHeight(int height) {
     eff_height_ = height;
     eff_area_ = eff_height_ * type_ptr_->Width();
   }
 
   // set the Block height to its BlockType height
   // area is also updated at the same time
-  void setHeightFromType() {
+  void SetHeightFromType() {
     eff_height_ = type_ptr_->Height();
     eff_area_ = type_ptr_->Area();
   }
@@ -142,13 +142,13 @@ class Block {
   BlockAux *AuxPtr() const { return aux_ptr_; }
 
   // set the NameNumPair, first: name, second: number
-  void setNameNumPair(std::pair<const std::string, int> *name_num_pair_ptr) {
+  void SetNameNumPair(std::pair<const std::string, int> *name_num_pair_ptr) {
     name_num_pair_ptr_ = name_num_pair_ptr;
   }
 
   // set the BlockType of this Block
-  void setType(BlockType *type_ptr) {
-    DaliExpects(type_ptr != nullptr, "Cannot set BlockType of a Block to NULL: BLock::setType()\n");
+  void SetType(BlockType *type_ptr) {
+    DaliExpects(type_ptr != nullptr, "Cannot set BlockType of a Block to NULL: BLock::SetType()\n");
     type_ptr_ = type_ptr;
     eff_height_ = type_ptr_->Height();
     eff_area_ = type_ptr_->Area();
@@ -161,32 +161,32 @@ class Block {
   }
 
   // set the lower left x coordinate
-  void setLLX(double lx) { llx_ = lx; }
+  void SetLLX(double lx) { llx_ = lx; }
 
   // set the lower left y coordinate
-  void setLLY(double ly) { lly_ = ly; }
+  void SetLLY(double ly) { lly_ = ly; }
 
   // set the upper right x coordinate
-  void setURX(double ux) { llx_ = ux - Width(); }
+  void SetURX(double ux) { llx_ = ux - Width(); }
 
   // set the upper right y coordinate
-  void setURY(double uy) { lly_ = uy - Height(); }
+  void SetURY(double uy) { lly_ = uy - Height(); }
 
   // set the center x coordinate
-  void setCenterX(double center_x) { llx_ = center_x - Width() / 2.0; }
+  void SetCenterX(double center_x) { llx_ = center_x - Width() / 2.0; }
 
   // set the center y coordinate
-  void setCenterY(double center_y) { lly_ = center_y - Height() / 2.0; }
+  void SetCenterY(double center_y) { lly_ = center_y - Height() / 2.0; }
 
   // set the placement status of this Block
-  void setPlacementStatus(PlaceStatus place_status) { place_status_ = place_status; }
+  void SetPlacementStatus(PlaceStatus place_status) { place_status_ = place_status; }
 
   // set the orientation of this Block
-  void setOrient(BlockOrient const &orient) { orient_ = orient; }
+  void SetOrient(BlockOrient const &orient) { orient_ = orient; }
 
   // set the pointer to the auxiliary information
-  void setAux(BlockAux *aux) {
-    DaliExpects(aux != nullptr, "When setting auxiliary information, the argument cannot be a nullptr: Block::setAux()");
+  void SetAux(BlockAux *aux) {
+    DaliExpects(aux != nullptr, "When setting auxiliary information, the argument cannot be a nullptr: Block::SetAux()");
     aux_ptr_ = aux;
   }
 
@@ -235,7 +235,7 @@ class BlockAux {
  protected:
   Block *blk_ptr_;
  public:
-  explicit BlockAux(Block *blk_ptr) : blk_ptr_(blk_ptr) { blk_ptr->setAux(this); }
+  explicit BlockAux(Block *blk_ptr) : blk_ptr_(blk_ptr) { blk_ptr->SetAux(this); }
 
   // get the pointer pointing to the Block it belongs to
   Block *getBlockPtr() const { return blk_ptr_; }
