@@ -711,6 +711,8 @@ bool StdClusterWellLegalizer::BlockClusteringLoose() {
      * After clustering, leave clusters as they are
      * ****/
 
+    int step = 50;
+    int count = 0;
     bool res = true;
     for (auto &col: col_list_) {
         bool is_success = true;
@@ -741,6 +743,13 @@ bool StdClusterWellLegalizer::BlockClusteringLoose() {
             for (auto &cluster: stripe.cluster_list_) {
                 cluster.UpdateBlockLocY();
                 cluster.MinDisplacementLegalization();
+                if (is_dump) {
+                    if (count % step == 0) {
+                        circuit_->GenMATLABTable("wlg_result_" + std::to_string(dump_count) + ".txt");
+                        ++dump_count;
+                    }
+                    ++count;
+                }
             }
             stripe.MinDisplacementAdjustment();
         }

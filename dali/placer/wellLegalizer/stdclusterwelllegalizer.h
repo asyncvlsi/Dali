@@ -54,6 +54,10 @@ class StdClusterWellLegalizer : public Placer {
     /**** initial location ****/
     std::vector<int2d> block_init_locations_;
 
+    // dump result
+    bool is_dump = false;
+    int dump_count = 0;
+
   public:
     StdClusterWellLegalizer();
     void LoadConf(std::string const &config_file) override;

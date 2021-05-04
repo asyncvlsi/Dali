@@ -201,10 +201,6 @@ int main(int argc, char *argv[]) {
     gb_placer->ReportBoundaries();
     gb_placer->StartPlacement();
 
-    Placer *legalizer = new LGTetrisEx;
-    legalizer->TakeOver(gb_placer);
-    legalizer->StartPlacement();
-
     auto *well_legalizer = new StdClusterWellLegalizer;
     well_legalizer->TakeOver(gb_placer);
     well_legalizer->StartPlacement();
@@ -215,10 +211,9 @@ int main(int argc, char *argv[]) {
     if (!output_name.empty()) {
       well_legalizer->EmitDEFWellFile(output_name, 1);
     }
-    well_legalizer->SimpleIoPinPlacement("io_metal_layer");
+    well_legalizer->SimpleIoPinPlacement(0);
     delete well_legalizer;
     delete gb_placer;
-    delete legalizer;
   }
   circuit.SaveDefFile(output_name, "", def_file_name, 1, 1, 2, 1);
   circuit.SaveDefFile(output_name, "_io", def_file_name, 1, 1, 1, 1);

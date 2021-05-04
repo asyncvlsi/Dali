@@ -249,123 +249,131 @@ void Placer::UpdateMovableBlkPlacementStatus() {
   }
 }
 
+void Placer::SimpleIoPinPlacement(int metal_layer_index) {
+    DaliExpects(metal_layer_index>=0, "illegal metal index for io placement");
+    DaliExpects(metal_layer_index < (int)circuit_->MetalListPtr()->size(), "Cannot find this metal index");
+
+    if (circuit_->getIOPinList()->empty()) return;
+
+    MetalLayer *layer_ptr = &(circuit_->getTechRef().metal_list_[metal_layer_index]);
+
+    //BOOST_LOG_TRIVIAL(info)   << circuit_->GetIOPinList()->size() << "\n";
+    Net *net = nullptr;
+    double net_minx, net_maxx, net_miny, net_maxy;
+    double to_left, to_right, to_bottom, to_top;
+    double min_distance;
+
+    std::vector<IOPin *> l_edge;
+    std::vector<IOPin *> r_edge;
+    std::vector<IOPin *> b_edge;
+    std::vector<IOPin *> t_edge;
+
+
+    for (auto &iopin: *(circuit_->getIOPinList())) {
+        if (iopin.IsPrePlaced()) continue;
+        iopin.SetLayer(layer_ptr);
+        net = iopin.GetNet();
+        if (net->blk_pin_list.empty()) continue;
+        //BOOST_LOG_TRIVIAL(info)   << net->NameStr() << "\n";
+
+        net->UpdateMaxMinIndex();
+        net_minx = net->MinX();
+        net_maxx = net->MaxX();
+        net_miny = net->MinY();
+        net_maxy = net->MaxY();
+
+        to_left = net_minx - left_;
+        to_right = right_ - net_maxx;
+        to_bottom = net_miny - bottom_;
+        to_top = top_ - net_maxy;
+        min_distance = std::min(std::min(to_left, to_right), std::min(to_bottom, to_top));
+
+        if (std::fabs(min_distance - to_left) < 1e-10) {
+            iopin.SetLoc(left_, (net_maxy + net_miny) / 2, PLACED_);
+            l_edge.push_back(&iopin);
+        } else if (std::fabs(min_distance - to_right) < 1e-10) {
+            iopin.SetLoc(right_, (net_maxy + net_miny) / 2, PLACED_);
+            r_edge.push_back(&iopin);
+        } else if (std::fabs(min_distance - to_bottom) < 1e-10) {
+            iopin.SetLoc((net_minx + net_maxx) / 2, bottom_, PLACED_);
+            b_edge.push_back(&iopin);
+        } else {
+            iopin.SetLoc((net_minx + net_maxx) / 2, top_, PLACED_);
+            t_edge.push_back(&iopin);
+        }
+    }
+
+    int lo;
+    int hi;
+    int sz;
+    int step;
+
+    //BOOST_LOG_TRIVIAL(info)  <<"IOPIN on left: %d\n", l_edge.size());
+    if (!l_edge.empty()) {
+        std::sort(l_edge.begin(),
+                  l_edge.end(),
+                  [](const IOPin *lhs, const IOPin *rhs) {
+                      return (lhs->Y() < rhs->Y());
+                  });
+        lo = bottom_;
+        hi = top_;
+        sz = l_edge.size();
+        step = (hi - lo) / (sz + 1);
+        for (int i = 0; i < sz; ++i) {
+            l_edge[i]->SetLoc(left_, (i + 1) * step);
+        }
+    }
+    //BOOST_LOG_TRIVIAL(info)  <<"IOPIN on right: %d\n", r_edge.size());
+    if (!r_edge.empty()) {
+        std::sort(r_edge.begin(),
+                  r_edge.end(),
+                  [](const IOPin *lhs, const IOPin *rhs) {
+                      return (lhs->Y() < rhs->Y());
+                  });
+        lo = bottom_;
+        hi = top_;
+        sz = r_edge.size();
+        step = (hi - lo) / (sz + 1);
+        for (int i = 0; i < sz; ++i) {
+            r_edge[i]->SetLoc(right_, (i + 1) * step);
+        }
+    }
+    //BOOST_LOG_TRIVIAL(info)  <<"IOPIN on bottom: %d\n", b_edge.size());
+    if (!b_edge.empty()) {
+        std::sort(b_edge.begin(),
+                  b_edge.end(),
+                  [](const IOPin *lhs, const IOPin *rhs) {
+                      return (lhs->X() < rhs->X());
+                  });
+        lo = left_;
+        hi = right_;
+        sz = b_edge.size();
+        step = (hi - lo) / (sz + 1);
+        for (int i = 0; i < sz; ++i) {
+            b_edge[i]->SetLoc((i + 1) * step, bottom_);
+        }
+    }
+    //BOOST_LOG_TRIVIAL(info)  <<"IOPIN on top: %d\n", t_edge.size());
+    if (!t_edge.empty()) {
+        std::sort(t_edge.begin(),
+                  t_edge.end(),
+                  [](const IOPin *lhs, const IOPin *rhs) {
+                      return (lhs->X() < rhs->X());
+                  });
+        lo = left_;
+        hi = right_;
+        sz = t_edge.size();
+        step = (hi - lo) / (sz + 1);
+        for (int i = 0; i < sz; ++i) {
+            t_edge[i]->SetLoc((i + 1) * step, top_);
+        }
+    }
+}
+
 void Placer::SimpleIoPinPlacement(std::string metal_layer) {
-  DaliExpects(circuit_->IsMetalLayerExist(metal_layer), "Metal layer does not exist: " + metal_layer);
-  MetalLayer *layer_ptr = circuit_->getMetalLayerPtr(metal_layer);
-  if (circuit_->getIOPinList()->empty()) return;
-
-  //BOOST_LOG_TRIVIAL(info)   << circuit_->GetIOPinList()->size() << "\n";
-  Net *net = nullptr;
-  double net_minx, net_maxx, net_miny, net_maxy;
-  double to_left, to_right, to_bottom, to_top;
-  double min_distance;
-
-  std::vector<IOPin *> l_edge;
-  std::vector<IOPin *> r_edge;
-  std::vector<IOPin *> b_edge;
-  std::vector<IOPin *> t_edge;
-
-
-  for (auto &iopin: *(circuit_->getIOPinList())) {
-    if (iopin.IsPrePlaced()) continue;
-    iopin.SetLayer(layer_ptr);
-    net = iopin.GetNet();
-    if (net->blk_pin_list.empty()) continue;
-    //BOOST_LOG_TRIVIAL(info)   << net->NameStr() << "\n";
-
-    net->UpdateMaxMinIndex();
-    net_minx = net->MinX();
-    net_maxx = net->MaxX();
-    net_miny = net->MinY();
-    net_maxy = net->MaxY();
-
-    to_left = net_minx - left_;
-    to_right = right_ - net_maxx;
-    to_bottom = net_miny - bottom_;
-    to_top = top_ - net_maxy;
-    min_distance = std::min(std::min(to_left, to_right), std::min(to_bottom, to_top));
-
-    if (std::fabs(min_distance - to_left) < 1e-10) {
-      iopin.SetLoc(left_, (net_maxy + net_miny) / 2, PLACED_);
-      l_edge.push_back(&iopin);
-    } else if (std::fabs(min_distance - to_right) < 1e-10) {
-      iopin.SetLoc(right_, (net_maxy + net_miny) / 2, PLACED_);
-      r_edge.push_back(&iopin);
-    } else if (std::fabs(min_distance - to_bottom) < 1e-10) {
-      iopin.SetLoc((net_minx + net_maxx) / 2, bottom_, PLACED_);
-      b_edge.push_back(&iopin);
-    } else {
-      iopin.SetLoc((net_minx + net_maxx) / 2, top_, PLACED_);
-      t_edge.push_back(&iopin);
-    }
-  }
-
-  int lo;
-  int hi;
-  int sz;
-  int step;
-
-  //BOOST_LOG_TRIVIAL(info)  <<"IOPIN on left: %d\n", l_edge.size());
-  if (!l_edge.empty()) {
-    std::sort(l_edge.begin(),
-              l_edge.end(),
-              [](const IOPin *lhs, const IOPin *rhs) {
-                return (lhs->Y() < rhs->Y());
-              });
-    lo = bottom_;
-    hi = top_;
-    sz = l_edge.size();
-    step = (hi - lo) / (sz + 1);
-    for (int i = 0; i < sz; ++i) {
-      l_edge[i]->SetLoc(left_, (i + 1) * step);
-    }
-  }
-  //BOOST_LOG_TRIVIAL(info)  <<"IOPIN on right: %d\n", r_edge.size());
-  if (!r_edge.empty()) {
-    std::sort(r_edge.begin(),
-              r_edge.end(),
-              [](const IOPin *lhs, const IOPin *rhs) {
-                return (lhs->Y() < rhs->Y());
-              });
-    lo = bottom_;
-    hi = top_;
-    sz = r_edge.size();
-    step = (hi - lo) / (sz + 1);
-    for (int i = 0; i < sz; ++i) {
-      r_edge[i]->SetLoc(right_, (i + 1) * step);
-    }
-  }
-  //BOOST_LOG_TRIVIAL(info)  <<"IOPIN on bottom: %d\n", b_edge.size());
-  if (!b_edge.empty()) {
-    std::sort(b_edge.begin(),
-              b_edge.end(),
-              [](const IOPin *lhs, const IOPin *rhs) {
-                return (lhs->X() < rhs->X());
-              });
-    lo = left_;
-    hi = right_;
-    sz = b_edge.size();
-    step = (hi - lo) / (sz + 1);
-    for (int i = 0; i < sz; ++i) {
-      b_edge[i]->SetLoc((i + 1) * step, bottom_);
-    }
-  }
-  //BOOST_LOG_TRIVIAL(info)  <<"IOPIN on top: %d\n", t_edge.size());
-  if (!t_edge.empty()) {
-    std::sort(t_edge.begin(),
-              t_edge.end(),
-              [](const IOPin *lhs, const IOPin *rhs) {
-                return (lhs->X() < rhs->X());
-              });
-    lo = left_;
-    hi = right_;
-    sz = t_edge.size();
-    step = (hi - lo) / (sz + 1);
-    for (int i = 0; i < sz; ++i) {
-      t_edge[i]->SetLoc((i + 1) * step, top_);
-    }
-  }
-
+    DaliExpects(circuit_->IsMetalLayerExist(metal_layer), "Metal layer does not exist: " + metal_layer);
+    int metal_layer_index = circuit_->MetalLayerIndex(metal_layer);
+    SimpleIoPinPlacement(metal_layer_index);
 }
 
 void Placer::ShiftX(double shift_x) {
