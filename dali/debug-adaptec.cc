@@ -57,11 +57,11 @@ int main(int argc, char **argv) {
   time_t Time = clock();
   double wall_time = get_wall_time();
 
-  std::string adaptec1_lef = "ISPD2005/bigblue4.lef";
+  std::string adaptec1_lef = "ISPD2005/adaptec1.lef";
 #if TEST_LG
   std::string adaptec1_def = "adaptec1_pl.def";
 #else
-  std::string adaptec1_def = "ISPD2005/bigblue4.def";
+  std::string adaptec1_def = "ISPD2005/adaptec1.def";
 #endif
 
   phydb::PhyDB phy_db;
@@ -90,12 +90,12 @@ int main(int argc, char **argv) {
   BOOST_LOG_TRIVIAL(info) << "tune_param: " << tune_param << "\n";
   gb_placer.SetInputCircuit(&circuit);
   gb_placer.SetBoundaryDef();
-  gb_placer.SetFillingRate(1);
+  gb_placer.SetFillingRate(0.9);
   gb_placer.ReportBoundaries();
   gb_placer.is_dump = false;
 #if !TEST_LG
   gb_placer.StartPlacement();
-  //gb_placer_.SaveDEFFile("adaptec1_pl.def", adaptec1_def);
+  gb_placer.SaveDEFFile("test_OpenDP/adaptec1_dali", adaptec1_def);
   circuit.SaveBookshelfPl("adaptec1bs.pl");
 #endif
   gb_placer.GenMATLABTable("gb_result.txt");

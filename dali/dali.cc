@@ -8,13 +8,15 @@ namespace dali {
 
 Dali::Dali(phydb::PhyDB *phy_db_ptr, std::string sl) {
     auto boost_sl = StrToLoggingLevel(sl);
-    InitLogging(boost_sl);
+    std::string log_file_name;
+    InitLogging(log_file_name, false, boost_sl);
     phy_db_ptr_ = phy_db_ptr;
     circuit_.InitializeFromPhyDB(phy_db_ptr);
 }
 
 Dali::Dali(phydb::PhyDB *phy_db_ptr, boost::log::trivial::severity_level sl) {
-    InitLogging(sl);
+    std::string log_file_name;
+    InitLogging(log_file_name, false, sl);
     phy_db_ptr_ = phy_db_ptr;
     circuit_.InitializeFromPhyDB(phy_db_ptr);
 }

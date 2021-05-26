@@ -21,35 +21,37 @@
 #include <boost/log/utility/setup/common_attributes.hpp>
 
 inline boost::log::record_ostream &operator<<(boost::log::record_ostream &p, std::vector<double> &v) {
-  p << "[";
-  for (size_t i = 0; i < v.size(); ++i) {
-    p << v[i];
-    if (i != v.size() - 1)
-      p << ", ";
-  }
-  p << "]";
-  return p;
+    p << "[";
+    for (size_t i = 0; i < v.size(); ++i) {
+        p << v[i];
+        if (i != v.size() - 1)
+            p << ", ";
+    }
+    p << "]";
+    return p;
 }
 
 namespace dali {
 
 boost::log::trivial::severity_level StrToLoggingLevel(std::string sl_str);
-void InitLogging(boost::log::trivial::severity_level sl = boost::log::trivial::info);
+void InitLogging(std::string &log_file_name,
+                 bool overwrite_logfile = false,
+                 boost::log::trivial::severity_level sl = boost::log::trivial::info);
 void CloseLogging();
 
 inline void DaliExpects(bool e, const std::string &error_message) {
-  if (!e) {
-    BOOST_LOG_TRIVIAL(fatal) << "\033[0;31m" << "Dali FATAL ERROR:" << "\n"
-                             << "    " << error_message << "\033[0m" << std::endl;
-    exit(1);
-  }
+    if (!e) {
+        BOOST_LOG_TRIVIAL(fatal) << "\033[0;31m" << "Dali FATAL ERROR:" << "\n"
+                                 << "    " << error_message << "\033[0m" << std::endl;
+        exit(1);
+    }
 }
 
 inline void DaliWarns(bool e, const std::string &warning_message) {
-  if (e) {
-    BOOST_LOG_TRIVIAL(warning) << "Dali WARNING:" << "\n"
-                               << "    " << warning_message << std::endl;
-  }
+    if (e) {
+        BOOST_LOG_TRIVIAL(warning) << "Dali WARNING:" << "\n"
+                                   << "    " << warning_message << std::endl;
+    }
 }
 
 }
