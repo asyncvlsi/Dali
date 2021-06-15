@@ -19,6 +19,12 @@ class Dali {
 
     void StartPlacement(double density, int number_of_threads = 1);
     void SimpleIoPinPlacement(std::string metal_layer);
+
+    void GlobalPlace(double density);
+    void UnifiedLegalization();
+
+    void ExternalDetailedPlaceAndLegalize(std::string engine, bool load_dp_result=true);
+
     void ExportToPhyDB();
     void Close();
 
@@ -30,6 +36,8 @@ class Dali {
     GPSimPL gb_placer_;
     LGTetrisEx legalizer_;
     StdClusterWellLegalizer well_legalizer_;
+
+    std::string CreateDetailedPlacementAndLegalizationScript(std::string &engine, std::string &script_name);
 
     void ExportComponentsToPhyDB();
     void ExportIoPinsToPhyDB();

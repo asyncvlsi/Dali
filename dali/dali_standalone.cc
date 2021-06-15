@@ -35,6 +35,7 @@ int main(int argc, char *argv[]) {
     std::string str_y_grid;
     std::string log_file_name;
     bool overwrite_logfile = false;
+    bool is_no_legal = false;
     double x_grid = 0, y_grid = 0;
     double target_density = -1;
     int io_metal_layer = 0;
@@ -114,6 +115,8 @@ int main(int argc, char *argv[]) {
             // TODO : verbose level
         } else if (arg == "-overwrite") {
             overwrite_logfile = true;
+        } else if (arg == "-nolegal") {
+            is_no_legal = true;
         } else if (arg == "-log" && i < argc) {
             log_file_name = std::string(argv[i++]);
             if (lef_file_name.empty()) {
@@ -193,14 +196,16 @@ int main(int argc, char *argv[]) {
         gb_placer->ReportBoundaries();
         gb_placer->StartPlacement();
 
-        Placer *legalizer = new LGTetrisEx;
-        legalizer->TakeOver(gb_placer);
-        legalizer->StartPlacement();
+        if (!is_no_legal) {
+            Placer *legalizer = new LGTetrisEx;
+            legalizer->TakeOver(gb_placer);
+            legalizer->StartPlacement();
 
-        legalizer->SimpleIoPinPlacement(0);
+            legalizer->SimpleIoPinPlacement(0);
+            delete legalizer;
+        }
 
         delete gb_placer;
-        delete legalizer;
     } else {
         circuit.ReadCellFile(cell_file_name);
 
@@ -249,11 +254,11 @@ void ReportUsage() {
                             << "Usage: dali\n"
                             << "  -lef        <file.lef>\n"
                             << "  -def        <file.def>\n"
-                            << "  -cell       <file.cell> (optional, if provided, iterative well placement flow will be triggered)\n"
+                            << "  -cell       <file.cell> (optional, if provided, well placement flow will be triggered)\n"
                             << "  -o          <output_name>.def (optional, default output file name dali_out.def)\n"
                             << "  -g/-grid    grid_value_x grid_value_y (optional, default metal1 and metal2 pitch values)\n"
                             << "  -d/-density density (optional, value interval (0,1], default max(space_utility, 0.7))\n"
-                            << "  -n          (optional, if this flag is present, then use naive LEF/DEF parser)\n"
+                            << "  -nolegal    optional, if this flag is present, then only perform global placement\n"
                             << "  -iolayer    metal_layer_num (optional, default 1 for m1)\n"
                             << "  -v          verbosity_level (optional, 0-5, default 1)\n"
                             << "(flag order does not matter)"

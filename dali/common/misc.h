@@ -7,6 +7,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstdlib>
 
 #include <iostream>
 #include <sstream>
@@ -160,8 +161,11 @@ class NotImplementedException : public std::logic_error {
 // splits a line into many words
 void StrSplit(std::string &line, std::vector<std::string> &res);
 
-// finds the first number in a string.
+// finds the first number in a string
 int FindFirstNumber(std::string &str);
+
+// check if an executable can be found or not
+bool IsExecutableExisting(std::string const &executable_path);
 
 }
 

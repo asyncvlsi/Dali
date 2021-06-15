@@ -37,14 +37,13 @@ void StrSplit(std::string &line, std::vector<std::string> &res) {
   }
 }
 
+/****
+ * this function assumes that the input string is a concatenation of
+ * a pure English char string, and a pure digit string
+ * like "metal7", "metal12", etc.
+ * it will return the location of the first digit
+ * ****/
 int FindFirstNumber(std::string &str) {
-  /****
-   * this function assumes that the input string is a concatenation of
-   * a pure English char string, and a pure digit string
-   * like "metal7", "metal12", etc.
-   * it will return the location of the first digit
-   * ****/
-
   int res = -1;
   int sz = str.size();
   for (int i = 0; i < sz; ++i) {
@@ -59,6 +58,20 @@ int FindFirstNumber(std::string &str) {
     }
   }
   return res;
+}
+
+/**
+ * Check if a binary executable exists or not using BSD's "which" command.
+ * We will use the property that "which" returns the number of failed arguments
+ *
+ * @param executable_path, the full path or name of an external executable.
+ * @return true if this executable can be found.
+ */
+bool IsExecutableExisting(std::string const &executable_path) {
+    // system call
+    std::string command = "which " + executable_path + " >/dev/null";
+    int res = std::system(command.c_str());
+    return res == 0;
 }
 
 }

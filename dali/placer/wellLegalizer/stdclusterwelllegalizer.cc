@@ -1546,19 +1546,18 @@ void StdClusterWellLegalizer::GenPPNP(const std::string &name_of_file) {
     ostpp.close();
 }
 
+/****
+ * Emit three files:
+ * 1. rect file including all N/P well rectangles
+ * 2. rect file including all NP/PP rectangles
+ * 3. cluster file including all cluster shapes
+ *
+ * @param well_mode
+ * 0: emit both N-well and P-well
+ * 1: emit N-well only
+ * 2: emit P-well only
+ * ****/
 void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode) {
-    /****
-     * Emit three files:
-     * 1. rect file including all N/P well rectangles
-     * 2. rect file including all NP/PP rectangles
-     * 3. cluster file including all cluster shapes
-     *
-     * @param well_mode
-     * 0: emit both N-well and P-well
-     * 1: emit N-well only
-     * 2: emit P-well only
-     * ****/
-
     EmitPPNPRect(name_of_file + "ppnp.rect");
     EmitWellRect(name_of_file + "well.rect", well_emit_mode);
     EmitClusterRect(name_of_file + "_router.cluster");
