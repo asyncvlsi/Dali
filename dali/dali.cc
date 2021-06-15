@@ -102,7 +102,7 @@ void Dali::UnifiedLegalization() {
 
     //well_legalizer_.SimpleIoPinPlacement(0);
     well_legalizer_.EmitDEFWellFile("circuit", 1);
-};
+}
 
 /**
  * Perform detailed placement using external placers.
@@ -116,7 +116,7 @@ void Dali::UnifiedLegalization() {
 void Dali::ExternalDetailedPlaceAndLegalize(std::string engine, bool load_dp_result) {
     // create a script for detailed placement and legalization
     BOOST_LOG_TRIVIAL(info) << "Creating detailed placement and legalization script...\n";
-    std::string dp_script_name = engine + ".cmd";
+    std::string dp_script_name = "dali_"+engine + ".cmd";
     std::string legal_def_file = CreateDetailedPlacementAndLegalizationScript(engine, dp_script_name);
 
     // system call
@@ -138,7 +138,7 @@ void Dali::ExportToPhyDB() {
     ExportIoPinsToPhyDB();
     // 3. MiniRows
     ExportMiniRowsToPhyDB();
-    // TODO 4. NPPP and Well
+    // TODO 4. NP/PP and Well
     ExportNpPpWellToPhyDB();
 }
 
@@ -166,9 +166,6 @@ void Dali::ExportToDEF(std::string &input_def_file_full_name, std::string output
  */
 std::string Dali::CreateDetailedPlacementAndLegalizationScript(std::string &engine,
                                                                std::string &script_name) {
-    // check if the engine can be found
-    DaliExpects(IsExecutableExisting(engine), "Cannot find the given engine");
-
     // create script for innovus
     DaliExpects(engine=="innovus", "Only support Innovus now");
     std::ofstream ost(script_name);
@@ -176,11 +173,13 @@ std::string Dali::CreateDetailedPlacementAndLegalizationScript(std::string &engi
     std::string input_def_file = phy_db_ptr_->GetDesignPtr()->GetDefName();
     std::string tmp_def_out = "dali_global_"+phy_db_ptr_->GetDesignPtr()->GetName();
     ExportToDEF(input_def_file, tmp_def_out);
-    ost << "loadDefFile " << tmp_def_out << "\n";
+    ost << "loadDefFile " << tmp_def_out << ".def\n";
     ost << "refinePlace\n";
-    std::string out_def = "dali_global_innovus_refine"+phy_db_ptr_->GetDesignPtr()->GetName()+".def";
+    std::string out_def = "dali_global_innovus_refine_"+phy_db_ptr_->GetDesignPtr()->GetName()+".def";
     ost << "defOut " << out_def << "\n";
 
+    // check if the engine can be found
+    DaliExpects(IsExecutableExisting(engine), "Cannot find the given engine");
     return out_def;
 }
 
