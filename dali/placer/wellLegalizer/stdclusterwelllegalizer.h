@@ -33,8 +33,8 @@ class StdClusterWellLegalizer : public Placer {
     int tot_col_num_;
     StripePartitionMode stripe_mode_ = STRICT;
 
-    /**** well tap cell parameters ****/
-    BlockType *well_tap_cell_;
+    /**** cached well tap cell parameters ****/
+    BlockType *well_tap_cell_ = nullptr; // remember to manually set this (shared) pointer to nullptr in destructor.
     int tap_cell_p_height_;
     int tap_cell_n_height_;
     int space_to_well_tap_ = 1;
@@ -60,6 +60,7 @@ class StdClusterWellLegalizer : public Placer {
 
   public:
     StdClusterWellLegalizer();
+    ~StdClusterWellLegalizer() override;
     void LoadConf(std::string const &config_file) override;
 
     void CheckWellExistence();

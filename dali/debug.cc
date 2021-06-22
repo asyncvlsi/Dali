@@ -17,27 +17,31 @@ using namespace dali;
 int main() {
     double wall_time = get_wall_time();
 
-    std::string lef_file_name = "ISPD2005/adaptec1.lef";
-    std::string def_file_name = "ISPD2005/adaptec1.def";
-    //std::string cell_file_name = "ICCAD2020/processor100.cell";
+    std::string lef_file_name = "ISPD2019/ispd19_test4/ispd19_test4.input.lef";
+    std::string def_file_name = "ISPD2019/ispd19_test4/ispd19_test4.input.def";
+    //std::string cell_file_name = "ICCAD2020/processor.cell";
 
     // read LEF/DEF/CELL
     phydb::PhyDB phy_db;
-    phy_db.SetPlacementGrids(0.01, 0.01);
+    //phy_db.SetPlacementGrids(0.01, 0.01);
     phy_db.ReadLef(lef_file_name);
     phy_db.ReadDef(def_file_name);
     //phy_db.ReadCell(cell_file_name);
 
     // initialize Dali
     Dali dali(&phy_db, boost::log::trivial::info);
-    dali.GlobalPlace(1.0);
-    dali.ExternalDetailedPlaceAndLegalize("innovus");
+
+    phydb::Macro *cell = phy_db.GetMacroPtr("WELLTAPX1");
+    dali.AddWellTaps(cell, 60, true);
+    //dali.StartPlacement(0.69);
+    //dali.GlobalPlace(1.00);
+    //dali.ExternalDetailedPlaceAndLegalize("innovus");
     //dali.SimpleIoPinPlacement("m1");
-    dali.ExportToDEF(def_file_name);
+    //dali.ExportToDEF(def_file_name);
 
-    dali.ExportToPhyDB();
+    //dali.ExportToPhyDB();
 
-    phy_db.WriteDef("dali_innovus_phydb.def");
+    phy_db.WriteDef("welltap_created_checkerboard.def");
 
     wall_time = get_wall_time() - wall_time;
     BOOST_LOG_TRIVIAL(info) << "Execution time " << wall_time << "s.\n";

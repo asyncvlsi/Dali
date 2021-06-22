@@ -138,6 +138,7 @@ file(GLOB SOURCES
         dali/placer/postLegalOptimizer/PLOSlide/*.cc
         dali/placer/wellLegalizer/*.cc
         dali/placer/wellPlaceFlow/*.cc
+        dali/placer/wellTapPlacer/*.cc
         )
 
 # Create a library, static libraries are controlled by ARCHIVE_OUTPUT_DIRECTORY property

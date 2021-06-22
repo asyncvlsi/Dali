@@ -20,6 +20,8 @@ class Dali {
     void StartPlacement(double density, int number_of_threads = 1);
     void SimpleIoPinPlacement(std::string metal_layer);
 
+    void AddWellTaps(phydb::Macro *cell, double cell_interval_microns, bool is_checker_board);
+    bool AddWellTaps(int argc, char **argv);
     void GlobalPlace(double density);
     void UnifiedLegalization();
 
@@ -36,6 +38,7 @@ class Dali {
     GPSimPL gb_placer_;
     LGTetrisEx legalizer_;
     StdClusterWellLegalizer well_legalizer_;
+    WellTapPlacer *well_tap_placer_ = nullptr;
 
     std::string CreateDetailedPlacementAndLegalizationScript(std::string &engine, std::string &script_name);
 

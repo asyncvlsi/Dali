@@ -14,6 +14,8 @@ Tech::~Tech() {
   * because T is initialized by
   *    auto *T = new T();
   * ****/
+    well_tap_cell_ptrs_.clear();
+
   for (auto &pair: block_type_map_) {
     delete pair.second;
   }

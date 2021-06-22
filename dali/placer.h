@@ -22,5 +22,6 @@
 
 /****Well Placement Flow****/
 #include "dali/placer/wellPlaceFlow/wellplaceflow.h"
+#include "dali/placer/wellTapPlacer/welltapplacer.h"
 
 #endif //DALI_SRC_PLACER_H_

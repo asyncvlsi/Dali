@@ -44,6 +44,63 @@ void Dali::SimpleIoPinPlacement(std::string metal_layer) {
     well_legalizer_.SimpleIoPinPlacement(metal_layer);
 }
 
+void Dali::AddWellTaps(phydb::Macro *cell, double cell_interval_microns, bool is_checker_board) {
+    well_tap_placer_ = new WellTapPlacer(phy_db_ptr_);
+
+    well_tap_placer_->FetchRowsFromPhyDB();
+    well_tap_placer_->InitializeWhiteSpaceInRows();
+
+    well_tap_placer_->SetCell(cell);
+    well_tap_placer_->SetCellInterval(cell_interval_microns);
+    well_tap_placer_->SetCellMinDistanceToBoundary(0.1);
+    well_tap_placer_->UseCheckerBoardMode(is_checker_board);
+
+    well_tap_placer_->AddWellTap();
+    well_tap_placer_->PlotAvailSpace();
+
+    well_tap_placer_->ExportWellTapCellsToPhyDB();
+
+    delete well_tap_placer_;
+}
+
+bool Dali::AddWellTaps(int argc, char **argv) {
+    phydb::Macro *cell = nullptr;
+    double cell_interval_microns = -1;
+    bool is_checker_board = false;
+    for (int i = 1; i < argc;) {
+        std::string arg(argv[i++]);
+        if (arg == "-cell" && i < argc) {
+            std::string macro_name = std::string(argv[i++]);
+            cell = phy_db_ptr_->GetMacroPtr("WELLTAPX1");
+            if (cell == nullptr) {
+                std::cout << "Cannot find well-tap cell: " << macro_name << "\n";
+                return false;
+            }
+            if (cell->GetClass() != phydb::CORE_WELLTAP) {
+                std::cout << "Given cell is not well-tap cell\n";
+                return false;
+            }
+        } else if (arg == "-interval" && i < argc) {
+            std::string cell_interval_str = std::string(argv[i++]);
+            try {
+                cell_interval_microns = std::stod(cell_interval_str);
+            } catch (...) {
+                std::cout << "Invalid well-tap cell interval\n";
+                return false;
+            }
+        } else if (arg == "-checker_board") {
+            is_checker_board = true;
+        } else {
+            std::cout << "Unknown flag\n";
+            std::cout << arg << "\n";
+            return false;
+        }
+    }
+
+    AddWellTaps(cell, cell_interval_microns, is_checker_board);
+    return true;
+}
+
 /**
  * Perform global placement using a given target density.
  *
@@ -116,7 +173,7 @@ void Dali::UnifiedLegalization() {
 void Dali::ExternalDetailedPlaceAndLegalize(std::string engine, bool load_dp_result) {
     // create a script for detailed placement and legalization
     BOOST_LOG_TRIVIAL(info) << "Creating detailed placement and legalization script...\n";
-    std::string dp_script_name = "dali_"+engine + ".cmd";
+    std::string dp_script_name = "dali_" + engine + ".cmd";
     std::string legal_def_file = CreateDetailedPlacementAndLegalizationScript(engine, dp_script_name);
 
     // system call
@@ -167,15 +224,15 @@ void Dali::ExportToDEF(std::string &input_def_file_full_name, std::string output
 std::string Dali::CreateDetailedPlacementAndLegalizationScript(std::string &engine,
                                                                std::string &script_name) {
     // create script for innovus
-    DaliExpects(engine=="innovus", "Only support Innovus now");
+    DaliExpects(engine == "innovus", "Only support Innovus now");
     std::ofstream ost(script_name);
     ost << "loadLefFile " << phy_db_ptr_->GetTechPtr()->GetLefName() << "\n";
     std::string input_def_file = phy_db_ptr_->GetDesignPtr()->GetDefName();
-    std::string tmp_def_out = "dali_global_"+phy_db_ptr_->GetDesignPtr()->GetName();
+    std::string tmp_def_out = "dali_global_" + phy_db_ptr_->GetDesignPtr()->GetName();
     ExportToDEF(input_def_file, tmp_def_out);
     ost << "loadDefFile " << tmp_def_out << ".def\n";
     ost << "refinePlace\n";
-    std::string out_def = "dali_global_innovus_refine_"+phy_db_ptr_->GetDesignPtr()->GetName()+".def";
+    std::string out_def = "dali_global_innovus_refine_" + phy_db_ptr_->GetDesignPtr()->GetName() + ".def";
     ost << "defOut " << out_def << "\n";
 
     // check if the engine can be found
