@@ -1389,7 +1389,7 @@ void GPSimPL::BuildProblemY() {
 }
 
 double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
-  omp_set_nested(1);
+ //omp_set_nested(1);
   omp_set_dynamic(0);
   int avail_threads_num = omp_get_max_threads();
   double wall_time = get_wall_time();
@@ -1471,7 +1471,7 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
 
   wall_time = get_wall_time() - wall_time;
   tot_cg_time += wall_time;
-  omp_set_nested(0);
+  //omp_set_nested(0);
 
   if (is_dump) DumpResult("cg_result_0.txt");
 
@@ -2729,7 +2729,7 @@ void GPSimPL::BuildProblemWithAnchorY() {
 }
 
 double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criterion) {
-  omp_set_nested(1);
+  //omp_set_nested(1);
   omp_set_dynamic(0);
   int avail_threads_num = omp_get_max_threads();
   //BOOST_LOG_TRIVIAL(info)   << "total threads: " << avail_threads_num << "\n";
@@ -2818,7 +2818,7 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
 
   wall_time = get_wall_time() - wall_time;
   tot_cg_time += wall_time;
-  omp_set_nested(0);
+  //omp_set_nested(0);
 
   if (is_dump) DumpResult("cg_result_" + std::to_string(cur_iter_) + ".txt");
   return lower_bound_hpwlx_.back() + lower_bound_hpwly_.back();
