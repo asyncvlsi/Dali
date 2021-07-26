@@ -197,7 +197,7 @@ class Circuit {
     // set the row height, unit in micron
     void setRowHeight(double row_height) {
         DaliExpects(row_height > 0, "Setting row height to a negative value? Circuit::setRowHeight()");
-        std::cout << row_height << "  " << tech_.grid_value_y_ << "\n";
+        BOOST_LOG_TRIVIAL(info) << row_height << "  " << tech_.grid_value_y_ << "\n";
         double residual = Residual(row_height, tech_.grid_value_y_);
         DaliExpects(std::fabs(residual) < 1e-6, "Site height is not integer multiple of grid value in Y");
         tech_.row_height_set_ = true;
@@ -348,14 +348,16 @@ class Circuit {
         double factor_y = tech_.grid_value_y_ * design_.def_distance_microns;
 
         // TODO, extract placement boundary from rows if they are any rows
-        DaliWarns(lower_x % (int) std::round(factor_x) == 0,
+        DaliWarns((lower_x % (int) std::round(factor_x)) != 0,
                   "expects the left boundary coordinate is integer multiple of grid_value_x");
-        DaliWarns(lower_y % (int) std::round(factor_y) == 0,
+
+        DaliWarns((lower_y % (int) std::round(factor_y)) != 0,
                   "expects the bottom boundary coordinate is integer multiple of grid_value_y");
-        DaliWarns(upper_x % (int) std::round(factor_x) == 0,
+        DaliWarns((upper_x % (int) std::round(factor_x)) != 0,
                   "expects the right boundary coordinate is integer multiple of grid_value_x");
-        DaliWarns(upper_y % (int) std::round(factor_y) == 0,
+        DaliWarns((upper_y % (int) std::round(factor_y)) != 0,
                   "expects the top boundary coordinate is integer multiple of grid_value_y");
+
         SetBoundary((int) std::round(lower_x / factor_x),
                     (int) std::round(lower_y / factor_y),
                     (int) std::round(upper_x / factor_x),

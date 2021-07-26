@@ -767,8 +767,8 @@ BlockType *Circuit::AddBlockTypeWithGridUnit(std::string &block_type_name, int w
 }
 
 BlockType *Circuit::AddBlockType(std::string &block_type_name, double width, double height) {
-    double residual = Residual(width, tech_.grid_value_x_);
-    DaliWarns(residual < 1e-6, "BlockType width is not integer multiple of grid value in X: " + block_type_name);
+    double residual = fabs(Residual(width, tech_.grid_value_x_));
+    DaliWarns(residual > 1e-6, "BlockType width is not integer multiple of grid value in X: " + block_type_name);
     int gridded_width = -1;
     if (residual < 1e-6) {
         gridded_width = (int) std::round(width / tech_.grid_value_x_);
@@ -776,8 +776,8 @@ BlockType *Circuit::AddBlockType(std::string &block_type_name, double width, dou
         gridded_width = (int) std::ceil(width / tech_.grid_value_x_);
     }
 
-    residual = Residual(height, tech_.grid_value_y_);
-    DaliWarns(residual < 1e-6, "BlockType height is not integer multiple of grid value in Y: " + block_type_name);
+    residual = fabs(Residual(height, tech_.grid_value_y_));
+    DaliWarns(residual > 1e-6, "BlockType height is not integer multiple of grid value in Y: " + block_type_name);
     int gridded_height = -1;
     if (residual < 1e-6) {
         gridded_height = (int) std::round(height / tech_.grid_value_y_);
@@ -789,10 +789,10 @@ BlockType *Circuit::AddBlockType(std::string &block_type_name, double width, dou
 
 void Circuit::SetBlockTypeSize(BlockType *blk_type_ptr, double width, double height) {
     DaliExpects(blk_type_ptr != nullptr, "Set size for an nullptr object?");
-    double residual = Residual(width, tech_.grid_value_x_);
+    double residual = fabs(Residual(width, tech_.grid_value_x_));
     DaliExpects(residual < 1e-6, "BlockType width is not integer multiple of grid value in X: " + blk_type_ptr->Name());
 
-    residual = Residual(height, tech_.grid_value_y_);
+    residual = fabs(Residual(height, tech_.grid_value_y_));
     DaliExpects(residual < 1e-6,
                 "BlockType height is not integer multiple of grid value in Y: " + blk_type_ptr->Name());
 
@@ -809,10 +809,10 @@ BlockType *Circuit::AddWellTapBlockTypeWithGridUnit(std::string &block_type_name
 }
 
 BlockType *Circuit::AddWellTapBlockType(std::string &block_type_name, double width, double height) {
-    double residual = Residual(width, tech_.grid_value_x_);
+    double residual = fabs(Residual(width, tech_.grid_value_x_));
     DaliExpects(residual < 1e-6, "BlockType width is not integer multiple of grid value in X: " + block_type_name);
 
-    residual = Residual(height, tech_.grid_value_y_);
+    residual = fabs(Residual(height, tech_.grid_value_y_));
     DaliExpects(residual < 1e-6, "BlockType height is not integer multiple of grid value in Y: " + block_type_name);
 
     int gridded_width = (int) std::round(width / tech_.grid_value_x_);
