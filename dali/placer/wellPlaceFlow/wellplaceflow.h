@@ -26,7 +26,7 @@ class WellPlaceFlow : public GPSimPL {
   }
   bool StartPlacement() override;
 
-  void EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode) override;
+  void EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode, bool enable_emitting_cluster = true) override;
 };
 
 }

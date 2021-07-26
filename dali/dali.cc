@@ -158,7 +158,7 @@ void Dali::UnifiedLegalization() {
     //circuit.GenLongNetTable("sc_longnet.txt");
 
     //well_legalizer_.SimpleIoPinPlacement(0);
-    well_legalizer_.EmitDEFWellFile("circuit", 1);
+    well_legalizer_.EmitDEFWellFile("circuit", 1, false);
 }
 
 /**

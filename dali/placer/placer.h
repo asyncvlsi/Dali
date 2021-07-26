@@ -142,7 +142,7 @@ class Placer {
                           std::string const &node_file = "nodes.txt");
     void SaveDEFFile(std::string const &name_of_file = "circuit.def");
     void SaveDEFFile(std::string const &name_of_file, std::string const &input_def_file);
-    virtual void EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode);
+    virtual void EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode, bool enable_emitting_cluster = true);
 
     /****for testing purposes****/
     void ShiftX(double shift_x);

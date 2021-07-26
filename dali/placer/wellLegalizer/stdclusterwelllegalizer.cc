@@ -1561,11 +1561,17 @@ void StdClusterWellLegalizer::GenPPNP(const std::string &name_of_file) {
  * 0: emit both N-well and P-well
  * 1: emit N-well only
  * 2: emit P-well only
+ *
+ * @param enable_emitting_cluster
+ * True: emit cluster file
+ * Fale: do not emit this file
  * ****/
-void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode) {
+void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode, bool enable_emitting_cluster) {
     EmitPPNPRect(name_of_file + "ppnp.rect");
     EmitWellRect(name_of_file + "well.rect", well_emit_mode);
-    EmitClusterRect(name_of_file + "_router.cluster");
+    if (enable_emitting_cluster) {
+        EmitClusterRect(name_of_file + "_router.cluster");
+    }
 }
 
 void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {

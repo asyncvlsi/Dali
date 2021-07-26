@@ -90,8 +90,8 @@ bool WellPlaceFlow::StartPlacement() {
   return true;
 }
 
-void WellPlaceFlow::EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode) {
-  well_legalizer_.EmitDEFWellFile(name_of_file, well_emit_mode);
+void WellPlaceFlow::EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode, bool enable_emitting_cluster) {
+  well_legalizer_.EmitDEFWellFile(name_of_file, well_emit_mode, enable_emitting_cluster);
 }
 
 }
