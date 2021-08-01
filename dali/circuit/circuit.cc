@@ -407,7 +407,7 @@ void Circuit::LoadDesign(phydb::PhyDB *phy_db_ptr) {
     // 3. load all components
     for (auto &comp: components) {
         std::string blk_name(comp.GetName());
-        std::string blk_type_name(comp.GetMacroName());
+        std::string blk_type_name(comp.GetMacro()->GetName());
         auto location = comp.GetLocation();
         int llx = location.x;
         int lly = location.y;

@@ -269,7 +269,9 @@ void Dali::ExportComponentsToPhyDB() {
         auto place_status = phydb::PlaceStatus(block.PlacementStatus());
         auto orient = phydb::CompOrient(block.Orient());
 
-        phy_db_ptr_->AddComponent(comp_name, macro_name, place_status, lx, ly, orient);
+        auto *phydb_macro_ptr = phy_db_ptr_->GetMacroPtr(macro_name);
+        DaliExpects(phydb_macro_ptr!= nullptr, "Cannot find " + macro_name + " in PhyDB?!");
+        phy_db_ptr_->AddComponent(comp_name, phydb_macro_ptr, place_status, lx, ly, orient);
     }
 }
 

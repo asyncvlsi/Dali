@@ -62,7 +62,7 @@ void WellTapPlacer::InitializeWhiteSpaceInRows() {
     if (rows_.empty()) return;
     for (auto &comp: phy_db_->GetDesignPtr()->components_) {
         if (comp.place_status_ != phydb::FIXED) continue;
-        phydb::Macro *macro = phy_db_->GetMacroPtr(comp.GetMacroName());
+        phydb::Macro *macro = comp.GetMacro();
         int comp_width = (int) std::round(macro->GetWidth() * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons());
         int comp_height = (int) std::round(macro->GetHeight() * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons());
 
@@ -233,7 +233,9 @@ void WellTapPlacer::ExportWellTapCellsToPhyDB() {
                 int llx = row.orig_x + i * row_step_;
                 int lly = row.orig_y;
                 phydb::CompOrient orient = row.is_N ? phydb::N : phydb::FS;
-                phy_db_->AddComponent(welltap_cell_name, macro_name, place_status, llx, lly, orient);
+                phydb::Macro *macro_ptr = phy_db_->GetMacroPtr(macro_name);
+                DaliExpects(macro_ptr!= nullptr, "Cannot find macro " + macro_name + " in PhyDB?!");
+                phy_db_->AddComponent(welltap_cell_name, macro_ptr, place_status, llx, lly, orient);
             }
         }
     }
