@@ -1128,7 +1128,7 @@ void StdClusterWellLegalizer::InsertWellTap() {
                     std::string block_name = "__well_tap__" + std::to_string(counter++);
                     tap_cell_list.emplace_back();
                     auto &tap_cell = tap_cell_list.back();
-                    tap_cell.SetPlacementStatus(PLACED_);
+                    tap_cell.SetPlacementStatus(PLACED);
                     tap_cell.SetType(circuit_->getTech()->WellTapCellRef()[0]);
                     int map_size = circuit_->getDesign()->tap_name_map.size();
                     auto ret =
@@ -1147,7 +1147,7 @@ void StdClusterWellLegalizer::InsertWellTap() {
 
 void StdClusterWellLegalizer::ClearCachedData() {
     for (auto &block: circuit_->BlockListRef()) {
-        block.SetOrient(N_);
+        block.SetOrient(N);
     }
 
     for (auto &col: col_list_) {

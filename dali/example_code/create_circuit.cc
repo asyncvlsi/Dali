@@ -30,9 +30,9 @@ int main() {
   // set metal layer if you want to do IO Placement and use metal pitches as grid value
   std::string metal_layer_name;
   metal_layer_name = "m1";
-  circuit.AddMetalLayer(metal_layer_name, 0.1, 0.1, 0.042, 0.2, 0.2, VERTICAL_);
+  circuit.AddMetalLayer(metal_layer_name, 0.1, 0.1, 0.042, 0.2, 0.2, VERTICAL);
   metal_layer_name = "m2";
-  circuit.AddMetalLayer(metal_layer_name, 0.1, 0.1, 0.042, 0.2, 0.2, HORIZONTAL_);
+  circuit.AddMetalLayer(metal_layer_name, 0.1, 0.1, 0.042, 0.2, 0.2, HORIZONTAL);
 
   // set grid value and row height
   circuit.SetGridValue(0.2, 0.2);
@@ -76,15 +76,15 @@ int main() {
 
   // add block instances
   std::string inv1_name = "inv1";
-  circuit.AddBlock(inv1_name, inv_type_name, 0, 0, UNPLACED_, N_, true);
+  circuit.AddBlock(inv1_name, inv_type_name, 0, 0, UNPLACED, N, true);
   std::string inv2_name = "inv2";
-  circuit.AddBlock(inv2_name, inv_type_name, 0, 0, UNPLACED_, N_, true);
+  circuit.AddBlock(inv2_name, inv_type_name, 0, 0, UNPLACED, N, true);
 
   // add IOPIN
   std::string chip_in = "io_in";
-  circuit.AddIOPin(chip_in, UNPLACED_, SIGNAL_, INPUT_, 0, 0);
+  circuit.AddIOPin(chip_in, UNPLACED, SIGNAL, INPUT, 0, 0);
   std::string chip_out = "io_out";
-  circuit.AddIOPin(chip_out, UNPLACED_, SIGNAL_, OUTPUT_, 0, 0);
+  circuit.AddIOPin(chip_out, UNPLACED, SIGNAL, OUTPUT, 0, 0);
 
   // add net
   std::string net_in_name = "net_in";

@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
 
   MetalLayer *hor_layer = nullptr;
   for (auto &metal_layer: circuit.getTechRef().metal_list_) {
-    if (metal_layer.Direction() == HORIZONTAL_) {
+    if (metal_layer.Direction() == HORIZONTAL) {
       hor_layer = &metal_layer;
       BOOST_LOG_TRIVIAL(info) << "Horizontal metal layer is: " << *hor_layer->Name() << "\n";
       break;

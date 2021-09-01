@@ -22,7 +22,7 @@ MetalLayer::MetalLayer(std::pair<const std::string, int> *name_num_pair_ptr) :
     min_area_(0),
     x_pitch_(0),
     y_pitch_(0),
-    direction_(HORIZONTAL_) {}
+    direction_(HORIZONTAL) {}
 
 MetalLayer::MetalLayer(double width,
                        double spacing,

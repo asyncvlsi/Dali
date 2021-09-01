@@ -54,13 +54,13 @@ class Block {
         int llx,
         int lly,
         bool movable = "true",
-        BlockOrient orient = N_);
+        BlockOrient orient = N);
   Block(BlockType *type_ptr,
         std::pair<const std::string, int> *name_num_pair_ptr,
         int llx,
         int lly,
-        PlaceStatus place_state = UNPLACED_,
-        BlockOrient orient = N_);
+        PlaceStatus place_state = UNPLACED,
+        BlockOrient orient = N);
 
   /****member functions for attributes access****/
   // get the Block name
@@ -117,7 +117,7 @@ class Block {
   std::vector<int> *NetList() { return &net_list_; }
 
   // get the boolean status of whether this Block is placed
-  bool IsPlaced() const { return place_status_ == PLACED_ || place_status_ == FIXED_ || place_status_ == COVER_; }
+  bool IsPlaced() const { return place_status_ == PLACED || place_status_ == FIXED || place_status_ == COVER; }
 
   // get the placement status of this Block
   PlaceStatus PlacementStatus() const { return place_status_; }
@@ -127,7 +127,7 @@ class Block {
 
   // get the boolean status of whether this Block is movable
   // current assumption: UNPLACED and PLACED are movable, FIXED and COVER are unmovable
-  bool IsMovable() const { return place_status_ == UNPLACED_ || place_status_ == PLACED_; }
+  bool IsMovable() const { return place_status_ == UNPLACED || place_status_ == PLACED; }
 
   // get the boolean status of whether this Block is unmovable
   bool IsFixed() const { return !IsMovable(); }

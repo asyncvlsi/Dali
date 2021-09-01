@@ -7,7 +7,8 @@
 namespace dali {
 
 WellTapPlacer::WellTapPlacer(phydb::PhyDB *phy_db) {
-    DaliExpects(phy_db != nullptr, "Cannot initialize WellTapPlacer using a nullptr");
+    DaliExpects(phy_db != nullptr,
+                "Cannot initialize a WellTapPlacer without providing a valid PhyDB pointer");
     phy_db_ = phy_db;
 }
 
@@ -31,17 +32,20 @@ void WellTapPlacer::FetchRowsFromPhyDB() {
         }
     }
 
-    row_height_ = (int) std::round(site_ptr_->GetHeight() * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons());
-    row_step_ = (int) std::round(site_ptr_->GetWidth() * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons());
+    row_height_ = (int) std::round(site_ptr_->GetHeight()
+                                       * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons());
+    row_step_ = (int) std::round(site_ptr_->GetWidth()
+                                     * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons());
 
     DaliExpects(site_ptr_ != nullptr, "Cannot find Site in PhyDB");
     bottom_ = row_vec[0].orig_y_;
     top_ = row_vec.back().orig_y_ + row_height_;
     int prev_y = row_vec[0].orig_y_;
-    for (auto &phydb_row : row_vec) {
+    for (auto &phydb_row: row_vec) {
         int orig_x = phydb_row.orig_x_;
         int orig_y = phydb_row.orig_y_;
-        DaliExpects(orig_y == prev_y, "Only support well-tap insertion for closely packed rows");
+        DaliExpects(orig_y == prev_y,
+                    "Only support well-tap insertion for closely packed rows");
         prev_y = orig_y + row_height_;
 
         bool is_N = phydb_row.site_orient_ == "N";
@@ -63,8 +67,10 @@ void WellTapPlacer::InitializeWhiteSpaceInRows() {
     for (auto &comp: phy_db_->GetDesignPtr()->components_) {
         if (comp.place_status_ != phydb::FIXED) continue;
         phydb::Macro *macro = comp.GetMacro();
-        int comp_width = (int) std::round(macro->GetWidth() * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons());
-        int comp_height = (int) std::round(macro->GetHeight() * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons());
+        int comp_width = (int) std::round(macro->GetWidth()
+                                              * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons());
+        int comp_height = (int) std::round(macro->GetHeight()
+                                               * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons());
 
         int comp_lx = comp.location_.x;
         int comp_ly = comp.location_.y;
@@ -92,19 +98,25 @@ void WellTapPlacer::InitializeWhiteSpaceInRows() {
 void WellTapPlacer::SetCell(phydb::Macro *cell) {
     DaliExpects(cell != nullptr, "Cannot use nullptr as well-tap cell");
     cell_ = cell;
-    cell_width_ = (int) std::ceil(cell->GetWidth() * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons() / row_step_);
+    cell_width_ = (int) std::ceil(
+        cell->GetWidth() * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons()
+            / row_step_);
 }
 
 void WellTapPlacer::SetCellInterval(double cell_interval_microns) {
     cell_interval_ =
-        (int) std::floor(cell_interval_microns * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons() / row_step_);
+        (int) std::floor(cell_interval_microns
+                             * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons()
+                             / row_step_);
     //std::cout << cell_interval_ << "\n";
 }
 
 void WellTapPlacer::SetCellMinDistanceToBoundary(double cell_min_distance_to_boundary_microns) {
     cell_min_distance_to_boundary_ =
         (int) std::ceil(
-            cell_min_distance_to_boundary_microns * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons() / row_step_);
+            cell_min_distance_to_boundary_microns
+                * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons()
+                / row_step_);
     //std::cout << cell_min_distance_to_boundary_ << "\n";
 }
 
@@ -112,7 +124,9 @@ void WellTapPlacer::UseCheckerBoardMode(bool is_checker_board) {
     is_checker_board_ = is_checker_board;
 }
 
-void WellTapPlacer::AddWellTapToRowUniform(Row &row, int first_loc, int interval) {
+void WellTapPlacer::AddWellTapToRowUniform(Row &row,
+                                           int first_loc,
+                                           int interval) {
     int lo_col = 0;
     int hi_col = -1;
     while (lo_col < row.num_x && hi_col < row.num_x) {
@@ -188,12 +202,12 @@ void WellTapPlacer::AddWellTapCheckerBoard() {
     // trim redundant well tap cells
     // there is no need to trim the first and last row
     int tot_num_rows = (int) rows_.size();
-    for (int r=1; r<tot_num_rows-1; ++r) {
+    for (int r = 1; r < tot_num_rows - 1; ++r) {
         bool is_odd_row = r % 2 == 1;
         Row &cur_row = rows_[r];
-        Row &prev_row = rows_[r-1];
-        Row &next_row = rows_[r+1];
-        for (int i=0; i<cur_row.num_x; ++i) {
+        Row &prev_row = rows_[r - 1];
+        Row &next_row = rows_[r + 1];
+        for (int i = 0; i < cur_row.num_x; ++i) {
             if (cur_row.well_taps[i]) {
                 if (i % half_cell_interval != 0) {
                     if (prev_row.well_taps[i] && next_row.well_taps[i]) {
@@ -229,13 +243,20 @@ void WellTapPlacer::ExportWellTapCellsToPhyDB() {
     for (auto &row: rows_) {
         for (int i = 0; i < row.num_x; ++i) {
             if (row.well_taps[i]) {
-                std::string welltap_cell_name = "welltap" + std::to_string(counter++);
+                std::string
+                    welltap_cell_name = "welltap" + std::to_string(counter++);
                 int llx = row.orig_x + i * row_step_;
                 int lly = row.orig_y;
                 phydb::CompOrient orient = row.is_N ? phydb::N : phydb::FS;
                 phydb::Macro *macro_ptr = phy_db_->GetMacroPtr(macro_name);
-                DaliExpects(macro_ptr!= nullptr, "Cannot find macro " + macro_name + " in PhyDB?!");
-                phy_db_->AddComponent(welltap_cell_name, macro_ptr, place_status, llx, lly, orient);
+                DaliExpects(macro_ptr != nullptr,
+                            "Cannot find macro " + macro_name + " in PhyDB?!");
+                phy_db_->AddComponent(welltap_cell_name,
+                                      macro_ptr,
+                                      place_status,
+                                      llx,
+                                      lly,
+                                      orient);
             }
         }
     }

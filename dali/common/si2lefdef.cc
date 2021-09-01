@@ -373,15 +373,15 @@ int getDefComponents(defrCallbackType_e type, defiComponent *comp, defiUserData 
       (int) std::round(comp->placementY() / circuit.GridValueY() / circuit.DistanceMicrons());
   //BOOST_LOG_TRIVIAL(info)   << llx_int << "  " << lly_int << "\n";
   std::string orient(std::string(comp->placementOrientStr()));
-  PlaceStatus place_status = UNPLACED_;
+  PlaceStatus place_status = UNPLACED;
   if (comp->isFixed()) {
-    place_status = FIXED_;
+    place_status = FIXED;
   } else if (comp->isCover()) {
-    place_status = COVER_;
+    place_status = COVER;
   } else if (comp->isPlaced()) {
-    place_status = PLACED_;
+    place_status = PLACED;
   } else if (comp->isUnplaced()) {
-    place_status = UNPLACED_;
+    place_status = UNPLACED;
     llx_int = 0;
     lly_int = 0;
   } else {
@@ -407,30 +407,30 @@ int getDefIOPins(defrCallbackType_e type, defiPin *pin, defiUserData userData) {
   PlaceStatus place_status;
   if (pin->hasPlacement()) {
     if (pin->isFixed()) {
-      place_status = FIXED_;
+      place_status = FIXED;
       iopin_x =
           (int) std::round(pin->placementX() / circuit.GridValueX() / circuit.DistanceMicrons());
       iopin_y =
           (int) std::round(pin->placementY() / circuit.GridValueY() / circuit.DistanceMicrons());
       is_loc_set = true;
     } else if (pin->isCover()) {
-      place_status = COVER_;
+      place_status = COVER;
       iopin_x =
           (int) std::round(pin->placementX() / circuit.GridValueX() / circuit.DistanceMicrons());
       iopin_y =
           (int) std::round(pin->placementY() / circuit.GridValueY() / circuit.DistanceMicrons());
       is_loc_set = true;
     } else if (pin->isPlaced()) {
-      place_status = PLACED_;
+      place_status = PLACED;
       iopin_x =
           (int) std::round(pin->placementX() / circuit.GridValueX() / circuit.DistanceMicrons());
       iopin_y =
           (int) std::round(pin->placementY() / circuit.GridValueY() / circuit.DistanceMicrons());
       is_loc_set = true;
     } else if (pin->isUnplaced()) {
-      place_status = UNPLACED_;
+      place_status = UNPLACED;
     } else {
-      place_status = UNPLACED_;
+      place_status = UNPLACED;
     }
   }
   std::string str_sig_use;
@@ -447,9 +447,9 @@ int getDefIOPins(defrCallbackType_e type, defiPin *pin, defiUserData userData) {
   SignalDirection sig_dir = StrToSignalDirection(str_sig_dir);
 
   if (is_loc_set) {
-    circuit.AddIOPin(iopin_name, PLACED_, sig_use, sig_dir, iopin_x, iopin_y);
+    circuit.AddIOPin(iopin_name, PLACED, sig_use, sig_dir, iopin_x, iopin_y);
   } else {
-    circuit.AddIOPin(iopin_name, UNPLACED_, sig_use, sig_dir);
+    circuit.AddIOPin(iopin_name, UNPLACED, sig_use, sig_dir);
   }
 
   return 0;

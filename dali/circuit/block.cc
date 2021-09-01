@@ -10,8 +10,8 @@ Block::Block() : type_ptr_(nullptr),
                  name_num_pair_ptr_(nullptr),
                  llx_(0),
                  lly_(0),
-                 place_status_(UNPLACED_),
-                 orient_(N_),
+                 place_status_(UNPLACED),
+                 orient_(N),
                  aux_ptr_(nullptr) {
 }
 
@@ -32,9 +32,9 @@ Block::Block(BlockType *type_ptr,
               "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
   aux_ptr_ = nullptr;
   if (movable) {
-    place_status_ = UNPLACED_;
+    place_status_ = UNPLACED;
   } else {
-    place_status_ = FIXED_;
+    place_status_ = FIXED;
   }
 }
 

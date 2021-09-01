@@ -18,58 +18,64 @@ namespace dali {
 class Net;
 
 class IOPin {
- private:
-  std::pair<const std::string, int> *name_num_pair_ptr_;
-  Net *net_ptr_;
-  SignalDirection direction_;
-  SignalUse use_;
-  MetalLayer *layer_ptr_;
-  RectD rect_;
-  PlaceStatus init_place_status_;
-  PlaceStatus place_status_;
-  double lx_, ly_;
-  BlockOrient orient_;
- public:
-  explicit IOPin(std::pair<const std::string, int> *name_num_pair_ptr);
-  IOPin(std::pair<const std::string, int> *name_num_pair_ptr, double lx, double ly);
-  IOPin(std::pair<const std::string, int> *name_num_pair_ptr,
-        SignalDirection direction,
-        PlaceStatus init_place_status,
-        double lx,
-        double ly);
+  private:
+    std::pair<const std::string, int> *name_num_pair_ptr_;
+    Net *net_ptr_;
+    SignalDirection direction_;
+    SignalUse use_;
+    MetalLayer *layer_ptr_;
+    std::vector<RectD> rect_; // the pin geometry when the orientation is N
+    bool is_shape_set_ = false;
+    PlaceStatus init_place_status_;
+    PlaceStatus place_status_;
+    double loc_x_, loc_y_;
+    BlockOrient orient_;
+  public:
+    explicit IOPin(std::pair<const std::string, int> *name_num_pair_ptr);
+    IOPin(std::pair<const std::string, int> *name_num_pair_ptr,
+          double loc_x,
+          double loc_y);
+    IOPin(std::pair<const std::string, int> *name_num_pair_ptr,
+          SignalDirection direction,
+          PlaceStatus init_place_status,
+          double loc_x,
+          double loc_y);
 
-  const std::string *Name() const { return &(name_num_pair_ptr_->first); }
-  int Num() const { return name_num_pair_ptr_->second; }
-  Net *GetNet() const { return net_ptr_; }
-  SignalDirection SigDirection() const { return direction_; }
-  SignalUse SigUse() const { return use_; }
-  MetalLayer *Layer() const { return layer_ptr_; }
-  RectD *GetRect() { return &rect_; }
-  bool IsPlaced() const { return place_status_ == FIXED_ || place_status_ == PLACED_; }
-  bool IsPrePlaced() const { return init_place_status_ == FIXED_ || init_place_status_ == PLACED_; }
-  double X() const { return lx_; }
-  double Y() const { return ly_; }
+    const std::string *Name() const;
+    int Num() const;
+    Net *GetNet() const;
+    SignalDirection SigDirection() const;
+    SignalUse SigUse() const;
+    MetalLayer *Layer() const;
+    RectD *GetRect();
+    bool IsPlaced() const;
+    bool IsPrePlaced() const;
+    double X() const;
+    double Y() const;
+    BlockOrient Orient() const;
 
-  void SetNet(Net *net_ptr) {
-    DaliExpects(net_ptr != nullptr, "Cannot set @param net_ptr to nullptr in function: IOPin::SetNet()");
-    net_ptr_ = net_ptr;
-  }
-  void SetDirection(SignalDirection direction) { direction_ = direction; }
-  void SetUse(SignalUse use) { use_ = use; }
-  void SetLayer(MetalLayer *layer_ptr) {
-    DaliExpects(layer_ptr != nullptr, "Cannot set @param layer_ptr to nullptr in function: IOPin::SetLayer()");
-    layer_ptr_ = layer_ptr;
-  }
-  void SetRect(double llx, double lly, double urx, double ury) {
-    rect_.SetValue(llx, lly, urx, ury);
-  }
-  void SetLoc(double lx, double ly, PlaceStatus place_status = PLACED_) {
-    lx_ = lx;
-    ly_ = ly;
-    place_status_ = place_status;
-  }
+    void SetNet(Net *net_ptr);
+    void SetDirection(SignalDirection direction);
+    void SetUse(SignalUse use);
+    void SetLayer(MetalLayer *layer_ptr);
+    void SetRect(double llx, double lly, double urx, double ury);
+    void SetInitPlaceStatus(PlaceStatus init_place_status);
+    void SetLocX(double loc_x);
+    void SetLocY(double loc_y);
+    void SetPlaceStatus(PlaceStatus place_status);
+    void SetLoc(double loc_x,
+                double loc_y,
+                PlaceStatus place_status = PLACED);
+    void SetOrient(BlockOrient orient);
+    void SetShape(double llx, double lly, double urx, double ury);
 
-  void Report() const;
+    double LX(double spacing = 0) const;
+    double UX(double spacing = 0) const;
+    double LY(double spacing = 0) const;
+    double UY(double spacing = 0) const;
+    bool IsShapeSet() const;
+
+    void Report() const;
 };
 
 }

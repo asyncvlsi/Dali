@@ -90,7 +90,7 @@ class Placer {
         DaliExpects(circuit_ != nullptr, "No input circuit specified, cannot modify any circuits!");
         GetCircuit()->NetSortBlkPin();
     }
-    virtual bool StartPlacement() = 0;
+    virtual bool StartPlacement();
 
     double WeightedHPWLX() {
         DaliExpects(circuit_ != nullptr, "No input circuit specified, cannot compute WeightedHPWLX!");
@@ -127,9 +127,6 @@ class Placer {
     void SanityCheck();
     void UpdateMovableBlkPlacementStatus();
 
-    void SimpleIoPinPlacement(int metal_layer_index);
-    void SimpleIoPinPlacement(std::string metal_layer);
-
     /****File I/O member functions****/
     void GenMATLABTable(std::string const &name_of_file) {
         circuit_->GenMATLABTable(name_of_file);
@@ -142,7 +139,9 @@ class Placer {
                           std::string const &node_file = "nodes.txt");
     void SaveDEFFile(std::string const &name_of_file = "circuit.def");
     void SaveDEFFile(std::string const &name_of_file, std::string const &input_def_file);
-    virtual void EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode, bool enable_emitting_cluster = true);
+    virtual void EmitDEFWellFile(std::string const &name_of_file,
+                                 int well_emit_mode,
+                                 bool enable_emitting_cluster = true);
 
     /****for testing purposes****/
     void ShiftX(double shift_x);

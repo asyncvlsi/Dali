@@ -132,6 +132,7 @@ file(GLOB SOURCES
         dali/placer/globalPlacer/GPSimPL/*.cc
         dali/placer/detailedPlacer/*.cc
         dali/placer/detailedPlacer/MDPlacer/*.cc
+        dali/placer/ioPlacer/*.cc
         dali/placer/legalizer/*.cc
         dali/placer/legalizer/LGTetris/*.cc
         dali/placer/postLegalOptimizer/*.cc

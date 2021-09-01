@@ -48,7 +48,7 @@ class MetalLayer : public Layer {
   MetalLayer(double width,
              double spacing,
              std::pair<const std::string, int> *name_num_pair_ptr,
-             MetalDirection direction = HORIZONTAL_);
+             MetalDirection direction = HORIZONTAL);
   void SetArea(double area) {
     DaliExpects(area >= 0, "Negative minarea?");
     min_area_ = area;

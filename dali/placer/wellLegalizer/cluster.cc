@@ -113,7 +113,7 @@ void Cluster::LegalizeLooseX(int space_to_well_tap) {
 void Cluster::SetOrient(bool is_orient_N) {
     if (is_orient_N_ != is_orient_N) {
         is_orient_N_ = is_orient_N;
-        BlockOrient orient = is_orient_N_ ? N_ : FS_;
+        BlockOrient orient = is_orient_N_ ? N : FS;
         double y_flip_axis = ly_ + height_ / 2.0;
         for (auto &blk_ptr: blk_list_) {
             double ly_to_axis = y_flip_axis - blk_ptr->LLY();
@@ -131,10 +131,10 @@ void Cluster::InsertWellTapCell(Block &tap_cell, int loc) {
     int p_well_height = well->PHeight();
     int n_well_height = well->NHeight();
     if (is_orient_N_) {
-        tap_cell.SetOrient(N_);
+        tap_cell.SetOrient(N);
         tap_cell.SetLLY(ly_ + p_well_height_ - p_well_height);
     } else {
-        tap_cell.SetOrient(FS_);
+        tap_cell.SetOrient(FS);
         tap_cell.SetLLY(ly_ + n_well_height_ - n_well_height);
     }
 }

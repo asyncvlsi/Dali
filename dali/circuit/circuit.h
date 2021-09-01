@@ -58,10 +58,6 @@ class Circuit {
     Tech tech_; // information in LEF and CELL
     Design design_; // information in DEF
 
-#ifdef USE_OPENDB
-    odb::dbDatabase *db_ptr_; // pointer to openDB database
-#endif
-
     phydb::PhyDB *phy_db_ptr_;
 
     // create fake N/P-well info for cells
@@ -98,10 +94,10 @@ class Circuit {
     // create a block instance using a pointer to its type
     void AddBlock(std::string &block_name,
                   BlockType *block_type_ptr,
-                  int llx = 0,
-                  int lly = 0,
-                  PlaceStatus place_status = UNPLACED_,
-                  BlockOrient orient = N_,
+                  double llx = 0,
+                  double lly = 0,
+                  PlaceStatus place_status = UNPLACED,
+                  BlockOrient orient = N,
                   bool is_real_cel = true);
 
     // create a dummy BlockType for IOPins.
@@ -111,7 +107,7 @@ class Circuit {
     IOPin *AddUnplacedIOPin(std::string &iopin_name);
 
     // add a placed IOPin.
-    IOPin *AddPlacedIOPin(std::string &iopin_name, int lx, int ly);
+    IOPin *AddPlacedIOPin(std::string &iopin_name, double lx, double ly);
 
     // create well information container for a given BlockType.
     BlockTypeWell *AddBlockTypeWell(BlockType *blk_type);
@@ -125,17 +121,17 @@ class Circuit {
      * 1. from openDB
      * 2. from LEF/DEF directly using a naive parser
      * ****/
-#ifdef USE_OPENDB
-    // constructor using openDB database
-    explicit Circuit(odb::dbDatabase *db_ptr);
-
-    // initialize a blank circuit from openDB database
-    void InitializeFromDB(odb::dbDatabase *db_ptr);
-#endif
-
     void LoadTech(phydb::PhyDB *phy_db_ptr); // LEF
+
+    int DaliLoc2PhyDBLocX(double loc);
+    int DaliLoc2PhyDBLocY(double loc);
+    double PhyDBLoc2DaliLocX(int loc);
+    double PhyDBLoc2DaliLocY(int loc);
+    void AddIoPinFromPhyDB(phydb::IOPin &iopin);
     void LoadDesign(phydb::PhyDB *phy_db_ptr); // DEF
+
     void LoadWell(phydb::PhyDB *phy_db_ptr); // CELL
+
     void InitializeFromPhyDB(phydb::PhyDB *phy_db_ptr);
 
     // LEF/DEF loader
@@ -217,9 +213,6 @@ class Circuit {
     /****API to set metal layers: deprecated
      * now the metal layer information are all stored in openDB data structure
      * ****/
-    // get the pointer to the list of metal layers
-    std::vector<MetalLayer> *MetalListPtr() { return &tech_.metal_list_; }
-
     // get the pointer to the name map of metal layers
     std::unordered_map<std::string, int> *MetalNameMap() { return &tech_.metal_name_map_; }
 
@@ -339,30 +332,7 @@ class Circuit {
     int DistanceMicrons() const { return design_.def_distance_microns; }
 
     // set die area, unit in manufacturing grid
-    void setDieArea(int lower_x, int lower_y, int upper_x, int upper_y) { // unit in manufacturing grid
-        DaliExpects(tech_.grid_value_x_ > 0 && tech_.grid_value_y_ > 0,
-                    "Need to set positive grid values before setting placement boundary");
-        DaliExpects(design_.def_distance_microns > 0,
-                    "Need to set def_distance_microns before setting placement boundary using Circuit::SetDieArea()");
-        double factor_x = tech_.grid_value_x_ * design_.def_distance_microns;
-        double factor_y = tech_.grid_value_y_ * design_.def_distance_microns;
-
-        // TODO, extract placement boundary from rows if they are any rows
-        DaliWarns((lower_x % (int) std::round(factor_x)) != 0,
-                  "expects the left boundary coordinate is integer multiple of grid_value_x");
-
-        DaliWarns((lower_y % (int) std::round(factor_y)) != 0,
-                  "expects the bottom boundary coordinate is integer multiple of grid_value_y");
-        DaliWarns((upper_x % (int) std::round(factor_x)) != 0,
-                  "expects the right boundary coordinate is integer multiple of grid_value_x");
-        DaliWarns((upper_y % (int) std::round(factor_y)) != 0,
-                  "expects the top boundary coordinate is integer multiple of grid_value_y");
-
-        SetBoundary((int) std::round(lower_x / factor_x),
-                    (int) std::round(lower_y / factor_y),
-                    (int) std::round(upper_x / factor_x),
-                    (int) std::round(upper_y / factor_y));
-    }
+    void setDieArea(int lower_x, int lower_y, int upper_x, int upper_y);
 
     // return lower x of the placement region, unit is grid value in x.
     int RegionLLX() const { return design_.region_left_; }
@@ -411,10 +381,10 @@ class Circuit {
     // create a block instance using the name of its type
     void AddBlock(std::string &block_name,
                   std::string &block_type_name,
-                  int llx = 0,
-                  int lly = 0,
-                  PlaceStatus place_status = UNPLACED_,
-                  BlockOrient orient = N_,
+                  double llx = 0,
+                  double lly = 0,
+                  PlaceStatus place_status = UNPLACED,
+                  BlockOrient orient = N,
                   bool is_real_cel = true);
 
     // report the whole Block list for debugging purposes.
@@ -450,8 +420,8 @@ class Circuit {
                     PlaceStatus place_status,
                     SignalUse signal_use,
                     SignalDirection signal_direction,
-                    int lx = 0,
-                    int ly = 0);
+                    double lx = 0,
+                    double ly = 0);
 
     // report the whole IOPin list for debugging purposes.
     void ReportIOPin();

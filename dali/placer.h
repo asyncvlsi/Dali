@@ -24,4 +24,7 @@
 #include "dali/placer/wellPlaceFlow/wellplaceflow.h"
 #include "dali/placer/wellTapPlacer/welltapplacer.h"
 
+/****IO Placer****/
+#include "dali/placer/ioPlacer/ioplacer.h"
+
 #endif //DALI_SRC_PLACER_H_
