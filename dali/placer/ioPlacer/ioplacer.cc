@@ -376,6 +376,11 @@ bool IoPlacer::ConfigCmd(int argc, char **argv) {
     return true;
 }
 
+// resource should be large enough for all IOPINs
+bool IoPlacer::CheckConfiguration() {
+    return true;
+}
+
 bool IoPlacer::BuildResourceMap() {
     std::vector<std::vector<Seg<double>>> all_used_segments(
         NUM_OF_PLACE_BOUNDARY,
@@ -547,8 +552,12 @@ bool IoPlacer::PlaceIoPinOnEachBoundary() {
 }
 
 bool IoPlacer::AutoPlaceIoPin() {
-    if (boundary_spaces_.empty()) {
+    if (!has_configured) {
         ConfigSetGlobalMetalLayer(0);
+    }
+
+    if (!CheckConfiguration()) {
+        return false;
     }
 
     BuildResourceMap();

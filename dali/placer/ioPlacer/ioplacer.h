@@ -26,6 +26,8 @@ class IoPlacer {
     Circuit *circuit_ptr_ = nullptr;
     phydb::PhyDB *phy_db_ptr_ = nullptr;
     std::vector<IoBoundarySpace> boundary_spaces_;
+
+    bool has_configured = false;
   public:
     IoPlacer();
     explicit IoPlacer(phydb::PhyDB *phy_db, Circuit *circuit_);
@@ -58,6 +60,8 @@ class IoPlacer {
 
     static void ReportConfigUsage();
     bool ConfigCmd(int argc, char **argv);
+
+    bool CheckConfiguration();
 
     bool BuildResourceMap();
     bool AssignIoPinToBoundaryLayers();
