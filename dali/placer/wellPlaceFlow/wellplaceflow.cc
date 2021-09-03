@@ -29,7 +29,7 @@ bool WellPlaceFlow::StartPlacement() {
 
   double eval_res = QuadraticPlacement(net_model_update_stop_criterion_);
   lower_bound_hpwl_.push_back(eval_res);
-  //BOOST_LOG_TRIVIAL(info)   << cg_total_hpwl_ << "  " << circuit_->HPWL() << "\n";
+  //BOOST_LOG_TRIVIAL(info)   << cg_total_hpwl_ << "  " << circuit_ptr_->HPWL() << "\n";
 
   bool old_success = false;
   max_iter_ = 50;
@@ -56,7 +56,7 @@ bool WellPlaceFlow::StartPlacement() {
       //if (!is_success && !old_success) {
       //  filling_rate_ = filling_rate_ * 0.99;
       //  BOOST_LOG_TRIVIAL(info)   << "Adjusted filling rate: " << filling_rate_ << "\n";
-      //  BOOST_LOG_TRIVIAL(info)   << "White space usage: " << circuit_->WhiteSpaceUsage() << "\n";
+      //  BOOST_LOG_TRIVIAL(info)   << "White space usage: " << circuit_ptr_->WhiteSpaceUsage() << "\n";
       //}
       //if (!old_success) {
       //  old_success = is_success;

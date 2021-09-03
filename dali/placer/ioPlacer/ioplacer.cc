@@ -15,20 +15,45 @@
 
 namespace dali {
 
+IoPlacer::IoPlacer() {
+    InitializeBoundarySpaces();
+}
+
 IoPlacer::IoPlacer(phydb::PhyDB *phy_db, Circuit *circuit) {
-    DaliExpects(phy_db != nullptr,
-                "Cannot initialize an IoPlacer without providing a valid PhyDB pointer");
-    phy_db_ptr_ = phy_db;
-    DaliExpects(circuit != nullptr,
-                "Cannot initialize an IoPlacer without providing a valid Circuit pointer");
-    circuit_ = circuit;
+    SetPhyDB(phy_db);
+    SetCiruit(circuit);
+    InitializeBoundarySpaces();
+}
+
+void IoPlacer::InitializeBoundarySpaces() {
+    boundary_spaces_.reserve(NUM_OF_PLACE_BOUNDARY);
+    // put all boundaries in a vector
+    std::vector<double> boundary_loc{
+        (double) circuit_ptr_->getDesignRef().region_left_,
+        (double) circuit_ptr_->getDesignRef().region_right_,
+        (double) circuit_ptr_->getDesignRef().region_bottom_,
+        (double) circuit_ptr_->getDesignRef().region_top_
+    };
+
+    // initialize each boundary
+    for (int i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
+        boundary_spaces_.emplace_back(
+            i == BOTTOM || i == TOP,
+            boundary_loc[i]
+        );
+    }
+
 }
 
 void IoPlacer::SetCiruit(Circuit *circuit) {
-    circuit_ = circuit;
+    DaliExpects(circuit != nullptr,
+                "Cannot initialize an IoPlacer without providing a valid Circuit pointer");
+    circuit_ptr_ = circuit;
 }
 
 void IoPlacer::SetPhyDB(phydb::PhyDB *phy_db_ptr) {
+    DaliExpects(phy_db_ptr != nullptr,
+                "Cannot initialize an IoPlacer without providing a valid PhyDB pointer");
     phy_db_ptr_ = phy_db_ptr;
 }
 
@@ -76,7 +101,7 @@ bool IoPlacer::AddIoPin(std::string &iopin_name, std::string &net_name,
     phy_db_ptr_->AddIoPinToNet(iopin_name, net_name);
 
     // add it to Dali::Circuit
-    circuit_->AddIoPinFromPhyDB(*phydb_iopin);
+    circuit_ptr_->AddIoPinFromPhyDB(*phydb_iopin);
 
     return true;
 }
@@ -149,7 +174,7 @@ bool IoPlacer::PlaceIoPin(std::string &iopin_name,
     }
 
     // get metal layer name
-    int is_metal_layer_existing = circuit_->IsMetalLayerExist(metal_name);
+    int is_metal_layer_existing = circuit_ptr_->IsMetalLayerExist(metal_name);
     if (!is_metal_layer_existing) {
         BOOST_LOG_TRIVIAL(warning)
             << "The given metal layer index does not exist: "
@@ -169,15 +194,15 @@ bool IoPlacer::PlaceIoPin(std::string &iopin_name,
                                   phydb::StrToCompOrient(orient));
 
     // check if this IOPIN is in Dali::Circuit or not (it should)
-    bool is_iopin_existing_dali = circuit_->IsIOPinExist(iopin_name);
+    bool is_iopin_existing_dali = circuit_ptr_->IsIOPinExist(iopin_name);
     DaliExpects(is_iopin_existing_dali, "IOPIN in PhyDB but not in Dali?");
-    IOPin *iopin_ptr_dali = circuit_->getIOPin(iopin_name);
+    IOPin *iopin_ptr_dali = circuit_ptr_->getIOPin(iopin_name);
 
     // set IOPIN placement status in Dali
-    iopin_ptr_dali->SetLoc(circuit_->PhyDBLoc2DaliLocX(loc_x),
-                           circuit_->PhyDBLoc2DaliLocY(loc_y),
+    iopin_ptr_dali->SetLoc(circuit_ptr_->PhyDBLoc2DaliLocX(loc_x),
+                           circuit_ptr_->PhyDBLoc2DaliLocY(loc_y),
                            StrToPlaceStatus(place_status));
-    MetalLayer *metal_layer_ptr = circuit_->getMetalLayerPtr(metal_name);
+    MetalLayer *metal_layer_ptr = circuit_ptr_->getMetalLayerPtr(metal_name);
     iopin_ptr_dali->SetLayer(metal_layer_ptr);
 
     return true;
@@ -247,30 +272,24 @@ bool IoPlacer::PartialPlaceCmd(int argc, char **argv) {
     return true;
 }
 
-bool IoPlacer::ConfigSetGlobalMetalLayer(int metal_layer_index) {
+bool IoPlacer::ConfigSetMetalLayer(int boundary_index, int metal_layer_index) {
     // check if this metal index exists or not
     bool is_legal_index = metal_layer_index >= 0
-        && metal_layer_index < (int) circuit_->getTechRef().metal_list_.size();
+        && metal_layer_index
+            < (int) circuit_ptr_->getTechRef().metal_list_.size();
     if (!is_legal_index) return false;
     MetalLayer *metal_layer =
-        &(circuit_->getTechRef().metal_list_[metal_layer_index]);
+        &(circuit_ptr_->getTechRef().metal_list_[metal_layer_index]);
+    boundary_spaces_[boundary_index].AddLayer(metal_layer);
+    return true;
+}
 
-    // put all boundaries in a vector
-    std::vector<double> boundary_loc{
-        (double) circuit_->getDesignRef().region_left_,
-        (double) circuit_->getDesignRef().region_right_,
-        (double) circuit_->getDesignRef().region_bottom_,
-        (double) circuit_->getDesignRef().region_top_
-    };
-
-    // initialize each boundary
-    IoBoundarySpace tmp_boundary_space;
+bool IoPlacer::ConfigSetGlobalMetalLayer(int metal_layer_index) {
     for (int i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
-        boundary_spaces_.push_back(tmp_boundary_space);
-        boundary_spaces_[i].is_iopin_limit_set = false;
-        boundary_spaces_[i].layer_spaces.emplace_back(i == BOTTOM || i == TOP,
-                                                      boundary_loc[i],
-                                                      metal_layer);
+        bool is_successful = ConfigSetMetalLayer(i, metal_layer_index);
+        if (!is_successful) {
+            return false;
+        }
     }
     return true;
 }
@@ -279,30 +298,107 @@ bool IoPlacer::ConfigAutoPlace() {
     return true;
 }
 
+void IoPlacer::ReportConfigUsage() {
+    BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
+                            << "Usage: place-io -c/--config\n"
+                            << "  -h/--help\n"
+                            << "      print out function usage\n"
+                            << "  -m/--metal <left/right/bottom/top> <metal layer>\n"
+                            << "      use this command to specify which metal layers to use for IOPINs on each placement boundary"
+                            << "      example: -m left m1, for IOPINs on the left boundary, using layer m1 to create physical geometry\n"
+                            << "      'place-io <metal layer>' is a shorthand for 'place-io -c -m left m1 right m1 bottom m1 top m1'\n"
+                            << "\033[0m\n";
+}
+
 bool IoPlacer::ConfigCmd(int argc, char **argv) {
+    if (argc < 2) {
+        ReportConfigUsage();
+        return false;
+    }
+
+    std::string option_str(argv[1]);
+    bool is_config_flag = (option_str == "-c" or option_str == "--config");
+    if (!is_config_flag) {
+        bool is_metal = circuit_ptr_->IsMetalLayerExist(option_str);
+        if (is_metal) {
+            MetalLayer
+                *metal_layer = circuit_ptr_->getMetalLayerPtr(option_str);
+            return ConfigSetGlobalMetalLayer(metal_layer->Num());
+        }
+        return false;
+    }
+
+    if (argc < 3) {
+        ReportConfigUsage();
+        return false;
+    }
+    option_str.assign(argv[2]);
+    if (option_str == "-h" or option_str == "--help") {
+        ReportConfigUsage();
+        return true;
+    } else if (option_str == "-m" or option_str == "--metal") {
+        if (argc < 5) {
+            ReportConfigUsage();
+            return false;
+        }
+        for (int i = 3; i < argc;) {
+            std::string arg(argv[i++]);
+            if (i < argc) {
+                std::string metal_name = std::string(argv[i++]);
+                bool is_layer_existing =
+                    circuit_ptr_->IsMetalLayerExist(metal_name);
+                if (!is_layer_existing) {
+                    BOOST_LOG_TRIVIAL(fatal) << "Invalid metal layer name!\n";
+                    ReportConfigUsage();
+                    return false;
+                }
+                MetalLayer *metal_layer =
+                    circuit_ptr_->getMetalLayerPtr(metal_name);
+                int metal_index = metal_layer->Num();
+                if (arg == "left") {
+
+                } else if (arg == "right") {
+
+                } else if (arg == "bottom") {
+
+                } else if (arg == "top") {
+
+                } else {
+                    BOOST_LOG_TRIVIAL(fatal)
+                        << "Invalid boundary, possible values: left, right, bottom, top\n";
+                    ReportConfigUsage();
+                    return false;
+                }
+            }
+        }
+    }
+
     return true;
 }
 
 bool IoPlacer::BuildResourceMap() {
-    std::vector<std::vector<Seg<double>>>
-        all_used_segments
-        (NUM_OF_PLACE_BOUNDARY, std::vector<Seg<double>>(0)); // TODO: carry layer info
-    for (auto &iopin: *(circuit_->getIOPinList())) {
+    std::vector<std::vector<Seg<double>>> all_used_segments(
+        NUM_OF_PLACE_BOUNDARY,
+        std::vector<Seg<double>>(0)
+    ); // TODO: carry layer info
+    for (auto &iopin: *(circuit_ptr_->getIOPinList())) {
         if (iopin.IsPrePlaced()) {
             double spacing = iopin.Layer()->Spacing();
-            if (iopin.X() == circuit_->getDesignRef().region_left_) {
+            if (iopin.X() == circuit_ptr_->getDesignRef().region_left_) {
                 double lly = iopin.LY(spacing);
                 double ury = iopin.UY(spacing);
                 all_used_segments[LEFT].emplace_back(lly, ury);
-            } else if (iopin.X() == circuit_->getDesignRef().region_right_) {
+            } else if (iopin.X()
+                == circuit_ptr_->getDesignRef().region_right_) {
                 double lly = iopin.LY(spacing);
                 double ury = iopin.UY(spacing);
                 all_used_segments[RIGHT].emplace_back(lly, ury);
-            } else if (iopin.Y() == circuit_->getDesignRef().region_bottom_) {
+            } else if (iopin.Y()
+                == circuit_ptr_->getDesignRef().region_bottom_) {
                 double llx = iopin.LX(spacing);
                 double urx = iopin.UX(spacing);
                 all_used_segments[BOTTOM].emplace_back(llx, urx);
-            } else if (iopin.Y() == circuit_->getDesignRef().region_top_) {
+            } else if (iopin.Y() == circuit_ptr_->getDesignRef().region_top_) {
                 double llx = iopin.LX(spacing);
                 double urx = iopin.UX(spacing);
                 all_used_segments[TOP].emplace_back(llx, urx);
@@ -315,10 +411,10 @@ bool IoPlacer::BuildResourceMap() {
     }
 
     std::vector<double> boundary_loc{
-        (double) circuit_->getDesignRef().region_left_,
-        (double) circuit_->getDesignRef().region_right_,
-        (double) circuit_->getDesignRef().region_bottom_,
-        (double) circuit_->getDesignRef().region_top_
+        (double) circuit_ptr_->getDesignRef().region_left_,
+        (double) circuit_ptr_->getDesignRef().region_right_,
+        (double) circuit_ptr_->getDesignRef().region_bottom_,
+        (double) circuit_ptr_->getDesignRef().region_top_
     };
 
     for (int i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
@@ -330,36 +426,40 @@ bool IoPlacer::BuildResourceMap() {
                   });
         std::vector<Seg<double>> avail_space;
         if (i == LEFT || i == RIGHT) {
-            double lo = circuit_->getDesignRef().region_bottom_;
+            double lo = circuit_ptr_->getDesignRef().region_bottom_;
+            double span = 0;
             int len = (int) used_segments.size();
+            if (len == 0) {
+                span = circuit_ptr_->getDesignRef().region_top_ - lo;
+                boundary_spaces_[i].layer_spaces_[0].AddCluster(lo, span);
+            }
             for (int j = 0; j < len; ++j) {
                 if (lo < used_segments[j].lo) {
-                    double hi = circuit_->getDesignRef().region_top_;
+                    double hi = circuit_ptr_->getDesignRef().region_top_;
                     if (j + 1 < len) {
                         hi = used_segments[j + 1].lo;
                     }
-                    boundary_spaces_[i].layer_spaces[0].pin_clusters.emplace_back(
-                        false,
-                        boundary_loc[i],
-                        lo,
-                        hi - lo);
+                    span = hi - lo;
+                    boundary_spaces_[i].layer_spaces_[0].AddCluster(lo, span);
                 }
                 lo = used_segments[j].hi;
             }
         } else {
-            double lo = circuit_->getDesignRef().region_left_;
+            double lo = circuit_ptr_->getDesignRef().region_left_;
+            double span = 0;
             int len = (int) used_segments.size();
+            if (len == 0) {
+                span = circuit_ptr_->getDesignRef().region_right_ - lo;
+                boundary_spaces_[i].layer_spaces_[0].AddCluster(lo, span);
+            }
             for (int j = 0; j < len; ++j) {
                 if (lo < used_segments[j].lo) {
-                    double hi = circuit_->getDesignRef().region_right_;
+                    double hi = circuit_ptr_->getDesignRef().region_right_;
                     if (j + 1 < len) {
                         hi = used_segments[j + 1].lo;
                     }
-                    boundary_spaces_[i].layer_spaces[0].pin_clusters.emplace_back(
-                        true,
-                        boundary_loc[i],
-                        lo,
-                        hi - lo);
+                    span = hi - lo;
+                    boundary_spaces_[i].layer_spaces_[0].AddCluster(lo, span);
                 }
                 lo = used_segments[j].hi;
             }
@@ -369,7 +469,7 @@ bool IoPlacer::BuildResourceMap() {
 }
 
 bool IoPlacer::AssignIoPinToBoundaryLayers() {
-    for (auto &iopin: *(circuit_->getIOPinList())) {
+    for (auto &iopin: *(circuit_ptr_->getIOPinList())) {
         // do nothing for placed IOPINs
         if (iopin.IsPrePlaced()) continue;
 
@@ -391,24 +491,24 @@ bool IoPlacer::AssignIoPinToBoundaryLayers() {
 
         // compute distances from edges of this bounding box to the corresponding placement boundary
         std::vector<double> distance_to_boundary{
-            net_minx - circuit_->getDesignRef().region_left_,
-            circuit_->getDesignRef().region_right_ - net_maxx,
-            net_miny - circuit_->getDesignRef().region_bottom_,
-            circuit_->getDesignRef().region_top_ - net_maxy
+            net_minx - circuit_ptr_->getDesignRef().region_left_,
+            circuit_ptr_->getDesignRef().region_right_ - net_maxx,
+            net_miny - circuit_ptr_->getDesignRef().region_bottom_,
+            circuit_ptr_->getDesignRef().region_top_ - net_maxy
         };
 
         // compute candidate locations for this IOPIN on each boundary
         std::vector<double> loc_candidate_x{
-            (double) circuit_->getDesignRef().region_left_,
-            (double) circuit_->getDesignRef().region_right_,
+            (double) circuit_ptr_->getDesignRef().region_left_,
+            (double) circuit_ptr_->getDesignRef().region_right_,
             (net_minx + net_maxx) / 2,
             (net_minx + net_maxx) / 2
         };
         std::vector<double> loc_candidate_y{
             (net_maxy + net_miny) / 2,
             (net_maxy + net_miny) / 2,
-            (double) circuit_->getDesignRef().region_bottom_,
-            (double) circuit_->getDesignRef().region_top_
+            (double) circuit_ptr_->getDesignRef().region_bottom_,
+            (double) circuit_ptr_->getDesignRef().region_top_
         };
 
         // determine which placement boundary this net bounding box is most close to
@@ -431,7 +531,7 @@ bool IoPlacer::AssignIoPinToBoundaryLayers() {
         for (int i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
             if (close_to_boundary[i]) {
                 iopin.SetLoc(loc_candidate_x[i], loc_candidate_y[i], PLACED);
-                boundary_spaces_[i].layer_spaces[0].iopin_ptr_list.push_back(&iopin);
+                boundary_spaces_[i].layer_spaces_[0].iopin_ptr_list.push_back(&iopin);
                 break;
             }
         }
@@ -459,7 +559,13 @@ bool IoPlacer::AutoPlaceIoPin() {
 }
 
 bool IoPlacer::AutoPlaceCmd(int argc, char **argv) {
-    return true;
+    bool is_config_successful = ConfigCmd(argc, argv);
+    if (is_config_successful) {
+        BOOST_LOG_TRIVIAL(fatal)
+            << "Cannot successfully configure the IoPlacer\n";
+        return false;
+    }
+    return AutoPlaceIoPin();
 }
 
 }

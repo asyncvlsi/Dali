@@ -39,12 +39,9 @@ int main() {
     //dali.SimpleIoPinPlacement("m1");
     //dali.ExportToDEF(def_file_name);
 
-    //dali.ExportToPhyDB();
-    dali.io_placer_.SetCiruit(&dali.circuit_);
-    dali.io_placer_.SetPhyDB(dali.phy_db_ptr_);
-    dali.io_placer_.AutoPlaceIoPin();
+    dali.AutoIoPinPlacement();
     dali.ExportToPhyDB();
-    phy_db.WriteDef("ioplace_default.def");
+    phy_db.WriteDef("ioplace_default_1.def");
 
     wall_time = get_wall_time() - wall_time;
     BOOST_LOG_TRIVIAL(info) << "Execution time " << wall_time << "s.\n";

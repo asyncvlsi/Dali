@@ -213,7 +213,7 @@ void StdClusterWellLegalizer::DecomposeToSimpleStripe() {
     //col_list_[tot_col_num_ - 1].stripe_list_[0].width_ =
     //    RegionRight() - col_list_[tot_col_num_ - 1].stripe_list_[0].LLX() - well_spacing_;
     //col_list_[tot_col_num_ - 1].stripe_list_[0].max_blk_capacity_per_cluster_ =
-    //    col_list_[tot_col_num_ - 1].stripe_list_[0].width_ / circuit_->MinBlkWidth();
+    //    col_list_[tot_col_num_ - 1].stripe_list_[0].width_ / circuit_ptr_->MinBlkWidth();
     /*for (auto &col: col_list_) {
       for (auto &stripe: col.stripe_list_) {
         stripe.height_ -= row_height_;
@@ -276,7 +276,7 @@ void StdClusterWellLegalizer::Initialize(int cluster_width) {
     tot_col_num_ = std::ceil(RegionWidth() / (double) stripe_width_);
     BOOST_LOG_TRIVIAL(info) << "Total number of cluster columns: " << tot_col_num_ << "\n";
 
-    //BOOST_LOG_TRIVIAL(info)   << RegionHeight() << "  " << circuit_->MinBlkHeight() << "\n";
+    //BOOST_LOG_TRIVIAL(info)   << RegionHeight() << "  " << circuit_ptr_->MinBlkHeight() << "\n";
     int max_clusters_per_col = RegionHeight() / circuit_->MinBlkHeight();
     col_list_.resize(tot_col_num_);
     stripe_width_ = RegionWidth() / tot_col_num_;
@@ -1034,7 +1034,7 @@ void StdClusterWellLegalizer::SingleSegmentClusteringOptimization() {
         std::vector<BlockSegment> old_cluster(num_old_cluster);
         for (int i = 0; i < num_old_cluster; ++i) {
           old_cluster[i].blk_index.push_back(i);
-          old_cluster[i].circuit_ = circuit_;
+          old_cluster[i].circuit_ptr_ = circuit_ptr_;
           old_cluster[i].cluster_ = &cluster;
           old_cluster[i].UpdateBoundList();
           old_cluster[i].SortBounds();
@@ -1195,7 +1195,7 @@ bool StdClusterWellLegalizer::StartPlacement() {
     bottom_ += 1;
     top_ -= 1;
 
-    //circuit_->GenMATLABWellTable("lg", false);
+    //circuit_ptr_->GenMATLABWellTable("lg", false);
 
     bool is_success = true;
     Initialize();
@@ -1206,13 +1206,13 @@ bool StdClusterWellLegalizer::StartPlacement() {
     //is_success = BlockClusteringCompact();
     is_success = BlockClusteringLoose();
     ReportHPWL();
-    //circuit_->GenMATLABWellTable("clu", false);
+    //circuit_ptr_->GenMATLABWellTable("clu", false);
     //GenMatlabClusterTable("clu_result");
 
     BOOST_LOG_TRIVIAL(info) << "Flip cluster orientation\n";
     UpdateClusterOrient();
     ReportHPWL();
-    //circuit_->GenMATLABWellTable("ori", false);
+    //circuit_ptr_->GenMATLABWellTable("ori", false);
     //GenMatlabClusterTable("ori_result");
 
     BOOST_LOG_TRIVIAL(info) << "Perform local reordering\n";
@@ -1224,13 +1224,13 @@ bool StdClusterWellLegalizer::StartPlacement() {
         //SingleSegmentClusteringOptimization();
         //ReportHPWL();
     }
-    //circuit_->GenMATLABWellTable("lop", false);
+    //circuit_ptr_->GenMATLABWellTable("lop", false);
     //GenMatlabClusterTable("lop_result");
 
     BOOST_LOG_TRIVIAL(info) << "Insert well tap cells\n";
     InsertWellTap();
     ReportHPWL();
-    //circuit_->GenMATLABWellTable("wtc", false);
+    //circuit_ptr_->GenMATLABWellTable("wtc", false);
     //GenMatlabClusterTable("wtc_result");
 
     bottom_ -= 1;
@@ -1786,8 +1786,8 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
     double factor_x = circuit_->getDesign()->def_distance_microns * circuit_->getTech()->grid_value_x_;
     double factor_y = circuit_->getDesign()->def_distance_microns * circuit_->getTech()->grid_value_y_;
     //BOOST_LOG_TRIVIAL(info)   << "Actual x span: "
-    //          << RegionLeft() * factor_x + +circuit_->getDesign()->die_area_offset_x_ << "  "
-    //          << (col_list_.back().stripe_list_[0].URX() + well_spacing_) * factor_x + circuit_->getDesign()->die_area_offset_x_
+    //          << RegionLeft() * factor_x + +circuit_ptr_->getDesign()->die_area_offset_x_ << "  "
+    //          << (col_list_.back().stripe_list_[0].URX() + well_spacing_) * factor_x + circuit_ptr_->getDesign()->die_area_offset_x_
     //          << "\n";
     for (int i = 0; i < tot_col_num_; ++i) {
         std::string column_name = "column" + std::to_string(i);

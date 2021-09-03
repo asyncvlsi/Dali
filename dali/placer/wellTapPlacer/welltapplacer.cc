@@ -104,19 +104,18 @@ void WellTapPlacer::SetCell(phydb::Macro *cell) {
 }
 
 void WellTapPlacer::SetCellInterval(double cell_interval_microns) {
-    cell_interval_ =
-        (int) std::floor(cell_interval_microns
-                             * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons()
-                             / row_step_);
+    int unit_micron = phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons();
+    cell_interval_ = (int) std::floor(
+        cell_interval_microns * unit_micron / row_step_
+    );
     //std::cout << cell_interval_ << "\n";
 }
 
 void WellTapPlacer::SetCellMinDistanceToBoundary(double cell_min_distance_to_boundary_microns) {
-    cell_min_distance_to_boundary_ =
-        (int) std::ceil(
-            cell_min_distance_to_boundary_microns
-                * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons()
-                / row_step_);
+    int unit_micron = phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons();
+    cell_min_distance_to_boundary_ = (int) std::ceil(
+        cell_min_distance_to_boundary_microns * unit_micron / row_step_
+    );
     //std::cout << cell_min_distance_to_boundary_ << "\n";
 }
 

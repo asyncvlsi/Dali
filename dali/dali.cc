@@ -23,58 +23,55 @@ Dali::Dali(phydb::PhyDB *phy_db_ptr, boost::log::trivial::severity_level sl) {
     circuit_.InitializeFromPhyDB(phy_db_ptr);
 }
 
+void Dali::InstantiateIoPlacer() {
+    if (io_placer_ == nullptr) {
+        io_placer_ = new IoPlacer(phy_db_ptr_, &circuit_);
+    }
+}
+
+bool Dali::AutoIoPinPlacement() {
+    InstantiateIoPlacer();
+    return io_placer_->AutoPlaceIoPin();
+}
+
 void Dali::ReportIoPlacementUsage() {
     BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
                             << "Usage: place-io (followed by one of the options below)\n"
-                            << "  -a/--add         [-h] <pin_name> <net_name> <direction> <use>\n"
-                            << "                     add an IOPIN\n"
-                            << "  -p/--place       [-h] <pin_name> <metal_name> <lx> <ly> <ux> <uy> <x> <y> <orientation>\n"
-                            << "                     manually place an IOPIN\n"
-                            << "  -c/--config      [-h] <file.cell>\n"
-                            << "                     set parameters for automatic IOPIN placement\n"
-                            << "  -ap/--auto-place [-h]\n"
                             << "  -h/--help\n"
-                            << "                     print out the IO placer usage\n"
+                            << "      print out the IO placer usage\n"
+                            << "  -a/--add <pin_name> <net_name> <direction> <use>\n"
+                            << "      add an IOPIN\n"
+                            << "  -p/--place <pin_name> <metal_name> <lx> <ly> <ux> <uy> <x> <y> <orientation>\n"
+                            << "      manually place an IOPIN\n"
+                            << "  -c/--config (use -h to see more usage)\n"
+                            << "      set parameters for automatic IOPIN placement\n"
+                            << "  -ap/--auto-place\n"
+                            << "      automatically place all unplaced IOPINs, which is also the default option"
                             << "\033[0m\n";
 }
 
 bool Dali::IoPinPlacement(int argc, char **argv) {
-    if (argc < 2) {
+    std::string option_str;
+    if (argc >= 2) {
+        option_str = std::string(argv[1]);
+    }
+
+    InstantiateIoPlacer();
+    if (option_str == "-h" or option_str == "--help") {
         ReportIoPlacementUsage();
-        return false;
-    }
-    std::string option_str(argv[1]);
-
-    enum IoPlacerOption {
-        ADD = 0,
-        PLACE = 1,
-        CONFIG = 2,
-        AUTO_PLACE = 3
-    };
-    IoPlacerOption option = AUTO_PLACE;
-    if (option_str == "-a" or option_str == "--add") {
-        option = ADD;
+        return true;
+    } else if (option_str == "-a" or option_str == "--add") {
+        return io_placer_->AddCmd(argc, argv);
     } else if (option_str == "-p" or option_str == "--place") {
-        option = PLACE;
+        return io_placer_->PlaceCmd(argc, argv);
     } else if (option_str == "-c" or option_str == "--config") {
-        option = CONFIG;
+        return io_placer_->ConfigCmd(argc, argv);
     } else if (option_str == "-ap" or option_str == "--auto-place") {
-        option = AUTO_PLACE;
+        return io_placer_->AutoPlaceCmd(argc, argv);
     } else {
-        BOOST_LOG_TRIVIAL(warning) << "Unknown flag: " + option_str;
-        return false;
-    }
-
-    //if (io_placer_ == nullptr) {
-    //    io_placer_ = new IoPlacer(phy_db_ptr_, &circuit_);
-    //}
-
-    switch (option) {
-        case ADD:return io_placer_.AddCmd(argc, argv);
-        case PLACE:return io_placer_.PlaceCmd(argc, argv);
-        case CONFIG:return io_placer_.ConfigCmd(argc, argv);
-        case AUTO_PLACE:return io_placer_.AutoPlaceCmd(argc, argv);
-        default:DaliExpects(false, "This is not supposed to happen!");
+        BOOST_LOG_TRIVIAL(warning)
+            << "IoPlace flag not specified, use --auto-place by default\n";
+        return io_placer_->AutoPlaceCmd(argc, argv);
     }
 }
 
@@ -371,22 +368,21 @@ void Dali::ExportComponentsToPhyDB() {
 void Dali::ExportIoPinsToPhyDB() {
     DaliExpects(!circuit_.getTechRef().metal_list_.empty(),
                 "Need metal layer info to generate PIN location\n");
-    double factor_x = circuit_.DistanceMicrons() * circuit_.GridValueX();
-    double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
-
     for (auto &iopin: circuit_.getDesignRef().iopin_list) {
         if (!iopin.IsPrePlaced() && iopin.IsPlaced()) {
+            DaliExpects(iopin.Layer() != nullptr,
+                        "IOPIN metal layer not set? Cannot export it to PhyDB");
             std::string metal_name = *(iopin.Layer()->Name());
             std::string iopin_name = *(iopin.Name());
             DaliExpects(phy_db_ptr_->IsIoPinExisting(iopin_name),
                         "IOPIN not in PhyDB? " + iopin_name);
-            phydb::IOPin *iopin_ptr = phy_db_ptr_->GetIoPinPtr(iopin_name);
+            phydb::IOPin *phydb_iopin = phy_db_ptr_->GetIoPinPtr(iopin_name);
             auto rect = iopin.GetRect();
-            int llx = (int) std::round(rect->LLX() * factor_x);
-            int lly = (int) std::round(rect->LLY() * factor_y);
-            int urx = (int) std::round(rect->URX() * factor_x);
-            int ury = (int) std::round(rect->URY() * factor_y);
-            iopin_ptr->SetShape(metal_name, llx, lly, urx, ury);
+            int llx = circuit_.Micron2DatabaseUnit(rect->LLX());
+            int lly = circuit_.Micron2DatabaseUnit(rect->LLY());
+            int urx = circuit_.Micron2DatabaseUnit(rect->URX());
+            int ury = circuit_.Micron2DatabaseUnit(rect->URY());
+            phydb_iopin->SetShape(metal_name, llx, lly, urx, ury);
 
             int pin_x = circuit_.DaliLoc2PhyDBLocX(iopin.X());
             int pin_y = circuit_.DaliLoc2PhyDBLocY(iopin.Y());
@@ -400,7 +396,7 @@ void Dali::ExportIoPinsToPhyDB() {
             } else {
                 pin_orient = phydb::S;
             }
-            iopin_ptr->SetPlacement(phydb::PLACED, pin_x, pin_y, pin_orient);
+            phydb_iopin->SetPlacement(phydb::PLACED, pin_x, pin_y, pin_orient);
         }
     }
 }

@@ -17,35 +17,45 @@ class Dali {
     Dali(phydb::PhyDB *phy_db_ptr, std::string sl);
     Dali(phydb::PhyDB *phy_db_ptr, boost::log::trivial::severity_level sl);
 
+    bool AutoIoPinPlacement();
     bool IoPinPlacement(int argc, char **argv);
+
     void StartPlacement(double density, int number_of_threads = 1);
 
-    void AddWellTaps(phydb::Macro *cell, double cell_interval_microns, bool is_checker_board);
+    void AddWellTaps(phydb::Macro *cell,
+                     double cell_interval_microns,
+                     bool is_checker_board);
     bool AddWellTaps(int argc, char **argv);
     void GlobalPlace(double density);
     void UnifiedLegalization();
 
-    void ExternalDetailedPlaceAndLegalize(std::string engine, bool load_dp_result=true);
+    void ExternalDetailedPlaceAndLegalize(
+        std::string engine,
+        bool load_dp_result = true
+    );
 
     void ExportToPhyDB();
     void Close();
 
-    void ExportToDEF(std::string &input_def_file_full_name, std::string output_def_name = "circuit");
-
-    Circuit circuit_;
-    phydb::PhyDB *phy_db_ptr_ = nullptr;
-    IoPlacer io_placer_;
+    void ExportToDEF(std::string &input_def_file_full_name,
+                     std::string output_def_name = "circuit");
 
   private:
-    //IoPlacer *io_placer_;
+    Circuit circuit_;
+    phydb::PhyDB *phy_db_ptr_ = nullptr;
+    IoPlacer *io_placer_ = nullptr;
     GPSimPL gb_placer_;
     LGTetrisEx legalizer_;
     StdClusterWellLegalizer well_legalizer_;
     WellTapPlacer *well_tap_placer_ = nullptr;
 
     static void ReportIoPlacementUsage();
+    void InstantiateIoPlacer();
 
-    std::string CreateDetailedPlacementAndLegalizationScript(std::string &engine, std::string &script_name);
+    std::string CreateDetailedPlacementAndLegalizationScript(
+        std::string &engine,
+        std::string &script_name
+    );
 
     void ExportComponentsToPhyDB();
     void ExportIoPinsToPhyDB();

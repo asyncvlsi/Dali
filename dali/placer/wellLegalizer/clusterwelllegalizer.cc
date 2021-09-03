@@ -31,7 +31,7 @@ void ClusterWellLegalizer::InitializeClusterLegalizer() {
     auto n_well_layer = tech_params->GetNLayer();
     auto p_well_layer = tech_params->GetPLayer();
     well_extension_x = std::ceil(n_well_layer->Overhang() / circuit_->GridValueX());
-    //well_extension_y = std::ceil((n_well_layer->Overhang())/circuit_->GetGridValueY());
+    //well_extension_y = std::ceil((n_well_layer->Overhang())/circuit_ptr_->GetGridValueY());
     //plug_width = std::ceil();
     BOOST_LOG_TRIVIAL(info) << "Well max plug distance:  um \n";
     BOOST_LOG_TRIVIAL(info) << "GridValueX: " << circuit_->GridValueX() << " um\n";

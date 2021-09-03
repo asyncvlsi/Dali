@@ -23,17 +23,14 @@ namespace dali {
  * 2. automatically place IOPINs after placement
  */
 class IoPlacer {
-    Circuit *circuit_ = nullptr;
+    Circuit *circuit_ptr_ = nullptr;
     phydb::PhyDB *phy_db_ptr_ = nullptr;
     std::vector<IoBoundarySpace> boundary_spaces_;
-    double left_;
-    double right_;
-    double bottom_;
-    double top_;
   public:
-    IoPlacer() = default;
+    IoPlacer();
     explicit IoPlacer(phydb::PhyDB *phy_db, Circuit *circuit_);
 
+    void InitializeBoundarySpaces();
     void SetCiruit(Circuit *circuit);
     void SetPhyDB(phydb::PhyDB *phy_db_ptr);
 
@@ -55,8 +52,11 @@ class IoPlacer {
     bool PartialPlaceIoPin();
     bool PartialPlaceCmd(int argc, char **argv);
 
+    bool ConfigSetMetalLayer(int boundary_index, int metal_layer_index);
     bool ConfigSetGlobalMetalLayer(int metal_layer_index);
     bool ConfigAutoPlace();
+
+    static void ReportConfigUsage();
     bool ConfigCmd(int argc, char **argv);
 
     bool BuildResourceMap();
