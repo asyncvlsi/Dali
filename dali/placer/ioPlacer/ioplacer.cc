@@ -274,9 +274,9 @@ bool IoPlacer::PartialPlaceCmd(int argc, char **argv) {
 
 bool IoPlacer::ConfigSetMetalLayer(int boundary_index, int metal_layer_index) {
     // check if this metal index exists or not
-    bool is_legal_index = metal_layer_index >= 0
-        && metal_layer_index
-            < (int) circuit_ptr_->getTechRef().metal_list_.size();
+    bool is_legal_index = (metal_layer_index >= 0) &&
+        (metal_layer_index
+            < (int) circuit_ptr_->getTechRef().metal_list_.size());
     if (!is_legal_index) return false;
     MetalLayer *metal_layer =
         &(circuit_ptr_->getTechRef().metal_list_[metal_layer_index]);
@@ -304,10 +304,58 @@ void IoPlacer::ReportConfigUsage() {
                             << "  -h/--help\n"
                             << "      print out function usage\n"
                             << "  -m/--metal <left/right/bottom/top> <metal layer>\n"
-                            << "      use this command to specify which metal layers to use for IOPINs on each placement boundary"
+                            << "      use this command to specify which metal layers to use for IOPINs on each placement boundary\n"
                             << "      example: -m left m1, for IOPINs on the left boundary, using layer m1 to create physical geometry\n"
                             << "      'place-io <metal layer>' is a shorthand for 'place-io -c -m left m1 right m1 bottom m1 top m1'\n"
                             << "\033[0m\n";
+}
+
+bool IoPlacer::ConfigBoundaryMetal(int argc, char **argv) {
+    if (argc < 5) {
+        ReportConfigUsage();
+        return false;
+    }
+    for (int i = 3; i < argc;) {
+        std::string arg(argv[i++]);
+        if (i < argc) {
+            std::string metal_name = std::string(argv[i++]);
+            bool is_layer_existing =
+                circuit_ptr_->IsMetalLayerExist(metal_name);
+            if (!is_layer_existing) {
+                BOOST_LOG_TRIVIAL(fatal) << "Invalid metal layer name!\n";
+                ReportConfigUsage();
+                return false;
+            }
+            MetalLayer *metal_layer =
+                circuit_ptr_->getMetalLayerPtr(metal_name);
+            int metal_index = metal_layer->Num();
+            if (arg == "left") {
+                bool is_success = ConfigSetMetalLayer(LEFT, metal_index);
+                std::cout << is_success << "\n";
+            } else if (arg == "right") {
+                bool is_success = ConfigSetMetalLayer(RIGHT, metal_index);
+                std::cout << is_success << "\n";
+            } else if (arg == "bottom") {
+                bool is_success = ConfigSetMetalLayer(BOTTOM, metal_index);
+                std::cout << is_success << "\n";
+            } else if (arg == "top") {
+                bool is_success = ConfigSetMetalLayer(TOP, metal_index);
+                std::cout << is_success << "\n";
+            } else {
+                BOOST_LOG_TRIVIAL(fatal)
+                    << "Invalid boundary, possible values: left, right, bottom, top\n";
+                ReportConfigUsage();
+                return false;
+            }
+            std::cout << arg << "  " << metal_name << "\n";
+        } else {
+            BOOST_LOG_TRIVIAL(fatal)
+                << "Boundary specified, but metal layer is not given\n";
+            ReportConfigUsage();
+            return false;
+        }
+    }
+    return true;
 }
 
 bool IoPlacer::ConfigCmd(int argc, char **argv) {
@@ -318,16 +366,21 @@ bool IoPlacer::ConfigCmd(int argc, char **argv) {
 
     std::string option_str(argv[1]);
     bool is_config_flag = (option_str == "-c" or option_str == "--config");
+
+    // when the command is like 'place-io <metal layer>'
     if (!is_config_flag) {
         bool is_metal = circuit_ptr_->IsMetalLayerExist(option_str);
         if (is_metal) {
-            MetalLayer
-                *metal_layer = circuit_ptr_->getMetalLayerPtr(option_str);
+            MetalLayer *metal_layer =
+                circuit_ptr_->getMetalLayerPtr(option_str);
             return ConfigSetGlobalMetalLayer(metal_layer->Num());
         }
+        BOOST_LOG_TRIVIAL(fatal) << "Invalid metal layer\n";
+        ReportConfigUsage();
         return false;
     }
 
+    // when the command is like 'place-io -c/--config ...'
     if (argc < 3) {
         ReportConfigUsage();
         return false;
@@ -337,43 +390,12 @@ bool IoPlacer::ConfigCmd(int argc, char **argv) {
         ReportConfigUsage();
         return true;
     } else if (option_str == "-m" or option_str == "--metal") {
-        if (argc < 5) {
-            ReportConfigUsage();
-            return false;
-        }
-        for (int i = 3; i < argc;) {
-            std::string arg(argv[i++]);
-            if (i < argc) {
-                std::string metal_name = std::string(argv[i++]);
-                bool is_layer_existing =
-                    circuit_ptr_->IsMetalLayerExist(metal_name);
-                if (!is_layer_existing) {
-                    BOOST_LOG_TRIVIAL(fatal) << "Invalid metal layer name!\n";
-                    ReportConfigUsage();
-                    return false;
-                }
-                MetalLayer *metal_layer =
-                    circuit_ptr_->getMetalLayerPtr(metal_name);
-                int metal_index = metal_layer->Num();
-                if (arg == "left") {
-
-                } else if (arg == "right") {
-
-                } else if (arg == "bottom") {
-
-                } else if (arg == "top") {
-
-                } else {
-                    BOOST_LOG_TRIVIAL(fatal)
-                        << "Invalid boundary, possible values: left, right, bottom, top\n";
-                    ReportConfigUsage();
-                    return false;
-                }
-            }
-        }
+        return ConfigBoundaryMetal(argc, argv);
+    } else {
+        BOOST_LOG_TRIVIAL(fatal) << "Unknown flag\n";
+        ReportConfigUsage();
+        return false;
     }
-
-    return true;
 }
 
 // resource should be large enough for all IOPINs
@@ -552,10 +574,6 @@ bool IoPlacer::PlaceIoPinOnEachBoundary() {
 }
 
 bool IoPlacer::AutoPlaceIoPin() {
-    if (!has_configured) {
-        ConfigSetGlobalMetalLayer(0);
-    }
-
     if (!CheckConfiguration()) {
         return false;
     }
@@ -569,7 +587,7 @@ bool IoPlacer::AutoPlaceIoPin() {
 
 bool IoPlacer::AutoPlaceCmd(int argc, char **argv) {
     bool is_config_successful = ConfigCmd(argc, argv);
-    if (is_config_successful) {
+    if (!is_config_successful) {
         BOOST_LOG_TRIVIAL(fatal)
             << "Cannot successfully configure the IoPlacer\n";
         return false;

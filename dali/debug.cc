@@ -39,9 +39,39 @@ int main() {
     //dali.SimpleIoPinPlacement("m1");
     //dali.ExportToDEF(def_file_name);
 
-    dali.AutoIoPinPlacement();
+    // for testing dali APIs for interact
+    //dali.InstantiateIoPlacer();
+    /*int count = 11;
+    char *arguments[11] = {
+        "place-io",
+        "--auto-place",
+        "--metal",
+        "left",
+        "m1",
+        "right",
+        "m1",
+        "bottom",
+        "m1",
+        "top",
+        "m1"
+    };*/
+
+    int count = 2;
+    char *arguments[2] = {
+        "place-io",
+        "m1"
+    };
+    //dali.io_placer_->AutoPlaceCmd(count, arguments);
+    dali.IoPinPlacement(count, arguments);
+    //dali.io_placer_->AutoPlaceIoPin();
+
+    //dali.AutoIoPinPlacement();
     dali.ExportToPhyDB();
     phy_db.WriteDef("ioplace_default_1.def");
+    std::string pp_name("circuitppnp1.rect");
+    phy_db.SavePpNpToRectFile(pp_name);
+    std::string well_name("circuitwell1.rect");
+    phy_db.SaveWellToRectFile(well_name);
 
     wall_time = get_wall_time() - wall_time;
     BOOST_LOG_TRIVIAL(info) << "Execution time " << wall_time << "s.\n";

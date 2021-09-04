@@ -154,8 +154,11 @@ class StdClusterWellLegalizer : public Placer {
     void GenPPNP(std::string const &name_of_file);
     void EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode, bool enable_emitting_cluster = true) override;
     void EmitPPNPRect(std::string const &name_of_file);
+    void ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr);
     void EmitWellRect(std::string const &name_of_file, int well_emit_mode);
+    void ExportWellToPhyDB(phydb::PhyDB *phydb_ptr, int well_emit_mode);
     void EmitClusterRect(std::string const &name_of_file);
+
 
     /**** member functions for debugging ****/
     void PlotAvailSpace(std::string const &name_of_file = "avail_space.txt");

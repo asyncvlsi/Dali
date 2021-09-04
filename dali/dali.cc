@@ -209,8 +209,7 @@ void Dali::UnifiedLegalization() {
     //well_legalizer_.GenMATLABWellTable("scw", 0);
     //circuit.GenLongNetTable("sc_longnet.txt");
 
-    //well_legalizer_.SimpleIoPinPlacement(0);
-    well_legalizer_.EmitDEFWellFile("circuit", 1, false);
+    //well_legalizer_.EmitDEFWellFile("circuit", 1, false);
 }
 
 /**
@@ -251,7 +250,8 @@ void Dali::ExportToPhyDB() {
     // 3. MiniRows
     ExportMiniRowsToPhyDB();
     // TODO 4. NP/PP and Well
-    ExportNpPpWellToPhyDB();
+    ExportPpNpToPhyDB();
+    ExportWellToPhyDB();
 }
 
 void Dali::Close() {
@@ -448,8 +448,12 @@ void Dali::ExportMiniRowsToPhyDB() {
     }
 }
 
-void Dali::ExportNpPpWellToPhyDB() {
+void Dali::ExportPpNpToPhyDB() {
+    well_legalizer_.ExportPpNpToPhyDB(phy_db_ptr_);
+}
 
+void Dali::ExportWellToPhyDB() {
+    well_legalizer_.ExportWellToPhyDB(phy_db_ptr_, 1);
 }
 
 }

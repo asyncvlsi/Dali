@@ -26,8 +26,6 @@ class IoPlacer {
     Circuit *circuit_ptr_ = nullptr;
     phydb::PhyDB *phy_db_ptr_ = nullptr;
     std::vector<IoBoundarySpace> boundary_spaces_;
-
-    bool has_configured = false;
   public:
     IoPlacer();
     explicit IoPlacer(phydb::PhyDB *phy_db, Circuit *circuit_);
@@ -57,6 +55,8 @@ class IoPlacer {
     bool ConfigSetMetalLayer(int boundary_index, int metal_layer_index);
     bool ConfigSetGlobalMetalLayer(int metal_layer_index);
     bool ConfigAutoPlace();
+
+    bool ConfigBoundaryMetal(int argc, char **argv);
 
     static void ReportConfigUsage();
     bool ConfigCmd(int argc, char **argv);

@@ -40,17 +40,18 @@ class Dali {
     void ExportToDEF(std::string &input_def_file_full_name,
                      std::string output_def_name = "circuit");
 
+    IoPlacer *io_placer_ = nullptr;
+    void InstantiateIoPlacer();
   private:
     Circuit circuit_;
     phydb::PhyDB *phy_db_ptr_ = nullptr;
-    IoPlacer *io_placer_ = nullptr;
     GPSimPL gb_placer_;
     LGTetrisEx legalizer_;
     StdClusterWellLegalizer well_legalizer_;
     WellTapPlacer *well_tap_placer_ = nullptr;
 
     static void ReportIoPlacementUsage();
-    void InstantiateIoPlacer();
+
 
     std::string CreateDetailedPlacementAndLegalizationScript(
         std::string &engine,
@@ -60,7 +61,8 @@ class Dali {
     void ExportComponentsToPhyDB();
     void ExportIoPinsToPhyDB();
     void ExportMiniRowsToPhyDB();
-    void ExportNpPpWellToPhyDB();
+    void ExportPpNpToPhyDB();
+    void ExportWellToPhyDB();
 };
 
 }

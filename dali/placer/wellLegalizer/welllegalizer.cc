@@ -952,7 +952,7 @@ bool WellLegalizer::StartPlacement() {
         //BOOST_LOG_TRIVIAL(info)   << "Current iteration: " << is_success << "  " << legalize_from_left_ << "\n";
         legalize_from_left_ = !legalize_from_left_;
         ++k_left_;
-        GenMATLABWellTable("lg" + std::to_string(cur_iter_) + "_result", 0);
+        //GenMATLABWellTable("lg" + std::to_string(cur_iter_) + "_result", 0);
         ReportHPWL();
         if (is_success) {
             break;
