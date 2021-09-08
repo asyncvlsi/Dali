@@ -184,14 +184,19 @@ bool IoPlacer::PlaceIoPin(std::string &iopin_name,
 
     // set IOPIN placement status in PhyDB
     phydb::IOPin *phydb_iopin_ptr = phy_db_ptr_->GetIoPinPtr(iopin_name);
-    phydb_iopin_ptr->SetShape(metal_name,
-                              shape_lx,
-                              shape_ly,
-                              shape_ux,
-                              shape_uy);
-    phydb_iopin_ptr->SetPlacement(phydb::StrToPlaceStatus(place_status),
-                                  loc_x, loc_y,
-                                  phydb::StrToCompOrient(orient));
+    phydb_iopin_ptr->SetShape(
+        metal_name,
+        shape_lx,
+        shape_ly,
+        shape_ux,
+        shape_uy
+    );
+    phydb_iopin_ptr->SetPlacement(
+        phydb::StrToPlaceStatus(place_status),
+        loc_x,
+        loc_y,
+        phydb::StrToCompOrient(orient)
+    );
 
     // check if this IOPIN is in Dali::Circuit or not (it should)
     bool is_iopin_existing_dali = circuit_ptr_->IsIOPinExist(iopin_name);
@@ -369,7 +374,7 @@ bool IoPlacer::ConfigCmd(int argc, char **argv) {
         ReportConfigUsage();
         return true;
     } else if (option_str == "-m" or option_str == "--metal") {
-        return ConfigBoundaryMetal(argc-1, argv+1);
+        return ConfigBoundaryMetal(argc - 1, argv + 1);
     } else {
         bool is_metal_name = circuit_ptr_->IsMetalLayerExist(option_str);
         // when the command is like 'place-io <metal layer>'

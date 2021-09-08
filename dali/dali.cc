@@ -6,6 +6,8 @@
 
 #include <cstdlib>
 
+#include "dali/common/phydbhelper.h"
+
 namespace dali {
 
 Dali::Dali(phydb::PhyDB *phy_db_ptr, std::string sl) {
@@ -400,7 +402,13 @@ void Dali::ExportIoPinsToPhyDB() {
             } else {
                 pin_orient = phydb::S;
             }
-            phydb_iopin->SetPlacement(phydb::PLACED, pin_x, pin_y, pin_orient);
+
+            phydb_iopin->SetPlacement(
+                PlaceStatusDali2PhyDB(iopin.GetPlaceStatus()),
+                pin_x,
+                pin_y,
+                pin_orient
+            );
         }
     }
 }

@@ -100,7 +100,11 @@ double IOPin::Y() const {
     return loc_y_;
 }
 
-BlockOrient IOPin::Orient() const {
+PlaceStatus IOPin::GetPlaceStatus() const {
+    return place_status_;
+}
+
+BlockOrient IOPin::GetOrient() const {
     return orient_;
 }
 

@@ -61,12 +61,28 @@ int main() {
         "place-io",
         "m1"
     };
-    //dali.io_placer_->AutoPlaceCmd(count, arguments);
-    dali.IoPinPlacement(count, arguments);
-    //dali.io_placer_->AutoPlaceIoPin();
 
+    dali.IoPinPlacement(count, arguments);
     //dali.AutoIoPinPlacement();
     dali.ExportToPhyDB();
+
+    int place_count = 12;
+    char *place_argvs[12] = {
+        "place-io",
+        "--place",
+        "go",
+        "m2",
+        "-211",
+        "1",
+        "211",
+        "101",
+        "FIXED",
+        "362401",
+        "185401",
+        "E"
+    };
+    dali.IoPinPlacement(place_count, place_argvs);
+
     phy_db.WriteDef("ioplace_default_1.def");
     std::string pp_name("circuitppnp1.rect");
     phy_db.SavePpNpToRectFile(pp_name);

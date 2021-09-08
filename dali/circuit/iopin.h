@@ -52,7 +52,8 @@ class IOPin {
     bool IsPrePlaced() const;
     double X() const;
     double Y() const;
-    BlockOrient Orient() const;
+    PlaceStatus GetPlaceStatus() const;
+    BlockOrient GetOrient() const;
 
     void SetNet(Net *net_ptr);
     void SetDirection(SignalDirection direction);
