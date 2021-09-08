@@ -116,11 +116,11 @@ bool IoPlacer::AddIoPin(std::string &iopin_name, std::string &net_name,
  *  true if this operation can be done successfully
  * */
 bool IoPlacer::AddCmd(int argc, char **argv) {
-    if (argc < 6) {
+    if (argc < 4) {
         BOOST_LOG_TRIVIAL(info)
             << "\033[0;36m"
             << "Add an IOPIN\n"
-            << "Usage: -a/--add\n"
+            << "Usage: place-io -a/--add\n"
             << "    <iopin_name> : name of the new IOPIN\n"
             << "    <net_name>   : name of the net this IOPIN will connect to\n"
             << "    <direction>  : specifies the pin type: {INPUT | OUTPUT | INOUT | FEEDTHRU}\n"
@@ -129,10 +129,10 @@ bool IoPlacer::AddCmd(int argc, char **argv) {
         return false;
     }
 
-    std::string iopin_name(argv[2]);
-    std::string net_name(argv[3]);
-    std::string direction(argv[4]);
-    std::string use(argv[5]);
+    std::string iopin_name(argv[0]);
+    std::string net_name(argv[1]);
+    std::string direction(argv[2]);
+    std::string use(argv[3]);
 
     return AddIoPin(iopin_name, net_name, direction, use);
 }
@@ -209,11 +209,11 @@ bool IoPlacer::PlaceIoPin(std::string &iopin_name,
 }
 
 bool IoPlacer::PlaceCmd(int argc, char **argv) {
-    if (argc < 6) {
+    if (argc < 10) {
         BOOST_LOG_TRIVIAL(info)
             << "\033[0;36m"
             << "Add an IOPIN\n"
-            << "Usage: -p/--place \n"
+            << "Usage: place-io -p/--place \n"
             << "    <iopin_name>  : name of the new IOPIN\n"
             << "    <metal_name>  : name of the metal layer to create its physical geometry\n"
             << "    <shape_lx>    : the pin geometry on that layer\n"
@@ -228,16 +228,16 @@ bool IoPlacer::PlaceCmd(int argc, char **argv) {
         return false;
     }
 
-    std::string iopin_name(argv[2]);
-    std::string metal_name(argv[3]);
-    std::string shape_lx_str(argv[4]);
-    std::string shape_ly_str(argv[5]);
-    std::string shape_ux_str(argv[6]);
-    std::string shape_uy_str(argv[7]);
-    std::string place_status(argv[8]);
-    std::string loc_x_str(argv[9]);
-    std::string loc_y_str(argv[10]);
-    std::string orient(argv[11]);
+    std::string iopin_name(argv[0]);
+    std::string metal_name(argv[1]);
+    std::string shape_lx_str(argv[2]);
+    std::string shape_ly_str(argv[3]);
+    std::string shape_ux_str(argv[4]);
+    std::string shape_uy_str(argv[5]);
+    std::string place_status(argv[6]);
+    std::string loc_x_str(argv[7]);
+    std::string loc_y_str(argv[8]);
+    std::string orient(argv[9]);
 
     int shape_lx = 0, shape_ly = 0, shape_ux = 0, shape_uy = 0;
     int loc_x = 0, loc_y = 0;
@@ -298,24 +298,12 @@ bool IoPlacer::ConfigAutoPlace() {
     return true;
 }
 
-void IoPlacer::ReportConfigUsage() {
-    BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
-                            << "Usage: place-io -c/--config\n"
-                            << "  -h/--help\n"
-                            << "      print out function usage\n"
-                            << "  -m/--metal <left/right/bottom/top> <metal layer>\n"
-                            << "      use this command to specify which metal layers to use for IOPINs on each placement boundary\n"
-                            << "      example: -m left m1, for IOPINs on the left boundary, using layer m1 to create physical geometry\n"
-                            << "      'place-io <metal layer>' is a shorthand for 'place-io -c -m left m1 right m1 bottom m1 top m1'\n"
-                            << "\033[0m\n";
-}
-
 bool IoPlacer::ConfigBoundaryMetal(int argc, char **argv) {
-    if (argc < 5) {
+    if (argc < 2) {
         ReportConfigUsage();
         return false;
     }
-    for (int i = 3; i < argc;) {
+    for (int i = 0; i < argc;) {
         std::string arg(argv[i++]);
         if (i < argc) {
             std::string metal_name = std::string(argv[i++]);
@@ -358,40 +346,38 @@ bool IoPlacer::ConfigBoundaryMetal(int argc, char **argv) {
     return true;
 }
 
+void IoPlacer::ReportConfigUsage() {
+    BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
+                            << "Usage: place-io -c/--config\n"
+                            << "  -h/--help\n"
+                            << "      print out function usage\n"
+                            << "  -m/--metal <left/right/bottom/top> <metal layer>\n"
+                            << "      use this command to specify which metal layers to use for IOPINs on each placement boundary\n"
+                            << "      example: -m left m1, for IOPINs on the left boundary, using layer m1 to create physical geometry\n"
+                            << "      'place-io <metal layer>' is a shorthand for 'place-io -c -m left m1 right m1 bottom m1 top m1'\n"
+                            << "\033[0m\n";
+}
+
 bool IoPlacer::ConfigCmd(int argc, char **argv) {
-    if (argc < 2) {
+    if (argc < 1) {
         ReportConfigUsage();
         return false;
     }
 
-    std::string option_str(argv[1]);
-    bool is_config_flag = (option_str == "-c" or option_str == "--config");
-
-    // when the command is like 'place-io <metal layer>'
-    if (!is_config_flag) {
-        bool is_metal = circuit_ptr_->IsMetalLayerExist(option_str);
-        if (is_metal) {
-            MetalLayer *metal_layer =
-                circuit_ptr_->getMetalLayerPtr(option_str);
-            return ConfigSetGlobalMetalLayer(metal_layer->Num());
-        }
-        BOOST_LOG_TRIVIAL(fatal) << "Invalid metal layer\n";
-        ReportConfigUsage();
-        return false;
-    }
-
-    // when the command is like 'place-io -c/--config ...'
-    if (argc < 3) {
-        ReportConfigUsage();
-        return false;
-    }
-    option_str.assign(argv[2]);
+    std::string option_str(argv[0]);
     if (option_str == "-h" or option_str == "--help") {
         ReportConfigUsage();
         return true;
     } else if (option_str == "-m" or option_str == "--metal") {
-        return ConfigBoundaryMetal(argc, argv);
+        return ConfigBoundaryMetal(argc-1, argv+1);
     } else {
+        bool is_metal_name = circuit_ptr_->IsMetalLayerExist(option_str);
+        // when the command is like 'place-io <metal layer>'
+        if (is_metal_name) {
+            MetalLayer *metal_layer =
+                circuit_ptr_->getMetalLayerPtr(option_str);
+            return ConfigSetGlobalMetalLayer(metal_layer->Num());
+        }
         BOOST_LOG_TRIVIAL(fatal) << "Unknown flag\n";
         ReportConfigUsage();
         return false;

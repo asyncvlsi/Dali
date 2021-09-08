@@ -51,27 +51,31 @@ void Dali::ReportIoPlacementUsage() {
 }
 
 bool Dali::IoPinPlacement(int argc, char **argv) {
-    std::string option_str;
-    if (argc >= 2) {
-        option_str = std::string(argv[1]);
+    if (argc < 2) {
+        ReportIoPlacementUsage();
+        return false;
     }
 
+    std::string option_str(argv[1]);
     InstantiateIoPlacer();
     if (option_str == "-h" or option_str == "--help") {
         ReportIoPlacementUsage();
         return true;
-    } else if (option_str == "-a" or option_str == "--add") {
-        return io_placer_->AddCmd(argc, argv);
+    }
+
+    // remove "place-io" and option flag before calling each function
+    if (option_str == "-a" or option_str == "--add") {
+        return io_placer_->AddCmd(argc - 2, argv + 2);
     } else if (option_str == "-p" or option_str == "--place") {
-        return io_placer_->PlaceCmd(argc, argv);
+        return io_placer_->PlaceCmd(argc - 2, argv + 2);
     } else if (option_str == "-c" or option_str == "--config") {
-        return io_placer_->ConfigCmd(argc, argv);
+        return io_placer_->ConfigCmd(argc - 2, argv + 2);
     } else if (option_str == "-ap" or option_str == "--auto-place") {
-        return io_placer_->AutoPlaceCmd(argc, argv);
+        return io_placer_->AutoPlaceCmd(argc - 2, argv + 2);
     } else {
         BOOST_LOG_TRIVIAL(warning)
             << "IoPlace flag not specified, use --auto-place by default\n";
-        return io_placer_->AutoPlaceCmd(argc, argv);
+        return io_placer_->AutoPlaceCmd(argc - 1, argv + 1);
     }
 }
 
@@ -249,7 +253,7 @@ void Dali::ExportToPhyDB() {
     ExportIoPinsToPhyDB();
     // 3. MiniRows
     ExportMiniRowsToPhyDB();
-    // TODO 4. NP/PP and Well
+    // 4. NP/PP and Well
     ExportPpNpToPhyDB();
     ExportWellToPhyDB();
 }

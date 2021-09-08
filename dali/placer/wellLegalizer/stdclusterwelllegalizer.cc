@@ -1815,6 +1815,7 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
 
 void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
     DaliExpects(phydb_ptr != nullptr, "Cannot export plus layer to a nullptr");
+    BOOST_LOG_TRIVIAL(info) << "Export Pplus/Nplus fillings to PhyDB\n";
     std::string NP_name = "nplus";
     std::string PP_name = "pplus";
 
