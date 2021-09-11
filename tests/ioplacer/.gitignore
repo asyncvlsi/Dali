@@ -4,3 +4,5 @@ bin/
 # Ignore input files for testing
 *.lef
 *.def
+
+*.log

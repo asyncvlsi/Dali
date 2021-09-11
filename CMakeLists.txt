@@ -219,9 +219,6 @@ target_link_libraries(create_circuit
 # Unittests
 enable_testing()
 add_subdirectory(tests/ioplacer)
-add_test(NAME metal
-        COMMAND metal
-        WORKING_DIRECTORY ../tests/ioplacer)
 
 ######################################
 # Configure install destination directory
