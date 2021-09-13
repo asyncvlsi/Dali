@@ -37,8 +37,10 @@ class Dali {
     void ExportToPhyDB();
     void Close();
 
-    void ExportToDEF(std::string &input_def_file_full_name,
-                     std::string output_def_name = "circuit");
+    void ExportToDEF(
+        std::string &input_def_file_full_name,
+        std::string output_def_name = "circuit"
+    );
 
     IoPlacer *io_placer_ = nullptr;
     void InstantiateIoPlacer();
@@ -51,7 +53,6 @@ class Dali {
     WellTapPlacer *well_tap_placer_ = nullptr;
 
     static void ReportIoPlacementUsage();
-
 
     std::string CreateDetailedPlacementAndLegalizationScript(
         std::string &engine,

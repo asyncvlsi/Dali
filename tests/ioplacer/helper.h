@@ -9,8 +9,9 @@
 
 namespace dali {
 
-void SetAllIoPinsToUnplaced(phydb::PhyDB &phydb);
-bool IsAllIoPinsOnBoundary(phydb::PhyDB &phydb);
+void SetAllIoPinsToUnplaced(phydb::PhyDB *phydb_ptr);
+bool IsEveryIoPinPlacedOnBoundary(phydb::PhyDB *phydb_ptr);
+bool IsNoIoPinOverlap(phydb::PhyDB *phydb_ptr);
 
 }
 

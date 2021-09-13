@@ -383,7 +383,7 @@ bool IoPlacer::ConfigCmd(int argc, char **argv) {
                 circuit_ptr_->getMetalLayerPtr(option_str);
             return ConfigSetGlobalMetalLayer(metal_layer->Num());
         }
-        BOOST_LOG_TRIVIAL(fatal) << "Unknown flag\n";
+        BOOST_LOG_TRIVIAL(fatal) << "Unknown flag: " << option_str << "\n";
         ReportConfigUsage();
         return false;
     }

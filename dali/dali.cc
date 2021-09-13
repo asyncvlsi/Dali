@@ -253,19 +253,23 @@ void Dali::ExportToPhyDB() {
     ExportComponentsToPhyDB();
     // 2. IOPINs
     ExportIoPinsToPhyDB();
-    // 3. MiniRows
-    ExportMiniRowsToPhyDB();
-    // 4. NP/PP and Well
-    ExportPpNpToPhyDB();
-    ExportWellToPhyDB();
+    if (well_legalizer_.circuit_ != nullptr) {
+        // 3. MiniRows
+        ExportMiniRowsToPhyDB();
+        // 4. NP/PP and Well
+        ExportPpNpToPhyDB();
+        ExportWellToPhyDB();
+    }
 }
 
 void Dali::Close() {
     CloseLogging();
 }
 
-void Dali::ExportToDEF(std::string &input_def_file_full_name,
-                       std::string output_def_name) {
+void Dali::ExportToDEF(
+    std::string &input_def_file_full_name,
+    std::string output_def_name
+) {
     circuit_.SaveDefFile(output_def_name,
                          "",
                          input_def_file_full_name,
