@@ -43,7 +43,12 @@ int main() {
     SetAllIoPinsToUnplaced(phy_db);
 
     // initialize Dali
-    Dali dali(phy_db, boost::log::trivial::info);
+    Dali dali(
+        phy_db,
+        boost::log::trivial::info,
+        "",
+        "[dali] "
+    );
 
     // perform IO placement
     int arg_count = NUM_OF_ARGS;
@@ -73,8 +78,6 @@ int main() {
 
     is_legal = IsNoIoPinOverlap(phy_db);
     if (!is_legal) return FAIL;
-
-
 
     return SUCCESS;
 }

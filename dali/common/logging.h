@@ -39,12 +39,14 @@ namespace logging = boost::log;
 typedef boost::log::trivial::severity_level severity;
 
 severity StrToLoggingLevel(const std::string &sl_str);
+
 void InitLogging(
     const std::string &log_file_name,
     bool overwrite_log_file = false,
     severity severity_level = logging::trivial::info,
-    const std::string &mode = "w"
+    const std::string &console_log_prefix = ""
 );
+
 void CloseLogging();
 
 inline void DaliExpects(bool e, const std::string &error_message) {

@@ -292,7 +292,8 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
     } else {
         setManufacturingGrid(1.0 / tech_.database_microns_);
     }
-    BOOST_LOG_TRIVIAL(info) << "MANUFACTURINGGRID " << tech_.manufacturing_grid_
+    BOOST_LOG_TRIVIAL(info) << "MANUFACTURINGGRID "
+                            << tech_.manufacturing_grid_
                             << "\n";
 
     // 2. placement grid and metal layers
@@ -329,7 +330,7 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
             }
             DaliExpects(min_width > 0,
                         "MinWidth and Width not found in PhyDB for layer: "
-                        + layer_name);
+                            + layer_name);
 
             double min_spacing = 0;
             auto &spacing_table = *(layer.GetSpacingTable());
@@ -340,21 +341,23 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
             }
             DaliExpects(min_spacing > 0,
                         "MinSpacing not found in PhyDB for layer: "
-                        + layer_name);
+                            + layer_name);
 
             double min_area = layer.GetArea();
             DaliExpects(min_area >= 0,
                         "Dali expects a non-negative MinArea for layer: "
-                        + layer_name);
+                            + layer_name);
 
             auto direction = MetalDirection(layer.GetDirection());
-            AddMetalLayer(layer_name,
-                          min_width,
-                          min_spacing,
-                          min_area,
-                          pitch_x,
-                          pitch_y,
-                          direction);
+            AddMetalLayer(
+                layer_name,
+                min_width,
+                min_spacing,
+                min_area,
+                pitch_x,
+                pitch_y,
+                direction
+            );
         }
     }
     if (!tech_.grid_set_) {
@@ -385,7 +388,7 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
             auto &layer_rects = pin.GetLayerRectRef();
             DaliExpects(!layer_rects.empty(),
                         "No physical pins, Macro: " + *blk_type->NamePtr()
-                        + ", pin: " + pin_name);
+                            + ", pin: " + pin_name);
             for (auto &layer_rect: layer_rects) {
                 auto &rects = layer_rect.GetRects();
                 for (auto &rect: rects) {
@@ -398,7 +401,7 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
             }
             DaliExpects(!new_pin->RectEmpty(),
                         "No geometries provided for pin " + pin_name
-                        + " in Macro: " + *blk_type->NamePtr());
+                            + " in Macro: " + *blk_type->NamePtr());
         }
         for (auto &pin: *(blk_type->PinList())) {
             pin.InitOffset();
@@ -406,10 +409,12 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
     }
 }
 
-void Circuit::setDieArea(int lower_x,
-                         int lower_y,
-                         int upper_x,
-                         int upper_y) { // unit in manufacturing grid
+void Circuit::setDieArea(
+    int lower_x,
+    int lower_y,
+    int upper_x,
+    int upper_y
+) { // unit in manufacturing grid
     DaliExpects(tech_.grid_value_x_ > 0 && tech_.grid_value_y_ > 0,
                 "Need to set positive grid values before setting placement boundary");
     DaliExpects(design_.def_distance_microns > 0,
@@ -522,17 +527,19 @@ void Circuit::LoadDesign(phydb::PhyDB *phy_db_ptr) {
     auto &phy_db_design = *(phy_db_ptr->GetDesignPtr());
 
     // 1. reserve space for COMPONENTS, IOPINS, and NETS
-    int components_count = 0, pins_count = 0, nets_count = 0;
     auto &components = phy_db_design.GetComponentsRef();
-    components_count = components.size();
+    int components_count = (int) components.size();
+
     auto &iopins = phy_db_design.GetIoPinsRef();
-    pins_count = iopins.size();
+    int pins_count = (int) iopins.size();
+
     auto &nets = phy_db_design.GetNetsRef();
-    nets_count = nets.size();
+    int nets_count = (int) nets.size();
     setListCapacity(components_count, pins_count, nets_count);
 
-    BOOST_LOG_TRIVIAL(info) << "components count: " << components_count << "\n";
-    BOOST_LOG_TRIVIAL(info) << "pins count:        " << pins_count << "\n";
+    BOOST_LOG_TRIVIAL(info) << "components count: " << components_count
+                            << "\n";
+    BOOST_LOG_TRIVIAL(info) << "pins count:       " << pins_count << "\n";
     BOOST_LOG_TRIVIAL(info) << "nets count:       " << nets_count << "\n";
 
 
@@ -563,21 +570,23 @@ void Circuit::LoadDesign(phydb::PhyDB *phy_db_ptr) {
     // 5. load all NETs
     for (auto &net: nets) {
         std::string net_name(net.GetName());
-        auto &comp_names = net.GetComponentNamesRef();
-        auto &pin_names = net.GetPinNamesRef();
+        auto &net_pins = net.GetPinsRef();
         auto &iopin_names = net.GetIoPinNamesRef();
-        DaliExpects(comp_names.size() == pin_names.size(),
-                    "number of components does not equal to number of pins in NET: "
-                    + net_name);
-        int net_capacity = int(comp_names.size() + iopin_names.size());
+        int net_capacity = int(net_pins.size() + iopin_names.size());
         AddNet(net_name, net_capacity, design_.normal_signal_weight);
 
         for (auto &iopin_name: iopin_names) {
             AddIOPinToNet(iopin_name, net_name);
         }
-        int sz = comp_names.size();
+        int sz = (int) net_pins.size();
         for (int i = 0; i < sz; ++i) {
-            AddBlkPinToNet(comp_names[i], pin_names[i], net_name);
+            int comp_id = net_pins[i].comp_id;
+            std::string comp_name =
+                phy_db_ptr_->GetDesignPtr()->GetComponentsRef()[comp_id].GetName();
+            int pin_id = net_pins[i].pin_id;
+            std::string pin_name =
+                phy_db_ptr_->GetDesignPtr()->GetComponentsRef()[comp_id].GetMacro()->GetPinsRef()[pin_id].GetName();
+            AddBlkPinToNet(comp_name, pin_name, net_name);
         }
     }
 }
@@ -627,7 +636,7 @@ void Circuit::LoadWell(phydb::PhyDB *phy_db_ptr) {
         auto *p_rect = macro_well->GetPwellRectPtr();
         DaliExpects(n_rect != nullptr || p_rect != nullptr,
                     "N/P-well geometries not provided for MACRO: "
-                    + macro_name);
+                        + macro_name);
         if (n_rect != nullptr) {
             setWellRect(macro_name,
                         true,
@@ -690,7 +699,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
                             BOOST_LOG_TRIVIAL(info) << line << std::endl;
                             DaliExpects(false,
                                         "Invalid stod conversion: "
-                                        + legalizer_fields[1]);
+                                            + legalizer_fields[1]);
                         }
                     } else if (legalizer_fields[0] == "ANY_DIFF_SPACING") {
                         try {
@@ -699,11 +708,11 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
                             BOOST_LOG_TRIVIAL(info) << line << std::endl;
                             DaliExpects(false,
                                         "Invalid stod conversion: "
-                                        + legalizer_fields[1]);
+                                            + legalizer_fields[1]);
                         }
                     }
                 } while (line.find("END LEGALIZER") == std::string::npos
-                         && !ist.eof());
+                    && !ist.eof());
                 //BOOST_LOG_TRIVIAL(info)   << "same diff spacing: " << same_diff_spacing << "\n any diff spacing: " << any_diff_spacing << "\n";
                 SetLegalizerSpacing(same_diff_spacing, any_diff_spacing);
             } else {
@@ -713,7 +722,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
                 if (!is_n_well)
                     DaliExpects(well_fields[1] == "pwell",
                                 "Unknow N/P well type: "
-                                + well_fields[1]);
+                                    + well_fields[1]);
                 std::string end_layer_flag = "END " + well_fields[1];
                 double width = 0;
                 double spacing = 0;
@@ -729,7 +738,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
                             BOOST_LOG_TRIVIAL(info) << line << std::endl;
                             DaliExpects(false,
                                         "Invalid stod conversion: "
-                                        + well_fields[1]);
+                                            + well_fields[1]);
                         }
                     } else if (line.find("OPPOSPACING") != std::string::npos) {
                         StrSplit(line, well_fields);
@@ -739,7 +748,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
                             BOOST_LOG_TRIVIAL(info) << line << std::endl;
                             DaliExpects(false,
                                         "Invalid stod conversion: "
-                                        + well_fields[1]);
+                                            + well_fields[1]);
                         }
                     } else if (line.find("SPACING") != std::string::npos) {
                         StrSplit(line, well_fields);
@@ -749,7 +758,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
                             BOOST_LOG_TRIVIAL(info) << line << std::endl;
                             DaliExpects(false,
                                         "Invalid stod conversion: "
-                                        + well_fields[1]);
+                                            + well_fields[1]);
                         }
                     } else if (line.find("MAXPLUGDIST") != std::string::npos) {
                         StrSplit(line, well_fields);
@@ -759,7 +768,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
                             BOOST_LOG_TRIVIAL(info) << line << std::endl;
                             DaliExpects(false,
                                         "Invalid stod conversion: "
-                                        + well_fields[1]);
+                                            + well_fields[1]);
                         }
                     } else if (line.find("MAXPLUGDIST") != std::string::npos) {
                         StrSplit(line, well_fields);
@@ -769,12 +778,12 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
                             BOOST_LOG_TRIVIAL(info) << line << std::endl;
                             DaliExpects(false,
                                         "Invalid stod conversion: "
-                                        + well_fields[1]);
+                                            + well_fields[1]);
                         }
                     } else {}
                     getline(ist, line);
                 } while (line.find(end_layer_flag) == std::string::npos
-                         && !ist.eof());
+                    && !ist.eof());
                 if (is_n_well) {
                     SetNWellParams(width,
                                    spacing,
@@ -818,16 +827,16 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
                             } catch (...) {
                                 DaliExpects(false,
                                             "Invalid stod conversion:\n"
-                                            + line);
+                                                + line);
                             }
                             setWellRect(macro_fields[1], is_n, lx, ly, ux, uy);
                         }
                         getline(ist, line);
                     } while (line.find("END VERSION") == std::string::npos
-                             && !ist.eof());
+                        && !ist.eof());
                 }
             } while (line.find(end_macro_flag) == std::string::npos
-                     && !ist.eof());
+                && !ist.eof());
         }
     }
     DaliExpects(!tech_.IsWellInfoSet(),
@@ -959,7 +968,7 @@ std::unordered_map<std::string, int> *Circuit::MetalNameMap() {
 // check if a metal layer with given name exists or not
 bool Circuit::IsMetalLayerExist(std::string &metal_name) {
     return tech_.metal_name_map_.find(metal_name)
-           != tech_.metal_name_map_.end();
+        != tech_.metal_name_map_.end();
 }
 
 // get the index of a metal layer
@@ -982,7 +991,7 @@ MetalLayer *Circuit::AddMetalLayer(std::string &metal_name,
                                    double spacing) {
     DaliExpects(!IsMetalLayerExist(metal_name),
                 "MetalLayer exist, cannot create this MetalLayer again: "
-                + metal_name);
+                    + metal_name);
     int map_size = tech_.metal_name_map_.size();
     auto ret = tech_.metal_name_map_.insert(std::pair<std::string, int>(
         metal_name,
@@ -1020,7 +1029,7 @@ void Circuit::AddMetalLayer(std::string &metal_name,
                             MetalDirection metal_direction) {
     DaliExpects(!IsMetalLayerExist(metal_name),
                 "MetalLayer exist, cannot create this MetalLayer again: "
-                + metal_name);
+                    + metal_name);
     int map_size = tech_.metal_name_map_.size();
     auto ret = tech_.metal_name_map_.insert(std::pair<std::string, int>(
         metal_name,
@@ -1034,7 +1043,8 @@ void Circuit::AddMetalLayer(std::string &metal_name,
 
 // report metal layer information for debugging purposes
 void Circuit::ReportMetalLayers() {
-    BOOST_LOG_TRIVIAL(info) << "Total MetalLayer: " << tech_.metal_list_.size()
+    BOOST_LOG_TRIVIAL(info) << "Total MetalLayer: "
+                            << tech_.metal_list_.size()
                             << "\n";
     for (auto &metal_layer: tech_.metal_list_) {
         metal_layer.Report();
@@ -1050,7 +1060,7 @@ std::unordered_map<std::string, BlockType *> *Circuit::BlockTypeMap() {
 // check if a BlockType with a given name exists or not
 bool Circuit::IsBlockTypeExist(std::string &block_type_name) {
     return tech_.block_type_map_.find(block_type_name)
-           != tech_.block_type_map_.end();
+        != tech_.block_type_map_.end();
 }
 
 // get the pointer to the BlockType with a given name, if not exist, return nullptr.
@@ -1132,7 +1142,7 @@ BlockType *Circuit::AddBlockTypeWithGridUnit(std::string &block_type_name,
                                              int height) {
     DaliExpects(!IsBlockTypeExist(block_type_name),
                 "BlockType exist, cannot create this block type again: "
-                + block_type_name);
+                    + block_type_name);
     auto ret = tech_.block_type_map_.insert(std::pair<std::string, BlockType *>(
         block_type_name,
         nullptr));
@@ -1237,12 +1247,12 @@ BlockType *Circuit::AddWellTapBlockType(std::string &block_type_name,
     double residual = fabs(Residual(width, tech_.grid_value_x_));
     DaliExpects(residual < EPSILON,
                 "BlockType width is not integer multiple of grid value in X: "
-                + block_type_name);
+                    + block_type_name);
 
     residual = fabs(Residual(height, tech_.grid_value_y_));
     DaliExpects(residual < EPSILON,
                 "BlockType height is not integer multiple of grid value in Y: "
-                + block_type_name);
+                    + block_type_name);
 
     int gridded_width = (int) std::round(width / tech_.grid_value_x_);
     int gridded_height = (int) std::round(height / tech_.grid_value_y_);
@@ -1258,7 +1268,7 @@ Pin *Circuit::AddBlkTypePin(std::string &block_type_name,
     BlockType *blk_type_ptr = getBlockType(block_type_name);
     DaliExpects(blk_type_ptr != nullptr,
                 "Cannot add BlockType pins because there is no such a BlockType: "
-                + block_type_name);
+                    + block_type_name);
     return blk_type_ptr->AddPin(pin_name, is_input);
 }
 
@@ -1279,11 +1289,11 @@ void Circuit::AddBlkTypePinRect(std::string &block_type_name,
     BlockType *blk_type_ptr = getBlockType(block_type_name);
     DaliExpects(blk_type_ptr != nullptr,
                 "Cannot add BlockType pins because there is no such a BlockType: "
-                + block_type_name);
+                    + block_type_name);
     Pin *pin_ptr = blk_type_ptr->getPinPtr(pin_name);
     DaliExpects(pin_ptr != nullptr,
                 "Cannot add BlockType pins because there is no such a pin: "
-                + block_type_name + "::" + pin_name);
+                    + block_type_name + "::" + pin_name);
     pin_ptr->AddRect(llx, lly, urx, ury);
 }
 
@@ -1319,7 +1329,7 @@ std::vector<Block> &Circuit::BlockListRef() {
 // check if a block with the given name exists or not.
 bool Circuit::IsBlockExist(std::string &block_name) {
     return !(design_.block_name_map.find(block_name)
-             == design_.block_name_map.end());
+        == design_.block_name_map.end());
 }
 
 // returns the index of a block with a given name. Users must guarantee the given name is valid.
@@ -1515,7 +1525,7 @@ std::vector<IOPin> *Circuit::getIOPinList() {
 // check if an IOPin with a given name exists or not.
 bool Circuit::IsIOPinExist(std::string &iopin_name) {
     return !(design_.iopin_name_map.find(iopin_name)
-             == design_.iopin_name_map.end());
+        == design_.iopin_name_map.end());
 }
 
 // returns the index of the IOPin with a given name. Users must guarantee the given name is valid.
@@ -1569,7 +1579,7 @@ std::vector<Net> &Circuit::NetListRef() {
 // check if a Net with a given name exists or not.
 bool Circuit::IsNetExist(std::string &net_name) {
     return !(design_.net_name_map.find(net_name)
-             == design_.net_name_map.end());
+        == design_.net_name_map.end());
 }
 
 // returns the index of the Net with a given name. Users must guarantee the given name is valid.
@@ -1666,7 +1676,8 @@ void Circuit::ReportBlockMap() {
 
 // report the net list for debugging purposes.
 void Circuit::ReportNetList() {
-    BOOST_LOG_TRIVIAL(info) << "Total Net: " << design_.net_list.size() << "\n";
+    BOOST_LOG_TRIVIAL(info) << "Total Net: " << design_.net_list.size()
+                            << "\n";
     for (auto &net: design_.net_list) {
         BOOST_LOG_TRIVIAL(info) << "  " << *net.Name() << "  " << net.Weight()
                                 << "\n";
@@ -1735,7 +1746,7 @@ void Circuit::ReportBriefSummary() const {
                             << "\n";
     BOOST_LOG_TRIVIAL(info) << "  total white space: "
                             << (long int) RegionWidth()
-                               * (long int) RegionHeight() << "\n";
+                                * (long int) RegionHeight() << "\n";
     BOOST_LOG_TRIVIAL(info) << "    left:   " << RegionLLX() << "\n";
     BOOST_LOG_TRIVIAL(info) << "    right:  " << RegionURX() << "\n";
     BOOST_LOG_TRIVIAL(info) << "    bottom: " << RegionLLY() << "\n";
@@ -1806,7 +1817,7 @@ double Circuit::AveMovBlkArea() const {
 // returns the white space usage ratio.
 double Circuit::WhiteSpaceUsage() const {
     return double(TotBlkArea()) / double(RegionURX() - RegionLLX())
-           / double(RegionURY() - RegionLLY());
+        / double(RegionURY() - RegionLLY());
 }
 
 void Circuit::BuildBlkPairNets() {
@@ -2263,8 +2274,9 @@ void Circuit::SaveDefFile(std::string const &name_of_file,
     if (is_complete_version) {
         BOOST_LOG_TRIVIAL(info) << "Writing DEF file: " << file_name << "\n";
     } else {
-        BOOST_LOG_TRIVIAL(info) << "Writing trimmed DEF file (for debugging): "
-                                << file_name << "\n";
+        BOOST_LOG_TRIVIAL(info)
+            << "Writing trimmed DEF file (for debugging): "
+            << file_name << "\n";
     }
 
     std::ofstream ost(file_name.c_str());
@@ -2289,12 +2301,12 @@ void Circuit::SaveDefFile(std::string const &name_of_file,
     if (is_complete_version) {
         ost << "COMPONENTS "
             << design_.block_list.size() - design_.pre_placed_io_count_
-               + design_.well_tap_list.size()
+                + design_.well_tap_list.size()
             << " ;\n";
     } else {
         ost << "COMPONENTS "
             << design_.block_list.size() - design_.pre_placed_io_count_
-               + design_.well_tap_list.size() + 1
+                + design_.well_tap_list.size() + 1
             << " ;\n";
         ost << "- "
             << "npwells "
@@ -2493,9 +2505,9 @@ void Circuit::SaveDefFile(std::string const &base_name,
                     << block.GetPlaceStatusStr() << " "
                     << "( "
                     << (int) (block.LLX() * factor_x)
-                       + design_.die_area_offset_x_ << " "
+                        + design_.die_area_offset_x_ << " "
                     << (int) (block.LLY() * factor_y)
-                       + design_.die_area_offset_y_
+                        + design_.die_area_offset_y_
                     << " ) "
                     << OrientStr(block.Orient())
                     << " ;\n";
@@ -2507,9 +2519,9 @@ void Circuit::SaveDefFile(std::string const &base_name,
                     << block.GetPlaceStatusStr() << " "
                     << "( "
                     << (int) (block.LLX() * factor_x)
-                       + design_.die_area_offset_x_ << " "
+                        + design_.die_area_offset_x_ << " "
                     << (int) (block.LLY() * factor_y)
-                       + design_.die_area_offset_y_
+                        + design_.die_area_offset_y_
                     << " ) "
                     << OrientStr(block.Orient())
                     << " ;\n";
@@ -2526,9 +2538,9 @@ void Circuit::SaveDefFile(std::string const &base_name,
                     << block.GetPlaceStatusStr() << " "
                     << "( "
                     << (int) (block.LLX() * factor_x)
-                       + design_.die_area_offset_x_ << " "
+                        + design_.die_area_offset_x_ << " "
                     << (int) (block.LLY() * factor_y)
-                       + design_.die_area_offset_y_
+                        + design_.die_area_offset_y_
                     << " ) "
                     << OrientStr(block.Orient())
                     << " ;\n";
@@ -2564,9 +2576,9 @@ void Circuit::SaveDefFile(std::string const &base_name,
                     << block.GetPlaceStatusStr() << " "
                     << "( "
                     << (int) (block.LLX() * factor_x)
-                       + design_.die_area_offset_x_ << " "
+                        + design_.die_area_offset_x_ << " "
                     << (int) (block.LLY() * factor_y)
-                       + design_.die_area_offset_y_
+                        + design_.die_area_offset_y_
                     << " ) "
                     << OrientStr(block.Orient())
                     << " ;\n";
@@ -2578,9 +2590,9 @@ void Circuit::SaveDefFile(std::string const &base_name,
                     << block.GetPlaceStatusStr() << " "
                     << "( "
                     << (int) (block.LLX() * factor_x)
-                       + design_.die_area_offset_x_ << " "
+                        + design_.die_area_offset_x_ << " "
                     << (int) (block.LLY() * factor_y)
-                       + design_.die_area_offset_y_
+                        + design_.die_area_offset_y_
                     << " ) "
                     << OrientStr(block.Orient())
                     << " ;\n";
@@ -2627,9 +2639,9 @@ void Circuit::SaveDefFile(std::string const &base_name,
                     << block.GetPlaceStatusStr() << " "
                     << "( "
                     << (int) (block.LLX() * factor_x)
-                       + design_.die_area_offset_x_ << " "
+                        + design_.die_area_offset_x_ << " "
                     << (int) (block.LLY() * factor_y)
-                       + design_.die_area_offset_y_
+                        + design_.die_area_offset_y_
                     << " ) "
                     << OrientStr(block.Orient())
                     << " ;\n";
@@ -2641,9 +2653,9 @@ void Circuit::SaveDefFile(std::string const &base_name,
                     << block.GetPlaceStatusStr() << " "
                     << "( "
                     << (int) (block.LLX() * factor_x)
-                       + design_.die_area_offset_x_ << " "
+                        + design_.die_area_offset_x_ << " "
                     << (int) (block.LLY() * factor_y)
-                       + design_.die_area_offset_y_
+                        + design_.die_area_offset_y_
                     << " ) "
                     << OrientStr(block.Orient())
                     << " ;\n";
@@ -2668,9 +2680,9 @@ void Circuit::SaveDefFile(std::string const &base_name,
                     << block.GetPlaceStatusStr() << " "
                     << "( "
                     << (int) (block.LLX() * factor_x)
-                       + design_.die_area_offset_x_ << " "
+                        + design_.die_area_offset_x_ << " "
                     << (int) (block.LLY() * factor_y)
-                       + design_.die_area_offset_y_
+                        + design_.die_area_offset_y_
                     << " ) "
                     << OrientStr(block.Orient())
                     << " ;\n";
@@ -2682,9 +2694,9 @@ void Circuit::SaveDefFile(std::string const &base_name,
                     << block.GetPlaceStatusStr() << " "
                     << "( "
                     << (int) (block.LLX() * factor_x)
-                       + design_.die_area_offset_x_ << " "
+                        + design_.die_area_offset_x_ << " "
                     << (int) (block.LLY() * factor_y)
-                       + design_.die_area_offset_y_
+                        + design_.die_area_offset_y_
                     << " ) "
                     << OrientStr(block.Orient())
                     << " ;\n";
@@ -2720,7 +2732,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
                 if (iopin.IsPlaced()) {
                     std::string metal_name = *(iopin.Layer()->Name());
                     int half_width = std::ceil(iopin.Layer()->MinHeight() / 2.0
-                                               * design_.def_distance_microns);
+                                                   * design_.def_distance_microns);
                     int height = std::ceil(
                         iopin.Layer()->Width() * design_.def_distance_microns);
                     ost << "\n  + LAYER "
@@ -2756,7 +2768,7 @@ void Circuit::SaveDefFile(std::string const &base_name,
                         "Need metal layer info to generate PIN location\n");
             std::string metal_name = *(tech_.metal_list_[0].Name());
             int half_width = std::ceil(tech_.metal_list_[0].MinHeight() / 2.0
-                                       * design_.def_distance_microns);
+                                           * design_.def_distance_microns);
             int height = std::ceil(
                 tech_.metal_list_[0].Width() * design_.def_distance_microns);
             for (auto &iopin: design_.iopin_list) {
@@ -2887,7 +2899,7 @@ void Circuit::SaveIODefFile(std::string const &name_of_file,
     double factor_y = design_.def_distance_microns * tech_.grid_value_y_;
     ost << "COMPONENTS "
         << design_.block_list.size() - design_.pre_placed_io_count_
-           + design_.well_tap_list.size()
+            + design_.well_tap_list.size()
         << " ;\n";
     for (auto &block: design_.block_list) {
         if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
@@ -3163,9 +3175,9 @@ void Circuit::SaveBookshelfNode(std::string const &name_of_file) {
     for (auto &block: design_.block_list) {
         ost << "\t" << *(block.NamePtr())
             << "\t" << block.Width() * design_.def_distance_microns
-                       * tech_.grid_value_x_
+                * tech_.grid_value_x_
             << "\t" << block.Height() * design_.def_distance_microns
-                       * tech_.grid_value_y_
+                * tech_.grid_value_y_
             << "\n";
     }
 }
@@ -3191,14 +3203,14 @@ void Circuit::SaveBookshelfNet(std::string const &name_of_file) {
                 ost << "O : ";
             }
             ost << (pair.PinPtr()->OffsetX()
-                    - pair.BlkPtr()->TypePtr()->Width() / 2.0)
-                   * design_.def_distance_microns
-                   * tech_.grid_value_x_
+                - pair.BlkPtr()->TypePtr()->Width() / 2.0)
+                * design_.def_distance_microns
+                * tech_.grid_value_x_
                 << "\t"
                 << (pair.PinPtr()->OffsetY()
                     - pair.BlkPtr()->TypePtr()->Height() / 2.0)
-                   * design_.def_distance_microns
-                   * tech_.grid_value_y_
+                    * design_.def_distance_microns
+                    * tech_.grid_value_y_
                 << "\n";
         }
     }
@@ -3215,7 +3227,7 @@ void Circuit::SaveBookshelfPl(std::string const &name_of_file) {
                 node.LLX() * design_.def_distance_microns * tech_.grid_value_x_)
             << "\t"
             << int(node.LLY() * design_.def_distance_microns
-                   * tech_.grid_value_y_);
+                       * tech_.grid_value_y_);
         if (node.IsMovable()) {
             ost << "\t:\tN\n";
         } else {
@@ -3289,9 +3301,9 @@ void Circuit::LoadBookshelfPl(std::string const &name_of_file) {
             if (IsBlockExist(res[0])) {
                 try {
                     lx = std::stod(res[1]) / tech_.grid_value_x_
-                         / design_.def_distance_microns;
+                        / design_.def_distance_microns;
                     ly = std::stod(res[2]) / tech_.grid_value_y_
-                         / design_.def_distance_microns;
+                        / design_.def_distance_microns;
                     getBlockPtr(res[0])->SetLoc(lx, ly);
                 } catch (...) {
                     DaliExpects(false, "Invalid stod conversion:\n\t" + line);

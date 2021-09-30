@@ -18,13 +18,13 @@ class Dali {
         phydb::PhyDB *phy_db_ptr,
         const std::string &severity_level,
         const std::string &log_file_name = "",
-        const std::string &open_mode = "w"
+        const std::string &console_log_prefix = ""
     );
     Dali(
         phydb::PhyDB *phy_db_ptr,
         severity severity_level,
         const std::string &log_file_name = "",
-        const std::string &open_mode = "w"
+        const std::string &console_log_prefix = ""
     );
 
     bool AutoIoPinPlacement();

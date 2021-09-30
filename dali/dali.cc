@@ -14,14 +14,14 @@ Dali::Dali(
     phydb::PhyDB *phy_db_ptr,
     const std::string &severity_level,
     const std::string &log_file_name,
-    const std::string &open_mode
+    const std::string &console_log_prefix
 ) {
-    auto boost_sl = StrToLoggingLevel(severity_level);
+    auto boost_severity_level = StrToLoggingLevel(severity_level);
     InitLogging(
         log_file_name,
         false,
-        boost_sl,
-        open_mode
+        boost_severity_level,
+        console_log_prefix
     );
     phy_db_ptr_ = phy_db_ptr;
     circuit_.InitializeFromPhyDB(phy_db_ptr);
@@ -31,13 +31,13 @@ Dali::Dali(
     phydb::PhyDB *phy_db_ptr,
     severity severity_level,
     const std::string &log_file_name,
-    const std::string &open_mode
+    const std::string &console_log_prefix
 ) {
     InitLogging(
         log_file_name,
         false,
         severity_level,
-        open_mode
+        console_log_prefix
     );
     phy_db_ptr_ = phy_db_ptr;
     circuit_.InitializeFromPhyDB(phy_db_ptr);
@@ -55,19 +55,20 @@ bool Dali::AutoIoPinPlacement() {
 }
 
 void Dali::ReportIoPlacementUsage() {
-    BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
-                            << "Usage: place-io (followed by one of the options below)\n"
-                            << "  -h/--help\n"
-                            << "      print out the IO placer usage\n"
-                            << "  -a/--add <pin_name> <net_name> <direction> <use>\n"
-                            << "      add an IOPIN\n"
-                            << "  -p/--place <pin_name> <metal_name> <lx> <ly> <ux> <uy> <x> <y> <orientation>\n"
-                            << "      manually place an IOPIN\n"
-                            << "  -c/--config (use -h to see more usage)\n"
-                            << "      set parameters for automatic IOPIN placement\n"
-                            << "  -ap/--auto-place\n"
-                            << "      automatically place all unplaced IOPINs, which is also the default option"
-                            << "\033[0m\n";
+    BOOST_LOG_TRIVIAL(info)
+        << "\033[0;36m"
+        << "Usage: place-io (followed by one of the options below)\n"
+        << "  -h/--help\n"
+        << "      print out the IO placer usage\n"
+        << "  -a/--add <pin_name> <net_name> <direction> <use>\n"
+        << "      add an IOPIN\n"
+        << "  -p/--place <pin_name> <metal_name> <lx> <ly> <ux> <uy> <x> <y> <orientation>\n"
+        << "      manually place an IOPIN\n"
+        << "  -c/--config (use -h to see more usage)\n"
+        << "      set parameters for automatic IOPIN placement\n"
+        << "  -ap/--auto-place\n"
+        << "      automatically place all unplaced IOPINs, which is also the default option"
+        << "\033[0m\n";
 }
 
 bool Dali::IoPinPlacement(int argc, char **argv) {

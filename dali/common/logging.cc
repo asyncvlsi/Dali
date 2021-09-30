@@ -47,19 +47,19 @@ severity StrToLoggingLevel(const std::string &sl_str) {
  * @param overwrite_log_file: if the log_file_name is not empty, this parameter is
  * ignored; otherwise, if this parameter is true, then the final log file name is
  * always 'dali0.log'.
- * @param severity_level:
- * @param mode
+ * @param severity_level: 0 (fatal) - 5 (trace)
+ * @param console_log_prefix: prefix for messages sent to the console.
  */
 void InitLogging(
     const std::string &log_file_name,
     bool overwrite_log_file,
     severity severity_level,
-    const std::string &mode
+    const std::string &console_log_prefix
 ) {
     CloseLogging();
 
+    // determine the log file name
     std::string file_name = log_file_name;
-
     if (file_name.empty()) {
         std::string base_name = "dali";
         std::string extension = ".log";
@@ -82,19 +82,9 @@ void InitLogging(
         }
     }
 
-    std::fstream::openmode open_mode;
-    if (mode == "w") {
-        open_mode = std::fstream::trunc;
-    } else if (mode == "a") {
-        open_mode = std::fstream::app;
-    } else {
-        std::cout << "FATAL: unknown open mode: " << mode << "\n";
-        std::cout << "  possible values: 'w' and 'a'" << std::endl;
-        exit(1);
-    }
+    // add a file sink
     g_file_sink = logging::add_file_log(
         keywords::file_name = file_name,
-        keywords::open_mode = open_mode,
         keywords::format = "[%TimeStamp%] [%ThreadID%] [%Severity%] %Message%"
     );
     g_file_sink->locked_backend()->set_auto_newline_mode(
@@ -105,11 +95,12 @@ void InitLogging(
     logging::core::get()->set_filter(
         logging::trivial::severity >= severity_level
     );
-
     logging::add_common_attributes();
+
+    // add a console sink
     g_console_sink = logging::add_console_log(
         std::cout,
-        logging::keywords::format = "%Message%"
+        logging::keywords::format = console_log_prefix + "%Message%"
     );
     g_console_sink->locked_backend()->set_auto_newline_mode(
         logging::sinks::auto_newline_mode::disabled_auto_newline
