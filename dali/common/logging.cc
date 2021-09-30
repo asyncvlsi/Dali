@@ -6,17 +6,18 @@
 
 namespace dali {
 
-namespace logging = boost::log;
 namespace keywords = boost::log::keywords;
+namespace sink = boost::log::sinks;
 
-typedef boost::log::sinks::synchronous_sink<boost::log::sinks::text_file_backend> file_sink_t;
+typedef sink::synchronous_sink<sink::text_file_backend> file_sink_t;
 boost::shared_ptr<file_sink_t> g_file_sink = nullptr;
 
-typedef boost::log::sinks::synchronous_sink<boost::log::sinks::basic_text_ostream_backend<char> > console_sink_t;
+typedef sink::synchronous_sink<sink::basic_text_ostream_backend<char>>
+    console_sink_t;
 boost::shared_ptr<console_sink_t> g_console_sink = nullptr;
 
-boost::log::trivial::severity_level StrToLoggingLevel(std::string sl_str) {
-    int level = -1;
+severity StrToLoggingLevel(const std::string &sl_str) {
+    int level;
     try {
         level = std::stoi(sl_str);
     } catch (...) {
@@ -25,28 +26,44 @@ boost::log::trivial::severity_level StrToLoggingLevel(std::string sl_str) {
     }
 
     switch (level) {
-        case 0  :return boost::log::trivial::severity_level::fatal;
-        case 1  :return boost::log::trivial::severity_level::error;
-        case 2  :return boost::log::trivial::severity_level::warning;
-        case 3  :return boost::log::trivial::severity_level::info;
-        case 4  :return boost::log::trivial::severity_level::debug;
-        case 5  :return boost::log::trivial::severity_level::trace;
+        case 0  :return severity::fatal;
+        case 1  :return severity::error;
+        case 2  :return severity::warning;
+        case 3  :return severity::info;
+        case 4  :return severity::debug;
+        case 5  :return severity::trace;
         default :std::cout << "Invalid dali verbosity level (0-5)!\n";
             exit(1);
     }
 }
 
-void InitLogging(std::string &log_file_name,
-                 bool overwrite_logfile,
-                 boost::log::trivial::severity_level sl)   {
+/****
+ * @brief Initialize the logging system.
+ *
+ * @param log_file_name: the name of the log file. This parameter can be an empty
+ * string. If it is empty, then the final log file name will be 'daliX.log', where
+ * X is a number which makes the log file name different from any other files in
+ * the working directory.
+ * @param overwrite_log_file: if the log_file_name is not empty, this parameter is
+ * ignored; otherwise, if this parameter is true, then the final log file name is
+ * always 'dali0.log'.
+ * @param severity_level:
+ * @param mode
+ */
+void InitLogging(
+    const std::string &log_file_name,
+    bool overwrite_log_file,
+    severity severity_level,
+    const std::string &mode
+) {
     CloseLogging();
 
-    std::string base_name = "dali";
-    std::string extension = ".log";
     std::string file_name = log_file_name;
 
     if (file_name.empty()) {
-        if (overwrite_logfile) {
+        std::string base_name = "dali";
+        std::string extension = ".log";
+        if (overwrite_log_file) {
             file_name = "dali0.log";
         } else {
             int upper_limits = 2048;
@@ -65,34 +82,48 @@ void InitLogging(std::string &log_file_name,
         }
     }
 
+    std::fstream::openmode open_mode;
+    if (mode == "w") {
+        open_mode = std::fstream::trunc;
+    } else if (mode == "a") {
+        open_mode = std::fstream::app;
+    } else {
+        std::cout << "FATAL: unknown open mode: " << mode << "\n";
+        std::cout << "  possible values: 'w' and 'a'" << std::endl;
+        exit(1);
+    }
     g_file_sink = logging::add_file_log(
         keywords::file_name = file_name,
+        keywords::open_mode = open_mode,
         keywords::format = "[%TimeStamp%] [%ThreadID%] [%Severity%] %Message%"
     );
-    g_file_sink->locked_backend()->set_auto_newline_mode(logging::sinks::auto_newline_mode::disabled_auto_newline);
+    g_file_sink->locked_backend()->set_auto_newline_mode(
+        sink::auto_newline_mode::disabled_auto_newline
+    );
     g_file_sink->locked_backend()->auto_flush(false);
 
-    logging::core::get()->set_filter
-        (
-            logging::trivial::severity >= sl
-        );
+    logging::core::get()->set_filter(
+        logging::trivial::severity >= severity_level
+    );
 
     logging::add_common_attributes();
-    g_console_sink = logging::add_console_log(std::cout, boost::log::keywords::format = "%Message%");
-    g_console_sink->locked_backend()->set_auto_newline_mode(logging::sinks::auto_newline_mode::disabled_auto_newline);
+    g_console_sink = logging::add_console_log(
+        std::cout,
+        logging::keywords::format = "%Message%"
+    );
+    g_console_sink->locked_backend()->set_auto_newline_mode(
+        logging::sinks::auto_newline_mode::disabled_auto_newline
+    );
     g_console_sink->locked_backend()->auto_flush(false);
-
-// write floating-point values in scientific notation.
-//  BOOST_LOG_TRIVIAL(trace) << std::scientific << std::setprecision(4);
 }
 
 void CloseLogging() {
     if (g_file_sink != nullptr) {
-        boost::log::core::get()->remove_sink(g_file_sink);
+        logging::core::get()->remove_sink(g_file_sink);
         g_file_sink.reset();
     }
     if (g_console_sink != nullptr) {
-        boost::log::core::get()->remove_sink(g_console_sink);
+        logging::core::get()->remove_sink(g_console_sink);
         g_console_sink.reset();
     }
 }

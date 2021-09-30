@@ -14,17 +14,29 @@ namespace dali {
 
 class Dali {
   public:
-    Dali(phydb::PhyDB *phy_db_ptr, std::string sl);
-    Dali(phydb::PhyDB *phy_db_ptr, boost::log::trivial::severity_level sl);
+    Dali(
+        phydb::PhyDB *phy_db_ptr,
+        const std::string &severity_level,
+        const std::string &log_file_name = "",
+        const std::string &open_mode = "w"
+    );
+    Dali(
+        phydb::PhyDB *phy_db_ptr,
+        severity severity_level,
+        const std::string &log_file_name = "",
+        const std::string &open_mode = "w"
+    );
 
     bool AutoIoPinPlacement();
     bool IoPinPlacement(int argc, char **argv);
 
     void StartPlacement(double density, int number_of_threads = 1);
 
-    void AddWellTaps(phydb::Macro *cell,
-                     double cell_interval_microns,
-                     bool is_checker_board);
+    void AddWellTaps(
+        phydb::Macro *cell,
+        double cell_interval_microns,
+        bool is_checker_board
+    );
     bool AddWellTaps(int argc, char **argv);
     void GlobalPlace(double density);
     void UnifiedLegalization();
