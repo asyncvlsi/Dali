@@ -132,8 +132,7 @@ int main(int argc, char *argv[]) {
     }
 
     if ((lef_file_name.empty()) || (def_file_name.empty())) {
-        BOOST_LOG_TRIVIAL(info)
-            << "Invalid input files!\n";
+        BOOST_LOG_TRIVIAL(info) << "Invalid input files!\n";
         ReportUsage();
         return 1;
     }
@@ -167,7 +166,8 @@ int main(int argc, char *argv[]) {
     file_wall_time = get_wall_time() - file_wall_time;
     file_cpu_time = get_cpu_time() - file_cpu_time;
     BOOST_LOG_TRIVIAL(info) << "File loading complete\n";
-    BOOST_LOG_TRIVIAL(info) << "(wall time: " << file_wall_time << "s, cpu time: " << file_cpu_time << "s)\n";
+    BOOST_LOG_TRIVIAL(info) << "(wall time: " << file_wall_time
+                            << "s, cpu time: " << file_cpu_time << "s)\n";
     circuit.ReportBriefSummary();
     circuit.ReportHPWL();
 
@@ -176,12 +176,16 @@ int main(int argc, char *argv[]) {
         target_density = std::max(circuit.WhiteSpaceUsage(), default_density);
     }
     if (circuit.WhiteSpaceUsage() > target_density) {
-        BOOST_LOG_TRIVIAL(info) << "Cannot set target density smaller than average white space utility!\n";
-        BOOST_LOG_TRIVIAL(info) << "  Average white space utility: " << circuit.WhiteSpaceUsage() << "\n";
-        BOOST_LOG_TRIVIAL(info) << "  Target density: " << target_density << "\n";
+        BOOST_LOG_TRIVIAL(info)
+            << "Cannot set target density smaller than average white space utility!\n";
+        BOOST_LOG_TRIVIAL(info) << "  Average white space utility: "
+                                << circuit.WhiteSpaceUsage() << "\n";
+        BOOST_LOG_TRIVIAL(info) << "  Target density: " << target_density
+                                << "\n";
         return 1;
     }
-    BOOST_LOG_TRIVIAL(info) << "  Average white space utility: " << circuit.WhiteSpaceUsage() << "\n";
+    BOOST_LOG_TRIVIAL(info) << "  Average white space utility: "
+                            << circuit.WhiteSpaceUsage() << "\n";
     BOOST_LOG_TRIVIAL(info) << "  Target density: " << target_density;
     if (target_density == default_density) {
         BOOST_LOG_TRIVIAL(info) << " (default)";
@@ -244,46 +248,49 @@ int main(int argc, char *argv[]) {
     wall_time = get_wall_time() - wall_time;
     cpu_time = get_cpu_time() - cpu_time;
 
-    BOOST_LOG_TRIVIAL(info) << "****End of placement "
-                            << "(wall time: " << wall_time << "s, "
-                            << "cpu time: " << cpu_time << "s)****\n";
+    BOOST_LOG_TRIVIAL(info)
+        << "****End of placement "
+        << "(wall time: " << wall_time << "s, "
+        << "cpu time: " << cpu_time << "s)****\n";
 
     return 0;
 }
 
 void ReportUsage() {
-    BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
-                            << "Usage: dali\n"
-                            << "  -lef        <file.lef>\n"
-                            << "  -def        <file.def>\n"
-                            << "  -cell       <file.cell> (optional, if provided, well placement flow will be triggered)\n"
-                            << "  -o          <output_name>.def (optional, default output file name dali_out.def)\n"
-                            << "  -g/-grid    grid_value_x grid_value_y (optional, default metal1 and metal2 pitch values)\n"
-                            << "  -d/-density density (optional, value interval (0,1], default max(space_utility, 0.7))\n"
-                            << "  -nolegal    optional, if this flag is present, then only perform global placement\n"
-                            << "  -iolayer    metal_layer_num (optional, default 1 for m1)\n"
-                            << "  -v          verbosity_level (optional, 0-5, default 1)\n"
-                            << "(flag order does not matter)"
-                            << "\033[0m\n";
+    std::cout
+        << "\033[0;36m"
+        << "Usage: dali\n"
+        << "  -lef        <file.lef>\n"
+        << "  -def        <file.def>\n"
+        << "  -cell       <file.cell> (optional, if provided, well placement flow will be triggered)\n"
+        << "  -o          <output_name>.def (optional, default output file name dali_out.def)\n"
+        << "  -g/-grid    grid_value_x grid_value_y (optional, default metal1 and metal2 pitch values)\n"
+        << "  -d/-density density (optional, value interval (0,1], default max(space_utility, 0.7))\n"
+        << "  -nolegal    optional, if this flag is present, then only perform global placement\n"
+        << "  -iolayer    metal_layer_num (optional, default 1 for m1)\n"
+        << "  -v          verbosity_level (optional, 0-5, default 1)\n"
+        << "(flag order does not matter)"
+        << "\033[0m\n";
 }
 
 void PrintSoftwareStatement() {
-    BOOST_LOG_TRIVIAL(info) << "\n"
-                            << "+----------------------------------------------+\n"
-                            << "|                                              |\n"
-                            << "|     Dali: gridded cell placement flow        |\n"
-                            << "|                                              |\n"
-                            << "|     Department of Electrical Engineering     |\n"
-                            << "|     Yale University                          |\n"
-                            << "|                                              |\n"
-                            << "|     Developed by                             |\n"
-                            << "|     Yihang Yang, Rajit Manohar               |\n"
-                            << "|                                              |\n"
-                            << "|     This program is for academic use and     |\n"
-                            << "|     testing only                             |\n"
-                            << "|     THERE IS NO WARRANTY                     |\n"
-                            << "|                                              |\n"
-                            << "|     build time: " << __DATE__ << " " << __TIME__ << "         |\n"
-                            << "|                                              |\n"
-                            << "+----------------------------------------------+\n\n";
+    BOOST_LOG_TRIVIAL(info)
+        << "\n"
+        << "+----------------------------------------------+\n"
+        << "|                                              |\n"
+        << "|     Dali: a gridded cell placer              |\n"
+        << "|                                              |\n"
+        << "|     Department of Electrical Engineering     |\n"
+        << "|     Yale University                          |\n"
+        << "|                                              |\n"
+        << "|     Developed by                             |\n"
+        << "|     Yihang Yang, Rajit Manohar               |\n"
+        << "|                                              |\n"
+        << "|     This program is for academic use and     |\n"
+        << "|     testing only                             |\n"
+        << "|     THERE IS NO WARRANTY                     |\n"
+        << "|                                              |\n"
+        << "|     build time: " << __DATE__ << " " << __TIME__ << "         |\n"
+        << "|                                              |\n"
+        << "+----------------------------------------------+\n\n";
 }

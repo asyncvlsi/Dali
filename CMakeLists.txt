@@ -28,6 +28,20 @@ find_library(ACTVLSILIB_LIBRARY NAMES vlsilib PATHS $ENV{ACT_HOME}/lib REQUIRED)
 find_library(PHYDB_LIBRARY NAMES phydb PATHS $ENV{ACT_HOME}/lib REQUIRED)
 
 ############################################################################
+# Check if the galois_eda library is installed
+############################################################################
+find_library(
+    GALOIS_EDA_LIBRARY
+    NAMES galois_eda
+    PATHS $ENV{ACT_HOME}/lib
+)
+if (NOT GALOIS_EDA)
+    message(STATUS "Cannot find libgalois_eda.a")
+else ()
+    message(STATUS "Found libgalois_eda.a")
+endif ()
+
+############################################################################
 # detect the installation path of LEF parser and DEF parser,
 # and check if the liblef and libdef library can be found or not
 ############################################################################
@@ -153,7 +167,7 @@ add_library(
 )
 target_link_libraries(
     dalilib
-    ${ACT_LIBRARY} ${ACTVLSILIB_LIBRARY} ${PHYDB_LIBRARY}
+    ${ACT_LIBRARY} ${ACTVLSILIB_LIBRARY} ${PHYDB_LIBRARY} ${GALOIS_EDA_LIBRARY}
     ${LEF_LIBRARY} ${DEF_LIBRARY}
     ${Boost_LIBRARIES}
     OpenMP::OpenMP_CXX

@@ -50,8 +50,8 @@ class Dali {
     void Close();
 
     void ExportToDEF(
-        std::string &input_def_file_full_name,
-        std::string output_def_name = "circuit"
+        std::string const &input_def_file_full_name,
+        std::string const &output_def_name = "circuit"
     );
 
     IoPlacer *io_placer_ = nullptr;
@@ -71,6 +71,8 @@ class Dali {
         std::string &script_name
     );
 
+    void ExportOrdinaryComponentsToPhyDB();
+    void ExportWellTapCellsToPhyDB();
     void ExportComponentsToPhyDB();
     void ExportIoPinsToPhyDB();
     void ExportMiniRowsToPhyDB();

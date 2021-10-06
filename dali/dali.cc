@@ -115,7 +115,10 @@ void Dali::StartPlacement(double density, int number_of_threads) {
     //circuit.BuildBlkPairNets();
 
     GlobalPlace(density);
-    UnifiedLegalization();
+    //UnifiedLegalization();
+
+    ExportOrdinaryComponentsToPhyDB();
+    phy_db_ptr_->PushRCToTimer();
 }
 
 void Dali::AddWellTaps(phydb::Macro *cell,
@@ -286,30 +289,36 @@ void Dali::Close() {
 }
 
 void Dali::ExportToDEF(
-    std::string &input_def_file_full_name,
-    std::string output_def_name
+    std::string const &input_def_file_full_name,
+    std::string const &output_def_name
 ) {
-    circuit_.SaveDefFile(output_def_name,
-                         "",
-                         input_def_file_full_name,
-                         1,
-                         1,
-                         2,
-                         1);
-    circuit_.SaveDefFile(output_def_name,
-                         "_io",
-                         input_def_file_full_name,
-                         1,
-                         1,
-                         1,
-                         1);
-    circuit_.SaveDefFile(output_def_name,
-                         "_filling",
-                         input_def_file_full_name,
-                         1,
-                         4,
-                         2,
-                         1);
+    circuit_.SaveDefFile(
+        output_def_name,
+        "",
+        input_def_file_full_name,
+        1,
+        1,
+        2,
+        1
+    );
+    circuit_.SaveDefFile(
+        output_def_name,
+        "_io",
+        input_def_file_full_name,
+        1,
+        1,
+        1,
+        1
+    );
+    circuit_.SaveDefFile(
+        output_def_name,
+        "_filling",
+        input_def_file_full_name,
+        1,
+        4,
+        2,
+        1
+    );
     circuit_.InitNetFanoutHistogram();
     circuit_.ReportNetFanoutHistogram();
     circuit_.ReportHPWLHistogramLinear();
@@ -346,15 +355,14 @@ std::string Dali::CreateDetailedPlacementAndLegalizationScript(std::string &engi
     return out_def;
 }
 
-void Dali::ExportComponentsToPhyDB() {
+void Dali::ExportOrdinaryComponentsToPhyDB() {
     double factor_x = circuit_.DistanceMicrons() * circuit_.GridValueX();
     double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
-
-    // a. existing components
     for (auto &block: circuit_.BlockListRef()) {
-        if (block.TypePtr()
-            == circuit_.getTechRef().io_dummy_blk_type_ptr_)
+        if (block.TypePtr() == circuit_.getTechRef().io_dummy_blk_type_ptr_) {
+            // skip dummy cells for I/O pins
             continue;
+        }
         std::string comp_name = block.Name();
         int lx = (int) (block.LLX() * factor_x)
             + circuit_.getDesignRef().die_area_offset_x_;
@@ -370,8 +378,11 @@ void Dali::ExportComponentsToPhyDB() {
         comp_ptr->SetPlacementStatus(place_status);
         comp_ptr->SetOrientation(orient);
     }
+}
 
-    // b. well tap cells
+void Dali::ExportWellTapCellsToPhyDB() {
+    double factor_x = circuit_.DistanceMicrons() * circuit_.GridValueX();
+    double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
     for (auto &block: circuit_.getDesignRef().well_tap_list) {
         std::string comp_name = block.Name();
         std::string macro_name = *(block.TypePtr()->NamePtr());
@@ -385,13 +396,20 @@ void Dali::ExportComponentsToPhyDB() {
         auto *phydb_macro_ptr = phy_db_ptr_->GetMacroPtr(macro_name);
         DaliExpects(phydb_macro_ptr != nullptr,
                     "Cannot find " + macro_name + " in PhyDB?!");
-        phy_db_ptr_->AddComponent(comp_name,
-                                  phydb_macro_ptr,
-                                  place_status,
-                                  lx,
-                                  ly,
-                                  orient);
+        phy_db_ptr_->AddComponent(
+            comp_name,
+            phydb_macro_ptr,
+            place_status,
+            lx,
+            ly,
+            orient
+        );
     }
+}
+
+void Dali::ExportComponentsToPhyDB() {
+    ExportOrdinaryComponentsToPhyDB();
+    ExportWellTapCellsToPhyDB();
 }
 
 void Dali::ExportIoPinsToPhyDB() {
