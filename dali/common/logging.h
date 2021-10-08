@@ -49,12 +49,21 @@ void InitLogging(
 
 void CloseLogging();
 
-inline void DaliExpects(bool e, const std::string &error_message) {
+#define DaliExpects(e, error_message) DaliExpects_(e, error_message, __FILE__, __LINE__, __FUNCTION__)
+inline void DaliExpects_(
+    bool e,
+    const std::string &error_message,
+    const char *file,
+    size_t line,
+    const char *function
+) {
     if (!e) {
         BOOST_LOG_TRIVIAL(fatal)
-            << "\033[0;31m" << "Dali FATAL ERROR:" << "\n"
-            << "    " << error_message << "\033[0m"
-            << std::endl;
+            << "\033[0;31m"
+            << "FATAL ERROR:" << "\n"
+            << "    " << error_message << "\n"
+            << file << " : " << line << " : " << function
+            << "\033[0m" << std::endl;
         exit(1);
     }
 }
@@ -62,7 +71,7 @@ inline void DaliExpects(bool e, const std::string &error_message) {
 inline void DaliWarns(bool e, const std::string &warning_message) {
     if (e) {
         BOOST_LOG_TRIVIAL(warning)
-            << "Dali WARNING:" << "\n"
+            << "WARNING:" << "\n"
             << "    " << warning_message
             << std::endl;
     }

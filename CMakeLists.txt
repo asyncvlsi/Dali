@@ -171,6 +171,7 @@ target_link_libraries(
     ${LEF_LIBRARY} ${DEF_LIBRARY}
     ${Boost_LIBRARIES}
     OpenMP::OpenMP_CXX
+    galois_eda galois_shmem numa
 )
 
 # Stand-alone placer, building from the dalilib library

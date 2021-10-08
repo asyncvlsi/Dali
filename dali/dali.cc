@@ -115,15 +115,23 @@ void Dali::StartPlacement(double density, int number_of_threads) {
     //circuit.BuildBlkPairNets();
 
     GlobalPlace(density);
-    //UnifiedLegalization();
 
     ExportOrdinaryComponentsToPhyDB();
-    phy_db_ptr_->PushRCToTimer();
+    phy_db_ptr_->CreatePhydbActAdaptor();
+    phy_db_ptr_->AddNetsAndCompPinsToSpefManager();
+    phy_db_ptr_->InitializeRCEstimator(phydb::RCEstimatorType::STARPIMODEL);
+    phy_db_ptr_->PushRCToSpefManager();
+    phy_db_ptr_->GetTimingApi().UpdateTimingIncremental();
+    std::cout << phy_db_ptr_->GetTimingApi().GetNumConstraints() << "\n";
+
+    UnifiedLegalization();
 }
 
-void Dali::AddWellTaps(phydb::Macro *cell,
-                       double cell_interval_microns,
-                       bool is_checker_board) {
+void Dali::AddWellTaps(
+    phydb::Macro *cell,
+    double cell_interval_microns,
+    bool is_checker_board
+) {
     well_tap_placer_ = new WellTapPlacer(phy_db_ptr_);
 
     well_tap_placer_->FetchRowsFromPhyDB();
