@@ -16,6 +16,8 @@
 
 using namespace dali;
 
+// TODO: move this to the tests/ folder
+
 int main() {
   InitLogging();
   BOOST_LOG_TRIVIAL(info) << "Example of creating a Circuit instance\n";

@@ -9,10 +9,11 @@
 #include <iostream>
 #include <ratio>
 
-#include "circuit.h"
-#include "common/logging.h"
-#include "common/si2lefdef.h"
-#include "placer.h"
+#include <phydb/phydb.h>
+
+#include "dali/circuit/circuit.h"
+#include "dali/common/logging.h"
+#include "dali/placer.h"
 
 using namespace dali;
 
@@ -160,8 +161,13 @@ int main(int argc, char *argv[]) {
     }
 
     // read LEF/DEF
-    circuit.ReadLefFile(lef_file_name);
-    circuit.ReadDefFile(def_file_name);
+    phydb::PhyDB phy_db;
+    phy_db.ReadLef(lef_file_name);
+    phy_db.ReadDef(def_file_name);
+    if (!cell_file_name.empty()) {
+        phy_db.ReadCell(cell_file_name);
+    }
+    circuit.InitializeFromPhyDB(&phy_db);
 
     file_wall_time = get_wall_time() - file_wall_time;
     file_cpu_time = get_cpu_time() - file_cpu_time;
@@ -212,8 +218,6 @@ int main(int argc, char *argv[]) {
 
         delete gb_placer;
     } else {
-        circuit.ReadCellFile(cell_file_name);
-
         Placer *gb_placer = new GPSimPL;
         gb_placer->SetInputCircuit(&circuit);
         gb_placer->SetBoundaryDef();

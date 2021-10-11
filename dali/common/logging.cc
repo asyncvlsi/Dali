@@ -48,13 +48,11 @@ severity StrToLoggingLevel(const std::string &sl_str) {
  * ignored; otherwise, if this parameter is true, then the final log file name is
  * always 'dali0.log'.
  * @param severity_level: 0 (fatal) - 5 (trace)
- * @param console_log_prefix: prefix for messages sent to the console.
  */
 void InitLogging(
     const std::string &log_file_name,
     bool overwrite_log_file,
-    severity severity_level,
-    const std::string &console_log_prefix
+    severity severity_level
 ) {
     CloseLogging();
 
@@ -100,7 +98,7 @@ void InitLogging(
     // add a console sink
     g_console_sink = logging::add_console_log(
         std::cout,
-        logging::keywords::format = console_log_prefix + "%Message%"
+        logging::keywords::format = "%Message%"
     );
     g_console_sink->locked_backend()->set_auto_newline_mode(
         logging::sinks::auto_newline_mode::disabled_auto_newline

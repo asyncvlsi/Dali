@@ -41,10 +41,9 @@ typedef boost::log::trivial::severity_level severity;
 severity StrToLoggingLevel(const std::string &sl_str);
 
 void InitLogging(
-    const std::string &log_file_name,
+    const std::string &log_file_name = "",
     bool overwrite_log_file = false,
-    severity severity_level = logging::trivial::info,
-    const std::string &console_log_prefix = ""
+    severity severity_level = logging::trivial::info
 );
 
 void CloseLogging();

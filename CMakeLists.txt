@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 3.9)
 
-# We only use C++ compiler for this project.
-# By specifying the languages, project() will only check if there is a C++ compiler.
-# Default values of LANGUAGES is C and C++, if not specified.
 project(Dali
     LANGUAGES CXX)
 
@@ -10,7 +7,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
-    module/eigen-git-mirror)
+    module/eigen-git-mirror
+)
 
 ############################################################################
 # Detect if $ACT_HOME exits
@@ -24,46 +22,39 @@ endif ()
 include_directories($ENV{ACT_HOME}/include)
 link_directories($ENV{ACT_HOME}/lib)
 find_library(ACT_LIBRARY NAMES act PATHS $ENV{ACT_HOME}/lib REQUIRED)
+message(STATUS "Found libact.a: " ${ACT_LIBRARY})
 find_library(ACTVLSILIB_LIBRARY NAMES vlsilib PATHS $ENV{ACT_HOME}/lib REQUIRED)
+message(STATUS "Found libvlsilib.a: " ${ACTVLSILIB_LIBRARY})
 find_library(PHYDB_LIBRARY NAMES phydb PATHS $ENV{ACT_HOME}/lib REQUIRED)
+message(STATUS "Found libphydb.a: " ${PHYDB_LIBRARY})
+find_library(LEF_LIBRARY NAMES lef PATHS $ENV{ACT_HOME}/lib REQUIRED)
+message(STATUS "Found liblef.a: " ${LEF_LIBRARY})
+find_library(DEF_LIBRARY NAMES def PATHS $ENV{ACT_HOME}/lib REQUIRED)
+message(STATUS "Found libdef.a: " ${DEF_LIBRARY})
 
 ############################################################################
 # Check if the galois_eda library is installed
+# TO-BE-FIXED
 ############################################################################
 find_library(
     GALOIS_EDA_LIBRARY
     NAMES galois_eda
     PATHS $ENV{ACT_HOME}/lib
 )
+find_library(
+    GALOIS_SHMEM_LIBRARY
+    NAMES galois_shmem
+    PATHS $ENV{ACT_HOME}/lib
+)
+find_library(
+    NUMA_LIBRARY
+    NAMES numa
+)
 if (NOT GALOIS_EDA)
     message(STATUS "Cannot find libgalois_eda.a")
 else ()
-    message(STATUS "Found libgalois_eda.a")
+    message(STATUS "Found libgalois_eda.a: " ${GALOIS_EDA_LIBRARY})
 endif ()
-
-############################################################################
-# detect the installation path of LEF parser and DEF parser,
-# and check if the liblef and libdef library can be found or not
-############################################################################
-message(STATUS "Detecting environment variable LEF_ROOT...")
-if (DEFINED ENV{LEF_ROOT})
-    message(STATUS "Environment variable LEF_ROOT detected: " $ENV{LEF_ROOT})
-else ()
-    message(FATAL_ERROR "Environment variable LEF_ROOT not found")
-endif ()
-include_directories($ENV{LEF_ROOT}/include)
-link_directories($ENV{LEF_ROOT}/lib)
-find_library(LEF_LIBRARY NAMES lef PATHS $ENV{LEF_ROOT}/lib REQUIRED)
-
-message(STATUS "Detecting environment variable DEF_ROOT...")
-if (DEFINED ENV{DEF_ROOT})
-    message(STATUS "Environment variable LEF_ROOT detected: " $ENV{DEF_ROOT})
-else ()
-    message(FATAL_ERROR "Environment variable DEF_ROOT not found")
-endif ()
-include_directories($ENV{DEF_ROOT}/include)
-link_directories($ENV{DEF_ROOT}/lib)
-find_library(DEF_LIBRARY NAMES def PATHS $ENV{DEF_ROOT}/lib REQUIRED)
 
 ############################################################################
 # Detect if OpenMP library exists
@@ -79,7 +70,6 @@ message(STATUS "Boost library path: ${Boost_LIBRARY_DIRS}")
 message(STATUS "Boost include path: ${Boost_INCLUDE_DIR}")
 message(STATUS "Boost libs: ${Boost_LIBRARIES}")
 include_directories(${Boost_INCLUDE_DIRS})
-#link_libraries(${Boost_LIBRARIES})
 
 ############################################################################
 # for building a standalone static executable
@@ -128,7 +118,7 @@ if (APPLE)
     add_compile_options(-Xpreprocessor)
 endif ()
 add_compile_options(-fopenmp)
-add_compile_options(-Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic)
+add_compile_options(-Wall -Wextra -Wshadow -Wnon-virtual-dtor -Werror=return-type -pedantic)
 
 # Set the output directory of static libraries
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
@@ -167,11 +157,11 @@ add_library(
 )
 target_link_libraries(
     dalilib
-    ${ACT_LIBRARY} ${ACTVLSILIB_LIBRARY} ${PHYDB_LIBRARY} ${GALOIS_EDA_LIBRARY}
+    ${ACT_LIBRARY} ${ACTVLSILIB_LIBRARY} ${PHYDB_LIBRARY}
+    ${GALOIS_EDA_LIBRARY} ${GALOIS_SHMEM_LIBRARY} ${NUMA_LIBRARY}
     ${LEF_LIBRARY} ${DEF_LIBRARY}
     ${Boost_LIBRARIES}
     OpenMP::OpenMP_CXX
-    galois_eda galois_shmem numa
 )
 
 # Stand-alone placer, building from the dalilib library

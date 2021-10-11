@@ -7,8 +7,8 @@
 
 #include <phydb/phydb.h>
 
-#include "circuit.h"
-#include "placer.h"
+#include "dali/circuit/circuit.h"
+#include "dali/placer.h"
 
 namespace dali {
 
@@ -17,14 +17,12 @@ class Dali {
     Dali(
         phydb::PhyDB *phy_db_ptr,
         const std::string &severity_level,
-        const std::string &log_file_name = "",
-        const std::string &console_log_prefix = ""
+        const std::string &log_file_name = ""
     );
     Dali(
         phydb::PhyDB *phy_db_ptr,
         severity severity_level,
-        const std::string &log_file_name = "",
-        const std::string &console_log_prefix = ""
+        const std::string &log_file_name = ""
     );
 
     bool AutoIoPinPlacement();

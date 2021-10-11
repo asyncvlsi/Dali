@@ -46,8 +46,7 @@ int main() {
     Dali dali(
         phy_db,
         boost::log::trivial::info,
-        "",
-        "[dali] "
+        ""
     );
 
     // perform IO placement

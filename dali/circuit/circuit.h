@@ -141,11 +141,6 @@ public:
 
     void InitializeFromPhyDB(phydb::PhyDB *phy_db_ptr);
 
-    // LEF/DEF loader
-    void ReadLefFile(std::string const &name_of_file);
-
-    void ReadDefFile(std::string const &name_of_file);
-
     // simple CELL parser
     void ReadCellFile(std::string const &name_of_file);
 

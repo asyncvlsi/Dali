@@ -20,6 +20,7 @@ phydb::PlaceStatus PlaceStatusDali2PhyDB(PlaceStatus dali_place_status) {
             return phydb::UNPLACED;
         default:
             DaliExpects(false, "Unknown Dali placement status for cells");
+            return phydb::UNPLACED; // this will never be reached
     }
 }
 

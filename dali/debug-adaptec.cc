@@ -10,10 +10,9 @@
 #include <common/config.h>
 #include <phydb/phydb.h>
 
-#include "circuit.h"
-#include "common/logging.h"
-#include "common/si2lefdef.h"
-#include "placer.h"
+#include "dali/circuit/circuit.h"
+#include "dali/common/logging.h"
+#include "dali/placer.h"
 
 #define TEST_LG 0
 #define TEST_WLG 0
@@ -21,7 +20,7 @@
 using namespace dali;
 
 int main(int argc, char **argv) {
-  InitLogging(boost::log::trivial::trace);
+  InitLogging("", false, boost::log::trivial::trace);
 
   double tune_param;
   for (int i = 1; i < argc;) {

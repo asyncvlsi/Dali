@@ -665,14 +665,6 @@ void Circuit::InitializeFromPhyDB(phydb::PhyDB *phy_db_ptr) {
     LoadWell(phy_db_ptr);
 }
 
-void Circuit::ReadLefFile(std::string const &name_of_file) {
-    ReadLef(name_of_file, this);
-}
-
-void Circuit::ReadDefFile(std::string const &name_of_file) {
-    ReadDef(name_of_file, this);
-}
-
 void Circuit::ReadCellFile(std::string const &name_of_file) {
     std::ifstream ist(name_of_file.c_str());
     DaliExpects(ist.is_open(), "Cannot open input file: " + name_of_file);
