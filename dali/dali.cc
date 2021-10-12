@@ -112,14 +112,33 @@ void Dali::StartPlacement(double density, int number_of_threads) {
 
     GlobalPlace(density);
 
-    ExportOrdinaryComponentsToPhyDB();
-    phy_db_ptr_->CreatePhydbActAdaptor();
-    phy_db_ptr_->AddNetsAndCompPinsToSpefManager();
-    phy_db_ptr_->InitializeRCEstimator(phydb::RCEstimatorType::STARPIMODEL);
-    phy_db_ptr_->PushRCToSpefManager();
-    phy_db_ptr_->GetTimingApi().UpdateTimingIncremental();
-    std::cout << phy_db_ptr_->GetTimingApi().GetNumConstraints() << "\n";
-
+#if PHYDB_USE_GALOIS
+    if (phy_db_ptr_->GetTimingApi().GetParaManager() != nullptr) {
+        ExportOrdinaryComponentsToPhyDB();
+        phy_db_ptr_->CreatePhydbActAdaptor();
+        phy_db_ptr_->AddNetsAndCompPinsToSpefManager();
+        phy_db_ptr_->InitializeRCEstimator(phydb::RCEstimatorType::STARPIMODEL);
+        phy_db_ptr_->PushRCToSpefManager();
+        auto timing_api = phy_db_ptr_->GetTimingApi();
+        timing_api.UpdateTimingIncremental();
+        std::cout << "Number of timing constraints: "
+                  << timing_api.GetNumConstraints() << "\n";
+        for (int i = 0; i < (int) timing_api.GetNumConstraints(); ++i) {
+            double slack = timing_api.GetSlack(i);
+            std::cout << "Slack for timing constraint " << i << " " << slack
+                      << "\n";
+            if (slack < 0) {
+                phydb::PhydbPath fast_path;
+                phydb::PhydbPath slow_path;
+                timing_api.GetWitness(i, fast_path, slow_path);
+                std::cout << "Fast path size: " << fast_path.edges.size()
+                          << "\n";
+                std::cout << "Fast path size: " << slow_path.edges.size()
+                          << "\n";
+            }
+        }
+    }
+#endif
     UnifiedLegalization();
 }
 

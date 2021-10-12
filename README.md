@@ -8,11 +8,11 @@
   * GNU Make
 
 ### Pre-requisite
-  * Boost, version >= 1.71.0 (lower version may work, not tested)
-  * LEF/DEF parser: [LEF parser](https://github.com/The-OpenROAD-Project/lef) and [DEF parser](https://github.com/The-OpenROAD-Project/def). Using `cmake .. -DCMAKE_INSTALL_PREFIX=path/to/install` to specify the installation destination. This LEF/DEF parser requires BISON (>= 3.0.4)
-  * OpenMP (for MacOS user, `libomp` from Homebrew will work)
-  * [PhyDB](https://github.com/asyncvlsi/phyDB)
   * [ACT](https://github.com/asyncvlsi/act)
+  * Boost, version >= 1.71.0 (lower version may work, not tested)
+  * Si2 LEF/DEF parser, a mirror can be found [here](https://github.com/asyncvlsi/lefdef)
+  * [PhyDB](https://github.com/asyncvlsi/phyDB)
+  * OpenMP (for MacOS user, `libomp` from Homebrew will work)
   
 ### Clone repo and compile
     $ git clone --recursive https://github.com/Yang-Yihang/Dali.git
@@ -34,7 +34,6 @@ The default installation destination is the repo directory.
 
 ### 3rd Party Module List
   * Eigen: sparse matrix iterative linear solver
-  * Si2: open source LEF/DEF parser
   
 ### Miscellaneous
   * Eigen gives different results for different C++ compilers, because floating point addition is not necessarily associative
