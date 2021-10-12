@@ -34,27 +34,46 @@ message(STATUS "Found libdef.a: " ${DEF_LIBRARY})
 
 ############################################################################
 # Check if the galois_eda library is installed
-# TO-BE-FIXED
 ############################################################################
+message(STATUS "Detecting Galois libraries...")
+set(Galois_FOUND TRUE)
 find_library(
     GALOIS_EDA_LIBRARY
     NAMES galois_eda
     PATHS $ENV{ACT_HOME}/lib
 )
+set(Galois_LIBRARIES ${GALOIS_EDA_LIBRARY})
+if (GALOIS_EDA_LIBRARY)
+    message(STATUS "Found libgalois_eda.a: " ${GALOIS_EDA_LIBRARY})
+else()
+    message(STATUS "Cannot find libgalois_eda.a")
+    set(Galois_FOUND FALSE)
+endif()
 find_library(
     GALOIS_SHMEM_LIBRARY
     NAMES galois_shmem
     PATHS $ENV{ACT_HOME}/lib
 )
-find_library(
-    NUMA_LIBRARY
-    NAMES numa
-)
-if (NOT GALOIS_EDA)
-    message(STATUS "Cannot find libgalois_eda.a")
-else ()
-    message(STATUS "Found libgalois_eda.a: " ${GALOIS_EDA_LIBRARY})
-endif ()
+if (GALOIS_SHMEM_LIBRARY)
+    message(STATUS "Found libgalois_shmem.a: " ${GALOIS_SHMEM_LIBRARY})
+    set(Galois_LIBRARIES ${Galois_LIBRARIES} ${GALOIS_SHMEM_LIBRARY})
+else()
+    message(STATUS "Cannot find libgalois_shmem.a")
+    set(Galois_FOUND FALSE)
+endif()
+if (UNIX AND (NOT APPLE))
+    find_library(
+        NUMA_LIBRARY
+        NAMES numa
+    )
+    if (NUMA_LIBRARY)
+        message(STATUS "Found libnuma: " ${NUMA_LIBRARY})
+        set(Galois_LIBRARIES ${Galois_LIBRARIES} ${NUMA_LIBRARY})
+    else()
+        message(STATUS "Cannot find libnuma")
+        set(Galois_FOUND FALSE)
+    endif()
+endif()
 
 ############################################################################
 # Detect if OpenMP library exists
@@ -158,7 +177,7 @@ add_library(
 target_link_libraries(
     dalilib
     ${ACT_LIBRARY} ${ACTVLSILIB_LIBRARY} ${PHYDB_LIBRARY}
-    ${GALOIS_EDA_LIBRARY} ${GALOIS_SHMEM_LIBRARY} ${NUMA_LIBRARY}
+    ${Galois_LIBRARIES}
     ${LEF_LIBRARY} ${DEF_LIBRARY}
     ${Boost_LIBRARIES}
     OpenMP::OpenMP_CXX
