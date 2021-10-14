@@ -6,6 +6,8 @@
 
 #include <algorithm>
 
+#include "dali/common/helper.h"
+
 namespace dali {
 
 StdClusterWellLegalizer::StdClusterWellLegalizer() {

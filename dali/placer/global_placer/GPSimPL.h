@@ -13,9 +13,11 @@
 #include <map>
 #include <vector>
 
+#include "Eigen/IterativeLinearSolvers"
+#include "Eigen/Sparse"
+
 #include "dali/common/misc.h"
 #include "dali/placer/placer.h"
-#include "dali/solver.h"
 #include "GPSimPL/boxbin.h"
 #include "GPSimPL/cellcutpoint.h"
 #include "GPSimPL/gridbinindex.h"

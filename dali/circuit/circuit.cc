@@ -13,9 +13,9 @@
 #include <iostream>
 #include <string>
 
+#include "dali/common/helper.h"
 #include "dali/common/optregdist.h"
-#include "dali/common/si2lefdef.h"
-#include "status.h"
+#include "dali/circuit/status.h"
 
 #define EPSILON 1e-6
 
@@ -681,7 +681,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
                 double any_diff_spacing = 0;
                 do {
                     getline(ist, line);
-                    StrSplit(line, legalizer_fields);
+                    StrTokenize(line, legalizer_fields);
                     DaliExpects(legalizer_fields.size() == 2,
                                 "Expect: SPACING + Value, get: " + line);
                     if (legalizer_fields[0] == "SAME_DIFF_SPACING") {
@@ -709,7 +709,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
                 SetLegalizerSpacing(same_diff_spacing, any_diff_spacing);
             } else {
                 std::vector<std::string> well_fields;
-                StrSplit(line, well_fields);
+                StrTokenize(line, well_fields);
                 bool is_n_well = (well_fields[1] == "nwell");
                 if (!is_n_well)
                     DaliExpects(well_fields[1] == "pwell",
@@ -723,7 +723,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
                 double overhang = 0;
                 do {
                     if (line.find("MINWIDTH") != std::string::npos) {
-                        StrSplit(line, well_fields);
+                        StrTokenize(line, well_fields);
                         try {
                             width = std::stod(well_fields[1]);
                         } catch (...) {
@@ -733,7 +733,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
                                             + well_fields[1]);
                         }
                     } else if (line.find("OPPOSPACING") != std::string::npos) {
-                        StrSplit(line, well_fields);
+                        StrTokenize(line, well_fields);
                         try {
                             op_spacing = std::stod(well_fields[1]);
                         } catch (...) {
@@ -743,7 +743,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
                                             + well_fields[1]);
                         }
                     } else if (line.find("SPACING") != std::string::npos) {
-                        StrSplit(line, well_fields);
+                        StrTokenize(line, well_fields);
                         try {
                             spacing = std::stod(well_fields[1]);
                         } catch (...) {
@@ -753,7 +753,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
                                             + well_fields[1]);
                         }
                     } else if (line.find("MAXPLUGDIST") != std::string::npos) {
-                        StrSplit(line, well_fields);
+                        StrTokenize(line, well_fields);
                         try {
                             max_plug_dist = std::stod(well_fields[1]);
                         } catch (...) {
@@ -763,7 +763,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
                                             + well_fields[1]);
                         }
                     } else if (line.find("MAXPLUGDIST") != std::string::npos) {
-                        StrSplit(line, well_fields);
+                        StrTokenize(line, well_fields);
                         try {
                             overhang = std::stod(well_fields[1]);
                         } catch (...) {
@@ -795,7 +795,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
         if (line.find("MACRO") != std::string::npos) {
             //BOOST_LOG_TRIVIAL(info)   << line << "\n";
             std::vector<std::string> macro_fields;
-            StrSplit(line, macro_fields);
+            StrTokenize(line, macro_fields);
             std::string end_macro_flag = "END " + macro_fields[1];
             BlockTypeWell *well = AddBlockTypeWell(macro_fields[1]);
             auto blk_type = getBlockType(macro_fields[1]);
@@ -810,7 +810,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
                         if (line.find("RECT") != std::string::npos) {
                             double lx = 0, ly = 0, ux = 0, uy = 0;
                             std::vector<std::string> shape_fields;
-                            StrSplit(line, shape_fields);
+                            StrTokenize(line, shape_fields);
                             try {
                                 lx = std::stod(shape_fields[1]);
                                 ly = std::stod(shape_fields[2]);
@@ -3288,7 +3288,7 @@ void Circuit::LoadBookshelfPl(std::string const &name_of_file) {
 
     while (!ist.eof()) {
         getline(ist, line);
-        StrSplit(line, res);
+        StrTokenize(line, res);
         if (res.size() >= 4) {
             if (IsBlockExist(res[0])) {
                 try {

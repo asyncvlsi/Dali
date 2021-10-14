@@ -7,8 +7,9 @@
 
 #include <phydb/phydb.h>
 
-#include "dali/circuit/circuit.h"
-#include "dali/placer.h"
+#include "circuit/circuit.h"
+#include "placer.h"
+#include "timing/starpimodelestimator.h"
 
 namespace dali {
 
@@ -27,6 +28,8 @@ class Dali {
 
     bool AutoIoPinPlacement();
     bool IoPinPlacement(int argc, char **argv);
+
+    void InitializeRCEstimator();
 
     void StartPlacement(double density, int number_of_threads = 1);
 
@@ -61,6 +64,7 @@ class Dali {
     LGTetrisEx legalizer_;
     StdClusterWellLegalizer well_legalizer_;
     WellTapPlacer *well_tap_placer_ = nullptr;
+    StarPiModelEstimator *rc_estimator = nullptr;
 
     static void ReportIoPlacementUsage();
 

@@ -6,6 +6,7 @@
 #define DALI_SRC_CIRCUIT_BLOCKPINPAIR_H_
 
 #include "block.h"
+#include "dali/common/misc.h"
 
 namespace dali {
 
@@ -22,51 +23,57 @@ namespace dali {
  * ****/
 
 struct BlkPinPair {
-  Block *blk_ptr_;
-  Pin *pin_ptr_;
+    Block *blk_ptr_;
+    Pin *pin_ptr_;
 
-  BlkPinPair(Block *block_ptr, Pin *pin_ptr) : blk_ptr_(block_ptr), pin_ptr_(pin_ptr) {}
+    BlkPinPair(Block *block_ptr, Pin *pin_ptr)
+        : blk_ptr_(block_ptr), pin_ptr_(pin_ptr) {}
 
-  // get the pointer to the block
-  Block *BlkPtr() const { return blk_ptr_; }
+    // get the pointer to the block
+    Block *BlkPtr() const { return blk_ptr_; }
 
-  // get the index of this block
-  int BlkNum() const { return blk_ptr_->Num(); }
+    // get the index of this block
+    int BlkNum() const { return blk_ptr_->Num(); }
 
-  // get the pointer to the pin
-  Pin *PinPtr() const { return pin_ptr_; }
+    // get the pointer to the pin
+    Pin *PinPtr() const { return pin_ptr_; }
 
-  // get the index of this pin
-  int PinNum() const { return pin_ptr_->Num(); }
+    // get the index of this pin
+    int PinNum() const { return pin_ptr_->Num(); }
 
-  // get the offset of this pin in x-direction, the orientation of the block is considered
-  double OffsetX() const { return pin_ptr_->OffsetX(blk_ptr_->Orient()); }
+    // get the offset of this pin in x-direction, the orientation of the block is considered
+    double OffsetX() const { return pin_ptr_->OffsetX(blk_ptr_->Orient()); }
 
-  // get the offset of this pin in y-direction, the orientation of the block is considered
-  double OffsetY() const { return pin_ptr_->OffsetY(blk_ptr_->Orient()); }
+    // get the offset of this pin in y-direction, the orientation of the block is considered
+    double OffsetY() const { return pin_ptr_->OffsetY(blk_ptr_->Orient()); }
 
-  // get the absolute position of this pin in x-direction, the orientation of the block is considered
-  double AbsX() const { return OffsetX() + blk_ptr_->LLX(); }
+    // get the absolute position of this pin in x-direction, the orientation of the block is considered
+    double AbsX() const { return OffsetX() + blk_ptr_->LLX(); }
 
-  // get the absolute position of this pin in y-direction, the orientation of the block is considered
-  double AbsY() const { return OffsetY() + blk_ptr_->LLY(); }
+    // get the absolute position of this pin in y-direction, the orientation of the block is considered
+    double AbsY() const { return OffsetY() + blk_ptr_->LLY(); }
 
-  // get the block name
-  const std::string *BlockNamePtr() const { return blk_ptr_->NamePtr(); }
+    // get location of this pin
+    double2d Location() const { return double2d(AbsX(), AbsY()); }
 
-  // get the pin name
-  const std::string *PinNamePtr() const { return pin_ptr_->Name(); }
+    // get the block name
+    const std::string *BlockNamePtr() const { return blk_ptr_->NamePtr(); }
 
-  // some boolean operators
-  bool operator<(const BlkPinPair &rhs) const {
-    return (BlkNum() < rhs.BlkNum()) || ((BlkNum() == rhs.BlkNum()) && (PinNum() < rhs.PinNum()));
-  }
-  bool operator>(const BlkPinPair &rhs) const {
-    return (BlkNum() > rhs.BlkNum()) || ((BlkNum() == rhs.BlkNum()) && (PinNum() > rhs.PinNum()));
-  }
-  bool operator==(const BlkPinPair &rhs) const {
-    return (BlkNum() == rhs.BlkNum()) && (PinNum() == rhs.PinNum());
-  }
+    // get the pin name
+    const std::string *PinNamePtr() const { return pin_ptr_->Name(); }
+
+    // some boolean operators
+    bool operator<(const BlkPinPair &rhs) const {
+        return (BlkNum() < rhs.BlkNum())
+            || ((BlkNum() == rhs.BlkNum()) && (PinNum() < rhs.PinNum()));
+    }
+    bool operator>(const BlkPinPair &rhs) const {
+        return (BlkNum() > rhs.BlkNum())
+            || ((BlkNum() == rhs.BlkNum()) && (PinNum() > rhs.PinNum()));
+    }
+    bool operator==(const BlkPinPair &rhs) const {
+        return (BlkNum() == rhs.BlkNum()) && (PinNum() == rhs.PinNum());
+    }
 };
 
 }

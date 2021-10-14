@@ -8,7 +8,7 @@
 #include <iostream>
 #include <vector>
 
-#include "dali.h"
+#include "dali/dali.h"
 
 #define TEST_LG 0
 
@@ -58,8 +58,8 @@ int main() {
 
     int count = 2;
     char *arguments[2] = {
-        "place-io",
-        "m1"
+        (char *) "place-io",
+        (char *) "m1"
     };
 
     dali.IoPinPlacement(count, arguments);
@@ -68,18 +68,18 @@ int main() {
 
     int place_count = 12;
     char *place_argvs[12] = {
-        "place-io",
-        "--place",
-        "go",
-        "m2",
-        "-211",
-        "1",
-        "211",
-        "101",
-        "FIXED",
-        "362401",
-        "185401",
-        "E"
+        (char *) "place-io",
+        (char *) "--place",
+        (char *) "go",
+        (char *) "m2",
+        (char *) "-211",
+        (char *) "1",
+        (char *) "211",
+        (char *) "101",
+        (char *) "FIXED",
+        (char *) "362401",
+        (char *) "185401",
+        (char *) "E"
     };
     dali.IoPinPlacement(place_count, place_argvs);
 

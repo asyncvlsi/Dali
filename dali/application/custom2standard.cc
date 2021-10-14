@@ -7,9 +7,9 @@
 #include <iostream>
 #include <iomanip>
 
-#include "dali/circuit.h"
+#include "dali/circuit/circuit.h"
+#include "dali/common/helper.h"
 #include "dali/common/logging.h"
-#include "common/misc.h"
 
 using namespace dali;
 
@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
 
     while (!ist.eof()) {
         if (line.find("MACRO") != std::string::npos) {
-            StrSplit(line, line_field);
+            StrTokenize(line, line_field);
             std::string type_name = line_field[1];
             std::string end_macro_flag = "END " + type_name;
             BlockType *type = circuit.getBlockType(type_name);
@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
             do {
                 getline(ist, line);
                 if (line.find("PIN ") != std::string::npos) {
-                    StrSplit(line, line_field);
+                    StrTokenize(line, line_field);
                     std::string pin_name = line_field[1];
                     std::string end_pin_flag = "END " + pin_name;
                     std::string pin_layer;
@@ -110,13 +110,13 @@ int main(int argc, char *argv[]) {
                         getline(ist, line);
                         if (pin_name == "Vdd" || pin_name == "GND") continue;
                         if (line.find("LAYER ") != std::string::npos) {
-                            StrSplit(line, line_field);
+                            StrTokenize(line, line_field);
                             pin_layer = line_field[1];
                             //BOOST_LOG_TRIVIAL(info)   << pin_layer << " " << (pin_layer == *(hor_layer->Name())) << "\n";
                         }
                         if (line.find("RECT ") != std::string::npos
                             && pin_layer == *(hor_layer->Name())) {
-                            StrSplit(line, line_field);
+                            StrTokenize(line, line_field);
                             std::string str_ly = line_field[2];
                             double ly = std::stod(str_ly);
                             std::string str_uy = line_field[4];
@@ -200,7 +200,7 @@ int main(int argc, char *argv[]) {
             do {
                 getline(ist, line);
                 if (line.find("SIZE") != std::string::npos) {
-                    StrSplit(line, line_field);
+                    StrTokenize(line, line_field);
                     ost << "    " << line_field[0] << " " << line_field[1]
                         << " " << line_field[2] << " " << std::fixed
                         << std::setprecision(6) << std_height
@@ -227,7 +227,7 @@ int main(int argc, char *argv[]) {
     while (!ist.eof()) {
         if (line.find("MACRO") != std::string::npos) {
             ost << line << "\n";
-            StrSplit(line, line_field);
+            StrTokenize(line, line_field);
             std::string type_name = line_field[1];
             std::string end_macro_flag = "END " + type_name;
             BOOST_LOG_TRIVIAL(info) << "modifying " << type_name << "\n";
@@ -239,7 +239,7 @@ int main(int argc, char *argv[]) {
                     break;
                 }
             }
-            Assert(bbox_ptr != nullptr, "Cannot find type?");
+            DaliExpects(bbox_ptr != nullptr, "Cannot find type?");
 
             double type_p_height =
                 circuit.getBlockType(type_name)->WellPtr()->PHeight()
@@ -248,11 +248,11 @@ int main(int argc, char *argv[]) {
             do {
                 getline(ist, line);
                 if (line.find("SIZE") != std::string::npos) {
-                    StrSplit(line, line_field);
+                    StrTokenize(line, line_field);
                     ost << "    " << line_field[0] << " " << line_field[1]
                         << " " << line_field[2] << " " << std_height << " ;\n";
                 } else if (line.find("PIN ") != std::string::npos) {
-                    StrSplit(line, line_field);
+                    StrTokenize(line, line_field);
                     std::string pin_name = line_field[1];
                     std::string end_pin_flag = "END " + pin_name;
                     ost << line << "\n";
@@ -318,7 +318,7 @@ int main(int argc, char *argv[]) {
                         }
 
                         if (line.find("RECT ") != std::string::npos) {
-                            StrSplit(line, line_field);
+                            StrTokenize(line, line_field);
                             std::string str_ly = line_field[2];
                             double ly = std::stod(str_ly);
                             std::string str_uy = line_field[4];

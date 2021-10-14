@@ -4,6 +4,7 @@
 
 #include "wellplaceflow.h"
 
+#include "dali/common/helper.h"
 #include "dali/placer/placer.h"
 
 namespace dali {

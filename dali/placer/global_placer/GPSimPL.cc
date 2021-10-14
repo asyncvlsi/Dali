@@ -9,8 +9,8 @@
 #include <algorithm>
 
 #include <omp.h>
-#include <unsupported/Eigen/SparseExtra>
 
+#include "dali/common/helper.h"
 #include "dali/common/logging.h"
 #include "dali/placer/legalizer/LGTetrisEx.h"
 

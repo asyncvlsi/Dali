@@ -6,6 +6,7 @@
 
 #include <algorithm>
 
+#include "dali/common/helper.h"
 #include "dali/common/logging.h"
 
 namespace dali {

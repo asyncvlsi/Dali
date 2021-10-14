@@ -1,28 +1,33 @@
 //
-// Created by Yihang Yang on 1/17/20.
+// Created by Yihang Yang on 9/24/19.
 //
 
 /****
- * This is a converter, which can convert a LEFDEF file to bookshelf files.
+ * This is a stand-alone hpwl calculator, it will report:
+ * 1. HPWL
+ *    pin-to-pin
+ *    center-to-center
+ * 2. Weighted HPWL, a weight file needs to be provided
+ *    pin-to-pin
+ *    center-to-center
  * ****/
-
+//TODO: fix this
 #include <iostream>
 
-#include "dali/circuit.h"
-#include "dali/common/logging.h"
+#include "dali/circuit/circuit.h"
 
 void ReportUsage();
 
 using namespace dali;
 
 int main(int argc, char *argv[]) {
-    if (argc != 7) {
+    if (argc != 5) {
         ReportUsage();
         return 1;
     }
+    InitLogging();
     std::string lef_file_name;
     std::string def_file_name;
-    std::string book_shelf_out;
 
     for (int i = 1; i < argc;) {
         std::string arg(argv[i++]);
@@ -30,8 +35,6 @@ int main(int argc, char *argv[]) {
             lef_file_name = std::string(argv[i++]);
         } else if (arg == "-def" && i < argc) {
             def_file_name = std::string(argv[i++]);
-        } else if ((arg == "-bs" || arg == "-bookshelf") && i < argc) {
-            book_shelf_out = std::string(argv[i++]);
         } else {
             BOOST_LOG_TRIVIAL(info) << "Unknown command line option: "
                                     << argv[i] << "\n";
@@ -45,23 +48,31 @@ int main(int argc, char *argv[]) {
     Circuit circuit;
     circuit.InitializeFromPhyDB(&phy_db);
     // might need to print out some circuit info here
-    circuit.SaveBookshelfNode(book_shelf_out + ".nodes");
-    circuit.SaveBookshelfNet(book_shelf_out + ".nets");
-    circuit.SaveBookshelfPl(book_shelf_out + ".pl");
-    circuit.SaveBookshelfScl(book_shelf_out + ".scl");
-    circuit.SaveBookshelfWts(book_shelf_out + ".wts");
-    circuit.SaveBookshelfAux(book_shelf_out);
-
+    double hpwl_x = circuit.WeightedHPWLX();
+    double hpwl_y = circuit.WeightedHPWLY();
+    BOOST_LOG_TRIVIAL(info)
+        << "Pin-to-Pin HPWL\n"
+        << "  HPWL in the x direction: " << hpwl_x << "\n"
+        << "  HPWL in the y direction: " << hpwl_y << "\n"
+        << "  HPWL total:              " << hpwl_x + hpwl_y
+        << "\n";
+    hpwl_x = circuit.HPWLCtoCX();
+    hpwl_y = circuit.HPWLCtoCY();
+    BOOST_LOG_TRIVIAL(info)
+        << "Center-to-Center HPWL\n"
+        << "  HPWL in the x direction: " << hpwl_x << "\n"
+        << "  HPWL in the y direction: " << hpwl_y << "\n"
+        << "  HPWL total:              " << hpwl_x + hpwl_y
+        << "\n";
     return 0;
 }
 
 void ReportUsage() {
     BOOST_LOG_TRIVIAL(info)
         << "\033[0;36m"
-        << "Usage: lefdef2bookshelf\n"
+        << "Usage: hpwl\n"
         << " -lef <file.lef>\n"
         << " -def <file.def>\n"
-        << " -bs/-bookshelf <output> (.aux .nets .nodes .pl .scl .wts file will be created)\n"
         << "(order does not matter)"
         << "\033[0m\n";
 }

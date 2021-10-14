@@ -42,8 +42,8 @@ find_library(
     NAMES galois_eda
     PATHS $ENV{ACT_HOME}/lib
 )
-set(Galois_LIBRARIES ${GALOIS_EDA_LIBRARY})
 if (GALOIS_EDA_LIBRARY)
+    set(Galois_LIBRARIES ${GALOIS_EDA_LIBRARY})
     message(STATUS "Found libgalois_eda.a: " ${GALOIS_EDA_LIBRARY})
 else()
     message(STATUS "Cannot find libgalois_eda.a")
@@ -55,8 +55,8 @@ find_library(
     PATHS $ENV{ACT_HOME}/lib
 )
 if (GALOIS_SHMEM_LIBRARY)
-    message(STATUS "Found libgalois_shmem.a: " ${GALOIS_SHMEM_LIBRARY})
     set(Galois_LIBRARIES ${Galois_LIBRARIES} ${GALOIS_SHMEM_LIBRARY})
+    message(STATUS "Found libgalois_shmem.a: " ${GALOIS_SHMEM_LIBRARY})
 else()
     message(STATUS "Cannot find libgalois_shmem.a")
     set(Galois_FOUND FALSE)
@@ -67,8 +67,8 @@ if (UNIX AND (NOT APPLE))
         NAMES numa
     )
     if (NUMA_LIBRARY)
-        message(STATUS "Found libnuma: " ${NUMA_LIBRARY})
         set(Galois_LIBRARIES ${Galois_LIBRARIES} ${NUMA_LIBRARY})
+        message(STATUS "Found libnuma: " ${NUMA_LIBRARY})
     else()
         message(STATUS "Cannot find libnuma")
         set(Galois_FOUND FALSE)
@@ -152,18 +152,15 @@ file(
     dali/circuit/*.cc
     dali/common/*.cc
     dali/placer/*.cc
-    dali/placer/globalPlacer/*.cc
-    dali/placer/globalPlacer/GPSimPL/*.cc
-    dali/placer/detailedPlacer/*.cc
-    dali/placer/detailedPlacer/MDPlacer/*.cc
-    dali/placer/ioPlacer/*.cc
+    dali/placer/global_placer/*.cc
+    dali/placer/global_placer/GPSimPL/*.cc
+    dali/placer/io_placer/*.cc
     dali/placer/legalizer/*.cc
     dali/placer/legalizer/LGTetris/*.cc
-    dali/placer/postLegalOptimizer/*.cc
-    dali/placer/postLegalOptimizer/PLOSlide/*.cc
-    dali/placer/wellLegalizer/*.cc
-    dali/placer/wellPlaceFlow/*.cc
-    dali/placer/wellTapPlacer/*.cc
+    dali/placer/well_legalizer/*.cc
+    dali/placer/well_place_flow/*.cc
+    dali/placer/welltap_placer/*.cc
+    dali/timing/*.cc
 )
 
 # Create a library, static libraries are controlled by ARCHIVE_OUTPUT_DIRECTORY property
@@ -186,7 +183,7 @@ target_link_libraries(
 # Stand-alone placer, building from the dalilib library
 add_executable(
     dali
-    dali/dali_standalone.cc
+    dali/application/dali_standalone.cc
 )
 target_link_libraries(
     dali
@@ -196,8 +193,7 @@ target_link_libraries(
 # Debugging executable, building from the dalilib library
 add_executable(
     dali-debug
-    EXCLUDE_FROM_ALL
-    dali/debug.cc
+    dali/application/debug.cc
 )
 target_link_libraries(
     dali-debug
@@ -207,8 +203,7 @@ target_link_libraries(
 # Debugging executable, building from the dalilib library
 add_executable(
     wellflow
-    EXCLUDE_FROM_ALL
-    dali/wellflow.cc
+    dali/application/wellflow.cc
 )
 target_link_libraries(
     wellflow
@@ -218,8 +213,7 @@ target_link_libraries(
 # Debugging executable, building from the dalilib library
 add_executable(
     adaptec-debug
-    EXCLUDE_FROM_ALL
-    dali/debug-adaptec.cc
+    dali/application/debug-adaptec.cc
 )
 target_link_libraries(
     adaptec-debug
@@ -229,8 +223,7 @@ target_link_libraries(
 # Stand-alone hpwl calculator, building from the dalilib library
 add_executable(
     hpwl
-    EXCLUDE_FROM_ALL
-    dali/utility/hpwl.cc
+    dali/application/hpwl.cc
 )
 target_link_libraries(
     hpwl
@@ -240,8 +233,7 @@ target_link_libraries(
 # Stand-alone LEFDEF to Bookshelf format tool, building from the dalilib library
 add_executable(
     lefdef2bookshelf
-    EXCLUDE_FROM_ALL
-    dali/utility/lefdef2bookshelf.cc
+    dali/application/lefdef2bookshelf.cc
 )
 target_link_libraries(
     lefdef2bookshelf
@@ -251,8 +243,7 @@ target_link_libraries(
 # Stand-alone Bookshelf to LEFDEF format tool, building from the dalilib library
 add_executable(
     bookshelf2def
-    EXCLUDE_FROM_ALL
-    dali/utility/bookshelf2def.cc
+    dali/application/bookshelf2def.cc
 )
 target_link_libraries(
     bookshelf2def
@@ -262,8 +253,7 @@ target_link_libraries(
 # Stand-alone custom cell design to standard cell design tool
 add_executable(
     custom2standard
-    EXCLUDE_FROM_ALL
-    dali/utility/custom2standard.cc
+    dali/application/custom2standard.cc
 )
 target_link_libraries(
     custom2standard
@@ -273,8 +263,7 @@ target_link_libraries(
 # Stand-alone custom cell design to standard cell design tool
 add_executable(
     create_circuit
-    EXCLUDE_FROM_ALL
-    dali/example_code/create_circuit.cc
+    dali/application/create_circuit.cc
 )
 target_link_libraries(
     create_circuit
@@ -313,8 +302,8 @@ install(
     PATTERN "*.h"
 )
 install(
-    DIRECTORY dali/../module/eigen-git-mirror/Eigen/
-    DESTINATION ${INCLUDE_DESTIN}/dali/Eigen
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/module/eigen-git-mirror/Eigen/
+    DESTINATION ${INCLUDE_DESTIN}/Eigen
 )
 
 ############################################################################

@@ -9,22 +9,22 @@
 #include "dali/placer/placer.h"
 
 /****Global placer****/
-#include "dali/placer/globalPlacer/GPSimPL.h"
+#include "dali/placer/global_placer/GPSimPL.h"
 
 /****Legalizer****/
 #include "dali/placer/legalizer/LGTetris.h"
 #include "dali/placer/legalizer/LGTetrisEx.h"
 
 /****Well Legalizer****/
-#include "dali/placer/wellLegalizer/clusterwelllegalizer.h"
-#include "dali/placer/wellLegalizer/stdclusterwelllegalizer.h"
-#include "dali/placer/wellLegalizer/welllegalizer.h"
+#include "dali/placer/well_legalizer/clusterwelllegalizer.h"
+#include "dali/placer/well_legalizer/stdclusterwelllegalizer.h"
+#include "dali/placer/well_legalizer/welllegalizer.h"
 
 /****Well Placement Flow****/
-#include "dali/placer/wellPlaceFlow/wellplaceflow.h"
-#include "dali/placer/wellTapPlacer/welltapplacer.h"
+#include "dali/placer/well_place_flow/wellplaceflow.h"
+#include "dali/placer/welltap_placer/welltapplacer.h"
 
 /****IO Placer****/
-#include "dali/placer/ioPlacer/ioplacer.h"
+#include "dali/placer/io_placer/ioplacer.h"
 
 #endif //DALI_SRC_PLACER_H_

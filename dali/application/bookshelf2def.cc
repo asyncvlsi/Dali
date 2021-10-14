@@ -8,7 +8,7 @@
 
 #include <iostream>
 
-#include "dali/circuit.h"
+#include "dali/circuit/circuit.h"
 #include "dali/common/logging.h"
 
 void ReportUsage();

@@ -12,7 +12,6 @@
 #include <common/config.h>
 
 #include "dali/circuit/circuit.h"
-#include "dali/common/memory.h"
 #include "dali/common/timing.h"
 
 namespace dali {
@@ -38,13 +37,16 @@ class Placer {
     virtual ~Placer() = default;
 
     virtual void LoadConf(std::string const &config_file) {
-        BOOST_LOG_TRIVIAL(warning) << "This is a virtual function, which is not supposed to be called directly\n";
+        BOOST_LOG_TRIVIAL(warning)
+            << "This is a virtual function, which is not supposed to be called directly\n";
     };
 
     virtual void SetInputCircuit(Circuit *circuit) {
-        DaliExpects(circuit != nullptr, "Invalid input circuit: not allowed to set nullptr as an input!");
+        DaliExpects(circuit != nullptr,
+                    "Invalid input circuit: not allowed to set nullptr as an input!");
         if (circuit->getBlockList()->empty()) {
-            BOOST_LOG_TRIVIAL(info) << "Invalid input circuit: empty block list, nothing to place!\n";
+            BOOST_LOG_TRIVIAL(info)
+                << "Invalid input circuit: empty block list, nothing to place!\n";
             return;
         }
         if (circuit->getNetList()->empty()) {
@@ -55,17 +57,20 @@ class Placer {
     }
     Circuit *GetCircuit() { return circuit_; }
     void SetFillingRate(double rate = 2.0 / 3.0) {
-        DaliExpects((rate <= 1) && (rate > 0), "Invalid value: value should be in range (0, 1]");
+        DaliExpects((rate <= 1) && (rate > 0),
+                    "Invalid value: value should be in range (0, 1]");
         filling_rate_ = rate;
     }
     double FillingRate() const { return filling_rate_; }
     void SetAspectRatio(double ratio = 1.0) {
-        DaliExpects(ratio >= 0, "Invalid value: value should be in range (0, +infinity)");
+        DaliExpects(ratio >= 0,
+                    "Invalid value: value should be in range (0, +infinity)");
         aspect_ratio_ = ratio;
     }
     double AspectRatio() const { return aspect_ratio_; }
     void SetSpaceBlockRatio(double ratio) {
-        DaliExpects(ratio >= 1, "Invalid value: value should be in range [1, +infinity)");
+        DaliExpects(ratio >= 1,
+                    "Invalid value: value should be in range [1, +infinity)");
         filling_rate_ = 1. / ratio;
     }
 
@@ -87,39 +92,37 @@ class Placer {
 
     void UpdateAspectRatio();
     void NetSortBlkPin() {
-        DaliExpects(circuit_ != nullptr, "No input circuit specified, cannot modify any circuits!");
+        DaliExpects(circuit_ != nullptr,
+                    "No input circuit specified, cannot modify any circuits!");
         GetCircuit()->NetSortBlkPin();
     }
     virtual bool StartPlacement();
 
     double WeightedHPWLX() {
-        DaliExpects(circuit_ != nullptr, "No input circuit specified, cannot compute WeightedHPWLX!");
+        DaliExpects(circuit_ != nullptr,
+                    "No input circuit specified, cannot compute WeightedHPWLX!");
         return GetCircuit()->WeightedHPWLX();
     }
     double WeightedHPWLY() {
-        DaliExpects(circuit_ != nullptr, "No input circuit specified, cannot compute WeightedHPWLY!");
+        DaliExpects(circuit_ != nullptr,
+                    "No input circuit specified, cannot compute WeightedHPWLY!");
         return GetCircuit()->WeightedHPWLY();
     }
     double WeightedHPWL() {
-        DaliExpects(circuit_ != nullptr, "No input circuit specified, cannot compute HPWL!");
+        DaliExpects(circuit_ != nullptr,
+                    "No input circuit specified, cannot compute HPWL!");
         return GetCircuit()->WeightedHPWL();
     }
 
     void ReportHPWL() {
-        DaliExpects(circuit_ != nullptr, "No input circuit specified, cannot compute HPWL!");
+        DaliExpects(circuit_ != nullptr,
+                    "No input circuit specified, cannot compute HPWL!");
         circuit_->ReportHPWL();
-    }
-    static void ReportMemory() {
-        auto peak_mem = getPeakRSS();
-        auto curr_mem = getCurrentRSS();
-        BOOST_LOG_TRIVIAL(info) << "(peak memory: "
-                                << (peak_mem >> 20u) << " MB, "
-                                << " current memory: "
-                                << (curr_mem >> 20u) << " MB)\n";
     }
 
     void ReportHPWLCtoC() {
-        DaliExpects(circuit_ != nullptr, "No input circuit specified, cannot compute HPWLCtoC!");
+        DaliExpects(circuit_ != nullptr,
+                    "No input circuit specified, cannot compute HPWLCtoC!");
         GetCircuit()->ReportHPWLCtoC();
     }
 
@@ -131,17 +134,27 @@ class Placer {
     void GenMATLABTable(std::string const &name_of_file) {
         circuit_->GenMATLABTable(name_of_file);
     }
-    virtual void GenMATLABWellTable(std::string const &name_of_file, int well_emit_mode) {
+    virtual void GenMATLABWellTable(
+        std::string const &name_of_file,
+        int well_emit_mode
+    ) {
         circuit_->GenMATLABWellTable(name_of_file);
     }
     void GenMATLABScriptPlaced(std::string const &name_of_file = "block_net_list.m");
-    bool SaveNodeTerminal(std::string const &terminal_file = "terminal.txt",
-                          std::string const &node_file = "nodes.txt");
+    bool SaveNodeTerminal(
+        std::string const &terminal_file = "terminal.txt",
+        std::string const &node_file = "nodes.txt"
+                                       "");
     void SaveDEFFile(std::string const &name_of_file = "circuit.def");
-    void SaveDEFFile(std::string const &name_of_file, std::string const &input_def_file);
-    virtual void EmitDEFWellFile(std::string const &name_of_file,
-                                 int well_emit_mode,
-                                 bool enable_emitting_cluster = true);
+    void SaveDEFFile(
+        std::string const &name_of_file,
+        std::string const &input_def_file
+    );
+    virtual void EmitDEFWellFile(
+        std::string const &name_of_file,
+        int well_emit_mode,
+        bool enable_emitting_cluster = true
+    );
 
     /****for testing purposes****/
     void ShiftX(double shift_x);

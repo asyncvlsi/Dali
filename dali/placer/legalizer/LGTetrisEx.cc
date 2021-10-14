@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <list>
 
+#include "dali/common/helper.h"
+
 namespace dali {
 
 LGTetrisEx::LGTetrisEx()

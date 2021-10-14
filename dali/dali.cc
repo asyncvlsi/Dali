@@ -6,6 +6,7 @@
 
 #include <cstdlib>
 
+#include "dali/common/helper.h"
 #include "dali/common/phydbhelper.h"
 
 namespace dali {
@@ -96,6 +97,10 @@ bool Dali::IoPinPlacement(int argc, char **argv) {
     }
 }
 
+void Dali::InitializeRCEstimator() {
+    rc_estimator = new StarPiModelEstimator(phy_db_ptr_, &circuit_);
+}
+
 void Dali::StartPlacement(double density, int number_of_threads) {
     int num_of_thread_openmp = number_of_threads;
     omp_set_num_threads(num_of_thread_openmp);
@@ -113,12 +118,12 @@ void Dali::StartPlacement(double density, int number_of_threads) {
     GlobalPlace(density);
 
 #if PHYDB_USE_GALOIS
-    if (phy_db_ptr_->GetTimingApi().GetParaManager() != nullptr) {
+    if (phy_db_ptr_->GetTimingApi().ReadyForTimingDriven()) {
         ExportOrdinaryComponentsToPhyDB();
         phy_db_ptr_->CreatePhydbActAdaptor();
         phy_db_ptr_->AddNetsAndCompPinsToSpefManager();
-        phy_db_ptr_->InitializeRCEstimator(phydb::RCEstimatorType::STARPIMODEL);
-        phy_db_ptr_->PushRCToSpefManager();
+        InitializeRCEstimator();
+        rc_estimator->PushNetRCToManager();
         auto timing_api = phy_db_ptr_->GetTimingApi();
         timing_api.UpdateTimingIncremental();
         std::cout << "Number of timing constraints: "

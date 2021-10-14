@@ -12,7 +12,7 @@
  * circuit.AddBlkTypePinRect(pin_ptr, 0, 1.9, 0.2, 2.1); // add the shape of this Pin
  ****/
 
-#include "dali/circuit.h"
+#include "dali/circuit/circuit.h"
 
 using namespace dali;
 

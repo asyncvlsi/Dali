@@ -7,7 +7,8 @@
 
 #include <vector>
 
-#include "dali/solver.h"
+#include "Eigen/IterativeLinearSolvers"
+#include "Eigen/Sparse"
 
 #include "net.h"
 

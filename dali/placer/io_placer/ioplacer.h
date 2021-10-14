@@ -9,7 +9,7 @@
 
 #include <phydb/phydb.h>
 
-#include "dali/circuit.h"
+#include "dali/circuit/circuit.h"
 #include "dali/placer.h"
 
 #include "ioboundaryspace.h"
@@ -34,19 +34,25 @@ class IoPlacer {
     void SetCiruit(Circuit *circuit);
     void SetPhyDB(phydb::PhyDB *phy_db_ptr);
 
-    bool AddIoPin(std::string &iopin_name, std::string &net_name,
-                  std::string &direction, std::string &use);
+    bool AddIoPin(
+        std::string &iopin_name,
+        std::string &net_name,
+        std::string &direction,
+        std::string &use
+    );
     bool AddCmd(int argc, char **argv);
-    bool PlaceIoPin(std::string &iopin_name,
-                    std::string &metal_name,
-                    int shape_lx,
-                    int shape_ly,
-                    int shape_ux,
-                    int shape_uy,
-                    std::string &place_status,
-                    int loc_x,
-                    int loc_y,
-                    std::string &orient);
+    bool PlaceIoPin(
+        std::string &iopin_name,
+        std::string &metal_name,
+        int shape_lx,
+        int shape_ly,
+        int shape_ux,
+        int shape_uy,
+        std::string &place_status,
+        int loc_x,
+        int loc_y,
+        std::string &orient
+    );
     bool PlaceCmd(int argc, char **argv);
 
     bool PartialPlaceIoPin();
