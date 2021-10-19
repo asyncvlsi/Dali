@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 3/11/20.
 //
 
-#ifndef DALI_SRC_COMMON_DISPLACEVIEWER_H_
-#define DALI_SRC_COMMON_DISPLACEVIEWER_H_
+#ifndef DALI_DALI_COMMON_DISPLACEVIEWER_H_
+#define DALI_DALI_COMMON_DISPLACEVIEWER_H_
 
 #include <fstream>
 #include <string>
@@ -59,4 +59,4 @@ struct DisplaceViewer {
 
 }
 
-#endif //DALI_SRC_COMMON_DISPLACEVIEWER_H_
+#endif //DALI_DALI_COMMON_DISPLACEVIEWER_H_

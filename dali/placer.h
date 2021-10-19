@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 9/5/19.
 //
 
-#ifndef DALI_SRC_PLACER_H_
-#define DALI_SRC_PLACER_H_
+#ifndef DALI_DALI_PLACER_H_
+#define DALI_DALI_PLACER_H_
 
 /****placer base class****/
 #include "dali/placer/placer.h"
@@ -27,4 +27,4 @@
 /****IO Placer****/
 #include "dali/placer/io_placer/ioplacer.h"
 
-#endif //DALI_SRC_PLACER_H_
+#endif //DALI_DALI_PLACER_H_

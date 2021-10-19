@@ -37,6 +37,7 @@ int main(int argc, char *argv[]) {
     std::string log_file_name;
     bool overwrite_logfile = false;
     bool is_no_legal = false;
+    severity verbose_level = logging::trivial::info;
     double x_grid = 0, y_grid = 0;
     double target_density = -1;
     int io_metal_layer = 0;
@@ -104,16 +105,14 @@ int main(int argc, char *argv[]) {
             str_verbose_level = std::string(argv[i++]);
             int tmp;
             try {
-                tmp = std::stoi(str_verbose_level);
+                verbose_level = StrToLoggingLevel(str_verbose_level);
             } catch (...) {
-                tmp = -1;
-            }
-            if (tmp > 5 || tmp < 0) {
-                std::cout << "Invalid verbosity level\n";
+                std::cout << "Invalid stoi conversion: "
+                          << str_verbose_level
+                          << "\n";
                 ReportUsage();
                 return 0;
             }
-            // TODO : verbose level
         } else if (arg == "-overwrite") {
             overwrite_logfile = true;
         } else if (arg == "-nolegal") {
@@ -141,7 +140,11 @@ int main(int argc, char *argv[]) {
     double file_wall_time = get_wall_time();
     double file_cpu_time = get_cpu_time();
 
-    InitLogging(log_file_name, overwrite_logfile, boost::log::trivial::info);
+    InitLogging(
+        log_file_name,
+        overwrite_logfile,
+        verbose_level
+    );
     PrintSoftwareStatement();
 
     int num_of_thread_openmp = 1;
@@ -210,9 +213,6 @@ int main(int argc, char *argv[]) {
             Placer *legalizer = new LGTetrisEx;
             legalizer->TakeOver(gb_placer);
             legalizer->StartPlacement();
-
-            // TODO fix this
-            //legalizer->SimpleIoPinPlacement(0);
             delete legalizer;
         }
 
@@ -227,6 +227,7 @@ int main(int argc, char *argv[]) {
 
         auto *well_legalizer = new StdClusterWellLegalizer;
         well_legalizer->TakeOver(gb_placer);
+        well_legalizer->SetStripePartitionMode(SCAVENGE);
         well_legalizer->StartPlacement();
         //well_legalizer->GenMATLABTable("sc_result.txt");
         //well_legalizer->GenMatlabClusterTable("sc_result");
@@ -235,11 +236,10 @@ int main(int argc, char *argv[]) {
         if (!output_name.empty()) {
             well_legalizer->EmitDEFWellFile(output_name, 1);
         }
-        // TODO fix this
-        //well_legalizer->SimpleIoPinPlacement(0);
         delete well_legalizer;
         delete gb_placer;
     }
+    std::cout << "I/O placement is skipped\n"; // TODO: reorganize IO placer and put it back!
     circuit.SaveDefFile(output_name, "", def_file_name, 1, 1, 2, 1);
     circuit.SaveDefFile(output_name, "_io", def_file_name, 1, 1, 1, 1);
     circuit.SaveDefFile(output_name, "_filling", def_file_name, 1, 4, 2, 0);

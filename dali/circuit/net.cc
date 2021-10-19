@@ -33,7 +33,7 @@ void Net::AddBlockPinPair(Block *block_ptr, Pin *pin_ptr) {
     }
     // because net list is stored as a vector, so the location of a net will change, thus here, we have to use Num() to
     // find a net, although a pointer to this net is more convenient.
-    block_ptr->net_list_.push_back(Num());
+    block_ptr->NetList().push_back(Num());
     int p_minus_one = int(blk_pin_list.size()) - 1;
     inv_p_ = p_minus_one > 0 ? 1.0 * weight_ / p_minus_one : 0;
   } else {

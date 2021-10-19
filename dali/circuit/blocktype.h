@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 10/31/19.
 //
 
-#ifndef DALI_SRC_CIRCUIT_BLOCKTYPE_H_
-#define DALI_SRC_CIRCUIT_BLOCKTYPE_H_
+#ifndef DALI_DALI_CIRCUIT_BLOCKTYPE_H_
+#define DALI_DALI_CIRCUIT_BLOCKTYPE_H_
 
 #include <map>
 #include <vector>
@@ -24,30 +24,14 @@ namespace dali {
  *  pin: a list of cell pins with shapes and offsets specified
  * ****/
 
-class Pin;
-
-struct BlockTypeWell;
+class BlockTypeWell;
 
 class BlockType {
-    friend class Circuit;
-
-private:
-    /****essential data entries****/
-    const std::string *name_ptr_;
-    int width_, height_;
-    long int area_;
-    BlockTypeWell *well_ptr_;
-    std::vector<Pin> pin_list_;
-    std::map<std::string, int> pin_name_num_map_;
-public:
+  public:
     BlockType(const std::string *name_ptr, int width, int height);
 
     // set the name of this BlockType
-    void setName(const std::string *name_ptr) {
-        DaliExpects(name_ptr != nullptr,
-                    "Cannot set @param name_ptr to nullptr in function: BlockType::SetName()\n");
-        name_ptr_ = name_ptr;
-    }
+    void SetName(const std::string *name_ptr);
 
     // get the pointer to the const name
     const std::string *NamePtr() const { return name_ptr_; }
@@ -55,16 +39,12 @@ public:
     const std::string &Name() { return *name_ptr_; }
 
     // check if a pin with a given name exists in this BlockType or not
-    bool IsPinExist(std::string &pin_name) {
+    bool IsPinExisting(std::string &pin_name) {
         return pin_name_num_map_.find(pin_name) != pin_name_num_map_.end();
     }
 
     // return the index of a pin with a given name
-    int PinIndex(std::string &pin_name) {
-        DaliExpects(IsPinExist(pin_name),
-                    "Pin does not exist, cannot find its index: " + pin_name);
-        return pin_name_num_map_.find(pin_name)->second;
-    }
+    int GetPinIndex(std::string &pin_name);
 
     // return a pointer to a newly allocated location for a Pin with a given name
     // if this member function is used to create pins, one needs to set pin shapes using the return pointer
@@ -75,42 +55,24 @@ public:
 
     // get the pointer to the pin with the given name
     // if such a pin does not exist, the return value is nullptr
-    Pin *getPinPtr(std::string &pin_name) {
-        auto res = pin_name_num_map_.find(pin_name);
-        return res == pin_name_num_map_.end() ? nullptr
-                                              : &(pin_list_[res->second]);
-    }
+    Pin *GetPinPtr(std::string &pin_name);
 
     // set the N/P-well information for this BlockType
-    void setWell(BlockTypeWell *well_ptr) {
-        DaliExpects(well_ptr != nullptr,
-                    "Cannot set @param well_ptr to nullptr in function: BlockType::SetWell()");
-        well_ptr_ = well_ptr;
-    }
+    void SetWell(BlockTypeWell *well_ptr);
 
     // get the pointer to the well of this BlockType
     BlockTypeWell *WellPtr() const { return well_ptr_; }
 
     // set the width of this BlockType and update its area
-    void setWidth(int width) {
-        width_ = width;
-        area_ = (long int) width_ * (long int) height_;
-    }
+    void SetWidth(int width);
 
     // get the width of this BlockType
     int Width() const { return width_; }
 
     // set the height of this BlockType and update its area
-    void setHeight(int height) {
-        height_ = height;
-        area_ = (long int) width_ * (long int) height_;
-    }
+    void SetHeight(int height);
 
-    void setSize(int width, int height) {
-        width_ = width;
-        height_ = height;
-        area_ = (long int) width_ * (long int) height_;
-    }
+    void SetSize(int width, int height);
 
     // get the height of this BlockType
     int Height() const { return height_; }
@@ -119,15 +81,23 @@ public:
     long int Area() const { return area_; }
 
     // get the pointer to the list of cell pins
-    std::vector<Pin> *PinList() { return &pin_list_; }
+    std::vector<Pin> &PinList() { return pin_list_; }
 
     // check if the pin_list_ is empty
-    bool Empty() const { return pin_list_.empty(); }
+    bool ContainNoPin() const { return pin_list_.empty(); }
 
     // report the information of this BlockType for debugging purposes
     void Report() const;
+
+  private:
+    const std::string *name_ptr_;
+    int width_, height_;
+    long int area_;
+    BlockTypeWell *well_ptr_ = nullptr;
+    std::vector<Pin> pin_list_;
+    std::map<std::string, int> pin_name_num_map_;
 };
 
 }
 
-#endif //DALI_SRC_CIRCUIT_BLOCKTYPE_H_
+#endif //DALI_DALI_CIRCUIT_BLOCKTYPE_H_

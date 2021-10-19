@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 3/23/2019.
 //
 
-#ifndef DALI_CIRCUIT_HPP
-#define DALI_CIRCUIT_HPP
+#ifndef DALI_DALI_CIRCUIT_CIRCUIT_H_
+#define DALI_DALI_CIRCUIT_CIRCUIT_H_
 
 #include <map>
 #include <set>
@@ -556,4 +556,4 @@ public:
 
 }
 
-#endif //DALI_CIRCUIT_HPP
+#endif //DALI_DALI_CIRCUIT_CIRCUIT_H_

@@ -2,12 +2,11 @@
 // Created by Yihang Yang on 10/31/19.
 //
 
-#ifndef DALI_SRC_CIRCUIT_PIN_H_
-#define DALI_SRC_CIRCUIT_PIN_H_
+#ifndef DALI_DALI_CIRCUIT_PIN_H_
+#define DALI_DALI_CIRCUIT_PIN_H_
 
 #include <vector>
 
-#include "blocktype.h"
 #include "dali/common/logging.h"
 #include "dali/common/misc.h"
 #include "status.h"
@@ -58,4 +57,4 @@ class Pin {
 
 }
 
-#endif //DALI_SRC_CIRCUIT_PIN_H_
+#endif //DALI_DALI_CIRCUIT_PIN_H_

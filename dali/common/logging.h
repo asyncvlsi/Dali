@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 11/20/20.
 //
 
-#ifndef DALI_SRC_COMMON_LOGGING_H_
-#define DALI_SRC_COMMON_LOGGING_H_
+#ifndef DALI_DALI_COMMON_LOGGING_H_
+#define DALI_DALI_COMMON_LOGGING_H_
 
 #include <iomanip>
 #include <iostream>
@@ -78,4 +78,4 @@ inline void DaliWarns(bool e, const std::string &warning_message) {
 
 }
 
-#endif //DALI_SRC_COMMON_LOGGING_H_
+#endif //DALI_DALI_COMMON_LOGGING_H_

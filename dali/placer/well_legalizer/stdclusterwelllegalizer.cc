@@ -261,10 +261,8 @@ void StdClusterWellLegalizer::Initialize(int cluster_width) {
     FetchNPWellParams();
 
     // temporarily change left and right boundary to reserve space
-    //BOOST_LOG_TRIVIAL(trace) << "left: %d, right: %d, width: %d\n", left_, right_, RegionWidth());
     left_ += well_spacing_;
     right_ -= well_spacing_;
-    //BOOST_LOG_TRIVIAL(trace) << "left: %d, right: %d, width: %d\n", left_, right_, RegionWidth());
 
     // initialize row height and white space segments
     DetectAvailSpace();
@@ -284,9 +282,10 @@ void StdClusterWellLegalizer::Initialize(int cluster_width) {
             (int) std::round(max_unplug_length_ * stripe_width_factor_);
     } else {
         if (cluster_width < max_unplug_length_) {
-            BOOST_LOG_TRIVIAL(warning) << "WARNING:\n"
-                                       << "  Specified cluster width is smaller than max_unplug_length_, "
-                                       << "  space is wasted, may not be able to successfully complete well legalization\n";
+            BOOST_LOG_TRIVIAL(warning)
+                << "WARNING:\n"
+                << "  Specified cluster width is smaller than max_unplug_length_, "
+                << "  space is wasted, may not be able to successfully complete well legalization\n";
         }
         stripe_width_ = cluster_width;
     }
@@ -296,16 +295,18 @@ void StdClusterWellLegalizer::Initialize(int cluster_width) {
         stripe_width_ = RegionWidth();
     }
     tot_col_num_ = std::ceil(RegionWidth() / (double) stripe_width_);
-    BOOST_LOG_TRIVIAL(info) << "Total number of cluster columns: "
-                            << tot_col_num_ << "\n";
+    BOOST_LOG_TRIVIAL(info)
+        << "Total number of cluster columns: "
+        << tot_col_num_ << "\n";
 
     //BOOST_LOG_TRIVIAL(info)   << RegionHeight() << "  " << circuit_ptr_->MinBlkHeight() << "\n";
     int max_clusters_per_col = RegionHeight() / circuit_->MinBlkHeight();
     col_list_.resize(tot_col_num_);
     stripe_width_ = RegionWidth() / tot_col_num_;
-    BOOST_LOG_TRIVIAL(info) << "Cluster width: "
-                            << stripe_width_ * circuit_->GridValueX()
-                            << " um\n";
+    BOOST_LOG_TRIVIAL(info)
+        << "Cluster width: "
+        << stripe_width_ * circuit_->GridValueX()
+        << " um\n";
     for (int i = 0; i < tot_col_num_; ++i) {
         col_list_[i].lx_ = RegionLeft() + i * stripe_width_;
         col_list_[i].width_ = stripe_width_ - well_spacing_;
@@ -394,8 +395,10 @@ void StdClusterWellLegalizer::AssignBlockToColBasedOnWhiteSpace() {
     }
 }
 
-void StdClusterWellLegalizer::AppendBlockToColBottomUp(Stripe &stripe,
-                                                       Block &blk) {
+void StdClusterWellLegalizer::AppendBlockToColBottomUp(
+    Stripe &stripe,
+    Block &blk
+) {
     bool is_no_cluster_in_col = (stripe.contour_ == stripe.LLY());
     bool is_new_cluster_needed = is_no_cluster_in_col;
     if (!is_new_cluster_needed) {
@@ -933,8 +936,8 @@ double StdClusterWellLegalizer::WireLengthCost(Cluster *cluster, int l, int r) {
     std::set<Net *> net_involved;
     for (int i = l; i <= r; ++i) {
         auto *blk = cluster->blk_list_[i];
-        for (auto &net_num: *blk->NetList()) {
-            if (net_list[net_num].P() < 100) {
+        for (auto &net_num: blk->NetList()) {
+            if (net_list[net_num].Pnum() < 100) {
                 net_involved.insert(&(net_list[net_num]));
             }
         }
@@ -2002,9 +2005,8 @@ void StdClusterWellLegalizer::EmitWellRect(std::string const &name_of_file,
             break;
         case 2:BOOST_LOG_TRIVIAL(info) << "emit P wells, ";
             break;
-        default:
-            DaliExpects(false,
-                        "Invalid value for well_emit_mode in StdClusterWellLegalizer::EmitDEFWellFile()");
+        default:DaliExpects(false,
+                            "Invalid value for well_emit_mode in StdClusterWellLegalizer::EmitDEFWellFile()");
     }
 
     std::ofstream ost(name_of_file.c_str());
@@ -2086,9 +2088,8 @@ void StdClusterWellLegalizer::ExportWellToPhyDB(phydb::PhyDB *phydb_ptr,
             break;
         case 2:BOOST_LOG_TRIVIAL(info) << "Export P wells tp PhyDB\n";
             break;
-        default:
-            DaliExpects(false,
-                        "Invalid value for well_emit_mode in StdClusterWellLegalizer::EmitDEFWellFile()");
+        default:DaliExpects(false,
+                            "Invalid value for well_emit_mode in StdClusterWellLegalizer::EmitDEFWellFile()");
     }
     double factor_x = circuit_->getDesign()->def_distance_microns
         * circuit_->getTech()->grid_value_x_;

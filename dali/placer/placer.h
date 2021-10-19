@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 5/23/19.
 //
 
-#ifndef DALI_PLACERBASE_HPP
-#define DALI_PLACERBASE_HPP
+#ifndef DALI_DALI_PLACER_PLACER_H_
+#define DALI_DALI_PLACER_PLACER_H_
 
 #include <fstream>
 #include <iostream>
@@ -163,4 +163,4 @@ class Placer {
 
 }
 
-#endif //DALI_PLACERBASE_HPP
+#endif //DALI_DALI_PLACER_PLACER_H_

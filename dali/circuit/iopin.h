@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 11/28/19.
 //
 
-#ifndef DALI_SRC_CIRCUIT_IOPIN_H_
-#define DALI_SRC_CIRCUIT_IOPIN_H_
+#ifndef DALI_DALI_CIRCUIT_IOPIN_H_
+#define DALI_DALI_CIRCUIT_IOPIN_H_
 
 #include <string>
 
@@ -81,4 +81,4 @@ class IOPin {
 
 }
 
-#endif //DALI_SRC_CIRCUIT_IOPIN_H_
+#endif //DALI_DALI_CIRCUIT_IOPIN_H_

@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 11/27/19.
 //
 
-#ifndef DALI_SRC_CIRCUIT_STATUS_H_
-#define DALI_SRC_CIRCUIT_STATUS_H_
+#ifndef DALI_DALI_CIRCUIT_STATUS_H_
+#define DALI_DALI_CIRCUIT_STATUS_H_
 
 #include <string>
 
@@ -71,4 +71,4 @@ std::string SignalUseStr(SignalUse signal_use);
 
 }
 
-#endif //DALI_SRC_CIRCUIT_STATUS_H_
+#endif //DALI_DALI_CIRCUIT_STATUS_H_

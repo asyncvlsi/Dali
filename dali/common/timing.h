@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 1/22/20.
 //
 
-#ifndef DALI_SRC_COMMON_TIMING_H_
-#define DALI_SRC_COMMON_TIMING_H_
+#ifndef DALI_DALI_COMMON_TIMING_H_
+#define DALI_DALI_COMMON_TIMING_H_
 
 namespace dali {
 
@@ -12,4 +12,4 @@ double get_cpu_time();
 
 }
 
-#endif //DALI_SRC_COMMON_TIMING_H_
+#endif //DALI_DALI_COMMON_TIMING_H_

@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 12/22/19.
 //
 
-#ifndef DALI_SRC_CIRCUIT_TECH_H_
-#define DALI_SRC_CIRCUIT_TECH_H_
+#ifndef DALI_DALI_CIRCUIT_TECH_H_
+#define DALI_DALI_CIRCUIT_TECH_H_
 
 #include <list>
 #include <unordered_map>
@@ -74,4 +74,4 @@ class Tech {
 
 }
 
-#endif //DALI_SRC_CIRCUIT_TECH_H_
+#endif //DALI_DALI_CIRCUIT_TECH_H_

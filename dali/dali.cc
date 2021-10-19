@@ -120,12 +120,18 @@ void Dali::StartPlacement(double density, int number_of_threads) {
 #if PHYDB_USE_GALOIS
     if (phy_db_ptr_->GetTimingApi().ReadyForTimingDriven()) {
         ExportOrdinaryComponentsToPhyDB();
+        BOOST_LOG_TRIVIAL(debug) << "Before CreatePhydbActAdaptor()\n";
         phy_db_ptr_->CreatePhydbActAdaptor();
+        BOOST_LOG_TRIVIAL(debug) << "Before AddNetsAndCompPinsToSpefManager()\n";
         phy_db_ptr_->AddNetsAndCompPinsToSpefManager();
+        BOOST_LOG_TRIVIAL(debug) << "Before InitializeRCEstimator()\n";
         InitializeRCEstimator();
+        BOOST_LOG_TRIVIAL(debug) << "Before PushNetRCToManager()\n";
         rc_estimator->PushNetRCToManager();
         auto timing_api = phy_db_ptr_->GetTimingApi();
+        BOOST_LOG_TRIVIAL(debug) << "Before UpdateTimingIncremental()\n";
         timing_api.UpdateTimingIncremental();
+        BOOST_LOG_TRIVIAL(debug) << "Before GetNumConstraints()\n";
         std::cout << "Number of timing constraints: "
                   << timing_api.GetNumConstraints() << "\n";
         for (int i = 0; i < (int) timing_api.GetNumConstraints(); ++i) {

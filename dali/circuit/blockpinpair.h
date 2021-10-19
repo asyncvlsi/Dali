@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 10/31/19.
 //
 
-#ifndef DALI_SRC_CIRCUIT_BLOCKPINPAIR_H_
-#define DALI_SRC_CIRCUIT_BLOCKPINPAIR_H_
+#ifndef DALI_DALI_CIRCUIT_BLOCKPINPAIR_H_
+#define DALI_DALI_CIRCUIT_BLOCKPINPAIR_H_
 
 #include "block.h"
 #include "dali/common/misc.h"
@@ -78,4 +78,4 @@ struct BlkPinPair {
 
 }
 
-#endif //DALI_SRC_CIRCUIT_BLOCKPINPAIR_H_
+#endif //DALI_DALI_CIRCUIT_BLOCKPINPAIR_H_

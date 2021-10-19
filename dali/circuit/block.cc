@@ -12,8 +12,7 @@ Block::Block() : type_ptr_(nullptr),
                  lly_(0),
                  place_status_(UNPLACED),
                  orient_(N),
-                 aux_ptr_(nullptr) {
-}
+                 aux_ptr_(nullptr) {}
 
 Block::Block(BlockType *type_ptr,
              std::pair<const std::string, int> *name_num_pair_ptr,
@@ -26,16 +25,16 @@ Block::Block(BlockType *type_ptr,
     llx_(llx),
     lly_(lly),
     orient_(orient) {
-  eff_height_ = type_ptr_->Height();
-  eff_area_ = type_ptr_->Area();
-  DaliExpects(name_num_pair_ptr != nullptr,
-              "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
-  aux_ptr_ = nullptr;
-  if (movable) {
-    place_status_ = UNPLACED;
-  } else {
-    place_status_ = FIXED;
-  }
+    eff_height_ = type_ptr_->Height();
+    eff_area_ = type_ptr_->Area();
+    DaliExpects(name_num_pair_ptr != nullptr,
+                "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
+    aux_ptr_ = nullptr;
+    if (movable) {
+        place_status_ = UNPLACED;
+    } else {
+        place_status_ = FIXED;
+    }
 }
 
 Block::Block(BlockType *type_ptr,
@@ -50,72 +49,110 @@ Block::Block(BlockType *type_ptr,
     lly_(lly),
     place_status_(place_state),
     orient_(orient) {
-  eff_height_ = type_ptr_->Height();
-  eff_area_ = type_ptr_->Area();
-  DaliExpects(name_num_pair_ptr != nullptr,
-              "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
-  aux_ptr_ = nullptr;
+    eff_height_ = type_ptr_->Height();
+    eff_area_ = type_ptr_->Area();
+    DaliExpects(name_num_pair_ptr != nullptr,
+                "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
+    aux_ptr_ = nullptr;
+}
+
+void Block::SetHeight(int height) {
+    eff_height_ = height;
+    eff_area_ = eff_height_ * type_ptr_->Width();
+}
+
+void Block::SetHeightFromType() {
+    eff_height_ = type_ptr_->Height();
+    eff_area_ = type_ptr_->Area();
+}
+
+void Block::SetType(BlockType *type_ptr) {
+    DaliExpects(type_ptr != nullptr,
+                "Cannot set BlockType of a Block to NULL: BLock::SetType()\n");
+    type_ptr_ = type_ptr;
+    eff_height_ = type_ptr_->Height();
+    eff_area_ = type_ptr_->Area();
+}
+
+void Block::SetLoc(double lx, double ly) {
+    llx_ = lx;
+    lly_ = ly;
+}
+
+void Block::SetPlacementStatus(PlaceStatus place_status) {
+    place_status_ = place_status;
+}
+
+void Block::SetOrient(BlockOrient const &orient) { orient_ = orient; }
+
+void Block::SetAux(BlockAux *aux) {
+    DaliExpects(aux != nullptr,
+                "When setting auxiliary information, the argument cannot be a nullptr: Block::SetAux()");
+    aux_ptr_ = aux;
 }
 
 void Block::SwapLoc(Block &blk) {
-  double tmp_x = llx_;
-  double tmp_y = lly_;
-  llx_ = blk.LLX();
-  lly_ = blk.LLY();
+    double tmp_x = llx_;
+    double tmp_y = lly_;
+    llx_ = blk.LLX();
+    lly_ = blk.LLY();
     blk.SetLLX(tmp_x);
     blk.SetLLY(tmp_y);
 }
 
 void Block::IncreaseX(double displacement, double upper, double lower) {
-  llx_ += displacement;
-  double real_upper = upper - Width();
-  if (llx_ < lower) {
-    llx_ = lower;
-  } else if (llx_ > real_upper) {
-    llx_ = real_upper;
-  }
+    llx_ += displacement;
+    double real_upper = upper - Width();
+    if (llx_ < lower) {
+        llx_ = lower;
+    } else if (llx_ > real_upper) {
+        llx_ = real_upper;
+    }
 }
 
 void Block::IncreaseY(double displacement, double upper, double lower) {
-  lly_ += displacement;
-  double real_upper = upper - Height();
-  if (lly_ < lower) {
-    lly_ = lower;
-  } else if (lly_ > real_upper) {
-    lly_ = real_upper;
-  }
+    lly_ += displacement;
+    double real_upper = upper - Height();
+    if (lly_ < lower) {
+        lly_ = lower;
+    } else if (lly_ > real_upper) {
+        lly_ = real_upper;
+    }
 }
 
 double Block::OverlapArea(const Block &blk) const {
-  double overlap_area = 0;
-  if (IsOverlap(blk)) {
-    double llx, urx, lly, ury;
-    llx = std::max(LLX(), blk.LLX());
-    urx = std::min(URX(), blk.URX());
-    lly = std::max(LLY(), blk.LLY());
-    ury = std::min(URY(), blk.URY());
-    overlap_area = (urx - llx) * (ury - lly);
-  }
-  return overlap_area;
+    double overlap_area = 0;
+    if (IsOverlap(blk)) {
+        double llx, urx, lly, ury;
+        llx = std::max(LLX(), blk.LLX());
+        urx = std::min(URX(), blk.URX());
+        lly = std::max(LLY(), blk.LLY());
+        ury = std::min(URY(), blk.URY());
+        overlap_area = (urx - llx) * (ury - lly);
+    }
+    return overlap_area;
 }
 
 void Block::Report() {
-  BOOST_LOG_TRIVIAL(info) << "  block name: " << *NamePtr() << "\n"
-                          << "    block type: " << *(TypePtr()->NamePtr()) << "\n"
-                          << "    width and height: " << Width() << " " << Height() << "\n"
-                          << "    lower left corner: " << llx_ << " " << lly_ << "\n"
-                          << "    movable: " << IsMovable() << "\n"
-                          << "    orientation: " << OrientStr(orient_) << "\n"
-                          << "    assigned primary key: " << Num()
-                          << "\n";
+    BOOST_LOG_TRIVIAL(info) << "  block name: " << *NamePtr() << "\n"
+                            << "    block type: " << *(TypePtr()->NamePtr())
+                            << "\n"
+                            << "    width and height: " << Width() << " "
+                            << Height() << "\n"
+                            << "    lower left corner: " << llx_ << " " << lly_
+                            << "\n"
+                            << "    movable: " << IsMovable() << "\n"
+                            << "    orientation: " << OrientStr(orient_) << "\n"
+                            << "    assigned primary key: " << Num()
+                            << "\n";
 }
 
 void Block::ReportNet() {
-  BOOST_LOG_TRIVIAL(info) << *NamePtr() << " connects to:\n";
-  for (auto &net_num: net_list_) {
-    BOOST_LOG_TRIVIAL(info) << net_num << "  ";
-  }
-  BOOST_LOG_TRIVIAL(info) << "\n";
+    BOOST_LOG_TRIVIAL(info) << *NamePtr() << " connects to:\n";
+    for (auto &net_num: net_list_) {
+        BOOST_LOG_TRIVIAL(info) << net_num << "  ";
+    }
+    BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
 }

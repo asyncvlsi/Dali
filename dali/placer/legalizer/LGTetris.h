@@ -12,8 +12,8 @@
  * but who wants bad input? The Global placer and detailed placer should have done their job well;
  * ****/
 
-#ifndef DALI_SRC_PLACER_LEGALIZER_LGTETRIS_H_
-#define DALI_SRC_PLACER_LEGALIZER_LGTETRIS_H_
+#ifndef DALI_DALI_PLACER_LEGALIZER_LGTETRIS_H_
+#define DALI_DALI_PLACER_LEGALIZER_LGTETRIS_H_
 
 #include "dali/common/misc.h"
 #include "LGTetris/tetrisspace.h"
@@ -40,4 +40,4 @@ class TetrisLegalizer : public Placer {
 
 }
 
-#endif //DALI_SRC_PLACER_LEGALIZER_LGTETRIS_H_
+#endif //DALI_DALI_PLACER_LEGALIZER_LGTETRIS_H_

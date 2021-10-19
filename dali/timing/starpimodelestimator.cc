@@ -107,8 +107,9 @@ void StarPiModelEstimator::FindFirstHorizontalAndVerticalMetalLayer() {
     }
 
     DaliExpects(horizontal_layer_ != nullptr,
-                "Cannot find a horizontal layer?");
-    DaliExpects(vertical_layer_ != nullptr, "Cannot find a vertical layer?");
+                "Cannot find RC parameters in a horizontal layer?");
+    DaliExpects(vertical_layer_ != nullptr,
+                "Cannot find RC parameters in a vertical layer?");
 }
 
 void StarPiModelEstimator::GetResistanceAndCapacitance(

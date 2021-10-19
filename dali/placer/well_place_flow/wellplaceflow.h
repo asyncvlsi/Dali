@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 3/5/20.
 //
 
-#ifndef DALI_SRC_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_
-#define DALI_SRC_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_
+#ifndef DALI_DALI_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_
+#define DALI_DALI_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_
 
 #include "dali/placer/global_placer/GPSimPL.h"
 #include "dali/placer/legalizer/LGTetrisEx.h"
@@ -31,4 +31,4 @@ class WellPlaceFlow : public GPSimPL {
 
 }
 
-#endif //DALI_SRC_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_
+#endif //DALI_DALI_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_

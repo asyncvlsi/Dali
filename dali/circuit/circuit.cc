@@ -113,13 +113,15 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
         //BOOST_LOG_TRIVIAL(info)   << layer->getArea();
         min_area = layer->getArea();
       }
-      AddMetalLayer(metal_layer_name,
-                    min_width,
-                    min_spacing,
-                    min_area,
-                    min_width + min_spacing,
-                    min_width + min_spacing,
-                    direct);
+      AddMetalLayer(
+          metal_layer_name,
+          min_width,
+          min_spacing,
+          min_area,
+          min_width + min_spacing,
+          min_width + min_spacing,
+          direct
+          );
       //BOOST_LOG_TRIVIAL(info)   << "\n";
     }
   }
@@ -403,7 +405,7 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
                         "No geometries provided for pin " + pin_name
                             + " in Macro: " + *blk_type->NamePtr());
         }
-        for (auto &pin: *(blk_type->PinList())) {
+        for (auto &pin: blk_type->PinList()) {
             pin.InitOffset();
         }
     }
@@ -638,20 +640,24 @@ void Circuit::LoadWell(phydb::PhyDB *phy_db_ptr) {
                     "N/P-well geometries not provided for MACRO: "
                         + macro_name);
         if (n_rect != nullptr) {
-            setWellRect(macro_name,
-                        true,
-                        n_rect->LLX(),
-                        n_rect->LLY(),
-                        n_rect->URX(),
-                        n_rect->URY());
+            setWellRect(
+                macro_name,
+                true,
+                n_rect->LLX(),
+                n_rect->LLY(),
+                n_rect->URX(),
+                n_rect->URY()
+            );
         }
         if (p_rect != nullptr) {
-            setWellRect(macro_name,
-                        false,
-                        p_rect->LLX(),
-                        p_rect->LLY(),
-                        p_rect->URX(),
-                        p_rect->URY());
+            setWellRect(
+                macro_name,
+                false,
+                p_rect->LLX(),
+                p_rect->LLY(),
+                p_rect->URX(),
+                p_rect->URY()
+            );
         }
     }
 }
@@ -1066,8 +1072,8 @@ BlockType *Circuit::getBlockType(std::string &block_type_name) {
 // create well information container for a given BlockType.
 BlockTypeWell *Circuit::AddBlockTypeWell(BlockType *blk_type) {
     tech_.well_list_.emplace_back(blk_type);
-    blk_type->well_ptr_ = &(tech_.well_list_.back());
-    return blk_type->well_ptr_;
+    blk_type->SetWell(&(tech_.well_list_.back()));
+    return blk_type->WellPtr();
 }
 
 // set N-well layer parameters
@@ -1080,11 +1086,13 @@ void Circuit::SetNWellParams(double width,
 }
 
 // set P-well layer parameters
-void Circuit::SetPWellParams(double width,
-                             double spacing,
-                             double op_spacing,
-                             double max_plug_dist,
-                             double overhang) {
+void Circuit::SetPWellParams(
+    double width,
+    double spacing,
+    double op_spacing,
+    double max_plug_dist,
+    double overhang
+) {
     tech_.SetPLayer(width, spacing, op_spacing, max_plug_dist, overhang);
 }
 
@@ -1217,7 +1225,7 @@ void Circuit::SetBlockTypeSize(
         gridded_width,
         gridded_height
     );
-    blk_type_ptr->setSize(gridded_width, gridded_height);
+    blk_type_ptr->SetSize(gridded_width, gridded_height);
 }
 
 // add a BlockType with name, with, and height. The return value is a pointer to this new BlockType for adding pins. Unit in grid value.
@@ -1282,7 +1290,7 @@ void Circuit::AddBlkTypePinRect(std::string &block_type_name,
     DaliExpects(blk_type_ptr != nullptr,
                 "Cannot add BlockType pins because there is no such a BlockType: "
                     + block_type_name);
-    Pin *pin_ptr = blk_type_ptr->getPinPtr(pin_name);
+    Pin *pin_ptr = blk_type_ptr->GetPinPtr(pin_name);
     DaliExpects(pin_ptr != nullptr,
                 "Cannot add BlockType pins because there is no such a pin: "
                     + block_type_name + "::" + pin_name);
@@ -1353,10 +1361,12 @@ void Circuit::CopyBlockType(Circuit &circuit) {
         blk_type = item.second;
         type_name = *(blk_type->NamePtr());
         if (type_name == "PIN") continue;
-        blk_type_new = AddBlockTypeWithGridUnit(type_name,
-                                                blk_type->Width(),
-                                                blk_type->Height());
-        for (auto &pin: blk_type->pin_list_) {
+        blk_type_new = AddBlockTypeWithGridUnit(
+            type_name,
+            blk_type->Width(),
+            blk_type->Height()
+        );
+        for (auto &pin: blk_type->PinList()) {
             pin_name = *(pin.Name());
             blk_type_new->AddPin(pin_name, pin.OffsetX(), pin.OffsetY());
         }
@@ -1594,7 +1604,7 @@ Net *Circuit::AddNet(std::string &net_name, int capacity, double weight) {
      * ****/
     DaliExpects(!IsNetExist(net_name),
                 "Net exists, cannot create this net again: " + net_name);
-    int map_size = design_.net_name_map.size();
+    int map_size = (int) design_.net_name_map.size();
     design_.net_name_map.insert(std::pair<std::string, int>(net_name,
                                                             map_size));
     std::pair<const std::string, int>
@@ -1611,17 +1621,19 @@ void Circuit::AddIOPinToNet(std::string &iopin_name, std::string &net_name) {
     io_net->AddIOPin(iopin);
     if (iopin->IsPrePlaced()) {
         Block *blk_ptr = getBlockPtr(iopin_name);
-        Pin *pin = &(blk_ptr->TypePtr()->pin_list_[0]);
+        Pin *pin = &(blk_ptr->TypePtr()->PinList()[0]);
         io_net->AddBlockPinPair(blk_ptr, pin);
     }
 }
 
 // add a block pin to a net.
-void Circuit::AddBlkPinToNet(std::string &blk_name,
-                             std::string &pin_name,
-                             std::string &net_name) {
+void Circuit::AddBlkPinToNet(
+    std::string &blk_name,
+    std::string &pin_name,
+    std::string &net_name
+) {
     Block *blk_ptr = getBlockPtr(blk_name);
-    Pin *pin = blk_ptr->TypePtr()->getPinPtr(pin_name);
+    Pin *pin = blk_ptr->TypePtr()->GetPinPtr(pin_name);
     Net *net = getNetPtr(net_name);
     net->AddBlockPinPair(blk_ptr, pin);
 }
@@ -1705,7 +1717,7 @@ void Circuit::UpdateNetHPWLHistogram() {
     design_.net_histogram_.max_hpwl_.assign(bin_count, DBL_MIN);
 
     for (auto &net: design_.net_list) {
-        int net_size = net.P();
+        int net_size = net.Pnum();
         double hpwl_x = net.WeightedHPWLX();
         double hpwl_y =
             net.WeightedHPWLY() * tech_.grid_value_y_ / tech_.grid_value_x_;
@@ -1933,7 +1945,7 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
     double factor = tech_.grid_value_y_ / tech_.grid_value_x_;
     for (auto &net: design_.net_list) {
         double tmp_hpwl = net.WeightedHPWLX() + net.WeightedHPWLY() * factor;
-        if (net.P() >= 1) {
+        if (net.Pnum() >= 1) {
             hpwl_list.push_back(tmp_hpwl);
             min_hpwl = std::min(min_hpwl, tmp_hpwl);
             max_hpwl = std::max(max_hpwl, tmp_hpwl);

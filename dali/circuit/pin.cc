@@ -4,10 +4,14 @@
 
 #include "pin.h"
 
+#include "blocktype.h"
+
 namespace dali {
 
-Pin::Pin(std::pair<const std::string, int> *name_num_pair_ptr,
-         BlockType *blk_type_ptr) :
+Pin::Pin(
+    std::pair<const std::string, int> *name_num_pair_ptr,
+    BlockType *blk_type_ptr
+) :
     name_num_pair_ptr_(name_num_pair_ptr),
     blk_type_ptr_(blk_type_ptr),
     is_input_(true) {

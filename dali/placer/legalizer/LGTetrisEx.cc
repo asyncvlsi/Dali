@@ -1432,12 +1432,11 @@ double LGTetrisEx::EstimatedHPWL(Block &block, int x, int y) {
     double min_x = x;
     double min_y = y;
     double tot_hpwl = 0;
-    Net *net;
     auto &net_list = *NetList();
-    for (auto &net_num: *block.NetList()) {
-        net = &(net_list[net_num]);
-        if (net->P() > 100) continue;
-        for (auto &blk_pin_pair: net->blk_pin_list) {
+    for (auto &net_num: block.NetList()) {
+        auto &net = net_list[net_num];
+        if (net.Pnum() > 100) continue;
+        for (auto &blk_pin_pair: net.blk_pin_list) {
             if (blk_pin_pair.BlkPtr() != &block) {
                 min_x = std::min(min_x, blk_pin_pair.AbsX());
                 min_y = std::min(min_y, blk_pin_pair.AbsY());

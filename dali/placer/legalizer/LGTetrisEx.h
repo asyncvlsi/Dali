@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 1/2/20.
 //
 
-#ifndef DALI_SRC_PLACER_LEGALIZER_LGTETRISEX_H_
-#define DALI_SRC_PLACER_LEGALIZER_LGTETRISEX_H_
+#ifndef DALI_DALI_PLACER_LEGALIZER_LGTETRISEX_H_
+#define DALI_DALI_PLACER_LEGALIZER_LGTETRISEX_H_
 
 #include "dali/common/displaceviewer.h"
 #include "dali/common/misc.h"
@@ -146,4 +146,4 @@ class LGTetrisEx : public Placer {
 
 }
 
-#endif //DALI_SRC_PLACER_LEGALIZER_LGTETRISEX_H_
+#endif //DALI_DALI_PLACER_LEGALIZER_LGTETRISEX_H_

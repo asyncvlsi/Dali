@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 5/23/19.
 //
 
-#ifndef DALI_BLOCK_H
-#define DALI_BLOCK_H
+#ifndef DALI_DALI_CIRCUIT_BLOCK_H_
+#define DALI_DALI_CIRCUIT_BLOCK_H_
 
 #include <iostream>
 #include <map>
@@ -31,216 +31,207 @@ namespace dali {
 class BlockAux;
 
 class Block {
-  friend class Net;
- protected:
-  /**** essential data entries ***/
-  BlockType *type_ptr_; // type
-  int eff_height_; // cached height, also used to store effective height, the unit is grid value in the y-direction
-  long int eff_area_; // cached effective area
-  std::pair<const std::string, int> *name_num_pair_ptr_; // name for finding its index in block_list
-  double llx_; // lower x coordinate, data type double, for global placement
-  double lly_; // lower y coordinate
-  std::vector<int> net_list_; // the list of nets connected to this cell
-  PlaceStatus place_status_; // placement status, i.e, PLACED, FIXED, UNPLACED
-  BlockOrient orient_; // orientation, normally, N or FS
-  BlockAux *aux_ptr_; // points to auxiliary information if needed
- public:
-  /****this constructor is for the developer only****/
-  Block();
+  public:
+    /****this constructor is for the developer only****/
+    Block();
 
-  /****Constructors for users****/
-  Block(BlockType *type_ptr,
-        std::pair<const std::string, int> *name_num_pair_ptr,
-        int llx,
-        int lly,
-        bool movable = "true",
-        BlockOrient orient = N);
-  Block(BlockType *type_ptr,
-        std::pair<const std::string, int> *name_num_pair_ptr,
-        int llx,
-        int lly,
-        PlaceStatus place_state = UNPLACED,
-        BlockOrient orient = N);
+    /****Constructors for users****/
+    Block(BlockType *type_ptr,
+          std::pair<const std::string, int> *name_num_pair_ptr,
+          int llx,
+          int lly,
+          bool movable = "true",
+          BlockOrient orient = N);
+    Block(BlockType *type_ptr,
+          std::pair<const std::string, int> *name_num_pair_ptr,
+          int llx,
+          int lly,
+          PlaceStatus place_state = UNPLACED,
+          BlockOrient orient = N);
 
-  /****member functions for attributes access****/
-  // get the Block name
-  const std::string *NamePtr() { return &(name_num_pair_ptr_->first); }
+    /****member functions for attributes access****/
+    // get the Block name
+    const std::string *NamePtr() { return &(name_num_pair_ptr_->first); }
 
-  // get the Block name
-  std::string Name() { return std::string(name_num_pair_ptr_->first); }
+    // get the Block name
+    const std::string &Name() { return name_num_pair_ptr_->first; }
 
-  // get BlockType of this Block
-  BlockType *TypePtr() const { return type_ptr_; }
+    // get BlockType of this Block
+    BlockType *TypePtr() const { return type_ptr_; }
 
-  // get the index of this Block in the vector of instances
-  int Num() const { return name_num_pair_ptr_->second; }
+    // get the index of this Block in the vector of instances
+    int Num() const { return name_num_pair_ptr_->second; }
 
-  // get the width of this Block
-  int Width() const { return type_ptr_->Width(); }
+    // get the width of this Block
+    int Width() const { return type_ptr_->Width(); }
 
-  // set the effective height of this Block, which can be different from the height of its type
-  // effective area is also updated at the same time
-  void SetHeight(int height) {
-    eff_height_ = height;
-    eff_area_ = eff_height_ * type_ptr_->Width();
-  }
+    // set the effective height of this Block, which can be different from the height of its type
+    // effective area is also updated at the same time
+    void SetHeight(int height);
 
-  // set the Block height to its BlockType height
-  // area is also updated at the same time
-  void SetHeightFromType() {
-    eff_height_ = type_ptr_->Height();
-    eff_area_ = type_ptr_->Area();
-  }
+    // set the Block height to its BlockType height
+    // area is also updated at the same time
+    void SetHeightFromType();
 
-  // get the height of this Block
-  int Height() const { return eff_height_; }
+    // get the height of this Block
+    int Height() const { return eff_height_; }
 
-  // get lower left x coordinate
-  double LLX() const { return llx_; }
+    // get lower left x coordinate
+    double LLX() const { return llx_; }
 
-  // get lower left y coordinate
-  double LLY() const { return lly_; }
+    // get lower left y coordinate
+    double LLY() const { return lly_; }
 
-  // get upper right x coordinate
-  double URX() const { return llx_ + Width(); }
+    // get upper right x coordinate
+    double URX() const { return llx_ + Width(); }
 
-  // get upper right y coordinate
-  double URY() const { return lly_ + Height(); }
+    // get upper right y coordinate
+    double URY() const { return lly_ + Height(); }
 
-  // get center x coordinate
-  double X() const { return llx_ + Width() / 2.0; }
+    // get center x coordinate
+    double X() const { return llx_ + Width() / 2.0; }
 
-  // get center y coordinate
-  double Y() const { return lly_ + Height() / 2.0; }
+    // get center y coordinate
+    double Y() const { return lly_ + Height() / 2.0; }
 
-  // get the indices of nets containing this Block
-  std::vector<int> *NetList() { return &net_list_; }
+    // get the indices of nets containing this Block
+    std::vector<int> &NetList() { return net_list_; }
 
-  // get the boolean status of whether this Block is placed
-  bool IsPlaced() const { return place_status_ == PLACED || place_status_ == FIXED || place_status_ == COVER; }
+    // get the boolean status of whether this Block is placed
+    bool IsPlaced() const {
+        return place_status_ == PLACED || place_status_ == FIXED
+            || place_status_ == COVER;
+    }
 
-  // get the placement status of this Block
-  PlaceStatus PlacementStatus() const { return place_status_; }
+    // get the placement status of this Block
+    PlaceStatus PlacementStatus() const { return place_status_; }
 
-  // get the string placement status of this Block
-  std::string GetPlaceStatusStr() const { return PlaceStatusStr(place_status_); }
+    // get the string placement status of this Block
+    std::string GetPlaceStatusStr() const { return PlaceStatusStr(place_status_); }
 
-  // get the boolean status of whether this Block is movable
-  // current assumption: UNPLACED and PLACED are movable, FIXED and COVER are unmovable
-  bool IsMovable() const { return place_status_ == UNPLACED || place_status_ == PLACED; }
+    // get the boolean status of whether this Block is movable
+    // current assumption: UNPLACED and PLACED are movable, FIXED and COVER are unmovable
+    bool IsMovable() const {
+        return place_status_ == UNPLACED || place_status_ == PLACED;
+    }
 
-  // get the boolean status of whether this Block is unmovable
-  bool IsFixed() const { return !IsMovable(); }
+    // get the boolean status of whether this Block is unmovable
+    bool IsFixed() const { return !IsMovable(); }
 
-  // get the area of this Block
-  long int Area() const { return eff_area_; }
+    // get the area of this Block
+    long int Area() const { return eff_area_; }
 
-  // get the Orientation of this Block
-  BlockOrient Orient() const { return orient_; }
+    // get the Orientation of this Block
+    BlockOrient Orient() const { return orient_; }
 
-  // get the pointer to the auxiliary information
-  BlockAux *AuxPtr() const { return aux_ptr_; }
+    // get the pointer to the auxiliary information
+    BlockAux *AuxPtr() const { return aux_ptr_; }
 
-  // set the NameNumPair, first: name, second: number
-  void SetNameNumPair(std::pair<const std::string, int> *name_num_pair_ptr) {
-    name_num_pair_ptr_ = name_num_pair_ptr;
-  }
+    // set the NameNumPair, first: name, second: number
+    void SetNameNumPair(std::pair<const std::string, int> *name_num_pair_ptr) {
+        name_num_pair_ptr_ = name_num_pair_ptr;
+    }
 
-  // set the BlockType of this Block
-  void SetType(BlockType *type_ptr) {
-    DaliExpects(type_ptr != nullptr, "Cannot set BlockType of a Block to NULL: BLock::SetType()\n");
-    type_ptr_ = type_ptr;
-    eff_height_ = type_ptr_->Height();
-    eff_area_ = type_ptr_->Area();
-  }
+    // set the BlockType of this Block
+    void SetType(BlockType *type_ptr) ;
 
-  // set the lower left x and y coordinate of this Block
-  void SetLoc(double lx, double ly) {
-    llx_ = lx;
-    lly_ = ly;
-  }
+    // set the lower left x and y coordinate of this Block
+    void SetLoc(double lx, double ly);
 
-  // set the lower left x coordinate
-  void SetLLX(double lx) { llx_ = lx; }
+    // set the lower left x coordinate
+    void SetLLX(double lx) { llx_ = lx; }
 
-  // set the lower left y coordinate
-  void SetLLY(double ly) { lly_ = ly; }
+    // set the lower left y coordinate
+    void SetLLY(double ly) { lly_ = ly; }
 
-  // set the upper right x coordinate
-  void SetURX(double ux) { llx_ = ux - Width(); }
+    // set the upper right x coordinate
+    void SetURX(double ux) { llx_ = ux - Width(); }
 
-  // set the upper right y coordinate
-  void SetURY(double uy) { lly_ = uy - Height(); }
+    // set the upper right y coordinate
+    void SetURY(double uy) { lly_ = uy - Height(); }
 
-  // set the center x coordinate
-  void SetCenterX(double center_x) { llx_ = center_x - Width() / 2.0; }
+    // set the center x coordinate
+    void SetCenterX(double center_x) { llx_ = center_x - Width() / 2.0; }
 
-  // set the center y coordinate
-  void SetCenterY(double center_y) { lly_ = center_y - Height() / 2.0; }
+    // set the center y coordinate
+    void SetCenterY(double center_y) { lly_ = center_y - Height() / 2.0; }
 
-  // set the placement status of this Block
-  void SetPlacementStatus(PlaceStatus place_status) { place_status_ = place_status; }
+    // set the placement status of this Block
+    void SetPlacementStatus(PlaceStatus place_status) ;
 
-  // set the orientation of this Block
-  void SetOrient(BlockOrient const &orient) { orient_ = orient; }
+    // set the orientation of this Block
+    void SetOrient(BlockOrient const &orient) ;
 
-  // set the pointer to the auxiliary information
-  void SetAux(BlockAux *aux) {
-    DaliExpects(aux != nullptr, "When setting auxiliary information, the argument cannot be a nullptr: Block::SetAux()");
-    aux_ptr_ = aux;
-  }
+    // set the pointer to the auxiliary information
+    void SetAux(BlockAux *aux);
 
-  // swap the location of this Block with the Block @param blk
-  // this member function ONLY swaps location
-  void SwapLoc(Block &blk);
+    // swap the location of this Block with the Block @param blk
+    // this member function ONLY swaps location
+    void SwapLoc(Block &blk);
 
-  // increase x coordinate by a certain amount
-  void IncreaseX(double displacement) { llx_ += displacement; }
+    // increase x coordinate by a certain amount
+    void IncreaseX(double displacement) { llx_ += displacement; }
 
-  // increase y coordinate by a certain amount
-  void IncreaseY(double displacement) { lly_ += displacement; }
+    // increase y coordinate by a certain amount
+    void IncreaseY(double displacement) { lly_ += displacement; }
 
-  // increase x coordinate by a certain amount, but the final location is bounded by @param lower, and upper
-  void IncreaseX(double displacement, double upper, double lower);
+    // increase x coordinate by a certain amount, but the final location is bounded by @param lower, and upper
+    void IncreaseX(double displacement, double upper, double lower);
 
-  // increase y coordinate by a certain amount, but the final location is bounded by @param lower, and upper
-  void IncreaseY(double displacement, double upper, double lower);
+    // increase y coordinate by a certain amount, but the final location is bounded by @param lower, and upper
+    void IncreaseY(double displacement, double upper, double lower);
 
-  // decrease x coordinate by a certain amount
-  void DecreaseX(double displacement) { llx_ -= displacement; }
+    // decrease x coordinate by a certain amount
+    void DecreaseX(double displacement) { llx_ -= displacement; }
 
-  // decrease y coordinate by a certain amount
-  void DecreaseY(double displacement) { lly_ -= displacement; }
+    // decrease y coordinate by a certain amount
+    void DecreaseY(double displacement) { lly_ -= displacement; }
 
-  // returns whether this Block overlaps with BLock @param blk
-  bool IsOverlap(const Block &blk) const {
-    return !(LLX() > blk.URX() || blk.LLX() > URX() || LLY() > blk.URY() || blk.LLY() > URY());
-  }
+    // returns whether this Block overlaps with BLock @param blk
+    bool IsOverlap(const Block &blk) const {
+        return !(LLX() > blk.URX() || blk.LLX() > URX() || LLY() > blk.URY()
+            || blk.LLY() > URY());
+    }
 
-  // returns whether this Block overlaps with BLock @param blk
-  bool IsOverlap(const Block *blk) const { return IsOverlap(*blk); }
+    // returns whether this Block overlaps with BLock @param blk
+    bool IsOverlap(const Block *blk) const { return IsOverlap(*blk); }
 
-  // returns the overlap area between this Block and Block @param blk
-  double OverlapArea(const Block &blk) const;
+    // returns the overlap area between this Block and Block @param blk
+    double OverlapArea(const Block &blk) const;
 
-  // returns the overlap area between this Block and Block @param blk
-  double OverlapArea(const Block *blk) const { return OverlapArea(*blk); }
+    // returns the overlap area between this Block and Block @param blk
+    double OverlapArea(const Block *blk) const { return OverlapArea(*blk); }
 
-  /****Report info of this Block, for debugging purposes****/
-  void Report();
-  void ReportNet();
+    /****Report info of this Block, for debugging purposes****/
+    void Report();
+    void ReportNet();
+
+  protected:
+    BlockType *type_ptr_; // type
+    int
+        eff_height_; // cached height, also used to store effective height, the unit is grid value in the y-direction
+    long int eff_area_; // cached effective area
+    std::pair<const std::string, int>
+        *name_num_pair_ptr_; // name for finding its index in block_list
+    double llx_; // lower x coordinate, data type double, for global placement
+    double lly_; // lower y coordinate
+    std::vector<int> net_list_; // the list of nets connected to this cell
+    PlaceStatus place_status_; // placement status, i.e, PLACED, FIXED, UNPLACED
+    BlockOrient orient_; // orientation, normally, N or FS
+    BlockAux *aux_ptr_; // points to auxiliary information if needed
 };
 
 class BlockAux {
- protected:
-  Block *blk_ptr_;
- public:
-  explicit BlockAux(Block *blk_ptr) : blk_ptr_(blk_ptr) { blk_ptr->SetAux(this); }
+  protected:
+    Block *blk_ptr_;
+  public:
+    explicit BlockAux(Block *blk_ptr)
+        : blk_ptr_(blk_ptr) { blk_ptr->SetAux(this); }
 
-  // get the pointer pointing to the Block it belongs to
-  Block *getBlockPtr() const { return blk_ptr_; }
+    // get the pointer pointing to the Block it belongs to
+    Block *getBlockPtr() const { return blk_ptr_; }
 };
 
 }
 
-#endif //DALI_BLOCK_H
+#endif //DALI_DALI_CIRCUIT_BLOCK_H_

@@ -34,7 +34,7 @@ Placer::Placer(double aspect_ratio, double filling_rate) : aspect_ratio_(
 double Placer::GetBlkHPWL(Block &blk) {
     double hpwl = 0;
     std::vector<Net> &net_list = *(NetList());
-    for (auto &idx: *blk.NetList()) {
+    for (auto &idx: blk.NetList()) {
         hpwl += net_list[idx].WeightedHPWL();
     }
     return hpwl;
@@ -269,7 +269,7 @@ void Placer::SanityCheck() {
     DaliExpects(IsBoundaryProper(), "Improper boundary setting");
     for (auto &pair: circuit_->tech_.block_type_map_) {
         BlockType *blk_type_ptr = pair.second;
-        for (auto &pin: *(blk_type_ptr->PinList())) {
+        for (auto &pin: blk_type_ptr->PinList()) {
             DaliExpects(!pin.RectEmpty(),
                         "No RECT found for pin: " + *(blk_type_ptr->NamePtr())
                             + "::" + *(pin.Name()));

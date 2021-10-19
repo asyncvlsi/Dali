@@ -2,8 +2,8 @@
 // Created by Yihang Yang on 7/25/19.
 //
 
-#ifndef DALI_SRC_COMMON_MISC_H_
-#define DALI_SRC_COMMON_MISC_H_
+#ifndef DALI_DALI_COMMON_MISC_H_
+#define DALI_DALI_COMMON_MISC_H_
 
 #include <cassert>
 #include <cmath>
@@ -164,4 +164,4 @@ typedef Seg<int> SegI;
 
 }
 
-#endif //DALI_SRC_COMMON_MISC_H_
+#endif //DALI_DALI_COMMON_MISC_H_
