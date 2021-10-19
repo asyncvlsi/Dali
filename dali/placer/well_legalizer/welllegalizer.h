@@ -22,7 +22,11 @@ struct RowWellStatus {
     int dist;
     int cluster_len;
     bool is_n;
-    explicit RowWellStatus(int dist_init = INT_MAX, int cluster_len_init = 0, bool is_n_init = false)
+    explicit RowWellStatus(
+        int dist_init = INT_MAX,
+        int cluster_len_init = 0,
+        bool is_n_init = false
+    )
         : dist(dist_init), cluster_len(cluster_len_init), is_n(is_n_init) {}
     bool IsNWell() const { return is_n; }
     bool IsPWell() const { return !is_n; }
@@ -64,17 +68,61 @@ class WellLegalizer : public LGTetrisEx {
     bool IsCurLocWellDistanceLeft(int loc_x, int lo_row, int hi_row, int p_row);
     bool IsCurLocWellMinWidthLeft(int loc_x, int lo_row, int hi_row, int p_row);
     bool IsBlockPerfectMatchLeft(int loc_x, int lo_row, int hi_row, int p_row);
-    bool IsCurrentLocLegalLeft(Value2D<int> &loc, int width, int height, int p_row);
-    bool IsCurrentLocLegalLeft(int loc_x, int width, int lo_row, int hi_row, int p_row);
-    bool FindLocLeft(Value2D<int> &loc, int num, int width, int height, int p_row);
+    bool IsCurrentLocLegalLeft(
+        Value2D<int> &loc,
+        int width,
+        int height,
+        int p_row
+    );
+    bool IsCurrentLocLegalLeft(
+        int loc_x,
+        int width,
+        int lo_row,
+        int hi_row,
+        int p_row
+    );
+    bool FindLocLeft(
+        Value2D<int> &loc,
+        int num,
+        int width,
+        int height,
+        int p_row
+    );
     bool WellLegalizationLeft();
 
     void MarkSpaceWellRight(Block const &block, int p_row);
-    bool IsCurLocWellDistanceRight(int loc_x, int lo_row, int hi_row, int p_row);
-    bool IsCurLocWellMinWidthRight(int loc_x, int lo_row, int hi_row, int p_row);
-    bool IsCurrentLocLegalRight(Value2D<int> &loc, int width, int height, int p_row);
-    bool IsCurrentLocLegalRight(int loc_x, int width, int lo_row, int hi_row, int p_row);
-    bool FindLocRight(Value2D<int> &loc, int num, int width, int height, int p_row);
+    bool IsCurLocWellDistanceRight(
+        int loc_x,
+        int lo_row,
+        int hi_row,
+        int p_row
+    );
+    bool IsCurLocWellMinWidthRight(
+        int loc_x,
+        int lo_row,
+        int hi_row,
+        int p_row
+    );
+    bool IsCurrentLocLegalRight(
+        Value2D<int> &loc,
+        int width,
+        int height,
+        int p_row
+    );
+    bool IsCurrentLocLegalRight(
+        int loc_x,
+        int width,
+        int lo_row,
+        int hi_row,
+        int p_row
+    );
+    bool FindLocRight(
+        Value2D<int> &loc,
+        int num,
+        int width,
+        int height,
+        int p_row
+    );
     bool WellLegalizationRight();
 
     bool StartPlacement() override;

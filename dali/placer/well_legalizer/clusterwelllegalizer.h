@@ -39,7 +39,12 @@ class ClusterWellLegalizer : public LGTetrisEx {
     ClusterWellLegalizer();
     ~ClusterWellLegalizer() override;
 
-    static int CostInitDisplacement(int x_new, int y_new, int x_old, int y_old) {
+    static int CostInitDisplacement(
+        int x_new,
+        int y_new,
+        int x_old,
+        int y_old
+    ) {
         return std::abs(x_new - x_old) + std::abs(y_new - y_old);
     }
     int CostLeftBottomBoundary(int x, int y) {
@@ -81,7 +86,14 @@ class ClusterWellLegalizer : public LGTetrisEx {
     void BlockVerticalSwap();
 
     double WireLengthCost(BlkCluster *cluster, int l, int r);
-    void FindBestPermutation(std::vector<Block *> &res, double &cost, BlkCluster *cluster, int l, int r, int range);
+    void FindBestPermutation(
+        std::vector<Block *> &res,
+        double &cost,
+        BlkCluster *cluster,
+        int l,
+        int r,
+        int range
+    );
     void LocalReorderInCluster(BlkCluster *cluster, int range = 3);
     void LocalReorderAllClusters();
 

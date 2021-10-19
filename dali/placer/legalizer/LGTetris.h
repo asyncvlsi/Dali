@@ -22,20 +22,20 @@
 namespace dali {
 
 class TetrisLegalizer : public Placer {
- private:
-  int max_iteration_;
-  int current_iteration_;
-  bool flipped_;
-  std::vector<IndexLocPair<double> > index_loc_list_;
- public:
-  TetrisLegalizer();
-  void InitLegalizer();
-  void SetMaxItr(int max_iteration);
-  void ResetItr() { current_iteration_ = 0; }
-  void FastShift(int failure_point);
-  void FlipPlacement();
-  bool TetrisLegal();
-  bool StartPlacement() override;
+  private:
+    int max_iteration_;
+    int current_iteration_;
+    bool flipped_;
+    std::vector<IndexLocPair<double> > index_loc_list_;
+  public:
+    TetrisLegalizer();
+    void InitLegalizer();
+    void SetMaxItr(int max_iteration);
+    void ResetItr() { current_iteration_ = 0; }
+    void FastShift(int failure_point);
+    void FlipPlacement();
+    bool TetrisLegal();
+    bool StartPlacement() override;
 };
 
 }

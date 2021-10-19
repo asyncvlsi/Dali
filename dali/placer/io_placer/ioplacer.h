@@ -10,7 +10,6 @@
 #include <phydb/phydb.h>
 
 #include "dali/circuit/circuit.h"
-#include "dali/placer.h"
 
 #include "ioboundaryspace.h"
 
