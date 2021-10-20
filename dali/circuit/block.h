@@ -61,7 +61,7 @@ class Block {
     const std::string &TypeName() const { return type_ptr_->Name(); }
 
     // get the index of this Block in the vector of instances
-    int Index() const { return name_id_pair_ptr_->second; }
+    int Id() const { return name_id_pair_ptr_->second; }
 
     // get the width of this Block
     int Width() const { return type_ptr_->Width(); }

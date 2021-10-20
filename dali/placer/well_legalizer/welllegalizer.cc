@@ -84,7 +84,7 @@ void WellLegalizer::UpdatePNBoundary(Block const &block) {
     auto it_lower = p_n_boundary_.lower_bound(block.LLY());
     auto it_upper = p_n_boundary_.upper_bound(block.URY());
     p_n_boundary_.erase(it_lower, it_upper);
-    p_n_boundary_.insert(block.LLY() + block.TypePtr()->WellPtr()->PNBoundary());
+    p_n_boundary_.insert(block.LLY() + block.TypePtr()->WellPtr()->PnBoundary());
 }
 
 bool WellLegalizer::FindLocation(Block &block, int2d &res) {
@@ -111,7 +111,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
     int best_row = 0;
     int best_loc = INT_MIN;
     int min_cost = INT_MAX;
-    int p_height = block.TypePtr()->WellPtr()->PNBoundary();
+    int p_height = block.TypePtr()->WellPtr()->PnBoundary();
 
     int tmp_cost = INT_MAX;
     int tmp_end_row = 0;
@@ -561,7 +561,7 @@ bool WellLegalizer::WellLegalizationLeft() {
         height = int(block.Height());
         width = int(block.Width());
 
-        p_well_row_height = HeightToRow(block.TypePtr()->WellPtr()->PNBoundary());
+        p_well_row_height = HeightToRow(block.TypePtr()->WellPtr()->PnBoundary());
 
         is_current_loc_legal = IsCurrentLocLegalLeft(res, width, height, p_well_row_height);
 
@@ -896,7 +896,7 @@ bool WellLegalizer::WellLegalizationRight() {
         height = int(block.Height());
         width = int(block.Width());
 
-        p_well_row_height = HeightToRow(block.TypePtr()->WellPtr()->PNBoundary());
+        p_well_row_height = HeightToRow(block.TypePtr()->WellPtr()->PnBoundary());
 
         //BOOST_LOG_TRIVIAL(info)   << block.Num() << "\n";
         is_current_loc_legal = IsCurrentLocLegalRight(res, width, height, p_well_row_height);

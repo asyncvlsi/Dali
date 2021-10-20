@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
             std::string end_macro_flag = "END " + type_name;
             BlockType *type = circuit.getBlockType(type_name);
             double np_boundary =
-                type->WellPtr()->PNBoundary() * circuit.GridValueY();
+                type->WellPtr()->PnBoundary() * circuit.GridValueY();
             TypeLayerBBox type_bbox(type, np_boundary, np_boundary);
             do {
                 getline(ist, line);
@@ -171,9 +171,9 @@ int main(int argc, char *argv[]) {
     for (auto &type_bbox: bbox_list) {
         BlockType *type = type_bbox.blk_type;
         if (type == circuit.getTechRef().io_dummy_blk_type_ptr_) continue;
-        double n_height = type->WellPtr()->NHeight() * circuit.GridValueY()
+        double n_height = type->WellPtr()->Nheight() * circuit.GridValueY()
             + type_bbox.n_extra;
-        double p_height = type->WellPtr()->PHeight() * circuit.GridValueY()
+        double p_height = type->WellPtr()->Pheight() * circuit.GridValueY()
             + type_bbox.p_extra;
         std_n_height = std::max(std_n_height, n_height);
         std_p_height = std::max(std_p_height, p_height);
@@ -242,7 +242,7 @@ int main(int argc, char *argv[]) {
             DaliExpects(bbox_ptr != nullptr, "Cannot find type?");
 
             double type_p_height =
-                circuit.getBlockType(type_name)->WellPtr()->PHeight()
+                circuit.getBlockType(type_name)->WellPtr()->Pheight()
                     * circuit.GridValueY();
             double height_diff = std_p_height - type_p_height;
             do {

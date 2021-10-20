@@ -7,7 +7,6 @@
 
 #include "blocksegment.h"
 #include "dali/circuit/block.h"
-#include "dali/circuit/blocktypewell.h"
 
 namespace dali {
 
@@ -95,7 +94,7 @@ struct Cluster {
 
     void AddBlock(Block *blk_ptr) {
         blk_list_.push_back(blk_ptr);
-        blk_initial_location_.emplace_back(blk_ptr->LLX(), blk_ptr->LLY() + blk_ptr->TypePtr()->WellPtr()->PHeight());
+        blk_initial_location_.emplace_back(blk_ptr->LLX(), blk_ptr->LLY() + blk_ptr->TypePtr()->WellPtr()->Pheight());
     }
 
     void ShiftBlockX(int x_disp);

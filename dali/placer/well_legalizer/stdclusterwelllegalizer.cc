@@ -168,8 +168,8 @@ void StdClusterWellLegalizer::FetchNPWellParams() {
 
     well_tap_cell_ = (circuit_->getTech()->WellTapCellRef()[0]);
     auto *tap_cell_well = well_tap_cell_->WellPtr();
-    tap_cell_p_height_ = tap_cell_well->PHeight();
-    tap_cell_n_height_ = tap_cell_well->NHeight();
+    tap_cell_p_height_ = tap_cell_well->Pheight();
+    tap_cell_n_height_ = tap_cell_well->Nheight();
 }
 
 void StdClusterWellLegalizer::UpdateWhiteSpaceInCol(ClusterStripe &col) {
@@ -414,8 +414,8 @@ void StdClusterWellLegalizer::AppendBlockToColBottomUp(
 
     Cluster *front_cluster;
     auto *blk_well = blk.TypePtr()->WellPtr();
-    int p_well_height = blk_well->PHeight();
-    int n_well_height = blk_well->NHeight();
+    int p_well_height = blk_well->Pheight();
+    int n_well_height = blk_well->Nheight();
     if (is_new_cluster_needed) {
         stripe.cluster_list_.emplace_back();
         front_cluster = &(stripe.cluster_list_.back());
@@ -468,8 +468,8 @@ void StdClusterWellLegalizer::AppendBlockToColTopDown(Stripe &stripe,
 
     Cluster *front_cluster;
     auto *blk_well = blk.TypePtr()->WellPtr();
-    int p_well_height = blk_well->PHeight();
-    int n_well_height = blk_well->NHeight();
+    int p_well_height = blk_well->Pheight();
+    int n_well_height = blk_well->Nheight();
     if (is_new_cluster_needed) {
         stripe.cluster_list_.emplace_back();
         front_cluster = &(stripe.cluster_list_.back());
@@ -520,8 +520,8 @@ void StdClusterWellLegalizer::AppendBlockToColBottomUpCompact(Stripe &stripe,
 
     Cluster *front_cluster;
     auto *well = blk.TypePtr()->WellPtr();
-    int p_well_height = well->PHeight();
-    int n_well_height = well->NHeight();
+    int p_well_height = well->Pheight();
+    int n_well_height = well->Nheight();
     if (is_new_cluster_needed) {
         stripe.cluster_list_.emplace_back();
         front_cluster = &(stripe.cluster_list_.back());
@@ -572,8 +572,8 @@ void StdClusterWellLegalizer::AppendBlockToColTopDownCompact(Stripe &stripe,
 
     Cluster *front_cluster;
     auto *well = blk.TypePtr()->WellPtr();
-    int p_well_height = well->PHeight();
-    int n_well_height = well->NHeight();
+    int p_well_height = well->Pheight();
+    int n_well_height = well->Nheight();
     if (is_new_cluster_needed) {
         stripe.cluster_list_.emplace_back();
         front_cluster = &(stripe.cluster_list_.back());
@@ -1354,20 +1354,20 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
     for (auto &blk: circuit_->getDesign()->block_list) {
         BlockType *type = blk.TypePtr();
         if (type == circuit_->getTech()->io_dummy_blk_type_ptr_) continue;;
-        if (type->WellPtr()->NHeight() > max_n_height) {
-            max_n_height = type->WellPtr()->NHeight();
+        if (type->WellPtr()->Nheight() > max_n_height) {
+            max_n_height = type->WellPtr()->Nheight();
         }
-        if (type->WellPtr()->PHeight() > max_p_height) {
-            max_p_height = type->WellPtr()->PHeight();
+        if (type->WellPtr()->Pheight() > max_p_height) {
+            max_p_height = type->WellPtr()->Pheight();
         }
     }
     BlockTypeWell *well_tap_cell_well_info =
         circuit_->getTech()->WellTapCellRef()[0]->WellPtr();
-    if (well_tap_cell_well_info->NHeight() > max_n_height) {
-        max_n_height = well_tap_cell_well_info->NHeight();
+    if (well_tap_cell_well_info->Nheight() > max_n_height) {
+        max_n_height = well_tap_cell_well_info->Nheight();
     }
-    if (well_tap_cell_well_info->PHeight() > max_p_height) {
-        max_p_height = well_tap_cell_well_info->PHeight();
+    if (well_tap_cell_well_info->Pheight() > max_p_height) {
+        max_p_height = well_tap_cell_well_info->Pheight();
     }
     int max_height = max_n_height + max_p_height;
 

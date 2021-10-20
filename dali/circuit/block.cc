@@ -138,16 +138,12 @@ double Block::OverlapArea(const Block &blk) const {
 void Block::Report() {
     BOOST_LOG_TRIVIAL(info)
         << "  block name: " << Name() << "\n"
-        << "    block type: " << *(TypePtr()->NamePtr())
-        << "\n"
-        << "    width and height: " << Width() << " "
-        << Height() << "\n"
-        << "    lower left corner: " << llx_ << " " << lly_
-        << "\n"
+        << "    block type: " << TypePtr()->Name() << "\n"
+        << "    width and height: " << Width() << " " << Height() << "\n"
+        << "    lower left corner: " << llx_ << " " << lly_ << "\n"
         << "    movable: " << IsMovable() << "\n"
         << "    orientation: " << OrientStr(orient_) << "\n"
-        << "    assigned primary key: " << Index()
-        << "\n";
+        << "    assigned primary key: " << Id() << "\n";
 }
 
 void Block::ReportNet() {

@@ -31,7 +31,7 @@ void Cluster::UpdateBlockLocY() {
     //Assert(p_well_height_ + n_well_height_ == height_, "Inconsistency occurs: p_well_height + n_Well_height != height\n");
     for (auto &blk_ptr: blk_list_) {
         auto *well = blk_ptr->TypePtr()->WellPtr();
-        blk_ptr->SetLLY(ly_ + p_well_height_ - well->PHeight());
+        blk_ptr->SetLLY(ly_ + p_well_height_ - well->Pheight());
     }
 }
 
@@ -128,8 +128,8 @@ void Cluster::InsertWellTapCell(Block &tap_cell, int loc) {
     blk_list_.emplace_back(tap_cell_);
     tap_cell_->SetCenterX(loc);
     auto *well = tap_cell.TypePtr()->WellPtr();
-    int p_well_height = well->PHeight();
-    int n_well_height = well->NHeight();
+    int p_well_height = well->Pheight();
+    int n_well_height = well->Nheight();
     if (is_orient_N_) {
         tap_cell.SetOrient(N);
         tap_cell.SetLLY(ly_ + p_well_height_ - p_well_height);

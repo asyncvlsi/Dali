@@ -16,7 +16,6 @@
 #include "blkpairnets.h"
 #include "block.h"
 #include "blocktype.h"
-#include "blocktypewell.h"
 #include "dali/common/logging.h"
 #include "design.h"
 #include "iopin.h"

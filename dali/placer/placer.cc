@@ -271,7 +271,7 @@ void Placer::SanityCheck() {
         BlockType *blk_type_ptr = pair.second;
         for (auto &pin: blk_type_ptr->PinList()) {
             DaliExpects(!pin.RectEmpty(),
-                        "No RECT found for pin: " + *(blk_type_ptr->NamePtr())
+                        "No RECT found for pin: " + blk_type_ptr->Name()
                             + "::" + pin.Name());
         }
     }

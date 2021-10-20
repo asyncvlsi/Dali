@@ -37,7 +37,7 @@ class BlkPinPair {
     Block *BlkPtr() const { return blk_ptr_; }
 
     // get the index of this block
-    int BlkId() const { return blk_ptr_->Index(); }
+    int BlkId() const { return blk_ptr_->Id(); }
 
     // get the pointer to the pin
     Pin *PinPtr() const { return pin_ptr_; }

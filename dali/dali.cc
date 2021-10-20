@@ -419,7 +419,7 @@ void Dali::ExportWellTapCellsToPhyDB() {
     double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
     for (auto &block: circuit_.getDesignRef().well_tap_list) {
         std::string comp_name = block.Name();
-        std::string macro_name = *(block.TypePtr()->NamePtr());
+        std::string macro_name = block.TypePtr()->Name();
         int lx = (int) (block.LLX() * factor_x)
             + circuit_.getDesignRef().die_area_offset_x_;
         int ly = (int) (block.LLY() * factor_y)

@@ -11,7 +11,6 @@
 
 #include "block.h"
 #include "blocktype.h"
-#include "blocktypewell.h"
 #include "layer.h"
 
 namespace dali {
