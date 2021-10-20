@@ -15,7 +15,7 @@ void OptRegDist::FindOptimalRegionX(
 ) const {
     std::vector<double> loc_list_x;
     std::vector<double> loc_list_y;
-    auto &net_list = circuit_->getDesign()->net_list;
+    auto &net_list = circuit_->getDesignRef().Nets();
     for (auto &it: blk.NetList()) {
         // find offset
         double offset_x = DBL_MAX;
@@ -86,7 +86,7 @@ void OptRegDist::SaveFile(std::string &file_name) const {
     double lx, ly, ux, uy;
     double llx, lly;
     double res;
-    for (auto &blk: circuit_->getDesign()->block_list) {
+    for (auto &blk: circuit_->getDesignRef().Blocks()) {
         FindOptimalRegionX(blk, lx, ly, ux, uy);
         llx = blk.LLX();
         lly = blk.LLY();

@@ -9,11 +9,10 @@
 
 namespace dali {
 
+/****
+ * Increment the count of net in the corresponding bin using binary search
+ * ****/
 void Design::UpdateFanoutHisto(int net_size) {
-    /****
-     * Increment the count of net in the corresponding bin using binary search
-     * ****/
-
     if (net_size <= 1) return;
     int l = 0;
     int r = int(net_histogram_.bin_list_.size()) - 1;
@@ -35,12 +34,12 @@ void Design::UpdateFanoutHisto(int net_size) {
     ++net_histogram_.count_[l];
 }
 
+/****
+ * Creates histogram bins using vector histo_x
+ * If histo_x is a nullptr, then using default histogram bins
+ * Classify nets to these bins, and compute the corresponding percentage
+ * ****/
 void Design::InitNetFanoutHisto(std::vector<int> *histo_x) {
-    /****
-     * Creates histogram bins using vector histo_x
-     * If histo_x is a nullptr, then using default histogram bins
-     * Classify nets to these bins, and compute the corresponding percentage
-     * ****/
     if (histo_x != nullptr) {
         net_histogram_.bin_list_.clear();
         int sz = (int) histo_x->size();
@@ -57,7 +56,7 @@ void Design::InitNetFanoutHisto(std::vector<int> *histo_x) {
     net_histogram_.ave_hpwl_.assign(sz, 0);
     net_histogram_.min_hpwl_.assign(sz, 0);
     net_histogram_.max_hpwl_.assign(sz, 0);
-    for (auto &net: net_list) {
+    for (auto &net: nets_) {
         int net_size = net.Pnum();
         UpdateFanoutHisto(net_size);
     }
@@ -67,15 +66,15 @@ void Design::InitNetFanoutHisto(std::vector<int> *histo_x) {
         net_histogram_.tot_net_count_ += net_histogram_.count_[i];
     }
     for (int i = 0; i < sz; ++i) {
-        net_histogram_.percent_[i] = 100 * net_histogram_.count_[i] / (double) net_histogram_.tot_net_count_;
+        net_histogram_.percent_[i] = 100 * net_histogram_.count_[i]
+            / (double) net_histogram_.tot_net_count_;
     }
 }
 
+/****
+ * Increment the HPWL of a net in the corresponding bin using binary search
+ * ****/
 void Design::UpdateNetHPWLHisto(int net_size, double hpwl) {
-    /****
-     * Increment the HPWL of a net in the corresponding bin using binary search
-     * ****/
-
     if (net_size <= 1) return;
     int l = 0;
     int r = int(net_histogram_.bin_list_.size()) - 1;
@@ -103,10 +102,11 @@ void Design::UpdateNetHPWLHisto(int net_size, double hpwl) {
 }
 
 void Design::ReportNetFanoutHisto() {
-    int sz = net_histogram_.count_.size();
+    int sz = static_cast<int>(net_histogram_.count_.size());
     for (int i = 0; i < sz; ++i) {
         if (net_histogram_.count_[i] > 0) {
-            net_histogram_.ave_hpwl_[i] = net_histogram_.sum_hpwl_[i] / net_histogram_.count_[i];
+            net_histogram_.ave_hpwl_[i] =
+                net_histogram_.sum_hpwl_[i] / net_histogram_.count_[i];
         } else {
             net_histogram_.ave_hpwl_[i] = 0;
         }
@@ -120,7 +120,8 @@ void Design::ReportNetFanoutHisto() {
     }
 
     BOOST_LOG_TRIVIAL(info) << "\n";
-    BOOST_LOG_TRIVIAL(info) << "                                         Net histogram\n";
+    BOOST_LOG_TRIVIAL(info)
+        << "                                         Net histogram\n";
     BOOST_LOG_TRIVIAL(info)
         << "=================================================================================================\n";
     BOOST_LOG_TRIVIAL(info)
@@ -133,7 +134,8 @@ void Design::ReportNetFanoutHisto() {
         int written_length = 0;
         if (lo == hi) {
             written_length =
-                sprintf(&buffer[0], "%4d       %8d       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
+                sprintf(&buffer[0],
+                        "%4d       %8d       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
                         lo,
                         net_histogram_.count_[i],
                         net_histogram_.percent_[i],
@@ -143,8 +145,10 @@ void Design::ReportNetFanoutHisto() {
                         net_histogram_.max_hpwl_[i]);
         } else {
             written_length =
-                sprintf(&buffer[0], "%4d-%-4d  %8d       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
-                        lo, hi,
+                sprintf(&buffer[0],
+                        "%4d-%-4d  %8d       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
+                        lo,
+                        hi,
                         net_histogram_.count_[i],
                         net_histogram_.percent_[i],
                         net_histogram_.sum_hpwl_[i],
@@ -157,7 +161,8 @@ void Design::ReportNetFanoutHisto() {
     }
     std::string buffer(1024, '\0');
     int written_length = 0;
-    written_length = sprintf(&buffer[0], "%4d+      %8d       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
+    written_length = sprintf(&buffer[0],
+                             "%4d+      %8d       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
                              net_histogram_.bin_list_[sz - 1],
                              net_histogram_.count_[sz - 1],
                              net_histogram_.percent_[sz - 1],
@@ -170,7 +175,8 @@ void Design::ReportNetFanoutHisto() {
 
     BOOST_LOG_TRIVIAL(info)
         << "=================================================================================================\n";
-    BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: " << net_histogram_.hpwl_unit_ << " um\n";
+    BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: "
+                            << net_histogram_.hpwl_unit_ << " um\n";
     BOOST_LOG_TRIVIAL(info) << "\n";
     //printf("%f\n", net_histogram_.tot_hpwl_ * 0.18);
 }

@@ -3301,8 +3301,10 @@ void GPSimPL::DumpResult(std::string const &name_of_file) {
     ++counter;
 }
 
-void GPSimPL::DumpLookAheadDisplacement(std::string const &base_name,
-                                        int mode) {
+void GPSimPL::DumpLookAheadDisplacement(
+    std::string const &base_name,
+    int mode
+) {
     /****
    * Dump the displacement of all cells during look ahead legalization.
    * @param mode:
@@ -3320,8 +3322,8 @@ void GPSimPL::DumpLookAheadDisplacement(std::string const &base_name,
         DaliExpects(circuit_ != nullptr,
                     "Set input circuit before starting anything GPSimPL::DumpLookAheadDisplacement()");
         std::vector<Block> &block_list = circuit_->BlockListRef();
-        size_t sz = circuit_->getDesignRef().blk_count_;
-        for (size_t i = 0; i < sz; ++i) {
+        int sz = circuit_->getDesignRef().RealBlkCnt();
+        for (int i = 0; i < sz; ++i) {
             double x = x_anchor[i] + block_list[i].Width() / 2.0;
             double y = y_anchor[i] + +block_list[i].Height() / 2.0;
             double u = block_list[i].X() - x;
@@ -3342,8 +3344,8 @@ void GPSimPL::DumpLookAheadDisplacement(std::string const &base_name,
                     "Set input circuit before starting anything GPSimPL::DumpLookAheadDisplacement()");
         double ave_height = circuit_->AveMovBlkHeight();
         std::vector<Block> &block_list = circuit_->BlockListRef();
-        size_t sz = circuit_->getDesignRef().blk_count_;
-        for (size_t i = 0; i < sz; ++i) {
+        int sz = circuit_->getDesignRef().RealBlkCnt();
+        for (int i = 0; i < sz; ++i) {
             double x = x_anchor[i] + block_list[i].Width() / 2.0;
             double y = y_anchor[i] + +block_list[i].Height() / 2.0;
             double u = block_list[i].X() - x;

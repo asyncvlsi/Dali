@@ -399,9 +399,9 @@ void Dali::ExportOrdinaryComponentsToPhyDB() {
         }
         std::string comp_name = block.Name();
         int lx = (int) (block.LLX() * factor_x)
-            + circuit_.getDesignRef().die_area_offset_x_;
+            + circuit_.getDesignRef().DieAreaOffsetX();
         int ly = (int) (block.LLY() * factor_y)
-            + circuit_.getDesignRef().die_area_offset_y_;
+            + circuit_.getDesignRef().DieAreaOffsetY();
         auto place_status = phydb::PlaceStatus(block.Status());
         auto orient = phydb::CompOrient(block.Orient());
 
@@ -417,13 +417,13 @@ void Dali::ExportOrdinaryComponentsToPhyDB() {
 void Dali::ExportWellTapCellsToPhyDB() {
     double factor_x = circuit_.DistanceMicrons() * circuit_.GridValueX();
     double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
-    for (auto &block: circuit_.getDesignRef().well_tap_list) {
+    for (auto &block: circuit_.getDesignRef().WellTaps()) {
         std::string comp_name = block.Name();
-        std::string macro_name = block.TypePtr()->Name();
+        std::string macro_name = block.TypeName();
         int lx = (int) (block.LLX() * factor_x)
-            + circuit_.getDesignRef().die_area_offset_x_;
+            + circuit_.getDesignRef().DieAreaOffsetX();
         int ly = (int) (block.LLY() * factor_y)
-            + circuit_.getDesignRef().die_area_offset_y_;
+            + circuit_.getDesignRef().DieAreaOffsetY();
         auto place_status = phydb::PlaceStatus(block.Status());
         auto orient = phydb::CompOrient(block.Orient());
 
@@ -449,7 +449,7 @@ void Dali::ExportComponentsToPhyDB() {
 void Dali::ExportIoPinsToPhyDB() {
     DaliExpects(!circuit_.getTechRef().metal_list_.empty(),
                 "Need metal layer info to generate PIN location\n");
-    for (auto &iopin: circuit_.getDesignRef().iopin_list) {
+    for (auto &iopin: circuit_.getDesignRef().IoPins()) {
         if (!iopin.IsPrePlaced() && iopin.IsPlaced()) {
             DaliExpects(iopin.Layer() != nullptr,
                         "IOPIN metal layer not set? Cannot export it to PhyDB");
@@ -468,11 +468,11 @@ void Dali::ExportIoPinsToPhyDB() {
             int pin_x = circuit_.DaliLoc2PhyDBLocX(iopin.X());
             int pin_y = circuit_.DaliLoc2PhyDBLocY(iopin.Y());
             phydb::CompOrient pin_orient;
-            if (iopin.X() == circuit_.getDesignRef().region_left_) {
+            if (iopin.X() == circuit_.getDesignRef().RegionLeft()) {
                 pin_orient = phydb::E;
-            } else if (iopin.X() == circuit_.getDesignRef().region_right_) {
+            } else if (iopin.X() == circuit_.getDesignRef().RegionRight()) {
                 pin_orient = phydb::W;
-            } else if (iopin.Y() == circuit_.getDesignRef().region_bottom_) {
+            } else if (iopin.Y() == circuit_.getDesignRef().RegionBottom()) {
                 pin_orient = phydb::N;
             } else {
                 pin_orient = phydb::S;
@@ -507,17 +507,17 @@ void Dali::ExportMiniRowsToPhyDB() {
                 *col_ptr = phy_db_ptr_->AddClusterCol(column_name, bot_signal_);
 
             int col_lx = (int) (strip.LLX() * factor_x)
-                + circuit_.getDesign()->die_area_offset_x_;
+                + circuit_.getDesign()->DieAreaOffsetX();
             int col_ux = (int) (strip.URX() * factor_x)
-                + circuit_.getDesign()->die_area_offset_x_;
+                + circuit_.getDesign()->DieAreaOffsetX();
             col_ptr->SetXRange(col_lx, col_ux);
 
             if (strip.is_bottom_up_) {
                 for (auto &cluster: strip.cluster_list_) {
                     int row_ly = (int) (cluster.LLY() * factor_y)
-                        + circuit_.getDesign()->die_area_offset_y_;
+                        + circuit_.getDesign()->DieAreaOffsetY();
                     int row_uy = (int) (cluster.URY() * factor_y)
-                        + circuit_.getDesign()->die_area_offset_y_;
+                        + circuit_.getDesign()->DieAreaOffsetY();
                     col_ptr->AddRow(row_ly, row_uy);
                 }
             } else {
@@ -525,9 +525,9 @@ void Dali::ExportMiniRowsToPhyDB() {
                 for (int j = sz - 1; j >= 0; --j) {
                     auto &cluster = strip.cluster_list_[j];
                     int row_ly = (int) (cluster.LLY() * factor_y)
-                        + circuit_.getDesign()->die_area_offset_y_;
+                        + circuit_.getDesign()->DieAreaOffsetY();
                     int row_uy = (int) (cluster.URY() * factor_y)
-                        + circuit_.getDesign()->die_area_offset_y_;
+                        + circuit_.getDesign()->DieAreaOffsetY();
                     col_ptr->AddRow(row_ly, row_uy);
                 }
             }
