@@ -389,18 +389,18 @@ void GPSimPL::BuildProblemB2BX() {
         max_pin_index = net.MaxBlkPinNumX();
         min_pin_index = net.MinBlkPinNumX();
 
-        blk_num_max = net.blk_pin_list[max_pin_index].BlkNum();
+        blk_num_max = net.blk_pin_list[max_pin_index].BlkId();
         pin_loc_max = net.blk_pin_list[max_pin_index].AbsX();
         is_movable_max = net.blk_pin_list[max_pin_index].BlkPtr()->IsMovable();
         offset_max = net.blk_pin_list[max_pin_index].OffsetX();
 
-        blk_num_min = net.blk_pin_list[min_pin_index].BlkNum();
+        blk_num_min = net.blk_pin_list[min_pin_index].BlkId();
         pin_loc_min = net.blk_pin_list[min_pin_index].AbsX();
         is_movable_min = net.blk_pin_list[min_pin_index].BlkPtr()->IsMovable();
         offset_min = net.blk_pin_list[min_pin_index].OffsetX();
 
         for (auto &pair: net.blk_pin_list) {
-            blk_num = pair.BlkNum();
+            blk_num = pair.BlkId();
             pin_loc = pair.AbsX();
             is_movable = pair.BlkPtr()->IsMovable();
             offset = pair.OffsetX();
@@ -540,18 +540,18 @@ void GPSimPL::BuildProblemB2BY() {
         max_pin_index = net.MaxBlkPinNumY();
         min_pin_index = net.MinBlkPinNumY();
 
-        blk_num_max = net.blk_pin_list[max_pin_index].BlkNum();
+        blk_num_max = net.blk_pin_list[max_pin_index].BlkId();
         pin_loc_max = net.blk_pin_list[max_pin_index].AbsY();
         is_movable_max = net.blk_pin_list[max_pin_index].BlkPtr()->IsMovable();
         offset_max = net.blk_pin_list[max_pin_index].OffsetY();
 
-        blk_num_min = net.blk_pin_list[min_pin_index].BlkNum();
+        blk_num_min = net.blk_pin_list[min_pin_index].BlkId();
         pin_loc_min = net.blk_pin_list[min_pin_index].AbsY();
         is_movable_min = net.blk_pin_list[min_pin_index].BlkPtr()->IsMovable();
         offset_min = net.blk_pin_list[min_pin_index].OffsetY();
 
         for (auto &pair: net.blk_pin_list) {
-            blk_num = pair.BlkNum();
+            blk_num = pair.BlkId();
             pin_loc = pair.AbsY();
             is_movable = pair.BlkPtr()->IsMovable();
             offset = pair.OffsetY();
@@ -675,13 +675,13 @@ void GPSimPL::BuildProblemStarModelX() {
         inv_p = net.InvP();
 
         // assuming the 0-th pin in the net is the driver pin
-        driver_blk_num = net.blk_pin_list[0].BlkNum();
+        driver_blk_num = net.blk_pin_list[0].BlkId();
         driver_pin_loc = net.blk_pin_list[0].AbsX();
         driver_is_movable = net.blk_pin_list[0].BlkPtr()->IsMovable();
         driver_offset = net.blk_pin_list[0].OffsetX();
 
         for (auto &pair: net.blk_pin_list) {
-            blk_num = pair.BlkNum();
+            blk_num = pair.BlkId();
             pin_loc = pair.AbsX();
             is_movable = pair.BlkPtr()->IsMovable();
 
@@ -782,13 +782,13 @@ void GPSimPL::BuildProblemStarModelY() {
         inv_p = net.InvP();
 
         // assuming the 0-th pin in the net is the driver pin
-        driver_blk_num = net.blk_pin_list[0].BlkNum();
+        driver_blk_num = net.blk_pin_list[0].BlkId();
         driver_pin_loc = net.blk_pin_list[0].AbsY();
         driver_is_movable = net.blk_pin_list[0].BlkPtr()->IsMovable();
         driver_offset = net.blk_pin_list[0].OffsetY();
 
         for (auto &pair: net.blk_pin_list) {
-            blk_num = pair.BlkNum();
+            blk_num = pair.BlkId();
             pin_loc = pair.AbsY();
             is_movable = pair.BlkPtr()->IsMovable();
 
@@ -887,12 +887,12 @@ void GPSimPL::BuildProblemHPWLX() {
         max_pin_index = net.MaxBlkPinNumX();
         min_pin_index = net.MinBlkPinNumX();
 
-        blk_num_max = net.blk_pin_list[max_pin_index].BlkNum();
+        blk_num_max = net.blk_pin_list[max_pin_index].BlkId();
         pin_loc_max = net.blk_pin_list[max_pin_index].AbsX();
         is_movable_max = net.blk_pin_list[max_pin_index].BlkPtr()->IsMovable();
         offset_max = net.blk_pin_list[max_pin_index].OffsetX();
 
-        blk_num_min = net.blk_pin_list[min_pin_index].BlkNum();
+        blk_num_min = net.blk_pin_list[min_pin_index].BlkId();
         pin_loc_min = net.blk_pin_list[min_pin_index].AbsX();
         is_movable_min = net.blk_pin_list[min_pin_index].BlkPtr()->IsMovable();
         offset_min = net.blk_pin_list[min_pin_index].OffsetX();
@@ -984,12 +984,12 @@ void GPSimPL::BuildProblemHPWLY() {
         max_pin_index = net.MaxBlkPinNumY();
         min_pin_index = net.MinBlkPinNumY();
 
-        blk_num_max = net.blk_pin_list[max_pin_index].BlkNum();
+        blk_num_max = net.blk_pin_list[max_pin_index].BlkId();
         pin_loc_max = net.blk_pin_list[max_pin_index].AbsY();
         is_movable_max = net.blk_pin_list[max_pin_index].BlkPtr()->IsMovable();
         offset_max = net.blk_pin_list[max_pin_index].OffsetY();
 
-        blk_num_min = net.blk_pin_list[min_pin_index].BlkNum();
+        blk_num_min = net.blk_pin_list[min_pin_index].BlkId();
         pin_loc_min = net.blk_pin_list[min_pin_index].AbsY();
         is_movable_min = net.blk_pin_list[min_pin_index].BlkPtr()->IsMovable();
         offset_min = net.blk_pin_list[min_pin_index].OffsetY();
@@ -1059,12 +1059,12 @@ void GPSimPL::BuildProblemStarHPWLX() {
             Net &net = *(edge.net);
             int d = edge.d;
             int l = edge.l;
-            int driver_blk_num = net.blk_pin_list[d].BlkNum();
+            int driver_blk_num = net.blk_pin_list[d].BlkId();
             double driver_pin_loc = net.blk_pin_list[d].AbsX();
             bool driver_is_movable = net.blk_pin_list[d].BlkPtr()->IsMovable();
             double driver_offset = net.blk_pin_list[d].OffsetX();
 
-            int load_blk_num = net.blk_pin_list[l].BlkNum();
+            int load_blk_num = net.blk_pin_list[l].BlkId();
             double load_pin_loc = net.blk_pin_list[l].AbsX();
             bool load_is_movable = net.blk_pin_list[l].BlkPtr()->IsMovable();
             double load_offset = net.blk_pin_list[l].OffsetX();
@@ -1072,13 +1072,13 @@ void GPSimPL::BuildProblemStarHPWLX() {
             int max_pin_index = net.MaxBlkPinNumX();
             int min_pin_index = net.MinBlkPinNumX();
 
-            int blk_num_max = net.blk_pin_list[max_pin_index].BlkNum();
+            int blk_num_max = net.blk_pin_list[max_pin_index].BlkId();
             double pin_loc_max = net.blk_pin_list[max_pin_index].AbsX();
             bool is_movable_max =
                 net.blk_pin_list[max_pin_index].BlkPtr()->IsMovable();
             double offset_max = net.blk_pin_list[max_pin_index].OffsetX();
 
-            int blk_num_min = net.blk_pin_list[min_pin_index].BlkNum();
+            int blk_num_min = net.blk_pin_list[min_pin_index].BlkId();
             double pin_loc_min = net.blk_pin_list[min_pin_index].AbsX();
             bool is_movable_min =
                 net.blk_pin_list[min_pin_index].BlkPtr()->IsMovable();
@@ -1199,12 +1199,12 @@ void GPSimPL::BuildProblemStarHPWLY() {
             Net &net = *(edge.net);
             int d = edge.d;
             int l = edge.l;
-            int driver_blk_num = net.blk_pin_list[d].BlkNum();
+            int driver_blk_num = net.blk_pin_list[d].BlkId();
             double driver_pin_loc = net.blk_pin_list[d].AbsY();
             bool driver_is_movable = net.blk_pin_list[d].BlkPtr()->IsMovable();
             double driver_offset = net.blk_pin_list[d].OffsetY();
 
-            int load_blk_num = net.blk_pin_list[l].BlkNum();
+            int load_blk_num = net.blk_pin_list[l].BlkId();
             double load_pin_loc = net.blk_pin_list[l].AbsY();
             bool load_is_movable = net.blk_pin_list[l].BlkPtr()->IsMovable();
             double load_offset = net.blk_pin_list[l].OffsetY();
@@ -1212,13 +1212,13 @@ void GPSimPL::BuildProblemStarHPWLY() {
             int max_pin_index = net.MaxBlkPinNumY();
             int min_pin_index = net.MinBlkPinNumY();
 
-            int blk_num_max = net.blk_pin_list[max_pin_index].BlkNum();
+            int blk_num_max = net.blk_pin_list[max_pin_index].BlkId();
             double pin_loc_max = net.blk_pin_list[max_pin_index].AbsY();
             bool is_movable_max =
                 net.blk_pin_list[max_pin_index].BlkPtr()->IsMovable();
             double offset_max = net.blk_pin_list[max_pin_index].OffsetY();
 
-            int blk_num_min = net.blk_pin_list[min_pin_index].BlkNum();
+            int blk_num_min = net.blk_pin_list[min_pin_index].BlkId();
             double pin_loc_min = net.blk_pin_list[min_pin_index].AbsY();
             bool is_movable_min =
                 net.blk_pin_list[min_pin_index].BlkPtr()->IsMovable();

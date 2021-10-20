@@ -16,30 +16,34 @@ namespace dali {
  *  a pointer to a Pin, representing a gate pin
  *
  * Important:
- *  for the consideration of performance, pointers are stored in this structure.
- *  note that the set of blocks in a Circuit and the set of pins in a BlockType are stored in vectors,
- *  the space for these vectors MUST BE pre-allocated using std::vector::resize() or std::vector::reserve(),
- *  otherwise, these pointers may point to invalid memory locations if not properly handled.
+ *  For the consideration of performance, pointers are stored in this structure.
+ *  note that blocks in a Circuit and pins in a BlockType are stored in vectors,
+ *  the space for these vectors MUST BE pre-allocated using std::vector::resize()
+ *  or std::vector::reserve(), otherwise, these pointers may point to invalid
+ *  memory locations if not properly handled.
+ *  This also implies that one cannot add blocks to a Circuit or pins to a BlockType
+ *  once these BlkPinPairs are constructed.
  * ****/
 
-struct BlkPinPair {
-    Block *blk_ptr_;
-    Pin *pin_ptr_;
-
-    BlkPinPair(Block *block_ptr, Pin *pin_ptr)
-        : blk_ptr_(block_ptr), pin_ptr_(pin_ptr) {}
+class BlkPinPair {
+  public:
+    BlkPinPair(
+        Block *block_ptr,
+        Pin *pin_ptr
+    ) : blk_ptr_(block_ptr),
+        pin_ptr_(pin_ptr) {}
 
     // get the pointer to the block
     Block *BlkPtr() const { return blk_ptr_; }
 
     // get the index of this block
-    int BlkNum() const { return blk_ptr_->Index(); }
+    int BlkId() const { return blk_ptr_->Index(); }
 
     // get the pointer to the pin
     Pin *PinPtr() const { return pin_ptr_; }
 
     // get the index of this pin
-    int PinNum() const { return pin_ptr_->Num(); }
+    int PinId() const { return pin_ptr_->Num(); }
 
     // get the offset of this pin in x-direction, the orientation of the block is considered
     double OffsetX() const { return pin_ptr_->OffsetX(blk_ptr_->Orient()); }
@@ -64,16 +68,19 @@ struct BlkPinPair {
 
     // some boolean operators
     bool operator<(const BlkPinPair &rhs) const {
-        return (BlkNum() < rhs.BlkNum())
-            || ((BlkNum() == rhs.BlkNum()) && (PinNum() < rhs.PinNum()));
+        return (BlkId() < rhs.BlkId())
+            || ((BlkId() == rhs.BlkId()) && (PinId() < rhs.PinId()));
     }
     bool operator>(const BlkPinPair &rhs) const {
-        return (BlkNum() > rhs.BlkNum())
-            || ((BlkNum() == rhs.BlkNum()) && (PinNum() > rhs.PinNum()));
+        return (BlkId() > rhs.BlkId())
+            || ((BlkId() == rhs.BlkId()) && (PinId() > rhs.PinId()));
     }
     bool operator==(const BlkPinPair &rhs) const {
-        return (BlkNum() == rhs.BlkNum()) && (PinNum() == rhs.PinNum());
+        return (BlkId() == rhs.BlkId()) && (PinId() == rhs.PinId());
     }
+  private:
+    Block *blk_ptr_;
+    Pin *pin_ptr_;
 };
 
 }

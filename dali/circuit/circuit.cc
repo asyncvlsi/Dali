@@ -1830,24 +1830,24 @@ void Circuit::BuildBlkPairNets() {
     // for each net, we decompose it, and enumerate all driver-load pair
     for (auto &net: design_.net_list) {
         //BOOST_LOG_TRIVIAL(info)   << net.NameStr() << "\n";
-        int sz = net.blk_pin_list.size();
+        int sz = static_cast<int>(net.blk_pin_list.size());
         int driver_index = -1;
         // find if there is a driver pin in this net
         // if a net contains a unplaced IOPin, then there might be no driver pin, this case is ignored for now
         // we also assume there is only one driver pin
         for (int i = 0; i < sz; ++i) {
             BlkPinPair &blk_pin_pair = net.blk_pin_list[i];
-            if (!(blk_pin_pair.pin_ptr_->IsInput())) {
+            if (!(blk_pin_pair.PinPtr()->IsInput())) {
                 driver_index = i;
                 break;
             }
         }
         if (driver_index == -1) continue;
 
-        int driver_blk_num = net.blk_pin_list[driver_index].BlkNum();
+        int driver_blk_num = net.blk_pin_list[driver_index].BlkId();
         for (int i = 0; i < sz; ++i) {
             if (i == driver_index) continue;
-            int load_blk_num = net.blk_pin_list[i].BlkNum();
+            int load_blk_num = net.blk_pin_list[i].BlkId();
             if (driver_blk_num == load_blk_num) continue;
             int num0 = std::max(driver_blk_num, load_blk_num);
             int num1 = std::min(driver_blk_num, load_blk_num);

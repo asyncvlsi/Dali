@@ -220,8 +220,6 @@ class Block {
 };
 
 class BlockAux {
-  protected:
-    Block *blk_ptr_;
   public:
     explicit BlockAux(Block *blk_ptr) : blk_ptr_(blk_ptr) {
         blk_ptr->SetAux(this);
@@ -229,6 +227,8 @@ class BlockAux {
 
     // get the pointer pointing to the Block it belongs to
     Block *getBlockPtr() const { return blk_ptr_; }
+  protected:
+    Block *blk_ptr_;
 };
 
 }
