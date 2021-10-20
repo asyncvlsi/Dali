@@ -94,7 +94,7 @@ void IoBoundaryLayerSpace::AddCluster(double low, double span) {
 
 void IoBoundaryLayerSpace::ComputeDefaultShape() {
     double min_width = metal_layer->Width();
-    double min_area = metal_layer->Area();
+    double min_area = metal_layer->MinArea();
     double height = min_area / min_width;
 
     default_horizontal_shape.SetValue(-height / 2.0,

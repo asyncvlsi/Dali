@@ -78,7 +78,7 @@ Net *IoPin::NetPtr() const {
 }
 
 const std::string &IoPin::NetName() const {
-    DaliExpects(net_ptr_!= nullptr,
+    DaliExpects(net_ptr_ != nullptr,
                 "Cannot get net name because net_ptr_ is a nullptr");
     return net_ptr_->NameStr();
 }
@@ -115,6 +115,12 @@ void IoPin::SetLayerPtr(MetalLayer *layer_ptr) {
 
 MetalLayer *IoPin::LayerPtr() const {
     return layer_ptr_;
+}
+
+const std::string &IoPin::LayerName() const {
+    DaliExpects(layer_ptr_ != nullptr,
+                "Cannot get layer name because layer_ptr_ is a nullptr");
+    return layer_ptr_->Name();
 }
 
 void IoPin::SetShape(double llx, double lly, double urx, double ury) {

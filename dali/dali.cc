@@ -453,7 +453,7 @@ void Dali::ExportIoPinsToPhyDB() {
         if (!iopin.IsPrePlaced() && iopin.IsPlaced()) {
             DaliExpects(iopin.LayerPtr() != nullptr,
                         "IOPIN metal layer not set? Cannot export it to PhyDB");
-            std::string metal_name = *(iopin.LayerPtr()->Name());
+            std::string metal_name = iopin.LayerPtr()->Name();
             std::string iopin_name = iopin.Name();
             DaliExpects(phy_db_ptr_->IsIoPinExisting(iopin_name),
                         "IOPIN not in PhyDB? " + iopin_name);

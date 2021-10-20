@@ -146,7 +146,7 @@ void StdClusterWellLegalizer::FetchNPWellParams() {
     int same_well_spacing =
         std::ceil(n_well_layer->Spacing() / circuit_->GridValueX());
     int op_well_spacing =
-        std::ceil(n_well_layer->OpSpacing() / circuit_->GridValueX());
+        std::ceil(n_well_layer->OppositeSpacing() / circuit_->GridValueX());
     well_spacing_ = std::max(same_well_spacing, op_well_spacing);
     max_unplug_length_ =
         (int) std::floor(n_well_layer->MaxPlugDist() / circuit_->GridValueX());

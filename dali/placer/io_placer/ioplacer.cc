@@ -321,7 +321,7 @@ bool IoPlacer::ConfigBoundaryMetal(int argc, char **argv) {
             }
             MetalLayer *metal_layer =
                 circuit_ptr_->getMetalLayerPtr(metal_name);
-            int metal_index = metal_layer->Num();
+            int metal_index = metal_layer->Id();
             if (arg == "left") {
                 bool is_success = ConfigSetMetalLayer(LEFT, metal_index);
                 std::cout << is_success << "\n";
@@ -381,7 +381,7 @@ bool IoPlacer::ConfigCmd(int argc, char **argv) {
         if (is_metal_name) {
             MetalLayer *metal_layer =
                 circuit_ptr_->getMetalLayerPtr(option_str);
-            return ConfigSetGlobalMetalLayer(metal_layer->Num());
+            return ConfigSetGlobalMetalLayer(metal_layer->Id());
         }
         BOOST_LOG_TRIVIAL(fatal) << "Unknown flag: " << option_str << "\n";
         ReportConfigUsage();

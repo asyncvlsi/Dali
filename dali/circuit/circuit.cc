@@ -1038,7 +1038,7 @@ void Circuit::AddMetalLayer(std::string &metal_name,
         map_size));
     std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
     tech_.metal_list_.emplace_back(width, spacing, name_num_pair_ptr);
-    tech_.metal_list_.back().SetArea(min_area);
+    tech_.metal_list_.back().SetMinArea(min_area);
     tech_.metal_list_.back().SetPitch(pitch_x, pitch_y);
     tech_.metal_list_.back().SetDirection(metal_direction);
 }
@@ -2273,9 +2273,11 @@ void Circuit::GenLongNetTable(std::string const &name_of_file) {
     ost.close();
 }
 
-void Circuit::SaveDefFile(std::string const &name_of_file,
-                          std::string const &def_file_name,
-                          bool is_complete_version) {
+void Circuit::SaveDefFile(
+    std::string const &name_of_file,
+    std::string const &def_file_name,
+    bool is_complete_version
+) {
     std::string file_name;
     if (is_complete_version) {
         file_name = name_of_file + ".def";
@@ -2369,7 +2371,7 @@ void Circuit::SaveDefFile(std::string const &name_of_file,
     ost << "PINS " << design_.iopins_.size() << " ;\n";
     DaliExpects(!tech_.metal_list_.empty(),
                 "Need metal layer info to generate PIN location\n");
-    std::string metal_name = *(tech_.metal_list_[0].Name());
+    std::string metal_name = tech_.metal_list_[0].Name();
     int half_width = std::ceil(
         tech_.metal_list_[0].MinHeight() / 2.0 * design_.distance_microns_);
     int height =
@@ -2743,10 +2745,10 @@ void Circuit::SaveDefFile(
                     << iopin.SigDirectStr()
                     << " + USE " << iopin.SigUseStr();
                 if (iopin.IsPlaced()) {
-                    std::string metal_name = *(iopin.LayerPtr()->Name());
+                    std::string metal_name = iopin.LayerName();
                     int half_width = std::ceil(
                         iopin.LayerPtr()->MinHeight() / 2.0
-                                                   * design_.distance_microns_);
+                            * design_.distance_microns_);
                     int height = std::ceil(
                         iopin.LayerPtr()->Width() * design_.distance_microns_);
                     ost << "\n  + LAYER "
@@ -2780,7 +2782,7 @@ void Circuit::SaveDefFile(
             ost << "PINS " << design_.iopins_.size() << " ;\n";
             DaliExpects(!tech_.metal_list_.empty(),
                         "Need metal layer info to generate PIN location\n");
-            std::string metal_name = *(tech_.metal_list_[0].Name());
+            std::string metal_name = tech_.metal_list_[0].Name();
             int half_width = std::ceil(tech_.metal_list_[0].MinHeight() / 2.0
                                            * design_.distance_microns_);
             int height = std::ceil(
@@ -2955,7 +2957,7 @@ void Circuit::SaveIODefFile(
     ost << "PINS " << design_.iopins_.size() << " ;\n";
     DaliExpects(!tech_.metal_list_.empty(),
                 "Need metal layer info to generate PIN location\n");
-    std::string metal_name = *(tech_.metal_list_[0].Name());
+    std::string metal_name = tech_.metal_list_[0].Name();
     int half_width = std::ceil(
         tech_.metal_list_[0].MinHeight() / 2.0 * design_.distance_microns_);
     int height =

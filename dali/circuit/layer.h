@@ -11,38 +11,44 @@
 #include "dali/common/misc.h"
 #include "status.h"
 
+/****
+ * This header file contains class Layer, which is an abstract class for MetalLayer
+ * and WellLayer. All these classes are defined in this file.
+ * ****/
+
 namespace dali {
 
+/****
+ * This is an abstract class of any layers, this class contains:
+ *     width: min width of this layer
+ *     spacing: min spacing of this layer
+ */
 class Layer {
-  protected:
-    double width_;
-    double spacing_;
-
   public:
     Layer();
     Layer(double width, double spacing);
-    void SetWidth(double width) {
-        DaliExpects(width >= 0,
-                    "Negative width not allowed: Layer::SetWidth()\n");
-        width_ = width;
-    }
-    void SetSpacing(double spacing) {
-        DaliExpects(spacing >= 0,
-                    "Negative spacing not allowed: Layer::SetSpacing()\n");
-        spacing_ = spacing;
-    }
+
+    // set the min width
+    void SetWidth(double width);
+
+    // get the min width
     double Width() const { return width_; }
+
+    // set the min spacing
+    void SetSpacing(double spacing);
+
+    // get the min spacing
     double Spacing() const { return spacing_; }
+  protected:
+    double width_;
+    double spacing_;
 };
 
+/****
+ * This is a class for metal layers, which contains basic information for
+ * placement, mainly I/O placement.
+ */
 class MetalLayer : public Layer {
-  private:
-    std::pair<const std::string, int> *name_num_pair_ptr_;
-    double min_area_;
-    double x_pitch_;
-    double y_pitch_;
-    MetalDirection direction_;
-
   public:
     explicit MetalLayer(std::pair<const std::string, int> *name_num_pair_ptr);
     MetalLayer(
@@ -51,70 +57,100 @@ class MetalLayer : public Layer {
         std::pair<const std::string, int> *name_num_pair_ptr,
         MetalDirection direction = HORIZONTAL
     );
-    void SetArea(double area) {
-        DaliExpects(area >= 0, "Negative minarea?");
-        min_area_ = area;
-    }
-    void SetPitch(double x_pitch, double y_pitch) {
-        DaliExpects(x_pitch >= 0 && y_pitch >= 0, "Negative metal pitch?");
-        x_pitch_ = x_pitch;
-        y_pitch_ = y_pitch;
-    }
-    void SetPitchAuto() {
-        x_pitch_ = width_ + spacing_;
-        y_pitch_ = width_ + spacing_;
-    }
-    void SetDirection(MetalDirection direction) { direction_ = direction; }
-    const std::string *Name() const { return &(name_num_pair_ptr_->first); }
-    int Num() const { return name_num_pair_ptr_->second; }
-    double Area() const { return min_area_; }
-    double MinHeight() const { return min_area_ / width_; }
-    double PitchX() const { return x_pitch_; }
-    double PitchY() const { return y_pitch_; }
-    MetalDirection Direction() const { return direction_; }
+
+    // get the name of this layer
+    const std::string &Name() const;
+
+    // get the index of this layer
+    int Id() const;
+
+    // set the min area
+    void SetMinArea(double min_area);
+
+    // get the min area
+    double MinArea() const;
+
+    // compute and get the min height
+    double MinHeight() const;
+
+    // set the pitch of this layer, this can be different from min_width + min_spacing
+    void SetPitch(double x_pitch, double y_pitch);
+
+    // automatically compute pitches from min_width and min_spacing
+    void SetPitchUsingWidthSpacing();
+
+    // get the pitch along x direction
+    double PitchX() const;
+
+    // get the pitch along y direction
+    double PitchY() const;
+
+    // set direction of this metal layer
+    void SetDirection(MetalDirection direction);
+
+    // get direction of this metal layer
+    MetalDirection Direction() const;
+
+    // get the string for the direction of this layer
+    std::string DirectionStr() const;
+
+    // print information of this layer
     void Report() const;
+  private:
+    std::pair<const std::string, int> *name_id_pair_ptr_;
+    double min_area_;
+    double x_pitch_;
+    double y_pitch_;
+    MetalDirection direction_;
 };
 
+/****
+ * This is a class for N/P-well layers, which contains basic information for
+ * placement, mainly well legalization.
+ */
 class WellLayer : public Layer {
-  private:
-    double op_spacing_;
-    double max_plug_dist_;
-    double overhang_;
   public:
     WellLayer(
         double width,
         double spacing,
-        double op_spacing,
+        double opposite_spacing,
         double max_plug_dist,
         double overhang
     );
-    double OpSpacing() const { return op_spacing_; }
-    double MaxPlugDist() const { return max_plug_dist_; }
-    double Overhang() const { return overhang_; }
 
-    void SetOpSpacing(double op_spacing) {
-        DaliExpects(op_spacing >= 0,
-                    "Negative opposite spacing not allowed: WellLayer::SetOpSpacing\n");
-        op_spacing_ = op_spacing;
-    }
-    void SetMaxPlugDist(double max_plug_dist) {
-        DaliExpects(max_plug_dist >= 0,
-                    "Negative max plug distance not allowed: WellLayer::SetMaxPlugDist\n");
-        max_plug_dist_ = max_plug_dist;
-    }
-    void SetOverhang(double overhang) {
-        DaliExpects(overhang >= 0,
-                    "Negative well/diffusion overhang not allowed: WellLayer::SetOverhang()\n");
-        overhang_ = overhang;
-    }
+    // set all parameters
     void SetParams(
         double width,
         double spacing,
-        double op_spacing,
+        double opposite_spacing,
         double max_plug_dist,
         double overhang
     );
+
+    // set opposite spacing
+    void SetOppositeSpacing(double opposite_spacing);
+
+    // get opposite spacing
+    double OppositeSpacing() const;
+
+    // set max plug distance
+    void SetMaxPlugDist(double max_plug_dist);
+
+    // get max plug distance
+    double MaxPlugDist() const;
+
+    // set overhang
+    void SetOverhang(double overhang);
+
+    // get overhang
+    double Overhang() const;
+
+    // print information of this layer
     void Report();
+  private:
+    double opposite_spacing_;
+    double max_plug_dist_;
+    double overhang_;
 };
 
 }

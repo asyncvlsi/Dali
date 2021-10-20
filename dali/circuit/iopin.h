@@ -21,7 +21,9 @@ class Net;
  * This class contains basic information of an I/O pin. In this class, users can
  * find many attributes like:
  *     name: name of an I/O pin
- *
+ *     index: internal index
+ *     net: the net this I/O pin belongs to
+ * and many other things including I/O pin usage and physical geometry.
  */
 class IoPin {
   public:
@@ -77,6 +79,9 @@ class IoPin {
 
     // get the metal layer used to create its physical geometry
     MetalLayer *LayerPtr() const;
+
+    // get the metal layer name
+    const std::string &LayerName() const;
 
     // set shape of its physical geometry
     void SetShape(double llx, double lly, double urx, double ury);

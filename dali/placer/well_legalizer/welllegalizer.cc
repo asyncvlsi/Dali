@@ -31,7 +31,7 @@ void WellLegalizer::InitWellLegalizer() {
     p_max_plug_dist_ = std::ceil(p_layer->MaxPlugDist() / circuit_->GridValueX());
     nn_spacing_ = std::ceil(n_layer->Spacing() / circuit_->GridValueX());
     pp_spacing_ = std::ceil(p_layer->Spacing() / circuit_->GridValueX());
-    np_spacing_ = std::ceil(p_layer->OpSpacing() / circuit_->GridValueX());
+    np_spacing_ = std::ceil(p_layer->OppositeSpacing() / circuit_->GridValueX());
     n_min_width_ = std::ceil(n_layer->Width() / circuit_->GridValueX());
     p_min_width_ = std::ceil(p_layer->Width() / circuit_->GridValueX());
 
