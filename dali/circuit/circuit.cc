@@ -1626,7 +1626,7 @@ void Circuit::AddIOPinToNet(std::string &iopin_name, std::string &net_name) {
     IoPin *iopin = getIOPin(iopin_name);
     Net *io_net = getNetPtr(net_name);
     iopin->SetNetPtr(io_net);
-    io_net->AddIOPin(iopin);
+    io_net->AddIoPin(iopin);
     if (iopin->IsPrePlaced()) {
         Block *blk_ptr = getBlockPtr(iopin_name);
         Pin *pin = &(blk_ptr->TypePtr()->PinList()[0]);
@@ -1688,16 +1688,17 @@ void Circuit::ReportBlockMap() {
 
 // report the net list for debugging purposes.
 void Circuit::ReportNetList() {
-    BOOST_LOG_TRIVIAL(info) << "Total Net: " << design_.nets_.size()
-                            << "\n";
+    BOOST_LOG_TRIVIAL(info)
+        << "Total Net: " << design_.nets_.size() << "\n";
     for (auto &net: design_.nets_) {
-        BOOST_LOG_TRIVIAL(info) << "  " << *net.Name() << "  " << net.Weight()
-                                << "\n";
-        for (auto &block_pin_pair: net.blk_pin_list) {
-            BOOST_LOG_TRIVIAL(info) << "\t" << " ("
-                                    << block_pin_pair.BlockName() << " "
-                                    << block_pin_pair.PinName() << ") "
-                                    << "\n";
+        BOOST_LOG_TRIVIAL(info)
+            << "  " << net.Name() << "  " << net.Weight() << "\n";
+        for (auto &block_pin: net.BlockPins()) {
+            BOOST_LOG_TRIVIAL(info)
+                << "\t" << " ("
+                << block_pin.BlockName() << " "
+                << block_pin.PinName() << ") "
+                << "\n";
         }
     }
     BOOST_LOG_TRIVIAL(info) << "\n";
@@ -1725,7 +1726,7 @@ void Circuit::UpdateNetHPWLHistogram() {
     design_.net_histogram_.max_hpwl_.assign(bin_count, DBL_MIN);
 
     for (auto &net: design_.nets_) {
-        int net_size = net.Pnum();
+        int net_size = net.PinCnt();
         double hpwl_x = net.WeightedHPWLX();
         double hpwl_y =
             net.WeightedHPWLY() * tech_.grid_value_y_ / tech_.grid_value_x_;
@@ -1836,13 +1837,13 @@ void Circuit::BuildBlkPairNets() {
     // for each net, we decompose it, and enumerate all driver-load pair
     for (auto &net: design_.nets_) {
         //BOOST_LOG_TRIVIAL(info)   << net.NameStr() << "\n";
-        int sz = static_cast<int>(net.blk_pin_list.size());
+        int sz = static_cast<int>(net.BlockPins().size());
         int driver_index = -1;
         // find if there is a driver pin in this net
         // if a net contains a unplaced IOPin, then there might be no driver pin, this case is ignored for now
         // we also assume there is only one driver pin
         for (int i = 0; i < sz; ++i) {
-            BlkPinPair &blk_pin_pair = net.blk_pin_list[i];
+            BlkPinPair &blk_pin_pair = net.BlockPins()[i];
             if (!(blk_pin_pair.PinPtr()->IsInput())) {
                 driver_index = i;
                 break;
@@ -1850,10 +1851,10 @@ void Circuit::BuildBlkPairNets() {
         }
         if (driver_index == -1) continue;
 
-        int driver_blk_num = net.blk_pin_list[driver_index].BlkId();
+        int driver_blk_num = net.BlockPins()[driver_index].BlkId();
         for (int i = 0; i < sz; ++i) {
             if (i == driver_index) continue;
-            int load_blk_num = net.blk_pin_list[i].BlkId();
+            int load_blk_num = net.BlockPins()[i].BlkId();
             if (driver_blk_num == load_blk_num) continue;
             int num0 = std::max(driver_blk_num, load_blk_num);
             int num1 = std::min(driver_blk_num, load_blk_num);
@@ -1953,7 +1954,7 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
     double factor = tech_.grid_value_y_ / tech_.grid_value_x_;
     for (auto &net: design_.nets_) {
         double tmp_hpwl = net.WeightedHPWLX() + net.WeightedHPWLY() * factor;
-        if (net.Pnum() >= 1) {
+        if (net.PinCnt() >= 1) {
             hpwl_list.push_back(tmp_hpwl);
             min_hpwl = std::min(min_hpwl, tmp_hpwl);
             max_hpwl = std::max(max_hpwl, tmp_hpwl);
@@ -2256,7 +2257,7 @@ void Circuit::GenLongNetTable(std::string const &name_of_file) {
         if (hpwl > threshold) {
             ave_hpwl += hpwl;
             ++count;
-            for (auto &blk_pin: net.blk_pin_list) {
+            for (auto &blk_pin: net.BlockPins()) {
                 ost << blk_pin.AbsX() << "\t"
                     << blk_pin.AbsY() << "\t";
             }
@@ -2838,12 +2839,12 @@ void Circuit::SaveDefFile(
         case 1: { // save all nets
             ost << "NETS " << design_.nets_.size() << " ;\n";
             for (auto &net: design_.nets_) {
-                ost << "- " << *(net.Name()) << "\n";
+                ost << "- " << net.Name() << "\n";
                 ost << " ";
-                for (auto &iopin: net.iopin_list) {
+                for (auto &iopin: net.IoPinPtrs()) {
                     ost << " ( PIN " << iopin->Name() << " ) ";
                 }
-                for (auto &pin_pair: net.blk_pin_list) {
+                for (auto &pin_pair: net.BlockPins()) {
                     if (pin_pair.BlkPtr()->TypePtr()
                         == tech_.io_dummy_blk_type_ptr_)
                         continue;
@@ -3207,15 +3208,15 @@ void Circuit::SaveBookshelfNet(std::string const &name_of_file) {
     DaliExpects(ost.is_open(), "Cannot open file " + name_of_file);
     int num_pins = 0;
     for (auto &net: design_.nets_) {
-        num_pins += net.blk_pin_list.size();
+        num_pins += net.BlockPins().size();
     }
     ost << "# this line is here just for ntuplace to recognize this file \n\n";
     ost << "NumNets : " << design_.nets_.size() << "\n"
         << "NumPins : " << num_pins << "\n\n";
     for (auto &net: design_.nets_) {
-        ost << "NetDegree : " << net.blk_pin_list.size() << "   " << *net.Name()
+        ost << "NetDegree : " << net.BlockPins().size() << "   " << net.Name()
             << "\n";
-        for (auto &pair: net.blk_pin_list) {
+        for (auto &pair: net.BlockPins()) {
             ost << "\t" << pair.BlockName() << "\t";
             if (pair.PinPtr()->IsInput()) {
                 ost << "I : ";

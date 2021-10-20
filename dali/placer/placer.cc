@@ -232,9 +232,9 @@ void Placer::SaveDEFFile(std::string const &name_of_file) {
     ost << "NETS " << NetList()->size() << " ;\n";
     for (auto &net: *NetList()) {
         ost << "- "
-            << *(net.Name()) << "\n";
+            << net.Name() << "\n";
         ost << " ";
-        for (auto &pin_pair: net.blk_pin_list) {
+        for (auto &pin_pair: net.BlockPins()) {
             ost << " ( " << pin_pair.BlockName() << " "
                 << pin_pair.PinName() << " ) ";
         }
@@ -244,8 +244,10 @@ void Placer::SaveDEFFile(std::string const &name_of_file) {
     ost << "END DESIGN\n";
 }
 
-void Placer::SaveDEFFile(std::string const &name_of_file,
-                         std::string const &input_def_file) {
+void Placer::SaveDEFFile(
+    std::string const &name_of_file,
+    std::string const &input_def_file
+) {
     circuit_->SaveDefFile(name_of_file, input_def_file);
 }
 
@@ -262,9 +264,9 @@ void Placer::SanityCheck() {
                 "Filling rate should be in a proper range, for example [0.1, 1], current value: "
                     + std::to_string(filling_rate_));
     for (auto &net: *NetList()) {
-        DaliWarns(net.blk_pin_list.empty(),
+        DaliWarns(net.BlockPins().empty(),
                   "Empty net or this net only contains unplaced IOPINs: "
-                      + *net.Name());
+                      + net.Name());
     }
     DaliExpects(IsBoundaryProper(), "Improper boundary setting");
     for (auto &pair: circuit_->tech_.block_type_map_) {

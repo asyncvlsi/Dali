@@ -80,7 +80,7 @@ Net *IoPin::NetPtr() const {
 const std::string &IoPin::NetName() const {
     DaliExpects(net_ptr_ != nullptr,
                 "Cannot get net name because net_ptr_ is a nullptr");
-    return net_ptr_->NameStr();
+    return net_ptr_->Name();
 }
 
 void IoPin::SetSigDirection(SignalDirection direction) {
@@ -207,7 +207,7 @@ BlockOrient IoPin::GetOrient() const {
 }
 
 void IoPin::Report() const {
-    std::string net_name = (net_ptr_ == nullptr) ? "NA" : *(net_ptr_->Name());
+    std::string net_name = (net_ptr_ == nullptr) ? "NA" : net_ptr_->Name();
     BOOST_LOG_TRIVIAL(info) << "  I/O PIN name: " << Name() << "\n"
                             << "    Net connected: " << net_name << "\n";
 }

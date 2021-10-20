@@ -493,12 +493,13 @@ bool IoPlacer::AssignIoPinToBoundaryLayers() {
 
         // find the bounding box of the net containing this IOPIN
         Net *net = iopin.NetPtr();
-        if (net->blk_pin_list.empty()) {
+        if (net->BlockPins().empty()) {
             // if this net only contain this IOPIN, do nothing
-            BOOST_LOG_TRIVIAL(warning) << "Net " << net->NameStr()
-                                       << " only contains IOPIN "
-                                       << iopin.Name()
-                                       << ", skip placing this IOPIN\n";
+            BOOST_LOG_TRIVIAL(warning)
+                << "Net " << net->Name()
+                << " only contains IOPIN "
+                << iopin.Name()
+                << ", skip placing this IOPIN\n";
             continue;
         }
         net->UpdateMaxMinIndex();

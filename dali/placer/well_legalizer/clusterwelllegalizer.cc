@@ -812,7 +812,7 @@ double ClusterWellLegalizer::WireLengthCost(BlkCluster *cluster, int l, int r) {
     for (int i = l; i <= r; ++i) {
         auto *blk = cluster->blk_ptr_list_[i];
         for (auto &net_num: blk->NetList()) {
-            if (net_list[net_num].Pnum() < 100) {
+            if (net_list[net_num].PinCnt() < 100) {
                 net_involved.insert(&(net_list[net_num]));
             }
         }

@@ -57,7 +57,7 @@ void Design::InitNetFanoutHisto(std::vector<int> *histo_x) {
     net_histogram_.min_hpwl_.assign(sz, 0);
     net_histogram_.max_hpwl_.assign(sz, 0);
     for (auto &net: nets_) {
-        int net_size = net.Pnum();
+        int net_size = net.PinCnt();
         UpdateFanoutHisto(net_size);
     }
 

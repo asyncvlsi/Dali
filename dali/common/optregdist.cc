@@ -20,7 +20,7 @@ void OptRegDist::FindOptimalRegionX(
         // find offset
         double offset_x = DBL_MAX;
         double offset_y = DBL_MAX;
-        for (auto &blk_pin: net_list[it].blk_pin_list) {
+        for (auto &blk_pin: net_list[it].BlockPins()) {
             if (blk_pin.BlkPtr() == &blk) {
                 offset_x = blk_pin.OffsetX();
                 offset_y = blk_pin.OffsetY();
@@ -33,7 +33,7 @@ void OptRegDist::FindOptimalRegionX(
         double max_x = -1e10;
         double min_y = 1e10;
         double max_y = -1e10;
-        for (auto &blk_pin: net_list[it].blk_pin_list) {
+        for (auto &blk_pin: net_list[it].BlockPins()) {
             if (blk_pin.BlkPtr() == &blk) {
                 continue;
             } else {
