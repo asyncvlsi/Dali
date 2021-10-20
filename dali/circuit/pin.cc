@@ -34,8 +34,8 @@ Pin::Pin(std::pair<const std::string, int> *name_num_pair_ptr,
     CalculateOffset(x_offset, y_offset);
 }
 
-const std::string *Pin::Name() const {
-    return &(name_num_pair_ptr_->first);
+const std::string &Pin::Name() const {
+    return name_num_pair_ptr_->first;
 }
 
 int Pin::Num() const {
@@ -198,7 +198,7 @@ bool Pin::RectEmpty() const {
 }
 
 void Pin::Report() const {
-    BOOST_LOG_TRIVIAL(info) << *Name() << " (" << OffsetX() << ", "
+    BOOST_LOG_TRIVIAL(info) << Name() << " (" << OffsetX() << ", "
                             << OffsetY() << ")";
     for (int i = 0; i < 8; ++i) {
         BOOST_LOG_TRIVIAL(info) << "   (" << x_offset_[i] << ", "

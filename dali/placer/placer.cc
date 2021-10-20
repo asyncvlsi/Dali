@@ -211,8 +211,8 @@ void Placer::SaveDEFFile(std::string const &name_of_file) {
     ost << "COMPONENTS " << BlockList()->size() << " ;\n";
     for (auto &block: *BlockList()) {
         ost << "- "
-            << *(block.NamePtr()) << " "
-            << *(block.TypePtr()->NamePtr()) << " + "
+            << block.Name() << " "
+            << block.TypeName() << " + "
             << "PLACED"
             << " ("
             << " "
@@ -235,8 +235,8 @@ void Placer::SaveDEFFile(std::string const &name_of_file) {
             << *(net.Name()) << "\n";
         ost << " ";
         for (auto &pin_pair: net.blk_pin_list) {
-            ost << " ( " << *(pin_pair.BlockNamePtr()) << " "
-                << *(pin_pair.PinNamePtr()) << " ) ";
+            ost << " ( " << pin_pair.BlockName() << " "
+                << pin_pair.PinName() << " ) ";
         }
         ost << "\n" << " ;\n";
     }
@@ -272,7 +272,7 @@ void Placer::SanityCheck() {
         for (auto &pin: blk_type_ptr->PinList()) {
             DaliExpects(!pin.RectEmpty(),
                         "No RECT found for pin: " + *(blk_type_ptr->NamePtr())
-                            + "::" + *(pin.Name()));
+                            + "::" + pin.Name());
         }
     }
 }

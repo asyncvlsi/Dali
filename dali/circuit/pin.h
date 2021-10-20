@@ -35,7 +35,7 @@ class Pin {
         double x_offset,
         double y_offset);
 
-    const std::string *Name() const;
+    const std::string &Name() const;
     int Num() const;
 
     void InitOffset();

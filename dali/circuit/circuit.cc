@@ -1137,15 +1137,17 @@ void Circuit::ReportWellShape() {
 }
 
 // add a BlockType with name, with, and height. The return value is a pointer to this new BlockType for adding pins. Unit in grid value.
-BlockType *Circuit::AddBlockTypeWithGridUnit(std::string &block_type_name,
-                                             int width,
-                                             int height) {
+BlockType *Circuit::AddBlockTypeWithGridUnit(
+    std::string &block_type_name,
+    int width,
+    int height
+) {
     DaliExpects(!IsBlockTypeExist(block_type_name),
                 "BlockType exist, cannot create this block type again: "
                     + block_type_name);
-    auto ret = tech_.block_type_map_.insert(std::pair<std::string, BlockType *>(
-        block_type_name,
-        nullptr));
+    auto ret = tech_.block_type_map_.insert(
+        std::pair<std::string, BlockType *>(block_type_name, nullptr)
+    );
     auto tmp_ptr = new BlockType(&(ret.first->first), width, height);
     ret.first->second = tmp_ptr;
     if (tmp_ptr->Area() > INT_MAX) tmp_ptr->Report();
@@ -1367,7 +1369,7 @@ void Circuit::CopyBlockType(Circuit &circuit) {
             blk_type->Height()
         );
         for (auto &pin: blk_type->PinList()) {
-            pin_name = *(pin.Name());
+            pin_name = pin.Name();
             blk_type_new->AddPin(pin_name, pin.OffsetX(), pin.OffsetY());
         }
     }
@@ -1687,8 +1689,8 @@ void Circuit::ReportNetList() {
                                 << "\n";
         for (auto &block_pin_pair: net.blk_pin_list) {
             BOOST_LOG_TRIVIAL(info) << "\t" << " ("
-                                    << *(block_pin_pair.BlockNamePtr()) << " "
-                                    << *(block_pin_pair.PinNamePtr()) << ") "
+                                    << block_pin_pair.BlockName() << " "
+                                    << block_pin_pair.PinName() << ") "
                                     << "\n";
         }
     }
@@ -2327,9 +2329,9 @@ void Circuit::SaveDefFile(std::string const &name_of_file,
     for (auto &block: design_.block_list) {
         if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
         ost << "- "
-            << *block.NamePtr() << " "
-            << *(block.TypePtr()->NamePtr()) << " + "
-            << block.GetPlaceStatusStr() << " "
+            << block.Name() << " "
+            << block.TypeName() << " + "
+            << block.StatusStr() << " "
             << "( "
             << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_
             << " "
@@ -2340,8 +2342,8 @@ void Circuit::SaveDefFile(std::string const &name_of_file,
     }
     for (auto &block: design_.well_tap_list) {
         ost << "- "
-            << *block.NamePtr() << " "
-            << *(block.TypePtr()->NamePtr()) << " + "
+            << block.Name() << " "
+            << block.TypeName() << " + "
             << "PLACED" << " "
             << "( "
             << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_
@@ -2424,13 +2426,15 @@ void Circuit::SaveDefFile(std::string const &name_of_file,
 }
 
 // save def file for users.
-void Circuit::SaveDefFile(std::string const &base_name,
-                          std::string const &name_padding,
-                          std::string const &def_file_name,
-                          int save_floorplan,
-                          int save_cell,
-                          int save_iopin,
-                          int save_net) {
+void Circuit::SaveDefFile(
+    std::string const &base_name,
+    std::string const &name_padding,
+    std::string const &def_file_name,
+    int save_floorplan,
+    int save_cell,
+    int save_iopin,
+    int save_net
+) {
     /****
      * Universal function for saving DEF file
      * @param, output def file name, ".def" extension is added automatically
@@ -2504,9 +2508,9 @@ void Circuit::SaveDefFile(std::string const &base_name,
             for (auto &block: design_.block_list) {
                 if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
                 ost << "- "
-                    << *(block.NamePtr()) << " "
-                    << *(block.TypePtr()->NamePtr()) << " + "
-                    << block.GetPlaceStatusStr() << " "
+                    << block.Name() << " "
+                    << block.TypeName() << " + "
+                    << block.StatusStr() << " "
                     << "( "
                     << (int) (block.LLX() * factor_x)
                         + design_.die_area_offset_x_ << " "
@@ -2518,9 +2522,9 @@ void Circuit::SaveDefFile(std::string const &base_name,
             }
             for (auto &block: design_.well_tap_list) {
                 ost << "- "
-                    << *(block.NamePtr()) << " "
-                    << *(block.TypePtr()->NamePtr()) << " + "
-                    << block.GetPlaceStatusStr() << " "
+                    << block.Name() << " "
+                    << block.TypeName() << " + "
+                    << block.StatusStr() << " "
                     << "( "
                     << (int) (block.LLX() * factor_x)
                         + design_.die_area_offset_x_ << " "
@@ -2537,9 +2541,9 @@ void Circuit::SaveDefFile(std::string const &base_name,
             ost << "COMPONENTS " << cell_count << " ;\n";
             for (auto &block: design_.well_tap_list) {
                 ost << "- "
-                    << *(block.NamePtr()) << " "
-                    << *(block.TypePtr()->NamePtr()) << " + "
-                    << block.GetPlaceStatusStr() << " "
+                    << block.Name() << " "
+                    << block.TypeName() << " + "
+                    << block.StatusStr() << " "
                     << "( "
                     << (int) (block.LLX() * factor_x)
                         + design_.die_area_offset_x_ << " "
@@ -2575,9 +2579,9 @@ void Circuit::SaveDefFile(std::string const &base_name,
             for (auto &block: design_.block_list) {
                 if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
                 ost << "- "
-                    << *(block.NamePtr()) << " "
-                    << *(block.TypePtr()->NamePtr()) << " + "
-                    << block.GetPlaceStatusStr() << " "
+                    << block.Name() << " "
+                    << block.TypeName() << " + "
+                    << block.StatusStr() << " "
                     << "( "
                     << (int) (block.LLX() * factor_x)
                         + design_.die_area_offset_x_ << " "
@@ -2589,9 +2593,9 @@ void Circuit::SaveDefFile(std::string const &base_name,
             }
             for (auto &block: design_.well_tap_list) {
                 ost << "- "
-                    << *(block.NamePtr()) << " "
-                    << *(block.TypePtr()->NamePtr()) << " + "
-                    << block.GetPlaceStatusStr() << " "
+                    << block.Name() << " "
+                    << block.TypeName() << " + "
+                    << block.StatusStr() << " "
                     << "( "
                     << (int) (block.LLX() * factor_x)
                         + design_.die_area_offset_x_ << " "
@@ -2638,9 +2642,9 @@ void Circuit::SaveDefFile(std::string const &base_name,
             for (auto &block: design_.block_list) {
                 if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
                 ost << "- "
-                    << *(block.NamePtr()) << " "
-                    << *(block.TypePtr()->NamePtr()) << " + "
-                    << block.GetPlaceStatusStr() << " "
+                    << block.Name() << " "
+                    << block.TypeName() << " + "
+                    << block.StatusStr() << " "
                     << "( "
                     << (int) (block.LLX() * factor_x)
                         + design_.die_area_offset_x_ << " "
@@ -2652,9 +2656,9 @@ void Circuit::SaveDefFile(std::string const &base_name,
             }
             for (auto &block: design_.well_tap_list) {
                 ost << "- "
-                    << *(block.NamePtr()) << " "
-                    << *(block.TypePtr()->NamePtr()) << " + "
-                    << block.GetPlaceStatusStr() << " "
+                    << block.Name() << " "
+                    << block.TypeName() << " + "
+                    << block.StatusStr() << " "
                     << "( "
                     << (int) (block.LLX() * factor_x)
                         + design_.die_area_offset_x_ << " "
@@ -2670,18 +2674,18 @@ void Circuit::SaveDefFile(std::string const &base_name,
             int cell_count = 0;
             for (auto &block: design_.block_list) {
                 if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
-                if (block.PlacementStatus() == UNPLACED) continue;
+                if (block.Status() == UNPLACED) continue;
                 ++cell_count;
             }
             cell_count += design_.well_tap_list.size();
             ost << "COMPONENTS " << cell_count << " ;\n";
             for (auto &block: design_.block_list) {
                 if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
-                if (block.PlacementStatus() == UNPLACED) continue;
+                if (block.Status() == UNPLACED) continue;
                 ost << "- "
-                    << *(block.NamePtr()) << " "
-                    << *(block.TypePtr()->NamePtr()) << " + "
-                    << block.GetPlaceStatusStr() << " "
+                    << block.Name() << " "
+                    << block.TypeName() << " + "
+                    << block.StatusStr() << " "
                     << "( "
                     << (int) (block.LLX() * factor_x)
                         + design_.die_area_offset_x_ << " "
@@ -2693,9 +2697,9 @@ void Circuit::SaveDefFile(std::string const &base_name,
             }
             for (auto &block: design_.well_tap_list) {
                 ost << "- "
-                    << *(block.NamePtr()) << " "
-                    << *(block.TypePtr()->NamePtr()) << " + "
-                    << block.GetPlaceStatusStr() << " "
+                    << block.Name() << " "
+                    << block.TypeName() << " + "
+                    << block.StatusStr() << " "
                     << "( "
                     << (int) (block.LLX() * factor_x)
                         + design_.die_area_offset_x_ << " "
@@ -2835,8 +2839,8 @@ void Circuit::SaveDefFile(std::string const &base_name,
                     if (pin_pair.BlkPtr()->TypePtr()
                         == tech_.io_dummy_blk_type_ptr_)
                         continue;
-                    ost << " ( " << *(pin_pair.BlockNamePtr()) << " "
-                        << *(pin_pair.PinNamePtr()) << " ) ";
+                    ost << " ( " << pin_pair.BlockName() << " "
+                        << pin_pair.PinName() << " ) ";
                 }
                 ost << "\n" << " ;\n";
             }
@@ -2876,8 +2880,10 @@ void Circuit::SaveDefFile(std::string const &base_name,
     BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
-void Circuit::SaveIODefFile(std::string const &name_of_file,
-                            std::string const &def_file_name) {
+void Circuit::SaveIODefFile(
+    std::string const &name_of_file,
+    std::string const &def_file_name
+) {
     std::string file_name;
     file_name = name_of_file + "_io.def";
     BOOST_LOG_TRIVIAL(info) << "Writing IO DEF file: " << file_name;
@@ -2908,9 +2914,9 @@ void Circuit::SaveIODefFile(std::string const &name_of_file,
     for (auto &block: design_.block_list) {
         if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
         ost << "- "
-            << *block.NamePtr() << " "
-            << *(block.TypePtr()->NamePtr()) << " + "
-            << block.GetPlaceStatusStr() << " "
+            << block.Name() << " "
+            << block.TypeName() << " + "
+            << block.StatusStr() << " "
             << "( "
             << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_
             << " "
@@ -2921,8 +2927,8 @@ void Circuit::SaveIODefFile(std::string const &name_of_file,
     }
     for (auto &block: design_.well_tap_list) {
         ost << "- "
-            << *block.NamePtr() << " "
-            << *(block.TypePtr()->NamePtr()) << " + "
+            << block.Name() << " "
+            << block.TypeName() << " + "
             << "PLACED" << " "
             << "( "
             << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_
@@ -3000,9 +3006,11 @@ void Circuit::SaveIODefFile(std::string const &name_of_file,
     BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
-void Circuit::SaveDefWell(std::string const &name_of_file,
-                          std::string const &def_file_name,
-                          bool is_no_normal_cell) {
+void Circuit::SaveDefWell(
+    std::string const &name_of_file,
+    std::string const &def_file_name,
+    bool is_no_normal_cell
+) {
     BOOST_LOG_TRIVIAL(info)
         << "Writing WellTap Network DEF file (for debugging): " << name_of_file;
     std::ofstream ost(name_of_file.c_str());
@@ -3037,8 +3045,8 @@ void Circuit::SaveDefWell(std::string const &name_of_file,
     }
     for (auto &block: design_.well_tap_list) {
         ost << "- "
-            << *block.NamePtr() << " "
-            << *(block.TypePtr()->NamePtr()) << " + "
+            << block.Name() << " "
+            << block.TypeName() << " + "
             << "PLACED" << " "
             << "( "
             << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_
@@ -3052,9 +3060,9 @@ void Circuit::SaveDefWell(std::string const &name_of_file,
         for (auto &block: design_.block_list) {
             if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
             ost << "- "
-                << *block.NamePtr() << " "
-                << *(block.TypePtr()->NamePtr()) << " + "
-                << block.GetPlaceStatusStr() << " "
+                << block.Name() << " "
+                << block.TypeName() << " + "
+                << block.StatusStr() << " "
                 << "( "
                 << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_
                 << " "
@@ -3177,7 +3185,7 @@ void Circuit::SaveBookshelfNode(std::string const &name_of_file) {
         << "NumTerminals : \t\t"
         << design_.block_list.size() - design_.tot_mov_blk_num_ << "\n";
     for (auto &block: design_.block_list) {
-        ost << "\t" << *(block.NamePtr())
+        ost << "\t" << block.Name()
             << "\t" << block.Width() * design_.def_distance_microns
                 * tech_.grid_value_x_
             << "\t" << block.Height() * design_.def_distance_microns
@@ -3200,7 +3208,7 @@ void Circuit::SaveBookshelfNet(std::string const &name_of_file) {
         ost << "NetDegree : " << net.blk_pin_list.size() << "   " << *net.Name()
             << "\n";
         for (auto &pair: net.blk_pin_list) {
-            ost << "\t" << *(pair.BlkPtr()->NamePtr()) << "\t";
+            ost << "\t" << pair.BlockName() << "\t";
             if (pair.PinPtr()->IsInput()) {
                 ost << "I : ";
             } else {
@@ -3224,15 +3232,16 @@ void Circuit::SaveBookshelfPl(std::string const &name_of_file) {
     std::ofstream ost(name_of_file.c_str());
     DaliExpects(ost.is_open(), "Cannot open file " + name_of_file);
     ost << "# this line is here just for ntuplace to recognize this file \n\n";
-    for (auto &node: design_.block_list) {
-        ost << *node.NamePtr()
+    for (auto &block: design_.block_list) {
+        ost << block.Name()
             << "\t"
             << int(
-                node.LLX() * design_.def_distance_microns * tech_.grid_value_x_)
+                block.LLX() * design_.def_distance_microns
+                    * tech_.grid_value_x_)
             << "\t"
-            << int(node.LLY() * design_.def_distance_microns
+            << int(block.LLY() * design_.def_distance_microns
                        * tech_.grid_value_y_);
-        if (node.IsMovable()) {
+        if (block.IsMovable()) {
             ost << "\t:\tN\n";
         } else {
             ost << "\t:\tN\t/FIXED\n";

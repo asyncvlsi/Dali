@@ -402,7 +402,7 @@ void Dali::ExportOrdinaryComponentsToPhyDB() {
             + circuit_.getDesignRef().die_area_offset_x_;
         int ly = (int) (block.LLY() * factor_y)
             + circuit_.getDesignRef().die_area_offset_y_;
-        auto place_status = phydb::PlaceStatus(block.PlacementStatus());
+        auto place_status = phydb::PlaceStatus(block.Status());
         auto orient = phydb::CompOrient(block.Orient());
 
         phydb::Component *comp_ptr = phy_db_ptr_->GetComponentPtr(comp_name);
@@ -424,7 +424,7 @@ void Dali::ExportWellTapCellsToPhyDB() {
             + circuit_.getDesignRef().die_area_offset_x_;
         int ly = (int) (block.LLY() * factor_y)
             + circuit_.getDesignRef().die_area_offset_y_;
-        auto place_status = phydb::PlaceStatus(block.PlacementStatus());
+        auto place_status = phydb::PlaceStatus(block.Status());
         auto orient = phydb::CompOrient(block.Orient());
 
         auto *phydb_macro_ptr = phy_db_ptr_->GetMacroPtr(macro_name);

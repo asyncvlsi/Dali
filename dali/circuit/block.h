@@ -32,35 +32,36 @@ class BlockAux;
 
 class Block {
   public:
-    /****this constructor is for the developer only****/
     Block();
-
-    /****Constructors for users****/
-    Block(BlockType *type_ptr,
-          std::pair<const std::string, int> *name_num_pair_ptr,
-          int llx,
-          int lly,
-          bool movable = "true",
-          BlockOrient orient = N);
-    Block(BlockType *type_ptr,
-          std::pair<const std::string, int> *name_num_pair_ptr,
-          int llx,
-          int lly,
-          PlaceStatus place_state = UNPLACED,
-          BlockOrient orient = N);
+    Block(
+        BlockType *type_ptr,
+        std::pair<const std::string, int> *name_num_pair_ptr,
+        int llx,
+        int lly,
+        bool movable = true,
+        BlockOrient orient = N
+    );
+    Block(
+        BlockType *type_ptr,
+        std::pair<const std::string, int> *name_num_pair_ptr,
+        int llx,
+        int lly,
+        PlaceStatus place_state = UNPLACED,
+        BlockOrient orient = N
+    );
 
     /****member functions for attributes access****/
     // get the Block name
-    const std::string *NamePtr() { return &(name_num_pair_ptr_->first); }
-
-    // get the Block name
-    const std::string &Name() { return name_num_pair_ptr_->first; }
+    const std::string &Name() { return name_id_pair_ptr_->first; }
 
     // get BlockType of this Block
     BlockType *TypePtr() const { return type_ptr_; }
 
+    // get BlockType of this Block
+    const std::string &TypeName() const { return type_ptr_->Name(); }
+
     // get the index of this Block in the vector of instances
-    int Num() const { return name_num_pair_ptr_->second; }
+    int Index() const { return name_id_pair_ptr_->second; }
 
     // get the width of this Block
     int Width() const { return type_ptr_->Width(); }
@@ -71,7 +72,7 @@ class Block {
 
     // set the Block height to its BlockType height
     // area is also updated at the same time
-    void SetHeightFromType();
+    void ResetHeight();
 
     // get the height of this Block
     int Height() const { return eff_height_; }
@@ -104,10 +105,10 @@ class Block {
     }
 
     // get the placement status of this Block
-    PlaceStatus PlacementStatus() const { return place_status_; }
+    PlaceStatus Status() const { return place_status_; }
 
     // get the string placement status of this Block
-    std::string GetPlaceStatusStr() const { return PlaceStatusStr(place_status_); }
+    std::string StatusStr() const { return PlaceStatusStr(place_status_); }
 
     // get the boolean status of whether this Block is movable
     // current assumption: UNPLACED and PLACED are movable, FIXED and COVER are unmovable
@@ -129,11 +130,11 @@ class Block {
 
     // set the NameNumPair, first: name, second: number
     void SetNameNumPair(std::pair<const std::string, int> *name_num_pair_ptr) {
-        name_num_pair_ptr_ = name_num_pair_ptr;
+        name_id_pair_ptr_ = name_num_pair_ptr;
     }
 
     // set the BlockType of this Block
-    void SetType(BlockType *type_ptr) ;
+    void SetType(BlockType *type_ptr);
 
     // set the lower left x and y coordinate of this Block
     void SetLoc(double lx, double ly);
@@ -157,10 +158,10 @@ class Block {
     void SetCenterY(double center_y) { lly_ = center_y - Height() / 2.0; }
 
     // set the placement status of this Block
-    void SetPlacementStatus(PlaceStatus place_status) ;
+    void SetPlacementStatus(PlaceStatus place_status);
 
     // set the orientation of this Block
-    void SetOrient(BlockOrient const &orient) ;
+    void SetOrient(BlockOrient orient);
 
     // set the pointer to the auxiliary information
     void SetAux(BlockAux *aux);
@@ -199,20 +200,17 @@ class Block {
     // returns the overlap area between this Block and Block @param blk
     double OverlapArea(const Block &blk) const;
 
-    // returns the overlap area between this Block and Block @param blk
-    double OverlapArea(const Block *blk) const { return OverlapArea(*blk); }
-
     /****Report info of this Block, for debugging purposes****/
     void Report();
     void ReportNet();
 
   protected:
     BlockType *type_ptr_; // type
-    int
-        eff_height_; // cached height, also used to store effective height, the unit is grid value in the y-direction
+    // cached height, also used to store effective height, the unit is grid value in the y-direction
+    int eff_height_;
     long int eff_area_; // cached effective area
-    std::pair<const std::string, int>
-        *name_num_pair_ptr_; // name for finding its index in block_list
+    // name for finding its index in block_list
+    std::pair<const std::string, int> *name_id_pair_ptr_;
     double llx_; // lower x coordinate, data type double, for global placement
     double lly_; // lower y coordinate
     std::vector<int> net_list_; // the list of nets connected to this cell
@@ -225,8 +223,9 @@ class BlockAux {
   protected:
     Block *blk_ptr_;
   public:
-    explicit BlockAux(Block *blk_ptr)
-        : blk_ptr_(blk_ptr) { blk_ptr->SetAux(this); }
+    explicit BlockAux(Block *blk_ptr) : blk_ptr_(blk_ptr) {
+        blk_ptr->SetAux(this);
+    }
 
     // get the pointer pointing to the Block it belongs to
     Block *getBlockPtr() const { return blk_ptr_; }

@@ -6,29 +6,31 @@
 
 namespace dali {
 
-Block::Block() : type_ptr_(nullptr),
-                 name_num_pair_ptr_(nullptr),
-                 llx_(0),
-                 lly_(0),
-                 place_status_(UNPLACED),
-                 orient_(N),
-                 aux_ptr_(nullptr) {}
+Block::Block() :
+    type_ptr_(nullptr),
+    name_id_pair_ptr_(nullptr),
+    llx_(0),
+    lly_(0),
+    place_status_(UNPLACED),
+    orient_(N),
+    aux_ptr_(nullptr) {}
 
-Block::Block(BlockType *type_ptr,
-             std::pair<const std::string, int> *name_num_pair_ptr,
-             int llx,
-             int lly,
-             bool movable,
-             BlockOrient orient) :
-    type_ptr_(type_ptr),
-    name_num_pair_ptr_(name_num_pair_ptr),
+Block::Block(
+    BlockType *type_ptr,
+    std::pair<const std::string, int> *name_num_pair_ptr,
+    int llx,
+    int lly,
+    bool movable,
+    BlockOrient orient
+) : type_ptr_(type_ptr),
+    name_id_pair_ptr_(name_num_pair_ptr),
     llx_(llx),
     lly_(lly),
     orient_(orient) {
+    DaliExpects(name_num_pair_ptr != nullptr, "nullptr for name and index?");
+    DaliExpects(type_ptr != nullptr, "nullptr for type");
     eff_height_ = type_ptr_->Height();
     eff_area_ = type_ptr_->Area();
-    DaliExpects(name_num_pair_ptr != nullptr,
-                "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
     aux_ptr_ = nullptr;
     if (movable) {
         place_status_ = UNPLACED;
@@ -37,22 +39,23 @@ Block::Block(BlockType *type_ptr,
     }
 }
 
-Block::Block(BlockType *type_ptr,
-             std::pair<const std::string, int> *name_num_pair_ptr,
-             int llx,
-             int lly,
-             PlaceStatus place_state,
-             BlockOrient orient) :
-    type_ptr_(type_ptr),
-    name_num_pair_ptr_(name_num_pair_ptr),
+Block::Block(
+    BlockType *type_ptr,
+    std::pair<const std::string, int> *name_num_pair_ptr,
+    int llx,
+    int lly,
+    PlaceStatus place_state,
+    BlockOrient orient
+) : type_ptr_(type_ptr),
+    name_id_pair_ptr_(name_num_pair_ptr),
     llx_(llx),
     lly_(lly),
     place_status_(place_state),
     orient_(orient) {
+    DaliExpects(name_num_pair_ptr != nullptr, "nullptr for name and index?");
+    DaliExpects(type_ptr != nullptr, "nullptr for type");
     eff_height_ = type_ptr_->Height();
     eff_area_ = type_ptr_->Area();
-    DaliExpects(name_num_pair_ptr != nullptr,
-                "Must provide a valid pointer to the std::pair<std::string, int> element in the block_name_map");
     aux_ptr_ = nullptr;
 }
 
@@ -61,14 +64,13 @@ void Block::SetHeight(int height) {
     eff_area_ = eff_height_ * type_ptr_->Width();
 }
 
-void Block::SetHeightFromType() {
+void Block::ResetHeight() {
     eff_height_ = type_ptr_->Height();
     eff_area_ = type_ptr_->Area();
 }
 
 void Block::SetType(BlockType *type_ptr) {
-    DaliExpects(type_ptr != nullptr,
-                "Cannot set BlockType of a Block to NULL: BLock::SetType()\n");
+    DaliExpects(type_ptr != nullptr, "Set BlockType to nullptr?");
     type_ptr_ = type_ptr;
     eff_height_ = type_ptr_->Height();
     eff_area_ = type_ptr_->Area();
@@ -83,11 +85,11 @@ void Block::SetPlacementStatus(PlaceStatus place_status) {
     place_status_ = place_status;
 }
 
-void Block::SetOrient(BlockOrient const &orient) { orient_ = orient; }
+void Block::SetOrient(BlockOrient orient) {
+    orient_ = orient;
+}
 
 void Block::SetAux(BlockAux *aux) {
-    DaliExpects(aux != nullptr,
-                "When setting auxiliary information, the argument cannot be a nullptr: Block::SetAux()");
     aux_ptr_ = aux;
 }
 
@@ -134,21 +136,22 @@ double Block::OverlapArea(const Block &blk) const {
 }
 
 void Block::Report() {
-    BOOST_LOG_TRIVIAL(info) << "  block name: " << *NamePtr() << "\n"
-                            << "    block type: " << *(TypePtr()->NamePtr())
-                            << "\n"
-                            << "    width and height: " << Width() << " "
-                            << Height() << "\n"
-                            << "    lower left corner: " << llx_ << " " << lly_
-                            << "\n"
-                            << "    movable: " << IsMovable() << "\n"
-                            << "    orientation: " << OrientStr(orient_) << "\n"
-                            << "    assigned primary key: " << Num()
-                            << "\n";
+    BOOST_LOG_TRIVIAL(info)
+        << "  block name: " << Name() << "\n"
+        << "    block type: " << *(TypePtr()->NamePtr())
+        << "\n"
+        << "    width and height: " << Width() << " "
+        << Height() << "\n"
+        << "    lower left corner: " << llx_ << " " << lly_
+        << "\n"
+        << "    movable: " << IsMovable() << "\n"
+        << "    orientation: " << OrientStr(orient_) << "\n"
+        << "    assigned primary key: " << Index()
+        << "\n";
 }
 
 void Block::ReportNet() {
-    BOOST_LOG_TRIVIAL(info) << *NamePtr() << " connects to:\n";
+    BOOST_LOG_TRIVIAL(info) << Name() << " connects to:\n";
     for (auto &net_num: net_list_) {
         BOOST_LOG_TRIVIAL(info) << net_num << "  ";
     }

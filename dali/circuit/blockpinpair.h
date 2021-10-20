@@ -33,7 +33,7 @@ struct BlkPinPair {
     Block *BlkPtr() const { return blk_ptr_; }
 
     // get the index of this block
-    int BlkNum() const { return blk_ptr_->Num(); }
+    int BlkNum() const { return blk_ptr_->Index(); }
 
     // get the pointer to the pin
     Pin *PinPtr() const { return pin_ptr_; }
@@ -57,10 +57,10 @@ struct BlkPinPair {
     double2d Location() const { return double2d(AbsX(), AbsY()); }
 
     // get the block name
-    const std::string *BlockNamePtr() const { return blk_ptr_->NamePtr(); }
+    const std::string &BlockName() const { return blk_ptr_->Name(); }
 
     // get the pin name
-    const std::string *PinNamePtr() const { return pin_ptr_->Name(); }
+    const std::string &PinName() const { return pin_ptr_->Name(); }
 
     // some boolean operators
     bool operator<(const BlkPinPair &rhs) const {

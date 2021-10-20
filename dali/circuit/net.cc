@@ -41,8 +41,8 @@ void Net::AddBlockPinPair(Block *block_ptr, Pin *pin_ptr) {
                             << ", cannot add more pin to this net:\n";
     BOOST_LOG_TRIVIAL(info) << "net name: " << *Name() << ", net weight: " << Weight() << "\n";
     for (auto &block_pin_pair: blk_pin_list) {
-      BOOST_LOG_TRIVIAL(info) << "\t" << " (" << *(block_pin_pair.BlockNamePtr()) << " "
-                              << *(block_pin_pair.PinNamePtr()) << ") " << "\n";
+      BOOST_LOG_TRIVIAL(info) << "\t" << " (" << block_pin_pair.BlockName() << " "
+                              << block_pin_pair.PinName() << ") " << "\n";
     }
     exit(1);
   }
