@@ -33,7 +33,7 @@ void IoPinCluster::UniformLegalize() {
     if (is_horizontal) {
         std::sort(iopin_ptr_list.begin(),
                   iopin_ptr_list.end(),
-                  [](const IOPin *lhs, const IOPin *rhs) {
+                  [](const IoPin *lhs, const IoPin *rhs) {
                       return (lhs->X() < rhs->X());
                   });
 
@@ -47,7 +47,7 @@ void IoPinCluster::UniformLegalize() {
     } else {
         std::sort(iopin_ptr_list.begin(),
                   iopin_ptr_list.end(),
-                  [](const IOPin *lhs, const IOPin *rhs) {
+                  [](const IoPin *lhs, const IoPin *rhs) {
                       return (lhs->Y() < rhs->Y());
                   });
 
@@ -125,7 +125,7 @@ void IoBoundaryLayerSpace::UpdateIoPinShapeAndLayer() {
         for (auto &pin_ptr: pin_cluster.iopin_ptr_list) {
             if (!pin_ptr->IsShapeSet()) {
                 pin_ptr->SetShape(llx, lly, urx, ury);
-                pin_ptr->SetLayer(metal_layer);
+                pin_ptr->SetLayerPtr(metal_layer);
             }
         }
     }
@@ -139,7 +139,7 @@ void IoBoundaryLayerSpace::GreedyAssignIoPinToCluster() {
     if (is_horizontal) {
         std::sort(iopin_ptr_list.begin(),
                   iopin_ptr_list.end(),
-                  [](const IOPin *lhs, const IOPin *rhs) {
+                  [](const IoPin *lhs, const IoPin *rhs) {
                       return (lhs->X() < rhs->X());
                   });
         for (auto &iopin_ptr: iopin_ptr_list) {
@@ -161,7 +161,7 @@ void IoBoundaryLayerSpace::GreedyAssignIoPinToCluster() {
     } else {
         std::sort(iopin_ptr_list.begin(),
                   iopin_ptr_list.end(),
-                  [](const IOPin *lhs, const IOPin *rhs) {
+                  [](const IoPin *lhs, const IoPin *rhs) {
                       return (lhs->Y() < rhs->Y());
                   });
         for (auto &iopin_ptr: iopin_ptr_list) {

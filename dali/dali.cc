@@ -451,18 +451,18 @@ void Dali::ExportIoPinsToPhyDB() {
                 "Need metal layer info to generate PIN location\n");
     for (auto &iopin: circuit_.getDesignRef().IoPins()) {
         if (!iopin.IsPrePlaced() && iopin.IsPlaced()) {
-            DaliExpects(iopin.Layer() != nullptr,
+            DaliExpects(iopin.LayerPtr() != nullptr,
                         "IOPIN metal layer not set? Cannot export it to PhyDB");
-            std::string metal_name = *(iopin.Layer()->Name());
-            std::string iopin_name = *(iopin.Name());
+            std::string metal_name = *(iopin.LayerPtr()->Name());
+            std::string iopin_name = iopin.Name();
             DaliExpects(phy_db_ptr_->IsIoPinExisting(iopin_name),
                         "IOPIN not in PhyDB? " + iopin_name);
             phydb::IOPin *phydb_iopin = phy_db_ptr_->GetIoPinPtr(iopin_name);
-            auto rect = iopin.GetRect();
-            int llx = circuit_.Micron2DatabaseUnit(rect->LLX());
-            int lly = circuit_.Micron2DatabaseUnit(rect->LLY());
-            int urx = circuit_.Micron2DatabaseUnit(rect->URX());
-            int ury = circuit_.Micron2DatabaseUnit(rect->URY());
+            auto &rect = iopin.GetShape();
+            int llx = circuit_.Micron2DatabaseUnit(rect.LLX());
+            int lly = circuit_.Micron2DatabaseUnit(rect.LLY());
+            int urx = circuit_.Micron2DatabaseUnit(rect.URX());
+            int ury = circuit_.Micron2DatabaseUnit(rect.URY());
             phydb_iopin->SetShape(metal_name, llx, lly, urx, ury);
 
             int pin_x = circuit_.DaliLoc2PhyDBLocX(iopin.X());

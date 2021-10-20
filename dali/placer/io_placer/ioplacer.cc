@@ -201,14 +201,14 @@ bool IoPlacer::PlaceIoPin(std::string &iopin_name,
     // check if this IOPIN is in Dali::Circuit or not (it should)
     bool is_iopin_existing_dali = circuit_ptr_->IsIOPinExist(iopin_name);
     DaliExpects(is_iopin_existing_dali, "IOPIN in PhyDB but not in Dali?");
-    IOPin *iopin_ptr_dali = circuit_ptr_->getIOPin(iopin_name);
+    IoPin *iopin_ptr_dali = circuit_ptr_->getIOPin(iopin_name);
 
     // set IOPIN placement status in Dali
     iopin_ptr_dali->SetLoc(circuit_ptr_->PhyDBLoc2DaliLocX(loc_x),
                            circuit_ptr_->PhyDBLoc2DaliLocY(loc_y),
                            StrToPlaceStatus(place_status));
     MetalLayer *metal_layer_ptr = circuit_ptr_->getMetalLayerPtr(metal_name);
-    iopin_ptr_dali->SetLayer(metal_layer_ptr);
+    iopin_ptr_dali->SetLayerPtr(metal_layer_ptr);
 
     return true;
 }
@@ -401,7 +401,7 @@ bool IoPlacer::BuildResourceMap() {
     ); // TODO: carry layer info
     for (auto &iopin: *(circuit_ptr_->getIOPinList())) {
         if (iopin.IsPrePlaced()) {
-            double spacing = iopin.Layer()->Spacing();
+            double spacing = iopin.LayerPtr()->Spacing();
             if (iopin.X() == circuit_ptr_->getDesignRef().RegionLeft()) {
                 double lly = iopin.LY(spacing);
                 double ury = iopin.UY(spacing);
@@ -423,7 +423,7 @@ bool IoPlacer::BuildResourceMap() {
             } else {
                 DaliExpects(false,
                             "Pre-placed IOPIN is not on placement boundary? "
-                                + *(iopin.Name()));
+                                + iopin.Name());
             }
         }
     }
@@ -492,12 +492,12 @@ bool IoPlacer::AssignIoPinToBoundaryLayers() {
         if (iopin.IsPrePlaced()) continue;
 
         // find the bounding box of the net containing this IOPIN
-        Net *net = iopin.GetNet();
+        Net *net = iopin.NetPtr();
         if (net->blk_pin_list.empty()) {
             // if this net only contain this IOPIN, do nothing
             BOOST_LOG_TRIVIAL(warning) << "Net " << net->NameStr()
                                        << " only contains IOPIN "
-                                       << *(iopin.Name())
+                                       << iopin.Name()
                                        << ", skip placing this IOPIN\n";
             continue;
         }

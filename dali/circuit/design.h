@@ -71,7 +71,7 @@ class Design {
     };
 
     // get all iopins
-    std::vector<IOPin> &IoPins() { return iopins_; }
+    std::vector<IoPin> &IoPins() { return iopins_; }
 
     // get all nets
     std::vector<Net> &Nets() { return nets_; }
@@ -109,7 +109,7 @@ class Design {
     int blk_count_limit_ = 0;
 
     /****list of IO Pins****/
-    std::vector<IOPin> iopins_;
+    std::vector<IoPin> iopins_;
     std::unordered_map<std::string, int> iopin_name_id_map_;
     int pre_placed_io_count_ = 0;
     int added_iopin_count_ = 0;

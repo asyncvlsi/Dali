@@ -97,9 +97,9 @@ private:
 
     void AddDummyIOPinBlockType();
 
-    IOPin *AddUnplacedIOPin(std::string &iopin_name);
+    IoPin *AddUnplacedIOPin(std::string &iopin_name);
 
-    IOPin *AddPlacedIOPin(std::string &iopin_name, double lx, double ly);
+    IoPin *AddPlacedIOPin(std::string &iopin_name, double lx, double ly);
 
     BlockTypeWell *AddBlockTypeWell(BlockType *blk_type);
 
@@ -325,15 +325,15 @@ public:
     /****API for IOPIN
      * These are PINS section in DEF
      * ****/
-    std::vector<IOPin> *getIOPinList();
+    std::vector<IoPin> *getIOPinList();
 
     bool IsIOPinExist(std::string &iopin_name);
 
     int IOPinIndex(std::string &iopin_name);
 
-    IOPin *getIOPin(std::string &iopin_name);
+    IoPin *getIOPin(std::string &iopin_name);
 
-    IOPin *AddIOPin(
+    IoPin *AddIOPin(
         std::string &iopin_name,
         PlaceStatus place_status,
         SignalUse signal_use,

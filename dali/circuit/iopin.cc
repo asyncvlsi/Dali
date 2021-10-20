@@ -6,128 +6,207 @@
 
 namespace dali {
 
-IOPin::IOPin(std::pair<const std::string, int> *name_num_pair_ptr) :
+IoPin::IoPin(std::pair<const std::string, int> *name_num_pair_ptr) :
     name_num_pair_ptr_(name_num_pair_ptr),
     net_ptr_(nullptr),
-    direction_(INPUT),
-    use_(SIGNAL),
+    signal_direction_(INPUT),
+    signal_use_(SIGNAL),
     layer_ptr_(nullptr),
     init_place_status_(UNPLACED),
     place_status_(UNPLACED),
-    loc_x_(0),
-    loc_y_(0),
+    x_(0),
+    y_(0),
     orient_(N) {
-    rect_.resize(NUM_OF_ORIENT, RectD(0, 0, 0, 0));
-    rect_[0].SetValue(0, 0, 0, 0);
+    rects_.resize(NUM_OF_ORIENT, RectD(0, 0, 0, 0));
+    rects_[0].SetValue(0, 0, 0, 0);
 }
 
-IOPin::IOPin(std::pair<const std::string, int> *name_num_pair_ptr,
-             double loc_x,
-             double loc_y) :
-    name_num_pair_ptr_(name_num_pair_ptr),
+IoPin::IoPin(
+    std::pair<const std::string, int> *name_num_pair_ptr,
+    double loc_x,
+    double loc_y
+) : name_num_pair_ptr_(name_num_pair_ptr),
     net_ptr_(nullptr),
-    direction_(INPUT),
-    use_(SIGNAL),
+    signal_direction_(INPUT),
+    signal_use_(SIGNAL),
     layer_ptr_(nullptr),
     init_place_status_(PLACED),
     place_status_(PLACED),
-    loc_x_(loc_x),
-    loc_y_(loc_y),
+    x_(loc_x),
+    y_(loc_y),
     orient_(N) {
-    rect_.resize(NUM_OF_ORIENT, RectD(0, 0, 0, 0));
-    rect_[0].SetValue(0, 0, 0, 0);
+    rects_.resize(NUM_OF_ORIENT, RectD(0, 0, 0, 0));
+    rects_[0].SetValue(0, 0, 0, 0);
 }
 
-IOPin::IOPin(std::pair<const std::string, int> *name_num_pair_ptr,
-             SignalDirection direction,
-             PlaceStatus init_place_status,
-             double loc_x,
-             double loc_y) :
-    name_num_pair_ptr_(name_num_pair_ptr),
+IoPin::IoPin(
+    std::pair<const std::string, int> *name_num_pair_ptr,
+    SignalDirection direction,
+    PlaceStatus init_place_status,
+    double loc_x,
+    double loc_y
+) : name_num_pair_ptr_(name_num_pair_ptr),
     net_ptr_(nullptr),
-    direction_(direction),
-    use_(SIGNAL),
+    signal_direction_(direction),
+    signal_use_(SIGNAL),
     layer_ptr_(nullptr),
     init_place_status_(init_place_status),
     place_status_(init_place_status),
-    loc_x_(loc_x),
-    loc_y_(loc_y),
+    x_(loc_x),
+    y_(loc_y),
     orient_(N) {
-    rect_.resize(NUM_OF_ORIENT, RectD(0, 0, 0, 0));
-    rect_[0].SetValue(0, 0, 0, 0);
+    rects_.resize(NUM_OF_ORIENT, RectD(0, 0, 0, 0));
+    rects_[0].SetValue(0, 0, 0, 0);
 }
 
-const std::string *IOPin::Name() const {
-    return &(name_num_pair_ptr_->first);
+const std::string &IoPin::Name() const {
+    return name_num_pair_ptr_->first;
 }
 
-int IOPin::Num() const {
+int IoPin::Id() const {
     return name_num_pair_ptr_->second;
 }
 
-Net *IOPin::GetNet() const {
+void IoPin::SetNetPtr(Net *net_ptr) {
+    DaliExpects(net_ptr != nullptr,
+                "Why do you need to set net_ptr in an I/O pin to a nullptr?");
+    net_ptr_ = net_ptr;
+}
+
+Net *IoPin::NetPtr() const {
     return net_ptr_;
 }
 
-SignalDirection IOPin::SigDirection() const {
-    return direction_;
+const std::string &IoPin::NetName() const {
+    DaliExpects(net_ptr_!= nullptr,
+                "Cannot get net name because net_ptr_ is a nullptr");
+    return net_ptr_->NameStr();
 }
 
-SignalUse IOPin::SigUse() const {
-    return use_;
+void IoPin::SetSigDirection(SignalDirection direction) {
+    signal_direction_ = direction;
 }
 
-MetalLayer *IOPin::Layer() const {
-    return layer_ptr_;
+SignalDirection IoPin::SigDirection() const {
+    return signal_direction_;
 }
 
-RectD *IOPin::GetRect() {
-    return &rect_[0];
+std::string IoPin::SigDirectStr() const {
+    return SignalDirectionStr(signal_direction_);
 }
 
-bool IOPin::IsPlaced() const {
-    return place_status_ == FIXED || place_status_ == PLACED;
+void IoPin::SetSigUse(SignalUse use) {
+    signal_use_ = use;
 }
 
-bool IOPin::IsPrePlaced() const {
-    return init_place_status_ == FIXED || init_place_status_ == PLACED;
-}
-double IOPin::X() const {
-    return loc_x_;
+SignalUse IoPin::SigUse() const {
+    return signal_use_;
 }
 
-double IOPin::Y() const {
-    return loc_y_;
+std::string IoPin::SigUseStr() const {
+    return SignalUseStr(signal_use_);
 }
 
-PlaceStatus IOPin::GetPlaceStatus() const {
-    return place_status_;
-}
-
-BlockOrient IOPin::GetOrient() const {
-    return orient_;
-}
-
-void IOPin::SetNet(Net *net_ptr) {
-    DaliExpects(net_ptr != nullptr,
-                "Cannot set @param net_ptr to nullptr in function: IOPin::SetNet()");
-    net_ptr_ = net_ptr;
-}
-void IOPin::SetDirection(SignalDirection direction) {
-    direction_ = direction;
-}
-
-void IOPin::SetUse(SignalUse use) {
-    use_ = use;
-}
-
-void IOPin::SetLayer(MetalLayer *layer_ptr) {
+void IoPin::SetLayerPtr(MetalLayer *layer_ptr) {
     DaliExpects(layer_ptr != nullptr,
-                "Cannot set @param layer_ptr to nullptr in function: IOPin::SetLayer()");
+                "Why do you need to set layer_ptr in an I/O pin to a nullptr?");
     layer_ptr_ = layer_ptr;
 }
 
-void IOPin::SetRect(double llx, double lly, double urx, double ury) {
+MetalLayer *IoPin::LayerPtr() const {
+    return layer_ptr_;
+}
+
+void IoPin::SetShape(double llx, double lly, double urx, double ury) {
+    is_shape_set_ = true;
+    SetRect(llx, lly, urx, ury);
+}
+
+RectD &IoPin::GetShape() {
+    return rects_[0];
+}
+
+bool IoPin::IsShapeSet() const {
+    return is_shape_set_;
+}
+
+void IoPin::SetInitPlaceStatus(PlaceStatus init_place_status) {
+    init_place_status_ = init_place_status;
+}
+
+bool IoPin::IsPrePlaced() const {
+    return init_place_status_ == FIXED || init_place_status_ == PLACED;
+}
+
+void IoPin::SetPlaceStatus(PlaceStatus place_status) {
+    place_status_ = place_status;
+}
+
+bool IoPin::IsPlaced() const {
+    return place_status_ == FIXED || place_status_ == PLACED;
+}
+
+PlaceStatus IoPin::GetPlaceStatus() const {
+    return place_status_;
+}
+
+void IoPin::SetLocX(double loc_x) {
+    x_ = loc_x;
+}
+
+double IoPin::X() const {
+    return x_;
+}
+
+void IoPin::SetLocY(double loc_y) {
+    y_ = loc_y;
+}
+
+double IoPin::Y() const {
+    return y_;
+}
+
+void IoPin::SetLoc(
+    double loc_x,
+    double loc_y,
+    PlaceStatus place_status
+) {
+    x_ = loc_x;
+    y_ = loc_y;
+    place_status_ = place_status;
+}
+
+double IoPin::LX(double spacing) const {
+    return x_ + rects_[orient_ - N].LLX() - spacing;
+}
+
+double IoPin::UX(double spacing) const {
+    return x_ + rects_[orient_ - N].URX() + spacing;
+}
+
+double IoPin::LY(double spacing) const {
+    return y_ + rects_[orient_ - N].LLY() - spacing;
+}
+
+double IoPin::UY(double spacing) const {
+    return y_ + rects_[orient_ - N].URY() + spacing;
+}
+
+void IoPin::SetOrient(BlockOrient orient) {
+    orient_ = orient;
+}
+
+BlockOrient IoPin::GetOrient() const {
+    return orient_;
+}
+
+void IoPin::Report() const {
+    std::string net_name = (net_ptr_ == nullptr) ? "NA" : *(net_ptr_->Name());
+    BOOST_LOG_TRIVIAL(info) << "  I/O PIN name: " << Name() << "\n"
+                            << "    Net connected: " << net_name << "\n";
+}
+
+void IoPin::SetRect(double llx, double lly, double urx, double ury) {
     /****
      * rotate 0 degree
      *    llx' = llx;
@@ -135,7 +214,7 @@ void IOPin::SetRect(double llx, double lly, double urx, double ury) {
      *    urx' = urx;
      *    ury' = ury;
      ****/
-    rect_[N - N].SetValue(llx, lly, urx, ury);
+    rects_[N - N].SetValue(llx, lly, urx, ury);
 
     /****
      * rotate 180 degree counterclockwise
@@ -144,7 +223,7 @@ void IOPin::SetRect(double llx, double lly, double urx, double ury) {
      *    urx' = -llx;
      *    ury' = -lly;
     ****/
-    rect_[S - N].SetValue(-urx, -ury, -llx, -lly);
+    rects_[S - N].SetValue(-urx, -ury, -llx, -lly);
 
     /****
      * rotate 90 degree counterclockwise
@@ -153,7 +232,7 @@ void IOPin::SetRect(double llx, double lly, double urx, double ury) {
      *    urx' = -lly;
      *    ury' =  urx;
      * ****/
-    rect_[W - N].SetValue(-ury, llx, -lly, urx);
+    rects_[W - N].SetValue(-ury, llx, -lly, urx);
 
     /****
      * rotate 270 degree counterclockwise
@@ -162,7 +241,7 @@ void IOPin::SetRect(double llx, double lly, double urx, double ury) {
      *    urx' =  ury;
      *    ury' = -llx;
      * ****/
-    rect_[E - N].SetValue(lly, -urx, ury, -llx);
+    rects_[E - N].SetValue(lly, -urx, ury, -llx);
 
     /****
      * rotate 0 degree counterclockwise
@@ -176,7 +255,7 @@ void IOPin::SetRect(double llx, double lly, double urx, double ury) {
      *    urx' = -llx;
      *    ury' =  ury;
      * ****/
-    rect_[FN - N].SetValue(-urx, lly, -llx, ury);
+    rects_[FN - N].SetValue(-urx, lly, -llx, ury);
 
     /****
      * rotate 180 degree counterclockwise
@@ -190,7 +269,7 @@ void IOPin::SetRect(double llx, double lly, double urx, double ury) {
      *    urx' =  urx;
      *    ury' = -lly;
      * ****/
-    rect_[FS - N].SetValue(llx, -ury, urx, -lly);
+    rects_[FS - N].SetValue(llx, -ury, urx, -lly);
 
     /****
      * rotate 90 degree counterclockwise
@@ -204,7 +283,7 @@ void IOPin::SetRect(double llx, double lly, double urx, double ury) {
      *    urx' =  ury;
      *    ury' =  urx;
      * ****/
-    rect_[FW - N].SetValue(lly, llx, ury, urx);
+    rects_[FW - N].SetValue(lly, llx, ury, urx);
 
     /****
      * rotate 270 degree counterclockwise
@@ -218,66 +297,7 @@ void IOPin::SetRect(double llx, double lly, double urx, double ury) {
      *    urx' = -lly;
      *    ury' = -llx;
      * ****/
-    rect_[FE - N].SetValue(-ury, -urx, -lly, -llx);
-}
-
-void IOPin::SetInitPlaceStatus(PlaceStatus init_place_status) {
-    init_place_status_ = init_place_status;
-}
-
-void IOPin::SetLocX(double loc_x) {
-    loc_x_ = loc_x;
-}
-
-void IOPin::SetLocY(double loc_y) {
-    loc_y_ = loc_y;
-}
-
-void IOPin::SetPlaceStatus(PlaceStatus place_status) {
-    place_status_ = place_status;
-}
-
-void IOPin::SetLoc(double loc_x,
-                   double loc_y,
-                   PlaceStatus place_status) {
-    loc_x_ = loc_x;
-    loc_y_ = loc_y;
-    place_status_ = place_status;
-}
-
-void IOPin::SetOrient(BlockOrient orient) {
-    orient_ = orient;
-}
-
-void IOPin::SetShape(double llx, double lly, double urx, double ury) {
-    is_shape_set_ = true;
-    SetRect(llx, lly, urx, ury);
-}
-
-double IOPin::LX(double spacing) const {
-    return loc_x_ + rect_[orient_].LLX() - spacing;
-}
-
-double IOPin::UX(double spacing) const {
-    return loc_x_ + rect_[orient_].URX() + spacing;
-}
-
-double IOPin::LY(double spacing) const {
-    return loc_y_ + rect_[orient_].LLY() - spacing;
-}
-
-double IOPin::UY(double spacing) const {
-    return loc_y_ + rect_[orient_].URY() + spacing;
-}
-
-bool IOPin::IsShapeSet() const {
-    return is_shape_set_;
-}
-
-void IOPin::Report() const {
-    std::string net_name = (net_ptr_ == nullptr) ? "NA" : *(net_ptr_->Name());
-    BOOST_LOG_TRIVIAL(info) << "  I/O PIN name: " << *Name() << "\n"
-                            << "    Net connected: " << net_name << "\n";
+    rects_[FE - N].SetValue(-ury, -urx, -lly, -llx);
 }
 
 }

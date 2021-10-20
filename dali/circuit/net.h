@@ -17,7 +17,7 @@
 namespace dali {
 
 class NetAux;
-class IOPin;
+class IoPin;
 
 class Net {
   protected:
@@ -36,7 +36,7 @@ class Net {
   public:
     std::vector<BlkPinPair> blk_pin_list;
     int driver_pin_index = -1;
-    std::vector<IOPin *> iopin_list;
+    std::vector<IoPin *> iopin_list;
 
     Net(std::pair<const std::string, int> *name_num_pair_ptr,
         int capacity,
@@ -44,10 +44,10 @@ class Net {
 
     // API to add block/pin pair
     void AddBlockPinPair(Block *block_ptr, Pin *pin_ptr);
-    void AddIOPin(IOPin *io_pin) { iopin_list.push_back(io_pin); }
+    void AddIOPin(IoPin *io_pin) { iopin_list.push_back(io_pin); }
 
     const std::string *Name() const { return &(name_num_pair_ptr_->first); }
-    std::string NameStr() const { return name_num_pair_ptr_->first; }
+    const std::string &NameStr() const { return name_num_pair_ptr_->first; }
     int Num() const { return name_num_pair_ptr_->second; }
     void SetWeight(double weight) { weight_ = weight; }
     double Weight() const { return weight_; }

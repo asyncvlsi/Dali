@@ -519,11 +519,11 @@ void Circuit::AddIoPinFromPhyDB(phydb::IOPin &iopin) {
     auto sig_dir = SignalDirection(iopin.GetDirection());
 
     if (is_loc_set) {
-        IOPin *pin =
+        IoPin *pin =
             AddIOPin(iopin_name, PLACED, sig_use, sig_dir, iopin_x, iopin_y);
         std::string layer_name = iopin.GetLayerName();
         MetalLayer *metal_layer = getMetalLayerPtr(layer_name);
-        pin->SetLayer(metal_layer);
+        pin->SetLayerPtr(metal_layer);
     } else {
         AddIOPin(iopin_name, UNPLACED, sig_use, sig_dir);
     }
@@ -1487,7 +1487,7 @@ void Circuit::AddDummyIOPinBlockType() {
 }
 
 // add an unplaced IOPin.
-IOPin *Circuit::AddUnplacedIOPin(std::string &iopin_name) {
+IoPin *Circuit::AddUnplacedIOPin(std::string &iopin_name) {
     DaliExpects(design_.nets_.empty(),
                 "Cannot add new IOPIN, because net_list now is not empty");
     DaliExpects(!IsIOPinExist(iopin_name),
@@ -1502,7 +1502,7 @@ IOPin *Circuit::AddUnplacedIOPin(std::string &iopin_name) {
 }
 
 // add a placed IOPin.
-IOPin *Circuit::AddPlacedIOPin(std::string &iopin_name, double lx, double ly) {
+IoPin *Circuit::AddPlacedIOPin(std::string &iopin_name, double lx, double ly) {
     DaliExpects(design_.nets_.empty(),
                 "Cannot add new IOPIN, because net_list now is not empty");
     DaliExpects(!IsIOPinExist(iopin_name),
@@ -1528,7 +1528,7 @@ IOPin *Circuit::AddPlacedIOPin(std::string &iopin_name, double lx, double ly) {
 }
 
 // get the pointer to the IOPin list.
-std::vector<IOPin> *Circuit::getIOPinList() {
+std::vector<IoPin> *Circuit::getIOPinList() {
     return &(design_.iopins_);
 }
 
@@ -1544,26 +1544,26 @@ int Circuit::IOPinIndex(std::string &iopin_name) {
 }
 
 // returns a pointer to the IOPin with a given name. Users must guarantee the given name is valid.
-IOPin *Circuit::getIOPin(std::string &iopin_name) {
+IoPin *Circuit::getIOPin(std::string &iopin_name) {
     return &design_.iopins_[IOPinIndex(iopin_name)];
 }
 
 // add an INPin
-IOPin *Circuit::AddIOPin(std::string &iopin_name,
+IoPin *Circuit::AddIOPin(std::string &iopin_name,
                          PlaceStatus place_status,
                          SignalUse signal_use,
                          SignalDirection signal_direction,
                          double lx,
                          double ly) {
-    IOPin *io_pin = nullptr;
+    IoPin *io_pin = nullptr;
     if (place_status == UNPLACED) {
         io_pin = AddUnplacedIOPin(iopin_name);
     } else {
         io_pin = AddPlacedIOPin(iopin_name, lx, ly);
         io_pin->SetInitPlaceStatus(place_status);
     }
-    io_pin->SetUse(signal_use);
-    io_pin->SetDirection(signal_direction);
+    io_pin->SetSigUse(signal_use);
+    io_pin->SetSigDirection(signal_direction);
     return io_pin;
 }
 
@@ -1623,9 +1623,9 @@ Net *Circuit::AddNet(std::string &net_name, int capacity, double weight) {
 
 // add a IOPin to a net.
 void Circuit::AddIOPinToNet(std::string &iopin_name, std::string &net_name) {
-    IOPin *iopin = getIOPin(iopin_name);
+    IoPin *iopin = getIOPin(iopin_name);
     Net *io_net = getNetPtr(net_name);
-    iopin->SetNet(io_net);
+    iopin->SetNetPtr(io_net);
     io_net->AddIOPin(iopin);
     if (iopin->IsPrePlaced()) {
         Block *blk_ptr = getBlockPtr(iopin_name);
@@ -2376,9 +2376,9 @@ void Circuit::SaveDefFile(std::string const &name_of_file,
         std::ceil(tech_.metal_list_[0].Width() * design_.distance_microns_);
     for (auto &iopin: design_.iopins_) {
         ost << "- "
-            << *iopin.Name()
+            << iopin.Name()
             << " + NET "
-            << iopin.GetNet()->NameStr()
+            << iopin.NetName()
             << " + DIRECTION INPUT + USE SIGNAL";
         if (iopin.IsPrePlaced()) {
             ost << "\n  + LAYER "
@@ -2736,18 +2736,19 @@ void Circuit::SaveDefFile(
                         "Need metal layer info to generate PIN location\n");
             for (auto &iopin: design_.iopins_) {
                 ost << "- "
-                    << *iopin.Name()
+                    << iopin.Name()
                     << " + NET "
-                    << iopin.GetNet()->NameStr()
+                    << iopin.NetName()
                     << " + DIRECTION "
-                    << SignalDirectionStr(iopin.SigDirection())
-                    << " + USE " << SignalUseStr(iopin.SigUse());
+                    << iopin.SigDirectStr()
+                    << " + USE " << iopin.SigUseStr();
                 if (iopin.IsPlaced()) {
-                    std::string metal_name = *(iopin.Layer()->Name());
-                    int half_width = std::ceil(iopin.Layer()->MinHeight() / 2.0
+                    std::string metal_name = *(iopin.LayerPtr()->Name());
+                    int half_width = std::ceil(
+                        iopin.LayerPtr()->MinHeight() / 2.0
                                                    * design_.distance_microns_);
                     int height = std::ceil(
-                        iopin.Layer()->Width() * design_.distance_microns_);
+                        iopin.LayerPtr()->Width() * design_.distance_microns_);
                     ost << "\n  + LAYER "
                         << metal_name
                         << " ( "
@@ -2786,12 +2787,12 @@ void Circuit::SaveDefFile(
                 tech_.metal_list_[0].Width() * design_.distance_microns_);
             for (auto &iopin: design_.iopins_) {
                 ost << "- "
-                    << *iopin.Name()
+                    << iopin.Name()
                     << " + NET "
-                    << iopin.GetNet()->NameStr()
+                    << iopin.NetName()
                     << " + DIRECTION "
-                    << SignalDirectionStr(iopin.SigDirection())
-                    << " + USE " << SignalUseStr(iopin.SigUse());
+                    << iopin.SigDirectStr()
+                    << " + USE " << iopin.SigUseStr();
                 if (iopin.IsPrePlaced()) {
                     ost << "\n  + LAYER "
                         << metal_name
@@ -2838,7 +2839,7 @@ void Circuit::SaveDefFile(
                 ost << "- " << *(net.Name()) << "\n";
                 ost << " ";
                 for (auto &iopin: net.iopin_list) {
-                    ost << " ( PIN " << *(iopin->Name()) << " ) ";
+                    ost << " ( PIN " << iopin->Name() << " ) ";
                 }
                 for (auto &pin_pair: net.blk_pin_list) {
                     if (pin_pair.BlkPtr()->TypePtr()
@@ -2961,9 +2962,9 @@ void Circuit::SaveIODefFile(
         std::ceil(tech_.metal_list_[0].Width() * design_.distance_microns_);
     for (auto &iopin: design_.iopins_) {
         ost << "- "
-            << *iopin.Name()
+            << iopin.Name()
             << " + NET "
-            << iopin.GetNet()->NameStr()
+            << iopin.NetName()
             << " + DIRECTION INPUT + USE SIGNAL";
         if (iopin.IsPlaced()) {
             ost << "\n  + LAYER "

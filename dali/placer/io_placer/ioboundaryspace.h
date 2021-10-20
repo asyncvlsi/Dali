@@ -27,7 +27,7 @@ struct IoPinCluster {
     double low; // the low position of this cluster
     double span; // the width or height of this cluster
     bool is_uniform_mode = true; // uniformly distribute IOPINs in this cluster or not
-    std::vector<IOPin *> iopin_ptr_list; // IOPINs  in this cluster
+    std::vector<IoPin *> iopin_ptr_list; // IOPINs  in this cluster
 
     double Low() const;
     double High() const;
@@ -51,7 +51,7 @@ struct IoBoundaryLayerSpace {
     RectD default_horizontal_shape; // unit in micron
     RectD default_vertical_shape; // unit in micron
     bool is_using_horizontal = true;
-    std::vector<IOPin *> iopin_ptr_list;
+    std::vector<IoPin *> iopin_ptr_list;
     std::vector<IoPinCluster> pin_clusters;
 
     void AddCluster(double low, double span);
