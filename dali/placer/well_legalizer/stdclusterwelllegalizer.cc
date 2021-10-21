@@ -142,31 +142,31 @@ void StdClusterWellLegalizer::FetchNPWellParams() {
     DaliExpects(tech != nullptr,
                 "No tech info found, well legalization cannot proceed!\n");
 
-    auto n_well_layer = tech->GetNLayer();
+    auto &n_well_layer = tech->NwellLayer();
     int same_well_spacing =
-        std::ceil(n_well_layer->Spacing() / circuit_->GridValueX());
+        std::ceil(n_well_layer.Spacing() / circuit_->GridValueX());
     int op_well_spacing =
-        std::ceil(n_well_layer->OppositeSpacing() / circuit_->GridValueX());
+        std::ceil(n_well_layer.OppositeSpacing() / circuit_->GridValueX());
     well_spacing_ = std::max(same_well_spacing, op_well_spacing);
     max_unplug_length_ =
-        (int) std::floor(n_well_layer->MaxPlugDist() / circuit_->GridValueX());
-    DaliExpects(!tech->WellTapCellRef().empty(),
+        (int) std::floor(n_well_layer.MaxPlugDist() / circuit_->GridValueX());
+    DaliExpects(!tech->WellTapCellPtrs().empty(),
                 "Cannot find the definition of well tap cell, well legalization cannot proceed\n");
-    well_tap_cell_ = tech->WellTapCellRef()[0];
+    well_tap_cell_ = tech->WellTapCellPtrs()[0];
     well_tap_cell_width_ = well_tap_cell_->Width();
 
     BOOST_LOG_TRIVIAL(info) << "Well max plug distance: "
-                            << n_well_layer->MaxPlugDist() << " um, "
+                            << n_well_layer.MaxPlugDist() << " um, "
                             << max_unplug_length_ << " \n";
     BOOST_LOG_TRIVIAL(info) << "GridValueX: " << circuit_->GridValueX()
                             << " um\n";
     BOOST_LOG_TRIVIAL(info) << "Well spacing: "
-                            << n_well_layer->Spacing() << " um, "
+                            << n_well_layer.Spacing() << " um, "
                             << well_spacing_ << "\n";
     BOOST_LOG_TRIVIAL(info) << "Well tap cell width: " << well_tap_cell_width_
                             << "\n";
 
-    well_tap_cell_ = (circuit_->getTech()->WellTapCellRef()[0]);
+    well_tap_cell_ = (circuit_->getTech()->WellTapCellPtrs()[0]);
     auto *tap_cell_well = well_tap_cell_->WellPtr();
     tap_cell_p_height_ = tap_cell_well->Pheight();
     tap_cell_n_height_ = tap_cell_well->Nheight();
@@ -1211,7 +1211,7 @@ void StdClusterWellLegalizer::InsertWellTap() {
                     tap_cell_list.emplace_back();
                     auto &tap_cell = tap_cell_list.back();
                     tap_cell.SetPlacementStatus(PLACED);
-                    tap_cell.SetType(circuit_->getTechRef().WellTapCellRef()[0]);
+                    tap_cell.SetType(circuit_->getTechRef().WellTapCellPtrs()[0]);
                     int map_size =
                         circuit_->getDesignRef().TapNameIdMap().size();
                     auto ret = circuit_->getDesignRef().TapNameIdMap().insert(
@@ -1352,7 +1352,7 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
     int max_p_height = 0;
     for (auto &blk: circuit_->getDesignRef().Blocks()) {
         BlockType *type = blk.TypePtr();
-        if (type == circuit_->getTech()->io_dummy_blk_type_ptr_) continue;;
+        if (type == circuit_->getTechRef().IoDummyBlkTypePtr()) continue;;
         if (type->WellPtr()->Nheight() > max_n_height) {
             max_n_height = type->WellPtr()->Nheight();
         }
@@ -1361,7 +1361,7 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
         }
     }
     BlockTypeWell *well_tap_cell_well_info =
-        circuit_->getTech()->WellTapCellRef()[0]->WellPtr();
+        circuit_->getTech()->WellTapCellPtrs()[0]->WellPtr();
     if (well_tap_cell_well_info->Nheight() > max_n_height) {
         max_n_height = well_tap_cell_well_info->Nheight();
     }

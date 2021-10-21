@@ -113,6 +113,12 @@ void MetalLayer::Report() const {
         << "\n";
 }
 
+WellLayer::WellLayer() :
+    Layer(0, 0),
+    opposite_spacing_(-1),
+    max_plug_dist_(-1),
+    overhang_(-1) {}
+
 WellLayer::WellLayer(
     double width,
     double spacing,
@@ -171,7 +177,7 @@ double WellLayer::Overhang() const {
     return overhang_;
 }
 
-void WellLayer::Report() {
+void WellLayer::Report() const {
     BOOST_LOG_TRIVIAL(info)
         << "    Width:       " << Width() << " um\n"
         << "    Spacing:     " << Spacing() << " um\n"

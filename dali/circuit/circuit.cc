@@ -25,35 +25,30 @@ Circuit::Circuit() {
     AddDummyIOPinBlockType();
 }
 
-// create fake N/P-well info for cells
+/****
+ * Creates fake NP-well information for testing purposes
+ * create fake N/P-well info for cells
+ * ****/
 void Circuit::LoadImaginaryCellFile() {
-    /****
-     * Creates fake NP-well information for testing purposes
-     * ****/
-
     // 1. create fake well tap cell
     std::string tap_cell_name("welltap_svt");
-    BlockType *tmp_well_tap_cell = AddBlockTypeWithGridUnit(tap_cell_name,
-                                                            MinBlkWidth(),
-                                                            MinBlkHeight());
-    tech_.well_tap_cell_ptrs_.push_back(tmp_well_tap_cell);
+    BlockType *tmp_well_tap_cell = AddBlockTypeWithGridUnit(
+        tap_cell_name,
+        MinBlkWidth(),
+        MinBlkHeight()
+    );
+    tech_.WellTapCellPtrs().push_back(tmp_well_tap_cell);
 
     // 2. create fake well parameters
     double fake_same_diff_spacing = 0;
     double fake_any_diff_spacing = 0;
     SetLegalizerSpacing(fake_same_diff_spacing, fake_any_diff_spacing);
 
-    double width = 0;
-    double spacing = 0;
-    double op_spacing = 0;
-    double max_plug_dist = 0;
+    double width = MinBlkHeight() / 2.0 * GridValueY();
+    double spacing = MinBlkWidth() * GridValueX();
+    double op_spacing = MinBlkWidth() * GridValueX();
+    double max_plug_dist = AveMovBlkWidth() * 10 * GridValueX();
     double overhang = 0;
-
-    width = MinBlkHeight() / 2.0 * tech_.grid_value_y_;
-    spacing = MinBlkWidth() * tech_.grid_value_x_;
-    op_spacing = MinBlkWidth() * tech_.grid_value_x_;
-    max_plug_dist = AveMovBlkWidth() * 10 * tech_.grid_value_x_;
-
     SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
     SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
 
@@ -93,9 +88,9 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
   //BOOST_LOG_TRIVIAL(info)   << top_level->getDefUnits() << "\n";
 
   // 2. manufacturing grid and metals
-  if (tech->hasManufacturingGrid()) {
-    //BOOST_LOG_TRIVIAL(info)   << "Mangrid" << tech->getManufacturingGrid() << "\n";
-    setManufacturingGrid(tech->getManufacturingGrid() / double(tech_.database_microns_));
+  if (tech->hasmanufacturing_grid_) {
+    //BOOST_LOG_TRIVIAL(info)   << "Mangrid" << tech->GetManufacturingGrid() << "\n";
+    setManufacturingGrid(tech->GetManufacturingGrid() / double(tech_.database_microns_));
   } else {
     setManufacturingGrid(1.0 / tech_.database_microns_);
   }
@@ -156,10 +151,10 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
       Assert(!terminal->getMPins().empty(), "No physical pins, Macro: " + *blk_type->NamePtr() + ", pin: " + pin_name);
       Assert(!terminal->getMPins().begin()->getGeometry().empty(), "No geometries provided for pin");
       auto geo_shape = terminal->getMPins().begin()->getGeometry().begin();
-      lx = geo_shape->xMin() / tech_.grid_value_x_ / tech_.database_microns_;
-      urx = geo_shape->xMax() / tech_.grid_value_x_ / tech_.database_microns_;
-      lly = geo_shape->yMin() / tech_.grid_value_y_ / tech_.database_microns_;
-      ury = geo_shape->yMax() / tech_.grid_value_y_ / tech_.database_microns_;
+      lx = geo_shape->xMin() / GridValueX() / tech_.database_microns_;
+      urx = geo_shape->xMax() / GridValueX() / tech_.database_microns_;
+      lly = geo_shape->yMin() / GridValueY() / tech_.database_microns_;
+      ury = geo_shape->yMax() / GridValueY() / tech_.database_microns_;
 
       bool is_input = true;
       if (terminal->getIoType() == odb::dbIoType::INPUT) {
@@ -230,8 +225,8 @@ void Circuit::InitializeFromDB(odb::dbDatabase *db_ptr) {
     blk->getLocation(llx_int, lly_int);
     llx_int /= 10;
     lly_int /= 10;
-    llx_int = (int) std::round(llx_int / tech_.grid_value_x_ / design_.def_distance_microns);
-    lly_int = (int) std::round(lly_int / tech_.grid_value_y_ / design_.def_distance_microns);
+    llx_int = (int) std::round(llx_int / GridValueX() / design_.def_distance_microns);
+    lly_int = (int) std::round(lly_int / GridValueY() / design_.def_distance_microns);
     std::string place_status(blk->getPlacementStatus().getString());
     std::string orient(blk->getOrient().getString());
     AddBlock(blk_name, blk_type_name, llx_int, lly_int, StrToPlaceStatus(place_status), StrToOrient(orient));
@@ -287,33 +282,34 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
     DaliExpects(phy_db_tech.GetDatabaseMicron() > 0,
                 "Bad DATABASE MICRONS from PhyDB");
     setDatabaseMicron(phy_db_tech.GetDatabaseMicron());
-    BOOST_LOG_TRIVIAL(info) << "DATABASE MICRONS " << tech_.database_microns_
-                            << "\n";
+    BOOST_LOG_TRIVIAL(info)
+        << "DATABASE MICRONS " << tech_.database_microns_ << "\n";
     if (phy_db_tech.GetManufacturingGrid() > EPSILON) {
         setManufacturingGrid(phy_db_tech.GetManufacturingGrid());
     } else {
         setManufacturingGrid(1.0 / tech_.database_microns_);
     }
-    BOOST_LOG_TRIVIAL(info) << "MANUFACTURINGGRID "
-                            << tech_.manufacturing_grid_
-                            << "\n";
+    BOOST_LOG_TRIVIAL(info)
+        << "MANUFACTURINGGRID " << tech_.manufacturing_grid_ << "\n";
 
     // 2. placement grid and metal layers
-    double placement_grid_value_x = 0, placement_grid_value_y = 0;
+    double grid_value_x = 0;
+    double grid_value_y = 0;
     bool is_placement_grid_set = phy_db_tech.GetPlacementGrids(
-        placement_grid_value_x,
-        placement_grid_value_y);
+        grid_value_x,
+        grid_value_y
+    );
     if (is_placement_grid_set) {
-        SetGridValue(placement_grid_value_x, placement_grid_value_y);
+        SetGridValue(grid_value_x, grid_value_y);
     } else {
         BOOST_LOG_TRIVIAL(info) << "Placement grid not set in PhyDB\n";
         BOOST_LOG_TRIVIAL(info) << "Checking Sites\n";
         auto &sites = phy_db_tech.GetSitesRef();
         if (!sites.empty()) {
-            placement_grid_value_x = sites[0].GetWidth();
-            placement_grid_value_y = sites[0].GetHeight();
-            SetGridValue(placement_grid_value_x, placement_grid_value_y);
-            setRowHeight(placement_grid_value_y);
+            grid_value_x = sites[0].GetWidth();
+            grid_value_y = sites[0].GetHeight();
+            SetGridValue(grid_value_x, grid_value_y);
+            setRowHeight(grid_value_y);
         } else {
             BOOST_LOG_TRIVIAL(info) << "No Sites found\n";
         }
@@ -362,7 +358,7 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
             );
         }
     }
-    if (!tech_.grid_set_) {
+    if (!tech_.is_grid_set_) {
         SetGridUsingMetalPitch();
     }
 
@@ -396,10 +392,10 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
             for (auto &layer_rect: layer_rects) {
                 auto &rects = layer_rect.GetRects();
                 for (auto &rect: rects) {
-                    double llx = rect.LLX() / tech_.grid_value_x_;
-                    double urx = rect.URX() / tech_.grid_value_x_;
-                    double lly = rect.LLY() / tech_.grid_value_y_;
-                    double ury = rect.URY() / tech_.grid_value_y_;
+                    double llx = rect.LLX() / GridValueX();
+                    double urx = rect.URX() / GridValueX();
+                    double lly = rect.LLY() / GridValueY();
+                    double ury = rect.URY() / GridValueY();
                     new_pin->AddRectOnly(llx, lly, urx, ury);
                 }
             }
@@ -421,12 +417,12 @@ void Circuit::setDieArea(
     int upper_x,
     int upper_y
 ) { // unit in manufacturing grid
-    DaliExpects(tech_.grid_value_x_ > 0 && tech_.grid_value_y_ > 0,
+    DaliExpects(GridValueX() > 0 && GridValueY() > 0,
                 "Need to set positive grid values before setting placement boundary");
     DaliExpects(design_.distance_microns_ > 0,
                 "Need to set def_distance_microns before setting placement boundary using Circuit::SetDieArea()");
-    double factor_x = tech_.grid_value_x_ * design_.distance_microns_;
-    double factor_y = tech_.grid_value_y_ * design_.distance_microns_;
+    double factor_x = GridValueX() * design_.distance_microns_;
+    double factor_y = GridValueY() * design_.distance_microns_;
 
     // TODO, extract placement boundary from rows if they are any rows
     DaliWarns((lower_x % (int) std::round(factor_x)) != 0,
@@ -841,7 +837,7 @@ void Circuit::ReadCellFile(std::string const &name_of_file) {
                 && !ist.eof());
         }
     }
-    DaliExpects(!tech_.IsWellInfoSet(),
+    DaliExpects(tech_.IsWellInfoSet(),
                 "N/P well technology information not found!");
     //tech_->Report();
     //ReportWellShape();
@@ -879,7 +875,7 @@ int Circuit::DatabaseMicron() const {
 // set manufacturing grid
 void Circuit::setManufacturingGrid(double manufacture_grid) {
     DaliExpects(manufacture_grid > 0,
-                "Cannot set negative manufacturing grid: Circuit::setManufacturingGrid()");
+                "Cannot set negative manufacturing grid: Circuit::setmanufacturing_grid_");
     tech_.manufacturing_grid_ = manufacture_grid;
 }
 
@@ -890,17 +886,16 @@ double Circuit::ManufacturingGrid() const {
 
 // set grid values in x and y direction, unit in micron
 void Circuit::SetGridValue(double grid_value_x, double grid_value_y) {
-    if (tech_.grid_set_) return;
+    DaliExpects(!tech_.is_grid_set_,
+                "once set, grid_value cannot be changed!");
     DaliExpects(grid_value_x > 0,
-                "grid_value_x must be a positive real number! Circuit::SetGridValue()");
+                "grid_value_x must be a positive real number!");
     DaliExpects(grid_value_y > 0,
-                "grid_value_y must be a positive real number! Circuit::SetGridValue()");
-    DaliExpects(!tech_.grid_set_,
-                "once set, grid_value cannot be changed! Circuit::SetGridValue()");
+                "grid_value_y must be a positive real number!");
     //BOOST_LOG_TRIVIAL(info) << "  grid value x: " << grid_value_x << ", grid value y: " << grid_value_y << "\n";
     tech_.grid_value_x_ = grid_value_x;
     tech_.grid_value_y_ = grid_value_y;
-    tech_.grid_set_ = true;
+    tech_.is_grid_set_ = true;
 }
 
 // set grid values using the first horizontal and vertical metal layer pitches
@@ -928,23 +923,21 @@ void Circuit::SetGridUsingMetalPitch() {
 
 // get the grid value in x direction, unit is usually in micro
 double Circuit::GridValueX() const {
-    DaliExpects(tech_.grid_set_, "Need to set grid value before use");
+    DaliExpects(tech_.is_grid_set_, "Need to set grid value before use");
     return tech_.grid_value_x_;
 }
 
 // get the grid value in y direction, unit is usually in micro
 double Circuit::GridValueY() const {
-    DaliExpects(tech_.grid_set_, "Need to set grid value before use");
+    DaliExpects(tech_.is_grid_set_, "Need to set grid value before use");
     return tech_.grid_value_y_;
 }
 
 // set the row height, unit in micron
 void Circuit::setRowHeight(double row_height) {
-    DaliExpects(row_height > 0,
-                "Setting row height to a negative value? Circuit::setRowHeight()");
-    BOOST_LOG_TRIVIAL(info) << row_height << "  " << tech_.grid_value_y_
-                            << "\n";
-    double residual = Residual(row_height, tech_.grid_value_y_);
+    DaliExpects(row_height > 0, "Setting row height to a negative value?");
+    //BOOST_LOG_TRIVIAL(info) << row_height << "  " << GridValueY() << std::endl;
+    double residual = Residual(row_height, GridValueY());
     DaliExpects(std::fabs(residual) < EPSILON,
                 "Site height is not integer multiple of grid value in Y");
     tech_.row_height_set_ = true;
@@ -960,7 +953,11 @@ double Circuit::getDBRowHeight() const {
 int Circuit::getINTRowHeight() const {
     DaliExpects(tech_.row_height_set_,
                 "Row height not set, cannot retrieve its value: Circuit::getINTRowHeight()\n");
-    return (int) std::round(tech_.row_height_ / tech_.grid_value_y_);
+    return (int) std::round(tech_.row_height_ / GridValueY());
+}
+
+std::vector<MetalLayer> &Circuit::Metals() {
+    return tech_.metal_list_;
 }
 
 std::unordered_map<std::string, int> *Circuit::MetalNameMap() {
@@ -988,9 +985,11 @@ MetalLayer *Circuit::getMetalLayerPtr(std::string &metal_name) {
 }
 
 // add a metal layer with name and size, unit in micron.
-MetalLayer *Circuit::AddMetalLayer(std::string &metal_name,
-                                   double width,
-                                   double spacing) {
+MetalLayer *Circuit::AddMetalLayer(
+    std::string &metal_name,
+    double width,
+    double spacing
+) {
     DaliExpects(!IsMetalLayerExist(metal_name),
                 "MetalLayer exist, cannot create this MetalLayer again: "
                     + metal_name);
@@ -1022,13 +1021,15 @@ void Circuit::SetBoundary(int left, int bottom, int right, int top) {
 }
 
 // add a metal layer, unit in micron.
-void Circuit::AddMetalLayer(std::string &metal_name,
-                            double width,
-                            double spacing,
-                            double min_area,
-                            double pitch_x,
-                            double pitch_y,
-                            MetalDirection metal_direction) {
+void Circuit::AddMetalLayer(
+    std::string &metal_name,
+    double width,
+    double spacing,
+    double min_area,
+    double pitch_x,
+    double pitch_y,
+    MetalDirection metal_direction
+) {
     DaliExpects(!IsMetalLayerExist(metal_name),
                 "MetalLayer exist, cannot create this MetalLayer again: "
                     + metal_name);
@@ -1045,9 +1046,10 @@ void Circuit::AddMetalLayer(std::string &metal_name,
 
 // report metal layer information for debugging purposes
 void Circuit::ReportMetalLayers() {
-    BOOST_LOG_TRIVIAL(info) << "Total MetalLayer: "
-                            << tech_.metal_list_.size()
-                            << "\n";
+    BOOST_LOG_TRIVIAL(info)
+        << "Total MetalLayer: "
+        << tech_.metal_list_.size()
+        << "\n";
     for (auto &metal_layer: tech_.metal_list_) {
         metal_layer.Report();
     }
@@ -1055,8 +1057,8 @@ void Circuit::ReportMetalLayers() {
 }
 
 // get the pointer to the unordered BlockType map.
-std::unordered_map<std::string, BlockType *> *Circuit::BlockTypeMap() {
-    return &tech_.block_type_map_;
+std::unordered_map<std::string, BlockType *> &Circuit::BlockTypeMap() {
+    return tech_.block_type_map_;
 }
 
 // check if a BlockType with a given name exists or not
@@ -1081,12 +1083,17 @@ BlockTypeWell *Circuit::AddBlockTypeWell(BlockType *blk_type) {
 }
 
 // set N-well layer parameters
-void Circuit::SetNWellParams(double width,
-                             double spacing,
-                             double op_spacing,
-                             double max_plug_dist,
-                             double overhang) {
-    tech_.SetNLayer(width, spacing, op_spacing, max_plug_dist, overhang);
+void Circuit::SetNWellParams(
+    double width,
+    double spacing,
+    double op_spacing,
+    double max_plug_dist,
+    double overhang
+) {
+    tech_.nwell_layer_.SetParams(
+        width, spacing, op_spacing, max_plug_dist, overhang
+    );
+    tech_.n_set_ = true;
 }
 
 // set P-well layer parameters
@@ -1097,13 +1104,17 @@ void Circuit::SetPWellParams(
     double max_plug_dist,
     double overhang
 ) {
-    tech_.SetPLayer(width, spacing, op_spacing, max_plug_dist, overhang);
+    tech_.pwell_layer_.SetParams(
+        width, spacing, op_spacing, max_plug_dist, overhang
+    );
+    tech_.p_set_ = true;
 }
 
 // TODO: discuss with Rajit about the necessity of the parameter ANY_SPACING in CELL file.
 // set same_spacing (NN and PP) and any_spacing (NP). This member function will be depreciated
 void Circuit::SetLegalizerSpacing(double same_spacing, double any_spacing) {
-    tech_.SetDiffSpacing(same_spacing, any_spacing);
+    tech_.same_diff_spacing_ = same_spacing;
+    tech_.any_diff_spacing_ = any_spacing;
 }
 
 // create well information container for a given BlockType.
@@ -1114,19 +1125,21 @@ BlockTypeWell *Circuit::AddBlockTypeWell(std::string &blk_type_name) {
 
 // TODO: discuss with Rajit about the necessity of having N/P-wells not fully covering the prBoundary of a given cell.
 // set the N/P-well shape of a given BlockType, unit in micron.
-void Circuit::setWellRect(std::string &blk_type_name,
-                          bool is_N,
-                          double lx,
-                          double ly,
-                          double ux,
-                          double uy) {
+void Circuit::setWellRect(
+    std::string &blk_type_name,
+    bool is_N,
+    double lx,
+    double ly,
+    double ux,
+    double uy
+) {
     BlockType *blk_type_ptr = getBlockType(blk_type_name);
     DaliExpects(blk_type_ptr != nullptr,
                 "Cannot find BlockType with name: " + blk_type_name);
-    int lx_grid = int(std::round(lx / tech_.grid_value_x_));
-    int ly_grid = int(std::round(ly / tech_.grid_value_y_));
-    int ux_grid = int(std::round(ux / tech_.grid_value_x_));
-    int uy_grid = int(std::round(uy / tech_.grid_value_y_));
+    int lx_grid = int(std::round(lx / GridValueX()));
+    int ly_grid = int(std::round(ly / GridValueY()));
+    int ux_grid = int(std::round(ux / GridValueX()));
+    int uy_grid = int(std::round(uy / GridValueY()));
     BlockTypeWell *well = blk_type_ptr->WellPtr();
     DaliExpects(well != nullptr,
                 "Well uninitialized for BlockType: " + blk_type_name);
@@ -1165,36 +1178,36 @@ void Circuit::BlockTypeSizeMicrometerToGridValue(
     int &gridded_width,
     int &gridded_height
 ) {
-    double residual_x = fabs(Residual(width, tech_.grid_value_x_));
+    double residual_x = fabs(Residual(width, GridValueX()));
     gridded_width = -1;
     if (residual_x < EPSILON) {
-        gridded_width = (int) std::round(width / tech_.grid_value_x_);
+        gridded_width = (int) std::round(width / GridValueX());
     } else {
-        gridded_width = (int) std::ceil(width / tech_.grid_value_x_);
+        gridded_width = (int) std::ceil(width / GridValueX());
         BOOST_LOG_TRIVIAL(warning)
             << "BlockType width is not integer multiple of the grid value along X: "
             << block_type_name << "\n"
             << "    width: " << width << " um\n"
-            << "    grid value x: " << tech_.grid_value_x_ << " um\n"
+            << "    grid value x: " << GridValueX() << " um\n"
             << "    residual: " << residual_x << "\n"
             << "    adjusted up to: " << gridded_width << " * "
-            << tech_.grid_value_x_ << " um\n";
+            << GridValueX() << " um\n";
     }
 
-    double residual_y = fabs(Residual(height, tech_.grid_value_y_));
+    double residual_y = fabs(Residual(height, GridValueY()));
     gridded_height = -1;
     if (residual_y < EPSILON) {
-        gridded_height = (int) std::round(height / tech_.grid_value_y_);
+        gridded_height = (int) std::round(height / GridValueY());
     } else {
-        gridded_height = (int) std::ceil(height / tech_.grid_value_y_);
+        gridded_height = (int) std::ceil(height / GridValueY());
         BOOST_LOG_TRIVIAL(warning)
             << "BlockType height is not integer multiple of the grid value along Y: "
             << block_type_name << "\n"
             << "    height: " << height << " um\n"
-            << "    grid value y: " << tech_.grid_value_y_ << " um\n"
+            << "    grid value y: " << GridValueY() << " um\n"
             << "    residual: " << residual_y << "\n"
             << "    adjusted up to: " << gridded_height << " * "
-            << tech_.grid_value_y_ << " um\n";
+            << GridValueY() << " um\n";
     }
 }
 
@@ -1250,18 +1263,18 @@ BlockType *Circuit::AddWellTapBlockTypeWithGridUnit(
 BlockType *Circuit::AddWellTapBlockType(std::string &block_type_name,
                                         double width,
                                         double height) {
-    double residual = fabs(Residual(width, tech_.grid_value_x_));
+    double residual = fabs(Residual(width, GridValueX()));
     DaliExpects(residual < EPSILON,
                 "BlockType width is not integer multiple of grid value in X: "
                     + block_type_name);
 
-    residual = fabs(Residual(height, tech_.grid_value_y_));
+    residual = fabs(Residual(height, GridValueY()));
     DaliExpects(residual < EPSILON,
                 "BlockType height is not integer multiple of grid value in Y: "
                     + block_type_name);
 
-    int gridded_width = (int) std::round(width / tech_.grid_value_x_);
-    int gridded_height = (int) std::round(height / tech_.grid_value_y_);
+    int gridded_width = (int) std::round(width / GridValueX());
+    int gridded_height = (int) std::round(height / GridValueY());
     return AddWellTapBlockTypeWithGridUnit(block_type_name,
                                            gridded_width,
                                            gridded_height);
@@ -1714,7 +1727,7 @@ void Circuit::ReportNetMap() {
 // initialize data structure for net fanout histogram
 void Circuit::InitNetFanoutHistogram(std::vector<int> *histo_x) {
     design_.InitNetFanoutHisto(histo_x);
-    design_.net_histogram_.hpwl_unit_ = tech_.grid_value_x_;
+    design_.net_histogram_.hpwl_unit_ = GridValueX();
 }
 
 // update HPWL values for the net fanout histogram
@@ -1729,7 +1742,7 @@ void Circuit::UpdateNetHPWLHistogram() {
         int net_size = net.PinCnt();
         double hpwl_x = net.WeightedHPWLX();
         double hpwl_y =
-            net.WeightedHPWLY() * tech_.grid_value_y_ / tech_.grid_value_x_;
+            net.WeightedHPWLY() * GridValueY() / GridValueX();
         design_.UpdateNetHPWLHisto(net_size, hpwl_x + hpwl_y);
     }
 
@@ -1753,8 +1766,8 @@ void Circuit::ReportBriefSummary() const {
     BOOST_LOG_TRIVIAL(info) << "  iopins: " << design_.iopins_.size()
                             << "\n";
     BOOST_LOG_TRIVIAL(info) << "  nets: " << design_.nets_.size() << "\n";
-    BOOST_LOG_TRIVIAL(info) << "  grid size x/y: " << tech_.grid_value_x_
-                            << ", " << tech_.grid_value_y_ << " um\n";
+    BOOST_LOG_TRIVIAL(info) << "  grid size x/y: " << GridValueX()
+                            << ", " << GridValueY() << " um\n";
     BOOST_LOG_TRIVIAL(info) << "  total block area: " << design_.tot_blk_area_
                             << "\n";
     BOOST_LOG_TRIVIAL(info) << "  total white space: "
@@ -1951,7 +1964,7 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
     double min_hpwl = DBL_MAX;
     double max_hpwl = DBL_MIN;
     hpwl_list.reserve(design_.nets_.size());
-    double factor = tech_.grid_value_y_ / tech_.grid_value_x_;
+    double factor = GridValueY() / GridValueX();
     for (auto &net: design_.nets_) {
         double tmp_hpwl = net.WeightedHPWLX() + net.WeightedHPWLY() * factor;
         if (net.PinCnt() >= 1) {
@@ -1997,7 +2010,7 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
     BOOST_LOG_TRIVIAL(info)
         << "===================================================================\n";
     BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: "
-                            << tech_.grid_value_x_ << " um\n";
+                            << GridValueX() << " um\n";
     BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
@@ -2007,7 +2020,7 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
     double min_hpwl = DBL_MAX;
     double max_hpwl = DBL_MIN;
     hpwl_list.reserve(design_.nets_.size());
-    double factor = tech_.grid_value_y_ / tech_.grid_value_x_;
+    double factor = GridValueY() / GridValueX();
     for (auto &net: design_.nets_) {
         double tmp_hpwl = net.WeightedHPWLX() + net.WeightedHPWLY() * factor;
         if (tmp_hpwl > 0) {
@@ -2054,7 +2067,7 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
     BOOST_LOG_TRIVIAL(info)
         << "===================================================================\n";
     BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: "
-                            << tech_.grid_value_x_ << " um\n";
+                            << GridValueX() << " um\n";
     BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
@@ -2310,8 +2323,8 @@ void Circuit::SaveDefFile(
     }
 
     // 2. print component
-    double factor_x = design_.distance_microns_ * tech_.grid_value_x_;
-    double factor_y = design_.distance_microns_ * tech_.grid_value_y_;
+    double factor_x = design_.distance_microns_ * GridValueX();
+    double factor_y = design_.distance_microns_ * GridValueY();
     if (is_complete_version) {
         ost << "COMPONENTS "
             << design_.blocks_.size() - design_.pre_placed_io_count_
@@ -2498,8 +2511,8 @@ void Circuit::SaveDefFile(
     }
 
     // 2. COMPONENT
-    double factor_x = design_.distance_microns_ * tech_.grid_value_x_;
-    double factor_y = design_.distance_microns_ * tech_.grid_value_y_;
+    double factor_x = design_.distance_microns_ * GridValueX();
+    double factor_y = design_.distance_microns_ * GridValueY();
     switch (save_cell) {
         case 0: { // no cells are saved
             ost << "COMPONENTS 0 ;\n";
@@ -2914,8 +2927,8 @@ void Circuit::SaveIODefFile(
     }
 
     // 2. print component
-    double factor_x = design_.distance_microns_ * tech_.grid_value_x_;
-    double factor_y = design_.distance_microns_ * tech_.grid_value_y_;
+    double factor_x = design_.distance_microns_ * GridValueX();
+    double factor_y = design_.distance_microns_ * GridValueY();
     ost << "COMPONENTS "
         << design_.blocks_.size() - design_.pre_placed_io_count_
             + design_.welltaps_.size()
@@ -3043,8 +3056,8 @@ void Circuit::SaveDefWell(
     }
 
     // 2. print well tap cells
-    double factor_x = design_.distance_microns_ * tech_.grid_value_x_;
-    double factor_y = design_.distance_microns_ * tech_.grid_value_y_;
+    double factor_x = design_.distance_microns_ * GridValueX();
+    double factor_y = design_.distance_microns_ * GridValueY();
     if (is_no_normal_cell) {
         ost << "COMPONENTS " << design_.welltaps_.size() << " ;\n";
     } else {
@@ -3140,8 +3153,8 @@ void Circuit::SaveDefPPNPWell(std::string const &name_of_file,
     }
 
     // 2. print well tap cells
-    double factor_x = design_.distance_microns_ * tech_.grid_value_x_;
-    double factor_y = design_.distance_microns_ * tech_.grid_value_y_;
+    double factor_x = design_.distance_microns_ * GridValueX();
+    double factor_y = design_.distance_microns_ * GridValueY();
     ost << "COMPONENTS " << 2 << " ;\n";
     ost << "- "
         << "npwells "
@@ -3196,9 +3209,9 @@ void Circuit::SaveBookshelfNode(std::string const &name_of_file) {
     for (auto &block: design_.blocks_) {
         ost << "\t" << block.Name()
             << "\t" << block.Width() * design_.distance_microns_
-                * tech_.grid_value_x_
+                * GridValueX()
             << "\t" << block.Height() * design_.distance_microns_
-                * tech_.grid_value_y_
+                * GridValueY()
             << "\n";
     }
 }
@@ -3226,12 +3239,12 @@ void Circuit::SaveBookshelfNet(std::string const &name_of_file) {
             ost << (pair.PinPtr()->OffsetX()
                 - pair.BlkPtr()->TypePtr()->Width() / 2.0)
                 * design_.distance_microns_
-                * tech_.grid_value_x_
+                * GridValueX()
                 << "\t"
                 << (pair.PinPtr()->OffsetY()
                     - pair.BlkPtr()->TypePtr()->Height() / 2.0)
                     * design_.distance_microns_
-                    * tech_.grid_value_y_
+                    * GridValueY()
                 << "\n";
         }
     }
@@ -3246,10 +3259,10 @@ void Circuit::SaveBookshelfPl(std::string const &name_of_file) {
             << "\t"
             << int(
                 block.LLX() * design_.distance_microns_
-                    * tech_.grid_value_x_)
+                    * GridValueX())
             << "\t"
             << int(block.LLY() * design_.distance_microns_
-                       * tech_.grid_value_y_);
+                       * GridValueY());
         if (block.IsMovable()) {
             ost << "\t:\tN\n";
         } else {
@@ -3322,9 +3335,9 @@ void Circuit::LoadBookshelfPl(std::string const &name_of_file) {
         if (res.size() >= 4) {
             if (IsBlockExist(res[0])) {
                 try {
-                    lx = std::stod(res[1]) / tech_.grid_value_x_
+                    lx = std::stod(res[1]) / GridValueX()
                         / design_.distance_microns_;
-                    ly = std::stod(res[2]) / tech_.grid_value_y_
+                    ly = std::stod(res[2]) / GridValueY()
                         / design_.distance_microns_;
                     getBlockPtr(res[0])->SetLoc(lx, ly);
                 } catch (...) {

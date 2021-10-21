@@ -182,6 +182,8 @@ public:
     /****API to set metal layers: deprecated
      * now the metal layer information are all stored in openDB data structure
      * ****/
+    std::vector<MetalLayer> &Metals();
+
     std::unordered_map<std::string, int> *MetalNameMap();
 
     bool IsMetalLayerExist(std::string &metal_name);
@@ -203,7 +205,7 @@ public:
     void ReportMetalLayers();
 
     /****API for BlockType****/
-    std::unordered_map<std::string, BlockType *> *BlockTypeMap();
+    std::unordered_map<std::string, BlockType *> &BlockTypeMap();
 
     bool IsBlockTypeExist(std::string &block_type_name);
 

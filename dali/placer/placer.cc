@@ -269,7 +269,7 @@ void Placer::SanityCheck() {
                       + net.Name());
     }
     DaliExpects(IsBoundaryProper(), "Improper boundary setting");
-    for (auto &pair: circuit_->tech_.block_type_map_) {
+    for (auto &pair: circuit_->BlockTypeMap()) {
         BlockType *blk_type_ptr = pair.second;
         for (auto &pin: blk_type_ptr->PinList()) {
             DaliExpects(!pin.IsRectEmpty(),

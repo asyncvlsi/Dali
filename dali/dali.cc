@@ -393,7 +393,7 @@ void Dali::ExportOrdinaryComponentsToPhyDB() {
     double factor_x = circuit_.DistanceMicrons() * circuit_.GridValueX();
     double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
     for (auto &block: circuit_.BlockListRef()) {
-        if (block.TypePtr() == circuit_.getTechRef().io_dummy_blk_type_ptr_) {
+        if (block.TypePtr() == circuit_.getTechRef().IoDummyBlkTypePtr()) {
             // skip dummy cells for I/O pins
             continue;
         }
@@ -447,7 +447,7 @@ void Dali::ExportComponentsToPhyDB() {
 }
 
 void Dali::ExportIoPinsToPhyDB() {
-    DaliExpects(!circuit_.getTechRef().metal_list_.empty(),
+    DaliExpects(!circuit_.Metals().empty(),
                 "Need metal layer info to generate PIN location\n");
     for (auto &iopin: circuit_.getDesignRef().IoPins()) {
         if (!iopin.IsPrePlaced() && iopin.IsPlaced()) {

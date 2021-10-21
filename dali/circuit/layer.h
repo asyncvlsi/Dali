@@ -110,6 +110,7 @@ class MetalLayer : public Layer {
  */
 class WellLayer : public Layer {
   public:
+    WellLayer();
     WellLayer(
         double width,
         double spacing,
@@ -146,7 +147,7 @@ class WellLayer : public Layer {
     double Overhang() const;
 
     // print information of this layer
-    void Report();
+    void Report() const;
   private:
     double opposite_spacing_;
     double max_plug_dist_;

@@ -28,16 +28,16 @@ void ClusterWellLegalizer::InitializeClusterLegalizer() {
     col_to_cluster_.resize(tot_num_cols_, nullptr);
 
     // parameters fetching
-    auto tech_params = circuit_->getTech();
-    DaliExpects(tech_params != nullptr, "No tech info found, well legalization cannot proceed!\n");
-    auto n_well_layer = tech_params->GetNLayer();
-    auto p_well_layer = tech_params->GetPLayer();
-    well_extension_x = std::ceil(n_well_layer->Overhang() / circuit_->GridValueX());
+    auto &tech_params = circuit_->getTechRef();
+    auto &n_well_layer = tech_params.NwellLayer();
+    auto &p_well_layer = tech_params.PwellLayer();
+    double grid_value_x = circuit_->GridValueX();
+    well_extension_x = std::ceil(n_well_layer.Overhang() / grid_value_x);
     //well_extension_y = std::ceil((n_well_layer->Overhang())/circuit_ptr_->GetGridValueY());
     //plug_width = std::ceil();
     BOOST_LOG_TRIVIAL(info) << "Well max plug distance:  um \n";
-    BOOST_LOG_TRIVIAL(info) << "GridValueX: " << circuit_->GridValueX() << " um\n";
-    max_well_length = std::floor(n_well_layer->MaxPlugDist() / circuit_->GridValueX());
+    BOOST_LOG_TRIVIAL(info) << "GridValueX: " << grid_value_x << " um\n";
+    max_well_length = std::floor(n_well_layer.MaxPlugDist() / grid_value_x);
 
     // parameters setting
     /*if (max_well_length > RegionWidth()) {
@@ -70,17 +70,21 @@ void ClusterWellLegalizer::UploadClusterXY() {
 void ClusterWellLegalizer::UploadClusterUV() {
     int counter = 0;
     for (auto &cluster: cluster_set_) {
-        displace_viewer_->SetXYFromDifference(counter++, cluster->LLX(), cluster->LLY());
+        displace_viewer_->SetXYFromDifference(counter++,
+                                              cluster->LLX(),
+                                              cluster->LLY());
     }
 }
 
 BlkCluster *ClusterWellLegalizer::CreateNewCluster() {
-    auto *new_cluster = new BlkCluster(well_extension_x, well_extension_y, plug_width);
+    auto *new_cluster =
+        new BlkCluster(well_extension_x, well_extension_y, plug_width);
     cluster_set_.insert(new_cluster);
     return new_cluster;
 }
 
-void ClusterWellLegalizer::AddBlockToCluster(Block &block, BlkCluster *cluster) {
+void ClusterWellLegalizer::AddBlockToCluster(Block &block,
+                                             BlkCluster *cluster) {
     /****
      * Append the @param block to the @param cluster
      * Update the row_to_cluster_
@@ -111,7 +115,8 @@ BlkCluster *ClusterWellLegalizer::FindClusterForBlock(Block &block) {
     int max_search_row = MaxRow(height);
 
     int search_start_row = std::max(0, LocToRow(init_y - 2 * height));
-    int search_end_row = std::min(max_search_row, LocToRow(init_y + 3 * height));
+    int search_end_row =
+        std::min(max_search_row, LocToRow(init_y + 3 * height));
 
     BlkCluster *res_cluster = nullptr;
     BlkCluster *pre_cluster = nullptr;
@@ -226,7 +231,9 @@ bool ClusterWellLegalizer::LegalizeClusterLeft() {
 
         cluster->SetLoc(res.x, res.y);
 
-        UseSpaceLeft(cluster->URX(), StartRow(cluster->LLY()), EndRow(cluster->URY()));
+        UseSpaceLeft(cluster->URX(),
+                     StartRow(cluster->LLY()),
+                     EndRow(cluster->URY()));
     }
 
     return is_successful;
@@ -290,7 +297,9 @@ bool ClusterWellLegalizer::LegalizeClusterRight() {
         cluster->SetURX(res.x);
         cluster->SetLLY(res.y);
 
-        UseSpaceRight(cluster->LLX(), StartRow(cluster->LLY()), EndRow(cluster->URY()));
+        UseSpaceRight(cluster->LLX(),
+                      StartRow(cluster->LLY()),
+                      EndRow(cluster->URY()));
     }
 
     return is_successful;
@@ -304,7 +313,9 @@ void ClusterWellLegalizer::UseSpaceBottom(int end_y, int lo_col, int hi_col) {
     }
 }
 
-bool ClusterWellLegalizer::FindLocBottom(Value2D<int> &loc, int width, int height) {
+bool ClusterWellLegalizer::FindLocBottom(Value2D<int> &loc,
+                                         int width,
+                                         int height) {
     /****
      * Returns whether a legal location can be found, and put the final location to @params loc
      * ****/
@@ -334,7 +345,8 @@ bool ClusterWellLegalizer::FindLocBottom(Value2D<int> &loc, int width, int heigh
     best_y = INT_MIN;
     min_cost = DBL_MAX;
 
-    for (int tmp_start_col = search_start_col; tmp_start_col <= search_end_col; ++tmp_start_col) {
+    for (int tmp_start_col = search_start_col; tmp_start_col <= search_end_col;
+         ++tmp_start_col) {
         int tmp_end_col = tmp_start_col + width - 1;
         bottom_white_space_bound = bottom_;
         //bottom_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_col, tmp_end_col);
@@ -345,7 +357,8 @@ bool ClusterWellLegalizer::FindLocBottom(Value2D<int> &loc, int width, int heigh
         }
         int tmp_x = ColToLoc(tmp_start_col);
 
-        double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y) + CostLeftBottomBoundary(tmp_x, tmp_y);
+        double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y)
+            + CostLeftBottomBoundary(tmp_x, tmp_y);
 
         if (tmp_cost < min_cost) {
             best_x = tmp_x;
@@ -359,15 +372,20 @@ bool ClusterWellLegalizer::FindLocBottom(Value2D<int> &loc, int width, int heigh
     bool legal_loc_found = false;
     double min_cost_legal = DBL_MAX;
     bool is_loc_legal =
-        IsSpaceLegal(best_x, best_x + width, StartRow(best_y), EndRow(best_y + height));
+        IsSpaceLegal(best_x,
+                     best_x + width,
+                     StartRow(best_y),
+                     EndRow(best_y + height));
 
     if (!is_loc_legal) {
         int old_start_col = search_start_col;
         int old_end_col = search_end_col;
         int extended_range = cur_iter_ * width;
         search_start_col = std::max(0, search_start_col - extended_range);
-        search_end_col = std::min(max_search_col, search_end_col + extended_range);
-        for (int tmp_start_col = search_start_col; tmp_start_col < old_start_col; ++tmp_start_col) {
+        search_end_col =
+            std::min(max_search_col, search_end_col + extended_range);
+        for (int tmp_start_col = search_start_col;
+             tmp_start_col < old_start_col; ++tmp_start_col) {
             int tmp_end_col = tmp_start_col + width - 1;
             //bottom_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_col, tmp_end_col);
             bottom_white_space_bound = bottom_;
@@ -380,14 +398,18 @@ bool ClusterWellLegalizer::FindLocBottom(Value2D<int> &loc, int width, int heigh
             int tmp_x = ColToLoc(tmp_start_col);
             //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
 
-            double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y) + CostLeftBottomBoundary(tmp_x, tmp_y);
+            double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y)
+                + CostLeftBottomBoundary(tmp_x, tmp_y);
             if (tmp_cost < min_cost) {
                 best_x = tmp_x;
                 best_y = tmp_y;
                 min_cost = tmp_cost;
             }
 
-            is_loc_legal = IsSpaceLegal(tmp_x, tmp_x + width, StartRow(tmp_y), EndRow(tmp_y + height));
+            is_loc_legal = IsSpaceLegal(tmp_x,
+                                        tmp_x + width,
+                                        StartRow(tmp_y),
+                                        EndRow(tmp_y + height));
 
             if (is_loc_legal) {
                 legal_loc_found = true;
@@ -398,7 +420,8 @@ bool ClusterWellLegalizer::FindLocBottom(Value2D<int> &loc, int width, int heigh
                 }
             }
         }
-        for (int tmp_start_col = old_end_col; tmp_start_col < search_end_col; ++tmp_start_col) {
+        for (int tmp_start_col = old_end_col; tmp_start_col < search_end_col;
+             ++tmp_start_col) {
             int tmp_end_col = tmp_start_col + width - 1;
             //bottom_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_col, tmp_end_col);
             bottom_white_space_bound = bottom_;
@@ -411,14 +434,18 @@ bool ClusterWellLegalizer::FindLocBottom(Value2D<int> &loc, int width, int heigh
             int tmp_x = ColToLoc(tmp_start_col);
             //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
 
-            double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y) + CostLeftBottomBoundary(tmp_x, tmp_y);
+            double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y)
+                + CostLeftBottomBoundary(tmp_x, tmp_y);
             if (tmp_cost < min_cost) {
                 best_x = tmp_x;
                 best_y = tmp_y;
                 min_cost = tmp_cost;
             }
 
-            is_loc_legal = IsSpaceLegal(tmp_x, tmp_x + width, StartRow(tmp_y), EndRow(tmp_y + height));
+            is_loc_legal = IsSpaceLegal(tmp_x,
+                                        tmp_x + width,
+                                        StartRow(tmp_y),
+                                        EndRow(tmp_y + height));
 
             if (is_loc_legal) {
                 legal_loc_found = true;
@@ -449,13 +476,16 @@ bool ClusterWellLegalizer::FindLocBottom(Value2D<int> &loc, int width, int heigh
 }
 
 void ClusterWellLegalizer::FastShiftBottom(int failure_point) {
-    std::vector<BlkCluster *> cluster_list(cluster_set_.begin(), cluster_set_.end());
+    std::vector<BlkCluster *>
+        cluster_list(cluster_set_.begin(), cluster_set_.end());
     //BOOST_LOG_TRIVIAL(info)   << cluster_set.size() << "\n";
     int bounding_bottom;
     if (failure_point == 0) {
-        BOOST_LOG_TRIVIAL(info) << "WARNING: unexpected case happens during legalization (failure point is 0)!\n";
+        BOOST_LOG_TRIVIAL(info)
+            << "WARNING: unexpected case happens during legalization (failure point is 0)!\n";
     } else {
-        int init_diff = cluster_loc_list_[failure_point - 1].y - cluster_loc_list_[failure_point].y;
+        int init_diff = cluster_loc_list_[failure_point - 1].y
+            - cluster_loc_list_[failure_point].y;
         bounding_bottom = cluster_loc_list_[failure_point].clus_ptr->LLY();
         int bottom_new = cluster_loc_list_[failure_point - 1].clus_ptr->LLY();
         int sz = cluster_loc_list_.size();
@@ -514,7 +544,9 @@ bool ClusterWellLegalizer::LegalizeClusterBottom() {
         }
 
         cluster->SetLoc(res.x, res.y);
-        UseSpaceBottom(cluster->URY(), StartCol(cluster->LLX()), EndCol(cluster->URX()));
+        UseSpaceBottom(cluster->URY(),
+                       StartCol(cluster->LLX()),
+                       EndCol(cluster->URX()));
     }
 
     /*if (!is_successful) {
@@ -532,7 +564,9 @@ void ClusterWellLegalizer::UseSpaceTop(int end_y, int lo_col, int hi_col) {
     }
 }
 
-bool ClusterWellLegalizer::FindLocTop(Value2D<int> &loc, int width, int height) {
+bool ClusterWellLegalizer::FindLocTop(Value2D<int> &loc,
+                                      int width,
+                                      int height) {
 /****
    * Returns whether a legal location can be found, and put the final location to @params loc
    * ****/
@@ -561,7 +595,8 @@ bool ClusterWellLegalizer::FindLocTop(Value2D<int> &loc, int width, int height) 
     best_y = INT_MIN;
     min_cost = DBL_MAX;
 
-    for (int tmp_start_col = search_start_col; tmp_start_col <= search_end_col; ++tmp_start_col) {
+    for (int tmp_start_col = search_start_col; tmp_start_col <= search_end_col;
+         ++tmp_start_col) {
         int tmp_end_col = tmp_start_col + width - 1;
         top_white_space_bound = top_;
         //top_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_col, tmp_end_col);
@@ -575,7 +610,8 @@ bool ClusterWellLegalizer::FindLocTop(Value2D<int> &loc, int width, int height) 
         int tmp_x = ColToLoc(tmp_start_col);
         //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
 
-        double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y) + CostRightTopBoundary(tmp_x, tmp_y);
+        double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y)
+            + CostRightTopBoundary(tmp_x, tmp_y);
 
         if (tmp_cost < min_cost) {
             best_x = tmp_x;
@@ -589,15 +625,20 @@ bool ClusterWellLegalizer::FindLocTop(Value2D<int> &loc, int width, int height) 
     bool legal_loc_found = false;
     double min_cost_legal = DBL_MAX;
     bool is_loc_legal =
-        IsSpaceLegal(best_x, best_x + width, StartRow(best_y), EndRow(best_y + height));
+        IsSpaceLegal(best_x,
+                     best_x + width,
+                     StartRow(best_y),
+                     EndRow(best_y + height));
 
     if (!is_loc_legal) {
         int old_start_col = search_start_col;
         int old_end_col = search_end_col;
         int extended_range = cur_iter_ * width;
         search_start_col = std::max(0, search_start_col - extended_range);
-        search_end_col = std::min(max_search_col, search_end_col + extended_range);
-        for (int tmp_start_col = search_start_col; tmp_start_col < old_start_col; ++tmp_start_col) {
+        search_end_col =
+            std::min(max_search_col, search_end_col + extended_range);
+        for (int tmp_start_col = search_start_col;
+             tmp_start_col < old_start_col; ++tmp_start_col) {
             int tmp_end_col = tmp_start_col + width - 1;
             //top_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_col, tmp_end_col);
             top_white_space_bound = top_;
@@ -610,7 +651,8 @@ bool ClusterWellLegalizer::FindLocTop(Value2D<int> &loc, int width, int height) 
             int tmp_x = ColToLoc(tmp_start_col);
             //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
 
-            double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y) + CostRightTopBoundary(tmp_x, tmp_y);
+            double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y)
+                + CostRightTopBoundary(tmp_x, tmp_y);
 
             if (tmp_cost < min_cost) {
                 best_x = tmp_x;
@@ -630,7 +672,8 @@ bool ClusterWellLegalizer::FindLocTop(Value2D<int> &loc, int width, int height) 
                 }
             }
         }
-        for (int tmp_start_col = old_end_col; tmp_start_col < search_end_col; ++tmp_start_col) {
+        for (int tmp_start_col = old_end_col; tmp_start_col < search_end_col;
+             ++tmp_start_col) {
             int tmp_end_col = tmp_start_col + width - 1;
             //top_white_space_bound = WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_col, tmp_end_col);
             top_white_space_bound = top_;
@@ -643,7 +686,8 @@ bool ClusterWellLegalizer::FindLocTop(Value2D<int> &loc, int width, int height) 
             int tmp_x = ColToLoc(tmp_start_col);
             //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
 
-            double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y) + CostRightTopBoundary(tmp_x, tmp_y);
+            double tmp_cost = CostInitDisplacement(tmp_x, tmp_y, loc.x, loc.y)
+                + CostRightTopBoundary(tmp_x, tmp_y);
 
             if (tmp_cost < min_cost) {
                 best_x = tmp_x;
@@ -733,7 +777,9 @@ bool ClusterWellLegalizer::LegalizeClusterTop() {
         cluster->SetLLX(res.x);
         cluster->SetURY(res.y);
         //BOOST_LOG_TRIVIAL(info)   << cluster->LLX() - left_ << "  " << cluster->URX() - left_ << "  " << tot_num_cols_ << "\n";
-        UseSpaceTop(cluster->LLY(), StartCol(cluster->LLX()), EndCol(cluster->URX()));
+        UseSpaceTop(cluster->LLY(),
+                    StartCol(cluster->LLX()),
+                    EndCol(cluster->URX()));
     }
 
     return is_successful;
@@ -748,9 +794,13 @@ bool ClusterWellLegalizer::LegalizeCluster(int iteration) {
         tot_cluster_area += cluster->Area();
     }
 
-    BOOST_LOG_TRIVIAL(info) << "Total cluster area: " << tot_cluster_area << "\n";
-    BOOST_LOG_TRIVIAL(info) << "Total region area : " << RegionHeight() * RegionWidth() << "\n";
-    BOOST_LOG_TRIVIAL(info) << "            Ratio : " << double(tot_cluster_area) / RegionWidth() / RegionHeight()
+    BOOST_LOG_TRIVIAL(info) << "Total cluster area: " << tot_cluster_area
+                            << "\n";
+    BOOST_LOG_TRIVIAL(info) << "Total region area : "
+                            << RegionHeight() * RegionWidth() << "\n";
+    BOOST_LOG_TRIVIAL(info) << "            Ratio : "
+                            << double(tot_cluster_area) / RegionWidth()
+                                / RegionHeight()
                             << "\n";
 
     bool is_success = false;
@@ -784,7 +834,8 @@ bool ClusterWellLegalizer::LegalizeCluster(int iteration) {
             break;
         }
     }
-    BOOST_LOG_TRIVIAL(info) << "Well legalization takes " << cur_iter_ << " iterations\n";
+    BOOST_LOG_TRIVIAL(info) << "Well legalization takes " << cur_iter_
+                            << " iterations\n";
     if (!is_success) {
         BOOST_LOG_TRIVIAL(info) << "Legalization fails\n";
     }
@@ -792,7 +843,7 @@ bool ClusterWellLegalizer::LegalizeCluster(int iteration) {
 }
 
 void ClusterWellLegalizer::UpdateBlockLocation() {
-    for (auto &cluster_ptr : cluster_set_) {
+    for (auto &cluster_ptr: cluster_set_) {
         cluster_ptr->UpdateBlockLocation();
     }
 }
@@ -873,7 +924,8 @@ void ClusterWellLegalizer::FindBestPermutation(std::vector<Block *> &res,
 
 }
 
-void ClusterWellLegalizer::LocalReorderInCluster(BlkCluster *cluster, int range) {
+void ClusterWellLegalizer::LocalReorderInCluster(BlkCluster *cluster,
+                                                 int range) {
     /****
      * Enumerate all local permutations, @param range determines how big the local range is
      * ****/
@@ -987,17 +1039,19 @@ void ClusterWellLegalizer::GenMatlabClusterTable(std::string const &name_of_file
 }
 
 void ClusterWellLegalizer::ReportWellRule() {
-    BOOST_LOG_TRIVIAL(info) << "  Number of rows: " << tot_num_rows_ << "\n"
-                            << "  Number of blocks: " << index_loc_list_.size() << "\n"
-                            << "  Well Rules:\n"
-                            << "    WellSpacing: " << well_spacing_x << "\n"
-                            << "    MaxDist:     " << max_well_length << "\n"
-                            << "    (real):      "
-                            << std::floor(circuit_->getTech()->GetNLayer()->MaxPlugDist() / circuit_->GridValueX())
-                            << "\n"
-                            << "    WellWidth:   " << well_min_width << "\n"
-                            << "    OverhangX:   " << well_extension_x << "\n"
-                            << "    OverhangY:   " << well_extension_y << "\n";
+    BOOST_LOG_TRIVIAL(info)
+        << "  Number of rows: " << tot_num_rows_ << "\n"
+        << "  Number of blocks: " << index_loc_list_.size() << "\n"
+        << "  Well Rules:\n"
+        << "    WellSpacing: " << well_spacing_x << "\n"
+        << "    MaxDist:     " << max_well_length << "\n"
+        << "    (real):      "
+        << std::floor(
+            circuit_->getTech()->NwellLayer().MaxPlugDist()
+                / circuit_->GridValueX()) << "\n"
+        << "    WellWidth:   " << well_min_width << "\n"
+        << "    OverhangX:   " << well_extension_x << "\n"
+        << "    OverhangY:   " << well_extension_y << "\n";
 }
 
 }

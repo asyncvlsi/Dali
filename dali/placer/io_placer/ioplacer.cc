@@ -280,11 +280,10 @@ bool IoPlacer::PartialPlaceCmd(int argc, char **argv) {
 bool IoPlacer::ConfigSetMetalLayer(int boundary_index, int metal_layer_index) {
     // check if this metal index exists or not
     bool is_legal_index = (metal_layer_index >= 0) &&
-        (metal_layer_index
-            < (int) circuit_ptr_->getTechRef().metal_list_.size());
+        (metal_layer_index < (int) circuit_ptr_->Metals().size());
     if (!is_legal_index) return false;
     MetalLayer *metal_layer =
-        &(circuit_ptr_->getTechRef().metal_list_[metal_layer_index]);
+        &(circuit_ptr_->Metals()[metal_layer_index]);
     boundary_spaces_[boundary_index].AddLayer(metal_layer);
     return true;
 }
