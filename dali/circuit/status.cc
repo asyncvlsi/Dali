@@ -8,7 +8,7 @@
 
 namespace dali {
 
-MetalDirection StrToMetalDirection(std::string &str_metal_direction) {
+MetalDirection StrToMetalDirection(std::string const &str_metal_direction) {
     MetalDirection metal_direction = HORIZONTAL;
     if (str_metal_direction == "HORIZONTAL") {
         metal_direction = HORIZONTAL;
@@ -44,7 +44,7 @@ std::string MetalDirectionStr(MetalDirection metal_direction) {
     return s;
 }
 
-BlockOrient StrToOrient(std::string &str_orient) {
+BlockOrient StrToOrient(std::string const &str_orient) {
     BlockOrient orient = N;
     if (str_orient == "N" || str_orient == "R0") {
         orient = N;
@@ -97,7 +97,7 @@ std::string OrientStr(BlockOrient orient) {
     return s;
 }
 
-PlaceStatus StrToPlaceStatus(std::string &str_place_status) {
+PlaceStatus StrToPlaceStatus(std::string const &str_place_status) {
     PlaceStatus place_status = UNPLACED;
     if (str_place_status == "COVER") {
         place_status = COVER;
@@ -128,13 +128,13 @@ std::string PlaceStatusStr(PlaceStatus place_status) {
             break;
         default: {
             DaliExpects(false,
-                        "Placement state error! This should never happen!");
+                        "Placement status error! This should never happen!");
         }
     }
     return s;
 }
 
-SignalDirection StrToSignalDirection(std::string &str_signal_direction) {
+SignalDirection StrToSignalDirection(std::string const &str_signal_direction) {
     SignalDirection signal_direction = INPUT;
     if (str_signal_direction == "INPUT") {
         signal_direction = INPUT;
@@ -169,7 +169,7 @@ std::string SignalDirectionStr(SignalDirection signal_direction) {
     return s;
 }
 
-SignalUse StrToSignalUse(std::string &str_signal_use) {
+SignalUse StrToSignalUse(std::string const &str_signal_use) {
     SignalUse signal_use = SIGNAL;
     if (str_signal_use == "SIGNAL") {
         signal_use = SIGNAL;

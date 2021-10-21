@@ -16,7 +16,7 @@ enum MetalDirection {
   DIAG135 = 3
 };
 
-MetalDirection StrToMetalDirection(std::string &str_metal_direction);
+MetalDirection StrToMetalDirection(std::string const &str_metal_direction);
 std::string MetalDirectionStr(MetalDirection metal_direction);
 
 #define NUM_OF_ORIENT 8
@@ -31,8 +31,7 @@ enum BlockOrient {
   FE = 7
 };
 
-BlockOrient StrToOrient(std::string &str_orient);
-BlockOrient StrToOrient(const char *str_orient);
+BlockOrient StrToOrient(std::string const &str_orient);
 std::string OrientStr(BlockOrient orient);
 
 enum PlaceStatus {
@@ -42,7 +41,7 @@ enum PlaceStatus {
   UNPLACED = 3,
 };
 
-PlaceStatus StrToPlaceStatus(std::string &str_place_status);
+PlaceStatus StrToPlaceStatus(std::string const &str_place_status);
 std::string PlaceStatusStr(PlaceStatus place_status);
 
 enum SignalDirection {
@@ -52,7 +51,7 @@ enum SignalDirection {
   FEEDTHRU = 3
 };
 
-SignalDirection StrToSignalDirection(std::string &str_signal_direction);
+SignalDirection StrToSignalDirection(std::string const &str_signal_direction);
 std::string SignalDirectionStr(SignalDirection signal_direction);
 
 enum SignalUse {
@@ -66,7 +65,7 @@ enum SignalUse {
   RESET = 7
 };
 
-SignalUse StrToSignalUse(std::string &str_signal_use);
+SignalUse StrToSignalUse(std::string const &str_signal_use);
 std::string SignalUseStr(SignalUse signal_use);
 
 }
