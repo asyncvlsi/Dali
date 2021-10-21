@@ -43,7 +43,7 @@ Pin *BlockType::AddPin(
     std::pair<const std::string, int> *name_num_ptr =
         &(*pin_name_id_map_.find(pin_name));
     pin_list_.emplace_back(name_num_ptr, this);
-    pin_list_.back().SetIOType(is_input);
+    pin_list_.back().SetIoType(is_input);
     return &pin_list_.back();
 }
 

@@ -403,7 +403,7 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
                     new_pin->AddRectOnly(llx, lly, urx, ury);
                 }
             }
-            if (new_pin->RectEmpty()) {
+            if (new_pin->IsRectEmpty()) {
                 DaliExpects(false,
                             "No geometries provided for pin " + pin_name
                                 + " in Macro: " + blk_type->Name());
@@ -998,8 +998,8 @@ MetalLayer *Circuit::AddMetalLayer(std::string &metal_name,
     auto ret = tech_.metal_name_map_.insert(std::pair<std::string, int>(
         metal_name,
         map_size));
-    std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
-    tech_.metal_list_.emplace_back(width, spacing, name_num_pair_ptr);
+    std::pair<const std::string, int> *name_id_pair_ptr = &(*ret.first);
+    tech_.metal_list_.emplace_back(width, spacing, name_id_pair_ptr);
     return &(tech_.metal_list_.back());
 }
 
@@ -1036,8 +1036,8 @@ void Circuit::AddMetalLayer(std::string &metal_name,
     auto ret = tech_.metal_name_map_.insert(std::pair<std::string, int>(
         metal_name,
         map_size));
-    std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
-    tech_.metal_list_.emplace_back(width, spacing, name_num_pair_ptr);
+    std::pair<const std::string, int> *name_id_pair_ptr = &(*ret.first);
+    tech_.metal_list_.emplace_back(width, spacing, name_id_pair_ptr);
     tech_.metal_list_.back().SetMinArea(min_area);
     tech_.metal_list_.back().SetPitch(pitch_x, pitch_y);
     tech_.metal_list_.back().SetDirection(metal_direction);
@@ -1408,10 +1408,10 @@ void Circuit::AddBlock(
     auto ret = design_.blk_name_id_map_.insert(std::pair<std::string, int>(
         block_name,
         map_size));
-    std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
+    std::pair<const std::string, int> *name_id_pair_ptr = &(*ret.first);
     design_.blocks_.emplace_back(
         block_type_ptr,
-        name_num_pair_ptr,
+        name_id_pair_ptr,
         llx,
         lly,
         place_status,
@@ -1496,8 +1496,8 @@ IoPin *Circuit::AddUnplacedIOPin(std::string &iopin_name) {
     auto ret = design_.iopin_name_id_map_.insert(std::pair<std::string, int>(
         iopin_name,
         map_size));
-    std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
-    design_.iopins_.emplace_back(name_num_pair_ptr);
+    std::pair<const std::string, int> *name_id_pair_ptr = &(*ret.first);
+    design_.iopins_.emplace_back(name_id_pair_ptr);
     return &(design_.iopins_.back());
 }
 
@@ -1511,8 +1511,8 @@ IoPin *Circuit::AddPlacedIOPin(std::string &iopin_name, double lx, double ly) {
     auto ret = design_.iopin_name_id_map_.insert(std::pair<std::string, int>(
         iopin_name,
         map_size));
-    std::pair<const std::string, int> *name_num_pair_ptr = &(*ret.first);
-    design_.iopins_.emplace_back(name_num_pair_ptr, lx, ly);
+    std::pair<const std::string, int> *name_id_pair_ptr = &(*ret.first);
+    design_.iopins_.emplace_back(name_id_pair_ptr, lx, ly);
     design_.pre_placed_io_count_ += 1;
 
     // add a dummy cell corresponding to this IOPIN to block_list.
@@ -1616,8 +1616,8 @@ Net *Circuit::AddNet(std::string &net_name, int capacity, double weight) {
     design_.net_name_id_map_.insert(std::pair<std::string, int>(net_name,
                                                                 map_size));
     std::pair<const std::string, int>
-        *name_num_pair_ptr = &(*design_.net_name_id_map_.find(net_name));
-    design_.nets_.emplace_back(name_num_pair_ptr, capacity, weight);
+        *name_id_pair_ptr = &(*design_.net_name_id_map_.find(net_name));
+    design_.nets_.emplace_back(name_id_pair_ptr, capacity, weight);
     return &design_.nets_.back();
 }
 

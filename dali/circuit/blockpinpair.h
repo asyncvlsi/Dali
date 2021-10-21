@@ -43,7 +43,7 @@ class BlkPinPair {
     Pin *PinPtr() const { return pin_ptr_; }
 
     // get the index of this pin
-    int PinId() const { return pin_ptr_->Num(); }
+    int PinId() const { return pin_ptr_->Id(); }
 
     // get the offset of this pin in x-direction, the orientation of the block is considered
     double OffsetX() const { return pin_ptr_->OffsetX(blk_ptr_->Orient()); }

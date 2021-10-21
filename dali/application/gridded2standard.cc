@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
         if (metal_layer.Direction() == HORIZONTAL) {
             hor_layer = &metal_layer;
             BOOST_LOG_TRIVIAL(info) << "Horizontal metal layer is: "
-                                    << *hor_layer->Name() << "\n";
+                                    << hor_layer->Name() << "\n";
             break;
         }
     }
@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
                             //BOOST_LOG_TRIVIAL(info)   << pin_layer << " " << (pin_layer == *(hor_layer->Name())) << "\n";
                         }
                         if (line.find("RECT ") != std::string::npos
-                            && pin_layer == *(hor_layer->Name())) {
+                            && pin_layer == hor_layer->Name()) {
                             StrTokenize(line, line_field);
                             std::string str_ly = line_field[2];
                             double ly = std::stod(str_ly);
@@ -151,9 +151,9 @@ int main(int argc, char *argv[]) {
                 type_bbox.p_extra = 0;
                 type_bbox.n_extra = pitch;
             }
-            BOOST_LOG_TRIVIAL(info) << *(type->NamePtr()) << "  " << "size: 0 "
+            BOOST_LOG_TRIVIAL(info) << type->Name() << "  " << "size: 0 "
                                     << type_height << "\n";
-            BOOST_LOG_TRIVIAL(info) << "  " << *(hor_layer->Name())
+            BOOST_LOG_TRIVIAL(info) << "  " << hor_layer->Name()
                                     << " y bbox: " << type_bbox.lo << " "
                                     << type_bbox.hi
                                     << "\n";
@@ -234,7 +234,7 @@ int main(int argc, char *argv[]) {
 
             TypeLayerBBox *bbox_ptr = nullptr;
             for (auto &bbox: bbox_list) {
-                if (*(bbox.blk_type->NamePtr()) == type_name) {
+                if (bbox.blk_type->Name() == type_name) {
                     bbox_ptr = &bbox;
                     break;
                 }
@@ -262,7 +262,7 @@ int main(int argc, char *argv[]) {
                         getline(ist, line);
                         if (pin_name == "GND") {
                             std::string
-                                layer_mark = "LAYER " + *(hor_layer->Name());
+                                layer_mark = "LAYER " + hor_layer->Name();
                             if (mode == 0
                                 && line.find(layer_mark) != std::string::npos) {
                                 hlayer_gnd_found = true;
@@ -276,7 +276,7 @@ int main(int argc, char *argv[]) {
                             }
                         } else if (pin_name == "Vdd") {
                             std::string
-                                layer_mark = "LAYER " + *(hor_layer->Name());
+                                layer_mark = "LAYER " + hor_layer->Name();
                             if (mode == 0
                                 && line.find(layer_mark) != std::string::npos) {
                                 hlayer_vdd_found = true;
@@ -295,7 +295,7 @@ int main(int argc, char *argv[]) {
                             if (pin_name == "GND") {
                                 if (mode == 0 && !hlayer_gnd_found) {
                                     ost << "        LAYER "
-                                        << *hor_layer->Name() << " ;\n";
+                                        << hor_layer->Name() << " ;\n";
                                     ost << "        RECT " << 0.0 << " " << 0.0
                                         << " "
                                         << bbox_ptr->blk_type->Width()
@@ -305,7 +305,7 @@ int main(int argc, char *argv[]) {
                             } else if (pin_name == "Vdd") {
                                 if (mode == 0 && !hlayer_vdd_found) {
                                     ost << "        LAYER "
-                                        << *hor_layer->Name() << " ;\n";
+                                        << hor_layer->Name() << " ;\n";
                                     ost << "        RECT " << 0.0 << " "
                                         << std_height - hor_layer->Width()
                                         << " "

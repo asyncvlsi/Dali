@@ -13,10 +13,10 @@
 namespace dali {
 
 Net::Net(
-    std::pair<const std::string, int> *name_num_pair_ptr,
+    std::pair<const std::string, int> *name_id_pair_ptr,
     int capacity,
     double weight
-) : name_id_pair_ptr_(name_num_pair_ptr), weight_(weight) {
+) : name_id_pair_ptr_(name_id_pair_ptr), weight_(weight) {
     cnt_fixed_ = 0;
     max_pin_x_ = -1;
     min_pin_x_ = -1;

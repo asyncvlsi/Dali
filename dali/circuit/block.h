@@ -35,7 +35,7 @@ class Block {
     Block();
     Block(
         BlockType *type_ptr,
-        std::pair<const std::string, int> *name_num_pair_ptr,
+        std::pair<const std::string, int> *name_id_pair_ptr,
         int llx,
         int lly,
         bool movable = true,
@@ -43,7 +43,7 @@ class Block {
     );
     Block(
         BlockType *type_ptr,
-        std::pair<const std::string, int> *name_num_pair_ptr,
+        std::pair<const std::string, int> *name_id_pair_ptr,
         int llx,
         int lly,
         PlaceStatus place_state = UNPLACED,
@@ -129,8 +129,8 @@ class Block {
     BlockAux *AuxPtr() const { return aux_ptr_; }
 
     // set the NameNumPair, first: name, second: number
-    void SetNameNumPair(std::pair<const std::string, int> *name_num_pair_ptr) {
-        name_id_pair_ptr_ = name_num_pair_ptr;
+    void SetNameNumPair(std::pair<const std::string, int> *name_id_pair_ptr) {
+        name_id_pair_ptr_ = name_id_pair_ptr;
     }
 
     // set the BlockType of this Block

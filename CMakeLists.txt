@@ -253,7 +253,7 @@ target_link_libraries(
 # Stand-alone custom cell design to standard cell design tool
 add_executable(
     custom2standard
-    dali/application/custom2standard.cc
+    dali/application/gridded2standard.cc
 )
 target_link_libraries(
     custom2standard

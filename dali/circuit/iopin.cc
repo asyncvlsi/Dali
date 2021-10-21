@@ -6,8 +6,8 @@
 
 namespace dali {
 
-IoPin::IoPin(std::pair<const std::string, int> *name_num_pair_ptr) :
-    name_num_pair_ptr_(name_num_pair_ptr),
+IoPin::IoPin(std::pair<const std::string, int> *name_id_pair_ptr) :
+    name_id_pair_ptr_(name_id_pair_ptr),
     net_ptr_(nullptr),
     signal_direction_(INPUT),
     signal_use_(SIGNAL),
@@ -22,10 +22,10 @@ IoPin::IoPin(std::pair<const std::string, int> *name_num_pair_ptr) :
 }
 
 IoPin::IoPin(
-    std::pair<const std::string, int> *name_num_pair_ptr,
+    std::pair<const std::string, int> *name_id_pair_ptr,
     double loc_x,
     double loc_y
-) : name_num_pair_ptr_(name_num_pair_ptr),
+) : name_id_pair_ptr_(name_id_pair_ptr),
     net_ptr_(nullptr),
     signal_direction_(INPUT),
     signal_use_(SIGNAL),
@@ -40,12 +40,12 @@ IoPin::IoPin(
 }
 
 IoPin::IoPin(
-    std::pair<const std::string, int> *name_num_pair_ptr,
+    std::pair<const std::string, int> *name_id_pair_ptr,
     SignalDirection direction,
     PlaceStatus init_place_status,
     double loc_x,
     double loc_y
-) : name_num_pair_ptr_(name_num_pair_ptr),
+) : name_id_pair_ptr_(name_id_pair_ptr),
     net_ptr_(nullptr),
     signal_direction_(direction),
     signal_use_(SIGNAL),
@@ -60,11 +60,11 @@ IoPin::IoPin(
 }
 
 const std::string &IoPin::Name() const {
-    return name_num_pair_ptr_->first;
+    return name_id_pair_ptr_->first;
 }
 
 int IoPin::Id() const {
-    return name_num_pair_ptr_->second;
+    return name_id_pair_ptr_->second;
 }
 
 void IoPin::SetNetPtr(Net *net_ptr) {

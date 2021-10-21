@@ -15,7 +15,7 @@
   * OpenMP (for MacOS user, `libomp` from Homebrew will work)
   
 ### Clone repo and compile
-    $ git clone --recursive https://github.com/Yang-Yihang/Dali.git
+    $ git clone --recursive https://github.com/asyncvlsi/Dali.git
     $ cd Dali/
     $ mkdir build
     $ cd build

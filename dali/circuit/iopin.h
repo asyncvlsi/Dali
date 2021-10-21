@@ -27,14 +27,14 @@ class Net;
  */
 class IoPin {
   public:
-    explicit IoPin(std::pair<const std::string, int> *name_num_pair_ptr);
+    explicit IoPin(std::pair<const std::string, int> *name_id_pair_ptr);
     IoPin(
-        std::pair<const std::string, int> *name_num_pair_ptr,
+        std::pair<const std::string, int> *name_id_pair_ptr,
         double loc_x,
         double loc_y
     );
     IoPin(
-        std::pair<const std::string, int> *name_num_pair_ptr,
+        std::pair<const std::string, int> *name_id_pair_ptr,
         SignalDirection direction,
         PlaceStatus init_place_status,
         double loc_x,
@@ -146,7 +146,7 @@ class IoPin {
     void Report() const;
 
   private:
-    std::pair<const std::string, int> *name_num_pair_ptr_;
+    std::pair<const std::string, int> *name_id_pair_ptr_;
     Net *net_ptr_;
     SignalDirection signal_direction_;
     SignalUse signal_use_;

@@ -1217,8 +1217,8 @@ void StdClusterWellLegalizer::InsertWellTap() {
                     auto ret = circuit_->getDesignRef().TapNameIdMap().insert(
                         std::pair<std::string, int>(block_name, map_size)
                     );
-                    auto *name_num_pair_ptr = &(*ret.first);
-                    tap_cell.SetNameNumPair(name_num_pair_ptr);
+                    auto *name_id_pair_ptr = &(*ret.first);
+                    tap_cell.SetNameNumPair(name_id_pair_ptr);
                     cluster.InsertWellTapCell(tap_cell, tap_cell_loc);
                     tap_cell_loc += step;
                 }

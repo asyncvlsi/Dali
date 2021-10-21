@@ -50,11 +50,11 @@ class Layer {
  */
 class MetalLayer : public Layer {
   public:
-    explicit MetalLayer(std::pair<const std::string, int> *name_num_pair_ptr);
+    explicit MetalLayer(std::pair<const std::string, int> *name_id_pair_ptr);
     MetalLayer(
         double width,
         double spacing,
-        std::pair<const std::string, int> *name_num_pair_ptr,
+        std::pair<const std::string, int> *name_id_pair_ptr,
         MetalDirection direction = HORIZONTAL
     );
 

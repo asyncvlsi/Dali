@@ -17,17 +17,17 @@ Block::Block() :
 
 Block::Block(
     BlockType *type_ptr,
-    std::pair<const std::string, int> *name_num_pair_ptr,
+    std::pair<const std::string, int> *name_id_pair_ptr,
     int llx,
     int lly,
     bool movable,
     BlockOrient orient
 ) : type_ptr_(type_ptr),
-    name_id_pair_ptr_(name_num_pair_ptr),
+    name_id_pair_ptr_(name_id_pair_ptr),
     llx_(llx),
     lly_(lly),
     orient_(orient) {
-    DaliExpects(name_num_pair_ptr != nullptr, "nullptr for name and index?");
+    DaliExpects(name_id_pair_ptr != nullptr, "nullptr for name and index?");
     DaliExpects(type_ptr != nullptr, "nullptr for type");
     eff_height_ = type_ptr_->Height();
     eff_area_ = type_ptr_->Area();
@@ -41,18 +41,18 @@ Block::Block(
 
 Block::Block(
     BlockType *type_ptr,
-    std::pair<const std::string, int> *name_num_pair_ptr,
+    std::pair<const std::string, int> *name_id_pair_ptr,
     int llx,
     int lly,
     PlaceStatus place_state,
     BlockOrient orient
 ) : type_ptr_(type_ptr),
-    name_id_pair_ptr_(name_num_pair_ptr),
+    name_id_pair_ptr_(name_id_pair_ptr),
     llx_(llx),
     lly_(lly),
     place_status_(place_state),
     orient_(orient) {
-    DaliExpects(name_num_pair_ptr != nullptr, "nullptr for name and index?");
+    DaliExpects(name_id_pair_ptr != nullptr, "nullptr for name and index?");
     DaliExpects(type_ptr != nullptr, "nullptr for type");
     eff_height_ = type_ptr_->Height();
     eff_area_ = type_ptr_->Area();

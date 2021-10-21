@@ -26,7 +26,7 @@ class IoPin;
 class Net {
   public:
     Net(
-        std::pair<const std::string, int> *name_num_pair_ptr,
+        std::pair<const std::string, int> *name_id_pair_ptr,
         int capacity,
         double weight
     );
