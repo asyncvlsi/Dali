@@ -21,7 +21,7 @@ class IoPin;
 /****
  * This is a class for nets. When initializing a net, its capacity and weight need
  * to be specified.
- * One can use AddBlockPinPair() and AddIoPin() to add pins to a net.
+ * One can use AddBlkPinPair() and AddIoPin() to add pins to a net.
  */
 class Net {
   public:
@@ -38,7 +38,7 @@ class Net {
     int Id() const;
 
     // add block/pin pair to this net
-    void AddBlockPinPair(Block *block_ptr, Pin *pin_ptr);
+    void AddBlkPinPair(Block *block_ptr, Pin *pin_ptr);
 
     std::vector<BlkPinPair> &BlockPins();
 

@@ -49,8 +49,8 @@ void Circuit::LoadImaginaryCellFile() {
     double op_spacing = MinBlkWidth() * GridValueX();
     double max_plug_dist = AveMovBlkWidth() * 10 * GridValueX();
     double overhang = 0;
-    SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
-    SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
+    SetNwellParams(width, spacing, op_spacing, max_plug_dist, overhang);
+    SetNwellParams(width, spacing, op_spacing, max_plug_dist, overhang);
 
     // 3. create fake NP-well geometries for each BlockType
     for (auto &pair: tech_.block_type_map_) {
@@ -577,7 +577,7 @@ void Circuit::LoadDesign(phydb::PhyDB *phy_db_ptr) {
         AddNet(net_name, net_capacity, design_.normal_signal_weight_);
 
         for (auto &iopin_name: iopin_names) {
-            AddIOPinToNet(iopin_name, net_name);
+            AddIoPinToNet(iopin_name, net_name);
         }
         int sz = (int) net_pins.size();
         for (int i = 0; i < sz; ++i) {
@@ -610,7 +610,7 @@ void Circuit::LoadWell(phydb::PhyDB *phy_db_ptr) {
         double op_spacing = n_well_layer->GetOpSpacing();
         double max_plug_dist = n_well_layer->GetMaxPlugDist();
         double overhang = n_well_layer->GetOverhang();
-        SetNWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
+        SetNwellParams(width, spacing, op_spacing, max_plug_dist, overhang);
     }
 
     auto *p_well_layer = phy_db_tech.GetPwellLayerPtr();
@@ -620,7 +620,7 @@ void Circuit::LoadWell(phydb::PhyDB *phy_db_ptr) {
         double op_spacing = p_well_layer->GetOpSpacing();
         double max_plug_dist = p_well_layer->GetMaxPlugDist();
         double overhang = p_well_layer->GetOverhang();
-        SetPWellParams(width, spacing, op_spacing, max_plug_dist, overhang);
+        SetPwellParams(width, spacing, op_spacing, max_plug_dist, overhang);
     }
 
     for (auto &macro: phy_db_tech.GetMacrosRef()) {
@@ -639,7 +639,7 @@ void Circuit::LoadWell(phydb::PhyDB *phy_db_ptr) {
                     "N/P-well geometries not provided for MACRO: "
                         + macro_name);
         if (n_rect != nullptr) {
-            setWellRect(
+            SetWellRect(
                 macro_name,
                 true,
                 n_rect->LLX(),
@@ -649,7 +649,7 @@ void Circuit::LoadWell(phydb::PhyDB *phy_db_ptr) {
             );
         }
         if (p_rect != nullptr) {
-            setWellRect(
+            SetWellRect(
                 macro_name,
                 false,
                 p_rect->LLX(),
@@ -898,7 +898,7 @@ BlockTypeWell *Circuit::AddBlockTypeWell(BlockType *blk_type) {
 }
 
 // set N-well layer parameters
-void Circuit::SetNWellParams(
+void Circuit::SetNwellParams(
     double width,
     double spacing,
     double op_spacing,
@@ -912,7 +912,7 @@ void Circuit::SetNWellParams(
 }
 
 // set P-well layer parameters
-void Circuit::SetPWellParams(
+void Circuit::SetPwellParams(
     double width,
     double spacing,
     double op_spacing,
@@ -933,16 +933,16 @@ void Circuit::SetLegalizerSpacing(double same_spacing, double any_spacing) {
 }
 
 // create well information container for a given BlockType.
-BlockTypeWell *Circuit::AddBlockTypeWell(std::string &blk_type_name) {
+BlockTypeWell *Circuit::AddBlockTypeWell(std::string const &blk_type_name) {
     BlockType *blk_type_ptr = GetBlockTypePtr(blk_type_name);
     return AddBlockTypeWell(blk_type_ptr);
 }
 
 // TODO: discuss with Rajit about the necessity of having N/P-wells not fully covering the prBoundary of a given cell.
 // set the N/P-well shape of a given BlockType, unit in micron.
-void Circuit::setWellRect(
-    std::string &blk_type_name,
-    bool is_N,
+void Circuit::SetWellRect(
+    std::string const &blk_type_name,
+    bool is_nwell,
     double lx,
     double ly,
     double ux,
@@ -958,7 +958,7 @@ void Circuit::setWellRect(
     BlockTypeWell *well = blk_type_ptr->WellPtr();
     DaliExpects(well != nullptr,
                 "Well uninitialized for BlockType: " + blk_type_name);
-    well->SetWellRect(is_N, lx_grid, ly_grid, ux_grid, uy_grid);
+    well->SetWellRect(is_nwell, lx_grid, ly_grid, ux_grid, uy_grid);
 }
 
 // report the well shape for each BlockType for debugging purposes.
@@ -1403,29 +1403,24 @@ void Circuit::ReportIOPin() {
     BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
-// get the pointer to the net list.
-std::vector<Net> *Circuit::getNetList() {
-    return &(design_.nets_);
-}
-
-std::vector<Net> &Circuit::NetListRef() {
+std::vector<Net> &Circuit::Nets() {
     return design_.nets_;
 }
 
 // check if a Net with a given name exists or not.
-bool Circuit::IsNetExist(std::string &net_name) {
+bool Circuit::IsNetExisting(std::string const &net_name) {
     return !(design_.net_name_id_map_.find(net_name)
         == design_.net_name_id_map_.end());
 }
 
 // returns the index of the Net with a given name. Users must guarantee the given name is valid.
-int Circuit::NetIndex(std::string &net_name) {
+int Circuit::GetNetId(std::string const &net_name) {
     return design_.net_name_id_map_.find(net_name)->second;
 }
 
 // returns a pointer to the Net with a given name. Users must guarantee the given name is valid.
-Net *Circuit::getNetPtr(std::string &net_name) {
-    return &design_.nets_[NetIndex(net_name)];
+Net *Circuit::GetNetPtr(std::string const &net_name) {
+    return &design_.nets_[GetNetId(net_name)];
 }
 
 // add a net with given name and capacity (number of cell pins), net weight is default 1.
@@ -1433,10 +1428,10 @@ Net *Circuit::getNetPtr(std::string &net_name) {
  * Returns a pointer to the newly created Net.
  * @param net_name: name of the net
  * @param capacity: maximum number of possible pins in this net
- * @param weight:   weight of this net
+ * @param weight:   weight of this net, if less than 0, then default net weight will be used
  * ****/
-Net *Circuit::AddNet(std::string &net_name, int capacity, double weight) {
-    DaliExpects(!IsNetExist(net_name),
+Net *Circuit::AddNet(std::string const &net_name, int capacity, double weight) {
+    DaliExpects(!IsNetExisting(net_name),
                 "Net exists, cannot create this net again: " + net_name);
     int map_size = (int) design_.net_name_id_map_.size();
     design_.net_name_id_map_.insert(
@@ -1444,33 +1439,39 @@ Net *Circuit::AddNet(std::string &net_name, int capacity, double weight) {
     );
     std::pair<const std::string, int> *name_id_pair_ptr =
         &(*design_.net_name_id_map_.find(net_name));
+    if (weight < 0) {
+        weight = constants_.normal_net_weight;
+    }
     design_.nets_.emplace_back(name_id_pair_ptr, capacity, weight);
     return &design_.nets_.back();
 }
 
 // add a IOPin to a net.
-void Circuit::AddIOPinToNet(std::string &iopin_name, std::string &net_name) {
+void Circuit::AddIoPinToNet(
+    std::string const &iopin_name,
+    std::string const &net_name
+) {
     IoPin *iopin = GetIoPinPtr(iopin_name);
-    Net *io_net = getNetPtr(net_name);
+    Net *io_net = GetNetPtr(net_name);
     iopin->SetNetPtr(io_net);
     io_net->AddIoPin(iopin);
     if (iopin->IsPrePlaced()) {
         Block *blk_ptr = GetBlockPtr(iopin_name);
         Pin *pin = &(blk_ptr->TypePtr()->PinList()[0]);
-        io_net->AddBlockPinPair(blk_ptr, pin);
+        io_net->AddBlkPinPair(blk_ptr, pin);
     }
 }
 
 // add a block pin to a net.
 void Circuit::AddBlkPinToNet(
-    std::string &blk_name,
-    std::string &pin_name,
-    std::string &net_name
+    std::string const &blk_name,
+    std::string const &pin_name,
+    std::string const &net_name
 ) {
     Block *blk_ptr = GetBlockPtr(blk_name);
     Pin *pin = blk_ptr->TypePtr()->GetPinPtr(pin_name);
-    Net *net = getNetPtr(net_name);
-    net->AddBlockPinPair(blk_ptr, pin);
+    Net *net = GetNetPtr(net_name);
+    net->AddBlkPinPair(blk_ptr, pin);
 }
 
 // report the whole Block list for debugging purposes.
@@ -1551,9 +1552,9 @@ void Circuit::ReportNetFanoutHistogram() {
 
 // report brief summary of this circuit.
 void Circuit::ReportBriefSummary() const {
-    BOOST_LOG_TRIVIAL(info) << "  movable blocks: " << TotMovableBlockCount()
+    BOOST_LOG_TRIVIAL(info) << "  movable blocks: " << TotMovBlkCnt()
                             << "\n";
-    BOOST_LOG_TRIVIAL(info) << "  blocks: " << TotBlkCount() << "\n";
+    BOOST_LOG_TRIVIAL(info) << "  blocks: " << TotBlkCnt() << "\n";
     BOOST_LOG_TRIVIAL(info) << "  iopins: " << design_.iopins_.size()
                             << "\n";
     BOOST_LOG_TRIVIAL(info) << "  nets: " << design_.nets_.size() << "\n";
@@ -1591,10 +1592,10 @@ int Circuit::MaxBlkHeight() const { return design_.blk_max_height_; }
 long int Circuit::TotBlkArea() const { return design_.tot_blk_area_; }
 
 // returns the total number of blocks.
-int Circuit::TotBlkCount() const { return design_.real_block_count_; }
+int Circuit::TotBlkCnt() const { return design_.real_block_count_; }
 
 // returns the total number of movable blocks.
-int Circuit::TotMovableBlockCount() const { return design_.tot_mov_blk_num_; }
+int Circuit::TotMovBlkCnt() const { return design_.tot_mov_blk_num_; }
 
 // returns the total number of fixed blocks.
 int Circuit::TotFixedBlkCnt() const {
@@ -1603,32 +1604,32 @@ int Circuit::TotFixedBlkCnt() const {
 
 // returns the average width of blocks.
 double Circuit::AveBlkWidth() const {
-    return double(design_.tot_width_) / double(TotBlkCount());
+    return double(design_.tot_width_) / double(TotBlkCnt());
 }
 
 // returns the average height of blocks.
 double Circuit::AveBlkHeight() const {
-    return double(design_.tot_height_) / double(TotBlkCount());
+    return double(design_.tot_height_) / double(TotBlkCnt());
 }
 
 // returns the average area of blocks.
 double Circuit::AveBlkArea() const {
-    return double(design_.tot_blk_area_) / double(TotBlkCount());
+    return double(design_.tot_blk_area_) / double(TotBlkCnt());
 }
 
 // returns the average width of movable blocks.
 double Circuit::AveMovBlkWidth() const {
-    return double(design_.tot_mov_width_) / TotMovableBlockCount();
+    return double(design_.tot_mov_width_) / TotMovBlkCnt();
 }
 
 // returns the average height of movable blocks.
 double Circuit::AveMovBlkHeight() const {
-    return double(design_.tot_mov_height_) / TotMovableBlockCount();
+    return double(design_.tot_mov_height_) / TotMovBlkCnt();
 }
 
 // returns the average area of movable blocks.
 double Circuit::AveMovBlkArea() const {
-    return double(design_.tot_mov_block_area_) / TotMovableBlockCount();
+    return double(design_.tot_mov_block_area_) / TotMovBlkCnt();
 }
 
 // returns the white space usage ratio.
@@ -2694,7 +2695,7 @@ void Circuit::SaveDefFile(
     BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
-void Circuit::SaveIODefFile(
+void Circuit::SaveIoDefFile(
     std::string const &name_of_file,
     std::string const &def_file_name
 ) {
@@ -2919,7 +2920,7 @@ void Circuit::SaveDefWell(
     BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
-void Circuit::SaveDefPPNPWell(
+void Circuit::SaveDefPpnpWell(
     std::string const &name_of_file,
     std::string const &def_file_name
 ) {

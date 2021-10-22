@@ -91,7 +91,7 @@ int main() {
   // add net
   std::string net_in_name = "net_in";
   circuit.AddNet(net_in_name, 2);
-  circuit.AddIOPinToNet(chip_in, net_in_name);
+    circuit.AddIoPinToNet(chip_in, net_in_name);
   circuit.AddBlkPinToNet(inv1_name, in_name, net_in_name);
 
   std::string net_between_name = "net_between";
@@ -102,7 +102,7 @@ int main() {
   std::string net_out_name = "net_out";
   circuit.AddNet(net_out_name, 2);
   circuit.AddBlkPinToNet(inv2_name, out_name, net_out_name);
-  circuit.AddIOPinToNet(chip_out, net_out_name);
+    circuit.AddIoPinToNet(chip_out, net_out_name);
 
   // Report circuit detail
   circuit.ReportMetalLayers();

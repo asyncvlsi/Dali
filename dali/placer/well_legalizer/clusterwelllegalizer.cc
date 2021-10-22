@@ -28,10 +28,10 @@ void ClusterWellLegalizer::InitializeClusterLegalizer() {
     col_to_cluster_.resize(tot_num_cols_, nullptr);
 
     // parameters fetching
-    auto &tech_params = circuit_->tech();
+    auto &tech_params = p_ckt_->tech();
     auto &n_well_layer = tech_params.NwellLayer();
     auto &p_well_layer = tech_params.PwellLayer();
-    double grid_value_x = circuit_->GridValueX();
+    double grid_value_x = p_ckt_->GridValueX();
     well_extension_x = std::ceil(n_well_layer.Overhang() / grid_value_x);
     //well_extension_y = std::ceil((n_well_layer->Overhang())/circuit_ptr_->GetGridValueY());
     //plug_width = std::ceil();
@@ -50,9 +50,9 @@ void ClusterWellLegalizer::InitializeClusterLegalizer() {
     //max_well_length = RegionWidth();
 
     max_well_length = std::min(max_well_length, RegionWidth() / 7);
-    max_well_length = std::min(max_well_length, circuit_->MinBlkWidth() * 7);
+    max_well_length = std::min(max_well_length, p_ckt_->MinBlkWidth() * 7);
 
-    new_cluster_cost_threshold = circuit_->MinBlkHeight();
+    new_cluster_cost_threshold = p_ckt_->MinBlkHeight();
 }
 
 void ClusterWellLegalizer::InitDisplaceViewer(int sz) {
@@ -859,7 +859,7 @@ void ClusterWellLegalizer::BlockVerticalSwap() {
 double ClusterWellLegalizer::WireLengthCost(BlkCluster *cluster, int l, int r) {
     cluster->UpdateBlockLocation();
     std::set<Net *> net_involved;
-    auto &net_list = *(NetList());
+    auto &net_list = Nets();
     for (int i = l; i <= r; ++i) {
         auto *blk = cluster->blk_ptr_list_[i];
         for (auto &net_num: blk->NetList()) {
@@ -877,22 +877,22 @@ double ClusterWellLegalizer::WireLengthCost(BlkCluster *cluster, int l, int r) {
     return res;
 }
 
-void ClusterWellLegalizer::FindBestPermutation(std::vector<Block *> &res,
-                                               double &cost,
-                                               BlkCluster *cluster,
-                                               int l,
-                                               int r,
-                                               int range) {
-    /****
-     * Returns the best permutation in @param res
-     * @param cost records the cost function associated with the best permutation
-     * @param l is the left bound of the range
-     * @param r is the right bound of the range
-     * @param cluster points to the whole range, but we are only interested in the permutation of range [l,r]
-     * ****/
-
+/****
+ * Returns the best permutation in @param res
+ * @param cost records the cost function associated with the best permutation
+ * @param l is the left bound of the range
+ * @param r is the right bound of the range
+ * @param cluster points to the whole range, but we are only interested in the permutation of range [l,r]
+ * ****/
+void ClusterWellLegalizer::FindBestPermutation(
+    std::vector<Block *> &res,
+    double &cost,
+    BlkCluster *cluster,
+    int l,
+    int r,
+    int range
+) {
     //BOOST_LOG_TRIVIAL(info)  <<"l : %d, r: %d\n", l, r);
-
     if (l == r) {
         /*for (auto &blk_ptr: cluster->blk_ptr_list_) {
           BOOST_LOG_TRIVIAL(info)   << blk_ptr->NameStr() << "  ";
@@ -924,12 +924,13 @@ void ClusterWellLegalizer::FindBestPermutation(std::vector<Block *> &res,
 
 }
 
-void ClusterWellLegalizer::LocalReorderInCluster(BlkCluster *cluster,
-                                                 int range) {
-    /****
-     * Enumerate all local permutations, @param range determines how big the local range is
-     * ****/
-
+/****
+ * Enumerate all local permutations, @param range determines how big the local range is
+ * ****/
+void ClusterWellLegalizer::LocalReorderInCluster(
+    BlkCluster *cluster,
+    int range
+) {
     assert(range > 0);
 
     int sz = cluster->size();
@@ -1047,8 +1048,8 @@ void ClusterWellLegalizer::ReportWellRule() {
         << "    MaxDist:     " << max_well_length << "\n"
         << "    (real):      "
         << std::floor(
-            circuit_->tech().NwellLayer().MaxPlugDist()
-                / circuit_->GridValueX()) << "\n"
+            p_ckt_->tech().NwellLayer().MaxPlugDist()
+                / p_ckt_->GridValueX()) << "\n"
         << "    WellWidth:   " << well_min_width << "\n"
         << "    OverhangX:   " << well_extension_x << "\n"
         << "    OverhangY:   " << well_extension_y << "\n";

@@ -27,7 +27,7 @@ void StarPiModelEstimator::PushNetRCToManager() {
         double driver_cap = 0;
         // this is just a rough estimation
         double2d driver_pin_loc =
-            circuit_->NetListRef()[net_id].BlockPins()[driver_id].Location();
+            circuit_->Nets()[net_id].BlockPins()[driver_id].Location();
         int net_sz = (int) net_pins.size();
         for (int pin_id = 0; pin_id < net_sz; ++pin_id) {
             if (pin_id == driver_id) continue;
@@ -37,7 +37,7 @@ void StarPiModelEstimator::PushNetRCToManager() {
             double res, cap;
             // this is just a rough estimation
             double2d load_pin_loc =
-                circuit_->NetListRef()[net_id].BlockPins()[pin_id].Location();
+                circuit_->Nets()[net_id].BlockPins()[pin_id].Location();
             GetResistanceAndCapacitance(
                 driver_pin_loc,
                 load_pin_loc,

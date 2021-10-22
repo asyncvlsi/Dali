@@ -94,9 +94,9 @@ void GPSimPL::BlockLocRandomInit() {
     std::uniform_real_distribution<double> distribution(0, 1);
 
     BOOST_LOG_TRIVIAL(info) << "HPWL before initialization: "
-                            << circuit_->WeightedHPWL() << "\n";
+                            << p_ckt_->WeightedHPWL() << "\n";
 
-    for (auto &block: circuit_->Blocks()) {
+    for (auto &block: p_ckt_->Blocks()) {
         if (block.IsMovable()) {
             block.SetCenterX(
                 RegionLeft() + region_width * distribution(generator));
@@ -107,8 +107,8 @@ void GPSimPL::BlockLocRandomInit() {
     BOOST_LOG_TRIVIAL(info)
         << "Block location uniform initialization complete\n";
 
-    init_hpwl_x_ = circuit_->WeightedHPWLX();
-    init_hpwl_y_ = circuit_->WeightedHPWLY();
+    init_hpwl_x_ = p_ckt_->WeightedHPWLX();
+    init_hpwl_y_ = p_ckt_->WeightedHPWLY();
     init_hpwl_ = init_hpwl_x_ + init_hpwl_y_;
     BOOST_LOG_TRIVIAL(info) << "HPWL after initialization: " << init_hpwl_
                             << "\n";
@@ -125,7 +125,7 @@ void GPSimPL::BlockLocCenterInit() {
     std::minstd_rand0 generator{1};
     std::normal_distribution<double> distribution(0.0, 1.0 / 3);
 
-    for (auto &block: circuit_->Blocks()) {
+    for (auto &block: p_ckt_->Blocks()) {
         if (!block.IsMovable()) continue;
         double x = region_center_x + region_width * distribution(generator);
         double y = region_center_y + region_height * distribution(generator);
@@ -138,8 +138,8 @@ void GPSimPL::BlockLocCenterInit() {
     }
     BOOST_LOG_TRIVIAL(info)
         << "Block location gaussian initialization complete\n";
-    init_hpwl_x_ = circuit_->WeightedHPWLX();
-    init_hpwl_y_ = circuit_->WeightedHPWLY();
+    init_hpwl_x_ = p_ckt_->WeightedHPWLX();
+    init_hpwl_y_ = p_ckt_->WeightedHPWLY();
     init_hpwl_ = init_hpwl_x_ + init_hpwl_y_;
     BOOST_LOG_TRIVIAL(info) << "HPWL after initialization: " << init_hpwl_
                             << "\n";
@@ -148,12 +148,12 @@ void GPSimPL::BlockLocCenterInit() {
 }
 
 void GPSimPL::DriverLoadPairInit() {
-    std::vector<BlkPairNets> &pair_list = circuit_->blk_pair_net_list_;
+    std::vector<BlkPairNets> &pair_list = p_ckt_->blk_pair_net_list_;
     std::unordered_map<std::pair<int, int>,
                        int,
                        boost::hash<std::pair<int, int>>>
-        &pair_map = circuit_->blk_pair_map_;
-    std::vector<Block> &block_list = circuit_->Blocks();
+        &pair_map = p_ckt_->blk_pair_map_;
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     int sz = block_list.size();
 
     pair_connect.resize(sz);
@@ -308,7 +308,7 @@ void GPSimPL::CGInit() {
 
     int coefficient_size = 0;
     int net_sz = 0;
-    for (auto &net: *NetList()) {
+    for (auto &net: Nets()) {
         net_sz = net.PinCnt();
         // if a net has size n, then in total, there will be (2(n-2)+1)*4 non-zero entries in the matrix
         if (net_sz > 1) coefficient_size += ((net_sz - 2) * 2 + 1) * 4;
@@ -324,7 +324,7 @@ void GPSimPL::CGInit() {
 }
 
 void GPSimPL::UpdateMaxMinX() {
-    std::vector<Net> &net_list = circuit_->NetListRef();
+    std::vector<Net> &net_list = p_ckt_->Nets();
     int sz = net_list.size();
 #pragma omp parallel for
     for (int i = 0; i < sz; ++i) {
@@ -333,7 +333,7 @@ void GPSimPL::UpdateMaxMinX() {
 }
 
 void GPSimPL::UpdateMaxMinY() {
-    std::vector<Net> &net_list = circuit_->NetListRef();
+    std::vector<Net> &net_list = p_ckt_->Nets();
     int sz = net_list.size();
 #pragma omp parallel for
     for (int i = 0; i < sz; ++i) {
@@ -344,9 +344,9 @@ void GPSimPL::UpdateMaxMinY() {
 void GPSimPL::BuildProblemB2BX() {
     double wall_time = get_wall_time();
 
-    std::vector<Net> &net_list = *NetList();
+    std::vector<Net> &net_list = Nets();
 
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     size_t coefficients_capacity = coefficientsx.capacity();
     coefficientsx.resize(0);
 
@@ -362,7 +362,7 @@ void GPSimPL::BuildProblemB2BX() {
     double weight;
     double weight_adjust;
     double inv_p;
-    double decay_length = decay_factor * circuit_->AveBlkHeight();
+    double decay_length = decay_factor * p_ckt_->AveBlkHeight();
 
     double pin_loc;
     int blk_num;
@@ -383,7 +383,8 @@ void GPSimPL::BuildProblemB2BX() {
     double offset_min;
 
     for (auto &net: net_list) {
-        if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
+        if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_)
+            continue;
         inv_p = net.InvP();
         net.UpdateMaxMinIdX();
         max_pin_index = net.MaxBlkPinIdX();
@@ -497,7 +498,7 @@ void GPSimPL::BuildProblemB2BY() {
 
     UpdateMaxMinY();
 
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     size_t coefficients_capacity = coefficientsy.capacity();
     coefficientsy.resize(0);
 
@@ -513,7 +514,7 @@ void GPSimPL::BuildProblemB2BY() {
     double weight;
     double weight_adjust;
     double inv_p;
-    double decay_length = decay_factor * circuit_->AveBlkHeight();
+    double decay_length = decay_factor * p_ckt_->AveBlkHeight();
 
     double pin_loc;
     int blk_num;
@@ -533,8 +534,9 @@ void GPSimPL::BuildProblemB2BY() {
     bool is_movable_min;
     double offset_min;
 
-    for (auto &net: *NetList()) {
-        if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
+    for (auto &net: Nets()) {
+        if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_)
+            continue;
         inv_p = net.InvP();
         //net.UpdateMaxMinIndexY();
         max_pin_index = net.MaxBlkPinIdY();
@@ -638,9 +640,9 @@ void GPSimPL::BuildProblemB2BY() {
 void GPSimPL::BuildProblemStarModelX() {
     double wall_time = get_wall_time();
 
-    std::vector<Net> &net_list = *NetList();
+    std::vector<Net> &net_list = Nets();
 
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     size_t coefficients_capacity = coefficientsx.capacity();
     coefficientsx.resize(0);
 
@@ -658,7 +660,7 @@ void GPSimPL::BuildProblemStarModelX() {
     double weight;
     double weight_adjust;
     double inv_p;
-    double decay_length = decay_factor * circuit_->AveBlkHeight();
+    double decay_length = decay_factor * p_ckt_->AveBlkHeight();
 
     double pin_loc;
     int blk_num;
@@ -671,7 +673,8 @@ void GPSimPL::BuildProblemStarModelX() {
     double driver_offset;
 
     for (auto &net: net_list) {
-        if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
+        if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_)
+            continue;
         inv_p = net.InvP();
 
         // assuming the 0-th pin in the net is the driver pin
@@ -745,9 +748,9 @@ void GPSimPL::BuildProblemStarModelX() {
 void GPSimPL::BuildProblemStarModelY() {
     double wall_time = get_wall_time();
 
-    std::vector<Net> &net_list = *NetList();
+    std::vector<Net> &net_list = Nets();
 
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     size_t coefficients_capacity = coefficientsy.capacity();
     coefficientsy.resize(0);
 
@@ -765,7 +768,7 @@ void GPSimPL::BuildProblemStarModelY() {
     double weight;
     double weight_adjust;
     double inv_p;
-    double decay_length = decay_factor * circuit_->AveBlkHeight();
+    double decay_length = decay_factor * p_ckt_->AveBlkHeight();
 
     double pin_loc;
     int blk_num;
@@ -778,7 +781,8 @@ void GPSimPL::BuildProblemStarModelY() {
     double driver_offset;
 
     for (auto &net: net_list) {
-        if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
+        if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_)
+            continue;
         inv_p = net.InvP();
 
         // assuming the 0-th pin in the net is the driver pin
@@ -846,9 +850,9 @@ void GPSimPL::BuildProblemStarModelY() {
 void GPSimPL::BuildProblemHPWLX() {
     double wall_time = get_wall_time();
 
-    std::vector<Net> &net_list = *NetList();
+    std::vector<Net> &net_list = Nets();
 
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     size_t coefficients_capacity = coefficientsx.capacity();
     coefficientsx.resize(0);
 
@@ -866,7 +870,7 @@ void GPSimPL::BuildProblemHPWLX() {
     double weight;
     double weight_adjust;
     double inv_p;
-    double decay_length = decay_factor * circuit_->AveBlkHeight();
+    double decay_length = decay_factor * p_ckt_->AveBlkHeight();
 
     int max_pin_index;
     int blk_num_max;
@@ -881,7 +885,8 @@ void GPSimPL::BuildProblemHPWLX() {
     double offset_min;
 
     for (auto &net: net_list) {
-        if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
+        if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_)
+            continue;
         inv_p = net.InvP();
         net.UpdateMaxMinIdX();
         max_pin_index = net.MaxBlkPinIdX();
@@ -945,7 +950,7 @@ void GPSimPL::BuildProblemHPWLX() {
 void GPSimPL::BuildProblemHPWLY() {
     double wall_time = get_wall_time();
 
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     size_t coefficients_capacity = coefficientsy.capacity();
     coefficientsy.resize(0);
 
@@ -963,7 +968,7 @@ void GPSimPL::BuildProblemHPWLY() {
     double weight;
     double weight_adjust;
     double inv_p;
-    double decay_length = decay_factor * circuit_->AveBlkHeight();
+    double decay_length = decay_factor * p_ckt_->AveBlkHeight();
 
     int max_pin_index;
     int blk_num_max;
@@ -977,8 +982,9 @@ void GPSimPL::BuildProblemHPWLY() {
     bool is_movable_min;
     double offset_min;
 
-    for (auto &net: *NetList()) {
-        if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
+    for (auto &net: Nets()) {
+        if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_)
+            continue;
         inv_p = net.InvP();
         net.UpdateMaxMinIdY();
         max_pin_index = net.MaxBlkPinIdY();
@@ -1048,8 +1054,8 @@ void GPSimPL::BuildProblemStarHPWLX() {
         bx[i] = 0;
     }
 
-    double decay_length = decay_factor * circuit_->AveBlkHeight();
-    std::vector<BlkPairNets> &blk_pair_net_list = circuit_->blk_pair_net_list_;
+    double decay_length = decay_factor * p_ckt_->AveBlkHeight();
+    std::vector<BlkPairNets> &blk_pair_net_list = p_ckt_->blk_pair_net_list_;
     int pair_sz = blk_pair_net_list.size();
 #pragma omp parallel for
     for (int i = 0; i < pair_sz; ++i) {
@@ -1147,7 +1153,7 @@ void GPSimPL::BuildProblemStarHPWLX() {
     double center_weight = 0.03 / std::sqrt(sz);
     double
         weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
 #pragma omp parallel for
     for (int i = 0; i < sz; ++i) {
         if (block_list[i].IsFixed()) {
@@ -1188,8 +1194,8 @@ void GPSimPL::BuildProblemStarHPWLY() {
         by[i] = 0;
     }
 
-    double decay_length = decay_factor * circuit_->AveBlkHeight();
-    std::vector<BlkPairNets> &blk_pair_net_list = circuit_->blk_pair_net_list_;
+    double decay_length = decay_factor * p_ckt_->AveBlkHeight();
+    std::vector<BlkPairNets> &blk_pair_net_list = p_ckt_->blk_pair_net_list_;
     int pair_sz = blk_pair_net_list.size();
 #pragma omp parallel for
     for (int i = 0; i < pair_sz; ++i) {
@@ -1287,7 +1293,7 @@ void GPSimPL::BuildProblemStarHPWLY() {
     double center_weight = 0.03 / std::sqrt(sz);
     double
         weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
 #pragma omp parallel for
     for (int i = 0; i < sz; ++i) {
         if (block_list[i].IsFixed()) {
@@ -1328,7 +1334,7 @@ double GPSimPL::OptimizeQuadraticMetricX(double cg_stop_criterion) {
     tot_matrix_from_triplets_x += wall_time;
 
     int sz = vx.size();
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
 
     wall_time = get_wall_time();
     std::vector<double> eval_history;
@@ -1382,7 +1388,7 @@ double GPSimPL::OptimizeQuadraticMetricY(double cg_stop_criterion) {
     tot_matrix_from_triplets_y += wall_time;
 
     int sz = vx.size();
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
 
     wall_time = get_wall_time();
     std::vector<double> eval_history;
@@ -1428,7 +1434,7 @@ double GPSimPL::OptimizeQuadraticMetricY(double cg_stop_criterion) {
 
 void GPSimPL::PullBlockBackToRegion() {
     int sz = vx.size();
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
 
     double blk_hi_bound_x;
     double blk_hi_bound_y;
@@ -1500,7 +1506,7 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
                                      << " Eigen threads: " << Eigen::nbThreads()
                                      << "\n";
 
-            std::vector<Block> &block_list = circuit_->Blocks();
+            std::vector<Block> &block_list = p_ckt_->Blocks();
             for (size_t i = 0; i < block_list.size(); ++i) {
                 vx[i] = block_list[i].LLX();
             }
@@ -1545,7 +1551,7 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
                                      << " Eigen threads: " << Eigen::nbThreads()
                                      << "\n";
 
-            std::vector<Block> &block_list = circuit_->Blocks();
+            std::vector<Block> &block_list = p_ckt_->Blocks();
             for (size_t i = 0; i < block_list.size(); ++i) {
                 vy[i] = block_list[i].LLY();
             }
@@ -1937,7 +1943,7 @@ void GPSimPL::UpdateGridBinState() {
     // for each cell, find the index of the grid bin it should be in
     // note that in extreme cases, the index might be smaller than 0 or larger than the maximum allowed index
     // because the cell is on the boundaries, so we need to make some modifications for these extreme cases
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     int sz = int(block_list.size());
     int x_index = 0;
     int y_index = 0;
@@ -2144,7 +2150,7 @@ void GPSimPL::FindMinimumBoxForLargestCluster() {
     if (cluster_set.empty()) return;
 
     // Part 1
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
 
     BoxBin R;
     R.cut_direction_x = false;
@@ -2209,7 +2215,7 @@ void GPSimPL::FindMinimumBoxForLargestCluster() {
 }
 
 void GPSimPL::SplitBox(BoxBin &box) {
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     bool flag_bisection_complete;
     int dominating_box_flag; // indicate whether there is a dominating BoxBin
     BoxBin box1, box2;
@@ -2358,7 +2364,7 @@ void GPSimPL::SplitBox(BoxBin &box) {
 }
 
 void GPSimPL::SplitGridBox(BoxBin &box) {
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     BoxBin box1, box2;
     box1.left = box.left;
     box1.bottom = box.bottom;
@@ -2460,7 +2466,7 @@ void GPSimPL::SplitGridBox(BoxBin &box) {
 }
 
 void GPSimPL::PlaceBlkInBox(BoxBin &box) {
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     /* this is the simplest version, just linearly move cells in the cell_box to the grid box
   * non-linearity is not considered yet*/
 
@@ -2542,7 +2548,7 @@ void GPSimPL::RoughLegalBlkInBox(BoxBin &box) {
     IndexLocPair<int> tmp_index_loc_pair(0, 0, 0);
     index_loc_list.resize(sz, tmp_index_loc_pair);
 
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     int blk_num;
     for (int i = 0; i < sz; ++i) {
         blk_num = box.cell_list[i];
@@ -2673,7 +2679,7 @@ double GPSimPL::BlkOverlapArea(Block *node1, Block *node2) {
 }
 
 void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     /* keep bisect a grid bin until the leaf bin has less than say 2 nodes? */
     size_t max_cell_num_in_box = 10;
     box.cut_direction_x = true;
@@ -2764,7 +2770,7 @@ void GPSimPL::UpdateGridBinBlocks(BoxBin &box) {
             grid_bin.cell_area = 0;
             grid_bin.over_fill = false;
 
-            std::vector<Block> &block_list = circuit_->Blocks();
+            std::vector<Block> &block_list = p_ckt_->Blocks();
             for (auto &blk_num: box.cell_list) {
                 grid_bin.cell_list.push_back(blk_num);
                 grid_bin.cell_area += block_list[blk_num].Area();
@@ -2808,7 +2814,7 @@ bool GPSimPL::RecursiveBisectionBlkSpreading() {
 }
 
 void GPSimPL::BackUpBlockLocation() {
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     size_t sz = block_list.size();
     for (size_t i = 0; i < sz; ++i) {
         x_anchor[i] = block_list[i].LLX();
@@ -2817,7 +2823,7 @@ void GPSimPL::BackUpBlockLocation() {
 }
 
 void GPSimPL::UpdateAnchorLocation() {
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     size_t sz = block_list.size();
 
     for (size_t i = 0; i < sz; ++i) {
@@ -2835,13 +2841,13 @@ void GPSimPL::UpdateAnchorLocation() {
 }
 
 void GPSimPL::UpdateAnchorNetWeight() {
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     size_t sz = block_list.size();
 
     // X direction
     double weight = 0;
     double pin_loc0, pin_loc1;
-    double ave_height = circuit_->AveBlkHeight();
+    double ave_height = p_ckt_->AveBlkHeight();
     for (size_t i = 0; i < sz; ++i) {
         if (block_list[i].IsFixed()) continue;
         pin_loc0 = block_list[i].LLX();
@@ -2877,7 +2883,7 @@ void GPSimPL::BuildProblemWithAnchorX() {
 
     double wall_time = get_wall_time();
 
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     size_t sz = block_list.size();
 
     double weight = 0;
@@ -2912,7 +2918,7 @@ void GPSimPL::BuildProblemWithAnchorY() {
 
     double wall_time = get_wall_time();
 
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     size_t sz = block_list.size();
 
     double weight = 0;
@@ -2940,7 +2946,7 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
     //BOOST_LOG_TRIVIAL(info)   << "total threads: " << avail_threads_num << "\n";
     double wall_time = get_wall_time();
 
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
 
     UpdateAnchorLocation();
     UpdateAnchorAlpha();
@@ -3096,7 +3102,7 @@ double GPSimPL::LookAheadLegalization() {
 }
 
 void GPSimPL::CheckAndShift() {
-    if (circuit_->TotFixedBlkCnt() > 0) return;
+    if (p_ckt_->TotFixedBlkCnt() > 0) return;
     /****
    * This method is helpful when a circuit does not have any fixed blocks.
    * In this case, the shift of the whole circuit does not influence HPWL and overlap.
@@ -3113,7 +3119,7 @@ void GPSimPL::CheckAndShift() {
     double bottom_most = INT_MAX;
     double top_most = INT_MIN;
 
-    for (auto &blk: circuit_->Blocks()) {
+    for (auto &blk: p_ckt_->Blocks()) {
         left_most = std::min(left_most, blk.LLX());
         right_most = std::max(right_most, blk.URX());
         bottom_most = std::min(bottom_most, blk.LLY());
@@ -3126,22 +3132,21 @@ void GPSimPL::CheckAndShift() {
     double delta_x = left_ + margin_x / 10 - left_most;
     double delta_y = bottom_ + margin_y / 2 - bottom_most;
 
-    for (auto &blk: circuit_->Blocks()) {
+    for (auto &blk: p_ckt_->Blocks()) {
         blk.IncreaseX(delta_x);
         blk.IncreaseY(delta_y);
     }
 }
 
+/****
+* Returns true of false indicating the convergence of the global placement.
+* Stopping criteria (SimPL, option 1):
+*    (a). the gap is reduced to 25% of the gap in the tenth iteration and upper-bound solution stops improving
+*    (b). the gap is smaller than 10% of the gap in the tenth iteration
+* Stopping criteria (POLAR, option 2):
+*    the gap between lower bound wirelength and upper bound wirelength is less than 8%
+* ****/
 bool GPSimPL::IsPlacementConverge() {
-    /****
-   * Returns true of false indicating the convergence of the global placement.
-   * Stopping criteria (SimPL, option 1):
-   *    (a). the gap is reduced to 25% of the gap in the tenth iteration and upper-bound solution stops improving
-   *    (b). the gap is smaller than 10% of the gap in the tenth iteration
-   * Stopping criteria (POLAR, option 2):
-   *    the gap between lower bound wirelength and upper bound wirelength is less than 8%
-   * ****/
-
     bool res = false;
     if (convergence_criteria_ == 1) {
         // (a) and (b) requires at least 10 iterations
@@ -3155,9 +3160,11 @@ bool GPSimPL::IsPlacementConverge() {
             if (gap_ratio < 0.1) { // (a)
                 res = true;
             } else if (gap_ratio < 0.25) { // (b)
-                res = IsSeriesConverge(upper_bound_hpwl_,
-                                       3,
-                                       simpl_LAL_converge_criterion_);
+                res = IsSeriesConverge(
+                    upper_bound_hpwl_,
+                    3,
+                    simpl_LAL_converge_criterion_
+                );
             } else {
                 res = false;
             }
@@ -3194,7 +3201,7 @@ bool GPSimPL::StartPlacement() {
         DriverLoadPairInit();
     }
 
-    if (NetList()->empty()) {
+    if (Nets().empty()) {
         BOOST_LOG_TRIVIAL(info) << "Net list empty\n";
         BOOST_LOG_TRIVIAL(info)
             << "\033[0;36m Global Placement complete\033[0m\n";
@@ -3207,10 +3214,11 @@ bool GPSimPL::StartPlacement() {
     lower_bound_hpwl_.push_back(eval_res);
     eval_res = LookAheadLegalization();
     upper_bound_hpwl_.push_back(eval_res);
-    BOOST_LOG_TRIVIAL(info) << "It " << cur_iter_ << ": \t"
-                            << std::scientific << std::setprecision(4)
-                            << lower_bound_hpwl_.back() << " "
-                            << upper_bound_hpwl_.back() << "\n";
+    BOOST_LOG_TRIVIAL(info)
+        << "It " << cur_iter_ << ": \t"
+        << std::scientific << std::setprecision(4)
+        << lower_bound_hpwl_.back() << " "
+        << upper_bound_hpwl_.back() << "\n";
 
     for (cur_iter_ = 1; cur_iter_ < max_iter_; ++cur_iter_) {
         BOOST_LOG_TRIVIAL(debug)
@@ -3224,16 +3232,18 @@ bool GPSimPL::StartPlacement() {
         eval_res = LookAheadLegalization();
         upper_bound_hpwl_.push_back(eval_res);
 
-        BOOST_LOG_TRIVIAL(info) << "It " << cur_iter_ << ": \t"
-                                << std::scientific << std::setprecision(4)
-                                << lower_bound_hpwl_.back() << " "
-                                << upper_bound_hpwl_.back() << "\n";
+        BOOST_LOG_TRIVIAL(info)
+            << "It " << cur_iter_ << ": \t"
+            << std::scientific << std::setprecision(4)
+            << lower_bound_hpwl_.back() << " "
+            << upper_bound_hpwl_.back() << "\n";
 
         if (IsPlacementConverge()) { // if HPWL converges
             BOOST_LOG_TRIVIAL(info)
                 << "Iterative look-ahead legalization complete\n";
-            BOOST_LOG_TRIVIAL(info) << "Total number of iteration: "
-                                    << cur_iter_ + 1 << "\n";
+            BOOST_LOG_TRIVIAL(info)
+                << "Total number of iteration: "
+                << cur_iter_ + 1 << "\n";
             break;
         }
     }
@@ -3293,7 +3303,7 @@ void GPSimPL::DumpResult(std::string const &name_of_file) {
     //UpdateGridBinState();
     static int counter = 0;
     //BOOST_LOG_TRIVIAL(info)   << "DumpNum:" << counter << "\n";
-    circuit_->GenMATLABTable(name_of_file);
+    p_ckt_->GenMATLABTable(name_of_file);
     //write_not_all_terminal_grid_bins("grid_bin_not_all_terminal" + std::to_string(counter) + ".txt");
     //write_overfill_grid_bins("grid_bin_overfill" + std::to_string(counter) + ".txt");
     ++counter;
@@ -3317,10 +3327,10 @@ void GPSimPL::DumpLookAheadDisplacement(
         std::ofstream ost(name_of_file.c_str());
         DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
-        DaliExpects(circuit_ != nullptr,
+        DaliExpects(p_ckt_ != nullptr,
                     "Set input circuit before starting anything GPSimPL::DumpLookAheadDisplacement()");
-        std::vector<Block> &block_list = circuit_->Blocks();
-        int sz = circuit_->design().RealBlkCnt();
+        std::vector<Block> &block_list = p_ckt_->Blocks();
+        int sz = p_ckt_->design().RealBlkCnt();
         for (int i = 0; i < sz; ++i) {
             double x = x_anchor[i] + block_list[i].Width() / 2.0;
             double y = y_anchor[i] + +block_list[i].Height() / 2.0;
@@ -3338,11 +3348,11 @@ void GPSimPL::DumpLookAheadDisplacement(
         std::ofstream ost(name_of_file.c_str());
         DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
-        DaliExpects(circuit_ != nullptr,
+        DaliExpects(p_ckt_ != nullptr,
                     "Set input circuit before starting anything GPSimPL::DumpLookAheadDisplacement()");
-        double ave_height = circuit_->AveMovBlkHeight();
-        std::vector<Block> &block_list = circuit_->Blocks();
-        int sz = circuit_->design().RealBlkCnt();
+        double ave_height = p_ckt_->AveMovBlkHeight();
+        std::vector<Block> &block_list = p_ckt_->Blocks();
+        int sz = p_ckt_->design().RealBlkCnt();
         for (int i = 0; i < sz; ++i) {
             double x = x_anchor[i] + block_list[i].Width() / 2.0;
             double y = y_anchor[i] + +block_list[i].Height() / 2.0;
@@ -3361,7 +3371,7 @@ void GPSimPL::DrawBlockNetList(std::string const &name_of_file) {
     ost << RegionLeft() << " " << RegionBottom() << " "
         << RegionRight() - RegionLeft() << " "
         << RegionTop() - RegionBottom() << "\n";
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     for (auto &block: block_list) {
         ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " "
             << block.Height() << "\n";

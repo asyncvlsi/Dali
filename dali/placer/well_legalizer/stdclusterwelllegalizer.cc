@@ -51,7 +51,7 @@ void StdClusterWellLegalizer::CheckWellExistence() {
 
 void StdClusterWellLegalizer::DetectAvailSpace() {
     if (!row_height_set_) {
-        row_height_ = circuit_->RowHeightGrid();
+        row_height_ = p_ckt_->RowHeightGrid();
     }
     tot_num_rows_ = (top_ - bottom_) / row_height_;
 
@@ -120,7 +120,7 @@ void StdClusterWellLegalizer::DetectAvailSpace() {
     }
 
     white_space_in_rows_.resize(tot_num_rows_);
-    int min_blk_width = int(circuit_->MinBlkWidth());
+    int min_blk_width = int(p_ckt_->MinBlkWidth());
     for (int i = 0; i < tot_num_rows_; ++i) {
         int len = int(intermediate_seg_rows[i].size());
         white_space_in_rows_[i].reserve(len / 2);
@@ -138,15 +138,15 @@ void StdClusterWellLegalizer::DetectAvailSpace() {
 }
 
 void StdClusterWellLegalizer::FetchNPWellParams() {
-    auto &tech = circuit_->tech();
+    auto &tech = p_ckt_->tech();
     auto &n_well_layer = tech.NwellLayer();
     int same_well_spacing =
-        std::ceil(n_well_layer.Spacing() / circuit_->GridValueX());
+        std::ceil(n_well_layer.Spacing() / p_ckt_->GridValueX());
     int op_well_spacing =
-        std::ceil(n_well_layer.OppositeSpacing() / circuit_->GridValueX());
+        std::ceil(n_well_layer.OppositeSpacing() / p_ckt_->GridValueX());
     well_spacing_ = std::max(same_well_spacing, op_well_spacing);
     max_unplug_length_ =
-        (int) std::floor(n_well_layer.MaxPlugDist() / circuit_->GridValueX());
+        (int) std::floor(n_well_layer.MaxPlugDist() / p_ckt_->GridValueX());
     DaliExpects(!tech.WellTapCellPtrs().empty(),
                 "Cannot find the definition of well tap cell, well legalization cannot proceed\n");
     well_tap_cell_ = tech.WellTapCellPtrs()[0];
@@ -155,7 +155,7 @@ void StdClusterWellLegalizer::FetchNPWellParams() {
     BOOST_LOG_TRIVIAL(info) << "Well max plug distance: "
                             << n_well_layer.MaxPlugDist() << " um, "
                             << max_unplug_length_ << " \n";
-    BOOST_LOG_TRIVIAL(info) << "GridValueX: " << circuit_->GridValueX()
+    BOOST_LOG_TRIVIAL(info) << "GridValueX: " << p_ckt_->GridValueX()
                             << " um\n";
     BOOST_LOG_TRIVIAL(info) << "Well spacing: "
                             << n_well_layer.Spacing() << " um, "
@@ -163,7 +163,7 @@ void StdClusterWellLegalizer::FetchNPWellParams() {
     BOOST_LOG_TRIVIAL(info) << "Well tap cell width: " << well_tap_cell_width_
                             << "\n";
 
-    well_tap_cell_ = (circuit_->tech().WellTapCellPtrs()[0]);
+    well_tap_cell_ = (p_ckt_->tech().WellTapCellPtrs()[0]);
     auto *tap_cell_well = well_tap_cell_->WellPtr();
     tap_cell_p_height_ = tap_cell_well->Pheight();
     tap_cell_n_height_ = tap_cell_well->Nheight();
@@ -219,7 +219,7 @@ void StdClusterWellLegalizer::DecomposeToSimpleStripe() {
                     stripe->front_cluster_ = nullptr;
                     stripe->used_height_ = 0;
                     stripe->max_blk_capacity_per_cluster_ =
-                        stripe->width_ / circuit_->MinBlkWidth();
+                        stripe->width_ / p_ckt_->MinBlkWidth();
                 } else {
                     stripe->height_ += row_height_;
                 }
@@ -243,7 +243,7 @@ void StdClusterWellLegalizer::DecomposeToSimpleStripe() {
 void StdClusterWellLegalizer::SaveInitialBlockLocation() {
     block_init_locations_.clear();
 
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     block_init_locations_.reserve(block_list.size());
 
     for (auto &block: block_list) {
@@ -297,12 +297,12 @@ void StdClusterWellLegalizer::Initialize(int cluster_width) {
         << tot_col_num_ << "\n";
 
     //BOOST_LOG_TRIVIAL(info)   << RegionHeight() << "  " << circuit_ptr_->MinBlkHeight() << "\n";
-    int max_clusters_per_col = RegionHeight() / circuit_->MinBlkHeight();
+    int max_clusters_per_col = RegionHeight() / p_ckt_->MinBlkHeight();
     col_list_.resize(tot_col_num_);
     stripe_width_ = RegionWidth() / tot_col_num_;
     BOOST_LOG_TRIVIAL(info)
         << "Cluster width: "
-        << stripe_width_ * circuit_->GridValueX()
+        << stripe_width_ * p_ckt_->GridValueX()
         << " um\n";
     for (int i = 0; i < tot_col_num_; ++i) {
         col_list_[i].lx_ = RegionLeft() + i * stripe_width_;
@@ -805,7 +805,7 @@ bool StdClusterWellLegalizer::BlockClusteringLoose() {
                 cluster.MinDisplacementLegalization();
                 if (is_dump) {
                     if (count % step == 0) {
-                        circuit_->GenMATLABTable(
+                        p_ckt_->GenMATLABTable(
                             "wlg_result_" + std::to_string(dump_count)
                                 + ".txt");
                         ++dump_count;
@@ -920,16 +920,15 @@ bool StdClusterWellLegalizer::TrialClusterLegalization(Stripe &stripe) {
     return res;
 }
 
+/****
+ * Returns the wire-length cost of the small group from l-th element to r-th element in this cluster
+ * "for each order, we keep the left and right boundaries of the group and evenly distribute the cells inside the group.
+ * Since we have the Single-Segment Clustering technique to take care of the cell positions,
+ * we do not pay much attention to the exact positions of the cells during Local Re-ordering."
+ * from "An Efficient and Effective Detailed Placement Algorithm"
+ * ****/
 double StdClusterWellLegalizer::WireLengthCost(Cluster *cluster, int l, int r) {
-    /****
-     * Returns the wire-length cost of the small group from l-th element to r-th element in this cluster
-     * "for each order, we keep the left and right boundaries of the group and evenly distribute the cells inside the group.
-     * Since we have the Single-Segment Clustering technique to take care of the cell positions,
-     * we do not pay much attention to the exact positions of the cells during Local Re-ordering."
-     * from "An Efficient and Effective Detailed Placement Algorithm"
-     * ****/
-
-    auto &net_list = *NetList();
+    auto &net_list = Nets();
     std::set<Net *> net_involved;
     for (int i = l; i <= r; ++i) {
         auto *blk = cluster->blk_list_[i];
@@ -947,29 +946,29 @@ double StdClusterWellLegalizer::WireLengthCost(Cluster *cluster, int l, int r) {
         hpwl_y += net->WeightedHPWLY();
     }
 
-    return hpwl_x * circuit_->GridValueX() + hpwl_y * circuit_->GridValueY();
+    return hpwl_x * p_ckt_->GridValueX() + hpwl_y * p_ckt_->GridValueY();
 }
 
-void StdClusterWellLegalizer::FindBestLocalOrder(std::vector<Block *> &res,
-                                                 double &cost,
-                                                 Cluster *cluster,
-                                                 int cur,
-                                                 int l,
-                                                 int r,
-                                                 int left_bound,
-                                                 int right_bound,
-                                                 int gap,
-                                                 int range) {
-    /****
-    * Returns the best permutation in @param res
-    * @param cost records the cost function associated with the best permutation
-    * @param l is the left bound of the range
-    * @param r is the right bound of the range
-    * @param cluster points to the whole range, but we are only interested in the permutation of range [l,r]
-    * ****/
-
+/****
+* Returns the best permutation in @param res
+* @param cost records the cost function associated with the best permutation
+* @param l is the left bound of the range
+* @param r is the right bound of the range
+* @param cluster points to the whole range, but we are only interested in the permutation of range [l,r]
+* ****/
+void StdClusterWellLegalizer::FindBestLocalOrder(
+    std::vector<Block *> &res,
+    double &cost,
+    Cluster *cluster,
+    int cur,
+    int l,
+    int r,
+    int left_bound,
+    int right_bound,
+    int gap,
+    int range
+) {
     //BOOST_LOG_TRIVIAL(info)  <<"l : %d, r: %d\n", l, r);
-
     if (cur == r) {
         cluster->blk_list_[l]->SetLLX(left_bound);
         cluster->blk_list_[r]->SetURX(right_bound);
@@ -1181,7 +1180,7 @@ void StdClusterWellLegalizer::UpdateClusterOrient() {
 }
 
 void StdClusterWellLegalizer::InsertWellTap() {
-    auto &tap_cell_list = circuit_->design().WellTaps();
+    auto &tap_cell_list = p_ckt_->design().WellTaps();
     tap_cell_list.clear();
     int tot_cluster_count = 0;
     for (auto &col: col_list_) {
@@ -1190,7 +1189,7 @@ void StdClusterWellLegalizer::InsertWellTap() {
         }
     }
     tap_cell_list.reserve(tot_cluster_count * 2);
-    circuit_->design().TapNameIdMap().clear();
+    p_ckt_->design().TapNameIdMap().clear();
 
     int counter = 0;
     int tot_tap_cell_num = 0;
@@ -1208,10 +1207,10 @@ void StdClusterWellLegalizer::InsertWellTap() {
                     tap_cell_list.emplace_back();
                     auto &tap_cell = tap_cell_list.back();
                     tap_cell.SetPlacementStatus(PLACED);
-                    tap_cell.SetType(circuit_->tech().WellTapCellPtrs()[0]);
+                    tap_cell.SetType(p_ckt_->tech().WellTapCellPtrs()[0]);
                     int map_size =
-                        circuit_->design().TapNameIdMap().size();
-                    auto ret = circuit_->design().TapNameIdMap().insert(
+                        p_ckt_->design().TapNameIdMap().size();
+                    auto ret = p_ckt_->design().TapNameIdMap().insert(
                         std::pair<std::string, int>(block_name, map_size)
                     );
                     auto *name_id_pair_ptr = &(*ret.first);
@@ -1228,7 +1227,7 @@ void StdClusterWellLegalizer::InsertWellTap() {
 }
 
 void StdClusterWellLegalizer::ClearCachedData() {
-    for (auto &block: circuit_->Blocks()) {
+    for (auto &block: p_ckt_->Blocks()) {
         block.SetOrient(N);
     }
 
@@ -1347,9 +1346,9 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
     long int tot_std_blk_area = 0;
     int max_n_height = 0;
     int max_p_height = 0;
-    for (auto &blk: circuit_->design().Blocks()) {
+    for (auto &blk: p_ckt_->design().Blocks()) {
         BlockType *type = blk.TypePtr();
-        if (type == circuit_->tech().IoDummyBlkTypePtr()) continue;;
+        if (type == p_ckt_->tech().IoDummyBlkTypePtr()) continue;;
         if (type->WellPtr()->Nheight() > max_n_height) {
             max_n_height = type->WellPtr()->Nheight();
         }
@@ -1358,7 +1357,7 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
         }
     }
     BlockTypeWell *well_tap_cell_well_info =
-        circuit_->tech().WellTapCellPtrs()[0]->WellPtr();
+        p_ckt_->tech().WellTapCellPtrs()[0]->WellPtr();
     if (well_tap_cell_well_info->Nheight() > max_n_height) {
         max_n_height = well_tap_cell_well_info->Nheight();
     }
@@ -1382,14 +1381,14 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
         }
     }
     double factor =
-        circuit_->GridValueX() * circuit_->GridValueY();
+        p_ckt_->GridValueX() * p_ckt_->GridValueY();
     BOOST_LOG_TRIVIAL(info) << "Total placement area: "
                             << ((long int) RegionWidth()
                                 * (long int) RegionHeight()) * factor
                             << " um^2\n";
     BOOST_LOG_TRIVIAL(info) << "Total block area: "
-                            << circuit_->TotBlkArea() * factor << " ("
-                            << circuit_->TotBlkArea() / (double) RegionWidth()
+                            << p_ckt_->TotBlkArea() * factor << " ("
+                            << p_ckt_->TotBlkArea() / (double) RegionWidth()
                                 / (double) RegionHeight() << ") um^2\n";
     BOOST_LOG_TRIVIAL(info) << "Total effective block area: "
                             << tot_eff_blk_area * factor << " ("
@@ -1429,7 +1428,7 @@ void StdClusterWellLegalizer::GenMatlabClusterTable(std::string const &name_of_f
 
 void StdClusterWellLegalizer::GenMATLABWellTable(std::string const &name_of_file,
                                                  int well_emit_mode) {
-    circuit_->GenMATLABWellTable(name_of_file, false);
+    p_ckt_->GenMATLABWellTable(name_of_file, false);
 
     std::string p_file = name_of_file + "_pwell.txt";
     std::ofstream ostp(p_file.c_str());
@@ -1679,20 +1678,20 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
     std::ofstream ost(name_of_file.c_str());
     DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
-    double factor_x = circuit_->design().DistanceMicrons()
-        * circuit_->GridValueX();
-    double factor_y = circuit_->design().DistanceMicrons()
-        * circuit_->GridValueY();
+    double factor_x = p_ckt_->design().DistanceMicrons()
+        * p_ckt_->GridValueX();
+    double factor_y = p_ckt_->design().DistanceMicrons()
+        * p_ckt_->GridValueY();
 
     ost << "bbox "
         << (int) (RegionLeft() * factor_x)
-            + circuit_->design().DieAreaOffsetX() << " "
+            + p_ckt_->design().DieAreaOffsetX() << " "
         << (int) (RegionBottom() * factor_y)
-            + circuit_->design().DieAreaOffsetY() << " "
+            + p_ckt_->design().DieAreaOffsetY() << " "
         << (int) (RegionRight() * factor_x)
-            + circuit_->design().DieAreaOffsetX() << " "
+            + p_ckt_->design().DieAreaOffsetX() << " "
         << (int) (RegionTop() * factor_y)
-            + circuit_->design().DieAreaOffsetY() << "\n";
+            + p_ckt_->design().DieAreaOffsetY() << "\n";
 
     int adjust_width = well_tap_cell_->Width();
 
@@ -1731,12 +1730,12 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
                     ost << "rect # " << PP_name << " ";
                 }
                 ost << (lx + adjust_width) * factor_x
-                    + circuit_->design().DieAreaOffsetX() << "\t"
-                    << ly * factor_y + circuit_->design().DieAreaOffsetY()
+                    + p_ckt_->design().DieAreaOffsetX() << "\t"
+                    << ly * factor_y + p_ckt_->design().DieAreaOffsetY()
                     << "\t"
                     << (ux - adjust_width) * factor_x
-                        + circuit_->design().DieAreaOffsetX() << "\t"
-                    << uy * factor_y + circuit_->design().DieAreaOffsetY()
+                        + p_ckt_->design().DieAreaOffsetX() << "\t"
+                    << uy * factor_y + p_ckt_->design().DieAreaOffsetY()
                     << "\n";
 
                 is_p_well_rect = !is_p_well_rect;
@@ -1785,26 +1784,26 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
                         ost << "rect # " << PP_name << " ";
                     }
                     ost << lx0 * factor_x
-                        + circuit_->design().DieAreaOffsetX() << "\t"
+                        + p_ckt_->design().DieAreaOffsetX() << "\t"
                         << ly * factor_y
-                            + circuit_->design().DieAreaOffsetY() << "\t"
+                            + p_ckt_->design().DieAreaOffsetY() << "\t"
                         << ux0 * factor_x
-                            + circuit_->design().DieAreaOffsetX() << "\t"
+                            + p_ckt_->design().DieAreaOffsetX() << "\t"
                         << uy * factor_y
-                            + circuit_->design().DieAreaOffsetY() << "\n";
+                            + p_ckt_->design().DieAreaOffsetY() << "\n";
                     if (!is_p_well_rect) {
                         ost << "rect # " << NP_name << " ";
                     } else {
                         ost << "rect # " << PP_name << " ";
                     }
                     ost << lx1 * factor_x
-                        + circuit_->design().DieAreaOffsetX() << "\t"
+                        + p_ckt_->design().DieAreaOffsetX() << "\t"
                         << ly * factor_y
-                            + circuit_->design().DieAreaOffsetY() << "\t"
+                            + p_ckt_->design().DieAreaOffsetY() << "\t"
                         << ux1 * factor_x
-                            + circuit_->design().DieAreaOffsetX() << "\t"
+                            + p_ckt_->design().DieAreaOffsetX() << "\t"
                         << uy * factor_y
-                            + circuit_->design().DieAreaOffsetY() << "\n";
+                            + p_ckt_->design().DieAreaOffsetY() << "\n";
                 }
                 is_p_well_rect = !is_p_well_rect;
             }
@@ -1820,19 +1819,19 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
     std::string NP_name = "nplus";
     std::string PP_name = "pplus";
 
-    double factor_x = circuit_->design().DistanceMicrons()
-        * circuit_->GridValueX();
-    double factor_y = circuit_->design().DistanceMicrons()
-        * circuit_->GridValueY();
+    double factor_x = p_ckt_->design().DistanceMicrons()
+        * p_ckt_->GridValueX();
+    double factor_y = p_ckt_->design().DistanceMicrons()
+        * p_ckt_->GridValueY();
 
     int bbox_llx = (int) (RegionLeft() * factor_x)
-        + circuit_->design().DieAreaOffsetX();
+        + p_ckt_->design().DieAreaOffsetX();
     int bbox_lly = (int) (RegionBottom() * factor_y)
-        + circuit_->design().DieAreaOffsetY();
+        + p_ckt_->design().DieAreaOffsetY();
     int bbox_urx = (int) (RegionRight() * factor_x)
-        + circuit_->design().DieAreaOffsetX();
+        + p_ckt_->design().DieAreaOffsetX();
     int bbox_ury = (int) (RegionTop() * factor_y)
-        + circuit_->design().DieAreaOffsetY();
+        + p_ckt_->design().DieAreaOffsetY();
 
     auto *phydb_layout_container = phydb_ptr->CreatePpNpMacroAndComponent(
         bbox_llx,
@@ -1880,13 +1879,13 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
                     layer_name = PP_name;
                 }
                 int rect_llx = (int) ((lx + adjust_width) * factor_x)
-                    + circuit_->design().DieAreaOffsetX();
+                    + p_ckt_->design().DieAreaOffsetX();
                 int rect_lly = (int) (ly * factor_y)
-                    + circuit_->design().DieAreaOffsetY();
+                    + p_ckt_->design().DieAreaOffsetY();
                 int rect_urx = (int) ((ux - adjust_width) * factor_x)
-                    + circuit_->design().DieAreaOffsetX();
+                    + p_ckt_->design().DieAreaOffsetX();
                 int rect_ury = (int) (uy * factor_y)
-                    + circuit_->design().DieAreaOffsetY();
+                    + p_ckt_->design().DieAreaOffsetY();
 
                 phydb_layout_container->AddRectSignalLayer(
                     signal_name,
@@ -1944,13 +1943,13 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
                         layer_name = PP_name;
                     }
                     int rect_llx = (int) (lx0 * factor_x)
-                        + circuit_->design().DieAreaOffsetX();
+                        + p_ckt_->design().DieAreaOffsetX();
                     int rect_lly = (int) (ly * factor_y)
-                        + circuit_->design().DieAreaOffsetY();
+                        + p_ckt_->design().DieAreaOffsetY();
                     int rect_urx = (int) (ux0 * factor_x)
-                        + circuit_->design().DieAreaOffsetX();
+                        + p_ckt_->design().DieAreaOffsetX();
                     int rect_ury = (int) (uy * factor_y)
-                        + circuit_->design().DieAreaOffsetY();
+                        + p_ckt_->design().DieAreaOffsetY();
 
                     phydb_layout_container->AddRectSignalLayer(
                         signal_name,
@@ -1967,13 +1966,13 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
                         layer_name = PP_name;
                     }
                     rect_llx = (int) (lx1 * factor_x)
-                        + circuit_->design().DieAreaOffsetX();
+                        + p_ckt_->design().DieAreaOffsetX();
                     rect_lly = (int) (ly * factor_y)
-                        + circuit_->design().DieAreaOffsetY();
+                        + p_ckt_->design().DieAreaOffsetY();
                     rect_urx = (int) (ux1 * factor_x)
-                        + circuit_->design().DieAreaOffsetX();
+                        + p_ckt_->design().DieAreaOffsetX();
                     rect_ury = (int) (uy * factor_y)
-                        + circuit_->design().DieAreaOffsetY();
+                        + p_ckt_->design().DieAreaOffsetY();
                     phydb_layout_container->AddRectSignalLayer(
                         signal_name,
                         layer_name,
@@ -2008,20 +2007,20 @@ void StdClusterWellLegalizer::EmitWellRect(std::string const &name_of_file,
     std::ofstream ost(name_of_file.c_str());
     DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
-    double factor_x = circuit_->design().DistanceMicrons()
-        * circuit_->GridValueX();
-    double factor_y = circuit_->design().DistanceMicrons()
-        * circuit_->GridValueY();
+    double factor_x = p_ckt_->design().DistanceMicrons()
+        * p_ckt_->GridValueX();
+    double factor_y = p_ckt_->design().DistanceMicrons()
+        * p_ckt_->GridValueY();
 
     ost << "bbox "
         << (int) (RegionLeft() * factor_x)
-            + circuit_->design().DieAreaOffsetX() << " "
+            + p_ckt_->design().DieAreaOffsetX() << " "
         << (int) (RegionBottom() * factor_y)
-            + circuit_->design().DieAreaOffsetY() << " "
+            + p_ckt_->design().DieAreaOffsetY() << " "
         << (int) (RegionRight() * factor_x)
-            + circuit_->design().DieAreaOffsetX() << " "
+            + p_ckt_->design().DieAreaOffsetX() << " "
         << (int) (RegionTop() * factor_y)
-            + circuit_->design().DieAreaOffsetY() << "\n";
+            + p_ckt_->design().DieAreaOffsetY() << "\n";
     for (auto &col: col_list_) {
         for (auto &stripe: col.stripe_list_) {
             std::vector<int> pn_edge_list;
@@ -2061,13 +2060,13 @@ void StdClusterWellLegalizer::EmitWellRect(std::string const &name_of_file,
                     ost << "rect Vdd nwell ";
                 }
                 ost << (int) (lx * factor_x)
-                    + circuit_->design().DieAreaOffsetX() << " "
+                    + p_ckt_->design().DieAreaOffsetX() << " "
                     << (int) (ly * factor_y)
-                        + circuit_->design().DieAreaOffsetY() << " "
+                        + p_ckt_->design().DieAreaOffsetY() << " "
                     << (int) (ux * factor_x)
-                        + circuit_->design().DieAreaOffsetX() << " "
+                        + p_ckt_->design().DieAreaOffsetX() << " "
                     << (int) (uy * factor_y)
-                        + circuit_->design().DieAreaOffsetY() << "\n";
+                        + p_ckt_->design().DieAreaOffsetY() << "\n";
             }
         }
     }
@@ -2087,19 +2086,19 @@ void StdClusterWellLegalizer::ExportWellToPhyDB(phydb::PhyDB *phydb_ptr,
         default:DaliExpects(false,
                             "Invalid value for well_emit_mode in StdClusterWellLegalizer::EmitDEFWellFile()");
     }
-    double factor_x = circuit_->design().DistanceMicrons()
-        * circuit_->GridValueX();
-    double factor_y = circuit_->design().DistanceMicrons()
-        * circuit_->GridValueY();
+    double factor_x = p_ckt_->design().DistanceMicrons()
+        * p_ckt_->GridValueX();
+    double factor_y = p_ckt_->design().DistanceMicrons()
+        * p_ckt_->GridValueY();
 
     int bbox_llx = (int) (RegionLeft() * factor_x)
-        + circuit_->design().DieAreaOffsetX();
+        + p_ckt_->design().DieAreaOffsetX();
     int bbox_lly = (int) (RegionBottom() * factor_y)
-        + circuit_->design().DieAreaOffsetY();
+        + p_ckt_->design().DieAreaOffsetY();
     int bbox_urx = (int) (RegionRight() * factor_x)
-        + circuit_->design().DieAreaOffsetX();
+        + p_ckt_->design().DieAreaOffsetX();
     int bbox_ury = (int) (RegionTop() * factor_y)
-        + circuit_->design().DieAreaOffsetY();
+        + p_ckt_->design().DieAreaOffsetY();
 
     auto *phydb_layout_container = phydb_ptr->CreateWellLayerMacroAndComponent(
         bbox_llx,
@@ -2151,13 +2150,13 @@ void StdClusterWellLegalizer::ExportWellToPhyDB(phydb::PhyDB *phydb_ptr,
                     layer_name = "nwell";
                 }
                 int rect_llx = (int) (lx * factor_x)
-                    + circuit_->design().DieAreaOffsetX();
+                    + p_ckt_->design().DieAreaOffsetX();
                 int rect_lly = (int) (ly * factor_y)
-                    + circuit_->design().DieAreaOffsetY();
+                    + p_ckt_->design().DieAreaOffsetY();
                 int rect_urx = (int) (ux * factor_x)
-                    + circuit_->design().DieAreaOffsetX();
+                    + p_ckt_->design().DieAreaOffsetX();
                 int rect_ury = (int) (uy * factor_y)
-                    + circuit_->design().DieAreaOffsetY();
+                    + p_ckt_->design().DieAreaOffsetY();
                 phydb_layout_container->AddRectSignalLayer(
                     signal_name,
                     layer_name,
@@ -2181,10 +2180,10 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
     std::ofstream ost(name_of_file.c_str());
     DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
-    double factor_x = circuit_->design().DistanceMicrons()
-        * circuit_->GridValueX();
-    double factor_y = circuit_->design().DistanceMicrons()
-        * circuit_->GridValueY();
+    double factor_x = p_ckt_->design().DistanceMicrons()
+        * p_ckt_->GridValueX();
+    double factor_y = p_ckt_->design().DistanceMicrons()
+        * p_ckt_->GridValueY();
     //BOOST_LOG_TRIVIAL(info)   << "Actual x span: "
     //          << RegionLeft() * factor_x + +circuit_ptr_->getDesignRef().DieAreaOffsetX() << "  "
     //          << (col_list_.back().stripe_list_[0].URX() + well_spacing_) * factor_x + circuit_ptr_->getDesignRef().DieAreaOffsetX()
@@ -2197,9 +2196,9 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
         for (auto &stripe: col.stripe_list_) {
             ost << "  "
                 << (int) (stripe.LLX() * factor_x)
-                    + circuit_->design().DieAreaOffsetX() << "  "
+                    + p_ckt_->design().DieAreaOffsetX() << "  "
                 << (int) (stripe.URX() * factor_x)
-                    + circuit_->design().DieAreaOffsetX() << "  ";
+                    + p_ckt_->design().DieAreaOffsetX() << "  ";
             if (stripe.is_first_row_orient_N_) {
                 ost << "GND\n";
             } else {
@@ -2210,9 +2209,9 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
                 for (auto &cluster: stripe.cluster_list_) {
                     ost << "  "
                         << (int) (cluster.LLY() * factor_y)
-                            + circuit_->design().DieAreaOffsetY() << "  "
+                            + p_ckt_->design().DieAreaOffsetY() << "  "
                         << (int) (cluster.URY() * factor_y)
-                            + circuit_->design().DieAreaOffsetY() << "\n";
+                            + p_ckt_->design().DieAreaOffsetY() << "\n";
                 }
             } else {
                 int sz = stripe.cluster_list_.size();
@@ -2220,9 +2219,9 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
                     auto &cluster = stripe.cluster_list_[j];
                     ost << "  "
                         << (int) (cluster.LLY() * factor_y)
-                            + circuit_->design().DieAreaOffsetY() << "  "
+                            + p_ckt_->design().DieAreaOffsetY() << "  "
                         << (int) (cluster.URY() * factor_y)
-                            + circuit_->design().DieAreaOffsetY() << "\n";
+                            + p_ckt_->design().DieAreaOffsetY() << "\n";
                 }
             }
 

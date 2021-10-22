@@ -17,9 +17,9 @@ WellLegalizer::WellLegalizer() : LGTetrisEx() {
 }
 
 void WellLegalizer::InitWellLegalizer() {
-    DaliExpects(circuit_ != nullptr,
+    DaliExpects(p_ckt_ != nullptr,
                 "Well Legalization fail: no input circuit!");
-    auto &tech = circuit_->tech();
+    auto &tech = p_ckt_->tech();
     DaliExpects(tech.IsNwellSet(),
                 "Well Legalization fail: no N well parameters found!");
     DaliExpects(tech.IsPwellSet(),
@@ -27,7 +27,7 @@ void WellLegalizer::InitWellLegalizer() {
     auto &n_layer = tech.NwellLayer();
     auto &p_layer = tech.PwellLayer();
 
-    double grid_value_x = circuit_->GridValueX();
+    double grid_value_x = p_ckt_->GridValueX();
     n_max_plug_dist_ = std::ceil(n_layer.MaxPlugDist() / grid_value_x);
     p_max_plug_dist_ = std::ceil(p_layer.MaxPlugDist() / grid_value_x);
     nn_spacing_ = std::ceil(n_layer.Spacing() / grid_value_x);

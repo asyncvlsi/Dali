@@ -35,7 +35,7 @@ int Net::Id() const {
     return name_id_pair_ptr_->second;
 }
 
-void Net::AddBlockPinPair(Block *block_ptr, Pin *pin_ptr) {
+void Net::AddBlkPinPair(Block *block_ptr, Pin *pin_ptr) {
     if (blk_pins_.size() < blk_pins_.capacity()) {
         blk_pins_.emplace_back(block_ptr, pin_ptr);
         if (!(pin_ptr->IsInput()))

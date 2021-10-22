@@ -27,7 +27,7 @@ class Placer {
      * if so, the aspect_ratio_ or filling_rate_ might also be changed */
     int left_, right_, bottom_, top_;
     // boundaries of the placement region
-    Circuit *circuit_;
+    Circuit *p_ckt_;
 
     double GetBlkHPWL(Block &blk);
 
@@ -49,13 +49,13 @@ class Placer {
                 << "Invalid input circuit: empty block list, nothing to place!\n";
             return;
         }
-        if (circuit->getNetList()->empty()) {
+        if (circuit->Nets().empty()) {
             BOOST_LOG_TRIVIAL(info)
-                << "Improper input circuit: empty net list, nothing to optimize during placement! But anyway...\n";
+                << "Bad input circuit: empty net list, nothing to optimize during placement! But anyway...\n";
         }
-        circuit_ = circuit;
+        p_ckt_ = circuit;
     }
-    Circuit *GetCircuit() { return circuit_; }
+    Circuit *GetCircuit() { return p_ckt_; }
     void SetFillingRate(double rate = 2.0 / 3.0) {
         DaliExpects((rate <= 1) && (rate > 0),
                     "Invalid value: value should be in range (0, 1]");
@@ -74,8 +74,8 @@ class Placer {
         filling_rate_ = 1. / ratio;
     }
 
-    std::vector<Block> &Blocks() { return circuit_->Blocks(); }
-    std::vector<Net> *NetList() { return circuit_->getNetList(); }
+    std::vector<Block> &Blocks() { return p_ckt_->Blocks(); }
+    std::vector<Net> &Nets() { return p_ckt_->Nets(); }
 
     bool IsBoundaryProper();
     void SetBoundaryAuto();
@@ -92,36 +92,36 @@ class Placer {
 
     void UpdateAspectRatio();
     void NetSortBlkPin() {
-        DaliExpects(circuit_ != nullptr,
+        DaliExpects(p_ckt_ != nullptr,
                     "No input circuit specified, cannot modify any circuits!");
         GetCircuit()->NetSortBlkPin();
     }
     virtual bool StartPlacement();
 
     double WeightedHPWLX() {
-        DaliExpects(circuit_ != nullptr,
+        DaliExpects(p_ckt_ != nullptr,
                     "No input circuit specified, cannot compute WeightedHPWLX!");
         return GetCircuit()->WeightedHPWLX();
     }
     double WeightedHPWLY() {
-        DaliExpects(circuit_ != nullptr,
+        DaliExpects(p_ckt_ != nullptr,
                     "No input circuit specified, cannot compute WeightedHPWLY!");
         return GetCircuit()->WeightedHPWLY();
     }
     double WeightedHPWL() {
-        DaliExpects(circuit_ != nullptr,
+        DaliExpects(p_ckt_ != nullptr,
                     "No input circuit specified, cannot compute HPWL!");
         return GetCircuit()->WeightedHPWL();
     }
 
     void ReportHPWL() {
-        DaliExpects(circuit_ != nullptr,
+        DaliExpects(p_ckt_ != nullptr,
                     "No input circuit specified, cannot compute HPWL!");
-        circuit_->ReportHPWL();
+        p_ckt_->ReportHPWL();
     }
 
     void ReportHPWLCtoC() {
-        DaliExpects(circuit_ != nullptr,
+        DaliExpects(p_ckt_ != nullptr,
                     "No input circuit specified, cannot compute HPWLCtoC!");
         GetCircuit()->ReportHPWLCtoC();
     }
@@ -132,13 +132,13 @@ class Placer {
 
     /****File I/O member functions****/
     void GenMATLABTable(std::string const &name_of_file) {
-        circuit_->GenMATLABTable(name_of_file);
+        p_ckt_->GenMATLABTable(name_of_file);
     }
     virtual void GenMATLABWellTable(
         std::string const &name_of_file,
         int well_emit_mode
     ) {
-        circuit_->GenMATLABWellTable(name_of_file);
+        p_ckt_->GenMATLABWellTable(name_of_file);
     }
     void GenMATLABScriptPlaced(std::string const &name_of_file = "block_net_list.m");
     bool SaveNodeTerminal(

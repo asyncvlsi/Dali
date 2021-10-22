@@ -95,8 +95,8 @@ class GPSimPL : public Placer {
     void LoadConf(std::string const &config_file) override;
 
     void SetEpsilon() {
-        width_epsilon_ = circuit_->AveMovBlkWidth() * epsilon_factor_;
-        height_epsilon_ = circuit_->AveMovBlkHeight() * epsilon_factor_;
+        width_epsilon_ = p_ckt_->AveMovBlkWidth() * epsilon_factor_;
+        height_epsilon_ = p_ckt_->AveMovBlkHeight() * epsilon_factor_;
     }
 
     double weight_modulation(

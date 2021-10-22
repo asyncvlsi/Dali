@@ -77,7 +77,7 @@ void LGTetrisEx::InitLegalizer() {
      * ****/
 
     if (!row_height_set_) {
-        row_height_ = circuit_->RowHeightGrid();
+        row_height_ = p_ckt_->RowHeightGrid();
     }
     tot_num_rows_ = (top_ - bottom_) / row_height_;
 
@@ -146,7 +146,7 @@ void LGTetrisEx::InitLegalizer() {
     }
 
     white_space_in_rows_.resize(tot_num_rows_);
-    int min_blk_width = int(circuit_->MinBlkWidth());
+    int min_blk_width = int(p_ckt_->MinBlkWidth());
     for (int i = 0; i < tot_num_rows_; ++i) {
         int len = int(intermediate_seg_rows[i].size());
         white_space_in_rows_[i].reserve(len / 2);
@@ -598,7 +598,7 @@ bool LGTetrisEx::LocalLegalizationLeft() {
 
         if (is_dump) {
             if (i % step == 0) {
-                circuit_->GenMATLABTable(
+                p_ckt_->GenMATLABTable(
                     "lg_result_" + std::to_string(dump_count) + ".txt");
                 ++dump_count;
             }
@@ -978,7 +978,7 @@ bool LGTetrisEx::LocalLegalizationRight() {
 
         if (is_dump) {
             if (i % step == 0) {
-                circuit_->GenMATLABTable(
+                p_ckt_->GenMATLABTable(
                     "lg_result_" + std::to_string(dump_count) + ".txt");
                 ++dump_count;
             }
@@ -1537,7 +1537,7 @@ double LGTetrisEx::EstimatedHPWL(Block &block, int x, int y) {
     double min_x = x;
     double min_y = y;
     double tot_hpwl = 0;
-    auto &net_list = *NetList();
+    auto &net_list = Nets();
     for (auto &net_num: block.NetList()) {
         auto &net = net_list[net_num];
         if (net.PinCnt() > 100) continue;
@@ -1647,7 +1647,7 @@ void LGTetrisEx::InitDispViewer() {
 
     // create a displacement viewer and reserve space
     displace_viewer_ = new DisplaceViewer<double>;
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     displace_viewer_->SetSize(block_list.size());
 
     // update location before legalization
@@ -1661,7 +1661,7 @@ void LGTetrisEx::GenDisplacement(std::string const &name_of_file) {
     if (!view_displacement_) return;
 
     // update displacement for each cell
-    std::vector<Block> &block_list = circuit_->Blocks();
+    std::vector<Block> &block_list = p_ckt_->Blocks();
     int counter = 0;
     for (auto &block: block_list) {
         displace_viewer_->SetXYFromDifference(counter++, block.X(), block.Y());

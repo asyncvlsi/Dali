@@ -24,6 +24,12 @@
 #include "status.h"
 #include "tech.h"
 
+namespace dali {
+
+struct CircuitConstants {
+    double normal_net_weight = 1.0;
+};
+
 /****
  * The class Circuit is an abstract of a circuit graph.
  * It contains two main parts:
@@ -48,9 +54,6 @@
  *  8. create well rect for macros
  * To know more detail about how to do this, take a look at comments in member function void InitializeFromDB().
  * ****/
-
-namespace dali {
-
 class Circuit {
     friend class Placer;
   public:
@@ -201,16 +204,10 @@ class Circuit {
     void CopyBlockType(Circuit &circuit);
 
     /************************************************
-     * End of APIs for LEF
-     * ************************************************/
-
-    /************************************************
      * The following APIs are for DEF
      * ************************************************/
 
-    /****API for DIE AREA
-     * These are DIEAREA section in DEF
-     * ****/
+    /**** APIs for DIE AREA ****/
     void SetUnitsDistanceMicrons(int distance_microns);
 
     int DistanceMicrons() const;
@@ -231,9 +228,7 @@ class Circuit {
 
     void SetListCapacity(int components_count, int pins_count, int nets_count);
 
-    /****API for Block
-     * These are COMPONENTS section in DEF
-     * ****/
+    /**** APIs for Block (COMPONENTS in DEF) ****/
     std::vector<Block> &Blocks();
 
     bool IsBlockExisting(std::string const &block_name);
@@ -256,9 +251,7 @@ class Circuit {
 
     void ReportBlockMap();
 
-    /****API for IOPIN
-     * These are PINS section in DEF
-     * ****/
+    /**** API for I/O pins (PINS in DEF) ****/
     std::vector<IoPin> &IoPins();
 
     bool IsIoPinExisting(std::string const &iopin_name);
@@ -278,27 +271,30 @@ class Circuit {
 
     void ReportIOPin();
 
-    /****API for Nets
-     * These are NETS section in DEF
-     * ****/
-    std::vector<Net> *getNetList();
+    /**** API for Nets (NETS in DEF) ****/
+    std::vector<Net> &Nets();
 
-    std::vector<Net> &NetListRef();
+    bool IsNetExisting(std::string const &net_name);
 
-    bool IsNetExist(std::string &net_name);
+    int GetNetId(std::string const &net_name);
 
-    int NetIndex(std::string &net_name);
+    Net *GetNetPtr(std::string const &net_name);
 
-    Net *getNetPtr(std::string &net_name);
+    Net *AddNet(
+        std::string const &net_name,
+        int capacity,
+        double weight = -1
+    );
 
-    Net *AddNet(std::string &net_name, int capacity, double weight = 1);
-
-    void AddIOPinToNet(std::string &iopin_name, std::string &net_name);
+    void AddIoPinToNet(
+        std::string const &iopin_name,
+        std::string const &net_name
+    );
 
     void AddBlkPinToNet(
-        std::string &blk_name,
-        std::string &pin_name,
-        std::string &net_name
+        std::string const &blk_name,
+        std::string const &pin_name,
+        std::string const &net_name
     );
 
     void ReportNetList();
@@ -311,15 +307,12 @@ class Circuit {
 
     void ReportNetFanoutHistogram();
 
-    /************************************************
-     * End of API for DEF
-     * ************************************************/
     void ReportBriefSummary() const;
 
     /************************************************
      * The following APIs are for in CELL
      * ************************************************/
-    void SetNWellParams(
+    void SetNwellParams(
         double width,
         double spacing,
         double op_spacing,
@@ -327,7 +320,7 @@ class Circuit {
         double overhang
     );
 
-    void SetPWellParams(
+    void SetPwellParams(
         double width,
         double spacing,
         double op_spacing,
@@ -337,11 +330,11 @@ class Circuit {
 
     void SetLegalizerSpacing(double same_spacing, double any_spacing);
 
-    BlockTypeWell *AddBlockTypeWell(std::string &blk_type_name);
+    BlockTypeWell *AddBlockTypeWell(std::string const &blk_type_name);
 
-    void setWellRect(
-        std::string &blk_type_name,
-        bool is_N,
+    void SetWellRect(
+        std::string const &blk_type_name,
+        bool is_nwell,
         double lx,
         double ly,
         double ux,
@@ -350,7 +343,7 @@ class Circuit {
 
     void ReportWellShape();
 
-    /****member functions to obtain some useful values****/
+    /**** Functions to get useful values ****/
     int MinBlkWidth() const;
 
     int MaxBlkWidth() const;
@@ -361,9 +354,9 @@ class Circuit {
 
     long int TotBlkArea() const;
 
-    int TotBlkCount() const;
+    int TotBlkCnt() const;
 
-    int TotMovableBlockCount() const;
+    int TotMovBlkCnt() const;
 
     int TotFixedBlkCnt() const;
 
@@ -381,7 +374,7 @@ class Circuit {
 
     double WhiteSpaceUsage() const;
 
-    /****Utility member functions****/
+    /**** Utility member functions ****/
     void BuildBlkPairNets();
 
     void NetSortBlkPin();
@@ -398,8 +391,7 @@ class Circuit {
 
     void ReportHPWLHistogramLogarithm(int bin_num = 10);
 
-    void SaveOptimalRegionDistance(
-        std::string file_name = "optimal_region_distance.txt");
+    void SaveOptimalRegionDistance(std::string file_name = "optimal_region_distance.txt");
 
     double HPWLCtoCX();
 
@@ -409,7 +401,7 @@ class Circuit {
 
     void ReportHPWLCtoC();
 
-    /****save placement results to various file formats****/
+    /**** Save placement results to various file formats ****/
     void GenMATLABTable(
         std::string const &name_of_file = "block.txt",
         bool only_well_tap = false
@@ -438,7 +430,7 @@ class Circuit {
         int save_net
     );
 
-    void SaveIODefFile(
+    void SaveIoDefFile(
         std::string const &name_of_file,
         std::string const &def_file_name
     );
@@ -449,7 +441,7 @@ class Circuit {
         bool is_no_normal_cell = true
     );
 
-    void SaveDefPPNPWell(
+    void SaveDefPpnpWell(
         std::string const &name_of_file,
         std::string const &def_file_name
     );
@@ -459,7 +451,7 @@ class Circuit {
         std::string const &def_file_name
     );
 
-    /****some Bookshelf IO APIs****/
+    /**** Save results in Bookshelf formats ****/
     void SaveBookshelfNode(std::string const &name_of_file);
 
     void SaveBookshelfNet(std::string const &name_of_file);
@@ -478,6 +470,7 @@ class Circuit {
     Tech tech_; // information in LEF and CELL
     Design design_; // information in DEF
     phydb::PhyDB *phy_db_ptr_;
+    CircuitConstants constants_;
 
     void LoadImaginaryCellFile();
 
