@@ -44,7 +44,7 @@ class Placer {
     virtual void SetInputCircuit(Circuit *circuit) {
         DaliExpects(circuit != nullptr,
                     "Invalid input circuit: not allowed to set nullptr as an input!");
-        if (circuit->getBlockList()->empty()) {
+        if (circuit->Blocks().empty()) {
             BOOST_LOG_TRIVIAL(info)
                 << "Invalid input circuit: empty block list, nothing to place!\n";
             return;
@@ -74,7 +74,7 @@ class Placer {
         filling_rate_ = 1. / ratio;
     }
 
-    std::vector<Block> *BlockList() { return circuit_->getBlockList(); }
+    std::vector<Block> &Blocks() { return circuit_->Blocks(); }
     std::vector<Net> *NetList() { return circuit_->getNetList(); }
 
     bool IsBoundaryProper();

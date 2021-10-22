@@ -203,9 +203,9 @@ bool IoPlacer::PlaceIoPin(std::string &iopin_name,
     );
 
     // check if this IOPIN is in Dali::Circuit or not (it should)
-    bool is_iopin_existing_dali = circuit_ptr_->IsIOPinExist(iopin_name);
+    bool is_iopin_existing_dali = circuit_ptr_->IsIoPinExisting(iopin_name);
     DaliExpects(is_iopin_existing_dali, "IOPIN in PhyDB but not in Dali?");
-    IoPin *iopin_ptr_dali = circuit_ptr_->getIOPin(iopin_name);
+    IoPin *iopin_ptr_dali = circuit_ptr_->GetIoPinPtr(iopin_name);
 
     // set IOPIN placement status in Dali
     iopin_ptr_dali->SetLoc(circuit_ptr_->LocPhydb2DaliX(loc_x),
@@ -402,7 +402,7 @@ bool IoPlacer::BuildResourceMap() {
         NUM_OF_PLACE_BOUNDARY,
         std::vector<Seg<double>>(0)
     ); // TODO: carry layer info
-    for (auto &iopin: *(circuit_ptr_->getIOPinList())) {
+    for (auto &iopin: circuit_ptr_->IoPins()) {
         if (iopin.IsPrePlaced()) {
             double spacing = iopin.LayerPtr()->Spacing();
             if (iopin.X() == circuit_ptr_->design().RegionLeft()) {
@@ -490,7 +490,7 @@ bool IoPlacer::BuildResourceMap() {
 }
 
 bool IoPlacer::AssignIoPinToBoundaryLayers() {
-    for (auto &iopin: *(circuit_ptr_->getIOPinList())) {
+    for (auto &iopin: circuit_ptr_->IoPins()) {
         // do nothing for placed IOPINs
         if (iopin.IsPrePlaced()) continue;
 

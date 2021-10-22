@@ -392,7 +392,7 @@ std::string Dali::CreateDetailedPlacementAndLegalizationScript(std::string &engi
 void Dali::ExportOrdinaryComponentsToPhyDB() {
     double factor_x = circuit_.DistanceMicrons() * circuit_.GridValueX();
     double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
-    for (auto &block: circuit_.BlockListRef()) {
+    for (auto &block: circuit_.Blocks()) {
         if (block.TypePtr() == circuit_.tech().IoDummyBlkTypePtr()) {
             // skip dummy cells for I/O pins
             continue;

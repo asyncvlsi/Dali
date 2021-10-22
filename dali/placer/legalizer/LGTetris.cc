@@ -11,7 +11,7 @@ namespace dali {
 TetrisLegalizer::TetrisLegalizer() : Placer(), max_iteration_(5), current_iteration_(0), flipped_(false) {}
 
 void TetrisLegalizer::InitLegalizer() {
-  std::vector<Block> &block_list = *BlockList();
+  std::vector<Block> &block_list = Blocks();
   IndexLocPair<double> init_pair(0, 0, 0);
   index_loc_list_.resize(block_list.size(), init_pair);
 }
@@ -35,7 +35,7 @@ void TetrisLegalizer::FastShift(int failure_point) {
    *    the bottom boundary of the bounding box will not be changed
    *    only the left boundary of the bounding box will be shifted to the right hand side of the block just placed
    * ****/
-  std::vector<Block> &block_list = *BlockList();
+  std::vector<Block> &block_list = Blocks();
   double bounding_left;
   if (failure_point == 0) {
     double bounding_bottom;
@@ -64,29 +64,29 @@ void TetrisLegalizer::FastShift(int failure_point) {
   }
 }
 
+/****
+ * flip_axis = (left_ + right_)/2;
+ * blk_x = block.X();
+ * flipped_x = -(blk_x - flip_axis) + flip_axis = 2*flip_axis - blk_x;
+ * flipped_llx = flipped_x - block.Width()/2.0
+ *             = 2*flip_axis - (block.X() + block.Width()/2.0)
+ *             = 2*flip_axis - block.URX()
+ *             = (left_ + right_) - block.URX()
+ *             = sum_left_right - block.URX()
+ * block.SetLLX(flipped_llx);
+ *
+ * ****/
 void TetrisLegalizer::FlipPlacement() {
-  /****
-   * flip_axis = (left_ + right_)/2;
-   * blk_x = block.X();
-   * flipped_x = -(blk_x - flip_axis) + flip_axis = 2*flip_axis - blk_x;
-   * flipped_llx = flipped_x - block.Width()/2.0
-   *             = 2*flip_axis - (block.X() + block.Width()/2.0)
-   *             = 2*flip_axis - block.URX()
-   *             = (left_ + right_) - block.URX()
-   *             = sum_left_right - block.URX()
-   * block.SetLLX(flipped_llx);
-   *
-   * ****/
   flipped_ = !flipped_;
   int sum_left_right = left_ + right_;
-  for (auto &block: *(GetCircuit()->getBlockList())) {
+  for (auto &block: Blocks()) {
       block.SetLLX(sum_left_right - block.URX());
   }
   //GenMATLABScript("flip_result.txt");
 }
 
 bool TetrisLegalizer::TetrisLegal() {
-  std::vector<Block> &block_list = *BlockList();
+  std::vector<Block> &block_list = Blocks();
   // 1. move all blocks into placement region
   /*for (auto &block: block_list) {
     if (block.LLX() < Left()) {

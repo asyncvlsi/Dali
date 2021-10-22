@@ -411,7 +411,7 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
     }
 }
 
-void Circuit::setDieArea(
+void Circuit::SetDieArea(
     int lower_x,
     int lower_y,
     int upper_x,
@@ -516,12 +516,12 @@ void Circuit::AddIoPinFromPhyDB(phydb::IOPin &iopin) {
 
     if (is_loc_set) {
         IoPin *pin =
-            AddIOPin(iopin_name, PLACED, sig_use, sig_dir, iopin_x, iopin_y);
+            AddIoPin(iopin_name, PLACED, sig_use, sig_dir, iopin_x, iopin_y);
         std::string layer_name = iopin.GetLayerName();
         MetalLayer *metal_layer = GetMetalLayerPtr(layer_name);
         pin->SetLayerPtr(metal_layer);
     } else {
-        AddIOPin(iopin_name, UNPLACED, sig_use, sig_dir);
+        AddIoPin(iopin_name, UNPLACED, sig_use, sig_dir);
     }
 }
 
@@ -537,7 +537,7 @@ void Circuit::LoadDesign(phydb::PhyDB *phy_db_ptr) {
 
     auto &nets = phy_db_design.GetNetsRef();
     int nets_count = (int) nets.size();
-    setListCapacity(components_count, pins_count, nets_count);
+    SetListCapacity(components_count, pins_count, nets_count);
 
     BOOST_LOG_TRIVIAL(info) << "components count: " << components_count << "\n";
     BOOST_LOG_TRIVIAL(info) << "pins count:       " << pins_count << "\n";
@@ -545,9 +545,9 @@ void Circuit::LoadDesign(phydb::PhyDB *phy_db_ptr) {
 
 
     // 2. load UNITS DISTANCE MICRONS and DIEAREA
-    setUnitsDistanceMicrons(phy_db_design.GetUnitsDistanceMicrons());
+    SetUnitsDistanceMicrons(phy_db_design.GetUnitsDistanceMicrons());
     auto die_area = phy_db_design.GetDieArea();
-    setDieArea(die_area.LLX(), die_area.LLY(), die_area.URX(), die_area.URY());
+    SetDieArea(die_area.LLX(), die_area.LLY(), die_area.URX(), die_area.URY());
 
     // 3. load all components
     for (auto &comp: components) {
@@ -788,7 +788,7 @@ bool Circuit::IsMetalLayerExisting(std::string const &metal_name) {
 }
 
 // get the index of a metal layer
-int Circuit::GetMetalLayerIndex(std::string const &metal_name) {
+int Circuit::GetMetalLayerId(std::string const &metal_name) {
     DaliExpects(IsMetalLayerExisting(metal_name),
                 "MetalLayer does not exist, cannot find it: " + metal_name);
     return tech_.metal_name_map_.find(metal_name)->second;
@@ -798,7 +798,7 @@ int Circuit::GetMetalLayerIndex(std::string const &metal_name) {
 MetalLayer *Circuit::GetMetalLayerPtr(std::string const &metal_name) {
     DaliExpects(IsMetalLayerExisting(metal_name),
                 "MetalLayer does not exist, cannot find it: " + metal_name);
-    return &tech_.metal_list_[GetMetalLayerIndex(metal_name)];
+    return &tech_.metal_list_[GetMetalLayerId(metal_name)];
 }
 
 // add a metal layer with name and size, unit in micron.
@@ -1146,7 +1146,7 @@ void Circuit::AddBlkTypePinRect(
     pin_ptr->AddRect(llx, lly, urx, ury);
 }
 
-void Circuit::setListCapacity(
+void Circuit::SetListCapacity(
     int components_count,
     int pins_count,
     int nets_count
@@ -1159,29 +1159,24 @@ void Circuit::setListCapacity(
     design_.nets_.reserve(nets_count);
 }
 
-// get the pointer to the block list.
-std::vector<Block> *Circuit::getBlockList() {
-    return &(design_.blocks_);
-}
-
-std::vector<Block> &Circuit::BlockListRef() {
+std::vector<Block> &Circuit::Blocks() {
     return design_.blocks_;
 }
 
 // check if a block with the given name exists or not.
-bool Circuit::IsBlockExist(std::string &block_name) {
+bool Circuit::IsBlockExisting(std::string const &block_name) {
     return !(design_.blk_name_id_map_.find(block_name)
         == design_.blk_name_id_map_.end());
 }
 
 // returns the index of a block with a given name. Users must guarantee the given name is valid.
-int Circuit::BlockIndex(std::string &block_name) {
+int Circuit::GetBlockId(std::string const &block_name) {
     return design_.blk_name_id_map_.find(block_name)->second;
 }
 
 // returns a pointer to the block with a given name. Users must guarantee the given name is valid.
-Block *Circuit::getBlockPtr(std::string &block_name) {
-    return &design_.blocks_[BlockIndex(block_name)];
+Block *Circuit::GetBlockPtr(std::string const &block_name) {
+    return &design_.blocks_[GetBlockId(block_name)];
 }
 
 // report the whole BlockType list for debugging purposes.
@@ -1214,7 +1209,7 @@ void Circuit::CopyBlockType(Circuit &circuit) {
 }
 
 // set DEF UNITS DISTANCE MICRONS
-void Circuit::setUnitsDistanceMicrons(int distance_microns) {
+void Circuit::SetUnitsDistanceMicrons(int distance_microns) {
     DaliExpects(distance_microns > 0, "Negative distance micron?");
     design_.distance_microns_ = distance_microns;
 }
@@ -1226,7 +1221,7 @@ int Circuit::DistanceMicrons() const {
 
 // create a block instance using a pointer to its type
 void Circuit::AddBlock(
-    std::string &block_name,
+    std::string const &block_name,
     BlockType *block_type_ptr,
     double llx,
     double lly,
@@ -1238,7 +1233,7 @@ void Circuit::AddBlock(
                 "Cannot add new Block, because net_list now is not empty");
     DaliExpects(design_.blocks_.size() < design_.blocks_.capacity(),
                 "Cannot add new Block, because block list is full");
-    DaliExpects(!IsBlockExist(block_name),
+    DaliExpects(!IsBlockExisting(block_name),
                 "Block exists, cannot create this block again: " + block_name);
     int map_size = design_.blk_name_id_map_.size();
     auto ret = design_.blk_name_id_map_.insert(std::pair<std::string, int>(
@@ -1284,8 +1279,8 @@ void Circuit::AddBlock(
 
 // create a block instance using the name of its type
 void Circuit::AddBlock(
-    std::string &block_name,
-    std::string &block_type_name,
+    std::string const &block_name,
+    std::string const &block_type_name,
     double llx,
     double lly,
     PlaceStatus place_status,
@@ -1316,10 +1311,10 @@ void Circuit::AddDummyIOPinBlockType() {
 }
 
 // add an unplaced IOPin.
-IoPin *Circuit::AddUnplacedIOPin(std::string &iopin_name) {
+IoPin *Circuit::AddUnplacedIOPin(std::string const &iopin_name) {
     DaliExpects(design_.nets_.empty(),
                 "Cannot add new IOPIN, because net_list now is not empty");
-    DaliExpects(!IsIOPinExist(iopin_name),
+    DaliExpects(!IsIoPinExisting(iopin_name),
                 "IOPin exists, cannot create this IOPin again: " + iopin_name);
     int map_size = design_.iopin_name_id_map_.size();
     auto ret = design_.iopin_name_id_map_.insert(
@@ -1331,10 +1326,14 @@ IoPin *Circuit::AddUnplacedIOPin(std::string &iopin_name) {
 }
 
 // add a placed IOPin.
-IoPin *Circuit::AddPlacedIOPin(std::string &iopin_name, double lx, double ly) {
+IoPin *Circuit::AddPlacedIOPin(
+    std::string const &iopin_name,
+    double lx,
+    double ly
+) {
     DaliExpects(design_.nets_.empty(),
                 "Cannot add new IOPIN, because net_list now is not empty");
-    DaliExpects(!IsIOPinExist(iopin_name),
+    DaliExpects(!IsIoPinExisting(iopin_name),
                 "IOPin exists, cannot create this IOPin again: " + iopin_name);
     int map_size = (int) design_.iopin_name_id_map_.size();
     auto ret = design_.iopin_name_id_map_.insert(
@@ -1353,29 +1352,29 @@ IoPin *Circuit::AddPlacedIOPin(std::string &iopin_name, double lx, double ly) {
 }
 
 // get the pointer to the IOPin list.
-std::vector<IoPin> *Circuit::getIOPinList() {
-    return &(design_.iopins_);
+std::vector<IoPin> &Circuit::IoPins() {
+    return design_.iopins_;
 }
 
 // check if an IOPin with a given name exists or not.
-bool Circuit::IsIOPinExist(std::string &iopin_name) {
+bool Circuit::IsIoPinExisting(std::string const &iopin_name) {
     return !(design_.iopin_name_id_map_.find(iopin_name)
         == design_.iopin_name_id_map_.end());
 }
 
 // returns the index of the IOPin with a given name. Users must guarantee the given name is valid.
-int Circuit::IOPinIndex(std::string &iopin_name) {
+int Circuit::GetIoPinId(std::string const &iopin_name) {
     return design_.iopin_name_id_map_.find(iopin_name)->second;
 }
 
 // returns a pointer to the IOPin with a given name. Users must guarantee the given name is valid.
-IoPin *Circuit::getIOPin(std::string &iopin_name) {
-    return &design_.iopins_[IOPinIndex(iopin_name)];
+IoPin *Circuit::GetIoPinPtr(std::string const &iopin_name) {
+    return &design_.iopins_[GetIoPinId(iopin_name)];
 }
 
 // add an INPin
-IoPin *Circuit::AddIOPin(
-    std::string &iopin_name,
+IoPin *Circuit::AddIoPin(
+    std::string const &iopin_name,
     PlaceStatus place_status,
     SignalUse signal_use,
     SignalDirection signal_direction,
@@ -1451,12 +1450,12 @@ Net *Circuit::AddNet(std::string &net_name, int capacity, double weight) {
 
 // add a IOPin to a net.
 void Circuit::AddIOPinToNet(std::string &iopin_name, std::string &net_name) {
-    IoPin *iopin = getIOPin(iopin_name);
+    IoPin *iopin = GetIoPinPtr(iopin_name);
     Net *io_net = getNetPtr(net_name);
     iopin->SetNetPtr(io_net);
     io_net->AddIoPin(iopin);
     if (iopin->IsPrePlaced()) {
-        Block *blk_ptr = getBlockPtr(iopin_name);
+        Block *blk_ptr = GetBlockPtr(iopin_name);
         Pin *pin = &(blk_ptr->TypePtr()->PinList()[0]);
         io_net->AddBlockPinPair(blk_ptr, pin);
     }
@@ -1468,7 +1467,7 @@ void Circuit::AddBlkPinToNet(
     std::string &pin_name,
     std::string &net_name
 ) {
-    Block *blk_ptr = getBlockPtr(blk_name);
+    Block *blk_ptr = GetBlockPtr(blk_name);
     Pin *pin = blk_ptr->TypePtr()->GetPinPtr(pin_name);
     Net *net = getNetPtr(net_name);
     net->AddBlockPinPair(blk_ptr, pin);
@@ -3130,13 +3129,13 @@ void Circuit::LoadBookshelfPl(std::string const &name_of_file) {
         getline(ist, line);
         StrTokenize(line, res);
         if (res.size() >= 4) {
-            if (IsBlockExist(res[0])) {
+            if (IsBlockExisting(res[0])) {
                 try {
                     lx = std::stod(res[1]) / GridValueX()
                         / design_.distance_microns_;
                     ly = std::stod(res[2]) / GridValueY()
                         / design_.distance_microns_;
-                    getBlockPtr(res[0])->SetLoc(lx, ly);
+                    GetBlockPtr(res[0])->SetLoc(lx, ly);
                 } catch (...) {
                     DaliExpects(false, "Invalid stod conversion:\n\t" + line);
                 }

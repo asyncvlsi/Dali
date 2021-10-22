@@ -152,7 +152,7 @@ void Placer::GenMATLABScriptPlaced(std::string const &name_of_file) {
     ost << RegionLeft() << " " << RegionBottom() << " "
         << RegionRight() - RegionLeft() << " "
         << RegionTop() - RegionBottom() << "\n";
-    for (auto &block: *BlockList()) {
+    for (auto &block: Blocks()) {
         if (block.IsPlaced()) {
             ost << block.LLX() << " " << block.LLY() << " " << block.Width()
                 << " " << block.Height() << "\n";
@@ -161,13 +161,15 @@ void Placer::GenMATLABScriptPlaced(std::string const &name_of_file) {
     ost.close();
 }
 
-bool Placer::SaveNodeTerminal(std::string const &terminal_file,
-                              std::string const &node_file) {
+bool Placer::SaveNodeTerminal(
+    std::string const &terminal_file,
+    std::string const &node_file
+) {
     std::ofstream ost(terminal_file.c_str());
     std::ofstream ost1(node_file.c_str());
     DaliExpects(ost.is_open() && ost1.is_open(),
                 "Cannot open file " + terminal_file + " or " + node_file);
-    for (auto &block: *BlockList()) {
+    for (auto &block: Blocks()) {
         if (block.IsMovable()) {
             ost1 << block.X() << "\t" << block.Y() << "\n";
         } else {
@@ -207,9 +209,9 @@ void Placer::SaveDEFFile(std::string const &name_of_file) {
     // no tracks?
 
     // 2. print component
-    BOOST_LOG_TRIVIAL(info) << BlockList()->size() << "\n";
-    ost << "COMPONENTS " << BlockList()->size() << " ;\n";
-    for (auto &block: *BlockList()) {
+    BOOST_LOG_TRIVIAL(info) << Blocks().size() << "\n";
+    ost << "COMPONENTS " << Blocks().size() << " ;\n";
+    for (auto &block: Blocks()) {
         ost << "- "
             << block.Name() << " "
             << block.TypeName() << " + "
@@ -280,7 +282,7 @@ void Placer::SanityCheck() {
 }
 
 void Placer::UpdateMovableBlkPlacementStatus() {
-    for (auto &blk: *BlockList()) {
+    for (auto &blk: Blocks()) {
         if (blk.IsMovable()) {
             blk.SetPlacementStatus(PLACED);
         }
@@ -288,13 +290,13 @@ void Placer::UpdateMovableBlkPlacementStatus() {
 }
 
 void Placer::ShiftX(double shift_x) {
-    for (auto &block: *BlockList()) {
+    for (auto &block: Blocks()) {
         block.IncreaseX(shift_x);
     }
 }
 
 void Placer::ShiftY(double shift_y) {
-    for (auto &block: *BlockList()) {
+    for (auto &block: Blocks()) {
         block.IncreaseY(shift_y);
     }
 }

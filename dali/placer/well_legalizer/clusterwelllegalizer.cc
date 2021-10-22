@@ -157,7 +157,7 @@ void ClusterWellLegalizer::ClusterBlocks() {
     cluster_set_.clear();
     cluster_loc_list_.clear();
 
-    std::vector<Block> &block_list = *BlockList();
+    std::vector<Block> &block_list = Blocks();
 
     int sz = index_loc_list_.size();
     for (int i = 0; i < sz; ++i) {

@@ -41,7 +41,7 @@ void StdClusterWellLegalizer::LoadConf(std::string const &config_file) {
 }
 
 void StdClusterWellLegalizer::CheckWellExistence() {
-    for (auto &blk: *(circuit_->getBlockList())) {
+    for (auto &blk: Blocks()) {
         if (blk.IsMovable()) {
             DaliExpects(blk.TypePtr()->WellPtr() != nullptr,
                         "Cannot find well info for cell: " + blk.Name());
@@ -59,7 +59,7 @@ void StdClusterWellLegalizer::DetectAvailSpace() {
     macro_segments.resize(tot_num_rows_);
     std::vector<int> tmp(2, 0);
     bool out_of_range;
-    for (auto &block: *BlockList()) {
+    for (auto &block: Blocks()) {
         if (block.IsMovable()) continue;
         int ly = int(std::floor(block.LLY()));
         int uy = int(std::ceil(block.URY()));
@@ -243,7 +243,7 @@ void StdClusterWellLegalizer::DecomposeToSimpleStripe() {
 void StdClusterWellLegalizer::SaveInitialBlockLocation() {
     block_init_locations_.clear();
 
-    std::vector<Block> &block_list = circuit_->BlockListRef();
+    std::vector<Block> &block_list = circuit_->Blocks();
     block_init_locations_.reserve(block_list.size());
 
     for (auto &block: block_list) {
@@ -265,7 +265,7 @@ void StdClusterWellLegalizer::Initialize(int cluster_width) {
     DetectAvailSpace();
 
     max_cell_width_ = 0;
-    for (auto &blk: *BlockList()) {
+    for (auto &blk: Blocks()) {
         if (blk.IsMovable()) {
             max_cell_width_ = std::max(max_cell_width_, blk.Width());
         }
@@ -325,21 +325,21 @@ void StdClusterWellLegalizer::Initialize(int cluster_width) {
         << "Maximum possible number of clusters in a column: "
         << max_clusters_per_col << "\n";
 
-    index_loc_list_.resize(BlockList()->size());
+    index_loc_list_.resize(Blocks().size());
     // temporarily change left and right boundary to reserve space
 
 }
 
 void StdClusterWellLegalizer::AssignBlockToColBasedOnWhiteSpace() {
     // assign blocks to columns
-    int sz = (int) BlockList()->size();
+    std::vector<Block> &block_list = Blocks();
+    int sz = (int) block_list.size();
     std::vector<int> block_column_assign(sz, -1);
     for (int i = 0; i < tot_col_num_; ++i) {
         col_list_[i].block_count_ = 0;
         col_list_[i].block_list_.clear();
     }
 
-    std::vector<Block> &block_list = *BlockList();
     for (int i = 0; i < sz; ++i) {
         if (block_list[i].IsFixed()) continue;
         int col_num = LocToCol((int) std::round(block_list[i].X()));
@@ -1228,7 +1228,7 @@ void StdClusterWellLegalizer::InsertWellTap() {
 }
 
 void StdClusterWellLegalizer::ClearCachedData() {
-    for (auto &block: circuit_->BlockListRef()) {
+    for (auto &block: circuit_->Blocks()) {
         block.SetOrient(N);
     }
 
@@ -2264,7 +2264,7 @@ void StdClusterWellLegalizer::PlotAvailSpace(std::string const &name_of_file) {
         }
     }
 
-    for (auto &block: *BlockList()) {
+    for (auto &block: Blocks()) {
         if (block.IsMovable()) continue;
         ost << block.LLX() << "\t"
             << block.URX() << "\t"
@@ -2313,7 +2313,7 @@ void StdClusterWellLegalizer::PlotAvailSpaceInCols(std::string const &name_of_fi
         }
     }
 
-    for (auto &block: *BlockList()) {
+    for (auto &block: Blocks()) {
         if (block.IsMovable()) continue;
         ost << block.LLX() << "\t"
             << block.URX() << "\t"
@@ -2359,7 +2359,7 @@ void StdClusterWellLegalizer::PlotSimpleStripes(std::string const &name_of_file)
         }
     }
 
-    for (auto &block: *BlockList()) {
+    for (auto &block: Blocks()) {
         if (block.IsMovable()) continue;
         ost << block.LLX() << "\t"
             << block.URX() << "\t"

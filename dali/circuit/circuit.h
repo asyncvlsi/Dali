@@ -122,7 +122,7 @@ class Circuit {
 
     bool IsMetalLayerExisting(std::string const &metal_name);
 
-    int GetMetalLayerIndex(std::string const &metal_name);
+    int GetMetalLayerId(std::string const &metal_name);
 
     MetalLayer *GetMetalLayerPtr(std::string const &metal_name);
 
@@ -211,11 +211,11 @@ class Circuit {
     /****API for DIE AREA
      * These are DIEAREA section in DEF
      * ****/
-    void setUnitsDistanceMicrons(int distance_microns);
+    void SetUnitsDistanceMicrons(int distance_microns);
 
     int DistanceMicrons() const;
 
-    void setDieArea(int lower_x, int lower_y, int upper_x, int upper_y);
+    void SetDieArea(int lower_x, int lower_y, int upper_x, int upper_y);
 
     int RegionLLX() const;
 
@@ -229,24 +229,22 @@ class Circuit {
 
     int RegionHeight() const;
 
-    void setListCapacity(int components_count, int pins_count, int nets_count);
+    void SetListCapacity(int components_count, int pins_count, int nets_count);
 
     /****API for Block
      * These are COMPONENTS section in DEF
      * ****/
-    std::vector<Block> *getBlockList();
+    std::vector<Block> &Blocks();
 
-    std::vector<Block> &BlockListRef();
+    bool IsBlockExisting(std::string const &block_name);
 
-    bool IsBlockExist(std::string &block_name);
+    int GetBlockId(std::string const &block_name);
 
-    int BlockIndex(std::string &block_name);
-
-    Block *getBlockPtr(std::string &block_name);
+    Block *GetBlockPtr(std::string const &block_name);
 
     void AddBlock(
-        std::string &block_name,
-        std::string &block_type_name,
+        std::string const &block_name,
+        std::string const &block_type_name,
         double llx = 0,
         double lly = 0,
         PlaceStatus place_status = UNPLACED,
@@ -261,16 +259,16 @@ class Circuit {
     /****API for IOPIN
      * These are PINS section in DEF
      * ****/
-    std::vector<IoPin> *getIOPinList();
+    std::vector<IoPin> &IoPins();
 
-    bool IsIOPinExist(std::string &iopin_name);
+    bool IsIoPinExisting(std::string const &iopin_name);
 
-    int IOPinIndex(std::string &iopin_name);
+    int GetIoPinId(std::string const &iopin_name);
 
-    IoPin *getIOPin(std::string &iopin_name);
+    IoPin *GetIoPinPtr(std::string const &iopin_name);
 
-    IoPin *AddIOPin(
-        std::string &iopin_name,
+    IoPin *AddIoPin(
+        std::string const &iopin_name,
         PlaceStatus place_status,
         SignalUse signal_use,
         SignalDirection signal_direction,
@@ -508,7 +506,7 @@ class Circuit {
     void SetBoundary(int left, int bottom, int right, int top);
 
     void AddBlock(
-        std::string &block_name,
+        std::string const &block_name,
         BlockType *block_type_ptr,
         double llx = 0,
         double lly = 0,
@@ -519,9 +517,9 @@ class Circuit {
 
     void AddDummyIOPinBlockType();
 
-    IoPin *AddUnplacedIOPin(std::string &iopin_name);
+    IoPin *AddUnplacedIOPin(std::string const &iopin_name);
 
-    IoPin *AddPlacedIOPin(std::string &iopin_name, double lx, double ly);
+    IoPin *AddPlacedIOPin(std::string const &iopin_name, double lx, double ly);
 
     BlockTypeWell *AddBlockTypeWell(BlockType *blk_type);
 

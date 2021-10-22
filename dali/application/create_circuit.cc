@@ -64,17 +64,17 @@ int main() {
   circuit.AddBlkTypePinRect(out_pin_ptr, out_lx, out_ly, out_ux, out_uy);
 
   // set DEF Units distance microns, which would be better the same as LEF database micron.
-  circuit.setUnitsDistanceMicrons(1000);
+  circuit.SetUnitsDistanceMicrons(1000);
 
   // set die area
   int die_left = 0.0 * circuit.DistanceMicrons();
   int die_bottom = 0.0 * circuit.DistanceMicrons();
   int die_right = 10.0 * circuit.DistanceMicrons();
   int die_top = 10.0 * circuit.DistanceMicrons();
-  circuit.setDieArea(die_left, die_bottom, die_right, die_top);
+    circuit.SetDieArea(die_left, die_bottom, die_right, die_top);
 
   // specify how many instances there are.
-  circuit.setListCapacity(2, 2, 3);
+    circuit.SetListCapacity(2, 2, 3);
 
   // add block instances
   std::string inv1_name = "inv1";
@@ -84,9 +84,9 @@ int main() {
 
   // add IOPIN
   std::string chip_in = "io_in";
-  circuit.AddIOPin(chip_in, UNPLACED, SIGNAL, INPUT, 0, 0);
+    circuit.AddIoPin(chip_in, UNPLACED, SIGNAL, INPUT, 0, 0);
   std::string chip_out = "io_out";
-  circuit.AddIOPin(chip_out, UNPLACED, SIGNAL, OUTPUT, 0, 0);
+    circuit.AddIoPin(chip_out, UNPLACED, SIGNAL, OUTPUT, 0, 0);
 
   // add net
   std::string net_in_name = "net_in";

@@ -44,7 +44,7 @@ void WellLegalizer::InitWellLegalizer() {
 
     InitLegalizer();
 
-    std::vector<Block> &block_list = *BlockList();
+    std::vector<Block> &block_list = Blocks();
     int sz = block_list.size();
     init_loc_.resize(sz);
     for (int i = 0; i < sz; ++i) {
@@ -581,7 +581,7 @@ bool WellLegalizer::WellLegalizationLeft() {
     int fail_count = 0;
     bool is_successful = true;
     block_contour_.assign(block_contour_.size(), left_);
-    std::vector<Block> &block_list = *BlockList();
+    std::vector<Block> &block_list = Blocks();
 
     int sz = index_loc_list_.size();
     for (int i = 0; i < sz; ++i) {
@@ -949,7 +949,7 @@ bool WellLegalizer::WellLegalizationRight() {
     int fail_count = 0;
     bool is_successful = true;
     block_contour_.assign(block_contour_.size(), right_);
-    std::vector<Block> &block_list = *BlockList();
+    std::vector<Block> &block_list = Blocks();
 
     int sz = index_loc_list_.size();
     for (int i = 0; i < sz; ++i) {
