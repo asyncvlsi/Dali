@@ -53,58 +53,7 @@ namespace dali {
 
 class Circuit {
     friend class Placer;
-
-private:
-    Tech tech_; // information in LEF and CELL
-    Design design_; // information in DEF
-    phydb::PhyDB *phy_db_ptr_;
-
-    void LoadImaginaryCellFile();
-
-    static double Residual(double x, double y);
-
-    BlockType *AddBlockTypeWithGridUnit(
-        std::string &block_type_name,
-        int width,
-        int height
-    );
-
-    BlockType *AddWellTapBlockTypeWithGridUnit(
-        std::string &block_type_name,
-        int width,
-        int height
-    );
-
-    MetalLayer *AddMetalLayer(
-        std::string &metal_name,
-        double width,
-        double spacing
-    );
-
-    MetalLayer *AddMetalLayer(std::string &metal_name);
-
-    void SetBoundary(int left, int bottom, int right, int top);
-
-    void AddBlock(
-        std::string &block_name,
-        BlockType *block_type_ptr,
-        double llx = 0,
-        double lly = 0,
-        PlaceStatus place_status = UNPLACED,
-        BlockOrient orient = N,
-        bool is_real_cel = true
-    );
-
-    void AddDummyIOPinBlockType();
-
-    IoPin *AddUnplacedIOPin(std::string &iopin_name);
-
-    IoPin *AddPlacedIOPin(std::string &iopin_name, double lx, double ly);
-
-    BlockTypeWell *AddBlockTypeWell(BlockType *blk_type);
-
-public:
-
+  public:
     Circuit();
 
     // lower triangle of the driver-load pair
@@ -115,85 +64,70 @@ public:
         boost::hash<std::pair<int, int>>
     > blk_pair_map_;
 
-    /****API to initialize circuit
-     * 2. from LEF/DEF directly using a naive parser
-     * ****/
-    void LoadTech(phydb::PhyDB *phy_db_ptr); // LEF
+    /**** API talking to PhyDB ****/
+    void InitializeFromPhyDB(phydb::PhyDB *phy_db_ptr);
+
+    void AddIoPinFromPhyDB(phydb::IOPin &iopin);
 
     int Micron2DatabaseUnit(double x);
 
     double DatabaseUnit2Micron(int x);
 
-    int DaliLoc2PhyDBLocX(double loc);
+    int LocDali2PhydbX(double loc);
 
-    int DaliLoc2PhyDBLocY(double loc);
+    int LocDali2PhydbY(double loc);
 
-    double PhyDBLoc2DaliLocX(int loc);
+    double LocPhydb2DaliX(int loc);
 
-    double PhyDBLoc2DaliLocY(int loc);
+    double LocPhydb2DaliY(int loc);
 
-    void AddIoPinFromPhyDB(phydb::IOPin &iopin);
+    /**** API to retrieve technology and design, this can be easily extended to support multiple techs and designs ****/
+    Tech &tech();
 
-    void LoadDesign(phydb::PhyDB *phy_db_ptr); // DEF
-
-    void LoadWell(phydb::PhyDB *phy_db_ptr); // CELL
-
-    void InitializeFromPhyDB(phydb::PhyDB *phy_db_ptr);
-
-    // simple CELL parser
-    void ReadCellFile(std::string const &name_of_file);
-
-    /****API to retrieve technology and design****/
-    Tech *getTech();
-
-    Tech &getTechRef();
-
-    Design *getDesign();
-
-    Design &getDesignRef();
+    Design &design();
 
     /************************************************
-     * The following APIs are for in LEF
+     * The following APIs are for information in LEF
      * ************************************************/
     /****API to set and get database unit****/
-    void setDatabaseMicron(int database_micron);
+    void SetDatabaseMicron(int database_micron);
 
     int DatabaseMicron() const;
 
-    void setManufacturingGrid(double manufacture_grid);
+    void SetManufacturingGrid(double manufacture_grid);
 
     double ManufacturingGrid() const;
 
     /****API to set grid value****/
     void SetGridValue(double grid_value_x, double grid_value_y);
 
-    void SetGridUsingMetalPitch();
+    void SetGridFromMetalPitch();
 
     double GridValueX() const;
 
     double GridValueY() const;
 
-    void setRowHeight(double row_height);
+    void SetRowHeight(double row_height);
 
-    double getDBRowHeight() const;
+    double RowHeightMicron() const;
 
-    int getINTRowHeight() const;
+    int RowHeightGrid() const;
 
     /****API to set metal layers: deprecated
      * now the metal layer information are all stored in openDB data structure
      * ****/
     std::vector<MetalLayer> &Metals();
 
-    std::unordered_map<std::string, int> *MetalNameMap();
+    std::unordered_map<std::string, int> &MetalNameMap();
 
-    bool IsMetalLayerExist(std::string &metal_name);
+    bool IsMetalLayerExisting(std::string const &metal_name);
 
-    int MetalLayerIndex(std::string &metal_name);
+    int GetMetalLayerIndex(std::string const &metal_name);
 
-    MetalLayer *getMetalLayerPtr(std::string &metal_name);
+    MetalLayer *GetMetalLayerPtr(std::string const &metal_name);
 
     void AddMetalLayer(
-        std::string &metal_name,
+        std::string const &metal_name,
         double width,
         double spacing,
         double min_area,
@@ -207,12 +141,12 @@ public:
     /****API for BlockType****/
     std::unordered_map<std::string, BlockType *> &BlockTypeMap();
 
-    bool IsBlockTypeExist(std::string &block_type_name);
+    bool IsBlockTypeExisting(std::string const &block_type_name);
 
-    BlockType *getBlockType(std::string &block_type_name);
+    BlockType *GetBlockTypePtr(std::string const &block_type_name);
 
     void BlockTypeSizeMicrometerToGridValue(
-        const std::string &block_type_name,
+        std::string const &block_type_name,
         double width,
         double height,
         int &gridded_width,
@@ -220,7 +154,7 @@ public:
     );
 
     BlockType *AddBlockType(
-        std::string &block_type_name,
+        std::string const &block_type_name,
         double width,
         double height
     );
@@ -228,26 +162,26 @@ public:
     void SetBlockTypeSize(BlockType *blk_type_ptr, double width, double height);
 
     BlockType *AddWellTapBlockType(
-        std::string &block_type_name,
+        std::string const &block_type_name,
         double width,
         double height
     );
 
     Pin *AddBlkTypePin(
-        std::string &block_type_name,
-        std::string &pin_name,
+        std::string const &block_type_name,
+        std::string const &pin_name,
         bool is_input
     );
 
     Pin *AddBlkTypePin(
         BlockType *blk_type_ptr,
-        std::string &pin_name,
+        std::string const &pin_name,
         bool is_input
     );
 
     void AddBlkTypePinRect(
-        std::string &block_type_name,
-        std::string &pin_name,
+        std::string const &block_type_name,
+        std::string const &pin_name,
         double llx,
         double lly,
         double urx,
@@ -418,18 +352,6 @@ public:
 
     void ReportWellShape();
 
-    /****API to add virtual nets for timing driven placement****/
-    /*
-    std::vector< Net > pseudo_net_list;
-    std::map<std::string, size_t> pseudo_net_name_map;
-    bool CreatePseudoNet(std::string &drive_blk, std::string &drive_pin, std::string &load_blk, std::string &load_pin, double weight = 1);
-    bool CreatePseudoNet(Block *drive_blk, int drive_pin, Block *load_blk, int load_pin, double weight = 1);
-    bool RemovePseudoNet(std::string &drive_blk, std::string &drive_pin, std::string &load_blk, std::string &load_pin);
-    bool RemovePseudoNet(Block *drive_blk, int drive_pin, Block *load_blk, int load_pin);
-    void RemoveAllPseudoNets();
-     */
-    // repulsive force can be created using an attractive force, a spring whose rest length in the current distance or even longer than the current distance
-
     /****member functions to obtain some useful values****/
     int MinBlkWidth() const;
 
@@ -553,6 +475,61 @@ public:
     void SaveBookshelfAux(std::string const &name_of_file);
 
     void LoadBookshelfPl(std::string const &name_of_file);
+
+  private:
+    Tech tech_; // information in LEF and CELL
+    Design design_; // information in DEF
+    phydb::PhyDB *phy_db_ptr_;
+
+    void LoadImaginaryCellFile();
+
+    static double Residual(double x, double y);
+
+    BlockType *AddBlockTypeWithGridUnit(
+        std::string const &block_type_name,
+        int width,
+        int height
+    );
+
+    BlockType *AddWellTapBlockTypeWithGridUnit(
+        std::string const &block_type_name,
+        int width,
+        int height
+    );
+
+    MetalLayer *AddMetalLayer(
+        std::string const &metal_name,
+        double width,
+        double spacing
+    );
+
+    MetalLayer *AddMetalLayer(std::string &metal_name);
+
+    void SetBoundary(int left, int bottom, int right, int top);
+
+    void AddBlock(
+        std::string &block_name,
+        BlockType *block_type_ptr,
+        double llx = 0,
+        double lly = 0,
+        PlaceStatus place_status = UNPLACED,
+        BlockOrient orient = N,
+        bool is_real_cel = true
+    );
+
+    void AddDummyIOPinBlockType();
+
+    IoPin *AddUnplacedIOPin(std::string &iopin_name);
+
+    IoPin *AddPlacedIOPin(std::string &iopin_name, double lx, double ly);
+
+    BlockTypeWell *AddBlockTypeWell(BlockType *blk_type);
+
+    void LoadTech(phydb::PhyDB *phy_db_ptr); // LEF
+
+    void LoadDesign(phydb::PhyDB *phy_db_ptr); // DEF
+
+    void LoadWell(phydb::PhyDB *phy_db_ptr); // CELL
 };
 
 }

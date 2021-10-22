@@ -26,8 +26,8 @@ int main() {
   Circuit circuit;
 
   // set database micron and manufacturing grid
-  circuit.setDatabaseMicron(1000);
-  circuit.setManufacturingGrid(0.001);
+    circuit.SetDatabaseMicron(1000);
+    circuit.SetManufacturingGrid(0.001);
 
   // set metal layer if you want to do IO Placement and use metal pitches as grid value
   std::string metal_layer_name;
@@ -38,7 +38,7 @@ int main() {
 
   // set grid value and row height
   circuit.SetGridValue(0.2, 0.2);
-  circuit.setRowHeight(0.2);
+    circuit.SetRowHeight(0.2);
 
   // add block type "NAND2"
   std::string inv_type_name = "INV2";

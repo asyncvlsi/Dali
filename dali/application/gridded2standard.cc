@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
     //circuit.ReadLefFile(lef_file_name);
 
     MetalLayer *hor_layer = nullptr;
-    for (auto &metal_layer: circuit.getTechRef().metal_list_) {
+    for (auto &metal_layer: circuit.Metals()) {
         if (metal_layer.Direction() == HORIZONTAL) {
             hor_layer = &metal_layer;
             BOOST_LOG_TRIVIAL(info) << "Horizontal metal layer is: "
@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
         }
     }
     std::vector<TypeLayerBBox> bbox_list;
-    bbox_list.reserve(circuit.getTechRef().block_type_map_.size());
+    bbox_list.reserve(circuit.BlockTypeMap().size());
     std::ifstream ist;
     ist.open(lef_file_name.c_str());
     DaliExpects(ist.is_open(), "Cannot open file " + lef_file_name);
@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
             StrTokenize(line, line_field);
             std::string type_name = line_field[1];
             std::string end_macro_flag = "END " + type_name;
-            BlockType *type = circuit.getBlockType(type_name);
+            BlockType *type = circuit.GetBlockTypePtr(type_name);
             double np_boundary =
                 type->WellPtr()->PnBoundary() * circuit.GridValueY();
             TypeLayerBBox type_bbox(type, np_boundary, np_boundary);
@@ -170,7 +170,7 @@ int main(int argc, char *argv[]) {
     double std_height = 0;
     for (auto &type_bbox: bbox_list) {
         BlockType *type = type_bbox.blk_type;
-        if (type == circuit.getTechRef().io_dummy_blk_type_ptr_) continue;
+        if (type == circuit.tech().IoDummyBlkTypePtr()) continue;
         double n_height = type->WellPtr()->Nheight() * circuit.GridValueY()
             + type_bbox.n_extra;
         double p_height = type->WellPtr()->Pheight() * circuit.GridValueY()
@@ -242,7 +242,7 @@ int main(int argc, char *argv[]) {
             DaliExpects(bbox_ptr != nullptr, "Cannot find type?");
 
             double type_p_height =
-                circuit.getBlockType(type_name)->WellPtr()->Pheight()
+                circuit.GetBlockTypePtr(type_name)->WellPtr()->Pheight()
                     * circuit.GridValueY();
             double height_diff = std_p_height - type_p_height;
             do {

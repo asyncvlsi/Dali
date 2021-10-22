@@ -3322,7 +3322,7 @@ void GPSimPL::DumpLookAheadDisplacement(
         DaliExpects(circuit_ != nullptr,
                     "Set input circuit before starting anything GPSimPL::DumpLookAheadDisplacement()");
         std::vector<Block> &block_list = circuit_->BlockListRef();
-        int sz = circuit_->getDesignRef().RealBlkCnt();
+        int sz = circuit_->design().RealBlkCnt();
         for (int i = 0; i < sz; ++i) {
             double x = x_anchor[i] + block_list[i].Width() / 2.0;
             double y = y_anchor[i] + +block_list[i].Height() / 2.0;
@@ -3344,7 +3344,7 @@ void GPSimPL::DumpLookAheadDisplacement(
                     "Set input circuit before starting anything GPSimPL::DumpLookAheadDisplacement()");
         double ave_height = circuit_->AveMovBlkHeight();
         std::vector<Block> &block_list = circuit_->BlockListRef();
-        int sz = circuit_->getDesignRef().RealBlkCnt();
+        int sz = circuit_->design().RealBlkCnt();
         for (int i = 0; i < sz; ++i) {
             double x = x_anchor[i] + block_list[i].Width() / 2.0;
             double y = y_anchor[i] + +block_list[i].Height() / 2.0;

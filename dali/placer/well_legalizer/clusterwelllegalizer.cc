@@ -28,7 +28,7 @@ void ClusterWellLegalizer::InitializeClusterLegalizer() {
     col_to_cluster_.resize(tot_num_cols_, nullptr);
 
     // parameters fetching
-    auto &tech_params = circuit_->getTechRef();
+    auto &tech_params = circuit_->tech();
     auto &n_well_layer = tech_params.NwellLayer();
     auto &p_well_layer = tech_params.PwellLayer();
     double grid_value_x = circuit_->GridValueX();
@@ -1047,7 +1047,7 @@ void ClusterWellLegalizer::ReportWellRule() {
         << "    MaxDist:     " << max_well_length << "\n"
         << "    (real):      "
         << std::floor(
-            circuit_->getTech()->NwellLayer().MaxPlugDist()
+            circuit_->tech().NwellLayer().MaxPlugDist()
                 / circuit_->GridValueX()) << "\n"
         << "    WellWidth:   " << well_min_width << "\n"
         << "    OverhangX:   " << well_extension_x << "\n"

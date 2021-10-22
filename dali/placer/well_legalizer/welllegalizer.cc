@@ -19,7 +19,7 @@ WellLegalizer::WellLegalizer() : LGTetrisEx() {
 void WellLegalizer::InitWellLegalizer() {
     DaliExpects(circuit_ != nullptr,
                 "Well Legalization fail: no input circuit!");
-    auto &tech = circuit_->getTechRef();
+    auto &tech = circuit_->tech();
     DaliExpects(tech.IsNwellSet(),
                 "Well Legalization fail: no N well parameters found!");
     DaliExpects(tech.IsPwellSet(),
