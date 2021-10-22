@@ -10,6 +10,9 @@
 
 namespace dali {
 
+// custom residual function, return: x - round(x/y) * y
+double Residual(double x, double y);
+
 // splits a line into many words
 void StrTokenize(std::string const &line, std::vector<std::string> &res);
 

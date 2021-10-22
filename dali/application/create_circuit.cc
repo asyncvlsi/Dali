@@ -26,7 +26,7 @@ int main() {
   Circuit circuit;
 
   // set database micron and manufacturing grid
-    circuit.SetDatabaseMicron(1000);
+    circuit.SetDatabaseMicrons(1000);
     circuit.SetManufacturingGrid(0.001);
 
   // set metal layer if you want to do IO Placement and use metal pitches as grid value

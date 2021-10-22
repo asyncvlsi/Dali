@@ -149,10 +149,11 @@ void GPSimPL::BlockLocCenterInit() {
 
 void GPSimPL::DriverLoadPairInit() {
     std::vector<BlkPairNets> &pair_list = p_ckt_->blk_pair_net_list_;
-    std::unordered_map<std::pair<int, int>,
-                       int,
-                       boost::hash<std::pair<int, int>>>
-        &pair_map = p_ckt_->blk_pair_map_;
+    std::unordered_map<
+        std::pair<int, int>,
+        int,
+        boost::hash<std::pair<int, int>>
+    > &pair_map = p_ckt_->blk_pair_map_;
     std::vector<Block> &block_list = p_ckt_->Blocks();
     int sz = block_list.size();
 

@@ -9,6 +9,10 @@
 
 namespace dali {
 
+double Residual(double x, double y) {
+    return x - std::round(x / y) * y;
+}
+
 void StrTokenize(std::string const &line, std::vector<std::string> &res) {
     static std::vector<char> delimiter_list{' ', ':', ';', '\t', '\r', '\n'};
 

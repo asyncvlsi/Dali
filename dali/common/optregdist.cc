@@ -75,7 +75,7 @@ void OptRegDist::FindOptimalRegionX(
     uy = loc_list_y[hi_index];
 }
 
-void OptRegDist::SaveFile(std::string &file_name) const {
+void OptRegDist::SaveFile(std::string const &file_name) const {
     BOOST_LOG_TRIVIAL(info) << "Writing optimal region distance file: "
                             << file_name;
     std::ofstream ost(file_name.c_str());

@@ -24,7 +24,7 @@ class OptRegDist {
         double &uy
     ) const;
 
-    void SaveFile(std::string &file_name) const;
+    void SaveFile(std::string const &file_name) const;
 };
 
 }
