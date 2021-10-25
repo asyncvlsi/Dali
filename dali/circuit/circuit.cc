@@ -2774,36 +2774,27 @@ void Circuit::LoadCell(phydb::PhyDB *phy_db_ptr) {
 
     for (auto &macro: phy_db_tech.GetMacrosRef()) {
         std::string macro_name(macro.GetName());
-        double width = macro.GetWidth();
-        double height = macro.GetHeight();
         phydb::MacroWell *macro_well = macro.GetWellPtr();
         DaliExpects(macro_well != nullptr,
                     "No well info provided for MACRO: " + macro_name);
-        BlockTypeWell *well = AddBlockTypeWell(macro_name);
+        AddBlockTypeWell(macro_name);
 
         auto *n_rect = macro_well->GetNwellRectPtr();
         auto *p_rect = macro_well->GetPwellRectPtr();
-        DaliExpects(n_rect != nullptr || p_rect != nullptr,
-                    "N/P-well geometries not provided for MACRO: "
-                        + macro_name);
+        if (n_rect == nullptr && p_rect == nullptr) {
+            DaliExpects(false, "N/P-well geometries not provided for MACRO: "
+                + macro_name);
+        }
         if (n_rect != nullptr) {
             SetWellRect(
-                macro_name,
-                true,
-                n_rect->LLX(),
-                n_rect->LLY(),
-                n_rect->URX(),
-                n_rect->URY()
+                macro_name, true, n_rect->LLX(),
+                n_rect->LLY(), n_rect->URX(), n_rect->URY()
             );
         }
         if (p_rect != nullptr) {
             SetWellRect(
-                macro_name,
-                false,
-                p_rect->LLX(),
-                p_rect->LLY(),
-                p_rect->URX(),
-                p_rect->URY()
+                macro_name, false, p_rect->LLX(),
+                p_rect->LLY(), p_rect->URX(), p_rect->URY()
             );
         }
     }

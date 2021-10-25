@@ -1267,8 +1267,9 @@ bool StdClusterWellLegalizer::WellLegalize() {
 }
 
 bool StdClusterWellLegalizer::StartPlacement() {
-    BOOST_LOG_TRIVIAL(info) << "---------------------------------------\n"
-                            << "Start Standard Cluster Well Legalization\n";
+    BOOST_LOG_TRIVIAL(info)
+        << "---------------------------------------\n"
+        << "Start Standard Cluster Well Legalization\n";
 
     double wall_time = get_wall_time();
     double cpu_time = get_cpu_time();
@@ -1319,14 +1320,16 @@ bool StdClusterWellLegalizer::StartPlacement() {
     top_ += 1;
 
     if (is_success) {
-        BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
-                                << "Standard Cluster Well Legalization complete!\n"
-                                << "\033[0m";
+        BOOST_LOG_TRIVIAL(info)
+            << "\033[0;36m"
+            << "Standard Cluster Well Legalization complete!\n"
+            << "\033[0m";
     } else {
-        BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
-                                << "Standard Cluster Well Legalization fail!\n"
-                                << "Please try lower density"
-                                << "\033[0m";
+        BOOST_LOG_TRIVIAL(info)
+            << "\033[0;36m"
+            << "Standard Cluster Well Legalization fail!\n"
+            << "Please try lower density"
+            << "\033[0m";
     }
     /****<----****/
 
@@ -2002,7 +2005,7 @@ void StdClusterWellLegalizer::EmitWellRect(std::string const &name_of_file,
         case 2:BOOST_LOG_TRIVIAL(info) << "emit P wells, ";
             break;
         default:DaliExpects(false,
-                            "Invalid value for well_emit_mode in StdClusterWellLegalizer::EmitDEFWellFile()");
+                            "Invalid value for well_emit_mode");
     }
 
     std::ofstream ost(name_of_file.c_str());
@@ -2072,7 +2075,7 @@ void StdClusterWellLegalizer::EmitWellRect(std::string const &name_of_file,
         }
     }
     ost.close();
-    BOOST_LOG_TRIVIAL(info) << ", done\n";
+    BOOST_LOG_TRIVIAL(info) << " done\n";
 }
 
 void StdClusterWellLegalizer::ExportWellToPhyDB(phydb::PhyDB *phydb_ptr,
@@ -2171,11 +2174,10 @@ void StdClusterWellLegalizer::ExportWellToPhyDB(phydb::PhyDB *phydb_ptr,
     }
 }
 
+/****
+ * Emits a rect file for power routing
+ * ****/
 void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
-    /****
-     * Emits a rect file for power routing
-     * ****/
-
     BOOST_LOG_TRIVIAL(info) << "Writing cluster rect file: " << name_of_file
                             << " for router, ";
     std::ofstream ost(name_of_file.c_str());
@@ -2230,7 +2232,7 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
         }
     }
     ost.close();
-    BOOST_LOG_TRIVIAL(info) << ", done\n";
+    BOOST_LOG_TRIVIAL(info) << " done\n";
 }
 
 void StdClusterWellLegalizer::PlotAvailSpace(std::string const &name_of_file) {

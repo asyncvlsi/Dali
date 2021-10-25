@@ -22,7 +22,7 @@ namespace dali {
  * 2. automatically place IOPINs after placement
  */
 class IoPlacer {
-    Circuit *circuit_ptr_ = nullptr;
+    Circuit *p_ckt_ = nullptr;
     phydb::PhyDB *phy_db_ptr_ = nullptr;
     std::vector<IoBoundarySpace> boundary_spaces_;
   public:

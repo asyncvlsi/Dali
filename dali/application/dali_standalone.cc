@@ -251,8 +251,15 @@ int main(int argc, char *argv[]) {
         delete well_legalizer;
         delete gb_placer;
     }
-    std::cout
-        << "I/O placement is skipped\n"; // TODO: reorganize IO placer and put it back!
+
+    auto *io_placer = new IoPlacer(&phy_db, &circuit);
+    bool is_ioplacer_config_success =
+        io_placer->ConfigSetGlobalMetalLayer(io_metal_layer);
+    DaliExpects(is_ioplacer_config_success,
+                "Cannot successfully configure I/O placer");
+    io_placer->AutoPlaceIoPin();
+    delete io_placer;
+
     circuit.SaveDefFile(output_name, "", def_file_name, 1, 1, 2, 1);
     circuit.SaveDefFile(output_name, "_io", def_file_name, 1, 1, 1, 1);
     circuit.SaveDefFile(output_name, "_filling", def_file_name, 1, 4, 2, 0);
@@ -284,7 +291,7 @@ void ReportUsage() {
         << "  -g/-grid    grid_value_x grid_value_y (optional, default metal1 and metal2 pitch values)\n"
         << "  -d/-density density (optional, value interval (0,1], default max(space_utility, 0.7))\n"
         << "  -nolegal    optional, if this flag is present, then only perform global placement\n"
-        << "  -iolayer    metal_layer_num (optional, default 1 for m1)\n"
+        << "  -iolayer    metal layer number for I/O placement (optional, default 1 for m1)\n"
         << "  -wlgmode    <scavenge/strict> determine whether the last column use unassigned space\n"
         << "  -v          verbosity_level (optional, 0-5, default 1)\n"
         << "(flag order does not matter)"

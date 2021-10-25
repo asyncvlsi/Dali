@@ -6,10 +6,12 @@
 
 namespace dali {
 
-IoPinCluster::IoPinCluster(bool is_horizontal_init,
-                           double boundary_loc_init,
-                           double lo_init,
-                           double span_init) :
+IoPinCluster::IoPinCluster(
+    bool is_horizontal_init,
+    double boundary_loc_init,
+    double lo_init,
+    double span_init
+) :
     is_horizontal(is_horizontal_init),
     boundary_loc(boundary_loc_init),
     low(lo_init),
@@ -31,11 +33,13 @@ double IoPinCluster::High() const {
 
 void IoPinCluster::UniformLegalize() {
     if (is_horizontal) {
-        std::sort(iopin_ptr_list.begin(),
-                  iopin_ptr_list.end(),
-                  [](const IoPin *lhs, const IoPin *rhs) {
-                      return (lhs->X() < rhs->X());
-                  });
+        std::sort(
+            iopin_ptr_list.begin(),
+            iopin_ptr_list.end(),
+            [](const IoPin *lhs, const IoPin *rhs) {
+                return (lhs->X() < rhs->X());
+            }
+        );
 
         double hi = low + span;
         int sz = (int) iopin_ptr_list.size();
@@ -45,11 +49,13 @@ void IoPinCluster::UniformLegalize() {
             iopin_ptr_list[i]->SetLoc(loc, boundary_loc, PLACED);
         }
     } else {
-        std::sort(iopin_ptr_list.begin(),
-                  iopin_ptr_list.end(),
-                  [](const IoPin *lhs, const IoPin *rhs) {
-                      return (lhs->Y() < rhs->Y());
-                  });
+        std::sort(
+            iopin_ptr_list.begin(),
+            iopin_ptr_list.end(),
+            [](const IoPin *lhs, const IoPin *rhs) {
+                return (lhs->Y() < rhs->Y());
+            }
+        );
 
         double hi = low + span;
         int sz = (int) iopin_ptr_list.size();
@@ -73,9 +79,11 @@ void IoPinCluster::Legalize() {
     }
 }
 
-IoBoundaryLayerSpace::IoBoundaryLayerSpace(bool is_horizontal_init,
-                                           double boundary_loc_init,
-                                           MetalLayer *metal_layer_init) :
+IoBoundaryLayerSpace::IoBoundaryLayerSpace(
+    bool is_horizontal_init,
+    double boundary_loc_init,
+    MetalLayer *metal_layer_init
+) :
     is_horizontal(is_horizontal_init),
     boundary_loc(boundary_loc_init),
     metal_layer(metal_layer_init) {}
