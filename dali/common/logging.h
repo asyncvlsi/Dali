@@ -70,9 +70,10 @@ inline void DaliExpects_(
 inline void DaliWarns(bool e, const std::string &warning_message) {
     if (e) {
         BOOST_LOG_TRIVIAL(warning)
+            << "\033[0;34m"
             << "WARNING:" << "\n"
             << "    " << warning_message
-            << std::endl;
+            << "\033[0m" << std::endl;
     }
 }
 

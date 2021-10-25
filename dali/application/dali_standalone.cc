@@ -35,6 +35,7 @@ int main(int argc, char *argv[]) {
     std::string str_x_grid;
     std::string str_y_grid;
     std::string log_file_name;
+    StripePartitionMode well_legalization_mode = STRICT;
     bool overwrite_logfile = false;
     bool is_no_legal = false;
     severity verbose_level = logging::trivial::info;
@@ -103,7 +104,6 @@ int main(int argc, char *argv[]) {
             }
         } else if (arg == "-v" && i < argc) {
             str_verbose_level = std::string(argv[i++]);
-            int tmp;
             try {
                 verbose_level = StrToLoggingLevel(str_verbose_level);
             } catch (...) {
@@ -111,7 +111,19 @@ int main(int argc, char *argv[]) {
                           << str_verbose_level
                           << "\n";
                 ReportUsage();
-                return 0;
+                return 1;
+            }
+        } else if (arg == "-wlgmode" && i < argc) {
+            std::string str_wlg_mode = std::string(argv[i++]);
+            if (str_wlg_mode == "scavenge") {
+                well_legalization_mode = SCAVENGE;
+            } else if (str_wlg_mode == "strict") {
+                well_legalization_mode = STRICT;
+            } else {
+                std::cout << "Unknown well legalization mode: "
+                          << str_wlg_mode << "\n";
+                ReportUsage();
+                return 1;
             }
         } else if (arg == "-overwrite") {
             overwrite_logfile = true;
@@ -227,7 +239,7 @@ int main(int argc, char *argv[]) {
 
         auto *well_legalizer = new StdClusterWellLegalizer;
         well_legalizer->TakeOver(gb_placer);
-        well_legalizer->SetStripePartitionMode(SCAVENGE);
+        well_legalizer->SetStripePartitionMode(well_legalization_mode);
         well_legalizer->StartPlacement();
         //well_legalizer->GenMATLABTable("sc_result.txt");
         //well_legalizer->GenMatlabClusterTable("sc_result");
@@ -239,7 +251,8 @@ int main(int argc, char *argv[]) {
         delete well_legalizer;
         delete gb_placer;
     }
-    std::cout << "I/O placement is skipped\n"; // TODO: reorganize IO placer and put it back!
+    std::cout
+        << "I/O placement is skipped\n"; // TODO: reorganize IO placer and put it back!
     circuit.SaveDefFile(output_name, "", def_file_name, 1, 1, 2, 1);
     circuit.SaveDefFile(output_name, "_io", def_file_name, 1, 1, 1, 1);
     circuit.SaveDefFile(output_name, "_filling", def_file_name, 1, 4, 2, 0);
@@ -272,6 +285,7 @@ void ReportUsage() {
         << "  -d/-density density (optional, value interval (0,1], default max(space_utility, 0.7))\n"
         << "  -nolegal    optional, if this flag is present, then only perform global placement\n"
         << "  -iolayer    metal_layer_num (optional, default 1 for m1)\n"
+        << "  -wlgmode    <scavenge/strict> determine whether the last column use unassigned space\n"
         << "  -v          verbosity_level (optional, 0-5, default 1)\n"
         << "(flag order does not matter)"
         << "\033[0m\n";

@@ -102,13 +102,13 @@ class StdClusterWellLegalizer : public Placer {
     }
 
     void DetectAvailSpace();
-    void FetchNPWellParams();
+    void FetchNpWellParams();
     void UpdateWhiteSpaceInCol(ClusterStripe &col);
     void DecomposeToSimpleStripe();
 
     void SaveInitialBlockLocation();
 
-    void Initialize(int cluster_width = 0);
+    void InitializeWellLegalizer(int cluster_width = 0);
 
     void AssignBlockToColBasedOnWhiteSpace();
 
@@ -158,12 +158,16 @@ class StdClusterWellLegalizer : public Placer {
 
     /****member function for file IO****/
     void GenMatlabClusterTable(std::string const &name_of_file);
-    void GenMATLABWellTable(std::string const &name_of_file,
-                            int well_emit_mode) override;
+    void GenMATLABWellTable(
+        std::string const &name_of_file,
+        int well_emit_mode
+    ) override;
     void GenPPNP(std::string const &name_of_file);
-    void EmitDEFWellFile(std::string const &name_of_file,
-                         int well_emit_mode,
-                         bool enable_emitting_cluster = true) override;
+    void EmitDEFWellFile(
+        std::string const &name_of_file,
+        int well_emit_mode,
+        bool enable_emitting_cluster = true
+    ) override;
     void EmitPPNPRect(std::string const &name_of_file);
     void ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr);
     void EmitWellRect(std::string const &name_of_file, int well_emit_mode);

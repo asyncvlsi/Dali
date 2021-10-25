@@ -30,7 +30,7 @@ void Circuit::InitializeFromPhyDB(phydb::PhyDB *phy_db_ptr) {
 
     LoadTech(phy_db_ptr);
     LoadDesign(phy_db_ptr);
-    LoadWell(phy_db_ptr);
+    LoadCell(phy_db_ptr);
 }
 
 int Circuit::Micron2DatabaseUnit(double x) const {
@@ -725,6 +725,28 @@ void Circuit::SetWellRect(
     double ux,
     double uy
 ) {
+    // check if well width is smaller than max_plug_distance
+    double width = ux - lx;
+    double max_plug_distance = 0;
+    if (is_nwell) {
+        DaliExpects(tech_.n_set_,
+                    "Nwell layer not found, cannot set well rect: "
+                        + blk_type_name);
+        max_plug_distance = tech_.nwell_layer_.MaxPlugDist();
+        DaliWarns(width > max_plug_distance,
+                  "BlockType has a Nwell wider than max_plug_distance, this may make well legalization fail: "
+                      + blk_type_name);
+    } else {
+        DaliExpects(tech_.p_set_,
+                    "Pwell layer not found, cannot set well rect: "
+                        + blk_type_name);
+        max_plug_distance = tech_.pwell_layer_.MaxPlugDist();
+        DaliWarns(width > max_plug_distance,
+                  "BlockType has a Pwell wider than max_plug_distance, this may make well legalization fail: "
+                      + blk_type_name);
+    }
+
+    // add well rect
     BlockType *blk_type_ptr = GetBlockTypePtr(blk_type_name);
     DaliExpects(blk_type_ptr != nullptr,
                 "Cannot find BlockType with name: " + blk_type_name);
@@ -732,6 +754,7 @@ void Circuit::SetWellRect(
     int ly_grid = int(std::round(ly / GridValueY()));
     int ux_grid = int(std::round(ux / GridValueX()));
     int uy_grid = int(std::round(uy / GridValueY()));
+
     BlockTypeWell *well = blk_type_ptr->WellPtr();
     DaliExpects(well != nullptr,
                 "Well uninitialized for BlockType: " + blk_type_name);
@@ -2718,7 +2741,7 @@ void Circuit::LoadDesign(phydb::PhyDB *phy_db_ptr) {
     }
 }
 
-void Circuit::LoadWell(phydb::PhyDB *phy_db_ptr) {
+void Circuit::LoadCell(phydb::PhyDB *phy_db_ptr) {
     auto &phy_db_tech = *(phy_db_ptr->GetTechPtr());
     if (!phy_db_tech.IsWellInfoSet()) {
         BOOST_LOG_TRIVIAL(info) << "N/P-Well layer info not found in PhyDB\n";
@@ -2753,8 +2776,7 @@ void Circuit::LoadWell(phydb::PhyDB *phy_db_ptr) {
         std::string macro_name(macro.GetName());
         double width = macro.GetWidth();
         double height = macro.GetHeight();
-        BlockType *blk_type = GetBlockTypePtr(macro_name);
-        auto *macro_well = macro.GetWellPtr();
+        phydb::MacroWell *macro_well = macro.GetWellPtr();
         DaliExpects(macro_well != nullptr,
                     "No well info provided for MACRO: " + macro_name);
         BlockTypeWell *well = AddBlockTypeWell(macro_name);

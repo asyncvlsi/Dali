@@ -629,7 +629,7 @@ class Circuit {
     void LoadDesign(phydb::PhyDB *phy_db_ptr);
 
     // load information in CELL
-    void LoadWell(phydb::PhyDB *phy_db_ptr);
+    void LoadCell(phydb::PhyDB *phy_db_ptr);
 };
 
 }

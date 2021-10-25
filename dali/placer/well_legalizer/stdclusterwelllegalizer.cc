@@ -137,16 +137,16 @@ void StdClusterWellLegalizer::DetectAvailSpace() {
     //PlotAvailSpace();
 }
 
-void StdClusterWellLegalizer::FetchNPWellParams() {
-    auto &tech = p_ckt_->tech();
-    auto &n_well_layer = tech.NwellLayer();
-    int same_well_spacing =
-        std::ceil(n_well_layer.Spacing() / p_ckt_->GridValueX());
+void StdClusterWellLegalizer::FetchNpWellParams() {
+    Tech &tech = p_ckt_->tech();
+    WellLayer &n_well_layer = tech.NwellLayer();
+    double grid_value_x = p_ckt_->GridValueX();
+    int same_well_spacing = std::ceil(n_well_layer.Spacing() / grid_value_x);
     int op_well_spacing =
-        std::ceil(n_well_layer.OppositeSpacing() / p_ckt_->GridValueX());
+        std::ceil(n_well_layer.OppositeSpacing() / grid_value_x);
     well_spacing_ = std::max(same_well_spacing, op_well_spacing);
     max_unplug_length_ =
-        (int) std::floor(n_well_layer.MaxPlugDist() / p_ckt_->GridValueX());
+        (int) std::floor(n_well_layer.MaxPlugDist() / grid_value_x);
     DaliExpects(!tech.WellTapCellPtrs().empty(),
                 "Cannot find the definition of well tap cell, well legalization cannot proceed\n");
     well_tap_cell_ = tech.WellTapCellPtrs()[0];
@@ -172,14 +172,13 @@ void StdClusterWellLegalizer::FetchNPWellParams() {
 void StdClusterWellLegalizer::UpdateWhiteSpaceInCol(ClusterStripe &col) {
     SegI stripe_seg(col.LLX(), col.URX());
     col.white_space_.clear();
-
     col.white_space_.resize(tot_num_rows_);
     for (int i = 0; i < tot_num_rows_; ++i) {
         for (auto &seg: white_space_in_rows_[i]) {
-            auto tmp_seg = stripe_seg.Joint(seg);
+            SegI *tmp_seg = stripe_seg.Joint(seg);
             if (tmp_seg != nullptr) {
-                if (tmp_seg->lo - seg.lo
-                    < max_cell_width_ * 2 + well_spacing_) {
+                /*
+                if (tmp_seg->lo - seg.lo < max_cell_width_ * 2 + well_spacing_) {
                     if (tmp_seg->hi - seg.lo
                         < stripe_width_factor_ * max_unplug_length_) {
                         tmp_seg->lo = seg.lo;
@@ -193,8 +192,10 @@ void StdClusterWellLegalizer::UpdateWhiteSpaceInCol(ClusterStripe &col) {
                     }
                 }
                 if (tmp_seg->Span() < max_cell_width_ * 2
-                    && tmp_seg->Span() < seg.Span())
-                    continue;;
+                    && tmp_seg->Span() < seg.Span()) {
+                    continue;
+                }
+                */
                 col.white_space_[i].push_back(*tmp_seg);
             }
             delete tmp_seg;
@@ -207,7 +208,7 @@ void StdClusterWellLegalizer::DecomposeToSimpleStripe() {
         for (int i = 0; i < tot_num_rows_; ++i) {
             for (auto &seg: col.white_space_[i]) {
                 int y_loc = RowToLoc(i);
-                auto stripe = col.GetStripeMatchSeg(seg, y_loc);
+                Stripe *stripe = col.GetStripeMatchSeg(seg, y_loc);
                 if (stripe == nullptr) {
                     col.stripe_list_.emplace_back();
                     stripe = &(col.stripe_list_.back());
@@ -238,6 +239,7 @@ void StdClusterWellLegalizer::DecomposeToSimpleStripe() {
     }*/
 
     //PlotSimpleStripes();
+    //PlotAvailSpaceInCols();
 }
 
 void StdClusterWellLegalizer::SaveInitialBlockLocation() {
@@ -251,11 +253,11 @@ void StdClusterWellLegalizer::SaveInitialBlockLocation() {
     }
 }
 
-void StdClusterWellLegalizer::Initialize(int cluster_width) {
+void StdClusterWellLegalizer::InitializeWellLegalizer(int cluster_width) {
     CheckWellExistence();
 
-    // fetch parameters about N/P-well
-    FetchNPWellParams();
+    // fetch parameters related to N/P-well
+    FetchNpWellParams();
 
     // temporarily change left and right boundary to reserve space
     left_ += well_spacing_;
@@ -264,49 +266,47 @@ void StdClusterWellLegalizer::Initialize(int cluster_width) {
     // initialize row height and white space segments
     DetectAvailSpace();
 
+    // find the maximum width among movable cells
     max_cell_width_ = 0;
     for (auto &blk: Blocks()) {
         if (blk.IsMovable()) {
             max_cell_width_ = std::max(max_cell_width_, blk.Width());
         }
     }
-    BOOST_LOG_TRIVIAL(info) << "Max cell width: " << max_cell_width_ << "\n";
+    BOOST_LOG_TRIVIAL(info) << "Max movable cell width: "
+                            << max_cell_width_ << "\n";
 
+    // determine the width of columns
     if (cluster_width <= 0) {
         BOOST_LOG_TRIVIAL(info)
             << "Using default cluster width: 2*max_unplug_length_\n";
         stripe_width_ =
             (int) std::round(max_unplug_length_ * stripe_width_factor_);
     } else {
-        if (cluster_width < max_unplug_length_) {
-            BOOST_LOG_TRIVIAL(warning)
-                << "WARNING:\n"
-                << "  Specified cluster width is smaller than max_unplug_length_, "
-                << "  space is wasted, may not be able to successfully complete well legalization\n";
-        }
+        DaliWarns(cluster_width < max_unplug_length_,
+                  "Specified cluster width is smaller than max_unplug_length_, space is wasted, may not be able to successfully complete well legalization");
         stripe_width_ = cluster_width;
     }
-
     stripe_width_ = stripe_width_ + well_spacing_;
     if (stripe_width_ > RegionWidth()) {
         stripe_width_ = RegionWidth();
     }
     tot_col_num_ = std::ceil(RegionWidth() / (double) stripe_width_);
-    BOOST_LOG_TRIVIAL(info)
-        << "Total number of cluster columns: "
-        << tot_col_num_ << "\n";
-
-    //BOOST_LOG_TRIVIAL(info)   << RegionHeight() << "  " << circuit_ptr_->MinBlkHeight() << "\n";
+    BOOST_LOG_TRIVIAL(info) << "Total number of cluster columns: "
+                            << tot_col_num_ << "\n";
     int max_clusters_per_col = RegionHeight() / p_ckt_->MinBlkHeight();
     col_list_.resize(tot_col_num_);
     stripe_width_ = RegionWidth() / tot_col_num_;
-    BOOST_LOG_TRIVIAL(info)
-        << "Cluster width: "
-        << stripe_width_ * p_ckt_->GridValueX()
-        << " um\n";
+    BOOST_LOG_TRIVIAL(info) << "Cluster width: "
+                            << stripe_width_ * p_ckt_->GridValueX() << " um, "
+                            << stripe_width_ << "\n";
+    DaliWarns(stripe_width_ < max_cell_width_,
+              "Maximum cell width is longer than cluster width?");
     for (int i = 0; i < tot_col_num_; ++i) {
         col_list_[i].lx_ = RegionLeft() + i * stripe_width_;
         col_list_[i].width_ = stripe_width_ - well_spacing_;
+        DaliExpects(col_list_[i].width_ > 0,
+                    "CELL configuration is problematic, leading to non-positive column width");
         UpdateWhiteSpaceInCol(col_list_[i]);
     }
     if (stripe_mode_ == SCAVENGE) {
@@ -314,7 +314,6 @@ void StdClusterWellLegalizer::Initialize(int cluster_width) {
         UpdateWhiteSpaceInCol(col_list_.back());
     }
     DecomposeToSimpleStripe();
-    //PlotAvailSpaceInCols();
     //cluster_list_.reserve(tot_col_num_ * max_clusters_per_col);
 
     // restore left and right boundaries back
@@ -326,8 +325,6 @@ void StdClusterWellLegalizer::Initialize(int cluster_width) {
         << max_clusters_per_col << "\n";
 
     index_loc_list_.resize(Blocks().size());
-    // temporarily change left and right boundary to reserve space
-
 }
 
 void StdClusterWellLegalizer::AssignBlockToColBasedOnWhiteSpace() {
@@ -361,8 +358,9 @@ void StdClusterWellLegalizer::AssignBlockToColBasedOnWhiteSpace() {
         double min_dist = DBL_MAX;
         for (auto &num: pos_col) {
             double tmp_dist;
-            auto res =
-                col_list_[num].GetStripeClosestToBlk(&block_list[i], tmp_dist);
+            Stripe *res = col_list_[num].GetStripeClosestToBlk(
+                &block_list[i], tmp_dist
+            );
             if (tmp_dist < min_dist) {
                 stripe = res;
                 col_num = num;
@@ -372,6 +370,10 @@ void StdClusterWellLegalizer::AssignBlockToColBasedOnWhiteSpace() {
         if (stripe != nullptr) {
             col_list_[col_num].block_count_++;
             block_column_assign[i] = col_num;
+        } else {
+            DaliExpects(false,
+                        "Cannot find a column to place cell: "
+                            + block_list[i].Name());
         }
     }
     for (int i = 0; i < tot_col_num_; ++i) {
@@ -765,12 +767,11 @@ bool StdClusterWellLegalizer::BlockClustering() {
     return res;
 }
 
+/****
+ * Clustering blocks in each stripe
+ * After clustering, leave clusters as they are
+ * ****/
 bool StdClusterWellLegalizer::BlockClusteringLoose() {
-    /****
-     * Clustering blocks in each stripe
-     * After clustering, leave clusters as they are
-     * ****/
-
     int step = 50;
     int count = 0;
     bool res = true;
@@ -1246,7 +1247,7 @@ void StdClusterWellLegalizer::ClearCachedData() {
 
 bool StdClusterWellLegalizer::WellLegalize() {
     bool is_success = true;
-    Initialize();
+    InitializeWellLegalizer();
     AssignBlockToColBasedOnWhiteSpace();
     is_success = BlockClusteringLoose();
     //BlockClusteringCompact();
@@ -1279,7 +1280,7 @@ bool StdClusterWellLegalizer::StartPlacement() {
     //circuit_ptr_->GenMATLABWellTable("lg", false);
 
     bool is_success = true;
-    Initialize();
+    InitializeWellLegalizer();
     AssignBlockToColBasedOnWhiteSpace();
 
     BOOST_LOG_TRIVIAL(info) << "Form block clustering\n";

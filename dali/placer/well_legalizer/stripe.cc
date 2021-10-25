@@ -17,7 +17,8 @@ void Stripe::MinDisplacementAdjustment() {
     std::sort(cluster_list_.begin(),
               cluster_list_.end(),
               [](const Cluster &cluster0, const Cluster &cluster1) {
-                  return cluster0.MinDisplacementLLY() < cluster1.MinDisplacementLLY();
+                  return cluster0.MinDisplacementLLY()
+                      < cluster1.MinDisplacementLLY();
               });
 
     std::vector<ClusterSegment> segments;
@@ -64,8 +65,9 @@ void Stripe::MinDisplacementAdjustment() {
 
 Stripe *ClusterStripe::GetStripeMatchSeg(SegI seg, int y_loc) {
     Stripe *res = nullptr;
-    for (auto &&Stripe: stripe_list_) {
-        if ((Stripe.URY() == y_loc) && (Stripe.LLX() == seg.lo) && (Stripe.URX() == seg.hi)) {
+    for (auto &Stripe: stripe_list_) {
+        if ((Stripe.URY() == y_loc) && (Stripe.LLX() == seg.lo)
+            && (Stripe.URX() == seg.hi)) {
             res = &Stripe;
             break;
         }
@@ -94,21 +96,30 @@ Stripe *ClusterStripe::GetStripeClosestToBlk(Block *blk_ptr, double &distance) {
     double center_x = blk_ptr->X();
     double center_y = blk_ptr->Y();
     double min_distance = DBL_MAX;
-    for (auto &&Stripe: stripe_list_) {
+    for (auto &Stripe: stripe_list_) {
         double tmp_distance;
-        if ((Stripe.LLY() <= center_y) &&
-            (Stripe.URY() > center_y) &&
-            (Stripe.LLX() <= center_x) &&
-            (Stripe.URX() > center_x)) {
+        if ((Stripe.LLY() <= center_y) && (Stripe.URY() > center_y) &&
+            (Stripe.LLX() <= center_x) && (Stripe.URX() > center_x)) {
             res = &Stripe;
             tmp_distance = 0;
         } else if ((Stripe.LLX() <= center_x) && (Stripe.URX() > center_x)) {
-            tmp_distance = std::min(std::abs(center_y - Stripe.LLY()), std::abs(center_y - Stripe.URY()));
+            tmp_distance = std::min(
+                std::abs(center_y - Stripe.LLY()),
+                std::abs(center_y - Stripe.URY())
+            );
         } else if ((Stripe.LLY() <= center_y) && (Stripe.URY() > center_y)) {
-            tmp_distance = std::min(std::abs(center_x - Stripe.LLX()), std::abs(center_x - Stripe.URX()));
+            tmp_distance = std::min(
+                std::abs(center_x - Stripe.LLX()),
+                std::abs(center_x - Stripe.URX())
+            );
         } else {
-            tmp_distance = std::min(std::abs(center_x - Stripe.LLX()), std::abs(center_x - Stripe.URX()))
-                + std::min(std::abs(center_y - Stripe.LLY()), std::abs(center_y - Stripe.URY()));
+            tmp_distance = std::min(
+                std::abs(center_x - Stripe.LLX()),
+                std::abs(center_x - Stripe.URX())
+            ) + std::min(
+                std::abs(center_y - Stripe.LLY()),
+                std::abs(center_y - Stripe.URY())
+            );
         }
         if (tmp_distance < min_distance) {
             min_distance = tmp_distance;
