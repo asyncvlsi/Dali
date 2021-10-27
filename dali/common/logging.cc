@@ -65,11 +65,13 @@ severity StrToLoggingLevel(const std::string &sl_str) {
  * ignored; otherwise, if this parameter is true, then the final log file name is
  * always 'dali0.log'.
  * @param severity_level: 0 (fatal) - 5 (trace)
+ * @param no_prefix: if true, then the log file only has severity level as prefix
  */
 void InitLogging(
     const std::string &log_file_name,
     bool overwrite_log_file,
-    severity severity_level
+    severity severity_level,
+    bool no_prefix
 ) {
   CloseLogging();
 
@@ -98,10 +100,18 @@ void InitLogging(
   }
 
   // add a file sink
-  g_file_sink = logging::add_file_log(
-      keywords::file_name = file_name,
-      keywords::format = "[%TimeStamp%] [%ThreadID%] [%Severity%] %Message%"
-  );
+  if (no_prefix) {
+    g_file_sink = logging::add_file_log(
+        keywords::file_name = file_name,
+        keywords::format = "%Message%"
+    );
+
+  } else {
+    g_file_sink = logging::add_file_log(
+        keywords::file_name = file_name,
+        keywords::format = "[%TimeStamp%] [%ThreadID%] [%Severity%] %Message%"
+    );
+  }
   g_file_sink->locked_backend()->set_auto_newline_mode(
       sink::auto_newline_mode::disabled_auto_newline
   );

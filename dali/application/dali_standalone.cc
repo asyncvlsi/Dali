@@ -20,10 +20,8 @@
  ******************************************************************************/
 #include <ctime>
 
-#include <algorithm>
 #include <chrono>
 #include <iostream>
-#include <ratio>
 
 #include <phydb/phydb.h>
 
@@ -55,6 +53,7 @@ int main(int argc, char *argv[]) {
   bool overwrite_logfile = false;
   bool is_no_legal = false;
   severity verbose_level = logging::trivial::info;
+  bool is_log_no_prefix = false;
   double x_grid = 0, y_grid = 0;
   double target_density = -1;
   int io_metal_layer = 0;
@@ -123,12 +122,12 @@ int main(int argc, char *argv[]) {
       try {
         verbose_level = StrToLoggingLevel(str_verbose_level);
       } catch (...) {
-        std::cout << "Invalid stoi conversion: "
-                  << str_verbose_level
-                  << "\n";
+        std::cout << "Invalid stoi conversion: " << str_verbose_level << "\n";
         ReportUsage();
         return 1;
       }
+    } else if (arg == "-lognoprefix") {
+      is_log_no_prefix = true;
     } else if (arg == "-wlgmode" && i < argc) {
       std::string str_wlg_mode = std::string(argv[i++]);
       if (str_wlg_mode == "scavenge") {
@@ -136,8 +135,7 @@ int main(int argc, char *argv[]) {
       } else if (str_wlg_mode == "strict") {
         well_legalization_mode = STRICT;
       } else {
-        std::cout << "Unknown well legalization mode: "
-                  << str_wlg_mode << "\n";
+        std::cout << "Unknown well legalization mode: " << str_wlg_mode << "\n";
         ReportUsage();
         return 1;
       }
@@ -171,7 +169,8 @@ int main(int argc, char *argv[]) {
   InitLogging(
       log_file_name,
       overwrite_logfile,
-      verbose_level
+      verbose_level,
+      is_log_no_prefix
   );
   PrintSoftwareStatement();
 
@@ -300,16 +299,17 @@ void ReportUsage() {
   std::cout
       << "\033[0;36m"
       << "Usage: dali\n"
-      << "  -lef        <file.lef>\n"
-      << "  -def        <file.def>\n"
-      << "  -cell       <file.cell> (optional, if provided, well placement flow will be triggered)\n"
-      << "  -o          <output_name>.def (optional, default output file name dali_out.def)\n"
-      << "  -g/-grid    grid_value_x grid_value_y (optional, default metal1 and metal2 pitch values)\n"
-      << "  -d/-density density (optional, value interval (0,1], default max(space_utility, 0.7))\n"
-      << "  -nolegal    optional, if this flag is present, then only perform global placement\n"
-      << "  -iolayer    metal layer number for I/O placement (optional, default 1 for m1)\n"
-      << "  -wlgmode    <scavenge/strict> determine whether the last column use unassigned space\n"
-      << "  -v          verbosity_level (optional, 0-5, default 1)\n"
+      << "  -lef         <file.lef>\n"
+      << "  -def         <file.def>\n"
+      << "  -cell        <file.cell> (optional, if provided, well placement flow will be triggered)\n"
+      << "  -o           <output_name>.def (optional, default output file name dali_out.def)\n"
+      << "  -g/-grid     grid_value_x grid_value_y (optional, default metal1 and metal2 pitch values)\n"
+      << "  -d/-density  density (optional, value interval (0,1], default max(space_utility, 0.7))\n"
+      << "  -nolegal     optional, if this flag is present, then only perform global placement\n"
+      << "  -iolayer     metal layer number for I/O placement (optional, default 1 for m1)\n"
+      << "  -wlgmode     <scavenge/strict> determine whether the last column use unassigned space\n"
+      << "  -v           verbosity_level (optional, 0-5, default 1)\n"
+      << "  -lognoprefix optional, if this flag is present, then only messages will be saved to the log file\n"
       << "(flag order does not matter)"
       << "\033[0m\n";
 }

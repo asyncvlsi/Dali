@@ -60,7 +60,8 @@ severity StrToLoggingLevel(const std::string &sl_str);
 void InitLogging(
     const std::string &log_file_name = "",
     bool overwrite_log_file = false,
-    severity severity_level = logging::trivial::info
+    severity severity_level = logging::trivial::info,
+    bool no_prefix = false
 );
 
 void CloseLogging();

@@ -520,14 +520,14 @@ void Dali::ExportMiniRowsToPhyDB() {
       } else {
         bot_signal_ = "Vdd";
       }
-      phydb::ClusterCol *col_ptr =
+      phydb::ClusterCol *p_col =
           phy_db_ptr_->AddClusterCol(column_name, bot_signal_);
 
       int col_lx = (int) (strip.LLX() * factor_x)
           + circuit_.design().DieAreaOffsetX();
       int col_ux = (int) (strip.URX() * factor_x)
           + circuit_.design().DieAreaOffsetX();
-      col_ptr->SetXRange(col_lx, col_ux);
+      p_col->SetXRange(col_lx, col_ux);
 
       if (strip.is_bottom_up_) {
         for (auto &cluster: strip.cluster_list_) {
@@ -535,17 +535,17 @@ void Dali::ExportMiniRowsToPhyDB() {
               + circuit_.design().DieAreaOffsetY();
           int row_uy = (int) (cluster.URY() * factor_y)
               + circuit_.design().DieAreaOffsetY();
-          col_ptr->AddRow(row_ly, row_uy);
+          p_col->AddRow(row_ly, row_uy);
         }
       } else {
-        int sz = strip.cluster_list_.size();
+        int sz = static_cast<int>(strip.cluster_list_.size());
         for (int j = sz - 1; j >= 0; --j) {
           auto &cluster = strip.cluster_list_[j];
           int row_ly = (int) (cluster.LLY() * factor_y)
               + circuit_.design().DieAreaOffsetY();
           int row_uy = (int) (cluster.URY() * factor_y)
               + circuit_.design().DieAreaOffsetY();
-          col_ptr->AddRow(row_ly, row_uy);
+          p_col->AddRow(row_ly, row_uy);
         }
       }
     }

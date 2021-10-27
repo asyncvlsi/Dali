@@ -1,4 +1,4 @@
 [submodule "module/eigen-git-mirror"]
 	path = module/eigen-git-mirror
-	url = https://github.com/eigenteam/eigen-git-mirror.git
-	branch = master
+	url = https://gitlab.com/libeigen/eigen.git
+	branch = 3.3
