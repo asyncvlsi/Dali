@@ -1,6 +1,23 @@
-//
-// Created by Yihang Yang on 8/7/19.
-//
+/*******************************************************************************
+ *
+ * Copyright (c) 2021 Yihang Yang
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
+ *
+ ******************************************************************************/
 
 #ifndef DALI_DALI_PLACER_GLOBALPLACER_GPSIMPL_BOXBIN_H_
 #define DALI_DALI_PLACER_GLOBALPLACER_GPSIMPL_BOXBIN_H_
@@ -78,7 +95,8 @@ class BoxBin {
   int top;
   void update_boundaries(std::vector<std::vector<GridBin> > &grid_bin_matrix);
   /* update_white_space can only be called when left, right, bottom, top are updated */
-  void update_terminal_list_white_space(std::vector<Block> &Nodelist, std::vector<int> &box_terminal_list);
+  void update_terminal_list_white_space(std::vector<Block> &Nodelist,
+                                        std::vector<int> &box_terminal_list);
 
   void update_all_terminal(std::vector<std::vector<GridBin> > &grid_bin_matrix);
   void update_cell_area(std::vector<Block> &Nodelist);
@@ -92,12 +110,15 @@ class BoxBin {
                                            GridBinIndex &ll,
                                            GridBinIndex &ur);
   void UpdateCellList(std::vector<std::vector<GridBin> > &grid_bin_matrix);
-  bool write_cell_in_box(std::string const &NameOfFile, std::vector<Block> &Nodelist);
+  bool write_cell_in_box(std::string const &NameOfFile,
+                         std::vector<Block> &Nodelist);
   bool update_cut_index_white_space(std::vector<std::vector<unsigned long int> > &grid_bin_white_space_LUT);
   bool update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist,
                                            unsigned long int &box1_total_white_space,
                                            unsigned long int &box2_total_white_space);
-  bool update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodelist, int &cut_line_w, int ave_blk_height);
+  bool update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodelist,
+                                                int &cut_line_w,
+                                                int ave_blk_height);
 };
 
 }

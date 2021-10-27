@@ -1,6 +1,23 @@
-//
-// Created by Yihang Yang on 7/17/19.
-//
+/*******************************************************************************
+ *
+ * Copyright (c) 2021 Yihang Yang
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
+ *
+ ******************************************************************************/
 
 #include "freesegmentlist.h"
 
@@ -15,7 +32,8 @@ FreeSegmentList::FreeSegmentList() {
   size_ = 0;
 }
 
-FreeSegmentList::FreeSegmentList(int start, int stop, int min_width) : min_width_(min_width) {
+FreeSegmentList::FreeSegmentList(int start, int stop, int min_width)
+    : min_width_(min_width) {
   head_ = new FreeSegment(start, stop);
   tail_ = head_;
   size_ = 1;
@@ -54,8 +72,10 @@ bool FreeSegmentList::EmplaceBack(int start, int end) {
     tail_ = seg_ptr;
   } else {
     if (start < Right()) {
-      BOOST_LOG_TRIVIAL(info) << "Illegal segment emplace back, Start: " << start
-                              << " is required to be no less than the Right End of current linked list: " << Right()
+      BOOST_LOG_TRIVIAL(info) << "Illegal segment emplace back, Start: "
+                              << start
+                              << " is required to be no less than the Right End of current linked list: "
+                              << Right()
                               << "\n";
       return false;
     }
@@ -83,8 +103,11 @@ void FreeSegmentList::PushBack(FreeSegment *seg) {
     ++size_;
   } else {
     if (Right() > seg->Start()) {
-      BOOST_LOG_TRIVIAL(info) << "Cannot push segment into list, because the Right of list is: " << Right()
-                              << " larger than the Start of segment to push: " << seg->Start() << std::endl;
+      BOOST_LOG_TRIVIAL(info)
+        << "Cannot push segment into list, because the Right of list is: "
+        << Right()
+        << " larger than the Start of segment to push: " << seg->Start()
+        << std::endl;
       assert(Right() <= seg->Start());
     }
     if (Right() < seg->Start()) {
@@ -98,7 +121,8 @@ void FreeSegmentList::PushBack(FreeSegment *seg) {
   }
 }
 
-void FreeSegmentList::Insert(FreeSegment *insertPosition, FreeSegment *segToInsert) {
+void FreeSegmentList::Insert(FreeSegment *insertPosition,
+                             FreeSegment *segToInsert) {
   if (insertPosition == Tail()) {
     PushBack(segToInsert);
   } else {
@@ -118,7 +142,8 @@ bool FreeSegmentList::Empty() const {
 void FreeSegmentList::CopyFrom(FreeSegmentList &originList) {
   this->Clear();
   if (!originList.Empty()) {
-    for (FreeSegment *current = originList.Head(); current != nullptr; current = current->Next()) {
+    for (FreeSegment *current = originList.Head(); current != nullptr;
+         current = current->Next()) {
       EmplaceBack(current->Start(), current->End());
     }
     min_width_ = originList.MinWidth();
@@ -151,7 +176,8 @@ void FreeSegmentList::RemoveSeg(FreeSegment *seg_in_list) { // don't remove, tra
   *    c). if the segment to remove has real prev and next, i.e., not nullptr, remove this segment,
   *        and connect its prev with its next
   ****/
-  DaliExpects(seg_in_list != nullptr, "Remove Empty pointer? Be careful, you can only remove nodes in the linked list");
+  DaliExpects(seg_in_list != nullptr,
+              "Remove Empty pointer? Be careful, you can only remove nodes in the linked list");
   DaliExpects(!Empty(), "Nothing to remove from an Empty list!");
   FreeSegment *current = seg_in_list;
   if (size() == 1) {
@@ -182,7 +208,8 @@ bool FreeSegmentList::ApplyMask(FreeSegmentList &maskRow) {
   FreeSegmentList result;
   for (FreeSegment *currentMaskSeg = maskRow.Head(); currentMaskSeg != nullptr;
        currentMaskSeg = currentMaskSeg->Next()) {
-    for (FreeSegment *current = Head(); current != nullptr; current = current->Next()) {
+    for (FreeSegment *current = Head(); current != nullptr;
+         current = current->Next()) {
       if (current->IsDominate(currentMaskSeg)) break;
       FreeSegment *tmpSeg_ptr = currentMaskSeg->SingleSegAnd(current);
       if (tmpSeg_ptr != nullptr) {
@@ -242,7 +269,9 @@ void FreeSegmentList::UseSpace(int start, int length) {
   }
 
   if (!isSegFound) {
-    BOOST_LOG_TRIVIAL(info) << "What? there are bugs in the code, the program should not reach here" << std::endl;
+    BOOST_LOG_TRIVIAL(info)
+      << "What? there are bugs in the code, the program should not reach here"
+      << std::endl;
     assert(isSegFound);
   }
 }
@@ -272,7 +301,8 @@ int FreeSegmentList::MinDispLoc(int llx, int width) {
    * We assume any segment in this list has a length longer than block width
    * lx is not used now, might be used in the future
    * ****/
-  DaliExpects(Head()->Length() >= width, "Segment length should be longer than block width");
+  DaliExpects(Head()->Length() >= width,
+              "Segment length should be longer than block width");
   return Head()->Start();
 }
 
@@ -284,7 +314,8 @@ void FreeSegmentList::Show() {
     FreeSegment *current = head_;
     size_t count = 0;
     while (count < size_) {
-      BOOST_LOG_TRIVIAL(info) << "( " << current->Start() << " " << current->End() << " )";
+      BOOST_LOG_TRIVIAL(info) << "( " << current->Start() << " "
+                              << current->End() << " )";
       current = current->Next();
       if (current != nullptr) {
         BOOST_LOG_TRIVIAL(info) << " -> ";

@@ -45,10 +45,10 @@ find_library(
 if (GALOIS_EDA_LIBRARY)
     set(Galois_LIBRARIES ${GALOIS_EDA_LIBRARY})
     message(STATUS "Found libgalois_eda.a: " ${GALOIS_EDA_LIBRARY})
-else()
+else ()
     message(STATUS "Cannot find libgalois_eda.a")
     set(Galois_FOUND FALSE)
-endif()
+endif ()
 find_library(
     GALOIS_SHMEM_LIBRARY
     NAMES galois_shmem
@@ -57,10 +57,10 @@ find_library(
 if (GALOIS_SHMEM_LIBRARY)
     set(Galois_LIBRARIES ${Galois_LIBRARIES} ${GALOIS_SHMEM_LIBRARY})
     message(STATUS "Found libgalois_shmem.a: " ${GALOIS_SHMEM_LIBRARY})
-else()
+else ()
     message(STATUS "Cannot find libgalois_shmem.a")
     set(Galois_FOUND FALSE)
-endif()
+endif ()
 if (UNIX AND (NOT APPLE))
     find_library(
         NUMA_LIBRARY
@@ -69,11 +69,11 @@ if (UNIX AND (NOT APPLE))
     if (NUMA_LIBRARY)
         set(Galois_LIBRARIES ${Galois_LIBRARIES} ${NUMA_LIBRARY})
         message(STATUS "Found libnuma: " ${NUMA_LIBRARY})
-    else()
+    else ()
         message(STATUS "Cannot find libnuma")
         set(Galois_FOUND FALSE)
-    endif()
-endif()
+    endif ()
+endif ()
 
 ############################################################################
 # Detect if OpenMP library exists

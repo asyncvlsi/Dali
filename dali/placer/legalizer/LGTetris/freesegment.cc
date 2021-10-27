@@ -1,6 +1,23 @@
-//
-// Created by yihan on 7/13/19.
-//
+/*******************************************************************************
+ *
+ * Copyright (c) 2021 Yihang Yang
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
+ *
+ ******************************************************************************/
 
 #include "freesegment.h"
 
@@ -18,7 +35,8 @@ bool FreeSegment::LinkSingleSeg(FreeSegment *seg_ptr) {
     assert(seg_ptr != nullptr);
   }
   if ((this->Next() != nullptr) || (seg_ptr->Next() != nullptr)) {
-    BOOST_LOG_TRIVIAL(info) << "This member function is not for concatenating multi nodes linked list\n";
+    BOOST_LOG_TRIVIAL(info)
+      << "This member function is not for concatenating multi nodes linked list\n";
     assert((this->Next() == nullptr) && (seg_ptr->Next() == nullptr));
   }
   return (SetNext(seg_ptr) && seg_ptr->SetPrev(this));
@@ -26,7 +44,8 @@ bool FreeSegment::LinkSingleSeg(FreeSegment *seg_ptr) {
 
 FreeSegment *FreeSegment::SingleSegOr(FreeSegment *seg) {
   if ((Length() == 0) && (seg->Length() == 0)) {
-    BOOST_LOG_TRIVIAL(info) << "What?! two segments with Length 0 for OR operation\n";
+    BOOST_LOG_TRIVIAL(info)
+      << "What?! two segments with Length 0 for OR operation\n";
     return nullptr;
   }
   auto *result = new FreeSegment;

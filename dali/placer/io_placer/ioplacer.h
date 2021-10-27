@@ -1,6 +1,23 @@
-//
-// Created by Yihang Yang on 8/25/21.
-//
+/*******************************************************************************
+ *
+ * Copyright (c) 2021 Yihang Yang
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
+ *
+ ******************************************************************************/
 
 #ifndef DALI_DALI_PLACER_IOPLACER_IOPLACER_H_
 #define DALI_DALI_PLACER_IOPLACER_IOPLACER_H_
@@ -22,58 +39,58 @@ namespace dali {
  * 2. automatically place IOPINs after placement
  */
 class IoPlacer {
-    Circuit *p_ckt_ = nullptr;
-    phydb::PhyDB *phy_db_ptr_ = nullptr;
-    std::vector<IoBoundarySpace> boundary_spaces_;
-  public:
-    IoPlacer();
-    explicit IoPlacer(phydb::PhyDB *phy_db, Circuit *circuit_);
+  Circuit *p_ckt_ = nullptr;
+  phydb::PhyDB *phy_db_ptr_ = nullptr;
+  std::vector<IoBoundarySpace> boundary_spaces_;
+ public:
+  IoPlacer();
+  explicit IoPlacer(phydb::PhyDB *phy_db, Circuit *circuit_);
 
-    void InitializeBoundarySpaces();
-    void SetCiruit(Circuit *circuit);
-    void SetPhyDB(phydb::PhyDB *phy_db_ptr);
+  void InitializeBoundarySpaces();
+  void SetCiruit(Circuit *circuit);
+  void SetPhyDB(phydb::PhyDB *phy_db_ptr);
 
-    bool AddIoPin(
-        std::string &iopin_name,
-        std::string &net_name,
-        std::string &direction,
-        std::string &use
-    );
-    bool AddCmd(int argc, char **argv);
-    bool PlaceIoPin(
-        std::string &iopin_name,
-        std::string &metal_name,
-        int shape_lx,
-        int shape_ly,
-        int shape_ux,
-        int shape_uy,
-        std::string &place_status,
-        int loc_x,
-        int loc_y,
-        std::string &orient
-    );
-    bool PlaceCmd(int argc, char **argv);
+  bool AddIoPin(
+      std::string &iopin_name,
+      std::string &net_name,
+      std::string &direction,
+      std::string &use
+  );
+  bool AddCmd(int argc, char **argv);
+  bool PlaceIoPin(
+      std::string &iopin_name,
+      std::string &metal_name,
+      int shape_lx,
+      int shape_ly,
+      int shape_ux,
+      int shape_uy,
+      std::string &place_status,
+      int loc_x,
+      int loc_y,
+      std::string &orient
+  );
+  bool PlaceCmd(int argc, char **argv);
 
-    bool PartialPlaceIoPin();
-    bool PartialPlaceCmd(int argc, char **argv);
+  bool PartialPlaceIoPin();
+  bool PartialPlaceCmd(int argc, char **argv);
 
-    bool ConfigSetMetalLayer(int boundary_index, int metal_layer_index);
-    bool ConfigSetGlobalMetalLayer(int metal_layer_index);
-    bool ConfigAutoPlace();
+  bool ConfigSetMetalLayer(int boundary_index, int metal_layer_index);
+  bool ConfigSetGlobalMetalLayer(int metal_layer_index);
+  bool ConfigAutoPlace();
 
-    bool ConfigBoundaryMetal(int argc, char **argv);
+  bool ConfigBoundaryMetal(int argc, char **argv);
 
-    static void ReportConfigUsage();
-    bool ConfigCmd(int argc, char **argv);
+  static void ReportConfigUsage();
+  bool ConfigCmd(int argc, char **argv);
 
-    bool CheckConfiguration();
+  bool CheckConfiguration();
 
-    bool BuildResourceMap();
-    bool AssignIoPinToBoundaryLayers();
-    bool PlaceIoPinOnEachBoundary();
+  bool BuildResourceMap();
+  bool AssignIoPinToBoundaryLayers();
+  bool PlaceIoPinOnEachBoundary();
 
-    bool AutoPlaceIoPin();
-    bool AutoPlaceCmd(int argc, char **argv);
+  bool AutoPlaceIoPin();
+  bool AutoPlaceCmd(int argc, char **argv);
 };
 
 }

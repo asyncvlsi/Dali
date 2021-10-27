@@ -1,7 +1,3 @@
-//
-// Created by Yihang Yang on 2/3/20.
-//
-
 /*
  * Author:  David Robert Nadeau
  * Site:    http://NadeauSoftware.com/

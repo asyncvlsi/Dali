@@ -1,7 +1,3 @@
-//
-// Created by Yihang Yang on 1/22/20.
-//
-
 #ifndef DALI_DALI_COMMON_TIMING_H_
 #define DALI_DALI_COMMON_TIMING_H_
 

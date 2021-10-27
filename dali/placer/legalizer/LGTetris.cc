@@ -1,6 +1,23 @@
-//
-// Created by Yihang Yang on 8/4/19.
-//
+/*******************************************************************************
+ *
+ * Copyright (c) 2021 Yihang Yang
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
+ *
+ ******************************************************************************/
 
 #include "LGTetris.h"
 
@@ -8,7 +25,8 @@
 
 namespace dali {
 
-TetrisLegalizer::TetrisLegalizer() : Placer(), max_iteration_(5), current_iteration_(0), flipped_(false) {}
+TetrisLegalizer::TetrisLegalizer()
+    : Placer(), max_iteration_(5), current_iteration_(0), flipped_(false) {}
 
 void TetrisLegalizer::InitLegalizer() {
   std::vector<Block> &block_list = Blocks();
@@ -17,7 +35,8 @@ void TetrisLegalizer::InitLegalizer() {
 }
 
 void TetrisLegalizer::SetMaxItr(int max_iteration) {
-  DaliExpects(max_iteration > 0, "Invalid max_iteration value, value must be greater than 0");
+  DaliExpects(max_iteration > 0,
+              "Invalid max_iteration value, value must be greater than 0");
   max_iteration_ = max_iteration;
 }
 
@@ -51,7 +70,8 @@ void TetrisLegalizer::FastShift(int failure_point) {
       block.IncreaseY(bottom_ - bounding_bottom);
     }
   } else {
-    double init_diff = index_loc_list_[failure_point - 1].x - index_loc_list_[failure_point].x;
+    double init_diff =
+        index_loc_list_[failure_point - 1].x - index_loc_list_[failure_point].x;
     int failed_block = index_loc_list_[failure_point].num;
     bounding_left = block_list[failed_block].LLX();
     int last_placed_block = index_loc_list_[failure_point - 1].num;
@@ -80,7 +100,7 @@ void TetrisLegalizer::FlipPlacement() {
   flipped_ = !flipped_;
   int sum_left_right = left_ + right_;
   for (auto &block: Blocks()) {
-      block.SetLLX(sum_left_right - block.URX());
+    block.SetLLX(sum_left_right - block.URX());
   }
   //GenMATLABScript("flip_result.txt");
 }
@@ -122,7 +142,8 @@ bool TetrisLegalizer::TetrisLegal() {
   //int minHeight = GetCircuit()->MinBlkHeight();
 
   BOOST_LOG_TRIVIAL(info) << "Building LGTetris space" << std::endl;
-  TetrisSpace tetrisSpace(RegionLeft(), RegionRight(), RegionBottom(), RegionTop(), 1, minWidth);
+  TetrisSpace tetrisSpace
+      (RegionLeft(), RegionRight(), RegionBottom(), RegionTop(), 1, minWidth);
   int llx, lly;
   int width, height;
   int block_num;
@@ -144,12 +165,14 @@ bool TetrisLegalizer::TetrisLegal() {
      * ****/
     llx = (int) std::round(block_list[block_num].LLX());
     lly = (int) std::round(block_list[block_num].LLY());
-    bool is_current_loc_legal = tetrisSpace.IsSpaceAvail(llx, lly, width, height);
+    bool is_current_loc_legal =
+        tetrisSpace.IsSpaceAvail(llx, lly, width, height);
     if (is_current_loc_legal) {
       block_list[block_num].SetLoc(llx, lly);
     } else {
       int2d result_loc(0, 0);
-      bool is_found = tetrisSpace.FindBlockLoc(llx, lly, width, height, result_loc);
+      bool is_found =
+          tetrisSpace.FindBlockLoc(llx, lly, width, height, result_loc);
       if (is_found) {
         block_list[block_num].SetLoc(result_loc.x, result_loc.y);
       } else {
@@ -178,7 +201,8 @@ bool TetrisLegalizer::StartPlacement() {
   max_iter_ = 2;
   GenMATLABScript("shift_result.txt");*/
   bool is_successful = false;
-  for (current_iteration_ = 0; current_iteration_ < max_iteration_; ++current_iteration_) {
+  for (current_iteration_ = 0; current_iteration_ < max_iteration_;
+       ++current_iteration_) {
     // if a legal location is not found, need to reverse the legalization process
     is_successful = TetrisLegal();
     if (!is_successful) {

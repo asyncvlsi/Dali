@@ -1,6 +1,23 @@
-//
-// Created by Yihang Yang on 11/20/20.
-//
+/*******************************************************************************
+ *
+ * Copyright (c) 2021 Yihang Yang
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
+ *
+ ******************************************************************************/
 
 #ifndef DALI_DALI_COMMON_LOGGING_H_
 #define DALI_DALI_COMMON_LOGGING_H_
@@ -23,14 +40,14 @@
 inline boost::log::record_ostream &operator<<(
     boost::log::record_ostream &p, std::vector<double> &v
 ) {
-    p << "[";
-    for (size_t i = 0; i < v.size(); ++i) {
-        p << v[i];
-        if (i != v.size() - 1)
-            p << ", ";
-    }
-    p << "]";
-    return p;
+  p << "[";
+  for (size_t i = 0; i < v.size(); ++i) {
+    p << v[i];
+    if (i != v.size() - 1)
+      p << ", ";
+  }
+  p << "]";
+  return p;
 }
 
 namespace dali {
@@ -56,25 +73,25 @@ inline void DaliExpects_(
     size_t line,
     const char *function
 ) {
-    if (!e) {
-        BOOST_LOG_TRIVIAL(fatal)
-            << "\033[0;31m"
-            << "FATAL ERROR:" << "\n"
-            << "    " << error_message << "\n"
-            << file << " : " << line << " : " << function
-            << "\033[0m" << std::endl;
-        exit(1);
-    }
+  if (!e) {
+    BOOST_LOG_TRIVIAL(fatal)
+      << "\033[0;31m"
+      << "FATAL ERROR:" << "\n"
+      << "    " << error_message << "\n"
+      << file << " : " << line << " : " << function
+      << "\033[0m" << std::endl;
+    exit(1);
+  }
 }
 
 inline void DaliWarns(bool e, const std::string &warning_message) {
-    if (e) {
-        BOOST_LOG_TRIVIAL(warning)
-            << "\033[0;34m"
-            << "WARNING:" << "\n"
-            << "    " << warning_message
-            << "\033[0m" << std::endl;
-    }
+  if (e) {
+    BOOST_LOG_TRIVIAL(warning)
+      << "\033[0;34m"
+      << "WARNING:" << "\n"
+      << "    " << warning_message
+      << "\033[0m" << std::endl;
+  }
 }
 
 }

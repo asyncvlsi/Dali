@@ -1,7 +1,23 @@
-//
-// Created by Yihang Yang on 10/31/19.
-//
-
+/*******************************************************************************
+ *
+ * Copyright (c) 2021 Yihang Yang
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
+ *
+ ******************************************************************************/
 #ifndef DALI_DALI_CIRCUIT_BLOCKTYPE_H_
 #define DALI_DALI_CIRCUIT_BLOCKTYPE_H_
 
@@ -32,68 +48,67 @@ class BlockTypeWell;
  *     pin: a list of cell pins with shapes and offsets
  */
 class BlockType {
-  public:
-    BlockType(const std::string *name_ptr, int width, int height);
+ public:
+  BlockType(const std::string *name_ptr, int width, int height);
 
-    const std::string &Name() const { return *name_ptr_; }
+  const std::string &Name() const { return *name_ptr_; }
 
-    // check if a pin with a given name exists in this BlockType or not
-    bool IsPinExisting(std::string const &pin_name) const {
-        return pin_name_id_map_.find(pin_name) != pin_name_id_map_.end();
-    }
+  // check if a pin with a given name exists in this BlockType or not
+  bool IsPinExisting(std::string const &pin_name) const {
+    return pin_name_id_map_.find(pin_name) != pin_name_id_map_.end();
+  }
 
-    // return the index of a pin with a given name
-    int GetPinId(std::string const &pin_name) const;
+  // return the index of a pin with a given name
+  int GetPinId(std::string const &pin_name) const;
 
-    // return a pointer to a newly allocated location for a Pin with a given name
-    // if this member function is used to create pins, one needs to set pin shapes using the return pointer
-    Pin *AddPin(std::string const &pin_name, bool is_input);
+  // return a pointer to a newly allocated location for a Pin with a given name
+  // if this member function is used to create pins, one needs to set pin shapes using the return pointer
+  Pin *AddPin(std::string const &pin_name, bool is_input);
 
-    // add a pin with a given name and x/y offset
-    void AddPin(std::string const &pin_name, double x_offset, double y_offset);
+  // add a pin with a given name and x/y offset
+  void AddPin(std::string const &pin_name, double x_offset, double y_offset);
 
-    // get the pointer to the pin with the given name
-    // if such a pin does not exist, the return value is nullptr
-    Pin *GetPinPtr(std::string const &pin_name);
+  // get the pointer to the pin with the given name
+  // if such a pin does not exist, the return value is nullptr
+  Pin *GetPinPtr(std::string const &pin_name);
 
-    // set the N/P-well information for this BlockType
-    void SetWell(BlockTypeWell *well_ptr);
+  // set the N/P-well information for this BlockType
+  void SetWell(BlockTypeWell *well_ptr);
 
-    // get the pointer to the well of this BlockType
-    BlockTypeWell *WellPtr() const { return well_ptr_; }
+  // get the pointer to the well of this BlockType
+  BlockTypeWell *WellPtr() const { return well_ptr_; }
 
-    // set the width of this BlockType and update its area
-    void SetWidth(int width);
+  // set the width of this BlockType and update its area
+  void SetWidth(int width);
 
-    // get the width of this BlockType
-    int Width() const { return width_; }
+  // get the width of this BlockType
+  int Width() const { return width_; }
 
-    // set the height of this BlockType and update its area
-    void SetHeight(int height);
+  // set the height of this BlockType and update its area
+  void SetHeight(int height);
 
-    void SetSize(int width, int height);
+  void SetSize(int width, int height);
 
-    // get the height of this BlockType
-    int Height() const { return height_; }
+  // get the height of this BlockType
+  int Height() const { return height_; }
 
-    // get the area of this BlockType
-    long int Area() const { return area_; }
+  // get the area of this BlockType
+  long int Area() const { return area_; }
 
-    // get the pointer to the list of cell pins
-    std::vector<Pin> &PinList() { return pin_list_; }
+  // get the pointer to the list of cell pins
+  std::vector<Pin> &PinList() { return pin_list_; }
 
-    // report the information of this BlockType for debugging purposes
-    void Report() const;
+  // report the information of this BlockType for debugging purposes
+  void Report() const;
 
-  private:
-    const std::string *name_ptr_;
-    int width_, height_;
-    long int area_;
-    BlockTypeWell *well_ptr_ = nullptr;
-    std::vector<Pin> pin_list_;
-    std::map<std::string, int> pin_name_id_map_;
+ private:
+  const std::string *name_ptr_;
+  int width_, height_;
+  long int area_;
+  BlockTypeWell *well_ptr_ = nullptr;
+  std::vector<Pin> pin_list_;
+  std::map<std::string, int> pin_name_id_map_;
 };
-
 
 /****
  * This struct BlockTypeWell provides the N/P-well geometries for a BlockType.
@@ -117,49 +132,49 @@ class BlockType {
  *     +-----------------+
  * ****/
 class BlockTypeWell {
-  public:
-    explicit BlockTypeWell(BlockType *type_ptr) : type_ptr_(type_ptr) {}
+ public:
+  explicit BlockTypeWell(BlockType *type_ptr) : type_ptr_(type_ptr) {}
 
-    // get the pointer to the BlockType this well belongs to
-    BlockType *BlkTypePtr() const { return type_ptr_; }
+  // get the pointer to the BlockType this well belongs to
+  BlockType *BlkTypePtr() const { return type_ptr_; }
 
-    // set the rect of N-well
-    void SetNwellRect(int lx, int ly, int ux, int uy);
+  // set the rect of N-well
+  void SetNwellRect(int lx, int ly, int ux, int uy);
 
-    // get the rect of N-well
-    const RectI &NwellRect() { return n_rect_; }
+  // get the rect of N-well
+  const RectI &NwellRect() { return n_rect_; }
 
-    // set the rect of P-well
-    void SetPwellRect(int lx, int ly, int ux, int uy);
+  // set the rect of P-well
+  void SetPwellRect(int lx, int ly, int ux, int uy);
 
-    // get the rect of P-well
-    const RectI &PwellRect() { return p_rect_; }
+  // get the rect of P-well
+  const RectI &PwellRect() { return p_rect_; }
 
-    // get the P/N well boundary
-    int PnBoundary() const { return p_n_edge_; }
+  // get the P/N well boundary
+  int PnBoundary() const { return p_n_edge_; }
 
-    // get the height of N-well
-    int Nheight() const { return type_ptr_->Height() - p_n_edge_; }
+  // get the height of N-well
+  int Nheight() const { return type_ptr_->Height() - p_n_edge_; }
 
-    // get the height of P-well
-    int Pheight() const { return p_n_edge_; }
+  // get the height of P-well
+  int Pheight() const { return p_n_edge_; }
 
-    // set the rect of N or P well
-    void SetWellRect(bool is_n, int lx, int ly, int ux, int uy);
+  // set the rect of N or P well
+  void SetWellRect(bool is_n, int lx, int ly, int ux, int uy);
 
-    // check if N-well is abutted with P-well, if both exist
-    bool IsNpWellAbutted() const;
+  // check if N-well is abutted with P-well, if both exist
+  bool IsNpWellAbutted() const;
 
-    // report the information of N/P-well for debugging purposes
-    void Report() const;
+  // report the information of N/P-well for debugging purposes
+  void Report() const;
 
-  private:
-    BlockType *type_ptr_; // pointer to BlockType
-    bool is_n_set_ = false; // whether N-well shape is set or not
-    bool is_p_set_ = false; // whether P-well shape is set or not
-    RectI n_rect_; // N-well rect
-    RectI p_rect_; // P-well rect
-    int p_n_edge_ = 0; // cached N/P-well boundary
+ private:
+  BlockType *type_ptr_; // pointer to BlockType
+  bool is_n_set_ = false; // whether N-well shape is set or not
+  bool is_p_set_ = false; // whether P-well shape is set or not
+  RectI n_rect_; // N-well rect
+  RectI p_rect_; // P-well rect
+  int p_n_edge_ = 0; // cached N/P-well boundary
 };
 
 }

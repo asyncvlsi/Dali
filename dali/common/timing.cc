@@ -1,7 +1,3 @@
-//
-// Created by yihang on 10/13/21.
-//
-
 #include "timing.h"
 
 namespace dali {
@@ -40,16 +36,16 @@ double get_cpu_time(){
 #include <time.h>
 #include <sys/time.h>
 double get_wall_time() {
-    timeval time{};
-    if (gettimeofday(&time, nullptr)) {
-        //  Handle error
-        return 0;
-    }
-    return (double) time.tv_sec + (double) time.tv_usec * 0.000001;
+  timeval time{};
+  if (gettimeofday(&time, nullptr)) {
+    //  Handle error
+    return 0;
+  }
+  return (double) time.tv_sec + (double) time.tv_usec * 0.000001;
 }
 
 double get_cpu_time() {
-    return (double) clock() / CLOCKS_PER_SEC;
+  return (double) clock() / CLOCKS_PER_SEC;
 }
 #else
 double get_wall_time() {

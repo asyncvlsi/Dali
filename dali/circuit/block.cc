@@ -1,7 +1,23 @@
-//
-// Created by Yihang Yang on 5/23/19.
-//
-
+/*******************************************************************************
+ *
+ * Copyright (c) 2021 Yihang Yang
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
+ *
+ ******************************************************************************/
 #include "block.h"
 
 namespace dali {
@@ -27,16 +43,16 @@ Block::Block(
     llx_(llx),
     lly_(lly),
     orient_(orient) {
-    DaliExpects(name_id_pair_ptr != nullptr, "nullptr for name and index?");
-    DaliExpects(type_ptr != nullptr, "nullptr for type");
-    eff_height_ = type_ptr_->Height();
-    eff_area_ = type_ptr_->Area();
-    aux_ptr_ = nullptr;
-    if (movable) {
-        place_status_ = UNPLACED;
-    } else {
-        place_status_ = FIXED;
-    }
+  DaliExpects(name_id_pair_ptr != nullptr, "nullptr for name and index?");
+  DaliExpects(type_ptr != nullptr, "nullptr for type");
+  eff_height_ = type_ptr_->Height();
+  eff_area_ = type_ptr_->Area();
+  aux_ptr_ = nullptr;
+  if (movable) {
+    place_status_ = UNPLACED;
+  } else {
+    place_status_ = FIXED;
+  }
 }
 
 Block::Block(
@@ -52,106 +68,106 @@ Block::Block(
     lly_(lly),
     place_status_(place_state),
     orient_(orient) {
-    DaliExpects(name_id_pair_ptr != nullptr, "nullptr for name and index?");
-    DaliExpects(type_ptr != nullptr, "nullptr for type");
-    eff_height_ = type_ptr_->Height();
-    eff_area_ = type_ptr_->Area();
-    aux_ptr_ = nullptr;
+  DaliExpects(name_id_pair_ptr != nullptr, "nullptr for name and index?");
+  DaliExpects(type_ptr != nullptr, "nullptr for type");
+  eff_height_ = type_ptr_->Height();
+  eff_area_ = type_ptr_->Area();
+  aux_ptr_ = nullptr;
 }
 
 void Block::SetHeight(int height) {
-    eff_height_ = height;
-    eff_area_ = eff_height_ * type_ptr_->Width();
+  eff_height_ = height;
+  eff_area_ = eff_height_ * type_ptr_->Width();
 }
 
 void Block::ResetHeight() {
-    eff_height_ = type_ptr_->Height();
-    eff_area_ = type_ptr_->Area();
+  eff_height_ = type_ptr_->Height();
+  eff_area_ = type_ptr_->Area();
 }
 
 void Block::SetType(BlockType *type_ptr) {
-    DaliExpects(type_ptr != nullptr, "Set BlockType to nullptr?");
-    type_ptr_ = type_ptr;
-    eff_height_ = type_ptr_->Height();
-    eff_area_ = type_ptr_->Area();
+  DaliExpects(type_ptr != nullptr, "Set BlockType to nullptr?");
+  type_ptr_ = type_ptr;
+  eff_height_ = type_ptr_->Height();
+  eff_area_ = type_ptr_->Area();
 }
 
 void Block::SetLoc(double lx, double ly) {
-    llx_ = lx;
-    lly_ = ly;
+  llx_ = lx;
+  lly_ = ly;
 }
 
 void Block::SetPlacementStatus(PlaceStatus place_status) {
-    place_status_ = place_status;
+  place_status_ = place_status;
 }
 
 void Block::SetOrient(BlockOrient orient) {
-    orient_ = orient;
+  orient_ = orient;
 }
 
 void Block::SetAux(BlockAux *aux) {
-    aux_ptr_ = aux;
+  aux_ptr_ = aux;
 }
 
 void Block::SwapLoc(Block &blk) {
-    double tmp_x = llx_;
-    double tmp_y = lly_;
-    llx_ = blk.LLX();
-    lly_ = blk.LLY();
-    blk.SetLLX(tmp_x);
-    blk.SetLLY(tmp_y);
+  double tmp_x = llx_;
+  double tmp_y = lly_;
+  llx_ = blk.LLX();
+  lly_ = blk.LLY();
+  blk.SetLLX(tmp_x);
+  blk.SetLLY(tmp_y);
 }
 
 void Block::IncreaseX(double displacement, double upper, double lower) {
-    llx_ += displacement;
-    double real_upper = upper - Width();
-    if (llx_ < lower) {
-        llx_ = lower;
-    } else if (llx_ > real_upper) {
-        llx_ = real_upper;
-    }
+  llx_ += displacement;
+  double real_upper = upper - Width();
+  if (llx_ < lower) {
+    llx_ = lower;
+  } else if (llx_ > real_upper) {
+    llx_ = real_upper;
+  }
 }
 
 void Block::IncreaseY(double displacement, double upper, double lower) {
-    lly_ += displacement;
-    double real_upper = upper - Height();
-    if (lly_ < lower) {
-        lly_ = lower;
-    } else if (lly_ > real_upper) {
-        lly_ = real_upper;
-    }
+  lly_ += displacement;
+  double real_upper = upper - Height();
+  if (lly_ < lower) {
+    lly_ = lower;
+  } else if (lly_ > real_upper) {
+    lly_ = real_upper;
+  }
 }
 
 double Block::OverlapArea(const Block &blk) const {
-    double overlap_area = 0;
-    if (IsOverlap(blk)) {
-        double llx, urx, lly, ury;
-        llx = std::max(LLX(), blk.LLX());
-        urx = std::min(URX(), blk.URX());
-        lly = std::max(LLY(), blk.LLY());
-        ury = std::min(URY(), blk.URY());
-        overlap_area = (urx - llx) * (ury - lly);
-    }
-    return overlap_area;
+  double overlap_area = 0;
+  if (IsOverlap(blk)) {
+    double llx, urx, lly, ury;
+    llx = std::max(LLX(), blk.LLX());
+    urx = std::min(URX(), blk.URX());
+    lly = std::max(LLY(), blk.LLY());
+    ury = std::min(URY(), blk.URY());
+    overlap_area = (urx - llx) * (ury - lly);
+  }
+  return overlap_area;
 }
 
 void Block::Report() {
-    BOOST_LOG_TRIVIAL(info)
-        << "  block name: " << Name() << "\n"
-        << "    block type: " << TypePtr()->Name() << "\n"
-        << "    width and height: " << Width() << " " << Height() << "\n"
-        << "    lower left corner: " << llx_ << " " << lly_ << "\n"
-        << "    movable: " << IsMovable() << "\n"
-        << "    orientation: " << OrientStr(orient_) << "\n"
-        << "    assigned primary key: " << Id() << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "  block name: " << Name() << "\n"
+    << "    block type: " << TypePtr()->Name() << "\n"
+    << "    width and height: " << Width() << " " << Height() << "\n"
+    << "    lower left corner: " << llx_ << " " << lly_ << "\n"
+    << "    movable: " << IsMovable() << "\n"
+    << "    orientation: " << OrientStr(orient_) << "\n"
+    << "    assigned primary key: " << Id() << "\n";
 }
 
 void Block::ReportNet() {
-    BOOST_LOG_TRIVIAL(info) << Name() << " connects to:\n";
-    for (auto &net_num: net_list_) {
-        BOOST_LOG_TRIVIAL(info) << net_num << "  ";
-    }
-    BOOST_LOG_TRIVIAL(info) << "\n";
+  BOOST_LOG_TRIVIAL(info) << Name() << " connects to:\n";
+  for (auto &net_num: net_list_) {
+    BOOST_LOG_TRIVIAL(info) << net_num << "  ";
+  }
+  BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
 }

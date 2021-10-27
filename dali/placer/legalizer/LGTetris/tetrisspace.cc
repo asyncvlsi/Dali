@@ -1,6 +1,23 @@
-//
-// Created by yihan on 7/12/19.
-//
+/*******************************************************************************
+ *
+ * Copyright (c) 2021 Yihang Yang
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
+ *
+ ******************************************************************************/
 
 #include "tetrisspace.h"
 
@@ -8,20 +25,25 @@
 
 namespace dali {
 
-TetrisSpace::TetrisSpace(int left, int right, int bottom, int top, int rowHeight, int minWidth) : scan_line_(left),
-                                                                                                  left_(left),
-                                                                                                  right_(right),
-                                                                                                  bottom_(bottom),
-                                                                                                  top_(top),
-                                                                                                  row_height_(rowHeight),
-                                                                                                  min_width_(minWidth) {
+TetrisSpace::TetrisSpace(int left,
+                         int right,
+                         int bottom,
+                         int top,
+                         int rowHeight,
+                         int minWidth) : scan_line_(left),
+                                         left_(left),
+                                         right_(right),
+                                         bottom_(bottom),
+                                         top_(top),
+                                         row_height_(rowHeight),
+                                         min_width_(minWidth) {
   tot_num_row_ = (top_ - bottom_) / rowHeight;
   top_ -= (top_ - bottom_) % rowHeight;
   for (int i = 0; i < tot_num_row_; ++i) {
     FreeSegmentList tmpRow;
     free_segment_rows.push_back(tmpRow);
   }
-  for (auto &row:free_segment_rows) {
+  for (auto &row: free_segment_rows) {
     auto *seg_ptr = new FreeSegment(left_, right_);
     row.PushBack(seg_ptr);
     row.SetMinWidth(min_width_);
@@ -32,7 +54,8 @@ int TetrisSpace::ToStartRow(int y_loc) {
   int row_num = (y_loc - bottom_) / row_height_;
   if ((row_num < 0) || (row_num >= tot_num_row_)) {
     BOOST_LOG_TRIVIAL(info) << "Fatal error:" << std::endl;
-    BOOST_LOG_TRIVIAL(info) << "  y_loc out of range, y_loc, bottom_, top_: " << y_loc << "  " << bottom_ << "  "
+    BOOST_LOG_TRIVIAL(info) << "  y_loc out of range, y_loc, bottom_, top_: "
+                            << y_loc << "  " << bottom_ << "  "
                             << top_
                             << std::endl;
     DaliExpects(false, "ToStartRow conversion fail");
@@ -48,10 +71,12 @@ int TetrisSpace::ToEndRow(int y_loc) {
   }
   if ((row_num < 0) || (row_num >= tot_num_row_)) {
     BOOST_LOG_TRIVIAL(info) << "Fatal error:" << std::endl;
-    BOOST_LOG_TRIVIAL(info) << "  y_loc out of range, y_loc, bottom_, top_: " << y_loc << "  " << bottom_ << "  "
+    BOOST_LOG_TRIVIAL(info) << "  y_loc out of range, y_loc, bottom_, top_: "
+                            << y_loc << "  " << bottom_ << "  "
                             << top_
                             << std::endl;
-    BOOST_LOG_TRIVIAL(info) << "  relative y location:" << relative_y << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "  relative y location:" << relative_y
+                            << std::endl;
     BOOST_LOG_TRIVIAL(info) << "  row height:" << row_height_ << std::endl;
     BOOST_LOG_TRIVIAL(info) << "  row num: " << row_num << std::endl;
     BOOST_LOG_TRIVIAL(info) << "  total row num: " << tot_num_row_ << std::endl;
@@ -68,7 +93,9 @@ void TetrisSpace::UseSpace(int llx, int lly, int width, int height) {
   }
 }
 
-void TetrisSpace::FindCommonSegments(int startRowNum, int endRowNum, FreeSegmentList &commonSegments) {
+void TetrisSpace::FindCommonSegments(int startRowNum,
+                                     int endRowNum,
+                                     FreeSegmentList &commonSegments) {
   if (endRowNum < startRowNum) {
     assert (endRowNum >= startRowNum);
   }
@@ -90,7 +117,9 @@ bool TetrisSpace::IsSpaceAvail(int llx, int lly, int width, int height) {
    * 4. If all of them are yes, make the region as used.
    * ****/
 
-  bool out_range = (llx + width > right_) || (llx < left_) || (lly + height > top_) || (lly < bottom_);
+  bool out_range =
+      (llx + width > right_) || (llx < left_) || (lly + height > top_)
+          || (lly < bottom_);
   if (out_range) {
     return false;
   }
@@ -99,8 +128,10 @@ bool TetrisSpace::IsSpaceAvail(int llx, int lly, int width, int height) {
   int end_row = ToEndRow(lly + height);
   if (end_row >= tot_num_row_) {
     BOOST_LOG_TRIVIAL(info) << "Fatal error:\n";
-    BOOST_LOG_TRIVIAL(info) << "  row info:   " << start_row << "  " << end_row << "  " << tot_num_row_ << "\n";
-    BOOST_LOG_TRIVIAL(info) << "  lly info: " << lly << "  " << lly + height << "  " << top_ << "\n";
+    BOOST_LOG_TRIVIAL(info) << "  row info:   " << start_row << "  " << end_row
+                            << "  " << tot_num_row_ << "\n";
+    BOOST_LOG_TRIVIAL(info) << "  lly info: " << lly << "  " << lly + height
+                            << "  " << top_ << "\n";
     exit(1);
   }
   bool all_row_avail = true;
@@ -116,7 +147,11 @@ bool TetrisSpace::IsSpaceAvail(int llx, int lly, int width, int height) {
   return all_row_avail;
 }
 
-bool TetrisSpace::FindBlockLoc(int llx, int lly, int width, int height, int2d &result_loc) {
+bool TetrisSpace::FindBlockLoc(int llx,
+                               int lly,
+                               int width,
+                               int height,
+                               int2d &result_loc) {
   if (llx < left_) {
     scan_line_ = left_;
   } else {
@@ -127,13 +162,15 @@ bool TetrisSpace::FindBlockLoc(int llx, int lly, int width, int height, int2d &r
   }
   double min_cost = DBL_MAX;
   int effective_height = (int) (std::ceil((double) height / row_height_));
-  int top_row_to_check = (int) (free_segment_rows.size()) - (effective_height - 1);
+  int top_row_to_check =
+      (int) (free_segment_rows.size()) - (effective_height - 1);
   bool all_row_fail = true;
   int min_disp_x;
   std::vector<int2d> candidate_list;
 
   int min_row = ToStartRow(std::max(bottom_, lly - 2 * height));
-  int max_row = ToEndRow(std::min(top_, lly + 2 * height)) - height / row_height_;
+  int max_row =
+      ToEndRow(std::min(top_, lly + 2 * height)) - height / row_height_;
 
   for (int i = min_row; i < max_row; ++i) {
     FreeSegmentList common_segments(scan_line_, right_, min_width_);
@@ -177,7 +214,8 @@ bool TetrisSpace::FindBlockLoc(int llx, int lly, int width, int height, int2d &r
     if (loc.x == -1 && loc.y == -1) {
       continue;
     }
-    double displacement = std::fabs(llx - loc.x) + std::fabs(lly - (loc.y * row_height_ + bottom_));
+    double displacement = std::fabs(llx - loc.x)
+        + std::fabs(lly - (loc.y * row_height_ + bottom_));
     if (displacement < min_cost) {
       min_cost = displacement;
       best_loc = loc;

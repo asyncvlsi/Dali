@@ -1,6 +1,23 @@
-//
-// Created by Yihang Yang on 5/23/19.
-//
+/*******************************************************************************
+ *
+ * Copyright (c) 2021 Yihang Yang
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
+ *
+ ******************************************************************************/
 
 #ifndef DALI_DALI_CIRCUIT_NET_H_
 #define DALI_DALI_CIRCUIT_NET_H_
@@ -24,154 +41,154 @@ class IoPin;
  * One can use AddBlkPinPair() and AddIoPin() to add pins to a net.
  */
 class Net {
-  public:
-    Net(
-        std::pair<const std::string, int> *name_id_pair_ptr,
-        int capacity,
-        double weight
-    );
+ public:
+  Net(
+      std::pair<const std::string, int> *name_id_pair_ptr,
+      int capacity,
+      double weight
+  );
 
-    // get the name
-    const std::string &Name() const;
+  // get the name
+  const std::string &Name() const;
 
-    // get the internal index
-    int Id() const;
+  // get the internal index
+  int Id() const;
 
-    // add block/pin pair to this net
-    void AddBlkPinPair(Block *block_ptr, Pin *pin_ptr);
+  // add block/pin pair to this net
+  void AddBlkPinPair(Block *block_ptr, Pin *pin_ptr);
 
-    std::vector<BlkPinPair> &BlockPins();
+  std::vector<BlkPinPair> &BlockPins();
 
-    // add an I/O pin to this net
-    void AddIoPin(IoPin *io_pin);
+  // add an I/O pin to this net
+  void AddIoPin(IoPin *io_pin);
 
-    std::vector<IoPin *> &IoPinPtrs();
+  std::vector<IoPin *> &IoPinPtrs();
 
-    // set the net weight
-    void SetWeight(double weight);
+  // set the net weight
+  void SetWeight(double weight);
 
-    // get the net weight
-    double Weight() const;
+  // get the net weight
+  double Weight() const;
 
-    // get the number of pins in this net
-    int PinCnt() const;
+  // get the number of pins in this net
+  int PinCnt() const;
 
-    // get 1/(p-1), where p in the number of pins in this net
-    double InvP() const;
+  // get 1/(p-1), where p in the number of pins in this net
+  double InvP() const;
 
-    // set auxiliary information
-    void SetAux(NetAux *aux);
+  // set auxiliary information
+  void SetAux(NetAux *aux);
 
-    // get auxiliary information
-    NetAux *Aux();
+  // get auxiliary information
+  NetAux *Aux();
 
-    // if a given block is not in this net, what is the lower and upper bound of this net in the x direction
-    void GetXBoundIfBlkAbsent(Block *blk_ptr, double &lo, double &hi);
+  // if a given block is not in this net, what is the lower and upper bound of this net in the x direction
+  void GetXBoundIfBlkAbsent(Block *blk_ptr, double &lo, double &hi);
 
-    // if a given block is not in this net, what is the lower and upper bound of this net in the y direction
-    void GetYBoundIfBlkAbsent(Block *blk_ptr, double &lo, double &hi);
+  // if a given block is not in this net, what is the lower and upper bound of this net in the y direction
+  void GetYBoundIfBlkAbsent(Block *blk_ptr, double &lo, double &hi);
 
-    // sort block pins based on block ids and pin ids
-    void SortBlkPinList();
+  // sort block pins based on block ids and pin ids
+  void SortBlkPinList();
 
-    // find the indices for pins with maximum x location and minimum x location in this net
-    void UpdateMaxMinIdX();
+  // find the indices for pins with maximum x location and minimum x location in this net
+  void UpdateMaxMinIdX();
 
-    // find the indices for pins with maximum y location and minimum y location in this net
-    void UpdateMaxMinIdY();
+  // find the indices for pins with maximum y location and minimum y location in this net
+  void UpdateMaxMinIdY();
 
-    // find the indices for pins in both directions
-    void UpdateMaxMinIndex();
+  // find the indices for pins in both directions
+  void UpdateMaxMinIndex();
 
-    // get the index of the BlockPin pair with the maximum x location
-    int MaxBlkPinIdX() const;
+  // get the index of the BlockPin pair with the maximum x location
+  int MaxBlkPinIdX() const;
 
-    // get the index of the BlockPin pair with the minimum x location
-    int MinBlkPinIdX() const;
+  // get the index of the BlockPin pair with the minimum x location
+  int MinBlkPinIdX() const;
 
-    // get the index of the BlockPin pair with the maximum y location
-    int MaxBlkPinIdY() const;
+  // get the index of the BlockPin pair with the maximum y location
+  int MaxBlkPinIdY() const;
 
-    // get the index of the BlockPin pair with the minimum y location
-    int MinBlkPinIdY() const;
+  // get the index of the BlockPin pair with the minimum y location
+  int MinBlkPinIdY() const;
 
-    // get the Block pointer of the BlockPin pair with the maximum x location
-    Block *MaxBlkPtrX() const;
+  // get the Block pointer of the BlockPin pair with the maximum x location
+  Block *MaxBlkPtrX() const;
 
-    // get the Block pointer of the BlockPin pair with the minimum x location
-    Block *MinBlkPtrX() const;
+  // get the Block pointer of the BlockPin pair with the minimum x location
+  Block *MinBlkPtrX() const;
 
-    // get the Block pointer of the BlockPin pair with the maximum y location
-    Block *MaxBlkPtrY() const;
+  // get the Block pointer of the BlockPin pair with the maximum y location
+  Block *MaxBlkPtrY() const;
 
-    // get the Block pointer of the BlockPin pair with the minimum y location
-    Block *MinBlkPtrY() const;
+  // get the Block pointer of the BlockPin pair with the minimum y location
+  Block *MinBlkPtrY() const;
 
-    // get the weighted HPWLX of this net
-    double WeightedHPWLX();
+  // get the weighted HPWLX of this net
+  double WeightedHPWLX();
 
-    // get the weight HPWLY of this net
-    double WeightedHPWLY();
+  // get the weight HPWLY of this net
+  double WeightedHPWLY();
 
-    // get the weight HPWL of this net
-    double WeightedHPWL();
+  // get the weight HPWL of this net
+  double WeightedHPWL();
 
-    // get the lower x bound of this net
-    double MinX() const;
+  // get the lower x bound of this net
+  double MinX() const;
 
-    // get the upper x bound of this net
-    double MaxX() const;
+  // get the upper x bound of this net
+  double MaxX() const;
 
-    // get the lower y bound of this net
-    double MinY() const;
+  // get the lower y bound of this net
+  double MinY() const;
 
-    // get the upper y bound of this net
-    double MaxY() const;
+  // get the upper y bound of this net
+  double MaxY() const;
 
-    void UpdateMaxMinCtoCX();
+  void UpdateMaxMinCtoCX();
 
-    void UpdateMaxMinCtoCY();
+  void UpdateMaxMinCtoCY();
 
-    void UpdateMaxMinCtoC();
+  void UpdateMaxMinCtoC();
 
-    int MaxPinCtoCX();
+  int MaxPinCtoCX();
 
-    int MinPinCtoCX();
+  int MinPinCtoCX();
 
-    int MaxPinCtoCY();
+  int MaxPinCtoCY();
 
-    int MinPinCtoCY();
+  int MinPinCtoCY();
 
-    double HPWLCtoCX();
+  double HPWLCtoCX();
 
-    double HPWLCtoCY();
+  double HPWLCtoCY();
 
-    double HPWLCtoC();
-  protected:
-    std::pair<const std::string, int> *name_id_pair_ptr_;
-    double weight_;
-    int cnt_fixed_;
-    std::vector<BlkPinPair> blk_pins_;
-    std::vector<IoPin *> iopin_ptrs_;
+  double HPWLCtoC();
+ protected:
+  std::pair<const std::string, int> *name_id_pair_ptr_;
+  double weight_;
+  int cnt_fixed_;
+  std::vector<BlkPinPair> blk_pins_;
+  std::vector<IoPin *> iopin_ptrs_;
 
-    // cached data
-    int max_pin_x_, min_pin_x_;
-    int max_pin_y_, min_pin_y_;
-    // 1.0/(p-1), where p is the number of pins connected by this net
-    double inv_p_;
-    int driver_pin_index = -1;
+  // cached data
+  int max_pin_x_, min_pin_x_;
+  int max_pin_y_, min_pin_y_;
+  // 1.0/(p-1), where p is the number of pins connected by this net
+  double inv_p_;
+  int driver_pin_index = -1;
 
-    // auxiliary information
-    NetAux *aux_ptr_;
+  // auxiliary information
+  NetAux *aux_ptr_;
 };
 
 class NetAux {
-  protected:
-    Net *net_ptr_;
-  public:
-    explicit NetAux(Net *net_ptr)
-        : net_ptr_(net_ptr) { net_ptr_->SetAux(this); }
-    Net *GetNet() const { return net_ptr_; }
+ protected:
+  Net *net_ptr_;
+ public:
+  explicit NetAux(Net *net_ptr)
+      : net_ptr_(net_ptr) { net_ptr_->SetAux(this); }
+  Net *GetNet() const { return net_ptr_; }
 };
 
 }
