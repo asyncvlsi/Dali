@@ -278,17 +278,10 @@ add_subdirectory(tests/ioplacer)
 # Configure install destination directory
 ############################################################################
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR} CACHE PATH "installation path" FORCE)
-endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-
-############################################################################
-# Change FALSE to TRUE if you want to change the installation directory to ${ACT_HOME}
-############################################################################
-if (TRUE)
-    message(STATUS "Changing Installation directory to ACT_HOME")
+    message(STATUS "Changing default installation directory to $ACT_HOME")
     set(CMAKE_INSTALL_PREFIX $ENV{ACT_HOME} CACHE PATH "installation path" FORCE)
-    message(STATUS "Current installation directory: " ${CMAKE_INSTALL_PREFIX})
-endif ()
+endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+message(STATUS "Current installation directory: " ${CMAKE_INSTALL_PREFIX})
 
 ############################################################################
 # Install header files
