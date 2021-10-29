@@ -18,7 +18,6 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-
 #ifndef DALI_DALI_PLACER_IOPLACER_IOBOUNDARYSPACE_H_
 #define DALI_DALI_PLACER_IOPLACER_IOBOUNDARYSPACE_H_
 

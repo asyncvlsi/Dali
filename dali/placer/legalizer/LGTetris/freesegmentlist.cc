@@ -18,7 +18,6 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-
 #include "freesegmentlist.h"
 
 #include "dali/common/misc.h"

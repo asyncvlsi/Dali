@@ -38,8 +38,8 @@ using namespace dali;
  *     "place-io m1"
  * we can obtain a placement result satisfying:
  * 1. all IOPINs are placed on placement boundary
- * 2. IOPINs does not overlap with each other
- * 3. Physical geometries of all IOPINs are on metal layer "m1"
+ * 2. IOPINs does not overlap with each other and respect spacing rules
+ * 3. Physical geometries of all IOPINs are on metal layer "Metal1"
  * 4. All locations respect manufacturing grid specified in LEF
  * 5. Physical geometries of all IOPINs are inside the placement region
  *
@@ -50,21 +50,24 @@ int main() {
   std::string def_file_name = "ispd19_test3.input.def";
 
   // initialize PhyDB
-  auto *phy_db = new phydb::PhyDB;
-  phy_db->ReadLef(lef_file_name);
-  phy_db->ReadDef(def_file_name);
+  auto *p_phy_db = new phydb::PhyDB;
+  p_phy_db->ReadLef(lef_file_name);
+  p_phy_db->ReadDef(def_file_name);
 
   // un-place all iopins
-  SetAllIoPinsToUnplaced(phy_db);
+  SetAllIoPinsToUnplaced(p_phy_db);
 
   // initialize Dali
-  Dali dali(phy_db, boost::log::trivial::info, "", true);
+  Dali dali(p_phy_db, boost::log::trivial::info, "", true);
 
   // perform IO placement
+  std::string layer_name("Metal1");
+  char layer_name_c_str[50];
+  strcpy(layer_name_c_str, layer_name.c_str());
   int arg_count = NUM_OF_ARGS;
   char *arg_values[NUM_OF_ARGS] = {
       (char *) "place-io",
-      (char *) "Metal1"
+      layer_name_c_str
   };
   bool is_ioplace_success = dali.IoPinPlacement(arg_count, arg_values);
   if (!is_ioplace_success) {
@@ -73,21 +76,30 @@ int main() {
 
   // export the result to PhyDB and save the result to a DEF file
   dali.ExportToPhyDB();
-  std::string out_def_file_name = "metal_layer.def";
-  phy_db->WriteDef(out_def_file_name);
-  delete phy_db;
+  std::string out_def_file_name = "all_iopin_use_same_metal_layer.def";
+  p_phy_db->WriteDef(out_def_file_name);
+  delete p_phy_db;
 
   // read the DEF file back to the memory, and perform checking
-  phy_db = new phydb::PhyDB;
-  phy_db->ReadLef(lef_file_name);
-  phy_db->ReadDef(out_def_file_name);
+  p_phy_db = new phydb::PhyDB;
+  p_phy_db->ReadLef(lef_file_name);
+  p_phy_db->ReadDef(out_def_file_name);
 
   bool is_legal;
 
-  is_legal = IsEveryIoPinPlacedOnBoundary(phy_db);
+  is_legal = IsEveryIoPinPlacedOnBoundary(p_phy_db);
   if (!is_legal) return FAIL;
 
-  is_legal = IsNoIoPinOverlap(phy_db);
+  is_legal = IsNoIoPinOverlapAndSpacingViolation(p_phy_db);
+  if (!is_legal) return FAIL;
+
+  is_legal = IsEveryIoPinOnMetal(p_phy_db, layer_name);
+  if (!is_legal) return FAIL;
+
+  is_legal = IsEveryIoPinManufacturable(p_phy_db);
+  if (!is_legal) return FAIL;
+
+  is_legal = IsEveryIoPinInsideDieArea(p_phy_db);
   if (!is_legal) return FAIL;
 
   return SUCCESS;

@@ -21,6 +21,7 @@
 #include "helper.h"
 
 #include "dali/circuit/iopin.h"
+#include "dali/common/helper.h"
 #include "dali/common/logging.h"
 #include "dali/common/phydbhelper.h"
 
@@ -34,10 +35,10 @@ namespace dali {
  * modify this benchmark and make all iopins UNPLACED. This function changes the
  * placement status of all iopins to UNPLACED.
  *
- * @param phydb_ptr : the PhyDB instance containing the design with iopins to be placed
+ * @param p_phydb : the PhyDB instance containing the design with iopins to be placed
  */
-void SetAllIoPinsToUnplaced(phydb::PhyDB *phydb_ptr) {
-  for (auto &iopin: phydb_ptr->GetDesignPtr()->GetIoPinsRef()) {
+void SetAllIoPinsToUnplaced(phydb::PhyDB *p_phydb) {
+  for (auto &iopin: p_phydb->GetDesignPtr()->GetIoPinsRef()) {
     iopin.SetPlacementStatus(phydb::UNPLACED);
     //iopin.Report();
   }
@@ -100,22 +101,22 @@ bool IoPinPlacedOnBoundary(
  *
  * This function simply checks if all iopins are placed on placement boundaries.
  *
- * @param phydb_ptr : the PhyDB instance to be checked
+ * @param p_phydb : the PhyDB instance to be checked
  * @return true, if all iopins are on placement boundaries; otherwise, false
  */
-bool IsEveryIoPinPlacedOnBoundary(phydb::PhyDB *phydb_ptr) {
-  if (phydb_ptr == nullptr) {
+bool IsEveryIoPinPlacedOnBoundary(phydb::PhyDB *p_phydb) {
+  if (p_phydb == nullptr) {
     BOOST_LOG_TRIVIAL(warning)
       << "Cannot check if every iopin is placed on placement boundaries for nullptr input\n";
     return false;
   }
 
-  int left = phydb_ptr->GetDesignPtr()->die_area_.LLX();
-  int right = phydb_ptr->GetDesignPtr()->die_area_.URX();
-  int bottom = phydb_ptr->GetDesignPtr()->die_area_.LLY();
-  int top = phydb_ptr->GetDesignPtr()->die_area_.URY();
+  int left = p_phydb->GetDesignPtr()->die_area_.LLX();
+  int right = p_phydb->GetDesignPtr()->die_area_.URX();
+  int bottom = p_phydb->GetDesignPtr()->die_area_.LLY();
+  int top = p_phydb->GetDesignPtr()->die_area_.URY();
 
-  auto &iopins = phydb_ptr->GetDesignPtr()->GetIoPinsRef();
+  auto &iopins = p_phydb->GetDesignPtr()->GetIoPinsRef();
 
   bool res = true;
   for (auto &iopin: iopins) {
@@ -127,18 +128,19 @@ bool IsEveryIoPinPlacedOnBoundary(phydb::PhyDB *phydb_ptr) {
     }
   }
 
+  BOOST_LOG_TRIVIAL(info) << "All iopins are placed on placement boundaries? ";
   if (res) {
-    BOOST_LOG_TRIVIAL(info)
-      << "All iopins are placed on placement boundaries\n";
+    BOOST_LOG_TRIVIAL(info) << "Yes\n";
   } else {
-    BOOST_LOG_TRIVIAL(info)
-      << "Not all iopins are placed on placement boundaries\n";
+    BOOST_LOG_TRIVIAL(info) << "No\n";
   }
 
   return res;
 }
 
 bool IsIoPinNotOverlapping(phydb::IOPin &io_pin0, phydb::IOPin &io_pin1) {
+  if (io_pin0.GetLayerName() != io_pin1.GetLayerName()) return true;
+
   phydb::Rect2D<int> shape0 = io_pin0.GetRect();
   int x0 = io_pin0.GetLocation().x;
   int y0 = io_pin0.GetLocation().y;
@@ -178,22 +180,86 @@ bool IsIoPinNotOverlapping(phydb::IOPin &io_pin0, phydb::IOPin &io_pin1) {
   return no_overlap;
 }
 
+bool IsIoPinNoSpacingViolation(
+    phydb::PhyDB *p_phydb,
+    phydb::IOPin &io_pin0,
+    phydb::IOPin &io_pin1
+) {
+  if (io_pin0.GetLayerName() != io_pin1.GetLayerName()) return true;
+
+  std::string layer_name = io_pin0.GetLayerName();
+  phydb::Layer *p_layer = p_phydb->GetLayerPtr(layer_name);
+  double d_spacing = p_layer->GetSpacing();
+  int database_micron = p_phydb->tech().GetDatabaseMicron();
+  double half_spacing = d_spacing * database_micron / 2.0;
+
+  phydb::Rect2D<int> shape0 = io_pin0.GetRect();
+  int x0 = io_pin0.GetLocation().x;
+  int y0 = io_pin0.GetLocation().y;
+  BlockOrient orient0 = OrientPhyDB2Dali(io_pin0.GetOrientation());
+  IoPin dali_pin0(
+      x0, y0, orient0,
+      shape0.LLX() - half_spacing,
+      shape0.LLY() - half_spacing,
+      shape0.URX() + half_spacing,
+      shape0.URY() + half_spacing
+  );
+
+  phydb::Rect2D<int> shape1 = io_pin1.GetRect();
+  int x1 = io_pin1.GetLocation().x;
+  int y1 = io_pin1.GetLocation().y;
+  BlockOrient orient1 = OrientPhyDB2Dali(io_pin1.GetOrientation());
+  IoPin dali_pin1(
+      x1, y1, orient1,
+      shape1.LLX() - half_spacing,
+      shape1.LLY() - half_spacing,
+      shape1.URX() + half_spacing,
+      shape1.URY() + half_spacing
+  );
+
+  bool no_overlap = dali_pin0.LX() > dali_pin1.UX() ||
+      dali_pin1.LX() > dali_pin0.UX() ||
+      dali_pin0.LY() > dali_pin1.UY() ||
+      dali_pin1.LY() > dali_pin0.UY();
+
+  if (!no_overlap) {
+    BOOST_LOG_TRIVIAL(info)
+      << "iopin " << io_pin0.GetName() << "\n"
+      << "    loc: (" << x0 << ", " << y0 << ")"
+      << "    size: " << shape0 << "\n"
+      << "    orin: " << OrientStr(orient0) << "\n"
+      << "    shape(+- spacing/2.0): (" << dali_pin0.LX() << ", "
+      << dali_pin0.LY() << ") ("
+      << dali_pin0.UX() << ", " << dali_pin0.UY() << ")\n"
+      << "violates the min-spacing rule with \n"
+      << "iopin " << io_pin0.GetName() << "\n"
+      << "    loc: (" << x1 << ", " << y1 << ")"
+      << "    size: " << shape1 << "\n"
+      << "    orin: " << OrientStr(orient1) << "\n"
+      << "    shape(+- spacing/2.0): (" << dali_pin1.LX() << ", "
+      << dali_pin1.LY() << ") ("
+      << dali_pin1.UX() << ", " << dali_pin1.UY() << ")\n";
+  }
+
+  return no_overlap;
+}
+
 /****
  * @brief Check if iopins do not overlap with each other
  *
  * This function simply checks if all iopins have no overlaps.
  *
- * @param phydb_ptr : the PhyDB instance to be checked
+ * @param p_phydb : the PhyDB instance to be checked
  * @return true, if all iopins have no overlaps; otherwise, false
  */
-bool IsNoIoPinOverlap(phydb::PhyDB *phydb_ptr) {
-  if (phydb_ptr == nullptr) {
+bool IsNoIoPinOverlapAndSpacingViolation(phydb::PhyDB *p_phydb) {
+  if (p_phydb == nullptr) {
     BOOST_LOG_TRIVIAL(warning)
       << "Cannot check if every iopin is placed on placement boundaries for nullptr input\n";
     return false;
   }
 
-  auto &iopins = phydb_ptr->GetDesignPtr()->GetIoPinsRef();
+  auto &iopins = p_phydb->GetDesignPtr()->GetIoPinsRef();
   size_t sz = iopins.size();
 
   bool res = true;
@@ -205,17 +271,148 @@ bool IsNoIoPinOverlap(phydb::PhyDB *phydb_ptr) {
       if (!is_not_overlapping) {
         res = false;
       }
+      bool is_spacing_satisfied = IsIoPinNoSpacingViolation(
+          p_phydb, io_pin0, io_pin1
+      );
+      if (!is_spacing_satisfied) {
+        res = false;
+      }
     }
   }
 
+  BOOST_LOG_TRIVIAL(info) << "All iopins satisfy spacing rules? ";
   if (res) {
-    BOOST_LOG_TRIVIAL(info)
-      << "All iopins do not overlap with each other\n";
+    BOOST_LOG_TRIVIAL(info) << "Yes\n";
   } else {
-    BOOST_LOG_TRIVIAL(info)
-      << "Some iopins overlap with each other\n";
+    BOOST_LOG_TRIVIAL(info) << "No\n";
   }
 
+  return res;
+}
+
+/****
+ * @brief Check if all I/O pins are placed on the given metal layer
+ *
+ * This function checks if all I/O pins are placed on the correct metal layer.
+ *
+ * @param p_phydb
+ * @param layer_name
+ * @return true, if all on the given metal layer; otherwise, false
+ */
+bool IsEveryIoPinOnMetal(
+    phydb::PhyDB *p_phydb,
+    std::string const &layer_name
+) {
+  if (p_phydb == nullptr) {
+    BOOST_LOG_TRIVIAL(warning)
+      << "Cannot check if every iopin is placed on placement boundaries for nullptr input\n";
+    return false;
+  }
+
+  auto &iopins = p_phydb->GetDesignPtr()->GetIoPinsRef();
+
+  bool res = true;
+  for (auto &iopin: iopins) {
+    if (iopin.GetLayerName() != layer_name) {
+      res = false;
+      BOOST_LOG_TRIVIAL(info)
+        << "iopin " << iopin.GetName()
+        << " is not on the give layer: " << layer_name << "\n";
+    }
+  }
+
+  BOOST_LOG_TRIVIAL(info)
+    << "All iopins are on layer: " << layer_name << "? ";
+  if (res) {
+    BOOST_LOG_TRIVIAL(info) << "Yes\n";
+  } else {
+    BOOST_LOG_TRIVIAL(info) << "No\n";
+  }
+
+  return res;
+}
+
+bool IsEveryIoPinManufacturable(phydb::PhyDB *p_phydb) {
+  if (p_phydb == nullptr) {
+    BOOST_LOG_TRIVIAL(warning)
+      << "Cannot check if every iopin is placed on placement boundaries for nullptr input\n";
+    return false;
+  }
+
+  auto &iopins = p_phydb->GetDesignPtr()->GetIoPinsRef();
+  bool res = true;
+  for (auto &iopin: iopins) {
+    int database_microns = p_phydb->tech().GetDatabaseMicron();
+    double manufacturing_grid = p_phydb->tech().GetManufacturingGrid();
+    phydb::Rect2D<int> shape = iopin.GetRect();
+    double tmp_grid = database_microns * manufacturing_grid;
+    DaliExpects(AbsResidual(tmp_grid, 1.0) < 1e-5,
+                "DATABASE_MICRONS * MANUFACTURINGGRID is not close to an integer?");
+    int grid = static_cast<int>(tmp_grid);
+    bool is_manufacturable = (shape.LLX() % grid == 0) &&
+        (shape.LLY() % grid == 0) &&
+        (shape.URX() % grid == 0) &&
+        (shape.URY() % grid == 0);
+
+    if (!is_manufacturable) {
+      res = false;
+      BOOST_LOG_TRIVIAL(info)
+        << "iopin " << iopin.GetName() << " has a rect: "
+        << shape << " not on manufacturing grid\n"
+        << "manufacturing grid: " << manufacturing_grid << " um, or "
+        << grid << " database unit\n";
+    }
+  }
+
+  BOOST_LOG_TRIVIAL(info) << "All iopins are manufacturable? ";
+  if (res) {
+    BOOST_LOG_TRIVIAL(info) << "Yes\n";
+  } else {
+    BOOST_LOG_TRIVIAL(info) << "No\n";
+  }
+
+  return res;
+}
+
+bool IsEveryIoPinInsideDieArea(phydb::PhyDB *p_phydb) {
+  if (p_phydb == nullptr) {
+    BOOST_LOG_TRIVIAL(warning)
+      << "Cannot check if every iopin is placed on placement boundaries for nullptr input\n";
+    return false;
+  }
+
+  auto &iopins = p_phydb->GetDesignPtr()->GetIoPinsRef();
+  bool res = true;
+  phydb::Rect2D<int> die_area = p_phydb->design().GetDieArea();
+  for (auto &iopin: iopins) {
+    phydb::Rect2D<int> shape = iopin.GetRect();
+    int x = iopin.GetLocation().x;
+    int y = iopin.GetLocation().y;
+    BlockOrient orient = OrientPhyDB2Dali(iopin.GetOrientation());
+    IoPin pin(x, y, orient,
+              shape.LLX(), shape.LLY(), shape.URX(), shape.URY());
+
+    bool is_in_die_area =
+        (pin.LX() >= die_area.LLX() && pin.LX() <= die_area.URX())
+            && (pin.UX() >= die_area.LLX() && pin.UX() <= die_area.URX())
+            && (pin.LY() >= die_area.LLY() && pin.LY() <= die_area.URY())
+            && (pin.UY() >= die_area.LLY() && pin.UY() <= die_area.URY());
+    if (!is_in_die_area) {
+      res = false;
+      BOOST_LOG_TRIVIAL(info)
+        << "iopin " << iopin.GetName() << "is out of die area: "
+        << "(" << pin.LX() << ", " << pin.LY() << ") ("
+        << pin.UX() << ", " << pin.UY() << ")\n"
+        << " die area: " << die_area << "\n";
+    }
+  }
+
+  BOOST_LOG_TRIVIAL(info) << "All iopins are inside the diea area? ";
+  if (res) {
+    BOOST_LOG_TRIVIAL(info) << "Yes\n";
+  } else {
+    BOOST_LOG_TRIVIAL(info) << "No\n";
+  }
   return res;
 }
 

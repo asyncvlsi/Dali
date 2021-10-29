@@ -26,12 +26,15 @@
 
 namespace dali {
 
-void SetAllIoPinsToUnplaced(phydb::PhyDB *phydb_ptr);
-bool IsEveryIoPinPlacedOnBoundary(phydb::PhyDB *phydb_ptr);
-bool IsNoIoPinOverlap(phydb::PhyDB *phydb_ptr);
+void SetAllIoPinsToUnplaced(phydb::PhyDB *p_phydb);
+bool IsEveryIoPinPlacedOnBoundary(phydb::PhyDB *p_phydb);
+bool IsNoIoPinOverlapAndSpacingViolation(phydb::PhyDB *p_phydb);
 bool IsEveryIoPinOnMetal(
-    phydb::PhyDB *phydb_ptr, std::string const &layer_name
+    phydb::PhyDB *p_phydb,
+    std::string const &layer_name
 );
+bool IsEveryIoPinManufacturable(phydb::PhyDB *p_phydb);
+bool IsEveryIoPinInsideDieArea(phydb::PhyDB *p_phydb);
 
 }
 

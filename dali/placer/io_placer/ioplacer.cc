@@ -18,11 +18,9 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-
 #include "ioplacer.h"
 
 #include "dali/common/logging.h"
-#include "dali/common/timing.h"
 
 #define NUM_OF_PLACE_BOUNDARY 4
 #define LEFT 0
@@ -657,3 +655,9 @@ bool IoPlacer::AutoPlaceCmd(int argc, char **argv) {
 }
 
 }
+
+#undef NUM_OF_PLACE_BOUNDARY
+#undef LEFT
+#undef RIGHT
+#undef BOTTOM
+#undef TOP
