@@ -56,6 +56,15 @@ class IoPin {
       double loc_x,
       double loc_y
   );
+  IoPin(
+      double loc_x,
+      double loc_y,
+      BlockOrient orient,
+      double llx,
+      double lly,
+      double urx,
+      double ury
+  );
 
   // get the name
   const std::string &Name() const;
@@ -153,6 +162,18 @@ class IoPin {
   // upper right y
   double UY(double spacing = 0) const;
 
+  // set final x
+  void SetFinalX(int final_x);
+
+  // get final x
+  int FinalX() const;
+
+  // set final y
+  void SetFinalY(int final_y);
+
+  //get final y
+  int FinalY() const;
+
   // set orientation
   void SetOrient(BlockOrient orient);
 
@@ -171,8 +192,10 @@ class IoPin {
   bool is_shape_set_ = false;
   PlaceStatus init_place_status_;
   PlaceStatus place_status_;
-  double x_;
-  double y_;
+  double x_; // grid unit
+  double y_; // grid unit
+  int final_x_ = 0; // database unit
+  int final_y_ = 0; // database unit
   BlockOrient orient_;
 
   // set shape of its physical geometry, and compute rects for different orientations

@@ -18,7 +18,6 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-
 #ifndef DALI_DALI_COMMON_PHYDBHELPER_H_
 #define DALI_DALI_COMMON_PHYDBHELPER_H_
 
@@ -27,7 +26,12 @@
 #include "dali/circuit/status.h"
 
 namespace dali {
+
 phydb::PlaceStatus PlaceStatusDali2PhyDB(PlaceStatus dali_place_status);
+PlaceStatus PlaceStatusPhyDB2Dali(phydb::PlaceStatus phydb_place_status);
+phydb::CompOrient OrientDali2PhyDB(BlockOrient dali_orient);
+BlockOrient OrientPhyDB2Dali(phydb::CompOrient phydb_orient);
+
 }
 
 #endif //DALI_DALI_COMMON_PHYDBHELPER_H_

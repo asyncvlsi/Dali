@@ -89,6 +89,12 @@ class Circuit {
   // convert length from database unit to um
   double DatabaseUnit2Micron(int x) const;
 
+  // Dali to PhyDB distance scale factor x
+  int DistanceScaleFactorX() const;
+
+  // Dali to PhyDB distance scale factor y
+  int DistanceScaleFactorY() const;
+
   // convert length in the x direction from grid unit to database unit
   int LocDali2PhydbX(double loc) const;
 

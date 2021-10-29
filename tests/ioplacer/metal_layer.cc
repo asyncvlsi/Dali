@@ -1,8 +1,23 @@
-//
-// Created by Yihang Yang on 9/9/21.
-//
-
-#include <fstream>
+/*******************************************************************************
+ *
+ * Copyright (c) 2021 Yihang Yang
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
+ *
+ ******************************************************************************/
 #include <iostream>
 
 #include "phydb/phydb.h"
@@ -31,52 +46,49 @@ using namespace dali;
  * @return 0 if this test is passed, 1 if failed
  */
 int main() {
-    std::string lef_file_name = "ispd19_test3.input.lef";
-    std::string def_file_name = "ispd19_test3.input.def";
+  std::string lef_file_name = "ispd19_test3.input.lef";
+  std::string def_file_name = "ispd19_test3.input.def";
 
-    // initialie PhyDB
-    auto *phy_db = new phydb::PhyDB;
-    phy_db->ReadLef(lef_file_name);
-    phy_db->ReadDef(def_file_name);
+  // initialize PhyDB
+  auto *phy_db = new phydb::PhyDB;
+  phy_db->ReadLef(lef_file_name);
+  phy_db->ReadDef(def_file_name);
 
-    // un-place all iopins
-    SetAllIoPinsToUnplaced(phy_db);
+  // un-place all iopins
+  SetAllIoPinsToUnplaced(phy_db);
 
-    // initialize Dali
-    Dali dali(
-        phy_db,
-        boost::log::trivial::info,
-        ""
-    );
+  // initialize Dali
+  Dali dali(phy_db, boost::log::trivial::info, "", true);
 
-    // perform IO placement
-    int arg_count = NUM_OF_ARGS;
-    char *arg_values[NUM_OF_ARGS] = {
-        (char *) "place-io",
-        (char *) "Metal1"
-    };
-    bool is_ioplace_success = dali.IoPinPlacement(arg_count, arg_values);
-    if (!is_ioplace_success) {
-        return FAIL;
-    }
+  // perform IO placement
+  int arg_count = NUM_OF_ARGS;
+  char *arg_values[NUM_OF_ARGS] = {
+      (char *) "place-io",
+      (char *) "Metal1"
+  };
+  bool is_ioplace_success = dali.IoPinPlacement(arg_count, arg_values);
+  if (!is_ioplace_success) {
+    return FAIL;
+  }
 
-    // export the result to PhyDB and save the result to a DEF file
-    dali.ExportToPhyDB();
-    std::string out_def_file_name = "metal_layer.def";
-    phy_db->WriteDef(out_def_file_name);
-    delete phy_db;
+  // export the result to PhyDB and save the result to a DEF file
+  dali.ExportToPhyDB();
+  std::string out_def_file_name = "metal_layer.def";
+  phy_db->WriteDef(out_def_file_name);
+  delete phy_db;
 
-    // read the DEF file back to the memory, and perform checking
-    phy_db = new phydb::PhyDB;
-    phy_db->ReadLef(lef_file_name);
-    phy_db->ReadDef(out_def_file_name);
+  // read the DEF file back to the memory, and perform checking
+  phy_db = new phydb::PhyDB;
+  phy_db->ReadLef(lef_file_name);
+  phy_db->ReadDef(out_def_file_name);
 
-    bool is_legal;
-    is_legal = IsEveryIoPinPlacedOnBoundary(phy_db);
-    if (!is_legal) return FAIL;
+  bool is_legal;
 
-    is_legal = IsNoIoPinOverlap(phy_db);
-    if (!is_legal) return FAIL;
+  is_legal = IsEveryIoPinPlacedOnBoundary(phy_db);
+  if (!is_legal) return FAIL;
 
-    return SUCCESS;
+  is_legal = IsNoIoPinOverlap(phy_db);
+  if (!is_legal) return FAIL;
+
+  return SUCCESS;
 }

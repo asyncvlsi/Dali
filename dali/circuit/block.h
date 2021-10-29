@@ -204,13 +204,13 @@ class Block {
   // decrease y coordinate by a certain amount
   void DecreaseY(double displacement) { lly_ -= displacement; }
 
-  // returns whether this Block overlaps with BLock @param blk
+  // returns whether this Block overlaps with Block @param blk
   bool IsOverlap(const Block &blk) const {
     return !(LLX() > blk.URX() || blk.LLX() > URX() || LLY() > blk.URY()
         || blk.LLY() > URY());
   }
 
-  // returns whether this Block overlaps with BLock @param blk
+  // returns whether this Block overlaps with Block @param blk
   bool IsOverlap(const Block *blk) const { return IsOverlap(*blk); }
 
   // returns the overlap area between this Block and Block @param blk

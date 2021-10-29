@@ -591,6 +591,37 @@ bool IoPlacer::PlaceIoPinOnEachBoundary() {
   return true;
 }
 
+/****
+ * @brief Adjust the location of an I/O pin, if it is placed on the right/top boundary
+ *
+ * Because the width and height of the placement may not be integer multiple of
+ * grid values. If this is the case, then I/O pins placed on the right/top boundary
+ * by Dali are not on the actual placement boundary, so we need to adjust their
+ * locations to address this problem.
+ */
+void IoPlacer::AdjustIoPinLocationForPhyDB() {
+  for (auto &iopin: p_ckt_->IoPins()) {
+    // ignore pre-placed I/O pins
+    if (iopin.IsPrePlaced()) continue;
+
+    // compute PhyDB locations assuming width and height are integer multiple of grid values
+    int final_x = p_ckt_->LocDali2PhydbX(iopin.X());
+    int final_y = p_ckt_->LocDali2PhydbY(iopin.Y());
+
+    // for I/O pins on the right/top boundary, need to adjust their location
+    if (iopin.X() == p_ckt_->RegionURX()) {
+      final_x += p_ckt_->design().DieAreaOffsetXResidual();
+    }
+    if (iopin.Y() == p_ckt_->RegionURY()) {
+      final_y += p_ckt_->design().DieAreaOffsetYResidual();
+    }
+
+    // set final locations
+    iopin.SetFinalX(final_x);
+    iopin.SetFinalY(final_y);
+  }
+}
+
 bool IoPlacer::AutoPlaceIoPin() {
   BOOST_LOG_TRIVIAL(info)
     << "---------------------------------------\n"
@@ -606,6 +637,7 @@ bool IoPlacer::AutoPlaceIoPin() {
   BuildResourceMap();
   AssignIoPinToBoundaryLayers();
   PlaceIoPinOnEachBoundary();
+  AdjustIoPinLocationForPhyDB();
 
   BOOST_LOG_TRIVIAL(info)
     << "\033[0;36m"

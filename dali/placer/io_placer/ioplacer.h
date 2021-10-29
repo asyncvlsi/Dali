@@ -89,6 +89,8 @@ class IoPlacer {
   bool AssignIoPinToBoundaryLayers();
   bool PlaceIoPinOnEachBoundary();
 
+  void AdjustIoPinLocationForPhyDB();
+
   bool AutoPlaceIoPin();
   bool AutoPlaceCmd(int argc, char **argv);
 };

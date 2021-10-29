@@ -18,16 +18,17 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-
 #include "helper.h"
+
+#include <cmath>
 
 #include "dali/common/logging.h"
 #include "dali/common/memory.h"
 
 namespace dali {
 
-double Residual(double x, double y) {
-  return x - std::round(x / y) * y;
+double AbsResidual(double x, double y) {
+  return std::fabs(x - std::round(x / y) * y);
 }
 
 void StrTokenize(std::string const &line, std::vector<std::string> &res) {

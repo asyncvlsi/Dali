@@ -75,6 +75,28 @@ IoPin::IoPin(
   rects_[0].SetValue(0, 0, 0, 0);
 }
 
+IoPin::IoPin(
+    double loc_x,
+    double loc_y,
+    BlockOrient orient,
+    double llx,
+    double lly,
+    double urx,
+    double ury
+) : name_id_pair_ptr_(nullptr),
+    net_ptr_(nullptr),
+    signal_direction_(INPUT),
+    signal_use_(SIGNAL),
+    layer_ptr_(nullptr),
+    init_place_status_(PLACED),
+    place_status_(PLACED),
+    x_(loc_x),
+    y_(loc_y),
+    orient_(orient) {
+  rects_.resize(NUM_OF_ORIENT, RectD(0, 0, 0, 0));
+  SetRect(llx, lly, urx, ury);
+}
+
 const std::string &IoPin::Name() const {
   return name_id_pair_ptr_->first;
 }
@@ -212,6 +234,22 @@ double IoPin::LY(double spacing) const {
 
 double IoPin::UY(double spacing) const {
   return y_ + rects_[orient_ - N].URY() + spacing;
+}
+
+void IoPin::SetFinalX(int final_x) {
+  final_x_ = final_x;
+}
+
+int IoPin::FinalX() const {
+  return final_x_;
+}
+
+void IoPin::SetFinalY(int final_y) {
+  final_y_ = final_y;
+}
+
+int IoPin::FinalY() const {
+  return final_y_;
 }
 
 void IoPin::SetOrient(BlockOrient orient) {

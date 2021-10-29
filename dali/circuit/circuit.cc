@@ -58,14 +58,39 @@ double Circuit::DatabaseUnit2Micron(int x) const {
   return (double(x)) / DatabaseMicrons();
 }
 
+int Circuit::DistanceScaleFactorX() const {
+  double d_factor_x = GridValueX() * design_.distance_microns_;
+  DaliExpects(AbsResidual(d_factor_x, 1.0) < constants_.epsilon,
+              "grid_value_x * distance_micron is not close to an integer?");
+  return static_cast<int>(std::round(d_factor_x));
+
+}
+
+int Circuit::DistanceScaleFactorY() const {
+  double d_factor_y = GridValueY() * design_.distance_microns_;
+  DaliExpects(AbsResidual(d_factor_y, 1.0) < constants_.epsilon,
+              "grid_value_y * distance_micron is not close to an integer?");
+  return static_cast<int>(std::round(d_factor_y));
+}
+
 int Circuit::LocDali2PhydbX(double loc) const {
-  double factor_x = DistanceMicrons() * GridValueX();
-  return int(std::round(loc * factor_x)) + DieAreaOffsetX();
+  if (AbsResidual(loc, 1.0) > constants_.epsilon) {
+    DaliExpects(false,
+                "Only Dali integer location can be converted to a PhyDB location: "
+                    + std::to_string(loc));
+  }
+  return static_cast<int>(std::round(loc * DistanceScaleFactorX()))
+      + DieAreaOffsetX();
 }
 
 int Circuit::LocDali2PhydbY(double loc) const {
-  double factor_y = DistanceMicrons() * GridValueY();
-  return int(std::round(loc * factor_y)) + DieAreaOffsetY();
+  if (AbsResidual(loc, 1.0) > constants_.epsilon) {
+    DaliExpects(false,
+                "Only Dali integer location can be converted to a PhyDB location: "
+                    + std::to_string(loc));
+  }
+  return static_cast<int>(std::round(loc * DistanceScaleFactorY()))
+      + DieAreaOffsetY();
 }
 
 double Circuit::LocPhydb2DaliX(int loc) const {
@@ -156,8 +181,8 @@ double Circuit::GridValueY() const {
 void Circuit::SetRowHeight(double row_height) {
   DaliExpects(row_height > 0, "Setting row height to a negative value?");
   //BOOST_LOG_TRIVIAL(info) << row_height << "  " << GridValueY() << std::endl;
-  double residual = Residual(row_height, GridValueY());
-  DaliExpects(std::fabs(residual) < constants_.epsilon,
+  double residual = AbsResidual(row_height, GridValueY());
+  DaliExpects(residual < constants_.epsilon,
               "Site height is not integer multiple of grid value in Y");
   tech_.row_height_set_ = true;
   tech_.row_height_ = row_height;
@@ -269,12 +294,12 @@ BlockType *Circuit::AddWellTapBlockType(
     double width,
     double height
 ) {
-  double residual = fabs(Residual(width, GridValueX()));
+  double residual = AbsResidual(width, GridValueX());
   DaliExpects(residual < constants_.epsilon,
               "BlockType width is not integer multiple of grid value in X: "
                   + block_type_name);
 
-  residual = fabs(Residual(height, GridValueY()));
+  residual = AbsResidual(height, GridValueY());
   DaliExpects(residual < constants_.epsilon,
               "BlockType height is not integer multiple of grid value in Y: "
                   + block_type_name);
@@ -342,38 +367,59 @@ int Circuit::DistanceMicrons() const {
   return design_.distance_microns_;
 }
 
-void Circuit::SetDieArea(
-    int lower_x,
-    int lower_y,
-    int upper_x,
-    int upper_y
-) {
+void Circuit::SetDieArea(int lower_x, int lower_y, int upper_x, int upper_y) {
   DaliExpects(GridValueX() > 0 && GridValueY() > 0,
               "Need to set positive grid values before setting placement boundary");
   DaliExpects(design_.distance_microns_ > 0,
               "Need to set def_distance_microns before setting placement boundary using Circuit::SetDieArea()");
-  double factor_x = GridValueX() * design_.distance_microns_;
-  double factor_y = GridValueY() * design_.distance_microns_;
+  int factor_x = DistanceScaleFactorX();
+  int factor_y = DistanceScaleFactorY();
 
   // TODO, extract placement boundary from rows if they are any rows
-  DaliWarns((lower_x % (int) std::round(factor_x)) != 0,
-            "expects the left boundary coordinate is integer multiple of grid_value_x");
-  DaliWarns((lower_y % (int) std::round(factor_y)) != 0,
-            "expects the bottom boundary coordinate is integer multiple of grid_value_y");
-  DaliWarns((upper_x % (int) std::round(factor_x)) != 0,
-            "expects the right boundary coordinate is integer multiple of grid_value_x");
-  DaliWarns((upper_y % (int) std::round(factor_y)) != 0,
-            "expects the top boundary coordinate is integer multiple of grid_value_y");
+  design_.die_area_offset_x_ = lower_x % factor_x;
+  design_.die_area_offset_y_ = lower_y % factor_y;
+  int adjusted_lower_x = lower_x - design_.die_area_offset_x_;
+  int adjusted_lower_y = lower_y - design_.die_area_offset_y_;
+  int adjusted_upper_x = upper_x - design_.die_area_offset_x_;
+  int adjusted_upper_y = upper_y - design_.die_area_offset_y_;
+  if (design_.die_area_offset_x_ != 0) {
+    BOOST_LOG_TRIVIAL(info)
+      << "left placement boundary is not on placement grid: \n"
+      << "  shift left from " << lower_x << " to " << adjusted_lower_x << "\n"
+      << "  shift right from " << upper_x << " to " << adjusted_upper_x << "\n";
+  }
+  if (design_.die_area_offset_y_ != 0) {
+    BOOST_LOG_TRIVIAL(info)
+      << "bottom placement boundary is not on placement grid: \n"
+      << "  shift bottom from " << lower_y << " to " << adjusted_lower_y << "\n"
+      << "  shift top from " << upper_y << " to " << adjusted_upper_y << "\n";
+  }
+  lower_x = adjusted_lower_x;
+  lower_y = adjusted_lower_y;
+  upper_x = adjusted_upper_x;
+  upper_y = adjusted_upper_y;
+  int left = lower_x / factor_x;
+  int bottom = lower_y / factor_y;
 
-  design_.die_area_offset_x_ = lower_x % (int) std::round(factor_x);
-  design_.die_area_offset_y_ = lower_y % (int) std::round(factor_y);
-
-  int left = lower_x / (int) std::round(factor_x);
-  int bottom = lower_y / (int) std::round(factor_y);
-  int right =
-      (upper_x - design_.die_area_offset_x_) / (int) std::round(factor_x);
-  int top =
-      (upper_y - design_.die_area_offset_y_) / (int) std::round(factor_y);
+  design_.die_area_offset_x_residual_ = upper_x % factor_x;
+  design_.die_area_offset_y_residual_ = upper_y % factor_y;
+  adjusted_upper_x = upper_x - design_.die_area_offset_x_residual_;
+  adjusted_upper_y = upper_y - design_.die_area_offset_y_residual_;
+  if (design_.die_area_offset_x_residual_ != 0) {
+    BOOST_LOG_TRIVIAL(info)
+      << "right placement boundary is not on placement grid: \n"
+      << "  shrink right from " << upper_x << " to " << adjusted_upper_x
+      << "\n";
+  }
+  if (design_.die_area_offset_y_residual_ != 0) {
+    BOOST_LOG_TRIVIAL(info)
+      << "top placement boundary is not on placement grid: \n"
+      << "  shrink top from " << upper_y << " to " << adjusted_upper_y << "\n";
+  }
+  upper_x = adjusted_upper_x;
+  upper_y = adjusted_upper_y;
+  int right = upper_x / factor_x;
+  int top = upper_y / factor_y;
 
   SetBoundary(left, bottom, right, top);
 }
@@ -2404,7 +2450,7 @@ void Circuit::BlockTypeSizeMicrometerToGridValue(
     int &gridded_width,
     int &gridded_height
 ) {
-  double residual_x = fabs(Residual(width, GridValueX()));
+  double residual_x = AbsResidual(width, GridValueX());
   gridded_width = -1;
   if (residual_x < constants_.epsilon) {
     gridded_width = (int) std::round(width / GridValueX());
@@ -2420,7 +2466,7 @@ void Circuit::BlockTypeSizeMicrometerToGridValue(
       << GridValueX() << " um\n";
   }
 
-  double residual_y = fabs(Residual(height, GridValueY()));
+  double residual_y = AbsResidual(height, GridValueY());
   gridded_height = -1;
   if (residual_y < constants_.epsilon) {
     gridded_height = (int) std::round(height / GridValueY());
