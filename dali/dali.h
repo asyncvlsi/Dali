@@ -62,7 +62,7 @@ class Dali {
   void UnifiedLegalization();
 
   void ExternalDetailedPlaceAndLegalize(
-      std::string engine,
+      std::string const &engine,
       bool load_dp_result = true
   );
 
@@ -88,8 +88,8 @@ class Dali {
   static void ReportIoPlacementUsage();
 
   std::string CreateDetailedPlacementAndLegalizationScript(
-      std::string &engine,
-      std::string &script_name
+      std::string const &engine,
+      std::string const &script_name
   );
 
   void ExportOrdinaryComponentsToPhyDB();

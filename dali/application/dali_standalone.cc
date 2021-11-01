@@ -228,30 +228,20 @@ int main(int argc, char *argv[]) {
   }
   BOOST_LOG_TRIVIAL(info) << "\n";
 
+  Placer *gb_placer = new GPSimPL;
+  gb_placer->SetInputCircuit(&circuit);
+  gb_placer->SetBoundaryDef();
+  gb_placer->SetFillingRate(target_density);
+  gb_placer->ReportBoundaries();
+  gb_placer->StartPlacement();
   if (cell_file_name.empty()) {
-    Placer *gb_placer = new GPSimPL;
-    gb_placer->SetInputCircuit(&circuit);
-    gb_placer->SetBoundaryDef();
-    gb_placer->SetFillingRate(target_density);
-    gb_placer->ReportBoundaries();
-    gb_placer->StartPlacement();
-
     if (!is_no_legal) {
       Placer *legalizer = new LGTetrisEx;
       legalizer->TakeOver(gb_placer);
       legalizer->StartPlacement();
       delete legalizer;
     }
-
-    delete gb_placer;
   } else {
-    Placer *gb_placer = new GPSimPL;
-    gb_placer->SetInputCircuit(&circuit);
-    gb_placer->SetBoundaryDef();
-    gb_placer->SetFillingRate(target_density);
-    gb_placer->ReportBoundaries();
-    gb_placer->StartPlacement();
-
     auto *well_legalizer = new StdClusterWellLegalizer;
     well_legalizer->TakeOver(gb_placer);
     well_legalizer->SetStripePartitionMode(well_legalization_mode);
@@ -264,8 +254,8 @@ int main(int argc, char *argv[]) {
       well_legalizer->EmitDEFWellFile(output_name, 1);
     }
     delete well_legalizer;
-    delete gb_placer;
   }
+  delete gb_placer;
 
   auto *io_placer = new IoPlacer(&phy_db, &circuit);
   bool is_ioplacer_config_success =

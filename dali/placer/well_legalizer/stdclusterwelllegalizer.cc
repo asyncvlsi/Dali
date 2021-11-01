@@ -1678,9 +1678,11 @@ void StdClusterWellLegalizer::GenPPNP(const std::string &name_of_file) {
  * True: emit cluster file
  * Fale: do not emit this file
  * ****/
-void StdClusterWellLegalizer::EmitDEFWellFile(std::string const &name_of_file,
-                                              int well_emit_mode,
-                                              bool enable_emitting_cluster) {
+void StdClusterWellLegalizer::EmitDEFWellFile(
+    std::string const &name_of_file,
+    int well_emit_mode,
+    bool enable_emitting_cluster
+) {
   EmitPPNPRect(name_of_file + "ppnp.rect");
   EmitWellRect(name_of_file + "well.rect", well_emit_mode);
   if (enable_emitting_cluster) {
@@ -1698,20 +1700,14 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
-  double factor_x = p_ckt_->design().DistanceMicrons()
-      * p_ckt_->GridValueX();
-  double factor_y = p_ckt_->design().DistanceMicrons()
-      * p_ckt_->GridValueY();
+  double factor_x = p_ckt_->DistanceScaleFactorX();
+  double factor_y = p_ckt_->DistanceScaleFactorY();
 
   ost << "bbox "
-      << (int) (RegionLeft() * factor_x)
-          + p_ckt_->design().DieAreaOffsetX() << " "
-      << (int) (RegionBottom() * factor_y)
-          + p_ckt_->design().DieAreaOffsetY() << " "
-      << (int) (RegionRight() * factor_x)
-          + p_ckt_->design().DieAreaOffsetX() << " "
-      << (int) (RegionTop() * factor_y)
-          + p_ckt_->design().DieAreaOffsetY() << "\n";
+      << p_ckt_->LocDali2PhydbX(RegionLeft()) << " "
+      << p_ckt_->LocDali2PhydbY(RegionBottom()) << " "
+      << p_ckt_->LocDali2PhydbX(RegionRight()) << " "
+      << p_ckt_->LocDali2PhydbY(RegionTop()) << "\n";
 
   int adjust_width = well_tap_cell_->Width();
 
@@ -1844,14 +1840,10 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
   double factor_y = p_ckt_->design().DistanceMicrons()
       * p_ckt_->GridValueY();
 
-  int bbox_llx = (int) (RegionLeft() * factor_x)
-      + p_ckt_->design().DieAreaOffsetX();
-  int bbox_lly = (int) (RegionBottom() * factor_y)
-      + p_ckt_->design().DieAreaOffsetY();
-  int bbox_urx = (int) (RegionRight() * factor_x)
-      + p_ckt_->design().DieAreaOffsetX();
-  int bbox_ury = (int) (RegionTop() * factor_y)
-      + p_ckt_->design().DieAreaOffsetY();
+  int bbox_llx = p_ckt_->LocDali2PhydbX(RegionLeft());
+  int bbox_lly = p_ckt_->LocDali2PhydbY(RegionBottom());
+  int bbox_urx = p_ckt_->LocDali2PhydbX(RegionRight());
+  int bbox_ury = p_ckt_->LocDali2PhydbY(RegionTop());
 
   auto *phydb_layout_container = phydb_ptr->CreatePpNpMacroAndComponent(
       bbox_llx,
@@ -2199,10 +2191,8 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
-  double factor_x = p_ckt_->design().DistanceMicrons()
-      * p_ckt_->GridValueX();
-  double factor_y = p_ckt_->design().DistanceMicrons()
-      * p_ckt_->GridValueY();
+  double factor_x = p_ckt_->DistanceScaleFactorX();
+  double factor_y = p_ckt_->DistanceScaleFactorY();
   //BOOST_LOG_TRIVIAL(info)   << "Actual x span: "
   //          << RegionLeft() * factor_x + +circuit_ptr_->getDesignRef().DieAreaOffsetX() << "  "
   //          << (col_list_.back().stripe_list_[0].URX() + well_spacing_) * factor_x + circuit_ptr_->getDesignRef().DieAreaOffsetX()

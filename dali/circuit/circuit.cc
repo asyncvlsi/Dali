@@ -1485,6 +1485,337 @@ void Circuit::SaveDefFile(
   BOOST_LOG_TRIVIAL(info) << "    DEF writing done\n";
 }
 
+void Circuit::SaveCell(std::ofstream &ost, Block &blk) const {
+  ost << "- "
+      << blk.Name() << " "
+      << blk.TypeName() << " + "
+      << blk.StatusStr() << " "
+      << "( "
+      << LocDali2PhydbX(blk.LLX()) << " " << LocDali2PhydbY(blk.LLY())
+      << " ) "
+      << OrientStr(blk.Orient())
+      << " ;\n";
+}
+
+void Circuit::SaveNormalCells(
+    std::ofstream &ost,
+    std::unordered_set<PlaceStatus> *filter_out
+) {
+  for (auto &blk: design_.blocks_) {
+    if (blk.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
+    if (filter_out != nullptr
+        && filter_out->find(blk.Status()) != filter_out->end()) {
+      continue;
+    }
+    SaveCell(ost, blk);
+  }
+}
+
+void Circuit::SaveWellTapCells(std::ofstream &ost) {
+  for (auto &blk: design_.welltaps_) {
+    SaveCell(ost, blk);
+  }
+}
+
+void Circuit::SaveCircuitWellCoverCell(
+    std::ofstream &ost,
+    std::string const &base_name
+) const {
+  ost << "- "
+      << "npwells" << " "
+      << base_name + "well" << " + "
+      << "COVER "
+      << "( "
+      << LocDali2PhydbX(RegionLLX()) << " "
+      << LocDali2PhydbY(RegionLLY())
+      << " ) "
+      << "N"
+      << " ;\n";
+}
+
+void Circuit::SaveCircuitPpnpCoverCell(
+    std::ofstream &ost,
+    std::string const &base_name
+) const {
+  ost << "- "
+      << "ppnps" << " "
+      << base_name + "ppnp" << " + "
+      << "COVER "
+      << "( "
+      << LocDali2PhydbX(RegionLLX()) << " "
+      << LocDali2PhydbY(RegionLLY())
+      << " ) "
+      << "N"
+      << " ;\n";
+}
+
+void Circuit::ExportNormalCells(std::ofstream &ost) {
+  //count the number of normal cells
+  size_t cell_count = 0;
+  for (auto &block: design_.blocks_) { // skip dummy cells for I/O pins
+    if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
+    ++cell_count;
+  }
+  cell_count += design_.welltaps_.size();
+  ost << "COMPONENTS " << cell_count << " ;\n";
+  SaveNormalCells(ost);
+  SaveWellTapCells(ost);
+  ost << "END COMPONENTS\n\n";
+}
+
+void Circuit::ExportWellTapCells(std::ofstream &ost) {
+  size_t cell_count = design_.welltaps_.size();
+  ost << "COMPONENTS " << cell_count << " ;\n";
+  SaveWellTapCells(ost);
+  ost << "END COMPONENTS\n\n";
+}
+
+void Circuit::ExportNormalAndWellTapCells(
+    std::ofstream &ost,
+    std::string const &base_name
+) {
+  size_t cell_count = 0;
+  for (auto &block: design_.blocks_) {
+    if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
+    ++cell_count;
+  }
+  cell_count += design_.welltaps_.size();
+  cell_count += 1;
+  ost << "COMPONENTS " << cell_count << " ;\n";
+  SaveCircuitWellCoverCell(ost, base_name);
+  SaveNormalCells(ost);
+  SaveWellTapCells(ost);
+  ost << "END COMPONENTS\n\n";
+}
+
+void Circuit::ExportNormalWellTapAndCoverCells(
+    std::ofstream &ost,
+    std::string const &base_name
+) {
+  size_t cell_count = 0;
+  for (auto &block: design_.blocks_) {
+    if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
+    ++cell_count;
+  }
+  cell_count += design_.welltaps_.size();
+  cell_count += 2;
+  ost << "COMPONENTS " << cell_count << " ;\n";
+  SaveCircuitWellCoverCell(ost, base_name);
+  SaveCircuitPpnpCoverCell(ost, base_name);
+  SaveNormalCells(ost);
+  SaveWellTapCells(ost);
+  ost << "END COMPONENTS\n\n";
+}
+
+void Circuit::ExportCellsExcept(
+    std::ofstream &ost,
+    std::unordered_set<PlaceStatus> *filter_out
+) {
+  size_t cell_count = 0;
+  for (auto &block: design_.blocks_) {
+    if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
+    if (block.Status() == UNPLACED) continue;
+    ++cell_count;
+  }
+  cell_count += design_.welltaps_.size();
+  ost << "COMPONENTS " << cell_count << " ;\n";
+  SaveNormalCells(ost, filter_out);
+  SaveWellTapCells(ost);
+  ost << "END COMPONENTS\n\n";
+}
+
+void Circuit::ExportCells(
+    std::ofstream &ost,
+    std::string const &base_name,
+    int mode
+) {
+  switch (mode) {
+    case 0: { // no cells are saved
+      ost << "COMPONENTS 0 ;\n";
+      ost << "END COMPONENTS\n\n";
+      break;
+    }
+    case 1: { // save all normal cells, regardless of the placement status
+      ExportNormalCells(ost);
+      break;
+    }
+    case 2: { // save only well tap cells
+      ExportWellTapCells(ost);
+      break;
+    }
+    case 3: { // save all normal cells + dummy cell for well filling
+      ExportNormalAndWellTapCells(ost, base_name);
+      break;
+    }
+    case 4: { // save all normal cells + dummy cell for well filling + dummy cell for n/p-plus filling
+      ExportNormalWellTapAndCoverCells(ost, base_name);
+      break;
+    }
+    case 5: { // save all placed and fixed cells
+      std::unordered_set<PlaceStatus> filter_out;
+      filter_out.insert(UNPLACED);
+      ExportCellsExcept(ost, &filter_out);
+      break;
+    }
+    default: {
+      DaliExpects(false, "Unknown option, allowed value: 0-5");
+    }
+  }
+}
+
+void Circuit::SaveIoPin(
+    std::ofstream &ost,
+    IoPin &iopin,
+    bool after_io_place
+) const {
+  ost << "- "
+      << iopin.Name()
+      << " + NET "
+      << iopin.NetName()
+      << " + DIRECTION "
+      << iopin.SigDirectStr()
+      << " + USE " << iopin.SigUseStr();
+  if ((after_io_place && iopin.IsPlaced())
+      || (!after_io_place && iopin.IsPrePlaced())) {
+    std::string const &metal_name = iopin.LayerName();
+    int half_width = std::ceil(
+        iopin.LayerPtr()->MinHeight() / 2.0 * design_.distance_microns_
+    );
+    int height = std::ceil(
+        iopin.LayerPtr()->Width() * design_.distance_microns_
+    );
+    ost << "\n  + LAYER "
+        << metal_name
+        << " ( "
+        << -half_width << " "
+        << 0 << " ) "
+        << " ( "
+        << half_width << " "
+        << height << " ) ";
+    ost << "\n  + PLACED ( "
+        << LocDali2PhydbX(iopin.X())
+        << " "
+        << LocDali2PhydbY(iopin.Y())
+        << " ) ";
+    if (iopin.X() == design_.region_left_) {
+      ost << "E";
+    } else if (iopin.X() == design_.region_right_) {
+      ost << "W";
+    } else if (iopin.Y() == design_.region_bottom_) {
+      ost << "N";
+    } else {
+      ost << "S";
+    }
+  }
+  ost << " ;\n";
+}
+
+void Circuit::ExportIoPinsInfoAfterIoPlacement(std::ofstream &ost) {
+  ost << "PINS " << design_.iopins_.size() << " ;\n";
+  DaliExpects(!tech_.metal_list_.empty(),
+              "Need metal layer info to generate PIN location\n");
+  for (auto &iopin: design_.iopins_) {
+    bool after_io_place = true;
+    SaveIoPin(ost, iopin, after_io_place);
+  }
+  ost << "END PINS\n\n";
+}
+
+void Circuit::ExportIoPinsInfoBeforeIoPlacement(std::ofstream &ost) {
+  ost << "PINS " << design_.iopins_.size() << " ;\n";
+  DaliExpects(!tech_.metal_list_.empty(),
+              "Need metal layer info to generate PIN location\n");
+  for (auto &iopin: design_.iopins_) {
+    bool after_io_place = false;
+    SaveIoPin(ost, iopin, after_io_place);
+  }
+  ost << "END PINS\n\n";
+}
+
+void Circuit::ExportIoPins(std::ofstream &ost, int mode) {
+  switch (mode) {
+    case 0: { // no IOPINs are saved
+      ost << "PINS 0 ;\n";
+      break;
+    }
+    case 1: { // save all IOPINs
+      ExportIoPinsInfoAfterIoPlacement(ost);
+      break;
+    }
+    case 2: { // save all IOPINs with status before IO placement
+      ExportIoPinsInfoBeforeIoPlacement(ost);
+      break;
+    }
+    default: {
+      DaliExpects(false, "Unknown option, allowed value: 0-2\n");
+    }
+  }
+}
+
+void Circuit::ExportAllNets(std::ofstream &ost) {
+  ost << "NETS " << design_.nets_.size() << " ;\n";
+  for (auto &net: design_.nets_) {
+    ost << "- " << net.Name() << "\n";
+    ost << " ";
+    for (auto &iopin: net.IoPinPtrs()) {
+      ost << " ( PIN " << iopin->Name() << " ) ";
+    }
+    for (auto &pin_pair: net.BlockPins()) {
+      if (pin_pair.BlkPtr()->TypePtr() == tech_.io_dummy_blk_type_ptr_) {
+        continue;
+      }
+      ost << " ( " << pin_pair.BlockName() << " "
+          << pin_pair.PinName() << " ) ";
+    }
+    ost << "\n" << " ;\n";
+  }
+  ost << "END NETS\n\n";
+}
+
+void Circuit::ExportPowerNetsForWellTapCells(std::ofstream &ost) {
+  ost << "\nNETS 2 ;\n";
+  // GND
+  ost << "- ggnndd\n";
+  ost << " ";
+  for (auto &block: design_.welltaps_) {
+    ost << " ( " << block.Name() << " g0 )";
+  }
+  ost << "\n" << " ;\n";
+  //Vdd
+  ost << "- vvdddd\n";
+  ost << " ";
+  for (auto &block: design_.welltaps_) {
+    ost << " ( " << block.Name() << " v0 )";
+  }
+  ost << "\n" << " ;\n";
+  ost << "END NETS\n\n";
+}
+
+void Circuit::ExportNets(std::ofstream &ost, int mode) {
+  switch (mode) {
+    case 0: { // no nets are saved
+      ost << "NETS 0 ;\n";
+      ost << "END NETS\n\n";
+      break;
+    }
+    case 1: { // save all nets
+      ExportAllNets(ost);
+      break;
+    }
+    case 2: { // save nets containing saved cells and IOPINs
+      DaliExpects(false, "This part has not been implemented\n");
+      break;
+    }
+    case 3: {// save power nets for well tap cell
+      ExportPowerNetsForWellTapCells(ost);
+      break;
+    }
+    default: {
+      DaliExpects(false, "Unknown option, allowed value: 0-3\n");
+    }
+  }
+}
+
 // save def file for users.
 /****
  * Universal function for saving DEF file
@@ -1548,393 +1879,12 @@ void Circuit::SaveDefFile(
     }
     ost << line << "\n";
   }
-
   // 2. COMPONENT
-  double factor_x = design_.distance_microns_ * GridValueX();
-  double factor_y = design_.distance_microns_ * GridValueY();
-  switch (save_cell) {
-    case 0: { // no cells are saved
-      ost << "COMPONENTS 0 ;\n";
-      break;
-    }
-    case 1: { // save all normal cells, regardless of the placement status
-      int cell_count = 0;
-      for (auto &block: design_.blocks_) {
-        if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
-        ++cell_count;
-      }
-      cell_count += design_.welltaps_.size();
-      ost << "COMPONENTS " << cell_count << " ;\n";
-      for (auto &block: design_.blocks_) {
-        if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
-        ost << "- "
-            << block.Name() << " "
-            << block.TypeName() << " + "
-            << block.StatusStr() << " "
-            << "( "
-            << (int) (block.LLX() * factor_x)
-                + design_.die_area_offset_x_ << " "
-            << (int) (block.LLY() * factor_y)
-                + design_.die_area_offset_y_
-            << " ) "
-            << OrientStr(block.Orient())
-            << " ;\n";
-      }
-      for (auto &block: design_.welltaps_) {
-        ost << "- "
-            << block.Name() << " "
-            << block.TypeName() << " + "
-            << block.StatusStr() << " "
-            << "( "
-            << (int) (block.LLX() * factor_x)
-                + design_.die_area_offset_x_ << " "
-            << (int) (block.LLY() * factor_y)
-                + design_.die_area_offset_y_
-            << " ) "
-            << OrientStr(block.Orient())
-            << " ;\n";
-      }
-      break;
-    }
-    case 2: { // save only well tap cells
-      int cell_count = design_.welltaps_.size();
-      ost << "COMPONENTS " << cell_count << " ;\n";
-      for (auto &block: design_.welltaps_) {
-        ost << "- "
-            << block.Name() << " "
-            << block.TypeName() << " + "
-            << block.StatusStr() << " "
-            << "( "
-            << (int) (block.LLX() * factor_x)
-                + design_.die_area_offset_x_ << " "
-            << (int) (block.LLY() * factor_y)
-                + design_.die_area_offset_y_
-            << " ) "
-            << OrientStr(block.Orient())
-            << " ;\n";
-      }
-      break;
-    }
-    case 3: { // save all normal cells + dummy cell for well filling
-      int cell_count = 0;
-      for (auto &block: design_.blocks_) {
-        if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
-        ++cell_count;
-      }
-      cell_count += design_.welltaps_.size();
-      cell_count += 1;
-      ost << "COMPONENTS " << cell_count << " ;\n";
-      ost << "- "
-          << "npwells "
-          << base_name + "well + "
-          << PlaceStatusStr(COVER) << " "
-          << "( "
-          << (int) (RegionLLX() * factor_x) + design_.die_area_offset_x_
-          << " "
-          << (int) (RegionLLY() * factor_y) + design_.die_area_offset_y_
-          << " ) "
-          << "N"
-          << " ;\n";
-
-      for (auto &block: design_.blocks_) {
-        if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
-        ost << "- "
-            << block.Name() << " "
-            << block.TypeName() << " + "
-            << block.StatusStr() << " "
-            << "( "
-            << (int) (block.LLX() * factor_x)
-                + design_.die_area_offset_x_ << " "
-            << (int) (block.LLY() * factor_y)
-                + design_.die_area_offset_y_
-            << " ) "
-            << OrientStr(block.Orient())
-            << " ;\n";
-      }
-      for (auto &block: design_.welltaps_) {
-        ost << "- "
-            << block.Name() << " "
-            << block.TypeName() << " + "
-            << block.StatusStr() << " "
-            << "( "
-            << (int) (block.LLX() * factor_x)
-                + design_.die_area_offset_x_ << " "
-            << (int) (block.LLY() * factor_y)
-                + design_.die_area_offset_y_
-            << " ) "
-            << OrientStr(block.Orient())
-            << " ;\n";
-      }
-      break;
-    }
-    case 4: { // save all normal cells + dummy cell for well filling + dummy cell for n/p-plus filling
-      int cell_count = 0;
-      for (auto &block: design_.blocks_) {
-        if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
-        ++cell_count;
-      }
-      cell_count += design_.welltaps_.size();
-      cell_count += 2;
-      ost << "COMPONENTS " << cell_count << " ;\n";
-      ost << "- "
-          << "npwells "
-          << base_name + "well + "
-          << PlaceStatusStr(COVER) << " "
-          << "( "
-          << (int) (RegionLLX() * factor_x) + design_.die_area_offset_x_
-          << " "
-          << (int) (RegionLLY() * factor_y) + design_.die_area_offset_y_
-          << " ) "
-          << "N"
-          << " ;\n";
-      ost << "- "
-          << "ppnps "
-          << base_name + "ppnp + "
-          << PlaceStatusStr(COVER) << " "
-          << "( "
-          << (int) (RegionLLX() * factor_x) + design_.die_area_offset_x_
-          << " "
-          << (int) (RegionLLY() * factor_y) + design_.die_area_offset_y_
-          << " ) "
-          << "N"
-          << " ;\n";
-
-      for (auto &block: design_.blocks_) {
-        if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
-        ost << "- "
-            << block.Name() << " "
-            << block.TypeName() << " + "
-            << block.StatusStr() << " "
-            << "( "
-            << (int) (block.LLX() * factor_x)
-                + design_.die_area_offset_x_ << " "
-            << (int) (block.LLY() * factor_y)
-                + design_.die_area_offset_y_
-            << " ) "
-            << OrientStr(block.Orient())
-            << " ;\n";
-      }
-      for (auto &block: design_.welltaps_) {
-        ost << "- "
-            << block.Name() << " "
-            << block.TypeName() << " + "
-            << block.StatusStr() << " "
-            << "( "
-            << (int) (block.LLX() * factor_x)
-                + design_.die_area_offset_x_ << " "
-            << (int) (block.LLY() * factor_y)
-                + design_.die_area_offset_y_
-            << " ) "
-            << OrientStr(block.Orient())
-            << " ;\n";
-      }
-      break;
-    }
-    case 5: { // save all placed cells
-      int cell_count = 0;
-      for (auto &block: design_.blocks_) {
-        if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
-        if (block.Status() == UNPLACED) continue;
-        ++cell_count;
-      }
-      cell_count += design_.welltaps_.size();
-      ost << "COMPONENTS " << cell_count << " ;\n";
-      for (auto &block: design_.blocks_) {
-        if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
-        if (block.Status() == UNPLACED) continue;
-        ost << "- "
-            << block.Name() << " "
-            << block.TypeName() << " + "
-            << block.StatusStr() << " "
-            << "( "
-            << (int) (block.LLX() * factor_x)
-                + design_.die_area_offset_x_ << " "
-            << (int) (block.LLY() * factor_y)
-                + design_.die_area_offset_y_
-            << " ) "
-            << OrientStr(block.Orient())
-            << " ;\n";
-      }
-      for (auto &block: design_.welltaps_) {
-        ost << "- "
-            << block.Name() << " "
-            << block.TypeName() << " + "
-            << block.StatusStr() << " "
-            << "( "
-            << (int) (block.LLX() * factor_x)
-                + design_.die_area_offset_x_ << " "
-            << (int) (block.LLY() * factor_y)
-                + design_.die_area_offset_y_
-            << " ) "
-            << OrientStr(block.Orient())
-            << " ;\n";
-      }
-      break;
-    }
-    default: {
-      DaliExpects(false,
-                  "Invalid value setting for @param save_cell");
-    }
-
-  }
-  ost << "END COMPONENTS\n\n";
-
+  ExportCells(ost, base_name, save_cell);
   // 3. PIN
-  switch (save_iopin) {
-    case 0: { // no IOPINs are saved
-      ost << "PINS 0 ;\n";
-      break;
-    }
-    case 1: { // save all IOPINs
-      ost << "PINS " << design_.iopins_.size() << " ;\n";
-      DaliExpects(!tech_.metal_list_.empty(),
-                  "Need metal layer info to generate PIN location\n");
-      for (auto &iopin: design_.iopins_) {
-        ost << "- "
-            << iopin.Name()
-            << " + NET "
-            << iopin.NetName()
-            << " + DIRECTION "
-            << iopin.SigDirectStr()
-            << " + USE " << iopin.SigUseStr();
-        if (iopin.IsPlaced()) {
-          std::string metal_name = iopin.LayerName();
-          int half_width = std::ceil(
-              iopin.LayerPtr()->MinHeight() / 2.0
-                  * design_.distance_microns_);
-          int height = std::ceil(
-              iopin.LayerPtr()->Width() * design_.distance_microns_);
-          ost << "\n  + LAYER "
-              << metal_name
-              << " ( "
-              << -half_width << " "
-              << 0 << " ) "
-              << " ( "
-              << half_width << " "
-              << height << " ) ";
-          ost << "\n  + PLACED ( "
-              << iopin.X() * factor_x + design_.die_area_offset_x_
-              << " "
-              << iopin.Y() * factor_y + design_.die_area_offset_y_
-              << " ) ";
-          if (iopin.X() == design_.region_left_) {
-            ost << "E";
-          } else if (iopin.X() == design_.region_right_) {
-            ost << "W";
-          } else if (iopin.Y() == design_.region_bottom_) {
-            ost << "N";
-          } else {
-            ost << "S";
-          }
-        }
-        ost << " ;\n";
-      }
-      break;
-    }
-    case 2: { // save all IOPINs with status before IO placement
-      ost << "PINS " << design_.iopins_.size() << " ;\n";
-      DaliExpects(!tech_.metal_list_.empty(),
-                  "Need metal layer info to generate PIN location\n");
-      std::string metal_name = tech_.metal_list_[0].Name();
-      int half_width = std::ceil(tech_.metal_list_[0].MinHeight() / 2.0
-                                     * design_.distance_microns_);
-      int height = std::ceil(
-          tech_.metal_list_[0].Width() * design_.distance_microns_);
-      for (auto &iopin: design_.iopins_) {
-        ost << "- "
-            << iopin.Name()
-            << " + NET "
-            << iopin.NetName()
-            << " + DIRECTION "
-            << iopin.SigDirectStr()
-            << " + USE " << iopin.SigUseStr();
-        if (iopin.IsPrePlaced()) {
-          ost << "\n  + LAYER "
-              << metal_name
-              << " ( "
-              << -half_width << " "
-              << 0 << " ) "
-              << " ( "
-              << half_width << " "
-              << height << " ) ";
-          ost << "\n  + PLACED ( "
-              << iopin.X() * factor_x + design_.die_area_offset_x_
-              << " "
-              << iopin.Y() * factor_y + design_.die_area_offset_y_
-              << " ) ";
-          if (iopin.X() == design_.region_left_) {
-            ost << "E";
-          } else if (iopin.X() == design_.region_right_) {
-            ost << "W";
-          } else if (iopin.Y() == design_.region_bottom_) {
-            ost << "N";
-          } else {
-            ost << "S";
-          }
-        }
-        ost << " ;\n";
-      }
-      break;
-    }
-    default: {
-      DaliExpects(false,
-                  "Invalid value setting for @param save_iopin\n");
-    }
-  }
-  ost << "END PINS\n\n";
-
-  switch (save_net) {
-    case 0: { // no nets are saved
-      ost << "NETS 0 ;\n";
-      break;
-    }
-    case 1: { // save all nets
-      ost << "NETS " << design_.nets_.size() << " ;\n";
-      for (auto &net: design_.nets_) {
-        ost << "- " << net.Name() << "\n";
-        ost << " ";
-        for (auto &iopin: net.IoPinPtrs()) {
-          ost << " ( PIN " << iopin->Name() << " ) ";
-        }
-        for (auto &pin_pair: net.BlockPins()) {
-          if (pin_pair.BlkPtr()->TypePtr()
-              == tech_.io_dummy_blk_type_ptr_)
-            continue;
-          ost << " ( " << pin_pair.BlockName() << " "
-              << pin_pair.PinName() << " ) ";
-        }
-        ost << "\n" << " ;\n";
-      }
-      break;
-    }
-    case 2: { // save nets containing saved cells and IOPINs
-      DaliExpects(false, "This part has not been implemented\n");
-      break;
-    }
-    case 3: {// save power nets for well tap cell
-      ost << "\nNETS 2 ;\n";
-      // GND
-      ost << "- ggnndd\n";
-      ost << " ";
-      for (auto &block: design_.welltaps_) {
-        ost << " ( " << block.Name() << " g0 )";
-      }
-      ost << "\n" << " ;\n";
-      //Vdd
-      ost << "- vvdddd\n";
-      ost << " ";
-      for (auto &block: design_.welltaps_) {
-        ost << " ( " << block.Name() << " v0 )";
-      }
-      ost << "\n" << " ;\n";
-      break;
-    }
-    default: {
-      DaliExpects(false,
-                  "Invalid value setting for @param save_net\n");
-    }
-  }
-  ost << "END NETS\n\n";
+  ExportIoPins(ost, save_iopin);
+  // 4. NET
+  ExportNets(ost, save_net);
 
   ost << "END DESIGN\n";
 

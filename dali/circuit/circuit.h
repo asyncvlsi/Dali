@@ -21,9 +21,8 @@
 #ifndef DALI_DALI_CIRCUIT_CIRCUIT_H_
 #define DALI_DALI_CIRCUIT_CIRCUIT_H_
 
-#include <map>
-#include <set>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <boost/functional/hash.hpp>
@@ -652,6 +651,48 @@ class Circuit {
 
   // load information in CELL
   void LoadCell(phydb::PhyDB *phy_db_ptr);
+
+  // export cells/components to an output stream
+  void SaveCell(std::ofstream &ost, Block &blk) const;
+  void SaveNormalCells(
+      std::ofstream &ost,
+      std::unordered_set<PlaceStatus> *filter_out = nullptr
+  );
+  void SaveWellTapCells(std::ofstream &ost);
+  void SaveCircuitWellCoverCell(
+      std::ofstream &ost,
+      std::string const &base_name
+  ) const;
+  void SaveCircuitPpnpCoverCell(
+      std::ofstream &ost,
+      std::string const &base_name
+  ) const;
+  void ExportNormalCells(std::ofstream &ost);
+  void ExportWellTapCells(std::ofstream &ost);
+  void ExportNormalAndWellTapCells(
+      std::ofstream &ost,
+      std::string const &base_name
+  );
+  void ExportNormalWellTapAndCoverCells(
+      std::ofstream &ost,
+      std::string const &base_name
+  );
+  void ExportCellsExcept(
+      std::ofstream &ost,
+      std::unordered_set<PlaceStatus> *filter_out = nullptr
+  );
+  void ExportCells(
+      std::ofstream &ost,
+      std::string const &base_name,
+      int mode
+  );
+  void SaveIoPin(std::ofstream &ost, IoPin &iopin, bool after_io_place) const;
+  void ExportIoPinsInfoAfterIoPlacement(std::ofstream &ost);
+  void ExportIoPinsInfoBeforeIoPlacement(std::ofstream &ost);
+  void ExportIoPins(std::ofstream &ost, int mode);
+  void ExportAllNets(std::ofstream &ost);
+  void ExportPowerNetsForWellTapCells(std::ofstream &ost);
+  void ExportNets(std::ofstream &ost, int mode);
 };
 
 }
