@@ -57,6 +57,7 @@ int main(int argc, char *argv[]) {
   double x_grid = 0, y_grid = 0;
   double target_density = -1;
   int io_metal_layer = 0;
+  bool export_well_cluster_for_matlab = false;
 
   for (int i = 1; i < argc;) {
     std::string arg(argv[i++]);
@@ -143,6 +144,8 @@ int main(int argc, char *argv[]) {
       overwrite_logfile = true;
     } else if (arg == "-nolegal") {
       is_no_legal = true;
+    } else if (arg == "-clsmatlab") {
+      export_well_cluster_for_matlab = true;
     } else if (arg == "-log" && i < argc) {
       log_file_name = std::string(argv[i++]);
       if (lef_file_name.empty()) {
@@ -246,9 +249,11 @@ int main(int argc, char *argv[]) {
     well_legalizer->TakeOver(gb_placer);
     well_legalizer->SetStripePartitionMode(well_legalization_mode);
     well_legalizer->StartPlacement();
-    //well_legalizer->GenMATLABTable("sc_result.txt");
-    //well_legalizer->GenMatlabClusterTable("sc_result");
-    //well_legalizer->GenMATLABWellTable("scw", 0);
+    if (export_well_cluster_for_matlab) {
+      well_legalizer->GenMATLABTable("sc_result.txt");
+      well_legalizer->GenMatlabClusterTable("sc_result");
+      well_legalizer->GenMATLABWellTable("scw", 0);
+    }
 
     if (!output_name.empty()) {
       well_legalizer->EmitDEFWellFile(output_name, 1);

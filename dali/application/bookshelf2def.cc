@@ -89,11 +89,11 @@ void ReportUsage() {
   BOOST_LOG_TRIVIAL(info)
     << "\033[0;36m"
     << "Usage: bookshelf2def\n"
-    << " -lef <file.lef>\n"
-    << " -def <file.def>\n"
-    << " -pl  <file.pl>\n"
-    << " -g/-grid grid_value_x grid_value_y\n"
-    << " -o   <out_name>.def\n"
+    << " -lef      <file.lef>\n"
+    << " -def      <file.def>\n"
+    << " -pl       <file.pl>\n"
+    << " -g/-grid  grid_value_x grid_value_y\n"
+    << " -o        <out_name>.def\n"
     << "(order does not matter)"
     << "\033[0m\n";
 }
