@@ -376,15 +376,16 @@ bool IoPlacer::ConfigBoundaryMetal(int argc, char **argv) {
 }
 
 void IoPlacer::ReportConfigUsage() {
-  BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
-                          << "Usage: place-io -c/--config\n"
-                          << "  -h/--help\n"
-                          << "      print out function usage\n"
-                          << "  -m/--metal <left/right/bottom/top> <metal layer>\n"
-                          << "      use this command to specify which metal layers to use for IOPINs on each placement boundary\n"
-                          << "      example: -m left m1, for IOPINs on the left boundary, using layer m1 to create physical geometry\n"
-                          << "      'place-io <metal layer>' is a shorthand for 'place-io -c -m left m1 right m1 bottom m1 top m1'\n"
-                          << "\033[0m\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "\033[0;36m"
+    << "Usage: place-io -c/--config\n"
+    << "  -h/--help\n"
+    << "      print out function usage\n"
+    << "  -m/--metal <left/right/bottom/top> <metal layer>\n"
+    << "      use this command to specify which metal layers to use for IOPINs on each placement boundary\n"
+    << "      example: -m left m1, for IOPINs on the left boundary, using layer m1 to create physical geometry\n"
+    << "      'place-io <metal layer>' is a shorthand for 'place-io -c -m left m1 right m1 bottom m1 top m1'\n"
+    << "\033[0m\n";
 }
 
 bool IoPlacer::ConfigCmd(int argc, char **argv) {
@@ -403,8 +404,7 @@ bool IoPlacer::ConfigCmd(int argc, char **argv) {
     bool is_metal_name = p_ckt_->IsMetalLayerExisting(option_str);
     // when the command is like 'place-io <metal layer>'
     if (is_metal_name) {
-      MetalLayer *metal_layer =
-          p_ckt_->GetMetalLayerPtr(option_str);
+      MetalLayer *metal_layer = p_ckt_->GetMetalLayerPtr(option_str);
       return ConfigSetGlobalMetalLayer(metal_layer->Id());
     }
     BOOST_LOG_TRIVIAL(fatal) << "Unknown flag: " << option_str << "\n";
@@ -647,8 +647,7 @@ bool IoPlacer::AutoPlaceIoPin() {
 bool IoPlacer::AutoPlaceCmd(int argc, char **argv) {
   bool is_config_successful = ConfigCmd(argc, argv);
   if (!is_config_successful) {
-    BOOST_LOG_TRIVIAL(fatal)
-      << "Cannot successfully configure the IoPlacer\n";
+    BOOST_LOG_TRIVIAL(fatal) << "Cannot successfully configure the IoPlacer\n";
     return false;
   }
   return AutoPlaceIoPin();

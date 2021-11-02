@@ -22,7 +22,6 @@
 /****
  * This can extract location of cells from a bookshelf .pl file, and generate a new DEF file with these locations.
  * ****/
-
 #include <iostream>
 
 #include "dali/circuit/circuit.h"
@@ -46,7 +45,6 @@ int main(int argc, char *argv[]) {
 
   double x_grid = 0;
   double y_grid = 0;
-  bool use_db = false;
 
   for (int i = 1; i < argc;) {
     std::string arg(argv[i++]);
@@ -69,11 +67,9 @@ int main(int argc, char *argv[]) {
       }
     } else if (arg == "-o" && i < argc) {
       out_def_name = std::string(argv[i++]) + ".def";
-    } else if (arg == "-db" && i < argc) {
-      use_db = true;
     } else {
-      BOOST_LOG_TRIVIAL(info) << "Unknown command line option: "
-                              << argv[i] << "\n";
+      BOOST_LOG_TRIVIAL(info)
+        << "Unknown command line option: " << argv[i] << "\n";
       return 1;
     }
   }
@@ -98,7 +94,6 @@ void ReportUsage() {
     << " -pl  <file.pl>\n"
     << " -g/-grid grid_value_x grid_value_y\n"
     << " -o   <out_name>.def\n"
-    << " -db (optional, use Naive parser by default)\n"
     << "(order does not matter)"
     << "\033[0m\n";
 }

@@ -112,7 +112,8 @@ int main(int argc, char **argv) {
   gb_placer.is_dump = false;
 #if !TEST_LG
   gb_placer.StartPlacement();
-  gb_placer.SaveDEFFile("test_OpenDP/adaptec1_dali", adaptec1_def);
+  circuit.SaveDefFile("test_OpenDP/adaptec1_dali", "",
+                      adaptec1_def, 1, 1, 1, 1);
   circuit.SaveBookshelfPl("adaptec1bs.pl");
 #endif
   gb_placer.GenMATLABTable("gb_result.txt");

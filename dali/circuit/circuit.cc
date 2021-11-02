@@ -237,7 +237,7 @@ MetalLayer *Circuit::AddMetalLayer(
                   + metal_name);
   int map_size = tech_.metal_name_map_.size();
   auto ret = tech_.metal_name_map_.insert(
-      std::pair<std::string, int>(metal_name, map_size)
+      std::unordered_map<std::string, int>::value_type(metal_name, map_size)
   );
   std::pair<const std::string, int> *name_id_pair_ptr = &(*ret.first);
   tech_.metal_list_.emplace_back(width, spacing, name_id_pair_ptr);
@@ -626,7 +626,7 @@ Net *Circuit::AddNet(std::string const &net_name, int capacity, double weight) {
               "Net exists, cannot create this net again: " + net_name);
   int map_size = (int) design_.net_name_id_map_.size();
   design_.net_name_id_map_.insert(
-      std::pair<std::string, int>(net_name, map_size)
+      std::unordered_map<std::string, int>::value_type(net_name, map_size)
   );
   std::pair<const std::string, int> *name_id_pair_ptr =
       &(*design_.net_name_id_map_.find(net_name));
@@ -1326,165 +1326,6 @@ void Circuit::GenLongNetTable(std::string const &name_of_file) {
   ost.close();
 }
 
-void Circuit::SaveDefFile(
-    std::string const &name_of_file,
-    std::string const &def_file_name,
-    bool is_complete_version
-) {
-  std::string file_name;
-  if (is_complete_version) {
-    file_name = name_of_file + ".def";
-  } else {
-    file_name = name_of_file + "_trim.def";
-  }
-  if (is_complete_version) {
-    BOOST_LOG_TRIVIAL(info) << "Writing DEF file: " << file_name << "\n";
-  } else {
-    BOOST_LOG_TRIVIAL(info)
-      << "Writing trimmed DEF file (for debugging): "
-      << file_name << "\n";
-  }
-
-  std::ofstream ost(file_name.c_str());
-  DaliExpects(ost.is_open(), "Cannot open file " + file_name);
-
-  std::ifstream ist(def_file_name.c_str());
-  DaliExpects(ist.is_open(), "Cannot open file " + def_file_name);
-
-  std::string line;
-  // 1. print file header, copy from def file
-  while (true) {
-    getline(ist, line);
-    if (line.find("COMPONENTS") != std::string::npos || ist.eof()) {
-      break;
-    }
-    ost << line << "\n";
-  }
-
-  // 2. print component
-  double factor_x = design_.distance_microns_ * GridValueX();
-  double factor_y = design_.distance_microns_ * GridValueY();
-  if (is_complete_version) {
-    ost << "COMPONENTS "
-        << design_.blocks_.size() - design_.pre_placed_io_count_
-            + design_.welltaps_.size()
-        << " ;\n";
-  } else {
-    ost << "COMPONENTS "
-        << design_.blocks_.size() - design_.pre_placed_io_count_
-            + design_.welltaps_.size() + 1
-        << " ;\n";
-    ost << "- "
-        << "npwells "
-        << name_of_file + "well + "
-        << PlaceStatusStr(COVER) << " "
-        << "( "
-        << (int) (RegionLLX() * factor_x) + design_.die_area_offset_x_
-        << " "
-        << (int) (RegionLLY() * factor_y) + design_.die_area_offset_y_
-        << " ) "
-        << "N"
-        << " ;\n";
-  }
-  for (auto &block: design_.blocks_) {
-    if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
-    ost << "- "
-        << block.Name() << " "
-        << block.TypeName() << " + "
-        << block.StatusStr() << " "
-        << "( "
-        << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_
-        << " "
-        << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
-        << " ) "
-        << OrientStr(block.Orient())
-        << " ;\n";
-  }
-  for (auto &block: design_.welltaps_) {
-    ost << "- "
-        << block.Name() << " "
-        << block.TypeName() << " + "
-        << "PLACED" << " "
-        << "( "
-        << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_
-        << " "
-        << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
-        << " ) "
-        << OrientStr(block.Orient())
-        << " ;\n";
-  }
-  ost << "END COMPONENTS\n";
-  // jump to the end of components
-  while (line.find("END COMPONENTS") == std::string::npos && !ist.eof()) {
-    getline(ist, line);
-  }
-
-  // 3. print PIN
-  ost << "\n";
-  ost << "PINS " << design_.iopins_.size() << " ;\n";
-  DaliExpects(!tech_.metal_list_.empty(),
-              "Need metal layer info to generate PIN location\n");
-  std::string metal_name = tech_.metal_list_[0].Name();
-  int half_width = std::ceil(
-      tech_.metal_list_[0].MinHeight() / 2.0 * design_.distance_microns_);
-  int height =
-      std::ceil(tech_.metal_list_[0].Width() * design_.distance_microns_);
-  for (auto &iopin: design_.iopins_) {
-    ost << "- "
-        << iopin.Name()
-        << " + NET "
-        << iopin.NetName()
-        << " + DIRECTION INPUT + USE SIGNAL";
-    if (iopin.IsPrePlaced()) {
-      ost << "\n  + LAYER "
-          << metal_name
-          << " ( "
-          << -half_width << " "
-          << 0 << " ) "
-          << " ( "
-          << half_width << " "
-          << height << " ) ";
-      ost << "\n  + PLACED ( "
-          << iopin.X() * factor_x + design_.die_area_offset_x_ << " "
-          << iopin.Y() * factor_y + design_.die_area_offset_y_
-          << " ) ";
-      if (iopin.X() == design_.region_left_) {
-        ost << "E";
-      } else if (iopin.X() == design_.region_right_) {
-        ost << "W";
-      } else if (iopin.Y() == design_.region_bottom_) {
-        ost << "N";
-      } else {
-        ost << "S";
-      }
-    }
-    ost << " ;\n";
-  }
-  ost << "END PINS\n\n";
-
-  // 4. print net, copy from def file
-  while (true) {
-    getline(ist, line);
-    if (line.find("NETS") != std::string::npos || ist.eof()) {
-      break;
-    }
-  }
-  if (is_complete_version) {
-    ost << line << "\n";
-    while (!ist.eof()) {
-      getline(ist, line);
-      ost << line << "\n";
-    }
-  } else {
-    ost << "END DESIGN\n";
-  }
-
-  ost.close();
-  ist.close();
-
-  BOOST_LOG_TRIVIAL(info) << "    DEF writing done\n";
-}
-
 void Circuit::SaveCell(std::ofstream &ost, Block &blk) const {
   ost << "- "
       << blk.Name() << " "
@@ -1861,6 +1702,7 @@ void Circuit::SaveDefFile(
   std::ifstream ist(def_file_name.c_str());
   DaliExpects(ist.is_open(), "Cannot open file " + def_file_name);
 
+  // title of this DEF file
   using std::chrono::system_clock;
   system_clock::time_point today = system_clock::now();
   std::time_t tt = system_clock::to_time_t(today);
@@ -1871,7 +1713,7 @@ void Circuit::SaveDefFile(
   ost << "##################################################\n";
 
   std::string line;
-  // 1. floorplanning
+  // 1. floor-plan
   while (true) {
     getline(ist, line);
     if (line.find("COMPONENTS") != std::string::npos || ist.eof()) {
@@ -1891,307 +1733,6 @@ void Circuit::SaveDefFile(
   BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
-void Circuit::SaveIoDefFile(
-    std::string const &name_of_file,
-    std::string const &def_file_name
-) {
-  std::string file_name;
-  file_name = name_of_file + "_io.def";
-  BOOST_LOG_TRIVIAL(info) << "Writing IO DEF file: " << file_name;
-
-  std::ofstream ost(file_name.c_str());
-  DaliExpects(ost.is_open(), "Cannot open file " + file_name);
-
-  std::ifstream ist(def_file_name.c_str());
-  DaliExpects(ist.is_open(), "Cannot open file " + def_file_name);
-
-  std::string line;
-  // 1. print file header, copy from def file
-  while (true) {
-    getline(ist, line);
-    if (line.find("COMPONENTS") != std::string::npos || ist.eof()) {
-      break;
-    }
-    ost << line << "\n";
-  }
-
-  // 2. print component
-  double factor_x = design_.distance_microns_ * GridValueX();
-  double factor_y = design_.distance_microns_ * GridValueY();
-  ost << "COMPONENTS "
-      << design_.blocks_.size() - design_.pre_placed_io_count_
-          + design_.welltaps_.size()
-      << " ;\n";
-  for (auto &block: design_.blocks_) {
-    if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
-    ost << "- "
-        << block.Name() << " "
-        << block.TypeName() << " + "
-        << block.StatusStr() << " "
-        << "( "
-        << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_
-        << " "
-        << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
-        << " ) "
-        << OrientStr(block.Orient())
-        << " ;\n";
-  }
-  for (auto &block: design_.welltaps_) {
-    ost << "- "
-        << block.Name() << " "
-        << block.TypeName() << " + "
-        << "PLACED" << " "
-        << "( "
-        << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_
-        << " "
-        << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
-        << " ) "
-        << OrientStr(block.Orient())
-        << " ;\n";
-  }
-  ost << "END COMPONENTS\n";
-  // jump to the end of components
-  while (line.find("END COMPONENTS") == std::string::npos && !ist.eof()) {
-    getline(ist, line);
-  }
-
-  // 3. print PIN
-  ost << "\n";
-  ost << "PINS " << design_.iopins_.size() << " ;\n";
-  DaliExpects(!tech_.metal_list_.empty(),
-              "Need metal layer info to generate PIN location\n");
-  std::string metal_name = tech_.metal_list_[0].Name();
-  int half_width = std::ceil(
-      tech_.metal_list_[0].MinHeight() / 2.0 * design_.distance_microns_);
-  int height =
-      std::ceil(tech_.metal_list_[0].Width() * design_.distance_microns_);
-  for (auto &iopin: design_.iopins_) {
-    ost << "- "
-        << iopin.Name()
-        << " + NET "
-        << iopin.NetName()
-        << " + DIRECTION INPUT + USE SIGNAL";
-    if (iopin.IsPlaced()) {
-      ost << "\n  + LAYER "
-          << metal_name
-          << " ( "
-          << -half_width << " "
-          << 0 << " ) "
-          << " ( "
-          << half_width << " "
-          << height << " ) ";
-      ost << "\n  + PLACED ( "
-          << iopin.X() * factor_x + design_.die_area_offset_x_ << " "
-          << iopin.Y() * factor_y + design_.die_area_offset_y_
-          << " ) ";
-      if (iopin.X() == design_.region_left_) {
-        ost << "E";
-      } else if (iopin.X() == design_.region_right_) {
-        ost << "W";
-      } else if (iopin.Y() == design_.region_bottom_) {
-        ost << "N";
-      } else {
-        ost << "S";
-      }
-    }
-    ost << " ;\n";
-  }
-  ost << "END PINS\n\n";
-
-  // 4. print net, copy from def file
-  while (true) {
-    getline(ist, line);
-    if (line.find("NETS") != std::string::npos || ist.eof()) {
-      break;
-    }
-  }
-  ost << line << "\n";
-  while (!ist.eof()) {
-    getline(ist, line);
-    ost << line << "\n";
-  }
-
-  ost.close();
-  ist.close();
-
-  BOOST_LOG_TRIVIAL(info) << ", done\n";
-}
-
-void Circuit::SaveDefWell(
-    std::string const &name_of_file,
-    std::string const &def_file_name,
-    bool is_no_normal_cell
-) {
-  BOOST_LOG_TRIVIAL(info)
-    << "Writing WellTap Network DEF file (for debugging): " << name_of_file;
-  std::ofstream ost(name_of_file.c_str());
-  DaliExpects(ost.is_open(), "Cannot open file " + name_of_file);
-
-  std::ifstream ist(def_file_name.c_str());
-  DaliExpects(ist.is_open(), "Cannot open file " + def_file_name);
-
-  std::string line;
-  // 1. print file header, copy from def file
-  while (true) {
-    getline(ist, line);
-    if (line.find("DESIGN") != std::string::npos || ist.eof()) {
-      ost << "DESIGN WellTapNetwork ;\n";
-      continue;
-    }
-    if (line.find("COMPONENTS") != std::string::npos || ist.eof()) {
-      break;
-    }
-    ost << line << "\n";
-  }
-
-  // 2. print well tap cells
-  double factor_x = design_.distance_microns_ * GridValueX();
-  double factor_y = design_.distance_microns_ * GridValueY();
-  if (is_no_normal_cell) {
-    ost << "COMPONENTS " << design_.welltaps_.size() << " ;\n";
-  } else {
-    ost << "COMPONENTS "
-        << design_.blocks_.size() + design_.welltaps_.size()
-        << " ;\n";
-  }
-  for (auto &block: design_.welltaps_) {
-    ost << "- "
-        << block.Name() << " "
-        << block.TypeName() << " + "
-        << "PLACED" << " "
-        << "( "
-        << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_
-        << " "
-        << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
-        << " ) "
-        << OrientStr(block.Orient())
-        << " ;\n";
-  }
-  if (!is_no_normal_cell) {
-    for (auto &block: design_.blocks_) {
-      if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
-      ost << "- "
-          << block.Name() << " "
-          << block.TypeName() << " + "
-          << block.StatusStr() << " "
-          << "( "
-          << (int) (block.LLX() * factor_x) + design_.die_area_offset_x_
-          << " "
-          << (int) (block.LLY() * factor_y) + design_.die_area_offset_y_
-          << " ) "
-          << OrientStr(block.Orient())
-          << " ;\n";
-    }
-  }
-  ost << "END COMPONENTS\n";
-  // jump to the end of components
-  while (line.find("END COMPONENTS") == std::string::npos && !ist.eof()) {
-    getline(ist, line);
-  }
-
-  // 3. print net, copy from def file
-
-  ost << "\nNETS 2 ;\n";
-  // GND
-  ost << "- ggnndd\n";
-  ost << " ";
-  for (auto &block: design_.welltaps_) {
-    ost << " ( " << block.Name() << " g0 )";
-  }
-  ost << "\n" << " ;\n";
-  //Vdd
-  ost << "- vvdddd\n";
-  ost << " ";
-  for (auto &block: design_.welltaps_) {
-    ost << " ( " << block.Name() << " v0 )";
-  }
-  ost << "\n" << " ;\n";
-
-  ost << "END NETS\n\n";
-  ost << "END DESIGN\n";
-
-  ost.close();
-  ist.close();
-
-  BOOST_LOG_TRIVIAL(info) << ", done\n";
-}
-
-void Circuit::SaveDefPpnpWell(
-    std::string const &name_of_file,
-    std::string const &def_file_name
-) {
-  std::string file_name = name_of_file + "_ppnpwell.def";
-  BOOST_LOG_TRIVIAL(info) << "Writing PPNPWell DEF file (for debugging): "
-                          << file_name;
-  std::ofstream ost(file_name.c_str());
-  DaliExpects(ost.is_open(), "Cannot open file " + file_name);
-
-  std::ifstream ist(def_file_name.c_str());
-  DaliExpects(ist.is_open(), "Cannot open file " + def_file_name);
-
-  std::string line;
-  // 1. print file header, copy from def file
-  while (true) {
-    getline(ist, line);
-    if (line.find("DESIGN") != std::string::npos || ist.eof()) {
-      ost << "DESIGN PPNPWell ;\n";
-      continue;
-    }
-    if (line.find("COMPONENTS") != std::string::npos || ist.eof()) {
-      break;
-    }
-    ost << line << "\n";
-  }
-
-  // 2. print well tap cells
-  double factor_x = design_.distance_microns_ * GridValueX();
-  double factor_y = design_.distance_microns_ * GridValueY();
-  ost << "COMPONENTS " << 2 << " ;\n";
-  ost << "- "
-      << "npwells "
-      << name_of_file + "well + "
-      << PlaceStatusStr(COVER) << " "
-      << "( "
-      << (int) (RegionLLX() * factor_x) + design_.die_area_offset_x_ << " "
-      << (int) (RegionLLY() * factor_y) + design_.die_area_offset_y_
-      << " ) "
-      << "N"
-      << " ;\n";
-  ost << "- "
-      << "ppnps "
-      << name_of_file + "ppnp + "
-      << PlaceStatusStr(COVER) << " "
-      << "( "
-      << (int) (RegionLLX() * factor_x) + design_.die_area_offset_x_ << " "
-      << (int) (RegionLLY() * factor_y) + design_.die_area_offset_y_
-      << " ) "
-      << "N"
-      << " ;\n";
-  ost << "END COMPONENTS\n";
-  // jump to the end of components
-  while (line.find("END COMPONENTS") == std::string::npos && !ist.eof()) {
-    getline(ist, line);
-  }
-
-  // 3. print net, copy from def file
-
-  ost << "\nNETS 0 ;\n";
-  ost << "END NETS\n\n";
-  ost << "END DESIGN\n";
-
-  ost.close();
-  ist.close();
-
-  BOOST_LOG_TRIVIAL(info) << ", done\n";
-}
-
-void Circuit::SaveInstanceDefFile(
-    std::string const &name_of_file,
-    std::string const &def_file_name
-) {
-  SaveDefFile(name_of_file, def_file_name, false);
-}
-
 void Circuit::SaveBookshelfNode(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file " + name_of_file);
@@ -2201,10 +1742,8 @@ void Circuit::SaveBookshelfNode(std::string const &name_of_file) {
       << design_.blocks_.size() - design_.tot_mov_blk_num_ << "\n";
   for (auto &block: design_.blocks_) {
     ost << "\t" << block.Name()
-        << "\t" << block.Width() * design_.distance_microns_
-            * GridValueX()
-        << "\t" << block.Height() * design_.distance_microns_
-            * GridValueY()
+        << "\t" << block.Width() * design_.distance_microns_ * GridValueX()
+        << "\t" << block.Height() * design_.distance_microns_ * GridValueY()
         << "\n";
   }
 }
@@ -2212,7 +1751,7 @@ void Circuit::SaveBookshelfNode(std::string const &name_of_file) {
 void Circuit::SaveBookshelfNet(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file " + name_of_file);
-  int num_pins = 0;
+  size_t num_pins = 0;
   for (auto &net: design_.nets_) {
     num_pins += net.BlockPins().size();
   }
@@ -2229,10 +1768,9 @@ void Circuit::SaveBookshelfNet(std::string const &name_of_file) {
       } else {
         ost << "O : ";
       }
-      ost << (pair.PinPtr()->OffsetX()
-          - pair.BlkPtr()->TypePtr()->Width() / 2.0)
-          * design_.distance_microns_
-          * GridValueX()
+      ost <<
+          (pair.PinPtr()->OffsetX() - pair.BlkPtr()->TypePtr()->Width() / 2.0)
+              * design_.distance_microns_ * GridValueX()
           << "\t"
           << (pair.PinPtr()->OffsetY()
               - pair.BlkPtr()->TypePtr()->Height() / 2.0)
@@ -2303,10 +1841,8 @@ void Circuit::LoadBookshelfPl(std::string const &name_of_file) {
     if (res.size() >= 4) {
       if (IsBlockExisting(res[0])) {
         try {
-          lx = std::stod(res[1]) / GridValueX()
-              / design_.distance_microns_;
-          ly = std::stod(res[2]) / GridValueY()
-              / design_.distance_microns_;
+          lx = std::stod(res[1]) / GridValueX() / design_.distance_microns_;
+          ly = std::stod(res[2]) / GridValueY() / design_.distance_microns_;
           GetBlockPtr(res[0])->SetLoc(lx, ly);
         } catch (...) {
           DaliExpects(false, "Invalid stod conversion:\n\t" + line);
@@ -2362,7 +1898,9 @@ BlockType *Circuit::AddBlockTypeWithGridUnit(
               "BlockType exist, cannot create this block type again: "
                   + block_type_name);
   auto ret = tech_.block_type_map_.insert(
-      std::pair<std::string, BlockType *>(block_type_name, nullptr)
+      std::unordered_map<std::string, BlockType *>::value_type(
+          block_type_name, nullptr
+      )
   );
   auto tmp_ptr = new BlockType(&(ret.first->first), width, height);
   ret.first->second = tmp_ptr;
@@ -2449,9 +1987,9 @@ void Circuit::AddBlock(
   DaliExpects(!IsBlockExisting(block_name),
               "Block exists, cannot create this block again: " + block_name);
   int map_size = design_.blk_name_id_map_.size();
-  auto ret = design_.blk_name_id_map_.insert(std::pair<std::string, int>(
-      block_name,
-      map_size));
+  auto ret = design_.blk_name_id_map_.insert(
+      std::unordered_map<std::string, int>::value_type(block_name, map_size)
+  );
   std::pair<const std::string, int> *name_id_pair_ptr = &(*ret.first);
   design_.blocks_.emplace_back(
       block_type_ptr, name_id_pair_ptr, llx, lly, place_status, orient
@@ -2513,7 +2051,7 @@ IoPin *Circuit::AddUnplacedIOPin(std::string const &iopin_name) {
               "IOPin exists, cannot create this IOPin again: " + iopin_name);
   int map_size = design_.iopin_name_id_map_.size();
   auto ret = design_.iopin_name_id_map_.insert(
-      std::pair<std::string, int>(iopin_name, map_size)
+      std::unordered_map<std::string, int>::value_type(iopin_name, map_size)
   );
   std::pair<const std::string, int> *name_id_pair_ptr = &(*ret.first);
   design_.iopins_.emplace_back(name_id_pair_ptr);
@@ -2531,7 +2069,7 @@ IoPin *Circuit::AddPlacedIOPin(
               "IOPin exists, cannot create this IOPin again: " + iopin_name);
   int map_size = (int) design_.iopin_name_id_map_.size();
   auto ret = design_.iopin_name_id_map_.insert(
-      std::pair<std::string, int>(iopin_name, map_size)
+      std::unordered_map<std::string, int>::value_type(iopin_name, map_size)
   );
   std::pair<const std::string, int> *name_id_pair_ptr = &(*ret.first);
   design_.iopins_.emplace_back(name_id_pair_ptr, lx, ly);

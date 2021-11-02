@@ -66,8 +66,30 @@ void Dali::InstantiateIoPlacer() {
   }
 }
 
-bool Dali::AutoIoPinPlacement() {
-  InstantiateIoPlacer();
+bool Dali::AddIoPin() {
+  return true;
+}
+
+bool Dali::SetIoPinStatus() {
+  return true;
+}
+
+bool Dali::ConfigIoPlacerAllInOneLayer(std::string const &layer_name) {
+  DaliExpects(io_placer_ != nullptr, "Please initialize I/O placer first");
+  bool is_metal_name = circuit_.IsMetalLayerExisting(layer_name);
+  if (is_metal_name) {
+    MetalLayer *metal_layer = circuit_.GetMetalLayerPtr(layer_name);
+    return io_placer_->ConfigSetGlobalMetalLayer(metal_layer->Id());
+  }
+  return false;
+}
+
+bool Dali::ConfigIoPlacer() {
+  return true;
+}
+
+bool Dali::StartIoPinAutoPlacement() {
+  DaliExpects(io_placer_ != nullptr, "Please initialize I/O placer first");
   return io_placer_->AutoPlaceIoPin();
 }
 

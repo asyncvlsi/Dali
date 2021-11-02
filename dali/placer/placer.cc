@@ -211,69 +211,11 @@ bool Placer::SaveNodeTerminal(
   return true;
 }
 
-void Placer::SaveDEFFile(std::string const &name_of_file) {
-  std::ofstream ost(name_of_file.c_str());
-  DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
-
-  // 1. print file header?
-  ost << "VERSION 5.8 ;\n"
-      << "DIVIDERCHAR \"/\" ;\n"
-      << "BUSBITCHARS \"[]\" ;\n";
-  ost << "DESIGN tmp_circuit_name\n";
-  ost
-      << "UNITS DISTANCE MICRONS 2000 \n\n"; // temporary values, depends on LEF file
-
-  // no core rows?
-  // no tracks?
-
-  // 2. print component
-  BOOST_LOG_TRIVIAL(info) << Blocks().size() << "\n";
-  ost << "COMPONENTS " << Blocks().size() << " ;\n";
-  for (auto &block: Blocks()) {
-    ost << "- "
-        << block.Name() << " "
-        << block.TypeName() << " + "
-        << "PLACED"
-        << " ("
-        << " "
-            + std::to_string((int) (block.LLX()
-                * p_ckt_->design_.DistanceMicrons()
-                * p_ckt_->GridValueX()))
-        << " "
-            + std::to_string((int) (block.LLY()
-                * p_ckt_->design_.DistanceMicrons()
-                * p_ckt_->GridValueY()))
-        << " ) "
-        << OrientStr(block.Orient()) + " ;\n";
-  }
-  ost << "END COMPONENTS\n";
-
-  // 3. print net
-  ost << "NETS " << Nets().size() << " ;\n";
-  for (auto &net: Nets()) {
-    ost << "- "
-        << net.Name() << "\n";
-    ost << " ";
-    for (auto &pin_pair: net.BlockPins()) {
-      ost << " ( " << pin_pair.BlockName() << " "
-          << pin_pair.PinName() << " ) ";
-    }
-    ost << "\n" << " ;\n";
-  }
-  ost << "END NETS\n\n";
-  ost << "END DESIGN\n";
-}
-
-void Placer::SaveDEFFile(
+void Placer::EmitDEFWellFile(
     std::string const &name_of_file,
-    std::string const &input_def_file
+    int well_emit_mode,
+    bool enable_emitting_cluster
 ) {
-  p_ckt_->SaveDefFile(name_of_file, input_def_file);
-}
-
-void Placer::EmitDEFWellFile(std::string const &name_of_file,
-                             int well_emit_mode,
-                             bool enable_emitting_cluster) {
   BOOST_LOG_TRIVIAL(info)
     << "virtual function Placer::EmitDEFWellFile() does nothing, you should not use this member function\n";
 }

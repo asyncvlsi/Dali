@@ -62,14 +62,9 @@ int main() {
 
   // perform IO placement
   std::string layer_name("Metal1");
-  char layer_name_c_str[50];
-  strcpy(layer_name_c_str, layer_name.c_str());
-  int arg_count = NUM_OF_ARGS;
-  char *arg_values[NUM_OF_ARGS] = {
-      (char *) "place-io",
-      layer_name_c_str
-  };
-  bool is_ioplace_success = dali.IoPinPlacement(arg_count, arg_values);
+  dali.InstantiateIoPlacer();
+  dali.ConfigIoPlacerAllInOneLayer(layer_name);
+  bool is_ioplace_success = dali.StartIoPinAutoPlacement();
   if (!is_ioplace_success) {
     return FAIL;
   }

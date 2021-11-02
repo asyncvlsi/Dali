@@ -44,7 +44,11 @@ class Dali {
       bool is_log_no_prefix = false
   );
 
-  bool AutoIoPinPlacement();
+  bool AddIoPin();
+  bool SetIoPinStatus();
+  bool ConfigIoPlacerAllInOneLayer(std::string const &layer_name);
+  bool ConfigIoPlacer();
+  bool StartIoPinAutoPlacement();
   bool IoPinPlacement(int argc, char **argv);
 
   void InitializeRCEstimator();
@@ -74,7 +78,6 @@ class Dali {
       std::string const &output_def_name = "circuit"
   );
 
-  IoPlacer *io_placer_ = nullptr;
   void InstantiateIoPlacer();
  private:
   Circuit circuit_;
@@ -83,6 +86,7 @@ class Dali {
   LGTetrisEx legalizer_;
   StdClusterWellLegalizer well_legalizer_;
   WellTapPlacer *well_tap_placer_ = nullptr;
+  IoPlacer *io_placer_ = nullptr;
   StarPiModelEstimator *rc_estimator = nullptr;
 
   static void ReportIoPlacementUsage();
