@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
   //circuit.ReadLefFile(lef_file_name);
   //circuit.ReadDefFile(def_file_name);
   circuit.LoadBookshelfPl(pl_file_name);
-  circuit.SaveDefFile(out_def_name, def_file_name);
+  circuit.SaveDefFile(out_def_name, "", def_file_name, 1, 1, 1, 1);
 
   return 0;
 }
