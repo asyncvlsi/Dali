@@ -52,8 +52,8 @@ class IoPlacer {
   bool AddIoPin(
       std::string &iopin_name,
       std::string &net_name,
-      std::string &direction,
-      std::string &use
+      phydb::SignalDirection direction,
+      phydb::SignalUse use
   );
   bool AddCmd(int argc, char **argv);
   bool PlaceIoPin(
@@ -63,10 +63,10 @@ class IoPlacer {
       int shape_ly,
       int shape_ux,
       int shape_uy,
-      std::string &place_status,
+      phydb::PlaceStatus place_status,
       int loc_x,
       int loc_y,
-      std::string &orient
+      phydb::CompOrient orient
   );
   bool PlaceCmd(int argc, char **argv);
 

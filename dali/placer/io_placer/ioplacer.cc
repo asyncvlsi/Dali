@@ -21,6 +21,7 @@
 #include "ioplacer.h"
 
 #include "dali/common/logging.h"
+#include "dali/common/phydbhelper.h"
 
 #define NUM_OF_PLACE_BOUNDARY 4
 #define LEFT 0
@@ -72,23 +73,21 @@ void IoPlacer::SetPhyDB(phydb::PhyDB *phy_db_ptr) {
   phy_db_ptr_ = phy_db_ptr;
 }
 
-/* A function for add IOPIN to PhyDB database. This function should be called
+/****
+ * @brief A function for add IOPIN to PhyDB database. This function should be called
  * before ordinary placement.
  *
- * Inputs:
- *  iopin_name: the name of the IOPIN
- *  net_name: the net this IOPIN is connected to
- *  direction: the direction of this IOPIN
- *  use: the usage of this IOPIN
- *
- * Return:
- *  true if this operation can be done successfully
- * */
+ * @param iopin_name: the name of the IOPIN
+ * @param net_name: the net this IOPIN is connected to
+ * @param direction: the direction of this IOPIN
+ * @param use: the usage of this IOPIN
+ * @return true if this operation can be done successfully
+ */
 bool IoPlacer::AddIoPin(
     std::string &iopin_name,
     std::string &net_name,
-    std::string &direction,
-    std::string &use
+    phydb::SignalDirection direction,
+    phydb::SignalUse use
 ) {
   // check if this IOPIN is in PhyDB or not
   bool is_iopin_existing = phy_db_ptr_->IsIoPinExisting(iopin_name);
@@ -108,14 +107,9 @@ bool IoPlacer::AddIoPin(
     return false;
   }
 
-  // convert strings to direction and use
-  phydb::SignalDirection signal_direction =
-      phydb::StrToSignalDirection(direction);
-  phydb::SignalUse signal_use = phydb::StrToSignalUse(use);
-
   // add this IOPIN to PhyDB
   phydb::IOPin *phydb_iopin =
-      phy_db_ptr_->AddIoPin(iopin_name, signal_direction, signal_use);
+      phy_db_ptr_->AddIoPin(iopin_name, direction, use);
   phydb_iopin->SetPlacementStatus(phydb::UNPLACED);
   phy_db_ptr_->AddIoPinToNet(iopin_name, net_name);
 
@@ -153,36 +147,40 @@ bool IoPlacer::AddCmd(int argc, char **argv) {
   std::string direction(argv[2]);
   std::string use(argv[3]);
 
-  return AddIoPin(iopin_name, net_name, direction, use);
+  phydb::SignalDirection phydb_direction =
+      phydb::StrToSignalDirection(direction);
+  phydb::SignalUse phydb_signal_use = phydb::StrToSignalUse(use);
+
+  return AddIoPin(iopin_name, net_name, phydb_direction, phydb_signal_use);
 }
 
-/* A function for placing IOPINs interactively.
+/****
+ * @brief A function for placing IOPINs interactively.
  *
- * Inputs:
- *  iopin_name: the name of the IOPIN
- *  metal_name: the metal layer to create its physical geometry
- *  shape_lx: lower left x of this IOPIN with respect to its location
- *  shape_ly: lower left y of this IOPIN with respect to its location
- *  shape_ux: upper right x of this IOPIN with respect to its location
- *  shape_uy: upper right y of this IOPIN with respect to its location
- *  place_status: placement status
- *  loc_x_: x location of this IOPIN on a boundary
- *  loc_y: y location of this IOPIN on a boundary
- *  orient: orientation of this IOPIN
- *
- * Return:
- *  true if this operation can be done successfully
- * */
-bool IoPlacer::PlaceIoPin(std::string &iopin_name,
-                          std::string &metal_name,
-                          int shape_lx,
-                          int shape_ly,
-                          int shape_ux,
-                          int shape_uy,
-                          std::string &place_status,
-                          int loc_x,
-                          int loc_y,
-                          std::string &orient) {
+ * @param iopin_name: the name of the IOPIN
+ * @param metal_name: the metal layer to create its physical geometry
+ * @param shape_lx: lower left x of this IOPIN with respect to its location
+ * @param shape_ly: lower left y of this IOPIN with respect to its location
+ * @param shape_ux: upper right x of this IOPIN with respect to its location
+ * @param shape_uy: upper right y of this IOPIN with respect to its location
+ * @param place_status: placement status
+ * @param loc_x: x location of this IOPIN on a boundary
+ * @param loc_y: y location of this IOPIN on a boundary
+ * @param orient: orientation of this IOPIN
+ * @return
+ */
+bool IoPlacer::PlaceIoPin(
+    std::string &iopin_name,
+    std::string &metal_name,
+    int shape_lx,
+    int shape_ly,
+    int shape_ux,
+    int shape_uy,
+    phydb::PlaceStatus place_status,
+    int loc_x,
+    int loc_y,
+    phydb::CompOrient orient
+) {
   // check if this IOPIN is in PhyDB or not
   bool is_iopin_existing_phydb = phy_db_ptr_->IsIoPinExisting(iopin_name);
   if (!is_iopin_existing_phydb) {
@@ -212,10 +210,10 @@ bool IoPlacer::PlaceIoPin(std::string &iopin_name,
       shape_uy
   );
   phydb_iopin_ptr->SetPlacement(
-      phydb::StrToPlaceStatus(place_status),
+      place_status,
       loc_x,
       loc_y,
-      phydb::StrToCompOrient(orient)
+      orient
   );
 
   // check if this IOPIN is in Dali::Circuit or not (it should)
@@ -224,9 +222,11 @@ bool IoPlacer::PlaceIoPin(std::string &iopin_name,
   IoPin *iopin_ptr_dali = p_ckt_->GetIoPinPtr(iopin_name);
 
   // set IOPIN placement status in Dali
-  iopin_ptr_dali->SetLoc(p_ckt_->LocPhydb2DaliX(loc_x),
-                         p_ckt_->LocPhydb2DaliY(loc_y),
-                         StrToPlaceStatus(place_status));
+  iopin_ptr_dali->SetLoc(
+      p_ckt_->LocPhydb2DaliX(loc_x),
+      p_ckt_->LocPhydb2DaliY(loc_y),
+      PlaceStatusPhyDB2Dali(place_status)
+  );
   MetalLayer *metal_layer_ptr = p_ckt_->GetMetalLayerPtr(metal_name);
   iopin_ptr_dali->SetLayerPtr(metal_layer_ptr);
 
@@ -277,16 +277,11 @@ bool IoPlacer::PlaceCmd(int argc, char **argv) {
     DaliExpects(false, "invalid IOPIN geometry or location");
   }
 
-  return PlaceIoPin(iopin_name,
-                    metal_name,
-                    shape_lx,
-                    shape_ly,
-                    shape_ux,
-                    shape_uy,
-                    place_status,
-                    loc_x,
-                    loc_y,
-                    orient);
+  return PlaceIoPin(iopin_name, metal_name,
+                    shape_lx, shape_ly, shape_ux, shape_uy,
+                    phydb::StrToPlaceStatus(place_status),
+                    loc_x, loc_y,
+                    phydb::StrToCompOrient(orient));
 }
 
 bool IoPlacer::PartialPlaceIoPin() {
@@ -654,9 +649,3 @@ bool IoPlacer::AutoPlaceCmd(int argc, char **argv) {
 }
 
 }
-
-#undef NUM_OF_PLACE_BOUNDARY
-#undef LEFT
-#undef RIGHT
-#undef BOTTOM
-#undef TOP

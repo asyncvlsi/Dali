@@ -66,12 +66,32 @@ void Dali::InstantiateIoPlacer() {
   }
 }
 
-bool Dali::AddIoPin() {
-  return true;
+bool Dali::AddIoPin(
+    std::string &iopin_name,
+    std::string &net_name,
+    phydb::SignalDirection direction,
+    phydb::SignalUse use
+) {
+  DaliExpects(io_placer_ != nullptr, "Please initialize I/O placer first");
+  return io_placer_->AddIoPin(iopin_name, net_name, direction, use);
 }
 
-bool Dali::SetIoPinStatus() {
-  return true;
+bool Dali::PlaceIoPin(
+    std::string &iopin_name,
+    std::string &metal_name,
+    int shape_lx,
+    int shape_ly,
+    int shape_ux,
+    int shape_uy,
+    phydb::PlaceStatus place_status,
+    int loc_x,
+    int loc_y,
+    phydb::CompOrient orient
+) {
+  DaliExpects(io_placer_ != nullptr, "Please initialize I/O placer first");
+  return io_placer_->PlaceIoPin(iopin_name, metal_name,
+                                shape_lx, shape_ly, shape_ux, shape_uy,
+                                place_status, loc_x, loc_y, orient);
 }
 
 bool Dali::ConfigIoPlacerAllInOneLayer(std::string const &layer_name) {

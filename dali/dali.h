@@ -44,8 +44,24 @@ class Dali {
       bool is_log_no_prefix = false
   );
 
-  bool AddIoPin();
-  bool SetIoPinStatus();
+  bool AddIoPin(
+      std::string &iopin_name,
+      std::string &net_name,
+      phydb::SignalDirection direction,
+      phydb::SignalUse use
+  );
+  bool PlaceIoPin(
+      std::string &iopin_name,
+      std::string &metal_name,
+      int shape_lx,
+      int shape_ly,
+      int shape_ux,
+      int shape_uy,
+      phydb::PlaceStatus place_status,
+      int loc_x,
+      int loc_y,
+      phydb::CompOrient orient
+  );
   bool ConfigIoPlacerAllInOneLayer(std::string const &layer_name);
   bool ConfigIoPlacer();
   bool StartIoPinAutoPlacement();

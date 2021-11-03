@@ -28,20 +28,6 @@
 
 using namespace dali;
 
-/****
- * @brief Testcase for IoPlacement command "place-io metal_layer".
- *
- * This is a simple testcase to show that using command
- *     "place-io m1"
- * we can obtain a placement result satisfying:
- * 1. all IOPINs are placed on placement boundary
- * 2. IOPINs does not overlap with each other and respect spacing rules
- * 3. Physical geometries of all IOPINs are on metal layer "Metal1"
- * 4. All locations respect manufacturing grid specified in LEF
- * 5. Physical geometries of all IOPINs are inside the placement region
- *
- * @return 0 if this test is passed, 1 if failed
- */
 int main() {
   std::string lef_file_name = "ispd19_test3.input.lef";
   std::string def_file_name = "ispd19_test3.input.def";
@@ -57,10 +43,10 @@ int main() {
   // initialize Dali
   Dali dali(p_phy_db, boost::log::trivial::info, "", true);
 
-  // perform IO placement
-  std::string layer_name("Metal1");
-  dali.InstantiateIoPlacer();
-  dali.ConfigIoPlacerAllInOneLayer(layer_name);
+  /****
+   *  this is the part of code to implement
+   */
+
   bool is_ioplace_success = dali.StartIoPinAutoPlacement();
   if (!is_ioplace_success) {
     return FAIL;
@@ -83,9 +69,6 @@ int main() {
   if (!is_legal) return FAIL;
 
   is_legal = IsNoIoPinOverlapAndSpacingViolation(p_phy_db);
-  if (!is_legal) return FAIL;
-
-  is_legal = IsEveryIoPinOnMetal(p_phy_db, layer_name);
   if (!is_legal) return FAIL;
 
   is_legal = IsEveryIoPinManufacturable(p_phy_db);
