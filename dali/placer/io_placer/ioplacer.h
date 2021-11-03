@@ -50,15 +50,15 @@ class IoPlacer {
   void SetPhyDB(phydb::PhyDB *phy_db_ptr);
 
   bool AddIoPin(
-      std::string &iopin_name,
-      std::string &net_name,
+      std::string const &iopin_name,
+      std::string const &net_name,
       phydb::SignalDirection direction,
       phydb::SignalUse use
   );
   bool AddCmd(int argc, char **argv);
   bool PlaceIoPin(
-      std::string &iopin_name,
-      std::string &metal_name,
+      std::string const &iopin_name,
+      std::string const &metal_name,
       int shape_lx,
       int shape_ly,
       int shape_ux,

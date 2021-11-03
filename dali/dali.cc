@@ -258,7 +258,7 @@ bool Dali::AddWellTaps(int argc, char **argv) {
                   << "\n";
         return false;
       }
-      if (cell->GetClass() != phydb::CORE_WELLTAP) {
+      if (cell->GetClass() != phydb::MacroClass::CORE_WELLTAP) {
         std::cout << "Given cell is not well-tap cell\n";
         return false;
       }
@@ -536,13 +536,13 @@ void Dali::ExportIoPinsToPhyDB() {
       int pin_y = iopin.FinalY();
       phydb::CompOrient pin_orient;
       if (iopin.X() == circuit_.design().RegionLeft()) {
-        pin_orient = phydb::E;
+        pin_orient = phydb::CompOrient::E;
       } else if (iopin.X() == circuit_.design().RegionRight()) {
-        pin_orient = phydb::W;
+        pin_orient = phydb::CompOrient::W;
       } else if (iopin.Y() == circuit_.design().RegionBottom()) {
-        pin_orient = phydb::N;
+        pin_orient = phydb::CompOrient::N;
       } else {
-        pin_orient = phydb::S;
+        pin_orient = phydb::CompOrient::S;
       }
 
       phydb_iopin->SetPlacement(

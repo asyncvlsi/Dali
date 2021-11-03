@@ -568,7 +568,8 @@ void Circuit::AddIoPinFromPhyDB(phydb::IOPin &iopin) {
   auto location = iopin.GetLocation();
   int iopin_x = LocPhydb2DaliX(location.x);
   int iopin_y = LocPhydb2DaliY(location.y);
-  bool is_loc_set = (iopin.GetPlacementStatus() != phydb::UNPLACED);
+  bool
+      is_loc_set = (iopin.GetPlacementStatus() != phydb::PlaceStatus::UNPLACED);
   auto sig_use = SignalUse(iopin.GetUse());
   auto sig_dir = SignalDirection(iopin.GetDirection());
 
@@ -2130,7 +2131,7 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
   }
 
   for (auto &layer: phy_db_tech.GetLayersRef()) {
-    if (layer.GetType() == phydb::ROUTING) {
+    if (layer.GetType() == phydb::LayerType::ROUTING) {
       std::string layer_name = layer.GetName();
 
       double pitch_x = -1, pitch_y = -1;
@@ -2182,7 +2183,7 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
     double width = macro.GetWidth();
     double height = macro.GetHeight();
     BlockType *blk_type = nullptr;
-    if (macro.GetClass() == phydb::CORE_WELLTAP) {
+    if (macro.GetClass() == phydb::MacroClass::CORE_WELLTAP) {
       blk_type = AddWellTapBlockType(macro_name, width, height);
     } else {
       blk_type = AddBlockType(macro_name, width, height);
@@ -2194,14 +2195,13 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
 
       bool is_input = true;
       auto pin_direction = pin.GetDirection();
-      is_input = (pin_direction == phydb::INPUT);
+      is_input = (pin_direction == phydb::SignalDirection::INPUT);
       Pin *new_pin = blk_type->AddPin(pin_name, is_input);
 
       auto &layer_rects = pin.GetLayerRectRef();
       if (layer_rects.empty()) {
-        DaliExpects(false,
-                    "No physical pins, Macro: " + blk_type->Name()
-                        + ", pin: " + pin_name);
+        DaliExpects(false, "No physical pins, Macro: " + blk_type->Name()
+            + ", pin: " + pin_name);
       }
       for (auto &layer_rect: layer_rects) {
         auto &rects = layer_rect.GetRects();

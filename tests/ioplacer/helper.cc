@@ -39,7 +39,7 @@ namespace dali {
  */
 void SetAllIoPinsToUnplaced(phydb::PhyDB *p_phydb) {
   for (auto &iopin: p_phydb->GetDesignPtr()->GetIoPinsRef()) {
-    iopin.SetPlacementStatus(phydb::UNPLACED);
+    iopin.SetPlacementStatus(phydb::PlaceStatus::UNPLACED);
     //iopin.Report();
   }
 }
@@ -51,8 +51,8 @@ bool IoPinPlacedOnBoundary(
     int bottom,
     int top
 ) {
-  if (iopin.place_status_ != phydb::PLACED
-      && iopin.place_status_ != phydb::FIXED) {
+  if (iopin.place_status_ != phydb::PlaceStatus::PLACED
+      && iopin.place_status_ != phydb::PlaceStatus::FIXED) {
     BOOST_LOG_TRIVIAL(info)
       << "placement status of iopin: " << iopin.GetName()
       << " is not PLACED or FIXED\n";

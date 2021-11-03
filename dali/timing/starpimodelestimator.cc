@@ -112,11 +112,11 @@ void StarPiModelEstimator::FindFirstHorizontalAndVerticalMetalLayer() {
   distance_micron_ = phy_db_->design().GetUnitsDistanceMicrons();
   if (horizontal_layer_ != nullptr && vertical_layer_ != nullptr) return;
   for (auto &metal: phy_db_->tech().GetMetalLayersRef()) {
-    if (metal->GetDirection() == phydb::HORIZONTAL
+    if (metal->GetDirection() == phydb::MetalDirection::HORIZONTAL
         && horizontal_layer_ == nullptr) {
       horizontal_layer_ = metal;
     }
-    if (metal->GetDirection() == phydb::VERTICAL
+    if (metal->GetDirection() == phydb::MetalDirection::VERTICAL
         && vertical_layer_ == nullptr) {
       vertical_layer_ = metal;
     }

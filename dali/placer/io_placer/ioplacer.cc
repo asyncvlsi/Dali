@@ -84,8 +84,8 @@ void IoPlacer::SetPhyDB(phydb::PhyDB *phy_db_ptr) {
  * @return true if this operation can be done successfully
  */
 bool IoPlacer::AddIoPin(
-    std::string &iopin_name,
-    std::string &net_name,
+    std::string const &iopin_name,
+    std::string const &net_name,
     phydb::SignalDirection direction,
     phydb::SignalUse use
 ) {
@@ -110,7 +110,7 @@ bool IoPlacer::AddIoPin(
   // add this IOPIN to PhyDB
   phydb::IOPin *phydb_iopin =
       phy_db_ptr_->AddIoPin(iopin_name, direction, use);
-  phydb_iopin->SetPlacementStatus(phydb::UNPLACED);
+  phydb_iopin->SetPlacementStatus(phydb::PlaceStatus::UNPLACED);
   phy_db_ptr_->AddIoPinToNet(iopin_name, net_name);
 
   // add it to Dali::Circuit
@@ -147,11 +147,11 @@ bool IoPlacer::AddCmd(int argc, char **argv) {
   std::string direction(argv[2]);
   std::string use(argv[3]);
 
-  phydb::SignalDirection phydb_direction =
-      phydb::StrToSignalDirection(direction);
-  phydb::SignalUse phydb_signal_use = phydb::StrToSignalUse(use);
-
-  return AddIoPin(iopin_name, net_name, phydb_direction, phydb_signal_use);
+  return AddIoPin(
+      iopin_name, net_name,
+      phydb::StrToSignalDirection(direction),
+      phydb::StrToSignalUse(use)
+  );
 }
 
 /****
@@ -170,8 +170,8 @@ bool IoPlacer::AddCmd(int argc, char **argv) {
  * @return
  */
 bool IoPlacer::PlaceIoPin(
-    std::string &iopin_name,
-    std::string &metal_name,
+    std::string const &iopin_name,
+    std::string const &metal_name,
     int shape_lx,
     int shape_ly,
     int shape_ux,

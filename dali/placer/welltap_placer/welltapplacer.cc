@@ -81,7 +81,7 @@ void WellTapPlacer::FetchRowsFromPhyDB() {
 void WellTapPlacer::InitializeWhiteSpaceInRows() {
   if (rows_.empty()) return;
   for (auto &comp: phy_db_->GetDesignPtr()->components_) {
-    if (comp.place_status_ != phydb::FIXED) continue;
+    if (comp.place_status_ != phydb::PlaceStatus::FIXED) continue;
     phydb::Macro *macro = comp.GetMacro();
     int comp_width = (int) std::round(macro->GetWidth()
                                           * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons());
@@ -254,24 +254,28 @@ void WellTapPlacer::ExportWellTapCellsToPhyDB() {
   if (rows_.empty()) return;
   int counter = 0;
   std::string macro_name = cell_->GetName();
-  phydb::PlaceStatus place_status = phydb::FIXED;
+  phydb::PlaceStatus place_status = phydb::PlaceStatus::FIXED;
   for (auto &row: rows_) {
     for (int i = 0; i < row.num_x; ++i) {
       if (row.well_taps[i]) {
-        std::string
-            welltap_cell_name = "welltap" + std::to_string(counter++);
+        std::string welltap_cell_name =
+            "welltap" + std::to_string(counter++);
         int llx = row.orig_x + i * row_step_;
         int lly = row.orig_y;
-        phydb::CompOrient orient = row.is_N ? phydb::N : phydb::FS;
+        phydb::CompOrient orient =
+            row.is_N ? phydb::CompOrient::N : phydb::CompOrient::FS;
         phydb::Macro *macro_ptr = phy_db_->GetMacroPtr(macro_name);
         DaliExpects(macro_ptr != nullptr,
                     "Cannot find macro " + macro_name + " in PhyDB?!");
-        phy_db_->AddComponent(welltap_cell_name,
-                              macro_ptr,
-                              place_status,
-                              llx,
-                              lly,
-                              orient);
+        phy_db_->AddComponent(
+            welltap_cell_name,
+            macro_ptr,
+            place_status,
+            llx,
+            lly,
+            orient,
+            phydb::CompSource::DIST
+        );
       }
     }
   }
