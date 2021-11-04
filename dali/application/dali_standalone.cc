@@ -188,18 +188,17 @@ int main(int argc, char *argv[]) {
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
 
-  Circuit circuit;
-  if (x_grid > 0 && y_grid > 0) {
-    circuit.SetGridValue(x_grid, y_grid);
-  }
-
   // read LEF/DEF
   phydb::PhyDB phy_db;
+  if (x_grid > 0 && y_grid > 0) {
+    phy_db.SetPlacementGrids(x_grid, y_grid);
+  }
   phy_db.ReadLef(lef_file_name);
   phy_db.ReadDef(def_file_name);
   if (!cell_file_name.empty()) {
     phy_db.ReadCell(cell_file_name);
   }
+  Circuit circuit;
   circuit.InitializeFromPhyDB(&phy_db);
 
   file_wall_time = get_wall_time() - file_wall_time;

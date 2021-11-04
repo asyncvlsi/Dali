@@ -2403,8 +2403,9 @@ void GPSimPL::SplitGridBox(BoxBin &box) {
     box1.update_terminal_list_white_space(block_list, box.terminal_list);
     box2.update_terminal_list_white_space(block_list, box.terminal_list);
 
-    if (double(box1.total_white_space) / (double) box.total_white_space
-        <= 0.01) {
+    if (
+        double(box1.total_white_space) / (double) box.total_white_space <= 0.01
+        ) {
       box2.ll_point = box.ll_point;
       box2.ur_point = box.ur_point;
       box2.cell_list = box.cell_list;
@@ -2412,8 +2413,8 @@ void GPSimPL::SplitGridBox(BoxBin &box) {
       box2.UpdateObsBoundary(block_list);
       queue_box_bin.push(box2);
     } else if (
-        double(box2.total_white_space) / (double) box.total_white_space
-            <= 0.01) {
+        double(box2.total_white_space) / (double) box.total_white_space <= 0.01
+        ) {
       box1.ll_point = box.ll_point;
       box1.ur_point = box.ur_point;
       box1.cell_list = box.cell_list;
@@ -2421,9 +2422,11 @@ void GPSimPL::SplitGridBox(BoxBin &box) {
       box1.UpdateObsBoundary(block_list);
       queue_box_bin.push(box1);
     } else {
-      box.update_cut_point_cell_list_low_high(block_list,
-                                              box1.total_white_space,
-                                              box2.total_white_space);
+      box.update_cut_point_cell_list_low_high(
+          block_list,
+          box1.total_white_space,
+          box2.total_white_space
+      );
       box1.cell_list = box.cell_list_low;
       box2.cell_list = box.cell_list_high;
       box1.ll_point = box.ll_point;
@@ -2446,8 +2449,9 @@ void GPSimPL::SplitGridBox(BoxBin &box) {
     box1.update_terminal_list_white_space(block_list, box.terminal_list);
     box2.update_terminal_list_white_space(block_list, box.terminal_list);
 
-    if (double(box1.total_white_space) / (double) box.total_white_space
-        <= 0.01) {
+    if (
+        double(box1.total_white_space) / (double) box.total_white_space <= 0.01
+        ) {
       box2.ll_point = box.ll_point;
       box2.ur_point = box.ur_point;
       box2.cell_list = box.cell_list;
@@ -2455,8 +2459,8 @@ void GPSimPL::SplitGridBox(BoxBin &box) {
       box2.UpdateObsBoundary(block_list);
       queue_box_bin.push(box2);
     } else if (
-        double(box2.total_white_space) / (double) box.total_white_space
-            <= 0.01) {
+        double(box2.total_white_space) / (double) box.total_white_space <= 0.01
+        ) {
       box1.ll_point = box.ll_point;
       box1.ur_point = box.ur_point;
       box1.cell_list = box.cell_list;
@@ -2464,9 +2468,11 @@ void GPSimPL::SplitGridBox(BoxBin &box) {
       box1.UpdateObsBoundary(block_list);
       queue_box_bin.push(box1);
     } else {
-      box.update_cut_point_cell_list_low_high(block_list,
-                                              box1.total_white_space,
-                                              box2.total_white_space);
+      box.update_cut_point_cell_list_low_high(
+          block_list,
+          box1.total_white_space,
+          box2.total_white_space
+      );
       box1.cell_list = box.cell_list_low;
       box2.cell_list = box.cell_list_high;
       box1.ll_point = box.ll_point;
@@ -2516,12 +2522,14 @@ for (auto &cell_id: box.cell_list) {
     grid_bin.cell_area += block_list[blk_num].Area();
   }
 
-  std::sort(index_loc_list_x.begin(),
-            index_loc_list_x.end(),
-            [](const std::pair<int, double> &p1,
-               const std::pair<int, double> &p2) {
-              return p1.second < p2.second;
-            });
+  std::sort(
+      index_loc_list_x.begin(),
+      index_loc_list_x.end(),
+      [](const std::pair<int, double> &p1,
+         const std::pair<int, double> &p2) {
+        return p1.second < p2.second;
+      }
+  );
   double total_length = 0;
   for (auto &cell_id: box.cell_list) {
     total_length += block_list[cell_id].Width();
@@ -2536,12 +2544,14 @@ for (auto &cell_id: box.cell_list) {
     cur_pos += block_list[cell_num].Width();
   }
 
-  std::sort(index_loc_list_y.begin(),
-            index_loc_list_y.end(),
-            [](const std::pair<int, double> &p1,
-               const std::pair<int, double> &p2) {
-              return p1.second < p2.second;
-            });
+  std::sort(
+      index_loc_list_y.begin(),
+      index_loc_list_y.end(),
+      [](const std::pair<int, double> &p1,
+         const std::pair<int, double> &p2) {
+        return p1.second < p2.second;
+      }
+  );
   total_length = 0;
   for (auto &cell_id: box.cell_list) {
     total_length += block_list[cell_id].Height();
@@ -2550,8 +2560,8 @@ for (auto &cell_id: box.cell_list) {
   int box_height = box.top - box.bottom;
   for (auto &pair: index_loc_list_y) {
     cell_num = pair.first;
-    block_list[cell_num].SetCenterY(
-        box.bottom + cur_pos / total_length * box_height);
+    double center_y_loc = box.bottom + cur_pos / total_length * box_height;
+    block_list[cell_num].SetCenterY(center_y_loc);
     cur_pos += block_list[cell_num].Height();
   }
 }

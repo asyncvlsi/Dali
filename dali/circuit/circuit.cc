@@ -2141,9 +2141,10 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
       if (min_width <= 0) {
         min_width = layer.GetWidth();
       }
-      DaliExpects(min_width > 0,
-                  "MinWidth and Width not found in PhyDB for layer: "
-                      + layer_name);
+      DaliExpects(
+          min_width > 0,
+          "MinWidth and Width not found in PhyDB for layer: " + layer_name
+      );
 
       double min_spacing = 0;
       auto &spacing_table = *(layer.GetSpacingTable());
@@ -2152,14 +2153,18 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
       } else {
         min_spacing = layer.GetSpacing();
       }
-      DaliExpects(min_spacing > 0,
-                  "MinSpacing not found in PhyDB for layer: "
-                      + layer_name);
+      if (min_spacing <= 0) {
+        BOOST_LOG_TRIVIAL(warning)
+          << "A valid min spacing is not found for layer: " + layer_name
+          << ", use its min width instead\n";
+        min_spacing = min_width;
+      }
 
       double min_area = layer.GetArea();
-      DaliExpects(min_area >= 0,
-                  "Dali expects a non-negative MinArea for layer: "
-                      + layer_name);
+      DaliExpects(
+          min_area >= 0,
+          "Dali expects a non-negative MinArea for layer: " + layer_name
+      );
 
       auto direction = MetalDirection(layer.GetDirection());
       AddMetalLayer(
