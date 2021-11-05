@@ -115,10 +115,10 @@ void GPSimPL::BlockLocRandomInit() {
 
   for (auto &block: p_ckt_->Blocks()) {
     if (block.IsMovable()) {
-      block.SetCenterX(
-          RegionLeft() + region_width * distribution(generator));
-      block.SetCenterY(
-          RegionBottom() + region_height * distribution(generator));
+      double init_x = RegionLeft() + region_width * distribution(generator);
+      double init_y = RegionBottom() + region_height * distribution(generator);
+      block.SetCenterX(init_x);
+      block.SetCenterY(init_y);
     }
   }
   BOOST_LOG_TRIVIAL(info)
@@ -328,17 +328,17 @@ void GPSimPL::CGInit() {
   int net_sz = 0;
   for (auto &net: Nets()) {
     net_sz = net.PinCnt();
-    // if a net has size n, then in total, there will be (2(n-2)+1)*4 non-zero entries in the matrix
-    if (net_sz > 1) coefficient_size += ((net_sz - 2) * 2 + 1) * 4;
+    // if a net has size n, then in total, there will be (2(n-2)+1)*4 non-zero entries for the matrix
+    if (net_sz > 1) coefficient_size += (2 * (net_sz - 2) + 1) * 4;
   }
   // this is to reserve space for anchor, because each block may need an anchor
   coefficient_size += sz;
-
   // this is to reserve space for anchor in the center of the placement region
   coefficient_size += sz;
   coefficientsx.reserve(coefficient_size);
   Ax.reserve(coefficient_size);
   coefficientsy.reserve(coefficient_size);
+  Ay.reserve(coefficient_size);
 }
 
 void GPSimPL::UpdateMaxMinX() {
@@ -368,14 +368,13 @@ void GPSimPL::BuildProblemB2BX() {
   size_t coefficients_capacity = coefficientsx.capacity();
   coefficientsx.resize(0);
 
-  int sz = bx.size();
+  int sz = static_cast<int>(bx.size());
   for (int i = 0; i < sz; ++i) {
     bx[i] = 0;
   }
 
   double center_weight = 0.03 / std::sqrt(sz);
-  double
-      weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
+  double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
 
   double weight;
   double weight_adjust;
@@ -401,8 +400,7 @@ void GPSimPL::BuildProblemB2BX() {
   double offset_min;
 
   for (auto &net: net_list) {
-    if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_)
-      continue;
+    if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
     inv_p = net.InvP();
     net.UpdateMaxMinIdX();
     max_pin_index = net.MaxBlkPinIdX();
@@ -431,17 +429,13 @@ void GPSimPL::BuildProblemB2BX() {
         //weight *= weight_adjust;
         if (!is_movable && is_movable_max) {
           bx[blk_num_max] += (pin_loc - offset_max) * weight;
-          coefficientsx.emplace_back(blk_num_max,
-                                     blk_num_max,
-                                     weight);
+          coefficientsx.emplace_back(blk_num_max, blk_num_max, weight);
         } else if (is_movable && !is_movable_max) {
           bx[blk_num] += (pin_loc_max - offset) * weight;
           coefficientsx.emplace_back(blk_num, blk_num, weight);
         } else if (is_movable && is_movable_max) {
           coefficientsx.emplace_back(blk_num, blk_num, weight);
-          coefficientsx.emplace_back(blk_num_max,
-                                     blk_num_max,
-                                     weight);
+          coefficientsx.emplace_back(blk_num_max, blk_num_max, weight);
           coefficientsx.emplace_back(blk_num, blk_num_max, -weight);
           coefficientsx.emplace_back(blk_num_max, blk_num, -weight);
           offset_diff = (offset_max - offset) * weight;
@@ -457,17 +451,13 @@ void GPSimPL::BuildProblemB2BX() {
         //weight *= weight_adjust;
         if (!is_movable && is_movable_min) {
           bx[blk_num_min] += (pin_loc - offset_min) * weight;
-          coefficientsx.emplace_back(blk_num_min,
-                                     blk_num_min,
-                                     weight);
+          coefficientsx.emplace_back(blk_num_min, blk_num_min, weight);
         } else if (is_movable && !is_movable_min) {
           bx[blk_num] += (pin_loc_min - offset) * weight;
           coefficientsx.emplace_back(blk_num, blk_num, weight);
         } else if (is_movable && is_movable_min) {
           coefficientsx.emplace_back(blk_num, blk_num, weight);
-          coefficientsx.emplace_back(blk_num_min,
-                                     blk_num_min,
-                                     weight);
+          coefficientsx.emplace_back(blk_num_min, blk_num_min, weight);
           coefficientsx.emplace_back(blk_num, blk_num_min, -weight);
           coefficientsx.emplace_back(blk_num_min, blk_num, -weight);
           offset_diff = (offset_min - offset) * weight;
@@ -493,7 +483,7 @@ void GPSimPL::BuildProblemB2BX() {
 
   if (coefficients_capacity != coefficientsx.capacity()) {
     BOOST_LOG_TRIVIAL(warning)
-      << "WARNING: coefficients capacity changed!\n"
+      << "WARNING: x coefficients capacity changed!\n"
       << "\told capacity: " << coefficients_capacity << "\n"
       << "\tnew capacity: " << coefficientsx.size() << "\n";
   }
@@ -520,14 +510,13 @@ void GPSimPL::BuildProblemB2BY() {
   size_t coefficients_capacity = coefficientsy.capacity();
   coefficientsy.resize(0);
 
-  int sz = by.size();
+  int sz = static_cast<int>(by.size());
   for (int i = 0; i < sz; ++i) {
     by[i] = 0;
   }
 
   double center_weight = 0.03 / std::sqrt(sz);
-  double
-      weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
+  double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
 
   double weight;
   double weight_adjust;
@@ -583,17 +572,13 @@ void GPSimPL::BuildProblemB2BY() {
         //weight *= weight_adjust;
         if (!is_movable && is_movable_max) {
           by[blk_num_max] += (pin_loc - offset_max) * weight;
-          coefficientsy.emplace_back(blk_num_max,
-                                     blk_num_max,
-                                     weight);
+          coefficientsy.emplace_back(blk_num_max, blk_num_max, weight);
         } else if (is_movable && !is_movable_max) {
           by[blk_num] += (pin_loc_max - offset) * weight;
           coefficientsy.emplace_back(blk_num, blk_num, weight);
         } else if (is_movable && is_movable_max) {
           coefficientsy.emplace_back(blk_num, blk_num, weight);
-          coefficientsy.emplace_back(blk_num_max,
-                                     blk_num_max,
-                                     weight);
+          coefficientsy.emplace_back(blk_num_max, blk_num_max, weight);
           coefficientsy.emplace_back(blk_num, blk_num_max, -weight);
           coefficientsy.emplace_back(blk_num_max, blk_num, -weight);
           offset_diff = (offset_max - offset) * weight;
@@ -609,17 +594,13 @@ void GPSimPL::BuildProblemB2BY() {
         //weight *= weight_adjust;
         if (!is_movable && is_movable_min) {
           by[blk_num_min] += (pin_loc - offset_min) * weight;
-          coefficientsy.emplace_back(blk_num_min,
-                                     blk_num_min,
-                                     weight);
+          coefficientsy.emplace_back(blk_num_min, blk_num_min, weight);
         } else if (is_movable && !is_movable_min) {
           by[blk_num] += (pin_loc_min - offset) * weight;
           coefficientsy.emplace_back(blk_num, blk_num, weight);
         } else if (is_movable && is_movable_min) {
           coefficientsy.emplace_back(blk_num, blk_num, weight);
-          coefficientsy.emplace_back(blk_num_min,
-                                     blk_num_min,
-                                     weight);
+          coefficientsy.emplace_back(blk_num_min, blk_num_min, weight);
           coefficientsy.emplace_back(blk_num, blk_num_min, -weight);
           coefficientsy.emplace_back(blk_num_min, blk_num, -weight);
           offset_diff = (offset_min - offset) * weight;
@@ -630,8 +611,8 @@ void GPSimPL::BuildProblemB2BY() {
 
     }
   }
-  for (int i = 0; i < sz;
-       ++i) { // add the diagonal non-zero element for fixed blocks
+  // add the diagonal non-zero element for fixed blocks
+  for (int i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) {
       coefficientsy.emplace_back(i, i, 1);
       by[i] = block_list[i].LLY();
@@ -643,10 +624,9 @@ void GPSimPL::BuildProblemB2BY() {
       }
     }
   }
-
   if (coefficients_capacity != coefficientsy.capacity()) {
     BOOST_LOG_TRIVIAL(warning)
-      << "WARNING: coefficients capacity changed!\n"
+      << "WARNING: y coefficients capacity changed!\n"
       << "\told capacity: " << coefficients_capacity << "\n"
       << "\tnew capacity: " << coefficientsy.size() << "\n";
   }
@@ -714,23 +694,15 @@ void GPSimPL::BuildProblemStarModelX() {
         //weight = inv_p / (distance + width_epsilon_);
         if (!is_movable && driver_is_movable) {
           bx[0] += (pin_loc - driver_offset) * weight;
-          coefficientsx.emplace_back(driver_blk_num,
-                                     driver_blk_num,
-                                     weight);
+          coefficientsx.emplace_back(driver_blk_num, driver_blk_num, weight);
         } else if (is_movable && !driver_is_movable) {
           bx[blk_num] += (driver_pin_loc - driver_offset) * weight;
           coefficientsx.emplace_back(blk_num, blk_num, weight);
         } else if (is_movable && driver_is_movable) {
           coefficientsx.emplace_back(blk_num, blk_num, weight);
-          coefficientsx.emplace_back(driver_blk_num,
-                                     driver_blk_num,
-                                     weight);
-          coefficientsx.emplace_back(blk_num,
-                                     driver_blk_num,
-                                     -weight);
-          coefficientsx.emplace_back(driver_blk_num,
-                                     blk_num,
-                                     -weight);
+          coefficientsx.emplace_back(driver_blk_num, driver_blk_num, weight);
+          coefficientsx.emplace_back(blk_num, driver_blk_num, -weight);
+          coefficientsx.emplace_back(driver_blk_num, blk_num, -weight);
           offset_diff = (driver_offset - pair.OffsetX()) * weight;
           bx[blk_num] += offset_diff;
           bx[driver_blk_num] -= offset_diff;
@@ -778,10 +750,8 @@ void GPSimPL::BuildProblemStarModelY() {
   }
 
   double center_weight = 0.03 / std::sqrt(sz);
-  double
-      weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
-  double
-      weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
+  double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
+  double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
 
   double weight;
   double weight_adjust;
@@ -822,23 +792,15 @@ void GPSimPL::BuildProblemStarModelY() {
         //weight = inv_p / (distance + height_epsilon_);
         if (!is_movable && driver_is_movable) {
           by[0] += (pin_loc - driver_offset) * weight;
-          coefficientsy.emplace_back(driver_blk_num,
-                                     driver_blk_num,
-                                     weight);
+          coefficientsy.emplace_back(driver_blk_num, driver_blk_num, weight);
         } else if (is_movable && !driver_is_movable) {
           by[blk_num] += (driver_pin_loc - driver_offset) * weight;
           coefficientsy.emplace_back(blk_num, blk_num, weight);
         } else if (is_movable && driver_is_movable) {
           coefficientsy.emplace_back(blk_num, blk_num, weight);
-          coefficientsy.emplace_back(driver_blk_num,
-                                     driver_blk_num,
-                                     weight);
-          coefficientsy.emplace_back(blk_num,
-                                     driver_blk_num,
-                                     -weight);
-          coefficientsy.emplace_back(driver_blk_num,
-                                     blk_num,
-                                     -weight);
+          coefficientsy.emplace_back(driver_blk_num, driver_blk_num, weight);
+          coefficientsy.emplace_back(blk_num, driver_blk_num, -weight);
+          coefficientsy.emplace_back(driver_blk_num, blk_num, -weight);
           offset_diff = (driver_offset - pair.OffsetY()) * weight;
           by[blk_num] += offset_diff;
           by[driver_blk_num] -= offset_diff;
@@ -847,8 +809,8 @@ void GPSimPL::BuildProblemStarModelY() {
     }
   }
 
-  for (int i = 0; i < sz;
-       ++i) { // add the diagonal non-zero element for fixed blocks
+  // add the diagonal non-zero element for fixed blocks
+  for (int i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) {
       coefficientsy.emplace_back(i, i, 1);
       by[i] = block_list[i].LLY();
@@ -880,10 +842,8 @@ void GPSimPL::BuildProblemHPWLX() {
   }
 
   double center_weight = 0.03 / std::sqrt(sz);
-  double
-      weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
-  double
-      weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
+  double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
+  double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
 
   double weight;
   double weight_adjust;
@@ -978,10 +938,8 @@ void GPSimPL::BuildProblemHPWLY() {
   }
 
   double center_weight = 0.03 / std::sqrt(sz);
-  double
-      weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
-  double
-      weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
+  double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
+  double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
 
   double weight;
   double weight_adjust;
@@ -1379,8 +1337,8 @@ double GPSimPL::OptimizeQuadraticMetricX(double cg_stop_criterion) {
       }
     }
   }
-  BOOST_LOG_TRIVIAL(trace) << "      Metric optimization in X, sequence: "
-                           << eval_history << "\n";
+  BOOST_LOG_TRIVIAL(trace)
+    << "      Metric optimization in X, sequence: " << eval_history << "\n";
   wall_time = get_wall_time() - wall_time;
   tot_cg_solver_time_x += wall_time;
 
@@ -1516,7 +1474,8 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
 
 #pragma omp parallel num_threads(std::min(omp_get_max_threads(), 2))
   {
-    //BOOST_LOG_TRIVIAL(info)  <<"OpenMP threads, %d\n", omp_get_num_threads());
+    BOOST_LOG_TRIVIAL(trace)
+      << "OpenMP threads, " << omp_get_num_threads() << "\n";
     if (omp_get_thread_num() == 0) {
       omp_set_num_threads(avail_threads_num / 2);
       BOOST_LOG_TRIVIAL(trace) << "threads in branch x: "
@@ -1531,13 +1490,11 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
 
       std::vector<double> eval_history_x;
       int b2b_update_it_x = 0;
-      for (b2b_update_it_x = 0;
-           b2b_update_it_x < b2b_update_max_iteration_;
+      for (b2b_update_it_x = 0; b2b_update_it_x < b2b_update_max_iteration_;
            ++b2b_update_it_x) {
         BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
         BuildProblemX();
-        double evaluate_result =
-            OptimizeQuadraticMetricX(cg_stop_criterion_);
+        double evaluate_result = OptimizeQuadraticMetricX(cg_stop_criterion_);
         eval_history_x.push_back(evaluate_result);
         if (eval_history_x.size() >= 3) {
           bool is_converge = IsSeriesConverge(eval_history_x,
@@ -2983,7 +2940,8 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
 
 #pragma omp parallel num_threads(std::min(omp_get_max_threads(), 2))
   {
-    //BOOST_LOG_TRIVIAL(info)  <<"OpenMP threads, %d\n", omp_get_num_threads());
+    BOOST_LOG_TRIVIAL(trace)
+      << "OpenMP threads, " << omp_get_num_threads() << "\n";
     if (omp_get_thread_num() == 0) {
       omp_set_num_threads(avail_threads_num / 2);
       BOOST_LOG_TRIVIAL(trace) << "threads in branch x: "
@@ -3000,8 +2958,7 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
            ++b2b_update_it_x) {
         BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
         BuildProblemWithAnchorX();
-        double evaluate_result =
-            OptimizeQuadraticMetricX(cg_stop_criterion_);
+        double evaluate_result = OptimizeQuadraticMetricX(cg_stop_criterion_);
         eval_history_x.push_back(evaluate_result);
         //BOOST_LOG_TRIVIAL(trace) << "\tIterative net model update, WeightedHPWLX: " << evaluate_result << "\n";
         if (eval_history_x.size() >= 3) {

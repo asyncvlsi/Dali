@@ -35,10 +35,10 @@ Net::Net(
     double weight
 ) : name_id_pair_ptr_(name_id_pair_ptr), weight_(weight) {
   cnt_fixed_ = 0;
-  max_pin_x_ = -1;
-  min_pin_x_ = -1;
-  max_pin_y_ = -1;
-  min_pin_y_ = -1;
+  max_x_pin_id_ = -1;
+  min_x_pin_id_ = -1;
+  max_y_pin_id_ = -1;
+  min_y_pin_id_ = -1;
   inv_p_ = 0;
   aux_ptr_ = nullptr;
   blk_pins_.reserve(capacity);
@@ -104,7 +104,7 @@ double Net::Weight() const {
 }
 
 int Net::PinCnt() const {
-  return (int) blk_pins_.size();
+  return static_cast<int>(blk_pins_.size());
 }
 
 double Net::InvP() const {
@@ -184,10 +184,30 @@ void Net::SortBlkPinList() {
   std::sort(blk_pins_.begin(), blk_pins_.end());
 }
 
+/****
+ * @brief find the index of the block pin with maximum/minimum x location.
+ *
+ * When the number of block pins in this net is >= 2, it is possible that
+ * all pins have exactly the same location. In this case, we need to choose
+ * different indices for max pin and min pin. Otherwise, this special case
+ * may potentially lead to some issues although the program may still work.
+ *
+ * For example, pin0 and pin1 are the only two pins in a net, and they have
+ * the same location, we know that when we decompose this net, it only has
+ * one edge. However, if pin0 is viewed as both the max_pin and min_pin, then
+ * two edges will be created between pin0 and pin1, which is not desired.
+ *
+ * To prevent this from happening, we will first find the max_x and min_x in
+ * this net. If these two locations are different, it is safe. If these two
+ * locations are the same, it means all pins in this net have the same location,
+ * we can just pick the first two pins as max_pin and min_pin.
+ *
+ * TODO: or the driver pin as on of the extreme pin.
+ */
 void Net::UpdateMaxMinIdX() {
   if (blk_pins_.empty()) return;
-  max_pin_x_ = 0;
-  min_pin_x_ = 0;
+  max_x_pin_id_ = 0;
+  min_x_pin_id_ = 0;
   double max_x = blk_pins_[0].AbsX();
   double min_x = max_x;
   double tmp_pin_loc;
@@ -196,19 +216,23 @@ void Net::UpdateMaxMinIdX() {
     tmp_pin_loc = blk_pins_[i].AbsX();
     if (max_x < tmp_pin_loc) {
       max_x = tmp_pin_loc;
-      max_pin_x_ = i;
+      max_x_pin_id_ = i;
     }
     if (min_x > tmp_pin_loc) {
       min_x = tmp_pin_loc;
-      min_pin_x_ = i;
+      min_x_pin_id_ = i;
     }
+  }
+  if (max_x == min_x && blk_pins_.size() >= 2) {
+    max_x_pin_id_ = 0;
+    min_x_pin_id_ = 1;
   }
 }
 
 void Net::UpdateMaxMinIdY() {
   if (blk_pins_.empty()) return;
-  max_pin_y_ = 0;
-  min_pin_y_ = 0;
+  max_y_pin_id_ = 0;
+  min_y_pin_id_ = 0;
   double max_y = blk_pins_[0].AbsY();
   double min_y = max_y;
   double tmp_pin_loc = 0;
@@ -217,12 +241,16 @@ void Net::UpdateMaxMinIdY() {
     tmp_pin_loc = blk_pins_[i].AbsY();
     if (max_y < tmp_pin_loc) {
       max_y = tmp_pin_loc;
-      max_pin_y_ = i;
+      max_y_pin_id_ = i;
     }
     if (min_y > tmp_pin_loc) {
       min_y = tmp_pin_loc;
-      min_pin_y_ = i;
+      min_y_pin_id_ = i;
     }
+  }
+  if (max_y == min_y && blk_pins_.size() >= 2) {
+    max_y_pin_id_ = 0;
+    min_y_pin_id_ = 1;
   }
 }
 
@@ -232,50 +260,50 @@ void Net::UpdateMaxMinIndex() {
 }
 
 int Net::MaxBlkPinIdX() const {
-  return max_pin_x_;
+  return max_x_pin_id_;
 }
 
 int Net::MinBlkPinIdX() const {
-  return min_pin_x_;
+  return min_x_pin_id_;
 }
 
 int Net::MaxBlkPinIdY() const {
-  return max_pin_y_;
+  return max_y_pin_id_;
 }
 
 int Net::MinBlkPinIdY() const {
-  return min_pin_y_;
+  return min_y_pin_id_;
 }
 
 Block *Net::MaxBlkPtrX() const {
-  return blk_pins_[max_pin_x_].BlkPtr();
+  return blk_pins_[max_x_pin_id_].BlkPtr();
 }
 
 Block *Net::MinBlkPtrX() const {
-  return blk_pins_[min_pin_x_].BlkPtr();
+  return blk_pins_[min_x_pin_id_].BlkPtr();
 }
 
 Block *Net::MaxBlkPtrY() const {
-  return blk_pins_[max_pin_y_].BlkPtr();
+  return blk_pins_[max_y_pin_id_].BlkPtr();
 }
 
 Block *Net::MinBlkPtrY() const {
-  return blk_pins_[min_pin_y_].BlkPtr();
+  return blk_pins_[min_y_pin_id_].BlkPtr();
 }
 
 double Net::WeightedHPWLX() {
   if (blk_pins_.size() <= 1) return 0;
   UpdateMaxMinIdX();
-  double max_x = blk_pins_[max_pin_x_].AbsX();
-  double min_x = blk_pins_[min_pin_x_].AbsX();
+  double max_x = blk_pins_[max_x_pin_id_].AbsX();
+  double min_x = blk_pins_[min_x_pin_id_].AbsX();
   return (max_x - min_x) * weight_;
 }
 
 double Net::WeightedHPWLY() {
   if (blk_pins_.size() <= 1) return 0;
   UpdateMaxMinIdY();
-  double max_y = blk_pins_[max_pin_y_].AbsY();
-  double min_y = blk_pins_[min_pin_y_].AbsY();
+  double max_y = blk_pins_[max_y_pin_id_].AbsY();
+  double min_y = blk_pins_[min_y_pin_id_].AbsY();
   return (max_y - min_y) * weight_;
 }
 
@@ -284,25 +312,25 @@ double Net::WeightedHPWL() {
 }
 
 double Net::MinX() const {
-  return blk_pins_[min_pin_x_].AbsX();
+  return blk_pins_[min_x_pin_id_].AbsX();
 }
 
 double Net::MaxX() const {
-  return blk_pins_[max_pin_x_].AbsX();
+  return blk_pins_[max_x_pin_id_].AbsX();
 }
 
 double Net::MinY() const {
-  return blk_pins_[min_pin_y_].AbsY();
+  return blk_pins_[min_y_pin_id_].AbsY();
 }
 
 double Net::MaxY() const {
-  return blk_pins_[max_pin_y_].AbsY();
+  return blk_pins_[max_y_pin_id_].AbsY();
 }
 
 void Net::UpdateMaxMinCtoCX() {
   if (blk_pins_.empty()) return;
-  max_pin_x_ = 0;
-  min_pin_x_ = 0;
+  max_x_pin_id_ = 0;
+  min_x_pin_id_ = 0;
   double max_x = blk_pins_[0].BlkPtr()->X();
   double min_x = max_x;
   double tmp_pin_loc = 0;
@@ -311,19 +339,19 @@ void Net::UpdateMaxMinCtoCX() {
     tmp_pin_loc = blk_pins_[i].BlkPtr()->X();
     if (max_x < tmp_pin_loc) {
       max_x = tmp_pin_loc;
-      max_pin_x_ = i;
+      max_x_pin_id_ = i;
     }
     if (min_x > tmp_pin_loc) {
       min_x = tmp_pin_loc;
-      min_pin_x_ = i;
+      min_x_pin_id_ = i;
     }
   }
 }
 
 void Net::UpdateMaxMinCtoCY() {
   if (blk_pins_.empty()) return;
-  max_pin_y_ = 0;
-  min_pin_y_ = 0;
+  max_y_pin_id_ = 0;
+  min_y_pin_id_ = 0;
   double max_y = blk_pins_[0].BlkPtr()->Y();
   double min_y = max_y;
   double tmp_pin_loc = 0;
@@ -332,11 +360,11 @@ void Net::UpdateMaxMinCtoCY() {
     tmp_pin_loc = blk_pins_[i].BlkPtr()->Y();
     if (max_y < tmp_pin_loc) {
       max_y = tmp_pin_loc;
-      max_pin_y_ = i;
+      max_y_pin_id_ = i;
     }
     if (min_y > tmp_pin_loc) {
       min_y = tmp_pin_loc;
-      min_pin_y_ = i;
+      min_y_pin_id_ = i;
     }
   }
 }

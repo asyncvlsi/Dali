@@ -172,8 +172,8 @@ class Net {
   std::vector<IoPin *> iopin_ptrs_;
 
   // cached data
-  int max_pin_x_, min_pin_x_;
-  int max_pin_y_, min_pin_y_;
+  int max_x_pin_id_, min_x_pin_id_;
+  int max_y_pin_id_, min_y_pin_id_;
   // 1.0/(p-1), where p is the number of pins connected by this net
   double inv_p_;
   int driver_pin_index = -1;
