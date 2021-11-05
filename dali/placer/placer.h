@@ -36,7 +36,7 @@ class Placer {
  protected:
   /* essential data entries */
   double aspect_ratio_; // placement region Height/Width
-  double filling_rate_;
+  double placement_density_;
 
   /* the following entries are derived data
    * note that the following entries can be manually changed
@@ -52,32 +52,20 @@ class Placer {
   Placer(double aspect_ratio, double filling_rate);
   virtual ~Placer() = default;
 
-  virtual void LoadConf(std::string const &config_file) {
-    BOOST_LOG_TRIVIAL(warning)
-      << "This is a virtual function, which is not supposed to be called directly\n";
-  };
+  virtual void LoadConf(std::string const &config_file);
 
-  virtual void SetInputCircuit(Circuit *circuit) {
-    DaliExpects(circuit != nullptr,
-                "Invalid input circuit: not allowed to set nullptr as an input!");
-    if (circuit->Blocks().empty()) {
-      BOOST_LOG_TRIVIAL(info)
-        << "Invalid input circuit: empty block list, nothing to place!\n";
-      return;
-    }
-    if (circuit->Nets().empty()) {
-      BOOST_LOG_TRIVIAL(info)
-        << "Bad input circuit: empty net list, nothing to optimize during placement! But anyway...\n";
-    }
-    p_ckt_ = circuit;
-  }
-  Circuit *GetCircuit() { return p_ckt_; }
-  void SetFillingRate(double rate = 2.0 / 3.0) {
-    DaliExpects((rate <= 1) && (rate > 0),
+  virtual void SetInputCircuit(Circuit *circuit);
+
+  Circuit &GetCircuitRef() ;
+
+  void SetPlacementDensity(double density = 2.0 / 3.0) {
+    DaliExpects((density <= 1) && (density > 0),
                 "Invalid value: value should be in range (0, 1]");
-    filling_rate_ = rate;
+    DaliExpects(p_ckt_->WhiteSpaceUsage() < density,
+                "Cannot set target density smaller than average white space utility!");
+    placement_density_ = density;
   }
-  double FillingRate() const { return filling_rate_; }
+  double PlacementDensity() const { return placement_density_; }
   void SetAspectRatio(double ratio = 1.0) {
     DaliExpects(ratio >= 0,
                 "Invalid value: value should be in range (0, +infinity)");
@@ -87,7 +75,7 @@ class Placer {
   void SetSpaceBlockRatio(double ratio) {
     DaliExpects(ratio >= 1,
                 "Invalid value: value should be in range [1, +infinity)");
-    filling_rate_ = 1. / ratio;
+    placement_density_ = 1.0 / ratio;
   }
 
   std::vector<Block> &Blocks() { return p_ckt_->Blocks(); }
@@ -110,24 +98,24 @@ class Placer {
   void NetSortBlkPin() {
     DaliExpects(p_ckt_ != nullptr,
                 "No input circuit specified, cannot modify any circuits!");
-    GetCircuit()->NetSortBlkPin();
+    GetCircuitRef().NetSortBlkPin();
   }
   virtual bool StartPlacement();
 
   double WeightedHPWLX() {
     DaliExpects(p_ckt_ != nullptr,
                 "No input circuit specified, cannot compute WeightedHPWLX!");
-    return GetCircuit()->WeightedHPWLX();
+    return GetCircuitRef().WeightedHPWLX();
   }
   double WeightedHPWLY() {
     DaliExpects(p_ckt_ != nullptr,
                 "No input circuit specified, cannot compute WeightedHPWLY!");
-    return GetCircuit()->WeightedHPWLY();
+    return GetCircuitRef().WeightedHPWLY();
   }
   double WeightedHPWL() {
     DaliExpects(p_ckt_ != nullptr,
                 "No input circuit specified, cannot compute HPWL!");
-    return GetCircuit()->WeightedHPWL();
+    return GetCircuitRef().WeightedHPWL();
   }
 
   void ReportHPWL() {
@@ -139,7 +127,7 @@ class Placer {
   void ReportHPWLCtoC() {
     DaliExpects(p_ckt_ != nullptr,
                 "No input circuit specified, cannot compute HPWLCtoC!");
-    GetCircuit()->ReportHPWLCtoC();
+    GetCircuitRef().ReportHPWLCtoC();
   }
 
   void TakeOver(Placer *placer);

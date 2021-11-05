@@ -30,7 +30,7 @@ namespace dali {
 
 Placer::Placer() {
   aspect_ratio_ = 0;
-  filling_rate_ = 0;
+  placement_density_ = 0;
   left_ = 0;
   right_ = 0;
   bottom_ = 0;
@@ -39,12 +39,38 @@ Placer::Placer() {
 }
 
 Placer::Placer(double aspect_ratio, double filling_rate) : aspect_ratio_(
-    aspect_ratio), filling_rate_(filling_rate) {
+    aspect_ratio), placement_density_(filling_rate) {
   left_ = 0;
   right_ = 0;
   bottom_ = 0;
   top_ = 0;
   p_ckt_ = nullptr;
+}
+
+void Placer::LoadConf(std::string const &config_file) {
+  BOOST_LOG_TRIVIAL(warning)
+    << "This is a virtual function, which is not supposed to be called directly\n";
+};
+
+void Placer::SetInputCircuit(Circuit *circuit) {
+  DaliExpects(circuit != nullptr,
+              "Invalid input circuit: not allowed to set nullptr as an input!");
+  if (circuit->Blocks().empty()) {
+    BOOST_LOG_TRIVIAL(info)
+      << "Invalid input circuit: empty block list, nothing to place!\n";
+    return;
+  }
+  if (circuit->Nets().empty()) {
+    BOOST_LOG_TRIVIAL(info)
+      << "Bad input circuit: empty net list, nothing to optimize during placement! But anyway...\n";
+  }
+  p_ckt_ = circuit;
+}
+
+Circuit &Placer::GetCircuitRef() {
+  DaliExpects(p_ckt_ != nullptr,
+              "Please set an input circuit before using this method");
+  return *p_ckt_;
 }
 
 double Placer::GetBlkHPWL(Block &blk) {
@@ -77,7 +103,7 @@ void Placer::SetBoundaryAuto() {
               "Must set input circuit before setting boundaries");
   long int tot_block_area = p_ckt_->TotBlkArea();
   int width = std::ceil(std::sqrt(
-      double(tot_block_area) / aspect_ratio_ / filling_rate_));
+      double(tot_block_area) / aspect_ratio_ / placement_density_));
   int height = std::ceil(width * aspect_ratio_);
   BOOST_LOG_TRIVIAL(info) << "Pre-set aspect ratio: " << aspect_ratio_
                           << "\n";
@@ -89,10 +115,10 @@ void Placer::SetBoundaryAuto() {
   bottom_ = (int) (p_ckt_->AveBlkWidth());
   top_ = bottom_ + height;
   int area = height * width;
-  BOOST_LOG_TRIVIAL(info) << "Pre-set filling rate: " << filling_rate_
+  BOOST_LOG_TRIVIAL(info) << "Pre-set filling rate: " << placement_density_
                           << "\n";
-  filling_rate_ = double(tot_block_area) / area;
-  BOOST_LOG_TRIVIAL(info) << "Adjusted filling rate: " << filling_rate_
+  placement_density_ = double(tot_block_area) / area;
+  BOOST_LOG_TRIVIAL(info) << "Adjusted filling rate: " << placement_density_
                           << "\n";
   DaliExpects(IsBoundaryProper(), "Invalid boundary setting");
 }
@@ -108,10 +134,10 @@ void Placer::SetBoundary(int left, int right, int bottom, int top) {
   unsigned long int tot_area = (right - left) * (top - bottom);
   DaliExpects(tot_area >= tot_block_area,
               "Invalid boundary setting: given region has smaller area than total block area!");
-  BOOST_LOG_TRIVIAL(info) << "Pre-set filling rate: " << filling_rate_
+  BOOST_LOG_TRIVIAL(info) << "Pre-set filling rate: " << placement_density_
                           << "\n";
-  filling_rate_ = (double) tot_block_area / (double) tot_area;
-  BOOST_LOG_TRIVIAL(info) << "Adjusted filling rate: " << filling_rate_
+  placement_density_ = (double) tot_block_area / (double) tot_area;
+  BOOST_LOG_TRIVIAL(info) << "Adjusted filling rate: " << placement_density_
                           << "\n";
   left_ = left;
   right_ = right;
@@ -121,10 +147,10 @@ void Placer::SetBoundary(int left, int right, int bottom, int top) {
 }
 
 void Placer::SetBoundaryDef() {
-  left_ = GetCircuit()->RegionLLX();
-  right_ = GetCircuit()->RegionURX();
-  bottom_ = GetCircuit()->RegionLLY();
-  top_ = GetCircuit()->RegionURY();
+  left_ = GetCircuitRef().RegionLLX();
+  right_ = GetCircuitRef().RegionURX();
+  bottom_ = GetCircuitRef().RegionLLY();
+  top_ = GetCircuitRef().RegionURY();
   DaliExpects(IsBoundaryProper(), "Invalid boundary setting");
 }
 
@@ -156,12 +182,12 @@ bool Placer::StartPlacement() {
 
 void Placer::TakeOver(Placer *placer) {
   aspect_ratio_ = placer->AspectRatio();
-  filling_rate_ = placer->FillingRate();
+  placement_density_ = placer->PlacementDensity();
   left_ = placer->RegionLeft();
   right_ = placer->RegionRight();
   bottom_ = placer->RegionBottom();
   top_ = placer->RegionTop();
-  p_ckt_ = placer->GetCircuit();
+  p_ckt_ = placer->p_ckt_;
 }
 
 void Placer::GenMATLABScriptPlaced(std::string const &name_of_file) {
@@ -222,9 +248,10 @@ void Placer::EmitDEFWellFile(
 
 void Placer::SanityCheck() {
   double epsilon = 1e-3;
-  DaliExpects(filling_rate_ > epsilon,
+  BOOST_LOG_TRIVIAL(info) << "Target density: " << placement_density_ << "\n";
+  DaliExpects(placement_density_ > epsilon,
               "Filling rate should be in a proper range, for example [0.1, 1], current value: "
-                  + std::to_string(filling_rate_));
+                  + std::to_string(placement_density_));
   for (auto &net: Nets()) {
     DaliWarns(net.BlockPins().empty(),
               "Empty net or this net only contains unplaced IOPINs: "

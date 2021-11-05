@@ -59,6 +59,7 @@ int main(int argc, char *argv[]) {
   int io_metal_layer = 0;
   bool export_well_cluster_for_matlab = false;
 
+  /**** parsing arguments ****/
   for (int i = 1; i < argc;) {
     std::string arg(argv[i++]);
     if (arg == "-lef" && i < argc) {
@@ -160,15 +161,14 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  /**** checking input files ****/
   if ((lef_file_name.empty()) || (def_file_name.empty())) {
     BOOST_LOG_TRIVIAL(info) << "Invalid input files!\n";
     ReportUsage();
     return 1;
   }
 
-  double file_wall_time = get_wall_time();
-  double file_cpu_time = get_cpu_time();
-
+  /**** initialize logger and print software statement ****/
   InitLogging(
       log_file_name,
       overwrite_logfile,
@@ -176,19 +176,21 @@ int main(int argc, char *argv[]) {
       is_log_no_prefix
   );
   PrintSoftwareStatement();
-
-  int num_of_thread_openmp = 1;
-  omp_set_num_threads(num_of_thread_openmp);
-
   using std::chrono::system_clock;
   system_clock::time_point today = system_clock::now();
   std::time_t tt = system_clock::to_time_t(today);
   BOOST_LOG_TRIVIAL(info) << "today is: " << ctime(&tt) << std::endl;
 
+  /**** set number of threads for OpenMP ****/
+  int num_of_thread_openmp = 1;
+  omp_set_num_threads(num_of_thread_openmp);
+
+  /**** time ****/
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
 
-  // read LEF/DEF
+  /**** read LEF/DEF/CELL ****/
+  // (1). initialize PhyDB
   phydb::PhyDB phy_db;
   if (x_grid > 0 && y_grid > 0) {
     phy_db.SetPlacementGrids(x_grid, y_grid);
@@ -198,43 +200,33 @@ int main(int argc, char *argv[]) {
   if (!cell_file_name.empty()) {
     phy_db.ReadCell(cell_file_name);
   }
+
+  // (2). initialize Circuit
   Circuit circuit;
   circuit.InitializeFromPhyDB(&phy_db);
-
-  file_wall_time = get_wall_time() - file_wall_time;
-  file_cpu_time = get_cpu_time() - file_cpu_time;
-  BOOST_LOG_TRIVIAL(info) << "File loading complete\n";
-  BOOST_LOG_TRIVIAL(info) << "(wall time: " << file_wall_time
-                          << "s, cpu time: " << file_cpu_time << "s)\n";
+  double file_wall_time = get_wall_time() - wall_time;
+  double file_cpu_time = get_cpu_time() - cpu_time;
+  BOOST_LOG_TRIVIAL(info)
+    << "File loading complete " << "(wall time: " << file_wall_time
+    << "s, cpu time: " << file_cpu_time << "s)\n";
+  BOOST_LOG_TRIVIAL(info) << "---------------------------------------\n";
   circuit.ReportBriefSummary();
   circuit.ReportHPWL();
 
-  double default_density = 0.7;
   if (target_density == -1) {
+    double default_density = 0.7;
     target_density = std::max(circuit.WhiteSpaceUsage(), default_density);
-  }
-  if (circuit.WhiteSpaceUsage() > target_density) {
     BOOST_LOG_TRIVIAL(info)
-      << "Cannot set target density smaller than average white space utility!\n";
-    BOOST_LOG_TRIVIAL(info) << "  Average white space utility: "
-                            << circuit.WhiteSpaceUsage() << "\n";
-    BOOST_LOG_TRIVIAL(info) << "  Target density: " << target_density
-                            << "\n";
-    return 1;
+      << "Target density not provided, set it to default value: "
+      << target_density << "\n";
   }
-  BOOST_LOG_TRIVIAL(info) << "  Average white space utility: "
-                          << circuit.WhiteSpaceUsage() << "\n";
-  BOOST_LOG_TRIVIAL(info) << "  Target density: " << target_density;
-  if (target_density == default_density) {
-    BOOST_LOG_TRIVIAL(info) << " (default)";
-  }
-  BOOST_LOG_TRIVIAL(info) << "\n";
 
+  /**** placement ****/
   Placer *gb_placer = new GPSimPL;
   gb_placer->SetInputCircuit(&circuit);
   gb_placer->SetBoundaryDef();
-  gb_placer->SetFillingRate(target_density);
-  gb_placer->ReportBoundaries();
+  gb_placer->SetPlacementDensity(target_density);
+  //gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
   if (cell_file_name.empty()) {
     if (!is_no_legal) {
@@ -269,6 +261,7 @@ int main(int argc, char *argv[]) {
   io_placer->AutoPlaceIoPin();
   delete io_placer;
 
+  /**** save results ****/
   circuit.SaveDefFile(output_name, "", def_file_name, 1, 1, 2, 1);
   circuit.SaveDefFile(output_name, "_io", def_file_name, 1, 1, 1, 1);
   circuit.SaveDefFile(output_name, "_filling", def_file_name, 1, 4, 2, 0);

@@ -136,9 +136,9 @@ bool TetrisLegalizer::TetrisLegal() {
   }*/
 
   // 3. initialize the data structure to store row usage
-  //int maxHeight = GetCircuit()->MaxBlkHeight();
-  int minWidth = GetCircuit()->MinBlkWidth();
-  //int minHeight = GetCircuit()->MinBlkHeight();
+  //int maxHeight = GetCircuitRef().MaxBlkHeight();
+  int minWidth = GetCircuitRef().MinBlkWidth();
+  //int minHeight = GetCircuitRef().MinBlkHeight();
 
   BOOST_LOG_TRIVIAL(info) << "Building LGTetris space" << std::endl;
   TetrisSpace tetrisSpace
@@ -194,7 +194,7 @@ bool TetrisLegalizer::StartPlacement() {
   double cpu_time = get_cpu_time();
   BOOST_LOG_TRIVIAL(info) << "Start LGTetris legalization\n";
   InitLegalizer();
-  /*for (auto &block: GetCircuit()->block_list) {
+  /*for (auto &block: GetCircuitRef().block_list) {
     block.IncreaseX((right_-left_)/2.0);
   }
   max_iter_ = 2;

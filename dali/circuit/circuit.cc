@@ -719,28 +719,24 @@ void Circuit::ReportNetFanoutHistogram() {
 }
 
 void Circuit::ReportBriefSummary() const {
-  BOOST_LOG_TRIVIAL(info) << "  movable blocks: " << TotMovBlkCnt()
-                          << "\n";
-  BOOST_LOG_TRIVIAL(info) << "  blocks: " << TotBlkCnt() << "\n";
-  BOOST_LOG_TRIVIAL(info) << "  iopins: " << design_.iopins_.size()
-                          << "\n";
-  BOOST_LOG_TRIVIAL(info) << "  nets: " << design_.nets_.size() << "\n";
-  BOOST_LOG_TRIVIAL(info) << "  grid size x/y: " << GridValueX()
-                          << ", " << GridValueY() << " um\n";
-  BOOST_LOG_TRIVIAL(info) << "  total block area: " << design_.tot_blk_area_
-                          << "\n";
-  BOOST_LOG_TRIVIAL(info) << "  total white space: "
-                          << (long int) RegionWidth()
-                              * (long int) RegionHeight() << "\n";
-  BOOST_LOG_TRIVIAL(info) << "    left:   " << RegionLLX() << "\n";
-  BOOST_LOG_TRIVIAL(info) << "    right:  " << RegionURX() << "\n";
-  BOOST_LOG_TRIVIAL(info) << "    bottom: " << RegionLLY() << "\n";
-  BOOST_LOG_TRIVIAL(info) << "    top:    " << RegionURY() << "\n";
-  BOOST_LOG_TRIVIAL(info) << "  average movable width, height: "
-                          << AveMovBlkWidth() << ", " << AveMovBlkHeight()
-                          << "\n";
-  BOOST_LOG_TRIVIAL(info) << "  white space utility: " << WhiteSpaceUsage()
-                          << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "Circuit brief summary:\n"
+    << "  movable blocks: " << TotMovBlkCnt() << "\n"
+    << "  fixed blocks:   " << design_.tot_fixed_blk_num_ << "\n"
+    << "  blocks:         " << TotBlkCnt() << "\n"
+    << "  iopins:         " << design_.iopins_.size() << "\n"
+    << "  nets:           " << design_.nets_.size() << "\n"
+    << "  grid size x/y:  " << GridValueX() << ", " << GridValueY() << " um\n"
+    << "  total block area: " << design_.tot_blk_area_ << "\n"
+    << "  total white space: "
+    << (long int) RegionWidth() * (long int) RegionHeight() << "\n"
+    << "    left:   " << RegionLLX() << "\n"
+    << "    right:  " << RegionURX() << "\n"
+    << "    bottom: " << RegionLLY() << "\n"
+    << "    top:    " << RegionURY() << "\n"
+    << "  average movable width, height: "
+    << AveMovBlkWidth() << ", " << AveMovBlkHeight() << "\n"
+    << "  white space utility: " << WhiteSpaceUsage() << "\n";
 }
 
 void Circuit::SetNwellParams(
@@ -1987,25 +1983,24 @@ void Circuit::AddBlock(
               "Cannot add new Block, because block list is full");
   DaliExpects(!IsBlockExisting(block_name),
               "Block exists, cannot create this block again: " + block_name);
-  int map_size = design_.blk_name_id_map_.size();
+  int id = static_cast<int>(design_.blk_name_id_map_.size());
   auto ret = design_.blk_name_id_map_.insert(
-      std::unordered_map<std::string, int>::value_type(block_name, map_size)
+      std::unordered_map<std::string, int>::value_type(block_name, id)
   );
   std::pair<const std::string, int> *name_id_pair_ptr = &(*ret.first);
   design_.blocks_.emplace_back(
       block_type_ptr, name_id_pair_ptr, llx, lly, place_status, orient
   );
 
+  if (!is_real_cel) return;
   // update statistics of blocks
+  ++design_.real_block_count_;
   long int old_tot_area = design_.tot_blk_area_;
   design_.tot_blk_area_ += design_.blocks_.back().Area();
   DaliExpects(old_tot_area <= design_.tot_blk_area_,
               "Total Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
   design_.tot_width_ += design_.blocks_.back().Width();
   design_.tot_height_ += design_.blocks_.back().Height();
-  if (is_real_cel) {
-    ++design_.real_block_count_;
-  }
   if (design_.blocks_.back().IsMovable()) {
     ++design_.tot_mov_blk_num_;
     old_tot_area = design_.tot_mov_block_area_;
@@ -2014,6 +2009,8 @@ void Circuit::AddBlock(
                 "Total Movable Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
     design_.tot_mov_width_ += design_.blocks_.back().Width();
     design_.tot_mov_height_ += design_.blocks_.back().Height();
+  } else {
+    ++design_.tot_fixed_blk_num_;
   }
   if (design_.blocks_.back().Height() < design_.blk_min_height_) {
     design_.blk_min_height_ = design_.blocks_.back().Height();

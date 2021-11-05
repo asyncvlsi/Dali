@@ -156,6 +156,7 @@ class Design {
   long int tot_mov_height_ = 0;
   long int tot_mov_block_area_ = 0;
   int tot_mov_blk_num_ = 0;
+  int tot_fixed_blk_num_ = 0;
   int blk_min_width_ = INT_MAX;
   int blk_max_width_ = INT_MIN;
   int blk_min_height_ = INT_MAX;

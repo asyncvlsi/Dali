@@ -296,8 +296,8 @@ void Dali::GlobalPlace(double density) {
   gb_placer_.SetInputCircuit(&circuit_);
   gb_placer_.is_dump = false;
   gb_placer_.SetBoundaryDef();
-  gb_placer_.SetFillingRate(density);
-  gb_placer_.ReportBoundaries();
+  gb_placer_.SetPlacementDensity(density);
+  //gb_placer_.ReportBoundaries();
   gb_placer_.StartPlacement();
   //gb_placer_.SaveDEFFile("benchmark_1K_dali.def", def_file_name);
   //gb_placer_.GenMATLABTable("gb_result.txt");

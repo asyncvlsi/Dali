@@ -1605,13 +1605,12 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
 void GPSimPL::InitGridBins() {
   // Part1
   grid_bin_height = int(std::round(std::sqrt(
-      number_of_cell_in_bin_ * GetCircuit()->AveMovBlkArea()
-          / FillingRate())));
+      number_of_cell_in_bin_ * GetCircuitRef().AveMovBlkArea()
+          / PlacementDensity())));
   grid_bin_width = grid_bin_height;
   grid_cnt_y =
       std::ceil(double(RegionTop() - RegionBottom()) / grid_bin_height);
-  grid_cnt_x =
-      std::ceil(double(RegionRight() - RegionLeft()) / grid_bin_width);
+  grid_cnt_x = std::ceil(double(RegionRight() - RegionLeft()) / grid_bin_width);
   BOOST_LOG_TRIVIAL(info) << "Global placement bin width, height: "
                           << grid_bin_width << "  "
                           << grid_bin_height << "\n";
@@ -1689,12 +1688,9 @@ void GPSimPL::InitGridBins() {
  * if this case happens, we need to ignore this fixed block for this grid box. */
         blk_out_of_bin =
             int(block_list[i].LLX() >= grid_bin_matrix[j][k].right) ||
-                int(block_list[i].URX() <= grid_bin_matrix[j][k].left)
-                ||
-                    int(block_list[i].LLY()
-                            >= grid_bin_matrix[j][k].top) ||
-                int(block_list[i].URY()
-                        <= grid_bin_matrix[j][k].bottom);
+                int(block_list[i].URX() <= grid_bin_matrix[j][k].left) ||
+                int(block_list[i].LLY() >= grid_bin_matrix[j][k].top) ||
+                int(block_list[i].URY() <= grid_bin_matrix[j][k].bottom);
         if (blk_out_of_bin) continue;
         grid_bin_matrix[j][k].terminal_list.push_back(i);
 
@@ -1961,7 +1957,7 @@ void GPSimPL::UpdateGridBinState() {
       } else {
         bin.filling_rate =
             double(bin.cell_area) / double(bin.white_space);
-        if (bin.filling_rate > FillingRate()) {
+        if (bin.filling_rate > PlacementDensity()) {
           bin.over_fill = true;
         }
       }
@@ -2148,7 +2144,7 @@ void GPSimPL::FindMinimumBoxForLargestCluster() {
     R.total_white_space = LookUpWhiteSpace(R.ll_index, R.ur_index);
     R.UpdateCellAreaWhiteSpaceFillingRate(grid_bin_white_space_LUT,
                                           grid_bin_matrix);
-    if (R.filling_rate > FillingRate()) {
+    if (R.filling_rate > PlacementDensity()) {
       R.ExpandBox(grid_cnt_x, grid_cnt_y);
     } else {
       break;
@@ -2683,8 +2679,8 @@ void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
       box2.top = front_box.top;
       box2.right = front_box.right;
 
-      int ave_blk_height = std::ceil(GetCircuit()->AveMovBlkHeight());
-      //BOOST_LOG_TRIVIAL(info)   << "Average block height: " << ave_blk_height << "  " << GetCircuit()->AveMovBlkHeight() << "\n";
+      int ave_blk_height = std::ceil(GetCircuitRef().AveMovBlkHeight());
+      //BOOST_LOG_TRIVIAL(info)   << "Average block height: " << ave_blk_height << "  " << GetCircuitRef().AveMovBlkHeight() << "\n";
       front_box.cut_direction_x =
           (front_box.top - front_box.bottom > ave_blk_height);
       int cut_line_w = 0; // cut-line for White space

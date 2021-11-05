@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
   dali::WellPlaceFlow well_place_flow;
   well_place_flow.SetInputCircuit(&circuit);
   well_place_flow.SetBoundaryDef();
-  well_place_flow.SetFillingRate(0.65);
+  well_place_flow.SetPlacementDensity(0.65);
   well_place_flow.ReportBoundaries();
   well_place_flow.StartPlacement();
   well_place_flow.GenMATLABTable("gb_result.txt");

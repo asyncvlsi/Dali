@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
   BOOST_LOG_TRIVIAL(info) << "tune_param: " << tune_param << "\n";
   gb_placer.SetInputCircuit(&circuit);
   gb_placer.SetBoundaryDef();
-  gb_placer.SetFillingRate(0.9);
+  gb_placer.SetPlacementDensity(0.9);
   gb_placer.ReportBoundaries();
   gb_placer.is_dump = false;
 #if !TEST_LG
