@@ -43,7 +43,7 @@ class Dali {
       const std::string &log_file_name = "",
       bool is_log_no_prefix = false
   );
-  
+
   bool ConfigIoPlacerAllInOneLayer(std::string const &layer_name);
   bool ConfigIoPlacer();
   bool StartIoPinAutoPlacement();

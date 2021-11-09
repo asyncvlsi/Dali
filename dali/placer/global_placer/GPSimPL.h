@@ -182,11 +182,10 @@ class GPSimPL : public Placer {
   // look ahead legalization member function implemented below
   int grid_bin_height;
   int grid_bin_width;
-  int
-      grid_cnt_y; // might distinguish the gird count in the x direction and y direction
   int grid_cnt_x;
+  int grid_cnt_y;
   std::vector<std::vector<GridBin> > grid_bin_matrix;
-  std::vector<std::vector<unsigned long int> > grid_bin_white_space_LUT;
+  std::vector<std::vector<unsigned long long> > grid_bin_white_space_LUT;
 
   double UpdateGridBinState_time = 0;
   double ClusterOverfilledGridBin_time = 0;

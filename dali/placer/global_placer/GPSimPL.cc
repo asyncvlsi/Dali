@@ -1719,7 +1719,7 @@ void GPSimPL::InitGridBins() {
                              grid_bin_matrix[j][k].URY());
           grid_bin_matrix[j][k].white_space -=
               (unsigned long int) (min_urx - max_llx)
-                  * (min_ury - max_lly);
+                  * (unsigned long int) (min_ury - max_lly);
           if (grid_bin_matrix[j][k].white_space < 1) {
             grid_bin_matrix[j][k].all_terminal = true;
             grid_bin_matrix[j][k].white_space = 0;
@@ -1730,16 +1730,15 @@ void GPSimPL::InitGridBins() {
   }
 }
 
+/****
+* this is a member function to initialize white space look-up table
+* this table is a matrix, one way to calculate the white space in a region is to add all white space of every single grid bin in this region
+* an easier way is to define an accumulate function and store it as a look-up table
+* when we want to find the white space in a region, the value can be easily extracted from the look-up table
+* ****/
 void GPSimPL::InitWhiteSpaceLUT() {
-  /****
- * this is a member function to initialize white space look-up table
- * this table is a matrix, one way to calculate the white space in a region is to add all white space of every single grid bin in this region
- * an easier way is to define an accumulate function and store it as a look-up table
- * when we want to find the white space in a region, the value can be easily extracted from the look-up table
- * ****/
-
   // this for loop is created to initialize the size of the loop-up table
-  std::vector<unsigned long int> tmp_vector(grid_cnt_y);
+  std::vector<unsigned long long> tmp_vector(grid_cnt_y);
   grid_bin_white_space_LUT.resize(grid_cnt_x, tmp_vector);
 
   // this for loop is used for computing elements in the look-up table

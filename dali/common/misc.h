@@ -18,7 +18,6 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-
 #ifndef DALI_DALI_COMMON_MISC_H_
 #define DALI_DALI_COMMON_MISC_H_
 
@@ -27,6 +26,7 @@
 #include <cstdlib>
 
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -40,10 +40,10 @@ struct Value2D {
   T y;
   explicit Value2D(T x_init = 0, T y_init = 0) : x(x_init), y(y_init) {}
 
-  // assignment operator modifies object, therefore non-const
+  // assignment operator modifies object
   Value2D &operator=(const Value2D &a) = default;
 
-  // add operator. doesn't modify object. therefore const.
+  // add operator. doesn't modify object
   Value2D operator+(const Value2D &a) const {
     return Value2D(a.x + x, a.y + y);
   }
@@ -54,20 +54,9 @@ struct Value2D {
     return *this;
   }
 
-  void Incre(const Value2D &a) {
-    x += a.x;
-    y += a.y;
-  }
-
-  // equality comparison. doesn't modify object. therefore const.
+  // equality comparison. doesn't modify object
   bool operator==(const Value2D &a) const {
     return (x == a.x && y == a.y);
-  }
-
-  void Normalize() {
-    T amp = sqrt(x * x + y * y);
-    x /= amp;
-    y /= amp;
   }
 
   Value2D operator*(const double scale) const {
@@ -78,6 +67,17 @@ struct Value2D {
     x *= scale;
     y *= scale;
     return *this;
+  }
+
+  void AddUp(const Value2D &a) {
+    x += a.x;
+    y += a.y;
+  }
+
+  void Normalize() {
+    T amp = sqrt(x * x + y * y);
+    x /= amp;
+    y /= amp;
   }
 
   void Init() {
@@ -103,6 +103,29 @@ struct Rect {
         && (urx_ == rhs.llx_)
         && (ury_ == rhs.llx_);
   }
+  bool operator!=(Rect<T> const &rhs) const {
+    return (llx_ != rhs.llx_)
+        || (lly_ != rhs.llx_)
+        || (urx_ != rhs.llx_)
+        || (ury_ != rhs.llx_);
+  }
+  bool operator<(Rect<T> const &rhs) const {
+    if (llx_ < rhs.llx_) {
+      return true;
+    }
+    if ((llx_ == rhs.llx_) && (lly_ < rhs.lly_)) {
+      return true;
+    }
+    if ((llx_ == rhs.llx_) && (lly_ == rhs.lly_) &&
+        (urx_ < rhs.urx_)) {
+      return true;
+    }
+    if ((llx_ == rhs.llx_) && (lly_ == rhs.lly_) &&
+        (urx_ == rhs.urx_) && (ury_ < rhs.ury_)) {
+      return true;
+    }
+    return false;
+  }
   T LLX() const { return llx_; }
   T LLY() const { return lly_; }
   T URX() const { return urx_; }
@@ -115,10 +138,35 @@ struct Rect {
     urx_ = urx;
     ury_ = ury;
   }
+  bool IsOverlap(Rect<T> const &rhs) const {
+    return !(LLX() > rhs.URX() ||
+        rhs.LLX() > URX() ||
+        LLY() > rhs.URY() ||
+        rhs.LLY() > URY());
+  }
+  Rect<T> GetOverlapRect(Rect<T> const &rhs) const {
+    double llx, urx, lly, ury;
+    llx = std::max(LLX(), rhs.LLX());
+    urx = std::min(URX(), rhs.URX());
+    lly = std::max(LLY(), rhs.LLY());
+    ury = std::min(URY(), rhs.URY());
+    return Rect<T>(llx, lly, urx, ury);
+  }
+  bool IsCover(Rect<T> const &rhs) const {
+    return (LLX() <= rhs.LLX() &&
+        URX() >= rhs.URX() &&
+        LLY() <= rhs.LLY() &&
+        URY() >= rhs.URY());
+  }
 };
 
 typedef Rect<double> RectD;
 typedef Rect<int> RectI;
+
+unsigned long long GetCoverArea(
+    std::set<RectI> &rects,
+    int recursive_counter = 0
+);
 
 template<class T>
 struct IndexLocPair {

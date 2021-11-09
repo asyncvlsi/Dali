@@ -272,6 +272,7 @@ target_link_libraries(
 
 # Unittests
 enable_testing()
+add_subdirectory(tests/boost_test)
 add_subdirectory(tests/ioplacer)
 
 ############################################################################

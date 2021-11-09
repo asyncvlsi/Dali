@@ -77,8 +77,8 @@ struct GridBinIndexHasher {
 struct GridBinCluster {
  public:
   GridBinCluster() : total_cell_area(0), total_white_space(0) {}
-  unsigned long int total_cell_area;
-  unsigned long int total_white_space;
+  unsigned long long total_cell_area;
+  unsigned long long total_white_space;
   std::set<GridBinIndex> bin_set;
   bool operator<(const GridBinCluster &rhs) const {
     return (total_cell_area < rhs.total_cell_area);

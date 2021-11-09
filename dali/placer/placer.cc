@@ -130,8 +130,9 @@ void Placer::SetBoundary(int left, int right, int bottom, int top) {
               "Invalid boundary setting: left boundary should be less than right boundary!");
   DaliExpects(bottom < top,
               "Invalid boundary setting: bottom boundary should be less than top boundary!");
-  unsigned long int tot_block_area = p_ckt_->TotBlkArea();
-  unsigned long int tot_area = (right - left) * (top - bottom);
+  unsigned long long tot_block_area = p_ckt_->TotBlkArea();
+  unsigned long long tot_area = (unsigned long long) (right - left) *
+      (unsigned long long) (top - bottom);
   DaliExpects(tot_area >= tot_block_area,
               "Invalid boundary setting: given region has smaller area than total block area!");
   BOOST_LOG_TRIVIAL(info) << "Pre-set filling rate: " << placement_density_

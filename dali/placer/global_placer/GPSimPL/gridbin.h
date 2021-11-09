@@ -36,8 +36,8 @@ class GridBin {
   int top;
   int left;
   int right;
-  unsigned long int white_space;
-  unsigned long int cell_area;
+  unsigned long long white_space;
+  unsigned long long cell_area;
   double filling_rate;
   bool all_terminal;
   bool
@@ -54,9 +54,9 @@ class GridBin {
   int URY() { return top; }
   int Height() { return top - bottom; }
   int Width() { return right - left; }
-  unsigned long int Area() {
-    return (unsigned long int) (top - bottom)
-        * (unsigned long int) (right - left);
+  unsigned long long Area() {
+    return (unsigned long long) (top - bottom)
+        * (unsigned long long) (right - left);
   }
   bool IsAllFixedBlk() { return all_terminal; }
   bool OverFill() { return over_fill; }

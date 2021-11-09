@@ -50,7 +50,7 @@ class BoxBin {
   bool cut_direction_x;
   // cut line is alone x direction
   bool all_terminal;
-  unsigned long int total_white_space;
+  unsigned long long total_white_space;
   double filling_rate;
   bool IsAllFixedBlk() { return all_terminal; };
   /* Cut-line to split box white space */
@@ -64,9 +64,9 @@ class BoxBin {
   CellCutPoint cut_ll_point;
   CellCutPoint cut_ur_point;
   /* total cell area, and the value in two children box */
-  unsigned long int total_cell_area;
-  unsigned long int total_cell_area_low;
-  unsigned long int total_cell_area_high;
+  unsigned long long total_cell_area;
+  unsigned long long total_cell_area_low;
+  unsigned long long total_cell_area_high;
 
   /* all cell_id in the box, and cell_id in two children box */
   std::vector<int> cell_list;
@@ -105,14 +105,14 @@ class BoxBin {
   void update_cell_area(std::vector<Block> &Nodelist);
   void update_cell_area_white_space(std::vector<std::vector<GridBin> > &grid_bin_matrix);
   void UpdateCellAreaWhiteSpaceFillingRate(
-      std::vector<std::vector<unsigned long int> > &grid_bin_white_space_LUT,
+      std::vector<std::vector<unsigned long long> > &grid_bin_white_space_LUT,
       std::vector<std::vector<GridBin> > &grid_bin_matrix
   );
   void ExpandBox(int grid_cnt_x, int grid_cnt_y);
   bool write_box_boundary(std::string const &NameOfFile);
   bool write_cell_region(std::string const &NameOfFile = "first_cell_bounding_box.txt");
-  static unsigned long int white_space_LUT(
-      std::vector<std::vector<unsigned long int> > &grid_bin_white_space_LUT,
+  static unsigned long long white_space_LUT(
+      std::vector<std::vector<unsigned long long> > &grid_bin_white_space_LUT,
       GridBinIndex &ll,
       GridBinIndex &ur
   );
@@ -121,11 +121,11 @@ class BoxBin {
       std::string const &NameOfFile,
       std::vector<Block> &Nodelist
   );
-  bool update_cut_index_white_space(std::vector<std::vector<unsigned long int> > &grid_bin_white_space_LUT);
+  bool update_cut_index_white_space(std::vector<std::vector<unsigned long long> > &grid_bin_white_space_LUT);
   bool update_cut_point_cell_list_low_high(
       std::vector<Block> &Nodelist,
-      unsigned long int &box1_total_white_space,
-      unsigned long int &box2_total_white_space
+      unsigned long long &box1_total_white_space,
+      unsigned long long &box2_total_white_space
   );
   bool update_cut_point_cell_list_low_high_leaf(
       std::vector<Block> &Nodelist,
