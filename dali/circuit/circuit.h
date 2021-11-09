@@ -635,7 +635,7 @@ class Circuit {
   void AddDummyIOPinBlockType();
 
   // add an unplaced IOPin
-  IoPin *AddUnplacedIOPin(std::string const &iopin_name);
+  IoPin *AddUnplacedIoPin(std::string const &iopin_name);
 
   // add a placed IOPin
   IoPin *AddPlacedIOPin(std::string const &iopin_name, double lx, double ly);

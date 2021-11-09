@@ -2334,25 +2334,35 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
   }
 }
 
+/****
+ *
+ *
+ * @param box: the BoxBin which needs to be further splitted into two sub-boxes
+ */
 void GPSimPL::SplitGridBox(BoxBin &box) {
   std::vector<Block> &block_list = p_ckt_->Blocks();
+
+  // 1. create two sub-boxes
   BoxBin box1, box2;
+  // the first sub-box should have the same lower left corner as the original box
   box1.left = box.left;
   box1.bottom = box.bottom;
-  box2.right = box.right;
-  box2.top = box.top;
   box1.ll_index = box.ll_index;
   box1.ur_index = box.ur_index;
+  // the second sub-box should have the same upper right corner as the original box
+  box2.right = box.right;
+  box2.top = box.top;
   box2.ll_index = box.ll_index;
   box2.ur_index = box.ur_index;
-  /* split along the direction with more boundary lines */
-  if (box.horizontal_obstacle_boundaries.size()
-      > box.vertical_obstacle_boundaries.size()) {
+
+  // 2. split along the direction with more boundary lines
+  if (box.IsMoreHorizontalCutlines()) {
     box.cut_direction_x = true;
+    // split the original box along the first horizontal cur line
     box1.right = box.right;
-    box1.top = box.horizontal_obstacle_boundaries[0];
+    box1.top = box.horizontal_cutlines[0];
     box2.left = box.left;
-    box2.bottom = box.horizontal_obstacle_boundaries[0];
+    box2.bottom = box.horizontal_cutlines[0];
     box1.update_terminal_list_white_space(block_list, box.terminal_list);
     box2.update_terminal_list_white_space(block_list, box.terminal_list);
 
@@ -2395,9 +2405,9 @@ void GPSimPL::SplitGridBox(BoxBin &box) {
     }
   } else {
     box.cut_direction_x = false;
-    box1.right = box.vertical_obstacle_boundaries[0];
+    box1.right = box.vertical_cutlines[0];
     box1.top = box.top;
-    box2.left = box.vertical_obstacle_boundaries[0];
+    box2.left = box.vertical_cutlines[0];
     box2.bottom = box.bottom;
     box1.update_terminal_list_white_space(block_list, box.terminal_list);
     box2.update_terminal_list_white_space(block_list, box.terminal_list);
@@ -2761,9 +2771,12 @@ void GPSimPL::UpdateGridBinBlocks(BoxBin &box) {
 
 }
 
+/****
+ * keep splitting the biggest box to many small boxes, and keep update the shape
+ * of each box and cells should be assigned to the box
+ * @return true if succeed, false if fail
+ */
 bool GPSimPL::RecursiveBisectionBlkSpreading() {
-  /* keep splitting the biggest box to many small boxes, and keep update the shape of each box and cells should be assigned to the box */
-
   double wall_time = get_wall_time();
 
   while (!queue_box_bin.empty()) {
@@ -2796,8 +2809,8 @@ bool GPSimPL::RecursiveBisectionBlkSpreading() {
 
 void GPSimPL::BackUpBlockLocation() {
   std::vector<Block> &block_list = p_ckt_->Blocks();
-  size_t sz = block_list.size();
-  for (size_t i = 0; i < sz; ++i) {
+  int sz = static_cast<int>(block_list.size());
+  for (int i = 0; i < sz; ++i) {
     x_anchor[i] = block_list[i].LLX();
     y_anchor[i] = block_list[i].LLY();
   }
@@ -2805,9 +2818,9 @@ void GPSimPL::BackUpBlockLocation() {
 
 void GPSimPL::UpdateAnchorLocation() {
   std::vector<Block> &block_list = p_ckt_->Blocks();
-  size_t sz = block_list.size();
+  int sz = static_cast<int>(block_list.size());
 
-  for (size_t i = 0; i < sz; ++i) {
+  for (int i = 0; i < sz; ++i) {
     double tmp_loc_x = x_anchor[i];
     x_anchor[i] = block_list[i].LLX();
     block_list[i].SetLLX(tmp_loc_x);
@@ -2823,13 +2836,13 @@ void GPSimPL::UpdateAnchorLocation() {
 
 void GPSimPL::UpdateAnchorNetWeight() {
   std::vector<Block> &block_list = p_ckt_->Blocks();
-  size_t sz = block_list.size();
+  int sz = static_cast<int>(block_list.size());
 
   // X direction
   double weight = 0;
   double pin_loc0, pin_loc1;
   double ave_height = p_ckt_->AveBlkHeight();
-  for (size_t i = 0; i < sz; ++i) {
+  for (int i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) continue;
     pin_loc0 = block_list[i].LLX();
     pin_loc1 = x_anchor[i];
@@ -2840,7 +2853,7 @@ void GPSimPL::UpdateAnchorNetWeight() {
 
   // Y direction
   weight = 0;
-  for (size_t i = 0; i < sz; ++i) {
+  for (int i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) continue;
     pin_loc0 = block_list[i].LLY();
     pin_loc1 = y_anchor[i];
@@ -2865,11 +2878,11 @@ void GPSimPL::BuildProblemWithAnchorX() {
   double wall_time = get_wall_time();
 
   std::vector<Block> &block_list = p_ckt_->Blocks();
-  size_t sz = block_list.size();
+  int sz = static_cast<int>(block_list.size());
 
   double weight = 0;
   double pin_loc0, pin_loc1;
-  for (size_t i = 0; i < sz; ++i) {
+  for (int i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) continue;
     pin_loc0 = block_list[i].LLX();
     pin_loc1 = x_anchor[i];
@@ -2900,11 +2913,11 @@ void GPSimPL::BuildProblemWithAnchorY() {
   double wall_time = get_wall_time();
 
   std::vector<Block> &block_list = p_ckt_->Blocks();
-  size_t sz = block_list.size();
+  int sz = static_cast<int>(block_list.size());
 
   double weight = 0;
   double pin_loc0, pin_loc1;
-  for (size_t i = 0; i < sz; ++i) {
+  for (int i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) continue;
     pin_loc0 = block_list[i].LLY();
     pin_loc1 = y_anchor[i];
@@ -3065,36 +3078,37 @@ double GPSimPL::LookAheadLegalization() {
   cpu_time = get_cpu_time() - cpu_time;
   tot_lal_time += cpu_time;
 
-  if (is_dump) DumpResult("lal_result_" + std::to_string(cur_iter_) + ".txt");
-  if (is_dump)
+  if (is_dump) {
+    DumpResult("lal_result_" + std::to_string(cur_iter_) + ".txt");
     DumpLookAheadDisplacement("displace_" + std::to_string(cur_iter_), 1);
+  }
 
-  BOOST_LOG_TRIVIAL(debug) << "(UpdateGridBinState time: "
-                           << UpdateGridBinState_time << "s)\n";
-  BOOST_LOG_TRIVIAL(debug) << "(UpdateClusterList time: "
-                           << UpdateClusterList_time << "s)\n";
-  BOOST_LOG_TRIVIAL(debug) << "(FindMinimumBoxForLargestCluster time: "
-                           << FindMinimumBoxForLargestCluster_time
-                           << "s)\n";
-  BOOST_LOG_TRIVIAL(debug) << "(RecursiveBisectionBlkSpreading time: "
-                           << RecursiveBisectionBlkSpreading_time << "s)\n";
+  BOOST_LOG_TRIVIAL(debug)
+    << "(UpdateGridBinState time: " << UpdateGridBinState_time << "s)\n";
+  BOOST_LOG_TRIVIAL(debug)
+    << "(UpdateClusterList time: " << UpdateClusterList_time << "s)\n";
+  BOOST_LOG_TRIVIAL(debug)
+    << "(FindMinimumBoxForLargestCluster time: "
+    << FindMinimumBoxForLargestCluster_time << "s)\n";
+  BOOST_LOG_TRIVIAL(debug)
+    << "(RecursiveBisectionBlkSpreading time: "
+    << RecursiveBisectionBlkSpreading_time << "s)\n";
 
   return evaluate_result_x + evaluate_result_y;
 }
 
+/****
+* This method is helpful when a circuit does not have any fixed blocks.
+* In this case, the shift of the whole circuit does not influence HPWL and overlap.
+* But if the circuit is placed close to the right placement boundary, it give very few change to legalizer_ if cells close
+* to the right boundary need to find different locations.
+*
+* 1. Find the leftmost, rightmost, topmost, bottommost cell edges
+* 2. Calculate the total margin in x direction and y direction
+* 3. Evenly assign the margin to each side
+* ****/
 void GPSimPL::CheckAndShift() {
   if (p_ckt_->TotFixedBlkCnt() > 0) return;
-  /****
- * This method is helpful when a circuit does not have any fixed blocks.
- * In this case, the shift of the whole circuit does not influence HPWL and overlap.
- * But if the circuit is placed close to the right placement boundary, it give very few change to legalizer_ if cells close
- * to the right boundary need to find different locations.
- *
- * 1. Find the leftmost, rightmost, topmost, bottommost cell edges
- * 2. Calculate the total margin in x direction and y direction
- * 3. Evenly assign the margin to each side
- * ****/
-
   double left_most = INT_MAX;
   double right_most = INT_MIN;
   double bottom_most = INT_MAX;
@@ -3183,7 +3197,7 @@ bool GPSimPL::StartPlacement() {
   }
 
   if (Nets().empty()) {
-    BOOST_LOG_TRIVIAL(info) << "Net list empty\n";
+    BOOST_LOG_TRIVIAL(info) << "Net list empty? Skip global placement!\n";
     BOOST_LOG_TRIVIAL(info)
       << "\033[0;36m Global Placement complete\033[0m\n";
     return true;
@@ -3228,44 +3242,46 @@ bool GPSimPL::StartPlacement() {
       break;
     }
   }
-  int num_it = lower_bound_hpwl_.size();
-  BOOST_LOG_TRIVIAL(info) << "Random init: " << init_hpwl_ << "\n";
-  BOOST_LOG_TRIVIAL(info) << "Lower bound: " << lower_bound_hpwl_ << "\n";
-  BOOST_LOG_TRIVIAL(info) << "Upper bound: " << upper_bound_hpwl_ << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "Random init: " << init_hpwl_ << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "Lower bound: " << lower_bound_hpwl_ << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "Upper bound: " << upper_bound_hpwl_ << "\n";
 
-  BOOST_LOG_TRIVIAL(info) << "\033[0;36m Global Placement complete\033[0m\n";
-  BOOST_LOG_TRIVIAL(info) << "(cg time: " << tot_cg_time << "s, lal time: "
-                          << tot_lal_time << "s)\n";
-  BOOST_LOG_TRIVIAL(info) << "total triplets time: "
-                          << tot_triplets_time_x << "s, "
-                          << tot_triplets_time_y << "s, "
-                          << tot_triplets_time_x + tot_triplets_time_y
-                          << "s\n";
-  BOOST_LOG_TRIVIAL(info) << "total matrix from triplets time: "
-                          << tot_matrix_from_triplets_x << "s, "
-                          << tot_matrix_from_triplets_y << "s, "
-                          << tot_matrix_from_triplets_x
-                              + tot_matrix_from_triplets_y << "s\n";
-  BOOST_LOG_TRIVIAL(info) << "total cg solver time: "
-                          << tot_cg_solver_time_x << "s, "
-                          << tot_cg_solver_time_y << "s, "
-                          << tot_cg_solver_time_x + tot_cg_solver_time_y
-                          << "s\n";
-  BOOST_LOG_TRIVIAL(info) << "total loc update time: "
-                          << tot_loc_update_time_x << "s, "
-                          << tot_loc_update_time_y << "s, "
-                          << tot_loc_update_time_x + tot_loc_update_time_y
-                          << "s\n";
-  double tot_time_x =
-      tot_triplets_time_x + tot_matrix_from_triplets_x + tot_cg_solver_time_x
-          + tot_loc_update_time_x;
-  double tot_time_y =
-      tot_triplets_time_y + tot_matrix_from_triplets_y + tot_cg_solver_time_y
-          + tot_loc_update_time_y;
-  BOOST_LOG_TRIVIAL(info) << "total x/y time: "
-                          << tot_time_x << "s, "
-                          << tot_time_y << "s, "
-                          << tot_time_x + tot_time_y << "s\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "\033[0;36m Global Placement complete\033[0m\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "(cg time: " << tot_cg_time << "s, lal time: " << tot_lal_time << "s)\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "total triplets time: "
+    << tot_triplets_time_x << "s, "
+    << tot_triplets_time_y << "s, "
+    << tot_triplets_time_x + tot_triplets_time_y << "s\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "total matrix from triplets time: "
+    << tot_matrix_from_triplets_x << "s, "
+    << tot_matrix_from_triplets_y << "s, "
+    << tot_matrix_from_triplets_x + tot_matrix_from_triplets_y << "s\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "total cg solver time: "
+    << tot_cg_solver_time_x << "s, "
+    << tot_cg_solver_time_y << "s, "
+    << tot_cg_solver_time_x + tot_cg_solver_time_y << "s\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "total loc update time: "
+    << tot_loc_update_time_x << "s, "
+    << tot_loc_update_time_y << "s, "
+    << tot_loc_update_time_x + tot_loc_update_time_y << "s\n";
+  double tot_time_x = tot_triplets_time_x + tot_matrix_from_triplets_x
+      + tot_cg_solver_time_x + tot_loc_update_time_x;
+  double tot_time_y = tot_triplets_time_y + tot_matrix_from_triplets_y
+      + tot_cg_solver_time_y + tot_loc_update_time_y;
+  BOOST_LOG_TRIVIAL(info)
+    << "total x/y time: "
+    << tot_time_x << "s, "
+    << tot_time_y << "s, "
+    << tot_time_x + tot_time_y << "s\n";
   LALClose();
   //CheckAndShift();
   UpdateMovableBlkPlacementStatus();
@@ -3273,8 +3289,8 @@ bool GPSimPL::StartPlacement() {
 
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;
-  BOOST_LOG_TRIVIAL(info) << "(wall time: " << wall_time << "s, cpu time: "
-                          << cpu_time << "s)\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
   ReportMemory();
 
   return true;
@@ -3290,18 +3306,17 @@ void GPSimPL::DumpResult(std::string const &name_of_file) {
   ++counter;
 }
 
+/****
+* Dump the displacement of all cells during look ahead legalization.
+* @param mode:
+*    if 0: dump displacement for MATLAB visualization (quiver/vector plot)
+*    if 1: dump displacement for distribution analysis, unit in average cell height
+*    if 2: dump both
+* ****/
 void GPSimPL::DumpLookAheadDisplacement(
     std::string const &base_name,
     int mode
 ) {
-  /****
- * Dump the displacement of all cells during look ahead legalization.
- * @param mode:
- *    if 0: dump displacement for MATLAB visualization (quiver/vector plot)
- *    if 1: dump displacement for distribution analysis, unit in average cell height
- *    if 2: dump both
- * ****/
-
   if (mode < 0 || mode > 2) return;
   if (mode == 0 || mode == 2) {
     std::string name_of_file = base_name + "quiver.txt";

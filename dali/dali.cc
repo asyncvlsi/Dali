@@ -66,34 +66,6 @@ void Dali::InstantiateIoPlacer() {
   }
 }
 
-bool Dali::AddIoPin(
-    std::string &iopin_name,
-    std::string &net_name,
-    phydb::SignalDirection direction,
-    phydb::SignalUse use
-) {
-  DaliExpects(io_placer_ != nullptr, "Please initialize I/O placer first");
-  return io_placer_->AddIoPin(iopin_name, net_name, direction, use);
-}
-
-bool Dali::PlaceIoPin(
-    std::string &iopin_name,
-    std::string &metal_name,
-    int shape_lx,
-    int shape_ly,
-    int shape_ux,
-    int shape_uy,
-    phydb::PlaceStatus place_status,
-    int loc_x,
-    int loc_y,
-    phydb::CompOrient orient
-) {
-  DaliExpects(io_placer_ != nullptr, "Please initialize I/O placer first");
-  return io_placer_->PlaceIoPin(iopin_name, metal_name,
-                                shape_lx, shape_ly, shape_ux, shape_uy,
-                                place_status, loc_x, loc_y, orient);
-}
-
 bool Dali::ConfigIoPlacerAllInOneLayer(std::string const &layer_name) {
   DaliExpects(io_placer_ != nullptr, "Please initialize I/O placer first");
   bool is_metal_name = circuit_.IsMetalLayerExisting(layer_name);
@@ -144,11 +116,7 @@ bool Dali::IoPinPlacement(int argc, char **argv) {
   }
 
   // remove "place-io" and option flag before calling each function
-  if (option_str == "-a" or option_str == "--add") {
-    return io_placer_->AddCmd(argc - 2, argv + 2);
-  } else if (option_str == "-p" or option_str == "--place") {
-    return io_placer_->PlaceCmd(argc - 2, argv + 2);
-  } else if (option_str == "-c" or option_str == "--config") {
+  if (option_str == "-c" or option_str == "--config") {
     return io_placer_->ConfigCmd(argc - 2, argv + 2);
   } else if (option_str == "-ap" or option_str == "--auto-place") {
     return io_placer_->AutoPlaceCmd(argc - 2, argv + 2);

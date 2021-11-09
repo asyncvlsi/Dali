@@ -416,4 +416,107 @@ bool IsEveryIoPinInsideDieArea(phydb::PhyDB *p_phydb) {
   return res;
 }
 
+void RemoveAllIoPins(phydb::PhyDB *p_phydb) {
+  if (p_phydb == nullptr) {
+    BOOST_LOG_TRIVIAL(warning)
+      << "Cannot remove I/O pins for a nullptr input\n";
+    return;
+  }
+  p_phydb->design().iopins_.clear();
+  p_phydb->design().iopin_2_id_.clear();
+  for (auto &phydb_net: p_phydb->design().GetNetsRef()) {
+    phydb_net.iopin_names_.clear();
+  }
+}
+
+bool IsEveryIoPinAddedAndPlacedCorrectly(
+    phydb::PhyDB *p_phydb0,
+    phydb::PhyDB *p_phydb1
+) {
+  if (p_phydb0 == nullptr || p_phydb1 == nullptr) {
+    BOOST_LOG_TRIVIAL(warning)
+      << "Cannot check the correctness for null PhyDB pointers\n";
+    return false;
+  }
+
+  bool res = true;
+  for (auto &iopin0: p_phydb0->design().iopins_) {
+    auto *iopin1 = p_phydb1->GetIoPinPtr(iopin0.GetName());
+    if (iopin1 == nullptr) {
+      BOOST_LOG_TRIVIAL(info)
+        << "Cannot find " << iopin0.GetName() << " in the second instance\n";
+      res = false;
+      break;
+    }
+    if (iopin0.GetDirection() != iopin1->GetDirection()) {
+      BOOST_LOG_TRIVIAL(info) << "different direction\n";
+      res = false;
+      break;
+    }
+    if (iopin0.GetUse() != iopin1->GetUse()) {
+      BOOST_LOG_TRIVIAL(info) << "different use\n";
+      res = false;
+      break;
+    }
+    if (iopin0.GetNetName() != iopin1->GetNetName()) {
+      BOOST_LOG_TRIVIAL(info) << "different net name\n";
+      res = false;
+      break;
+    }
+    if (iopin0.GetLayerName() != iopin1->GetLayerName()) {
+      BOOST_LOG_TRIVIAL(info) << "different layer name\n";
+      res = false;
+      break;
+    }
+    if (iopin0.GetRect().LLX() != iopin1->GetRect().LLX()) {
+      BOOST_LOG_TRIVIAL(info) << "different shape llx\n";
+      res = false;
+      break;
+    }
+    if (iopin0.GetRect().LLY() != iopin1->GetRect().LLY()) {
+      BOOST_LOG_TRIVIAL(info) << "different shape lly\n";
+      res = false;
+      break;
+    }
+    if (iopin0.GetRect().URX() != iopin1->GetRect().URX()) {
+      BOOST_LOG_TRIVIAL(info) << "different shape urx\n";
+      res = false;
+      break;
+    }
+    if (iopin0.GetRect().URY() != iopin1->GetRect().URY()) {
+      BOOST_LOG_TRIVIAL(info) << "different shape ury\n";
+      res = false;
+      break;
+    }
+    if (iopin0.GetPlacementStatus() != iopin1->GetPlacementStatus()) {
+      BOOST_LOG_TRIVIAL(info) << "different placement status\n";
+      res = false;
+      break;
+    }
+    if (iopin0.GetOrientation() != iopin1->GetOrientation()) {
+      BOOST_LOG_TRIVIAL(info) << "different orientation\n";
+      res = false;
+      break;
+    }
+    if (iopin0.GetLocation().x != iopin1->GetLocation().x) {
+      BOOST_LOG_TRIVIAL(info) << "different location x\n";
+      res = false;
+      break;
+    }
+    if (iopin0.GetLocation().y != iopin1->GetLocation().y) {
+      BOOST_LOG_TRIVIAL(info) << "different location y\n";
+      res = false;
+      break;
+    }
+  }
+
+  BOOST_LOG_TRIVIAL(info) << "All iopins are correctly added and placed? ";
+  if (res) {
+    BOOST_LOG_TRIVIAL(info) << "Yes\n";
+  } else {
+    BOOST_LOG_TRIVIAL(info) << "No\n";
+  }
+  return res;
+}
+
 }

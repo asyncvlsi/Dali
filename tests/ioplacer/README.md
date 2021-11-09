@@ -4,11 +4,6 @@
 * `place-io <metal_layer>`
   * Automatically place all IO pins and create physical geometries on the given metal layer.
   * This is equivalent to calling `place-io -c ...` to specify which metal layer to use, and then calling `place-io -ap ...` to place all IO pins.
-* `place-io -a/--add ...`
-  * Manually add an IO pin to PhyDB database.
-* `place-io -p/--place ...`
-  * Manually place an IO pin.
-  * Warnings will be printed out if there is anything looks abnormal.
 * `place-io -c/--config ...`
   * Instead of letting the IO placer decides how to place IO pins, users can tell the placer their preferences, or specify some placement constraints.
   * For example:

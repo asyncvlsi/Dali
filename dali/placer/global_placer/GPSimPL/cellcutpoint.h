@@ -45,6 +45,10 @@ struct CellCutPoint {
   bool operator==(const CellCutPoint &rhs) const {
     return (x == rhs.x) && (y == rhs.y);
   }
+  friend std::ostream &operator<<(std::ostream &os, const CellCutPoint &p) {
+    os << "(" << p.x << ", " << p.y << ") ";
+    return os;
+  }
 };
 
 }

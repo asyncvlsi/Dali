@@ -28,53 +28,68 @@
 
 using namespace dali;
 
+/****
+ * @brief Testcase for IoPlacement command "place-io --add" and "place-io --place".
+ *
+ * This is a simple testcase to show that using command
+ *     "add-io <pin_name> <net_name> <direction> <use>"
+ *     "place-io <pin_name> <metal_name> <lx> <ly> <ux> <uy> <placement_status> <x> <y> <orientation>"
+ * we can obtain a placement result satisfying:
+ * 1. all I/O pins have final locations, shapes, and orientation as we set.
+ *
+ * @return 0 if this test is passed, 1 if failed
+ */
 int main() {
   std::string lef_file_name = "ispd19_test3.input.lef";
   std::string def_file_name = "ispd19_test3.input.def";
 
   // initialize PhyDB
-  auto *p_phy_db = new phydb::PhyDB;
-  p_phy_db->ReadLef(lef_file_name);
-  p_phy_db->ReadDef(def_file_name);
+  auto *p_phy_db0 = new phydb::PhyDB;
+  p_phy_db0->ReadLef(lef_file_name);
+  p_phy_db0->ReadDef(def_file_name);
 
-  // un-place all iopins
-  SetAllIoPinsToUnplaced(p_phy_db);
+  // remove all iopins from a PhyDB instance
+  RemoveAllIoPins(p_phy_db0);
 
-  // initialize Dali
-  Dali dali(p_phy_db, boost::log::trivial::info, "", true);
-
-  /****
-   *  this is the part of code to implement
-   */
-
-  bool is_ioplace_success = dali.StartIoPinAutoPlacement();
-  if (!is_ioplace_success) {
-    return FAIL;
-  }
-
-  // export the result to PhyDB and save the result to a DEF file
-  dali.ExportToPhyDB();
-  std::string out_def_file_name = "all_iopin_use_same_metal_layer.def";
-  p_phy_db->WriteDef(out_def_file_name);
-  delete p_phy_db;
+  // initialize Dali to use its API to add and place I/O pins
+  Dali dali(p_phy_db0, boost::log::trivial::debug, "", true);
+  dali.InstantiateIoPlacer();
 
   // read the DEF file back to the memory, and perform checking
-  p_phy_db = new phydb::PhyDB;
-  p_phy_db->ReadLef(lef_file_name);
-  p_phy_db->ReadDef(out_def_file_name);
+  auto *p_phy_db1 = new phydb::PhyDB;
+  p_phy_db1->ReadLef(lef_file_name);
+  p_phy_db1->ReadDef(def_file_name);
 
-  bool is_legal;
+  // add all I/O pins to the first PhyDB instance
+  for (auto &iopin: p_phy_db1->design().iopins_) {
+    auto *p_iopin = p_phy_db0->AddIoPin(
+        iopin.GetName(),
+        iopin.GetDirection(),
+        iopin.GetUse()
+    );
+    p_iopin->SetNetName(iopin.GetNetName());
+    p_iopin->SetShape(
+        iopin.GetLayerName(),
+        iopin.GetRect().LLX(),
+        iopin.GetRect().LLY(),
+        iopin.GetRect().URX(),
+        iopin.GetRect().URY()
+    );
+    p_iopin->SetPlacement(
+        iopin.GetPlacementStatus(),
+        iopin.GetLocation().x,
+        iopin.GetLocation().y,
+        iopin.GetOrientation()
+    );
+  }
 
-  is_legal = IsEveryIoPinPlacedOnBoundary(p_phy_db);
-  if (!is_legal) return FAIL;
+  p_phy_db0->WriteDef("add_and_place_io_pins.def");
 
-  is_legal = IsNoIoPinOverlapAndSpacingViolation(p_phy_db);
-  if (!is_legal) return FAIL;
+  bool is_legal = IsEveryIoPinAddedAndPlacedCorrectly(p_phy_db0, p_phy_db1);
 
-  is_legal = IsEveryIoPinManufacturable(p_phy_db);
-  if (!is_legal) return FAIL;
+  delete p_phy_db0;
+  delete p_phy_db1;
 
-  is_legal = IsEveryIoPinInsideDieArea(p_phy_db);
   if (!is_legal) return FAIL;
 
   return SUCCESS;

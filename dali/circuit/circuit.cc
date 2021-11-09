@@ -464,6 +464,8 @@ void Circuit::SetListCapacity(
   DaliExpects(components_count >= 0, "Negative number of components?");
   DaliExpects(pins_count >= 0, "Negative number of IOPINs?");
   DaliExpects(nets_count >= 0, "Negative number of NETs?");
+  DaliExpects(components_count <= INT_MAX - pins_count,
+              "Too many components and pins, total number larger than INT_MAX");
   design_.blocks_.reserve(components_count + pins_count);
   design_.iopins_.reserve(pins_count);
   design_.nets_.reserve(nets_count);
@@ -553,7 +555,7 @@ IoPin *Circuit::AddIoPin(
 ) {
   IoPin *io_pin = nullptr;
   if (place_status == UNPLACED) {
-    io_pin = AddUnplacedIOPin(iopin_name);
+    io_pin = AddUnplacedIoPin(iopin_name);
   } else {
     io_pin = AddPlacedIOPin(iopin_name, lx, ly);
     io_pin->SetInitPlaceStatus(place_status);
@@ -1984,6 +1986,9 @@ void Circuit::AddBlock(
   DaliExpects(!IsBlockExisting(block_name),
               "Block exists, cannot create this block again: " + block_name);
   int id = static_cast<int>(design_.blk_name_id_map_.size());
+  if (id < 0 || id > INT_MAX) {
+    DaliExpects(false, "Cannot add more blocks, the limit is INT_MAX");
+  }
   auto ret = design_.blk_name_id_map_.insert(
       std::unordered_map<std::string, int>::value_type(block_name, id)
   );
@@ -2042,7 +2047,7 @@ void Circuit::AddDummyIOPinBlockType() {
   tech_.io_dummy_blk_type_ptr_ = io_pin_type;
 }
 
-IoPin *Circuit::AddUnplacedIOPin(std::string const &iopin_name) {
+IoPin *Circuit::AddUnplacedIoPin(std::string const &iopin_name) {
   DaliExpects(design_.nets_.empty(),
               "Cannot add new IOPIN, because net_list now is not empty");
   DaliExpects(!IsIoPinExisting(iopin_name),

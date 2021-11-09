@@ -92,9 +92,10 @@ void BoxBin::update_cell_area_white_space(std::vector<std::vector<GridBin> > &gr
   filling_rate = double(total_cell_area) / double(total_white_space);
 }
 
-void BoxBin::UpdateCellAreaWhiteSpaceFillingRate(std::vector<std::vector<
-    unsigned long int>> &grid_bin_white_space_LUT,
-                                                 std::vector<std::vector<GridBin> > &grid_bin_matrix) {
+void BoxBin::UpdateCellAreaWhiteSpaceFillingRate(
+    std::vector<std::vector<unsigned long int>> &grid_bin_white_space_LUT,
+    std::vector<std::vector<GridBin>> &grid_bin_matrix
+) {
   if (ll_index.x == 0) {
     if (ll_index.y == 0) {
       total_white_space = grid_bin_white_space_LUT[ur_index.x][ur_index.y];
@@ -204,8 +205,10 @@ void BoxBin::update_boundaries(std::vector<std::vector<GridBin> > &grid_bin_matr
   top = grid_bin_matrix[ur_index.x][ur_index.y].top;
 }
 
-void BoxBin::update_terminal_list_white_space(std::vector<Block> &Nodelist,
-                                              std::vector<int> &box_terminal_list) {
+void BoxBin::update_terminal_list_white_space(
+    std::vector<Block> &Nodelist,
+    std::vector<int> &box_terminal_list
+) {
   int node_llx, node_lly, node_urx, node_ury, bin_llx, bin_lly, bin_urx,
       bin_ury;
   int min_urx, max_llx, min_ury, max_lly;
@@ -246,56 +249,57 @@ void BoxBin::UpdateObsBoundary(std::vector<Block> &block_list) {
   if (terminal_list.empty()) {
     return;
   }
-  vertical_obstacle_boundaries.clear();
-  horizontal_obstacle_boundaries.clear();
-  Block *node;
+  vertical_cutlines.clear();
+  horizontal_cutlines.clear();
   for (auto &terminal_id: terminal_list) {
-    node = &block_list[terminal_id];
-    if ((left < node->LLX()) && (right > node->LLX())) {
-      vertical_obstacle_boundaries.push_back((int) node->LLX());
+    Block &node = block_list[terminal_id];
+    std::cout << node.Name() << "\n";
+    printf("(%f, %f), (%f, %f)\n", node.LLX(), node.LLY(), node.URX(), node.URY());
+    if ((left < node.LLX()) && (right > node.LLX())) {
+      vertical_cutlines.push_back((int) node.LLX());
     }
-    if ((left < node->URX()) && (right > node->URX())) {
-      vertical_obstacle_boundaries.push_back((int) node->URX());
+    if ((left < node.URX()) && (right > node.URX())) {
+      vertical_cutlines.push_back((int) node.URX());
     }
-    if ((bottom < node->LLY()) && (top > node->LLY())) {
-      horizontal_obstacle_boundaries.push_back((int) node->LLY());
+    if ((bottom < node.LLY()) && (top > node.LLY())) {
+      horizontal_cutlines.push_back((int) node.LLY());
     }
-    if ((bottom < node->URY()) && (top > node->URY())) {
-      horizontal_obstacle_boundaries.push_back((int) node->URY());
+    if ((bottom < node.URY()) && (top > node.URY())) {
+      horizontal_cutlines.push_back((int) node.URY());
     }
   }
   /* sort boundaries in the ascending order */
   size_t min_index;
   int min_boundary, tmp_boundary;
-  if (!horizontal_obstacle_boundaries.empty()) {
-    for (size_t i = 0; i < horizontal_obstacle_boundaries.size(); i++) {
+  if (!horizontal_cutlines.empty()) {
+    for (size_t i = 0; i < horizontal_cutlines.size(); i++) {
       min_index = i;
-      min_boundary = horizontal_obstacle_boundaries[i];
-      for (size_t j = i + 1; j < horizontal_obstacle_boundaries.size(); j++) {
-        if (horizontal_obstacle_boundaries[j] < min_boundary) {
+      min_boundary = horizontal_cutlines[i];
+      for (size_t j = i + 1; j < horizontal_cutlines.size(); j++) {
+        if (horizontal_cutlines[j] < min_boundary) {
           min_index = j;
-          min_boundary = horizontal_obstacle_boundaries[j];
+          min_boundary = horizontal_cutlines[j];
         }
       }
-      tmp_boundary = horizontal_obstacle_boundaries[i];
-      horizontal_obstacle_boundaries[i] =
-          horizontal_obstacle_boundaries[min_index];
-      horizontal_obstacle_boundaries[min_index] = tmp_boundary;
+      tmp_boundary = horizontal_cutlines[i];
+      horizontal_cutlines[i] =
+          horizontal_cutlines[min_index];
+      horizontal_cutlines[min_index] = tmp_boundary;
     }
   }
-  if (!vertical_obstacle_boundaries.empty()) {
-    for (size_t i = 0; i < vertical_obstacle_boundaries.size(); i++) {
+  if (!vertical_cutlines.empty()) {
+    for (size_t i = 0; i < vertical_cutlines.size(); i++) {
       min_index = i;
-      min_boundary = vertical_obstacle_boundaries[i];
-      for (size_t j = i + 1; j < vertical_obstacle_boundaries.size(); j++) {
-        if (vertical_obstacle_boundaries[j] < min_boundary) {
+      min_boundary = vertical_cutlines[i];
+      for (size_t j = i + 1; j < vertical_cutlines.size(); j++) {
+        if (vertical_cutlines[j] < min_boundary) {
           min_index = j;
-          min_boundary = vertical_obstacle_boundaries[j];
+          min_boundary = vertical_cutlines[j];
         }
       }
-      tmp_boundary = vertical_obstacle_boundaries[i];
-      vertical_obstacle_boundaries[i] = vertical_obstacle_boundaries[min_index];
-      vertical_obstacle_boundaries[min_index] = tmp_boundary;
+      tmp_boundary = vertical_cutlines[i];
+      vertical_cutlines[i] = vertical_cutlines[min_index];
+      vertical_cutlines[min_index] = tmp_boundary;
     }
   }
   /*
@@ -312,8 +316,14 @@ void BoxBin::UpdateObsBoundary(std::vector<Block> &block_list) {
   */
 }
 
-bool BoxBin::write_cell_in_box(std::string const &NameOfFile,
-                               std::vector<Block> &Nodelist) {
+bool BoxBin::IsMoreHorizontalCutlines() const {
+  return horizontal_cutlines.size() > vertical_cutlines.size();
+}
+
+bool BoxBin::write_cell_in_box(
+    std::string const &NameOfFile,
+    std::vector<Block> &Nodelist
+) {
   std::ofstream ost;
   ost.open(NameOfFile.c_str(), std::ios::app);
   if (ost.is_open() == 0) {
@@ -329,9 +339,11 @@ bool BoxBin::write_cell_in_box(std::string const &NameOfFile,
   return true;
 }
 
-unsigned long int BoxBin::white_space_LUT(std::vector<std::vector<unsigned long int>> &grid_bin_white_space_LUT,
-                                          GridBinIndex &ll,
-                                          GridBinIndex &ur) {
+unsigned long int BoxBin::white_space_LUT(
+    std::vector<std::vector<unsigned long int>> &grid_bin_white_space_LUT,
+    GridBinIndex &ll,
+    GridBinIndex &ur
+) {
   unsigned long int white_space;
   if (ll.x == 0) {
     if (ll.y == 0) {
@@ -407,9 +419,11 @@ bool BoxBin::update_cut_index_white_space(std::vector<std::vector<unsigned long 
   }
 }
 
-bool BoxBin::update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist,
-                                                 unsigned long int &box1_total_white_space,
-                                                 unsigned long int &box2_total_white_space) {
+bool BoxBin::update_cut_point_cell_list_low_high(
+    std::vector<Block> &Nodelist,
+    unsigned long int &box1_total_white_space,
+    unsigned long int &box2_total_white_space
+) {
   // this member function will be called only when two white spaces are not different from each other for several magnitudes
   unsigned long int cell_area_low = 0;
   double cut_line_low, cut_line_high;
@@ -499,9 +513,11 @@ bool BoxBin::update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist,
   return true;
 }
 
-bool BoxBin::update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodelist,
-                                                      int &cut_line_w,
-                                                      int ave_blk_height) {
+bool BoxBin::update_cut_point_cell_list_low_high_leaf(
+    std::vector<Block> &Nodelist,
+    int &cut_line_w,
+    int ave_blk_height
+) {
   unsigned long int cell_area_low = 0;
   double cut_line = 0;
   // the above three cut-lines are for cells, thus they needs to be double
@@ -666,6 +682,59 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodeli
             * (right - left));
   }
   return true;
+}
+
+void BoxBin::Report() {
+  std::string cur_direction = cut_direction_x ? "x" : "y";
+  BOOST_LOG_TRIVIAL(info)
+    << "cut direction: " << cur_direction << "\n"
+    << "white spaces all used by macros: " << all_terminal << "\n"
+    << "total white space: " << total_white_space << "\n"
+    << "grid bin index: " << ll_index << " " << ur_index << "\n"
+    << "grid bin cut index: " << cut_ll_index << " " << cut_ur_index << "\n"
+    << "box coordinate: " << ll_point << " " << ur_point << "\n"
+    << "box cut coordinate: " << cut_ll_point << " " << cut_ur_point << "\n"
+    << "total cell area: " << total_cell_area << "\n"
+    << "total cell area low: " << total_cell_area_low << "\n"
+    << "total cell area high: " << total_cell_area_high << "\n"
+    << "shape: (" << left << ", " << bottom
+    << ") (" << right << ", " << top << ")\n";
+
+  BOOST_LOG_TRIVIAL(info) << "cell list: " << cell_list.size() << "\n";
+  for (auto &num: cell_list) {
+    BOOST_LOG_TRIVIAL(info) << num << ", ";
+  }
+  BOOST_LOG_TRIVIAL(info) << "\nend\n";
+
+  BOOST_LOG_TRIVIAL(info) << "cell list low: " << cell_list_low.size() << "\n";
+  for (auto &num: cell_list_low) {
+    BOOST_LOG_TRIVIAL(info) << num << ", ";
+  }
+  BOOST_LOG_TRIVIAL(info) << "\nend\n";
+
+  BOOST_LOG_TRIVIAL(info) << "cell list hi: " << cell_list_high.size() << "\n";
+  for (auto &num: cell_list_high) {
+    BOOST_LOG_TRIVIAL(info) << num << ", ";
+  }
+  BOOST_LOG_TRIVIAL(info) << "\nend\n";
+
+  BOOST_LOG_TRIVIAL(info) << "terminal list: " << terminal_list.size() << "\n";
+  for (auto &num: terminal_list) {
+    BOOST_LOG_TRIVIAL(info) << num << ", ";
+  }
+  BOOST_LOG_TRIVIAL(info) << "\nend\n";
+
+  BOOST_LOG_TRIVIAL(info) << "vertical boundaries\n";
+  for (auto &num: vertical_cutlines) {
+    BOOST_LOG_TRIVIAL(info) << num << ", ";
+  }
+  BOOST_LOG_TRIVIAL(info) << "\nend\n";
+
+  BOOST_LOG_TRIVIAL(info) << "horizontal boundaries\n";
+  for (auto &num: horizontal_cutlines) {
+    BOOST_LOG_TRIVIAL(info) << num << ", ";
+  }
+  BOOST_LOG_TRIVIAL(info) << "\nend\n";
 }
 
 }

@@ -83,9 +83,10 @@ class BoxBin {
   /* UpdateFixedBlkList can only be called when the box is a grid_bin_box */
   bool IsContainFixedBlk() const { return !terminal_list.empty(); };
 
-  std::vector<int> vertical_obstacle_boundaries;
-  std::vector<int> horizontal_obstacle_boundaries;
+  std::vector<int> vertical_cutlines;
+  std::vector<int> horizontal_cutlines;
   void UpdateObsBoundary(std::vector<Block> &block_list);
+  bool IsMoreHorizontalCutlines() const;
 
   /* the boundary of box if the box is smaller than a grid bin, the following for attribute will be very important
    * the left, right, bottom, top boundaries are the region where cells will be placed in */
@@ -95,30 +96,44 @@ class BoxBin {
   int top;
   void update_boundaries(std::vector<std::vector<GridBin> > &grid_bin_matrix);
   /* update_white_space can only be called when left, right, bottom, top are updated */
-  void update_terminal_list_white_space(std::vector<Block> &Nodelist,
-                                        std::vector<int> &box_terminal_list);
+  void update_terminal_list_white_space(
+      std::vector<Block> &Nodelist,
+      std::vector<int> &box_terminal_list
+  );
 
   void update_all_terminal(std::vector<std::vector<GridBin> > &grid_bin_matrix);
   void update_cell_area(std::vector<Block> &Nodelist);
   void update_cell_area_white_space(std::vector<std::vector<GridBin> > &grid_bin_matrix);
-  void UpdateCellAreaWhiteSpaceFillingRate(std::vector<std::vector<unsigned long int> > &grid_bin_white_space_LUT,
-                                           std::vector<std::vector<GridBin> > &grid_bin_matrix);
+  void UpdateCellAreaWhiteSpaceFillingRate(
+      std::vector<std::vector<unsigned long int> > &grid_bin_white_space_LUT,
+      std::vector<std::vector<GridBin> > &grid_bin_matrix
+  );
   void ExpandBox(int grid_cnt_x, int grid_cnt_y);
   bool write_box_boundary(std::string const &NameOfFile);
   bool write_cell_region(std::string const &NameOfFile = "first_cell_bounding_box.txt");
-  static unsigned long int white_space_LUT(std::vector<std::vector<unsigned long int> > &grid_bin_white_space_LUT,
-                                           GridBinIndex &ll,
-                                           GridBinIndex &ur);
+  static unsigned long int white_space_LUT(
+      std::vector<std::vector<unsigned long int> > &grid_bin_white_space_LUT,
+      GridBinIndex &ll,
+      GridBinIndex &ur
+  );
   void UpdateCellList(std::vector<std::vector<GridBin> > &grid_bin_matrix);
-  bool write_cell_in_box(std::string const &NameOfFile,
-                         std::vector<Block> &Nodelist);
+  bool write_cell_in_box(
+      std::string const &NameOfFile,
+      std::vector<Block> &Nodelist
+  );
   bool update_cut_index_white_space(std::vector<std::vector<unsigned long int> > &grid_bin_white_space_LUT);
-  bool update_cut_point_cell_list_low_high(std::vector<Block> &Nodelist,
-                                           unsigned long int &box1_total_white_space,
-                                           unsigned long int &box2_total_white_space);
-  bool update_cut_point_cell_list_low_high_leaf(std::vector<Block> &Nodelist,
-                                                int &cut_line_w,
-                                                int ave_blk_height);
+  bool update_cut_point_cell_list_low_high(
+      std::vector<Block> &Nodelist,
+      unsigned long int &box1_total_white_space,
+      unsigned long int &box2_total_white_space
+  );
+  bool update_cut_point_cell_list_low_high_leaf(
+      std::vector<Block> &Nodelist,
+      int &cut_line_w,
+      int ave_blk_height
+  );
+
+  void Report();
 };
 
 }

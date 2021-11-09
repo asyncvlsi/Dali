@@ -50,6 +50,10 @@ struct GridBinIndex {
   bool operator==(const GridBinIndex &rhs) const {
     return ((x == rhs.x) && (y == rhs.y));
   }
+  friend std::ostream &operator<<(std::ostream &os, const GridBinIndex &p) {
+    os << "(" << p.x << ", " << p.y << ") ";
+    return os;
+  }
 };
 
 struct GridBinIndexHasher {

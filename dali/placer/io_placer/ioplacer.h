@@ -49,27 +49,6 @@ class IoPlacer {
   void SetCiruit(Circuit *circuit);
   void SetPhyDB(phydb::PhyDB *phy_db_ptr);
 
-  bool AddIoPin(
-      std::string const &iopin_name,
-      std::string const &net_name,
-      phydb::SignalDirection direction,
-      phydb::SignalUse use
-  );
-  bool AddCmd(int argc, char **argv);
-  bool PlaceIoPin(
-      std::string const &iopin_name,
-      std::string const &metal_name,
-      int shape_lx,
-      int shape_ly,
-      int shape_ux,
-      int shape_uy,
-      phydb::PlaceStatus place_status,
-      int loc_x,
-      int loc_y,
-      phydb::CompOrient orient
-  );
-  bool PlaceCmd(int argc, char **argv);
-
   bool PartialPlaceIoPin();
   bool PartialPlaceCmd(int argc, char **argv);
 

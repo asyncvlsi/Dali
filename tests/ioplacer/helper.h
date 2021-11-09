@@ -36,6 +36,12 @@ bool IsEveryIoPinOnMetal(
 bool IsEveryIoPinManufacturable(phydb::PhyDB *p_phydb);
 bool IsEveryIoPinInsideDieArea(phydb::PhyDB *p_phydb);
 
+void RemoveAllIoPins(phydb::PhyDB *p_phydb);
+bool IsEveryIoPinAddedAndPlacedCorrectly(
+    phydb::PhyDB *p_phydb0,
+    phydb::PhyDB *p_phydb1
+);
+
 }
 
 #endif //DALI_TESTS_IOPLACER_HELPER_H
