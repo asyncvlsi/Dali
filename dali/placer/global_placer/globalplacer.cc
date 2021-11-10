@@ -19,7 +19,7 @@
  *
  ******************************************************************************/
 
-#include "GPSimPL.h"
+#include "globalplacer.h"
 
 #include <cmath>
 
@@ -33,7 +33,7 @@
 
 namespace dali {
 
-GPSimPL::GPSimPL() : Placer() {
+GlobalPlacer::GlobalPlacer() : Placer() {
   grid_bin_height = 0;
   grid_bin_width = 0;
   grid_cnt_y = 0;
@@ -42,8 +42,9 @@ GPSimPL::GPSimPL() : Placer() {
   height_epsilon_ = 0;
 }
 
-GPSimPL::GPSimPL(double aspectRatio, double fillingRate) : Placer(aspectRatio,
-                                                                  fillingRate) {
+GlobalPlacer::GlobalPlacer(double aspectRatio, double fillingRate) : Placer(
+    aspectRatio,
+    fillingRate) {
   grid_bin_height = 0;
   grid_bin_width = 0;
   grid_cnt_y = 0;
@@ -52,59 +53,59 @@ GPSimPL::GPSimPL(double aspectRatio, double fillingRate) : Placer(aspectRatio,
   height_epsilon_ = 0;
 }
 
-void GPSimPL::LoadConf(std::string const &config_file) {
+void GlobalPlacer::LoadConf(std::string const &config_file) {
   config_read(config_file.c_str());
   std::string variable;
 
-  variable = "dali.GPSimPL.cg_iteration_";
+  variable = "dali.global_placer.cg_iteration_";
   if (config_exists(variable.c_str()) == 1) {
     cg_iteration_ = config_get_int(variable.c_str());
   }
-  variable = "dali.GPSimPL.cg_iteration_max_num_";
+  variable = "dali.global_placer.cg_iteration_max_num_";
   if (config_exists(variable.c_str()) == 1) {
     cg_iteration_max_num_ = config_get_int(variable.c_str());
   }
-  variable = "dali.GPSimPL.cg_stop_criterion_";
+  variable = "dali.global_placer.cg_stop_criterion_";
   if (config_exists(variable.c_str()) == 1) {
     cg_stop_criterion_ = config_get_real(variable.c_str());
   }
-  variable = "dali.GPSimPL.net_model_update_stop_criterion_";
+  variable = "dali.global_placer.net_model_update_stop_criterion_";
   if (config_exists(variable.c_str()) == 1) {
     net_model_update_stop_criterion_ = config_get_real(variable.c_str());
   }
 
-  variable = "dali.GPSimPL.b2b_update_max_iteration_";
+  variable = "dali.global_placer.b2b_update_max_iteration_";
   if (config_exists(variable.c_str()) == 1) {
     b2b_update_max_iteration_ = config_get_int(variable.c_str());
   }
-  variable = "dali.GPSimPL.max_iter_";
+  variable = "dali.global_placer.max_iter_";
   if (config_exists(variable.c_str()) == 1) {
     max_iter_ = config_get_int(variable.c_str());
   }
-  variable = "dali.GPSimPL.number_of_cell_in_bin_";
+  variable = "dali.global_placer.number_of_cell_in_bin_";
   if (config_exists(variable.c_str()) == 1) {
     number_of_cell_in_bin_ = config_get_int(variable.c_str());
   }
-  variable = "dali.GPSimPL.net_ignore_threshold_";
+  variable = "dali.global_placer.net_ignore_threshold_";
   if (config_exists(variable.c_str()) == 1) {
     net_ignore_threshold_ = config_get_int(variable.c_str());
   }
 
-  variable = "dali.GPSimPL.simpl_LAL_converge_criterion_";
+  variable = "dali.global_placer.simpl_LAL_converge_criterion_";
   if (config_exists(variable.c_str()) == 1) {
     simpl_LAL_converge_criterion_ = config_get_real(variable.c_str());
   }
-  variable = "dali.GPSimPL.polar_converge_criterion_";
+  variable = "dali.global_placer.polar_converge_criterion_";
   if (config_exists(variable.c_str()) == 1) {
     polar_converge_criterion_ = config_get_real(variable.c_str());
   }
-  variable = "dali.GPSimPL.convergence_criteria_";
+  variable = "dali.global_placer.convergence_criteria_";
   if (config_exists(variable.c_str()) == 1) {
     convergence_criteria_ = config_get_int(variable.c_str());
   }
 }
 
-void GPSimPL::BlockLocRandomInit() {
+void GlobalPlacer::BlockLocRandomInit() {
   std::minstd_rand0 generator{1};
   int region_width = RegionWidth();
   int region_height = RegionHeight();
@@ -133,7 +134,7 @@ void GPSimPL::BlockLocRandomInit() {
   if (is_dump) DumpResult("rand_init.txt");
 }
 
-void GPSimPL::BlockLocCenterInit() {
+void GlobalPlacer::BlockLocCenterInit() {
   double region_center_x = (RegionRight() + RegionLeft()) / 2.0;
   double region_center_y = (RegionTop() + RegionBottom()) / 2.0;
   int region_width = RegionWidth();
@@ -164,7 +165,7 @@ void GPSimPL::BlockLocCenterInit() {
   if (is_dump) DumpResult("rand_init.txt");
 }
 
-void GPSimPL::DriverLoadPairInit() {
+void GlobalPlacer::DriverLoadPairInit() {
   std::vector<BlkPairNets> &pair_list = p_ckt_->blk_pair_net_list_;
   std::unordered_map<
       std::pair<int, int>,
@@ -297,7 +298,7 @@ void GPSimPL::DriverLoadPairInit() {
 //  exit(1);
 }
 
-void GPSimPL::CGInit() {
+void GlobalPlacer::CGInit() {
   SetEpsilon(); // set a small value for net weight dividend to avoid divergence
   lower_bound_hpwlx_.clear();
   lower_bound_hpwly_.clear();
@@ -341,7 +342,7 @@ void GPSimPL::CGInit() {
   Ay.reserve(coefficient_size);
 }
 
-void GPSimPL::UpdateMaxMinX() {
+void GlobalPlacer::UpdateMaxMinX() {
   std::vector<Net> &net_list = p_ckt_->Nets();
   int sz = net_list.size();
 #pragma omp parallel for
@@ -350,7 +351,7 @@ void GPSimPL::UpdateMaxMinX() {
   }
 }
 
-void GPSimPL::UpdateMaxMinY() {
+void GlobalPlacer::UpdateMaxMinY() {
   std::vector<Net> &net_list = p_ckt_->Nets();
   int sz = net_list.size();
 #pragma omp parallel for
@@ -359,7 +360,7 @@ void GPSimPL::UpdateMaxMinY() {
   }
 }
 
-void GPSimPL::BuildProblemB2BX() {
+void GlobalPlacer::BuildProblemB2BX() {
   double wall_time = get_wall_time();
 
   std::vector<Net> &net_list = Nets();
@@ -501,7 +502,7 @@ void GPSimPL::BuildProblemB2BX() {
 //  }
 }
 
-void GPSimPL::BuildProblemB2BY() {
+void GlobalPlacer::BuildProblemB2BY() {
   double wall_time = get_wall_time();
 
   UpdateMaxMinY();
@@ -635,7 +636,7 @@ void GPSimPL::BuildProblemB2BY() {
   tot_triplets_time_y += wall_time;
 }
 
-void GPSimPL::BuildProblemStarModelX() {
+void GlobalPlacer::BuildProblemStarModelX() {
   double wall_time = get_wall_time();
 
   std::vector<Net> &net_list = Nets();
@@ -735,7 +736,7 @@ void GPSimPL::BuildProblemStarModelX() {
   tot_triplets_time_x += wall_time;
 }
 
-void GPSimPL::BuildProblemStarModelY() {
+void GlobalPlacer::BuildProblemStarModelY() {
   double wall_time = get_wall_time();
 
   std::vector<Net> &net_list = Nets();
@@ -827,7 +828,7 @@ void GPSimPL::BuildProblemStarModelY() {
   tot_triplets_time_y += wall_time;
 }
 
-void GPSimPL::BuildProblemHPWLX() {
+void GlobalPlacer::BuildProblemHPWLX() {
   double wall_time = get_wall_time();
 
   std::vector<Net> &net_list = Nets();
@@ -925,7 +926,7 @@ void GPSimPL::BuildProblemHPWLX() {
   tot_triplets_time_x += wall_time;
 }
 
-void GPSimPL::BuildProblemHPWLY() {
+void GlobalPlacer::BuildProblemHPWLY() {
   double wall_time = get_wall_time();
 
   std::vector<Block> &block_list = p_ckt_->Blocks();
@@ -1021,7 +1022,7 @@ void GPSimPL::BuildProblemHPWLY() {
   tot_triplets_time_y += wall_time;
 }
 
-void GPSimPL::BuildProblemStarHPWLX() {
+void GlobalPlacer::BuildProblemStarHPWLX() {
   double wall_time = get_wall_time();
   UpdateMaxMinX();
 
@@ -1161,7 +1162,7 @@ void GPSimPL::BuildProblemStarHPWLX() {
   tot_triplets_time_x += wall_time;
 }
 
-void GPSimPL::BuildProblemStarHPWLY() {
+void GlobalPlacer::BuildProblemStarHPWLY() {
   double wall_time = get_wall_time();
   UpdateMaxMinY();
 
@@ -1301,7 +1302,7 @@ void GPSimPL::BuildProblemStarHPWLY() {
   tot_triplets_time_y += wall_time;
 }
 
-double GPSimPL::OptimizeQuadraticMetricX(double cg_stop_criterion) {
+double GlobalPlacer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
   double wall_time = get_wall_time();
   if (net_model != 3) {
     Ax.setFromTriplets(coefficientsx.begin(), coefficientsx.end());
@@ -1355,7 +1356,7 @@ double GPSimPL::OptimizeQuadraticMetricX(double cg_stop_criterion) {
   return eval_history.back();
 }
 
-double GPSimPL::OptimizeQuadraticMetricY(double cg_stop_criterion) {
+double GlobalPlacer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
   double wall_time = get_wall_time();
   if (net_model != 3) {
     Ay.setFromTriplets(coefficientsy.begin(), coefficientsy.end());
@@ -1408,7 +1409,7 @@ double GPSimPL::OptimizeQuadraticMetricY(double cg_stop_criterion) {
   return eval_history.back();
 }
 
-void GPSimPL::PullBlockBackToRegion() {
+void GlobalPlacer::PullBlockBackToRegion() {
   int sz = vx.size();
   std::vector<Block> &block_list = p_ckt_->Blocks();
 
@@ -1440,7 +1441,7 @@ void GPSimPL::PullBlockBackToRegion() {
   }
 }
 
-void GPSimPL::BuildProblemX() {
+void GlobalPlacer::BuildProblemX() {
   UpdateMaxMinX();
   if (net_model == 0) {
     BuildProblemB2BX();
@@ -1453,7 +1454,7 @@ void GPSimPL::BuildProblemX() {
   }
 }
 
-void GPSimPL::BuildProblemY() {
+void GlobalPlacer::BuildProblemY() {
   UpdateMaxMinY();
   if (net_model == 0) {
     BuildProblemB2BY();
@@ -1466,7 +1467,7 @@ void GPSimPL::BuildProblemY() {
   }
 }
 
-double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
+double GlobalPlacer::QuadraticPlacement(double net_model_update_stop_criterion) {
   //omp_set_nested(1);
   omp_set_dynamic(0);
   int avail_threads_num = omp_get_max_threads();
@@ -1515,7 +1516,7 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
         << "  Optimization summary X, iterations x: " << b2b_update_it_x
         << ", " << eval_history_x << "\n";
       DaliExpects(!eval_history_x.empty(),
-                  "Cannot return a valid value because the result is not evaluated in GPSimPL::QuadraticPlacement()!");
+                  "Cannot return a valid value because the result is not evaluated!");
       lower_bound_hpwlx_.push_back(eval_history_x.back());
     }
 
@@ -1559,7 +1560,7 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
         << "  Optimization summary Y, iterations y: " << b2b_update_it_y
         << ", " << eval_history_y << "\n";
       DaliExpects(!eval_history_y.empty(),
-                  "Cannot return a valid value because the result is not evaluated in GPSimPL::QuadraticPlacement()!");
+                  "Cannot return a valid value because the result is not evaluated!");
       lower_bound_hpwly_.push_back(eval_history_y.back());
     }
   }
@@ -1575,6 +1576,42 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
   if (is_dump) DumpResult("cg_result_0.txt");
 
   return lower_bound_hpwlx_.back() + lower_bound_hpwly_.back();
+}
+
+void GlobalPlacer::UpdateWhiteSpaceInGridBin(GridBin &grid_bin) {
+  if (grid_bin.all_terminal) return;
+  RectI bin_rect(
+      grid_bin.LLX(), grid_bin.LLY(), grid_bin.URX(), grid_bin.URY()
+  );
+  std::vector<Block> &blocks = Blocks();
+
+  std::vector<RectI> rects;
+  for (auto &fixed_blk_id: grid_bin.terminal_list) {
+    auto &fixed_blk = blocks[fixed_blk_id];
+    RectI fixed_blk_rect(
+        static_cast<int>(std::round(fixed_blk.LLX())),
+        static_cast<int>(std::round(fixed_blk.LLY())),
+        static_cast<int>(std::round(fixed_blk.URX())),
+        static_cast<int>(std::round(fixed_blk.URY()))
+    );
+    if (bin_rect.IsOverlap(fixed_blk_rect)) {
+      rects.push_back(bin_rect.GetOverlapRect(fixed_blk_rect));
+    }
+  }
+
+  unsigned long long used_area = GetCoverArea(rects);
+  if (grid_bin.white_space < used_area) {
+    DaliExpects(false,
+                "Fixed blocks takes more space than available space? "
+                    + std::to_string(grid_bin.white_space) + " "
+                    + std::to_string(used_area)
+    );
+  }
+
+  grid_bin.white_space -= used_area;
+  if (grid_bin.white_space == 0) {
+    grid_bin.all_terminal = true;
+  }
 }
 
 /****
@@ -1602,7 +1639,7 @@ double GPSimPL::QuadraticPlacement(double net_model_update_stop_criterion) {
 * if the final white space is 0, we know the grid bin is also all covered by fixed blocks
 * and we set the flag "all_terminal" to true.
 * ****/
-void GPSimPL::InitGridBins() {
+void GlobalPlacer::InitGridBins() {
   // Part1
   grid_bin_height = int(std::round(std::sqrt(
       number_of_cell_in_bin_ * GetCircuitRef().AveMovBlkArea()
@@ -1623,15 +1660,12 @@ void GPSimPL::InitGridBins() {
     for (int j = 0; j < grid_cnt_y; j++) {
       grid_bin_matrix[i][j].index = {i, j};
       grid_bin_matrix[i][j].bottom = RegionBottom() + j * grid_bin_height;
-      grid_bin_matrix[i][j].top =
-          RegionBottom() + (j + 1) * grid_bin_height;
+      grid_bin_matrix[i][j].top = RegionBottom() + (j + 1) * grid_bin_height;
       grid_bin_matrix[i][j].left = RegionLeft() + i * grid_bin_width;
-      grid_bin_matrix[i][j].right =
-          RegionLeft() + (i + 1) * grid_bin_width;
+      grid_bin_matrix[i][j].right = RegionLeft() + (i + 1) * grid_bin_width;
       grid_bin_matrix[i][j].white_space = grid_bin_matrix[i][j].Area();
       // at the very beginning, assuming the white space is the same as area
-      grid_bin_matrix[i][j].create_adjacent_bin_list(grid_cnt_x,
-                                                     grid_cnt_y);
+      grid_bin_matrix[i][j].create_adjacent_bin_list(grid_cnt_x, grid_cnt_y);
     }
   }
 
@@ -1671,21 +1705,24 @@ void GPSimPL::InitGridBins() {
     top_index = (int) std::floor(
         (block_list[i].URY() - RegionBottom()) / grid_bin_height);
     /* the grid boundaries might be the placement region boundaries
- * if a block touches the rightmost and topmost boundaries, the index need to be fixed
- * to make sure no memory access out of scope */
+     * if a block touches the rightmost and topmost boundaries,
+     * the index need to be fixed to make sure no memory access out of scope */
     if (left_index < 0) left_index = 0;
     if (right_index >= grid_cnt_x) right_index = grid_cnt_x - 1;
     if (bottom_index < 0) bottom_index = 0;
     if (top_index >= grid_cnt_y) top_index = grid_cnt_y - 1;
 
-    /* for each terminal, we will check which grid is inside it, and directly set the all_terminal attribute to true for that grid
- * some small terminals might occupy the same grid, we need to deduct the overlap area from the white space of that grid bin
- * when the final white space is 0, we know this grid bin is occupied by several terminals*/
+    /* for each terminal, we will check which grid is inside it, and directly
+     * set the all_terminal attribute to true for that grid some small
+     * terminals might occupy the same grid, we need to deduct the overlap
+     * area from the white space of that grid bin when the final white space
+     * is 0, we know this grid bin is occupied by several terminals*/
     for (int j = left_index; j <= right_index; ++j) {
       for (int k = bottom_index; k <= top_index; ++k) {
         /* the following case might happen:
- * the top/right of a fixed block overlap with the bottom/left of a grid box
- * if this case happens, we need to ignore this fixed block for this grid box. */
+         * the top/right of a fixed block overlap with the bottom/left of
+         * a grid box if this case happens, we need to ignore this fixed
+         * block for this grid box. */
         blk_out_of_bin =
             int(block_list[i].LLX() >= grid_bin_matrix[j][k].right) ||
                 int(block_list[i].URX() <= grid_bin_matrix[j][k].left) ||
@@ -1697,10 +1734,8 @@ void GPSimPL::InitGridBins() {
         // if grid bin is covered by a large fixed block, then all_terminal flag for this block is set to be true
         all_terminal =
             int(block_list[i].LLX() <= grid_bin_matrix[j][k].LLX()) &&
-                int(block_list[i].LLY() <= grid_bin_matrix[j][k].LLY())
-                &&
-                    int(block_list[i].URX()
-                            >= grid_bin_matrix[j][k].URX()) &&
+                int(block_list[i].LLY() <= grid_bin_matrix[j][k].LLY()) &&
+                int(block_list[i].URX() >= grid_bin_matrix[j][k].URX()) &&
                 int(block_list[i].URY() >= grid_bin_matrix[j][k].URY());
         grid_bin_matrix[j][k].all_terminal = all_terminal;
         // if all_terminal flag is false, we need to calculate the overlap of grid bin and this fixed block to get the white space,
@@ -1709,23 +1744,23 @@ void GPSimPL::InitGridBins() {
           grid_bin_matrix[j][k].white_space = 0;
         } else {
           // this part calculate the overlap of two rectangles
-          max_llx = std::max(int(block_list[i].LLX()),
-                             grid_bin_matrix[j][k].LLX());
-          max_lly = std::max(int(block_list[i].LLY()),
-                             grid_bin_matrix[j][k].LLY());
-          min_urx = std::min(int(block_list[i].URX()),
-                             grid_bin_matrix[j][k].URX());
-          min_ury = std::min(int(block_list[i].URY()),
-                             grid_bin_matrix[j][k].URY());
-          grid_bin_matrix[j][k].white_space -=
-              (unsigned long int) (min_urx - max_llx)
-                  * (unsigned long int) (min_ury - max_lly);
-          if (grid_bin_matrix[j][k].white_space < 1) {
-            grid_bin_matrix[j][k].all_terminal = true;
-            grid_bin_matrix[j][k].white_space = 0;
-          }
+          //max_llx = std::max(int(block_list[i].LLX()), grid_bin_matrix[j][k].LLX());
+          //max_lly = std::max(int(block_list[i].LLY()), grid_bin_matrix[j][k].LLY());
+          //min_urx = std::min(int(block_list[i].URX()), grid_bin_matrix[j][k].URX());
+          //min_ury = std::min(int(block_list[i].URY()), grid_bin_matrix[j][k].URY());
+          //grid_bin_matrix[j][k].white_space -= (unsigned long int) (min_urx - max_llx)
+          //        * (unsigned long int) (min_ury - max_lly);
+          //if (grid_bin_matrix[j][k].white_space < 1) {
+          //  grid_bin_matrix[j][k].all_terminal = true;
+          //  grid_bin_matrix[j][k].white_space = 0;
+          //}
         }
       }
+    }
+  }
+  for (int i = 0; i < grid_cnt_x; ++i) {
+    for (int j = 0; j < grid_cnt_y; ++j) {
+      UpdateWhiteSpaceInGridBin(grid_bin_matrix[i][j]);
     }
   }
 }
@@ -1736,7 +1771,7 @@ void GPSimPL::InitGridBins() {
 * an easier way is to define an accumulate function and store it as a look-up table
 * when we want to find the white space in a region, the value can be easily extracted from the look-up table
 * ****/
-void GPSimPL::InitWhiteSpaceLUT() {
+void GlobalPlacer::InitWhiteSpaceLUT() {
   // this for loop is created to initialize the size of the loop-up table
   std::vector<unsigned long long> tmp_vector(grid_cnt_y);
   grid_bin_white_space_LUT.resize(grid_cnt_x, tmp_vector);
@@ -1748,8 +1783,7 @@ void GPSimPL::InitWhiteSpaceLUT() {
       grid_bin_white_space_LUT[kx][ky] = 0;
       if (kx == 0) {
         if (ky == 0) {
-          grid_bin_white_space_LUT[kx][ky] =
-              grid_bin_matrix[0][0].white_space;
+          grid_bin_white_space_LUT[kx][ky] = grid_bin_matrix[0][0].white_space;
         } else {
           grid_bin_white_space_LUT[kx][ky] =
               grid_bin_white_space_LUT[kx][ky - 1]
@@ -1772,7 +1806,7 @@ void GPSimPL::InitWhiteSpaceLUT() {
   }
 }
 
-void GPSimPL::LALInit() {
+void GlobalPlacer::LALInit() {
   upper_bound_hpwlx_.clear();
   upper_bound_hpwly_.clear();
   upper_bound_hpwl_.clear();
@@ -1780,19 +1814,19 @@ void GPSimPL::LALInit() {
   InitWhiteSpaceLUT();
 }
 
-void GPSimPL::LALClose() {
+void GlobalPlacer::LALClose() {
   grid_bin_matrix.clear();
   grid_bin_white_space_LUT.clear();
 }
 
-void GPSimPL::ClearGridBinFlag() {
+void GlobalPlacer::ClearGridBinFlag() {
   for (auto &bin_column: grid_bin_matrix) {
     for (auto &bin: bin_column) bin.global_placed = false;
   }
 }
 
-unsigned long int GPSimPL::LookUpWhiteSpace(GridBinIndex const &ll_index,
-                                            GridBinIndex const &ur_index) {
+unsigned long int GlobalPlacer::LookUpWhiteSpace(GridBinIndex const &ll_index,
+                                                 GridBinIndex const &ur_index) {
   /****
  * this function is used to return the white space in a region specified by ll_index, and ur_index
  * there are four cases, element at (0,0), elements on the left edge, elements on the right edge, otherwise
@@ -1822,7 +1856,7 @@ unsigned long int GPSimPL::LookUpWhiteSpace(GridBinIndex const &ll_index,
   return total_white_space;
 }
 
-unsigned long int GPSimPL::LookUpWhiteSpace(WindowQuadruple &window) {
+unsigned long int GlobalPlacer::LookUpWhiteSpace(WindowQuadruple &window) {
   unsigned long int total_white_space;
   if (window.llx == 0) {
     if (window.lly == 0) {
@@ -1846,7 +1880,7 @@ unsigned long int GPSimPL::LookUpWhiteSpace(WindowQuadruple &window) {
   return total_white_space;
 }
 
-unsigned long int GPSimPL::LookUpBlkArea(WindowQuadruple &window) {
+unsigned long int GlobalPlacer::LookUpBlkArea(WindowQuadruple &window) {
   unsigned long int res = 0;
   for (int x = window.llx; x <= window.urx; ++x) {
     for (int y = window.lly; y <= window.ury; ++y) {
@@ -1856,7 +1890,7 @@ unsigned long int GPSimPL::LookUpBlkArea(WindowQuadruple &window) {
   return res;
 }
 
-unsigned long int GPSimPL::WindowArea(WindowQuadruple &window) {
+unsigned long int GlobalPlacer::WindowArea(WindowQuadruple &window) {
   unsigned long int res = 0;
   if (window.urx == grid_cnt_x - 1) {
     if (window.ury == grid_cnt_y - 1) {
@@ -1893,7 +1927,7 @@ for (int i=window.lx; i<=window.urx; ++i) {
   return res;
 }
 
-void GPSimPL::UpdateGridBinState() {
+void GlobalPlacer::UpdateGridBinState() {
   /****
  * this is a member function to update grid bin status, because the cell_list, cell_area and over_fill state can be changed
  * so we need to update them when necessary
@@ -1979,7 +2013,7 @@ void GPSimPL::UpdateGridBinState() {
   UpdateGridBinState_time += get_wall_time() - wall_time;
 }
 
-void GPSimPL::UpdateClusterList() {
+void GlobalPlacer::UpdateClusterList() {
   double wall_time = get_wall_time();
   cluster_set.clear();
 
@@ -2028,7 +2062,7 @@ void GPSimPL::UpdateClusterList() {
   UpdateClusterList_time += get_wall_time() - wall_time;
 }
 
-void GPSimPL::UpdateLargestCluster() {
+void GlobalPlacer::UpdateLargestCluster() {
   if (cluster_set.empty()) return;
 
   for (auto it = cluster_set.begin(); it != cluster_set.end();) {
@@ -2103,7 +2137,7 @@ void GPSimPL::UpdateLargestCluster() {
   }
 }
 
-void GPSimPL::FindMinimumBoxForLargestCluster() {
+void GlobalPlacer::FindMinimumBoxForLargestCluster() {
   /****
  * this function find the box for the largest cluster,
  * such that the total white space in the box is larger than the total cell area
@@ -2184,7 +2218,7 @@ void GPSimPL::FindMinimumBoxForLargestCluster() {
   FindMinimumBoxForLargestCluster_time += get_wall_time() - wall_time;
 }
 
-void GPSimPL::SplitBox(BoxBin &box) {
+void GlobalPlacer::SplitBox(BoxBin &box) {
   std::vector<Block> &block_list = p_ckt_->Blocks();
   bool flag_bisection_complete;
   int dominating_box_flag; // indicate whether there is a dominating BoxBin
@@ -2338,7 +2372,7 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
  *
  * @param box: the BoxBin which needs to be further splitted into two sub-boxes
  */
-void GPSimPL::SplitGridBox(BoxBin &box) {
+void GlobalPlacer::SplitGridBox(BoxBin &box) {
   std::vector<Block> &block_list = p_ckt_->Blocks();
 
   // 1. create two sub-boxes
@@ -2451,7 +2485,7 @@ void GPSimPL::SplitGridBox(BoxBin &box) {
   }
 }
 
-void GPSimPL::PlaceBlkInBox(BoxBin &box) {
+void GlobalPlacer::PlaceBlkInBox(BoxBin &box) {
   std::vector<Block> &block_list = p_ckt_->Blocks();
   /* this is the simplest version, just linearly move cells in the cell_box to the grid box
 * non-linearity is not considered yet*/
@@ -2528,13 +2562,14 @@ for (auto &cell_id: box.cell_list) {
   }
 }
 
-void GPSimPL::RoughLegalBlkInBox(BoxBin &box) {
+void GlobalPlacer::RoughLegalBlkInBox(BoxBin &box) {
   int sz = box.cell_list.size();
   if (sz == 0) return;
   std::vector<int> row_start;
   row_start.assign(box.top - box.bottom + 1, box.left);
 
-  std::vector<IndexLocPair<int>> index_loc_list;
+  std::vector<IndexLocPair<int>>
+      index_loc_list;
   IndexLocPair<int> tmp_index_loc_pair(0, 0, 0);
   index_loc_list.resize(sz, tmp_index_loc_pair);
 
@@ -2633,7 +2668,7 @@ void GPSimPL::RoughLegalBlkInBox(BoxBin &box) {
 
 }
 
-double GPSimPL::BlkOverlapArea(Block *node1, Block *node2) {
+double GlobalPlacer::BlkOverlapArea(Block *node1, Block *node2) {
   bool not_overlap;
   not_overlap =
       ((node1->LLX() >= node2->URX()) || (node1->LLY() >= node2->URY()))
@@ -2668,7 +2703,7 @@ double GPSimPL::BlkOverlapArea(Block *node1, Block *node2) {
   }
 }
 
-void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
+void GlobalPlacer::PlaceBlkInBoxBisection(BoxBin &box) {
   std::vector<Block> &block_list = p_ckt_->Blocks();
   /* keep bisect a grid bin until the leaf bin has less than say 2 nodes? */
   size_t max_cell_num_in_box = 10;
@@ -2742,7 +2777,7 @@ void GPSimPL::PlaceBlkInBoxBisection(BoxBin &box) {
   }
 }
 
-void GPSimPL::UpdateGridBinBlocks(BoxBin &box) {
+void GlobalPlacer::UpdateGridBinBlocks(BoxBin &box) {
   /****
  * Update the block list, area, and overfilled state of a box bin if this box is also a grid bin box
  * ****/
@@ -2775,7 +2810,7 @@ void GPSimPL::UpdateGridBinBlocks(BoxBin &box) {
  * of each box and cells should be assigned to the box
  * @return true if succeed, false if fail
  */
-bool GPSimPL::RecursiveBisectionBlkSpreading() {
+bool GlobalPlacer::RecursiveBisectionBlkSpreading() {
   double wall_time = get_wall_time();
 
   while (!queue_box_bin.empty()) {
@@ -2806,7 +2841,7 @@ bool GPSimPL::RecursiveBisectionBlkSpreading() {
   return true;
 }
 
-void GPSimPL::BackUpBlockLocation() {
+void GlobalPlacer::BackUpBlockLocation() {
   std::vector<Block> &block_list = p_ckt_->Blocks();
   int sz = static_cast<int>(block_list.size());
   for (int i = 0; i < sz; ++i) {
@@ -2815,7 +2850,7 @@ void GPSimPL::BackUpBlockLocation() {
   }
 }
 
-void GPSimPL::UpdateAnchorLocation() {
+void GlobalPlacer::UpdateAnchorLocation() {
   std::vector<Block> &block_list = p_ckt_->Blocks();
   int sz = static_cast<int>(block_list.size());
 
@@ -2833,7 +2868,7 @@ void GPSimPL::UpdateAnchorLocation() {
   y_anchor_set = true;
 }
 
-void GPSimPL::UpdateAnchorNetWeight() {
+void GlobalPlacer::UpdateAnchorNetWeight() {
   std::vector<Block> &block_list = p_ckt_->Blocks();
   int sz = static_cast<int>(block_list.size());
 
@@ -2862,7 +2897,7 @@ void GPSimPL::UpdateAnchorNetWeight() {
   }
 }
 
-void GPSimPL::BuildProblemWithAnchorX() {
+void GlobalPlacer::BuildProblemWithAnchorX() {
   UpdateMaxMinX();
   if (net_model == 0) {
     BuildProblemB2BX();
@@ -2897,7 +2932,7 @@ void GPSimPL::BuildProblemWithAnchorX() {
   tot_triplets_time_x += wall_time;
 }
 
-void GPSimPL::BuildProblemWithAnchorY() {
+void GlobalPlacer::BuildProblemWithAnchorY() {
   UpdateMaxMinY();
   if (net_model == 0) {
     BuildProblemB2BY(); // fill A and b
@@ -2932,7 +2967,7 @@ void GPSimPL::BuildProblemWithAnchorY() {
   tot_triplets_time_y += wall_time;
 }
 
-double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criterion) {
+double GlobalPlacer::QuadraticPlacementWithAnchor(double net_model_update_stop_criterion) {
   //omp_set_nested(1);
   omp_set_dynamic(0);
   int avail_threads_num = omp_get_max_threads();
@@ -2988,7 +3023,7 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
         << "  Optimization summary X, iterations x: " << b2b_update_it_x
         << ", " << eval_history_x << "\n";
       DaliExpects(!eval_history_x.empty(),
-                  "Cannot return a valid value because the result is not evaluated in GPSimPL::QuadraticPlacement()!");
+                  "Cannot return a valid value because the result is not evaluated!");
       lower_bound_hpwlx_.push_back(eval_history_x.back());
     }
     if (omp_get_thread_num() == 1 || omp_get_num_threads() == 1) {
@@ -3029,7 +3064,7 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
         << "  Optimization summary Y, iterations y: " << b2b_update_it_y
         << ", " << eval_history_y << "\n";
       DaliExpects(!eval_history_y.empty(),
-                  "Cannot return a valid value because the result is not evaluated in GPSimPL::QuadraticPlacement()!");
+                  "Cannot return a valid value because the result is not evaluated!");
       lower_bound_hpwly_.push_back(eval_history_y.back());
     }
   }
@@ -3050,7 +3085,7 @@ double GPSimPL::QuadraticPlacementWithAnchor(double net_model_update_stop_criter
   return lower_bound_hpwlx_.back() + lower_bound_hpwly_.back();
 }
 
-double GPSimPL::LookAheadLegalization() {
+double GlobalPlacer::LookAheadLegalization() {
   double cpu_time = get_cpu_time();
 
   BackUpBlockLocation();
@@ -3106,7 +3141,7 @@ double GPSimPL::LookAheadLegalization() {
 * 2. Calculate the total margin in x direction and y direction
 * 3. Evenly assign the margin to each side
 * ****/
-void GPSimPL::CheckAndShift() {
+void GlobalPlacer::CheckAndShift() {
   if (p_ckt_->TotFixedBlkCnt() > 0) return;
   double left_most = INT_MAX;
   double right_most = INT_MIN;
@@ -3140,7 +3175,7 @@ void GPSimPL::CheckAndShift() {
 * Stopping criteria (POLAR, option 2):
 *    the gap between lower bound wirelength and upper bound wirelength is less than 8%
 * ****/
-bool GPSimPL::IsPlacementConverge() {
+bool GlobalPlacer::IsPlacementConverge() {
   bool res = false;
   if (convergence_criteria_ == 1) {
     // (a) and (b) requires at least 10 iterations
@@ -3179,7 +3214,7 @@ bool GPSimPL::IsPlacementConverge() {
   return res;
 }
 
-bool GPSimPL::StartPlacement() {
+bool GlobalPlacer::StartPlacement() {
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
 
@@ -3295,7 +3330,7 @@ bool GPSimPL::StartPlacement() {
   return true;
 }
 
-void GPSimPL::DumpResult(std::string const &name_of_file) {
+void GlobalPlacer::DumpResult(std::string const &name_of_file) {
   //UpdateGridBinState();
   static int counter = 0;
   //BOOST_LOG_TRIVIAL(info)   << "DumpNum:" << counter << "\n";
@@ -3312,7 +3347,7 @@ void GPSimPL::DumpResult(std::string const &name_of_file) {
 *    if 1: dump displacement for distribution analysis, unit in average cell height
 *    if 2: dump both
 * ****/
-void GPSimPL::DumpLookAheadDisplacement(
+void GlobalPlacer::DumpLookAheadDisplacement(
     std::string const &base_name,
     int mode
 ) {
@@ -3323,7 +3358,7 @@ void GPSimPL::DumpLookAheadDisplacement(
     DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
     DaliExpects(p_ckt_ != nullptr,
-                "Set input circuit before starting anything GPSimPL::DumpLookAheadDisplacement()");
+                "Set input circuit before starting anything");
     std::vector<Block> &block_list = p_ckt_->Blocks();
     int sz = p_ckt_->design().RealBlkCnt();
     for (int i = 0; i < sz; ++i) {
@@ -3344,7 +3379,7 @@ void GPSimPL::DumpLookAheadDisplacement(
     DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
     DaliExpects(p_ckt_ != nullptr,
-                "Set input circuit before starting anything GPSimPL::DumpLookAheadDisplacement()");
+                "Set input circuit before starting anything");
     double ave_height = p_ckt_->AveMovBlkHeight();
     std::vector<Block> &block_list = p_ckt_->Blocks();
     int sz = p_ckt_->design().RealBlkCnt();
@@ -3360,7 +3395,7 @@ void GPSimPL::DumpLookAheadDisplacement(
   }
 }
 
-void GPSimPL::DrawBlockNetList(std::string const &name_of_file) {
+void GlobalPlacer::DrawBlockNetList(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open input file " + name_of_file);
   ost << RegionLeft() << " " << RegionBottom() << " "
@@ -3374,7 +3409,7 @@ void GPSimPL::DrawBlockNetList(std::string const &name_of_file) {
   ost.close();
 }
 
-void GPSimPL::write_all_terminal_grid_bins(std::string const &name_of_file) {
+void GlobalPlacer::write_all_terminal_grid_bins(std::string const &name_of_file) {
   /* this is a member function for testing, print grid bins where the flag "all_terminal" is true */
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
@@ -3402,7 +3437,7 @@ void GPSimPL::write_all_terminal_grid_bins(std::string const &name_of_file) {
   ost.close();
 }
 
-void GPSimPL::write_not_all_terminal_grid_bins(std::string const &name_of_file) {
+void GlobalPlacer::write_not_all_terminal_grid_bins(std::string const &name_of_file) {
   /* this is a member function for testing, print grid bins where the flag "all_terminal" is false */
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
@@ -3430,7 +3465,7 @@ void GPSimPL::write_not_all_terminal_grid_bins(std::string const &name_of_file) 
   ost.close();
 }
 
-void GPSimPL::write_overfill_grid_bins(std::string const &name_of_file) {
+void GlobalPlacer::write_overfill_grid_bins(std::string const &name_of_file) {
   /* this is a member function for testing, print grid bins where the flag "over_fill" is true */
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
@@ -3458,7 +3493,7 @@ void GPSimPL::write_overfill_grid_bins(std::string const &name_of_file) {
   ost.close();
 }
 
-void GPSimPL::write_not_overfill_grid_bins(std::string const &name_of_file) {
+void GlobalPlacer::write_not_overfill_grid_bins(std::string const &name_of_file) {
   /* this is a member function for testing, print grid bins where the flag "over_fill" is false */
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
@@ -3486,8 +3521,8 @@ void GPSimPL::write_not_overfill_grid_bins(std::string const &name_of_file) {
   ost.close();
 }
 
-void GPSimPL::write_first_n_bin_cluster(std::string const &name_of_file,
-                                        size_t n) {
+void GlobalPlacer::write_first_n_bin_cluster(std::string const &name_of_file,
+                                             size_t n) {
   /* this is a member function for testing, print the first n over_filled clusters */
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
@@ -3516,17 +3551,17 @@ void GPSimPL::write_first_n_bin_cluster(std::string const &name_of_file,
   ost.close();
 }
 
-void GPSimPL::write_first_bin_cluster(std::string const &name_of_file) {
+void GlobalPlacer::write_first_bin_cluster(std::string const &name_of_file) {
   /* this is a member function for testing, print the first one over_filled clusters */
   write_first_n_bin_cluster(name_of_file, 1);
 }
 
-void GPSimPL::write_all_bin_cluster(const std::string &name_of_file) {
+void GlobalPlacer::write_all_bin_cluster(const std::string &name_of_file) {
   /* this is a member function for testing, print all over_filled clusters */
   write_first_n_bin_cluster(name_of_file, cluster_set.size());
 }
 
-void GPSimPL::write_first_box(std::string const &name_of_file) {
+void GlobalPlacer::write_first_box(std::string const &name_of_file) {
   /* this is a member function for testing, print the first n over_filled clusters */
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
@@ -3548,7 +3583,7 @@ void GPSimPL::write_first_box(std::string const &name_of_file) {
   ost.close();
 }
 
-void GPSimPL::write_first_box_cell_bounding(std::string const &name_of_file) {
+void GlobalPlacer::write_first_box_cell_bounding(std::string const &name_of_file) {
   /* this is a member function for testing, print the bounding box of cells in which all cells should be placed into corresponding boxes */
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
@@ -3570,9 +3605,9 @@ void GPSimPL::write_first_box_cell_bounding(std::string const &name_of_file) {
   ost.close();
 }
 
-bool GPSimPL::IsSeriesConverge(std::vector<double> &data,
-                               int window_size,
-                               double tolerance) {
+bool GlobalPlacer::IsSeriesConverge(std::vector<double> &data,
+                                    int window_size,
+                                    double tolerance) {
   int sz = (int) data.size();
   if (sz < window_size) {
     return false;
@@ -3592,7 +3627,7 @@ bool GPSimPL::IsSeriesConverge(std::vector<double> &data,
   return ratio < tolerance;
 }
 
-bool GPSimPL::IsSeriesOscillate(std::vector<double> &data, int length) {
+bool GlobalPlacer::IsSeriesOscillate(std::vector<double> &data, int length) {
   /****
  * Returns if the given series of data is oscillating or not.
  * We will only look at the last several data points @param length.

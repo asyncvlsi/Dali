@@ -26,11 +26,12 @@
 #include <cstdlib>
 
 #include <iostream>
-#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
+
+#include "logging.h"
 
 namespace dali {
 
@@ -96,7 +97,9 @@ struct Rect {
  public:
   Rect() : llx_(0), lly_(0), urx_(0), ury_(0) {}
   Rect(T llx, T lly, T urx, T ury)
-      : llx_(llx), lly_(lly), urx_(urx), ury_(ury) {}
+      : llx_(llx), lly_(lly), urx_(urx), ury_(ury) {
+    DaliExpects(llx_ <= urx_ && lly_ <= ury_, "Invalid Rect?");
+  }
   bool operator==(Rect<T> const &rhs) const {
     return (llx_ == rhs.llx_)
         && (lly_ == rhs.llx_)
@@ -137,6 +140,7 @@ struct Rect {
     lly_ = lly;
     urx_ = urx;
     ury_ = ury;
+    DaliExpects(llx_ <= urx_ && lly_ <= ury_, "Invalid Rect?");
   }
   bool IsOverlap(Rect<T> const &rhs) const {
     return !(LLX() > rhs.URX() ||
@@ -152,21 +156,12 @@ struct Rect {
     ury = std::min(URY(), rhs.URY());
     return Rect<T>(llx, lly, urx, ury);
   }
-  bool IsCover(Rect<T> const &rhs) const {
-    return (LLX() <= rhs.LLX() &&
-        URX() >= rhs.URX() &&
-        LLY() <= rhs.LLY() &&
-        URY() >= rhs.URY());
-  }
 };
 
 typedef Rect<double> RectD;
 typedef Rect<int> RectI;
 
-unsigned long long GetCoverArea(
-    std::set<RectI> &rects,
-    int recursive_counter = 0
-);
+unsigned long long GetCoverArea(std::vector<RectI> &rects);
 
 template<class T>
 struct IndexLocPair {

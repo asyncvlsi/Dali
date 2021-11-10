@@ -25,7 +25,7 @@
 
 namespace dali {
 
-WellPlaceFlow::WellPlaceFlow() : GPSimPL() {}
+WellPlaceFlow::WellPlaceFlow() : GlobalPlacer() {}
 
 bool WellPlaceFlow::StartPlacement() {
   double wall_time = get_wall_time();

@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
   circuit.ReportBriefSummary();
   circuit.ReportHPWL();
 
-  GPSimPL gb_placer;
+  GlobalPlacer gb_placer;
   //gb_placer_.net_model_update_stop_criterion_ = tune_param;
   BOOST_LOG_TRIVIAL(info) << "tune_param: " << tune_param << "\n";
   gb_placer.SetInputCircuit(&circuit);

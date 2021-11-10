@@ -19,8 +19,8 @@
  *
  ******************************************************************************/
 
-#ifndef DALI_DALI_PLACER_GLOBALPLACER_GPSIMPL_GRIDBININDEX_H_
-#define DALI_DALI_PLACER_GLOBALPLACER_GPSIMPL_GRIDBININDEX_H_
+#ifndef DALI_DALI_PLACER_GLOBALPLACER_GRIDBININDEX_H_
+#define DALI_DALI_PLACER_GLOBALPLACER_GRIDBININDEX_H_
 
 #include <iostream>
 #include <set>
@@ -93,4 +93,4 @@ struct GridBinCluster {
 
 }
 
-#endif //DALI_DALI_PLACER_GLOBALPLACER_GPSIMPL_GRIDBININDEX_H_
+#endif //DALI_DALI_PLACER_GLOBALPLACER_GRIDBININDEX_H_

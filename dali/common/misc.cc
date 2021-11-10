@@ -20,39 +20,119 @@
  ******************************************************************************/
 #include "misc.h"
 
-#include "logging.h"
+#include <unordered_set>
 
 namespace dali {
 
-unsigned long long GetCoverArea(
-    std::set<RectI> &rects, int recursive_counter
-) {
-  DaliExpects(recursive_counter < 1000, "Something is wrong?");
-  if (rects.empty()) {
-    std::cout << recursive_counter << " " << 0 << "\n";
-    return 0;
+class SegmentTree {
+ public:
+  int start, end;
+  std::vector<int> X;
+  SegmentTree *left;
+  SegmentTree *right;
+  int count;
+  long long total;
+
+  SegmentTree(int start0, int end0, std::vector<int> &X0) :
+      start(start0),
+      end(end0),
+      X(X0) {
+    left = nullptr;
+    right = nullptr;
+    count = 0;
+    total = 0;
   }
-  if (rects.size() == 1) {
-    unsigned long long area = (unsigned long long) rects.begin()->Width() *
-        (unsigned long long) rects.begin()->Height();
-    std::cout << recursive_counter << " " << area << "\n";
-    return area;
+
+  int GetRangeMid() const {
+    return start + (end - start) / 2;
   }
-  std::set<RectI> overlap_rects;
-  unsigned long long sum_area = 0;
-  for (auto it0 = rects.begin(); it0 != rects.end(); ++it0) {
-    unsigned long long area = (unsigned long long) it0->Width() *
-        (unsigned long long) it0->Height();
-    sum_area += area;
-    for (auto it1 = std::next(it0, 1); it1 != rects.end(); ++it1) {
-      if (it0->IsOverlap(*it1)) {
-        RectI overlap_rect = it0->GetOverlapRect(*it1);
-        overlap_rects.insert(overlap_rect);
-      }
+
+  SegmentTree *GetLeft() {
+    if (left == nullptr) {
+      left = new SegmentTree(start, GetRangeMid(), X);
     }
+    return left;
   }
-  std::cout << recursive_counter << " " << sum_area << "\n";
-  return sum_area - GetCoverArea(overlap_rects, recursive_counter + 1);
+
+  SegmentTree *GetRight() {
+    if (right == nullptr) {
+      right = new SegmentTree(GetRangeMid(), end, X);
+    }
+    return right;
+  }
+
+  long long Update(int i, int j, int val) {
+    if (i >= j) return 0;
+    if (start == i && end == j) {
+      count += val;
+    } else {
+      GetLeft()->Update(i, std::min(GetRangeMid(), j), val);
+      GetRight()->Update(std::max(GetRangeMid(), i), j, val);
+    }
+
+    if (count > 0) total = X[end] - X[start];
+    else total = GetLeft()->total + GetRight()->total;
+
+    return total;
+  }
+};
+
+unsigned long long GetCoverArea(std::vector<RectI> &rects) {
+  // no rectangles, return 0 immediately
+  if (rects.empty()) return 0;
+
+  int event_open = 1, event_close = -1;
+  // event is a tuple containing {y_loc, open/close event, lower_x, upper_x}
+  std::vector<std::vector<int>> events;
+  // each rectangle can create at most 2 events if area is positive, otherwise 0 event
+  events.reserve(rects.size() * 2);
+  std::unordered_set<int> x_values_set;
+
+  // create an event only when a rectangle has an area larger than 0
+  for (auto &rec: rects) {
+    if ((rec.LLX() == rec.URX()) || (rec.LLY() == rec.URY())) continue;
+    events.push_back({rec.LLY(), event_open, rec.LLX(), rec.URX()});
+    events.push_back({rec.URY(), event_close, rec.LLX(), rec.URX()});
+    x_values_set.insert(rec.LLX());
+    x_values_set.insert(rec.URX());
+  }
+
+  // sort all events based on y location of an event
+  std::sort(
+      events.begin(),
+      events.end(),
+      [](std::vector<int> const &event0, std::vector<int> const &event1) {
+        return event0[0] < event1[0];
+      }
+  );
+
+  // build a map to find index from x value
+  std::vector<int> x_values;
+  int sz = static_cast<int>(x_values_set.size());
+  x_values.reserve(sz);
+  for (auto &val: x_values_set) {
+    x_values.push_back(val);
+  }
+  std::sort(x_values.begin(), x_values.end());
+  std::unordered_map<int, int> x_value_id_map;
+  for (int i = 0; i < sz; ++i) {
+    x_value_id_map.insert(
+        std::unordered_map<int, int>::value_type(x_values[i], i)
+    );
+  }
+
+  SegmentTree active(0, sz - 1, x_values);
+  long long ans = 0;
+  long long cur_x_sum = 0;
+  int cur_y = events[0][0];
+  for (auto &event: events) {
+    int y = event[0], type = event[1], x1 = event[2], x2 = event[3];
+    ans += cur_x_sum * (y - cur_y);
+    cur_x_sum = active.Update(x_value_id_map[x1], x_value_id_map[x2], type);
+    cur_y = y;
+  }
+
+  return ans;
 }
 
 }

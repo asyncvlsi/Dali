@@ -253,8 +253,6 @@ void BoxBin::UpdateObsBoundary(std::vector<Block> &block_list) {
   horizontal_cutlines.clear();
   for (auto &terminal_id: terminal_list) {
     Block &node = block_list[terminal_id];
-    std::cout << node.Name() << "\n";
-    printf("(%f, %f), (%f, %f)\n", node.LLX(), node.LLY(), node.URX(), node.URY());
     if ((left < node.LLX()) && (right > node.LLX())) {
       vertical_cutlines.push_back((int) node.LLX());
     }

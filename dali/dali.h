@@ -80,7 +80,7 @@ class Dali {
  private:
   Circuit circuit_;
   phydb::PhyDB *phy_db_ptr_ = nullptr;
-  GPSimPL gb_placer_;
+  GlobalPlacer gb_placer_;
   LGTetrisEx legalizer_;
   StdClusterWellLegalizer well_legalizer_;
   WellTapPlacer *well_tap_placer_ = nullptr;

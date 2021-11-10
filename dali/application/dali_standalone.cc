@@ -222,7 +222,7 @@ int main(int argc, char *argv[]) {
   }
 
   /**** placement ****/
-  Placer *gb_placer = new GPSimPL;
+  Placer *gb_placer = new GlobalPlacer;
   gb_placer->SetInputCircuit(&circuit);
   gb_placer->SetBoundaryDef();
   gb_placer->SetPlacementDensity(target_density);

@@ -18,9 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-
-#ifndef DALI_DALI_PLACER_GLOBALPLACER_GPSIMPL_H_
-#define DALI_DALI_PLACER_GLOBALPLACER_GPSIMPL_H_
+#ifndef DALI_DALI_PLACER_GLOBALPLACER_GLOBALPLACER_H_
+#define DALI_DALI_PLACER_GLOBALPLACER_GLOBALPLACER_H_
 
 #include <cfloat>
 
@@ -35,10 +34,10 @@
 
 #include "dali/common/misc.h"
 #include "dali/placer/placer.h"
-#include "GPSimPL/boxbin.h"
-#include "GPSimPL/cellcutpoint.h"
-#include "GPSimPL/gridbinindex.h"
-#include "GPSimPL/gridbin.h"
+#include "boxbin.h"
+#include "cellcutpoint.h"
+#include "gridbinindex.h"
+#include "gridbin.h"
 
 namespace dali {
 
@@ -51,7 +50,7 @@ typedef Eigen::Triplet<double> T;
 // A "doublet" is a simple object representing a non-zero entry as: column index, value, for a given row index.
 typedef IndexVal D;
 
-class GPSimPL : public Placer {
+class GlobalPlacer : public Placer {
  protected:
   /**** storing the lower and upper bound of hpwl along x and y direction ****/
   double init_hpwl_x_ = DBL_MAX;
@@ -106,8 +105,8 @@ class GPSimPL : public Placer {
   // lal parameters
   int cluster_upper_size = 3;
  public:
-  GPSimPL();
-  GPSimPL(double aspectRatio, double fillingRate);
+  GlobalPlacer();
+  GlobalPlacer(double aspectRatio, double fillingRate);
 
   void LoadConf(std::string const &config_file) override;
 
@@ -194,6 +193,7 @@ class GPSimPL : public Placer {
   double FindMinimumBoxForLargestCluster_time = 0;
   double RecursiveBisectionBlkSpreading_time = 0;
 
+  void UpdateWhiteSpaceInGridBin(GridBin &grid_bin);
   void InitGridBins();
   void InitWhiteSpaceLUT();
   unsigned long int LookUpWhiteSpace(
@@ -293,4 +293,4 @@ class GPSimPL : public Placer {
 
 }
 
-#endif //DALI_DALI_PLACER_GLOBALPLACER_GPSIMPL_H_
+#endif //DALI_DALI_PLACER_GLOBALPLACER_GLOBALPLACER_H_

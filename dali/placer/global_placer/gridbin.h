@@ -19,8 +19,8 @@
  *
  ******************************************************************************/
 
-#ifndef DALI_DALI_PLACER_GLOBALPLACER_GPSIMPL_GRIDBIN_H_
-#define DALI_DALI_PLACER_GLOBALPLACER_GPSIMPL_GRIDBIN_H_
+#ifndef DALI_DALI_PLACER_GLOBALPLACER_GRIDBIN_H_
+#define DALI_DALI_PLACER_GLOBALPLACER_GRIDBIN_H_
 
 #include <vector>
 
@@ -40,8 +40,8 @@ class GridBin {
   unsigned long long cell_area;
   double filling_rate;
   bool all_terminal;
-  bool
-      over_fill; // a grid bin is over-filled, if filling rate is larger than the target, or cells locate on terminals
+  // a grid bin is over-filled, if filling rate is larger than the target, or cells locate on terminals
+  bool over_fill;
   bool cluster_visited;
   bool global_placed;
   std::vector<int> cell_list;
@@ -66,4 +66,4 @@ class GridBin {
 
 }
 
-#endif //DALI_DALI_PLACER_GLOBALPLACER_GPSIMPL_GRIDBIN_H_
+#endif //DALI_DALI_PLACER_GLOBALPLACER_GRIDBIN_H_

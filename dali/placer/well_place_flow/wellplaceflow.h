@@ -21,13 +21,13 @@
 #ifndef DALI_DALI_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_
 #define DALI_DALI_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_
 
-#include "dali/placer/global_placer/GPSimPL.h"
+#include "dali/placer/global_placer/globalplacer.h"
 #include "dali/placer/legalizer/LGTetrisEx.h"
 #include "dali/placer/well_legalizer/stdclusterwelllegalizer.h"
 
 namespace dali {
 
-class WellPlaceFlow : public GPSimPL {
+class WellPlaceFlow : public GlobalPlacer {
   StdClusterWellLegalizer well_legalizer_;
  public:
   WellPlaceFlow();

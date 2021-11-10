@@ -74,7 +74,7 @@ struct CircuitConstants {
  * ****/
 class Circuit {
   friend class Placer;
-  friend class GPSimPL;
+  friend class GlobalPlacer;
  public:
   Circuit();
 
