@@ -18,7 +18,6 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-
 #include "circuit.h"
 
 #include <chrono>
@@ -48,6 +47,7 @@ void Circuit::InitializeFromPhyDB(phydb::PhyDB *phy_db_ptr) {
   LoadTech(phy_db_ptr);
   LoadDesign(phy_db_ptr);
   LoadCell(phy_db_ptr);
+  UpdateTotalBlkArea();
 }
 
 int Circuit::Micron2DatabaseUnit(double x) const {
@@ -75,9 +75,9 @@ int Circuit::DistanceScaleFactorY() const {
 
 int Circuit::LocDali2PhydbX(double loc) const {
   if (AbsResidual(loc, 1.0) > constants_.epsilon) {
-    DaliExpects(false,
-                "Only Dali integer location can be converted to a PhyDB location: "
-                    + std::to_string(loc));
+    BOOST_LOG_TRIVIAL(trace)
+      << "Converting a non-integer Dali location to a PhyDB location: "
+      << loc << "\n";
   }
   return static_cast<int>(std::round(loc * DistanceScaleFactorX()))
       + DieAreaOffsetX();
@@ -85,9 +85,9 @@ int Circuit::LocDali2PhydbX(double loc) const {
 
 int Circuit::LocDali2PhydbY(double loc) const {
   if (AbsResidual(loc, 1.0) > constants_.epsilon) {
-    DaliExpects(false,
-                "Only Dali integer location can be converted to a PhyDB location: "
-                    + std::to_string(loc));
+    BOOST_LOG_TRIVIAL(trace)
+      << "Converting a non-integer Dali location to a PhyDB location: "
+      << loc << "\n";
   }
   return static_cast<int>(std::round(loc * DistanceScaleFactorY()))
       + DieAreaOffsetY();
@@ -508,6 +508,43 @@ void Circuit::AddBlock(
   );
 }
 
+void Circuit::UpdateTotalBlkArea() {
+  design_.tot_white_space_ =
+      (unsigned long long) (design_.region_right_ - design_.region_left_) *
+          (unsigned long long) (design_.region_top_ - design_.region_bottom_);
+  RectI bin_rect(
+      design_.region_left_, design_.region_bottom_,
+      design_.region_right_, design_.region_top_
+  );
+  std::vector<Block> &blocks = Blocks();
+
+  std::vector<RectI> rects;
+  for (auto &blk: blocks) {
+    if (blk.IsMovable()) continue;
+    RectI fixed_blk_rect(
+        static_cast<int>(std::round(blk.LLX())),
+        static_cast<int>(std::round(blk.LLY())),
+        static_cast<int>(std::round(blk.URX())),
+        static_cast<int>(std::round(blk.URY()))
+    );
+    if (bin_rect.IsOverlap(fixed_blk_rect)) {
+      rects.push_back(bin_rect.GetOverlapRect(fixed_blk_rect));
+    }
+  }
+
+  design_.tot_fixed_blk_cover_area_ = GetCoverArea(rects);
+  if (design_.tot_white_space_ < design_.tot_fixed_blk_cover_area_) {
+    DaliExpects(false,
+                "Fixed blocks takes more space than available space? "
+                    + std::to_string(design_.tot_blk_area_) + " "
+                    + std::to_string(design_.tot_fixed_blk_cover_area_)
+    );
+  }
+  design_.tot_white_space_ -= design_.tot_fixed_blk_cover_area_;
+  design_.tot_blk_area_ = design_.tot_fixed_blk_cover_area_
+      + design_.tot_mov_blk_area_;
+}
+
 void Circuit::ReportBlockList() {
   BOOST_LOG_TRIVIAL(info) << "Total Block: " << design_.blocks_.size()
                           << "\n";
@@ -570,8 +607,8 @@ void Circuit::AddIoPinFromPhyDB(phydb::IOPin &iopin) {
   auto location = iopin.GetLocation();
   int iopin_x = LocPhydb2DaliX(location.x);
   int iopin_y = LocPhydb2DaliY(location.y);
-  bool
-      is_loc_set = (iopin.GetPlacementStatus() != phydb::PlaceStatus::UNPLACED);
+  bool is_loc_set =
+      (iopin.GetPlacementStatus() != phydb::PlaceStatus::UNPLACED);
   auto sig_use = SignalUse(iopin.GetUse());
   auto sig_dir = SignalDirection(iopin.GetDirection());
 
@@ -729,9 +766,11 @@ void Circuit::ReportBriefSummary() const {
     << "  iopins:         " << design_.iopins_.size() << "\n"
     << "  nets:           " << design_.nets_.size() << "\n"
     << "  grid size x/y:  " << GridValueX() << ", " << GridValueY() << " um\n"
+    << "  total movable blk area: " << design_.tot_mov_blk_area_ << "\n"
+    << "  total white space: " << design_.tot_white_space_ << "\n"
     << "  total block area: " << design_.tot_blk_area_ << "\n"
-    << "  total white space: "
-    << (long int) RegionWidth() * (long int) RegionHeight() << "\n"
+    << "  total space: "
+    << (long long) RegionWidth() * (long long) RegionHeight() << "\n"
     << "    left:   " << RegionLLX() << "\n"
     << "    right:  " << RegionURX() << "\n"
     << "    bottom: " << RegionLLY() << "\n"
@@ -845,7 +884,7 @@ int Circuit::MaxBlkHeight() const {
   return design_.blk_max_height_;
 }
 
-long int Circuit::TotBlkArea() const {
+long long Circuit::TotBlkArea() const {
   return design_.tot_blk_area_;
 }
 
@@ -882,12 +921,11 @@ double Circuit::AveMovBlkHeight() const {
 }
 
 double Circuit::AveMovBlkArea() const {
-  return double(design_.tot_mov_block_area_) / TotMovBlkCnt();
+  return double(design_.tot_mov_blk_area_) / TotMovBlkCnt();
 }
 
 double Circuit::WhiteSpaceUsage() const {
-  return double(TotBlkArea()) / double(RegionURX() - RegionLLX())
-      / double(RegionURY() - RegionLLY());
+  return double(design_.tot_mov_blk_area_) / double(design_.tot_white_space_);
 }
 
 void Circuit::BuildBlkPairNets() {
@@ -1732,6 +1770,57 @@ void Circuit::SaveDefFile(
   BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
+void Circuit::SaveDefFileComponent(
+    std::string const &name_of_file,
+    std::string const &def_file_name
+) {
+  std::string file_name = name_of_file;
+  BOOST_LOG_TRIVIAL(info) << "Writing DEF file: " << file_name;
+  std::ofstream ost(file_name.c_str());
+  DaliExpects(ost.is_open(), "Cannot open file " + file_name);
+  std::ifstream ist(def_file_name.c_str());
+  DaliExpects(ist.is_open(), "Cannot open file " + def_file_name);
+
+  // title of this DEF file
+  using std::chrono::system_clock;
+  system_clock::time_point today = system_clock::now();
+  std::time_t tt = system_clock::to_time_t(today);
+  ost << "##################################################\n";
+  ost << "#  created by: Dali, build time: " << __DATE__ << " " << __TIME__
+      << "\n";
+  ost << "#  time: " << ctime(&tt);
+  ost << "##################################################\n";
+
+  std::string line;
+  // copy everything before COMPONENTS
+  while (true) {
+    getline(ist, line);
+    if (line.find("COMPONENTS") != std::string::npos || ist.eof()) {
+      break;
+    }
+    ost << line << "\n";
+  }
+  // COMPONENT
+  ExportCells(ost, "", 1);
+
+  // copy everything after END COMPONENTS
+  while (true) {
+    getline(ist, line);
+    if (line.find("END COMPONENTS") != std::string::npos || ist.eof()) {
+      break;
+    }
+  }
+  while (true) {
+    getline(ist, line);
+    if (ist.eof()) {
+      break;
+    }
+    ost << line << "\n";
+  }
+
+  BOOST_LOG_TRIVIAL(info) << ", done\n";
+}
+
 void Circuit::SaveBookshelfNode(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file " + name_of_file);
@@ -1786,13 +1875,8 @@ void Circuit::SaveBookshelfPl(std::string const &name_of_file) {
   ost << "# this line is here just for ntuplace to recognize this file \n\n";
   for (auto &block: design_.blocks_) {
     ost << block.Name()
-        << "\t"
-        << int(
-            block.LLX() * design_.distance_microns_
-                * GridValueX())
-        << "\t"
-        << int(block.LLY() * design_.distance_microns_
-                   * GridValueY());
+        << "\t" << int(block.LLX() * design_.distance_microns_ * GridValueX())
+        << "\t" << int(block.LLY() * design_.distance_microns_ * GridValueY());
     if (block.IsMovable()) {
       ost << "\t:\tN\n";
     } else {
@@ -2000,17 +2084,13 @@ void Circuit::AddBlock(
   if (!is_real_cel) return;
   // update statistics of blocks
   ++design_.real_block_count_;
-  long int old_tot_area = design_.tot_blk_area_;
-  design_.tot_blk_area_ += design_.blocks_.back().Area();
-  DaliExpects(old_tot_area <= design_.tot_blk_area_,
-              "Total Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
   design_.tot_width_ += design_.blocks_.back().Width();
   design_.tot_height_ += design_.blocks_.back().Height();
   if (design_.blocks_.back().IsMovable()) {
     ++design_.tot_mov_blk_num_;
-    old_tot_area = design_.tot_mov_block_area_;
-    design_.tot_mov_block_area_ += design_.blocks_.back().Area();
-    DaliExpects(old_tot_area <= design_.tot_mov_block_area_,
+    long long old_tot_mov_area = design_.tot_mov_blk_area_;
+    design_.tot_mov_blk_area_ += design_.blocks_.back().Area();
+    DaliExpects(old_tot_mov_area <= design_.tot_mov_blk_area_,
                 "Total Movable Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
     design_.tot_mov_width_ += design_.blocks_.back().Width();
     design_.tot_mov_height_ += design_.blocks_.back().Height();
@@ -2061,6 +2141,13 @@ IoPin *Circuit::AddUnplacedIoPin(std::string const &iopin_name) {
   return &(design_.iopins_.back());
 }
 
+/****
+ * @brief PLACED I/O pins are treated as fixed blocks with no area
+ * @param iopin_name: name of this I/O pin
+ * @param lx: x location of this pin
+ * @param ly: y location of this pin
+ * @return a pointer to the newly added I/O pin
+ */
 IoPin *Circuit::AddPlacedIOPin(
     std::string const &iopin_name,
     double lx,
@@ -2080,7 +2167,7 @@ IoPin *Circuit::AddPlacedIOPin(
 
   // add a dummy cell corresponding to this IOPIN to block_list.
   AddBlock(
-      iopin_name, tech_.io_dummy_blk_type_ptr_, lx, ly, PLACED, N, false
+      iopin_name, tech_.io_dummy_blk_type_ptr_, lx, ly, FIXED, N, false
   );
 
   return &(design_.iopins_.back());

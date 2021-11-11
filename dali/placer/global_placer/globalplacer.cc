@@ -1311,7 +1311,7 @@ double GlobalPlacer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
   tot_matrix_from_triplets_x += wall_time;
 
   int sz = vx.size();
-  std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Block> &block_list = Blocks();
 
   wall_time = get_wall_time();
   std::vector<double> eval_history;
@@ -1578,16 +1578,131 @@ double GlobalPlacer::QuadraticPlacement(double net_model_update_stop_criterion) 
   return lower_bound_hpwlx_.back() + lower_bound_hpwly_.back();
 }
 
+/****
+ * @brief determine the grid bin height and width
+ * grid_bin_height and grid_bin_width is determined by the following formula:
+ *    grid_bin_height = sqrt(number_of_cell_in_bin_ * average_area / placement_density)
+ * the number of bins in the y-direction is given by:
+ *    grid_cnt_y = (Top() - Bottom())/grid_bin_height
+ *    grid_cnt_x = (Right() - Left())/grid_bin_width
+ * And initialize the space of grid_bin_mesh
+ */
+void GlobalPlacer::InitializeGridBinSize() {
+  double grid_bin_area =
+      number_of_cell_in_bin_ * GetCkt().AveMovBlkArea() / PlacementDensity();
+  grid_bin_height = static_cast<int>(std::round(std::sqrt(grid_bin_area)));
+  grid_bin_width = grid_bin_height;
+  grid_cnt_x = std::ceil(double(RegionWidth()) / grid_bin_width);
+  grid_cnt_y = std::ceil(double(RegionHeight()) / grid_bin_height);
+  BOOST_LOG_TRIVIAL(info)
+    << "Global placement bin width, height: "
+    << grid_bin_width << "  " << grid_bin_height << "\n";
+
+  std::vector<GridBin> temp_grid_bin_column(grid_cnt_y);
+  grid_bin_mesh.resize(grid_cnt_x, temp_grid_bin_column);
+}
+
+/****
+ * @brief set basic attributes for each grid bin.
+ * we need to initialize many attributes in every single grid bin, including index,
+ * boundaries, area, and potential available white space. The adjacent bin list
+ * is cached for the convenience of overfilled bin clustering.
+ */
+void GlobalPlacer::UpdateAttributesForAllGridBins() {
+  for (int i = 0; i < grid_cnt_x; i++) {
+    for (int j = 0; j < grid_cnt_y; j++) {
+      grid_bin_mesh[i][j].index = {i, j};
+      grid_bin_mesh[i][j].bottom = RegionBottom() + j * grid_bin_height;
+      grid_bin_mesh[i][j].top = RegionBottom() + (j + 1) * grid_bin_height;
+      grid_bin_mesh[i][j].left = RegionLeft() + i * grid_bin_width;
+      grid_bin_mesh[i][j].right = RegionLeft() + (i + 1) * grid_bin_width;
+      grid_bin_mesh[i][j].white_space = grid_bin_mesh[i][j].Area();
+      // at the very beginning, assuming the white space is the same as area
+      grid_bin_mesh[i][j].create_adjacent_bin_list(grid_cnt_x, grid_cnt_y);
+    }
+  }
+
+  // make sure the top placement boundary is the same as the top of the topmost bins
+  for (int i = 0; i < grid_cnt_x; ++i) {
+    grid_bin_mesh[i][grid_cnt_y - 1].top = RegionTop();
+    grid_bin_mesh[i][grid_cnt_y - 1].white_space =
+        grid_bin_mesh[i][grid_cnt_y - 1].Area();
+  }
+  // make sure the right placement boundary is the same as the right of the rightmost bins
+  for (int i = 0; i < grid_cnt_y; ++i) {
+    grid_bin_mesh[grid_cnt_x - 1][i].right = RegionRight();
+    grid_bin_mesh[grid_cnt_x - 1][i].white_space =
+        grid_bin_mesh[grid_cnt_x - 1][i].Area();
+  }
+}
+
+/****
+ * @brief find fixed blocks in each grid bin
+ * For each fixed block, we need to store its index in grid bins it overlaps with.
+ * This can help us to compute available white space in each grid bin.
+ */
+void GlobalPlacer::UpdateFixedBlocksInGridBins() {
+  auto &blocks = Blocks();
+  int sz = static_cast<int>(Blocks().size());
+  int min_urx, max_llx, min_ury, max_lly;
+  bool fixed_blk_out_of_region, blk_out_of_bin;
+  int left_index, right_index, bottom_index, top_index;
+  for (int i = 0; i < sz; i++) {
+    /* find the left, right, bottom, top index of the grid */
+    if (blocks[i].IsMovable()) continue;
+    fixed_blk_out_of_region = int(blocks[i].LLX()) >= RegionRight() ||
+        int(blocks[i].URX()) <= RegionLeft() ||
+        int(blocks[i].LLY()) >= RegionTop() ||
+        int(blocks[i].URY()) <= RegionBottom();
+    if (fixed_blk_out_of_region) continue;
+    left_index = (int) std::floor(
+        (blocks[i].LLX() - RegionLeft()) / grid_bin_width);
+    right_index = (int) std::floor(
+        (blocks[i].URX() - RegionLeft()) / grid_bin_width);
+    bottom_index = (int) std::floor(
+        (blocks[i].LLY() - RegionBottom()) / grid_bin_height);
+    top_index = (int) std::floor(
+        (blocks[i].URY() - RegionBottom()) / grid_bin_height);
+    /* the grid boundaries might be the placement region boundaries
+     * if a block touches the rightmost and topmost boundaries,
+     * the index need to be fixed to make sure no memory access out of scope */
+    if (left_index < 0) left_index = 0;
+    if (right_index >= grid_cnt_x) right_index = grid_cnt_x - 1;
+    if (bottom_index < 0) bottom_index = 0;
+    if (top_index >= grid_cnt_y) top_index = grid_cnt_y - 1;
+
+    /* for each terminal, we will check which grid is inside it, and directly
+     * set the all_terminal attribute to true for that grid some small
+     * terminals might occupy the same grid, we need to deduct the overlap
+     * area from the white space of that grid bin when the final white space
+     * is 0, we know this grid bin is occupied by several terminals*/
+    for (int j = left_index; j <= right_index; ++j) {
+      for (int k = bottom_index; k <= top_index; ++k) {
+        /* the following case might happen:
+         * the top/right of a fixed block overlap with the bottom/left of
+         * a grid box if this case happens, we need to ignore this fixed
+         * block for this grid box. */
+        blk_out_of_bin =
+            int(blocks[i].LLX() >= grid_bin_mesh[j][k].right) ||
+                int(blocks[i].URX() <= grid_bin_mesh[j][k].left) ||
+                int(blocks[i].LLY() >= grid_bin_mesh[j][k].top) ||
+                int(blocks[i].URY() <= grid_bin_mesh[j][k].bottom);
+        if (blk_out_of_bin) continue;
+        grid_bin_mesh[j][k].fixed_blks.push_back(&(blocks[i]));
+      }
+    }
+  }
+}
+
 void GlobalPlacer::UpdateWhiteSpaceInGridBin(GridBin &grid_bin) {
-  if (grid_bin.all_terminal) return;
   RectI bin_rect(
       grid_bin.LLX(), grid_bin.LLY(), grid_bin.URX(), grid_bin.URY()
   );
   std::vector<Block> &blocks = Blocks();
 
   std::vector<RectI> rects;
-  for (auto &fixed_blk_id: grid_bin.terminal_list) {
-    auto &fixed_blk = blocks[fixed_blk_id];
+  for (auto &fixed_blk_ptr: grid_bin.fixed_blks) {
+    auto &fixed_blk = *fixed_blk_ptr;
     RectI fixed_blk_rect(
         static_cast<int>(std::round(fixed_blk.LLX())),
         static_cast<int>(std::round(fixed_blk.LLY())),
@@ -1615,152 +1730,18 @@ void GlobalPlacer::UpdateWhiteSpaceInGridBin(GridBin &grid_bin) {
 }
 
 /****
-* This function initialize the grid bin matrix, each bin has an area which can accommodate around number_of_cell_in_bin_ # of cells
-* Part1
-* grid_bin_height and grid_bin_width is determined by the following formula:
-*    grid_bin_height = sqrt(number_of_cell_in_bin_ * average_area / filling_rate)
-* the number of bins in the y-direction is given by:
-*    grid_cnt_y = (Top() - Bottom())/grid_bin_height
-*    grid_cnt_x = (Right() - Left())/grid_bin_width
-* And initialize the space of grid_bin_matrix
-*
-* Part2
-* for each grid bin, we need to initialize the attributes,
-* including index, boundaries, area, and potential available white space
-* the adjacent bin list is cached for the convenience of overfilled bin clustering
-*
-* Part3
-* check whether the grid bin is occupied by fixed blocks, and we only do this once, and cache this result for future usage
-* Assumption: fixed blocks do not overlap with each other!!!!!!!
-* we will check whether this grid bin is covered by a fixed block,
-* if yes, we set the label of this grid bin "all_terminal" to be true, initially, this value is false
-* if not, we deduce the white space by the amount of fixed block and grid bin overlap region
-* because a grid bin might be covered by more than one fixed blocks
-* if the final white space is 0, we know the grid bin is also all covered by fixed blocks
-* and we set the flag "all_terminal" to true.
-* ****/
+ * This function initialize the grid bin matrix, each bin has an area which
+ * can accommodate around number_of_cell_in_bin_ # of cells
+ * ****/
 void GlobalPlacer::InitGridBins() {
-  // Part1
-  grid_bin_height = int(std::round(std::sqrt(
-      number_of_cell_in_bin_ * GetCircuitRef().AveMovBlkArea()
-          / PlacementDensity())));
-  grid_bin_width = grid_bin_height;
-  grid_cnt_y =
-      std::ceil(double(RegionTop() - RegionBottom()) / grid_bin_height);
-  grid_cnt_x = std::ceil(double(RegionRight() - RegionLeft()) / grid_bin_width);
-  BOOST_LOG_TRIVIAL(info) << "Global placement bin width, height: "
-                          << grid_bin_width << "  "
-                          << grid_bin_height << "\n";
+  InitializeGridBinSize();
+  UpdateAttributesForAllGridBins();
+  UpdateFixedBlocksInGridBins();
 
-  std::vector<GridBin> temp_grid_bin_column(grid_cnt_y);
-  grid_bin_matrix.resize(grid_cnt_x, temp_grid_bin_column);
-
-  // Part2
-  for (int i = 0; i < grid_cnt_x; i++) {
-    for (int j = 0; j < grid_cnt_y; j++) {
-      grid_bin_matrix[i][j].index = {i, j};
-      grid_bin_matrix[i][j].bottom = RegionBottom() + j * grid_bin_height;
-      grid_bin_matrix[i][j].top = RegionBottom() + (j + 1) * grid_bin_height;
-      grid_bin_matrix[i][j].left = RegionLeft() + i * grid_bin_width;
-      grid_bin_matrix[i][j].right = RegionLeft() + (i + 1) * grid_bin_width;
-      grid_bin_matrix[i][j].white_space = grid_bin_matrix[i][j].Area();
-      // at the very beginning, assuming the white space is the same as area
-      grid_bin_matrix[i][j].create_adjacent_bin_list(grid_cnt_x, grid_cnt_y);
-    }
-  }
-
-  // make sure the top placement boundary is the same as the top of the topmost bins
-  for (int i = 0; i < grid_cnt_x; ++i) {
-    grid_bin_matrix[i][grid_cnt_y - 1].top = RegionTop();
-    grid_bin_matrix[i][grid_cnt_y - 1].white_space =
-        grid_bin_matrix[i][grid_cnt_y - 1].Area();
-  }
-  // make sure the right placement boundary is the same as the right of the rightmost bins
-  for (int i = 0; i < grid_cnt_y; ++i) {
-    grid_bin_matrix[grid_cnt_x - 1][i].right = RegionRight();
-    grid_bin_matrix[grid_cnt_x - 1][i].white_space =
-        grid_bin_matrix[grid_cnt_x - 1][i].Area();
-  }
-
-  // Part3
-  auto &block_list = Blocks();
-  int sz = int(Blocks().size());
-  int min_urx, max_llx, min_ury, max_lly;
-  bool all_terminal, fixed_blk_out_of_region, blk_out_of_bin;
-  int left_index, right_index, bottom_index, top_index;
-  for (int i = 0; i < sz; i++) {
-    /* find the left, right, bottom, top index of the grid */
-    if (block_list[i].IsMovable()) continue;
-    fixed_blk_out_of_region = int(block_list[i].LLX()) >= RegionRight() ||
-        int(block_list[i].URX()) <= RegionLeft() ||
-        int(block_list[i].LLY()) >= RegionTop() ||
-        int(block_list[i].URY()) <= RegionBottom();
-    if (fixed_blk_out_of_region) continue;
-    left_index = (int) std::floor(
-        (block_list[i].LLX() - RegionLeft()) / grid_bin_width);
-    right_index = (int) std::floor(
-        (block_list[i].URX() - RegionLeft()) / grid_bin_width);
-    bottom_index = (int) std::floor(
-        (block_list[i].LLY() - RegionBottom()) / grid_bin_height);
-    top_index = (int) std::floor(
-        (block_list[i].URY() - RegionBottom()) / grid_bin_height);
-    /* the grid boundaries might be the placement region boundaries
-     * if a block touches the rightmost and topmost boundaries,
-     * the index need to be fixed to make sure no memory access out of scope */
-    if (left_index < 0) left_index = 0;
-    if (right_index >= grid_cnt_x) right_index = grid_cnt_x - 1;
-    if (bottom_index < 0) bottom_index = 0;
-    if (top_index >= grid_cnt_y) top_index = grid_cnt_y - 1;
-
-    /* for each terminal, we will check which grid is inside it, and directly
-     * set the all_terminal attribute to true for that grid some small
-     * terminals might occupy the same grid, we need to deduct the overlap
-     * area from the white space of that grid bin when the final white space
-     * is 0, we know this grid bin is occupied by several terminals*/
-    for (int j = left_index; j <= right_index; ++j) {
-      for (int k = bottom_index; k <= top_index; ++k) {
-        /* the following case might happen:
-         * the top/right of a fixed block overlap with the bottom/left of
-         * a grid box if this case happens, we need to ignore this fixed
-         * block for this grid box. */
-        blk_out_of_bin =
-            int(block_list[i].LLX() >= grid_bin_matrix[j][k].right) ||
-                int(block_list[i].URX() <= grid_bin_matrix[j][k].left) ||
-                int(block_list[i].LLY() >= grid_bin_matrix[j][k].top) ||
-                int(block_list[i].URY() <= grid_bin_matrix[j][k].bottom);
-        if (blk_out_of_bin) continue;
-        grid_bin_matrix[j][k].terminal_list.push_back(i);
-
-        // if grid bin is covered by a large fixed block, then all_terminal flag for this block is set to be true
-        all_terminal =
-            int(block_list[i].LLX() <= grid_bin_matrix[j][k].LLX()) &&
-                int(block_list[i].LLY() <= grid_bin_matrix[j][k].LLY()) &&
-                int(block_list[i].URX() >= grid_bin_matrix[j][k].URX()) &&
-                int(block_list[i].URY() >= grid_bin_matrix[j][k].URY());
-        grid_bin_matrix[j][k].all_terminal = all_terminal;
-        // if all_terminal flag is false, we need to calculate the overlap of grid bin and this fixed block to get the white space,
-        // when white space is less than 1, this grid bin is also all_terminal
-        if (all_terminal) {
-          grid_bin_matrix[j][k].white_space = 0;
-        } else {
-          // this part calculate the overlap of two rectangles
-          //max_llx = std::max(int(block_list[i].LLX()), grid_bin_matrix[j][k].LLX());
-          //max_lly = std::max(int(block_list[i].LLY()), grid_bin_matrix[j][k].LLY());
-          //min_urx = std::min(int(block_list[i].URX()), grid_bin_matrix[j][k].URX());
-          //min_ury = std::min(int(block_list[i].URY()), grid_bin_matrix[j][k].URY());
-          //grid_bin_matrix[j][k].white_space -= (unsigned long int) (min_urx - max_llx)
-          //        * (unsigned long int) (min_ury - max_lly);
-          //if (grid_bin_matrix[j][k].white_space < 1) {
-          //  grid_bin_matrix[j][k].all_terminal = true;
-          //  grid_bin_matrix[j][k].white_space = 0;
-          //}
-        }
-      }
-    }
-  }
-  for (int i = 0; i < grid_cnt_x; ++i) {
-    for (int j = 0; j < grid_cnt_y; ++j) {
-      UpdateWhiteSpaceInGridBin(grid_bin_matrix[i][j]);
+  // update white spaces in grid bins
+  for (auto &grid_bin_column: grid_bin_mesh) {
+    for (auto &grid_bin: grid_bin_column) {
+      UpdateWhiteSpaceInGridBin(grid_bin);
     }
   }
 }
@@ -1783,22 +1764,22 @@ void GlobalPlacer::InitWhiteSpaceLUT() {
       grid_bin_white_space_LUT[kx][ky] = 0;
       if (kx == 0) {
         if (ky == 0) {
-          grid_bin_white_space_LUT[kx][ky] = grid_bin_matrix[0][0].white_space;
+          grid_bin_white_space_LUT[kx][ky] = grid_bin_mesh[0][0].white_space;
         } else {
           grid_bin_white_space_LUT[kx][ky] =
               grid_bin_white_space_LUT[kx][ky - 1]
-                  + grid_bin_matrix[kx][ky].white_space;
+                  + grid_bin_mesh[kx][ky].white_space;
         }
       } else {
         if (ky == 0) {
           grid_bin_white_space_LUT[kx][ky] =
               grid_bin_white_space_LUT[kx - 1][ky]
-                  + grid_bin_matrix[kx][ky].white_space;
+                  + grid_bin_mesh[kx][ky].white_space;
         } else {
           grid_bin_white_space_LUT[kx][ky] =
               grid_bin_white_space_LUT[kx - 1][ky]
                   + grid_bin_white_space_LUT[kx][ky - 1]
-                  + grid_bin_matrix[kx][ky].white_space
+                  + grid_bin_mesh[kx][ky].white_space
                   - grid_bin_white_space_LUT[kx - 1][ky - 1];
         }
       }
@@ -1815,12 +1796,12 @@ void GlobalPlacer::LALInit() {
 }
 
 void GlobalPlacer::LALClose() {
-  grid_bin_matrix.clear();
+  grid_bin_mesh.clear();
   grid_bin_white_space_LUT.clear();
 }
 
 void GlobalPlacer::ClearGridBinFlag() {
-  for (auto &bin_column: grid_bin_matrix) {
+  for (auto &bin_column: grid_bin_mesh) {
     for (auto &bin: bin_column) bin.global_placed = false;
   }
 }
@@ -1884,7 +1865,7 @@ unsigned long int GlobalPlacer::LookUpBlkArea(WindowQuadruple &window) {
   unsigned long int res = 0;
   for (int x = window.llx; x <= window.urx; ++x) {
     for (int y = window.lly; y <= window.ury; ++y) {
-      res += grid_bin_matrix[x][y].cell_area;
+      res += grid_bin_mesh[x][y].cell_area;
     }
   }
   return res;
@@ -1897,22 +1878,22 @@ unsigned long int GlobalPlacer::WindowArea(WindowQuadruple &window) {
       res = (window.urx - window.llx) * (window.ury - window.lly)
           * grid_bin_width * grid_bin_height;
       res += (window.urx - window.llx) * grid_bin_width
-          * grid_bin_matrix[window.urx][window.ury].Height();
+          * grid_bin_mesh[window.urx][window.ury].Height();
       res += (window.ury - window.lly) * grid_bin_height
-          * grid_bin_matrix[window.urx][window.ury].Width();
-      res += grid_bin_matrix[window.urx][window.ury].Area();
+          * grid_bin_mesh[window.urx][window.ury].Width();
+      res += grid_bin_mesh[window.urx][window.ury].Area();
     } else {
       res = (window.urx - window.llx) * (window.ury - window.lly + 1)
           * grid_bin_width * grid_bin_height;
       res += (window.ury - window.lly + 1) * grid_bin_height
-          * grid_bin_matrix[window.urx][window.ury].Width();
+          * grid_bin_mesh[window.urx][window.ury].Width();
     }
   } else {
     if (window.ury == grid_cnt_y - 1) {
       res = (window.urx - window.llx + 1) * (window.ury - window.lly)
           * grid_bin_width * grid_bin_height;
       res += (window.urx - window.llx + 1) * grid_bin_width
-          * grid_bin_matrix[window.urx][window.ury].Height();
+          * grid_bin_mesh[window.urx][window.ury].Height();
     } else {
       res = (window.urx - window.llx + 1) * (window.ury - window.lly + 1)
           * grid_bin_width * grid_bin_height;
@@ -1927,80 +1908,78 @@ for (int i=window.lx; i<=window.urx; ++i) {
   return res;
 }
 
-void GlobalPlacer::UpdateGridBinState() {
-  /****
- * this is a member function to update grid bin status, because the cell_list, cell_area and over_fill state can be changed
- * so we need to update them when necessary
+/****
+ * this is a member function to update grid bin status, because the cell_list,
+ * cell_area and over_fill state can be changed, so we need to update them when necessary
  * ****/
-
+void GlobalPlacer::UpdateGridBinState() {
   double wall_time = get_wall_time();
 
   // clean the old data
-  for (auto &bin_column: grid_bin_matrix) {
-    for (auto &bin: bin_column) {
-      bin.cell_list.clear();
-      bin.cell_area = 0;
-      bin.over_fill = false;
+  for (auto &grid_bin_column: grid_bin_mesh) {
+    for (auto &grid_bin: grid_bin_column) {
+      grid_bin.cell_list.clear();
+      grid_bin.cell_area = 0;
+      grid_bin.over_fill = false;
     }
   }
 
-  // for each cell, find the index of the grid bin it should be in
-  // note that in extreme cases, the index might be smaller than 0 or larger than the maximum allowed index
-  // because the cell is on the boundaries, so we need to make some modifications for these extreme cases
-  std::vector<Block> &block_list = p_ckt_->Blocks();
-  int sz = int(block_list.size());
+  // for each cell, find the index of the grid bin it should be in.
+  // note that in extreme cases, the index might be smaller than 0 or larger
+  // than the maximum allowed index, because the cell is on the boundaries,
+  // so we need to make some modifications for these extreme cases.
+  std::vector<Block> &blocks = Blocks();
+  int sz = static_cast<int>(blocks.size());
   int x_index = 0;
   int y_index = 0;
 
-  //double for_time = get_wall_time();
   for (int i = 0; i < sz; i++) {
-    if (block_list[i].IsFixed()) continue;
-    x_index = (int) std::floor(
-        (block_list[i].X() - RegionLeft()) / grid_bin_width);
-    y_index = (int) std::floor(
-        (block_list[i].Y() - RegionBottom()) / grid_bin_height);
+    if (blocks[i].IsFixed()) continue;
+    x_index = (int) std::floor((blocks[i].X() - RegionLeft()) / grid_bin_width);
+    y_index =
+        (int) std::floor((blocks[i].Y() - RegionBottom()) / grid_bin_height);
     if (x_index < 0) x_index = 0;
     if (x_index > grid_cnt_x - 1) x_index = grid_cnt_x - 1;
     if (y_index < 0) y_index = 0;
     if (y_index > grid_cnt_y - 1) y_index = grid_cnt_y - 1;
-    grid_bin_matrix[x_index][y_index].cell_list.push_back(i);
-    grid_bin_matrix[x_index][y_index].cell_area += block_list[i].Area();
+    grid_bin_mesh[x_index][y_index].cell_list.push_back(&(blocks[i]));
+    grid_bin_mesh[x_index][y_index].cell_area += blocks[i].Area();
   }
-  //for_time = get_wall_time() - for_time;
-  //BOOST_LOG_TRIVIAL(info)   << "for time: " << for_time << "s\n";
-  //exit(1);
 
   /**** below is the criterion to decide whether a grid bin is over_filled or not
- * 1. if this bin if fully occupied by fixed blocks, but its cell_list is non-empty, which means there is some cells overlap with this grid bin, we say it is over_fill
- * 2. if not fully occupied by terminals, but filling_rate is larger than the TARGET_FILLING_RATE, then set is to over_fill
- * 3. if this bin is not overfilled, but cells in this bin overlaps with fixed blocks in this bin, we also mark it as over_fill
- * ****/
+   * 1. if this bin if fully occupied by fixed blocks, but its cell_list is
+   *    non-empty, which means there is some cells overlap with this grid bin,
+   *    we say it is over_fill
+   * 2. if not fully occupied by fixed blocks, but filling_rate is larger than
+   *    the TARGET_FILLING_RATE, then set is to over_fill
+   * 3. if this bin is not overfilled, but cells in this bin overlaps with fixed
+   *    blocks in this bin, we also mark it as over_fill
+   * ****/
   //TODO: the third criterion might be changed in the next
   bool over_fill = false;
-  for (auto &bin_column: grid_bin_matrix) {
-    for (auto &bin: bin_column) {
-      if (bin.global_placed) {
-        bin.over_fill = false;
+  for (auto &grid_bin_column: grid_bin_mesh) {
+    for (auto &grid_bin: grid_bin_column) {
+      if (grid_bin.global_placed) {
+        grid_bin.over_fill = false;
         continue;
       }
-      if (bin.IsAllFixedBlk()) {
-        if (!bin.cell_list.empty()) {
-          bin.over_fill = true;
+      if (grid_bin.IsAllFixedBlk()) {
+        if (!grid_bin.cell_list.empty()) {
+          grid_bin.over_fill = true;
         }
       } else {
-        bin.filling_rate =
-            double(bin.cell_area) / double(bin.white_space);
-        if (bin.filling_rate > PlacementDensity()) {
-          bin.over_fill = true;
+        grid_bin.filling_rate =
+            double(grid_bin.cell_area) / double(grid_bin.white_space);
+        if (grid_bin.filling_rate > PlacementDensity()) {
+          grid_bin.over_fill = true;
         }
       }
-      if (!bin.OverFill()) {
-        for (auto &cell_num: bin.cell_list) {
-          for (auto &terminal_num: bin.terminal_list) {
-            over_fill =
-                block_list[cell_num].IsOverlap(block_list[terminal_num]);
+      if (!grid_bin.OverFill()) {
+        for (auto &blk_ptr: grid_bin.cell_list) {
+          for (auto &fixed_blk_ptr: grid_bin.fixed_blks) {
+            over_fill = blk_ptr->IsOverlap(*fixed_blk_ptr);
             if (over_fill) {
-              bin.over_fill = true;
+              grid_bin.over_fill = true;
               break;
             }
           }
@@ -2013,26 +1992,37 @@ void GlobalPlacer::UpdateGridBinState() {
   UpdateGridBinState_time += get_wall_time() - wall_time;
 }
 
+void GlobalPlacer::UpdateClusterArea(GridBinCluster &cluster) {
+  cluster.total_cell_area = 0;
+  cluster.total_white_space = 0;
+  for (auto &index: cluster.bin_set) {
+    cluster.total_cell_area +=
+        grid_bin_mesh[index.x][index.y].cell_area;
+    cluster.total_white_space +=
+        grid_bin_mesh[index.x][index.y].white_space;
+  }
+}
+
 void GlobalPlacer::UpdateClusterList() {
   double wall_time = get_wall_time();
   cluster_set.clear();
 
-  int m = (int) grid_bin_matrix.size(); // number of rows
-  int n = (int) grid_bin_matrix[0].size(); // number of columns
+  int m = (int) grid_bin_mesh.size(); // number of rows
+  int n = (int) grid_bin_mesh[0].size(); // number of columns
   for (int i = 0; i < m; ++i) {
     for (int j = 0; j < n; ++j)
-      grid_bin_matrix[i][j].cluster_visited = false;
+      grid_bin_mesh[i][j].cluster_visited = false;
   }
   int cnt = 0;
   for (int i = 0; i < m; ++i) {
     for (int j = 0; j < n; ++j) {
-      if (grid_bin_matrix[i][j].cluster_visited
-          || !grid_bin_matrix[i][j].over_fill)
+      if (grid_bin_mesh[i][j].cluster_visited
+          || !grid_bin_mesh[i][j].over_fill)
         continue;
       GridBinIndex b(i, j);
       GridBinCluster H;
       H.bin_set.insert(b);
-      grid_bin_matrix[i][j].cluster_visited = true;
+      grid_bin_mesh[i][j].cluster_visited = true;
       cnt = 0;
       std::queue<GridBinIndex> Q;
       Q.push(b);
@@ -2040,8 +2030,8 @@ void GlobalPlacer::UpdateClusterList() {
         b = Q.front();
         Q.pop();
         for (auto
-              &index: grid_bin_matrix[b.x][b.y].adjacent_bin_index) {
-          GridBin &bin = grid_bin_matrix[index.x][index.y];
+              &index: grid_bin_mesh[b.x][b.y].adjacent_bin_index) {
+          GridBin &bin = grid_bin_mesh[index.x][index.y];
           if (!bin.cluster_visited && bin.over_fill) {
             if (cnt > cluster_upper_size) {
               UpdateClusterArea(H);
@@ -2070,7 +2060,7 @@ void GlobalPlacer::UpdateLargestCluster() {
 
     // if there is no grid bin has been roughly legalized, then this cluster is the largest one for sure
     for (auto &index: it->bin_set) {
-      if (grid_bin_matrix[index.x][index.y].global_placed) {
+      if (grid_bin_mesh[index.x][index.y].global_placed) {
         is_contact = false;
       }
     }
@@ -2099,7 +2089,7 @@ void GlobalPlacer::UpdateLargestCluster() {
       int i = grid_index.x;
       int j = grid_index.y;
       if (grid_bin_visited[grid_index]) continue; // if this grid bin has been visited continue
-      if (grid_bin_matrix[i][j].global_placed) continue; // if this grid bin has been roughly legalized
+      if (grid_bin_mesh[i][j].global_placed) continue; // if this grid bin has been roughly legalized
       GridBinIndex b(i, j);
       GridBinCluster H;
       H.bin_set.insert(b);
@@ -2111,13 +2101,13 @@ void GlobalPlacer::UpdateLargestCluster() {
         b = Q.front();
         Q.pop();
         for (auto
-              &index: grid_bin_matrix[b.x][b.y].adjacent_bin_index) {
+              &index: grid_bin_mesh[b.x][b.y].adjacent_bin_index) {
           if (grid_bin_visited.find(index)
               == grid_bin_visited.end())
             continue; // this index is not in the cluster
           if (grid_bin_visited[index]) continue; // this index has been visited
-          if (grid_bin_matrix[index.x][index.y].global_placed) continue; // if this grid bin has been roughly legalized
-          GridBin &bin = grid_bin_matrix[index.x][index.y];
+          if (grid_bin_mesh[index.x][index.y].global_placed) continue; // if this grid bin has been roughly legalized
+          GridBin &bin = grid_bin_mesh[index.x][index.y];
           if (cnt > cluster_upper_size) {
             UpdateClusterArea(H);
             cluster_set.insert(H);
@@ -2154,7 +2144,7 @@ void GlobalPlacer::FindMinimumBoxForLargestCluster() {
   if (cluster_set.empty()) return;
 
   // Part 1
-  std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Block> &block_list = Blocks();
 
   BoxBin R;
   R.cut_direction_x = false;
@@ -2176,7 +2166,7 @@ void GlobalPlacer::FindMinimumBoxForLargestCluster() {
     // update cell area, white space, and thus filling rate to determine whether to expand this box or not
     R.total_white_space = LookUpWhiteSpace(R.ll_index, R.ur_index);
     R.UpdateCellAreaWhiteSpaceFillingRate(grid_bin_white_space_LUT,
-                                          grid_bin_matrix);
+                                          grid_bin_mesh);
     if (R.filling_rate > PlacementDensity()) {
       R.ExpandBox(grid_cnt_x, grid_cnt_y);
     } else {
@@ -2187,12 +2177,12 @@ void GlobalPlacer::FindMinimumBoxForLargestCluster() {
 
   R.total_white_space = LookUpWhiteSpace(R.ll_index, R.ur_index);
   R.UpdateCellAreaWhiteSpaceFillingRate(grid_bin_white_space_LUT,
-                                        grid_bin_matrix);
-  R.UpdateCellList(grid_bin_matrix);
-  R.ll_point.x = grid_bin_matrix[R.ll_index.x][R.ll_index.y].left;
-  R.ll_point.y = grid_bin_matrix[R.ll_index.x][R.ll_index.y].bottom;
-  R.ur_point.x = grid_bin_matrix[R.ur_index.x][R.ur_index.y].right;
-  R.ur_point.y = grid_bin_matrix[R.ur_index.x][R.ur_index.y].top;
+                                        grid_bin_mesh);
+  R.UpdateCellList(grid_bin_mesh);
+  R.ll_point.x = grid_bin_mesh[R.ll_index.x][R.ll_index.y].left;
+  R.ll_point.y = grid_bin_mesh[R.ll_index.x][R.ll_index.y].bottom;
+  R.ur_point.x = grid_bin_mesh[R.ur_index.x][R.ur_index.y].right;
+  R.ur_point.y = grid_bin_mesh[R.ur_index.x][R.ur_index.y].top;
 
   R.left = int(R.ll_point.x);
   R.bottom = int(R.ll_point.y);
@@ -2200,9 +2190,9 @@ void GlobalPlacer::FindMinimumBoxForLargestCluster() {
   R.top = int(R.ur_point.y);
 
   if (R.ll_index == R.ur_index) {
-    R.UpdateFixedBlkList(grid_bin_matrix);
+    R.UpdateFixedBlkList(grid_bin_mesh);
     if (R.IsContainFixedBlk()) {
-      R.UpdateObsBoundary(block_list);
+      R.UpdateObsBoundary();
     }
   }
   queue_box_bin.push(R);
@@ -2211,7 +2201,7 @@ void GlobalPlacer::FindMinimumBoxForLargestCluster() {
 
   for (int kx = R.ll_index.x; kx <= R.ur_index.x; ++kx) {
     for (int ky = R.ll_index.y; ky <= R.ur_index.y; ++ky) {
-      grid_bin_matrix[kx][ky].global_placed = true;
+      grid_bin_mesh[kx][ky].global_placed = true;
     }
   }
 
@@ -2268,8 +2258,8 @@ void GlobalPlacer::SplitBox(BoxBin &box) {
       }
     }
   }
-  box1.update_cell_area_white_space(grid_bin_matrix);
-  box2.update_cell_area_white_space(grid_bin_matrix);
+  box1.update_cell_area_white_space(grid_bin_mesh);
+  box2.update_cell_area_white_space(grid_bin_mesh);
   //BOOST_LOG_TRIVIAL(info)   << box1.ll_index_ << box1.ur_index_ << "\n";
   //BOOST_LOG_TRIVIAL(info)   << box2.ll_index_ << box2.ur_index_ << "\n";
   //box1.update_all_terminal(grid_bin_matrix);
@@ -2285,8 +2275,8 @@ void GlobalPlacer::SplitBox(BoxBin &box) {
     dominating_box_flag = 2;
   }
 
-  box1.update_boundaries(grid_bin_matrix);
-  box2.update_boundaries(grid_bin_matrix);
+  box1.update_boundaries(grid_bin_mesh);
+  box2.update_boundaries(grid_bin_mesh);
 
   if (dominating_box_flag == 0) {
     //BOOST_LOG_TRIVIAL(info)   << "cell list size: " << box.cell_list.size() << "\n";
@@ -2305,12 +2295,12 @@ void GlobalPlacer::SplitBox(BoxBin &box) {
     box2.total_cell_area = box.total_cell_area_high;
 
     if (box1.ll_index == box1.ur_index) {
-      box1.UpdateFixedBlkList(grid_bin_matrix);
-      box1.UpdateObsBoundary(block_list);
+      box1.UpdateFixedBlkList(grid_bin_mesh);
+      box1.UpdateObsBoundary();
     }
     if (box2.ll_index == box2.ur_index) {
-      box2.UpdateFixedBlkList(grid_bin_matrix);
-      box2.UpdateObsBoundary(block_list);
+      box2.UpdateFixedBlkList(grid_bin_mesh);
+      box2.UpdateObsBoundary();
     }
 
     /*if ((box1.left < LEFT) || (box1.bottom < BOTTOM)) {
@@ -2334,8 +2324,8 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
     box2.cell_list = box.cell_list;
     box2.total_cell_area = box.total_cell_area;
     if (box2.ll_index == box2.ur_index) {
-      box2.UpdateFixedBlkList(grid_bin_matrix);
-      box2.UpdateObsBoundary(block_list);
+      box2.UpdateFixedBlkList(grid_bin_mesh);
+      box2.UpdateObsBoundary();
     }
 
     /*if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
@@ -2352,8 +2342,8 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
     box1.cell_list = box.cell_list;
     box1.total_cell_area = box.total_cell_area;
     if (box1.ll_index == box1.ur_index) {
-      box1.UpdateFixedBlkList(grid_bin_matrix);
-      box1.UpdateObsBoundary(block_list);
+      box1.UpdateFixedBlkList(grid_bin_mesh);
+      box1.UpdateObsBoundary();
     }
 
     /*if ((box1.left < LEFT) || (box1.bottom < BOTTOM)) {
@@ -2373,7 +2363,7 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
  * @param box: the BoxBin which needs to be further splitted into two sub-boxes
  */
 void GlobalPlacer::SplitGridBox(BoxBin &box) {
-  std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Block> &block_list = Blocks();
 
   // 1. create two sub-boxes
   BoxBin box1, box2;
@@ -2396,8 +2386,8 @@ void GlobalPlacer::SplitGridBox(BoxBin &box) {
     box1.top = box.horizontal_cutlines[0];
     box2.left = box.left;
     box2.bottom = box.horizontal_cutlines[0];
-    box1.update_terminal_list_white_space(block_list, box.terminal_list);
-    box2.update_terminal_list_white_space(block_list, box.terminal_list);
+    box1.UpdateWhiteSpaceAndFixedBlks(box.fixed_blks);
+    box2.UpdateWhiteSpaceAndFixedBlks(box.fixed_blks);
 
     if (
         double(box1.total_white_space) / (double) box.total_white_space <= 0.01
@@ -2406,7 +2396,7 @@ void GlobalPlacer::SplitGridBox(BoxBin &box) {
       box2.ur_point = box.ur_point;
       box2.cell_list = box.cell_list;
       box2.total_cell_area = box.total_cell_area;
-      box2.UpdateObsBoundary(block_list);
+      box2.UpdateObsBoundary();
       queue_box_bin.push(box2);
     } else if (
         double(box2.total_white_space) / (double) box.total_white_space <= 0.01
@@ -2415,7 +2405,7 @@ void GlobalPlacer::SplitGridBox(BoxBin &box) {
       box1.ur_point = box.ur_point;
       box1.cell_list = box.cell_list;
       box1.total_cell_area = box.total_cell_area;
-      box1.UpdateObsBoundary(block_list);
+      box1.UpdateObsBoundary();
       queue_box_bin.push(box1);
     } else {
       box.update_cut_point_cell_list_low_high(
@@ -2431,19 +2421,20 @@ void GlobalPlacer::SplitGridBox(BoxBin &box) {
       box2.ll_point = box.cut_ll_point;
       box1.total_cell_area = box.total_cell_area_low;
       box2.total_cell_area = box.total_cell_area_high;
-      box1.UpdateObsBoundary(block_list);
-      box2.UpdateObsBoundary(block_list);
+      box1.UpdateObsBoundary();
+      box2.UpdateObsBoundary();
       queue_box_bin.push(box1);
       queue_box_bin.push(box2);
     }
   } else {
+    //box.Report();
     box.cut_direction_x = false;
     box1.right = box.vertical_cutlines[0];
     box1.top = box.top;
     box2.left = box.vertical_cutlines[0];
     box2.bottom = box.bottom;
-    box1.update_terminal_list_white_space(block_list, box.terminal_list);
-    box2.update_terminal_list_white_space(block_list, box.terminal_list);
+    box1.UpdateWhiteSpaceAndFixedBlks(box.fixed_blks);
+    box2.UpdateWhiteSpaceAndFixedBlks(box.fixed_blks);
 
     if (
         double(box1.total_white_space) / (double) box.total_white_space <= 0.01
@@ -2452,7 +2443,7 @@ void GlobalPlacer::SplitGridBox(BoxBin &box) {
       box2.ur_point = box.ur_point;
       box2.cell_list = box.cell_list;
       box2.total_cell_area = box.total_cell_area;
-      box2.UpdateObsBoundary(block_list);
+      box2.UpdateObsBoundary();
       queue_box_bin.push(box2);
     } else if (
         double(box2.total_white_space) / (double) box.total_white_space <= 0.01
@@ -2461,7 +2452,7 @@ void GlobalPlacer::SplitGridBox(BoxBin &box) {
       box1.ur_point = box.ur_point;
       box1.cell_list = box.cell_list;
       box1.total_cell_area = box.total_cell_area;
-      box1.UpdateObsBoundary(block_list);
+      box1.UpdateObsBoundary();
       queue_box_bin.push(box1);
     } else {
       box.update_cut_point_cell_list_low_high(
@@ -2477,8 +2468,8 @@ void GlobalPlacer::SplitGridBox(BoxBin &box) {
       box2.ll_point = box.cut_ll_point;
       box1.total_cell_area = box.total_cell_area_low;
       box2.total_cell_area = box.total_cell_area_high;
-      box1.UpdateObsBoundary(block_list);
-      box2.UpdateObsBoundary(block_list);
+      box1.UpdateObsBoundary();
+      box2.UpdateObsBoundary();
       queue_box_bin.push(box1);
       queue_box_bin.push(box2);
     }
@@ -2486,7 +2477,7 @@ void GlobalPlacer::SplitGridBox(BoxBin &box) {
 }
 
 void GlobalPlacer::PlaceBlkInBox(BoxBin &box) {
-  std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Block> &block_list = Blocks();
   /* this is the simplest version, just linearly move cells in the cell_box to the grid box
 * non-linearity is not considered yet*/
 
@@ -2505,60 +2496,71 @@ for (auto &cell_id: box.cell_list) {
 }*/
 
   int sz = box.cell_list.size();
-  std::vector<std::pair<int, double>> index_loc_list_x(sz);
-  std::vector<std::pair<int, double>> index_loc_list_y(sz);
-  GridBin &grid_bin = grid_bin_matrix[box.ll_index.x][box.ll_index.y];
+  std::vector<std::pair<Block *, double>> index_loc_list_x(sz);
+  std::vector<std::pair<Block *, double>> index_loc_list_y(sz);
+  GridBin &grid_bin = grid_bin_mesh[box.ll_index.x][box.ll_index.y];
   for (int i = 0; i < sz; ++i) {
-    int blk_num = box.cell_list[i];
-    index_loc_list_x[i].first = blk_num;
-    index_loc_list_x[i].second = block_list[blk_num].X();
-    index_loc_list_y[i].first = blk_num;
-    index_loc_list_y[i].second = block_list[blk_num].Y();
-    grid_bin.cell_list.push_back(blk_num);
-    grid_bin.cell_area += block_list[blk_num].Area();
+    Block *blk_ptr = box.cell_list[i];
+    index_loc_list_x[i].first = blk_ptr;
+    index_loc_list_x[i].second = blk_ptr->X();
+    index_loc_list_y[i].first = blk_ptr;
+    index_loc_list_y[i].second = blk_ptr->Y();
+    grid_bin.cell_list.push_back(blk_ptr);
+    grid_bin.cell_area += blk_ptr->Area();
   }
 
   std::sort(
       index_loc_list_x.begin(),
       index_loc_list_x.end(),
-      [](const std::pair<int, double> &p1,
-         const std::pair<int, double> &p2) {
+      [](const std::pair<Block *, double> &p1,
+         const std::pair<Block *, double> &p2) {
         return p1.second < p2.second;
       }
   );
   double total_length = 0;
-  for (auto &cell_id: box.cell_list) {
-    total_length += block_list[cell_id].Width();
+  for (auto &blk_ptr: box.cell_list) {
+    total_length += blk_ptr->Width();
   }
   double cur_pos = 0;
   int box_width = box.right - box.left;
-  int cell_num;
   for (auto &pair: index_loc_list_x) {
-    cell_num = pair.first;
-    block_list[cell_num].SetCenterX(
-        box.left + cur_pos / total_length * box_width);
-    cur_pos += block_list[cell_num].Width();
+    Block *blk_ptr = pair.first;
+    double center_x = box.left + cur_pos / total_length * box_width;
+    blk_ptr->SetCenterX(center_x);
+    cur_pos += blk_ptr->Width();
+    if (std::isnan(center_x)) {
+      std::cout << "x " << total_length << "\n";
+      box.Report();
+      std::cout << std::endl;
+      exit(1);
+    }
   }
 
   std::sort(
       index_loc_list_y.begin(),
       index_loc_list_y.end(),
-      [](const std::pair<int, double> &p1,
-         const std::pair<int, double> &p2) {
+      [](const std::pair<Block *, double> &p1,
+         const std::pair<Block *, double> &p2) {
         return p1.second < p2.second;
       }
   );
   total_length = 0;
-  for (auto &cell_id: box.cell_list) {
-    total_length += block_list[cell_id].Height();
+  for (auto &blk_ptr: box.cell_list) {
+    total_length += blk_ptr->Height();
   }
   cur_pos = 0;
   int box_height = box.top - box.bottom;
   for (auto &pair: index_loc_list_y) {
-    cell_num = pair.first;
-    double center_y_loc = box.bottom + cur_pos / total_length * box_height;
-    block_list[cell_num].SetCenterY(center_y_loc);
-    cur_pos += block_list[cell_num].Height();
+    Block *blk_ptr = pair.first;
+    double center_y = box.bottom + cur_pos / total_length * box_height;
+    if (std::isnan(center_y)) {
+      std::cout << "y " << total_length << "\n";
+      box.Report();
+      std::cout << std::endl;
+      exit(1);
+    }
+    blk_ptr->SetCenterY(center_y);
+    cur_pos += blk_ptr->Height();
   }
 }
 
@@ -2568,18 +2570,16 @@ void GlobalPlacer::RoughLegalBlkInBox(BoxBin &box) {
   std::vector<int> row_start;
   row_start.assign(box.top - box.bottom + 1, box.left);
 
-  std::vector<IndexLocPair<int>>
-      index_loc_list;
+  std::vector<IndexLocPair<int>> index_loc_list;
   IndexLocPair<int> tmp_index_loc_pair(0, 0, 0);
   index_loc_list.resize(sz, tmp_index_loc_pair);
 
   std::vector<Block> &block_list = p_ckt_->Blocks();
-  int blk_num;
   for (int i = 0; i < sz; ++i) {
-    blk_num = box.cell_list[i];
-    index_loc_list[i].num = blk_num;
-    index_loc_list[i].x = block_list[blk_num].LLX();
-    index_loc_list[i].y = block_list[blk_num].LLY();
+    Block *blk_ptr = box.cell_list[i];
+    index_loc_list[i].blk_ptr = blk_ptr;
+    index_loc_list[i].x = blk_ptr->LLX();
+    index_loc_list[i].y = blk_ptr->LLY();
   }
   std::sort(index_loc_list.begin(), index_loc_list.end());
 
@@ -2601,7 +2601,7 @@ void GlobalPlacer::RoughLegalBlkInBox(BoxBin &box) {
   double max_x = left_;
 
   for (auto &pair: index_loc_list) {
-    auto &block = block_list[pair.num];
+    auto &block = *(pair.blk_ptr);
 
     init_x = int(block.LLX());
     init_y = int(block.LLY());
@@ -2662,7 +2662,7 @@ void GlobalPlacer::RoughLegalBlkInBox(BoxBin &box) {
   }
   DaliExpects(span_x > 0, "Expect span_x > 0!");
   for (auto &pair: index_loc_list) {
-    auto &block = block_list[pair.num];
+    auto &block = *(pair.blk_ptr);
     block.SetCenterX((block.X() - min_x) / span_x * box_width + box.left);
   }
 
@@ -2723,7 +2723,7 @@ void GlobalPlacer::PlaceBlkInBoxBisection(BoxBin &box) {
       box2.top = front_box.top;
       box2.right = front_box.right;
 
-      int ave_blk_height = std::ceil(GetCircuitRef().AveMovBlkHeight());
+      int ave_blk_height = std::ceil(GetCkt().AveMovBlkHeight());
       //BOOST_LOG_TRIVIAL(info)   << "Average block height: " << ave_blk_height << "  " << GetCircuitRef().AveMovBlkHeight() << "\n";
       front_box.cut_direction_x =
           (front_box.top - front_box.bottom > ave_blk_height);
@@ -2763,10 +2763,9 @@ void GlobalPlacer::PlaceBlkInBoxBisection(BoxBin &box) {
       // shift cells to the center of the final box
       if (max_cell_num_in_box == 1) {
         Block *cell;
-        for (auto &cell_id: front_box.cell_list) {
-          cell = &block_list[cell_id];
-          cell->SetCenterX((front_box.left + front_box.right) / 2.0);
-          cell->SetCenterY((front_box.bottom + front_box.top) / 2.0);
+        for (auto &blk_ptr: front_box.cell_list) {
+          blk_ptr->SetCenterX((front_box.left + front_box.right) / 2.0);
+          blk_ptr->SetCenterY((front_box.bottom + front_box.top) / 2.0);
         }
       } else {
         PlaceBlkInBox(front_box);
@@ -2786,7 +2785,7 @@ void GlobalPlacer::UpdateGridBinBlocks(BoxBin &box) {
   if (box.ll_index == box.ur_index) {
     int x_index = box.ll_index.x;
     int y_index = box.ll_index.y;
-    GridBin &grid_bin = grid_bin_matrix[x_index][y_index];
+    GridBin &grid_bin = grid_bin_mesh[x_index][y_index];
     if (grid_bin.left == box.left &&
         grid_bin.bottom == box.bottom &&
         grid_bin.right == box.right &&
@@ -2796,13 +2795,12 @@ void GlobalPlacer::UpdateGridBinBlocks(BoxBin &box) {
       grid_bin.over_fill = false;
 
       std::vector<Block> &block_list = p_ckt_->Blocks();
-      for (auto &blk_num: box.cell_list) {
-        grid_bin.cell_list.push_back(blk_num);
-        grid_bin.cell_area += block_list[blk_num].Area();
+      for (auto &blk_ptr: box.cell_list) {
+        grid_bin.cell_list.push_back(blk_ptr);
+        grid_bin.cell_area += blk_ptr->Area();
       }
     }
   }
-
 }
 
 /****
@@ -3085,6 +3083,27 @@ double GlobalPlacer::QuadraticPlacementWithAnchor(double net_model_update_stop_c
   return lower_bound_hpwlx_.back() + lower_bound_hpwly_.back();
 }
 
+void GlobalPlacer::UpdateAnchorAlpha() {
+  if (net_model == 0) {
+    if (0 <= cur_iter_ && cur_iter_ < 5) {
+      alpha_step = 0.005;
+    } else if (cur_iter_ < 10) {
+      alpha_step = 0.01;
+    } else if (cur_iter_ < 15) {
+      alpha_step = 0.02;
+    } else {
+      alpha_step = 0.03;
+    }
+    alpha += alpha_step;
+  } else if (net_model == 1) {
+    alpha = 0.002 * cur_iter_;
+  } else if (net_model == 2) {
+    alpha = 0.005 * cur_iter_;
+  } else {
+    alpha = 0.002 * cur_iter_;
+  }
+}
+
 double GlobalPlacer::LookAheadLegalization() {
   double cpu_time = get_cpu_time();
 
@@ -3132,42 +3151,6 @@ double GlobalPlacer::LookAheadLegalization() {
 }
 
 /****
-* This method is helpful when a circuit does not have any fixed blocks.
-* In this case, the shift of the whole circuit does not influence HPWL and overlap.
-* But if the circuit is placed close to the right placement boundary, it give very few change to legalizer_ if cells close
-* to the right boundary need to find different locations.
-*
-* 1. Find the leftmost, rightmost, topmost, bottommost cell edges
-* 2. Calculate the total margin in x direction and y direction
-* 3. Evenly assign the margin to each side
-* ****/
-void GlobalPlacer::CheckAndShift() {
-  if (p_ckt_->TotFixedBlkCnt() > 0) return;
-  double left_most = INT_MAX;
-  double right_most = INT_MIN;
-  double bottom_most = INT_MAX;
-  double top_most = INT_MIN;
-
-  for (auto &blk: p_ckt_->Blocks()) {
-    left_most = std::min(left_most, blk.LLX());
-    right_most = std::max(right_most, blk.URX());
-    bottom_most = std::min(bottom_most, blk.LLY());
-    top_most = std::max(top_most, blk.URY());
-  }
-
-  double margin_x = (right_ - left_) - (right_most - left_most);
-  double margin_y = (top_ - bottom_) - (top_most - bottom_most);
-
-  double delta_x = left_ + margin_x / 10 - left_most;
-  double delta_y = bottom_ + margin_y / 2 - bottom_most;
-
-  for (auto &blk: p_ckt_->Blocks()) {
-    blk.IncreaseX(delta_x);
-    blk.IncreaseY(delta_y);
-  }
-}
-
-/****
 * Returns true of false indicating the convergence of the global placement.
 * Stopping criteria (SimPL, option 1):
 *    (a). the gap is reduced to 25% of the gap in the tenth iteration and upper-bound solution stops improving
@@ -3183,8 +3166,7 @@ bool GlobalPlacer::IsPlacementConverge() {
       res = false;
     } else {
       double tenth_gap = upper_bound_hpwl_[9] - lower_bound_hpwl_[9];
-      double
-          last_gap = upper_bound_hpwl_.back() - lower_bound_hpwl_.back();
+      double last_gap = upper_bound_hpwl_.back() - lower_bound_hpwl_.back();
       double gap_ratio = last_gap / tenth_gap;
       if (gap_ratio < 0.1) { // (a)
         res = true;
@@ -3254,8 +3236,7 @@ bool GlobalPlacer::StartPlacement() {
       << "----------------------------------------------\n";
     BOOST_LOG_TRIVIAL(debug) << cur_iter_ << "-th iteration\n";
 
-    eval_res =
-        QuadraticPlacementWithAnchor(net_model_update_stop_criterion_);
+    eval_res = QuadraticPlacementWithAnchor(net_model_update_stop_criterion_);
     lower_bound_hpwl_.push_back(eval_res);
 
     eval_res = LookAheadLegalization();
@@ -3317,7 +3298,6 @@ bool GlobalPlacer::StartPlacement() {
     << tot_time_y << "s, "
     << tot_time_x + tot_time_y << "s\n";
   LALClose();
-  //CheckAndShift();
   UpdateMovableBlkPlacementStatus();
   ReportHPWL();
 
@@ -3413,7 +3393,7 @@ void GlobalPlacer::write_all_terminal_grid_bins(std::string const &name_of_file)
   /* this is a member function for testing, print grid bins where the flag "all_terminal" is true */
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
-  for (auto &bin_column: grid_bin_matrix) {
+  for (auto &bin_column: grid_bin_mesh) {
     for (auto &bin: bin_column) {
       double low_x, low_y, width, height;
       width = bin.right - bin.left;
@@ -3441,7 +3421,7 @@ void GlobalPlacer::write_not_all_terminal_grid_bins(std::string const &name_of_f
   /* this is a member function for testing, print grid bins where the flag "all_terminal" is false */
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
-  for (auto &bin_column: grid_bin_matrix) {
+  for (auto &bin_column: grid_bin_mesh) {
     for (auto &bin: bin_column) {
       double low_x, low_y, width, height;
       width = bin.right - bin.left;
@@ -3469,7 +3449,7 @@ void GlobalPlacer::write_overfill_grid_bins(std::string const &name_of_file) {
   /* this is a member function for testing, print grid bins where the flag "over_fill" is true */
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
-  for (auto &bin_column: grid_bin_matrix) {
+  for (auto &bin_column: grid_bin_mesh) {
     for (auto &bin: bin_column) {
       double low_x, low_y, width, height;
       width = bin.right - bin.left;
@@ -3497,7 +3477,7 @@ void GlobalPlacer::write_not_overfill_grid_bins(std::string const &name_of_file)
   /* this is a member function for testing, print grid bins where the flag "over_fill" is false */
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
-  for (auto &bin_column: grid_bin_matrix) {
+  for (auto &bin_column: grid_bin_mesh) {
     for (auto &bin: bin_column) {
       double low_x, low_y, width, height;
       width = bin.right - bin.left;
@@ -3530,7 +3510,7 @@ void GlobalPlacer::write_first_n_bin_cluster(std::string const &name_of_file,
   for (size_t i = 0; i < n; ++i, --it) {
     for (auto &index: it->bin_set) {
       double low_x, low_y, width, height;
-      GridBin *GridBin = &grid_bin_matrix[index.x][index.y];
+      GridBin *GridBin = &grid_bin_mesh[index.x][index.y];
       width = GridBin->right - GridBin->left;
       height = GridBin->top - GridBin->bottom;
       low_x = GridBin->left;

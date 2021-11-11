@@ -177,14 +177,14 @@ void ClusterWellLegalizer::ClusterBlocks() {
 
   int sz = index_loc_list_.size();
   for (int i = 0; i < sz; ++i) {
-    index_loc_list_[i].num = i;
+    index_loc_list_[i].blk_ptr = &(block_list[i]);
     index_loc_list_[i].x = block_list[i].LLX();
     index_loc_list_[i].y = block_list[i].LLY();
   }
   std::sort(index_loc_list_.begin(), index_loc_list_.end());
 
   for (int i = 0; i < sz; ++i) {
-    auto &block = block_list[index_loc_list_[i].num];
+    auto &block = *(index_loc_list_[i].blk_ptr);
 
     if (block.IsFixed()) continue;
 

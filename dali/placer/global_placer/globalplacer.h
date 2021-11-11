@@ -183,7 +183,7 @@ class GlobalPlacer : public Placer {
   int grid_bin_width;
   int grid_cnt_x;
   int grid_cnt_y;
-  std::vector<std::vector<GridBin> > grid_bin_matrix;
+  std::vector<std::vector<GridBin> > grid_bin_mesh;
   std::vector<std::vector<unsigned long long> > grid_bin_white_space_LUT;
 
   double UpdateGridBinState_time = 0;
@@ -193,6 +193,9 @@ class GlobalPlacer : public Placer {
   double FindMinimumBoxForLargestCluster_time = 0;
   double RecursiveBisectionBlkSpreading_time = 0;
 
+  void InitializeGridBinSize();
+  void UpdateAttributesForAllGridBins();
+  void UpdateFixedBlocksInGridBins();
   void UpdateWhiteSpaceInGridBin(GridBin &grid_bin);
   void InitGridBins();
   void InitWhiteSpaceLUT();
@@ -209,16 +212,7 @@ class GlobalPlacer : public Placer {
   void UpdateGridBinState();
 
   std::multiset<GridBinCluster, std::greater<>> cluster_set;
-  void UpdateClusterArea(GridBinCluster &cluster) {
-    cluster.total_cell_area = 0;
-    cluster.total_white_space = 0;
-    for (auto &index: cluster.bin_set) {
-      cluster.total_cell_area +=
-          grid_bin_matrix[index.x][index.y].cell_area;
-      cluster.total_white_space +=
-          grid_bin_matrix[index.x][index.y].white_space;
-    }
-  }
+  void UpdateClusterArea(GridBinCluster &cluster);
   void UpdateClusterList();
 
   std::queue<BoxBin> queue_box_bin;
@@ -240,29 +234,7 @@ class GlobalPlacer : public Placer {
   void BuildProblemWithAnchorX();
   void BuildProblemWithAnchorY();
   double QuadraticPlacementWithAnchor(double net_model_update_stop_criterion);
-  void UpdateAnchorAlpha() {
-    if (net_model == 0) {
-      if (0 <= cur_iter_ && cur_iter_ < 5) {
-        alpha_step = 0.005;
-      } else if (cur_iter_ < 10) {
-        alpha_step = 0.01;
-      } else if (cur_iter_ < 15) {
-        alpha_step = 0.02;
-      } else {
-        alpha_step = 0.03;
-      }
-      alpha += alpha_step;
-    } else if (net_model == 1) {
-      alpha = 0.002 * cur_iter_;
-    } else if (net_model == 2) {
-      alpha = 0.005 * cur_iter_;
-    } else {
-      alpha = 0.002 * cur_iter_;
-    }
-  }
-
-  void CheckAndShift();
-
+  void UpdateAnchorAlpha();
   bool IsPlacementConverge();
 
   double tot_lal_time = 0;

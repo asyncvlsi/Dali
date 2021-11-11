@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
   gb_placer.is_dump = false;
 #if !TEST_LG
   gb_placer.StartPlacement();
-  circuit.SaveDefFile("test_OpenDP/adaptec1_dali", "",
+  circuit.SaveDefFile("ISPD2005/adaptec1_dali", "",
                       adaptec1_def, 1, 1, 1, 1);
   circuit.SaveBookshelfPl("adaptec1bs.pl");
 #endif

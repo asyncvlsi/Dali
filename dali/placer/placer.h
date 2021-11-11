@@ -56,7 +56,7 @@ class Placer {
 
   virtual void SetInputCircuit(Circuit *circuit);
 
-  Circuit &GetCircuitRef() ;
+  Circuit &GetCkt() ;
 
   void SetPlacementDensity(double density = 2.0 / 3.0) {
     DaliExpects((density <= 1) && (density > 0),
@@ -98,24 +98,24 @@ class Placer {
   void NetSortBlkPin() {
     DaliExpects(p_ckt_ != nullptr,
                 "No input circuit specified, cannot modify any circuits!");
-    GetCircuitRef().NetSortBlkPin();
+    GetCkt().NetSortBlkPin();
   }
   virtual bool StartPlacement();
 
   double WeightedHPWLX() {
     DaliExpects(p_ckt_ != nullptr,
                 "No input circuit specified, cannot compute WeightedHPWLX!");
-    return GetCircuitRef().WeightedHPWLX();
+    return GetCkt().WeightedHPWLX();
   }
   double WeightedHPWLY() {
     DaliExpects(p_ckt_ != nullptr,
                 "No input circuit specified, cannot compute WeightedHPWLY!");
-    return GetCircuitRef().WeightedHPWLY();
+    return GetCkt().WeightedHPWLY();
   }
   double WeightedHPWL() {
     DaliExpects(p_ckt_ != nullptr,
                 "No input circuit specified, cannot compute HPWL!");
-    return GetCircuitRef().WeightedHPWL();
+    return GetCkt().WeightedHPWL();
   }
 
   void ReportHPWL() {
@@ -127,7 +127,7 @@ class Placer {
   void ReportHPWLCtoC() {
     DaliExpects(p_ckt_ != nullptr,
                 "No input circuit specified, cannot compute HPWLCtoC!");
-    GetCircuitRef().ReportHPWLCtoC();
+    GetCkt().ReportHPWLCtoC();
   }
 
   void TakeOver(Placer *placer);

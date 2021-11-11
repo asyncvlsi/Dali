@@ -90,12 +90,19 @@ unsigned long long GetCoverArea(std::vector<RectI> &rects) {
 
   // create an event only when a rectangle has an area larger than 0
   for (auto &rec: rects) {
+    if (!rec.CheckValidity()) {
+      DaliExpects(false,
+                  "Something wrong with this rectangle? " + rec.ToString());
+    }
     if ((rec.LLX() == rec.URX()) || (rec.LLY() == rec.URY())) continue;
     events.push_back({rec.LLY(), event_open, rec.LLX(), rec.URX()});
     events.push_back({rec.URY(), event_close, rec.LLX(), rec.URX()});
     x_values_set.insert(rec.LLX());
     x_values_set.insert(rec.URX());
   }
+
+  // if there is no events, return 0 earlier
+  if (events.empty()) return 0;
 
   // sort all events based on y location of an event
   std::sort(

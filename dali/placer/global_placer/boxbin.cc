@@ -74,9 +74,8 @@ void BoxBin::update_cell_area(std::vector<Block> &Nodelist) {
 
   Block *node;
   total_cell_area = 0;
-  for (auto &cell_id: cell_list) {
-    node = &Nodelist[cell_id];
-    total_cell_area += node->Area();
+  for (auto &blk_ptr: cell_list) {
+    total_cell_area += blk_ptr->Area();
   }
 }
 
@@ -188,8 +187,8 @@ void BoxBin::UpdateCellList(std::vector<std::vector<GridBin> > &grid_bin_matrix)
   cell_list.clear();
   for (int x = ll_index.x; x <= ur_index.x; x++) {
     for (int y = ll_index.y; y <= ur_index.y; y++) {
-      for (auto &cell_id: grid_bin_matrix[x][y].cell_list) {
-        cell_list.push_back(cell_id);
+      for (auto &blk_ptr: grid_bin_matrix[x][y].cell_list) {
+        cell_list.push_back(blk_ptr);
       }
       grid_bin_matrix[x][y].cell_list.clear();
       grid_bin_matrix[x][y].cell_area = 0;
@@ -205,54 +204,48 @@ void BoxBin::update_boundaries(std::vector<std::vector<GridBin> > &grid_bin_matr
   top = grid_bin_matrix[ur_index.x][ur_index.y].top;
 }
 
-void BoxBin::update_terminal_list_white_space(
-    std::vector<Block> &Nodelist,
-    std::vector<int> &box_terminal_list
+void BoxBin::UpdateWhiteSpaceAndFixedBlks(
+    std::vector<Block *> &box_fixed_blks
 ) {
-  int node_llx, node_lly, node_urx, node_ury, bin_llx, bin_lly, bin_urx,
-      bin_ury;
-  int min_urx, max_llx, min_ury, max_lly;
-  int overlap_x, overlap_y, overlap_area;
-  bool not_overlap;
-  Block *node;
-  total_white_space = (right - left) * (top - bottom);
-  for (auto &terminal_id: box_terminal_list) {
-    node = &Nodelist[terminal_id];
-    node_llx = (int) node->LLX();
-    node_lly = (int) node->LLY();
-    node_urx = (int) node->URX();
-    node_ury = (int) node->URY();
-    bin_llx = left;
-    bin_lly = bottom;
-    bin_urx = right;
-    bin_ury = top;
-    not_overlap = ((node_llx >= bin_urx) || (node_lly >= bin_ury))
-        || ((bin_llx >= node_urx) || (bin_lly >= node_ury));
-    if (!not_overlap) {
-      max_llx = std::max(node_llx, bin_llx);
-      max_lly = std::max(node_lly, bin_lly);
-      min_urx = std::min(node_urx, bin_urx);
-      min_ury = std::min(node_ury, bin_ury);
-      overlap_x = min_urx - max_llx;
-      overlap_y = min_ury - max_lly;
-      overlap_area = overlap_x * overlap_y;
-      terminal_list.push_back(terminal_id);
-      total_white_space -= overlap_area;
-    }
-    if (total_white_space < 1) {
-      total_white_space = 0;
+  total_white_space = (unsigned long long) (right - left) *
+      (unsigned long long) (top - bottom);
+  RectI bin_rect(left, bottom, right, top);
+
+  std::vector<RectI> rects;
+  for (auto &fixed_blk_ptr: box_fixed_blks) {
+    auto &fixed_blk = *fixed_blk_ptr;
+    RectI fixed_blk_rect(
+        static_cast<int>(std::round(fixed_blk.LLX())),
+        static_cast<int>(std::round(fixed_blk.LLY())),
+        static_cast<int>(std::round(fixed_blk.URX())),
+        static_cast<int>(std::round(fixed_blk.URY()))
+    );
+    if (bin_rect.IsOverlap(fixed_blk_rect)) {
+      fixed_blks.push_back(fixed_blk_ptr);
+      rects.push_back(bin_rect.GetOverlapRect(fixed_blk_rect));
     }
   }
+
+  unsigned long long used_area = GetCoverArea(rects);
+  if (total_white_space < used_area) {
+    DaliExpects(false,
+                "Fixed blocks takes more space than available space? "
+                    + std::to_string(total_white_space) + " "
+                    + std::to_string(used_area)
+    );
+  }
+
+  total_white_space -= used_area;
 }
 
-void BoxBin::UpdateObsBoundary(std::vector<Block> &block_list) {
-  if (terminal_list.empty()) {
-    return;
-  }
+void BoxBin::UpdateObsBoundary() {
   vertical_cutlines.clear();
   horizontal_cutlines.clear();
-  for (auto &terminal_id: terminal_list) {
-    Block &node = block_list[terminal_id];
+  if (fixed_blks.empty()) {
+    return;
+  }
+  for (auto &blk_ptr: fixed_blks) {
+    Block &node = *blk_ptr;
     if ((left < node.LLX()) && (right > node.LLX())) {
       vertical_cutlines.push_back((int) node.LLX());
     }
@@ -328,9 +321,9 @@ bool BoxBin::write_cell_in_box(
     BOOST_LOG_TRIVIAL(info) << "Cannot open file" << NameOfFile << "\n";
     return false;
   }
-  for (auto &cell_id: cell_list) {
-    if (Nodelist[cell_id].IsMovable()) {
-      ost << Nodelist[cell_id].X() << "\t" << Nodelist[cell_id].Y() << "\n";
+  for (auto &blk_ptr: cell_list) {
+    if (blk_ptr->IsMovable()) {
+      ost << blk_ptr->X() << "\t" << blk_ptr->Y() << "\n";
     }
   }
   ost.close();
@@ -439,10 +432,9 @@ bool BoxBin::update_cut_point_cell_list_low_high(
       //BOOST_LOG_TRIVIAL(info)   << i << "\n";
       cell_area_low = 0;
       cut_line = (cut_line_low + cut_line_high) / 2;
-      for (auto &cell_id: cell_list) {
-        node = &Nodelist[cell_id];
-        if (node->Y() < cut_line) {
-          cell_area_low += node->Area();
+      for (auto &blk_ptr: cell_list) {
+        if (blk_ptr->Y() < cut_line) {
+          cell_area_low += blk_ptr->Area();
         }
       }
       //BOOST_LOG_TRIVIAL(info)   << cell_area_low/(double)total_cell_area << "\n";
@@ -461,12 +453,11 @@ bool BoxBin::update_cut_point_cell_list_low_high(
     cut_ll_point.y = cut_line;
     cut_ur_point.y = cut_line;
     //BOOST_LOG_TRIVIAL(info)   << cut_line << " LLY " << ll_point.y << " URY " << ll_point.y << "\n";
-    for (auto &cell_id: cell_list) {
-      node = &Nodelist[cell_id];
-      if (node->Y() < cut_line) {
-        cell_list_low.push_back(cell_id);
+    for (auto &blk_ptr: cell_list) {
+      if (blk_ptr->Y() < cut_line) {
+        cell_list_low.push_back(blk_ptr);
       } else {
-        cell_list_high.push_back(cell_id);
+        cell_list_high.push_back(blk_ptr);
       }
     }
   } else {
@@ -478,10 +469,9 @@ bool BoxBin::update_cut_point_cell_list_low_high(
       //BOOST_LOG_TRIVIAL(info)   << i << "\n";
       cell_area_low = 0;
       cut_line = (cut_line_low + cut_line_high) / 2;
-      for (auto &cell_id: cell_list) {
-        node = &Nodelist[cell_id];
-        if (node->X() < cut_line) {
-          cell_area_low += node->Area();
+      for (auto &blk_ptr: cell_list) {
+        if (blk_ptr->X() < cut_line) {
+          cell_area_low += blk_ptr->Area();
         }
       }
       //BOOST_LOG_TRIVIAL(info)   << cell_area_low/(double)total_cell_area << "\n";
@@ -499,12 +489,11 @@ bool BoxBin::update_cut_point_cell_list_low_high(
     cut_ll_point.x = cut_line;
     cut_ur_point.x = cut_line;
     //BOOST_LOG_TRIVIAL(info)   << cut_line << " LLX " << ll_point.x << " URX " << ur_point.x << "\n";
-    for (auto &cell_id: cell_list) {
-      node = &Nodelist[cell_id];
-      if (node->X() < cut_line) {
-        cell_list_low.push_back(cell_id);
+    for (auto &blk_ptr: cell_list) {
+      if (blk_ptr->X() < cut_line) {
+        cell_list_low.push_back(blk_ptr);
       } else {
-        cell_list_high.push_back(cell_id);
+        cell_list_high.push_back(blk_ptr);
       }
     }
   }
@@ -550,29 +539,28 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(
     /* second part, split the total cell_list to two part,
      * by sort cell_list based on y location in ascending order */
     size_t mini_index;
-    int tmp_cell_id;
     double mini_loc;
     for (size_t i = 0; i < cell_list.size(); i++) {
-      node = &Nodelist[cell_list[i]];
+      node = cell_list[i];
       mini_index = i;
       mini_loc = node->Y();
       for (size_t j = i + 1; j < cell_list.size(); j++) {
-        node1 = &Nodelist[cell_list[j]];
+        node1 = cell_list[j];
         if (node1->Y() < mini_loc) {
           mini_index = j;
           mini_loc = node1->Y();
         }
       }
-      tmp_cell_id = cell_list[mini_index];
+      Block *tmp_cell_ptr = cell_list[mini_index];
       cell_list[mini_index] = cell_list[i];
-      cell_list[i] = tmp_cell_id;
+      cell_list[i] = tmp_cell_ptr;
     }
 
     /* and then, find the index of cell, the total cell area below which is closest to one half of the total cell area */
     unsigned long long tmp_tot_cell_area_low = 0;
     int index_tot_cell_low_closest_to_half = 0;
     for (size_t i = 0; i < cell_list.size(); i++) {
-      node = &Nodelist[cell_list[i]];
+      node = cell_list[i];
       tmp_tot_cell_area_low += node->Area();
       cell_area_low_percentage =
           double(tmp_tot_cell_area_low) / double(total_cell_area);
@@ -592,7 +580,7 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(
      * and update total_cell_area_low and total_cell_area_high */
     cell_area_low = 0;
     for (int i = 0; i < (int) cell_list.size(); i++) {
-      node = &Nodelist[cell_list[i]];
+      node = cell_list[i];
       if (i <= index_tot_cell_low_closest_to_half) {
         cell_area_low += node->Area();
         cell_list_low.push_back(cell_list[i]);
@@ -608,7 +596,7 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(
      * it is set to be the y-coordinate of the cell closest to half of the total cell area */
     cut_ur_point.x = ur_point.x;
     cut_ll_point.x = ll_point.x;
-    node = &Nodelist[cell_list[index_tot_cell_low_closest_to_half]];
+    node = cell_list[index_tot_cell_low_closest_to_half];
     cut_line = node->Y();
     cut_ll_point.y = cut_line;
     cut_ur_point.y = cut_line;
@@ -616,28 +604,27 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(
     /* first, split the total cell_list to two part,
      * by sort cell_list based on y location in ascending order */
     size_t mini_index;
-    int tmp_cell_id;
     double mini_loc;
     for (size_t i = 0; i < cell_list.size(); i++) {
-      node = &Nodelist[cell_list[i]];
+      node = cell_list[i];
       mini_index = i;
       mini_loc = node->X();
       for (size_t j = i + 1; j < cell_list.size(); j++) {
-        node1 = &Nodelist[cell_list[j]];
+        node1 = cell_list[j];
         if (node1->X() < mini_loc) {
           mini_index = j;
           mini_loc = node1->X();
         }
       }
-      tmp_cell_id = cell_list[mini_index];
+      Block *tmp_cell_ptr = cell_list[mini_index];
       cell_list[mini_index] = cell_list[i];
-      cell_list[i] = tmp_cell_id;
+      cell_list[i] = tmp_cell_ptr;
     }
     /* second, find the index of cell, the total cell area below which is closest to one half of the total cell area */
     unsigned long long tmp_tot_cell_area_low = 0;
     int index_tot_cell_low_closest_to_half = 0;
     for (size_t i = 0; i < cell_list.size(); i++) {
-      node = &Nodelist[cell_list[i]];
+      node = cell_list[i];
       tmp_tot_cell_area_low += node->Area();
       cell_area_low_percentage =
           double(tmp_tot_cell_area_low) / double(total_cell_area);
@@ -655,7 +642,7 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(
      * and update total_cell_area_low and total_cell_area_high */
     cell_area_low = 0;
     for (int i = 0; i < (int) cell_list.size(); i++) {
-      node = &Nodelist[cell_list[i]];
+      node = cell_list[i];
       if (i <= index_tot_cell_low_closest_to_half) {
         cell_area_low += node->Area();
         cell_list_low.push_back(cell_list[i]);
@@ -670,7 +657,7 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(
      * it is set to be the y-coordinate of the cell closest to half of the total cell area */
     cut_ur_point.y = ur_point.y;
     cut_ll_point.y = ll_point.y;
-    node = &Nodelist[cell_list[index_tot_cell_low_closest_to_half]];
+    node = cell_list[index_tot_cell_low_closest_to_half];
     cut_line = node->X();
     cut_ll_point.y = cut_line;
     cut_ur_point.y = cut_line;
@@ -699,8 +686,11 @@ void BoxBin::Report() {
     << ") (" << right << ", " << top << ")\n";
 
   BOOST_LOG_TRIVIAL(info) << "cell list: " << cell_list.size() << "\n";
-  for (auto &num: cell_list) {
-    BOOST_LOG_TRIVIAL(info) << num << ", ";
+  for (auto &p_blk: cell_list) {
+    BOOST_LOG_TRIVIAL(info)
+      << p_blk->Name() << ", "
+      << "(" << p_blk->LLX() << ", " << p_blk->LLY() << "), "
+      << "(" << p_blk->URX() << ", " << p_blk->URY() << ")\n";
   }
   BOOST_LOG_TRIVIAL(info) << "\nend\n";
 
@@ -716,9 +706,12 @@ void BoxBin::Report() {
   }
   BOOST_LOG_TRIVIAL(info) << "\nend\n";
 
-  BOOST_LOG_TRIVIAL(info) << "terminal list: " << terminal_list.size() << "\n";
-  for (auto &num: terminal_list) {
-    BOOST_LOG_TRIVIAL(info) << num << ", ";
+  BOOST_LOG_TRIVIAL(info) << "terminal list: " << fixed_blks.size() << "\n";
+  for (auto &p_fixed_blk: fixed_blks) {
+    BOOST_LOG_TRIVIAL(info)
+      << p_fixed_blk->Name() << ", "
+      << "(" << p_fixed_blk->LLX() << ", " << p_fixed_blk->LLY() << "), "
+      << "(" << p_fixed_blk->URX() << ", " << p_fixed_blk->URY() << ")\n";
   }
   BOOST_LOG_TRIVIAL(info) << "\nend\n";
 

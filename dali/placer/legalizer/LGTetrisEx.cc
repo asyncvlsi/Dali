@@ -534,18 +534,16 @@ void LGTetrisEx::FastShiftLeft(int failure_point) {
   } else {
     double init_diff = index_loc_list_[failure_point - 1].x
         - index_loc_list_[failure_point].x;
-    int failed_block = index_loc_list_[failure_point].num;
-    bounding_left = block_list[failed_block].LLX();
-    int last_placed_block = index_loc_list_[failure_point - 1].num;
-    int left_new = (int) std::round(block_list[last_placed_block].LLX());
+    Block *failed_block = index_loc_list_[failure_point].blk_ptr;
+    bounding_left = failed_block->LLX();
+    Block *last_placed_block = index_loc_list_[failure_point - 1].blk_ptr;
+    int left_new = (int) std::round(last_placed_block->LLX());
     //BOOST_LOG_TRIVIAL(info)   << left_new << "  " << bounding_left << "\n";
     int sz = index_loc_list_.size();
-    int block_num;
     for (int i = failure_point; i < sz; ++i) {
-      block_num = index_loc_list_[i].num;
-      if (block_list[block_num].IsMovable()) {
-        block_list[block_num].IncreaseX(
-            left_new - bounding_left + init_diff);
+      Block *blk_ptr = index_loc_list_[i].blk_ptr;
+      if (blk_ptr->IsMovable()) {
+        blk_ptr->IncreaseX(left_new - bounding_left + init_diff);
       }
     }
   }
@@ -571,7 +569,7 @@ bool LGTetrisEx::LocalLegalizationLeft() {
 
   int sz = index_loc_list_.size();
   for (int i = 0; i < sz; ++i) {
-    index_loc_list_[i].num = i;
+    index_loc_list_[i].blk_ptr = &(block_list[i]);
     index_loc_list_[i].x =
         block_list[i].LLX() - k_width_ * block_list[i].Width()
             - k_height_ * block_list[i].Height();
@@ -590,7 +588,7 @@ bool LGTetrisEx::LocalLegalizationLeft() {
   int i;
   for (i = 0; i < sz; ++i) {
     //BOOST_LOG_TRIVIAL(info)   << i << "\n";
-    auto &block = block_list[index_loc_list_[i].num];
+    auto &block = *(index_loc_list_[i].blk_ptr);
 
     if (block.IsFixed()) continue;
 
@@ -912,16 +910,14 @@ void LGTetrisEx::FastShiftRight(int failure_point) {
     double init_diff = index_loc_list_[failure_point - 1].x
         - index_loc_list_[failure_point].x;
     bounding_right = index_loc_list_[failure_point].x;
-    int last_placed_block = index_loc_list_[failure_point - 1].num;
-    int right_new = (int) std::round(block_list[last_placed_block].URX());
+    Block *last_placed_block = index_loc_list_[failure_point - 1].blk_ptr;
+    int right_new = (int) std::round(last_placed_block->URX());
     //BOOST_LOG_TRIVIAL(info)   << left_new << "  " << bounding_left << "\n";
     int sz = index_loc_list_.size();
-    int block_num = -1;
     for (int i = failure_point; i < sz; ++i) {
-      block_num = index_loc_list_[i].num;
-      if (block_list[block_num].IsMovable()) {
-        block_list[block_num].DecreaseX(
-            right_new - bounding_right + init_diff);
+      Block *blk_pr = index_loc_list_[i].blk_ptr;
+      if (blk_pr->IsMovable()) {
+        blk_pr->DecreaseX(right_new - bounding_right + init_diff);
       }
     }
   }
@@ -946,7 +942,7 @@ bool LGTetrisEx::LocalLegalizationRight() {
 
   int sz = index_loc_list_.size();
   for (int i = 0; i < sz; ++i) {
-    index_loc_list_[i].num = i;
+    index_loc_list_[i].blk_ptr = &(block_list[i]);
     index_loc_list_[i].x =
         block_list[i].URX() + k_width_ * block_list[i].Width()
             + k_height_ * block_list[i].Height();
@@ -970,7 +966,7 @@ bool LGTetrisEx::LocalLegalizationRight() {
   int i;
   for (i = 0; i < sz; ++i) {
     //BOOST_LOG_TRIVIAL(info)   << i << "\n";
-    auto &block = block_list[index_loc_list_[i].num];
+    auto &block = *(index_loc_list_[i].blk_ptr);
     if (block.IsFixed()) continue;
 
     res.x = int(std::round(block.URX()));
@@ -1235,7 +1231,7 @@ bool LGTetrisEx::LocalLegalizationBottom() {
 
   int sz = index_loc_list_.size();
   for (int i = 0; i < sz; ++i) {
-    index_loc_list_[i].num = i;
+    index_loc_list_[i].blk_ptr = &(block_list[i]);
     index_loc_list_[i].x = block_list[i].LLX();
     index_loc_list_[i].y =
         block_list[i].LLY() - k_width_ * block_list[i].Width()
@@ -1257,7 +1253,7 @@ bool LGTetrisEx::LocalLegalizationBottom() {
   int i;
   for (i = 0; i < sz; ++i) {
     //BOOST_LOG_TRIVIAL(info)   << i << "\n";
-    auto &block = block_list[index_loc_list_[i].num];
+    auto &block = *(index_loc_list_[i].blk_ptr);
 
     if (block.IsFixed()) continue;
 
@@ -1496,7 +1492,7 @@ bool LGTetrisEx::LocalLegalizationTop() {
 
   int sz = index_loc_list_.size();
   for (int i = 0; i < sz; ++i) {
-    index_loc_list_[i].num = i;
+    index_loc_list_[i].blk_ptr = &(block_list[i]);
     index_loc_list_[i].x = block_list[i].LLX();
     index_loc_list_[i].y =
         block_list[i].URY() + k_width_ * block_list[i].Width()
@@ -1518,7 +1514,7 @@ bool LGTetrisEx::LocalLegalizationTop() {
   int i;
   for (i = 0; i < sz; ++i) {
     //BOOST_LOG_TRIVIAL(info)   << i << "\n";
-    auto &block = block_list[index_loc_list_[i].num];
+    auto &block = *(index_loc_list_[i].blk_ptr);
 
     if (block.IsFixed()) continue;
 

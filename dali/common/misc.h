@@ -143,10 +143,10 @@ struct Rect {
     DaliExpects(llx_ <= urx_ && lly_ <= ury_, "Invalid Rect?");
   }
   bool IsOverlap(Rect<T> const &rhs) const {
-    return !(LLX() > rhs.URX() ||
-        rhs.LLX() > URX() ||
-        LLY() > rhs.URY() ||
-        rhs.LLY() > URY());
+    return !(LLX() >= rhs.URX() ||
+        rhs.LLX() >= URX() ||
+        LLY() >= rhs.URY() ||
+        rhs.LLY() >= URY());
   }
   Rect<T> GetOverlapRect(Rect<T> const &rhs) const {
     double llx, urx, lly, ury;
@@ -156,6 +156,13 @@ struct Rect {
     ury = std::min(URY(), rhs.URY());
     return Rect<T>(llx, lly, urx, ury);
   }
+  bool CheckValidity() {
+    return llx_ <= urx_ && lly_ <= ury_;
+  }
+  std::string ToString() {
+    return "(" + std::to_string(llx_), ", " + std::to_string(lly_) + "), " +
+        "(" + std::to_string(urx_), ", " + std::to_string(ury_) + ")";
+  }
 };
 
 typedef Rect<double> RectD;
@@ -163,16 +170,17 @@ typedef Rect<int> RectI;
 
 unsigned long long GetCoverArea(std::vector<RectI> &rects);
 
+class Block;
 template<class T>
 struct IndexLocPair {
-  int num;
+  Block *blk_ptr;
   T x;
   T y;
   explicit IndexLocPair(
-      int num_init = 0,
+      Block *blk_ptr_init = nullptr,
       T x_init = 0,
       T y_init = 0
-  ) : num(num_init),
+  ) : blk_ptr(blk_ptr_init),
       x(x_init),
       y(y_init) {}
   bool operator<(const IndexLocPair &rhs) const {

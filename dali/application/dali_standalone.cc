@@ -52,6 +52,7 @@ int main(int argc, char *argv[]) {
   StripePartitionMode well_legalization_mode = STRICT;
   bool overwrite_logfile = false;
   bool is_no_legal = false;
+  bool is_no_io_place = false;
   severity verbose_level = logging::trivial::info;
   bool is_log_no_prefix = false;
   double x_grid = 0, y_grid = 0;
@@ -145,6 +146,8 @@ int main(int argc, char *argv[]) {
       overwrite_logfile = true;
     } else if (arg == "-nolegal") {
       is_no_legal = true;
+    } else if (arg == "-noioplace") {
+      is_no_io_place = true;
     } else if (arg == "-clsmatlab") {
       export_well_cluster_for_matlab = true;
     } else if (arg == "-log" && i < argc) {
@@ -207,11 +210,17 @@ int main(int argc, char *argv[]) {
   double file_wall_time = get_wall_time() - wall_time;
   double file_cpu_time = get_cpu_time() - cpu_time;
   BOOST_LOG_TRIVIAL(info)
-    << "File loading complete " << "(wall time: " << file_wall_time
-    << "s, cpu time: " << file_cpu_time << "s)\n";
+    << "File loading complete " << "(wall time: "
+    << file_wall_time << "s, cpu time: " << file_cpu_time << "s)\n";
   BOOST_LOG_TRIVIAL(info) << "---------------------------------------\n";
   circuit.ReportBriefSummary();
   circuit.ReportHPWL();
+
+  //auto *phydb_iopin = phy_db.GetIoPinPtr("p513239");
+  //phydb_iopin->Report();
+  //auto *dali_blk = circuit.GetBlockPtr("p513239");
+  //dali_blk->Report();
+  //exit(1);
 
   if (target_density == -1) {
     double default_density = 0.7;
@@ -253,18 +262,21 @@ int main(int argc, char *argv[]) {
   }
   delete gb_placer;
 
-  auto *io_placer = new IoPlacer(&phy_db, &circuit);
-  bool is_ioplacer_config_success =
-      io_placer->ConfigSetGlobalMetalLayer(io_metal_layer);
-  DaliExpects(is_ioplacer_config_success,
-              "Cannot successfully configure I/O placer");
-  io_placer->AutoPlaceIoPin();
-  delete io_placer;
+  if (!is_no_io_place) {
+    auto *io_placer = new IoPlacer(&phy_db, &circuit);
+    bool is_ioplacer_config_success =
+        io_placer->ConfigSetGlobalMetalLayer(io_metal_layer);
+    DaliExpects(is_ioplacer_config_success,
+                "Cannot successfully configure I/O placer");
+    io_placer->AutoPlaceIoPin();
+    delete io_placer;
+  }
 
   /**** save results ****/
   circuit.SaveDefFile(output_name, "", def_file_name, 1, 1, 2, 1);
   circuit.SaveDefFile(output_name, "_io", def_file_name, 1, 1, 1, 1);
   circuit.SaveDefFile(output_name, "_filling", def_file_name, 1, 4, 2, 0);
+  circuit.SaveDefFileComponent(output_name + "_comp.def", def_file_name);
 
   circuit.InitNetFanoutHistogram();
   circuit.ReportNetFanoutHistogram();

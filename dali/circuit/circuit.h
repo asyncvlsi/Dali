@@ -292,6 +292,8 @@ class Circuit {
       bool is_real_cel = true
   );
 
+  void UpdateTotalBlkArea();
+
   // report the whole Block list for debugging purposes
   void ReportBlockList();
 
@@ -432,7 +434,7 @@ class Circuit {
   int MaxBlkHeight() const;
 
   // returns the total block area
-  long int TotBlkArea() const;
+  long long TotBlkArea() const;
 
   // returns the total number of blocks
   int TotBlkCnt() const;
@@ -521,13 +523,6 @@ class Circuit {
   // save long nets as a Matlab table
   void GenLongNetTable(std::string const &name_of_file);
 
-  // save placement to a DEF file
-  void SaveDefFile(
-      std::string const &name_of_file,
-      std::string const &def_file_name,
-      bool is_complete_version = true
-  );
-
   // save placement to a DEF file with many options
   void SaveDefFile(
       std::string const &base_name,
@@ -539,27 +534,8 @@ class Circuit {
       int save_net
   );
 
-  // save IO placement result to a DEF file
-  void SaveIoDefFile(
-      std::string const &name_of_file,
-      std::string const &def_file_name
-  );
-
-  // save well fillings to a DEF file
-  void SaveDefWell(
-      std::string const &name_of_file,
-      std::string const &def_file_name,
-      bool is_no_normal_cell = true
-  );
-
-  // save PP/NP fillings to a DEF file
-  void SaveDefPpnpWell(
-      std::string const &name_of_file,
-      std::string const &def_file_name
-  );
-
   // save all components to a DEF file
-  void SaveInstanceDefFile(
+  void SaveDefFileComponent(
       std::string const &name_of_file,
       std::string const &def_file_name
   );

@@ -601,7 +601,7 @@ bool WellLegalizer::WellLegalizationLeft() {
 
   int sz = index_loc_list_.size();
   for (int i = 0; i < sz; ++i) {
-    index_loc_list_[i].num = i;
+    index_loc_list_[i].blk_ptr = &(block_list[i]);
     index_loc_list_[i].x = block_list[i].LLX();
     index_loc_list_[i].y = block_list[i].LLY();
   }
@@ -616,7 +616,7 @@ bool WellLegalizer::WellLegalizationLeft() {
   bool is_legal_loc_found;
 
   for (auto &pair: index_loc_list_) {
-    auto &block = block_list[pair.num];
+    auto &block = *(pair.blk_ptr);
     if (block.IsFixed()) continue;
 
     res.x = int(std::round(block.LLX()));
@@ -632,7 +632,11 @@ bool WellLegalizer::WellLegalizationLeft() {
 
     if (!is_current_loc_legal) {
       is_legal_loc_found =
-          FindLocLeft(res, pair.num, width, height, p_well_row_height);
+          FindLocLeft(res,
+                      pair.blk_ptr->Id(),
+                      width,
+                      height,
+                      p_well_row_height);
       if (!is_legal_loc_found) {
         //BOOST_LOG_TRIVIAL(info)  <<"LNum: %d, lx: %d, ly: %d\n", pair.num, res.x, res.y);
         ++fail_count;
@@ -969,7 +973,7 @@ bool WellLegalizer::WellLegalizationRight() {
 
   int sz = index_loc_list_.size();
   for (int i = 0; i < sz; ++i) {
-    index_loc_list_[i].num = i;
+    index_loc_list_[i].blk_ptr = &(block_list[i]);
     index_loc_list_[i].x = block_list[i].URX();
     index_loc_list_[i].y = block_list[i].LLY();
   }
@@ -988,7 +992,7 @@ bool WellLegalizer::WellLegalizationRight() {
   bool is_legal_loc_found;
 
   for (auto &pair: index_loc_list_) {
-    auto &block = block_list[pair.num];
+    auto &block = *(pair.blk_ptr);
     if (block.IsFixed()) continue;
 
     res.x = int(std::round(block.URX()));
@@ -1005,8 +1009,8 @@ bool WellLegalizer::WellLegalizationRight() {
 
     if (!is_current_loc_legal) {
       //BOOST_LOG_TRIVIAL(info)  <<"Num: %d, lx: %d, ly: %d\n", pair.num, res.x, res.y);
-      is_legal_loc_found =
-          FindLocRight(res, pair.num, width, height, p_well_row_height);
+      is_legal_loc_found = FindLocRight(res, pair.blk_ptr->Id(),
+                                        width, height, p_well_row_height);
       if (!is_legal_loc_found) {
         //BOOST_LOG_TRIVIAL(info)  <<"RNum: %d, lx: %d, ly: %d\n", pair.num, res.x, res.y);
         ++fail_count;

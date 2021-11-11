@@ -67,7 +67,7 @@ void Placer::SetInputCircuit(Circuit *circuit) {
   p_ckt_ = circuit;
 }
 
-Circuit &Placer::GetCircuitRef() {
+Circuit &Placer::GetCkt() {
   DaliExpects(p_ckt_ != nullptr,
               "Please set an input circuit before using this method");
   return *p_ckt_;
@@ -148,10 +148,10 @@ void Placer::SetBoundary(int left, int right, int bottom, int top) {
 }
 
 void Placer::SetBoundaryDef() {
-  left_ = GetCircuitRef().RegionLLX();
-  right_ = GetCircuitRef().RegionURX();
-  bottom_ = GetCircuitRef().RegionLLY();
-  top_ = GetCircuitRef().RegionURY();
+  left_ = GetCkt().RegionLLX();
+  right_ = GetCkt().RegionURX();
+  bottom_ = GetCkt().RegionLLY();
+  top_ = GetCkt().RegionURY();
   DaliExpects(IsBoundaryProper(), "Invalid boundary setting");
 }
 

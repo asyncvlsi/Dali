@@ -18,12 +18,12 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-
 #ifndef DALI_DALI_PLACER_GLOBALPLACER_GRIDBIN_H_
 #define DALI_DALI_PLACER_GLOBALPLACER_GRIDBIN_H_
 
 #include <vector>
 
+#include "dali/circuit/block.h"
 #include "gridbinindex.h"
 
 namespace dali {
@@ -44,8 +44,8 @@ class GridBin {
   bool over_fill;
   bool cluster_visited;
   bool global_placed;
-  std::vector<int> cell_list;
-  std::vector<int> terminal_list;
+  std::vector<Block *> cell_list;
+  std::vector<Block *> fixed_blks;
   std::vector<GridBinIndex> adjacent_bin_index;
 
   int LLX() { return left; }
