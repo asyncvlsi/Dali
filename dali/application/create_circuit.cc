@@ -77,7 +77,7 @@ int main() {
   double in_ux = 0.2;
   double in_uy = 0.9;
   Pin *in_pin_ptr = circuit.AddBlkTypePin(inv_ptr, in_name, true);
-  circuit.AddBlkTypePinRect(in_pin_ptr, in_lx, in_ly, in_ux, in_uy);
+  in_pin_ptr->SetOffset((in_lx + in_uy) / 2.0, (in_ly + in_uy) / 2.0);
 
   std::string out_name = "OUT";
   double out_lx = 0.6;
@@ -85,7 +85,7 @@ int main() {
   double out_ux = 0.8;
   double out_uy = 0.9;
   Pin *out_pin_ptr = circuit.AddBlkTypePin(inv_ptr, out_name, false);
-  circuit.AddBlkTypePinRect(out_pin_ptr, out_lx, out_ly, out_ux, out_uy);
+  out_pin_ptr->SetOffset((out_lx + out_ly) / 2.0, (out_ux + out_uy) / 2.0);
 
   // set DEF Units distance microns, which would be better the same as LEF database micron.
   circuit.SetUnitsDistanceMicrons(1000);
