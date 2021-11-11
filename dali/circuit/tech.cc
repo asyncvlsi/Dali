@@ -40,6 +40,11 @@ Tech::~Tech() {
   }
 }
 
+double Tech::GetManufacturingGrid() const {
+  DaliExpects(manufacturing_grid_ > 0, "Manufacturing grid not set");
+  return manufacturing_grid_;
+}
+
 std::vector<BlockType *> &Tech::WellTapCellPtrs() {
   return well_tap_cell_ptrs_;
 }

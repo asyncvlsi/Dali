@@ -18,7 +18,6 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-
 #ifndef DALI_DALI_CIRCUIT_TECH_H_
 #define DALI_DALI_CIRCUIT_TECH_H_
 
@@ -37,6 +36,8 @@ class Tech {
  public:
   Tech();
   ~Tech();
+
+  double GetManufacturingGrid() const;
 
   // get all kinds of well tap cells
   std::vector<BlockType *> &WellTapCellPtrs();

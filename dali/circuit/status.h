@@ -18,7 +18,6 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-
 #ifndef DALI_DALI_CIRCUIT_STATUS_H_
 #define DALI_DALI_CIRCUIT_STATUS_H_
 
@@ -36,7 +35,6 @@ enum MetalDirection {
 MetalDirection StrToMetalDirection(std::string const &str_metal_direction);
 std::string MetalDirectionStr(MetalDirection metal_direction);
 
-#define NUM_OF_ORIENT 8
 enum BlockOrient {
   N = 0,
   S = 1,

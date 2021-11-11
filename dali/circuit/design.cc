@@ -130,7 +130,7 @@ void Design::ReportNetFanoutHisto() {
     if (net_histogram_.min_hpwl_[i] == DBL_MAX) {
       net_histogram_.min_hpwl_[i] = 0;
     }
-    if (net_histogram_.max_hpwl_[i] == DBL_MIN) {
+    if (net_histogram_.max_hpwl_[i] == -DBL_MAX) {
       net_histogram_.max_hpwl_[i] = 0;
     }
   }

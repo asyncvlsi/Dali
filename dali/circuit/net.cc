@@ -122,7 +122,7 @@ NetAux *Net::Aux() {
 }
 
 void Net::GetXBoundIfBlkAbsent(Block *blk_ptr, double &lo, double &hi) {
-  lo = DBL_MIN;
+  lo = -DBL_MAX;
   hi = DBL_MAX;
 
   int sz = static_cast<int>(blk_pins_.size());
@@ -130,7 +130,7 @@ void Net::GetXBoundIfBlkAbsent(Block *blk_ptr, double &lo, double &hi) {
     return;
   }
 
-  double max_x = DBL_MIN;
+  double max_x = -DBL_MAX;
   double min_x = DBL_MAX;
   double tmp_pin_loc;
 
@@ -152,7 +152,7 @@ void Net::GetXBoundIfBlkAbsent(Block *blk_ptr, double &lo, double &hi) {
 }
 
 void Net::GetYBoundIfBlkAbsent(Block *blk_ptr, double &lo, double &hi) {
-  lo = DBL_MIN;
+  lo = -DBL_MAX;
   hi = DBL_MAX;
 
   int sz = static_cast<int>(blk_pins_.size());
@@ -160,7 +160,7 @@ void Net::GetYBoundIfBlkAbsent(Block *blk_ptr, double &lo, double &hi) {
     return;
   }
 
-  double max_y = DBL_MIN;
+  double max_y = -DBL_MAX;
   double min_y = DBL_MAX;
   double tmp_pin_loc;
 

@@ -74,21 +74,11 @@ int Circuit::DistanceScaleFactorY() const {
 }
 
 int Circuit::LocDali2PhydbX(double loc) const {
-  if (AbsResidual(loc, 1.0) > constants_.epsilon) {
-    BOOST_LOG_TRIVIAL(trace)
-      << "Converting a non-integer Dali location to a PhyDB location: "
-      << loc << "\n";
-  }
   return static_cast<int>(std::round(loc * DistanceScaleFactorX()))
       + DieAreaOffsetX();
 }
 
 int Circuit::LocDali2PhydbY(double loc) const {
-  if (AbsResidual(loc, 1.0) > constants_.epsilon) {
-    BOOST_LOG_TRIVIAL(trace)
-      << "Converting a non-integer Dali location to a PhyDB location: "
-      << loc << "\n";
-  }
   return static_cast<int>(std::round(loc * DistanceScaleFactorY()))
       + DieAreaOffsetY();
 }
@@ -101,6 +91,24 @@ double Circuit::LocPhydb2DaliX(int loc) const {
 double Circuit::LocPhydb2DaliY(int loc) const {
   double factor_y = DistanceMicrons() * GridValueY();
   return (loc - DieAreaOffsetY()) / factor_y;
+}
+
+double Circuit::LengthPhydb2DaliX(double length) const {
+  int mg_length =
+      static_cast<int>(std::round(length / tech_.GetManufacturingGrid()));
+  int mg_grid_x = static_cast<int>(
+      std::round(GridValueX() / tech_.GetManufacturingGrid())
+  );
+  return (double) mg_length / (double) mg_grid_x;
+}
+
+double Circuit::LengthPhydb2DaliY(double length) const {
+  int mg_length =
+      static_cast<int>(std::round(length / tech_.GetManufacturingGrid()));
+  int mg_grid_y = static_cast<int>(
+      std::round(GridValueY() / tech_.GetManufacturingGrid())
+  );
+  return (double) mg_length / (double) mg_grid_y;
 }
 
 Tech &Circuit::tech() {
@@ -140,7 +148,12 @@ void Circuit::SetGridValue(double grid_value_x, double grid_value_y) {
               "grid_value_x must be a positive real number!");
   DaliExpects(grid_value_y > 0,
               "grid_value_y must be a positive real number!");
-  //BOOST_LOG_TRIVIAL(info) << "  grid value x: " << grid_value_x << ", grid value y: " << grid_value_y << "\n";
+  double residual_x = AbsResidual(grid_value_x, tech_.GetManufacturingGrid());
+  DaliExpects(residual_x < constants_.epsilon,
+              "grid value x is not integer multiple of manufacturing grid?");
+  double residual_y = AbsResidual(grid_value_y, tech_.GetManufacturingGrid());
+  DaliExpects(residual_y < constants_.epsilon,
+              "grid value y is not integer multiple of manufacturing grid?");
   tech_.grid_value_x_ = grid_value_x;
   tech_.grid_value_y_ = grid_value_y;
   tech_.is_grid_set_ = true;
@@ -320,20 +333,10 @@ Pin *Circuit::AddBlkTypePin(
   return blk_type_ptr->AddPin(pin_name, is_input);
 }
 
-void Circuit::AddBlkTypePinRect(
-    Pin *pin_ptr,
-    double llx,
-    double lly,
-    double urx,
-    double ury
-) {
-  DaliExpects(pin_ptr != nullptr, "Add a Rect to a nullptr?");
-  pin_ptr->AddRect(llx, lly, urx, ury);
-}
-
 void Circuit::ReportBlockType() {
-  BOOST_LOG_TRIVIAL(info) << "Total BlockType: "
-                          << tech_.block_type_map_.size() << std::endl;
+  BOOST_LOG_TRIVIAL(info)
+    << "Total BlockType: "
+    << tech_.block_type_map_.size() << std::endl;
   for (auto &pair: tech_.block_type_map_) {
     pair.second->Report();
   }
@@ -736,7 +739,7 @@ void Circuit::UpdateNetHPWLHistogram() {
   design_.net_histogram_.sum_hpwl_.assign(bin_count, 0);
   design_.net_histogram_.ave_hpwl_.assign(bin_count, 0);
   design_.net_histogram_.min_hpwl_.assign(bin_count, DBL_MAX);
-  design_.net_histogram_.max_hpwl_.assign(bin_count, DBL_MIN);
+  design_.net_histogram_.max_hpwl_.assign(bin_count, -DBL_MAX);
 
   for (auto &net: design_.nets_) {
     int net_size = net.PinCnt();
@@ -1039,7 +1042,7 @@ void Circuit::ReportHPWL() {
 void Circuit::ReportHPWLHistogramLinear(int bin_num) {
   std::vector<double> hpwl_list;
   double min_hpwl = DBL_MAX;
-  double max_hpwl = DBL_MIN;
+  double max_hpwl = -DBL_MAX;
   hpwl_list.reserve(design_.nets_.size());
   double factor = GridValueY() / GridValueX();
   for (auto &net: design_.nets_) {
@@ -1094,7 +1097,7 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
 void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
   std::vector<double> hpwl_list;
   double min_hpwl = DBL_MAX;
-  double max_hpwl = DBL_MIN;
+  double max_hpwl = -DBL_MAX;
   hpwl_list.reserve(design_.nets_.size());
   double factor = GridValueY() / GridValueX();
   for (auto &net: design_.nets_) {
@@ -2123,7 +2126,7 @@ void Circuit::AddDummyIOPinBlockType() {
   std::string tmp_pin_name("pin");
   // TO-DO, the value of @param is_input may not be true
   Pin *pin = io_pin_type->AddPin(tmp_pin_name, true);
-  pin->AddRect(0, 0, 0, 0);
+  pin->SetOffset(0, 0);
   tech_.io_dummy_blk_type_ptr_ = io_pin_type;
 }
 
@@ -2257,13 +2260,8 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
 
       auto direction = MetalDirection(layer.GetDirection());
       AddMetalLayer(
-          layer_name,
-          min_width,
-          min_spacing,
-          min_area,
-          pitch_x,
-          pitch_y,
-          direction
+          layer_name, min_width, min_spacing, min_area,
+          pitch_x, pitch_y, direction
       );
     }
   }
@@ -2294,27 +2292,22 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
 
       auto &layer_rects = pin.GetLayerRectRef();
       if (layer_rects.empty()) {
-        DaliExpects(false, "No physical pins, Macro: " + blk_type->Name()
-            + ", pin: " + pin_name);
+        DaliExpects(false, "No physical pins, Macro: "
+            + blk_type->Name() + ", pin: " + pin_name);
       }
-      for (auto &layer_rect: layer_rects) {
-        auto &rects = layer_rect.GetRects();
-        for (auto &rect: rects) {
-          double llx = rect.LLX() / GridValueX();
-          double urx = rect.URX() / GridValueX();
-          double lly = rect.LLY() / GridValueY();
-          double ury = rect.URY() / GridValueY();
-          new_pin->AddRectOnly(llx, lly, urx, ury);
-        }
-      }
-      if (new_pin->IsRectEmpty()) {
-        DaliExpects(false,
-                    "No geometries provided for pin " + pin_name
-                        + " in Macro: " + blk_type->Name());
-      }
-    }
-    for (auto &pin: blk_type->PinList()) {
-      pin.InitOffset();
+
+      auto bbox = pin.GetBoundingBox();
+      double llx = LengthPhydb2DaliX(bbox.LLX());
+      double urx = LengthPhydb2DaliX(bbox.URX());
+      double lly = LengthPhydb2DaliY(bbox.LLY());
+      double ury = LengthPhydb2DaliY(bbox.URY());
+      new_pin->SetOffset(
+          (llx + urx) / 2.0,
+          (lly + ury) / 2.0
+      );
+      double bbox_width = LengthPhydb2DaliX(bbox.GetWidth());
+      double bbox_height = LengthPhydb2DaliY(bbox.GetHeight());
+      new_pin->SetBoundingBoxSize(bbox_width, bbox_height);
     }
   }
 }

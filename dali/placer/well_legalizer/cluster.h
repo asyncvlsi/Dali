@@ -50,7 +50,7 @@ struct Cluster {
   int n_well_height_ = 0;
 
   /**** lly which gives minimal displacement ****/
-  double min_displacement_lly_ = DBL_MIN;
+  double min_displacement_lly_ = -DBL_MAX;
 
   /**** member functions ****/
   int UsedSize() const { return used_size_; }

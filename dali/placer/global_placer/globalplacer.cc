@@ -3585,14 +3585,16 @@ void GlobalPlacer::write_first_box_cell_bounding(std::string const &name_of_file
   ost.close();
 }
 
-bool GlobalPlacer::IsSeriesConverge(std::vector<double> &data,
-                                    int window_size,
-                                    double tolerance) {
+bool GlobalPlacer::IsSeriesConverge(
+    std::vector<double> &data,
+    int window_size,
+    double tolerance
+) {
   int sz = (int) data.size();
   if (sz < window_size) {
     return false;
   }
-  double max_val = DBL_MIN;
+  double max_val = -DBL_MAX;
   double min_val = DBL_MAX;
   for (int i = 0; i < window_size; ++i) {
     max_val = std::max(max_val, data[sz - 1 - i]);

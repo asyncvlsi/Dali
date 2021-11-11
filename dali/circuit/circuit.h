@@ -94,17 +94,23 @@ class Circuit {
   // Dali to PhyDB distance scale factor y
   int DistanceScaleFactorY() const;
 
-  // convert length in the x direction from grid unit to database unit
+  // convert location in a design from Dali to PhyDB
   int LocDali2PhydbX(double loc) const;
 
-  // convert length in the y direction from grid unit to database unit
+  // convert location in a design from Dali to PhyDB
   int LocDali2PhydbY(double loc) const;
 
-  // convert length in the x direction from database unit to grid unit
+  // convert location in a design from PhyDB to Dali
   double LocPhydb2DaliX(int loc) const;
 
-  // convert length in the y direction from database unit to grid unit
+  // convert location in a design from PhyDB to Dali
   double LocPhydb2DaliY(int loc) const;
+
+  // convert length in um to grid unit
+  double LengthPhydb2DaliX(double length) const;
+
+  // convert length in um to grid unit
+  double LengthPhydb2DaliY(double length) const;
 
   /**** API to retrieve technology and design, this can be easily extended to support multiple techs and designs ****/
   // get the tech
@@ -210,15 +216,6 @@ class Circuit {
       BlockType *blk_type_ptr,
       std::string const &pin_name,
       bool is_input
-  );
-
-  // add a rectangle to a block pin. Unit in grid value
-  void AddBlkTypePinRect(
-      Pin *pin_ptr,
-      double llx,
-      double lly,
-      double urx,
-      double ury
   );
 
   // print all BlockTypes

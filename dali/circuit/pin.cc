@@ -18,10 +18,11 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-
 #include "pin.h"
 
 #include "blocktype.h"
+
+#define NUM_OF_ORIENT 8
 
 namespace dali {
 
@@ -61,20 +62,16 @@ int Pin::Id() const {
   return name_id_pair_ptr_->second;
 }
 
-void Pin::InitOffset() {
-  DaliExpects(!rect_list_.empty(),
-              "Empty rect_list cannot set x_offset_ and y_offset_!");
-  if (!manual_set_) {
-    CalculateOffset(
-        (rect_list_[0].LLX() + rect_list_[0].URX()) / 2.0,
-        (rect_list_[0].LLY() + rect_list_[0].URY()) / 2.0
-    );
-  }
-}
-
 void Pin::SetOffset(double x_offset, double y_offset) {
   CalculateOffset(x_offset, y_offset);
   manual_set_ = true;
+}
+
+void Pin::SetBoundingBoxSize(double width, double height) {
+  DaliExpects(width >= 0 && height >= 0,
+              "Negative width or height?");
+  half_bbox_width_ = width / 2.0;
+  half_bbox_height_ = height / 2.0;
 }
 
 double Pin::OffsetX(BlockOrient orient) const {
@@ -85,17 +82,6 @@ double Pin::OffsetY(BlockOrient orient) const {
   return y_offset_[orient - N];
 }
 
-void Pin::AddRect(double llx, double lly, double urx, double ury) {
-  if (rect_list_.empty()) {
-    CalculateOffset((llx + urx) / 2.0, (lly + ury) / 2.0);
-  }
-  rect_list_.emplace_back(llx, lly, urx, ury);
-}
-
-void Pin::AddRectOnly(double llx, double lly, double urx, double ury) {
-  rect_list_.emplace_back(llx, lly, urx, ury);
-}
-
 void Pin::SetIoType(bool is_input) {
   is_input_ = is_input;
 }
@@ -104,16 +90,12 @@ bool Pin::IsInput() const {
   return is_input_;
 }
 
-bool Pin::IsRectEmpty() const {
-  return rect_list_.empty();
-}
-
 void Pin::Report() const {
-  BOOST_LOG_TRIVIAL(info) << Name() << " (" << OffsetX() << ", "
-                          << OffsetY() << ")";
+  BOOST_LOG_TRIVIAL(info)
+    << Name() << " (" << OffsetX() << ", " << OffsetY() << ")";
   for (int i = 0; i < 8; ++i) {
-    BOOST_LOG_TRIVIAL(info) << "   (" << x_offset_[i] << ", "
-                            << y_offset_[i] << ")";
+    BOOST_LOG_TRIVIAL(info)
+      << "   (" << x_offset_[i] << ", " << y_offset_[i] << ")";
   }
   BOOST_LOG_TRIVIAL(info) << "\n";
 }

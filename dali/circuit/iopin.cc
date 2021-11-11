@@ -20,6 +20,8 @@
  ******************************************************************************/
 #include "iopin.h"
 
+#define NUM_OF_ORIENT 8
+
 namespace dali {
 
 IoPin::IoPin(std::pair<const std::string, int> *name_id_pair_ptr) :

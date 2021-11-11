@@ -254,19 +254,13 @@ void Placer::SanityCheck() {
               "Filling rate should be in a proper range, for example [0.1, 1], current value: "
                   + std::to_string(placement_density_));
   for (auto &net: Nets()) {
-    DaliWarns(net.BlockPins().empty(),
-              "Empty net or this net only contains unplaced IOPINs: "
-                  + net.Name());
-  }
-  DaliExpects(IsBoundaryProper(), "Improper boundary setting");
-  for (auto &pair: p_ckt_->BlockTypeMap()) {
-    BlockType *blk_type_ptr = pair.second;
-    for (auto &pin: blk_type_ptr->PinList()) {
-      DaliExpects(!pin.IsRectEmpty(),
-                  "No RECT found for pin: " + blk_type_ptr->Name()
-                      + "::" + pin.Name());
+    if (net.BlockPins().empty()) {
+      DaliWarns(true,
+                "Empty net or this net only contains unplaced IOPINs: "
+                    + net.Name());
     }
   }
+  DaliExpects(IsBoundaryProper(), "Improper boundary setting");
 }
 
 void Placer::UpdateMovableBlkPlacementStatus() {
