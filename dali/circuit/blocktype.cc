@@ -94,9 +94,13 @@ Pin *BlockType::GetPinPtr(std::string const &pin_name) {
 }
 
 void BlockType::SetWell(BlockTypeWell *well_ptr) {
-  DaliExpects(well_ptr != nullptr,
-              "Cannot set @param well_ptr to nullptr in function: BlockType::SetWell()");
+  DaliExpects(well_ptr != nullptr, "Well_ptr is a nullptr?");
   well_ptr_ = well_ptr;
+}
+
+void BlockType::SetDoubleWell(BlockTypeDoubleWell *double_well_ptr) {
+  DaliExpects(double_well_ptr!= nullptr, "double_well_ptr is a nullptr?");
+  d_well_ptr_ = double_well_ptr;
 }
 
 void BlockType::SetWidth(int width) {
@@ -169,11 +173,39 @@ void BlockTypeWell::Report() const {
   BOOST_LOG_TRIVIAL(info)
     << "  Well of BlockType: " << type_ptr_->Name() << "\n"
     << "    Nwell: " << n_rect_.LLX() << "  " << n_rect_.LLY() << "  "
-    << n_rect_.URX() << "  " << n_rect_.URY()
-    << "\n"
+    << n_rect_.URX() << "  " << n_rect_.URY() << "\n"
     << "    Pwell: " << p_rect_.LLX() << "  " << p_rect_.LLY() << "  "
-    << p_rect_.URX() << "  " << p_rect_.URY()
-    << "\n";
+    << p_rect_.URX() << "  " << p_rect_.URY() << "\n";
+}
+
+void BlockTypeDoubleWell::SetWellRect(
+    bool is_first,
+    bool is_n,
+    int lx,
+    int ly,
+    int ux,
+    int uy
+) {
+  RectI *rect_ptr_ = nullptr;
+  if (is_first) {
+    rect_ptr_ = is_n ? &n_rect0_ : &p_rect0_;
+  } else {
+    rect_ptr_ = is_n ? &n_rect1_ : &p_rect1_;
+  }
+  rect_ptr_->SetValue(lx, ly, ux, uy);
+}
+
+void BlockTypeDoubleWell::Report() const {
+  BOOST_LOG_TRIVIAL(info)
+    << "  Well of BlockType: " << type_ptr_->Name() << "\n"
+    << "    Pwell0: " << p_rect0_.LLX() << "  " << p_rect0_.LLY() << "  "
+    << p_rect0_.URX() << "  " << p_rect0_.URY() << "\n"
+    << "    Nwell0: " << n_rect0_.LLX() << "  " << n_rect0_.LLY() << "  "
+    << n_rect0_.URX() << "  " << n_rect0_.URY() << "\n"
+    << "    Nwell1: " << n_rect1_.LLX() << "  " << n_rect1_.LLY() << "  "
+    << n_rect1_.URX() << "  " << n_rect1_.URY() << "\n"
+    << "    Pwell1: " << p_rect1_.LLX() << "  " << p_rect1_.LLY() << "  "
+    << p_rect1_.URX() << "  " << p_rect1_.URY() << "\n";
 }
 
 }

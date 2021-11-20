@@ -37,6 +37,7 @@
 namespace dali {
 
 class BlockTypeWell;
+class BlockTypeDoubleWell;
 
 /****
  * The class BlockType is an abstraction of a kind of gate, like INV, NAND, NOR
@@ -75,8 +76,14 @@ class BlockType {
   // set the N/P-well information for this BlockType
   void SetWell(BlockTypeWell *well_ptr);
 
+  // set the double N/P-well information for this BlockType
+  void SetDoubleWell(BlockTypeDoubleWell *double_well_ptr);
+
   // get the pointer to the well of this BlockType
   BlockTypeWell *WellPtr() const { return well_ptr_; }
+
+  // get the pointer to the double well of this BlockType
+  BlockTypeDoubleWell *DoubleWellPtr() const { return d_well_ptr_; }
 
   // set the width of this BlockType and update its area
   void SetWidth(int width);
@@ -106,6 +113,7 @@ class BlockType {
   int width_, height_;
   long int area_;
   BlockTypeWell *well_ptr_ = nullptr;
+  BlockTypeDoubleWell *d_well_ptr_ = nullptr;
   std::vector<Pin> pin_list_;
   std::map<std::string, int> pin_name_id_map_;
 };
@@ -175,6 +183,63 @@ class BlockTypeWell {
   RectI n_rect_; // N-well rect
   RectI p_rect_; // P-well rect
   int p_n_edge_ = 0; // cached N/P-well boundary
+};
+
+/****
+ * This struct BlockTypeDoubleWell provides the N/P-well geometries for a BlockType.
+ * Assumptions:
+ *  1. BlockType has two well regions, each of which contains at least one N-well
+ *     or P-well rectangle.
+ *  2. If both N-well and P-well in the same region are present, they must be
+ *     abutted. This is for debugging purposes, also for compact physical layout.
+ *  3. N-well rectangles in both regions must be present, and they must be abutted.
+ *     If a technology node has no N-well, create a fake N-well. If the actual
+ *     N-well rectangles in both regions are not abutted, make them abutted.
+ *     +-----------------+
+ *     |                 |
+ *     |                 |
+ *     |    P-well       |
+ *     |                 |
+ *     |                 |
+ *     +-----------------+  n_p_edge of Region1
+ *     |                 |
+ *     |                 |
+ *     |    N-well       |
+ *     |                 |
+ *     |                 |
+ *     +-----------------+  stretch mark
+ *     |                 |
+ *     |                 |
+ *     |    N-well       |
+ *     |                 |
+ *     |                 |
+ *     +-----------------+  n_p_edge of Region0
+ *     |                 |
+ *     |                 |
+ *     |    P-well       |
+ *     |                 |
+ *     |                 |
+ *     +-----------------+
+ * ****/
+class BlockTypeDoubleWell {
+ public:
+  explicit BlockTypeDoubleWell(BlockType *type_ptr) : type_ptr_(type_ptr) {}
+
+  // get the pointer to the BlockType this well belongs to
+  BlockType *BlkTypePtr() const { return type_ptr_; }
+
+  // set the rect of N or P well
+  void SetWellRect(bool is_first, bool is_n, int lx, int ly, int ux, int uy);
+
+  // report the information of N/P-well for debugging purposes
+  void Report() const;
+
+ private:
+  BlockType *type_ptr_; // pointer to BlockType
+  RectI p_rect1_;
+  RectI n_rect1_;
+  RectI n_rect0_;
+  RectI p_rect0_;
 };
 
 }

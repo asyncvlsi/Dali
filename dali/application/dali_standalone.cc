@@ -42,6 +42,7 @@ int main(int argc, char *argv[]) {
   std::string lef_file_name;
   std::string def_file_name;
   std::string cell_file_name;
+  std::string m_cell_file_name;
   std::string output_name = "dali_out";
   std::string str_grid_value_x, str_grid_value_y;
   std::string str_target_density;
@@ -81,6 +82,13 @@ int main(int argc, char *argv[]) {
       cell_file_name = std::string(argv[i++]);
       if (cell_file_name.empty()) {
         std::cout << "Invalid input cell file!\n";
+        ReportUsage();
+        return 1;
+      }
+    } else if (arg == "-mcell" && i < argc) {
+      m_cell_file_name = std::string(argv[i++]);
+      if (m_cell_file_name.empty()) {
+        std::cout << "Invalid input mcell file!\n";
         ReportUsage();
         return 1;
       }
@@ -207,6 +215,9 @@ int main(int argc, char *argv[]) {
   // (2). initialize Circuit
   Circuit circuit;
   circuit.InitializeFromPhyDB(&phy_db);
+  if (!m_cell_file_name.empty()) {
+    circuit.ReadMultiWellCell(m_cell_file_name);
+  }
   double file_wall_time = get_wall_time() - wall_time;
   double file_cpu_time = get_cpu_time() - cpu_time;
   BOOST_LOG_TRIVIAL(info)
@@ -301,6 +312,7 @@ void ReportUsage() {
       << "  -lef         <file.lef>\n"
       << "  -def         <file.def>\n"
       << "  -cell        <file.cell> (optional, if provided, well placement flow will be triggered)\n"
+      << "  -mcell       <file.cell> (multiwell gridded cell)\n"
       << "  -o           <output_name>.def (optional, default output file name dali_out.def)\n"
       << "  -g/-grid     grid_value_x grid_value_y (optional, default metal1 and metal2 pitch values)\n"
       << "  -d/-density  density (optional, value interval (0,1], default max(space_utility, 0.7))\n"

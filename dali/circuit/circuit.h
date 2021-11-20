@@ -417,6 +417,12 @@ class Circuit {
   // report the well shape for each BlockType for debugging purposes
   void ReportWellShape();
 
+  // read cell file for multiwell gridded cells
+  void ReadMultiWellCell(std::string const &name_of_file);
+
+  // report the double well shape for each BlockType
+  void ReportDoubleWellShape();
+
   /**** Functions to get useful values ****/
   // returns the minimum width of blocks
   int MinBlkWidth() const;
@@ -431,7 +437,7 @@ class Circuit {
   int MaxBlkHeight() const;
 
   // returns the total block area
-  long long TotBlkArea() const;
+  unsigned long long TotBlkArea() const;
 
   // returns the total number of blocks
   int TotBlkCnt() const;
@@ -615,6 +621,9 @@ class Circuit {
 
   // create well information container for a given BlockType
   BlockTypeWell *AddBlockTypeWell(BlockType *blk_type);
+
+  // create double well information for a given BlockType
+  BlockTypeDoubleWell *AddBlockTypeDoubleWell(BlockType *blk_type);
 
   // load information in LEF
   void LoadTech(phydb::PhyDB *phy_db_ptr);

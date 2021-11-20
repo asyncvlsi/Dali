@@ -854,6 +854,20 @@ void Circuit::SetWellRect(
   BlockType *blk_type_ptr = GetBlockTypePtr(blk_type_name);
   DaliExpects(blk_type_ptr != nullptr,
               "Cannot find BlockType with name: " + blk_type_name);
+  double ly_residual = AbsResidual(ly, GridValueY());
+  if (ly_residual > constants_.epsilon) {
+    BOOST_LOG_TRIVIAL(warning)
+      << "WARNING: ly of well rect for " << blk_type_name
+      << " is not an integer multiple of grid value y\n"
+      << "  ly: " << ly << ", grid value y: " << GridValueY() << "\n";
+  }
+  double uy_residual = AbsResidual(uy, GridValueY());
+  if (uy_residual > constants_.epsilon) {
+    BOOST_LOG_TRIVIAL(warning)
+      << "WARNING: uy of well rect for " << blk_type_name
+      << " is not an integer multiple of grid value y\n"
+      << "  uy: " << uy << ", grid value y: " << GridValueY() << "\n";
+  }
   int lx_grid = int(std::round(lx / GridValueX()));
   int ly_grid = int(std::round(ly / GridValueY()));
   int ux_grid = int(std::round(ux / GridValueX()));
@@ -868,6 +882,209 @@ void Circuit::SetWellRect(
 void Circuit::ReportWellShape() {
   for (auto &blk_type_well: tech_.well_list_) {
     blk_type_well.Report();
+  }
+}
+
+void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
+  std::ifstream ist(name_of_file.c_str());
+  DaliExpects(ist.is_open(), "Cannot open input file " + name_of_file);
+
+  std::string line;
+  while (!ist.eof()) {
+    getline(ist, line);
+    if (line.empty()) continue;
+    if (line.find("LAYER") != std::string::npos) {
+      if (line.find("LEGALIZER") != std::string::npos) {
+        std::vector<std::string> legalizer_fields;
+        double same_diff_spacing = 0;
+        double any_diff_spacing = 0;
+        do {
+          getline(ist, line);
+          StrTokenize(line, legalizer_fields);
+          if (legalizer_fields.size() != 2) {
+            std::cout << "Expect: SPACING + Value, get: " + line
+                      << std::endl;
+            exit(1);
+          }
+          if (legalizer_fields[0] == "SAME_DIFF_SPACING") {
+            try {
+              same_diff_spacing = std::stod(legalizer_fields[1]);
+            } catch (...) {
+              std::cout << "Invalid stod conversion: " + line
+                        << std::endl;
+              exit(1);
+            }
+          } else if (legalizer_fields[0] == "ANY_DIFF_SPACING") {
+            try {
+              any_diff_spacing = std::stod(legalizer_fields[1]);
+            } catch (...) {
+              std::cout << "Invalid stod conversion: " + line
+                        << std::endl;
+              exit(1);
+            }
+          }
+        } while (line.find("END LEGALIZER") == std::string::npos && !ist.eof());
+        SetLegalizerSpacing(same_diff_spacing, any_diff_spacing);
+      } else {
+        std::vector<std::string> well_fields;
+        StrTokenize(line, well_fields);
+        bool is_n_well = (well_fields[1] == "nwell");
+        if (!is_n_well) {
+          if (well_fields[1] != "pwell") {
+            std::cout << "Unknow N/P well type: " + well_fields[1] << std::endl;
+            exit(1);
+          }
+        }
+        std::string end_layer_flag = "END " + well_fields[1];
+        double width = 0;
+        double spacing = 0;
+        double op_spacing = 0;
+        double max_plug_dist = 0;
+        double overhang = 0;
+        do {
+          if (line.find("MINWIDTH") != std::string::npos) {
+            StrTokenize(line, well_fields);
+            try {
+              width = std::stod(well_fields[1]);
+            } catch (...) {
+              std::cout
+                  << "Invalid stod conversion: " + well_fields[1]
+                  << std::endl;
+              exit(1);
+            }
+          } else if (line.find("OPPOSPACING") != std::string::npos) {
+            StrTokenize(line, well_fields);
+            try {
+              op_spacing = std::stod(well_fields[1]);
+            } catch (...) {
+              std::cout
+                  << "Invalid stod conversion: " + well_fields[1]
+                  << std::endl;
+              exit(1);
+            }
+          } else if (line.find("SPACING") != std::string::npos) {
+            StrTokenize(line, well_fields);
+            try {
+              spacing = std::stod(well_fields[1]);
+            } catch (...) {
+              std::cout
+                  << "Invalid stod conversion: " + well_fields[1]
+                  << std::endl;
+              exit(1);
+            }
+          } else if (line.find("MAXPLUGDIST") != std::string::npos) {
+            StrTokenize(line, well_fields);
+            try {
+              max_plug_dist = std::stod(well_fields[1]);
+            } catch (...) {
+              std::cout
+                  << "Invalid stod conversion: " + well_fields[1]
+                  << std::endl;
+              exit(1);
+            }
+          } else if (line.find("MAXPLUGDIST") != std::string::npos) {
+            StrTokenize(line, well_fields);
+            try {
+              overhang = std::stod(well_fields[1]);
+            } catch (...) {
+              std::cout
+                  << "Invalid stod conversion: " + well_fields[1]
+                  << std::endl;
+              exit(1);
+            }
+          } else {}
+          getline(ist, line);
+        } while (line.find(end_layer_flag) == std::string::npos
+            && !ist.eof());
+        if (is_n_well) {
+          SetNwellParams(
+              width, spacing, op_spacing,
+              max_plug_dist, overhang
+          );
+        } else {
+          SetPwellParams(
+              width, spacing, op_spacing,
+              max_plug_dist, overhang
+          );
+        }
+      }
+    }
+
+    if (line.find("MACRO") != std::string::npos) {
+      std::vector<std::string> macro_fields;
+      StrTokenize(line, macro_fields);
+      std::string end_macro_flag = "END " + macro_fields[1];
+      BlockType *p_blk_type = GetBlockTypePtr(macro_fields[1]);
+      BlockTypeDoubleWell *well_ptr = AddBlockTypeDoubleWell(p_blk_type);
+      bool is_first = true;
+      do {
+        getline(ist, line);
+        if (line.find("REGION") != std::string::npos) {
+          do {
+            getline(ist, line);
+            bool is_n = false;
+            if (line.find("LAYER") != std::string::npos) {
+              do {
+                if (line.find("nwell") != std::string::npos) {
+                  is_n = true;
+                }
+                if (line.find("RECT") != std::string::npos) {
+                  double lx = 0, ly = 0, ux = 0, uy = 0;
+                  std::vector<std::string> shape_fields;
+                  StrTokenize(line, shape_fields);
+                  try {
+                    lx = std::stod(shape_fields[1]);
+                    ly = std::stod(shape_fields[2]);
+                    ux = std::stod(shape_fields[3]);
+                    uy = std::stod(shape_fields[4]);
+                    double ly_residual = AbsResidual(ly, GridValueY());
+                    if (ly_residual > constants_.epsilon) {
+                      BOOST_LOG_TRIVIAL(warning)
+                        << "WARNING: ly of well rect for " << macro_fields[1]
+                        << " is not an integer multiple of grid value y\n"
+                        << "  ly: " << ly << ", grid value y: " << GridValueY()
+                        << "\n";
+                    }
+                    double uy_residual = AbsResidual(uy, GridValueY());
+                    if (uy_residual > constants_.epsilon) {
+                      BOOST_LOG_TRIVIAL(warning)
+                        << "WARNING: uy of well rect for " << macro_fields[1]
+                        << " is not an integer multiple of grid value y\n"
+                        << "  uy: " << uy << ", grid value y: " << GridValueY()
+                        << "\n";
+                    }
+                  } catch (...) {
+                    std::cout << "Invalid stod conversion: " + line
+                              << std::endl;
+                    exit(1);
+                  }
+                  int lx_grid = int(std::round(lx / GridValueX()));
+                  int ly_grid = int(std::round(ly / GridValueY()));
+                  int ux_grid = int(std::round(ux / GridValueX()));
+                  int uy_grid = int(std::round(uy / GridValueY()));
+                  well_ptr->SetWellRect(
+                      is_first, is_n,
+                      lx_grid, ly_grid, ux_grid, uy_grid
+                  );
+                  is_n = !is_n;
+                }
+                getline(ist, line);
+              } while (line.find("END REGION") == std::string::npos
+                  && !ist.eof());
+            }
+          } while (line.find("END REGION") == std::string::npos && !ist.eof());
+        }
+        is_first = false;
+      } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
+    }
+  }
+  ReportDoubleWellShape();
+  exit(1);
+}
+
+void Circuit::ReportDoubleWellShape() {
+  for (auto &double_well: tech_.double_well_list_) {
+    double_well.Report();
   }
 }
 
@@ -887,7 +1104,7 @@ int Circuit::MaxBlkHeight() const {
   return design_.blk_max_height_;
 }
 
-long long Circuit::TotBlkArea() const {
+unsigned long long Circuit::TotBlkArea() const {
   return design_.tot_blk_area_;
 }
 
@@ -2091,7 +2308,7 @@ void Circuit::AddBlock(
   design_.tot_height_ += design_.blocks_.back().Height();
   if (design_.blocks_.back().IsMovable()) {
     ++design_.tot_mov_blk_num_;
-    long long old_tot_mov_area = design_.tot_mov_blk_area_;
+    auto old_tot_mov_area = design_.tot_mov_blk_area_;
     design_.tot_mov_blk_area_ += design_.blocks_.back().Area();
     DaliExpects(old_tot_mov_area <= design_.tot_mov_blk_area_,
                 "Total Movable Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
@@ -2180,6 +2397,12 @@ BlockTypeWell *Circuit::AddBlockTypeWell(BlockType *blk_type) {
   tech_.well_list_.emplace_back(blk_type);
   blk_type->SetWell(&(tech_.well_list_.back()));
   return blk_type->WellPtr();
+}
+
+BlockTypeDoubleWell *Circuit::AddBlockTypeDoubleWell(BlockType *blk_type) {
+  tech_.double_well_list_.emplace_back(blk_type);
+  blk_type->SetDoubleWell(&(tech_.double_well_list_.back()));
+  return blk_type->DoubleWellPtr();
 }
 
 void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
