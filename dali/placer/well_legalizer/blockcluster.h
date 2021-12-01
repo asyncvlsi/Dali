@@ -27,9 +27,11 @@ namespace dali {
 
 struct BlkCluster {
   BlkCluster();
-  BlkCluster(int well_extension_x_init,
-             int well_extension_y_init,
-             int plug_width_init);
+  BlkCluster(
+      int well_extension_x_init,
+      int well_extension_y_init,
+      int plug_width_init
+  );
 
   int well_extension_x_;
   int well_extension_y_;
@@ -67,10 +69,12 @@ struct BlkCluster {
     lx_ = lx;
     ly_ = ly;
   }
-  void SetCenterX(double center_x) { lx_ = (int) std::round(
+  void SetCenterX(double center_x) {
+    lx_ = (int) std::round(
         center_x - width_ / 2.0);
   }
-  void SetCenterY(double center_y) { ly_ = (int) std::round(
+  void SetCenterY(double center_y) {
+    ly_ = (int) std::round(
         center_y - height_ / 2.0);
   }
   void IncreX(int displacement) { lx_ += displacement; }
@@ -85,10 +89,13 @@ struct CluPtrLocPair {
   BlkCluster *clus_ptr;
   int x;
   int y;
-  explicit CluPtrLocPair(BlkCluster *clus_ptr_init = nullptr,
-                         int x_init = 0,
-                         int y_init = 0)
-      : clus_ptr(clus_ptr_init), x(x_init), y(y_init) {}
+  explicit CluPtrLocPair(
+      BlkCluster *clus_ptr_init = nullptr,
+      int x_init = 0,
+      int y_init = 0
+  ) : clus_ptr(clus_ptr_init),
+      x(x_init),
+      y(y_init) {}
   bool operator<(const CluPtrLocPair &rhs) const {
     return (x < rhs.x) || ((x == rhs.x) && (y < rhs.y));
   }

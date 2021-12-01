@@ -1015,7 +1015,7 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
       StrTokenize(line, macro_fields);
       std::string end_macro_flag = "END " + macro_fields[1];
       BlockType *p_blk_type = GetBlockTypePtr(macro_fields[1]);
-      BlockTypeDoubleWell *well_ptr = AddBlockTypeDoubleWell(p_blk_type);
+      BlockTypeWell *well_ptr = AddBlockTypeWell(p_blk_type);
       bool is_first = true;
       do {
         getline(ist, line);
@@ -1076,16 +1076,10 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
         }
         is_first = false;
       } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
+      well_ptr->CheckLegal();
     }
   }
-  ReportDoubleWellShape();
-  exit(1);
-}
-
-void Circuit::ReportDoubleWellShape() {
-  for (auto &double_well: tech_.double_well_list_) {
-    double_well.Report();
-  }
+  ReportWellShape();
 }
 
 int Circuit::MinBlkWidth() const {
@@ -1460,45 +1454,56 @@ void Circuit::GenMATLABWellTable(
   if (!only_well_tap) {
     for (auto &block: design_.blocks_) {
       well = block.TypePtr()->WellPtr();
-      if (well != nullptr) {
-        auto &n_well_shape = well->NwellRect();
-        auto &p_well_shape = well->PwellRect();
+      if (well == nullptr) continue;
+
+      std::vector<RectI> n_well_shapes;
+      std::vector<RectI> p_well_shapes;
+
+      n_well_shapes.push_back(well->NwellRect());
+      p_well_shapes.push_back(well->PwellRect());
+
+      if (!well->IsSingleWell()) {
+        n_well_shapes.push_back(well->NwellRect1());
+        p_well_shapes.push_back(well->PwellRect1());
+      }
+
+      for (size_t i=0; i<n_well_shapes.size(); ++i) {
         if (block.Orient() == N) {
-          ost << block.LLX() + n_well_shape.LLX() << "\t"
-              << block.LLX() + n_well_shape.URX() << "\t"
-              << block.LLX() + n_well_shape.URX() << "\t"
-              << block.LLX() + n_well_shape.LLX() << "\t"
-              << block.LLY() + n_well_shape.LLY() << "\t"
-              << block.LLY() + n_well_shape.LLY() << "\t"
-              << block.LLY() + n_well_shape.URY() << "\t"
-              << block.LLY() + n_well_shape.URY() << "\t"
+          ost << block.LLX() + n_well_shapes[i].LLX() << "\t"
+              << block.LLX() + n_well_shapes[i].URX() << "\t"
+              << block.LLX() + n_well_shapes[i].URX() << "\t"
+              << block.LLX() + n_well_shapes[i].LLX() << "\t"
+              << block.LLY() + n_well_shapes[i].LLY() << "\t"
+              << block.LLY() + n_well_shapes[i].LLY() << "\t"
+              << block.LLY() + n_well_shapes[i].URY() << "\t"
+              << block.LLY() + n_well_shapes[i].URY() << "\t"
 
-              << block.LLX() + p_well_shape.LLX() << "\t"
-              << block.LLX() + p_well_shape.URX() << "\t"
-              << block.LLX() + p_well_shape.URX() << "\t"
-              << block.LLX() + p_well_shape.LLX() << "\t"
-              << block.LLY() + p_well_shape.LLY() << "\t"
-              << block.LLY() + p_well_shape.LLY() << "\t"
-              << block.LLY() + p_well_shape.URY() << "\t"
-              << block.LLY() + p_well_shape.URY() << "\n";
+              << block.LLX() + p_well_shapes[i].LLX() << "\t"
+              << block.LLX() + p_well_shapes[i].URX() << "\t"
+              << block.LLX() + p_well_shapes[i].URX() << "\t"
+              << block.LLX() + p_well_shapes[i].LLX() << "\t"
+              << block.LLY() + p_well_shapes[i].LLY() << "\t"
+              << block.LLY() + p_well_shapes[i].LLY() << "\t"
+              << block.LLY() + p_well_shapes[i].URY() << "\t"
+              << block.LLY() + p_well_shapes[i].URY() << "\n";
         } else if (block.Orient() == FS) {
-          ost << block.LLX() + n_well_shape.LLX() << "\t"
-              << block.LLX() + n_well_shape.URX() << "\t"
-              << block.LLX() + n_well_shape.URX() << "\t"
-              << block.LLX() + n_well_shape.LLX() << "\t"
-              << block.URY() - n_well_shape.LLY() << "\t"
-              << block.URY() - n_well_shape.LLY() << "\t"
-              << block.URY() - n_well_shape.URY() << "\t"
-              << block.URY() - n_well_shape.URY() << "\t"
+          ost << block.LLX() + n_well_shapes[i].LLX() << "\t"
+              << block.LLX() + n_well_shapes[i].URX() << "\t"
+              << block.LLX() + n_well_shapes[i].URX() << "\t"
+              << block.LLX() + n_well_shapes[i].LLX() << "\t"
+              << block.URY() - n_well_shapes[i].LLY() << "\t"
+              << block.URY() - n_well_shapes[i].LLY() << "\t"
+              << block.URY() - n_well_shapes[i].URY() << "\t"
+              << block.URY() - n_well_shapes[i].URY() << "\t"
 
-              << block.LLX() + p_well_shape.LLX() << "\t"
-              << block.LLX() + p_well_shape.URX() << "\t"
-              << block.LLX() + p_well_shape.URX() << "\t"
-              << block.LLX() + p_well_shape.LLX() << "\t"
-              << block.URY() - p_well_shape.LLY() << "\t"
-              << block.URY() - p_well_shape.LLY() << "\t"
-              << block.URY() - p_well_shape.URY() << "\t"
-              << block.URY() - p_well_shape.URY() << "\n";
+              << block.LLX() + p_well_shapes[i].LLX() << "\t"
+              << block.LLX() + p_well_shapes[i].URX() << "\t"
+              << block.LLX() + p_well_shapes[i].URX() << "\t"
+              << block.LLX() + p_well_shapes[i].LLX() << "\t"
+              << block.URY() - p_well_shapes[i].LLY() << "\t"
+              << block.URY() - p_well_shapes[i].LLY() << "\t"
+              << block.URY() - p_well_shapes[i].URY() << "\t"
+              << block.URY() - p_well_shapes[i].URY() << "\n";
         }
       }
     }
@@ -2397,12 +2402,6 @@ BlockTypeWell *Circuit::AddBlockTypeWell(BlockType *blk_type) {
   tech_.well_list_.emplace_back(blk_type);
   blk_type->SetWell(&(tech_.well_list_.back()));
   return blk_type->WellPtr();
-}
-
-BlockTypeDoubleWell *Circuit::AddBlockTypeDoubleWell(BlockType *blk_type) {
-  tech_.double_well_list_.emplace_back(blk_type);
-  blk_type->SetDoubleWell(&(tech_.double_well_list_.back()));
-  return blk_type->DoubleWellPtr();
 }
 
 void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {

@@ -37,7 +37,6 @@
 namespace dali {
 
 class BlockTypeWell;
-class BlockTypeDoubleWell;
 
 /****
  * The class BlockType is an abstraction of a kind of gate, like INV, NAND, NOR
@@ -76,14 +75,8 @@ class BlockType {
   // set the N/P-well information for this BlockType
   void SetWell(BlockTypeWell *well_ptr);
 
-  // set the double N/P-well information for this BlockType
-  void SetDoubleWell(BlockTypeDoubleWell *double_well_ptr);
-
   // get the pointer to the well of this BlockType
   BlockTypeWell *WellPtr() const { return well_ptr_; }
-
-  // get the pointer to the double well of this BlockType
-  BlockTypeDoubleWell *DoubleWellPtr() const { return d_well_ptr_; }
 
   // set the width of this BlockType and update its area
   void SetWidth(int width);
@@ -113,7 +106,6 @@ class BlockType {
   int width_, height_;
   long int area_;
   BlockTypeWell *well_ptr_ = nullptr;
-  BlockTypeDoubleWell *d_well_ptr_ = nullptr;
   std::vector<Pin> pin_list_;
   std::map<std::string, int> pin_name_id_map_;
 };
@@ -121,80 +113,14 @@ class BlockType {
 /****
  * This struct BlockTypeWell provides the N/P-well geometries for a BlockType.
  * Assumptions:
- *  1. BlockType has at most one rectangular N-well and at most one rectangular P-well.
- *  2. It is allowed to provide only N-well or P-well.
- *  3. If both N-well and P-well are present, they must be abutted.
- *     This is for debugging purposes, also for compact physical layout.
- *     +-----------------+
- *     |                 |
- *     |                 |
- *     |   N-well        |
- *     |                 |
- *     |                 |
- *     +-----------------+  p_n_edge_
- *     |                 |
- *     |                 |
- *     |    P-well       |
- *     |                 |
- *     |                 |
- *     +-----------------+
- * ****/
-class BlockTypeWell {
- public:
-  explicit BlockTypeWell(BlockType *type_ptr) : type_ptr_(type_ptr) {}
-
-  // get the pointer to the BlockType this well belongs to
-  BlockType *BlkTypePtr() const { return type_ptr_; }
-
-  // set the rect of N-well
-  void SetNwellRect(int lx, int ly, int ux, int uy);
-
-  // get the rect of N-well
-  const RectI &NwellRect() { return n_rect_; }
-
-  // set the rect of P-well
-  void SetPwellRect(int lx, int ly, int ux, int uy);
-
-  // get the rect of P-well
-  const RectI &PwellRect() { return p_rect_; }
-
-  // get the P/N well boundary
-  int PnBoundary() const { return p_n_edge_; }
-
-  // get the height of N-well
-  int Nheight() const { return type_ptr_->Height() - p_n_edge_; }
-
-  // get the height of P-well
-  int Pheight() const { return p_n_edge_; }
-
-  // set the rect of N or P well
-  void SetWellRect(bool is_n, int lx, int ly, int ux, int uy);
-
-  // check if N-well is abutted with P-well, if both exist
-  bool IsNpWellAbutted() const;
-
-  // report the information of N/P-well for debugging purposes
-  void Report() const;
-
- private:
-  BlockType *type_ptr_; // pointer to BlockType
-  bool is_n_set_ = false; // whether N-well shape is set or not
-  bool is_p_set_ = false; // whether P-well shape is set or not
-  RectI n_rect_; // N-well rect
-  RectI p_rect_; // P-well rect
-  int p_n_edge_ = 0; // cached N/P-well boundary
-};
-
-/****
- * This struct BlockTypeDoubleWell provides the N/P-well geometries for a BlockType.
- * Assumptions:
- *  1. BlockType has two well regions, each of which contains at least one N-well
- *     or P-well rectangle.
+ *  1. BlockType has 1 or 2 well regions, each of which contains at least one
+ *     N-well or P-well rectangle.
  *  2. If both N-well and P-well in the same region are present, they must be
  *     abutted. This is for debugging purposes, also for compact physical layout.
  *  3. N-well rectangles in both regions must be present, and they must be abutted.
- *     If a technology node has no N-well, create a fake N-well. If the actual
- *     N-well rectangles in both regions are not abutted, make them abutted.
+ *     Otherwise, the well legalizer does not know how to stretch this kind of cell.
+ *     If a technology node has no N-well, create a fake N-well.
+ *     If the actual N-well rectangles in both regions are not abutted, make them abutted.
  *     +-----------------+
  *     |                 |
  *     |                 |
@@ -221,25 +147,88 @@ class BlockTypeWell {
  *     |                 |
  *     +-----------------+
  * ****/
-class BlockTypeDoubleWell {
+class BlockTypeWell {
  public:
-  explicit BlockTypeDoubleWell(BlockType *type_ptr) : type_ptr_(type_ptr) {}
+  explicit BlockTypeWell(BlockType *type_ptr) : type_ptr_(type_ptr) {}
 
   // get the pointer to the BlockType this well belongs to
   BlockType *BlkTypePtr() const { return type_ptr_; }
 
+  // set the rect of N-well
+  void SetNwellRect(int lx, int ly, int ux, int uy);
+
+  // set the rect of N-well 1
+  void SetNwellRect1(int lx, int ly, int ux, int uy);
+
+  // get the rect of N-well
+  const RectI &NwellRect() { return n_rect_; }
+
+  // get the rect of N-well 1
+  const RectI &NwellRect1() { return n_rect1_; }
+
+  // set the rect of P-well
+  void SetPwellRect(int lx, int ly, int ux, int uy);
+
+  // set the rect of P-well 1
+  void SetPwellRect1(int lx, int ly, int ux, int uy);
+
+  // get the rect of P-well
+  const RectI &PwellRect() { return p_rect_; }
+
+  // get the rect of P-well
+  const RectI &PwellRect1() { return p_rect1_; }
+
+  // get the P/N well boundary
+  int PnBoundary() const { return p_n_edge_; }
+
+  // get the height of N-well
+  int Nheight() const { return stretch_edge_ - p_n_edge_; }
+
+  // get the height of P-well
+  int Pheight() const { return p_n_edge_; }
+
+  // get the P/N well boundary
+  int PnBoundary1() const { return p_n_edge1_; }
+
+  // get the height of N-well
+  int Nheight1() const { return n_rect1_.Height(); }
+
+  // get the height of P-well
+  int Pheight1() const { return type_ptr_->Height() - n_rect1_.URY(); }
+
+  // set the rect of N or P well
+  void SetWellRect(bool is_n, int lx, int ly, int ux, int uy);
+
   // set the rect of N or P well
   void SetWellRect(bool is_first, bool is_n, int lx, int ly, int ux, int uy);
+
+  // check if N-well is abutted with P-well, if both exist
+  bool IsNpWellAbutted() const;
+
+  // check if this cell has a double well or not
+  bool IsSingleWell() const;
+
+  // check if the N/P-well shapes are legal or not
+  void CheckLegal() const;
 
   // report the information of N/P-well for debugging purposes
   void Report() const;
 
  private:
   BlockType *type_ptr_; // pointer to BlockType
-  RectI p_rect1_;
-  RectI n_rect1_;
-  RectI n_rect0_;
-  RectI p_rect0_;
+  bool is_n_set_ = false; // whether N-well 0 shape is set or not
+  bool is_p_set_ = false; // whether P-well 0 shape is set or not
+  RectI n_rect_; // N-well rect 0
+  RectI p_rect_; // P-well rect 0
+  int p_n_edge_ = 0; // cached N/P-well boundary 0
+
+  int stretch_edge_ = 0;
+
+  bool is_n_set1_ = false; // whether N-well 1 shape is set or not
+  bool is_p_set1_ = false; // whether P-well 1 shape is set or not
+  RectI n_rect1_; // N-well rect 1
+  RectI p_rect1_; // P-well rect 1
+  int p_n_edge1_ = 0; // cached N/P-well boundary 1
 };
 
 }

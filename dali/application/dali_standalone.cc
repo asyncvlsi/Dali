@@ -248,7 +248,7 @@ int main(int argc, char *argv[]) {
   gb_placer->SetPlacementDensity(target_density);
   //gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
-  if (cell_file_name.empty()) {
+  if (cell_file_name.empty() && m_cell_file_name.empty()) {
     if (!is_no_legal) {
       Placer *legalizer = new LGTetrisEx;
       legalizer->TakeOver(gb_placer);

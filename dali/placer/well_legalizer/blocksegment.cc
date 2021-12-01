@@ -25,7 +25,7 @@ namespace dali {
 void BlockSegment::Merge(BlockSegment &sc, int lower_bound, int upper_bound) {
   int sz = (int) sc.blk_list.size();
   DaliExpects(sz == (int) sc.initial_loc.size(),
-              "Block number does not match initial location number, BlockSegment::Merge");
+              "Block number does not match initial location number");
   for (int i = 0; i < sz; ++i) {
     blk_list.push_back(sc.blk_list[i]);
     initial_loc.push_back(sc.initial_loc[i]);
@@ -40,7 +40,7 @@ void BlockSegment::Merge(BlockSegment &sc, int lower_bound, int upper_bound) {
     accumulative_width += blk_list[i]->Width();
   }
   DaliExpects(width_ == accumulative_width,
-              "Something is wrong, width does not match, BlockSegment::Merge()");
+              "Something is wrong, width does not match");
 
   double sum = 0;
   for (auto &num: anchor) {

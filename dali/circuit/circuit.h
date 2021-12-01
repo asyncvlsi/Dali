@@ -622,9 +622,6 @@ class Circuit {
   // create well information container for a given BlockType
   BlockTypeWell *AddBlockTypeWell(BlockType *blk_type);
 
-  // create double well information for a given BlockType
-  BlockTypeDoubleWell *AddBlockTypeDoubleWell(BlockType *blk_type);
-
   // load information in LEF
   void LoadTech(phydb::PhyDB *phy_db_ptr);
 

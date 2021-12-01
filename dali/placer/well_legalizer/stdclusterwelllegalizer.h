@@ -36,6 +36,7 @@ class StdClusterWellLegalizer : public Placer {
   friend class Dali;
  private:
   bool is_first_row_orient_N_ = true;
+  bool is_only_single_well_cells_ = true;
 
   /**** well parameters ****/
   int max_unplug_length_;
@@ -81,7 +82,7 @@ class StdClusterWellLegalizer : public Placer {
   ~StdClusterWellLegalizer() override;
   void LoadConf(std::string const &config_file) override;
 
-  void CheckWellExistence();
+  void CheckWellStatus();
 
   void SetStripePartitionMode(StripePartitionMode mode) {
     stripe_mode_ = mode;
@@ -128,6 +129,11 @@ class StdClusterWellLegalizer : public Placer {
 
   void AssignBlockToColBasedOnWhiteSpace();
 
+  void CreateClusterAndAppendSingleWellBlock(Stripe &stripe, Block &blk);
+  void AppendSingleWellBlockToFrontCluster(Stripe &stripe, Block &blk);
+  void CreateClusterAndAppendDoubleWellBlock(Stripe &stripe, Block &blk);
+  void AppendDoubleWellBlockToFrontCluster(Stripe &stripe, Block &blk);
+  void AppendDoubleWellBlockToColBottomUp(Stripe &stripe, Block &blk);
   void AppendBlockToColBottomUp(Stripe &stripe, Block &blk);
   void AppendBlockToColTopDown(Stripe &stripe, Block &blk);
   void AppendBlockToColBottomUpCompact(Stripe &stripe, Block &blk);
@@ -141,6 +147,10 @@ class StdClusterWellLegalizer : public Placer {
   bool BlockClustering();
   bool BlockClusteringLoose();
   bool BlockClusteringCompact();
+
+  void AppendBlockToColBottomUpDoubleClustering(Stripe &stripe, Block &blk);
+  bool StripeLegalizationBottomUpDoubleCluster(Stripe &stripe);
+  bool BlockDoubleClustering();
 
   bool TrialClusterLegalization(Stripe &stripe);
 

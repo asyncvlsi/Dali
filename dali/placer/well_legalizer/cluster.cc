@@ -24,6 +24,205 @@
 
 namespace dali {
 
+bool Cluster::IsOrientN() const {
+  return is_orient_N_;
+}
+
+bool Cluster::IsSingle() const {
+  return is_only_single_well_cells_;
+}
+
+int Cluster::UsedSize() const {
+  return used_size_;
+}
+
+void Cluster::SetUsedSize(int used_size) {
+  used_size_ = used_size;
+}
+
+void Cluster::UseSpace(int width) {
+  used_size_ += width;
+}
+
+int Cluster::UsedSize1() const {
+  return used_size1_;
+}
+
+void Cluster::SetUsedSize1(int used_size) {
+  used_size1_ = used_size;
+}
+
+void Cluster::UseSpace1(int width) {
+  used_size1_ += width;
+}
+
+void Cluster::SetLLX(int lx) {
+  lx_ = lx;
+}
+
+void Cluster::SetURX(int ux) {
+  lx_ = ux - width_;
+}
+
+int Cluster::LLX() const {
+  return lx_;
+}
+
+int Cluster::URX() const {
+  return lx_ + width_;
+}
+
+double Cluster::CenterX() const {
+  return lx_ + width_ / 2.0;
+}
+
+void Cluster::SetWidth(int width) {
+  width_ = width;
+}
+
+int Cluster::Width() const {
+  return width_;
+}
+
+void Cluster::SetLLY(int ly) {
+  ly_ = ly;
+}
+
+void Cluster::SetURY(int uy) {
+  ly_ = uy - Height();
+}
+
+int Cluster::LLY() const {
+  return ly_;
+}
+
+int Cluster::URY() const {
+  return ly_ + Height();
+}
+
+double Cluster::CenterY() const {
+  return ly_ + height_ / 2.0;
+}
+
+void Cluster::SetHeight(int height) {
+  height_ = height;
+}
+
+/****
+* Update the height of this cluster with the lower y of this cluster fixed.
+* So even if the height changes, the lower y of this cluster does not need be changed.
+* ****/
+void Cluster::UpdateWellHeightFromBottom(int p_well_height, int n_well_height) {
+  p_well_height_ = std::max(p_well_height_, p_well_height);
+  n_well_height_ = std::max(n_well_height_, n_well_height);
+  height_ = p_well_height_ + n_well_height_;
+}
+
+/****
+* Update the height of this cluster with the upper y of this cluster fixed.
+* So if the height changes, then the lower y of this cluster should also be changed.
+* ****/
+void Cluster::UpdateWellHeightFromTop(int p_well_height, int n_well_height) {
+  int old_height = height_;
+  p_well_height_ = std::max(p_well_height_, p_well_height);
+  n_well_height_ = std::max(n_well_height_, n_well_height);
+  height_ = p_well_height_ + n_well_height_;
+  ly_ -= (height_ - old_height);
+}
+
+int Cluster::Height() const {
+  return height_ + height1_;
+}
+
+int Cluster::PHeight() const {
+  return p_well_height_;
+}
+
+int Cluster::NHeight() const {
+  return n_well_height_;
+}
+
+/****
+* Returns the P/N well edge to the bottom of this cluster
+* ****/
+int Cluster::PNEdge() const {
+  return is_orient_N_ ? PHeight() : NHeight();
+}
+
+void Cluster::UpdateWellHeightFromBottom1(
+    int p_well_height,
+    int n_well_height
+) {
+  p_well_height1_ = std::max(p_well_height1_, p_well_height);
+  n_well_height1_ = std::max(n_well_height1_, n_well_height);
+  height1_ = p_well_height1_ + n_well_height1_;
+}
+
+void Cluster::UpdateWellHeightFromTop1(int p_well_height, int n_well_height) {
+  int old_height = height1_;
+  p_well_height1_ = std::max(p_well_height1_, p_well_height);
+  n_well_height1_ = std::max(n_well_height1_, n_well_height);
+  height1_ = p_well_height1_ + n_well_height1_;
+  ly_ -= (height_ - old_height);
+}
+
+int Cluster::PHeight1() const {
+  return p_well_height1_;
+}
+
+int Cluster::NHeight1() const {
+  return n_well_height1_;
+}
+
+int Cluster::PNEdge1() const {
+  return is_orient_N_ ? NHeight1() : PHeight1();
+}
+
+int Cluster::ClusterEdge() const {
+  return p_well_height_ + n_well_height_;
+}
+
+void Cluster::SetLoc(int lx, int ly) {
+  lx_ = lx;
+  ly_ = ly;
+}
+
+void Cluster::AddBlock(Block *blk_ptr) {
+  BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
+  if (well_ptr->IsSingleWell()) {
+    blk_list_.push_back(blk_ptr);
+    blk_initial_location_.emplace_back(
+        blk_ptr->LLX(),
+        blk_ptr->LLY() + well_ptr->Pheight()
+    );
+  } else {
+    is_only_single_well_cells_ = false;
+    blk_list_double_.push_back(blk_ptr);
+  }
+}
+
+void Cluster::AddBlock1(Block *blk_ptr) {
+  BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
+  if (well_ptr->IsSingleWell()) {
+    blk_list1_.push_back(blk_ptr);
+    blk_initial_location_.emplace_back(
+        blk_ptr->LLX(),
+        blk_ptr->LLY() + well_ptr->Pheight()
+    );
+  } else {
+    is_only_single_well_cells_ = false;
+    blk_list_double_.push_back(blk_ptr);
+  }
+}
+
+std::vector<Block *> &Cluster::Blocks() {
+  return blk_list_;
+}
+
+std::vector<double2d> &Cluster::InitLocations() {
+  return blk_initial_location_;
+}
+
 void Cluster::ShiftBlockX(int x_disp) {
   for (auto &blk_ptr: blk_list_) {
     blk_ptr->IncreaseX(x_disp);
@@ -45,18 +244,24 @@ void Cluster::ShiftBlock(int x_disp, int y_disp) {
 
 void Cluster::UpdateBlockLocY() {
   //Assert(p_well_height_ + n_well_height_ == height_, "Inconsistency occurs: p_well_height + n_Well_height != height\n");
-  for (auto &blk_ptr: blk_list_) {
-    auto *well = blk_ptr->TypePtr()->WellPtr();
-    blk_ptr->SetLLY(ly_ + p_well_height_ - well->Pheight());
+  if (IsSingle()) {
+    for (auto &blk_ptr: blk_list_) {
+      auto *well = blk_ptr->TypePtr()->WellPtr();
+      blk_ptr->SetLLY(ly_ + p_well_height_ - well->Pheight());
+    }
+  } else {
+    std::cout << "Not implemented yet\n";
   }
 }
 
 void Cluster::LegalizeCompactX(int left) {
-  std::sort(blk_list_.begin(),
-            blk_list_.end(),
-            [](const Block *blk_ptr0, const Block *blk_ptr1) {
-              return blk_ptr0->LLX() < blk_ptr1->LLX();
-            });
+  std::sort(
+      blk_list_.begin(),
+      blk_list_.end(),
+      [](const Block *blk_ptr0, const Block *blk_ptr1) {
+        return blk_ptr0->LLX() < blk_ptr1->LLX();
+      }
+  );
   int current_x = left;
   for (auto &blk: blk_list_) {
     blk->SetLLX(current_x);
@@ -65,11 +270,13 @@ void Cluster::LegalizeCompactX(int left) {
 }
 
 void Cluster::LegalizeCompactX() {
-  std::sort(blk_list_.begin(),
-            blk_list_.end(),
-            [](const Block *blk_ptr0, const Block *blk_ptr1) {
-              return blk_ptr0->LLX() < blk_ptr1->LLX();
-            });
+  std::sort(
+      blk_list_.begin(),
+      blk_list_.end(),
+      [](const Block *blk_ptr0, const Block *blk_ptr1) {
+        return blk_ptr0->LLX() < blk_ptr1->LLX();
+      }
+  );
   int current_x = lx_;
   for (auto &blk: blk_list_) {
     blk->SetLLX(current_x);
@@ -91,11 +298,13 @@ void Cluster::LegalizeLooseX(int space_to_well_tap) {
   if (blk_list_.empty()) {
     return;
   }
-  std::sort(blk_list_.begin(),
-            blk_list_.end(),
-            [](const Block *blk_ptr0, const Block *blk_ptr1) {
-              return blk_ptr0->LLX() < blk_ptr1->LLX();
-            });
+  std::sort(
+      blk_list_.begin(),
+      blk_list_.end(),
+      [](const Block *blk_ptr0, const Block *blk_ptr1) {
+        return blk_ptr0->LLX() < blk_ptr1->LLX();
+      }
+  );
   int block_contour = lx_;
   int res_x;
   for (auto &blk: blk_list_) {
@@ -109,11 +318,13 @@ void Cluster::LegalizeLooseX(int space_to_well_tap) {
 
   int ux = lx_ + width_;
   //if (block_contour > ux) {
-  std::sort(blk_list_.begin(),
-            blk_list_.end(),
-            [](const Block *blk_ptr0, const Block *blk_ptr1) {
-              return blk_ptr0->URX() > blk_ptr1->URX();
-            });
+  std::sort(
+      blk_list_.begin(),
+      blk_list_.end(),
+      [](const Block *blk_ptr0, const Block *blk_ptr1) {
+        return blk_ptr0->URX() > blk_ptr1->URX();
+      }
+  );
   block_contour = ux;
   for (auto &blk: blk_list_) {
     res_x = std::min(block_contour, int(blk->URX()));
@@ -156,11 +367,13 @@ void Cluster::InsertWellTapCell(Block &tap_cell, int loc) {
 }
 
 void Cluster::UpdateBlockLocationCompact() {
-  std::sort(blk_list_.begin(),
-            blk_list_.end(),
-            [](const Block *blk_ptr0, const Block *blk_ptr1) {
-              return blk_ptr0->LLX() < blk_ptr1->LLX();
-            });
+  std::sort(
+      blk_list_.begin(),
+      blk_list_.end(),
+      [](const Block *blk_ptr0, const Block *blk_ptr1) {
+        return blk_ptr0->LLX() < blk_ptr1->LLX();
+      }
+  );
   int current_x = lx_;
   for (auto &blk: blk_list_) {
     blk->SetLLX(current_x);
@@ -170,11 +383,13 @@ void Cluster::UpdateBlockLocationCompact() {
 }
 
 void Cluster::MinDisplacementLegalization() {
-  std::sort(blk_list_.begin(),
-            blk_list_.end(),
-            [](const Block *blk_ptr0, const Block *blk_ptr1) {
-              return blk_ptr0->X() < blk_ptr1->X();
-            });
+  std::sort(
+      blk_list_.begin(),
+      blk_list_.end(),
+      [](const Block *blk_ptr0, const Block *blk_ptr1) {
+        return blk_ptr0->X() < blk_ptr1->X();
+      }
+  );
 
   std::vector<BlockSegment> segments;
 
@@ -245,9 +460,67 @@ double Cluster::MinDisplacementLLY() const {
   return min_displacement_lly_;
 }
 
-void ClusterSegment::Merge(ClusterSegment &sc,
-                           int lower_bound,
-                           int upper_bound) {
+void Cluster::DoubleWellLegalization() {
+  // simply legalize cells with a double well
+  std::sort(
+      blk_list_double_.begin(),
+      blk_list_double_.end(),
+      [](const Block *blk_ptr0, const Block *blk_ptr1) {
+        return blk_ptr0->X() < blk_ptr1->X();
+      }
+  );
+  size_t sz = blk_list_double_.size();
+  int contour = lx_;
+  for (size_t i = 0; i < sz; ++i) {
+    Block *blk_ptr = blk_list_double_[i];
+    BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
+    blk_ptr->SetLLX(contour);
+    blk_ptr->SetLLY(ly_ + p_well_height_ - well_ptr->Pheight());
+    contour += blk_ptr->Width();
+  }
+
+  // simply legalize cells in sub-cluster 0
+  std::sort(
+      blk_list_.begin(),
+      blk_list_.end(),
+      [](const Block *blk_ptr0, const Block *blk_ptr1) {
+        return blk_ptr0->X() < blk_ptr1->X();
+      }
+  );
+  size_t sz0 = blk_list_.size();
+  int contour0 = contour;
+  for (size_t i = 0; i < sz0; ++i) {
+    Block *blk_ptr = blk_list_[i];
+    BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
+    blk_ptr->SetLLX(contour0);
+    blk_ptr->SetLLY(ly_ + p_well_height_ - well_ptr->Pheight());
+    contour0 += blk_ptr->Width();
+  }
+
+  // simply legalize cells in sub-cluster 1
+  std::sort(
+      blk_list1_.begin(),
+      blk_list1_.end(),
+      [](const Block *blk_ptr0, const Block *blk_ptr1) {
+        return blk_ptr0->X() < blk_ptr1->X();
+      }
+  );
+  size_t sz1 = blk_list1_.size();
+  int contour1 = contour;
+  for (size_t i = 0; i < sz1; ++i) {
+    Block *blk_ptr = blk_list1_[i];
+    BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
+    blk_ptr->SetLLX(contour1);
+    blk_ptr->SetLLY(ly_ + height_);
+    contour1 += blk_ptr->Width();
+  }
+}
+
+void ClusterSegment::Merge(
+    ClusterSegment &sc,
+    int lower_bound,
+    int upper_bound
+) {
   int sz = (int) sc.cluster_list.size();
   for (int i = 0; i < sz; ++i) {
     cluster_list.push_back(sc.cluster_list[i]);
@@ -257,13 +530,13 @@ void ClusterSegment::Merge(ClusterSegment &sc,
   sz = (int) cluster_list.size();
   int anchor_size = 0;
   for (auto &cluster_ptr: cluster_list) {
-    anchor_size += (int) cluster_ptr->blk_list_.size();
+    anchor_size += (int) cluster_ptr->Blocks().size();
   }
   std::vector<double> anchor;
   anchor.reserve(anchor_size);
   int accumulative_d = 0;
   for (int i = 0; i < sz; ++i) {
-    for (auto &init_loc: cluster_list[i]->blk_initial_location_) {
+    for (auto &init_loc: cluster_list[i]->InitLocations()) {
       double init_np_boundary = init_loc.y;
       anchor.push_back(init_np_boundary - accumulative_d);
     }
@@ -275,7 +548,7 @@ void ClusterSegment::Merge(ClusterSegment &sc,
     }
   }
   DaliExpects(height_ == accumulative_d,
-              "Something is wrong, height does not match, ClusterSegment::Merge()");
+              "Something is wrong, height does not match");
 
   long double sum = 0;
   for (auto &num: anchor) {

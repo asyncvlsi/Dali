@@ -30,12 +30,14 @@ void Stripe::MinDisplacementAdjustment() {
     cluster.UpdateMinDisplacementLLY();
   }
 
-  std::sort(cluster_list_.begin(),
-            cluster_list_.end(),
-            [](const Cluster &cluster0, const Cluster &cluster1) {
-              return cluster0.MinDisplacementLLY()
-                  < cluster1.MinDisplacementLLY();
-            });
+  std::sort(
+      cluster_list_.begin(),
+      cluster_list_.end(),
+      [](const Cluster &cluster0, const Cluster &cluster1) {
+        return cluster0.MinDisplacementLLY()
+            < cluster1.MinDisplacementLLY();
+      }
+  );
 
   std::vector<ClusterSegment> segments;
 

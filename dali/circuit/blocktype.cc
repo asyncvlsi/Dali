@@ -98,11 +98,6 @@ void BlockType::SetWell(BlockTypeWell *well_ptr) {
   well_ptr_ = well_ptr;
 }
 
-void BlockType::SetDoubleWell(BlockTypeDoubleWell *double_well_ptr) {
-  DaliExpects(double_well_ptr!= nullptr, "double_well_ptr is a nullptr?");
-  d_well_ptr_ = double_well_ptr;
-}
-
 void BlockType::SetWidth(int width) {
   width_ = width;
   area_ = (long int) width_ * (long int) height_;
@@ -141,6 +136,18 @@ void BlockTypeWell::SetNwellRect(int lx, int ly, int ux, int uy) {
     DaliExpects(n_rect_.LLY() == p_rect_.URY(), "N/P-well not abutted");
   } else {
     p_n_edge_ = n_rect_.LLY();
+    stretch_edge_ = type_ptr_->Height();
+  }
+}
+
+void BlockTypeWell::SetNwellRect1(int lx, int ly, int ux, int uy) {
+  is_n_set1_ = true;
+  n_rect1_.SetValue(lx, ly, ux, uy);
+  if (is_p_set1_) {
+    DaliExpects(n_rect1_.URY() == p_rect1_.LLY(), "N/P-well not abutted");
+  } else {
+    p_n_edge1_ = n_rect1_.Height();
+    stretch_edge_ = n_rect1_.LLY();
   }
 }
 
@@ -151,6 +158,15 @@ void BlockTypeWell::SetPwellRect(int lx, int ly, int ux, int uy) {
     DaliExpects(n_rect_.LLY() == p_rect_.URY(), "N/P-well not abutted");
   } else {
     p_n_edge_ = p_rect_.URY();
+    stretch_edge_ = type_ptr_->Height();
+  }
+}
+
+void BlockTypeWell::SetPwellRect1(int lx, int ly, int ux, int uy) {
+  is_p_set1_ = true;
+  p_rect1_.SetValue(lx, ly, ux, uy);
+  if (is_n_set1_) {
+    DaliExpects(n_rect1_.URY() == p_rect1_.LLY(), "N/P-well not abutted");
   }
 }
 
@@ -162,23 +178,7 @@ void BlockTypeWell::SetWellRect(bool is_n, int lx, int ly, int ux, int uy) {
   }
 }
 
-bool BlockTypeWell::IsNpWellAbutted() const {
-  if (is_p_set_ && is_n_set_) {
-    return p_rect_.URY() == n_rect_.LLY();
-  }
-  return true;
-}
-
-void BlockTypeWell::Report() const {
-  BOOST_LOG_TRIVIAL(info)
-    << "  Well of BlockType: " << type_ptr_->Name() << "\n"
-    << "    Nwell: " << n_rect_.LLX() << "  " << n_rect_.LLY() << "  "
-    << n_rect_.URX() << "  " << n_rect_.URY() << "\n"
-    << "    Pwell: " << p_rect_.LLX() << "  " << p_rect_.LLY() << "  "
-    << p_rect_.URX() << "  " << p_rect_.URY() << "\n";
-}
-
-void BlockTypeDoubleWell::SetWellRect(
+void BlockTypeWell::SetWellRect(
     bool is_first,
     bool is_n,
     int lx,
@@ -186,26 +186,64 @@ void BlockTypeDoubleWell::SetWellRect(
     int ux,
     int uy
 ) {
-  RectI *rect_ptr_ = nullptr;
   if (is_first) {
-    rect_ptr_ = is_n ? &n_rect0_ : &p_rect0_;
+    if (is_n) {
+      SetNwellRect(lx, ly, ux, uy);
+    } else {
+      SetPwellRect(lx, ly, ux, uy);
+    }
   } else {
-    rect_ptr_ = is_n ? &n_rect1_ : &p_rect1_;
+    if (is_n) {
+      SetNwellRect1(lx, ly, ux, uy);
+    } else {
+      SetPwellRect1(lx, ly, ux, uy);
+    }
   }
-  rect_ptr_->SetValue(lx, ly, ux, uy);
 }
 
-void BlockTypeDoubleWell::Report() const {
+bool BlockTypeWell::IsNpWellAbutted() const {
+  if (is_p_set_ && is_n_set_) {
+    return p_rect_.URY() == n_rect_.LLY();
+  }
+  return true;
+}
+
+bool BlockTypeWell::IsSingleWell() const {
+  return !is_n_set1_ && !is_p_set1_;
+}
+
+void BlockTypeWell::CheckLegal() const {
+  if (!is_n_set_) {
+    DaliExpects(false, "Cannot find Nwell 0 for " + type_ptr_->Name());
+  }
+  if (is_n_set1_ && (n_rect_.URY() != n_rect1_.LLY())) {
+    DaliExpects(false, "Nwell 0 and 1 are not abutted " + type_ptr_->Name());
+  }
+}
+
+void BlockTypeWell::Report() const {
   BOOST_LOG_TRIVIAL(info)
-    << "  Well of BlockType: " << type_ptr_->Name() << "\n"
-    << "    Pwell0: " << p_rect0_.LLX() << "  " << p_rect0_.LLY() << "  "
-    << p_rect0_.URX() << "  " << p_rect0_.URY() << "\n"
-    << "    Nwell0: " << n_rect0_.LLX() << "  " << n_rect0_.LLY() << "  "
-    << n_rect0_.URX() << "  " << n_rect0_.URY() << "\n"
-    << "    Nwell1: " << n_rect1_.LLX() << "  " << n_rect1_.LLY() << "  "
-    << n_rect1_.URX() << "  " << n_rect1_.URY() << "\n"
-    << "    Pwell1: " << p_rect1_.LLX() << "  " << p_rect1_.LLY() << "  "
-    << p_rect1_.URX() << "  " << p_rect1_.URY() << "\n";
+    << "  Well of BlockType: " << type_ptr_->Name() << "\n";
+  if (is_n_set_) {
+    BOOST_LOG_TRIVIAL(info)
+      << "    Nwell: " << n_rect_.LLX() << "  " << n_rect_.LLY() << "  "
+      << n_rect_.URX() << "  " << n_rect_.URY() << "\n";
+  }
+  if (is_p_set_) {
+    BOOST_LOG_TRIVIAL(info)
+      << "    Pwell: " << p_rect_.LLX() << "  " << p_rect_.LLY() << "  "
+      << p_rect_.URX() << "  " << p_rect_.URY() << "\n";
+  }
+  if (is_n_set1_) {
+    BOOST_LOG_TRIVIAL(info)
+      << "    Nwell1: " << n_rect1_.LLX() << "  " << n_rect1_.LLY() << "  "
+      << n_rect1_.URX() << "  " << n_rect1_.URY() << "\n";
+  }
+  if (is_p_set1_) {
+    BOOST_LOG_TRIVIAL(info)
+      << "    Pwell1: " << p_rect1_.LLX() << "  " << p_rect1_.LLY() << "  "
+      << p_rect1_.URX() << "  " << p_rect1_.URY() << "\n";
+  }
 }
 
 }

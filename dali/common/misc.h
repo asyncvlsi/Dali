@@ -163,6 +163,11 @@ struct Rect {
     return "(" + std::to_string(llx_), ", " + std::to_string(lly_) + "), " +
         "(" + std::to_string(urx_), ", " + std::to_string(ury_) + ")";
   }
+  void Report() const {
+    BOOST_LOG_TRIVIAL(info)
+      << "(" << llx_ << ", " << lly_ << "), "
+      << "(" << urx_ << ", " << ury_ << ")\n";
+  }
 };
 
 typedef Rect<double> RectD;
