@@ -32,12 +32,11 @@ class Cluster {
 
   bool IsOrientN() const;
   bool IsSingle() const;
+  void SetIsSingle(bool is_single);
   int UsedSize() const;
   void SetUsedSize(int used_size);
   void UseSpace(int width);
-  int UsedSize1() const;
   void SetUsedSize1(int used_size);
-  void UseSpace1(int width);
 
   void SetLLX(int lx);
   void SetURX(int ux);
@@ -71,7 +70,6 @@ class Cluster {
   void SetLoc(int lx, int ly);
 
   void AddBlock(Block *blk_ptr);
-  void AddBlock1(Block *blk_ptr);
   std::vector<Block *> &Blocks();
   std::vector<double2d> &InitLocations();
   void ShiftBlockX(int x_disp);
@@ -90,12 +88,22 @@ class Cluster {
   void UpdateMinDisplacementLLY();
   double MinDisplacementLLY() const;
 
+  bool IsCloserToLowerCluster(Block &blk);
+  bool IsEnoughSpace(Block &blk, bool is_lower_cluster);
+  bool IsEnoughSpace2(Block &blk);
+  void AddBlockDoubleCluster(Block &blk, bool is_lower_cluster);
+  void AddBlockDoubleCluster2(Block &blk);
+  void SplitSingleWellCellList();
+  void UpdateSubClusterSize();
+  void RedistributeSingleWellCells();
+  void ShiftCellsToCenter();
+  void UpdateBlockLocYDoubleCluster();
   void DoubleWellLegalization();
  private:
   bool is_orient_N_ = true; // orientation of this cluster
   bool is_only_single_well_cells_ = true;
   std::vector<Block *> blk_list_; // list of blocks in this cluster
-  int cluster_boundary_ = 0;
+  int cluster_edge_ = 0;
   std::vector<Block *> blk_list1_;
   std::vector<Block *> blk_list_double_;
   std::vector<double2d> blk_initial_location_;

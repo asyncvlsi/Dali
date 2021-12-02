@@ -458,123 +458,15 @@ void StdClusterWellLegalizer::AppendSingleWellBlockToFrontCluster(
   int n_well_height = blk_well->Nheight();
 
   Cluster *front_cluster = stripe.front_cluster_;
-  bool is_top_cluster_full =
-      front_cluster->UsedSize() + blk.Width() > stripe.width_;
-  if (!is_top_cluster_full) {
-    front_cluster->AddBlock(&blk);
-    front_cluster->UseSpace(width);
-    if (p_well_height > front_cluster->PHeight()
-        || n_well_height > front_cluster->NHeight()) {
-      int old_height = front_cluster->Height();
-      front_cluster->UpdateWellHeightFromBottom(p_well_height, n_well_height);
-      stripe.used_height_ += front_cluster->Height() - old_height;
-    }
-  } else {
-    front_cluster->AddBlock1(&blk);
-    front_cluster->UseSpace1(width);
-    if (p_well_height > front_cluster->PHeight1()
-        || n_well_height > front_cluster->NHeight1()) {
-      int old_height = front_cluster->Height();
-      front_cluster->UpdateWellHeightFromBottom1(p_well_height, n_well_height);
-      stripe.used_height_ += front_cluster->Height() - old_height;
-    }
-  }
-  stripe.contour_ = front_cluster->URY();
-}
-
-void StdClusterWellLegalizer::CreateClusterAndAppendDoubleWellBlock(
-    Stripe &stripe,
-    Block &blk
-) {
-  bool is_orient_N = true;
-
-  stripe.cluster_list_.emplace_back();
-  Cluster *front_cluster = &(stripe.cluster_list_.back());
-  front_cluster->SetOrient(is_orient_N);
-  front_cluster->Blocks().reserve(stripe.max_blk_capacity_per_cluster_);
-  front_cluster->AddBlock(&blk);
-
-  int width = blk.Width();
-  int init_y = (int) std::round(blk.LLY());
-  init_y = std::max(init_y, stripe.contour_);
-
-  //int num_of_tap_cell = (int) std::ceil(stripe.Width() / max_unplug_length_);
-  int num_of_tap_cell = 2;
-
-  BlockTypeWell *blk_well = blk.TypePtr()->WellPtr();
-  int p_well_height = blk_well->Pheight();
-  int n_well_height = blk_well->Nheight();
-  int n_well_height1 = blk_well->Nheight1();
-  int p_well_height1 = blk_well->Pheight1();
-  front_cluster->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_
-                                 + num_of_tap_cell * space_to_well_tap_);
-  front_cluster->SetUsedSize1(width + num_of_tap_cell * well_tap_cell_width_
-                                  + num_of_tap_cell * space_to_well_tap_);
-  front_cluster->UpdateWellHeightFromBottom(tap_cell_p_height_,
-                                            tap_cell_n_height_);
-  front_cluster->UpdateWellHeightFromBottom(p_well_height, n_well_height);
-  front_cluster->UpdateWellHeightFromBottom1(tap_cell_p_height_,
-                                             tap_cell_n_height_);
-  front_cluster->UpdateWellHeightFromBottom1(p_well_height1, n_well_height1);
-
-  front_cluster->SetLLY(init_y);
-  front_cluster->SetLLX(stripe.LLX());
-  front_cluster->SetWidth(stripe.Width());
-
-  stripe.front_cluster_ = front_cluster;
-  stripe.cluster_count_ += 1;
-  stripe.used_height_ += front_cluster->Height();
-  stripe.contour_ = front_cluster->URY();
-}
-
-void StdClusterWellLegalizer::AppendDoubleWellBlockToFrontCluster(
-    Stripe &stripe,
-    Block &blk
-) {
-  int width = blk.Width();
-  BlockTypeWell *blk_well = blk.TypePtr()->WellPtr();
-  int p_well_height = blk_well->Pheight();
-  int n_well_height = blk_well->Nheight();
-  int n_well_height1 = blk_well->Nheight1();
-  int p_well_height1 = blk_well->Pheight1();
-
-  Cluster *front_cluster = stripe.front_cluster_;
   front_cluster->AddBlock(&blk);
   front_cluster->UseSpace(width);
-  front_cluster->UseSpace1(width);
   if (p_well_height > front_cluster->PHeight()
       || n_well_height > front_cluster->NHeight()) {
     int old_height = front_cluster->Height();
     front_cluster->UpdateWellHeightFromBottom(p_well_height, n_well_height);
     stripe.used_height_ += front_cluster->Height() - old_height;
   }
-  if (p_well_height1 > front_cluster->PHeight1()
-      || n_well_height1 > front_cluster->NHeight1()) {
-    int old_height = front_cluster->Height();
-    front_cluster->UpdateWellHeightFromBottom1(p_well_height1, n_well_height1);
-    stripe.used_height_ += front_cluster->Height() - old_height;
-  }
   stripe.contour_ = front_cluster->URY();
-}
-
-void StdClusterWellLegalizer::AppendDoubleWellBlockToColBottomUp(
-    Stripe &stripe,
-    Block &blk
-) {
-  bool is_no_cluster_in_col = (stripe.contour_ == stripe.LLY());
-  bool is_new_cluster_needed = is_no_cluster_in_col;
-  if (!is_new_cluster_needed) {
-    bool is_not_in_top_cluster = stripe.contour_ <= blk.LLY();
-    bool is_top_cluster_full =
-        stripe.front_cluster_->UsedSize() + blk.Width() > stripe.width_;
-    is_new_cluster_needed = is_not_in_top_cluster || is_top_cluster_full;
-  }
-
-  if (is_new_cluster_needed) {
-    CreateClusterAndAppendDoubleWellBlock(stripe, blk);
-  } else {
-    AppendDoubleWellBlockToFrontCluster(stripe, blk);
-  }
 }
 
 void StdClusterWellLegalizer::AppendBlockToColBottomUp(
@@ -1008,11 +900,152 @@ bool StdClusterWellLegalizer::BlockClusteringCompact() {
   return res;
 }
 
+void StdClusterWellLegalizer::CreateDoubleClusterAndAppendBlock(
+    Stripe &stripe,
+    Block &blk
+) {
+  stripe.cluster_list_.emplace_back();
+  Cluster *front_cluster = &(stripe.cluster_list_.back());
+  front_cluster->SetIsSingle(false);
+  front_cluster->AddBlockDoubleCluster(blk, true);
+
+  int width = blk.Width();
+  int init_y = (int) std::round(blk.LLY());
+  init_y = std::max(init_y, stripe.contour_);
+
+  int num_of_tap_cell = 2;
+
+  BlockTypeWell *blk_well = blk.TypePtr()->WellPtr();
+  int p_well_height = blk_well->Pheight();
+  int n_well_height = blk_well->Nheight();
+  front_cluster->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_
+                                 + num_of_tap_cell * space_to_well_tap_);
+  front_cluster->UpdateWellHeightFromBottom(tap_cell_p_height_,
+                                            tap_cell_n_height_);
+  front_cluster->UpdateWellHeightFromBottom1(tap_cell_p_height_,
+                                             tap_cell_n_height_);
+  front_cluster->UpdateWellHeightFromBottom(p_well_height, n_well_height);
+  if (!blk_well->IsSingleWell()) {
+    int n_well_height1 = blk_well->Nheight1();
+    int p_well_height1 = blk_well->Pheight1();
+    front_cluster->SetUsedSize1(width + num_of_tap_cell * well_tap_cell_width_
+                                    + num_of_tap_cell * space_to_well_tap_);
+    front_cluster->UpdateWellHeightFromBottom1(p_well_height1, n_well_height1);
+  }
+
+  front_cluster->SetLLY(init_y);
+  front_cluster->SetLLX(stripe.LLX());
+  front_cluster->SetWidth(stripe.Width());
+
+  stripe.front_cluster_ = front_cluster;
+  stripe.cluster_count_ += 1;
+  stripe.used_height_ += front_cluster->Height();
+  stripe.contour_ = front_cluster->URY();
+}
+
+void StdClusterWellLegalizer::CreateDoubleClusterAndAppendBlock2(
+    Stripe &stripe,
+    Block &blk
+) {
+  stripe.cluster_list_.emplace_back();
+  Cluster *front_cluster = &(stripe.cluster_list_.back());
+  front_cluster->SetIsSingle(false);
+  front_cluster->AddBlockDoubleCluster2(blk);
+
+  int width = blk.Width();
+  int init_y = (int) std::round(blk.LLY());
+  init_y = std::max(init_y, stripe.contour_);
+
+  int num_of_tap_cell = 2;
+
+  BlockTypeWell *blk_well = blk.TypePtr()->WellPtr();
+  int p_well_height = blk_well->Pheight();
+  int n_well_height = blk_well->Nheight();
+  front_cluster->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_
+                                 + num_of_tap_cell * space_to_well_tap_);
+  front_cluster->UpdateWellHeightFromBottom(tap_cell_p_height_,
+                                            tap_cell_n_height_);
+  front_cluster->UpdateWellHeightFromBottom1(tap_cell_p_height_,
+                                             tap_cell_n_height_);
+  front_cluster->UpdateWellHeightFromBottom(p_well_height, n_well_height);
+  if (!blk_well->IsSingleWell()) {
+    int n_well_height1 = blk_well->Nheight1();
+    int p_well_height1 = blk_well->Pheight1();
+    front_cluster->SetUsedSize1(width + num_of_tap_cell * well_tap_cell_width_
+                                    + num_of_tap_cell * space_to_well_tap_);
+    front_cluster->UpdateWellHeightFromBottom1(p_well_height1, n_well_height1);
+  }
+
+  front_cluster->SetLLY(init_y);
+  front_cluster->SetLLX(stripe.LLX());
+  front_cluster->SetWidth(stripe.Width());
+
+  stripe.front_cluster_ = front_cluster;
+  stripe.cluster_count_ += 1;
+  stripe.used_height_ += front_cluster->Height();
+  stripe.contour_ = front_cluster->URY();
+}
+
+void StdClusterWellLegalizer::AppendBlockToFrontDoubleCluster(
+    Stripe &stripe,
+    Block &blk
+) {
+  Cluster *front_cluster = stripe.front_cluster_;
+  bool is_lower_cluster = front_cluster->IsCloserToLowerCluster(blk);
+  bool is_enough_space = front_cluster->IsEnoughSpace(blk, is_lower_cluster);
+  if (!is_enough_space && is_lower_cluster) {
+    is_enough_space = front_cluster->IsEnoughSpace(blk, false);
+    is_lower_cluster = false;
+  }
+  if (!is_enough_space) {
+    std::cout << "Cannot find enough space for cell: " << blk.Name() << "\n";
+  }
+  int old_height = front_cluster->Height();
+  front_cluster->AddBlockDoubleCluster(blk, is_lower_cluster);
+
+  stripe.used_height_ += front_cluster->Height() - old_height;
+  stripe.contour_ = front_cluster->URY();
+}
+
 void StdClusterWellLegalizer::AppendBlockToColBottomUpDoubleClustering(
     Stripe &stripe,
     Block &blk
 ) {
+  bool is_no_cluster_in_col = (stripe.contour_ == stripe.LLY());
+  bool is_new_cluster_needed = is_no_cluster_in_col;
+  if (!is_new_cluster_needed) {
+    Cluster *front_cluster = stripe.front_cluster_;
+    bool is_not_in_top_cluster = stripe.contour_ <= blk.LLY();
+    bool is_top_cluster_full = !(front_cluster->IsEnoughSpace(blk, true) ||
+        front_cluster->IsEnoughSpace(blk, false));
+    is_new_cluster_needed = is_not_in_top_cluster || is_top_cluster_full;
+  }
 
+  if (is_new_cluster_needed) {
+    CreateDoubleClusterAndAppendBlock(stripe, blk);
+  } else {
+    AppendBlockToFrontDoubleCluster(stripe, blk);
+  }
+}
+
+void StdClusterWellLegalizer::AppendBlockToColBottomUpDoubleClustering2(
+    Stripe &stripe,
+    Block &blk
+) {
+  bool is_no_cluster_in_col = (stripe.contour_ == stripe.LLY());
+  bool is_new_cluster_needed = is_no_cluster_in_col;
+  if (!is_new_cluster_needed) {
+    Cluster *front_cluster = stripe.front_cluster_;
+    bool is_not_in_top_cluster = stripe.contour_ <= blk.LLY();
+    bool is_top_cluster_full = !front_cluster->IsEnoughSpace2(blk);
+    is_new_cluster_needed = is_not_in_top_cluster || is_top_cluster_full;
+  }
+
+  if (is_new_cluster_needed) {
+    CreateDoubleClusterAndAppendBlock2(stripe, blk);
+  } else {
+    //AppendBlockToFrontDoubleCluster2(stripe, blk);
+  }
 }
 
 bool StdClusterWellLegalizer::StripeLegalizationBottomUpDoubleCluster(Stripe &stripe) {
@@ -1037,7 +1070,7 @@ bool StdClusterWellLegalizer::StripeLegalizationBottomUpDoubleCluster(Stripe &st
   }
 
   for (auto &cluster: stripe.cluster_list_) {
-    cluster.UpdateBlockLocY();
+    cluster.DoubleWellLegalization();
   }
 
   return stripe.contour_ <= stripe.URY();
@@ -1506,6 +1539,8 @@ bool StdClusterWellLegalizer::StartPlacement() {
     //circuit_ptr_->GenMATLABWellTable("wtc", false);
     //GenMatlabClusterTable("wtc_result");
   } else {
+    tap_cell_n_height_ = 0;
+    tap_cell_p_height_ = 0;
     BOOST_LOG_TRIVIAL(info) << "Form block double clustering\n";
     is_success = BlockDoubleClustering();
     ReportHPWL();

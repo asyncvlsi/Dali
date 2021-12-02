@@ -131,9 +131,6 @@ class StdClusterWellLegalizer : public Placer {
 
   void CreateClusterAndAppendSingleWellBlock(Stripe &stripe, Block &blk);
   void AppendSingleWellBlockToFrontCluster(Stripe &stripe, Block &blk);
-  void CreateClusterAndAppendDoubleWellBlock(Stripe &stripe, Block &blk);
-  void AppendDoubleWellBlockToFrontCluster(Stripe &stripe, Block &blk);
-  void AppendDoubleWellBlockToColBottomUp(Stripe &stripe, Block &blk);
   void AppendBlockToColBottomUp(Stripe &stripe, Block &blk);
   void AppendBlockToColTopDown(Stripe &stripe, Block &blk);
   void AppendBlockToColBottomUpCompact(Stripe &stripe, Block &blk);
@@ -148,7 +145,12 @@ class StdClusterWellLegalizer : public Placer {
   bool BlockClusteringLoose();
   bool BlockClusteringCompact();
 
+  void CreateDoubleClusterAndAppendBlock(Stripe &stripe, Block &blk);
+  void CreateDoubleClusterAndAppendBlock2(Stripe &stripe, Block &blk);
+  void AppendBlockToFrontDoubleCluster(Stripe &stripe, Block &blk);
+  void AppendBlockToFrontDoubleCluster2(Stripe &stripe, Block &blk);
   void AppendBlockToColBottomUpDoubleClustering(Stripe &stripe, Block &blk);
+  void AppendBlockToColBottomUpDoubleClustering2(Stripe &stripe, Block &blk);
   bool StripeLegalizationBottomUpDoubleCluster(Stripe &stripe);
   bool BlockDoubleClustering();
 
