@@ -883,6 +883,9 @@ void Circuit::ReportWellShape() {
   for (auto &blk_type_well: tech_.well_list_) {
     blk_type_well.Report();
   }
+  for (auto &blk_type_well: tech_.multi_well_list_) {
+    blk_type_well.Report();
+  }
 }
 
 void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
@@ -1015,18 +1018,22 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
       StrTokenize(line, macro_fields);
       std::string end_macro_flag = "END " + macro_fields[1];
       BlockType *p_blk_type = GetBlockTypePtr(macro_fields[1]);
-      BlockTypeWell *well_ptr = AddBlockTypeWell(p_blk_type);
-      bool is_first = true;
+      tech_.multi_well_list_.emplace_back(p_blk_type);
+      auto *well_ptr = &(tech_.multi_well_list_.back());
+      p_blk_type->SetMultiWell(well_ptr);
       do {
         getline(ist, line);
         if (line.find("REGION") != std::string::npos) {
           do {
             getline(ist, line);
-            bool is_n = false;
+            bool is_n;
             if (line.find("LAYER") != std::string::npos) {
               do {
                 if (line.find("nwell") != std::string::npos) {
                   is_n = true;
+                }
+                if (line.find("pwell") != std::string::npos) {
+                  is_n = false;
                 }
                 if (line.find("RECT") != std::string::npos) {
                   double lx = 0, ly = 0, ux = 0, uy = 0;
@@ -1062,11 +1069,9 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
                   int ly_grid = int(std::round(ly / GridValueY()));
                   int ux_grid = int(std::round(ux / GridValueX()));
                   int uy_grid = int(std::round(uy / GridValueY()));
-                  //well_ptr->SetWellRect(
-                  //    is_first, is_n,
-                  //    lx_grid, ly_grid, ux_grid, uy_grid
-                  //);
-                  //is_n = !is_n;
+                  well_ptr->AddWellRect(
+                      is_n, lx_grid, ly_grid, ux_grid, uy_grid
+                  );
                 }
                 getline(ist, line);
               } while (line.find("END REGION") == std::string::npos
@@ -1074,12 +1079,12 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
             }
           } while (line.find("END REGION") == std::string::npos && !ist.eof());
         }
-        is_first = false;
       } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
       //well_ptr->CheckLegal();
     }
   }
   ReportWellShape();
+  exit(1);
 }
 
 int Circuit::MinBlkWidth() const {

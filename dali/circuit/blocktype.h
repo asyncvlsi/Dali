@@ -52,6 +52,8 @@ class BlockType {
  public:
   BlockType(const std::string *name_ptr, int width, int height);
 
+  ~BlockType();
+
   const std::string &Name() const { return *name_ptr_; }
 
   // check if a pin with a given name exists in this BlockType or not
@@ -77,7 +79,13 @@ class BlockType {
   void SetWell(BlockTypeWell *well_ptr);
 
   // get the pointer to the well of this BlockType
-  BlockTypeWell *WellPtr() const { return well_ptr_; }
+  BlockTypeWell *WellPtr() const;
+
+  // set the multi-well information for this BlockType
+  void SetMultiWell(BlockTypeMultiWell *m_well_ptr);
+
+  // get the pointer to the multi-well of this BlockType
+  BlockTypeMultiWell *MultiWellPtr() const;
 
   // set the width of this BlockType and update its area
   void SetWidth(int width);
@@ -107,6 +115,7 @@ class BlockType {
   int width_, height_;
   long int area_;
   BlockTypeWell *well_ptr_ = nullptr;
+  BlockTypeMultiWell *m_well_ptr_ = nullptr;
   std::vector<Pin> pin_list_;
   std::map<std::string, int> pin_name_id_map_;
 };
@@ -201,6 +210,8 @@ class BlockTypeMultiWell {
   void AddNwellRect(int llx, int lly, int urx, int ury);
 
   void AddPwellRect(int llx, int lly, int urx, int ury);
+
+  void AddWellRect(bool is_n, int llx, int lly, int urx, int ury);
 
   void SetExtraBottomExtension(int bot_extension);
 

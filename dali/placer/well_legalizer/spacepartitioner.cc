@@ -527,11 +527,11 @@ int SpacePartitioner::EndRow(int y_loc) const {
   return res;
 }
 
-int SpacePartitioner::RowToLoc(int row_num, int displacement) {
+int SpacePartitioner::RowToLoc(int row_num, int displacement) const {
   return row_num * row_height_ + Bottom() + displacement;
 }
 
-int SpacePartitioner::LocToCol(int x) {
+int SpacePartitioner::LocToCol(int x) const {
   int col_num = (x - Left()) / stripe_width_;
   if (col_num < 0) {
     col_num = 0;

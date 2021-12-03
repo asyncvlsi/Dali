@@ -32,6 +32,10 @@ BlockType::BlockType(
     area_((long int) width_ * (long int) height_),
     well_ptr_(nullptr) {}
 
+BlockType::~BlockType() {
+  delete m_well_ptr_;
+}
+
 int BlockType::GetPinId(std::string const &pin_name) const {
   auto ret = pin_name_id_map_.find(pin_name);
   if (ret != pin_name_id_map_.end()) {
@@ -94,8 +98,21 @@ Pin *BlockType::GetPinPtr(std::string const &pin_name) {
 }
 
 void BlockType::SetWell(BlockTypeWell *well_ptr) {
-  DaliExpects(well_ptr != nullptr, "Well_ptr is a nullptr?");
+  DaliExpects(well_ptr != nullptr, "well_ptr is a nullptr?");
   well_ptr_ = well_ptr;
+}
+
+BlockTypeWell *BlockType::WellPtr() const {
+  return well_ptr_;
+}
+
+void BlockType::SetMultiWell(BlockTypeMultiWell *m_well_ptr) {
+  DaliExpects(m_well_ptr != nullptr, "m_well_ptr is a nullptr?");
+  m_well_ptr_ = m_well_ptr;
+}
+
+BlockTypeMultiWell *BlockType::MultiWellPtr() const {
+  return m_well_ptr_;
 }
 
 void BlockType::SetWidth(int width) {
@@ -195,6 +212,16 @@ void BlockTypeMultiWell::AddPwellRect(int llx, int lly, int urx, int ury) {
   p_rects_.emplace_back(llx, lly, urx, ury);
 }
 
+void BlockTypeMultiWell::AddWellRect(
+    bool is_n, int llx, int lly, int urx, int ury
+) {
+  if (is_n) {
+    AddNwellRect(llx, lly, urx, ury);
+  } else {
+    AddPwellRect(llx, lly, urx, ury);
+  }
+}
+
 void BlockTypeMultiWell::SetExtraBottomExtension(int bot_extension) {
   extra_bot_extension_ = bot_extension;
 }
@@ -247,11 +274,11 @@ void BlockTypeMultiWell::Report() const {
   int sz = RowCount();
   for (int i = 0; i < sz; ++i) {
     BOOST_LOG_TRIVIAL(info)
-      << "    Nwell: " << n_rects_[i].LLX() << "  " << n_rects_[i].LLY() << "  "
-      << n_rects_[i].URX() << "  " << n_rects_[i].URY() << "\n";
-    BOOST_LOG_TRIVIAL(info)
       << "    Pwell: " << p_rects_[i].LLX() << "  " << p_rects_[i].LLY() << "  "
       << p_rects_[i].URX() << "  " << p_rects_[i].URY() << "\n";
+    BOOST_LOG_TRIVIAL(info)
+      << "    Nwell: " << n_rects_[i].LLX() << "  " << n_rects_[i].LLY() << "  "
+      << n_rects_[i].URX() << "  " << n_rects_[i].URY() << "\n";
   }
 }
 

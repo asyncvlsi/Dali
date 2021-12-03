@@ -82,7 +82,6 @@ class SpacePartitioner {
   int tot_num_rows_ = 0;
   std::vector<std::vector<SegI>> white_space_in_rows_;
 
-
   int Left() const;
   int Right() const;
   int Bottom() const;
@@ -90,8 +89,8 @@ class SpacePartitioner {
 
   int StartRow(int y_loc) const;
   int EndRow(int y_loc) const;
-  int RowToLoc(int row_num, int displacement = 0);
-  int LocToCol(int x);
+  int RowToLoc(int row_num, int displacement = 0) const;
+  int LocToCol(int x) const;
 };
 
 }
