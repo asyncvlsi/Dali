@@ -88,24 +88,10 @@ class Cluster {
   void UpdateMinDisplacementLLY();
   double MinDisplacementLLY() const;
 
-  bool IsCloserToLowerCluster(Block &blk);
-  bool IsEnoughSpace(Block &blk, bool is_lower_cluster);
-  bool IsEnoughSpace2(Block &blk);
-  void AddBlockDoubleCluster(Block &blk, bool is_lower_cluster);
-  void AddBlockDoubleCluster2(Block &blk);
-  void SplitSingleWellCellList();
-  void UpdateSubClusterSize();
-  void RedistributeSingleWellCells();
-  void ShiftCellsToCenter();
-  void UpdateBlockLocYDoubleCluster();
-  void DoubleWellLegalization();
  private:
   bool is_orient_N_ = true; // orientation of this cluster
   bool is_only_single_well_cells_ = true;
   std::vector<Block *> blk_list_; // list of blocks in this cluster
-  int cluster_edge_ = 0;
-  std::vector<Block *> blk_list1_;
-  std::vector<Block *> blk_list_double_;
   std::vector<double2d> blk_initial_location_;
 
   /**** number of tap cells needed, and pointers to tap cells ****/
@@ -119,16 +105,12 @@ class Cluster {
 
   /**** total width of cells in this cluster, including reserved space for tap cells ****/
   int used_size_ = 0;
-  int used_size1_ = 0;
   int usable_width_; // to ensure a proper well tap cell location can be found
 
   /**** maximum p-well height and n-well height ****/
   int p_well_height_ = 0;
   int n_well_height_ = 0;
   int height_ = 0;
-  int n_well_height1_ = 0;
-  int p_well_height1_ = 0;
-  int height1_ = 0;
 
   /**** lly which gives minimal displacement ****/
   double min_displacement_lly_ = -DBL_MAX;

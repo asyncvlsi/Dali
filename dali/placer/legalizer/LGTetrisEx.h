@@ -80,7 +80,6 @@ class LGTetrisEx : public Placer {
   }
   void SetLeftBoundFactor(double k_left) { k_left_ = k_left; }
 
-  static void MergeIntervals(std::vector<std::vector<int>> &intervals);
   void InitLegalizer();
   void InitLegalizerY();
 

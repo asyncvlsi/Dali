@@ -1062,11 +1062,11 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
                   int ly_grid = int(std::round(ly / GridValueY()));
                   int ux_grid = int(std::round(ux / GridValueX()));
                   int uy_grid = int(std::round(uy / GridValueY()));
-                  well_ptr->SetWellRect(
-                      is_first, is_n,
-                      lx_grid, ly_grid, ux_grid, uy_grid
-                  );
-                  is_n = !is_n;
+                  //well_ptr->SetWellRect(
+                  //    is_first, is_n,
+                  //    lx_grid, ly_grid, ux_grid, uy_grid
+                  //);
+                  //is_n = !is_n;
                 }
                 getline(ist, line);
               } while (line.find("END REGION") == std::string::npos
@@ -1076,7 +1076,7 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
         }
         is_first = false;
       } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
-      well_ptr->CheckLegal();
+      //well_ptr->CheckLegal();
     }
   }
   ReportWellShape();
@@ -1462,12 +1462,7 @@ void Circuit::GenMATLABWellTable(
       n_well_shapes.push_back(well->NwellRect());
       p_well_shapes.push_back(well->PwellRect());
 
-      if (!well->IsSingleWell()) {
-        n_well_shapes.push_back(well->NwellRect1());
-        p_well_shapes.push_back(well->PwellRect1());
-      }
-
-      for (size_t i=0; i<n_well_shapes.size(); ++i) {
+      for (size_t i = 0; i < n_well_shapes.size(); ++i) {
         if (block.Orient() == N) {
           ost << block.LLX() + n_well_shapes[i].LLX() << "\t"
               << block.LLX() + n_well_shapes[i].URX() << "\t"

@@ -37,6 +37,7 @@
 namespace dali {
 
 class BlockTypeWell;
+class BlockTypeMultiWell;
 
 /****
  * The class BlockType is an abstraction of a kind of gate, like INV, NAND, NOR
@@ -157,59 +158,29 @@ class BlockTypeWell {
   // set the rect of N-well
   void SetNwellRect(int lx, int ly, int ux, int uy);
 
-  // set the rect of N-well 1
-  void SetNwellRect1(int lx, int ly, int ux, int uy);
-
   // get the rect of N-well
-  const RectI &NwellRect() { return n_rect_; }
-
-  // get the rect of N-well 1
-  const RectI &NwellRect1() { return n_rect1_; }
+  const RectI &NwellRect();
 
   // set the rect of P-well
   void SetPwellRect(int lx, int ly, int ux, int uy);
 
-  // set the rect of P-well 1
-  void SetPwellRect1(int lx, int ly, int ux, int uy);
-
   // get the rect of P-well
-  const RectI &PwellRect() { return p_rect_; }
-
-  // get the rect of P-well
-  const RectI &PwellRect1() { return p_rect1_; }
+  const RectI &PwellRect();
 
   // get the P/N well boundary
   int PnBoundary() const { return p_n_edge_; }
 
   // get the height of N-well
-  int Nheight() const { return stretch_edge_ - p_n_edge_; }
+  int Nheight() const { return type_ptr_->Height() - p_n_edge_; }
 
   // get the height of P-well
   int Pheight() const { return p_n_edge_; }
 
-  // get the P/N well boundary
-  int PnBoundary1() const { return p_n_edge1_; }
-
-  // get the height of N-well
-  int Nheight1() const { return n_rect1_.Height(); }
-
-  // get the height of P-well
-  int Pheight1() const { return type_ptr_->Height() - n_rect1_.URY(); }
-
   // set the rect of N or P well
   void SetWellRect(bool is_n, int lx, int ly, int ux, int uy);
 
-  // set the rect of N or P well
-  void SetWellRect(bool is_first, bool is_n, int lx, int ly, int ux, int uy);
-
   // check if N-well is abutted with P-well, if both exist
   bool IsNpWellAbutted() const;
-
-  // check if this cell has a double well or not
-  bool IsSingleWell() const;
-
-  // check if the N/P-well shapes are legal or not
-  void CheckLegal() const;
 
   // report the information of N/P-well for debugging purposes
   void Report() const;
@@ -221,14 +192,38 @@ class BlockTypeWell {
   RectI n_rect_; // N-well rect 0
   RectI p_rect_; // P-well rect 0
   int p_n_edge_ = 0; // cached N/P-well boundary 0
+};
 
-  int stretch_edge_ = 0;
+class BlockTypeMultiWell {
+ public:
+  explicit BlockTypeMultiWell(BlockType *type_ptr) : type_ptr_(type_ptr) {}
 
-  bool is_n_set1_ = false; // whether N-well 1 shape is set or not
-  bool is_p_set1_ = false; // whether P-well 1 shape is set or not
-  RectI n_rect1_; // N-well rect 1
-  RectI p_rect1_; // P-well rect 1
-  int p_n_edge1_ = 0; // cached N/P-well boundary 1
+  void AddNwellRect(int llx, int lly, int urx, int ury);
+
+  void AddPwellRect(int llx, int lly, int urx, int ury);
+
+  void SetExtraBottomExtension(int bot_extension);
+
+  void SetExtraTopExtension(int top_extension);
+
+  bool IsBottomWellN() const;
+
+  int RowCount() const;
+
+  bool CheckWellAbutment() const;
+
+  int NwellHeight(int index) const;
+
+  int PwellHeight(int index) const;
+
+  void Report() const;
+
+ private:
+  BlockType *type_ptr_ = nullptr;
+  std::vector<RectI> n_rects_;
+  std::vector<RectI> p_rects_;
+  int extra_bot_extension_ = 0;
+  int extra_top_extension_ = 0;
 };
 
 }

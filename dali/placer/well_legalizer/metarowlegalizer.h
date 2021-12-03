@@ -18,30 +18,24 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_COMMON_HELPER_H_
-#define DALI_DALI_COMMON_HELPER_H_
-
-#include <string>
-#include <vector>
+#ifndef DALI_DALI_PLACER_WELL_LEGALIZER_METAROWLEGALIZER_H_
+#define DALI_DALI_PLACER_WELL_LEGALIZER_METAROWLEGALIZER_H_
 
 namespace dali {
 
-// custom residual function, return: |x - round(x/y) * y|
-double AbsResidual(double x, double y);
+class MetaRowLegalizer {
+ public:
+  MetaRowLegalizer() = default;
 
-// splits a line into many words
-void StrTokenize(std::string const &line, std::vector<std::string> &res);
+  void CheckWellInfo();
+  void PartitionSpace();
+  void AssignBlocksToSubRegion();
 
-// finds the first number in a string
-int FindFirstNumber(std::string const &str);
+  bool StartPlacement();
+ private:
 
-// check if an executable can be found or not
-bool IsExecutableExisting(std::string const &executable_path);
-
-void ReportMemory();
-
-void MergeIntervals(std::vector<std::vector<int>> &intervals);
+};
 
 }
 
-#endif //DALI_DALI_COMMON_HELPER_H_
+#endif //DALI_DALI_PLACER_WELL_LEGALIZER_METAROWLEGALIZER_H_

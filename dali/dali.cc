@@ -526,8 +526,7 @@ void Dali::ExportMiniRowsToPhyDB() {
   double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
 
   int counter = 0;
-  for (int i = 0; i < well_legalizer_.tot_col_num_; ++i) {
-    auto &col = well_legalizer_.col_list_[i];
+  for (auto &col: well_legalizer_.col_list_) {
     for (auto &strip: col.stripe_list_) {
       std::string column_name = "column" + std::to_string(counter++);
       std::string bot_signal_;
