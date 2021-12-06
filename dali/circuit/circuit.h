@@ -420,9 +420,6 @@ class Circuit {
   // read cell file for multiwell gridded cells
   void ReadMultiWellCell(std::string const &name_of_file);
 
-  // report the double well shape for each BlockType
-  void ReportDoubleWellShape();
-
   /**** Functions to get useful values ****/
   // returns the minimum width of blocks
   int MinBlkWidth() const;

@@ -28,6 +28,11 @@
 
 namespace dali {
 
+enum class StripePartitionMode {
+  STRICT = 0,
+  SCAVENGE = 1
+};
+
 class SpacePartitioner {
  public:
   SpacePartitioner() = default;
@@ -68,7 +73,7 @@ class SpacePartitioner {
   /**** stripe parameters ****/
   int max_cell_width_ = 0;
   double stripe_width_factor_ = 2.0;
-  StripePartitionMode stripe_mode_ = STRICT;
+  StripePartitionMode stripe_mode_ = StripePartitionMode::STRICT;
 
   // write result to an external container in a legalizer
   int cluster_width_ = 0;

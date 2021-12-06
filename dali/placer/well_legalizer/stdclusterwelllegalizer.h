@@ -111,7 +111,6 @@ class StdClusterWellLegalizer : public Placer {
   void ExportWellToPhyDB(phydb::PhyDB *phydb_ptr, int well_emit_mode);
   void EmitClusterRect(std::string const &name_of_file);
  private:
-  SpacePartitioner space_partitioner_;
   bool is_first_row_orient_N_ = true;
 
   /**** well parameters ****/
@@ -120,7 +119,8 @@ class StdClusterWellLegalizer : public Placer {
   int well_spacing_;
 
   /**** stripe parameters ****/
-  StripePartitionMode stripe_mode_ = STRICT;
+  StripePartitionMode stripe_mode_ = StripePartitionMode::STRICT;
+  SpacePartitioner space_partitioner_;
 
   /**** cached well tap cell parameters ****/
   BlockType *well_tap_cell_ = nullptr;

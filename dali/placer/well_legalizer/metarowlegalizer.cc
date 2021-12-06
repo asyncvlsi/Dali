@@ -24,21 +24,36 @@
 #include "dali/common/logging.h"
 #include "dali/common/memory.h"
 #include "dali/common/timing.h"
+#include "helper.h"
 
 namespace dali {
 
 void MetaRowLegalizer::CheckWellInfo() {
+  for (auto &multi_well: p_ckt_->tech().MultiWells()) {
+    multi_well.CheckLegality();
+  }
 
+  Tech &tech = p_ckt_->tech();
+  WellLayer &n_well_layer = tech.NwellLayer();
+  double grid_value_x = p_ckt_->GridValueX();
+  int same_spacing = std::ceil(n_well_layer.Spacing() / grid_value_x);
+  int op_spacing = std::ceil(n_well_layer.OppositeSpacing() / grid_value_x);
+  well_spacing_ = std::max(same_spacing, op_spacing);
 }
 
-void MetaRowLegalizer::PartitionSpace() {
-
+void MetaRowLegalizer::SetPartitionMode(StripePartitionMode mode) {
+  stripe_mode_ = mode;
 }
 
-void MetaRowLegalizer::AssignBlocksToSubRegion() {
-
+void MetaRowLegalizer::PartitionSpaceAndBlocks() {
+  space_partitioner_.SetCircuit(p_ckt_);
+  space_partitioner_.SetOutput(&col_list_);
+  space_partitioner_.SetReservedSpaceToBoundaries(
+      well_spacing_, well_spacing_, 1, 1
+  );
+  space_partitioner_.SetPartitionMode(stripe_mode_);
+  space_partitioner_.StartPartitioning();
 }
-
 
 bool MetaRowLegalizer::StartPlacement() {
   BOOST_LOG_TRIVIAL(info)
@@ -51,10 +66,7 @@ bool MetaRowLegalizer::StartPlacement() {
   bool is_successful = true;
 
   CheckWellInfo();
-  PartitionSpace();
-  AssignBlocksToSubRegion();
-
-
+  PartitionSpaceAndBlocks();
 
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;
@@ -64,6 +76,12 @@ bool MetaRowLegalizer::StartPlacement() {
   ReportMemory();
 
   return is_successful;
+}
+
+void MetaRowLegalizer::GenMatlabClusterTable(std::string const &name_of_file) {
+  std::string frame_file = name_of_file + "_outline.txt";
+  GenMATLABTable(frame_file);
+  GenClusterTable(name_of_file, col_list_);
 }
 
 }

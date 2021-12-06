@@ -339,7 +339,7 @@ bool SpacePartitioner::StartPartitioning() {
                 "CELL configuration is problematic, leading to non-positive column width");
     UpdateWhiteSpaceInCol(col_list[i]);
   }
-  if (stripe_mode_ == SCAVENGE) {
+  if (stripe_mode_ == StripePartitionMode::SCAVENGE) {
     col_list.back().width_ = Right() - col_list.back().lx_;
     UpdateWhiteSpaceInCol(col_list.back());
   }

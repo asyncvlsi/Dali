@@ -78,11 +78,6 @@ struct ClusterStripe {
   void AssignBlockToSimpleStripe();
 };
 
-enum StripePartitionMode {
-  STRICT = 0,
-  SCAVENGE = 1
-};
-
 }
 
 #endif //DALI_DALI_PLACER_WELLLEGALIZER_STRIPE_H_

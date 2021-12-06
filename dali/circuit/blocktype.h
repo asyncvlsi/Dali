@@ -52,8 +52,6 @@ class BlockType {
  public:
   BlockType(const std::string *name_ptr, int width, int height);
 
-  ~BlockType();
-
   const std::string &Name() const { return *name_ptr_; }
 
   // check if a pin with a given name exists in this BlockType or not
@@ -217,11 +215,15 @@ class BlockTypeMultiWell {
 
   void SetExtraTopExtension(int top_extension);
 
-  bool IsBottomWellN() const;
+  bool IsBottomWellP() const;
 
   int RowCount() const;
 
-  bool CheckWellAbutment() const;
+  bool IsWellAbutted();
+
+  bool IsCellHeightConsistent();
+
+  void CheckLegality();
 
   int NwellHeight(int index) const;
 

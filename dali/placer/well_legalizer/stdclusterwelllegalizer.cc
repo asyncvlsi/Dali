@@ -23,6 +23,7 @@
 #include <algorithm>
 
 #include "dali/common/helper.h"
+#include "helper.h"
 
 namespace dali {
 
@@ -1130,49 +1131,7 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
 void StdClusterWellLegalizer::GenMatlabClusterTable(std::string const &name_of_file) {
   std::string frame_file = name_of_file + "_outline.txt";
   GenMATLABTable(frame_file);
-
-  std::string cluster_file = name_of_file + "_cluster.txt";
-  std::ofstream ost(cluster_file.c_str());
-  DaliExpects(ost.is_open(), "Cannot open output file: " + cluster_file);
-
-  for (auto &col: col_list_) {
-    for (auto &stripe: col.stripe_list_) {
-      for (auto &cluster: stripe.cluster_list_) {
-        std::vector<int> llx;
-        std::vector<int> lly;
-        std::vector<int> urx;
-        std::vector<int> ury;
-        if (cluster.IsSingle()) {
-          llx.push_back(cluster.LLX());
-          lly.push_back(cluster.LLY());
-          urx.push_back(cluster.URX());
-          ury.push_back(cluster.URY());
-        } else {
-          llx.push_back(cluster.LLX());
-          lly.push_back(cluster.LLY());
-          urx.push_back(cluster.URX());
-          ury.push_back(cluster.LLY() + cluster.ClusterEdge());
-
-          llx.push_back(cluster.LLX());
-          lly.push_back(cluster.LLY() + cluster.ClusterEdge());
-          urx.push_back(cluster.URX());
-          ury.push_back(cluster.URY());
-        }
-        size_t sz = llx.size();
-        for (size_t i = 0; i < sz; ++i) {
-          ost << llx[i] << "\t"
-              << urx[i] << "\t"
-              << urx[i] << "\t"
-              << llx[i] << "\t"
-              << lly[i] << "\t"
-              << lly[i] << "\t"
-              << ury[i] << "\t"
-              << ury[i] << "\n";
-        }
-      }
-    }
-  }
-  ost.close();
+  GenClusterTable(name_of_file, col_list_);
 }
 
 void StdClusterWellLegalizer::GenMATLABWellTable(

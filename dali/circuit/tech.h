@@ -60,6 +60,9 @@ class Tech {
   // is any well layer available?
   bool IsWellInfoSet() const;
 
+  // get all multi-well for cells
+  std::list<BlockTypeMultiWell> &MultiWells();
+
   // print information
   void Report() const;
 

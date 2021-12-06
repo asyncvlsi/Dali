@@ -32,10 +32,6 @@ BlockType::BlockType(
     area_((long int) width_ * (long int) height_),
     well_ptr_(nullptr) {}
 
-BlockType::~BlockType() {
-  delete m_well_ptr_;
-}
-
 int BlockType::GetPinId(std::string const &pin_name) const {
   auto ret = pin_name_id_map_.find(pin_name);
   if (ret != pin_name_id_map_.end()) {
@@ -230,32 +226,55 @@ void BlockTypeMultiWell::SetExtraTopExtension(int top_extension) {
   extra_top_extension_ = top_extension;
 }
 
-bool BlockTypeMultiWell::IsBottomWellN() const {
+bool BlockTypeMultiWell::IsBottomWellP() const {
   DaliExpects(!n_rects_.empty() && !p_rects_.empty(), "No wells in cell?");
-  return n_rects_[0].LLY() <= p_rects_[0].LLY();
+  return p_rects_[0].LLY() <= n_rects_[0].LLY();
 }
 
 int BlockTypeMultiWell::RowCount() const {
   return static_cast<int>(n_rects_.size());
 }
 
-bool BlockTypeMultiWell::CheckWellAbutment() const {
+bool BlockTypeMultiWell::IsWellAbutted() {
   int row_count = RowCount();
-  bool is_bottom_well_N = IsBottomWellN();
-
-  if (is_bottom_well_N) {
-    for (int i = 0; i < row_count; ++i) {
-      bool is_in_row_abutted = n_rects_[i].URY() == p_rects_[i].LLY();
-      if (!is_in_row_abutted) return false;
-      bool is_between_row_abutted = true;
-      if (i > 0) {
-        is_between_row_abutted = p_rects_[i - 1].URY() == n_rects_[i].LLY();
-      }
-      if (!is_between_row_abutted) return false;
+  std::vector<int> y_edges;
+  bool is_well_p = IsBottomWellP();
+  for (int i = 0; i < row_count; ++i) {
+    if (is_well_p) {
+      y_edges.push_back(p_rects_[i].LLY());
+      y_edges.push_back(p_rects_[i].URY());
+      y_edges.push_back(n_rects_[i].LLY());
+      y_edges.push_back(n_rects_[i].URY());
+    } else {
+      y_edges.push_back(n_rects_[i].LLY());
+      y_edges.push_back(n_rects_[i].URY());
+      y_edges.push_back(p_rects_[i].LLY());
+      y_edges.push_back(p_rects_[i].URY());
     }
+    is_well_p = !is_well_p;
   }
 
+  for (int i = 1; i < 2 * row_count - 1; i += 2) {
+    if (y_edges[i] != y_edges[i + 1]) {
+      return false;
+    }
+  }
   return true;
+}
+
+bool BlockTypeMultiWell::IsCellHeightConsistent() {
+  int cell_height = std::max(n_rects_.back().URY(), p_rects_.back().URY());
+  int lef_height = type_ptr_->Height();
+  return cell_height == lef_height;
+}
+
+void BlockTypeMultiWell::CheckLegality() {
+  if (!IsWellAbutted()) {
+    DaliExpects(false, "Wells are not abutted for cell " + type_ptr_->Name());
+  }
+  if (!IsCellHeightConsistent()) {
+    DaliExpects(false, "Macro/well height inconsistency" + type_ptr_->Name());
+  }
 }
 
 int BlockTypeMultiWell::NwellHeight(int index) const {
@@ -274,11 +293,11 @@ void BlockTypeMultiWell::Report() const {
   int sz = RowCount();
   for (int i = 0; i < sz; ++i) {
     BOOST_LOG_TRIVIAL(info)
-      << "    Pwell: " << p_rects_[i].LLX() << "  " << p_rects_[i].LLY() << "  "
-      << p_rects_[i].URX() << "  " << p_rects_[i].URY() << "\n";
+      << "    Pwell: " << p_rects_[i].LLX() << "  " << p_rects_[i].LLY()
+      << "  " << p_rects_[i].URX() << "  " << p_rects_[i].URY() << "\n";
     BOOST_LOG_TRIVIAL(info)
-      << "    Nwell: " << n_rects_[i].LLX() << "  " << n_rects_[i].LLY() << "  "
-      << n_rects_[i].URX() << "  " << n_rects_[i].URY() << "\n";
+      << "    Nwell: " << n_rects_[i].LLX() << "  " << n_rects_[i].LLY()
+      << "  " << n_rects_[i].URX() << "  " << n_rects_[i].URY() << "\n";
   }
 }
 

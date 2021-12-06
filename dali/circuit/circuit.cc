@@ -770,8 +770,8 @@ void Circuit::ReportBriefSummary() const {
     << "  nets:           " << design_.nets_.size() << "\n"
     << "  grid size x/y:  " << GridValueX() << ", " << GridValueY() << " um\n"
     << "  total movable blk area: " << design_.tot_mov_blk_area_ << "\n"
-    << "  total white space: " << design_.tot_white_space_ << "\n"
-    << "  total block area: " << design_.tot_blk_area_ << "\n"
+    << "  total white space     : " << design_.tot_white_space_ << "\n"
+    << "  total block area      : " << design_.tot_blk_area_ << "\n"
     << "  total space: "
     << (long long) RegionWidth() * (long long) RegionHeight() << "\n"
     << "    left:   " << RegionLLX() << "\n"
@@ -1026,7 +1026,7 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
         if (line.find("REGION") != std::string::npos) {
           do {
             getline(ist, line);
-            bool is_n;
+            bool is_n = true;
             if (line.find("LAYER") != std::string::npos) {
               do {
                 if (line.find("nwell") != std::string::npos) {
@@ -1080,11 +1080,11 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
           } while (line.find("END REGION") == std::string::npos && !ist.eof());
         }
       } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
-      //well_ptr->CheckLegal();
+      well_ptr->Report();
+      well_ptr->CheckLegality();
     }
   }
-  ReportWellShape();
-  exit(1);
+  //ReportWellShape();
 }
 
 int Circuit::MinBlkWidth() const {

@@ -73,6 +73,10 @@ bool Tech::IsWellInfoSet() const {
   return n_set_ || p_set_;
 }
 
+std::list<BlockTypeMultiWell> &Tech::MultiWells() {
+  return multi_well_list_;
+}
+
 void Tech::Report() const {
   if (n_set_) {
     BOOST_LOG_TRIVIAL(info) << "  Layer name: nwell\n";

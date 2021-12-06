@@ -18,30 +18,21 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_PLACER_H_
-#define DALI_DALI_PLACER_H_
+#ifndef DALI_DALI_PLACER_WELL_LEGALIZER_HELPER_H_
+#define DALI_DALI_PLACER_WELL_LEGALIZER_HELPER_H_
 
-/****placer base class****/
-#include "dali/placer/placer.h"
+#include <string>
+#include <vector>
 
-/****Global placer****/
-#include "dali/placer/global_placer/globalplacer.h"
+#include "stripe.h"
 
-/****Legalizer****/
-#include "dali/placer/legalizer/LGTetris.h"
-#include "dali/placer/legalizer/LGTetrisEx.h"
+namespace dali {
 
-/****Well Legalizer****/
-#include "dali/placer/well_legalizer/clusterwelllegalizer.h"
-#include "dali/placer/well_legalizer/stdclusterwelllegalizer.h"
-#include "dali/placer/well_legalizer/welllegalizer.h"
-#include "dali/placer/well_legalizer/metarowlegalizer.h"
+void GenClusterTable(
+    std::string const &name_of_file,
+    std::vector<ClusterStripe> &col_list_
+);
 
-/****Well Placement Flow****/
-#include "dali/placer/well_place_flow/wellplaceflow.h"
-#include "dali/placer/welltap_placer/welltapplacer.h"
+}
 
-/****IO Placer****/
-#include "dali/placer/io_placer/ioplacer.h"
-
-#endif //DALI_DALI_PLACER_H_
+#endif //DALI_DALI_PLACER_WELL_LEGALIZER_HELPER_H_

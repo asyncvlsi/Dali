@@ -21,19 +21,31 @@
 #ifndef DALI_DALI_PLACER_WELL_LEGALIZER_METAROWLEGALIZER_H_
 #define DALI_DALI_PLACER_WELL_LEGALIZER_METAROWLEGALIZER_H_
 
+#include "dali/placer/placer.h"
+#include "spacepartitioner.h"
+#include "stripe.h"
+
 namespace dali {
 
-class MetaRowLegalizer {
+class MetaRowLegalizer : public Placer {
  public:
   MetaRowLegalizer() = default;
 
   void CheckWellInfo();
-  void PartitionSpace();
-  void AssignBlocksToSubRegion();
 
-  bool StartPlacement();
+  void SetPartitionMode(StripePartitionMode mode);
+  void PartitionSpaceAndBlocks();
+
+  bool StartPlacement() override;
+
+  void GenMatlabClusterTable(std::string const &name_of_file);
  private:
+  StripePartitionMode stripe_mode_ = StripePartitionMode::STRICT;
+  SpacePartitioner space_partitioner_;
 
+  int well_spacing_ = 0;
+
+  std::vector<ClusterStripe> col_list_;
 };
 
 }

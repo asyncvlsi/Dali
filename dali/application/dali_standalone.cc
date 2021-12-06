@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
   std::string str_x_grid;
   std::string str_y_grid;
   std::string log_file_name;
-  StripePartitionMode well_legalization_mode = STRICT;
+  auto well_legalization_mode = StripePartitionMode::STRICT;
   bool overwrite_logfile = false;
   bool is_no_legal = false;
   bool is_no_io_place = false;
@@ -142,9 +142,9 @@ int main(int argc, char *argv[]) {
     } else if (arg == "-wlgmode" && i < argc) {
       std::string str_wlg_mode = std::string(argv[i++]);
       if (str_wlg_mode == "scavenge") {
-        well_legalization_mode = SCAVENGE;
+        well_legalization_mode = StripePartitionMode::SCAVENGE;
       } else if (str_wlg_mode == "strict") {
-        well_legalization_mode = STRICT;
+        well_legalization_mode = StripePartitionMode::STRICT;
       } else {
         std::cout << "Unknown well legalization mode: " << str_wlg_mode << "\n";
         ReportUsage();
@@ -248,14 +248,7 @@ int main(int argc, char *argv[]) {
   gb_placer->SetPlacementDensity(target_density);
   //gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
-  if (cell_file_name.empty() && m_cell_file_name.empty()) {
-    if (!is_no_legal) {
-      Placer *legalizer = new LGTetrisEx;
-      legalizer->TakeOver(gb_placer);
-      legalizer->StartPlacement();
-      delete legalizer;
-    }
-  } else {
+  if (!cell_file_name.empty()) {
     auto *well_legalizer = new StdClusterWellLegalizer;
     well_legalizer->TakeOver(gb_placer);
     well_legalizer->SetStripePartitionMode(well_legalization_mode);
@@ -270,6 +263,28 @@ int main(int argc, char *argv[]) {
       well_legalizer->EmitDEFWellFile(output_name, 1);
     }
     delete well_legalizer;
+  } else if (!m_cell_file_name.empty()) {
+    auto *multi_well_legalizer = new MetaRowLegalizer;
+    multi_well_legalizer->TakeOver(gb_placer);
+    multi_well_legalizer->SetPartitionMode(well_legalization_mode);
+    multi_well_legalizer->StartPlacement();
+    if (export_well_cluster_for_matlab) {
+      multi_well_legalizer->GenMATLABTable("sc_result.txt");
+      multi_well_legalizer->GenMatlabClusterTable("sc_result");
+      multi_well_legalizer->GenMATLABWellTable("scw", 0);
+    }
+
+    if (!output_name.empty()) {
+      multi_well_legalizer->EmitDEFWellFile(output_name, 1);
+    }
+    delete multi_well_legalizer;
+  } else {
+    if (!is_no_legal) {
+      Placer *legalizer = new LGTetrisEx;
+      legalizer->TakeOver(gb_placer);
+      legalizer->StartPlacement();
+      delete legalizer;
+    }
   }
   delete gb_placer;
 

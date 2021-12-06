@@ -62,7 +62,7 @@ bool WellPlaceFlow::StartPlacement() {
 
       StdClusterWellLegalizer well_legalizer;
       well_legalizer.TakeOver(this);
-      well_legalizer.SetStripePartitionMode(SCAVENGE);
+      well_legalizer.SetStripePartitionMode(StripePartitionMode::SCAVENGE);
       well_legalizer.WellLegalize();
       upper_bound_hpwl_.back() = p_ckt_->WeightedHPWL();
 
@@ -99,24 +99,28 @@ bool WellPlaceFlow::StartPlacement() {
   ReportHPWL();
 
   well_legalizer_.TakeOver(this);
-  well_legalizer_.SetStripePartitionMode(SCAVENGE);
+  well_legalizer_.SetStripePartitionMode(StripePartitionMode::SCAVENGE);
   well_legalizer_.StartPlacement();
 
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;
-  BOOST_LOG_TRIVIAL(info) << "(wall time: " << wall_time << "s, cpu time: "
-                          << cpu_time << "s)\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
   ReportMemory();
 
   return true;
 }
 
-void WellPlaceFlow::EmitDEFWellFile(std::string const &name_of_file,
-                                    int well_emit_mode,
-                                    bool enable_emitting_cluster) {
-  well_legalizer_.EmitDEFWellFile(name_of_file,
-                                  well_emit_mode,
-                                  enable_emitting_cluster);
+void WellPlaceFlow::EmitDEFWellFile(
+    std::string const &name_of_file,
+    int well_emit_mode,
+    bool enable_emitting_cluster
+) {
+  well_legalizer_.EmitDEFWellFile(
+      name_of_file,
+      well_emit_mode,
+      enable_emitting_cluster
+  );
 }
 
 }
