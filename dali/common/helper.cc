@@ -22,8 +22,8 @@
 
 #include <cmath>
 
-#include "dali/common/logging.h"
-#include "dali/common/memory.h"
+#include "logging.h"
+#include "memory.h"
 
 namespace dali {
 
@@ -113,39 +113,39 @@ void ReportMemory() {
  *
  * This member function can merge a list of intervals
  * ****/
-void MergeIntervals(std::vector<std::vector<int>> &intervals) {
-  int sz = intervals.size();
+void MergeIntervals(std::vector<SegI> &intervals) {
+  size_t sz = intervals.size();
   if (sz <= 1) return;
 
   std::sort(
       intervals.begin(),
       intervals.end(),
-      [](const std::vector<int> &inter1,
-         const std::vector<int> &inter2) {
-        return inter1[0] < inter2[0];
+      [](const SegI &inter1,
+         const SegI &inter2) {
+        return inter1.lo < inter2.lo;
       }
   );
 
-  std::vector<std::vector<int>> res;
+  std::vector<SegI> res;
 
-  int begin = intervals[0][0];
-  int end = intervals[0][1];
+  int begin = intervals[0].lo;
+  int end = intervals[0].hi;
 
-  std::vector<int> tmp(2, 0);
-  for (int i = 1; i < sz; ++i) {
-    if (end < intervals[i][0]) {
-      tmp[0] = begin;
-      tmp[1] = end;
+  SegI tmp(2, 0);
+  for (size_t i = 1; i < sz; ++i) {
+    if (end < intervals[i].lo) {
+      tmp.lo = begin;
+      tmp.hi = end;
       res.push_back(tmp);
-      begin = intervals[i][0];
+      begin = intervals[i].hi;
     }
-    if (end < intervals[i][1]) {
-      end = intervals[i][1];
+    if (end < intervals[i].hi) {
+      end = intervals[i].hi;
     }
   }
 
-  tmp[0] = begin;
-  tmp[1] = end;
+  tmp.lo = begin;
+  tmp.hi = end;
   res.push_back(tmp);
 
   intervals = res;

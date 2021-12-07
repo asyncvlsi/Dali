@@ -54,9 +54,9 @@ void LGTetrisEx::InitLegalizer() {
   }
   tot_num_rows_ = (top_ - bottom_) / row_height_;
 
-  std::vector<std::vector<std::vector<int>>> macro_segments;
+  std::vector<std::vector<SegI>> macro_segments;
   macro_segments.resize(tot_num_rows_);
-  std::vector<int> tmp(2, 0);
+  Seg tmp(0, 0);
   bool out_of_range;
   for (auto &block: Blocks()) {
     if (block.IsMovable()) continue;
@@ -76,9 +76,9 @@ void LGTetrisEx::InitLegalizer() {
     start_row = std::max(0, start_row);
     end_row = std::min(tot_num_rows_ - 1, end_row);
 
-    tmp[0] = std::max(RegionLeft(), lx);
-    tmp[1] = std::min(RegionRight(), ux);
-    if (tmp[1] > tmp[0]) {
+    tmp.lo = std::max(RegionLeft(), lx);
+    tmp.hi = std::min(RegionRight(), ux);
+    if (tmp.hi > tmp.lo) {
       for (int i = start_row; i <= end_row; ++i) {
         macro_segments[i].push_back(tmp);
       }
@@ -99,17 +99,17 @@ void LGTetrisEx::InitLegalizer() {
     int segments_size = int(macro_segments[i].size());
     for (int j = 0; j < segments_size; ++j) {
       auto &interval = macro_segments[i][j];
-      if (interval[0] == left_ && interval[1] < RegionRight()) {
-        intermediate_seg_rows[i].push_back(interval[1]);
+      if (interval.lo == left_ && interval.hi < RegionRight()) {
+        intermediate_seg_rows[i].push_back(interval.hi);
       }
 
-      if (interval[0] > left_) {
+      if (interval.lo > left_) {
         if (intermediate_seg_rows[i].empty()) {
           intermediate_seg_rows[i].push_back(left_);
         }
-        intermediate_seg_rows[i].push_back(interval[0]);
-        if (interval[1] < RegionRight()) {
-          intermediate_seg_rows[i].push_back(interval[1]);
+        intermediate_seg_rows[i].push_back(interval.lo);
+        if (interval.hi < RegionRight()) {
+          intermediate_seg_rows[i].push_back(interval.hi);
         }
       }
     }
@@ -126,9 +126,10 @@ void LGTetrisEx::InitLegalizer() {
     for (int j = 0; j < len; j += 2) {
       if (intermediate_seg_rows[i][j + 1] - intermediate_seg_rows[i][j]
           >= min_blk_width) {
-        white_space_in_rows_[i].emplace_back(intermediate_seg_rows[i][j],
-                                             intermediate_seg_rows[i][j
-                                                 + 1]);
+        white_space_in_rows_[i].emplace_back(
+            intermediate_seg_rows[i][j],
+            intermediate_seg_rows[i][j + 1]
+        );
       }
     }
   }
@@ -137,7 +138,7 @@ void LGTetrisEx::InitLegalizer() {
 
   block_contour_.resize(tot_num_rows_, left_);
 
-  IndexLocPair<int> tmp_index_loc_pair(0, 0, 0);
+  IndexLocPair<int> tmp_index_loc_pair(nullptr, 0, 0);
   index_loc_list_.resize(Blocks().size(), tmp_index_loc_pair);
 }
 

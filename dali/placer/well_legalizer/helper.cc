@@ -39,22 +39,12 @@ void GenClusterTable(
         std::vector<int> lly;
         std::vector<int> urx;
         std::vector<int> ury;
-        if (cluster.IsSingle()) {
-          llx.push_back(cluster.LLX());
-          lly.push_back(cluster.LLY());
-          urx.push_back(cluster.URX());
-          ury.push_back(cluster.URY());
-        } else {
-          llx.push_back(cluster.LLX());
-          lly.push_back(cluster.LLY());
-          urx.push_back(cluster.URX());
-          ury.push_back(cluster.LLY() + cluster.ClusterEdge());
 
-          llx.push_back(cluster.LLX());
-          lly.push_back(cluster.LLY() + cluster.ClusterEdge());
-          urx.push_back(cluster.URX());
-          ury.push_back(cluster.URY());
-        }
+        llx.push_back(cluster.LLX());
+        lly.push_back(cluster.LLY());
+        urx.push_back(cluster.URX());
+        ury.push_back(cluster.URY());
+
         size_t sz = llx.size();
         for (size_t i = 0; i < sz; ++i) {
           ost << llx[i] << "\t"

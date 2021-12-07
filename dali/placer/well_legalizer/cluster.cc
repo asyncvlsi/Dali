@@ -22,18 +22,12 @@
 
 #include <algorithm>
 
+#include "dali/common/helper.h"
+
 namespace dali {
 
 bool Cluster::IsOrientN() const {
   return is_orient_N_;
-}
-
-bool Cluster::IsSingle() const {
-  return is_only_single_well_cells_;
-}
-
-void Cluster::SetIsSingle(bool is_single) {
-  is_only_single_well_cells_ = is_single;
 }
 
 int Cluster::UsedSize() const {
@@ -397,6 +391,94 @@ void Cluster::UpdateMinDisplacementLLY() {
 
 double Cluster::MinDisplacementLLY() const {
   return min_displacement_lly_;
+}
+
+void Cluster::UpdateWhiteSpace() {
+  // collect used space segments
+  std::vector<SegI> used_spaces;
+  for (auto &blk_region: blk_regions_) {
+    Block *p_blk = blk_region.p_blk;
+    used_spaces.emplace_back(p_blk->LLX(), p_blk->LLY());
+  }
+  MergeIntervals(used_spaces);
+
+  // collect unused space segments
+  std::vector<int> intermediate_seg;
+  if (used_spaces.empty()) {
+    intermediate_seg.push_back(LLX());
+    intermediate_seg.push_back(URX());
+  } else {
+    size_t segments_size = used_spaces.size();
+    for (size_t i = 0; i < segments_size; ++i) {
+      auto &interval = used_spaces[i];
+      if (interval.lo == LLX() && interval.hi < URX()) {
+        intermediate_seg.push_back(interval.hi);
+      }
+
+      if (interval.lo > LLX()) {
+        if (intermediate_seg.empty()) {
+          intermediate_seg.push_back(LLX());
+        }
+        intermediate_seg.push_back(interval.lo);
+        if (interval.hi < URX()) {
+          intermediate_seg.push_back(interval.hi);
+        }
+      }
+    }
+    if (intermediate_seg.size() % 2 == 1) {
+      intermediate_seg.push_back(URX());
+    }
+  }
+
+  // compute the final space segments
+  size_t len = intermediate_seg.size();
+  white_spaces_.clear();
+  white_spaces_.reserve(len / 2);
+  for (size_t i = 0; i < len; i += 2) {
+    white_spaces_.emplace_back(intermediate_seg[i], intermediate_seg[i + 1]);
+  }
+}
+
+bool Cluster::IsBelowTopBoundary(Block *p_blk) const {
+  return p_blk->LLY() < URY();
+}
+
+bool Cluster::IsBelowMiddleLine(Block *p_blk) const {
+  return p_blk->LLY() < CenterY();
+}
+
+bool Cluster::IsOverlap(Block *p_blk, int criterion) const {
+  switch (criterion) {
+    case 0: {
+      return IsBelowTopBoundary(p_blk);
+    }
+    case 1: {
+      return IsBelowMiddleLine(p_blk);
+    }
+    default: {
+      DaliExpects(false, "unknown overlapping criterion");
+      return false;
+    }
+  }
+}
+
+bool Cluster::HasSameOrientation(Block *p_blk) const {
+  BlockTypeMultiWell *p_well = p_blk->TypePtr()->MultiWellPtr();
+  // cells with an odd number of regions can be fitted into any clusters
+  if (p_well->HasOddRegions()) {
+    return true;
+  }
+  // cells with an even number of regions can only be fitted into clusters with the same well orientation
+  return IsOrientN() ? p_well->IsBottomWellP() : !p_well->IsBottomWellP();
+}
+
+void Cluster::AddBlockRegion(Block *p_blk, int region_id) {
+  blk_regions_.emplace_back(p_blk, region_id);
+}
+
+bool Cluster::AttemptToAdd(Block *p_blk) {
+  // put this block to the closest white space segment
+  return true;
 }
 
 void ClusterSegment::Merge(

@@ -55,6 +55,41 @@ void MetaRowLegalizer::PartitionSpaceAndBlocks() {
   space_partitioner_.StartPartitioning();
 }
 
+bool MetaRowLegalizer::StripeLegalizationBottomUp(Stripe &stripe) {
+  stripe.cluster_list_.clear();
+  stripe.contour_ = stripe.LLY();
+  stripe.front_id_ = 0;
+  stripe.is_bottom_up_ = true;
+
+  std::sort(
+      stripe.block_list_.begin(),
+      stripe.block_list_.end(),
+      [](const Block *lhs, const Block *rhs) {
+        return (lhs->LLY() < rhs->LLY())
+            || (lhs->LLY() == rhs->LLY() && lhs->LLX() < rhs->LLX());
+      }
+  );
+
+  size_t processed_blk_cnt = 0;
+  while (processed_blk_cnt < stripe.block_list_.size()) {
+    stripe.UpdateFrontSpace();
+    processed_blk_cnt = stripe.FitBlocksToFrontSpace(processed_blk_cnt);
+    stripe.front_id_ += 1;
+  }
+
+  return true;
+}
+
+bool MetaRowLegalizer::BlockClustering() {
+  for (auto &col: col_list_) {
+    for (auto &stripe: col.stripe_list_) {
+      StripeLegalizationBottomUp(stripe);
+    }
+  }
+
+  return true;
+}
+
 bool MetaRowLegalizer::StartPlacement() {
   BOOST_LOG_TRIVIAL(info)
     << "---------------------------------------\n"
@@ -67,6 +102,7 @@ bool MetaRowLegalizer::StartPlacement() {
 
   CheckWellInfo();
   PartitionSpaceAndBlocks();
+  BlockClustering();
 
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;

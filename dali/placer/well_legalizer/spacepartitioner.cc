@@ -63,9 +63,9 @@ void SpacePartitioner::DetectAvailSpace() {
   }
   tot_num_rows_ = (Top() - Bottom()) / row_height_;
 
-  std::vector<std::vector<std::vector<int>>> macro_segments;
+  std::vector<std::vector<SegI>> macro_segments;
   macro_segments.resize(tot_num_rows_);
-  std::vector<int> tmp(2, 0);
+  SegI tmp(0, 0);
   bool out_of_range;
   for (auto &block: p_ckt_->Blocks()) {
     if (block.IsMovable()) continue;
@@ -85,9 +85,9 @@ void SpacePartitioner::DetectAvailSpace() {
     start_row = std::max(0, start_row);
     end_row = std::min(tot_num_rows_ - 1, end_row);
 
-    tmp[0] = std::max(Left(), lx);
-    tmp[1] = std::min(Right(), ux);
-    if (tmp[1] > tmp[0]) {
+    tmp.lo = std::max(Left(), lx);
+    tmp.hi = std::min(Right(), ux);
+    if (tmp.hi > tmp.lo) {
       for (int i = start_row; i <= end_row; ++i) {
         macro_segments[i].push_back(tmp);
       }
@@ -108,17 +108,17 @@ void SpacePartitioner::DetectAvailSpace() {
     int segments_size = int(macro_segments[i].size());
     for (int j = 0; j < segments_size; ++j) {
       auto &interval = macro_segments[i][j];
-      if (interval[0] == Left() && interval[1] < Right()) {
-        intermediate_seg_rows[i].push_back(interval[1]);
+      if (interval.lo == Left() && interval.hi < Right()) {
+        intermediate_seg_rows[i].push_back(interval.hi);
       }
 
-      if (interval[0] > Left()) {
+      if (interval.lo > Left()) {
         if (intermediate_seg_rows[i].empty()) {
           intermediate_seg_rows[i].push_back(Left());
         }
-        intermediate_seg_rows[i].push_back(interval[0]);
-        if (interval[1] < Right()) {
-          intermediate_seg_rows[i].push_back(interval[1]);
+        intermediate_seg_rows[i].push_back(interval.lo);
+        if (interval.hi < Right()) {
+          intermediate_seg_rows[i].push_back(interval.hi);
         }
       }
     }

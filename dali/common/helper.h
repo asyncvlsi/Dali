@@ -24,6 +24,8 @@
 #include <string>
 #include <vector>
 
+#include "misc.h"
+
 namespace dali {
 
 // custom residual function, return: |x - round(x/y) * y|
@@ -40,7 +42,7 @@ bool IsExecutableExisting(std::string const &executable_path);
 
 void ReportMemory();
 
-void MergeIntervals(std::vector<std::vector<int>> &intervals);
+void MergeIntervals(std::vector<SegI> &intervals);
 
 }
 

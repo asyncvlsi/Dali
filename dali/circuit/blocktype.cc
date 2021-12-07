@@ -235,6 +235,10 @@ int BlockTypeMultiWell::RowCount() const {
   return static_cast<int>(n_rects_.size());
 }
 
+bool BlockTypeMultiWell::HasOddRegions() const {
+  return n_rects_.size() & 1;
+}
+
 bool BlockTypeMultiWell::IsWellAbutted() {
   int row_count = RowCount();
   std::vector<int> y_edges;

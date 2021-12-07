@@ -26,17 +26,20 @@
 
 namespace dali {
 
+struct BlockRegion {
+  BlockRegion(Block *blk, int id): p_blk(blk), region_id(id) {}
+  Block *p_blk = nullptr;
+  int region_id = 0;
+};
+
 class Cluster {
  public:
   Cluster() = default;
 
   bool IsOrientN() const;
-  bool IsSingle() const;
-  void SetIsSingle(bool is_single);
   int UsedSize() const;
   void SetUsedSize(int used_size);
   void UseSpace(int width);
-  void SetUsedSize1(int used_size);
 
   void SetLLX(int lx);
   void SetURX(int ux);
@@ -60,11 +63,6 @@ class Cluster {
   int PHeight() const;
   int NHeight() const;
   int PNEdge() const;
-  void UpdateWellHeightFromBottom1(int p_well_height, int n_well_height);
-  void UpdateWellHeightFromTop1(int p_well_height, int n_well_height);
-  int PHeight1() const;
-  int NHeight1() const;
-  int PNEdge1() const;
   int ClusterEdge() const;
 
   void SetLoc(int lx, int ly);
@@ -87,6 +85,15 @@ class Cluster {
   void MinDisplacementLegalization();
   void UpdateMinDisplacementLLY();
   double MinDisplacementLLY() const;
+
+  /**** for multi-well legalization ****/
+  void UpdateWhiteSpace();
+  bool IsBelowTopBoundary(Block *p_blk) const;
+  bool IsBelowMiddleLine(Block *p_blk) const;
+  bool IsOverlap(Block *p_blk, int criterion) const;
+  bool HasSameOrientation(Block *p_blk) const;
+  void AddBlockRegion(Block *p_blk, int region_id);
+  bool AttemptToAdd(Block *p_blk);
 
  private:
   bool is_orient_N_ = true; // orientation of this cluster
@@ -114,6 +121,12 @@ class Cluster {
 
   /**** lly which gives minimal displacement ****/
   double min_displacement_lly_ = -DBL_MAX;
+
+  /**** for multi-well legalization ****/
+  std::vector<BlockRegion> blk_regions_;
+  std::vector<SegI> white_spaces_;
+  size_t white_space_front_id_ = 0;
+  int white_space_used_width_ = 0;
 };
 
 class ClusterSegment {

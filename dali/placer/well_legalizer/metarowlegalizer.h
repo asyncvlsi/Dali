@@ -36,6 +36,9 @@ class MetaRowLegalizer : public Placer {
   void SetPartitionMode(StripePartitionMode mode);
   void PartitionSpaceAndBlocks();
 
+  bool StripeLegalizationBottomUp(Stripe &stripe);
+  bool BlockClustering();
+
   bool StartPlacement() override;
 
   void GenMatlabClusterTable(std::string const &name_of_file);

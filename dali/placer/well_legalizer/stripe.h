@@ -38,6 +38,7 @@ struct Stripe {
   int used_height_;
   int cluster_count_;
   Cluster *front_cluster_;
+  size_t front_id_;
   std::vector<Cluster> cluster_list_;
   bool is_bottom_up_ = false;
 
@@ -55,6 +56,10 @@ struct Stripe {
   int Height() const { return height_; }
 
   void MinDisplacementAdjustment();
+
+  void UpdateFrontSpace();
+  bool AddBlockToFrontCluster(Block *p_blk);
+  size_t FitBlocksToFrontSpace(size_t start_id);
 };
 
 struct ClusterStripe {

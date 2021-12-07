@@ -121,33 +121,17 @@ class BlockType {
 /****
  * This struct BlockTypeWell provides the N/P-well geometries for a BlockType.
  * Assumptions:
- *  1. BlockType has 1 or 2 well regions, each of which contains at least one
- *     N-well or P-well rectangle.
- *  2. If both N-well and P-well in the same region are present, they must be
- *     abutted. This is for debugging purposes, also for compact physical layout.
- *  3. N-well rectangles in both regions must be present, and they must be abutted.
- *     Otherwise, the well legalizer does not know how to stretch this kind of cell.
- *     If a technology node has no N-well, create a fake N-well.
- *     If the actual N-well rectangles in both regions are not abutted, make them abutted.
+ *  1. BlockType has at most one rectangular N-well and at most one rectangular P-well.
+ *  2. It is allowed to provide only N-well or P-well.
+ *  3. If both N-well and P-well are present, they must be abutted.
+ *     This is for debugging purposes, also for compact physical layout.
  *     +-----------------+
  *     |                 |
  *     |                 |
- *     |    P-well       |
+ *     |   N-well        |
  *     |                 |
  *     |                 |
- *     +-----------------+  n_p_edge of Region1
- *     |                 |
- *     |                 |
- *     |    N-well       |
- *     |                 |
- *     |                 |
- *     +-----------------+  stretch mark
- *     |                 |
- *     |                 |
- *     |    N-well       |
- *     |                 |
- *     |                 |
- *     +-----------------+  n_p_edge of Region0
+ *     +-----------------+  p_n_edge_
  *     |                 |
  *     |                 |
  *     |    P-well       |
@@ -201,6 +185,41 @@ class BlockTypeWell {
   int p_n_edge_ = 0; // cached N/P-well boundary 0
 };
 
+/****
+ * This class BlockTypeMultiWell provides the N/P-well geometries for a BlockType.
+ * Assumptions:
+ *  1. BlockType has at least one well region, each of which contains both a N-well
+ *     and a P-well rectangle.
+ *  2. The N-well and P-well in the same region must be abutted. This is for
+ *     debugging purposes, also for compact physical layout.
+ *  3. Adjacent regions must be abutted. If the actual regions are not abutted,
+ *     make them abutted.
+ *     +-----------------+
+ *     |                 |
+ *     |                 |
+ *     |    P-well       |
+ *     |                 |
+ *     |                 |
+ *     +-----------------+  n_p_edge of Region1
+ *     |                 |
+ *     |                 |
+ *     |    N-well       |
+ *     |                 |
+ *     |                 |
+ *     +-----------------+  stretch mark
+ *     |                 |
+ *     |                 |
+ *     |    N-well       |
+ *     |                 |
+ *     |                 |
+ *     +-----------------+  n_p_edge of Region0
+ *     |                 |
+ *     |                 |
+ *     |    P-well       |
+ *     |                 |
+ *     |                 |
+ *     +-----------------+
+ * ****/
 class BlockTypeMultiWell {
  public:
   explicit BlockTypeMultiWell(BlockType *type_ptr) : type_ptr_(type_ptr) {}
@@ -218,6 +237,8 @@ class BlockTypeMultiWell {
   bool IsBottomWellP() const;
 
   int RowCount() const;
+
+  bool HasOddRegions() const;
 
   bool IsWellAbutted();
 

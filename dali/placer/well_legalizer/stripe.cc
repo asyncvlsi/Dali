@@ -81,6 +81,63 @@ void Stripe::MinDisplacementAdjustment() {
   }
 }
 
+void Stripe::UpdateFrontSpace() {
+  if (front_id_ >= cluster_list_.size()) {
+    cluster_list_.emplace_back();
+    if (front_id_ & 1) { // odd clusters
+      cluster_list_[front_id_].SetOrient(!is_first_row_orient_N_);
+    } else { // even clusters
+      cluster_list_[front_id_].SetOrient(is_first_row_orient_N_);
+    }
+  }
+  cluster_list_[front_id_].UpdateWhiteSpace();
+}
+
+bool Stripe::AddBlockToFrontCluster(Block *p_blk) {
+  bool res = true;
+  Cluster &front_cluster = cluster_list_[front_id_];
+  res = front_cluster.AttemptToAdd(p_blk);
+  if (!res) return false;
+
+  // add this block to other clusters above the front cluster
+
+  return true;
+}
+
+size_t Stripe::FitBlocksToFrontSpace(size_t start_id) {
+  std::vector<Block *> legalized_blks;
+  std::vector<Block *> skipped_blks;
+
+  size_t blks_sz = block_list_.size();
+  Cluster &front_cluster = cluster_list_[front_id_];
+  for (size_t i = start_id; i < blks_sz; ++i) {
+    Block *p_blk = block_list_[i];
+    if (!front_cluster.IsOverlap(p_blk, 1)) break;
+    if (front_cluster.HasSameOrientation(p_blk)) {
+      if (AddBlockToFrontCluster(p_blk)) {
+        legalized_blks.push_back(p_blk);
+      } else {
+        break;
+      }
+    } else {
+      skipped_blks.push_back(p_blk);
+    }
+  }
+
+  // put legalized blocks back to the sorted list
+  for (size_t i = 0; i < legalized_blks.size(); ++i) {
+    block_list_[i + start_id] = legalized_blks[i];
+  }
+
+  // put skipped blocks back to the sorted list
+  start_id = start_id + legalized_blks.size();
+  for (size_t i = 0; i < skipped_blks.size(); ++i) {
+    block_list_[i + start_id] = skipped_blks[i];
+  }
+
+  return start_id;
+}
+
 Stripe *ClusterStripe::GetStripeMatchSeg(SegI seg, int y_loc) {
   Stripe *res = nullptr;
   for (auto &Stripe: stripe_list_) {
