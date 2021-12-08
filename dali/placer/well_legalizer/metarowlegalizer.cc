@@ -100,9 +100,9 @@ bool MetaRowLegalizer::StartPlacement() {
 
   bool is_successful = true;
 
-  CheckWellInfo();
-  PartitionSpaceAndBlocks();
-  BlockClustering();
+  //CheckWellInfo();
+  //PartitionSpaceAndBlocks();
+  //BlockClustering();
 
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;

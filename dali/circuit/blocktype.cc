@@ -291,6 +291,16 @@ int BlockTypeMultiWell::PwellHeight(int index) const {
   return p_rects_[index].Height();
 }
 
+RectI &BlockTypeMultiWell::NwellRect(int index) {
+  DaliExpects(index < RowCount(), "Out of bound");
+  return n_rects_[index];
+}
+
+RectI &BlockTypeMultiWell::PwellRect(int index) {
+  DaliExpects(index < RowCount(), "Out of bound");
+  return p_rects_[index];
+}
+
 void BlockTypeMultiWell::Report() const {
   BOOST_LOG_TRIVIAL(info)
     << "  Well of BlockType: " << type_ptr_->Name() << "\n";

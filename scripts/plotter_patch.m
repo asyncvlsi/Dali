@@ -31,11 +31,11 @@ a = transpose(origin);
 if (numRows>=16)
     nx = a(1:4,:);
     ny = a(5:8,:);
-    patch(nx,ny,color_n,'EdgeColor','none', 'FaceAlpha', transp_unplug);
+    patch(nx,ny,color_n, 'EdgeColor','black', 'FaceAlpha',transp_unplug, 'LineStyle', ':');
     hold on
     px = a(9:12,:);
     py = a(13:16,:);
-    patch(px,py,color_p,'EdgeColor','none', 'FaceAlpha', transp_unplug);
+    patch(px,py,color_p, 'EdgeColor','black', 'FaceAlpha',transp_unplug, 'LineStyle', ':');
     hold on
 end
 

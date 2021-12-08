@@ -87,7 +87,7 @@ class Cluster {
   double MinDisplacementLLY() const;
 
   /**** for multi-well legalization ****/
-  void UpdateWhiteSpace();
+  void UpdateSubClusters();
   bool IsBelowTopBoundary(Block *p_blk) const;
   bool IsBelowMiddleLine(Block *p_blk) const;
   bool IsOverlap(Block *p_blk, int criterion) const;
@@ -97,7 +97,6 @@ class Cluster {
 
  private:
   bool is_orient_N_ = true; // orientation of this cluster
-  bool is_only_single_well_cells_ = true;
   std::vector<Block *> blk_list_; // list of blocks in this cluster
   std::vector<double2d> blk_initial_location_;
 
@@ -112,7 +111,6 @@ class Cluster {
 
   /**** total width of cells in this cluster, including reserved space for tap cells ****/
   int used_size_ = 0;
-  int usable_width_; // to ensure a proper well tap cell location can be found
 
   /**** maximum p-well height and n-well height ****/
   int p_well_height_ = 0;
@@ -124,9 +122,7 @@ class Cluster {
 
   /**** for multi-well legalization ****/
   std::vector<BlockRegion> blk_regions_;
-  std::vector<SegI> white_spaces_;
-  size_t white_space_front_id_ = 0;
-  int white_space_used_width_ = 0;
+  std::vector<Cluster> sub_clusters_;
 };
 
 class ClusterSegment {

@@ -90,7 +90,7 @@ void Stripe::UpdateFrontSpace() {
       cluster_list_[front_id_].SetOrient(is_first_row_orient_N_);
     }
   }
-  cluster_list_[front_id_].UpdateWhiteSpace();
+  cluster_list_[front_id_].UpdateSubClusters();
 }
 
 bool Stripe::AddBlockToFrontCluster(Block *p_blk) {

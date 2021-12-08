@@ -44,6 +44,68 @@ void ReportMemory();
 
 void MergeIntervals(std::vector<SegI> &intervals);
 
+/****
+ * Create a square with vertices at (lx,ly), (ux,ly), (ux,uy), and (lx,uy).
+ * Specify x as the x-coordinates of the vertices and y as the y-coordinates.
+ * MATLAB command `patch` automatically connects the last (x,y) coordinate with
+ * the first (x,y) coordinate.
+ *
+ * @param ost: output file stream
+ * @param rect: the given rectangle
+ * @param has_rgb: use rgb or not
+ * @param r: red channel 0-1
+ * @param g: green channel 0-1
+ * @param b: blue channel 0-1
+ *
+ * (0,0,0) black, (1,1,1) white
+ */
+template<class T>
+void SaveMatlabPatchRect(
+    std::ofstream &ost,
+    T lx, T ly, T ux, T uy,
+    bool has_rgb = false,
+    double r = 0.0, double g = 0.0, double b = 0.0
+) {
+  ost << lx
+      << "\t" << ux
+      << "\t" << ux
+      << "\t" << lx
+      << "\t" << ly
+      << "\t" << ly
+      << "\t" << uy
+      << "\t" << uy;
+  if (has_rgb) {
+    ost << "\t" << r
+        << "\t" << g
+        << "\t" << b;
+  }
+  ost << "\n";
+}
+
+template<class T>
+void SaveMatlabPatchRegion(
+    std::ofstream &ost,
+    Rect<T> &n_rect, Rect<T> &p_rect
+) {
+  ost << n_rect.LLX() << "\t"
+      << n_rect.URX() << "\t"
+      << n_rect.URX() << "\t"
+      << n_rect.LLX() << "\t"
+      << n_rect.LLY() << "\t"
+      << n_rect.LLY() << "\t"
+      << n_rect.URY() << "\t"
+      << n_rect.URY() << "\t"
+
+      << p_rect.LLX() << "\t"
+      << p_rect.URX() << "\t"
+      << p_rect.URX() << "\t"
+      << p_rect.LLX() << "\t"
+      << p_rect.LLY() << "\t"
+      << p_rect.LLY() << "\t"
+      << p_rect.URY() << "\t"
+      << p_rect.URY() << "\n";
+}
+
 }
 
 #endif //DALI_DALI_COMMON_HELPER_H_

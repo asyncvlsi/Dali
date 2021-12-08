@@ -1402,44 +1402,30 @@ void Circuit::GenMATLABTable(
 ) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
-  ost << RegionLLX() << "\t"
-      << RegionURX() << "\t"
-      << RegionURX() << "\t"
-      << RegionLLX() << "\t"
-      << RegionLLY() << "\t"
-      << RegionLLY() << "\t"
-      << RegionURY() << "\t"
-      << RegionURY() << "\t"
-      << 1 << "\t"
-      << 1 << "\t"
-      << 1 << "\n";
+
+  // save place region
+  SaveMatlabPatchRect(
+      ost,
+      RegionLLX(), RegionLLY(), RegionURX(), RegionURY(),
+      true, 1, 1, 1
+  );
   if (!only_well_tap) {
+    // save ordinary cells
     for (auto &block: design_.blocks_) {
-      ost << block.LLX() << "\t"
-          << block.URX() << "\t"
-          << block.URX() << "\t"
-          << block.LLX() << "\t"
-          << block.LLY() << "\t"
-          << block.LLY() << "\t"
-          << block.URY() << "\t"
-          << block.URY() << "\t"
-          << 0 << "\t"
-          << 1 << "\t"
-          << 1 << "\n";
+      SaveMatlabPatchRect(
+          ost,
+          block.LLX(), block.LLY(), block.URX(), block.URY(),
+          true, 0, 1, 1
+      );
     }
   }
+  // save well-tap cells
   for (auto &block: design_.welltaps_) {
-    ost << block.LLX() << "\t"
-        << block.URX() << "\t"
-        << block.URX() << "\t"
-        << block.LLX() << "\t"
-        << block.LLY() << "\t"
-        << block.LLY() << "\t"
-        << block.URY() << "\t"
-        << block.URY() << "\t"
-        << 0 << "\t"
-        << 1 << "\t"
-        << 1 << "\n";
+    SaveMatlabPatchRect(
+        ost,
+        block.LLX(), block.LLY(), block.URX(), block.URY(),
+        true, 0, 1, 1
+    );
   }
   ost.close();
 }
@@ -1448,112 +1434,22 @@ void Circuit::GenMATLABWellTable(
     std::string const &name_of_file,
     bool only_well_tap
 ) {
+  // generate MATLAB table for cell outlines
   std::string frame_file = name_of_file + "_outline.txt";
-  std::string unplug_file = name_of_file + "_unplug.txt";
   GenMATLABTable(frame_file, only_well_tap);
 
+  // generate MATLAB table for N/P-well shapes
+  std::string unplug_file = name_of_file + "_unplug.txt";
   std::ofstream ost(unplug_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + unplug_file);
-
-  BlockTypeWell *well;
   if (!only_well_tap) {
     for (auto &block: design_.blocks_) {
-      well = block.TypePtr()->WellPtr();
-      if (well == nullptr) continue;
-
-      std::vector<RectI> n_well_shapes;
-      std::vector<RectI> p_well_shapes;
-
-      n_well_shapes.push_back(well->NwellRect());
-      p_well_shapes.push_back(well->PwellRect());
-
-      for (size_t i = 0; i < n_well_shapes.size(); ++i) {
-        if (block.Orient() == N) {
-          ost << block.LLX() + n_well_shapes[i].LLX() << "\t"
-              << block.LLX() + n_well_shapes[i].URX() << "\t"
-              << block.LLX() + n_well_shapes[i].URX() << "\t"
-              << block.LLX() + n_well_shapes[i].LLX() << "\t"
-              << block.LLY() + n_well_shapes[i].LLY() << "\t"
-              << block.LLY() + n_well_shapes[i].LLY() << "\t"
-              << block.LLY() + n_well_shapes[i].URY() << "\t"
-              << block.LLY() + n_well_shapes[i].URY() << "\t"
-
-              << block.LLX() + p_well_shapes[i].LLX() << "\t"
-              << block.LLX() + p_well_shapes[i].URX() << "\t"
-              << block.LLX() + p_well_shapes[i].URX() << "\t"
-              << block.LLX() + p_well_shapes[i].LLX() << "\t"
-              << block.LLY() + p_well_shapes[i].LLY() << "\t"
-              << block.LLY() + p_well_shapes[i].LLY() << "\t"
-              << block.LLY() + p_well_shapes[i].URY() << "\t"
-              << block.LLY() + p_well_shapes[i].URY() << "\n";
-        } else if (block.Orient() == FS) {
-          ost << block.LLX() + n_well_shapes[i].LLX() << "\t"
-              << block.LLX() + n_well_shapes[i].URX() << "\t"
-              << block.LLX() + n_well_shapes[i].URX() << "\t"
-              << block.LLX() + n_well_shapes[i].LLX() << "\t"
-              << block.URY() - n_well_shapes[i].LLY() << "\t"
-              << block.URY() - n_well_shapes[i].LLY() << "\t"
-              << block.URY() - n_well_shapes[i].URY() << "\t"
-              << block.URY() - n_well_shapes[i].URY() << "\t"
-
-              << block.LLX() + p_well_shapes[i].LLX() << "\t"
-              << block.LLX() + p_well_shapes[i].URX() << "\t"
-              << block.LLX() + p_well_shapes[i].URX() << "\t"
-              << block.LLX() + p_well_shapes[i].LLX() << "\t"
-              << block.URY() - p_well_shapes[i].LLY() << "\t"
-              << block.URY() - p_well_shapes[i].LLY() << "\t"
-              << block.URY() - p_well_shapes[i].URY() << "\t"
-              << block.URY() - p_well_shapes[i].URY() << "\n";
-        }
-      }
+      block.ExportWellToMatlabPatchRect(ost);
     }
   }
-
   for (auto &block: design_.welltaps_) {
-    well = block.TypePtr()->WellPtr();
-    if (well != nullptr) {
-      auto &n_well_shape = well->NwellRect();
-      auto &p_well_shape = well->PwellRect();
-      if (block.Orient() == N) {
-        ost << block.LLX() + n_well_shape.LLX() << "\t"
-            << block.LLX() + n_well_shape.URX() << "\t"
-            << block.LLX() + n_well_shape.URX() << "\t"
-            << block.LLX() + n_well_shape.LLX() << "\t"
-            << block.LLY() + n_well_shape.LLY() << "\t"
-            << block.LLY() + n_well_shape.LLY() << "\t"
-            << block.LLY() + n_well_shape.URY() << "\t"
-            << block.LLY() + n_well_shape.URY() << "\t"
-
-            << block.LLX() + p_well_shape.LLX() << "\t"
-            << block.LLX() + p_well_shape.URX() << "\t"
-            << block.LLX() + p_well_shape.URX() << "\t"
-            << block.LLX() + p_well_shape.LLX() << "\t"
-            << block.LLY() + p_well_shape.LLY() << "\t"
-            << block.LLY() + p_well_shape.LLY() << "\t"
-            << block.LLY() + p_well_shape.URY() << "\t"
-            << block.LLY() + p_well_shape.URY() << "\n";
-      } else if (block.Orient() == FS) {
-        ost << block.LLX() + n_well_shape.LLX() << "\t"
-            << block.LLX() + n_well_shape.URX() << "\t"
-            << block.LLX() + n_well_shape.URX() << "\t"
-            << block.LLX() + n_well_shape.LLX() << "\t"
-            << block.URY() - n_well_shape.LLY() << "\t"
-            << block.URY() - n_well_shape.LLY() << "\t"
-            << block.URY() - n_well_shape.URY() << "\t"
-            << block.URY() - n_well_shape.URY() << "\t"
-
-            << block.LLX() + p_well_shape.LLX() << "\t"
-            << block.LLX() + p_well_shape.URX() << "\t"
-            << block.LLX() + p_well_shape.URX() << "\t"
-            << block.LLX() + p_well_shape.LLX() << "\t"
-            << block.URY() - p_well_shape.LLY() << "\t"
-            << block.URY() - p_well_shape.LLY() << "\t"
-            << block.URY() - p_well_shape.URY() << "\t"
-            << block.URY() - p_well_shape.URY() << "\n";
-      }
-    }
+    block.ExportWellToMatlabPatchRect(ost);
   }
-
   ost.close();
 }
 

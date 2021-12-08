@@ -20,6 +20,8 @@
  ******************************************************************************/
 #include "block.h"
 
+#include "dali/common/helper.h"
+
 namespace dali {
 
 Block::Block() :
@@ -83,6 +85,10 @@ void Block::SetHeight(int height) {
 void Block::ResetHeight() {
   eff_height_ = type_ptr_->Height();
   eff_area_ = type_ptr_->Area();
+}
+
+bool Block::IsFlipped() const {
+  return orient_ == FN || orient_ == FS || orient_ == FW || orient_ == FE;
 }
 
 void Block::SetType(BlockType *type_ptr) {
@@ -168,6 +174,58 @@ void Block::ReportNet() {
     BOOST_LOG_TRIVIAL(info) << net_num << "  ";
   }
   BOOST_LOG_TRIVIAL(info) << "\n";
+}
+
+void Block::ExportWellToMatlabPatchRect(std::ofstream &ost) {
+  std::vector<RectI> n_well_shapes;
+  std::vector<RectI> p_well_shapes;
+  BlockTypeWell *well = TypePtr()->WellPtr();
+  if (well != nullptr) {
+    n_well_shapes.push_back(well->NwellRect());
+    p_well_shapes.push_back(well->PwellRect());
+  }
+  BlockTypeMultiWell *multi_well = TypePtr()->MultiWellPtr();
+  if (multi_well != nullptr) {
+    for (int i = 0; i < multi_well->RowCount(); ++i) {
+      n_well_shapes.push_back(multi_well->NwellRect(i));
+      p_well_shapes.push_back(multi_well->PwellRect(i));
+    }
+  }
+
+  size_t sz = n_well_shapes.size();
+  for (size_t i = 0; i < sz; ++i) {
+    RectD n_rect, p_rect;
+    if (Orient() == N) {
+      n_rect.SetValue(
+          LLX() + n_well_shapes[i].LLX(),
+          LLY() + n_well_shapes[i].LLY(),
+          LLX() + n_well_shapes[i].URX(),
+          LLY() + n_well_shapes[i].URY()
+      );
+      p_rect.SetValue(
+          LLX() + p_well_shapes[i].LLX(),
+          LLY() + p_well_shapes[i].LLY(),
+          LLX() + p_well_shapes[i].URX(),
+          LLY() + p_well_shapes[i].URY()
+      );
+    } else if (Orient() == FS) {
+      n_rect.SetValue(
+          LLX() + n_well_shapes[i].LLX(),
+          URY() - n_well_shapes[i].LLY(),
+          LLX() + n_well_shapes[i].URX(),
+          URY() - n_well_shapes[i].URY()
+      );
+      p_rect.SetValue(
+          LLX() + p_well_shapes[i].LLX(),
+          URY() - p_well_shapes[i].LLY(),
+          LLX() + p_well_shapes[i].URX(),
+          URY() - p_well_shapes[i].URY()
+      );
+    } else {
+      DaliExpects(false, "Why this orientation?");
+    }
+    SaveMatlabPatchRegion(ost, n_rect, p_rect);
+  }
 }
 
 }

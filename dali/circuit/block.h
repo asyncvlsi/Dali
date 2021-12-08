@@ -141,6 +141,9 @@ class Block {
   // get the Orientation of this Block
   BlockOrient Orient() const { return orient_; }
 
+  // is the cell placed in a flipped way
+  bool IsFlipped() const;
+
   // get the pointer to the auxiliary information
   BlockAux *AuxPtr() const { return aux_ptr_; }
 
@@ -219,6 +222,7 @@ class Block {
   /****Report info of this Block, for debugging purposes****/
   void Report();
   void ReportNet();
+  void ExportWellToMatlabPatchRect(std::ofstream &ost);
 
  protected:
   BlockType *type_ptr_; // type

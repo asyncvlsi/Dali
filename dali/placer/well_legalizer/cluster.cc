@@ -393,7 +393,7 @@ double Cluster::MinDisplacementLLY() const {
   return min_displacement_lly_;
 }
 
-void Cluster::UpdateWhiteSpace() {
+void Cluster::UpdateSubClusters() {
   // collect used space segments
   std::vector<SegI> used_spaces;
   for (auto &blk_region: blk_regions_) {
@@ -430,12 +430,17 @@ void Cluster::UpdateWhiteSpace() {
     }
   }
 
-  // compute the final space segments
+  // create sub-clusters
   size_t len = intermediate_seg.size();
-  white_spaces_.clear();
-  white_spaces_.reserve(len / 2);
+  sub_clusters_.clear();
+  sub_clusters_.reserve(len / 2);
   for (size_t i = 0; i < len; i += 2) {
-    white_spaces_.emplace_back(intermediate_seg[i], intermediate_seg[i + 1]);
+    sub_clusters_.emplace_back();
+    Cluster &sub_cluster = sub_clusters_.back();
+    sub_cluster.SetLLX(intermediate_seg[i]);
+    sub_cluster.SetWidth(intermediate_seg[i + 1] - intermediate_seg[i]);
+    sub_cluster.SetOrient(is_orient_N_);
+    sub_cluster.SetLLY(ly_);
   }
 }
 
@@ -478,6 +483,7 @@ void Cluster::AddBlockRegion(Block *p_blk, int region_id) {
 
 bool Cluster::AttemptToAdd(Block *p_blk) {
   // put this block to the closest white space segment
+
   return true;
 }
 

@@ -250,6 +250,10 @@ class BlockTypeMultiWell {
 
   int PwellHeight(int index) const;
 
+  RectI &NwellRect(int index);
+
+  RectI &PwellRect(int index);
+
   void Report() const;
 
  private:
