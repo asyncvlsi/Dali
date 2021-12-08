@@ -81,25 +81,46 @@ void Stripe::MinDisplacementAdjustment() {
   }
 }
 
-void Stripe::UpdateFrontSpace() {
+void Stripe::UpdateFrontCluster(int p_height, int n_height) {
   if (front_id_ >= cluster_list_.size()) {
     cluster_list_.emplace_back();
-    if (front_id_ & 1) { // odd clusters
-      cluster_list_[front_id_].SetOrient(!is_first_row_orient_N_);
-    } else { // even clusters
-      cluster_list_[front_id_].SetOrient(is_first_row_orient_N_);
-    }
   }
+  cluster_list_[front_id_].SetLLX(lx_);
+  cluster_list_[front_id_].SetWidth(width_);
+  if (front_id_ == 0) {
+    cluster_list_[front_id_].SetLLY(ly_);
+    cluster_list_[front_id_].SetOrient(is_first_row_orient_N_);
+  } else {
+    cluster_list_[front_id_].SetLLY(cluster_list_[front_id_ - 1].URY());
+    cluster_list_[front_id_].SetOrient(!cluster_list_[front_id_-1].IsOrientN());
+  }
+  cluster_list_[front_id_].UpdateWellHeightFromBottom(p_height, n_height);
   cluster_list_[front_id_].UpdateSubClusters();
 }
 
+void Stripe::UpdateFollowingClusters(Block *p_blk) {
+  BlockTypeMultiWell *well = p_blk->TypePtr()->MultiWellPtr();
+  size_t row_count = well->RowCount();
+  std::cout << __FUNCTION__  << " " << p_blk->Name() << " " << row_count << "\n";
+  for (size_t i = 1; i < row_count; ++i) {
+    size_t row_index = front_id_ + i;
+    std::cout << row_index << "  ";
+    if (row_index >= cluster_list_.size()) {
+      cluster_list_.emplace_back();
+    }
+    cluster_list_[row_index].AddBlockRegion(p_blk, i);
+  }
+  std::cout << "\n";
+}
+
 bool Stripe::AddBlockToFrontCluster(Block *p_blk) {
-  bool res = true;
-  Cluster &front_cluster = cluster_list_[front_id_];
-  res = front_cluster.AttemptToAdd(p_blk);
+  bool res;
+  res = cluster_list_[front_id_].AttemptToAdd(p_blk);
+  std::cout << p_blk->Name() << " " << res << "\n";
   if (!res) return false;
 
   // add this block to other clusters above the front cluster
+  UpdateFollowingClusters(p_blk);
 
   return true;
 }
@@ -109,20 +130,33 @@ size_t Stripe::FitBlocksToFrontSpace(size_t start_id) {
   std::vector<Block *> skipped_blks;
 
   size_t blks_sz = block_list_.size();
-  Cluster &front_cluster = cluster_list_[front_id_];
+  std::cout << "stripe " << lx_ << " " << ly_ << " "
+            << URX() << " " << URY() << "\n";
+  std::cout << blks_sz << "\n";
   for (size_t i = start_id; i < blks_sz; ++i) {
     Block *p_blk = block_list_[i];
-    if (!front_cluster.IsOverlap(p_blk, 1)) break;
-    if (front_cluster.HasSameOrientation(p_blk)) {
+    std::cout << "cluster " << cluster_list_[front_id_].LLX() << " " << cluster_list_[front_id_].LLY()
+              << " " << cluster_list_[front_id_].URX() << " " << cluster_list_[front_id_].URY()
+              << "\n";
+    std::cout << "block " << p_blk->LLX() << " " << p_blk->LLY() << " "
+              << p_blk->URX() << " " << p_blk->URY() << "\n";
+    if (!cluster_list_[front_id_].IsOverlap(p_blk, 1)) {
+      std::cout << "not overlap\n";
+      break;
+    }
+    if (cluster_list_[front_id_].HasSameOrientation(p_blk)) {
       if (AddBlockToFrontCluster(p_blk)) {
         legalized_blks.push_back(p_blk);
       } else {
+        std::cout << "fail to add\n";
         break;
       }
     } else {
       skipped_blks.push_back(p_blk);
     }
   }
+
+  cluster_list_[front_id_].SubClusterLegalize();
 
   // put legalized blocks back to the sorted list
   for (size_t i = 0; i < legalized_blks.size(); ++i) {

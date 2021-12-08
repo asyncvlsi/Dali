@@ -236,7 +236,7 @@ class BlockTypeMultiWell {
 
   bool IsBottomWellP() const;
 
-  int RowCount() const;
+  size_t RowCount() const;
 
   bool HasOddRegions() const;
 
@@ -246,13 +246,13 @@ class BlockTypeMultiWell {
 
   void CheckLegality();
 
-  int NwellHeight(int index) const;
+  int NwellHeight(size_t index) const;
 
-  int PwellHeight(int index) const;
+  int PwellHeight(size_t index) const;
 
-  RectI &NwellRect(int index);
+  RectI &NwellRect(size_t index);
 
-  RectI &PwellRect(int index);
+  RectI &PwellRect(size_t index);
 
   void Report() const;
 

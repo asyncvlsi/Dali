@@ -126,18 +126,23 @@ void MergeIntervals(std::vector<SegI> &intervals) {
       }
   );
 
+  std::cout << "sorted intervals\n";
+  for (auto &seg: intervals) {
+    std::cout << seg.lo << " " << seg.hi << "\n";
+  }
+
   std::vector<SegI> res;
 
   int begin = intervals[0].lo;
   int end = intervals[0].hi;
 
-  SegI tmp(2, 0);
+  SegI tmp(0, 0);
   for (size_t i = 1; i < sz; ++i) {
     if (end < intervals[i].lo) {
       tmp.lo = begin;
       tmp.hi = end;
       res.push_back(tmp);
-      begin = intervals[i].hi;
+      begin = intervals[i].lo;
     }
     if (end < intervals[i].hi) {
       end = intervals[i].hi;
@@ -147,6 +152,11 @@ void MergeIntervals(std::vector<SegI> &intervals) {
   tmp.lo = begin;
   tmp.hi = end;
   res.push_back(tmp);
+
+  std::cout << "merged intervals\n";
+  for (auto &seg: res) {
+    std::cout << seg.lo << " " << seg.hi << "\n";
+  }
 
   intervals = res;
 }

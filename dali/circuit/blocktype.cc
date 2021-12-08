@@ -231,8 +231,8 @@ bool BlockTypeMultiWell::IsBottomWellP() const {
   return p_rects_[0].LLY() <= n_rects_[0].LLY();
 }
 
-int BlockTypeMultiWell::RowCount() const {
-  return static_cast<int>(n_rects_.size());
+size_t BlockTypeMultiWell::RowCount() const {
+  return n_rects_.size();
 }
 
 bool BlockTypeMultiWell::HasOddRegions() const {
@@ -240,10 +240,10 @@ bool BlockTypeMultiWell::HasOddRegions() const {
 }
 
 bool BlockTypeMultiWell::IsWellAbutted() {
-  int row_count = RowCount();
+  size_t row_count = RowCount();
   std::vector<int> y_edges;
   bool is_well_p = IsBottomWellP();
-  for (int i = 0; i < row_count; ++i) {
+  for (size_t i = 0; i < row_count; ++i) {
     if (is_well_p) {
       y_edges.push_back(p_rects_[i].LLY());
       y_edges.push_back(p_rects_[i].URY());
@@ -258,7 +258,7 @@ bool BlockTypeMultiWell::IsWellAbutted() {
     is_well_p = !is_well_p;
   }
 
-  for (int i = 1; i < 2 * row_count - 1; i += 2) {
+  for (size_t i = 1; i < 2 * row_count - 1; i += 2) {
     if (y_edges[i] != y_edges[i + 1]) {
       return false;
     }
@@ -281,22 +281,22 @@ void BlockTypeMultiWell::CheckLegality() {
   }
 }
 
-int BlockTypeMultiWell::NwellHeight(int index) const {
+int BlockTypeMultiWell::NwellHeight(size_t index) const {
   DaliExpects(index < RowCount(), "Out of bound");
   return n_rects_[index].Height();
 }
 
-int BlockTypeMultiWell::PwellHeight(int index) const {
+int BlockTypeMultiWell::PwellHeight(size_t index) const {
   DaliExpects(index < RowCount(), "Out of bound");
   return p_rects_[index].Height();
 }
 
-RectI &BlockTypeMultiWell::NwellRect(int index) {
+RectI &BlockTypeMultiWell::NwellRect(size_t index) {
   DaliExpects(index < RowCount(), "Out of bound");
   return n_rects_[index];
 }
 
-RectI &BlockTypeMultiWell::PwellRect(int index) {
+RectI &BlockTypeMultiWell::PwellRect(size_t index) {
   DaliExpects(index < RowCount(), "Out of bound");
   return p_rects_[index];
 }

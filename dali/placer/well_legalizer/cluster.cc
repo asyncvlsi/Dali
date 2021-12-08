@@ -398,9 +398,17 @@ void Cluster::UpdateSubClusters() {
   std::vector<SegI> used_spaces;
   for (auto &blk_region: blk_regions_) {
     Block *p_blk = blk_region.p_blk;
-    used_spaces.emplace_back(p_blk->LLX(), p_blk->LLY());
+    used_spaces.emplace_back(p_blk->LLX(), p_blk->URX());
+  }
+  std::cout << "Used spaces before merge\n";
+  for (auto &seg: used_spaces) {
+    std::cout << seg.lo << " " << seg.hi << "\n";
   }
   MergeIntervals(used_spaces);
+  std::cout << "Used spaces after merge\n";
+  for (auto &seg: used_spaces) {
+    std::cout << seg.lo << " " << seg.hi << "\n";
+  }
 
   // collect unused space segments
   std::vector<int> intermediate_seg;
@@ -441,6 +449,10 @@ void Cluster::UpdateSubClusters() {
     sub_cluster.SetWidth(intermediate_seg[i + 1] - intermediate_seg[i]);
     sub_cluster.SetOrient(is_orient_N_);
     sub_cluster.SetLLY(ly_);
+    std::cout
+        << "subcluster, "
+        << sub_cluster.LLX() << " " << sub_cluster.LLY() << " "
+        << sub_cluster.URX() << " " << sub_cluster.URY() << "\n";
   }
 }
 
@@ -477,14 +489,72 @@ bool Cluster::HasSameOrientation(Block *p_blk) const {
   return IsOrientN() ? p_well->IsBottomWellP() : !p_well->IsBottomWellP();
 }
 
-void Cluster::AddBlockRegion(Block *p_blk, int region_id) {
+void Cluster::AddBlockRegion(Block *p_blk, size_t region_id) {
   blk_regions_.emplace_back(p_blk, region_id);
+  BlockTypeMultiWell *well = p_blk->TypePtr()->MultiWellPtr();
+  p_well_height_ = std::max(p_well_height_, well->PwellHeight(region_id));
+  n_well_height_ = std::max(n_well_height_, well->NwellHeight(region_id));
+  height_ = p_well_height_ + n_well_height_;
 }
 
 bool Cluster::AttemptToAdd(Block *p_blk) {
   // put this block to the closest white space segment
+  double min_distance = DBL_MAX;
+  int min_index = -1;
+  int sz = static_cast<int>(sub_clusters_.size());
+  std::cout << p_blk->Name() << " " << p_blk->Width() << " "
+            << p_blk->LLX() << " " << p_blk->URX() << "\n";
+  for (int i = 0; i < sz; ++i) {
+    auto &sub_cluster = sub_clusters_[i];
+    std::cout << i << " " << sub_cluster.Width() << " " << sub_cluster.used_size_ << " "
+              << sub_cluster.LLX() << " " << sub_cluster.URX() << " ";
+    double distance = DBL_MAX;
+    if (sub_cluster.used_size_ + p_blk->Width() <= sub_cluster.width_) {
+      if (p_blk->LLX() >= sub_cluster.LLX()
+          && p_blk->URX() <= sub_cluster.URX()) {
+        distance = 0;
+      } else {
+        distance = std::min(
+            std::fabs(p_blk->LLX() - sub_cluster.LLX()),
+            std::fabs(p_blk->URX() - sub_cluster.URX())
+        );
+      }
+    }
+    std::cout << distance << "\n";
+    if (distance < min_distance) {
+      min_distance = distance;
+      min_index = i;
+    }
+  }
 
+  std::cout << "min index: " << min_index << ", min distance: " << min_distance << "\n";
+  if (min_index == -1) {
+    return false;
+  }
+
+  sub_clusters_[min_index].blk_list_.push_back(p_blk);
+  sub_clusters_[min_index].used_size_ += p_blk->Width();
+  AddBlockRegion(p_blk, 0);
   return true;
+}
+
+void Cluster::SubClusterLegalize() {
+  for (auto &sub_cluster: sub_clusters_) {
+    sub_cluster.LegalizeCompactX();
+
+    for (auto &p_blk: sub_cluster.blk_list_) {
+      p_blk->SetLLY(sub_cluster.LLY());
+      //p_blk->SetOrient(is_orient_N_ ? N : FS);
+      BlockTypeMultiWell *well = p_blk->TypePtr()->MultiWellPtr();
+      std::cout
+          << p_blk->Name()
+          << "  " << well->PwellHeight(0)
+          << ", " << well->NwellHeight(0) << "\n";
+    }
+    std::cout << "p height " << p_well_height_ << ", n height "
+              << n_well_height_ << "\n";
+  }
+  std::cout << LLY() << " " << URY() << "\n";
 }
 
 void ClusterSegment::Merge(

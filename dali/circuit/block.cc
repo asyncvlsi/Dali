@@ -194,37 +194,39 @@ void Block::ExportWellToMatlabPatchRect(std::ofstream &ost) {
 
   size_t sz = n_well_shapes.size();
   for (size_t i = 0; i < sz; ++i) {
-    RectD n_rect, p_rect;
     if (Orient() == N) {
-      n_rect.SetValue(
+      RectD n_rect(
           LLX() + n_well_shapes[i].LLX(),
           LLY() + n_well_shapes[i].LLY(),
           LLX() + n_well_shapes[i].URX(),
           LLY() + n_well_shapes[i].URY()
       );
-      p_rect.SetValue(
+      RectD p_rect(
           LLX() + p_well_shapes[i].LLX(),
           LLY() + p_well_shapes[i].LLY(),
           LLX() + p_well_shapes[i].URX(),
           LLY() + p_well_shapes[i].URY()
       );
+      SaveMatlabPatchRegion(ost, n_rect, p_rect);
     } else if (Orient() == FS) {
-      n_rect.SetValue(
+      RectD n_rect(
           LLX() + n_well_shapes[i].LLX(),
           URY() - n_well_shapes[i].LLY(),
           LLX() + n_well_shapes[i].URX(),
           URY() - n_well_shapes[i].URY()
       );
-      p_rect.SetValue(
+      RectD p_rect(
           LLX() + p_well_shapes[i].LLX(),
           URY() - p_well_shapes[i].LLY(),
           LLX() + p_well_shapes[i].URX(),
           URY() - p_well_shapes[i].URY()
       );
+      SaveMatlabPatchRegion(ost, n_rect, p_rect);
     } else {
-      DaliExpects(false, "Why this orientation?");
+      BOOST_LOG_TRIVIAL(debug)
+        << "Orientation not supported "
+        << __FILE__ << " : " << __LINE__ << " : " << __FUNCTION__ << "\n";
     }
-    SaveMatlabPatchRegion(ost, n_rect, p_rect);
   }
 }
 

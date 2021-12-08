@@ -47,6 +47,8 @@ class MetaRowLegalizer : public Placer {
   SpacePartitioner space_partitioner_;
 
   int well_spacing_ = 0;
+  int tap_cell_p_height_;
+  int tap_cell_n_height_;
 
   std::vector<ClusterStripe> col_list_;
 };

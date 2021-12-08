@@ -39,6 +39,11 @@ void MetaRowLegalizer::CheckWellInfo() {
   int same_spacing = std::ceil(n_well_layer.Spacing() / grid_value_x);
   int op_spacing = std::ceil(n_well_layer.OppositeSpacing() / grid_value_x);
   well_spacing_ = std::max(same_spacing, op_spacing);
+
+  BlockType *well_tap_cell_ = (p_ckt_->tech().WellTapCellPtrs()[0]);
+  auto *tap_cell_well = well_tap_cell_->MultiWellPtr();
+  tap_cell_p_height_ = tap_cell_well->PwellHeight(0);
+  tap_cell_n_height_ = tap_cell_well->NwellHeight(0);
 }
 
 void MetaRowLegalizer::SetPartitionMode(StripePartitionMode mode) {
@@ -70,12 +75,24 @@ bool MetaRowLegalizer::StripeLegalizationBottomUp(Stripe &stripe) {
       }
   );
 
+  std::cout << "before while loop\n";
   size_t processed_blk_cnt = 0;
+  int count = 0;
   while (processed_blk_cnt < stripe.block_list_.size()) {
-    stripe.UpdateFrontSpace();
+    std::cout << "processed block count: " << processed_blk_cnt << "\n";
+    stripe.UpdateFrontCluster(tap_cell_p_height_, tap_cell_n_height_);
     processed_blk_cnt = stripe.FitBlocksToFrontSpace(processed_blk_cnt);
+    std::cout << processed_blk_cnt << " " << stripe.block_list_.size() << "\n";
     stripe.front_id_ += 1;
+    std::cout << "processed block count: " << processed_blk_cnt << "\n";
+    ++count;
+    if (count == 20) {
+      GenMatlabClusterTable("sc_result");
+      GenMATLABWellTable("scw", 0);
+      exit(1);
+    }
   }
+  std::cout << "after while loop\n";
 
   return true;
 }
@@ -100,9 +117,9 @@ bool MetaRowLegalizer::StartPlacement() {
 
   bool is_successful = true;
 
-  //CheckWellInfo();
-  //PartitionSpaceAndBlocks();
-  //BlockClustering();
+  CheckWellInfo();
+  PartitionSpaceAndBlocks();
+  BlockClustering();
 
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;

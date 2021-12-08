@@ -27,12 +27,13 @@
 namespace dali {
 
 struct BlockRegion {
-  BlockRegion(Block *blk, int id): p_blk(blk), region_id(id) {}
+  BlockRegion(Block *blk, size_t id): p_blk(blk), region_id(id) {}
   Block *p_blk = nullptr;
-  int region_id = 0;
+  size_t region_id = 0;
 };
 
 class Cluster {
+  friend class Stripe;
  public:
   Cluster() = default;
 
@@ -92,8 +93,9 @@ class Cluster {
   bool IsBelowMiddleLine(Block *p_blk) const;
   bool IsOverlap(Block *p_blk, int criterion) const;
   bool HasSameOrientation(Block *p_blk) const;
-  void AddBlockRegion(Block *p_blk, int region_id);
+  void AddBlockRegion(Block *p_blk, size_t region_id);
   bool AttemptToAdd(Block *p_blk);
+  void SubClusterLegalize();
 
  private:
   bool is_orient_N_ = true; // orientation of this cluster
