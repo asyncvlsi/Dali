@@ -63,7 +63,7 @@ void MetaRowLegalizer::PartitionSpaceAndBlocks() {
 bool MetaRowLegalizer::StripeLegalizationBottomUp(Stripe &stripe) {
   stripe.cluster_list_.clear();
   stripe.contour_ = stripe.LLY();
-  stripe.front_id_ = 0;
+  stripe.front_id_ = -1;
   stripe.is_bottom_up_ = true;
 
   std::sort(
@@ -83,15 +83,17 @@ bool MetaRowLegalizer::StripeLegalizationBottomUp(Stripe &stripe) {
     stripe.UpdateFrontCluster(tap_cell_p_height_, tap_cell_n_height_);
     processed_blk_cnt = stripe.FitBlocksToFrontSpace(processed_blk_cnt);
     std::cout << processed_blk_cnt << " " << stripe.block_list_.size() << "\n";
-    stripe.front_id_ += 1;
+    stripe.LegalizeFrontCluster();
     std::cout << "processed block count: " << processed_blk_cnt << "\n";
     ++count;
-    if (count == 20) {
-      GenMatlabClusterTable("sc_result");
-      GenMATLABWellTable("scw", 0);
-      exit(1);
-    }
+    //if (count == 20) {
+    //  stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_);
+    //  GenMatlabClusterTable("sc_result");
+    //  GenMATLABWellTable("scw", 0);
+    //  exit(1);
+    //}
   }
+  stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_);
   std::cout << "after while loop\n";
 
   return true;

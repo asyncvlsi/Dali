@@ -506,7 +506,8 @@ bool Cluster::AttemptToAdd(Block *p_blk) {
             << p_blk->LLX() << " " << p_blk->URX() << "\n";
   for (int i = 0; i < sz; ++i) {
     auto &sub_cluster = sub_clusters_[i];
-    std::cout << i << " " << sub_cluster.Width() << " " << sub_cluster.used_size_ << " "
+    std::cout << i << " " << sub_cluster.Width() << " "
+              << sub_cluster.used_size_ << " "
               << sub_cluster.LLX() << " " << sub_cluster.URX() << " ";
     double distance = DBL_MAX;
     if (sub_cluster.used_size_ + p_blk->Width() <= sub_cluster.width_) {
@@ -527,7 +528,8 @@ bool Cluster::AttemptToAdd(Block *p_blk) {
     }
   }
 
-  std::cout << "min index: " << min_index << ", min distance: " << min_distance << "\n";
+  std::cout << "min index: " << min_index << ", min distance: " << min_distance
+            << "\n";
   if (min_index == -1) {
     return false;
   }
@@ -538,13 +540,26 @@ bool Cluster::AttemptToAdd(Block *p_blk) {
   return true;
 }
 
+BlockOrient Cluster::ComputeOrient(Block *p_blk) {
+  DaliExpects(p_blk != nullptr, "Nullptr?");
+  BlockTypeMultiWell *well = p_blk->TypePtr()->MultiWellPtr();
+  BlockOrient orient = N;
+  bool is_cluster_block_orientation_matching =
+      (is_orient_N_ && well->IsBottomWellP()) ||
+          (!is_orient_N_ && !well->IsBottomWellP());
+  if (!is_cluster_block_orientation_matching) {
+    orient = FS;
+  }
+  return orient;
+}
+
 void Cluster::SubClusterLegalize() {
   for (auto &sub_cluster: sub_clusters_) {
     sub_cluster.LegalizeCompactX();
 
     for (auto &p_blk: sub_cluster.blk_list_) {
       p_blk->SetLLY(sub_cluster.LLY());
-      //p_blk->SetOrient(is_orient_N_ ? N : FS);
+      p_blk->SetOrient(ComputeOrient(p_blk));
       BlockTypeMultiWell *well = p_blk->TypePtr()->MultiWellPtr();
       std::cout
           << p_blk->Name()
@@ -555,6 +570,19 @@ void Cluster::SubClusterLegalize() {
               << n_well_height_ << "\n";
   }
   std::cout << LLY() << " " << URY() << "\n";
+}
+
+void Cluster::RecomputeHeight(int p_well_height, int n_well_height) {
+  p_well_height_ = p_well_height;
+  n_well_height_ = n_well_height;
+  for (auto &blk_region: blk_regions_) {
+    auto *p_blk = blk_region.p_blk;
+    size_t region_id = blk_region.region_id;
+    BlockTypeMultiWell *well = p_blk->TypePtr()->MultiWellPtr();
+    p_well_height_ = std::max(p_well_height_, well->PwellHeight(region_id));
+    n_well_height_ = std::max(n_well_height_, well->NwellHeight(region_id));
+  }
+  height_ = p_well_height_ + n_well_height_;
 }
 
 void ClusterSegment::Merge(

@@ -58,9 +58,11 @@ struct Stripe {
   void MinDisplacementAdjustment();
 
   void UpdateFrontCluster(int p_height, int n_height);
-  void UpdateFollowingClusters(Block *p_blk);
+  void SimplyAddFollowingClusters(Block *p_blk);
   bool AddBlockToFrontCluster(Block *p_blk);
   size_t FitBlocksToFrontSpace(size_t start_id);
+  void LegalizeFrontCluster();
+  void UpdateRemainingClusters(int p_height, int n_height);
 };
 
 struct ClusterStripe {

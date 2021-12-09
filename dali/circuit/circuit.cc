@@ -1444,6 +1444,7 @@ void Circuit::GenMATLABWellTable(
   DaliExpects(ost.is_open(), "Cannot open output file: " + unplug_file);
   if (!only_well_tap) {
     for (auto &block: design_.blocks_) {
+      std::cout << block.Id() << "/" << design_.blocks_.size() << " " << block.Name() << "\n";
       block.ExportWellToMatlabPatchRect(ost);
     }
   }

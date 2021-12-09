@@ -186,7 +186,7 @@ void Block::ExportWellToMatlabPatchRect(std::ofstream &ost) {
   }
   BlockTypeMultiWell *multi_well = TypePtr()->MultiWellPtr();
   if (multi_well != nullptr) {
-    for (int i = 0; i < multi_well->RowCount(); ++i) {
+    for (size_t i = 0; i < multi_well->RowCount(); ++i) {
       n_well_shapes.push_back(multi_well->NwellRect(i));
       p_well_shapes.push_back(multi_well->PwellRect(i));
     }
@@ -209,17 +209,27 @@ void Block::ExportWellToMatlabPatchRect(std::ofstream &ost) {
       );
       SaveMatlabPatchRegion(ost, n_rect, p_rect);
     } else if (Orient() == FS) {
+      std::cout << Name() << ":\n"
+                << LLX() + n_well_shapes[i].LLX() << " "
+                << URY() - n_well_shapes[i].URY() << " "
+                << LLX() + n_well_shapes[i].URX() << " "
+                << URY() - n_well_shapes[i].LLY() << "\n";
       RectD n_rect(
           LLX() + n_well_shapes[i].LLX(),
-          URY() - n_well_shapes[i].LLY(),
+          URY() - n_well_shapes[i].URY(),
           LLX() + n_well_shapes[i].URX(),
-          URY() - n_well_shapes[i].URY()
+          URY() - n_well_shapes[i].LLY()
       );
+      std::cout << Name() << ":\n"
+                << LLX() + p_well_shapes[i].LLX() << " "
+                << URY() - p_well_shapes[i].URY() << " "
+                << LLX() + p_well_shapes[i].URX() << " "
+                << URY() - p_well_shapes[i].LLY() << "\n";
       RectD p_rect(
           LLX() + p_well_shapes[i].LLX(),
-          URY() - p_well_shapes[i].LLY(),
+          URY() - p_well_shapes[i].URY(),
           LLX() + p_well_shapes[i].URX(),
-          URY() - p_well_shapes[i].URY()
+          URY() - p_well_shapes[i].LLY()
       );
       SaveMatlabPatchRegion(ost, n_rect, p_rect);
     } else {

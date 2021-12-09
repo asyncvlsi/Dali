@@ -82,6 +82,7 @@ void Stripe::MinDisplacementAdjustment() {
 }
 
 void Stripe::UpdateFrontCluster(int p_height, int n_height) {
+  ++front_id_;
   if (front_id_ >= cluster_list_.size()) {
     cluster_list_.emplace_back();
   }
@@ -92,25 +93,23 @@ void Stripe::UpdateFrontCluster(int p_height, int n_height) {
     cluster_list_[front_id_].SetOrient(is_first_row_orient_N_);
   } else {
     cluster_list_[front_id_].SetLLY(cluster_list_[front_id_ - 1].URY());
-    cluster_list_[front_id_].SetOrient(!cluster_list_[front_id_-1].IsOrientN());
+    cluster_list_[front_id_].SetOrient(!cluster_list_[front_id_
+        - 1].IsOrientN());
   }
   cluster_list_[front_id_].UpdateWellHeightFromBottom(p_height, n_height);
   cluster_list_[front_id_].UpdateSubClusters();
 }
 
-void Stripe::UpdateFollowingClusters(Block *p_blk) {
+void Stripe::SimplyAddFollowingClusters(Block *p_blk) {
   BlockTypeMultiWell *well = p_blk->TypePtr()->MultiWellPtr();
   size_t row_count = well->RowCount();
-  std::cout << __FUNCTION__  << " " << p_blk->Name() << " " << row_count << "\n";
   for (size_t i = 1; i < row_count; ++i) {
     size_t row_index = front_id_ + i;
-    std::cout << row_index << "  ";
     if (row_index >= cluster_list_.size()) {
       cluster_list_.emplace_back();
     }
     cluster_list_[row_index].AddBlockRegion(p_blk, i);
   }
-  std::cout << "\n";
 }
 
 bool Stripe::AddBlockToFrontCluster(Block *p_blk) {
@@ -120,7 +119,7 @@ bool Stripe::AddBlockToFrontCluster(Block *p_blk) {
   if (!res) return false;
 
   // add this block to other clusters above the front cluster
-  UpdateFollowingClusters(p_blk);
+  SimplyAddFollowingClusters(p_blk);
 
   return true;
 }
@@ -135,8 +134,10 @@ size_t Stripe::FitBlocksToFrontSpace(size_t start_id) {
   std::cout << blks_sz << "\n";
   for (size_t i = start_id; i < blks_sz; ++i) {
     Block *p_blk = block_list_[i];
-    std::cout << "cluster " << cluster_list_[front_id_].LLX() << " " << cluster_list_[front_id_].LLY()
-              << " " << cluster_list_[front_id_].URX() << " " << cluster_list_[front_id_].URY()
+    std::cout << "cluster " << cluster_list_[front_id_].LLX() << " "
+              << cluster_list_[front_id_].LLY()
+              << " " << cluster_list_[front_id_].URX() << " "
+              << cluster_list_[front_id_].URY()
               << "\n";
     std::cout << "block " << p_blk->LLX() << " " << p_blk->LLY() << " "
               << p_blk->URX() << " " << p_blk->URY() << "\n";
@@ -156,8 +157,6 @@ size_t Stripe::FitBlocksToFrontSpace(size_t start_id) {
     }
   }
 
-  cluster_list_[front_id_].SubClusterLegalize();
-
   // put legalized blocks back to the sorted list
   for (size_t i = 0; i < legalized_blks.size(); ++i) {
     block_list_[i + start_id] = legalized_blks[i];
@@ -170,6 +169,20 @@ size_t Stripe::FitBlocksToFrontSpace(size_t start_id) {
   }
 
   return start_id;
+}
+
+void Stripe::LegalizeFrontCluster() {
+  cluster_list_[front_id_].SubClusterLegalize();
+}
+
+void Stripe::UpdateRemainingClusters(int p_height, int n_height) {
+  size_t sz = cluster_list_.size();
+  for (size_t i = front_id_ + 1; i < sz; ++i) {
+    cluster_list_[i].SetLLX(lx_);
+    cluster_list_[i].SetWidth(width_);
+    cluster_list_[i].SetLLY(cluster_list_[i-1].URY());
+    cluster_list_[i].RecomputeHeight(p_height, n_height);
+  }
 }
 
 Stripe *ClusterStripe::GetStripeMatchSeg(SegI seg, int y_loc) {

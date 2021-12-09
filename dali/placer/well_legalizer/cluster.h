@@ -95,7 +95,9 @@ class Cluster {
   bool HasSameOrientation(Block *p_blk) const;
   void AddBlockRegion(Block *p_blk, size_t region_id);
   bool AttemptToAdd(Block *p_blk);
+  BlockOrient ComputeOrient(Block *p_blk);
   void SubClusterLegalize();
+  void RecomputeHeight(int p_well_height, int n_well_height);
 
  private:
   bool is_orient_N_ = true; // orientation of this cluster
