@@ -246,9 +246,9 @@ class BlockTypeMultiWell {
 
   void CheckLegality();
 
-  int NwellHeight(size_t index) const;
+  int NwellHeight(size_t index, bool is_flipped = false) const;
 
-  int PwellHeight(size_t index) const;
+  int PwellHeight(size_t index, bool is_flipped = false) const;
 
   RectI &NwellRect(size_t index);
 

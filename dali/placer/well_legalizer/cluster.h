@@ -92,7 +92,7 @@ class Cluster {
   bool IsBelowTopBoundary(Block *p_blk) const;
   bool IsBelowMiddleLine(Block *p_blk) const;
   bool IsOverlap(Block *p_blk, int criterion) const;
-  bool HasSameOrientation(Block *p_blk) const;
+  bool IsOrientMatching(Block *p_blk) const;
   void AddBlockRegion(Block *p_blk, size_t region_id);
   bool AttemptToAdd(Block *p_blk);
   BlockOrient ComputeOrient(Block *p_blk);

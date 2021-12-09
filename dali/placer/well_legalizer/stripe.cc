@@ -88,18 +88,30 @@ void Stripe::UpdateFrontCluster(int p_height, int n_height) {
   }
   cluster_list_[front_id_].SetLLX(lx_);
   cluster_list_[front_id_].SetWidth(width_);
+
+  // determine the orientation of lower y of the front cluster
+  int ly;
+  bool is_orient_N;
   if (front_id_ == 0) {
-    cluster_list_[front_id_].SetLLY(ly_);
-    cluster_list_[front_id_].SetOrient(is_first_row_orient_N_);
+    ly = ly_;
+    is_orient_N = is_first_row_orient_N_;
   } else {
-    cluster_list_[front_id_].SetLLY(cluster_list_[front_id_ - 1].URY());
-    cluster_list_[front_id_].SetOrient(!cluster_list_[front_id_
-        - 1].IsOrientN());
+    ly = cluster_list_[front_id_ - 1].URY();
+    is_orient_N = !cluster_list_[front_id_-1].IsOrientN();
   }
+  cluster_list_[front_id_].SetLLY(ly);
+  cluster_list_[front_id_].SetOrient(is_orient_N);
+
   cluster_list_[front_id_].UpdateWellHeightFromBottom(p_height, n_height);
   cluster_list_[front_id_].UpdateSubClusters();
 }
 
+/****
+ * Add following clusters and set orientation accordingly.
+ * Add the corresponding block region into these clusters based on row orientation and block orientation.
+ *
+ * @param p_blk
+ */
 void Stripe::SimplyAddFollowingClusters(Block *p_blk) {
   BlockTypeMultiWell *well = p_blk->TypePtr()->MultiWellPtr();
   size_t row_count = well->RowCount();
@@ -108,6 +120,7 @@ void Stripe::SimplyAddFollowingClusters(Block *p_blk) {
     if (row_index >= cluster_list_.size()) {
       cluster_list_.emplace_back();
     }
+    cluster_list_[row_index].SetOrient(!cluster_list_[row_index-1].IsOrientN());
     cluster_list_[row_index].AddBlockRegion(p_blk, i);
   }
 }
@@ -115,7 +128,6 @@ void Stripe::SimplyAddFollowingClusters(Block *p_blk) {
 bool Stripe::AddBlockToFrontCluster(Block *p_blk) {
   bool res;
   res = cluster_list_[front_id_].AttemptToAdd(p_blk);
-  std::cout << p_blk->Name() << " " << res << "\n";
   if (!res) return false;
 
   // add this block to other clusters above the front cluster
@@ -129,27 +141,15 @@ size_t Stripe::FitBlocksToFrontSpace(size_t start_id) {
   std::vector<Block *> skipped_blks;
 
   size_t blks_sz = block_list_.size();
-  std::cout << "stripe " << lx_ << " " << ly_ << " "
-            << URX() << " " << URY() << "\n";
-  std::cout << blks_sz << "\n";
   for (size_t i = start_id; i < blks_sz; ++i) {
     Block *p_blk = block_list_[i];
-    std::cout << "cluster " << cluster_list_[front_id_].LLX() << " "
-              << cluster_list_[front_id_].LLY()
-              << " " << cluster_list_[front_id_].URX() << " "
-              << cluster_list_[front_id_].URY()
-              << "\n";
-    std::cout << "block " << p_blk->LLX() << " " << p_blk->LLY() << " "
-              << p_blk->URX() << " " << p_blk->URY() << "\n";
     if (!cluster_list_[front_id_].IsOverlap(p_blk, 1)) {
-      std::cout << "not overlap\n";
       break;
     }
-    if (cluster_list_[front_id_].HasSameOrientation(p_blk)) {
+    if (cluster_list_[front_id_].IsOrientMatching(p_blk)) {
       if (AddBlockToFrontCluster(p_blk)) {
         legalized_blks.push_back(p_blk);
       } else {
-        std::cout << "fail to add\n";
         break;
       }
     } else {
@@ -180,7 +180,7 @@ void Stripe::UpdateRemainingClusters(int p_height, int n_height) {
   for (size_t i = front_id_ + 1; i < sz; ++i) {
     cluster_list_[i].SetLLX(lx_);
     cluster_list_[i].SetWidth(width_);
-    cluster_list_[i].SetLLY(cluster_list_[i-1].URY());
+    cluster_list_[i].SetLLY(cluster_list_[i - 1].URY());
     cluster_list_[i].RecomputeHeight(p_height, n_height);
   }
 }

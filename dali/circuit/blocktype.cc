@@ -281,13 +281,21 @@ void BlockTypeMultiWell::CheckLegality() {
   }
 }
 
-int BlockTypeMultiWell::NwellHeight(size_t index) const {
-  DaliExpects(index < RowCount(), "Out of bound");
+int BlockTypeMultiWell::NwellHeight(size_t index, bool is_flipped) const {
+  size_t row_cnt = RowCount();
+  DaliExpects(index < row_cnt, "Out of bound");
+  if (is_flipped) {
+    index = row_cnt - 1 - index;
+  }
   return n_rects_[index].Height();
 }
 
-int BlockTypeMultiWell::PwellHeight(size_t index) const {
-  DaliExpects(index < RowCount(), "Out of bound");
+int BlockTypeMultiWell::PwellHeight(size_t index, bool is_flipped) const {
+  size_t row_cnt = RowCount();
+  DaliExpects(index < row_cnt, "Out of bound");
+  if (is_flipped) {
+    index = row_cnt - 1 - index;
+  }
   return p_rects_[index].Height();
 }
 

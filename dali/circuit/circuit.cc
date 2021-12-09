@@ -1080,7 +1080,7 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
           } while (line.find("END REGION") == std::string::npos && !ist.eof());
         }
       } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
-      well_ptr->Report();
+      //well_ptr->Report();
       well_ptr->CheckLegality();
     }
   }
@@ -1444,7 +1444,6 @@ void Circuit::GenMATLABWellTable(
   DaliExpects(ost.is_open(), "Cannot open output file: " + unplug_file);
   if (!only_well_tap) {
     for (auto &block: design_.blocks_) {
-      std::cout << block.Id() << "/" << design_.blocks_.size() << " " << block.Name() << "\n";
       block.ExportWellToMatlabPatchRect(ost);
     }
   }
