@@ -62,4 +62,79 @@ void GenClusterTable(
   ost.close();
 }
 
+void GenMATLABWellFillingTable(
+    std::string const &base_file_name,
+    std::vector<ClusterStripe> &col_list,
+    int bottom_boundary,
+    int top_boundary,
+    int well_emit_mode
+) {
+  std::string p_file = base_file_name + "_pwell.txt";
+  std::ofstream ostp(p_file.c_str());
+  DaliExpects(ostp.is_open(), "Cannot open output file: " + p_file);
+
+  std::string n_file = base_file_name + "_nwell.txt";
+  std::ofstream ostn(n_file.c_str());
+  DaliExpects(ostn.is_open(), "Cannot open output file: " + n_file);
+
+  for (auto &col: col_list) {
+    for (auto &stripe: col.stripe_list_) {
+      std::vector<int> pn_edge_list;
+      if (stripe.is_bottom_up_) {
+        pn_edge_list.reserve(stripe.cluster_list_.size() + 2);
+        pn_edge_list.push_back(bottom_boundary);
+      } else {
+        pn_edge_list.reserve(stripe.cluster_list_.size() + 2);
+        pn_edge_list.push_back(top_boundary);
+      }
+      for (auto &cluster: stripe.cluster_list_) {
+        pn_edge_list.push_back(cluster.LLY() + cluster.PNEdge());
+      }
+      if (stripe.is_bottom_up_) {
+        pn_edge_list.push_back(top_boundary);
+      } else {
+        pn_edge_list.push_back(bottom_boundary);
+        std::reverse(pn_edge_list.begin(), pn_edge_list.end());
+      }
+
+      bool is_p_well_rect = stripe.is_first_row_orient_N_;
+      int lx = stripe.LLX();
+      int ux = stripe.URX();
+      int ly;
+      int uy;
+      int rect_count = (int) pn_edge_list.size() - 1;
+      for (int i = 0; i < rect_count; ++i) {
+        ly = pn_edge_list[i];
+        uy = pn_edge_list[i + 1];
+        if (is_p_well_rect) {
+          if (well_emit_mode != 1) {
+            ostp << lx << "\t"
+                 << ux << "\t"
+                 << ux << "\t"
+                 << lx << "\t"
+                 << ly << "\t"
+                 << ly << "\t"
+                 << uy << "\t"
+                 << uy << "\n";
+          }
+        } else {
+          if (well_emit_mode != 2) {
+            ostn << lx << "\t"
+                 << ux << "\t"
+                 << ux << "\t"
+                 << lx << "\t"
+                 << ly << "\t"
+                 << ly << "\t"
+                 << uy << "\t"
+                 << uy << "\n";
+          }
+        }
+        is_p_well_rect = !is_p_well_rect;
+      }
+    }
+  }
+  ostp.close();
+  ostn.close();
+}
+
 }

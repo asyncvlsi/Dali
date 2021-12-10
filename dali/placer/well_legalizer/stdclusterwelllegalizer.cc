@@ -1140,72 +1140,11 @@ void StdClusterWellLegalizer::GenMATLABWellTable(
 ) {
   p_ckt_->GenMATLABWellTable(name_of_file, false);
 
-  std::string p_file = name_of_file + "_pwell.txt";
-  std::ofstream ostp(p_file.c_str());
-  DaliExpects(ostp.is_open(), "Cannot open output file: " + p_file);
-
-  std::string n_file = name_of_file + "_nwell.txt";
-  std::ofstream ostn(n_file.c_str());
-  DaliExpects(ostn.is_open(), "Cannot open output file: " + n_file);
-
-  for (auto &col: col_list_) {
-    for (auto &stripe: col.stripe_list_) {
-      std::vector<int> pn_edge_list;
-      if (stripe.is_bottom_up_) {
-        pn_edge_list.reserve(stripe.cluster_list_.size() + 2);
-        pn_edge_list.push_back(RegionBottom());
-      } else {
-        pn_edge_list.reserve(stripe.cluster_list_.size() + 2);
-        pn_edge_list.push_back(RegionTop());
-      }
-      for (auto &cluster: stripe.cluster_list_) {
-        pn_edge_list.push_back(cluster.LLY() + cluster.PNEdge());
-      }
-      if (stripe.is_bottom_up_) {
-        pn_edge_list.push_back(RegionTop());
-      } else {
-        pn_edge_list.push_back(RegionBottom());
-        std::reverse(pn_edge_list.begin(), pn_edge_list.end());
-      }
-
-      bool is_p_well_rect = stripe.is_first_row_orient_N_;
-      int lx = stripe.LLX();
-      int ux = stripe.URX();
-      int ly;
-      int uy;
-      int rect_count = (int) pn_edge_list.size() - 1;
-      for (int i = 0; i < rect_count; ++i) {
-        ly = pn_edge_list[i];
-        uy = pn_edge_list[i + 1];
-        if (is_p_well_rect) {
-          if (well_emit_mode != 1) {
-            ostp << lx << "\t"
-                 << ux << "\t"
-                 << ux << "\t"
-                 << lx << "\t"
-                 << ly << "\t"
-                 << ly << "\t"
-                 << uy << "\t"
-                 << uy << "\n";
-          }
-        } else {
-          if (well_emit_mode != 2) {
-            ostn << lx << "\t"
-                 << ux << "\t"
-                 << ux << "\t"
-                 << lx << "\t"
-                 << ly << "\t"
-                 << ly << "\t"
-                 << uy << "\t"
-                 << uy << "\n";
-          }
-        }
-        is_p_well_rect = !is_p_well_rect;
-      }
-    }
-  }
-  ostp.close();
-  ostn.close();
+  GenMATLABWellFillingTable(
+      name_of_file, col_list_,
+      RegionBottom(), RegionTop(),
+      well_emit_mode
+  );
 
   GenPPNP(name_of_file);
 }

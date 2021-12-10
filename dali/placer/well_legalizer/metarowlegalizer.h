@@ -42,8 +42,11 @@ class MetaRowLegalizer : public Placer {
   void StretchBlocks();
 
   bool StartPlacement() override;
-
   void GenMatlabClusterTable(std::string const &name_of_file);
+  void GenMATLABWellTable(
+      std::string const &name_of_file,
+      int well_emit_mode
+  ) override;
  private:
   StripePartitionMode stripe_mode_ = StripePartitionMode::STRICT;
   SpacePartitioner space_partitioner_;

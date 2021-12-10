@@ -144,4 +144,18 @@ void MetaRowLegalizer::GenMatlabClusterTable(std::string const &name_of_file) {
   GenClusterTable(name_of_file, col_list_);
 }
 
+void MetaRowLegalizer::GenMATLABWellTable(
+    std::string const &name_of_file,
+    int well_emit_mode
+) {
+  std::string frame_file = name_of_file + "_outline.txt";
+  p_ckt_->GenMATLABWellTable(name_of_file, false);
+  GenMATLABWellFillingTable(
+      name_of_file, col_list_,
+      RegionBottom(), RegionTop(),
+      well_emit_mode
+  );
+  GenClusterTable(name_of_file, col_list_);
+}
+
 }

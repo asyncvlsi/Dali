@@ -33,6 +33,14 @@ void GenClusterTable(
     std::vector<ClusterStripe> &col_list_
 );
 
+void GenMATLABWellFillingTable(
+    std::string const &base_file_name,
+    std::vector<ClusterStripe> &col_list,
+    int bottom_boundary,
+    int top_boundary,
+    int well_emit_mode = 0
+);
+
 }
 
 #endif //DALI_DALI_PLACER_WELL_LEGALIZER_HELPER_H_
