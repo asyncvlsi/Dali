@@ -559,10 +559,24 @@ void Cluster::RecomputeHeight(int p_well_height, int n_well_height) {
     auto *p_blk = blk_region.p_blk;
     size_t region_id = blk_region.region_id;
     BlockTypeMultiWell *well = p_blk->TypePtr()->MultiWellPtr();
-    p_well_height_ = std::max(p_well_height_, well->PwellHeight(region_id));
-    n_well_height_ = std::max(n_well_height_, well->NwellHeight(region_id));
+    int p_height = well->PwellHeight(region_id, p_blk->IsFlipped());
+    int n_height = well->NwellHeight(region_id, p_blk->IsFlipped());
+    p_well_height_ = std::max(p_well_height_, p_height);
+    n_well_height_ = std::max(n_well_height_, n_height);
   }
   height_ = p_well_height_ + n_well_height_;
+}
+
+void Cluster::InitializeBlockStretching() {
+  for (auto &blk_region: blk_regions_) {
+    auto *p_blk = blk_region.p_blk;
+    size_t region_id = blk_region.region_id;
+    BlockTypeMultiWell *well = p_blk->TypePtr()->MultiWellPtr();
+    size_t row_cnt = well->RowCount();
+    if (region_id == 0) {
+      p_blk->StretchLengths().resize(row_cnt-1, 0);
+    }
+  }
 }
 
 void ClusterSegment::Merge(

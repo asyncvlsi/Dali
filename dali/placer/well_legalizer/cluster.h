@@ -98,6 +98,7 @@ class Cluster {
   BlockOrient ComputeOrient(Block *p_blk);
   void SubClusterLegalize();
   void RecomputeHeight(int p_well_height, int n_well_height);
+  void InitializeBlockStretching();
 
  private:
   bool is_orient_N_ = true; // orientation of this cluster

@@ -299,6 +299,27 @@ int BlockTypeMultiWell::PwellHeight(size_t index, bool is_flipped) const {
   return p_rects_[index].Height();
 }
 
+/****
+ * Distance of NP-edge between Region index and Region index+1
+ * @param index
+ * @param is_flipped
+ * @return
+ */
+int BlockTypeMultiWell::AdjacentRegionEdgeDistance(
+    size_t index, bool is_flipped
+) const {
+  size_t row_cnt = RowCount();
+  DaliExpects(index + 1 < row_cnt, "Out of bound");
+  if (is_flipped) {
+    index = row_cnt - 2 - index;
+  }
+  if (n_rects_[index].LLY() > p_rects_[index].LLY()) {
+    return n_rects_[index].Height() + n_rects_[index + 1].Height();
+  } else {
+    return p_rects_[index].Height() + p_rects_[index + 1].Height();
+  }
+}
+
 RectI &BlockTypeMultiWell::NwellRect(size_t index) {
   DaliExpects(index < RowCount(), "Out of bound");
   return n_rects_[index];

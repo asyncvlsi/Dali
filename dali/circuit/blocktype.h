@@ -250,6 +250,8 @@ class BlockTypeMultiWell {
 
   int PwellHeight(size_t index, bool is_flipped = false) const;
 
+  int AdjacentRegionEdgeDistance(size_t index, bool is_flipped = false) const;
+
   RectI &NwellRect(size_t index);
 
   RectI &PwellRect(size_t index);

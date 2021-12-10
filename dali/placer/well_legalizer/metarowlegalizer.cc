@@ -94,14 +94,21 @@ bool MetaRowLegalizer::StripeLegalizationBottomUp(Stripe &stripe) {
   return true;
 }
 
-bool MetaRowLegalizer::BlockClustering() {
+bool MetaRowLegalizer::GroupBlocksToClusters() {
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
       StripeLegalizationBottomUp(stripe);
     }
   }
-
   return true;
+}
+
+void MetaRowLegalizer::StretchBlocks() {
+  for (auto &col: col_list_) {
+    for (auto &stripe: col.stripe_list_) {
+      stripe.UpdateBlockStretchLength();
+    }
+  }
 }
 
 bool MetaRowLegalizer::StartPlacement() {
@@ -116,7 +123,8 @@ bool MetaRowLegalizer::StartPlacement() {
 
   CheckWellInfo();
   PartitionSpaceAndBlocks();
-  BlockClustering();
+  GroupBlocksToClusters();
+  StretchBlocks();
 
   ReportHPWL();
 

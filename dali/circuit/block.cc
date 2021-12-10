@@ -157,6 +157,32 @@ double Block::OverlapArea(const Block &blk) const {
   return overlap_area;
 }
 
+void Block::SetStretchLength(size_t index, int length) {
+  size_t sz = stretch_length_.size();
+  DaliExpects(index < sz, "Out of bound");
+  if (IsFlipped()) {
+    index = sz - 1 - index;
+  }
+  stretch_length_[index] = length;
+}
+
+std::vector<int> &Block::StretchLengths() {
+  return stretch_length_;
+}
+
+int Block::CumulativeStretchLength(size_t index) {
+  if (TypePtr()->MultiWellPtr()->RowCount() == 1) return 0;
+
+  size_t sz = stretch_length_.size();
+  DaliExpects(index <= sz, "Out of bound");
+
+  int res = 0;
+  for (size_t i = 0; i < index; ++i) {
+    res += stretch_length_[i];
+  }
+  return res;
+}
+
 void Block::Report() {
   BOOST_LOG_TRIVIAL(info)
     << "  block name: " << Name() << "\n"
@@ -194,32 +220,33 @@ void Block::ExportWellToMatlabPatchRect(std::ofstream &ost) {
 
   size_t sz = n_well_shapes.size();
   for (size_t i = 0; i < sz; ++i) {
+    int length = CumulativeStretchLength(i);
     if (Orient() == N) {
       RectD n_rect(
           LLX() + n_well_shapes[i].LLX(),
-          LLY() + n_well_shapes[i].LLY(),
+          LLY() + (n_well_shapes[i].LLY() + length),
           LLX() + n_well_shapes[i].URX(),
-          LLY() + n_well_shapes[i].URY()
+          LLY() + (n_well_shapes[i].URY() + length)
       );
       RectD p_rect(
           LLX() + p_well_shapes[i].LLX(),
-          LLY() + p_well_shapes[i].LLY(),
+          LLY() + (p_well_shapes[i].LLY() + length),
           LLX() + p_well_shapes[i].URX(),
-          LLY() + p_well_shapes[i].URY()
+          LLY() + (p_well_shapes[i].URY() + length)
       );
       SaveMatlabPatchRegion(ost, n_rect, p_rect);
     } else if (Orient() == FS) {
       RectD n_rect(
           LLX() + n_well_shapes[i].LLX(),
-          URY() - n_well_shapes[i].URY(),
+          URY() - (n_well_shapes[i].URY() + length),
           LLX() + n_well_shapes[i].URX(),
-          URY() - n_well_shapes[i].LLY()
+          URY() - (n_well_shapes[i].LLY() + length)
       );
       RectD p_rect(
           LLX() + p_well_shapes[i].LLX(),
-          URY() - p_well_shapes[i].URY(),
+          URY() - (p_well_shapes[i].URY() + length),
           LLX() + p_well_shapes[i].URX(),
-          URY() - p_well_shapes[i].LLY()
+          URY() - (p_well_shapes[i].LLY() + length)
       );
       SaveMatlabPatchRegion(ost, n_rect, p_rect);
     } else {

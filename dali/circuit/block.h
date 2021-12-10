@@ -23,6 +23,7 @@
 
 #include <iostream>
 #include <map>
+#include <numeric>
 #include <string>
 #include <vector>
 
@@ -103,7 +104,7 @@ class Block {
   double URX() const { return llx_ + Width(); }
 
   // get upper right y coordinate
-  double URY() const { return lly_ + Height(); }
+  double URY() const { return lly_ + Height() + std::accumulate(stretch_length_.begin(), stretch_length_.end(), 0); }
 
   // get center x coordinate
   double X() const { return llx_ + Width() / 2.0; }
@@ -219,6 +220,14 @@ class Block {
   // returns the overlap area between this Block and Block @param blk
   double OverlapArea(const Block &blk) const;
 
+  // set stretch length
+  void SetStretchLength(size_t index, int length);
+
+  // returns the stretching lengths
+  std::vector<int> &StretchLengths();
+
+  int CumulativeStretchLength(size_t index);
+
   /****Report info of this Block, for debugging purposes****/
   void Report();
   void ReportNet();
@@ -237,6 +246,8 @@ class Block {
   PlaceStatus place_status_; // placement status, i.e, PLACED, FIXED, UNPLACED
   BlockOrient orient_; // orientation, normally, N or FS
   BlockAux *aux_ptr_; // points to auxiliary information if needed
+
+  std::vector<int> stretch_length_;
 };
 
 class BlockAux {

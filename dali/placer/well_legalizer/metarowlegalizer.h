@@ -37,7 +37,9 @@ class MetaRowLegalizer : public Placer {
   void PartitionSpaceAndBlocks();
 
   bool StripeLegalizationBottomUp(Stripe &stripe);
-  bool BlockClustering();
+  bool GroupBlocksToClusters();
+
+  void StretchBlocks();
 
   bool StartPlacement() override;
 

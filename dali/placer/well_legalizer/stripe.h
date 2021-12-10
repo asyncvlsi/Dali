@@ -63,6 +63,7 @@ struct Stripe {
   size_t FitBlocksToFrontSpace(size_t start_id);
   void LegalizeFrontCluster();
   void UpdateRemainingClusters(int p_height, int n_height);
+  void UpdateBlockStretchLength();
 };
 
 struct ClusterStripe {

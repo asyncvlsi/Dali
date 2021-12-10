@@ -97,7 +97,7 @@ void Stripe::UpdateFrontCluster(int p_height, int n_height) {
     is_orient_N = is_first_row_orient_N_;
   } else {
     ly = cluster_list_[front_id_ - 1].URY();
-    is_orient_N = !cluster_list_[front_id_-1].IsOrientN();
+    is_orient_N = !cluster_list_[front_id_ - 1].IsOrientN();
   }
   cluster_list_[front_id_].SetLLY(ly);
   cluster_list_[front_id_].SetOrient(is_orient_N);
@@ -120,7 +120,8 @@ void Stripe::SimplyAddFollowingClusters(Block *p_blk) {
     if (row_index >= cluster_list_.size()) {
       cluster_list_.emplace_back();
     }
-    cluster_list_[row_index].SetOrient(!cluster_list_[row_index-1].IsOrientN());
+    bool is_orient_N = !cluster_list_[row_index - 1].IsOrientN();
+    cluster_list_[row_index].SetOrient(is_orient_N);
     cluster_list_[row_index].AddBlockRegion(p_blk, i);
   }
 }
@@ -182,6 +183,33 @@ void Stripe::UpdateRemainingClusters(int p_height, int n_height) {
     cluster_list_[i].SetWidth(width_);
     cluster_list_[i].SetLLY(cluster_list_[i - 1].URY());
     cluster_list_[i].RecomputeHeight(p_height, n_height);
+  }
+}
+
+void Stripe::UpdateBlockStretchLength() {
+  for (auto &cluster: cluster_list_) {
+    cluster.InitializeBlockStretching();
+  }
+
+  size_t sz = cluster_list_.size();
+  for (size_t i = 1; i < sz; ++i) {
+    Cluster &cur_cluster = cluster_list_[i];
+    Cluster &pre_cluster = cluster_list_[i - 1];
+    for (auto &blk_region: cur_cluster.blk_regions_) {
+      size_t id = blk_region.region_id;
+      if (id >= 1) {
+        Block *p_blk = blk_region.p_blk;
+        BlockTypeMultiWell *well = blk_region.p_blk->TypePtr()->MultiWellPtr();
+        --id;
+        int well_edge_distance =
+            well->AdjacentRegionEdgeDistance(id, p_blk->IsFlipped());
+        int actual_edge_distance =
+            (cur_cluster.LLY() + cur_cluster.PNEdge()) -
+                (pre_cluster.LLY() + pre_cluster.PNEdge());
+        int length = actual_edge_distance - well_edge_distance;
+        p_blk->SetStretchLength(id, length);
+      }
+    }
   }
 }
 
