@@ -95,7 +95,7 @@ class Cluster {
   bool IsOrientMatching(Block *p_blk) const;
   void AddBlockRegion(Block *p_blk, size_t region_id);
   bool AttemptToAdd(Block *p_blk);
-  BlockOrient ComputeOrient(Block *p_blk);
+  BlockOrient ComputeBlockOrient(Block *p_blk);
   void SubClusterLegalize();
   void RecomputeHeight(int p_well_height, int n_well_height);
   void InitializeBlockStretching();

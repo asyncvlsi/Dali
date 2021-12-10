@@ -145,12 +145,17 @@ void Cluster::SetLoc(int lx, int ly) {
 }
 
 void Cluster::AddBlock(Block *blk_ptr) {
-  BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
   blk_list_.push_back(blk_ptr);
-  blk_initial_location_.emplace_back(
-      blk_ptr->LLX(),
-      blk_ptr->LLY() + well_ptr->Pheight()
-  );
+  double y_init = blk_ptr->LLY();
+  BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
+  if (well_ptr != nullptr) {
+    y_init = blk_ptr->LLY() + well_ptr->Pheight();
+  }
+  BlockTypeMultiWell *m_well_ptr = blk_ptr->TypePtr()->MultiWellPtr();
+  if (m_well_ptr != nullptr) {
+    y_init = blk_ptr->LLY() + m_well_ptr->PwellHeight(0, false); // TODO : this seems to be unnecessary for multi-row gridded cells
+  }
+  blk_initial_location_.emplace_back(blk_ptr->LLX(), y_init);
 }
 
 std::vector<Block *> &Cluster::Blocks() {
@@ -512,14 +517,14 @@ bool Cluster::AttemptToAdd(Block *p_blk) {
     return false;
   }
 
-  sub_clusters_[min_index].blk_list_.push_back(p_blk);
+  sub_clusters_[min_index].AddBlock(p_blk);
   sub_clusters_[min_index].used_size_ += p_blk->Width();
-  p_blk->SetOrient(ComputeOrient(p_blk));
+  p_blk->SetOrient(ComputeBlockOrient(p_blk));
   AddBlockRegion(p_blk, 0);
   return true;
 }
 
-BlockOrient Cluster::ComputeOrient(Block *p_blk) {
+BlockOrient Cluster::ComputeBlockOrient(Block *p_blk) {
   DaliExpects(p_blk != nullptr, "Nullptr?");
   BlockTypeMultiWell *well = p_blk->TypePtr()->MultiWellPtr();
   BlockOrient orient = N;
@@ -534,21 +539,17 @@ BlockOrient Cluster::ComputeOrient(Block *p_blk) {
 
 void Cluster::SubClusterLegalize() {
   for (auto &sub_cluster: sub_clusters_) {
-    sub_cluster.LegalizeCompactX();
-
+    sub_cluster.MinDisplacementLegalization();
     for (auto &p_blk: sub_cluster.blk_list_) {
       BlockTypeMultiWell *well = p_blk->TypePtr()->MultiWellPtr();
+      double y_loc = sub_cluster.LLY();
       if (is_orient_N_) {
-        double y_loc = sub_cluster.LLY() + p_well_height_
-            - well->PwellHeight(0, p_blk->IsFlipped());
-        p_blk->SetLLY(y_loc);
+        y_loc += p_well_height_ - well->PwellHeight(0, p_blk->IsFlipped());
       } else {
-        double y_loc = sub_cluster.LLY() + n_well_height_
-            - well->NwellHeight(0, !p_blk->IsFlipped());
-        p_blk->SetLLY(y_loc);
+        y_loc += n_well_height_ - well->NwellHeight(0, p_blk->IsFlipped());
       }
+      p_blk->SetLLY(y_loc);
     }
-
   }
 }
 
@@ -574,7 +575,7 @@ void Cluster::InitializeBlockStretching() {
     BlockTypeMultiWell *well = p_blk->TypePtr()->MultiWellPtr();
     size_t row_cnt = well->RowCount();
     if (region_id == 0) {
-      p_blk->StretchLengths().resize(row_cnt-1, 0);
+      p_blk->StretchLengths().resize(row_cnt - 1, 0);
     }
   }
 }
