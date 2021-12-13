@@ -76,7 +76,7 @@ class BlockType {
   void SetWell(BlockTypeWell *well_ptr);
 
   // get the pointer to the well of this BlockType
-  BlockTypeWell *WellPtr() const;
+  BlockTypeWell *WellPtr() const { return well_ptr_; }
 
   // set the width of this BlockType and update its area
   void SetWidth(int width);
@@ -93,7 +93,7 @@ class BlockType {
   int Height() const { return height_; }
 
   // get the area of this BlockType
-  long int Area() const { return area_; }
+  long long Area() const { return area_; }
 
   // get the pointer to the list of cell pins
   std::vector<Pin> &PinList() { return pin_list_; }
@@ -104,10 +104,12 @@ class BlockType {
  private:
   const std::string *name_ptr_;
   int width_, height_;
-  long int area_;
+  long long area_;
   BlockTypeWell *well_ptr_ = nullptr;
   std::vector<Pin> pin_list_;
   std::map<std::string, int> pin_name_id_map_;
+
+  void UpdateArea();
 };
 
 /****

@@ -29,8 +29,7 @@ BlockType::BlockType(
 ) : name_ptr_(name_ptr),
     width_(width),
     height_(height),
-    area_((long int) width_ * (long int) height_)
-    {}
+    area_((long int) width_ * (long int) height_) {}
 
 int BlockType::GetPinId(std::string const &pin_name) const {
   auto ret = pin_name_id_map_.find(pin_name);
@@ -98,24 +97,20 @@ void BlockType::SetWell(BlockTypeWell *well_ptr) {
   well_ptr_ = well_ptr;
 }
 
-BlockTypeWell *BlockType::WellPtr() const {
-  return well_ptr_;
-}
-
 void BlockType::SetWidth(int width) {
   width_ = width;
-  area_ = (long int) width_ * (long int) height_;
+  UpdateArea();
 }
 
 void BlockType::SetHeight(int height) {
   height_ = height;
-  area_ = (long int) width_ * (long int) height_;
+  UpdateArea();
 }
 
 void BlockType::SetSize(int width, int height) {
   width_ = width;
   height_ = height;
-  area_ = (long int) width_ * (long int) height_;
+  UpdateArea();
 }
 
 void BlockType::Report() const {
@@ -131,6 +126,10 @@ void BlockType::Report() const {
       << pin_list_[it.second].OffsetY() << ")\n";
     pin_list_[it.second].Report();
   }
+}
+
+void BlockType::UpdateArea() {
+  area_ = static_cast<long long>(width_) * static_cast<long long>(height_);
 }
 
 void BlockTypeWell::AddNwellRect(int llx, int lly, int urx, int ury) {
@@ -266,8 +265,8 @@ RectI &BlockTypeWell::PwellRect(size_t index) {
 void BlockTypeWell::Report() const {
   BOOST_LOG_TRIVIAL(info)
     << "  Well of BlockType: " << type_ptr_->Name() << "\n";
-  int sz = RowCount();
-  for (int i = 0; i < sz; ++i) {
+  size_t sz = RowCount();
+  for (size_t i = 0; i < sz; ++i) {
     BOOST_LOG_TRIVIAL(info)
       << "    Pwell: " << p_rects_[i].LLX() << "  " << p_rects_[i].LLY()
       << "  " << p_rects_[i].URX() << "  " << p_rects_[i].URY() << "\n";

@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
       std::string end_macro_flag = "END " + type_name;
       BlockType *type = circuit.GetBlockTypePtr(type_name);
       double np_boundary =
-          type->WellPtr()->PnBoundary() * circuit.GridValueY();
+          type->WellPtr()->Pheight() * circuit.GridValueY();
       TypeLayerBBox type_bbox(type, np_boundary, np_boundary);
       do {
         getline(ist, line);
