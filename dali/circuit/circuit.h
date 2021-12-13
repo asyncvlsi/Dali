@@ -407,7 +407,7 @@ class Circuit {
   // set the N/P-well shape of a given BlockType, unit in micron
   void SetWellRect(
       std::string const &blk_type_name,
-      bool is_nwell,
+      bool is_n,
       double lx,
       double ly,
       double ux,

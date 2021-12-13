@@ -171,7 +171,7 @@ std::vector<int> &Block::StretchLengths() {
 }
 
 int Block::CumulativeStretchLength(size_t index) {
-  if (TypePtr()->MultiWellPtr()->RowCount() == 1) return 0;
+  if (TypePtr()->WellPtr()->RowCount() == 1) return 0;
 
   size_t sz = stretch_length_.size();
   DaliExpects(index <= sz, "Out of bound");
@@ -205,12 +205,7 @@ void Block::ReportNet() {
 void Block::ExportWellToMatlabPatchRect(std::ofstream &ost) {
   std::vector<RectI> n_well_shapes;
   std::vector<RectI> p_well_shapes;
-  BlockTypeWell *well = TypePtr()->WellPtr();
-  if (well != nullptr) {
-    n_well_shapes.push_back(well->NwellRect());
-    p_well_shapes.push_back(well->PwellRect());
-  }
-  BlockTypeMultiWell *multi_well = TypePtr()->MultiWellPtr();
+  BlockTypeWell *multi_well = TypePtr()->WellPtr();
   if (multi_well != nullptr) {
     for (size_t i = 0; i < multi_well->RowCount(); ++i) {
       n_well_shapes.push_back(multi_well->NwellRect(i));

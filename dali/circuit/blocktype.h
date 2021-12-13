@@ -24,9 +24,9 @@
 #include <map>
 #include <vector>
 
+#include "dali/circuit/pin.h"
 #include "dali/common/logging.h"
 #include "dali/common/misc.h"
-#include "pin.h"
 
 /****
  * This header file contains class BlockType and BlockTypeWell. The former contains
@@ -37,7 +37,6 @@
 namespace dali {
 
 class BlockTypeWell;
-class BlockTypeMultiWell;
 
 /****
  * The class BlockType is an abstraction of a kind of gate, like INV, NAND, NOR
@@ -73,17 +72,11 @@ class BlockType {
   // if such a pin does not exist, the return value is nullptr
   Pin *GetPinPtr(std::string const &pin_name);
 
-  // set the N/P-well information for this BlockType
+  // set the well information for this BlockType
   void SetWell(BlockTypeWell *well_ptr);
 
   // get the pointer to the well of this BlockType
   BlockTypeWell *WellPtr() const;
-
-  // set the multi-well information for this BlockType
-  void SetMultiWell(BlockTypeMultiWell *m_well_ptr);
-
-  // get the pointer to the multi-well of this BlockType
-  BlockTypeMultiWell *MultiWellPtr() const;
 
   // set the width of this BlockType and update its area
   void SetWidth(int width);
@@ -113,80 +106,12 @@ class BlockType {
   int width_, height_;
   long int area_;
   BlockTypeWell *well_ptr_ = nullptr;
-  BlockTypeMultiWell *m_well_ptr_ = nullptr;
   std::vector<Pin> pin_list_;
   std::map<std::string, int> pin_name_id_map_;
 };
 
 /****
- * This struct BlockTypeWell provides the N/P-well geometries for a BlockType.
- * Assumptions:
- *  1. BlockType has at most one rectangular N-well and at most one rectangular P-well.
- *  2. It is allowed to provide only N-well or P-well.
- *  3. If both N-well and P-well are present, they must be abutted.
- *     This is for debugging purposes, also for compact physical layout.
- *     +-----------------+
- *     |                 |
- *     |                 |
- *     |   N-well        |
- *     |                 |
- *     |                 |
- *     +-----------------+  p_n_edge_
- *     |                 |
- *     |                 |
- *     |    P-well       |
- *     |                 |
- *     |                 |
- *     +-----------------+
- * ****/
-class BlockTypeWell {
- public:
-  explicit BlockTypeWell(BlockType *type_ptr) : type_ptr_(type_ptr) {}
-
-  // get the pointer to the BlockType this well belongs to
-  BlockType *BlkTypePtr() const { return type_ptr_; }
-
-  // set the rect of N-well
-  void SetNwellRect(int lx, int ly, int ux, int uy);
-
-  // get the rect of N-well
-  const RectI &NwellRect();
-
-  // set the rect of P-well
-  void SetPwellRect(int lx, int ly, int ux, int uy);
-
-  // get the rect of P-well
-  const RectI &PwellRect();
-
-  // get the P/N well boundary
-  int PnBoundary() const { return p_n_edge_; }
-
-  // get the height of N-well
-  int Nheight() const { return type_ptr_->Height() - p_n_edge_; }
-
-  // get the height of P-well
-  int Pheight() const { return p_n_edge_; }
-
-  // set the rect of N or P well
-  void SetWellRect(bool is_n, int lx, int ly, int ux, int uy);
-
-  // check if N-well is abutted with P-well, if both exist
-  bool IsNpWellAbutted() const;
-
-  // report the information of N/P-well for debugging purposes
-  void Report() const;
-
- private:
-  BlockType *type_ptr_; // pointer to BlockType
-  bool is_n_set_ = false; // whether N-well 0 shape is set or not
-  bool is_p_set_ = false; // whether P-well 0 shape is set or not
-  RectI n_rect_; // N-well rect 0
-  RectI p_rect_; // P-well rect 0
-  int p_n_edge_ = 0; // cached N/P-well boundary 0
-};
-
-/****
- * This class BlockTypeMultiWell provides the N/P-well geometries for a BlockType.
+ * This class BlockTypeWell provides the N/P-well geometries for a BlockType.
  * Assumptions:
  *  1. BlockType has at least one well region, each of which contains both a N-well
  *     and a P-well rectangle.
@@ -220,9 +145,9 @@ class BlockTypeWell {
  *     |                 |
  *     +-----------------+
  * ****/
-class BlockTypeMultiWell {
+class BlockTypeWell {
  public:
-  explicit BlockTypeMultiWell(BlockType *type_ptr) : type_ptr_(type_ptr) {}
+  explicit BlockTypeWell(BlockType *type_ptr) : type_ptr_(type_ptr) {}
 
   void AddNwellRect(int llx, int lly, int urx, int ury);
 
@@ -257,6 +182,10 @@ class BlockTypeMultiWell {
   RectI &PwellRect(size_t index);
 
   void Report() const;
+
+  /**** for old code ****/
+  int Pheight();
+  int Nheight();
 
  private:
   BlockType *type_ptr_ = nullptr;

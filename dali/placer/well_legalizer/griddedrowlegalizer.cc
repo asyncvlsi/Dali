@@ -18,7 +18,7 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#include "metarowlegalizer.h"
+#include "griddedrowlegalizer.h"
 
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
@@ -28,7 +28,7 @@
 
 namespace dali {
 
-void MetaRowLegalizer::CheckWellInfo() {
+void GriddedRowLegalizer::CheckWellInfo() {
   for (auto &multi_well: p_ckt_->tech().MultiWells()) {
     multi_well.CheckLegality();
   }
@@ -41,16 +41,16 @@ void MetaRowLegalizer::CheckWellInfo() {
   well_spacing_ = std::max(same_spacing, op_spacing);
 
   BlockType *well_tap_cell_ = (p_ckt_->tech().WellTapCellPtrs()[0]);
-  auto *tap_cell_well = well_tap_cell_->MultiWellPtr();
+  auto *tap_cell_well = well_tap_cell_->WellPtr();
   tap_cell_p_height_ = tap_cell_well->PwellHeight(0);
   tap_cell_n_height_ = tap_cell_well->NwellHeight(0);
 }
 
-void MetaRowLegalizer::SetPartitionMode(StripePartitionMode mode) {
+void GriddedRowLegalizer::SetPartitionMode(StripePartitionMode mode) {
   stripe_mode_ = mode;
 }
 
-void MetaRowLegalizer::PartitionSpaceAndBlocks() {
+void GriddedRowLegalizer::PartitionSpaceAndBlocks() {
   space_partitioner_.SetCircuit(p_ckt_);
   space_partitioner_.SetOutput(&col_list_);
   space_partitioner_.SetReservedSpaceToBoundaries(
@@ -60,8 +60,8 @@ void MetaRowLegalizer::PartitionSpaceAndBlocks() {
   space_partitioner_.StartPartitioning();
 }
 
-bool MetaRowLegalizer::StripeLegalizationBottomUp(Stripe &stripe) {
-  stripe.cluster_list_.clear();
+bool GriddedRowLegalizer::StripeLegalizationBottomUp(Stripe &stripe) {
+  stripe.gridded_rows_.clear();
   stripe.contour_ = stripe.LLY();
   stripe.front_id_ = -1;
   stripe.is_bottom_up_ = true;
@@ -76,25 +76,17 @@ bool MetaRowLegalizer::StripeLegalizationBottomUp(Stripe &stripe) {
   );
 
   size_t processed_blk_cnt = 0;
-  //int count = 0;
   while (processed_blk_cnt < stripe.block_list_.size()) {
     stripe.UpdateFrontCluster(tap_cell_p_height_, tap_cell_n_height_);
     processed_blk_cnt = stripe.FitBlocksToFrontSpace(processed_blk_cnt);
     stripe.LegalizeFrontCluster();
-    //++count;
-    //if (count == 20) {
-    //  stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_);
-    //  GenMatlabClusterTable("sc_result");
-    //  GenMATLABWellTable("scw", 0);
-    //  exit(1);
-    //}
   }
   stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_);
 
   return true;
 }
 
-bool MetaRowLegalizer::GroupBlocksToClusters() {
+bool GriddedRowLegalizer::GroupBlocksToClusters() {
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
       StripeLegalizationBottomUp(stripe);
@@ -103,7 +95,7 @@ bool MetaRowLegalizer::GroupBlocksToClusters() {
   return true;
 }
 
-void MetaRowLegalizer::StretchBlocks() {
+void GriddedRowLegalizer::StretchBlocks() {
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
       stripe.UpdateBlockStretchLength();
@@ -111,10 +103,10 @@ void MetaRowLegalizer::StretchBlocks() {
   }
 }
 
-bool MetaRowLegalizer::StartPlacement() {
+bool GriddedRowLegalizer::StartPlacement() {
   BOOST_LOG_TRIVIAL(info)
     << "---------------------------------------\n"
-    << "Start Meta-row Well Legalization\n";
+    << "Start Gridded Row Well Legalization\n";
 
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
@@ -138,13 +130,13 @@ bool MetaRowLegalizer::StartPlacement() {
   return is_successful;
 }
 
-void MetaRowLegalizer::GenMatlabClusterTable(std::string const &name_of_file) {
+void GriddedRowLegalizer::GenMatlabClusterTable(std::string const &name_of_file) {
   std::string frame_file = name_of_file + "_outline.txt";
   GenMATLABTable(frame_file);
   GenClusterTable(name_of_file, col_list_);
 }
 
-void MetaRowLegalizer::GenMATLABWellTable(
+void GriddedRowLegalizer::GenMATLABWellTable(
     std::string const &name_of_file,
     int well_emit_mode
 ) {

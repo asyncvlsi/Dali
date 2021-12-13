@@ -115,10 +115,10 @@ void StdClusterWellLegalizer::CreateClusterAndAppendSingleWellBlock(
     Stripe &stripe,
     Block &blk
 ) {
-  stripe.cluster_list_.emplace_back();
-  Cluster *front_cluster = &(stripe.cluster_list_.back());
-  front_cluster->Blocks().reserve(stripe.max_blk_capacity_per_cluster_);
-  front_cluster->AddBlock(&blk);
+  stripe.gridded_rows_.emplace_back();
+  GriddedRow *front_row = &(stripe.gridded_rows_.back());
+  front_row->Blocks().reserve(stripe.max_blk_capacity_per_cluster_);
+  front_row->AddBlock(&blk);
 
   int width = blk.Width();
   int init_y = (int) std::round(blk.LLY());
@@ -130,19 +130,19 @@ void StdClusterWellLegalizer::CreateClusterAndAppendSingleWellBlock(
 
   //int num_of_tap_cell = (int) std::ceil(stripe.Width() / max_unplug_length_);
   int num_of_tap_cell = 2;
-  front_cluster->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_
-                                 + num_of_tap_cell * space_to_well_tap_);
-  front_cluster->UpdateWellHeightFromBottom(tap_cell_p_height_,
-                                            tap_cell_n_height_);
-  front_cluster->UpdateWellHeightFromBottom(p_well_height, n_well_height);
-  front_cluster->SetLLY(init_y);
-  front_cluster->SetLLX(stripe.LLX());
-  front_cluster->SetWidth(stripe.Width());
+  front_row->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_
+                             + num_of_tap_cell * space_to_well_tap_);
+  front_row->UpdateWellHeightFromBottom(tap_cell_p_height_,
+                                        tap_cell_n_height_);
+  front_row->UpdateWellHeightFromBottom(p_well_height, n_well_height);
+  front_row->SetLLY(init_y);
+  front_row->SetLLX(stripe.LLX());
+  front_row->SetWidth(stripe.Width());
 
-  stripe.front_cluster_ = front_cluster;
+  stripe.front_row_ = front_row;
   stripe.cluster_count_ += 1;
-  stripe.used_height_ += front_cluster->Height();
-  stripe.contour_ = front_cluster->URY();
+  stripe.used_height_ += front_row->Height();
+  stripe.contour_ = front_row->URY();
 }
 
 void StdClusterWellLegalizer::AppendSingleWellBlockToFrontCluster(
@@ -154,33 +154,32 @@ void StdClusterWellLegalizer::AppendSingleWellBlockToFrontCluster(
   int p_well_height = blk_well->Pheight();
   int n_well_height = blk_well->Nheight();
 
-  Cluster *front_cluster = stripe.front_cluster_;
-  front_cluster->AddBlock(&blk);
-  front_cluster->UseSpace(width);
-  if (p_well_height > front_cluster->PHeight()
-      || n_well_height > front_cluster->NHeight()) {
-    int old_height = front_cluster->Height();
-    front_cluster->UpdateWellHeightFromBottom(p_well_height, n_well_height);
-    stripe.used_height_ += front_cluster->Height() - old_height;
+  GriddedRow *front_row = stripe.front_row_;
+  front_row->AddBlock(&blk);
+  front_row->UseSpace(width);
+  if (p_well_height > front_row->PHeight()
+      || n_well_height > front_row->NHeight()) {
+    int old_height = front_row->Height();
+    front_row->UpdateWellHeightFromBottom(p_well_height, n_well_height);
+    stripe.used_height_ += front_row->Height() - old_height;
   }
-  stripe.contour_ = front_cluster->URY();
+  stripe.contour_ = front_row->URY();
 }
 
 void StdClusterWellLegalizer::AppendBlockToColBottomUp(
     Stripe &stripe,
     Block &blk
 ) {
-  bool is_no_cluster_in_col = (stripe.contour_ == stripe.LLY());
-  bool is_new_cluster_needed = is_no_cluster_in_col;
-  if (!is_new_cluster_needed) {
-    Cluster *front_cluster = stripe.front_cluster_;
-    bool is_not_in_top_cluster = stripe.contour_ <= blk.LLY();
-    bool is_top_cluster_full =
-        front_cluster->UsedSize() + blk.Width() > stripe.width_;
-    is_new_cluster_needed = is_not_in_top_cluster || is_top_cluster_full;
+  bool is_no_row_in_col = (stripe.contour_ == stripe.LLY());
+  bool is_new_row_needed = is_no_row_in_col;
+  if (!is_new_row_needed) {
+    GriddedRow *front_row = stripe.front_row_;
+    bool is_not_in_top_row = stripe.contour_ <= blk.LLY();
+    bool is_top_row_full = front_row->UsedSize() + blk.Width() > stripe.width_;
+    is_new_row_needed = is_not_in_top_row || is_top_row_full;
   }
 
-  if (is_new_cluster_needed) {
+  if (is_new_row_needed) {
     CreateClusterAndAppendSingleWellBlock(stripe, blk);
   } else {
     AppendSingleWellBlockToFrontCluster(stripe, blk);
@@ -191,55 +190,55 @@ void StdClusterWellLegalizer::AppendBlockToColTopDown(
     Stripe &stripe,
     Block &blk
 ) {
-  bool is_no_cluster = stripe.cluster_list_.empty();
-  bool is_new_cluster_needed = is_no_cluster;
-  if (!is_new_cluster_needed) {
-    bool is_not_in_top_cluster = stripe.contour_ >= blk.URY();
-    bool is_top_cluster_full =
-        stripe.front_cluster_->UsedSize() + blk.Width() > stripe.width_;
-    is_new_cluster_needed = is_not_in_top_cluster || is_top_cluster_full;
+  bool is_no_row = stripe.gridded_rows_.empty();
+  bool is_new_row_needed = is_no_row;
+  if (!is_new_row_needed) {
+    bool is_not_in_top_row = stripe.contour_ >= blk.URY();
+    bool is_top_row_full =
+        stripe.front_row_->UsedSize() + blk.Width() > stripe.width_;
+    is_new_row_needed = is_not_in_top_row || is_top_row_full;
   }
 
   int width = blk.Width();
   int init_y = (int) std::round(blk.URY());
   init_y = std::min(init_y, stripe.contour_);
 
-  Cluster *front_cluster;
+  GriddedRow *front_row;
   auto *blk_well = blk.TypePtr()->WellPtr();
   int p_well_height = blk_well->Pheight();
   int n_well_height = blk_well->Nheight();
-  if (is_new_cluster_needed) {
-    stripe.cluster_list_.emplace_back();
-    front_cluster = &(stripe.cluster_list_.back());
-    front_cluster->Blocks().reserve(stripe.max_blk_capacity_per_cluster_);
-    front_cluster->AddBlock(&blk);
+  if (is_new_row_needed) {
+    stripe.gridded_rows_.emplace_back();
+    front_row = &(stripe.gridded_rows_.back());
+    front_row->Blocks().reserve(stripe.max_blk_capacity_per_cluster_);
+    front_row->AddBlock(&blk);
     //int num_of_tap_cell = (int) std::ceil(stripe.Width() / max_unplug_length_);
     int num_of_tap_cell = 2;
-    front_cluster->SetUsedSize(
+    front_row->SetUsedSize(
         width + num_of_tap_cell * well_tap_cell_width_
             + num_of_tap_cell * space_to_well_tap_);
-    front_cluster->UpdateWellHeightFromTop(tap_cell_p_height_,
-                                           tap_cell_n_height_);
-    front_cluster->UpdateWellHeightFromTop(p_well_height, n_well_height);
-    front_cluster->SetURY(init_y);
-    front_cluster->SetLLX(stripe.LLX());
-    front_cluster->SetWidth(stripe.Width());
+    front_row->UpdateWellHeightFromTop(tap_cell_p_height_,
+                                       tap_cell_n_height_);
+    front_row->UpdateWellHeightFromTop(p_well_height, n_well_height);
+    front_row->SetURY(init_y);
+    front_row->SetLLX(stripe.LLX());
+    front_row->SetWidth(stripe.Width());
 
-    stripe.front_cluster_ = front_cluster;
+    stripe.front_row_ = front_row;
     stripe.cluster_count_ += 1;
-    stripe.used_height_ += front_cluster->Height();
+    stripe.used_height_ += front_row->Height();
   } else {
-    front_cluster = stripe.front_cluster_;
-    front_cluster->AddBlock(&blk);
-    front_cluster->UseSpace(width);
-    if (p_well_height > front_cluster->PHeight()
-        || n_well_height > front_cluster->NHeight()) {
-      int old_height = front_cluster->Height();
-      front_cluster->UpdateWellHeightFromTop(p_well_height, n_well_height);
-      stripe.used_height_ += front_cluster->Height() - old_height;
+    front_row = stripe.front_row_;
+    front_row->AddBlock(&blk);
+    front_row->UseSpace(width);
+    if (p_well_height > front_row->PHeight()
+        || n_well_height > front_row->NHeight()) {
+      int old_height = front_row->Height();
+      front_row->UpdateWellHeightFromTop(p_well_height, n_well_height);
+      stripe.used_height_ += front_row->Height() - old_height;
     }
   }
-  stripe.contour_ = front_cluster->LLY();
+  stripe.contour_ = front_row->LLY();
 }
 
 void StdClusterWellLegalizer::AppendBlockToColBottomUpCompact(
@@ -249,7 +248,7 @@ void StdClusterWellLegalizer::AppendBlockToColBottomUpCompact(
   bool is_new_cluster_needed = (stripe.contour_ == stripe.LLY());
   if (!is_new_cluster_needed) {
     bool is_top_cluster_full =
-        stripe.front_cluster_->UsedSize() + blk.Width() > stripe.width_;
+        stripe.front_row_->UsedSize() + blk.Width() > stripe.width_;
     is_new_cluster_needed = is_top_cluster_full;
   }
 
@@ -257,13 +256,13 @@ void StdClusterWellLegalizer::AppendBlockToColBottomUpCompact(
   int init_y = (int) std::round(blk.LLY());
   init_y = std::max(init_y, stripe.contour_);
 
-  Cluster *front_cluster;
+  GriddedRow *front_cluster;
   auto *well = blk.TypePtr()->WellPtr();
   int p_well_height = well->Pheight();
   int n_well_height = well->Nheight();
   if (is_new_cluster_needed) {
-    stripe.cluster_list_.emplace_back();
-    front_cluster = &(stripe.cluster_list_.back());
+    stripe.gridded_rows_.emplace_back();
+    front_cluster = &(stripe.gridded_rows_.back());
     front_cluster->Blocks().reserve(stripe.max_blk_capacity_per_cluster_);
     front_cluster->AddBlock(&blk);
     //int num_of_tap_cell = (int) std::ceil(stripe.Width() / max_unplug_length_);
@@ -278,11 +277,11 @@ void StdClusterWellLegalizer::AppendBlockToColBottomUpCompact(
     front_cluster->SetWidth(stripe.Width());
     front_cluster->UpdateWellHeightFromBottom(p_well_height, n_well_height);
 
-    stripe.front_cluster_ = front_cluster;
+    stripe.front_row_ = front_cluster;
     stripe.cluster_count_ += 1;
     stripe.used_height_ += front_cluster->Height();
   } else {
-    front_cluster = stripe.front_cluster_;
+    front_cluster = stripe.front_row_;
     front_cluster->AddBlock(&blk);
     front_cluster->UseSpace(width);
     if (p_well_height > front_cluster->PHeight()
@@ -302,7 +301,7 @@ void StdClusterWellLegalizer::AppendBlockToColTopDownCompact(
   bool is_new_cluster_needed = (stripe.contour_ == stripe.URY());
   if (!is_new_cluster_needed) {
     bool is_top_cluster_full =
-        stripe.front_cluster_->UsedSize() + blk.Width() > stripe.width_;
+        stripe.front_row_->UsedSize() + blk.Width() > stripe.width_;
     is_new_cluster_needed = is_top_cluster_full;
   }
 
@@ -310,13 +309,13 @@ void StdClusterWellLegalizer::AppendBlockToColTopDownCompact(
   int init_y = (int) std::round(blk.URY());
   init_y = std::min(init_y, stripe.contour_);
 
-  Cluster *front_cluster;
+  GriddedRow *front_cluster;
   auto *well = blk.TypePtr()->WellPtr();
   int p_well_height = well->Pheight();
   int n_well_height = well->Nheight();
   if (is_new_cluster_needed) {
-    stripe.cluster_list_.emplace_back();
-    front_cluster = &(stripe.cluster_list_.back());
+    stripe.gridded_rows_.emplace_back();
+    front_cluster = &(stripe.gridded_rows_.back());
     front_cluster->Blocks().reserve(stripe.max_blk_capacity_per_cluster_);
     front_cluster->AddBlock(&blk);
     //int num_of_tap_cell = (int) std::ceil(stripe.Width() / max_unplug_length_);
@@ -331,11 +330,11 @@ void StdClusterWellLegalizer::AppendBlockToColTopDownCompact(
     front_cluster->SetLLX(stripe.LLX());
     front_cluster->SetWidth(stripe.Width());
 
-    stripe.front_cluster_ = front_cluster;
+    stripe.front_row_ = front_cluster;
     stripe.cluster_count_ += 1;
     stripe.used_height_ += front_cluster->Height();
   } else {
-    front_cluster = stripe.front_cluster_;
+    front_cluster = stripe.front_row_;
     front_cluster->AddBlock(&blk);
     front_cluster->UseSpace(width);
     if (p_well_height > front_cluster->PHeight()
@@ -349,11 +348,11 @@ void StdClusterWellLegalizer::AppendBlockToColTopDownCompact(
 }
 
 bool StdClusterWellLegalizer::StripeLegalizationBottomUp(Stripe &stripe) {
-  stripe.cluster_list_.clear();
+  stripe.gridded_rows_.clear();
   stripe.contour_ = stripe.LLY();
   stripe.used_height_ = 0;
   stripe.cluster_count_ = 0;
-  stripe.front_cluster_ = nullptr;
+  stripe.front_row_ = nullptr;
   stripe.is_bottom_up_ = true;
 
   std::sort(
@@ -369,19 +368,19 @@ bool StdClusterWellLegalizer::StripeLegalizationBottomUp(Stripe &stripe) {
     AppendBlockToColBottomUp(stripe, *blk_ptr);
   }
 
-  for (auto &cluster: stripe.cluster_list_) {
-    cluster.UpdateBlockLocY();
+  for (auto &gridded_row: stripe.gridded_rows_) {
+    gridded_row.UpdateBlockLocY();
   }
 
   return stripe.contour_ <= stripe.URY();
 }
 
 bool StdClusterWellLegalizer::StripeLegalizationTopDown(Stripe &stripe) {
-  stripe.cluster_list_.clear();
+  stripe.gridded_rows_.clear();
   stripe.contour_ = stripe.URY();
   stripe.used_height_ = 0;
   stripe.cluster_count_ = 0;
-  stripe.front_cluster_ = nullptr;
+  stripe.front_row_ = nullptr;
   stripe.is_bottom_up_ = false;
 
   std::sort(
@@ -397,8 +396,8 @@ bool StdClusterWellLegalizer::StripeLegalizationTopDown(Stripe &stripe) {
     AppendBlockToColTopDown(stripe, *blk_ptr);
   }
 
-  for (auto &cluster: stripe.cluster_list_) {
-    cluster.UpdateBlockLocY();
+  for (auto &gridded_row: stripe.gridded_rows_) {
+    gridded_row.UpdateBlockLocY();
   }
 
   /*BOOST_LOG_TRIVIAL(info)   << "Reverse clustering: ";
@@ -412,11 +411,11 @@ bool StdClusterWellLegalizer::StripeLegalizationTopDown(Stripe &stripe) {
 }
 
 bool StdClusterWellLegalizer::StripeLegalizationBottomUpCompact(Stripe &stripe) {
-  stripe.cluster_list_.clear();
+  stripe.gridded_rows_.clear();
   stripe.contour_ = RegionBottom();
   stripe.used_height_ = 0;
   stripe.cluster_count_ = 0;
-  stripe.front_cluster_ = nullptr;
+  stripe.front_row_ = nullptr;
   stripe.is_bottom_up_ = true;
 
   std::sort(
@@ -432,7 +431,7 @@ bool StdClusterWellLegalizer::StripeLegalizationBottomUpCompact(Stripe &stripe) 
     AppendBlockToColBottomUpCompact(stripe, *blk_ptr);
   }
 
-  for (auto &cluster: stripe.cluster_list_) {
+  for (auto &cluster: stripe.gridded_rows_) {
     cluster.UpdateBlockLocY();
   }
 
@@ -440,11 +439,11 @@ bool StdClusterWellLegalizer::StripeLegalizationBottomUpCompact(Stripe &stripe) 
 }
 
 bool StdClusterWellLegalizer::StripeLegalizationTopDownCompact(Stripe &stripe) {
-  stripe.cluster_list_.clear();
+  stripe.gridded_rows_.clear();
   stripe.contour_ = stripe.URY();
   stripe.used_height_ = 0;
   stripe.cluster_count_ = 0;
-  stripe.front_cluster_ = nullptr;
+  stripe.front_row_ = nullptr;
   stripe.is_bottom_up_ = false;
 
   std::sort(
@@ -460,7 +459,7 @@ bool StdClusterWellLegalizer::StripeLegalizationTopDownCompact(Stripe &stripe) {
     AppendBlockToColTopDownCompact(stripe, *blk_ptr);
   }
 
-  for (auto &cluster: stripe.cluster_list_) {
+  for (auto &cluster: stripe.gridded_rows_) {
     cluster.UpdateBlockLocY();
   }
 
@@ -494,16 +493,16 @@ bool StdClusterWellLegalizer::BlockClustering() {
       // closely pack clusters from bottom to top
       stripe.contour_ = stripe.LLY();
       if (stripe.is_bottom_up_) {
-        for (auto &cluster: stripe.cluster_list_) {
+        for (auto &cluster: stripe.gridded_rows_) {
           stripe.contour_ += cluster.Height();
           cluster.SetLLY(stripe.contour_);
           cluster.UpdateBlockLocY();
           cluster.LegalizeCompactX();
         }
       } else {
-        int sz = static_cast<int>(stripe.cluster_list_.size());
+        int sz = static_cast<int>(stripe.gridded_rows_.size());
         for (int i = sz - 1; i >= 0; --i) {
-          auto &cluster = stripe.cluster_list_[i];
+          auto &cluster = stripe.gridded_rows_[i];
           stripe.contour_ += cluster.Height();
           cluster.SetLLY(stripe.contour_);
           cluster.UpdateBlockLocY();
@@ -549,9 +548,9 @@ bool StdClusterWellLegalizer::BlockClusteringLoose() {
         BOOST_LOG_TRIVIAL(info)  <<"stripe legalization fail, %d\n", i);
       }*/
 
-      for (auto &cluster: stripe.cluster_list_) {
-        cluster.UpdateBlockLocY();
-        cluster.MinDisplacementLegalization();
+      for (auto &row: stripe.gridded_rows_) {
+        row.UpdateBlockLocY();
+        row.MinDisplacementLegalization();
         if (is_dump) {
           if (count % step == 0) {
             std::string tmp_file_name =
@@ -587,7 +586,7 @@ bool StdClusterWellLegalizer::BlockClusteringCompact() {
       }
       res = res && is_success;
 
-      for (auto &cluster: stripe.cluster_list_) {
+      for (auto &cluster: stripe.gridded_rows_) {
         cluster.UpdateBlockLocY();
         cluster.LegalizeLooseX();
       }
@@ -606,10 +605,10 @@ bool StdClusterWellLegalizer::TrialClusterLegalization(Stripe &stripe) {
   bool res = true;
 
   // sort clusters in each column based on the lower left coordinate
-  std::vector<Cluster *> cluster_list;
+  std::vector<GriddedRow *> cluster_list;
   cluster_list.resize(stripe.cluster_count_, nullptr);
   for (int i = 0; i < stripe.cluster_count_; ++i) {
-    cluster_list[i] = &stripe.cluster_list_[i];
+    cluster_list[i] = &stripe.gridded_rows_[i];
   }
 
   //BOOST_LOG_TRIVIAL(info)   << "used height/RegionHeight(): " << col.used_height_ / (double) RegionHeight() << "\n";
@@ -618,7 +617,7 @@ bool StdClusterWellLegalizer::TrialClusterLegalization(Stripe &stripe) {
       std::sort(
           cluster_list.begin(),
           cluster_list.end(),
-          [](const Cluster *lhs, const Cluster *rhs) {
+          [](const GriddedRow *lhs, const GriddedRow *rhs) {
             return (lhs->URY() > rhs->URY());
           }
       );
@@ -636,7 +635,7 @@ bool StdClusterWellLegalizer::TrialClusterLegalization(Stripe &stripe) {
       std::sort(
           cluster_list.begin(),
           cluster_list.end(),
-          [](const Cluster *lhs, const Cluster *rhs) {
+          [](const GriddedRow *lhs, const GriddedRow *rhs) {
             return (lhs->LLY() < rhs->LLY());
           }
       );
@@ -655,7 +654,7 @@ bool StdClusterWellLegalizer::TrialClusterLegalization(Stripe &stripe) {
     std::sort(
         cluster_list.begin(),
         cluster_list.end(),
-        [](const Cluster *lhs, const Cluster *rhs) {
+        [](const GriddedRow *lhs, const GriddedRow *rhs) {
           return (lhs->LLY() < rhs->LLY());
         }
     );
@@ -682,7 +681,9 @@ bool StdClusterWellLegalizer::TrialClusterLegalization(Stripe &stripe) {
  * we do not pay much attention to the exact positions of the cells during Local Re-ordering."
  * from "An Efficient and Effective Detailed Placement Algorithm"
  * ****/
-double StdClusterWellLegalizer::WireLengthCost(Cluster *cluster, int l, int r) {
+double StdClusterWellLegalizer::WireLengthCost(GriddedRow *cluster,
+                                               int l,
+                                               int r) {
   auto &net_list = Nets();
   std::set<Net *> net_involved;
   for (int i = l; i <= r; ++i) {
@@ -713,7 +714,7 @@ double StdClusterWellLegalizer::WireLengthCost(Cluster *cluster, int l, int r) {
 * ****/
 void StdClusterWellLegalizer::FindBestLocalOrder(
     std::vector<Block *> &res,
-    double &cost, Cluster *cluster,
+    double &cost, GriddedRow *cluster,
     int cur, int l, int r,
     int left_bound, int right_bound,
     int gap, int range
@@ -756,7 +757,7 @@ void StdClusterWellLegalizer::FindBestLocalOrder(
 }
 
 void StdClusterWellLegalizer::LocalReorderInCluster(
-    Cluster *cluster,
+    GriddedRow *cluster,
     int range
 ) {
   /****
@@ -807,29 +808,31 @@ void StdClusterWellLegalizer::LocalReorderInCluster(
 }
 
 void StdClusterWellLegalizer::LocalReorderAllClusters() {
-  // sort cluster based on the lower left corner
-  int tot_cluster_count = 0;
+  // sort all cluster based on their lower left corners
+  size_t tot_cluster_count = 0;
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
-      tot_cluster_count += stripe.cluster_list_.size();
+      tot_cluster_count += stripe.gridded_rows_.size();
     }
   }
-  std::vector<Cluster *> cluster_ptr_list(tot_cluster_count, nullptr);
+  std::vector<GriddedRow *> cluster_ptr_list(tot_cluster_count, nullptr);
   int counter = 0;
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
-      for (auto &cluster: stripe.cluster_list_) {
+      for (auto &cluster: stripe.gridded_rows_) {
         cluster_ptr_list[counter] = &cluster;
         ++counter;
       }
     }
   }
-  std::sort(cluster_ptr_list.begin(),
-            cluster_ptr_list.end(),
-            [](const Cluster *lhs, const Cluster *rhs) {
-              return (lhs->LLY() < rhs->LLY())
-                  || (lhs->LLY() == rhs->LLY() && lhs->LLX() < rhs->LLX());
-            });
+  std::sort(
+      cluster_ptr_list.begin(),
+      cluster_ptr_list.end(),
+      [](const GriddedRow *lhs, const GriddedRow *rhs) {
+        return (lhs->LLY() < rhs->LLY())
+            || (lhs->LLY() == rhs->LLY() && lhs->LLX() < rhs->LLX());
+      }
+  );
 
   for (auto &cluster_ptr: cluster_ptr_list) {
     LocalReorderInCluster(cluster_ptr, 3);
@@ -900,14 +903,14 @@ void StdClusterWellLegalizer::UpdateClusterOrient() {
     bool is_orient_N = is_first_row_orient_N_;
     for (auto &stripe: col.stripe_list_) {
       if (stripe.is_bottom_up_) {
-        for (auto &cluster: stripe.cluster_list_) {
+        for (auto &cluster: stripe.gridded_rows_) {
           cluster.SetOrient(is_orient_N);
           is_orient_N = !is_orient_N;
         }
       } else {
-        int sz = stripe.cluster_list_.size();
+        int sz = stripe.gridded_rows_.size();
         for (int i = sz - 1; i >= 0; --i) {
-          stripe.cluster_list_[i].SetOrient(is_orient_N);
+          stripe.gridded_rows_[i].SetOrient(is_orient_N);
           is_orient_N = !is_orient_N;
         }
       }
@@ -918,10 +921,10 @@ void StdClusterWellLegalizer::UpdateClusterOrient() {
 void StdClusterWellLegalizer::InsertWellTap() {
   auto &tap_cell_list = p_ckt_->design().WellTaps();
   tap_cell_list.clear();
-  int tot_cluster_count = 0;
+  size_t tot_cluster_count = 0;
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
-      tot_cluster_count += stripe.cluster_list_.size();
+      tot_cluster_count += stripe.gridded_rows_.size();
     }
   }
   tap_cell_list.reserve(tot_cluster_count * 2);
@@ -931,30 +934,28 @@ void StdClusterWellLegalizer::InsertWellTap() {
   int tot_tap_cell_num = 0;
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
-      for (auto &cluster: stripe.cluster_list_) {
+      for (auto &row: stripe.gridded_rows_) {
         //int tap_cell_num = std::ceil(cluster.Width() / (double) max_unplug_length_);
         int tap_cell_num = 2;
         tot_tap_cell_num += tap_cell_num;
-        int step = cluster.Width();
-        int tap_cell_loc = cluster.LLX() - well_tap_cell_->Width() / 2;
+        int step = row.Width();
+        int tap_cell_loc = row.LLX() - well_tap_cell_->Width() / 2;
         for (int i = 0; i < tap_cell_num; ++i) {
-          std::string block_name =
-              "__well_tap__" + std::to_string(counter++);
+          std::string block_name = "__well_tap__" + std::to_string(counter++);
           tap_cell_list.emplace_back();
           auto &tap_cell = tap_cell_list.back();
           tap_cell.SetPlacementStatus(PLACED);
           tap_cell.SetType(p_ckt_->tech().WellTapCellPtrs()[0]);
-          int map_size =
-              p_ckt_->design().TapNameIdMap().size();
+          int map_size = p_ckt_->design().TapNameIdMap().size();
           auto ret = p_ckt_->design().TapNameIdMap().insert(
               std::pair<std::string, int>(block_name, map_size)
           );
           auto *name_id_pair_ptr = &(*ret.first);
           tap_cell.SetNameNumPair(name_id_pair_ptr);
-          cluster.InsertWellTapCell(tap_cell, tap_cell_loc);
+          row.InsertWellTapCell(tap_cell, tap_cell_loc);
           tap_cell_loc += step;
         }
-        cluster.LegalizeLooseX(space_to_well_tap_);
+        row.LegalizeLooseX(space_to_well_tap_);
       }
     }
   }
@@ -972,8 +973,8 @@ void StdClusterWellLegalizer::ClearCachedData() {
       stripe.contour_ = stripe.LLY();
       stripe.used_height_ = 0;
       stripe.cluster_count_ = 0;
-      stripe.cluster_list_.clear();
-      stripe.front_cluster_ = nullptr;
+      stripe.gridded_rows_.clear();
+      stripe.front_row_ = nullptr;
     }
   }
 
@@ -1097,7 +1098,7 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
   long int tot_eff_blk_area = 0;
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
-      for (auto &cluster: stripe.cluster_list_) {
+      for (auto &cluster: stripe.gridded_rows_) {
         long int eff_height = cluster.Height();
         long int tot_cell_width = 0;
         for (auto &blk_ptr: cluster.Blocks()) {
@@ -1164,13 +1165,13 @@ void StdClusterWellLegalizer::GenPPNP(const std::string &name_of_file) {
     for (auto &stripe: col.stripe_list_) {
       // draw NP and PP shapes from N/P-edge to N/P-edge
       std::vector<int> pn_edge_list;
-      pn_edge_list.reserve(stripe.cluster_list_.size() + 2);
+      pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
       if (stripe.is_bottom_up_) {
         pn_edge_list.push_back(RegionBottom());
       } else {
         pn_edge_list.push_back(RegionTop());
       }
-      for (auto &cluster: stripe.cluster_list_) {
+      for (auto &cluster: stripe.gridded_rows_) {
         pn_edge_list.push_back(cluster.LLY() + cluster.PNEdge());
       }
       if (stripe.is_bottom_up_) {
@@ -1213,13 +1214,13 @@ void StdClusterWellLegalizer::GenPPNP(const std::string &name_of_file) {
 
       // draw NP and PP shapes from well-tap cell to well-tap cell
       std::vector<int> well_tap_top_bottom_list;
-      well_tap_top_bottom_list.reserve(stripe.cluster_list_.size() + 2);
+      well_tap_top_bottom_list.reserve(stripe.gridded_rows_.size() + 2);
       if (stripe.is_bottom_up_) {
         well_tap_top_bottom_list.push_back(RegionBottom());
       } else {
         well_tap_top_bottom_list.push_back(RegionTop());
       }
-      for (auto &cluster: stripe.cluster_list_) {
+      for (auto &cluster: stripe.gridded_rows_) {
         if (stripe.is_bottom_up_) {
           well_tap_top_bottom_list.push_back(cluster.Blocks()[0]->LLY());
           well_tap_top_bottom_list.push_back(cluster.Blocks()[0]->URY());
@@ -1344,13 +1345,13 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
     for (auto &stripe: col.stripe_list_) {
       // draw NP and PP shapes from N/P-edge to N/P-edge
       std::vector<int> pn_edge_list;
-      pn_edge_list.reserve(stripe.cluster_list_.size() + 2);
+      pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
       if (stripe.is_bottom_up_) {
         pn_edge_list.push_back(RegionBottom());
       } else {
         pn_edge_list.push_back(RegionTop());
       }
-      for (auto &cluster: stripe.cluster_list_) {
+      for (auto &cluster: stripe.gridded_rows_) {
         pn_edge_list.push_back(cluster.LLY() + cluster.PNEdge());
       }
       if (stripe.is_bottom_up_) {
@@ -1388,13 +1389,13 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
 
       // draw NP and PP shapes from well-tap cell to well-tap cell
       std::vector<int> well_tap_top_bottom_list;
-      well_tap_top_bottom_list.reserve(stripe.cluster_list_.size() + 2);
+      well_tap_top_bottom_list.reserve(stripe.gridded_rows_.size() + 2);
       if (stripe.is_bottom_up_) {
         well_tap_top_bottom_list.push_back(RegionBottom());
       } else {
         well_tap_top_bottom_list.push_back(RegionTop());
       }
-      for (auto &cluster: stripe.cluster_list_) {
+      for (auto &cluster: stripe.gridded_rows_) {
         if (stripe.is_bottom_up_) {
           well_tap_top_bottom_list.push_back(cluster.Blocks()[0]->LLY());
           well_tap_top_bottom_list.push_back(cluster.Blocks()[0]->URY());
@@ -1487,13 +1488,13 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
     for (auto &stripe: col.stripe_list_) {
       // draw NP and PP shapes from N/P-edge to N/P-edge
       std::vector<int> pn_edge_list;
-      pn_edge_list.reserve(stripe.cluster_list_.size() + 2);
+      pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
       if (stripe.is_bottom_up_) {
         pn_edge_list.push_back(RegionBottom());
       } else {
         pn_edge_list.push_back(RegionTop());
       }
-      for (auto &cluster: stripe.cluster_list_) {
+      for (auto &cluster: stripe.gridded_rows_) {
         pn_edge_list.push_back(cluster.LLY() + cluster.PNEdge());
       }
       if (stripe.is_bottom_up_) {
@@ -1541,13 +1542,13 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
 
       // draw NP and PP shapes from well-tap cell to well-tap cell
       std::vector<int> well_tap_top_bottom_list;
-      well_tap_top_bottom_list.reserve(stripe.cluster_list_.size() + 2);
+      well_tap_top_bottom_list.reserve(stripe.gridded_rows_.size() + 2);
       if (stripe.is_bottom_up_) {
         well_tap_top_bottom_list.push_back(RegionBottom());
       } else {
         well_tap_top_bottom_list.push_back(RegionTop());
       }
-      for (auto &cluster: stripe.cluster_list_) {
+      for (auto &cluster: stripe.gridded_rows_) {
         if (stripe.is_bottom_up_) {
           well_tap_top_bottom_list.push_back(cluster.Blocks()[0]->LLY());
           well_tap_top_bottom_list.push_back(cluster.Blocks()[0]->URY());
@@ -1666,13 +1667,13 @@ void StdClusterWellLegalizer::EmitWellRect(std::string const &name_of_file,
     for (auto &stripe: col.stripe_list_) {
       std::vector<int> pn_edge_list;
       if (stripe.is_bottom_up_) {
-        pn_edge_list.reserve(stripe.cluster_list_.size() + 2);
+        pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
         pn_edge_list.push_back(RegionBottom());
       } else {
-        pn_edge_list.reserve(stripe.cluster_list_.size() + 2);
+        pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
         pn_edge_list.push_back(RegionTop());
       }
-      for (auto &cluster: stripe.cluster_list_) {
+      for (auto &cluster: stripe.gridded_rows_) {
         pn_edge_list.push_back(cluster.LLY() + cluster.PNEdge());
       }
       if (stripe.is_bottom_up_) {
@@ -1754,13 +1755,13 @@ void StdClusterWellLegalizer::ExportWellToPhyDB(
     for (auto &stripe: col.stripe_list_) {
       std::vector<int> pn_edge_list;
       if (stripe.is_bottom_up_) {
-        pn_edge_list.reserve(stripe.cluster_list_.size() + 2);
+        pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
         pn_edge_list.push_back(RegionBottom());
       } else {
-        pn_edge_list.reserve(stripe.cluster_list_.size() + 2);
+        pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
         pn_edge_list.push_back(RegionTop());
       }
-      for (auto &cluster: stripe.cluster_list_) {
+      for (auto &cluster: stripe.gridded_rows_) {
         pn_edge_list.push_back(cluster.LLY() + cluster.PNEdge());
       }
       if (stripe.is_bottom_up_) {
@@ -1846,7 +1847,7 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
       }
 
       if (stripe.is_bottom_up_) {
-        for (auto &cluster: stripe.cluster_list_) {
+        for (auto &cluster: stripe.gridded_rows_) {
           ost << "  "
               << (int) (cluster.LLY() * factor_y)
                   + p_ckt_->design().DieAreaOffsetY() << "  "
@@ -1854,9 +1855,9 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
                   + p_ckt_->design().DieAreaOffsetY() << "\n";
         }
       } else {
-        int sz = stripe.cluster_list_.size();
+        int sz = stripe.gridded_rows_.size();
         for (int j = sz - 1; j >= 0; --j) {
-          auto &cluster = stripe.cluster_list_[j];
+          auto &cluster = stripe.gridded_rows_[j];
           ost << "  "
               << (int) (cluster.LLY() * factor_y)
                   + p_ckt_->design().DieAreaOffsetY() << "  "

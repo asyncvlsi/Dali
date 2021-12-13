@@ -61,7 +61,7 @@ class Tech {
   bool IsWellInfoSet() const;
 
   // get all multi-well for cells
-  std::list<BlockTypeMultiWell> &MultiWells();
+  std::list<BlockTypeWell> &MultiWells();
 
   // print information
   void Report() const;
@@ -82,8 +82,7 @@ class Tech {
 
   /**** macros ****/
   std::unordered_map<std::string, BlockType *> block_type_map_;
-  std::list<BlockTypeWell> well_list_;
-  std::list<BlockTypeMultiWell> multi_well_list_;
+  std::list<BlockTypeWell> multi_well_list_;
   BlockType *io_dummy_blk_type_ptr_ = nullptr;
   std::vector<BlockType *> well_tap_cell_ptrs_;
 

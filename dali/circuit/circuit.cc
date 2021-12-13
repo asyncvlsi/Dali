@@ -823,7 +823,7 @@ BlockTypeWell *Circuit::AddBlockTypeWell(std::string const &blk_type_name) {
 // TODO: discuss with Rajit about the necessity of having N/P-wells not fully covering the prBoundary of a given cell.
 void Circuit::SetWellRect(
     std::string const &blk_type_name,
-    bool is_nwell,
+    bool is_n,
     double lx,
     double ly,
     double ux,
@@ -832,7 +832,7 @@ void Circuit::SetWellRect(
   // check if well width is smaller than max_plug_distance
   double width = ux - lx;
   double max_plug_distance = 0;
-  if (is_nwell) {
+  if (is_n) {
     DaliExpects(tech_.n_set_,
                 "Nwell layer not found, cannot set well rect: "
                     + blk_type_name);
@@ -876,13 +876,10 @@ void Circuit::SetWellRect(
   BlockTypeWell *well = blk_type_ptr->WellPtr();
   DaliExpects(well != nullptr,
               "Well uninitialized for BlockType: " + blk_type_name);
-  well->SetWellRect(is_nwell, lx_grid, ly_grid, ux_grid, uy_grid);
+  well->AddWellRect(is_n, lx_grid, ly_grid, ux_grid, uy_grid);
 }
 
 void Circuit::ReportWellShape() {
-  for (auto &blk_type_well: tech_.well_list_) {
-    blk_type_well.Report();
-  }
   for (auto &blk_type_well: tech_.multi_well_list_) {
     blk_type_well.Report();
   }
@@ -1020,7 +1017,7 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
       BlockType *p_blk_type = GetBlockTypePtr(macro_fields[1]);
       tech_.multi_well_list_.emplace_back(p_blk_type);
       auto *well_ptr = &(tech_.multi_well_list_.back());
-      p_blk_type->SetMultiWell(well_ptr);
+      p_blk_type->SetWell(well_ptr);
       do {
         getline(ist, line);
         if (line.find("REGION") != std::string::npos) {
@@ -2088,8 +2085,8 @@ void Circuit::LoadImaginaryCellFile() {
     auto *blk_type = pair.second;
     BlockTypeWell *well = AddBlockTypeWell(blk_type);
     int np_edge = blk_type->Height() / 2;
-    well->SetNwellRect(0, np_edge, blk_type->Width(), blk_type->Height());
-    well->SetPwellRect(0, 0, blk_type->Width(), np_edge);
+    well->AddPwellRect(0, 0, blk_type->Width(), np_edge);
+    well->AddNwellRect(0, 0, blk_type->Width(), blk_type->Height());
   }
 }
 
@@ -2295,8 +2292,8 @@ IoPin *Circuit::AddPlacedIOPin(
 }
 
 BlockTypeWell *Circuit::AddBlockTypeWell(BlockType *blk_type) {
-  tech_.well_list_.emplace_back(blk_type);
-  blk_type->SetWell(&(tech_.well_list_.back()));
+  tech_.multi_well_list_.emplace_back(blk_type);
+  blk_type->SetWell(&(tech_.multi_well_list_.back()));
   return blk_type->WellPtr();
 }
 

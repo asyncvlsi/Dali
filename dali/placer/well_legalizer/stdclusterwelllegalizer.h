@@ -23,7 +23,7 @@
 
 #include "blockcluster.h"
 #include "blocksegment.h"
-#include "cluster.h"
+#include "griddedrow.h"
 #include "dali/circuit/block.h"
 #include "dali/common/misc.h"
 #include "dali/placer/legalizer/LGTetrisEx.h"
@@ -65,11 +65,11 @@ class StdClusterWellLegalizer : public Placer {
 
   bool TrialClusterLegalization(Stripe &stripe);
 
-  double WireLengthCost(Cluster *cluster, int l, int r);
+  double WireLengthCost(GriddedRow *cluster, int l, int r);
   void FindBestLocalOrder(
       std::vector<Block *> &res,
       double &cost,
-      Cluster *cluster,
+      GriddedRow *cluster,
       int cur,
       int l,
       int r,
@@ -78,7 +78,7 @@ class StdClusterWellLegalizer : public Placer {
       int gap,
       int range
   );
-  void LocalReorderInCluster(Cluster *cluster, int range = 3);
+  void LocalReorderInCluster(GriddedRow *cluster, int range = 3);
   void LocalReorderAllClusters();
 
   //void SingleSegmentClusteringOptimization();

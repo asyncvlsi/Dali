@@ -18,11 +18,12 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_PLACER_WELLLEGALIZER_CLUSTER_H_
-#define DALI_DALI_PLACER_WELLLEGALIZER_CLUSTER_H_
+#ifndef DALI_DALI_PLACER_WELLLEGALIZER_GRIDDEDROW_H_
+#define DALI_DALI_PLACER_WELLLEGALIZER_GRIDDEDROW_H_
 
-#include "blocksegment.h"
 #include "dali/circuit/block.h"
+#include "dali/placer/well_legalizer/blocksegment.h"
+#include "dali/placer/well_legalizer/rowsegment.h"
 
 namespace dali {
 
@@ -32,10 +33,10 @@ struct BlockRegion {
   size_t region_id = 0;
 };
 
-class Cluster {
+class GriddedRow {
   friend class Stripe;
  public:
-  Cluster() = default;
+  GriddedRow() = default;
 
   bool IsOrientN() const;
   int UsedSize() const;
@@ -64,7 +65,6 @@ class Cluster {
   int PHeight() const;
   int NHeight() const;
   int PNEdge() const;
-  int ClusterEdge() const;
 
   void SetLoc(int lx, int ly);
 
@@ -87,8 +87,8 @@ class Cluster {
   void UpdateMinDisplacementLLY();
   double MinDisplacementLLY() const;
 
-  /**** for multi-well legalization ****/
-  void UpdateSubClusters();
+  std::vector<RowSegment> &Segments();
+  void UpdateSegments();
   bool IsBelowTopBoundary(Block *p_blk) const;
   bool IsBelowMiddleLine(Block *p_blk) const;
   bool IsOverlap(Block *p_blk, int criterion) const;
@@ -96,7 +96,7 @@ class Cluster {
   void AddBlockRegion(Block *p_blk, size_t region_id);
   bool AttemptToAdd(Block *p_blk);
   BlockOrient ComputeBlockOrient(Block *p_blk);
-  void SubClusterLegalize();
+  void LegalizeSegments();
   void RecomputeHeight(int p_well_height, int n_well_height);
   void InitializeBlockStretching();
 
@@ -127,7 +127,7 @@ class Cluster {
 
   /**** for multi-well legalization ****/
   std::vector<BlockRegion> blk_regions_;
-  std::vector<Cluster> sub_clusters_;
+  std::vector<RowSegment> segments_;
 };
 
 class ClusterSegment {
@@ -135,11 +135,11 @@ class ClusterSegment {
   int ly_;
   int height_;
  public:
-  ClusterSegment(Cluster *cluster_ptr, int loc)
+  ClusterSegment(GriddedRow *cluster_ptr, int loc)
       : ly_(loc), height_(cluster_ptr->Height()) {
     cluster_list.push_back(cluster_ptr);
   }
-  std::vector<Cluster *> cluster_list;
+  std::vector<GriddedRow *> cluster_list;
 
   int LY() const { return ly_; }
   int UY() const { return ly_ + height_; }
@@ -154,4 +154,4 @@ class ClusterSegment {
 
 }
 
-#endif //DALI_DALI_PLACER_WELLLEGALIZER_CLUSTER_H_
+#endif //DALI_DALI_PLACER_WELLLEGALIZER_GRIDDEDROW_H_

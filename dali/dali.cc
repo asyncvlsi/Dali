@@ -545,7 +545,7 @@ void Dali::ExportMiniRowsToPhyDB() {
       p_col->SetXRange(col_lx, col_ux);
 
       if (strip.is_bottom_up_) {
-        for (auto &cluster: strip.cluster_list_) {
+        for (auto &cluster: strip.gridded_rows_) {
           int row_ly = (int) (cluster.LLY() * factor_y)
               + circuit_.design().DieAreaOffsetY();
           int row_uy = (int) (cluster.URY() * factor_y)
@@ -553,9 +553,9 @@ void Dali::ExportMiniRowsToPhyDB() {
           p_col->AddRow(row_ly, row_uy);
         }
       } else {
-        int sz = static_cast<int>(strip.cluster_list_.size());
+        int sz = static_cast<int>(strip.gridded_rows_.size());
         for (int j = sz - 1; j >= 0; --j) {
-          auto &cluster = strip.cluster_list_[j];
+          auto &cluster = strip.gridded_rows_[j];
           int row_ly = (int) (cluster.LLY() * factor_y)
               + circuit_.design().DieAreaOffsetY();
           int row_uy = (int) (cluster.URY() * factor_y)

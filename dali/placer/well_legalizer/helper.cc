@@ -34,7 +34,7 @@ void GenClusterTable(
 
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
-      for (auto &cluster: stripe.cluster_list_) {
+      for (auto &cluster: stripe.gridded_rows_) {
         std::vector<int> llx;
         std::vector<int> lly;
         std::vector<int> urx;
@@ -81,13 +81,13 @@ void GenMATLABWellFillingTable(
     for (auto &stripe: col.stripe_list_) {
       std::vector<int> pn_edge_list;
       if (stripe.is_bottom_up_) {
-        pn_edge_list.reserve(stripe.cluster_list_.size() + 2);
+        pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
         pn_edge_list.push_back(bottom_boundary);
       } else {
-        pn_edge_list.reserve(stripe.cluster_list_.size() + 2);
+        pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
         pn_edge_list.push_back(top_boundary);
       }
-      for (auto &cluster: stripe.cluster_list_) {
+      for (auto &cluster: stripe.gridded_rows_) {
         pn_edge_list.push_back(cluster.LLY() + cluster.PNEdge());
       }
       if (stripe.is_bottom_up_) {

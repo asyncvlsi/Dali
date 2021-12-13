@@ -264,7 +264,7 @@ int main(int argc, char *argv[]) {
     }
     delete well_legalizer;
   } else if (!m_cell_file_name.empty()) {
-    auto *multi_well_legalizer = new MetaRowLegalizer;
+    auto *multi_well_legalizer = new GriddedRowLegalizer;
     multi_well_legalizer->TakeOver(gb_placer);
     multi_well_legalizer->SetPartitionMode(well_legalization_mode);
     multi_well_legalizer->StartPlacement();

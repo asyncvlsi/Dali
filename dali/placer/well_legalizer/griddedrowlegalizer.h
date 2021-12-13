@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_PLACER_WELL_LEGALIZER_METAROWLEGALIZER_H_
-#define DALI_DALI_PLACER_WELL_LEGALIZER_METAROWLEGALIZER_H_
+#ifndef DALI_DALI_PLACER_WELL_LEGALIZER_GRIDDEDROWLEGALIZER_H_
+#define DALI_DALI_PLACER_WELL_LEGALIZER_GRIDDEDROWLEGALIZER_H_
 
 #include "dali/placer/placer.h"
 #include "spacepartitioner.h"
@@ -27,9 +27,9 @@
 
 namespace dali {
 
-class MetaRowLegalizer : public Placer {
+class GriddedRowLegalizer : public Placer {
  public:
-  MetaRowLegalizer() = default;
+  GriddedRowLegalizer() = default;
 
   void CheckWellInfo();
 
@@ -60,4 +60,4 @@ class MetaRowLegalizer : public Placer {
 
 }
 
-#endif //DALI_DALI_PLACER_WELL_LEGALIZER_METAROWLEGALIZER_H_
+#endif //DALI_DALI_PLACER_WELL_LEGALIZER_GRIDDEDROWLEGALIZER_H_

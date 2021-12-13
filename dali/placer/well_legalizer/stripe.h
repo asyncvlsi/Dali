@@ -21,7 +21,7 @@
 #ifndef DALI_DALI_PLACER_WELLLEGALIZER_STRIPE_H_
 #define DALI_DALI_PLACER_WELLLEGALIZER_STRIPE_H_
 
-#include "cluster.h"
+#include "griddedrow.h"
 #include "dali/circuit/block.h"
 #include "dali/common/misc.h"
 
@@ -37,9 +37,9 @@ struct Stripe {
   int contour_;
   int used_height_;
   int cluster_count_;
-  Cluster *front_cluster_;
+  GriddedRow *front_row_;
   size_t front_id_;
-  std::vector<Cluster> cluster_list_;
+  std::vector<GriddedRow> gridded_rows_;
   bool is_bottom_up_ = false;
 
   int block_count_;

@@ -18,30 +18,45 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_PLACER_H_
-#define DALI_DALI_PLACER_H_
+#ifndef DALI_DALI_PLACER_WELL_LEGALIZER_ROWSEGMENT_H_
+#define DALI_DALI_PLACER_WELL_LEGALIZER_ROWSEGMENT_H_
 
-/****placer base class****/
-#include "dali/placer/placer.h"
+#include <vector>
 
-/****Global placer****/
-#include "dali/placer/global_placer/globalplacer.h"
+#include "dali/circuit/block.h"
+#include "dali/common/misc.h"
 
-/****Legalizer****/
-#include "dali/placer/legalizer/LGTetris.h"
-#include "dali/placer/legalizer/LGTetrisEx.h"
+namespace dali {
 
-/****Well Legalizer****/
-#include "dali/placer/well_legalizer/clusterwelllegalizer.h"
-#include "dali/placer/well_legalizer/stdclusterwelllegalizer.h"
-#include "dali/placer/well_legalizer/welllegalizer.h"
-#include "dali/placer/well_legalizer/griddedrowlegalizer.h"
+class RowSegment {
+ public:
+  RowSegment() = default;
 
-/****Well Placement Flow****/
-#include "dali/placer/well_place_flow/wellplaceflow.h"
-#include "dali/placer/welltap_placer/welltapplacer.h"
+  void SetLoc(int lx, int ly);
+  void SetLLX(int lx);
+  void SetURX(int ux);
+  void SetWidth(int width);
+  void SetUsedSize(int used_size);
 
-/****IO Placer****/
-#include "dali/placer/io_placer/ioplacer.h"
+  int LLX() const;
+  int URX() const;
+  int Width() const;
+  int UsedSize() const;
 
-#endif //DALI_DALI_PLACER_H_
+  std::vector<Block *> &Blocks();
+  void AddBlock(Block *blk_ptr);
+  void MinDisplacementLegalization();
+ private:
+  // list of blocks in this segment
+  std::vector<Block *> blk_list_;
+  // initial location of blocks before putting into this segment
+  std::vector<double2d> blk_initial_location_;
+  int lx_ = INT_MIN;
+  int ly_ = INT_MIN;
+  int width_ = 0;
+  int used_size_ = 0;
+};
+
+}
+
+#endif //DALI_DALI_PLACER_WELL_LEGALIZER_ROWSEGMENT_H_

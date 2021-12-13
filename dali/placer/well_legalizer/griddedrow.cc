@@ -18,7 +18,7 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#include "cluster.h"
+#include "griddedrow.h"
 
 #include <algorithm>
 
@@ -26,71 +26,71 @@
 
 namespace dali {
 
-bool Cluster::IsOrientN() const {
+bool GriddedRow::IsOrientN() const {
   return is_orient_N_;
 }
 
-int Cluster::UsedSize() const {
+int GriddedRow::UsedSize() const {
   return used_size_;
 }
 
-void Cluster::SetUsedSize(int used_size) {
+void GriddedRow::SetUsedSize(int used_size) {
   used_size_ = used_size;
 }
 
-void Cluster::UseSpace(int width) {
+void GriddedRow::UseSpace(int width) {
   used_size_ += width;
 }
 
-void Cluster::SetLLX(int lx) {
+void GriddedRow::SetLLX(int lx) {
   lx_ = lx;
 }
 
-void Cluster::SetURX(int ux) {
+void GriddedRow::SetURX(int ux) {
   lx_ = ux - width_;
 }
 
-int Cluster::LLX() const {
+int GriddedRow::LLX() const {
   return lx_;
 }
 
-int Cluster::URX() const {
+int GriddedRow::URX() const {
   return lx_ + width_;
 }
 
-double Cluster::CenterX() const {
+double GriddedRow::CenterX() const {
   return lx_ + width_ / 2.0;
 }
 
-void Cluster::SetWidth(int width) {
+void GriddedRow::SetWidth(int width) {
   width_ = width;
 }
 
-int Cluster::Width() const {
+int GriddedRow::Width() const {
   return width_;
 }
 
-void Cluster::SetLLY(int ly) {
+void GriddedRow::SetLLY(int ly) {
   ly_ = ly;
 }
 
-void Cluster::SetURY(int uy) {
+void GriddedRow::SetURY(int uy) {
   ly_ = uy - Height();
 }
 
-int Cluster::LLY() const {
+int GriddedRow::LLY() const {
   return ly_;
 }
 
-int Cluster::URY() const {
+int GriddedRow::URY() const {
   return ly_ + Height();
 }
 
-double Cluster::CenterY() const {
+double GriddedRow::CenterY() const {
   return ly_ + height_ / 2.0;
 }
 
-void Cluster::SetHeight(int height) {
+void GriddedRow::SetHeight(int height) {
   height_ = height;
 }
 
@@ -98,7 +98,8 @@ void Cluster::SetHeight(int height) {
 * Update the height of this cluster with the lower y of this cluster fixed.
 * So even if the height changes, the lower y of this cluster does not need be changed.
 * ****/
-void Cluster::UpdateWellHeightFromBottom(int p_well_height, int n_well_height) {
+void GriddedRow::UpdateWellHeightFromBottom(int p_well_height,
+                                            int n_well_height) {
   p_well_height_ = std::max(p_well_height_, p_well_height);
   n_well_height_ = std::max(n_well_height_, n_well_height);
   height_ = p_well_height_ + n_well_height_;
@@ -108,7 +109,7 @@ void Cluster::UpdateWellHeightFromBottom(int p_well_height, int n_well_height) {
 * Update the height of this cluster with the upper y of this cluster fixed.
 * So if the height changes, then the lower y of this cluster should also be changed.
 * ****/
-void Cluster::UpdateWellHeightFromTop(int p_well_height, int n_well_height) {
+void GriddedRow::UpdateWellHeightFromTop(int p_well_height, int n_well_height) {
   int old_height = height_;
   p_well_height_ = std::max(p_well_height_, p_well_height);
   n_well_height_ = std::max(n_well_height_, n_well_height);
@@ -116,83 +117,73 @@ void Cluster::UpdateWellHeightFromTop(int p_well_height, int n_well_height) {
   ly_ -= (height_ - old_height);
 }
 
-int Cluster::Height() const {
+int GriddedRow::Height() const {
   return height_;
 }
 
-int Cluster::PHeight() const {
+int GriddedRow::PHeight() const {
   return p_well_height_;
 }
 
-int Cluster::NHeight() const {
+int GriddedRow::NHeight() const {
   return n_well_height_;
 }
 
 /****
 * Returns the P/N well edge to the bottom of this cluster
 * ****/
-int Cluster::PNEdge() const {
+int GriddedRow::PNEdge() const {
   return is_orient_N_ ? PHeight() : NHeight();
 }
 
-int Cluster::ClusterEdge() const {
-  return p_well_height_ + n_well_height_;
-}
-
-void Cluster::SetLoc(int lx, int ly) {
+void GriddedRow::SetLoc(int lx, int ly) {
   lx_ = lx;
   ly_ = ly;
 }
 
-void Cluster::AddBlock(Block *blk_ptr) {
+void GriddedRow::AddBlock(Block *blk_ptr) {
   blk_list_.push_back(blk_ptr);
   double y_init = blk_ptr->LLY();
   BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
-  if (well_ptr != nullptr) {
-    y_init = blk_ptr->LLY() + well_ptr->Pheight();
-  }
-  BlockTypeMultiWell *m_well_ptr = blk_ptr->TypePtr()->MultiWellPtr();
-  if (m_well_ptr != nullptr) {
-    y_init = blk_ptr->LLY() + m_well_ptr->PwellHeight(0, false); // TODO : this seems to be unnecessary for multi-row gridded cells
-  }
+  y_init = blk_ptr->LLY() + well_ptr->Pheight();
   blk_initial_location_.emplace_back(blk_ptr->LLX(), y_init);
 }
 
-std::vector<Block *> &Cluster::Blocks() {
+std::vector<Block *> &GriddedRow::Blocks() {
   return blk_list_;
 }
 
-std::vector<double2d> &Cluster::InitLocations() {
+std::vector<double2d> &GriddedRow::InitLocations() {
   return blk_initial_location_;
 }
 
-void Cluster::ShiftBlockX(int x_disp) {
+void GriddedRow::ShiftBlockX(int x_disp) {
   for (auto &blk_ptr: blk_list_) {
     blk_ptr->IncreaseX(x_disp);
   }
 }
 
-void Cluster::ShiftBlockY(int y_disp) {
+void GriddedRow::ShiftBlockY(int y_disp) {
   for (auto &blk_ptr: blk_list_) {
     blk_ptr->IncreaseY(y_disp);
   }
 }
 
-void Cluster::ShiftBlock(int x_disp, int y_disp) {
+void GriddedRow::ShiftBlock(int x_disp, int y_disp) {
   for (auto &blk_ptr: blk_list_) {
     blk_ptr->IncreaseX(x_disp);
     blk_ptr->IncreaseY(y_disp);
   }
 }
 
-void Cluster::UpdateBlockLocY() {
+void GriddedRow::UpdateBlockLocY() {
   for (auto &blk_ptr: blk_list_) {
     auto *well = blk_ptr->TypePtr()->WellPtr();
     blk_ptr->SetLLY(ly_ + p_well_height_ - well->Pheight());
   }
 }
 
-void Cluster::LegalizeCompactX(int left) {
+void GriddedRow::LegalizeCompactX(int left) {
   std::sort(
       blk_list_.begin(),
       blk_list_.end(),
@@ -207,7 +198,7 @@ void Cluster::LegalizeCompactX(int left) {
   }
 }
 
-void Cluster::LegalizeCompactX() {
+void GriddedRow::LegalizeCompactX() {
   std::sort(
       blk_list_.begin(),
       blk_list_.end(),
@@ -222,17 +213,16 @@ void Cluster::LegalizeCompactX() {
   }
 }
 
-void Cluster::LegalizeLooseX(int space_to_well_tap) {
-  /****
-   * Legalize this cluster using the extended Tetris legalization algorithm
-   *
-   * 1. legalize blocks from left
-   * 2. if block contour goes out of the right boundary, legalize blocks from right
-   *
-   * if the total width of blocks in this cluster is smaller than the width of this cluster,
-   * two-rounds legalization is enough to make the final result legal.
-   * ****/
-
+/****
+ * Legalize this cluster using the extended Tetris legalization algorithm
+ *
+ * 1. legalize blocks from left
+ * 2. if block contour goes out of the right boundary, legalize blocks from right
+ *
+ * if the total width of blocks in this cluster is smaller than the width of this cluster,
+ * two-rounds legalization is enough to make the final result legal.
+ * ****/
+void GriddedRow::LegalizeLooseX(int space_to_well_tap) {
   if (blk_list_.empty()) {
     return;
   }
@@ -275,7 +265,7 @@ void Cluster::LegalizeLooseX(int space_to_well_tap) {
   //}
 }
 
-void Cluster::SetOrient(bool is_orient_N) {
+void GriddedRow::SetOrient(bool is_orient_N) {
   if (is_orient_N_ != is_orient_N) {
     is_orient_N_ = is_orient_N;
     BlockOrient orient = is_orient_N_ ? N : FS;
@@ -288,7 +278,7 @@ void Cluster::SetOrient(bool is_orient_N) {
   }
 }
 
-void Cluster::InsertWellTapCell(Block &tap_cell, int loc) {
+void GriddedRow::InsertWellTapCell(Block &tap_cell, int loc) {
   tap_cell_ = &tap_cell;
   blk_list_.emplace_back(tap_cell_);
   tap_cell_->SetCenterX(loc);
@@ -304,7 +294,7 @@ void Cluster::InsertWellTapCell(Block &tap_cell, int loc) {
   }
 }
 
-void Cluster::UpdateBlockLocationCompact() {
+void GriddedRow::UpdateBlockLocationCompact() {
   std::sort(
       blk_list_.begin(),
       blk_list_.end(),
@@ -320,7 +310,7 @@ void Cluster::UpdateBlockLocationCompact() {
   }
 }
 
-void Cluster::MinDisplacementLegalization() {
+void GriddedRow::MinDisplacementLegalization() {
   std::sort(
       blk_list_.begin(),
       blk_list_.end(),
@@ -377,7 +367,7 @@ void Cluster::MinDisplacementLegalization() {
   }
 }
 
-void Cluster::UpdateMinDisplacementLLY() {
+void GriddedRow::UpdateMinDisplacementLLY() {
   DaliExpects(blk_list_.size() == blk_initial_location_.size(),
               "Block count does not equal initial location count\n");
   double sum = 0;
@@ -389,11 +379,15 @@ void Cluster::UpdateMinDisplacementLLY() {
       sum / (int) (blk_initial_location_.size()) - PHeight();
 }
 
-double Cluster::MinDisplacementLLY() const {
+double GriddedRow::MinDisplacementLLY() const {
   return min_displacement_lly_;
 }
 
-void Cluster::UpdateSubClusters() {
+std::vector<RowSegment> &GriddedRow::Segments() {
+  return segments_;
+}
+
+void GriddedRow::UpdateSegments() {
   // collect used space segments
   std::vector<SegI> used_spaces;
   for (auto &blk_region: blk_regions_) {
@@ -433,27 +427,26 @@ void Cluster::UpdateSubClusters() {
 
   // create sub-clusters
   size_t len = intermediate_seg.size();
-  sub_clusters_.clear();
-  sub_clusters_.reserve(len / 2);
+  DaliExpects((len & 1) == 0, "odd number of segments? VERY ODD!");
+  segments_.clear();
+  segments_.reserve(len / 2);
   for (size_t i = 0; i < len; i += 2) {
-    sub_clusters_.emplace_back();
-    Cluster &sub_cluster = sub_clusters_.back();
-    sub_cluster.SetLLX(intermediate_seg[i]);
-    sub_cluster.SetWidth(intermediate_seg[i + 1] - intermediate_seg[i]);
-    sub_cluster.SetOrient(is_orient_N_);
-    sub_cluster.SetLLY(ly_);
+    segments_.emplace_back();
+    RowSegment &segment = segments_.back();
+    segment.SetLLX(intermediate_seg[i]);
+    segment.SetWidth(intermediate_seg[i + 1] - intermediate_seg[i]);
   }
 }
 
-bool Cluster::IsBelowTopBoundary(Block *p_blk) const {
+bool GriddedRow::IsBelowTopBoundary(Block *p_blk) const {
   return p_blk->LLY() < URY();
 }
 
-bool Cluster::IsBelowMiddleLine(Block *p_blk) const {
+bool GriddedRow::IsBelowMiddleLine(Block *p_blk) const {
   return p_blk->LLY() < CenterY();
 }
 
-bool Cluster::IsOverlap(Block *p_blk, int criterion) const {
+bool GriddedRow::IsOverlap(Block *p_blk, int criterion) const {
   switch (criterion) {
     case 0: {
       return IsBelowTopBoundary(p_blk);
@@ -468,8 +461,8 @@ bool Cluster::IsOverlap(Block *p_blk, int criterion) const {
   }
 }
 
-bool Cluster::IsOrientMatching(Block *p_blk) const {
-  BlockTypeMultiWell *p_well = p_blk->TypePtr()->MultiWellPtr();
+bool GriddedRow::IsOrientMatching(Block *p_blk) const {
+  BlockTypeWell *p_well = p_blk->TypePtr()->WellPtr();
   // cells with an odd number of regions can be fitted into any clusters
   if (p_well->HasOddRegions()) {
     return true;
@@ -478,9 +471,9 @@ bool Cluster::IsOrientMatching(Block *p_blk) const {
   return IsOrientN() ? p_well->IsBottomWellP() : !p_well->IsBottomWellP();
 }
 
-void Cluster::AddBlockRegion(Block *p_blk, size_t region_id) {
+void GriddedRow::AddBlockRegion(Block *p_blk, size_t region_id) {
   blk_regions_.emplace_back(p_blk, region_id);
-  BlockTypeMultiWell *well = p_blk->TypePtr()->MultiWellPtr();
+  BlockTypeWell *well = p_blk->TypePtr()->WellPtr();
   int p_height = well->PwellHeight(region_id, p_blk->IsFlipped());
   int n_height = well->NwellHeight(region_id, p_blk->IsFlipped());
   p_well_height_ = std::max(p_well_height_, p_height);
@@ -488,22 +481,22 @@ void Cluster::AddBlockRegion(Block *p_blk, size_t region_id) {
   height_ = p_well_height_ + n_well_height_;
 }
 
-bool Cluster::AttemptToAdd(Block *p_blk) {
+bool GriddedRow::AttemptToAdd(Block *p_blk) {
   // put this block to the closest white space segment
   double min_distance = DBL_MAX;
   int min_index = -1;
-  int sz = static_cast<int>(sub_clusters_.size());
+  int sz = static_cast<int>(segments_.size());
   for (int i = 0; i < sz; ++i) {
-    auto &sub_cluster = sub_clusters_[i];
+    auto &segment = segments_[i];
     double distance = DBL_MAX;
-    if (sub_cluster.used_size_ + p_blk->Width() <= sub_cluster.width_) {
-      if (p_blk->LLX() >= sub_cluster.LLX()
-          && p_blk->URX() <= sub_cluster.URX()) {
+    if (segment.UsedSize() + p_blk->Width() <= segment.Width()) {
+      if (p_blk->LLX() >= segment.LLX()
+          && p_blk->URX() <= segment.URX()) {
         distance = 0;
       } else {
         distance = std::min(
-            std::fabs(p_blk->LLX() - sub_cluster.LLX()),
-            std::fabs(p_blk->URX() - sub_cluster.URX())
+            std::fabs(p_blk->LLX() - segment.LLX()),
+            std::fabs(p_blk->URX() - segment.URX())
         );
       }
     }
@@ -517,16 +510,15 @@ bool Cluster::AttemptToAdd(Block *p_blk) {
     return false;
   }
 
-  sub_clusters_[min_index].AddBlock(p_blk);
-  sub_clusters_[min_index].used_size_ += p_blk->Width();
+  segments_[min_index].AddBlock(p_blk);
   p_blk->SetOrient(ComputeBlockOrient(p_blk));
   AddBlockRegion(p_blk, 0);
   return true;
 }
 
-BlockOrient Cluster::ComputeBlockOrient(Block *p_blk) {
+BlockOrient GriddedRow::ComputeBlockOrient(Block *p_blk) {
   DaliExpects(p_blk != nullptr, "Nullptr?");
-  BlockTypeMultiWell *well = p_blk->TypePtr()->MultiWellPtr();
+  BlockTypeWell *well = p_blk->TypePtr()->WellPtr();
   BlockOrient orient = N;
   bool is_cluster_block_orientation_matching =
       (is_orient_N_ && well->IsBottomWellP()) ||
@@ -537,12 +529,12 @@ BlockOrient Cluster::ComputeBlockOrient(Block *p_blk) {
   return orient;
 }
 
-void Cluster::SubClusterLegalize() {
-  for (auto &sub_cluster: sub_clusters_) {
-    sub_cluster.MinDisplacementLegalization();
-    for (auto &p_blk: sub_cluster.blk_list_) {
-      BlockTypeMultiWell *well = p_blk->TypePtr()->MultiWellPtr();
-      double y_loc = sub_cluster.LLY();
+void GriddedRow::LegalizeSegments() {
+  for (auto &segment: segments_) {
+    segment.MinDisplacementLegalization();
+    for (auto &p_blk: segment.Blocks()) {
+      BlockTypeWell *well = p_blk->TypePtr()->WellPtr();
+      double y_loc = ly_;
       if (is_orient_N_) {
         y_loc += p_well_height_ - well->PwellHeight(0, p_blk->IsFlipped());
       } else {
@@ -553,13 +545,13 @@ void Cluster::SubClusterLegalize() {
   }
 }
 
-void Cluster::RecomputeHeight(int p_well_height, int n_well_height) {
+void GriddedRow::RecomputeHeight(int p_well_height, int n_well_height) {
   p_well_height_ = p_well_height;
   n_well_height_ = n_well_height;
   for (auto &blk_region: blk_regions_) {
     auto *p_blk = blk_region.p_blk;
     size_t region_id = blk_region.region_id;
-    BlockTypeMultiWell *well = p_blk->TypePtr()->MultiWellPtr();
+    BlockTypeWell *well = p_blk->TypePtr()->WellPtr();
     int p_height = well->PwellHeight(region_id, p_blk->IsFlipped());
     int n_height = well->NwellHeight(region_id, p_blk->IsFlipped());
     p_well_height_ = std::max(p_well_height_, p_height);
@@ -568,11 +560,11 @@ void Cluster::RecomputeHeight(int p_well_height, int n_well_height) {
   height_ = p_well_height_ + n_well_height_;
 }
 
-void Cluster::InitializeBlockStretching() {
+void GriddedRow::InitializeBlockStretching() {
   for (auto &blk_region: blk_regions_) {
     auto *p_blk = blk_region.p_blk;
     size_t region_id = blk_region.region_id;
-    BlockTypeMultiWell *well = p_blk->TypePtr()->MultiWellPtr();
+    BlockTypeWell *well = p_blk->TypePtr()->WellPtr();
     size_t row_cnt = well->RowCount();
     if (region_id == 0) {
       p_blk->StretchLengths().resize(row_cnt - 1, 0);

@@ -26,14 +26,14 @@
 namespace dali {
 
 void Stripe::MinDisplacementAdjustment() {
-  for (auto &cluster: cluster_list_) {
-    cluster.UpdateMinDisplacementLLY();
+  for (auto &row: gridded_rows_) {
+    row.UpdateMinDisplacementLLY();
   }
 
   std::sort(
-      cluster_list_.begin(),
-      cluster_list_.end(),
-      [](const Cluster &cluster0, const Cluster &cluster1) {
+      gridded_rows_.begin(),
+      gridded_rows_.end(),
+      [](const GriddedRow &cluster0, const GriddedRow &cluster1) {
         return cluster0.MinDisplacementLLY()
             < cluster1.MinDisplacementLLY();
       }
@@ -41,20 +41,20 @@ void Stripe::MinDisplacementAdjustment() {
 
   std::vector<ClusterSegment> segments;
 
-  int sz = (int) cluster_list_.size();
+  int sz = (int) gridded_rows_.size();
   int lower_bound = ly_;
   int upper_bound = ly_ + height_;
   for (int i = 0; i < sz; ++i) {
     // create a segment which contains only this block
-    Cluster &cluster = cluster_list_[i];
-    double init_y = cluster.MinDisplacementLLY();
+    GriddedRow &row = gridded_rows_[i];
+    double init_y = row.MinDisplacementLLY();
     if (init_y < lower_bound) {
       init_y = lower_bound;
     }
-    if (init_y + cluster.Height() > upper_bound) {
-      init_y = upper_bound - cluster.Height();
+    if (init_y + row.Height() > upper_bound) {
+      init_y = upper_bound - row.Height();
     }
-    segments.emplace_back(&cluster, init_y);
+    segments.emplace_back(&row, init_y);
 
     // if this new segment is the only segment, do nothing
     size_t seg_sz = segments.size();
@@ -83,11 +83,11 @@ void Stripe::MinDisplacementAdjustment() {
 
 void Stripe::UpdateFrontCluster(int p_height, int n_height) {
   ++front_id_;
-  if (front_id_ >= cluster_list_.size()) {
-    cluster_list_.emplace_back();
+  if (front_id_ >= gridded_rows_.size()) {
+    gridded_rows_.emplace_back();
   }
-  cluster_list_[front_id_].SetLLX(lx_);
-  cluster_list_[front_id_].SetWidth(width_);
+  gridded_rows_[front_id_].SetLLX(lx_);
+  gridded_rows_[front_id_].SetWidth(width_);
 
   // determine the orientation of lower y of the front cluster
   int ly;
@@ -96,14 +96,14 @@ void Stripe::UpdateFrontCluster(int p_height, int n_height) {
     ly = ly_;
     is_orient_N = is_first_row_orient_N_;
   } else {
-    ly = cluster_list_[front_id_ - 1].URY();
-    is_orient_N = !cluster_list_[front_id_ - 1].IsOrientN();
+    ly = gridded_rows_[front_id_ - 1].URY();
+    is_orient_N = !gridded_rows_[front_id_ - 1].IsOrientN();
   }
-  cluster_list_[front_id_].SetLLY(ly);
-  cluster_list_[front_id_].SetOrient(is_orient_N);
+  gridded_rows_[front_id_].SetLLY(ly);
+  gridded_rows_[front_id_].SetOrient(is_orient_N);
 
-  cluster_list_[front_id_].UpdateWellHeightFromBottom(p_height, n_height);
-  cluster_list_[front_id_].UpdateSubClusters();
+  gridded_rows_[front_id_].UpdateWellHeightFromBottom(p_height, n_height);
+  gridded_rows_[front_id_].UpdateSegments();
 }
 
 /****
@@ -113,22 +113,22 @@ void Stripe::UpdateFrontCluster(int p_height, int n_height) {
  * @param p_blk
  */
 void Stripe::SimplyAddFollowingClusters(Block *p_blk) {
-  BlockTypeMultiWell *well = p_blk->TypePtr()->MultiWellPtr();
+  BlockTypeWell *well = p_blk->TypePtr()->WellPtr();
   size_t row_count = well->RowCount();
   for (size_t i = 1; i < row_count; ++i) {
     size_t row_index = front_id_ + i;
-    if (row_index >= cluster_list_.size()) {
-      cluster_list_.emplace_back();
+    if (row_index >= gridded_rows_.size()) {
+      gridded_rows_.emplace_back();
     }
-    bool is_orient_N = !cluster_list_[row_index - 1].IsOrientN();
-    cluster_list_[row_index].SetOrient(is_orient_N);
-    cluster_list_[row_index].AddBlockRegion(p_blk, i);
+    bool is_orient_N = !gridded_rows_[row_index - 1].IsOrientN();
+    gridded_rows_[row_index].SetOrient(is_orient_N);
+    gridded_rows_[row_index].AddBlockRegion(p_blk, i);
   }
 }
 
 bool Stripe::AddBlockToFrontCluster(Block *p_blk) {
   bool res;
-  res = cluster_list_[front_id_].AttemptToAdd(p_blk);
+  res = gridded_rows_[front_id_].AttemptToAdd(p_blk);
   if (!res) return false;
 
   // add this block to other clusters above the front cluster
@@ -144,10 +144,10 @@ size_t Stripe::FitBlocksToFrontSpace(size_t start_id) {
   size_t blks_sz = block_list_.size();
   for (size_t i = start_id; i < blks_sz; ++i) {
     Block *p_blk = block_list_[i];
-    if (!cluster_list_[front_id_].IsOverlap(p_blk, 1)) {
+    if (!gridded_rows_[front_id_].IsOverlap(p_blk, 1)) {
       break;
     }
-    if (cluster_list_[front_id_].IsOrientMatching(p_blk)) {
+    if (gridded_rows_[front_id_].IsOrientMatching(p_blk)) {
       if (AddBlockToFrontCluster(p_blk)) {
         legalized_blks.push_back(p_blk);
       } else {
@@ -173,33 +173,33 @@ size_t Stripe::FitBlocksToFrontSpace(size_t start_id) {
 }
 
 void Stripe::LegalizeFrontCluster() {
-  cluster_list_[front_id_].SubClusterLegalize();
+  gridded_rows_[front_id_].LegalizeSegments();
 }
 
 void Stripe::UpdateRemainingClusters(int p_height, int n_height) {
-  size_t sz = cluster_list_.size();
+  size_t sz = gridded_rows_.size();
   for (size_t i = front_id_ + 1; i < sz; ++i) {
-    cluster_list_[i].SetLLX(lx_);
-    cluster_list_[i].SetWidth(width_);
-    cluster_list_[i].SetLLY(cluster_list_[i - 1].URY());
-    cluster_list_[i].RecomputeHeight(p_height, n_height);
+    gridded_rows_[i].SetLLX(lx_);
+    gridded_rows_[i].SetWidth(width_);
+    gridded_rows_[i].SetLLY(gridded_rows_[i - 1].URY());
+    gridded_rows_[i].RecomputeHeight(p_height, n_height);
   }
 }
 
 void Stripe::UpdateBlockStretchLength() {
-  for (auto &cluster: cluster_list_) {
+  for (auto &cluster: gridded_rows_) {
     cluster.InitializeBlockStretching();
   }
 
-  size_t sz = cluster_list_.size();
+  size_t sz = gridded_rows_.size();
   for (size_t i = 1; i < sz; ++i) {
-    Cluster &cur_cluster = cluster_list_[i];
-    Cluster &pre_cluster = cluster_list_[i - 1];
+    GriddedRow &cur_cluster = gridded_rows_[i];
+    GriddedRow &pre_cluster = gridded_rows_[i - 1];
     for (auto &blk_region: cur_cluster.blk_regions_) {
       size_t id = blk_region.region_id;
       if (id >= 1) {
         Block *p_blk = blk_region.p_blk;
-        BlockTypeMultiWell *well = blk_region.p_blk->TypePtr()->MultiWellPtr();
+        BlockTypeWell *well = blk_region.p_blk->TypePtr()->WellPtr();
         --id;
         int well_edge_distance =
             well->AdjacentRegionEdgeDistance(id, p_blk->IsFlipped());

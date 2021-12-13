@@ -192,7 +192,7 @@ void SpacePartitioner::DecomposeSpaceToSimpleStripes() {
           stripe->ly_ = y_loc;
           stripe->height_ = row_height_;
           stripe->contour_ = y_loc;
-          stripe->front_cluster_ = nullptr;
+          stripe->front_row_ = nullptr;
           stripe->used_height_ = 0;
           stripe->max_blk_capacity_per_cluster_ =
               stripe->width_ / p_ckt_->MinBlkWidth();
@@ -301,18 +301,17 @@ bool SpacePartitioner::StartPartitioning() {
       max_cell_width_ = std::max(max_cell_width_, blk.Width());
     }
   }
-  BOOST_LOG_TRIVIAL(info) << "Max movable cell width: "
-                          << max_cell_width_ << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "Max movable cell width: " << max_cell_width_ << "\n";
 
   // determine the width of columns
   if (cluster_width_ <= 0) {
     BOOST_LOG_TRIVIAL(info)
-      << "Using default cluster width: 2*max_unplug_length_\n";
-    stripe_width_ =
-        (int) std::round(max_unplug_length_ * stripe_width_factor_);
+      << "Using default gridded row width: 2*max_unplug_length_\n";
+    stripe_width_ = (int) std::round(max_unplug_length_ * stripe_width_factor_);
   } else {
     DaliWarns(cluster_width_ < max_unplug_length_,
-              "Specified cluster width is smaller than max_unplug_length_, space is wasted, may not be able to successfully complete well legalization");
+              "Specified gridded row width is smaller than max_unplug_length_, space is wasted, may not be able to successfully complete well legalization");
     stripe_width_ = cluster_width_;
   }
   stripe_width_ = stripe_width_ + well_spacing_;
@@ -322,16 +321,16 @@ bool SpacePartitioner::StartPartitioning() {
     stripe_width_ = region_width;
   }
   tot_col_num_ = std::ceil(region_width / (double) stripe_width_);
-  BOOST_LOG_TRIVIAL(info) << "Total number of cluster columns: "
+  BOOST_LOG_TRIVIAL(info) << "Total number of columns: "
                           << tot_col_num_ << "\n";
   int max_clusters_per_col = region_height / p_ckt_->MinBlkHeight();
   col_list.resize(tot_col_num_);
   stripe_width_ = region_width / tot_col_num_;
-  BOOST_LOG_TRIVIAL(info) << "Cluster width: "
+  BOOST_LOG_TRIVIAL(info) << "Gridded row width: "
                           << stripe_width_ * p_ckt_->GridValueX() << " um, "
                           << stripe_width_ << "\n";
   DaliWarns(stripe_width_ < max_cell_width_,
-            "Maximum cell width is longer than cluster width?");
+            "Maximum cell width is longer than gridded row width?");
   for (int i = 0; i < tot_col_num_; ++i) {
     col_list[i].lx_ = Left() + i * stripe_width_;
     col_list[i].width_ = stripe_width_ - well_spacing_;
@@ -348,7 +347,7 @@ bool SpacePartitioner::StartPartitioning() {
 
   //BOOST_LOG_TRIVIAL(info)  <<"left: %d, right: %d\n", left_, right_);
   BOOST_LOG_TRIVIAL(info)
-    << "Maximum possible number of clusters in a column: "
+    << "Maximum possible number of gridded rows in a column: "
     << max_clusters_per_col << "\n";
 
   AssignBlockToColBasedOnWhiteSpace();

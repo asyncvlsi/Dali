@@ -73,7 +73,7 @@ bool Tech::IsWellInfoSet() const {
   return n_set_ || p_set_;
 }
 
-std::list<BlockTypeMultiWell> &Tech::MultiWells() {
+std::list<BlockTypeWell> &Tech::MultiWells() {
   return multi_well_list_;
 }
 
