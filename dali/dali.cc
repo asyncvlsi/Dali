@@ -152,11 +152,6 @@ void Dali::FetchSlacks() {
 }
 
 void Dali::StartPlacement(double density, int number_of_threads) {
-  int num_of_thread_openmp = number_of_threads;
-  omp_set_num_threads(num_of_thread_openmp);
-  Eigen::initParallel();
-  BOOST_LOG_TRIVIAL(info) << "Eigen thread " << Eigen::nbThreads() << "\n";
-
   BOOST_LOG_TRIVIAL(info) << "  Average white space utility: "
                           << circuit_.WhiteSpaceUsage() << std::endl;
   circuit_.ReportBriefSummary();
@@ -165,7 +160,7 @@ void Dali::StartPlacement(double density, int number_of_threads) {
   circuit_.ReportHPWL();
   //circuit.BuildBlkPairNets();
 
-  GlobalPlace(density);
+  GlobalPlace(density, number_of_threads);
 
 #if PHYDB_USE_GALOIS
   if (phy_db_ptr_->GetTimingApi().ReadyForTimingDriven()) {
@@ -257,9 +252,12 @@ bool Dali::AddWellTaps(int argc, char **argv) {
  * @param density, target density, reasonable range (0, 1].
  * @return void
  */
-void Dali::GlobalPlace(double density) {
+void Dali::GlobalPlace(double density, int number_of_threads) {
   //std::string config_file = "dali.conf";
-
+  int num_of_thread_openmp = number_of_threads;
+  omp_set_num_threads(num_of_thread_openmp);
+  Eigen::initParallel();
+  BOOST_LOG_TRIVIAL(info) << "Eigen thread " << Eigen::nbThreads() << "\n";
   //gb_placer_.LoadConf(config_file);
   gb_placer_.SetInputCircuit(&circuit_);
   gb_placer_.is_dump = false;

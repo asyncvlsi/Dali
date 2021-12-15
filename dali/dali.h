@@ -60,7 +60,7 @@ class Dali {
       bool is_checker_board
   );
   bool AddWellTaps(int argc, char **argv);
-  void GlobalPlace(double density);
+  void GlobalPlace(double density, int number_of_threads = 1);
   void UnifiedLegalization();
 
   void ExternalDetailedPlaceAndLegalize(
