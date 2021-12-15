@@ -1674,20 +1674,14 @@ void Circuit::SaveIoPin(
   if ((after_io_place && iopin.IsPlaced())
       || (!after_io_place && iopin.IsPrePlaced())) {
     std::string const &metal_name = iopin.LayerName();
-    int half_width = std::ceil(
-        iopin.LayerPtr()->MinHeight() / 2.0 * design_.distance_microns_
-    );
-    int height = std::ceil(
-        iopin.LayerPtr()->Width() * design_.distance_microns_
-    );
     ost << "\n  + LAYER "
         << metal_name
         << " ( "
-        << -half_width << " "
-        << 0 << " ) "
+        << iopin.GetShape().LLX() * design_.distance_microns_ << " "
+        << iopin.GetShape().LLY() * design_.distance_microns_ << " ) "
         << " ( "
-        << half_width << " "
-        << height << " ) ";
+        << iopin.GetShape().URX() * design_.distance_microns_ << " "
+        << iopin.GetShape().URY() * design_.distance_microns_ << " ) ";
     ost << "\n  + PLACED ( "
         << LocDali2PhydbX(iopin.X())
         << " "

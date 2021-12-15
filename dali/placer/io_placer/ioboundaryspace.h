@@ -58,9 +58,11 @@ struct IoPinCluster {
  * If there is no blockage on the boundary, then it only contains one IoPinCluster.
  */
 struct IoBoundaryLayerSpace {
-  IoBoundaryLayerSpace(bool is_horizontal_init,
-                       double boundary_loc_init,
-                       MetalLayer *metal_layer_init);
+  IoBoundaryLayerSpace(
+      bool is_horizontal_init,
+      double boundary_loc_init,
+      MetalLayer *metal_layer_init
+  );
   ~IoBoundaryLayerSpace();
   bool is_horizontal;
   double boundary_loc;
@@ -73,7 +75,7 @@ struct IoBoundaryLayerSpace {
 
   void AddCluster(double low, double span);
 
-  void ComputeDefaultShape();
+  void ComputeDefaultShape(double manufacturing_grid);
   void UpdateIoPinShapeAndLayer();
   void UniformAssignIoPinToCluster();
   void GreedyAssignIoPinToCluster();
@@ -84,11 +86,7 @@ struct IoBoundaryLayerSpace {
  * A structure for storing IOPINs on a boundary for all possible metal layer.
  */
 struct IoBoundarySpace {
- private:
-  int iopin_limit_ = 0;
-  bool is_iopin_limit_set_ = false;
-  bool is_horizontal_;
-  double boundary_loc_ = 0;
+  friend class IoPlacer;
  public:
   std::vector<IoBoundaryLayerSpace> layer_spaces_;
 
@@ -96,6 +94,12 @@ struct IoBoundarySpace {
   void AddLayer(MetalLayer *metal_layer);
   void SetIoPinLimit(int limit);
   bool AutoPlaceIoPin();
+ private:
+  int iopin_limit_ = 0;
+  bool is_iopin_limit_set_ = false;
+  bool is_horizontal_;
+  double boundary_loc_ = 0;
+  double manufacturing_grid_;
 };
 
 }

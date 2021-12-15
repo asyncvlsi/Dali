@@ -31,6 +31,9 @@ namespace dali {
 // custom residual function, return: |x - round(x/y) * y|
 double AbsResidual(double x, double y);
 
+// perform round() when x is close to an integer within an epsilon, other perform ceiling()
+double RoundOrCeiling(double x, double epsilon = 1e-5);
+
 // splits a line into many words
 void StrTokenize(std::string const &line, std::vector<std::string> &res);
 

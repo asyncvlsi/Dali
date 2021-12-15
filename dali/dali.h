@@ -23,9 +23,9 @@
 
 #include <phydb/phydb.h>
 
-#include "circuit/circuit.h"
-#include "placer.h"
-#include "timing/starpimodelestimator.h"
+#include "dali/circuit/circuit.h"
+#include "dali/placer.h"
+#include "dali/timing/starpimodelestimator.h"
 
 namespace dali {
 

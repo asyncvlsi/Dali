@@ -31,6 +31,13 @@ double AbsResidual(double x, double y) {
   return std::fabs(x - std::round(x / y) * y);
 }
 
+double RoundOrCeiling(double x, double epsilon) {
+  if (AbsResidual(x, 1) > epsilon) {
+    return std::ceil(x);
+  }
+  return std::round(x);
+}
+
 void StrTokenize(std::string const &line, std::vector<std::string> &res) {
   static std::vector<char> delimiter_list{' ', ':', ';', '\t', '\r', '\n'};
 

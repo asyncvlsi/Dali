@@ -20,6 +20,8 @@
  ******************************************************************************/
 #include "ioboundaryspace.h"
 
+#include "dali/common/helper.h"
+
 namespace dali {
 
 IoPinCluster::IoPinCluster(
@@ -116,19 +118,27 @@ void IoBoundaryLayerSpace::AddCluster(double low, double span) {
   pin_clusters.emplace_back(is_horizontal, boundary_loc, low, span);
 }
 
-void IoBoundaryLayerSpace::ComputeDefaultShape() {
-  double min_width = metal_layer->Width();
+void IoBoundaryLayerSpace::ComputeDefaultShape(double manufacturing_grid) {
   double min_area = metal_layer->MinArea();
-  double height = min_area / min_width;
+  double width = metal_layer->Width();
+  double height = min_area / width;
+  height = std::max(height, width); // height is always no less than width
 
-  default_horizontal_shape.SetValue(-height / 2.0,
-                                    0,
-                                    height / 2.0,
-                                    min_width);
-  default_vertical_shape.SetValue(-min_width / 2.0,
-                                  0,
-                                  min_width / 2.0,
-                                  height);
+  width = RoundOrCeiling(width / manufacturing_grid) * manufacturing_grid;
+  height = RoundOrCeiling(height / manufacturing_grid) * manufacturing_grid;
+
+  double grid_half_width = RoundOrCeiling(width / 2.0 / manufacturing_grid);
+  double half_width = grid_half_width * manufacturing_grid;
+
+  double grid_half_height = RoundOrCeiling(height / 2.0 / manufacturing_grid);
+  double half_height = grid_half_height * manufacturing_grid;
+
+  default_horizontal_shape.SetValue(
+      -half_height, 0, half_height, width
+  );
+  default_vertical_shape.SetValue(
+      -half_width, 0, half_width, height
+  );
 }
 
 void IoBoundaryLayerSpace::UpdateIoPinShapeAndLayer() {
@@ -226,7 +236,7 @@ void IoBoundarySpace::SetIoPinLimit(int limit) {
 
 bool IoBoundarySpace::AutoPlaceIoPin() {
   for (auto &layer_space: layer_spaces_) {
-    layer_space.ComputeDefaultShape();
+    layer_space.ComputeDefaultShape(manufacturing_grid_);
     layer_space.AssignIoPinToCluster();
     layer_space.UpdateIoPinShapeAndLayer();
     for (auto &pin_cluster: layer_space.pin_clusters) {

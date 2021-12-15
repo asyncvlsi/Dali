@@ -57,6 +57,8 @@ void IoPlacer::InitializeBoundarySpaces() {
         i == BOTTOM || i == TOP,
         boundary_loc[i]
     );
+    boundary_spaces_.back().manufacturing_grid_ =
+        phy_db_ptr_->tech().GetManufacturingGrid();
   }
 
 }
@@ -91,8 +93,7 @@ bool IoPlacer::ConfigSetMetalLayer(int boundary_index, int metal_layer_index) {
       << metal_layer_index << "\n";
     return false;
   }
-  MetalLayer *metal_layer =
-      &(p_ckt_->Metals()[metal_layer_index]);
+  MetalLayer *metal_layer = &(p_ckt_->Metals()[metal_layer_index]);
   boundary_spaces_[boundary_index].AddLayer(metal_layer);
   return true;
 }
@@ -245,11 +246,13 @@ bool IoPlacer::BuildResourceMap() {
 
   for (int i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
     std::vector<Seg<double>> &used_segments = all_used_segments[i];
-    std::sort(used_segments.begin(),
-              used_segments.end(),
-              [](const Seg<double> &lhs, const Seg<double> &rhs) {
-                return (lhs.lo < rhs.lo);
-              });
+    std::sort(
+        used_segments.begin(),
+        used_segments.end(),
+        [](const Seg<double> &lhs, const Seg<double> &rhs) {
+          return (lhs.lo < rhs.lo);
+        }
+    );
     std::vector<Seg<double>> avail_space;
     if (i == LEFT || i == RIGHT) {
       double lo = p_ckt_->design().RegionBottom();
