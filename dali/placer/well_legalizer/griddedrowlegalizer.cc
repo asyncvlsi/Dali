@@ -46,18 +46,42 @@ void GriddedRowLegalizer::CheckWellInfo() {
   tap_cell_n_height_ = tap_cell_well->NwellHeight(0);
 }
 
-void GriddedRowLegalizer::SetPartitionMode(StripePartitionMode mode) {
-  stripe_mode_ = mode;
+void GriddedRowLegalizer::SetExternalSpacePartitioner(
+    AbstractSpacePartitioner *p_external_partitioner
+) {
+  space_partitioner_ = p_external_partitioner;
+}
+
+void GriddedRowLegalizer::SetPartitionMode(int partitioning_mode) {
+  partitioning_mode_ = partitioning_mode;
+}
+
+void GriddedRowLegalizer::SetWellTapCellParameters(
+    double cell_interval_microns,
+    bool is_checker_board_mode,
+    BlockType *p_well_tap_type
+) {
+
 }
 
 void GriddedRowLegalizer::PartitionSpaceAndBlocks() {
-  space_partitioner_.SetCircuit(p_ckt_);
-  space_partitioner_.SetOutput(&col_list_);
-  space_partitioner_.SetReservedSpaceToBoundaries(
+  bool is_external_partitioner_provided = (space_partitioner_ != nullptr);
+  if (!is_external_partitioner_provided) {
+    space_partitioner_ = new SpacePartitioner;
+  }
+
+  space_partitioner_->SetInputCircuit(p_ckt_);
+  space_partitioner_->SetOutput(&col_list_);
+  space_partitioner_->SetReservedSpaceToBoundaries(
       well_spacing_, well_spacing_, 1, 1
   );
-  space_partitioner_.SetPartitionMode(stripe_mode_);
-  space_partitioner_.StartPartitioning();
+  space_partitioner_->SetPartitionMode(partitioning_mode_);
+  space_partitioner_->StartPartitioning();
+
+  if (!is_external_partitioner_provided) {
+    delete space_partitioner_;
+    space_partitioner_ = nullptr;
+  }
 }
 
 bool GriddedRowLegalizer::StripeLegalizationBottomUp(Stripe &stripe) {
@@ -103,6 +127,10 @@ void GriddedRowLegalizer::StretchBlocks() {
   }
 }
 
+void GriddedRowLegalizer::EmbodyWellTapCells() {
+
+}
+
 bool GriddedRowLegalizer::StartPlacement() {
   BOOST_LOG_TRIVIAL(info)
     << "---------------------------------------\n"
@@ -117,6 +145,7 @@ bool GriddedRowLegalizer::StartPlacement() {
   PartitionSpaceAndBlocks();
   GroupBlocksToClusters();
   StretchBlocks();
+  EmbodyWellTapCells();
 
   ReportHPWL();
 

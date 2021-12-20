@@ -33,13 +33,22 @@ class GriddedRowLegalizer : public Placer {
 
   void CheckWellInfo();
 
-  void SetPartitionMode(StripePartitionMode mode);
+  void SetExternalSpacePartitioner(AbstractSpacePartitioner *p_external_partitioner);
+  void SetPartitionMode(int partitioning_mode_);
   void PartitionSpaceAndBlocks();
+
+  void SetWellTapCellParameters(
+      double cell_interval_microns,
+      bool is_checker_board_mode = false,
+      BlockType *p_well_tap_type = nullptr
+  );
 
   bool StripeLegalizationBottomUp(Stripe &stripe);
   bool GroupBlocksToClusters();
 
   void StretchBlocks();
+
+  void EmbodyWellTapCells();
 
   bool StartPlacement() override;
   void GenMatlabClusterTable(std::string const &name_of_file);
@@ -48,12 +57,13 @@ class GriddedRowLegalizer : public Placer {
       int well_emit_mode
   ) override;
  private:
-  StripePartitionMode stripe_mode_ = StripePartitionMode::STRICT;
-  SpacePartitioner space_partitioner_;
+  // space partitioner
+  int partitioning_mode_ = 0;
+  AbstractSpacePartitioner *space_partitioner_ = nullptr;
 
   int well_spacing_ = 0;
-  int tap_cell_p_height_;
-  int tap_cell_n_height_;
+  int tap_cell_p_height_ = 0;
+  int tap_cell_n_height_ = 0;
 
   std::vector<ClusterStripe> col_list_;
 };

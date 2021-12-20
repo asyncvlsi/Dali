@@ -100,7 +100,7 @@ void StdClusterWellLegalizer::InitializeWellLegalizer(int cluster_width) {
   // fetch parameters related to N/P-well
   FetchNpWellParams();
 
-  space_partitioner_.SetCircuit(p_ckt_);
+  space_partitioner_.SetInputCircuit(p_ckt_);
   space_partitioner_.SetOutput(&col_list_);
   space_partitioner_.SetReservedSpaceToBoundaries(
       well_spacing_, well_spacing_, 1, 1

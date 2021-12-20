@@ -137,8 +137,7 @@ void Dali::FetchSlacks() {
             << timing_api.GetNumConstraints() << "\n";
   for (int i = 0; i < (int) timing_api.GetNumConstraints(); ++i) {
     double slack = timing_api.GetSlack(i);
-    std::cout << "Slack for timing constraint " << i << " " << slack
-              << "\n";
+    std::cout << "Slack for timing constraint " << i << " " << slack << "\n";
     if (slack < 0) {
       phydb::PhydbPath fast_path;
       phydb::PhydbPath slow_path;
@@ -296,7 +295,7 @@ void Dali::UnifiedLegalization() {
    */
 
   well_legalizer_.TakeOver(&gb_placer_);
-  well_legalizer_.SetStripePartitionMode(StripePartitionMode::SCAVENGE);
+  well_legalizer_.SetStripePartitionMode(int(StripePartitionMode::SCAVENGE));
   well_legalizer_.is_dump = false;
   well_legalizer_.StartPlacement();
   //well_legalizer_.GenMatlabClusterTable("sc_result");

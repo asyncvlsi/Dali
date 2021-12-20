@@ -41,7 +41,7 @@ class StdClusterWellLegalizer : public Placer {
   void LoadConf(std::string const &config_file) override;
 
   void CheckWellStatus();
-  void SetStripePartitionMode(StripePartitionMode mode) { stripe_mode_ = mode; }
+  void SetStripePartitionMode(int mode) { stripe_mode_ = mode; }
   void SetFirstRowOrientN(bool is_N) { is_first_row_orient_N_ = is_N; }
   void FetchNpWellParams();
   void SaveInitialBlockLocation();
@@ -119,7 +119,7 @@ class StdClusterWellLegalizer : public Placer {
   int well_spacing_;
 
   /**** stripe parameters ****/
-  StripePartitionMode stripe_mode_ = StripePartitionMode::STRICT;
+  int stripe_mode_ = 0;
   SpacePartitioner space_partitioner_;
 
   /**** cached well tap cell parameters ****/

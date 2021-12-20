@@ -22,27 +22,27 @@
 
 namespace dali {
 
-void SpacePartitioner::SetCircuit(Circuit *p_ckt) {
+void AbstractSpacePartitioner::SetInputCircuit(Circuit *p_ckt) {
   DaliExpects(p_ckt != nullptr, "Partition space for a null Circuit?");
   p_ckt_ = p_ckt;
 }
 
-void SpacePartitioner::SetOutput(std::vector<ClusterStripe> *p_col_list) {
+void AbstractSpacePartitioner::SetOutput(std::vector<ClusterStripe> *p_col_list) {
   DaliExpects(p_col_list != nullptr, "Save partitioning result to a nullptr?");
   p_col_list_ = p_col_list;
 }
 
-void SpacePartitioner::SetPartitionMode(StripePartitionMode stripe_mode) {
-  stripe_mode_ = stripe_mode;
-}
-
-void SpacePartitioner::SetReservedSpaceToBoundaries(
+void AbstractSpacePartitioner::SetReservedSpaceToBoundaries(
     int l_space, int r_space, int b_space, int t_space
 ) {
   l_space_ = l_space;
   r_space_ = r_space;
   b_space_ = b_space;
   t_space_ = t_space;
+}
+
+void AbstractSpacePartitioner::SetPartitionMode(int stripe_mode) {
+  partition_mode_ = stripe_mode;
 }
 
 void SpacePartitioner::FetchWellParameters() {
@@ -338,7 +338,7 @@ bool SpacePartitioner::StartPartitioning() {
                 "CELL configuration is problematic, leading to non-positive column width");
     UpdateWhiteSpaceInCol(col_list[i]);
   }
-  if (stripe_mode_ == StripePartitionMode::SCAVENGE) {
+  if (partition_mode_ == 1) {
     col_list.back().width_ = Right() - col_list.back().lx_;
     UpdateWhiteSpaceInCol(col_list.back());
   }

@@ -28,37 +28,22 @@
 
 namespace dali {
 
-enum class StripePartitionMode {
-  STRICT = 0,
-  SCAVENGE = 1
-};
-
-class SpacePartitioner {
+class AbstractSpacePartitioner {
  public:
-  SpacePartitioner() = default;
+  AbstractSpacePartitioner() = default;
+  virtual ~AbstractSpacePartitioner() = default;
 
-  void SetCircuit(Circuit *p_ckt);
-  void SetOutput(std::vector<ClusterStripe> *p_col_list);
-  void SetPartitionMode(StripePartitionMode stripe_mode);
-
-  void SetReservedSpaceToBoundaries(
+  virtual void SetInputCircuit(Circuit *p_ckt);
+  virtual void SetOutput(std::vector<ClusterStripe> *p_col_list);
+  virtual void SetReservedSpaceToBoundaries(
       int l_space, int r_space, int b_space, int t_space
   );
+  virtual void SetPartitionMode(int stripe_mode);
 
-  void FetchWellParameters();
-  void DetectAvailSpace();
-  void UpdateWhiteSpaceInCol(ClusterStripe &col);
-  void DecomposeSpaceToSimpleStripes();
-  void AssignBlockToColBasedOnWhiteSpace();
-
-  bool StartPartitioning();
-
-  /**** member functions for debugging ****/
-  void PlotAvailSpace(std::string const &name_of_file = "avail_space.txt");
-  void PlotAvailSpaceInCols(std::string const &name_of_file = "avail_space.txt");
-  void PlotSimpleStripes(std::string const &name_of_file = "stripe_space.txt");
- private:
+  virtual bool StartPartitioning() = 0;
+ protected:
   Circuit *p_ckt_ = nullptr;
+  std::vector<ClusterStripe> *p_col_list_ = nullptr;
 
   // some distances reserved to every edge
   int l_space_ = 0;
@@ -66,6 +51,32 @@ class SpacePartitioner {
   int b_space_ = 0;
   int t_space_ = 0;
 
+  int partition_mode_ = 0;
+};
+
+enum class StripePartitionMode {
+  STRICT = 0,
+  SCAVENGE = 1
+};
+
+class SpacePartitioner : public AbstractSpacePartitioner {
+ public:
+  SpacePartitioner() = default;
+  ~SpacePartitioner() override = default;
+
+  void FetchWellParameters();
+  void DetectAvailSpace();
+  void UpdateWhiteSpaceInCol(ClusterStripe &col);
+  void DecomposeSpaceToSimpleStripes();
+  void AssignBlockToColBasedOnWhiteSpace();
+
+  bool StartPartitioning() override;
+
+  /**** member functions for debugging ****/
+  void PlotAvailSpace(std::string const &name_of_file = "avail_space.txt");
+  void PlotAvailSpaceInCols(std::string const &name_of_file = "avail_space.txt");
+  void PlotSimpleStripes(std::string const &name_of_file = "stripe_space.txt");
+ private:
   /**** well parameters ****/
   int max_unplug_length_ = 0;
   int well_spacing_ = 0;
@@ -73,13 +84,11 @@ class SpacePartitioner {
   /**** stripe parameters ****/
   int max_cell_width_ = 0;
   double stripe_width_factor_ = 2.0;
-  StripePartitionMode stripe_mode_ = StripePartitionMode::STRICT;
 
-  // write result to an external container in a legalizer
+  /**** write result to an external container in a legalizer ****/
   int cluster_width_ = 0;
   int tot_col_num_ = 0;
   int stripe_width_ = 0;
-  std::vector<ClusterStripe> *p_col_list_ = nullptr;
 
   /**** row information ****/
   bool row_height_set_ = false;

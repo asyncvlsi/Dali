@@ -62,7 +62,7 @@ bool WellPlaceFlow::StartPlacement() {
 
       StdClusterWellLegalizer well_legalizer;
       well_legalizer.TakeOver(this);
-      well_legalizer.SetStripePartitionMode(StripePartitionMode::SCAVENGE);
+      well_legalizer.SetStripePartitionMode(int(StripePartitionMode::SCAVENGE));
       well_legalizer.WellLegalize();
       upper_bound_hpwl_.back() = p_ckt_->WeightedHPWL();
 
@@ -99,7 +99,7 @@ bool WellPlaceFlow::StartPlacement() {
   ReportHPWL();
 
   well_legalizer_.TakeOver(this);
-  well_legalizer_.SetStripePartitionMode(StripePartitionMode::SCAVENGE);
+  well_legalizer_.SetStripePartitionMode(int(StripePartitionMode::SCAVENGE));
   well_legalizer_.StartPlacement();
 
   wall_time = get_wall_time() - wall_time;
