@@ -120,7 +120,7 @@ class StdClusterWellLegalizer : public Placer {
 
   /**** stripe parameters ****/
   int stripe_mode_ = 0;
-  SpacePartitioner space_partitioner_;
+  DefaultSpacePartitioner space_partitioner_;
 
   /**** cached well tap cell parameters ****/
   BlockType *well_tap_cell_ = nullptr;

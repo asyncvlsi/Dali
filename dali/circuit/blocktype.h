@@ -21,7 +21,7 @@
 #ifndef DALI_DALI_CIRCUIT_BLOCKTYPE_H_
 #define DALI_DALI_CIRCUIT_BLOCKTYPE_H_
 
-#include <map>
+#include <unordered_map>
 #include <vector>
 
 #include "dali/circuit/pin.h"
@@ -107,7 +107,7 @@ class BlockType {
   long long area_;
   BlockTypeWell *well_ptr_ = nullptr;
   std::vector<Pin> pin_list_;
-  std::map<std::string, int> pin_name_id_map_;
+  std::unordered_map<std::string, int> pin_name_id_map_;
 
   void UpdateArea();
 };
@@ -161,9 +161,9 @@ class BlockTypeWell {
 
   void SetExtraTopExtension(int top_extension);
 
-  bool IsBottomWellP() const;
+  bool IsNwellAbovePwell(int region_id) const;
 
-  size_t RowCount() const;
+  int RegionCount() const;
 
   bool HasOddRegions() const;
 
@@ -173,15 +173,15 @@ class BlockTypeWell {
 
   void CheckLegality();
 
-  int NwellHeight(size_t index, bool is_flipped = false) const;
+  int NwellHeight(int region_id, bool is_flipped = false) const;
 
-  int PwellHeight(size_t index, bool is_flipped = false) const;
+  int PwellHeight(int region_id, bool is_flipped = false) const;
 
-  int AdjacentRegionEdgeDistance(size_t index, bool is_flipped = false) const;
+  int AdjacentRegionEdgeDistance(int index, bool is_flipped = false) const;
 
-  RectI &NwellRect(size_t index);
+  RectI &NwellRect(int index);
 
-  RectI &PwellRect(size_t index);
+  RectI &PwellRect(int index);
 
   void Report() const;
 
@@ -193,6 +193,7 @@ class BlockTypeWell {
   BlockType *type_ptr_ = nullptr;
   std::vector<RectI> n_rects_;
   std::vector<RectI> p_rects_;
+  int region_count_ = 0;
   int extra_bot_extension_ = 0;
   int extra_top_extension_ = 0;
 };

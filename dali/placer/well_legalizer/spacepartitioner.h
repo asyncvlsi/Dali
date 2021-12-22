@@ -28,6 +28,22 @@
 
 namespace dali {
 
+/****
+ * This is a base class for SpacePartitioner. This partitioner is used by well
+ * legalizers to clean up design rule checking errors related to N/P-wells.
+ *
+ * A sample code snippet in a well legalizer is like the following:
+ *   p_partitioner->SetInputCircuit(p_ckt);
+ *   p_partitioner->SetOutput(&col_list);
+ *   p_partitioner->SetReservedSpaceToBoundaries(l_space, r_space, b_space, t_space);
+ *   p_partitioner->SetPartitionMode(partition_mode);
+ *   p_partitioner->StartPartitioning();
+ *
+ * After partitioning, the whole placement region and circuit is partitioned into
+ * several smaller rectangular placement regions and sub-circuits. The partitioning
+ * results are saved in the output container. Then the well legalizer will take
+ * over from here, and perform legalization is each rectangular placement region.
+ */
 class AbstractSpacePartitioner {
  public:
   AbstractSpacePartitioner() = default;
@@ -38,7 +54,7 @@ class AbstractSpacePartitioner {
   virtual void SetReservedSpaceToBoundaries(
       int l_space, int r_space, int b_space, int t_space
   );
-  virtual void SetPartitionMode(int stripe_mode);
+  virtual void SetPartitionMode(int partition_mode);
 
   virtual bool StartPartitioning() = 0;
  protected:
@@ -54,15 +70,20 @@ class AbstractSpacePartitioner {
   int partition_mode_ = 0;
 };
 
-enum class StripePartitionMode {
+enum class DefaultPartitionMode {
   STRICT = 0,
   SCAVENGE = 1
 };
 
-class SpacePartitioner : public AbstractSpacePartitioner {
+/****
+ * The default space partitioner. If no external space partitioner is provided
+ * during well legalization, the well legalizer will use this default space
+ * partitioner to partition placement region and circuit.
+ */
+class DefaultSpacePartitioner : public AbstractSpacePartitioner {
  public:
-  SpacePartitioner() = default;
-  ~SpacePartitioner() override = default;
+  DefaultSpacePartitioner() = default;
+  ~DefaultSpacePartitioner() override = default;
 
   void FetchWellParameters();
   void DetectAvailSpace();

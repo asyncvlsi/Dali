@@ -38,12 +38,14 @@ class GriddedRowLegalizer : public Placer {
   void PartitionSpaceAndBlocks();
 
   void SetWellTapCellParameters(
-      double cell_interval_microns,
+      double tap_cell_interval_microns,
       bool is_checker_board_mode = false,
-      BlockType *p_well_tap_type = nullptr
+      std::string const &well_tap_type_name = ""
   );
 
-  bool StripeLegalizationBottomUp(Stripe &stripe);
+  void SetLegalizationMaxIteration(size_t max_iteration);
+  bool StripeLegalizationUpward(Stripe &stripe) const;
+  bool StripeLegalizationDownward(Stripe &stripe) const;
   bool GroupBlocksToClusters();
 
   void StretchBlocks();
@@ -66,6 +68,12 @@ class GriddedRowLegalizer : public Placer {
   int tap_cell_n_height_ = 0;
 
   std::vector<ClusterStripe> col_list_;
+
+  int tap_cell_interval_grid_ = -1;
+  bool is_checker_board_mode_ = false;
+  BlockType *well_tap_type_ptr_ = nullptr;
+
+  size_t max_iteration_ = 10;
 };
 
 }

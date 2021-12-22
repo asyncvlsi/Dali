@@ -41,11 +41,11 @@ void AbstractSpacePartitioner::SetReservedSpaceToBoundaries(
   t_space_ = t_space;
 }
 
-void AbstractSpacePartitioner::SetPartitionMode(int stripe_mode) {
-  partition_mode_ = stripe_mode;
+void AbstractSpacePartitioner::SetPartitionMode(int partition_mode) {
+  partition_mode_ = partition_mode;
 }
 
-void SpacePartitioner::FetchWellParameters() {
+void DefaultSpacePartitioner::FetchWellParameters() {
   Tech &tech = p_ckt_->tech();
   WellLayer &n_well_layer = tech.NwellLayer();
   double grid_value_x = p_ckt_->GridValueX();
@@ -57,7 +57,7 @@ void SpacePartitioner::FetchWellParameters() {
       (int) std::floor(n_well_layer.MaxPlugDist() / grid_value_x);
 }
 
-void SpacePartitioner::DetectAvailSpace() {
+void DefaultSpacePartitioner::DetectAvailSpace() {
   if (!row_height_set_) {
     row_height_ = p_ckt_->RowHeightGridUnit();
   }
@@ -144,7 +144,7 @@ void SpacePartitioner::DetectAvailSpace() {
   }
 }
 
-void SpacePartitioner::UpdateWhiteSpaceInCol(ClusterStripe &col) {
+void DefaultSpacePartitioner::UpdateWhiteSpaceInCol(ClusterStripe &col) {
   SegI stripe_seg(col.LLX(), col.URX());
   col.white_space_.clear();
   col.white_space_.resize(tot_num_rows_);
@@ -178,7 +178,7 @@ void SpacePartitioner::UpdateWhiteSpaceInCol(ClusterStripe &col) {
   }
 }
 
-void SpacePartitioner::DecomposeSpaceToSimpleStripes() {
+void DefaultSpacePartitioner::DecomposeSpaceToSimpleStripes() {
   for (auto &col: *p_col_list_) {
     for (int i = 0; i < tot_num_rows_; ++i) {
       for (auto &seg: col.white_space_[i]) {
@@ -217,7 +217,7 @@ void SpacePartitioner::DecomposeSpaceToSimpleStripes() {
   //PlotAvailSpaceInCols();
 }
 
-void SpacePartitioner::AssignBlockToColBasedOnWhiteSpace() {
+void DefaultSpacePartitioner::AssignBlockToColBasedOnWhiteSpace() {
   // assign blocks to columns
   std::vector<Block> &block_list = p_ckt_->Blocks();
   std::vector<ClusterStripe> &col_list = *p_col_list_;
@@ -284,7 +284,7 @@ void SpacePartitioner::AssignBlockToColBasedOnWhiteSpace() {
   }
 }
 
-bool SpacePartitioner::StartPartitioning() {
+bool DefaultSpacePartitioner::StartPartitioning() {
   DaliExpects(p_ckt_ != nullptr, "Circuit is not set");
   DaliExpects(p_col_list_ != nullptr, "Output location is not set");
 
@@ -355,7 +355,7 @@ bool SpacePartitioner::StartPartitioning() {
   return true;
 }
 
-void SpacePartitioner::PlotAvailSpace(std::string const &name_of_file) {
+void DefaultSpacePartitioner::PlotAvailSpace(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
   ost << Left() << "\t"
@@ -402,7 +402,7 @@ void SpacePartitioner::PlotAvailSpace(std::string const &name_of_file) {
   }
 }
 
-void SpacePartitioner::PlotAvailSpaceInCols(std::string const &name_of_file) {
+void DefaultSpacePartitioner::PlotAvailSpaceInCols(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
   ost << Left() << "\t"
@@ -451,7 +451,7 @@ void SpacePartitioner::PlotAvailSpaceInCols(std::string const &name_of_file) {
   }
 }
 
-void SpacePartitioner::PlotSimpleStripes(std::string const &name_of_file) {
+void DefaultSpacePartitioner::PlotSimpleStripes(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
   ost << Left() << "\t"
@@ -497,27 +497,27 @@ void SpacePartitioner::PlotSimpleStripes(std::string const &name_of_file) {
   }
 }
 
-int SpacePartitioner::Left() const {
+int DefaultSpacePartitioner::Left() const {
   return p_ckt_->RegionLLX() + l_space_;
 }
 
-int SpacePartitioner::Right() const {
+int DefaultSpacePartitioner::Right() const {
   return p_ckt_->RegionURX() - r_space_;
 }
 
-int SpacePartitioner::Bottom() const {
+int DefaultSpacePartitioner::Bottom() const {
   return p_ckt_->RegionLLY() + b_space_;
 }
 
-int SpacePartitioner::Top() const {
+int DefaultSpacePartitioner::Top() const {
   return p_ckt_->RegionURY() - t_space_;
 }
 
-int SpacePartitioner::StartRow(int y_loc) const {
+int DefaultSpacePartitioner::StartRow(int y_loc) const {
   return (y_loc - Bottom()) / row_height_;
 }
 
-int SpacePartitioner::EndRow(int y_loc) const {
+int DefaultSpacePartitioner::EndRow(int y_loc) const {
   int relative_y = y_loc - Bottom();
   int res = relative_y / row_height_;
   if (relative_y % row_height_ == 0) {
@@ -526,11 +526,11 @@ int SpacePartitioner::EndRow(int y_loc) const {
   return res;
 }
 
-int SpacePartitioner::RowToLoc(int row_num, int displacement) const {
+int DefaultSpacePartitioner::RowToLoc(int row_num, int displacement) const {
   return row_num * row_height_ + Bottom() + displacement;
 }
 
-int SpacePartitioner::LocToCol(int x) const {
+int DefaultSpacePartitioner::LocToCol(int x) const {
   int col_num = (x - Left()) / stripe_width_;
   if (col_num < 0) {
     col_num = 0;

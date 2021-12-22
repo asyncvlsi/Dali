@@ -40,8 +40,7 @@ void GriddedRowLegalizer::CheckWellInfo() {
   int op_spacing = std::ceil(n_well_layer.OppositeSpacing() / grid_value_x);
   well_spacing_ = std::max(same_spacing, op_spacing);
 
-  BlockType *well_tap_cell_ = (p_ckt_->tech().WellTapCellPtrs()[0]);
-  auto *tap_cell_well = well_tap_cell_->WellPtr();
+  auto *tap_cell_well = well_tap_type_ptr_->WellPtr();
   tap_cell_p_height_ = tap_cell_well->PwellHeight(0);
   tap_cell_n_height_ = tap_cell_well->NwellHeight(0);
 }
@@ -57,17 +56,44 @@ void GriddedRowLegalizer::SetPartitionMode(int partitioning_mode) {
 }
 
 void GriddedRowLegalizer::SetWellTapCellParameters(
-    double cell_interval_microns,
+    double tap_cell_interval_microns,
     bool is_checker_board_mode,
-    BlockType *p_well_tap_type
+    std::string const &well_tap_type_name
 ) {
+  BOOST_LOG_TRIVIAL(info)
+    << "Provided well tap cell interval:      "
+    << tap_cell_interval_microns << " um\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "Gridded value x:                      "
+    << p_ckt_->GridValueX() << " um\n";
+  tap_cell_interval_grid_ =
+      std::floor(tap_cell_interval_microns / p_ckt_->GridValueX());
+  BOOST_LOG_TRIVIAL(info)
+    << "Well tap cell interval in grid unit : "
+    << tap_cell_interval_grid_ << "\n";
 
+  is_checker_board_mode_ = is_checker_board_mode;
+  std::string is_mode_on = is_checker_board_mode_ ? "True" : "False";
+  BOOST_LOG_TRIVIAL(info) << "Checkerboard mode on: " << is_mode_on << "\n";
+
+  if (well_tap_type_name.empty()) {
+    BOOST_LOG_TRIVIAL(info) << "Well tap cell type not specified\n";
+    DaliExpects(!p_ckt_->tech().WellTapCellPtrs().empty(),
+                "No well tap cells provided in the cell library?");
+    well_tap_type_ptr_ = p_ckt_->tech().WellTapCellPtrs()[0];
+    BOOST_LOG_TRIVIAL(info) << "Using the default well tap cell: "
+                            << well_tap_type_ptr_->Name() << "\n";
+  } else {
+    BOOST_LOG_TRIVIAL(info) << "Provided well tap cell type: "
+                            << well_tap_type_name << "\n";
+    well_tap_type_ptr_ = p_ckt_->GetBlockTypePtr(well_tap_type_name);
+  }
 }
 
 void GriddedRowLegalizer::PartitionSpaceAndBlocks() {
   bool is_external_partitioner_provided = (space_partitioner_ != nullptr);
   if (!is_external_partitioner_provided) {
-    space_partitioner_ = new SpacePartitioner;
+    space_partitioner_ = new DefaultSpacePartitioner;
   }
 
   space_partitioner_->SetInputCircuit(p_ckt_);
@@ -84,9 +110,12 @@ void GriddedRowLegalizer::PartitionSpaceAndBlocks() {
   }
 }
 
-bool GriddedRowLegalizer::StripeLegalizationBottomUp(Stripe &stripe) {
+void GriddedRowLegalizer::SetLegalizationMaxIteration(size_t max_iteration) {
+  max_iteration_ = max_iteration;
+}
+
+bool GriddedRowLegalizer::StripeLegalizationUpward(Stripe &stripe) const {
   stripe.gridded_rows_.clear();
-  stripe.contour_ = stripe.LLY();
   stripe.front_id_ = -1;
   stripe.is_bottom_up_ = true;
 
@@ -101,22 +130,70 @@ bool GriddedRowLegalizer::StripeLegalizationBottomUp(Stripe &stripe) {
 
   size_t processed_blk_cnt = 0;
   while (processed_blk_cnt < stripe.block_list_.size()) {
-    stripe.UpdateFrontCluster(tap_cell_p_height_, tap_cell_n_height_);
-    processed_blk_cnt = stripe.FitBlocksToFrontSpace(processed_blk_cnt);
+    stripe.UpdateFrontClusterUpward(tap_cell_p_height_, tap_cell_n_height_);
+    processed_blk_cnt = stripe.FitBlocksToFrontSpaceUpward(processed_blk_cnt);
     stripe.LegalizeFrontCluster();
   }
-  stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_);
+  stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_, true);
+  stripe.UpdateBlockYLocation();
 
-  return true;
+  return stripe.HasNoRowsSpillingOut();
+}
+
+bool GriddedRowLegalizer::StripeLegalizationDownward(Stripe &stripe) const {
+  stripe.gridded_rows_.clear();
+  stripe.front_id_ = -1;
+  stripe.is_bottom_up_ = false;
+
+  std::sort(
+      stripe.block_list_.begin(),
+      stripe.block_list_.end(),
+      [](const Block *lhs, const Block *rhs) {
+        return (lhs->URY() > rhs->URY())
+            || (lhs->URY() == rhs->URY() && lhs->LLX() < rhs->LLX());
+      }
+  );
+
+  size_t processed_blk_cnt = 0;
+  int counter = 0;
+  while (processed_blk_cnt < stripe.block_list_.size()) {
+    stripe.UpdateFrontClusterDownward(tap_cell_p_height_, tap_cell_n_height_);
+    processed_blk_cnt = stripe.FitBlocksToFrontSpaceDownward(processed_blk_cnt);
+    stripe.LegalizeFrontCluster();
+    ++counter;
+    //if (counter == 10) {
+    //  break;
+    //}
+  }
+  stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_, false);
+  stripe.UpdateBlockYLocation();
+
+  return stripe.HasNoRowsSpillingOut();
 }
 
 bool GriddedRowLegalizer::GroupBlocksToClusters() {
-  for (auto &col: col_list_) {
-    for (auto &stripe: col.stripe_list_) {
-      StripeLegalizationBottomUp(stripe);
+  bool res = true;
+  for (ClusterStripe &col: col_list_) {
+    bool is_success = true;
+    for (Stripe &stripe: col.stripe_list_) {
+      bool is_from_bottom = true;
+      for (size_t i = 0; i < max_iteration_; ++i) {
+        if (is_from_bottom) {
+          is_success = StripeLegalizationUpward(stripe);
+        } else {
+          is_success = StripeLegalizationDownward(stripe);
+        }
+        is_from_bottom = !is_from_bottom;
+        if (is_success) {
+          std::cout << i << " " << is_success << " " << stripe.contour_ << " "
+           << stripe.LLY() << " " << stripe.URY() << "\n";
+          break;
+        }
+      }
+      res = res && is_success;
     }
   }
-  return true;
+  return res;
 }
 
 void GriddedRowLegalizer::StretchBlocks() {
@@ -143,11 +220,24 @@ bool GriddedRowLegalizer::StartPlacement() {
 
   CheckWellInfo();
   PartitionSpaceAndBlocks();
-  GroupBlocksToClusters();
+  bool is_success = GroupBlocksToClusters();
   StretchBlocks();
   EmbodyWellTapCells();
 
   ReportHPWL();
+
+  if (is_success) {
+    BOOST_LOG_TRIVIAL(info)
+      << "\033[0;36m"
+      << "Gridded Row Well Legalization complete!\n"
+      << "\033[0m";
+  } else {
+    BOOST_LOG_TRIVIAL(info)
+      << "\033[0;36m"
+      << "Gridded Row Well Legalization fail!\n"
+      << "Please a lower placement density\n"
+      << "\033[0m";
+  }
 
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;

@@ -28,9 +28,9 @@
 namespace dali {
 
 struct BlockRegion {
-  BlockRegion(Block *blk, size_t id): p_blk(blk), region_id(id) {}
+  BlockRegion(Block *blk, int id): p_blk(blk), region_id(id) {}
   Block *p_blk = nullptr;
-  size_t region_id = 0;
+  int region_id = 0;
 };
 
 class GriddedRow {
@@ -59,8 +59,8 @@ class GriddedRow {
   double CenterY() const;
 
   void SetHeight(int height);
-  void UpdateWellHeightFromBottom(int p_well_height, int n_well_height);
-  void UpdateWellHeightFromTop(int p_well_height, int n_well_height);
+  void UpdateWellHeightUpward(int p_well_height, int n_well_height);
+  void UpdateWellHeightDownward(int p_well_height, int n_well_height);
   int Height() const;
   int PHeight() const;
   int NHeight() const;
@@ -91,12 +91,16 @@ class GriddedRow {
   void UpdateSegments();
   bool IsBelowTopBoundary(Block *p_blk) const;
   bool IsBelowMiddleLine(Block *p_blk) const;
+  bool IsAboveBottomBoundary(Block *p_blk) const;
+  bool IsAboveMiddleLine(Block *p_blk) const;
   bool IsOverlap(Block *p_blk, int criterion) const;
-  bool IsOrientMatching(Block *p_blk) const;
-  void AddBlockRegion(Block *p_blk, size_t region_id);
-  bool AttemptToAdd(Block *p_blk);
-  BlockOrient ComputeBlockOrient(Block *p_blk);
-  void LegalizeSegments();
+
+  bool IsOrientMatching(Block *p_blk, int region_id) const;
+  void AddBlockRegion(Block *p_blk, int region_id, bool is_upward);
+  bool AttemptToAdd(Block *p_blk, bool is_upward = true);
+  BlockOrient ComputeBlockOrient(Block *p_blk, bool is_upward) const;
+  void LegalizeSegmentsX();
+  void LegalizeSegmentsY();
   void RecomputeHeight(int p_well_height, int n_well_height);
   void InitializeBlockStretching();
 

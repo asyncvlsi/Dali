@@ -132,9 +132,9 @@ void StdClusterWellLegalizer::CreateClusterAndAppendSingleWellBlock(
   int num_of_tap_cell = 2;
   front_row->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_
                              + num_of_tap_cell * space_to_well_tap_);
-  front_row->UpdateWellHeightFromBottom(tap_cell_p_height_,
-                                        tap_cell_n_height_);
-  front_row->UpdateWellHeightFromBottom(p_well_height, n_well_height);
+  front_row->UpdateWellHeightUpward(tap_cell_p_height_,
+                                    tap_cell_n_height_);
+  front_row->UpdateWellHeightUpward(p_well_height, n_well_height);
   front_row->SetLLY(init_y);
   front_row->SetLLX(stripe.LLX());
   front_row->SetWidth(stripe.Width());
@@ -160,7 +160,7 @@ void StdClusterWellLegalizer::AppendSingleWellBlockToFrontCluster(
   if (p_well_height > front_row->PHeight()
       || n_well_height > front_row->NHeight()) {
     int old_height = front_row->Height();
-    front_row->UpdateWellHeightFromBottom(p_well_height, n_well_height);
+    front_row->UpdateWellHeightUpward(p_well_height, n_well_height);
     stripe.used_height_ += front_row->Height() - old_height;
   }
   stripe.contour_ = front_row->URY();
@@ -217,9 +217,9 @@ void StdClusterWellLegalizer::AppendBlockToColTopDown(
     front_row->SetUsedSize(
         width + num_of_tap_cell * well_tap_cell_width_
             + num_of_tap_cell * space_to_well_tap_);
-    front_row->UpdateWellHeightFromTop(tap_cell_p_height_,
-                                       tap_cell_n_height_);
-    front_row->UpdateWellHeightFromTop(p_well_height, n_well_height);
+    front_row->UpdateWellHeightDownward(tap_cell_p_height_,
+                                        tap_cell_n_height_);
+    front_row->UpdateWellHeightDownward(p_well_height, n_well_height);
     front_row->SetURY(init_y);
     front_row->SetLLX(stripe.LLX());
     front_row->SetWidth(stripe.Width());
@@ -234,7 +234,7 @@ void StdClusterWellLegalizer::AppendBlockToColTopDown(
     if (p_well_height > front_row->PHeight()
         || n_well_height > front_row->NHeight()) {
       int old_height = front_row->Height();
-      front_row->UpdateWellHeightFromTop(p_well_height, n_well_height);
+      front_row->UpdateWellHeightDownward(p_well_height, n_well_height);
       stripe.used_height_ += front_row->Height() - old_height;
     }
   }
@@ -270,12 +270,12 @@ void StdClusterWellLegalizer::AppendBlockToColBottomUpCompact(
     front_cluster->SetUsedSize(
         width + num_of_tap_cell * well_tap_cell_width_
             + num_of_tap_cell * space_to_well_tap_);
-    front_cluster->UpdateWellHeightFromBottom(tap_cell_p_height_,
-                                              tap_cell_n_height_);
+    front_cluster->UpdateWellHeightUpward(tap_cell_p_height_,
+                                          tap_cell_n_height_);
     front_cluster->SetLLY(init_y);
     front_cluster->SetLLX(stripe.LLX());
     front_cluster->SetWidth(stripe.Width());
-    front_cluster->UpdateWellHeightFromBottom(p_well_height, n_well_height);
+    front_cluster->UpdateWellHeightUpward(p_well_height, n_well_height);
 
     stripe.front_row_ = front_cluster;
     stripe.cluster_count_ += 1;
@@ -287,7 +287,7 @@ void StdClusterWellLegalizer::AppendBlockToColBottomUpCompact(
     if (p_well_height > front_cluster->PHeight()
         || n_well_height > front_cluster->NHeight()) {
       int old_height = front_cluster->Height();
-      front_cluster->UpdateWellHeightFromBottom(p_well_height, n_well_height);
+      front_cluster->UpdateWellHeightUpward(p_well_height, n_well_height);
       stripe.used_height_ += front_cluster->Height() - old_height;
     }
   }
@@ -323,9 +323,9 @@ void StdClusterWellLegalizer::AppendBlockToColTopDownCompact(
     front_cluster->SetUsedSize(
         width + num_of_tap_cell * well_tap_cell_width_
             + num_of_tap_cell * space_to_well_tap_);
-    front_cluster->UpdateWellHeightFromTop(tap_cell_p_height_,
-                                           tap_cell_n_height_);
-    front_cluster->UpdateWellHeightFromTop(p_well_height, n_well_height);
+    front_cluster->UpdateWellHeightDownward(tap_cell_p_height_,
+                                            tap_cell_n_height_);
+    front_cluster->UpdateWellHeightDownward(p_well_height, n_well_height);
     front_cluster->SetURY(init_y);
     front_cluster->SetLLX(stripe.LLX());
     front_cluster->SetWidth(stripe.Width());
@@ -340,7 +340,7 @@ void StdClusterWellLegalizer::AppendBlockToColTopDownCompact(
     if (p_well_height > front_cluster->PHeight()
         || n_well_height > front_cluster->NHeight()) {
       int old_height = front_cluster->Height();
-      front_cluster->UpdateWellHeightFromTop(p_well_height, n_well_height);
+      front_cluster->UpdateWellHeightDownward(p_well_height, n_well_height);
       stripe.used_height_ += front_cluster->Height() - old_height;
     }
   }
@@ -372,7 +372,7 @@ bool StdClusterWellLegalizer::StripeLegalizationBottomUp(Stripe &stripe) {
     gridded_row.UpdateBlockLocY();
   }
 
-  return stripe.contour_ <= stripe.URY();
+  return stripe.HasNoRowsSpillingOut();
 }
 
 bool StdClusterWellLegalizer::StripeLegalizationTopDown(Stripe &stripe) {
@@ -407,7 +407,7 @@ bool StdClusterWellLegalizer::StripeLegalizationTopDown(Stripe &stripe) {
     BOOST_LOG_TRIVIAL(info)   << "fail\n";
   }*/
 
-  return stripe.contour_ >= stripe.LLY();
+  return stripe.HasNoRowsSpillingOut();
 }
 
 bool StdClusterWellLegalizer::StripeLegalizationBottomUpCompact(Stripe &stripe) {
@@ -1054,7 +1054,7 @@ bool StdClusterWellLegalizer::StartPlacement() {
     BOOST_LOG_TRIVIAL(info)
       << "\033[0;36m"
       << "Standard Cluster Well Legalization fail!\n"
-      << "Please try lower density"
+      << "Please try a lower placement density\n"
       << "\033[0m";
   }
   /****<----****/

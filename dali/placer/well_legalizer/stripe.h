@@ -38,7 +38,7 @@ struct Stripe {
   int used_height_;
   int cluster_count_;
   GriddedRow *front_row_;
-  size_t front_id_;
+  int front_id_;
   std::vector<GriddedRow> gridded_rows_;
   bool is_bottom_up_ = false;
 
@@ -55,15 +55,22 @@ struct Stripe {
   int Width() const { return width_; }
   int Height() const { return height_; }
 
+  bool HasNoRowsSpillingOut() const;
+
   void MinDisplacementAdjustment();
 
-  void UpdateFrontCluster(int p_height, int n_height);
-  void SimplyAddFollowingClusters(Block *p_blk);
-  bool AddBlockToFrontCluster(Block *p_blk);
-  size_t FitBlocksToFrontSpace(size_t start_id);
+  void UpdateFrontClusterUpward(int p_height, int n_height);
+  void SimplyAddFollowingClusters(Block *p_blk, bool is_upward);
+  bool AddBlockToFrontCluster(Block *p_blk, bool is_upward);
+  size_t FitBlocksToFrontSpaceUpward(size_t start_id);
   void LegalizeFrontCluster();
-  void UpdateRemainingClusters(int p_height, int n_height);
+  void UpdateRemainingClusters(int p_height, int n_height, bool is_upward);
   void UpdateBlockStretchLength();
+
+  void UpdateFrontClusterDownward(int p_height, int n_height);
+  size_t FitBlocksToFrontSpaceDownward(size_t start_id);
+
+  void UpdateBlockYLocation();
 };
 
 struct ClusterStripe {

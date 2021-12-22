@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
   std::string str_x_grid;
   std::string str_y_grid;
   std::string log_file_name;
-  int well_legalization_mode = static_cast<int>(StripePartitionMode::STRICT);
+  int well_legalization_mode = static_cast<int>(DefaultPartitionMode::STRICT);
   bool overwrite_logfile = false;
   bool is_no_legal = false;
   bool is_no_io_place = false;
@@ -142,9 +142,9 @@ int main(int argc, char *argv[]) {
     } else if (arg == "-wlgmode" && i < argc) {
       std::string str_wlg_mode = std::string(argv[i++]);
       if (str_wlg_mode == "scavenge") {
-        well_legalization_mode = static_cast<int>(StripePartitionMode::SCAVENGE);
+        well_legalization_mode = static_cast<int>(DefaultPartitionMode::SCAVENGE);
       } else if (str_wlg_mode == "strict") {
-        well_legalization_mode = static_cast<int>(StripePartitionMode::STRICT);
+        well_legalization_mode = static_cast<int>(DefaultPartitionMode::STRICT);
       } else {
         std::cout << "Unknown well legalization mode: " << str_wlg_mode << "\n";
         ReportUsage();
@@ -266,6 +266,7 @@ int main(int argc, char *argv[]) {
   } else if (!m_cell_file_name.empty()) {
     auto *multi_well_legalizer = new GriddedRowLegalizer;
     multi_well_legalizer->TakeOver(gb_placer);
+    multi_well_legalizer->SetWellTapCellParameters(30, false, "");
     multi_well_legalizer->SetPartitionMode(well_legalization_mode);
     multi_well_legalizer->StartPlacement();
     if (export_well_cluster_for_matlab) {

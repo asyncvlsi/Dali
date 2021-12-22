@@ -53,7 +53,10 @@ Pin *BlockType::AddPin(
     );
   }
   pin_name_id_map_.insert(
-      std::pair<std::string, int>(pin_name, pin_list_.size())
+      std::unordered_map<std::string, int>::value_type(
+          pin_name,
+          static_cast<int>(pin_list_.size())
+      )
   );
   std::pair<const std::string, int> *name_num_ptr =
       &(*pin_name_id_map_.find(pin_name));
@@ -77,7 +80,10 @@ void BlockType::AddPin(
     );
   }
   pin_name_id_map_.insert(
-      std::pair<std::string, int>(pin_name, pin_list_.size())
+      std::unordered_map<std::string, int>::value_type(
+          pin_name,
+          static_cast<int>(pin_list_.size())
+      )
   );
   std::pair<const std::string, int> *name_num_ptr =
       &(*pin_name_id_map_.find(pin_name));
@@ -116,15 +122,14 @@ void BlockType::SetSize(int width, int height) {
 void BlockType::Report() const {
   BOOST_LOG_TRIVIAL(info)
     << "  BlockType name: " << Name() << "\n"
-    << "    width, height: " << Width() << " "
-    << Height() << "\n"
+    << "    width, height: " << Width() << " " << Height() << "\n"
     << "    pin list:\n";
-  for (auto &it: pin_name_id_map_) {
+  for (const auto&[name, id]: pin_name_id_map_) {
     BOOST_LOG_TRIVIAL(info)
-      << "      " << it.first << " " << it.second << " ("
-      << pin_list_[it.second].OffsetX() << ", "
-      << pin_list_[it.second].OffsetY() << ")\n";
-    pin_list_[it.second].Report();
+      << "      " << name << " " << id
+      << " (" << pin_list_[id].OffsetX() << ", " << pin_list_[id].OffsetY()
+      << ")\n";
+    pin_list_[id].Report();
   }
 }
 
@@ -134,10 +139,12 @@ void BlockType::UpdateArea() {
 
 void BlockTypeWell::AddNwellRect(int llx, int lly, int urx, int ury) {
   n_rects_.emplace_back(llx, lly, urx, ury);
+  region_count_ = static_cast<int>(std::max(n_rects_.size(), p_rects_.size()));
 }
 
 void BlockTypeWell::AddPwellRect(int llx, int lly, int urx, int ury) {
   p_rects_.emplace_back(llx, lly, urx, ury);
+  region_count_ = static_cast<int>(std::max(n_rects_.size(), p_rects_.size()));
 }
 
 void BlockTypeWell::AddWellRect(
@@ -158,24 +165,24 @@ void BlockTypeWell::SetExtraTopExtension(int top_extension) {
   extra_top_extension_ = top_extension;
 }
 
-bool BlockTypeWell::IsBottomWellP() const {
-  DaliExpects(!n_rects_.empty() && !p_rects_.empty(), "No wells in cell?");
-  return p_rects_[0].LLY() <= n_rects_[0].LLY();
+bool BlockTypeWell::IsNwellAbovePwell(int region_id) const {
+  DaliExpects(region_id < region_count_, "Index out of bound");
+  return p_rects_[region_id].LLY() <= n_rects_[region_id].LLY();
 }
 
-size_t BlockTypeWell::RowCount() const {
-  return n_rects_.size();
+int BlockTypeWell::RegionCount() const {
+  return region_count_;
 }
 
 bool BlockTypeWell::HasOddRegions() const {
-  return n_rects_.size() & 1;
+  return region_count_ & 1;
 }
 
 bool BlockTypeWell::IsWellAbutted() {
-  size_t row_count = RowCount();
+  int row_count = RegionCount();
   std::vector<int> y_edges;
-  bool is_well_p = IsBottomWellP();
-  for (size_t i = 0; i < row_count; ++i) {
+  bool is_well_p = IsNwellAbovePwell(0);
+  for (int i = 0; i < row_count; ++i) {
     if (is_well_p) {
       y_edges.push_back(p_rects_[i].LLY());
       y_edges.push_back(p_rects_[i].URY());
@@ -190,7 +197,7 @@ bool BlockTypeWell::IsWellAbutted() {
     is_well_p = !is_well_p;
   }
 
-  for (size_t i = 1; i < 2 * row_count - 1; i += 2) {
+  for (int i = 1; i < 2 * row_count - 1; i += 2) {
     if (y_edges[i] != y_edges[i + 1]) {
       return false;
     }
@@ -205,30 +212,28 @@ bool BlockTypeWell::IsCellHeightConsistent() {
 }
 
 void BlockTypeWell::CheckLegality() {
-  if (!IsWellAbutted()) {
-    DaliExpects(false, "Wells are not abutted for cell " + type_ptr_->Name());
-  }
-  if (!IsCellHeightConsistent()) {
-    DaliExpects(false, "Macro/well height inconsistency" + type_ptr_->Name());
-  }
+  DaliExpects(n_rects_.size() == p_rects_.size(),
+              "Nwell count is different from Pwell count " + type_ptr_->Name());
+  DaliExpects(IsWellAbutted(),
+              "Wells are not abutted for cell " + type_ptr_->Name());
+  DaliExpects(IsCellHeightConsistent(),
+              "Macro/well height inconsistency" + type_ptr_->Name());
 }
 
-int BlockTypeWell::NwellHeight(size_t index, bool is_flipped) const {
-  size_t row_cnt = n_rects_.size();
-  DaliExpects(index < row_cnt, "Out of bound");
+int BlockTypeWell::NwellHeight(int region_id, bool is_flipped) const {
+  DaliExpects(region_id < region_count_, "Index out of bound");
   if (is_flipped) {
-    index = row_cnt - 1 - index;
+    region_id = region_count_ - 1 - region_id;
   }
-  return n_rects_[index].Height();
+  return n_rects_[region_id].Height();
 }
 
-int BlockTypeWell::PwellHeight(size_t index, bool is_flipped) const {
-  size_t row_cnt = p_rects_.size();
-  DaliExpects(index < row_cnt, "Out of bound");
+int BlockTypeWell::PwellHeight(int region_id, bool is_flipped) const {
+  DaliExpects(region_id < region_count_, "Index out of bound");
   if (is_flipped) {
-    index = row_cnt - 1 - index;
+    region_id = region_count_ - 1 - region_id;
   }
-  return p_rects_[index].Height();
+  return p_rects_[region_id].Height();
 }
 
 /****
@@ -238,9 +243,9 @@ int BlockTypeWell::PwellHeight(size_t index, bool is_flipped) const {
  * @return
  */
 int BlockTypeWell::AdjacentRegionEdgeDistance(
-    size_t index, bool is_flipped
+    int index, bool is_flipped
 ) const {
-  size_t row_cnt = RowCount();
+  int row_cnt = RegionCount();
   DaliExpects(index + 1 < row_cnt, "Out of bound");
   if (is_flipped) {
     index = row_cnt - 2 - index;
@@ -252,20 +257,20 @@ int BlockTypeWell::AdjacentRegionEdgeDistance(
   }
 }
 
-RectI &BlockTypeWell::NwellRect(size_t index) {
-  DaliExpects(index < RowCount(), "Out of bound");
+RectI &BlockTypeWell::NwellRect(int index) {
+  DaliExpects(index < RegionCount(), "Out of bound");
   return n_rects_[index];
 }
 
-RectI &BlockTypeWell::PwellRect(size_t index) {
-  DaliExpects(index < RowCount(), "Out of bound");
+RectI &BlockTypeWell::PwellRect(int index) {
+  DaliExpects(index < RegionCount(), "Out of bound");
   return p_rects_[index];
 }
 
 void BlockTypeWell::Report() const {
   BOOST_LOG_TRIVIAL(info)
     << "  Well of BlockType: " << type_ptr_->Name() << "\n";
-  size_t sz = RowCount();
+  size_t sz = RegionCount();
   for (size_t i = 0; i < sz; ++i) {
     BOOST_LOG_TRIVIAL(info)
       << "    Pwell: " << p_rects_[i].LLX() << "  " << p_rects_[i].LLY()

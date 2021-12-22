@@ -295,7 +295,7 @@ void Dali::UnifiedLegalization() {
    */
 
   well_legalizer_.TakeOver(&gb_placer_);
-  well_legalizer_.SetStripePartitionMode(int(StripePartitionMode::SCAVENGE));
+  well_legalizer_.SetStripePartitionMode(int(DefaultPartitionMode::SCAVENGE));
   well_legalizer_.is_dump = false;
   well_legalizer_.StartPlacement();
   //well_legalizer_.GenMatlabClusterTable("sc_result");

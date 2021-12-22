@@ -98,8 +98,7 @@ void GriddedRow::SetHeight(int height) {
 * Update the height of this cluster with the lower y of this cluster fixed.
 * So even if the height changes, the lower y of this cluster does not need be changed.
 * ****/
-void GriddedRow::UpdateWellHeightFromBottom(int p_well_height,
-                                            int n_well_height) {
+void GriddedRow::UpdateWellHeightUpward(int p_well_height, int n_well_height) {
   p_well_height_ = std::max(p_well_height_, p_well_height);
   n_well_height_ = std::max(n_well_height_, n_well_height);
   height_ = p_well_height_ + n_well_height_;
@@ -109,7 +108,9 @@ void GriddedRow::UpdateWellHeightFromBottom(int p_well_height,
 * Update the height of this cluster with the upper y of this cluster fixed.
 * So if the height changes, then the lower y of this cluster should also be changed.
 * ****/
-void GriddedRow::UpdateWellHeightFromTop(int p_well_height, int n_well_height) {
+void GriddedRow::UpdateWellHeightDownward(
+    int p_well_height, int n_well_height
+) {
   int old_height = height_;
   p_well_height_ = std::max(p_well_height_, p_well_height);
   n_well_height_ = std::max(n_well_height_, n_well_height);
@@ -446,6 +447,14 @@ bool GriddedRow::IsBelowMiddleLine(Block *p_blk) const {
   return p_blk->LLY() < CenterY();
 }
 
+bool GriddedRow::IsAboveBottomBoundary(Block *p_blk) const {
+  return p_blk->URY() > LLY();
+}
+
+bool GriddedRow::IsAboveMiddleLine(Block *p_blk) const {
+  return p_blk->URY() > CenterY();
+}
+
 bool GriddedRow::IsOverlap(Block *p_blk, int criterion) const {
   switch (criterion) {
     case 0: {
@@ -454,6 +463,12 @@ bool GriddedRow::IsOverlap(Block *p_blk, int criterion) const {
     case 1: {
       return IsBelowMiddleLine(p_blk);
     }
+    case 2: {
+      return IsAboveBottomBoundary(p_blk);
+    }
+    case 3: {
+      return IsAboveMiddleLine(p_blk);
+    }
     default: {
       DaliExpects(false, "unknown overlapping criterion");
       return false;
@@ -461,27 +476,30 @@ bool GriddedRow::IsOverlap(Block *p_blk, int criterion) const {
   }
 }
 
-bool GriddedRow::IsOrientMatching(Block *p_blk) const {
-  BlockTypeWell *p_well = p_blk->TypePtr()->WellPtr();
+bool GriddedRow::IsOrientMatching(Block *p_blk, int region_id) const {
+  BlockTypeWell *well_ptr = p_blk->TypePtr()->WellPtr();
   // cells with an odd number of regions can be fitted into any clusters
-  if (p_well->HasOddRegions()) {
+  if (well_ptr->HasOddRegions()) {
     return true;
   }
   // cells with an even number of regions can only be fitted into clusters with the same well orientation
-  return IsOrientN() ? p_well->IsBottomWellP() : !p_well->IsBottomWellP();
+  return IsOrientN() ? well_ptr->IsNwellAbovePwell(region_id)
+                     : !well_ptr->IsNwellAbovePwell(region_id);
 }
 
-void GriddedRow::AddBlockRegion(Block *p_blk, size_t region_id) {
+void GriddedRow::AddBlockRegion(Block *p_blk, int region_id, bool is_upward) {
   blk_regions_.emplace_back(p_blk, region_id);
   BlockTypeWell *well = p_blk->TypePtr()->WellPtr();
   int p_height = well->PwellHeight(region_id, p_blk->IsFlipped());
   int n_height = well->NwellHeight(region_id, p_blk->IsFlipped());
-  p_well_height_ = std::max(p_well_height_, p_height);
-  n_well_height_ = std::max(n_well_height_, n_height);
-  height_ = p_well_height_ + n_well_height_;
+  if (is_upward) {
+    UpdateWellHeightUpward(p_height, n_height);
+  } else {
+    UpdateWellHeightDownward(p_height, n_height);
+  }
 }
 
-bool GriddedRow::AttemptToAdd(Block *p_blk) {
+bool GriddedRow::AttemptToAdd(Block *p_blk, bool is_upward) {
   // put this block to the closest white space segment
   double min_distance = DBL_MAX;
   int min_index = -1;
@@ -511,37 +529,46 @@ bool GriddedRow::AttemptToAdd(Block *p_blk) {
   }
 
   segments_[min_index].AddBlock(p_blk);
-  p_blk->SetOrient(ComputeBlockOrient(p_blk));
-  AddBlockRegion(p_blk, 0);
+  p_blk->SetOrient(ComputeBlockOrient(p_blk, is_upward));
+  int region_count = p_blk->TypePtr()->WellPtr()->RegionCount();
+  int region_id = is_upward ? 0 : region_count - 1;
+  AddBlockRegion(p_blk, region_id, is_upward);
+
   return true;
 }
 
-BlockOrient GriddedRow::ComputeBlockOrient(Block *p_blk) {
+BlockOrient GriddedRow::ComputeBlockOrient(Block *p_blk, bool is_upward) const {
   DaliExpects(p_blk != nullptr, "Nullptr?");
   BlockTypeWell *well = p_blk->TypePtr()->WellPtr();
   BlockOrient orient = N;
+  int region_count = p_blk->TypePtr()->WellPtr()->RegionCount();
+  int region_id = is_upward ? 0 : region_count - 1;
   bool is_cluster_block_orientation_matching =
-      (is_orient_N_ && well->IsBottomWellP()) ||
-          (!is_orient_N_ && !well->IsBottomWellP());
+      (is_orient_N_ && well->IsNwellAbovePwell(region_id)) ||
+          (!is_orient_N_ && !well->IsNwellAbovePwell(region_id));
   if (!is_cluster_block_orientation_matching) {
     orient = FS;
   }
   return orient;
 }
 
-void GriddedRow::LegalizeSegments() {
+void GriddedRow::LegalizeSegmentsX() {
   for (auto &segment: segments_) {
     segment.MinDisplacementLegalization();
-    for (auto &p_blk: segment.Blocks()) {
-      BlockTypeWell *well = p_blk->TypePtr()->WellPtr();
-      double y_loc = ly_;
-      if (is_orient_N_) {
-        y_loc += p_well_height_ - well->PwellHeight(0, p_blk->IsFlipped());
-      } else {
-        y_loc += n_well_height_ - well->NwellHeight(0, p_blk->IsFlipped());
-      }
-      p_blk->SetLLY(y_loc);
+  }
+}
+
+void GriddedRow::LegalizeSegmentsY() {
+  for (auto &[p_blk, region_id]: blk_regions_) {
+    if (region_id != 0) continue;
+    BlockTypeWell *well = p_blk->TypePtr()->WellPtr();
+    double y_loc = LLY();
+    if (is_orient_N_) {
+      y_loc += p_well_height_ - well->PwellHeight(0, p_blk->IsFlipped());
+    } else {
+      y_loc += n_well_height_ - well->NwellHeight(0, p_blk->IsFlipped());
     }
+    p_blk->SetLLY(y_loc);
   }
 }
 
@@ -550,7 +577,7 @@ void GriddedRow::RecomputeHeight(int p_well_height, int n_well_height) {
   n_well_height_ = n_well_height;
   for (auto &blk_region: blk_regions_) {
     auto *p_blk = blk_region.p_blk;
-    size_t region_id = blk_region.region_id;
+    int region_id = blk_region.region_id;
     BlockTypeWell *well = p_blk->TypePtr()->WellPtr();
     int p_height = well->PwellHeight(region_id, p_blk->IsFlipped());
     int n_height = well->NwellHeight(region_id, p_blk->IsFlipped());
@@ -565,7 +592,7 @@ void GriddedRow::InitializeBlockStretching() {
     auto *p_blk = blk_region.p_blk;
     size_t region_id = blk_region.region_id;
     BlockTypeWell *well = p_blk->TypePtr()->WellPtr();
-    size_t row_cnt = well->RowCount();
+    size_t row_cnt = well->RegionCount();
     if (region_id == 0) {
       p_blk->StretchLengths().resize(row_cnt - 1, 0);
     }
