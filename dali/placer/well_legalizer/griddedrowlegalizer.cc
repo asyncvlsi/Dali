@@ -110,63 +110,50 @@ void GriddedRowLegalizer::PartitionSpaceAndBlocks() {
   }
 }
 
-void GriddedRowLegalizer::SetLegalizationMaxIteration(size_t max_iteration) {
+void GriddedRowLegalizer::SetLegalizationMaxIteration(int max_iteration) {
   max_iteration_ = max_iteration;
 }
 
-bool GriddedRowLegalizer::StripeLegalizationUpward(Stripe &stripe) const {
+bool GriddedRowLegalizer::StripeLegalizationUpward(Stripe &stripe) {
   stripe.gridded_rows_.clear();
   stripe.front_id_ = -1;
   stripe.is_bottom_up_ = true;
 
-  std::sort(
-      stripe.block_list_.begin(),
-      stripe.block_list_.end(),
-      [](const Block *lhs, const Block *rhs) {
-        return (lhs->LLY() < rhs->LLY())
-            || (lhs->LLY() == rhs->LLY() && lhs->LLX() < rhs->LLX());
-      }
-  );
+  stripe.SortBlocksBasedOnYLocation(0);
 
   size_t processed_blk_cnt = 0;
   while (processed_blk_cnt < stripe.block_list_.size()) {
     stripe.UpdateFrontClusterUpward(tap_cell_p_height_, tap_cell_n_height_);
-    processed_blk_cnt = stripe.FitBlocksToFrontSpaceUpward(processed_blk_cnt);
+    processed_blk_cnt = stripe.FitBlocksToFrontSpaceUpward(
+        processed_blk_cnt, cur_iter_
+    );
     stripe.LegalizeFrontCluster();
   }
   stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_, true);
   stripe.UpdateBlockYLocation();
+  StretchBlocks();
 
   return stripe.HasNoRowsSpillingOut();
 }
 
-bool GriddedRowLegalizer::StripeLegalizationDownward(Stripe &stripe) const {
+bool GriddedRowLegalizer::StripeLegalizationDownward(Stripe &stripe) {
   stripe.gridded_rows_.clear();
   stripe.front_id_ = -1;
   stripe.is_bottom_up_ = false;
 
-  std::sort(
-      stripe.block_list_.begin(),
-      stripe.block_list_.end(),
-      [](const Block *lhs, const Block *rhs) {
-        return (lhs->URY() > rhs->URY())
-            || (lhs->URY() == rhs->URY() && lhs->LLX() < rhs->LLX());
-      }
-  );
+  stripe.SortBlocksBasedOnYLocation(2);
 
   size_t processed_blk_cnt = 0;
-  int counter = 0;
   while (processed_blk_cnt < stripe.block_list_.size()) {
     stripe.UpdateFrontClusterDownward(tap_cell_p_height_, tap_cell_n_height_);
-    processed_blk_cnt = stripe.FitBlocksToFrontSpaceDownward(processed_blk_cnt);
+    processed_blk_cnt = stripe.FitBlocksToFrontSpaceDownward(
+        processed_blk_cnt, cur_iter_
+    );
     stripe.LegalizeFrontCluster();
-    ++counter;
-    //if (counter == 10) {
-    //  break;
-    //}
   }
   stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_, false);
   stripe.UpdateBlockYLocation();
+  StretchBlocks();
 
   return stripe.HasNoRowsSpillingOut();
 }
@@ -177,7 +164,7 @@ bool GriddedRowLegalizer::GroupBlocksToClusters() {
     bool is_success = true;
     for (Stripe &stripe: col.stripe_list_) {
       bool is_from_bottom = true;
-      for (size_t i = 0; i < max_iteration_; ++i) {
+      for (cur_iter_ = 0; cur_iter_ < max_iteration_; ++cur_iter_) {
         if (is_from_bottom) {
           is_success = StripeLegalizationUpward(stripe);
         } else {
@@ -185,8 +172,6 @@ bool GriddedRowLegalizer::GroupBlocksToClusters() {
         }
         is_from_bottom = !is_from_bottom;
         if (is_success) {
-          std::cout << i << " " << is_success << " " << stripe.contour_ << " "
-           << stripe.LLY() << " " << stripe.URY() << "\n";
           break;
         }
       }
@@ -221,7 +206,6 @@ bool GriddedRowLegalizer::StartPlacement() {
   CheckWellInfo();
   PartitionSpaceAndBlocks();
   bool is_success = GroupBlocksToClusters();
-  StretchBlocks();
   EmbodyWellTapCells();
 
   ReportHPWL();

@@ -439,39 +439,42 @@ void GriddedRow::UpdateSegments() {
   }
 }
 
-bool GriddedRow::IsBelowTopBoundary(Block *p_blk) const {
-  return p_blk->LLY() < URY();
-}
-
 bool GriddedRow::IsBelowMiddleLine(Block *p_blk) const {
   return p_blk->LLY() < CenterY();
 }
 
-bool GriddedRow::IsAboveBottomBoundary(Block *p_blk) const {
-  return p_blk->URY() > LLY();
+bool GriddedRow::IsBelowTopPlusKFirstRegionHeight(
+    Block *p_blk, int iteration
+) const {
+  return p_blk->LLY() < URY() + height_ * (iteration - 1);
 }
 
 bool GriddedRow::IsAboveMiddleLine(Block *p_blk) const {
-  return p_blk->URY() > CenterY();
+  return p_blk->StretchedURY() > CenterY();
 }
 
-bool GriddedRow::IsOverlap(Block *p_blk, int criterion) const {
-  switch (criterion) {
-    case 0: {
-      return IsBelowTopBoundary(p_blk);
-    }
-    case 1: {
+bool GriddedRow::IsAboveBottomMinusKFirstRegionHeight(
+    Block *p_blk, int iteration
+) const {
+  return p_blk->StretchedURY() > LLY() - height_ * (iteration - 1);
+}
+
+bool GriddedRow::IsOverlap(
+    Block *p_blk,
+    int iteration,
+    bool is_upward
+) const {
+  if (is_upward) {
+    if (iteration > 0) {
+      return IsBelowTopPlusKFirstRegionHeight(p_blk, iteration);
+    } else {
       return IsBelowMiddleLine(p_blk);
     }
-    case 2: {
-      return IsAboveBottomBoundary(p_blk);
-    }
-    case 3: {
+  } else {
+    if (iteration > 0) {
+      return IsAboveBottomMinusKFirstRegionHeight(p_blk, iteration);
+    } else {
       return IsAboveMiddleLine(p_blk);
-    }
-    default: {
-      DaliExpects(false, "unknown overlapping criterion");
-      return false;
     }
   }
 }

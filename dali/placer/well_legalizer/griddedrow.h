@@ -89,11 +89,11 @@ class GriddedRow {
 
   std::vector<RowSegment> &Segments();
   void UpdateSegments();
-  bool IsBelowTopBoundary(Block *p_blk) const;
   bool IsBelowMiddleLine(Block *p_blk) const;
-  bool IsAboveBottomBoundary(Block *p_blk) const;
+  bool IsBelowTopPlusKFirstRegionHeight(Block *p_blk, int iteration) const;
   bool IsAboveMiddleLine(Block *p_blk) const;
-  bool IsOverlap(Block *p_blk, int criterion) const;
+  bool IsAboveBottomMinusKFirstRegionHeight(Block *p_blk, int iteration) const;
+  bool IsOverlap(Block *p_blk, int iteration,  bool is_upward) const;
 
   bool IsOrientMatching(Block *p_blk, int region_id) const;
   void AddBlockRegion(Block *p_blk, int region_id, bool is_upward);

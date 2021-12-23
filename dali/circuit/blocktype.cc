@@ -236,6 +236,14 @@ int BlockTypeWell::PwellHeight(int region_id, bool is_flipped) const {
   return p_rects_[region_id].Height();
 }
 
+int BlockTypeWell::RegionHeight(int region_id, bool is_flipped) const {
+  DaliExpects(region_id < region_count_, "Index out of bound");
+  if (is_flipped) {
+    region_id = region_count_ - 1 - region_id;
+  }
+  return p_rects_[region_id].Height() + n_rects_[region_id].Height();
+}
+
 /****
  * Distance of NP-edge between Region index and Region index+1
  * @param index

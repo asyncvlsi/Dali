@@ -43,9 +43,9 @@ class GriddedRowLegalizer : public Placer {
       std::string const &well_tap_type_name = ""
   );
 
-  void SetLegalizationMaxIteration(size_t max_iteration);
-  bool StripeLegalizationUpward(Stripe &stripe) const;
-  bool StripeLegalizationDownward(Stripe &stripe) const;
+  void SetLegalizationMaxIteration(int max_iteration);
+  bool StripeLegalizationUpward(Stripe &stripe);
+  bool StripeLegalizationDownward(Stripe &stripe);
   bool GroupBlocksToClusters();
 
   void StretchBlocks();
@@ -73,7 +73,8 @@ class GriddedRowLegalizer : public Placer {
   bool is_checker_board_mode_ = false;
   BlockType *well_tap_type_ptr_ = nullptr;
 
-  size_t max_iteration_ = 10;
+  int cur_iter_ = 0;
+  int max_iteration_ = 10;
 };
 
 }

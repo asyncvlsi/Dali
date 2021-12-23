@@ -29,17 +29,13 @@ bool Stripe::HasNoRowsSpillingOut() const {
   if (gridded_rows_.empty()) return true;
 
   // check if the first row fully inside the placement region
-  if (gridded_rows_[0].LLY() <= LLY() ||
-      gridded_rows_[0].URY() >= URY()) {
-    return false;
-  }
+  bool is_first_row_fully_in = gridded_rows_[0].LLY() >= LLY() &&
+      gridded_rows_[0].URY() <= URY();
   // check if the last row fully inside the placement region
-  if (gridded_rows_.back().LLY() <= LLY() ||
-      gridded_rows_.back().URY() >= URY()) {
-    return false;
-  }
+  bool is_last_row_fully_in = gridded_rows_.back().LLY() >= LLY() &&
+      gridded_rows_.back().URY() <= URY();
 
-  return true;
+  return is_first_row_fully_in && is_last_row_fully_in;
 }
 
 void Stripe::MinDisplacementAdjustment() {
@@ -95,6 +91,60 @@ void Stripe::MinDisplacementAdjustment() {
 
   for (auto &seg: segments) {
     seg.UpdateClusterLocation();
+  }
+}
+
+void Stripe::SortBlocksBasedOnLLY() {
+  std::sort(
+      block_list_.begin(),
+      block_list_.end(),
+      [](const Block *lhs, const Block *rhs) {
+        return (lhs->LLY() < rhs->LLY())
+            || (lhs->LLY() == rhs->LLY() && lhs->LLX() < rhs->LLX());
+      }
+  );
+}
+
+void Stripe::SortBlocksBasedOnURY() {
+  std::sort(
+      block_list_.begin(),
+      block_list_.end(),
+      [](const Block *lhs, const Block *rhs) {
+        return (lhs->URY() < rhs->URY())
+            || (lhs->URY() == rhs->URY() && lhs->LLX() < rhs->LLX());
+      }
+  );
+}
+
+void Stripe::SortBlocksBasedOnStretchedURY() {
+  std::sort(
+      block_list_.begin(),
+      block_list_.end(),
+      [](const Block *lhs, const Block *rhs) {
+        return (lhs->StretchedURY() > rhs->StretchedURY())
+            || (lhs->StretchedURY() == rhs->StretchedURY()
+                && lhs->LLX() < rhs->LLX());
+      }
+  );
+}
+
+void Stripe::SortBlocksBasedOnYLocation(int criterion) {
+  switch (criterion) {
+    case 0: {
+      SortBlocksBasedOnLLY();
+      break;
+    }
+    case 1: {
+      SortBlocksBasedOnURY();
+      break;
+    }
+    case 2: {
+      SortBlocksBasedOnStretchedURY();
+      break;
+    }
+    default: {
+      DaliExpects(false, "unknown block sorting criterion");
+    }
   }
 }
 
@@ -154,21 +204,24 @@ bool Stripe::AddBlockToFrontCluster(Block *p_blk, bool is_upward) {
   return true;
 }
 
-size_t Stripe::FitBlocksToFrontSpaceUpward(size_t start_id) {
+size_t Stripe::FitBlocksToFrontSpaceUpward(
+    size_t start_id,
+    int current_iteration
+) {
   std::vector<Block *> legalized_blks;
   std::vector<Block *> skipped_blks;
 
   size_t blks_sz = block_list_.size();
   for (size_t i = start_id; i < blks_sz; ++i) {
     Block *p_blk = block_list_[i];
-    if (!gridded_rows_[front_id_].IsOverlap(p_blk, 1)) {
+    if (!gridded_rows_[front_id_].IsOverlap(p_blk, current_iteration, true)) {
       break;
     }
     if (gridded_rows_[front_id_].IsOrientMatching(p_blk, 0)) {
       if (AddBlockToFrontCluster(p_blk, true)) {
         legalized_blks.push_back(p_blk);
       } else {
-        break;
+        skipped_blks.push_back(p_blk);
       }
     } else {
       skipped_blks.push_back(p_blk);
@@ -251,7 +304,18 @@ void Stripe::UpdateFrontClusterDownward(int p_height, int n_height) {
   bool is_orient_N;
   if (front_id_ == 0) {
     uy = URY();
-    is_orient_N = is_first_row_orient_N_;
+    if (block_list_.empty()) {
+      is_orient_N = is_first_row_orient_N_;
+    } else {
+      BlockTypeWell *well_ptr = block_list_[0]->TypePtr()->WellPtr();
+      bool is_blk_flipped = block_list_[0]->IsFlipped();
+      if (is_blk_flipped) {
+        is_orient_N = !well_ptr->IsNwellAbovePwell(0);
+      } else {
+        int region_id = well_ptr->RegionCount() - 1;
+        is_orient_N = well_ptr->IsNwellAbovePwell(region_id);
+      }
+    }
   } else {
     uy = gridded_rows_[front_id_ - 1].LLY();
     is_orient_N = !gridded_rows_[front_id_ - 1].IsOrientN();
@@ -262,14 +326,17 @@ void Stripe::UpdateFrontClusterDownward(int p_height, int n_height) {
   gridded_rows_[front_id_].UpdateSegments();
 }
 
-size_t Stripe::FitBlocksToFrontSpaceDownward(size_t start_id) {
+size_t Stripe::FitBlocksToFrontSpaceDownward(
+    size_t start_id,
+    int current_iteration
+) {
   std::vector<Block *> legalized_blks;
   std::vector<Block *> skipped_blks;
 
   size_t blks_sz = block_list_.size();
   for (size_t i = start_id; i < blks_sz; ++i) {
     Block *p_blk = block_list_[i];
-    if (!gridded_rows_[front_id_].IsOverlap(p_blk, 3)) {
+    if (!gridded_rows_[front_id_].IsOverlap(p_blk, current_iteration, false)) {
       break;
     }
     int region_id = p_blk->TypePtr()->WellPtr()->RegionCount() - 1;
@@ -277,7 +344,7 @@ size_t Stripe::FitBlocksToFrontSpaceDownward(size_t start_id) {
       if (AddBlockToFrontCluster(p_blk, false)) {
         legalized_blks.push_back(p_blk);
       } else {
-        break;
+        skipped_blks.push_back(p_blk);
       }
     } else {
       skipped_blks.push_back(p_blk);

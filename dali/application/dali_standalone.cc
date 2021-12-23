@@ -248,6 +248,9 @@ int main(int argc, char *argv[]) {
   gb_placer->SetPlacementDensity(target_density);
   //gb_placer->ReportBoundaries();
   gb_placer->StartPlacement();
+  if (export_well_cluster_for_matlab) {
+    gb_placer->GenMATLABTable("gb_result.txt");
+  }
   if (!cell_file_name.empty()) {
     auto *well_legalizer = new StdClusterWellLegalizer;
     well_legalizer->TakeOver(gb_placer);

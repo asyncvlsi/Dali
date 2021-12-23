@@ -1411,7 +1411,7 @@ void Circuit::GenMATLABTable(
     for (auto &block: design_.blocks_) {
       SaveMatlabPatchRect(
           ost,
-          block.LLX(), block.LLY(), block.URX(), block.URY(),
+          block.LLX(), block.LLY(), block.URX(), block.StretchedURY(),
           true, 0, 1, 1
       );
     }
@@ -1420,7 +1420,7 @@ void Circuit::GenMATLABTable(
   for (auto &block: design_.welltaps_) {
     SaveMatlabPatchRect(
         ost,
-        block.LLX(), block.LLY(), block.URX(), block.URY(),
+        block.LLX(), block.LLY(), block.URX(), block.StretchedURY(),
         true, 0, 1, 1
     );
   }

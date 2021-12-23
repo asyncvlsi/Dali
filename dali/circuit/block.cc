@@ -234,15 +234,15 @@ void Block::ExportWellToMatlabPatchRect(std::ofstream &ost) {
     } else if (Orient() == FS) {
       RectD n_rect(
           LLX() + n_well_shapes[i].LLX(),
-          URY() - (n_well_shapes[i].URY() + length),
+          StretchedURY() - (n_well_shapes[i].URY() + length),
           LLX() + n_well_shapes[i].URX(),
-          URY() - (n_well_shapes[i].LLY() + length)
+          StretchedURY() - (n_well_shapes[i].LLY() + length)
       );
       RectD p_rect(
           LLX() + p_well_shapes[i].LLX(),
-          URY() - (p_well_shapes[i].URY() + length),
+          StretchedURY() - (p_well_shapes[i].URY() + length),
           LLX() + p_well_shapes[i].URX(),
-          URY() - (p_well_shapes[i].LLY() + length)
+          StretchedURY() - (p_well_shapes[i].LLY() + length)
       );
       SaveMatlabPatchRegion(ost, n_rect, p_rect);
     } else {

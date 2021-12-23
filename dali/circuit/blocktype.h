@@ -177,6 +177,8 @@ class BlockTypeWell {
 
   int PwellHeight(int region_id, bool is_flipped = false) const;
 
+  int RegionHeight(int region_id, bool is_flipped = false) const;
+
   int AdjacentRegionEdgeDistance(int index, bool is_flipped = false) const;
 
   RectI &NwellRect(int index);
