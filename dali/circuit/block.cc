@@ -164,6 +164,8 @@ void Block::SetStretchLength(size_t index, int length) {
     index = sz - 1 - index;
   }
   stretch_length_[index] = length;
+  tot_stretch_length =
+      std::accumulate(stretch_length_.begin(), stretch_length_.end(), 0);
 }
 
 std::vector<int> &Block::StretchLengths() {
@@ -234,15 +236,15 @@ void Block::ExportWellToMatlabPatchRect(std::ofstream &ost) {
     } else if (Orient() == FS) {
       RectD n_rect(
           LLX() + n_well_shapes[i].LLX(),
-          StretchedURY() - (n_well_shapes[i].URY() + length),
+          URY() - (n_well_shapes[i].URY() + length),
           LLX() + n_well_shapes[i].URX(),
-          StretchedURY() - (n_well_shapes[i].LLY() + length)
+          URY() - (n_well_shapes[i].LLY() + length)
       );
       RectD p_rect(
           LLX() + p_well_shapes[i].LLX(),
-          StretchedURY() - (p_well_shapes[i].URY() + length),
+          URY() - (p_well_shapes[i].URY() + length),
           LLX() + p_well_shapes[i].URX(),
-          StretchedURY() - (p_well_shapes[i].LLY() + length)
+          URY() - (p_well_shapes[i].LLY() + length)
       );
       SaveMatlabPatchRegion(ost, n_rect, p_rect);
     } else {

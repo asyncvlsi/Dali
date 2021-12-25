@@ -1411,7 +1411,7 @@ void Circuit::GenMATLABTable(
     for (auto &block: design_.blocks_) {
       SaveMatlabPatchRect(
           ost,
-          block.LLX(), block.LLY(), block.URX(), block.StretchedURY(),
+          block.LLX(), block.LLY(), block.URX(), block.URY(),
           true, 0, 1, 1
       );
     }
@@ -1420,7 +1420,7 @@ void Circuit::GenMATLABTable(
   for (auto &block: design_.welltaps_) {
     SaveMatlabPatchRect(
         ost,
-        block.LLX(), block.LLY(), block.URX(), block.StretchedURY(),
+        block.LLX(), block.LLY(), block.URX(), block.URY(),
         true, 0, 1, 1
     );
   }
@@ -1517,8 +1517,7 @@ void Circuit::SaveCircuitWellCoverCell(
     std::ofstream &ost,
     std::string const &base_name
 ) const {
-  ost << "- "
-      << "npwells" << " "
+  ost << "- " << "npwells" << " "
       << base_name + "well" << " + "
       << "COVER "
       << "( "
@@ -1533,8 +1532,7 @@ void Circuit::SaveCircuitPpnpCoverCell(
     std::ofstream &ost,
     std::string const &base_name
 ) const {
-  ost << "- "
-      << "ppnps" << " "
+  ost << "- " << "ppnps" << " "
       << base_name + "ppnp" << " + "
       << "COVER "
       << "( "

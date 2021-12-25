@@ -104,12 +104,7 @@ class Block {
   double URX() const { return llx_ + Width(); }
 
   // get upper right y coordinate
-  double URY() const { return lly_ + Height(); }
-
-  double StretchedURY() const {
-    return lly_ + Height()
-        + std::accumulate(stretch_length_.begin(), stretch_length_.end(), 0);
-  }
+  double URY() const { return lly_ + Height() + tot_stretch_length; }
 
   // get center x coordinate
   double X() const { return llx_ + Width() / 2.0; }
@@ -253,6 +248,7 @@ class Block {
   BlockAux *aux_ptr_; // points to auxiliary information if needed
 
   std::vector<int> stretch_length_;
+  double tot_stretch_length = 0;
 };
 
 class BlockAux {

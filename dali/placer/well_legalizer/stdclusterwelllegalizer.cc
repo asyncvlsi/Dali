@@ -1753,62 +1753,48 @@ void StdClusterWellLegalizer::ExportWellToPhyDB(
 
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
-      std::vector<int> pn_edge_list;
-      if (stripe.is_bottom_up_) {
-        pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
-        pn_edge_list.push_back(RegionBottom());
-      } else {
-        pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
-        pn_edge_list.push_back(RegionTop());
-      }
-      for (auto &cluster: stripe.gridded_rows_) {
-        pn_edge_list.push_back(cluster.LLY() + cluster.PNEdge());
-      }
-      if (stripe.is_bottom_up_) {
-        pn_edge_list.push_back(RegionTop());
-      } else {
-        pn_edge_list.push_back(RegionBottom());
-        std::reverse(pn_edge_list.begin(), pn_edge_list.end());
-      }
-
-      bool is_p_well_rect = stripe.is_first_row_orient_N_;
-      int lx = stripe.LLX();
-      int ux = stripe.URX();
-      int ly;
-      int uy;
-      int rect_count = (int) pn_edge_list.size() - 1;
-      for (int i = 0; i < rect_count; ++i) {
-        ly = pn_edge_list[i];
-        uy = pn_edge_list[i + 1];
-        std::string signal_name;
-        std::string layer_name;
-        if (is_p_well_rect) {
-          is_p_well_rect = !is_p_well_rect;
-          if (well_emit_mode == 1) continue;
-          signal_name = "GND";
-          layer_name = "pwell";
-        } else {
-          is_p_well_rect = !is_p_well_rect;
-          if (well_emit_mode == 2) continue;
-          signal_name = "Vdd";
-          layer_name = "nwell";
+      std::vector<RectI> n_rects;
+      std::vector<RectI> p_rects;
+      CollectWellFillingRects(
+          stripe,
+          RegionBottom(), RegionTop(),
+          n_rects, p_rects
+      );
+      if (well_emit_mode != 1) {
+        std::string signal_name = "GND";
+        std::string layer_name = "pwell";
+        for (auto &rect: p_rects) {
+          int rect_llx = p_ckt_->LocDali2PhydbX(rect.LLX());
+          int rect_lly = p_ckt_->LocDali2PhydbY(rect.LLY());
+          int rect_urx = p_ckt_->LocDali2PhydbX(rect.URX());
+          int rect_ury = p_ckt_->LocDali2PhydbY(rect.URY());
+          phydb_layout_container->AddRectSignalLayer(
+              signal_name,
+              layer_name,
+              rect_llx,
+              rect_lly,
+              rect_urx,
+              rect_ury
+          );
         }
-        int rect_llx = (int) (lx * factor_x)
-            + p_ckt_->design().DieAreaOffsetX();
-        int rect_lly = (int) (ly * factor_y)
-            + p_ckt_->design().DieAreaOffsetY();
-        int rect_urx = (int) (ux * factor_x)
-            + p_ckt_->design().DieAreaOffsetX();
-        int rect_ury = (int) (uy * factor_y)
-            + p_ckt_->design().DieAreaOffsetY();
-        phydb_layout_container->AddRectSignalLayer(
-            signal_name,
-            layer_name,
-            rect_llx,
-            rect_lly,
-            rect_urx,
-            rect_ury
-        );
+      }
+      if (well_emit_mode != 2) {
+        std::string signal_name = "Vdd";
+        std::string layer_name = "nwell";
+        for (auto &rect: p_rects) {
+          int rect_llx = p_ckt_->LocDali2PhydbX(rect.LLX());
+          int rect_lly = p_ckt_->LocDali2PhydbY(rect.LLY());
+          int rect_urx = p_ckt_->LocDali2PhydbX(rect.URX());
+          int rect_ury = p_ckt_->LocDali2PhydbY(rect.URY());
+          phydb_layout_container->AddRectSignalLayer(
+              signal_name,
+              layer_name,
+              rect_llx,
+              rect_lly,
+              rect_urx,
+              rect_ury
+          );
+        }
       }
     }
   }

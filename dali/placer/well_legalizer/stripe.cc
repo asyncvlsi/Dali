@@ -121,9 +121,8 @@ void Stripe::SortBlocksBasedOnStretchedURY() {
       block_list_.begin(),
       block_list_.end(),
       [](const Block *lhs, const Block *rhs) {
-        return (lhs->StretchedURY() > rhs->StretchedURY())
-            || (lhs->StretchedURY() == rhs->StretchedURY()
-                && lhs->LLX() < rhs->LLX());
+        return (lhs->URY() > rhs->URY())
+            || (lhs->URY() == rhs->URY() && lhs->LLX() < rhs->LLX());
       }
   );
 }

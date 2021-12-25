@@ -20,6 +20,7 @@
  ******************************************************************************/
 #include "helper.h"
 
+#include "dali/common/helper.h"
 #include "dali/common/logging.h"
 
 namespace dali {
@@ -62,6 +63,62 @@ void GenClusterTable(
   ost.close();
 }
 
+void CollectWellFillingRects(
+    Stripe &stripe,
+    int bottom_boundary,
+    int top_boundary,
+    std::vector<RectI> &n_rects, std::vector<RectI> &p_rects
+) {
+  int loc_bottom = bottom_boundary;
+  if (!stripe.gridded_rows_.empty()) {
+    loc_bottom = std::min(loc_bottom, stripe.gridded_rows_[0].LLY());
+  }
+  int loc_top = top_boundary;
+  if (!stripe.gridded_rows_.empty()) {
+    loc_top = std::max(loc_top, stripe.gridded_rows_.back().URY());
+  }
+
+  std::vector<int> pn_edge_list;
+  if (stripe.is_bottom_up_) {
+    pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
+    pn_edge_list.push_back(loc_bottom);
+  } else {
+    pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
+    pn_edge_list.push_back(loc_top);
+  }
+  for (auto &cluster: stripe.gridded_rows_) {
+    pn_edge_list.push_back(cluster.LLY() + cluster.PNEdge());
+  }
+  if (stripe.is_bottom_up_) {
+    pn_edge_list.push_back(loc_top);
+  } else {
+    pn_edge_list.push_back(loc_bottom);
+    std::reverse(pn_edge_list.begin(), pn_edge_list.end());
+  }
+
+  bool is_p_well_rect;
+  if (stripe.gridded_rows_.empty()) {
+    is_p_well_rect = stripe.is_first_row_orient_N_;
+  } else {
+    is_p_well_rect = stripe.gridded_rows_[0].IsOrientN();
+  }
+  int lx = stripe.LLX();
+  int ux = stripe.URX();
+  int ly;
+  int uy;
+  int rect_count = (int) pn_edge_list.size() - 1;
+  for (int i = 0; i < rect_count; ++i) {
+    ly = pn_edge_list[i];
+    uy = pn_edge_list[i + 1];
+    if (is_p_well_rect) {
+      p_rects.emplace_back(lx, ly, ux, uy);
+    } else {
+      n_rects.emplace_back(lx, ly, ux, uy);
+    }
+    is_p_well_rect = !is_p_well_rect;
+  }
+}
+
 void GenMATLABWellFillingTable(
     std::string const &base_file_name,
     std::vector<ClusterStripe> &col_list,
@@ -79,71 +136,28 @@ void GenMATLABWellFillingTable(
 
   for (auto &col: col_list) {
     for (auto &stripe: col.stripe_list_) {
-      std::vector<int> pn_edge_list;
-      int loc_bottom = bottom_boundary;
-      if (!stripe.gridded_rows_.empty()) {
-        loc_bottom = std::min(loc_bottom, stripe.gridded_rows_[0].LLY());
-      }
-      int loc_top = top_boundary;
-      if (!stripe.gridded_rows_.empty()) {
-        loc_top = std::min(loc_top, stripe.gridded_rows_.back().URY());
-      }
-
-      if (stripe.is_bottom_up_) {
-        pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
-        pn_edge_list.push_back(loc_bottom);
-      } else {
-        pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
-        pn_edge_list.push_back(loc_top);
-      }
-      for (auto &cluster: stripe.gridded_rows_) {
-        pn_edge_list.push_back(cluster.LLY() + cluster.PNEdge());
-      }
-      if (stripe.is_bottom_up_) {
-        pn_edge_list.push_back(loc_top);
-      } else {
-        pn_edge_list.push_back(loc_bottom);
-        std::reverse(pn_edge_list.begin(), pn_edge_list.end());
-      }
-
-      bool is_p_well_rect;
-      if (stripe.gridded_rows_.empty()) {
-        is_p_well_rect = stripe.is_first_row_orient_N_;
-      } else {
-        is_p_well_rect = stripe.gridded_rows_[0].IsOrientN();
-      }
-      int lx = stripe.LLX();
-      int ux = stripe.URX();
-      int ly;
-      int uy;
-      int rect_count = (int) pn_edge_list.size() - 1;
-      for (int i = 0; i < rect_count; ++i) {
-        ly = pn_edge_list[i];
-        uy = pn_edge_list[i + 1];
-        if (is_p_well_rect) {
-          if (well_emit_mode != 1) {
-            ostp << lx << "\t"
-                 << ux << "\t"
-                 << ux << "\t"
-                 << lx << "\t"
-                 << ly << "\t"
-                 << ly << "\t"
-                 << uy << "\t"
-                 << uy << "\n";
-          }
-        } else {
-          if (well_emit_mode != 2) {
-            ostn << lx << "\t"
-                 << ux << "\t"
-                 << ux << "\t"
-                 << lx << "\t"
-                 << ly << "\t"
-                 << ly << "\t"
-                 << uy << "\t"
-                 << uy << "\n";
-          }
+      std::vector<RectI> n_rects;
+      std::vector<RectI> p_rects;
+      CollectWellFillingRects(
+          stripe,
+          bottom_boundary, top_boundary,
+          n_rects, p_rects
+      );
+      if (well_emit_mode != 1) {
+        for (auto &rect: p_rects) {
+          SaveMatlabPatchRect(
+              ostp,
+              rect.LLX(), rect.LLY(), rect.URX(), rect.URY()
+          );
         }
-        is_p_well_rect = !is_p_well_rect;
+      }
+      if (well_emit_mode != 2) {
+        for (auto &rect: n_rects) {
+          SaveMatlabPatchRect(
+              ostn,
+              rect.LLX(), rect.LLY(), rect.URX(), rect.URY()
+          );
+        }
       }
     }
   }

@@ -450,13 +450,13 @@ bool GriddedRow::IsBelowTopPlusKFirstRegionHeight(
 }
 
 bool GriddedRow::IsAboveMiddleLine(Block *p_blk) const {
-  return p_blk->StretchedURY() > CenterY();
+  return p_blk->URY() > CenterY();
 }
 
 bool GriddedRow::IsAboveBottomMinusKFirstRegionHeight(
     Block *p_blk, int iteration
 ) const {
-  return p_blk->StretchedURY() > LLY() - height_ * (iteration - 1);
+  return p_blk->URY() > LLY() - height_ * (iteration - 1);
 }
 
 bool GriddedRow::IsOverlap(

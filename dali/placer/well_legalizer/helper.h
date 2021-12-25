@@ -33,6 +33,13 @@ void GenClusterTable(
     std::vector<ClusterStripe> &col_list_
 );
 
+void CollectWellFillingRects(
+    Stripe &stripe,
+    int bottom_boundary,
+    int top_boundary,
+    std::vector<RectI> &n_rects, std::vector<RectI> &p_rects
+);
+
 void GenMATLABWellFillingTable(
     std::string const &base_file_name,
     std::vector<ClusterStripe> &col_list,
