@@ -172,9 +172,10 @@ void Stripe::PrecomputeWellTapCellLocation(
   }
 
   // compute how many well-tap cells are needed
-  int init_location = 0; // TODO: this can be a parameter exposed to users
-  int well_tap_cell_loc = lx_ + init_location;
-  int number_of_well_tap_cell = width_ / tap_cell_interval_grid;
+  int space_to_left = 0; // TODO: this can be a parameter exposed to users
+  int well_tap_cell_loc = lx_ + space_to_left;
+  int number_of_well_tap_cell =
+      (width_ - space_to_left) / tap_cell_interval_grid + 1;
   for (int i = 0; i < number_of_well_tap_cell; ++i) {
     locations.emplace_back(well_tap_cell_loc);
     well_tap_cell_loc += tap_cell_interval_grid;
@@ -456,17 +457,20 @@ void Stripe::UpdateBlockYLocation() {
   }
 }
 
-size_t Stripe::AddWellTapCells(Circuit *p_ckt, size_t start_id) {
-  auto &tap_cell_list = p_ckt->design().WellTaps();
+size_t Stripe::AddWellTapCells(
+    Circuit *p_ckt,
+    BlockType *well_tap_type_ptr,
+    size_t start_id
+) {
   size_t row_cnt = gridded_rows_.size();
   for (size_t i = 0; i < row_cnt; ++i) {
     if (i & 1) {
       start_id = gridded_rows_[i].AddWellTapCells(
-          p_ckt, start_id, well_tap_cell_location_odd_
+          p_ckt, well_tap_type_ptr, start_id, well_tap_cell_location_odd_
       );
     } else {
       start_id = gridded_rows_[i].AddWellTapCells(
-          p_ckt, start_id, well_tap_cell_location_even_
+          p_ckt, well_tap_type_ptr, start_id, well_tap_cell_location_even_
       );
     }
   }

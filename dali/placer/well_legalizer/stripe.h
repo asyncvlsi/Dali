@@ -89,7 +89,7 @@ struct Stripe {
 
   void UpdateBlockYLocation();
 
-  size_t AddWellTapCells(Circuit *p_ckt, size_t start_id);
+  size_t AddWellTapCells(Circuit *p_ckt, BlockType *well_tap_type_ptr, size_t start_id);
 };
 
 struct ClusterStripe {

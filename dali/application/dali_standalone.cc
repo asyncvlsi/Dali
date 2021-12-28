@@ -270,7 +270,7 @@ int main(int argc, char *argv[]) {
   } else if (!m_cell_file_name.empty()) {
     auto *multi_well_legalizer = new GriddedRowLegalizer;
     multi_well_legalizer->TakeOver(gb_placer);
-    multi_well_legalizer->SetWellTapCellParameters(false, false, 90, "");
+    multi_well_legalizer->SetWellTapCellParameters(true, false, -1, "");
     multi_well_legalizer->SetPartitionMode(well_legalization_mode);
     multi_well_legalizer->StartPlacement();
     if (export_well_cluster_for_matlab) {

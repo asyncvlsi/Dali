@@ -603,15 +603,26 @@ void GriddedRow::InitializeBlockStretching() {
 }
 
 size_t GriddedRow::AddWellTapCells(
-    Circuit *p_ckt, size_t start_id, std::vector<SegI> &well_tap_cell_locs
+    Circuit *p_ckt,
+    BlockType *well_tap_type_ptr,
+    size_t start_id,
+    std::vector<SegI> &well_tap_cell_locs
 ) {
   auto &tap_cell_list = p_ckt->design().WellTaps();
+  BlockTypeWell *well = well_tap_type_ptr->WellPtr();
+  double y_loc = LLY();
+  if (is_orient_N_) {
+    y_loc += p_well_height_ - well->PwellHeight(0, false);
+  } else {
+    y_loc += n_well_height_ - well->NwellHeight(0, true);
+  }
+  BlockOrient orient = is_orient_N_ ? N : FS;
   for (auto &[lo_x, hi_x]: well_tap_cell_locs) {
     std::string block_name = "__well_tap__" + std::to_string(start_id++);
     tap_cell_list.emplace_back();
     auto &tap_cell = tap_cell_list.back();
     tap_cell.SetPlacementStatus(PLACED);
-    tap_cell.SetType(p_ckt->tech().WellTapCellPtrs()[0]);
+    tap_cell.SetType(well_tap_type_ptr);
     int map_size = static_cast<int>(p_ckt->design().TapNameIdMap().size());
     auto ret = p_ckt->design().TapNameIdMap().insert(
         std::pair<std::string, int>(block_name, map_size)
@@ -619,7 +630,8 @@ size_t GriddedRow::AddWellTapCells(
     auto *name_id_pair_ptr = &(*ret.first);
     tap_cell.SetNameNumPair(name_id_pair_ptr);
     tap_cell.SetLLX(lo_x);
-    tap_cell.SetLLY(ly_); // TODO: this needs to be fixed
+    tap_cell.SetLLY(y_loc);
+    tap_cell.SetOrient(orient);
   }
   return start_id;
 }

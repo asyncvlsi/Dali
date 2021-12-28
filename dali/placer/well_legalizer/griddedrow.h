@@ -106,7 +106,10 @@ class GriddedRow {
   void InitializeBlockStretching();
 
   size_t AddWellTapCells(
-      Circuit *p_ckt, size_t start_id, std::vector<SegI> &well_tap_cell_locs
+      Circuit *p_ckt,
+      BlockType *well_tap_type_ptr,
+      size_t start_id,
+      std::vector<SegI> &well_tap_cell_locs
   );
 
  private:

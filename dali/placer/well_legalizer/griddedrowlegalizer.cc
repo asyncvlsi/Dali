@@ -213,7 +213,7 @@ void GriddedRowLegalizer::EmbodyWellTapCells() {
   size_t counter = 0;
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
-      counter = stripe.AddWellTapCells(p_ckt_, counter);
+      counter = stripe.AddWellTapCells(p_ckt_, well_tap_type_ptr_, counter);
     }
   }
 }
