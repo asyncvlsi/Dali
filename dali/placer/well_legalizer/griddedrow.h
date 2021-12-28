@@ -22,13 +22,14 @@
 #define DALI_DALI_PLACER_WELLLEGALIZER_GRIDDEDROW_H_
 
 #include "dali/circuit/block.h"
+#include "dali/circuit/circuit.h"
 #include "dali/placer/well_legalizer/blocksegment.h"
 #include "dali/placer/well_legalizer/rowsegment.h"
 
 namespace dali {
 
 struct BlockRegion {
-  BlockRegion(Block *blk, int id): p_blk(blk), region_id(id) {}
+  BlockRegion(Block *blk, int id) : p_blk(blk), region_id(id) {}
   Block *p_blk = nullptr;
   int region_id = 0;
 };
@@ -88,12 +89,12 @@ class GriddedRow {
   double MinDisplacementLLY() const;
 
   std::vector<RowSegment> &Segments();
-  void UpdateSegments();
+  void UpdateSegments(std::vector<SegI> &external_blockage);
   bool IsBelowMiddleLine(Block *p_blk) const;
   bool IsBelowTopPlusKFirstRegionHeight(Block *p_blk, int iteration) const;
   bool IsAboveMiddleLine(Block *p_blk) const;
   bool IsAboveBottomMinusKFirstRegionHeight(Block *p_blk, int iteration) const;
-  bool IsOverlap(Block *p_blk, int iteration,  bool is_upward) const;
+  bool IsOverlap(Block *p_blk, int iteration, bool is_upward) const;
 
   bool IsOrientMatching(Block *p_blk, int region_id) const;
   void AddBlockRegion(Block *p_blk, int region_id, bool is_upward);
@@ -103,6 +104,10 @@ class GriddedRow {
   void LegalizeSegmentsY();
   void RecomputeHeight(int p_well_height, int n_well_height);
   void InitializeBlockStretching();
+
+  size_t AddWellTapCells(
+      Circuit *p_ckt, size_t start_id, std::vector<SegI> &well_tap_cell_locs
+  );
 
  private:
   bool is_orient_N_ = true; // orientation of this cluster

@@ -55,6 +55,7 @@ class AbstractSpacePartitioner {
       int l_space, int r_space, int b_space, int t_space
   );
   virtual void SetPartitionMode(int partition_mode);
+  virtual void SetMaxRowWidth(int max_row_width);
 
   virtual bool StartPartitioning() = 0;
  protected:
@@ -68,6 +69,7 @@ class AbstractSpacePartitioner {
   int t_space_ = 0;
 
   int partition_mode_ = 0;
+  int max_row_width_ = -1;
 };
 
 enum class DefaultPartitionMode {

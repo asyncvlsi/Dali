@@ -45,6 +45,10 @@ void AbstractSpacePartitioner::SetPartitionMode(int partition_mode) {
   partition_mode_ = partition_mode;
 }
 
+void AbstractSpacePartitioner::SetMaxRowWidth(int max_row_width) {
+  max_row_width_ = max_row_width;
+}
+
 void DefaultSpacePartitioner::FetchWellParameters() {
   Tech &tech = p_ckt_->tech();
   WellLayer &n_well_layer = tech.NwellLayer();
@@ -305,6 +309,7 @@ bool DefaultSpacePartitioner::StartPartitioning() {
     << "Max movable cell width: " << max_cell_width_ << "\n";
 
   // determine the width of columns
+  cluster_width_ = max_row_width_;
   if (cluster_width_ <= 0) {
     BOOST_LOG_TRIVIAL(info)
       << "Using default gridded row width: 2*max_unplug_length_\n";
@@ -358,142 +363,100 @@ bool DefaultSpacePartitioner::StartPartitioning() {
 void DefaultSpacePartitioner::PlotAvailSpace(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
-  ost << Left() << "\t"
-      << Right() << "\t"
-      << Right() << "\t"
-      << Left() << "\t"
-      << Bottom() << "\t"
-      << Bottom() << "\t"
-      << Top() << "\t"
-      << Top() << "\t"
-      << 1 << "\t"
-      << 1 << "\t"
-      << 1 << "\n";
+  SaveMatlabPatchRect(
+      ost,
+      Left(), Bottom(), Right(), Top(),
+      true, 1, 1, 1
+  );
   for (int i = 0; i < tot_num_rows_; ++i) {
     auto &row = white_space_in_rows_[i];
     for (auto &seg: row) {
-      ost << seg.lo << "\t"
-          << seg.hi << "\t"
-          << seg.hi << "\t"
-          << seg.lo << "\t"
-          << i * row_height_ + Bottom() << "\t"
-          << i * row_height_ + Bottom() << "\t"
-          << (i + 1) * row_height_ + Bottom() << "\t"
-          << (i + 1) * row_height_ + Bottom() << "\t"
-          << 1 << "\t"
-          << 1 << "\t"
-          << 1 << "\n";
+      SaveMatlabPatchRect(
+          ost,
+          seg.lo,
+          i * row_height_ + Bottom(),
+          seg.hi,
+          (i + 1) * row_height_ + Bottom(),
+          true,
+          1,
+          1,
+          1
+      );
     }
   }
 
   for (auto &block: p_ckt_->Blocks()) {
     if (block.IsMovable()) continue;
-    ost << block.LLX() << "\t"
-        << block.URX() << "\t"
-        << block.URX() << "\t"
-        << block.LLX() << "\t"
-        << block.LLY() << "\t"
-        << block.LLY() << "\t"
-        << block.URY() << "\t"
-        << block.URY() << "\t"
-        << 1 << "\t"
-        << 1 << "\t"
-        << 1 << "\n";
+    SaveMatlabPatchRect(
+        ost,
+        block.LLX(), block.LLY(), block.URX(), block.URY(),
+        true, 1, 1, 1
+    );
   }
 }
 
 void DefaultSpacePartitioner::PlotAvailSpaceInCols(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
-  ost << Left() << "\t"
-      << Right() << "\t"
-      << Right() << "\t"
-      << Left() << "\t"
-      << Bottom() << "\t"
-      << Bottom() << "\t"
-      << Top() << "\t"
-      << Top() << "\t"
-      << 1 << "\t"
-      << 1 << "\t"
-      << 1 << "\n";
+  SaveMatlabPatchRect(
+      ost,
+      Left(), Bottom(), Right(), Top(),
+      true, 1, 1, 1
+  );
   for (auto &col: *p_col_list_) {
     for (int i = 0; i < tot_num_rows_; ++i) {
       auto &row = col.white_space_[i];
       for (auto &seg: row) {
-        ost << seg.lo << "\t"
-            << seg.hi << "\t"
-            << seg.hi << "\t"
-            << seg.lo << "\t"
-            << i * row_height_ + Bottom() << "\t"
-            << i * row_height_ + Bottom() << "\t"
-            << (i + 1) * row_height_ + Bottom() << "\t"
-            << (i + 1) * row_height_ + Bottom() << "\t"
-            << 0 << "\t"
-            << 1 << "\t"
-            << 1 << "\n";
+        SaveMatlabPatchRect(
+            ost,
+            seg.lo,
+            i * row_height_ + Bottom(),
+            seg.hi,
+            (i + 1) * row_height_ + Bottom(),
+            true,
+            0,
+            1,
+            1
+        );
       }
     }
   }
 
   for (auto &block: p_ckt_->Blocks()) {
     if (block.IsMovable()) continue;
-    ost << block.LLX() << "\t"
-        << block.URX() << "\t"
-        << block.URX() << "\t"
-        << block.LLX() << "\t"
-        << block.LLY() << "\t"
-        << block.LLY() << "\t"
-        << block.URY() << "\t"
-        << block.URY() << "\t"
-        << 0 << "\t"
-        << 1 << "\t"
-        << 1 << "\n";
+    SaveMatlabPatchRect(
+        ost,
+        block.LLX(), block.LLY(), block.URX(), block.URY(),
+        true, 0, 1, 1
+    );
   }
 }
 
 void DefaultSpacePartitioner::PlotSimpleStripes(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
-  ost << Left() << "\t"
-      << Right() << "\t"
-      << Right() << "\t"
-      << Left() << "\t"
-      << Bottom() << "\t"
-      << Bottom() << "\t"
-      << Top() << "\t"
-      << Top() << "\t"
-      << 1 << "\t"
-      << 1 << "\t"
-      << 1 << "\n";
+  SaveMatlabPatchRect(
+      ost,
+      Left(), Bottom(), Right(), Top(),
+      true, 1, 1, 1
+  );
   for (auto &col: *p_col_list_) {
     for (auto &stripe: col.stripe_list_) {
-      ost << stripe.LLX() << "\t"
-          << stripe.URX() << "\t"
-          << stripe.URX() << "\t"
-          << stripe.LLX() << "\t"
-          << stripe.LLY() << "\t"
-          << stripe.LLY() << "\t"
-          << stripe.URY() << "\t"
-          << stripe.URY() << "\t"
-          << 0.8 << "\t"
-          << 0.8 << "\t"
-          << 0.8 << "\n";
+      SaveMatlabPatchRect(
+          ost,
+          stripe.LLX(), stripe.LLY(), stripe.URX(), stripe.URY(),
+          true, 0.8, 0.8, 0.8
+      );
     }
   }
 
   for (auto &block: p_ckt_->Blocks()) {
     if (block.IsMovable()) continue;
-    ost << block.LLX() << "\t"
-        << block.URX() << "\t"
-        << block.URX() << "\t"
-        << block.LLX() << "\t"
-        << block.LLY() << "\t"
-        << block.LLY() << "\t"
-        << block.URY() << "\t"
-        << block.URY() << "\t"
-        << 0 << "\t"
-        << 1 << "\t"
-        << 1 << "\n";
+    SaveMatlabPatchRect(
+        ost,
+        block.LLX(), block.LLY(), block.URX(), block.URY(),
+        true, 0, 1, 1
+    );
   }
 }
 

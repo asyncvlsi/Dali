@@ -388,9 +388,9 @@ std::vector<RowSegment> &GriddedRow::Segments() {
   return segments_;
 }
 
-void GriddedRow::UpdateSegments() {
+void GriddedRow::UpdateSegments(std::vector<SegI> &external_blockage) {
   // collect used space segments
-  std::vector<SegI> used_spaces;
+  std::vector<SegI> used_spaces = external_blockage;
   for (auto &blk_region: blk_regions_) {
     Block *p_blk = blk_region.p_blk;
     used_spaces.emplace_back(p_blk->LLX(), p_blk->URX());
@@ -600,6 +600,28 @@ void GriddedRow::InitializeBlockStretching() {
       p_blk->StretchLengths().resize(row_cnt - 1, 0);
     }
   }
+}
+
+size_t GriddedRow::AddWellTapCells(
+    Circuit *p_ckt, size_t start_id, std::vector<SegI> &well_tap_cell_locs
+) {
+  auto &tap_cell_list = p_ckt->design().WellTaps();
+  for (auto &[lo_x, hi_x]: well_tap_cell_locs) {
+    std::string block_name = "__well_tap__" + std::to_string(start_id++);
+    tap_cell_list.emplace_back();
+    auto &tap_cell = tap_cell_list.back();
+    tap_cell.SetPlacementStatus(PLACED);
+    tap_cell.SetType(p_ckt->tech().WellTapCellPtrs()[0]);
+    int map_size = static_cast<int>(p_ckt->design().TapNameIdMap().size());
+    auto ret = p_ckt->design().TapNameIdMap().insert(
+        std::pair<std::string, int>(block_name, map_size)
+    );
+    auto *name_id_pair_ptr = &(*ret.first);
+    tap_cell.SetNameNumPair(name_id_pair_ptr);
+    tap_cell.SetLLX(lo_x);
+    tap_cell.SetLLY(ly_); // TODO: this needs to be fixed
+  }
+  return start_id;
 }
 
 void ClusterSegment::Merge(

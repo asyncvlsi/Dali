@@ -21,9 +21,10 @@
 #ifndef DALI_DALI_PLACER_WELLLEGALIZER_STRIPE_H_
 #define DALI_DALI_PLACER_WELLLEGALIZER_STRIPE_H_
 
-#include "griddedrow.h"
 #include "dali/circuit/block.h"
+#include "dali/circuit/circuit.h"
 #include "dali/common/misc.h"
+#include "dali/placer/well_legalizer/griddedrow.h"
 
 namespace dali {
 
@@ -48,6 +49,11 @@ struct Stripe {
   bool is_first_row_orient_N_ = true;
   std::vector<RectI> well_rect_list_;
 
+  bool is_checkerboard_mode_ = false;
+  int well_tap_cell_width_ = -1;
+  std::vector<SegI> well_tap_cell_location_even_;
+  std::vector<SegI> well_tap_cell_location_odd_;
+
   int LLX() const { return lx_; }
   int LLY() const { return ly_; }
   int URX() const { return lx_ + width_; }
@@ -64,6 +70,12 @@ struct Stripe {
   void SortBlocksBasedOnStretchedURY();
   void SortBlocksBasedOnYLocation(int criterion);
 
+  void PrecomputeWellTapCellLocation(
+      bool is_checker_board_mode,
+      int tap_cell_interval_grid,
+      BlockType *well_tap_type_ptr
+  );
+
   void UpdateFrontClusterUpward(int p_height, int n_height);
   void SimplyAddFollowingClusters(Block *p_blk, bool is_upward);
   bool AddBlockToFrontCluster(Block *p_blk, bool is_upward);
@@ -76,6 +88,8 @@ struct Stripe {
   size_t FitBlocksToFrontSpaceDownward(size_t start_id, int current_iteration);
 
   void UpdateBlockYLocation();
+
+  size_t AddWellTapCells(Circuit *p_ckt, size_t start_id);
 };
 
 struct ClusterStripe {

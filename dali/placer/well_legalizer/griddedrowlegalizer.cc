@@ -55,39 +55,16 @@ void GriddedRowLegalizer::SetPartitionMode(int partitioning_mode) {
   partitioning_mode_ = partitioning_mode;
 }
 
-void GriddedRowLegalizer::SetWellTapCellParameters(
-    double tap_cell_interval_microns,
-    bool is_checker_board_mode,
-    std::string const &well_tap_type_name
-) {
+void GriddedRowLegalizer::SetMaxRowWidth(double max_row_width) {
   BOOST_LOG_TRIVIAL(info)
-    << "Provided well tap cell interval:      "
-    << tap_cell_interval_microns << " um\n";
+    << "Provided max row width: " << max_row_width << " um\n";
   BOOST_LOG_TRIVIAL(info)
     << "Gridded value x:                      "
     << p_ckt_->GridValueX() << " um\n";
-  tap_cell_interval_grid_ =
-      std::floor(tap_cell_interval_microns / p_ckt_->GridValueX());
+  max_row_width_ = std::floor(max_row_width / p_ckt_->GridValueX());
   BOOST_LOG_TRIVIAL(info)
-    << "Well tap cell interval in grid unit : "
+    << "Max row width in grid unit : "
     << tap_cell_interval_grid_ << "\n";
-
-  is_checker_board_mode_ = is_checker_board_mode;
-  std::string is_mode_on = is_checker_board_mode_ ? "True" : "False";
-  BOOST_LOG_TRIVIAL(info) << "Checkerboard mode on: " << is_mode_on << "\n";
-
-  if (well_tap_type_name.empty()) {
-    BOOST_LOG_TRIVIAL(info) << "Well tap cell type not specified\n";
-    DaliExpects(!p_ckt_->tech().WellTapCellPtrs().empty(),
-                "No well tap cells provided in the cell library?");
-    well_tap_type_ptr_ = p_ckt_->tech().WellTapCellPtrs()[0];
-    BOOST_LOG_TRIVIAL(info) << "Using the default well tap cell: "
-                            << well_tap_type_ptr_->Name() << "\n";
-  } else {
-    BOOST_LOG_TRIVIAL(info) << "Provided well tap cell type: "
-                            << well_tap_type_name << "\n";
-    well_tap_type_ptr_ = p_ckt_->GetBlockTypePtr(well_tap_type_name);
-  }
 }
 
 void GriddedRowLegalizer::PartitionSpaceAndBlocks() {
@@ -102,11 +79,35 @@ void GriddedRowLegalizer::PartitionSpaceAndBlocks() {
       well_spacing_, well_spacing_, 1, 1
   );
   space_partitioner_->SetPartitionMode(partitioning_mode_);
+  space_partitioner_->SetMaxRowWidth(max_row_width_);
   space_partitioner_->StartPartitioning();
 
   if (!is_external_partitioner_provided) {
     delete space_partitioner_;
     space_partitioner_ = nullptr;
+  }
+}
+
+void GriddedRowLegalizer::SetWellTapCellParameters(
+    bool is_well_tap_needed,
+    bool is_checker_board_mode,
+    double tap_cell_interval_microns,
+    std::string const &well_tap_type_name
+) {
+  SetWellTapCellNecessary(is_well_tap_needed);
+  SetWellTapCellPlacementMode(is_checker_board_mode);
+  SetWellTapCellInterval(tap_cell_interval_microns);
+  SetWellTapCellType(well_tap_type_name);
+}
+
+void GriddedRowLegalizer::PrecomputeWellTapCellLocation() {
+  if (!is_well_tap_needed_) return;
+  for (ClusterStripe &cluster: col_list_) {
+    for (Stripe &stripe: cluster.stripe_list_) {
+      stripe.PrecomputeWellTapCellLocation(
+          is_checker_board_mode_, tap_cell_interval_grid_, well_tap_type_ptr_
+      );
+    }
   }
 }
 
@@ -190,7 +191,31 @@ void GriddedRowLegalizer::StretchBlocks() {
 }
 
 void GriddedRowLegalizer::EmbodyWellTapCells() {
+  if (!is_well_tap_needed_) return;
 
+  // compute the number of well-tap cells and reserve space
+  size_t well_tap_cell_count_upper_limit = 0;
+  for (auto &col: col_list_) {
+    for (auto &stripe: col.stripe_list_) {
+      size_t upper_limit_per_row = std::max(
+          stripe.well_tap_cell_location_even_.size(),
+          stripe.well_tap_cell_location_odd_.size()
+      );
+      well_tap_cell_count_upper_limit +=
+          upper_limit_per_row * stripe.gridded_rows_.size();
+    }
+  }
+  auto &tap_cell_list = p_ckt_->design().WellTaps();
+  tap_cell_list.clear();
+  tap_cell_list.reserve(well_tap_cell_count_upper_limit);
+
+  // create well-tap cells
+  size_t counter = 0;
+  for (auto &col: col_list_) {
+    for (auto &stripe: col.stripe_list_) {
+      counter = stripe.AddWellTapCells(p_ckt_, counter);
+    }
+  }
 }
 
 bool GriddedRowLegalizer::StartPlacement() {
@@ -205,6 +230,7 @@ bool GriddedRowLegalizer::StartPlacement() {
 
   CheckWellInfo();
   PartitionSpaceAndBlocks();
+  PrecomputeWellTapCellLocation();
   bool is_success = GroupBlocksToClusters();
   EmbodyWellTapCells();
 
@@ -251,6 +277,73 @@ void GriddedRowLegalizer::GenMATLABWellTable(
       well_emit_mode
   );
   GenClusterTable(name_of_file, col_list_);
+}
+
+void GriddedRowLegalizer::SetWellTapCellNecessary(bool is_well_tap_needed) {
+  is_well_tap_needed_ = is_well_tap_needed;
+  std::string is_needed = is_well_tap_needed_ ? "True" : "False";
+  BOOST_LOG_TRIVIAL(info) << "Place well tap cells: " << is_needed << "\n";
+}
+
+void GriddedRowLegalizer::SetWellTapCellPlacementMode(
+    bool is_checker_board_mode
+) {
+  is_checker_board_mode_ = is_checker_board_mode;
+  std::string is_mode_on = is_checker_board_mode_ ? "True" : "False";
+  BOOST_LOG_TRIVIAL(info) << "Checkerboard mode on: " << is_mode_on << "\n";
+}
+
+void GriddedRowLegalizer::SetWellTapCellInterval(
+    double tap_cell_interval_microns
+) {
+  if (tap_cell_interval_microns > 0) {
+    BOOST_LOG_TRIVIAL(info)
+      << "Provided well tap cell interval: "
+      << tap_cell_interval_microns << " um\n";
+  } else {
+    Tech &tech = p_ckt_->tech();
+    WellLayer &n_well_layer = tech.NwellLayer();
+    double max_unplug_length = n_well_layer.MaxPlugDist();
+    if (is_checker_board_mode_) {
+      tap_cell_interval_microns = 4 * max_unplug_length;
+      BOOST_LOG_TRIVIAL(info)
+        << "Using default well tap cell interval 4*max_unplug_length: "
+        << tap_cell_interval_microns << " um\n";
+    } else {
+      tap_cell_interval_microns = 2 * max_unplug_length;
+      BOOST_LOG_TRIVIAL(info)
+        << "Using default well tap cell interval 2*max_unplug_length: "
+        << tap_cell_interval_microns << " um\n";
+    }
+  }
+  BOOST_LOG_TRIVIAL(info)
+    << "Gridded value x: "
+    << p_ckt_->GridValueX() << " um\n";
+  tap_cell_interval_grid_ =
+      std::floor(tap_cell_interval_microns / p_ckt_->GridValueX());
+  BOOST_LOG_TRIVIAL(info)
+    << "Well tap cell interval in grid unit : "
+    << tap_cell_interval_grid_ << "\n";
+}
+
+void GriddedRowLegalizer::SetWellTapCellType(
+    std::string const &well_tap_type_name
+) {
+  if (well_tap_type_name.empty()) {
+    BOOST_LOG_TRIVIAL(info)
+      << "Well tap cell type not specified\n";
+    DaliExpects(!p_ckt_->tech().WellTapCellPtrs().empty(),
+                "No well tap cells provided in the cell library?");
+    well_tap_type_ptr_ = p_ckt_->tech().WellTapCellPtrs()[0];
+    BOOST_LOG_TRIVIAL(info)
+      << "Using the default well tap cell: "
+      << well_tap_type_ptr_->Name() << "\n";
+  } else {
+    BOOST_LOG_TRIVIAL(info)
+      << "Provided well tap cell type: "
+      << well_tap_type_name << "\n";
+    well_tap_type_ptr_ = p_ckt_->GetBlockTypePtr(well_tap_type_name);
+  }
 }
 
 }

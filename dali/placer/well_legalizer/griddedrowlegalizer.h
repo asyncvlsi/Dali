@@ -35,13 +35,17 @@ class GriddedRowLegalizer : public Placer {
 
   void SetExternalSpacePartitioner(AbstractSpacePartitioner *p_external_partitioner);
   void SetPartitionMode(int partitioning_mode_);
+  void SetMaxRowWidth(double max_row_width);
   void PartitionSpaceAndBlocks();
 
   void SetWellTapCellParameters(
-      double tap_cell_interval_microns,
+      bool is_well_tap_needed = true,
       bool is_checker_board_mode = false,
+      double tap_cell_interval_microns = -1,
       std::string const &well_tap_type_name = ""
   );
+
+  void PrecomputeWellTapCellLocation();
 
   void SetLegalizationMaxIteration(int max_iteration);
   bool StripeLegalizationUpward(Stripe &stripe);
@@ -61,6 +65,7 @@ class GriddedRowLegalizer : public Placer {
  private:
   // space partitioner
   int partitioning_mode_ = 0;
+  int max_row_width_ = -1;
   AbstractSpacePartitioner *space_partitioner_ = nullptr;
 
   int well_spacing_ = 0;
@@ -69,12 +74,18 @@ class GriddedRowLegalizer : public Placer {
 
   std::vector<ClusterStripe> col_list_;
 
-  int tap_cell_interval_grid_ = -1;
+  bool is_well_tap_needed_ = true;
   bool is_checker_board_mode_ = false;
+  int tap_cell_interval_grid_ = -1;
   BlockType *well_tap_type_ptr_ = nullptr;
 
   int cur_iter_ = 0;
   int max_iteration_ = 10;
+
+  void SetWellTapCellNecessary(bool is_well_tap_needed);
+  void SetWellTapCellPlacementMode(bool is_checker_board_mode);
+  void SetWellTapCellInterval(double tap_cell_interval_microns);
+  void SetWellTapCellType(std::string const &well_tap_type_name);
 };
 
 }

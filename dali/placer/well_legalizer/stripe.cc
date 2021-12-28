@@ -147,6 +147,79 @@ void Stripe::SortBlocksBasedOnYLocation(int criterion) {
   }
 }
 
+void Stripe::PrecomputeWellTapCellLocation(
+    bool is_checker_board_mode,
+    int tap_cell_interval_grid,
+    BlockType *well_tap_type_ptr
+) {
+  is_checkerboard_mode_ = is_checker_board_mode;
+  DaliExpects(tap_cell_interval_grid > 0,
+              "Non-positive well-tap cell interval?");
+  DaliExpects(well_tap_type_ptr != nullptr, "Well-tap cell is a nullptr?");
+  well_tap_cell_width_ = well_tap_type_ptr->Width();
+  DaliExpects(width_ > well_tap_cell_width_,
+              "Stripe width is smaller than well-tap cell width?");
+
+  std::vector<int> locations;
+
+  if (is_checkerboard_mode_) {
+    if (tap_cell_interval_grid & 1) { // if this interval is an odd number
+      BOOST_LOG_TRIVIAL(info)
+        << "Rounding well tap cell interval from " << tap_cell_interval_grid--
+        << " to " << tap_cell_interval_grid << "\n";
+    }
+    tap_cell_interval_grid = tap_cell_interval_grid / 2;
+  }
+
+  // compute how many well-tap cells are needed
+  int init_location = 0; // TODO: this can be a parameter exposed to users
+  int well_tap_cell_loc = lx_ + init_location;
+  int number_of_well_tap_cell = width_ / tap_cell_interval_grid;
+  for (int i = 0; i < number_of_well_tap_cell; ++i) {
+    locations.emplace_back(well_tap_cell_loc);
+    well_tap_cell_loc += tap_cell_interval_grid;
+  }
+
+  // check if the ux of the last well-tap cell is out of the region
+  int last_ux = locations.back() + well_tap_cell_width_;
+  int right_most_loc = URX() - well_tap_cell_width_;
+  if (last_ux > URX()) {
+    locations.back() = right_most_loc;
+  } else {
+    // check if the last segment is longer than half of the well tap cell interval
+    if (URX() - last_ux >= tap_cell_interval_grid / 2.0) {
+      locations.emplace_back(right_most_loc);
+    }
+  }
+
+  // finalize well-tap cell locations
+  if (is_checkerboard_mode_) {
+    size_t sz = locations.size();
+    size_t half_sz = (sz + 1) >> 1; // divide by 2
+    well_tap_cell_location_even_.reserve(half_sz);
+    well_tap_cell_location_odd_.reserve(half_sz);
+    for (size_t i = 0; i < sz; ++i) {
+      int lo_loc = locations[i];
+      int hi_loc = locations[i] + well_tap_cell_width_;
+      if (i & 1) { // if index i is an odd number
+        well_tap_cell_location_odd_.emplace_back(lo_loc, hi_loc);
+      } else {
+        well_tap_cell_location_even_.emplace_back(lo_loc, hi_loc);
+      }
+    }
+  } else {
+    size_t sz = locations.size();
+    well_tap_cell_location_even_.reserve(sz);
+    well_tap_cell_location_odd_.reserve(sz);
+    for (size_t i = 0; i < sz; ++i) {
+      int lo_loc = locations[i];
+      int hi_loc = locations[i] + well_tap_cell_width_;
+      well_tap_cell_location_odd_.emplace_back(lo_loc, hi_loc);
+      well_tap_cell_location_even_.emplace_back(lo_loc, hi_loc);
+    }
+  }
+}
+
 void Stripe::UpdateFrontClusterUpward(int p_height, int n_height) {
   ++front_id_;
   if (front_id_ >= static_cast<int>(gridded_rows_.size())) {
@@ -169,7 +242,11 @@ void Stripe::UpdateFrontClusterUpward(int p_height, int n_height) {
   gridded_rows_[front_id_].SetOrient(is_orient_N);
 
   gridded_rows_[front_id_].UpdateWellHeightUpward(p_height, n_height);
-  gridded_rows_[front_id_].UpdateSegments();
+  if (front_id_ & 1) {
+    gridded_rows_[front_id_].UpdateSegments(well_tap_cell_location_odd_);
+  } else {
+    gridded_rows_[front_id_].UpdateSegments(well_tap_cell_location_even_);
+  }
 }
 
 /****
@@ -322,7 +399,11 @@ void Stripe::UpdateFrontClusterDownward(int p_height, int n_height) {
   gridded_rows_[front_id_].SetURY(uy);
   gridded_rows_[front_id_].SetOrient(is_orient_N);
   gridded_rows_[front_id_].UpdateWellHeightDownward(p_height, n_height);
-  gridded_rows_[front_id_].UpdateSegments();
+  if (front_id_ & 1) {
+    gridded_rows_[front_id_].UpdateSegments(well_tap_cell_location_odd_);
+  } else {
+    gridded_rows_[front_id_].UpdateSegments(well_tap_cell_location_even_);
+  }
 }
 
 size_t Stripe::FitBlocksToFrontSpaceDownward(
@@ -373,6 +454,23 @@ void Stripe::UpdateBlockYLocation() {
   for (auto &row: gridded_rows_) {
     row.LegalizeSegmentsY();
   }
+}
+
+size_t Stripe::AddWellTapCells(Circuit *p_ckt, size_t start_id) {
+  auto &tap_cell_list = p_ckt->design().WellTaps();
+  size_t row_cnt = gridded_rows_.size();
+  for (size_t i = 0; i < row_cnt; ++i) {
+    if (i & 1) {
+      start_id = gridded_rows_[i].AddWellTapCells(
+          p_ckt, start_id, well_tap_cell_location_odd_
+      );
+    } else {
+      start_id = gridded_rows_[i].AddWellTapCells(
+          p_ckt, start_id, well_tap_cell_location_even_
+      );
+    }
+  }
+  return start_id;
 }
 
 Stripe *ClusterStripe::GetStripeMatchSeg(SegI seg, int y_loc) {
