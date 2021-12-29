@@ -62,21 +62,23 @@ class SegmentTree {
     return right;
   }
 
-  long long Update(int i, int j, int val) {
-    if (i >= j) return 0;
-    if (start == i && end == j) {
-      count += val;
-    } else {
-      GetLeft()->Update(i, std::min(GetRangeMid(), j), val);
-      GetRight()->Update(std::max(GetRangeMid(), i), j, val);
-    }
-
-    if (count > 0) total = X[end] - X[start];
-    else total = GetLeft()->total + GetRight()->total;
-
-    return total;
-  }
+  long long Update(int i, int j, int val);
 };
+
+long long SegmentTree::Update(int i, int j, int val) {
+  if (i >= j) return 0;
+  if (start == i && end == j) {
+    count += val;
+  } else {
+    GetLeft()->Update(i, std::min(GetRangeMid(), j), val);
+    GetRight()->Update(std::max(GetRangeMid(), i), j, val);
+  }
+
+  if (count > 0) total = X[end] - X[start];
+  else total = GetLeft()->total + GetRight()->total;
+
+  return total;
+}
 
 unsigned long long GetCoverArea(std::vector<RectI> &rects) {
   // no rectangles, return 0 immediately
