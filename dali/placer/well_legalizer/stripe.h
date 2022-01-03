@@ -23,12 +23,19 @@
 
 #include "dali/circuit/block.h"
 #include "dali/circuit/circuit.h"
+#include "dali/common/config.h"
 #include "dali/common/misc.h"
 #include "dali/placer/well_legalizer/griddedrow.h"
 
+#if DALI_USE_CPLEX
+#include <ilcplex/ilocplex.h>
+ILOSTLBEGIN
+#endif
+
 namespace dali {
 
-struct Stripe {
+class Stripe {
+ public:
   int lx_;
   int ly_;
   int width_;
@@ -89,7 +96,26 @@ struct Stripe {
 
   void UpdateBlockYLocation();
 
-  size_t AddWellTapCells(Circuit *p_ckt, BlockType *well_tap_type_ptr, size_t start_id);
+  size_t AddWellTapCells(Circuit *p_ckt,
+                         BlockType *well_tap_type_ptr,
+                         size_t start_id);
+
+#if DALI_USE_CPLEX
+  std::unordered_map<Block *, IloInt> blk_ptr_2_tmp_id;
+  std::unordered_map<IloInt, Block *> blk_tmp_id_2_ptr;
+  std::unordered_map<Block *, double> init_x_locs_;
+  void SaveInitialLocationX();
+  void RestoreInitialLocationX();
+  void SortBlocksInEachRow();
+  void PopulateVariableArray(IloModel &model, IloNumVarArray &x);
+  void AddVariableConstraints(
+      IloModel &model, IloNumVarArray &x, IloRangeArray &c
+  );
+  void ConstructQuadraticObjective(IloModel &model, IloNumVarArray &x);
+  void CreateQPModel(IloModel &model, IloNumVarArray &x, IloRangeArray &c);
+  void SolveQPProblem(IloCplex &cplex, IloNumVarArray &var);
+  bool OptimizeDisplacementUsingQuadraticProgramming();
+#endif
 };
 
 struct ClusterStripe {

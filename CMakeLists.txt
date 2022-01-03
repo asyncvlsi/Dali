@@ -5,6 +5,8 @@ project(Dali
 
 set(CMAKE_CXX_STANDARD 17)
 
+set(DALI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/dali")
+
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     module/eigen-git-mirror
@@ -89,6 +91,63 @@ message(STATUS "Boost library path: ${Boost_LIBRARY_DIRS}")
 message(STATUS "Boost include path: ${Boost_INCLUDE_DIR}")
 message(STATUS "Boost libs: ${Boost_LIBRARIES}")
 include_directories(${Boost_INCLUDE_DIRS})
+
+############################################################################
+# Detect if CPLEX library exists
+############################################################################
+set(CPLEX_FOUND TRUE)
+if (DEFINED ENV{CPLEX_INC})
+    message(STATUS "Environment variable CPLEX_INC detected: " $ENV{CPLEX_INC})
+else ()
+    message(STATUS "Environment variable CPLEX_INC not found")
+    set(CPLEX_FOUND FALSE)
+endif ()
+if (DEFINED ENV{CPLEX_LIB})
+    message(STATUS "Environment variable CPLEX_LIB detected: " $ENV{CPLEX_LIB})
+else ()
+    message(STATUS "Environment variable CPLEX_LIB not found")
+    set(CPLEX_FOUND FALSE)
+endif ()
+if (DEFINED ENV{CONCERT_INC})
+    message(STATUS "Environment variable CONCERT_INC detected: " $ENV{CONCERT_INC})
+else ()
+    message(STATUS "Environment variable CONCERT_INC not found")
+    set(CPLEX_FOUND FALSE)
+endif ()
+if (DEFINED ENV{CONCERT_LIB})
+    message(STATUS "Environment variable CONCERT_LIB detected: " $ENV{CONCERT_LIB})
+else ()
+    message(STATUS "Environment variable CONCERT_LIB not found")
+    set(CPLEX_FOUND FALSE)
+endif ()
+if (CPLEX_FOUND)
+    set(DALI_USE_CPLEX 1)
+    include_directories($ENV{CPLEX_INC})
+    include_directories($ENV{CONCERT_INC})
+    add_definitions(-DIL_STD)
+    find_library(
+        ILOCPLEX_LIBRARY
+        NAMES ilocplex
+        PATHS $ENV{CPLEX_LIB}
+    )
+    set(CPLEX_LIBRARIES ${ILOCPLEX_LIBRARY})
+    find_library(
+        CONCERT_LIBRARY
+        NAMES concert
+        PATHS $ENV{CONCERT_LIB}
+    )
+    set(CPLEX_LIBRARIES ${CPLEX_LIBRARIES} ${CONCERT_LIBRARY})
+    find_library(
+        CPLEX_LIBRARY
+        NAMES cplex
+        PATHS $ENV{CPLEX_LIB}
+    )
+    set(CPLEX_LIBRARIES ${CPLEX_LIBRARIES} ${CPLEX_LIBRARY})
+    message(STATUS "CPLEX libs: ${CPLEX_LIBRARIES}")
+else ()
+    set(DALI_USE_CPLEX 0)
+endif ()
+configure_file(${DALI_DIR}/common/config.h.in ${DALI_DIR}/common/config.h)
 
 ############################################################################
 # for building a standalone static executable
@@ -176,6 +235,7 @@ target_link_libraries(
     ${ACT_LIBRARY} ${ACTVLSILIB_LIBRARY} ${PHYDB_LIBRARY}
     ${Galois_LIBRARIES}
     ${LEF_LIBRARY} ${DEF_LIBRARY}
+    ${CPLEX_LIBRARIES} m pthread dl
     ${Boost_LIBRARIES}
     OpenMP::OpenMP_CXX
 )

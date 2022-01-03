@@ -636,6 +636,16 @@ size_t GriddedRow::AddWellTapCells(
   return start_id;
 }
 
+void GriddedRow::SortBlockRegions() {
+  std::sort(
+      blk_regions_.begin(),
+      blk_regions_.end(),
+      [](const BlockRegion r0, const BlockRegion r1) {
+        return r0.p_blk->LLX() < r1.p_blk->LLX();
+      }
+  );
+}
+
 void ClusterSegment::Merge(
     ClusterSegment &sc,
     int lower_bound,

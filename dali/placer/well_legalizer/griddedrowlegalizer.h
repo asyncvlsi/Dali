@@ -22,8 +22,8 @@
 #define DALI_DALI_PLACER_WELL_LEGALIZER_GRIDDEDROWLEGALIZER_H_
 
 #include "dali/placer/placer.h"
-#include "spacepartitioner.h"
-#include "stripe.h"
+#include "dali/placer/well_legalizer/spacepartitioner.h"
+#include "dali/placer/well_legalizer/stripe.h"
 
 namespace dali {
 
@@ -47,10 +47,14 @@ class GriddedRowLegalizer : public Placer {
 
   void PrecomputeWellTapCellLocation();
 
+  void SaveInitialLocationX();
+
   void SetLegalizationMaxIteration(int max_iteration);
   bool StripeLegalizationUpward(Stripe &stripe);
   bool StripeLegalizationDownward(Stripe &stripe);
   bool GroupBlocksToClusters();
+
+  bool OptimizeDisplacementUsingQuadraticProgramming();
 
   void StretchBlocks();
 

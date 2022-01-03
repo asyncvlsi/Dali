@@ -112,6 +112,8 @@ class GriddedRow {
       std::vector<SegI> &well_tap_cell_locs
   );
 
+  void SortBlockRegions();
+
  private:
   bool is_orient_N_ = true; // orientation of this cluster
   std::vector<Block *> blk_list_; // list of blocks in this cluster

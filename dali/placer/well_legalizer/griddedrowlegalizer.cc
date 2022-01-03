@@ -20,11 +20,12 @@
  ******************************************************************************/
 #include "griddedrowlegalizer.h"
 
+#include "dali/common/config.h"
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
 #include "dali/common/memory.h"
 #include "dali/common/timing.h"
-#include "helper.h"
+#include "dali/placer/well_legalizer/helper.h"
 
 namespace dali {
 
@@ -111,6 +112,16 @@ void GriddedRowLegalizer::PrecomputeWellTapCellLocation() {
   }
 }
 
+void GriddedRowLegalizer::SaveInitialLocationX() {
+#if DALI_USE_CPLEX
+  for (ClusterStripe &cluster: col_list_) {
+    for (Stripe &stripe: cluster.stripe_list_) {
+      stripe.SaveInitialLocationX();
+    }
+  }
+#endif
+}
+
 void GriddedRowLegalizer::SetLegalizationMaxIteration(int max_iteration) {
   max_iteration_ = max_iteration;
 }
@@ -164,6 +175,7 @@ bool GriddedRowLegalizer::GroupBlocksToClusters() {
   for (ClusterStripe &col: col_list_) {
     bool is_success = true;
     for (Stripe &stripe: col.stripe_list_) {
+      stripe.SaveInitialLocationX();
       bool is_from_bottom = true;
       for (cur_iter_ = 0; cur_iter_ < max_iteration_; ++cur_iter_) {
         if (is_from_bottom) {
@@ -180,6 +192,34 @@ bool GriddedRowLegalizer::GroupBlocksToClusters() {
     }
   }
   return res;
+}
+
+bool GriddedRowLegalizer::OptimizeDisplacementUsingQuadraticProgramming() {
+#if DALI_USE_CPLEX
+  BOOST_LOG_TRIVIAL(info)
+    << "Optimizing displacement X using quadratic programming\n";
+  double wall_time = get_wall_time();
+  double cpu_time = get_cpu_time();
+
+  bool is_successful = true;
+  for (auto &col: col_list_) {
+    for (auto &stripe: col.stripe_list_) {
+      bool res = stripe.OptimizeDisplacementUsingQuadraticProgramming();
+      is_successful = res && is_successful;
+    }
+  }
+
+  wall_time = get_wall_time() - wall_time;
+  cpu_time = get_cpu_time() - cpu_time;
+  BOOST_LOG_TRIVIAL(info)
+    << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
+
+  return is_successful;
+#else
+  BOOST_LOG_TRIVIAL(info)
+    << "Skip optimizing displacement using quadratic programming: CPLEX not found\n";
+  return true;
+#endif
 }
 
 void GriddedRowLegalizer::StretchBlocks() {
@@ -231,10 +271,20 @@ bool GriddedRowLegalizer::StartPlacement() {
   CheckWellInfo();
   PartitionSpaceAndBlocks();
   PrecomputeWellTapCellLocation();
-  bool is_success = GroupBlocksToClusters();
-  EmbodyWellTapCells();
 
+#if DALI_USE_CPLEX
+  SaveInitialLocationX();
+#endif
+
+  bool is_success = GroupBlocksToClusters();
   ReportHPWL();
+
+#if DALI_USE_CPLEX
+  OptimizeDisplacementUsingQuadraticProgramming();
+  ReportHPWL();
+#endif
+
+  EmbodyWellTapCells();
 
   if (is_success) {
     BOOST_LOG_TRIVIAL(info)

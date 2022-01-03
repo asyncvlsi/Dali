@@ -21,7 +21,6 @@
 #include "stripe.h"
 
 #include <algorithm>
-#include <climits>
 
 namespace dali {
 
@@ -476,6 +475,151 @@ size_t Stripe::AddWellTapCells(
   }
   return start_id;
 }
+
+#if DALI_USE_CPLEX
+void Stripe::SaveInitialLocationX() {
+  for (auto &blk_ptr: block_list_) {
+    init_x_locs_.insert(
+        std::unordered_map<Block *, double>::value_type(blk_ptr, blk_ptr->LLX())
+    );
+  }
+}
+
+void Stripe::RestoreInitialLocationX() {
+  for (auto &[blk_ptr, init_x]: init_x_locs_) {
+    blk_ptr->SetLLX(init_x);
+  }
+}
+
+void Stripe::SortBlocksInEachRow() {
+  for (auto &row: gridded_rows_) {
+    row.SortBlockRegions();
+  }
+}
+
+void Stripe::PopulateVariableArray(IloModel &model, IloNumVarArray &x) {
+  IloEnv env = model.getEnv();
+  IloInt cnt = 0;
+  for (auto &row: gridded_rows_) {
+    for (auto &blk_region: row.blk_regions_) {
+      Block *blk_ptr = blk_region.p_blk;
+      if (blk_ptr_2_tmp_id.find(blk_ptr) == blk_ptr_2_tmp_id.end()) {
+        //x.add(IloNumVar(env, lx_, lx_ + width_));
+        x.add(IloNumVar(env, 0, IloInfinity));
+        blk_ptr_2_tmp_id[blk_ptr] = cnt;
+        blk_tmp_id_2_ptr[cnt] = blk_ptr;
+        ++cnt;
+      }
+    }
+  }
+}
+
+void Stripe::AddVariableConstraints(
+    IloModel &model,
+    IloNumVarArray &x,
+    IloRangeArray &c
+) {
+  for (auto &row: gridded_rows_) {
+    size_t blk_cnt = row.blk_regions_.size();
+    for (size_t i = 0; i < blk_cnt; ++i) {
+      if (i > 0) {
+        Block *blk_ptr0 = row.blk_regions_[i - 1].p_blk;
+        IloInt id0 = blk_ptr_2_tmp_id[blk_ptr0];
+        int width = blk_ptr0->Width();
+        Block *blk_ptr1 = row.blk_regions_[i].p_blk;
+        IloInt id1 = blk_ptr_2_tmp_id[blk_ptr1];
+        c.add(x[id1] - x[id0] >= width);
+      }
+    }
+  }
+
+  model.add(c);
+}
+
+void Stripe::ConstructQuadraticObjective(
+    IloModel &model,
+    IloNumVarArray &x
+) {
+  IloEnv env = model.getEnv();
+  IloExpr objExpr(env);
+  for (auto &row: gridded_rows_) {
+    for (auto &blk_region: row.blk_regions_) {
+      Block *blk_ptr = blk_region.p_blk;
+      double init_x = blk_ptr->X();
+      IloInt id = blk_ptr_2_tmp_id[blk_ptr];
+      objExpr += 1.0 * x[id] * x[id] - 2 * init_x * x[id];
+    }
+  }
+  IloObjective obj = IloMinimize(env, objExpr);
+  model.add(obj);
+  objExpr.end();
+}
+
+void Stripe::CreateQPModel(
+    IloModel &model,
+    IloNumVarArray &x,
+    IloRangeArray &c
+) {
+  PopulateVariableArray(model, x);
+  AddVariableConstraints(model, x, c);
+  ConstructQuadraticObjective(model, x);
+}
+
+void Stripe::SolveQPProblem(IloCplex &cplex, IloNumVarArray &var) {
+  IloEnv env = var.getEnv();
+
+  IloBool solved = cplex.solve();
+
+  if (solved) {
+    //BOOST_LOG_TRIVIAL(info)
+    //  << "Solution status = " << cplex.getStatus() << "\n";
+    //BOOST_LOG_TRIVIAL(info)
+    //  << "Solution value  = " << cplex.getObjValue() << "\n";
+
+    IloNumArray val(env);
+    cplex.getValues(val, var);
+    IloInt nvars = var.getSize();
+    for (IloInt j = 0; j < nvars; ++j) {
+      //env.out() << "Variable " << j << ": Value = " << val[j] << endl;
+      Block *blk_ptr = blk_tmp_id_2_ptr[j];
+      blk_ptr->SetLLX(val[j]);
+    }
+    val.end();
+  } else {
+    BOOST_LOG_TRIVIAL(info) << "Problem cannot be solved\n";
+  }
+}
+
+bool Stripe::OptimizeDisplacementUsingQuadraticProgramming() {
+  bool is_successful = true;
+
+  RestoreInitialLocationX();
+  SortBlocksInEachRow();
+
+  IloEnv env;
+  try {
+    // create a QP problem
+    IloModel model(env);
+    IloNumVarArray var(env);
+    IloRangeArray con(env);
+    CreateQPModel(model, var, con);
+
+    IloCplex cplex(model);
+
+    // solve the QP problem
+    SolveQPProblem(cplex, var);
+  } catch (IloException &e) {
+    BOOST_LOG_TRIVIAL(error) << "Concert exception caught: " << e << "\n";
+    is_successful = false;
+  } catch (...) {
+    BOOST_LOG_TRIVIAL(error) << "Unknown exception caught" << "\n";
+    is_successful = false;
+  }
+
+  env.end();
+  return is_successful;
+}
+#endif
 
 Stripe *ClusterStripe::GetStripeMatchSeg(SegI seg, int y_loc) {
   Stripe *res = nullptr;
