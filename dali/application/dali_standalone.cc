@@ -26,6 +26,7 @@
 #include <phydb/phydb.h>
 
 #include "dali/circuit/circuit.h"
+#include "dali/common/helper.h"
 #include "dali/common/logging.h"
 #include "dali/placer.h"
 
@@ -60,6 +61,8 @@ int main(int argc, char *argv[]) {
   double target_density = -1;
   int io_metal_layer = 0;
   bool export_well_cluster_for_matlab = false;
+  bool is_well_tap_needed = true;
+  double max_row_width = 0;
 
   /**** parsing arguments ****/
   for (int i = 1; i < argc;) {
@@ -155,6 +158,16 @@ int main(int argc, char *argv[]) {
       overwrite_logfile = true;
     } else if (arg == "-nolegal") {
       is_no_legal = true;
+    } else if (arg == "-maxrowwidth" && i < argc) {
+      try {
+        max_row_width = std::stod(argv[i++]);
+      } catch (...) {
+        std::cout << "Invalid max row width!\n";
+        ReportUsage();
+        return 1;
+      }
+    } else if (arg == "-nowelltap") {
+      is_well_tap_needed = false;
     } else if (arg == "-noioplace") {
       is_no_io_place = true;
     } else if (arg == "-clsmatlab") {
@@ -192,6 +205,9 @@ int main(int argc, char *argv[]) {
   system_clock::time_point today = system_clock::now();
   std::time_t tt = system_clock::to_time_t(today);
   BOOST_LOG_TRIVIAL(info) << "today is: " << ctime(&tt) << std::endl;
+
+  /**** save command line arguments for future reference ****/
+  SaveArgs(argc, argv);
 
   /**** set number of threads for OpenMP ****/
   int num_of_thread_openmp = 1;
@@ -270,7 +286,10 @@ int main(int argc, char *argv[]) {
   } else if (!m_cell_file_name.empty()) {
     auto *multi_well_legalizer = new GriddedRowLegalizer;
     multi_well_legalizer->TakeOver(gb_placer);
-    multi_well_legalizer->SetWellTapCellParameters(true, false, -1, "");
+    multi_well_legalizer->SetWellTapCellParameters(
+        is_well_tap_needed, false, -1, ""
+    );
+    multi_well_legalizer->SetMaxRowWidth(max_row_width);
     multi_well_legalizer->SetPartitionMode(well_legalization_mode);
     multi_well_legalizer->StartPlacement();
     if (export_well_cluster_for_matlab) {

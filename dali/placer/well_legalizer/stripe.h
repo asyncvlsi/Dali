@@ -52,6 +52,7 @@ class Stripe {
 
   int block_count_;
   std::vector<Block *> block_list_;
+  std::unordered_map<Block *, int> blk_ptr_2_row_id_;
 
   bool is_first_row_orient_N_ = true;
   std::vector<RectI> well_rect_list_;
@@ -96,9 +97,19 @@ class Stripe {
 
   void UpdateBlockYLocation();
 
-  size_t AddWellTapCells(Circuit *p_ckt,
-                         BlockType *well_tap_type_ptr,
-                         size_t start_id);
+  size_t AddWellTapCells(
+      Circuit *p_ckt,
+      BlockType *well_tap_type_ptr,
+      size_t start_id
+  );
+
+  bool IsLeftmostPlacementLegal();
+
+  void BreakMultiRowCellIntoSingleRowCell();
+  void OptimizeDisplacementInEachRow();
+  void ComputeAverageLocationForMultiRowCells();
+  void IterativeCellReordering();
+  void ClearMultiRowCellBreaking();
 
 #if DALI_USE_CPLEX
   std::unordered_map<Block *, IloInt> blk_ptr_2_tmp_id;

@@ -21,6 +21,7 @@
 #ifndef DALI_DALI_PLACER_WELL_LEGALIZER_ROWSEGMENT_H_
 #define DALI_DALI_PLACER_WELL_LEGALIZER_ROWSEGMENT_H_
 
+#include <unordered_map>
 #include <vector>
 
 #include "dali/circuit/block.h"
@@ -32,7 +33,6 @@ class RowSegment {
  public:
   RowSegment() = default;
 
-  void SetLoc(int lx, int ly);
   void SetLLX(int lx);
   void SetURX(int ux);
   void SetWidth(int width);
@@ -50,9 +50,8 @@ class RowSegment {
   // list of blocks in this segment
   std::vector<Block *> blk_list_;
   // initial location of blocks before putting into this segment
-  std::vector<double2d> blk_initial_location_;
+  std::unordered_map<Block *, double2d> blk_initial_location_;
   int lx_ = INT_MIN;
-  int ly_ = INT_MIN;
   int width_ = 0;
   int used_size_ = 0;
 };

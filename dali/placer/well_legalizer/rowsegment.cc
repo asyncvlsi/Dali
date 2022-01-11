@@ -24,12 +24,6 @@
 
 namespace dali {
 
-void RowSegment::SetLoc(int lx, int ly) {
-  lx_ = lx;
-  ly_ = ly;
-  DaliExpects(false, "do not use this API");
-}
-
 void RowSegment::SetLLX(int lx) {
   lx_ = lx;
 }
@@ -77,7 +71,7 @@ void RowSegment::AddBlock(Block *blk_ptr) {
   double y_init = blk_ptr->LLY();
   BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
   y_init = well_ptr->Pheight();
-  blk_initial_location_.emplace_back(blk_ptr->LLX(), y_init);
+  blk_initial_location_[blk_ptr] = double2d(blk_ptr->LLX(), y_init);
 }
 
 void RowSegment::MinDisplacementLegalization() {
@@ -85,7 +79,7 @@ void RowSegment::MinDisplacementLegalization() {
       blk_list_.begin(),
       blk_list_.end(),
       [](const Block *blk_ptr0, const Block *blk_ptr1) {
-        return blk_ptr0->X() < blk_ptr1->X();
+        return blk_ptr0->LLX() < blk_ptr1->LLX();
       }
   );
 
@@ -100,7 +94,7 @@ void RowSegment::MinDisplacementLegalization() {
   for (size_t i = 0; i < sz; ++i) {
     // create a segment which contains only this block
     Block *blk_ptr = blk_list_[i];
-    double init_x = blk_initial_location_[i].x;
+    double init_x = blk_initial_location_[blk_ptr].x;
     if (init_x < lower_bound) {
       init_x = lower_bound;
     }

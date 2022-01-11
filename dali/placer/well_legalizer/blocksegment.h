@@ -31,10 +31,10 @@ struct BlockSegment {
   int width_;
  public:
   BlockSegment(Block *blk_ptr, int loc) : lx_(loc), width_(blk_ptr->Width()) {
-    blk_list.push_back(blk_ptr);
+    blk_ptrs.push_back(blk_ptr);
     initial_loc.push_back(loc);
   }
-  std::vector<Block *> blk_list;
+  std::vector<Block *> blk_ptrs;
   std::vector<double> initial_loc;
 
   int LX() const { return lx_; }

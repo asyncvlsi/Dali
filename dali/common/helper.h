@@ -28,6 +28,8 @@
 
 namespace dali {
 
+void SaveArgs(int argc, char *argv[]);
+
 // custom residual function, return: |x - round(x/y) * y|
 double AbsResidual(double x, double y);
 

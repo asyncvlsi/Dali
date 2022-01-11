@@ -22,10 +22,19 @@
 
 #include <cmath>
 
-#include "logging.h"
-#include "memory.h"
+#include "dali/common/logging.h"
+#include "dali/common/memory.h"
 
 namespace dali {
+
+void SaveArgs(int argc, char *argv[]) {
+  std::string cmd_line_arguments;
+  for (int i = 0; i < argc; ++i) {
+    cmd_line_arguments += argv[i];
+    cmd_line_arguments.push_back(' ');
+  }
+  BOOST_LOG_TRIVIAL(info) << cmd_line_arguments << "\n";
+}
 
 double AbsResidual(double x, double y) {
   return std::fabs(x - std::round(x / y) * y);

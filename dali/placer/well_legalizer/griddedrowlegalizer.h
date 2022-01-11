@@ -54,6 +54,10 @@ class GriddedRowLegalizer : public Placer {
   bool StripeLegalizationDownward(Stripe &stripe);
   bool GroupBlocksToClusters();
 
+  void IterativeCellReordering();
+
+  void RestoreBlockInitialLocationX();
+  bool IsLeftmostPlacementLegal();
   bool OptimizeDisplacementUsingQuadraticProgramming();
 
   void StretchBlocks();

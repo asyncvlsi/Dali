@@ -60,9 +60,12 @@ void GriddedRowLegalizer::SetMaxRowWidth(double max_row_width) {
   BOOST_LOG_TRIVIAL(info)
     << "Provided max row width: " << max_row_width << " um\n";
   BOOST_LOG_TRIVIAL(info)
-    << "Gridded value x:                      "
-    << p_ckt_->GridValueX() << " um\n";
-  max_row_width_ = std::floor(max_row_width / p_ckt_->GridValueX());
+    << "Gridded value x: " << p_ckt_->GridValueX() << " um\n";
+  if (max_row_width < 0) {
+    max_row_width_ = RegionRight() - RegionLeft();
+  } else {
+    max_row_width_ = std::floor(max_row_width / p_ckt_->GridValueX());
+  }
   BOOST_LOG_TRIVIAL(info)
     << "Max row width in grid unit : "
     << tap_cell_interval_grid_ << "\n";
@@ -143,7 +146,7 @@ bool GriddedRowLegalizer::StripeLegalizationUpward(Stripe &stripe) {
   }
   stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_, true);
   stripe.UpdateBlockYLocation();
-  StretchBlocks();
+  stripe.UpdateBlockStretchLength();
 
   return stripe.HasNoRowsSpillingOut();
 }
@@ -165,7 +168,7 @@ bool GriddedRowLegalizer::StripeLegalizationDownward(Stripe &stripe) {
   }
   stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_, false);
   stripe.UpdateBlockYLocation();
-  StretchBlocks();
+  stripe.UpdateBlockStretchLength();
 
   return stripe.HasNoRowsSpillingOut();
 }
@@ -189,6 +192,35 @@ bool GriddedRowLegalizer::GroupBlocksToClusters() {
         }
       }
       res = res && is_success;
+    }
+  }
+  return res;
+}
+
+void GriddedRowLegalizer::IterativeCellReordering() {
+  for (auto &col: col_list_) {
+    for (auto &stripe: col.stripe_list_) {
+      stripe.BreakMultiRowCellIntoSingleRowCell();
+      stripe.IterativeCellReordering();
+      stripe.ClearMultiRowCellBreaking();
+    }
+  }
+}
+
+void GriddedRowLegalizer::RestoreBlockInitialLocationX() {
+  for (auto &col: col_list_) {
+    for (auto &stripe: col.stripe_list_) {
+      stripe.RestoreInitialLocationX();
+    }
+  }
+}
+
+bool GriddedRowLegalizer::IsLeftmostPlacementLegal() {
+  bool res = true;
+  for (auto &col: col_list_) {
+    for (auto &stripe: col.stripe_list_) {
+      bool tmp_res = stripe.IsLeftmostPlacementLegal();
+      res = res && tmp_res;
     }
   }
   return res;
@@ -280,6 +312,9 @@ bool GriddedRowLegalizer::StartPlacement() {
   ReportHPWL();
 
 #if DALI_USE_CPLEX
+  RestoreBlockInitialLocationX();
+  //IsLeftmostPlacementLegal();
+  //IterativeCellReordering();
   OptimizeDisplacementUsingQuadraticProgramming();
   ReportHPWL();
 #endif

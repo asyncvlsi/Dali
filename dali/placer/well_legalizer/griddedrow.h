@@ -21,6 +21,8 @@
 #ifndef DALI_DALI_PLACER_WELLLEGALIZER_GRIDDEDROW_H_
 #define DALI_DALI_PLACER_WELLLEGALIZER_GRIDDEDROW_H_
 
+#include <unordered_map>
+
 #include "dali/circuit/block.h"
 #include "dali/circuit/circuit.h"
 #include "dali/placer/well_legalizer/blocksegment.h"
@@ -71,7 +73,7 @@ class GriddedRow {
 
   void AddBlock(Block *blk_ptr);
   std::vector<Block *> &Blocks();
-  std::vector<double2d> &InitLocations();
+  std::unordered_map<Block *, double2d> &InitLocations();
   void ShiftBlockX(int x_disp);
   void ShiftBlockY(int y_disp);
   void ShiftBlock(int x_disp, int y_disp);
@@ -114,10 +116,13 @@ class GriddedRow {
 
   void SortBlockRegions();
 
+  void BreakMultiRowCellIntoSingleRowCell();
+  void ClearMultiRowCellBreaking();
+
  private:
   bool is_orient_N_ = true; // orientation of this cluster
   std::vector<Block *> blk_list_; // list of blocks in this cluster
-  std::vector<double2d> blk_initial_location_;
+  std::unordered_map<Block *, double2d> blk_initial_location_;
 
   /**** number of tap cells needed, and pointers to tap cells ****/
   int tap_cell_num_ = 0;
@@ -142,6 +147,9 @@ class GriddedRow {
   /**** for multi-well legalization ****/
   std::vector<BlockRegion> blk_regions_;
   std::vector<RowSegment> segments_;
+
+  /**** for iterative cell reordering ****/
+  std::vector<Block> sub_blks_;
 };
 
 class ClusterSegment {
@@ -151,9 +159,9 @@ class ClusterSegment {
  public:
   ClusterSegment(GriddedRow *cluster_ptr, int loc)
       : ly_(loc), height_(cluster_ptr->Height()) {
-    cluster_list.push_back(cluster_ptr);
+    gridded_rows.push_back(cluster_ptr);
   }
-  std::vector<GriddedRow *> cluster_list;
+  std::vector<GriddedRow *> gridded_rows;
 
   int LY() const { return ly_; }
   int UY() const { return ly_ + height_; }

@@ -163,9 +163,11 @@ void Stripe::PrecomputeWellTapCellLocation(
 
   if (is_checkerboard_mode_) {
     if (tap_cell_interval_grid & 1) { // if this interval is an odd number
+      int new_tap_cell_interval_grid = tap_cell_interval_grid - 1;
       BOOST_LOG_TRIVIAL(info)
-        << "Rounding well tap cell interval from " << tap_cell_interval_grid--
-        << " to " << tap_cell_interval_grid << "\n";
+        << "Rounding well tap cell interval from " << tap_cell_interval_grid
+        << " to " << new_tap_cell_interval_grid << "\n";
+      tap_cell_interval_grid = new_tap_cell_interval_grid;
     }
     tap_cell_interval_grid = tap_cell_interval_grid / 2;
   }
@@ -341,8 +343,13 @@ void Stripe::UpdateRemainingClusters(
 }
 
 void Stripe::UpdateBlockStretchLength() {
-  for (auto &cluster: gridded_rows_) {
-    cluster.InitializeBlockStretching();
+  if (!is_bottom_up_) {
+    std::reverse(gridded_rows_.begin(), gridded_rows_.end());
+    is_bottom_up_ = true;
+  }
+
+  for (auto &row: gridded_rows_) {
+    row.InitializeBlockStretching();
   }
 
   int sz = static_cast<int>(gridded_rows_.size());
@@ -357,9 +364,8 @@ void Stripe::UpdateBlockStretchLength() {
         --id;
         int well_edge_distance =
             well->AdjacentRegionEdgeDistance(id, p_blk->IsFlipped());
-        int actual_edge_distance =
-            (cur_cluster.LLY() + cur_cluster.PNEdge()) -
-                (pre_cluster.LLY() + pre_cluster.PNEdge());
+        int actual_edge_distance = (cur_cluster.LLY() + cur_cluster.PNEdge()) -
+            (pre_cluster.LLY() + pre_cluster.PNEdge());
         int length = actual_edge_distance - well_edge_distance;
         p_blk->SetStretchLength(id, length);
       }
@@ -445,13 +451,11 @@ size_t Stripe::FitBlocksToFrontSpaceDownward(
   return start_id;
 }
 
+/****
+ * @brief Update the Y location of all cells
+ */
 void Stripe::UpdateBlockYLocation() {
-  if (!is_bottom_up_) {
-    std::reverse(gridded_rows_.begin(), gridded_rows_.end());
-    is_bottom_up_ = true;
-  }
-
-  for (auto &row: gridded_rows_) {
+    for (GriddedRow &row: gridded_rows_) {
     row.LegalizeSegmentsY();
   }
 }
@@ -476,9 +480,51 @@ size_t Stripe::AddWellTapCells(
   return start_id;
 }
 
+bool Stripe::IsLeftmostPlacementLegal() {
+  std::sort(
+      block_list_.begin(),
+      block_list_.end(),
+      [](const Block *blk0, const Block *blk1) {
+        return (blk0->LLX() < blk1->LLX()) ||
+            ((blk0->LLX() == blk1->LLX()) && (blk0->Id() < blk1->Id()));
+      }
+  );
+
+  for (Block *&blk: block_list_) {
+
+  }
+
+  return true;
+}
+
+void Stripe::BreakMultiRowCellIntoSingleRowCell() {
+  for (auto &gridded_row: gridded_rows_) {
+    gridded_row.BreakMultiRowCellIntoSingleRowCell();
+  }
+}
+
+void Stripe::OptimizeDisplacementInEachRow() {
+
+}
+
+void Stripe::ComputeAverageLocationForMultiRowCells() {
+
+}
+
+void Stripe::IterativeCellReordering() {
+  OptimizeDisplacementInEachRow();
+  ComputeAverageLocationForMultiRowCells();
+}
+
+void Stripe::ClearMultiRowCellBreaking() {
+  for (auto &gridded_row: gridded_rows_) {
+    gridded_row.ClearMultiRowCellBreaking();
+  }
+}
+
 #if DALI_USE_CPLEX
 void Stripe::SaveInitialLocationX() {
-  for (auto &blk_ptr: block_list_) {
+  for (Block *&blk_ptr: block_list_) {
     init_x_locs_.insert(
         std::unordered_map<Block *, double>::value_type(blk_ptr, blk_ptr->LLX())
     );
@@ -505,7 +551,7 @@ void Stripe::PopulateVariableArray(IloModel &model, IloNumVarArray &x) {
       Block *blk_ptr = blk_region.p_blk;
       if (blk_ptr_2_tmp_id.find(blk_ptr) == blk_ptr_2_tmp_id.end()) {
         //x.add(IloNumVar(env, lx_, lx_ + width_));
-        x.add(IloNumVar(env, 0, IloInfinity));
+        x.add(IloNumVar(env, lx_, IloInfinity));
         blk_ptr_2_tmp_id[blk_ptr] = cnt;
         blk_tmp_id_2_ptr[cnt] = blk_ptr;
         ++cnt;
@@ -593,7 +639,6 @@ void Stripe::SolveQPProblem(IloCplex &cplex, IloNumVarArray &var) {
 bool Stripe::OptimizeDisplacementUsingQuadraticProgramming() {
   bool is_successful = true;
 
-  RestoreInitialLocationX();
   SortBlocksInEachRow();
 
   IloEnv env;
@@ -605,6 +650,8 @@ bool Stripe::OptimizeDisplacementUsingQuadraticProgramming() {
     CreateQPModel(model, var, con);
 
     IloCplex cplex(model);
+
+    cplex.setParam(IloCplex::Param::MIP::Display, 0);
 
     // solve the QP problem
     SolveQPProblem(cplex, var);

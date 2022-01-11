@@ -147,14 +147,14 @@ void GriddedRow::AddBlock(Block *blk_ptr) {
   double y_init = blk_ptr->LLY();
   BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
   y_init = blk_ptr->LLY() + well_ptr->Pheight();
-  blk_initial_location_.emplace_back(blk_ptr->LLX(), y_init);
+  blk_initial_location_[blk_ptr] = double2d(blk_ptr->LLX(), y_init);
 }
 
 std::vector<Block *> &GriddedRow::Blocks() {
   return blk_list_;
 }
 
-std::vector<double2d> &GriddedRow::InitLocations() {
+std::unordered_map<Block *, double2d> &GriddedRow::InitLocations() {
   return blk_initial_location_;
 }
 
@@ -331,7 +331,7 @@ void GriddedRow::MinDisplacementLegalization() {
   for (size_t i = 0; i < sz; ++i) {
     // create a segment which contains only this block
     Block *blk_ptr = blk_list_[i];
-    double init_x = blk_initial_location_[i].x;
+    double init_x = blk_initial_location_[blk_ptr].x;
     if (init_x < lower_bound) {
       init_x = lower_bound;
     }
@@ -372,7 +372,7 @@ void GriddedRow::UpdateMinDisplacementLLY() {
   DaliExpects(blk_list_.size() == blk_initial_location_.size(),
               "Block count does not equal initial location count\n");
   double sum = 0;
-  for (auto &init_loc: blk_initial_location_) {
+  for (auto &[blk_ptr, init_loc]: blk_initial_location_) {
     double init_np_boundary = init_loc.y;
     sum += init_np_boundary;
   }
@@ -636,14 +636,36 @@ size_t GriddedRow::AddWellTapCells(
   return start_id;
 }
 
+/****
+ * @brief sort blocks in this row based on their x location
+ *
+ * If two cells have the same x location, then sort them based on their index.
+ */
 void GriddedRow::SortBlockRegions() {
   std::sort(
       blk_regions_.begin(),
       blk_regions_.end(),
       [](const BlockRegion r0, const BlockRegion r1) {
-        return r0.p_blk->LLX() < r1.p_blk->LLX();
+        return (r0.p_blk->LLX() < r1.p_blk->LLX()) ||
+            ((r0.p_blk->LLX() == r1.p_blk->LLX())
+                && (r0.p_blk->Id() < r1.p_blk->Id()));
       }
   );
+}
+
+void GriddedRow::BreakMultiRowCellIntoSingleRowCell() {
+  for (auto &block_region: blk_regions_) {
+    Block *blk_ptr = block_region.p_blk;
+    BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
+    if (well_ptr->RegionCount() > 1) {
+      sub_blks_.emplace_back();
+      Block &sub_blk = sub_blks_.back();
+    }
+  }
+}
+
+void GriddedRow::ClearMultiRowCellBreaking() {
+
 }
 
 void ClusterSegment::Merge(
@@ -651,30 +673,30 @@ void ClusterSegment::Merge(
     int lower_bound,
     int upper_bound
 ) {
-  int sz = (int) sc.cluster_list.size();
+  int sz = (int) sc.gridded_rows.size();
   for (int i = 0; i < sz; ++i) {
-    cluster_list.push_back(sc.cluster_list[i]);
+    gridded_rows.push_back(sc.gridded_rows[i]);
   }
   height_ += sc.Height();
 
-  sz = (int) cluster_list.size();
+  sz = (int) gridded_rows.size();
   int anchor_size = 0;
-  for (auto &cluster_ptr: cluster_list) {
+  for (auto &cluster_ptr: gridded_rows) {
     anchor_size += (int) cluster_ptr->Blocks().size();
   }
   std::vector<double> anchor;
   anchor.reserve(anchor_size);
   int accumulative_d = 0;
   for (int i = 0; i < sz; ++i) {
-    for (auto &init_loc: cluster_list[i]->InitLocations()) {
+    for (auto &[blk_ptr, init_loc]: gridded_rows[i]->InitLocations()) {
       double init_np_boundary = init_loc.y;
       anchor.push_back(init_np_boundary - accumulative_d);
     }
-    accumulative_d += cluster_list[i]->NHeight();
+    accumulative_d += gridded_rows[i]->NHeight();
     if (i + 1 < sz) {
-      accumulative_d += cluster_list[i + 1]->PHeight();
+      accumulative_d += gridded_rows[i + 1]->PHeight();
     } else {
-      accumulative_d += cluster_list[0]->PHeight();
+      accumulative_d += gridded_rows[0]->PHeight();
     }
   }
   DaliExpects(height_ == accumulative_d,
@@ -686,7 +708,7 @@ void ClusterSegment::Merge(
   }
   int first_np_boundary = (int) std::round(sum / anchor_size);
 
-  ly_ = first_np_boundary - cluster_list[0]->PHeight();
+  ly_ = first_np_boundary - gridded_rows[0]->PHeight();
   if (ly_ < lower_bound) {
     ly_ = lower_bound;
   }
@@ -697,11 +719,11 @@ void ClusterSegment::Merge(
 
 void ClusterSegment::UpdateClusterLocation() {
   int cur_y = ly_;
-  int sz = (int) cluster_list.size();
+  int sz = (int) gridded_rows.size();
   for (int i = 0; i < sz; ++i) {
-    cluster_list[i]->SetLLY(cur_y);
-    cluster_list[i]->UpdateBlockLocY();
-    cur_y += cluster_list[i]->Height();
+    gridded_rows[i]->SetLLY(cur_y);
+    gridded_rows[i]->UpdateBlockLocY();
+    cur_y += gridded_rows[i]->Height();
   }
 }
 
