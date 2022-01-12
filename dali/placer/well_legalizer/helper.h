@@ -48,6 +48,53 @@ void GenMATLABWellFillingTable(
     int well_emit_mode = 0
 );
 
+/****
+ * @brief A structure containing information of a block for minimizing displacement
+ */
+struct BlkDispVar {
+  int w;                     // width of this block
+  double x_0;                // initial location
+  double e;                  // weight of initial location
+  double x_a;                // anchor location
+  double a;                  // weight of anchor location
+  double x;                  // place to store final location
+  Block *blk_ptr;            // pointer to the block
+  BlkDispVar(int width, double x_init, double weight = 1.0) :
+      w(width),
+      x_0(x_init),
+      e(weight),
+      x_a(0),
+      a(0),
+      x(0),
+      blk_ptr(nullptr) {}
+
+  int Width() { return w; }
+  double InitX() { return x_0; }
+  double Weight() { return e; }
+  double AnchorX() { return x_a; }
+  double AnchorWeight() { return a; };
+  double Solution() { return x; }
+  Block *BlkPtr() { return blk_ptr; }
+
+  void SetAnchor(double anchor, double anchor_weight) {
+    x_a = anchor;
+    a = anchor_weight;
+    double sum_weight_anchor = e * x_0 + a * x_a;
+    double sum_weight = e + a;
+    e = sum_weight;
+    x_0 = sum_weight_anchor / sum_weight;
+  }
+
+  void SetSolution(double x_new) { x = x_new; }
+  void UpdateBlkLocation() { blk_ptr->SetLLX(x); }
+};
+
+void MinimizeQuadraticDisplacement(
+    std::vector<BlkDispVar> &vars,
+    int lower_limit,
+    int upper_limit
+);
+
 }
 
 #endif //DALI_DALI_PLACER_WELL_LEGALIZER_HELPER_H_

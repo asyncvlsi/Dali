@@ -611,12 +611,12 @@ void Stripe::CreateQPModel(
   ConstructQuadraticObjective(model, x);
 }
 
-void Stripe::SolveQPProblem(IloCplex &cplex, IloNumVarArray &var) {
+bool Stripe::SolveQPProblem(IloCplex &cplex, IloNumVarArray &var) {
   IloEnv env = var.getEnv();
 
-  IloBool solved = cplex.solve();
+  IloBool is_solved = cplex.solve();
 
-  if (solved) {
+  if (is_solved) {
     //BOOST_LOG_TRIVIAL(info)
     //  << "Solution status = " << cplex.getStatus() << "\n";
     //BOOST_LOG_TRIVIAL(info)
@@ -634,10 +634,12 @@ void Stripe::SolveQPProblem(IloCplex &cplex, IloNumVarArray &var) {
   } else {
     BOOST_LOG_TRIVIAL(info) << "Problem cannot be solved\n";
   }
+
+  return is_solved;
 }
 
 bool Stripe::OptimizeDisplacementUsingQuadraticProgramming() {
-  bool is_successful = true;
+  bool is_solved = true;
 
   SortBlocksInEachRow();
 
@@ -654,17 +656,17 @@ bool Stripe::OptimizeDisplacementUsingQuadraticProgramming() {
     cplex.setParam(IloCplex::Param::MIP::Display, 0);
 
     // solve the QP problem
-    SolveQPProblem(cplex, var);
+    is_solved = SolveQPProblem(cplex, var);
   } catch (IloException &e) {
     BOOST_LOG_TRIVIAL(error) << "Concert exception caught: " << e << "\n";
-    is_successful = false;
+    is_solved = false;
   } catch (...) {
     BOOST_LOG_TRIVIAL(error) << "Unknown exception caught" << "\n";
-    is_successful = false;
+    is_solved = false;
   }
 
   env.end();
-  return is_successful;
+  return is_solved;
 }
 #endif
 

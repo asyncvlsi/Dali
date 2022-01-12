@@ -44,6 +44,9 @@ class Dali {
       bool is_log_no_prefix = false
   );
 
+  Circuit &GetCircuit();
+  phydb::PhyDB *GetPhyDBPtr();
+
   bool ConfigIoPlacerAllInOneLayer(std::string const &layer_name);
   bool ConfigIoPlacer();
   bool StartIoPinAutoPlacement();

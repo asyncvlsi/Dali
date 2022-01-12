@@ -21,6 +21,7 @@
 #include "rowsegment.h"
 
 #include "dali/placer/well_legalizer/blocksegment.h"
+#include "dali/placer/well_legalizer/helper.h"
 
 namespace dali {
 
@@ -78,57 +79,20 @@ void RowSegment::MinDisplacementLegalization() {
   std::sort(
       blk_list_.begin(),
       blk_list_.end(),
-      [](const Block *blk_ptr0, const Block *blk_ptr1) {
-        return blk_ptr0->LLX() < blk_ptr1->LLX();
+      [](const Block *blk0, const Block *blk1) {
+        return (blk0->LLX() < blk1->LLX()) ||
+            ((blk0->LLX() == blk1->LLX()) && (blk0->Id() < blk1->Id()));
       }
   );
 
-  std::vector<BlockSegment> segments;
-
-  DaliExpects(blk_list_.size() == blk_initial_location_.size(),
-              "Block number does not equal initial location number\n");
-
-  size_t sz = blk_list_.size();
-  int lower_bound = lx_;
-  int upper_bound = lx_ + width_;
-  for (size_t i = 0; i < sz; ++i) {
-    // create a segment which contains only this block
-    Block *blk_ptr = blk_list_[i];
-    double init_x = blk_initial_location_[blk_ptr].x;
-    if (init_x < lower_bound) {
-      init_x = lower_bound;
-    }
-    if (init_x + blk_ptr->Width() > upper_bound) {
-      init_x = upper_bound - blk_ptr->Width();
-    }
-    segments.emplace_back(blk_ptr, init_x);
-
-    // if this new segment is the only segment, do nothing
-    size_t seg_sz = segments.size();
-    if (seg_sz == 1) continue;
-
-    // check if this segment overlap with the previous one, if yes, merge these two segments
-    // repeats until this is no overlap or only one segment left
-
-    BlockSegment *cur_seg = &(segments[seg_sz - 1]);
-    BlockSegment *prev_seg = &(segments[seg_sz - 2]);
-    while (prev_seg->IsNotOnLeft(*cur_seg)) {
-      prev_seg->Merge(*cur_seg, lower_bound, upper_bound);
-      segments.pop_back();
-
-      seg_sz = segments.size();
-      if (seg_sz == 1) break;
-      cur_seg = &(segments[seg_sz - 1]);
-      prev_seg = &(segments[seg_sz - 2]);
-    }
+  std::vector<BlkDispVar> vars;
+  vars.reserve(blk_list_.size());
+  for (Block *&blk_ptr: blk_list_) {
+    vars.emplace_back(blk_ptr->Width(), blk_initial_location_[blk_ptr].x, 1.0);
+    vars.back().blk_ptr = blk_ptr;
   }
 
-  //int count = 0;
-  for (auto &seg: segments) {
-    seg.UpdateBlockLocation();
-    //count += seg.blk_list.size();
-    //seg.Report();
-  }
+  MinimizeQuadraticDisplacement(vars, LLX(), URX());
 }
 
 }

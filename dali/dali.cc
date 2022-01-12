@@ -60,10 +60,12 @@ Dali::Dali(
   circuit_.InitializeFromPhyDB(phy_db_ptr);
 }
 
-void Dali::InstantiateIoPlacer() {
-  if (io_placer_ == nullptr) {
-    io_placer_ = new IoPlacer(phy_db_ptr_, &circuit_);
-  }
+Circuit &Dali::GetCircuit() {
+  return circuit_;
+}
+
+phydb::PhyDB *Dali::GetPhyDBPtr() {
+  return phy_db_ptr_;
 }
 
 bool Dali::ConfigIoPlacerAllInOneLayer(std::string const &layer_name) {
@@ -392,6 +394,12 @@ void Dali::ExportToDEF(
   circuit_.ReportNetFanoutHistogram();
   circuit_.ReportHPWLHistogramLinear();
   circuit_.ReportHPWLHistogramLogarithm();
+}
+
+void Dali::InstantiateIoPlacer() {
+  if (io_placer_ == nullptr) {
+    io_placer_ = new IoPlacer(phy_db_ptr_, &circuit_);
+  }
 }
 
 /**

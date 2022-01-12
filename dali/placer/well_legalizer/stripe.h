@@ -124,7 +124,7 @@ class Stripe {
   );
   void ConstructQuadraticObjective(IloModel &model, IloNumVarArray &x);
   void CreateQPModel(IloModel &model, IloNumVarArray &x, IloRangeArray &c);
-  void SolveQPProblem(IloCplex &cplex, IloNumVarArray &var);
+  bool SolveQPProblem(IloCplex &cplex, IloNumVarArray &var);
   bool OptimizeDisplacementUsingQuadraticProgramming();
 #endif
 };

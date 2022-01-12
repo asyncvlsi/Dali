@@ -116,13 +116,11 @@ void GriddedRowLegalizer::PrecomputeWellTapCellLocation() {
 }
 
 void GriddedRowLegalizer::SaveInitialLocationX() {
-#if DALI_USE_CPLEX
   for (ClusterStripe &cluster: col_list_) {
     for (Stripe &stripe: cluster.stripe_list_) {
       stripe.SaveInitialLocationX();
     }
   }
-#endif
 }
 
 void GriddedRowLegalizer::SetLegalizationMaxIteration(int max_iteration) {
@@ -194,6 +192,7 @@ bool GriddedRowLegalizer::GroupBlocksToClusters() {
       res = res && is_success;
     }
   }
+  ReportDisplacement();
   return res;
 }
 
@@ -239,6 +238,12 @@ bool GriddedRowLegalizer::OptimizeDisplacementUsingQuadraticProgramming() {
       bool res = stripe.OptimizeDisplacementUsingQuadraticProgramming();
       is_successful = res && is_successful;
     }
+  }
+
+  if (is_successful) {
+    BOOST_LOG_TRIVIAL(info) << "Quadratic programming complete\n";
+  } else {
+    BOOST_LOG_TRIVIAL(info) << "Quadratic programming solution not found\n";
   }
 
   wall_time = get_wall_time() - wall_time;
@@ -290,6 +295,10 @@ void GriddedRowLegalizer::EmbodyWellTapCells() {
   }
 }
 
+void GriddedRowLegalizer::ReportDisplacement() {
+
+}
+
 bool GriddedRowLegalizer::StartPlacement() {
   BOOST_LOG_TRIVIAL(info)
     << "---------------------------------------\n"
@@ -304,24 +313,22 @@ bool GriddedRowLegalizer::StartPlacement() {
   PartitionSpaceAndBlocks();
   PrecomputeWellTapCellLocation();
 
-#if DALI_USE_CPLEX
   SaveInitialLocationX();
-#endif
 
   bool is_success = GroupBlocksToClusters();
+  SaveGreedyResult();
   ReportHPWL();
-
-#if DALI_USE_CPLEX
-  RestoreBlockInitialLocationX();
-  //IsLeftmostPlacementLegal();
-  //IterativeCellReordering();
-  OptimizeDisplacementUsingQuadraticProgramming();
-  ReportHPWL();
-#endif
-
-  EmbodyWellTapCells();
 
   if (is_success) {
+    RestoreBlockInitialLocationX();
+    //IsLeftmostPlacementLegal();
+    //IterativeCellReordering();
+    bool is_qp_solved = OptimizeDisplacementUsingQuadraticProgramming();
+    SaveQuadraticProgrammingResult();
+    ReportHPWL();
+
+    EmbodyWellTapCells();
+
     BOOST_LOG_TRIVIAL(info)
       << "\033[0;36m"
       << "Gridded Row Well Legalization complete!\n"
@@ -429,6 +436,14 @@ void GriddedRowLegalizer::SetWellTapCellType(
       << well_tap_type_name << "\n";
     well_tap_type_ptr_ = p_ckt_->GetBlockTypePtr(well_tap_type_name);
   }
+}
+
+void GriddedRowLegalizer::SaveGreedyResult() {
+
+}
+
+void GriddedRowLegalizer::SaveQuadraticProgrammingResult() {
+
 }
 
 }

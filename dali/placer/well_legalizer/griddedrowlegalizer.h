@@ -64,7 +64,10 @@ class GriddedRowLegalizer : public Placer {
 
   void EmbodyWellTapCells();
 
+  void ReportDisplacement();
+
   bool StartPlacement() override;
+
   void GenMatlabClusterTable(std::string const &name_of_file);
   void GenMATLABWellTable(
       std::string const &name_of_file,
@@ -90,10 +93,17 @@ class GriddedRowLegalizer : public Placer {
   int cur_iter_ = 0;
   int max_iteration_ = 10;
 
+  std::vector<double2d> greedy_solution_;
+  std::vector<double2d> qp_solution_;
+  std::vector<double2d> consensus_solution_;
+
   void SetWellTapCellNecessary(bool is_well_tap_needed);
   void SetWellTapCellPlacementMode(bool is_checker_board_mode);
   void SetWellTapCellInterval(double tap_cell_interval_microns);
   void SetWellTapCellType(std::string const &well_tap_type_name);
+
+  void SaveGreedyResult();
+  void SaveQuadraticProgrammingResult();
 };
 
 }
