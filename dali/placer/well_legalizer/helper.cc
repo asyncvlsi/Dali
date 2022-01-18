@@ -165,6 +165,20 @@ void GenMATLABWellFillingTable(
   ostn.close();
 }
 
+/****
+ * @brief return the weight for optimal anchor
+ *
+ * Important: must return 0 when i is 0
+ *
+ * @param i
+ * @return
+ */
+double GetOptimalAnchorWeight(int i) {
+  return i * 0.1;
+  //return i * i * 0.01;
+  //return exp(i/10.0) - 1;
+}
+
 struct BlkDispVarSegment {
  private:
   int lx_;
@@ -188,7 +202,11 @@ struct BlkDispVarSegment {
   bool IsNotOnLeft(BlkDispVarSegment &sc) const {
     return sc.LX() < UX();
   }
-  void Merge(BlkDispVarSegment &seg, int lower_bound, int upper_bound);
+  void Merge(
+      BlkDispVarSegment &seg,
+      int lower_bound = INT_MIN,
+      int upper_bound = INT_MAX
+  );
   void UpdateBlockLocation();
 };
 

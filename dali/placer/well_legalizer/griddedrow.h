@@ -91,7 +91,11 @@ class GriddedRow {
   double MinDisplacementLLY() const;
 
   std::vector<RowSegment> &Segments();
-  void UpdateSegments(std::vector<SegI> &external_blockage);
+  void UpdateSegments(
+      std::vector<SegI> &blockage,
+      bool is_existing_blks_considered
+  );
+  void AssignBlocksToSegments();
   bool IsBelowMiddleLine(Block *p_blk) const;
   bool IsBelowTopPlusKFirstRegionHeight(Block *p_blk, int iteration) const;
   bool IsAboveMiddleLine(Block *p_blk) const;
@@ -116,8 +120,11 @@ class GriddedRow {
 
   void SortBlockRegions();
 
-  void BreakMultiRowCellIntoSingleRowCell();
-  void ClearMultiRowCellBreaking();
+  bool IsRowLegal();
+
+  void SetOptimalAnchorWeight(double weight);
+  void BuildQuadraticOptimizationProblem();
+  void OptimizeQuadraticDisplacement();
 
  private:
   bool is_orient_N_ = true; // orientation of this cluster
@@ -147,9 +154,6 @@ class GriddedRow {
   /**** for multi-well legalization ****/
   std::vector<BlockRegion> blk_regions_;
   std::vector<RowSegment> segments_;
-
-  /**** for iterative cell reordering ****/
-  std::vector<Block> sub_blks_;
 };
 
 class ClusterSegment {

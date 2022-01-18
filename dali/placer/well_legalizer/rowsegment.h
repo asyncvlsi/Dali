@@ -46,14 +46,19 @@ class RowSegment {
   std::vector<Block *> &Blocks();
   void AddBlock(Block *blk_ptr);
   void MinDisplacementLegalization();
+
+  void SetOptimalAnchorWeight(double weight);
+  void BuildQuadraticOptimizationProblem();
+  void OptimizeQuadraticDisplacement();
  private:
   // list of blocks in this segment
   std::vector<Block *> blk_list_;
-  // initial location of blocks before putting into this segment
-  std::unordered_map<Block *, double2d> blk_initial_location_;
   int lx_ = INT_MIN;
   int width_ = 0;
   int used_size_ = 0;
+
+  /**** for iterative displacement optimization ****/
+  double opt_anchor_weight = 0;
 };
 
 }

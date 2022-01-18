@@ -31,7 +31,7 @@
 #include <string>
 #include <vector>
 
-#include "logging.h"
+#include "dali/common/logging.h"
 
 namespace dali {
 

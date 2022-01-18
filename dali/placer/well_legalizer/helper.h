@@ -48,6 +48,8 @@ void GenMATLABWellFillingTable(
     int well_emit_mode = 0
 );
 
+double GetOptimalAnchorWeight(int i);
+
 /****
  * @brief A structure containing information of a block for minimizing displacement
  */
@@ -58,7 +60,7 @@ struct BlkDispVar {
   double x_a;                // anchor location
   double a;                  // weight of anchor location
   double x;                  // place to store final location
-  Block *blk_ptr;            // pointer to the block
+  Block *blk_ptr;            // pointer to the block or dummy block
   BlkDispVar(int width, double x_init, double weight = 1.0) :
       w(width),
       x_0(x_init),
@@ -86,13 +88,17 @@ struct BlkDispVar {
   }
 
   void SetSolution(double x_new) { x = x_new; }
-  void UpdateBlkLocation() { blk_ptr->SetLLX(x); }
+  void UpdateBlkLocation() {
+    if (blk_ptr != nullptr) {
+      blk_ptr->SetLLX(x);
+    }
+  }
 };
 
 void MinimizeQuadraticDisplacement(
     std::vector<BlkDispVar> &vars,
-    int lower_limit,
-    int upper_limit
+    int lower_limit = INT_MIN,
+    int upper_limit = INT_MAX
 );
 
 }

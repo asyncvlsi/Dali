@@ -51,7 +51,7 @@ class Stripe {
   bool is_bottom_up_ = false;
 
   int block_count_;
-  std::vector<Block *> block_list_;
+  std::vector<Block *> blk_ptrs_vec_;
   std::unordered_map<Block *, int> blk_ptr_2_row_id_;
 
   bool is_first_row_orient_N_ = true;
@@ -61,6 +61,10 @@ class Stripe {
   int well_tap_cell_width_ = -1;
   std::vector<SegI> well_tap_cell_location_even_;
   std::vector<SegI> well_tap_cell_location_odd_;
+
+  std::unordered_map<Block *, double2d> init_locs_;
+  std::unordered_map<Block *, std::vector<double>> sub_cell_locs_;
+  std::vector<RowSegment *> row_seg_ptrs_;
 
   int LLX() const { return lx_; }
   int LLY() const { return ly_; }
@@ -96,6 +100,7 @@ class Stripe {
   size_t FitBlocksToFrontSpaceDownward(size_t start_id, int current_iteration);
 
   void UpdateBlockYLocation();
+  void CleanUpTemporaryRowSegments();
 
   size_t AddWellTapCells(
       Circuit *p_ckt,
@@ -104,20 +109,21 @@ class Stripe {
   );
 
   bool IsLeftmostPlacementLegal();
+  bool IsStripeLegal();
 
-  void BreakMultiRowCellIntoSingleRowCell();
-  void OptimizeDisplacementInEachRow();
-  void ComputeAverageLocationForMultiRowCells();
-  void IterativeCellReordering();
+  void CreateContainerToStoreMultiDeckCellLocationInRows();
+  void OptimizeDisplacementInEachRowSegment();
+  void ComputeAverageLocationForMultiRowCells(int i);
+  void IterativeCellReordering(int max_iter);
   void ClearMultiRowCellBreaking();
+
+  void SaveCurrentLocation();
+  void RestoreInitialLocationX();
+  void SortBlocksInEachRow();
 
 #if DALI_USE_CPLEX
   std::unordered_map<Block *, IloInt> blk_ptr_2_tmp_id;
   std::unordered_map<IloInt, Block *> blk_tmp_id_2_ptr;
-  std::unordered_map<Block *, double> init_x_locs_;
-  void SaveInitialLocationX();
-  void RestoreInitialLocationX();
-  void SortBlocksInEachRow();
   void PopulateVariableArray(IloModel &model, IloNumVarArray &x);
   void AddVariableConstraints(
       IloModel &model, IloNumVarArray &x, IloRangeArray &c

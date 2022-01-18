@@ -22,6 +22,7 @@
 #define DALI_DALI_PLACER_WELL_LEGALIZER_GRIDDEDROWLEGALIZER_H_
 
 #include "dali/placer/placer.h"
+#include "dali/placer/well_legalizer/lgblkaux.h"
 #include "dali/placer/well_legalizer/spacepartitioner.h"
 #include "dali/placer/well_legalizer/stripe.h"
 
@@ -47,20 +48,27 @@ class GriddedRowLegalizer : public Placer {
 
   void PrecomputeWellTapCellLocation();
 
-  void SaveInitialLocationX();
+  void InitializeBlockAuxiliaryInfo();
+  void SaveInitialLoc();
+  void SaveGreedyLoc();
+  void SaveQPLoc();
+  void SaveConsensusLoc();
+  void RestoreInitialLoc();
+  void RestoreGreedyLoc();
+  void RestoreQPLoc();
+  void RestoreConsensusLoc();
 
   void SetLegalizationMaxIteration(int max_iteration);
   bool StripeLegalizationUpward(Stripe &stripe);
   bool StripeLegalizationDownward(Stripe &stripe);
-  bool GroupBlocksToClusters();
+  void CleanUpTemporaryRowSegments();
+  bool GreedyLegalization();
 
-  void IterativeCellReordering();
-
-  void RestoreBlockInitialLocationX();
   bool IsLeftmostPlacementLegal();
+  bool IsPlacementLegal();
   bool OptimizeDisplacementUsingQuadraticProgramming();
 
-  void StretchBlocks();
+  bool IterativeQuadraticDisplacementOptimization();
 
   void EmbodyWellTapCells();
 
@@ -90,20 +98,21 @@ class GriddedRowLegalizer : public Placer {
   int tap_cell_interval_grid_ = -1;
   BlockType *well_tap_type_ptr_ = nullptr;
 
-  int cur_iter_ = 0;
-  int max_iteration_ = 10;
+  int greedy_cur_iter_ = 0;
+  int greedy_max_iter_ = 10;
 
-  std::vector<double2d> greedy_solution_;
-  std::vector<double2d> qp_solution_;
-  std::vector<double2d> consensus_solution_;
+  int consensus_max_iter_ = 100;
+
+  bool is_init_loc_cached_ = false;
+  bool is_greedy_loc_cached_ = false;
+  bool is_qp_loc_cached_ = false;
+  bool is_cons_loc_cached_ = false;
+  std::vector<LgBlkAux> blk_auxs_;
 
   void SetWellTapCellNecessary(bool is_well_tap_needed);
   void SetWellTapCellPlacementMode(bool is_checker_board_mode);
   void SetWellTapCellInterval(double tap_cell_interval_microns);
   void SetWellTapCellType(std::string const &well_tap_type_name);
-
-  void SaveGreedyResult();
-  void SaveQuadraticProgrammingResult();
 };
 
 }

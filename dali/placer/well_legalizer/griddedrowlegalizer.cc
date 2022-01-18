@@ -20,6 +20,8 @@
  ******************************************************************************/
 #include "griddedrowlegalizer.h"
 
+#include <cmath>
+
 #include "dali/common/config.h"
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
@@ -115,16 +117,83 @@ void GriddedRowLegalizer::PrecomputeWellTapCellLocation() {
   }
 }
 
-void GriddedRowLegalizer::SaveInitialLocationX() {
-  for (ClusterStripe &cluster: col_list_) {
-    for (Stripe &stripe: cluster.stripe_list_) {
-      stripe.SaveInitialLocationX();
-    }
+void GriddedRowLegalizer::InitializeBlockAuxiliaryInfo() {
+  blk_auxs_.reserve(Blocks().size());
+  for (Block &blk: Blocks()) {
+    blk_auxs_.emplace_back(&blk);
+  }
+}
+
+void GriddedRowLegalizer::SaveInitialLoc() {
+  is_init_loc_cached_ = true;
+  for (Block &blk: Blocks()) {
+    auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
+    aux_ptr->StoreCurLocAsInitLoc();
+  }
+}
+
+void GriddedRowLegalizer::SaveGreedyLoc() {
+  is_greedy_loc_cached_ = true;
+  for (Block &blk: Blocks()) {
+    auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
+    aux_ptr->StoreCurLocAsGreedyLoc();
+  }
+}
+
+void GriddedRowLegalizer::SaveQPLoc() {
+  is_qp_loc_cached_ = true;
+  for (Block &blk: Blocks()) {
+    auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
+    aux_ptr->StoreCurLocAsQPLoc();
+  }
+}
+
+void GriddedRowLegalizer::SaveConsensusLoc() {
+  is_cons_loc_cached_ = true;
+  for (Block &blk: Blocks()) {
+    auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
+    aux_ptr->StoreCurLocAsConsLoc();
+  }
+}
+
+void GriddedRowLegalizer::RestoreInitialLoc() {
+  DaliExpects(is_init_loc_cached_,
+              "Initial locations are not saved, no way to restore");
+  for (Block &blk: Blocks()) {
+    auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
+    aux_ptr->RecoverInitLoc();
+  }
+}
+
+void GriddedRowLegalizer::RestoreGreedyLoc() {
+  DaliExpects(is_greedy_loc_cached_,
+              "Greedy locations are not saved, no way to restore");
+  for (Block &blk: Blocks()) {
+    auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
+    aux_ptr->RecoverGreedyLoc();
+  }
+}
+
+void GriddedRowLegalizer::RestoreQPLoc() {
+  DaliExpects(is_qp_loc_cached_,
+              "Quadratic programming locations are not saved, no way to restore");
+  for (Block &blk: Blocks()) {
+    auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
+    aux_ptr->RecoverQPLoc();
+  }
+}
+
+void GriddedRowLegalizer::RestoreConsensusLoc() {
+  DaliExpects(is_cons_loc_cached_,
+              "Consensus locations are not saved, no way to restore");
+  for (Block &blk: Blocks()) {
+    auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
+    aux_ptr->RecoverConsLoc();
   }
 }
 
 void GriddedRowLegalizer::SetLegalizationMaxIteration(int max_iteration) {
-  max_iteration_ = max_iteration;
+  greedy_max_iter_ = max_iteration;
 }
 
 bool GriddedRowLegalizer::StripeLegalizationUpward(Stripe &stripe) {
@@ -135,10 +204,10 @@ bool GriddedRowLegalizer::StripeLegalizationUpward(Stripe &stripe) {
   stripe.SortBlocksBasedOnYLocation(0);
 
   size_t processed_blk_cnt = 0;
-  while (processed_blk_cnt < stripe.block_list_.size()) {
+  while (processed_blk_cnt < stripe.blk_ptrs_vec_.size()) {
     stripe.UpdateFrontClusterUpward(tap_cell_p_height_, tap_cell_n_height_);
     processed_blk_cnt = stripe.FitBlocksToFrontSpaceUpward(
-        processed_blk_cnt, cur_iter_
+        processed_blk_cnt, greedy_cur_iter_
     );
     stripe.LegalizeFrontCluster();
   }
@@ -157,10 +226,10 @@ bool GriddedRowLegalizer::StripeLegalizationDownward(Stripe &stripe) {
   stripe.SortBlocksBasedOnYLocation(2);
 
   size_t processed_blk_cnt = 0;
-  while (processed_blk_cnt < stripe.block_list_.size()) {
+  while (processed_blk_cnt < stripe.blk_ptrs_vec_.size()) {
     stripe.UpdateFrontClusterDownward(tap_cell_p_height_, tap_cell_n_height_);
     processed_blk_cnt = stripe.FitBlocksToFrontSpaceDownward(
-        processed_blk_cnt, cur_iter_
+        processed_blk_cnt, greedy_cur_iter_
     );
     stripe.LegalizeFrontCluster();
   }
@@ -171,14 +240,22 @@ bool GriddedRowLegalizer::StripeLegalizationDownward(Stripe &stripe) {
   return stripe.HasNoRowsSpillingOut();
 }
 
-bool GriddedRowLegalizer::GroupBlocksToClusters() {
+void GriddedRowLegalizer::CleanUpTemporaryRowSegments() {
+  for (ClusterStripe &col: col_list_) {
+    for (Stripe &stripe: col.stripe_list_) {
+      stripe.CleanUpTemporaryRowSegments();
+    }
+  }
+}
+
+bool GriddedRowLegalizer::GreedyLegalization() {
   bool res = true;
   for (ClusterStripe &col: col_list_) {
     bool is_success = true;
     for (Stripe &stripe: col.stripe_list_) {
-      stripe.SaveInitialLocationX();
       bool is_from_bottom = true;
-      for (cur_iter_ = 0; cur_iter_ < max_iteration_; ++cur_iter_) {
+      for (greedy_cur_iter_ = 0; greedy_cur_iter_ < greedy_max_iter_;
+           ++greedy_cur_iter_) {
         if (is_from_bottom) {
           is_success = StripeLegalizationUpward(stripe);
         } else {
@@ -192,26 +269,9 @@ bool GriddedRowLegalizer::GroupBlocksToClusters() {
       res = res && is_success;
     }
   }
+  CleanUpTemporaryRowSegments();
   ReportDisplacement();
   return res;
-}
-
-void GriddedRowLegalizer::IterativeCellReordering() {
-  for (auto &col: col_list_) {
-    for (auto &stripe: col.stripe_list_) {
-      stripe.BreakMultiRowCellIntoSingleRowCell();
-      stripe.IterativeCellReordering();
-      stripe.ClearMultiRowCellBreaking();
-    }
-  }
-}
-
-void GriddedRowLegalizer::RestoreBlockInitialLocationX() {
-  for (auto &col: col_list_) {
-    for (auto &stripe: col.stripe_list_) {
-      stripe.RestoreInitialLocationX();
-    }
-  }
 }
 
 bool GriddedRowLegalizer::IsLeftmostPlacementLegal() {
@@ -219,6 +279,17 @@ bool GriddedRowLegalizer::IsLeftmostPlacementLegal() {
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
       bool tmp_res = stripe.IsLeftmostPlacementLegal();
+      res = res && tmp_res;
+    }
+  }
+  return res;
+}
+
+bool GriddedRowLegalizer::IsPlacementLegal() {
+  bool res = true;
+  for (auto &col: col_list_) {
+    for (auto &stripe: col.stripe_list_) {
+      bool tmp_res = stripe.IsStripeLegal();
       res = res && tmp_res;
     }
   }
@@ -242,6 +313,7 @@ bool GriddedRowLegalizer::OptimizeDisplacementUsingQuadraticProgramming() {
 
   if (is_successful) {
     BOOST_LOG_TRIVIAL(info) << "Quadratic programming complete\n";
+    ReportDisplacement();
   } else {
     BOOST_LOG_TRIVIAL(info) << "Quadratic programming solution not found\n";
   }
@@ -259,12 +331,15 @@ bool GriddedRowLegalizer::OptimizeDisplacementUsingQuadraticProgramming() {
 #endif
 }
 
-void GriddedRowLegalizer::StretchBlocks() {
+bool GriddedRowLegalizer::IterativeQuadraticDisplacementOptimization() {
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
-      stripe.UpdateBlockStretchLength();
+      stripe.CreateContainerToStoreMultiDeckCellLocationInRows();
+      stripe.IterativeCellReordering(consensus_max_iter_);
+      stripe.ClearMultiRowCellBreaking();
     }
   }
+  return IsPlacementLegal();
 }
 
 void GriddedRowLegalizer::EmbodyWellTapCells() {
@@ -296,7 +371,24 @@ void GriddedRowLegalizer::EmbodyWellTapCells() {
 }
 
 void GriddedRowLegalizer::ReportDisplacement() {
-
+  if (!is_init_loc_cached_) {
+    BOOST_LOG_TRIVIAL(info)
+      << "Initial locations are not saved, cannot compute displacement\n";
+  }
+  double disp_x = 0;
+  double disp_y = 0;
+  for (Block &blk: Blocks()) {
+    auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
+    double2d init_loc = aux_ptr->InitLoc();
+    disp_x += std::fabs(blk.LLX() - init_loc.x);
+    disp_y += std::fabs(blk.LLY() - init_loc.y);
+  }
+  disp_x *= p_ckt_->GridValueX();
+  disp_y *= p_ckt_->GridValueY();
+  BOOST_LOG_TRIVIAL(info)
+    << "  Current displacement,  x: " << disp_x
+    << ", y: " << disp_y
+    << ", sum: " << disp_x + disp_y << " um\n";
 }
 
 bool GriddedRowLegalizer::StartPlacement() {
@@ -313,18 +405,19 @@ bool GriddedRowLegalizer::StartPlacement() {
   PartitionSpaceAndBlocks();
   PrecomputeWellTapCellLocation();
 
-  SaveInitialLocationX();
+  InitializeBlockAuxiliaryInfo();
+  SaveInitialLoc();
 
-  bool is_success = GroupBlocksToClusters();
-  SaveGreedyResult();
+  bool is_success = GreedyLegalization();
+  SaveGreedyLoc();
   ReportHPWL();
 
   if (is_success) {
-    RestoreBlockInitialLocationX();
+    //RestoreBlockInitialLocationX();
     //IsLeftmostPlacementLegal();
     //IterativeCellReordering();
-    bool is_qp_solved = OptimizeDisplacementUsingQuadraticProgramming();
-    SaveQuadraticProgrammingResult();
+    //bool is_qp_solved = OptimizeDisplacementUsingQuadraticProgramming();
+    SaveQPLoc();
     ReportHPWL();
 
     EmbodyWellTapCells();
@@ -436,14 +529,6 @@ void GriddedRowLegalizer::SetWellTapCellType(
       << well_tap_type_name << "\n";
     well_tap_type_ptr_ = p_ckt_->GetBlockTypePtr(well_tap_type_name);
   }
-}
-
-void GriddedRowLegalizer::SaveGreedyResult() {
-
-}
-
-void GriddedRowLegalizer::SaveQuadraticProgrammingResult() {
-
 }
 
 }

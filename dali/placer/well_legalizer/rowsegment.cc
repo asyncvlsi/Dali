@@ -22,6 +22,7 @@
 
 #include "dali/placer/well_legalizer/blocksegment.h"
 #include "dali/placer/well_legalizer/helper.h"
+#include "dali/placer/well_legalizer/lgblkaux.h"
 
 namespace dali {
 
@@ -69,10 +70,6 @@ std::vector<Block *> &RowSegment::Blocks() {
 void RowSegment::AddBlock(Block *blk_ptr) {
   used_size_ += blk_ptr->Width();
   blk_list_.push_back(blk_ptr);
-  double y_init = blk_ptr->LLY();
-  BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
-  y_init = well_ptr->Pheight();
-  blk_initial_location_[blk_ptr] = double2d(blk_ptr->LLX(), y_init);
 }
 
 void RowSegment::MinDisplacementLegalization() {
@@ -88,11 +85,20 @@ void RowSegment::MinDisplacementLegalization() {
   std::vector<BlkDispVar> vars;
   vars.reserve(blk_list_.size());
   for (Block *&blk_ptr: blk_list_) {
-    vars.emplace_back(blk_ptr->Width(), blk_initial_location_[blk_ptr].x, 1.0);
+    auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
+    vars.emplace_back(blk_ptr->Width(), aux_ptr->InitLoc().x, 1.0);
     vars.back().blk_ptr = blk_ptr;
   }
 
   MinimizeQuadraticDisplacement(vars, LLX(), URX());
+}
+
+void RowSegment::BuildQuadraticOptimizationProblem() {
+
+}
+
+void RowSegment::OptimizeQuadraticDisplacement() {
+
 }
 
 }

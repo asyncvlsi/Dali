@@ -48,7 +48,7 @@ class Net {
       double weight
   );
 
-  // get the name
+  // get the name of this net
   const std::string &Name() const;
 
   // get the internal index

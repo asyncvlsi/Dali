@@ -356,14 +356,14 @@ bool StdClusterWellLegalizer::StripeLegalizationBottomUp(Stripe &stripe) {
   stripe.is_bottom_up_ = true;
 
   std::sort(
-      stripe.block_list_.begin(),
-      stripe.block_list_.end(),
+      stripe.blk_ptrs_vec_.begin(),
+      stripe.blk_ptrs_vec_.end(),
       [](const Block *lhs, const Block *rhs) {
         return (lhs->LLY() < rhs->LLY())
             || (lhs->LLY() == rhs->LLY() && lhs->LLX() < rhs->LLX());
       }
   );
-  for (auto &blk_ptr: stripe.block_list_) {
+  for (auto &blk_ptr: stripe.blk_ptrs_vec_) {
     if (blk_ptr->IsFixed()) continue;
     AppendBlockToColBottomUp(stripe, *blk_ptr);
   }
@@ -384,14 +384,14 @@ bool StdClusterWellLegalizer::StripeLegalizationTopDown(Stripe &stripe) {
   stripe.is_bottom_up_ = false;
 
   std::sort(
-      stripe.block_list_.begin(),
-      stripe.block_list_.end(),
+      stripe.blk_ptrs_vec_.begin(),
+      stripe.blk_ptrs_vec_.end(),
       [](const Block *lhs, const Block *rhs) {
         return (lhs->URY() > rhs->URY())
             || (lhs->URY() == rhs->URY() && lhs->LLX() < rhs->LLX());
       }
   );
-  for (auto &blk_ptr: stripe.block_list_) {
+  for (auto &blk_ptr: stripe.blk_ptrs_vec_) {
     if (blk_ptr->IsFixed()) continue;
     AppendBlockToColTopDown(stripe, *blk_ptr);
   }
@@ -419,14 +419,14 @@ bool StdClusterWellLegalizer::StripeLegalizationBottomUpCompact(Stripe &stripe) 
   stripe.is_bottom_up_ = true;
 
   std::sort(
-      stripe.block_list_.begin(),
-      stripe.block_list_.end(),
+      stripe.blk_ptrs_vec_.begin(),
+      stripe.blk_ptrs_vec_.end(),
       [](const Block *lhs, const Block *rhs) {
         return (lhs->LLY() < rhs->LLY())
             || (lhs->LLY() == rhs->LLY() && lhs->LLX() < rhs->LLX());
       }
   );
-  for (auto &blk_ptr: stripe.block_list_) {
+  for (auto &blk_ptr: stripe.blk_ptrs_vec_) {
     if (blk_ptr->IsFixed()) continue;
     AppendBlockToColBottomUpCompact(stripe, *blk_ptr);
   }
@@ -447,14 +447,14 @@ bool StdClusterWellLegalizer::StripeLegalizationTopDownCompact(Stripe &stripe) {
   stripe.is_bottom_up_ = false;
 
   std::sort(
-      stripe.block_list_.begin(),
-      stripe.block_list_.end(),
+      stripe.blk_ptrs_vec_.begin(),
+      stripe.blk_ptrs_vec_.end(),
       [](const Block *lhs, const Block *rhs) {
         return (lhs->URY() > rhs->URY())
             || (lhs->URY() == rhs->URY() && lhs->LLX() < rhs->LLX());
       }
   );
-  for (auto &blk_ptr: stripe.block_list_) {
+  for (auto &blk_ptr: stripe.blk_ptrs_vec_) {
     if (blk_ptr->IsFixed()) continue;
     AppendBlockToColTopDownCompact(stripe, *blk_ptr);
   }

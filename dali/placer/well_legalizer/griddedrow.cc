@@ -388,12 +388,19 @@ std::vector<RowSegment> &GriddedRow::Segments() {
   return segments_;
 }
 
-void GriddedRow::UpdateSegments(std::vector<SegI> &external_blockage) {
+void GriddedRow::UpdateSegments(
+    std::vector<SegI> &blockage,
+    bool is_existing_blks_considered
+) {
   // collect used space segments
-  std::vector<SegI> used_spaces = external_blockage;
-  for (auto &blk_region: blk_regions_) {
-    Block *p_blk = blk_region.p_blk;
-    used_spaces.emplace_back(p_blk->LLX(), p_blk->URX());
+  std::vector<SegI> used_spaces = blockage;
+
+  // treat existing blocks as blockages
+  if (is_existing_blks_considered) {
+    for (auto &blk_region: blk_regions_) {
+      Block *p_blk = blk_region.p_blk;
+      used_spaces.emplace_back(p_blk->LLX(), p_blk->URX());
+    }
   }
 
   MergeIntervals(used_spaces);
@@ -436,6 +443,26 @@ void GriddedRow::UpdateSegments(std::vector<SegI> &external_blockage) {
     RowSegment &segment = segments_.back();
     segment.SetLLX(intermediate_seg[i]);
     segment.SetWidth(intermediate_seg[i + 1] - intermediate_seg[i]);
+  }
+}
+
+/****
+ * @brief: re-assign blocks to row segments
+ */
+void GriddedRow::AssignBlocksToSegments() {
+  for (auto &[p_blk, region_id]: blk_regions_) {
+    bool is_completely_in_a_seg = false;
+    for (auto &seg: segments_) {
+      if (p_blk->LLX() >= seg.LLX() &&
+          p_blk->URX() <= seg.URX()) {
+        double2d &init_loc = blk_initial_location_[p_blk];
+        seg.AddBlock(p_blk);
+        is_completely_in_a_seg = true;
+        break;
+      }
+    }
+    DaliExpects(is_completely_in_a_seg,
+                "A block is not completely in any row segment?!!");
   }
 }
 
@@ -653,19 +680,32 @@ void GriddedRow::SortBlockRegions() {
   );
 }
 
-void GriddedRow::BreakMultiRowCellIntoSingleRowCell() {
-  for (auto &block_region: blk_regions_) {
-    Block *blk_ptr = block_region.p_blk;
-    BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
-    if (well_ptr->RegionCount() > 1) {
-      sub_blks_.emplace_back();
-      Block &sub_blk = sub_blks_.back();
-    }
+bool GriddedRow::IsRowLegal() {
+  SortBlockRegions();
+  int front = LLX();
+  for (BlockRegion &blk_region: blk_regions_) {
+    Block *blk_ptr = blk_region.p_blk;
+    int blk_lx = static_cast<int>(std::round(blk_ptr->LLX()));
+    if (blk_lx < front) return false;
+    front += blk_ptr->Width();
+  }
+  return front <= URX();
+}
+
+void GriddedRow::SetOptimalAnchorWeight(double weight) {
+
+}
+
+void GriddedRow::BuildQuadraticOptimizationProblem() {
+  for (RowSegment &segment: segments_) {
+    segment.BuildQuadraticOptimizationProblem();
   }
 }
 
-void GriddedRow::ClearMultiRowCellBreaking() {
-
+void GriddedRow::OptimizeQuadraticDisplacement() {
+  for (RowSegment &segment: segments_) {
+    segment.OptimizeQuadraticDisplacement();
+  }
 }
 
 void ClusterSegment::Merge(

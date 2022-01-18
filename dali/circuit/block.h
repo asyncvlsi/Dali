@@ -113,7 +113,7 @@ class Block {
   double Y() const { return lly_ + Height() / 2.0; }
 
   // get the indices of nets containing this Block
-  std::vector<int> &NetList() { return net_list_; }
+  std::vector<int> &NetList() { return nets_; }
 
   // get the boolean status of whether this Block is placed
   bool IsPlaced() const {
@@ -137,7 +137,7 @@ class Block {
   bool IsFixed() const { return !IsMovable(); }
 
   // get the area of this Block
-  long int Area() const { return eff_area_; }
+  long long int Area() const { return eff_area_; }
 
   // get the Orientation of this Block
   BlockOrient Orient() const { return orient_; }
@@ -237,17 +237,17 @@ class Block {
   BlockType *type_ptr_; // type
   // cached height, also used to store effective height, the unit is grid value in the y-direction
   int eff_height_;
-  long int eff_area_; // cached effective area
+  long long int eff_area_; // cached effective area
   // name for finding its index in block_list
   std::pair<const std::string, int> *name_id_pair_ptr_;
   double llx_; // lower x coordinate, data type double, for global placement
   double lly_; // lower y coordinate
-  std::vector<int> net_list_; // the list of nets connected to this cell
+  std::vector<int> nets_; // the list of nets connected to this cell
   PlaceStatus place_status_; // placement status, i.e, PLACED, FIXED, UNPLACED
   BlockOrient orient_; // orientation, normally, N or FS
-  BlockAux *aux_ptr_; // points to auxiliary information if needed
+  BlockAux *aux_ptr_ = nullptr; // points to auxiliary information if needed
 
-  std::vector<int> stretch_length_;
+  std::vector<int> stretch_length_; // TODO : move these two attributes to LgBlkAux
   double tot_stretch_length = 0;
 };
 

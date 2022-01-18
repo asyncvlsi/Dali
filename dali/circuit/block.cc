@@ -199,7 +199,7 @@ void Block::Report() {
 
 void Block::ReportNet() {
   BOOST_LOG_TRIVIAL(info) << Name() << " connects to:\n";
-  for (auto &net_num: net_list_) {
+  for (auto &net_num: nets_) {
     BOOST_LOG_TRIVIAL(info) << net_num << "  ";
   }
   BOOST_LOG_TRIVIAL(info) << "\n";
