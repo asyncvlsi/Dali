@@ -25,146 +25,6 @@
 
 namespace dali {
 
-void GenClusterTable(
-    std::string const &name_of_file,
-    std::vector<ClusterStripe> &col_list_
-) {
-  std::string cluster_file = name_of_file + "_cluster.txt";
-  std::ofstream ost(cluster_file.c_str());
-  DaliExpects(ost.is_open(), "Cannot open output file: " + cluster_file);
-
-  for (auto &col: col_list_) {
-    for (auto &stripe: col.stripe_list_) {
-      for (auto &cluster: stripe.gridded_rows_) {
-        std::vector<int> llx;
-        std::vector<int> lly;
-        std::vector<int> urx;
-        std::vector<int> ury;
-
-        llx.push_back(cluster.LLX());
-        lly.push_back(cluster.LLY());
-        urx.push_back(cluster.URX());
-        ury.push_back(cluster.URY());
-
-        size_t sz = llx.size();
-        for (size_t i = 0; i < sz; ++i) {
-          ost << llx[i] << "\t"
-              << urx[i] << "\t"
-              << urx[i] << "\t"
-              << llx[i] << "\t"
-              << lly[i] << "\t"
-              << lly[i] << "\t"
-              << ury[i] << "\t"
-              << ury[i] << "\n";
-        }
-      }
-    }
-  }
-  ost.close();
-}
-
-void CollectWellFillingRects(
-    Stripe &stripe,
-    int bottom_boundary,
-    int top_boundary,
-    std::vector<RectI> &n_rects, std::vector<RectI> &p_rects
-) {
-  int loc_bottom = bottom_boundary;
-  if (!stripe.gridded_rows_.empty()) {
-    loc_bottom = std::min(loc_bottom, stripe.gridded_rows_[0].LLY());
-  }
-  int loc_top = top_boundary;
-  if (!stripe.gridded_rows_.empty()) {
-    loc_top = std::max(loc_top, stripe.gridded_rows_.back().URY());
-  }
-
-  std::vector<int> pn_edge_list;
-  if (stripe.is_bottom_up_) {
-    pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
-    pn_edge_list.push_back(loc_bottom);
-  } else {
-    pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
-    pn_edge_list.push_back(loc_top);
-  }
-  for (auto &cluster: stripe.gridded_rows_) {
-    pn_edge_list.push_back(cluster.LLY() + cluster.PNEdge());
-  }
-  if (stripe.is_bottom_up_) {
-    pn_edge_list.push_back(loc_top);
-  } else {
-    pn_edge_list.push_back(loc_bottom);
-    std::reverse(pn_edge_list.begin(), pn_edge_list.end());
-  }
-
-  bool is_p_well_rect;
-  if (stripe.gridded_rows_.empty()) {
-    is_p_well_rect = stripe.is_first_row_orient_N_;
-  } else {
-    is_p_well_rect = stripe.gridded_rows_[0].IsOrientN();
-  }
-  int lx = stripe.LLX();
-  int ux = stripe.URX();
-  int ly;
-  int uy;
-  int rect_count = (int) pn_edge_list.size() - 1;
-  for (int i = 0; i < rect_count; ++i) {
-    ly = pn_edge_list[i];
-    uy = pn_edge_list[i + 1];
-    if (is_p_well_rect) {
-      p_rects.emplace_back(lx, ly, ux, uy);
-    } else {
-      n_rects.emplace_back(lx, ly, ux, uy);
-    }
-    is_p_well_rect = !is_p_well_rect;
-  }
-}
-
-void GenMATLABWellFillingTable(
-    std::string const &base_file_name,
-    std::vector<ClusterStripe> &col_list,
-    int bottom_boundary,
-    int top_boundary,
-    int well_emit_mode
-) {
-  std::string p_file = base_file_name + "_pwell.txt";
-  std::ofstream ostp(p_file.c_str());
-  DaliExpects(ostp.is_open(), "Cannot open output file: " + p_file);
-
-  std::string n_file = base_file_name + "_nwell.txt";
-  std::ofstream ostn(n_file.c_str());
-  DaliExpects(ostn.is_open(), "Cannot open output file: " + n_file);
-
-  for (auto &col: col_list) {
-    for (auto &stripe: col.stripe_list_) {
-      std::vector<RectI> n_rects;
-      std::vector<RectI> p_rects;
-      CollectWellFillingRects(
-          stripe,
-          bottom_boundary, top_boundary,
-          n_rects, p_rects
-      );
-      if (well_emit_mode != 1) {
-        for (auto &rect: p_rects) {
-          SaveMatlabPatchRect(
-              ostp,
-              rect.LLX(), rect.LLY(), rect.URX(), rect.URY()
-          );
-        }
-      }
-      if (well_emit_mode != 2) {
-        for (auto &rect: n_rects) {
-          SaveMatlabPatchRect(
-              ostn,
-              rect.LLX(), rect.LLY(), rect.URX(), rect.URY()
-          );
-        }
-      }
-    }
-  }
-  ostp.close();
-  ostn.close();
-}
-
 /****
  * @brief return the weight for optimal anchor
  *
@@ -207,7 +67,7 @@ struct BlkDispVarSegment {
       int lower_bound = INT_MIN,
       int upper_bound = INT_MAX
   );
-  void UpdateBlockLocation();
+  void UpdateVarLoc();
 };
 
 /****
@@ -240,11 +100,10 @@ void BlkDispVarSegment::Merge(
   }
 }
 
-void BlkDispVarSegment::UpdateBlockLocation() {
+void BlkDispVarSegment::UpdateVarLoc() {
   int cur_loc = lx_;
   for (auto &var: vars_) {
     var->SetSolution(cur_loc);
-    var->UpdateBlkLocation();
     cur_loc += var->Width();
   }
 }
@@ -303,7 +162,7 @@ void MinimizeQuadraticDisplacement(
   }
 
   for (auto &seg: segments) {
-    seg.UpdateBlockLocation();
+    seg.UpdateVarLoc();
   }
 }
 

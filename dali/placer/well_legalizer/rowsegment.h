@@ -26,6 +26,8 @@
 
 #include "dali/circuit/block.h"
 #include "dali/common/misc.h"
+#include "dali/placer/well_legalizer/blockhelper.h"
+#include "dali/placer/well_legalizer/helper.h"
 
 namespace dali {
 
@@ -43,22 +45,22 @@ class RowSegment {
   int Width() const;
   int UsedSize() const;
 
-  std::vector<Block *> &Blocks();
-  void AddBlock(Block *blk_ptr);
+  std::vector<BlockRegion> &BlkRegions();
+  void AddBlockRegion(Block *blk_ptr, int region_id);
   void MinDisplacementLegalization();
 
   void SetOptimalAnchorWeight(double weight);
   void BuildQuadraticOptimizationProblem();
-  void OptimizeQuadraticDisplacement();
+  std::vector<BlkDispVar> OptimizeQuadraticDisplacement();
  private:
   // list of blocks in this segment
-  std::vector<Block *> blk_list_;
+  std::vector<BlockRegion> blk_regions_;
   int lx_ = INT_MIN;
   int width_ = 0;
   int used_size_ = 0;
 
   /**** for iterative displacement optimization ****/
-  double opt_anchor_weight = 0;
+  double opt_anchor_weight_ = 0;
 };
 
 }

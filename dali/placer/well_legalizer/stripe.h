@@ -62,7 +62,6 @@ class Stripe {
   std::vector<SegI> well_tap_cell_location_even_;
   std::vector<SegI> well_tap_cell_location_odd_;
 
-  std::unordered_map<Block *, double2d> init_locs_;
   std::unordered_map<Block *, std::vector<double>> sub_cell_locs_;
   std::vector<RowSegment *> row_seg_ptrs_;
 
@@ -111,7 +110,8 @@ class Stripe {
   bool IsLeftmostPlacementLegal();
   bool IsStripeLegal();
 
-  void CreateContainerToStoreMultiDeckCellLocationInRows();
+  void CollectAllRowSegments();
+  void UpdateSubCellLocs(std::vector<BlkDispVar> &vars);
   void OptimizeDisplacementInEachRowSegment();
   void ComputeAverageLocationForMultiRowCells(int i);
   void IterativeCellReordering(int max_iter);

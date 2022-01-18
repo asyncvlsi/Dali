@@ -28,6 +28,7 @@
 #include "dali/common/memory.h"
 #include "dali/common/timing.h"
 #include "dali/placer/well_legalizer/helper.h"
+#include "dali/placer/well_legalizer/stripehelper.h"
 
 namespace dali {
 
@@ -332,13 +333,14 @@ bool GriddedRowLegalizer::OptimizeDisplacementUsingQuadraticProgramming() {
 }
 
 bool GriddedRowLegalizer::IterativeQuadraticDisplacementOptimization() {
+  BOOST_LOG_TRIVIAL(info)
+    << "Optimizing displacement X using the consensus algorithm\n";
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
-      stripe.CreateContainerToStoreMultiDeckCellLocationInRows();
       stripe.IterativeCellReordering(consensus_max_iter_);
-      stripe.ClearMultiRowCellBreaking();
     }
   }
+  ReportDisplacement();
   return IsPlacementLegal();
 }
 
@@ -391,14 +393,15 @@ void GriddedRowLegalizer::ReportDisplacement() {
   disp_y *= p_ckt_->GridValueY();
   quadratic_disp_x *= p_ckt_->GridValueX() * p_ckt_->GridValueX();
   quadratic_disp_y *= p_ckt_->GridValueY() * p_ckt_->GridValueY();
-  BOOST_LOG_TRIVIAL(info)
-    << "  Current linear displacement\n"
-    << "    x: " << disp_x << ", y: " << disp_y << ", sum: " << disp_x + disp_y
-    << " um\n";
-  BOOST_LOG_TRIVIAL(info)
-    << "  Current quadratic displacement\n"
-    << "    x: " << quadratic_disp_x << ", y: " << quadratic_disp_y
-    << ", sum: " << quadratic_disp_x + quadratic_disp_y << " um^2\n";
+  BOOST_LOG_TRIVIAL(info) << "  Current linear displacement\n";
+  BOOST_LOG_TRIVIAL(info) << "    x: " << disp_x
+                          << ", y: " << disp_y
+                          << ", sum: " << disp_x + disp_y << " um\n";
+  BOOST_LOG_TRIVIAL(info) << "  Current quadratic displacement\n";
+  BOOST_LOG_TRIVIAL(info) << "    x: " << quadratic_disp_x
+                          << ", y: " << quadratic_disp_y
+                          << ", sum: " << quadratic_disp_x + quadratic_disp_y
+                          << " um^2\n";
 }
 
 bool GriddedRowLegalizer::StartPlacement() {
@@ -423,12 +426,23 @@ bool GriddedRowLegalizer::StartPlacement() {
   ReportHPWL();
 
   if (is_success) {
-    //RestoreInitialLocX();
-    //IsLeftmostPlacementLegal();
+#if false
+    RestoreInitialLocX();
+    IsLeftmostPlacementLegal();
     //IterativeCellReordering();
     bool is_qp_solved = OptimizeDisplacementUsingQuadraticProgramming();
     SaveQPLoc();
     ReportHPWL();
+#endif
+
+#if true
+    RestoreInitialLocX();
+    //bool is_cons_solved = IterativeQuadraticDisplacementOptimization();
+    IterativeQuadraticDisplacementOptimization();
+    SaveConsensusLoc();
+    ReportHPWL();
+#endif
+
 
     EmbodyWellTapCells();
 

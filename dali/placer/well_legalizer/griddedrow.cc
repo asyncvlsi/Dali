@@ -456,7 +456,7 @@ void GriddedRow::AssignBlocksToSegments() {
       if (p_blk->LLX() >= seg.LLX() &&
           p_blk->URX() <= seg.URX()) {
         double2d &init_loc = blk_initial_location_[p_blk];
-        seg.AddBlock(p_blk);
+        seg.AddBlockRegion(p_blk, region_id);
         is_completely_in_a_seg = true;
         break;
       }
@@ -558,10 +558,10 @@ bool GriddedRow::AttemptToAdd(Block *p_blk, bool is_upward) {
     return false;
   }
 
-  segments_[min_index].AddBlock(p_blk);
-  p_blk->SetOrient(ComputeBlockOrient(p_blk, is_upward));
   int region_count = p_blk->TypePtr()->WellPtr()->RegionCount();
   int region_id = is_upward ? 0 : region_count - 1;
+  segments_[min_index].AddBlockRegion(p_blk, region_id);
+  p_blk->SetOrient(ComputeBlockOrient(p_blk, is_upward));
   AddBlockRegion(p_blk, region_id, is_upward);
 
   return true;

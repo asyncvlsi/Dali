@@ -22,8 +22,9 @@
 
 #include <algorithm>
 
-#include "dali/placer/well_legalizer/helper.h"
+#include "dali/placer/well_legalizer/blockhelper.h"
 #include "dali/placer/well_legalizer/lgblkaux.h"
+#include "dali/placer/well_legalizer/stripehelper.h"
 
 namespace dali {
 
@@ -541,14 +542,15 @@ bool Stripe::IsStripeLegal() {
   return true;
 }
 
-void Stripe::CreateContainerToStoreMultiDeckCellLocationInRows() {
+void Stripe::CollectAllRowSegments() {
+  sub_cell_locs_.clear();
   for (Block *&blk_ptr: blk_ptrs_vec_) {
     DaliExpects(sub_cell_locs_.find(blk_ptr) == sub_cell_locs_.end(),
                 "A block pointer appears in this Stripe more than once?!!!");
     BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
     int region_cnt = well_ptr->RegionCount();
     if (region_cnt <= 1) continue;
-    sub_cell_locs_[blk_ptr] = std::vector<double>(region_cnt, lx_);
+    sub_cell_locs_[blk_ptr] = std::vector<double>(region_cnt, DBL_MAX);
   }
 
   size_t row_seg_cnt = 0;
@@ -563,43 +565,42 @@ void Stripe::CreateContainerToStoreMultiDeckCellLocationInRows() {
   }
 }
 
+void Stripe::UpdateSubCellLocs(std::vector<BlkDispVar> &vars) {
+  for (BlkDispVar &var: vars) {
+    Block *blk_ptr = var.blk_rgn.p_blk;
+    if (blk_ptr == nullptr) continue; // dummy cells
+    BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
+    int region_cnt = well_ptr->RegionCount();
+    if (region_cnt <= 1) continue;
+
+  }
+}
+
 void Stripe::OptimizeDisplacementInEachRowSegment() {
   for (RowSegment *&seg_ptr: row_seg_ptrs_) {
-    seg_ptr->OptimizeQuadraticDisplacement();
+    std::vector<BlkDispVar> vars = seg_ptr->OptimizeQuadraticDisplacement();
+    UpdateSubCellLocs(vars);
   }
 }
 
 void Stripe::ComputeAverageLocationForMultiRowCells(int i) {
   double opt_anchor_weight = GetOptimalAnchorWeight(i);
   for (RowSegment *&seg_ptr: row_seg_ptrs_) {
-    //seg_ptr->();
+    seg_ptr->SetOptimalAnchorWeight(opt_anchor_weight);
   }
 }
 
 void Stripe::IterativeCellReordering(int max_iter) {
+  CollectAllRowSegments();
   for (int i = 0; i < max_iter; ++i) {
     OptimizeDisplacementInEachRowSegment();
     ComputeAverageLocationForMultiRowCells(i);
   }
+  ClearMultiRowCellBreaking();
 }
 
 void Stripe::ClearMultiRowCellBreaking() {
-  sub_cell_locs_.clear();
   row_seg_ptrs_.clear();
-}
-
-void Stripe::SaveCurrentLocation() {
-  for (Block *&blk_ptr: blk_ptrs_vec_) {
-    DaliExpects(init_locs_.find(blk_ptr) == init_locs_.end(),
-                "Duplicate blocks in a Stripe!");
-    init_locs_[blk_ptr] = double2d(blk_ptr->LLX(), blk_ptr->LLY());
-  }
-}
-
-void Stripe::RestoreInitialLocationX() {
-  for (auto &[blk_ptr, init_loc]: init_locs_) {
-    blk_ptr->SetLLX(init_loc.x);
-  }
 }
 
 void Stripe::SortBlocksInEachRow() {
