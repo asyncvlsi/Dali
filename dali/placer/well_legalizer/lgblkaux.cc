@@ -79,6 +79,27 @@ void LgBlkAux::RecoverLoc(size_t index) {
   blk_ptr_->SetLLY(cached_locs_[index].y);
 }
 
+void LgBlkAux::RecoverInitLocX() {
+  blk_ptr_->SetLLX(init_loc_.x);
+}
+
+void LgBlkAux::RecoverGreedyLocX() {
+  blk_ptr_->SetLLX(greedy_loc_.x);
+}
+
+void LgBlkAux::RecoverQPLocX() {
+  blk_ptr_->SetLLX(qp_loc_.x);
+}
+
+void LgBlkAux::RecoverConsLocX() {
+  blk_ptr_->SetLLX(cons_loc_.x);
+}
+
+void LgBlkAux::RecoverLocX(size_t index) {
+  DaliExpects(index < cached_locs_.size(), "Out of bound");
+  blk_ptr_->SetLLX(cached_locs_[index].x);
+}
+
 double2d LgBlkAux::InitLoc() {
   return init_loc_;
 }

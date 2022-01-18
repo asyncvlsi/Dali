@@ -156,39 +156,39 @@ void GriddedRowLegalizer::SaveConsensusLoc() {
   }
 }
 
-void GriddedRowLegalizer::RestoreInitialLoc() {
+void GriddedRowLegalizer::RestoreInitialLocX() {
   DaliExpects(is_init_loc_cached_,
               "Initial locations are not saved, no way to restore");
   for (Block &blk: Blocks()) {
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
-    aux_ptr->RecoverInitLoc();
+    aux_ptr->RecoverInitLocX();
   }
 }
 
-void GriddedRowLegalizer::RestoreGreedyLoc() {
+void GriddedRowLegalizer::RestoreGreedyLocX() {
   DaliExpects(is_greedy_loc_cached_,
               "Greedy locations are not saved, no way to restore");
   for (Block &blk: Blocks()) {
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
-    aux_ptr->RecoverGreedyLoc();
+    aux_ptr->RecoverGreedyLocX();
   }
 }
 
-void GriddedRowLegalizer::RestoreQPLoc() {
+void GriddedRowLegalizer::RestoreQPLocX() {
   DaliExpects(is_qp_loc_cached_,
               "Quadratic programming locations are not saved, no way to restore");
   for (Block &blk: Blocks()) {
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
-    aux_ptr->RecoverQPLoc();
+    aux_ptr->RecoverQPLocX();
   }
 }
 
-void GriddedRowLegalizer::RestoreConsensusLoc() {
+void GriddedRowLegalizer::RestoreConsensusLocX() {
   DaliExpects(is_cons_loc_cached_,
               "Consensus locations are not saved, no way to restore");
   for (Block &blk: Blocks()) {
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
-    aux_ptr->RecoverConsLoc();
+    aux_ptr->RecoverConsLocX();
   }
 }
 
@@ -375,20 +375,30 @@ void GriddedRowLegalizer::ReportDisplacement() {
     BOOST_LOG_TRIVIAL(info)
       << "Initial locations are not saved, cannot compute displacement\n";
   }
-  double disp_x = 0;
-  double disp_y = 0;
+  double disp_x = 0, disp_y = 0;
+  double quadratic_disp_x = 0, quadratic_disp_y = 0;
   for (Block &blk: Blocks()) {
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
     double2d init_loc = aux_ptr->InitLoc();
-    disp_x += std::fabs(blk.LLX() - init_loc.x);
-    disp_y += std::fabs(blk.LLY() - init_loc.y);
+    double tmp_disp_x = std::fabs(blk.LLX() - init_loc.x);
+    double tmp_disp_y = std::fabs(blk.LLY() - init_loc.y);
+    disp_x += tmp_disp_x;
+    disp_y += tmp_disp_y;
+    quadratic_disp_x += tmp_disp_x * tmp_disp_x;
+    quadratic_disp_y += tmp_disp_y * tmp_disp_y;
   }
   disp_x *= p_ckt_->GridValueX();
   disp_y *= p_ckt_->GridValueY();
+  quadratic_disp_x *= p_ckt_->GridValueX() * p_ckt_->GridValueX();
+  quadratic_disp_y *= p_ckt_->GridValueY() * p_ckt_->GridValueY();
   BOOST_LOG_TRIVIAL(info)
-    << "  Current displacement,  x: " << disp_x
-    << ", y: " << disp_y
-    << ", sum: " << disp_x + disp_y << " um\n";
+    << "  Current linear displacement\n"
+    << "    x: " << disp_x << ", y: " << disp_y << ", sum: " << disp_x + disp_y
+    << " um\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "  Current quadratic displacement\n"
+    << "    x: " << quadratic_disp_x << ", y: " << quadratic_disp_y
+    << ", sum: " << quadratic_disp_x + quadratic_disp_y << " um^2\n";
 }
 
 bool GriddedRowLegalizer::StartPlacement() {
@@ -413,10 +423,10 @@ bool GriddedRowLegalizer::StartPlacement() {
   ReportHPWL();
 
   if (is_success) {
-    //RestoreBlockInitialLocationX();
+    //RestoreInitialLocX();
     //IsLeftmostPlacementLegal();
     //IterativeCellReordering();
-    //bool is_qp_solved = OptimizeDisplacementUsingQuadraticProgramming();
+    bool is_qp_solved = OptimizeDisplacementUsingQuadraticProgramming();
     SaveQPLoc();
     ReportHPWL();
 
@@ -444,10 +454,29 @@ bool GriddedRowLegalizer::StartPlacement() {
   return is_successful;
 }
 
+void GriddedRowLegalizer::GenDisplacement(std::string const &name_of_file) {
+  // initialize the displacement viewer and reserve space
+  displace_viewer_.SetSize(Blocks().size());
+
+  // update location before legalization
+  int counter = 0;
+  for (auto &blk: Blocks()) {
+    auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
+    double2d init_loc = aux_ptr->InitLoc();
+    displace_viewer_.SetXY(counter, init_loc.x, init_loc.y);
+    displace_viewer_.SetXYFromDifference(counter, blk.LLX(), blk.LLY());
+    ++counter;
+  }
+
+  // save displacement result
+  displace_viewer_.SaveDisplacementVector(name_of_file);
+}
+
 void GriddedRowLegalizer::GenMatlabClusterTable(std::string const &name_of_file) {
   std::string frame_file = name_of_file + "_outline.txt";
   GenMATLABTable(frame_file);
   GenClusterTable(name_of_file, col_list_);
+  GenDisplacement(name_of_file + "_disp.txt");
 }
 
 void GriddedRowLegalizer::GenMATLABWellTable(

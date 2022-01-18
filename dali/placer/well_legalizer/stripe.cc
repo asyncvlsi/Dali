@@ -23,6 +23,7 @@
 #include <algorithm>
 
 #include "dali/placer/well_legalizer/helper.h"
+#include "dali/placer/well_legalizer/lgblkaux.h"
 
 namespace dali {
 
@@ -656,9 +657,10 @@ void Stripe::ConstructQuadraticObjective(
   for (auto &row: gridded_rows_) {
     for (auto &blk_region: row.blk_regions_) {
       Block *blk_ptr = blk_region.p_blk;
-      double init_x = blk_ptr->X();
+      auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
+      double2d init = aux_ptr->InitLoc();
       IloInt id = blk_ptr_2_tmp_id[blk_ptr];
-      objExpr += 1.0 * x[id] * x[id] - 2 * init_x * x[id];
+      objExpr += 1.0 * x[id] * x[id] - 2 * init.x * x[id];
     }
   }
   IloObjective obj = IloMinimize(env, objExpr);

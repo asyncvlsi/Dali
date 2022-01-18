@@ -21,6 +21,7 @@
 #ifndef DALI_DALI_PLACER_WELL_LEGALIZER_GRIDDEDROWLEGALIZER_H_
 #define DALI_DALI_PLACER_WELL_LEGALIZER_GRIDDEDROWLEGALIZER_H_
 
+#include "dali/common/displaceviewer.h"
 #include "dali/placer/placer.h"
 #include "dali/placer/well_legalizer/lgblkaux.h"
 #include "dali/placer/well_legalizer/spacepartitioner.h"
@@ -53,10 +54,10 @@ class GriddedRowLegalizer : public Placer {
   void SaveGreedyLoc();
   void SaveQPLoc();
   void SaveConsensusLoc();
-  void RestoreInitialLoc();
-  void RestoreGreedyLoc();
-  void RestoreQPLoc();
-  void RestoreConsensusLoc();
+  void RestoreInitialLocX();
+  void RestoreGreedyLocX();
+  void RestoreQPLocX();
+  void RestoreConsensusLocX();
 
   void SetLegalizationMaxIteration(int max_iteration);
   bool StripeLegalizationUpward(Stripe &stripe);
@@ -109,10 +110,15 @@ class GriddedRowLegalizer : public Placer {
   bool is_cons_loc_cached_ = false;
   std::vector<LgBlkAux> blk_auxs_;
 
+  // displacement visualization
+  DisplaceViewer<double> displace_viewer_;
+
   void SetWellTapCellNecessary(bool is_well_tap_needed);
   void SetWellTapCellPlacementMode(bool is_checker_board_mode);
   void SetWellTapCellInterval(double tap_cell_interval_microns);
   void SetWellTapCellType(std::string const &well_tap_type_name);
+
+  void GenDisplacement(std::string const &name_of_file);
 };
 
 }

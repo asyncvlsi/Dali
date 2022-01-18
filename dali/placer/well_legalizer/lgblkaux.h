@@ -42,6 +42,12 @@ class LgBlkAux : public BlockAux {
   void RecoverConsLoc();
   void RecoverLoc(size_t index);
 
+  void RecoverInitLocX();
+  void RecoverGreedyLocX();
+  void RecoverQPLocX();
+  void RecoverConsLocX();
+  void RecoverLocX(size_t index);
+
   double2d InitLoc();
   double2d GreedyLoc();
   double2d QPLoc();

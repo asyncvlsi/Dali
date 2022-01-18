@@ -34,7 +34,7 @@ namespace dali {
 template<class T>
 struct DisplaceViewer {
  private:
-  int sz_ = 0;
+  size_t sz_ = 0;
   std::vector<T> x_;
   std::vector<T> y_;
   std::vector<T> u_;
@@ -43,7 +43,7 @@ struct DisplaceViewer {
  public:
   DisplaceViewer() = default;
 
-  void SetSize(int sz) {
+  void SetSize(size_t sz) {
     sz_ = sz;
     x_.resize(sz);
     y_.resize(sz);
