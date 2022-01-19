@@ -27,7 +27,7 @@
 #include "dali/common/logging.h"
 #include "dali/common/memory.h"
 #include "dali/common/timing.h"
-#include "dali/placer/well_legalizer/helper.h"
+#include "dali/placer/well_legalizer/optimizationhelper.h"
 #include "dali/placer/well_legalizer/stripehelper.h"
 
 namespace dali {
@@ -335,6 +335,7 @@ bool GriddedRowLegalizer::OptimizeDisplacementUsingQuadraticProgramming() {
 bool GriddedRowLegalizer::IterativeQuadraticDisplacementOptimization() {
   BOOST_LOG_TRIVIAL(info)
     << "Optimizing displacement X using the consensus algorithm\n";
+  consensus_max_iter_ = 1;
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
       stripe.IterativeCellReordering(consensus_max_iter_);

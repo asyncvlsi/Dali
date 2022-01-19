@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_PLACER_WELL_LEGALIZER_HELPER_H_
-#define DALI_DALI_PLACER_WELL_LEGALIZER_HELPER_H_
+#ifndef DALI_DALI_PLACER_WELL_LEGALIZER_OPTIMIZATIONHELPER_H_
+#define DALI_DALI_PLACER_WELL_LEGALIZER_OPTIMIZATIONHELPER_H_
 
 #include <vector>
 
@@ -37,4 +37,4 @@ void MinimizeQuadraticDisplacement(
 
 }
 
-#endif //DALI_DALI_PLACER_WELL_LEGALIZER_HELPER_H_
+#endif //DALI_DALI_PLACER_WELL_LEGALIZER_OPTIMIZATIONHELPER_H_

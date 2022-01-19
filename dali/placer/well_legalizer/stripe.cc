@@ -543,16 +543,6 @@ bool Stripe::IsStripeLegal() {
 }
 
 void Stripe::CollectAllRowSegments() {
-  sub_cell_locs_.clear();
-  for (Block *&blk_ptr: blk_ptrs_vec_) {
-    DaliExpects(sub_cell_locs_.find(blk_ptr) == sub_cell_locs_.end(),
-                "A block pointer appears in this Stripe more than once?!!!");
-    BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
-    int region_cnt = well_ptr->RegionCount();
-    if (region_cnt <= 1) continue;
-    sub_cell_locs_[blk_ptr] = std::vector<double>(region_cnt, DBL_MAX);
-  }
-
   size_t row_seg_cnt = 0;
   for (GriddedRow &row: gridded_rows_) {
     row_seg_cnt += row.segments_.size();
@@ -568,11 +558,9 @@ void Stripe::CollectAllRowSegments() {
 void Stripe::UpdateSubCellLocs(std::vector<BlkDispVar> &vars) {
   for (BlkDispVar &var: vars) {
     Block *blk_ptr = var.blk_rgn.p_blk;
-    if (blk_ptr == nullptr) continue; // dummy cells
-    BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
-    int region_cnt = well_ptr->RegionCount();
-    if (region_cnt <= 1) continue;
-
+    if (blk_ptr == nullptr) continue; // skip dummy cells
+    auto *aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
+    aux_ptr->SetSubCellLoc(var.blk_rgn.region_id, var.Solution());
   }
 }
 
@@ -583,24 +571,67 @@ void Stripe::OptimizeDisplacementInEachRowSegment() {
   }
 }
 
-void Stripe::ComputeAverageLocationForMultiRowCells(int i) {
+void Stripe::ComputeAverageLoc() {
+  for (auto &blk_ptr: blk_ptrs_vec_) {
+    auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
+    aux_ptr->ComputeAverageLoc();
+  }
+}
+
+void Stripe::SetAnchorLocAndWeight(int i) {
   double opt_anchor_weight = GetOptimalAnchorWeight(i);
   for (RowSegment *&seg_ptr: row_seg_ptrs_) {
     seg_ptr->SetOptimalAnchorWeight(opt_anchor_weight);
+    seg_ptr->SetAnchorLoc();
   }
+}
+
+void Stripe::ReportIterativeStatus(int i) {
+  double disp_x = 0;
+  double discrepancy = 0;
+  for (auto &blk_ptr: blk_ptrs_vec_) {
+    // compute displacement from init_x to average_x
+    auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
+    double2d init_loc = aux_ptr->InitLoc();
+    double tmp_disp_x = std::fabs(aux_ptr->AverageLoc() - init_loc.x);
+    disp_x += tmp_disp_x;
+
+    // compute average discrepancy to the average location
+    int sz = static_cast<int>(aux_ptr->SubLocs().size());
+    double tmp_discrepancy = 0;
+    for (auto &loc_x: aux_ptr->SubLocs()) {
+      tmp_discrepancy += std::fabs(loc_x - aux_ptr->AverageLoc());
+    }
+    tmp_discrepancy = tmp_discrepancy / sz;
+    discrepancy += tmp_discrepancy;
+  }
+
+  BOOST_LOG_TRIVIAL(info)
+    << "Iter " << i << ", displacement: " << disp_x
+    << ", discrepancy: " << discrepancy << "\n";
+}
+
+void Stripe::SetBlockLoc() {
+  for (auto &blk_ptr: blk_ptrs_vec_) {
+    auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
+    blk_ptr->SetLLX(aux_ptr->AverageLoc());
+  }
+}
+
+void Stripe::ClearMultiRowCellBreaking() {
+  row_seg_ptrs_.clear();
 }
 
 void Stripe::IterativeCellReordering(int max_iter) {
   CollectAllRowSegments();
   for (int i = 0; i < max_iter; ++i) {
     OptimizeDisplacementInEachRowSegment();
-    ComputeAverageLocationForMultiRowCells(i);
+    ComputeAverageLoc();
+    SetAnchorLocAndWeight(i);
+    ReportIterativeStatus(i);
   }
+  SetBlockLoc();
   ClearMultiRowCellBreaking();
-}
-
-void Stripe::ClearMultiRowCellBreaking() {
-  row_seg_ptrs_.clear();
 }
 
 void Stripe::SortBlocksInEachRow() {

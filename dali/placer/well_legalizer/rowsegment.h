@@ -27,7 +27,7 @@
 #include "dali/circuit/block.h"
 #include "dali/common/misc.h"
 #include "dali/placer/well_legalizer/blockhelper.h"
-#include "dali/placer/well_legalizer/helper.h"
+#include "dali/placer/well_legalizer/optimizationhelper.h"
 
 namespace dali {
 
@@ -50,6 +50,7 @@ class RowSegment {
   void MinDisplacementLegalization();
 
   void SetOptimalAnchorWeight(double weight);
+  void SetAnchorLoc();
   void BuildQuadraticOptimizationProblem();
   std::vector<BlkDispVar> OptimizeQuadraticDisplacement();
  private:
@@ -61,6 +62,7 @@ class RowSegment {
 
   /**** for iterative displacement optimization ****/
   double opt_anchor_weight_ = 0;
+  std::unordered_map<Block *, double> anchor_locs_;
 };
 
 }

@@ -22,6 +22,12 @@
 
 namespace dali {
 
+LgBlkAux::LgBlkAux(Block *blk_ptr) : BlockAux(blk_ptr) {
+  BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
+  int region_cnt = well_ptr->RegionCount();
+  sub_locs_.resize(region_cnt, DBL_MAX);
+}
+
 void LgBlkAux::StoreCurLocAsInitLoc() {
   init_loc_.x = blk_ptr_->LLX();
   init_loc_.y = blk_ptr_->LLY();
@@ -40,17 +46,6 @@ void LgBlkAux::StoreCurLocAsQPLoc() {
 void LgBlkAux::StoreCurLocAsConsLoc() {
   cons_loc_.x = blk_ptr_->LLX();
   cons_loc_.y = blk_ptr_->LLY();
-}
-
-void LgBlkAux::StoreCurLoc(size_t index) {
-  DaliExpects(index < cached_locs_.size(), "Out of bound");
-  cached_locs_[index].x = blk_ptr_->LLX();
-  cached_locs_[index].y = blk_ptr_->LLY();
-}
-
-void LgBlkAux::AllocateCacheLocs(size_t sz) {
-  double2d tmp(0,0);
-  cached_locs_.resize(sz, tmp);
 }
 
 void LgBlkAux::RecoverInitLoc() {
@@ -73,12 +68,6 @@ void LgBlkAux::RecoverConsLoc() {
   blk_ptr_->SetLLY(cons_loc_.y);
 }
 
-void LgBlkAux::RecoverLoc(size_t index) {
-  DaliExpects(index < cached_locs_.size(), "Out of bound");
-  blk_ptr_->SetLLX(cached_locs_[index].x);
-  blk_ptr_->SetLLY(cached_locs_[index].y);
-}
-
 void LgBlkAux::RecoverInitLocX() {
   blk_ptr_->SetLLX(init_loc_.x);
 }
@@ -95,9 +84,22 @@ void LgBlkAux::RecoverConsLocX() {
   blk_ptr_->SetLLX(cons_loc_.x);
 }
 
-void LgBlkAux::RecoverLocX(size_t index) {
-  DaliExpects(index < cached_locs_.size(), "Out of bound");
-  blk_ptr_->SetLLX(cached_locs_[index].x);
+void LgBlkAux::SetSubCellLoc(int id, double loc) {
+  sub_locs_[id] = loc;
+}
+
+void LgBlkAux::ComputeAverageLoc() {
+  int sz = static_cast<int>(sub_locs_.size());
+  double sum_loc = std::accumulate(sub_locs_.begin(), sub_locs_.end(), 0.0);
+  average_loc_ = sum_loc / sz;
+}
+
+std::vector<double> &LgBlkAux::SubLocs() {
+  return sub_locs_;
+}
+
+double LgBlkAux::AverageLoc() {
+  return average_loc_;
 }
 
 double2d LgBlkAux::InitLoc() {
@@ -114,10 +116,6 @@ double2d LgBlkAux::QPLoc() {
 
 double2d LgBlkAux::ConsLoc() {
   return cons_loc_;
-}
-
-std::vector<double2d> &LgBlkAux::CachedLocs() {
-  return cached_locs_;
 }
 
 }

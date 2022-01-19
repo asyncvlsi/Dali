@@ -21,7 +21,7 @@
 #include "rowsegment.h"
 
 #include "dali/placer/well_legalizer/blocksegment.h"
-#include "dali/placer/well_legalizer/helper.h"
+#include "dali/placer/well_legalizer/optimizationhelper.h"
 #include "dali/placer/well_legalizer/lgblkaux.h"
 
 namespace dali {
@@ -85,15 +85,16 @@ void RowSegment::MinDisplacementLegalization() {
 
   std::vector<BlkDispVar> vars;
   vars.reserve(blk_regions_.size());
-  for (auto &[blk_ptr, region_id]: blk_regions_) {
-    auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
-    vars.emplace_back(blk_ptr->Width(), aux_ptr->InitLoc().x, 1.0);
-    vars.back().blk_rgn.p_blk = blk_ptr;
-    vars.back().blk_rgn.region_id = region_id;
+  for (auto &blk_rgn: blk_regions_) {
+    auto aux_ptr = static_cast<LgBlkAux *>(blk_rgn.p_blk->AuxPtr());
+    vars.emplace_back(blk_rgn.p_blk->Width(), aux_ptr->InitLoc().x, 1.0);
+    vars.back().blk_rgn = blk_rgn;
   }
 
+  // get optimized locations and store them in vars
   MinimizeQuadraticDisplacement(vars, LLX(), URX());
 
+  // set block locations from vars
   for (auto &var: vars) {
     var.UpdateBlkLocation();
   }
@@ -101,6 +102,18 @@ void RowSegment::MinDisplacementLegalization() {
 
 void RowSegment::SetOptimalAnchorWeight(double weight) {
   opt_anchor_weight_ = weight;
+}
+
+void RowSegment::SetAnchorLoc() {
+  for (BlockRegion &blk_rgn: blk_regions_) {
+    Block *blk_ptr = blk_rgn.p_blk;
+    if (blk_ptr == nullptr) continue; // dummy cells
+    BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
+    int region_cnt = well_ptr->RegionCount();
+    if (region_cnt <= 1) continue;
+    auto aux_ptr = static_cast<LgBlkAux *>(blk_rgn.p_blk->AuxPtr());
+    anchor_locs_[blk_ptr] = aux_ptr->AverageLoc();
+  }
 }
 
 void RowSegment::BuildQuadraticOptimizationProblem() {
@@ -120,11 +133,17 @@ std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement() {
 
   std::vector<BlkDispVar> vars;
   vars.reserve(blk_regions_.size());
-  for (auto &[blk_ptr, region_id]: blk_regions_) {
+  for (auto &blk_rgn: blk_regions_) {
+    Block *blk_ptr = blk_rgn.p_blk;
     auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
     vars.emplace_back(blk_ptr->Width(), aux_ptr->InitLoc().x, 1.0);
-    vars.back().blk_rgn.p_blk = blk_ptr;
-    vars.back().blk_rgn.region_id = region_id;
+    vars.back().blk_rgn = blk_rgn;
+    //BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
+    //int region_cnt = well_ptr->RegionCount();
+    //if (region_cnt <= 1) continue;
+    if (anchor_locs_.find(blk_ptr) != anchor_locs_.end()) {
+      vars.back().SetAnchor(opt_anchor_weight_, anchor_locs_[blk_ptr]);
+    }
   }
 
   MinimizeQuadraticDisplacement(vars, LLX(), URX());

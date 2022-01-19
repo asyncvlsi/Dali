@@ -62,7 +62,6 @@ class Stripe {
   std::vector<SegI> well_tap_cell_location_even_;
   std::vector<SegI> well_tap_cell_location_odd_;
 
-  std::unordered_map<Block *, std::vector<double>> sub_cell_locs_;
   std::vector<RowSegment *> row_seg_ptrs_;
 
   int LLX() const { return lx_; }
@@ -113,12 +112,13 @@ class Stripe {
   void CollectAllRowSegments();
   void UpdateSubCellLocs(std::vector<BlkDispVar> &vars);
   void OptimizeDisplacementInEachRowSegment();
-  void ComputeAverageLocationForMultiRowCells(int i);
-  void IterativeCellReordering(int max_iter);
+  void ComputeAverageLoc();
+  void SetAnchorLocAndWeight(int i);
+  void ReportIterativeStatus(int i);
+  void SetBlockLoc();
   void ClearMultiRowCellBreaking();
+  void IterativeCellReordering(int max_iter);
 
-  void SaveCurrentLocation();
-  void RestoreInitialLocationX();
   void SortBlocksInEachRow();
 
 #if DALI_USE_CPLEX

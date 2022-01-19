@@ -28,38 +28,39 @@ namespace dali {
 
 class LgBlkAux : public BlockAux {
  public:
-  explicit LgBlkAux(Block *blk_ptr) : BlockAux(blk_ptr) {}
+  explicit LgBlkAux(Block *blk_ptr);
   void StoreCurLocAsInitLoc();
   void StoreCurLocAsGreedyLoc();
   void StoreCurLocAsQPLoc();
   void StoreCurLocAsConsLoc();
-  void StoreCurLoc(size_t index);
-  void AllocateCacheLocs(size_t sz);
 
   void RecoverInitLoc();
   void RecoverGreedyLoc();
   void RecoverQPLoc();
   void RecoverConsLoc();
-  void RecoverLoc(size_t index);
 
   void RecoverInitLocX();
   void RecoverGreedyLocX();
   void RecoverQPLocX();
   void RecoverConsLocX();
-  void RecoverLocX(size_t index);
+
+  void SetSubCellLoc(int id, double loc);
+  void ComputeAverageLoc();
+  std::vector<double> &SubLocs();
+  double AverageLoc();
 
   double2d InitLoc();
   double2d GreedyLoc();
   double2d QPLoc();
   double2d ConsLoc();
-  std::vector<double2d> &CachedLocs();
-
  private:
   double2d init_loc_;     // location before legalization
   double2d greedy_loc_;   // location from the greedy legalization algorithm
   double2d qp_loc_;       // location from quadratic programming
   double2d cons_loc_;     // location from the consensus algorithm
-  std::vector<double2d> cached_locs_; // other cached locations for future usage
+
+  std::vector<double> sub_locs_; // locations from different sub-cells
+  double average_loc_ = DBL_MAX;
 
   std::vector<int> stretch_length_;
   double tot_stretch_length = 0;

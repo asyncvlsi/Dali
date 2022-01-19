@@ -18,7 +18,7 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#include "helper.h"
+#include "optimizationhelper.h"
 
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
