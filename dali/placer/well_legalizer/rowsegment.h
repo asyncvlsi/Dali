@@ -50,9 +50,7 @@ class RowSegment {
   void MinDisplacementLegalization();
 
   void SetOptimalAnchorWeight(double weight);
-  void SetAnchorLoc();
-  void BuildQuadraticOptimizationProblem();
-  std::vector<BlkDispVar> OptimizeQuadraticDisplacement();
+  std::vector<BlkDispVar> OptimizeQuadraticDisplacement(double lambda);
  private:
   // list of blocks in this segment
   std::vector<BlockRegion> blk_regions_;
@@ -62,7 +60,6 @@ class RowSegment {
 
   /**** for iterative displacement optimization ****/
   double opt_anchor_weight_ = 0;
-  std::unordered_map<Block *, double> anchor_locs_;
 };
 
 }

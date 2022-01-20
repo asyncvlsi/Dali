@@ -42,14 +42,16 @@ struct BlkDispVar {
   double a;                       // weight of anchor location
   double x;                       // place to store final location
   BlockRegion blk_rgn;            // pointer to the block or dummy block
+  double cluster_weight_;
   BlkDispVar(int width, double x_init, double weight = 1.0) :
       w(width),
       x_0(x_init),
       e(weight),
-      x_a(0),
-      a(0),
-      x(0),
-      blk_rgn(nullptr, 0) {}
+      x_a(0.0),
+      a(0.0),
+      x(0.0),
+      blk_rgn(nullptr, 0),
+      cluster_weight_(1.0) {}
 
   int Width() { return w; }
   double InitX() { return x_0; }
@@ -57,6 +59,7 @@ struct BlkDispVar {
   double AnchorX() { return x_a; }
   double AnchorWeight() { return a; };
   double Solution() { return x; }
+  double ClusterWeight() {return cluster_weight_;}
   BlockRegion BlkRegion() { return blk_rgn; }
 
   void SetAnchor(double anchor, double anchor_weight) {
@@ -69,6 +72,7 @@ struct BlkDispVar {
   }
 
   void SetSolution(double x_new) { x = x_new; }
+  void SetClusterWeight(double c_weight) { cluster_weight_ = c_weight; }
   void UpdateBlkLocation() {
     if (blk_rgn.p_blk != nullptr) {
       blk_rgn.p_blk->SetLLX(x);

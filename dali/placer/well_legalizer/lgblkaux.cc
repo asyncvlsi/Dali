@@ -26,6 +26,7 @@ LgBlkAux::LgBlkAux(Block *blk_ptr) : BlockAux(blk_ptr) {
   BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
   int region_cnt = well_ptr->RegionCount();
   sub_locs_.resize(region_cnt, DBL_MAX);
+  weights_.resize(region_cnt, 1.0);
 }
 
 void LgBlkAux::StoreCurLocAsInitLoc() {
@@ -84,14 +85,28 @@ void LgBlkAux::RecoverConsLocX() {
   blk_ptr_->SetLLX(cons_loc_.x);
 }
 
-void LgBlkAux::SetSubCellLoc(int id, double loc) {
+void LgBlkAux::SetSubCellLoc(int id, double loc, double weight) {
   sub_locs_[id] = loc;
+  weights_[id] = weight;
 }
 
-void LgBlkAux::ComputeAverageLoc() {
-  int sz = static_cast<int>(sub_locs_.size());
-  double sum_loc = std::accumulate(sub_locs_.begin(), sub_locs_.end(), 0.0);
-  average_loc_ = sum_loc / sz;
+void LgBlkAux::ComputeAverageLoc(bool is_max) {
+  size_t sz = sub_locs_.size();
+  double sum_weight_loc = 0;
+  double sum_weight = 0;
+  for (size_t i = 0; i < sz; ++i) {
+    sum_weight_loc += weights_[i] * sub_locs_[i];
+    sum_weight += weights_[i];
+  }
+  //average_loc_ = std::round(sum_weight_loc / sum_weight);
+  average_loc_ = sum_weight_loc / sum_weight;
+  /*if (is_max) {
+    average_loc_ =
+        std::ceil(*std::max_element(sub_locs_.begin(), sub_locs_.end()));
+  } else {
+    average_loc_ =
+        std::floor(*std::max_element(sub_locs_.begin(), sub_locs_.end()));
+  }*/
 }
 
 std::vector<double> &LgBlkAux::SubLocs() {

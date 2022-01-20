@@ -104,23 +104,7 @@ void RowSegment::SetOptimalAnchorWeight(double weight) {
   opt_anchor_weight_ = weight;
 }
 
-void RowSegment::SetAnchorLoc() {
-  for (BlockRegion &blk_rgn: blk_regions_) {
-    Block *blk_ptr = blk_rgn.p_blk;
-    if (blk_ptr == nullptr) continue; // dummy cells
-    BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
-    int region_cnt = well_ptr->RegionCount();
-    if (region_cnt <= 1) continue;
-    auto aux_ptr = static_cast<LgBlkAux *>(blk_rgn.p_blk->AuxPtr());
-    anchor_locs_[blk_ptr] = aux_ptr->AverageLoc();
-  }
-}
-
-void RowSegment::BuildQuadraticOptimizationProblem() {
-
-}
-
-std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement() {
+std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement(double lambda) {
   std::sort(
       blk_regions_.begin(),
       blk_regions_.end(),
@@ -135,18 +119,29 @@ std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement() {
   vars.reserve(blk_regions_.size());
   for (auto &blk_rgn: blk_regions_) {
     Block *blk_ptr = blk_rgn.p_blk;
+    int region_cnt = blk_ptr->TypePtr()->WellPtr()->RegionCount();
     auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
-    vars.emplace_back(blk_ptr->Width(), aux_ptr->InitLoc().x, 1.0);
+    vars.emplace_back(
+        blk_ptr->Width(),
+        aux_ptr->InitLoc().x,
+        lambda / region_cnt
+    );
     vars.back().blk_rgn = blk_rgn;
-    //BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
-    //int region_cnt = well_ptr->RegionCount();
-    //if (region_cnt <= 1) continue;
-    if (anchor_locs_.find(blk_ptr) != anchor_locs_.end()) {
-      vars.back().SetAnchor(opt_anchor_weight_, anchor_locs_[blk_ptr]);
+    if (region_cnt == 1) {
+      //vars.back().SetAnchor(
+      //    aux_ptr->AverageLoc(),
+      //    (1 - lambda) * opt_anchor_weight_ / 50
+      //);
+    } else {
+      vars.back().SetAnchor(
+          aux_ptr->AverageLoc(),
+          (1 - lambda) * opt_anchor_weight_ / region_cnt
+      );
     }
   }
 
   MinimizeQuadraticDisplacement(vars, LLX(), URX());
+  // TODO linear displacement
 
   return vars;
 }

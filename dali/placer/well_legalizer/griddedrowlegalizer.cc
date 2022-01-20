@@ -335,13 +335,22 @@ bool GriddedRowLegalizer::OptimizeDisplacementUsingQuadraticProgramming() {
 bool GriddedRowLegalizer::IterativeQuadraticDisplacementOptimization() {
   BOOST_LOG_TRIVIAL(info)
     << "Optimizing displacement X using the consensus algorithm\n";
-  consensus_max_iter_ = 1;
+  double wall_time = get_wall_time();
+  double cpu_time = get_cpu_time();
+
+  consensus_max_iter_ = 100;
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
       stripe.IterativeCellReordering(consensus_max_iter_);
     }
   }
   ReportDisplacement();
+
+  wall_time = get_wall_time() - wall_time;
+  cpu_time = get_cpu_time() - cpu_time;
+  BOOST_LOG_TRIVIAL(info)
+    << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
+
   return IsPlacementLegal();
 }
 
@@ -427,11 +436,12 @@ bool GriddedRowLegalizer::StartPlacement() {
   ReportHPWL();
 
   if (is_success) {
-#if false
+#if true
     RestoreInitialLocX();
     IsLeftmostPlacementLegal();
     //IterativeCellReordering();
-    bool is_qp_solved = OptimizeDisplacementUsingQuadraticProgramming();
+    //bool is_qp_solved = OptimizeDisplacementUsingQuadraticProgramming();
+    OptimizeDisplacementUsingQuadraticProgramming();
     SaveQPLoc();
     ReportHPWL();
 #endif
@@ -440,6 +450,8 @@ bool GriddedRowLegalizer::StartPlacement() {
     RestoreInitialLocX();
     //bool is_cons_solved = IterativeQuadraticDisplacementOptimization();
     IterativeQuadraticDisplacementOptimization();
+    ReportHPWL();
+    GreedyLegalization();
     SaveConsensusLoc();
     ReportHPWL();
 #endif

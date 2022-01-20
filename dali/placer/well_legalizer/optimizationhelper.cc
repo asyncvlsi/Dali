@@ -34,8 +34,8 @@ namespace dali {
  * @return
  */
 double GetOptimalAnchorWeight(int i) {
-  return i * 0.1;
-  //return i * i * 0.01;
+  //return i * 0.1;
+  return i * i * 0.01;
   //return exp(i/10.0) - 1;
 }
 
@@ -104,6 +104,7 @@ void BlkDispVarSegment::UpdateVarLoc() {
   int cur_loc = lx_;
   for (auto &var: vars_) {
     var->SetSolution(cur_loc);
+    var->SetClusterWeight(vars_.size());
     cur_loc += var->Width();
   }
 }

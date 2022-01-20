@@ -44,8 +44,8 @@ class LgBlkAux : public BlockAux {
   void RecoverQPLocX();
   void RecoverConsLocX();
 
-  void SetSubCellLoc(int id, double loc);
-  void ComputeAverageLoc();
+  void SetSubCellLoc(int id, double loc, double weight);
+  void ComputeAverageLoc(bool is_max);
   std::vector<double> &SubLocs();
   double AverageLoc();
 
@@ -60,6 +60,7 @@ class LgBlkAux : public BlockAux {
   double2d cons_loc_;     // location from the consensus algorithm
 
   std::vector<double> sub_locs_; // locations from different sub-cells
+  std::vector<double> weights_;  // weights of clusters they belong to
   double average_loc_ = DBL_MAX;
 
   std::vector<int> stretch_length_;

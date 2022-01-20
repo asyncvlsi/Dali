@@ -692,22 +692,6 @@ bool GriddedRow::IsRowLegal() {
   return front <= URX();
 }
 
-void GriddedRow::SetOptimalAnchorWeight(double weight) {
-
-}
-
-void GriddedRow::BuildQuadraticOptimizationProblem() {
-  for (RowSegment &segment: segments_) {
-    segment.BuildQuadraticOptimizationProblem();
-  }
-}
-
-void GriddedRow::OptimizeQuadraticDisplacement() {
-  for (RowSegment &segment: segments_) {
-    segment.OptimizeQuadraticDisplacement();
-  }
-}
-
 void ClusterSegment::Merge(
     ClusterSegment &sc,
     int lower_bound,

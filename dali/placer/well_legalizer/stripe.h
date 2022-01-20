@@ -64,6 +64,9 @@ class Stripe {
 
   std::vector<RowSegment *> row_seg_ptrs_;
 
+  std::vector<double> displacements_;
+  std::vector<double> discrepancies_;
+
   int LLX() const { return lx_; }
   int LLY() const { return ly_; }
   int URX() const { return lx_ + width_; }
@@ -111,9 +114,9 @@ class Stripe {
 
   void CollectAllRowSegments();
   void UpdateSubCellLocs(std::vector<BlkDispVar> &vars);
-  void OptimizeDisplacementInEachRowSegment();
-  void ComputeAverageLoc();
-  void SetAnchorLocAndWeight(int i);
+  void OptimizeDisplacementInEachRowSegment(double lambda);
+  void ComputeAverageLoc(int i);
+  void SetAnchorWeight(int i);
   void ReportIterativeStatus(int i);
   void SetBlockLoc();
   void ClearMultiRowCellBreaking();
