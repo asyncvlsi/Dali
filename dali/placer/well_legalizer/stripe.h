@@ -114,9 +114,10 @@ class Stripe {
 
   void CollectAllRowSegments();
   void UpdateSubCellLocs(std::vector<BlkDispVar> &vars);
-  void OptimizeDisplacementInEachRowSegment(double lambda);
+  void OptimizeDisplacementInEachRowSegment(double lambda, bool is_weighted_anchor);
   void ComputeAverageLoc();
   void ReportIterativeStatus(int i);
+  bool IsDiscrepancyConverge();
   void SetBlockLoc();
   void ClearMultiRowCellBreaking();
   void IterativeCellReordering(int max_iter);

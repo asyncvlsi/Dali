@@ -69,7 +69,7 @@ class GriddedRowLegalizer : public Placer {
   bool IsPlacementLegal();
   bool OptimizeDisplacementUsingQuadraticProgramming();
 
-  bool IterativeQuadraticDisplacementOptimization();
+  bool IterativeDisplacementOptimization();
 
   void EmbodyWellTapCells();
 

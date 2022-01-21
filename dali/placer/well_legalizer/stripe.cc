@@ -570,24 +570,29 @@ void Stripe::UpdateSubCellLocs(std::vector<BlkDispVar> &vars) {
   }
 }
 
-void Stripe::OptimizeDisplacementInEachRowSegment(double lambda) {
+void Stripe::OptimizeDisplacementInEachRowSegment(
+    double lambda,
+    bool is_weighted_anchor
+) {
   size_t sz = row_seg_ptrs_.size();
-  omp_set_num_threads(1);
 #pragma omp parallel for
   for (size_t i = 0; i < sz; ++i) {
-    //std::vector<BlkDispVar>
-    //    vars = row_seg_ptrs_[i]->OptimizeQuadraticDisplacement(lambda);
-    std::vector<BlkDispVar>
-        vars = row_seg_ptrs_[i]->OptimizeLinearDisplacement(lambda);
+    RowSegment *seg = row_seg_ptrs_[i];
+    //std::vector<BlkDispVar> vars = seg->OptimizeQuadraticDisplacement(lambda);
+    std::vector<BlkDispVar> vars =
+        seg->OptimizeLinearDisplacement(lambda, is_weighted_anchor);
     UpdateSubCellLocs(vars);
   }
-  omp_set_num_threads(1);
 }
 
 void Stripe::ComputeAverageLoc() {
-  for (auto &blk_ptr: blk_ptrs_vec_) {
+  size_t sz = blk_ptrs_vec_.size();
+#pragma omp parallel for
+  for (size_t i = 0; i < sz; ++i) {
+    Block *blk_ptr = blk_ptrs_vec_[i];
     auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
     aux_ptr->ComputeAverageLoc();
+    blk_ptr->SetLLX(aux_ptr->AverageLoc());
   }
 }
 
@@ -619,8 +624,22 @@ void Stripe::ReportIterativeStatus(int i) {
     << ", discrepancy: " << discrepancy << "\n";
 }
 
+bool Stripe::IsDiscrepancyConverge() {
+  if (discrepancies_.size() <= 1) return false;
+  size_t sz = discrepancies_.size();
+  double last_difference =
+      std::fabs(discrepancies_[sz - 2] - discrepancies_[sz - 1]);
+  double threshold = 0.001;
+  std::cout << last_difference / discrepancies_[0] << " "
+            << (last_difference / discrepancies_[0] < threshold) << "\n";
+  return last_difference / discrepancies_[0] < threshold;
+}
+
 void Stripe::SetBlockLoc() {
-  for (auto &blk_ptr: blk_ptrs_vec_) {
+  size_t sz = blk_ptrs_vec_.size();
+#pragma omp parallel for
+  for (size_t i = 0; i < sz; ++i) {
+    Block *blk_ptr = blk_ptrs_vec_[i];
     auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
     blk_ptr->SetLLX(aux_ptr->AverageLoc());
   }
@@ -632,12 +651,19 @@ void Stripe::ClearMultiRowCellBreaking() {
 
 void Stripe::IterativeCellReordering(int max_iter) {
   CollectAllRowSegments();
+  omp_set_num_threads(6);
+  bool is_weighted_anchor = false;
   for (int i = 0; i < max_iter; ++i) {
-    OptimizeDisplacementInEachRowSegment(exp(-i / 10.0));
+    double lambda = exp(-i / 10.0);
+    OptimizeDisplacementInEachRowSegment(lambda, is_weighted_anchor);
     ComputeAverageLoc();
     ReportIterativeStatus(i);
+    if (!is_weighted_anchor) {
+      is_weighted_anchor = IsDiscrepancyConverge();
+    }
   }
   SetBlockLoc();
+  omp_set_num_threads(1);
   GenSubCellTable("subcell");
   ClearMultiRowCellBreaking();
   BOOST_LOG_TRIVIAL(info) << "displacement: " << displacements_ << "\n";
@@ -659,7 +685,8 @@ void Stripe::PopulateVariableArray(IloModel &model, IloNumVarArray &x) {
       Block *blk_ptr = blk_region.p_blk;
       if (blk_ptr_2_tmp_id.find(blk_ptr) == blk_ptr_2_tmp_id.end()) {
         //x.add(IloNumVar(env, lx_, lx_ + width_));
-        x.add(IloNumVar(env, lx_, IloInfinity));
+        //x.add(IloNumVar(env, lx_, IloInfinity));
+        x.add(IloNumVar(env, -IloInfinity, IloInfinity));
         blk_ptr_2_tmp_id[blk_ptr] = cnt;
         blk_tmp_id_2_ptr[cnt] = blk_ptr;
         ++cnt;

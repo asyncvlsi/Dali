@@ -332,13 +332,13 @@ bool GriddedRowLegalizer::OptimizeDisplacementUsingQuadraticProgramming() {
 #endif
 }
 
-bool GriddedRowLegalizer::IterativeQuadraticDisplacementOptimization() {
+bool GriddedRowLegalizer::IterativeDisplacementOptimization() {
   BOOST_LOG_TRIVIAL(info)
     << "Optimizing displacement X using the consensus algorithm\n";
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
 
-  consensus_max_iter_ = 100;
+  consensus_max_iter_ = 1000;
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
       stripe.IterativeCellReordering(consensus_max_iter_);
@@ -448,8 +448,8 @@ bool GriddedRowLegalizer::StartPlacement() {
 
 #if true
     RestoreInitialLocX();
-    //bool is_cons_solved = IterativeQuadraticDisplacementOptimization();
-    IterativeQuadraticDisplacementOptimization();
+    //bool is_cons_solved = IterativeDisplacementOptimization();
+    IterativeDisplacementOptimization();
     //ReportHPWL();
     //GreedyLegalization();
     SaveConsensusLoc();

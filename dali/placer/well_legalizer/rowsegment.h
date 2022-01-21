@@ -51,7 +51,10 @@ class RowSegment {
 
   void SetOptimalAnchorWeight(double weight);
   std::vector<BlkDispVar> OptimizeQuadraticDisplacement(double lambda);
-  std::vector<BlkDispVar> OptimizeLinearDisplacement(double lambda);
+  std::vector<BlkDispVar> OptimizeLinearDisplacement(
+      double lambda,
+      bool is_weighted_anchor
+  );
 
   void GenSubCellTable(
       std::ofstream &ost_sub_cell,

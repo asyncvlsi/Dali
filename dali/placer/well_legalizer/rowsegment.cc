@@ -106,42 +106,6 @@ void RowSegment::SetOptimalAnchorWeight(double weight) {
 }
 
 std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement(double lambda) {
-  std::sort(
-      blk_regions_.begin(),
-      blk_regions_.end(),
-      [](const BlockRegion &br0, const BlockRegion &br1) {
-        return (br0.p_blk->LLX() < br1.p_blk->LLX()) ||
-            ((br0.p_blk->LLX() == br1.p_blk->LLX())
-                && (br0.p_blk->Id() < br1.p_blk->Id()));
-      }
-  );
-
-  std::vector<BlkDispVar> vars;
-  vars.reserve(blk_regions_.size());
-  for (auto &blk_rgn: blk_regions_) {
-    Block *blk_ptr = blk_rgn.p_blk;
-    int region_cnt = blk_ptr->TypePtr()->WellPtr()->RegionCount();
-    auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
-    vars.emplace_back(
-        blk_ptr->Width(),
-        aux_ptr->InitLoc().x,
-        lambda / region_cnt
-    );
-    vars.back().blk_rgn = blk_rgn;
-    if (region_cnt > 1) {
-      vars.back().SetAnchor(
-          aux_ptr->AverageLoc(),
-          (1 - lambda) * (1 + 1000*std::fabs(aux_ptr->AverageLoc() - aux_ptr->SubLocs()[blk_rgn.region_id])) // / region_cnt
-      );
-    }
-  }
-
-  MinimizeQuadraticDisplacement(vars, LLX(), URX());
-
-  return vars;
-}
-
-std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(double lambda) {
   std::vector<BlkDispVar> vars;
   if (blk_regions_.empty()) return vars;
 
@@ -174,7 +138,6 @@ std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(double lambda) {
     ave_discrepancy = 1;
   }
 
-  // create variables
   vars.reserve(blk_regions_.size());
   for (auto &blk_rgn: blk_regions_) {
     Block *blk_ptr = blk_rgn.p_blk;
@@ -190,14 +153,85 @@ std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(double lambda) {
     double sub_loc = aux_ptr->SubLocs()[blk_rgn.region_id];
     double average_loc = aux_ptr->AverageLoc();
     double tmp_discrepancy = std::fabs(average_loc - sub_loc);
-    double weight_discrepancy = exp(tmp_discrepancy/ave_discrepancy);
+    double weight_discrepancy = exp(tmp_discrepancy / ave_discrepancy);
     vars.back().SetAnchor(
         aux_ptr->AverageLoc(),
         (1 - lambda) * weight_discrepancy // / region_cnt
     );
   }
 
-  MinimizeLinearDisplacement(vars, LLX(), URX());
+  MinimizeQuadraticDisplacement(vars, LLX(), URX());
+
+  return vars;
+}
+
+std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(
+    double lambda,
+    bool is_weighted_anchor
+) {
+  std::vector<BlkDispVar> vars;
+  if (blk_regions_.empty()) return vars;
+
+  // sort cells based on their lower x location
+  std::sort(
+      blk_regions_.begin(),
+      blk_regions_.end(),
+      [](const BlockRegion &br0, const BlockRegion &br1) {
+        return (br0.p_blk->LLX() < br1.p_blk->LLX()) ||
+            ((br0.p_blk->LLX() == br1.p_blk->LLX())
+                && (br0.p_blk->Id() < br1.p_blk->Id()));
+      }
+  );
+
+  // compute average discrepancy
+  double ave_discrepancy = 1;
+  if (is_weighted_anchor) {
+    int sub_cell_cnt = 0;
+    double sum_discrepancy = 0;
+    for (auto &blk_rgn: blk_regions_) {
+      Block *blk_ptr = blk_rgn.p_blk;
+      auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
+      int region_cnt = blk_ptr->TypePtr()->WellPtr()->RegionCount();
+      double average_loc = aux_ptr->AverageLoc();
+      double sub_loc = aux_ptr->SubLocs()[blk_rgn.region_id];
+      double tmp_discrepancy = std::fabs(average_loc - sub_loc);
+      sum_discrepancy += tmp_discrepancy;
+      ++sub_cell_cnt;
+    }
+    ave_discrepancy = sum_discrepancy / sub_cell_cnt;
+    if (ave_discrepancy < 1e-5) {
+      ave_discrepancy = 1;
+    }
+  }
+
+  // create variables
+  vars.reserve(blk_regions_.size());
+  for (auto &blk_rgn: blk_regions_) {
+    Block *blk_ptr = blk_rgn.p_blk;
+    int region_cnt = blk_ptr->TypePtr()->WellPtr()->RegionCount();
+    auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
+    vars.emplace_back(
+        blk_ptr->Width(),
+        aux_ptr->InitLoc().x,
+        lambda / region_cnt
+    );
+    vars.back().blk_rgn = blk_rgn;
+    if (region_cnt <= 1) continue;
+    double weight_discrepancy = 1;
+    if (is_weighted_anchor) {
+      double sub_loc = aux_ptr->SubLocs()[blk_rgn.region_id];
+      double average_loc = aux_ptr->AverageLoc();
+      double tmp_discrepancy = std::fabs(average_loc - sub_loc);
+      weight_discrepancy = pow(1 + tmp_discrepancy / ave_discrepancy, 2.0);
+    }
+    vars.back().SetAnchor(
+        aux_ptr->AverageLoc(),
+        (1 - lambda) * weight_discrepancy // / region_cnt
+    );
+  }
+
+  //MinimizeLinearDisplacement(vars, LLX(), URX());
+  MinimizeLinearDisplacement(vars);
 
   return vars;
 }
