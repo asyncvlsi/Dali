@@ -43,6 +43,7 @@ struct BlkDispVar {
   double x;                       // place to store final location
   BlockRegion blk_rgn;            // pointer to the block or dummy block
   double cluster_weight_;
+  double s_;
   BlkDispVar(int width, double x_init, double weight = 1.0) :
       w(width),
       x_0(x_init),

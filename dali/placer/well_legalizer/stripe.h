@@ -115,8 +115,7 @@ class Stripe {
   void CollectAllRowSegments();
   void UpdateSubCellLocs(std::vector<BlkDispVar> &vars);
   void OptimizeDisplacementInEachRowSegment(double lambda);
-  void ComputeAverageLoc(int i);
-  void SetAnchorWeight(int i);
+  void ComputeAverageLoc();
   void ReportIterativeStatus(int i);
   void SetBlockLoc();
   void ClearMultiRowCellBreaking();
@@ -136,6 +135,8 @@ class Stripe {
   bool SolveQPProblem(IloCplex &cplex, IloNumVarArray &var);
   bool OptimizeDisplacementUsingQuadraticProgramming();
 #endif
+
+  void GenSubCellTable(std::string const &name_of_file);
 };
 
 struct ClusterStripe {

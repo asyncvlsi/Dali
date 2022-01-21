@@ -116,6 +116,12 @@ class GriddedRow {
 
   bool IsRowLegal();
 
+  void GenSubCellTable(
+      std::ofstream &ost_sub_cell,
+      std::ofstream &ost_discrepancy,
+      std::ofstream &ost_displacement
+  );
+
  private:
   bool is_orient_N_ = true; // orientation of this cluster
   std::vector<Block *> blk_list_; // list of blocks in this cluster

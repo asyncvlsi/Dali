@@ -575,24 +575,19 @@ void Stripe::OptimizeDisplacementInEachRowSegment(double lambda) {
   omp_set_num_threads(1);
 #pragma omp parallel for
   for (size_t i = 0; i < sz; ++i) {
+    //std::vector<BlkDispVar>
+    //    vars = row_seg_ptrs_[i]->OptimizeQuadraticDisplacement(lambda);
     std::vector<BlkDispVar>
-        vars = row_seg_ptrs_[i]->OptimizeQuadraticDisplacement(lambda);
+        vars = row_seg_ptrs_[i]->OptimizeLinearDisplacement(lambda);
     UpdateSubCellLocs(vars);
   }
   omp_set_num_threads(1);
 }
 
-void Stripe::ComputeAverageLoc(int i) {
+void Stripe::ComputeAverageLoc() {
   for (auto &blk_ptr: blk_ptrs_vec_) {
     auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
-    aux_ptr->ComputeAverageLoc(i & 1);
-  }
-}
-
-void Stripe::SetAnchorWeight(int i) {
-  double opt_anchor_weight = GetOptimalAnchorWeight(i);
-  for (RowSegment *&seg_ptr: row_seg_ptrs_) {
-    seg_ptr->SetOptimalAnchorWeight(opt_anchor_weight);
+    aux_ptr->ComputeAverageLoc();
   }
 }
 
@@ -639,11 +634,11 @@ void Stripe::IterativeCellReordering(int max_iter) {
   CollectAllRowSegments();
   for (int i = 0; i < max_iter; ++i) {
     OptimizeDisplacementInEachRowSegment(exp(-i / 10.0));
-    ComputeAverageLoc(i);
-    SetAnchorWeight(i);
+    ComputeAverageLoc();
     ReportIterativeStatus(i);
   }
   SetBlockLoc();
+  GenSubCellTable("subcell");
   ClearMultiRowCellBreaking();
   BOOST_LOG_TRIVIAL(info) << "displacement: " << displacements_ << "\n";
   BOOST_LOG_TRIVIAL(info) << "discrepancy : " << discrepancies_ << "\n";
@@ -784,6 +779,26 @@ bool Stripe::OptimizeDisplacementUsingQuadraticProgramming() {
   return is_solved;
 }
 #endif
+
+void Stripe::GenSubCellTable(std::string const &name_of_file) {
+  std::ofstream ost_sub_cell((name_of_file + "_result.txt").c_str());
+  DaliExpects(ost_sub_cell.is_open(),
+              "Cannot open output file: " + name_of_file);
+  std::ofstream ost_discrepancy((name_of_file + "_disc.txt").c_str());
+  DaliExpects(ost_discrepancy.is_open(),
+              "Cannot open output file: " + name_of_file);
+  std::ofstream ost_displacement((name_of_file + "_disp.txt").c_str());
+  DaliExpects(ost_discrepancy.is_open(),
+              "Cannot open output file: " + name_of_file);
+
+  for (auto &row: gridded_rows_) {
+    row.GenSubCellTable(
+        ost_sub_cell,
+        ost_discrepancy,
+        ost_displacement
+    );
+  }
+}
 
 Stripe *ClusterStripe::GetStripeMatchSeg(SegI seg, int y_loc) {
   Stripe *res = nullptr;

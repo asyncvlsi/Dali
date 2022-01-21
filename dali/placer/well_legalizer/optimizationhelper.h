@@ -27,12 +27,16 @@
 
 namespace dali {
 
-double GetOptimalAnchorWeight(int i);
-
 void MinimizeQuadraticDisplacement(
     std::vector<BlkDispVar> &vars,
-    int lower_limit = INT_MIN,
-    int upper_limit = INT_MAX
+    double lower_limit = -DBL_MAX,
+    double upper_limit = DBL_MAX
+);
+
+void MinimizeLinearDisplacement(
+    std::vector<BlkDispVar> &vars,
+    double lower_limit = -DBL_MAX,
+    double upper_limit = DBL_MAX
 );
 
 }

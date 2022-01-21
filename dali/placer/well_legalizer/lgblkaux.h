@@ -45,7 +45,7 @@ class LgBlkAux : public BlockAux {
   void RecoverConsLocX();
 
   void SetSubCellLoc(int id, double loc, double weight);
-  void ComputeAverageLoc(bool is_max);
+  void ComputeAverageLoc();
   std::vector<double> &SubLocs();
   double AverageLoc();
 

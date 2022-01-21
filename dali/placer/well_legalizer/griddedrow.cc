@@ -692,6 +692,19 @@ bool GriddedRow::IsRowLegal() {
   return front <= URX();
 }
 
+void GriddedRow::GenSubCellTable(
+    std::ofstream &ost_sub_cell,
+    std::ofstream &ost_discrepancy,
+    std::ofstream &ost_displacement
+) {
+  for (auto &seg: segments_) {
+    seg.GenSubCellTable(
+        ost_sub_cell, ost_discrepancy, ost_displacement,
+        LLY(), URY()
+    );
+  }
+}
+
 void ClusterSegment::Merge(
     ClusterSegment &sc,
     int lower_bound,

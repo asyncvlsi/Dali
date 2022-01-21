@@ -436,7 +436,7 @@ bool GriddedRowLegalizer::StartPlacement() {
   ReportHPWL();
 
   if (is_success) {
-#if true
+#if false
     RestoreInitialLocX();
     IsLeftmostPlacementLegal();
     //IterativeCellReordering();
@@ -450,12 +450,11 @@ bool GriddedRowLegalizer::StartPlacement() {
     RestoreInitialLocX();
     //bool is_cons_solved = IterativeQuadraticDisplacementOptimization();
     IterativeQuadraticDisplacementOptimization();
-    ReportHPWL();
-    GreedyLegalization();
+    //ReportHPWL();
+    //GreedyLegalization();
     SaveConsensusLoc();
     ReportHPWL();
 #endif
-
 
     EmbodyWellTapCells();
 

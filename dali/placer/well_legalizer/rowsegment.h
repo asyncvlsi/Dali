@@ -51,6 +51,15 @@ class RowSegment {
 
   void SetOptimalAnchorWeight(double weight);
   std::vector<BlkDispVar> OptimizeQuadraticDisplacement(double lambda);
+  std::vector<BlkDispVar> OptimizeLinearDisplacement(double lambda);
+
+  void GenSubCellTable(
+      std::ofstream &ost_sub_cell,
+      std::ofstream &ost_discrepancy,
+      std::ofstream &ost_displacement,
+      double row_ly,
+      double row_uy
+  );
  private:
   // list of blocks in this segment
   std::vector<BlockRegion> blk_regions_;
