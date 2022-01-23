@@ -53,6 +53,7 @@ int main(int argc, char *argv[]) {
   std::string log_file_name;
   int well_legalization_mode = static_cast<int>(DefaultPartitionMode::STRICT);
   bool overwrite_logfile = false;
+  bool is_no_global = false;
   bool is_no_legal = false;
   bool is_no_io_place = false;
   severity verbose_level = logging::trivial::info;
@@ -158,6 +159,8 @@ int main(int argc, char *argv[]) {
       overwrite_logfile = true;
     } else if (arg == "-nolegal") {
       is_no_legal = true;
+    } else if (arg == "-noglobal") {
+      is_no_global = true;
     } else if (arg == "-maxrowwidth" && i < argc) {
       try {
         max_row_width = std::stod(argv[i++]);
@@ -262,9 +265,11 @@ int main(int argc, char *argv[]) {
   Placer *gb_placer = new GlobalPlacer;
   gb_placer->SetInputCircuit(&circuit);
   gb_placer->SetBoundaryDef();
-  gb_placer->SetPlacementDensity(target_density);
-  //gb_placer->ReportBoundaries();
-  gb_placer->StartPlacement();
+  if (!is_no_global) {
+    gb_placer->SetPlacementDensity(target_density);
+    //gb_placer->ReportBoundaries();
+    gb_placer->StartPlacement();
+  }
   if (export_well_cluster_for_matlab) {
     gb_placer->GenMATLABTable("gb_result.txt");
   }

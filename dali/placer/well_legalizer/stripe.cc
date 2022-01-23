@@ -578,9 +578,10 @@ void Stripe::OptimizeDisplacementInEachRowSegment(
 #pragma omp parallel for
   for (size_t i = 0; i < sz; ++i) {
     RowSegment *seg = row_seg_ptrs_[i];
-    //std::vector<BlkDispVar> vars = seg->OptimizeQuadraticDisplacement(lambda);
     std::vector<BlkDispVar> vars =
-        seg->OptimizeLinearDisplacement(lambda, is_weighted_anchor);
+        seg->OptimizeQuadraticDisplacement(lambda, is_weighted_anchor);
+    //std::vector<BlkDispVar> vars =
+    //    seg->OptimizeLinearDisplacement(lambda, is_weighted_anchor);
     UpdateSubCellLocs(vars);
   }
 }
