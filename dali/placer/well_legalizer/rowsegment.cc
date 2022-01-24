@@ -108,7 +108,7 @@ void RowSegment::SetOptimalAnchorWeight(double weight) {
 std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement(
     double lambda,
     bool is_weighted_anchor
-    ) {
+) {
   std::vector<BlkDispVar> vars;
   if (blk_regions_.empty()) return vars;
 
@@ -247,12 +247,20 @@ std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(
 }
 
 void RowSegment::GenSubCellTable(
+    std::ofstream &ost_cluster,
     std::ofstream &ost_sub_cell,
     std::ofstream &ost_discrepancy,
     std::ofstream &ost_displacement,
     double row_ly,
     double row_uy
 ) {
+  SaveMatlabPatchRect(
+      ost_cluster,
+      static_cast<double>(LLX()), row_ly,
+      static_cast<double>(URX()), row_uy,
+      false, 0, 0, 0
+  );
+
   for (auto &blk_rgn: blk_regions_) {
     Block *blk_ptr = blk_rgn.p_blk;
     auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());

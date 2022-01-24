@@ -36,6 +36,25 @@ void SaveArgs(int argc, char *argv[]) {
   BOOST_LOG_TRIVIAL(info) << cmd_line_arguments << "\n";
 }
 
+std::vector<std::vector<std::string>> ParseArguments(
+    int argc,
+    char *argv[]
+) {
+  std::vector<std::vector<std::string>> options;
+  for (int i = 1; i < argc; ++i) {
+    std::string arg(argv[i]);
+    if (arg[0] == '-') { // this is a new flag
+      options.emplace_back();
+      options.back().emplace_back(arg);
+    } else if (!options.empty()) { // this is an option for the latest flag
+      options.back().emplace_back(arg);
+    } else { // option with no flag declared in advance?
+      DaliExpects(false, "there is no flag declared before: " + arg);
+    }
+  }
+  return options;
+}
+
 double AbsResidual(double x, double y) {
   return std::fabs(x - std::round(x / y) * y);
 }

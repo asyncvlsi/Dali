@@ -21,6 +21,12 @@
 
 #include "tech.h"
 
+#include <cctype>
+#include <cfloat>
+
+#include <algorithm>
+#include <unordered_set>
+
 namespace dali {
 
 Tech::Tech()
@@ -75,6 +81,98 @@ bool Tech::IsWellInfoSet() const {
 
 std::list<BlockTypeWell> &Tech::MultiWells() {
   return multi_well_list_;
+}
+
+bool Tech::IsGndAtBottom(phydb::Macro *macro) {
+  const std::unordered_set<std::string> gnd_names = {"vss", "gnd"};
+  const std::unordered_set<std::string> vdd_names = {"vdd"};
+
+  double gnd_bottom_line = DBL_MAX;
+  double vdd_bottom_line = DBL_MAX;
+  for (auto &pin: macro->GetPinsRef()) {
+    std::string pin_name = pin.GetName();
+    std::for_each(
+        pin_name.begin(),
+        pin_name.end(),
+        [](char &c) { c = tolower(c); }
+    );
+    if (gnd_names.find(pin_name) != gnd_names.end()) {
+      for (auto &layer_rect: pin.GetLayerRectRef()) {
+        for (auto &rect: layer_rect.GetRects()) {
+          gnd_bottom_line = std::min(gnd_bottom_line, rect.LLY());
+        }
+      }
+    } else if (vdd_names.find(pin_name) != vdd_names.end()) {
+      for (auto &layer_rect: pin.GetLayerRectRef()) {
+        for (auto &rect: layer_rect.GetRects()) {
+          vdd_bottom_line = std::min(vdd_bottom_line, rect.LLY());
+        }
+      }
+    } else {
+      continue;
+    }
+  }
+
+  if ((gnd_bottom_line < DBL_MAX) && (vdd_bottom_line < DBL_MAX)) {
+    return gnd_bottom_line < vdd_bottom_line;
+  }
+  if (gnd_bottom_line < DBL_MAX) {
+    return (gnd_bottom_line - 0) < (gnd_bottom_line - macro->GetHeight());
+  }
+  if (vdd_bottom_line < DBL_MAX) {
+    return (vdd_bottom_line - 0) > (vdd_bottom_line - macro->GetHeight());
+  }
+  DaliExpects(false,
+              "Cannot find a power signal in this macro: " + macro->GetName());
+  return true;
+}
+
+void Tech::CreateFakeWellForStandardCell(phydb::PhyDB *phy_db) {
+  std::unordered_set<int> height_set;
+  for (auto &[name, blk_type]: block_type_map_) {
+    if (blk_type == io_dummy_blk_type_ptr_) continue;
+    height_set.insert(blk_type->Height());
+    multi_well_list_.emplace_back(blk_type);
+  }
+
+  DaliExpects(!height_set.empty(), "No cell height?");
+
+  std::vector<int> height_vec(height_set.begin(), height_set.end());
+  std::sort(
+      height_vec.begin(),
+      height_vec.end(),
+      [](const int &h0, const int &h1) { return h0 < h1; }
+  );
+
+  int standard_height = height_vec[0];
+  int n_height = standard_height / 2;
+  int p_height = standard_height - n_height;
+  DaliExpects(n_height > 0 || p_height > 0, "Both heights are 0?");
+
+  for (auto &[name, blk_type]: block_type_map_) {
+    if (blk_type == io_dummy_blk_type_ptr_) continue;
+    auto *macro = phy_db->GetMacroPtr(name);
+    int region_cnt = (int) std::round(blk_type->Height() / standard_height);
+    auto *well_ptr = blk_type->WellPtr();
+    int accumulative_height = 0;
+    bool is_n = IsGndAtBottom(macro);
+    for (int i = 0; i < 2 * region_cnt; ++i) {
+      if (is_n) {
+        well_ptr->AddNwellRect(
+            0, accumulative_height,
+            blk_type->Width(), accumulative_height + n_height
+        );
+        accumulative_height += n_height;
+      } else {
+        well_ptr->AddPwellRect(
+            0, accumulative_height,
+            blk_type->Width(), accumulative_height + p_height
+        );
+        accumulative_height += p_height;
+      }
+      is_n = !is_n;
+    }
+  }
 }
 
 void Tech::Report() const {

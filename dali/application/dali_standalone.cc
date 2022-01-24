@@ -22,12 +22,14 @@
 
 #include <chrono>
 #include <iostream>
+#include <memory>
 
 #include <phydb/phydb.h>
 
 #include "dali/circuit/circuit.h"
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
+#include "dali/common/timing.h"
 #include "dali/placer.h"
 
 using namespace dali;
@@ -189,13 +191,6 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  /**** checking input files ****/
-  if ((lef_file_name.empty()) || (def_file_name.empty())) {
-    BOOST_LOG_TRIVIAL(info) << "Invalid input files!\n";
-    ReportUsage();
-    return 1;
-  }
-
   /**** initialize logger and print software statement ****/
   InitLogging(
       log_file_name,
@@ -208,6 +203,13 @@ int main(int argc, char *argv[]) {
   system_clock::time_point today = system_clock::now();
   std::time_t tt = system_clock::to_time_t(today);
   BOOST_LOG_TRIVIAL(info) << "today is: " << ctime(&tt) << std::endl;
+
+  /**** checking input files ****/
+  if ((lef_file_name.empty()) || (def_file_name.empty())) {
+    BOOST_LOG_TRIVIAL(info) << "Invalid input files!\n";
+    ReportUsage();
+    return 1;
+  }
 
   /**** save command line arguments for future reference ****/
   SaveArgs(argc, argv);
@@ -247,12 +249,7 @@ int main(int argc, char *argv[]) {
   circuit.ReportBriefSummary();
   circuit.ReportHPWL();
 
-  //auto *phydb_iopin = phy_db.GetIoPinPtr("p513239");
-  //phydb_iopin->Report();
-  //auto *dali_blk = circuit.GetBlockPtr("p513239");
-  //dali_blk->Report();
-  //exit(1);
-
+  /**** set placement density ****/
   if (target_density == -1) {
     double default_density = 0.7;
     target_density = std::max(circuit.WhiteSpaceUsage(), default_density);
@@ -262,7 +259,8 @@ int main(int argc, char *argv[]) {
   }
 
   /**** placement ****/
-  Placer *gb_placer = new GlobalPlacer;
+  // (1). global placement
+  auto gb_placer = std::make_unique<GlobalPlacer>();
   gb_placer->SetInputCircuit(&circuit);
   gb_placer->SetBoundaryDef();
   if (!is_no_global) {
@@ -273,9 +271,12 @@ int main(int argc, char *argv[]) {
   if (export_well_cluster_for_matlab) {
     gb_placer->GenMATLABTable("gb_result.txt");
   }
+
+  // (2). legalization
   if (!cell_file_name.empty()) {
-    auto *well_legalizer = new StdClusterWellLegalizer;
-    well_legalizer->TakeOver(gb_placer);
+    // (a). single row gridded cell legalization
+    auto well_legalizer = std::make_unique<StdClusterWellLegalizer>();
+    well_legalizer->TakeOver(gb_placer.get());
     well_legalizer->SetStripePartitionMode(well_legalization_mode);
     well_legalizer->StartPlacement();
     if (export_well_cluster_for_matlab) {
@@ -287,10 +288,10 @@ int main(int argc, char *argv[]) {
     if (!output_name.empty()) {
       well_legalizer->EmitDEFWellFile(output_name, 1);
     }
-    delete well_legalizer;
   } else if (!m_cell_file_name.empty()) {
-    auto *multi_well_legalizer = new GriddedRowLegalizer;
-    multi_well_legalizer->TakeOver(gb_placer);
+    // (b). multi row gridded cell legalization
+    auto multi_well_legalizer = std::make_unique<GriddedRowLegalizer>();
+    multi_well_legalizer->TakeOver(gb_placer.get());
     multi_well_legalizer->SetWellTapCellParameters(
         is_well_tap_needed, false, -1, ""
     );
@@ -306,25 +307,22 @@ int main(int argc, char *argv[]) {
     if (!output_name.empty()) {
       multi_well_legalizer->EmitDEFWellFile(output_name, 1);
     }
-    delete multi_well_legalizer;
   } else {
+    // (c). Tetris Legalization
     if (!is_no_legal) {
-      Placer *legalizer = new LGTetrisEx;
-      legalizer->TakeOver(gb_placer);
+      auto legalizer = std::make_unique<LGTetrisEx>();
+      legalizer->TakeOver(gb_placer.get());
       legalizer->StartPlacement();
-      delete legalizer;
     }
   }
-  delete gb_placer;
 
   if (!is_no_io_place) {
-    auto *io_placer = new IoPlacer(&phy_db, &circuit);
+    auto io_placer = std::make_unique<IoPlacer>(&phy_db, &circuit);
     bool is_ioplacer_config_success =
         io_placer->ConfigSetGlobalMetalLayer(io_metal_layer);
     DaliExpects(is_ioplacer_config_success,
                 "Cannot successfully configure I/O placer");
     io_placer->AutoPlaceIoPin();
-    delete io_placer;
   }
 
   /**** save results ****/

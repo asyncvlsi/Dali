@@ -137,7 +137,11 @@ class Stripe {
   bool OptimizeDisplacementUsingQuadraticProgramming();
 #endif
 
-  void GenSubCellTable(std::string const &name_of_file);
+  /**** for standard cells ****/
+  int row_height_ = 1;
+  void ImportStandardRowSegments(phydb::PhyDB &phydb, Circuit &ckt);
+  int LocY2RowId(double lly);
+  void AssignStandardCellsToRowSegments();
 };
 
 struct ClusterStripe {

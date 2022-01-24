@@ -283,4 +283,8 @@ void Placer::ShiftY(double shift_y) {
   }
 }
 
+bool Placer::IsDummyBlock(Block &blk) {
+  return blk.TypePtr() == p_ckt_->tech().IoDummyBlkTypePtr();
+}
+
 }

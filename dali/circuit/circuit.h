@@ -555,6 +555,9 @@ class Circuit {
 
   void LoadBookshelfPl(std::string const &name_of_file);
 
+  /**** for standard cells ****/
+  void CreateFakeWellForStandardCell();
+
  private:
   Tech tech_; // information in LEF and CELL
   Design design_; // information in DEF

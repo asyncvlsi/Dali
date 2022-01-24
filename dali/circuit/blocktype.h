@@ -149,7 +149,9 @@ class BlockType {
  * ****/
 class BlockTypeWell {
  public:
-  explicit BlockTypeWell(BlockType *type_ptr) : type_ptr_(type_ptr) {}
+  explicit BlockTypeWell(BlockType *type_ptr) : type_ptr_(type_ptr) {
+    type_ptr_->SetWell(this);
+  }
 
   void AddNwellRect(int llx, int lly, int urx, int ury);
 

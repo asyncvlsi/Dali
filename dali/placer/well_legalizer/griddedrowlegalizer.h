@@ -21,6 +21,8 @@
 #ifndef DALI_DALI_PLACER_WELL_LEGALIZER_GRIDDEDROWLEGALIZER_H_
 #define DALI_DALI_PLACER_WELL_LEGALIZER_GRIDDEDROWLEGALIZER_H_
 
+#include <phydb/phydb.h>
+
 #include "dali/common/displaceviewer.h"
 #include "dali/placer/placer.h"
 #include "dali/placer/well_legalizer/lgblkaux.h"
@@ -77,11 +79,16 @@ class GriddedRowLegalizer : public Placer {
 
   bool StartPlacement() override;
 
+  void ImportStandardRowSegments(phydb::PhyDB &phydb);
+  void AssignStandardCellsToRowSegments();
+  bool StartStandardLegalization();
+
   void GenMatlabClusterTable(std::string const &name_of_file);
   void GenMATLABWellTable(
       std::string const &name_of_file,
       int well_emit_mode
   ) override;
+  void GenSubCellTable(std::string const &name_of_file);
  private:
   // space partitioner
   int partitioning_mode_ = 0;
@@ -110,15 +117,10 @@ class GriddedRowLegalizer : public Placer {
   bool is_cons_loc_cached_ = false;
   std::vector<LgBlkAux> blk_auxs_;
 
-  // displacement visualization
-  DisplaceViewer<double> displace_viewer_;
-
   void SetWellTapCellNecessary(bool is_well_tap_needed);
   void SetWellTapCellPlacementMode(bool is_checker_board_mode);
   void SetWellTapCellInterval(double tap_cell_interval_microns);
   void SetWellTapCellType(std::string const &well_tap_type_name);
-
-  void GenDisplacement(std::string const &name_of_file);
 };
 
 }

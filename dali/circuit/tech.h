@@ -25,6 +25,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <phydb/phydb.h>
+
 #include "block.h"
 #include "blocktype.h"
 #include "layer.h"
@@ -62,6 +64,11 @@ class Tech {
 
   // get all multi-well for cells
   std::list<BlockTypeWell> &MultiWells();
+
+  static bool IsGndAtBottom(phydb::Macro *macro);
+
+  // create fake well for standard cells
+  void CreateFakeWellForStandardCell(phydb::PhyDB *phy_db);
 
   // print information
   void Report() const;

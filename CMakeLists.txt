@@ -330,6 +330,16 @@ target_link_libraries(
     PRIVATE dalilib
 )
 
+# Mixed-cell-height legalization for standard cells
+add_executable(
+    mhlg
+    dali/application/mhlg.cc
+)
+target_link_libraries(
+    mhlg
+    PRIVATE dalilib
+)
+
 # Unittests
 enable_testing()
 add_subdirectory(tests/boost_test)

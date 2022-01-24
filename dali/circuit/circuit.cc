@@ -1017,7 +1017,6 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
       BlockType *p_blk_type = GetBlockTypePtr(macro_fields[1]);
       tech_.multi_well_list_.emplace_back(p_blk_type);
       auto *well_ptr = &(tech_.multi_well_list_.back());
-      p_blk_type->SetWell(well_ptr);
       do {
         getline(ist, line);
         if (line.find("REGION") != std::string::npos) {
@@ -2045,6 +2044,10 @@ void Circuit::LoadBookshelfPl(std::string const &name_of_file) {
   }
 }
 
+void Circuit::CreateFakeWellForStandardCell() {
+  tech_.CreateFakeWellForStandardCell(phy_db_ptr_);
+}
+
 /****
  * Creates fake NP-well information for testing purposes
  * create fake N/P-well info for cells
@@ -2322,6 +2325,8 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
     if (!sites.empty()) {
       grid_value_x = sites[0].GetWidth();
       grid_value_y = sites[0].GetHeight();
+      BOOST_LOG_TRIVIAL(info) << " Width : " << grid_value_x << "\n";
+      BOOST_LOG_TRIVIAL(info) << " Height: " << grid_value_y << "\n";
       SetGridValue(grid_value_x, grid_value_y);
       SetRowHeight(grid_value_y);
     } else {

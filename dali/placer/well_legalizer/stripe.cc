@@ -652,7 +652,7 @@ void Stripe::ClearMultiRowCellBreaking() {
 
 void Stripe::IterativeCellReordering(int max_iter) {
   CollectAllRowSegments();
-  omp_set_num_threads(6);
+  omp_set_num_threads(1);
   bool is_weighted_anchor = false;
   for (int i = 0; i < max_iter; ++i) {
     double lambda = exp(-i / 10.0);
@@ -665,7 +665,6 @@ void Stripe::IterativeCellReordering(int max_iter) {
   }
   SetBlockLoc();
   omp_set_num_threads(1);
-  GenSubCellTable("subcell");
   ClearMultiRowCellBreaking();
   BOOST_LOG_TRIVIAL(info) << "displacement: " << displacements_ << "\n";
   BOOST_LOG_TRIVIAL(info) << "discrepancy : " << discrepancies_ << "\n";
@@ -808,23 +807,67 @@ bool Stripe::OptimizeDisplacementUsingQuadraticProgramming() {
 }
 #endif
 
-void Stripe::GenSubCellTable(std::string const &name_of_file) {
-  std::ofstream ost_sub_cell((name_of_file + "_result.txt").c_str());
-  DaliExpects(ost_sub_cell.is_open(),
-              "Cannot open output file: " + name_of_file);
-  std::ofstream ost_discrepancy((name_of_file + "_disc.txt").c_str());
-  DaliExpects(ost_discrepancy.is_open(),
-              "Cannot open output file: " + name_of_file);
-  std::ofstream ost_displacement((name_of_file + "_disp.txt").c_str());
-  DaliExpects(ost_discrepancy.is_open(),
-              "Cannot open output file: " + name_of_file);
+void Stripe::ImportStandardRowSegments(phydb::PhyDB &phydb, Circuit &ckt) {
+  std::cout << "Importing rows from PhyBD\n";
+  lx_ = INT_MAX;
+  int ux = INT_MIN;
+  ly_ = INT_MAX;
+  int uy = INT_MIN;
+  row_height_ = phydb.tech().GetSitesRef()[0].GetHeight() / ckt.GridValueY();
+  auto &design = phydb.design();
+  gridded_rows_.reserve(design.GetRowVec().size());
+  for (auto &row: design.GetRowVec()) {
+    gridded_rows_.emplace_back();
+    auto &gridded_row = gridded_rows_.back();
 
-  for (auto &row: gridded_rows_) {
-    row.GenSubCellTable(
-        ost_sub_cell,
-        ost_discrepancy,
-        ost_displacement
-    );
+    double d_llx = ckt.LocPhydb2DaliX(row.orig_x_);
+    DaliExpects(AbsResidual(d_llx, 1) < 1e-5, "row llx loc is not an integer");
+    int llx = static_cast<int>(d_llx);
+    gridded_row.SetLLX(llx);
+    lx_ = std::min(lx_, gridded_row.LLX());
+
+    double d_width = static_cast<double>(row.num_x_) * row.step_x_
+        / ckt.DatabaseMicrons() / ckt.GridValueX();
+    DaliExpects(AbsResidual(d_width, 1) < 1e-5,
+                "row width loc is not an integer");
+    int width = static_cast<int>(d_width);
+    gridded_row.SetWidth(width);
+    ux = std::max(ux, gridded_row.URX());
+
+    double d_lly = ckt.LocPhydb2DaliY(row.orig_y_);
+    DaliExpects(AbsResidual(d_lly, 1) < 1e-5, "row lly loc is not an integer");
+    int lly = static_cast<int>(d_lly);
+    gridded_row.SetLLY(lly);
+    gridded_row.SetHeight(row_height_);
+    ly_ = std::min(ly_, gridded_row.LLY());
+    uy = std::max(uy, gridded_row.URY());
+
+    gridded_row.SetOrient(row.site_orient_ == "N");
+
+    std::vector<SegI> blockage;
+    gridded_row.UpdateSegments(blockage, false);
+  }
+  width_ = ux - lx_;
+  height_ = uy - ly_;
+  std::cout << "End of importing rows from PhyBD\n";
+}
+
+int Stripe::LocY2RowId(double lly) {
+  if (lly <= LLY() + row_height_ / 2.0) {
+    return 0;
+  }
+  if (lly >= URY() - row_height_ / 2.0) {
+    return static_cast<int>(gridded_rows_.size()) - 1;
+  }
+
+  double height = lly - LLY();
+  return static_cast<int>(std::round(height / row_height_));
+}
+
+void Stripe::AssignStandardCellsToRowSegments() {
+  for (auto &blk_ptr: blk_ptrs_vec_) {
+    int row_id = LocY2RowId(blk_ptr->LLY());
+    gridded_rows_[row_id].segments_[0].AddBlockRegion(blk_ptr, 0);
   }
 }
 

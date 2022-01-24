@@ -693,13 +693,14 @@ bool GriddedRow::IsRowLegal() {
 }
 
 void GriddedRow::GenSubCellTable(
+    std::ofstream &ost_cluster,
     std::ofstream &ost_sub_cell,
     std::ofstream &ost_discrepancy,
     std::ofstream &ost_displacement
 ) {
   for (auto &seg: segments_) {
     seg.GenSubCellTable(
-        ost_sub_cell, ost_discrepancy, ost_displacement,
+        ost_cluster, ost_sub_cell, ost_discrepancy, ost_displacement,
         LLY(), URY()
     );
   }

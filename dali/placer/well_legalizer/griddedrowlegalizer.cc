@@ -121,6 +121,7 @@ void GriddedRowLegalizer::PrecomputeWellTapCellLocation() {
 void GriddedRowLegalizer::InitializeBlockAuxiliaryInfo() {
   blk_auxs_.reserve(Blocks().size());
   for (Block &blk: Blocks()) {
+    if (IsDummyBlock(blk)) continue;
     blk_auxs_.emplace_back(&blk);
   }
 }
@@ -128,6 +129,7 @@ void GriddedRowLegalizer::InitializeBlockAuxiliaryInfo() {
 void GriddedRowLegalizer::SaveInitialLoc() {
   is_init_loc_cached_ = true;
   for (Block &blk: Blocks()) {
+    if (IsDummyBlock(blk)) continue;
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
     aux_ptr->StoreCurLocAsInitLoc();
   }
@@ -136,6 +138,7 @@ void GriddedRowLegalizer::SaveInitialLoc() {
 void GriddedRowLegalizer::SaveGreedyLoc() {
   is_greedy_loc_cached_ = true;
   for (Block &blk: Blocks()) {
+    if (IsDummyBlock(blk)) continue;
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
     aux_ptr->StoreCurLocAsGreedyLoc();
   }
@@ -144,6 +147,7 @@ void GriddedRowLegalizer::SaveGreedyLoc() {
 void GriddedRowLegalizer::SaveQPLoc() {
   is_qp_loc_cached_ = true;
   for (Block &blk: Blocks()) {
+    if (IsDummyBlock(blk)) continue;
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
     aux_ptr->StoreCurLocAsQPLoc();
   }
@@ -152,6 +156,7 @@ void GriddedRowLegalizer::SaveQPLoc() {
 void GriddedRowLegalizer::SaveConsensusLoc() {
   is_cons_loc_cached_ = true;
   for (Block &blk: Blocks()) {
+    if (IsDummyBlock(blk)) continue;
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
     aux_ptr->StoreCurLocAsConsLoc();
   }
@@ -161,6 +166,7 @@ void GriddedRowLegalizer::RestoreInitialLocX() {
   DaliExpects(is_init_loc_cached_,
               "Initial locations are not saved, no way to restore");
   for (Block &blk: Blocks()) {
+    if (IsDummyBlock(blk)) continue;
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
     aux_ptr->RecoverInitLocX();
   }
@@ -170,6 +176,7 @@ void GriddedRowLegalizer::RestoreGreedyLocX() {
   DaliExpects(is_greedy_loc_cached_,
               "Greedy locations are not saved, no way to restore");
   for (Block &blk: Blocks()) {
+    if (IsDummyBlock(blk)) continue;
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
     aux_ptr->RecoverGreedyLocX();
   }
@@ -179,6 +186,7 @@ void GriddedRowLegalizer::RestoreQPLocX() {
   DaliExpects(is_qp_loc_cached_,
               "Quadratic programming locations are not saved, no way to restore");
   for (Block &blk: Blocks()) {
+    if (IsDummyBlock(blk)) continue;
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
     aux_ptr->RecoverQPLocX();
   }
@@ -188,6 +196,7 @@ void GriddedRowLegalizer::RestoreConsensusLocX() {
   DaliExpects(is_cons_loc_cached_,
               "Consensus locations are not saved, no way to restore");
   for (Block &blk: Blocks()) {
+    if (IsDummyBlock(blk)) continue;
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
     aux_ptr->RecoverConsLocX();
   }
@@ -450,6 +459,7 @@ bool GriddedRowLegalizer::StartPlacement() {
     RestoreInitialLocX();
     //bool is_cons_solved = IterativeDisplacementOptimization();
     IterativeDisplacementOptimization();
+    GenSubCellTable("subcell");
     //ReportHPWL();
     //GreedyLegalization();
     SaveConsensusLoc();
@@ -480,29 +490,38 @@ bool GriddedRowLegalizer::StartPlacement() {
   return is_successful;
 }
 
-void GriddedRowLegalizer::GenDisplacement(std::string const &name_of_file) {
-  // initialize the displacement viewer and reserve space
-  displace_viewer_.SetSize(Blocks().size());
-
-  // update location before legalization
-  int counter = 0;
+void GriddedRowLegalizer::ImportStandardRowSegments(phydb::PhyDB &phydb) {
+  // create one stripe column and one stripe
+  col_list_.emplace_back();
+  auto &col = col_list_.back();
+  col.stripe_list_.emplace_back();
+  auto &stripe = col.stripe_list_.back();
+  stripe.ImportStandardRowSegments(phydb,*p_ckt_);
+  stripe.blk_ptrs_vec_.reserve(Blocks().size());
   for (auto &blk: Blocks()) {
-    auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
-    double2d init_loc = aux_ptr->InitLoc();
-    displace_viewer_.SetXY(counter, init_loc.x, init_loc.y);
-    displace_viewer_.SetXYFromDifference(counter, blk.LLX(), blk.LLY());
-    ++counter;
+    if (IsDummyBlock(blk)) continue;
+    stripe.blk_ptrs_vec_.emplace_back(&blk);
   }
+}
 
-  // save displacement result
-  displace_viewer_.SaveDisplacementVector(name_of_file);
+void GriddedRowLegalizer::AssignStandardCellsToRowSegments() {
+  auto &stripe = col_list_[0].stripe_list_[0];
+  stripe.AssignStandardCellsToRowSegments();
+}
+
+bool GriddedRowLegalizer::StartStandardLegalization() {
+  InitializeBlockAuxiliaryInfo();
+  SaveInitialLoc();
+
+  AssignStandardCellsToRowSegments();
+  GenSubCellTable("subcell");
+  return true;
 }
 
 void GriddedRowLegalizer::GenMatlabClusterTable(std::string const &name_of_file) {
   std::string frame_file = name_of_file + "_outline.txt";
   GenMATLABTable(frame_file);
   GenClusterTable(name_of_file, col_list_);
-  GenDisplacement(name_of_file + "_disp.txt");
 }
 
 void GriddedRowLegalizer::GenMATLABWellTable(
@@ -517,6 +536,42 @@ void GriddedRowLegalizer::GenMATLABWellTable(
       well_emit_mode
   );
   GenClusterTable(name_of_file, col_list_);
+}
+
+void GriddedRowLegalizer::GenSubCellTable(std::string const &name_of_file) {
+  std::string cluster_file = name_of_file + "_cluster.txt";
+  std::ofstream ost_cluster(cluster_file.c_str());
+  DaliExpects(ost_cluster.is_open(),
+              "Cannot open output file: " + name_of_file);
+
+  std::string sub_cell_file = name_of_file + "_result.txt";
+  std::ofstream ost_sub_cell(sub_cell_file.c_str());
+  DaliExpects(ost_sub_cell.is_open(),
+              "Cannot open output file: " + name_of_file);
+
+  std::string discrepancy_file = name_of_file + "_disc.txt";
+  std::ofstream ost_discrepancy(discrepancy_file.c_str());
+  DaliExpects(ost_discrepancy.is_open(),
+              "Cannot open output file: " + name_of_file);
+
+  std::string displacement_file = name_of_file + "_disp.txt";
+  std::ofstream ost_displacement(displacement_file.c_str());
+  DaliExpects(ost_discrepancy.is_open(),
+              "Cannot open output file: " + name_of_file);
+
+  for (auto &col: col_list_) {
+    for (auto &stripe: col.stripe_list_) {
+      for (auto &row: stripe.gridded_rows_) {
+        row.GenSubCellTable(
+            ost_cluster,
+            ost_sub_cell,
+            ost_discrepancy,
+            ost_displacement
+        );
+      }
+    }
+  }
+
 }
 
 void GriddedRowLegalizer::SetWellTapCellNecessary(bool is_well_tap_needed) {

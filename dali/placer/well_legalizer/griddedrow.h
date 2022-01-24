@@ -117,6 +117,7 @@ class GriddedRow {
   bool IsRowLegal();
 
   void GenSubCellTable(
+      std::ofstream &ost_cluster,
       std::ofstream &ost_sub_cell,
       std::ofstream &ost_discrepancy,
       std::ofstream &ost_displacement

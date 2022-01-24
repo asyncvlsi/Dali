@@ -158,6 +158,8 @@ class Placer {
   /****for testing purposes****/
   void ShiftX(double shift_x);
   void ShiftY(double shift_y);
+
+  bool IsDummyBlock(Block &blk);
 };
 
 }
