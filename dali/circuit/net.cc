@@ -311,6 +311,36 @@ double Net::WeightedHPWL() {
   return WeightedHPWLX() + WeightedHPWLY();
 }
 
+double Net::WeightedBboxX() {
+  if (blk_pins_.size() <= 1) return 0;
+  double max_x = blk_pins_[0].AbsX();
+  double min_x = blk_pins_[0].AbsX();
+  for (auto &blk_pin: blk_pins_) {
+    double center_x = blk_pin.AbsX();
+    double half_width = blk_pin.PinPtr()->HalfBboxWidth();
+    max_x = std::max(max_x, center_x + half_width);
+    min_x = std::min(min_x, center_x - half_width);
+  }
+  return (max_x - min_x) * weight_;
+}
+
+double Net::WeightedBboxY() {
+  if (blk_pins_.size() <= 1) return 0;
+  double max_y = blk_pins_[0].AbsY();
+  double min_y = blk_pins_[0].AbsY();
+  for (auto &blk_pin: blk_pins_) {
+    double center_y = blk_pin.AbsY();
+    double half_height = blk_pin.PinPtr()->HalfBboxHeight();
+    max_y = std::max(max_y, center_y + half_height);
+    min_y = std::min(min_y, center_y - half_height);
+  }
+  return (max_y - min_y) * weight_;
+}
+
+double Net::WeightedBbox() {
+  return WeightedBboxX() + WeightedBboxY();
+}
+
 double Net::MinX() const {
   return blk_pins_[min_x_pin_id_].AbsX();
 }

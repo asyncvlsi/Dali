@@ -706,6 +706,50 @@ void GriddedRow::GenSubCellTable(
   }
 }
 
+void GriddedRow::UpdateCommonSegment(
+    std::vector<SegI> &avail_spaces,
+    int width,
+    double density
+) {
+  std::vector<SegI> cur_spaces;
+  for (auto &row_seg: segments_) {
+    bool has_space = row_seg.Width() - row_seg.UsedSize() >= width;
+    double tmp_density =
+        static_cast<double> (row_seg.UsedSize() + width) / row_seg.Width();
+    bool is_density_not_too_high = tmp_density < density * 1.1;
+    if (has_space && is_density_not_too_high) {
+      cur_spaces.emplace_back(row_seg.LLX(), row_seg.URX());
+    }
+  }
+
+  std::vector<SegI> res;
+  for (auto &avail_space: avail_spaces) {
+    for (auto &cur_space: cur_spaces) {
+      if (cur_space.lo >= avail_space.hi) break;
+      SegI *joint_space = avail_space.Joint(cur_space);
+      if (joint_space != nullptr && joint_space->Span() > 0) {
+        res.emplace_back(joint_space->lo, joint_space->hi);
+      }
+      delete joint_space;
+    }
+  }
+
+  avail_spaces = res;
+}
+
+void GriddedRow::AddStandardCell(Block *p_blk, int region_id, SegI range) {
+  bool is_added = false;
+  for (auto &seg: segments_) {
+    if ((seg.LLX() <= range.lo) && (seg.URX() >= range.hi)) {
+      seg.AddBlockRegion(p_blk, region_id);
+      is_added = true;
+      break;
+    }
+  }
+
+  DaliExpects(is_added, "Unable to add cell to a row segment?!");
+}
+
 void ClusterSegment::Merge(
     ClusterSegment &sc,
     int lower_bound,

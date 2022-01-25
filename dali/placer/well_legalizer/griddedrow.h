@@ -123,6 +123,9 @@ class GriddedRow {
       std::ofstream &ost_displacement
   );
 
+  void UpdateCommonSegment(std::vector<SegI> &avail_spaces, int width, double density);
+  void AddStandardCell(Block *p_blk, int region_id, SegI range);
+
  private:
   bool is_orient_N_ = true; // orientation of this cluster
   std::vector<Block *> blk_list_; // list of blocks in this cluster

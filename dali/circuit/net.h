@@ -133,6 +133,15 @@ class Net {
   // get the weight HPWL of this net
   double WeightedHPWL();
 
+  // get the weighted bounding box of this net
+  double WeightedBboxX();
+
+  // get the weight bounding box of this net
+  double WeightedBboxY();
+
+  // get the weight bounding box of this net
+  double WeightedBbox();
+
   // get the lower x bound of this net
   double MinX() const;
 

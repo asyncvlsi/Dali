@@ -103,17 +103,25 @@ int main(int argc, char *argv[]) {
   BOOST_LOG_TRIVIAL(info) << "---------------------------------------\n";
   circuit.ReportBriefSummary();
   circuit.ReportHPWL();
+  circuit.ReportBoundingBox();
 
   /**** legalization ****/
   auto multi_well_legalizer = std::make_unique<GriddedRowLegalizer>();
+  auto tetris_legalizer = std::make_unique<LGTetrisEx>();
   multi_well_legalizer->SetInputCircuit(&circuit);
   multi_well_legalizer->SetBoundaryDef();
   multi_well_legalizer->ImportStandardRowSegments(phy_db);
+  multi_well_legalizer->InitializeBlockAuxiliaryInfo();
+  multi_well_legalizer->SaveInitialLoc();
+
+  tetris_legalizer->InitializeFromGriddedRowLegalizer(multi_well_legalizer.get());
+  tetris_legalizer->StartMultiHeightLegalization();
+  tetris_legalizer->GenMATLABTable("lg_result.txt");
+
   multi_well_legalizer->StartStandardLegalization();
   if (is_export_matlab) {
     multi_well_legalizer->GenMATLABTable("sc_result.txt");
-    //multi_well_legalizer->GenMatlabClusterTable("sc_result");
-    //multi_well_legalizer->GenMATLABWellTable("scw", 0);
+    multi_well_legalizer->GenMatlabClusterTable("sc_result");
   }
 
   if (!output_name.empty()) {

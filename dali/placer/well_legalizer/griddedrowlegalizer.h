@@ -32,6 +32,7 @@
 namespace dali {
 
 class GriddedRowLegalizer : public Placer {
+  friend class LGTetrisEx;
  public:
   GriddedRowLegalizer() = default;
 
@@ -81,6 +82,7 @@ class GriddedRowLegalizer : public Placer {
 
   void ImportStandardRowSegments(phydb::PhyDB &phydb);
   void AssignStandardCellsToRowSegments();
+  void ReportStandardCellDisplacement();
   bool StartStandardLegalization();
 
   void GenMatlabClusterTable(std::string const &name_of_file);

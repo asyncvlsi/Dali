@@ -71,6 +71,12 @@ class Pin {
   // is this pin an input pin?
   bool IsInput() const;
 
+  // half of the bounding box width
+  double HalfBboxWidth();
+
+  // half of the bounding box height
+  double HalfBboxHeight();
+
   // print information of this pin
   void Report() const;
  private:

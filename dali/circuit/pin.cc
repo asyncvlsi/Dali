@@ -90,6 +90,14 @@ bool Pin::IsInput() const {
   return is_input_;
 }
 
+double Pin::HalfBboxWidth() {
+  return half_bbox_width_;
+}
+
+double Pin::HalfBboxHeight() {
+  return half_bbox_height_;
+}
+
 void Pin::Report() const {
   BOOST_LOG_TRIVIAL(info)
     << Name() << " (" << OffsetX() << ", " << OffsetY() << ")";

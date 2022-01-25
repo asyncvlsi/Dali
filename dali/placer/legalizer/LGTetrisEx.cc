@@ -41,6 +41,38 @@ LGTetrisEx::LGTetrisEx()
       k_left_(1),
       tot_num_rows_(0) {}
 
+void LGTetrisEx::InitializeFromGriddedRowLegalizer(GriddedRowLegalizer *grlg) {
+  DaliExpects(grlg != nullptr,
+              "Cannot initialize LGTetrisEx from a nullptr GriddedRowLegalizer");
+  // circuit
+  p_ckt_ = grlg->p_ckt_;
+
+  // rows info
+  auto &stripe = grlg->col_list_[0].stripe_list_[0];
+  row_height_ = stripe.row_height_;
+  tot_num_rows_ = static_cast<int>(stripe.gridded_rows_.size());
+
+  // placement boundary
+  left_ = stripe.LLX();
+  right_ = stripe.URX();
+  bottom_ = stripe.LLY();
+  top_ = stripe.URY();
+
+  // rows
+  white_space_in_rows_.resize(tot_num_rows_);
+  for (int i = 0; i < tot_num_rows_; ++i) {
+    auto &row = stripe.gridded_rows_[i];
+    for (auto &seg: row.Segments()) {
+      white_space_in_rows_[i].emplace_back(seg.LLX(), seg.URX());
+    }
+  }
+
+  block_contour_.resize(tot_num_rows_, left_);
+
+  IndexLocPair<int> tmp_index_loc_pair(nullptr, 0, 0);
+  index_loc_list_.resize(Blocks().size(), tmp_index_loc_pair);
+}
+
 void LGTetrisEx::InitLegalizer() {
   /****
    * 1. calculate the number of rows for a given row_height
@@ -59,6 +91,7 @@ void LGTetrisEx::InitLegalizer() {
   Seg tmp(0, 0);
   bool out_of_range;
   for (auto &block: Blocks()) {
+    if (IsDummyBlock(block)) continue;
     if (block.IsMovable()) continue;
     int ly = int(std::floor(block.LLY()));
     int uy = int(std::ceil(block.URY()));
@@ -525,7 +558,7 @@ bool LGTetrisEx::LocalLegalizationLeft() {
   block_contour_.assign(block_contour_.size(), left_);
   std::vector<Block> &block_list = Blocks();
 
-  int sz = index_loc_list_.size();
+  int sz = static_cast<int>(index_loc_list_.size());
   for (int i = 0; i < sz; ++i) {
     index_loc_list_[i].blk_ptr = &(block_list[i]);
     index_loc_list_[i].x =
@@ -547,7 +580,7 @@ bool LGTetrisEx::LocalLegalizationLeft() {
   for (i = 0; i < sz; ++i) {
     //BOOST_LOG_TRIVIAL(info)   << i << "\n";
     auto &block = *(index_loc_list_[i].blk_ptr);
-
+    if (IsDummyBlock(block)) continue;
     if (block.IsFixed()) continue;
 
     res.x = int(std::round(block.LLX()));
@@ -925,6 +958,7 @@ bool LGTetrisEx::LocalLegalizationRight() {
   for (i = 0; i < sz; ++i) {
     //BOOST_LOG_TRIVIAL(info)   << i << "\n";
     auto &block = *(index_loc_list_[i].blk_ptr);
+    if (IsDummyBlock(block)) continue;
     if (block.IsFixed()) continue;
 
     res.x = int(std::round(block.URX()));
@@ -1534,6 +1568,51 @@ bool LGTetrisEx::StartPlacement() {
   double cpu_time = get_cpu_time();
 
   InitLegalizer();
+
+  bool is_success = false;
+  for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
+    if (legalize_from_left_) {
+      is_success = LocalLegalizationLeft();
+    } else {
+      is_success = LocalLegalizationRight();
+    }
+    legalize_from_left_ = !legalize_from_left_;
+    ++k_left_;
+    //GenMATLABTable("lg" + std::to_string(cur_iter_) + "_result.txt");
+    ReportHPWL();
+    if (is_success) {
+      break;
+    }
+  }
+  if (!is_success) {
+    BOOST_LOG_TRIVIAL(info) << "Legalization fails\n";
+  }
+
+  BOOST_LOG_TRIVIAL(info)
+    << "\033[0;36m"
+    << "LGTetrisEx Legalization complete (" << cur_iter_ + 1 << ")\n"
+    << "\033[0m";
+
+  ReportHPWL();
+
+  wall_time = get_wall_time() - wall_time;
+  cpu_time = get_cpu_time() - cpu_time;
+  BOOST_LOG_TRIVIAL(info)
+    << "(wall time: " << wall_time << "s, cpu time: "
+    << cpu_time << "s)\n";
+
+  ReportMemory();
+
+  return true;
+}
+
+bool LGTetrisEx::StartMultiHeightLegalization() {
+  BOOST_LOG_TRIVIAL(info)
+    << "---------------------------------------\n"
+    << "Start LGTetrisEx Legalization\n";
+
+  double wall_time = get_wall_time();
+  double cpu_time = get_cpu_time();
 
   bool is_success = false;
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {

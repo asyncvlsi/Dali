@@ -282,7 +282,7 @@ void RowSegment::GenSubCellTable(
     double init_x = aux_ptr->InitLoc().x;
     double init_y = aux_ptr->InitLoc().y;
     if (blk_rgn.region_id == 0) {
-      double disp_x = blk_ptr->LLX() - aux_ptr->AverageLoc();
+      double disp_x = blk_ptr->LLX() - init_x;
       double disp_y = blk_ptr->LLY() - init_y;
       ost_displacement << init_x << "  " << init_y << "  "
                        << disp_x << "  " << disp_y << "\n";

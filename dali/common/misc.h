@@ -227,13 +227,13 @@ struct Seg {
   }
 };
 
+typedef Seg<int> SegI;
+
 struct IndexVal {
   int col;
   double val;
   IndexVal(int col_init, double val_init) : col(col_init), val(val_init) {}
 };
-
-typedef Seg<int> SegI;
 
 }
 

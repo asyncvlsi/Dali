@@ -485,6 +485,18 @@ class Circuit {
   // simple function to report HPWL
   void ReportHPWL();
 
+  // returns bounding box in the x direction, unit in micron
+  double WeightedBoundingBoxX();
+
+  // returns bounding box in the y direction, unit in micron
+  double WeightedBoundingBoxY();
+
+  // returns total bounding box, unit in micron
+  double WeightedBoundingBox();
+
+  // simple function to report total bounding box
+  void ReportBoundingBox();
+
   // report the histogram of HPWL using linear bins
   void ReportHPWLHistogramLinear(int bin_num = 10);
 

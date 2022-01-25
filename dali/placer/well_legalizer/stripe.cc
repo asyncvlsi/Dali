@@ -578,10 +578,10 @@ void Stripe::OptimizeDisplacementInEachRowSegment(
 #pragma omp parallel for
   for (size_t i = 0; i < sz; ++i) {
     RowSegment *seg = row_seg_ptrs_[i];
-    std::vector<BlkDispVar> vars =
-        seg->OptimizeQuadraticDisplacement(lambda, is_weighted_anchor);
     //std::vector<BlkDispVar> vars =
-    //    seg->OptimizeLinearDisplacement(lambda, is_weighted_anchor);
+    //    seg->OptimizeQuadraticDisplacement(lambda, is_weighted_anchor);
+    std::vector<BlkDispVar> vars =
+        seg->OptimizeLinearDisplacement(lambda, is_weighted_anchor);
     UpdateSubCellLocs(vars);
   }
 }
@@ -808,7 +808,6 @@ bool Stripe::OptimizeDisplacementUsingQuadraticProgramming() {
 #endif
 
 void Stripe::ImportStandardRowSegments(phydb::PhyDB &phydb, Circuit &ckt) {
-  std::cout << "Importing rows from PhyBD\n";
   lx_ = INT_MAX;
   int ux = INT_MIN;
   ly_ = INT_MAX;
@@ -849,7 +848,6 @@ void Stripe::ImportStandardRowSegments(phydb::PhyDB &phydb, Circuit &ckt) {
   }
   width_ = ux - lx_;
   height_ = uy - ly_;
-  std::cout << "End of importing rows from PhyBD\n";
 }
 
 int Stripe::LocY2RowId(double lly) {
@@ -864,10 +862,66 @@ int Stripe::LocY2RowId(double lly) {
   return static_cast<int>(std::round(height / row_height_));
 }
 
-void Stripe::AssignStandardCellsToRowSegments() {
+double Stripe::EstimateCost(int row_id, Block *blk_ptr, SegI &range, double density) {
+  int region_cnt = blk_ptr->TypePtr()->WellPtr()->RegionCount();
+  std::vector<SegI> spaces;
+  spaces.emplace_back(LLX(), URX());
+  for (int i = 0; i < region_cnt; ++i) {
+    gridded_rows_[row_id + i].UpdateCommonSegment(spaces, blk_ptr->Width(), density);
+  }
+
+  if (spaces.empty()) {
+    return DBL_MAX;
+  }
+  int sz = static_cast<int>(spaces.size());
+  int min_id = -1;
+  double min_cost = DBL_MAX;
+  for (int i = 0; i < sz; ++i) {
+    SegI &space = spaces[i];
+    double tmp_cost;
+    if (space.lo <= blk_ptr->LLX() && space.hi >= blk_ptr->URX()) {
+      tmp_cost = 0;
+    }
+    if (space.lo > blk_ptr->LLX()) {
+      tmp_cost = space.lo - blk_ptr->LLX();
+    }
+    if (space.hi < blk_ptr->URX()) {
+      tmp_cost = blk_ptr->URX() - space.hi;
+    }
+    if (tmp_cost < min_cost) {
+      min_cost = tmp_cost;
+      min_id = i;
+    }
+  }
+
+  range = spaces[min_id];
+  //return min_cost;
+  double y_cost = std::fabs(blk_ptr->LLY() - gridded_rows_[row_id].LLY());
+  return min_cost + y_cost;
+}
+
+void Stripe::AddBlockToRow(int row_id, Block *blk_ptr, SegI range) {
+  int region_cnt = blk_ptr->TypePtr()->WellPtr()->RegionCount();
+  blk_ptr->SetLLY(gridded_rows_[row_id].LLY());
+  for (int i = 0; i < region_cnt; ++i) {
+    gridded_rows_[row_id + i].AddStandardCell(blk_ptr, i, range);
+  }
+}
+
+void Stripe::AssignStandardCellsToRowSegments(double white_space_usage) {
+  std::sort(
+      blk_ptrs_vec_.begin(),
+      blk_ptrs_vec_.end(),
+      [](const Block *blk0, const Block *blk1) {
+        return (blk0->LLY() < blk1->LLY()) ||
+            ((blk0->LLY() == blk1->LLY()) && (blk0->Id() < blk1->Id()));
+      }
+  );
+  int row_cnt = static_cast<int>(gridded_rows_.size());
   for (auto &blk_ptr: blk_ptrs_vec_) {
     int row_id = LocY2RowId(blk_ptr->LLY());
-    gridded_rows_[row_id].segments_[0].AddBlockRegion(blk_ptr, 0);
+    SegI range(blk_ptr->LLX(), blk_ptr->URX());
+    AddBlockToRow(row_id, blk_ptr, range);
   }
 }
 

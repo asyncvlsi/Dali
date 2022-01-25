@@ -347,7 +347,7 @@ bool GriddedRowLegalizer::IterativeDisplacementOptimization() {
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
 
-  consensus_max_iter_ = 1000;
+  consensus_max_iter_ = 2;
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
       stripe.IterativeCellReordering(consensus_max_iter_);
@@ -399,6 +399,7 @@ void GriddedRowLegalizer::ReportDisplacement() {
   double disp_x = 0, disp_y = 0;
   double quadratic_disp_x = 0, quadratic_disp_y = 0;
   for (Block &blk: Blocks()) {
+    if (IsDummyBlock(blk)) continue;
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
     double2d init_loc = aux_ptr->InitLoc();
     double tmp_disp_x = std::fabs(blk.LLX() - init_loc.x);
@@ -496,7 +497,7 @@ void GriddedRowLegalizer::ImportStandardRowSegments(phydb::PhyDB &phydb) {
   auto &col = col_list_.back();
   col.stripe_list_.emplace_back();
   auto &stripe = col.stripe_list_.back();
-  stripe.ImportStandardRowSegments(phydb,*p_ckt_);
+  stripe.ImportStandardRowSegments(phydb, *p_ckt_);
   stripe.blk_ptrs_vec_.reserve(Blocks().size());
   for (auto &blk: Blocks()) {
     if (IsDummyBlock(blk)) continue;
@@ -506,14 +507,71 @@ void GriddedRowLegalizer::ImportStandardRowSegments(phydb::PhyDB &phydb) {
 
 void GriddedRowLegalizer::AssignStandardCellsToRowSegments() {
   auto &stripe = col_list_[0].stripe_list_[0];
-  stripe.AssignStandardCellsToRowSegments();
+  stripe.AssignStandardCellsToRowSegments(p_ckt_->WhiteSpaceUsage());
+}
+
+void GriddedRowLegalizer::ReportStandardCellDisplacement() {
+  if (!is_init_loc_cached_) {
+    BOOST_LOG_TRIVIAL(info)
+      << "Initial locations are not saved, cannot compute displacement\n";
+  }
+  double sum_disp_x = 0, sum_disp_y = 0;
+  double max_disp_x = 0, max_disp_y = 0;
+  double max_manhattan_disp = 0;
+  double sum_eucli_disp = 0;
+  double max_euclidean_disp = 0;
+  int cell_count = 0;
+  for (Block &blk: Blocks()) {
+    if (IsDummyBlock(blk)) continue;
+    auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
+    double2d init_loc = aux_ptr->InitLoc();
+    double tmp_disp_x = std::fabs(blk.LLX() - init_loc.x);
+    double tmp_disp_y = std::fabs(blk.LLY() - init_loc.y);
+    sum_disp_x += tmp_disp_x;
+    sum_disp_y += tmp_disp_y;
+    max_disp_x = std::max(max_disp_x, tmp_disp_x);
+    max_disp_y = std::max(max_disp_y, tmp_disp_y);
+    max_manhattan_disp = std::max(max_manhattan_disp, tmp_disp_x + tmp_disp_y);
+
+    double tmp_euclidean_disp =
+        std::sqrt(tmp_disp_x * tmp_disp_x + tmp_disp_y * tmp_disp_y);
+    sum_eucli_disp += tmp_euclidean_disp;
+    max_euclidean_disp = std::max(
+        max_euclidean_disp, tmp_euclidean_disp
+    );
+    ++cell_count;
+  }
+  BOOST_LOG_TRIVIAL(info) << "Standard cell legalization summary\n";
+  BOOST_LOG_TRIVIAL(info) << "  sum manhattan displacement\n";
+  BOOST_LOG_TRIVIAL(info) << "    x: " << sum_disp_x
+                          << ", y: " << sum_disp_y
+                          << ", sum: " << sum_disp_x + sum_disp_y << " sites\n";
+  BOOST_LOG_TRIVIAL(info) << "  average manhattan displacement\n";
+  BOOST_LOG_TRIVIAL(info) << "    x: " << sum_disp_x / cell_count
+                          << ", y: " << sum_disp_y / cell_count
+                          << ", sum: " << (sum_disp_x + sum_disp_y) / cell_count
+                          << " sites\n";
+  BOOST_LOG_TRIVIAL(info) << "  max manhattan displacement\n";
+  BOOST_LOG_TRIVIAL(info) << "    x: " << max_disp_x
+                          << ", y: " << max_disp_y
+                          << " sites\n";
+  BOOST_LOG_TRIVIAL(info) << "  max sum manhattan displacement: "
+                          << max_manhattan_disp << " sites\n";
+
+  BOOST_LOG_TRIVIAL(info) << "  sum euclidean displacement: "
+                          << sum_eucli_disp << " sites\n";
+  BOOST_LOG_TRIVIAL(info) << "  average euclidean displacement: "
+                          << sum_eucli_disp / cell_count << " sites\n";
+  BOOST_LOG_TRIVIAL(info) << "  max euclidean displacement: "
+                          << max_euclidean_disp << " sites\n";
 }
 
 bool GriddedRowLegalizer::StartStandardLegalization() {
-  InitializeBlockAuxiliaryInfo();
-  SaveInitialLoc();
-
   AssignStandardCellsToRowSegments();
+  IterativeDisplacementOptimization();
+  ReportStandardCellDisplacement();
+  ReportHPWL();
+  ReportBoundingBox();
   GenSubCellTable("subcell");
   return true;
 }

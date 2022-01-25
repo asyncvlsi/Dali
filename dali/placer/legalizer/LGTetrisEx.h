@@ -24,6 +24,7 @@
 #include "dali/common/displaceviewer.h"
 #include "dali/common/misc.h"
 #include "dali/placer/placer.h"
+#include "dali/placer/well_legalizer/griddedrowlegalizer.h"
 
 namespace dali {
 
@@ -80,6 +81,7 @@ class LGTetrisEx : public Placer {
   }
   void SetLeftBoundFactor(double k_left) { k_left_ = k_left; }
 
+  void InitializeFromGriddedRowLegalizer(GriddedRowLegalizer *grlg);
   void InitLegalizer();
   void InitLegalizerY();
 
@@ -154,6 +156,8 @@ class LGTetrisEx : public Placer {
   double EstimatedHPWL(Block &block, int x, int y);
 
   bool StartPlacement() override;
+
+  bool StartMultiHeightLegalization();
 
   void GenAvailSpace(std::string const &name_of_file = "avail_space.txt");
 

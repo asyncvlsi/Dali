@@ -124,6 +124,12 @@ class Placer {
     p_ckt_->ReportHPWL();
   }
 
+  void ReportBoundingBox() {
+    DaliExpects(p_ckt_ != nullptr,
+                "No input circuit specified, cannot compute bounding box!");
+    p_ckt_->ReportBoundingBox();
+  }
+
   void ReportHPWLCtoC() {
     DaliExpects(p_ckt_ != nullptr,
                 "No input circuit specified, cannot compute HPWLCtoC!");

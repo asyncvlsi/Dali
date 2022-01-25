@@ -141,7 +141,9 @@ class Stripe {
   int row_height_ = 1;
   void ImportStandardRowSegments(phydb::PhyDB &phydb, Circuit &ckt);
   int LocY2RowId(double lly);
-  void AssignStandardCellsToRowSegments();
+  double EstimateCost(int row_id, Block *blk_ptr, SegI &range, double density);
+  void AddBlockToRow(int row_id, Block *blk_ptr, SegI range);
+  void AssignStandardCellsToRowSegments(double white_space_usage);
 };
 
 struct ClusterStripe {

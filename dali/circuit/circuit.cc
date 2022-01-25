@@ -1251,6 +1251,31 @@ void Circuit::ReportHPWL() {
     << "  Current weighted HPWL: " << WeightedHPWL() << " um\n";
 }
 
+double Circuit::WeightedBoundingBoxX() {
+  double bbox_x = 0;
+  for (auto &net: design_.nets_) {
+    bbox_x += net.WeightedBboxX();
+  }
+  return bbox_x * GridValueX();
+}
+
+double Circuit::WeightedBoundingBoxY() {
+  double bbox_y = 0;
+  for (auto &net: design_.nets_) {
+    bbox_y += net.WeightedBboxY();
+  }
+  return bbox_y * GridValueY();
+}
+
+double Circuit::WeightedBoundingBox() {
+  return WeightedBoundingBoxX() + WeightedBoundingBoxY();
+}
+
+void Circuit::ReportBoundingBox() {
+  BOOST_LOG_TRIVIAL(info)
+    << "  Current weighted bbox: " << WeightedBoundingBox() << " um\n";
+}
+
 void Circuit::ReportHPWLHistogramLinear(int bin_num) {
   std::vector<double> hpwl_list;
   double min_hpwl = DBL_MAX;
