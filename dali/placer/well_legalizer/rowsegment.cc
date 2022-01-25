@@ -105,6 +105,27 @@ void RowSegment::SetOptimalAnchorWeight(double weight) {
   opt_anchor_weight_ = weight;
 }
 
+void RowSegment::FitInRange(std::vector<BlkDispVar> &vars) {
+  double left_contour = LLX();
+  for (auto &var: vars) {
+    if (var.Solution() < left_contour) {
+      var.SetSolution(left_contour);
+    }
+    left_contour = var.Solution() + var.blk_rgn.p_blk->Width();
+  }
+
+  double right_contour = URX();
+  for (auto it = vars.rbegin(); it != vars.rend(); ++it) {
+    auto &var = *it;
+    int width = var.blk_rgn.p_blk->Width();
+    double ux = var.Solution() + width;
+    if (ux > right_contour) {
+      var.SetSolution(right_contour - width);
+    }
+    right_contour = var.Solution();
+  }
+}
+
 std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement(
     double lambda,
     bool is_weighted_anchor
@@ -170,7 +191,9 @@ std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement(
   }
 
   //MinimizeQuadraticDisplacement(vars, LLX(), URX());
-  MinimizeQuadraticDisplacement(vars, LLX());
+  MinimizeQuadraticDisplacement(vars);
+
+  FitInRange(vars);
 
   return vars;
 }
@@ -242,6 +265,8 @@ std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(
 
   //MinimizeLinearDisplacement(vars, LLX(), URX());
   MinimizeLinearDisplacement(vars);
+
+  FitInRange(vars);
 
   return vars;
 }

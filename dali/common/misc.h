@@ -173,38 +173,6 @@ struct Rect {
 typedef Rect<double> RectD;
 typedef Rect<int> RectI;
 
-unsigned long long GetCoverArea(std::vector<RectI> &rects);
-
-class Block;
-template<class T>
-struct IndexLocPair {
-  Block *blk_ptr;
-  T x;
-  T y;
-  explicit IndexLocPair(
-      Block *blk_ptr_init = nullptr,
-      T x_init = 0,
-      T y_init = 0
-  ) : blk_ptr(blk_ptr_init),
-      x(x_init),
-      y(y_init) {}
-  bool operator<(const IndexLocPair &rhs) const {
-    return (x < rhs.x) || ((x == rhs.x) && (y < rhs.y));
-  }
-};
-
-template<class T>
-struct PtrLocPair {
-  T *ptr;
-  int x;
-  int y;
-  explicit PtrLocPair(T *ptr_init = nullptr, int x_init = 0, int y_init = 0)
-      : ptr(ptr_init), x(x_init), y(y_init) {}
-  bool operator<(const PtrLocPair &rhs) const {
-    return (x < rhs.x) || ((x == rhs.x) && (y < rhs.y));
-  }
-};
-
 template<class T>
 struct Seg {
   T lo;

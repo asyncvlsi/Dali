@@ -42,35 +42,58 @@ int main(int argc, char *argv[]) {
   InitLogging("", false, logging::trivial::info, true);
   SaveArgs(argc, argv);
   std::vector<std::vector<std::string>> options =
-      ParseArguments(argc, argv);
+      ParseArguments(argc, argv, "--");
 
   std::vector<std::string> lef_files;
   std::vector<std::string> def_files;
   std::string output_name = "dali_out";
   int number_of_threads = 1;
   bool is_export_matlab = false;
+  double k_width = 0.0;
+  double k_height = 0.0;
+  double k_left = 0.5;
+  double k_left_step = 0.5;
 
   for (auto &option: options) {
     std::string &flag = option[0];
-    if (flag == "-lef") {
+    if (flag == "--lef") {
       lef_files.assign(option.begin() + 1, option.end());
       DaliExpects(!lef_files.empty(), "No lef file provided!");
-    } else if (flag == "-def") {
+    } else if (flag == "--def") {
       def_files.assign(option.begin() + 1, option.end());
       DaliExpects(!def_files.empty(), "No def file provided!");
-    } else if (flag == "-o") {
+    } else if (flag == "--o") {
       DaliExpects(option.size() >= 2, "No output file name provided!");
       output_name = option[1];
-    } else if (flag == "-t") {
+    } else if (flag == "--t") {
       DaliExpects(option.size() >= 2, "No #threads provided!");
       try {
         number_of_threads = std::stoi(option[1]);
       } catch (...) {
         DaliExpects(false, "Invalid #threads!");
       }
-    } else if (flag == "-clsmatlab") {
+    } else if (flag == "--clsmatlab") {
       is_export_matlab = true;
-    } else {
+    } else if (flag == "--kwidth") {
+      try {
+        k_width = std::stod(option[1]);
+      } catch (...) {
+        DaliExpects(false, "Invalid k_width!");
+      }
+    } else if (flag == "--kheight") {
+      try {
+        k_height = std::stod(option[1]);
+      } catch (...) {
+        DaliExpects(false, "Invalid k_height!");
+      }
+    } else if (flag == "--kleft") {
+      try {
+        k_left = std::stod(option[1]);
+        k_left_step = std::stod(option[2]);
+      } catch (...) {
+        DaliExpects(false, "Invalid k_left!");
+      }
+    }  else {
       DaliExpects(false, "Unknown flag: " + option[0]);
     }
   }
@@ -114,18 +137,31 @@ int main(int argc, char *argv[]) {
   multi_well_legalizer->InitializeBlockAuxiliaryInfo();
   multi_well_legalizer->SaveInitialLoc();
 
+  tetris_legalizer->SetWidthHeightFactor(k_width, k_height);
+  tetris_legalizer->SetLeftBoundFactor(k_left, k_left_step);
   tetris_legalizer->InitializeFromGriddedRowLegalizer(multi_well_legalizer.get());
-  tetris_legalizer->StartMultiHeightLegalization();
+  tetris_legalizer->StartRowAssignment();
+
   tetris_legalizer->GenMATLABTable("lg_result.txt");
+  tetris_legalizer->GenDisplacement("disp_result.txt");
 
   multi_well_legalizer->StartStandardLegalization();
   if (is_export_matlab) {
     multi_well_legalizer->GenMATLABTable("sc_result.txt");
     multi_well_legalizer->GenMatlabClusterTable("sc_result");
+    //multi_well_legalizer->GenMATLABWellTable("scw", 0);
   }
+  multi_well_legalizer->ReportStandardCellDisplacement();
+
+
+  //tetris_legalizer->InitializeFromGriddedRowLegalizer(multi_well_legalizer.get());
+  //tetris_legalizer->IsPrintDisplacement(true);
+  //tetris_legalizer->StartMultiHeightLegalization();
+  //tetris_legalizer->GenMATLABTable("lg1_result.txt");
+  //tetris_legalizer->GenDisplacement("disp1_result.txt");
 
   if (!output_name.empty()) {
-    multi_well_legalizer->EmitDEFWellFile(output_name, 1);
+    circuit.SaveDefFile(output_name, "", def_files[0], 1, 1, 2, 1);
   }
 
   wall_time = get_wall_time() - wall_time;

@@ -29,7 +29,7 @@ TetrisLegalizer::TetrisLegalizer()
 
 void TetrisLegalizer::InitLegalizer() {
   std::vector<Block> &block_list = Blocks();
-  IndexLocPair<double> init_pair(0, 0, 0);
+  BlkInitPair init_pair(nullptr, 0, 0);
   index_loc_list_.resize(block_list.size(), init_pair);
 }
 
@@ -129,7 +129,14 @@ bool TetrisLegalizer::TetrisLegal() {
     index_loc_list_[i].x = block_list[i].LLX();
     index_loc_list_[i].y = block_list[i].LLY();
   }
-  std::sort(index_loc_list_.begin(), index_loc_list_.end());
+  std::sort(
+      index_loc_list_.begin(),
+      index_loc_list_.end(),
+      [](const BlkInitPair &pair0, const BlkInitPair &pair1) {
+        return (pair0.x < pair1.x)
+            || ((pair0.x == pair1.x) && (pair0.y < pair1.y));
+      }
+  );
 
   /*for (auto &pair: index_loc_list_) {
     BOOST_LOG_TRIVIAL(info)   << block_list[pair.num].LLX() << "\n";

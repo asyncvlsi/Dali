@@ -129,7 +129,7 @@ class StdClusterWellLegalizer : public Placer {
   int space_to_well_tap_ = 1;
 
   // list of index loc pair for location sort
-  std::vector<IndexLocPair<int>> index_loc_list_;
+  std::vector<BlkInitPair> index_loc_list_;
   std::vector<ClusterStripe> col_list_; // list of stripes
 
   /**** parameters for legalization ****/

@@ -32,11 +32,14 @@ void SaveArgs(int argc, char *argv[]);
 
 std::vector<std::vector<std::string>> ParseArguments(
     int argc,
-    char *argv[]
+    char *argv[],
+    std::string const &flag_prefix
 );
 
 // custom residual function, return: |x - round(x/y) * y|
 double AbsResidual(double x, double y);
+
+unsigned long long GetCoverArea(std::vector<RectI> &rects);
 
 // perform round() when x is close to an integer within an epsilon, other perform ceiling()
 double RoundOrCeiling(double x, double epsilon = 1e-5);

@@ -263,6 +263,19 @@ class BlockAux {
   Block *blk_ptr_;
 };
 
+struct BlkInitPair {
+  Block *blk_ptr;
+  double x;
+  double y;
+  explicit BlkInitPair(
+      Block *blk_ptr_init = nullptr,
+      double x_init = 0,
+      double y_init = 0
+  ) : blk_ptr(blk_ptr_init),
+      x(x_init),
+      y(y_init) {}
+};
+
 }
 
 #endif //DALI_DALI_CIRCUIT_BLOCK_H_

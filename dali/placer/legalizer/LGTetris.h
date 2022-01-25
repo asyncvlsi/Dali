@@ -21,8 +21,11 @@
 #ifndef DALI_DALI_PLACER_LEGALIZER_LGTETRIS_H_
 #define DALI_DALI_PLACER_LEGALIZER_LGTETRIS_H_
 
+#include <vector>
+
+#include "dali/circuit/block.h"
 #include "dali/common/misc.h"
-#include "LGTetris/tetrisspace.h"
+#include "dali/placer/legalizer/LGTetris/tetrisspace.h"
 #include "dali/placer/placer.h"
 
 /****
@@ -42,7 +45,7 @@ class TetrisLegalizer : public Placer {
   int max_iteration_;
   int current_iteration_;
   bool flipped_;
-  std::vector<IndexLocPair<double> > index_loc_list_;
+  std::vector<BlkInitPair> index_loc_list_;
  public:
   TetrisLegalizer();
   void InitLegalizer();

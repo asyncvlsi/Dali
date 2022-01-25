@@ -347,7 +347,6 @@ bool GriddedRowLegalizer::IterativeDisplacementOptimization() {
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
 
-  consensus_max_iter_ = 2;
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
       stripe.IterativeCellReordering(consensus_max_iter_);
@@ -569,7 +568,6 @@ void GriddedRowLegalizer::ReportStandardCellDisplacement() {
 bool GriddedRowLegalizer::StartStandardLegalization() {
   AssignStandardCellsToRowSegments();
   IterativeDisplacementOptimization();
-  ReportStandardCellDisplacement();
   ReportHPWL();
   ReportBoundingBox();
   GenSubCellTable("subcell");
@@ -614,7 +612,7 @@ void GriddedRowLegalizer::GenSubCellTable(std::string const &name_of_file) {
 
   std::string displacement_file = name_of_file + "_disp.txt";
   std::ofstream ost_displacement(displacement_file.c_str());
-  DaliExpects(ost_discrepancy.is_open(),
+  DaliExpects(ost_displacement.is_open(),
               "Cannot open output file: " + name_of_file);
 
   for (auto &col: col_list_) {

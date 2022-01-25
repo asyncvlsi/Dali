@@ -111,7 +111,7 @@ class GriddedRowLegalizer : public Placer {
   int greedy_cur_iter_ = 0;
   int greedy_max_iter_ = 10;
 
-  int consensus_max_iter_ = 100;
+  int consensus_max_iter_ = 1000;
 
   bool is_init_loc_cached_ = false;
   bool is_greedy_loc_cached_ = false;

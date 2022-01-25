@@ -2570,8 +2570,8 @@ void GlobalPlacer::RoughLegalBlkInBox(BoxBin &box) {
   std::vector<int> row_start;
   row_start.assign(box.top - box.bottom + 1, box.left);
 
-  std::vector<IndexLocPair<int>> index_loc_list;
-  IndexLocPair<int> tmp_index_loc_pair(0, 0, 0);
+  std::vector<BlkInitPair> index_loc_list;
+  BlkInitPair tmp_index_loc_pair(nullptr, 0, 0);
   index_loc_list.resize(sz, tmp_index_loc_pair);
 
   std::vector<Block> &block_list = p_ckt_->Blocks();
@@ -2581,7 +2581,13 @@ void GlobalPlacer::RoughLegalBlkInBox(BoxBin &box) {
     index_loc_list[i].x = blk_ptr->LLX();
     index_loc_list[i].y = blk_ptr->LLY();
   }
-  std::sort(index_loc_list.begin(), index_loc_list.end());
+  std::sort(
+      index_loc_list.begin(), index_loc_list.end(),
+      [](const BlkInitPair &pair0, const BlkInitPair &pair1) {
+        return (pair0.x < pair1.x)
+            || ((pair0.x == pair1.x) && (pair0.y < pair1.y));
+      }
+  );
 
   int init_x;
   int init_y;

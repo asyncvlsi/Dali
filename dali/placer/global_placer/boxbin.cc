@@ -23,6 +23,8 @@
 
 #include <cmath>
 
+#include "dali/common/helper.h"
+
 namespace dali {
 
 BoxBin::BoxBin() {

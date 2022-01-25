@@ -32,7 +32,6 @@
 #include "dali/placer/legalizer/LGTetrisEx.h"
 
 /****Well Legalizer****/
-#include "dali/placer/well_legalizer/clusterwelllegalizer.h"
 #include "dali/placer/well_legalizer/stdclusterwelllegalizer.h"
 #include "dali/placer/well_legalizer/welllegalizer.h"
 #include "dali/placer/well_legalizer/griddedrowlegalizer.h"

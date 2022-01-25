@@ -50,6 +50,7 @@ class RowSegment {
   void MinDisplacementLegalization();
 
   void SetOptimalAnchorWeight(double weight);
+  void FitInRange(std::vector<BlkDispVar> &vars);
   std::vector<BlkDispVar> OptimizeQuadraticDisplacement(
       double lambda,
       bool is_weighted_anchor

@@ -642,7 +642,7 @@ void Stripe::SetBlockLoc() {
   for (size_t i = 0; i < sz; ++i) {
     Block *blk_ptr = blk_ptrs_vec_[i];
     auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
-    blk_ptr->SetLLX(aux_ptr->AverageLoc());
+    blk_ptr->SetLLX(std::round(aux_ptr->AverageLoc()));
   }
 }
 
@@ -662,6 +662,8 @@ void Stripe::IterativeCellReordering(int max_iter) {
     if (!is_weighted_anchor) {
       is_weighted_anchor = IsDiscrepancyConverge();
     }
+    if (is_weighted_anchor) break;
+    if (discrepancies_.back() < 1e-5) break;
   }
   SetBlockLoc();
   omp_set_num_threads(1);

@@ -155,9 +155,9 @@ void Tech::CreateFakeWellForStandardCell(phydb::PhyDB *phy_db) {
     int region_cnt = (int) std::round(blk_type->Height() / standard_height);
     auto *well_ptr = blk_type->WellPtr();
     int accumulative_height = 0;
-    bool is_n = IsGndAtBottom(macro);
+    bool is_pwell = IsGndAtBottom(macro);
     for (int i = 0; i < 2 * region_cnt; ++i) {
-      if (is_n) {
+      if (is_pwell) {
         well_ptr->AddNwellRect(
             0, accumulative_height,
             blk_type->Width(), accumulative_height + n_height
@@ -170,7 +170,7 @@ void Tech::CreateFakeWellForStandardCell(phydb::PhyDB *phy_db) {
         );
         accumulative_height += p_height;
       }
-      is_n = !is_n;
+      is_pwell = !is_pwell;
     }
   }
 }
