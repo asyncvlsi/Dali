@@ -600,15 +600,15 @@ bool WellLegalizer::WellLegalizationLeft() {
   block_contour_.assign(block_contour_.size(), left_);
   std::vector<Block> &block_list = Blocks();
 
-  int sz = index_loc_list_.size();
+  int sz = blk_inits_.size();
   for (int i = 0; i < sz; ++i) {
-    index_loc_list_[i].blk_ptr = &(block_list[i]);
-    index_loc_list_[i].x = block_list[i].LLX();
-    index_loc_list_[i].y = block_list[i].LLY();
+    blk_inits_[i].blk_ptr = &(block_list[i]);
+    blk_inits_[i].x = block_list[i].LLX();
+    blk_inits_[i].y = block_list[i].LLY();
   }
   std::sort(
-      index_loc_list_.begin(),
-      index_loc_list_.end(),
+      blk_inits_.begin(),
+      blk_inits_.end(),
       [](const BlkInitPair &pair0, const BlkInitPair &pair1) {
         return (pair0.x < pair1.x)
             || ((pair0.x == pair1.x) && (pair0.y < pair1.y));
@@ -623,7 +623,7 @@ bool WellLegalizer::WellLegalizationLeft() {
   bool is_current_loc_legal;
   bool is_legal_loc_found;
 
-  for (auto &pair: index_loc_list_) {
+  for (auto &pair: blk_inits_) {
     auto &block = *(pair.blk_ptr);
     if (block.IsFixed()) continue;
 
@@ -979,15 +979,15 @@ bool WellLegalizer::WellLegalizationRight() {
   block_contour_.assign(block_contour_.size(), right_);
   std::vector<Block> &block_list = Blocks();
 
-  int sz = index_loc_list_.size();
+  int sz = blk_inits_.size();
   for (int i = 0; i < sz; ++i) {
-    index_loc_list_[i].blk_ptr = &(block_list[i]);
-    index_loc_list_[i].x = block_list[i].URX();
-    index_loc_list_[i].y = block_list[i].LLY();
+    blk_inits_[i].blk_ptr = &(block_list[i]);
+    blk_inits_[i].x = block_list[i].URX();
+    blk_inits_[i].y = block_list[i].LLY();
   }
   std::sort(
-      index_loc_list_.begin(),
-      index_loc_list_.end(),
+      blk_inits_.begin(),
+      blk_inits_.end(),
       [](const BlkInitPair &lhs, const BlkInitPair &rhs) {
         return (lhs.x > rhs.x) || (lhs.x == rhs.x && lhs.y > rhs.y);
       }
@@ -1001,7 +1001,7 @@ bool WellLegalizer::WellLegalizationRight() {
   bool is_current_loc_legal;
   bool is_legal_loc_found;
 
-  for (auto &pair: index_loc_list_) {
+  for (auto &pair: blk_inits_) {
     auto &block = *(pair.blk_ptr);
     if (block.IsFixed()) continue;
 
@@ -1049,7 +1049,7 @@ bool WellLegalizer::StartPlacement() {
   InitWellLegalizer();
   BOOST_LOG_TRIVIAL(info) << "  Number of rows: " << row_well_status_.size()
                           << "\n"
-                          << "  Number of blocks: " << index_loc_list_.size()
+                          << "  Number of blocks: " << blk_inits_.size()
                           << "\n"
                           << "  Well Rules:\n"
                           << "    NN spacing: " << nn_spacing_ << "\n"

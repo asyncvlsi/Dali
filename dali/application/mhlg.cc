@@ -140,11 +140,13 @@ int main(int argc, char *argv[]) {
   tetris_legalizer->SetWidthHeightFactor(k_width, k_height);
   tetris_legalizer->SetLeftBoundFactor(k_left, k_left_step);
   tetris_legalizer->InitializeFromGriddedRowLegalizer(multi_well_legalizer.get());
+  tetris_legalizer->SetMaxIteration(10);
   tetris_legalizer->StartRowAssignment();
 
   tetris_legalizer->GenMATLABTable("lg_result.txt");
   tetris_legalizer->GenDisplacement("disp_result.txt");
 
+  /*
   multi_well_legalizer->StartStandardLegalization();
   if (is_export_matlab) {
     multi_well_legalizer->GenMATLABTable("sc_result.txt");
@@ -152,6 +154,7 @@ int main(int argc, char *argv[]) {
     //multi_well_legalizer->GenMATLABWellTable("scw", 0);
   }
   multi_well_legalizer->ReportStandardCellDisplacement();
+   */
 
 
   //tetris_legalizer->InitializeFromGriddedRowLegalizer(multi_well_legalizer.get());
