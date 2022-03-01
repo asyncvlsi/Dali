@@ -529,6 +529,10 @@ void GriddedRow::AddBlockRegion(Block *p_blk, int region_id, bool is_upward) {
   }
 }
 
+std::vector<BlockRegion> &GriddedRow::BlkRegions() {
+  return blk_regions_;
+}
+
 bool GriddedRow::AttemptToAdd(Block *p_blk, bool is_upward) {
   // put this block to the closest white space segment
   double min_distance = DBL_MAX;
@@ -582,9 +586,10 @@ BlockOrient GriddedRow::ComputeBlockOrient(Block *p_blk, bool is_upward) const {
   return orient;
 }
 
-void GriddedRow::LegalizeSegmentsX() {
+void GriddedRow::LegalizeSegmentsX(bool use_init_loc) {
   for (auto &segment: segments_) {
-    segment.MinDisplacementLegalization();
+    segment.MinDisplacementLegalization(use_init_loc);
+    segment.SnapCellToPlacementGrid();
   }
 }
 
@@ -748,6 +753,17 @@ void GriddedRow::AddStandardCell(Block *p_blk, int region_id, SegI range) {
   }
 
   DaliExpects(is_added, "Unable to add cell to a row segment?!");
+}
+
+size_t GriddedRow::OutOfBoundCell() {
+  size_t cnt = 0;
+  for (auto &blk_region: blk_regions_) {
+    Block *blk_ptr = blk_region.p_blk;
+    if ((blk_ptr->LLX() < LLX()) || (blk_ptr->URX() > URX())) {
+      ++cnt;
+    }
+  }
+  return cnt;
 }
 
 void ClusterSegment::Merge(

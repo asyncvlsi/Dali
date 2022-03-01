@@ -73,7 +73,13 @@ void RowSegment::AddBlockRegion(Block *blk_ptr, int region_id) {
   blk_regions_.emplace_back(blk_ptr, region_id);
 }
 
-void RowSegment::MinDisplacementLegalization() {
+void RowSegment::RemoveBlockRegion(Block *blk_ptr, int region_id) {
+  used_size_ -= blk_ptr->Width();
+  blk_regions_.pop_back();
+}
+
+void RowSegment::MinDisplacementLegalization(bool use_init_loc) {
+  if (blk_regions_.empty()) return;
   std::sort(
       blk_regions_.begin(),
       blk_regions_.end(),
@@ -86,10 +92,17 @@ void RowSegment::MinDisplacementLegalization() {
 
   std::vector<BlkDispVar> vars;
   vars.reserve(blk_regions_.size());
-  for (auto &blk_rgn: blk_regions_) {
-    auto aux_ptr = static_cast<LgBlkAux *>(blk_rgn.p_blk->AuxPtr());
-    vars.emplace_back(blk_rgn.p_blk->Width(), aux_ptr->InitLoc().x, 1.0);
-    vars.back().blk_rgn = blk_rgn;
+  if (use_init_loc) {
+    for (auto &blk_rgn: blk_regions_) {
+      auto aux_ptr = static_cast<LgBlkAux *>(blk_rgn.p_blk->AuxPtr());
+      vars.emplace_back(blk_rgn.p_blk->Width(), aux_ptr->InitLoc().x, 1.0);
+      vars.back().blk_rgn = blk_rgn;
+    }
+  } else {
+    for (auto &blk_rgn: blk_regions_) {
+      vars.emplace_back(blk_rgn.p_blk->Width(), blk_rgn.p_blk->LLX(), 1.0);
+      vars.back().blk_rgn = blk_rgn;
+    }
   }
 
   // get optimized locations and store them in vars
@@ -98,6 +111,12 @@ void RowSegment::MinDisplacementLegalization() {
   // set block locations from vars
   for (auto &var: vars) {
     var.UpdateBlkLocation();
+  }
+}
+
+void RowSegment::SnapCellToPlacementGrid() {
+  for (auto &blk_region: blk_regions_) {
+    blk_region.p_blk->SetLLX(std::round(blk_region.p_blk->LLX()));
   }
 }
 
@@ -111,13 +130,13 @@ void RowSegment::FitInRange(std::vector<BlkDispVar> &vars) {
     if (var.Solution() < left_contour) {
       var.SetSolution(left_contour);
     }
-    left_contour = var.Solution() + var.blk_rgn.p_blk->Width();
+    left_contour = var.Solution() + var.Width();
   }
 
   double right_contour = URX();
   for (auto it = vars.rbegin(); it != vars.rend(); ++it) {
     auto &var = *it;
-    int width = var.blk_rgn.p_blk->Width();
+    int width = var.Width();
     double ux = var.Solution() + width;
     if (ux > right_contour) {
       var.SetSolution(right_contour - width);
@@ -126,9 +145,157 @@ void RowSegment::FitInRange(std::vector<BlkDispVar> &vars) {
   }
 }
 
+double RowSegment::DispCost(
+    std::vector<BlkDispVar> &vars,
+    int l,
+    int r,
+    bool is_linear
+) {
+  double quadratic_disp = 0;
+  for (int i = l; i <= r; ++i) {
+    double disp = std::fabs(vars[i].Solution() - vars[i].InitX());
+    if (is_linear) {
+      quadratic_disp += vars[i].Weight();
+    } else {
+      quadratic_disp += vars[i].Weight() * disp * disp;
+    }
+
+  }
+  return quadratic_disp;
+}
+
+void RowSegment::FindBestLocalOrder(
+    std::vector<BlkDispVar> &res,
+    double &cost,
+    std::vector<BlkDispVar> &vars,
+    int cur, int l, int r,
+    double left_bound, double right_bound,
+    double gap, int range,
+    bool is_linear
+) {
+  if (cur == r) {
+    vars[l].SetSolution(left_bound);
+    vars[r].SetSolution(right_bound - vars[r].Width());
+
+    double left_contour = left_bound + gap + vars[l].Width();
+    for (int i = l + 1; i < r; ++i) {
+      vars[i].SetSolution(left_contour);
+      left_contour += vars[i].Width() + gap;
+    }
+
+    double tmp_cost = DispCost(vars, l, r, is_linear);
+    if (tmp_cost < cost) {
+      cost = tmp_cost;
+      for (int j = 0; j < range; ++j) {
+        res[j] = vars[l + j];
+      }
+    }
+  } else {
+    // Permutations made
+    for (int i = cur; i <= r; ++i) {
+      // Swapping done
+      std::swap(vars[cur], vars[i]);
+
+      // Recursion called
+      FindBestLocalOrder(
+          res, cost, vars,
+          cur + 1, l, r,
+          left_bound, right_bound, gap, range,
+          is_linear
+      );
+
+      //backtrack
+      std::swap(vars[cur], vars[i]);
+    }
+  }
+}
+
+void RowSegment::LocalReorder(
+    std::vector<BlkDispVar> &vars,
+    int range,
+    int omit,
+    bool is_linear
+) {
+  int sz = static_cast<int>(vars.size());
+  if (sz < range) return;
+
+  int last_segment = sz - range - omit;
+  BlkDispVar tmp(0, 0, 0);
+  std::vector<BlkDispVar> res_local_order(range, tmp);
+  for (int l = omit; l <= last_segment; ++l) {
+    int tot_blk_width = 0;
+    for (int j = 0; j < range; ++j) {
+      res_local_order[j] = vars[l + j];
+      tot_blk_width += res_local_order[j].Width();
+    }
+    int r = l + range - 1;
+    double best_cost = DBL_MAX;
+    double left_bound = vars[l].Solution();
+    double right_bound = vars[r].Solution() + vars[r].Width();
+    double gap = (right_bound - left_bound - tot_blk_width) / (range - 1);
+
+    FindBestLocalOrder(
+        res_local_order, best_cost, vars,
+        l, l, r,
+        left_bound, right_bound, gap, range,
+        is_linear
+    );
+    for (int j = 0; j < range; ++j) {
+      vars[l + j] = res_local_order[j];
+    }
+
+    vars[l].SetSolution(left_bound);
+    vars[r].SetSolution(right_bound - vars[r].Width());
+    double left_contour = left_bound + vars[l].Width() + gap;
+    for (int i = l + 1; i < r; ++i) {
+      vars[i].SetSolution(left_contour);
+      left_contour += vars[i].Width() + gap;
+    }
+  }
+}
+
+void RowSegment::LocalReorder2(
+    std::vector<BlkDispVar> &vars
+) {
+  int sz = static_cast<int>(vars.size());
+  if (sz <= 2) return;
+  for (int i = 0; i < sz - 1;) {
+    // if a multideck cell
+    if (vars[i].IsMultideckCell()) {
+      if (vars[i].TendToRight()) { // have a tendency to move right
+        if (i + 1 < sz) {
+          if ((vars[i + 1].IsMultideckCell() && vars[i + 1].TendToLeft()) ||
+              (!vars[i + 1].IsMultideckCell())) {
+            double left = vars[i].Solution();
+            double right = vars[i + 1].Solution() + vars[i + 1].Width();
+            vars[i].SetSolution(right - vars[i].Width());
+            vars[i + 1].SetSolution(left);
+            i += 1;
+            continue;
+          }
+        }
+      } else if (vars[i].TendToLeft()) { // have a tendency to move left
+        if (i - 1 > 0) {
+          if ((vars[i - 1].IsMultideckCell() && vars[i - 1].TendToRight()) ||
+              (!vars[i - 1].IsMultideckCell())) {
+            double left = vars[i - 1].Solution();
+            double right = vars[i].Solution() + vars[i].Width();
+            vars[i - 1].SetSolution(right - vars[i - 1].Width());
+            vars[i].SetSolution(left);
+            i += 1;
+            continue;
+          }
+        }
+      }
+    }
+    ++i;
+  }
+}
+
 std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement(
     double lambda,
-    bool is_weighted_anchor
+    bool is_weighted_anchor,
+    bool is_reorder
 ) {
   std::vector<BlkDispVar> vars;
   if (blk_regions_.empty()) return vars;
@@ -152,7 +319,6 @@ std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement(
     for (auto &blk_rgn: blk_regions_) {
       Block *blk_ptr = blk_rgn.p_blk;
       auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
-      int region_cnt = blk_ptr->TypePtr()->WellPtr()->RegionCount();
       double average_loc = aux_ptr->AverageLoc();
       double sub_loc = aux_ptr->SubLocs()[blk_rgn.region_id];
       double tmp_discrepancy = std::fabs(average_loc - sub_loc);
@@ -161,10 +327,13 @@ std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement(
     }
     ave_discrepancy = sum_discrepancy / sub_cell_cnt;
     if (ave_discrepancy < 1e-5) {
-      ave_discrepancy = 1;
+      ave_discrepancy = 1e-5;
     }
   }
 
+  //vars.reserve(blk_regions_.size() + 2);
+  //vars.emplace_back(0, LLX(), 0);
+  //double max_weight = 0;
   vars.reserve(blk_regions_.size());
   for (auto &blk_rgn: blk_regions_) {
     Block *blk_ptr = blk_rgn.p_blk;
@@ -183,24 +352,37 @@ std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement(
       double average_loc = aux_ptr->AverageLoc();
       double tmp_discrepancy = std::fabs(average_loc - sub_loc);
       weight_discrepancy = pow(1 + tmp_discrepancy / ave_discrepancy, 2.0);
+      //weight_discrepancy = exp(tmp_discrepancy / ave_discrepancy);
     }
+    double weight = (1 - lambda) * weight_discrepancy;
+    //max_weight = std::max(weight, max_weight);
     vars.back().SetAnchor(
         aux_ptr->AverageLoc(),
-        (1 - lambda) * weight_discrepancy // / region_cnt
+        weight // / region_cnt
     );
   }
+  //vars.emplace_back(0, URX(), max_weight * 100);
+  //vars[0].SetWeight(max_weight * 100);
 
   //MinimizeQuadraticDisplacement(vars, LLX(), URX());
-  MinimizeQuadraticDisplacement(vars);
+  //MinimizeQuadraticDisplacement(vars);
+  AbacusPlaceRow(vars);
 
-  FitInRange(vars);
+  if (is_weighted_anchor) {
+    FitInRange(vars);
+    if (is_reorder) {
+      LocalReorder(vars, 3, 0, false);
+      //LocalReorder2(vars);
+    }
+  }
 
   return vars;
 }
 
 std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(
     double lambda,
-    bool is_weighted_anchor
+    bool is_weighted_anchor,
+    bool is_reorder
 ) {
   std::vector<BlkDispVar> vars;
   if (blk_regions_.empty()) return vars;
@@ -233,7 +415,7 @@ std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(
     }
     ave_discrepancy = sum_discrepancy / sub_cell_cnt;
     if (ave_discrepancy < 1e-5) {
-      ave_discrepancy = 1;
+      ave_discrepancy = 1e-5;
     }
   }
 
@@ -255,7 +437,7 @@ std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(
       double sub_loc = aux_ptr->SubLocs()[blk_rgn.region_id];
       double average_loc = aux_ptr->AverageLoc();
       double tmp_discrepancy = std::fabs(average_loc - sub_loc);
-      weight_discrepancy = pow(1 + tmp_discrepancy / ave_discrepancy, 2.0);
+      weight_discrepancy = pow(1 + tmp_discrepancy / ave_discrepancy, 1.0);
     }
     vars.back().SetAnchor(
         aux_ptr->AverageLoc(),
@@ -266,7 +448,10 @@ std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(
   //MinimizeLinearDisplacement(vars, LLX(), URX());
   MinimizeLinearDisplacement(vars);
 
-  FitInRange(vars);
+  if (is_weighted_anchor) {
+    FitInRange(vars);
+    if (is_reorder) LocalReorder(vars, 3, 0, true);
+  }
 
   return vars;
 }

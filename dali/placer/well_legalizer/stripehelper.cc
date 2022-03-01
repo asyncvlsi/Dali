@@ -108,8 +108,6 @@ void CollectWellFillingRects(
   for (int i = 0; i < rect_count; ++i) {
     ly = pn_edge_list[i];
     uy = pn_edge_list[i + 1];
-    std::cout << lx << " " << ly << " "
-              << ux << " " << uy << std::endl;
     if (is_p_well_rect) {
       p_rects.emplace_back(lx, ly, ux, uy);
     } else {

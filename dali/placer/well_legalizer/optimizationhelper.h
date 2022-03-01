@@ -39,6 +39,12 @@ void MinimizeLinearDisplacement(
     double upper_limit = DBL_MAX
 );
 
+void AbacusPlaceRow(
+    std::vector<BlkDispVar> &vars,
+    double lower_limit = -DBL_MAX,
+    double upper_limit = DBL_MAX
+);
+
 }
 
 #endif //DALI_DALI_PLACER_WELL_LEGALIZER_OPTIMIZATIONHELPER_H_

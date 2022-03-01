@@ -50,7 +50,7 @@ struct BlkDispVarSegment {
   }
   void Merge(
       BlkDispVarSegment &seg,
-      double lower_bound ,
+      double lower_bound,
       double upper_bound
   );
   void LinearMerge(
@@ -256,6 +256,101 @@ void MinimizeLinearDisplacement(
 
   for (auto &seg: segments) {
     seg.UpdateVarLoc();
+  }
+}
+
+struct BlkSegment {
+  int first_id = -1;
+  int last_id = -1;
+  double x = 0;
+  double sum_e_ = 0;
+  double sum_es_ = 0;
+  int width = 0;
+
+  int CellCount() const { return last_id - first_id + 1; }
+  void UpdatePosition() { x = sum_es_ / sum_e_; }
+  void AddCell(BlkDispVar &var, int i);
+  void SetX(double init_x) { x = init_x; }
+  void SetFirstId(int i) { first_id = i; }
+  int LastId() { return last_id; }
+  int Width() { return width; }
+  double TotalWeight() { return sum_e_; }
+  double TotalWeightedLoc() { return sum_es_; }
+  double LX() const { return x; }
+  double UX() const { return x + width; }
+  void AddSegment(BlkSegment &seg);
+};
+
+void BlkSegment::AddCell(BlkDispVar &var, int i) {
+  last_id = i;
+  sum_e_ += var.Weight();
+  sum_es_ += var.Weight() * (var.InitX() - width);
+  width += var.Width();
+}
+
+void BlkSegment::AddSegment(BlkSegment &seg) {
+  last_id = seg.LastId();
+  sum_e_ += seg.TotalWeight();
+  sum_es_ += seg.TotalWeightedLoc() - seg.TotalWeight() * width;
+  width += seg.Width();
+}
+
+void CollapseSegment(
+    std::vector<BlkSegment> &segments,
+    double lower_limit,
+    double upper_limit
+) {
+  DaliExpects(!segments.empty(), "Impossible to be empty!");
+  BlkSegment &cur_seg = segments.back();
+  cur_seg.UpdatePosition();
+  if (cur_seg.LX() < lower_limit) {
+    cur_seg.SetX(lower_limit);
+  }
+  if (cur_seg.UX() > upper_limit) {
+    cur_seg.SetX(upper_limit - cur_seg.Width());
+  }
+
+  size_t seg_sz = segments.size();
+  if (seg_sz == 1) return;
+  BlkSegment &prev_seg = segments[seg_sz - 2];
+  if (prev_seg.UX() > cur_seg.LX()) {
+    prev_seg.AddSegment(cur_seg);
+    segments.pop_back();
+    CollapseSegment(segments, lower_limit, upper_limit);
+  }
+}
+
+void AbacusPlaceRow(
+    std::vector<BlkDispVar> &vars,
+    double lower_limit,
+    double upper_limit
+) {
+  if (vars.empty()) return;
+  std::vector<BlkSegment> segments;
+
+  int sz = static_cast<int>(vars.size());
+  for (int i = 0; i < sz; ++i) {
+    if ((i == 0) || (segments.back().UX() <= vars[i].InitX())) {
+      segments.emplace_back();
+      BlkSegment &last_seg = segments.back();
+      last_seg.SetX(vars[i].InitX());
+      last_seg.SetFirstId(i);
+      last_seg.AddCell(vars[i], i);
+    } else {
+      BlkSegment &last_seg = segments.back();
+      last_seg.AddCell(vars[i], i);
+      CollapseSegment(segments, lower_limit, upper_limit);
+    }
+  }
+
+  int i = 0;
+  for (auto &seg: segments) {
+    double x = seg.LX();
+    for (; i <= seg.LastId(); ++i) {
+      vars[i].SetSolution(x);
+      vars[i].SetClusterWeight(seg.TotalWeight());
+      x += vars[i].Width();
+    }
   }
 }
 

@@ -66,6 +66,9 @@ class Stripe {
 
   std::vector<double> displacements_;
   std::vector<double> discrepancies_;
+  double max_discrepancy_ = 0;
+
+  double max_disp_ = 0;
 
   int LLX() const { return lx_; }
   int LLY() const { return ly_; }
@@ -93,7 +96,7 @@ class Stripe {
   void SimplyAddFollowingClusters(Block *p_blk, bool is_upward);
   bool AddBlockToFrontCluster(Block *p_blk, bool is_upward);
   size_t FitBlocksToFrontSpaceUpward(size_t start_id, int current_iteration);
-  void LegalizeFrontCluster();
+  void LegalizeFrontCluster(bool use_init_loc);
   void UpdateRemainingClusters(int p_height, int n_height, bool is_upward);
   void UpdateBlockStretchLength();
 
@@ -114,15 +117,21 @@ class Stripe {
 
   void CollectAllRowSegments();
   void UpdateSubCellLocs(std::vector<BlkDispVar> &vars);
-  void OptimizeDisplacementInEachRowSegment(double lambda, bool is_weighted_anchor);
+  void OptimizeDisplacementInEachRowSegment(
+      double lambda,
+      bool is_weighted_anchor,
+      bool is_reorder
+  );
   void ComputeAverageLoc();
   void ReportIterativeStatus(int i);
   bool IsDiscrepancyConverge();
   void SetBlockLoc();
   void ClearMultiRowCellBreaking();
-  void IterativeCellReordering(int max_iter);
+  void IterativeCellReordering(int max_iter, int number_of_threads = 1);
 
   void SortBlocksInEachRow();
+
+  size_t OutOfBoundCell();
 
 #if DALI_USE_CPLEX
   std::unordered_map<Block *, IloInt> blk_ptr_2_tmp_id;
@@ -134,7 +143,7 @@ class Stripe {
   void ConstructQuadraticObjective(IloModel &model, IloNumVarArray &x);
   void CreateQPModel(IloModel &model, IloNumVarArray &x, IloRangeArray &c);
   bool SolveQPProblem(IloCplex &cplex, IloNumVarArray &var);
-  bool OptimizeDisplacementUsingQuadraticProgramming();
+  bool OptimizeDisplacementUsingQuadraticProgramming(int number_of_threads = 1);
 #endif
 
   /**** for standard cells ****/

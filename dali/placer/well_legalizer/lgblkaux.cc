@@ -96,6 +96,13 @@ void LgBlkAux::ComputeAverageLoc() {
   size_t sz = sub_locs_.size();
   double sum_weight_loc = 0;
   double sum_weight = 0;
+  /*double max_weight = 0;
+  for (size_t i = 0; i < sz; ++i) {
+    max_weight = std::max(max_weight, weights_[i]);
+  }
+  for (size_t i = 0; i < sz; ++i) {
+    weights_[i] /= max_weight;
+  }*/
   for (size_t i = 0; i < sz; ++i) {
     sum_weight_loc += weights_[i] * sub_locs_[i];
     sum_weight += weights_[i];

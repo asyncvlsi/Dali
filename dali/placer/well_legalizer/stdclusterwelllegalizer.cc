@@ -681,9 +681,11 @@ bool StdClusterWellLegalizer::TrialClusterLegalization(Stripe &stripe) {
  * we do not pay much attention to the exact positions of the cells during Local Re-ordering."
  * from "An Efficient and Effective Detailed Placement Algorithm"
  * ****/
-double StdClusterWellLegalizer::WireLengthCost(GriddedRow *cluster,
-                                               int l,
-                                               int r) {
+double StdClusterWellLegalizer::WireLengthCost(
+    GriddedRow *cluster,
+    int l,
+    int r
+) {
   auto &net_list = Nets();
   std::set<Net *> net_involved;
   for (int i = l; i <= r; ++i) {
@@ -804,7 +806,6 @@ void StdClusterWellLegalizer::LocalReorderInCluster(
       left_contour += blk->Width() + gap;
     }
   }
-
 }
 
 void StdClusterWellLegalizer::LocalReorderAllClusters() {

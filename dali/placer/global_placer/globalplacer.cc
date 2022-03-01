@@ -53,6 +53,11 @@ GlobalPlacer::GlobalPlacer(double aspectRatio, double fillingRate) : Placer(
   height_epsilon_ = 0;
 }
 
+void GlobalPlacer::SetMaxIter(int max_iter) {
+  DaliExpects(max_iter > 0, "negative iterations?");
+  max_iter_ = max_iter;
+}
+
 void GlobalPlacer::LoadConf(std::string const &config_file) {
   config_read(config_file.c_str());
   std::string variable;

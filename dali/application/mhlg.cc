@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
   tetris_legalizer->StartRowAssignment();
 
   tetris_legalizer->GenMATLABTable("lg_result.txt");
-  tetris_legalizer->GenDisplacement("disp_result.txt");
+  multi_well_legalizer->GenDisplacement("disp_result.txt");
 
   /*
   multi_well_legalizer->StartStandardLegalization();

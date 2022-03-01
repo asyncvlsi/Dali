@@ -66,6 +66,9 @@ int main(int argc, char *argv[]) {
   bool export_well_cluster_for_matlab = false;
   bool is_well_tap_needed = true;
   double max_row_width = 0;
+  int lg_threads = 1;
+  int gb_maxiter = 100;
+  bool lg_cplex = false;
 
   /**** parsing arguments ****/
   for (int i = 1; i < argc;) {
@@ -184,6 +187,26 @@ int main(int argc, char *argv[]) {
         ReportUsage();
         return 1;
       }
+    } else if (arg == "-lgthreads" && i < argc) {
+      std::string str_lgthreads = std::string(argv[i++]);
+      try {
+        lg_threads = std::max(std::stoi(str_lgthreads), 1);
+      } catch (...) {
+        std::cout << "Invalid metal layer number!\n";
+        ReportUsage();
+        return 1;
+      }
+    } else if (arg == "-lgcplex") {
+      lg_cplex = true;
+    } else if (arg == "-gbmaxit" && i < argc) {
+      std::string str_gb_maxiter = std::string(argv[i++]);
+      try {
+        gb_maxiter = std::stoi(str_gb_maxiter);
+      } catch (...) {
+        std::cout << "Invalid metal layer number!\n";
+        ReportUsage();
+        return 1;
+      }
     } else {
       std::cout << "Unknown flag\n";
       std::cout << arg << "\n";
@@ -263,6 +286,7 @@ int main(int argc, char *argv[]) {
   auto gb_placer = std::make_unique<GlobalPlacer>();
   gb_placer->SetInputCircuit(&circuit);
   gb_placer->SetBoundaryDef();
+  gb_placer->SetMaxIter(gb_maxiter);
   if (!is_no_global) {
     gb_placer->SetPlacementDensity(target_density);
     //gb_placer->ReportBoundaries();
@@ -291,6 +315,8 @@ int main(int argc, char *argv[]) {
   } else if (!m_cell_file_name.empty()) {
     // (b). multi row gridded cell legalization
     auto multi_well_legalizer = std::make_unique<GriddedRowLegalizer>();
+    multi_well_legalizer->SetThreads(lg_threads);
+    multi_well_legalizer->SetUseCplex(lg_cplex);
     multi_well_legalizer->TakeOver(gb_placer.get());
     multi_well_legalizer->SetWellTapCellParameters(
         is_well_tap_needed, false, -1, ""
@@ -302,6 +328,7 @@ int main(int argc, char *argv[]) {
       multi_well_legalizer->GenMATLABTable("sc_result.txt");
       multi_well_legalizer->GenMatlabClusterTable("sc_result");
       multi_well_legalizer->GenMATLABWellTable("scw", 0);
+      multi_well_legalizer->GenDisplacement("disp_result.txt");
     }
 
     if (!output_name.empty()) {

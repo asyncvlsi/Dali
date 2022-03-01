@@ -98,9 +98,10 @@ class GriddedRow {
 
   bool IsOrientMatching(Block *p_blk, int region_id) const;
   void AddBlockRegion(Block *p_blk, int region_id, bool is_upward);
+  std::vector<BlockRegion> &BlkRegions();
   bool AttemptToAdd(Block *p_blk, bool is_upward = true);
   BlockOrient ComputeBlockOrient(Block *p_blk, bool is_upward) const;
-  void LegalizeSegmentsX();
+  void LegalizeSegmentsX(bool use_init_loc);
   void LegalizeSegmentsY();
   void RecomputeHeight(int p_well_height, int n_well_height);
   void InitializeBlockStretching();
@@ -125,6 +126,8 @@ class GriddedRow {
 
   void UpdateCommonSegment(std::vector<SegI> &avail_spaces, int width, double density);
   void AddStandardCell(Block *p_blk, int region_id, SegI range);
+
+  size_t OutOfBoundCell();
 
  private:
   bool is_orient_N_ = true; // orientation of this cluster

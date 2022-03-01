@@ -108,6 +108,7 @@ class GlobalPlacer : public Placer {
   GlobalPlacer();
   GlobalPlacer(double aspectRatio, double fillingRate);
 
+  void SetMaxIter(int max_iter);
   void LoadConf(std::string const &config_file) override;
 
   void SetEpsilon() {

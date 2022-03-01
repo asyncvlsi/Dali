@@ -49,6 +49,15 @@ void GriddedRowLegalizer::CheckWellInfo() {
   tap_cell_n_height_ = tap_cell_well->NwellHeight(0);
 }
 
+void GriddedRowLegalizer::SetThreads(int number_of_threads) {
+  DaliExpects(number_of_threads > 0, "negative threads?");
+  number_of_threads_ = number_of_threads;
+}
+
+void GriddedRowLegalizer::SetUseCplex(bool use_cplex) {
+  use_cplex_ = use_cplex;
+}
+
 void GriddedRowLegalizer::SetExternalSpacePartitioner(
     AbstractSpacePartitioner *p_external_partitioner
 ) {
@@ -206,7 +215,10 @@ void GriddedRowLegalizer::SetLegalizationMaxIteration(int max_iteration) {
   greedy_max_iter_ = max_iteration;
 }
 
-bool GriddedRowLegalizer::StripeLegalizationUpward(Stripe &stripe) {
+bool GriddedRowLegalizer::StripeLegalizationUpward(
+    Stripe &stripe,
+    bool use_init_loc
+) {
   stripe.gridded_rows_.clear();
   stripe.front_id_ = -1;
   stripe.is_bottom_up_ = true;
@@ -219,7 +231,7 @@ bool GriddedRowLegalizer::StripeLegalizationUpward(Stripe &stripe) {
     processed_blk_cnt = stripe.FitBlocksToFrontSpaceUpward(
         processed_blk_cnt, greedy_cur_iter_
     );
-    stripe.LegalizeFrontCluster();
+    stripe.LegalizeFrontCluster(true);
   }
   stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_, true);
   stripe.UpdateBlockYLocation();
@@ -228,7 +240,10 @@ bool GriddedRowLegalizer::StripeLegalizationUpward(Stripe &stripe) {
   return stripe.HasNoRowsSpillingOut();
 }
 
-bool GriddedRowLegalizer::StripeLegalizationDownward(Stripe &stripe) {
+bool GriddedRowLegalizer::StripeLegalizationDownward(
+    Stripe &stripe,
+    bool use_init_loc
+) {
   stripe.gridded_rows_.clear();
   stripe.front_id_ = -1;
   stripe.is_bottom_up_ = false;
@@ -241,7 +256,7 @@ bool GriddedRowLegalizer::StripeLegalizationDownward(Stripe &stripe) {
     processed_blk_cnt = stripe.FitBlocksToFrontSpaceDownward(
         processed_blk_cnt, greedy_cur_iter_
     );
-    stripe.LegalizeFrontCluster();
+    stripe.LegalizeFrontCluster(true);
   }
   stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_, false);
   stripe.UpdateBlockYLocation();
@@ -258,18 +273,23 @@ void GriddedRowLegalizer::CleanUpTemporaryRowSegments() {
   }
 }
 
-bool GriddedRowLegalizer::GreedyLegalization() {
+bool GriddedRowLegalizer::UpwardDownwardLegalization(bool use_init_loc) {
+  BOOST_LOG_TRIVIAL(info) << "Start upward-downward legalization\n";
+  double wall_time = get_wall_time();
+  double cpu_time = get_cpu_time();
+
   bool res = true;
   for (ClusterStripe &col: col_list_) {
     bool is_success = true;
     for (Stripe &stripe: col.stripe_list_) {
+      stripe.max_disp_ = p_ckt_->AveBlkWidth();
       bool is_from_bottom = true;
       for (greedy_cur_iter_ = 0; greedy_cur_iter_ < greedy_max_iter_;
            ++greedy_cur_iter_) {
         if (is_from_bottom) {
-          is_success = StripeLegalizationUpward(stripe);
+          is_success = StripeLegalizationUpward(stripe, use_init_loc);
         } else {
-          is_success = StripeLegalizationDownward(stripe);
+          is_success = StripeLegalizationDownward(stripe, use_init_loc);
         }
         is_from_bottom = !is_from_bottom;
         if (is_success) {
@@ -281,7 +301,16 @@ bool GriddedRowLegalizer::GreedyLegalization() {
   }
   CleanUpTemporaryRowSegments();
   ReportDisplacement();
+
+  wall_time = get_wall_time() - wall_time;
+  cpu_time = get_cpu_time() - cpu_time;
+  BOOST_LOG_TRIVIAL(info)
+    << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
   return res;
+}
+
+bool GriddedRowLegalizer::UpwardDownwardLegalizationWithDispCheck(bool use_init_loc) {
+  return true;
 }
 
 bool GriddedRowLegalizer::IsLeftmostPlacementLegal() {
@@ -316,14 +345,14 @@ bool GriddedRowLegalizer::OptimizeDisplacementUsingQuadraticProgramming() {
   bool is_successful = true;
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
-      bool res = stripe.OptimizeDisplacementUsingQuadraticProgramming();
+      bool res = stripe.OptimizeDisplacementUsingQuadraticProgramming(
+          number_of_threads_);
       is_successful = res && is_successful;
     }
   }
 
   if (is_successful) {
     BOOST_LOG_TRIVIAL(info) << "Quadratic programming complete\n";
-    ReportDisplacement();
   } else {
     BOOST_LOG_TRIVIAL(info) << "Quadratic programming solution not found\n";
   }
@@ -333,6 +362,7 @@ bool GriddedRowLegalizer::OptimizeDisplacementUsingQuadraticProgramming() {
   BOOST_LOG_TRIVIAL(info)
     << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
 
+  ReportDisplacement();
   return is_successful;
 #else
   BOOST_LOG_TRIVIAL(info)
@@ -349,15 +379,16 @@ bool GriddedRowLegalizer::IterativeDisplacementOptimization() {
 
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
-      stripe.IterativeCellReordering(consensus_max_iter_);
+      stripe.IterativeCellReordering(consensus_max_iter_, number_of_threads_);
     }
   }
-  ReportDisplacement();
 
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;
   BOOST_LOG_TRIVIAL(info)
     << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
+
+  ReportDisplacement();
 
   return IsPlacementLegal();
 }
@@ -412,14 +443,22 @@ void GriddedRowLegalizer::ReportDisplacement() {
   disp_y *= p_ckt_->GridValueY();
   quadratic_disp_x *= p_ckt_->GridValueX() * p_ckt_->GridValueX();
   quadratic_disp_y *= p_ckt_->GridValueY() * p_ckt_->GridValueY();
+  auto count = static_cast<double>(p_ckt_->TotMovBlkCnt());
   BOOST_LOG_TRIVIAL(info) << "  Current linear displacement\n";
-  BOOST_LOG_TRIVIAL(info) << "    x: " << disp_x
-                          << ", y: " << disp_y
-                          << ", sum: " << disp_x + disp_y << " um\n";
+  BOOST_LOG_TRIVIAL(info) << "    x: " << disp_x << "(" << disp_x / count << ")"
+                          << ", y: " << disp_y << "(" << disp_y / count << ")"
+                          << ", sum: " << disp_x + disp_y
+                          << "(" << (disp_x + disp_y) / count << ")"
+                          << " um\n";
   BOOST_LOG_TRIVIAL(info) << "  Current quadratic displacement\n";
   BOOST_LOG_TRIVIAL(info) << "    x: " << quadratic_disp_x
+                          << "(" << quadratic_disp_x / count << ")"
                           << ", y: " << quadratic_disp_y
+                          << "(" << quadratic_disp_y / count << ")"
                           << ", sum: " << quadratic_disp_x + quadratic_disp_y
+                          << "("
+                          << (quadratic_disp_x + quadratic_disp_y) / count
+                          << ")"
                           << " um^2\n";
 }
 
@@ -440,31 +479,31 @@ bool GriddedRowLegalizer::StartPlacement() {
   InitializeBlockAuxiliaryInfo();
   SaveInitialLoc();
 
-  bool is_success = GreedyLegalization();
+  bool is_success = UpwardDownwardLegalization();
   SaveGreedyLoc();
   ReportHPWL();
+  ReportEffectiveDensity();
 
   if (is_success) {
-#if false
-    RestoreInitialLocX();
-    IsLeftmostPlacementLegal();
-    //IterativeCellReordering();
-    //bool is_qp_solved = OptimizeDisplacementUsingQuadraticProgramming();
-    OptimizeDisplacementUsingQuadraticProgramming();
-    SaveQPLoc();
+    if (use_cplex_) {
+      RestoreInitialLocX();
+      IsLeftmostPlacementLegal();
+      //IterativeCellReordering();
+      //bool is_qp_solved = OptimizeDisplacementUsingQuadraticProgramming();
+      OptimizeDisplacementUsingQuadraticProgramming();
+      SaveQPLoc();
+      ReportHPWL();
+    } else {
+      RestoreInitialLocX();
+      //bool is_cons_solved = IterativeDisplacementOptimization();
+      IterativeDisplacementOptimization();
+      GenSubCellTable("subcell");
+      ReportHPWL();
+      SaveConsensusLoc();
+    }
+    ReportOutOfBoundCell();
+    UpwardDownwardLegalization(true);
     ReportHPWL();
-#endif
-
-#if true
-    RestoreInitialLocX();
-    //bool is_cons_solved = IterativeDisplacementOptimization();
-    IterativeDisplacementOptimization();
-    GenSubCellTable("subcell");
-    //ReportHPWL();
-    //GreedyLegalization();
-    SaveConsensusLoc();
-    ReportHPWL();
-#endif
 
     EmbodyWellTapCells();
 
@@ -574,6 +613,17 @@ bool GriddedRowLegalizer::StartStandardLegalization() {
   return true;
 }
 
+void GriddedRowLegalizer::ReportOutOfBoundCell() {
+  size_t cnt = 0;
+  for (auto &col: col_list_) {
+    for (auto &stripe: col.stripe_list_) {
+      cnt += stripe.OutOfBoundCell();
+    }
+  }
+  BOOST_LOG_TRIVIAL(info) << cnt
+                          << " cells out of the corresponding cluster boundary!\n";
+}
+
 void GriddedRowLegalizer::GenMatlabClusterTable(std::string const &name_of_file) {
   std::string frame_file = name_of_file + "_outline.txt";
   GenMATLABTable(frame_file);
@@ -627,7 +677,48 @@ void GriddedRowLegalizer::GenSubCellTable(std::string const &name_of_file) {
       }
     }
   }
+}
 
+void GriddedRowLegalizer::GenDisplacement(std::string const &name_of_file) {
+  std::ofstream ost_displacement(name_of_file.c_str());
+  DaliExpects(ost_displacement.is_open(),
+              "Cannot open output file: " + name_of_file);
+
+  std::vector<Block> &block_list = p_ckt_->Blocks();
+  for (auto &block: block_list) {
+    if (IsDummyBlock(block)) continue;
+    if (block.AuxPtr() == nullptr) {
+      BOOST_LOG_TRIVIAL(warning)
+        << "Block " << block.Name()
+        << " has not AuxPtr, cannot generate displacement vector\n";
+      continue;
+    }
+    auto aux_ptr = static_cast<LgBlkAux *>(block.AuxPtr());
+    double init_x = aux_ptr->InitLoc().x;
+    double init_y = aux_ptr->InitLoc().y;
+    double disp_x = block.LLX() - init_x;
+    double disp_y = block.LLY() - init_y;
+    ost_displacement << init_x << "  " << init_y << "  "
+                     << disp_x << "  " << disp_y << "\n";
+  }
+}
+
+void GriddedRowLegalizer::ReportEffectiveDensity() {
+  long long tot_eff_area = 0;
+  for (auto &col: col_list_) {
+    for (auto &stripe: col.stripe_list_) {
+      for (auto &row: stripe.gridded_rows_) {
+        for (auto &blk: row.BlkRegions()) {
+          tot_eff_area += blk.p_blk->Width() * row.Height();
+        }
+      }
+    }
+  }
+
+  double eff_density = static_cast<double> (tot_eff_area)
+      / static_cast<double> (RegionWidth())
+      / static_cast<double> (RegionHeight()) * 100;
+  BOOST_LOG_TRIVIAL(info) << "Effective density: " << eff_density << "%\n";
 }
 
 void GriddedRowLegalizer::SetWellTapCellNecessary(bool is_well_tap_needed) {

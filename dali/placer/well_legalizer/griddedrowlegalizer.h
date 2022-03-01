@@ -37,6 +37,8 @@ class GriddedRowLegalizer : public Placer {
   GriddedRowLegalizer() = default;
 
   void CheckWellInfo();
+  void SetThreads(int number_of_threads);
+  void SetUseCplex(bool use_cplex);
 
   void SetExternalSpacePartitioner(AbstractSpacePartitioner *p_external_partitioner);
   void SetPartitionMode(int partitioning_mode_);
@@ -63,10 +65,12 @@ class GriddedRowLegalizer : public Placer {
   void RestoreConsensusLocX();
 
   void SetLegalizationMaxIteration(int max_iteration);
-  bool StripeLegalizationUpward(Stripe &stripe);
-  bool StripeLegalizationDownward(Stripe &stripe);
+  bool StripeLegalizationUpward(Stripe &stripe, bool use_init_loc);
+  bool StripeLegalizationDownward(Stripe &stripe, bool use_init_loc);
   void CleanUpTemporaryRowSegments();
-  bool GreedyLegalization();
+  bool UpwardDownwardLegalization(bool use_init_loc = true);
+
+  bool UpwardDownwardLegalizationWithDispCheck(bool use_init_loc);
 
   bool IsLeftmostPlacementLegal();
   bool IsPlacementLegal();
@@ -85,12 +89,17 @@ class GriddedRowLegalizer : public Placer {
   void ReportStandardCellDisplacement();
   bool StartStandardLegalization();
 
+  void ReportOutOfBoundCell();
+
   void GenMatlabClusterTable(std::string const &name_of_file);
   void GenMATLABWellTable(
       std::string const &name_of_file,
       int well_emit_mode
   ) override;
   void GenSubCellTable(std::string const &name_of_file);
+  void GenDisplacement(std::string const &name_of_file);
+
+  void ReportEffectiveDensity();
  private:
   // space partitioner
   int partitioning_mode_ = 0;
@@ -109,7 +118,7 @@ class GriddedRowLegalizer : public Placer {
   BlockType *well_tap_type_ptr_ = nullptr;
 
   int greedy_cur_iter_ = 0;
-  int greedy_max_iter_ = 10;
+  int greedy_max_iter_ = 30;
 
   int consensus_max_iter_ = 1000;
 
@@ -118,6 +127,9 @@ class GriddedRowLegalizer : public Placer {
   bool is_qp_loc_cached_ = false;
   bool is_cons_loc_cached_ = false;
   std::vector<LgBlkAux> blk_auxs_;
+
+  int number_of_threads_ = 1;
+  bool use_cplex_ = false;
 
   void SetWellTapCellNecessary(bool is_well_tap_needed);
   void SetWellTapCellPlacementMode(bool is_checker_board_mode);

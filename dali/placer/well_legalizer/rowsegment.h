@@ -47,17 +47,44 @@ class RowSegment {
 
   std::vector<BlockRegion> &BlkRegions();
   void AddBlockRegion(Block *blk_ptr, int region_id);
-  void MinDisplacementLegalization();
+  void RemoveBlockRegion(Block *blk_ptr, int region_id);
+  void MinDisplacementLegalization(bool use_init_loc);
+  void SnapCellToPlacementGrid();
 
   void SetOptimalAnchorWeight(double weight);
   void FitInRange(std::vector<BlkDispVar> &vars);
+  double DispCost(
+      std::vector<BlkDispVar> &vars,
+      int l, int r,
+      bool is_linear
+  );
+  void FindBestLocalOrder(
+      std::vector<BlkDispVar> &res,
+      double &best_cost,
+      std::vector<BlkDispVar> &vars,
+      int cur, int l, int r,
+      double left_bound, double right_bound,
+      double gap, int range,
+      bool is_linear
+  );
+  void LocalReorder(
+      std::vector<BlkDispVar> &vars,
+      int range = 3,
+      int omit = 0,
+      bool is_linear = false
+  );
+  void LocalReorder2(
+      std::vector<BlkDispVar> &vars
+  );
   std::vector<BlkDispVar> OptimizeQuadraticDisplacement(
       double lambda,
-      bool is_weighted_anchor
+      bool is_weighted_anchor,
+      bool is_reorder
   );
   std::vector<BlkDispVar> OptimizeLinearDisplacement(
       double lambda,
-      bool is_weighted_anchor
+      bool is_weighted_anchor,
+      bool is_reorder
   );
 
   void GenSubCellTable(

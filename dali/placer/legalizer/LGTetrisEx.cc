@@ -1168,28 +1168,4 @@ void LGTetrisEx::GenAvailSpace(std::string const &name_of_file) {
   }
 }
 
-void LGTetrisEx::GenDisplacement(std::string const &name_of_file) {
-  std::ofstream ost_displacement(name_of_file.c_str());
-  DaliExpects(ost_displacement.is_open(),
-              "Cannot open output file: " + name_of_file);
-
-  std::vector<Block> &block_list = p_ckt_->Blocks();
-  for (auto &block: block_list) {
-    if (IsDummyBlock(block)) continue;
-    if (block.AuxPtr() == nullptr) {
-      BOOST_LOG_TRIVIAL(warning)
-        << "Block " << block.Name()
-        << " has not AuxPtr, cannot generate displacement vector\n";
-      continue;
-    }
-    auto aux_ptr = static_cast<LgBlkAux *>(block.AuxPtr());
-    double init_x = aux_ptr->InitLoc().x;
-    double init_y = aux_ptr->InitLoc().y;
-    double disp_x = block.LLX() - init_x;
-    double disp_y = block.LLY() - init_y;
-    ost_displacement << init_x << "  " << init_y << "  "
-                     << disp_x << "  " << disp_y << "\n";
-  }
-}
-
 }

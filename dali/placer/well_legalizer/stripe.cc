@@ -326,8 +326,8 @@ size_t Stripe::FitBlocksToFrontSpaceUpward(
   return start_id;
 }
 
-void Stripe::LegalizeFrontCluster() {
-  gridded_rows_[front_id_].LegalizeSegmentsX();
+void Stripe::LegalizeFrontCluster(bool use_init_loc) {
+  gridded_rows_[front_id_].LegalizeSegmentsX(use_init_loc);
 }
 
 void Stripe::UpdateRemainingClusters(
@@ -565,23 +565,26 @@ void Stripe::UpdateSubCellLocs(std::vector<BlkDispVar> &vars) {
     aux_ptr->SetSubCellLoc(
         var.blk_rgn.region_id,
         var.Solution(),
-        var.ClusterWeight()
+        var.SegmentWeight()
     );
   }
 }
 
 void Stripe::OptimizeDisplacementInEachRowSegment(
     double lambda,
-    bool is_weighted_anchor
+    bool is_weighted_anchor,
+    bool is_reorder
 ) {
   size_t sz = row_seg_ptrs_.size();
 #pragma omp parallel for
   for (size_t i = 0; i < sz; ++i) {
     RowSegment *seg = row_seg_ptrs_[i];
-    //std::vector<BlkDispVar> vars =
-    //    seg->OptimizeQuadraticDisplacement(lambda, is_weighted_anchor);
     std::vector<BlkDispVar> vars =
-        seg->OptimizeLinearDisplacement(lambda, is_weighted_anchor);
+        seg->OptimizeQuadraticDisplacement(lambda,
+                                           is_weighted_anchor,
+                                           is_reorder);
+    //std::vector<BlkDispVar> vars =
+    //    seg->OptimizeLinearDisplacement(lambda, is_weighted_anchor, is_reorder);
     UpdateSubCellLocs(vars);
   }
 }
@@ -600,6 +603,7 @@ void Stripe::ComputeAverageLoc() {
 void Stripe::ReportIterativeStatus(int i) {
   double disp_x = 0;
   double discrepancy = 0;
+  max_discrepancy_ = 0;
   for (auto &blk_ptr: blk_ptrs_vec_) {
     // compute displacement from init_x to average_x
     auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
@@ -615,6 +619,7 @@ void Stripe::ReportIterativeStatus(int i) {
     }
     tmp_discrepancy = tmp_discrepancy / sz;
     discrepancy += tmp_discrepancy;
+    max_discrepancy_ = std::max(max_discrepancy_, tmp_discrepancy);
   }
 
   displacements_.push_back(disp_x);
@@ -631,8 +636,6 @@ bool Stripe::IsDiscrepancyConverge() {
   double last_difference =
       std::fabs(discrepancies_[sz - 2] - discrepancies_[sz - 1]);
   double threshold = 0.001;
-  std::cout << last_difference / discrepancies_[0] << " "
-            << (last_difference / discrepancies_[0] < threshold) << "\n";
   return last_difference / discrepancies_[0] < threshold;
 }
 
@@ -650,20 +653,23 @@ void Stripe::ClearMultiRowCellBreaking() {
   row_seg_ptrs_.clear();
 }
 
-void Stripe::IterativeCellReordering(int max_iter) {
+void Stripe::IterativeCellReordering(int max_iter, int number_of_threads) {
   CollectAllRowSegments();
-  omp_set_num_threads(1);
+  omp_set_num_threads(number_of_threads);
   bool is_weighted_anchor = false;
   for (int i = 0; i < max_iter; ++i) {
-    double lambda = exp(-i / 10.0);
-    OptimizeDisplacementInEachRowSegment(lambda, is_weighted_anchor);
+    double decay = 30.0; // the bigger, the closer to CPLEX result
+    //double lambda = exp(-i / decay);
+    double lambda = 1 / double(i + 1);
+    OptimizeDisplacementInEachRowSegment(lambda,
+                                         is_weighted_anchor,
+                                         i % 10 == 0);
     ComputeAverageLoc();
     ReportIterativeStatus(i);
     if (!is_weighted_anchor) {
       is_weighted_anchor = IsDiscrepancyConverge();
     }
-    if (is_weighted_anchor) break;
-    if (discrepancies_.back() < 1e-5) break;
+    if (max_discrepancy_ < 0.1) break;
   }
   SetBlockLoc();
   omp_set_num_threads(1);
@@ -676,6 +682,14 @@ void Stripe::SortBlocksInEachRow() {
   for (auto &row: gridded_rows_) {
     row.SortBlockRegions();
   }
+}
+
+size_t Stripe::OutOfBoundCell() {
+  size_t cnt = 0;
+  for (auto &row: gridded_rows_) {
+    cnt += row.OutOfBoundCell();
+  }
+  return cnt;
 }
 
 #if DALI_USE_CPLEX
@@ -776,7 +790,7 @@ bool Stripe::SolveQPProblem(IloCplex &cplex, IloNumVarArray &var) {
   return is_solved;
 }
 
-bool Stripe::OptimizeDisplacementUsingQuadraticProgramming() {
+bool Stripe::OptimizeDisplacementUsingQuadraticProgramming(int number_of_threads) {
   bool is_solved = true;
 
   SortBlocksInEachRow();
@@ -792,7 +806,7 @@ bool Stripe::OptimizeDisplacementUsingQuadraticProgramming() {
     IloCplex cplex(model);
 
     cplex.setParam(IloCplex::Param::MIP::Display, 0);
-    cplex.setParam(IloCplex::Param::Threads, 1);
+    cplex.setParam(IloCplex::Param::Threads, number_of_threads);
 
     // solve the QP problem
     is_solved = SolveQPProblem(cplex, var);
@@ -864,12 +878,21 @@ int Stripe::LocY2RowId(double lly) {
   return static_cast<int>(std::round(height / row_height_));
 }
 
-double Stripe::EstimateCost(int row_id, Block *blk_ptr, SegI &range, double density) {
+double Stripe::EstimateCost(
+    int row_id,
+    Block *blk_ptr,
+    SegI &range,
+    double density
+) {
   int region_cnt = blk_ptr->TypePtr()->WellPtr()->RegionCount();
   std::vector<SegI> spaces;
   spaces.emplace_back(LLX(), URX());
   for (int i = 0; i < region_cnt; ++i) {
-    gridded_rows_[row_id + i].UpdateCommonSegment(spaces, blk_ptr->Width(), density);
+    gridded_rows_[row_id + i].UpdateCommonSegment(
+        spaces,
+        blk_ptr->Width(),
+        density
+    );
   }
 
   if (spaces.empty()) {

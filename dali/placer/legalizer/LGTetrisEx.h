@@ -83,8 +83,6 @@ class LGTetrisEx : public Placer {
   bool StartRowAssignment();
 
   void GenAvailSpace(std::string const &name_of_file = "avail_space.txt");
-
-  void GenDisplacement(std::string const &name_of_file);
  protected:
   bool is_row_assignment_ = false;
   std::vector<std::vector<SegI>> row_segments_;
