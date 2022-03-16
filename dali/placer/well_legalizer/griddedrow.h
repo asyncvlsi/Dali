@@ -100,6 +100,11 @@ class GriddedRow {
   void AddBlockRegion(Block *p_blk, int region_id, bool is_upward);
   std::vector<BlockRegion> &BlkRegions();
   bool AttemptToAdd(Block *p_blk, bool is_upward = true);
+  bool AttemptToAddWithDispCheck(
+      Block *p_blk,
+      double displacement_upper_limit,
+      bool is_upward
+  );
   BlockOrient ComputeBlockOrient(Block *p_blk, bool is_upward) const;
   void LegalizeSegmentsX(bool use_init_loc);
   void LegalizeSegmentsY();

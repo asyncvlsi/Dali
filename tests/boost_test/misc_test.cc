@@ -24,6 +24,7 @@
 #define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
 
+#include "dali/common/helper.h"
 #include "dali/common/misc.h"
 #define BOOST_TEST_MODULE misc
 

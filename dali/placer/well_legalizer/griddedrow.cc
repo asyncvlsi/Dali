@@ -571,6 +571,48 @@ bool GriddedRow::AttemptToAdd(Block *p_blk, bool is_upward) {
   return true;
 }
 
+bool GriddedRow::AttemptToAddWithDispCheck(
+    Block *p_blk,
+    double displacement_upper_limit,
+    bool is_upward
+) {
+  // put this block to the closest white space segment
+  double min_distance = DBL_MAX;
+  int min_index = -1;
+  int sz = static_cast<int>(segments_.size());
+  for (int i = 0; i < sz; ++i) {
+    auto &segment = segments_[i];
+    double distance = DBL_MAX;
+    if (segment.UsedSize() + p_blk->Width() <= segment.Width()) {
+      if (p_blk->LLX() >= segment.LLX()
+          && p_blk->URX() <= segment.URX()) {
+        distance = 0;
+      } else {
+        distance = std::min(
+            std::fabs(p_blk->LLX() - segment.LLX()),
+            std::fabs(p_blk->URX() - segment.URX())
+        );
+      }
+    }
+    if (distance < min_distance) {
+      min_distance = distance;
+      min_index = i;
+    }
+  }
+
+  if (min_index == -1) {
+    return false;
+  }
+
+  int region_count = p_blk->TypePtr()->WellPtr()->RegionCount();
+  int region_id = is_upward ? 0 : region_count - 1;
+  segments_[min_index].AddBlockRegion(p_blk, region_id);
+  p_blk->SetOrient(ComputeBlockOrient(p_blk, is_upward));
+  AddBlockRegion(p_blk, region_id, is_upward);
+
+  return true;
+}
+
 BlockOrient GriddedRow::ComputeBlockOrient(Block *p_blk, bool is_upward) const {
   DaliExpects(p_blk != nullptr, "Nullptr?");
   BlockTypeWell *well = p_blk->TypePtr()->WellPtr();

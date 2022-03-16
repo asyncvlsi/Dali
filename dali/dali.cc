@@ -165,20 +165,20 @@ void Dali::StartPlacement(double density, int number_of_threads) {
 
 #if PHYDB_USE_GALOIS
   if (phy_db_ptr_->GetTimingApi().ReadyForTimingDriven()) {
-    BOOST_LOG_TRIVIAL(debug) << "Before CreatePhydbActAdaptor()\n";
+    BOOST_LOG_TRIVIAL(debug) << "Before CreatePhydbActAdaptor()" << std::endl;
     phy_db_ptr_->CreatePhydbActAdaptor();
     BOOST_LOG_TRIVIAL(debug)
-      << "Before AddNetsAndCompPinsToSpefManager()\n";
+      << "Before AddNetsAndCompPinsToSpefManager()" << std::endl;
     phy_db_ptr_->AddNetsAndCompPinsToSpefManager();
     //FetchSlacks();
-    BOOST_LOG_TRIVIAL(debug) << "Before InitializeRCEstimator()\n";
+    BOOST_LOG_TRIVIAL(debug) << "Before InitializeRCEstimator()" << std::endl;
     InitializeRCEstimator();
-    BOOST_LOG_TRIVIAL(debug) << "Before PushNetRCToManager()\n";
+    BOOST_LOG_TRIVIAL(debug) << "Before PushNetRCToManager()" << std::endl;
     rc_estimator->PushNetRCToManager();
     phydb::ActPhyDBTimingAPI &timing_api = phy_db_ptr_->GetTimingApi();
-    BOOST_LOG_TRIVIAL(debug) << "Before UpdateTimingIncremental()\n";
+    BOOST_LOG_TRIVIAL(debug) << "Before UpdateTimingIncremental()" << std::endl;
     timing_api.UpdateTimingIncremental();
-    BOOST_LOG_TRIVIAL(debug) << "Before GetNumConstraints()\n";
+    BOOST_LOG_TRIVIAL(debug) << "Before GetNumConstraints()" << std::endl;
     FetchSlacks();
   }
 #endif

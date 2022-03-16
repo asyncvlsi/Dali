@@ -95,7 +95,15 @@ class Stripe {
   void UpdateFrontClusterUpward(int p_height, int n_height);
   void SimplyAddFollowingClusters(Block *p_blk, bool is_upward);
   bool AddBlockToFrontCluster(Block *p_blk, bool is_upward);
+  bool AddBlockToFrontClusterWithDispCheck(
+      Block *p_blk,
+      double displacement_upper_limit,
+      bool is_upward
+  );
   size_t FitBlocksToFrontSpaceUpward(size_t start_id, int current_iteration);
+  size_t FitBlocksToFrontSpaceUpwardWithDispCheck(
+      size_t start_id, double displacement_upper_limit
+  );
   void LegalizeFrontCluster(bool use_init_loc);
   void UpdateRemainingClusters(int p_height, int n_height, bool is_upward);
   void UpdateBlockStretchLength();

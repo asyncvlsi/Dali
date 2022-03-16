@@ -288,6 +288,24 @@ bool Stripe::AddBlockToFrontCluster(Block *p_blk, bool is_upward) {
   return true;
 }
 
+bool Stripe::AddBlockToFrontClusterWithDispCheck(
+    Block *p_blk,
+    double displacement_upper_limit,
+    bool is_upward
+) {
+  bool res = gridded_rows_[front_id_].AttemptToAddWithDispCheck(
+      p_blk,
+      displacement_upper_limit,
+      is_upward
+  );
+  if (!res) return false;
+
+  // add this block to other clusters above the front cluster
+  SimplyAddFollowingClusters(p_blk, is_upward);
+
+  return true;
+}
+
 size_t Stripe::FitBlocksToFrontSpaceUpward(
     size_t start_id,
     int current_iteration
@@ -303,6 +321,42 @@ size_t Stripe::FitBlocksToFrontSpaceUpward(
     }
     if (gridded_rows_[front_id_].IsOrientMatching(p_blk, 0)) {
       if (AddBlockToFrontCluster(p_blk, true)) {
+        legalized_blks.push_back(p_blk);
+      } else {
+        skipped_blks.push_back(p_blk);
+      }
+    } else {
+      skipped_blks.push_back(p_blk);
+    }
+  }
+
+  // put legalized blocks back to the sorted list
+  for (size_t i = 0; i < legalized_blks.size(); ++i) {
+    blk_ptrs_vec_[i + start_id] = legalized_blks[i];
+  }
+
+  // put skipped blocks back to the sorted list
+  start_id = start_id + legalized_blks.size();
+  for (size_t i = 0; i < skipped_blks.size(); ++i) {
+    blk_ptrs_vec_[i + start_id] = skipped_blks[i];
+  }
+
+  return start_id;
+}
+
+size_t Stripe::FitBlocksToFrontSpaceUpwardWithDispCheck(
+    size_t start_id, double displacement_upper_limit
+) {
+  std::vector<Block *> legalized_blks;
+  std::vector<Block *> skipped_blks;
+
+  size_t blks_sz = blk_ptrs_vec_.size();
+  for (size_t i = start_id; i < blks_sz; ++i) {
+    Block *p_blk = blk_ptrs_vec_[i];
+    if (gridded_rows_[front_id_].IsOrientMatching(p_blk, 0)) {
+      if (AddBlockToFrontClusterWithDispCheck(p_blk,
+                                              displacement_upper_limit,
+                                              true)) {
         legalized_blks.push_back(p_blk);
       } else {
         skipped_blks.push_back(p_blk);

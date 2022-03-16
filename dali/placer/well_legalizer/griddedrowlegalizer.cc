@@ -144,7 +144,7 @@ void GriddedRowLegalizer::SaveInitialLoc() {
   }
 }
 
-void GriddedRowLegalizer::SaveGreedyLoc() {
+void GriddedRowLegalizer::SaveUpDownLoc() {
   is_greedy_loc_cached_ = true;
   for (Block &blk: Blocks()) {
     if (IsDummyBlock(blk)) continue;
@@ -284,7 +284,8 @@ bool GriddedRowLegalizer::UpwardDownwardLegalization(bool use_init_loc) {
     for (Stripe &stripe: col.stripe_list_) {
       stripe.max_disp_ = p_ckt_->AveBlkWidth();
       bool is_from_bottom = true;
-      for (greedy_cur_iter_ = 0; greedy_cur_iter_ < greedy_max_iter_;
+      for (greedy_cur_iter_ = 0;
+           greedy_cur_iter_ < greedy_max_iter_;
            ++greedy_cur_iter_) {
         if (is_from_bottom) {
           is_success = StripeLegalizationUpward(stripe, use_init_loc);
@@ -309,8 +310,74 @@ bool GriddedRowLegalizer::UpwardDownwardLegalization(bool use_init_loc) {
   return res;
 }
 
-bool GriddedRowLegalizer::UpwardDownwardLegalizationWithDispCheck(bool use_init_loc) {
+bool GriddedRowLegalizer::StripeLegalizationUpwardWithDispCheck(
+    Stripe &stripe,
+    bool use_init_loc
+) {
+  stripe.gridded_rows_.clear();
+  stripe.front_id_ = -1;
+  stripe.is_bottom_up_ = true;
+
+  stripe.SortBlocksBasedOnYLocation(0);
+
+  size_t processed_blk_cnt = 0;
+  while (processed_blk_cnt < stripe.blk_ptrs_vec_.size()) {
+    stripe.UpdateFrontClusterUpward(tap_cell_p_height_, tap_cell_n_height_);
+    processed_blk_cnt = stripe.FitBlocksToFrontSpaceUpwardWithDispCheck(
+        processed_blk_cnt, greedy_cur_iter_
+    );
+    stripe.LegalizeFrontCluster(true);
+  }
+  stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_, true);
+  stripe.UpdateBlockYLocation();
+  stripe.UpdateBlockStretchLength();
+
+  return stripe.HasNoRowsSpillingOut();
+}
+
+bool GriddedRowLegalizer::StripeLegalizationDownwardWithDispCheck(
+    Stripe &stripe,
+    bool use_init_loc
+) {
   return true;
+}
+
+bool GriddedRowLegalizer::UpwardDownwardLegalizationWithDispCheck(bool use_init_loc) {
+  BOOST_LOG_TRIVIAL(info)
+    << "Start upward-downward legalization with displacement checking\n";
+  double wall_time = get_wall_time();
+  double cpu_time = get_cpu_time();
+
+  bool res = true;
+  for (ClusterStripe &col: col_list_) {
+    bool is_success = true;
+    for (Stripe &stripe: col.stripe_list_) {
+      stripe.max_disp_ = p_ckt_->AveBlkWidth();
+      bool is_from_bottom = true;
+      for (greedy_cur_iter_ = 0;
+           greedy_cur_iter_ < greedy_max_iter_;
+           ++greedy_cur_iter_) {
+        if (is_from_bottom) {
+          is_success = StripeLegalizationUpwardWithDispCheck(stripe, use_init_loc);
+        } else {
+          is_success = StripeLegalizationDownwardWithDispCheck(stripe, use_init_loc);
+        }
+        is_from_bottom = !is_from_bottom;
+        if (is_success) {
+          break;
+        }
+      }
+      res = res && is_success;
+    }
+  }
+  CleanUpTemporaryRowSegments();
+  ReportDisplacement();
+
+  wall_time = get_wall_time() - wall_time;
+  cpu_time = get_cpu_time() - cpu_time;
+  BOOST_LOG_TRIVIAL(info)
+    << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
+  return res;
 }
 
 bool GriddedRowLegalizer::IsLeftmostPlacementLegal() {
@@ -479,8 +546,9 @@ bool GriddedRowLegalizer::StartPlacement() {
   InitializeBlockAuxiliaryInfo();
   SaveInitialLoc();
 
+  //bool is_success = UpwardDownwardLegalization();
   bool is_success = UpwardDownwardLegalization();
-  SaveGreedyLoc();
+  SaveUpDownLoc();
   ReportHPWL();
   ReportEffectiveDensity();
 

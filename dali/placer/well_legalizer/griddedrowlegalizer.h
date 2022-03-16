@@ -56,7 +56,7 @@ class GriddedRowLegalizer : public Placer {
 
   void InitializeBlockAuxiliaryInfo();
   void SaveInitialLoc();
-  void SaveGreedyLoc();
+  void SaveUpDownLoc();
   void SaveQPLoc();
   void SaveConsensusLoc();
   void RestoreInitialLocX();
@@ -70,6 +70,14 @@ class GriddedRowLegalizer : public Placer {
   void CleanUpTemporaryRowSegments();
   bool UpwardDownwardLegalization(bool use_init_loc = true);
 
+  bool StripeLegalizationUpwardWithDispCheck(
+      Stripe &stripe,
+      bool use_init_loc
+  );
+  bool StripeLegalizationDownwardWithDispCheck(
+      Stripe &stripe,
+      bool use_init_loc
+  );
   bool UpwardDownwardLegalizationWithDispCheck(bool use_init_loc);
 
   bool IsLeftmostPlacementLegal();

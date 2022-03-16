@@ -358,6 +358,8 @@ int main(int argc, char *argv[]) {
   circuit.SaveDefFile(output_name, "_filling", def_file_name, 1, 4, 2, 0);
   circuit.SaveDefFileComponent(output_name + "_comp.def", def_file_name);
 
+  phy_db.WriteDef("phydb.def");
+
   circuit.InitNetFanoutHistogram();
   circuit.ReportNetFanoutHistogram();
   circuit.ReportHPWLHistogramLinear();
