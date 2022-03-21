@@ -52,8 +52,17 @@ class Dali {
   bool StartIoPinAutoPlacement();
   bool IoPinPlacement(int argc, char **argv);
 
+  bool ShouldPerformTimingDrivenPlacement();
   void InitializeRCEstimator();
+#if PHYDB_USE_GALOIS
   void FetchSlacks();
+  void InitializeTimingDrivenPlacement();
+  void UpdateRCs();
+  void PerformTimingAnalysis();
+  void UpdateNetWeights();
+  void ReportPerformance();
+#endif
+  void TimingDrivenPlacement(double density, int number_of_threads);
 
   void StartPlacement(double density, int number_of_threads = 1);
 
@@ -89,6 +98,8 @@ class Dali {
   WellTapPlacer *well_tap_placer_ = nullptr;
   IoPlacer *io_placer_ = nullptr;
   StarPiModelEstimator *rc_estimator = nullptr;
+
+  int max_td_place_num_ = 10;
 
   static void ReportIoPlacementUsage();
 

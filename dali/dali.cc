@@ -129,10 +129,15 @@ bool Dali::IoPinPlacement(int argc, char **argv) {
   }
 }
 
+bool Dali::ShouldPerformTimingDrivenPlacement() {
+  return phy_db_ptr_->GetTimingApi().ReadyForTimingDriven();
+}
+
 void Dali::InitializeRCEstimator() {
   rc_estimator = new StarPiModelEstimator(phy_db_ptr_, &circuit_);
 }
 
+#if PHYDB_USE_GALOIS
 void Dali::FetchSlacks() {
   phydb::ActPhyDBTimingAPI &timing_api = phy_db_ptr_->GetTimingApi();
   std::cout << "Number of timing constraints: "
@@ -152,37 +157,56 @@ void Dali::FetchSlacks() {
   }
 }
 
-void Dali::StartPlacement(double density, int number_of_threads) {
-  BOOST_LOG_TRIVIAL(info) << "  Average white space utility: "
-                          << circuit_.WhiteSpaceUsage() << std::endl;
-  circuit_.ReportBriefSummary();
-  //circuit.ReportBlockType();
-  //circuit.ReportIOPin();
-  circuit_.ReportHPWL();
-  //circuit.BuildBlkPairNets();
+void Dali::InitializeTimingDrivenPlacement() {
+  phy_db_ptr_->CreatePhydbActAdaptor();
+  phy_db_ptr_->AddNetsAndCompPinsToSpefManager();
+  InitializeRCEstimator();
+}
 
-  GlobalPlace(density, number_of_threads);
+void Dali::UpdateRCs() {
+  rc_estimator->PushNetRCToManager();
+}
 
-#if PHYDB_USE_GALOIS
-  if (phy_db_ptr_->GetTimingApi().ReadyForTimingDriven()) {
-    BOOST_LOG_TRIVIAL(debug) << "Before CreatePhydbActAdaptor()" << std::endl;
-    phy_db_ptr_->CreatePhydbActAdaptor();
-    BOOST_LOG_TRIVIAL(debug)
-      << "Before AddNetsAndCompPinsToSpefManager()" << std::endl;
-    phy_db_ptr_->AddNetsAndCompPinsToSpefManager();
-    //FetchSlacks();
-    BOOST_LOG_TRIVIAL(debug) << "Before InitializeRCEstimator()" << std::endl;
-    InitializeRCEstimator();
-    BOOST_LOG_TRIVIAL(debug) << "Before PushNetRCToManager()" << std::endl;
-    rc_estimator->PushNetRCToManager();
-    phydb::ActPhyDBTimingAPI &timing_api = phy_db_ptr_->GetTimingApi();
-    BOOST_LOG_TRIVIAL(debug) << "Before UpdateTimingIncremental()" << std::endl;
-    timing_api.UpdateTimingIncremental();
-    BOOST_LOG_TRIVIAL(debug) << "Before GetNumConstraints()" << std::endl;
-    FetchSlacks();
-  }
+void Dali::PerformTimingAnalysis() {
+  phydb::ActPhyDBTimingAPI &timing_api = phy_db_ptr_->GetTimingApi();
+  timing_api.UpdateTimingIncremental();
+}
+
+void Dali::UpdateNetWeights() {
+  FetchSlacks();
+}
+
+void Dali::ReportPerformance() {
+  if (!phy_db_ptr_->GetTimingApi().ReadyForTimingDriven()) return;
+}
 #endif
-  UnifiedLegalization();
+
+void Dali::TimingDrivenPlacement(double density, int number_of_threads) {
+#if PHYDB_USE_GALOIS
+  InitializeTimingDrivenPlacement();
+  for (int i = 0; i < max_td_place_num_; ++i) {
+    GlobalPlace(density, number_of_threads);
+    UnifiedLegalization();
+    UpdateRCs();
+    PerformTimingAnalysis();
+    UpdateNetWeights();
+  }
+  ReportPerformance();
+#endif
+}
+
+void Dali::StartPlacement(double density, int number_of_threads) {
+  circuit_.ReportBriefSummary();
+  circuit_.ReportHPWL();
+
+  bool is_td = ShouldPerformTimingDrivenPlacement();
+  if (is_td) {
+    TimingDrivenPlacement(density, number_of_threads);
+  } else {
+    GlobalPlace(density, number_of_threads);
+    UnifiedLegalization();
+  }
+
 }
 
 void Dali::AddWellTaps(
@@ -218,8 +242,7 @@ bool Dali::AddWellTaps(int argc, char **argv) {
       std::string macro_name = std::string(argv[i++]);
       cell = phy_db_ptr_->GetMacroPtr("WELLTAPX1");
       if (cell == nullptr) {
-        std::cout << "Cannot find well-tap cell: " << macro_name
-                  << "\n";
+        std::cout << "Cannot find well-tap cell: " << macro_name << "\n";
         return false;
       }
       if (cell->GetClass() != phydb::MacroClass::CORE_WELLTAP) {
