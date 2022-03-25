@@ -147,12 +147,11 @@ void Dali::FetchSlacks() {
     std::cout << "Slack for timing constraint " << i << " " << slack << "\n";
     if (slack < 0) {
       phydb::PhydbPath fast_path;
+      timing_api.GetFastWitness(i, fast_path);
+      std::cout << "Fast path size: " << fast_path.edges.size() << "\n";
       phydb::PhydbPath slow_path;
-      timing_api.GetWitness(i, fast_path, slow_path);
-      std::cout << "Fast path size: "
-                << fast_path.edges.size() << "\n";
-      std::cout << "Fast path size: "
-                << slow_path.edges.size() << "\n";
+      timing_api.GetSlowWitness(i, fast_path);
+      std::cout << "Fast path size: " << slow_path.edges.size() << "\n";
     }
   }
 }
