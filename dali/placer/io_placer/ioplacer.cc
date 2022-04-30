@@ -208,7 +208,7 @@ bool IoPlacer::BuildResourceMap() {
       NUM_OF_PLACE_BOUNDARY,
       std::vector<Seg<double>>(0)
   ); // TODO: carry layer info
-  for (auto &iopin: p_ckt_->IoPins()) {
+  for (auto &iopin : p_ckt_->IoPins()) {
     if (iopin.IsPrePlaced()) {
       double spacing = iopin.LayerPtr()->Spacing();
       if (iopin.X() == p_ckt_->design().RegionLeft()) {
@@ -231,8 +231,7 @@ bool IoPlacer::BuildResourceMap() {
         all_used_segments[TOP].emplace_back(llx, urx);
       } else {
         DaliExpects(false,
-                    "Pre-placed IOPIN is not on placement boundary? "
-                        + iopin.Name());
+                    "Pre-placed IOPIN is not on placement boundary? " << iopin.Name());
       }
     }
   }
@@ -298,7 +297,7 @@ bool IoPlacer::BuildResourceMap() {
 }
 
 bool IoPlacer::AssignIoPinToBoundaryLayers() {
-  for (auto &iopin: p_ckt_->IoPins()) {
+  for (auto &iopin : p_ckt_->IoPins()) {
     // do nothing for placed IOPINs
     if (iopin.IsPrePlaced()) continue;
 
@@ -370,7 +369,7 @@ bool IoPlacer::AssignIoPinToBoundaryLayers() {
 }
 
 bool IoPlacer::PlaceIoPinOnEachBoundary() {
-  for (auto &boundary_space: boundary_spaces_) {
+  for (auto &boundary_space : boundary_spaces_) {
     boundary_space.AutoPlaceIoPin();
   }
   return true;
@@ -385,7 +384,7 @@ bool IoPlacer::PlaceIoPinOnEachBoundary() {
  * locations to address this problem.
  */
 void IoPlacer::AdjustIoPinLocationForPhyDB() {
-  for (auto &iopin: p_ckt_->IoPins()) {
+  for (auto &iopin : p_ckt_->IoPins()) {
     // ignore pre-placed I/O pins
     if (iopin.IsPrePlaced()) continue;
 

@@ -76,7 +76,7 @@ Circuit &Placer::GetCkt() {
 double Placer::GetBlkHPWL(Block &blk) {
   double hpwl = 0;
   std::vector<Net> &net_list = Nets();
-  for (auto &idx: blk.NetList()) {
+  for (auto &idx : blk.NetList()) {
     hpwl += net_list[idx].WeightedHPWL();
   }
   return hpwl;
@@ -193,11 +193,11 @@ void Placer::TakeOver(Placer *placer) {
 
 void Placer::GenMATLABScriptPlaced(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
-  DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open output file: " << name_of_file);
   ost << RegionLeft() << " " << RegionBottom() << " "
       << RegionRight() - RegionLeft() << " "
       << RegionTop() - RegionBottom() << "\n";
-  for (auto &block: Blocks()) {
+  for (auto &block : Blocks()) {
     if (block.IsPlaced()) {
       ost << block.LLX() << " " << block.LLY() << " " << block.Width()
           << " " << block.Height() << "\n";
@@ -213,8 +213,8 @@ bool Placer::SaveNodeTerminal(
   std::ofstream ost(terminal_file.c_str());
   std::ofstream ost1(node_file.c_str());
   DaliExpects(ost.is_open() && ost1.is_open(),
-              "Cannot open file " + terminal_file + " or " + node_file);
-  for (auto &block: Blocks()) {
+              "Cannot open file " << terminal_file << " or " << node_file);
+  for (auto &block : Blocks()) {
     if (block.IsMovable()) {
       ost1 << block.X() << "\t" << block.Y() << "\n";
     } else {
@@ -252,19 +252,19 @@ void Placer::SanityCheck() {
   BOOST_LOG_TRIVIAL(info) << "Target density: " << placement_density_ << "\n";
   DaliExpects(placement_density_ > epsilon,
               "Filling rate should be in a proper range, for example [0.1, 1], current value: "
-                  + std::to_string(placement_density_));
-  for (auto &net: Nets()) {
+                  << placement_density_);
+  for (auto &net : Nets()) {
     if (net.BlockPins().empty()) {
       DaliWarns(true,
                 "Empty net or this net only contains unplaced IOPINs: "
-                    + net.Name());
+                    << net.Name());
     }
   }
   DaliExpects(IsBoundaryProper(), "Improper boundary setting");
 }
 
 void Placer::UpdateMovableBlkPlacementStatus() {
-  for (auto &blk: Blocks()) {
+  for (auto &blk : Blocks()) {
     if (blk.IsMovable()) {
       blk.SetPlacementStatus(PLACED);
     }
@@ -272,13 +272,13 @@ void Placer::UpdateMovableBlkPlacementStatus() {
 }
 
 void Placer::ShiftX(double shift_x) {
-  for (auto &block: Blocks()) {
+  for (auto &block : Blocks()) {
     block.IncreaseX(shift_x);
   }
 }
 
 void Placer::ShiftY(double shift_y) {
-  for (auto &block: Blocks()) {
+  for (auto &block : Blocks()) {
     block.IncreaseY(shift_y);
   }
 }

@@ -159,14 +159,13 @@ struct Rect {
   bool CheckValidity() {
     return llx_ <= urx_ && lly_ <= ury_;
   }
-  std::string ToString() {
-    return "(" + std::to_string(llx_), ", " + std::to_string(lly_) + "), " +
-        "(" + std::to_string(urx_), ", " + std::to_string(ury_) + ")";
+  friend std::ostream &operator<<(std::ostream &ost, const Rect &rect) {
+    ost << "(" << rect.LLX() << ", " << rect.LLY() << "), "
+        << "(" << rect.URX() << ", " << rect.URY() << ")";
+    return ost;
   }
   void Report() const {
-    BOOST_LOG_TRIVIAL(info)
-      << "(" << llx_ << ", " << lly_ << "), "
-      << "(" << urx_ << ", " << ury_ << ")\n";
+    BOOST_LOG_TRIVIAL(info) << *this << "\n";
   }
 };
 

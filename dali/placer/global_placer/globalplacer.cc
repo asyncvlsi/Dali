@@ -119,7 +119,7 @@ void GlobalPlacer::BlockLocRandomInit() {
   BOOST_LOG_TRIVIAL(info) << "HPWL before initialization: "
                           << p_ckt_->WeightedHPWL() << "\n";
 
-  for (auto &block: p_ckt_->Blocks()) {
+  for (auto &block : p_ckt_->Blocks()) {
     if (block.IsMovable()) {
       double init_x = RegionLeft() + region_width * distribution(generator);
       double init_y = RegionBottom() + region_height * distribution(generator);
@@ -148,7 +148,7 @@ void GlobalPlacer::BlockLocCenterInit() {
   std::minstd_rand0 generator{1};
   std::normal_distribution<double> distribution(0.0, 1.0 / 3);
 
-  for (auto &block: p_ckt_->Blocks()) {
+  for (auto &block : p_ckt_->Blocks()) {
     if (!block.IsMovable()) continue;
     double x = region_center_x + region_width * distribution(generator);
     double y = region_center_y + region_height * distribution(generator);
@@ -181,7 +181,7 @@ void GlobalPlacer::DriverLoadPairInit() {
   int sz = block_list.size();
 
   pair_connect.resize(sz);
-  for (auto &blk_pair: pair_list) {
+  for (auto &blk_pair : pair_list) {
     int num0 = blk_pair.blk_num0;
     int num1 = blk_pair.blk_num1;
     //BOOST_LOG_TRIVIAL(info)   << num0 << " " << num1 << "\n";
@@ -208,7 +208,7 @@ void GlobalPlacer::DriverLoadPairInit() {
 
   std::vector<int> row_size(sz, 1);
   for (int i = 0; i < sz; ++i) {
-    for (auto &blk_pair: pair_connect[i]) {
+    for (auto &blk_pair : pair_connect[i]) {
       int num0 = blk_pair->blk_num0;
       int num1 = blk_pair->blk_num1;
       if (num0 == num1) continue;
@@ -220,7 +220,7 @@ void GlobalPlacer::DriverLoadPairInit() {
   Ax.reserve(row_size);
   SpMat_diag_x.resize(sz);
   for (int i = 0; i < sz; ++i) {
-    for (auto &blk_pair: pair_connect[i]) {
+    for (auto &blk_pair : pair_connect[i]) {
       int num0 = blk_pair->blk_num0;
       int num1 = blk_pair->blk_num1;
       if (block_list[num0].IsMovable() && block_list[num1].IsMovable()) {
@@ -260,7 +260,7 @@ void GlobalPlacer::DriverLoadPairInit() {
   Ay.reserve(row_size);
   SpMat_diag_y.resize(sz);
   for (int i = 0; i < sz; ++i) {
-    for (auto &blk_pair: pair_connect[i]) {
+    for (auto &blk_pair : pair_connect[i]) {
       int num0 = blk_pair->blk_num0;
       int num1 = blk_pair->blk_num1;
       if (block_list[num0].IsMovable() && block_list[num1].IsMovable()) {
@@ -332,7 +332,7 @@ void GlobalPlacer::CGInit() {
 
   int coefficient_size = 0;
   int net_sz = 0;
-  for (auto &net: Nets()) {
+  for (auto &net : Nets()) {
     net_sz = net.PinCnt();
     // if a net has size n, then in total, there will be (2(n-2)+1)*4 non-zero entries for the matrix
     if (net_sz > 1) coefficient_size += (2 * (net_sz - 2) + 1) * 4;
@@ -405,7 +405,7 @@ void GlobalPlacer::BuildProblemB2BX() {
   bool is_movable_min;
   double offset_min;
 
-  for (auto &net: net_list) {
+  for (auto &net : net_list) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
     inv_p = net.InvP();
     net.UpdateMaxMinIdX();
@@ -422,7 +422,7 @@ void GlobalPlacer::BuildProblemB2BX() {
     is_movable_min = net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
     offset_min = net.BlockPins()[min_pin_index].OffsetX();
 
-    for (auto &pair: net.BlockPins()) {
+    for (auto &pair : net.BlockPins()) {
       blk_num = pair.BlkId();
       pin_loc = pair.AbsX();
       is_movable = pair.BlkPtr()->IsMovable();
@@ -547,7 +547,7 @@ void GlobalPlacer::BuildProblemB2BY() {
   bool is_movable_min;
   double offset_min;
 
-  for (auto &net: Nets()) {
+  for (auto &net : Nets()) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_)
       continue;
     inv_p = net.InvP();
@@ -565,7 +565,7 @@ void GlobalPlacer::BuildProblemB2BY() {
     is_movable_min = net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
     offset_min = net.BlockPins()[min_pin_index].OffsetY();
 
-    for (auto &pair: net.BlockPins()) {
+    for (auto &pair : net.BlockPins()) {
       blk_num = pair.BlkId();
       pin_loc = pair.AbsY();
       is_movable = pair.BlkPtr()->IsMovable();
@@ -676,7 +676,7 @@ void GlobalPlacer::BuildProblemStarModelX() {
   bool driver_is_movable;
   double driver_offset;
 
-  for (auto &net: net_list) {
+  for (auto &net : net_list) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_)
       continue;
     inv_p = net.InvP();
@@ -687,7 +687,7 @@ void GlobalPlacer::BuildProblemStarModelX() {
     driver_is_movable = net.BlockPins()[0].BlkPtr()->IsMovable();
     driver_offset = net.BlockPins()[0].OffsetX();
 
-    for (auto &pair: net.BlockPins()) {
+    for (auto &pair : net.BlockPins()) {
       blk_num = pair.BlkId();
       pin_loc = pair.AbsX();
       is_movable = pair.BlkPtr()->IsMovable();
@@ -774,7 +774,7 @@ void GlobalPlacer::BuildProblemStarModelY() {
   bool driver_is_movable;
   double driver_offset;
 
-  for (auto &net: net_list) {
+  for (auto &net : net_list) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_)
       continue;
     inv_p = net.InvP();
@@ -785,7 +785,7 @@ void GlobalPlacer::BuildProblemStarModelY() {
     driver_is_movable = net.BlockPins()[0].BlkPtr()->IsMovable();
     driver_offset = net.BlockPins()[0].OffsetY();
 
-    for (auto &pair: net.BlockPins()) {
+    for (auto &pair : net.BlockPins()) {
       blk_num = pair.BlkId();
       pin_loc = pair.AbsY();
       is_movable = pair.BlkPtr()->IsMovable();
@@ -868,7 +868,7 @@ void GlobalPlacer::BuildProblemHPWLX() {
   bool is_movable_min;
   double offset_min;
 
-  for (auto &net: net_list) {
+  for (auto &net : net_list) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_)
       continue;
     inv_p = net.InvP();
@@ -964,7 +964,7 @@ void GlobalPlacer::BuildProblemHPWLY() {
   bool is_movable_min;
   double offset_min;
 
-  for (auto &net: Nets()) {
+  for (auto &net : Nets()) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_)
       continue;
     inv_p = net.InvP();
@@ -1043,7 +1043,7 @@ void GlobalPlacer::BuildProblemStarHPWLX() {
   for (int i = 0; i < pair_sz; ++i) {
     BlkPairNets &blk_pair = blk_pair_net_list[i];
     blk_pair.ClearX();
-    for (auto &edge: blk_pair.edges) {
+    for (auto &edge : blk_pair.edges) {
       Net &net = *(edge.net);
       int d = edge.d;
       int l = edge.l;
@@ -1144,7 +1144,7 @@ void GlobalPlacer::BuildProblemStarHPWLX() {
     } else {
       double diag_val = 0;
       double b = 0;
-      for (auto &blk_pair: pair_connect[i]) {
+      for (auto &blk_pair : pair_connect[i]) {
         if (i == blk_pair->blk_num0) {
           diag_val += blk_pair->e00x;
           b += blk_pair->b0x;
@@ -1183,7 +1183,7 @@ void GlobalPlacer::BuildProblemStarHPWLY() {
   for (int i = 0; i < pair_sz; ++i) {
     BlkPairNets &blk_pair = blk_pair_net_list[i];
     blk_pair.ClearY();
-    for (auto &edge: blk_pair.edges) {
+    for (auto &edge : blk_pair.edges) {
       Net &net = *(edge.net);
       int d = edge.d;
       int l = edge.l;
@@ -1284,7 +1284,7 @@ void GlobalPlacer::BuildProblemStarHPWLY() {
     } else {
       double diag_val = 0;
       double b = 0;
-      for (auto &blk_pair: pair_connect[i]) {
+      for (auto &blk_pair : pair_connect[i]) {
         if (i == blk_pair->blk_num0) {
           diag_val += blk_pair->e00y;
           b += blk_pair->b0y;
@@ -1706,7 +1706,7 @@ void GlobalPlacer::UpdateWhiteSpaceInGridBin(GridBin &grid_bin) {
   std::vector<Block> &blocks = Blocks();
 
   std::vector<RectI> rects;
-  for (auto &fixed_blk_ptr: grid_bin.fixed_blks) {
+  for (auto &fixed_blk_ptr : grid_bin.fixed_blks) {
     auto &fixed_blk = *fixed_blk_ptr;
     RectI fixed_blk_rect(
         static_cast<int>(std::round(fixed_blk.LLX())),
@@ -1723,8 +1723,7 @@ void GlobalPlacer::UpdateWhiteSpaceInGridBin(GridBin &grid_bin) {
   if (grid_bin.white_space < used_area) {
     DaliExpects(false,
                 "Fixed blocks takes more space than available space? "
-                    + std::to_string(grid_bin.white_space) + " "
-                    + std::to_string(used_area)
+                    << grid_bin.white_space << " " << used_area
     );
   }
 
@@ -1744,8 +1743,8 @@ void GlobalPlacer::InitGridBins() {
   UpdateFixedBlocksInGridBins();
 
   // update white spaces in grid bins
-  for (auto &grid_bin_column: grid_bin_mesh) {
-    for (auto &grid_bin: grid_bin_column) {
+  for (auto &grid_bin_column : grid_bin_mesh) {
+    for (auto &grid_bin : grid_bin_column) {
       UpdateWhiteSpaceInGridBin(grid_bin);
     }
   }
@@ -1806,8 +1805,8 @@ void GlobalPlacer::LALClose() {
 }
 
 void GlobalPlacer::ClearGridBinFlag() {
-  for (auto &bin_column: grid_bin_mesh) {
-    for (auto &bin: bin_column) bin.global_placed = false;
+  for (auto &bin_column : grid_bin_mesh) {
+    for (auto &bin : bin_column) bin.global_placed = false;
   }
 }
 
@@ -1921,8 +1920,8 @@ void GlobalPlacer::UpdateGridBinState() {
   double wall_time = get_wall_time();
 
   // clean the old data
-  for (auto &grid_bin_column: grid_bin_mesh) {
-    for (auto &grid_bin: grid_bin_column) {
+  for (auto &grid_bin_column : grid_bin_mesh) {
+    for (auto &grid_bin : grid_bin_column) {
       grid_bin.cell_list.clear();
       grid_bin.cell_area = 0;
       grid_bin.over_fill = false;
@@ -1962,8 +1961,8 @@ void GlobalPlacer::UpdateGridBinState() {
    * ****/
   //TODO: the third criterion might be changed in the next
   bool over_fill = false;
-  for (auto &grid_bin_column: grid_bin_mesh) {
-    for (auto &grid_bin: grid_bin_column) {
+  for (auto &grid_bin_column : grid_bin_mesh) {
+    for (auto &grid_bin : grid_bin_column) {
       if (grid_bin.global_placed) {
         grid_bin.over_fill = false;
         continue;
@@ -1980,8 +1979,8 @@ void GlobalPlacer::UpdateGridBinState() {
         }
       }
       if (!grid_bin.OverFill()) {
-        for (auto &blk_ptr: grid_bin.cell_list) {
-          for (auto &fixed_blk_ptr: grid_bin.fixed_blks) {
+        for (auto &blk_ptr : grid_bin.cell_list) {
+          for (auto &fixed_blk_ptr : grid_bin.fixed_blks) {
             over_fill = blk_ptr->IsOverlap(*fixed_blk_ptr);
             if (over_fill) {
               grid_bin.over_fill = true;
@@ -2000,7 +1999,7 @@ void GlobalPlacer::UpdateGridBinState() {
 void GlobalPlacer::UpdateClusterArea(GridBinCluster &cluster) {
   cluster.total_cell_area = 0;
   cluster.total_white_space = 0;
-  for (auto &index: cluster.bin_set) {
+  for (auto &index : cluster.bin_set) {
     cluster.total_cell_area +=
         grid_bin_mesh[index.x][index.y].cell_area;
     cluster.total_white_space +=
@@ -2035,7 +2034,7 @@ void GlobalPlacer::UpdateClusterList() {
         b = Q.front();
         Q.pop();
         for (auto
-              &index: grid_bin_mesh[b.x][b.y].adjacent_bin_index) {
+              &index : grid_bin_mesh[b.x][b.y].adjacent_bin_index) {
           GridBin &bin = grid_bin_mesh[index.x][index.y];
           if (!bin.cluster_visited && bin.over_fill) {
             if (cnt > cluster_upper_size) {
@@ -2064,7 +2063,7 @@ void GlobalPlacer::UpdateLargestCluster() {
     bool is_contact = true;
 
     // if there is no grid bin has been roughly legalized, then this cluster is the largest one for sure
-    for (auto &index: it->bin_set) {
+    for (auto &index : it->bin_set) {
       if (grid_bin_mesh[index.x][index.y].global_placed) {
         is_contact = false;
       }
@@ -2077,7 +2076,7 @@ void GlobalPlacer::UpdateLargestCluster() {
     grid_bin_list.reserve(it->bin_set.size());
     std::unordered_map<GridBinIndex, bool, GridBinIndexHasher>
         grid_bin_visited;
-    for (auto &index: it->bin_set) {
+    for (auto &index : it->bin_set) {
       grid_bin_list.push_back(index);
       grid_bin_visited.insert({index, false});
     }
@@ -2090,7 +2089,7 @@ void GlobalPlacer::UpdateLargestCluster() {
               });
 
     int cnt = 0;
-    for (auto &grid_index: grid_bin_list) {
+    for (auto &grid_index : grid_bin_list) {
       int i = grid_index.x;
       int j = grid_index.y;
       if (grid_bin_visited[grid_index]) continue; // if this grid bin has been visited continue
@@ -2106,7 +2105,7 @@ void GlobalPlacer::UpdateLargestCluster() {
         b = Q.front();
         Q.pop();
         for (auto
-              &index: grid_bin_mesh[b.x][b.y].adjacent_bin_index) {
+              &index : grid_bin_mesh[b.x][b.y].adjacent_bin_index) {
           if (grid_bin_visited.find(index)
               == grid_bin_visited.end())
             continue; // this index is not in the cluster
@@ -2161,7 +2160,7 @@ void GlobalPlacer::FindMinimumBoxForLargestCluster() {
   // initialize a box with y cut-direction
   // identify the bounding box of the initial cluster
   auto it = cluster_set.begin();
-  for (auto &index: it->bin_set) {
+  for (auto &index : it->bin_set) {
     R.ll_index.x = std::min(R.ll_index.x, index.x);
     R.ur_index.x = std::max(R.ur_index.x, index.x);
     R.ll_index.y = std::min(R.ll_index.y, index.y);
@@ -2523,12 +2522,12 @@ for (auto &cell_id: box.cell_list) {
       }
   );
   double total_length = 0;
-  for (auto &blk_ptr: box.cell_list) {
+  for (auto &blk_ptr : box.cell_list) {
     total_length += blk_ptr->Width();
   }
   double cur_pos = 0;
   int box_width = box.right - box.left;
-  for (auto &pair: index_loc_list_x) {
+  for (auto &pair : index_loc_list_x) {
     Block *blk_ptr = pair.first;
     double center_x = box.left + cur_pos / total_length * box_width;
     blk_ptr->SetCenterX(center_x);
@@ -2550,12 +2549,12 @@ for (auto &cell_id: box.cell_list) {
       }
   );
   total_length = 0;
-  for (auto &blk_ptr: box.cell_list) {
+  for (auto &blk_ptr : box.cell_list) {
     total_length += blk_ptr->Height();
   }
   cur_pos = 0;
   int box_height = box.top - box.bottom;
-  for (auto &pair: index_loc_list_y) {
+  for (auto &pair : index_loc_list_y) {
     Block *blk_ptr = pair.first;
     double center_y = box.bottom + cur_pos / total_length * box_height;
     if (std::isnan(center_y)) {
@@ -2611,7 +2610,7 @@ void GlobalPlacer::RoughLegalBlkInBox(BoxBin &box) {
   double min_x = right_;
   double max_x = left_;
 
-  for (auto &pair: index_loc_list) {
+  for (auto &pair : index_loc_list) {
     auto &block = *(pair.blk_ptr);
 
     init_x = int(block.LLX());
@@ -2672,7 +2671,7 @@ void GlobalPlacer::RoughLegalBlkInBox(BoxBin &box) {
                             << "\n";
   }
   DaliExpects(span_x > 0, "Expect span_x > 0!");
-  for (auto &pair: index_loc_list) {
+  for (auto &pair : index_loc_list) {
     auto &block = *(pair.blk_ptr);
     block.SetCenterX((block.X() - min_x) / span_x * box_width + box.left);
   }
@@ -2774,7 +2773,7 @@ void GlobalPlacer::PlaceBlkInBoxBisection(BoxBin &box) {
       // shift cells to the center of the final box
       if (max_cell_num_in_box == 1) {
         Block *cell;
-        for (auto &blk_ptr: front_box.cell_list) {
+        for (auto &blk_ptr : front_box.cell_list) {
           blk_ptr->SetCenterX((front_box.left + front_box.right) / 2.0);
           blk_ptr->SetCenterY((front_box.bottom + front_box.top) / 2.0);
         }
@@ -2806,7 +2805,7 @@ void GlobalPlacer::UpdateGridBinBlocks(BoxBin &box) {
       grid_bin.over_fill = false;
 
       std::vector<Block> &block_list = p_ckt_->Blocks();
-      for (auto &blk_ptr: box.cell_list) {
+      for (auto &blk_ptr : box.cell_list) {
         grid_bin.cell_list.push_back(blk_ptr);
         grid_bin.cell_area += blk_ptr->Area();
       }
@@ -3393,7 +3392,7 @@ void GlobalPlacer::DrawBlockNetList(std::string const &name_of_file) {
       << RegionRight() - RegionLeft() << " "
       << RegionTop() - RegionBottom() << "\n";
   std::vector<Block> &block_list = p_ckt_->Blocks();
-  for (auto &block: block_list) {
+  for (auto &block : block_list) {
     ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " "
         << block.Height() << "\n";
   }
@@ -3404,8 +3403,8 @@ void GlobalPlacer::write_all_terminal_grid_bins(std::string const &name_of_file)
   /* this is a member function for testing, print grid bins where the flag "all_terminal" is true */
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
-  for (auto &bin_column: grid_bin_mesh) {
-    for (auto &bin: bin_column) {
+  for (auto &bin_column : grid_bin_mesh) {
+    for (auto &bin : bin_column) {
       double low_x, low_y, width, height;
       width = bin.right - bin.left;
       height = bin.top - bin.bottom;
@@ -3432,8 +3431,8 @@ void GlobalPlacer::write_not_all_terminal_grid_bins(std::string const &name_of_f
   /* this is a member function for testing, print grid bins where the flag "all_terminal" is false */
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
-  for (auto &bin_column: grid_bin_mesh) {
-    for (auto &bin: bin_column) {
+  for (auto &bin_column : grid_bin_mesh) {
+    for (auto &bin : bin_column) {
       double low_x, low_y, width, height;
       width = bin.right - bin.left;
       height = bin.top - bin.bottom;
@@ -3460,8 +3459,8 @@ void GlobalPlacer::write_overfill_grid_bins(std::string const &name_of_file) {
   /* this is a member function for testing, print grid bins where the flag "over_fill" is true */
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
-  for (auto &bin_column: grid_bin_mesh) {
-    for (auto &bin: bin_column) {
+  for (auto &bin_column : grid_bin_mesh) {
+    for (auto &bin : bin_column) {
       double low_x, low_y, width, height;
       width = bin.right - bin.left;
       height = bin.top - bin.bottom;
@@ -3488,8 +3487,8 @@ void GlobalPlacer::write_not_overfill_grid_bins(std::string const &name_of_file)
   /* this is a member function for testing, print grid bins where the flag "over_fill" is false */
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
-  for (auto &bin_column: grid_bin_mesh) {
-    for (auto &bin: bin_column) {
+  for (auto &bin_column : grid_bin_mesh) {
+    for (auto &bin : bin_column) {
       double low_x, low_y, width, height;
       width = bin.right - bin.left;
       height = bin.top - bin.bottom;
@@ -3519,7 +3518,7 @@ void GlobalPlacer::write_first_n_bin_cluster(std::string const &name_of_file,
   DaliExpects(ost.is_open(), "Cannot open file" + name_of_file);
   auto it = cluster_set.begin();
   for (size_t i = 0; i < n; ++i, --it) {
-    for (auto &index: it->bin_set) {
+    for (auto &index : it->bin_set) {
       double low_x, low_y, width, height;
       GridBin *GridBin = &grid_bin_mesh[index.x][index.y];
       width = GridBin->right - GridBin->left;

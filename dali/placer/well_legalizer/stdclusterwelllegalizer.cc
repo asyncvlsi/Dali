@@ -46,7 +46,7 @@ void StdClusterWellLegalizer::CheckWellStatus() {
     if (blk.IsMovable()) {
       BlockTypeWell *well_ptr = blk.TypePtr()->WellPtr();
       DaliExpects(well_ptr != nullptr,
-                  "Cannot find well info for cell: " + blk.Name());
+                  "Cannot find well info for cell: " << blk.Name());
     }
   }
 }

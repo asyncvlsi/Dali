@@ -76,7 +76,7 @@ void BoxBin::update_cell_area(std::vector<Block> &Nodelist) {
 
   Block *node;
   total_cell_area = 0;
-  for (auto &blk_ptr: cell_list) {
+  for (auto &blk_ptr : cell_list) {
     total_cell_area += blk_ptr->Area();
   }
 }
@@ -189,7 +189,7 @@ void BoxBin::UpdateCellList(std::vector<std::vector<GridBin> > &grid_bin_matrix)
   cell_list.clear();
   for (int x = ll_index.x; x <= ur_index.x; x++) {
     for (int y = ll_index.y; y <= ur_index.y; y++) {
-      for (auto &blk_ptr: grid_bin_matrix[x][y].cell_list) {
+      for (auto &blk_ptr : grid_bin_matrix[x][y].cell_list) {
         cell_list.push_back(blk_ptr);
       }
       grid_bin_matrix[x][y].cell_list.clear();
@@ -214,7 +214,7 @@ void BoxBin::UpdateWhiteSpaceAndFixedBlks(
   RectI bin_rect(left, bottom, right, top);
 
   std::vector<RectI> rects;
-  for (auto &fixed_blk_ptr: box_fixed_blks) {
+  for (auto &fixed_blk_ptr : box_fixed_blks) {
     auto &fixed_blk = *fixed_blk_ptr;
     RectI fixed_blk_rect(
         static_cast<int>(std::round(fixed_blk.LLX())),
@@ -232,8 +232,7 @@ void BoxBin::UpdateWhiteSpaceAndFixedBlks(
   if (total_white_space < used_area) {
     DaliExpects(false,
                 "Fixed blocks takes more space than available space? "
-                    + std::to_string(total_white_space) + " "
-                    + std::to_string(used_area)
+                    << total_white_space << " " << used_area
     );
   }
 
@@ -246,7 +245,7 @@ void BoxBin::UpdateObsBoundary() {
   if (fixed_blks.empty()) {
     return;
   }
-  for (auto &blk_ptr: fixed_blks) {
+  for (auto &blk_ptr : fixed_blks) {
     Block &node = *blk_ptr;
     if ((left < node.LLX()) && (right > node.LLX())) {
       vertical_cutlines.push_back((int) node.LLX());
@@ -323,7 +322,7 @@ bool BoxBin::write_cell_in_box(
     BOOST_LOG_TRIVIAL(info) << "Cannot open file" << NameOfFile << "\n";
     return false;
   }
-  for (auto &blk_ptr: cell_list) {
+  for (auto &blk_ptr : cell_list) {
     if (blk_ptr->IsMovable()) {
       ost << blk_ptr->X() << "\t" << blk_ptr->Y() << "\n";
     }
@@ -434,7 +433,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(
       //BOOST_LOG_TRIVIAL(info)   << i << "\n";
       cell_area_low = 0;
       cut_line = (cut_line_low + cut_line_high) / 2;
-      for (auto &blk_ptr: cell_list) {
+      for (auto &blk_ptr : cell_list) {
         if (blk_ptr->Y() < cut_line) {
           cell_area_low += blk_ptr->Area();
         }
@@ -455,7 +454,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(
     cut_ll_point.y = cut_line;
     cut_ur_point.y = cut_line;
     //BOOST_LOG_TRIVIAL(info)   << cut_line << " LLY " << ll_point.y << " URY " << ll_point.y << "\n";
-    for (auto &blk_ptr: cell_list) {
+    for (auto &blk_ptr : cell_list) {
       if (blk_ptr->Y() < cut_line) {
         cell_list_low.push_back(blk_ptr);
       } else {
@@ -471,7 +470,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(
       //BOOST_LOG_TRIVIAL(info)   << i << "\n";
       cell_area_low = 0;
       cut_line = (cut_line_low + cut_line_high) / 2;
-      for (auto &blk_ptr: cell_list) {
+      for (auto &blk_ptr : cell_list) {
         if (blk_ptr->X() < cut_line) {
           cell_area_low += blk_ptr->Area();
         }
@@ -491,7 +490,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(
     cut_ll_point.x = cut_line;
     cut_ur_point.x = cut_line;
     //BOOST_LOG_TRIVIAL(info)   << cut_line << " LLX " << ll_point.x << " URX " << ur_point.x << "\n";
-    for (auto &blk_ptr: cell_list) {
+    for (auto &blk_ptr : cell_list) {
       if (blk_ptr->X() < cut_line) {
         cell_list_low.push_back(blk_ptr);
       } else {
@@ -688,7 +687,7 @@ void BoxBin::Report() {
     << ") (" << right << ", " << top << ")\n";
 
   BOOST_LOG_TRIVIAL(info) << "cell list: " << cell_list.size() << "\n";
-  for (auto &p_blk: cell_list) {
+  for (auto &p_blk : cell_list) {
     BOOST_LOG_TRIVIAL(info)
       << p_blk->Name() << ", "
       << "(" << p_blk->LLX() << ", " << p_blk->LLY() << "), "
@@ -697,19 +696,19 @@ void BoxBin::Report() {
   BOOST_LOG_TRIVIAL(info) << "\nend\n";
 
   BOOST_LOG_TRIVIAL(info) << "cell list low: " << cell_list_low.size() << "\n";
-  for (auto &num: cell_list_low) {
+  for (auto &num : cell_list_low) {
     BOOST_LOG_TRIVIAL(info) << num << ", ";
   }
   BOOST_LOG_TRIVIAL(info) << "\nend\n";
 
   BOOST_LOG_TRIVIAL(info) << "cell list hi: " << cell_list_high.size() << "\n";
-  for (auto &num: cell_list_high) {
+  for (auto &num : cell_list_high) {
     BOOST_LOG_TRIVIAL(info) << num << ", ";
   }
   BOOST_LOG_TRIVIAL(info) << "\nend\n";
 
   BOOST_LOG_TRIVIAL(info) << "terminal list: " << fixed_blks.size() << "\n";
-  for (auto &p_fixed_blk: fixed_blks) {
+  for (auto &p_fixed_blk : fixed_blks) {
     BOOST_LOG_TRIVIAL(info)
       << p_fixed_blk->Name() << ", "
       << "(" << p_fixed_blk->LLX() << ", " << p_fixed_blk->LLY() << "), "
@@ -718,13 +717,13 @@ void BoxBin::Report() {
   BOOST_LOG_TRIVIAL(info) << "\nend\n";
 
   BOOST_LOG_TRIVIAL(info) << "vertical boundaries\n";
-  for (auto &num: vertical_cutlines) {
+  for (auto &num : vertical_cutlines) {
     BOOST_LOG_TRIVIAL(info) << num << ", ";
   }
   BOOST_LOG_TRIVIAL(info) << "\nend\n";
 
   BOOST_LOG_TRIVIAL(info) << "horizontal boundaries\n";
-  for (auto &num: horizontal_cutlines) {
+  for (auto &num : horizontal_cutlines) {
     BOOST_LOG_TRIVIAL(info) << num << ", ";
   }
   BOOST_LOG_TRIVIAL(info) << "\nend\n";

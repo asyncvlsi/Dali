@@ -96,7 +96,7 @@ void OptRegDist::SaveFile(std::string const &file_name) const {
   BOOST_LOG_TRIVIAL(info) << "Writing optimal region distance file: "
                           << file_name;
   std::ofstream ost(file_name.c_str());
-  DaliExpects(ost.is_open(), "Cannot open file " + file_name);
+  DaliExpects(ost.is_open(), "Cannot open file " << file_name);
 
   if (circuit_ == nullptr) return;
   double ave_size = circuit_->AveBlkHeight();

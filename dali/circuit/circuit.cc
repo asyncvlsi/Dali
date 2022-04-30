@@ -839,7 +839,7 @@ void Circuit::SetWellRect(
     max_plug_distance = tech_.nwell_layer_.MaxPlugDist();
     DaliWarns(width > max_plug_distance,
               "BlockType has a Nwell wider than max_plug_distance, this may make well legalization fail: "
-                  + blk_type_name);
+                  << blk_type_name);
   } else {
     DaliExpects(tech_.p_set_,
                 "Pwell layer not found, cannot set well rect: "
@@ -847,7 +847,7 @@ void Circuit::SetWellRect(
     max_plug_distance = tech_.pwell_layer_.MaxPlugDist();
     DaliWarns(width > max_plug_distance,
               "BlockType has a Pwell wider than max_plug_distance, this may make well legalization fail: "
-                  + blk_type_name);
+                  << blk_type_name);
   }
 
   // add well rect

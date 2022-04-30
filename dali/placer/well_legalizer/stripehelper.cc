@@ -29,7 +29,7 @@ void GenClusterTable(
 ) {
   std::string cluster_file = name_of_file + "_cluster.txt";
   std::ofstream ost(cluster_file.c_str());
-  DaliExpects(ost.is_open(), "Cannot open output file: " + cluster_file);
+  DaliExpects(ost.is_open(), "Cannot open output file: " << cluster_file);
 
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
@@ -126,11 +126,11 @@ void GenMATLABWellFillingTable(
 ) {
   std::string p_file = base_file_name + "_pwell.txt";
   std::ofstream ostp(p_file.c_str());
-  DaliExpects(ostp.is_open(), "Cannot open output file: " + p_file);
+  DaliExpects(ostp.is_open(), "Cannot open output file: " << p_file);
 
   std::string n_file = base_file_name + "_nwell.txt";
   std::ofstream ostn(n_file.c_str());
-  DaliExpects(ostn.is_open(), "Cannot open output file: " + n_file);
+  DaliExpects(ostn.is_open(), "Cannot open output file: " << n_file);
 
   for (auto &col: col_list) {
     for (auto &stripe: col.stripe_list_) {

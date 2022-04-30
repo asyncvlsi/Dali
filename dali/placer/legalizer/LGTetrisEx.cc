@@ -1132,7 +1132,7 @@ void LGTetrisEx::GenAvailSpace(std::string const &name_of_file) {
   BOOST_LOG_TRIVIAL(info) << "Generating available space, dump result to: "
                           << name_of_file << "\n";
   std::ofstream ost(name_of_file.c_str());
-  DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
+  DaliExpects(ost.is_open(), "Cannot open output file: " << name_of_file);
   ost << RegionLeft() << "\t"
       << RegionRight() << "\t"
       << RegionRight() << "\t"

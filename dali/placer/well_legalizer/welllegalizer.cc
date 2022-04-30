@@ -274,10 +274,12 @@ void WellLegalizer::WellPlace(Block &block) {
   //UpdatePNBoundary(block);
 }
 
-bool WellLegalizer::IsCurLocWellDistanceLeft(int loc_x,
-                                             int lo_row,
-                                             int hi_row,
-                                             int p_row) {
+bool WellLegalizer::IsCurLocWellDistanceLeft(
+    int loc_x,
+    int lo_row,
+    int hi_row,
+    int p_row
+) {
   /****
    * Returns if the N/P well distance to its left hand side neighbors are satisfied
    ****/
@@ -623,7 +625,7 @@ bool WellLegalizer::WellLegalizationLeft() {
   bool is_current_loc_legal;
   bool is_legal_loc_found;
 
-  for (auto &pair: blk_inits_) {
+  for (auto &pair : blk_inits_) {
     auto &block = *(pair.blk_ptr);
     if (block.IsFixed()) continue;
 
@@ -1001,7 +1003,7 @@ bool WellLegalizer::WellLegalizationRight() {
   bool is_current_loc_legal;
   bool is_legal_loc_found;
 
-  for (auto &pair: blk_inits_) {
+  for (auto &pair : blk_inits_) {
     auto &block = *(pair.blk_ptr);
     if (block.IsFixed()) continue;
 

@@ -474,7 +474,7 @@ void Dali::ExportOrdinaryComponentsToPhyDB() {
 
     phydb::Component *comp_ptr = phy_db_ptr_->GetComponentPtr(comp_name);
     DaliExpects(comp_ptr != nullptr,
-                "No component in PhyDB with name: " + comp_name);
+                "No component in PhyDB with name: " << comp_name);
     comp_ptr->SetLocation(lx, ly);
     comp_ptr->SetPlacementStatus(place_status);
     comp_ptr->SetOrientation(orient);
@@ -496,7 +496,7 @@ void Dali::ExportWellTapCellsToPhyDB() {
 
     auto *phydb_macro_ptr = phy_db_ptr_->GetMacroPtr(macro_name);
     DaliExpects(phydb_macro_ptr != nullptr,
-                "Cannot find " + macro_name + " in PhyDB?!");
+                "Cannot find " << macro_name << " in PhyDB?!");
     phy_db_ptr_->AddComponent(
         comp_name, phydb_macro_ptr, place_status, lx, ly, orient
     );
@@ -518,7 +518,7 @@ void Dali::ExportIoPinsToPhyDB() {
       std::string metal_name = iopin.LayerPtr()->Name();
       std::string iopin_name = iopin.Name();
       DaliExpects(phy_db_ptr_->IsIoPinExisting(iopin_name),
-                  "IOPIN not in PhyDB? " + iopin_name);
+                  "IOPIN not in PhyDB? " << iopin_name);
       phydb::IOPin *phydb_iopin = phy_db_ptr_->GetIoPinPtr(iopin_name);
       auto &rect = iopin.GetShape();
       int llx = circuit_.Micron2DatabaseUnit(rect.LLX());

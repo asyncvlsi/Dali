@@ -47,13 +47,13 @@ std::vector<std::vector<std::string>> ParseArguments(
   std::vector<std::vector<std::string>> options;
   for (int i = 1; i < argc; ++i) {
     std::string arg(argv[i]);
-    if (arg.substr(0,flag_prefix.size()) == flag_prefix) { // this is a new flag
+    if (arg.substr(0, flag_prefix.size()) == flag_prefix) { // this is a new flag
       options.emplace_back();
       options.back().emplace_back(arg);
     } else if (!options.empty()) { // this is an option for the latest flag
       options.back().emplace_back(arg);
     } else { // option with no flag declared in advance?
-      DaliExpects(false, "there is no flag declared before: " + arg);
+      DaliExpects(false, "there is no flag declared before: " << arg);
     }
   }
   return options;
@@ -130,10 +130,9 @@ unsigned long long GetCoverArea(std::vector<RectI> &rects) {
   std::unordered_set<int> x_values_set;
 
   // create an event only when a rectangle has an area larger than 0
-  for (auto &rec: rects) {
+  for (auto &rec : rects) {
     if (!rec.CheckValidity()) {
-      DaliExpects(false,
-                  "Something wrong with this rectangle? " + rec.ToString());
+      DaliExpects(false, "Something wrong with this rectangle? " << rec);
     }
     if ((rec.LLX() == rec.URX()) || (rec.LLY() == rec.URY())) continue;
     events.push_back({rec.LLY(), event_open, rec.LLX(), rec.URX()});
@@ -158,7 +157,7 @@ unsigned long long GetCoverArea(std::vector<RectI> &rects) {
   std::vector<int> x_values;
   int sz = static_cast<int>(x_values_set.size());
   x_values.reserve(sz);
-  for (auto &val: x_values_set) {
+  for (auto &val : x_values_set) {
     x_values.push_back(val);
   }
   std::sort(x_values.begin(), x_values.end());
@@ -173,7 +172,7 @@ unsigned long long GetCoverArea(std::vector<RectI> &rects) {
   long long ans = 0;
   long long cur_x_sum = 0;
   int cur_y = events[0][0];
-  for (auto &event: events) {
+  for (auto &event : events) {
     int y = event[0], type = event[1], x1 = event[2], x2 = event[3];
     ans += cur_x_sum * (y - cur_y);
     cur_x_sum = active.Update(x_value_id_map[x1], x_value_id_map[x2], type);
@@ -197,9 +196,9 @@ void StrTokenize(std::string const &line, std::vector<std::string> &res) {
   std::string empty_str;
   bool is_delimiter, old_is_delimiter = true;
   int current_field = -1;
-  for (auto &c: line) {
+  for (auto &c : line) {
     is_delimiter = false;
-    for (auto &delimiter: delimiter_list) {
+    for (auto &delimiter : delimiter_list) {
       if (c == delimiter) {
         is_delimiter = true;
         break;
@@ -237,7 +236,7 @@ int FindFirstNumber(std::string const &str) {
   if (res > 0) {
     for (size_t i = res + 1; i < sz; ++i) {
       DaliExpects(str[i] >= '0' && str[i] <= '9',
-                  "Invalid naming convention: " + str);
+                  "Invalid naming convention: " << str);
     }
   }
   return res;
