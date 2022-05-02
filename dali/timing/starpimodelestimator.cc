@@ -35,8 +35,8 @@ void StarPiModelEstimator::PushNetRCToManager() {
   DaliExpects(!libs.empty(), "CellLibs empty?");
   for (size_t net_id = 0; net_id < phy_db_->design().nets_.size(); ++net_id) {
     phydb::Net &net = phy_db_->design().nets_[net_id];
-    if (!net.GetIoPinNamesRef().empty()) continue;
-    int driver_id = net.driver_pin_id_;
+    if (!net.GetIoPinIdsRef().empty()) continue;
+    int driver_id = net.GetDriverPinId();
     auto &net_pins = net.GetPinsRef();
     auto &driver = net_pins[driver_id];
     std::string driver_name = phy_db_->GetFullCompPinName(driver);
@@ -88,7 +88,7 @@ void StarPiModelEstimator::AddEdgesToManager() {
   auto &timing_api = phy_db_->GetTimingApi();
   auto spef_manager = phy_db_->GetParaManager();
   for (auto &net: phy_db_->design().nets_) {
-    int driver_id = net.driver_pin_id_;
+    int driver_id = net.GetDriverPinId();
     auto &net_pins = net.GetPinsRef();
     auto &driver = net_pins[driver_id];
     std::string driver_name = phy_db_->GetFullCompPinName(driver);

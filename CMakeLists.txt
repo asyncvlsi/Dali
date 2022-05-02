@@ -1,7 +1,9 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.10)
 
-project(Dali
-    LANGUAGES CXX)
+project(
+    Dali
+    LANGUAGES CXX
+)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -16,11 +18,11 @@ include_directories(
 # Detect if $ACT_HOME exits
 ############################################################################
 message(STATUS "Detecting environment variable ACT_HOME...")
-if (DEFINED ENV{ACT_HOME})
+if(DEFINED ENV{ACT_HOME})
     message(STATUS "Environment variable ACT_HOME detected: " $ENV{ACT_HOME})
-else ()
+else()
     message(FATAL_ERROR "Environment variable ACT_HOME not found")
-endif ()
+endif()
 include_directories($ENV{ACT_HOME}/include)
 link_directories($ENV{ACT_HOME}/lib)
 find_library(ACT_LIBRARY NAMES act PATHS $ENV{ACT_HOME}/lib REQUIRED)
@@ -44,38 +46,38 @@ find_library(
     NAMES galois_eda
     PATHS $ENV{ACT_HOME}/lib
 )
-if (GALOIS_EDA_LIBRARY)
+if(GALOIS_EDA_LIBRARY)
     set(Galois_LIBRARIES ${GALOIS_EDA_LIBRARY})
     message(STATUS "Found libgalois_eda.a: " ${GALOIS_EDA_LIBRARY})
-else ()
+else()
     message(STATUS "Cannot find libgalois_eda.a")
     set(Galois_FOUND FALSE)
-endif ()
+endif()
 find_library(
     GALOIS_SHMEM_LIBRARY
     NAMES galois_shmem
     PATHS $ENV{ACT_HOME}/lib
 )
-if (GALOIS_SHMEM_LIBRARY)
+if(GALOIS_SHMEM_LIBRARY)
     set(Galois_LIBRARIES ${Galois_LIBRARIES} ${GALOIS_SHMEM_LIBRARY})
     message(STATUS "Found libgalois_shmem.a: " ${GALOIS_SHMEM_LIBRARY})
-else ()
+else()
     message(STATUS "Cannot find libgalois_shmem.a")
     set(Galois_FOUND FALSE)
-endif ()
-if (UNIX AND (NOT APPLE))
+endif()
+if(UNIX AND (NOT APPLE))
     find_library(
         NUMA_LIBRARY
         NAMES numa
     )
-    if (NUMA_LIBRARY)
+    if(NUMA_LIBRARY)
         set(Galois_LIBRARIES ${Galois_LIBRARIES} ${NUMA_LIBRARY})
         message(STATUS "Found libnuma: " ${NUMA_LIBRARY})
-    else ()
+    else()
         message(STATUS "Cannot find libnuma")
         set(Galois_FOUND FALSE)
-    endif ()
-endif ()
+    endif()
+endif()
 
 ############################################################################
 # Detect if OpenMP library exists
@@ -96,32 +98,32 @@ include_directories(${Boost_INCLUDE_DIRS})
 # Detect if CPLEX library exists
 ############################################################################
 set(CPLEX_FOUND TRUE)
-if (DEFINED ENV{CPLEX_INC})
+if(DEFINED ENV{CPLEX_INC})
     message(STATUS "Environment variable CPLEX_INC detected: " $ENV{CPLEX_INC})
-else ()
+else()
     message(STATUS "Environment variable CPLEX_INC not found")
     set(CPLEX_FOUND FALSE)
-endif ()
-if (DEFINED ENV{CPLEX_LIB})
+endif()
+if(DEFINED ENV{CPLEX_LIB})
     message(STATUS "Environment variable CPLEX_LIB detected: " $ENV{CPLEX_LIB})
-else ()
+else()
     message(STATUS "Environment variable CPLEX_LIB not found")
     set(CPLEX_FOUND FALSE)
-endif ()
-if (DEFINED ENV{CONCERT_INC})
+endif()
+if(DEFINED ENV{CONCERT_INC})
     message(STATUS "Environment variable CONCERT_INC detected: " $ENV{CONCERT_INC})
-else ()
+else()
     message(STATUS "Environment variable CONCERT_INC not found")
     set(CPLEX_FOUND FALSE)
-endif ()
-if (DEFINED ENV{CONCERT_LIB})
+endif()
+if(DEFINED ENV{CONCERT_LIB})
     message(STATUS "Environment variable CONCERT_LIB detected: " $ENV{CONCERT_LIB})
-else ()
+else()
     message(STATUS "Environment variable CONCERT_LIB not found")
     set(CPLEX_FOUND FALSE)
-endif ()
+endif()
 set(CPLEX_FOUND FALSE)
-if (CPLEX_FOUND)
+if(CPLEX_FOUND)
     set(DALI_USE_CPLEX 1)
     include_directories($ENV{CPLEX_INC})
     include_directories($ENV{CONCERT_INC})
@@ -145,31 +147,31 @@ if (CPLEX_FOUND)
     )
     set(CPLEX_LIBRARIES ${CPLEX_LIBRARIES} ${CPLEX_LIBRARY})
     message(STATUS "CPLEX libs: ${CPLEX_LIBRARIES}")
-else ()
+else()
     set(DALI_USE_CPLEX 0)
-endif ()
+endif()
 configure_file(${DALI_DIR}/common/config.h.in ${DALI_DIR}/common/config.h)
 
 ############################################################################
 # for building a standalone static executable
 ############################################################################
-#set(BUILD_STATIC_EXECUTABLES FALSE)
-#if(BUILD_STATIC_EXECUTABLES)
-#    set(CMAKE_EXE_LINKER_FLAGS -static)
-#    set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
-#    set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS)       # remove -Wl,-Bdynamic
-#    set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
-#    set(CMAKE_SHARED_LIBRARY_C_FLAGS)         # remove -fPIC
-#    set(CMAKE_SHARED_LIBRARY_CXX_FLAGS)
-#    set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS)    # remove -rdynamic
-#    set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS)
-#    # Maybe this works as well, haven't tried yet.
-#    # set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS FALSE)
-#else(BUILD_STATIC_EXECUTABLES)
-#    # Set RPATH to use for installed targets; append linker search path
-#    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LOFAR_LIBDIR}")
-#    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-#endif(BUILD_STATIC_EXECUTABLES)
+set(BUILD_STATIC_EXECUTABLES FALSE)
+if(BUILD_STATIC_EXECUTABLES)
+    set(CMAKE_EXE_LINKER_FLAGS -static)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+    set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS)       # remove -Wl,-Bdynamic
+    set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
+    set(CMAKE_SHARED_LIBRARY_C_FLAGS)         # remove -fPIC
+    set(CMAKE_SHARED_LIBRARY_CXX_FLAGS)
+    set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS)    # remove -rdynamic
+    set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS)
+    # Maybe this works as well, haven't tried yet.
+    # set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS FALSE)
+else(BUILD_STATIC_EXECUTABLES)
+    # Set RPATH to use for installed targets; append linker search path
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LOFAR_LIBDIR}")
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+endif(BUILD_STATIC_EXECUTABLES)
 
 # Set C++ compilation flags and options
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O3")
@@ -177,25 +179,22 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
 # Set a default build type if none was specified
 set(default_build_type "RELEASE")
-if (NOT CMAKE_BUILD_TYPE)
+if(NOT CMAKE_BUILD_TYPE)
     message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
     set(CMAKE_BUILD_TYPE "${default_build_type}")
     # Set the possible values of build type for cmake-gui
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
-        "DEBUG" "RELEASE")
-endif ()
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "DEBUG" "RELEASE")
+endif()
 
-if (CMAKE_BUILD_TYPE MATCHES DEBUG)
+if(CMAKE_BUILD_TYPE MATCHES DEBUG)
     message(STATUS "DEBUG build type")
-endif (CMAKE_BUILD_TYPE MATCHES DEBUG)
-
-if (CMAKE_BUILD_TYPE MATCHES RELEASE)
+else(CMAKE_BUILD_TYPE MATCHES RELEASE)
     message(STATUS "RELEASE build type")
-endif (CMAKE_BUILD_TYPE MATCHES RELEASE)
+endif()
 
-if (APPLE)
+if(APPLE)
     add_compile_options(-Xpreprocessor)
-endif ()
+endif()
 add_compile_options(-fopenmp)
 add_compile_options(-Wall -Wextra -Wshadow -Wnon-virtual-dtor -Werror=return-type -pedantic)
 
@@ -349,10 +348,10 @@ add_subdirectory(tests/ioplacer)
 ############################################################################
 # Configure install destination directory
 ############################################################################
-if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     message(STATUS "Changing default installation directory to $ACT_HOME")
     set(CMAKE_INSTALL_PREFIX $ENV{ACT_HOME} CACHE PATH "installation path" FORCE)
-endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 message(STATUS "Current installation directory: " ${CMAKE_INSTALL_PREFIX})
 
 ############################################################################

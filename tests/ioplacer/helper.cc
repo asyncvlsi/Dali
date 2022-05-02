@@ -425,7 +425,7 @@ void RemoveAllIoPins(phydb::PhyDB *p_phydb) {
   p_phydb->design().iopins_.clear();
   p_phydb->design().iopin_2_id_.clear();
   for (auto &phydb_net: p_phydb->design().GetNetsRef()) {
-    phydb_net.iopin_names_.clear();
+    phydb_net.GetIoPinIdsRef().clear();
   }
 }
 

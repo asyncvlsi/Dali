@@ -2496,19 +2496,19 @@ void Circuit::LoadDesign(phydb::PhyDB *phy_db_ptr) {
   for (auto &net: nets) {
     std::string net_name(net.GetName());
     auto &net_pins = net.GetPinsRef();
-    auto &iopin_names = net.GetIoPinNamesRef();
-    int net_capacity = int(net_pins.size() + iopin_names.size());
+    std::vector<int> &iopin_ids = net.GetIoPinIdsRef();
+    int net_capacity = int(net_pins.size() + iopin_ids.size());
     AddNet(net_name, net_capacity, design_.normal_signal_weight_);
 
-    for (auto &iopin_name: iopin_names) {
-      AddIoPinToNet(iopin_name, net_name);
+    for (int &id: iopin_ids) {
+      AddIoPinToNet(iopins[id].GetName(), net_name);
     }
     int sz = (int) net_pins.size();
     for (int i = 0; i < sz; ++i) {
-      int comp_id = net_pins[i].comp_id;
+      int comp_id = net_pins[i].InstanceId();
       std::string comp_name =
           phy_db_ptr_->GetDesignPtr()->GetComponentsRef()[comp_id].GetName();
-      int pin_id = net_pins[i].pin_id;
+      int pin_id = net_pins[i].PinId();
       std::string pin_name =
           phy_db_ptr_->GetDesignPtr()->GetComponentsRef()[comp_id].GetMacro()->GetPinsRef()[pin_id].GetName();
       AddBlkPinToNet(comp_name, pin_name, net_name);
