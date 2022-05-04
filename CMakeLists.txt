@@ -7,12 +7,13 @@ project(
 
 set(CMAKE_CXX_STANDARD 17)
 
-set(DALI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/dali")
-
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     module/eigen-git-mirror
 )
+
+# add sub-cmake files to the search path
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 ############################################################################
 # Detect if $ACT_HOME exits
@@ -37,47 +38,9 @@ find_library(DEF_LIBRARY NAMES def PATHS $ENV{ACT_HOME}/lib REQUIRED)
 message(STATUS "Found libdef.a: " ${DEF_LIBRARY})
 
 ############################################################################
-# Check if the galois_eda library is installed
+# Detect if galois_eda library exists
 ############################################################################
-message(STATUS "Detecting Galois libraries...")
-set(Galois_FOUND TRUE)
-find_library(
-    GALOIS_EDA_LIBRARY
-    NAMES galois_eda
-    PATHS $ENV{ACT_HOME}/lib
-)
-if(GALOIS_EDA_LIBRARY)
-    set(Galois_LIBRARIES ${GALOIS_EDA_LIBRARY})
-    message(STATUS "Found libgalois_eda.a: " ${GALOIS_EDA_LIBRARY})
-else()
-    message(STATUS "Cannot find libgalois_eda.a")
-    set(Galois_FOUND FALSE)
-endif()
-find_library(
-    GALOIS_SHMEM_LIBRARY
-    NAMES galois_shmem
-    PATHS $ENV{ACT_HOME}/lib
-)
-if(GALOIS_SHMEM_LIBRARY)
-    set(Galois_LIBRARIES ${Galois_LIBRARIES} ${GALOIS_SHMEM_LIBRARY})
-    message(STATUS "Found libgalois_shmem.a: " ${GALOIS_SHMEM_LIBRARY})
-else()
-    message(STATUS "Cannot find libgalois_shmem.a")
-    set(Galois_FOUND FALSE)
-endif()
-if(UNIX AND (NOT APPLE))
-    find_library(
-        NUMA_LIBRARY
-        NAMES numa
-    )
-    if(NUMA_LIBRARY)
-        set(Galois_LIBRARIES ${Galois_LIBRARIES} ${NUMA_LIBRARY})
-        message(STATUS "Found libnuma: " ${NUMA_LIBRARY})
-    else()
-        message(STATUS "Cannot find libnuma")
-        set(Galois_FOUND FALSE)
-    endif()
-endif()
+include(cmake/FindGaloisEDA.cmake)
 
 ############################################################################
 # Detect if OpenMP library exists
@@ -97,60 +60,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 ############################################################################
 # Detect if CPLEX library exists
 ############################################################################
-set(CPLEX_FOUND TRUE)
-if(DEFINED ENV{CPLEX_INC})
-    message(STATUS "Environment variable CPLEX_INC detected: " $ENV{CPLEX_INC})
-else()
-    message(STATUS "Environment variable CPLEX_INC not found")
-    set(CPLEX_FOUND FALSE)
-endif()
-if(DEFINED ENV{CPLEX_LIB})
-    message(STATUS "Environment variable CPLEX_LIB detected: " $ENV{CPLEX_LIB})
-else()
-    message(STATUS "Environment variable CPLEX_LIB not found")
-    set(CPLEX_FOUND FALSE)
-endif()
-if(DEFINED ENV{CONCERT_INC})
-    message(STATUS "Environment variable CONCERT_INC detected: " $ENV{CONCERT_INC})
-else()
-    message(STATUS "Environment variable CONCERT_INC not found")
-    set(CPLEX_FOUND FALSE)
-endif()
-if(DEFINED ENV{CONCERT_LIB})
-    message(STATUS "Environment variable CONCERT_LIB detected: " $ENV{CONCERT_LIB})
-else()
-    message(STATUS "Environment variable CONCERT_LIB not found")
-    set(CPLEX_FOUND FALSE)
-endif()
-set(CPLEX_FOUND FALSE)
-if(CPLEX_FOUND)
-    set(DALI_USE_CPLEX 1)
-    include_directories($ENV{CPLEX_INC})
-    include_directories($ENV{CONCERT_INC})
-    add_definitions(-DIL_STD)
-    find_library(
-        ILOCPLEX_LIBRARY
-        NAMES ilocplex
-        PATHS $ENV{CPLEX_LIB}
-    )
-    set(CPLEX_LIBRARIES ${ILOCPLEX_LIBRARY})
-    find_library(
-        CONCERT_LIBRARY
-        NAMES concert
-        PATHS $ENV{CONCERT_LIB}
-    )
-    set(CPLEX_LIBRARIES ${CPLEX_LIBRARIES} ${CONCERT_LIBRARY})
-    find_library(
-        CPLEX_LIBRARY
-        NAMES cplex
-        PATHS $ENV{CPLEX_LIB}
-    )
-    set(CPLEX_LIBRARIES ${CPLEX_LIBRARIES} ${CPLEX_LIBRARY})
-    message(STATUS "CPLEX libs: ${CPLEX_LIBRARIES}")
-else()
-    set(DALI_USE_CPLEX 0)
-endif()
-configure_file(${DALI_DIR}/common/config.h.in ${DALI_DIR}/common/config.h)
+include(cmake/FindCPLEX.cmake)
 
 ############################################################################
 # for building a standalone static executable
@@ -206,20 +116,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
 # All used circuit and placer source code
 file(
-    GLOB SOURCES
+    GLOB_RECURSE SOURCES
     dali/dali.cc
     dali/circuit/*.cc
     dali/common/*.cc
     dali/placer/*.cc
-    dali/placer/global_placer/*.cc
-    dali/placer/global_placer/GPSimPL/*.cc
-    dali/placer/io_placer/*.cc
-    dali/placer/legalizer/*.cc
-    dali/placer/legalizer/LGTetris/*.cc
-    dali/placer/well_legalizer/*.cc
-    dali/placer/well_place_flow/*.cc
-    dali/placer/welltap_placer/*.cc
-    dali/timing/*.cc
 )
 
 # Create a library, static libraries are controlled by ARCHIVE_OUTPUT_DIRECTORY property
@@ -361,7 +262,6 @@ set(INCLUDE_DESTIN include)
 install(
     DIRECTORY dali/
     DESTINATION ${INCLUDE_DESTIN}/dali
-    COMPONENT Development
     FILES_MATCHING
     PATTERN "*.h"
 )
