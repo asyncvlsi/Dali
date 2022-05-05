@@ -459,7 +459,7 @@ std::string Dali::CreateDetailedPlacementAndLegalizationScript(
 void Dali::ExportOrdinaryComponentsToPhyDB() {
   double factor_x = circuit_.DistanceMicrons() * circuit_.GridValueX();
   double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
-  for (auto &block: circuit_.Blocks()) {
+  for (auto &block : circuit_.Blocks()) {
     if (block.TypePtr() == circuit_.tech().IoDummyBlkTypePtr()) {
       // skip dummy cells for I/O pins
       continue;
@@ -484,7 +484,7 @@ void Dali::ExportOrdinaryComponentsToPhyDB() {
 void Dali::ExportWellTapCellsToPhyDB() {
   double factor_x = circuit_.DistanceMicrons() * circuit_.GridValueX();
   double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
-  for (auto &block: circuit_.design().WellTaps()) {
+  for (auto &block : circuit_.design().WellTaps()) {
     std::string comp_name = block.Name();
     std::string macro_name = block.TypeName();
     int lx = (int) (block.LLX() * factor_x)
@@ -498,7 +498,12 @@ void Dali::ExportWellTapCellsToPhyDB() {
     DaliExpects(phydb_macro_ptr != nullptr,
                 "Cannot find " << macro_name << " in PhyDB?!");
     phy_db_ptr_->AddComponent(
-        comp_name, phydb_macro_ptr, place_status, lx, ly, orient
+        comp_name,
+        phydb_macro_ptr,
+        phydb::CompSource::USER,
+        place_status,
+        lx, ly,
+        orient
     );
   }
 }
@@ -511,7 +516,7 @@ void Dali::ExportComponentsToPhyDB() {
 void Dali::ExportIoPinsToPhyDB() {
   DaliExpects(!circuit_.Metals().empty(),
               "Need metal layer info to generate PIN location\n");
-  for (auto &iopin: circuit_.design().IoPins()) {
+  for (auto &iopin : circuit_.design().IoPins()) {
     if (!iopin.IsPrePlaced() && iopin.IsPlaced()) {
       DaliExpects(iopin.LayerPtr() != nullptr,
                   "IOPIN metal layer not set? Cannot export it to PhyDB");
@@ -553,8 +558,8 @@ void Dali::ExportMiniRowsToPhyDB() {
   double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
 
   int counter = 0;
-  for (auto &col: well_legalizer_.col_list_) {
-    for (auto &strip: col.stripe_list_) {
+  for (auto &col : well_legalizer_.col_list_) {
+    for (auto &strip : col.stripe_list_) {
       std::string column_name = "column" + std::to_string(counter++);
       std::string bot_signal_;
       if (strip.is_first_row_orient_N_) {
@@ -572,7 +577,7 @@ void Dali::ExportMiniRowsToPhyDB() {
       p_col->SetXRange(col_lx, col_ux);
 
       if (strip.is_bottom_up_) {
-        for (auto &cluster: strip.gridded_rows_) {
+        for (auto &cluster : strip.gridded_rows_) {
           int row_ly = (int) (cluster.LLY() * factor_y)
               + circuit_.design().DieAreaOffsetY();
           int row_uy = (int) (cluster.URY() * factor_y)

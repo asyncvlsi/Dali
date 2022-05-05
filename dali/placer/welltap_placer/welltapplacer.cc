@@ -41,7 +41,7 @@ void WellTapPlacer::FetchRowsFromPhyDB() {
 
   std::string site_name = row_vec[0].site_name_;
   auto &sites = phy_db_->GetTechPtr()->GetSitesRef();
-  for (auto &site: sites) {
+  for (auto &site : sites) {
     if (site.GetName() == site_name) {
       site_ptr_ = &site;
       break;
@@ -57,7 +57,7 @@ void WellTapPlacer::FetchRowsFromPhyDB() {
   bottom_ = row_vec[0].orig_y_;
   top_ = row_vec.back().orig_y_ + row_height_;
   int prev_y = row_vec[0].orig_y_;
-  for (auto &phydb_row: row_vec) {
+  for (auto &phydb_row : row_vec) {
     int orig_x = phydb_row.orig_x_;
     int orig_y = phydb_row.orig_y_;
     DaliExpects(orig_y == prev_y,
@@ -80,16 +80,19 @@ void WellTapPlacer::FetchRowsFromPhyDB() {
 
 void WellTapPlacer::InitializeWhiteSpaceInRows() {
   if (rows_.empty()) return;
-  for (auto &comp: phy_db_->GetDesignPtr()->components_) {
-    if (comp.place_status_ != phydb::PlaceStatus::FIXED) continue;
+  for (auto &comp : phy_db_->GetDesignPtr()->components_) {
+    if (comp.GetPlacementStatus() != phydb::PlaceStatus::FIXED) continue;
     phydb::Macro *macro = comp.GetMacro();
-    int comp_width = (int) std::round(macro->GetWidth()
-                                          * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons());
-    int comp_height = (int) std::round(macro->GetHeight()
-                                           * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons());
+    int comp_width = (int) std::round(
+        macro->GetWidth() * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons()
+    );
+    int comp_height = (int) std::round(
+        macro->GetHeight()
+            * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons()
+    );
 
-    int comp_lx = comp.location_.x;
-    int comp_ly = comp.location_.y;
+    int comp_lx = comp.GetLocation().x;
+    int comp_ly = comp.GetLocation().y;
     int comp_ux = comp_lx + comp_width;
     int comp_uy = comp_ly + comp_height;
 
@@ -201,7 +204,7 @@ void WellTapPlacer::AddWellTapToRowUniform(Row &row,
 
 void WellTapPlacer::AddWellTapUniform() {
   int first_loc = ((cell_interval_ - cell_width_) / 2) * row_step_ + left_;
-  for (auto &row: rows_) {
+  for (auto &row : rows_) {
     AddWellTapToRowUniform(row, first_loc, cell_interval_);
   }
 }
@@ -210,7 +213,7 @@ void WellTapPlacer::AddWellTapCheckerBoard() {
   // add well tap cell using half cell interval
   int half_cell_interval = cell_interval_ / 2;
   int first_loc = left_;
-  for (auto &row: rows_) {
+  for (auto &row : rows_) {
     AddWellTapToRowUniform(row, first_loc, half_cell_interval);
   }
 
@@ -239,7 +242,6 @@ void WellTapPlacer::AddWellTapCheckerBoard() {
       }
     }
   }
-
 }
 
 void WellTapPlacer::AddWellTap() {
@@ -255,7 +257,7 @@ void WellTapPlacer::ExportWellTapCellsToPhyDB() {
   int counter = 0;
   std::string macro_name = cell_->GetName();
   phydb::PlaceStatus place_status = phydb::PlaceStatus::FIXED;
-  for (auto &row: rows_) {
+  for (auto &row : rows_) {
     for (int i = 0; i < row.num_x; ++i) {
       if (row.well_taps[i]) {
         std::string welltap_cell_name =
@@ -265,16 +267,18 @@ void WellTapPlacer::ExportWellTapCellsToPhyDB() {
         phydb::CompOrient orient =
             row.is_N ? phydb::CompOrient::N : phydb::CompOrient::FS;
         phydb::Macro *macro_ptr = phy_db_->GetMacroPtr(macro_name);
-        DaliExpects(macro_ptr != nullptr,
-                    "Cannot find macro " + macro_name + " in PhyDB?!");
+        DaliExpects(
+            macro_ptr != nullptr,
+            "Cannot find macro " << macro_name << " in PhyDB?!"
+        );
         phy_db_->AddComponent(
             welltap_cell_name,
             macro_ptr,
+            phydb::CompSource::DIST,
             place_status,
             llx,
             lly,
-            orient,
-            phydb::CompSource::DIST
+            orient
         );
       }
     }
@@ -284,7 +288,7 @@ void WellTapPlacer::ExportWellTapCellsToPhyDB() {
 void WellTapPlacer::PlotAvailSpace() {
   std::ofstream ost("avail_space.txt");
   DaliExpects(ost.is_open(), "Cannot open output file: avail_space.txt");
-  for (auto &row: rows_) {
+  for (auto &row : rows_) {
     for (int i = 0; i < row.num_x; ++i) {
       if (!row.avail_sites[i]) continue;
       int lx = row.orig_x + i * row_step_;
