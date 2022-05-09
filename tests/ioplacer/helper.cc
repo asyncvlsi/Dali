@@ -51,16 +51,16 @@ bool IoPinPlacedOnBoundary(
     int bottom,
     int top
 ) {
-  if (iopin.place_status_ != phydb::PlaceStatus::PLACED
-      && iopin.place_status_ != phydb::PlaceStatus::FIXED) {
+  if (iopin.GetPlacementStatus() != phydb::PlaceStatus::PLACED
+      && iopin.GetPlacementStatus() != phydb::PlaceStatus::FIXED) {
     BOOST_LOG_TRIVIAL(info)
       << "placement status of iopin: " << iopin.GetName()
       << " is not PLACED or FIXED\n";
     return false;
   }
   bool res = true;
-  int x = iopin.location_.x;
-  int y = iopin.location_.y;
+  int x = iopin.GetLocation().x;
+  int y = iopin.GetLocation().y;
   if (x == left || x == right) {
     if (!(bottom <= y && y <= top)) {
       BOOST_LOG_TRIVIAL(info)
@@ -111,10 +111,10 @@ bool IsEveryIoPinPlacedOnBoundary(phydb::PhyDB *p_phydb) {
     return false;
   }
 
-  int left = p_phydb->GetDesignPtr()->die_area_.LLX();
-  int right = p_phydb->GetDesignPtr()->die_area_.URX();
-  int bottom = p_phydb->GetDesignPtr()->die_area_.LLY();
-  int top = p_phydb->GetDesignPtr()->die_area_.URY();
+  int left = p_phydb->GetDesignPtr()->GetDieArea().LLX();
+  int right = p_phydb->GetDesignPtr()->GetDieArea().URX();
+  int bottom = p_phydb->GetDesignPtr()->GetDieArea().LLY();
+  int top = p_phydb->GetDesignPtr()->GetDieArea().URY();
 
   auto &iopins = p_phydb->GetDesignPtr()->GetIoPinsRef();
 
@@ -422,8 +422,8 @@ void RemoveAllIoPins(phydb::PhyDB *p_phydb) {
       << "Cannot remove I/O pins for a nullptr input\n";
     return;
   }
-  p_phydb->design().iopins_.clear();
-  p_phydb->design().iopin_2_id_.clear();
+  p_phydb->design().GetIoPinsRef().clear();
+  p_phydb->design().GetIoPinNameMapRef().clear();
   for (auto &phydb_net: p_phydb->design().GetNetsRef()) {
     phydb_net.GetIoPinIdsRef().clear();
   }
@@ -440,7 +440,7 @@ bool IsEveryIoPinAddedAndPlacedCorrectly(
   }
 
   bool res = true;
-  for (auto &iopin0: p_phydb0->design().iopins_) {
+  for (auto &iopin0: p_phydb0->design().GetIoPinsRef()) {
     auto *iopin1 = p_phydb1->GetIoPinPtr(iopin0.GetName());
     if (iopin1 == nullptr) {
       BOOST_LOG_TRIVIAL(info)
@@ -458,8 +458,8 @@ bool IsEveryIoPinAddedAndPlacedCorrectly(
       res = false;
       break;
     }
-    if (iopin0.GetNetName() != iopin1->GetNetName()) {
-      BOOST_LOG_TRIVIAL(info) << "different net name\n";
+    if (iopin0.GetNetId() != iopin1->GetNetId()) {
+      BOOST_LOG_TRIVIAL(info) << "different net\n";
       res = false;
       break;
     }

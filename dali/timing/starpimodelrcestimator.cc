@@ -32,9 +32,10 @@ void StarPiModelEstimator::PushNetRCToManager() {
   auto &timing_api = phy_db_->GetTimingApi();
   auto *spef_manager = phy_db_->GetParaManager();
   auto &libs = phy_db_->GetCellLibs();
+  auto &design = *(phy_db_->GetDesignPtr());
   DaliExpects(!libs.empty(), "CellLibs empty?");
-  for (size_t net_id = 0; net_id < phy_db_->design().nets_.size(); ++net_id) {
-    phydb::Net &net = phy_db_->design().nets_[net_id];
+  auto &nets = phy_db_->design().GetNetsRef();
+  for (auto &net : nets) {
     if (!net.GetIoPinIdsRef().empty()) continue;
     int driver_id = net.GetDriverPinId();
     auto &net_pins = net.GetPinsRef();
@@ -42,9 +43,10 @@ void StarPiModelEstimator::PushNetRCToManager() {
     std::string driver_name = phy_db_->GetFullCompPinName(driver);
     auto *driver_node = timing_api.PhyDBPinToSpefNode(driver);
     double driver_cap = 0;
-    // this is just a rough estimation
-    double2d driver_pin_loc =
-        circuit_->Nets()[net_id].BlockPins()[driver_id].Location();
+    phydb::Point2D<int> driver_pin_loc = design.GetComponentPinLocation(
+        driver.InstanceId(),
+        driver.PinId()
+    );
     int net_sz = (int) net_pins.size();
     for (int pin_id = 0; pin_id < net_sz; ++pin_id) {
       if (pin_id == driver_id) continue;
@@ -52,9 +54,10 @@ void StarPiModelEstimator::PushNetRCToManager() {
       std::string load_name = phy_db_->GetFullCompPinName(load);
       auto load_node = timing_api.PhyDBPinToSpefNode(load);
       double res, cap;
-      // this is just a rough estimation
-      double2d load_pin_loc =
-          circuit_->Nets()[net_id].BlockPins()[pin_id].Location();
+      phydb::Point2D<int> load_pin_loc = design.GetComponentPinLocation(
+          load.InstanceId(),
+          load.PinId()
+      );;
       GetResistanceAndCapacitance(
           driver_pin_loc,
           load_pin_loc,
@@ -87,7 +90,7 @@ void StarPiModelEstimator::AddEdgesToManager() {
   edge_pushed_to_spef_manager_ = true;
   auto &timing_api = phy_db_->GetTimingApi();
   auto spef_manager = phy_db_->GetParaManager();
-  for (auto &net: phy_db_->design().nets_) {
+  for (auto &net : phy_db_->design().GetNetsRef()) {
     int driver_id = net.GetDriverPinId();
     auto &net_pins = net.GetPinsRef();
     auto &driver = net_pins[driver_id];
@@ -112,7 +115,7 @@ void StarPiModelEstimator::AddEdgesToManager() {
 void StarPiModelEstimator::FindFirstHorizontalAndVerticalMetalLayer() {
   distance_micron_ = phy_db_->design().GetUnitsDistanceMicrons();
   if (horizontal_layer_ != nullptr && vertical_layer_ != nullptr) return;
-  for (auto &metal: phy_db_->tech().GetMetalLayersRef()) {
+  for (auto &metal : phy_db_->tech().GetMetalLayersRef()) {
     if (metal->GetDirection() == phydb::MetalDirection::HORIZONTAL
         && horizontal_layer_ == nullptr) {
       horizontal_layer_ = metal;

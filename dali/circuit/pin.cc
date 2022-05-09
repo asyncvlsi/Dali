@@ -207,7 +207,6 @@ void Pin::CalculateOffset(double x_offset, double y_offset) {
    * ****/
   x_offset_[FE - N] = blk_type_ptr_->Height() - y_offset;
   y_offset_[FE - N] = blk_type_ptr_->Width() - x_offset;
-
 }
 
 }

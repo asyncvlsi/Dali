@@ -134,7 +134,7 @@ bool Dali::ShouldPerformTimingDrivenPlacement() {
 }
 
 void Dali::InitializeRCEstimator() {
-  rc_estimator = new StarPiModelEstimator(phy_db_ptr_, &circuit_);
+  rc_estimator = new StarPiModelEstimator(phy_db_ptr_);
 }
 
 #if PHYDB_USE_GALOIS

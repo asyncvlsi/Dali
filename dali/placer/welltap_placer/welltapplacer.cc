@@ -80,7 +80,7 @@ void WellTapPlacer::FetchRowsFromPhyDB() {
 
 void WellTapPlacer::InitializeWhiteSpaceInRows() {
   if (rows_.empty()) return;
-  for (auto &comp : phy_db_->GetDesignPtr()->components_) {
+  for (auto &comp : phy_db_->GetDesignPtr()->GetComponentsRef()) {
     if (comp.GetPlacementStatus() != phydb::PlaceStatus::FIXED) continue;
     phydb::Macro *macro = comp.GetMacro();
     int comp_width = (int) std::round(

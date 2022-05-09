@@ -61,13 +61,13 @@ int main() {
   p_phy_db1->ReadDef(def_file_name);
 
   // add all I/O pins to the first PhyDB instance
-  for (auto &iopin: p_phy_db1->design().iopins_) {
+  for (auto &iopin: p_phy_db1->design().GetIoPinsRef()) {
     auto *p_iopin = p_phy_db0->AddIoPin(
         iopin.GetName(),
         iopin.GetDirection(),
         iopin.GetUse()
     );
-    p_iopin->SetNetName(iopin.GetNetName());
+    p_iopin->SetNetId(iopin.GetNetId());
     p_iopin->SetShape(
         iopin.GetLayerName(),
         iopin.GetRect().LLX(),
