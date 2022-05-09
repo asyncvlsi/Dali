@@ -25,7 +25,7 @@
 
 #include "dali/circuit/circuit.h"
 #include "dali/placer.h"
-#include "dali/timing/starpimodelestimator.h"
+#include "dali/timing/starpimodelrcestimator.h"
 
 namespace dali {
 
