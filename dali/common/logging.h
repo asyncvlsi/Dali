@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_COMMON_LOGGING_H_
-#define DALI_DALI_COMMON_LOGGING_H_
+#ifndef DALI_COMMON_LOGGING_H_
+#define DALI_COMMON_LOGGING_H_
 
 #include <iomanip>
 #include <iostream>
@@ -89,4 +89,4 @@ void CloseLogging();
 
 }
 
-#endif //DALI_DALI_COMMON_LOGGING_H_
+#endif //DALI_COMMON_LOGGING_H_

@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_PLACER_WELLLEGALIZER_BLOCKSEGMENT_H_
-#define DALI_DALI_PLACER_WELLLEGALIZER_BLOCKSEGMENT_H_
+#ifndef DALI_PLACER_WELLLEGALIZER_BLOCKSEGMENT_H_
+#define DALI_PLACER_WELLLEGALIZER_BLOCKSEGMENT_H_
 
 #include "dali/circuit/block.h"
 
@@ -52,4 +52,4 @@ struct BlockSegment {
 
 }
 
-#endif //DALI_DALI_PLACER_WELLLEGALIZER_BLOCKSEGMENT_H_
+#endif //DALI_PLACER_WELLLEGALIZER_BLOCKSEGMENT_H_

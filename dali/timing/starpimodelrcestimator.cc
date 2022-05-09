@@ -18,7 +18,7 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#include "starpimodelestimator.h"
+#include "starpimodelrcestimator.h"
 
 #include "dali/common/logging.h"
 
@@ -130,8 +130,8 @@ void StarPiModelEstimator::FindFirstHorizontalAndVerticalMetalLayer() {
 }
 
 void StarPiModelEstimator::GetResistanceAndCapacitance(
-    double2d &driver_loc,
-    double2d &load_loc,
+    phydb::Point2D<int> &driver_loc,
+    phydb::Point2D<int> &load_loc,
     double &resistance,
     double &capacitance
 ) {

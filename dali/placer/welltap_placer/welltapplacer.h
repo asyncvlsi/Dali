@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_PLACER_WELLTAPPLACER_WELLTAPPLACER_H_
-#define DALI_DALI_PLACER_WELLTAPPLACER_WELLTAPPLACER_H_
+#ifndef DALI_PLACER_WELLTAPPLACER_WELLTAPPLACER_H_
+#define DALI_PLACER_WELLTAPPLACER_WELLTAPPLACER_H_
 
 #include <list>
 #include <vector>
@@ -114,4 +114,4 @@ class WellTapPlacer {
 
 }
 
-#endif //DALI_DALI_PLACER_WELLTAPPLACER_WELLTAPPLACER_H_
+#endif //DALI_PLACER_WELLTAPPLACER_WELLTAPPLACER_H_

@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_PLACER_LEGALIZER_LGTETRISEX_H_
-#define DALI_DALI_PLACER_LEGALIZER_LGTETRISEX_H_
+#ifndef DALI_PLACER_LEGALIZER_LGTETRISEX_H_
+#define DALI_PLACER_LEGALIZER_LGTETRISEX_H_
 
 #include "dali/circuit/block.h"
 #include "dali/common/displaceviewer.h"
@@ -119,4 +119,4 @@ class LGTetrisEx : public Placer {
 
 }
 
-#endif //DALI_DALI_PLACER_LEGALIZER_LGTETRISEX_H_
+#endif //DALI_PLACER_LEGALIZER_LGTETRISEX_H_

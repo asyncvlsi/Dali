@@ -19,8 +19,8 @@
  *
  ******************************************************************************/
 
-#ifndef DALI_DALI_CIRCUIT_NET_H_
-#define DALI_DALI_CIRCUIT_NET_H_
+#ifndef DALI_CIRCUIT_NET_H_
+#define DALI_CIRCUIT_NET_H_
 
 #include <string>
 #include <vector>
@@ -202,4 +202,4 @@ class NetAux {
 
 }
 
-#endif //DALI_DALI_CIRCUIT_NET_H_
+#endif //DALI_CIRCUIT_NET_H_

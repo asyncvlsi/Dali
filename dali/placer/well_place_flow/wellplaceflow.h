@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_
-#define DALI_DALI_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_
+#ifndef DALI_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_
+#define DALI_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_
 
 #include "dali/placer/global_placer/globalplacer.h"
 #include "dali/placer/legalizer/LGTetrisEx.h"
@@ -53,4 +53,4 @@ class WellPlaceFlow : public GlobalPlacer {
 
 }
 
-#endif //DALI_DALI_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_
+#endif //DALI_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_

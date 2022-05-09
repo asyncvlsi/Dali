@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_DALI_H_
-#define DALI_DALI_DALI_H_
+#ifndef DALI_DALI_H_
+#define DALI_DALI_H_
 
 #include <phydb/phydb.h>
 
@@ -119,4 +119,4 @@ class Dali {
 
 }
 
-#endif //DALI_DALI_DALI_H_
+#endif //DALI_DALI_H_

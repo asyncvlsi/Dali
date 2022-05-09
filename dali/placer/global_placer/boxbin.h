@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_PLACER_GLOBALPLACER_BOXBIN_H_
-#define DALI_DALI_PLACER_GLOBALPLACER_BOXBIN_H_
+#ifndef DALI_PLACER_GLOBALPLACER_BOXBIN_H_
+#define DALI_PLACER_GLOBALPLACER_BOXBIN_H_
 
 #include <iostream>
 #include <fstream>
@@ -134,4 +134,4 @@ class BoxBin {
 
 }
 
-#endif //DALI_DALI_PLACER_GLOBALPLACER_BOXBIN_H_
+#endif //DALI_PLACER_GLOBALPLACER_BOXBIN_H_

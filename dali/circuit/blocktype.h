@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_CIRCUIT_BLOCKTYPE_H_
-#define DALI_DALI_CIRCUIT_BLOCKTYPE_H_
+#ifndef DALI_CIRCUIT_BLOCKTYPE_H_
+#define DALI_CIRCUIT_BLOCKTYPE_H_
 
 #include <unordered_map>
 #include <vector>
@@ -204,4 +204,4 @@ class BlockTypeWell {
 
 }
 
-#endif //DALI_DALI_CIRCUIT_BLOCKTYPE_H_
+#endif //DALI_CIRCUIT_BLOCKTYPE_H_

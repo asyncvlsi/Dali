@@ -19,8 +19,8 @@
  *
  ******************************************************************************/
 
-#ifndef DALI_DALI_CIRCUIT_LAYER_H_
-#define DALI_DALI_CIRCUIT_LAYER_H_
+#ifndef DALI_CIRCUIT_LAYER_H_
+#define DALI_CIRCUIT_LAYER_H_
 
 #include <string>
 
@@ -173,4 +173,4 @@ class WellLayer : public Layer {
 
 }
 
-#endif //DALI_DALI_CIRCUIT_LAYER_H_
+#endif //DALI_CIRCUIT_LAYER_H_

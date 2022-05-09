@@ -19,8 +19,8 @@
  *
  ******************************************************************************/
 
-#ifndef DALI_DALI_COMMON_OPTREGDIST_H_
-#define DALI_DALI_COMMON_OPTREGDIST_H_
+#ifndef DALI_COMMON_OPTREGDIST_H_
+#define DALI_COMMON_OPTREGDIST_H_
 
 #include <vector>
 
@@ -46,4 +46,4 @@ class OptRegDist {
 
 }
 
-#endif //DALI_DALI_COMMON_OPTREGDIST_H_
+#endif //DALI_COMMON_OPTREGDIST_H_

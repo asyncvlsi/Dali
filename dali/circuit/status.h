@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_CIRCUIT_STATUS_H_
-#define DALI_DALI_CIRCUIT_STATUS_H_
+#ifndef DALI_CIRCUIT_STATUS_H_
+#define DALI_CIRCUIT_STATUS_H_
 
 #include <string>
 
@@ -85,4 +85,4 @@ std::string SignalUseStr(SignalUse signal_use);
 
 }
 
-#endif //DALI_DALI_CIRCUIT_STATUS_H_
+#endif //DALI_CIRCUIT_STATUS_H_

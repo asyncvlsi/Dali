@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_PLACER_WELL_LEGALIZER_ROWSEGMENT_H_
-#define DALI_DALI_PLACER_WELL_LEGALIZER_ROWSEGMENT_H_
+#ifndef DALI_PLACER_WELL_LEGALIZER_ROWSEGMENT_H_
+#define DALI_PLACER_WELL_LEGALIZER_ROWSEGMENT_H_
 
 #include <unordered_map>
 #include <vector>
@@ -108,4 +108,4 @@ class RowSegment {
 
 }
 
-#endif //DALI_DALI_PLACER_WELL_LEGALIZER_ROWSEGMENT_H_
+#endif //DALI_PLACER_WELL_LEGALIZER_ROWSEGMENT_H_

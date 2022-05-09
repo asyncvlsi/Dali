@@ -18,23 +18,21 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_TIMING_STARPIMODELRCESTIMATOR_H_
-#define DALI_DALI_TIMING_STARPIMODELRCESTIMATOR_H_
+#ifndef DALI_TIMING_STARPIMODELRCESTIMATOR_H_
+#define DALI_TIMING_STARPIMODELRCESTIMATOR_H_
 
+#include <phydb/datatype.h>
 #include <phydb/timing/abstractrcestimator.h>
 
 namespace dali {
 class StarPiModelEstimator : protected phydb::AbstractRcEstimator {
  public:
   StarPiModelEstimator(
-      phydb::PhyDB *phydb_ptr,
-      Circuit *circuit
-  ) : AbstractRcEstimator(phydb_ptr),
-      circuit_(circuit) {}
+      phydb::PhyDB *phydb_ptr
+  ) : AbstractRcEstimator(phydb_ptr) {}
   ~StarPiModelEstimator() override = default;
   void PushNetRCToManager() override;
  private:
-  Circuit *circuit_;
   int distance_micron_ = 0;
   bool edge_pushed_to_spef_manager_ = false;
   phydb::Layer *horizontal_layer_ = nullptr;
@@ -42,12 +40,12 @@ class StarPiModelEstimator : protected phydb::AbstractRcEstimator {
   void AddEdgesToManager();
   void FindFirstHorizontalAndVerticalMetalLayer();
   void GetResistanceAndCapacitance(
-      double2d &driver_loc,
-      double2d &load_loc,
+      phydb::Point2D<int> &driver_loc,
+      phydb::Point2D<int> &load_loc,
       double &resistance,
       double &capacitance
   );
 };
 }
 
-#endif //DALI_DALI_TIMING_STARPIMODELRCESTIMATOR_H_
+#endif //DALI_TIMING_STARPIMODELRCESTIMATOR_H_

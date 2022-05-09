@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_CIRCUIT_TECH_H_
-#define DALI_DALI_CIRCUIT_TECH_H_
+#ifndef DALI_CIRCUIT_TECH_H_
+#define DALI_CIRCUIT_TECH_H_
 
 #include <list>
 #include <unordered_map>
@@ -108,4 +108,4 @@ class Tech {
 
 }
 
-#endif //DALI_DALI_CIRCUIT_TECH_H_
+#endif //DALI_CIRCUIT_TECH_H_

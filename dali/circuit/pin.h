@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_CIRCUIT_PIN_H_
-#define DALI_DALI_CIRCUIT_PIN_H_
+#ifndef DALI_CIRCUIT_PIN_H_
+#define DALI_CIRCUIT_PIN_H_
 
 #include <vector>
 
@@ -96,4 +96,4 @@ class Pin {
 
 }
 
-#endif //DALI_DALI_CIRCUIT_PIN_H_
+#endif //DALI_CIRCUIT_PIN_H_

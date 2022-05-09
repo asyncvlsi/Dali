@@ -19,8 +19,8 @@
  *
  ******************************************************************************/
 
-#ifndef DALI_DALI_COMMON_DISPLACEVIEWER_H_
-#define DALI_DALI_COMMON_DISPLACEVIEWER_H_
+#ifndef DALI_COMMON_DISPLACEVIEWER_H_
+#define DALI_COMMON_DISPLACEVIEWER_H_
 
 #include <fstream>
 #include <string>
@@ -76,4 +76,4 @@ struct DisplaceViewer {
 
 }
 
-#endif //DALI_DALI_COMMON_DISPLACEVIEWER_H_
+#endif //DALI_COMMON_DISPLACEVIEWER_H_

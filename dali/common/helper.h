@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_COMMON_HELPER_H_
-#define DALI_DALI_COMMON_HELPER_H_
+#ifndef DALI_COMMON_HELPER_H_
+#define DALI_COMMON_HELPER_H_
 
 #include <string>
 #include <vector>
@@ -121,4 +121,4 @@ void SaveMatlabPatchRegion(
 
 }
 
-#endif //DALI_DALI_COMMON_HELPER_H_
+#endif //DALI_COMMON_HELPER_H_

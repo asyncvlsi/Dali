@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_CIRCUIT_BLOCK_H_
-#define DALI_DALI_CIRCUIT_BLOCK_H_
+#ifndef DALI_CIRCUIT_BLOCK_H_
+#define DALI_CIRCUIT_BLOCK_H_
 
 #include <iostream>
 #include <map>
@@ -278,4 +278,4 @@ struct BlkInitPair {
 
 }
 
-#endif //DALI_DALI_CIRCUIT_BLOCK_H_
+#endif //DALI_CIRCUIT_BLOCK_H_

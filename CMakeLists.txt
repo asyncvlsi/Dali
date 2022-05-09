@@ -121,6 +121,7 @@ file(
     dali/circuit/*.cc
     dali/common/*.cc
     dali/placer/*.cc
+    dali/timing/*.cc
 )
 
 # Create a library, static libraries are controlled by ARCHIVE_OUTPUT_DIRECTORY property

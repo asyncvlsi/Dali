@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_CIRCUIT_BLOCKPINPAIR_H_
-#define DALI_DALI_CIRCUIT_BLOCKPINPAIR_H_
+#ifndef DALI_CIRCUIT_BLOCKPINPAIR_H_
+#define DALI_CIRCUIT_BLOCKPINPAIR_H_
 
 #include "block.h"
 #include "dali/common/misc.h"
@@ -101,4 +101,4 @@ class BlkPinPair {
 
 }
 
-#endif //DALI_DALI_CIRCUIT_BLOCKPINPAIR_H_
+#endif //DALI_CIRCUIT_BLOCKPINPAIR_H_

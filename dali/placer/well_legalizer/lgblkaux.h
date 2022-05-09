@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_PLACER_WELL_LEGALIZER_LGBLKAUX_H_
-#define DALI_DALI_PLACER_WELL_LEGALIZER_LGBLKAUX_H_
+#ifndef DALI_PLACER_WELL_LEGALIZER_LGBLKAUX_H_
+#define DALI_PLACER_WELL_LEGALIZER_LGBLKAUX_H_
 
 #include "dali/circuit/block.h"
 #include "dali/common/misc.h"
@@ -69,4 +69,4 @@ class LgBlkAux : public BlockAux {
 
 }
 
-#endif //DALI_DALI_PLACER_WELL_LEGALIZER_LGBLKAUX_H_
+#endif //DALI_PLACER_WELL_LEGALIZER_LGBLKAUX_H_

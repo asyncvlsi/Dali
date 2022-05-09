@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_PLACER_LEGALIZER_LGTETRIS_H_
-#define DALI_DALI_PLACER_LEGALIZER_LGTETRIS_H_
+#ifndef DALI_PLACER_LEGALIZER_LGTETRIS_H_
+#define DALI_PLACER_LEGALIZER_LGTETRIS_H_
 
 #include <vector>
 
@@ -59,4 +59,4 @@ class TetrisLegalizer : public Placer {
 
 }
 
-#endif //DALI_DALI_PLACER_LEGALIZER_LGTETRIS_H_
+#endif //DALI_PLACER_LEGALIZER_LGTETRIS_H_

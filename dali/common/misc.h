@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_COMMON_MISC_H_
-#define DALI_DALI_COMMON_MISC_H_
+#ifndef DALI_COMMON_MISC_H_
+#define DALI_COMMON_MISC_H_
 
 #include <cassert>
 #include <cmath>
@@ -204,4 +204,4 @@ struct IndexVal {
 
 }
 
-#endif //DALI_DALI_COMMON_MISC_H_
+#endif //DALI_COMMON_MISC_H_

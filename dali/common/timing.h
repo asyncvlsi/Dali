@@ -1,5 +1,5 @@
-#ifndef DALI_DALI_COMMON_TIMING_H_
-#define DALI_DALI_COMMON_TIMING_H_
+#ifndef DALI_COMMON_TIMING_H_
+#define DALI_COMMON_TIMING_H_
 
 namespace dali {
 
@@ -8,4 +8,4 @@ double get_cpu_time();
 
 }
 
-#endif //DALI_DALI_COMMON_TIMING_H_
+#endif //DALI_COMMON_TIMING_H_

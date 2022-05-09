@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_COMMON_PHYDBHELPER_H_
-#define DALI_DALI_COMMON_PHYDBHELPER_H_
+#ifndef DALI_COMMON_PHYDBHELPER_H_
+#define DALI_COMMON_PHYDBHELPER_H_
 
 #include <phydb/enumtypes.h>
 
@@ -34,4 +34,4 @@ BlockOrient OrientPhyDB2Dali(phydb::CompOrient phydb_orient);
 
 }
 
-#endif //DALI_DALI_COMMON_PHYDBHELPER_H_
+#endif //DALI_COMMON_PHYDBHELPER_H_

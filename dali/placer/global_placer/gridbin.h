@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_DALI_PLACER_GLOBALPLACER_GRIDBIN_H_
-#define DALI_DALI_PLACER_GLOBALPLACER_GRIDBIN_H_
+#ifndef DALI_PLACER_GLOBALPLACER_GRIDBIN_H_
+#define DALI_PLACER_GLOBALPLACER_GRIDBIN_H_
 
 #include <vector>
 
@@ -66,4 +66,4 @@ class GridBin {
 
 }
 
-#endif //DALI_DALI_PLACER_GLOBALPLACER_GRIDBIN_H_
+#endif //DALI_PLACER_GLOBALPLACER_GRIDBIN_H_
