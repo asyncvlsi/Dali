@@ -65,15 +65,15 @@ void StarPiModelEstimator::PushNetRCToManager() {
           cap
       );
       load_node->setC(libs[0], maxMode, cap / 2.0);
-      //std::cout << "Set C for load pin: " << load_name << " " << cap / 2.0 << "\n";
+      std::cout << "Set C for load pin: " << load_name << " " << cap / 2.0 << "\n";
       driver_cap += cap / 2.0;
       auto edge = spef_manager->findEdge(driver_node, load_node);
       DaliExpects(edge != nullptr, "Cannot find edge!");
-      edge->setR(libs[0], maxMode, 0.12345);
-      //std::cout << "Set R for edge, "
-      //          << "driver: " << driver_name << ", "
-      //          << "load: " << load_name << ", "
-      //          << res << "\n";
+      edge->setR(libs[0], maxMode, res);
+      std::cout << "Set R for edge, "
+                << "driver: " << driver_name << ", "
+                << "load: " << load_name << ", "
+                << res << "\n";
     }
     driver_node->setC(libs[0], maxMode, driver_cap);
     //std::cout << "Set C for driver pin: " << driver_name << " " << driver_cap << "\n";
@@ -94,19 +94,14 @@ void StarPiModelEstimator::AddEdgesToManager() {
     int driver_id = net.GetDriverPinId();
     auto &net_pins = net.GetPinsRef();
     auto &driver = net_pins[driver_id];
-    std::string driver_name = phy_db_->GetFullCompPinName(driver);
     auto driver_node = timing_api.PhyDBPinToSpefNode(driver);
-    int net_sz = (int) net_pins.size();
+    int net_sz = static_cast<int>(net_pins.size());
     for (int i = 0; i < net_sz; ++i) {
       if (i == driver_id) continue;
       auto &load = net_pins[i];
-      std::string load_name = phy_db_->GetFullCompPinName(load);
       auto load_node = timing_api.PhyDBPinToSpefNode(load);
       auto ret = spef_manager->addEdge(driver_node, load_node);
       DaliExpects(ret != nullptr, "Fail to add an edge\n");
-      //std::cout << "Add an edge to spef_manager, "
-      //          << "driver: " << driver_name << ", "
-      //          << "load: " << load_name << "\n";
     }
   }
 #endif
@@ -116,20 +111,26 @@ void StarPiModelEstimator::FindFirstHorizontalAndVerticalMetalLayer() {
   distance_micron_ = phy_db_->design().GetUnitsDistanceMicrons();
   if (horizontal_layer_ != nullptr && vertical_layer_ != nullptr) return;
   for (auto &metal : phy_db_->tech().GetMetalLayersRef()) {
-    if (metal->GetDirection() == phydb::MetalDirection::HORIZONTAL
-        && horizontal_layer_ == nullptr) {
+    if (horizontal_layer_ == nullptr
+        && metal->GetDirection() == phydb::MetalDirection::HORIZONTAL
+        ) {
       horizontal_layer_ = metal;
     }
-    if (metal->GetDirection() == phydb::MetalDirection::VERTICAL
-        && vertical_layer_ == nullptr) {
+    if (vertical_layer_ == nullptr
+        && metal->GetDirection() == phydb::MetalDirection::VERTICAL
+        ) {
       vertical_layer_ = metal;
     }
   }
 
-  DaliExpects(horizontal_layer_ != nullptr,
-              "Cannot find RC parameters in a horizontal layer?");
-  DaliExpects(vertical_layer_ != nullptr,
-              "Cannot find RC parameters in a vertical layer?");
+  DaliExpects(
+      horizontal_layer_ != nullptr,
+      "Cannot find RC parameters in a horizontal layer?"
+  );
+  DaliExpects(
+      vertical_layer_ != nullptr,
+      "Cannot find RC parameters in a vertical layer?"
+  );
 }
 
 void StarPiModelEstimator::GetResistanceAndCapacitance(

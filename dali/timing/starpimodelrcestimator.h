@@ -27,7 +27,7 @@
 namespace dali {
 class StarPiModelEstimator : protected phydb::AbstractRcEstimator {
  public:
-  StarPiModelEstimator(
+  explicit StarPiModelEstimator(
       phydb::PhyDB *phydb_ptr
   ) : AbstractRcEstimator(phydb_ptr) {}
   ~StarPiModelEstimator() override = default;
@@ -37,6 +37,7 @@ class StarPiModelEstimator : protected phydb::AbstractRcEstimator {
   bool edge_pushed_to_spef_manager_ = false;
   phydb::Layer *horizontal_layer_ = nullptr;
   phydb::Layer *vertical_layer_ = nullptr;
+
   void AddEdgesToManager();
   void FindFirstHorizontalAndVerticalMetalLayer();
   void GetResistanceAndCapacitance(

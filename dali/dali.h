@@ -99,7 +99,7 @@ class Dali {
   IoPlacer *io_placer_ = nullptr;
   StarPiModelEstimator *rc_estimator = nullptr;
 
-  int max_td_place_num_ = 10;
+  int max_td_place_num_ = 2;
 
   static void ReportIoPlacementUsage();
 
