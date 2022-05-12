@@ -495,15 +495,17 @@ void Dali::ExportWellTapCellsToPhyDB() {
     auto orient = phydb::CompOrient(block.Orient());
 
     auto *phydb_macro_ptr = phy_db_ptr_->GetMacroPtr(macro_name);
-    DaliExpects(phydb_macro_ptr != nullptr,
-                "Cannot find " << macro_name << " in PhyDB?!");
+    DaliExpects(
+        phydb_macro_ptr != nullptr,
+        "Cannot find " << macro_name << " in PhyDB?!"
+    );
     phy_db_ptr_->AddComponent(
         comp_name,
         phydb_macro_ptr,
-        phydb::CompSource::USER,
         place_status,
         lx, ly,
-        orient
+        orient,
+        phydb::CompSource::USER
     );
   }
 }
