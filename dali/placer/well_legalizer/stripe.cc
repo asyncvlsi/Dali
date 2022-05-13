@@ -911,7 +911,7 @@ void Stripe::ImportStandardRowSegments(phydb::PhyDB &phydb, Circuit &ckt) {
     ly_ = std::min(ly_, gridded_row.LLY());
     uy = std::max(uy, gridded_row.URY());
 
-    gridded_row.SetOrient(row.GetSiteOrientation() == "N");
+    gridded_row.SetOrient(row.GetOrient() == phydb::CompOrient::N);
 
     std::vector<SegI> blockage;
     gridded_row.UpdateSegments(blockage, false);

@@ -39,8 +39,9 @@ void WellTapPlacer::FetchRowsFromPhyDB() {
   if (sz == 0) return;
   rows_.reserve(sz);
 
-  std::string site_name = row_vec[0].GetSiteName();
+  int site_id = row_vec[0].GetSiteId();
   auto &sites = phy_db_->GetTechPtr()->GetSitesRef();
+  auto site_name = sites[site_id].GetName();
   for (auto &site : sites) {
     if (site.GetName() == site_name) {
       site_ptr_ = &site;
@@ -48,10 +49,12 @@ void WellTapPlacer::FetchRowsFromPhyDB() {
     }
   }
 
-  row_height_ = (int) std::round(site_ptr_->GetHeight()
-                                     * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons());
-  row_step_ = (int) std::round(site_ptr_->GetWidth()
-                                   * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons());
+  row_height_ = (int) std::round(
+      site_ptr_->GetHeight() * phy_db_->design().GetUnitsDistanceMicrons()
+  );
+  row_step_ = (int) std::round(
+      site_ptr_->GetWidth() * phy_db_->design().GetUnitsDistanceMicrons()
+  );
 
   DaliExpects(site_ptr_ != nullptr, "Cannot find Site in PhyDB");
   bottom_ = row_vec[0].GetOriginY();
@@ -60,11 +63,13 @@ void WellTapPlacer::FetchRowsFromPhyDB() {
   for (auto &phydb_row : row_vec) {
     int orig_x = phydb_row.GetOriginX();
     int orig_y = phydb_row.GetOriginY();
-    DaliExpects(orig_y == prev_y,
-                "Only support well-tap insertion for closely packed rows");
+    DaliExpects(
+        orig_y == prev_y,
+        "Only support well-tap insertion for closely packed rows"
+    );
     prev_y = orig_y + row_height_;
 
-    bool is_N = phydb_row.GetSiteOrientation() == "N";
+    bool is_N = phydb_row.GetOrient() == phydb::CompOrient::N;
     Row &row = rows_.emplace_back();
     row.is_N = is_N;
     row.orig_x = orig_x;
@@ -87,8 +92,7 @@ void WellTapPlacer::InitializeWhiteSpaceInRows() {
         macro->GetWidth() * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons()
     );
     int comp_height = (int) std::round(
-        macro->GetHeight()
-            * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons()
+        macro->GetHeight() * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons()
     );
 
     int comp_lx = comp.GetLocation().x;
