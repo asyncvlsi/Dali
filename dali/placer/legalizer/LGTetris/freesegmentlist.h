@@ -73,7 +73,7 @@ class FreeSegmentList {
   void RemoveShortSeg(int width);
   void UseSpace(int start, int length);
   bool IsSpaceAvail(int x_loc, int width);
-  int MinDispLoc(int llx, int width);
+  int MinDispLoc(int width);
   void Show();
 };
 

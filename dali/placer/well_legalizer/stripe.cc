@@ -584,9 +584,9 @@ bool Stripe::IsLeftmostPlacementLegal() {
       }
   );
 
-  for (Block *&blk : blk_ptrs_vec_) {
-
-  }
+  DaliExpects(false, "To be implemented");
+  //for (Block *&blk : blk_ptrs_vec_) {
+  //}
 
   return true;
 }
@@ -712,12 +712,12 @@ void Stripe::IterativeCellReordering(int max_iter, int number_of_threads) {
   omp_set_num_threads(number_of_threads);
   bool is_weighted_anchor = false;
   for (int i = 0; i < max_iter; ++i) {
-    double decay = 30.0; // the bigger, the closer to CPLEX result
+    //double decay = 30.0; // the bigger, the closer to CPLEX result
     //double lambda = exp(-i / decay);
     double lambda = 1 / double(i + 1);
-    OptimizeDisplacementInEachRowSegment(lambda,
-                                         is_weighted_anchor,
-                                         i % 10 == 0);
+    OptimizeDisplacementInEachRowSegment(
+        lambda, is_weighted_anchor, i % 10 == 0
+    );
     ComputeAverageLoc();
     ReportIterativeStatus(i);
     if (!is_weighted_anchor) {
@@ -957,7 +957,7 @@ double Stripe::EstimateCost(
   double min_cost = DBL_MAX;
   for (int i = 0; i < sz; ++i) {
     SegI &space = spaces[i];
-    double tmp_cost;
+    double tmp_cost = DBL_MAX;
     if (space.lo <= blk_ptr->LLX() && space.hi >= blk_ptr->URX()) {
       tmp_cost = 0;
     }
@@ -987,7 +987,7 @@ void Stripe::AddBlockToRow(int row_id, Block *blk_ptr, SegI range) {
   }
 }
 
-void Stripe::AssignStandardCellsToRowSegments(double white_space_usage) {
+void Stripe::AssignStandardCellsToRowSegments(/*double white_space_usage*/) {
   std::sort(
       blk_ptrs_vec_.begin(),
       blk_ptrs_vec_.end(),
@@ -996,7 +996,7 @@ void Stripe::AssignStandardCellsToRowSegments(double white_space_usage) {
             ((blk0->LLY() == blk1->LLY()) && (blk0->Id() < blk1->Id()));
       }
   );
-  int row_cnt = static_cast<int>(gridded_rows_.size());
+  //int row_cnt = static_cast<int>(gridded_rows_.size());
   for (auto &blk_ptr : blk_ptrs_vec_) {
     int row_id = LocY2RowId(blk_ptr->LLY());
     SegI range(blk_ptr->LLX(), blk_ptr->URX());

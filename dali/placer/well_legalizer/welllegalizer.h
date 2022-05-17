@@ -83,7 +83,6 @@ class WellLegalizer : public LGTetrisEx {
   void MarkSpaceWellLeft(Block const &block, int p_row);
   bool IsCurLocWellDistanceLeft(int loc_x, int lo_row, int hi_row, int p_row);
   bool IsCurLocWellMinWidthLeft(int loc_x, int lo_row, int hi_row, int p_row);
-  bool IsBlockPerfectMatchLeft(int loc_x, int lo_row, int hi_row, int p_row);
   bool IsCurrentLocLegalLeft(
       Value2D<int> &loc,
       int width,

@@ -379,7 +379,7 @@ void GlobalPlacer::BuildProblemB2BX() {
 
   double center_weight = 0.03 / std::sqrt(sz);
   double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
-  double decay_length = decay_factor * p_ckt_->AveBlkHeight();
+  //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
 
   for (auto &net : net_list) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
@@ -488,7 +488,7 @@ void GlobalPlacer::BuildProblemB2BY() {
 
   double center_weight = 0.03 / std::sqrt(sz);
   double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
-  double decay_length = decay_factor * p_ckt_->AveBlkHeight();
+  //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
 
   for (auto &net : net_list) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
@@ -588,59 +588,39 @@ void GlobalPlacer::BuildProblemStarModelX() {
   double wall_time = get_wall_time();
 
   std::vector<Net> &net_list = Nets();
-
   std::vector<Block> &block_list = p_ckt_->Blocks();
   size_t coefficients_capacity = coefficientsx.capacity();
   coefficientsx.resize(0);
 
-  int sz = bx.size();
+  int sz = static_cast<int>(bx.size());
   for (int i = 0; i < sz; ++i) {
     bx[i] = 0;
   }
 
   double center_weight = 0.03 / std::sqrt(sz);
-  double
-      weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
-  double
-      weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
-
-  double weight;
-  double weight_adjust;
-  double inv_p;
-  double decay_length = decay_factor * p_ckt_->AveBlkHeight();
-
-  double pin_loc;
-  int blk_num;
-  bool is_movable;
-  double offset_diff;
-
-  int driver_blk_num;
-  double driver_pin_loc;
-  bool driver_is_movable;
-  double driver_offset;
+  double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
+  //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
 
   for (auto &net : net_list) {
-    if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_)
-      continue;
-    inv_p = net.InvP();
+    if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
+    double inv_p = net.InvP();
 
     // assuming the 0-th pin in the net is the driver pin
-    driver_blk_num = net.BlockPins()[0].BlkId();
-    driver_pin_loc = net.BlockPins()[0].AbsX();
-    driver_is_movable = net.BlockPins()[0].BlkPtr()->IsMovable();
-    driver_offset = net.BlockPins()[0].OffsetX();
+    int driver_blk_num = net.BlockPins()[0].BlkId();
+    double driver_pin_loc = net.BlockPins()[0].AbsX();
+    bool driver_is_movable = net.BlockPins()[0].BlkPtr()->IsMovable();
+    double driver_offset = net.BlockPins()[0].OffsetX();
 
     for (auto &pair : net.BlockPins()) {
-      blk_num = pair.BlkId();
-      pin_loc = pair.AbsX();
-      is_movable = pair.BlkPtr()->IsMovable();
+      int blk_num = pair.BlkId();
+      double pin_loc = pair.AbsX();
+      bool is_movable = pair.BlkPtr()->IsMovable();
 
       if (blk_num != driver_blk_num) {
         double distance = std::fabs(pin_loc - driver_pin_loc);
-        weight_adjust = base_factor
-            + adjust_factor * (1 - exp(-distance / decay_length));
-        weight = inv_p / (distance + width_epsilon_) * weight_adjust;
-        //weight = inv_p / (distance + width_epsilon_);
+        //weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
+        //weight = inv_p / (distance + width_epsilon_) * weight_adjust;
+        double weight = inv_p / (distance + width_epsilon_);
         if (!is_movable && driver_is_movable) {
           bx[0] += (pin_loc - driver_offset) * weight;
           coefficientsx.emplace_back(driver_blk_num, driver_blk_num, weight);
@@ -652,7 +632,7 @@ void GlobalPlacer::BuildProblemStarModelX() {
           coefficientsx.emplace_back(driver_blk_num, driver_blk_num, weight);
           coefficientsx.emplace_back(blk_num, driver_blk_num, -weight);
           coefficientsx.emplace_back(driver_blk_num, blk_num, -weight);
-          offset_diff = (driver_offset - pair.OffsetX()) * weight;
+          double offset_diff = (driver_offset - pair.OffsetX()) * weight;
           bx[blk_num] += offset_diff;
           bx[driver_blk_num] -= offset_diff;
         }
@@ -673,12 +653,12 @@ void GlobalPlacer::BuildProblemStarModelX() {
     }
   }
 
-  if (coefficients_capacity != coefficientsx.capacity()) {
-    BOOST_LOG_TRIVIAL(warning)
-      << "WARNING: coefficients capacity changed!\n"
-      << "\told capacity: " << coefficients_capacity << "\n"
-      << "\tnew capacity: " << coefficientsx.size() << "\n";
-  }
+  DaliWarns(
+      coefficients_capacity != coefficientsx.capacity(),
+      "WARNING: x coefficients capacity changed!\n"
+          << "\told capacity: " << coefficients_capacity << "\n"
+          << "\tnew capacity: " << coefficientsx.size()
+  );
 
   wall_time = get_wall_time() - wall_time;
   tot_triplets_time_x += wall_time;
@@ -688,57 +668,39 @@ void GlobalPlacer::BuildProblemStarModelY() {
   double wall_time = get_wall_time();
 
   std::vector<Net> &net_list = Nets();
-
   std::vector<Block> &block_list = p_ckt_->Blocks();
   size_t coefficients_capacity = coefficientsy.capacity();
   coefficientsy.resize(0);
 
-  int sz = by.size();
+  int sz = static_cast<int>(by.size());
   for (int i = 0; i < sz; ++i) {
     by[i] = 0;
   }
 
   double center_weight = 0.03 / std::sqrt(sz);
-  double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
   double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
-
-  double weight;
-  double weight_adjust;
-  double inv_p;
-  double decay_length = decay_factor * p_ckt_->AveBlkHeight();
-
-  double pin_loc;
-  int blk_num;
-  bool is_movable;
-  double offset_diff;
-
-  int driver_blk_num;
-  double driver_pin_loc;
-  bool driver_is_movable;
-  double driver_offset;
+  //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
 
   for (auto &net : net_list) {
-    if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_)
-      continue;
-    inv_p = net.InvP();
+    if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
+    double inv_p = net.InvP();
 
     // assuming the 0-th pin in the net is the driver pin
-    driver_blk_num = net.BlockPins()[0].BlkId();
-    driver_pin_loc = net.BlockPins()[0].AbsY();
-    driver_is_movable = net.BlockPins()[0].BlkPtr()->IsMovable();
-    driver_offset = net.BlockPins()[0].OffsetY();
+    int driver_blk_num = net.BlockPins()[0].BlkId();
+    double driver_pin_loc = net.BlockPins()[0].AbsY();
+    bool driver_is_movable = net.BlockPins()[0].BlkPtr()->IsMovable();
+    double driver_offset = net.BlockPins()[0].OffsetY();
 
     for (auto &pair : net.BlockPins()) {
-      blk_num = pair.BlkId();
-      pin_loc = pair.AbsY();
-      is_movable = pair.BlkPtr()->IsMovable();
+      int blk_num = pair.BlkId();
+      double pin_loc = pair.AbsY();
+      bool is_movable = pair.BlkPtr()->IsMovable();
 
       if (blk_num != driver_blk_num) {
         double distance = std::fabs(pin_loc - driver_pin_loc);
-        weight_adjust = base_factor
-            + adjust_factor * (1 - exp(-distance / decay_length));
-        weight = inv_p / (distance + height_epsilon_) * weight_adjust;
-        //weight = inv_p / (distance + height_epsilon_);
+        //weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
+        //weight = inv_p / (distance + height_epsilon_) * weight_adjust;
+        double weight = inv_p / (distance + height_epsilon_);
         if (!is_movable && driver_is_movable) {
           by[0] += (pin_loc - driver_offset) * weight;
           coefficientsy.emplace_back(driver_blk_num, driver_blk_num, weight);
@@ -750,7 +712,7 @@ void GlobalPlacer::BuildProblemStarModelY() {
           coefficientsy.emplace_back(driver_blk_num, driver_blk_num, weight);
           coefficientsy.emplace_back(blk_num, driver_blk_num, -weight);
           coefficientsy.emplace_back(driver_blk_num, blk_num, -weight);
-          offset_diff = (driver_offset - pair.OffsetY()) * weight;
+          double offset_diff = (driver_offset - pair.OffsetY()) * weight;
           by[blk_num] += offset_diff;
           by[driver_blk_num] -= offset_diff;
         }
@@ -772,6 +734,13 @@ void GlobalPlacer::BuildProblemStarModelY() {
     }
   }
 
+  DaliWarns(
+      coefficients_capacity != coefficientsy.capacity(),
+      "WARNING: y coefficients capacity changed!\n"
+          << "\told capacity: " << coefficients_capacity << "\n"
+          << "\tnew capacity: " << coefficientsy.size()
+  );
+
   wall_time = get_wall_time() - wall_time;
   tot_triplets_time_y += wall_time;
 }
@@ -780,59 +749,40 @@ void GlobalPlacer::BuildProblemHPWLX() {
   double wall_time = get_wall_time();
 
   std::vector<Net> &net_list = Nets();
-
   std::vector<Block> &block_list = p_ckt_->Blocks();
   size_t coefficients_capacity = coefficientsx.capacity();
   coefficientsx.resize(0);
 
-  int sz = bx.size();
+  int sz = static_cast<int>(bx.size());
   for (int i = 0; i < sz; ++i) {
     bx[i] = 0;
   }
 
   double center_weight = 0.03 / std::sqrt(sz);
   double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
-  double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
-
-  double weight;
-  double weight_adjust;
-  double inv_p;
-  double decay_length = decay_factor * p_ckt_->AveBlkHeight();
-
-  int max_pin_index;
-  int blk_num_max;
-  double pin_loc_max;
-  bool is_movable_max;
-  double offset_max;
-
-  int min_pin_index;
-  int blk_num_min;
-  double pin_loc_min;
-  bool is_movable_min;
-  double offset_min;
+  //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
 
   for (auto &net : net_list) {
-    if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_)
-      continue;
-    inv_p = net.InvP();
+    if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
+    double inv_p = net.InvP();
     net.UpdateMaxMinIdX();
-    max_pin_index = net.MaxBlkPinIdX();
-    min_pin_index = net.MinBlkPinIdX();
+    int max_pin_index = net.MaxBlkPinIdX();
+    int min_pin_index = net.MinBlkPinIdX();
 
-    blk_num_max = net.BlockPins()[max_pin_index].BlkId();
-    pin_loc_max = net.BlockPins()[max_pin_index].AbsX();
-    is_movable_max = net.BlockPins()[max_pin_index].BlkPtr()->IsMovable();
-    offset_max = net.BlockPins()[max_pin_index].OffsetX();
+    int blk_num_max = net.BlockPins()[max_pin_index].BlkId();
+    double pin_loc_max = net.BlockPins()[max_pin_index].AbsX();
+    bool is_movable_max = net.BlockPins()[max_pin_index].BlkPtr()->IsMovable();
+    double offset_max = net.BlockPins()[max_pin_index].OffsetX();
 
-    blk_num_min = net.BlockPins()[min_pin_index].BlkId();
-    pin_loc_min = net.BlockPins()[min_pin_index].AbsX();
-    is_movable_min = net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
-    offset_min = net.BlockPins()[min_pin_index].OffsetX();
+    int blk_num_min = net.BlockPins()[min_pin_index].BlkId();
+    double pin_loc_min = net.BlockPins()[min_pin_index].AbsX();
+    bool is_movable_min = net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
+    double offset_min = net.BlockPins()[min_pin_index].OffsetX();
 
     double distance = std::fabs(pin_loc_min - pin_loc_max);
     //weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
     //weight = inv_p / (distance + width_epsilon_) * weight_adjust;
-    weight = inv_p / (distance + width_epsilon_);
+    double weight = inv_p / (distance + width_epsilon_);
     if (!is_movable_min && is_movable_max) {
       bx[blk_num_max] += (pin_loc_min - offset_max) * weight;
       coefficientsx.emplace_back(blk_num_max, blk_num_max, weight);
@@ -863,12 +813,12 @@ void GlobalPlacer::BuildProblemHPWLX() {
     }
   }
 
-  if (coefficients_capacity != coefficientsx.capacity()) {
-    BOOST_LOG_TRIVIAL(warning)
-      << "WARNING: coefficients capacity changed!\n"
-      << "\told capacity: " << coefficients_capacity << "\n"
-      << "\tnew capacity: " << coefficientsx.size() << "\n";
-  }
+  DaliWarns(
+      coefficients_capacity != coefficientsx.capacity(),
+      "WARNING: x coefficients capacity changed!\n"
+          << "\told capacity: " << coefficients_capacity << "\n"
+          << "\tnew capacity: " << coefficientsx.size()
+  );
 
   wall_time = get_wall_time() - wall_time;
   tot_triplets_time_x += wall_time;
@@ -877,6 +827,7 @@ void GlobalPlacer::BuildProblemHPWLX() {
 void GlobalPlacer::BuildProblemHPWLY() {
   double wall_time = get_wall_time();
 
+  std::vector<Net> &net_list = Nets();
   std::vector<Block> &block_list = p_ckt_->Blocks();
   size_t coefficients_capacity = coefficientsy.capacity();
   coefficientsy.resize(0);
@@ -887,48 +838,30 @@ void GlobalPlacer::BuildProblemHPWLY() {
   }
 
   double center_weight = 0.03 / std::sqrt(sz);
-  double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
   double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
+  //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
 
-  double weight;
-  double weight_adjust;
-  double inv_p;
-  double decay_length = decay_factor * p_ckt_->AveBlkHeight();
-
-  int max_pin_index;
-  int blk_num_max;
-  double pin_loc_max;
-  bool is_movable_max;
-  double offset_max;
-
-  int min_pin_index;
-  int blk_num_min;
-  double pin_loc_min;
-  bool is_movable_min;
-  double offset_min;
-
-  for (auto &net : Nets()) {
-    if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_)
-      continue;
-    inv_p = net.InvP();
+  for (auto &net : net_list) {
+    if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
+    double inv_p = net.InvP();
     net.UpdateMaxMinIdY();
-    max_pin_index = net.MaxBlkPinIdY();
-    min_pin_index = net.MinBlkPinIdY();
+    int max_pin_index = net.MaxBlkPinIdY();
+    int min_pin_index = net.MinBlkPinIdY();
 
-    blk_num_max = net.BlockPins()[max_pin_index].BlkId();
-    pin_loc_max = net.BlockPins()[max_pin_index].AbsY();
-    is_movable_max = net.BlockPins()[max_pin_index].BlkPtr()->IsMovable();
-    offset_max = net.BlockPins()[max_pin_index].OffsetY();
+    int blk_num_max = net.BlockPins()[max_pin_index].BlkId();
+    double pin_loc_max = net.BlockPins()[max_pin_index].AbsY();
+    bool is_movable_max = net.BlockPins()[max_pin_index].BlkPtr()->IsMovable();
+    double offset_max = net.BlockPins()[max_pin_index].OffsetY();
 
-    blk_num_min = net.BlockPins()[min_pin_index].BlkId();
-    pin_loc_min = net.BlockPins()[min_pin_index].AbsY();
-    is_movable_min = net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
-    offset_min = net.BlockPins()[min_pin_index].OffsetY();
+    int blk_num_min = net.BlockPins()[min_pin_index].BlkId();
+    double pin_loc_min = net.BlockPins()[min_pin_index].AbsY();
+    bool is_movable_min = net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
+    double offset_min = net.BlockPins()[min_pin_index].OffsetY();
 
     double distance = std::fabs(pin_loc_min - pin_loc_max);
     //weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
     //weight = inv_p / (distance + height_epsilon_) * weight_adjust;
-    weight = inv_p / (distance + height_epsilon_);
+    double weight = inv_p / (distance + height_epsilon_);
     if (!is_movable_min && is_movable_max) {
       by[blk_num_max] += (pin_loc_min - offset_max) * weight;
       coefficientsy.emplace_back(blk_num_max, blk_num_max, weight);
@@ -959,12 +892,12 @@ void GlobalPlacer::BuildProblemHPWLY() {
     }
   }
 
-  if (coefficients_capacity != coefficientsy.capacity()) {
-    BOOST_LOG_TRIVIAL(warning)
-      << "WARNING: coefficients capacity changed!\n"
-      << "\told capacity: " << coefficients_capacity << "\n"
-      << "\tnew capacity: " << coefficientsy.size() << "\n";
-  }
+  DaliWarns(
+      coefficients_capacity != coefficientsy.capacity(),
+      "WARNING: coefficients capacity changed!\n"
+          << "\told capacity: " << coefficients_capacity << "\n"
+          << "\tnew capacity: " << coefficientsy.size()
+  );
 
   wall_time = get_wall_time() - wall_time;
   tot_triplets_time_y += wall_time;
@@ -1005,15 +938,13 @@ void GlobalPlacer::BuildProblemStarHPWLX() {
 
       int blk_num_max = net.BlockPins()[max_pin_index].BlkId();
       double pin_loc_max = net.BlockPins()[max_pin_index].AbsX();
-      bool is_movable_max =
-          net.BlockPins()[max_pin_index].BlkPtr()->IsMovable();
-      double offset_max = net.BlockPins()[max_pin_index].OffsetX();
+      //bool is_movable_max = net.BlockPins()[max_pin_index].BlkPtr()->IsMovable();
+      //double offset_max = net.BlockPins()[max_pin_index].OffsetX();
 
       int blk_num_min = net.BlockPins()[min_pin_index].BlkId();
       double pin_loc_min = net.BlockPins()[min_pin_index].AbsX();
-      bool is_movable_min =
-          net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
-      double offset_min = net.BlockPins()[min_pin_index].OffsetX();
+      //bool is_movable_min = net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
+      //double offset_min = net.BlockPins()[min_pin_index].OffsetX();
 
       double distance = std::fabs(load_pin_loc - driver_pin_loc);
       double weight_adjust = base_factor
@@ -1145,15 +1076,13 @@ void GlobalPlacer::BuildProblemStarHPWLY() {
 
       int blk_num_max = net.BlockPins()[max_pin_index].BlkId();
       double pin_loc_max = net.BlockPins()[max_pin_index].AbsY();
-      bool is_movable_max =
-          net.BlockPins()[max_pin_index].BlkPtr()->IsMovable();
-      double offset_max = net.BlockPins()[max_pin_index].OffsetY();
+      //bool is_movable_max = net.BlockPins()[max_pin_index].BlkPtr()->IsMovable();
+      //double offset_max = net.BlockPins()[max_pin_index].OffsetY();
 
       int blk_num_min = net.BlockPins()[min_pin_index].BlkId();
       double pin_loc_min = net.BlockPins()[min_pin_index].AbsY();
-      bool is_movable_min =
-          net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
-      double offset_min = net.BlockPins()[min_pin_index].OffsetY();
+      //bool is_movable_min = net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
+      //double offset_min = net.BlockPins()[min_pin_index].OffsetY();
 
       double distance = std::fabs(load_pin_loc - driver_pin_loc);
       double weight_adjust = base_factor
@@ -1299,8 +1228,10 @@ double GlobalPlacer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
   wall_time = get_wall_time() - wall_time;
   tot_loc_update_time_x += wall_time;
 
-  DaliExpects(!eval_history.empty(),
-              "Cannot return a valid value because the result is not evaluated!");
+  DaliExpects(
+      !eval_history.empty(),
+      "Cannot return a valid value because the result is not evaluated!"
+  );
   return eval_history.back();
 }
 
@@ -1592,24 +1523,21 @@ void GlobalPlacer::UpdateAttributesForAllGridBins() {
 void GlobalPlacer::UpdateFixedBlocksInGridBins() {
   auto &blocks = Blocks();
   int sz = static_cast<int>(Blocks().size());
-  int min_urx, max_llx, min_ury, max_lly;
-  bool fixed_blk_out_of_region, blk_out_of_bin;
-  int left_index, right_index, bottom_index, top_index;
   for (int i = 0; i < sz; i++) {
     /* find the left, right, bottom, top index of the grid */
     if (blocks[i].IsMovable()) continue;
-    fixed_blk_out_of_region = int(blocks[i].LLX()) >= RegionRight() ||
+    bool fixed_blk_out_of_region = int(blocks[i].LLX()) >= RegionRight() ||
         int(blocks[i].URX()) <= RegionLeft() ||
         int(blocks[i].LLY()) >= RegionTop() ||
         int(blocks[i].URY()) <= RegionBottom();
     if (fixed_blk_out_of_region) continue;
-    left_index = (int) std::floor(
+    int left_index = (int) std::floor(
         (blocks[i].LLX() - RegionLeft()) / grid_bin_width);
-    right_index = (int) std::floor(
+    int right_index = (int) std::floor(
         (blocks[i].URX() - RegionLeft()) / grid_bin_width);
-    bottom_index = (int) std::floor(
+    int bottom_index = (int) std::floor(
         (blocks[i].LLY() - RegionBottom()) / grid_bin_height);
-    top_index = (int) std::floor(
+    int top_index = (int) std::floor(
         (blocks[i].URY() - RegionBottom()) / grid_bin_height);
     /* the grid boundaries might be the placement region boundaries
      * if a block touches the rightmost and topmost boundaries,
@@ -1630,7 +1558,7 @@ void GlobalPlacer::UpdateFixedBlocksInGridBins() {
          * the top/right of a fixed block overlap with the bottom/left of
          * a grid box if this case happens, we need to ignore this fixed
          * block for this grid box. */
-        blk_out_of_bin =
+        bool blk_out_of_bin =
             int(blocks[i].LLX() >= grid_bin_mesh[j][k].right) ||
                 int(blocks[i].URX() <= grid_bin_mesh[j][k].left) ||
                 int(blocks[i].LLY() >= grid_bin_mesh[j][k].top) ||
@@ -1646,7 +1574,6 @@ void GlobalPlacer::UpdateWhiteSpaceInGridBin(GridBin &grid_bin) {
   RectI bin_rect(
       grid_bin.LLX(), grid_bin.LLY(), grid_bin.URX(), grid_bin.URY()
   );
-  std::vector<Block> &blocks = Blocks();
 
   std::vector<RectI> rects;
   for (auto &fixed_blk_ptr : grid_bin.fixed_blks) {
@@ -2054,7 +1981,6 @@ void GlobalPlacer::UpdateLargestCluster() {
             continue; // this index is not in the cluster
           if (grid_bin_visited[index]) continue; // this index has been visited
           if (grid_bin_mesh[index.x][index.y].global_placed) continue; // if this grid bin has been roughly legalized
-          GridBin &bin = grid_bin_mesh[index.x][index.y];
           if (cnt > cluster_upper_size) {
             UpdateClusterArea(H);
             cluster_set.insert(H);
@@ -2091,8 +2017,6 @@ void GlobalPlacer::FindMinimumBoxForLargestCluster() {
   if (cluster_set.empty()) return;
 
   // Part 1
-  std::vector<Block> &block_list = Blocks();
-
   BoxBin R;
   R.cut_direction_x = false;
 
@@ -2156,7 +2080,6 @@ void GlobalPlacer::FindMinimumBoxForLargestCluster() {
 }
 
 void GlobalPlacer::SplitBox(BoxBin &box) {
-  std::vector<Block> &block_list = p_ckt_->Blocks();
   bool flag_bisection_complete;
   int dominating_box_flag; // indicate whether there is a dominating BoxBin
   BoxBin box1, box2;
@@ -2229,9 +2152,10 @@ void GlobalPlacer::SplitBox(BoxBin &box) {
     //BOOST_LOG_TRIVIAL(info)   << "cell list size: " << box.cell_list.size() << "\n";
     //box.update_cell_area(block_list);
     //BOOST_LOG_TRIVIAL(info)   << "total_cell_area: " << box.total_cell_area << "\n";
-    box.update_cut_point_cell_list_low_high(block_list,
-                                            box1.total_white_space,
-                                            box2.total_white_space);
+    box.update_cut_point_cell_list_low_high(
+        box1.total_white_space,
+        box2.total_white_space
+    );
     box1.cell_list = box.cell_list_low;
     box2.cell_list = box.cell_list_high;
     box1.ll_point = box.ll_point;
@@ -2310,8 +2234,6 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
  * @param box: the BoxBin which needs to be further splitted into two sub-boxes
  */
 void GlobalPlacer::SplitGridBox(BoxBin &box) {
-  std::vector<Block> &block_list = Blocks();
-
   // 1. create two sub-boxes
   BoxBin box1, box2;
   // the first sub-box should have the same lower left corner as the original box
@@ -2356,7 +2278,6 @@ void GlobalPlacer::SplitGridBox(BoxBin &box) {
       queue_box_bin.push(box1);
     } else {
       box.update_cut_point_cell_list_low_high(
-          block_list,
           box1.total_white_space,
           box2.total_white_space
       );
@@ -2403,7 +2324,6 @@ void GlobalPlacer::SplitGridBox(BoxBin &box) {
       queue_box_bin.push(box1);
     } else {
       box.update_cut_point_cell_list_low_high(
-          block_list,
           box1.total_white_space,
           box2.total_white_space
       );
@@ -2424,7 +2344,6 @@ void GlobalPlacer::SplitGridBox(BoxBin &box) {
 }
 
 void GlobalPlacer::PlaceBlkInBox(BoxBin &box) {
-  std::vector<Block> &block_list = Blocks();
   /* this is the simplest version, just linearly move cells in the cell_box to the grid box
 * non-linearity is not considered yet*/
 
@@ -2442,7 +2361,7 @@ for (auto &cell_id: box.cell_list) {
   cell->SetCenterY((cell->Y() - cell_box_bottom)/cell_box_height * (box.top - box.bottom) + box.bottom);
 }*/
 
-  int sz = box.cell_list.size();
+  int sz = static_cast<int>(box.cell_list.size());
   std::vector<std::pair<Block *, double>> index_loc_list_x(sz);
   std::vector<std::pair<Block *, double>> index_loc_list_y(sz);
   GridBin &grid_bin = grid_bin_mesh[box.ll_index.x][box.ll_index.y];
@@ -2521,7 +2440,6 @@ void GlobalPlacer::RoughLegalBlkInBox(BoxBin &box) {
   BlkInitPair tmp_index_loc_pair(nullptr, 0, 0);
   index_loc_list.resize(sz, tmp_index_loc_pair);
 
-  std::vector<Block> &block_list = p_ckt_->Blocks();
   for (int i = 0; i < sz; ++i) {
     Block *blk_ptr = box.cell_list[i];
     index_loc_list[i].blk_ptr = blk_ptr;
@@ -2657,7 +2575,6 @@ double GlobalPlacer::BlkOverlapArea(Block *node1, Block *node2) {
 }
 
 void GlobalPlacer::PlaceBlkInBoxBisection(BoxBin &box) {
-  std::vector<Block> &block_list = p_ckt_->Blocks();
   /* keep bisect a grid bin until the leaf bin has less than say 2 nodes? */
   size_t max_cell_num_in_box = 10;
   box.cut_direction_x = true;
@@ -2681,9 +2598,10 @@ void GlobalPlacer::PlaceBlkInBoxBisection(BoxBin &box) {
       front_box.cut_direction_x =
           (front_box.top - front_box.bottom > ave_blk_height);
       int cut_line_w = 0; // cut-line for White space
-      front_box.update_cut_point_cell_list_low_high_leaf(block_list,
-                                                         cut_line_w,
-                                                         ave_blk_height);
+      front_box.update_cut_point_cell_list_low_high_leaf(
+          cut_line_w,
+          ave_blk_height
+      );
       if (front_box.cut_direction_x) {
         box1.top = cut_line_w;
         box1.right = front_box.right;
@@ -2715,7 +2633,6 @@ void GlobalPlacer::PlaceBlkInBoxBisection(BoxBin &box) {
     } else {
       // shift cells to the center of the final box
       if (max_cell_num_in_box == 1) {
-        Block *cell;
         for (auto &blk_ptr : front_box.cell_list) {
           blk_ptr->SetCenterX((front_box.left + front_box.right) / 2.0);
           blk_ptr->SetCenterY((front_box.bottom + front_box.top) / 2.0);
@@ -2747,7 +2664,6 @@ void GlobalPlacer::UpdateGridBinBlocks(BoxBin &box) {
       grid_bin.cell_area = 0;
       grid_bin.over_fill = false;
 
-      std::vector<Block> &block_list = p_ckt_->Blocks();
       for (auto &blk_ptr : box.cell_list) {
         grid_bin.cell_list.push_back(blk_ptr);
         grid_bin.cell_area += blk_ptr->Area();
@@ -2824,26 +2740,22 @@ void GlobalPlacer::UpdateAnchorNetWeight() {
   int sz = static_cast<int>(block_list.size());
 
   // X direction
-  double weight = 0;
-  double pin_loc0, pin_loc1;
-  double ave_height = p_ckt_->AveBlkHeight();
   for (int i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) continue;
-    pin_loc0 = block_list[i].LLX();
-    pin_loc1 = x_anchor[i];
+    double pin_loc0 = block_list[i].LLX();
+    double pin_loc1 = x_anchor[i];
     double displacement = std::fabs(pin_loc0 - pin_loc1);
-    weight = alpha / (displacement + width_epsilon_);
+    double weight = alpha / (displacement + width_epsilon_);
     x_anchor_weight[i] = weight;
   }
 
   // Y direction
-  weight = 0;
   for (int i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) continue;
-    pin_loc0 = block_list[i].LLY();
-    pin_loc1 = y_anchor[i];
+    double pin_loc0 = block_list[i].LLY();
+    double pin_loc1 = y_anchor[i];
     double displacement = std::fabs(pin_loc0 - pin_loc1);
-    weight = alpha / (displacement + width_epsilon_);
+    double weight = alpha / (displacement + width_epsilon_);
     y_anchor_weight[i] = weight;
   }
 }

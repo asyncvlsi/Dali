@@ -179,7 +179,7 @@ bool TetrisSpace::FindBlockLoc(int llx,
       candidate_list.emplace_back(-1, -1);
     } else {
       all_row_fail = false;
-      min_disp_x = common_segments.MinDispLoc(scan_line_, width);
+      min_disp_x = common_segments.MinDispLoc(width);
       candidate_list.emplace_back(min_disp_x, i);
     }
   }
@@ -198,7 +198,7 @@ bool TetrisSpace::FindBlockLoc(int llx,
         candidate_list.emplace_back(-1, -1);
       } else {
         all_row_fail = false;
-        min_disp_x = common_segments.MinDispLoc(scan_line_, width);
+        min_disp_x = common_segments.MinDispLoc(width);
         candidate_list.emplace_back(min_disp_x, i);
       }
     }

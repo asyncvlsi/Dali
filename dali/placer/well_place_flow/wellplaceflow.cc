@@ -49,7 +49,7 @@ bool WellPlaceFlow::StartPlacement() {
   lower_bound_hpwl_.push_back(eval_res);
   //BOOST_LOG_TRIVIAL(info)   << cg_total_hpwl_ << "  " << circuit_ptr_->HPWL() << "\n";
 
-  bool old_success = false;
+  //bool old_success = false;
   max_iter_ = 50;
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     BOOST_LOG_TRIVIAL(trace) << cur_iter_ << "-th iteration\n";

@@ -55,7 +55,7 @@ void BoxBin::update_all_terminal(std::vector<std::vector<GridBin> > &grid_bin_ma
   all_terminal = true;
 }
 
-void BoxBin::update_cell_area(std::vector<Block> &Nodelist) {
+void BoxBin::update_cell_area() {
   /*
   int temp_total_cell_area = 0;
   Block *node;
@@ -74,7 +74,6 @@ void BoxBin::update_cell_area(std::vector<Block> &Nodelist) {
   BOOST_LOG_TRIVIAL(info)   << "Total cell area: " << total_cell_area << "  " << temp_total_cell_area << "\n";
   */
 
-  Block *node;
   total_cell_area = 0;
   for (auto &blk_ptr : cell_list) {
     total_cell_area += blk_ptr->Area();
@@ -313,8 +312,7 @@ bool BoxBin::IsMoreHorizontalCutlines() const {
 }
 
 bool BoxBin::write_cell_in_box(
-    std::string const &NameOfFile,
-    std::vector<Block> &Nodelist
+    std::string const &NameOfFile
 ) {
   std::ofstream ost;
   ost.open(NameOfFile.c_str(), std::ios::app);
@@ -412,7 +410,6 @@ bool BoxBin::update_cut_index_white_space(std::vector<std::vector<unsigned long 
 }
 
 bool BoxBin::update_cut_point_cell_list_low_high(
-    std::vector<Block> &Nodelist,
     unsigned long long &box1_total_white_space,
     unsigned long long &box2_total_white_space
 ) {
@@ -423,7 +420,6 @@ bool BoxBin::update_cut_point_cell_list_low_high(
   double ratio =
       1 + double(box2_total_white_space) / double(box1_total_white_space);
   //TODO: this method can be accelerated
-  Block *node;
   if (cut_direction_x) {
     cut_ur_point.x = ur_point.x;
     cut_ll_point.x = ll_point.x;
@@ -502,7 +498,6 @@ bool BoxBin::update_cut_point_cell_list_low_high(
 }
 
 bool BoxBin::update_cut_point_cell_list_low_high_leaf(
-    std::vector<Block> &Nodelist,
     int &cut_line_w,
     int ave_blk_height
 ) {

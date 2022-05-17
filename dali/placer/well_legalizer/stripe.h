@@ -160,7 +160,7 @@ class Stripe {
   int LocY2RowId(double lly);
   double EstimateCost(int row_id, Block *blk_ptr, SegI &range, double density);
   void AddBlockToRow(int row_id, Block *blk_ptr, SegI range);
-  void AssignStandardCellsToRowSegments(double white_space_usage);
+  void AssignStandardCellsToRowSegments(/*double white_space_usage*/);
 };
 
 struct ClusterStripe {

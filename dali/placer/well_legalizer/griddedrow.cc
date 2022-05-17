@@ -159,26 +159,26 @@ std::unordered_map<Block *, double2d> &GriddedRow::InitLocations() {
 }
 
 void GriddedRow::ShiftBlockX(int x_disp) {
-  for (auto &blk_ptr: blk_list_) {
+  for (auto &blk_ptr : blk_list_) {
     blk_ptr->IncreaseX(x_disp);
   }
 }
 
 void GriddedRow::ShiftBlockY(int y_disp) {
-  for (auto &blk_ptr: blk_list_) {
+  for (auto &blk_ptr : blk_list_) {
     blk_ptr->IncreaseY(y_disp);
   }
 }
 
 void GriddedRow::ShiftBlock(int x_disp, int y_disp) {
-  for (auto &blk_ptr: blk_list_) {
+  for (auto &blk_ptr : blk_list_) {
     blk_ptr->IncreaseX(x_disp);
     blk_ptr->IncreaseY(y_disp);
   }
 }
 
 void GriddedRow::UpdateBlockLocY() {
-  for (auto &blk_ptr: blk_list_) {
+  for (auto &blk_ptr : blk_list_) {
     auto *well = blk_ptr->TypePtr()->WellPtr();
     blk_ptr->SetLLY(ly_ + p_well_height_ - well->Pheight());
   }
@@ -193,7 +193,7 @@ void GriddedRow::LegalizeCompactX(int left) {
       }
   );
   int current_x = left;
-  for (auto &blk: blk_list_) {
+  for (auto &blk : blk_list_) {
     blk->SetLLX(current_x);
     current_x += blk->Width();
   }
@@ -208,7 +208,7 @@ void GriddedRow::LegalizeCompactX() {
       }
   );
   int current_x = lx_;
-  for (auto &blk: blk_list_) {
+  for (auto &blk : blk_list_) {
     blk->SetLLX(current_x);
     current_x += blk->Width();
   }
@@ -236,7 +236,7 @@ void GriddedRow::LegalizeLooseX(int space_to_well_tap) {
   );
   int block_contour = lx_;
   int res_x;
-  for (auto &blk: blk_list_) {
+  for (auto &blk : blk_list_) {
     res_x = std::max(block_contour, int(blk->LLX()));
     blk->SetLLX(res_x);
     block_contour = int(blk->URX());
@@ -255,7 +255,7 @@ void GriddedRow::LegalizeLooseX(int space_to_well_tap) {
       }
   );
   block_contour = ux;
-  for (auto &blk: blk_list_) {
+  for (auto &blk : blk_list_) {
     res_x = std::min(block_contour, int(blk->URX()));
     blk->SetURX(res_x);
     block_contour = int(blk->LLX());
@@ -271,7 +271,7 @@ void GriddedRow::SetOrient(bool is_orient_N) {
     is_orient_N_ = is_orient_N;
     BlockOrient orient = is_orient_N_ ? N : FS;
     double y_flip_axis = ly_ + height_ / 2.0;
-    for (auto &blk_ptr: blk_list_) {
+    for (auto &blk_ptr : blk_list_) {
       double ly_to_axis = y_flip_axis - blk_ptr->LLY();
       blk_ptr->SetOrient(orient);
       blk_ptr->SetURY(y_flip_axis + ly_to_axis);
@@ -304,7 +304,7 @@ void GriddedRow::UpdateBlockLocationCompact() {
       }
   );
   int current_x = lx_;
-  for (auto &blk: blk_list_) {
+  for (auto &blk : blk_list_) {
     blk->SetLLX(current_x);
     blk->SetCenterY(CenterY());
     current_x += blk->Width();
@@ -361,7 +361,7 @@ void GriddedRow::MinDisplacementLegalization() {
   }
 
   //int count = 0;
-  for (auto &seg: segments) {
+  for (auto &seg : segments) {
     seg.UpdateBlockLocation();
     //count += seg.blk_list.size();
     //seg.Report();
@@ -372,7 +372,7 @@ void GriddedRow::UpdateMinDisplacementLLY() {
   DaliExpects(blk_list_.size() == blk_initial_location_.size(),
               "Block count does not equal initial location count\n");
   double sum = 0;
-  for (auto &[blk_ptr, init_loc]: blk_initial_location_) {
+  for (auto &[blk_ptr, init_loc] : blk_initial_location_) {
     double init_np_boundary = init_loc.y;
     sum += init_np_boundary;
   }
@@ -397,7 +397,7 @@ void GriddedRow::UpdateSegments(
 
   // treat existing blocks as blockages
   if (is_existing_blks_considered) {
-    for (auto &blk_region: blk_regions_) {
+    for (auto &blk_region : blk_regions_) {
       Block *p_blk = blk_region.p_blk;
       used_spaces.emplace_back(p_blk->LLX(), p_blk->URX());
     }
@@ -450,19 +450,21 @@ void GriddedRow::UpdateSegments(
  * @brief: re-assign blocks to row segments
  */
 void GriddedRow::AssignBlocksToSegments() {
-  for (auto &[p_blk, region_id]: blk_regions_) {
+  for (auto &[p_blk, region_id] : blk_regions_) {
     bool is_completely_in_a_seg = false;
-    for (auto &seg: segments_) {
+    for (auto &seg : segments_) {
       if (p_blk->LLX() >= seg.LLX() &&
           p_blk->URX() <= seg.URX()) {
-        double2d &init_loc = blk_initial_location_[p_blk];
+        //double2d &init_loc = blk_initial_location_[p_blk];
         seg.AddBlockRegion(p_blk, region_id);
         is_completely_in_a_seg = true;
         break;
       }
     }
-    DaliExpects(is_completely_in_a_seg,
-                "A block is not completely in any row segment?!!");
+    DaliExpects(
+        is_completely_in_a_seg,
+        "A block is not completely in any row segment?!!"
+    );
   }
 }
 
@@ -594,7 +596,7 @@ bool GriddedRow::AttemptToAddWithDispCheck(
         );
       }
     }
-    if (distance < min_distance) {
+    if (distance < min_distance && distance < displacement_upper_limit) {
       min_distance = distance;
       min_index = i;
     }
@@ -629,14 +631,14 @@ BlockOrient GriddedRow::ComputeBlockOrient(Block *p_blk, bool is_upward) const {
 }
 
 void GriddedRow::LegalizeSegmentsX(bool use_init_loc) {
-  for (auto &segment: segments_) {
+  for (auto &segment : segments_) {
     segment.MinDisplacementLegalization(use_init_loc);
     segment.SnapCellToPlacementGrid();
   }
 }
 
 void GriddedRow::LegalizeSegmentsY() {
-  for (auto &[p_blk, region_id]: blk_regions_) {
+  for (auto &[p_blk, region_id] : blk_regions_) {
     if (region_id != 0) continue;
     BlockTypeWell *well = p_blk->TypePtr()->WellPtr();
     double y_loc = LLY();
@@ -652,7 +654,7 @@ void GriddedRow::LegalizeSegmentsY() {
 void GriddedRow::RecomputeHeight(int p_well_height, int n_well_height) {
   p_well_height_ = p_well_height;
   n_well_height_ = n_well_height;
-  for (auto &blk_region: blk_regions_) {
+  for (auto &blk_region : blk_regions_) {
     auto *p_blk = blk_region.p_blk;
     int region_id = blk_region.region_id;
     BlockTypeWell *well = p_blk->TypePtr()->WellPtr();
@@ -665,7 +667,7 @@ void GriddedRow::RecomputeHeight(int p_well_height, int n_well_height) {
 }
 
 void GriddedRow::InitializeBlockStretching() {
-  for (auto &blk_region: blk_regions_) {
+  for (auto &blk_region : blk_regions_) {
     auto *p_blk = blk_region.p_blk;
     size_t region_id = blk_region.region_id;
     BlockTypeWell *well = p_blk->TypePtr()->WellPtr();
@@ -691,7 +693,7 @@ size_t GriddedRow::AddWellTapCells(
     y_loc += n_well_height_ - well->NwellHeight(0, true);
   }
   BlockOrient orient = is_orient_N_ ? N : FS;
-  for (auto &[lo_x, hi_x]: well_tap_cell_locs) {
+  for (auto &[lo_x, hi_x] : well_tap_cell_locs) {
     std::string block_name = "__well_tap__" + std::to_string(start_id++);
     tap_cell_list.emplace_back();
     auto &tap_cell = tap_cell_list.back();
@@ -730,7 +732,7 @@ void GriddedRow::SortBlockRegions() {
 bool GriddedRow::IsRowLegal() {
   SortBlockRegions();
   int front = LLX();
-  for (BlockRegion &blk_region: blk_regions_) {
+  for (BlockRegion &blk_region : blk_regions_) {
     Block *blk_ptr = blk_region.p_blk;
     int blk_lx = static_cast<int>(std::round(blk_ptr->LLX()));
     if (blk_lx < front) return false;
@@ -745,7 +747,7 @@ void GriddedRow::GenSubCellTable(
     std::ofstream &ost_discrepancy,
     std::ofstream &ost_displacement
 ) {
-  for (auto &seg: segments_) {
+  for (auto &seg : segments_) {
     seg.GenSubCellTable(
         ost_cluster, ost_sub_cell, ost_discrepancy, ost_displacement,
         LLY(), URY()
@@ -759,7 +761,7 @@ void GriddedRow::UpdateCommonSegment(
     double density
 ) {
   std::vector<SegI> cur_spaces;
-  for (auto &row_seg: segments_) {
+  for (auto &row_seg : segments_) {
     bool has_space = row_seg.Width() - row_seg.UsedSize() >= width;
     double tmp_density =
         static_cast<double> (row_seg.UsedSize() + width) / row_seg.Width();
@@ -770,8 +772,8 @@ void GriddedRow::UpdateCommonSegment(
   }
 
   std::vector<SegI> res;
-  for (auto &avail_space: avail_spaces) {
-    for (auto &cur_space: cur_spaces) {
+  for (auto &avail_space : avail_spaces) {
+    for (auto &cur_space : cur_spaces) {
       if (cur_space.lo >= avail_space.hi) break;
       SegI *joint_space = avail_space.Joint(cur_space);
       if (joint_space != nullptr && joint_space->Span() > 0) {
@@ -786,7 +788,7 @@ void GriddedRow::UpdateCommonSegment(
 
 void GriddedRow::AddStandardCell(Block *p_blk, int region_id, SegI range) {
   bool is_added = false;
-  for (auto &seg: segments_) {
+  for (auto &seg : segments_) {
     if ((seg.LLX() <= range.lo) && (seg.URX() >= range.hi)) {
       seg.AddBlockRegion(p_blk, region_id);
       is_added = true;
@@ -799,7 +801,7 @@ void GriddedRow::AddStandardCell(Block *p_blk, int region_id, SegI range) {
 
 size_t GriddedRow::OutOfBoundCell() {
   size_t cnt = 0;
-  for (auto &blk_region: blk_regions_) {
+  for (auto &blk_region : blk_regions_) {
     Block *blk_ptr = blk_region.p_blk;
     if ((blk_ptr->LLX() < LLX()) || (blk_ptr->URX() > URX())) {
       ++cnt;
@@ -821,14 +823,14 @@ void ClusterSegment::Merge(
 
   sz = (int) gridded_rows.size();
   int anchor_size = 0;
-  for (auto &cluster_ptr: gridded_rows) {
+  for (auto &cluster_ptr : gridded_rows) {
     anchor_size += (int) cluster_ptr->Blocks().size();
   }
   std::vector<double> anchor;
   anchor.reserve(anchor_size);
   int accumulative_d = 0;
   for (int i = 0; i < sz; ++i) {
-    for (auto &[blk_ptr, init_loc]: gridded_rows[i]->InitLocations()) {
+    for (auto &[blk_ptr, init_loc] : gridded_rows[i]->InitLocations()) {
       double init_np_boundary = init_loc.y;
       anchor.push_back(init_np_boundary - accumulative_d);
     }
@@ -843,7 +845,7 @@ void ClusterSegment::Merge(
               "Something is wrong, height does not match");
 
   long double sum = 0;
-  for (auto &num: anchor) {
+  for (auto &num : anchor) {
     sum += num;
   }
   int first_np_boundary = (int) std::round(sum / anchor_size);

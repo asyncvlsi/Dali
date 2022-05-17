@@ -71,7 +71,7 @@ void DefaultSpacePartitioner::DetectAvailSpace() {
   macro_segments.resize(tot_num_rows_);
   SegI tmp(0, 0);
   bool out_of_range;
-  for (auto &block: p_ckt_->Blocks()) {
+  for (auto &block : p_ckt_->Blocks()) {
     if (block.IsMovable()) continue;
     int ly = int(std::floor(block.LLY()));
     int uy = int(std::ceil(block.URY()));
@@ -97,7 +97,7 @@ void DefaultSpacePartitioner::DetectAvailSpace() {
       }
     }
   }
-  for (auto &intervals: macro_segments) {
+  for (auto &intervals : macro_segments) {
     MergeIntervals(intervals);
   }
 
@@ -153,7 +153,7 @@ void DefaultSpacePartitioner::UpdateWhiteSpaceInCol(ClusterStripe &col) {
   col.white_space_.clear();
   col.white_space_.resize(tot_num_rows_);
   for (int i = 0; i < tot_num_rows_; ++i) {
-    for (auto &seg: white_space_in_rows_[i]) {
+    for (auto &seg : white_space_in_rows_[i]) {
       SegI *tmp_seg = stripe_seg.Joint(seg);
       if (tmp_seg != nullptr) {
         /*
@@ -183,9 +183,9 @@ void DefaultSpacePartitioner::UpdateWhiteSpaceInCol(ClusterStripe &col) {
 }
 
 void DefaultSpacePartitioner::DecomposeSpaceToSimpleStripes() {
-  for (auto &col: *p_col_list_) {
+  for (auto &col : *p_col_list_) {
     for (int i = 0; i < tot_num_rows_; ++i) {
-      for (auto &seg: col.white_space_[i]) {
+      for (auto &seg : col.white_space_[i]) {
         int y_loc = RowToLoc(i);
         Stripe *stripe = col.GetStripeMatchSeg(seg, y_loc);
         if (stripe == nullptr) {
@@ -251,7 +251,7 @@ void DefaultSpacePartitioner::AssignBlockToColBasedOnWhiteSpace() {
 
     Stripe *stripe = nullptr;
     double min_dist = DBL_MAX;
-    for (auto &num: pos_col) {
+    for (auto &num : pos_col) {
       double tmp_dist;
       Stripe *res = col_list[num].GetStripeClosestToBlk(
           &block_list[i], tmp_dist
@@ -283,7 +283,7 @@ void DefaultSpacePartitioner::AssignBlockToColBasedOnWhiteSpace() {
     }
   }
 
-  for (auto &col: col_list) {
+  for (auto &col : col_list) {
     col.AssignBlockToSimpleStripe();
   }
 }
@@ -300,7 +300,7 @@ bool DefaultSpacePartitioner::StartPartitioning() {
   std::vector<ClusterStripe> &col_list = *p_col_list_;
   // find the maximum width among movable cells
   max_cell_width_ = 0;
-  for (auto &blk: p_ckt_->Blocks()) {
+  for (auto &blk : p_ckt_->Blocks()) {
     if (blk.IsMovable()) {
       max_cell_width_ = std::max(max_cell_width_, blk.Width());
     }
@@ -315,8 +315,10 @@ bool DefaultSpacePartitioner::StartPartitioning() {
       << "Using default gridded row width: 2*max_unplug_length_\n";
     stripe_width_ = (int) std::round(max_unplug_length_ * stripe_width_factor_);
   } else {
-    DaliWarns(cluster_width_ < max_unplug_length_,
-              "Specified gridded row width is smaller than max_unplug_length_, space is wasted, may not be able to successfully complete well legalization");
+    DaliWarns(
+        cluster_width_ < max_unplug_length_,
+        "Specified gridded row width is smaller than max_unplug_length_, space is wasted, may not be able to successfully complete well legalization"
+    );
     stripe_width_ = cluster_width_;
   }
   stripe_width_ = stripe_width_ + well_spacing_;
@@ -370,7 +372,7 @@ void DefaultSpacePartitioner::PlotAvailSpace(std::string const &name_of_file) {
   );
   for (int i = 0; i < tot_num_rows_; ++i) {
     auto &row = white_space_in_rows_[i];
-    for (auto &seg: row) {
+    for (auto &seg : row) {
       SaveMatlabPatchRect(
           ost,
           seg.lo,
@@ -385,7 +387,7 @@ void DefaultSpacePartitioner::PlotAvailSpace(std::string const &name_of_file) {
     }
   }
 
-  for (auto &block: p_ckt_->Blocks()) {
+  for (auto &block : p_ckt_->Blocks()) {
     if (block.IsMovable()) continue;
     SaveMatlabPatchRect(
         ost,
@@ -403,10 +405,10 @@ void DefaultSpacePartitioner::PlotAvailSpaceInCols(std::string const &name_of_fi
       Left(), Bottom(), Right(), Top(),
       true, 1, 1, 1
   );
-  for (auto &col: *p_col_list_) {
+  for (auto &col : *p_col_list_) {
     for (int i = 0; i < tot_num_rows_; ++i) {
       auto &row = col.white_space_[i];
-      for (auto &seg: row) {
+      for (auto &seg : row) {
         SaveMatlabPatchRect(
             ost,
             seg.lo,
@@ -422,7 +424,7 @@ void DefaultSpacePartitioner::PlotAvailSpaceInCols(std::string const &name_of_fi
     }
   }
 
-  for (auto &block: p_ckt_->Blocks()) {
+  for (auto &block : p_ckt_->Blocks()) {
     if (block.IsMovable()) continue;
     SaveMatlabPatchRect(
         ost,
@@ -440,8 +442,8 @@ void DefaultSpacePartitioner::PlotSimpleStripes(std::string const &name_of_file)
       Left(), Bottom(), Right(), Top(),
       true, 1, 1, 1
   );
-  for (auto &col: *p_col_list_) {
-    for (auto &stripe: col.stripe_list_) {
+  for (auto &col : *p_col_list_) {
+    for (auto &stripe : col.stripe_list_) {
       SaveMatlabPatchRect(
           ost,
           stripe.LLX(), stripe.LLY(), stripe.URX(), stripe.URY(),
@@ -450,7 +452,7 @@ void DefaultSpacePartitioner::PlotSimpleStripes(std::string const &name_of_file)
     }
   }
 
-  for (auto &block: p_ckt_->Blocks()) {
+  for (auto &block : p_ckt_->Blocks()) {
     if (block.IsMovable()) continue;
     SaveMatlabPatchRect(
         ost,

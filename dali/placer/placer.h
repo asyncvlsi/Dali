@@ -52,7 +52,7 @@ class Placer {
   Placer(double aspect_ratio, double filling_rate);
   virtual ~Placer() = default;
 
-  virtual void LoadConf(std::string const &config_file);
+  virtual void LoadConf([[maybe_unused]]std::string const &config_file);
 
   virtual void SetInputCircuit(Circuit *circuit);
 
@@ -156,9 +156,9 @@ class Placer {
       std::string const &node_file = "nodes.txt"
   );
   virtual void EmitDEFWellFile(
-      std::string const &name_of_file,
-      int well_emit_mode,
-      bool enable_emitting_cluster = true
+      [[maybe_unused]]std::string const &name_of_file,
+      [[maybe_unused]]int well_emit_mode,
+      [[maybe_unused]]bool enable_emitting_cluster = true
   );
 
   /****for testing purposes****/

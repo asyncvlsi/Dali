@@ -106,6 +106,7 @@ void StdClusterWellLegalizer::InitializeWellLegalizer(int cluster_width) {
       well_spacing_, well_spacing_, 1, 1
   );
   space_partitioner_.SetPartitionMode(stripe_mode_);
+  space_partitioner_.SetMaxRowWidth(cluster_width);
   space_partitioner_.StartPartitioning();
 
   index_loc_list_.resize(Blocks().size());

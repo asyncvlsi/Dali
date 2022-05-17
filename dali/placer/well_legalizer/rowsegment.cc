@@ -73,11 +73,6 @@ void RowSegment::AddBlockRegion(Block *blk_ptr, int region_id) {
   blk_regions_.emplace_back(blk_ptr, region_id);
 }
 
-void RowSegment::RemoveBlockRegion(Block *blk_ptr, int region_id) {
-  used_size_ -= blk_ptr->Width();
-  blk_regions_.pop_back();
-}
-
 void RowSegment::MinDisplacementLegalization(bool use_init_loc) {
   if (blk_regions_.empty()) return;
   std::sort(
@@ -406,7 +401,7 @@ std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(
     for (auto &blk_rgn: blk_regions_) {
       Block *blk_ptr = blk_rgn.p_blk;
       auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
-      int region_cnt = blk_ptr->TypePtr()->WellPtr()->RegionCount();
+      //int region_cnt = blk_ptr->TypePtr()->WellPtr()->RegionCount();
       double average_loc = aux_ptr->AverageLoc();
       double sub_loc = aux_ptr->SubLocs()[blk_rgn.region_id];
       double tmp_discrepancy = std::fabs(average_loc - sub_loc);

@@ -133,6 +133,13 @@ void BlkDispVarSegment::LinearMerge(
       break;
     }
   }
+
+  if (lx_ < lower_bound) {
+    lx_ = lower_bound;
+  }
+  if (lx_ + width_ > upper_bound) {
+    lx_ = upper_bound - width_;
+  }
 }
 
 void BlkDispVarSegment::UpdateVarLoc() {

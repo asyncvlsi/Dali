@@ -76,10 +76,12 @@ void IoPlacer::SetPhyDB(phydb::PhyDB *phy_db_ptr) {
 }
 
 bool IoPlacer::PartialPlaceIoPin() {
+  DaliExpects(false, "to be implemented");
   return true;
 }
 
 bool IoPlacer::PartialPlaceCmd(int argc, char **argv) {
+  DaliExpects(false, "to be implemented");
   return true;
 }
 

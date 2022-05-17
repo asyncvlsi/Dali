@@ -98,7 +98,7 @@ class BoxBin {
   void UpdateWhiteSpaceAndFixedBlks(std::vector<Block *> &box_fixed_blks);
 
   void update_all_terminal(std::vector<std::vector<GridBin>> &grid_bin_matrix);
-  void update_cell_area(std::vector<Block> &Nodelist);
+  void update_cell_area();
   void update_cell_area_white_space(std::vector<std::vector<GridBin>> &grid_bin_matrix);
   void UpdateCellAreaWhiteSpaceFillingRate(
       std::vector<std::vector<unsigned long long> > &grid_bin_white_space_LUT,
@@ -114,17 +114,14 @@ class BoxBin {
   );
   void UpdateCellList(std::vector<std::vector<GridBin>> &grid_bin_matrix);
   bool write_cell_in_box(
-      std::string const &NameOfFile,
-      std::vector<Block> &Nodelist
+      std::string const &NameOfFile
   );
   bool update_cut_index_white_space(std::vector<std::vector<unsigned long long>> &grid_bin_white_space_LUT);
   bool update_cut_point_cell_list_low_high(
-      std::vector<Block> &Nodelist,
       unsigned long long &box1_total_white_space,
       unsigned long long &box2_total_white_space
   );
   bool update_cut_point_cell_list_low_high_leaf(
-      std::vector<Block> &Nodelist,
       int &cut_line_w,
       int ave_blk_height
   );

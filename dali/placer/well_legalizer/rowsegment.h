@@ -47,7 +47,6 @@ class RowSegment {
 
   std::vector<BlockRegion> &BlkRegions();
   void AddBlockRegion(Block *blk_ptr, int region_id);
-  void RemoveBlockRegion(Block *blk_ptr, int region_id);
   void MinDisplacementLegalization(bool use_init_loc);
   void SnapCellToPlacementGrid();
 

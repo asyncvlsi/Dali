@@ -374,10 +374,12 @@ bool WellLegalizer::IsCurLocWellDistanceLeft(
   return is_well_distance_legal;
 }
 
-bool WellLegalizer::IsCurLocWellMinWidthLeft(int loc_x,
-                                             int lo_row,
-                                             int hi_row,
-                                             int p_row) {
+bool WellLegalizer::IsCurLocWellMinWidthLeft(
+    int loc_x,
+    int lo_row,
+    int hi_row,
+    int p_row
+) {
   // check if the min-width rule is satisfied.
   //    P well min-width
   int shared_well_height = 0;
@@ -394,7 +396,7 @@ bool WellLegalizer::IsCurLocWellMinWidthLeft(int loc_x,
     }
   }
 
-  //    N well min-width
+  // N well min-width
   if (is_well_min_width_legal) {
     shared_well_height = 0;
     is_well_min_width_legal = true;
@@ -413,38 +415,33 @@ bool WellLegalizer::IsCurLocWellMinWidthLeft(int loc_x,
   return is_well_min_width_legal;
 }
 
-bool WellLegalizer::IsBlockPerfectMatchLeft(int loc_x,
-                                            int lo_row,
-                                            int hi_row,
-                                            int p_row) {
-
-  return true;
-}
-
-bool WellLegalizer::IsCurrentLocLegalLeft(Value2D<int> &loc,
-                                          int width,
-                                          int height,
-                                          int p_row) {
+bool WellLegalizer::IsCurrentLocLegalLeft(
+    Value2D<int> &loc,
+    int width,
+    int height,
+    int p_row
+) {
   int lo_row = StartRow(loc.y);
   int hi_row = EndRow(loc.y + height);
   return IsCurrentLocLegalLeft(loc.x, width, lo_row, hi_row, p_row);
 }
 
-bool WellLegalizer::IsCurrentLocLegalLeft(int loc_x,
-                                          int width,
-                                          int lo_row,
-                                          int hi_row,
-                                          int p_row) {
-  /****
-   * Returns whether the current location is legal
-   *
-   * 1. if the space itself is illegal, then return false
-   * 2. if the space covers placed blocks, then return false
-   * 3. if the N/P well distance to its left hand side neighbors are not satisfied, then return false
-   * 4. if the N/P well minimum spacing rule is not satisfied, then return false
-   * 3. otherwise, return true
-   * ****/
-
+/****
+ * Returns whether the current location is legal
+ *
+ * 1. if the space itself is illegal, then return false
+ * 2. if the space covers placed blocks, then return false
+ * 3. if the N/P well distance to its left hand side neighbors are not satisfied, then return false
+ * 4. if the N/P well minimum spacing rule is not satisfied, then return false
+ * 3. otherwise, return true
+ * ****/
+bool WellLegalizer::IsCurrentLocLegalLeft(
+    int loc_x,
+    int width,
+    int lo_row,
+    int hi_row,
+    int p_row
+) {
   bool is_current_loc_legal;
 
   // 1. check if the space itself is legal

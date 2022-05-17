@@ -339,6 +339,7 @@ bool GriddedRowLegalizer::StripeLegalizationDownwardWithDispCheck(
     Stripe &stripe,
     bool use_init_loc
 ) {
+  DaliExpects(false, "to be implemented");
   return true;
 }
 
@@ -613,7 +614,7 @@ void GriddedRowLegalizer::ImportStandardRowSegments(phydb::PhyDB &phydb) {
 
 void GriddedRowLegalizer::AssignStandardCellsToRowSegments() {
   auto &stripe = col_list_[0].stripe_list_[0];
-  stripe.AssignStandardCellsToRowSegments(p_ckt_->WhiteSpaceUsage());
+  stripe.AssignStandardCellsToRowSegments();
 }
 
 void GriddedRowLegalizer::ReportStandardCellDisplacement() {

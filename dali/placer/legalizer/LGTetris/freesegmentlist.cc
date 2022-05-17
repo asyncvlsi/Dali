@@ -295,13 +295,14 @@ bool FreeSegmentList::IsSpaceAvail(int x_loc, int width) {
   return is_avail;
 }
 
-int FreeSegmentList::MinDispLoc(int llx, int width) {
-  /****
-   * We assume any segment in this list has a length longer than block width
-   * lx is not used now, might be used in the future
-   * ****/
-  DaliExpects(Head()->Length() >= width,
-              "Segment length should be longer than block width");
+/****
+ * We assume any segment in this list has a length longer than block width
+ * ****/
+int FreeSegmentList::MinDispLoc(int width) {
+  DaliExpects(
+      Head()->Length() >= width,
+      "Segment length should be longer than block width"
+  );
   return Head()->Start();
 }
 
