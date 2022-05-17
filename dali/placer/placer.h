@@ -146,7 +146,7 @@ class Placer {
   }
   virtual void GenMATLABWellTable(
       std::string const &name_of_file,
-      int well_emit_mode
+      [[maybe_unused]]int well_emit_mode
   ) {
     p_ckt_->GenMATLABWellTable(name_of_file);
   }

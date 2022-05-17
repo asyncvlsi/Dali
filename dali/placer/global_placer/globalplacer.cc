@@ -368,12 +368,10 @@ void GlobalPlacer::UpdateMaxMinY() {
 void GlobalPlacer::BuildProblemB2BX() {
   double wall_time = get_wall_time();
 
-  std::vector<Net> &net_list = Nets();
-
   std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Net> &net_list = Nets();
   size_t coefficients_capacity = coefficientsx.capacity();
   coefficientsx.resize(0);
-
   int sz = static_cast<int>(bx.size());
   for (int i = 0; i < sz; ++i) {
     bx[i] = 0;
@@ -381,56 +379,34 @@ void GlobalPlacer::BuildProblemB2BX() {
 
   double center_weight = 0.03 / std::sqrt(sz);
   double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
-
-  double weight;
-  double weight_adjust;
-  double inv_p;
   double decay_length = decay_factor * p_ckt_->AveBlkHeight();
-
-  double pin_loc;
-  int blk_num;
-  bool is_movable;
-  double offset;
-  double offset_diff;
-
-  int max_pin_index;
-  int blk_num_max;
-  double pin_loc_max;
-  bool is_movable_max;
-  double offset_max;
-
-  int min_pin_index;
-  int blk_num_min;
-  double pin_loc_min;
-  bool is_movable_min;
-  double offset_min;
 
   for (auto &net : net_list) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
-    inv_p = net.InvP();
+    double inv_p = net.InvP();
     net.UpdateMaxMinIdX();
-    max_pin_index = net.MaxBlkPinIdX();
-    min_pin_index = net.MinBlkPinIdX();
+    int max_pin_index = net.MaxBlkPinIdX();
+    int min_pin_index = net.MinBlkPinIdX();
 
-    blk_num_max = net.BlockPins()[max_pin_index].BlkId();
-    pin_loc_max = net.BlockPins()[max_pin_index].AbsX();
-    is_movable_max = net.BlockPins()[max_pin_index].BlkPtr()->IsMovable();
-    offset_max = net.BlockPins()[max_pin_index].OffsetX();
+    int blk_num_max = net.BlockPins()[max_pin_index].BlkId();
+    double pin_loc_max = net.BlockPins()[max_pin_index].AbsX();
+    bool is_movable_max = net.BlockPins()[max_pin_index].BlkPtr()->IsMovable();
+    double offset_max = net.BlockPins()[max_pin_index].OffsetX();
 
-    blk_num_min = net.BlockPins()[min_pin_index].BlkId();
-    pin_loc_min = net.BlockPins()[min_pin_index].AbsX();
-    is_movable_min = net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
-    offset_min = net.BlockPins()[min_pin_index].OffsetX();
+    int blk_num_min = net.BlockPins()[min_pin_index].BlkId();
+    double pin_loc_min = net.BlockPins()[min_pin_index].AbsX();
+    bool is_movable_min = net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
+    double offset_min = net.BlockPins()[min_pin_index].OffsetX();
 
     for (auto &pair : net.BlockPins()) {
-      blk_num = pair.BlkId();
-      pin_loc = pair.AbsX();
-      is_movable = pair.BlkPtr()->IsMovable();
-      offset = pair.OffsetX();
+      int blk_num = pair.BlkId();
+      double pin_loc = pair.AbsX();
+      bool is_movable = pair.BlkPtr()->IsMovable();
+      double offset = pair.OffsetX();
 
       if (blk_num != blk_num_max) {
         double distance = std::fabs(pin_loc - pin_loc_max);
-        weight = inv_p / (distance + width_epsilon_);
+        double weight = inv_p / (distance + width_epsilon_);
         //weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
         //weight *= weight_adjust;
         if (!is_movable && is_movable_max) {
@@ -444,7 +420,7 @@ void GlobalPlacer::BuildProblemB2BX() {
           coefficientsx.emplace_back(blk_num_max, blk_num_max, weight);
           coefficientsx.emplace_back(blk_num, blk_num_max, -weight);
           coefficientsx.emplace_back(blk_num_max, blk_num, -weight);
-          offset_diff = (offset_max - offset) * weight;
+          double offset_diff = (offset_max - offset) * weight;
           bx[blk_num] += offset_diff;
           bx[blk_num_max] -= offset_diff;
         }
@@ -452,7 +428,7 @@ void GlobalPlacer::BuildProblemB2BX() {
 
       if ((blk_num != blk_num_max) && (blk_num != blk_num_min)) {
         double distance = std::fabs(pin_loc - pin_loc_min);
-        weight = inv_p / (distance + width_epsilon_);
+        double weight = inv_p / (distance + width_epsilon_);
         //weight_adjust = adjust_factor * (1 - exp(-distance / decay_length));
         //weight *= weight_adjust;
         if (!is_movable && is_movable_min) {
@@ -466,7 +442,7 @@ void GlobalPlacer::BuildProblemB2BX() {
           coefficientsx.emplace_back(blk_num_min, blk_num_min, weight);
           coefficientsx.emplace_back(blk_num, blk_num_min, -weight);
           coefficientsx.emplace_back(blk_num_min, blk_num, -weight);
-          offset_diff = (offset_min - offset) * weight;
+          double offset_diff = (offset_min - offset) * weight;
           bx[blk_num] += offset_diff;
           bx[blk_num_min] -= offset_diff;
         }
@@ -487,35 +463,24 @@ void GlobalPlacer::BuildProblemB2BX() {
     }
   }
 
-  if (coefficients_capacity != coefficientsx.capacity()) {
-    BOOST_LOG_TRIVIAL(warning)
-      << "WARNING: x coefficients capacity changed!\n"
-      << "\told capacity: " << coefficients_capacity << "\n"
-      << "\tnew capacity: " << coefficientsx.size() << "\n";
-  }
+  DaliWarns(
+      coefficients_capacity != coefficientsx.capacity(),
+      "WARNING: x coefficients capacity changed!\n"
+          << "\told capacity: " << coefficients_capacity << "\n"
+          << "\tnew capacity: " << coefficientsx.size()
+  );
 
   wall_time = get_wall_time() - wall_time;
   tot_triplets_time_x += wall_time;
-
-//  static int count = 0;
-//  count += 1;
-//  if (count == 100) {
-//    bool s = saveMarket(Ax, "sparse_matrices");
-//    if (s) {
-//      BOOST_LOG_TRIVIAL(info)   << "Sparse matrix saved successfully\n";
-//    }
-//  }
 }
 
 void GlobalPlacer::BuildProblemB2BY() {
   double wall_time = get_wall_time();
 
-  UpdateMaxMinY();
-
   std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Net> &net_list = Nets();
   size_t coefficients_capacity = coefficientsy.capacity();
   coefficientsy.resize(0);
-
   int sz = static_cast<int>(by.size());
   for (int i = 0; i < sz; ++i) {
     by[i] = 0;
@@ -523,57 +488,34 @@ void GlobalPlacer::BuildProblemB2BY() {
 
   double center_weight = 0.03 / std::sqrt(sz);
   double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
-
-  double weight;
-  double weight_adjust;
-  double inv_p;
   double decay_length = decay_factor * p_ckt_->AveBlkHeight();
 
-  double pin_loc;
-  int blk_num;
-  bool is_movable;
-  double offset;
-  double offset_diff;
+  for (auto &net : net_list) {
+    if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
+    double inv_p = net.InvP();
+    net.UpdateMaxMinIdY();
+    int max_pin_index = net.MaxBlkPinIdY();
+    int min_pin_index = net.MinBlkPinIdY();
 
-  int max_pin_index;
-  int blk_num_max;
-  double pin_loc_max;
-  bool is_movable_max;
-  double offset_max;
+    int blk_num_max = net.BlockPins()[max_pin_index].BlkId();
+    double pin_loc_max = net.BlockPins()[max_pin_index].AbsY();
+    bool is_movable_max = net.BlockPins()[max_pin_index].BlkPtr()->IsMovable();
+    double offset_max = net.BlockPins()[max_pin_index].OffsetY();
 
-  int min_pin_index;
-  int blk_num_min;
-  double pin_loc_min;
-  bool is_movable_min;
-  double offset_min;
-
-  for (auto &net : Nets()) {
-    if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_)
-      continue;
-    inv_p = net.InvP();
-    //net.UpdateMaxMinIndexY();
-    max_pin_index = net.MaxBlkPinIdY();
-    min_pin_index = net.MinBlkPinIdY();
-
-    blk_num_max = net.BlockPins()[max_pin_index].BlkId();
-    pin_loc_max = net.BlockPins()[max_pin_index].AbsY();
-    is_movable_max = net.BlockPins()[max_pin_index].BlkPtr()->IsMovable();
-    offset_max = net.BlockPins()[max_pin_index].OffsetY();
-
-    blk_num_min = net.BlockPins()[min_pin_index].BlkId();
-    pin_loc_min = net.BlockPins()[min_pin_index].AbsY();
-    is_movable_min = net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
-    offset_min = net.BlockPins()[min_pin_index].OffsetY();
+    int blk_num_min = net.BlockPins()[min_pin_index].BlkId();
+    double pin_loc_min = net.BlockPins()[min_pin_index].AbsY();
+    bool is_movable_min = net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
+    double offset_min = net.BlockPins()[min_pin_index].OffsetY();
 
     for (auto &pair : net.BlockPins()) {
-      blk_num = pair.BlkId();
-      pin_loc = pair.AbsY();
-      is_movable = pair.BlkPtr()->IsMovable();
-      offset = pair.OffsetY();
+      int blk_num = pair.BlkId();
+      double pin_loc = pair.AbsY();
+      bool is_movable = pair.BlkPtr()->IsMovable();
+      double offset = pair.OffsetY();
 
       if (blk_num != blk_num_max) {
         double distance = std::fabs(pin_loc - pin_loc_max);
-        weight = inv_p / (distance + height_epsilon_);
+        double weight = inv_p / (distance + height_epsilon_);
         //weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
         //weight *= weight_adjust;
         if (!is_movable && is_movable_max) {
@@ -587,7 +529,7 @@ void GlobalPlacer::BuildProblemB2BY() {
           coefficientsy.emplace_back(blk_num_max, blk_num_max, weight);
           coefficientsy.emplace_back(blk_num, blk_num_max, -weight);
           coefficientsy.emplace_back(blk_num_max, blk_num, -weight);
-          offset_diff = (offset_max - offset) * weight;
+          double offset_diff = (offset_max - offset) * weight;
           by[blk_num] += offset_diff;
           by[blk_num_max] -= offset_diff;
         }
@@ -595,7 +537,7 @@ void GlobalPlacer::BuildProblemB2BY() {
 
       if ((blk_num != blk_num_max) && (blk_num != blk_num_min)) {
         double distance = std::fabs(pin_loc - pin_loc_min);
-        weight = inv_p / (distance + height_epsilon_);
+        double weight = inv_p / (distance + height_epsilon_);
         //weight_adjust = adjust_factor * (1 - exp(-distance / decay_length));
         //weight *= weight_adjust;
         if (!is_movable && is_movable_min) {
@@ -609,7 +551,7 @@ void GlobalPlacer::BuildProblemB2BY() {
           coefficientsy.emplace_back(blk_num_min, blk_num_min, weight);
           coefficientsy.emplace_back(blk_num, blk_num_min, -weight);
           coefficientsy.emplace_back(blk_num_min, blk_num, -weight);
-          offset_diff = (offset_min - offset) * weight;
+          double offset_diff = (offset_min - offset) * weight;
           by[blk_num] += offset_diff;
           by[blk_num_min] -= offset_diff;
         }
@@ -630,12 +572,13 @@ void GlobalPlacer::BuildProblemB2BY() {
       }
     }
   }
-  if (coefficients_capacity != coefficientsy.capacity()) {
-    BOOST_LOG_TRIVIAL(warning)
-      << "WARNING: y coefficients capacity changed!\n"
-      << "\told capacity: " << coefficients_capacity << "\n"
-      << "\tnew capacity: " << coefficientsy.size() << "\n";
-  }
+
+  DaliWarns(
+      coefficients_capacity != coefficientsy.capacity(),
+      "WARNING: y coefficients capacity changed!\n"
+          << "\told capacity: " << coefficients_capacity << "\n"
+          << "\tnew capacity: " << coefficientsy.size()
+  );
 
   wall_time = get_wall_time() - wall_time;
   tot_triplets_time_y += wall_time;
