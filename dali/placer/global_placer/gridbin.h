@@ -45,7 +45,7 @@ class GridBin {
   bool cluster_visited;
   bool global_placed;
   std::vector<Block *> cell_list;
-  std::vector<Block *> fixed_blks;
+  std::vector<Block *> fixed_blocks;
   std::vector<GridBinIndex> adjacent_bin_index;
 
   int LLX() { return left; }

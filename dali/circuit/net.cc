@@ -18,7 +18,6 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-
 #include "net.h"
 
 #include <cfloat>
@@ -202,18 +201,25 @@ void Net::SortBlkPinList() {
  * locations are the same, it means all pins in this net have the same location,
  * we can just pick the first two pins as max_pin and min_pin.
  *
- * TODO: or the driver pin as on of the extreme pin.
+ * TODO: or the driver pin as one of the extreme pin.
  */
 void Net::UpdateMaxMinIdX() {
+  // no pin
   if (blk_pins_.empty()) return;
+  // only one pin
+  if (blk_pins_.size() == 1) {
+    max_x_pin_id_ = 0;
+    min_x_pin_id_ = 0;
+    return;
+  }
+  // more than one pin
   max_x_pin_id_ = 0;
   min_x_pin_id_ = 0;
-  double max_x = blk_pins_[0].AbsX();
-  double min_x = max_x;
-  double tmp_pin_loc;
+  double max_x = -DBL_MAX;
+  double min_x = DBL_MAX;
   int sz = static_cast<int>(blk_pins_.size());
-  for (int i = 1; i < sz; ++i) {
-    tmp_pin_loc = blk_pins_[i].AbsX();
+  for (int i = 0; i < sz; ++i) {
+    double tmp_pin_loc = blk_pins_[i].AbsX();
     if (max_x < tmp_pin_loc) {
       max_x = tmp_pin_loc;
       max_x_pin_id_ = i;
@@ -223,22 +229,30 @@ void Net::UpdateMaxMinIdX() {
       min_x_pin_id_ = i;
     }
   }
-  if (max_x == min_x && blk_pins_.size() >= 2) {
+  // if maximum x is the same as minimum x, make sure max id is different from min id
+  if (max_x == min_x) {
     max_x_pin_id_ = 0;
     min_x_pin_id_ = 1;
   }
 }
 
 void Net::UpdateMaxMinIdY() {
+  // no pin
   if (blk_pins_.empty()) return;
+  // only one pin
+  if (blk_pins_.size() == 1) {
+    max_y_pin_id_ = 0;
+    min_y_pin_id_ = 0;
+    return;
+  }
+  // more than one pin
   max_y_pin_id_ = 0;
   min_y_pin_id_ = 0;
-  double max_y = blk_pins_[0].AbsY();
-  double min_y = max_y;
-  double tmp_pin_loc = 0;
+  double max_y = -DBL_MAX;
+  double min_y = DBL_MAX;
   int sz = static_cast<int>(blk_pins_.size());
-  for (int i = 1; i < sz; ++i) {
-    tmp_pin_loc = blk_pins_[i].AbsY();
+  for (int i = 0; i < sz; ++i) {
+    double tmp_pin_loc = blk_pins_[i].AbsY();
     if (max_y < tmp_pin_loc) {
       max_y = tmp_pin_loc;
       max_y_pin_id_ = i;
@@ -248,7 +262,8 @@ void Net::UpdateMaxMinIdY() {
       min_y_pin_id_ = i;
     }
   }
-  if (max_y == min_y && blk_pins_.size() >= 2) {
+  // if maximum y is the same as minimum y, make sure max id is different from min id
+  if (max_y == min_y) {
     max_y_pin_id_ = 0;
     min_y_pin_id_ = 1;
   }

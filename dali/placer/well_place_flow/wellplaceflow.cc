@@ -33,15 +33,13 @@ bool WellPlaceFlow::StartPlacement() {
   BOOST_LOG_TRIVIAL(info) << "---------------------------------------\n"
                           << "Start global placement\n";
   SanityCheck();
-  CGInit();
+  InitializeConjugateGradientLinearSolver();
   LALInit();
-  //BlockLocCenterInit();
-  BlockLocRandomInit();
-  if (Nets().empty()) {
+  //BlockLocationNormalInitialization();
+  BlockLocationUniformInitialization();
+  if (p_ckt_->Nets().empty()) {
     BOOST_LOG_TRIVIAL(info)
-      << "\033[0;36m"
-      << "Global Placement complete\n"
-      << "\033[0m";
+      << "\033[0;36m" << "Global Placement complete\n" << "\033[0m";
     return true;
   }
 
@@ -80,19 +78,19 @@ bool WellPlaceFlow::StartPlacement() {
       //  old_success = is_success;
       //}
     }
-    BOOST_LOG_TRIVIAL(info) << "It " << cur_iter_ << ": \t"
-                            << lower_bound_hpwl_.back() << " "
-                            << upper_bound_hpwl_.back() << "\n";
+    BOOST_LOG_TRIVIAL(info)
+      << "It " << cur_iter_ << ": \t"
+      << lower_bound_hpwl_.back() << " "
+      << upper_bound_hpwl_.back() << "\n";
     eval_res =
         QuadraticPlacementWithAnchor(net_model_update_stop_criterion_);
     lower_bound_hpwl_.push_back(eval_res);
   }
 
-  BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
-                          << "Global Placement complete\n"
-                          << "\033[0m";
-  BOOST_LOG_TRIVIAL(info) << "(cg time: " << tot_cg_time << "s, lal time: "
-                          << tot_lal_time << "s)\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "\033[0;36m" << "Global Placement complete\n" << "\033[0m";
+  BOOST_LOG_TRIVIAL(info)
+    << "(cg time: " << tot_cg_time << "s, lal time: " << tot_lal_time << "s)\n";
   LALClose();
   //CheckAndShift();
   UpdateMovableBlkPlacementStatus();

@@ -310,35 +310,35 @@ size_t Stripe::FitBlocksToFrontSpaceUpward(
     size_t start_id,
     int current_iteration
 ) {
-  std::vector<Block *> legalized_blks;
-  std::vector<Block *> skipped_blks;
+  std::vector<Block *> legalized_blocks;
+  std::vector<Block *> skipped_blocks;
 
-  size_t blks_sz = blk_ptrs_vec_.size();
-  for (size_t i = start_id; i < blks_sz; ++i) {
+  size_t blocks_sz = blk_ptrs_vec_.size();
+  for (size_t i = start_id; i < blocks_sz; ++i) {
     Block *p_blk = blk_ptrs_vec_[i];
     if (!gridded_rows_[front_id_].IsOverlap(p_blk, current_iteration, true)) {
       break;
     }
     if (gridded_rows_[front_id_].IsOrientMatching(p_blk, 0)) {
       if (AddBlockToFrontCluster(p_blk, true)) {
-        legalized_blks.push_back(p_blk);
+        legalized_blocks.push_back(p_blk);
       } else {
-        skipped_blks.push_back(p_blk);
+        skipped_blocks.push_back(p_blk);
       }
     } else {
-      skipped_blks.push_back(p_blk);
+      skipped_blocks.push_back(p_blk);
     }
   }
 
   // put legalized blocks back to the sorted list
-  for (size_t i = 0; i < legalized_blks.size(); ++i) {
-    blk_ptrs_vec_[i + start_id] = legalized_blks[i];
+  for (size_t i = 0; i < legalized_blocks.size(); ++i) {
+    blk_ptrs_vec_[i + start_id] = legalized_blocks[i];
   }
 
   // put skipped blocks back to the sorted list
-  start_id = start_id + legalized_blks.size();
-  for (size_t i = 0; i < skipped_blks.size(); ++i) {
-    blk_ptrs_vec_[i + start_id] = skipped_blks[i];
+  start_id = start_id + legalized_blocks.size();
+  for (size_t i = 0; i < skipped_blocks.size(); ++i) {
+    blk_ptrs_vec_[i + start_id] = skipped_blocks[i];
   }
 
   return start_id;
@@ -347,34 +347,34 @@ size_t Stripe::FitBlocksToFrontSpaceUpward(
 size_t Stripe::FitBlocksToFrontSpaceUpwardWithDispCheck(
     size_t start_id, double displacement_upper_limit
 ) {
-  std::vector<Block *> legalized_blks;
-  std::vector<Block *> skipped_blks;
+  std::vector<Block *> legalized_blocks;
+  std::vector<Block *> skipped_blocks;
 
-  size_t blks_sz = blk_ptrs_vec_.size();
-  for (size_t i = start_id; i < blks_sz; ++i) {
+  size_t blocks_sz = blk_ptrs_vec_.size();
+  for (size_t i = start_id; i < blocks_sz; ++i) {
     Block *p_blk = blk_ptrs_vec_[i];
     if (gridded_rows_[front_id_].IsOrientMatching(p_blk, 0)) {
       if (AddBlockToFrontClusterWithDispCheck(p_blk,
                                               displacement_upper_limit,
                                               true)) {
-        legalized_blks.push_back(p_blk);
+        legalized_blocks.push_back(p_blk);
       } else {
-        skipped_blks.push_back(p_blk);
+        skipped_blocks.push_back(p_blk);
       }
     } else {
-      skipped_blks.push_back(p_blk);
+      skipped_blocks.push_back(p_blk);
     }
   }
 
   // put legalized blocks back to the sorted list
-  for (size_t i = 0; i < legalized_blks.size(); ++i) {
-    blk_ptrs_vec_[i + start_id] = legalized_blks[i];
+  for (size_t i = 0; i < legalized_blocks.size(); ++i) {
+    blk_ptrs_vec_[i + start_id] = legalized_blocks[i];
   }
 
   // put skipped blocks back to the sorted list
-  start_id = start_id + legalized_blks.size();
-  for (size_t i = 0; i < skipped_blks.size(); ++i) {
-    blk_ptrs_vec_[i + start_id] = skipped_blks[i];
+  start_id = start_id + legalized_blocks.size();
+  for (size_t i = 0; i < skipped_blocks.size(); ++i) {
+    blk_ptrs_vec_[i + start_id] = skipped_blocks[i];
   }
 
   return start_id;
@@ -476,11 +476,11 @@ size_t Stripe::FitBlocksToFrontSpaceDownward(
     size_t start_id,
     int current_iteration
 ) {
-  std::vector<Block *> legalized_blks;
-  std::vector<Block *> skipped_blks;
+  std::vector<Block *> legalized_blocks;
+  std::vector<Block *> skipped_blocks;
 
-  size_t blks_sz = blk_ptrs_vec_.size();
-  for (size_t i = start_id; i < blks_sz; ++i) {
+  size_t blocks_sz = blk_ptrs_vec_.size();
+  for (size_t i = start_id; i < blocks_sz; ++i) {
     Block *p_blk = blk_ptrs_vec_[i];
     if (!gridded_rows_[front_id_].IsOverlap(p_blk, current_iteration, false)) {
       break;
@@ -488,24 +488,24 @@ size_t Stripe::FitBlocksToFrontSpaceDownward(
     int region_id = p_blk->TypePtr()->WellPtr()->RegionCount() - 1;
     if (gridded_rows_[front_id_].IsOrientMatching(p_blk, region_id)) {
       if (AddBlockToFrontCluster(p_blk, false)) {
-        legalized_blks.push_back(p_blk);
+        legalized_blocks.push_back(p_blk);
       } else {
-        skipped_blks.push_back(p_blk);
+        skipped_blocks.push_back(p_blk);
       }
     } else {
-      skipped_blks.push_back(p_blk);
+      skipped_blocks.push_back(p_blk);
     }
   }
 
   // put legalized blocks back to the sorted list
-  for (size_t i = 0; i < legalized_blks.size(); ++i) {
-    blk_ptrs_vec_[i + start_id] = legalized_blks[i];
+  for (size_t i = 0; i < legalized_blocks.size(); ++i) {
+    blk_ptrs_vec_[i + start_id] = legalized_blocks[i];
   }
 
   // put skipped blocks back to the sorted list
-  start_id = start_id + legalized_blks.size();
-  for (size_t i = 0; i < skipped_blks.size(); ++i) {
-    blk_ptrs_vec_[i + start_id] = skipped_blks[i];
+  start_id = start_id + legalized_blocks.size();
+  for (size_t i = 0; i < skipped_blocks.size(); ++i) {
+    blk_ptrs_vec_[i + start_id] = skipped_blocks[i];
   }
 
   return start_id;

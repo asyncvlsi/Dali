@@ -87,7 +87,7 @@ class GriddedRow {
   std::vector<RowSegment> &Segments();
   void UpdateSegments(
       std::vector<SegI> &blockage,
-      bool is_existing_blks_considered
+      bool is_existing_blocks_considered
   );
   void AssignBlocksToSegments();
   bool IsBelowMiddleLine(Block *p_blk) const;

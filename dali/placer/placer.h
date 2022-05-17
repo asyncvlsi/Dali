@@ -56,30 +56,33 @@ class Placer {
 
   virtual void SetInputCircuit(Circuit *circuit);
 
-  Circuit &GetCkt() ;
-
   void SetPlacementDensity(double density = 2.0 / 3.0) {
-    DaliExpects((density <= 1) && (density > 0),
-                "Invalid value: value should be in range (0, 1]");
-    DaliExpects(p_ckt_->WhiteSpaceUsage() < density,
-                "Cannot set target density smaller than average white space utility!");
+    DaliExpects(
+        (density <= 1) && (density > 0),
+        "Invalid value: value should be in range (0, 1]"
+    );
+    DaliExpects(
+        p_ckt_->WhiteSpaceUsage() < density,
+        "Cannot set target density smaller than average white space utility!"
+    );
     placement_density_ = density;
   }
   double PlacementDensity() const { return placement_density_; }
   void SetAspectRatio(double ratio = 1.0) {
-    DaliExpects(ratio >= 0,
-                "Invalid value: value should be in range (0, +infinity)");
+    DaliExpects(
+        ratio >= 0,
+        "Invalid value: value should be in range (0, +infinity)"
+    );
     aspect_ratio_ = ratio;
   }
   double AspectRatio() const { return aspect_ratio_; }
   void SetSpaceBlockRatio(double ratio) {
-    DaliExpects(ratio >= 1,
-                "Invalid value: value should be in range [1, +infinity)");
+    DaliExpects(
+        ratio >= 1,
+        "Invalid value: value should be in range [1, +infinity)"
+    );
     placement_density_ = 1.0 / ratio;
   }
-
-  std::vector<Block> &Blocks() { return p_ckt_->Blocks(); }
-  std::vector<Net> &Nets() { return p_ckt_->Nets(); }
 
   bool IsBoundaryProper();
   void SetBoundaryAuto();
@@ -96,44 +99,58 @@ class Placer {
 
   void UpdateAspectRatio();
   void NetSortBlkPin() {
-    DaliExpects(p_ckt_ != nullptr,
-                "No input circuit specified, cannot modify any circuits!");
-    GetCkt().NetSortBlkPin();
+    DaliExpects(
+        p_ckt_ != nullptr,
+        "No input circuit specified, cannot modify any circuits!"
+    );
+    p_ckt_->NetSortBlkPin();
   }
   virtual bool StartPlacement();
 
   double WeightedHPWLX() {
-    DaliExpects(p_ckt_ != nullptr,
-                "No input circuit specified, cannot compute WeightedHPWLX!");
-    return GetCkt().WeightedHPWLX();
+    DaliExpects(
+        p_ckt_ != nullptr,
+        "No input circuit specified, cannot compute WeightedHPWLX!"
+    );
+    return p_ckt_->WeightedHPWLX();
   }
   double WeightedHPWLY() {
-    DaliExpects(p_ckt_ != nullptr,
-                "No input circuit specified, cannot compute WeightedHPWLY!");
-    return GetCkt().WeightedHPWLY();
+    DaliExpects(
+        p_ckt_ != nullptr,
+        "No input circuit specified, cannot compute WeightedHPWLY!"
+    );
+    return p_ckt_->WeightedHPWLY();
   }
   double WeightedHPWL() {
-    DaliExpects(p_ckt_ != nullptr,
-                "No input circuit specified, cannot compute HPWL!");
-    return GetCkt().WeightedHPWL();
+    DaliExpects(
+        p_ckt_ != nullptr,
+        "No input circuit specified, cannot compute HPWL!"
+    );
+    return p_ckt_->WeightedHPWL();
   }
 
   void ReportHPWL() {
-    DaliExpects(p_ckt_ != nullptr,
-                "No input circuit specified, cannot compute HPWL!");
+    DaliExpects(
+        p_ckt_ != nullptr,
+        "No input circuit specified, cannot compute HPWL!"
+    );
     p_ckt_->ReportHPWL();
   }
 
   void ReportBoundingBox() {
-    DaliExpects(p_ckt_ != nullptr,
-                "No input circuit specified, cannot compute bounding box!");
+    DaliExpects(
+        p_ckt_ != nullptr,
+        "No input circuit specified, cannot compute bounding box!"
+    );
     p_ckt_->ReportBoundingBox();
   }
 
   void ReportHPWLCtoC() {
-    DaliExpects(p_ckt_ != nullptr,
-                "No input circuit specified, cannot compute HPWLCtoC!");
-    GetCkt().ReportHPWLCtoC();
+    DaliExpects(
+        p_ckt_ != nullptr,
+        "No input circuit specified, cannot compute HPWLCtoC!"
+    );
+    p_ckt_->ReportHPWLCtoC();
   }
 
   void TakeOver(Placer *placer);

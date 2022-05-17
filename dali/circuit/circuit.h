@@ -28,7 +28,6 @@
 #include <boost/functional/hash.hpp>
 #include <phydb/phydb.h>
 
-#include "blkpairnets.h"
 #include "block.h"
 #include "blocktype.h"
 #include "dali/common/helper.h"
@@ -467,9 +466,6 @@ class Circuit {
   double WhiteSpaceUsage() const;
 
   /**** Utility member functions ****/
-  // create a block pairs for a specific net model
-  void BuildBlkPairNets();
-
   // sort block pais in nets
   void NetSortBlkPin();
 
@@ -575,14 +571,6 @@ class Circuit {
   Design design_; // information in DEF
   phydb::PhyDB *phy_db_ptr_;
   CircuitConstants constants_;
-
-  // lower triangle of the driver-load pair
-  std::vector<BlkPairNets> blk_pair_net_list_;
-  std::unordered_map<
-      std::pair<int, int>,
-      int,
-      boost::hash<std::pair<int, int>>
-  > blk_pair_map_;
 
   void LoadImaginaryCellFile();
 

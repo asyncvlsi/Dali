@@ -67,17 +67,11 @@ void Placer::SetInputCircuit(Circuit *circuit) {
   p_ckt_ = circuit;
 }
 
-Circuit &Placer::GetCkt() {
-  DaliExpects(p_ckt_ != nullptr,
-              "Please set an input circuit before using this method");
-  return *p_ckt_;
-}
-
 double Placer::GetBlkHPWL(Block &blk) {
   double hpwl = 0;
-  std::vector<Net> &net_list = Nets();
+  std::vector<Net> &nets = p_ckt_->Nets();
   for (auto &idx : blk.NetList()) {
-    hpwl += net_list[idx].WeightedHPWL();
+    hpwl += nets[idx].WeightedHPWL();
   }
   return hpwl;
 }
@@ -101,7 +95,7 @@ bool Placer::IsBoundaryProper() {
 void Placer::SetBoundaryAuto() {
   DaliExpects(p_ckt_ != nullptr,
               "Must set input circuit before setting boundaries");
-  long int tot_block_area = p_ckt_->TotBlkArea();
+  auto tot_block_area = p_ckt_->TotBlkArea();
   int width = std::ceil(std::sqrt(
       double(tot_block_area) / aspect_ratio_ / placement_density_));
   int height = std::ceil(width * aspect_ratio_);
@@ -148,10 +142,10 @@ void Placer::SetBoundary(int left, int right, int bottom, int top) {
 }
 
 void Placer::SetBoundaryDef() {
-  left_ = GetCkt().RegionLLX();
-  right_ = GetCkt().RegionURX();
-  bottom_ = GetCkt().RegionLLY();
-  top_ = GetCkt().RegionURY();
+  left_ = p_ckt_->RegionLLX();
+  right_ = p_ckt_->RegionURX();
+  bottom_ = p_ckt_->RegionLLY();
+  top_ = p_ckt_->RegionURY();
   DaliExpects(IsBoundaryProper(), "Invalid boundary setting");
 }
 
@@ -197,7 +191,8 @@ void Placer::GenMATLABScriptPlaced(std::string const &name_of_file) {
   ost << RegionLeft() << " " << RegionBottom() << " "
       << RegionRight() - RegionLeft() << " "
       << RegionTop() - RegionBottom() << "\n";
-  for (auto &block : Blocks()) {
+  auto &blocks = p_ckt_->Blocks();
+  for (auto &block : blocks) {
     if (block.IsPlaced()) {
       ost << block.LLX() << " " << block.LLY() << " " << block.Width()
           << " " << block.Height() << "\n";
@@ -214,7 +209,8 @@ bool Placer::SaveNodeTerminal(
   std::ofstream ost1(node_file.c_str());
   DaliExpects(ost.is_open() && ost1.is_open(),
               "Cannot open file " << terminal_file << " or " << node_file);
-  for (auto &block : Blocks()) {
+  auto &blocks = p_ckt_->Blocks();
+  for (auto &block : blocks) {
     if (block.IsMovable()) {
       ost1 << block.X() << "\t" << block.Y() << "\n";
     } else {
@@ -250,35 +246,42 @@ void Placer::EmitDEFWellFile(
 void Placer::SanityCheck() {
   double epsilon = 1e-3;
   BOOST_LOG_TRIVIAL(info) << "Target density: " << placement_density_ << "\n";
-  DaliExpects(placement_density_ > epsilon,
-              "Filling rate should be in a proper range, for example [0.1, 1], current value: "
-                  << placement_density_);
-  for (auto &net : Nets()) {
+  DaliExpects(
+      placement_density_ > epsilon,
+      "Filling rate should be in a proper range, for example [0.1, 1], current value: "
+          << placement_density_
+  );
+  auto &nets = p_ckt_->Nets();
+  for (auto &net : nets) {
     if (net.BlockPins().empty()) {
-      DaliWarns(true,
-                "Empty net or this net only contains unplaced IOPINs: "
-                    << net.Name());
+      DaliWarns(
+          true,
+          "Empty net or this net only contains unplaced IOPINs: " << net.Name()
+      );
     }
   }
   DaliExpects(IsBoundaryProper(), "Improper boundary setting");
 }
 
 void Placer::UpdateMovableBlkPlacementStatus() {
-  for (auto &blk : Blocks()) {
-    if (blk.IsMovable()) {
-      blk.SetPlacementStatus(PLACED);
+  auto &blocks = p_ckt_->Blocks();
+  for (auto &block : blocks) {
+    if (block.IsMovable()) {
+      block.SetPlacementStatus(PLACED);
     }
   }
 }
 
 void Placer::ShiftX(double shift_x) {
-  for (auto &block : Blocks()) {
+  auto &blocks = p_ckt_->Blocks();
+  for (auto &block : blocks) {
     block.IncreaseX(shift_x);
   }
 }
 
 void Placer::ShiftY(double shift_y) {
-  for (auto &block : Blocks()) {
+  auto &blocks = p_ckt_->Blocks();
+  for (auto &block : blocks) {
     block.IncreaseY(shift_y);
   }
 }

@@ -60,7 +60,7 @@ void WellLegalizer::InitWellLegalizer() {
 
   InitLegalizer();
 
-  std::vector<Block> &block_list = Blocks();
+  std::vector<Block> &block_list = p_ckt_->Blocks();
   int sz = block_list.size();
   init_loc_.resize(sz);
   for (int i = 0; i < sz; ++i) {
@@ -581,11 +581,13 @@ bool WellLegalizer::FindLocLeft(Value2D<int> &loc,
     }*/
 
   }
-  is_successful = IsCurrentLocLegalLeft(best_loc_x,
-                                        width,
-                                        best_row,
-                                        best_row + blk_row_height - 1,
-                                        p_row);
+  is_successful = IsCurrentLocLegalLeft(
+      best_loc_x,
+      width,
+      best_row,
+      best_row + blk_row_height - 1,
+      p_row
+  );
 
   loc.x = best_loc_x;
   loc.y = RowToLoc(best_row);
@@ -597,7 +599,7 @@ bool WellLegalizer::WellLegalizationLeft() {
   int fail_count = 0;
   bool is_successful = true;
   block_contour_.assign(block_contour_.size(), left_);
-  std::vector<Block> &block_list = Blocks();
+  std::vector<Block> &block_list = p_ckt_->Blocks();
 
   int sz = blk_inits_.size();
   for (int i = 0; i < sz; ++i) {
@@ -976,7 +978,7 @@ bool WellLegalizer::WellLegalizationRight() {
   int fail_count = 0;
   bool is_successful = true;
   block_contour_.assign(block_contour_.size(), right_);
-  std::vector<Block> &block_list = Blocks();
+  std::vector<Block> &block_list = p_ckt_->Blocks();
 
   int sz = blk_inits_.size();
   for (int i = 0; i < sz; ++i) {
@@ -1046,18 +1048,17 @@ bool WellLegalizer::StartPlacement() {
   double cpu_time = get_cpu_time();
 
   InitWellLegalizer();
-  BOOST_LOG_TRIVIAL(info) << "  Number of rows: " << row_well_status_.size()
-                          << "\n"
-                          << "  Number of blocks: " << blk_inits_.size()
-                          << "\n"
-                          << "  Well Rules:\n"
-                          << "    NN spacing: " << nn_spacing_ << "\n"
-                          << "    PP spacing: " << pp_spacing_ << "\n"
-                          << "    NP spacing: " << np_spacing_ << "\n"
-                          << "    MaxNDist:   " << n_max_plug_dist_ << "\n"
-                          << "    MaxPDist:   " << p_max_plug_dist_ << "\n"
-                          << "    MinNWidth:  " << n_min_width_ << "\n"
-                          << "    MinPWidth:  " << p_min_width_ << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "  Number of rows: " << row_well_status_.size() << "\n"
+    << "  Number of blocks: " << blk_inits_.size() << "\n"
+    << "  Well Rules:\n"
+    << "    NN spacing: " << nn_spacing_ << "\n"
+    << "    PP spacing: " << pp_spacing_ << "\n"
+    << "    NP spacing: " << np_spacing_ << "\n"
+    << "    MaxNDist:   " << n_max_plug_dist_ << "\n"
+    << "    MaxPDist:   " << p_max_plug_dist_ << "\n"
+    << "    MinNWidth:  " << n_min_width_ << "\n"
+    << "    MinPWidth:  " << p_min_width_ << "\n";
 
   bool is_success = false;
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
@@ -1082,17 +1083,15 @@ bool WellLegalizer::StartPlacement() {
     BOOST_LOG_TRIVIAL(info) << "Well Legalization fails\n";
   }
 
-  BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
-                          << "Well Legalization complete!\n"
-                          << "\033[0m";
+  BOOST_LOG_TRIVIAL(info)
+    << "\033[0;36m" << "Well Legalization complete!\n" << "\033[0m";
 
   ReportHPWL();
 
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;
-  BOOST_LOG_TRIVIAL(info) << "(wall time: "
-                          << wall_time << "s, cpu time: "
-                          << cpu_time << "s)\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
 
   ReportMemory();
 

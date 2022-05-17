@@ -266,7 +266,7 @@ void MinimizeLinearDisplacement(
   }
 }
 
-struct BlkSegment {
+struct blocksegment {
   int first_id = -1;
   int last_id = -1;
   double x = 0;
@@ -285,17 +285,17 @@ struct BlkSegment {
   double TotalWeightedLoc() { return sum_es_; }
   double LX() const { return x; }
   double UX() const { return x + width; }
-  void AddSegment(BlkSegment &seg);
+  void AddSegment(blocksegment &seg);
 };
 
-void BlkSegment::AddCell(BlkDispVar &var, int i) {
+void blocksegment::AddCell(BlkDispVar &var, int i) {
   last_id = i;
   sum_e_ += var.Weight();
   sum_es_ += var.Weight() * (var.InitX() - width);
   width += var.Width();
 }
 
-void BlkSegment::AddSegment(BlkSegment &seg) {
+void blocksegment::AddSegment(blocksegment &seg) {
   last_id = seg.LastId();
   sum_e_ += seg.TotalWeight();
   sum_es_ += seg.TotalWeightedLoc() - seg.TotalWeight() * width;
@@ -303,12 +303,12 @@ void BlkSegment::AddSegment(BlkSegment &seg) {
 }
 
 void CollapseSegment(
-    std::vector<BlkSegment> &segments,
+    std::vector<blocksegment> &segments,
     double lower_limit,
     double upper_limit
 ) {
   DaliExpects(!segments.empty(), "Impossible to be empty!");
-  BlkSegment &cur_seg = segments.back();
+  blocksegment &cur_seg = segments.back();
   cur_seg.UpdatePosition();
   if (cur_seg.LX() < lower_limit) {
     cur_seg.SetX(lower_limit);
@@ -319,7 +319,7 @@ void CollapseSegment(
 
   size_t seg_sz = segments.size();
   if (seg_sz == 1) return;
-  BlkSegment &prev_seg = segments[seg_sz - 2];
+  blocksegment &prev_seg = segments[seg_sz - 2];
   if (prev_seg.UX() > cur_seg.LX()) {
     prev_seg.AddSegment(cur_seg);
     segments.pop_back();
@@ -333,18 +333,18 @@ void AbacusPlaceRow(
     double upper_limit
 ) {
   if (vars.empty()) return;
-  std::vector<BlkSegment> segments;
+  std::vector<blocksegment> segments;
 
   int sz = static_cast<int>(vars.size());
   for (int i = 0; i < sz; ++i) {
     if ((i == 0) || (segments.back().UX() <= vars[i].InitX())) {
       segments.emplace_back();
-      BlkSegment &last_seg = segments.back();
+      blocksegment &last_seg = segments.back();
       last_seg.SetX(vars[i].InitX());
       last_seg.SetFirstId(i);
       last_seg.AddCell(vars[i], i);
     } else {
-      BlkSegment &last_seg = segments.back();
+      blocksegment &last_seg = segments.back();
       last_seg.AddCell(vars[i], i);
       CollapseSegment(segments, lower_limit, upper_limit);
     }

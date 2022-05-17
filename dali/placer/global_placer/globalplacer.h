@@ -20,7 +20,6 @@
  ******************************************************************************/
 #ifndef DALI_PLACER_GLOBALPLACER_GLOBALPLACER_H_
 #define DALI_PLACER_GLOBALPLACER_GLOBALPLACER_H_
-
 #include <cfloat>
 
 #include <queue>
@@ -29,11 +28,13 @@
 #include <map>
 #include <vector>
 
-#include "Eigen/IterativeLinearSolvers"
-#include "Eigen/Sparse"
+#include <Eigen/IterativeLinearSolvers>
+#include <Eigen/Sparse>
 
+#include "dali/circuit/blkpairnets.h"
 #include "dali/common/misc.h"
 #include "dali/placer/placer.h"
+
 #include "boxbin.h"
 #include "cellcutpoint.h"
 #include "gridbinindex.h"
@@ -41,21 +42,121 @@
 
 namespace dali {
 
+typedef Eigen::Index EgId;
+typedef std::pair<EgId, EgId> PairEgId;
 // declares a row-major sparse matrix type of double
 typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat;
-
 // A triplet is a simple object representing a non-zero entry as the triplet: row index, column index, value.
 typedef Eigen::Triplet<double> T;
-
 // A "doublet" is a simple object representing a non-zero entry as: column index, value, for a given row index.
 typedef IndexVal D;
 
 class GlobalPlacer : public Placer {
+ public:
+  GlobalPlacer() = default;
+
+  void SetMaxIteration(int max_iter);
+  void LoadConf(std::string const &config_file) override;
+  void UpdateEpsilon();
+  void BlockLocationUniformInitialization();
+  void BlockLocationNormalInitialization(double std_dev = 1.0 / 3.0);
+
+  void InitializeConjugateGradientLinearSolver();
+  void UpdateMaxMinX();
+  void UpdateMaxMinY();
+
+  // Bound2Bound net model
+  void BuildProblemB2BX();
+  void BuildProblemB2BY();
+
+  // start net model
+  void DecomposeNetsToBlkPairs();
+  void InitializeDriverLoadPairs();
+  void BuildProblemStarModelX();
+  void BuildProblemStarModelY();
+
+  // HPWL net model
+  void BuildProblemHPWLX();
+  void BuildProblemHPWLY();
+
+  // star-HPWL net model
+  void BuildProblemStarHPWLX();
+  void BuildProblemStarHPWLY();
+
+  double OptimizeQuadraticMetricX(double cg_stop_criterion);
+  double OptimizeQuadraticMetricY(double cg_stop_criterion);
+  void PullBlockBackToRegion();
+
+  void BuildProblemX();
+  void BuildProblemY();
+  double QuadraticPlacement(double net_model_update_stop_criterion);
+
+  void InitializeGridBinSize();
+  void UpdateAttributesForAllGridBins();
+  void UpdateFixedBlocksInGridBins();
+  void UpdateWhiteSpaceInGridBin(GridBin &grid_bin);
+  void InitGridBins();
+  void InitWhiteSpaceLUT();
+  unsigned long int LookUpWhiteSpace(
+      GridBinIndex const &ll_index,
+      GridBinIndex const &ur_index
+  );
+  unsigned long int LookUpWhiteSpace(WindowQuadruple &window);
+  unsigned long int LookUpBlkArea(WindowQuadruple &window);
+  unsigned long int WindowArea(WindowQuadruple &window);
+  void LALInit();
+  void LALClose();
+  void ClearGridBinFlag();
+  void UpdateGridBinState();
+
+  void UpdateClusterArea(GridBinCluster &cluster);
+  void UpdateClusterList();
+
+  static double BlkOverlapArea(Block *node1, Block *node2);
+  void UpdateLargestCluster();
+  void FindMinimumBoxForLargestCluster();
+  void SplitBox(BoxBin &box);
+  void SplitGridBox(BoxBin &box);
+  void PlaceBlkInBox(BoxBin &box);
+  void RoughLegalBlkInBox(BoxBin &box);
+  void PlaceBlkInBoxBisection(BoxBin &box);
+  void UpdateGridBinBlocks(BoxBin &box);
+  bool RecursiveBisectionblockspreading();
+
+  void BackUpBlockLocation();
+  double LookAheadLegalization();
+  void UpdateAnchorLocation();
+  void UpdateAnchorNetWeight();
+  void BuildProblemWithAnchorX();
+  void BuildProblemWithAnchorY();
+  double QuadraticPlacementWithAnchor(double net_model_update_stop_criterion);
+  void UpdateAnchorAlpha();
+  bool IsPlacementConverge();
+
+  bool StartPlacement() override;
+
+  void SetDump(bool s_dump);
+  void DumpResult(std::string const &name_of_file);
+  void DumpLookAheadDisplacement(std::string const &base_name, int mode);
+  void DrawBlockNetList(std::string const &name_of_file = "block_net_list.txt");
+  void write_all_terminal_grid_bins(std::string const &name_of_file);
+  void write_not_all_terminal_grid_bins(std::string const &name_of_file = "grid_bin_not_all_terminal.txt");
+  void write_overfill_grid_bins(std::string const &name_of_file = "grid_bin_overfill.txt");
+  void write_not_overfill_grid_bins(std::string const &name_of_file);
+  void write_first_n_bin_cluster(std::string const &name_of_file, size_t n);
+  void write_first_bin_cluster(std::string const &name_of_file);
+  void write_all_bin_cluster(const std::string &name_of_file);
+  void write_first_box(std::string const &name_of_file);
+  void write_first_box_cell_bounding(std::string const &name_of_file);
+
+  static bool IsSeriesConverge(
+      std::vector<double> &data,
+      int window_size,
+      double tolerance
+  );
+  static bool IsSeriesOscillate(std::vector<double> &data, int window_size);
  protected:
   /**** storing the lower and upper bound of hpwl along x and y direction ****/
-  double init_hpwl_x_ = DBL_MAX;
-  double init_hpwl_y_ = DBL_MAX;
-  double init_hpwl_ = DBL_MAX;
   std::vector<double> lower_bound_hpwlx_;
   std::vector<double> lower_bound_hpwly_;
   std::vector<double> lower_bound_hpwl_;
@@ -77,10 +178,10 @@ class GlobalPlacer : public Placer {
 
   /**** two small positive numbers used to avoid divergence when calculating net weights ****/
   double epsilon_factor_ = 1.5;
-  // this value is 1/epsilon_factor_ times the average movable cell width
-  double width_epsilon_;
-  // this value is 1/epsilon_factor_ times the average movable cell height
-  double height_epsilon_;
+  // this value will be set to 1/epsilon_factor_ times the average movable cell width
+  double width_epsilon_ = 1e-5;
+  // this value will be set to 1/epsilon_factor_ times the average movable cell height
+  double height_epsilon_ = 1e-5;
 
   /**** anchor weight ****/
   // pseudo-net weight additional factor for anchor pseudo-net
@@ -104,26 +205,21 @@ class GlobalPlacer : public Placer {
 
   // lal parameters
   int cluster_upper_size = 3;
- public:
-  GlobalPlacer();
-  GlobalPlacer(double aspectRatio, double fillingRate);
 
-  void SetMaxIter(int max_iter);
-  void LoadConf(std::string const &config_file) override;
+  // look ahead legalization member function implemented below
+  int grid_bin_height = 0;
+  int grid_bin_width = 0;
+  int grid_cnt_x = 0;
+  int grid_cnt_y = 0;
+  std::vector<std::vector<GridBin> > grid_bin_mesh;
+  std::vector<std::vector<unsigned long long> > grid_bin_white_space_LUT;
 
-  void SetEpsilon() {
-    width_epsilon_ = p_ckt_->AveMovBlkWidth() * epsilon_factor_;
-    height_epsilon_ = p_ckt_->AveMovBlkHeight() * epsilon_factor_;
-  }
-
-  double weight_modulation(
-      double init_weight,
-      double norm_distance,
-      double center,
-      double dispersion
-  ) {
-    return init_weight / (1 + exp((norm_distance - center) / dispersion));
-  }
+  double UpdateGridBinState_time = 0;
+  double ClusterOverfilledGridBin_time = 0;
+  double UpdateClusterArea_time = 0;
+  double UpdateClusterList_time = 0;
+  double FindMinimumBoxForLargestCluster_time = 0;
+  double RecursiveBisectionblockspreading_time = 0;
 
   std::vector<int> Ax_row_size;
   std::vector<int> Ay_row_size;
@@ -147,6 +243,15 @@ class GlobalPlacer : public Placer {
   std::vector<SpMat::InnerIterator> SpMat_diag_x;
   std::vector<SpMat::InnerIterator> SpMat_diag_y;
 
+  // lower triangle of the driver-load pair
+  std::vector<BlkPairNets> blk_pair_net_list_;
+  std::unordered_map<PairEgId, EgId, boost::hash<PairEgId>> blk_pair_map_;
+
+  int net_model = 0; // 0: b2b; 1: star; 2:HPWL; 3: StarHPWL
+  std::multiset<GridBinCluster, std::greater<>> cluster_set;
+  std::queue<BoxBin> queue_box_bin;
+  bool is_dump_ = false;
+
   double tot_triplets_time_x = 0;
   double tot_triplets_time_y = 0;
   double tot_matrix_from_triplets_x = 0;
@@ -155,113 +260,12 @@ class GlobalPlacer : public Placer {
   double tot_cg_solver_time_y = 0;
   double tot_loc_update_time_x = 0;
   double tot_loc_update_time_y = 0;
-
-  int net_model = 0; // 0: b2b; 1: star; 2:HPWL; 3: StarHPWL
-  void BlockLocRandomInit();
-  void BlockLocCenterInit();
-  void DriverLoadPairInit();
-  void CGInit();
-  void UpdateMaxMinX();
-  void UpdateMaxMinY();
-  void BuildProblemB2BX();
-  void BuildProblemB2BY();
-  void BuildProblemStarModelX();
-  void BuildProblemStarModelY();
-  void BuildProblemHPWLX();
-  void BuildProblemHPWLY();
-  void BuildProblemStarHPWLX();
-  void BuildProblemStarHPWLY();
-  double OptimizeQuadraticMetricX(double cg_stop_criterion);
-  double OptimizeQuadraticMetricY(double cg_stop_criterion);
-  void PullBlockBackToRegion();
-
-  void BuildProblemX();
-  void BuildProblemY();
-  double QuadraticPlacement(double net_model_update_stop_criterion);
-
-  // look ahead legalization member function implemented below
-  int grid_bin_height;
-  int grid_bin_width;
-  int grid_cnt_x;
-  int grid_cnt_y;
-  std::vector<std::vector<GridBin> > grid_bin_mesh;
-  std::vector<std::vector<unsigned long long> > grid_bin_white_space_LUT;
-
-  double UpdateGridBinState_time = 0;
-  double ClusterOverfilledGridBin_time = 0;
-  double UpdateClusterArea_time = 0;
-  double UpdateClusterList_time = 0;
-  double FindMinimumBoxForLargestCluster_time = 0;
-  double RecursiveBisectionBlkSpreading_time = 0;
-
-  void InitializeGridBinSize();
-  void UpdateAttributesForAllGridBins();
-  void UpdateFixedBlocksInGridBins();
-  void UpdateWhiteSpaceInGridBin(GridBin &grid_bin);
-  void InitGridBins();
-  void InitWhiteSpaceLUT();
-  unsigned long int LookUpWhiteSpace(
-      GridBinIndex const &ll_index,
-      GridBinIndex const &ur_index
-  );
-  unsigned long int LookUpWhiteSpace(WindowQuadruple &window);
-  unsigned long int LookUpBlkArea(WindowQuadruple &window);
-  unsigned long int WindowArea(WindowQuadruple &window);
-  void LALInit();
-  void LALClose();
-  void ClearGridBinFlag();
-  void UpdateGridBinState();
-
-  std::multiset<GridBinCluster, std::greater<>> cluster_set;
-  void UpdateClusterArea(GridBinCluster &cluster);
-  void UpdateClusterList();
-
-  std::queue<BoxBin> queue_box_bin;
-  static double BlkOverlapArea(Block *node1, Block *node2);
-  void UpdateLargestCluster();
-  void FindMinimumBoxForLargestCluster();
-  void SplitBox(BoxBin &box);
-  void SplitGridBox(BoxBin &box);
-  void PlaceBlkInBox(BoxBin &box);
-  void RoughLegalBlkInBox(BoxBin &box);
-  void PlaceBlkInBoxBisection(BoxBin &box);
-  void UpdateGridBinBlocks(BoxBin &box);
-  bool RecursiveBisectionBlkSpreading();
-
-  void BackUpBlockLocation();
-  double LookAheadLegalization();
-  void UpdateAnchorLocation();
-  void UpdateAnchorNetWeight();
-  void BuildProblemWithAnchorX();
-  void BuildProblemWithAnchorY();
-  double QuadraticPlacementWithAnchor(double net_model_update_stop_criterion);
-  void UpdateAnchorAlpha();
-  bool IsPlacementConverge();
-
   double tot_lal_time = 0;
   double tot_cg_time = 0;
-  bool StartPlacement() override;
 
-  bool is_dump = false;
-  void DumpResult(std::string const &name_of_file);
-  void DumpLookAheadDisplacement(std::string const &base_name, int mode);
-  void DrawBlockNetList(std::string const &name_of_file = "block_net_list.txt");
-  void write_all_terminal_grid_bins(std::string const &name_of_file);
-  void write_not_all_terminal_grid_bins(std::string const &name_of_file = "grid_bin_not_all_terminal.txt");
-  void write_overfill_grid_bins(std::string const &name_of_file = "grid_bin_overfill.txt");
-  void write_not_overfill_grid_bins(std::string const &name_of_file);
-  void write_first_n_bin_cluster(std::string const &name_of_file, size_t n);
-  void write_first_bin_cluster(std::string const &name_of_file);
-  void write_all_bin_cluster(const std::string &name_of_file);
-  void write_first_box(std::string const &name_of_file);
-  void write_first_box_cell_bounding(std::string const &name_of_file);
-
-  static bool IsSeriesConverge(
-      std::vector<double> &data,
-      int window_size,
-      double tolerance
-  );
-  static bool IsSeriesOscillate(std::vector<double> &data, int window_size);
+  void BlockLocationUniformInitialization_();
+  void BlockLocationNormalInitialization_(double std_dev);
+  void BlockLocationInitialization_(int mode, double std_dev);
 };
 
 }

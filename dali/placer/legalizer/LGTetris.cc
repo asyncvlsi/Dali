@@ -28,9 +28,8 @@ TetrisLegalizer::TetrisLegalizer()
     : Placer(), max_iteration_(5), current_iteration_(0), flipped_(false) {}
 
 void TetrisLegalizer::InitLegalizer() {
-  std::vector<Block> &block_list = Blocks();
   BlkInitPair init_pair(nullptr, 0, 0);
-  index_loc_list_.resize(block_list.size(), init_pair);
+  index_loc_list_.resize(p_ckt_->Blocks().size(), init_pair);
 }
 
 void TetrisLegalizer::SetMaxItr(int max_iteration) {
@@ -53,18 +52,18 @@ void TetrisLegalizer::FastShift(int failure_point) {
    *    the bottom boundary of the bounding box will not be changed
    *    only the left boundary of the bounding box will be shifted to the right hand side of the block just placed
    * ****/
-  std::vector<Block> &block_list = Blocks();
+  std::vector<Block> &blocks = p_ckt_->Blocks();
   double bounding_left;
   if (failure_point == 0) {
     double bounding_bottom;
-    bounding_left = block_list[0].LLX();
-    bounding_bottom = block_list[0].LLY();
-    for (auto &block: block_list) {
+    bounding_left = blocks[0].LLX();
+    bounding_bottom = blocks[0].LLY();
+    for (auto &block: blocks) {
       if (block.LLY() < bounding_bottom) {
         bounding_bottom = block.LLY();
       }
     }
-    for (auto &block: block_list) {
+    for (auto &block: blocks) {
       block.IncreaseX(left_ - bounding_left);
       block.IncreaseY(bottom_ - bounding_bottom);
     }
@@ -98,16 +97,17 @@ void TetrisLegalizer::FastShift(int failure_point) {
 void TetrisLegalizer::FlipPlacement() {
   flipped_ = !flipped_;
   int sum_left_right = left_ + right_;
-  for (auto &block: Blocks()) {
+  std::vector<Block> &blocks = p_ckt_->Blocks();
+  for (auto &block: blocks) {
     block.SetLLX(sum_left_right - block.URX());
   }
   //GenMATLABScript("flip_result.txt");
 }
 
 bool TetrisLegalizer::TetrisLegal() {
-  std::vector<Block> &block_list = Blocks();
+  std::vector<Block> &blocks = p_ckt_->Blocks();
   // 1. move all blocks into placement region
-  /*for (auto &block: block_list) {
+  /*for (auto &block: blocks) {
     if (block.LLX() < Left()) {
       block.SetLLX(Left());
     }
@@ -125,9 +125,9 @@ bool TetrisLegalizer::TetrisLegal() {
   // 2. sort blocks based on their lower Left corners. Further optimization is doable here.
 
   for (size_t i = 0; i < index_loc_list_.size(); ++i) {
-    index_loc_list_[i].blk_ptr = &(block_list[i]);
-    index_loc_list_[i].x = block_list[i].LLX();
-    index_loc_list_[i].y = block_list[i].LLY();
+    index_loc_list_[i].blk_ptr = &(blocks[i]);
+    index_loc_list_[i].x = blocks[i].LLX();
+    index_loc_list_[i].y = blocks[i].LLY();
   }
   std::sort(
       index_loc_list_.begin(),
@@ -139,12 +139,12 @@ bool TetrisLegalizer::TetrisLegal() {
   );
 
   /*for (auto &pair: index_loc_list_) {
-    BOOST_LOG_TRIVIAL(info)   << block_list[pair.num].LLX() << "\n";
+    BOOST_LOG_TRIVIAL(info)   << blocks[pair.num].LLX() << "\n";
   }*/
 
   // 3. initialize the data structure to store row usage
   //int maxHeight = GetCircuitRef().MaxBlkHeight();
-  int minWidth = GetCkt().MinBlkWidth();
+  int minWidth = p_ckt_->MinBlkWidth();
   //int minHeight = GetCircuitRef().MinBlkHeight();
 
   BOOST_LOG_TRIVIAL(info) << "Building LGTetris space" << std::endl;
@@ -186,7 +186,7 @@ bool TetrisLegalizer::TetrisLegal() {
         return false;
       }
     }
-    /*block_list[block_num].is_placed = true;
+    /*blocks[block_num].is_placed = true;
     std::string file_name = std::to_string(count);
     BOOST_LOG_TRIVIAL(info)   << count << "  " << is_current_loc_legal << "\n";
      GenMATLABScriptPlaced(file_name);*/

@@ -18,46 +18,33 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-
 #include "globalplacer.h"
 
 #include <cmath>
+#include <omp.h>
 
 #include <algorithm>
 
-#include <omp.h>
-
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
-#include "dali/placer/legalizer/LGTetrisEx.h"
 
 namespace dali {
 
-GlobalPlacer::GlobalPlacer() : Placer() {
-  grid_bin_height = 0;
-  grid_bin_width = 0;
-  grid_cnt_y = 0;
-  grid_cnt_x = 0;
-  width_epsilon_ = 0;
-  height_epsilon_ = 0;
-}
-
-GlobalPlacer::GlobalPlacer(double aspectRatio, double fillingRate) : Placer(
-    aspectRatio,
-    fillingRate) {
-  grid_bin_height = 0;
-  grid_bin_width = 0;
-  grid_cnt_y = 0;
-  grid_cnt_x = 0;
-  width_epsilon_ = 0;
-  height_epsilon_ = 0;
-}
-
-void GlobalPlacer::SetMaxIter(int max_iter) {
-  DaliExpects(max_iter > 0, "negative iterations?");
+/****
+ * @brief Set the maximum number of iterations
+ *
+ * @param max_iter: maximum number of iterations
+ */
+void GlobalPlacer::SetMaxIteration(int max_iter) {
+  DaliExpects(max_iter >= 0, "negative number of iterations?");
   max_iter_ = max_iter;
 }
 
+/****
+ * @brief Load a configuration file for this placer
+ *
+ * @param config_file: name of the configuration file
+ */
 void GlobalPlacer::LoadConf(std::string const &config_file) {
   config_read(config_file.c_str());
   std::string variable;
@@ -110,78 +97,81 @@ void GlobalPlacer::LoadConf(std::string const &config_file) {
   }
 }
 
-void GlobalPlacer::BlockLocRandomInit() {
-  std::minstd_rand0 generator{1};
-  int region_width = RegionWidth();
-  int region_height = RegionHeight();
-  std::uniform_real_distribution<double> distribution(0, 1);
+/****
+ * @brief During quadratic placement, net weights are computed by dividing the
+ * distance between two pins. To improve numerical stability, a small number is
+ * added to this distance.
+ *
+ * In our implementation, this small number is around the average movable cell
+ * width for x and height for y.
+ */
+void GlobalPlacer::UpdateEpsilon() {
+  width_epsilon_ = p_ckt_->AveMovBlkWidth() * epsilon_factor_;
+  height_epsilon_ = p_ckt_->AveMovBlkHeight() * epsilon_factor_;
+}
 
-  BOOST_LOG_TRIVIAL(info) << "HPWL before initialization: "
-                          << p_ckt_->WeightedHPWL() << "\n";
+/****
+ * @brief Initialize the location of blocks uniformly across the placement region
+ */
+void GlobalPlacer::BlockLocationUniformInitialization() {
+  BlockLocationInitialization_(0, -1.0);
+}
 
-  for (auto &block : p_ckt_->Blocks()) {
-    if (block.IsMovable()) {
-      double init_x = RegionLeft() + region_width * distribution(generator);
-      double init_y = RegionBottom() + region_height * distribution(generator);
-      block.SetCenterX(init_x);
-      block.SetCenterY(init_y);
+/****
+ * @brief Initialize the location of blocks around the center of the placement
+ * region using normal distribution
+ */
+void GlobalPlacer::BlockLocationNormalInitialization(double std_dev) {
+  BlockLocationInitialization_(1, std_dev);
+}
+
+void GlobalPlacer::DecomposeNetsToBlkPairs() {
+  // for each net, we decompose it, and enumerate all driver-load pair
+  std::vector<Net> &net_list = p_ckt_->Nets();
+  for (auto &net : net_list) {
+    //BOOST_LOG_TRIVIAL(info)   << net.NameStr() << "\n";
+    int sz = static_cast<int>(net.BlockPins().size());
+    int driver_index = -1;
+    // find if there is a driver pin in this net
+    // if a net contains a unplaced IOPin, then there might be no driver pin, this case is ignored for now
+    // we also assume there is only one driver pin
+    for (int i = 0; i < sz; ++i) {
+      BlkPinPair &blk_pin_pair = net.BlockPins()[i];
+      if (!(blk_pin_pair.PinPtr()->IsInput())) {
+        driver_index = i;
+        break;
+      }
+    }
+    if (driver_index == -1) continue;
+
+    int driver_blk_num = net.BlockPins()[driver_index].BlkId();
+    for (EgId i = 0; i < sz; ++i) {
+      if (i == driver_index) continue;
+      int load_blk_num = net.BlockPins()[i].BlkId();
+      if (driver_blk_num == load_blk_num) continue;
+      int num0 = std::max(driver_blk_num, load_blk_num);
+      int num1 = std::min(driver_blk_num, load_blk_num);
+      std::pair<int, int> key = std::make_pair(num0, num1);
+      if (blk_pair_map_.find(key) == blk_pair_map_.end()) {
+        int val = int(blk_pair_net_list_.size());
+        blk_pair_map_.insert({key, val});
+        blk_pair_net_list_.emplace_back(num0, num1);
+      }
+      EgId pair_index = blk_pair_map_[key];
+      EgId load_index = i;
+      blk_pair_net_list_[pair_index].edges.emplace_back(
+          &net, driver_index, load_index
+      );
     }
   }
-  BOOST_LOG_TRIVIAL(info)
-    << "Block location uniform initialization complete\n";
-
-  init_hpwl_x_ = p_ckt_->WeightedHPWLX();
-  init_hpwl_y_ = p_ckt_->WeightedHPWLY();
-  init_hpwl_ = init_hpwl_x_ + init_hpwl_y_;
-  BOOST_LOG_TRIVIAL(info) << "HPWL after initialization: " << init_hpwl_
-                          << "\n";
-
-  if (is_dump) DumpResult("rand_init.txt");
 }
 
-void GlobalPlacer::BlockLocCenterInit() {
-  double region_center_x = (RegionRight() + RegionLeft()) / 2.0;
-  double region_center_y = (RegionTop() + RegionBottom()) / 2.0;
-  int region_width = RegionWidth();
-  int region_height = RegionHeight();
-
-  std::minstd_rand0 generator{1};
-  std::normal_distribution<double> distribution(0.0, 1.0 / 3);
-
-  for (auto &block : p_ckt_->Blocks()) {
-    if (!block.IsMovable()) continue;
-    double x = region_center_x + region_width * distribution(generator);
-    double y = region_center_y + region_height * distribution(generator);
-    x = std::max(x, (double) RegionLeft());
-    x = std::min(x, (double) RegionRight());
-    y = std::max(y, (double) RegionBottom());
-    y = std::min(y, (double) RegionTop());
-    block.SetCenterX(x);
-    block.SetCenterY(y);
-  }
-  BOOST_LOG_TRIVIAL(info)
-    << "Block location gaussian initialization complete\n";
-  init_hpwl_x_ = p_ckt_->WeightedHPWLX();
-  init_hpwl_y_ = p_ckt_->WeightedHPWLY();
-  init_hpwl_ = init_hpwl_x_ + init_hpwl_y_;
-  BOOST_LOG_TRIVIAL(info) << "HPWL after initialization: " << init_hpwl_
-                          << "\n";
-
-  if (is_dump) DumpResult("rand_init.txt");
-}
-
-void GlobalPlacer::DriverLoadPairInit() {
-  std::vector<BlkPairNets> &pair_list = p_ckt_->blk_pair_net_list_;
-  std::unordered_map<
-      std::pair<int, int>,
-      int,
-      boost::hash<std::pair<int, int>>
-  > &pair_map = p_ckt_->blk_pair_map_;
-  std::vector<Block> &block_list = p_ckt_->Blocks();
-  int sz = block_list.size();
+void GlobalPlacer::InitializeDriverLoadPairs() {
+  std::vector<Block> &blocks = p_ckt_->Blocks();
+  int sz = static_cast<int>(blocks.size());
 
   pair_connect.resize(sz);
-  for (auto &blk_pair : pair_list) {
+  for (auto &blk_pair : blk_pair_net_list_) {
     int num0 = blk_pair.blk_num0;
     int num1 = blk_pair.blk_num1;
     //BOOST_LOG_TRIVIAL(info)   << num0 << " " << num1 << "\n";
@@ -194,16 +184,18 @@ void GlobalPlacer::DriverLoadPairInit() {
   for (int i = 0; i < sz; ++i) {
     diagonal_pair.emplace_back(i, i);
     pair_connect[i].push_back(&(diagonal_pair[i]));
-    std::sort(pair_connect[i].begin(),
-              pair_connect[i].end(),
-              [](const BlkPairNets *blk_pair0,
-                 const BlkPairNets *blk_pair1) {
-                if (blk_pair0->blk_num0 == blk_pair1->blk_num0) {
-                  return blk_pair0->blk_num1 < blk_pair1->blk_num1;
-                } else {
-                  return blk_pair0->blk_num0 < blk_pair1->blk_num0;
-                }
-              });
+    std::sort(
+        pair_connect[i].begin(),
+        pair_connect[i].end(),
+        [](const BlkPairNets *blk_pair0,
+           const BlkPairNets *blk_pair1) {
+          if (blk_pair0->blk_num0 == blk_pair1->blk_num0) {
+            return blk_pair0->blk_num1 < blk_pair1->blk_num1;
+          } else {
+            return blk_pair0->blk_num0 < blk_pair1->blk_num0;
+          }
+        }
+    );
   }
 
   std::vector<int> row_size(sz, 1);
@@ -212,7 +204,7 @@ void GlobalPlacer::DriverLoadPairInit() {
       int num0 = blk_pair->blk_num0;
       int num1 = blk_pair->blk_num1;
       if (num0 == num1) continue;
-      if (block_list[num0].IsMovable() && block_list[num1].IsMovable()) {
+      if (blocks[num0].IsMovable() && blocks[num1].IsMovable()) {
         ++row_size[i];
       }
     }
@@ -223,7 +215,7 @@ void GlobalPlacer::DriverLoadPairInit() {
     for (auto &blk_pair : pair_connect[i]) {
       int num0 = blk_pair->blk_num0;
       int num1 = blk_pair->blk_num1;
-      if (block_list[num0].IsMovable() && block_list[num1].IsMovable()) {
+      if (blocks[num0].IsMovable() && blocks[num1].IsMovable()) {
         int col;
         if (num0 == i) {
           col = num1;
@@ -233,26 +225,28 @@ void GlobalPlacer::DriverLoadPairInit() {
         Ax.insertBackUncompressed(i, col) = 0;
       }
     }
-    std::pair<int, int> key = std::make_pair(0, 0);
+    PairEgId key = std::make_pair(0, 0);
     for (SpMat::InnerIterator it(Ax, i); it; ++it) {
-      int row = it.row();
-      int col = it.col();
+      EgId row = it.row();
+      EgId col = it.col();
       if (row == col) {
         SpMat_diag_x[i] = it;
         continue;
       }
       key.first = std::max(row, col);
       key.second = std::min(row, col);
-      if (pair_map.find(key) == pair_map.end()) {
+      if (blk_pair_map_.find(key) == blk_pair_map_.end()) {
         BOOST_LOG_TRIVIAL(info) << row << " " << col << std::endl;
-        DaliExpects(false,
-                    "Cannot find block pair in the database, something wrong happens\n");
+        DaliExpects(
+            false,
+            "Cannot find block pair in the database, something wrong happens\n"
+        );
       }
-      int pair_index = pair_map[key];
-      if (pair_list[pair_index].blk_num0 == row) {
-        pair_list[pair_index].it01x = it;
+      EgId pair_index = blk_pair_map_[key];
+      if (blk_pair_net_list_[pair_index].blk_num0 == row) {
+        blk_pair_net_list_[pair_index].it01x = it;
       } else {
-        pair_list[pair_index].it10x = it;
+        blk_pair_net_list_[pair_index].it10x = it;
       }
     }
   }
@@ -263,7 +257,7 @@ void GlobalPlacer::DriverLoadPairInit() {
     for (auto &blk_pair : pair_connect[i]) {
       int num0 = blk_pair->blk_num0;
       int num1 = blk_pair->blk_num1;
-      if (block_list[num0].IsMovable() && block_list[num1].IsMovable()) {
+      if (blocks[num0].IsMovable() && blocks[num1].IsMovable()) {
         int col;
         if (num0 == i) {
           col = num1;
@@ -273,43 +267,40 @@ void GlobalPlacer::DriverLoadPairInit() {
         Ay.insertBackUncompressed(i, col) = 0;
       }
     }
-    std::pair<int, int> key = std::make_pair(0, 0);
+    PairEgId key = std::make_pair(0, 0);
     for (SpMat::InnerIterator it(Ay, i); it; ++it) {
-      int row = it.row();
-      int col = it.col();
+      EgId row = it.row();
+      EgId col = it.col();
       if (row == col) {
         SpMat_diag_y[i] = it;
         continue;
       }
       key.first = std::max(row, col);
       key.second = std::min(row, col);
-      if (pair_map.find(key) == pair_map.end()) {
+      if (blk_pair_map_.find(key) == blk_pair_map_.end()) {
         BOOST_LOG_TRIVIAL(info) << row << " " << col << std::endl;
-        DaliExpects(false,
-                    "Cannot find block pair in the database, something wrong happens\n");
+        DaliExpects(
+            false,
+            "Cannot find block pair in the database, something wrong happens\n"
+        );
       }
-      int pair_index = pair_map[key];
-      if (pair_list[pair_index].blk_num0 == row) {
-        pair_list[pair_index].it01y = it;
+      EgId pair_index = blk_pair_map_[key];
+      if (blk_pair_net_list_[pair_index].blk_num0 == row) {
+        blk_pair_net_list_[pair_index].it01y = it;
       } else {
-        pair_list[pair_index].it10y = it;
+        blk_pair_net_list_[pair_index].it10y = it;
       }
     }
   }
-
-//  BOOST_LOG_TRIVIAL(info)   << SpMat_diag_x[0].value() << "\n";
-//  SpMat_diag_x[0].valueRef() = 1;
-//  BOOST_LOG_TRIVIAL(info)   << SpMat_diag_x[0].value() << "\n";
-//  exit(1);
 }
 
-void GlobalPlacer::CGInit() {
-  SetEpsilon(); // set a small value for net weight dividend to avoid divergence
+void GlobalPlacer::InitializeConjugateGradientLinearSolver() {
+  UpdateEpsilon(); // set a small value for net weight dividend to avoid divergence
   lower_bound_hpwlx_.clear();
   lower_bound_hpwly_.clear();
   lower_bound_hpwl_.clear();
 
-  int sz = Blocks().size();
+  int sz = p_ckt_->Blocks().size();
   ADx.resize(sz);
   ADy.resize(sz);
   Ax_row_size.assign(sz, 0);
@@ -332,7 +323,8 @@ void GlobalPlacer::CGInit() {
 
   int coefficient_size = 0;
   int net_sz = 0;
-  for (auto &net : Nets()) {
+  auto &nets = p_ckt_->Nets();
+  for (auto &net : nets) {
     net_sz = net.PinCnt();
     // if a net has size n, then in total, there will be (2(n-2)+1)*4 non-zero entries for the matrix
     if (net_sz > 1) coefficient_size += (2 * (net_sz - 2) + 1) * 4;
@@ -349,18 +341,18 @@ void GlobalPlacer::CGInit() {
 
 void GlobalPlacer::UpdateMaxMinX() {
   std::vector<Net> &net_list = p_ckt_->Nets();
-  int sz = net_list.size();
+  size_t sz = net_list.size();
 #pragma omp parallel for
-  for (int i = 0; i < sz; ++i) {
+  for (size_t i = 0; i < sz; ++i) {
     net_list[i].UpdateMaxMinIdX();
   }
 }
 
 void GlobalPlacer::UpdateMaxMinY() {
   std::vector<Net> &net_list = p_ckt_->Nets();
-  int sz = net_list.size();
+  size_t sz = net_list.size();
 #pragma omp parallel for
-  for (int i = 0; i < sz; ++i) {
+  for (size_t i = 0; i < sz; ++i) {
     net_list[i].UpdateMaxMinIdY();
   }
 }
@@ -368,8 +360,8 @@ void GlobalPlacer::UpdateMaxMinY() {
 void GlobalPlacer::BuildProblemB2BX() {
   double wall_time = get_wall_time();
 
-  std::vector<Block> &block_list = p_ckt_->Blocks();
-  std::vector<Net> &net_list = Nets();
+  std::vector<Block> &blocks = p_ckt_->Blocks();
+  std::vector<Net> &nets = p_ckt_->Nets();
   size_t coefficients_capacity = coefficientsx.capacity();
   coefficientsx.resize(0);
   int sz = static_cast<int>(bx.size());
@@ -381,7 +373,7 @@ void GlobalPlacer::BuildProblemB2BX() {
   double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
   //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
 
-  for (auto &net : net_list) {
+  for (auto &net : nets) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
     double inv_p = net.InvP();
     net.UpdateMaxMinIdX();
@@ -451,12 +443,12 @@ void GlobalPlacer::BuildProblemB2BX() {
   }
 
   for (int i = 0; i < sz; ++i) {
-    if (block_list[i].IsFixed()) {
+    if (blocks[i].IsFixed()) {
       coefficientsx.emplace_back(i, i, 1);
-      bx[i] = block_list[i].LLX();
+      bx[i] = blocks[i].LLX();
     } else {
-      if (block_list[i].LLX() < RegionLeft()
-          || block_list[i].URX() > RegionRight()) {
+      if (blocks[i].LLX() < RegionLeft()
+          || blocks[i].URX() > RegionRight()) {
         coefficientsx.emplace_back(i, i, center_weight);
         bx[i] += weight_center_x;
       }
@@ -477,8 +469,8 @@ void GlobalPlacer::BuildProblemB2BX() {
 void GlobalPlacer::BuildProblemB2BY() {
   double wall_time = get_wall_time();
 
-  std::vector<Block> &block_list = p_ckt_->Blocks();
-  std::vector<Net> &net_list = Nets();
+  std::vector<Block> &blocks = p_ckt_->Blocks();
+  std::vector<Net> &nets = p_ckt_->Nets();
   size_t coefficients_capacity = coefficientsy.capacity();
   coefficientsy.resize(0);
   int sz = static_cast<int>(by.size());
@@ -490,7 +482,7 @@ void GlobalPlacer::BuildProblemB2BY() {
   double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
   //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
 
-  for (auto &net : net_list) {
+  for (auto &net : nets) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
     double inv_p = net.InvP();
     net.UpdateMaxMinIdY();
@@ -561,12 +553,12 @@ void GlobalPlacer::BuildProblemB2BY() {
   }
   // add the diagonal non-zero element for fixed blocks
   for (int i = 0; i < sz; ++i) {
-    if (block_list[i].IsFixed()) {
+    if (blocks[i].IsFixed()) {
       coefficientsy.emplace_back(i, i, 1);
-      by[i] = block_list[i].LLY();
+      by[i] = blocks[i].LLY();
     } else {
-      if (block_list[i].LLY() < RegionBottom()
-          || block_list[i].URY() > RegionTop()) {
+      if (blocks[i].LLY() < RegionBottom()
+          || blocks[i].URY() > RegionTop()) {
         coefficientsy.emplace_back(i, i, center_weight);
         by[i] += weight_center_y;
       }
@@ -587,8 +579,8 @@ void GlobalPlacer::BuildProblemB2BY() {
 void GlobalPlacer::BuildProblemStarModelX() {
   double wall_time = get_wall_time();
 
-  std::vector<Net> &net_list = Nets();
   std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Net> &nets = p_ckt_->Nets();
   size_t coefficients_capacity = coefficientsx.capacity();
   coefficientsx.resize(0);
 
@@ -601,7 +593,7 @@ void GlobalPlacer::BuildProblemStarModelX() {
   double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
   //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
 
-  for (auto &net : net_list) {
+  for (auto &net : nets) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
     double inv_p = net.InvP();
 
@@ -667,8 +659,8 @@ void GlobalPlacer::BuildProblemStarModelX() {
 void GlobalPlacer::BuildProblemStarModelY() {
   double wall_time = get_wall_time();
 
-  std::vector<Net> &net_list = Nets();
   std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Net> &nets = p_ckt_->Nets();
   size_t coefficients_capacity = coefficientsy.capacity();
   coefficientsy.resize(0);
 
@@ -681,7 +673,7 @@ void GlobalPlacer::BuildProblemStarModelY() {
   double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
   //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
 
-  for (auto &net : net_list) {
+  for (auto &net : nets) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
     double inv_p = net.InvP();
 
@@ -748,8 +740,8 @@ void GlobalPlacer::BuildProblemStarModelY() {
 void GlobalPlacer::BuildProblemHPWLX() {
   double wall_time = get_wall_time();
 
-  std::vector<Net> &net_list = Nets();
   std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Net> &nets = p_ckt_->Nets();
   size_t coefficients_capacity = coefficientsx.capacity();
   coefficientsx.resize(0);
 
@@ -762,7 +754,7 @@ void GlobalPlacer::BuildProblemHPWLX() {
   double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
   //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
 
-  for (auto &net : net_list) {
+  for (auto &net : nets) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
     double inv_p = net.InvP();
     net.UpdateMaxMinIdX();
@@ -827,8 +819,8 @@ void GlobalPlacer::BuildProblemHPWLX() {
 void GlobalPlacer::BuildProblemHPWLY() {
   double wall_time = get_wall_time();
 
-  std::vector<Net> &net_list = Nets();
   std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Net> &nets = p_ckt_->Nets();
   size_t coefficients_capacity = coefficientsy.capacity();
   coefficientsy.resize(0);
 
@@ -841,7 +833,7 @@ void GlobalPlacer::BuildProblemHPWLY() {
   double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
   //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
 
-  for (auto &net : net_list) {
+  for (auto &net : nets) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
     double inv_p = net.InvP();
     net.UpdateMaxMinIdY();
@@ -907,13 +899,13 @@ void GlobalPlacer::BuildProblemStarHPWLX() {
   double wall_time = get_wall_time();
   UpdateMaxMinX();
 
-  int sz = bx.size();
+  int sz = static_cast<int>(bx.size());
   for (int i = 0; i < sz; ++i) {
     bx[i] = 0;
   }
 
-  double decay_length = decay_factor * p_ckt_->AveBlkHeight();
-  std::vector<BlkPairNets> &blk_pair_net_list = p_ckt_->blk_pair_net_list_;
+  //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
+  std::vector<BlkPairNets> &blk_pair_net_list = blk_pair_net_list_;
   int pair_sz = blk_pair_net_list.size();
 #pragma omp parallel for
   for (int i = 0; i < pair_sz; ++i) {
@@ -947,11 +939,10 @@ void GlobalPlacer::BuildProblemStarHPWLX() {
       //double offset_min = net.BlockPins()[min_pin_index].OffsetX();
 
       double distance = std::fabs(load_pin_loc - driver_pin_loc);
-      double weight_adjust = base_factor
-          + adjust_factor * (1 - exp(-distance / decay_length));
+      //double weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
       double inv_p = net.InvP();
       double weight = inv_p / (distance + width_epsilon_);
-      weight *= weight_adjust;
+      //weight *= weight_adjust;
       //weight = inv_p / (distance + width_epsilon_);
       double adjust = 1.0;
       if (driver_blk_num == blk_num_max) {
@@ -1045,13 +1036,13 @@ void GlobalPlacer::BuildProblemStarHPWLY() {
   double wall_time = get_wall_time();
   UpdateMaxMinY();
 
-  int sz = by.size();
+  int sz = static_cast<int>(by.size());
   for (int i = 0; i < sz; ++i) {
     by[i] = 0;
   }
 
-  double decay_length = decay_factor * p_ckt_->AveBlkHeight();
-  std::vector<BlkPairNets> &blk_pair_net_list = p_ckt_->blk_pair_net_list_;
+  //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
+  std::vector<BlkPairNets> &blk_pair_net_list = blk_pair_net_list_;
   int pair_sz = blk_pair_net_list.size();
 #pragma omp parallel for
   for (int i = 0; i < pair_sz; ++i) {
@@ -1085,11 +1076,10 @@ void GlobalPlacer::BuildProblemStarHPWLY() {
       //double offset_min = net.BlockPins()[min_pin_index].OffsetY();
 
       double distance = std::fabs(load_pin_loc - driver_pin_loc);
-      double weight_adjust = base_factor
-          + adjust_factor * (1 - exp(-distance / decay_length));
+      //double weight_adjust = base_factor + adjust_factor * (1 - exp(-distance / decay_length));
       double inv_p = net.InvP();
       double weight = inv_p / (distance + height_epsilon_);
-      weight *= weight_adjust;
+      //weight *= weight_adjust;
       //weight = inv_p / (distance + width_epsilon_);
       double adjust = 1.0;
       if (driver_blk_num == blk_num_max) {
@@ -1188,7 +1178,7 @@ double GlobalPlacer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
   tot_matrix_from_triplets_x += wall_time;
 
   int sz = vx.size();
-  std::vector<Block> &block_list = Blocks();
+  std::vector<Block> &blocks = p_ckt_->Blocks();
 
   wall_time = get_wall_time();
   std::vector<double> eval_history;
@@ -1197,7 +1187,7 @@ double GlobalPlacer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
   for (int i = 0; i < max_rounds; ++i) {
     vx = cgx.solveWithGuess(bx, vx);
     for (int num = 0; num < sz; ++num) {
-      block_list[num].SetLLX(vx[num]);
+      blocks[num].SetLLX(vx[num]);
     }
     double evaluate_result = WeightedHPWLX();
     eval_history.push_back(evaluate_result);
@@ -1223,7 +1213,7 @@ double GlobalPlacer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
   wall_time = get_wall_time();
 
   for (int num = 0; num < sz; ++num) {
-    block_list[num].SetLLX(vx[num]);
+    blocks[num].SetLLX(vx[num]);
   }
   wall_time = get_wall_time() - wall_time;
   tot_loc_update_time_x += wall_time;
@@ -1377,9 +1367,11 @@ double GlobalPlacer::QuadraticPlacement(double net_model_update_stop_criterion) 
         double evaluate_result = OptimizeQuadraticMetricX(cg_stop_criterion_);
         eval_history_x.push_back(evaluate_result);
         if (eval_history_x.size() >= 3) {
-          bool is_converge = IsSeriesConverge(eval_history_x,
-                                              3,
-                                              net_model_update_stop_criterion);
+          bool is_converge = IsSeriesConverge(
+              eval_history_x,
+              3,
+              net_model_update_stop_criterion
+          );
           bool is_oscillate = IsSeriesOscillate(eval_history_x, 5);
           if (is_converge) {
             break;
@@ -1452,7 +1444,7 @@ double GlobalPlacer::QuadraticPlacement(double net_model_update_stop_criterion) 
   tot_cg_time += wall_time;
   //omp_set_nested(0);
 
-  if (is_dump) DumpResult("cg_result_0.txt");
+  if (is_dump_) DumpResult("cg_result_0.txt");
 
   return lower_bound_hpwlx_.back() + lower_bound_hpwly_.back();
 }
@@ -1468,7 +1460,7 @@ double GlobalPlacer::QuadraticPlacement(double net_model_update_stop_criterion) 
  */
 void GlobalPlacer::InitializeGridBinSize() {
   double grid_bin_area =
-      number_of_cell_in_bin_ * GetCkt().AveMovBlkArea() / PlacementDensity();
+      number_of_cell_in_bin_ * p_ckt_->AveMovBlkArea() / PlacementDensity();
   grid_bin_height = static_cast<int>(std::round(std::sqrt(grid_bin_area)));
   grid_bin_width = grid_bin_height;
   grid_cnt_x = std::ceil(double(RegionWidth()) / grid_bin_width);
@@ -1521,8 +1513,8 @@ void GlobalPlacer::UpdateAttributesForAllGridBins() {
  * This can help us to compute available white space in each grid bin.
  */
 void GlobalPlacer::UpdateFixedBlocksInGridBins() {
-  auto &blocks = Blocks();
-  int sz = static_cast<int>(Blocks().size());
+  auto &blocks = p_ckt_->Blocks();
+  int sz = static_cast<int>(blocks.size());
   for (int i = 0; i < sz; i++) {
     /* find the left, right, bottom, top index of the grid */
     if (blocks[i].IsMovable()) continue;
@@ -1564,7 +1556,7 @@ void GlobalPlacer::UpdateFixedBlocksInGridBins() {
                 int(blocks[i].LLY() >= grid_bin_mesh[j][k].top) ||
                 int(blocks[i].URY() <= grid_bin_mesh[j][k].bottom);
         if (blk_out_of_bin) continue;
-        grid_bin_mesh[j][k].fixed_blks.push_back(&(blocks[i]));
+        grid_bin_mesh[j][k].fixed_blocks.push_back(&(blocks[i]));
       }
     }
   }
@@ -1576,7 +1568,7 @@ void GlobalPlacer::UpdateWhiteSpaceInGridBin(GridBin &grid_bin) {
   );
 
   std::vector<RectI> rects;
-  for (auto &fixed_blk_ptr : grid_bin.fixed_blks) {
+  for (auto &fixed_blk_ptr : grid_bin.fixed_blocks) {
     auto &fixed_blk = *fixed_blk_ptr;
     RectI fixed_blk_rect(
         static_cast<int>(std::round(fixed_blk.LLX())),
@@ -1802,7 +1794,7 @@ void GlobalPlacer::UpdateGridBinState() {
   // note that in extreme cases, the index might be smaller than 0 or larger
   // than the maximum allowed index, because the cell is on the boundaries,
   // so we need to make some modifications for these extreme cases.
-  std::vector<Block> &blocks = Blocks();
+  std::vector<Block> &blocks = p_ckt_->Blocks();
   int sz = static_cast<int>(blocks.size());
   int x_index = 0;
   int y_index = 0;
@@ -1850,7 +1842,7 @@ void GlobalPlacer::UpdateGridBinState() {
       }
       if (!grid_bin.OverFill()) {
         for (auto &blk_ptr : grid_bin.cell_list) {
-          for (auto &fixed_blk_ptr : grid_bin.fixed_blks) {
+          for (auto &fixed_blk_ptr : grid_bin.fixed_blocks) {
             over_fill = blk_ptr->IsOverlap(*fixed_blk_ptr);
             if (over_fill) {
               grid_bin.over_fill = true;
@@ -2255,8 +2247,8 @@ void GlobalPlacer::SplitGridBox(BoxBin &box) {
     box1.top = box.horizontal_cutlines[0];
     box2.left = box.left;
     box2.bottom = box.horizontal_cutlines[0];
-    box1.UpdateWhiteSpaceAndFixedBlks(box.fixed_blks);
-    box2.UpdateWhiteSpaceAndFixedBlks(box.fixed_blks);
+    box1.UpdateWhiteSpaceAndFixedblocks(box.fixed_blocks);
+    box2.UpdateWhiteSpaceAndFixedblocks(box.fixed_blocks);
 
     if (
         double(box1.total_white_space) / (double) box.total_white_space <= 0.01
@@ -2301,8 +2293,8 @@ void GlobalPlacer::SplitGridBox(BoxBin &box) {
     box1.top = box.top;
     box2.left = box.vertical_cutlines[0];
     box2.bottom = box.bottom;
-    box1.UpdateWhiteSpaceAndFixedBlks(box.fixed_blks);
-    box2.UpdateWhiteSpaceAndFixedBlks(box.fixed_blks);
+    box1.UpdateWhiteSpaceAndFixedblocks(box.fixed_blocks);
+    box2.UpdateWhiteSpaceAndFixedblocks(box.fixed_blocks);
 
     if (
         double(box1.total_white_space) / (double) box.total_white_space <= 0.01
@@ -2593,7 +2585,7 @@ void GlobalPlacer::PlaceBlkInBoxBisection(BoxBin &box) {
       box2.top = front_box.top;
       box2.right = front_box.right;
 
-      int ave_blk_height = std::ceil(GetCkt().AveMovBlkHeight());
+      int ave_blk_height = std::ceil(p_ckt_->AveMovBlkHeight());
       //BOOST_LOG_TRIVIAL(info)   << "Average block height: " << ave_blk_height << "  " << GetCircuitRef().AveMovBlkHeight() << "\n";
       front_box.cut_direction_x =
           (front_box.top - front_box.bottom > ave_blk_height);
@@ -2677,7 +2669,7 @@ void GlobalPlacer::UpdateGridBinBlocks(BoxBin &box) {
  * of each box and cells should be assigned to the box
  * @return true if succeed, false if fail
  */
-bool GlobalPlacer::RecursiveBisectionBlkSpreading() {
+bool GlobalPlacer::RecursiveBisectionblockspreading() {
   double wall_time = get_wall_time();
 
   while (!queue_box_bin.empty()) {
@@ -2704,7 +2696,7 @@ bool GlobalPlacer::RecursiveBisectionBlkSpreading() {
     queue_box_bin.pop();
   }
 
-  RecursiveBisectionBlkSpreading_time += get_wall_time() - wall_time;
+  RecursiveBisectionblockspreading_time += get_wall_time() - wall_time;
   return true;
 }
 
@@ -2944,7 +2936,7 @@ double GlobalPlacer::QuadraticPlacementWithAnchor(double net_model_update_stop_c
   tot_cg_time += wall_time;
   //omp_set_nested(0);
 
-  if (is_dump) DumpResult("cg_result_" + std::to_string(cur_iter_) + ".txt");
+  if (is_dump_) DumpResult("cg_result_" + std::to_string(cur_iter_) + ".txt");
   return lower_bound_hpwlx_.back() + lower_bound_hpwly_.back();
 }
 
@@ -2979,7 +2971,7 @@ double GlobalPlacer::LookAheadLegalization() {
   do {
     UpdateLargestCluster();
     FindMinimumBoxForLargestCluster();
-    RecursiveBisectionBlkSpreading();
+    RecursiveBisectionblockspreading();
     //BOOST_LOG_TRIVIAL(info) << "cluster count: " << cluster_set.size() << "\n";
   } while (!cluster_set.empty());
 
@@ -2996,7 +2988,7 @@ double GlobalPlacer::LookAheadLegalization() {
   cpu_time = get_cpu_time() - cpu_time;
   tot_lal_time += cpu_time;
 
-  if (is_dump) {
+  if (is_dump_) {
     DumpResult("lal_result_" + std::to_string(cur_iter_) + ".txt");
     DumpLookAheadDisplacement("displace_" + std::to_string(cur_iter_), 1);
   }
@@ -3009,8 +3001,8 @@ double GlobalPlacer::LookAheadLegalization() {
     << "(FindMinimumBoxForLargestCluster time: "
     << FindMinimumBoxForLargestCluster_time << "s)\n";
   BOOST_LOG_TRIVIAL(debug)
-    << "(RecursiveBisectionBlkSpreading time: "
-    << RecursiveBisectionBlkSpreading_time << "s)\n";
+    << "(RecursiveBisectionblockspreading time: "
+    << RecursiveBisectionblockspreading_time << "s)\n";
 
   return evaluate_result_x + evaluate_result_y;
 }
@@ -3069,15 +3061,15 @@ bool GlobalPlacer::StartPlacement() {
   BOOST_LOG_TRIVIAL(info) << "Start global placement\n";
 
   SanityCheck();
-  CGInit();
+  InitializeConjugateGradientLinearSolver();
   LALInit();
-  //BlockLocCenterInit();
-  BlockLocRandomInit();
+  //BlockLocationNormalInitialization();
+  BlockLocationUniformInitialization();
   if (net_model == 3) {
-    DriverLoadPairInit();
+    InitializeDriverLoadPairs();
   }
 
-  if (Nets().empty()) {
+  if (p_ckt_->Nets().empty()) {
     BOOST_LOG_TRIVIAL(info) << "Net list empty? Skip global placement!\n";
     BOOST_LOG_TRIVIAL(info)
       << "\033[0;36m Global Placement complete\033[0m\n";
@@ -3122,8 +3114,6 @@ bool GlobalPlacer::StartPlacement() {
       break;
     }
   }
-  BOOST_LOG_TRIVIAL(info)
-    << "Random init: " << init_hpwl_ << "\n";
   BOOST_LOG_TRIVIAL(info)
     << "Lower bound: " << lower_bound_hpwl_ << "\n";
   BOOST_LOG_TRIVIAL(info)
@@ -3173,6 +3163,10 @@ bool GlobalPlacer::StartPlacement() {
   ReportMemory();
 
   return true;
+}
+
+void GlobalPlacer::SetDump(bool s_dump) {
+  is_dump_ = s_dump;
 }
 
 void GlobalPlacer::DumpResult(std::string const &name_of_file) {
@@ -3505,6 +3499,66 @@ bool GlobalPlacer::IsSeriesOscillate(std::vector<double> &data, int length) {
   }
 
   return is_oscillate;
+}
+
+void GlobalPlacer::BlockLocationInitialization_(int mode, double std_dev) {
+  BOOST_LOG_TRIVIAL(info)
+    << "HPWL before random initialization: " << p_ckt_->WeightedHPWL() << "\n";
+
+  if (mode == 0) {
+    BlockLocationUniformInitialization_();
+  } else if (mode == 1) {
+    BlockLocationNormalInitialization_(std_dev);
+  }
+
+  BOOST_LOG_TRIVIAL(info)
+    << "HPWL after random initialization: " << p_ckt_->WeightedHPWL() << "\n";
+
+  if (is_dump_) DumpResult("rand_init.txt");
+}
+
+void GlobalPlacer::BlockLocationUniformInitialization_() {
+  // initialize the random number generator
+  std::minstd_rand0 generator{1};
+  std::uniform_real_distribution<double> distribution(0, 1);
+
+  std::vector<Block> &blocks = p_ckt_->Blocks();
+  int region_width = RegionWidth();
+  int region_height = RegionHeight();
+  for (auto &blk : blocks) {
+    if (!blk.IsMovable()) continue;
+    double init_x = RegionLeft() + region_width * distribution(generator);
+    double init_y = RegionBottom() + region_height * distribution(generator);
+    blk.SetCenterX(init_x);
+    blk.SetCenterY(init_y);
+  }
+  BOOST_LOG_TRIVIAL(info)
+    << "Block location uniform initialization complete\n";
+}
+
+void GlobalPlacer::BlockLocationNormalInitialization_(double std_dev) {
+  // initialize the random number generator
+  std::minstd_rand0 generator{1};
+  std::normal_distribution<double> normal_distribution(0.0, std_dev);
+
+  std::vector<Block> &blocks = p_ckt_->Blocks();
+  int region_width = RegionWidth();
+  int region_height = RegionHeight();
+  double region_center_x = (RegionRight() + RegionLeft()) / 2.0;
+  double region_center_y = (RegionTop() + RegionBottom()) / 2.0;
+  for (auto &block : blocks) {
+    if (!block.IsMovable()) continue;
+    double x = region_center_x + region_width * normal_distribution(generator);
+    double y = region_center_y + region_height * normal_distribution(generator);
+    x = std::max(x, (double) RegionLeft());
+    x = std::min(x, (double) RegionRight());
+    y = std::max(y, (double) RegionBottom());
+    y = std::min(y, (double) RegionTop());
+    block.SetCenterX(x);
+    block.SetCenterY(y);
+  }
+  BOOST_LOG_TRIVIAL(info)
+    << "Block location gaussian initialization complete\n";
 }
 
 }

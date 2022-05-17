@@ -205,15 +205,15 @@ void BoxBin::update_boundaries(std::vector<std::vector<GridBin> > &grid_bin_matr
   top = grid_bin_matrix[ur_index.x][ur_index.y].top;
 }
 
-void BoxBin::UpdateWhiteSpaceAndFixedBlks(
-    std::vector<Block *> &box_fixed_blks
+void BoxBin::UpdateWhiteSpaceAndFixedblocks(
+    std::vector<Block *> &box_fixed_blocks
 ) {
   total_white_space = (unsigned long long) (right - left) *
       (unsigned long long) (top - bottom);
   RectI bin_rect(left, bottom, right, top);
 
   std::vector<RectI> rects;
-  for (auto &fixed_blk_ptr : box_fixed_blks) {
+  for (auto &fixed_blk_ptr : box_fixed_blocks) {
     auto &fixed_blk = *fixed_blk_ptr;
     RectI fixed_blk_rect(
         static_cast<int>(std::round(fixed_blk.LLX())),
@@ -222,7 +222,7 @@ void BoxBin::UpdateWhiteSpaceAndFixedBlks(
         static_cast<int>(std::round(fixed_blk.URY()))
     );
     if (bin_rect.IsOverlap(fixed_blk_rect)) {
-      fixed_blks.push_back(fixed_blk_ptr);
+      fixed_blocks.push_back(fixed_blk_ptr);
       rects.push_back(bin_rect.GetOverlapRect(fixed_blk_rect));
     }
   }
@@ -241,10 +241,10 @@ void BoxBin::UpdateWhiteSpaceAndFixedBlks(
 void BoxBin::UpdateObsBoundary() {
   vertical_cutlines.clear();
   horizontal_cutlines.clear();
-  if (fixed_blks.empty()) {
+  if (fixed_blocks.empty()) {
     return;
   }
-  for (auto &blk_ptr : fixed_blks) {
+  for (auto &blk_ptr : fixed_blocks) {
     Block &node = *blk_ptr;
     if ((left < node.LLX()) && (right > node.LLX())) {
       vertical_cutlines.push_back((int) node.LLX());
@@ -702,8 +702,8 @@ void BoxBin::Report() {
   }
   BOOST_LOG_TRIVIAL(info) << "\nend\n";
 
-  BOOST_LOG_TRIVIAL(info) << "terminal list: " << fixed_blks.size() << "\n";
-  for (auto &p_fixed_blk : fixed_blks) {
+  BOOST_LOG_TRIVIAL(info) << "terminal list: " << fixed_blocks.size() << "\n";
+  for (auto &p_fixed_blk : fixed_blocks) {
     BOOST_LOG_TRIVIAL(info)
       << p_fixed_blk->Name() << ", "
       << "(" << p_fixed_blk->LLX() << ", " << p_fixed_blk->LLY() << "), "

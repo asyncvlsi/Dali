@@ -390,13 +390,13 @@ std::vector<RowSegment> &GriddedRow::Segments() {
 
 void GriddedRow::UpdateSegments(
     std::vector<SegI> &blockage,
-    bool is_existing_blks_considered
+    bool is_existing_blocks_considered
 ) {
   // collect used space segments
   std::vector<SegI> used_spaces = blockage;
 
   // treat existing blocks as blockages
-  if (is_existing_blks_considered) {
+  if (is_existing_blocks_considered) {
     for (auto &blk_region : blk_regions_) {
       Block *p_blk = blk_region.p_blk;
       used_spaces.emplace_back(p_blk->LLX(), p_blk->URX());

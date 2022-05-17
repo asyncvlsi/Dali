@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
   gb_placer.SetBoundaryDef();
   gb_placer.SetPlacementDensity(0.9);
   gb_placer.ReportBoundaries();
-  gb_placer.is_dump = false;
+  gb_placer.is_dump_ = false;
 #if !TEST_LG
   gb_placer.StartPlacement();
   circuit.SaveDefFile("ISPD2005/adaptec1_dali", "",

@@ -80,8 +80,8 @@ class Tech {
 
   /*** *grid value along X and Y ****/
   bool is_grid_set_ = false;
-  double grid_value_x_ = 0;
-  double grid_value_y_ = 0;
+  double grid_value_x_ = 1;
+  double grid_value_y_ = 1;
 
   /**** metal layers ****/
   std::vector<MetalLayer> metal_list_;

@@ -91,7 +91,7 @@ void LGTetrisEx::InitializeFromGriddedRowLegalizer(GriddedRowLegalizer *grlg) {
 
   BlkInitPair tmp_index_loc_pair(nullptr, 0, 0);
   blk_inits_.clear();
-  blk_inits_.resize(Blocks().size(), tmp_index_loc_pair);
+  blk_inits_.resize(p_ckt_->Blocks().size(), tmp_index_loc_pair);
 }
 
 void LGTetrisEx::SetRowInfoAuto() {
@@ -107,7 +107,8 @@ void LGTetrisEx::DetectWhiteSpace() {
   macro_segments.resize(tot_num_rows_);
   Seg tmp(0, 0);
   bool out_of_range;
-  for (auto &block: Blocks()) {
+  auto &blocks = p_ckt_->Blocks();
+  for (auto &block: blocks) {
     if (IsDummyBlock(block)) continue;
     if (block.IsMovable()) continue;
     int ly = int(std::floor(block.LLY()));
@@ -188,7 +189,7 @@ void LGTetrisEx::DetectWhiteSpace() {
 
 void LGTetrisEx::InitIndexLocList() {
   BlkInitPair tmp_index_loc_pair(nullptr, 0, 0);
-  blk_inits_.resize(Blocks().size(), tmp_index_loc_pair);
+  blk_inits_.resize(p_ckt_->Blocks().size(), tmp_index_loc_pair);
 }
 
 /****
@@ -327,7 +328,8 @@ void LGTetrisEx::InitBlockContourForward() {
 
 void LGTetrisEx::InitAndSortBlockAscendingX() {
   blk_inits_.clear();
-  for (auto &blk: Blocks()) {
+  auto &blocks = p_ckt_->Blocks();
+  for (auto &blk: blocks) {
     // skipp dummy blocks and fixed blocks
     if (IsDummyBlock(blk)) continue;
     if (blk.IsFixed()) continue;
@@ -672,7 +674,8 @@ void LGTetrisEx::InitBlockContourBackward() {
 
 void LGTetrisEx::InitAndSortBlockDescendingX() {
   blk_inits_.clear();
-  for (auto &blk: Blocks()) {
+  auto &blocks = p_ckt_->Blocks();
+  for (auto &blk: blocks) {
     if (IsDummyBlock(blk)) continue;
     if (blk.IsFixed()) continue;
     double x_loc = blk.URX() + k_width_ * blk.Width()
@@ -1014,7 +1017,7 @@ double LGTetrisEx::EstimatedHPWL(Block &block, int x, int y) {
   double min_x = x;
   double min_y = y;
   double tot_hpwl = 0;
-  auto &net_list = Nets();
+  auto &net_list = p_ckt_->Nets();
   for (auto &net_num: block.NetList()) {
     auto &net = net_list[net_num];
     if (net.PinCnt() > 100) continue;
@@ -1155,7 +1158,8 @@ void LGTetrisEx::GenAvailSpace(std::string const &name_of_file) {
     }
   }
 
-  for (auto &block: Blocks()) {
+  auto &blocks = p_ckt_->Blocks();
+  for (auto &block: blocks) {
     if (block.IsMovable()) continue;
     ost << block.LLX() << "\t"
         << block.URX() << "\t"

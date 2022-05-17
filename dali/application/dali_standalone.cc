@@ -286,7 +286,7 @@ int main(int argc, char *argv[]) {
   auto gb_placer = std::make_unique<GlobalPlacer>();
   gb_placer->SetInputCircuit(&circuit);
   gb_placer->SetBoundaryDef();
-  gb_placer->SetMaxIter(gb_maxiter);
+  gb_placer->SetMaxIteration(gb_maxiter);
   if (!is_no_global) {
     gb_placer->SetPlacementDensity(target_density);
     //gb_placer->ReportBoundaries();

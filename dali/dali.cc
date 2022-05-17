@@ -283,7 +283,7 @@ void Dali::GlobalPlace(double density, int number_of_threads) {
   BOOST_LOG_TRIVIAL(info) << "Eigen thread " << Eigen::nbThreads() << "\n";
   //gb_placer_.LoadConf(config_file);
   gb_placer_.SetInputCircuit(&circuit_);
-  gb_placer_.is_dump = false;
+  gb_placer_.SetDump(false);
   gb_placer_.SetBoundaryDef();
   gb_placer_.SetPlacementDensity(density);
   //gb_placer_.ReportBoundaries();
@@ -310,7 +310,7 @@ void Dali::UnifiedLegalization() {
   /*
   legalizer_.TakeOver(&gb_placer_);
   legalizer_.IsPrintDisplacement(true);
-  legalizer_.is_dump = false;
+  legalizer_.is_dump_ = false;
   legalizer_.StartPlacement();
   legalizer_.GenMATLABTable("lg_result.txt");
   legalizer_.GenDisplacement("disp_result.txt");
