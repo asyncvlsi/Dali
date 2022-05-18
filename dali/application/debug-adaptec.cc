@@ -108,11 +108,10 @@ int main(int argc, char **argv) {
   gb_placer.SetBoundaryDef();
   gb_placer.SetPlacementDensity(0.9);
   gb_placer.ReportBoundaries();
-  gb_placer.is_dump_ = false;
+  gb_placer.SetDump(false);
 #if !TEST_LG
   gb_placer.StartPlacement();
-  circuit.SaveDefFile("ISPD2005/adaptec1_dali", "",
-                      adaptec1_def, 1, 1, 1, 1);
+  circuit.SaveDefFile("ISPD2005/adaptec1_dali", "", adaptec1_def, 1, 1, 1, 1);
   circuit.SaveBookshelfPl("adaptec1bs.pl");
 #endif
   gb_placer.GenMATLABTable("gb_result.txt");
@@ -147,8 +146,8 @@ int main(int argc, char **argv) {
 
   Time = clock() - Time;
   wall_time = get_wall_time() - wall_time;
-  BOOST_LOG_TRIVIAL(info) << "Execution time "
-                          << double(Time) / CLOCKS_PER_SEC << "s.\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "Execution time " << double(Time) / CLOCKS_PER_SEC << "s.\n";
   BOOST_LOG_TRIVIAL(info) << "Wall time " << wall_time << "s.\n";
   BOOST_LOG_TRIVIAL(info) << "tune_param: " << tune_param << "\n";
 

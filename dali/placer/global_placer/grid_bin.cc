@@ -19,7 +19,7 @@
  *
  ******************************************************************************/
 
-#include "gridbin.h"
+#include "grid_bin.h"
 
 #include "dali/common/logging.h"
 

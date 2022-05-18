@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_PLACER_GLOBALPLACER_GLOBALPLACER_H_
-#define DALI_PLACER_GLOBALPLACER_GLOBALPLACER_H_
+#ifndef DALI_PLACER_GLOBAL_PLACER_GLOBAL_PLACER_H_
+#define DALI_PLACER_GLOBAL_PLACER_GLOBAL_PLACER_H_
 #include <cfloat>
 
 #include <queue>
@@ -35,10 +35,10 @@
 #include "dali/common/misc.h"
 #include "dali/placer/placer.h"
 
-#include "boxbin.h"
-#include "cellcutpoint.h"
-#include "gridbinindex.h"
-#include "gridbin.h"
+#include "box_bin.h"
+#include "cell_cut_point.h"
+#include "grid_bin_index.h"
+#include "grid_bin.h"
 
 namespace dali {
 
@@ -270,4 +270,4 @@ class GlobalPlacer : public Placer {
 
 }
 
-#endif //DALI_PLACER_GLOBALPLACER_GLOBALPLACER_H_
+#endif //DALI_PLACER_GLOBAL_PLACER_GLOBAL_PLACER_H_

@@ -21,7 +21,7 @@
 #ifndef DALI_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_
 #define DALI_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_
 
-#include "dali/placer/global_placer/globalplacer.h"
+#include "dali/placer/global_placer/global_placer.h"
 #include "dali/placer/legalizer/LGTetrisEx.h"
 #include "dali/placer/well_legalizer/stdclusterwelllegalizer.h"
 

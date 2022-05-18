@@ -18,9 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-
-#ifndef DALI_PLACER_GLOBALPLACER_GRIDBININDEX_H_
-#define DALI_PLACER_GLOBALPLACER_GRIDBININDEX_H_
+#ifndef DALI_PLACER_GLOBAL_PLACER_GRID_BIN_INDEX_H_
+#define DALI_PLACER_GLOBAL_PLACER_GRID_BIN_INDEX_H_
 
 #include <iostream>
 #include <set>
@@ -93,4 +92,4 @@ struct GridBinCluster {
 
 }
 
-#endif //DALI_PLACER_GLOBALPLACER_GRIDBININDEX_H_
+#endif //DALI_PLACER_GLOBAL_PLACER_GRID_BIN_INDEX_H_

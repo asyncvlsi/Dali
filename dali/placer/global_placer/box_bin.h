@@ -18,17 +18,17 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_PLACER_GLOBALPLACER_BOXBIN_H_
-#define DALI_PLACER_GLOBALPLACER_BOXBIN_H_
+#ifndef DALI_PLACER_GLOBAL_PLACER_BOXBIN_H_
+#define DALI_PLACER_GLOBAL_PLACER_BOXBIN_H_
 
 #include <iostream>
 #include <fstream>
 #include <vector>
 
-#include "cellcutpoint.h"
+#include "cell_cut_point.h"
 #include "dali/circuit/block.h"
-#include "gridbin.h"
-#include "gridbinindex.h"
+#include "grid_bin.h"
+#include "grid_bin_index.h"
 
 namespace dali {
 
@@ -131,4 +131,4 @@ class BoxBin {
 
 }
 
-#endif //DALI_PLACER_GLOBALPLACER_BOXBIN_H_
+#endif //DALI_PLACER_GLOBAL_PLACER_BOXBIN_H_

@@ -18,13 +18,13 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_PLACER_GLOBALPLACER_GRIDBIN_H_
-#define DALI_PLACER_GLOBALPLACER_GRIDBIN_H_
+#ifndef DALI_PLACER_GLOBAL_PLACER_GRID_BIN_H_
+#define DALI_PLACER_GLOBAL_PLACER_GRID_BIN_H_
 
 #include <vector>
 
 #include "dali/circuit/block.h"
-#include "gridbinindex.h"
+#include "grid_bin_index.h"
 
 namespace dali {
 
@@ -66,4 +66,4 @@ class GridBin {
 
 }
 
-#endif //DALI_PLACER_GLOBALPLACER_GRIDBIN_H_
+#endif //DALI_PLACER_GLOBAL_PLACER_GRID_BIN_H_

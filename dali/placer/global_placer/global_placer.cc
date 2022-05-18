@@ -18,7 +18,7 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#include "globalplacer.h"
+#include "global_placer.h"
 
 #include <cmath>
 #include <omp.h>

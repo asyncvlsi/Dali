@@ -25,7 +25,7 @@
 #include "dali/placer/placer.h"
 
 /****Global placer****/
-#include "dali/placer/global_placer/globalplacer.h"
+#include "dali/placer/global_placer/global_placer.h"
 
 /****Legalizer****/
 #include "dali/placer/legalizer/LGTetris.h"
