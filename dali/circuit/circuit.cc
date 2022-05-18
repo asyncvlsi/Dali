@@ -746,7 +746,7 @@ void Circuit::UpdateNetHPWLHistogram() {
   design_.net_histogram_.max_hpwl_.assign(bin_count, -DBL_MAX);
 
   for (auto &net : design_.nets_) {
-    int net_size = net.PinCnt();
+    size_t net_size = net.PinCnt();
     double hpwl_x = net.WeightedHPWLX();
     double hpwl_y = net.WeightedHPWLY() * GridValueY() / GridValueX();
     design_.UpdateNetHPWLHisto(net_size, hpwl_x + hpwl_y);

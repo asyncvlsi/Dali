@@ -193,7 +193,7 @@ class GlobalPlacer : public Placer {
   int cur_iter_ = 0;
   int max_iter_ = 100;
   int number_of_cell_in_bin_ = 30;
-  int net_ignore_threshold_ = 100;
+  size_t net_ignore_threshold_ = 100;
   double simpl_LAL_converge_criterion_ = 0.005;
   double polar_converge_criterion_ = 0.08;
   int convergence_criteria_ = 1;
@@ -214,12 +214,12 @@ class GlobalPlacer : public Placer {
   std::vector<std::vector<GridBin> > grid_bin_mesh;
   std::vector<std::vector<unsigned long long> > grid_bin_white_space_LUT;
 
-  double UpdateGridBinState_time = 0;
-  double ClusterOverfilledGridBin_time = 0;
-  double UpdateClusterArea_time = 0;
-  double UpdateClusterList_time = 0;
-  double FindMinimumBoxForLargestCluster_time = 0;
-  double RecursiveBisectionblockspreading_time = 0;
+  double update_grid_bin_state_time_ = 0;
+  double cluster_overfilled_grid_bin_time_ = 0;
+  double update_cluster_area_time_ = 0;
+  double update_cluster_list_time_ = 0;
+  double find_minimum_box_for_largest_cluster_time_ = 0;
+  double recursive_bisection_block_spreading_time_ = 0;
 
   std::vector<int> Ax_row_size;
   std::vector<int> Ay_row_size;
@@ -234,10 +234,10 @@ class GlobalPlacer : public Placer {
   Eigen::VectorXd x_anchor_weight, y_anchor_weight;
   bool x_anchor_set = false;
   bool y_anchor_set = false;
-  std::vector<T> coefficientsx;
-  std::vector<T> coefficientsy;
-  Eigen::ConjugateGradient<SpMat, Eigen::Lower | Eigen::Upper> cgx;
-  Eigen::ConjugateGradient<SpMat, Eigen::Lower | Eigen::Upper> cgy;
+  std::vector<T> coefficients_x_;
+  std::vector<T> coefficients_y_;
+  Eigen::ConjugateGradient<SpMat, Eigen::Lower | Eigen::Upper> cg_x_;
+  Eigen::ConjugateGradient<SpMat, Eigen::Lower | Eigen::Upper> cg_y_;
   std::vector<std::vector<BlkPairNets *>> pair_connect;
   std::vector<BlkPairNets> diagonal_pair;
   std::vector<SpMat::InnerIterator> SpMat_diag_x;

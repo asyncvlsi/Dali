@@ -71,7 +71,7 @@ class Net {
   double Weight() const;
 
   // get the number of pins in this net
-  int PinCnt() const;
+  size_t PinCnt() const;
 
   // get 1/(p-1), where p in the number of pins in this net
   double InvP() const;

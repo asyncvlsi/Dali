@@ -94,9 +94,9 @@ class Design {
   // get all nets
   std::vector<Net> &Nets() { return nets_; }
 
-  void UpdateFanoutHisto(int net_size);
+  void UpdateFanoutHisto(size_t net_size);
   void InitNetFanoutHisto(std::vector<int> *histo_x = nullptr);
-  void UpdateNetHPWLHisto(int net_size, double hpwl);
+  void UpdateNetHPWLHisto(size_t net_size, double hpwl);
   void ReportNetFanoutHisto();
  private:
   /****design name****/

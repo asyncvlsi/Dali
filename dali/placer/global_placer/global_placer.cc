@@ -125,6 +125,61 @@ void GlobalPlacer::BlockLocationNormalInitialization(double std_dev) {
   BlockLocationInitialization_(1, std_dev);
 }
 
+/****
+ * @brief Initialize variables for the conjugate gradient linear solver
+ */
+void GlobalPlacer::InitializeConjugateGradientLinearSolver() {
+  // set a small value for net weight dividend to improve numerical stability
+  UpdateEpsilon();
+
+  // initialize containers to store HPWL after each iteration
+  lower_bound_hpwlx_.clear();
+  lower_bound_hpwly_.clear();
+  lower_bound_hpwl_.clear();
+
+  size_t sz = p_ckt_->Blocks().size();
+  ADx.resize(sz);
+  ADy.resize(sz);
+  Ax_row_size.assign(sz, 0);
+  Ax_row_size.assign(sz, 0);
+
+  EgId eigen_sz = static_cast<EgId>(p_ckt_->Blocks().size());
+  vx.resize(eigen_sz);
+  vy.resize(eigen_sz);
+  bx.resize(eigen_sz);
+  by.resize(eigen_sz);
+  Ax.resize(eigen_sz, eigen_sz);
+  Ay.resize(eigen_sz, eigen_sz);
+  x_anchor.resize(eigen_sz);
+  y_anchor.resize(eigen_sz);
+  x_anchor_weight.resize(eigen_sz);
+  y_anchor_weight.resize(eigen_sz);
+
+
+  cg_x_.setMaxIterations(cg_iteration_);
+  cg_x_.setTolerance(cg_tolerance_);
+  cg_y_.setMaxIterations(cg_iteration_);
+  cg_y_.setTolerance(cg_tolerance_);
+
+  size_t coefficient_size = 0;
+  auto &nets = p_ckt_->Nets();
+  for (auto &net : nets) {
+    size_t net_sz = net.PinCnt();
+    // if a net has size n, then in total, there will be (2(n-2)+1)*4 non-zero entries for the matrix
+    if (net_sz > 1) {
+      coefficient_size += (2 * (net_sz - 2) + 1) * 4;
+    }
+  }
+  // this is to reserve space for anchor, because each block may need an anchor
+  coefficient_size += sz;
+  // this is to reserve space for anchor in the center of the placement region
+  coefficient_size += sz;
+  coefficients_x_.reserve(coefficient_size);
+  Ax.reserve(static_cast<EgId>(coefficient_size));
+  coefficients_y_.reserve(coefficient_size);
+  Ay.reserve(static_cast<EgId>(coefficient_size));
+}
+
 void GlobalPlacer::DecomposeNetsToBlkPairs() {
   // for each net, we decompose it, and enumerate all driver-load pair
   std::vector<Net> &net_list = p_ckt_->Nets();
@@ -294,51 +349,6 @@ void GlobalPlacer::InitializeDriverLoadPairs() {
   }
 }
 
-void GlobalPlacer::InitializeConjugateGradientLinearSolver() {
-  UpdateEpsilon(); // set a small value for net weight dividend to avoid divergence
-  lower_bound_hpwlx_.clear();
-  lower_bound_hpwly_.clear();
-  lower_bound_hpwl_.clear();
-
-  int sz = p_ckt_->Blocks().size();
-  ADx.resize(sz);
-  ADy.resize(sz);
-  Ax_row_size.assign(sz, 0);
-  Ax_row_size.assign(sz, 0);
-  vx.resize(sz);
-  vy.resize(sz);
-  bx.resize(sz);
-  by.resize(sz);
-  Ax.resize(sz, sz);
-  Ay.resize(sz, sz);
-  x_anchor.resize(sz);
-  y_anchor.resize(sz);
-  x_anchor_weight.resize(sz);
-  y_anchor_weight.resize(sz);
-
-  cgx.setMaxIterations(cg_iteration_);
-  cgx.setTolerance(cg_tolerance_);
-  cgy.setMaxIterations(cg_iteration_);
-  cgy.setTolerance(cg_tolerance_);
-
-  int coefficient_size = 0;
-  int net_sz = 0;
-  auto &nets = p_ckt_->Nets();
-  for (auto &net : nets) {
-    net_sz = net.PinCnt();
-    // if a net has size n, then in total, there will be (2(n-2)+1)*4 non-zero entries for the matrix
-    if (net_sz > 1) coefficient_size += (2 * (net_sz - 2) + 1) * 4;
-  }
-  // this is to reserve space for anchor, because each block may need an anchor
-  coefficient_size += sz;
-  // this is to reserve space for anchor in the center of the placement region
-  coefficient_size += sz;
-  coefficientsx.reserve(coefficient_size);
-  Ax.reserve(coefficient_size);
-  coefficientsy.reserve(coefficient_size);
-  Ay.reserve(coefficient_size);
-}
-
 void GlobalPlacer::UpdateMaxMinX() {
   std::vector<Net> &net_list = p_ckt_->Nets();
   size_t sz = net_list.size();
@@ -362,8 +372,8 @@ void GlobalPlacer::BuildProblemB2BX() {
 
   std::vector<Block> &blocks = p_ckt_->Blocks();
   std::vector<Net> &nets = p_ckt_->Nets();
-  size_t coefficients_capacity = coefficientsx.capacity();
-  coefficientsx.resize(0);
+  size_t coefficients_capacity = coefficients_x_.capacity();
+  coefficients_x_.resize(0);
   int sz = static_cast<int>(bx.size());
   for (int i = 0; i < sz; ++i) {
     bx[i] = 0;
@@ -403,15 +413,15 @@ void GlobalPlacer::BuildProblemB2BX() {
         //weight *= weight_adjust;
         if (!is_movable && is_movable_max) {
           bx[blk_num_max] += (pin_loc - offset_max) * weight;
-          coefficientsx.emplace_back(blk_num_max, blk_num_max, weight);
+          coefficients_x_.emplace_back(blk_num_max, blk_num_max, weight);
         } else if (is_movable && !is_movable_max) {
           bx[blk_num] += (pin_loc_max - offset) * weight;
-          coefficientsx.emplace_back(blk_num, blk_num, weight);
+          coefficients_x_.emplace_back(blk_num, blk_num, weight);
         } else if (is_movable && is_movable_max) {
-          coefficientsx.emplace_back(blk_num, blk_num, weight);
-          coefficientsx.emplace_back(blk_num_max, blk_num_max, weight);
-          coefficientsx.emplace_back(blk_num, blk_num_max, -weight);
-          coefficientsx.emplace_back(blk_num_max, blk_num, -weight);
+          coefficients_x_.emplace_back(blk_num, blk_num, weight);
+          coefficients_x_.emplace_back(blk_num_max, blk_num_max, weight);
+          coefficients_x_.emplace_back(blk_num, blk_num_max, -weight);
+          coefficients_x_.emplace_back(blk_num_max, blk_num, -weight);
           double offset_diff = (offset_max - offset) * weight;
           bx[blk_num] += offset_diff;
           bx[blk_num_max] -= offset_diff;
@@ -425,15 +435,15 @@ void GlobalPlacer::BuildProblemB2BX() {
         //weight *= weight_adjust;
         if (!is_movable && is_movable_min) {
           bx[blk_num_min] += (pin_loc - offset_min) * weight;
-          coefficientsx.emplace_back(blk_num_min, blk_num_min, weight);
+          coefficients_x_.emplace_back(blk_num_min, blk_num_min, weight);
         } else if (is_movable && !is_movable_min) {
           bx[blk_num] += (pin_loc_min - offset) * weight;
-          coefficientsx.emplace_back(blk_num, blk_num, weight);
+          coefficients_x_.emplace_back(blk_num, blk_num, weight);
         } else if (is_movable && is_movable_min) {
-          coefficientsx.emplace_back(blk_num, blk_num, weight);
-          coefficientsx.emplace_back(blk_num_min, blk_num_min, weight);
-          coefficientsx.emplace_back(blk_num, blk_num_min, -weight);
-          coefficientsx.emplace_back(blk_num_min, blk_num, -weight);
+          coefficients_x_.emplace_back(blk_num, blk_num, weight);
+          coefficients_x_.emplace_back(blk_num_min, blk_num_min, weight);
+          coefficients_x_.emplace_back(blk_num, blk_num_min, -weight);
+          coefficients_x_.emplace_back(blk_num_min, blk_num, -weight);
           double offset_diff = (offset_min - offset) * weight;
           bx[blk_num] += offset_diff;
           bx[blk_num_min] -= offset_diff;
@@ -444,22 +454,22 @@ void GlobalPlacer::BuildProblemB2BX() {
 
   for (int i = 0; i < sz; ++i) {
     if (blocks[i].IsFixed()) {
-      coefficientsx.emplace_back(i, i, 1);
+      coefficients_x_.emplace_back(i, i, 1);
       bx[i] = blocks[i].LLX();
     } else {
       if (blocks[i].LLX() < RegionLeft()
           || blocks[i].URX() > RegionRight()) {
-        coefficientsx.emplace_back(i, i, center_weight);
+        coefficients_x_.emplace_back(i, i, center_weight);
         bx[i] += weight_center_x;
       }
     }
   }
 
   DaliWarns(
-      coefficients_capacity != coefficientsx.capacity(),
+      coefficients_capacity != coefficients_x_.capacity(),
       "WARNING: x coefficients capacity changed!\n"
           << "\told capacity: " << coefficients_capacity << "\n"
-          << "\tnew capacity: " << coefficientsx.size()
+          << "\tnew capacity: " << coefficients_x_.size()
   );
 
   wall_time = get_wall_time() - wall_time;
@@ -471,8 +481,8 @@ void GlobalPlacer::BuildProblemB2BY() {
 
   std::vector<Block> &blocks = p_ckt_->Blocks();
   std::vector<Net> &nets = p_ckt_->Nets();
-  size_t coefficients_capacity = coefficientsy.capacity();
-  coefficientsy.resize(0);
+  size_t coefficients_capacity = coefficients_y_.capacity();
+  coefficients_y_.resize(0);
   int sz = static_cast<int>(by.size());
   for (int i = 0; i < sz; ++i) {
     by[i] = 0;
@@ -512,15 +522,15 @@ void GlobalPlacer::BuildProblemB2BY() {
         //weight *= weight_adjust;
         if (!is_movable && is_movable_max) {
           by[blk_num_max] += (pin_loc - offset_max) * weight;
-          coefficientsy.emplace_back(blk_num_max, blk_num_max, weight);
+          coefficients_y_.emplace_back(blk_num_max, blk_num_max, weight);
         } else if (is_movable && !is_movable_max) {
           by[blk_num] += (pin_loc_max - offset) * weight;
-          coefficientsy.emplace_back(blk_num, blk_num, weight);
+          coefficients_y_.emplace_back(blk_num, blk_num, weight);
         } else if (is_movable && is_movable_max) {
-          coefficientsy.emplace_back(blk_num, blk_num, weight);
-          coefficientsy.emplace_back(blk_num_max, blk_num_max, weight);
-          coefficientsy.emplace_back(blk_num, blk_num_max, -weight);
-          coefficientsy.emplace_back(blk_num_max, blk_num, -weight);
+          coefficients_y_.emplace_back(blk_num, blk_num, weight);
+          coefficients_y_.emplace_back(blk_num_max, blk_num_max, weight);
+          coefficients_y_.emplace_back(blk_num, blk_num_max, -weight);
+          coefficients_y_.emplace_back(blk_num_max, blk_num, -weight);
           double offset_diff = (offset_max - offset) * weight;
           by[blk_num] += offset_diff;
           by[blk_num_max] -= offset_diff;
@@ -534,15 +544,15 @@ void GlobalPlacer::BuildProblemB2BY() {
         //weight *= weight_adjust;
         if (!is_movable && is_movable_min) {
           by[blk_num_min] += (pin_loc - offset_min) * weight;
-          coefficientsy.emplace_back(blk_num_min, blk_num_min, weight);
+          coefficients_y_.emplace_back(blk_num_min, blk_num_min, weight);
         } else if (is_movable && !is_movable_min) {
           by[blk_num] += (pin_loc_min - offset) * weight;
-          coefficientsy.emplace_back(blk_num, blk_num, weight);
+          coefficients_y_.emplace_back(blk_num, blk_num, weight);
         } else if (is_movable && is_movable_min) {
-          coefficientsy.emplace_back(blk_num, blk_num, weight);
-          coefficientsy.emplace_back(blk_num_min, blk_num_min, weight);
-          coefficientsy.emplace_back(blk_num, blk_num_min, -weight);
-          coefficientsy.emplace_back(blk_num_min, blk_num, -weight);
+          coefficients_y_.emplace_back(blk_num, blk_num, weight);
+          coefficients_y_.emplace_back(blk_num_min, blk_num_min, weight);
+          coefficients_y_.emplace_back(blk_num, blk_num_min, -weight);
+          coefficients_y_.emplace_back(blk_num_min, blk_num, -weight);
           double offset_diff = (offset_min - offset) * weight;
           by[blk_num] += offset_diff;
           by[blk_num_min] -= offset_diff;
@@ -554,22 +564,22 @@ void GlobalPlacer::BuildProblemB2BY() {
   // add the diagonal non-zero element for fixed blocks
   for (int i = 0; i < sz; ++i) {
     if (blocks[i].IsFixed()) {
-      coefficientsy.emplace_back(i, i, 1);
+      coefficients_y_.emplace_back(i, i, 1);
       by[i] = blocks[i].LLY();
     } else {
       if (blocks[i].LLY() < RegionBottom()
           || blocks[i].URY() > RegionTop()) {
-        coefficientsy.emplace_back(i, i, center_weight);
+        coefficients_y_.emplace_back(i, i, center_weight);
         by[i] += weight_center_y;
       }
     }
   }
 
   DaliWarns(
-      coefficients_capacity != coefficientsy.capacity(),
+      coefficients_capacity != coefficients_y_.capacity(),
       "WARNING: y coefficients capacity changed!\n"
           << "\told capacity: " << coefficients_capacity << "\n"
-          << "\tnew capacity: " << coefficientsy.size()
+          << "\tnew capacity: " << coefficients_y_.size()
   );
 
   wall_time = get_wall_time() - wall_time;
@@ -581,8 +591,8 @@ void GlobalPlacer::BuildProblemStarModelX() {
 
   std::vector<Block> &block_list = p_ckt_->Blocks();
   std::vector<Net> &nets = p_ckt_->Nets();
-  size_t coefficients_capacity = coefficientsx.capacity();
-  coefficientsx.resize(0);
+  size_t coefficients_capacity = coefficients_x_.capacity();
+  coefficients_x_.resize(0);
 
   int sz = static_cast<int>(bx.size());
   for (int i = 0; i < sz; ++i) {
@@ -615,15 +625,15 @@ void GlobalPlacer::BuildProblemStarModelX() {
         double weight = inv_p / (distance + width_epsilon_);
         if (!is_movable && driver_is_movable) {
           bx[0] += (pin_loc - driver_offset) * weight;
-          coefficientsx.emplace_back(driver_blk_num, driver_blk_num, weight);
+          coefficients_x_.emplace_back(driver_blk_num, driver_blk_num, weight);
         } else if (is_movable && !driver_is_movable) {
           bx[blk_num] += (driver_pin_loc - driver_offset) * weight;
-          coefficientsx.emplace_back(blk_num, blk_num, weight);
+          coefficients_x_.emplace_back(blk_num, blk_num, weight);
         } else if (is_movable && driver_is_movable) {
-          coefficientsx.emplace_back(blk_num, blk_num, weight);
-          coefficientsx.emplace_back(driver_blk_num, driver_blk_num, weight);
-          coefficientsx.emplace_back(blk_num, driver_blk_num, -weight);
-          coefficientsx.emplace_back(driver_blk_num, blk_num, -weight);
+          coefficients_x_.emplace_back(blk_num, blk_num, weight);
+          coefficients_x_.emplace_back(driver_blk_num, driver_blk_num, weight);
+          coefficients_x_.emplace_back(blk_num, driver_blk_num, -weight);
+          coefficients_x_.emplace_back(driver_blk_num, blk_num, -weight);
           double offset_diff = (driver_offset - pair.OffsetX()) * weight;
           bx[blk_num] += offset_diff;
           bx[driver_blk_num] -= offset_diff;
@@ -634,22 +644,22 @@ void GlobalPlacer::BuildProblemStarModelX() {
 
   for (int i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) {
-      coefficientsx.emplace_back(i, i, 1);
+      coefficients_x_.emplace_back(i, i, 1);
       bx[i] = block_list[i].LLX();
     } else {
       if (block_list[i].LLX() < RegionLeft()
           || block_list[i].URX() > RegionRight()) {
-        coefficientsx.emplace_back(i, i, center_weight);
+        coefficients_x_.emplace_back(i, i, center_weight);
         bx[i] += weight_center_x;
       }
     }
   }
 
   DaliWarns(
-      coefficients_capacity != coefficientsx.capacity(),
+      coefficients_capacity != coefficients_x_.capacity(),
       "WARNING: x coefficients capacity changed!\n"
           << "\told capacity: " << coefficients_capacity << "\n"
-          << "\tnew capacity: " << coefficientsx.size()
+          << "\tnew capacity: " << coefficients_x_.size()
   );
 
   wall_time = get_wall_time() - wall_time;
@@ -661,8 +671,8 @@ void GlobalPlacer::BuildProblemStarModelY() {
 
   std::vector<Block> &block_list = p_ckt_->Blocks();
   std::vector<Net> &nets = p_ckt_->Nets();
-  size_t coefficients_capacity = coefficientsy.capacity();
-  coefficientsy.resize(0);
+  size_t coefficients_capacity = coefficients_y_.capacity();
+  coefficients_y_.resize(0);
 
   int sz = static_cast<int>(by.size());
   for (int i = 0; i < sz; ++i) {
@@ -695,15 +705,15 @@ void GlobalPlacer::BuildProblemStarModelY() {
         double weight = inv_p / (distance + height_epsilon_);
         if (!is_movable && driver_is_movable) {
           by[0] += (pin_loc - driver_offset) * weight;
-          coefficientsy.emplace_back(driver_blk_num, driver_blk_num, weight);
+          coefficients_y_.emplace_back(driver_blk_num, driver_blk_num, weight);
         } else if (is_movable && !driver_is_movable) {
           by[blk_num] += (driver_pin_loc - driver_offset) * weight;
-          coefficientsy.emplace_back(blk_num, blk_num, weight);
+          coefficients_y_.emplace_back(blk_num, blk_num, weight);
         } else if (is_movable && driver_is_movable) {
-          coefficientsy.emplace_back(blk_num, blk_num, weight);
-          coefficientsy.emplace_back(driver_blk_num, driver_blk_num, weight);
-          coefficientsy.emplace_back(blk_num, driver_blk_num, -weight);
-          coefficientsy.emplace_back(driver_blk_num, blk_num, -weight);
+          coefficients_y_.emplace_back(blk_num, blk_num, weight);
+          coefficients_y_.emplace_back(driver_blk_num, driver_blk_num, weight);
+          coefficients_y_.emplace_back(blk_num, driver_blk_num, -weight);
+          coefficients_y_.emplace_back(driver_blk_num, blk_num, -weight);
           double offset_diff = (driver_offset - pair.OffsetY()) * weight;
           by[blk_num] += offset_diff;
           by[driver_blk_num] -= offset_diff;
@@ -715,22 +725,22 @@ void GlobalPlacer::BuildProblemStarModelY() {
   // add the diagonal non-zero element for fixed blocks
   for (int i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) {
-      coefficientsy.emplace_back(i, i, 1);
+      coefficients_y_.emplace_back(i, i, 1);
       by[i] = block_list[i].LLY();
     } else {
       if (block_list[i].LLY() < RegionBottom()
           || block_list[i].URY() > RegionTop()) {
-        coefficientsy.emplace_back(i, i, center_weight);
+        coefficients_y_.emplace_back(i, i, center_weight);
         by[i] += weight_center_y;
       }
     }
   }
 
   DaliWarns(
-      coefficients_capacity != coefficientsy.capacity(),
+      coefficients_capacity != coefficients_y_.capacity(),
       "WARNING: y coefficients capacity changed!\n"
           << "\told capacity: " << coefficients_capacity << "\n"
-          << "\tnew capacity: " << coefficientsy.size()
+          << "\tnew capacity: " << coefficients_y_.size()
   );
 
   wall_time = get_wall_time() - wall_time;
@@ -742,8 +752,8 @@ void GlobalPlacer::BuildProblemHPWLX() {
 
   std::vector<Block> &block_list = p_ckt_->Blocks();
   std::vector<Net> &nets = p_ckt_->Nets();
-  size_t coefficients_capacity = coefficientsx.capacity();
-  coefficientsx.resize(0);
+  size_t coefficients_capacity = coefficients_x_.capacity();
+  coefficients_x_.resize(0);
 
   int sz = static_cast<int>(bx.size());
   for (int i = 0; i < sz; ++i) {
@@ -777,15 +787,15 @@ void GlobalPlacer::BuildProblemHPWLX() {
     double weight = inv_p / (distance + width_epsilon_);
     if (!is_movable_min && is_movable_max) {
       bx[blk_num_max] += (pin_loc_min - offset_max) * weight;
-      coefficientsx.emplace_back(blk_num_max, blk_num_max, weight);
+      coefficients_x_.emplace_back(blk_num_max, blk_num_max, weight);
     } else if (is_movable_min && !is_movable_max) {
       bx[blk_num_min] += (pin_loc_max - offset_min) * weight;
-      coefficientsx.emplace_back(blk_num_min, blk_num_min, weight);
+      coefficients_x_.emplace_back(blk_num_min, blk_num_min, weight);
     } else if (is_movable_min && is_movable_max) {
-      coefficientsx.emplace_back(blk_num_min, blk_num_min, weight);
-      coefficientsx.emplace_back(blk_num_max, blk_num_max, weight);
-      coefficientsx.emplace_back(blk_num_min, blk_num_max, -weight);
-      coefficientsx.emplace_back(blk_num_max, blk_num_min, -weight);
+      coefficients_x_.emplace_back(blk_num_min, blk_num_min, weight);
+      coefficients_x_.emplace_back(blk_num_max, blk_num_max, weight);
+      coefficients_x_.emplace_back(blk_num_min, blk_num_max, -weight);
+      coefficients_x_.emplace_back(blk_num_max, blk_num_min, -weight);
       double offset_diff = (offset_max - offset_min) * weight;
       bx[blk_num_min] += offset_diff;
       bx[blk_num_max] -= offset_diff;
@@ -794,22 +804,22 @@ void GlobalPlacer::BuildProblemHPWLX() {
 
   for (int i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) {
-      coefficientsx.emplace_back(i, i, 1);
+      coefficients_x_.emplace_back(i, i, 1);
       bx[i] = block_list[i].LLX();
     } else {
       if (block_list[i].LLX() < RegionLeft()
           || block_list[i].URX() > RegionRight()) {
-        coefficientsx.emplace_back(i, i, center_weight);
+        coefficients_x_.emplace_back(i, i, center_weight);
         bx[i] += weight_center_x;
       }
     }
   }
 
   DaliWarns(
-      coefficients_capacity != coefficientsx.capacity(),
+      coefficients_capacity != coefficients_x_.capacity(),
       "WARNING: x coefficients capacity changed!\n"
           << "\told capacity: " << coefficients_capacity << "\n"
-          << "\tnew capacity: " << coefficientsx.size()
+          << "\tnew capacity: " << coefficients_x_.size()
   );
 
   wall_time = get_wall_time() - wall_time;
@@ -821,8 +831,8 @@ void GlobalPlacer::BuildProblemHPWLY() {
 
   std::vector<Block> &block_list = p_ckt_->Blocks();
   std::vector<Net> &nets = p_ckt_->Nets();
-  size_t coefficients_capacity = coefficientsy.capacity();
-  coefficientsy.resize(0);
+  size_t coefficients_capacity = coefficients_y_.capacity();
+  coefficients_y_.resize(0);
 
   int sz = static_cast<int>(by.size());
   for (int i = 0; i < sz; ++i) {
@@ -856,15 +866,15 @@ void GlobalPlacer::BuildProblemHPWLY() {
     double weight = inv_p / (distance + height_epsilon_);
     if (!is_movable_min && is_movable_max) {
       by[blk_num_max] += (pin_loc_min - offset_max) * weight;
-      coefficientsy.emplace_back(blk_num_max, blk_num_max, weight);
+      coefficients_y_.emplace_back(blk_num_max, blk_num_max, weight);
     } else if (is_movable_min && !is_movable_max) {
       by[blk_num_min] += (pin_loc_max - offset_max) * weight;
-      coefficientsy.emplace_back(blk_num_min, blk_num_min, weight);
+      coefficients_y_.emplace_back(blk_num_min, blk_num_min, weight);
     } else if (is_movable_min && is_movable_max) {
-      coefficientsy.emplace_back(blk_num_min, blk_num_min, weight);
-      coefficientsy.emplace_back(blk_num_max, blk_num_max, weight);
-      coefficientsy.emplace_back(blk_num_min, blk_num_max, -weight);
-      coefficientsy.emplace_back(blk_num_max, blk_num_min, -weight);
+      coefficients_y_.emplace_back(blk_num_min, blk_num_min, weight);
+      coefficients_y_.emplace_back(blk_num_max, blk_num_max, weight);
+      coefficients_y_.emplace_back(blk_num_min, blk_num_max, -weight);
+      coefficients_y_.emplace_back(blk_num_max, blk_num_min, -weight);
       double offset_diff = (offset_max - offset_min) * weight;
       by[blk_num_min] += offset_diff;
       by[blk_num_max] -= offset_diff;
@@ -873,22 +883,22 @@ void GlobalPlacer::BuildProblemHPWLY() {
   for (int i = 0; i < sz;
        ++i) { // add the diagonal non-zero element for fixed blocks
     if (block_list[i].IsFixed()) {
-      coefficientsy.emplace_back(i, i, 1);
+      coefficients_y_.emplace_back(i, i, 1);
       by[i] = block_list[i].LLY();
     } else {
       if (block_list[i].LLY() < RegionBottom()
           || block_list[i].URY() > RegionTop()) {
-        coefficientsy.emplace_back(i, i, center_weight);
+        coefficients_y_.emplace_back(i, i, center_weight);
         by[i] += weight_center_y;
       }
     }
   }
 
   DaliWarns(
-      coefficients_capacity != coefficientsy.capacity(),
+      coefficients_capacity != coefficients_y_.capacity(),
       "WARNING: coefficients capacity changed!\n"
           << "\told capacity: " << coefficients_capacity << "\n"
-          << "\tnew capacity: " << coefficientsy.size()
+          << "\tnew capacity: " << coefficients_y_.size()
   );
 
   wall_time = get_wall_time() - wall_time;
@@ -1172,7 +1182,7 @@ void GlobalPlacer::BuildProblemStarHPWLY() {
 double GlobalPlacer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
   double wall_time = get_wall_time();
   if (net_model != 3) {
-    Ax.setFromTriplets(coefficientsx.begin(), coefficientsx.end());
+    Ax.setFromTriplets(coefficients_x_.begin(), coefficients_x_.end());
   }
   wall_time = get_wall_time() - wall_time;
   tot_matrix_from_triplets_x += wall_time;
@@ -1183,9 +1193,9 @@ double GlobalPlacer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
   wall_time = get_wall_time();
   std::vector<double> eval_history;
   int max_rounds = cg_iteration_max_num_ / cg_iteration_;
-  cgx.compute(Ax); // Ax * vx = bx
+  cg_x_.compute(Ax); // Ax * vx = bx
   for (int i = 0; i < max_rounds; ++i) {
-    vx = cgx.solveWithGuess(bx, vx);
+    vx = cg_x_.solveWithGuess(bx, vx);
     for (int num = 0; num < sz; ++num) {
       blocks[num].SetLLX(vx[num]);
     }
@@ -1228,7 +1238,7 @@ double GlobalPlacer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
 double GlobalPlacer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
   double wall_time = get_wall_time();
   if (net_model != 3) {
-    Ay.setFromTriplets(coefficientsy.begin(), coefficientsy.end());
+    Ay.setFromTriplets(coefficients_y_.begin(), coefficients_y_.end());
   }
   wall_time = get_wall_time() - wall_time;
   tot_matrix_from_triplets_y += wall_time;
@@ -1239,9 +1249,9 @@ double GlobalPlacer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
   wall_time = get_wall_time();
   std::vector<double> eval_history;
   int max_rounds = cg_iteration_max_num_ / cg_iteration_;
-  cgy.compute(Ay);
+  cg_y_.compute(Ay);
   for (int i = 0; i < max_rounds; ++i) {
-    vy = cgy.solveWithGuess(by, vy);
+    vy = cg_y_.solveWithGuess(by, vy);
     for (int num = 0; num < sz; ++num) {
       block_list[num].SetLLY(vy[num]);
     }
@@ -1855,7 +1865,7 @@ void GlobalPlacer::UpdateGridBinState() {
       }
     }
   }
-  UpdateGridBinState_time += get_wall_time() - wall_time;
+  update_grid_bin_state_time_ += get_wall_time() - wall_time;
 }
 
 void GlobalPlacer::UpdateClusterArea(GridBinCluster &cluster) {
@@ -1915,7 +1925,7 @@ void GlobalPlacer::UpdateClusterList() {
       cluster_set.insert(H);
     }
   }
-  UpdateClusterList_time += get_wall_time() - wall_time;
+  update_cluster_list_time_ += get_wall_time() - wall_time;
 }
 
 void GlobalPlacer::UpdateLargestCluster() {
@@ -2068,7 +2078,7 @@ void GlobalPlacer::FindMinimumBoxForLargestCluster() {
     }
   }
 
-  FindMinimumBoxForLargestCluster_time += get_wall_time() - wall_time;
+  find_minimum_box_for_largest_cluster_time_ += get_wall_time() - wall_time;
 }
 
 void GlobalPlacer::SplitBox(BoxBin &box) {
@@ -2696,7 +2706,7 @@ bool GlobalPlacer::RecursiveBisectionblockspreading() {
     queue_box_bin.pop();
   }
 
-  RecursiveBisectionblockspreading_time += get_wall_time() - wall_time;
+  recursive_bisection_block_spreading_time_ += get_wall_time() - wall_time;
   return true;
 }
 
@@ -2780,7 +2790,7 @@ void GlobalPlacer::BuildProblemWithAnchorX() {
     if (net_model == 3) {
       SpMat_diag_x[i].valueRef() += weight;
     } else {
-      coefficientsx.emplace_back(T(i, i, weight));
+      coefficients_x_.emplace_back(T(i, i, weight));
     }
   }
   wall_time = get_wall_time() - wall_time;
@@ -2815,7 +2825,7 @@ void GlobalPlacer::BuildProblemWithAnchorY() {
     if (net_model == 3) {
       SpMat_diag_y[i].valueRef() += weight;
     } else {
-      coefficientsy.emplace_back(T(i, i, weight));
+      coefficients_y_.emplace_back(T(i, i, weight));
     }
   }
   wall_time = get_wall_time() - wall_time;
@@ -2994,15 +3004,15 @@ double GlobalPlacer::LookAheadLegalization() {
   }
 
   BOOST_LOG_TRIVIAL(debug)
-    << "(UpdateGridBinState time: " << UpdateGridBinState_time << "s)\n";
+    << "(UpdateGridBinState time: " << update_grid_bin_state_time_ << "s)\n";
   BOOST_LOG_TRIVIAL(debug)
-    << "(UpdateClusterList time: " << UpdateClusterList_time << "s)\n";
+    << "(UpdateClusterList time: " << update_cluster_list_time_ << "s)\n";
   BOOST_LOG_TRIVIAL(debug)
     << "(FindMinimumBoxForLargestCluster time: "
-    << FindMinimumBoxForLargestCluster_time << "s)\n";
+    << find_minimum_box_for_largest_cluster_time_ << "s)\n";
   BOOST_LOG_TRIVIAL(debug)
     << "(RecursiveBisectionblockspreading time: "
-    << RecursiveBisectionblockspreading_time << "s)\n";
+    << recursive_bisection_block_spreading_time_ << "s)\n";
 
   return evaluate_result_x + evaluate_result_y;
 }
@@ -3500,7 +3510,13 @@ bool GlobalPlacer::IsSeriesOscillate(std::vector<double> &data, int length) {
 
   return is_oscillate;
 }
-
+/****
+ * @brief This function is a wrapper to report HPWL before and after block
+ * location initialization using different methods.
+ *
+ * @param mode: the method to initialize the block locations
+ * @param std_dev: the standard deviation if normal distribution is used
+ */
 void GlobalPlacer::BlockLocationInitialization_(int mode, double std_dev) {
   BOOST_LOG_TRIVIAL(info)
     << "HPWL before random initialization: " << p_ckt_->WeightedHPWL() << "\n";
@@ -3517,6 +3533,9 @@ void GlobalPlacer::BlockLocationInitialization_(int mode, double std_dev) {
   if (is_dump_) DumpResult("rand_init.txt");
 }
 
+/****
+ * @brief Initialize the location of blocks uniformly across the placement region.
+ */
 void GlobalPlacer::BlockLocationUniformInitialization_() {
   // initialize the random number generator
   std::minstd_rand0 generator{1};
@@ -3536,6 +3555,11 @@ void GlobalPlacer::BlockLocationUniformInitialization_() {
     << "Block location uniform initialization complete\n";
 }
 
+/****
+ * @brief Initialize the location of blocks using the normal distribution.
+ *
+ * @param std_dev: the deviation of cells around the center of the placement region
+ */
 void GlobalPlacer::BlockLocationNormalInitialization_(double std_dev) {
   // initialize the random number generator
   std::minstd_rand0 generator{1};

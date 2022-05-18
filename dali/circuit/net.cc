@@ -102,8 +102,8 @@ double Net::Weight() const {
   return weight_;
 }
 
-int Net::PinCnt() const {
-  return static_cast<int>(blk_pins_.size());
+size_t Net::PinCnt() const {
+  return blk_pins_.size();
 }
 
 double Net::InvP() const {

@@ -28,7 +28,7 @@ namespace dali {
 /****
  * Increment the count of net in the corresponding bin using binary search
  * ****/
-void Design::UpdateFanoutHisto(int net_size) {
+void Design::UpdateFanoutHisto(size_t net_size) {
   if (net_size <= 1) return;
   int l = 0;
   int r = int(net_histogram_.bin_list_.size()) - 1;
@@ -73,7 +73,7 @@ void Design::InitNetFanoutHisto(std::vector<int> *histo_x) {
   net_histogram_.min_hpwl_.assign(sz, 0);
   net_histogram_.max_hpwl_.assign(sz, 0);
   for (auto &net: nets_) {
-    int net_size = net.PinCnt();
+    size_t net_size = net.PinCnt();
     UpdateFanoutHisto(net_size);
   }
 
@@ -90,7 +90,7 @@ void Design::InitNetFanoutHisto(std::vector<int> *histo_x) {
 /****
  * Increment the HPWL of a net in the corresponding bin using binary search
  * ****/
-void Design::UpdateNetHPWLHisto(int net_size, double hpwl) {
+void Design::UpdateNetHPWLHisto(size_t net_size, double hpwl) {
   if (net_size <= 1) return;
   int l = 0;
   int r = int(net_histogram_.bin_list_.size()) - 1;
