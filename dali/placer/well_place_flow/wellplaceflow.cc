@@ -33,11 +33,11 @@ bool WellPlaceFlow::StartPlacement() {
   BOOST_LOG_TRIVIAL(info) << "---------------------------------------\n"
                           << "Start global placement\n";
   SanityCheck();
-  InitializeConjugateGradientLinearSolver();
-  LALInit();
-  //BlockLocationNormalInitialization();
-  BlockLocationUniformInitialization();
-  if (p_ckt_->Nets().empty()) {
+  InitializeHpwlOptimizer();
+  InitializeRoughLegalizer();
+  //InitializeBlockLocationNormal();
+  InitializeBlockLocationUniform();
+  if (ckt_ptr_->Nets().empty()) {
     BOOST_LOG_TRIVIAL(info)
       << "\033[0;36m" << "Global Placement complete\n" << "\033[0m";
     return true;
@@ -62,7 +62,7 @@ bool WellPlaceFlow::StartPlacement() {
       well_legalizer.TakeOver(this);
       well_legalizer.SetStripePartitionMode(int(DefaultPartitionMode::SCAVENGE));
       well_legalizer.WellLegalize();
-      upper_bound_hpwl_.back() = p_ckt_->WeightedHPWL();
+      upper_bound_hpwl_.back() = ckt_ptr_->WeightedHPWL();
 
       //StdClusterWellLegalizer well_legalizer;
       //well_legalizer.TakeOver(this);

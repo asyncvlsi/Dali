@@ -33,20 +33,6 @@
 namespace dali {
 
 class Placer {
- protected:
-  /* essential data entries */
-  double aspect_ratio_; // placement region Height/Width
-  double placement_density_;
-
-  /* the following entries are derived data
-   * note that the following entries can be manually changed
-   * if so, the aspect_ratio_ or filling_rate_ might also be changed */
-  int left_, right_, bottom_, top_;
-  // boundaries of the placement region
-  Circuit *p_ckt_;
-
-  double GetBlkHPWL(Block &blk);
-
  public:
   Placer();
   Placer(double aspect_ratio, double filling_rate);
@@ -62,7 +48,7 @@ class Placer {
         "Invalid value: value should be in range (0, 1]"
     );
     DaliExpects(
-        p_ckt_->WhiteSpaceUsage() < density,
+        ckt_ptr_->WhiteSpaceUsage() < density,
         "Cannot set target density smaller than average white space utility!"
     );
     placement_density_ = density;
@@ -100,57 +86,57 @@ class Placer {
   void UpdateAspectRatio();
   void NetSortBlkPin() {
     DaliExpects(
-        p_ckt_ != nullptr,
+        ckt_ptr_ != nullptr,
         "No input circuit specified, cannot modify any circuits!"
     );
-    p_ckt_->NetSortBlkPin();
+    ckt_ptr_->NetSortBlkPin();
   }
   virtual bool StartPlacement();
 
   double WeightedHPWLX() {
     DaliExpects(
-        p_ckt_ != nullptr,
+        ckt_ptr_ != nullptr,
         "No input circuit specified, cannot compute WeightedHPWLX!"
     );
-    return p_ckt_->WeightedHPWLX();
+    return ckt_ptr_->WeightedHPWLX();
   }
   double WeightedHPWLY() {
     DaliExpects(
-        p_ckt_ != nullptr,
+        ckt_ptr_ != nullptr,
         "No input circuit specified, cannot compute WeightedHPWLY!"
     );
-    return p_ckt_->WeightedHPWLY();
+    return ckt_ptr_->WeightedHPWLY();
   }
   double WeightedHPWL() {
     DaliExpects(
-        p_ckt_ != nullptr,
+        ckt_ptr_ != nullptr,
         "No input circuit specified, cannot compute HPWL!"
     );
-    return p_ckt_->WeightedHPWL();
+    return ckt_ptr_->WeightedHPWL();
   }
 
   void ReportHPWL() {
     DaliExpects(
-        p_ckt_ != nullptr,
+        ckt_ptr_ != nullptr,
         "No input circuit specified, cannot compute HPWL!"
     );
-    p_ckt_->ReportHPWL();
+    ckt_ptr_->ReportHPWL();
   }
 
   void ReportBoundingBox() {
     DaliExpects(
-        p_ckt_ != nullptr,
+        ckt_ptr_ != nullptr,
         "No input circuit specified, cannot compute bounding box!"
     );
-    p_ckt_->ReportBoundingBox();
+    ckt_ptr_->ReportBoundingBox();
   }
 
   void ReportHPWLCtoC() {
     DaliExpects(
-        p_ckt_ != nullptr,
+        ckt_ptr_ != nullptr,
         "No input circuit specified, cannot compute HPWLCtoC!"
     );
-    p_ckt_->ReportHPWLCtoC();
+    ckt_ptr_->ReportHPWLCtoC();
   }
 
   void TakeOver(Placer *placer);
@@ -159,13 +145,13 @@ class Placer {
 
   /****File I/O member functions****/
   void GenMATLABTable(std::string const &name_of_file) {
-    p_ckt_->GenMATLABTable(name_of_file);
+    ckt_ptr_->GenMATLABTable(name_of_file);
   }
   virtual void GenMATLABWellTable(
       std::string const &name_of_file,
       [[maybe_unused]]int well_emit_mode
   ) {
-    p_ckt_->GenMATLABWellTable(name_of_file);
+    ckt_ptr_->GenMATLABWellTable(name_of_file);
   }
   void GenMATLABScriptPlaced(std::string const &name_of_file = "block_net_list.m");
   bool SaveNodeTerminal(
@@ -183,6 +169,19 @@ class Placer {
   void ShiftY(double shift_y);
 
   bool IsDummyBlock(Block &blk);
+ protected:
+  /* essential data entries */
+  double aspect_ratio_; // placement region Height/Width
+  double placement_density_;
+
+  /* the following entries are derived data
+   * note that the following entries can be manually changed
+   * if so, the aspect_ratio_ or filling_rate_ might also be changed */
+  int left_, right_, bottom_, top_;
+  // boundaries of the placement region
+  Circuit *ckt_ptr_;
+
+  double GetBlkHPWL(Block &blk);
 };
 
 }

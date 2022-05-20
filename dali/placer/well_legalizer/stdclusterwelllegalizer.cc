@@ -42,7 +42,7 @@ void StdClusterWellLegalizer::LoadConf(std::string const &config_file) {
 }
 
 void StdClusterWellLegalizer::CheckWellStatus() {
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   for (Block &blk : blocks) {
     if (blk.IsMovable()) {
       BlockTypeWell *well_ptr = blk.TypePtr()->WellPtr();
@@ -53,9 +53,9 @@ void StdClusterWellLegalizer::CheckWellStatus() {
 }
 
 void StdClusterWellLegalizer::FetchNpWellParams() {
-  Tech &tech = p_ckt_->tech();
+  Tech &tech = ckt_ptr_->tech();
   WellLayer &n_well_layer = tech.NwellLayer();
-  double grid_value_x = p_ckt_->GridValueX();
+  double grid_value_x = ckt_ptr_->GridValueX();
   int same_well_spacing = std::ceil(n_well_layer.Spacing() / grid_value_x);
   int op_well_spacing =
       std::ceil(n_well_layer.OppositeSpacing() / grid_value_x);
@@ -70,7 +70,7 @@ void StdClusterWellLegalizer::FetchNpWellParams() {
   BOOST_LOG_TRIVIAL(info) << "Well max plug distance: "
                           << n_well_layer.MaxPlugDist() << " um, "
                           << max_unplug_length_ << " \n";
-  BOOST_LOG_TRIVIAL(info) << "GridValueX: " << p_ckt_->GridValueX()
+  BOOST_LOG_TRIVIAL(info) << "GridValueX: " << ckt_ptr_->GridValueX()
                           << " um\n";
   BOOST_LOG_TRIVIAL(info) << "Well spacing: "
                           << n_well_layer.Spacing() << " um, "
@@ -78,7 +78,7 @@ void StdClusterWellLegalizer::FetchNpWellParams() {
   BOOST_LOG_TRIVIAL(info) << "Well tap cell width: " << well_tap_cell_width_
                           << "\n";
 
-  well_tap_cell_ = (p_ckt_->tech().WellTapCellPtrs()[0]);
+  well_tap_cell_ = (ckt_ptr_->tech().WellTapCellPtrs()[0]);
   auto *tap_cell_well = well_tap_cell_->WellPtr();
   tap_cell_p_height_ = tap_cell_well->Pheight();
   tap_cell_n_height_ = tap_cell_well->Nheight();
@@ -87,7 +87,7 @@ void StdClusterWellLegalizer::FetchNpWellParams() {
 void StdClusterWellLegalizer::SaveInitialBlockLocation() {
   block_init_locations_.clear();
 
-  std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
   block_init_locations_.reserve(block_list.size());
 
   for (auto &block : block_list) {
@@ -101,7 +101,7 @@ void StdClusterWellLegalizer::InitializeWellLegalizer(int cluster_width) {
   // fetch parameters related to N/P-well
   FetchNpWellParams();
 
-  space_partitioner_.SetInputCircuit(p_ckt_);
+  space_partitioner_.SetInputCircuit(ckt_ptr_);
   space_partitioner_.SetOutput(&col_list_);
   space_partitioner_.SetReservedSpaceToBoundaries(
       well_spacing_, well_spacing_, 1, 1
@@ -110,7 +110,7 @@ void StdClusterWellLegalizer::InitializeWellLegalizer(int cluster_width) {
   space_partitioner_.SetMaxRowWidth(cluster_width);
   space_partitioner_.StartPartitioning();
 
-  index_loc_list_.resize(p_ckt_->Blocks().size());
+  index_loc_list_.resize(ckt_ptr_->Blocks().size());
 }
 
 void StdClusterWellLegalizer::CreateClusterAndAppendSingleWellBlock(
@@ -557,7 +557,7 @@ bool StdClusterWellLegalizer::BlockClusteringLoose() {
           if (count % step == 0) {
             std::string tmp_file_name =
                 "wlg_result_" + std::to_string(dump_count) + ".txt";
-            p_ckt_->GenMATLABTable(tmp_file_name);
+            ckt_ptr_->GenMATLABTable(tmp_file_name);
             ++dump_count;
           }
           ++count;
@@ -688,7 +688,7 @@ double StdClusterWellLegalizer::WireLengthCost(
     int l,
     int r
 ) {
-  auto &net_list = p_ckt_->Nets();
+  auto &net_list = ckt_ptr_->Nets();
   std::set<Net *> net_involved;
   for (int i = l; i <= r; ++i) {
     auto *blk = cluster->Blocks()[i];
@@ -706,7 +706,7 @@ double StdClusterWellLegalizer::WireLengthCost(
     hpwl_y += net->WeightedHPWLY();
   }
 
-  return hpwl_x * p_ckt_->GridValueX() + hpwl_y * p_ckt_->GridValueY();
+  return hpwl_x * ckt_ptr_->GridValueX() + hpwl_y * ckt_ptr_->GridValueY();
 }
 
 /****
@@ -924,7 +924,7 @@ void StdClusterWellLegalizer::UpdateClusterOrient() {
 }
 
 void StdClusterWellLegalizer::InsertWellTap() {
-  auto &tap_cell_list = p_ckt_->design().WellTaps();
+  auto &tap_cell_list = ckt_ptr_->design().WellTaps();
   tap_cell_list.clear();
   size_t tot_cluster_count = 0;
   for (auto &col : col_list_) {
@@ -933,7 +933,7 @@ void StdClusterWellLegalizer::InsertWellTap() {
     }
   }
   tap_cell_list.reserve(tot_cluster_count * 2);
-  p_ckt_->design().TapNameIdMap().clear();
+  ckt_ptr_->design().TapNameIdMap().clear();
 
   int counter = 0;
   int tot_tap_cell_num = 0;
@@ -950,9 +950,9 @@ void StdClusterWellLegalizer::InsertWellTap() {
           tap_cell_list.emplace_back();
           auto &tap_cell = tap_cell_list.back();
           tap_cell.SetPlacementStatus(PLACED);
-          tap_cell.SetType(p_ckt_->tech().WellTapCellPtrs()[0]);
-          int map_size = p_ckt_->design().TapNameIdMap().size();
-          auto ret = p_ckt_->design().TapNameIdMap().insert(
+          tap_cell.SetType(ckt_ptr_->tech().WellTapCellPtrs()[0]);
+          int map_size = ckt_ptr_->design().TapNameIdMap().size();
+          auto ret = ckt_ptr_->design().TapNameIdMap().insert(
               std::pair<std::string, int>(block_name, map_size)
           );
           auto *name_id_pair_ptr = &(*ret.first);
@@ -969,7 +969,7 @@ void StdClusterWellLegalizer::InsertWellTap() {
 }
 
 void StdClusterWellLegalizer::ClearCachedData() {
-  for (auto &block : p_ckt_->Blocks()) {
+  for (auto &block : ckt_ptr_->Blocks()) {
     block.SetOrient(N);
   }
 
@@ -1080,9 +1080,9 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
   long int tot_std_blk_area = 0;
   int max_n_height = 0;
   int max_p_height = 0;
-  for (auto &blk : p_ckt_->design().Blocks()) {
+  for (auto &blk : ckt_ptr_->design().Blocks()) {
     BlockType *type = blk.TypePtr();
-    if (type == p_ckt_->tech().IoDummyBlkTypePtr()) continue;;
+    if (type == ckt_ptr_->tech().IoDummyBlkTypePtr()) continue;;
     if (type->WellPtr()->Nheight() > max_n_height) {
       max_n_height = type->WellPtr()->Nheight();
     }
@@ -1091,7 +1091,7 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
     }
   }
   BlockTypeWell *well_tap_cell_well_info =
-      p_ckt_->tech().WellTapCellPtrs()[0]->WellPtr();
+      ckt_ptr_->tech().WellTapCellPtrs()[0]->WellPtr();
   if (well_tap_cell_well_info->Nheight() > max_n_height) {
     max_n_height = well_tap_cell_well_info->Nheight();
   }
@@ -1114,14 +1114,14 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
       }
     }
   }
-  double factor = p_ckt_->GridValueX() * p_ckt_->GridValueY();
+  double factor = ckt_ptr_->GridValueX() * ckt_ptr_->GridValueY();
   BOOST_LOG_TRIVIAL(info) << "Total placement area: "
                           << ((long int) RegionWidth()
                               * (long int) RegionHeight()) * factor
                           << " um^2\n";
   BOOST_LOG_TRIVIAL(info) << "Total block area: "
-                          << p_ckt_->TotBlkArea() * factor << " ("
-                          << p_ckt_->TotBlkArea() / (double) RegionWidth()
+                          << ckt_ptr_->TotBlkArea() * factor << " ("
+                          << ckt_ptr_->TotBlkArea() / (double) RegionWidth()
                               / (double) RegionHeight() << ") um^2\n";
   BOOST_LOG_TRIVIAL(info) << "Total effective block area: "
                           << tot_eff_blk_area * factor << " ("
@@ -1144,7 +1144,7 @@ void StdClusterWellLegalizer::GenMATLABWellTable(
     std::string const &name_of_file,
     int well_emit_mode
 ) {
-  p_ckt_->GenMATLABWellTable(name_of_file, false);
+  ckt_ptr_->GenMATLABWellTable(name_of_file, false);
 
   GenMATLABWellFillingTable(
       name_of_file, col_list_,
@@ -1335,14 +1335,14 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
-  double factor_x = p_ckt_->DistanceScaleFactorX();
-  double factor_y = p_ckt_->DistanceScaleFactorY();
+  double factor_x = ckt_ptr_->DistanceScaleFactorX();
+  double factor_y = ckt_ptr_->DistanceScaleFactorY();
 
   ost << "bbox "
-      << p_ckt_->LocDali2PhydbX(RegionLeft()) << " "
-      << p_ckt_->LocDali2PhydbY(RegionBottom()) << " "
-      << p_ckt_->LocDali2PhydbX(RegionRight()) << " "
-      << p_ckt_->LocDali2PhydbY(RegionTop()) << "\n";
+      << ckt_ptr_->LocDali2PhydbX(RegionLeft()) << " "
+      << ckt_ptr_->LocDali2PhydbY(RegionBottom()) << " "
+      << ckt_ptr_->LocDali2PhydbX(RegionRight()) << " "
+      << ckt_ptr_->LocDali2PhydbY(RegionTop()) << "\n";
 
   int adjust_width = well_tap_cell_->Width();
 
@@ -1381,12 +1381,12 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
           ost << "rect # " << PP_name << " ";
         }
         ost << (lx + adjust_width) * factor_x
-            + p_ckt_->design().DieAreaOffsetX() << "\t"
-            << ly * factor_y + p_ckt_->design().DieAreaOffsetY()
+            + ckt_ptr_->design().DieAreaOffsetX() << "\t"
+            << ly * factor_y + ckt_ptr_->design().DieAreaOffsetY()
             << "\t"
             << (ux - adjust_width) * factor_x
-                + p_ckt_->design().DieAreaOffsetX() << "\t"
-            << uy * factor_y + p_ckt_->design().DieAreaOffsetY()
+                + ckt_ptr_->design().DieAreaOffsetX() << "\t"
+            << uy * factor_y + ckt_ptr_->design().DieAreaOffsetY()
             << "\n";
 
         is_p_well_rect = !is_p_well_rect;
@@ -1435,26 +1435,26 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
             ost << "rect # " << PP_name << " ";
           }
           ost << lx0 * factor_x
-              + p_ckt_->design().DieAreaOffsetX() << "\t"
+              + ckt_ptr_->design().DieAreaOffsetX() << "\t"
               << ly * factor_y
-                  + p_ckt_->design().DieAreaOffsetY() << "\t"
+                  + ckt_ptr_->design().DieAreaOffsetY() << "\t"
               << ux0 * factor_x
-                  + p_ckt_->design().DieAreaOffsetX() << "\t"
+                  + ckt_ptr_->design().DieAreaOffsetX() << "\t"
               << uy * factor_y
-                  + p_ckt_->design().DieAreaOffsetY() << "\n";
+                  + ckt_ptr_->design().DieAreaOffsetY() << "\n";
           if (!is_p_well_rect) {
             ost << "rect # " << NP_name << " ";
           } else {
             ost << "rect # " << PP_name << " ";
           }
           ost << lx1 * factor_x
-              + p_ckt_->design().DieAreaOffsetX() << "\t"
+              + ckt_ptr_->design().DieAreaOffsetX() << "\t"
               << ly * factor_y
-                  + p_ckt_->design().DieAreaOffsetY() << "\t"
+                  + ckt_ptr_->design().DieAreaOffsetY() << "\t"
               << ux1 * factor_x
-                  + p_ckt_->design().DieAreaOffsetX() << "\t"
+                  + ckt_ptr_->design().DieAreaOffsetX() << "\t"
               << uy * factor_y
-                  + p_ckt_->design().DieAreaOffsetY() << "\n";
+                  + ckt_ptr_->design().DieAreaOffsetY() << "\n";
         }
         is_p_well_rect = !is_p_well_rect;
       }
@@ -1470,15 +1470,15 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
   std::string NP_name = "nplus";
   std::string PP_name = "pplus";
 
-  double factor_x = p_ckt_->design().DistanceMicrons()
-      * p_ckt_->GridValueX();
-  double factor_y = p_ckt_->design().DistanceMicrons()
-      * p_ckt_->GridValueY();
+  double factor_x = ckt_ptr_->design().DistanceMicrons()
+      * ckt_ptr_->GridValueX();
+  double factor_y = ckt_ptr_->design().DistanceMicrons()
+      * ckt_ptr_->GridValueY();
 
-  int bbox_llx = p_ckt_->LocDali2PhydbX(RegionLeft());
-  int bbox_lly = p_ckt_->LocDali2PhydbY(RegionBottom());
-  int bbox_urx = p_ckt_->LocDali2PhydbX(RegionRight());
-  int bbox_ury = p_ckt_->LocDali2PhydbY(RegionTop());
+  int bbox_llx = ckt_ptr_->LocDali2PhydbX(RegionLeft());
+  int bbox_lly = ckt_ptr_->LocDali2PhydbY(RegionBottom());
+  int bbox_urx = ckt_ptr_->LocDali2PhydbX(RegionRight());
+  int bbox_ury = ckt_ptr_->LocDali2PhydbY(RegionTop());
 
   auto *phydb_layout_container = phydb_ptr->CreatePpNpMacroAndComponent(
       bbox_llx,
@@ -1526,13 +1526,13 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
           layer_name = PP_name;
         }
         int rect_llx = (int) ((lx + adjust_width) * factor_x)
-            + p_ckt_->design().DieAreaOffsetX();
+            + ckt_ptr_->design().DieAreaOffsetX();
         int rect_lly = (int) (ly * factor_y)
-            + p_ckt_->design().DieAreaOffsetY();
+            + ckt_ptr_->design().DieAreaOffsetY();
         int rect_urx = (int) ((ux - adjust_width) * factor_x)
-            + p_ckt_->design().DieAreaOffsetX();
+            + ckt_ptr_->design().DieAreaOffsetX();
         int rect_ury = (int) (uy * factor_y)
-            + p_ckt_->design().DieAreaOffsetY();
+            + ckt_ptr_->design().DieAreaOffsetY();
 
         phydb_layout_container->AddRectSignalLayer(
             signal_name,
@@ -1590,13 +1590,13 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
             layer_name = PP_name;
           }
           int rect_llx = (int) (lx0 * factor_x)
-              + p_ckt_->design().DieAreaOffsetX();
+              + ckt_ptr_->design().DieAreaOffsetX();
           int rect_lly = (int) (ly * factor_y)
-              + p_ckt_->design().DieAreaOffsetY();
+              + ckt_ptr_->design().DieAreaOffsetY();
           int rect_urx = (int) (ux0 * factor_x)
-              + p_ckt_->design().DieAreaOffsetX();
+              + ckt_ptr_->design().DieAreaOffsetX();
           int rect_ury = (int) (uy * factor_y)
-              + p_ckt_->design().DieAreaOffsetY();
+              + ckt_ptr_->design().DieAreaOffsetY();
 
           phydb_layout_container->AddRectSignalLayer(
               signal_name,
@@ -1613,13 +1613,13 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
             layer_name = PP_name;
           }
           rect_llx = (int) (lx1 * factor_x)
-              + p_ckt_->design().DieAreaOffsetX();
+              + ckt_ptr_->design().DieAreaOffsetX();
           rect_lly = (int) (ly * factor_y)
-              + p_ckt_->design().DieAreaOffsetY();
+              + ckt_ptr_->design().DieAreaOffsetY();
           rect_urx = (int) (ux1 * factor_x)
-              + p_ckt_->design().DieAreaOffsetX();
+              + ckt_ptr_->design().DieAreaOffsetX();
           rect_ury = (int) (uy * factor_y)
-              + p_ckt_->design().DieAreaOffsetY();
+              + ckt_ptr_->design().DieAreaOffsetY();
           phydb_layout_container->AddRectSignalLayer(
               signal_name,
               layer_name,
@@ -1654,20 +1654,20 @@ void StdClusterWellLegalizer::EmitWellRect(std::string const &name_of_file,
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
-  double factor_x = p_ckt_->design().DistanceMicrons()
-      * p_ckt_->GridValueX();
-  double factor_y = p_ckt_->design().DistanceMicrons()
-      * p_ckt_->GridValueY();
+  double factor_x = ckt_ptr_->design().DistanceMicrons()
+      * ckt_ptr_->GridValueX();
+  double factor_y = ckt_ptr_->design().DistanceMicrons()
+      * ckt_ptr_->GridValueY();
 
   ost << "bbox "
       << (int) (RegionLeft() * factor_x)
-          + p_ckt_->design().DieAreaOffsetX() << " "
+          + ckt_ptr_->design().DieAreaOffsetX() << " "
       << (int) (RegionBottom() * factor_y)
-          + p_ckt_->design().DieAreaOffsetY() << " "
+          + ckt_ptr_->design().DieAreaOffsetY() << " "
       << (int) (RegionRight() * factor_x)
-          + p_ckt_->design().DieAreaOffsetX() << " "
+          + ckt_ptr_->design().DieAreaOffsetX() << " "
       << (int) (RegionTop() * factor_y)
-          + p_ckt_->design().DieAreaOffsetY() << "\n";
+          + ckt_ptr_->design().DieAreaOffsetY() << "\n";
   for (auto &col : col_list_) {
     for (auto &stripe : col.stripe_list_) {
       std::vector<int> pn_edge_list;
@@ -1707,13 +1707,13 @@ void StdClusterWellLegalizer::EmitWellRect(std::string const &name_of_file,
           ost << "rect Vdd nwell ";
         }
         ost << (int) (lx * factor_x)
-            + p_ckt_->design().DieAreaOffsetX() << " "
+            + ckt_ptr_->design().DieAreaOffsetX() << " "
             << (int) (ly * factor_y)
-                + p_ckt_->design().DieAreaOffsetY() << " "
+                + ckt_ptr_->design().DieAreaOffsetY() << " "
             << (int) (ux * factor_x)
-                + p_ckt_->design().DieAreaOffsetX() << " "
+                + ckt_ptr_->design().DieAreaOffsetX() << " "
             << (int) (uy * factor_y)
-                + p_ckt_->design().DieAreaOffsetY() << "\n";
+                + ckt_ptr_->design().DieAreaOffsetY() << "\n";
       }
     }
   }
@@ -1735,19 +1735,19 @@ void StdClusterWellLegalizer::ExportWellToPhyDB(
     default:DaliExpects(false,
                         "Invalid value for well_emit_mode in StdClusterWellLegalizer::EmitDEFWellFile()");
   }
-  double factor_x = p_ckt_->design().DistanceMicrons()
-      * p_ckt_->GridValueX();
-  double factor_y = p_ckt_->design().DistanceMicrons()
-      * p_ckt_->GridValueY();
+  double factor_x = ckt_ptr_->design().DistanceMicrons()
+      * ckt_ptr_->GridValueX();
+  double factor_y = ckt_ptr_->design().DistanceMicrons()
+      * ckt_ptr_->GridValueY();
 
   int bbox_llx = (int) (RegionLeft() * factor_x)
-      + p_ckt_->design().DieAreaOffsetX();
+      + ckt_ptr_->design().DieAreaOffsetX();
   int bbox_lly = (int) (RegionBottom() * factor_y)
-      + p_ckt_->design().DieAreaOffsetY();
+      + ckt_ptr_->design().DieAreaOffsetY();
   int bbox_urx = (int) (RegionRight() * factor_x)
-      + p_ckt_->design().DieAreaOffsetX();
+      + ckt_ptr_->design().DieAreaOffsetX();
   int bbox_ury = (int) (RegionTop() * factor_y)
-      + p_ckt_->design().DieAreaOffsetY();
+      + ckt_ptr_->design().DieAreaOffsetY();
 
   auto *phydb_layout_container = phydb_ptr->CreateWellLayerMacroAndComponent(
       bbox_llx,
@@ -1769,10 +1769,10 @@ void StdClusterWellLegalizer::ExportWellToPhyDB(
         std::string signal_name = "GND";
         std::string layer_name = "pwell";
         for (auto &rect : p_rects) {
-          int rect_llx = p_ckt_->LocDali2PhydbX(rect.LLX());
-          int rect_lly = p_ckt_->LocDali2PhydbY(rect.LLY());
-          int rect_urx = p_ckt_->LocDali2PhydbX(rect.URX());
-          int rect_ury = p_ckt_->LocDali2PhydbY(rect.URY());
+          int rect_llx = ckt_ptr_->LocDali2PhydbX(rect.LLX());
+          int rect_lly = ckt_ptr_->LocDali2PhydbY(rect.LLY());
+          int rect_urx = ckt_ptr_->LocDali2PhydbX(rect.URX());
+          int rect_ury = ckt_ptr_->LocDali2PhydbY(rect.URY());
           phydb_layout_container->AddRectSignalLayer(
               signal_name,
               layer_name,
@@ -1787,10 +1787,10 @@ void StdClusterWellLegalizer::ExportWellToPhyDB(
         std::string signal_name = "Vdd";
         std::string layer_name = "nwell";
         for (auto &rect : p_rects) {
-          int rect_llx = p_ckt_->LocDali2PhydbX(rect.LLX());
-          int rect_lly = p_ckt_->LocDali2PhydbY(rect.LLY());
-          int rect_urx = p_ckt_->LocDali2PhydbX(rect.URX());
-          int rect_ury = p_ckt_->LocDali2PhydbY(rect.URY());
+          int rect_llx = ckt_ptr_->LocDali2PhydbX(rect.LLX());
+          int rect_lly = ckt_ptr_->LocDali2PhydbY(rect.LLY());
+          int rect_urx = ckt_ptr_->LocDali2PhydbX(rect.URX());
+          int rect_ury = ckt_ptr_->LocDali2PhydbY(rect.URY());
           phydb_layout_container->AddRectSignalLayer(
               signal_name,
               layer_name,
@@ -1814,8 +1814,8 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
-  double factor_x = p_ckt_->DistanceScaleFactorX();
-  double factor_y = p_ckt_->DistanceScaleFactorY();
+  double factor_x = ckt_ptr_->DistanceScaleFactorX();
+  double factor_y = ckt_ptr_->DistanceScaleFactorY();
   //BOOST_LOG_TRIVIAL(info)   << "Actual x span: "
   //          << RegionLeft() * factor_x + +circuit_ptr_->getDesignRef().DieAreaOffsetX() << "  "
   //          << (col_list_.back().stripe_list_[0].URX() + well_spacing_) * factor_x + circuit_ptr_->getDesignRef().DieAreaOffsetX()
@@ -1828,9 +1828,9 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
     for (auto &stripe : col.stripe_list_) {
       ost << "  "
           << (int) (stripe.LLX() * factor_x)
-              + p_ckt_->design().DieAreaOffsetX() << "  "
+              + ckt_ptr_->design().DieAreaOffsetX() << "  "
           << (int) (stripe.URX() * factor_x)
-              + p_ckt_->design().DieAreaOffsetX() << "  ";
+              + ckt_ptr_->design().DieAreaOffsetX() << "  ";
       if (stripe.is_first_row_orient_N_) {
         ost << "GND\n";
       } else {
@@ -1841,9 +1841,9 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
         for (auto &cluster : stripe.gridded_rows_) {
           ost << "  "
               << (int) (cluster.LLY() * factor_y)
-                  + p_ckt_->design().DieAreaOffsetY() << "  "
+                  + ckt_ptr_->design().DieAreaOffsetY() << "  "
               << (int) (cluster.URY() * factor_y)
-                  + p_ckt_->design().DieAreaOffsetY() << "\n";
+                  + ckt_ptr_->design().DieAreaOffsetY() << "\n";
         }
       } else {
         int sz = stripe.gridded_rows_.size();
@@ -1851,9 +1851,9 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
           auto &cluster = stripe.gridded_rows_[j];
           ost << "  "
               << (int) (cluster.LLY() * factor_y)
-                  + p_ckt_->design().DieAreaOffsetY() << "  "
+                  + ckt_ptr_->design().DieAreaOffsetY() << "  "
               << (int) (cluster.URY() * factor_y)
-                  + p_ckt_->design().DieAreaOffsetY() << "\n";
+                  + ckt_ptr_->design().DieAreaOffsetY() << "\n";
         }
       }
 

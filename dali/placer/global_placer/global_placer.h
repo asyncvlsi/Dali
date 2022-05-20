@@ -40,6 +40,9 @@
 #include "grid_bin_index.h"
 #include "grid_bin.h"
 
+#include "hpwl_optimizer.h"
+#include "rough_legalizer.h"
+
 namespace dali {
 
 typedef Eigen::Index EgId;
@@ -58,10 +61,10 @@ class GlobalPlacer : public Placer {
   void SetMaxIteration(int max_iter);
   void LoadConf(std::string const &config_file) override;
   void UpdateEpsilon();
-  void BlockLocationUniformInitialization();
-  void BlockLocationNormalInitialization(double std_dev = 1.0 / 3.0);
+  void InitializeBlockLocationUniform();
+  void InitializeBlockLocationNormal(double std_dev = 1.0 / 3.0);
 
-  void InitializeConjugateGradientLinearSolver();
+  void InitializeHpwlOptimizer();
   void UpdateMaxMinX();
   void UpdateMaxMinY();
 
@@ -104,7 +107,7 @@ class GlobalPlacer : public Placer {
   unsigned long int LookUpWhiteSpace(WindowQuadruple &window);
   unsigned long int LookUpBlkArea(WindowQuadruple &window);
   unsigned long int WindowArea(WindowQuadruple &window);
-  void LALInit();
+  void InitializeRoughLegalizer();
   void LALClose();
   void ClearGridBinFlag();
   void UpdateGridBinState();
@@ -133,6 +136,7 @@ class GlobalPlacer : public Placer {
   void UpdateAnchorAlpha();
   bool IsPlacementConverge();
 
+  void CheckOptimizerAndLegalizer();
   bool StartPlacement() override;
 
   void SetDump(bool s_dump);
@@ -266,6 +270,9 @@ class GlobalPlacer : public Placer {
   void BlockLocationUniformInitialization_();
   void BlockLocationNormalInitialization_(double std_dev);
   void BlockLocationInitialization_(int mode, double std_dev);
+
+  HpwlOptimizer *optimizer_ = nullptr;
+  RoughLegalizer *legalizer_ = nullptr;
 };
 
 }

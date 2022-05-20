@@ -62,7 +62,7 @@ void LGTetrisEx::InitializeFromGriddedRowLegalizer(GriddedRowLegalizer *grlg) {
   DaliExpects(grlg != nullptr,
               "Cannot initialize LGTetrisEx from a nullptr GriddedRowLegalizer");
   // circuit
-  p_ckt_ = grlg->p_ckt_;
+  ckt_ptr_ = grlg->ckt_ptr_;
 
   // rows info
   auto &stripe = grlg->col_list_[0].stripe_list_[0];
@@ -91,12 +91,12 @@ void LGTetrisEx::InitializeFromGriddedRowLegalizer(GriddedRowLegalizer *grlg) {
 
   BlkInitPair tmp_index_loc_pair(nullptr, 0, 0);
   blk_inits_.clear();
-  blk_inits_.resize(p_ckt_->Blocks().size(), tmp_index_loc_pair);
+  blk_inits_.resize(ckt_ptr_->Blocks().size(), tmp_index_loc_pair);
 }
 
 void LGTetrisEx::SetRowInfoAuto() {
   if (!row_height_set_) {
-    row_height_ = p_ckt_->RowHeightGridUnit();
+    row_height_ = ckt_ptr_->RowHeightGridUnit();
   }
   tot_num_rows_ = (top_ - bottom_) / row_height_;
   block_contour_.resize(tot_num_rows_, left_);
@@ -107,7 +107,7 @@ void LGTetrisEx::DetectWhiteSpace() {
   macro_segments.resize(tot_num_rows_);
   Seg tmp(0, 0);
   bool out_of_range;
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   for (auto &block: blocks) {
     if (IsDummyBlock(block)) continue;
     if (block.IsMovable()) continue;
@@ -170,7 +170,7 @@ void LGTetrisEx::DetectWhiteSpace() {
   }
 
   row_segments_.resize(tot_num_rows_);
-  int min_blk_width = int(p_ckt_->MinBlkWidth());
+  int min_blk_width = int(ckt_ptr_->MinBlkWidth());
   for (int i = 0; i < tot_num_rows_; ++i) {
     int len = int(intermediate_seg_rows[i].size());
     row_segments_[i].reserve(len / 2);
@@ -189,7 +189,7 @@ void LGTetrisEx::DetectWhiteSpace() {
 
 void LGTetrisEx::InitIndexLocList() {
   BlkInitPair tmp_index_loc_pair(nullptr, 0, 0);
-  blk_inits_.resize(p_ckt_->Blocks().size(), tmp_index_loc_pair);
+  blk_inits_.resize(ckt_ptr_->Blocks().size(), tmp_index_loc_pair);
 }
 
 /****
@@ -328,7 +328,7 @@ void LGTetrisEx::InitBlockContourForward() {
 
 void LGTetrisEx::InitAndSortBlockAscendingX() {
   blk_inits_.clear();
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   for (auto &blk: blocks) {
     // skipp dummy blocks and fixed blocks
     if (IsDummyBlock(blk)) continue;
@@ -674,7 +674,7 @@ void LGTetrisEx::InitBlockContourBackward() {
 
 void LGTetrisEx::InitAndSortBlockDescendingX() {
   blk_inits_.clear();
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   for (auto &blk: blocks) {
     if (IsDummyBlock(blk)) continue;
     if (blk.IsFixed()) continue;
@@ -1017,7 +1017,7 @@ double LGTetrisEx::EstimatedHPWL(Block &block, int x, int y) {
   double min_x = x;
   double min_y = y;
   double tot_hpwl = 0;
-  auto &net_list = p_ckt_->Nets();
+  auto &net_list = ckt_ptr_->Nets();
   for (auto &net_num: block.NetList()) {
     auto &net = net_list[net_num];
     if (net.PinCnt() > 100) continue;
@@ -1158,7 +1158,7 @@ void LGTetrisEx::GenAvailSpace(std::string const &name_of_file) {
     }
   }
 
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   for (auto &block: blocks) {
     if (block.IsMovable()) continue;
     ost << block.LLX() << "\t"

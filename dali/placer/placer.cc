@@ -35,7 +35,7 @@ Placer::Placer() {
   right_ = 0;
   bottom_ = 0;
   top_ = 0;
-  p_ckt_ = nullptr;
+  ckt_ptr_ = nullptr;
 }
 
 Placer::Placer(double aspect_ratio, double filling_rate) : aspect_ratio_(
@@ -44,7 +44,7 @@ Placer::Placer(double aspect_ratio, double filling_rate) : aspect_ratio_(
   right_ = 0;
   bottom_ = 0;
   top_ = 0;
-  p_ckt_ = nullptr;
+  ckt_ptr_ = nullptr;
 }
 
 void Placer::LoadConf(std::string const &config_file) {
@@ -64,12 +64,12 @@ void Placer::SetInputCircuit(Circuit *circuit) {
     BOOST_LOG_TRIVIAL(info)
       << "Bad input circuit: empty net list, nothing to optimize during placement! But anyway...\n";
   }
-  p_ckt_ = circuit;
+  ckt_ptr_ = circuit;
 }
 
 double Placer::GetBlkHPWL(Block &blk) {
   double hpwl = 0;
-  std::vector<Net> &nets = p_ckt_->Nets();
+  std::vector<Net> &nets = ckt_ptr_->Nets();
   for (auto &idx : blk.NetList()) {
     hpwl += nets[idx].WeightedHPWL();
   }
@@ -77,13 +77,13 @@ double Placer::GetBlkHPWL(Block &blk) {
 }
 
 bool Placer::IsBoundaryProper() {
-  if (p_ckt_->MaxBlkWidth() > RegionRight() - RegionLeft()) {
+  if (ckt_ptr_->MaxBlkWidth() > RegionRight() - RegionLeft()) {
     BOOST_LOG_TRIVIAL(info)
       << "Problematic placement boundary:\n"
       << "    maximum cell width is larger than the width of placement region\n";
     return false;
   }
-  if (p_ckt_->MaxBlkHeight() > RegionTop() - RegionBottom()) {
+  if (ckt_ptr_->MaxBlkHeight() > RegionTop() - RegionBottom()) {
     BOOST_LOG_TRIVIAL(info)
       << "Problematic placement boundary:\n"
       << "    maximum cell height is larger than the height of placement region\n";
@@ -93,9 +93,9 @@ bool Placer::IsBoundaryProper() {
 }
 
 void Placer::SetBoundaryAuto() {
-  DaliExpects(p_ckt_ != nullptr,
+  DaliExpects(ckt_ptr_ != nullptr,
               "Must set input circuit before setting boundaries");
-  auto tot_block_area = p_ckt_->TotBlkArea();
+  auto tot_block_area = ckt_ptr_->TotBlkArea();
   int width = std::ceil(std::sqrt(
       double(tot_block_area) / aspect_ratio_ / placement_density_));
   int height = std::ceil(width * aspect_ratio_);
@@ -104,9 +104,9 @@ void Placer::SetBoundaryAuto() {
   aspect_ratio_ = height / (double) width;
   BOOST_LOG_TRIVIAL(info) << "Adjusted aspect rate: " << aspect_ratio_
                           << "\n";
-  left_ = (int) (p_ckt_->AveBlkWidth());
+  left_ = (int) (ckt_ptr_->AveBlkWidth());
   right_ = left_ + width;
-  bottom_ = (int) (p_ckt_->AveBlkWidth());
+  bottom_ = (int) (ckt_ptr_->AveBlkWidth());
   top_ = bottom_ + height;
   int area = height * width;
   BOOST_LOG_TRIVIAL(info) << "Pre-set filling rate: " << placement_density_
@@ -118,13 +118,13 @@ void Placer::SetBoundaryAuto() {
 }
 
 void Placer::SetBoundary(int left, int right, int bottom, int top) {
-  DaliExpects(p_ckt_ != nullptr,
+  DaliExpects(ckt_ptr_ != nullptr,
               "Must set input circuit before setting boundaries");
   DaliExpects(left < right,
               "Invalid boundary setting: left boundary should be less than right boundary!");
   DaliExpects(bottom < top,
               "Invalid boundary setting: bottom boundary should be less than top boundary!");
-  unsigned long long tot_block_area = p_ckt_->TotBlkArea();
+  unsigned long long tot_block_area = ckt_ptr_->TotBlkArea();
   unsigned long long tot_area = (unsigned long long) (right - left) *
       (unsigned long long) (top - bottom);
   DaliExpects(tot_area >= tot_block_area,
@@ -142,10 +142,10 @@ void Placer::SetBoundary(int left, int right, int bottom, int top) {
 }
 
 void Placer::SetBoundaryDef() {
-  left_ = p_ckt_->RegionLLX();
-  right_ = p_ckt_->RegionURX();
-  bottom_ = p_ckt_->RegionLLY();
-  top_ = p_ckt_->RegionURY();
+  left_ = ckt_ptr_->RegionLLX();
+  right_ = ckt_ptr_->RegionURX();
+  bottom_ = ckt_ptr_->RegionLLY();
+  top_ = ckt_ptr_->RegionURY();
   DaliExpects(IsBoundaryProper(), "Invalid boundary setting");
 }
 
@@ -182,7 +182,7 @@ void Placer::TakeOver(Placer *placer) {
   right_ = placer->RegionRight();
   bottom_ = placer->RegionBottom();
   top_ = placer->RegionTop();
-  p_ckt_ = placer->p_ckt_;
+  ckt_ptr_ = placer->ckt_ptr_;
 }
 
 void Placer::GenMATLABScriptPlaced(std::string const &name_of_file) {
@@ -191,7 +191,7 @@ void Placer::GenMATLABScriptPlaced(std::string const &name_of_file) {
   ost << RegionLeft() << " " << RegionBottom() << " "
       << RegionRight() - RegionLeft() << " "
       << RegionTop() - RegionBottom() << "\n";
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   for (auto &block : blocks) {
     if (block.IsPlaced()) {
       ost << block.LLX() << " " << block.LLY() << " " << block.Width()
@@ -209,7 +209,7 @@ bool Placer::SaveNodeTerminal(
   std::ofstream ost1(node_file.c_str());
   DaliExpects(ost.is_open() && ost1.is_open(),
               "Cannot open file " << terminal_file << " or " << node_file);
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   for (auto &block : blocks) {
     if (block.IsMovable()) {
       ost1 << block.X() << "\t" << block.Y() << "\n";
@@ -251,7 +251,7 @@ void Placer::SanityCheck() {
       "Filling rate should be in a proper range, for example [0.1, 1], current value: "
           << placement_density_
   );
-  auto &nets = p_ckt_->Nets();
+  auto &nets = ckt_ptr_->Nets();
   for (auto &net : nets) {
     if (net.BlockPins().empty()) {
       DaliWarns(
@@ -264,7 +264,7 @@ void Placer::SanityCheck() {
 }
 
 void Placer::UpdateMovableBlkPlacementStatus() {
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   for (auto &block : blocks) {
     if (block.IsMovable()) {
       block.SetPlacementStatus(PLACED);
@@ -273,21 +273,21 @@ void Placer::UpdateMovableBlkPlacementStatus() {
 }
 
 void Placer::ShiftX(double shift_x) {
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   for (auto &block : blocks) {
     block.IncreaseX(shift_x);
   }
 }
 
 void Placer::ShiftY(double shift_y) {
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   for (auto &block : blocks) {
     block.IncreaseY(shift_y);
   }
 }
 
 bool Placer::IsDummyBlock(Block &blk) {
-  return blk.TypePtr() == p_ckt_->tech().IoDummyBlkTypePtr();
+  return blk.TypePtr() == ckt_ptr_->tech().IoDummyBlkTypePtr();
 }
 
 }

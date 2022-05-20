@@ -33,9 +33,9 @@ WellLegalizer::WellLegalizer() : LGTetrisEx() {
 }
 
 void WellLegalizer::InitWellLegalizer() {
-  DaliExpects(p_ckt_ != nullptr,
+  DaliExpects(ckt_ptr_ != nullptr,
               "Well Legalization fail: no input circuit!");
-  auto &tech = p_ckt_->tech();
+  auto &tech = ckt_ptr_->tech();
   DaliExpects(tech.IsNwellSet(),
               "Well Legalization fail: no N well parameters found!");
   DaliExpects(tech.IsPwellSet(),
@@ -43,7 +43,7 @@ void WellLegalizer::InitWellLegalizer() {
   auto &n_layer = tech.NwellLayer();
   auto &p_layer = tech.PwellLayer();
 
-  double grid_value_x = p_ckt_->GridValueX();
+  double grid_value_x = ckt_ptr_->GridValueX();
   n_max_plug_dist_ = std::ceil(n_layer.MaxPlugDist() / grid_value_x);
   p_max_plug_dist_ = std::ceil(p_layer.MaxPlugDist() / grid_value_x);
   nn_spacing_ = std::ceil(n_layer.Spacing() / grid_value_x);
@@ -60,7 +60,7 @@ void WellLegalizer::InitWellLegalizer() {
 
   InitLegalizer();
 
-  std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
   int sz = block_list.size();
   init_loc_.resize(sz);
   for (int i = 0; i < sz; ++i) {
@@ -599,7 +599,7 @@ bool WellLegalizer::WellLegalizationLeft() {
   int fail_count = 0;
   bool is_successful = true;
   block_contour_.assign(block_contour_.size(), left_);
-  std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
 
   int sz = blk_inits_.size();
   for (int i = 0; i < sz; ++i) {
@@ -978,7 +978,7 @@ bool WellLegalizer::WellLegalizationRight() {
   int fail_count = 0;
   bool is_successful = true;
   block_contour_.assign(block_contour_.size(), right_);
-  std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
 
   int sz = blk_inits_.size();
   for (int i = 0; i < sz; ++i) {

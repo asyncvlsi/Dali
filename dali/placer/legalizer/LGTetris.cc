@@ -29,7 +29,7 @@ TetrisLegalizer::TetrisLegalizer()
 
 void TetrisLegalizer::InitLegalizer() {
   BlkInitPair init_pair(nullptr, 0, 0);
-  index_loc_list_.resize(p_ckt_->Blocks().size(), init_pair);
+  index_loc_list_.resize(ckt_ptr_->Blocks().size(), init_pair);
 }
 
 void TetrisLegalizer::SetMaxItr(int max_iteration) {
@@ -52,7 +52,7 @@ void TetrisLegalizer::FastShift(int failure_point) {
    *    the bottom boundary of the bounding box will not be changed
    *    only the left boundary of the bounding box will be shifted to the right hand side of the block just placed
    * ****/
-  std::vector<Block> &blocks = p_ckt_->Blocks();
+  std::vector<Block> &blocks = ckt_ptr_->Blocks();
   double bounding_left;
   if (failure_point == 0) {
     double bounding_bottom;
@@ -97,7 +97,7 @@ void TetrisLegalizer::FastShift(int failure_point) {
 void TetrisLegalizer::FlipPlacement() {
   flipped_ = !flipped_;
   int sum_left_right = left_ + right_;
-  std::vector<Block> &blocks = p_ckt_->Blocks();
+  std::vector<Block> &blocks = ckt_ptr_->Blocks();
   for (auto &block: blocks) {
     block.SetLLX(sum_left_right - block.URX());
   }
@@ -105,7 +105,7 @@ void TetrisLegalizer::FlipPlacement() {
 }
 
 bool TetrisLegalizer::TetrisLegal() {
-  std::vector<Block> &blocks = p_ckt_->Blocks();
+  std::vector<Block> &blocks = ckt_ptr_->Blocks();
   // 1. move all blocks into placement region
   /*for (auto &block: blocks) {
     if (block.LLX() < Left()) {
@@ -144,7 +144,7 @@ bool TetrisLegalizer::TetrisLegal() {
 
   // 3. initialize the data structure to store row usage
   //int maxHeight = GetCircuitRef().MaxBlkHeight();
-  int minWidth = p_ckt_->MinBlkWidth();
+  int minWidth = ckt_ptr_->MinBlkWidth();
   //int minHeight = GetCircuitRef().MinBlkHeight();
 
   BOOST_LOG_TRIVIAL(info) << "Building LGTetris space" << std::endl;

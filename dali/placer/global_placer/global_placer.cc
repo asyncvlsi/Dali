@@ -106,14 +106,14 @@ void GlobalPlacer::LoadConf(std::string const &config_file) {
  * width for x and height for y.
  */
 void GlobalPlacer::UpdateEpsilon() {
-  width_epsilon_ = p_ckt_->AveMovBlkWidth() * epsilon_factor_;
-  height_epsilon_ = p_ckt_->AveMovBlkHeight() * epsilon_factor_;
+  width_epsilon_ = ckt_ptr_->AveMovBlkWidth() * epsilon_factor_;
+  height_epsilon_ = ckt_ptr_->AveMovBlkHeight() * epsilon_factor_;
 }
 
 /****
  * @brief Initialize the location of blocks uniformly across the placement region
  */
-void GlobalPlacer::BlockLocationUniformInitialization() {
+void GlobalPlacer::InitializeBlockLocationUniform() {
   BlockLocationInitialization_(0, -1.0);
 }
 
@@ -121,14 +121,14 @@ void GlobalPlacer::BlockLocationUniformInitialization() {
  * @brief Initialize the location of blocks around the center of the placement
  * region using normal distribution
  */
-void GlobalPlacer::BlockLocationNormalInitialization(double std_dev) {
+void GlobalPlacer::InitializeBlockLocationNormal(double std_dev) {
   BlockLocationInitialization_(1, std_dev);
 }
 
 /****
  * @brief Initialize variables for the conjugate gradient linear solver
  */
-void GlobalPlacer::InitializeConjugateGradientLinearSolver() {
+void GlobalPlacer::InitializeHpwlOptimizer() {
   // set a small value for net weight dividend to improve numerical stability
   UpdateEpsilon();
 
@@ -137,13 +137,13 @@ void GlobalPlacer::InitializeConjugateGradientLinearSolver() {
   lower_bound_hpwly_.clear();
   lower_bound_hpwl_.clear();
 
-  size_t sz = p_ckt_->Blocks().size();
+  size_t sz = ckt_ptr_->Blocks().size();
   ADx.resize(sz);
   ADy.resize(sz);
   Ax_row_size.assign(sz, 0);
   Ax_row_size.assign(sz, 0);
 
-  EgId eigen_sz = static_cast<EgId>(p_ckt_->Blocks().size());
+  EgId eigen_sz = static_cast<EgId>(ckt_ptr_->Blocks().size());
   vx.resize(eigen_sz);
   vy.resize(eigen_sz);
   bx.resize(eigen_sz);
@@ -155,14 +155,13 @@ void GlobalPlacer::InitializeConjugateGradientLinearSolver() {
   x_anchor_weight.resize(eigen_sz);
   y_anchor_weight.resize(eigen_sz);
 
-
   cg_x_.setMaxIterations(cg_iteration_);
   cg_x_.setTolerance(cg_tolerance_);
   cg_y_.setMaxIterations(cg_iteration_);
   cg_y_.setTolerance(cg_tolerance_);
 
   size_t coefficient_size = 0;
-  auto &nets = p_ckt_->Nets();
+  auto &nets = ckt_ptr_->Nets();
   for (auto &net : nets) {
     size_t net_sz = net.PinCnt();
     // if a net has size n, then in total, there will be (2(n-2)+1)*4 non-zero entries for the matrix
@@ -182,7 +181,7 @@ void GlobalPlacer::InitializeConjugateGradientLinearSolver() {
 
 void GlobalPlacer::DecomposeNetsToBlkPairs() {
   // for each net, we decompose it, and enumerate all driver-load pair
-  std::vector<Net> &net_list = p_ckt_->Nets();
+  std::vector<Net> &net_list = ckt_ptr_->Nets();
   for (auto &net : net_list) {
     //BOOST_LOG_TRIVIAL(info)   << net.NameStr() << "\n";
     int sz = static_cast<int>(net.BlockPins().size());
@@ -222,7 +221,7 @@ void GlobalPlacer::DecomposeNetsToBlkPairs() {
 }
 
 void GlobalPlacer::InitializeDriverLoadPairs() {
-  std::vector<Block> &blocks = p_ckt_->Blocks();
+  std::vector<Block> &blocks = ckt_ptr_->Blocks();
   int sz = static_cast<int>(blocks.size());
 
   pair_connect.resize(sz);
@@ -350,7 +349,7 @@ void GlobalPlacer::InitializeDriverLoadPairs() {
 }
 
 void GlobalPlacer::UpdateMaxMinX() {
-  std::vector<Net> &net_list = p_ckt_->Nets();
+  std::vector<Net> &net_list = ckt_ptr_->Nets();
   size_t sz = net_list.size();
 #pragma omp parallel for
   for (size_t i = 0; i < sz; ++i) {
@@ -359,7 +358,7 @@ void GlobalPlacer::UpdateMaxMinX() {
 }
 
 void GlobalPlacer::UpdateMaxMinY() {
-  std::vector<Net> &net_list = p_ckt_->Nets();
+  std::vector<Net> &net_list = ckt_ptr_->Nets();
   size_t sz = net_list.size();
 #pragma omp parallel for
   for (size_t i = 0; i < sz; ++i) {
@@ -370,8 +369,8 @@ void GlobalPlacer::UpdateMaxMinY() {
 void GlobalPlacer::BuildProblemB2BX() {
   double wall_time = get_wall_time();
 
-  std::vector<Block> &blocks = p_ckt_->Blocks();
-  std::vector<Net> &nets = p_ckt_->Nets();
+  std::vector<Block> &blocks = ckt_ptr_->Blocks();
+  std::vector<Net> &nets = ckt_ptr_->Nets();
   size_t coefficients_capacity = coefficients_x_.capacity();
   coefficients_x_.resize(0);
   int sz = static_cast<int>(bx.size());
@@ -381,7 +380,7 @@ void GlobalPlacer::BuildProblemB2BX() {
 
   double center_weight = 0.03 / std::sqrt(sz);
   double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
-  //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
+  //double decay_length = decay_factor * ckt_ptr_->AveBlkHeight();
 
   for (auto &net : nets) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
@@ -479,8 +478,8 @@ void GlobalPlacer::BuildProblemB2BX() {
 void GlobalPlacer::BuildProblemB2BY() {
   double wall_time = get_wall_time();
 
-  std::vector<Block> &blocks = p_ckt_->Blocks();
-  std::vector<Net> &nets = p_ckt_->Nets();
+  std::vector<Block> &blocks = ckt_ptr_->Blocks();
+  std::vector<Net> &nets = ckt_ptr_->Nets();
   size_t coefficients_capacity = coefficients_y_.capacity();
   coefficients_y_.resize(0);
   int sz = static_cast<int>(by.size());
@@ -490,7 +489,7 @@ void GlobalPlacer::BuildProblemB2BY() {
 
   double center_weight = 0.03 / std::sqrt(sz);
   double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
-  //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
+  //double decay_length = decay_factor * ckt_ptr_->AveBlkHeight();
 
   for (auto &net : nets) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
@@ -589,8 +588,8 @@ void GlobalPlacer::BuildProblemB2BY() {
 void GlobalPlacer::BuildProblemStarModelX() {
   double wall_time = get_wall_time();
 
-  std::vector<Block> &block_list = p_ckt_->Blocks();
-  std::vector<Net> &nets = p_ckt_->Nets();
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  std::vector<Net> &nets = ckt_ptr_->Nets();
   size_t coefficients_capacity = coefficients_x_.capacity();
   coefficients_x_.resize(0);
 
@@ -601,7 +600,7 @@ void GlobalPlacer::BuildProblemStarModelX() {
 
   double center_weight = 0.03 / std::sqrt(sz);
   double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
-  //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
+  //double decay_length = decay_factor * ckt_ptr_->AveBlkHeight();
 
   for (auto &net : nets) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
@@ -669,8 +668,8 @@ void GlobalPlacer::BuildProblemStarModelX() {
 void GlobalPlacer::BuildProblemStarModelY() {
   double wall_time = get_wall_time();
 
-  std::vector<Block> &block_list = p_ckt_->Blocks();
-  std::vector<Net> &nets = p_ckt_->Nets();
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  std::vector<Net> &nets = ckt_ptr_->Nets();
   size_t coefficients_capacity = coefficients_y_.capacity();
   coefficients_y_.resize(0);
 
@@ -681,7 +680,7 @@ void GlobalPlacer::BuildProblemStarModelY() {
 
   double center_weight = 0.03 / std::sqrt(sz);
   double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
-  //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
+  //double decay_length = decay_factor * ckt_ptr_->AveBlkHeight();
 
   for (auto &net : nets) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
@@ -750,8 +749,8 @@ void GlobalPlacer::BuildProblemStarModelY() {
 void GlobalPlacer::BuildProblemHPWLX() {
   double wall_time = get_wall_time();
 
-  std::vector<Block> &block_list = p_ckt_->Blocks();
-  std::vector<Net> &nets = p_ckt_->Nets();
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  std::vector<Net> &nets = ckt_ptr_->Nets();
   size_t coefficients_capacity = coefficients_x_.capacity();
   coefficients_x_.resize(0);
 
@@ -762,7 +761,7 @@ void GlobalPlacer::BuildProblemHPWLX() {
 
   double center_weight = 0.03 / std::sqrt(sz);
   double weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
-  //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
+  //double decay_length = decay_factor * ckt_ptr_->AveBlkHeight();
 
   for (auto &net : nets) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
@@ -829,8 +828,8 @@ void GlobalPlacer::BuildProblemHPWLX() {
 void GlobalPlacer::BuildProblemHPWLY() {
   double wall_time = get_wall_time();
 
-  std::vector<Block> &block_list = p_ckt_->Blocks();
-  std::vector<Net> &nets = p_ckt_->Nets();
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  std::vector<Net> &nets = ckt_ptr_->Nets();
   size_t coefficients_capacity = coefficients_y_.capacity();
   coefficients_y_.resize(0);
 
@@ -841,7 +840,7 @@ void GlobalPlacer::BuildProblemHPWLY() {
 
   double center_weight = 0.03 / std::sqrt(sz);
   double weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
-  //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
+  //double decay_length = decay_factor * ckt_ptr_->AveBlkHeight();
 
   for (auto &net : nets) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
@@ -914,7 +913,7 @@ void GlobalPlacer::BuildProblemStarHPWLX() {
     bx[i] = 0;
   }
 
-  //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
+  //double decay_length = decay_factor * ckt_ptr_->AveBlkHeight();
   std::vector<BlkPairNets> &blk_pair_net_list = blk_pair_net_list_;
   int pair_sz = blk_pair_net_list.size();
 #pragma omp parallel for
@@ -1010,7 +1009,7 @@ void GlobalPlacer::BuildProblemStarHPWLX() {
   double center_weight = 0.03 / std::sqrt(sz);
   double
       weight_center_x = (RegionLeft() + RegionRight()) / 2.0 * center_weight;
-  std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
 #pragma omp parallel for
   for (int i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) {
@@ -1051,7 +1050,7 @@ void GlobalPlacer::BuildProblemStarHPWLY() {
     by[i] = 0;
   }
 
-  //double decay_length = decay_factor * p_ckt_->AveBlkHeight();
+  //double decay_length = decay_factor * ckt_ptr_->AveBlkHeight();
   std::vector<BlkPairNets> &blk_pair_net_list = blk_pair_net_list_;
   int pair_sz = blk_pair_net_list.size();
 #pragma omp parallel for
@@ -1147,7 +1146,7 @@ void GlobalPlacer::BuildProblemStarHPWLY() {
   double center_weight = 0.03 / std::sqrt(sz);
   double
       weight_center_y = (RegionBottom() + RegionTop()) / 2.0 * center_weight;
-  std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
 #pragma omp parallel for
   for (int i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) {
@@ -1188,7 +1187,7 @@ double GlobalPlacer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
   tot_matrix_from_triplets_x += wall_time;
 
   int sz = vx.size();
-  std::vector<Block> &blocks = p_ckt_->Blocks();
+  std::vector<Block> &blocks = ckt_ptr_->Blocks();
 
   wall_time = get_wall_time();
   std::vector<double> eval_history;
@@ -1244,7 +1243,7 @@ double GlobalPlacer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
   tot_matrix_from_triplets_y += wall_time;
 
   int sz = vx.size();
-  std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
 
   wall_time = get_wall_time();
   std::vector<double> eval_history;
@@ -1290,7 +1289,7 @@ double GlobalPlacer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
 
 void GlobalPlacer::PullBlockBackToRegion() {
   int sz = vx.size();
-  std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
 
   double blk_hi_bound_x;
   double blk_hi_bound_y;
@@ -1358,12 +1357,13 @@ double GlobalPlacer::QuadraticPlacement(double net_model_update_stop_criterion) 
       << "OpenMP threads, " << omp_get_num_threads() << "\n";
     if (omp_get_thread_num() == 0) {
       omp_set_num_threads(avail_threads_num / 2);
-      BOOST_LOG_TRIVIAL(trace) << "threads in branch x: "
-                               << omp_get_max_threads()
-                               << " Eigen threads: " << Eigen::nbThreads()
-                               << "\n";
+      BOOST_LOG_TRIVIAL(trace)
+        << "threads in branch x: "
+        << omp_get_max_threads()
+        << " Eigen threads: " << Eigen::nbThreads()
+        << "\n";
 
-      std::vector<Block> &block_list = p_ckt_->Blocks();
+      std::vector<Block> &block_list = ckt_ptr_->Blocks();
       for (size_t i = 0; i < block_list.size(); ++i) {
         vx[i] = block_list[i].LLX();
       }
@@ -1396,19 +1396,22 @@ double GlobalPlacer::QuadraticPlacement(double net_model_update_stop_criterion) 
       BOOST_LOG_TRIVIAL(trace)
         << "  Optimization summary X, iterations x: " << b2b_update_it_x
         << ", " << eval_history_x << "\n";
-      DaliExpects(!eval_history_x.empty(),
-                  "Cannot return a valid value because the result is not evaluated!");
+      DaliExpects(
+          !eval_history_x.empty(),
+          "Cannot return a valid value because the result is not evaluated!"
+      );
       lower_bound_hpwlx_.push_back(eval_history_x.back());
     }
 
     if (omp_get_thread_num() == 1 || omp_get_num_threads() == 1) {
       omp_set_num_threads(avail_threads_num / 2);
-      BOOST_LOG_TRIVIAL(trace) << "threads in branch y: "
-                               << omp_get_max_threads()
-                               << " Eigen threads: " << Eigen::nbThreads()
-                               << "\n";
+      BOOST_LOG_TRIVIAL(trace)
+        << "threads in branch y: "
+        << omp_get_max_threads()
+        << " Eigen threads: " << Eigen::nbThreads()
+        << "\n";
 
-      std::vector<Block> &block_list = p_ckt_->Blocks();
+      std::vector<Block> &block_list = ckt_ptr_->Blocks();
       for (size_t i = 0; i < block_list.size(); ++i) {
         vy[i] = block_list[i].LLY();
       }
@@ -1423,9 +1426,10 @@ double GlobalPlacer::QuadraticPlacement(double net_model_update_stop_criterion) 
             OptimizeQuadraticMetricY(cg_stop_criterion_);
         eval_history_y.push_back(evaluate_result);
         if (eval_history_y.size() >= 3) {
-          bool is_converge = IsSeriesConverge(eval_history_y,
-                                              3,
-                                              net_model_update_stop_criterion);
+          bool is_converge = IsSeriesConverge(
+              eval_history_y, 3,
+              net_model_update_stop_criterion
+          );
           bool is_oscillate = IsSeriesOscillate(eval_history_y, 5);
           if (is_converge) {
             break;
@@ -1440,8 +1444,10 @@ double GlobalPlacer::QuadraticPlacement(double net_model_update_stop_criterion) 
       BOOST_LOG_TRIVIAL(trace)
         << "  Optimization summary Y, iterations y: " << b2b_update_it_y
         << ", " << eval_history_y << "\n";
-      DaliExpects(!eval_history_y.empty(),
-                  "Cannot return a valid value because the result is not evaluated!");
+      DaliExpects(
+          !eval_history_y.empty(),
+          "Cannot return a valid value because the result is not evaluated!"
+      );
       lower_bound_hpwly_.push_back(eval_history_y.back());
     }
   }
@@ -1455,6 +1461,8 @@ double GlobalPlacer::QuadraticPlacement(double net_model_update_stop_criterion) 
   //omp_set_nested(0);
 
   if (is_dump_) DumpResult("cg_result_0.txt");
+
+  BackUpBlockLocation();
 
   return lower_bound_hpwlx_.back() + lower_bound_hpwly_.back();
 }
@@ -1470,7 +1478,7 @@ double GlobalPlacer::QuadraticPlacement(double net_model_update_stop_criterion) 
  */
 void GlobalPlacer::InitializeGridBinSize() {
   double grid_bin_area =
-      number_of_cell_in_bin_ * p_ckt_->AveMovBlkArea() / PlacementDensity();
+      number_of_cell_in_bin_ * ckt_ptr_->AveMovBlkArea() / PlacementDensity();
   grid_bin_height = static_cast<int>(std::round(std::sqrt(grid_bin_area)));
   grid_bin_width = grid_bin_height;
   grid_cnt_x = std::ceil(double(RegionWidth()) / grid_bin_width);
@@ -1523,7 +1531,7 @@ void GlobalPlacer::UpdateAttributesForAllGridBins() {
  * This can help us to compute available white space in each grid bin.
  */
 void GlobalPlacer::UpdateFixedBlocksInGridBins() {
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   int sz = static_cast<int>(blocks.size());
   for (int i = 0; i < sz; i++) {
     /* find the left, right, bottom, top index of the grid */
@@ -1663,7 +1671,7 @@ void GlobalPlacer::InitWhiteSpaceLUT() {
   }
 }
 
-void GlobalPlacer::LALInit() {
+void GlobalPlacer::InitializeRoughLegalizer() {
   upper_bound_hpwlx_.clear();
   upper_bound_hpwly_.clear();
   upper_bound_hpwl_.clear();
@@ -1804,7 +1812,7 @@ void GlobalPlacer::UpdateGridBinState() {
   // note that in extreme cases, the index might be smaller than 0 or larger
   // than the maximum allowed index, because the cell is on the boundaries,
   // so we need to make some modifications for these extreme cases.
-  std::vector<Block> &blocks = p_ckt_->Blocks();
+  std::vector<Block> &blocks = ckt_ptr_->Blocks();
   int sz = static_cast<int>(blocks.size());
   int x_index = 0;
   int y_index = 0;
@@ -2595,7 +2603,7 @@ void GlobalPlacer::PlaceBlkInBoxBisection(BoxBin &box) {
       box2.top = front_box.top;
       box2.right = front_box.right;
 
-      int ave_blk_height = std::ceil(p_ckt_->AveMovBlkHeight());
+      int ave_blk_height = std::ceil(ckt_ptr_->AveMovBlkHeight());
       //BOOST_LOG_TRIVIAL(info)   << "Average block height: " << ave_blk_height << "  " << GetCircuitRef().AveMovBlkHeight() << "\n";
       front_box.cut_direction_x =
           (front_box.top - front_box.bottom > ave_blk_height);
@@ -2711,7 +2719,7 @@ bool GlobalPlacer::RecursiveBisectionblockspreading() {
 }
 
 void GlobalPlacer::BackUpBlockLocation() {
-  std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
   for (int i = 0; i < sz; ++i) {
     x_anchor[i] = block_list[i].LLX();
@@ -2720,7 +2728,7 @@ void GlobalPlacer::BackUpBlockLocation() {
 }
 
 void GlobalPlacer::UpdateAnchorLocation() {
-  std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
 
   for (int i = 0; i < sz; ++i) {
@@ -2738,7 +2746,7 @@ void GlobalPlacer::UpdateAnchorLocation() {
 }
 
 void GlobalPlacer::UpdateAnchorNetWeight() {
-  std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
 
   // X direction
@@ -2776,7 +2784,7 @@ void GlobalPlacer::BuildProblemWithAnchorX() {
 
   double wall_time = get_wall_time();
 
-  std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
 
   double weight = 0;
@@ -2811,7 +2819,7 @@ void GlobalPlacer::BuildProblemWithAnchorY() {
 
   double wall_time = get_wall_time();
 
-  std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
 
   double weight = 0;
@@ -2839,7 +2847,7 @@ double GlobalPlacer::QuadraticPlacementWithAnchor(double net_model_update_stop_c
   //BOOST_LOG_TRIVIAL(info)   << "total threads: " << avail_threads_num << "\n";
   double wall_time = get_wall_time();
 
-  std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
 
   UpdateAnchorLocation();
   UpdateAnchorAlpha();
@@ -2947,6 +2955,7 @@ double GlobalPlacer::QuadraticPlacementWithAnchor(double net_model_update_stop_c
   //omp_set_nested(0);
 
   if (is_dump_) DumpResult("cg_result_" + std::to_string(cur_iter_) + ".txt");
+  BackUpBlockLocation();
   return lower_bound_hpwlx_.back() + lower_bound_hpwly_.back();
 }
 
@@ -2974,7 +2983,6 @@ void GlobalPlacer::UpdateAnchorAlpha() {
 double GlobalPlacer::LookAheadLegalization() {
   double cpu_time = get_cpu_time();
 
-  BackUpBlockLocation();
   ClearGridBinFlag();
   UpdateGridBinState();
   UpdateClusterList();
@@ -3063,6 +3071,16 @@ bool GlobalPlacer::IsPlacementConverge() {
   return res;
 }
 
+void GlobalPlacer::CheckOptimizerAndLegalizer() {
+  if (optimizer_ == nullptr) {
+    optimizer_ = new B2BHpwlOptimizer(ckt_ptr_);
+  }
+  if (legalizer_ == nullptr) {
+    legalizer_ = new LookAheadLegalizer(ckt_ptr_);
+  }
+}
+
+#if true
 bool GlobalPlacer::StartPlacement() {
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
@@ -3071,15 +3089,15 @@ bool GlobalPlacer::StartPlacement() {
   BOOST_LOG_TRIVIAL(info) << "Start global placement\n";
 
   SanityCheck();
-  InitializeConjugateGradientLinearSolver();
-  LALInit();
-  //BlockLocationNormalInitialization();
-  BlockLocationUniformInitialization();
+  InitializeHpwlOptimizer();
+  InitializeRoughLegalizer();
+  //InitializeBlockLocationNormal();
+  InitializeBlockLocationUniform();
   if (net_model == 3) {
     InitializeDriverLoadPairs();
   }
 
-  if (p_ckt_->Nets().empty()) {
+  if (ckt_ptr_->Nets().empty()) {
     BOOST_LOG_TRIVIAL(info) << "Net list empty? Skip global placement!\n";
     BOOST_LOG_TRIVIAL(info)
       << "\033[0;36m Global Placement complete\033[0m\n";
@@ -3174,6 +3192,127 @@ bool GlobalPlacer::StartPlacement() {
 
   return true;
 }
+#else
+bool GlobalPlacer::StartPlacement() {
+  double wall_time = get_wall_time();
+  double cpu_time = get_cpu_time();
+
+  if (ckt_ptr_->Blocks().empty()) {
+    BOOST_LOG_TRIVIAL(info)
+      << "Block list empty? Skip global placement!\n"
+      << "\033[0;36m Global Placement complete\033[0m\n";
+    return true;
+  }
+  if (ckt_ptr_->Nets().empty()) {
+    BOOST_LOG_TRIVIAL(info)
+      << "Net list empty? Skip global placement!\n"
+      << "\033[0;36m Global Placement complete\033[0m\n";
+    return true;
+  }
+
+  BOOST_LOG_TRIVIAL(info)
+    << "---------------------------------------\n"
+    << "Start global placement\n";
+
+  SanityCheck();
+  CheckOptimizerAndLegalizer();
+  optimizer_->Initialize();
+  legalizer_->Initialize(PlacementDensity());
+  //InitializeBlockLocationNormal();
+  InitializeBlockLocationUniform();
+  if (net_model == 3) {
+    InitializeDriverLoadPairs();
+  }
+
+  // initial placement
+  BOOST_LOG_TRIVIAL(debug) << cur_iter_ << "-th iteration\n";
+  double eval_res = optimizer_->QuadraticPlacement(net_model_update_stop_criterion_);
+  lower_bound_hpwl_.push_back(eval_res);
+  eval_res = legalizer_->LookAheadLegalization();
+  upper_bound_hpwl_.push_back(eval_res);
+  BOOST_LOG_TRIVIAL(info)
+    << "It " << cur_iter_ << ": \t"
+    << std::scientific << std::setprecision(4)
+    << lower_bound_hpwl_.back() << " "
+    << upper_bound_hpwl_.back() << "\n";
+
+  for (cur_iter_ = 1; cur_iter_ < max_iter_; ++cur_iter_) {
+    BOOST_LOG_TRIVIAL(debug)
+      << "----------------------------------------------\n";
+    BOOST_LOG_TRIVIAL(debug) << cur_iter_ << "-th iteration\n";
+
+    eval_res = QuadraticPlacementWithAnchor(net_model_update_stop_criterion_);
+    lower_bound_hpwl_.push_back(eval_res);
+
+    eval_res = LookAheadLegalization();
+    upper_bound_hpwl_.push_back(eval_res);
+
+    BOOST_LOG_TRIVIAL(info)
+      << "It " << cur_iter_ << ": \t"
+      << std::scientific << std::setprecision(4)
+      << lower_bound_hpwl_.back() << " "
+      << upper_bound_hpwl_.back() << "\n";
+
+    if (IsPlacementConverge()) { // if HPWL converges
+      BOOST_LOG_TRIVIAL(info)
+        << "Iterative look-ahead legalization complete\n";
+      BOOST_LOG_TRIVIAL(info)
+        << "Total number of iteration: "
+        << cur_iter_ + 1 << "\n";
+      break;
+    }
+  }
+  BOOST_LOG_TRIVIAL(info)
+    << "Lower bound: " << lower_bound_hpwl_ << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "Upper bound: " << upper_bound_hpwl_ << "\n";
+
+  BOOST_LOG_TRIVIAL(info)
+    << "\033[0;36m Global Placement complete\033[0m\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "(cg time: " << tot_cg_time << "s, lal time: " << tot_lal_time << "s)\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "total triplets time: "
+    << tot_triplets_time_x << "s, "
+    << tot_triplets_time_y << "s, "
+    << tot_triplets_time_x + tot_triplets_time_y << "s\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "total matrix from triplets time: "
+    << tot_matrix_from_triplets_x << "s, "
+    << tot_matrix_from_triplets_y << "s, "
+    << tot_matrix_from_triplets_x + tot_matrix_from_triplets_y << "s\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "total cg solver time: "
+    << tot_cg_solver_time_x << "s, "
+    << tot_cg_solver_time_y << "s, "
+    << tot_cg_solver_time_x + tot_cg_solver_time_y << "s\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "total loc update time: "
+    << tot_loc_update_time_x << "s, "
+    << tot_loc_update_time_y << "s, "
+    << tot_loc_update_time_x + tot_loc_update_time_y << "s\n";
+  double tot_time_x = tot_triplets_time_x + tot_matrix_from_triplets_x
+      + tot_cg_solver_time_x + tot_loc_update_time_x;
+  double tot_time_y = tot_triplets_time_y + tot_matrix_from_triplets_y
+      + tot_cg_solver_time_y + tot_loc_update_time_y;
+  BOOST_LOG_TRIVIAL(info)
+    << "total x/y time: "
+    << tot_time_x << "s, "
+    << tot_time_y << "s, "
+    << tot_time_x + tot_time_y << "s\n";
+  LALClose();
+  UpdateMovableBlkPlacementStatus();
+  ReportHPWL();
+
+  wall_time = get_wall_time() - wall_time;
+  cpu_time = get_cpu_time() - cpu_time;
+  BOOST_LOG_TRIVIAL(info)
+    << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
+  ReportMemory();
+
+  return true;
+}
+#endif
 
 void GlobalPlacer::SetDump(bool s_dump) {
   is_dump_ = s_dump;
@@ -3183,7 +3322,7 @@ void GlobalPlacer::DumpResult(std::string const &name_of_file) {
   //UpdateGridBinState();
   static int counter = 0;
   //BOOST_LOG_TRIVIAL(info)   << "DumpNum:" << counter << "\n";
-  p_ckt_->GenMATLABTable(name_of_file);
+  ckt_ptr_->GenMATLABTable(name_of_file);
   //write_not_all_terminal_grid_bins("grid_bin_not_all_terminal" + std::to_string(counter) + ".txt");
   //write_overfill_grid_bins("grid_bin_overfill" + std::to_string(counter) + ".txt");
   ++counter;
@@ -3206,10 +3345,10 @@ void GlobalPlacer::DumpLookAheadDisplacement(
     std::ofstream ost(name_of_file.c_str());
     DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
-    DaliExpects(p_ckt_ != nullptr,
+    DaliExpects(ckt_ptr_ != nullptr,
                 "Set input circuit before starting anything");
-    std::vector<Block> &block_list = p_ckt_->Blocks();
-    int sz = p_ckt_->design().RealBlkCnt();
+    std::vector<Block> &block_list = ckt_ptr_->Blocks();
+    int sz = ckt_ptr_->design().RealBlkCnt();
     for (int i = 0; i < sz; ++i) {
       double x = x_anchor[i] + block_list[i].Width() / 2.0;
       double y = y_anchor[i] + +block_list[i].Height() / 2.0;
@@ -3227,11 +3366,11 @@ void GlobalPlacer::DumpLookAheadDisplacement(
     std::ofstream ost(name_of_file.c_str());
     DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
-    DaliExpects(p_ckt_ != nullptr,
+    DaliExpects(ckt_ptr_ != nullptr,
                 "Set input circuit before starting anything");
-    double ave_height = p_ckt_->AveMovBlkHeight();
-    std::vector<Block> &block_list = p_ckt_->Blocks();
-    int sz = p_ckt_->design().RealBlkCnt();
+    double ave_height = ckt_ptr_->AveMovBlkHeight();
+    std::vector<Block> &block_list = ckt_ptr_->Blocks();
+    int sz = ckt_ptr_->design().RealBlkCnt();
     for (int i = 0; i < sz; ++i) {
       double x = x_anchor[i] + block_list[i].Width() / 2.0;
       double y = y_anchor[i] + +block_list[i].Height() / 2.0;
@@ -3250,7 +3389,7 @@ void GlobalPlacer::DrawBlockNetList(std::string const &name_of_file) {
   ost << RegionLeft() << " " << RegionBottom() << " "
       << RegionRight() - RegionLeft() << " "
       << RegionTop() - RegionBottom() << "\n";
-  std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
   for (auto &block : block_list) {
     ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " "
         << block.Height() << "\n";
@@ -3519,7 +3658,8 @@ bool GlobalPlacer::IsSeriesOscillate(std::vector<double> &data, int length) {
  */
 void GlobalPlacer::BlockLocationInitialization_(int mode, double std_dev) {
   BOOST_LOG_TRIVIAL(info)
-    << "HPWL before random initialization: " << p_ckt_->WeightedHPWL() << "\n";
+    << "HPWL before random initialization: " << ckt_ptr_->WeightedHPWL()
+    << "\n";
 
   if (mode == 0) {
     BlockLocationUniformInitialization_();
@@ -3528,7 +3668,7 @@ void GlobalPlacer::BlockLocationInitialization_(int mode, double std_dev) {
   }
 
   BOOST_LOG_TRIVIAL(info)
-    << "HPWL after random initialization: " << p_ckt_->WeightedHPWL() << "\n";
+    << "HPWL after random initialization: " << ckt_ptr_->WeightedHPWL() << "\n";
 
   if (is_dump_) DumpResult("rand_init.txt");
 }
@@ -3541,7 +3681,7 @@ void GlobalPlacer::BlockLocationUniformInitialization_() {
   std::minstd_rand0 generator{1};
   std::uniform_real_distribution<double> distribution(0, 1);
 
-  std::vector<Block> &blocks = p_ckt_->Blocks();
+  std::vector<Block> &blocks = ckt_ptr_->Blocks();
   int region_width = RegionWidth();
   int region_height = RegionHeight();
   for (auto &blk : blocks) {
@@ -3565,7 +3705,7 @@ void GlobalPlacer::BlockLocationNormalInitialization_(double std_dev) {
   std::minstd_rand0 generator{1};
   std::normal_distribution<double> normal_distribution(0.0, std_dev);
 
-  std::vector<Block> &blocks = p_ckt_->Blocks();
+  std::vector<Block> &blocks = ckt_ptr_->Blocks();
   int region_width = RegionWidth();
   int region_height = RegionHeight();
   double region_center_x = (RegionRight() + RegionLeft()) / 2.0;

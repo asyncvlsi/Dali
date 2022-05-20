@@ -192,12 +192,12 @@ class Net {
 };
 
 class NetAux {
- protected:
-  Net *net_ptr_;
  public:
   explicit NetAux(Net *net_ptr)
       : net_ptr_(net_ptr) { net_ptr_->SetAux(this); }
   Net *GetNet() const { return net_ptr_; }
+ protected:
+  Net *net_ptr_;
 };
 
 }

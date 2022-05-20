@@ -33,13 +33,13 @@
 namespace dali {
 
 void GriddedRowLegalizer::CheckWellInfo() {
-  for (auto &multi_well : p_ckt_->tech().MultiWells()) {
+  for (auto &multi_well : ckt_ptr_->tech().MultiWells()) {
     multi_well.CheckLegality();
   }
 
-  Tech &tech = p_ckt_->tech();
+  Tech &tech = ckt_ptr_->tech();
   WellLayer &n_well_layer = tech.NwellLayer();
-  double grid_value_x = p_ckt_->GridValueX();
+  double grid_value_x = ckt_ptr_->GridValueX();
   int same_spacing = std::ceil(n_well_layer.Spacing() / grid_value_x);
   int op_spacing = std::ceil(n_well_layer.OppositeSpacing() / grid_value_x);
   well_spacing_ = std::max(same_spacing, op_spacing);
@@ -72,11 +72,11 @@ void GriddedRowLegalizer::SetMaxRowWidth(double max_row_width) {
   BOOST_LOG_TRIVIAL(info)
     << "Provided max row width: " << max_row_width << " um\n";
   BOOST_LOG_TRIVIAL(info)
-    << "Gridded value x: " << p_ckt_->GridValueX() << " um\n";
+    << "Gridded value x: " << ckt_ptr_->GridValueX() << " um\n";
   if (max_row_width < 0) {
     max_row_width_ = RegionRight() - RegionLeft();
   } else {
-    max_row_width_ = std::floor(max_row_width / p_ckt_->GridValueX());
+    max_row_width_ = std::floor(max_row_width / ckt_ptr_->GridValueX());
   }
   BOOST_LOG_TRIVIAL(info)
     << "Max row width in grid unit : "
@@ -89,7 +89,7 @@ void GriddedRowLegalizer::PartitionSpaceAndBlocks() {
     space_partitioner_ = new DefaultSpacePartitioner;
   }
 
-  space_partitioner_->SetInputCircuit(p_ckt_);
+  space_partitioner_->SetInputCircuit(ckt_ptr_);
   space_partitioner_->SetOutput(&col_list_);
   space_partitioner_->SetReservedSpaceToBoundaries(
       well_spacing_, well_spacing_, 1, 1
@@ -128,7 +128,7 @@ void GriddedRowLegalizer::PrecomputeWellTapCellLocation() {
 }
 
 void GriddedRowLegalizer::InitializeBlockAuxiliaryInfo() {
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   blk_auxs_.reserve(blocks.size());
   for (Block &blk : blocks) {
     if (IsDummyBlock(blk)) continue;
@@ -138,7 +138,7 @@ void GriddedRowLegalizer::InitializeBlockAuxiliaryInfo() {
 
 void GriddedRowLegalizer::SaveInitialLoc() {
   is_init_loc_cached_ = true;
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   for (Block &blk : blocks) {
     if (IsDummyBlock(blk)) continue;
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
@@ -148,7 +148,7 @@ void GriddedRowLegalizer::SaveInitialLoc() {
 
 void GriddedRowLegalizer::SaveUpDownLoc() {
   is_greedy_loc_cached_ = true;
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   for (Block &blk : blocks) {
     if (IsDummyBlock(blk)) continue;
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
@@ -158,7 +158,7 @@ void GriddedRowLegalizer::SaveUpDownLoc() {
 
 void GriddedRowLegalizer::SaveQPLoc() {
   is_qp_loc_cached_ = true;
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   for (Block &blk : blocks) {
     if (IsDummyBlock(blk)) continue;
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
@@ -168,7 +168,7 @@ void GriddedRowLegalizer::SaveQPLoc() {
 
 void GriddedRowLegalizer::SaveConsensusLoc() {
   is_cons_loc_cached_ = true;
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   for (Block &blk : blocks) {
     if (IsDummyBlock(blk)) continue;
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
@@ -181,7 +181,7 @@ void GriddedRowLegalizer::RestoreInitialLocX() {
       is_init_loc_cached_,
       "Initial locations are not saved, no way to restore"
   );
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   for (Block &blk : blocks) {
     if (IsDummyBlock(blk)) continue;
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
@@ -194,7 +194,7 @@ void GriddedRowLegalizer::RestoreGreedyLocX() {
       is_greedy_loc_cached_,
       "Greedy locations are not saved, no way to restore"
   );
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   for (Block &blk : blocks) {
     if (IsDummyBlock(blk)) continue;
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
@@ -205,7 +205,7 @@ void GriddedRowLegalizer::RestoreGreedyLocX() {
 void GriddedRowLegalizer::RestoreQPLocX() {
   DaliExpects(is_qp_loc_cached_,
               "Quadratic programming locations are not saved, no way to restore");
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   for (Block &blk : blocks) {
     if (IsDummyBlock(blk)) continue;
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
@@ -216,7 +216,7 @@ void GriddedRowLegalizer::RestoreQPLocX() {
 void GriddedRowLegalizer::RestoreConsensusLocX() {
   DaliExpects(is_cons_loc_cached_,
               "Consensus locations are not saved, no way to restore");
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   for (Block &blk : blocks) {
     if (IsDummyBlock(blk)) continue;
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
@@ -295,7 +295,7 @@ bool GriddedRowLegalizer::UpwardDownwardLegalization(bool use_init_loc) {
   for (ClusterStripe &col : col_list_) {
     bool is_success = true;
     for (Stripe &stripe : col.stripe_list_) {
-      stripe.max_disp_ = p_ckt_->AveBlkWidth();
+      stripe.max_disp_ = ckt_ptr_->AveBlkWidth();
       bool is_from_bottom = true;
       for (greedy_cur_iter_ = 0;
            greedy_cur_iter_ < greedy_max_iter_;
@@ -366,7 +366,7 @@ bool GriddedRowLegalizer::UpwardDownwardLegalizationWithDispCheck(bool use_init_
   for (ClusterStripe &col : col_list_) {
     bool is_success = true;
     for (Stripe &stripe : col.stripe_list_) {
-      stripe.max_disp_ = p_ckt_->AveBlkWidth();
+      stripe.max_disp_ = ckt_ptr_->AveBlkWidth();
       bool is_from_bottom = true;
       for (greedy_cur_iter_ = 0;
            greedy_cur_iter_ < greedy_max_iter_;
@@ -491,7 +491,7 @@ void GriddedRowLegalizer::EmbodyWellTapCells() {
           upper_limit_per_row * stripe.gridded_rows_.size();
     }
   }
-  auto &tap_cell_list = p_ckt_->design().WellTaps();
+  auto &tap_cell_list = ckt_ptr_->design().WellTaps();
   tap_cell_list.clear();
   tap_cell_list.reserve(well_tap_cell_count_upper_limit);
 
@@ -499,7 +499,7 @@ void GriddedRowLegalizer::EmbodyWellTapCells() {
   size_t counter = 0;
   for (auto &col : col_list_) {
     for (auto &stripe : col.stripe_list_) {
-      counter = stripe.AddWellTapCells(p_ckt_, well_tap_type_ptr_, counter);
+      counter = stripe.AddWellTapCells(ckt_ptr_, well_tap_type_ptr_, counter);
     }
   }
 }
@@ -511,7 +511,7 @@ void GriddedRowLegalizer::ReportDisplacement() {
   }
   double disp_x = 0, disp_y = 0;
   double quadratic_disp_x = 0, quadratic_disp_y = 0;
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   for (Block &blk : blocks) {
     if (IsDummyBlock(blk)) continue;
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
@@ -523,11 +523,11 @@ void GriddedRowLegalizer::ReportDisplacement() {
     quadratic_disp_x += tmp_disp_x * tmp_disp_x;
     quadratic_disp_y += tmp_disp_y * tmp_disp_y;
   }
-  disp_x *= p_ckt_->GridValueX();
-  disp_y *= p_ckt_->GridValueY();
-  quadratic_disp_x *= p_ckt_->GridValueX() * p_ckt_->GridValueX();
-  quadratic_disp_y *= p_ckt_->GridValueY() * p_ckt_->GridValueY();
-  auto count = static_cast<double>(p_ckt_->TotMovBlkCnt());
+  disp_x *= ckt_ptr_->GridValueX();
+  disp_y *= ckt_ptr_->GridValueY();
+  quadratic_disp_x *= ckt_ptr_->GridValueX() * ckt_ptr_->GridValueX();
+  quadratic_disp_y *= ckt_ptr_->GridValueY() * ckt_ptr_->GridValueY();
+  auto count = static_cast<double>(ckt_ptr_->TotMovBlkCnt());
   BOOST_LOG_TRIVIAL(info) << "  Current linear displacement\n";
   BOOST_LOG_TRIVIAL(info) << "    x: " << disp_x << "(" << disp_x / count << ")"
                           << ", y: " << disp_y << "(" << disp_y / count << ")"
@@ -620,8 +620,8 @@ void GriddedRowLegalizer::ImportStandardRowSegments(phydb::PhyDB &phydb) {
   auto &col = col_list_.back();
   col.stripe_list_.emplace_back();
   auto &stripe = col.stripe_list_.back();
-  stripe.ImportStandardRowSegments(phydb, *p_ckt_);
-  auto &blocks = p_ckt_->Blocks();
+  stripe.ImportStandardRowSegments(phydb, *ckt_ptr_);
+  auto &blocks = ckt_ptr_->Blocks();
   stripe.blk_ptrs_vec_.reserve(blocks.size());
   for (auto &blk : blocks) {
     if (IsDummyBlock(blk)) continue;
@@ -645,7 +645,7 @@ void GriddedRowLegalizer::ReportStandardCellDisplacement() {
   double sum_eucli_disp = 0;
   double max_euclidean_disp = 0;
   int cell_count = 0;
-  auto &blocks = p_ckt_->Blocks();
+  auto &blocks = ckt_ptr_->Blocks();
   for (Block &blk : blocks) {
     if (IsDummyBlock(blk)) continue;
     auto aux_ptr = static_cast<LgBlkAux *>(blk.AuxPtr());
@@ -722,7 +722,7 @@ void GriddedRowLegalizer::GenMATLABWellTable(
     int well_emit_mode
 ) {
   std::string frame_file = name_of_file + "_outline.txt";
-  p_ckt_->GenMATLABWellTable(name_of_file, false);
+  ckt_ptr_->GenMATLABWellTable(name_of_file, false);
   GenMATLABWellFillingTable(
       name_of_file, col_list_,
       RegionBottom(), RegionTop(),
@@ -771,7 +771,7 @@ void GriddedRowLegalizer::GenDisplacement(std::string const &name_of_file) {
   DaliExpects(ost_displacement.is_open(),
               "Cannot open output file: " + name_of_file);
 
-  std::vector<Block> &block_list = p_ckt_->Blocks();
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
   for (auto &block : block_list) {
     if (IsDummyBlock(block)) continue;
     if (block.AuxPtr() == nullptr) {
@@ -830,7 +830,7 @@ void GriddedRowLegalizer::SetWellTapCellInterval(
       << "Provided well tap cell interval: "
       << tap_cell_interval_microns << " um\n";
   } else {
-    Tech &tech = p_ckt_->tech();
+    Tech &tech = ckt_ptr_->tech();
     WellLayer &n_well_layer = tech.NwellLayer();
     double max_unplug_length = n_well_layer.MaxPlugDist();
     if (is_checker_board_mode_) {
@@ -847,9 +847,9 @@ void GriddedRowLegalizer::SetWellTapCellInterval(
   }
   BOOST_LOG_TRIVIAL(info)
     << "Gridded value x: "
-    << p_ckt_->GridValueX() << " um\n";
+    << ckt_ptr_->GridValueX() << " um\n";
   tap_cell_interval_grid_ =
-      std::floor(tap_cell_interval_microns / p_ckt_->GridValueX());
+      std::floor(tap_cell_interval_microns / ckt_ptr_->GridValueX());
   BOOST_LOG_TRIVIAL(info)
     << "Well tap cell interval in grid unit : "
     << tap_cell_interval_grid_ << "\n";
@@ -861,9 +861,9 @@ void GriddedRowLegalizer::SetWellTapCellType(
   if (well_tap_type_name.empty()) {
     BOOST_LOG_TRIVIAL(info)
       << "Well tap cell type not specified\n";
-    DaliExpects(!p_ckt_->tech().WellTapCellPtrs().empty(),
+    DaliExpects(!ckt_ptr_->tech().WellTapCellPtrs().empty(),
                 "No well tap cells provided in the cell library?");
-    well_tap_type_ptr_ = p_ckt_->tech().WellTapCellPtrs()[0];
+    well_tap_type_ptr_ = ckt_ptr_->tech().WellTapCellPtrs()[0];
     BOOST_LOG_TRIVIAL(info)
       << "Using the default well tap cell: "
       << well_tap_type_ptr_->Name() << "\n";
@@ -871,7 +871,7 @@ void GriddedRowLegalizer::SetWellTapCellType(
     BOOST_LOG_TRIVIAL(info)
       << "Provided well tap cell type: "
       << well_tap_type_name << "\n";
-    well_tap_type_ptr_ = p_ckt_->GetBlockTypePtr(well_tap_type_name);
+    well_tap_type_ptr_ = ckt_ptr_->GetBlockTypePtr(well_tap_type_name);
   }
 }
 

@@ -368,7 +368,7 @@ void Dali::ExportToPhyDB() {
   ExportComponentsToPhyDB();
   // 2. IOPINs
   ExportIoPinsToPhyDB();
-  if (well_legalizer_.p_ckt_ != nullptr) {
+  if (well_legalizer_.ckt_ptr_ != nullptr) {
     // 3. MiniRows
     ExportMiniRowsToPhyDB();
     // 4. NP/PP and Well
