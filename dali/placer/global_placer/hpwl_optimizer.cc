@@ -628,7 +628,235 @@ double B2BHpwlOptimizer::QuadraticPlacement(double net_model_update_stop_criteri
   //omp_set_nested(0);
 
   if (is_dump_) DumpResult("cg_result_0.txt");
+  BackUpBlockLocation();
+  return lower_bound_hpwlx_.back() + lower_bound_hpwly_.back();
+}
 
+void B2BHpwlOptimizer::UpdateAnchorLocation() {
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  int sz = static_cast<int>(block_list.size());
+
+  for (int i = 0; i < sz; ++i) {
+    double tmp_loc_x = x_anchor[i];
+    x_anchor[i] = block_list[i].LLX();
+    block_list[i].SetLLX(tmp_loc_x);
+
+    double tmp_loc_y = y_anchor[i];
+    y_anchor[i] = block_list[i].LLY();
+    block_list[i].SetLLY(tmp_loc_y);
+  }
+
+  x_anchor_set = true;
+  y_anchor_set = true;
+}
+
+void B2BHpwlOptimizer::UpdateAnchorAlpha() {
+  if (0 <= cur_iter_ && cur_iter_ < 5) {
+    alpha_step = 0.005;
+  } else if (cur_iter_ < 10) {
+    alpha_step = 0.01;
+  } else if (cur_iter_ < 15) {
+    alpha_step = 0.02;
+  } else {
+    alpha_step = 0.03;
+  }
+  alpha += alpha_step;
+}
+
+void B2BHpwlOptimizer::UpdateMaxMinX() {
+  std::vector<Net> &net_list = ckt_ptr_->Nets();
+  size_t sz = net_list.size();
+//#pragma omp parallel for
+  for (size_t i = 0; i < sz; ++i) {
+    net_list[i].UpdateMaxMinIdX();
+  }
+}
+
+void B2BHpwlOptimizer::UpdateMaxMinY() {
+  std::vector<Net> &net_list = ckt_ptr_->Nets();
+  size_t sz = net_list.size();
+//#pragma omp parallel for
+  for (size_t i = 0; i < sz; ++i) {
+    net_list[i].UpdateMaxMinIdY();
+  }
+}
+
+void B2BHpwlOptimizer::BuildProblemWithAnchorX() {
+  UpdateMaxMinX();
+  BuildProblemX();
+
+  double wall_time = get_wall_time();
+
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  int sz = static_cast<int>(block_list.size());
+
+  double weight = 0;
+  double pin_loc0, pin_loc1;
+  for (int i = 0; i < sz; ++i) {
+    if (block_list[i].IsFixed()) continue;
+    pin_loc0 = block_list[i].LLX();
+    pin_loc1 = x_anchor[i];
+    weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + width_epsilon_);
+    bx[i] += pin_loc1 * weight;
+    coefficients_x_.emplace_back(T(i, i, weight));
+  }
+  wall_time = get_wall_time() - wall_time;
+  tot_triplets_time_x += wall_time;
+}
+void B2BHpwlOptimizer::BuildProblemWithAnchorY() {
+  UpdateMaxMinY();
+  BuildProblemY();
+
+  double wall_time = get_wall_time();
+
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  int sz = static_cast<int>(block_list.size());
+
+  double weight = 0;
+  double pin_loc0, pin_loc1;
+  for (int i = 0; i < sz; ++i) {
+    if (block_list[i].IsFixed()) continue;
+    pin_loc0 = block_list[i].LLY();
+    pin_loc1 = y_anchor[i];
+    weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + width_epsilon_);
+    by[i] += pin_loc1 * weight;
+    coefficients_y_.emplace_back(T(i, i, weight));
+  }
+  wall_time = get_wall_time() - wall_time;
+  tot_triplets_time_y += wall_time;
+}
+
+void B2BHpwlOptimizer::BackUpBlockLocation() {
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  int sz = static_cast<int>(block_list.size());
+  for (int i = 0; i < sz; ++i) {
+    x_anchor[i] = block_list[i].LLX();
+    y_anchor[i] = block_list[i].LLY();
+  }
+}
+
+double B2BHpwlOptimizer::QuadraticPlacementWithAnchor(double net_model_update_stop_criterion) {
+  //omp_set_nested(1);
+  omp_set_dynamic(0);
+  int avail_threads_num = omp_get_max_threads();
+  //BOOST_LOG_TRIVIAL(info)   << "total threads: " << avail_threads_num << "\n";
+  double wall_time = get_wall_time();
+
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+
+  UpdateAnchorLocation();
+  UpdateAnchorAlpha();
+  //UpdateAnchorNetWeight();
+  BOOST_LOG_TRIVIAL(trace) << "alpha: " << alpha << "\n";
+
+//#pragma omp parallel num_threads(std::min(omp_get_max_threads(), 2))
+  {
+    BOOST_LOG_TRIVIAL(trace)
+      << "OpenMP threads, " << omp_get_num_threads() << "\n";
+    if (omp_get_thread_num() == 0) {
+      omp_set_num_threads(avail_threads_num / 2);
+      BOOST_LOG_TRIVIAL(trace)
+        << "threads in branch x: "
+        << omp_get_max_threads()
+        << " Eigen threads: " << Eigen::nbThreads()
+        << "\n";
+      for (size_t i = 0; i < block_list.size(); ++i) {
+        vx[i] = block_list[i].LLX();
+      }
+      std::vector<double> eval_history_x;
+      int b2b_update_it_x = 0;
+      for (b2b_update_it_x = 0;
+           b2b_update_it_x < b2b_update_max_iteration_;
+           ++b2b_update_it_x) {
+        BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
+        BuildProblemWithAnchorX();
+        double evaluate_result = OptimizeQuadraticMetricX(cg_stop_criterion_);
+        eval_history_x.push_back(evaluate_result);
+        //BOOST_LOG_TRIVIAL(trace) << "\tIterative net model update, WeightedHPWLX: " << evaluate_result << "\n";
+        if (eval_history_x.size() >= 3) {
+          bool is_converge = IsSeriesConverge(
+              eval_history_x,
+              3,
+              net_model_update_stop_criterion
+          );
+          bool is_oscillate = IsSeriesOscillate(eval_history_x, 5);
+          if (is_converge) {
+            break;
+          }
+          if (is_oscillate) {
+            BOOST_LOG_TRIVIAL(trace)
+              << "Net model update oscillation detected X\n";
+            break;
+          }
+        }
+      }
+      BOOST_LOG_TRIVIAL(trace)
+        << "  Optimization summary X, iterations x: " << b2b_update_it_x
+        << ", " << eval_history_x << "\n";
+      DaliExpects(!eval_history_x.empty(),
+                  "Cannot return a valid value because the result is not evaluated!");
+      lower_bound_hpwlx_.push_back(eval_history_x.back());
+    }
+    if (omp_get_thread_num() == 1 || omp_get_num_threads() == 1) {
+      omp_set_num_threads(avail_threads_num / 2);
+      BOOST_LOG_TRIVIAL(trace)
+        << "threads in branch y: "
+        << omp_get_max_threads()
+        << " Eigen threads: " << Eigen::nbThreads()
+        << "\n";
+      for (size_t i = 0; i < block_list.size(); ++i) {
+        vy[i] = block_list[i].LLY();
+      }
+      std::vector<double> eval_history_y;
+      int b2b_update_it_y = 0;
+      for (b2b_update_it_y = 0;
+           b2b_update_it_y < b2b_update_max_iteration_;
+           ++b2b_update_it_y) {
+        BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
+        BuildProblemWithAnchorY();
+        double evaluate_result =
+            OptimizeQuadraticMetricY(cg_stop_criterion_);
+        eval_history_y.push_back(evaluate_result);
+        if (eval_history_y.size() >= 3) {
+          bool is_converge = IsSeriesConverge(
+              eval_history_y,
+              3,
+              net_model_update_stop_criterion
+          );
+          bool is_oscillate = IsSeriesOscillate(eval_history_y, 5);
+          if (is_converge) {
+            break;
+          }
+          if (is_oscillate) {
+            BOOST_LOG_TRIVIAL(trace)
+              << "Net model update oscillation detected Y\n";
+            break;
+          }
+        }
+      }
+      BOOST_LOG_TRIVIAL(trace)
+        << "  Optimization summary Y, iterations y: " << b2b_update_it_y
+        << ", " << eval_history_y << "\n";
+      DaliExpects(!eval_history_y.empty(),
+                  "Cannot return a valid value because the result is not evaluated!");
+      lower_bound_hpwly_.push_back(eval_history_y.back());
+    }
+  }
+
+  PullBlockBackToRegion();
+
+  BOOST_LOG_TRIVIAL(debug) << "Quadratic Placement With Anchor Complete\n";
+
+//  for (size_t i = 0; i < 10; ++i) {
+//    BOOST_LOG_TRIVIAL(info)   << vx[i] << "  " << vy[i] << "\n";
+//  }
+
+  wall_time = get_wall_time() - wall_time;
+  tot_cg_time += wall_time;
+  //omp_set_nested(0);
+
+  if (is_dump_) DumpResult("cg_result_" + std::to_string(cur_iter_) + ".txt");
+  BackUpBlockLocation();
   return lower_bound_hpwlx_.back() + lower_bound_hpwly_.back();
 }
 

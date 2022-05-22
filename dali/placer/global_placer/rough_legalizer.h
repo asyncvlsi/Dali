@@ -20,9 +20,12 @@
  ******************************************************************************/
 #ifndef DALI_PLACER_GLOBAL_PLACER_ROUGH_LEGALIZER_H_
 #define DALI_PLACER_GLOBAL_PLACER_ROUGH_LEGALIZER_H_
+#include <queue>
 
 #include "dali/circuit/circuit.h"
+#include "box_bin.h"
 #include "grid_bin.h"
+#include "grid_bin_index.h"
 
 namespace dali {
 
@@ -49,11 +52,19 @@ class LookAheadLegalizer : public RoughLegalizer {
   void InitGridBins();
   void InitWhiteSpaceLUT();
   void Initialize(double placement_density) override;
-/*
-  void BackUpBlockLocation();
+
   void ClearGridBinFlag();
   void UpdateGridBinState();
-  void UpdateClusterList();*/
+  void UpdateClusterArea(GridBinCluster &cluster);
+  void UpdateClusterList();
+  void UpdateLargestCluster();
+  unsigned long int LookUpWhiteSpace(GridBinIndex const &ll_index, GridBinIndex const &ur_index);
+  unsigned long int LookUpWhiteSpace(WindowQuadruple &window);
+  void FindMinimumBoxForLargestCluster();
+  void SplitGridBox(BoxBin &box);
+  void PlaceBlkInBox(BoxBin &box);
+  void SplitBox(BoxBin &box);
+  bool RecursiveBisectionblockspreading();
   double LookAheadLegalization() override;
  private:
   std::vector<double> upper_bound_hpwlx_;
@@ -61,6 +72,7 @@ class LookAheadLegalizer : public RoughLegalizer {
   std::vector<double> upper_bound_hpwl_;
 
   int number_of_cell_in_bin_ = 30;
+  int cluster_upper_size = 3;
 
   // look ahead legalization member function implemented below
   int grid_bin_height = 0;
@@ -69,6 +81,17 @@ class LookAheadLegalizer : public RoughLegalizer {
   int grid_cnt_y = 0;
   std::vector<std::vector<GridBin> > grid_bin_mesh;
   std::vector<std::vector<unsigned long long> > grid_bin_white_space_LUT;
+
+  std::multiset<GridBinCluster, std::greater<>> cluster_set;
+  std::queue<BoxBin> queue_box_bin;
+
+  double update_grid_bin_state_time_ = 0;
+  double cluster_overfilled_grid_bin_time_ = 0;
+  double update_cluster_area_time_ = 0;
+  double update_cluster_list_time_ = 0;
+  double find_minimum_box_for_largest_cluster_time_ = 0;
+  double recursive_bisection_block_spreading_time_ = 0;
+  double tot_lal_time = 0;
 };
 
 } // dali

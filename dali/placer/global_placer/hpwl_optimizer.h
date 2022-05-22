@@ -44,9 +44,12 @@ class HpwlOptimizer {
   explicit HpwlOptimizer(Circuit *ckt_ptr);
   virtual ~HpwlOptimizer() = default;
   virtual void Initialize() = 0;
+  void SetIteration(int cur_iter) { cur_iter_ = cur_iter; }
   virtual double QuadraticPlacement(double net_model_update_stop_criterion) = 0;
+  virtual double QuadraticPlacementWithAnchor(double net_model_update_stop_criterion) = 0;
  protected:
   Circuit *ckt_ptr_ = nullptr;
+  int cur_iter_ = 0;
 };
 
 class B2BHpwlOptimizer : public HpwlOptimizer {
@@ -69,6 +72,15 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   double OptimizeQuadraticMetricY(double cg_stop_criterion);
   void PullBlockBackToRegion();
   double QuadraticPlacement(double net_model_update_stop_criterion) override;
+
+  void UpdateAnchorLocation();
+  void UpdateAnchorAlpha();
+  void UpdateMaxMinX();
+  void UpdateMaxMinY();
+  void BuildProblemWithAnchorX();
+  void BuildProblemWithAnchorY();
+  void BackUpBlockLocation();
+  double QuadraticPlacementWithAnchor(double net_model_update_stop_criterion) override;
 
   void DumpResult(std::string const &name_of_file);
  private:
@@ -119,7 +131,6 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   std::vector<SpMat::InnerIterator> SpMat_diag_y;
 
   int b2b_update_max_iteration_ = 50;
-  int cur_iter_ = 0;
   int max_iter_ = 100;
   size_t net_ignore_threshold_ = 100;
 
@@ -132,6 +143,11 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   double tot_loc_update_time_x = 0;
   double tot_loc_update_time_y = 0;
   double tot_cg_time = 0;
+
+  /**** anchor weight ****/
+  // pseudo-net weight additional factor for anchor pseudo-net
+  double alpha = 0.00;
+  double alpha_step = 0.00;
 
   bool is_dump_ = false;
 };

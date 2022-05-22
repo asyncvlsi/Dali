@@ -3080,7 +3080,7 @@ void GlobalPlacer::CheckOptimizerAndLegalizer() {
   }
 }
 
-#if true
+#if false
 bool GlobalPlacer::StartPlacement() {
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
@@ -3240,11 +3240,11 @@ bool GlobalPlacer::StartPlacement() {
     BOOST_LOG_TRIVIAL(debug)
       << "----------------------------------------------\n";
     BOOST_LOG_TRIVIAL(debug) << cur_iter_ << "-th iteration\n";
-
-    eval_res = QuadraticPlacementWithAnchor(net_model_update_stop_criterion_);
+    optimizer_->SetIteration(cur_iter_);
+    eval_res = optimizer_->QuadraticPlacementWithAnchor(net_model_update_stop_criterion_);
     lower_bound_hpwl_.push_back(eval_res);
 
-    eval_res = LookAheadLegalization();
+    eval_res = legalizer_->LookAheadLegalization();
     upper_bound_hpwl_.push_back(eval_res);
 
     BOOST_LOG_TRIVIAL(info)
