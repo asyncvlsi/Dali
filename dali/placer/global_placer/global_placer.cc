@@ -193,36 +193,8 @@ bool GlobalPlacer::StartPlacement() {
   BOOST_LOG_TRIVIAL(info)
     << "\033[0;36m Global Placement complete\033[0m\n";
   BOOST_LOG_TRIVIAL(info)
-    << "(cg time: " << tot_cg_time << "s, lal time: " << tot_lal_time << "s)\n";
-  BOOST_LOG_TRIVIAL(info)
-    << "total triplets time: "
-    << tot_triplets_time_x << "s, "
-    << tot_triplets_time_y << "s, "
-    << tot_triplets_time_x + tot_triplets_time_y << "s\n";
-  BOOST_LOG_TRIVIAL(info)
-    << "total matrix from triplets time: "
-    << tot_matrix_from_triplets_x << "s, "
-    << tot_matrix_from_triplets_y << "s, "
-    << tot_matrix_from_triplets_x + tot_matrix_from_triplets_y << "s\n";
-  BOOST_LOG_TRIVIAL(info)
-    << "total cg solver time: "
-    << tot_cg_solver_time_x << "s, "
-    << tot_cg_solver_time_y << "s, "
-    << tot_cg_solver_time_x + tot_cg_solver_time_y << "s\n";
-  BOOST_LOG_TRIVIAL(info)
-    << "total loc update time: "
-    << tot_loc_update_time_x << "s, "
-    << tot_loc_update_time_y << "s, "
-    << tot_loc_update_time_x + tot_loc_update_time_y << "s\n";
-  double tot_time_x = tot_triplets_time_x + tot_matrix_from_triplets_x
-      + tot_cg_solver_time_x + tot_loc_update_time_x;
-  double tot_time_y = tot_triplets_time_y + tot_matrix_from_triplets_y
-      + tot_cg_solver_time_y + tot_loc_update_time_y;
-  BOOST_LOG_TRIVIAL(info)
-    << "total x/y time: "
-    << tot_time_x << "s, "
-    << tot_time_y << "s, "
-    << tot_time_x + tot_time_y << "s\n";
+    << "(cg time: " << optimizer_->GetTime() << "s, lal time: " << legalizer_->GetTime() << "s)\n";
+  optimizer_->Close();
   legalizer_->Close();
   UpdateMovableBlkPlacementStatus();
   ReportHPWL();

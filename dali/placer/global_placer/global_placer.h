@@ -98,17 +98,6 @@ class GlobalPlacer : public Placer {
 
   bool is_dump_ = false;
 
-  double tot_triplets_time_x = 0;
-  double tot_triplets_time_y = 0;
-  double tot_matrix_from_triplets_x = 0;
-  double tot_matrix_from_triplets_y = 0;
-  double tot_cg_solver_time_x = 0;
-  double tot_cg_solver_time_y = 0;
-  double tot_loc_update_time_x = 0;
-  double tot_loc_update_time_y = 0;
-  double tot_lal_time = 0;
-  double tot_cg_time = 0;
-
   void BlockLocationUniformInitialization_();
   void BlockLocationNormalInitialization_(double std_dev);
   void BlockLocationInitialization_(int mode, double std_dev);

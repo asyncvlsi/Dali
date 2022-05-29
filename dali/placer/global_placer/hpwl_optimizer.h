@@ -47,6 +47,8 @@ class HpwlOptimizer {
   void SetIteration(int cur_iter) { cur_iter_ = cur_iter; }
   virtual double QuadraticPlacement(double net_model_update_stop_criterion) = 0;
   virtual double QuadraticPlacementWithAnchor(double net_model_update_stop_criterion) = 0;
+  virtual double GetTime() = 0;
+  virtual void Close() = 0;
  protected:
   Circuit *ckt_ptr_ = nullptr;
   int cur_iter_ = 0;
@@ -81,6 +83,9 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   virtual void BuildProblemWithAnchorY();
   virtual void BackUpBlockLocation();
   double QuadraticPlacementWithAnchor(double net_model_update_stop_criterion) override;
+
+  double GetTime() override;
+  void Close() override;
 
   virtual void DumpResult(std::string const &name_of_file);
  protected:

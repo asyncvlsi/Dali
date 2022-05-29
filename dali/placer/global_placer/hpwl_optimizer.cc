@@ -860,6 +860,42 @@ double B2BHpwlOptimizer::QuadraticPlacementWithAnchor(double net_model_update_st
   return lower_bound_hpwlx_.back() + lower_bound_hpwly_.back();
 }
 
+double B2BHpwlOptimizer::GetTime() {
+  return tot_cg_time;
+}
+
+void B2BHpwlOptimizer::Close() {
+  BOOST_LOG_TRIVIAL(info)
+    << "total triplets time: "
+    << tot_triplets_time_x << "s, "
+    << tot_triplets_time_y << "s, "
+    << tot_triplets_time_x + tot_triplets_time_y << "s\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "total matrix from triplets time: "
+    << tot_matrix_from_triplets_x << "s, "
+    << tot_matrix_from_triplets_y << "s, "
+    << tot_matrix_from_triplets_x + tot_matrix_from_triplets_y << "s\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "total cg solver time: "
+    << tot_cg_solver_time_x << "s, "
+    << tot_cg_solver_time_y << "s, "
+    << tot_cg_solver_time_x + tot_cg_solver_time_y << "s\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "total loc update time: "
+    << tot_loc_update_time_x << "s, "
+    << tot_loc_update_time_y << "s, "
+    << tot_loc_update_time_x + tot_loc_update_time_y << "s\n";
+  double tot_time_x = tot_triplets_time_x + tot_matrix_from_triplets_x
+      + tot_cg_solver_time_x + tot_loc_update_time_x;
+  double tot_time_y = tot_triplets_time_y + tot_matrix_from_triplets_y
+      + tot_cg_solver_time_y + tot_loc_update_time_y;
+  BOOST_LOG_TRIVIAL(info)
+    << "total x/y time: "
+    << tot_time_x << "s, "
+    << tot_time_y << "s, "
+    << tot_time_x + tot_time_y << "s\n";
+}
+
 void B2BHpwlOptimizer::DumpResult(std::string const &name_of_file) {
   //UpdateGridBinState();
   static int counter = 0;

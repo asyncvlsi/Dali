@@ -35,6 +35,7 @@ class RoughLegalizer {
   virtual ~RoughLegalizer() = default;
   virtual void Initialize(double placement_density) = 0;
   virtual double LookAheadLegalization() = 0;
+  virtual double GetTime() = 0;
   virtual void Close() = 0;
  protected:
   Circuit *ckt_ptr_ = nullptr;
@@ -68,6 +69,7 @@ class LookAheadLegalizer : public RoughLegalizer {
   bool RecursiveBisectionblockspreading();
   double LookAheadLegalization() override;
 
+  double GetTime() override;
   void Close() override;
  private:
   std::vector<double> upper_bound_hpwlx_;

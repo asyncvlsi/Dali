@@ -91,7 +91,7 @@ bool WellPlaceFlow::StartPlacement() {
   BOOST_LOG_TRIVIAL(info)
     << "\033[0;36m" << "Global Placement complete\n" << "\033[0m";
   BOOST_LOG_TRIVIAL(info)
-    << "(cg time: " << tot_cg_time << "s, lal time: " << tot_lal_time << "s)\n";
+    << "(cg time: " << optimizer_->GetTime() << "s, lal time: " << legalizer_->GetTime() << "s)\n";
   legalizer_->Close();
   //CheckAndShift();
   UpdateMovableBlkPlacementStatus();

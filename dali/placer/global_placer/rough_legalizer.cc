@@ -1037,6 +1037,10 @@ double LookAheadLegalizer::LookAheadLegalization() {
   return evaluate_result_x + evaluate_result_y;
 }
 
+double LookAheadLegalizer::GetTime() {
+  return tot_lal_time;
+}
+
 void LookAheadLegalizer::Close() {
   grid_bin_mesh.clear();
   grid_bin_white_space_LUT.clear();
