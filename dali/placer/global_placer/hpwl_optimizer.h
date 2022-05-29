@@ -57,33 +57,33 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   explicit B2BHpwlOptimizer(Circuit *ckt_ptr): HpwlOptimizer(ckt_ptr) {}
   ~B2BHpwlOptimizer() override = default;
 
-  void UpdateEpsilon();
+  virtual void UpdateEpsilon();
   void Initialize() override;
 
-  void BuildProblemX();
-  void BuildProblemY();
-  bool IsSeriesConverge(
+  virtual void BuildProblemX();
+  virtual void BuildProblemY();
+  virtual bool IsSeriesConverge(
       std::vector<double> &data,
       int window_size,
       double tolerance
   );
-  bool IsSeriesOscillate(std::vector<double> &data, int window_size);
-  double OptimizeQuadraticMetricX(double cg_stop_criterion);
-  double OptimizeQuadraticMetricY(double cg_stop_criterion);
-  void PullBlockBackToRegion();
+  virtual bool IsSeriesOscillate(std::vector<double> &data, int window_size);
+  virtual double OptimizeQuadraticMetricX(double cg_stop_criterion);
+  virtual double OptimizeQuadraticMetricY(double cg_stop_criterion);
+  virtual void PullBlockBackToRegion();
   double QuadraticPlacement(double net_model_update_stop_criterion) override;
 
-  void UpdateAnchorLocation();
-  void UpdateAnchorAlpha();
-  void UpdateMaxMinX();
-  void UpdateMaxMinY();
-  void BuildProblemWithAnchorX();
-  void BuildProblemWithAnchorY();
-  void BackUpBlockLocation();
+  virtual void UpdateAnchorLocation();
+  virtual void UpdateAnchorAlpha();
+  virtual void UpdateMaxMinX();
+  virtual void UpdateMaxMinY();
+  virtual void BuildProblemWithAnchorX();
+  virtual void BuildProblemWithAnchorY();
+  virtual void BackUpBlockLocation();
   double QuadraticPlacementWithAnchor(double net_model_update_stop_criterion) override;
 
-  void DumpResult(std::string const &name_of_file);
- private:
+  virtual void DumpResult(std::string const &name_of_file);
+ protected:
   /**** storing the lower and upper bound of hpwl along x and y direction ****/
   std::vector<double> lower_bound_hpwlx_;
   std::vector<double> lower_bound_hpwly_;
@@ -150,6 +150,51 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   double alpha_step = 0.00;
 
   bool is_dump_ = false;
+};
+
+class StarHpwlOptimizer : public B2BHpwlOptimizer {
+ public:
+  explicit StarHpwlOptimizer(Circuit *ckt_ptr): B2BHpwlOptimizer(ckt_ptr) {}
+  ~StarHpwlOptimizer() override = default;
+
+  void BuildProblemX() override;
+  void BuildProblemY() override;
+
+  void UpdateAnchorAlpha() override;
+};
+
+class HpwlHpwlOptimizer : public B2BHpwlOptimizer {
+ public:
+  explicit HpwlHpwlOptimizer(Circuit *ckt_ptr): B2BHpwlOptimizer(ckt_ptr) {}
+  ~HpwlHpwlOptimizer() override = default;
+
+  void BuildProblemX() override;
+  void BuildProblemY() override;
+
+  void UpdateAnchorAlpha() override;
+};
+
+class StarHpwlHpwlOptimizer : public B2BHpwlOptimizer {
+ public:
+  explicit StarHpwlHpwlOptimizer(Circuit *ckt_ptr): B2BHpwlOptimizer(ckt_ptr) {}
+  ~StarHpwlHpwlOptimizer() override = default;
+
+  void InitializeDriverLoadPairs();
+  void Initialize() override;
+
+  void BuildProblemX() override;
+  void BuildProblemY() override;
+
+  void BuildProblemWithAnchorX() override;
+  void BuildProblemWithAnchorY() override;
+
+  double OptimizeQuadraticMetricX(double cg_stop_criterion);
+  double OptimizeQuadraticMetricY(double cg_stop_criterion);
+
+  void UpdateAnchorAlpha() override;
+ private:
+  std::vector<BlkPairNets> blk_pair_net_list_;
+  std::unordered_map<PairEgId, EgId, boost::hash<PairEgId>> blk_pair_map_;
 };
 
 } // dali

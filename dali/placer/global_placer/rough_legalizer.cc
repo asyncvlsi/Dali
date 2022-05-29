@@ -1037,4 +1037,9 @@ double LookAheadLegalizer::LookAheadLegalization() {
   return evaluate_result_x + evaluate_result_y;
 }
 
+void LookAheadLegalizer::Close() {
+  grid_bin_mesh.clear();
+  grid_bin_white_space_LUT.clear();
+}
+
 } // dali

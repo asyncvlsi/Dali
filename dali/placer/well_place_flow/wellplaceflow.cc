@@ -33,8 +33,9 @@ bool WellPlaceFlow::StartPlacement() {
   BOOST_LOG_TRIVIAL(info) << "---------------------------------------\n"
                           << "Start global placement\n";
   SanityCheck();
-  InitializeHpwlOptimizer();
-  InitializeRoughLegalizer();
+  CheckOptimizerAndLegalizer();
+  optimizer_->Initialize();
+  legalizer_->Initialize(PlacementDensity());
   //InitializeBlockLocationNormal();
   InitializeBlockLocationUniform();
   if (ckt_ptr_->Nets().empty()) {
@@ -43,7 +44,7 @@ bool WellPlaceFlow::StartPlacement() {
     return true;
   }
 
-  double eval_res = QuadraticPlacement(net_model_update_stop_criterion_);
+  double eval_res = optimizer_->QuadraticPlacement(net_model_update_stop_criterion_);
   lower_bound_hpwl_.push_back(eval_res);
   //BOOST_LOG_TRIVIAL(info)   << cg_total_hpwl_ << "  " << circuit_ptr_->HPWL() << "\n";
 
@@ -51,7 +52,7 @@ bool WellPlaceFlow::StartPlacement() {
   max_iter_ = 50;
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     BOOST_LOG_TRIVIAL(trace) << cur_iter_ << "-th iteration\n";
-    eval_res = LookAheadLegalization();
+    eval_res = legalizer_->LookAheadLegalization();
     upper_bound_hpwl_.push_back(eval_res);
     if (cur_iter_ > 10) {
       LGTetrisEx legalizer;
@@ -83,7 +84,7 @@ bool WellPlaceFlow::StartPlacement() {
       << lower_bound_hpwl_.back() << " "
       << upper_bound_hpwl_.back() << "\n";
     eval_res =
-        QuadraticPlacementWithAnchor(net_model_update_stop_criterion_);
+        optimizer_->QuadraticPlacementWithAnchor(net_model_update_stop_criterion_);
     lower_bound_hpwl_.push_back(eval_res);
   }
 
@@ -91,7 +92,7 @@ bool WellPlaceFlow::StartPlacement() {
     << "\033[0;36m" << "Global Placement complete\n" << "\033[0m";
   BOOST_LOG_TRIVIAL(info)
     << "(cg time: " << tot_cg_time << "s, lal time: " << tot_lal_time << "s)\n";
-  LALClose();
+  legalizer_->Close();
   //CheckAndShift();
   UpdateMovableBlkPlacementStatus();
   ReportHPWL();
