@@ -77,15 +77,6 @@ class GlobalPlacer : public Placer {
   );
   static bool IsSeriesOscillate(std::vector<double> &data, int window_size);
  protected:
-  /**** storing the lower and upper bound of hpwl along x and y direction ****/
-  std::vector<double> lower_bound_hpwlx_;
-  std::vector<double> lower_bound_hpwly_;
-  std::vector<double> lower_bound_hpwl_;
-  std::vector<double> upper_bound_hpwlx_;
-  std::vector<double> upper_bound_hpwly_;
-  std::vector<double> upper_bound_hpwl_;
-
-  /**** parameters for CG solver optimization configuration ****/
   // stop update net model if the cost change is less than this value for 3 iterations
   double net_model_update_stop_criterion_ = 0.01;
 

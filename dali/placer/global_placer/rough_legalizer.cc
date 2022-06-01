@@ -240,8 +240,8 @@ void LookAheadLegalizer::InitWhiteSpaceLUT() {
 void LookAheadLegalizer::Initialize(double placement_density) {
   placement_density_ = placement_density;
 
-  upper_bound_hpwlx_.clear();
-  upper_bound_hpwly_.clear();
+  upper_bound_hpwl_x_.clear();
+  upper_bound_hpwl_y_.clear();
   upper_bound_hpwl_.clear();
   InitGridBins();
   InitWhiteSpaceLUT();
@@ -1010,9 +1010,9 @@ double LookAheadLegalizer::LookAheadLegalization() {
   //legalizer_.StartPlacement();
 
   double evaluate_result_x = ckt_ptr_->WeightedHPWLX();
-  upper_bound_hpwlx_.push_back(evaluate_result_x);
+  upper_bound_hpwl_x_.push_back(evaluate_result_x);
   double evaluate_result_y = ckt_ptr_->WeightedHPWLY();
-  upper_bound_hpwly_.push_back(evaluate_result_y);
+  upper_bound_hpwl_y_.push_back(evaluate_result_y);
   BOOST_LOG_TRIVIAL(debug) << "Look-ahead legalization complete\n";
 
   cpu_time = get_cpu_time() - cpu_time;
@@ -1034,7 +1034,8 @@ double LookAheadLegalizer::LookAheadLegalization() {
     << "(RecursiveBisectionblockspreading time: "
     << recursive_bisection_block_spreading_time_ << "s)\n";
 
-  return evaluate_result_x + evaluate_result_y;
+  upper_bound_hpwl_.push_back(evaluate_result_x + evaluate_result_y);
+  return upper_bound_hpwl_.back();
 }
 
 double LookAheadLegalizer::GetTime() {

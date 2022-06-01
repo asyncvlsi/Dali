@@ -49,9 +49,15 @@ class HpwlOptimizer {
   virtual double QuadraticPlacementWithAnchor(double net_model_update_stop_criterion) = 0;
   virtual double GetTime() = 0;
   virtual void Close() = 0;
+  std::vector<double> &GetHpwls() { return lower_bound_hpwl_; }
+  std::vector<double> &GetHpwlsX() { return lower_bound_hpwl_x_; }
+  std::vector<double> &GetHpwlsY() { return lower_bound_hpwl_y_; }
  protected:
   Circuit *ckt_ptr_ = nullptr;
   int cur_iter_ = 0;
+  std::vector<double> lower_bound_hpwl_;
+  std::vector<double> lower_bound_hpwl_x_;
+  std::vector<double> lower_bound_hpwl_y_;
 };
 
 class B2BHpwlOptimizer : public HpwlOptimizer {
@@ -89,11 +95,6 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
 
   virtual void DumpResult(std::string const &name_of_file);
  protected:
-  /**** storing the lower and upper bound of hpwl along x and y direction ****/
-  std::vector<double> lower_bound_hpwlx_;
-  std::vector<double> lower_bound_hpwly_;
-  std::vector<double> lower_bound_hpwl_;
-
   /**** parameters for CG solver optimization configuration ****/
   // this is to make sure cg_tolerance is the same for different machines
   double cg_tolerance_ = 1e-35;

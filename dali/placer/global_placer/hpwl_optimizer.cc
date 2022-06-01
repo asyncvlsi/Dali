@@ -51,8 +51,8 @@ void B2BHpwlOptimizer::Initialize() {
   UpdateEpsilon();
 
   // initialize containers to store HPWL after each iteration
-  lower_bound_hpwlx_.clear();
-  lower_bound_hpwly_.clear();
+  lower_bound_hpwl_x_.clear();
+  lower_bound_hpwl_y_.clear();
   lower_bound_hpwl_.clear();
 
   size_t sz = ckt_ptr_->Blocks().size();
@@ -567,7 +567,7 @@ double B2BHpwlOptimizer::QuadraticPlacement(double net_model_update_stop_criteri
           !eval_history_x.empty(),
           "Cannot return a valid value because the result is not evaluated!"
       );
-      lower_bound_hpwlx_.push_back(eval_history_x.back());
+      lower_bound_hpwl_x_.push_back(eval_history_x.back());
     }
 
     if (omp_get_thread_num() == 1 || omp_get_num_threads() == 1) {
@@ -615,7 +615,7 @@ double B2BHpwlOptimizer::QuadraticPlacement(double net_model_update_stop_criteri
           !eval_history_y.empty(),
           "Cannot return a valid value because the result is not evaluated!"
       );
-      lower_bound_hpwly_.push_back(eval_history_y.back());
+      lower_bound_hpwl_y_.push_back(eval_history_y.back());
     }
   }
 
@@ -627,9 +627,12 @@ double B2BHpwlOptimizer::QuadraticPlacement(double net_model_update_stop_criteri
   tot_cg_time += wall_time;
   //omp_set_nested(0);
 
-  if (is_dump_) DumpResult("cg_result_0.txt");
+  if (is_dump_) {
+    DumpResult("cg_result_0.txt");
+  }
   BackUpBlockLocation();
-  return lower_bound_hpwlx_.back() + lower_bound_hpwly_.back();
+  lower_bound_hpwl_.push_back(lower_bound_hpwl_x_.back() + lower_bound_hpwl_y_.back());
+  return lower_bound_hpwl_.back();
 }
 
 void B2BHpwlOptimizer::UpdateAnchorLocation() {
@@ -795,7 +798,7 @@ double B2BHpwlOptimizer::QuadraticPlacementWithAnchor(double net_model_update_st
         << ", " << eval_history_x << "\n";
       DaliExpects(!eval_history_x.empty(),
                   "Cannot return a valid value because the result is not evaluated!");
-      lower_bound_hpwlx_.push_back(eval_history_x.back());
+      lower_bound_hpwl_x_.push_back(eval_history_x.back());
     }
     if (omp_get_thread_num() == 1 || omp_get_num_threads() == 1) {
       omp_set_num_threads(avail_threads_num / 2);
@@ -839,7 +842,7 @@ double B2BHpwlOptimizer::QuadraticPlacementWithAnchor(double net_model_update_st
         << ", " << eval_history_y << "\n";
       DaliExpects(!eval_history_y.empty(),
                   "Cannot return a valid value because the result is not evaluated!");
-      lower_bound_hpwly_.push_back(eval_history_y.back());
+      lower_bound_hpwl_y_.push_back(eval_history_y.back());
     }
   }
 
@@ -857,7 +860,8 @@ double B2BHpwlOptimizer::QuadraticPlacementWithAnchor(double net_model_update_st
 
   if (is_dump_) DumpResult("cg_result_" + std::to_string(cur_iter_) + ".txt");
   BackUpBlockLocation();
-  return lower_bound_hpwlx_.back() + lower_bound_hpwly_.back();
+  lower_bound_hpwl_.push_back(lower_bound_hpwl_x_.back() + lower_bound_hpwl_y_.back());
+  return lower_bound_hpwl_.back();
 }
 
 double B2BHpwlOptimizer::GetTime() {
@@ -1370,8 +1374,8 @@ void StarHpwlHpwlOptimizer::Initialize() {
   UpdateEpsilon();
 
   // initialize containers to store HPWL after each iteration
-  lower_bound_hpwlx_.clear();
-  lower_bound_hpwly_.clear();
+  lower_bound_hpwl_x_.clear();
+  lower_bound_hpwl_y_.clear();
   lower_bound_hpwl_.clear();
 
   size_t sz = ckt_ptr_->Blocks().size();

@@ -44,16 +44,14 @@ bool WellPlaceFlow::StartPlacement() {
     return true;
   }
 
-  double eval_res = optimizer_->QuadraticPlacement(net_model_update_stop_criterion_);
-  lower_bound_hpwl_.push_back(eval_res);
+  optimizer_->QuadraticPlacement(net_model_update_stop_criterion_);
   //BOOST_LOG_TRIVIAL(info)   << cg_total_hpwl_ << "  " << circuit_ptr_->HPWL() << "\n";
 
   //bool old_success = false;
   max_iter_ = 50;
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     BOOST_LOG_TRIVIAL(trace) << cur_iter_ << "-th iteration\n";
-    eval_res = legalizer_->LookAheadLegalization();
-    upper_bound_hpwl_.push_back(eval_res);
+    legalizer_->LookAheadLegalization();
     if (cur_iter_ > 10) {
       LGTetrisEx legalizer;
       legalizer.TakeOver(this);
@@ -63,7 +61,7 @@ bool WellPlaceFlow::StartPlacement() {
       well_legalizer.TakeOver(this);
       well_legalizer.SetStripePartitionMode(int(DefaultPartitionMode::SCAVENGE));
       well_legalizer.WellLegalize();
-      upper_bound_hpwl_.back() = ckt_ptr_->WeightedHPWL();
+      legalizer_->GetHpwls().back() = ckt_ptr_->WeightedHPWL();
 
       //StdClusterWellLegalizer well_legalizer;
       //well_legalizer.TakeOver(this);
@@ -81,11 +79,9 @@ bool WellPlaceFlow::StartPlacement() {
     }
     BOOST_LOG_TRIVIAL(info)
       << "It " << cur_iter_ << ": \t"
-      << lower_bound_hpwl_.back() << " "
-      << upper_bound_hpwl_.back() << "\n";
-    eval_res =
-        optimizer_->QuadraticPlacementWithAnchor(net_model_update_stop_criterion_);
-    lower_bound_hpwl_.push_back(eval_res);
+      << optimizer_->GetHpwls().back() << " "
+      << legalizer_->GetHpwls().back() << "\n";
+    optimizer_->QuadraticPlacementWithAnchor(net_model_update_stop_criterion_);
   }
 
   BOOST_LOG_TRIVIAL(info)

@@ -83,19 +83,21 @@ void GlobalPlacer::InitializeBlockLocationNormal(double std_dev) {
 * ****/
 bool GlobalPlacer::IsPlacementConverge() {
   bool res = false;
+  auto &lower_bound_hpwl = optimizer_->GetHpwls();
+  auto &upper_bound_hpwl = legalizer_->GetHpwls();
   if (convergence_criteria_ == 1) {
     // (a) and (b) requires at least 10 iterations
-    if (lower_bound_hpwl_.size() <= 10) {
+    if (lower_bound_hpwl.size() <= 10) {
       res = false;
     } else {
-      double tenth_gap = upper_bound_hpwl_[9] - lower_bound_hpwl_[9];
-      double last_gap = upper_bound_hpwl_.back() - lower_bound_hpwl_.back();
+      double tenth_gap = upper_bound_hpwl[9] - lower_bound_hpwl[9];
+      double last_gap = upper_bound_hpwl.back() - lower_bound_hpwl.back();
       double gap_ratio = last_gap / tenth_gap;
       if (gap_ratio < 0.1) { // (a)
         res = true;
       } else if (gap_ratio < 0.25) { // (b)
         res = IsSeriesConverge(
-            upper_bound_hpwl_,
+            upper_bound_hpwl,
             3,
             simpl_LAL_converge_criterion_
         );
@@ -104,11 +106,11 @@ bool GlobalPlacer::IsPlacementConverge() {
       }
     }
   } else if (convergence_criteria_ == 2) {
-    if (lower_bound_hpwl_.empty()) {
+    if (lower_bound_hpwl.empty()) {
       res = false;
     } else {
-      double lower_bound = lower_bound_hpwl_.back();
-      double upper_bound = upper_bound_hpwl_.back();
+      double lower_bound = lower_bound_hpwl.back();
+      double upper_bound = upper_bound_hpwl.back();
       res = (lower_bound < upper_bound)
           && (upper_bound / lower_bound - 1 < polar_converge_criterion_);
     }
@@ -149,32 +151,27 @@ bool GlobalPlacer::StartPlacement() {
 
   // initial placement
   BOOST_LOG_TRIVIAL(debug) << cur_iter_ << "-th iteration\n";
-  double eval_res = optimizer_->QuadraticPlacement(net_model_update_stop_criterion_);
-  lower_bound_hpwl_.push_back(eval_res);
-  eval_res = legalizer_->LookAheadLegalization();
-  upper_bound_hpwl_.push_back(eval_res);
+  optimizer_->QuadraticPlacement(net_model_update_stop_criterion_);
+  legalizer_->LookAheadLegalization();
   BOOST_LOG_TRIVIAL(info)
     << "It " << cur_iter_ << ": \t"
     << std::scientific << std::setprecision(4)
-    << lower_bound_hpwl_.back() << " "
-    << upper_bound_hpwl_.back() << "\n";
+    << optimizer_->GetHpwls().back() << " "
+    << legalizer_->GetHpwls().back() << "\n";
 
   for (cur_iter_ = 1; cur_iter_ < max_iter_; ++cur_iter_) {
     BOOST_LOG_TRIVIAL(debug)
       << "----------------------------------------------\n";
     BOOST_LOG_TRIVIAL(debug) << cur_iter_ << "-th iteration\n";
     optimizer_->SetIteration(cur_iter_);
-    eval_res = optimizer_->QuadraticPlacementWithAnchor(net_model_update_stop_criterion_);
-    lower_bound_hpwl_.push_back(eval_res);
-
-    eval_res = legalizer_->LookAheadLegalization();
-    upper_bound_hpwl_.push_back(eval_res);
+    optimizer_->QuadraticPlacementWithAnchor(net_model_update_stop_criterion_);
+    legalizer_->LookAheadLegalization();
 
     BOOST_LOG_TRIVIAL(info)
       << "It " << cur_iter_ << ": \t"
       << std::scientific << std::setprecision(4)
-      << lower_bound_hpwl_.back() << " "
-      << upper_bound_hpwl_.back() << "\n";
+      << optimizer_->GetHpwls().back() << " "
+      << legalizer_->GetHpwls().back() << "\n";
 
     if (IsPlacementConverge()) { // if HPWL converges
       BOOST_LOG_TRIVIAL(info)
@@ -186,9 +183,9 @@ bool GlobalPlacer::StartPlacement() {
     }
   }
   BOOST_LOG_TRIVIAL(info)
-    << "Lower bound: " << lower_bound_hpwl_ << "\n";
+    << "Lower bound: " << optimizer_->GetHpwls() << "\n";
   BOOST_LOG_TRIVIAL(info)
-    << "Upper bound: " << upper_bound_hpwl_ << "\n";
+    << "Upper bound: " << legalizer_->GetHpwls() << "\n";
 
   BOOST_LOG_TRIVIAL(info)
     << "\033[0;36m Global Placement complete\033[0m\n";

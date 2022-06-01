@@ -37,9 +37,15 @@ class RoughLegalizer {
   virtual double LookAheadLegalization() = 0;
   virtual double GetTime() = 0;
   virtual void Close() = 0;
+  std::vector<double> &GetHpwls() { return upper_bound_hpwl_; }
+  std::vector<double> &GetHpwlsX() { return upper_bound_hpwl_x_; }
+  std::vector<double> &GetHpwlsY() { return upper_bound_hpwl_y_; }
  protected:
   Circuit *ckt_ptr_ = nullptr;
   double placement_density_ = 1.0;
+  std::vector<double> upper_bound_hpwl_;
+  std::vector<double> upper_bound_hpwl_x_;
+  std::vector<double> upper_bound_hpwl_y_;
 };
 
 class LookAheadLegalizer : public RoughLegalizer {
@@ -72,10 +78,6 @@ class LookAheadLegalizer : public RoughLegalizer {
   double GetTime() override;
   void Close() override;
  private:
-  std::vector<double> upper_bound_hpwlx_;
-  std::vector<double> upper_bound_hpwly_;
-  std::vector<double> upper_bound_hpwl_;
-
   int number_of_cell_in_bin_ = 30;
   int cluster_upper_size = 3;
 
