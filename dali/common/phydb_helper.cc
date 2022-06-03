@@ -18,7 +18,7 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#include "phydbhelper.h"
+#include "phydb_helper.h"
 
 #include "logging.h"
 

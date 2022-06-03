@@ -33,19 +33,19 @@
 namespace dali {
 
 /****
- * This is a struct for getting the statistics of half-perimeter wire-length.
+ * This is a struct for getting the statistics of net size and wire-length.
  */
 struct NetHistogram {
-  std::vector<int> bin_list_{2, 3, 4, 20, 40, 80, 160};
-  std::vector<int> count_;
-  std::vector<double> percent_;
-  std::vector<double> sum_hpwl_;
-  std::vector<double> ave_hpwl_;
-  std::vector<double> min_hpwl_;
-  std::vector<double> max_hpwl_;
-  int tot_net_count_;
-  double tot_hpwl_;
-  double hpwl_unit_;
+  std::vector<size_t> buckets{2, 3, 4, 20, 40, 80, 160}; // this list defines the buckets for net size
+  std::vector<size_t> counts;                            // the number of nets in each bucket
+  std::vector<double> percents;                          // the percentage of nets in each bucket
+  std::vector<double> sum_hpwls;
+  std::vector<double> ave_hpwls;
+  std::vector<double> min_hpwls;
+  std::vector<double> max_hpwls;
+  size_t tot_net_count;
+  double tot_hpwl;
+  double hpwl_unit;
 };
 
 /****
@@ -94,10 +94,10 @@ class Design {
   // get all nets
   std::vector<Net> &Nets() { return nets_; }
 
-  void UpdateFanoutHisto(size_t net_size);
-  void InitNetFanoutHisto(std::vector<int> *histo_x = nullptr);
-  void UpdateNetHPWLHisto(size_t net_size, double hpwl);
-  void ReportNetFanoutHisto();
+  void UpdateFanOutHistogram(size_t net_size);
+  void InitNetFanOutHistogram(std::vector<size_t> *histo_x = nullptr);
+  void UpdateNetHPWLHistogram(size_t net_size, double hpwl);
+  void ReportNetFanOutHistogram();
  private:
   /****design name****/
   std::string name_;

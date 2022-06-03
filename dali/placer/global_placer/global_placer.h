@@ -31,7 +31,7 @@
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/Sparse>
 
-#include "dali/circuit/blkpairnets.h"
+#include "blkpairnets.h"
 #include "dali/common/misc.h"
 #include "dali/placer/placer.h"
 

@@ -38,7 +38,7 @@ class Placer {
   Placer(double aspect_ratio, double filling_rate);
   virtual ~Placer() = default;
 
-  virtual void LoadConf([[maybe_unused]]std::string const &config_file);
+  virtual void LoadConf(std::string const &config_file);
 
   virtual void SetInputCircuit(Circuit *circuit);
 

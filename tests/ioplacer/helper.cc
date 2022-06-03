@@ -23,7 +23,7 @@
 #include "dali/circuit/iopin.h"
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
-#include "dali/common/phydbhelper.h"
+#include "dali/common/phydb_helper.h"
 
 namespace dali {
 

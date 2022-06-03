@@ -23,7 +23,7 @@
 
 #include <phydb/enumtypes.h>
 
-#include "dali/circuit/status.h"
+#include "dali/circuit/enums.h"
 
 namespace dali {
 

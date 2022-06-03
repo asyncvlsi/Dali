@@ -23,7 +23,7 @@
 
 #include <phydb/phydb.h>
 
-#include "dali/common/displaceviewer.h"
+#include "dali/placer/displacement_viewer.h"
 #include "dali/placer/placer.h"
 #include "dali/placer/well_legalizer/lgblkaux.h"
 #include "dali/placer/well_legalizer/spacepartitioner.h"

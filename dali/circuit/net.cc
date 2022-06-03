@@ -82,7 +82,7 @@ void Net::AddBlkPinPair(Block *block_ptr, Pin *pin_ptr) {
   }
 }
 
-std::vector<BlkPinPair> &Net::BlockPins() {
+std::vector<NetPin> &Net::BlockPins() {
   return blk_pins_;
 }
 

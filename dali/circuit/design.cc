@@ -28,26 +28,28 @@ namespace dali {
 /****
  * Increment the count of net in the corresponding bin using binary search
  * ****/
-void Design::UpdateFanoutHisto(size_t net_size) {
+void Design::UpdateFanOutHistogram(size_t net_size) {
+  // if there is no net bins, skip
+  if (net_histogram_.buckets.empty()) return;
+  // if the net size is smaller than 2, skip
   if (net_size <= 1) return;
-  int l = 0;
-  int r = int(net_histogram_.bin_list_.size()) - 1;
 
+  // find the bin to increment the count
+  size_t l = 0;
+  size_t r = net_histogram_.buckets.size() - 1;
   while (l < r) {
-    int m = l + (r - l) / 2;
-    if (net_histogram_.bin_list_[m] == net_size) {
-      ++net_histogram_.count_[m];
-      //BOOST_LOG_TRIVIAL(info)   << bin_list_[m] << " " << bin_list_[m+1] << " " << net_size << "\n";
+    size_t m = l + (r - l) / 2;
+    if (net_histogram_.buckets[m] == net_size) {
+      ++net_histogram_.counts[m];
       return;
     }
-    if (net_histogram_.bin_list_[m] > net_size) {
+    if (net_histogram_.buckets[m] > net_size) {
       r = m - 1;
     } else {
       l = m + 1;
     }
   }
-  //BOOST_LOG_TRIVIAL(info)   << bin_list_[l] << " " << bin_list_[r] << " " << net_size << "\n";
-  ++net_histogram_.count_[l];
+  ++net_histogram_.counts[l];
 }
 
 /****
@@ -55,83 +57,87 @@ void Design::UpdateFanoutHisto(size_t net_size) {
  * If histo_x is a nullptr, then using default histogram bins
  * Classify nets to these bins, and compute the corresponding percentage
  * ****/
-void Design::InitNetFanoutHisto(std::vector<int> *histo_x) {
+void Design::InitNetFanOutHistogram(std::vector<size_t> *histo_x) {
   if (histo_x != nullptr) {
-    net_histogram_.bin_list_.clear();
+    net_histogram_.buckets.clear();
     int sz = (int) histo_x->size();
-    net_histogram_.bin_list_.assign(sz, 0);
+    net_histogram_.buckets.assign(sz, 0);
     for (int i = 0; i < sz; ++i) {
-      net_histogram_.bin_list_.push_back((*histo_x)[i]);
+      net_histogram_.buckets.push_back((*histo_x)[i]);
     }
   }
 
-  int sz = int(net_histogram_.bin_list_.size());
-  net_histogram_.count_.assign(sz, 0);
-  net_histogram_.percent_.assign(sz, 0);
-  net_histogram_.sum_hpwl_.assign(sz, 0);
-  net_histogram_.ave_hpwl_.assign(sz, 0);
-  net_histogram_.min_hpwl_.assign(sz, 0);
-  net_histogram_.max_hpwl_.assign(sz, 0);
-  for (auto &net: nets_) {
+  size_t sz = net_histogram_.buckets.size();
+  net_histogram_.counts.assign(sz, 0);
+  net_histogram_.percents.assign(sz, 0);
+  net_histogram_.sum_hpwls.assign(sz, 0);
+  net_histogram_.ave_hpwls.assign(sz, 0);
+  net_histogram_.min_hpwls.assign(sz, 0);
+  net_histogram_.max_hpwls.assign(sz, 0);
+  for (auto &net : nets_) {
     size_t net_size = net.PinCnt();
-    UpdateFanoutHisto(net_size);
+    UpdateFanOutHistogram(net_size);
   }
 
-  net_histogram_.tot_net_count_ = 0;
-  for (int i = 0; i < sz; ++i) {
-    net_histogram_.tot_net_count_ += net_histogram_.count_[i];
+  net_histogram_.tot_net_count = 0;
+  for (size_t i = 0; i < sz; ++i) {
+    net_histogram_.tot_net_count += net_histogram_.counts[i];
   }
-  for (int i = 0; i < sz; ++i) {
-    net_histogram_.percent_[i] = 100 * net_histogram_.count_[i]
-        / (double) net_histogram_.tot_net_count_;
+  for (size_t i = 0; i < sz; ++i) {
+    net_histogram_.percents[i] = 100.0 * static_cast<double>(net_histogram_.counts[i])
+        / static_cast<double>(net_histogram_.tot_net_count);
   }
 }
 
 /****
  * Increment the HPWL of a net in the corresponding bin using binary search
  * ****/
-void Design::UpdateNetHPWLHisto(size_t net_size, double hpwl) {
+void Design::UpdateNetHPWLHistogram(size_t net_size, double hpwl) {
+  // if there is no net bins, skip
+  if (net_histogram_.buckets.empty()) return;
+  // if the net size is smaller than 2, skip
   if (net_size <= 1) return;
-  int l = 0;
-  int r = int(net_histogram_.bin_list_.size()) - 1;
 
+  size_t l = 0;
+  size_t r = net_histogram_.buckets.size() - 1;
   while (l < r) {
-    int m = l + (r - l) / 2;
-    if (net_histogram_.bin_list_[m] == net_size) {
+    size_t m = l + (r - l) / 2;
+    if (net_histogram_.buckets[m] == net_size) {
       l = m;
       break;
     }
-    if (net_histogram_.bin_list_[m] > net_size) {
+    if (net_histogram_.buckets[m] > net_size) {
       r = m - 1;
     } else {
       l = m + 1;
     }
   }
 
-  net_histogram_.sum_hpwl_[l] += hpwl;
-  if (hpwl < net_histogram_.min_hpwl_[l]) {
-    net_histogram_.min_hpwl_[l] = hpwl;
+  net_histogram_.sum_hpwls[l] += hpwl;
+  if (hpwl < net_histogram_.min_hpwls[l]) {
+    net_histogram_.min_hpwls[l] = hpwl;
   }
-  if (hpwl > net_histogram_.max_hpwl_[l]) {
-    net_histogram_.max_hpwl_[l] = hpwl;
+  if (hpwl > net_histogram_.max_hpwls[l]) {
+    net_histogram_.max_hpwls[l] = hpwl;
   }
 }
 
-void Design::ReportNetFanoutHisto() {
-  int sz = static_cast<int>(net_histogram_.count_.size());
-  for (int i = 0; i < sz; ++i) {
-    if (net_histogram_.count_[i] > 0) {
-      net_histogram_.ave_hpwl_[i] =
-          net_histogram_.sum_hpwl_[i] / net_histogram_.count_[i];
+void Design::ReportNetFanOutHistogram() {
+  if (net_histogram_.counts.empty()) return;
+  size_t sz = net_histogram_.counts.size();
+  for (size_t i = 0; i < sz; ++i) {
+    if (net_histogram_.counts[i] > 0) {
+      net_histogram_.ave_hpwls[i] =
+          net_histogram_.sum_hpwls[i] / static_cast<double>(net_histogram_.counts[i]);
     } else {
-      net_histogram_.ave_hpwl_[i] = 0;
+      net_histogram_.ave_hpwls[i] = 0;
     }
 
-    if (net_histogram_.min_hpwl_[i] == DBL_MAX) {
-      net_histogram_.min_hpwl_[i] = 0;
+    if (net_histogram_.min_hpwls[i] == DBL_MAX) {
+      net_histogram_.min_hpwls[i] = 0;
     }
-    if (net_histogram_.max_hpwl_[i] == -DBL_MAX) {
-      net_histogram_.max_hpwl_[i] = 0;
+    if (net_histogram_.max_hpwls[i] == -DBL_MAX) {
+      net_histogram_.max_hpwls[i] = 0;
     }
   }
 
@@ -143,58 +149,61 @@ void Design::ReportNetFanoutHisto() {
   BOOST_LOG_TRIVIAL(info)
     << "  Net         Count     Percent/%      sum HPWL        ave HPWL        min HPWL        max HPWL\n";
 
-  for (int i = 0; i < sz - 1; ++i) {
-    int lo = net_histogram_.bin_list_[i];
-    int hi = net_histogram_.bin_list_[i + 1] - 1;
+  for (size_t i = 0; i < sz - 1; ++i) {
+    size_t lo = net_histogram_.buckets[i];
+    size_t hi = net_histogram_.buckets[i + 1] - 1;
     std::string buffer(1024, '\0');
-    int written_length = 0;
+    int written_length;
     if (lo == hi) {
-      written_length =
-          sprintf(&buffer[0],
-                  "%4d       %8d       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
-                  lo,
-                  net_histogram_.count_[i],
-                  net_histogram_.percent_[i],
-                  net_histogram_.sum_hpwl_[i],
-                  net_histogram_.ave_hpwl_[i],
-                  net_histogram_.min_hpwl_[i],
-                  net_histogram_.max_hpwl_[i]);
+      written_length = sprintf(
+          &buffer[0],
+          "%4ld       %8ld       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
+          lo,
+          net_histogram_.counts[i],
+          net_histogram_.percents[i],
+          net_histogram_.sum_hpwls[i],
+          net_histogram_.ave_hpwls[i],
+          net_histogram_.min_hpwls[i],
+          net_histogram_.max_hpwls[i]
+      );
     } else {
-      written_length =
-          sprintf(&buffer[0],
-                  "%4d-%-4d  %8d       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
-                  lo,
-                  hi,
-                  net_histogram_.count_[i],
-                  net_histogram_.percent_[i],
-                  net_histogram_.sum_hpwl_[i],
-                  net_histogram_.ave_hpwl_[i],
-                  net_histogram_.min_hpwl_[i],
-                  net_histogram_.max_hpwl_[i]);
+      written_length = sprintf(
+          &buffer[0],
+          "%4ld-%-4ld  %8ld       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
+          lo,
+          hi,
+          net_histogram_.counts[i],
+          net_histogram_.percents[i],
+          net_histogram_.sum_hpwls[i],
+          net_histogram_.ave_hpwls[i],
+          net_histogram_.min_hpwls[i],
+          net_histogram_.max_hpwls[i]
+      );
     }
     buffer.resize(written_length);
     BOOST_LOG_TRIVIAL(info) << buffer;
   }
   std::string buffer(1024, '\0');
-  int written_length = 0;
-  written_length = sprintf(&buffer[0],
-                           "%4d+      %8d       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
-                           net_histogram_.bin_list_[sz - 1],
-                           net_histogram_.count_[sz - 1],
-                           net_histogram_.percent_[sz - 1],
-                           net_histogram_.sum_hpwl_[sz - 1],
-                           net_histogram_.ave_hpwl_[sz - 1],
-                           net_histogram_.min_hpwl_[sz - 1],
-                           net_histogram_.max_hpwl_[sz - 1]);
+  int written_length;
+  written_length = sprintf(
+      &buffer[0],
+      "%4ld+      %8ld       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
+      net_histogram_.buckets[sz - 1],
+      net_histogram_.counts[sz - 1],
+      net_histogram_.percents[sz - 1],
+      net_histogram_.sum_hpwls[sz - 1],
+      net_histogram_.ave_hpwls[sz - 1],
+      net_histogram_.min_hpwls[sz - 1],
+      net_histogram_.max_hpwls[sz - 1]
+  );
   buffer.resize(written_length);
   BOOST_LOG_TRIVIAL(info) << buffer;
-
   BOOST_LOG_TRIVIAL(info)
     << "=================================================================================================\n";
   BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: "
-                          << net_histogram_.hpwl_unit_ << " um\n";
+                          << net_histogram_.hpwl_unit << " um\n";
   BOOST_LOG_TRIVIAL(info) << "\n";
-  //printf("%f\n", net_histogram_.tot_hpwl_ * 0.18);
+  //printf("%f\n", net_histogram_.tot_hpwl * 0.18);
 }
 
 }

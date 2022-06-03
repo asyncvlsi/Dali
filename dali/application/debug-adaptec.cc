@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
 #endif
 
   //circuit.InitNetFanoutHistogram();
-  //circuit.ReportNetFanoutHistogram();
+  //circuit.ReportNetFanOutHistogram();
   //circuit.ReportHPWLHistogramLinear();
   //circuit.ReportHPWLHistogramLogarithm();
 

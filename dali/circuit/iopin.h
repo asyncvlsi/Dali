@@ -27,7 +27,7 @@
 #include "dali/common/misc.h"
 #include "layer.h"
 #include "net.h"
-#include "status.h"
+#include "enums.h"
 
 namespace dali {
 

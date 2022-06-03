@@ -27,7 +27,7 @@
 namespace dali {
 
 /****
- * BlockPinPair is a simple struct containing:
+ * NetPin is a simple struct containing:
  *  a pointer to a Block, representing a gate or an IOPIN
  *  a pointer to a Pin, representing a gate pin
  *
@@ -41,9 +41,9 @@ namespace dali {
  *  once these BlkPinPairs are constructed.
  * ****/
 
-class BlkPinPair {
+class NetPin {
  public:
-  BlkPinPair(
+  NetPin(
       Block *block_ptr,
       Pin *pin_ptr
   ) : blk_ptr_(block_ptr),
@@ -83,15 +83,15 @@ class BlkPinPair {
   const std::string &PinName() const { return pin_ptr_->Name(); }
 
   // some boolean operators
-  bool operator<(const BlkPinPair &rhs) const {
+  bool operator<(const NetPin &rhs) const {
     return (BlkId() < rhs.BlkId())
         || ((BlkId() == rhs.BlkId()) && (PinId() < rhs.PinId()));
   }
-  bool operator>(const BlkPinPair &rhs) const {
+  bool operator>(const NetPin &rhs) const {
     return (BlkId() > rhs.BlkId())
         || ((BlkId() == rhs.BlkId()) && (PinId() > rhs.PinId()));
   }
-  bool operator==(const BlkPinPair &rhs) const {
+  bool operator==(const NetPin &rhs) const {
     return (BlkId() == rhs.BlkId()) && (PinId() == rhs.PinId());
   }
  private:

@@ -18,7 +18,6 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-
 #ifndef DALI_COMMON_OPTREGDIST_H_
 #define DALI_COMMON_OPTREGDIST_H_
 
@@ -28,6 +27,8 @@
 #include "logging.h"
 
 namespace dali {
+
+// TODO: move this to circuit or placer as a member function
 
 // optimal region distance
 class OptRegDist {

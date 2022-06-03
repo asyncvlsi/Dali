@@ -29,14 +29,14 @@
 #include <phydb/phydb.h>
 
 #include "block.h"
-#include "blocktype.h"
+#include "block_type.h"
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
 #include "design.h"
+#include "enums.h"
 #include "iopin.h"
 #include "layer.h"
 #include "net.h"
-#include "status.h"
 #include "tech.h"
 
 namespace dali {
@@ -365,7 +365,7 @@ class Circuit {
   void ReportNetMap();
 
   // initialize data structure for net fanout histogram
-  void InitNetFanoutHistogram(std::vector<int> *histo_x = nullptr);
+  void InitNetFanoutHistogram(std::vector<size_t> *histo_x = nullptr);
 
   // update HPWL values for the net fanout histogram
   void UpdateNetHPWLHistogram();

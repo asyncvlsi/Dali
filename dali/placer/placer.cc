@@ -47,7 +47,7 @@ Placer::Placer(double aspect_ratio, double filling_rate) : aspect_ratio_(
   ckt_ptr_ = nullptr;
 }
 
-void Placer::LoadConf(std::string const &config_file) {
+void Placer::LoadConf([[maybe_unused]]std::string const &config_file) {
   BOOST_LOG_TRIVIAL(warning)
     << "This is a virtual function, which is not supposed to be called directly\n";
 };
@@ -235,9 +235,9 @@ bool Placer::SaveNodeTerminal(
 }
 
 void Placer::EmitDEFWellFile(
-    std::string const &name_of_file,
-    int well_emit_mode,
-    bool enable_emitting_cluster
+    [[maybe_unused]]std::string const &name_of_file,
+    [[maybe_unused]]int well_emit_mode,
+    [[maybe_unused]]bool enable_emitting_cluster
 ) {
   BOOST_LOG_TRIVIAL(info)
     << "virtual function Placer::EmitDEFWellFile() does nothing, you should not use this member function\n";

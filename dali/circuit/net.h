@@ -26,7 +26,7 @@
 #include <vector>
 
 #include "block.h"
-#include "blockpinpair.h"
+#include "net_pin.h"
 #include "dali/common/logging.h"
 #include "dali/common/misc.h"
 
@@ -57,7 +57,7 @@ class Net {
   // add block/pin pair to this net
   void AddBlkPinPair(Block *block_ptr, Pin *pin_ptr);
 
-  std::vector<BlkPinPair> &BlockPins();
+  std::vector<NetPin> &BlockPins();
 
   // add an I/O pin to this net
   void AddIoPin(IoPin *io_pin);
@@ -177,7 +177,7 @@ class Net {
   std::pair<const std::string, int> *name_id_pair_ptr_;
   double weight_;
   int cnt_fixed_;
-  std::vector<BlkPinPair> blk_pins_;
+  std::vector<NetPin> blk_pins_;
   std::vector<IoPin *> iopin_ptrs_;
 
   // cached data

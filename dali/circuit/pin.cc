@@ -20,7 +20,7 @@
  ******************************************************************************/
 #include "pin.h"
 
-#include "blocktype.h"
+#include "block_type.h"
 
 #define NUM_OF_ORIENT 8
 

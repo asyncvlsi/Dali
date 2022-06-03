@@ -19,7 +19,7 @@
  *
  ******************************************************************************/
 
-#include "status.h"
+#include "enums.h"
 
 #include "dali/common/logging.h"
 

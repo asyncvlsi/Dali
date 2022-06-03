@@ -28,7 +28,7 @@
 #include <phydb/phydb.h>
 
 #include "block.h"
-#include "blocktype.h"
+#include "block_type.h"
 #include "layer.h"
 
 namespace dali {

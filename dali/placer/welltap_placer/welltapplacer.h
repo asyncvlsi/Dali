@@ -26,7 +26,7 @@
 
 #include <phydb/phydb.h>
 
-#include "dali/circuit/blocktype.h"
+#include "dali/circuit/block_type.h"
 #include "dali/common/misc.h"
 
 namespace dali {

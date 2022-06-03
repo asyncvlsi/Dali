@@ -25,7 +25,7 @@
 
 #include "dali/common/logging.h"
 #include "dali/common/misc.h"
-#include "status.h"
+#include "enums.h"
 
 namespace dali {
 

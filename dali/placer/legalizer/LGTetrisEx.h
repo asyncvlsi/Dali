@@ -22,7 +22,7 @@
 #define DALI_PLACER_LEGALIZER_LGTETRISEX_H_
 
 #include "dali/circuit/block.h"
-#include "dali/common/displaceviewer.h"
+#include "dali/placer/displacement_viewer.h"
 #include "dali/common/misc.h"
 #include "dali/placer/placer.h"
 #include "dali/placer/well_legalizer/griddedrowlegalizer.h"

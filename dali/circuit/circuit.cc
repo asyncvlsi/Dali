@@ -31,7 +31,7 @@
 
 #include "dali/common/helper.h"
 #include "dali/common/optregdist.h"
-#include "dali/circuit/status.h"
+#include "dali/circuit/enums.h"
 
 namespace dali {
 
@@ -733,34 +733,35 @@ void Circuit::ReportNetMap() {
   }
 }
 
-void Circuit::InitNetFanoutHistogram(std::vector<int> *histo_x) {
-  design_.InitNetFanoutHisto(histo_x);
-  design_.net_histogram_.hpwl_unit_ = GridValueX();
+void Circuit::InitNetFanoutHistogram(std::vector<size_t> *histo_x) {
+  design_.InitNetFanOutHistogram(histo_x);
+  design_.net_histogram_.hpwl_unit = GridValueX();
 }
 
 void Circuit::UpdateNetHPWLHistogram() {
-  int bin_count = (int) design_.net_histogram_.bin_list_.size();
-  design_.net_histogram_.sum_hpwl_.assign(bin_count, 0);
-  design_.net_histogram_.ave_hpwl_.assign(bin_count, 0);
-  design_.net_histogram_.min_hpwl_.assign(bin_count, DBL_MAX);
-  design_.net_histogram_.max_hpwl_.assign(bin_count, -DBL_MAX);
+  size_t sz = design_.net_histogram_.buckets.size();
+  design_.net_histogram_.sum_hpwls.assign(sz, 0);
+  design_.net_histogram_.ave_hpwls.assign(sz, 0);
+  design_.net_histogram_.min_hpwls.assign(sz, DBL_MAX);
+  design_.net_histogram_.max_hpwls.assign(sz, -DBL_MAX);
 
+  double grid_x_y_ratio = GridValueY() / GridValueX();
   for (auto &net : design_.nets_) {
     size_t net_size = net.PinCnt();
     double hpwl_x = net.WeightedHPWLX();
-    double hpwl_y = net.WeightedHPWLY() * GridValueY() / GridValueX();
-    design_.UpdateNetHPWLHisto(net_size, hpwl_x + hpwl_y);
+    double hpwl_y = net.WeightedHPWLY() * grid_x_y_ratio;
+    design_.UpdateNetHPWLHistogram(net_size, hpwl_x + hpwl_y);
   }
 
-  design_.net_histogram_.tot_hpwl_ = 0;
-  for (int i = 0; i < bin_count; ++i) {
-    design_.net_histogram_.tot_hpwl_ += design_.net_histogram_.sum_hpwl_[i];
+  design_.net_histogram_.tot_hpwl = 0;
+  for (size_t i = 0; i < sz; ++i) {
+    design_.net_histogram_.tot_hpwl += design_.net_histogram_.sum_hpwls[i];
   }
 }
 
 void Circuit::ReportNetFanoutHistogram() {
   UpdateNetHPWLHistogram();
-  design_.ReportNetFanoutHisto();
+  design_.ReportNetFanOutHistogram();
 }
 
 void Circuit::ReportBriefSummary() const {
@@ -836,49 +837,55 @@ void Circuit::SetWellRect(
   double width = ux - lx;
   double max_plug_distance = 0;
   if (is_n) {
-    DaliExpects(tech_.n_set_,
-                "Nwell layer not found, cannot set well rect: "
-                    + blk_type_name);
+    DaliExpects(
+        tech_.n_set_,
+        "Nwell layer not found, cannot set well rect: " << blk_type_name
+    );
     max_plug_distance = tech_.nwell_layer_.MaxPlugDist();
-    DaliWarns(width > max_plug_distance,
-              "BlockType has a Nwell wider than max_plug_distance, this may make well legalization fail: "
-                  << blk_type_name);
+    DaliWarns(
+        width > max_plug_distance,
+        "BlockType has a Nwell wider than max_plug_distance, this may make well legalization fail: " << blk_type_name
+    );
   } else {
-    DaliExpects(tech_.p_set_,
-                "Pwell layer not found, cannot set well rect: "
-                    + blk_type_name);
+    DaliExpects(
+        tech_.p_set_,
+        "Pwell layer not found, cannot set well rect: " << blk_type_name
+    );
     max_plug_distance = tech_.pwell_layer_.MaxPlugDist();
-    DaliWarns(width > max_plug_distance,
-              "BlockType has a Pwell wider than max_plug_distance, this may make well legalization fail: "
-                  << blk_type_name);
+    DaliWarns(
+        width > max_plug_distance,
+        "BlockType has a Pwell wider than max_plug_distance, this may make well legalization fail: " << blk_type_name
+    );
   }
 
   // add well rect
   BlockType *blk_type_ptr = GetBlockTypePtr(blk_type_name);
-  DaliExpects(blk_type_ptr != nullptr,
-              "Cannot find BlockType with name: " + blk_type_name);
+  DaliExpects(
+      blk_type_ptr != nullptr,
+      "Cannot find BlockType with name: " << blk_type_name
+  );
   double ly_residual = AbsResidual(ly, GridValueY());
-  if (ly_residual > constants_.epsilon) {
-    BOOST_LOG_TRIVIAL(warning)
-      << "WARNING: ly of well rect for " << blk_type_name
-      << " is not an integer multiple of grid value y\n"
-      << "  ly: " << ly << ", grid value y: " << GridValueY() << "\n";
-  }
+  DaliWarns(
+      ly_residual > constants_.epsilon,
+      "ly of well rect for " << blk_type_name << " is not an integer multiple of grid value y\n"
+                             << "  ly: " << ly << ", grid value y: " << GridValueY()
+  );
   double uy_residual = AbsResidual(uy, GridValueY());
-  if (uy_residual > constants_.epsilon) {
-    BOOST_LOG_TRIVIAL(warning)
-      << "WARNING: uy of well rect for " << blk_type_name
-      << " is not an integer multiple of grid value y\n"
-      << "  uy: " << uy << ", grid value y: " << GridValueY() << "\n";
-  }
+  DaliWarns(
+      uy_residual > constants_.epsilon,
+      "uy of well rect for " << blk_type_name << " is not an integer multiple of grid value y\n"
+                             << "  uy: " << uy << ", grid value y: " << GridValueY()
+  );
   int lx_grid = int(std::round(lx / GridValueX()));
   int ly_grid = int(std::round(ly / GridValueY()));
   int ux_grid = int(std::round(ux / GridValueX()));
   int uy_grid = int(std::round(uy / GridValueY()));
 
   BlockTypeWell *well = blk_type_ptr->WellPtr();
-  DaliExpects(well != nullptr,
-              "Well uninitialized for BlockType: " + blk_type_name);
+  DaliExpects(
+      well != nullptr,
+      "Well uninitialized for BlockType: " << blk_type_name
+  );
   well->AddWellRect(is_n, lx_grid, ly_grid, ux_grid, uy_grid);
 }
 
@@ -1793,7 +1800,7 @@ void Circuit::SaveDefFile(
     std::string const &base_name,
     std::string const &name_padding,
     std::string const &def_file_name,
-    int save_floorplan,
+    [[maybe_unused]]int save_floorplan,
     int save_cell,
     int save_iopin,
     int save_net

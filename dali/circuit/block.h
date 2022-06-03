@@ -27,10 +27,10 @@
 #include <string>
 #include <vector>
 
-#include "blocktype.h"
+#include "block_type.h"
 #include "dali/common/logging.h"
 #include "dali/common/misc.h"
-#include "status.h"
+#include "enums.h"
 
 /****
  * The class Block provides an abstraction of the physical placement status of an instance

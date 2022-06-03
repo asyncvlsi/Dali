@@ -83,7 +83,7 @@ void CloseLogging();
       << "\033[0;34m" \
       << "WARNING:" << "\n" \
       << "    " << warning_message << "\n" \
-      << "\033[0m" << std::endl; \
+      << "\033[0m"; \
   } \
 } while(0)
 

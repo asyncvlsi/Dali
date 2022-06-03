@@ -18,15 +18,15 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_CIRCUIT_BLKPAIRNETS_H_
-#define DALI_CIRCUIT_BLKPAIRNETS_H_
+#ifndef DALI_PLACER_GLOBAL_PLACER_BLKPAIRNETS_H_
+#define DALI_PLACER_GLOBAL_PLACER_BLKPAIRNETS_H_
 
 #include <vector>
 
 #include "Eigen/IterativeLinearSolvers"
 #include "Eigen/Sparse"
 
-#include "net.h"
+#include "dali/circuit/net.h"
 
 namespace dali {
 // declares a row-major sparse matrix type of double
@@ -79,4 +79,4 @@ class BlkPairNets {
 
 }
 
-#endif //DALI_CIRCUIT_BLKPAIRNETS_H_
+#endif //DALI_PLACER_GLOBAL_PLACER_BLKPAIRNETS_H_

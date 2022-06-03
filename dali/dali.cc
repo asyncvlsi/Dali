@@ -23,7 +23,7 @@
 #include <cstdlib>
 
 #include "dali/common/helper.h"
-#include "dali/common/phydbhelper.h"
+#include "dali/common/phydb_helper.h"
 
 namespace dali {
 
@@ -178,10 +178,8 @@ void Dali::UpdateNetWeights() {
 void Dali::ReportPerformance() {
   if (!phy_db_ptr_->GetTimingApi().ReadyForTimingDriven()) return;
 }
-#endif
 
 void Dali::TimingDrivenPlacement(double density, int number_of_threads) {
-#if PHYDB_USE_GALOIS
   InitializeTimingDrivenPlacement();
   for (int i = 0; i < max_td_place_num_; ++i) {
     GlobalPlace(density, number_of_threads);
@@ -191,21 +189,23 @@ void Dali::TimingDrivenPlacement(double density, int number_of_threads) {
     UpdateNetWeights();
   }
   ReportPerformance();
-#endif
 }
+
+#endif
 
 void Dali::StartPlacement(double density, int number_of_threads) {
   circuit_.ReportBriefSummary();
   circuit_.ReportHPWL();
 
+#if PHYDB_USE_GALOIS
   bool is_td = ShouldPerformTimingDrivenPlacement();
   if (is_td) {
     TimingDrivenPlacement(density, number_of_threads);
-  } else {
-    GlobalPlace(density, number_of_threads);
-    UnifiedLegalization();
+    return;
   }
-
+#endif
+  GlobalPlace(density, number_of_threads);
+  UnifiedLegalization();
 }
 
 void Dali::AddWellTaps(
@@ -292,7 +292,7 @@ void Dali::GlobalPlace(double density, int number_of_threads) {
   //gb_placer_.GenMATLABTable("gb_result.txt");
   //circuit.GenLongNetTable("gb_longnet.txt");
   //gb_placer_->GenMATLABWellTable("gb_result");
-  //circuit.ReportNetFanoutHisto();
+  //circuit.ReportNetFanOutHistogram();
 }
 
 /**

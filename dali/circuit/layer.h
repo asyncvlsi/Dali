@@ -26,7 +26,7 @@
 
 #include "dali/common/logging.h"
 #include "dali/common/misc.h"
-#include "status.h"
+#include "enums.h"
 
 /****
  * This header file contains class Layer, which is an abstract class for MetalLayer

@@ -18,7 +18,7 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#include "blocktype.h"
+#include "block_type.h"
 
 namespace dali {
 

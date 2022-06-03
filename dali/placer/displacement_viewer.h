@@ -26,13 +26,13 @@
 #include <string>
 #include <vector>
 
-#include "logging.h"
-#include "misc.h"
+#include "dali/common/logging.h"
+#include "dali/common/misc.h"
 
 namespace dali {
 
 template<class T>
-struct DisplaceViewer {
+struct DisplacementViewer {
  private:
   size_t sz_ = 0;
   std::vector<T> x_;
@@ -41,7 +41,7 @@ struct DisplaceViewer {
   std::vector<T> v_;
 
  public:
-  DisplaceViewer() = default;
+  DisplacementViewer() = default;
 
   void SetSize(size_t sz) {
     sz_ = sz;

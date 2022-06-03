@@ -61,8 +61,8 @@ class Dali {
   void PerformTimingAnalysis();
   void UpdateNetWeights();
   void ReportPerformance();
-#endif
   void TimingDrivenPlacement(double density, int number_of_threads);
+#endif
 
   void StartPlacement(double density, int number_of_threads = 1);
 
