@@ -179,33 +179,35 @@ void Dali::ReportPerformance() {
   if (!phy_db_ptr_->GetTimingApi().ReadyForTimingDriven()) return;
 }
 
-void Dali::TimingDrivenPlacement(double density, int number_of_threads) {
+bool Dali::TimingDrivenPlacement(double density, int number_of_threads) {
+  bool is_success = true;
   InitializeTimingDrivenPlacement();
   for (int i = 0; i < max_td_place_num_; ++i) {
     GlobalPlace(density, number_of_threads);
-    UnifiedLegalization();
+    is_success = UnifiedLegalization();
     UpdateRCs();
     PerformTimingAnalysis();
     UpdateNetWeights();
   }
   ReportPerformance();
+  return is_success;
 }
 
 #endif
 
-void Dali::StartPlacement(double density, int number_of_threads) {
+bool Dali::StartPlacement(double density, int number_of_threads) {
   circuit_.ReportBriefSummary();
   circuit_.ReportHPWL();
 
 #if PHYDB_USE_GALOIS
   bool is_td = ShouldPerformTimingDrivenPlacement();
   if (is_td) {
-    TimingDrivenPlacement(density, number_of_threads);
-    return;
+    return TimingDrivenPlacement(density, number_of_threads);
   }
 #endif
   GlobalPlace(density, number_of_threads);
-  UnifiedLegalization();
+  bool is_success = UnifiedLegalization();
+  return is_success;
 }
 
 void Dali::AddWellTaps(
@@ -275,7 +277,7 @@ bool Dali::AddWellTaps(int argc, char **argv) {
  * @param density, target density, reasonable range (0, 1].
  * @return void
  */
-void Dali::GlobalPlace(double density, int number_of_threads) {
+bool Dali::GlobalPlace(double density, int number_of_threads) {
   //std::string config_file = "dali.conf";
   int num_of_thread_openmp = number_of_threads;
   omp_set_num_threads(num_of_thread_openmp);
@@ -287,7 +289,7 @@ void Dali::GlobalPlace(double density, int number_of_threads) {
   gb_placer_.SetBoundaryDef();
   gb_placer_.SetPlacementDensity(density);
   //gb_placer_.ReportBoundaries();
-  gb_placer_.StartPlacement();
+  return gb_placer_.StartPlacement();
   //gb_placer_.SaveDEFFile("benchmark_1K_dali.def", def_file_name);
   //gb_placer_.GenMATLABTable("gb_result.txt");
   //circuit.GenLongNetTable("gb_longnet.txt");
@@ -306,7 +308,7 @@ void Dali::GlobalPlace(double density, int number_of_threads) {
  * @param density, target density, reasonable range (0, 1].
  * @return void
  */
-void Dali::UnifiedLegalization() {
+bool Dali::UnifiedLegalization() {
   /*
   legalizer_.TakeOver(&gb_placer_);
   legalizer_.IsPrintDisplacement(true);
@@ -321,7 +323,7 @@ void Dali::UnifiedLegalization() {
   well_legalizer_.TakeOver(&gb_placer_);
   well_legalizer_.SetStripePartitionMode(int(DefaultPartitionMode::SCAVENGE));
   well_legalizer_.is_dump = false;
-  well_legalizer_.StartPlacement();
+  return well_legalizer_.StartPlacement();
   //well_legalizer_.GenMatlabClusterTable("sc_result");
   //well_legalizer_.GenMATLABTable("sc_result.txt");
   //well_legalizer_.GenMatlabClusterTable("sc_result");

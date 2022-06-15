@@ -61,10 +61,10 @@ class Dali {
   void PerformTimingAnalysis();
   void UpdateNetWeights();
   void ReportPerformance();
-  void TimingDrivenPlacement(double density, int number_of_threads);
+  bool TimingDrivenPlacement(double density, int number_of_threads);
 #endif
 
-  void StartPlacement(double density, int number_of_threads = 1);
+  bool StartPlacement(double density, int number_of_threads = 1);
 
   void AddWellTaps(
       phydb::Macro *cell,
@@ -72,8 +72,8 @@ class Dali {
       bool is_checker_board
   );
   bool AddWellTaps(int argc, char **argv);
-  void GlobalPlace(double density, int number_of_threads = 1);
-  void UnifiedLegalization();
+  bool GlobalPlace(double density, int number_of_threads = 1);
+  bool UnifiedLegalization();
 
   void ExternalDetailedPlaceAndLegalize(
       std::string const &engine,
