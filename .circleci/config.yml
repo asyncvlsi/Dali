@@ -1,7 +1,7 @@
 version: 2.1
 
 jobs:
-  ubuntu20: # Ubuntu 22
+  ubuntu22: # Ubuntu 22
     docker:
       - image: ubuntu:22.04
     steps:
