@@ -20,6 +20,8 @@
  ******************************************************************************/
 #include "welltapplacer.h"
 
+#include <fstream>
+
 namespace dali {
 
 WellTapPlacer::WellTapPlacer(phydb::PhyDB *phy_db) {
