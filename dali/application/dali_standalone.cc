@@ -69,6 +69,7 @@ int main(int argc, char *argv[]) {
   int lg_threads = 1;
   int gb_maxiter = 100;
   bool lg_cplex = false;
+  int num_of_thread_openmp = 1;
 
   /**** parsing arguments ****/
   for (int i = 1; i < argc;) {
@@ -207,6 +208,15 @@ int main(int argc, char *argv[]) {
         ReportUsage();
         return 1;
       }
+    } else if (arg == "-nthreads" && i < argc) {
+      std::string str_nthreads = std::string(argv[i++]);
+      try {
+        num_of_thread_openmp = std::stoi(str_nthreads);
+      } catch (...) {
+        std::cout << "Invalid number of threads!\n";
+        ReportUsage();
+        return 1;
+      }
     } else {
       std::cout << "Unknown flag\n";
       std::cout << arg << "\n";
@@ -238,7 +248,6 @@ int main(int argc, char *argv[]) {
   SaveArgs(argc, argv);
 
   /**** set number of threads for OpenMP ****/
-  int num_of_thread_openmp = 1;
   omp_set_num_threads(num_of_thread_openmp);
 
   /**** time ****/

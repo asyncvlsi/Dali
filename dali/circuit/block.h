@@ -235,9 +235,6 @@ class Block {
 
  protected:
   BlockType *type_ptr_; // type
-  // cached height, also used to store effective height, the unit is grid value in the y-direction
-  int eff_height_;
-  long long int eff_area_; // cached effective area
   // name for finding its index in block_list
   std::pair<const std::string, int> *name_id_pair_ptr_;
   double llx_; // lower x coordinate, data type double, for global placement
@@ -246,6 +243,10 @@ class Block {
   PlaceStatus place_status_; // placement status, i.e, PLACED, FIXED, UNPLACED
   BlockOrient orient_; // orientation, normally, N or FS
   BlockAux *aux_ptr_ = nullptr; // points to auxiliary information if needed
+
+  // cached height, also used to store effective height, the unit is grid value in the y-direction
+  int eff_height_;
+  long long int eff_area_; // cached effective area
 
   std::vector<int> stretch_length_; // TODO : move these two attributes to LgBlkAux
   double tot_stretch_length = 0;

@@ -21,6 +21,7 @@
 #ifndef DALI_COMMON_HELPER_H_
 #define DALI_COMMON_HELPER_H_
 
+#include <fstream>
 #include <string>
 #include <vector>
 

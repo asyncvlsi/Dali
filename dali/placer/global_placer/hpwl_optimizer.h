@@ -79,6 +79,8 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   virtual double OptimizeQuadraticMetricX(double cg_stop_criterion);
   virtual double OptimizeQuadraticMetricY(double cg_stop_criterion);
   virtual void PullBlockBackToRegion();
+  void OptimizeHpwlX(double net_model_update_stop_criterion);
+  void OptimizeHpwlY(double net_model_update_stop_criterion);
   double QuadraticPlacement(double net_model_update_stop_criterion) override;
 
   virtual void UpdateAnchorLocation();
@@ -88,6 +90,8 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   virtual void BuildProblemWithAnchorX();
   virtual void BuildProblemWithAnchorY();
   virtual void BackUpBlockLocation();
+  void OptimizeHpwlXWithAnchor(double net_model_update_stop_criterion);
+  void OptimizeHpwlYWithAnchor(double net_model_update_stop_criterion);
   double QuadraticPlacementWithAnchor(double net_model_update_stop_criterion) override;
 
   double GetTime() override;

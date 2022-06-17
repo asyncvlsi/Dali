@@ -383,7 +383,7 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
   wall_time = get_wall_time() - wall_time;
   tot_matrix_from_triplets_x += wall_time;
 
-  int sz = vx.size();
+  int sz = static_cast<int>(vx.size());
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
 
   wall_time = get_wall_time();
@@ -392,6 +392,7 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
   cg_x_.compute(Ax); // Ax * vx = bx
   for (int i = 0; i < max_rounds; ++i) {
     vx = cg_x_.solveWithGuess(bx, vx);
+//#pragma omp for
     for (int num = 0; num < sz; ++num) {
       blocks[num].SetLLX(vx[num]);
     }
@@ -416,7 +417,7 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
   tot_cg_solver_time_x += wall_time;
 
   wall_time = get_wall_time();
-
+//#pragma omp for
   for (int num = 0; num < sz; ++num) {
     blocks[num].SetLLX(vx[num]);
   }
@@ -436,7 +437,7 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
   wall_time = get_wall_time() - wall_time;
   tot_matrix_from_triplets_y += wall_time;
 
-  int sz = vx.size();
+  int sz = static_cast<int>(vy.size());
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
 
   wall_time = get_wall_time();
@@ -445,6 +446,7 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
   cg_y_.compute(Ay);
   for (int i = 0; i < max_rounds; ++i) {
     vy = cg_y_.solveWithGuess(by, vy);
+//#pragma omp for
     for (int num = 0; num < sz; ++num) {
       block_list[num].SetLLY(vy[num]);
     }
@@ -469,6 +471,7 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
   tot_cg_solver_time_y += wall_time;
 
   wall_time = get_wall_time();
+//#pragma omp for
   for (int num = 0; num < sz; ++num) {
     block_list[num].SetLLY(vy[num]);
   }
@@ -481,141 +484,164 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
 }
 
 void B2BHpwlOptimizer::PullBlockBackToRegion() {
-  int sz = vx.size();
+  int sz = static_cast<int>(vx.size());
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  double region_llx = ckt_ptr_->RegionLLX();
+  double region_urx = ckt_ptr_->RegionURX();
+  double region_lly = ckt_ptr_->RegionLLY();
+  double region_ury = ckt_ptr_->RegionURY();
+#pragma omp parallel num_threads(omp_get_max_threads())
+  {
+#pragma omp for
+    for (int i = 0; i < sz; ++i) {
+      if (block_list[i].IsMovable()) {
+        if (vx[i] < region_llx) {
+          vx[i] = region_llx;
+        }
+        double blk_hi_bound_x = region_urx - block_list[i].Width();
+        if (vx[i] > blk_hi_bound_x) {
+          vx[i] = blk_hi_bound_x;
+        }
 
-  double blk_hi_bound_x;
-  double blk_hi_bound_y;
-
-  for (int num = 0; num < sz; ++num) {
-    if (block_list[num].IsMovable()) {
-      if (vx[num] < ckt_ptr_->RegionLLX()) {
-        vx[num] = ckt_ptr_->RegionLLX();
-      }
-      blk_hi_bound_x = ckt_ptr_->RegionURX() - block_list[num].Width();
-      if (vx[num] > blk_hi_bound_x) {
-        vx[num] = blk_hi_bound_x;
-      }
-
-      if (vy[num] < ckt_ptr_->RegionLLY()) {
-        vy[num] = ckt_ptr_->RegionLLY();
-      }
-      blk_hi_bound_y = ckt_ptr_->RegionURY() - block_list[num].Height();
-      if (vy[num] > blk_hi_bound_y) {
-        vy[num] = blk_hi_bound_y;
+        if (vy[i] < region_lly) {
+          vy[i] = region_lly;
+        }
+        double blk_hi_bound_y = region_ury - block_list[i].Height();
+        if (vy[i] > blk_hi_bound_y) {
+          vy[i] = blk_hi_bound_y;
+        }
       }
     }
-  }
 
-  for (int num = 0; num < sz; ++num) {
-    block_list[num].SetLoc(vx[num], vy[num]);
+#pragma omp for
+    for (int i = 0; i < sz; ++i) {
+      block_list[i].SetLoc(vx[i], vy[i]);
+    }
   }
 }
 
-double B2BHpwlOptimizer::QuadraticPlacement(double net_model_update_stop_criterion) {
+void B2BHpwlOptimizer::OptimizeHpwlX(double net_model_update_stop_criterion) {
+  BOOST_LOG_TRIVIAL(trace)
+    << "threads in branch x: "
+    << omp_get_max_threads()
+    << " Eigen threads: " << Eigen::nbThreads()
+    << "\n";
+
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  size_t sz = block_list.size();
+#pragma omp parallel
+  {
+#pragma omp for
+    for (size_t i = 0; i < sz; ++i) {
+      vx[i] = block_list[i].LLX();
+    }
+  }
+
+  std::vector<double> eval_history_x;
+  int b2b_update_it_x = 0;
+  for (b2b_update_it_x = 0; b2b_update_it_x < b2b_update_max_iteration_;
+       ++b2b_update_it_x) {
+    BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
+    BuildProblemX();
+    double evaluate_result = OptimizeQuadraticMetricX(cg_stop_criterion_);
+    eval_history_x.push_back(evaluate_result);
+    if (eval_history_x.size() >= 3) {
+      bool is_converge = IsSeriesConverge(
+          eval_history_x,
+          3,
+          net_model_update_stop_criterion
+      );
+      bool is_oscillate = IsSeriesOscillate(eval_history_x, 5);
+      if (is_converge) {
+        break;
+      }
+      if (is_oscillate) {
+        BOOST_LOG_TRIVIAL(trace)
+          << "Net model update oscillation detected X\n";
+        break;
+      }
+    }
+  }
+  BOOST_LOG_TRIVIAL(trace)
+    << "  Optimization summary X, iterations x: " << b2b_update_it_x
+    << ", " << eval_history_x << "\n";
+  DaliExpects(
+      !eval_history_x.empty(),
+      "Cannot return a valid value because the result is not evaluated!"
+  );
+  lower_bound_hpwl_x_.push_back(eval_history_x.back());
+}
+
+void B2BHpwlOptimizer::OptimizeHpwlY(double net_model_update_stop_criterion) {
+  BOOST_LOG_TRIVIAL(trace)
+    << "threads in branch y: "
+    << omp_get_max_threads()
+    << " Eigen threads: " << Eigen::nbThreads()
+    << "\n";
+
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  size_t sz = block_list.size();
+#pragma omp parallel
+  {
+#pragma omp for
+    for (size_t i = 0; i < sz; ++i) {
+      vy[i] = block_list[i].LLY();
+    }
+  }
+
+  std::vector<double> eval_history_y;
+  int b2b_update_it_y = 0;
+  for (b2b_update_it_y = 0;
+       b2b_update_it_y < b2b_update_max_iteration_;
+       ++b2b_update_it_y) {
+    BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
+    BuildProblemY();
+    double evaluate_result =
+        OptimizeQuadraticMetricY(cg_stop_criterion_);
+    eval_history_y.push_back(evaluate_result);
+    if (eval_history_y.size() >= 3) {
+      bool is_converge = IsSeriesConverge(
+          eval_history_y, 3,
+          net_model_update_stop_criterion
+      );
+      bool is_oscillate = IsSeriesOscillate(eval_history_y, 5);
+      if (is_converge) {
+        break;
+      }
+      if (is_oscillate) {
+        BOOST_LOG_TRIVIAL(trace)
+          << "Net model update oscillation detected Y\n";
+        break;
+      }
+    }
+  }
+  BOOST_LOG_TRIVIAL(trace)
+    << "  Optimization summary Y, iterations y: " << b2b_update_it_y
+    << ", " << eval_history_y << "\n";
+  DaliExpects(
+      !eval_history_y.empty(),
+      "Cannot return a valid value because the result is not evaluated!"
+  );
+  lower_bound_hpwl_y_.push_back(eval_history_y.back());
+}
+
+double B2BHpwlOptimizer::QuadraticPlacement(double net_model_update_stop_criterion) { // TODO: break this to two smaller functions
   //omp_set_nested(1);
   omp_set_dynamic(0);
   int avail_threads_num = omp_get_max_threads();
   double wall_time = get_wall_time();
 
-//#pragma omp parallel num_threads(std::min(omp_get_max_threads(), 2))
+#pragma omp parallel num_threads(std::min(omp_get_max_threads(), 2))
   {
     BOOST_LOG_TRIVIAL(trace)
       << "OpenMP threads, " << omp_get_num_threads() << "\n";
     if (omp_get_thread_num() == 0) {
       omp_set_num_threads(avail_threads_num / 2);
-      BOOST_LOG_TRIVIAL(trace)
-        << "threads in branch x: "
-        << omp_get_max_threads()
-        << " Eigen threads: " << Eigen::nbThreads()
-        << "\n";
-
-      std::vector<Block> &block_list = ckt_ptr_->Blocks();
-      for (size_t i = 0; i < block_list.size(); ++i) {
-        vx[i] = block_list[i].LLX();
-      }
-
-      std::vector<double> eval_history_x;
-      int b2b_update_it_x = 0;
-      for (b2b_update_it_x = 0; b2b_update_it_x < b2b_update_max_iteration_;
-           ++b2b_update_it_x) {
-        BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
-        BuildProblemX();
-        double evaluate_result = OptimizeQuadraticMetricX(cg_stop_criterion_);
-        eval_history_x.push_back(evaluate_result);
-        if (eval_history_x.size() >= 3) {
-          bool is_converge = IsSeriesConverge(
-              eval_history_x,
-              3,
-              net_model_update_stop_criterion
-          );
-          bool is_oscillate = IsSeriesOscillate(eval_history_x, 5);
-          if (is_converge) {
-            break;
-          }
-          if (is_oscillate) {
-            BOOST_LOG_TRIVIAL(trace)
-              << "Net model update oscillation detected X\n";
-            break;
-          }
-        }
-      }
-      BOOST_LOG_TRIVIAL(trace)
-        << "  Optimization summary X, iterations x: " << b2b_update_it_x
-        << ", " << eval_history_x << "\n";
-      DaliExpects(
-          !eval_history_x.empty(),
-          "Cannot return a valid value because the result is not evaluated!"
-      );
-      lower_bound_hpwl_x_.push_back(eval_history_x.back());
+      OptimizeHpwlX(net_model_update_stop_criterion);
     }
-
     if (omp_get_thread_num() == 1 || omp_get_num_threads() == 1) {
       omp_set_num_threads(avail_threads_num / 2);
-      BOOST_LOG_TRIVIAL(trace)
-        << "threads in branch y: "
-        << omp_get_max_threads()
-        << " Eigen threads: " << Eigen::nbThreads()
-        << "\n";
-
-      std::vector<Block> &block_list = ckt_ptr_->Blocks();
-      for (size_t i = 0; i < block_list.size(); ++i) {
-        vy[i] = block_list[i].LLY();
-      }
-      std::vector<double> eval_history_y;
-      int b2b_update_it_y = 0;
-      for (b2b_update_it_y = 0;
-           b2b_update_it_y < b2b_update_max_iteration_;
-           ++b2b_update_it_y) {
-        BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
-        BuildProblemY();
-        double evaluate_result =
-            OptimizeQuadraticMetricY(cg_stop_criterion_);
-        eval_history_y.push_back(evaluate_result);
-        if (eval_history_y.size() >= 3) {
-          bool is_converge = IsSeriesConverge(
-              eval_history_y, 3,
-              net_model_update_stop_criterion
-          );
-          bool is_oscillate = IsSeriesOscillate(eval_history_y, 5);
-          if (is_converge) {
-            break;
-          }
-          if (is_oscillate) {
-            BOOST_LOG_TRIVIAL(trace)
-              << "Net model update oscillation detected Y\n";
-            break;
-          }
-        }
-      }
-      BOOST_LOG_TRIVIAL(trace)
-        << "  Optimization summary Y, iterations y: " << b2b_update_it_y
-        << ", " << eval_history_y << "\n";
-      DaliExpects(
-          !eval_history_y.empty(),
-          "Cannot return a valid value because the result is not evaluated!"
-      );
-      lower_bound_hpwl_y_.push_back(eval_history_y.back());
+      OptimizeHpwlY(net_model_update_stop_criterion);
     }
   }
 
@@ -732,10 +758,115 @@ void B2BHpwlOptimizer::BuildProblemWithAnchorY() {
 void B2BHpwlOptimizer::BackUpBlockLocation() {
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
+//#pragma omp for
   for (int i = 0; i < sz; ++i) {
     x_anchor[i] = block_list[i].LLX();
     y_anchor[i] = block_list[i].LLY();
   }
+}
+
+void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(double net_model_update_stop_criterion) {
+  BOOST_LOG_TRIVIAL(trace)
+    << "threads in branch x: "
+    << omp_get_max_threads()
+    << " Eigen threads: " << Eigen::nbThreads()
+    << "\n";
+
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  int sz = static_cast<int>(block_list.size());
+#pragma omp parallel
+  {
+#pragma omp for
+    for (int i = 0; i < sz; ++i) {
+      vx[i] = block_list[i].LLX();
+    }
+  }
+
+  std::vector<double> eval_history_x;
+  int b2b_update_it_x = 0;
+  for (b2b_update_it_x = 0;
+       b2b_update_it_x < b2b_update_max_iteration_;
+       ++b2b_update_it_x) {
+    BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
+    BuildProblemWithAnchorX();
+    double evaluate_result = OptimizeQuadraticMetricX(cg_stop_criterion_);
+    eval_history_x.push_back(evaluate_result);
+    //BOOST_LOG_TRIVIAL(trace) << "\tIterative net model update, WeightedHPWLX: " << evaluate_result << "\n";
+    if (eval_history_x.size() >= 3) {
+      bool is_converge = IsSeriesConverge(
+          eval_history_x,
+          3,
+          net_model_update_stop_criterion
+      );
+      bool is_oscillate = IsSeriesOscillate(eval_history_x, 5);
+      if (is_converge) {
+        break;
+      }
+      if (is_oscillate) {
+        BOOST_LOG_TRIVIAL(trace)
+          << "Net model update oscillation detected X\n";
+        break;
+      }
+    }
+  }
+  BOOST_LOG_TRIVIAL(trace)
+    << "  Optimization summary X, iterations x: " << b2b_update_it_x
+    << ", " << eval_history_x << "\n";
+  DaliExpects(!eval_history_x.empty(),
+              "Cannot return a valid value because the result is not evaluated!");
+  lower_bound_hpwl_x_.push_back(eval_history_x.back());
+}
+
+void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(double net_model_update_stop_criterion) {
+  BOOST_LOG_TRIVIAL(trace)
+    << "threads in branch y: "
+    << omp_get_max_threads()
+    << " Eigen threads: " << Eigen::nbThreads()
+    << "\n";
+
+  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  int sz = static_cast<int>(block_list.size());
+#pragma omp parallel
+  {
+#pragma omp for
+    for (size_t i = 0; i < block_list.size(); ++i) {
+      vy[i] = block_list[i].LLY();
+    }
+  }
+
+  std::vector<double> eval_history_y;
+  int b2b_update_it_y = 0;
+  for (b2b_update_it_y = 0;
+       b2b_update_it_y < b2b_update_max_iteration_;
+       ++b2b_update_it_y) {
+    BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
+    BuildProblemWithAnchorY();
+    double evaluate_result =
+        OptimizeQuadraticMetricY(cg_stop_criterion_);
+    eval_history_y.push_back(evaluate_result);
+    if (eval_history_y.size() >= 3) {
+      bool is_converge = IsSeriesConverge(
+          eval_history_y,
+          3,
+          net_model_update_stop_criterion
+      );
+      bool is_oscillate = IsSeriesOscillate(eval_history_y, 5);
+      if (is_converge) {
+        break;
+      }
+      if (is_oscillate) {
+        BOOST_LOG_TRIVIAL(trace)
+          << "Net model update oscillation detected Y\n";
+        break;
+      }
+    }
+  }
+  BOOST_LOG_TRIVIAL(trace)
+    << "  Optimization summary Y, iterations y: " << b2b_update_it_y
+    << ", " << eval_history_y << "\n";
+  DaliExpects(!eval_history_y.empty(),
+              "Cannot return a valid value because the result is not evaluated!");
+  lower_bound_hpwl_y_.push_back(eval_history_y.back());
 }
 
 double B2BHpwlOptimizer::QuadraticPlacementWithAnchor(double net_model_update_stop_criterion) {
@@ -745,104 +876,22 @@ double B2BHpwlOptimizer::QuadraticPlacementWithAnchor(double net_model_update_st
   //BOOST_LOG_TRIVIAL(info)   << "total threads: " << avail_threads_num << "\n";
   double wall_time = get_wall_time();
 
-  std::vector<Block> &block_list = ckt_ptr_->Blocks();
-
   UpdateAnchorLocation();
   UpdateAnchorAlpha();
   //UpdateAnchorNetWeight();
   BOOST_LOG_TRIVIAL(trace) << "alpha: " << alpha << "\n";
 
-//#pragma omp parallel num_threads(std::min(omp_get_max_threads(), 2))
+#pragma omp parallel num_threads(std::min(omp_get_max_threads(), 2))
   {
     BOOST_LOG_TRIVIAL(trace)
       << "OpenMP threads, " << omp_get_num_threads() << "\n";
     if (omp_get_thread_num() == 0) {
       omp_set_num_threads(avail_threads_num / 2);
-      BOOST_LOG_TRIVIAL(trace)
-        << "threads in branch x: "
-        << omp_get_max_threads()
-        << " Eigen threads: " << Eigen::nbThreads()
-        << "\n";
-      for (size_t i = 0; i < block_list.size(); ++i) {
-        vx[i] = block_list[i].LLX();
-      }
-      std::vector<double> eval_history_x;
-      int b2b_update_it_x = 0;
-      for (b2b_update_it_x = 0;
-           b2b_update_it_x < b2b_update_max_iteration_;
-           ++b2b_update_it_x) {
-        BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
-        BuildProblemWithAnchorX();
-        double evaluate_result = OptimizeQuadraticMetricX(cg_stop_criterion_);
-        eval_history_x.push_back(evaluate_result);
-        //BOOST_LOG_TRIVIAL(trace) << "\tIterative net model update, WeightedHPWLX: " << evaluate_result << "\n";
-        if (eval_history_x.size() >= 3) {
-          bool is_converge = IsSeriesConverge(
-              eval_history_x,
-              3,
-              net_model_update_stop_criterion
-          );
-          bool is_oscillate = IsSeriesOscillate(eval_history_x, 5);
-          if (is_converge) {
-            break;
-          }
-          if (is_oscillate) {
-            BOOST_LOG_TRIVIAL(trace)
-              << "Net model update oscillation detected X\n";
-            break;
-          }
-        }
-      }
-      BOOST_LOG_TRIVIAL(trace)
-        << "  Optimization summary X, iterations x: " << b2b_update_it_x
-        << ", " << eval_history_x << "\n";
-      DaliExpects(!eval_history_x.empty(),
-                  "Cannot return a valid value because the result is not evaluated!");
-      lower_bound_hpwl_x_.push_back(eval_history_x.back());
+      OptimizeHpwlXWithAnchor(net_model_update_stop_criterion);
     }
     if (omp_get_thread_num() == 1 || omp_get_num_threads() == 1) {
       omp_set_num_threads(avail_threads_num / 2);
-      BOOST_LOG_TRIVIAL(trace)
-        << "threads in branch y: "
-        << omp_get_max_threads()
-        << " Eigen threads: " << Eigen::nbThreads()
-        << "\n";
-      for (size_t i = 0; i < block_list.size(); ++i) {
-        vy[i] = block_list[i].LLY();
-      }
-      std::vector<double> eval_history_y;
-      int b2b_update_it_y = 0;
-      for (b2b_update_it_y = 0;
-           b2b_update_it_y < b2b_update_max_iteration_;
-           ++b2b_update_it_y) {
-        BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
-        BuildProblemWithAnchorY();
-        double evaluate_result =
-            OptimizeQuadraticMetricY(cg_stop_criterion_);
-        eval_history_y.push_back(evaluate_result);
-        if (eval_history_y.size() >= 3) {
-          bool is_converge = IsSeriesConverge(
-              eval_history_y,
-              3,
-              net_model_update_stop_criterion
-          );
-          bool is_oscillate = IsSeriesOscillate(eval_history_y, 5);
-          if (is_converge) {
-            break;
-          }
-          if (is_oscillate) {
-            BOOST_LOG_TRIVIAL(trace)
-              << "Net model update oscillation detected Y\n";
-            break;
-          }
-        }
-      }
-      BOOST_LOG_TRIVIAL(trace)
-        << "  Optimization summary Y, iterations y: " << b2b_update_it_y
-        << ", " << eval_history_y << "\n";
-      DaliExpects(!eval_history_y.empty(),
-                  "Cannot return a valid value because the result is not evaluated!");
-      lower_bound_hpwl_y_.push_back(eval_history_y.back());
+      OptimizeHpwlYWithAnchor(net_model_update_stop_criterion);
     }
   }
 

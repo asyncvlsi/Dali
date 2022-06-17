@@ -31,7 +31,9 @@ Block::Block() :
     lly_(0),
     place_status_(UNPLACED),
     orient_(N),
-    aux_ptr_(nullptr) {}
+    aux_ptr_(nullptr),
+    eff_height_(0),
+    eff_area_(0) {}
 
 Block::Block(
     BlockType *type_ptr,
@@ -88,7 +90,10 @@ void Block::ResetHeight() {
 }
 
 bool Block::IsFlipped() const {
-  return orient_ == FN || orient_ == FS || orient_ == FW || orient_ == FE;
+  return orient_ == FN
+      || orient_ == FS
+      || orient_ == FW
+      || orient_ == FE;
 }
 
 void Block::SetType(BlockType *type_ptr) {
@@ -199,7 +204,7 @@ void Block::Report() {
 
 void Block::ReportNet() {
   BOOST_LOG_TRIVIAL(info) << Name() << " connects to:\n";
-  for (auto &net_num: nets_) {
+  for (auto &net_num : nets_) {
     BOOST_LOG_TRIVIAL(info) << net_num << "  ";
   }
   BOOST_LOG_TRIVIAL(info) << "\n";

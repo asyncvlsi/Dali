@@ -101,4 +101,4 @@ workflows:
   build:
     jobs:
       - ubuntu22
-      - centos8
+      # - centos8
