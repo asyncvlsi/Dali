@@ -49,56 +49,75 @@ jobs:
             cd build
             cmake ..
             make install
-  centos8:
+  centos7:
     docker:
-      - image: centos:8
+      - image: centos:7
     steps:
       - run:
           name: "Install ACT"
           command: |
-            yum install -y 'dnf-command(config-manager)'
-            yum config-manager --set-enabled powertools -y
-            yum install -y gcc gcc-c++ diffutils make libedit-devel zlib-devel m4
+            set +e
+            yum install -y centos-release-scl git wget
+            yum-config-manager --enable rhel-server-rhscl-7-rpms
+            echo "yum install -y devtoolset-11 libtool libedit-devel zlib-devel m4 flex bison libboost--devel | cat" | bash
+            source scl_source enable devtoolset-11
             git clone https://github.com/asyncvlsi/act.git
-            cd act
-            mkdir install
+            #the boost prebuild needs act home to be in act 
+            mv act actsrc
+            mkdir act
+            export ACT_HOME=`pwd`/act
+            cd actsrc
             export VLSI_TOOLS_SRC=`pwd`
-            export ACT_HOME=$VLSI_TOOLS_SRC/install
             echo export VLSI_TOOLS_SRC=`pwd` >> $BASH_ENV
-            echo export ACT_HOME=$VLSI_TOOLS_SRC/install >> $BASH_ENV
-            ./configure $ACT_HOME
-            ./build
+            echo export ACT_HOME=$ACT_HOME >> $BASH_ENV
+            ./configure $ACT_HOME || exit 1
+            ./build  || exit 1
             make install
       - run:
           name: "Install Si2 LEF/DEF parser"
           command: |
+            set +e
+            source scl_source enable devtoolset-11
             git clone https://github.com/asyncvlsi/lefdef.git
-            apt-get install -y flex bison
             cd lefdef
-            make
-            make install
+            make  || exit 1
+            make install  || exit 1
       - run:
           name: "Install phyDB"
           command: |
-            apt install -y cmake libboost-all-dev
+            set +e
+            source scl_source enable devtoolset-11
+            #install new version of cmake
+            wget --quiet https://github.com/bics-rug/act-toolchain-prebuildfiles/raw/master/cmake-3.23.2-prebuild.tar.gz
+            echo "34fe140f10bbeb5e71c7529a26c53386439bbdab14c8efbfd71d86aa36cba578 cmake-3.23.2-prebuild.tar.gz" | sha256sum --check || exit 1
+            mkdir cmake && tar -C "cmake" --strip-components=1 -xf cmake-3.23.2-prebuild.tar.gz
+            cd cmake && make install && cd ..
+            # new version of boost
+            wget --quiet https://github.com/bics-rug/act-toolchain-prebuildfiles/raw/master/boost_1_79_0-prebuild.tar.gz
+            echo "2839c7fc868c032c5a73e5c63aebc605f35b4f2e0dac15b865ff5bede2f2ad6e boost_1_79_0-prebuild.tar.gz" | sha256sum --check || exit 1
+            mkdir -p src/org-boostorg-boost && tar -C src/org-boostorg-boost --strip-components=2 -xf boost_1_79_0-prebuild.tar.gz
+            cd src/org-boostorg-boost && ./b2 install && cd ../..
+
             git clone https://github.com/asyncvlsi/phyDB.git
             cd phyDB
             mkdir build
             cd build
-            cmake ..
-            make install
+            cmake -D Boost_INCLUDE_DIR=$ACT_HOME/include ..  || exit 1
+            make install  || exit 1
       - run:
           name: "Install Dali"
           command: |
+            set +e
+            source scl_source enable devtoolset-11
             git clone --recursive https://github.com/asyncvlsi/Dali.git
             cd Dali
             mkdir build
             cd build
-            cmake ..
-            make install
+            cmake -D Boost_INCLUDE_DIR=$ACT_HOME/include ..  || exit 1
+            make install  || exit 1
             
 workflows:
   build:
     jobs:
       - ubuntu22
-      # - centos8
+      - centos7
