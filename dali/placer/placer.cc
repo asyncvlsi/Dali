@@ -20,32 +20,34 @@
  ******************************************************************************/
 #include "placer.h"
 
-#include <cmath>
+#include <omp.h>
 
+#include <cmath>
 #include <algorithm>
 
 #include "dali/common/misc.h"
 
 namespace dali {
 
-Placer::Placer() {
-  aspect_ratio_ = 0;
-  placement_density_ = 0;
-  left_ = 0;
-  right_ = 0;
-  bottom_ = 0;
-  top_ = 0;
-  ckt_ptr_ = nullptr;
-}
+Placer::Placer() :
+    num_threads_(1),
+    aspect_ratio_(0),
+    placement_density_(0),
+    left_(0),
+    right_(0),
+    bottom_(0),
+    top_(0),
+    ckt_ptr_(nullptr) {}
 
-Placer::Placer(double aspect_ratio, double filling_rate) : aspect_ratio_(
-    aspect_ratio), placement_density_(filling_rate) {
-  left_ = 0;
-  right_ = 0;
-  bottom_ = 0;
-  top_ = 0;
-  ckt_ptr_ = nullptr;
-}
+Placer::Placer(double aspect_ratio, double filling_rate) :
+    num_threads_(1),
+    aspect_ratio_(aspect_ratio),
+    placement_density_(filling_rate),
+    left_(0),
+    right_(0),
+    bottom_(0),
+    top_(0),
+    ckt_ptr_(nullptr) {}
 
 void Placer::LoadConf([[maybe_unused]]std::string const &config_file) {
   BOOST_LOG_TRIVIAL(warning)
@@ -65,6 +67,32 @@ void Placer::SetInputCircuit(Circuit *circuit) {
       << "Bad input circuit: empty net list, nothing to optimize during placement! But anyway...\n";
   }
   ckt_ptr_ = circuit;
+}
+
+/****
+ * @brief Set the number of threads which can be used by this placer
+ *
+ * @param num_threads: the number of threads
+ */
+void Placer::SetNumThreads(int num_threads) {
+  if (num_threads < 1) {
+    num_threads = 1;
+    DaliWarning(
+        "Number of threads ("
+            << num_threads << ") for placer is less than 1, using 1 instead"
+    );
+  }
+  int max_num_threads = omp_get_max_threads();
+  if (num_threads > max_num_threads) {
+    num_threads = max_num_threads;
+    DaliWarning(
+        "Number of threads ("
+            << num_threads
+            << ") for placer is more than max number of threads ("
+            << max_num_threads << "), using max number of threads instead"
+    );
+  }
+  num_threads_ = num_threads;
 }
 
 double Placer::GetBlkHPWL(Block &blk) {

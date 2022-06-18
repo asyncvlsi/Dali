@@ -274,15 +274,13 @@ bool Dali::AddWellTaps(int argc, char **argv) {
 /**
  * Perform global placement using a given target density.
  *
- * @param density, target density, reasonable range (0, 1].
+ * @param density: target density, reasonable range (0, 1].
+ * @param num_threads: number of threads.
  * @return void
  */
-bool Dali::GlobalPlace(double density, int number_of_threads) {
+bool Dali::GlobalPlace(double density, int num_threads) {
   //std::string config_file = "dali.conf";
-  int num_of_thread_openmp = number_of_threads;
-  omp_set_num_threads(num_of_thread_openmp);
-  Eigen::initParallel();
-  BOOST_LOG_TRIVIAL(info) << "Eigen thread " << Eigen::nbThreads() << "\n";
+  gb_placer_.SetNumThreads(num_threads);
   //gb_placer_.LoadConf(config_file);
   gb_placer_.SetInputCircuit(&circuit_);
   gb_placer_.SetDump(false);

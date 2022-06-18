@@ -51,7 +51,7 @@ void GlobalPlacer::LoadConf(std::string const &config_file) {
 
 void GlobalPlacer::CheckOptimizerAndLegalizer() {
   if (optimizer_ == nullptr) {
-    optimizer_ = new B2BHpwlOptimizer(ckt_ptr_);
+    optimizer_ = new B2BHpwlOptimizer(ckt_ptr_, num_threads_);
   }
   if (legalizer_ == nullptr) {
     legalizer_ = new LookAheadLegalizer(ckt_ptr_);

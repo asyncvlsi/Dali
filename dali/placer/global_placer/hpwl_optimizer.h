@@ -41,9 +41,10 @@ typedef IndexVal D;
 
 class HpwlOptimizer {
  public:
-  explicit HpwlOptimizer(Circuit *ckt_ptr);
+  HpwlOptimizer(Circuit *ckt_ptr, int num_threads);
   virtual ~HpwlOptimizer() = default;
   virtual void Initialize() = 0;
+  void SetNumThreads(int num_threads) { num_threads_ = num_threads; }
   void SetIteration(int cur_iter) { cur_iter_ = cur_iter; }
   virtual double QuadraticPlacement(double net_model_update_stop_criterion) = 0;
   virtual double QuadraticPlacementWithAnchor(double net_model_update_stop_criterion) = 0;
@@ -55,6 +56,7 @@ class HpwlOptimizer {
  protected:
   Circuit *ckt_ptr_ = nullptr;
   int cur_iter_ = 0;
+  int num_threads_ = 1;
   std::vector<double> lower_bound_hpwl_;
   std::vector<double> lower_bound_hpwl_x_;
   std::vector<double> lower_bound_hpwl_y_;
@@ -62,36 +64,43 @@ class HpwlOptimizer {
 
 class B2BHpwlOptimizer : public HpwlOptimizer {
  public:
-  explicit B2BHpwlOptimizer(Circuit *ckt_ptr): HpwlOptimizer(ckt_ptr) {}
+  B2BHpwlOptimizer(Circuit *ckt_ptr, int num_threads) :
+      HpwlOptimizer(ckt_ptr, num_threads) {}
   ~B2BHpwlOptimizer() override = default;
 
-  virtual void UpdateEpsilon();
+  void UpdateEpsilon();
   void Initialize() override;
 
   virtual void BuildProblemX();
   virtual void BuildProblemY();
-  virtual bool IsSeriesConverge(
+  bool IsSeriesConverge(
       std::vector<double> &data,
       int window_size,
       double tolerance
   );
-  virtual bool IsSeriesOscillate(std::vector<double> &data, int window_size);
+  bool IsSeriesOscillate(std::vector<double> &data, int window_size);
   virtual double OptimizeQuadraticMetricX(double cg_stop_criterion);
   virtual double OptimizeQuadraticMetricY(double cg_stop_criterion);
-  virtual void PullBlockBackToRegion();
-  void OptimizeHpwlX(double net_model_update_stop_criterion);
-  void OptimizeHpwlY(double net_model_update_stop_criterion);
+  void PullBlockBackToRegion();
+  void OptimizeHpwlX(double net_model_update_stop_criterion, int num_threads);
+  void OptimizeHpwlY(double net_model_update_stop_criterion, int num_threads);
   double QuadraticPlacement(double net_model_update_stop_criterion) override;
 
-  virtual void UpdateAnchorLocation();
+  void UpdateAnchorLocation();
   virtual void UpdateAnchorAlpha();
-  virtual void UpdateMaxMinX();
-  virtual void UpdateMaxMinY();
+  void UpdateMaxMinX();
+  void UpdateMaxMinY();
   virtual void BuildProblemWithAnchorX();
   virtual void BuildProblemWithAnchorY();
-  virtual void BackUpBlockLocation();
-  void OptimizeHpwlXWithAnchor(double net_model_update_stop_criterion);
-  void OptimizeHpwlYWithAnchor(double net_model_update_stop_criterion);
+  void BackUpBlockLocation();
+  void OptimizeHpwlXWithAnchor(
+      double net_model_update_stop_criterion,
+      int num_threads
+  );
+  void OptimizeHpwlYWithAnchor(
+      double net_model_update_stop_criterion,
+      int num_threads
+  );
   double QuadraticPlacementWithAnchor(double net_model_update_stop_criterion) override;
 
   double GetTime() override;
@@ -164,7 +173,8 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
 
 class StarHpwlOptimizer : public B2BHpwlOptimizer {
  public:
-  explicit StarHpwlOptimizer(Circuit *ckt_ptr): B2BHpwlOptimizer(ckt_ptr) {}
+  StarHpwlOptimizer(Circuit *ckt_ptr, int num_threads) :
+      B2BHpwlOptimizer(ckt_ptr, num_threads) {}
   ~StarHpwlOptimizer() override = default;
 
   void BuildProblemX() override;
@@ -175,7 +185,8 @@ class StarHpwlOptimizer : public B2BHpwlOptimizer {
 
 class HpwlHpwlOptimizer : public B2BHpwlOptimizer {
  public:
-  explicit HpwlHpwlOptimizer(Circuit *ckt_ptr): B2BHpwlOptimizer(ckt_ptr) {}
+  HpwlHpwlOptimizer(Circuit *ckt_ptr, int num_threads) :
+      B2BHpwlOptimizer(ckt_ptr, num_threads) {}
   ~HpwlHpwlOptimizer() override = default;
 
   void BuildProblemX() override;
@@ -186,7 +197,8 @@ class HpwlHpwlOptimizer : public B2BHpwlOptimizer {
 
 class StarHpwlHpwlOptimizer : public B2BHpwlOptimizer {
  public:
-  explicit StarHpwlHpwlOptimizer(Circuit *ckt_ptr): B2BHpwlOptimizer(ckt_ptr) {}
+  StarHpwlHpwlOptimizer(Circuit *ckt_ptr, int num_threads)
+      : B2BHpwlOptimizer(ckt_ptr, num_threads) {}
   ~StarHpwlHpwlOptimizer() override = default;
 
   void InitializeDriverLoadPairs();

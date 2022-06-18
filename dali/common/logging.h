@@ -77,6 +77,16 @@ void CloseLogging();
   } \
 } while(0)
 
+#define DaliFatal(error_message) do{ \
+  BOOST_LOG_TRIVIAL(fatal) \
+      << "\033[0;31m" \
+      << "FATAL ERROR:" << "\n" \
+      << "    " << error_message << "\n" \
+      << __FILE__ << " : " << __LINE__ << " : " << __FUNCTION__ \
+      << "\033[0m" << std::endl; \
+      exit(1); \
+} while(0)
+
 #define DaliWarns(e, warning_message) do{ \
   if((e)) { \
     BOOST_LOG_TRIVIAL(warning) \
@@ -85,6 +95,14 @@ void CloseLogging();
       << "    " << warning_message << "\n" \
       << "\033[0m"; \
   } \
+} while(0)
+
+#define DaliWarning(warning_message) do{ \
+  BOOST_LOG_TRIVIAL(warning) \
+      << "\033[0;34m" \
+      << "WARNING:" << "\n" \
+      << "    " << warning_message << "\n" \
+      << "\033[0m"; \
 } while(0)
 
 }

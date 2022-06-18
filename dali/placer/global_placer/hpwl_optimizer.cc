@@ -25,9 +25,11 @@
 
 namespace dali {
 
-HpwlOptimizer::HpwlOptimizer(Circuit *ckt_ptr) {
+HpwlOptimizer::HpwlOptimizer(Circuit *ckt_ptr, int num_threads) {
   DaliExpects(ckt_ptr != nullptr, "Circuit is a nullptr?");
   ckt_ptr_ = ckt_ptr;
+  DaliExpects(num_threads >= 1, "Number of threads less than 1?");
+  num_threads_ = num_threads;
 }
 
 /****
@@ -490,7 +492,7 @@ void B2BHpwlOptimizer::PullBlockBackToRegion() {
   double region_urx = ckt_ptr_->RegionURX();
   double region_lly = ckt_ptr_->RegionLLY();
   double region_ury = ckt_ptr_->RegionURY();
-#pragma omp parallel num_threads(omp_get_max_threads())
+#pragma omp parallel num_threads(omp_get_max_threads()) default(none) shared(block_list, sz, region_llx, region_urx, region_lly, region_ury)
   {
 #pragma omp for
     for (int i = 0; i < sz; ++i) {
@@ -520,16 +522,19 @@ void B2BHpwlOptimizer::PullBlockBackToRegion() {
   }
 }
 
-void B2BHpwlOptimizer::OptimizeHpwlX(double net_model_update_stop_criterion) {
+void B2BHpwlOptimizer::OptimizeHpwlX(
+    double net_model_update_stop_criterion,
+    int num_threads
+) {
+  Eigen::setNbThreads(num_threads);
   BOOST_LOG_TRIVIAL(trace)
-    << "threads in branch x: "
-    << omp_get_max_threads()
+    << "threads in branch x: " << num_threads
     << " Eigen threads: " << Eigen::nbThreads()
     << "\n";
 
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
   size_t sz = block_list.size();
-#pragma omp parallel
+#pragma omp parallel num_threads(num_threads) default(none) shared(block_list, sz)
   {
 #pragma omp for
     for (size_t i = 0; i < sz; ++i) {
@@ -572,16 +577,19 @@ void B2BHpwlOptimizer::OptimizeHpwlX(double net_model_update_stop_criterion) {
   lower_bound_hpwl_x_.push_back(eval_history_x.back());
 }
 
-void B2BHpwlOptimizer::OptimizeHpwlY(double net_model_update_stop_criterion) {
+void B2BHpwlOptimizer::OptimizeHpwlY(
+    double net_model_update_stop_criterion,
+    int num_threads
+) {
+  Eigen::setNbThreads(num_threads);
   BOOST_LOG_TRIVIAL(trace)
-    << "threads in branch y: "
-    << omp_get_max_threads()
+    << "threads in branch y: " << num_threads
     << " Eigen threads: " << Eigen::nbThreads()
     << "\n";
 
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
   size_t sz = block_list.size();
-#pragma omp parallel
+#pragma omp parallel num_threads(num_threads) default(none) shared(block_list, sz)
   {
 #pragma omp for
     for (size_t i = 0; i < sz; ++i) {
@@ -625,23 +633,21 @@ void B2BHpwlOptimizer::OptimizeHpwlY(double net_model_update_stop_criterion) {
   lower_bound_hpwl_y_.push_back(eval_history_y.back());
 }
 
-double B2BHpwlOptimizer::QuadraticPlacement(double net_model_update_stop_criterion) { // TODO: break this to two smaller functions
-  //omp_set_nested(1);
+double B2BHpwlOptimizer::QuadraticPlacement(double net_model_update_stop_criterion) {
   omp_set_dynamic(0);
-  int avail_threads_num = omp_get_max_threads();
+  int avail_threads_num = num_threads_ / 2;
+  if (avail_threads_num == 0) {
+    avail_threads_num = 1;
+  }
   double wall_time = get_wall_time();
 
-#pragma omp parallel num_threads(std::min(omp_get_max_threads(), 2))
+#pragma omp parallel num_threads(std::min(num_threads_, 2)) default(none) shared(avail_threads_num, net_model_update_stop_criterion)
   {
-    BOOST_LOG_TRIVIAL(trace)
-      << "OpenMP threads, " << omp_get_num_threads() << "\n";
     if (omp_get_thread_num() == 0) {
-      omp_set_num_threads(avail_threads_num / 2);
-      OptimizeHpwlX(net_model_update_stop_criterion);
+      OptimizeHpwlX(net_model_update_stop_criterion, avail_threads_num);
     }
     if (omp_get_thread_num() == 1 || omp_get_num_threads() == 1) {
-      omp_set_num_threads(avail_threads_num / 2);
-      OptimizeHpwlY(net_model_update_stop_criterion);
+      OptimizeHpwlY(net_model_update_stop_criterion, avail_threads_num);
     }
   }
 
@@ -651,13 +657,13 @@ double B2BHpwlOptimizer::QuadraticPlacement(double net_model_update_stop_criteri
 
   wall_time = get_wall_time() - wall_time;
   tot_cg_time += wall_time;
-  //omp_set_nested(0);
 
   if (is_dump_) {
     DumpResult("cg_result_0.txt");
   }
   BackUpBlockLocation();
-  lower_bound_hpwl_.push_back(lower_bound_hpwl_x_.back() + lower_bound_hpwl_y_.back());
+  lower_bound_hpwl_.push_back(
+      lower_bound_hpwl_x_.back() + lower_bound_hpwl_y_.back());
   return lower_bound_hpwl_.back();
 }
 
@@ -765,7 +771,10 @@ void B2BHpwlOptimizer::BackUpBlockLocation() {
   }
 }
 
-void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(double net_model_update_stop_criterion) {
+void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(
+    double net_model_update_stop_criterion,
+    int num_threads
+) {
   BOOST_LOG_TRIVIAL(trace)
     << "threads in branch x: "
     << omp_get_max_threads()
@@ -774,7 +783,7 @@ void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(double net_model_update_stop_crit
 
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
-#pragma omp parallel
+#pragma omp parallel num_threads(num_threads) default(none) shared(block_list, sz)
   {
 #pragma omp for
     for (int i = 0; i < sz; ++i) {
@@ -817,7 +826,10 @@ void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(double net_model_update_stop_crit
   lower_bound_hpwl_x_.push_back(eval_history_x.back());
 }
 
-void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(double net_model_update_stop_criterion) {
+void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(
+    double net_model_update_stop_criterion,
+    int num_threads
+) {
   BOOST_LOG_TRIVIAL(trace)
     << "threads in branch y: "
     << omp_get_max_threads()
@@ -826,7 +838,7 @@ void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(double net_model_update_stop_crit
 
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
-#pragma omp parallel
+#pragma omp parallel num_threads(num_threads) default(none) shared(block_list, sz)
   {
 #pragma omp for
     for (size_t i = 0; i < block_list.size(); ++i) {
@@ -870,28 +882,26 @@ void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(double net_model_update_stop_crit
 }
 
 double B2BHpwlOptimizer::QuadraticPlacementWithAnchor(double net_model_update_stop_criterion) {
-  //omp_set_nested(1);
   omp_set_dynamic(0);
-  int avail_threads_num = omp_get_max_threads();
-  //BOOST_LOG_TRIVIAL(info)   << "total threads: " << avail_threads_num << "\n";
+  int avail_threads_num = num_threads_ / 2;
+  if (avail_threads_num == 0) {
+    avail_threads_num = 1;
+  }
   double wall_time = get_wall_time();
 
   UpdateAnchorLocation();
   UpdateAnchorAlpha();
   //UpdateAnchorNetWeight();
   BOOST_LOG_TRIVIAL(trace) << "alpha: " << alpha << "\n";
+  BOOST_LOG_TRIVIAL(trace) << "OpenMP threads, " << num_threads_ << "\n";
 
-#pragma omp parallel num_threads(std::min(omp_get_max_threads(), 2))
+#pragma omp parallel num_threads(std::min(num_threads_, 2)) default(none) shared(avail_threads_num, net_model_update_stop_criterion)
   {
-    BOOST_LOG_TRIVIAL(trace)
-      << "OpenMP threads, " << omp_get_num_threads() << "\n";
     if (omp_get_thread_num() == 0) {
-      omp_set_num_threads(avail_threads_num / 2);
-      OptimizeHpwlXWithAnchor(net_model_update_stop_criterion);
+      OptimizeHpwlXWithAnchor(net_model_update_stop_criterion, avail_threads_num);
     }
     if (omp_get_thread_num() == 1 || omp_get_num_threads() == 1) {
-      omp_set_num_threads(avail_threads_num / 2);
-      OptimizeHpwlYWithAnchor(net_model_update_stop_criterion);
+      OptimizeHpwlYWithAnchor(net_model_update_stop_criterion, avail_threads_num);
     }
   }
 
@@ -905,7 +915,6 @@ double B2BHpwlOptimizer::QuadraticPlacementWithAnchor(double net_model_update_st
 
   wall_time = get_wall_time() - wall_time;
   tot_cg_time += wall_time;
-  //omp_set_nested(0);
 
   if (is_dump_) DumpResult("cg_result_" + std::to_string(cur_iter_) + ".txt");
   BackUpBlockLocation();

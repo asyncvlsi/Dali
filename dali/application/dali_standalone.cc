@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
   int lg_threads = 1;
   int gb_maxiter = 100;
   bool lg_cplex = false;
-  int num_of_thread_openmp = 1;
+  int num_threads = 1;
 
   /**** parsing arguments ****/
   for (int i = 1; i < argc;) {
@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
     } else if (arg == "-nthreads" && i < argc) {
       std::string str_nthreads = std::string(argv[i++]);
       try {
-        num_of_thread_openmp = std::stoi(str_nthreads);
+        num_threads = std::stoi(str_nthreads);
       } catch (...) {
         std::cout << "Invalid number of threads!\n";
         ReportUsage();
@@ -246,9 +246,6 @@ int main(int argc, char *argv[]) {
 
   /**** save command line arguments for future reference ****/
   SaveArgs(argc, argv);
-
-  /**** set number of threads for OpenMP ****/
-  omp_set_num_threads(num_of_thread_openmp);
 
   /**** time ****/
   double wall_time = get_wall_time();
@@ -294,6 +291,7 @@ int main(int argc, char *argv[]) {
   // (1). global placement
   auto gb_placer = std::make_unique<GlobalPlacer>();
   gb_placer->SetInputCircuit(&circuit);
+  gb_placer->SetNumThreads(num_threads);
   gb_placer->SetBoundaryDef();
   gb_placer->SetMaxIteration(gb_maxiter);
   if (!is_no_global) {

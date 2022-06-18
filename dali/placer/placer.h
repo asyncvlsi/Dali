@@ -42,6 +42,8 @@ class Placer {
 
   virtual void SetInputCircuit(Circuit *circuit);
 
+  void SetNumThreads(int num_threads);
+
   void SetPlacementDensity(double density = 2.0 / 3.0) {
     DaliExpects(
         (density <= 1) && (density > 0),
@@ -171,6 +173,7 @@ class Placer {
   bool IsDummyBlock(Block &blk);
  protected:
   /* essential data entries */
+  int num_threads_;
   double aspect_ratio_; // placement region Height/Width
   double placement_density_;
 
