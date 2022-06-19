@@ -865,17 +865,19 @@ void Circuit::SetWellRect(
       "Cannot find BlockType with name: " << blk_type_name
   );
   double ly_residual = AbsResidual(ly, GridValueY());
-  DaliWarns(
-      ly_residual > constants_.epsilon,
-      "ly of well rect for " << blk_type_name << " is not an integer multiple of grid value y\n"
-                             << "  ly: " << ly << ", grid value y: " << GridValueY()
-  );
+  if (ly_residual > constants_.epsilon) {
+    BOOST_LOG_TRIVIAL(warning)
+      << "WARNING: ly of well rect for " << blk_type_name
+      << " is not an integer multiple of grid value y\n"
+      << "  ly: " << ly << ", grid value y: " << GridValueY() << "\n";
+  }
   double uy_residual = AbsResidual(uy, GridValueY());
-  DaliWarns(
-      uy_residual > constants_.epsilon,
-      "uy of well rect for " << blk_type_name << " is not an integer multiple of grid value y\n"
-                             << "  uy: " << uy << ", grid value y: " << GridValueY()
-  );
+  if (uy_residual > constants_.epsilon) {
+    BOOST_LOG_TRIVIAL(warning)
+      << "WARNING: uy of well rect for " << blk_type_name
+      << " is not an integer multiple of grid value y\n"
+      << "  uy: " << uy << ", grid value y: " << GridValueY() << "\n";
+  }
   int lx_grid = int(std::round(lx / GridValueX()));
   int ly_grid = int(std::round(ly / GridValueY()));
   int ux_grid = int(std::round(ux / GridValueX()));
