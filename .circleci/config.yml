@@ -120,4 +120,4 @@ workflows:
   build:
     jobs:
       - ubuntu22
-      - centos7
+      #- centos7
