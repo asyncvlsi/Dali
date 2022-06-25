@@ -866,14 +866,14 @@ void Circuit::SetWellRect(
   );
   double ly_residual = AbsResidual(ly, GridValueY());
   if (ly_residual > constants_.epsilon) {
-    BOOST_LOG_TRIVIAL(warning)
+    BOOST_LOG_TRIVIAL(trace)
       << "WARNING: ly of well rect for " << blk_type_name
       << " is not an integer multiple of grid value y\n"
       << "  ly: " << ly << ", grid value y: " << GridValueY() << "\n";
   }
   double uy_residual = AbsResidual(uy, GridValueY());
   if (uy_residual > constants_.epsilon) {
-    BOOST_LOG_TRIVIAL(warning)
+    BOOST_LOG_TRIVIAL(trace)
       << "WARNING: uy of well rect for " << blk_type_name
       << " is not an integer multiple of grid value y\n"
       << "  uy: " << uy << ", grid value y: " << GridValueY() << "\n";
@@ -1054,7 +1054,7 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
                     uy = std::stod(shape_fields[4]);
                     double ly_residual = AbsResidual(ly, GridValueY());
                     if (ly_residual > constants_.epsilon) {
-                      BOOST_LOG_TRIVIAL(warning)
+                      BOOST_LOG_TRIVIAL(trace)
                         << "WARNING: ly of well rect for " << macro_fields[1]
                         << " is not an integer multiple of grid value y\n"
                         << "  ly: " << ly << ", grid value y: " << GridValueY()
@@ -1062,7 +1062,7 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
                     }
                     double uy_residual = AbsResidual(uy, GridValueY());
                     if (uy_residual > constants_.epsilon) {
-                      BOOST_LOG_TRIVIAL(warning)
+                      BOOST_LOG_TRIVIAL(trace)
                         << "WARNING: uy of well rect for " << macro_fields[1]
                         << " is not an integer multiple of grid value y\n"
                         << "  uy: " << uy << ", grid value y: " << GridValueY()
