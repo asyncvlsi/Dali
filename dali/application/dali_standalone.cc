@@ -38,10 +38,7 @@ void PrintSoftwareStatement();
 void ReportUsage();
 
 int main(int argc, char *argv[]) {
-  if (argc < 5) {
-    ReportUsage();
-    return 1;
-  }
+  // parameters that can be configured via the command line
   std::string lef_file_name;
   std::string def_file_name;
   std::string cell_file_name;
@@ -54,12 +51,11 @@ int main(int argc, char *argv[]) {
   std::string str_y_grid;
   std::string log_file_name;
   int well_legalization_mode = static_cast<int>(DefaultPartitionMode::STRICT);
-  bool overwrite_logfile = false;
   bool is_no_global = false;
   bool is_no_legal = false;
   bool is_no_io_place = false;
-  severity verbose_level = logging::trivial::info;
-  bool is_log_no_prefix = false;
+  severity verbose_level = boost::log::trivial::info;
+  bool has_log_prefix = false;
   double x_grid = 0, y_grid = 0;
   double target_density = -1;
   int io_metal_layer = 0;
@@ -71,7 +67,7 @@ int main(int argc, char *argv[]) {
   bool lg_cplex = false;
   int num_threads = 1;
 
-  /**** parsing arguments ****/
+  // parsing arguments
   for (int i = 1; i < argc;) {
     std::string arg(argv[i++]);
     if (arg == "-lef" && i < argc) {
@@ -148,7 +144,7 @@ int main(int argc, char *argv[]) {
         return 1;
       }
     } else if (arg == "-lognoprefix") {
-      is_log_no_prefix = true;
+      has_log_prefix = false;
     } else if (arg == "-wlgmode" && i < argc) {
       std::string str_wlg_mode = std::string(argv[i++]);
       if (str_wlg_mode == "scavenge") {
@@ -161,8 +157,6 @@ int main(int argc, char *argv[]) {
         ReportUsage();
         return 1;
       }
-    } else if (arg == "-overwrite") {
-      overwrite_logfile = true;
     } else if (arg == "-nolegal") {
       is_no_legal = true;
     } else if (arg == "-noglobal") {
@@ -224,35 +218,36 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  /**** initialize logger and print software statement ****/
+  // initialize logger
   InitLogging(
       log_file_name,
-      overwrite_logfile,
       verbose_level,
-      is_log_no_prefix
+      has_log_prefix
   );
+
+  // print the software statement
   PrintSoftwareStatement();
+
+  // print the current time
   using std::chrono::system_clock;
   system_clock::time_point today = system_clock::now();
   std::time_t tt = system_clock::to_time_t(today);
-  BOOST_LOG_TRIVIAL(info) << "today is: " << ctime(&tt) << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "today is: " << ctime(&tt) << "\n";
 
-  /**** checking input files ****/
+  // save command line arguments for future reference
+  SaveArgs(argc, argv);
+
+  // start the timer to record the runtime
+  double wall_time = get_wall_time();
+  double cpu_time = get_cpu_time();
+
+  // load LEF/DEF/CELL files
+  // (1). initialize PhyDB
   if ((lef_file_name.empty()) || (def_file_name.empty())) {
     BOOST_LOG_TRIVIAL(info) << "Invalid input files!\n";
     ReportUsage();
     return 1;
   }
-
-  /**** save command line arguments for future reference ****/
-  SaveArgs(argc, argv);
-
-  /**** time ****/
-  double wall_time = get_wall_time();
-  double cpu_time = get_cpu_time();
-
-  /**** read LEF/DEF/CELL ****/
-  // (1). initialize PhyDB
   phydb::PhyDB phy_db;
   if (x_grid > 0 && y_grid > 0) {
     phy_db.SetPlacementGrids(x_grid, y_grid);
@@ -269,16 +264,9 @@ int main(int argc, char *argv[]) {
   if (!m_cell_file_name.empty()) {
     circuit.ReadMultiWellCell(m_cell_file_name);
   }
-  double file_wall_time = get_wall_time() - wall_time;
-  double file_cpu_time = get_cpu_time() - cpu_time;
-  BOOST_LOG_TRIVIAL(info)
-    << "File loading complete " << "(wall time: "
-    << file_wall_time << "s, cpu time: " << file_cpu_time << "s)\n";
-  BOOST_LOG_TRIVIAL(info) << "---------------------------------------\n";
   circuit.ReportBriefSummary();
-  circuit.ReportHPWL();
 
-  /**** set placement density ****/
+  // set the placement density
   if (target_density == -1) {
     double default_density = 0.7;
     target_density = std::max(circuit.WhiteSpaceUsage(), default_density);
@@ -287,7 +275,7 @@ int main(int argc, char *argv[]) {
       << target_density << "\n";
   }
 
-  /**** placement ****/
+  // start placement
   // (1). global placement
   auto gb_placer = std::make_unique<GlobalPlacer>();
   gb_placer->SetInputCircuit(&circuit);
@@ -359,13 +347,11 @@ int main(int argc, char *argv[]) {
     io_placer->AutoPlaceIoPin();
   }
 
-  /**** save results ****/
+  // save placement result
   circuit.SaveDefFile(output_name, "", def_file_name, 1, 1, 2, 1);
   circuit.SaveDefFile(output_name, "_io", def_file_name, 1, 1, 1, 1);
   circuit.SaveDefFile(output_name, "_filling", def_file_name, 1, 4, 2, 0);
   circuit.SaveDefFileComponent(output_name + "_comp.def", def_file_name);
-
-  phy_db.WriteDef("phydb.def");
 
   circuit.InitNetFanoutHistogram();
   circuit.ReportNetFanoutHistogram();

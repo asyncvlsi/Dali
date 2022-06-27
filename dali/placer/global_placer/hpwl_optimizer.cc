@@ -20,6 +20,8 @@
  ******************************************************************************/
 #include "hpwl_optimizer.h"
 
+#include <cfloat>
+
 #include "dali/common/logging.h"
 #include "dali/common/timing.h"
 
@@ -653,7 +655,7 @@ double B2BHpwlOptimizer::QuadraticPlacement(double net_model_update_stop_criteri
 
   PullBlockBackToRegion();
 
-  BOOST_LOG_TRIVIAL(info) << "Initial Placement Complete\n";
+  BOOST_LOG_TRIVIAL(info) << "  Initial Placement Complete\n";
 
   wall_time = get_wall_time() - wall_time;
   tot_cg_time += wall_time;
@@ -927,22 +929,22 @@ double B2BHpwlOptimizer::GetTime() {
 }
 
 void B2BHpwlOptimizer::Close() {
-  BOOST_LOG_TRIVIAL(info)
+  BOOST_LOG_TRIVIAL(debug)
     << "total triplets time: "
     << tot_triplets_time_x << "s, "
     << tot_triplets_time_y << "s, "
     << tot_triplets_time_x + tot_triplets_time_y << "s\n";
-  BOOST_LOG_TRIVIAL(info)
+  BOOST_LOG_TRIVIAL(debug)
     << "total matrix from triplets time: "
     << tot_matrix_from_triplets_x << "s, "
     << tot_matrix_from_triplets_y << "s, "
     << tot_matrix_from_triplets_x + tot_matrix_from_triplets_y << "s\n";
-  BOOST_LOG_TRIVIAL(info)
+  BOOST_LOG_TRIVIAL(debug)
     << "total cg solver time: "
     << tot_cg_solver_time_x << "s, "
     << tot_cg_solver_time_y << "s, "
     << tot_cg_solver_time_x + tot_cg_solver_time_y << "s\n";
-  BOOST_LOG_TRIVIAL(info)
+  BOOST_LOG_TRIVIAL(debug)
     << "total loc update time: "
     << tot_loc_update_time_x << "s, "
     << tot_loc_update_time_y << "s, "
@@ -951,7 +953,7 @@ void B2BHpwlOptimizer::Close() {
       + tot_cg_solver_time_x + tot_loc_update_time_x;
   double tot_time_y = tot_triplets_time_y + tot_matrix_from_triplets_y
       + tot_cg_solver_time_y + tot_loc_update_time_y;
-  BOOST_LOG_TRIVIAL(info)
+  BOOST_LOG_TRIVIAL(debug)
     << "total x/y time: "
     << tot_time_x << "s, "
     << tot_time_y << "s, "

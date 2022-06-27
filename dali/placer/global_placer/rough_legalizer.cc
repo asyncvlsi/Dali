@@ -49,7 +49,7 @@ void LookAheadLegalizer::InitializeGridBinSize() {
   grid_cnt_x = std::ceil(double(ckt_ptr_->RegionWidth()) / grid_bin_width);
   grid_cnt_y = std::ceil(double(ckt_ptr_->RegionHeight()) / grid_bin_height);
   BOOST_LOG_TRIVIAL(info)
-    << "Global placement bin width, height: "
+    << "  Global placement bin width, height: "
     << grid_bin_width << "  " << grid_bin_height << "\n";
 
   std::vector<GridBin> temp_grid_bin_column(grid_cnt_y);

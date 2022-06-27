@@ -21,6 +21,8 @@
 #ifndef DALI_PLACER_WELL_LEGALIZER_LGBLKAUX_H_
 #define DALI_PLACER_WELL_LEGALIZER_LGBLKAUX_H_
 
+#include <cfloat>
+
 #include "dali/circuit/block.h"
 #include "dali/common/misc.h"
 

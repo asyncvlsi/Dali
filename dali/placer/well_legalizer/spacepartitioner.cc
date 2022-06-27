@@ -328,14 +328,14 @@ bool DefaultSpacePartitioner::StartPartitioning() {
     stripe_width_ = region_width;
   }
   tot_col_num_ = std::ceil(region_width / (double) stripe_width_);
-  BOOST_LOG_TRIVIAL(info) << "Total number of columns: "
-                          << tot_col_num_ << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "  Total number of columns: " << tot_col_num_ << "\n";
   int max_clusters_per_col = region_height / p_ckt_->MinBlkHeight();
   col_list.resize(tot_col_num_);
   stripe_width_ = region_width / tot_col_num_;
-  BOOST_LOG_TRIVIAL(info) << "Gridded row width: "
-                          << stripe_width_ * p_ckt_->GridValueX() << " um, "
-                          << stripe_width_ << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "  Gridded row width: " << stripe_width_ * p_ckt_->GridValueX() << "um, "
+    << stripe_width_ << "\n";
   DaliWarns(stripe_width_ < max_cell_width_,
             "Maximum cell width is longer than gridded row width?");
   for (int i = 0; i < tot_col_num_; ++i) {

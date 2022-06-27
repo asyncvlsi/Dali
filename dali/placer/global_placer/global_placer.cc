@@ -27,6 +27,7 @@
 
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
+#include "dali/common/timing.h"
 
 namespace dali {
 
@@ -125,22 +126,22 @@ bool GlobalPlacer::StartPlacement() {
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
 
+  BOOST_LOG_TRIVIAL(info)
+    << "---------------------------------------\n"
+    << "Start global placement\n";
+
   if (ckt_ptr_->Blocks().empty()) {
     BOOST_LOG_TRIVIAL(info)
-      << "Block list empty? Skip global placement!\n"
+      << "Block list empty? Skip!\n"
       << "\033[0;36m Global Placement complete\033[0m\n";
     return true;
   }
   if (ckt_ptr_->Nets().empty()) {
     BOOST_LOG_TRIVIAL(info)
-      << "Net list empty? Skip global placement!\n"
+      << "Net list empty? Skip!\n"
       << "\033[0;36m Global Placement complete\033[0m\n";
     return true;
   }
-
-  BOOST_LOG_TRIVIAL(info)
-    << "---------------------------------------\n"
-    << "Start global placement\n";
 
   SanityCheck();
   CheckOptimizerAndLegalizer();
@@ -154,7 +155,7 @@ bool GlobalPlacer::StartPlacement() {
   optimizer_->QuadraticPlacement(net_model_update_stop_criterion_);
   legalizer_->LookAheadLegalization();
   BOOST_LOG_TRIVIAL(info)
-    << "It " << cur_iter_ << ": \t"
+    << "  It " << cur_iter_ << ": \t"
     << std::scientific << std::setprecision(4)
     << optimizer_->GetHpwls().back() << " "
     << legalizer_->GetHpwls().back() << "\n";
@@ -168,29 +169,30 @@ bool GlobalPlacer::StartPlacement() {
     legalizer_->LookAheadLegalization();
 
     BOOST_LOG_TRIVIAL(info)
-      << "It " << cur_iter_ << ": \t"
+      << "  It " << cur_iter_ << ": \t"
       << std::scientific << std::setprecision(4)
       << optimizer_->GetHpwls().back() << " "
       << legalizer_->GetHpwls().back() << "\n";
 
     if (IsPlacementConverge()) { // if HPWL converges
       BOOST_LOG_TRIVIAL(info)
-        << "Iterative look-ahead legalization complete\n";
+        << "  Iterative look-ahead legalization complete\n";
       BOOST_LOG_TRIVIAL(info)
-        << "Total number of iteration: "
+        << "  Total number of iteration: "
         << cur_iter_ + 1 << "\n";
       break;
     }
   }
   BOOST_LOG_TRIVIAL(info)
-    << "Lower bound: " << optimizer_->GetHpwls() << "\n";
+    << "  Lower bound: " << optimizer_->GetHpwls() << "\n";
   BOOST_LOG_TRIVIAL(info)
-    << "Upper bound: " << legalizer_->GetHpwls() << "\n";
+    << "  Upper bound: " << legalizer_->GetHpwls() << "\n";
 
   BOOST_LOG_TRIVIAL(info)
-    << "\033[0;36m Global Placement complete\033[0m\n";
+    << "\033[0;36m" << "Global Placement complete" << "\033[0m\n";
   BOOST_LOG_TRIVIAL(info)
-    << "(cg time: " << optimizer_->GetTime() << "s, lal time: " << legalizer_->GetTime() << "s)\n";
+    << "(cg time: " << optimizer_->GetTime() << "s, lal time: "
+    << legalizer_->GetTime() << "s)\n";
   optimizer_->Close();
   legalizer_->Close();
   UpdateMovableBlkPlacementStatus();
@@ -284,7 +286,7 @@ bool GlobalPlacer::IsSeriesOscillate(std::vector<double> &data, int length) {
  */
 void GlobalPlacer::BlockLocationInitialization_(int mode, double std_dev) {
   BOOST_LOG_TRIVIAL(info)
-    << "HPWL before random initialization: " << ckt_ptr_->WeightedHPWL()
+    << "  HPWL before random initialization: " << ckt_ptr_->WeightedHPWL()
     << "\n";
 
   if (mode == 0) {
@@ -294,7 +296,8 @@ void GlobalPlacer::BlockLocationInitialization_(int mode, double std_dev) {
   }
 
   BOOST_LOG_TRIVIAL(info)
-    << "HPWL after random initialization: " << ckt_ptr_->WeightedHPWL() << "\n";
+    << "  HPWL after random initialization: " << ckt_ptr_->WeightedHPWL()
+    << "\n";
 
   if (is_dump_) DumpResult("rand_init.txt");
 }
@@ -318,7 +321,7 @@ void GlobalPlacer::BlockLocationUniformInitialization_() {
     blk.SetCenterY(init_y);
   }
   BOOST_LOG_TRIVIAL(info)
-    << "Block location uniform initialization complete\n";
+    << "  Block location uniform initialization complete\n";
 }
 
 /****
@@ -348,7 +351,7 @@ void GlobalPlacer::BlockLocationNormalInitialization_(double std_dev) {
     block.SetCenterY(y);
   }
   BOOST_LOG_TRIVIAL(info)
-    << "Block location gaussian initialization complete\n";
+    << "  Block location gaussian initialization complete\n";
 }
 
 }

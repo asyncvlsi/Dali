@@ -21,6 +21,8 @@
 #ifndef DALI_PLACER_WELL_LEGALIZER_OPTIMIZATIONHELPER_H_
 #define DALI_PLACER_WELL_LEGALIZER_OPTIMIZATIONHELPER_H_
 
+#include <cfloat>
+
 #include <vector>
 
 #include "dali/placer/well_legalizer/blockhelper.h"

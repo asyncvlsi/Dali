@@ -18,8 +18,9 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-
 #include "optregdist.h"
+
+#include <cfloat>
 
 namespace dali {
 

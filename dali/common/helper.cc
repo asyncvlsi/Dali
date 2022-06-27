@@ -36,7 +36,7 @@ void SaveArgs(int argc, char *argv[]) {
     cmd_line_arguments += argv[i];
     cmd_line_arguments.push_back(' ');
   }
-  BOOST_LOG_TRIVIAL(info) << cmd_line_arguments << "\n";
+  BOOST_LOG_TRIVIAL(info) << cmd_line_arguments << std::endl;
 }
 
 std::vector<std::vector<std::string>> ParseArguments(
@@ -260,8 +260,8 @@ void ReportMemory() {
   auto peak_mem = getPeakRSS();
   auto curr_mem = getCurrentRSS();
   BOOST_LOG_TRIVIAL(info)
-    << "(peak memory: " << (peak_mem >> 20u) << " MB, "
-    << " current memory: " << (curr_mem >> 20u) << " MB)\n";
+    << "(peak memory: " << (peak_mem >> 20u) << "MB, "
+    << " current memory: " << (curr_mem >> 20u) << "MB)\n";
 }
 
 /****

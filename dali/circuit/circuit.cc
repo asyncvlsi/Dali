@@ -20,6 +20,7 @@
  ******************************************************************************/
 #include "circuit.h"
 
+#include <cfloat>
 #include <chrono>
 #include <climits>
 #include <cmath>
@@ -31,6 +32,7 @@
 
 #include "dali/common/helper.h"
 #include "dali/common/optregdist.h"
+#include "dali/common/timing.h"
 #include "dali/circuit/enums.h"
 
 namespace dali {
@@ -40,14 +42,25 @@ Circuit::Circuit() {
 }
 
 void Circuit::InitializeFromPhyDB(phydb::PhyDB *phy_db_ptr) {
+  double wall_time = get_wall_time();
+  double cpu_time = get_cpu_time();
+
   DaliExpects(phy_db_ptr != nullptr,
               "Dali cannot initialize from a PhyDB which is a nullptr!");
   phy_db_ptr_ = phy_db_ptr;
 
-  LoadTech(phy_db_ptr);
-  LoadDesign(phy_db_ptr);
-  LoadCell(phy_db_ptr);
+  BOOST_LOG_TRIVIAL(info)
+    << "---------------------------------------\n"
+    << "Load information from PhyDB\n";
+  LoadTech(phy_db_ptr_);
+  LoadDesign(phy_db_ptr_);
+  LoadCell(phy_db_ptr_);
   UpdateTotalBlkArea();
+
+  wall_time = get_wall_time() - wall_time;
+  cpu_time = get_cpu_time() - cpu_time;
+  BOOST_LOG_TRIVIAL(info)
+    << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
 }
 
 int Circuit::Micron2DatabaseUnit(double x) const {
@@ -764,15 +777,16 @@ void Circuit::ReportNetFanoutHistogram() {
   design_.ReportNetFanOutHistogram();
 }
 
-void Circuit::ReportBriefSummary() const {
+void Circuit::ReportBriefSummary() {
   BOOST_LOG_TRIVIAL(info)
+    << "---------------------------------------\n"
     << "Circuit brief summary:\n"
     << "  movable blocks: " << TotMovBlkCnt() << "\n"
     << "  fixed blocks:   " << design_.tot_fixed_blk_num_ << "\n"
     << "  blocks:         " << TotBlkCnt() << "\n"
     << "  iopins:         " << design_.iopins_.size() << "\n"
     << "  nets:           " << design_.nets_.size() << "\n"
-    << "  grid size x/y:  " << GridValueX() << ", " << GridValueY() << " um\n"
+    << "  grid size x/y:  " << GridValueX() << "/" << GridValueY() << "um\n"
     << "  total movable blk area: " << design_.tot_mov_blk_area_ << "\n"
     << "  total white space     : " << design_.tot_white_space_ << "\n"
     << "  total block area      : " << design_.tot_blk_area_ << "\n"
@@ -782,9 +796,10 @@ void Circuit::ReportBriefSummary() const {
     << "    right:  " << RegionURX() << "\n"
     << "    bottom: " << RegionLLY() << "\n"
     << "    top:    " << RegionURY() << "\n"
-    << "  average movable width, height: "
-    << AveMovBlkWidth() << ", " << AveMovBlkHeight() << "\n"
+    << "  average movable width/height: "
+    << AveMovBlkWidth() << "/" << AveMovBlkHeight() << "um\n"
     << "  white space utility: " << WhiteSpaceUsage() << "\n";
+  ReportHPWL();
 }
 
 void Circuit::SetNwellParams(
@@ -844,7 +859,8 @@ void Circuit::SetWellRect(
     max_plug_distance = tech_.nwell_layer_.MaxPlugDist();
     DaliWarns(
         width > max_plug_distance,
-        "BlockType has a Nwell wider than max_plug_distance, this may make well legalization fail: " << blk_type_name
+        "BlockType has a Nwell wider than max_plug_distance, this may make well legalization fail: "
+            << blk_type_name
     );
   } else {
     DaliExpects(
@@ -854,7 +870,8 @@ void Circuit::SetWellRect(
     max_plug_distance = tech_.pwell_layer_.MaxPlugDist();
     DaliWarns(
         width > max_plug_distance,
-        "BlockType has a Pwell wider than max_plug_distance, this may make well legalization fail: " << blk_type_name
+        "BlockType has a Pwell wider than max_plug_distance, this may make well legalization fail: "
+            << blk_type_name
     );
   }
 
@@ -866,15 +883,15 @@ void Circuit::SetWellRect(
   );
   double ly_residual = AbsResidual(ly, GridValueY());
   if (ly_residual > constants_.epsilon) {
-    BOOST_LOG_TRIVIAL(trace)
-      << "WARNING: ly of well rect for " << blk_type_name
+    BOOST_LOG_TRIVIAL(debug)
+      << "NOTE: ly of well rect for " << blk_type_name
       << " is not an integer multiple of grid value y\n"
       << "  ly: " << ly << ", grid value y: " << GridValueY() << "\n";
   }
   double uy_residual = AbsResidual(uy, GridValueY());
   if (uy_residual > constants_.epsilon) {
-    BOOST_LOG_TRIVIAL(trace)
-      << "WARNING: uy of well rect for " << blk_type_name
+    BOOST_LOG_TRIVIAL(debug)
+      << "NOTE: uy of well rect for " << blk_type_name
       << " is not an integer multiple of grid value y\n"
       << "  uy: " << uy << ", grid value y: " << GridValueY() << "\n";
   }
@@ -1189,7 +1206,7 @@ double Circuit::WeightedHPWL() {
 
 void Circuit::ReportHPWL() {
   BOOST_LOG_TRIVIAL(info)
-    << "  Current weighted HPWL: " << WeightedHPWL() << " um\n";
+    << "  Current weighted HPWL: " << WeightedHPWL() << "um\n";
 }
 
 double Circuit::WeightedBoundingBoxX() {
@@ -2265,15 +2282,15 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
   DaliExpects(phy_db_tech.GetDatabaseMicron() > 0,
               "Bad DATABASE MICRONS from PhyDB");
   SetDatabaseMicrons(phy_db_tech.GetDatabaseMicron());
-  BOOST_LOG_TRIVIAL(info)
-    << "DATABASE MICRONS " << tech_.database_microns_ << "\n";
+  BOOST_LOG_TRIVIAL(trace) << "  DATABASE MICRONS " << tech_.database_microns_
+                           << "\n";
   if (phy_db_tech.GetManufacturingGrid() > constants_.epsilon) {
     SetManufacturingGrid(phy_db_tech.GetManufacturingGrid());
   } else {
     SetManufacturingGrid(1.0 / tech_.database_microns_);
   }
-  BOOST_LOG_TRIVIAL(info)
-    << "MANUFACTURINGGRID " << tech_.manufacturing_grid_ << "\n";
+  BOOST_LOG_TRIVIAL(trace) << "  MANUFACTURINGGRID "
+                           << tech_.manufacturing_grid_ << "\n";
 
   // 2. placement grid and metal layers
   double grid_value_x = 0;
@@ -2285,18 +2302,18 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
   if (is_placement_grid_set) {
     SetGridValue(grid_value_x, grid_value_y);
   } else {
-    BOOST_LOG_TRIVIAL(info) << "Placement grid not set in PhyDB\n";
-    BOOST_LOG_TRIVIAL(info) << "Checking Sites\n";
+    BOOST_LOG_TRIVIAL(info) << "  Placement grid not set in PhyDB\n";
+    BOOST_LOG_TRIVIAL(info) << "  Checking Sites\n";
     auto &sites = phy_db_tech.GetSitesRef();
     if (!sites.empty()) {
       grid_value_x = sites[0].GetWidth();
       grid_value_y = sites[0].GetHeight();
-      BOOST_LOG_TRIVIAL(info) << " Width : " << grid_value_x << "\n";
-      BOOST_LOG_TRIVIAL(info) << " Height: " << grid_value_y << "\n";
+      BOOST_LOG_TRIVIAL(info) << "    Width : " << grid_value_x << "um\n";
+      BOOST_LOG_TRIVIAL(info) << "    Height: " << grid_value_y << "um\n";
       SetGridValue(grid_value_x, grid_value_y);
       SetRowHeight(grid_value_y);
     } else {
-      BOOST_LOG_TRIVIAL(info) << "No Sites found\n";
+      BOOST_LOG_TRIVIAL(info) << "  No Sites found\n";
     }
   }
 
@@ -2403,11 +2420,6 @@ void Circuit::LoadDesign(phydb::PhyDB *phy_db_ptr) {
   auto &nets = phy_db_design.GetNetsRef();
   int nets_count = (int) nets.size();
   SetListCapacity(components_count, pins_count, nets_count);
-
-  BOOST_LOG_TRIVIAL(info) << "components count: " << components_count << "\n";
-  BOOST_LOG_TRIVIAL(info) << "pins count:       " << pins_count << "\n";
-  BOOST_LOG_TRIVIAL(info) << "nets count:       " << nets_count << "\n";
-
 
   // 2. load UNITS DISTANCE MICRONS and DIEAREA
   SetUnitsDistanceMicrons(phy_db_design.GetUnitsDistanceMicrons());

@@ -31,14 +31,13 @@ Dali::Dali(
     phydb::PhyDB *phy_db_ptr,
     const std::string &severity_level,
     const std::string &log_file_name,
-    bool is_log_no_prefix
+    bool has_log_prefix
 ) {
   auto boost_severity_level = StrToLoggingLevel(severity_level);
   InitLogging(
       log_file_name,
-      false,
       boost_severity_level,
-      is_log_no_prefix
+      has_log_prefix
   );
   phy_db_ptr_ = phy_db_ptr;
   circuit_.InitializeFromPhyDB(phy_db_ptr);
@@ -48,13 +47,12 @@ Dali::Dali(
     phydb::PhyDB *phy_db_ptr,
     severity severity_level,
     const std::string &log_file_name,
-    bool is_log_no_prefix
+    bool has_log_prefix
 ) {
   InitLogging(
       log_file_name,
-      false,
       severity_level,
-      is_log_no_prefix
+      has_log_prefix
   );
   phy_db_ptr_ = phy_db_ptr;
   circuit_.InitializeFromPhyDB(phy_db_ptr);

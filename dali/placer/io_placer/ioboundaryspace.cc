@@ -20,6 +20,8 @@
  ******************************************************************************/
 #include "ioboundaryspace.h"
 
+#include <cfloat>
+
 #include "dali/common/helper.h"
 
 namespace dali {

@@ -273,7 +273,7 @@ void Placer::EmitDEFWellFile(
 
 void Placer::SanityCheck() {
   double epsilon = 1e-3;
-  BOOST_LOG_TRIVIAL(info) << "Target density: " << placement_density_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "  Target density: " << placement_density_ << "\n";
   DaliExpects(
       placement_density_ > epsilon,
       "Filling rate should be in a proper range, for example [0.1, 1], current value: "

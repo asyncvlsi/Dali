@@ -67,15 +67,15 @@ void StdClusterWellLegalizer::FetchNpWellParams() {
   well_tap_cell_ = tech.WellTapCellPtrs()[0];
   well_tap_cell_width_ = well_tap_cell_->Width();
 
-  BOOST_LOG_TRIVIAL(info) << "Well max plug distance: "
-                          << n_well_layer.MaxPlugDist() << " um, "
+  BOOST_LOG_TRIVIAL(info) << "  Well max plug distance: "
+                          << n_well_layer.MaxPlugDist() << "um, "
                           << max_unplug_length_ << " \n";
-  BOOST_LOG_TRIVIAL(info) << "GridValueX: " << ckt_ptr_->GridValueX()
+  BOOST_LOG_TRIVIAL(info) << "  GridValueX: " << ckt_ptr_->GridValueX()
                           << " um\n";
-  BOOST_LOG_TRIVIAL(info) << "Well spacing: "
-                          << n_well_layer.Spacing() << " um, "
+  BOOST_LOG_TRIVIAL(info) << "  Well spacing: "
+                          << n_well_layer.Spacing() << "um, "
                           << well_spacing_ << "\n";
-  BOOST_LOG_TRIVIAL(info) << "Well tap cell width: " << well_tap_cell_width_
+  BOOST_LOG_TRIVIAL(info) << "  Well tap cell width: " << well_tap_cell_width_
                           << "\n";
 
   well_tap_cell_ = (ckt_ptr_->tech().WellTapCellPtrs()[0]);

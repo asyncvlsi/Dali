@@ -374,7 +374,7 @@ class Circuit {
   void ReportNetFanoutHistogram();
 
   // report brief summary of this circuit
-  void ReportBriefSummary() const;
+  void ReportBriefSummary();
 
   /************************************************
    * The following APIs are for in CELL

@@ -27,14 +27,8 @@
 #include <string>
 #include <vector>
 
-#include <boost/filesystem.hpp>
-#include <boost/log/core.hpp>
-#include <boost/log/expressions.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/log/utility/formatting_ostream.hpp>
-#include <boost/log/utility/setup/console.hpp>
-#include <boost/log/utility/setup/file.hpp>
-#include <boost/log/utility/setup/common_attributes.hpp>
 
 inline boost::log::record_ostream &operator<<(
     boost::log::record_ostream &p, std::vector<double> &v
@@ -51,16 +45,14 @@ inline boost::log::record_ostream &operator<<(
 
 namespace dali {
 
-namespace logging = boost::log;
 typedef boost::log::trivial::severity_level severity;
 
-severity StrToLoggingLevel(const std::string &sl_str);
+severity StrToLoggingLevel(const std::string &severity_level_str);
 
 void InitLogging(
     const std::string &log_file_name = "",
-    bool overwrite_log_file = false,
-    severity severity_level = logging::trivial::info,
-    bool no_prefix = false
+    severity severity_level = boost::log::trivial::info,
+    bool has_log_prefix = true
 );
 
 void CloseLogging();
