@@ -1028,7 +1028,7 @@ double LookAheadLegalizer::LookAheadLegalization() {
   elapsed_time.RecordEndTime();
   tot_lal_time += elapsed_time.GetWallTime();
 
-  //if (is_dump_) {
+  //if (should_save_intermediate_result_) {
   //DumpResult("lal_result_" + std::to_string(cur_iter_) + ".txt");
   //DumpLookAheadDisplacement("displace_" + std::to_string(cur_iter_), 1);
   //}

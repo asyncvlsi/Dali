@@ -42,7 +42,7 @@ bool WellPlaceFlow::StartPlacement() { // TODO: do not use this
   InitializeOptimizerAndLegalizer();
   optimizer_->Initialize();
   legalizer_->Initialize(PlacementDensity());
-  InitializeBlockLocationAtRandom(0, -1);
+  InitializeBlockLocationAtRandom();
 
   optimizer_->OptimizeHpwl(net_model_update_stop_criterion_);
   //BOOST_LOG_TRIVIAL(info)   << cg_total_hpwl_ << "  " << circuit_ptr_->HPWL() << "\n";

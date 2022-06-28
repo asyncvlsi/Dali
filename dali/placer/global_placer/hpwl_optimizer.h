@@ -102,7 +102,7 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   double GetTime() override;
   void Close() override;
 
-  virtual void DumpResult(std::string const &name_of_file);
+  void DumpResult(std::string const &name_of_file);
  protected:
   /**** parameters for CG solver optimization configuration ****/
   // this is to make sure cg_tolerance is the same for different machines

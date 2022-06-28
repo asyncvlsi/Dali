@@ -45,41 +45,21 @@
 
 namespace dali {
 
-typedef Eigen::Index EgId;
-typedef std::pair<EgId, EgId> PairEgId;
-// declares a row-major sparse matrix type of double
-typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat;
-// A triplet is a simple object representing a non-zero entry as the triplet: row index, column index, value.
-typedef Eigen::Triplet<double> T;
-// A "doublet" is a simple object representing a non-zero entry as: column index, value, for a given row index.
-typedef IndexVal D;
-
 class GlobalPlacer : public Placer {
  public:
   GlobalPlacer() = default;
 
   void SetMaxIteration(int max_iter);
+  void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
   void LoadConf(std::string const &config_file) override;
+
   void InitializeOptimizerAndLegalizer();
   void CloseOptimizerAndLegalizer();
-  void InitializeBlockLocationAtRandom(int mode, double std_dev);
-  bool IsPlacementConverge();
 
-  bool IsBlockListOrNetListEmpty() const;
-  void PrintHpwl(int iter, double lo, double hi) const;
-  void PrintPlacementSummary() const;
+  void SetBlockLocationInitialization(int mode, double std_dev);
+  void InitializeBlockLocationAtRandom();
 
   bool StartPlacement() override;
-
-  void SetDump(bool s_dump);
-  void DumpResult(std::string const &name_of_file);
-
-  static bool IsSeriesConverge(
-      std::vector<double> &data,
-      int window_size,
-      double tolerance
-  );
-  static bool IsSeriesOscillate(std::vector<double> &data, int window_size);
  protected:
   // stop update net model if the cost change is less than this value for 3 iterations
   double net_model_update_stop_criterion_ = 0.01;
@@ -91,10 +71,26 @@ class GlobalPlacer : public Placer {
   double polar_converge_criterion_ = 0.08;
   int convergence_criteria_ = 1;
 
-  bool is_dump_ = false;
+  // save intermediate result for debugging and/or visualization
+  bool should_save_intermediate_result_ = false;
 
+  // block location initialization
+  int mode_ = 0;
+  double std_dev_ = -1;
   void BlockLocationUniformInitialization();
   void BlockLocationNormalInitialization(double std_dev);
+
+  bool IsBlockListOrNetListEmpty() const;
+  static bool IsSeriesConverge(
+      std::vector<double> &data,
+      int window_size,
+      double tolerance
+  );
+  bool IsPlacementConverge();
+  void PrintHpwl(int iter, double lo, double hi) const;
+  void PrintPlacementSummary() const;
+
+  void DumpResult(std::string const &name_of_file);
 
   HpwlOptimizer *optimizer_ = nullptr;
   RoughLegalizer *legalizer_ = nullptr;
