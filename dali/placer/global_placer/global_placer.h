@@ -64,6 +64,8 @@ class GlobalPlacer : public Placer {
   void CloseOptimizerAndLegalizer();
   void InitializeBlockLocationAtRandom(int mode, double std_dev);
   bool IsPlacementConverge();
+
+  bool IsBlockListOrNetListEmpty() const;
   void PrintHpwl(int iter, double lo, double hi) const;
   void PrintPlacementSummary() const;
 

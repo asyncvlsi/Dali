@@ -21,20 +21,18 @@
 
 #include "global_placer.h"
 
-#include <cmath>
 #include <omp.h>
 
 #include <algorithm>
 
-#include "dali/common/helper.h"
 #include "dali/common/logging.h"
 
 namespace dali {
 
 /****
- * @brief Set the maximum number of iterations
+ * @brief Set the maximum number of iterations.
  *
- * @param max_iter: maximum number of iterations
+ * @param max_iter: maximum number of iterations.
  */
 void GlobalPlacer::SetMaxIteration(int max_iter) {
   DaliExpects(max_iter >= 0, "negative number of iterations?");
@@ -42,43 +40,56 @@ void GlobalPlacer::SetMaxIteration(int max_iter) {
 }
 
 /****
- * @brief Load a configuration file for this placer
+ * @brief Load a configuration file for this placer.
  *
- * @param config_file: name of the configuration file
+ * @param config_file: name of the configuration file.
  */
 void GlobalPlacer::LoadConf(std::string const &config_file) {
   config_read(config_file.c_str());
+  DaliFatal("This function is not fully implemented");
 }
 
 /****
- * @brief Initialize HPWL optimizer and rough legalizer
+ * @brief Initialize HPWL optimizer and rough legalizer. If optimizer/legalizer
+ * has been initialized, delete them and create a new instance.
  */
 void GlobalPlacer::InitializeOptimizerAndLegalizer() {
-  if (optimizer_ == nullptr) {
-    optimizer_ = new B2BHpwlOptimizer(ckt_ptr_, num_threads_);
-  }
-  if (legalizer_ == nullptr) {
-    legalizer_ = new LookAheadLegalizer(ckt_ptr_);
-  }
+  delete optimizer_;
+  optimizer_ = new B2BHpwlOptimizer(ckt_ptr_, num_threads_);
   optimizer_->Initialize();
+
+  delete legalizer_;
+  legalizer_ = new LookAheadLegalizer(ckt_ptr_);
   legalizer_->Initialize(PlacementDensity());
 }
 
+/****
+ * @brief Close and delete both optimizer and legalizer.
+ */
 void GlobalPlacer::CloseOptimizerAndLegalizer() {
-  optimizer_->Close();
-  legalizer_->Close();
+  if (optimizer_ != nullptr) {
+    optimizer_->Close();
+    delete optimizer_;
+  }
+  if (legalizer_ != nullptr) {
+    legalizer_->Close();
+    delete legalizer_;
+  }
 }
 
 /****
-* Returns true of false indicating the convergence of the global placement.
-* Stopping criteria (SimPL, option 1):
-*    (a). the gap is reduced to 25% of the gap in the tenth iteration and upper-bound solution stops improving
-*    (b). the gap is smaller than 10% of the gap in the tenth iteration
-* Stopping criteria (POLAR, option 2):
-*    the gap between lower bound wirelength and upper bound wirelength is less than 8%
-* ****/
+ * @brief Returns true or false indicating the convergence of the global placement.
+ *
+ * Stopping criteria (SimPL, option 1):
+ *    (a). the gap is reduced to 25% of the gap in the tenth iteration and
+ *    upper-bound solution stops improving
+ *    (b). the gap is smaller than 10% of the gap in the tenth iteration
+ * Stopping criteria (POLAR, option 2):
+ *    the gap between lower bound wire-length and upper bound wire-length is
+ *    less than 8%
+ * ****/
 bool GlobalPlacer::IsPlacementConverge() {
-  bool res = false;
+  bool res;
   auto &lower_bound_hpwl = optimizer_->GetHpwls();
   auto &upper_bound_hpwl = legalizer_->GetHpwls();
   if (convergence_criteria_ == 1) {
@@ -117,6 +128,32 @@ bool GlobalPlacer::IsPlacementConverge() {
   return res;
 }
 
+/****
+ * @brief Check if block_list is empty or net_list is empty. If either of them
+ * is empty, return true, so that the global placement can be skipped.
+ * @return a boolean value indicate whether block_list or net_list is empty or not.
+ */
+bool GlobalPlacer::IsBlockListOrNetListEmpty() const {
+  if (ckt_ptr_->Blocks().empty()) {
+    BOOST_LOG_TRIVIAL(info)
+      << "Empty block list, nothing to place! Skip global placement!\n";
+    return true;
+  }
+  if (ckt_ptr_->Nets().empty()) {
+    BOOST_LOG_TRIVIAL(info)
+      << "Empty net list, nothing to optimize! Skip global placement!\n";
+    return true;
+  }
+  return false;
+}
+
+/****
+ * @brief A helper function to format and print HPWL in each iteration.
+ *
+ * @param iter: the current iteration of global placement.
+ * @param lo: the lower bound of HPWL.
+ * @param hi: the upper bound of HPWL.
+ */
 void GlobalPlacer::PrintHpwl(int iter, double lo, double hi) const {
   std::string buffer(1024, '\0');
   int written_length = sprintf(
@@ -128,6 +165,9 @@ void GlobalPlacer::PrintHpwl(int iter, double lo, double hi) const {
   BOOST_LOG_TRIVIAL(debug) << cur_iter_ << "-th iteration completed\n";
 }
 
+/****
+ * @brief Printf the summary of global placement.
+ */
 void GlobalPlacer::PrintPlacementSummary() const {
   BOOST_LOG_TRIVIAL(debug)
     << "  Iterative look-ahead legalization complete\n";
@@ -142,18 +182,13 @@ void GlobalPlacer::PrintPlacementSummary() const {
     << "s, lal time: " << legalizer_->GetTime() << "s\n";
 }
 
+/****
+ * @brief The entry point of global placement.
+ * @return A boolean value indicating whether global placement can be
+ * successfully performed.
+ */
 bool GlobalPlacer::StartPlacement() {
-  // early return if there is no blocks or nets
-  if (ckt_ptr_->Blocks().empty()) {
-    BOOST_LOG_TRIVIAL(info)
-      << "Empty block list, nothing to place!\n";
-    return true;
-  }
-  if (ckt_ptr_->Nets().empty()) {
-    BOOST_LOG_TRIVIAL(info)
-      << "Empty net list, nothing to optimize during placement!\n";
-    return true;
-  }
+  if (IsBlockListOrNetListEmpty()) return true;
 
   PrintStartStatement("global placement");
   SanityCheck();
@@ -173,9 +208,7 @@ bool GlobalPlacer::StartPlacement() {
 
   PrintPlacementSummary();
   CloseOptimizerAndLegalizer();
-
   PrintEndStatement("global placement", true);
-
   return true;
 }
 
