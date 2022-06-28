@@ -1036,12 +1036,7 @@ double LGTetrisEx::EstimatedHPWL(Block &block, int x, int y) {
 }
 
 bool LGTetrisEx::StartPlacement() {
-  BOOST_LOG_TRIVIAL(info)
-    << "---------------------------------------\n"
-    << "Start LGTetrisEx Legalization\n";
-
-  double wall_time = get_wall_time();
-  double cpu_time = get_cpu_time();
+  PrintStartStatement("LGTetrisEx Legalization");
 
   is_row_assignment_ = false;
   InitLegalizer();
@@ -1062,35 +1057,14 @@ bool LGTetrisEx::StartPlacement() {
       break;
     }
   }
-  if (!is_success) {
-    BOOST_LOG_TRIVIAL(info) << "Legalization fails\n";
-  }
 
-  BOOST_LOG_TRIVIAL(info)
-    << "\033[0;36m"
-    << "LGTetrisEx Legalization complete (" << cur_iter_ + 1 << ")\n"
-    << "\033[0m";
-
-  ReportHPWL();
-
-  wall_time = get_wall_time() - wall_time;
-  cpu_time = get_cpu_time() - cpu_time;
-  BOOST_LOG_TRIVIAL(info)
-    << "(wall time: " << wall_time << "s, cpu time: "
-    << cpu_time << "s)\n";
-
-  ReportMemory();
+  PrintEndStatement("LGTetrisEx Legalization", is_success);
 
   return true;
 }
 
 bool LGTetrisEx::StartRowAssignment() {
-  BOOST_LOG_TRIVIAL(info)
-    << "---------------------------------------\n"
-    << "Start Row Assignment\n";
-
-  double wall_time = get_wall_time();
-  double cpu_time = get_cpu_time();
+  PrintStartStatement("row assignment");
 
   is_row_assignment_ = true;
   ResetLeftLimitFactor();
@@ -1120,11 +1094,8 @@ bool LGTetrisEx::StartRowAssignment() {
   ReportHPWL();
   ReportBoundingBox();
 
-  wall_time = get_wall_time() - wall_time;
-  cpu_time = get_cpu_time() - cpu_time;
-  BOOST_LOG_TRIVIAL(info)
-    << "(wall time: " << wall_time << "s, cpu time: "
-    << cpu_time << "s)\n";
+  elapsed_time_.RecordEndTime();
+  elapsed_time_.PrintTimeElapsed();
 
   ReportMemory();
 

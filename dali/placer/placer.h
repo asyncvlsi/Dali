@@ -29,7 +29,6 @@
 
 #include "dali/circuit/circuit.h"
 #include "dali/common/elapsed_time.h"
-#include "dali/common/timing.h"
 
 namespace dali {
 
@@ -165,7 +164,7 @@ class Placer {
   double GetBlkHPWL(Block &blk);
 
   void PrintStartStatement(std::string const &name_of_process);
-  void PrintEndStatement(std::string const &name_of_process);
+  void PrintEndStatement(std::string const &name_of_process, bool is_success);
 };
 
 }

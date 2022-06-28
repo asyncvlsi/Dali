@@ -569,7 +569,7 @@ class Circuit {
  private:
   Tech tech_; // information in LEF and CELL
   Design design_; // information in DEF
-  phydb::PhyDB *phy_db_ptr_;
+  phydb::PhyDB *phy_db_ptr_ = nullptr;
   CircuitConstants constants_;
 
   void LoadImaginaryCellFile();

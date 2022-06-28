@@ -27,9 +27,10 @@
 #include <phydb/phydb.h>
 
 #include "dali/circuit/circuit.h"
+#include "dali/common/elapsed_time.h"
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
-#include "dali/common/timing.h"
+
 #include "dali/placer.h"
 
 using namespace dali;
@@ -238,8 +239,8 @@ int main(int argc, char *argv[]) {
   SaveArgs(argc, argv);
 
   // start the timer to record the runtime
-  double wall_time = get_wall_time();
-  double cpu_time = get_cpu_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   // load LEF/DEF/CELL files
   // (1). initialize PhyDB
@@ -358,13 +359,11 @@ int main(int argc, char *argv[]) {
   circuit.ReportHPWLHistogramLinear();
   circuit.ReportHPWLHistogramLogarithm();
 
-  wall_time = get_wall_time() - wall_time;
-  cpu_time = get_cpu_time() - cpu_time;
-
+  elapsed_time.RecordEndTime();
   BOOST_LOG_TRIVIAL(info)
     << "****End of placement "
-    << "(wall time: " << wall_time << "s, "
-    << "cpu time: " << cpu_time << "s)****\n";
+    << "(wall time: " << elapsed_time.GetWallTime() << "s, "
+    << "cpu time: " << elapsed_time.GetCpuTime() << "s)****\n";
 
   return 0;
 }

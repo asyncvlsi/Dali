@@ -18,12 +18,13 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
 #include "hpwl_optimizer.h"
 
 #include <cfloat>
 
+#include "dali/common/elapsed_time.h"
 #include "dali/common/logging.h"
-#include "dali/common/timing.h"
 
 namespace dali {
 
@@ -102,7 +103,8 @@ void B2BHpwlOptimizer::Initialize() {
 }
 
 void B2BHpwlOptimizer::BuildProblemX() {
-  double wall_time = get_wall_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
   std::vector<Net> &nets = ckt_ptr_->Nets();
@@ -207,12 +209,13 @@ void B2BHpwlOptimizer::BuildProblemX() {
           << "\tnew capacity: " << coefficients_x_.size()
   );
 
-  wall_time = get_wall_time() - wall_time;
-  tot_triplets_time_x += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_triplets_time_x += elapsed_time.GetWallTime();
 }
 
 void B2BHpwlOptimizer::BuildProblemY() {
-  double wall_time = get_wall_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
   std::vector<Net> &nets = ckt_ptr_->Nets();
@@ -318,8 +321,8 @@ void B2BHpwlOptimizer::BuildProblemY() {
           << "\tnew capacity: " << coefficients_y_.size()
   );
 
-  wall_time = get_wall_time() - wall_time;
-  tot_triplets_time_y += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_triplets_time_y += elapsed_time.GetWallTime();
 }
 
 bool B2BHpwlOptimizer::IsSeriesConverge(
@@ -382,15 +385,16 @@ bool B2BHpwlOptimizer::IsSeriesOscillate(
 }
 
 double B2BHpwlOptimizer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
-  double wall_time = get_wall_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
   Ax.setFromTriplets(coefficients_x_.begin(), coefficients_x_.end());
-  wall_time = get_wall_time() - wall_time;
-  tot_matrix_from_triplets_x += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_matrix_from_triplets_x += elapsed_time.GetWallTime();
 
   int sz = static_cast<int>(vx.size());
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
 
-  wall_time = get_wall_time();
+  elapsed_time.RecordStartTime();
   std::vector<double> eval_history;
   int max_rounds = cg_iteration_max_num_ / cg_iteration_;
   cg_x_.compute(Ax); // Ax * vx = bx
@@ -417,16 +421,16 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
   }
   BOOST_LOG_TRIVIAL(trace)
     << "      Metric optimization in X, sequence: " << eval_history << "\n";
-  wall_time = get_wall_time() - wall_time;
-  tot_cg_solver_time_x += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_cg_solver_time_x += elapsed_time.GetWallTime();
 
-  wall_time = get_wall_time();
+  elapsed_time.RecordStartTime();
 //#pragma omp for
   for (int num = 0; num < sz; ++num) {
     blocks[num].SetLLX(vx[num]);
   }
-  wall_time = get_wall_time() - wall_time;
-  tot_loc_update_time_x += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_loc_update_time_x += elapsed_time.GetWallTime();
 
   DaliExpects(
       !eval_history.empty(),
@@ -436,15 +440,16 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
 }
 
 double B2BHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
-  double wall_time = get_wall_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
   Ay.setFromTriplets(coefficients_y_.begin(), coefficients_y_.end());
-  wall_time = get_wall_time() - wall_time;
-  tot_matrix_from_triplets_y += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_matrix_from_triplets_y += elapsed_time.GetWallTime();
 
   int sz = static_cast<int>(vy.size());
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
 
-  wall_time = get_wall_time();
+  elapsed_time.RecordStartTime();
   std::vector<double> eval_history;
   int max_rounds = cg_iteration_max_num_ / cg_iteration_;
   cg_y_.compute(Ay);
@@ -471,16 +476,16 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
   }
   BOOST_LOG_TRIVIAL(trace) << "      Metric optimization in Y, sequence: "
                            << eval_history << "\n";
-  wall_time = get_wall_time() - wall_time;
-  tot_cg_solver_time_y += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_cg_solver_time_y += elapsed_time.GetWallTime();
 
-  wall_time = get_wall_time();
+  elapsed_time.RecordStartTime();
 //#pragma omp for
   for (int num = 0; num < sz; ++num) {
     block_list[num].SetLLY(vy[num]);
   }
-  wall_time = get_wall_time() - wall_time;
-  tot_loc_update_time_y += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_loc_update_time_y += elapsed_time.GetWallTime();
 
   DaliExpects(!eval_history.empty(),
               "Cannot return a valid value because the result is not evaluated!");
@@ -581,7 +586,8 @@ void B2BHpwlOptimizer::BuildProblemWithAnchorX() {
   BuildProblemX();
 
   if (cur_iter_ == 0) return;
-  double wall_time = get_wall_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
@@ -596,15 +602,16 @@ void B2BHpwlOptimizer::BuildProblemWithAnchorX() {
     bx[i] += pin_loc1 * weight;
     coefficients_x_.emplace_back(T(i, i, weight));
   }
-  wall_time = get_wall_time() - wall_time;
-  tot_triplets_time_x += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_triplets_time_x += elapsed_time.GetWallTime();
 }
 void B2BHpwlOptimizer::BuildProblemWithAnchorY() {
   UpdateMaxMinY();
   BuildProblemY();
 
   if (cur_iter_ == 0) return;
-  double wall_time = get_wall_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
@@ -619,8 +626,8 @@ void B2BHpwlOptimizer::BuildProblemWithAnchorY() {
     by[i] += pin_loc1 * weight;
     coefficients_y_.emplace_back(T(i, i, weight));
   }
-  wall_time = get_wall_time() - wall_time;
-  tot_triplets_time_y += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_triplets_time_y += elapsed_time.GetWallTime();
 }
 
 void B2BHpwlOptimizer::BackUpBlockLocation() {
@@ -742,13 +749,14 @@ void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(
   lower_bound_hpwl_y_.push_back(eval_history_y.back());
 }
 
-double B2BHpwlOptimizer::QuadraticPlacementWithAnchor(double net_model_update_stop_criterion) {
+double B2BHpwlOptimizer::OptimizeHpwl(double net_model_update_stop_criterion) {
   omp_set_dynamic(0);
   int avail_threads_num = num_threads_ / 2;
   if (avail_threads_num == 0) {
     avail_threads_num = 1;
   }
-  double wall_time = get_wall_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   UpdateAnchorLocation();
   UpdateAnchorAlpha();
@@ -772,8 +780,8 @@ double B2BHpwlOptimizer::QuadraticPlacementWithAnchor(double net_model_update_st
 
   BOOST_LOG_TRIVIAL(trace) << "Quadratic Placement With Anchor Complete\n";
 
-  wall_time = get_wall_time() - wall_time;
-  tot_cg_time += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_cg_time += elapsed_time.GetWallTime();
 
   if (is_dump_) DumpResult("cg_result_" + std::to_string(cur_iter_) + ".txt");
   BackUpBlockLocation();
@@ -829,7 +837,8 @@ void B2BHpwlOptimizer::DumpResult(std::string const &name_of_file) {
 }
 
 void StarHpwlOptimizer::BuildProblemX() {
-  double wall_time = get_wall_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
   std::vector<Net> &nets = ckt_ptr_->Nets();
@@ -905,12 +914,13 @@ void StarHpwlOptimizer::BuildProblemX() {
           << "\tnew capacity: " << coefficients_x_.size()
   );
 
-  wall_time = get_wall_time() - wall_time;
-  tot_triplets_time_x += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_triplets_time_x += elapsed_time.GetWallTime();
 }
 
 void StarHpwlOptimizer::BuildProblemY() {
-  double wall_time = get_wall_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.GetWallTime();
 
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
   std::vector<Net> &nets = ckt_ptr_->Nets();
@@ -987,8 +997,8 @@ void StarHpwlOptimizer::BuildProblemY() {
           << "\tnew capacity: " << coefficients_y_.size()
   );
 
-  wall_time = get_wall_time() - wall_time;
-  tot_triplets_time_y += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_triplets_time_y += elapsed_time.GetWallTime();
 }
 
 void StarHpwlOptimizer::UpdateAnchorAlpha() {
@@ -996,7 +1006,8 @@ void StarHpwlOptimizer::UpdateAnchorAlpha() {
 }
 
 void HpwlHpwlOptimizer::BuildProblemX() {
-  double wall_time = get_wall_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
   std::vector<Net> &nets = ckt_ptr_->Nets();
@@ -1071,12 +1082,13 @@ void HpwlHpwlOptimizer::BuildProblemX() {
           << "\tnew capacity: " << coefficients_x_.size()
   );
 
-  wall_time = get_wall_time() - wall_time;
-  tot_triplets_time_x += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_triplets_time_x += elapsed_time.GetWallTime();
 }
 
 void HpwlHpwlOptimizer::BuildProblemY() {
-  double wall_time = get_wall_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
   std::vector<Net> &nets = ckt_ptr_->Nets();
@@ -1151,8 +1163,8 @@ void HpwlHpwlOptimizer::BuildProblemY() {
           << "\tnew capacity: " << coefficients_y_.size()
   );
 
-  wall_time = get_wall_time() - wall_time;
-  tot_triplets_time_y += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_triplets_time_y += elapsed_time.GetWallTime();
 }
 
 void HpwlHpwlOptimizer::UpdateAnchorAlpha() {
@@ -1341,7 +1353,8 @@ void StarHpwlHpwlOptimizer::Initialize() {
 }
 
 void StarHpwlHpwlOptimizer::BuildProblemX() {
-  double wall_time = get_wall_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
   UpdateMaxMinX();
 
   int sz = static_cast<int>(bx.size());
@@ -1473,12 +1486,13 @@ void StarHpwlHpwlOptimizer::BuildProblemX() {
     }
   }
 
-  wall_time = get_wall_time() - wall_time;
-  tot_triplets_time_x += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_triplets_time_x += elapsed_time.GetWallTime();
 }
 
 void StarHpwlHpwlOptimizer::BuildProblemY() {
-  double wall_time = get_wall_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
   UpdateMaxMinY();
 
   int sz = static_cast<int>(by.size());
@@ -1610,15 +1624,16 @@ void StarHpwlHpwlOptimizer::BuildProblemY() {
     }
   }
 
-  wall_time = get_wall_time() - wall_time;
-  tot_triplets_time_y += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_triplets_time_y += elapsed_time.GetWallTime();
 }
 
 void StarHpwlHpwlOptimizer::BuildProblemWithAnchorX() {
   UpdateMaxMinX();
   BuildProblemX();
 
-  double wall_time = get_wall_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
@@ -1633,15 +1648,16 @@ void StarHpwlHpwlOptimizer::BuildProblemWithAnchorX() {
     bx[i] += pin_loc1 * weight;
     SpMat_diag_x[i].valueRef() += weight;
   }
-  wall_time = get_wall_time() - wall_time;
-  tot_triplets_time_x += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_triplets_time_x += elapsed_time.GetWallTime();
 }
 
 void StarHpwlHpwlOptimizer::BuildProblemWithAnchorY() {
   UpdateMaxMinY();
   BuildProblemY();
 
-  double wall_time = get_wall_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
@@ -1656,19 +1672,17 @@ void StarHpwlHpwlOptimizer::BuildProblemWithAnchorY() {
     by[i] += pin_loc1 * weight;
     SpMat_diag_y[i].valueRef() += weight;
   }
-  wall_time = get_wall_time() - wall_time;
-  tot_triplets_time_y += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_triplets_time_y += elapsed_time.GetWallTime();
 }
 
 double StarHpwlHpwlOptimizer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
-  double wall_time = get_wall_time();
-  wall_time = get_wall_time() - wall_time;
-  tot_matrix_from_triplets_x += wall_time;
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   int sz = vx.size();
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
 
-  wall_time = get_wall_time();
   std::vector<double> eval_history;
   int max_rounds = cg_iteration_max_num_ / cg_iteration_;
   cg_x_.compute(Ax); // Ax * vx = bx
@@ -1695,16 +1709,15 @@ double StarHpwlHpwlOptimizer::OptimizeQuadraticMetricX(double cg_stop_criterion)
   }
   BOOST_LOG_TRIVIAL(trace)
     << "      Metric optimization in X, sequence: " << eval_history << "\n";
-  wall_time = get_wall_time() - wall_time;
-  tot_cg_solver_time_x += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_cg_solver_time_x += elapsed_time.GetWallTime();
 
-  wall_time = get_wall_time();
-
+  elapsed_time.RecordStartTime();
   for (int num = 0; num < sz; ++num) {
     blocks[num].SetLLX(vx[num]);
   }
-  wall_time = get_wall_time() - wall_time;
-  tot_loc_update_time_x += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_loc_update_time_x += elapsed_time.GetWallTime();
 
   DaliExpects(
       !eval_history.empty(),
@@ -1714,14 +1727,12 @@ double StarHpwlHpwlOptimizer::OptimizeQuadraticMetricX(double cg_stop_criterion)
 }
 
 double StarHpwlHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
-  double wall_time = get_wall_time();
-  wall_time = get_wall_time() - wall_time;
-  tot_matrix_from_triplets_y += wall_time;
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   int sz = vx.size();
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
 
-  wall_time = get_wall_time();
   std::vector<double> eval_history;
   int max_rounds = cg_iteration_max_num_ / cg_iteration_;
   cg_y_.compute(Ay);
@@ -1748,15 +1759,15 @@ double StarHpwlHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion)
   }
   BOOST_LOG_TRIVIAL(trace) << "      Metric optimization in Y, sequence: "
                            << eval_history << "\n";
-  wall_time = get_wall_time() - wall_time;
-  tot_cg_solver_time_y += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_cg_solver_time_y += elapsed_time.GetWallTime();
 
-  wall_time = get_wall_time();
+  elapsed_time.RecordStartTime();
   for (int num = 0; num < sz; ++num) {
     block_list[num].SetLLY(vy[num]);
   }
-  wall_time = get_wall_time() - wall_time;
-  tot_loc_update_time_y += wall_time;
+  elapsed_time.RecordEndTime();
+  tot_loc_update_time_y += elapsed_time.GetWallTime();
 
   DaliExpects(!eval_history.empty(),
               "Cannot return a valid value because the result is not evaluated!");

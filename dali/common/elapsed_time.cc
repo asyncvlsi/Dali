@@ -33,15 +33,23 @@ void ElapsedTime::RecordStartTime() {
 void ElapsedTime::RecordEndTime() {
   end_wall_time_ = std::chrono::steady_clock::now();
   end_cpu_time_ = std::clock();
+  std::chrono::duration<double> wall_time = end_wall_time_ - start_wall_time_;
+  wall_time_ = wall_time.count();
+  cpu_time_ =
+      static_cast<double>(end_cpu_time_ - start_cpu_time_) / CLOCKS_PER_SEC;
 }
 
-void ElapsedTime::PrintTimeElapsed() {
-  std::chrono::duration<double> wall_time = end_wall_time_ - start_wall_time_;
-  double cpu_time =
-      static_cast<double>(end_cpu_time_ - start_cpu_time_) / CLOCKS_PER_SEC;
+void ElapsedTime::PrintTimeElapsed() const {
   BOOST_LOG_TRIVIAL(info)
-    << "wall time: " << wall_time.count()
-    << "s, cpu time: " << cpu_time << "s\n";
+    << "wall time: " << wall_time_ << "s, cpu time: " << cpu_time_ << "s\n";
+}
+
+double ElapsedTime::GetWallTime() const {
+  return wall_time_;
+}
+
+double ElapsedTime::GetCpuTime() const {
+  return cpu_time_;
 }
 
 } // dali

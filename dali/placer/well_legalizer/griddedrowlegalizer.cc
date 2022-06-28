@@ -23,10 +23,11 @@
 #include <cmath>
 
 #include "dali/common/config.h"
+#include "dali/common/elapsed_time.h"
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
 #include "dali/common/memory.h"
-#include "dali/common/timing.h"
+
 #include "dali/placer/well_legalizer/optimizationhelper.h"
 #include "dali/placer/well_legalizer/stripehelper.h"
 
@@ -288,8 +289,8 @@ void GriddedRowLegalizer::CleanUpTemporaryRowSegments() {
 
 bool GriddedRowLegalizer::UpwardDownwardLegalization(bool use_init_loc) {
   BOOST_LOG_TRIVIAL(info) << "Start upward-downward legalization\n";
-  double wall_time = get_wall_time();
-  double cpu_time = get_cpu_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   bool res = true;
   for (ClusterStripe &col : col_list_) {
@@ -316,10 +317,8 @@ bool GriddedRowLegalizer::UpwardDownwardLegalization(bool use_init_loc) {
   CleanUpTemporaryRowSegments();
   ReportDisplacement();
 
-  wall_time = get_wall_time() - wall_time;
-  cpu_time = get_cpu_time() - cpu_time;
-  BOOST_LOG_TRIVIAL(info)
-    << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
+  elapsed_time.RecordEndTime();
+  elapsed_time.PrintTimeElapsed();
   return res;
 }
 
@@ -359,8 +358,8 @@ bool GriddedRowLegalizer::StripeLegalizationDownwardWithDispCheck(
 bool GriddedRowLegalizer::UpwardDownwardLegalizationWithDispCheck(bool use_init_loc) {
   BOOST_LOG_TRIVIAL(info)
     << "Start upward-downward legalization with displacement checking\n";
-  double wall_time = get_wall_time();
-  double cpu_time = get_cpu_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   bool res = true;
   for (ClusterStripe &col : col_list_) {
@@ -389,10 +388,8 @@ bool GriddedRowLegalizer::UpwardDownwardLegalizationWithDispCheck(bool use_init_
   CleanUpTemporaryRowSegments();
   ReportDisplacement();
 
-  wall_time = get_wall_time() - wall_time;
-  cpu_time = get_cpu_time() - cpu_time;
-  BOOST_LOG_TRIVIAL(info)
-    << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
+  elapsed_time.RecordEndTime();
+  elapsed_time.PrintTimeElapsed();
   return res;
 }
 
@@ -457,8 +454,8 @@ bool GriddedRowLegalizer::OptimizeDisplacementUsingQuadraticProgramming() {
 bool GriddedRowLegalizer::IterativeDisplacementOptimization() {
   BOOST_LOG_TRIVIAL(info)
     << "Optimizing displacement X using the consensus algorithm\n";
-  double wall_time = get_wall_time();
-  double cpu_time = get_cpu_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   for (auto &col : col_list_) {
     for (auto &stripe : col.stripe_list_) {
@@ -466,10 +463,8 @@ bool GriddedRowLegalizer::IterativeDisplacementOptimization() {
     }
   }
 
-  wall_time = get_wall_time() - wall_time;
-  cpu_time = get_cpu_time() - cpu_time;
-  BOOST_LOG_TRIVIAL(info)
-    << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
+  elapsed_time.RecordEndTime();
+  elapsed_time.PrintTimeElapsed();
 
   ReportDisplacement();
 
@@ -547,12 +542,7 @@ void GriddedRowLegalizer::ReportDisplacement() {
 }
 
 bool GriddedRowLegalizer::StartPlacement() {
-  BOOST_LOG_TRIVIAL(info)
-    << "---------------------------------------\n"
-    << "Start Gridded Row Well Legalization\n";
-
-  double wall_time = get_wall_time();
-  double cpu_time = get_cpu_time();
+  PrintStartStatement("gridded row well legalization");
 
   bool is_successful = true;
 
@@ -591,25 +581,9 @@ bool GriddedRowLegalizer::StartPlacement() {
     ReportHPWL();
 
     EmbodyWellTapCells();
-
-    BOOST_LOG_TRIVIAL(info)
-      << "\033[0;36m"
-      << "Gridded Row Well Legalization complete!\n"
-      << "\033[0m";
-  } else {
-    BOOST_LOG_TRIVIAL(info)
-      << "\033[0;36m"
-      << "Gridded Row Well Legalization fail!\n"
-      << "Please a lower placement density\n"
-      << "\033[0m";
   }
 
-  wall_time = get_wall_time() - wall_time;
-  cpu_time = get_cpu_time() - cpu_time;
-  BOOST_LOG_TRIVIAL(info)
-    << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
-
-  ReportMemory();
+  PrintEndStatement("gridded row well legalization", is_success);
 
   return is_successful;
 }

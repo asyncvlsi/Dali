@@ -58,12 +58,12 @@ void TetrisLegalizer::FastShift(int failure_point) {
     double bounding_bottom;
     bounding_left = blocks[0].LLX();
     bounding_bottom = blocks[0].LLY();
-    for (auto &block: blocks) {
+    for (auto &block : blocks) {
       if (block.LLY() < bounding_bottom) {
         bounding_bottom = block.LLY();
       }
     }
-    for (auto &block: blocks) {
+    for (auto &block : blocks) {
       block.IncreaseX(left_ - bounding_left);
       block.IncreaseY(bottom_ - bounding_bottom);
     }
@@ -98,7 +98,7 @@ void TetrisLegalizer::FlipPlacement() {
   flipped_ = !flipped_;
   int sum_left_right = left_ + right_;
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
-  for (auto &block: blocks) {
+  for (auto &block : blocks) {
     block.SetLLX(sum_left_right - block.URX());
   }
   //GenMATLABScript("flip_result.txt");
@@ -196,9 +196,7 @@ bool TetrisLegalizer::TetrisLegal() {
 }
 
 bool TetrisLegalizer::StartPlacement() {
-  double wall_time = get_wall_time();
-  double cpu_time = get_cpu_time();
-  BOOST_LOG_TRIVIAL(info) << "Start LGTetris legalization\n";
+  PrintStartStatement("LGTetris legalization");
   InitLegalizer();
   /*for (auto &block: GetCircuitRef().block_list) {
     block.IncreaseX((right_-left_)/2.0);
@@ -213,26 +211,16 @@ bool TetrisLegalizer::StartPlacement() {
     if (!is_successful) {
       FlipPlacement();
     } else {
-      BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
-                              << "Tetris legalization complete!\n"
-                              << "\033[0m";
       break;
     }
   }
   if (flipped_) {
     FlipPlacement();
   }
-  if (!is_successful) {
-    BOOST_LOG_TRIVIAL(info) << "\033[0;31m"
-                            << "LGTetris legalization fails\n"
-                            << "\033[0m";
-  }
-  ReportHPWL();
-  BOOST_LOG_TRIVIAL(info) << "(wall time: "
-                          << wall_time << "s, cpu time: "
-                          << cpu_time << "s)\n";
 
-  return true;
+  PrintEndStatement("LGTetris legalization", is_successful);
+
+  return is_successful;
 }
 
 }

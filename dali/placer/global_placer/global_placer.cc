@@ -18,6 +18,7 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
 #include "global_placer.h"
 
 #include <cmath>
@@ -27,7 +28,6 @@
 
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
-#include "dali/common/timing.h"
 
 namespace dali {
 
@@ -117,14 +117,42 @@ bool GlobalPlacer::IsPlacementConverge() {
   return res;
 }
 
+void GlobalPlacer::PrintHpwl(int iter, double lo, double hi) const {
+  std::string buffer(1024, '\0');
+  int written_length = sprintf(
+      &buffer[0],
+      "  Iter %-3d: %.4e  %.4e\n", iter, lo, hi
+  );
+  buffer.resize(written_length);
+  BOOST_LOG_TRIVIAL(info) << buffer;
+  BOOST_LOG_TRIVIAL(debug) << cur_iter_ << "-th iteration completed\n";
+}
+
+void GlobalPlacer::PrintPlacementSummary() const {
+  BOOST_LOG_TRIVIAL(debug)
+    << "  Iterative look-ahead legalization complete\n";
+  BOOST_LOG_TRIVIAL(debug)
+    << "  Total number of iteration: " << cur_iter_ + 1 << "\n";
+  BOOST_LOG_TRIVIAL(debug)
+    << "  Lower bound: " << optimizer_->GetHpwls() << "\n";
+  BOOST_LOG_TRIVIAL(debug)
+    << "  Upper bound: " << legalizer_->GetHpwls() << "\n";
+  BOOST_LOG_TRIVIAL(debug)
+    << "cg time: " << optimizer_->GetTime()
+    << "s, lal time: " << legalizer_->GetTime() << "s\n";
+}
+
 bool GlobalPlacer::StartPlacement() {
+  // early return if there is no blocks or nets
   if (ckt_ptr_->Blocks().empty()) {
     BOOST_LOG_TRIVIAL(info)
       << "Empty block list, nothing to place!\n";
+    return true;
   }
   if (ckt_ptr_->Nets().empty()) {
     BOOST_LOG_TRIVIAL(info)
       << "Empty net list, nothing to optimize during placement!\n";
+    return true;
   }
 
   PrintStartStatement("global placement");
@@ -133,39 +161,20 @@ bool GlobalPlacer::StartPlacement() {
   InitializeBlockLocationAtRandom(0, -1);
 
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
-    BOOST_LOG_TRIVIAL(debug)
-      << "----------------------------------------------\n";
-    BOOST_LOG_TRIVIAL(debug) << cur_iter_ << "-th iteration\n";
     optimizer_->SetIteration(cur_iter_);
-    optimizer_->QuadraticPlacementWithAnchor(net_model_update_stop_criterion_);
-    legalizer_->LookAheadLegalization();
+    double lo_hpwl = optimizer_->OptimizeHpwl(net_model_update_stop_criterion_);
+    double hi_hpwl = legalizer_->LookAheadLegalization();
 
-    BOOST_LOG_TRIVIAL(info)
-      << "  It " << cur_iter_ << ": \t"
-      << std::scientific << std::setprecision(4)
-      << optimizer_->GetHpwls().back() << " "
-      << legalizer_->GetHpwls().back() << "\n";
-
-    if (IsPlacementConverge()) { // if HPWL converges
-      BOOST_LOG_TRIVIAL(debug)
-        << "  Iterative look-ahead legalization complete\n";
-      BOOST_LOG_TRIVIAL(debug)
-        << "  Total number of iteration: "
-        << cur_iter_ + 1 << "\n";
+    PrintHpwl(cur_iter_, lo_hpwl, hi_hpwl);
+    if (IsPlacementConverge()) {
       break;
     }
   }
 
-  BOOST_LOG_TRIVIAL(debug)
-    << "  Lower bound: " << optimizer_->GetHpwls() << "\n";
-  BOOST_LOG_TRIVIAL(debug)
-    << "  Upper bound: " << legalizer_->GetHpwls() << "\n";
-  BOOST_LOG_TRIVIAL(debug)
-    << "(cg time: " << optimizer_->GetTime() << "s, lal time: "
-    << legalizer_->GetTime() << "s)\n";
+  PrintPlacementSummary();
   CloseOptimizerAndLegalizer();
 
-  PrintEndStatement("global placement");
+  PrintEndStatement("global placement", true);
 
   return true;
 }
@@ -283,7 +292,7 @@ void GlobalPlacer::BlockLocationUniformInitialization() {
     blk.SetCenterX(init_x);
     blk.SetCenterY(init_y);
   }
-  BOOST_LOG_TRIVIAL(info)
+  BOOST_LOG_TRIVIAL(debug)
     << "  Block location uniform initialization complete\n";
 }
 
@@ -313,7 +322,7 @@ void GlobalPlacer::BlockLocationNormalInitialization(double std_dev) {
     block.SetCenterX(x);
     block.SetCenterY(y);
   }
-  BOOST_LOG_TRIVIAL(info)
+  BOOST_LOG_TRIVIAL(debug)
     << "  Block location gaussian initialization complete\n";
 }
 

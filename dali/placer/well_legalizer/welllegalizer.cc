@@ -22,6 +22,7 @@
 
 #include <algorithm>
 
+#include "dali/common/elapsed_time.h"
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
 
@@ -1041,11 +1042,7 @@ bool WellLegalizer::WellLegalizationRight() {
 }
 
 bool WellLegalizer::StartPlacement() {
-  BOOST_LOG_TRIVIAL(info) << "---------------------------------------\n"
-                          << "Start Well Legalization\n";
-
-  double wall_time = get_wall_time();
-  double cpu_time = get_cpu_time();
+  PrintStartStatement("Well Legalization");
 
   InitWellLegalizer();
   BOOST_LOG_TRIVIAL(info)
@@ -1079,21 +1076,7 @@ bool WellLegalizer::StartPlacement() {
     }
   }
 
-  if (!is_success) {
-    BOOST_LOG_TRIVIAL(info) << "Well Legalization fails\n";
-  }
-
-  BOOST_LOG_TRIVIAL(info)
-    << "\033[0;36m" << "Well Legalization complete!\n" << "\033[0m";
-
-  ReportHPWL();
-
-  wall_time = get_wall_time() - wall_time;
-  cpu_time = get_cpu_time() - cpu_time;
-  BOOST_LOG_TRIVIAL(info)
-    << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
-
-  ReportMemory();
+  PrintEndStatement("Well Legalization", is_success);
 
   return true;
 }

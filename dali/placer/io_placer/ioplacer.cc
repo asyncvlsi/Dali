@@ -409,9 +409,8 @@ void IoPlacer::AdjustIoPinLocationForPhyDB() {
 }
 
 bool IoPlacer::AutoPlaceIoPin() {
-  BOOST_LOG_TRIVIAL(info)
-    << "---------------------------------------\n"
-    << "Start I/O Placement\n";
+  PrintHorizontalLine();
+  BOOST_LOG_TRIVIAL(info)  << "Start I/O Placement\n";
   if (!CheckConfiguration()) {
     BOOST_LOG_TRIVIAL(info)
       << "\033[0;36m"

@@ -121,8 +121,7 @@ void SaveMatlabPatchRegion(
 }
 
 inline void PrintHorizontalLine() {
-  BOOST_LOG_TRIVIAL(info)
-    << "-------------------------------------------------------------\n";
+  BOOST_LOG_TRIVIAL(info) << "------------------------------------------------------------\n";
 }
 
 }

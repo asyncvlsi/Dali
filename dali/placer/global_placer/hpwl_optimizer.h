@@ -46,7 +46,7 @@ class HpwlOptimizer {
   virtual void Initialize() = 0;
   void SetNumThreads(int num_threads) { num_threads_ = num_threads; }
   void SetIteration(int cur_iter) { cur_iter_ = cur_iter; }
-  virtual double QuadraticPlacementWithAnchor(double net_model_update_stop_criterion) = 0;
+  virtual double OptimizeHpwl(double net_model_update_stop_criterion) = 0;
   virtual double GetTime() = 0;
   virtual void Close() = 0;
   std::vector<double> &GetHpwls() { return lower_bound_hpwl_; }
@@ -97,7 +97,7 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
       double net_model_update_stop_criterion,
       int num_threads
   );
-  double QuadraticPlacementWithAnchor(double net_model_update_stop_criterion) override;
+  double OptimizeHpwl(double net_model_update_stop_criterion) override;
 
   double GetTime() override;
   void Close() override;
@@ -205,8 +205,8 @@ class StarHpwlHpwlOptimizer : public B2BHpwlOptimizer {
   void BuildProblemWithAnchorX() override;
   void BuildProblemWithAnchorY() override;
 
-  double OptimizeQuadraticMetricX(double cg_stop_criterion);
-  double OptimizeQuadraticMetricY(double cg_stop_criterion);
+  double OptimizeQuadraticMetricX(double cg_stop_criterion) override;
+  double OptimizeQuadraticMetricY(double cg_stop_criterion) override;
 
   void UpdateAnchorAlpha() override;
  private:

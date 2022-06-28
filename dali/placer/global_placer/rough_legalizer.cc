@@ -20,8 +20,8 @@
  ******************************************************************************/
 #include "rough_legalizer.h"
 
+#include "dali/common/elapsed_time.h"
 #include "dali/common/logging.h"
-#include "dali/common/timing.h"
 
 #include "box_bin.h"
 
@@ -48,7 +48,7 @@ void LookAheadLegalizer::InitializeGridBinSize() {
   grid_bin_width = grid_bin_height;
   grid_cnt_x = std::ceil(double(ckt_ptr_->RegionWidth()) / grid_bin_width);
   grid_cnt_y = std::ceil(double(ckt_ptr_->RegionHeight()) / grid_bin_height);
-  BOOST_LOG_TRIVIAL(info)
+  BOOST_LOG_TRIVIAL(debug)
     << "  Global placement bin width, height: "
     << grid_bin_width << "  " << grid_bin_height << "\n";
 
@@ -258,7 +258,8 @@ void LookAheadLegalizer::ClearGridBinFlag() {
  * cell_area and over_fill state can be changed, so we need to update them when necessary
  * ****/
 void LookAheadLegalizer::UpdateGridBinState() {
-  double wall_time = get_wall_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   // clean the old data
   for (auto &grid_bin_column : grid_bin_mesh) {
@@ -280,9 +281,11 @@ void LookAheadLegalizer::UpdateGridBinState() {
 
   for (int i = 0; i < sz; i++) {
     if (blocks[i].IsFixed()) continue;
-    x_index = (int) std::floor((blocks[i].X() - ckt_ptr_->RegionLLX()) / grid_bin_width);
+    x_index = (int) std::floor(
+        (blocks[i].X() - ckt_ptr_->RegionLLX()) / grid_bin_width);
     y_index =
-        (int) std::floor((blocks[i].Y() - ckt_ptr_->RegionLLY()) / grid_bin_height);
+        (int) std::floor(
+            (blocks[i].Y() - ckt_ptr_->RegionLLY()) / grid_bin_height);
     if (x_index < 0) x_index = 0;
     if (x_index > grid_cnt_x - 1) x_index = grid_cnt_x - 1;
     if (y_index < 0) y_index = 0;
@@ -334,7 +337,8 @@ void LookAheadLegalizer::UpdateGridBinState() {
       }
     }
   }
-  update_grid_bin_state_time_ += get_wall_time() - wall_time;
+  elapsed_time.RecordEndTime();
+  update_grid_bin_state_time_ += elapsed_time.GetWallTime();
 }
 
 void LookAheadLegalizer::UpdateClusterArea(GridBinCluster &cluster) {
@@ -349,7 +353,8 @@ void LookAheadLegalizer::UpdateClusterArea(GridBinCluster &cluster) {
 }
 
 void LookAheadLegalizer::UpdateClusterList() {
-  double wall_time = get_wall_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
   cluster_set.clear();
 
   int m = (int) grid_bin_mesh.size(); // number of rows
@@ -394,7 +399,8 @@ void LookAheadLegalizer::UpdateClusterList() {
       cluster_set.insert(H);
     }
   }
-  update_cluster_list_time_ += get_wall_time() - wall_time;
+  elapsed_time.RecordEndTime();
+  update_cluster_list_time_ += elapsed_time.GetWallTime();
 }
 
 void LookAheadLegalizer::UpdateLargestCluster() {
@@ -472,7 +478,7 @@ void LookAheadLegalizer::UpdateLargestCluster() {
 }
 
 unsigned long int LookAheadLegalizer::LookUpWhiteSpace(GridBinIndex const &ll_index,
-                                                 GridBinIndex const &ur_index) {
+                                                       GridBinIndex const &ur_index) {
   /****
  * this function is used to return the white space in a region specified by ll_index, and ur_index
  * there are four cases, element at (0,0), elements on the left edge, elements on the right edge, otherwise
@@ -535,8 +541,8 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
   * Part 1
   * find the index of the maximum cluster
   * ****/
-
-  double wall_time = get_wall_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   // clear the queue_box_bin
   while (!queue_box_bin.empty()) queue_box_bin.pop();
@@ -602,7 +608,8 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
     }
   }
 
-  find_minimum_box_for_largest_cluster_time_ += get_wall_time() - wall_time;
+  elapsed_time.RecordEndTime();
+  find_minimum_box_for_largest_cluster_time_ += elapsed_time.GetWallTime();
 }
 
 /****
@@ -962,7 +969,8 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
  * @return true if succeed, false if fail
  */
 bool LookAheadLegalizer::RecursiveBisectionblockspreading() {
-  double wall_time = get_wall_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   while (!queue_box_bin.empty()) {
     //std::cout << queue_box_bin.size() << "\n";
@@ -988,12 +996,14 @@ bool LookAheadLegalizer::RecursiveBisectionblockspreading() {
     queue_box_bin.pop();
   }
 
-  recursive_bisection_block_spreading_time_ += get_wall_time() - wall_time;
+  elapsed_time.RecordEndTime();
+  recursive_bisection_block_spreading_time_ += elapsed_time.GetWallTime();
   return true;
 }
 
 double LookAheadLegalizer::LookAheadLegalization() {
-  double cpu_time = get_cpu_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   ClearGridBinFlag();
   UpdateGridBinState();
@@ -1015,12 +1025,12 @@ double LookAheadLegalizer::LookAheadLegalization() {
   upper_bound_hpwl_y_.push_back(evaluate_result_y);
   BOOST_LOG_TRIVIAL(debug) << "Look-ahead legalization complete\n";
 
-  cpu_time = get_cpu_time() - cpu_time;
-  tot_lal_time += cpu_time;
+  elapsed_time.RecordEndTime();
+  tot_lal_time += elapsed_time.GetWallTime();
 
   //if (is_dump_) {
-    //DumpResult("lal_result_" + std::to_string(cur_iter_) + ".txt");
-    //DumpLookAheadDisplacement("displace_" + std::to_string(cur_iter_), 1);
+  //DumpResult("lal_result_" + std::to_string(cur_iter_) + ".txt");
+  //DumpLookAheadDisplacement("displace_" + std::to_string(cur_iter_), 1);
   //}
 
   BOOST_LOG_TRIVIAL(debug)

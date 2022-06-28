@@ -30,9 +30,10 @@
 #include <iostream>
 #include <string>
 
+#include "dali/common/elapsed_time.h"
 #include "dali/common/helper.h"
 #include "dali/common/optregdist.h"
-#include "dali/common/timing.h"
+
 #include "dali/circuit/enums.h"
 
 namespace dali {
@@ -42,25 +43,22 @@ Circuit::Circuit() {
 }
 
 void Circuit::InitializeFromPhyDB(phydb::PhyDB *phy_db_ptr) {
-  double wall_time = get_wall_time();
-  double cpu_time = get_cpu_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   DaliExpects(phy_db_ptr != nullptr,
               "Dali cannot initialize from a PhyDB which is a nullptr!");
   phy_db_ptr_ = phy_db_ptr;
 
-  BOOST_LOG_TRIVIAL(info)
-    << "---------------------------------------\n"
-    << "Load information from PhyDB\n";
+  PrintHorizontalLine();
+  BOOST_LOG_TRIVIAL(info) << "Load information from PhyDB\n";
   LoadTech(phy_db_ptr_);
   LoadDesign(phy_db_ptr_);
   LoadCell(phy_db_ptr_);
   UpdateTotalBlkArea();
 
-  wall_time = get_wall_time() - wall_time;
-  cpu_time = get_cpu_time() - cpu_time;
-  BOOST_LOG_TRIVIAL(info)
-    << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
+  elapsed_time.RecordEndTime();
+  elapsed_time.PrintTimeElapsed();
 }
 
 int Circuit::Micron2DatabaseUnit(double x) const {
@@ -778,8 +776,8 @@ void Circuit::ReportNetFanoutHistogram() {
 }
 
 void Circuit::ReportBriefSummary() {
+  PrintHorizontalLine();
   BOOST_LOG_TRIVIAL(info)
-    << "---------------------------------------\n"
     << "Circuit brief summary:\n"
     << "  movable blocks: " << TotMovBlkCnt() << "\n"
     << "  fixed blocks:   " << design_.tot_fixed_blk_num_ << "\n"

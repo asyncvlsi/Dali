@@ -244,7 +244,7 @@ void Placer::TakeOver(Placer *placer) {
   right_ = placer->RegionRight();
   bottom_ = placer->RegionBottom();
   top_ = placer->RegionTop();
-  ckt_ptr_= placer->ckt_ptr_;
+  ckt_ptr_ = placer->ckt_ptr_;
 }
 
 void Placer::GenMATLABScriptPlaced(std::string const &name_of_file) {
@@ -376,7 +376,10 @@ void Placer::PrintStartStatement(std::string const &name_of_process) {
   BOOST_LOG_TRIVIAL(info) << "Start " << name_of_process << "\n";
 }
 
-void Placer::PrintEndStatement(std::string const &name_of_process) {
+void Placer::PrintEndStatement(
+    std::string const &name_of_process,
+    bool is_success
+) {
   ReportHPWL();
 
   // report time
@@ -386,8 +389,14 @@ void Placer::PrintEndStatement(std::string const &name_of_process) {
   // report memory
   ReportMemory();
 
-  BOOST_LOG_TRIVIAL(info)
-    << "\033[0;36m" << name_of_process << " complete" << "\033[0m\n";
+  if (is_success) {
+    BOOST_LOG_TRIVIAL(info)
+      << "\033[0;36m" << name_of_process << " completed" << "\033[0m\n";
+  } else {
+    BOOST_LOG_TRIVIAL(info)
+      << "\033[0;31m" << name_of_process << " failed" << "\033[0m\n";
+  }
+
 }
 
 }

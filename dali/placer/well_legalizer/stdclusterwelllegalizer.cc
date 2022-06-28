@@ -1007,12 +1007,7 @@ bool StdClusterWellLegalizer::WellLegalize() {
 }
 
 bool StdClusterWellLegalizer::StartPlacement() {
-  BOOST_LOG_TRIVIAL(info)
-    << "---------------------------------------\n"
-    << "Start Standard Cluster Well Legalization\n";
-
-  double wall_time = get_wall_time();
-  double cpu_time = get_cpu_time();
+  PrintStartStatement("standard cluster well legalization");
 
   //circuit_ptr_->GenMATLABWellTable("lg", false);
 
@@ -1046,31 +1041,10 @@ bool StdClusterWellLegalizer::StartPlacement() {
 
   BOOST_LOG_TRIVIAL(info) << "Insert well tap cells\n";
   InsertWellTap();
-  ReportHPWL();
   //circuit_ptr_->GenMATLABWellTable("wtc", false);
   //GenMatlabClusterTable("wtc_result");
 
-  if (is_success) {
-    BOOST_LOG_TRIVIAL(info)
-      << "\033[0;36m"
-      << "Standard Cluster Well Legalization complete!\n"
-      << "\033[0m";
-  } else {
-    BOOST_LOG_TRIVIAL(info)
-      << "\033[0;36m"
-      << "Standard Cluster Well Legalization fail!\n"
-      << "Please try a lower placement density\n"
-      << "\033[0m";
-  }
-  /****<----****/
-
-  wall_time = get_wall_time() - wall_time;
-  cpu_time = get_cpu_time() - cpu_time;
-  BOOST_LOG_TRIVIAL(info)
-    << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
-
-  ReportMemory();
-
+  PrintEndStatement("Standard Cluster Well Legalization", is_success);
   //ReportEffectiveSpaceUtilization();
 
   return is_success;
@@ -1115,22 +1089,25 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
     }
   }
   double factor = ckt_ptr_->GridValueX() * ckt_ptr_->GridValueY();
-  BOOST_LOG_TRIVIAL(info) << "Total placement area: "
-                          << ((long int) RegionWidth()
-                              * (long int) RegionHeight()) * factor
-                          << " um^2\n";
-  BOOST_LOG_TRIVIAL(info) << "Total block area: "
-                          << ckt_ptr_->TotBlkArea() * factor << " ("
-                          << ckt_ptr_->TotBlkArea() / (double) RegionWidth()
-                              / (double) RegionHeight() << ") um^2\n";
-  BOOST_LOG_TRIVIAL(info) << "Total effective block area: "
-                          << tot_eff_blk_area * factor << " ("
-                          << tot_eff_blk_area / (double) RegionWidth()
-                              / (double) RegionHeight() << ") um^2\n";
-  BOOST_LOG_TRIVIAL(info) << "Total standard block area (lower bound):"
-                          << tot_std_blk_area * factor << " ("
-                          << tot_std_blk_area / (double) RegionWidth()
-                              / (double) RegionHeight() << ") um^2\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "Total placement area: "
+    << ((long int) RegionWidth() * (long int) RegionHeight()) * factor
+    << " um^2\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "Total block area: "
+    << ckt_ptr_->TotBlkArea() * factor << " ("
+    << ckt_ptr_->TotBlkArea() / (double) RegionWidth() / (double) RegionHeight()
+    << ") um^2\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "Total effective block area: "
+    << tot_eff_blk_area * factor << " ("
+    << tot_eff_blk_area / (double) RegionWidth() / (double) RegionHeight()
+    << ") um^2\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "Total standard block area (lower bound):"
+    << tot_std_blk_area * factor << " ("
+    << tot_std_blk_area / (double) RegionWidth() / (double) RegionHeight()
+    << ") um^2\n";
 
 }
 

@@ -26,7 +26,7 @@
 #include "dali/circuit/circuit.h"
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
-#include "dali/common/timing.h"
+
 #include "dali/placer.h"
 
 using namespace dali;

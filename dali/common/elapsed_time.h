@@ -31,12 +31,18 @@ class ElapsedTime {
   ElapsedTime() = default;
   void RecordStartTime();
   void RecordEndTime();
-  void PrintTimeElapsed();
+  void PrintTimeElapsed() const;
+  double GetWallTime() const;
+  double GetCpuTime() const;
  private:
   std::chrono::time_point<std::chrono::steady_clock> start_wall_time_;
   std::chrono::time_point<std::chrono::steady_clock> end_wall_time_;
   clock_t start_cpu_time_ = 0;
   clock_t end_cpu_time_ = 0;
+
+  // cached time duration
+  double wall_time_ = 0;
+  double cpu_time_ = 0;
 };
 
 } // dali

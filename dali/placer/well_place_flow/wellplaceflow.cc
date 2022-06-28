@@ -27,23 +27,24 @@ namespace dali {
 
 WellPlaceFlow::WellPlaceFlow() : GlobalPlacer() {}
 
-bool WellPlaceFlow::StartPlacement() {
-  double wall_time = get_wall_time();
-  double cpu_time = get_cpu_time();
-  BOOST_LOG_TRIVIAL(info) << "---------------------------------------\n"
-                          << "Start global placement\n";
+bool WellPlaceFlow::StartPlacement() { // TODO: do not use this
+  if (ckt_ptr_->Blocks().empty()) {
+    BOOST_LOG_TRIVIAL(info)
+      << "Empty block list, nothing to place!\n";
+  }
+  if (ckt_ptr_->Nets().empty()) {
+    BOOST_LOG_TRIVIAL(info)
+      << "Empty net list, nothing to optimize during placement!\n";
+  }
+
+  PrintStartStatement("well place flow");
   SanityCheck();
   InitializeOptimizerAndLegalizer();
   optimizer_->Initialize();
   legalizer_->Initialize(PlacementDensity());
   InitializeBlockLocationAtRandom(0, -1);
-  if (ckt_ptr_->Nets().empty()) {
-    BOOST_LOG_TRIVIAL(info)
-      << "\033[0;36m" << "Global Placement complete\n" << "\033[0m";
-    return true;
-  }
 
-  optimizer_->QuadraticPlacementWithAnchor(net_model_update_stop_criterion_);
+  optimizer_->OptimizeHpwl(net_model_update_stop_criterion_);
   //BOOST_LOG_TRIVIAL(info)   << cg_total_hpwl_ << "  " << circuit_ptr_->HPWL() << "\n";
 
   //bool old_success = false;
@@ -80,7 +81,7 @@ bool WellPlaceFlow::StartPlacement() {
       << "It " << cur_iter_ << ": \t"
       << optimizer_->GetHpwls().back() << " "
       << legalizer_->GetHpwls().back() << "\n";
-    optimizer_->QuadraticPlacementWithAnchor(net_model_update_stop_criterion_);
+    optimizer_->OptimizeHpwl(net_model_update_stop_criterion_);
   }
 
   BOOST_LOG_TRIVIAL(info)
@@ -96,11 +97,7 @@ bool WellPlaceFlow::StartPlacement() {
   well_legalizer_.SetStripePartitionMode(int(DefaultPartitionMode::SCAVENGE));
   well_legalizer_.StartPlacement();
 
-  wall_time = get_wall_time() - wall_time;
-  cpu_time = get_cpu_time() - cpu_time;
-  BOOST_LOG_TRIVIAL(info)
-    << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
-  ReportMemory();
+  PrintEndStatement("well place flow", true);
 
   return true;
 }
