@@ -524,152 +524,8 @@ void B2BHpwlOptimizer::PullBlockBackToRegion() {
   }
 }
 
-void B2BHpwlOptimizer::OptimizeHpwlX(
-    double net_model_update_stop_criterion,
-    int num_threads
-) {
-  Eigen::setNbThreads(num_threads);
-  BOOST_LOG_TRIVIAL(trace)
-    << "threads in branch x: " << num_threads
-    << " Eigen threads: " << Eigen::nbThreads()
-    << "\n";
-
-  std::vector<Block> &block_list = ckt_ptr_->Blocks();
-  size_t sz = block_list.size();
-#pragma omp parallel num_threads(num_threads) default(none) shared(block_list, sz)
-  {
-#pragma omp for
-    for (size_t i = 0; i < sz; ++i) {
-      vx[i] = block_list[i].LLX();
-    }
-  }
-
-  std::vector<double> eval_history_x;
-  int b2b_update_it_x = 0;
-  for (b2b_update_it_x = 0; b2b_update_it_x < b2b_update_max_iteration_;
-       ++b2b_update_it_x) {
-    BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
-    BuildProblemX();
-    double evaluate_result = OptimizeQuadraticMetricX(cg_stop_criterion_);
-    eval_history_x.push_back(evaluate_result);
-    if (eval_history_x.size() >= 3) {
-      bool is_converge = IsSeriesConverge(
-          eval_history_x,
-          3,
-          net_model_update_stop_criterion
-      );
-      bool is_oscillate = IsSeriesOscillate(eval_history_x, 5);
-      if (is_converge) {
-        break;
-      }
-      if (is_oscillate) {
-        BOOST_LOG_TRIVIAL(trace)
-          << "Net model update oscillation detected X\n";
-        break;
-      }
-    }
-  }
-  BOOST_LOG_TRIVIAL(trace)
-    << "  Optimization summary X, iterations x: " << b2b_update_it_x
-    << ", " << eval_history_x << "\n";
-  DaliExpects(
-      !eval_history_x.empty(),
-      "Cannot return a valid value because the result is not evaluated!"
-  );
-  lower_bound_hpwl_x_.push_back(eval_history_x.back());
-}
-
-void B2BHpwlOptimizer::OptimizeHpwlY(
-    double net_model_update_stop_criterion,
-    int num_threads
-) {
-  Eigen::setNbThreads(num_threads);
-  BOOST_LOG_TRIVIAL(trace)
-    << "threads in branch y: " << num_threads
-    << " Eigen threads: " << Eigen::nbThreads()
-    << "\n";
-
-  std::vector<Block> &block_list = ckt_ptr_->Blocks();
-  size_t sz = block_list.size();
-#pragma omp parallel num_threads(num_threads) default(none) shared(block_list, sz)
-  {
-#pragma omp for
-    for (size_t i = 0; i < sz; ++i) {
-      vy[i] = block_list[i].LLY();
-    }
-  }
-
-  std::vector<double> eval_history_y;
-  int b2b_update_it_y = 0;
-  for (b2b_update_it_y = 0;
-       b2b_update_it_y < b2b_update_max_iteration_;
-       ++b2b_update_it_y) {
-    BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
-    BuildProblemY();
-    double evaluate_result =
-        OptimizeQuadraticMetricY(cg_stop_criterion_);
-    eval_history_y.push_back(evaluate_result);
-    if (eval_history_y.size() >= 3) {
-      bool is_converge = IsSeriesConverge(
-          eval_history_y, 3,
-          net_model_update_stop_criterion
-      );
-      bool is_oscillate = IsSeriesOscillate(eval_history_y, 5);
-      if (is_converge) {
-        break;
-      }
-      if (is_oscillate) {
-        BOOST_LOG_TRIVIAL(trace)
-          << "Net model update oscillation detected Y\n";
-        break;
-      }
-    }
-  }
-  BOOST_LOG_TRIVIAL(trace)
-    << "  Optimization summary Y, iterations y: " << b2b_update_it_y
-    << ", " << eval_history_y << "\n";
-  DaliExpects(
-      !eval_history_y.empty(),
-      "Cannot return a valid value because the result is not evaluated!"
-  );
-  lower_bound_hpwl_y_.push_back(eval_history_y.back());
-}
-
-double B2BHpwlOptimizer::QuadraticPlacement(double net_model_update_stop_criterion) {
-  omp_set_dynamic(0);
-  int avail_threads_num = num_threads_ / 2;
-  if (avail_threads_num == 0) {
-    avail_threads_num = 1;
-  }
-  double wall_time = get_wall_time();
-
-#pragma omp parallel num_threads(std::min(num_threads_, 2)) default(none) shared(avail_threads_num, net_model_update_stop_criterion)
-  {
-    if (omp_get_thread_num() == 0) {
-      OptimizeHpwlX(net_model_update_stop_criterion, avail_threads_num);
-    }
-    if (omp_get_thread_num() == 1 || omp_get_num_threads() == 1) {
-      OptimizeHpwlY(net_model_update_stop_criterion, avail_threads_num);
-    }
-  }
-
-  PullBlockBackToRegion();
-
-  BOOST_LOG_TRIVIAL(info) << "  Initial Placement Complete\n";
-
-  wall_time = get_wall_time() - wall_time;
-  tot_cg_time += wall_time;
-
-  if (is_dump_) {
-    DumpResult("cg_result_0.txt");
-  }
-  BackUpBlockLocation();
-  lower_bound_hpwl_.push_back(
-      lower_bound_hpwl_x_.back() + lower_bound_hpwl_y_.back());
-  return lower_bound_hpwl_.back();
-}
-
 void B2BHpwlOptimizer::UpdateAnchorLocation() {
+  if (cur_iter_ == 0) return;
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
 
@@ -688,7 +544,9 @@ void B2BHpwlOptimizer::UpdateAnchorLocation() {
 }
 
 void B2BHpwlOptimizer::UpdateAnchorAlpha() {
-  if (0 <= cur_iter_ && cur_iter_ < 5) {
+  if (cur_iter_ == 0) {
+    alpha_step = 0;
+  } else if (0 < cur_iter_ && cur_iter_ < 5) {
     alpha_step = 0.005;
   } else if (cur_iter_ < 10) {
     alpha_step = 0.01;
@@ -722,6 +580,7 @@ void B2BHpwlOptimizer::BuildProblemWithAnchorX() {
   UpdateMaxMinX();
   BuildProblemX();
 
+  if (cur_iter_ == 0) return;
   double wall_time = get_wall_time();
 
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
@@ -744,6 +603,7 @@ void B2BHpwlOptimizer::BuildProblemWithAnchorY() {
   UpdateMaxMinY();
   BuildProblemY();
 
+  if (cur_iter_ == 0) return;
   double wall_time = get_wall_time();
 
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
@@ -777,11 +637,11 @@ void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(
     double net_model_update_stop_criterion,
     int num_threads
 ) {
+  Eigen::setNbThreads(num_threads);
   BOOST_LOG_TRIVIAL(trace)
-    << "threads in branch x: "
-    << omp_get_max_threads()
-    << " Eigen threads: " << Eigen::nbThreads()
-    << "\n";
+    << "threads in branch x: " << num_threads
+    << " actual number of threads: " << omp_get_max_threads()
+    << " Eigen threads: " << Eigen::nbThreads() << "\n";
 
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
@@ -795,14 +655,12 @@ void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(
 
   std::vector<double> eval_history_x;
   int b2b_update_it_x = 0;
-  for (b2b_update_it_x = 0;
-       b2b_update_it_x < b2b_update_max_iteration_;
+  for (b2b_update_it_x = 0; b2b_update_it_x < b2b_update_max_iteration_;
        ++b2b_update_it_x) {
     BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
     BuildProblemWithAnchorX();
     double evaluate_result = OptimizeQuadraticMetricX(cg_stop_criterion_);
     eval_history_x.push_back(evaluate_result);
-    //BOOST_LOG_TRIVIAL(trace) << "\tIterative net model update, WeightedHPWLX: " << evaluate_result << "\n";
     if (eval_history_x.size() >= 3) {
       bool is_converge = IsSeriesConverge(
           eval_history_x,
@@ -823,8 +681,9 @@ void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(
   BOOST_LOG_TRIVIAL(trace)
     << "  Optimization summary X, iterations x: " << b2b_update_it_x
     << ", " << eval_history_x << "\n";
-  DaliExpects(!eval_history_x.empty(),
-              "Cannot return a valid value because the result is not evaluated!");
+  DaliExpects(
+      !eval_history_x.empty(),
+      "Cannot return a valid value because the result is not evaluated!");
   lower_bound_hpwl_x_.push_back(eval_history_x.back());
 }
 
@@ -900,27 +759,26 @@ double B2BHpwlOptimizer::QuadraticPlacementWithAnchor(double net_model_update_st
 #pragma omp parallel num_threads(std::min(num_threads_, 2)) default(none) shared(avail_threads_num, net_model_update_stop_criterion)
   {
     if (omp_get_thread_num() == 0) {
-      OptimizeHpwlXWithAnchor(net_model_update_stop_criterion, avail_threads_num);
+      OptimizeHpwlXWithAnchor(net_model_update_stop_criterion,
+                              avail_threads_num);
     }
     if (omp_get_thread_num() == 1 || omp_get_num_threads() == 1) {
-      OptimizeHpwlYWithAnchor(net_model_update_stop_criterion, avail_threads_num);
+      OptimizeHpwlYWithAnchor(net_model_update_stop_criterion,
+                              avail_threads_num);
     }
   }
 
   PullBlockBackToRegion();
 
-  BOOST_LOG_TRIVIAL(debug) << "Quadratic Placement With Anchor Complete\n";
-
-//  for (size_t i = 0; i < 10; ++i) {
-//    BOOST_LOG_TRIVIAL(info)   << vx[i] << "  " << vy[i] << "\n";
-//  }
+  BOOST_LOG_TRIVIAL(trace) << "Quadratic Placement With Anchor Complete\n";
 
   wall_time = get_wall_time() - wall_time;
   tot_cg_time += wall_time;
 
   if (is_dump_) DumpResult("cg_result_" + std::to_string(cur_iter_) + ".txt");
   BackUpBlockLocation();
-  lower_bound_hpwl_.push_back(lower_bound_hpwl_x_.back() + lower_bound_hpwl_y_.back());
+  lower_bound_hpwl_.push_back(
+      lower_bound_hpwl_x_.back() + lower_bound_hpwl_y_.back());
   return lower_bound_hpwl_.back();
 }
 

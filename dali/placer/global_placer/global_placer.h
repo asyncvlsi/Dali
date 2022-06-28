@@ -60,9 +60,9 @@ class GlobalPlacer : public Placer {
 
   void SetMaxIteration(int max_iter);
   void LoadConf(std::string const &config_file) override;
-  void CheckOptimizerAndLegalizer();
-  void InitializeBlockLocationUniform();
-  void InitializeBlockLocationNormal(double std_dev = 1.0 / 3.0);
+  void InitializeOptimizerAndLegalizer();
+  void CloseOptimizerAndLegalizer();
+  void InitializeBlockLocationAtRandom(int mode, double std_dev);
   bool IsPlacementConverge();
 
   bool StartPlacement() override;
@@ -89,9 +89,8 @@ class GlobalPlacer : public Placer {
 
   bool is_dump_ = false;
 
-  void BlockLocationUniformInitialization_();
-  void BlockLocationNormalInitialization_(double std_dev);
-  void BlockLocationInitialization_(int mode, double std_dev);
+  void BlockLocationUniformInitialization();
+  void BlockLocationNormalInitialization(double std_dev);
 
   HpwlOptimizer *optimizer_ = nullptr;
   RoughLegalizer *legalizer_ = nullptr;

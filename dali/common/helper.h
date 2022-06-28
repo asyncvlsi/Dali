@@ -25,6 +25,7 @@
 #include <string>
 #include <vector>
 
+#include "logging.h"
 #include "misc.h"
 
 namespace dali {
@@ -109,7 +110,6 @@ void SaveMatlabPatchRegion(
       << n_rect.LLY() << "\t"
       << n_rect.URY() << "\t"
       << n_rect.URY() << "\t"
-
       << p_rect.LLX() << "\t"
       << p_rect.URX() << "\t"
       << p_rect.URX() << "\t"
@@ -118,6 +118,11 @@ void SaveMatlabPatchRegion(
       << p_rect.LLY() << "\t"
       << p_rect.URY() << "\t"
       << p_rect.URY() << "\n";
+}
+
+inline void PrintHorizontalLine() {
+  BOOST_LOG_TRIVIAL(info)
+    << "-------------------------------------------------------------\n";
 }
 
 }

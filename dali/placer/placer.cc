@@ -55,18 +55,17 @@ void Placer::LoadConf([[maybe_unused]]std::string const &config_file) {
 };
 
 void Placer::SetInputCircuit(Circuit *circuit) {
-  DaliExpects(circuit != nullptr,
-              "Invalid input circuit: not allowed to set nullptr as an input!");
-  if (circuit->Blocks().empty()) {
-    BOOST_LOG_TRIVIAL(info)
-      << "Invalid input circuit: empty block list, nothing to place!\n";
-    return;
-  }
-  if (circuit->Nets().empty()) {
-    BOOST_LOG_TRIVIAL(info)
-      << "Bad input circuit: empty net list, nothing to optimize during placement! But anyway...\n";
-  }
+  DaliExpects(
+      circuit != nullptr,
+      "Invalid input circuit: not allowed to set nullptr as an input!"
+  );
   ckt_ptr_ = circuit;
+  if (ckt_ptr_->Blocks().empty()) {
+    BOOST_LOG_TRIVIAL(info) << "Empty block list, nothing to place!\n";
+  }
+  if (ckt_ptr_->Nets().empty()) {
+    BOOST_LOG_TRIVIAL(info) << "Empty net list, nothing to optimize!\n";
+  }
 }
 
 /****
@@ -95,6 +94,42 @@ void Placer::SetNumThreads(int num_threads) {
   num_threads_ = num_threads;
 }
 
+void Placer::SetPlacementDensity(double density) {
+  DaliExpects(
+      (density <= 1) && (density > 0),
+      "Invalid value: value should be in range (0, 1]"
+  );
+  DaliExpects(
+      ckt_ptr_->WhiteSpaceUsage() < density,
+      "Cannot set target density smaller than average white space utility!"
+  );
+  placement_density_ = density;
+}
+
+double Placer::PlacementDensity() const {
+  return placement_density_;
+}
+
+void Placer::SetAspectRatio(double ratio) {
+  DaliExpects(
+      ratio >= 0,
+      "Invalid value: value should be in range (0, +infinity)"
+  );
+  aspect_ratio_ = ratio;
+}
+
+double Placer::AspectRatio() const {
+  return aspect_ratio_;
+}
+
+void Placer::SetSpaceBlockRatio(double ratio) {
+  DaliExpects(
+      ratio >= 1,
+      "Invalid value: value should be in range [1, +infinity)"
+  );
+  placement_density_ = 1.0 / ratio;
+}
+
 double Placer::GetBlkHPWL(Block &blk) {
   double hpwl = 0;
   std::vector<Net> &nets = ckt_ptr_->Nets();
@@ -104,20 +139,15 @@ double Placer::GetBlkHPWL(Block &blk) {
   return hpwl;
 }
 
-bool Placer::IsBoundaryProper() {
-  if (ckt_ptr_->MaxBlkWidth() > RegionRight() - RegionLeft()) {
-    BOOST_LOG_TRIVIAL(info)
-      << "Problematic placement boundary:\n"
-      << "    maximum cell width is larger than the width of placement region\n";
-    return false;
-  }
-  if (ckt_ptr_->MaxBlkHeight() > RegionTop() - RegionBottom()) {
-    BOOST_LOG_TRIVIAL(info)
-      << "Problematic placement boundary:\n"
-      << "    maximum cell height is larger than the height of placement region\n";
-    return false;
-  }
-  return true;
+void Placer::CheckPlacementBoundary() {
+  DaliExpects(
+      ckt_ptr_->MaxBlkWidth() <= RegionRight() - RegionLeft(),
+      "maximum cell width is larger than the width of placement region"
+  );
+  DaliExpects(
+      ckt_ptr_->MaxBlkHeight() <= RegionTop() - RegionBottom(),
+      "maximum cell height is larger than the height of placement region"
+  );
 }
 
 void Placer::SetBoundaryAuto() {
@@ -142,7 +172,7 @@ void Placer::SetBoundaryAuto() {
   placement_density_ = double(tot_block_area) / area;
   BOOST_LOG_TRIVIAL(info) << "Adjusted filling rate: " << placement_density_
                           << "\n";
-  DaliExpects(IsBoundaryProper(), "Invalid boundary setting");
+  CheckPlacementBoundary();
 }
 
 void Placer::SetBoundary(int left, int right, int bottom, int top) {
@@ -166,7 +196,7 @@ void Placer::SetBoundary(int left, int right, int bottom, int top) {
   right_ = right;
   bottom_ = bottom;
   top_ = top;
-  DaliExpects(IsBoundaryProper(), "Invalid boundary setting");
+  CheckPlacementBoundary();
 }
 
 void Placer::SetBoundaryDef() {
@@ -174,7 +204,7 @@ void Placer::SetBoundaryDef() {
   right_ = ckt_ptr_->RegionURX();
   bottom_ = ckt_ptr_->RegionLLY();
   top_ = ckt_ptr_->RegionURY();
-  DaliExpects(IsBoundaryProper(), "Invalid boundary setting");
+  CheckPlacementBoundary();
 }
 
 void Placer::ReportBoundaries() const {
@@ -187,13 +217,17 @@ void Placer::ReportBoundaries() const {
 }
 
 void Placer::UpdateAspectRatio() {
-  if ((right_ - left_ == 0) || (top_ - bottom_ == 0)) {
-    BOOST_LOG_TRIVIAL(fatal) << "Error!\n"
-                             << "Zero Height or Width of placement region!\n";
-    ReportBoundaries();
-    exit(1);
-  }
+  DaliExpects(right_ > left_, "Right boundary is less than left boundary?");
+  DaliExpects(top_ > bottom_, "Top boundary is less than bottom boundary?");
   aspect_ratio_ = (top_ - bottom_) / (double) (right_ - left_);
+}
+
+void Placer::NetSortBlkPin() {
+  DaliExpects(
+      ckt_ptr_ != nullptr,
+      "No input circuit specified, cannot modify any circuits!"
+  );
+  ckt_ptr_->NetSortBlkPin();
 }
 
 bool Placer::StartPlacement() {
@@ -210,7 +244,7 @@ void Placer::TakeOver(Placer *placer) {
   right_ = placer->RegionRight();
   bottom_ = placer->RegionBottom();
   top_ = placer->RegionTop();
-  ckt_ptr_ = placer->ckt_ptr_;
+  ckt_ptr_= placer->ckt_ptr_;
 }
 
 void Placer::GenMATLABScriptPlaced(std::string const &name_of_file) {
@@ -268,10 +302,14 @@ void Placer::EmitDEFWellFile(
     [[maybe_unused]]bool enable_emitting_cluster
 ) {
   BOOST_LOG_TRIVIAL(info)
-    << "virtual function Placer::EmitDEFWellFile() does nothing, you should not use this member function\n";
+    << __FILE__ << " : " << __LINE__ << " : " << __FUNCTION__ << "\n"
+    << "This function does nothing, you should not use this member function\n";
 }
 
-void Placer::SanityCheck() {
+/****
+ * @brief: check if the target density if properly set
+ */
+void Placer::CheckTargetDensity() const {
   double epsilon = 1e-3;
   BOOST_LOG_TRIVIAL(info) << "  Target density: " << placement_density_ << "\n";
   DaliExpects(
@@ -279,6 +317,12 @@ void Placer::SanityCheck() {
       "Filling rate should be in a proper range, for example [0.1, 1], current value: "
           << placement_density_
   );
+}
+
+/****
+ * @brief: check if there is any empty nets
+ */
+void Placer::CheckNets() { // TODO: empty nets should be allowed
   auto &nets = ckt_ptr_->Nets();
   for (auto &net : nets) {
     if (net.BlockPins().empty()) {
@@ -288,7 +332,15 @@ void Placer::SanityCheck() {
       );
     }
   }
-  DaliExpects(IsBoundaryProper(), "Improper boundary setting");
+}
+
+/****
+ * @brief: perform basic sanity check
+ */
+void Placer::SanityCheck() {
+  CheckTargetDensity();
+  CheckNets();
+  CheckPlacementBoundary();
 }
 
 void Placer::UpdateMovableBlkPlacementStatus() {
@@ -316,6 +368,26 @@ void Placer::ShiftY(double shift_y) {
 
 bool Placer::IsDummyBlock(Block &blk) {
   return blk.TypePtr() == ckt_ptr_->tech().IoDummyBlkTypePtr();
+}
+
+void Placer::PrintStartStatement(std::string const &name_of_process) {
+  elapsed_time_.RecordStartTime();
+  PrintHorizontalLine();
+  BOOST_LOG_TRIVIAL(info) << "Start " << name_of_process << "\n";
+}
+
+void Placer::PrintEndStatement(std::string const &name_of_process) {
+  ReportHPWL();
+
+  // report time
+  elapsed_time_.RecordEndTime();
+  elapsed_time_.PrintTimeElapsed();
+
+  // report memory
+  ReportMemory();
+
+  BOOST_LOG_TRIVIAL(info)
+    << "\033[0;36m" << name_of_process << " complete" << "\033[0m\n";
 }
 
 }

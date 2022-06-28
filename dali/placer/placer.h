@@ -28,6 +28,7 @@
 #include <common/config.h>
 
 #include "dali/circuit/circuit.h"
+#include "dali/common/elapsed_time.h"
 #include "dali/common/timing.h"
 
 namespace dali {
@@ -40,39 +41,17 @@ class Placer {
 
   virtual void LoadConf(std::string const &config_file);
 
-  virtual void SetInputCircuit(Circuit *circuit);
+  void SetInputCircuit(Circuit *circuit);
 
   void SetNumThreads(int num_threads);
 
-  void SetPlacementDensity(double density = 2.0 / 3.0) {
-    DaliExpects(
-        (density <= 1) && (density > 0),
-        "Invalid value: value should be in range (0, 1]"
-    );
-    DaliExpects(
-        ckt_ptr_->WhiteSpaceUsage() < density,
-        "Cannot set target density smaller than average white space utility!"
-    );
-    placement_density_ = density;
-  }
-  double PlacementDensity() const { return placement_density_; }
-  void SetAspectRatio(double ratio = 1.0) {
-    DaliExpects(
-        ratio >= 0,
-        "Invalid value: value should be in range (0, +infinity)"
-    );
-    aspect_ratio_ = ratio;
-  }
-  double AspectRatio() const { return aspect_ratio_; }
-  void SetSpaceBlockRatio(double ratio) {
-    DaliExpects(
-        ratio >= 1,
-        "Invalid value: value should be in range [1, +infinity)"
-    );
-    placement_density_ = 1.0 / ratio;
-  }
+  void SetPlacementDensity(double density = 2.0 / 3.0);
+  double PlacementDensity() const;
+  void SetAspectRatio(double ratio = 1.0);
+  double AspectRatio() const;
+  void SetSpaceBlockRatio(double ratio);
 
-  bool IsBoundaryProper();
+  void CheckPlacementBoundary();
   void SetBoundaryAuto();
   void SetBoundary(int left, int right, int bottom, int top);
   void SetBoundaryDef();
@@ -86,13 +65,7 @@ class Placer {
   int RegionHeight() const { return top_ - bottom_; }
 
   void UpdateAspectRatio();
-  void NetSortBlkPin() {
-    DaliExpects(
-        ckt_ptr_ != nullptr,
-        "No input circuit specified, cannot modify any circuits!"
-    );
-    ckt_ptr_->NetSortBlkPin();
-  }
+  void NetSortBlkPin();
   virtual bool StartPlacement();
 
   double WeightedHPWLX() {
@@ -142,6 +115,8 @@ class Placer {
   }
 
   void TakeOver(Placer *placer);
+  void CheckTargetDensity() const;
+  void CheckNets();
   void SanityCheck();
   void UpdateMovableBlkPlacementStatus();
 
@@ -184,7 +159,13 @@ class Placer {
   // boundaries of the placement region
   Circuit *ckt_ptr_;
 
+  // record start/end time
+  ElapsedTime elapsed_time_;
+
   double GetBlkHPWL(Block &blk);
+
+  void PrintStartStatement(std::string const &name_of_process);
+  void PrintEndStatement(std::string const &name_of_process);
 };
 
 }

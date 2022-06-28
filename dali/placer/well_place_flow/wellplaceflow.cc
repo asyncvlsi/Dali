@@ -33,18 +33,17 @@ bool WellPlaceFlow::StartPlacement() {
   BOOST_LOG_TRIVIAL(info) << "---------------------------------------\n"
                           << "Start global placement\n";
   SanityCheck();
-  CheckOptimizerAndLegalizer();
+  InitializeOptimizerAndLegalizer();
   optimizer_->Initialize();
   legalizer_->Initialize(PlacementDensity());
-  //InitializeBlockLocationNormal();
-  InitializeBlockLocationUniform();
+  InitializeBlockLocationAtRandom(0, -1);
   if (ckt_ptr_->Nets().empty()) {
     BOOST_LOG_TRIVIAL(info)
       << "\033[0;36m" << "Global Placement complete\n" << "\033[0m";
     return true;
   }
 
-  optimizer_->QuadraticPlacement(net_model_update_stop_criterion_);
+  optimizer_->QuadraticPlacementWithAnchor(net_model_update_stop_criterion_);
   //BOOST_LOG_TRIVIAL(info)   << cg_total_hpwl_ << "  " << circuit_ptr_->HPWL() << "\n";
 
   //bool old_success = false;

@@ -50,28 +50,23 @@ void GlobalPlacer::LoadConf(std::string const &config_file) {
   config_read(config_file.c_str());
 }
 
-void GlobalPlacer::CheckOptimizerAndLegalizer() {
+/****
+ * @brief Initialize HPWL optimizer and rough legalizer
+ */
+void GlobalPlacer::InitializeOptimizerAndLegalizer() {
   if (optimizer_ == nullptr) {
     optimizer_ = new B2BHpwlOptimizer(ckt_ptr_, num_threads_);
   }
   if (legalizer_ == nullptr) {
     legalizer_ = new LookAheadLegalizer(ckt_ptr_);
   }
+  optimizer_->Initialize();
+  legalizer_->Initialize(PlacementDensity());
 }
 
-/****
- * @brief Initialize the location of blocks uniformly across the placement region
- */
-void GlobalPlacer::InitializeBlockLocationUniform() {
-  BlockLocationInitialization_(0, -1.0);
-}
-
-/****
- * @brief Initialize the location of blocks around the center of the placement
- * region using normal distribution
- */
-void GlobalPlacer::InitializeBlockLocationNormal(double std_dev) {
-  BlockLocationInitialization_(1, std_dev);
+void GlobalPlacer::CloseOptimizerAndLegalizer() {
+  optimizer_->Close();
+  legalizer_->Close();
 }
 
 /****
@@ -123,44 +118,21 @@ bool GlobalPlacer::IsPlacementConverge() {
 }
 
 bool GlobalPlacer::StartPlacement() {
-  double wall_time = get_wall_time();
-  double cpu_time = get_cpu_time();
-
-  BOOST_LOG_TRIVIAL(info)
-    << "---------------------------------------\n"
-    << "Start global placement\n";
-
   if (ckt_ptr_->Blocks().empty()) {
     BOOST_LOG_TRIVIAL(info)
-      << "Block list empty? Skip!\n"
-      << "\033[0;36m Global Placement complete\033[0m\n";
-    return true;
+      << "Empty block list, nothing to place!\n";
   }
   if (ckt_ptr_->Nets().empty()) {
     BOOST_LOG_TRIVIAL(info)
-      << "Net list empty? Skip!\n"
-      << "\033[0;36m Global Placement complete\033[0m\n";
-    return true;
+      << "Empty net list, nothing to optimize during placement!\n";
   }
 
+  PrintStartStatement("global placement");
   SanityCheck();
-  CheckOptimizerAndLegalizer();
-  optimizer_->Initialize();
-  legalizer_->Initialize(PlacementDensity());
-  //InitializeBlockLocationNormal();
-  InitializeBlockLocationUniform();
+  InitializeOptimizerAndLegalizer();
+  InitializeBlockLocationAtRandom(0, -1);
 
-  // initial placement
-  BOOST_LOG_TRIVIAL(debug) << cur_iter_ << "-th iteration\n";
-  optimizer_->QuadraticPlacement(net_model_update_stop_criterion_);
-  legalizer_->LookAheadLegalization();
-  BOOST_LOG_TRIVIAL(info)
-    << "  It " << cur_iter_ << ": \t"
-    << std::scientific << std::setprecision(4)
-    << optimizer_->GetHpwls().back() << " "
-    << legalizer_->GetHpwls().back() << "\n";
-
-  for (cur_iter_ = 1; cur_iter_ < max_iter_; ++cur_iter_) {
+  for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     BOOST_LOG_TRIVIAL(debug)
       << "----------------------------------------------\n";
     BOOST_LOG_TRIVIAL(debug) << cur_iter_ << "-th iteration\n";
@@ -175,34 +147,25 @@ bool GlobalPlacer::StartPlacement() {
       << legalizer_->GetHpwls().back() << "\n";
 
     if (IsPlacementConverge()) { // if HPWL converges
-      BOOST_LOG_TRIVIAL(info)
+      BOOST_LOG_TRIVIAL(debug)
         << "  Iterative look-ahead legalization complete\n";
-      BOOST_LOG_TRIVIAL(info)
+      BOOST_LOG_TRIVIAL(debug)
         << "  Total number of iteration: "
         << cur_iter_ + 1 << "\n";
       break;
     }
   }
-  BOOST_LOG_TRIVIAL(info)
-    << "  Lower bound: " << optimizer_->GetHpwls() << "\n";
-  BOOST_LOG_TRIVIAL(info)
-    << "  Upper bound: " << legalizer_->GetHpwls() << "\n";
 
-  BOOST_LOG_TRIVIAL(info)
-    << "\033[0;36m" << "Global Placement complete" << "\033[0m\n";
-  BOOST_LOG_TRIVIAL(info)
+  BOOST_LOG_TRIVIAL(debug)
+    << "  Lower bound: " << optimizer_->GetHpwls() << "\n";
+  BOOST_LOG_TRIVIAL(debug)
+    << "  Upper bound: " << legalizer_->GetHpwls() << "\n";
+  BOOST_LOG_TRIVIAL(debug)
     << "(cg time: " << optimizer_->GetTime() << "s, lal time: "
     << legalizer_->GetTime() << "s)\n";
-  optimizer_->Close();
-  legalizer_->Close();
-  UpdateMovableBlkPlacementStatus();
-  ReportHPWL();
+  CloseOptimizerAndLegalizer();
 
-  wall_time = get_wall_time() - wall_time;
-  cpu_time = get_cpu_time() - cpu_time;
-  BOOST_LOG_TRIVIAL(info)
-    << "(wall time: " << wall_time << "s, cpu time: " << cpu_time << "s)\n";
-  ReportMemory();
+  PrintEndStatement("global placement");
 
   return true;
 }
@@ -284,15 +247,15 @@ bool GlobalPlacer::IsSeriesOscillate(std::vector<double> &data, int length) {
  * @param mode: the method to initialize the block locations
  * @param std_dev: the standard deviation if normal distribution is used
  */
-void GlobalPlacer::BlockLocationInitialization_(int mode, double std_dev) {
+void GlobalPlacer::InitializeBlockLocationAtRandom(int mode, double std_dev) {
   BOOST_LOG_TRIVIAL(info)
     << "  HPWL before random initialization: " << ckt_ptr_->WeightedHPWL()
     << "\n";
 
   if (mode == 0) {
-    BlockLocationUniformInitialization_();
+    BlockLocationUniformInitialization();
   } else if (mode == 1) {
-    BlockLocationNormalInitialization_(std_dev);
+    BlockLocationNormalInitialization(std_dev);
   }
 
   BOOST_LOG_TRIVIAL(info)
@@ -305,7 +268,7 @@ void GlobalPlacer::BlockLocationInitialization_(int mode, double std_dev) {
 /****
  * @brief Initialize the location of blocks uniformly across the placement region.
  */
-void GlobalPlacer::BlockLocationUniformInitialization_() {
+void GlobalPlacer::BlockLocationUniformInitialization() {
   // initialize the random number generator
   std::minstd_rand0 generator{1};
   std::uniform_real_distribution<double> distribution(0, 1);
@@ -329,7 +292,7 @@ void GlobalPlacer::BlockLocationUniformInitialization_() {
  *
  * @param std_dev: the deviation of cells around the center of the placement region
  */
-void GlobalPlacer::BlockLocationNormalInitialization_(double std_dev) {
+void GlobalPlacer::BlockLocationNormalInitialization(double std_dev) {
   // initialize the random number generator
   std::minstd_rand0 generator{1};
   std::normal_distribution<double> normal_distribution(0.0, std_dev);

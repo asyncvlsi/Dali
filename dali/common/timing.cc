@@ -33,7 +33,7 @@ double get_cpu_time(){
 }
 #elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__) || defined(__APPLE__)
 //  Posix/Linux
-#include <time.h>
+#include <ctime>
 #include <sys/time.h>
 double get_wall_time() {
   timeval time{};
