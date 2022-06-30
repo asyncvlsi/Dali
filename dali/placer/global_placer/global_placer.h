@@ -20,27 +20,13 @@
  ******************************************************************************/
 #ifndef DALI_PLACER_GLOBAL_PLACER_GLOBAL_PLACER_H_
 #define DALI_PLACER_GLOBAL_PLACER_GLOBAL_PLACER_H_
-#include <cfloat>
 
-#include <queue>
-#include <random>
-#include <set>
-#include <map>
 #include <vector>
 
-#include <Eigen/IterativeLinearSolvers>
-#include <Eigen/Sparse>
-
-#include "blkpairnets.h"
-#include "dali/common/misc.h"
 #include "dali/placer/placer.h"
 
-#include "box_bin.h"
-#include "cell_cut_point.h"
-#include "grid_bin_index.h"
-#include "grid_bin.h"
-
 #include "hpwl_optimizer.h"
+#include "random_initializer.h"
 #include "rough_legalizer.h"
 
 namespace dali {
@@ -56,11 +42,6 @@ class GlobalPlacer : public Placer {
   void InitializeOptimizerAndLegalizer();
   void CloseOptimizerAndLegalizer();
 
-  void SetBlockLocationInitialization(
-      int block_initialization_mode = 0,
-      unsigned int random_seed = 1,
-      double std_dev = -1
-  );
   void InitializeBlockLocationAtRandom();
 
   bool StartPlacement() override;
@@ -75,13 +56,6 @@ class GlobalPlacer : public Placer {
   // save intermediate result for debugging and/or visualization
   bool should_save_intermediate_result_ = false;
 
-  // block location initialization
-  int block_initialization_mode_ = 0;
-  unsigned int random_seed_ = 1;
-  double std_dev_ = -1;
-  void BlockLocationUniformInitialization();
-  void BlockLocationNormalInitialization();
-
   bool IsBlockListOrNetListEmpty() const;
   static bool IsSeriesConverge(
       std::vector<double> &data,
@@ -95,8 +69,7 @@ class GlobalPlacer : public Placer {
       bool is_success
   ) override;
 
-  void DumpResult(std::string const &name_of_file);
-
+  RandomInitializer *initializer_ = nullptr;
   HpwlOptimizer *optimizer_ = nullptr;
   RoughLegalizer *legalizer_ = nullptr;
 };

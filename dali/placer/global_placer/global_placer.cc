@@ -21,7 +21,7 @@
 
 #include "global_placer.h"
 
-#include <omp.h>
+#include <cfloat>
 
 #include <algorithm>
 
@@ -88,24 +88,6 @@ void GlobalPlacer::CloseOptimizerAndLegalizer() {
 }
 
 /****
- * @brief Set parameters to control how to cell location should be randomly
- * initialized.
- *
- * @param block_initialization_mode: 0, uniform distribution; 1, normal distribution
- * @param random_seed: random random_seed, default 1.
- * @param std_dev: standard deviation for normal distribution.
- */
-void GlobalPlacer::SetBlockLocationInitialization(
-    int block_initialization_mode,
-    unsigned int random_seed,
-    double std_dev
-) {
-  block_initialization_mode_ = block_initialization_mode;
-  random_seed_ = random_seed;
-  std_dev_ = std_dev;
-}
-
-/****
  * @brief This function is a wrapper to report HPWL before and after block
  * location initialization using different methods.
  *
@@ -113,27 +95,11 @@ void GlobalPlacer::SetBlockLocationInitialization(
  * @param std_dev: the standard deviation if normal distribution is used
  */
 void GlobalPlacer::InitializeBlockLocationAtRandom() {
-  BOOST_LOG_TRIVIAL(info)
-    << "  HPWL before random initialization: " << ckt_ptr_->WeightedHPWL()
-    << "\n";
-
-  if (block_initialization_mode_ == 0) {
-    BlockLocationUniformInitialization();
-  } else if (block_initialization_mode_ == 1) {
-    BlockLocationNormalInitialization();
-  } else {
-    BOOST_LOG_TRIVIAL(warning)
-     << "Unknown initialization mode, use uniform mode instead\n";
-    BlockLocationUniformInitialization();
-  }
-
-  BOOST_LOG_TRIVIAL(info)
-    << "  HPWL after random initialization: "
-    << ckt_ptr_->WeightedHPWL() << "\n";
-
-  if (should_save_intermediate_result_) {
-    DumpResult("rand_init.txt");
-  }
+  initializer_ = new UniformInitializer(ckt_ptr_, 1, 1);
+  //initializer_ = new NormalInitializer(ckt_ptr_, 1.0/3.0, 1, 1);
+  initializer_->RandomPlace();
+  delete initializer_;
+  initializer_ = nullptr;
 }
 
 /****
@@ -160,58 +126,6 @@ bool GlobalPlacer::StartPlacement() {
 
   PrintEndStatement("Global placement", true);
   return true;
-}
-
-/****
- * @brief Initialize the location of blocks uniformly across the placement region.
- */
-void GlobalPlacer::BlockLocationUniformInitialization() {
-  // initialize the random number generator
-  std::minstd_rand0 generator{random_seed_};
-  std::uniform_real_distribution<double> distribution(0, 1);
-
-  std::vector<Block> &blocks = ckt_ptr_->Blocks();
-  int region_width = RegionWidth();
-  int region_height = RegionHeight();
-  for (auto &blk : blocks) {
-    if (!blk.IsMovable()) continue;
-    double init_x = RegionLeft() + region_width * distribution(generator);
-    double init_y = RegionBottom() + region_height * distribution(generator);
-    blk.SetCenterX(init_x);
-    blk.SetCenterY(init_y);
-  }
-  BOOST_LOG_TRIVIAL(debug)
-    << "  block location uniform initialization complete\n";
-}
-
-/****
- * @brief Initialize the location of blocks using the normal distribution.
- *
- * @param std_dev: the deviation of cells around the center of the placement region
- */
-void GlobalPlacer::BlockLocationNormalInitialization() {
-  // initialize the random number generator
-  std::minstd_rand0 generator{random_seed_};
-  std::normal_distribution<double> normal_distribution(0.0, std_dev_);
-
-  std::vector<Block> &blocks = ckt_ptr_->Blocks();
-  int region_width = RegionWidth();
-  int region_height = RegionHeight();
-  double region_center_x = (RegionRight() + RegionLeft()) / 2.0;
-  double region_center_y = (RegionTop() + RegionBottom()) / 2.0;
-  for (auto &block : blocks) {
-    if (!block.IsMovable()) continue;
-    double x = region_center_x + region_width * normal_distribution(generator);
-    double y = region_center_y + region_height * normal_distribution(generator);
-    x = std::max(x, (double) RegionLeft());
-    x = std::min(x, (double) RegionRight());
-    y = std::max(y, (double) RegionBottom());
-    y = std::min(y, (double) RegionTop());
-    block.SetCenterX(x);
-    block.SetCenterY(y);
-  }
-  BOOST_LOG_TRIVIAL(debug)
-    << "  block location gaussian initialization complete\n";
 }
 
 /****
@@ -344,12 +258,6 @@ void GlobalPlacer::PrintEndStatement(
     << "cg time: " << optimizer_->GetTime()
     << "s, lal time: " << legalizer_->GetTime() << "s\n";
   Placer::PrintEndStatement(name_of_process, is_success);
-}
-
-void GlobalPlacer::DumpResult(std::string const &name_of_file) {
-  static int counter = 0;
-  ckt_ptr_->GenMATLABTable(name_of_file);
-  ++counter;
 }
 
 }
