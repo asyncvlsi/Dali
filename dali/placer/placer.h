@@ -163,8 +163,8 @@ class Placer {
 
   double GetBlkHPWL(Block &blk);
 
-  void PrintStartStatement(std::string const &name_of_process);
-  void PrintEndStatement(std::string const &name_of_process, bool is_success);
+  virtual void PrintStartStatement(std::string const &name_of_process);
+  virtual void PrintEndStatement(std::string const &name_of_process, bool is_success);
 };
 
 }

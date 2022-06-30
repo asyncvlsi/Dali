@@ -640,10 +640,7 @@ void B2BHpwlOptimizer::BackUpBlockLocation() {
   }
 }
 
-void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(
-    double net_model_update_stop_criterion,
-    int num_threads
-) {
+void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(int num_threads) {
   Eigen::setNbThreads(num_threads);
   BOOST_LOG_TRIVIAL(trace)
     << "threads in branch x: " << num_threads
@@ -672,7 +669,7 @@ void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(
       bool is_converge = IsSeriesConverge(
           eval_history_x,
           3,
-          net_model_update_stop_criterion
+          net_model_update_stop_criterion_
       );
       bool is_oscillate = IsSeriesOscillate(eval_history_x, 5);
       if (is_converge) {
@@ -694,10 +691,7 @@ void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(
   lower_bound_hpwl_x_.push_back(eval_history_x.back());
 }
 
-void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(
-    double net_model_update_stop_criterion,
-    int num_threads
-) {
+void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(int num_threads) {
   BOOST_LOG_TRIVIAL(trace)
     << "threads in branch y: "
     << omp_get_max_threads()
@@ -728,7 +722,7 @@ void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(
       bool is_converge = IsSeriesConverge(
           eval_history_y,
           3,
-          net_model_update_stop_criterion
+          net_model_update_stop_criterion_
       );
       bool is_oscillate = IsSeriesOscillate(eval_history_y, 5);
       if (is_converge) {
@@ -749,7 +743,7 @@ void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(
   lower_bound_hpwl_y_.push_back(eval_history_y.back());
 }
 
-double B2BHpwlOptimizer::OptimizeHpwl(double net_model_update_stop_criterion) {
+double B2BHpwlOptimizer::OptimizeHpwl() {
   omp_set_dynamic(0);
   int avail_threads_num = num_threads_ / 2;
   if (avail_threads_num == 0) {
@@ -764,15 +758,13 @@ double B2BHpwlOptimizer::OptimizeHpwl(double net_model_update_stop_criterion) {
   BOOST_LOG_TRIVIAL(trace) << "alpha: " << alpha << "\n";
   BOOST_LOG_TRIVIAL(trace) << "OpenMP threads, " << num_threads_ << "\n";
 
-#pragma omp parallel num_threads(std::min(num_threads_, 2)) default(none) shared(avail_threads_num, net_model_update_stop_criterion)
+#pragma omp parallel num_threads(std::min(num_threads_, 2)) default(none) shared(avail_threads_num)
   {
     if (omp_get_thread_num() == 0) {
-      OptimizeHpwlXWithAnchor(net_model_update_stop_criterion,
-                              avail_threads_num);
+      OptimizeHpwlXWithAnchor(avail_threads_num);
     }
     if (omp_get_thread_num() == 1 || omp_get_num_threads() == 1) {
-      OptimizeHpwlYWithAnchor(net_model_update_stop_criterion,
-                              avail_threads_num);
+      OptimizeHpwlYWithAnchor(avail_threads_num);
     }
   }
 

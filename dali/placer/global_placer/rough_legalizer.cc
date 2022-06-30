@@ -1001,7 +1001,7 @@ bool LookAheadLegalizer::RecursiveBisectionblockspreading() {
   return true;
 }
 
-double LookAheadLegalizer::LookAheadLegalization() {
+double LookAheadLegalizer::RemoveCellOverlap() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 

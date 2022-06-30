@@ -127,25 +127,21 @@ void GlobalPlacer::InitializeBlockLocationAtRandom() {
  */
 bool GlobalPlacer::StartPlacement() {
   if (IsBlockListOrNetListEmpty()) return true;
-
   PrintStartStatement("global placement");
+
   SanityCheck();
   InitializeOptimizerAndLegalizer();
   InitializeBlockLocationAtRandom();
-
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     optimizer_->SetIteration(cur_iter_);
-    double lo_hpwl = optimizer_->OptimizeHpwl(net_model_update_stop_criterion_);
-    double hi_hpwl = legalizer_->LookAheadLegalization();
-
-    PrintHpwl(cur_iter_, lo_hpwl, hi_hpwl);
-    if (IsPlacementConverge()) {
-      break;
-    }
+    optimizer_->OptimizeHpwl();
+    legalizer_->RemoveCellOverlap();
+    PrintHpwl();
+    if (IsPlacementConverge()) break;
   }
-
-  PrintPlacementSummary();
+  UpdateMovableBlkPlacementStatus();
   CloseOptimizerAndLegalizer();
+
   PrintEndStatement("global placement", true);
   return true;
 }
@@ -298,16 +294,15 @@ bool GlobalPlacer::IsPlacementConverge() {
 
 /****
  * @brief A helper function to format and print HPWL in each iteration.
- *
- * @param iter: the current iteration of global placement.
- * @param lo: the lower bound of HPWL.
- * @param hi: the upper bound of HPWL.
  */
-void GlobalPlacer::PrintHpwl(int iter, double lo, double hi) const {
+void GlobalPlacer::PrintHpwl() const {
+  if (optimizer_->GetHpwls().empty() || legalizer_->GetHpwls().empty()) return;
+  double lo_hpwl = optimizer_->GetHpwls().back();
+  double hi_hpwl = legalizer_->GetHpwls().back();
   std::string buffer(1024, '\0');
   int written_length = sprintf(
       &buffer[0],
-      "  Iter %-3d: %.4e  %.4e\n", iter, lo, hi
+      "  Iter %-3d: %.4e  %.4e\n", cur_iter_, lo_hpwl, hi_hpwl
   );
   buffer.resize(written_length);
   BOOST_LOG_TRIVIAL(info) << buffer;
@@ -317,7 +312,10 @@ void GlobalPlacer::PrintHpwl(int iter, double lo, double hi) const {
 /****
  * @brief Printf the summary of global placement.
  */
-void GlobalPlacer::PrintPlacementSummary() const {
+void GlobalPlacer::PrintEndStatement(
+    std::string const &name_of_process,
+    bool is_success
+) {
   BOOST_LOG_TRIVIAL(debug)
     << "  Iterative look-ahead legalization complete\n";
   BOOST_LOG_TRIVIAL(debug)
@@ -329,6 +327,7 @@ void GlobalPlacer::PrintPlacementSummary() const {
   BOOST_LOG_TRIVIAL(debug)
     << "cg time: " << optimizer_->GetTime()
     << "s, lal time: " << legalizer_->GetTime() << "s\n";
+  Placer::PrintEndStatement(name_of_process, is_success);
 }
 
 void GlobalPlacer::DumpResult(std::string const &name_of_file) {

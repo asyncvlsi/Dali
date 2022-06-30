@@ -46,7 +46,7 @@ class HpwlOptimizer {
   virtual void Initialize() = 0;
   void SetNumThreads(int num_threads) { num_threads_ = num_threads; }
   void SetIteration(int cur_iter) { cur_iter_ = cur_iter; }
-  virtual double OptimizeHpwl(double net_model_update_stop_criterion) = 0;
+  virtual double OptimizeHpwl() = 0;
   virtual double GetTime() = 0;
   virtual void Close() = 0;
   std::vector<double> &GetHpwls() { return lower_bound_hpwl_; }
@@ -59,6 +59,9 @@ class HpwlOptimizer {
   std::vector<double> lower_bound_hpwl_;
   std::vector<double> lower_bound_hpwl_x_;
   std::vector<double> lower_bound_hpwl_y_;
+
+  // stop update net model if the cost change is less than this value for 3 iterations
+  double net_model_update_stop_criterion_ = 0.01;
 };
 
 class B2BHpwlOptimizer : public HpwlOptimizer {
@@ -89,15 +92,9 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   virtual void BuildProblemWithAnchorX();
   virtual void BuildProblemWithAnchorY();
   void BackUpBlockLocation();
-  void OptimizeHpwlXWithAnchor(
-      double net_model_update_stop_criterion,
-      int num_threads
-  );
-  void OptimizeHpwlYWithAnchor(
-      double net_model_update_stop_criterion,
-      int num_threads
-  );
-  double OptimizeHpwl(double net_model_update_stop_criterion) override;
+  void OptimizeHpwlXWithAnchor(int num_threads);
+  void OptimizeHpwlYWithAnchor(int num_threads);
+  double OptimizeHpwl() override;
 
   double GetTime() override;
   void Close() override;

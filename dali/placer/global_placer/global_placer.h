@@ -61,9 +61,6 @@ class GlobalPlacer : public Placer {
 
   bool StartPlacement() override;
  protected:
-  // stop update net model if the cost change is less than this value for 3 iterations
-  double net_model_update_stop_criterion_ = 0.01;
-
   // for look ahead legalization
   int cur_iter_ = 0;
   int max_iter_ = 100;
@@ -87,8 +84,11 @@ class GlobalPlacer : public Placer {
       double tolerance
   );
   bool IsPlacementConverge();
-  void PrintHpwl(int iter, double lo, double hi) const;
-  void PrintPlacementSummary() const;
+  void PrintHpwl() const;
+  void PrintEndStatement(
+      std::string const &name_of_process,
+      bool is_success
+  ) override;
 
   void DumpResult(std::string const &name_of_file);
 

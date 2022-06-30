@@ -34,7 +34,7 @@ class RoughLegalizer {
   explicit RoughLegalizer(Circuit *ckt_ptr);
   virtual ~RoughLegalizer() = default;
   virtual void Initialize(double placement_density) = 0;
-  virtual double LookAheadLegalization() = 0;
+  virtual double RemoveCellOverlap() = 0;
   virtual double GetTime() = 0;
   virtual void Close() = 0;
   std::vector<double> &GetHpwls() { return upper_bound_hpwl_; }
@@ -73,7 +73,7 @@ class LookAheadLegalizer : public RoughLegalizer {
   void PlaceBlkInBox(BoxBin &box);
   void SplitBox(BoxBin &box);
   bool RecursiveBisectionblockspreading();
-  double LookAheadLegalization() override;
+  double RemoveCellOverlap() override;
 
   double GetTime() override;
   void Close() override;

@@ -44,14 +44,14 @@ bool WellPlaceFlow::StartPlacement() { // TODO: do not use this
   legalizer_->Initialize(PlacementDensity());
   InitializeBlockLocationAtRandom();
 
-  optimizer_->OptimizeHpwl(net_model_update_stop_criterion_);
+  optimizer_->OptimizeHpwl();
   //BOOST_LOG_TRIVIAL(info)   << cg_total_hpwl_ << "  " << circuit_ptr_->HPWL() << "\n";
 
   //bool old_success = false;
   max_iter_ = 50;
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     BOOST_LOG_TRIVIAL(trace) << cur_iter_ << "-th iteration\n";
-    legalizer_->LookAheadLegalization();
+    legalizer_->RemoveCellOverlap();
     if (cur_iter_ > 10) {
       LGTetrisEx legalizer;
       legalizer.TakeOver(this);
@@ -81,7 +81,7 @@ bool WellPlaceFlow::StartPlacement() { // TODO: do not use this
       << "It " << cur_iter_ << ": \t"
       << optimizer_->GetHpwls().back() << " "
       << legalizer_->GetHpwls().back() << "\n";
-    optimizer_->OptimizeHpwl(net_model_update_stop_criterion_);
+    optimizer_->OptimizeHpwl();
   }
 
   BOOST_LOG_TRIVIAL(info)
