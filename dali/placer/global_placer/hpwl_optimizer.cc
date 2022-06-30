@@ -703,7 +703,7 @@ void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(int num_threads) {
 #pragma omp parallel num_threads(num_threads) default(none) shared(block_list, sz)
   {
 #pragma omp for
-    for (size_t i = 0; i < block_list.size(); ++i) {
+    for (int i = 0; i < sz; ++i) {
       vy[i] = block_list[i].LLY();
     }
   }

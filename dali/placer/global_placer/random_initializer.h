@@ -21,6 +21,9 @@
 #ifndef DALI_PLACER_GLOBAL_PLACER_RANDOM_INITIALIZER_H_
 #define DALI_PLACER_GLOBAL_PLACER_RANDOM_INITIALIZER_H_
 
+#include <unordered_map>
+#include <string>
+
 #include "dali/circuit/circuit.h"
 #include "dali/common/elapsed_time.h"
 
@@ -34,6 +37,9 @@ class RandomInitializer {
       unsigned int random_seed
   );
   virtual ~RandomInitializer() = default;
+  virtual void SetParameters(
+      std::unordered_map<std::string, std::string> &params_dict
+  );
   virtual void RandomPlace() = 0;
   virtual void PrintStartStatement();
   virtual void PrintEndStatement();
@@ -41,6 +47,10 @@ class RandomInitializer {
   Circuit *ckt_ptr_ = nullptr;
   int num_threads_ = 1;
   unsigned int random_seed_ = 1;
+
+  // cut the block list in to a fixed number of chunks, and perform location
+  // initialization in parallel
+  int num_chunks_ = 1;
 
   // save intermediate result for debugging and/or visualization
   bool should_save_intermediate_result_ = false;
@@ -66,16 +76,17 @@ class NormalInitializer : public RandomInitializer {
  public:
   NormalInitializer(
       Circuit *ckt_ptr,
-      double std_dev,
       int num_threads,
       unsigned int random_seed
-  ) : RandomInitializer(ckt_ptr, num_threads, random_seed),
-      std_dev_(std_dev) {}
+  ) : RandomInitializer(ckt_ptr, num_threads, random_seed) {}
   ~NormalInitializer() override = default;
+  void SetParameters(
+      std::unordered_map<std::string, std::string> &params_dict
+  ) override;
   void RandomPlace() override;
   void PrintEndStatement() override;
  protected:
-  double std_dev_ = 0;
+  double std_dev_ = 1.0/3.0;
 };
 
 class MonteCarloInitializer : public RandomInitializer {

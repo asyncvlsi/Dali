@@ -21,8 +21,6 @@
 
 #include "elapsed_time.h"
 
-#include "logging.h"
-
 namespace dali {
 
 void ElapsedTime::RecordStartTime() {
@@ -39,9 +37,42 @@ void ElapsedTime::RecordEndTime() {
       static_cast<double>(end_cpu_time_ - start_cpu_time_) / CLOCKS_PER_SEC;
 }
 
-void ElapsedTime::PrintTimeElapsed() const {
-  BOOST_LOG_TRIVIAL(info)
-    << "(wall time: " << wall_time_ << "s, cpu time: " << cpu_time_ << "s)\n";
+void ElapsedTime::PrintTimeElapsed(severity lvl) const {
+  std::string buffer(1024, '\0');
+  int written_length = sprintf(
+      &buffer[0], "(wall time: %fs, cpu time: %f)\n", wall_time_, cpu_time_
+  );
+  buffer.resize(written_length);
+  switch (lvl) {
+    case boost::log::trivial::trace : {
+      BOOST_LOG_TRIVIAL(trace) << buffer;
+      break;
+    }
+    case boost::log::trivial::debug : {
+      BOOST_LOG_TRIVIAL(debug) << buffer;
+      break;
+    }
+    case boost::log::trivial::info : {
+      BOOST_LOG_TRIVIAL(info) << buffer;
+      break;
+    }
+    case boost::log::trivial::warning : {
+      BOOST_LOG_TRIVIAL(warning) << buffer;
+      break;
+    }
+    case boost::log::trivial::error : {
+      BOOST_LOG_TRIVIAL(error) << buffer;
+      break;
+    }
+    case boost::log::trivial::fatal : {
+      BOOST_LOG_TRIVIAL(fatal) << buffer;
+      break;
+    }
+    default : {
+      DaliFatal("Unknown Boost severity level");
+    }
+  }
+
 }
 
 double ElapsedTime::GetWallTime() const {

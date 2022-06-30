@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
   bool is_no_legal = false;
   bool is_no_io_place = false;
   severity verbose_level = boost::log::trivial::info;
-  bool has_log_prefix = false;
+  bool has_log_prefix = true;
   double x_grid = 0, y_grid = 0;
   double target_density = -1;
   int io_metal_layer = 0;
@@ -391,21 +391,21 @@ void ReportUsage() {
 void PrintSoftwareStatement() {
   BOOST_LOG_TRIVIAL(info)
     << "\n"
-    << "+----------------------------------------------+\n"
-    << "|                                              |\n"
-    << "|     Dali: a gridded cell placer              |\n"
-    << "|                                              |\n"
-    << "|     Department of Electrical Engineering     |\n"
-    << "|     Yale University                          |\n"
-    << "|                                              |\n"
-    << "|     Developed by                             |\n"
-    << "|     Yihang Yang, Rajit Manohar               |\n"
-    << "|                                              |\n"
-    << "|     This program is for academic use and     |\n"
-    << "|     testing only                             |\n"
-    << "|     THERE IS NO WARRANTY                     |\n"
-    << "|                                              |\n"
-    << "|     build time: " << __DATE__ << " " << __TIME__ << "         |\n"
-    << "|                                              |\n"
-    << "+----------------------------------------------+\n\n";
+    << "  +----------------------------------------------+\n"
+    << "  |                                              |\n"
+    << "  |     Dali: a gridded cell placer              |\n"
+    << "  |                                              |\n"
+    << "  |     Department of Electrical Engineering     |\n"
+    << "  |     Yale University                          |\n"
+    << "  |                                              |\n"
+    << "  |     Developed by                             |\n"
+    << "  |     Yihang Yang, Rajit Manohar               |\n"
+    << "  |                                              |\n"
+    << "  |     This program is for academic use and     |\n"
+    << "  |     testing only                             |\n"
+    << "  |     THERE IS NO WARRANTY                     |\n"
+    << "  |                                              |\n"
+    << "  |     build time: " << __DATE__ << " " << __TIME__ << "         |\n"
+    << "  |                                              |\n"
+    << "  +----------------------------------------------+\n\n";
 }

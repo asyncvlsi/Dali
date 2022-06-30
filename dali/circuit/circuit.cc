@@ -778,24 +778,40 @@ void Circuit::ReportNetFanoutHistogram() {
 void Circuit::ReportBriefSummary() {
   PrintHorizontalLine();
   BOOST_LOG_TRIVIAL(info)
-    << "Circuit brief summary:\n"
-    << "  movable blocks: " << TotMovBlkCnt() << "\n"
-    << "  fixed blocks:   " << design_.tot_fixed_blk_num_ << "\n"
-    << "  blocks:         " << TotBlkCnt() << "\n"
-    << "  iopins:         " << design_.iopins_.size() << "\n"
-    << "  nets:           " << design_.nets_.size() << "\n"
-    << "  grid size x/y:  " << GridValueX() << "/" << GridValueY() << "um\n"
-    << "  total movable blk area: " << design_.tot_mov_blk_area_ << "\n"
-    << "  total white space     : " << design_.tot_white_space_ << "\n"
-    << "  total block area      : " << design_.tot_blk_area_ << "\n"
+    << "Circuit brief summary:\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "  movable blocks: " << TotMovBlkCnt() << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "  fixed blocks:   " << design_.tot_fixed_blk_num_ << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "  blocks:         " << TotBlkCnt() << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "  iopins:         " << design_.iopins_.size() << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "  nets:           " << design_.nets_.size() << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "  grid size x/y:  " << GridValueX() << "/" << GridValueY() << "um\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "  total movable blk area: " << design_.tot_mov_blk_area_ << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "  total white space     : " << design_.tot_white_space_ << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "  total block area      : " << design_.tot_blk_area_ << "\n";
+  BOOST_LOG_TRIVIAL(info)
     << "  total space: "
-    << (long long) RegionWidth() * (long long) RegionHeight() << "\n"
-    << "    left:   " << RegionLLX() << "\n"
-    << "    right:  " << RegionURX() << "\n"
-    << "    bottom: " << RegionLLY() << "\n"
-    << "    top:    " << RegionURY() << "\n"
+    << (long long) RegionWidth() * (long long) RegionHeight() << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "    left:   " << RegionLLX() << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "    right:  " << RegionURX() << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "    bottom: " << RegionLLY() << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "    top:    " << RegionURY() << "\n";
+  BOOST_LOG_TRIVIAL(info)
     << "  average movable width/height: "
-    << AveMovBlkWidth() << "/" << AveMovBlkHeight() << "um\n"
+    << AveMovBlkWidth() << "/" << AveMovBlkHeight() << "um\n";
+  BOOST_LOG_TRIVIAL(info)
     << "  white space utility: " << WhiteSpaceUsage() << "\n";
   ReportHPWL();
 }
@@ -1823,7 +1839,7 @@ void Circuit::SaveDefFile(
     int save_net
 ) {
   std::string file_name = base_name + name_padding + ".def";
-  BOOST_LOG_TRIVIAL(info) << "Writing DEF file: " << file_name;
+  BOOST_LOG_TRIVIAL(info) << "Writing DEF file: " << file_name << "\n";
   std::ofstream ost(file_name.c_str());
   DaliExpects(ost.is_open(), "Cannot open file " + file_name);
   std::ifstream ist(def_file_name.c_str());
@@ -1856,8 +1872,6 @@ void Circuit::SaveDefFile(
   ExportNets(ost, save_net);
 
   ost << "END DESIGN\n";
-
-  BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
 void Circuit::SaveDefFileComponent(
@@ -1865,7 +1879,7 @@ void Circuit::SaveDefFileComponent(
     std::string const &def_file_name
 ) {
   std::string file_name = name_of_file;
-  BOOST_LOG_TRIVIAL(info) << "Writing DEF file: " << file_name;
+  BOOST_LOG_TRIVIAL(info) << "Writing DEF file: " << file_name << "\n";
   std::ofstream ost(file_name.c_str());
   DaliExpects(ost.is_open(), "Cannot open file " + file_name);
   std::ifstream ist(def_file_name.c_str());
@@ -1907,8 +1921,6 @@ void Circuit::SaveDefFileComponent(
     }
     ost << line << "\n";
   }
-
-  BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
 void Circuit::SaveBookshelfNode(std::string const &name_of_file) {

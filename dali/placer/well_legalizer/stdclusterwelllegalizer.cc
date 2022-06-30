@@ -1307,7 +1307,8 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
   std::string NP_name = "nplus";
   std::string PP_name = "pplus";
 
-  BOOST_LOG_TRIVIAL(info) << "Writing PP and NP rect file: " << name_of_file;
+  BOOST_LOG_TRIVIAL(info) << "Writing PP and NP rect file: "
+                          << name_of_file << "\n";
 
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
@@ -1438,7 +1439,6 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
     }
   }
   ost.close();
-  BOOST_LOG_TRIVIAL(info) << ", done\n";
 }
 
 void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
@@ -1615,17 +1615,25 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
 void StdClusterWellLegalizer::EmitWellRect(std::string const &name_of_file,
                                            int well_emit_mode) {
   // emit rect file
-  BOOST_LOG_TRIVIAL(info) << "Writing N/P-well rect file: " << name_of_file;
-
   switch (well_emit_mode) {
-    case 0:BOOST_LOG_TRIVIAL(info) << "emit N/P wells, ";
+    case 0: {
+      BOOST_LOG_TRIVIAL(info) << "Writing N/P-well rect file: "
+                              << name_of_file << "\n";
       break;
-    case 1:BOOST_LOG_TRIVIAL(info) << "emit N wells, ";
+    }
+    case 1: {
+      BOOST_LOG_TRIVIAL(info) << "Writing N-well rect file: "
+                              << name_of_file << "\n";
       break;
-    case 2:BOOST_LOG_TRIVIAL(info) << "emit P wells, ";
+    }
+    case 2: {
+      BOOST_LOG_TRIVIAL(info) << "Writing P-well rect file: "
+                              << name_of_file << "\n";
       break;
-    default:DaliExpects(false,
-                        "Invalid value for well_emit_mode");
+    }
+    default: {
+      DaliExpects(false, "Invalid value for well_emit_mode");
+    }
   }
 
   std::ofstream ost(name_of_file.c_str());
@@ -1695,7 +1703,6 @@ void StdClusterWellLegalizer::EmitWellRect(std::string const &name_of_file,
     }
   }
   ost.close();
-  BOOST_LOG_TRIVIAL(info) << " done\n";
 }
 
 void StdClusterWellLegalizer::ExportWellToPhyDB(
@@ -1786,8 +1793,8 @@ void StdClusterWellLegalizer::ExportWellToPhyDB(
  * Emits a rect file for power routing
  * ****/
 void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
-  BOOST_LOG_TRIVIAL(info) << "Writing cluster rect file: " << name_of_file
-                          << " for router, ";
+  BOOST_LOG_TRIVIAL(info)
+    << "Writing cluster rect file: " << name_of_file << "\n";
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
@@ -1838,7 +1845,6 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
     }
   }
   ost.close();
-  BOOST_LOG_TRIVIAL(info) << " done\n";
 }
 
 }

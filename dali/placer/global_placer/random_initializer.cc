@@ -47,10 +47,16 @@ void RandomInitializer::PrintStartStatement() {
     << "\n";
 }
 
+void RandomInitializer::SetParameters(
+    [[maybe_unused]]std::unordered_map<std::string, std::string> &params_dict
+) {}
+
 void RandomInitializer::PrintEndStatement() {
   BOOST_LOG_TRIVIAL(info)
     << "  HPWL after random initialization: "
     << ckt_ptr_->WeightedHPWL() << "\n";
+  elapsed_time_.RecordEndTime();
+  elapsed_time_.PrintTimeElapsed(boost::log::trivial::debug);
   if (should_save_intermediate_result_) {
     ckt_ptr_->GenMATLABTable("rand_init.txt");
   }
@@ -58,20 +64,33 @@ void RandomInitializer::PrintEndStatement() {
 
 void UniformInitializer::RandomPlace() {
   PrintStartStatement();
-  // initialize the random number generator
-  std::minstd_rand0 generator{random_seed_};
-  std::uniform_real_distribution<double> distribution(0, 1);
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
+  int sz = static_cast<int>(blocks.size());
+  int chunk_size = std::ceil((double) sz / num_chunks_);
   int region_width = ckt_ptr_->RegionWidth();
   int region_height = ckt_ptr_->RegionHeight();
   int region_left = ckt_ptr_->RegionLLX();
   int region_bottom = ckt_ptr_->RegionLLY();
-  for (auto &blk : blocks) {
-    if (!blk.IsMovable()) continue;
-    double init_x = region_left + region_width * distribution(generator);
-    double init_y = region_bottom + region_height * distribution(generator);
-    blk.SetCenterX(init_x);
-    blk.SetCenterY(init_y);
+#pragma omp parallel num_threads(num_threads_) default(none) shared(blocks, sz, chunk_size, region_width, region_height, region_left, region_bottom)
+  {
+    int thread_id = omp_get_thread_num();
+    for (int chunk_id = thread_id;
+         chunk_id < num_chunks_;
+         chunk_id += num_threads_) {
+      // for each chunk, create a random number generator
+      std::minstd_rand0 generator{random_seed_ + chunk_id};
+      std::uniform_real_distribution<double> distribution(0, 1);
+
+      int low = chunk_id * chunk_size;
+      int high = std::min(low + chunk_size, sz);
+      for (int i = low; i < high; ++i) {
+        if (!blocks[i].IsMovable()) continue;
+        double init_x = region_left + region_width * distribution(generator);
+        double init_y = region_bottom + region_height * distribution(generator);
+        blocks[i].SetCenterX(init_x);
+        blocks[i].SetCenterY(init_y);
+      }
+    }
   }
 
   PrintEndStatement();
@@ -81,6 +100,20 @@ void UniformInitializer::PrintEndStatement() {
   BOOST_LOG_TRIVIAL(debug)
     << "  block location uniform initialization complete\n";
   RandomInitializer::PrintEndStatement();
+}
+
+void NormalInitializer::SetParameters(
+    std::unordered_map<std::string, std::string> &params_dict
+) {
+  std::string std_dev_name = "std_dev";
+  if (params_dict.find(std_dev_name) != params_dict.end()) {
+    try {
+      std_dev_ = std::stod(params_dict.at(std_dev_name));
+    } catch (...) {
+      DaliFatal("Failed to convert "
+                    << params_dict.at(std_dev_name) << " to a double");
+    }
+  }
 }
 
 void NormalInitializer::RandomPlace() {

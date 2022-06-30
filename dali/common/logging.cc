@@ -121,12 +121,18 @@ void InitLogging(
         keywords::format = "%Message%"
     );
   }
+  g_file_sink->locked_backend()->set_auto_newline_mode(
+      sink::auto_newline_mode::disabled_auto_newline
+  );
   g_file_sink->locked_backend()->auto_flush(false);
 
   // add a console sink
   g_console_sink = boost::log::add_console_log(
       std::cout,
       boost::log::keywords::format = "%Message%"
+  );
+  g_console_sink->locked_backend()->set_auto_newline_mode(
+      sink::auto_newline_mode::disabled_auto_newline
   );
   g_console_sink->locked_backend()->auto_flush(false);
 

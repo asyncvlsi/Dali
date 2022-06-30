@@ -96,7 +96,7 @@ void GlobalPlacer::CloseOptimizerAndLegalizer() {
  */
 void GlobalPlacer::InitializeBlockLocationAtRandom() {
   initializer_ = new UniformInitializer(ckt_ptr_, 1, 1);
-  //initializer_ = new NormalInitializer(ckt_ptr_, 1.0/3.0, 1, 1);
+  //initializer_ = new NormalInitializer(ckt_ptr_, 1, 1);
   initializer_->RandomPlace();
   delete initializer_;
   initializer_ = nullptr;

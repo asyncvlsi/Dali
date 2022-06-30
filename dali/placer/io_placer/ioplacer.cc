@@ -426,8 +426,8 @@ bool IoPlacer::AutoPlaceIoPin() {
 
   BOOST_LOG_TRIVIAL(info)
     << "\033[0;36m"
-    << "I/O Placement complete!\n"
-    << "\033[0m";
+    << "I/O Placement complete!"
+    << "\033[0m\n";
   return true;
 }
 

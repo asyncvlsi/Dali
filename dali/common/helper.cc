@@ -36,9 +36,8 @@ void SaveArgs(int argc, char *argv[]) {
     cmd_line_arguments += argv[i];
     cmd_line_arguments.push_back(' ');
   }
-  BOOST_LOG_TRIVIAL(info)
-    << "Command:"
-    << "\n  " << cmd_line_arguments << "\n" << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "Command:\n";
+  BOOST_LOG_TRIVIAL(info) << cmd_line_arguments << "\n" << std::endl;
 }
 
 std::vector<std::vector<std::string>> ParseArguments(
@@ -49,8 +48,8 @@ std::vector<std::vector<std::string>> ParseArguments(
   std::vector<std::vector<std::string>> options;
   for (int i = 1; i < argc; ++i) {
     std::string arg(argv[i]);
-    if (arg.substr(0, flag_prefix.size())
-        == flag_prefix) { // this is a new flag
+    if (arg.substr(0, flag_prefix.size())== flag_prefix) {
+      // this is a new flag
       options.emplace_back();
       options.back().emplace_back(arg);
     } else if (!options.empty()) { // this is an option for the latest flag

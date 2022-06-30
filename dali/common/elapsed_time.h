@@ -24,6 +24,8 @@
 #include <ctime>
 #include <chrono>
 
+#include "logging.h"
+
 namespace dali {
 
 class ElapsedTime {
@@ -31,7 +33,7 @@ class ElapsedTime {
   ElapsedTime() = default;
   void RecordStartTime();
   void RecordEndTime();
-  void PrintTimeElapsed() const;
+  void PrintTimeElapsed(severity lvl = boost::log::trivial::info) const;
   double GetWallTime() const;
   double GetCpuTime() const;
  private:
