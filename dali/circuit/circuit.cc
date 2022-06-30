@@ -1204,7 +1204,7 @@ double Circuit::WeightedHPWL() {
 
 void Circuit::ReportHPWL() {
   BOOST_LOG_TRIVIAL(info)
-    << "  Current weighted HPWL: " << WeightedHPWL() << "um\n";
+    << "  current weighted HPWL: " << WeightedHPWL() << "um\n";
 }
 
 double Circuit::WeightedBoundingBoxX() {
@@ -1229,7 +1229,7 @@ double Circuit::WeightedBoundingBox() {
 
 void Circuit::ReportBoundingBox() {
   BOOST_LOG_TRIVIAL(info)
-    << "  Current weighted bbox: " << WeightedBoundingBox() << " um\n";
+    << "  current weighted bbox: " << WeightedBoundingBox() << " um\n";
 }
 
 void Circuit::ReportHPWLHistogramLinear(int bin_num) {
@@ -2300,18 +2300,18 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
   if (is_placement_grid_set) {
     SetGridValue(grid_value_x, grid_value_y);
   } else {
-    BOOST_LOG_TRIVIAL(info) << "  Placement grid not set in PhyDB\n";
-    BOOST_LOG_TRIVIAL(info) << "  Checking Sites\n";
+    BOOST_LOG_TRIVIAL(info) << "  placement grid not set in PhyDB\n";
+    BOOST_LOG_TRIVIAL(info) << "  checking sites\n";
     auto &sites = phy_db_tech.GetSitesRef();
     if (!sites.empty()) {
       grid_value_x = sites[0].GetWidth();
       grid_value_y = sites[0].GetHeight();
-      BOOST_LOG_TRIVIAL(info) << "    Width : " << grid_value_x << "um\n";
-      BOOST_LOG_TRIVIAL(info) << "    Height: " << grid_value_y << "um\n";
+      BOOST_LOG_TRIVIAL(info) << "    width : " << grid_value_x << "um\n";
+      BOOST_LOG_TRIVIAL(info) << "    height: " << grid_value_y << "um\n";
       SetGridValue(grid_value_x, grid_value_y);
       SetRowHeight(grid_value_y);
     } else {
-      BOOST_LOG_TRIVIAL(info) << "  No Sites found\n";
+      BOOST_LOG_TRIVIAL(info) << "  no sites found\n";
     }
   }
 
@@ -2384,10 +2384,11 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
       Pin *new_pin = blk_type->AddPin(pin_name, is_input);
 
       auto &layer_rects = pin.GetLayerRectRef();
-      if (layer_rects.empty()) {
-        DaliExpects(false, "No physical pins, Macro: "
-            + blk_type->Name() + ", pin: " + pin_name);
-      }
+      DaliExpects(
+          !layer_rects.empty(),
+          "No physical pins, Macro: "
+              << blk_type->Name() << ", pin: " << pin_name
+      );
 
       auto bbox = pin.GetBoundingBox();
       double llx = LengthPhydb2DaliX(bbox.LLX());

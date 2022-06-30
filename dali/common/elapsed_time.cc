@@ -41,7 +41,7 @@ void ElapsedTime::RecordEndTime() {
 
 void ElapsedTime::PrintTimeElapsed() const {
   BOOST_LOG_TRIVIAL(info)
-    << "wall time: " << wall_time_ << "s, cpu time: " << cpu_time_ << "s\n";
+    << "(wall time: " << wall_time_ << "s, cpu time: " << cpu_time_ << "s)\n";
 }
 
 double ElapsedTime::GetWallTime() const {

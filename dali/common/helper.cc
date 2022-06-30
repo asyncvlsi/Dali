@@ -263,8 +263,8 @@ void ReportMemory() {
   auto peak_mem = getPeakRSS();
   auto curr_mem = getCurrentRSS();
   BOOST_LOG_TRIVIAL(info)
-    << "peak memory: " << (peak_mem >> 20u) << "MB, "
-    << " current memory: " << (curr_mem >> 20u) << "MB\n";
+    << "(peak memory: " << (peak_mem >> 20u) << "MB, "
+    << " current memory: " << (curr_mem >> 20u) << "MB)\n";
 }
 
 /****

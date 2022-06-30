@@ -87,10 +87,22 @@ void GlobalPlacer::CloseOptimizerAndLegalizer() {
   }
 }
 
-void GlobalPlacer::SetBlockLocationInitialization(int mode, double std_dev) {
-  mode_ = mode;
+/****
+ * @brief Set parameters to control how to cell location should be randomly
+ * initialized.
+ *
+ * @param block_initialization_mode: 0, uniform distribution; 1, normal distribution
+ * @param random_seed: random random_seed, default 1.
+ * @param std_dev: standard deviation for normal distribution.
+ */
+void GlobalPlacer::SetBlockLocationInitialization(
+    int block_initialization_mode,
+    unsigned int random_seed,
+    double std_dev
+) {
+  block_initialization_mode_ = block_initialization_mode;
+  random_seed_ = random_seed;
   std_dev_ = std_dev;
-  // error checking
 }
 
 /****
@@ -105,10 +117,14 @@ void GlobalPlacer::InitializeBlockLocationAtRandom() {
     << "  HPWL before random initialization: " << ckt_ptr_->WeightedHPWL()
     << "\n";
 
-  if (mode_ == 0) {
+  if (block_initialization_mode_ == 0) {
     BlockLocationUniformInitialization();
-  } else if (mode_ == 1) {
-    BlockLocationNormalInitialization(std_dev_);
+  } else if (block_initialization_mode_ == 1) {
+    BlockLocationNormalInitialization();
+  } else {
+    BOOST_LOG_TRIVIAL(warning)
+     << "Unknown initialization mode, use uniform mode instead\n";
+    BlockLocationUniformInitialization();
   }
 
   BOOST_LOG_TRIVIAL(info)
@@ -130,8 +146,8 @@ bool GlobalPlacer::StartPlacement() {
   PrintStartStatement("global placement");
 
   SanityCheck();
-  InitializeOptimizerAndLegalizer();
   InitializeBlockLocationAtRandom();
+  InitializeOptimizerAndLegalizer();
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     optimizer_->SetIteration(cur_iter_);
     optimizer_->OptimizeHpwl();
@@ -142,7 +158,7 @@ bool GlobalPlacer::StartPlacement() {
   UpdateMovableBlkPlacementStatus();
   CloseOptimizerAndLegalizer();
 
-  PrintEndStatement("global placement", true);
+  PrintEndStatement("Global placement", true);
   return true;
 }
 
@@ -151,7 +167,7 @@ bool GlobalPlacer::StartPlacement() {
  */
 void GlobalPlacer::BlockLocationUniformInitialization() {
   // initialize the random number generator
-  std::minstd_rand0 generator{1};
+  std::minstd_rand0 generator{random_seed_};
   std::uniform_real_distribution<double> distribution(0, 1);
 
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
@@ -165,7 +181,7 @@ void GlobalPlacer::BlockLocationUniformInitialization() {
     blk.SetCenterY(init_y);
   }
   BOOST_LOG_TRIVIAL(debug)
-    << "  Block location uniform initialization complete\n";
+    << "  block location uniform initialization complete\n";
 }
 
 /****
@@ -173,10 +189,10 @@ void GlobalPlacer::BlockLocationUniformInitialization() {
  *
  * @param std_dev: the deviation of cells around the center of the placement region
  */
-void GlobalPlacer::BlockLocationNormalInitialization(double std_dev) {
+void GlobalPlacer::BlockLocationNormalInitialization() {
   // initialize the random number generator
-  std::minstd_rand0 generator{1};
-  std::normal_distribution<double> normal_distribution(0.0, std_dev);
+  std::minstd_rand0 generator{random_seed_};
+  std::normal_distribution<double> normal_distribution(0.0, std_dev_);
 
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
   int region_width = RegionWidth();
@@ -195,7 +211,7 @@ void GlobalPlacer::BlockLocationNormalInitialization(double std_dev) {
     block.SetCenterY(y);
   }
   BOOST_LOG_TRIVIAL(debug)
-    << "  Block location gaussian initialization complete\n";
+    << "  block location gaussian initialization complete\n";
 }
 
 /****
@@ -302,7 +318,7 @@ void GlobalPlacer::PrintHpwl() const {
   std::string buffer(1024, '\0');
   int written_length = sprintf(
       &buffer[0],
-      "  Iter %-3d: %.4e  %.4e\n", cur_iter_, lo_hpwl, hi_hpwl
+      "  iter-%-3d: %.4e  %.4e\n", cur_iter_, lo_hpwl, hi_hpwl
   );
   buffer.resize(written_length);
   BOOST_LOG_TRIVIAL(info) << buffer;

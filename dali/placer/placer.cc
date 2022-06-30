@@ -301,9 +301,7 @@ void Placer::EmitDEFWellFile(
     [[maybe_unused]]int well_emit_mode,
     [[maybe_unused]]bool enable_emitting_cluster
 ) {
-  BOOST_LOG_TRIVIAL(info)
-    << __FILE__ << " : " << __LINE__ << " : " << __FUNCTION__ << "\n"
-    << "This function does nothing, you should not use this member function\n";
+  DaliFatal("You should not use this member function");
 }
 
 /****
@@ -311,7 +309,7 @@ void Placer::EmitDEFWellFile(
  */
 void Placer::CheckTargetDensity() const {
   double epsilon = 1e-3;
-  BOOST_LOG_TRIVIAL(info) << "  Target density: " << placement_density_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "  target density: " << placement_density_ << "\n";
   DaliExpects(
       placement_density_ > epsilon,
       "Filling rate should be in a proper range, for example [0.1, 1], current value: "
@@ -326,8 +324,7 @@ void Placer::CheckNets() { // TODO: empty nets should be allowed
   auto &nets = ckt_ptr_->Nets();
   for (auto &net : nets) {
     if (net.BlockPins().empty()) {
-      DaliWarns(
-          true,
+      DaliWarning(
           "Empty net or this net only contains unplaced IOPINs: " << net.Name()
       );
     }
@@ -382,13 +379,6 @@ void Placer::PrintEndStatement(
 ) {
   ReportHPWL();
 
-  // report time
-  elapsed_time_.RecordEndTime();
-  elapsed_time_.PrintTimeElapsed();
-
-  // report memory
-  ReportMemory();
-
   if (is_success) {
     BOOST_LOG_TRIVIAL(info)
       << "\033[0;36m" << name_of_process << " completed" << "\033[0m\n";
@@ -396,6 +386,13 @@ void Placer::PrintEndStatement(
     BOOST_LOG_TRIVIAL(info)
       << "\033[0;31m" << name_of_process << " failed" << "\033[0m\n";
   }
+
+  // report time
+  elapsed_time_.RecordEndTime();
+  elapsed_time_.PrintTimeElapsed();
+
+  // report memory
+  ReportMemory();
 
 }
 

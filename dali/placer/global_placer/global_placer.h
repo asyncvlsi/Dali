@@ -56,7 +56,11 @@ class GlobalPlacer : public Placer {
   void InitializeOptimizerAndLegalizer();
   void CloseOptimizerAndLegalizer();
 
-  void SetBlockLocationInitialization(int mode, double std_dev);
+  void SetBlockLocationInitialization(
+      int block_initialization_mode = 0,
+      unsigned int random_seed = 1,
+      double std_dev = -1
+  );
   void InitializeBlockLocationAtRandom();
 
   bool StartPlacement() override;
@@ -72,10 +76,11 @@ class GlobalPlacer : public Placer {
   bool should_save_intermediate_result_ = false;
 
   // block location initialization
-  int mode_ = 0;
+  int block_initialization_mode_ = 0;
+  unsigned int random_seed_ = 1;
   double std_dev_ = -1;
   void BlockLocationUniformInitialization();
-  void BlockLocationNormalInitialization(double std_dev);
+  void BlockLocationNormalInitialization();
 
   bool IsBlockListOrNetListEmpty() const;
   static bool IsSeriesConverge(

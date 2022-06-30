@@ -233,7 +233,7 @@ int main(int argc, char *argv[]) {
   using std::chrono::system_clock;
   system_clock::time_point today = system_clock::now();
   std::time_t tt = system_clock::to_time_t(today);
-  BOOST_LOG_TRIVIAL(info) << "today is: " << ctime(&tt) << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Today is: " << ctime(&tt) << "\n";
 
   // save command line arguments for future reference
   SaveArgs(argc, argv);
