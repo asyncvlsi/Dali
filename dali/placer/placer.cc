@@ -66,6 +66,7 @@ void Placer::SetInputCircuit(Circuit *circuit) {
   if (ckt_ptr_->Nets().empty()) {
     BOOST_LOG_TRIVIAL(info) << "Empty net list, nothing to optimize!\n";
   }
+  SetBoundaryFromCircuit();
 }
 
 /****
@@ -199,7 +200,7 @@ void Placer::SetBoundary(int left, int right, int bottom, int top) {
   CheckPlacementBoundary();
 }
 
-void Placer::SetBoundaryDef() {
+void Placer::SetBoundaryFromCircuit() {
   left_ = ckt_ptr_->RegionLLX();
   right_ = ckt_ptr_->RegionURX();
   bottom_ = ckt_ptr_->RegionLLY();

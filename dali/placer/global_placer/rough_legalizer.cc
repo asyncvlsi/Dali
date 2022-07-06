@@ -32,6 +32,10 @@ RoughLegalizer::RoughLegalizer(Circuit *ckt_ptr) {
   ckt_ptr_ = ckt_ptr;
 }
 
+void RoughLegalizer::SetShouldSaveIntermediateResult(bool should_save_intermediate_result) {
+  should_save_intermediate_result_ = should_save_intermediate_result;
+}
+
 /****
  * @brief determine the grid bin height and width
  * grid_bin_height and grid_bin_width is determined by the following formula:
@@ -1028,10 +1032,12 @@ double LookAheadLegalizer::RemoveCellOverlap() {
   elapsed_time.RecordEndTime();
   tot_lal_time += elapsed_time.GetWallTime();
 
-  //if (should_save_intermediate_result_) {
-  //DumpResult("lal_result_" + std::to_string(cur_iter_) + ".txt");
+  if (should_save_intermediate_result_) {
+    std::string file_name = "lal_result_" + std::to_string(cur_iter_) + ".txt";
+    ++cur_iter_;
+    ckt_ptr_->GenMATLABTable(file_name);
   //DumpLookAheadDisplacement("displace_" + std::to_string(cur_iter_), 1);
-  //}
+  }
 
   BOOST_LOG_TRIVIAL(debug)
     << "(UpdateGridBinState time: " << update_grid_bin_state_time_ << "s)\n";

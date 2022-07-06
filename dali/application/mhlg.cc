@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
   auto multi_well_legalizer = std::make_unique<GriddedRowLegalizer>();
   auto tetris_legalizer = std::make_unique<LGTetrisEx>();
   multi_well_legalizer->SetInputCircuit(&circuit);
-  multi_well_legalizer->SetBoundaryDef();
+  multi_well_legalizer->SetBoundaryFromCircuit();
   multi_well_legalizer->ImportStandardRowSegments(phy_db);
   multi_well_legalizer->InitializeBlockAuxiliaryInfo();
   multi_well_legalizer->SaveInitialLoc();

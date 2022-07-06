@@ -53,7 +53,7 @@ class Placer {
   void CheckPlacementBoundary();
   void SetBoundaryAuto();
   void SetBoundary(int left, int right, int bottom, int top);
-  void SetBoundaryDef();
+  void SetBoundaryFromCircuit();
   void ReportBoundaries() const;
 
   int RegionLeft() const { return left_; }
@@ -120,9 +120,6 @@ class Placer {
   void UpdateMovableBlkPlacementStatus();
 
   /****File I/O member functions****/
-  void GenMATLABTable(std::string const &name_of_file) {
-    ckt_ptr_->GenMATLABTable(name_of_file);
-  }
   virtual void GenMATLABWellTable(
       std::string const &name_of_file,
       [[maybe_unused]]int well_emit_mode

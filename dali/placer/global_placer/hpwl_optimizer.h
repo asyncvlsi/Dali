@@ -52,6 +52,7 @@ class HpwlOptimizer {
   std::vector<double> &GetHpwls() { return lower_bound_hpwl_; }
   std::vector<double> &GetHpwlsX() { return lower_bound_hpwl_x_; }
   std::vector<double> &GetHpwlsY() { return lower_bound_hpwl_y_; }
+  void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
  protected:
   Circuit *ckt_ptr_ = nullptr;
   int cur_iter_ = 0;
@@ -62,6 +63,9 @@ class HpwlOptimizer {
 
   // stop update net model if the cost change is less than this value for 3 iterations
   double net_model_update_stop_criterion_ = 0.01;
+
+  // save intermediate result for debugging and/or visualization
+  bool should_save_intermediate_result_ = false;
 };
 
 class B2BHpwlOptimizer : public HpwlOptimizer {
@@ -98,8 +102,6 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
 
   double GetTime() override;
   void Close() override;
-
-  void DumpResult(std::string const &name_of_file);
  protected:
   /**** parameters for CG solver optimization configuration ****/
   // this is to make sure cg_tolerance is the same for different machines
@@ -159,8 +161,6 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   // pseudo-net weight additional factor for anchor pseudo-net
   double alpha = 0.00;
   double alpha_step = 0.00;
-
-  bool is_dump_ = false;
 };
 
 class StarHpwlOptimizer : public B2BHpwlOptimizer {

@@ -1113,7 +1113,7 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
 
 void StdClusterWellLegalizer::GenMatlabClusterTable(std::string const &name_of_file) {
   std::string frame_file = name_of_file + "_outline.txt";
-  GenMATLABTable(frame_file);
+  ckt_ptr_->GenMATLABTable(frame_file);
   GenClusterTable(name_of_file, col_list_);
 }
 

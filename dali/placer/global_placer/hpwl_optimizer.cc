@@ -35,6 +35,10 @@ HpwlOptimizer::HpwlOptimizer(Circuit *ckt_ptr, int num_threads) {
   num_threads_ = num_threads;
 }
 
+void HpwlOptimizer::SetShouldSaveIntermediateResult(bool should_save_intermediate_result) {
+  should_save_intermediate_result_ = should_save_intermediate_result;
+}
+
 /****
  * @brief During quadratic placement, net weights are computed by dividing the
  * distance between two pins. To improve numerical stability, a small number is
@@ -775,7 +779,9 @@ double B2BHpwlOptimizer::OptimizeHpwl() {
   elapsed_time.RecordEndTime();
   tot_cg_time += elapsed_time.GetWallTime();
 
-  if (is_dump_) DumpResult("cg_result_" + std::to_string(cur_iter_) + ".txt");
+  if (should_save_intermediate_result_) {
+    ckt_ptr_->GenMATLABTable("cg_result_" + std::to_string(cur_iter_) + ".txt");
+  }
   BackUpBlockLocation();
   lower_bound_hpwl_.push_back(
       lower_bound_hpwl_x_.back() + lower_bound_hpwl_y_.back());
@@ -816,16 +822,6 @@ void B2BHpwlOptimizer::Close() {
     << tot_time_x << "s, "
     << tot_time_y << "s, "
     << tot_time_x + tot_time_y << "s\n";
-}
-
-void B2BHpwlOptimizer::DumpResult(std::string const &name_of_file) {
-  //UpdateGridBinState();
-  static int counter = 0;
-  //BOOST_LOG_TRIVIAL(info)   << "DumpNum:" << counter << "\n";
-  ckt_ptr_->GenMATLABTable(name_of_file);
-  //write_not_all_terminal_grid_bins("grid_bin_not_all_terminal" + std::to_string(counter) + ".txt");
-  //write_overfill_grid_bins("grid_bin_overfill" + std::to_string(counter) + ".txt");
-  ++counter;
 }
 
 void StarHpwlOptimizer::BuildProblemX() {

@@ -66,10 +66,12 @@ void GlobalPlacer::LoadConf(std::string const &config_file) {
 void GlobalPlacer::InitializeOptimizerAndLegalizer() {
   delete optimizer_;
   optimizer_ = new B2BHpwlOptimizer(ckt_ptr_, num_threads_);
+  optimizer_->SetShouldSaveIntermediateResult(should_save_intermediate_result_);
   optimizer_->Initialize();
 
   delete legalizer_;
   legalizer_ = new LookAheadLegalizer(ckt_ptr_);
+  legalizer_->SetShouldSaveIntermediateResult(should_save_intermediate_result_);
   legalizer_->Initialize(PlacementDensity());
 }
 
@@ -94,12 +96,28 @@ void GlobalPlacer::CloseOptimizerAndLegalizer() {
  * @param mode: the method to initialize the block locations
  * @param std_dev: the standard deviation if normal distribution is used
  */
-void GlobalPlacer::InitializeBlockLocationAtRandom() {
-  initializer_ = new UniformInitializer(ckt_ptr_, 1, 1);
-  //initializer_ = new NormalInitializer(ckt_ptr_, 1, 1);
-  initializer_->RandomPlace();
-  delete initializer_;
-  initializer_ = nullptr;
+void GlobalPlacer::InitializeBlockLocation() {
+  RandomInitializer *initializer;
+  switch (initializer_type_) {
+    case RandomInitializerType::UNIFORM : {
+      initializer = new UniformInitializer(ckt_ptr_, 1);
+      break;
+    }
+    case RandomInitializerType::NORMAL : {
+      initializer = new NormalInitializer(ckt_ptr_, 1);
+      break;
+    }
+    case RandomInitializerType::MONTECARLO : {
+      initializer = new MonteCarloInitializer(ckt_ptr_, 1);
+      break;
+    }
+    default : {
+      DaliFatal("Unknown random initializer type");
+    }
+  }
+  initializer->SetShouldSaveIntermediateResult(should_save_intermediate_result_);
+  initializer->RandomPlace();
+  delete initializer;
 }
 
 /****
@@ -112,7 +130,7 @@ bool GlobalPlacer::StartPlacement() {
   PrintStartStatement("global placement");
 
   SanityCheck();
-  InitializeBlockLocationAtRandom();
+  InitializeBlockLocation();
   InitializeOptimizerAndLegalizer();
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     optimizer_->SetIteration(cur_iter_);
@@ -122,9 +140,9 @@ bool GlobalPlacer::StartPlacement() {
     if (IsPlacementConverge()) break;
   }
   UpdateMovableBlkPlacementStatus();
-  CloseOptimizerAndLegalizer();
 
   PrintEndStatement("Global placement", true);
+  CloseOptimizerAndLegalizer();
   return true;
 }
 
@@ -163,7 +181,7 @@ bool GlobalPlacer::IsSeriesConverge(
     min_val = std::min(min_val, data[sz - 1 - i]);
   }
   DaliExpects(max_val >= 0 && min_val >= 0,
-              "Do not support negative data series!");
+              "Negative data series not supported!");
   if (max_val < 1e-10 && min_val <= 1e-10) {
     return true;
   }

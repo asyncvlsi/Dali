@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
   //gb_placer_.net_model_update_stop_criterion_ = tune_param;
   BOOST_LOG_TRIVIAL(info) << "tune_param: " << tune_param << "\n";
   gb_placer.SetInputCircuit(&circuit);
-  gb_placer.SetBoundaryDef();
+  gb_placer.SetBoundaryFromCircuit();
   gb_placer.SetPlacementDensity(0.9);
   gb_placer.ReportBoundaries();
   gb_placer.SetShouldSaveIntermediateResult(false);

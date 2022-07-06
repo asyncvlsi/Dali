@@ -281,7 +281,6 @@ int main(int argc, char *argv[]) {
   auto gb_placer = std::make_unique<GlobalPlacer>();
   gb_placer->SetInputCircuit(&circuit);
   gb_placer->SetNumThreads(num_threads);
-  gb_placer->SetBoundaryDef();
   gb_placer->SetMaxIteration(gb_maxiter);
   if (!is_no_global) {
     gb_placer->SetPlacementDensity(target_density);
@@ -289,7 +288,7 @@ int main(int argc, char *argv[]) {
     gb_placer->StartPlacement();
   }
   if (export_well_cluster_for_matlab) {
-    gb_placer->GenMATLABTable("gb_result.txt");
+    circuit.GenMATLABTable("gb_result.txt");
   }
 
   // (2). legalization
@@ -300,7 +299,7 @@ int main(int argc, char *argv[]) {
     well_legalizer->SetStripePartitionMode(well_legalization_mode);
     well_legalizer->StartPlacement();
     if (export_well_cluster_for_matlab) {
-      well_legalizer->GenMATLABTable("sc_result.txt");
+      circuit.GenMATLABTable("sc_result.txt");
       well_legalizer->GenMatlabClusterTable("sc_result");
       well_legalizer->GenMATLABWellTable("scw", 0);
     }
@@ -321,7 +320,7 @@ int main(int argc, char *argv[]) {
     multi_well_legalizer->SetPartitionMode(well_legalization_mode);
     multi_well_legalizer->StartPlacement();
     if (export_well_cluster_for_matlab) {
-      multi_well_legalizer->GenMATLABTable("sc_result.txt");
+      circuit.GenMATLABTable("sc_result.txt");
       multi_well_legalizer->GenMatlabClusterTable("sc_result");
       multi_well_legalizer->GenMATLABWellTable("scw", 0);
       multi_well_legalizer->GenDisplacement("disp_result.txt");

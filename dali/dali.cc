@@ -282,7 +282,7 @@ bool Dali::GlobalPlace(double density, int num_threads) {
   //gb_placer_.LoadConf(config_file);
   gb_placer_.SetInputCircuit(&circuit_);
   gb_placer_.SetShouldSaveIntermediateResult(false);
-  gb_placer_.SetBoundaryDef();
+  gb_placer_.SetBoundaryFromCircuit();
   gb_placer_.SetPlacementDensity(density);
   //gb_placer_.ReportBoundaries();
   return gb_placer_.StartPlacement();

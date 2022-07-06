@@ -42,7 +42,7 @@ class GlobalPlacer : public Placer {
   void InitializeOptimizerAndLegalizer();
   void CloseOptimizerAndLegalizer();
 
-  void InitializeBlockLocationAtRandom();
+  void InitializeBlockLocation();
 
   bool StartPlacement() override;
  protected:
@@ -69,7 +69,7 @@ class GlobalPlacer : public Placer {
       bool is_success
   ) override;
 
-  RandomInitializer *initializer_ = nullptr;
+  RandomInitializerType initializer_type_ = RandomInitializerType::UNIFORM;
   HpwlOptimizer *optimizer_ = nullptr;
   RoughLegalizer *legalizer_ = nullptr;
 };

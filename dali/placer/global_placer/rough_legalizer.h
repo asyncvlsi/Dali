@@ -40,12 +40,17 @@ class RoughLegalizer {
   std::vector<double> &GetHpwls() { return upper_bound_hpwl_; }
   std::vector<double> &GetHpwlsX() { return upper_bound_hpwl_x_; }
   std::vector<double> &GetHpwlsY() { return upper_bound_hpwl_y_; }
+  void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
  protected:
   Circuit *ckt_ptr_ = nullptr;
   double placement_density_ = 1.0;
   std::vector<double> upper_bound_hpwl_;
   std::vector<double> upper_bound_hpwl_x_;
   std::vector<double> upper_bound_hpwl_y_;
+
+  // save intermediate result for debugging and/or visualization
+  bool should_save_intermediate_result_ = false;
+  int cur_iter_ = 0;
 };
 
 class LookAheadLegalizer : public RoughLegalizer {
