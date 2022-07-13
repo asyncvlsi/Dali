@@ -35,7 +35,7 @@
 using namespace dali;
 
 int main(int argc, char **argv) {
-  InitLogging("", false, boost::log::trivial::trace);
+  InitLogging("", boost::log::trivial::trace, false);
 
   double tune_param;
   for (int i = 1; i < argc;) {
@@ -69,7 +69,6 @@ int main(int argc, char **argv) {
   BOOST_LOG_TRIVIAL(info) << "Eigen thread " << Eigen::nbThreads() << "\n";
 
   time_t Time = clock();
-  double wall_time = get_wall_time();
 
   std::string adaptec1_lef = "ISPD2005/adaptec1.lef";
 #if TEST_LG
@@ -114,7 +113,7 @@ int main(int argc, char **argv) {
   circuit.SaveDefFile("ISPD2005/adaptec1_dali", "", adaptec1_def, 1, 1, 1, 1);
   circuit.SaveBookshelfPl("adaptec1bs.pl");
 #endif
-  gb_placer.GenMATLABTable("gb_result.txt");
+  circuit.GenMATLABTable("gb_result.txt");
 
   /*
   LGTetrisEx legalizer_;
@@ -145,10 +144,8 @@ int main(int argc, char **argv) {
   //circuit.ReportHPWLHistogramLogarithm();
 
   Time = clock() - Time;
-  wall_time = get_wall_time() - wall_time;
   BOOST_LOG_TRIVIAL(info)
     << "Execution time " << double(Time) / CLOCKS_PER_SEC << "s.\n";
-  BOOST_LOG_TRIVIAL(info) << "Wall time " << wall_time << "s.\n";
   BOOST_LOG_TRIVIAL(info) << "tune_param: " << tune_param << "\n";
 
   return 0;

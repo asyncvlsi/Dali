@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  InitLogging("", false, logging::trivial::info, true);
+  InitLogging("", boost::log::trivial::info, true);
   SaveArgs(argc, argv);
   std::vector<std::vector<std::string>> options =
       ParseArguments(argc, argv, "--");
@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
   double k_left = 0.5;
   double k_left_step = 0.5;
 
-  for (auto &option: options) {
+  for (auto &option : options) {
     std::string &flag = option[0];
     if (flag == "--lef") {
       lef_files.assign(option.begin() + 1, option.end());
@@ -93,24 +93,24 @@ int main(int argc, char *argv[]) {
       } catch (...) {
         DaliExpects(false, "Invalid k_left!");
       }
-    }  else {
+    } else {
       DaliExpects(false, "Unknown flag: " + option[0]);
     }
   }
   options.clear();
 
   /**** time ****/
-  double wall_time = get_wall_time();
-  double cpu_time = get_cpu_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   /**** read LEF/DEF/CELL ****/
   // (1). initialize PhyDB
   phydb::PhyDB phy_db;
   phy_db.SetPlacementGrids(0.2, 0.2);
-  for (auto &lef_file_name: lef_files) {
+  for (auto &lef_file_name : lef_files) {
     phy_db.ReadLef(lef_file_name);
   }
-  for (auto &def_file_name: def_files) {
+  for (auto &def_file_name : def_files) {
     phy_db.ReadDef(def_file_name);
   }
 
@@ -118,12 +118,6 @@ int main(int argc, char *argv[]) {
   Circuit circuit;
   circuit.InitializeFromPhyDB(&phy_db);
   circuit.CreateFakeWellForStandardCell();
-  double file_wall_time = get_wall_time() - wall_time;
-  double file_cpu_time = get_cpu_time() - cpu_time;
-  BOOST_LOG_TRIVIAL(info)
-    << "File loading complete " << "(wall time: "
-    << file_wall_time << "s, cpu time: " << file_cpu_time << "s)\n";
-  BOOST_LOG_TRIVIAL(info) << "---------------------------------------\n";
   circuit.ReportBriefSummary();
   circuit.ReportHPWL();
   circuit.ReportBoundingBox();
@@ -143,7 +137,7 @@ int main(int argc, char *argv[]) {
   tetris_legalizer->SetMaxIteration(10);
   tetris_legalizer->StartRowAssignment();
 
-  tetris_legalizer->GenMATLABTable("lg_result.txt");
+  circuit.GenMATLABTable("lg_result.txt");
   multi_well_legalizer->GenDisplacement("disp_result.txt");
 
   /*
@@ -167,12 +161,11 @@ int main(int argc, char *argv[]) {
     circuit.SaveDefFile(output_name, "", def_files[0], 1, 1, 2, 1);
   }
 
-  wall_time = get_wall_time() - wall_time;
-  cpu_time = get_cpu_time() - cpu_time;
+  elapsed_time.RecordEndTime();
   BOOST_LOG_TRIVIAL(info)
     << "****End of placement "
-    << "(wall time: " << wall_time << "s, "
-    << "cpu time: " << cpu_time << "s)****\n";
+    << "(wall time: " << elapsed_time.GetWallTime() << "s, "
+    << "cpu time: " << elapsed_time.GetCpuTime() << "s)****\n";
 
   return 0;
 }

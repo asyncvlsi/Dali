@@ -21,7 +21,6 @@
 #include <ctime>
 
 #include <iostream>
-#include <vector>
 
 #include "dali/circuit/circuit.h"
 #include "dali/common/logging.h"
@@ -63,7 +62,7 @@ int main(int argc, char *argv[]) {
   well_place_flow.SetPlacementDensity(0.65);
   well_place_flow.ReportBoundaries();
   well_place_flow.StartPlacement();
-  well_place_flow.GenMATLABTable("gb_result.txt");
+  circuit.GenMATLABTable("gb_result.txt");
 
   well_place_flow.EmitDEFWellFile(out_file_name, 1);
   circuit.SaveDefFile(out_file_name, "", def_file_name, 1, 1, 2, 1);

@@ -32,7 +32,8 @@
 using namespace dali;
 
 int main() {
-  double wall_time = get_wall_time();
+  ElapsedTime elapsed_time;
+  elapsed_time.RecordStartTime();
 
   std::string lef_file_name = "processor.lef";
   std::string def_file_name = "processor.def";
@@ -106,8 +107,9 @@ int main() {
   std::string well_name("circuitwell1.rect");
   phy_db.SaveWellToRectFile(well_name);
 
-  wall_time = get_wall_time() - wall_time;
-  BOOST_LOG_TRIVIAL(info) << "Execution time " << wall_time << "s.\n";
+  elapsed_time.RecordEndTime();
+  BOOST_LOG_TRIVIAL(info)
+    << "Execution time " << elapsed_time.GetWallTime() << "s.\n";
   dali.Close();
 
   return 0;

@@ -149,7 +149,9 @@ void MonteCarloInitializer::RandomPlace() {
 }
 
 void MonteCarloInitializer::PrintEndStatement() {
-  DaliFatal("Not implemented");
+  BOOST_LOG_TRIVIAL(debug)
+    << "  block location Monte Carlo initialization complete\n";
+  RandomInitializer::PrintEndStatement();
 }
 
 } // dali
