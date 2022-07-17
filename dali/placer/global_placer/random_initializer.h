@@ -24,6 +24,7 @@
 #include <unordered_map>
 #include <string>
 
+#include "dali/circuit/block.h"
 #include "dali/circuit/circuit.h"
 #include "dali/common/elapsed_time.h"
 
@@ -40,7 +41,8 @@ namespace dali {
 enum class RandomInitializerType {
   UNIFORM = 0,
   NORMAL = 1,
-  MONTECARLO = 2
+  MONTECARLO = 2,
+  DENSITYAWARE = 3
 };
 
 /****
@@ -62,7 +64,7 @@ class RandomInitializer {
   unsigned int random_seed_ = 1;
 
   // save intermediate result for debugging and/or visualization
-  bool should_save_intermediate_result_ = true;
+  bool should_save_intermediate_result_ = false;
 
   ElapsedTime elapsed_time_;
 };
@@ -113,6 +115,9 @@ class NormalInitializer : public RandomInitializer {
  * This is very similar to UniformInitializer, the difference is that if the
  * random location of a cell is on the top of a fixed macro, then re-generate
  * a random location.
+ *
+ * Note: this initializer is designed for the scenario where all macros are
+ * fixed (not unplaced or placed). It may not work very well for other scenarios.
  */
 class MonteCarloInitializer : public RandomInitializer {
  public:
@@ -121,6 +126,32 @@ class MonteCarloInitializer : public RandomInitializer {
       unsigned int random_seed = 1
   ) : RandomInitializer(ckt_ptr, random_seed) {}
   ~MonteCarloInitializer() override = default;
+  void RandomPlace() override;
+ protected:
+  void PrintEndStatement() override;
+
+  void InitializeGridBin();
+  void AssignFixedMacroToGridBin();
+  bool IsBlkLocationValid(Block &blk);
+  int grid_bin_cnt_x_ = 30;
+  int grid_bin_cnt_y_ = 30;
+  double bin_width_ = 0;
+  double bin_height_ = 0;
+  int blk_size_factor_ = 5;
+  // contiguous memory layout is not very important in this case, use a vector
+  // of vector to simulate the 2-D array
+  std::vector<std::vector<std::vector<Block *>>> macros_in_grid_bin_;
+  int num_trials_ = 50;
+};
+
+// TODO: implement this initializer, put the block into the bin with the least density
+class DensityAwareInitializer : public RandomInitializer {
+ public:
+  explicit DensityAwareInitializer(
+      Circuit *ckt_ptr,
+      unsigned int random_seed = 1
+  ) : RandomInitializer(ckt_ptr, random_seed) {}
+  ~DensityAwareInitializer() override = default;
   void RandomPlace() override;
  protected:
   void PrintEndStatement() override;

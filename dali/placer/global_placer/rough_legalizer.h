@@ -71,7 +71,10 @@ class LookAheadLegalizer : public RoughLegalizer {
   void UpdateClusterArea(GridBinCluster &cluster);
   void UpdateClusterList();
   void UpdateLargestCluster();
-  unsigned long int LookUpWhiteSpace(GridBinIndex const &ll_index, GridBinIndex const &ur_index);
+  unsigned long int LookUpWhiteSpace(
+      GridBinIndex const &ll_index,
+      GridBinIndex const &ur_index
+  );
   unsigned long int LookUpWhiteSpace(WindowQuadruple &window);
   void FindMinimumBoxForLargestCluster();
   void SplitGridBox(BoxBin &box);
@@ -91,8 +94,8 @@ class LookAheadLegalizer : public RoughLegalizer {
   int grid_bin_width = 0;
   int grid_cnt_x = 0;
   int grid_cnt_y = 0;
-  std::vector<std::vector<GridBin> > grid_bin_mesh;
-  std::vector<std::vector<unsigned long long> > grid_bin_white_space_LUT;
+  std::vector<std::vector<GridBin>> grid_bin_mesh;
+  std::vector<std::vector<unsigned long long>> grid_bin_white_space_LUT;
 
   std::multiset<GridBinCluster, std::greater<>> cluster_set;
   std::queue<BoxBin> queue_box_bin;

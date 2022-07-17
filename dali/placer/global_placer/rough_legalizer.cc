@@ -102,24 +102,23 @@ void LookAheadLegalizer::UpdateAttributesForAllGridBins() {
  * This can help us to compute available white space in each grid bin.
  */
 void LookAheadLegalizer::UpdateFixedBlocksInGridBins() {
-  auto &blocks = ckt_ptr_->Blocks();
-  int sz = static_cast<int>(blocks.size());
-  for (int i = 0; i < sz; i++) {
+  for (auto &&blk: ckt_ptr_->Blocks()) {
     /* find the left, right, bottom, top index of the grid */
-    if (blocks[i].IsMovable()) continue;
-    bool fixed_blk_out_of_region = int(blocks[i].LLX()) >= ckt_ptr_->RegionURX()
-        || int(blocks[i].URX()) <= ckt_ptr_->RegionLLX()
-        || int(blocks[i].LLY()) >= ckt_ptr_->RegionURY()
-        || int(blocks[i].URY()) <= ckt_ptr_->RegionLLY();
+    if (blk.IsMovable()) continue;
+    bool fixed_blk_out_of_region = int(blk.LLX()) >= ckt_ptr_->RegionURX()
+        || int(blk.URX()) <= ckt_ptr_->RegionLLX()
+        || int(blk.LLY()) >= ckt_ptr_->RegionURY()
+        || int(blk.URY()) <= ckt_ptr_->RegionLLY();
+    // TODO: test and clean up this part of code using an adaptec benchmark
     if (fixed_blk_out_of_region) continue;
     int left_index = (int) std::floor(
-        (blocks[i].LLX() - ckt_ptr_->RegionLLX()) / grid_bin_width);
+        (blk.LLX() - ckt_ptr_->RegionLLX()) / grid_bin_width);
     int right_index = (int) std::floor(
-        (blocks[i].URX() - ckt_ptr_->RegionLLX()) / grid_bin_width);
+        (blk.URX() - ckt_ptr_->RegionLLX()) / grid_bin_width);
     int bottom_index = (int) std::floor(
-        (blocks[i].LLY() - ckt_ptr_->RegionLLY()) / grid_bin_height);
+        (blk.LLY() - ckt_ptr_->RegionLLY()) / grid_bin_height);
     int top_index = (int) std::floor(
-        (blocks[i].URY() - ckt_ptr_->RegionLLY()) / grid_bin_height);
+        (blk.URY() - ckt_ptr_->RegionLLY()) / grid_bin_height);
     /* the grid boundaries might be the placement region boundaries
      * if a block touches the rightmost and topmost boundaries,
      * the index need to be fixed to make sure no memory access out of scope */
@@ -137,15 +136,15 @@ void LookAheadLegalizer::UpdateFixedBlocksInGridBins() {
       for (int k = bottom_index; k <= top_index; ++k) {
         /* the following case might happen:
          * the top/right of a fixed block overlap with the bottom/left of
-         * a grid box if this case happens, we need to ignore this fixed
+         * a grid box. if this case happens, we need to ignore this fixed
          * block for this grid box. */
         bool blk_out_of_bin =
-            int(blocks[i].LLX() >= grid_bin_mesh[j][k].right) ||
-                int(blocks[i].URX() <= grid_bin_mesh[j][k].left) ||
-                int(blocks[i].LLY() >= grid_bin_mesh[j][k].top) ||
-                int(blocks[i].URY() <= grid_bin_mesh[j][k].bottom);
+            int(blk.LLX() >= grid_bin_mesh[j][k].right) ||
+                int(blk.URX() <= grid_bin_mesh[j][k].left) ||
+                int(blk.LLY() >= grid_bin_mesh[j][k].top) ||
+                int(blk.URY() <= grid_bin_mesh[j][k].bottom);
         if (blk_out_of_bin) continue;
-        grid_bin_mesh[j][k].fixed_blocks.push_back(&(blocks[i]));
+        grid_bin_mesh[j][k].fixed_blocks.push_back(&blk);
       }
     }
   }
