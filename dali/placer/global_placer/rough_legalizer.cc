@@ -18,12 +18,11 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
 #include "rough_legalizer.h"
 
 #include "dali/common/elapsed_time.h"
 #include "dali/common/logging.h"
-
-#include "box_bin.h"
 
 namespace dali {
 

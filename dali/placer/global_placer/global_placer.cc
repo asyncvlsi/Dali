@@ -103,11 +103,11 @@ void GlobalPlacer::InitializeBlockLocation() {
       initializer = new UniformInitializer(ckt_ptr_, 1);
       break;
     }
-    case RandomInitializerType::NORMAL : {
-      initializer = new NormalInitializer(ckt_ptr_, 1);
+    case RandomInitializerType::GAUSSIAN : {
+      initializer = new GaussianInitializer(ckt_ptr_, 1);
       break;
     }
-    case RandomInitializerType::MONTECARLO : {
+    case RandomInitializerType::MONTE_CARLO : {
       initializer = new MonteCarloInitializer(ckt_ptr_, 1);
       break;
     }
@@ -131,6 +131,9 @@ bool GlobalPlacer::StartPlacement() {
 
   SanityCheck();
   InitializeBlockLocation();
+  ckt_ptr_->GenMATLABTable("init_result.txt");
+  std::cout << std::endl;
+  exit(1);
   InitializeOptimizerAndLegalizer();
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     optimizer_->SetIteration(cur_iter_);

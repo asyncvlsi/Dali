@@ -24,7 +24,7 @@
 #include <vector>
 
 #include "dali/circuit/block.h"
-#include "grid_bin_index.h"
+#include "dali/placer/global_placer/grid_bin_index.h"
 
 namespace dali {
 

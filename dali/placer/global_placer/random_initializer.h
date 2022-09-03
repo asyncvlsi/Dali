@@ -40,9 +40,9 @@ namespace dali {
  */
 enum class RandomInitializerType {
   UNIFORM = 0,
-  NORMAL = 1,
-  MONTECARLO = 2,
-  DENSITYAWARE = 3
+  GAUSSIAN = 1,
+  MONTE_CARLO = 2,
+  DENSITY_AWARE = 3
 };
 
 /****
@@ -70,8 +70,8 @@ class RandomInitializer {
 };
 
 /****
- * This class implements a initializer that uniformly place cells across the
- * whole placement region at random.
+ * This class implements an initializer that uniformly place cells across the
+ * whole placement region at random without considering the size of cells.
  */
 class UniformInitializer : public RandomInitializer {
  public:
@@ -87,19 +87,20 @@ class UniformInitializer : public RandomInitializer {
 };
 
 /****
- * This class implements a initializer that randomly place cells across the
- * whole placement region following the normal distribution.
+ * This class implements an initializer that randomly place cells across the
+ * whole placement region following the normal distribution without considering
+ * the size of cells.
  * The center of the distribution is the center of the placement region, which
  * is assumed to be a rectangle.
  * The deviation of this distribution will be scaled by the region width and height.
  */
-class NormalInitializer : public RandomInitializer {
+class GaussianInitializer : public RandomInitializer {
  public:
-  explicit NormalInitializer(
+  explicit GaussianInitializer(
       Circuit *ckt_ptr,
       unsigned int random_seed = 1
   ) : RandomInitializer(ckt_ptr, random_seed) {}
-  ~NormalInitializer() override = default;
+  ~GaussianInitializer() override = default;
   void SetParameters(
       std::unordered_map<std::string, std::string> &params_dict
   ) override;
@@ -110,8 +111,8 @@ class NormalInitializer : public RandomInitializer {
 };
 
 /****
- * This class implements a initializer that uniformly place cells across the
- * whole white space at random.
+ * This class implements an initializer that uniformly place cells across the
+ * whole white space at random without considering the size of cells.
  * This is very similar to UniformInitializer, the difference is that if the
  * random location of a cell is on the top of a fixed macro, then re-generate
  * a random location.
@@ -144,7 +145,21 @@ class MonteCarloInitializer : public RandomInitializer {
   int num_trials_ = 50;
 };
 
-// TODO: implement this initializer, put the block into the bin with the least density
+/****
+ * This class implements an initializer that uniformly place cells across the
+ * whole white space at random.
+ * This initializer will:
+ *   1. divide the placement region into many grid bins;
+ *   2. for each cell, find the grid bin with the smallest cell density;
+ *
+ * By default, a 100 * 100 mesh is used to divide the placement region into
+ * grid bins. The grid bin width/height is at least 10 times of average cell
+ * width/height, and thus the number of grid bins might be adjusted.
+ * Future work: we can make it possible to set these parameters by users.
+ *
+ * Note: this initializer is designed for the scenario where all macros are
+ * fixed (not unplaced or placed). It may not work very well for other scenarios.
+ */
 class DensityAwareInitializer : public RandomInitializer {
  public:
   explicit DensityAwareInitializer(

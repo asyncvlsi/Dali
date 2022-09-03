@@ -25,10 +25,10 @@
 #include <fstream>
 #include <vector>
 
-#include "cell_cut_point.h"
 #include "dali/circuit/block.h"
-#include "grid_bin.h"
-#include "grid_bin_index.h"
+#include "dali/placer/global_placer/cell_cut_point.h"
+#include "dali/placer/global_placer/grid_bin.h"
+#include "dali/placer/global_placer/grid_bin_index.h"
 
 namespace dali {
 

@@ -25,8 +25,8 @@
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/Sparse>
 
-#include "blkpairnets.h"
 #include "dali/circuit/circuit.h"
+#include "dali/placer/global_placer/blkpairnets.h"
 
 namespace dali {
 

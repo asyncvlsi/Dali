@@ -23,11 +23,10 @@
 
 #include <vector>
 
+#include "dali/placer/global_placer/hpwl_optimizer.h"
+#include "dali/placer/global_placer/random_initializer.h"
+#include "dali/placer/global_placer/rough_legalizer.h"
 #include "dali/placer/placer.h"
-
-#include "hpwl_optimizer.h"
-#include "random_initializer.h"
-#include "rough_legalizer.h"
 
 namespace dali {
 
@@ -69,7 +68,7 @@ class GlobalPlacer : public Placer {
       bool is_success
   ) override;
 
-  RandomInitializerType initializer_type_ = RandomInitializerType::UNIFORM;
+  RandomInitializerType initializer_type_ = RandomInitializerType::MONTE_CARLO;
   HpwlOptimizer *optimizer_ = nullptr;
   RoughLegalizer *legalizer_ = nullptr;
 };

@@ -36,7 +36,9 @@ RandomInitializer::RandomInitializer(
   DaliExpects(ckt_ptr_ != nullptr, "Ckt is a null ptr?");
 }
 
-void RandomInitializer::SetShouldSaveIntermediateResult(bool should_save_intermediate_result) {
+void RandomInitializer::SetShouldSaveIntermediateResult(
+    bool should_save_intermediate_result
+) {
   should_save_intermediate_result_ = should_save_intermediate_result;
 }
 
@@ -92,7 +94,7 @@ void UniformInitializer::PrintEndStatement() {
   RandomInitializer::PrintEndStatement();
 }
 
-void NormalInitializer::SetParameters(
+void GaussianInitializer::SetParameters(
     std::unordered_map<std::string, std::string> &params_dict
 ) {
   std::string std_dev_name = "std_dev";
@@ -106,7 +108,7 @@ void NormalInitializer::SetParameters(
   }
 }
 
-void NormalInitializer::RandomPlace() {
+void GaussianInitializer::RandomPlace() {
   PrintStartStatement();
   // initialize the random number generator
   std::minstd_rand0 generator{random_seed_};
@@ -135,7 +137,7 @@ void NormalInitializer::RandomPlace() {
   PrintEndStatement();
 }
 
-void NormalInitializer::PrintEndStatement() {
+void GaussianInitializer::PrintEndStatement() {
   BOOST_LOG_TRIVIAL(debug)
     << "  block location gaussian initialization complete\n";
   RandomInitializer::PrintEndStatement();
@@ -257,14 +259,14 @@ bool MonteCarloInitializer::IsBlkLocationValid(Block &blk) {
   double y_loc = blk.Y();
   int ix = static_cast<int>(std::floor((x_loc - region_llx) / bin_width_));
   int iy = static_cast<int>(std::floor((y_loc - region_lly) / bin_height_));
-  for (auto &macro_ptr : macros_in_grid_bin_[ix][iy]) {
-    if (x_loc >= macro_ptr->URX()) continue;
-    if (y_loc >= macro_ptr->URY()) continue;
-    if (x_loc <= macro_ptr->LLX()) continue;
-    if (y_loc <= macro_ptr->LLY()) continue;
-    return false;
-  }
-  return true;
+  return std::all_of(
+      macros_in_grid_bin_[ix][iy].begin(),
+      macros_in_grid_bin_[ix][iy].end(),
+      [&x_loc, &y_loc](const Block *macro_ptr) {
+        return (x_loc >= macro_ptr->URX()) || (y_loc >= macro_ptr->URY())
+            || (x_loc <= macro_ptr->LLX()) || (y_loc <= macro_ptr->LLY());
+      }
+  );
 }
 
 } // dali

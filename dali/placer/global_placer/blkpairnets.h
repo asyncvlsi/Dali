@@ -23,8 +23,8 @@
 
 #include <vector>
 
-#include "Eigen/IterativeLinearSolvers"
-#include "Eigen/Sparse"
+#include <Eigen/IterativeLinearSolvers>
+#include <Eigen/Sparse>
 
 #include "dali/circuit/net.h"
 
