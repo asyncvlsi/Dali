@@ -18,6 +18,7 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
 #ifndef DALI_PLACER_PLACER_H_
 #define DALI_PLACER_PLACER_H_
 

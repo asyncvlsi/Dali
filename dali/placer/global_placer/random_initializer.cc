@@ -34,6 +34,7 @@ RandomInitializer::RandomInitializer(
 ) : ckt_ptr_(ckt_ptr),
     random_seed_(random_seed) {
   DaliExpects(ckt_ptr_ != nullptr, "Ckt is a null ptr?");
+  initializer_name_ = "abstract random";
 }
 
 void RandomInitializer::SetShouldSaveIntermediateResult(
@@ -45,8 +46,8 @@ void RandomInitializer::SetShouldSaveIntermediateResult(
 void RandomInitializer::PrintStartStatement() {
   elapsed_time_.RecordStartTime();
   BOOST_LOG_TRIVIAL(info)
-    << "  HPWL before random initialization: " << ckt_ptr_->WeightedHPWL()
-    << "\n";
+    << "  Block location initialization:\n"
+    << "    HPWL before, " << ckt_ptr_->WeightedHPWL() << "\n";
 }
 
 void RandomInitializer::SetParameters(
@@ -54,14 +55,22 @@ void RandomInitializer::SetParameters(
 ) {}
 
 void RandomInitializer::PrintEndStatement() {
+  BOOST_LOG_TRIVIAL(debug)
+    << "    " << initializer_name_ << " initialization complete\n";
   BOOST_LOG_TRIVIAL(info)
-    << "  HPWL after random initialization: "
-    << ckt_ptr_->WeightedHPWL() << "\n";
+    << "    HPWL after, " << ckt_ptr_->WeightedHPWL() << "\n";
   elapsed_time_.RecordEndTime();
   elapsed_time_.PrintTimeElapsed(boost::log::trivial::debug);
   if (should_save_intermediate_result_) {
     ckt_ptr_->GenMATLABTable("rand_init.txt");
   }
+}
+
+UniformInitializer::UniformInitializer(
+    Circuit *ckt_ptr,
+    unsigned int random_seed
+) : RandomInitializer(ckt_ptr, random_seed) {
+  initializer_name_ = "uniform";
 }
 
 void UniformInitializer::RandomPlace() {
@@ -88,10 +97,11 @@ void UniformInitializer::RandomPlace() {
   PrintEndStatement();
 }
 
-void UniformInitializer::PrintEndStatement() {
-  BOOST_LOG_TRIVIAL(debug)
-    << "  block location uniform initialization complete\n";
-  RandomInitializer::PrintEndStatement();
+GaussianInitializer::GaussianInitializer(
+    Circuit *ckt_ptr,
+    unsigned int random_seed
+) : RandomInitializer(ckt_ptr, random_seed) {
+  initializer_name_ = "Gaussian";
 }
 
 void GaussianInitializer::SetParameters(
@@ -137,10 +147,54 @@ void GaussianInitializer::RandomPlace() {
   PrintEndStatement();
 }
 
-void GaussianInitializer::PrintEndStatement() {
-  BOOST_LOG_TRIVIAL(debug)
-    << "  block location gaussian initialization complete\n";
-  RandomInitializer::PrintEndStatement();
+std::vector<Block *> &InitializerGridBin::Macros() {
+  return macros_;
+}
+
+double InitializerGridBin::GetDensity() const {
+  return density_;
+}
+
+void InitializerGridBin::UpdateDensity() {
+  density_ = used_area_ / total_area_;
+}
+
+void InitializerGridBin::SetBoundary(
+    double lx,
+    double ly,
+    double ux,
+    double uy
+) {
+  lx_ = lx;
+  ly_ = ly;
+  ux_ = ux;
+  uy_ = uy;
+}
+
+void InitializerGridBin::UpdateTotalArea() {
+  total_area_ = (ux_ - lx_) * (uy_ - ly_);
+}
+
+void InitializerGridBin::UpdateMacroArea() {
+  used_area_ = 0;
+  for (auto &&
+        macro_ptr : macros_) { // TODO: use GetCoverArea() to get the total macro area
+    used_area_ += macro_ptr->Area(); // TODO: use long long instead of double
+  }
+  UpdateDensity();
+}
+
+void InitializerGridBin::AddBlock(Block *blk) {
+  blocks_.emplace_back(blk);
+  used_area_ += blk->Area();
+  UpdateDensity();
+}
+
+MonteCarloInitializer::MonteCarloInitializer(
+    Circuit *ckt_ptr,
+    unsigned int random_seed
+) : RandomInitializer(ckt_ptr, random_seed) {
+  initializer_name_ = "Monte Carlo";
 }
 
 void MonteCarloInitializer::RandomPlace() {
@@ -173,12 +227,6 @@ void MonteCarloInitializer::RandomPlace() {
   PrintEndStatement();
 }
 
-void MonteCarloInitializer::PrintEndStatement() {
-  BOOST_LOG_TRIVIAL(debug)
-    << "  block location Monte Carlo initialization complete\n";
-  RandomInitializer::PrintEndStatement();
-}
-
 /****
  * @brief Initialize a grid bin to store fixed macros in each bin
  */
@@ -201,8 +249,8 @@ void MonteCarloInitializer::InitializeGridBin() {
     bin_height_ = region_height / grid_bin_cnt_y_;
   }
 
-  auto tmp_col = std::vector<std::vector<Block *>>(grid_bin_cnt_y_);
-  macros_in_grid_bin_.assign(grid_bin_cnt_x_, tmp_col);
+  auto tmp_col = std::vector<InitializerGridBin>(grid_bin_cnt_y_);
+  grid_bins_.assign(grid_bin_cnt_x_, tmp_col);
 }
 
 /****
@@ -240,7 +288,7 @@ void MonteCarloInitializer::AssignFixedMacroToGridBin() {
       for (int iy = ly_index; iy <= uy_index; ++iy) {
         // we can ignore the case where this fixed macro only touches the boundary of this grid bin.
         // but it is ok not to do it because this will only lead to a small performance penalty
-        macros_in_grid_bin_[ix][iy].push_back(&blk);
+        grid_bins_[ix][iy].Macros().push_back(&blk);
       }
     }
   }
@@ -259,14 +307,99 @@ bool MonteCarloInitializer::IsBlkLocationValid(Block &blk) {
   double y_loc = blk.Y();
   int ix = static_cast<int>(std::floor((x_loc - region_llx) / bin_width_));
   int iy = static_cast<int>(std::floor((y_loc - region_lly) / bin_height_));
+  auto &macros = grid_bins_[ix][iy].Macros();
   return std::all_of(
-      macros_in_grid_bin_[ix][iy].begin(),
-      macros_in_grid_bin_[ix][iy].end(),
+      macros.begin(),
+      macros.end(),
       [&x_loc, &y_loc](const Block *macro_ptr) {
         return (x_loc >= macro_ptr->URX()) || (y_loc >= macro_ptr->URY())
             || (x_loc <= macro_ptr->LLX()) || (y_loc <= macro_ptr->LLY());
       }
   );
+}
+
+DensityAwareInitializer::DensityAwareInitializer(
+    Circuit *ckt_ptr,
+    unsigned int random_seed
+) : MonteCarloInitializer(ckt_ptr, random_seed) {
+  initializer_name_ = "density-aware";
+}
+
+void DensityAwareInitializer::RandomPlace() {
+  PrintStartStatement();
+
+  InitializeGridBin();
+  AssignFixedMacroToGridBin();
+  InitializePriorityQueue();
+
+  int region_width = ckt_ptr_->RegionWidth();
+  int region_height = ckt_ptr_->RegionHeight();
+  int region_llx = ckt_ptr_->RegionLLX();
+  int region_lly = ckt_ptr_->RegionLLY();
+
+  // initialize the random number generator
+  std::minstd_rand0 generator{random_seed_};
+  std::uniform_real_distribution<double> distribution(0, 1);
+
+  std::vector<Block> &blocks = ckt_ptr_->Blocks();
+  for (auto &&blk : blocks) {
+    if (!blk.IsMovable()) continue;
+    auto grid_bin = density_queue_.top();
+    density_queue_.pop();
+    grid_bin->AddBlock(&blk);
+    density_queue_.emplace(grid_bin);
+  }
+
+  while (!density_queue_.empty()) {
+    std::cout << density_queue_.top()->GetDensity() << "\n";
+    density_queue_.pop();
+  }
+
+  PrintEndStatement();
+}
+
+void DensityAwareInitializer::InitializeGridBin() {
+  MonteCarloInitializer::InitializeGridBin();
+
+  int region_llx = ckt_ptr_->RegionLLX();
+  int region_lly = ckt_ptr_->RegionLLY();
+  for (int ix = 0; ix < grid_bin_cnt_x_; ++ix) {
+    for (int iy = 0; iy < grid_bin_cnt_y_; ++iy) {
+      double lx = region_llx + ix * bin_width_;
+      double ly = region_lly + iy * bin_height_;
+      double ux = lx + bin_width_;
+      double uy = ly + bin_height_;
+      grid_bins_[ix][iy].SetBoundary(lx, ly, ux, uy);
+      grid_bins_[ix][iy].UpdateTotalArea();
+    }
+  }
+}
+
+void DensityAwareInitializer::AssignFixedMacroToGridBin() {
+  MonteCarloInitializer::AssignFixedMacroToGridBin();
+  /*
+  for (int ix = 0; ix < grid_bin_cnt_x_; ++ix) {
+    for (int iy = 0; iy < grid_bin_cnt_y_; ++iy) {
+      grid_bins_[ix][iy].UpdateMacroArea();
+    }
+  }
+   */
+}
+
+void DensityAwareInitializer::InitializePriorityQueue() {
+  for (int ix = 0; ix < grid_bin_cnt_x_; ++ix) {
+    for (int iy = 0; iy < grid_bin_cnt_y_; ++iy) {
+      density_queue_.emplace(&(grid_bins_[ix][iy]));
+    }
+  }
+  /*
+  while (!density_queue_.empty()) {
+    std::cout << density_queue_.top()->GetDensity() << "\n";
+    density_queue_.pop();
+  }
+
+  std::cout << std::endl;
+   */
 }
 
 } // dali

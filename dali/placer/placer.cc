@@ -18,12 +18,13 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
 #include "placer.h"
 
 #include <omp.h>
 
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 
 #include "dali/common/misc.h"
 

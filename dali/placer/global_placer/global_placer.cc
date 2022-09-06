@@ -21,9 +21,9 @@
 
 #include "global_placer.h"
 
-#include <cfloat>
-
 #include <algorithm>
+#include <cfloat>
+#include <memory>
 
 #include "dali/common/logging.h"
 
@@ -97,18 +97,22 @@ void GlobalPlacer::CloseOptimizerAndLegalizer() {
  * @param std_dev: the standard deviation if normal distribution is used
  */
 void GlobalPlacer::InitializeBlockLocation() {
-  RandomInitializer *initializer;
+  std::unique_ptr<RandomInitializer> initializer(nullptr);
   switch (initializer_type_) {
     case RandomInitializerType::UNIFORM : {
-      initializer = new UniformInitializer(ckt_ptr_, 1);
+      initializer = std::make_unique<UniformInitializer>(ckt_ptr_, 1);
       break;
     }
     case RandomInitializerType::GAUSSIAN : {
-      initializer = new GaussianInitializer(ckt_ptr_, 1);
+      initializer = std::make_unique<GaussianInitializer>(ckt_ptr_, 1);
       break;
     }
     case RandomInitializerType::MONTE_CARLO : {
-      initializer = new MonteCarloInitializer(ckt_ptr_, 1);
+      initializer = std::make_unique<MonteCarloInitializer>(ckt_ptr_, 1);
+      break;
+    }
+    case RandomInitializerType::DENSITY_AWARE : {
+      initializer = std::make_unique<DensityAwareInitializer>(ckt_ptr_, 1);
       break;
     }
     default : {
@@ -117,7 +121,6 @@ void GlobalPlacer::InitializeBlockLocation() {
   }
   initializer->SetShouldSaveIntermediateResult(should_save_intermediate_result_);
   initializer->RandomPlace();
-  delete initializer;
 }
 
 /****

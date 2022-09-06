@@ -22,11 +22,11 @@
 #define DALI_PLACER_GLOBAL_PLACER_ROUGH_LEGALIZER_H_
 
 #include <queue>
+#include <set>
 
 #include "dali/circuit/circuit.h"
 #include "dali/placer/global_placer/box_bin.h"
 #include "dali/placer/global_placer/grid_bin.h"
-#include "dali/placer/global_placer/grid_bin_index.h"
 
 namespace dali {
 

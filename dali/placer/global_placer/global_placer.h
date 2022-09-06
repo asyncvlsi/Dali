@@ -68,7 +68,7 @@ class GlobalPlacer : public Placer {
       bool is_success
   ) override;
 
-  RandomInitializerType initializer_type_ = RandomInitializerType::MONTE_CARLO;
+  RandomInitializerType initializer_type_ = RandomInitializerType::DENSITY_AWARE;
   HpwlOptimizer *optimizer_ = nullptr;
   RoughLegalizer *legalizer_ = nullptr;
 };

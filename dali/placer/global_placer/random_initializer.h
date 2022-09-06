@@ -21,6 +21,7 @@
 #ifndef DALI_PLACER_GLOBAL_PLACER_RANDOM_INITIALIZER_H_
 #define DALI_PLACER_GLOBAL_PLACER_RANDOM_INITIALIZER_H_
 
+#include <queue>
 #include <unordered_map>
 #include <string>
 
@@ -52,14 +53,17 @@ class RandomInitializer {
  public:
   RandomInitializer(Circuit *ckt_ptr, unsigned int random_seed);
   virtual ~RandomInitializer() = default;
+
+  // interface functions
   virtual void SetParameters(
       std::unordered_map<std::string, std::string> &params_dict
   );
   void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
   virtual void RandomPlace() = 0;
+
  protected:
-  virtual void PrintStartStatement();
-  virtual void PrintEndStatement();
+  void PrintStartStatement();
+  void PrintEndStatement();
   Circuit *ckt_ptr_ = nullptr;
   unsigned int random_seed_ = 1;
 
@@ -67,6 +71,7 @@ class RandomInitializer {
   bool should_save_intermediate_result_ = false;
 
   ElapsedTime elapsed_time_;
+  std::string initializer_name_;
 };
 
 /****
@@ -78,12 +83,9 @@ class UniformInitializer : public RandomInitializer {
   explicit UniformInitializer(
       Circuit *ckt_ptr,
       unsigned int random_seed = 1
-  ) : RandomInitializer(ckt_ptr, random_seed) {}
+  );
   ~UniformInitializer() override = default;
   void RandomPlace() override;
- protected:
-  void PrintEndStatement() override;
-
 };
 
 /****
@@ -99,15 +101,45 @@ class GaussianInitializer : public RandomInitializer {
   explicit GaussianInitializer(
       Circuit *ckt_ptr,
       unsigned int random_seed = 1
-  ) : RandomInitializer(ckt_ptr, random_seed) {}
+  );
   ~GaussianInitializer() override = default;
   void SetParameters(
       std::unordered_map<std::string, std::string> &params_dict
   ) override;
   void RandomPlace() override;
  protected:
-  void PrintEndStatement() override;
   double std_dev_ = 1.0 / 3.0;
+};
+
+/****
+ * This is a helper struct to store necessary information in each grid bin
+ * during cell initialization.
+ */
+class InitializerGridBin {
+ public:
+  std::vector<Block *> &Macros();
+  double GetDensity() const;
+  void UpdateDensity();
+  void SetBoundary(double lx, double ly, double ux, double uy);
+  void UpdateTotalArea();
+  void UpdateMacroArea();
+  void AddBlock(Block *blk);
+ private:
+  std::vector<Block *> macros_;
+  std::vector<Block *> blocks_;
+  double density_ = 0;
+  double total_area_ = 0;
+  double used_area_ = 0;
+  double lx_ = 0;
+  double ly_ = 0;
+  double ux_ = 0;
+  double uy_ = 0;
+};
+
+struct CompareInitializerGridBinPtr {
+  bool operator()(InitializerGridBin const *p1, InitializerGridBin const *p2) {
+    return p1->GetDensity() > p2->GetDensity();
+  }
 };
 
 /****
@@ -117,6 +149,11 @@ class GaussianInitializer : public RandomInitializer {
  * random location of a cell is on the top of a fixed macro, then re-generate
  * a random location.
  *
+ * By default, a 30 * 30 mesh is used to divide the placement region into
+ * grid bins. The grid bin width/height is at least 5 times of average cell
+ * width/height, and thus the number of grid bins might be adjusted.
+ * Future work: we can make it possible to set these parameters by users.
+ *
  * Note: this initializer is designed for the scenario where all macros are
  * fixed (not unplaced or placed). It may not work very well for other scenarios.
  */
@@ -125,23 +162,20 @@ class MonteCarloInitializer : public RandomInitializer {
   explicit MonteCarloInitializer(
       Circuit *ckt_ptr,
       unsigned int random_seed = 1
-  ) : RandomInitializer(ckt_ptr, random_seed) {}
+  );
   ~MonteCarloInitializer() override = default;
   void RandomPlace() override;
  protected:
-  void PrintEndStatement() override;
-
-  void InitializeGridBin();
-  void AssignFixedMacroToGridBin();
+  virtual void InitializeGridBin();
+  virtual void AssignFixedMacroToGridBin();
   bool IsBlkLocationValid(Block &blk);
+
   int grid_bin_cnt_x_ = 30;
   int grid_bin_cnt_y_ = 30;
   double bin_width_ = 0;
   double bin_height_ = 0;
   int blk_size_factor_ = 5;
-  // contiguous memory layout is not very important in this case, use a vector
-  // of vector to simulate the 2-D array
-  std::vector<std::vector<std::vector<Block *>>> macros_in_grid_bin_;
+  std::vector<std::vector<InitializerGridBin>> grid_bins_;
   int num_trials_ = 50;
 };
 
@@ -152,24 +186,25 @@ class MonteCarloInitializer : public RandomInitializer {
  *   1. divide the placement region into many grid bins;
  *   2. for each cell, find the grid bin with the smallest cell density;
  *
- * By default, a 100 * 100 mesh is used to divide the placement region into
- * grid bins. The grid bin width/height is at least 10 times of average cell
- * width/height, and thus the number of grid bins might be adjusted.
- * Future work: we can make it possible to set these parameters by users.
- *
  * Note: this initializer is designed for the scenario where all macros are
  * fixed (not unplaced or placed). It may not work very well for other scenarios.
  */
-class DensityAwareInitializer : public RandomInitializer {
+class DensityAwareInitializer : public MonteCarloInitializer {
  public:
   explicit DensityAwareInitializer(
       Circuit *ckt_ptr,
       unsigned int random_seed = 1
-  ) : RandomInitializer(ckt_ptr, random_seed) {}
+  );
   ~DensityAwareInitializer() override = default;
   void RandomPlace() override;
  protected:
-  void PrintEndStatement() override;
+  void InitializeGridBin() override;
+  void AssignFixedMacroToGridBin() override;
+
+  std::priority_queue<InitializerGridBin *,
+                      std::vector<InitializerGridBin *>,
+                      CompareInitializerGridBinPtr> density_queue_;
+  void InitializePriorityQueue();
 };
 
 } // dali
