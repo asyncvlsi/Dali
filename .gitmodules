@@ -2,3 +2,4 @@
 	path = module/eigen-git-mirror
 	url = https://gitlab.com/libeigen/eigen.git
 	branch = 3.4
+	shallow = true
