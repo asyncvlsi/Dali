@@ -60,9 +60,9 @@ void Design::UpdateFanOutHistogram(size_t net_size) {
 void Design::InitNetFanOutHistogram(std::vector<size_t> *histo_x) {
   if (histo_x != nullptr) {
     net_histogram_.buckets.clear();
-    int sz = (int) histo_x->size();
+    int32_t sz = (int32_t) histo_x->size();
     net_histogram_.buckets.assign(sz, 0);
-    for (int i = 0; i < sz; ++i) {
+    for (int32_t i = 0; i < sz; ++i) {
       net_histogram_.buckets.push_back((*histo_x)[i]);
     }
   }
@@ -153,7 +153,7 @@ void Design::ReportNetFanOutHistogram() {
     size_t lo = net_histogram_.buckets[i];
     size_t hi = net_histogram_.buckets[i + 1] - 1;
     std::string buffer(1024, '\0');
-    int written_length;
+    int32_t written_length;
     if (lo == hi) {
       written_length = sprintf(
           &buffer[0],
@@ -184,7 +184,7 @@ void Design::ReportNetFanOutHistogram() {
     BOOST_LOG_TRIVIAL(info) << buffer;
   }
   std::string buffer(1024, '\0');
-  int written_length;
+  int32_t written_length;
   written_length = sprintf(
       &buffer[0],
       "%4ld+      %8ld       %4.1f         %.2e        %.2e        %.2e        %.2e\n",

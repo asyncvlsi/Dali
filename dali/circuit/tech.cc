@@ -128,7 +128,7 @@ bool Tech::IsGndAtBottom(phydb::Macro *macro) {
 }
 
 void Tech::CreateFakeWellForStandardCell(phydb::PhyDB *phy_db) {
-  std::unordered_set<int> height_set;
+  std::unordered_set<int32_t> height_set;
   for (auto &[name, blk_type]: block_type_map_) {
     if (blk_type == io_dummy_blk_type_ptr_) continue;
     height_set.insert(blk_type->Height());
@@ -137,26 +137,26 @@ void Tech::CreateFakeWellForStandardCell(phydb::PhyDB *phy_db) {
 
   DaliExpects(!height_set.empty(), "No cell height?");
 
-  std::vector<int> height_vec(height_set.begin(), height_set.end());
+  std::vector<int32_t> height_vec(height_set.begin(), height_set.end());
   std::sort(
       height_vec.begin(),
       height_vec.end(),
-      [](const int &h0, const int &h1) { return h0 < h1; }
+      [](const int32_t &h0, const int32_t &h1) { return h0 < h1; }
   );
 
-  int standard_height = height_vec[0];
-  int n_height = standard_height / 2;
-  int p_height = standard_height - n_height;
+  int32_t standard_height = height_vec[0];
+  int32_t n_height = standard_height / 2;
+  int32_t p_height = standard_height - n_height;
   DaliExpects(n_height > 0 || p_height > 0, "Both heights are 0?");
 
   for (auto &[name, blk_type]: block_type_map_) {
     if (blk_type == io_dummy_blk_type_ptr_) continue;
     auto *macro = phy_db->GetMacroPtr(name);
-    int region_cnt = (int) std::round(blk_type->Height() / standard_height);
+    int32_t region_cnt = (int32_t) std::round(blk_type->Height() / standard_height);
     auto *well_ptr = blk_type->WellPtr();
-    int accumulative_height = 0;
+    int32_t accumulative_height = 0;
     bool is_pwell = IsGndAtBottom(macro);
-    for (int i = 0; i < 2 * region_cnt; ++i) {
+    for (int32_t i = 0; i < 2 * region_cnt; ++i) {
       if (is_pwell) {
         well_ptr->AddNwellRect(
             0, accumulative_height,

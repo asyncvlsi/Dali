@@ -52,7 +52,7 @@ void IoPlacer::InitializeBoundarySpaces() {
   };
 
   // initialize each boundary
-  for (int i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
+  for (int32_t i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
     boundary_spaces_.emplace_back(
         i == BOTTOM || i == TOP,
         boundary_loc[i]
@@ -80,15 +80,15 @@ bool IoPlacer::PartialPlaceIoPin() {
   return true;
 }
 
-bool IoPlacer::PartialPlaceCmd(int argc, char **argv) {
+bool IoPlacer::PartialPlaceCmd(int32_t argc, char **argv) {
   DaliExpects(false, "to be implemented");
   return true;
 }
 
-bool IoPlacer::ConfigSetMetalLayer(int boundary_index, int metal_layer_index) {
+bool IoPlacer::ConfigSetMetalLayer(int32_t boundary_index, int32_t metal_layer_index) {
   // check if this metal index exists or not
   bool is_legal_index = (metal_layer_index >= 0) &&
-      (metal_layer_index < (int) p_ckt_->Metals().size());
+      (metal_layer_index < (int32_t) p_ckt_->Metals().size());
   if (!is_legal_index) {
     BOOST_LOG_TRIVIAL(info)
       << "metal layer index is a bad value: "
@@ -100,8 +100,8 @@ bool IoPlacer::ConfigSetMetalLayer(int boundary_index, int metal_layer_index) {
   return true;
 }
 
-bool IoPlacer::ConfigSetGlobalMetalLayer(int metal_layer_index) {
-  for (int i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
+bool IoPlacer::ConfigSetGlobalMetalLayer(int32_t metal_layer_index) {
+  for (int32_t i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
     bool is_successful = ConfigSetMetalLayer(i, metal_layer_index);
     if (!is_successful) {
       return false;
@@ -114,12 +114,12 @@ bool IoPlacer::ConfigAutoPlace() {
   return true;
 }
 
-bool IoPlacer::ConfigBoundaryMetal(int argc, char **argv) {
+bool IoPlacer::ConfigBoundaryMetal(int32_t argc, char **argv) {
   if (argc < 2) {
     ReportConfigUsage();
     return false;
   }
-  for (int i = 0; i < argc;) {
+  for (int32_t i = 0; i < argc;) {
     std::string arg(argv[i++]);
     if (i < argc) {
       std::string metal_name = std::string(argv[i++]);
@@ -132,7 +132,7 @@ bool IoPlacer::ConfigBoundaryMetal(int argc, char **argv) {
       }
       MetalLayer *metal_layer =
           p_ckt_->GetMetalLayerPtr(metal_name);
-      int metal_index = metal_layer->Id();
+      int32_t metal_index = metal_layer->Id();
       if (arg == "left") {
         bool is_success = ConfigSetMetalLayer(LEFT, metal_index);
         std::cout << is_success << "\n";
@@ -175,7 +175,7 @@ void IoPlacer::ReportConfigUsage() {
     << "\033[0m\n";
 }
 
-bool IoPlacer::ConfigCmd(int argc, char **argv) {
+bool IoPlacer::ConfigCmd(int32_t argc, char **argv) {
   if (argc < 1) {
     ReportConfigUsage();
     return false;
@@ -245,7 +245,7 @@ bool IoPlacer::BuildResourceMap() {
       (double) p_ckt_->design().RegionTop()
   };
 
-  for (int i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
+  for (int32_t i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
     std::vector<Seg<double>> &used_segments = all_used_segments[i];
     std::sort(
         used_segments.begin(),
@@ -258,12 +258,12 @@ bool IoPlacer::BuildResourceMap() {
     if (i == LEFT || i == RIGHT) {
       double lo = p_ckt_->design().RegionBottom();
       double span = 0;
-      int len = (int) used_segments.size();
+      int32_t len = (int32_t) used_segments.size();
       if (len == 0) {
         span = p_ckt_->design().RegionTop() - lo;
         boundary_spaces_[i].layer_spaces_[0].AddCluster(lo, span);
       }
-      for (int j = 0; j < len; ++j) {
+      for (int32_t j = 0; j < len; ++j) {
         if (lo < used_segments[j].lo) {
           double hi = p_ckt_->design().RegionTop();
           if (j + 1 < len) {
@@ -277,12 +277,12 @@ bool IoPlacer::BuildResourceMap() {
     } else {
       double lo = p_ckt_->design().RegionLeft();
       double span = 0;
-      int len = (int) used_segments.size();
+      int32_t len = (int32_t) used_segments.size();
       if (len == 0) {
         span = p_ckt_->design().RegionRight() - lo;
         boundary_spaces_[i].layer_spaces_[0].AddCluster(lo, span);
       }
-      for (int j = 0; j < len; ++j) {
+      for (int32_t j = 0; j < len; ++j) {
         if (lo < used_segments[j].lo) {
           double hi = p_ckt_->design().RegionRight();
           if (j + 1 < len) {
@@ -359,7 +359,7 @@ bool IoPlacer::AssignIoPinToBoundaryLayers() {
     }
 
     // set this IOPIN to the best candidate location
-    for (int i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
+    for (int32_t i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
       if (close_to_boundary[i]) {
         iopin.SetLoc(loc_candidate_x[i], loc_candidate_y[i], PLACED);
         boundary_spaces_[i].layer_spaces_[0].iopin_ptr_list.push_back(&iopin);
@@ -391,8 +391,8 @@ void IoPlacer::AdjustIoPinLocationForPhyDB() {
     if (iopin.IsPrePlaced()) continue;
 
     // compute PhyDB locations assuming width and height are integer multiple of grid values
-    int final_x = p_ckt_->LocDali2PhydbX(iopin.X());
-    int final_y = p_ckt_->LocDali2PhydbY(iopin.Y());
+    int32_t final_x = p_ckt_->LocDali2PhydbX(iopin.X());
+    int32_t final_y = p_ckt_->LocDali2PhydbY(iopin.Y());
 
     // for I/O pins on the right/top boundary, need to adjust their location
     if (iopin.X() == p_ckt_->RegionURX()) {
@@ -431,7 +431,7 @@ bool IoPlacer::AutoPlaceIoPin() {
   return true;
 }
 
-bool IoPlacer::AutoPlaceCmd(int argc, char **argv) {
+bool IoPlacer::AutoPlaceCmd(int32_t argc, char **argv) {
   bool is_config_successful = ConfigCmd(argc, argv);
   if (!is_config_successful) {
     BOOST_LOG_TRIVIAL(fatal) << "Cannot successfully configure the IoPlacer\n";

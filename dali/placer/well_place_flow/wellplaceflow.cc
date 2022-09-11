@@ -59,7 +59,7 @@ bool WellPlaceFlow::StartPlacement() { // TODO: do not use this
 
       StdClusterWellLegalizer well_legalizer;
       well_legalizer.TakeOver(this);
-      well_legalizer.SetStripePartitionMode(int(DefaultPartitionMode::SCAVENGE));
+      well_legalizer.SetStripePartitionMode(int32_t(DefaultPartitionMode::SCAVENGE));
       well_legalizer.WellLegalize();
       legalizer_->GetHpwls().back() = ckt_ptr_->WeightedHPWL();
 
@@ -94,7 +94,7 @@ bool WellPlaceFlow::StartPlacement() { // TODO: do not use this
   ReportHPWL();
 
   well_legalizer_.TakeOver(this);
-  well_legalizer_.SetStripePartitionMode(int(DefaultPartitionMode::SCAVENGE));
+  well_legalizer_.SetStripePartitionMode(int32_t(DefaultPartitionMode::SCAVENGE));
   well_legalizer_.StartPlacement();
 
   PrintEndStatement("well place flow", true);
@@ -104,7 +104,7 @@ bool WellPlaceFlow::StartPlacement() { // TODO: do not use this
 
 void WellPlaceFlow::EmitDEFWellFile(
     std::string const &name_of_file,
-    int well_emit_mode,
+    int32_t well_emit_mode,
     bool enable_emitting_cluster
 ) {
   well_legalizer_.EmitDEFWellFile(

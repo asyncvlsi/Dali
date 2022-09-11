@@ -62,9 +62,9 @@ void IoPinCluster::UniformLegalize() {
     );
 
     double hi = low + span;
-    int sz = (int) iopin_ptr_list.size();
+    int32_t sz = (int32_t) iopin_ptr_list.size();
     double step = (hi - low) / (sz + 1);
-    for (int i = 0; i < sz; ++i) {
+    for (int32_t i = 0; i < sz; ++i) {
       double loc = std::round(low + (i + 1) * step);
       iopin_ptr_list[i]->SetLoc(loc, boundary_loc, PLACED);
     }
@@ -78,9 +78,9 @@ void IoPinCluster::UniformLegalize() {
     );
 
     double hi = low + span;
-    int sz = (int) iopin_ptr_list.size();
+    int32_t sz = (int32_t) iopin_ptr_list.size();
     double step = (hi - low) / (sz + 1);
-    for (int i = 0; i < sz; ++i) {
+    for (int32_t i = 0; i < sz; ++i) {
       double loc = std::round(low + (i + 1) * step);
       iopin_ptr_list[i]->SetLoc(boundary_loc, loc, PLACED);
     }
@@ -179,10 +179,10 @@ void IoBoundaryLayerSpace::GreedyAssignIoPinToCluster() {
                 return (lhs->X() < rhs->X());
               });
     for (auto &iopin_ptr: iopin_ptr_list) {
-      int len = (int) pin_clusters.size();
+      int32_t len = (int32_t) pin_clusters.size();
       double min_distance = DBL_MAX;
-      int min_index = 0;
-      for (int i = 0; i < len; ++i) {
+      int32_t min_index = 0;
+      for (int32_t i = 0; i < len; ++i) {
         double distance = std::min(
             std::fabs(iopin_ptr->X() - pin_clusters[i].Low()),
             std::fabs(iopin_ptr->X() - pin_clusters[i].High())
@@ -201,10 +201,10 @@ void IoBoundaryLayerSpace::GreedyAssignIoPinToCluster() {
                 return (lhs->Y() < rhs->Y());
               });
     for (auto &iopin_ptr: iopin_ptr_list) {
-      int len = (int) pin_clusters.size();
+      int32_t len = (int32_t) pin_clusters.size();
       double min_distance = DBL_MAX;
-      int min_index = 0;
-      for (int i = 0; i < len; ++i) {
+      int32_t min_index = 0;
+      for (int32_t i = 0; i < len; ++i) {
         double distance = std::min(
             std::fabs(iopin_ptr->Y() - pin_clusters[i].Low()),
             std::fabs(iopin_ptr->Y() - pin_clusters[i].High())
@@ -231,7 +231,7 @@ void IoBoundarySpace::AddLayer(MetalLayer *metal_layer) {
   layer_spaces_.emplace_back(is_horizontal_, boundary_loc_, metal_layer);
 }
 
-void IoBoundarySpace::SetIoPinLimit(int limit) {
+void IoBoundarySpace::SetIoPinLimit(int32_t limit) {
   iopin_limit_ = limit;
   is_iopin_limit_set_ = true;
 }

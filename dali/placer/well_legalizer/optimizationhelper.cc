@@ -28,7 +28,7 @@ namespace dali {
 struct BlkDispVarSegment {
  private:
   double lx_;
-  int width_;
+  int32_t width_;
   double sum_es_;
   double sum_e_;
  public:
@@ -43,7 +43,7 @@ struct BlkDispVarSegment {
 
   double LX() const { return lx_; }
   double UX() const { return lx_ + width_; }
-  int Width() const { return width_; }
+  int32_t Width() const { return width_; }
 
   bool IsNotOnLeft(BlkDispVarSegment &sc) const {
     return sc.LX() < UX();
@@ -111,7 +111,7 @@ void BlkDispVarSegment::LinearMerge(
 
   std::vector<WeightLocPair> es_;
   es_.reserve(vars_.size());
-  int accumulative_width = 0;
+  int32_t accumulative_width = 0;
   for (auto &var: vars_) {
     es_.emplace_back(var->Weight(), var->InitX() - accumulative_width);
     accumulative_width += var->Width();
@@ -267,20 +267,20 @@ void MinimizeLinearDisplacement(
 }
 
 struct blocksegment {
-  int first_id = -1;
-  int last_id = -1;
+  int32_t first_id = -1;
+  int32_t last_id = -1;
   double x = 0;
   double sum_e_ = 0;
   double sum_es_ = 0;
-  int width = 0;
+  int32_t width = 0;
 
-  int CellCount() const { return last_id - first_id + 1; }
+  int32_t CellCount() const { return last_id - first_id + 1; }
   void UpdatePosition() { x = sum_es_ / sum_e_; }
-  void AddCell(BlkDispVar &var, int i);
+  void AddCell(BlkDispVar &var, int32_t i);
   void SetX(double init_x) { x = init_x; }
-  void SetFirstId(int i) { first_id = i; }
-  int LastId() { return last_id; }
-  int Width() { return width; }
+  void SetFirstId(int32_t i) { first_id = i; }
+  int32_t LastId() { return last_id; }
+  int32_t Width() { return width; }
   double TotalWeight() { return sum_e_; }
   double TotalWeightedLoc() { return sum_es_; }
   double LX() const { return x; }
@@ -288,7 +288,7 @@ struct blocksegment {
   void AddSegment(blocksegment &seg);
 };
 
-void blocksegment::AddCell(BlkDispVar &var, int i) {
+void blocksegment::AddCell(BlkDispVar &var, int32_t i) {
   last_id = i;
   sum_e_ += var.Weight();
   sum_es_ += var.Weight() * (var.InitX() - width);
@@ -335,8 +335,8 @@ void AbacusPlaceRow(
   if (vars.empty()) return;
   std::vector<blocksegment> segments;
 
-  int sz = static_cast<int>(vars.size());
-  for (int i = 0; i < sz; ++i) {
+  int32_t sz = static_cast<int32_t>(vars.size());
+  for (int32_t i = 0; i < sz; ++i) {
     if ((i == 0) || (segments.back().UX() <= vars[i].InitX())) {
       segments.emplace_back();
       blocksegment &last_seg = segments.back();
@@ -350,7 +350,7 @@ void AbacusPlaceRow(
     }
   }
 
-  int i = 0;
+  int32_t i = 0;
   for (auto &seg: segments) {
     double x = seg.LX();
     for (; i <= seg.LastId(); ++i) {

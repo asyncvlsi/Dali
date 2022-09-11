@@ -36,47 +36,47 @@ class GriddedRow {
   GriddedRow() = default;
 
   bool IsOrientN() const;
-  int UsedSize() const;
-  void SetUsedSize(int used_size);
-  void UseSpace(int width);
+  int32_t UsedSize() const;
+  void SetUsedSize(int32_t used_size);
+  void UseSpace(int32_t width);
 
-  void SetLLX(int lx);
-  void SetURX(int ux);
-  int LLX() const;
-  int URX() const;
+  void SetLLX(int32_t lx);
+  void SetURX(int32_t ux);
+  int32_t LLX() const;
+  int32_t URX() const;
   double CenterX() const;
 
-  void SetWidth(int width);
-  int Width() const;
+  void SetWidth(int32_t width);
+  int32_t Width() const;
 
-  void SetLLY(int ly);
-  void SetURY(int uy);
-  int LLY() const;
-  int URY() const;
+  void SetLLY(int32_t ly);
+  void SetURY(int32_t uy);
+  int32_t LLY() const;
+  int32_t URY() const;
   double CenterY() const;
 
-  void SetHeight(int height);
-  void UpdateWellHeightUpward(int p_well_height, int n_well_height);
-  void UpdateWellHeightDownward(int p_well_height, int n_well_height);
-  int Height() const;
-  int PHeight() const;
-  int NHeight() const;
-  int PNEdge() const;
+  void SetHeight(int32_t height);
+  void UpdateWellHeightUpward(int32_t p_well_height, int32_t n_well_height);
+  void UpdateWellHeightDownward(int32_t p_well_height, int32_t n_well_height);
+  int32_t Height() const;
+  int32_t PHeight() const;
+  int32_t NHeight() const;
+  int32_t PNEdge() const;
 
-  void SetLoc(int lx, int ly);
+  void SetLoc(int32_t lx, int32_t ly);
 
   void AddBlock(Block *blk_ptr);
   std::vector<Block *> &Blocks();
   std::unordered_map<Block *, double2d> &InitLocations();
-  void ShiftBlockX(int x_disp);
-  void ShiftBlockY(int y_disp);
-  void ShiftBlock(int x_disp, int y_disp);
+  void ShiftBlockX(int32_t x_disp);
+  void ShiftBlockY(int32_t y_disp);
+  void ShiftBlock(int32_t x_disp, int32_t y_disp);
   void UpdateBlockLocY();
-  void LegalizeCompactX(int left);
+  void LegalizeCompactX(int32_t left);
   void LegalizeCompactX();
-  void LegalizeLooseX(int space_to_well_tap = 0);
+  void LegalizeLooseX(int32_t space_to_well_tap = 0);
   void SetOrient(bool is_orient_N);
-  void InsertWellTapCell(Block &tap_cell, int loc);
+  void InsertWellTapCell(Block &tap_cell, int32_t loc);
 
   void UpdateBlockLocationCompact();
 
@@ -91,13 +91,13 @@ class GriddedRow {
   );
   void AssignBlocksToSegments();
   bool IsBelowMiddleLine(Block *p_blk) const;
-  bool IsBelowTopPlusKFirstRegionHeight(Block *p_blk, int iteration) const;
+  bool IsBelowTopPlusKFirstRegionHeight(Block *p_blk, int32_t iteration) const;
   bool IsAboveMiddleLine(Block *p_blk) const;
-  bool IsAboveBottomMinusKFirstRegionHeight(Block *p_blk, int iteration) const;
-  bool IsOverlap(Block *p_blk, int iteration, bool is_upward) const;
+  bool IsAboveBottomMinusKFirstRegionHeight(Block *p_blk, int32_t iteration) const;
+  bool IsOverlap(Block *p_blk, int32_t iteration, bool is_upward) const;
 
-  bool IsOrientMatching(Block *p_blk, int region_id) const;
-  void AddBlockRegion(Block *p_blk, int region_id, bool is_upward);
+  bool IsOrientMatching(Block *p_blk, int32_t region_id) const;
+  void AddBlockRegion(Block *p_blk, int32_t region_id, bool is_upward);
   std::vector<BlockRegion> &BlkRegions();
   bool AttemptToAdd(Block *p_blk, bool is_upward = true);
   bool AttemptToAddWithDispCheck(
@@ -108,7 +108,7 @@ class GriddedRow {
   BlockOrient ComputeBlockOrient(Block *p_blk, bool is_upward) const;
   void LegalizeSegmentsX(bool use_init_loc);
   void LegalizeSegmentsY();
-  void RecomputeHeight(int p_well_height, int n_well_height);
+  void RecomputeHeight(int32_t p_well_height, int32_t n_well_height);
   void InitializeBlockStretching();
 
   size_t AddWellTapCells(
@@ -129,8 +129,8 @@ class GriddedRow {
       std::ofstream &ost_displacement
   );
 
-  void UpdateCommonSegment(std::vector<SegI> &avail_spaces, int width, double density);
-  void AddStandardCell(Block *p_blk, int region_id, SegI range);
+  void UpdateCommonSegment(std::vector<SegI> &avail_spaces, int32_t width, double density);
+  void AddStandardCell(Block *p_blk, int32_t region_id, SegI range);
 
   size_t OutOfBoundCell();
 
@@ -140,21 +140,21 @@ class GriddedRow {
   std::unordered_map<Block *, double2d> blk_initial_location_;
 
   /**** number of tap cells needed, and pointers to tap cells ****/
-  int tap_cell_num_ = 0;
+  int32_t tap_cell_num_ = 0;
   Block *tap_cell_;
 
   /**** x/y coordinates and dimension ****/
-  int lx_;
-  int ly_;
-  int width_;
+  int32_t lx_;
+  int32_t ly_;
+  int32_t width_;
 
   /**** total width of cells in this cluster, including reserved space for tap cells ****/
-  int used_size_ = 0;
+  int32_t used_size_ = 0;
 
   /**** maximum p-well height and n-well height ****/
-  int p_well_height_ = 0;
-  int n_well_height_ = 0;
-  int height_ = 0;
+  int32_t p_well_height_ = 0;
+  int32_t n_well_height_ = 0;
+  int32_t height_ = 0;
 
   /**** lly which gives minimal displacement ****/
   double min_displacement_lly_ = -DBL_MAX;
@@ -166,23 +166,23 @@ class GriddedRow {
 
 class ClusterSegment {
  private:
-  int ly_;
-  int height_;
+  int32_t ly_;
+  int32_t height_;
  public:
-  ClusterSegment(GriddedRow *cluster_ptr, int loc)
+  ClusterSegment(GriddedRow *cluster_ptr, int32_t loc)
       : ly_(loc), height_(cluster_ptr->Height()) {
     gridded_rows.push_back(cluster_ptr);
   }
   std::vector<GriddedRow *> gridded_rows;
 
-  int LY() const { return ly_; }
-  int UY() const { return ly_ + height_; }
-  int Height() const { return height_; }
+  int32_t LY() const { return ly_; }
+  int32_t UY() const { return ly_ + height_; }
+  int32_t Height() const { return height_; }
 
   bool IsNotOnBottom(ClusterSegment &sc) const {
     return sc.LY() < UY();
   }
-  void Merge(ClusterSegment &sc, int lower_bound, int upper_bound);
+  void Merge(ClusterSegment &sc, int32_t lower_bound, int32_t upper_bound);
   void UpdateClusterLocation();
 };
 

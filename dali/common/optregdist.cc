@@ -76,15 +76,15 @@ void OptRegDist::FindOptimalRegionX(
   }
   std::sort(loc_list_x.begin(), loc_list_x.end());
   std::sort(loc_list_y.begin(), loc_list_y.end());
-  int lo_index = int(loc_list_x.size() - 1) / 2;
-  int hi_index = lo_index;
+  int32_t lo_index = int32_t(loc_list_x.size() - 1) / 2;
+  int32_t hi_index = lo_index;
   if (loc_list_x.size() % 2 == 0) {
     hi_index += 1;
   }
   lx = loc_list_x[lo_index];
   ux = loc_list_x[hi_index];
 
-  lo_index = int(loc_list_y.size() - 1) / 2;
+  lo_index = int32_t(loc_list_y.size() - 1) / 2;
   hi_index = lo_index;
   if (loc_list_y.size() % 2 == 0) {
     hi_index += 1;

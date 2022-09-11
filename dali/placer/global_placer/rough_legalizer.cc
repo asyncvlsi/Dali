@@ -47,7 +47,7 @@ void RoughLegalizer::SetShouldSaveIntermediateResult(bool should_save_intermedia
 void LookAheadLegalizer::InitializeGridBinSize() {
   double grid_bin_area =
       number_of_cell_in_bin_ * ckt_ptr_->AveMovBlkArea() / placement_density_;
-  grid_bin_height = static_cast<int>(std::round(std::sqrt(grid_bin_area)));
+  grid_bin_height = static_cast<int32_t>(std::round(std::sqrt(grid_bin_area)));
   grid_bin_width = grid_bin_height;
   grid_cnt_x = std::ceil(double(ckt_ptr_->RegionWidth()) / grid_bin_width);
   grid_cnt_y = std::ceil(double(ckt_ptr_->RegionHeight()) / grid_bin_height);
@@ -66,8 +66,8 @@ void LookAheadLegalizer::InitializeGridBinSize() {
  * is cached for the convenience of overfilled bin clustering.
  */
 void LookAheadLegalizer::UpdateAttributesForAllGridBins() {
-  for (int i = 0; i < grid_cnt_x; i++) {
-    for (int j = 0; j < grid_cnt_y; j++) {
+  for (int32_t i = 0; i < grid_cnt_x; i++) {
+    for (int32_t j = 0; j < grid_cnt_y; j++) {
       grid_bin_mesh[i][j].index = {i, j};
       grid_bin_mesh[i][j].bottom = ckt_ptr_->RegionLLY() + j * grid_bin_height;
       grid_bin_mesh[i][j].top =
@@ -82,13 +82,13 @@ void LookAheadLegalizer::UpdateAttributesForAllGridBins() {
   }
 
   // make sure the top placement boundary is the same as the top of the topmost bins
-  for (int i = 0; i < grid_cnt_x; ++i) {
+  for (int32_t i = 0; i < grid_cnt_x; ++i) {
     grid_bin_mesh[i][grid_cnt_y - 1].top = ckt_ptr_->RegionURY();
     grid_bin_mesh[i][grid_cnt_y - 1].white_space =
         grid_bin_mesh[i][grid_cnt_y - 1].Area();
   }
   // make sure the right placement boundary is the same as the right of the rightmost bins
-  for (int i = 0; i < grid_cnt_y; ++i) {
+  for (int32_t i = 0; i < grid_cnt_y; ++i) {
     grid_bin_mesh[grid_cnt_x - 1][i].right = ckt_ptr_->RegionURX();
     grid_bin_mesh[grid_cnt_x - 1][i].white_space =
         grid_bin_mesh[grid_cnt_x - 1][i].Area();
@@ -104,19 +104,19 @@ void LookAheadLegalizer::UpdateFixedBlocksInGridBins() {
   for (auto &&blk: ckt_ptr_->Blocks()) {
     /* find the left, right, bottom, top index of the grid */
     if (blk.IsMovable()) continue;
-    bool fixed_blk_out_of_region = int(blk.LLX()) >= ckt_ptr_->RegionURX()
-        || int(blk.URX()) <= ckt_ptr_->RegionLLX()
-        || int(blk.LLY()) >= ckt_ptr_->RegionURY()
-        || int(blk.URY()) <= ckt_ptr_->RegionLLY();
+    bool fixed_blk_out_of_region = int32_t(blk.LLX()) >= ckt_ptr_->RegionURX()
+        || int32_t(blk.URX()) <= ckt_ptr_->RegionLLX()
+        || int32_t(blk.LLY()) >= ckt_ptr_->RegionURY()
+        || int32_t(blk.URY()) <= ckt_ptr_->RegionLLY();
     // TODO: test and clean up this part of code using an adaptec benchmark
     if (fixed_blk_out_of_region) continue;
-    int left_index = (int) std::floor(
+    int32_t left_index = (int32_t) std::floor(
         (blk.LLX() - ckt_ptr_->RegionLLX()) / grid_bin_width);
-    int right_index = (int) std::floor(
+    int32_t right_index = (int32_t) std::floor(
         (blk.URX() - ckt_ptr_->RegionLLX()) / grid_bin_width);
-    int bottom_index = (int) std::floor(
+    int32_t bottom_index = (int32_t) std::floor(
         (blk.LLY() - ckt_ptr_->RegionLLY()) / grid_bin_height);
-    int top_index = (int) std::floor(
+    int32_t top_index = (int32_t) std::floor(
         (blk.URY() - ckt_ptr_->RegionLLY()) / grid_bin_height);
     /* the grid boundaries might be the placement region boundaries
      * if a block touches the rightmost and topmost boundaries,
@@ -131,17 +131,17 @@ void LookAheadLegalizer::UpdateFixedBlocksInGridBins() {
      * terminals might occupy the same grid, we need to deduct the overlap
      * area from the white space of that grid bin when the final white space
      * is 0, we know this grid bin is occupied by several terminals*/
-    for (int j = left_index; j <= right_index; ++j) {
-      for (int k = bottom_index; k <= top_index; ++k) {
+    for (int32_t j = left_index; j <= right_index; ++j) {
+      for (int32_t k = bottom_index; k <= top_index; ++k) {
         /* the following case might happen:
          * the top/right of a fixed block overlap with the bottom/left of
          * a grid box. if this case happens, we need to ignore this fixed
          * block for this grid box. */
         bool blk_out_of_bin =
-            int(blk.LLX() >= grid_bin_mesh[j][k].right) ||
-                int(blk.URX() <= grid_bin_mesh[j][k].left) ||
-                int(blk.LLY() >= grid_bin_mesh[j][k].top) ||
-                int(blk.URY() <= grid_bin_mesh[j][k].bottom);
+            int32_t(blk.LLX() >= grid_bin_mesh[j][k].right) ||
+                int32_t(blk.URX() <= grid_bin_mesh[j][k].left) ||
+                int32_t(blk.LLY() >= grid_bin_mesh[j][k].top) ||
+                int32_t(blk.URY() <= grid_bin_mesh[j][k].bottom);
         if (blk_out_of_bin) continue;
         grid_bin_mesh[j][k].fixed_blocks.push_back(&blk);
       }
@@ -158,10 +158,10 @@ void LookAheadLegalizer::UpdateWhiteSpaceInGridBin(GridBin &grid_bin) {
   for (auto &fixed_blk_ptr : grid_bin.fixed_blocks) {
     auto &fixed_blk = *fixed_blk_ptr;
     RectI fixed_blk_rect(
-        static_cast<int>(std::round(fixed_blk.LLX())),
-        static_cast<int>(std::round(fixed_blk.LLY())),
-        static_cast<int>(std::round(fixed_blk.URX())),
-        static_cast<int>(std::round(fixed_blk.URY()))
+        static_cast<int32_t>(std::round(fixed_blk.LLX())),
+        static_cast<int32_t>(std::round(fixed_blk.LLY())),
+        static_cast<int32_t>(std::round(fixed_blk.URX())),
+        static_cast<int32_t>(std::round(fixed_blk.URY()))
     );
     if (bin_rect.IsOverlap(fixed_blk_rect)) {
       rects.push_back(bin_rect.GetOverlapRect(fixed_blk_rect));
@@ -211,8 +211,8 @@ void LookAheadLegalizer::InitWhiteSpaceLUT() {
 
   // this for loop is used for computing elements in the look-up table
   // there are four cases, element at (0,0), elements on the left edge, elements on the right edge, otherwise
-  for (int kx = 0; kx < grid_cnt_x; ++kx) {
-    for (int ky = 0; ky < grid_cnt_y; ++ky) {
+  for (int32_t kx = 0; kx < grid_cnt_x; ++kx) {
+    for (int32_t ky = 0; ky < grid_cnt_y; ++ky) {
       grid_bin_white_space_LUT[kx][ky] = 0;
       if (kx == 0) {
         if (ky == 0) {
@@ -277,16 +277,16 @@ void LookAheadLegalizer::UpdateGridBinState() {
   // than the maximum allowed index, because the cell is on the boundaries,
   // so we need to make some modifications for these extreme cases.
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
-  int sz = static_cast<int>(blocks.size());
-  int x_index = 0;
-  int y_index = 0;
+  int32_t sz = static_cast<int32_t>(blocks.size());
+  int32_t x_index = 0;
+  int32_t y_index = 0;
 
-  for (int i = 0; i < sz; i++) {
+  for (int32_t i = 0; i < sz; i++) {
     if (blocks[i].IsFixed()) continue;
-    x_index = (int) std::floor(
+    x_index = (int32_t) std::floor(
         (blocks[i].X() - ckt_ptr_->RegionLLX()) / grid_bin_width);
     y_index =
-        (int) std::floor(
+        (int32_t) std::floor(
             (blocks[i].Y() - ckt_ptr_->RegionLLY()) / grid_bin_height);
     if (x_index < 0) x_index = 0;
     if (x_index > grid_cnt_x - 1) x_index = grid_cnt_x - 1;
@@ -359,15 +359,15 @@ void LookAheadLegalizer::UpdateClusterList() {
   elapsed_time.RecordStartTime();
   cluster_set.clear();
 
-  int m = (int) grid_bin_mesh.size(); // number of rows
-  int n = (int) grid_bin_mesh[0].size(); // number of columns
-  for (int i = 0; i < m; ++i) {
-    for (int j = 0; j < n; ++j)
+  int32_t m = (int32_t) grid_bin_mesh.size(); // number of rows
+  int32_t n = (int32_t) grid_bin_mesh[0].size(); // number of columns
+  for (int32_t i = 0; i < m; ++i) {
+    for (int32_t j = 0; j < n; ++j)
       grid_bin_mesh[i][j].cluster_visited = false;
   }
-  int cnt = 0;
-  for (int i = 0; i < m; ++i) {
-    for (int j = 0; j < n; ++j) {
+  int32_t cnt = 0;
+  for (int32_t i = 0; i < m; ++i) {
+    for (int32_t j = 0; j < n; ++j) {
       if (grid_bin_mesh[i][j].cluster_visited
           || !grid_bin_mesh[i][j].over_fill)
         continue;
@@ -437,10 +437,10 @@ void LookAheadLegalizer::UpdateLargestCluster() {
                     || (index1.x == index2.x && index1.y < index2.y);
               });
 
-    int cnt = 0;
+    int32_t cnt = 0;
     for (auto &grid_index : grid_bin_list) {
-      int i = grid_index.x;
-      int j = grid_index.y;
+      int32_t i = grid_index.x;
+      int32_t j = grid_index.y;
       if (grid_bin_visited[grid_index]) continue; // if this grid bin has been visited continue
       if (grid_bin_mesh[i][j].global_placed) continue; // if this grid bin has been roughly legalized
       GridBinIndex b(i, j);
@@ -479,14 +479,14 @@ void LookAheadLegalizer::UpdateLargestCluster() {
   }
 }
 
-unsigned long int LookAheadLegalizer::LookUpWhiteSpace(GridBinIndex const &ll_index,
+uint32_t LookAheadLegalizer::LookUpWhiteSpace(GridBinIndex const &ll_index,
                                                        GridBinIndex const &ur_index) {
   /****
  * this function is used to return the white space in a region specified by ll_index, and ur_index
  * there are four cases, element at (0,0), elements on the left edge, elements on the right edge, otherwise
  * ****/
 
-  unsigned long int total_white_space;
+  uint32_t total_white_space;
   /*if (ll_index.x == 0) {
   if (ll_index.y == 0) {
     total_white_space = grid_bin_white_space_LUT[ur_index.x][ur_index.y];
@@ -510,8 +510,8 @@ unsigned long int LookAheadLegalizer::LookUpWhiteSpace(GridBinIndex const &ll_in
   return total_white_space;
 }
 
-unsigned long int LookAheadLegalizer::LookUpWhiteSpace(WindowQuadruple &window) {
-  unsigned long int total_white_space;
+uint32_t LookAheadLegalizer::LookUpWhiteSpace(WindowQuadruple &window) {
+  uint32_t total_white_space;
   if (window.llx == 0) {
     if (window.lly == 0) {
       total_white_space =
@@ -589,10 +589,10 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
   R.ur_point.x = grid_bin_mesh[R.ur_index.x][R.ur_index.y].right;
   R.ur_point.y = grid_bin_mesh[R.ur_index.x][R.ur_index.y].top;
 
-  R.left = int(R.ll_point.x);
-  R.bottom = int(R.ll_point.y);
-  R.right = int(R.ur_point.x);
-  R.top = int(R.ur_point.y);
+  R.left = int32_t(R.ll_point.x);
+  R.bottom = int32_t(R.ll_point.y);
+  R.right = int32_t(R.ur_point.x);
+  R.top = int32_t(R.ur_point.y);
 
   if (R.ll_index == R.ur_index) {
     R.UpdateFixedBlkList(grid_bin_mesh);
@@ -604,8 +604,8 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
   //BOOST_LOG_TRIVIAL(info)   << "Bounding box total white space: " << queue_box_bin.front().total_white_space << "\n";
   //BOOST_LOG_TRIVIAL(info)   << "Bounding box total cell area: " << queue_box_bin.front().total_cell_area << "\n";
 
-  for (int kx = R.ll_index.x; kx <= R.ur_index.x; ++kx) {
-    for (int ky = R.ll_index.y; ky <= R.ur_index.y; ++ky) {
+  for (int32_t kx = R.ll_index.x; kx <= R.ur_index.x; ++kx) {
+    for (int32_t ky = R.ll_index.y; ky <= R.ur_index.y; ++ky) {
       grid_bin_mesh[kx][ky].global_placed = true;
     }
   }
@@ -747,11 +747,11 @@ for (auto &cell_id: box.cell_list) {
   cell->SetCenterY((cell->Y() - cell_box_bottom)/cell_box_height * (box.top - box.bottom) + box.bottom);
 }*/
 
-  int sz = static_cast<int>(box.cell_list.size());
+  int32_t sz = static_cast<int32_t>(box.cell_list.size());
   std::vector<std::pair<Block *, double>> index_loc_list_x(sz);
   std::vector<std::pair<Block *, double>> index_loc_list_y(sz);
   GridBin &grid_bin = grid_bin_mesh[box.ll_index.x][box.ll_index.y];
-  for (int i = 0; i < sz; ++i) {
+  for (int32_t i = 0; i < sz; ++i) {
     Block *blk_ptr = box.cell_list[i];
     index_loc_list_x[i].first = blk_ptr;
     index_loc_list_x[i].second = blk_ptr->X();
@@ -774,7 +774,7 @@ for (auto &cell_id: box.cell_list) {
     total_length += blk_ptr->Width();
   }
   double cur_pos = 0;
-  int box_width = box.right - box.left;
+  int32_t box_width = box.right - box.left;
   for (auto &pair : index_loc_list_x) {
     Block *blk_ptr = pair.first;
     double center_x = box.left + cur_pos / total_length * box_width;
@@ -801,7 +801,7 @@ for (auto &cell_id: box.cell_list) {
     total_length += blk_ptr->Height();
   }
   cur_pos = 0;
-  int box_height = box.top - box.bottom;
+  int32_t box_height = box.top - box.bottom;
   for (auto &pair : index_loc_list_y) {
     Block *blk_ptr = pair.first;
     double center_y = box.bottom + cur_pos / total_length * box_height;
@@ -818,7 +818,7 @@ for (auto &cell_id: box.cell_list) {
 
 void LookAheadLegalizer::SplitBox(BoxBin &box) {
   bool flag_bisection_complete;
-  int dominating_box_flag; // indicate whether there is a dominating BoxBin
+  int32_t dominating_box_flag; // indicate whether there is a dominating BoxBin
   BoxBin box1, box2;
   box1.ll_index = box.ll_index;
   box2.ur_index = box.ur_index;

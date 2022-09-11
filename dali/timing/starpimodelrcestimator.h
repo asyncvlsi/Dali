@@ -33,7 +33,7 @@ class StarPiModelEstimator : protected phydb::AbstractRcEstimator {
   ~StarPiModelEstimator() override = default;
   void PushNetRCToManager() override;
  private:
-  int distance_micron_ = 0;
+  int32_t distance_micron_ = 0;
   bool edge_pushed_to_spef_manager_ = false;
   phydb::Layer *horizontal_layer_ = nullptr;
   phydb::Layer *vertical_layer_ = nullptr;
@@ -41,8 +41,8 @@ class StarPiModelEstimator : protected phydb::AbstractRcEstimator {
   void AddEdgesToManager();
   void FindFirstHorizontalAndVerticalMetalLayer();
   void GetResistanceAndCapacitance(
-      phydb::Point2D<int> &driver_loc,
-      phydb::Point2D<int> &load_loc,
+      phydb::Point2D<int32_t> &driver_loc,
+      phydb::Point2D<int32_t> &load_loc,
       double &resistance,
       double &capacitance
   );

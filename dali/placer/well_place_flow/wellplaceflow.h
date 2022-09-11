@@ -36,7 +36,7 @@ class WellPlaceFlow : public GlobalPlacer {
 
   void EmitDEFWellFile(
       std::string const &name_of_file,
-      int well_emit_mode,
+      int32_t well_emit_mode,
       bool enable_emitting_cluster = true
   ) override;
 };

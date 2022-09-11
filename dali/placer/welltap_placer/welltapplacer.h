@@ -38,9 +38,9 @@ namespace dali {
  * 3. lower left location of all well-tap cells
  */
 struct Row {
-  int orig_x = 0;
-  int orig_y = 0;
-  int num_x = 0;
+  int32_t orig_x = 0;
+  int32_t orig_y = 0;
+  int32_t num_x = 0;
   std::vector<bool> avail_sites; // white space segments
   std::vector<bool> well_taps;
 
@@ -58,19 +58,19 @@ struct Row {
 class WellTapPlacer {
   phydb::PhyDB *phy_db_ = nullptr;
   phydb::Site *site_ptr_ = nullptr;
-  int top_ = 0;
-  int bottom_ = 0;
-  int left_ = INT_MAX;
-  int right_ = INT_MIN;
-  int row_height_ = 0;
-  int row_step_ = 0;
+  int32_t top_ = 0;
+  int32_t bottom_ = 0;
+  int32_t left_ = INT_MAX;
+  int32_t right_ = INT_MIN;
+  int32_t row_height_ = 0;
+  int32_t row_step_ = 0;
 
   std::vector<Row> rows_; // white space in each row
 
   phydb::Macro *cell_ = nullptr; // pointer to well-tap cell
-  int cell_width_ = -1; // unit is row_step_
-  int cell_interval_ = -1; // unit is row_step_
-  int cell_min_distance_to_boundary_ = -1; // unit is row_step_
+  int32_t cell_width_ = -1; // unit is row_step_
+  int32_t cell_interval_ = -1; // unit is row_step_
+  int32_t cell_min_distance_to_boundary_ = -1; // unit is row_step_
   bool is_checker_board_ = true;
 
  public:
@@ -82,7 +82,7 @@ class WellTapPlacer {
   void SetCellInterval(double cell_interval_microns);
   void SetCellMinDistanceToBoundary(double cell_min_distance_to_boundary_microns);
   void UseCheckerBoardMode(bool is_checker_board);
-  void AddWellTapToRowUniform(Row &row, int first_loc, int interval);
+  void AddWellTapToRowUniform(Row &row, int32_t first_loc, int32_t interval);
   void AddWellTapUniform();
   void AddWellTapCheckerBoard();
   void AddWellTap();
@@ -90,21 +90,21 @@ class WellTapPlacer {
 
   void PlotAvailSpace();
 
-  int StartRow(int y_loc) { return (y_loc - bottom_) / row_height_; }
-  int EndRow(int y_loc) {
-    int relative_y = y_loc - bottom_;
-    int res = relative_y / row_height_;
+  int32_t StartRow(int32_t y_loc) { return (y_loc - bottom_) / row_height_; }
+  int32_t EndRow(int32_t y_loc) {
+    int32_t relative_y = y_loc - bottom_;
+    int32_t res = relative_y / row_height_;
     if (relative_y % row_height_ == 0) {
       --res;
     }
     return res;
   }
-  int StartCol(int x_loc, int orig_x) {
+  int32_t StartCol(int32_t x_loc, int32_t orig_x) {
     return (x_loc - orig_x) / row_step_;
   }
-  int EndCol(int x_loc, int orig_x) {
-    int relative_x = x_loc - orig_x;
-    int res = relative_x / row_step_;
+  int32_t EndCol(int32_t x_loc, int32_t orig_x) {
+    int32_t relative_x = x_loc - orig_x;
+    int32_t res = relative_x / row_step_;
     if (relative_x % row_step_ == 0) {
       --res;
     }

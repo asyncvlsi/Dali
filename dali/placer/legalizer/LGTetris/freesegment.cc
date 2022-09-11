@@ -22,7 +22,7 @@
 
 namespace dali {
 
-FreeSegment::FreeSegment(int start, int stop) :
+FreeSegment::FreeSegment(int32_t start, int32_t stop) :
     start_(start),
     end_(stop) {
   assert(start <= stop);
@@ -49,7 +49,7 @@ FreeSegment *FreeSegment::SingleSegOr(FreeSegment *seg) {
   }
   auto *result = new FreeSegment;
   if (start_ > seg->End() || end_ < seg->Start()) { // no overlap, no touch
-    int firstStart, firstEnd, secondStart, secondEnd;
+    int32_t firstStart, firstEnd, secondStart, secondEnd;
     if (start_ < seg->Start()) {
       firstStart = start_;
       firstEnd = end_;

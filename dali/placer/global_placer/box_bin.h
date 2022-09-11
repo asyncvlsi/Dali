@@ -32,7 +32,7 @@
 namespace dali {
 
 struct WindowQuadruple {
-  int llx, lly, urx, ury;
+  int32_t llx, lly, urx, ury;
   bool Cover(WindowQuadruple &rhs) {
     return llx <= rhs.llx && lly <= rhs.lly && urx >= rhs.urx && ury >= rhs.ury;
   }
@@ -81,17 +81,17 @@ class BoxBin {
   /* UpdateFixedBlkList can only be called when the box is a grid_bin_box */
   bool IsContainFixedBlk() const { return !fixed_blocks.empty(); };
 
-  std::vector<int> vertical_cutlines;
-  std::vector<int> horizontal_cutlines;
+  std::vector<int32_t> vertical_cutlines;
+  std::vector<int32_t> horizontal_cutlines;
   void UpdateObsBoundary();
   bool IsMoreHorizontalCutlines() const;
 
   /* the boundary of box if the box is smaller than a grid bin, the following for attribute will be very important
    * the left, right, bottom, top boundaries are the region where cells will be placed in */
-  int left;
-  int right;
-  int bottom;
-  int top;
+  int32_t left;
+  int32_t right;
+  int32_t bottom;
+  int32_t top;
   void update_boundaries(std::vector<std::vector<GridBin> > &grid_bin_matrix);
   /* update_white_space can only be called when left, right, bottom, top are updated */
   void UpdateWhiteSpaceAndFixedblocks(std::vector<Block *> &box_fixed_blocks);
@@ -103,7 +103,7 @@ class BoxBin {
       std::vector<std::vector<unsigned long long> > &grid_bin_white_space_LUT,
       std::vector<std::vector<GridBin>> &grid_bin_matrix
   );
-  void ExpandBox(int grid_cnt_x, int grid_cnt_y);
+  void ExpandBox(int32_t grid_cnt_x, int32_t grid_cnt_y);
   bool write_box_boundary(std::string const &NameOfFile);
   bool write_cell_region(std::string const &NameOfFile = "first_cell_bounding_box.txt");
   static unsigned long long white_space_LUT(
@@ -121,8 +121,8 @@ class BoxBin {
       unsigned long long &box2_total_white_space
   );
   bool update_cut_point_cell_list_low_high_leaf(
-      int &cut_line_w,
-      int ave_blk_height
+      int32_t &cut_line_w,
+      int32_t ave_blk_height
   );
 
   void Report();

@@ -21,8 +21,8 @@
 
 /**** the following is an example to add a BlockType with one cell pin to a Circuit
  * std::string blk_type_name = "nand2"; // block type with name nand2
- * int width = 4; // width 4
- * int height = 8; // height 8
+ * int32_t width = 4; // width 4
+ * int32_t height = 8; // height 8
  * BlockType *blk_type_ptr = circuit.AddBlockType(blk_type_name, width, height); // add this BlockType to circuit
  * std::string pin_name = "in"; // block pin with name "in"
  * Pin *pin_ptr = circuit.AddBlkTypePin(blk_type_ptr, pin_name); // add this Pin to this BlockType
@@ -91,10 +91,10 @@ int main() {
   circuit.SetUnitsDistanceMicrons(1000);
 
   // set die area
-  int die_left = 0.0 * circuit.DistanceMicrons();
-  int die_bottom = 0.0 * circuit.DistanceMicrons();
-  int die_right = 10.0 * circuit.DistanceMicrons();
-  int die_top = 10.0 * circuit.DistanceMicrons();
+  int32_t die_left = 0.0 * circuit.DistanceMicrons();
+  int32_t die_bottom = 0.0 * circuit.DistanceMicrons();
+  int32_t die_right = 10.0 * circuit.DistanceMicrons();
+  int32_t die_top = 10.0 * circuit.DistanceMicrons();
   circuit.SetDieArea(die_left, die_bottom, die_right, die_top);
 
   // specify how many instances there are.

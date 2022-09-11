@@ -46,7 +46,7 @@ class LgBlkAux : public BlockAux {
   void RecoverQPLocX();
   void RecoverConsLocX();
 
-  void SetSubCellLoc(int id, double loc, double weight);
+  void SetSubCellLoc(int32_t id, double loc, double weight);
   void ComputeAverageLoc();
   std::vector<double> &SubLocs();
   double AverageLoc();
@@ -65,7 +65,7 @@ class LgBlkAux : public BlockAux {
   std::vector<double> weights_;  // weights of clusters they belong to
   double average_loc_ = DBL_MAX;
 
-  std::vector<int> stretch_length_;
+  std::vector<int32_t> stretch_length_;
   double tot_stretch_length = 0;
 };
 

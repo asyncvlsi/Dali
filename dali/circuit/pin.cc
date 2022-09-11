@@ -27,7 +27,7 @@
 namespace dali {
 
 Pin::Pin(
-    std::pair<const std::string, int> *name_id_pair_ptr,
+    std::pair<const std::string, int32_t> *name_id_pair_ptr,
     BlockType *blk_type_ptr
 ) :
     name_id_pair_ptr_(name_id_pair_ptr),
@@ -39,7 +39,7 @@ Pin::Pin(
 }
 
 Pin::Pin(
-    std::pair<const std::string, int> *name_id_pair_ptr,
+    std::pair<const std::string, int32_t> *name_id_pair_ptr,
     BlockType *blk_type_ptr,
     double x_offset,
     double y_offset
@@ -58,7 +58,7 @@ const std::string &Pin::Name() const {
   return name_id_pair_ptr_->first;
 }
 
-int Pin::Id() const {
+int32_t Pin::Id() const {
   return name_id_pair_ptr_->second;
 }
 
@@ -101,7 +101,7 @@ double Pin::HalfBboxHeight() {
 void Pin::Report() const {
   BOOST_LOG_TRIVIAL(info)
     << Name() << " (" << OffsetX() << ", " << OffsetY() << ")";
-  for (int i = 0; i < 8; ++i) {
+  for (int32_t i = 0; i < 8; ++i) {
     BOOST_LOG_TRIVIAL(info)
       << "   (" << x_offset_[i] << ", " << y_offset_[i] << ")";
   }

@@ -30,7 +30,7 @@ using namespace dali;
 
 int main(int argc, char *argv[]) {
   InitLogging();
-  int num_of_thread = 1;
+  int32_t num_of_thread = 1;
   omp_set_num_threads(num_of_thread);
 
   time_t Time = clock();

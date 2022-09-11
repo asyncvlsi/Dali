@@ -24,18 +24,18 @@ namespace dali {
 
 BlkCluster::BlkCluster() = default;
 
-BlkCluster::BlkCluster(int well_extension_x_init,
-                       int well_extension_y_init,
-                       int plug_width_init) :
+BlkCluster::BlkCluster(int32_t well_extension_x_init,
+                       int32_t well_extension_y_init,
+                       int32_t plug_width_init) :
     well_extension_x_(well_extension_x_init),
     well_extension_y_(well_extension_y_init),
     plug_width_(plug_width_init) {}
 
 void BlkCluster::AppendBlock(Block &block) {
   if (blk_ptr_list_.empty()) {
-    lx_ = int(block.LLX()) - well_extension_x_;
+    lx_ = int32_t(block.LLX()) - well_extension_x_;
     modified_lx_ = lx_ - well_extension_x_ - plug_width_;
-    ly_ = int(block.LLY()) - well_extension_y_;
+    ly_ = int32_t(block.LLY()) - well_extension_y_;
     width_ = block.Width() + well_extension_x_ * 2 + plug_width_;
     height_ = block.Height() + well_extension_y_ * 2;
   } else {
@@ -56,7 +56,7 @@ void BlkCluster::OptimizeHeight() {
 }
 
 void BlkCluster::UpdateBlockLocation() {
-  int current_loc = lx_;
+  int32_t current_loc = lx_;
   for (auto &blk_ptr: blk_ptr_list_) {
     blk_ptr->SetLLX(current_loc);
     blk_ptr->SetCenterY(this->CenterY());

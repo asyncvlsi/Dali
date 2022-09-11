@@ -34,7 +34,7 @@ class LGTetrisEx : public Placer {
  public:
   LGTetrisEx();
 
-  void SetRowHeight(int row_height);
+  void SetRowHeight(int32_t row_height);
   void SetMaxIteration(size_t max_iter);
   void SetWidthHeightFactor(double k_width, double k_height);
   void SetLeftBoundFactor(double k_left, double k_left_step);
@@ -45,38 +45,38 @@ class LGTetrisEx : public Placer {
   void InitIndexLocList();
   void InitLegalizer();
 
-  int RowHeight() const;
-  int StartRow(int y_loc) const;
-  int EndRow(int y_loc) const;
-  int MaxRow(int height) const;
-  int HeightToRow(int height) const;
-  int LocToRow(int y_loc) const;
-  int RowToLoc(int row_num, int displacement = 0) const;
-  int AlignLocToRowLoc(double y_loc) const;
-  bool IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row) const;
+  int32_t RowHeight() const;
+  int32_t StartRow(int32_t y_loc) const;
+  int32_t EndRow(int32_t y_loc) const;
+  int32_t MaxRow(int32_t height) const;
+  int32_t HeightToRow(int32_t height) const;
+  int32_t LocToRow(int32_t y_loc) const;
+  int32_t RowToLoc(int32_t row_num, int32_t displacement = 0) const;
+  int32_t AlignLocToRowLoc(double y_loc) const;
+  bool IsSpaceLegal(int32_t lo_x, int32_t hi_x, int32_t lo_row, int32_t hi_row) const;
 
-  bool IsFitToRow(int row_id, Block &block) const;
-  bool ShouldOrientN(int row_id, Block &block) const;
+  bool IsFitToRow(int32_t row_id, Block &block) const;
+  bool ShouldOrientN(int32_t row_id, Block &block) const;
 
   void InitBlockContourForward();
   void InitAndSortBlockAscendingX();
   void UseSpaceLeft(Block const &block);
-  bool IsCurrentLocLegalLeft(Value2D<int> &loc, Block &block);
-  int WhiteSpaceBoundLeft(int lo_x, int hi_x, int lo_row, int hi_row);
-  bool FindLocLeft(Value2D<int> &loc, Block &block);
+  bool IsCurrentLocLegalLeft(Value2D<int32_t> &loc, Block &block);
+  int32_t WhiteSpaceBoundLeft(int32_t lo_x, int32_t hi_x, int32_t lo_row, int32_t hi_row);
+  bool FindLocLeft(Value2D<int32_t> &loc, Block &block);
   bool LocalLegalizationLeft();
 
   void InitBlockContourBackward();
   void InitAndSortBlockDescendingX();
   void UseSpaceRight(Block const &block);
-  bool IsCurrentLocLegalRight(Value2D<int> &loc, Block &block);
-  int WhiteSpaceBoundRight(int lo_x, int hi_x, int lo_row, int hi_row);
-  bool FindLocRight(Value2D<int> &loc, Block &block);
+  bool IsCurrentLocLegalRight(Value2D<int32_t> &loc, Block &block);
+  int32_t WhiteSpaceBoundRight(int32_t lo_x, int32_t hi_x, int32_t lo_row, int32_t hi_row);
+  bool FindLocRight(Value2D<int32_t> &loc, Block &block);
   bool LocalLegalizationRight();
 
   void ResetLeftLimitFactor();
   void UpdateLeftLimitFactor();
-  double EstimatedHPWL(Block &block, int x, int y);
+  double EstimatedHPWL(Block &block, int32_t x, int32_t y);
 
   bool StartPlacement() override;
 
@@ -86,10 +86,10 @@ class LGTetrisEx : public Placer {
  protected:
   bool is_row_assignment_ = false;
   std::vector<std::vector<SegI>> row_segments_;
-  std::vector<int> block_contour_;
+  std::vector<int32_t> block_contour_;
   std::vector<BlkInitPair> blk_inits_;
 
-  int row_height_;
+  int32_t row_height_;
   bool row_height_set_;
 
   bool is_first_row_N_;
@@ -109,11 +109,11 @@ class LGTetrisEx : public Placer {
   double k_end = 3; // 5
 
   //cached data
-  int tot_num_rows_;
+  int32_t tot_num_rows_;
 
   // dump result
   bool is_dump = false;
-  int dump_count = 0;
+  int32_t dump_count = 0;
   double step_ratio = 0.1;
 };
 

@@ -32,9 +32,9 @@ namespace dali {
 struct GridBinIndex {
  public:
   GridBinIndex() : x(0), y(0) {}
-  GridBinIndex(int x0, int y0) : x(x0), y(y0) {}
-  int x;
-  int y;
+  GridBinIndex(int32_t x0, int32_t y0) : x(x0), y(y0) {}
+  int32_t x;
+  int32_t y;
   void init() {
     x = 0;
     y = 0;
@@ -95,10 +95,10 @@ class GridBin {
  public:
   GridBin();
   GridBinIndex index;
-  int bottom;
-  int top;
-  int left;
-  int right;
+  int32_t bottom;
+  int32_t top;
+  int32_t left;
+  int32_t right;
   unsigned long long white_space;
   unsigned long long cell_area;
   double filling_rate;
@@ -111,19 +111,19 @@ class GridBin {
   std::vector<Block *> fixed_blocks;
   std::vector<GridBinIndex> adjacent_bin_index;
 
-  int LLX() { return left; }
-  int LLY() { return bottom; }
-  int URX() { return right; }
-  int URY() { return top; }
-  int Height() { return top - bottom; }
-  int Width() { return right - left; }
+  int32_t LLX() { return left; }
+  int32_t LLY() { return bottom; }
+  int32_t URX() { return right; }
+  int32_t URY() { return top; }
+  int32_t Height() { return top - bottom; }
+  int32_t Width() { return right - left; }
   unsigned long long Area() {
     return (unsigned long long) (top - bottom)
         * (unsigned long long) (right - left);
   }
   bool IsAllFixedBlk() { return all_terminal; }
   bool OverFill() { return over_fill; }
-  void create_adjacent_bin_list(int grid_cnt_x, int grid_cnt_y);
+  void create_adjacent_bin_list(int32_t grid_cnt_x, int32_t grid_cnt_y);
   void Report();
 };
 

@@ -47,7 +47,7 @@ size_t getPeakRSS() {
 #elif (defined(_AIX) || defined(__TOS__AIX__)) || (defined(__sun__) || defined(__sun) || defined(sun) && (defined(__SVR4) || defined(__svr4__)))
   /* AIX and Solaris ------------------------------------------ */
     struct psinfo psinfo;
-    int fd = -1;
+    int32_t fd = -1;
     if ( (fd = open( "/proc/self/psinfo", O_RDONLY )) == -1 )
         return (size_t)0L;      /* Can't open? */
     if ( read( fd, &psinfo, sizeof(psinfo) ) != sizeof(psinfo) )

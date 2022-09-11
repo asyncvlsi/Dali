@@ -34,10 +34,10 @@ void GenClusterTable(
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
       for (auto &cluster: stripe.gridded_rows_) {
-        std::vector<int> llx;
-        std::vector<int> lly;
-        std::vector<int> urx;
-        std::vector<int> ury;
+        std::vector<int32_t> llx;
+        std::vector<int32_t> lly;
+        std::vector<int32_t> urx;
+        std::vector<int32_t> ury;
 
         llx.push_back(cluster.LLX());
         lly.push_back(cluster.LLY());
@@ -63,20 +63,20 @@ void GenClusterTable(
 
 void CollectWellFillingRects(
     Stripe &stripe,
-    int bottom_boundary,
-    int top_boundary,
+    int32_t bottom_boundary,
+    int32_t top_boundary,
     std::vector<RectI> &n_rects, std::vector<RectI> &p_rects
 ) {
-  int loc_bottom = bottom_boundary;
+  int32_t loc_bottom = bottom_boundary;
   if (!stripe.gridded_rows_.empty()) {
     loc_bottom = std::min(loc_bottom, stripe.gridded_rows_[0].LLY());
   }
-  int loc_top = top_boundary;
+  int32_t loc_top = top_boundary;
   if (!stripe.gridded_rows_.empty()) {
     loc_top = std::max(loc_top, stripe.gridded_rows_.back().URY());
   }
 
-  std::vector<int> pn_edge_list;
+  std::vector<int32_t> pn_edge_list;
   if (stripe.is_bottom_up_) {
     pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
     pn_edge_list.push_back(loc_bottom);
@@ -100,12 +100,12 @@ void CollectWellFillingRects(
   } else {
     is_p_well_rect = stripe.gridded_rows_[0].IsOrientN();
   }
-  int lx = stripe.LLX();
-  int ux = stripe.URX();
-  int ly;
-  int uy;
-  int rect_count = (int) pn_edge_list.size() - 1;
-  for (int i = 0; i < rect_count; ++i) {
+  int32_t lx = stripe.LLX();
+  int32_t ux = stripe.URX();
+  int32_t ly;
+  int32_t uy;
+  int32_t rect_count = (int32_t) pn_edge_list.size() - 1;
+  for (int32_t i = 0; i < rect_count; ++i) {
     ly = pn_edge_list[i];
     uy = pn_edge_list[i + 1];
     if (is_p_well_rect) {
@@ -120,9 +120,9 @@ void CollectWellFillingRects(
 void GenMATLABWellFillingTable(
     std::string const &base_file_name,
     std::vector<ClusterStripe> &col_list,
-    int bottom_boundary,
-    int top_boundary,
-    int well_emit_mode
+    int32_t bottom_boundary,
+    int32_t top_boundary,
+    int32_t well_emit_mode
 ) {
   std::string p_file = base_file_name + "_pwell.txt";
   std::ofstream ostp(p_file.c_str());

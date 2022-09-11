@@ -49,7 +49,7 @@ class BlockTypeWell;
  */
 class BlockType {
  public:
-  BlockType(const std::string *name_ptr, int width, int height);
+  BlockType(const std::string *name_ptr, int32_t width, int32_t height);
 
   const std::string &Name() const { return *name_ptr_; }
 
@@ -59,7 +59,7 @@ class BlockType {
   }
 
   // return the index of a pin with a given name
-  int GetPinId(std::string const &pin_name) const;
+  int32_t GetPinId(std::string const &pin_name) const;
 
   // return a pointer to a newly allocated location for a Pin with a given name
   // if this member function is used to create pins, one needs to set pin shapes using the return pointer
@@ -79,18 +79,18 @@ class BlockType {
   BlockTypeWell *WellPtr() const { return well_ptr_; }
 
   // set the width of this BlockType and update its area
-  void SetWidth(int width);
+  void SetWidth(int32_t width);
 
   // get the width of this BlockType
-  int Width() const { return width_; }
+  int32_t Width() const { return width_; }
 
   // set the height of this BlockType and update its area
-  void SetHeight(int height);
+  void SetHeight(int32_t height);
 
-  void SetSize(int width, int height);
+  void SetSize(int32_t width, int32_t height);
 
   // get the height of this BlockType
-  int Height() const { return height_; }
+  int32_t Height() const { return height_; }
 
   // get the area of this BlockType
   long long Area() const { return area_; }
@@ -103,11 +103,11 @@ class BlockType {
 
  private:
   const std::string *name_ptr_;
-  int width_, height_;
+  int32_t width_, height_;
   long long area_;
   BlockTypeWell *well_ptr_ = nullptr;
   std::vector<Pin> pin_list_;
-  std::unordered_map<std::string, int> pin_name_id_map_;
+  std::unordered_map<std::string, int32_t> pin_name_id_map_;
 
   void UpdateArea();
 };
@@ -153,19 +153,19 @@ class BlockTypeWell {
     type_ptr_->SetWell(this);
   }
 
-  void AddNwellRect(int llx, int lly, int urx, int ury);
+  void AddNwellRect(int32_t llx, int32_t lly, int32_t urx, int32_t ury);
 
-  void AddPwellRect(int llx, int lly, int urx, int ury);
+  void AddPwellRect(int32_t llx, int32_t lly, int32_t urx, int32_t ury);
 
-  void AddWellRect(bool is_n, int llx, int lly, int urx, int ury);
+  void AddWellRect(bool is_n, int32_t llx, int32_t lly, int32_t urx, int32_t ury);
 
-  void SetExtraBottomExtension(int bot_extension);
+  void SetExtraBottomExtension(int32_t bot_extension);
 
-  void SetExtraTopExtension(int top_extension);
+  void SetExtraTopExtension(int32_t top_extension);
 
-  bool IsNwellAbovePwell(int region_id) const;
+  bool IsNwellAbovePwell(int32_t region_id) const;
 
-  int RegionCount() const;
+  int32_t RegionCount() const;
 
   bool HasOddRegions() const;
 
@@ -175,31 +175,31 @@ class BlockTypeWell {
 
   void CheckLegality();
 
-  int NwellHeight(int region_id, bool is_flipped = false) const;
+  int32_t NwellHeight(int32_t region_id, bool is_flipped = false) const;
 
-  int PwellHeight(int region_id, bool is_flipped = false) const;
+  int32_t PwellHeight(int32_t region_id, bool is_flipped = false) const;
 
-  int RegionHeight(int region_id, bool is_flipped = false) const;
+  int32_t RegionHeight(int32_t region_id, bool is_flipped = false) const;
 
-  int AdjacentRegionEdgeDistance(int index, bool is_flipped = false) const;
+  int32_t AdjacentRegionEdgeDistance(int32_t index, bool is_flipped = false) const;
 
-  RectI &NwellRect(int index);
+  RectI &NwellRect(int32_t index);
 
-  RectI &PwellRect(int index);
+  RectI &PwellRect(int32_t index);
 
   void Report() const;
 
   /**** for old code ****/
-  int Pheight();
-  int Nheight();
+  int32_t Pheight();
+  int32_t Nheight();
 
  private:
   BlockType *type_ptr_ = nullptr;
   std::vector<RectI> n_rects_;
   std::vector<RectI> p_rects_;
-  int region_count_ = 0;
-  int extra_bot_extension_ = 0;
-  int extra_top_extension_ = 0;
+  int32_t region_count_ = 0;
+  int32_t extra_bot_extension_ = 0;
+  int32_t extra_top_extension_ = 0;
 };
 
 }

@@ -32,31 +32,31 @@ namespace dali {
 
 class TetrisSpace {
  private:
-  int scan_line_;
-  int left_;
-  int right_;
-  int bottom_;
-  int top_;
-  int row_height_;
-  int min_width_;
+  int32_t scan_line_;
+  int32_t left_;
+  int32_t right_;
+  int32_t bottom_;
+  int32_t top_;
+  int32_t row_height_;
+  int32_t min_width_;
   std::vector<FreeSegmentList> free_segment_rows;
   /****derived data entry****/
-  int tot_num_row_;
+  int32_t tot_num_row_;
  public:
-  TetrisSpace(int left,
-              int right,
-              int bottom,
-              int top,
-              int rowHeight,
-              int minWidth);
-  int ToStartRow(int y_loc);
-  int ToEndRow(int y_loc);
-  void UseSpace(int llx, int lly, int width, int height);
-  void FindCommonSegments(int startRowNum,
-                          int endRowNum,
+  TetrisSpace(int32_t left,
+              int32_t right,
+              int32_t bottom,
+              int32_t top,
+              int32_t rowHeight,
+              int32_t minWidth);
+  int32_t ToStartRow(int32_t y_loc);
+  int32_t ToEndRow(int32_t y_loc);
+  void UseSpace(int32_t llx, int32_t lly, int32_t width, int32_t height);
+  void FindCommonSegments(int32_t startRowNum,
+                          int32_t endRowNum,
                           FreeSegmentList &commonSegments);
-  bool IsSpaceAvail(int llx, int lly, int width, int height);
-  bool FindBlockLoc(int llx, int lly, int width, int height, int2d &result_loc);
+  bool IsSpaceAvail(int32_t llx, int32_t lly, int32_t width, int32_t height);
+  bool FindBlockLoc(int32_t llx, int32_t lly, int32_t width, int32_t height, int2d &result_loc);
   void Show();
 };
 

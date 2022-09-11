@@ -35,17 +35,17 @@ void GenClusterTable(
 
 void CollectWellFillingRects(
     Stripe &stripe,
-    int bottom_boundary,
-    int top_boundary,
+    int32_t bottom_boundary,
+    int32_t top_boundary,
     std::vector<RectI> &n_rects, std::vector<RectI> &p_rects
 );
 
 void GenMATLABWellFillingTable(
     std::string const &base_file_name,
     std::vector<ClusterStripe> &col_list,
-    int bottom_boundary,
-    int top_boundary,
-    int well_emit_mode = 0
+    int32_t bottom_boundary,
+    int32_t top_boundary,
+    int32_t well_emit_mode = 0
 );
 
 }

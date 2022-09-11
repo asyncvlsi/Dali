@@ -102,7 +102,7 @@ void Dali::ReportIoPlacementUsage() {
     << "\033[0m\n";
 }
 
-bool Dali::IoPinPlacement(int argc, char **argv) {
+bool Dali::IoPinPlacement(int32_t argc, char **argv) {
   if (argc < 2) {
     ReportIoPlacementUsage();
     return false;
@@ -140,7 +140,7 @@ void Dali::FetchSlacks() {
   phydb::ActPhyDBTimingAPI &timing_api = phy_db_ptr_->GetTimingApi();
   std::cout << "Number of timing constraints: "
             << timing_api.GetNumConstraints() << "\n";
-  for (int i = 0; i < (int) timing_api.GetNumConstraints(); ++i) {
+  for (int32_t i = 0; i < (int32_t) timing_api.GetNumConstraints(); ++i) {
     double slack = timing_api.GetSlack(i);
     std::cout << "Slack for timing constraint " << i << " " << slack << "\n";
     if (slack < 0) {
@@ -177,10 +177,10 @@ void Dali::ReportPerformance() {
   if (!phy_db_ptr_->GetTimingApi().ReadyForTimingDriven()) return;
 }
 
-bool Dali::TimingDrivenPlacement(double density, int number_of_threads) {
+bool Dali::TimingDrivenPlacement(double density, int32_t number_of_threads) {
   bool is_success = true;
   InitializeTimingDrivenPlacement();
-  for (int i = 0; i < max_td_place_num_; ++i) {
+  for (int32_t i = 0; i < max_td_place_num_; ++i) {
     GlobalPlace(density, number_of_threads);
     is_success = UnifiedLegalization();
     UpdateRCs();
@@ -193,7 +193,7 @@ bool Dali::TimingDrivenPlacement(double density, int number_of_threads) {
 
 #endif
 
-bool Dali::StartPlacement(double density, int number_of_threads) {
+bool Dali::StartPlacement(double density, int32_t number_of_threads) {
   circuit_.ReportBriefSummary();
   circuit_.ReportHPWL();
 
@@ -231,11 +231,11 @@ void Dali::AddWellTaps(
   delete well_tap_placer_;
 }
 
-bool Dali::AddWellTaps(int argc, char **argv) {
+bool Dali::AddWellTaps(int32_t argc, char **argv) {
   phydb::Macro *cell = nullptr;
   double cell_interval_microns = -1;
   bool is_checker_board = false;
-  for (int i = 1; i < argc;) {
+  for (int32_t i = 1; i < argc;) {
     std::string arg(argv[i++]);
     if (arg == "-cell" && i < argc) {
       std::string macro_name = std::string(argv[i++]);
@@ -276,7 +276,7 @@ bool Dali::AddWellTaps(int argc, char **argv) {
  * @param num_threads: number of threads.
  * @return void
  */
-bool Dali::GlobalPlace(double density, int num_threads) {
+bool Dali::GlobalPlace(double density, int32_t num_threads) {
   //std::string config_file = "dali.conf";
   gb_placer_.SetNumThreads(num_threads);
   //gb_placer_.LoadConf(config_file);
@@ -317,7 +317,7 @@ bool Dali::UnifiedLegalization() {
    */
 
   well_legalizer_.TakeOver(&gb_placer_);
-  well_legalizer_.SetStripePartitionMode(int(DefaultPartitionMode::SCAVENGE));
+  well_legalizer_.SetStripePartitionMode(int32_t(DefaultPartitionMode::SCAVENGE));
   well_legalizer_.is_dump = false;
   return well_legalizer_.StartPlacement();
   //well_legalizer_.GenMatlabClusterTable("sc_result");
@@ -352,7 +352,7 @@ void Dali::ExternalDetailedPlaceAndLegalize(
   // system call
   BOOST_LOG_TRIVIAL(info) << "System call...\n";
   std::string command = engine + " < " + dp_script_name;
-  int res = std::system(command.c_str());
+  int32_t res = std::system(command.c_str());
   BOOST_LOG_TRIVIAL(info) << engine << " return code: " << res << "\n";
 
   if (load_dp_result) {
@@ -463,9 +463,9 @@ void Dali::ExportOrdinaryComponentsToPhyDB() {
       continue;
     }
     std::string comp_name = block.Name();
-    int lx = (int) (block.LLX() * factor_x)
+    int32_t lx = (int32_t) (block.LLX() * factor_x)
         + circuit_.design().DieAreaOffsetX();
-    int ly = (int) (block.LLY() * factor_y)
+    int32_t ly = (int32_t) (block.LLY() * factor_y)
         + circuit_.design().DieAreaOffsetY();
     auto place_status = phydb::PlaceStatus(block.Status());
     auto orient = phydb::CompOrient(block.Orient());
@@ -485,9 +485,9 @@ void Dali::ExportWellTapCellsToPhyDB() {
   for (auto &block : circuit_.design().WellTaps()) {
     std::string comp_name = block.Name();
     std::string macro_name = block.TypeName();
-    int lx = (int) (block.LLX() * factor_x)
+    int32_t lx = (int32_t) (block.LLX() * factor_x)
         + circuit_.design().DieAreaOffsetX();
-    int ly = (int) (block.LLY() * factor_y)
+    int32_t ly = (int32_t) (block.LLY() * factor_y)
         + circuit_.design().DieAreaOffsetY();
     auto place_status = phydb::PlaceStatus(block.Status());
     auto orient = phydb::CompOrient(block.Orient());
@@ -526,14 +526,14 @@ void Dali::ExportIoPinsToPhyDB() {
                   "IOPIN not in PhyDB? " << iopin_name);
       phydb::IOPin *phydb_iopin = phy_db_ptr_->GetIoPinPtr(iopin_name);
       auto &rect = iopin.GetShape();
-      int llx = circuit_.Micron2DatabaseUnit(rect.LLX());
-      int lly = circuit_.Micron2DatabaseUnit(rect.LLY());
-      int urx = circuit_.Micron2DatabaseUnit(rect.URX());
-      int ury = circuit_.Micron2DatabaseUnit(rect.URY());
+      int32_t llx = circuit_.Micron2DatabaseUnit(rect.LLX());
+      int32_t lly = circuit_.Micron2DatabaseUnit(rect.LLY());
+      int32_t urx = circuit_.Micron2DatabaseUnit(rect.URX());
+      int32_t ury = circuit_.Micron2DatabaseUnit(rect.URY());
       phydb_iopin->SetShape(metal_name, llx, lly, urx, ury);
 
-      int pin_x = iopin.FinalX();
-      int pin_y = iopin.FinalY();
+      int32_t pin_x = iopin.FinalX();
+      int32_t pin_y = iopin.FinalY();
       phydb::CompOrient pin_orient;
       if (iopin.X() == circuit_.design().RegionLeft()) {
         pin_orient = phydb::CompOrient::E;
@@ -557,7 +557,7 @@ void Dali::ExportMiniRowsToPhyDB() {
   double factor_x = circuit_.DistanceMicrons() * circuit_.GridValueX();
   double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
 
-  int counter = 0;
+  int32_t counter = 0;
   for (auto &col : well_legalizer_.col_list_) {
     for (auto &strip : col.stripe_list_) {
       std::string column_name = "column" + std::to_string(counter++);
@@ -570,27 +570,27 @@ void Dali::ExportMiniRowsToPhyDB() {
       phydb::ClusterCol *p_col =
           phy_db_ptr_->AddClusterCol(column_name, bot_signal_);
 
-      int col_lx = (int) (strip.LLX() * factor_x)
+      int32_t col_lx = (int32_t) (strip.LLX() * factor_x)
           + circuit_.design().DieAreaOffsetX();
-      int col_ux = (int) (strip.URX() * factor_x)
+      int32_t col_ux = (int32_t) (strip.URX() * factor_x)
           + circuit_.design().DieAreaOffsetX();
       p_col->SetXRange(col_lx, col_ux);
 
       if (strip.is_bottom_up_) {
         for (auto &cluster : strip.gridded_rows_) {
-          int row_ly = (int) (cluster.LLY() * factor_y)
+          int32_t row_ly = (int32_t) (cluster.LLY() * factor_y)
               + circuit_.design().DieAreaOffsetY();
-          int row_uy = (int) (cluster.URY() * factor_y)
+          int32_t row_uy = (int32_t) (cluster.URY() * factor_y)
               + circuit_.design().DieAreaOffsetY();
           p_col->AddRow(row_ly, row_uy);
         }
       } else {
-        int sz = static_cast<int>(strip.gridded_rows_.size());
-        for (int j = sz - 1; j >= 0; --j) {
+        int32_t sz = static_cast<int32_t>(strip.gridded_rows_.size());
+        for (int32_t j = sz - 1; j >= 0; --j) {
           auto &cluster = strip.gridded_rows_[j];
-          int row_ly = (int) (cluster.LLY() * factor_y)
+          int32_t row_ly = (int32_t) (cluster.LLY() * factor_y)
               + circuit_.design().DieAreaOffsetY();
-          int row_uy = (int) (cluster.URY() * factor_y)
+          int32_t row_uy = (int32_t) (cluster.URY() * factor_y)
               + circuit_.design().DieAreaOffsetY();
           p_col->AddRow(row_ly, row_uy);
         }

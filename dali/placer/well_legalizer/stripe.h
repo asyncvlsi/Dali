@@ -36,29 +36,29 @@ namespace dali {
 
 class Stripe {
  public:
-  int lx_;
-  int ly_;
-  int width_;
-  int height_;
-  int max_blk_capacity_per_cluster_;
+  int32_t lx_;
+  int32_t ly_;
+  int32_t width_;
+  int32_t height_;
+  int32_t max_blk_capacity_per_cluster_;
 
-  int contour_;
-  int used_height_;
-  int cluster_count_;
+  int32_t contour_;
+  int32_t used_height_;
+  int32_t cluster_count_;
   GriddedRow *front_row_;
-  int front_id_;
+  int32_t front_id_;
   std::vector<GriddedRow> gridded_rows_;
   bool is_bottom_up_ = false;
 
-  int block_count_;
+  int32_t block_count_;
   std::vector<Block *> blk_ptrs_vec_;
-  std::unordered_map<Block *, int> blk_ptr_2_row_id_;
+  std::unordered_map<Block *, int32_t> blk_ptr_2_row_id_;
 
   bool is_first_row_orient_N_ = true;
   std::vector<RectI> well_rect_list_;
 
   bool is_checkerboard_mode_ = false;
-  int well_tap_cell_width_ = -1;
+  int32_t well_tap_cell_width_ = -1;
   std::vector<SegI> well_tap_cell_location_even_;
   std::vector<SegI> well_tap_cell_location_odd_;
 
@@ -70,12 +70,12 @@ class Stripe {
 
   double max_disp_ = 0;
 
-  int LLX() const { return lx_; }
-  int LLY() const { return ly_; }
-  int URX() const { return lx_ + width_; }
-  int URY() const { return ly_ + height_; }
-  int Width() const { return width_; }
-  int Height() const { return height_; }
+  int32_t LLX() const { return lx_; }
+  int32_t LLY() const { return ly_; }
+  int32_t URX() const { return lx_ + width_; }
+  int32_t URY() const { return ly_ + height_; }
+  int32_t Width() const { return width_; }
+  int32_t Height() const { return height_; }
 
   bool HasNoRowsSpillingOut() const;
 
@@ -84,15 +84,15 @@ class Stripe {
   void SortBlocksBasedOnLLY();
   void SortBlocksBasedOnURY();
   void SortBlocksBasedOnStretchedURY();
-  void SortBlocksBasedOnYLocation(int criterion);
+  void SortBlocksBasedOnYLocation(int32_t criterion);
 
   void PrecomputeWellTapCellLocation(
       bool is_checker_board_mode,
-      int tap_cell_interval_grid,
+      int32_t tap_cell_interval_grid,
       BlockType *well_tap_type_ptr
   );
 
-  void UpdateFrontClusterUpward(int p_height, int n_height);
+  void UpdateFrontClusterUpward(int32_t p_height, int32_t n_height);
   void SimplyAddFollowingClusters(Block *p_blk, bool is_upward);
   bool AddBlockToFrontCluster(Block *p_blk, bool is_upward);
   bool AddBlockToFrontClusterWithDispCheck(
@@ -100,16 +100,16 @@ class Stripe {
       double displacement_upper_limit,
       bool is_upward
   );
-  size_t FitBlocksToFrontSpaceUpward(size_t start_id, int current_iteration);
+  size_t FitBlocksToFrontSpaceUpward(size_t start_id, int32_t current_iteration);
   size_t FitBlocksToFrontSpaceUpwardWithDispCheck(
       size_t start_id, double displacement_upper_limit
   );
   void LegalizeFrontCluster(bool use_init_loc);
-  void UpdateRemainingClusters(int p_height, int n_height, bool is_upward);
+  void UpdateRemainingClusters(int32_t p_height, int32_t n_height, bool is_upward);
   void UpdateBlockStretchLength();
 
-  void UpdateFrontClusterDownward(int p_height, int n_height);
-  size_t FitBlocksToFrontSpaceDownward(size_t start_id, int current_iteration);
+  void UpdateFrontClusterDownward(int32_t p_height, int32_t n_height);
+  size_t FitBlocksToFrontSpaceDownward(size_t start_id, int32_t current_iteration);
 
   void UpdateBlockYLocation();
   void CleanUpTemporaryRowSegments();
@@ -131,11 +131,11 @@ class Stripe {
       bool is_reorder
   );
   void ComputeAverageLoc();
-  void ReportIterativeStatus(int i);
+  void ReportIterativeStatus(int32_t i);
   bool IsDiscrepancyConverge();
   void SetBlockLoc();
   void ClearMultiRowCellBreaking();
-  void IterativeCellReordering(int max_iter, int number_of_threads = 1);
+  void IterativeCellReordering(int32_t max_iter, int32_t number_of_threads = 1);
 
   void SortBlocksInEachRow();
 
@@ -151,23 +151,23 @@ class Stripe {
   void ConstructQuadraticObjective(IloModel &model, IloNumVarArray &x);
   void CreateQPModel(IloModel &model, IloNumVarArray &x, IloRangeArray &c);
   bool SolveQPProblem(IloCplex &cplex, IloNumVarArray &var);
-  bool OptimizeDisplacementUsingQuadraticProgramming(int number_of_threads = 1);
+  bool OptimizeDisplacementUsingQuadraticProgramming(int32_t number_of_threads = 1);
 #endif
 
   /**** for standard cells ****/
-  int row_height_ = 1;
+  int32_t row_height_ = 1;
   void ImportStandardRowSegments(phydb::PhyDB &phydb, Circuit &ckt);
-  int LocY2RowId(double lly);
-  double EstimateCost(int row_id, Block *blk_ptr, SegI &range, double density);
-  void AddBlockToRow(int row_id, Block *blk_ptr, SegI range);
+  int32_t LocY2RowId(double lly);
+  double EstimateCost(int32_t row_id, Block *blk_ptr, SegI &range, double density);
+  void AddBlockToRow(int32_t row_id, Block *blk_ptr, SegI range);
   void AssignStandardCellsToRowSegments(/*double white_space_usage*/);
 };
 
 struct ClusterStripe {
-  int lx_;
-  int width_;
+  int32_t lx_;
+  int32_t width_;
 
-  int block_count_;
+  int32_t block_count_;
   std::vector<Block *> block_list_;
 
   std::vector<RectI> well_rect_list_;
@@ -175,10 +175,10 @@ struct ClusterStripe {
   std::vector<std::vector<SegI>> white_space_; // white space in each row
   std::vector<Stripe> stripe_list_;
 
-  int Width() const { return width_; }
-  int LLX() const { return lx_; }
-  int URX() const { return lx_ + width_; }
-  Stripe *GetStripeMatchSeg(SegI seg, int y_loc);
+  int32_t Width() const { return width_; }
+  int32_t LLX() const { return lx_; }
+  int32_t URX() const { return lx_ + width_; }
+  Stripe *GetStripeMatchSeg(SegI seg, int32_t y_loc);
   Stripe *GetStripeMatchBlk(Block *blk_ptr);
   Stripe *GetStripeClosestToBlk(Block *blk_ptr, double &distance);
   void AssignBlockToSimpleStripe();

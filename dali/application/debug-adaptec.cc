@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
   //FILE *fp = fopen(dump_file.c_str(), "w+");
   //config_dump(fp);
 
-  int num_of_thread_openmp = 1;
+  int32_t num_of_thread_openmp = 1;
   omp_set_num_threads(num_of_thread_openmp);
 
   Eigen::initParallel();

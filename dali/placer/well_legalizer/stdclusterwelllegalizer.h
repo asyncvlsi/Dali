@@ -41,11 +41,11 @@ class StdClusterWellLegalizer : public Placer {
   void LoadConf(std::string const &config_file) override;
 
   void CheckWellStatus();
-  void SetStripePartitionMode(int mode) { stripe_mode_ = mode; }
+  void SetStripePartitionMode(int32_t mode) { stripe_mode_ = mode; }
   void SetFirstRowOrientN(bool is_N) { is_first_row_orient_N_ = is_N; }
   void FetchNpWellParams();
   void SaveInitialBlockLocation();
-  void InitializeWellLegalizer(int cluster_width = 0);
+  void InitializeWellLegalizer(int32_t cluster_width = 0);
 
   void CreateClusterAndAppendSingleWellBlock(Stripe &stripe, Block &blk);
   void AppendSingleWellBlockToFrontCluster(Stripe &stripe, Block &blk);
@@ -65,20 +65,20 @@ class StdClusterWellLegalizer : public Placer {
 
   bool TrialClusterLegalization(Stripe &stripe);
 
-  double WireLengthCost(GriddedRow *cluster, int l, int r);
+  double WireLengthCost(GriddedRow *cluster, int32_t l, int32_t r);
   void FindBestLocalOrder(
       std::vector<Block *> &res,
       double &cost,
       GriddedRow *cluster,
-      int cur,
-      int l,
-      int r,
-      int left_bound,
-      int right_bound,
-      int gap,
-      int range
+      int32_t cur,
+      int32_t l,
+      int32_t r,
+      int32_t left_bound,
+      int32_t right_bound,
+      int32_t gap,
+      int32_t range
   );
-  void LocalReorderInCluster(GriddedRow *cluster, int range = 3);
+  void LocalReorderInCluster(GriddedRow *cluster, int32_t range = 3);
   void LocalReorderAllClusters();
 
   //void SingleSegmentClusteringOptimization();
@@ -97,50 +97,50 @@ class StdClusterWellLegalizer : public Placer {
   void GenMatlabClusterTable(std::string const &name_of_file);
   void GenMATLABWellTable(
       std::string const &name_of_file,
-      int well_emit_mode
+      int32_t well_emit_mode
   ) override;
   void GenPPNP(std::string const &name_of_file);
   void EmitDEFWellFile(
       std::string const &name_of_file,
-      int well_emit_mode,
+      int32_t well_emit_mode,
       bool enable_emitting_cluster = true
   ) override;
   void EmitPPNPRect(std::string const &name_of_file);
   void ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr);
-  void EmitWellRect(std::string const &name_of_file, int well_emit_mode);
-  void ExportWellToPhyDB(phydb::PhyDB *phydb_ptr, int well_emit_mode);
+  void EmitWellRect(std::string const &name_of_file, int32_t well_emit_mode);
+  void ExportWellToPhyDB(phydb::PhyDB *phydb_ptr, int32_t well_emit_mode);
   void EmitClusterRect(std::string const &name_of_file);
  private:
   bool is_first_row_orient_N_ = true;
 
   /**** well parameters ****/
-  int max_unplug_length_;
-  int well_tap_cell_width_;
-  int well_spacing_;
+  int32_t max_unplug_length_;
+  int32_t well_tap_cell_width_;
+  int32_t well_spacing_;
 
   /**** stripe parameters ****/
-  int stripe_mode_ = 0;
+  int32_t stripe_mode_ = 0;
   DefaultSpacePartitioner space_partitioner_;
 
   /**** cached well tap cell parameters ****/
   BlockType *well_tap_cell_ = nullptr;
-  int tap_cell_p_height_;
-  int tap_cell_n_height_;
-  int space_to_well_tap_ = 1;
+  int32_t tap_cell_p_height_;
+  int32_t tap_cell_n_height_;
+  int32_t space_to_well_tap_ = 1;
 
   // list of index loc pair for location sort
   std::vector<BlkInitPair> index_loc_list_;
   std::vector<ClusterStripe> col_list_; // list of stripes
 
   /**** parameters for legalization ****/
-  int max_iter_ = 10;
+  int32_t max_iter_ = 10;
 
   /**** initial location ****/
   std::vector<int2d> block_init_locations_;
 
   // dump result
   bool is_dump = false;
-  int dump_count = 0;
+  int32_t dump_count = 0;
 
 };
 

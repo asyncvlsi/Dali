@@ -28,57 +28,57 @@ namespace dali {
 struct BlkCluster {
   BlkCluster();
   BlkCluster(
-      int well_extension_x_init,
-      int well_extension_y_init,
-      int plug_width_init
+      int32_t well_extension_x_init,
+      int32_t well_extension_y_init,
+      int32_t plug_width_init
   );
 
-  int well_extension_x_;
-  int well_extension_y_;
-  int plug_width_;
+  int32_t well_extension_x_;
+  int32_t well_extension_y_;
+  int32_t plug_width_;
 
-  int p_well_height_;
+  int32_t p_well_height_;
 
-  int width_;
-  int height_;
-  int lx_;
-  int ly_;
+  int32_t width_;
+  int32_t height_;
+  int32_t lx_;
+  int32_t ly_;
   std::vector<Block *> blk_ptr_list_;
 
   // cached value;
-  int modified_lx_;
+  int32_t modified_lx_;
 
-  int Width() const { return width_; }
-  int Height() const { return height_; }
-  long int Area() const { return (long int) width_ * (long int) height_; }
-  int InnerUX() const { return modified_lx_ + width_; }
-  int LLX() const { return lx_; }
-  int LLY() const { return ly_; }
-  int URX() const { return lx_ + width_; }
-  int URY() const { return ly_ + height_; }
+  int32_t Width() const { return width_; }
+  int32_t Height() const { return height_; }
+  long Area() const { return width_ * height_; }
+  int32_t InnerUX() const { return modified_lx_ + width_; }
+  int32_t LLX() const { return lx_; }
+  int32_t LLY() const { return ly_; }
+  int32_t URX() const { return lx_ + width_; }
+  int32_t URY() const { return ly_ + height_; }
   double CenterX() const { return lx_ + width_ / 2.0; }
   double CenterY() const { return ly_ + height_ / 2.0; }
 
-  int size() const { return blk_ptr_list_.size(); }
+  int32_t size() const { return blk_ptr_list_.size(); }
 
-  void SetLLX(int lx) { lx_ = lx; }
-  void SetLLY(int ly) { ly_ = ly; }
-  void SetURX(int ux) { lx_ = ux - width_; }
-  void SetURY(int uy) { ly_ = uy - height_; }
-  void SetLoc(int lx, int ly) {
+  void SetLLX(int32_t lx) { lx_ = lx; }
+  void SetLLY(int32_t ly) { ly_ = ly; }
+  void SetURX(int32_t ux) { lx_ = ux - width_; }
+  void SetURY(int32_t uy) { ly_ = uy - height_; }
+  void SetLoc(int32_t lx, int32_t ly) {
     lx_ = lx;
     ly_ = ly;
   }
   void SetCenterX(double center_x) {
-    lx_ = (int) std::round(
+    lx_ = (int32_t) std::round(
         center_x - width_ / 2.0);
   }
   void SetCenterY(double center_y) {
-    ly_ = (int) std::round(
+    ly_ = (int32_t) std::round(
         center_y - height_ / 2.0);
   }
-  void IncreX(int displacement) { lx_ += displacement; }
-  void IncreY(int displacement) { ly_ += displacement; }
+  void IncreX(int32_t displacement) { lx_ += displacement; }
+  void IncreY(int32_t displacement) { ly_ += displacement; }
 
   void AppendBlock(Block &block);
   void OptimizeHeight();
@@ -87,12 +87,12 @@ struct BlkCluster {
 
 struct CluPtrLocPair {
   BlkCluster *clus_ptr;
-  int x;
-  int y;
+  int32_t x;
+  int32_t y;
   explicit CluPtrLocPair(
       BlkCluster *clus_ptr_init = nullptr,
-      int x_init = 0,
-      int y_init = 0
+      int32_t x_init = 0,
+      int32_t y_init = 0
   ) : clus_ptr(clus_ptr_init),
       x(x_init),
       y(y_init) {}

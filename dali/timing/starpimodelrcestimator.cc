@@ -37,24 +37,24 @@ void StarPiModelEstimator::PushNetRCToManager() {
   auto &nets = phy_db_->design().GetNetsRef();
   for (auto &net : nets) {
     if (!net.GetIoPinIdsRef().empty()) continue;
-    int driver_id = net.GetDriverPinId();
+    int32_t driver_id = net.GetDriverPinId();
     auto &net_pins = net.GetPinsRef();
     auto &driver = net_pins[driver_id];
     std::string driver_name = phy_db_->GetFullCompPinName(driver);
     auto *driver_node = timing_api.PhyDBPinToSpefNode(driver);
     double driver_cap = 0;
-    phydb::Point2D<int> driver_pin_loc = design.GetComponentPinLocation(
+    phydb::Point2D<int32_t> driver_pin_loc = design.GetComponentPinLocation(
         driver.InstanceId(),
         driver.PinId()
     );
-    int net_sz = (int) net_pins.size();
-    for (int pin_id = 0; pin_id < net_sz; ++pin_id) {
+    int32_t net_sz = (int32_t) net_pins.size();
+    for (int32_t pin_id = 0; pin_id < net_sz; ++pin_id) {
       if (pin_id == driver_id) continue;
       phydb::PhydbPin &load = net_pins[pin_id];
       std::string load_name = phy_db_->GetFullCompPinName(load);
       auto load_node = timing_api.PhyDBPinToSpefNode(load);
       double res, cap;
-      phydb::Point2D<int> load_pin_loc = design.GetComponentPinLocation(
+      phydb::Point2D<int32_t> load_pin_loc = design.GetComponentPinLocation(
           load.InstanceId(),
           load.PinId()
       );;
@@ -91,12 +91,12 @@ void StarPiModelEstimator::AddEdgesToManager() {
   auto &timing_api = phy_db_->GetTimingApi();
   auto spef_manager = phy_db_->GetParaManager();
   for (auto &net : phy_db_->design().GetNetsRef()) {
-    int driver_id = net.GetDriverPinId();
+    int32_t driver_id = net.GetDriverPinId();
     auto &net_pins = net.GetPinsRef();
     auto &driver = net_pins[driver_id];
     auto driver_node = timing_api.PhyDBPinToSpefNode(driver);
-    int net_sz = static_cast<int>(net_pins.size());
-    for (int i = 0; i < net_sz; ++i) {
+    int32_t net_sz = static_cast<int32_t>(net_pins.size());
+    for (int32_t i = 0; i < net_sz; ++i) {
       if (i == driver_id) continue;
       auto &load = net_pins[i];
       auto load_node = timing_api.PhyDBPinToSpefNode(load);
@@ -134,8 +134,8 @@ void StarPiModelEstimator::FindFirstHorizontalAndVerticalMetalLayer() {
 }
 
 void StarPiModelEstimator::GetResistanceAndCapacitance(
-    phydb::Point2D<int> &driver_loc,
-    phydb::Point2D<int> &load_loc,
+    phydb::Point2D<int32_t> &driver_loc,
+    phydb::Point2D<int32_t> &load_loc,
     double &resistance,
     double &capacitance
 ) {

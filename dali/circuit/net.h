@@ -43,8 +43,8 @@ class IoPin;
 class Net {
  public:
   Net(
-      std::pair<const std::string, int> *name_id_pair_ptr,
-      int capacity,
+      std::pair<const std::string, int32_t> *name_id_pair_ptr,
+      int32_t capacity,
       double weight
   );
 
@@ -52,7 +52,7 @@ class Net {
   const std::string &Name() const;
 
   // get the internal index
-  int Id() const;
+  int32_t Id() const;
 
   // add block/pin pair to this net
   void AddBlkPinPair(Block *block_ptr, Pin *pin_ptr);
@@ -101,16 +101,16 @@ class Net {
   void UpdateMaxMinIndex();
 
   // get the index of the BlockPin pair with the maximum x location
-  int MaxBlkPinIdX() const;
+  int32_t MaxBlkPinIdX() const;
 
   // get the index of the BlockPin pair with the minimum x location
-  int MinBlkPinIdX() const;
+  int32_t MinBlkPinIdX() const;
 
   // get the index of the BlockPin pair with the maximum y location
-  int MaxBlkPinIdY() const;
+  int32_t MaxBlkPinIdY() const;
 
   // get the index of the BlockPin pair with the minimum y location
-  int MinBlkPinIdY() const;
+  int32_t MinBlkPinIdY() const;
 
   // get the Block pointer of the BlockPin pair with the maximum x location
   Block *MaxBlkPtrX() const;
@@ -160,13 +160,13 @@ class Net {
 
   void UpdateMaxMinCtoC();
 
-  int MaxPinCtoCX();
+  int32_t MaxPinCtoCX();
 
-  int MinPinCtoCX();
+  int32_t MinPinCtoCX();
 
-  int MaxPinCtoCY();
+  int32_t MaxPinCtoCY();
 
-  int MinPinCtoCY();
+  int32_t MinPinCtoCY();
 
   double HPWLCtoCX();
 
@@ -174,18 +174,18 @@ class Net {
 
   double HPWLCtoC();
  protected:
-  std::pair<const std::string, int> *name_id_pair_ptr_;
+  std::pair<const std::string, int32_t> *name_id_pair_ptr_;
   double weight_;
-  int cnt_fixed_;
+  int32_t cnt_fixed_;
   std::vector<NetPin> blk_pins_;
   std::vector<IoPin *> iopin_ptrs_;
 
   // cached data
-  int max_x_pin_id_, min_x_pin_id_;
-  int max_y_pin_id_, min_y_pin_id_;
+  int32_t max_x_pin_id_, min_x_pin_id_;
+  int32_t max_y_pin_id_, min_y_pin_id_;
   // 1.0/(p-1), where p is the number of pins connected by this net
   double inv_p_;
-  int driver_pin_index = -1;
+  int32_t driver_pin_index = -1;
 
   // auxiliary information
   NetAux *aux_ptr_;

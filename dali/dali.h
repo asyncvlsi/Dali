@@ -50,7 +50,7 @@ class Dali {
   bool ConfigIoPlacerAllInOneLayer(std::string const &layer_name);
   bool ConfigIoPlacer();
   bool StartIoPinAutoPlacement();
-  bool IoPinPlacement(int argc, char **argv);
+  bool IoPinPlacement(int32_t argc, char **argv);
 
   bool ShouldPerformTimingDrivenPlacement();
   void InitializeRCEstimator();
@@ -61,18 +61,18 @@ class Dali {
   void PerformTimingAnalysis();
   void UpdateNetWeights();
   void ReportPerformance();
-  bool TimingDrivenPlacement(double density, int number_of_threads);
+  bool TimingDrivenPlacement(double density, int32_t number_of_threads);
 #endif
 
-  bool StartPlacement(double density, int number_of_threads = 1);
+  bool StartPlacement(double density, int32_t number_of_threads = 1);
 
   void AddWellTaps(
       phydb::Macro *cell,
       double cell_interval_microns,
       bool is_checker_board
   );
-  bool AddWellTaps(int argc, char **argv);
-  bool GlobalPlace(double density, int num_threads = 1);
+  bool AddWellTaps(int32_t argc, char **argv);
+  bool GlobalPlace(double density, int32_t num_threads = 1);
   bool UnifiedLegalization();
 
   void ExternalDetailedPlaceAndLegalize(
@@ -99,7 +99,7 @@ class Dali {
   IoPlacer *io_placer_ = nullptr;
   StarPiModelEstimator *rc_estimator = nullptr;
 
-  int max_td_place_num_ = 2;
+  int32_t max_td_place_num_ = 2;
 
   static void ReportIoPlacementUsage();
 

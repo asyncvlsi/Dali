@@ -53,13 +53,13 @@ class NetPin {
   Block *BlkPtr() const { return blk_ptr_; }
 
   // get the index of this block
-  int BlkId() const { return blk_ptr_->Id(); }
+  int32_t BlkId() const { return blk_ptr_->Id(); }
 
   // get the pointer to the pin
   Pin *PinPtr() const { return pin_ptr_; }
 
   // get the index of this pin
-  int PinId() const { return pin_ptr_->Id(); }
+  int32_t PinId() const { return pin_ptr_->Id(); }
 
   // get the offset of this pin in x-direction, the orientation of the block is considered
   double OffsetX() const { return pin_ptr_->OffsetX(blk_ptr_->Orient()); }

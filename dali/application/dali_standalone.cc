@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
   std::string str_x_grid;
   std::string str_y_grid;
   std::string log_file_name;
-  int well_legalization_mode = static_cast<int>(DefaultPartitionMode::STRICT);
+  auto well_legalization_mode = static_cast<int32_t>(DefaultPartitionMode::STRICT);
   bool is_no_global = false;
   bool is_no_legal = false;
   bool is_no_io_place = false;
@@ -59,14 +59,14 @@ int main(int argc, char *argv[]) {
   bool has_log_prefix = true;
   double x_grid = 0, y_grid = 0;
   double target_density = -1;
-  int io_metal_layer = 0;
+  int32_t io_metal_layer = 0;
   bool export_well_cluster_for_matlab = false;
   bool is_well_tap_needed = true;
   double max_row_width = 0;
-  int lg_threads = 1;
-  int gb_maxiter = 100;
+  int32_t lg_threads = 1;
+  int32_t gb_maxiter = 100;
   bool lg_cplex = false;
-  int num_threads = 1;
+  int32_t num_threads = 1;
 
   // parsing arguments
   for (int i = 1; i < argc;) {
@@ -150,9 +150,9 @@ int main(int argc, char *argv[]) {
       std::string str_wlg_mode = std::string(argv[i++]);
       if (str_wlg_mode == "scavenge") {
         well_legalization_mode =
-            static_cast<int>(DefaultPartitionMode::SCAVENGE);
+            static_cast<int32_t>(DefaultPartitionMode::SCAVENGE);
       } else if (str_wlg_mode == "strict") {
-        well_legalization_mode = static_cast<int>(DefaultPartitionMode::STRICT);
+        well_legalization_mode = static_cast<int32_t>(DefaultPartitionMode::STRICT);
       } else {
         std::cout << "Unknown well legalization mode: " << str_wlg_mode << "\n";
         ReportUsage();

@@ -30,9 +30,9 @@
 
 namespace dali {
 
-void SaveArgs(int argc, char *argv[]) {
+void SaveArgs(int32_t argc, char *argv[]) {
   std::string cmd_line_arguments;
-  for (int i = 0; i < argc; ++i) {
+  for (int32_t i = 0; i < argc; ++i) {
     cmd_line_arguments += argv[i];
     cmd_line_arguments.push_back(' ');
   }
@@ -41,12 +41,12 @@ void SaveArgs(int argc, char *argv[]) {
 }
 
 std::vector<std::vector<std::string>> ParseArguments(
-    int argc,
+    int32_t argc,
     char *argv[],
     std::string const &flag_prefix
 ) {
   std::vector<std::vector<std::string>> options;
-  for (int i = 1; i < argc; ++i) {
+  for (int32_t i = 1; i < argc; ++i) {
     std::string arg(argv[i]);
     if (arg.substr(0, flag_prefix.size())== flag_prefix) {
       // this is a new flag
@@ -67,14 +67,14 @@ double AbsResidual(double x, double y) {
 
 class SegmentTree {
  public:
-  int start, end;
-  std::vector<int> X;
+  int32_t start, end;
+  std::vector<int32_t> X;
   SegmentTree *left;
   SegmentTree *right;
-  int count;
+  int32_t count;
   long long total;
 
-  SegmentTree(int start0, int end0, std::vector<int> &X0) :
+  SegmentTree(int32_t start0, int32_t end0, std::vector<int32_t> &X0) :
       start(start0),
       end(end0),
       X(X0) {
@@ -84,7 +84,7 @@ class SegmentTree {
     total = 0;
   }
 
-  int GetRangeMid() const {
+  int32_t GetRangeMid() const {
     return start + (end - start) / 2;
   }
 
@@ -102,10 +102,10 @@ class SegmentTree {
     return right;
   }
 
-  long long Update(int i, int j, int val);
+  long long Update(int32_t i, int32_t j, int32_t val);
 };
 
-long long SegmentTree::Update(int i, int j, int val) {
+long long SegmentTree::Update(int32_t i, int32_t j, int32_t val) {
   if (i >= j) return 0;
   if (start == i && end == j) {
     count += val;
@@ -124,12 +124,12 @@ unsigned long long GetCoverArea(std::vector<RectI> &rects) {
   // no rectangles, return 0 immediately
   if (rects.empty()) return 0;
 
-  int event_open = 1, event_close = -1;
+  int32_t event_open = 1, event_close = -1;
   // event is a tuple containing {y_loc, open/close event, lower_x, upper_x}
-  std::vector<std::vector<int>> events;
+  std::vector<std::vector<int32_t>> events;
   // each rectangle can create at most 2 events if area is positive, otherwise 0 event
   events.reserve(rects.size() * 2);
-  std::unordered_set<int> x_values_set;
+  std::unordered_set<int32_t> x_values_set;
 
   // create an event only when a rectangle has an area larger than 0
   for (auto &rec : rects) {
@@ -150,32 +150,32 @@ unsigned long long GetCoverArea(std::vector<RectI> &rects) {
   std::sort(
       events.begin(),
       events.end(),
-      [](std::vector<int> const &event0, std::vector<int> const &event1) {
+      [](std::vector<int32_t> const &event0, std::vector<int32_t> const &event1) {
         return event0[0] < event1[0];
       }
   );
 
   // build a map to find index from x value
-  std::vector<int> x_values;
-  int sz = static_cast<int>(x_values_set.size());
+  std::vector<int32_t> x_values;
+  int32_t sz = static_cast<int32_t>(x_values_set.size());
   x_values.reserve(sz);
   for (auto &val : x_values_set) {
     x_values.push_back(val);
   }
   std::sort(x_values.begin(), x_values.end());
-  std::unordered_map<int, int> x_value_id_map;
-  for (int i = 0; i < sz; ++i) {
+  std::unordered_map<int32_t, int32_t> x_value_id_map;
+  for (int32_t i = 0; i < sz; ++i) {
     x_value_id_map.insert(
-        std::unordered_map<int, int>::value_type(x_values[i], i)
+        std::unordered_map<int32_t, int32_t>::value_type(x_values[i], i)
     );
   }
 
   SegmentTree active(0, sz - 1, x_values);
   long long ans = 0;
   long long cur_x_sum = 0;
-  int cur_y = events[0][0];
+  int32_t cur_y = events[0][0];
   for (auto &event : events) {
-    int y = event[0], type = event[1], x1 = event[2], x2 = event[3];
+    int32_t y = event[0], type = event[1], x1 = event[2], x2 = event[3];
     ans += cur_x_sum * (y - cur_y);
     cur_x_sum = active.Update(x_value_id_map[x1], x_value_id_map[x2], type);
     cur_y = y;
@@ -197,7 +197,7 @@ void StrTokenize(std::string const &line, std::vector<std::string> &res) {
   res.clear();
   std::string empty_str;
   bool is_delimiter, old_is_delimiter = true;
-  int current_field = -1;
+  int32_t current_field = -1;
   for (auto &c : line) {
     is_delimiter = false;
     for (auto &delimiter : delimiter_list) {
@@ -226,8 +226,8 @@ void StrTokenize(std::string const &line, std::vector<std::string> &res) {
  * like "metal7", "metal12", etc.
  * it will return the location of the first digit
  * ****/
-int FindFirstNumber(std::string const &str) {
-  int res = -1;
+int32_t FindFirstNumber(std::string const &str) {
+  int32_t res = -1;
   size_t sz = str.size();
   for (size_t i = 0; i < sz; ++i) {
     if (str[i] >= '0' && str[i] <= '9') {
@@ -254,7 +254,7 @@ int FindFirstNumber(std::string const &str) {
 bool IsExecutableExisting(std::string const &executable_path) {
   // system call
   std::string command = "which " + executable_path + " >/dev/null";
-  int res = std::system(command.c_str());
+  int32_t res = std::system(command.c_str());
   return res == 0;
 }
 
@@ -288,8 +288,8 @@ void MergeIntervals(std::vector<SegI> &intervals) {
 
   std::vector<SegI> res;
 
-  int begin = intervals[0].lo;
-  int end = intervals[0].hi;
+  int32_t begin = intervals[0].lo;
+  int32_t end = intervals[0].hi;
   SegI tmp(0, 0);
   for (size_t i = 1; i < sz; ++i) {
     if (end < intervals[i].lo) {

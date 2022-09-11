@@ -51,7 +51,7 @@ enum class RandomInitializerType {
  */
 class RandomInitializer {
  public:
-  RandomInitializer(Circuit *ckt_ptr, unsigned int random_seed);
+  RandomInitializer(Circuit *ckt_ptr, uint32_t random_seed);
   virtual ~RandomInitializer() = default;
 
   // interface functions
@@ -65,7 +65,7 @@ class RandomInitializer {
   void PrintStartStatement();
   void PrintEndStatement();
   Circuit *ckt_ptr_ = nullptr;
-  unsigned int random_seed_ = 1;
+  uint32_t random_seed_ = 1;
 
   // save intermediate result for debugging and/or visualization
   bool should_save_intermediate_result_ = false;
@@ -82,7 +82,7 @@ class UniformInitializer : public RandomInitializer {
  public:
   explicit UniformInitializer(
       Circuit *ckt_ptr,
-      unsigned int random_seed = 1
+      uint32_t random_seed = 1
   );
   ~UniformInitializer() override = default;
   void RandomPlace() override;
@@ -100,7 +100,7 @@ class GaussianInitializer : public RandomInitializer {
  public:
   explicit GaussianInitializer(
       Circuit *ckt_ptr,
-      unsigned int random_seed = 1
+      uint32_t = 1
   );
   ~GaussianInitializer() override = default;
   void SetParameters(
@@ -120,7 +120,7 @@ class InitializerGridBin {
   std::vector<Block *> &Macros();
   double GetDensity() const;
   void UpdateDensity();
-  void SetBoundary(double lx, double ly, double ux, double uy);
+  void SetBoundary(int32_t lx, int32_t ly, int32_t ux, int32_t uy);
   void UpdateTotalArea();
   void UpdateMacroArea();
   void AddBlock(Block *blk);
@@ -128,12 +128,12 @@ class InitializerGridBin {
   std::vector<Block *> macros_;
   std::vector<Block *> blocks_;
   double density_ = 0;
-  double total_area_ = 0;
-  double used_area_ = 0;
-  double lx_ = 0;
-  double ly_ = 0;
-  double ux_ = 0;
-  double uy_ = 0;
+  unsigned long long total_area_ = 0;
+  unsigned long long used_area_ = 0;
+  int32_t lx_ = 0;
+  int32_t ly_ = 0;
+  int32_t ux_ = 0;
+  int32_t uy_ = 0;
 };
 
 struct CompareInitializerGridBinPtr {
@@ -161,7 +161,7 @@ class MonteCarloInitializer : public RandomInitializer {
  public:
   explicit MonteCarloInitializer(
       Circuit *ckt_ptr,
-      unsigned int random_seed = 1
+      uint32_t random_seed = 1
   );
   ~MonteCarloInitializer() override = default;
   void RandomPlace() override;
@@ -170,13 +170,13 @@ class MonteCarloInitializer : public RandomInitializer {
   virtual void AssignFixedMacroToGridBin();
   bool IsBlkLocationValid(Block &blk);
 
-  int grid_bin_cnt_x_ = 30;
-  int grid_bin_cnt_y_ = 30;
-  double bin_width_ = 0;
-  double bin_height_ = 0;
-  int blk_size_factor_ = 5;
+  int32_t grid_bin_cnt_x_ = 30;
+  int32_t grid_bin_cnt_y_ = 30;
+  int32_t bin_width_ = 0;
+  int32_t bin_height_ = 0;
+  int32_t blk_size_factor_ = 5;
   std::vector<std::vector<InitializerGridBin>> grid_bins_;
-  int num_trials_ = 50;
+  int32_t num_trials_ = 50;
 };
 
 /****
@@ -193,7 +193,7 @@ class DensityAwareInitializer : public MonteCarloInitializer {
  public:
   explicit DensityAwareInitializer(
       Circuit *ckt_ptr,
-      unsigned int random_seed = 1
+      uint32_t random_seed = 1
   );
   ~DensityAwareInitializer() override = default;
   void RandomPlace() override;

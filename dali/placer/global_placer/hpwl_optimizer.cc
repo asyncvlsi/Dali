@@ -28,7 +28,7 @@
 
 namespace dali {
 
-HpwlOptimizer::HpwlOptimizer(Circuit *ckt_ptr, int num_threads) {
+HpwlOptimizer::HpwlOptimizer(Circuit *ckt_ptr, int32_t num_threads) {
   DaliExpects(ckt_ptr != nullptr, "Circuit is a nullptr?");
   ckt_ptr_ = ckt_ptr;
   DaliExpects(num_threads >= 1, "Number of threads less than 1?");
@@ -114,8 +114,8 @@ void B2BHpwlOptimizer::BuildProblemX() {
   std::vector<Net> &nets = ckt_ptr_->Nets();
   size_t coefficients_capacity = coefficients_x_.capacity();
   coefficients_x_.resize(0);
-  int sz = static_cast<int>(bx.size());
-  for (int i = 0; i < sz; ++i) {
+  int32_t sz = static_cast<int32_t>(bx.size());
+  for (int32_t i = 0; i < sz; ++i) {
     bx[i] = 0;
   }
 
@@ -128,21 +128,21 @@ void B2BHpwlOptimizer::BuildProblemX() {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
     double inv_p = net.InvP();
     net.UpdateMaxMinIdX();
-    int max_pin_index = net.MaxBlkPinIdX();
-    int min_pin_index = net.MinBlkPinIdX();
+    int32_t max_pin_index = net.MaxBlkPinIdX();
+    int32_t min_pin_index = net.MinBlkPinIdX();
 
-    int blk_num_max = net.BlockPins()[max_pin_index].BlkId();
+    int32_t blk_num_max = net.BlockPins()[max_pin_index].BlkId();
     double pin_loc_max = net.BlockPins()[max_pin_index].AbsX();
     bool is_movable_max = net.BlockPins()[max_pin_index].BlkPtr()->IsMovable();
     double offset_max = net.BlockPins()[max_pin_index].OffsetX();
 
-    int blk_num_min = net.BlockPins()[min_pin_index].BlkId();
+    int32_t blk_num_min = net.BlockPins()[min_pin_index].BlkId();
     double pin_loc_min = net.BlockPins()[min_pin_index].AbsX();
     bool is_movable_min = net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
     double offset_min = net.BlockPins()[min_pin_index].OffsetX();
 
     for (auto &pair : net.BlockPins()) {
-      int blk_num = pair.BlkId();
+      int32_t blk_num = pair.BlkId();
       double pin_loc = pair.AbsX();
       bool is_movable = pair.BlkPtr()->IsMovable();
       double offset = pair.OffsetX();
@@ -193,7 +193,7 @@ void B2BHpwlOptimizer::BuildProblemX() {
     }
   }
 
-  for (int i = 0; i < sz; ++i) {
+  for (int32_t i = 0; i < sz; ++i) {
     if (blocks[i].IsFixed()) {
       coefficients_x_.emplace_back(i, i, 1);
       bx[i] = blocks[i].LLX();
@@ -225,8 +225,8 @@ void B2BHpwlOptimizer::BuildProblemY() {
   std::vector<Net> &nets = ckt_ptr_->Nets();
   size_t coefficients_capacity = coefficients_y_.capacity();
   coefficients_y_.resize(0);
-  int sz = static_cast<int>(by.size());
-  for (int i = 0; i < sz; ++i) {
+  int32_t sz = static_cast<int32_t>(by.size());
+  for (int32_t i = 0; i < sz; ++i) {
     by[i] = 0;
   }
 
@@ -239,21 +239,21 @@ void B2BHpwlOptimizer::BuildProblemY() {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
     double inv_p = net.InvP();
     net.UpdateMaxMinIdY();
-    int max_pin_index = net.MaxBlkPinIdY();
-    int min_pin_index = net.MinBlkPinIdY();
+    int32_t max_pin_index = net.MaxBlkPinIdY();
+    int32_t min_pin_index = net.MinBlkPinIdY();
 
-    int blk_num_max = net.BlockPins()[max_pin_index].BlkId();
+    int32_t blk_num_max = net.BlockPins()[max_pin_index].BlkId();
     double pin_loc_max = net.BlockPins()[max_pin_index].AbsY();
     bool is_movable_max = net.BlockPins()[max_pin_index].BlkPtr()->IsMovable();
     double offset_max = net.BlockPins()[max_pin_index].OffsetY();
 
-    int blk_num_min = net.BlockPins()[min_pin_index].BlkId();
+    int32_t blk_num_min = net.BlockPins()[min_pin_index].BlkId();
     double pin_loc_min = net.BlockPins()[min_pin_index].AbsY();
     bool is_movable_min = net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
     double offset_min = net.BlockPins()[min_pin_index].OffsetY();
 
     for (auto &pair : net.BlockPins()) {
-      int blk_num = pair.BlkId();
+      int32_t blk_num = pair.BlkId();
       double pin_loc = pair.AbsY();
       bool is_movable = pair.BlkPtr()->IsMovable();
       double offset = pair.OffsetY();
@@ -305,7 +305,7 @@ void B2BHpwlOptimizer::BuildProblemY() {
     }
   }
   // add the diagonal non-zero element for fixed blocks
-  for (int i = 0; i < sz; ++i) {
+  for (int32_t i = 0; i < sz; ++i) {
     if (blocks[i].IsFixed()) {
       coefficients_y_.emplace_back(i, i, 1);
       by[i] = blocks[i].LLY();
@@ -331,16 +331,16 @@ void B2BHpwlOptimizer::BuildProblemY() {
 
 bool B2BHpwlOptimizer::IsSeriesConverge(
     std::vector<double> &data,
-    int window_size,
+    int32_t window_size,
     double tolerance
 ) {
-  int sz = (int) data.size();
+  int32_t sz = (int32_t) data.size();
   if (sz < window_size) {
     return false;
   }
   double max_val = -DBL_MAX;
   double min_val = DBL_MAX;
-  for (int i = 0; i < window_size; ++i) {
+  for (int32_t i = 0; i < window_size; ++i) {
     max_val = std::max(max_val, data[sz - 1 - i]);
     min_val = std::min(min_val, data[sz - 1 - i]);
   }
@@ -359,26 +359,26 @@ bool B2BHpwlOptimizer::IsSeriesConverge(
 * ****/
 bool B2BHpwlOptimizer::IsSeriesOscillate(
     std::vector<double> &data,
-    int window_size
+    int32_t window_size
 ) {
   // if the given length is too short, we cannot know whether it is oscillating or not.
   if (window_size < 3) return false;
 
   // if the given data series is short than the length, we cannot know whether it is oscillating or not.
-  int sz = (int) data.size();
+  int32_t sz = (int32_t) data.size();
   if (sz < window_size) {
     return false;
   }
 
   // this vector keeps track of the increasing trend (true) and descreasing trend (false).
   std::vector<bool> trend(window_size - 1, false);
-  for (int i = 0; i < window_size - 1; ++i) {
+  for (int32_t i = 0; i < window_size - 1; ++i) {
     trend[i] = data[sz - 1 - i] > data[sz - 2 - i];
   }
   std::reverse(trend.begin(), trend.end());
 
   bool is_oscillate = true;
-  for (int i = 0; i < window_size - 2; ++i) {
+  for (int32_t i = 0; i < window_size - 2; ++i) {
     if (trend[i] == trend[i + 1]) {
       is_oscillate = false;
       break;
@@ -395,17 +395,17 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
   elapsed_time.RecordEndTime();
   tot_matrix_from_triplets_x += elapsed_time.GetWallTime();
 
-  int sz = static_cast<int>(vx.size());
+  int32_t sz = static_cast<int32_t>(vx.size());
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
 
   elapsed_time.RecordStartTime();
   std::vector<double> eval_history;
-  int max_rounds = cg_iteration_max_num_ / cg_iteration_;
+  int32_t max_rounds = cg_iteration_max_num_ / cg_iteration_;
   cg_x_.compute(Ax); // Ax * vx = bx
-  for (int i = 0; i < max_rounds; ++i) {
+  for (int32_t i = 0; i < max_rounds; ++i) {
     vx = cg_x_.solveWithGuess(bx, vx);
 //#pragma omp for
-    for (int num = 0; num < sz; ++num) {
+    for (int32_t num = 0; num < sz; ++num) {
       blocks[num].SetLLX(vx[num]);
     }
     double evaluate_result = ckt_ptr_->WeightedHPWLX();
@@ -430,7 +430,7 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
 
   elapsed_time.RecordStartTime();
 //#pragma omp for
-  for (int num = 0; num < sz; ++num) {
+  for (int32_t num = 0; num < sz; ++num) {
     blocks[num].SetLLX(vx[num]);
   }
   elapsed_time.RecordEndTime();
@@ -450,17 +450,17 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
   elapsed_time.RecordEndTime();
   tot_matrix_from_triplets_y += elapsed_time.GetWallTime();
 
-  int sz = static_cast<int>(vy.size());
+  int32_t sz = static_cast<int32_t>(vy.size());
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
 
   elapsed_time.RecordStartTime();
   std::vector<double> eval_history;
-  int max_rounds = cg_iteration_max_num_ / cg_iteration_;
+  int32_t max_rounds = cg_iteration_max_num_ / cg_iteration_;
   cg_y_.compute(Ay);
-  for (int i = 0; i < max_rounds; ++i) {
+  for (int32_t i = 0; i < max_rounds; ++i) {
     vy = cg_y_.solveWithGuess(by, vy);
 //#pragma omp for
-    for (int num = 0; num < sz; ++num) {
+    for (int32_t num = 0; num < sz; ++num) {
       block_list[num].SetLLY(vy[num]);
     }
     double evaluate_result = ckt_ptr_->WeightedHPWLY();
@@ -485,7 +485,7 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
 
   elapsed_time.RecordStartTime();
 //#pragma omp for
-  for (int num = 0; num < sz; ++num) {
+  for (int32_t num = 0; num < sz; ++num) {
     block_list[num].SetLLY(vy[num]);
   }
   elapsed_time.RecordEndTime();
@@ -497,7 +497,7 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
 }
 
 void B2BHpwlOptimizer::PullBlockBackToRegion() {
-  int sz = static_cast<int>(vx.size());
+  int32_t sz = static_cast<int32_t>(vx.size());
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
   double region_llx = ckt_ptr_->RegionLLX();
   double region_urx = ckt_ptr_->RegionURX();
@@ -506,7 +506,7 @@ void B2BHpwlOptimizer::PullBlockBackToRegion() {
 #pragma omp parallel num_threads(omp_get_max_threads()) default(none) shared(block_list, sz, region_llx, region_urx, region_lly, region_ury)
   {
 #pragma omp for
-    for (int i = 0; i < sz; ++i) {
+    for (int32_t i = 0; i < sz; ++i) {
       if (block_list[i].IsMovable()) {
         if (vx[i] < region_llx) {
           vx[i] = region_llx;
@@ -527,7 +527,7 @@ void B2BHpwlOptimizer::PullBlockBackToRegion() {
     }
 
 #pragma omp for
-    for (int i = 0; i < sz; ++i) {
+    for (int32_t i = 0; i < sz; ++i) {
       block_list[i].SetLoc(vx[i], vy[i]);
     }
   }
@@ -536,9 +536,9 @@ void B2BHpwlOptimizer::PullBlockBackToRegion() {
 void B2BHpwlOptimizer::UpdateAnchorLocation() {
   if (cur_iter_ == 0) return;
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
-  int sz = static_cast<int>(block_list.size());
+  int32_t sz = static_cast<int32_t>(block_list.size());
 
-  for (int i = 0; i < sz; ++i) {
+  for (int32_t i = 0; i < sz; ++i) {
     double tmp_loc_x = x_anchor[i];
     x_anchor[i] = block_list[i].LLX();
     block_list[i].SetLLX(tmp_loc_x);
@@ -594,11 +594,11 @@ void B2BHpwlOptimizer::BuildProblemWithAnchorX() {
   elapsed_time.RecordStartTime();
 
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
-  int sz = static_cast<int>(block_list.size());
+  int32_t sz = static_cast<int32_t>(block_list.size());
 
   double weight = 0;
   double pin_loc0, pin_loc1;
-  for (int i = 0; i < sz; ++i) {
+  for (int32_t i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) continue;
     pin_loc0 = block_list[i].LLX();
     pin_loc1 = x_anchor[i];
@@ -618,11 +618,11 @@ void B2BHpwlOptimizer::BuildProblemWithAnchorY() {
   elapsed_time.RecordStartTime();
 
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
-  int sz = static_cast<int>(block_list.size());
+  int32_t sz = static_cast<int32_t>(block_list.size());
 
   double weight = 0;
   double pin_loc0, pin_loc1;
-  for (int i = 0; i < sz; ++i) {
+  for (int32_t i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) continue;
     pin_loc0 = block_list[i].LLY();
     pin_loc1 = y_anchor[i];
@@ -636,15 +636,15 @@ void B2BHpwlOptimizer::BuildProblemWithAnchorY() {
 
 void B2BHpwlOptimizer::BackUpBlockLocation() {
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
-  int sz = static_cast<int>(block_list.size());
+  int32_t sz = static_cast<int32_t>(block_list.size());
 //#pragma omp for
-  for (int i = 0; i < sz; ++i) {
+  for (int32_t i = 0; i < sz; ++i) {
     x_anchor[i] = block_list[i].LLX();
     y_anchor[i] = block_list[i].LLY();
   }
 }
 
-void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(int num_threads) {
+void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(int32_t num_threads) {
   Eigen::setNbThreads(num_threads);
   BOOST_LOG_TRIVIAL(trace)
     << "threads in branch x: " << num_threads
@@ -652,17 +652,17 @@ void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(int num_threads) {
     << " Eigen threads: " << Eigen::nbThreads() << "\n";
 
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
-  int sz = static_cast<int>(block_list.size());
+  int32_t sz = static_cast<int32_t>(block_list.size());
 #pragma omp parallel num_threads(num_threads) default(none) shared(block_list, sz)
   {
 #pragma omp for
-    for (int i = 0; i < sz; ++i) {
+    for (int32_t i = 0; i < sz; ++i) {
       vx[i] = block_list[i].LLX();
     }
   }
 
   std::vector<double> eval_history_x;
-  int b2b_update_it_x = 0;
+  int32_t b2b_update_it_x = 0;
   for (b2b_update_it_x = 0; b2b_update_it_x < b2b_update_max_iteration_;
        ++b2b_update_it_x) {
     BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
@@ -695,7 +695,7 @@ void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(int num_threads) {
   lower_bound_hpwl_x_.push_back(eval_history_x.back());
 }
 
-void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(int num_threads) {
+void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(int32_t num_threads) {
   BOOST_LOG_TRIVIAL(trace)
     << "threads in branch y: "
     << omp_get_max_threads()
@@ -703,17 +703,17 @@ void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(int num_threads) {
     << "\n";
 
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
-  int sz = static_cast<int>(block_list.size());
+  int32_t sz = static_cast<int32_t>(block_list.size());
 #pragma omp parallel num_threads(num_threads) default(none) shared(block_list, sz)
   {
 #pragma omp for
-    for (int i = 0; i < sz; ++i) {
+    for (int32_t i = 0; i < sz; ++i) {
       vy[i] = block_list[i].LLY();
     }
   }
 
   std::vector<double> eval_history_y;
-  int b2b_update_it_y = 0;
+  int32_t b2b_update_it_y = 0;
   for (b2b_update_it_y = 0;
        b2b_update_it_y < b2b_update_max_iteration_;
        ++b2b_update_it_y) {
@@ -749,7 +749,7 @@ void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(int num_threads) {
 
 double B2BHpwlOptimizer::OptimizeHpwl() {
   omp_set_dynamic(0);
-  int avail_threads_num = num_threads_ / 2;
+  int32_t avail_threads_num = num_threads_ / 2;
   if (avail_threads_num == 0) {
     avail_threads_num = 1;
   }
@@ -833,8 +833,8 @@ void StarHpwlOptimizer::BuildProblemX() {
   size_t coefficients_capacity = coefficients_x_.capacity();
   coefficients_x_.resize(0);
 
-  int sz = static_cast<int>(bx.size());
-  for (int i = 0; i < sz; ++i) {
+  int32_t sz = static_cast<int32_t>(bx.size());
+  for (int32_t i = 0; i < sz; ++i) {
     bx[i] = 0;
   }
 
@@ -848,13 +848,13 @@ void StarHpwlOptimizer::BuildProblemX() {
     double inv_p = net.InvP();
 
     // assuming the 0-th pin in the net is the driver pin
-    int driver_blk_num = net.BlockPins()[0].BlkId();
+    int32_t driver_blk_num = net.BlockPins()[0].BlkId();
     double driver_pin_loc = net.BlockPins()[0].AbsX();
     bool driver_is_movable = net.BlockPins()[0].BlkPtr()->IsMovable();
     double driver_offset = net.BlockPins()[0].OffsetX();
 
     for (auto &pair : net.BlockPins()) {
-      int blk_num = pair.BlkId();
+      int32_t blk_num = pair.BlkId();
       double pin_loc = pair.AbsX();
       bool is_movable = pair.BlkPtr()->IsMovable();
 
@@ -882,7 +882,7 @@ void StarHpwlOptimizer::BuildProblemX() {
     }
   }
 
-  for (int i = 0; i < sz; ++i) {
+  for (int32_t i = 0; i < sz; ++i) {
     if (blocks[i].IsFixed()) {
       coefficients_x_.emplace_back(i, i, 1);
       bx[i] = blocks[i].LLX();
@@ -915,8 +915,8 @@ void StarHpwlOptimizer::BuildProblemY() {
   size_t coefficients_capacity = coefficients_y_.capacity();
   coefficients_y_.resize(0);
 
-  int sz = static_cast<int>(by.size());
-  for (int i = 0; i < sz; ++i) {
+  int32_t sz = static_cast<int32_t>(by.size());
+  for (int32_t i = 0; i < sz; ++i) {
     by[i] = 0;
   }
 
@@ -930,13 +930,13 @@ void StarHpwlOptimizer::BuildProblemY() {
     double inv_p = net.InvP();
 
     // assuming the 0-th pin in the net is the driver pin
-    int driver_blk_num = net.BlockPins()[0].BlkId();
+    int32_t driver_blk_num = net.BlockPins()[0].BlkId();
     double driver_pin_loc = net.BlockPins()[0].AbsY();
     bool driver_is_movable = net.BlockPins()[0].BlkPtr()->IsMovable();
     double driver_offset = net.BlockPins()[0].OffsetY();
 
     for (auto &pair : net.BlockPins()) {
-      int blk_num = pair.BlkId();
+      int32_t blk_num = pair.BlkId();
       double pin_loc = pair.AbsY();
       bool is_movable = pair.BlkPtr()->IsMovable();
 
@@ -965,7 +965,7 @@ void StarHpwlOptimizer::BuildProblemY() {
   }
 
   // add the diagonal non-zero element for fixed blocks
-  for (int i = 0; i < sz; ++i) {
+  for (int32_t i = 0; i < sz; ++i) {
     if (blocks[i].IsFixed()) {
       coefficients_y_.emplace_back(i, i, 1);
       by[i] = blocks[i].LLY();
@@ -1002,8 +1002,8 @@ void HpwlHpwlOptimizer::BuildProblemX() {
   size_t coefficients_capacity = coefficients_x_.capacity();
   coefficients_x_.resize(0);
 
-  int sz = static_cast<int>(bx.size());
-  for (int i = 0; i < sz; ++i) {
+  int32_t sz = static_cast<int32_t>(bx.size());
+  for (int32_t i = 0; i < sz; ++i) {
     bx[i] = 0;
   }
 
@@ -1016,15 +1016,15 @@ void HpwlHpwlOptimizer::BuildProblemX() {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
     double inv_p = net.InvP();
     net.UpdateMaxMinIdX();
-    int max_pin_index = net.MaxBlkPinIdX();
-    int min_pin_index = net.MinBlkPinIdX();
+    int32_t max_pin_index = net.MaxBlkPinIdX();
+    int32_t min_pin_index = net.MinBlkPinIdX();
 
-    int blk_num_max = net.BlockPins()[max_pin_index].BlkId();
+    int32_t blk_num_max = net.BlockPins()[max_pin_index].BlkId();
     double pin_loc_max = net.BlockPins()[max_pin_index].AbsX();
     bool is_movable_max = net.BlockPins()[max_pin_index].BlkPtr()->IsMovable();
     double offset_max = net.BlockPins()[max_pin_index].OffsetX();
 
-    int blk_num_min = net.BlockPins()[min_pin_index].BlkId();
+    int32_t blk_num_min = net.BlockPins()[min_pin_index].BlkId();
     double pin_loc_min = net.BlockPins()[min_pin_index].AbsX();
     bool is_movable_min = net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
     double offset_min = net.BlockPins()[min_pin_index].OffsetX();
@@ -1050,7 +1050,7 @@ void HpwlHpwlOptimizer::BuildProblemX() {
     }
   }
 
-  for (int i = 0; i < sz; ++i) {
+  for (int32_t i = 0; i < sz; ++i) {
     if (blocks[i].IsFixed()) {
       coefficients_x_.emplace_back(i, i, 1);
       bx[i] = blocks[i].LLX();
@@ -1083,8 +1083,8 @@ void HpwlHpwlOptimizer::BuildProblemY() {
   size_t coefficients_capacity = coefficients_y_.capacity();
   coefficients_y_.resize(0);
 
-  int sz = static_cast<int>(by.size());
-  for (int i = 0; i < sz; ++i) {
+  int32_t sz = static_cast<int32_t>(by.size());
+  for (int32_t i = 0; i < sz; ++i) {
     by[i] = 0;
   }
 
@@ -1097,15 +1097,15 @@ void HpwlHpwlOptimizer::BuildProblemY() {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
     double inv_p = net.InvP();
     net.UpdateMaxMinIdY();
-    int max_pin_index = net.MaxBlkPinIdY();
-    int min_pin_index = net.MinBlkPinIdY();
+    int32_t max_pin_index = net.MaxBlkPinIdY();
+    int32_t min_pin_index = net.MinBlkPinIdY();
 
-    int blk_num_max = net.BlockPins()[max_pin_index].BlkId();
+    int32_t blk_num_max = net.BlockPins()[max_pin_index].BlkId();
     double pin_loc_max = net.BlockPins()[max_pin_index].AbsY();
     bool is_movable_max = net.BlockPins()[max_pin_index].BlkPtr()->IsMovable();
     double offset_max = net.BlockPins()[max_pin_index].OffsetY();
 
-    int blk_num_min = net.BlockPins()[min_pin_index].BlkId();
+    int32_t blk_num_min = net.BlockPins()[min_pin_index].BlkId();
     double pin_loc_min = net.BlockPins()[min_pin_index].AbsY();
     bool is_movable_min = net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
     double offset_min = net.BlockPins()[min_pin_index].OffsetY();
@@ -1130,7 +1130,7 @@ void HpwlHpwlOptimizer::BuildProblemY() {
       by[blk_num_max] -= offset_diff;
     }
   }
-  for (int i = 0; i < sz;
+  for (int32_t i = 0; i < sz;
        ++i) { // add the diagonal non-zero element for fixed blocks
     if (blocks[i].IsFixed()) {
       coefficients_y_.emplace_back(i, i, 1);
@@ -1161,12 +1161,12 @@ void HpwlHpwlOptimizer::UpdateAnchorAlpha() {
 
 void StarHpwlHpwlOptimizer::InitializeDriverLoadPairs() {
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
-  int sz = static_cast<int>(blocks.size());
+  int32_t sz = static_cast<int32_t>(blocks.size());
 
   pair_connect.resize(sz);
   for (auto &blk_pair : blk_pair_net_list_) {
-    int num0 = blk_pair.blk_num0;
-    int num1 = blk_pair.blk_num1;
+    int32_t num0 = blk_pair.blk_num0;
+    int32_t num1 = blk_pair.blk_num1;
     //BOOST_LOG_TRIVIAL(info)   << num0 << " " << num1 << "\n";
     pair_connect[num0].push_back(&blk_pair);
     pair_connect[num1].push_back(&blk_pair);
@@ -1174,7 +1174,7 @@ void StarHpwlHpwlOptimizer::InitializeDriverLoadPairs() {
 
   diagonal_pair.clear();
   diagonal_pair.reserve(sz);
-  for (int i = 0; i < sz; ++i) {
+  for (int32_t i = 0; i < sz; ++i) {
     diagonal_pair.emplace_back(i, i);
     pair_connect[i].push_back(&(diagonal_pair[i]));
     std::sort(
@@ -1191,11 +1191,11 @@ void StarHpwlHpwlOptimizer::InitializeDriverLoadPairs() {
     );
   }
 
-  std::vector<int> row_size(sz, 1);
-  for (int i = 0; i < sz; ++i) {
+  std::vector<int32_t> row_size(sz, 1);
+  for (int32_t i = 0; i < sz; ++i) {
     for (auto &blk_pair : pair_connect[i]) {
-      int num0 = blk_pair->blk_num0;
-      int num1 = blk_pair->blk_num1;
+      int32_t num0 = blk_pair->blk_num0;
+      int32_t num1 = blk_pair->blk_num1;
       if (num0 == num1) continue;
       if (blocks[num0].IsMovable() && blocks[num1].IsMovable()) {
         ++row_size[i];
@@ -1204,12 +1204,12 @@ void StarHpwlHpwlOptimizer::InitializeDriverLoadPairs() {
   }
   Ax.reserve(row_size);
   SpMat_diag_x.resize(sz);
-  for (int i = 0; i < sz; ++i) {
+  for (int32_t i = 0; i < sz; ++i) {
     for (auto &blk_pair : pair_connect[i]) {
-      int num0 = blk_pair->blk_num0;
-      int num1 = blk_pair->blk_num1;
+      int32_t num0 = blk_pair->blk_num0;
+      int32_t num1 = blk_pair->blk_num1;
       if (blocks[num0].IsMovable() && blocks[num1].IsMovable()) {
-        int col;
+        int32_t col;
         if (num0 == i) {
           col = num1;
         } else {
@@ -1246,12 +1246,12 @@ void StarHpwlHpwlOptimizer::InitializeDriverLoadPairs() {
 
   Ay.reserve(row_size);
   SpMat_diag_y.resize(sz);
-  for (int i = 0; i < sz; ++i) {
+  for (int32_t i = 0; i < sz; ++i) {
     for (auto &blk_pair : pair_connect[i]) {
-      int num0 = blk_pair->blk_num0;
-      int num1 = blk_pair->blk_num1;
+      int32_t num0 = blk_pair->blk_num0;
+      int32_t num1 = blk_pair->blk_num1;
       if (blocks[num0].IsMovable() && blocks[num1].IsMovable()) {
-        int col;
+        int32_t col;
         if (num0 == i) {
           col = num1;
         } else {
@@ -1345,41 +1345,41 @@ void StarHpwlHpwlOptimizer::BuildProblemX() {
   elapsed_time.RecordStartTime();
   UpdateMaxMinX();
 
-  int sz = static_cast<int>(bx.size());
-  for (int i = 0; i < sz; ++i) {
+  int32_t sz = static_cast<int32_t>(bx.size());
+  for (int32_t i = 0; i < sz; ++i) {
     bx[i] = 0;
   }
 
   //double decay_length = decay_factor * ckt_ptr_->AveBlkHeight();
   std::vector<BlkPairNets> &blk_pair_net_list = blk_pair_net_list_;
-  int pair_sz = blk_pair_net_list.size();
+  int32_t pair_sz = blk_pair_net_list.size();
 //#pragma omp parallel for
-  for (int i = 0; i < pair_sz; ++i) {
+  for (int32_t i = 0; i < pair_sz; ++i) {
     BlkPairNets &blk_pair = blk_pair_net_list[i];
     blk_pair.ClearX();
     for (auto &edge : blk_pair.edges) {
       Net &net = *(edge.net);
-      int d = edge.d;
-      int l = edge.l;
-      int driver_blk_num = net.BlockPins()[d].BlkId();
+      int32_t d = edge.d;
+      int32_t l = edge.l;
+      int32_t driver_blk_num = net.BlockPins()[d].BlkId();
       double driver_pin_loc = net.BlockPins()[d].AbsX();
       bool driver_is_movable = net.BlockPins()[d].BlkPtr()->IsMovable();
       double driver_offset = net.BlockPins()[d].OffsetX();
 
-      int load_blk_num = net.BlockPins()[l].BlkId();
+      int32_t load_blk_num = net.BlockPins()[l].BlkId();
       double load_pin_loc = net.BlockPins()[l].AbsX();
       bool load_is_movable = net.BlockPins()[l].BlkPtr()->IsMovable();
       double load_offset = net.BlockPins()[l].OffsetX();
 
-      int max_pin_index = net.MaxBlkPinIdX();
-      int min_pin_index = net.MinBlkPinIdX();
+      int32_t max_pin_index = net.MaxBlkPinIdX();
+      int32_t min_pin_index = net.MinBlkPinIdX();
 
-      int blk_num_max = net.BlockPins()[max_pin_index].BlkId();
+      int32_t blk_num_max = net.BlockPins()[max_pin_index].BlkId();
       double pin_loc_max = net.BlockPins()[max_pin_index].AbsX();
       //bool is_movable_max = net.BlockPins()[max_pin_index].BlkPtr()->IsMovable();
       //double offset_max = net.BlockPins()[max_pin_index].OffsetX();
 
-      int blk_num_min = net.BlockPins()[min_pin_index].BlkId();
+      int32_t blk_num_min = net.BlockPins()[min_pin_index].BlkId();
       double pin_loc_min = net.BlockPins()[min_pin_index].AbsX();
       //bool is_movable_min = net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
       //double offset_min = net.BlockPins()[min_pin_index].OffsetX();
@@ -1406,7 +1406,7 @@ void StarHpwlHpwlOptimizer::BuildProblemX() {
               / (driver_pin_loc - pin_loc_min + width_epsilon_);
         }
       }
-      //int exponent = cur_iter_/5;
+      //int32_t exponent = cur_iter_/5;
       //weight *= std::pow(adjust, exponent);
       weight *= adjust;
       if (!load_is_movable && driver_is_movable) {
@@ -1448,7 +1448,7 @@ void StarHpwlHpwlOptimizer::BuildProblemX() {
       (ckt_ptr_->RegionLLX() + ckt_ptr_->RegionURX()) / 2.0 * center_weight;
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
 //#pragma omp parallel for
-  for (int i = 0; i < sz; ++i) {
+  for (int32_t i = 0; i < sz; ++i) {
     if (blocks[i].IsFixed()) {
       SpMat_diag_x[i].valueRef() = 1;
       bx[i] = blocks[i].LLX();
@@ -1483,41 +1483,41 @@ void StarHpwlHpwlOptimizer::BuildProblemY() {
   elapsed_time.RecordStartTime();
   UpdateMaxMinY();
 
-  int sz = static_cast<int>(by.size());
-  for (int i = 0; i < sz; ++i) {
+  int32_t sz = static_cast<int32_t>(by.size());
+  for (int32_t i = 0; i < sz; ++i) {
     by[i] = 0;
   }
 
   //double decay_length = decay_factor * ckt_ptr_->AveBlkHeight();
   std::vector<BlkPairNets> &blk_pair_net_list = blk_pair_net_list_;
-  int pair_sz = blk_pair_net_list.size();
+  int32_t pair_sz = blk_pair_net_list.size();
 //#pragma omp parallel for
-  for (int i = 0; i < pair_sz; ++i) {
+  for (int32_t i = 0; i < pair_sz; ++i) {
     BlkPairNets &blk_pair = blk_pair_net_list[i];
     blk_pair.ClearY();
     for (auto &edge : blk_pair.edges) {
       Net &net = *(edge.net);
-      int d = edge.d;
-      int l = edge.l;
-      int driver_blk_num = net.BlockPins()[d].BlkId();
+      int32_t d = edge.d;
+      int32_t l = edge.l;
+      int32_t driver_blk_num = net.BlockPins()[d].BlkId();
       double driver_pin_loc = net.BlockPins()[d].AbsY();
       bool driver_is_movable = net.BlockPins()[d].BlkPtr()->IsMovable();
       double driver_offset = net.BlockPins()[d].OffsetY();
 
-      int load_blk_num = net.BlockPins()[l].BlkId();
+      int32_t load_blk_num = net.BlockPins()[l].BlkId();
       double load_pin_loc = net.BlockPins()[l].AbsY();
       bool load_is_movable = net.BlockPins()[l].BlkPtr()->IsMovable();
       double load_offset = net.BlockPins()[l].OffsetY();
 
-      int max_pin_index = net.MaxBlkPinIdY();
-      int min_pin_index = net.MinBlkPinIdY();
+      int32_t max_pin_index = net.MaxBlkPinIdY();
+      int32_t min_pin_index = net.MinBlkPinIdY();
 
-      int blk_num_max = net.BlockPins()[max_pin_index].BlkId();
+      int32_t blk_num_max = net.BlockPins()[max_pin_index].BlkId();
       double pin_loc_max = net.BlockPins()[max_pin_index].AbsY();
       //bool is_movable_max = net.BlockPins()[max_pin_index].BlkPtr()->IsMovable();
       //double offset_max = net.BlockPins()[max_pin_index].OffsetY();
 
-      int blk_num_min = net.BlockPins()[min_pin_index].BlkId();
+      int32_t blk_num_min = net.BlockPins()[min_pin_index].BlkId();
       double pin_loc_min = net.BlockPins()[min_pin_index].AbsY();
       //bool is_movable_min = net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
       //double offset_min = net.BlockPins()[min_pin_index].OffsetY();
@@ -1544,7 +1544,7 @@ void StarHpwlHpwlOptimizer::BuildProblemY() {
               / (driver_pin_loc - pin_loc_min + height_epsilon_);
         }
       }
-      //int exponent = cur_iter_/5;
+      //int32_t exponent = cur_iter_/5;
       //weight *= std::pow(adjust, exponent);
       weight *= adjust;
       if (!load_is_movable && driver_is_movable) {
@@ -1586,7 +1586,7 @@ void StarHpwlHpwlOptimizer::BuildProblemY() {
       (ckt_ptr_->RegionLLY() + ckt_ptr_->RegionURY()) / 2.0 * center_weight;
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
 //#pragma omp parallel for
-  for (int i = 0; i < sz; ++i) {
+  for (int32_t i = 0; i < sz; ++i) {
     if (blocks[i].IsFixed()) {
       SpMat_diag_y[i].valueRef() = 1;
       by[i] = blocks[i].LLY();
@@ -1624,11 +1624,11 @@ void StarHpwlHpwlOptimizer::BuildProblemWithAnchorX() {
   elapsed_time.RecordStartTime();
 
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
-  int sz = static_cast<int>(block_list.size());
+  int32_t sz = static_cast<int32_t>(block_list.size());
 
   double weight = 0;
   double pin_loc0, pin_loc1;
-  for (int i = 0; i < sz; ++i) {
+  for (int32_t i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) continue;
     pin_loc0 = block_list[i].LLX();
     pin_loc1 = x_anchor[i];
@@ -1648,11 +1648,11 @@ void StarHpwlHpwlOptimizer::BuildProblemWithAnchorY() {
   elapsed_time.RecordStartTime();
 
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
-  int sz = static_cast<int>(block_list.size());
+  int32_t sz = static_cast<int32_t>(block_list.size());
 
   double weight = 0;
   double pin_loc0, pin_loc1;
-  for (int i = 0; i < sz; ++i) {
+  for (int32_t i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) continue;
     pin_loc0 = block_list[i].LLY();
     pin_loc1 = y_anchor[i];
@@ -1668,15 +1668,15 @@ double StarHpwlHpwlOptimizer::OptimizeQuadraticMetricX(double cg_stop_criterion)
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
-  int sz = vx.size();
+  int32_t sz = vx.size();
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
 
   std::vector<double> eval_history;
-  int max_rounds = cg_iteration_max_num_ / cg_iteration_;
+  int32_t max_rounds = cg_iteration_max_num_ / cg_iteration_;
   cg_x_.compute(Ax); // Ax * vx = bx
-  for (int i = 0; i < max_rounds; ++i) {
+  for (int32_t i = 0; i < max_rounds; ++i) {
     vx = cg_x_.solveWithGuess(bx, vx);
-    for (int num = 0; num < sz; ++num) {
+    for (int32_t num = 0; num < sz; ++num) {
       blocks[num].SetLLX(vx[num]);
     }
     double evaluate_result = ckt_ptr_->WeightedHPWLX();
@@ -1701,7 +1701,7 @@ double StarHpwlHpwlOptimizer::OptimizeQuadraticMetricX(double cg_stop_criterion)
   tot_cg_solver_time_x += elapsed_time.GetWallTime();
 
   elapsed_time.RecordStartTime();
-  for (int num = 0; num < sz; ++num) {
+  for (int32_t num = 0; num < sz; ++num) {
     blocks[num].SetLLX(vx[num]);
   }
   elapsed_time.RecordEndTime();
@@ -1718,15 +1718,15 @@ double StarHpwlHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion)
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
-  int sz = vx.size();
+  int32_t sz = vx.size();
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
 
   std::vector<double> eval_history;
-  int max_rounds = cg_iteration_max_num_ / cg_iteration_;
+  int32_t max_rounds = cg_iteration_max_num_ / cg_iteration_;
   cg_y_.compute(Ay);
-  for (int i = 0; i < max_rounds; ++i) {
+  for (int32_t i = 0; i < max_rounds; ++i) {
     vy = cg_y_.solveWithGuess(by, vy);
-    for (int num = 0; num < sz; ++num) {
+    for (int32_t num = 0; num < sz; ++num) {
       block_list[num].SetLLY(vy[num]);
     }
     double evaluate_result = ckt_ptr_->WeightedHPWLY();
@@ -1751,7 +1751,7 @@ double StarHpwlHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion)
   tot_cg_solver_time_y += elapsed_time.GetWallTime();
 
   elapsed_time.RecordStartTime();
-  for (int num = 0; num < sz; ++num) {
+  for (int32_t num = 0; num < sz; ++num) {
     block_list[num].SetLLY(vy[num]);
   }
   elapsed_time.RecordEndTime();

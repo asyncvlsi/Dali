@@ -58,33 +58,33 @@ class Design {
   const std::string &Name() const { return name_; }
 
   // get DEF distance microns
-  int DistanceMicrons() const { return distance_microns_; }
+  int32_t DistanceMicrons() const { return distance_microns_; }
 
   // get the location of placement boundaries
-  int RegionLeft() const { return region_left_; }
-  int RegionRight() const { return region_right_; }
-  int RegionBottom() const { return region_bottom_; }
-  int RegionTop() const { return region_top_; }
+  int32_t RegionLeft() const { return region_left_; }
+  int32_t RegionRight() const { return region_right_; }
+  int32_t RegionBottom() const { return region_bottom_; }
+  int32_t RegionTop() const { return region_top_; }
 
   // locations of cells in Dali is on grid, but they do not have to be on grid
   // in a DEF file. The following two APIs return the offset along each direction.
-  int DieAreaOffsetX() const { return die_area_offset_x_; }
-  int DieAreaOffsetY() const { return die_area_offset_y_; }
-  int DieAreaOffsetXResidual() const { return die_area_offset_x_residual_; }
-  int DieAreaOffsetYResidual() const { return die_area_offset_y_residual_; }
+  int32_t DieAreaOffsetX() const { return die_area_offset_x_; }
+  int32_t DieAreaOffsetY() const { return die_area_offset_y_; }
+  int32_t DieAreaOffsetXResidual() const { return die_area_offset_x_residual_; }
+  int32_t DieAreaOffsetYResidual() const { return die_area_offset_y_residual_; }
 
   // get all blocks
   std::vector<Block> &Blocks() { return blocks_; }
 
   // some blocks are imaginary (for example, fixed IOPINs), this function
   // returns the number of real blocks (for example, gates)
-  int RealBlkCnt() const { return real_block_count_; }
+  int32_t RealBlkCnt() const { return real_block_count_; }
 
   // get all well tap cells
   std::vector<Block> &WellTaps() { return welltaps_; }
 
   // get well tap cell name-id map
-  std::unordered_map<std::string, int> &TapNameIdMap() {
+  std::unordered_map<std::string, int32_t> &TapNameIdMap() {
     return tap_name_id_map_;
   };
 
@@ -103,49 +103,49 @@ class Design {
   std::string name_;
 
   /****def distance microns****/
-  int distance_microns_ = 0;
+  int32_t distance_microns_ = 0;
 
   /****die area****/
-  int region_left_ = 0; // unit is grid value x
-  int region_right_ = 0; // unit is grid value x
-  int region_bottom_ = 0; // unit is grid value y
-  int region_top_ = 0; // unit is grid value y
+  int32_t region_left_ = 0; // unit is grid value x
+  int32_t region_right_ = 0; // unit is grid value x
+  int32_t region_bottom_ = 0; // unit is grid value y
+  int32_t region_top_ = 0; // unit is grid value y
   bool die_area_set_ = false;
 
   // if left boundary is not on grid, then how much distance should we shift it to make it on grid
-  int die_area_offset_x_ = 0; // unit is manufacturing grid
+  int32_t die_area_offset_x_ = 0; // unit is manufacturing grid
   // if right boundary is still not on grid after shifting, this number is the residual
-  int die_area_offset_x_residual_ = 0; // unit is manufacturing grid
+  int32_t die_area_offset_x_residual_ = 0; // unit is manufacturing grid
   // if bottom boundary is not on grid, then how much distance should we shift it to make it on grid
-  int die_area_offset_y_ = 0; // unit is manufacturing grid
+  int32_t die_area_offset_y_ = 0; // unit is manufacturing grid
   // if top boundary is still not on grid after shifting, this number is the residual
-  int die_area_offset_y_residual_ = 0; // unit is manufacturing grid
+  int32_t die_area_offset_y_residual_ = 0; // unit is manufacturing grid
 
   /****list of instances****/
   // block list consists of blocks and dummy blocks for pre-placed IOPINs
   std::vector<Block> blocks_;
-  std::unordered_map<std::string, int> blk_name_id_map_;
+  std::unordered_map<std::string, int32_t> blk_name_id_map_;
   std::vector<Block> welltaps_;
-  std::unordered_map<std::string, int> tap_name_id_map_;
+  std::unordered_map<std::string, int32_t> tap_name_id_map_;
   // number of blocks added by calling the AddBlock() API
-  int real_block_count_ = 0;
+  int32_t real_block_count_ = 0;
   // number of blocks given in DEF, these two numbers are supposed to be the same
-  int blk_count_limit_ = 0;
+  int32_t blk_count_limit_ = 0;
 
   /****list of IO Pins****/
   std::vector<IoPin> iopins_;
-  std::unordered_map<std::string, int> iopin_name_id_map_;
-  int pre_placed_io_count_ = 0;
-  int added_iopin_count_ = 0;
-  int iopin_count_limit_ = 0;
+  std::unordered_map<std::string, int32_t> iopin_name_id_map_;
+  int32_t pre_placed_io_count_ = 0;
+  int32_t added_iopin_count_ = 0;
+  int32_t iopin_count_limit_ = 0;
 
   /****list of nets****/
   double reset_signal_weight_ = 1;
   double normal_signal_weight_ = 1;
   std::vector<Net> nets_;
-  int added_net_count_ = 0;
-  int net_count_limit_ = 0;
-  std::unordered_map<std::string, int> net_name_id_map_;
+  int32_t added_net_count_ = 0;
+  int32_t net_count_limit_ = 0;
+  std::unordered_map<std::string, int32_t> net_name_id_map_;
   NetHistogram net_histogram_;
 
   /****statistical data of the circuit****/
@@ -157,12 +157,12 @@ class Design {
   unsigned long tot_mov_width_ = 0;
   unsigned long tot_mov_height_ = 0;
   unsigned long long tot_mov_blk_area_ = 0;
-  int tot_mov_blk_num_ = 0;
-  int tot_fixed_blk_num_ = 0;
-  int blk_min_width_ = INT_MAX;
-  int blk_max_width_ = INT_MIN;
-  int blk_min_height_ = INT_MAX;
-  int blk_max_height_ = INT_MIN;
+  int32_t tot_mov_blk_num_ = 0;
+  int32_t tot_fixed_blk_num_ = 0;
+  int32_t blk_min_width_ = INT_MAX;
+  int32_t blk_max_width_ = INT_MIN;
+  int32_t blk_min_height_ = INT_MAX;
+  int32_t blk_max_height_ = INT_MIN;
 };
 
 }

@@ -30,10 +30,10 @@
 
 namespace dali {
 
-void SaveArgs(int argc, char *argv[]);
+void SaveArgs(int32_t argc, char *argv[]);
 
 std::vector<std::vector<std::string>> ParseArguments(
-    int argc,
+    int32_t argc,
     char *argv[],
     std::string const &flag_prefix
 );
@@ -50,7 +50,7 @@ double RoundOrCeiling(double x, double epsilon = 1e-5);
 void StrTokenize(std::string const &line, std::vector<std::string> &res);
 
 // finds the first number in a string
-int FindFirstNumber(std::string const &str);
+int32_t FindFirstNumber(std::string const &str);
 
 // check if an executable can be found or not
 bool IsExecutableExisting(std::string const &executable_path);

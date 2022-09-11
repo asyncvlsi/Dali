@@ -52,17 +52,17 @@ class Block {
   Block();
   Block(
       BlockType *type_ptr,
-      std::pair<const std::string, int> *name_id_pair_ptr,
-      int llx,
-      int lly,
+      std::pair<const std::string, int32_t> *name_id_pair_ptr,
+      int32_t llx,
+      int32_t lly,
       bool movable = true,
       BlockOrient orient = N
   );
   Block(
       BlockType *type_ptr,
-      std::pair<const std::string, int> *name_id_pair_ptr,
-      int llx,
-      int lly,
+      std::pair<const std::string, int32_t> *name_id_pair_ptr,
+      int32_t llx,
+      int32_t lly,
       PlaceStatus place_state = UNPLACED,
       BlockOrient orient = N
   );
@@ -78,21 +78,21 @@ class Block {
   const std::string &TypeName() const { return type_ptr_->Name(); }
 
   // get the index of this Block in the vector of instances
-  int Id() const { return name_id_pair_ptr_->second; }
+  int32_t Id() const { return name_id_pair_ptr_->second; }
 
   // get the width of this Block
-  int Width() const { return type_ptr_->Width(); }
+  int32_t Width() const { return type_ptr_->Width(); }
 
   // set the effective height of this Block, which can be different from the height of its type
   // effective area is also updated at the same time
-  void SetHeight(int height);
+  void SetHeight(int32_t height);
 
   // set the Block height to its BlockType height
   // area is also updated at the same time
   void ResetHeight();
 
   // get the height of this Block
-  int Height() const { return eff_height_; }
+  int32_t Height() const { return eff_height_; }
 
   // get lower left x coordinate
   double LLX() const { return llx_; }
@@ -113,7 +113,7 @@ class Block {
   double Y() const { return lly_ + Height() / 2.0; }
 
   // get the indices of nets containing this Block
-  std::vector<int> &NetList() { return nets_; }
+  std::vector<int32_t> &NetList() { return nets_; }
 
   // get the boolean status of whether this Block is placed
   bool IsPlaced() const {
@@ -137,7 +137,7 @@ class Block {
   bool IsFixed() const { return !IsMovable(); }
 
   // get the area of this Block
-  long long int Area() const { return eff_area_; }
+  long long Area() const { return eff_area_; }
 
   // get the Orientation of this Block
   BlockOrient Orient() const { return orient_; }
@@ -149,7 +149,7 @@ class Block {
   BlockAux *AuxPtr() const { return aux_ptr_; }
 
   // set the NameNumPair, first: name, second: number
-  void SetNameNumPair(std::pair<const std::string, int> *name_id_pair_ptr) {
+  void SetNameNumPair(std::pair<const std::string, int32_t> *name_id_pair_ptr) {
     name_id_pair_ptr_ = name_id_pair_ptr;
   }
 
@@ -221,12 +221,12 @@ class Block {
   double OverlapArea(const Block &blk) const;
 
   // set stretch length
-  void SetStretchLength(size_t index, int length);
+  void SetStretchLength(size_t index, int32_t length);
 
   // returns the stretching lengths
-  std::vector<int> &StretchLengths();
+  std::vector<int32_t> &StretchLengths();
 
-  int CumulativeStretchLength(size_t index);
+  int32_t CumulativeStretchLength(size_t index);
 
   /****Report info of this Block, for debugging purposes****/
   void Report();
@@ -236,19 +236,19 @@ class Block {
  protected:
   BlockType *type_ptr_; // type
   // name for finding its index in block_list
-  std::pair<const std::string, int> *name_id_pair_ptr_;
+  std::pair<const std::string, int32_t> *name_id_pair_ptr_;
   double llx_; // lower x coordinate, data type double, for global placement
   double lly_; // lower y coordinate
-  std::vector<int> nets_; // the list of nets connected to this cell
+  std::vector<int32_t> nets_; // the list of nets connected to this cell
   PlaceStatus place_status_; // placement status, i.e, PLACED, FIXED, UNPLACED
   BlockOrient orient_; // orientation, normally, N or FS
   BlockAux *aux_ptr_ = nullptr; // points to auxiliary information if needed
 
   // cached height, also used to store effective height, the unit is grid value in the y-direction
-  int eff_height_;
-  long long int eff_area_; // cached effective area
+  int32_t eff_height_;
+  long long eff_area_; // cached effective area
 
-  std::vector<int> stretch_length_; // TODO : move these two attributes to LgBlkAux
+  std::vector<int32_t> stretch_length_; // TODO : move these two attributes to LgBlkAux
   double tot_stretch_length = 0;
 };
 

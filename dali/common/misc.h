@@ -88,7 +88,7 @@ struct Value2D {
 };
 
 typedef Value2D<double> double2d;
-typedef Value2D<int> int2d;
+typedef Value2D<int32_t> int2d;
 
 template<class T>
 struct Rect {
@@ -170,7 +170,7 @@ struct Rect {
 };
 
 typedef Rect<double> RectD;
-typedef Rect<int> RectI;
+typedef Rect<int32_t> RectI;
 
 template<class T>
 struct Seg {
@@ -194,12 +194,12 @@ struct Seg {
   }
 };
 
-typedef Seg<int> SegI;
+typedef Seg<int32_t> SegI;
 
 struct IndexVal {
-  int col;
+  int32_t col;
   double val;
-  IndexVal(int col_init, double val_init) : col(col_init), val(val_init) {}
+  IndexVal(int32_t col_init, double val_init) : col(col_init), val(val_init) {}
 };
 
 }

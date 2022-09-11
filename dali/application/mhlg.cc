@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
   std::vector<std::string> lef_files;
   std::vector<std::string> def_files;
   std::string output_name = "dali_out";
-  int number_of_threads = 1;
+  int32_t number_of_threads = 1;
   bool is_export_matlab = false;
   double k_width = 0.0;
   double k_height = 0.0;

@@ -56,12 +56,12 @@ void StdClusterWellLegalizer::FetchNpWellParams() {
   Tech &tech = ckt_ptr_->tech();
   WellLayer &n_well_layer = tech.NwellLayer();
   double grid_value_x = ckt_ptr_->GridValueX();
-  int same_well_spacing = std::ceil(n_well_layer.Spacing() / grid_value_x);
-  int op_well_spacing =
+  int32_t same_well_spacing = std::ceil(n_well_layer.Spacing() / grid_value_x);
+  int32_t op_well_spacing =
       std::ceil(n_well_layer.OppositeSpacing() / grid_value_x);
   well_spacing_ = std::max(same_well_spacing, op_well_spacing);
   max_unplug_length_ =
-      (int) std::floor(n_well_layer.MaxPlugDist() / grid_value_x);
+      (int32_t) std::floor(n_well_layer.MaxPlugDist() / grid_value_x);
   DaliExpects(!tech.WellTapCellPtrs().empty(),
               "Cannot find the definition of well tap cell, well legalization cannot proceed\n");
   well_tap_cell_ = tech.WellTapCellPtrs()[0];
@@ -95,7 +95,7 @@ void StdClusterWellLegalizer::SaveInitialBlockLocation() {
   }
 }
 
-void StdClusterWellLegalizer::InitializeWellLegalizer(int cluster_width) {
+void StdClusterWellLegalizer::InitializeWellLegalizer(int32_t cluster_width) {
   CheckWellStatus();
 
   // fetch parameters related to N/P-well
@@ -122,16 +122,16 @@ void StdClusterWellLegalizer::CreateClusterAndAppendSingleWellBlock(
   front_row->Blocks().reserve(stripe.max_blk_capacity_per_cluster_);
   front_row->AddBlock(&blk);
 
-  int width = blk.Width();
-  int init_y = (int) std::round(blk.LLY());
+  int32_t width = blk.Width();
+  int32_t init_y = (int32_t) std::round(blk.LLY());
   init_y = std::max(init_y, stripe.contour_);
 
   auto *blk_well = blk.TypePtr()->WellPtr();
-  int p_well_height = blk_well->Pheight();
-  int n_well_height = blk_well->Nheight();
+  int32_t p_well_height = blk_well->Pheight();
+  int32_t n_well_height = blk_well->Nheight();
 
-  //int num_of_tap_cell = (int) std::ceil(stripe.Width() / max_unplug_length_);
-  int num_of_tap_cell = 2;
+  //int32_t num_of_tap_cell = (int32_t) std::ceil(stripe.Width() / max_unplug_length_);
+  int32_t num_of_tap_cell = 2;
   front_row->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_
                              + num_of_tap_cell * space_to_well_tap_);
   front_row->UpdateWellHeightUpward(tap_cell_p_height_,
@@ -151,17 +151,17 @@ void StdClusterWellLegalizer::AppendSingleWellBlockToFrontCluster(
     Stripe &stripe,
     Block &blk
 ) {
-  int width = blk.Width();
+  int32_t width = blk.Width();
   BlockTypeWell *blk_well = blk.TypePtr()->WellPtr();
-  int p_well_height = blk_well->Pheight();
-  int n_well_height = blk_well->Nheight();
+  int32_t p_well_height = blk_well->Pheight();
+  int32_t n_well_height = blk_well->Nheight();
 
   GriddedRow *front_row = stripe.front_row_;
   front_row->AddBlock(&blk);
   front_row->UseSpace(width);
   if (p_well_height > front_row->PHeight()
       || n_well_height > front_row->NHeight()) {
-    int old_height = front_row->Height();
+    int32_t old_height = front_row->Height();
     front_row->UpdateWellHeightUpward(p_well_height, n_well_height);
     stripe.used_height_ += front_row->Height() - old_height;
   }
@@ -201,21 +201,21 @@ void StdClusterWellLegalizer::AppendBlockToColTopDown(
     is_new_row_needed = is_not_in_top_row || is_top_row_full;
   }
 
-  int width = blk.Width();
-  int init_y = (int) std::round(blk.URY());
+  int32_t width = blk.Width();
+  int32_t init_y = (int32_t) std::round(blk.URY());
   init_y = std::min(init_y, stripe.contour_);
 
   GriddedRow *front_row;
   auto *blk_well = blk.TypePtr()->WellPtr();
-  int p_well_height = blk_well->Pheight();
-  int n_well_height = blk_well->Nheight();
+  int32_t p_well_height = blk_well->Pheight();
+  int32_t n_well_height = blk_well->Nheight();
   if (is_new_row_needed) {
     stripe.gridded_rows_.emplace_back();
     front_row = &(stripe.gridded_rows_.back());
     front_row->Blocks().reserve(stripe.max_blk_capacity_per_cluster_);
     front_row->AddBlock(&blk);
-    //int num_of_tap_cell = (int) std::ceil(stripe.Width() / max_unplug_length_);
-    int num_of_tap_cell = 2;
+    //int32_t num_of_tap_cell = (int32_t) std::ceil(stripe.Width() / max_unplug_length_);
+    int32_t num_of_tap_cell = 2;
     front_row->SetUsedSize(
         width + num_of_tap_cell * well_tap_cell_width_
             + num_of_tap_cell * space_to_well_tap_);
@@ -235,7 +235,7 @@ void StdClusterWellLegalizer::AppendBlockToColTopDown(
     front_row->UseSpace(width);
     if (p_well_height > front_row->PHeight()
         || n_well_height > front_row->NHeight()) {
-      int old_height = front_row->Height();
+      int32_t old_height = front_row->Height();
       front_row->UpdateWellHeightDownward(p_well_height, n_well_height);
       stripe.used_height_ += front_row->Height() - old_height;
     }
@@ -254,21 +254,21 @@ void StdClusterWellLegalizer::AppendBlockToColBottomUpCompact(
     is_new_cluster_needed = is_top_cluster_full;
   }
 
-  int width = blk.Width();
-  int init_y = (int) std::round(blk.LLY());
+  int32_t width = blk.Width();
+  int32_t init_y = (int32_t) std::round(blk.LLY());
   init_y = std::max(init_y, stripe.contour_);
 
   GriddedRow *front_cluster;
   auto *well = blk.TypePtr()->WellPtr();
-  int p_well_height = well->Pheight();
-  int n_well_height = well->Nheight();
+  int32_t p_well_height = well->Pheight();
+  int32_t n_well_height = well->Nheight();
   if (is_new_cluster_needed) {
     stripe.gridded_rows_.emplace_back();
     front_cluster = &(stripe.gridded_rows_.back());
     front_cluster->Blocks().reserve(stripe.max_blk_capacity_per_cluster_);
     front_cluster->AddBlock(&blk);
-    //int num_of_tap_cell = (int) std::ceil(stripe.Width() / max_unplug_length_);
-    int num_of_tap_cell = 2;
+    //int32_t num_of_tap_cell = (int32_t) std::ceil(stripe.Width() / max_unplug_length_);
+    int32_t num_of_tap_cell = 2;
     front_cluster->SetUsedSize(
         width + num_of_tap_cell * well_tap_cell_width_
             + num_of_tap_cell * space_to_well_tap_);
@@ -288,7 +288,7 @@ void StdClusterWellLegalizer::AppendBlockToColBottomUpCompact(
     front_cluster->UseSpace(width);
     if (p_well_height > front_cluster->PHeight()
         || n_well_height > front_cluster->NHeight()) {
-      int old_height = front_cluster->Height();
+      int32_t old_height = front_cluster->Height();
       front_cluster->UpdateWellHeightUpward(p_well_height, n_well_height);
       stripe.used_height_ += front_cluster->Height() - old_height;
     }
@@ -307,21 +307,21 @@ void StdClusterWellLegalizer::AppendBlockToColTopDownCompact(
     is_new_cluster_needed = is_top_cluster_full;
   }
 
-  int width = blk.Width();
-  int init_y = (int) std::round(blk.URY());
+  int32_t width = blk.Width();
+  int32_t init_y = (int32_t) std::round(blk.URY());
   init_y = std::min(init_y, stripe.contour_);
 
   GriddedRow *front_cluster;
   auto *well = blk.TypePtr()->WellPtr();
-  int p_well_height = well->Pheight();
-  int n_well_height = well->Nheight();
+  int32_t p_well_height = well->Pheight();
+  int32_t n_well_height = well->Nheight();
   if (is_new_cluster_needed) {
     stripe.gridded_rows_.emplace_back();
     front_cluster = &(stripe.gridded_rows_.back());
     front_cluster->Blocks().reserve(stripe.max_blk_capacity_per_cluster_);
     front_cluster->AddBlock(&blk);
-    //int num_of_tap_cell = (int) std::ceil(stripe.Width() / max_unplug_length_);
-    int num_of_tap_cell = 2;
+    //int32_t num_of_tap_cell = (int32_t) std::ceil(stripe.Width() / max_unplug_length_);
+    int32_t num_of_tap_cell = 2;
     front_cluster->SetUsedSize(
         width + num_of_tap_cell * well_tap_cell_width_
             + num_of_tap_cell * space_to_well_tap_);
@@ -341,7 +341,7 @@ void StdClusterWellLegalizer::AppendBlockToColTopDownCompact(
     front_cluster->UseSpace(width);
     if (p_well_height > front_cluster->PHeight()
         || n_well_height > front_cluster->NHeight()) {
-      int old_height = front_cluster->Height();
+      int32_t old_height = front_cluster->Height();
       front_cluster->UpdateWellHeightDownward(p_well_height, n_well_height);
       stripe.used_height_ += front_cluster->Height() - old_height;
     }
@@ -484,7 +484,7 @@ bool StdClusterWellLegalizer::BlockClustering() {
   for (auto &col : col_list_) {
     bool is_success = true;
     for (auto &stripe : col.stripe_list_) {
-      for (int i = 0; i < max_iter_; ++i) {
+      for (int32_t i = 0; i < max_iter_; ++i) {
         is_success = StripeLegalizationBottomUp(stripe);
         if (!is_success) {
           is_success = StripeLegalizationTopDown(stripe);
@@ -502,8 +502,8 @@ bool StdClusterWellLegalizer::BlockClustering() {
           cluster.LegalizeCompactX();
         }
       } else {
-        int sz = static_cast<int>(stripe.gridded_rows_.size());
-        for (int i = sz - 1; i >= 0; --i) {
+        int32_t sz = static_cast<int32_t>(stripe.gridded_rows_.size());
+        for (int32_t i = sz - 1; i >= 0; --i) {
           auto &cluster = stripe.gridded_rows_[i];
           stripe.contour_ += cluster.Height();
           cluster.SetLLY(stripe.contour_);
@@ -521,13 +521,13 @@ bool StdClusterWellLegalizer::BlockClustering() {
  * After clustering, leave clusters as they are
  * ****/
 bool StdClusterWellLegalizer::BlockClusteringLoose() {
-  int step = 50;
-  int count = 0;
+  int32_t step = 50;
+  int32_t count = 0;
   bool res = true;
   for (auto &col : col_list_) {
     bool is_success = true;
     for (auto &stripe : col.stripe_list_) {
-      int i = 0;
+      int32_t i = 0;
       bool is_from_bottom = true;
       for (i = 0; i < max_iter_; ++i) {
         if (is_from_bottom) {
@@ -580,7 +580,7 @@ bool StdClusterWellLegalizer::BlockClusteringCompact() {
   for (auto &col : col_list_) {
     bool is_success = true;
     for (auto &stripe : col.stripe_list_) {
-      for (int i = 0; i < max_iter_; ++i) {
+      for (int32_t i = 0; i < max_iter_; ++i) {
         is_success = StripeLegalizationBottomUpCompact(stripe);
         if (!is_success) {
           is_success = StripeLegalizationTopDownCompact(stripe);
@@ -609,7 +609,7 @@ bool StdClusterWellLegalizer::TrialClusterLegalization(Stripe &stripe) {
   // sort clusters in each column based on the lower left coordinate
   std::vector<GriddedRow *> cluster_list;
   cluster_list.resize(stripe.cluster_count_, nullptr);
-  for (int i = 0; i < stripe.cluster_count_; ++i) {
+  for (int32_t i = 0; i < stripe.cluster_count_; ++i) {
     cluster_list[i] = &stripe.gridded_rows_[i];
   }
 
@@ -623,9 +623,9 @@ bool StdClusterWellLegalizer::TrialClusterLegalization(Stripe &stripe) {
             return (lhs->URY() > rhs->URY());
           }
       );
-      int cluster_contour = stripe.URY();
-      int res_y;
-      int init_y;
+      int32_t cluster_contour = stripe.URY();
+      int32_t res_y;
+      int32_t init_y;
       for (auto &cluster : cluster_list) {
         init_y = cluster->URY();
         res_y = std::min(cluster_contour, cluster->URY());
@@ -641,9 +641,9 @@ bool StdClusterWellLegalizer::TrialClusterLegalization(Stripe &stripe) {
             return (lhs->LLY() < rhs->LLY());
           }
       );
-      int cluster_contour = stripe.LLY();
-      int res_y;
-      int init_y;
+      int32_t cluster_contour = stripe.LLY();
+      int32_t res_y;
+      int32_t init_y;
       for (auto &cluster : cluster_list) {
         init_y = cluster->LLY();
         res_y = std::max(cluster_contour, cluster->LLY());
@@ -660,9 +660,9 @@ bool StdClusterWellLegalizer::TrialClusterLegalization(Stripe &stripe) {
           return (lhs->LLY() < rhs->LLY());
         }
     );
-    int cluster_contour = RegionBottom();
-    int res_y;
-    int init_y;
+    int32_t cluster_contour = RegionBottom();
+    int32_t res_y;
+    int32_t init_y;
     for (auto &cluster : cluster_list) {
       init_y = cluster->LLY();
       res_y = cluster_contour;
@@ -685,12 +685,12 @@ bool StdClusterWellLegalizer::TrialClusterLegalization(Stripe &stripe) {
  * ****/
 double StdClusterWellLegalizer::WireLengthCost(
     GriddedRow *cluster,
-    int l,
-    int r
+    int32_t l,
+    int32_t r
 ) {
   auto &net_list = ckt_ptr_->Nets();
   std::set<Net *> net_involved;
-  for (int i = l; i <= r; ++i) {
+  for (int32_t i = l; i <= r; ++i) {
     auto *blk = cluster->Blocks()[i];
     for (auto &net_num : blk->NetList()) {
       if (net_list[net_num].PinCnt() < 100) {
@@ -719,17 +719,17 @@ double StdClusterWellLegalizer::WireLengthCost(
 void StdClusterWellLegalizer::FindBestLocalOrder(
     std::vector<Block *> &res,
     double &cost, GriddedRow *cluster,
-    int cur, int l, int r,
-    int left_bound, int right_bound,
-    int gap, int range
+    int32_t cur, int32_t l, int32_t r,
+    int32_t left_bound, int32_t right_bound,
+    int32_t gap, int32_t range
 ) {
   //BOOST_LOG_TRIVIAL(info)  <<"l : %d, r: %d\n", l, r);
   if (cur == r) {
     cluster->Blocks()[l]->SetLLX(left_bound);
     cluster->Blocks()[r]->SetURX(right_bound);
 
-    int left_contour = left_bound + gap + cluster->Blocks()[l]->Width();
-    for (int i = l + 1; i < r; ++i) {
+    int32_t left_contour = left_bound + gap + cluster->Blocks()[l]->Width();
+    for (int32_t i = l + 1; i < r; ++i) {
       auto *blk = cluster->Blocks()[i];
       blk->SetLLX(left_contour);
       left_contour += blk->Width() + gap;
@@ -738,14 +738,14 @@ void StdClusterWellLegalizer::FindBestLocalOrder(
     double tmp_cost = WireLengthCost(cluster, l, r);
     if (tmp_cost < cost) {
       cost = tmp_cost;
-      for (int j = 0; j < range; ++j) {
+      for (int32_t j = 0; j < range; ++j) {
         res[j] = cluster->Blocks()[l + j];
       }
     }
   } else {
     // Permutations made
     auto &blk_list = cluster->Blocks();
-    for (int i = cur; i <= r; ++i) {
+    for (int32_t i = cur; i <= r; ++i) {
       // Swapping done
       std::swap(blk_list[cur], blk_list[i]);
 
@@ -762,7 +762,7 @@ void StdClusterWellLegalizer::FindBestLocalOrder(
 
 void StdClusterWellLegalizer::LocalReorderInCluster(
     GriddedRow *cluster,
-    int range
+    int32_t range
 ) {
   /****
    * Enumerate all local permutations, @param range determines how big the local range is
@@ -770,7 +770,7 @@ void StdClusterWellLegalizer::LocalReorderInCluster(
 
   assert(range > 0);
 
-  int sz = cluster->Blocks().size();
+  int32_t sz = cluster->Blocks().size();
   if (sz < 3) return;
 
   std::sort(
@@ -781,30 +781,30 @@ void StdClusterWellLegalizer::LocalReorderInCluster(
       }
   );
 
-  int last_segment = sz - range;
+  int32_t last_segment = sz - range;
   std::vector<Block *> res_local_order(range, nullptr);
-  for (int l = 0; l <= last_segment; ++l) {
-    int tot_blk_width = 0;
-    for (int j = 0; j < range; ++j) {
+  for (int32_t l = 0; l <= last_segment; ++l) {
+    int32_t tot_blk_width = 0;
+    for (int32_t j = 0; j < range; ++j) {
       res_local_order[j] = cluster->Blocks()[l + j];
       tot_blk_width += res_local_order[j]->Width();
     }
-    int r = l + range - 1;
+    int32_t r = l + range - 1;
     double best_cost = DBL_MAX;
-    int left_bound = (int) cluster->Blocks()[l]->LLX();
-    int right_bound = (int) cluster->Blocks()[r]->URX();
-    int gap = (right_bound - left_bound - tot_blk_width) / (r - l);
+    int32_t left_bound = (int32_t) cluster->Blocks()[l]->LLX();
+    int32_t right_bound = (int32_t) cluster->Blocks()[r]->URX();
+    int32_t gap = (right_bound - left_bound - tot_blk_width) / (r - l);
 
     FindBestLocalOrder(res_local_order, best_cost, cluster,
                        l, l, r, left_bound, right_bound, gap, range);
-    for (int j = 0; j < range; ++j) {
+    for (int32_t j = 0; j < range; ++j) {
       cluster->Blocks()[l + j] = res_local_order[j];
     }
 
     cluster->Blocks()[l]->SetLLX(left_bound);
     cluster->Blocks()[r]->SetURX(right_bound);
-    int left_contour = left_bound + cluster->Blocks()[l]->Width() + gap;
-    for (int i = l + 1; i < r; ++i) {
+    int32_t left_contour = left_bound + cluster->Blocks()[l]->Width() + gap;
+    for (int32_t i = l + 1; i < r; ++i) {
       auto *blk = cluster->Blocks()[i];
       blk->SetLLX(left_contour);
       left_contour += blk->Width() + gap;
@@ -821,7 +821,7 @@ void StdClusterWellLegalizer::LocalReorderAllClusters() {
     }
   }
   std::vector<GriddedRow *> cluster_ptr_list(tot_cluster_count, nullptr);
-  int counter = 0;
+  int32_t counter = 0;
   for (auto &col : col_list_) {
     for (auto &stripe : col.stripe_list_) {
       for (auto &cluster : stripe.gridded_rows_) {
@@ -851,9 +851,9 @@ void StdClusterWellLegalizer::SingleSegmentClusteringOptimization() {
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
       for (auto &cluster: stripe.cluster_list_) {
-        int num_old_cluster = cluster.blk_list_.size();
+        int32_t num_old_cluster = cluster.blk_list_.size();
         std::vector<BlockSegment> old_cluster(num_old_cluster);
-        for (int i = 0; i < num_old_cluster; ++i) {
+        for (int32_t i = 0; i < num_old_cluster; ++i) {
           old_cluster[i].blk_index.push_back(i);
           old_cluster[i].circuit_ptr_ = circuit_ptr_;
           old_cluster[i].cluster_ = &cluster;
@@ -866,7 +866,7 @@ void StdClusterWellLegalizer::SingleSegmentClusteringOptimization() {
         do {
           std::vector<BlockSegment> new_cluster;
           new_cluster.push_back(old_cluster[0]);
-          int j = 0;
+          int32_t j = 0;
           while (j + 1 < num_old_cluster) {
             if (new_cluster.back().Overlap(old_cluster[j + 1])) {
               new_cluster.back().Merge(old_cluster[j + 1]);
@@ -875,14 +875,14 @@ void StdClusterWellLegalizer::SingleSegmentClusteringOptimization() {
             }
             j += 1;
           }
-          int new_count = new_cluster.size();
+          int32_t new_count = new_cluster.size();
           num_old_cluster = new_count;
-          for (int i = 0; i < new_count; ++i) {
+          for (int32_t i = 0; i < new_count; ++i) {
             old_cluster[i].CopyFrom(new_cluster[i]);
           }
 
           is_overlap = false;
-          for (int i = 0; i < new_count - 1; ++i) {
+          for (int32_t i = 0; i < new_count - 1; ++i) {
             if (old_cluster[i].IsNotOnLeft(old_cluster[i + 1])) {
               is_overlap = true;
               break;
@@ -893,7 +893,7 @@ void StdClusterWellLegalizer::SingleSegmentClusteringOptimization() {
 
         } while (is_overlap);
 
-        for (int i = 0; i < num_old_cluster; ++i) {
+        for (int32_t i = 0; i < num_old_cluster; ++i) {
           old_cluster[i].UpdateBlockLocation();
         }
       }
@@ -913,8 +913,8 @@ void StdClusterWellLegalizer::UpdateClusterOrient() {
           is_orient_N = !is_orient_N;
         }
       } else {
-        int sz = stripe.gridded_rows_.size();
-        for (int i = sz - 1; i >= 0; --i) {
+        int32_t sz = stripe.gridded_rows_.size();
+        for (int32_t i = sz - 1; i >= 0; --i) {
           stripe.gridded_rows_[i].SetOrient(is_orient_N);
           is_orient_N = !is_orient_N;
         }
@@ -935,25 +935,25 @@ void StdClusterWellLegalizer::InsertWellTap() {
   tap_cell_list.reserve(tot_cluster_count * 2);
   ckt_ptr_->design().TapNameIdMap().clear();
 
-  int counter = 0;
-  int tot_tap_cell_num = 0;
+  int32_t counter = 0;
+  int32_t tot_tap_cell_num = 0;
   for (auto &col : col_list_) {
     for (auto &stripe : col.stripe_list_) {
       for (auto &row : stripe.gridded_rows_) {
-        //int tap_cell_num = std::ceil(cluster.Width() / (double) max_unplug_length_);
-        int tap_cell_num = 2;
+        //int32_t tap_cell_num = std::ceil(cluster.Width() / (double) max_unplug_length_);
+        int32_t tap_cell_num = 2;
         tot_tap_cell_num += tap_cell_num;
-        int step = row.Width();
-        int tap_cell_loc = row.LLX() - well_tap_cell_->Width() / 2;
-        for (int i = 0; i < tap_cell_num; ++i) {
+        int32_t step = row.Width();
+        int32_t tap_cell_loc = row.LLX() - well_tap_cell_->Width() / 2;
+        for (int32_t i = 0; i < tap_cell_num; ++i) {
           std::string block_name = "__well_tap__" + std::to_string(counter++);
           tap_cell_list.emplace_back();
           auto &tap_cell = tap_cell_list.back();
           tap_cell.SetPlacementStatus(PLACED);
           tap_cell.SetType(ckt_ptr_->tech().WellTapCellPtrs()[0]);
-          int map_size = ckt_ptr_->design().TapNameIdMap().size();
+          int32_t map_size = ckt_ptr_->design().TapNameIdMap().size();
           auto ret = ckt_ptr_->design().TapNameIdMap().insert(
-              std::pair<std::string, int>(block_name, map_size)
+              std::pair<std::string, int32_t>(block_name, map_size)
           );
           auto *name_id_pair_ptr = &(*ret.first);
           tap_cell.SetNameNumPair(name_id_pair_ptr);
@@ -1028,7 +1028,7 @@ bool StdClusterWellLegalizer::StartPlacement() {
   //GenMatlabClusterTable("ori_result");
 
   BOOST_LOG_TRIVIAL(info) << "Perform local reordering\n";
-  for (int i = 0; i < 6; ++i) {
+  for (int32_t i = 0; i < 6; ++i) {
     BOOST_LOG_TRIVIAL(info) << "reorder iteration: " << i << "\n";
     LocalReorderAllClusters();
     ReportHPWL();
@@ -1051,9 +1051,9 @@ bool StdClusterWellLegalizer::StartPlacement() {
 }
 
 void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
-  long int tot_std_blk_area = 0;
-  int max_n_height = 0;
-  int max_p_height = 0;
+  int32_t tot_std_blk_area = 0;
+  int32_t max_n_height = 0;
+  int32_t max_p_height = 0;
   for (auto &blk : ckt_ptr_->design().Blocks()) {
     BlockType *type = blk.TypePtr();
     if (type == ckt_ptr_->tech().IoDummyBlkTypePtr()) continue;;
@@ -1072,14 +1072,14 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
   if (well_tap_cell_well_info->Pheight() > max_p_height) {
     max_p_height = well_tap_cell_well_info->Pheight();
   }
-  int max_height = max_n_height + max_p_height;
+  int32_t max_height = max_n_height + max_p_height;
 
-  long int tot_eff_blk_area = 0;
+  int32_t tot_eff_blk_area = 0;
   for (auto &col : col_list_) {
     for (auto &stripe : col.stripe_list_) {
       for (auto &cluster : stripe.gridded_rows_) {
-        long int eff_height = cluster.Height();
-        long int tot_cell_width = 0;
+        int32_t eff_height = cluster.Height();
+        int32_t tot_cell_width = 0;
         for (auto &blk_ptr : cluster.Blocks()) {
           tot_cell_width += blk_ptr->Width();
         }
@@ -1091,7 +1091,7 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
   double factor = ckt_ptr_->GridValueX() * ckt_ptr_->GridValueY();
   BOOST_LOG_TRIVIAL(info)
     << "Total placement area: "
-    << ((long int) RegionWidth() * (long int) RegionHeight()) * factor
+    << (RegionWidth() * RegionHeight()) * factor
     << " um^2\n";
   BOOST_LOG_TRIVIAL(info)
     << "Total block area: "
@@ -1119,7 +1119,7 @@ void StdClusterWellLegalizer::GenMatlabClusterTable(std::string const &name_of_f
 
 void StdClusterWellLegalizer::GenMATLABWellTable(
     std::string const &name_of_file,
-    int well_emit_mode
+    int32_t well_emit_mode
 ) {
   ckt_ptr_->GenMATLABWellTable(name_of_file, false);
 
@@ -1141,12 +1141,12 @@ void StdClusterWellLegalizer::GenPPNP(const std::string &name_of_file) {
   std::ofstream ostpp(pp_file.c_str());
   DaliExpects(ostpp.is_open(), "Cannot open output file: " + pp_file);
 
-  int adjust_width = well_tap_cell_->Width();
+  int32_t adjust_width = well_tap_cell_->Width();
 
   for (auto &col : col_list_) {
     for (auto &stripe : col.stripe_list_) {
       // draw NP and PP shapes from N/P-edge to N/P-edge
-      std::vector<int> pn_edge_list;
+      std::vector<int32_t> pn_edge_list;
       pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
       if (stripe.is_bottom_up_) {
         pn_edge_list.push_back(RegionBottom());
@@ -1164,12 +1164,12 @@ void StdClusterWellLegalizer::GenPPNP(const std::string &name_of_file) {
       }
 
       bool is_p_well_rect = stripe.is_first_row_orient_N_;
-      int lx = stripe.LLX();
-      int ux = stripe.URX();
-      int ly;
-      int uy;
-      int rect_count = (int) pn_edge_list.size() - 1;
-      for (int i = 0; i < rect_count; ++i) {
+      int32_t lx = stripe.LLX();
+      int32_t ux = stripe.URX();
+      int32_t ly;
+      int32_t uy;
+      int32_t rect_count = (int32_t) pn_edge_list.size() - 1;
+      for (int32_t i = 0; i < rect_count; ++i) {
         ly = pn_edge_list[i];
         uy = pn_edge_list[i + 1];
         if (is_p_well_rect) {
@@ -1195,7 +1195,7 @@ void StdClusterWellLegalizer::GenPPNP(const std::string &name_of_file) {
       }
 
       // draw NP and PP shapes from well-tap cell to well-tap cell
-      std::vector<int> well_tap_top_bottom_list;
+      std::vector<int32_t> well_tap_top_bottom_list;
       well_tap_top_bottom_list.reserve(stripe.gridded_rows_.size() + 2);
       if (stripe.is_bottom_up_) {
         well_tap_top_bottom_list.push_back(RegionBottom());
@@ -1222,12 +1222,12 @@ void StdClusterWellLegalizer::GenPPNP(const std::string &name_of_file) {
                   "Impossible to get an even number of well tap cell edges");
 
       is_p_well_rect = stripe.is_first_row_orient_N_;
-      int lx0 = stripe.LLX();
-      int ux0 = lx + adjust_width;
-      int ux1 = stripe.URX();
-      int lx1 = ux1 - adjust_width;
-      rect_count = (int) well_tap_top_bottom_list.size() - 1;
-      for (int i = 0; i < rect_count; i += 2) {
+      int32_t lx0 = stripe.LLX();
+      int32_t ux0 = lx + adjust_width;
+      int32_t ux1 = stripe.URX();
+      int32_t lx1 = ux1 - adjust_width;
+      rect_count = (int32_t) well_tap_top_bottom_list.size() - 1;
+      for (int32_t i = 0; i < rect_count; i += 2) {
         ly = well_tap_top_bottom_list[i];
         uy = well_tap_top_bottom_list[i + 1];
         if (uy > ly) {
@@ -1292,7 +1292,7 @@ void StdClusterWellLegalizer::GenPPNP(const std::string &name_of_file) {
  * ****/
 void StdClusterWellLegalizer::EmitDEFWellFile(
     std::string const &name_of_file,
-    int well_emit_mode,
+    int32_t well_emit_mode,
     bool enable_emitting_cluster
 ) {
   EmitPPNPRect(name_of_file + "ppnp.rect");
@@ -1322,12 +1322,12 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
       << ckt_ptr_->LocDali2PhydbX(RegionRight()) << " "
       << ckt_ptr_->LocDali2PhydbY(RegionTop()) << "\n";
 
-  int adjust_width = well_tap_cell_->Width();
+  int32_t adjust_width = well_tap_cell_->Width();
 
   for (auto &col : col_list_) {
     for (auto &stripe : col.stripe_list_) {
       // draw NP and PP shapes from N/P-edge to N/P-edge
-      std::vector<int> pn_edge_list;
+      std::vector<int32_t> pn_edge_list;
       pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
       if (stripe.is_bottom_up_) {
         pn_edge_list.push_back(RegionBottom());
@@ -1345,12 +1345,12 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
       }
 
       bool is_p_well_rect = stripe.is_first_row_orient_N_;
-      int lx = stripe.LLX();
-      int ux = stripe.URX();
-      int ly;
-      int uy;
-      int rect_count = (int) pn_edge_list.size() - 1;
-      for (int i = 0; i < rect_count; ++i) {
+      int32_t lx = stripe.LLX();
+      int32_t ux = stripe.URX();
+      int32_t ly;
+      int32_t uy;
+      int32_t rect_count = (int32_t) pn_edge_list.size() - 1;
+      for (int32_t i = 0; i < rect_count; ++i) {
         ly = pn_edge_list[i];
         uy = pn_edge_list[i + 1];
         if (is_p_well_rect) {
@@ -1371,7 +1371,7 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
       }
 
       // draw NP and PP shapes from well-tap cell to well-tap cell
-      std::vector<int> well_tap_top_bottom_list;
+      std::vector<int32_t> well_tap_top_bottom_list;
       well_tap_top_bottom_list.reserve(stripe.gridded_rows_.size() + 2);
       if (stripe.is_bottom_up_) {
         well_tap_top_bottom_list.push_back(RegionBottom());
@@ -1398,12 +1398,12 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
                   "Impossible to get an even number of well tap cell edges");
 
       is_p_well_rect = stripe.is_first_row_orient_N_;
-      int lx0 = stripe.LLX();
-      int ux0 = lx + adjust_width;
-      int ux1 = stripe.URX();
-      int lx1 = ux1 - adjust_width;
-      rect_count = (int) well_tap_top_bottom_list.size() - 1;
-      for (int i = 0; i < rect_count; i += 2) {
+      int32_t lx0 = stripe.LLX();
+      int32_t ux0 = lx + adjust_width;
+      int32_t ux1 = stripe.URX();
+      int32_t lx1 = ux1 - adjust_width;
+      rect_count = (int32_t) well_tap_top_bottom_list.size() - 1;
+      for (int32_t i = 0; i < rect_count; i += 2) {
         ly = well_tap_top_bottom_list[i];
         uy = well_tap_top_bottom_list[i + 1];
         if (uy > ly) {
@@ -1452,10 +1452,10 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
   double factor_y = ckt_ptr_->design().DistanceMicrons()
       * ckt_ptr_->GridValueY();
 
-  int bbox_llx = ckt_ptr_->LocDali2PhydbX(RegionLeft());
-  int bbox_lly = ckt_ptr_->LocDali2PhydbY(RegionBottom());
-  int bbox_urx = ckt_ptr_->LocDali2PhydbX(RegionRight());
-  int bbox_ury = ckt_ptr_->LocDali2PhydbY(RegionTop());
+  int32_t bbox_llx = ckt_ptr_->LocDali2PhydbX(RegionLeft());
+  int32_t bbox_lly = ckt_ptr_->LocDali2PhydbY(RegionBottom());
+  int32_t bbox_urx = ckt_ptr_->LocDali2PhydbX(RegionRight());
+  int32_t bbox_ury = ckt_ptr_->LocDali2PhydbY(RegionTop());
 
   auto *phydb_layout_container = phydb_ptr->CreatePpNpMacroAndComponent(
       bbox_llx,
@@ -1464,12 +1464,12 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
       bbox_ury
   );
 
-  int adjust_width = well_tap_cell_->Width();
+  int32_t adjust_width = well_tap_cell_->Width();
 
   for (auto &col : col_list_) {
     for (auto &stripe : col.stripe_list_) {
       // draw NP and PP shapes from N/P-edge to N/P-edge
-      std::vector<int> pn_edge_list;
+      std::vector<int32_t> pn_edge_list;
       pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
       if (stripe.is_bottom_up_) {
         pn_edge_list.push_back(RegionBottom());
@@ -1487,12 +1487,12 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
       }
 
       bool is_p_well_rect = stripe.is_first_row_orient_N_;
-      int lx = stripe.LLX();
-      int ux = stripe.URX();
-      int ly;
-      int uy;
-      int rect_count = (int) pn_edge_list.size() - 1;
-      for (int i = 0; i < rect_count; ++i) {
+      int32_t lx = stripe.LLX();
+      int32_t ux = stripe.URX();
+      int32_t ly;
+      int32_t uy;
+      int32_t rect_count = (int32_t) pn_edge_list.size() - 1;
+      for (int32_t i = 0; i < rect_count; ++i) {
         ly = pn_edge_list[i];
         uy = pn_edge_list[i + 1];
         std::string signal_name("#");
@@ -1502,13 +1502,13 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
         } else {
           layer_name = PP_name;
         }
-        int rect_llx = (int) ((lx + adjust_width) * factor_x)
+        int32_t rect_llx = (int32_t) ((lx + adjust_width) * factor_x)
             + ckt_ptr_->design().DieAreaOffsetX();
-        int rect_lly = (int) (ly * factor_y)
+        int32_t rect_lly = (int32_t) (ly * factor_y)
             + ckt_ptr_->design().DieAreaOffsetY();
-        int rect_urx = (int) ((ux - adjust_width) * factor_x)
+        int32_t rect_urx = (int32_t) ((ux - adjust_width) * factor_x)
             + ckt_ptr_->design().DieAreaOffsetX();
-        int rect_ury = (int) (uy * factor_y)
+        int32_t rect_ury = (int32_t) (uy * factor_y)
             + ckt_ptr_->design().DieAreaOffsetY();
 
         phydb_layout_container->AddRectSignalLayer(
@@ -1523,7 +1523,7 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
       }
 
       // draw NP and PP shapes from well-tap cell to well-tap cell
-      std::vector<int> well_tap_top_bottom_list;
+      std::vector<int32_t> well_tap_top_bottom_list;
       well_tap_top_bottom_list.reserve(stripe.gridded_rows_.size() + 2);
       if (stripe.is_bottom_up_) {
         well_tap_top_bottom_list.push_back(RegionBottom());
@@ -1550,12 +1550,12 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
                   "Impossible to get an even number of well tap cell edges");
 
       is_p_well_rect = stripe.is_first_row_orient_N_;
-      int lx0 = stripe.LLX();
-      int ux0 = lx + adjust_width;
-      int ux1 = stripe.URX();
-      int lx1 = ux1 - adjust_width;
-      rect_count = (int) well_tap_top_bottom_list.size() - 1;
-      for (int i = 0; i < rect_count; i += 2) {
+      int32_t lx0 = stripe.LLX();
+      int32_t ux0 = lx + adjust_width;
+      int32_t ux1 = stripe.URX();
+      int32_t lx1 = ux1 - adjust_width;
+      rect_count = (int32_t) well_tap_top_bottom_list.size() - 1;
+      for (int32_t i = 0; i < rect_count; i += 2) {
         ly = well_tap_top_bottom_list[i];
         uy = well_tap_top_bottom_list[i + 1];
         if (uy > ly) {
@@ -1566,13 +1566,13 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
           } else {
             layer_name = PP_name;
           }
-          int rect_llx = (int) (lx0 * factor_x)
+          int32_t rect_llx = (int32_t) (lx0 * factor_x)
               + ckt_ptr_->design().DieAreaOffsetX();
-          int rect_lly = (int) (ly * factor_y)
+          int32_t rect_lly = (int32_t) (ly * factor_y)
               + ckt_ptr_->design().DieAreaOffsetY();
-          int rect_urx = (int) (ux0 * factor_x)
+          int32_t rect_urx = (int32_t) (ux0 * factor_x)
               + ckt_ptr_->design().DieAreaOffsetX();
-          int rect_ury = (int) (uy * factor_y)
+          int32_t rect_ury = (int32_t) (uy * factor_y)
               + ckt_ptr_->design().DieAreaOffsetY();
 
           phydb_layout_container->AddRectSignalLayer(
@@ -1589,13 +1589,13 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
           } else {
             layer_name = PP_name;
           }
-          rect_llx = (int) (lx1 * factor_x)
+          rect_llx = (int32_t) (lx1 * factor_x)
               + ckt_ptr_->design().DieAreaOffsetX();
-          rect_lly = (int) (ly * factor_y)
+          rect_lly = (int32_t) (ly * factor_y)
               + ckt_ptr_->design().DieAreaOffsetY();
-          rect_urx = (int) (ux1 * factor_x)
+          rect_urx = (int32_t) (ux1 * factor_x)
               + ckt_ptr_->design().DieAreaOffsetX();
-          rect_ury = (int) (uy * factor_y)
+          rect_ury = (int32_t) (uy * factor_y)
               + ckt_ptr_->design().DieAreaOffsetY();
           phydb_layout_container->AddRectSignalLayer(
               signal_name,
@@ -1613,7 +1613,7 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
 }
 
 void StdClusterWellLegalizer::EmitWellRect(std::string const &name_of_file,
-                                           int well_emit_mode) {
+                                           int32_t well_emit_mode) {
   // emit rect file
   switch (well_emit_mode) {
     case 0: {
@@ -1645,17 +1645,17 @@ void StdClusterWellLegalizer::EmitWellRect(std::string const &name_of_file,
       * ckt_ptr_->GridValueY();
 
   ost << "bbox "
-      << (int) (RegionLeft() * factor_x)
+      << (int32_t) (RegionLeft() * factor_x)
           + ckt_ptr_->design().DieAreaOffsetX() << " "
-      << (int) (RegionBottom() * factor_y)
+      << (int32_t) (RegionBottom() * factor_y)
           + ckt_ptr_->design().DieAreaOffsetY() << " "
-      << (int) (RegionRight() * factor_x)
+      << (int32_t) (RegionRight() * factor_x)
           + ckt_ptr_->design().DieAreaOffsetX() << " "
-      << (int) (RegionTop() * factor_y)
+      << (int32_t) (RegionTop() * factor_y)
           + ckt_ptr_->design().DieAreaOffsetY() << "\n";
   for (auto &col : col_list_) {
     for (auto &stripe : col.stripe_list_) {
-      std::vector<int> pn_edge_list;
+      std::vector<int32_t> pn_edge_list;
       if (stripe.is_bottom_up_) {
         pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
         pn_edge_list.push_back(RegionBottom());
@@ -1674,12 +1674,12 @@ void StdClusterWellLegalizer::EmitWellRect(std::string const &name_of_file,
       }
 
       bool is_p_well_rect = stripe.is_first_row_orient_N_;
-      int lx = stripe.LLX();
-      int ux = stripe.URX();
-      int ly;
-      int uy;
-      int rect_count = (int) pn_edge_list.size() - 1;
-      for (int i = 0; i < rect_count; ++i) {
+      int32_t lx = stripe.LLX();
+      int32_t ux = stripe.URX();
+      int32_t ly;
+      int32_t uy;
+      int32_t rect_count = (int32_t) pn_edge_list.size() - 1;
+      for (int32_t i = 0; i < rect_count; ++i) {
         ly = pn_edge_list[i];
         uy = pn_edge_list[i + 1];
         if (is_p_well_rect) {
@@ -1691,13 +1691,13 @@ void StdClusterWellLegalizer::EmitWellRect(std::string const &name_of_file,
           if (well_emit_mode == 2) continue;
           ost << "rect Vdd nwell ";
         }
-        ost << (int) (lx * factor_x)
+        ost << (int32_t) (lx * factor_x)
             + ckt_ptr_->design().DieAreaOffsetX() << " "
-            << (int) (ly * factor_y)
+            << (int32_t) (ly * factor_y)
                 + ckt_ptr_->design().DieAreaOffsetY() << " "
-            << (int) (ux * factor_x)
+            << (int32_t) (ux * factor_x)
                 + ckt_ptr_->design().DieAreaOffsetX() << " "
-            << (int) (uy * factor_y)
+            << (int32_t) (uy * factor_y)
                 + ckt_ptr_->design().DieAreaOffsetY() << "\n";
       }
     }
@@ -1707,7 +1707,7 @@ void StdClusterWellLegalizer::EmitWellRect(std::string const &name_of_file,
 
 void StdClusterWellLegalizer::ExportWellToPhyDB(
     phydb::PhyDB *phydb_ptr,
-    int well_emit_mode
+    int32_t well_emit_mode
 ) {
   switch (well_emit_mode) {
     case 0:BOOST_LOG_TRIVIAL(info) << "Export N/P wells to PhyDB\n";
@@ -1724,13 +1724,13 @@ void StdClusterWellLegalizer::ExportWellToPhyDB(
   double factor_y = ckt_ptr_->design().DistanceMicrons()
       * ckt_ptr_->GridValueY();
 
-  int bbox_llx = (int) (RegionLeft() * factor_x)
+  int32_t bbox_llx = (int32_t) (RegionLeft() * factor_x)
       + ckt_ptr_->design().DieAreaOffsetX();
-  int bbox_lly = (int) (RegionBottom() * factor_y)
+  int32_t bbox_lly = (int32_t) (RegionBottom() * factor_y)
       + ckt_ptr_->design().DieAreaOffsetY();
-  int bbox_urx = (int) (RegionRight() * factor_x)
+  int32_t bbox_urx = (int32_t) (RegionRight() * factor_x)
       + ckt_ptr_->design().DieAreaOffsetX();
-  int bbox_ury = (int) (RegionTop() * factor_y)
+  int32_t bbox_ury = (int32_t) (RegionTop() * factor_y)
       + ckt_ptr_->design().DieAreaOffsetY();
 
   auto *phydb_layout_container = phydb_ptr->CreateWellLayerMacroAndComponent(
@@ -1753,10 +1753,10 @@ void StdClusterWellLegalizer::ExportWellToPhyDB(
         std::string signal_name = "GND";
         std::string layer_name = "pwell";
         for (auto &rect : p_rects) {
-          int rect_llx = ckt_ptr_->LocDali2PhydbX(rect.LLX());
-          int rect_lly = ckt_ptr_->LocDali2PhydbY(rect.LLY());
-          int rect_urx = ckt_ptr_->LocDali2PhydbX(rect.URX());
-          int rect_ury = ckt_ptr_->LocDali2PhydbY(rect.URY());
+          int32_t rect_llx = ckt_ptr_->LocDali2PhydbX(rect.LLX());
+          int32_t rect_lly = ckt_ptr_->LocDali2PhydbY(rect.LLY());
+          int32_t rect_urx = ckt_ptr_->LocDali2PhydbX(rect.URX());
+          int32_t rect_ury = ckt_ptr_->LocDali2PhydbY(rect.URY());
           phydb_layout_container->AddRectSignalLayer(
               signal_name,
               layer_name,
@@ -1771,10 +1771,10 @@ void StdClusterWellLegalizer::ExportWellToPhyDB(
         std::string signal_name = "Vdd";
         std::string layer_name = "nwell";
         for (auto &rect : p_rects) {
-          int rect_llx = ckt_ptr_->LocDali2PhydbX(rect.LLX());
-          int rect_lly = ckt_ptr_->LocDali2PhydbY(rect.LLY());
-          int rect_urx = ckt_ptr_->LocDali2PhydbX(rect.URX());
-          int rect_ury = ckt_ptr_->LocDali2PhydbY(rect.URY());
+          int32_t rect_llx = ckt_ptr_->LocDali2PhydbX(rect.LLX());
+          int32_t rect_lly = ckt_ptr_->LocDali2PhydbY(rect.LLY());
+          int32_t rect_urx = ckt_ptr_->LocDali2PhydbX(rect.URX());
+          int32_t rect_ury = ckt_ptr_->LocDali2PhydbY(rect.URY());
           phydb_layout_container->AddRectSignalLayer(
               signal_name,
               layer_name,
@@ -1811,9 +1811,9 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
     auto &col = col_list_[i];
     for (auto &stripe : col.stripe_list_) {
       ost << "  "
-          << (int) (stripe.LLX() * factor_x)
+          << (int32_t) (stripe.LLX() * factor_x)
               + ckt_ptr_->design().DieAreaOffsetX() << "  "
-          << (int) (stripe.URX() * factor_x)
+          << (int32_t) (stripe.URX() * factor_x)
               + ckt_ptr_->design().DieAreaOffsetX() << "  ";
       if (stripe.is_first_row_orient_N_) {
         ost << "GND\n";
@@ -1824,19 +1824,19 @@ void StdClusterWellLegalizer::EmitClusterRect(std::string const &name_of_file) {
       if (stripe.is_bottom_up_) {
         for (auto &cluster : stripe.gridded_rows_) {
           ost << "  "
-              << (int) (cluster.LLY() * factor_y)
+              << (int32_t) (cluster.LLY() * factor_y)
                   + ckt_ptr_->design().DieAreaOffsetY() << "  "
-              << (int) (cluster.URY() * factor_y)
+              << (int32_t) (cluster.URY() * factor_y)
                   + ckt_ptr_->design().DieAreaOffsetY() << "\n";
         }
       } else {
-        int sz = stripe.gridded_rows_.size();
-        for (int j = sz - 1; j >= 0; --j) {
+        int32_t sz = stripe.gridded_rows_.size();
+        for (int32_t j = sz - 1; j >= 0; --j) {
           auto &cluster = stripe.gridded_rows_[j];
           ost << "  "
-              << (int) (cluster.LLY() * factor_y)
+              << (int32_t) (cluster.LLY() * factor_y)
                   + ckt_ptr_->design().DieAreaOffsetY() << "  "
-              << (int) (cluster.URY() * factor_y)
+              << (int32_t) (cluster.URY() * factor_y)
                   + ckt_ptr_->design().DieAreaOffsetY() << "\n";
         }
       }

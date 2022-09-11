@@ -40,7 +40,7 @@ GridBin::GridBin() {
   global_placed = false;
 }
 
-void GridBin::create_adjacent_bin_list(int grid_cnt_x, int grid_cnt_y) {
+void GridBin::create_adjacent_bin_list(int32_t grid_cnt_x, int32_t grid_cnt_y) {
   adjacent_bin_index.clear();
   GridBinIndex tmp_index;
   if (index.x > 0) {

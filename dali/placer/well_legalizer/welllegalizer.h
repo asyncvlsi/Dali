@@ -35,37 +35,37 @@ namespace dali {
  *  2. the type of well exposed at the starting point
  * ****/
 struct RowWellStatus {
-  int dist;
-  int cluster_len;
+  int32_t dist;
+  int32_t cluster_len;
   bool is_n;
   explicit RowWellStatus(
-      int dist_init = INT_MAX,
-      int cluster_len_init = 0,
+      int32_t dist_init = INT_MAX,
+      int32_t cluster_len_init = 0,
       bool is_n_init = false
   )
       : dist(dist_init), cluster_len(cluster_len_init), is_n(is_n_init) {}
   bool IsNWell() const { return is_n; }
   bool IsPWell() const { return !is_n; }
-  int ClusterLength() const { return cluster_len; }
+  int32_t ClusterLength() const { return cluster_len; }
 };
 
 class WellLegalizer : public LGTetrisEx {
  private:
-  int n_max_plug_dist_;
-  int p_max_plug_dist_;
+  int32_t n_max_plug_dist_;
+  int32_t p_max_plug_dist_;
 
-  int nn_spacing_;
-  int pp_spacing_;
-  int np_spacing_;
+  int32_t nn_spacing_;
+  int32_t pp_spacing_;
+  int32_t np_spacing_;
 
-  int n_min_width_;
-  int p_min_width_;
+  int32_t n_min_width_;
+  int32_t p_min_width_;
 
-  int abutment_benefit_ = 0;
+  int32_t abutment_benefit_ = 0;
 
   std::vector<RowWellStatus> row_well_status_;
-  std::vector<Value2D < int>> init_loc_;
-  std::set<int> p_n_boundary_;
+  std::vector<Value2D < int32_t>> init_loc_;
+  std::set<int32_t> p_n_boundary_;
 
   double k_distance_ = 1;
   double k_min_width_ = 1;
@@ -80,63 +80,63 @@ class WellLegalizer : public LGTetrisEx {
   bool FindLocation(Block &block, int2d &res);
   void WellPlace(Block &block);
 
-  void MarkSpaceWellLeft(Block const &block, int p_row);
-  bool IsCurLocWellDistanceLeft(int loc_x, int lo_row, int hi_row, int p_row);
-  bool IsCurLocWellMinWidthLeft(int loc_x, int lo_row, int hi_row, int p_row);
+  void MarkSpaceWellLeft(Block const &block, int32_t p_row);
+  bool IsCurLocWellDistanceLeft(int32_t loc_x, int32_t lo_row, int32_t hi_row, int32_t p_row);
+  bool IsCurLocWellMinWidthLeft(int32_t loc_x, int32_t lo_row, int32_t hi_row, int32_t p_row);
   bool IsCurrentLocLegalLeft(
-      Value2D<int> &loc,
-      int width,
-      int height,
-      int p_row
+      Value2D<int32_t> &loc,
+      int32_t width,
+      int32_t height,
+      int32_t p_row
   );
   bool IsCurrentLocLegalLeft(
-      int loc_x,
-      int width,
-      int lo_row,
-      int hi_row,
-      int p_row
+      int32_t loc_x,
+      int32_t width,
+      int32_t lo_row,
+      int32_t hi_row,
+      int32_t p_row
   );
   bool FindLocLeft(
-      Value2D<int> &loc,
-      int num,
-      int width,
-      int height,
-      int p_row
+      Value2D<int32_t> &loc,
+      int32_t num,
+      int32_t width,
+      int32_t height,
+      int32_t p_row
   );
   bool WellLegalizationLeft();
 
-  void MarkSpaceWellRight(Block const &block, int p_row);
+  void MarkSpaceWellRight(Block const &block, int32_t p_row);
   bool IsCurLocWellDistanceRight(
-      int loc_x,
-      int lo_row,
-      int hi_row,
-      int p_row
+      int32_t loc_x,
+      int32_t lo_row,
+      int32_t hi_row,
+      int32_t p_row
   );
   bool IsCurLocWellMinWidthRight(
-      int loc_x,
-      int lo_row,
-      int hi_row,
-      int p_row
+      int32_t loc_x,
+      int32_t lo_row,
+      int32_t hi_row,
+      int32_t p_row
   );
   bool IsCurrentLocLegalRight(
-      Value2D<int> &loc,
-      int width,
-      int height,
-      int p_row
+      Value2D<int32_t> &loc,
+      int32_t width,
+      int32_t height,
+      int32_t p_row
   );
   bool IsCurrentLocLegalRight(
-      int loc_x,
-      int width,
-      int lo_row,
-      int hi_row,
-      int p_row
+      int32_t loc_x,
+      int32_t width,
+      int32_t lo_row,
+      int32_t hi_row,
+      int32_t p_row
   );
   bool FindLocRight(
-      Value2D<int> &loc,
-      int num,
-      int width,
-      int height,
-      int p_row
+      Value2D<int32_t> &loc,
+      int32_t num,
+      int32_t width,
+      int32_t height,
+      int32_t p_row
   );
   bool WellLegalizationRight();
 

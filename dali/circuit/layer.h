@@ -67,11 +67,11 @@ class Layer {
  */
 class MetalLayer : public Layer {
  public:
-  explicit MetalLayer(std::pair<const std::string, int> *name_id_pair_ptr);
+  explicit MetalLayer(std::pair<const std::string, int32_t> *name_id_pair_ptr);
   MetalLayer(
       double width,
       double spacing,
-      std::pair<const std::string, int> *name_id_pair_ptr,
+      std::pair<const std::string, int32_t> *name_id_pair_ptr,
       MetalDirection direction = HORIZONTAL
   );
 
@@ -79,7 +79,7 @@ class MetalLayer : public Layer {
   const std::string &Name() const;
 
   // get the index of this layer
-  int Id() const;
+  int32_t Id() const;
 
   // set the min area
   void SetMinArea(double min_area);
@@ -114,7 +114,7 @@ class MetalLayer : public Layer {
   // print information of this layer
   void Report() const;
  private:
-  std::pair<const std::string, int> *name_id_pair_ptr_;
+  std::pair<const std::string, int32_t> *name_id_pair_ptr_;
   double min_area_;
   double x_pitch_;
   double y_pitch_;

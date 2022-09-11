@@ -37,11 +37,11 @@ class BlockType;
 class Pin {
  public:
   Pin(
-      std::pair<const std::string, int> *name_id_pair_ptr,
+      std::pair<const std::string, int32_t> *name_id_pair_ptr,
       BlockType *blk_type_ptr
   );
   Pin(
-      std::pair<const std::string, int> *name_id_pair_ptr,
+      std::pair<const std::string, int32_t> *name_id_pair_ptr,
       BlockType *blk_type_ptr,
       double x_offset,
       double y_offset
@@ -51,7 +51,7 @@ class Pin {
   const std::string &Name() const;
 
   // get the internal index
-  int Id() const;
+  int32_t Id() const;
 
   // set offsets for N orientation, and compute offsets for all orientations
   void SetOffset(double x_offset, double y_offset);
@@ -80,7 +80,7 @@ class Pin {
   // print information of this pin
   void Report() const;
  private:
-  std::pair<const std::string, int> *name_id_pair_ptr_;
+  std::pair<const std::string, int32_t> *name_id_pair_ptr_;
   BlockType *blk_type_ptr_;
 
   bool is_input_;

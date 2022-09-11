@@ -34,7 +34,7 @@ namespace dali {
  *
  * @param max_iter: maximum number of iterations.
  */
-void GlobalPlacer::SetMaxIteration(int max_iter) {
+void GlobalPlacer::SetMaxIteration(int32_t max_iter) {
   DaliExpects(max_iter >= 0, "negative number of iterations?");
   max_iter_ = max_iter;
 }
@@ -134,9 +134,9 @@ bool GlobalPlacer::StartPlacement() {
 
   SanityCheck();
   InitializeBlockLocation();
-  ckt_ptr_->GenMATLABTable("init_result.txt");
-  std::cout << std::endl;
-  exit(1);
+  //ckt_ptr_->GenMATLABTable("init_result.txt");
+  //std::cout << std::endl;
+  //exit(1);
   InitializeOptimizerAndLegalizer();
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     optimizer_->SetIteration(cur_iter_);
@@ -173,16 +173,16 @@ bool GlobalPlacer::IsBlockListOrNetListEmpty() const {
 
 bool GlobalPlacer::IsSeriesConverge(
     std::vector<double> &data,
-    int window_size,
+    int32_t window_size,
     double tolerance
 ) {
-  int sz = (int) data.size();
+  int32_t sz = (int32_t) data.size();
   if (sz < window_size) {
     return false;
   }
   double max_val = -DBL_MAX;
   double min_val = DBL_MAX;
-  for (int i = 0; i < window_size; ++i) {
+  for (int32_t i = 0; i < window_size; ++i) {
     max_val = std::max(max_val, data[sz - 1 - i]);
     min_val = std::min(min_val, data[sz - 1 - i]);
   }
@@ -254,7 +254,7 @@ void GlobalPlacer::PrintHpwl() const {
   double lo_hpwl = optimizer_->GetHpwls().back();
   double hi_hpwl = legalizer_->GetHpwls().back();
   std::string buffer(1024, '\0');
-  int written_length = sprintf(
+  int32_t written_length = sprintf(
       &buffer[0],
       "  iter-%-3d: %.4e  %.4e\n", cur_iter_, lo_hpwl, hi_hpwl
   );

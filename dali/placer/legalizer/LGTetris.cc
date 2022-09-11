@@ -32,13 +32,13 @@ void TetrisLegalizer::InitLegalizer() {
   index_loc_list_.resize(ckt_ptr_->Blocks().size(), init_pair);
 }
 
-void TetrisLegalizer::SetMaxItr(int max_iteration) {
+void TetrisLegalizer::SetMaxItr(int32_t max_iteration) {
   DaliExpects(max_iteration > 0,
               "Invalid max_iteration value, value must be greater than 0");
   max_iteration_ = max_iteration;
 }
 
-void TetrisLegalizer::FastShift(int failure_point) {
+void TetrisLegalizer::FastShift(int32_t failure_point) {
   /****
    * This method is to FastShiftLeft() the blocks following the failure_point (included) to reasonable locations in order to keep block orders
    *    1. tetrisSpace.IsSpaceAvail() fails to place a block when the current location of this block is illegal
@@ -73,7 +73,7 @@ void TetrisLegalizer::FastShift(int failure_point) {
     Block *failed_block = index_loc_list_[failure_point].blk_ptr;
     bounding_left = failed_block->LLX();
     Block *last_placed_block = index_loc_list_[failure_point - 1].blk_ptr;
-    int left_new = (int) std::round(last_placed_block->LLX());
+    int32_t left_new = (int32_t) std::round(last_placed_block->LLX());
     //BOOST_LOG_TRIVIAL(info)   << left_new << "  " << bounding_left << "\n";
     for (size_t i = failure_point; i < index_loc_list_.size(); ++i) {
       Block *blk_ptr = index_loc_list_[i].blk_ptr;
@@ -96,7 +96,7 @@ void TetrisLegalizer::FastShift(int failure_point) {
  * ****/
 void TetrisLegalizer::FlipPlacement() {
   flipped_ = !flipped_;
-  int sum_left_right = left_ + right_;
+  int32_t sum_left_right = left_ + right_;
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
   for (auto &block : blocks) {
     block.SetLLX(sum_left_right - block.URX());
@@ -143,22 +143,22 @@ bool TetrisLegalizer::TetrisLegal() {
   }*/
 
   // 3. initialize the data structure to store row usage
-  //int maxHeight = GetCircuitRef().MaxBlkHeight();
-  int minWidth = ckt_ptr_->MinBlkWidth();
-  //int minHeight = GetCircuitRef().MinBlkHeight();
+  //int32_t maxHeight = GetCircuitRef().MaxBlkHeight();
+  int32_t minWidth = ckt_ptr_->MinBlkWidth();
+  //int32_t minHeight = GetCircuitRef().MinBlkHeight();
 
   BOOST_LOG_TRIVIAL(info) << "Building LGTetris space" << std::endl;
   TetrisSpace tetrisSpace
       (RegionLeft(), RegionRight(), RegionBottom(), RegionTop(), 1, minWidth);
-  int llx, lly;
-  int width, height;
-  //int count = 0;
+  int32_t llx, lly;
+  int32_t width, height;
+  //int32_t count = 0;
   for (size_t i = 0; i < index_loc_list_.size(); ++i) {
     auto bk_ptr = index_loc_list_[i].blk_ptr;
     width = bk_ptr->Width();
     height = bk_ptr->Height();
     /****
-     * After "integerization" of the current location from "double" to "int":
+     * After "integerization" of the current location from "double" to "int32_t":
      * 1. if the current location is legal, the location of this block don't have to be changed,
      *  IsSpaceAvail() will mark the space occupied by this block to be "used", and for sure this space is no more available
      * 2. if the current location is illegal,
@@ -168,8 +168,8 @@ bool TetrisLegalizer::TetrisLegal() {
      *  FlipPlacement() will flip the placement in the x-direction
      *  if current_iteration does not reach the maximum allowed number, then do the legalization in a reverse order
      * ****/
-    llx = (int) std::round(bk_ptr->LLX());
-    lly = (int) std::round(bk_ptr->LLY());
+    llx = (int32_t) std::round(bk_ptr->LLX());
+    lly = (int32_t) std::round(bk_ptr->LLY());
     bool is_current_loc_legal =
         tetrisSpace.IsSpaceAvail(llx, lly, width, height);
     if (is_current_loc_legal) {

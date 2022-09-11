@@ -29,8 +29,8 @@
 namespace dali {
 
 Net::Net(
-    std::pair<const std::string, int> *name_id_pair_ptr,
-    int capacity,
+    std::pair<const std::string, int32_t> *name_id_pair_ptr,
+    int32_t capacity,
     double weight
 ) : name_id_pair_ptr_(name_id_pair_ptr), weight_(weight) {
   cnt_fixed_ = 0;
@@ -47,7 +47,7 @@ const std::string &Net::Name() const {
   return name_id_pair_ptr_->first;
 }
 
-int Net::Id() const {
+int32_t Net::Id() const {
   return name_id_pair_ptr_->second;
 }
 
@@ -55,14 +55,14 @@ void Net::AddBlkPinPair(Block *block_ptr, Pin *pin_ptr) {
   if (blk_pins_.size() < blk_pins_.capacity()) {
     blk_pins_.emplace_back(block_ptr, pin_ptr);
     if (!(pin_ptr->IsInput()))
-      driver_pin_index = int(blk_pins_.size()) - 1;
+      driver_pin_index = int32_t(blk_pins_.size()) - 1;
     if (!block_ptr->IsMovable()) {
       ++cnt_fixed_;
     }
     // because net list is stored as a vector, so the location of a net will change, thus here, we have to use Num() to
     // find a net, although a pointer to this net is more convenient.
     block_ptr->NetList().push_back(Id());
-    int p_minus_one = int(blk_pins_.size()) - 1;
+    int32_t p_minus_one = int32_t(blk_pins_.size()) - 1;
     inv_p_ = p_minus_one > 0 ? 1.0 * weight_ / p_minus_one : 0;
   } else {
     BOOST_LOG_TRIVIAL(info)
@@ -124,7 +124,7 @@ void Net::GetXBoundIfBlkAbsent(Block *blk_ptr, double &lo, double &hi) {
   lo = -DBL_MAX;
   hi = DBL_MAX;
 
-  int sz = static_cast<int>(blk_pins_.size());
+  int32_t sz = static_cast<int32_t>(blk_pins_.size());
   if (sz == 1) {
     return;
   }
@@ -154,7 +154,7 @@ void Net::GetYBoundIfBlkAbsent(Block *blk_ptr, double &lo, double &hi) {
   lo = -DBL_MAX;
   hi = DBL_MAX;
 
-  int sz = static_cast<int>(blk_pins_.size());
+  int32_t sz = static_cast<int32_t>(blk_pins_.size());
   if (sz == 1) {
     return;
   }
@@ -217,8 +217,8 @@ void Net::UpdateMaxMinIdX() {
   min_x_pin_id_ = 0;
   double max_x = -DBL_MAX;
   double min_x = DBL_MAX;
-  int sz = static_cast<int>(blk_pins_.size());
-  for (int i = 0; i < sz; ++i) {
+  int32_t sz = static_cast<int32_t>(blk_pins_.size());
+  for (int32_t i = 0; i < sz; ++i) {
     double tmp_pin_loc = blk_pins_[i].AbsX();
     if (max_x < tmp_pin_loc) {
       max_x = tmp_pin_loc;
@@ -250,8 +250,8 @@ void Net::UpdateMaxMinIdY() {
   min_y_pin_id_ = 0;
   double max_y = -DBL_MAX;
   double min_y = DBL_MAX;
-  int sz = static_cast<int>(blk_pins_.size());
-  for (int i = 0; i < sz; ++i) {
+  int32_t sz = static_cast<int32_t>(blk_pins_.size());
+  for (int32_t i = 0; i < sz; ++i) {
     double tmp_pin_loc = blk_pins_[i].AbsY();
     if (max_y < tmp_pin_loc) {
       max_y = tmp_pin_loc;
@@ -274,19 +274,19 @@ void Net::UpdateMaxMinIndex() {
   UpdateMaxMinIdY();
 }
 
-int Net::MaxBlkPinIdX() const {
+int32_t Net::MaxBlkPinIdX() const {
   return max_x_pin_id_;
 }
 
-int Net::MinBlkPinIdX() const {
+int32_t Net::MinBlkPinIdX() const {
   return min_x_pin_id_;
 }
 
-int Net::MaxBlkPinIdY() const {
+int32_t Net::MaxBlkPinIdY() const {
   return max_y_pin_id_;
 }
 
-int Net::MinBlkPinIdY() const {
+int32_t Net::MinBlkPinIdY() const {
   return min_y_pin_id_;
 }
 
@@ -379,8 +379,8 @@ void Net::UpdateMaxMinCtoCX() {
   double max_x = blk_pins_[0].BlkPtr()->X();
   double min_x = max_x;
   double tmp_pin_loc = 0;
-  int sz = static_cast<int>(blk_pins_.size());
-  for (int i = 1; i < sz; ++i) {
+  int32_t sz = static_cast<int32_t>(blk_pins_.size());
+  for (int32_t i = 1; i < sz; ++i) {
     tmp_pin_loc = blk_pins_[i].BlkPtr()->X();
     if (max_x < tmp_pin_loc) {
       max_x = tmp_pin_loc;
@@ -400,8 +400,8 @@ void Net::UpdateMaxMinCtoCY() {
   double max_y = blk_pins_[0].BlkPtr()->Y();
   double min_y = max_y;
   double tmp_pin_loc = 0;
-  int sz = static_cast<int>(blk_pins_.size());
-  for (int i = 1; i < sz; ++i) {
+  int32_t sz = static_cast<int32_t>(blk_pins_.size());
+  for (int32_t i = 1; i < sz; ++i) {
     tmp_pin_loc = blk_pins_[i].BlkPtr()->Y();
     if (max_y < tmp_pin_loc) {
       max_y = tmp_pin_loc;
@@ -419,12 +419,12 @@ void Net::UpdateMaxMinCtoC() {
   UpdateMaxMinIdY();
 }
 
-int Net::MaxPinCtoCX() {
-  int max_pin_index = 0;
+int32_t Net::MaxPinCtoCX() {
+  int32_t max_pin_index = 0;
   auto *block = blk_pins_[0].BlkPtr();
   double max_x = block->X();
-  int sz = static_cast<int>(blk_pins_.size());
-  for (int i = 0; i < sz; i++) {
+  int32_t sz = static_cast<int32_t>(blk_pins_.size());
+  for (int32_t i = 0; i < sz; i++) {
     block = blk_pins_[i].BlkPtr();
     if (max_x < block->X()) {
       max_x = block->X();
@@ -434,12 +434,12 @@ int Net::MaxPinCtoCX() {
   return max_pin_index;
 }
 
-int Net::MinPinCtoCX() {
-  int min_pin_index = 0;
+int32_t Net::MinPinCtoCX() {
+  int32_t min_pin_index = 0;
   auto *block = blk_pins_[0].BlkPtr();
   double min_x = block->X();
-  int sz = static_cast<int>(blk_pins_.size());
-  for (int i = 0; i < sz; i++) {
+  int32_t sz = static_cast<int32_t>(blk_pins_.size());
+  for (int32_t i = 0; i < sz; i++) {
     block = blk_pins_[i].BlkPtr();
     if (min_x > block->X()) {
       min_x = block->X();
@@ -449,12 +449,12 @@ int Net::MinPinCtoCX() {
   return min_pin_index;
 }
 
-int Net::MaxPinCtoCY() {
-  int max_pin_index = 0;
+int32_t Net::MaxPinCtoCY() {
+  int32_t max_pin_index = 0;
   auto *block = blk_pins_[0].BlkPtr();
   double max_y = block->Y();
-  int sz = static_cast<int>(blk_pins_.size());
-  for (int i = 0; i < sz; i++) {
+  int32_t sz = static_cast<int32_t>(blk_pins_.size());
+  for (int32_t i = 0; i < sz; i++) {
     block = blk_pins_[i].BlkPtr();
     if (max_y < block->Y()) {
       max_y = block->Y();
@@ -464,12 +464,12 @@ int Net::MaxPinCtoCY() {
   return max_pin_index;
 }
 
-int Net::MinPinCtoCY() {
-  int min_pin_index = 0;
+int32_t Net::MinPinCtoCY() {
+  int32_t min_pin_index = 0;
   auto *block = blk_pins_[0].BlkPtr();
   double min_y = block->Y();
-  int sz = static_cast<int>(blk_pins_.size());
-  for (int i = 0; i < sz; i++) {
+  int32_t sz = static_cast<int32_t>(blk_pins_.size());
+  for (int32_t i = 0; i < sz; i++) {
     block = blk_pins_[i].BlkPtr();
     if (min_y > block->Y()) {
       min_y = block->Y();

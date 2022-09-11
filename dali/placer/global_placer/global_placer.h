@@ -34,7 +34,7 @@ class GlobalPlacer : public Placer {
  public:
   GlobalPlacer() = default;
 
-  void SetMaxIteration(int max_iter);
+  void SetMaxIteration(int32_t max_iter);
   void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
   void LoadConf(std::string const &config_file) override;
 
@@ -46,11 +46,11 @@ class GlobalPlacer : public Placer {
   bool StartPlacement() override;
  protected:
   // for look ahead legalization
-  int cur_iter_ = 0;
-  int max_iter_ = 100;
+  int32_t cur_iter_ = 0;
+  int32_t max_iter_ = 100;
   double simpl_LAL_converge_criterion_ = 0.005;
   double polar_converge_criterion_ = 0.08;
-  int convergence_criteria_ = 1;
+  int32_t convergence_criteria_ = 1;
 
   // save intermediate result for debugging and/or visualization
   bool should_save_intermediate_result_ = false;
@@ -58,7 +58,7 @@ class GlobalPlacer : public Placer {
   bool IsBlockListOrNetListEmpty() const;
   static bool IsSeriesConverge(
       std::vector<double> &data,
-      int window_size,
+      int32_t window_size,
       double tolerance
   );
   bool IsPlacementConverge();
@@ -68,7 +68,7 @@ class GlobalPlacer : public Placer {
       bool is_success
   ) override;
 
-  RandomInitializerType initializer_type_ = RandomInitializerType::DENSITY_AWARE;
+  RandomInitializerType initializer_type_ = RandomInitializerType::UNIFORM;
   HpwlOptimizer *optimizer_ = nullptr;
   RoughLegalizer *legalizer_ = nullptr;
 };

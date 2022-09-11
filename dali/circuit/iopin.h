@@ -43,14 +43,14 @@ class Net;
  */
 class IoPin {
  public:
-  explicit IoPin(std::pair<const std::string, int> *name_id_pair_ptr);
+  explicit IoPin(std::pair<const std::string, int32_t> *name_id_pair_ptr);
   IoPin(
-      std::pair<const std::string, int> *name_id_pair_ptr,
+      std::pair<const std::string, int32_t> *name_id_pair_ptr,
       double loc_x,
       double loc_y
   );
   IoPin(
-      std::pair<const std::string, int> *name_id_pair_ptr,
+      std::pair<const std::string, int32_t> *name_id_pair_ptr,
       SignalDirection direction,
       PlaceStatus init_place_status,
       double loc_x,
@@ -70,7 +70,7 @@ class IoPin {
   const std::string &Name() const;
 
   // get the index
-  int Id() const;
+  int32_t Id() const;
 
   // set net pointer
   void SetNetPtr(Net *net_ptr);
@@ -163,16 +163,16 @@ class IoPin {
   double UY(double spacing = 0) const;
 
   // set final x
-  void SetFinalX(int final_x);
+  void SetFinalX(int32_t final_x);
 
   // get final x
-  int FinalX() const;
+  int32_t FinalX() const;
 
   // set final y
-  void SetFinalY(int final_y);
+  void SetFinalY(int32_t final_y);
 
   //get final y
-  int FinalY() const;
+  int32_t FinalY() const;
 
   // set orientation
   void SetOrient(BlockOrient orient);
@@ -183,7 +183,7 @@ class IoPin {
   void Report() const;
 
  private:
-  std::pair<const std::string, int> *name_id_pair_ptr_;
+  std::pair<const std::string, int32_t> *name_id_pair_ptr_;
   Net *net_ptr_;
   SignalDirection signal_direction_;
   SignalUse signal_use_;
@@ -194,8 +194,8 @@ class IoPin {
   PlaceStatus place_status_;
   double x_; // grid unit
   double y_; // grid unit
-  int final_x_ = 0; // database unit
-  int final_y_ = 0; // database unit
+  int32_t final_x_ = 0; // database unit
+  int32_t final_y_ = 0; // database unit
   BlockOrient orient_;
 
   // set shape of its physical geometry, and compute rects for different orientations

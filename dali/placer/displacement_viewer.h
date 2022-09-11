@@ -51,15 +51,15 @@ struct DisplacementViewer {
     v_.resize(sz);
   }
 
-  void SetXY(int i, T x_val, T y_val) {
+  void SetXY(int32_t i, T x_val, T y_val) {
     x_[i] = x_val;
     y_[i] = y_val;
   }
-  void SetUV(int i, T u_val, T v_val) {
+  void SetUV(int32_t i, T u_val, T v_val) {
     u_[i] = u_val;
     v_[i] = v_val;
   }
-  void SetXYFromDifference(int i, T x_prime, T y_prime) {
+  void SetXYFromDifference(int32_t i, T x_prime, T y_prime) {
     u_[i] = x_prime - x_[i];
     v_[i] = y_prime - y_[i];
   }
