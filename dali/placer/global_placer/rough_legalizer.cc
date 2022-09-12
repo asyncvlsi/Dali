@@ -101,7 +101,7 @@ void LookAheadLegalizer::UpdateAttributesForAllGridBins() {
  * This can help us to compute available white space in each grid bin.
  */
 void LookAheadLegalizer::UpdateFixedBlocksInGridBins() {
-  for (auto &&blk : ckt_ptr_->Blocks()) {
+  for (auto &blk : ckt_ptr_->Blocks()) {
     /* find the left, right, bottom, top index of the grid */
     if (blk.IsMovable()) continue;
     bool fixed_blk_out_of_region = int32_t(blk.LLX()) >= ckt_ptr_->RegionURX()

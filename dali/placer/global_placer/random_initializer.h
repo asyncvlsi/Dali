@@ -124,6 +124,7 @@ class InitializerGridBin {
   void UpdateTotalArea();
   void UpdateMacroArea();
   void AddBlock(Block *blk);
+  void InitializeBlockLocation(uint32_t random_seed, int32_t num_trials);
  private:
   std::vector<Block *> macros_;
   std::vector<Block *> blocks_;
@@ -205,6 +206,7 @@ class DensityAwareInitializer : public MonteCarloInitializer {
                       std::vector<InitializerGridBin *>,
                       CompareInitializerGridBinPtr> density_queue_;
   void InitializePriorityQueue();
+  void AssignBlockToGridBin();
 };
 
 } // dali

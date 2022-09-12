@@ -1020,7 +1020,7 @@ Stripe *ClusterStripe::GetStripeMatchBlk(Block *blk_ptr) {
   Stripe *res = nullptr;
   double center_x = blk_ptr->X();
   double center_y = blk_ptr->Y();
-  for (auto &&Stripe : stripe_list_) {
+  for (auto &Stripe : stripe_list_) {
     if ((Stripe.LLY() <= center_y) &&
         (Stripe.URY() > center_y) &&
         (Stripe.LLX() <= center_x) &&

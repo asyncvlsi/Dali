@@ -134,9 +134,6 @@ bool GlobalPlacer::StartPlacement() {
 
   SanityCheck();
   InitializeBlockLocation();
-  //ckt_ptr_->GenMATLABTable("init_result.txt");
-  //std::cout << std::endl;
-  //exit(1);
   InitializeOptimizerAndLegalizer();
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     optimizer_->SetIteration(cur_iter_);
