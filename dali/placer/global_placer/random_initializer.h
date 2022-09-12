@@ -170,8 +170,8 @@ class MonteCarloInitializer : public RandomInitializer {
   virtual void AssignFixedMacroToGridBin();
   bool IsBlkLocationValid(Block &blk);
 
-  int32_t grid_bin_cnt_x_ = 30;
-  int32_t grid_bin_cnt_y_ = 30;
+  int32_t grid_cnt_x_ = 30;
+  int32_t grid_cnt_y_ = 30;
   int32_t bin_width_ = 0;
   int32_t bin_height_ = 0;
   int32_t blk_size_factor_ = 5;

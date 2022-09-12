@@ -57,7 +57,7 @@ class GlobalPlacer : public Placer {
 
   bool IsBlockListOrNetListEmpty() const;
   static bool IsSeriesConverge(
-      std::vector<double> &data,
+      std::vector<double> &series,
       int32_t window_size,
       double tolerance
   );
@@ -68,7 +68,7 @@ class GlobalPlacer : public Placer {
       bool is_success
   ) override;
 
-  RandomInitializerType initializer_type_ = RandomInitializerType::UNIFORM;
+  RandomInitializerType initializer_type_ = RandomInitializerType::MONTE_CARLO;
   HpwlOptimizer *optimizer_ = nullptr;
   RoughLegalizer *legalizer_ = nullptr;
 };

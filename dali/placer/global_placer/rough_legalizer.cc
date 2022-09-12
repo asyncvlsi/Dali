@@ -101,7 +101,7 @@ void LookAheadLegalizer::UpdateAttributesForAllGridBins() {
  * This can help us to compute available white space in each grid bin.
  */
 void LookAheadLegalizer::UpdateFixedBlocksInGridBins() {
-  for (auto &&blk: ckt_ptr_->Blocks()) {
+  for (auto &&blk : ckt_ptr_->Blocks()) {
     /* find the left, right, bottom, top index of the grid */
     if (blk.IsMovable()) continue;
     bool fixed_blk_out_of_region = int32_t(blk.LLX()) >= ckt_ptr_->RegionURX()
@@ -110,13 +110,13 @@ void LookAheadLegalizer::UpdateFixedBlocksInGridBins() {
         || int32_t(blk.URY()) <= ckt_ptr_->RegionLLY();
     // TODO: test and clean up this part of code using an adaptec benchmark
     if (fixed_blk_out_of_region) continue;
-    int32_t left_index = (int32_t) std::floor(
+    int32_t left_index = std::floor(
         (blk.LLX() - ckt_ptr_->RegionLLX()) / grid_bin_width);
-    int32_t right_index = (int32_t) std::floor(
+    int32_t right_index = std::floor(
         (blk.URX() - ckt_ptr_->RegionLLX()) / grid_bin_width);
-    int32_t bottom_index = (int32_t) std::floor(
+    int32_t bottom_index = std::floor(
         (blk.LLY() - ckt_ptr_->RegionLLY()) / grid_bin_height);
-    int32_t top_index = (int32_t) std::floor(
+    int32_t top_index = std::floor(
         (blk.URY() - ckt_ptr_->RegionLLY()) / grid_bin_height);
     /* the grid boundaries might be the placement region boundaries
      * if a block touches the rightmost and topmost boundaries,
@@ -480,7 +480,7 @@ void LookAheadLegalizer::UpdateLargestCluster() {
 }
 
 uint32_t LookAheadLegalizer::LookUpWhiteSpace(GridBinIndex const &ll_index,
-                                                       GridBinIndex const &ur_index) {
+                                              GridBinIndex const &ur_index) {
   /****
  * this function is used to return the white space in a region specified by ll_index, and ur_index
  * there are four cases, element at (0,0), elements on the left edge, elements on the right edge, otherwise
@@ -970,7 +970,7 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
  * of each box and cells should be assigned to the box
  * @return true if succeed, false if fail
  */
-bool LookAheadLegalizer::RecursiveBisectionblockspreading() {
+bool LookAheadLegalizer::RecursiveBisectionBlockSpreading() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
@@ -1013,7 +1013,7 @@ double LookAheadLegalizer::RemoveCellOverlap() {
   do {
     UpdateLargestCluster();
     FindMinimumBoxForLargestCluster();
-    RecursiveBisectionblockspreading();
+    RecursiveBisectionBlockSpreading();
     //BOOST_LOG_TRIVIAL(info) << "cluster count: " << cluster_set.size() << "\n";
   } while (!cluster_set.empty());
 
@@ -1034,7 +1034,7 @@ double LookAheadLegalizer::RemoveCellOverlap() {
     std::string file_name = "lal_result_" + std::to_string(cur_iter_) + ".txt";
     ++cur_iter_;
     ckt_ptr_->GenMATLABTable(file_name);
-  //DumpLookAheadDisplacement("displace_" + std::to_string(cur_iter_), 1);
+    //DumpLookAheadDisplacement("displace_" + std::to_string(cur_iter_), 1);
   }
 
   BOOST_LOG_TRIVIAL(debug)
@@ -1045,7 +1045,7 @@ double LookAheadLegalizer::RemoveCellOverlap() {
     << "(FindMinimumBoxForLargestCluster time: "
     << find_minimum_box_for_largest_cluster_time_ << "s)\n";
   BOOST_LOG_TRIVIAL(debug)
-    << "(RecursiveBisectionblockspreading time: "
+    << "(RecursiveBisectionBlockSpreading time: "
     << recursive_bisection_block_spreading_time_ << "s)\n";
 
   upper_bound_hpwl_.push_back(evaluate_result_x + evaluate_result_y);

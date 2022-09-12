@@ -172,22 +172,22 @@ bool GlobalPlacer::IsBlockListOrNetListEmpty() const {
 }
 
 bool GlobalPlacer::IsSeriesConverge(
-    std::vector<double> &data,
+    std::vector<double> &series,
     int32_t window_size,
     double tolerance
 ) {
-  int32_t sz = (int32_t) data.size();
+  auto sz = static_cast<int32_t>(series.size());
   if (sz < window_size) {
     return false;
   }
   double max_val = -DBL_MAX;
   double min_val = DBL_MAX;
   for (int32_t i = 0; i < window_size; ++i) {
-    max_val = std::max(max_val, data[sz - 1 - i]);
-    min_val = std::min(min_val, data[sz - 1 - i]);
+    max_val = std::max(max_val, series[sz - 1 - i]);
+    min_val = std::min(min_val, series[sz - 1 - i]);
   }
   DaliExpects(max_val >= 0 && min_val >= 0,
-              "Negative data series not supported!");
+              "Negative series series not supported!");
   if (max_val < 1e-10 && min_val <= 1e-10) {
     return true;
   }

@@ -81,7 +81,7 @@ class LookAheadLegalizer : public RoughLegalizer {
   void SplitGridBox(BoxBin &box);
   void PlaceBlkInBox(BoxBin &box);
   void SplitBox(BoxBin &box);
-  bool RecursiveBisectionblockspreading();
+  bool RecursiveBisectionBlockSpreading();
   double RemoveCellOverlap() override;
 
   double GetTime() override;
