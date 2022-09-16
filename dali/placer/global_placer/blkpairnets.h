@@ -36,22 +36,22 @@ class BlkBlkEdge {
  public:
   BlkBlkEdge(
       Net *net_ptr,
-      int32_t d_index,
-      int32_t l_index
+      int d_index,
+      int l_index
   ) : net(net_ptr),
       d(d_index),
       l(l_index) {}
   Net *net; // the pointer to the net containing two blocks
-  int32_t d; // driver index
-  int32_t l; // load index
+  int d; // driver index
+  int l; // load index
 };
 
 class BlkPairNets {
  public:
-  BlkPairNets(int32_t blk0, int32_t blk1) : blk_num0(blk0), blk_num1(blk1) {}
+  BlkPairNets(int blk0, int blk1) : blk_num0(blk0), blk_num1(blk1) {}
   std::vector<BlkBlkEdge> edges;
-  int32_t blk_num0;
-  int32_t blk_num1;
+  int blk_num0;
+  int blk_num1;
 
   double e00x = 0;
   double e01x = 0;

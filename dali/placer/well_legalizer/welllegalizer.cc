@@ -62,24 +62,24 @@ void WellLegalizer::InitWellLegalizer() {
   InitLegalizer();
 
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
-  int32_t sz = block_list.size();
+  int sz = block_list.size();
   init_loc_.resize(sz);
-  for (int32_t i = 0; i < sz; ++i) {
+  for (int i = 0; i < sz; ++i) {
     init_loc_[i].x = block_list[i].LLX();
     init_loc_[i].y = block_list[i].LLY();
   }
 }
 
-void WellLegalizer::MarkSpaceWellLeft(Block const &block, int32_t p_row) {
+void WellLegalizer::MarkSpaceWellLeft(Block const &block, int p_row) {
   /****
    * Mark the space used by this block by changing the start point of available space in each related row
    * ****/
-  int32_t lo_row = StartRow((int32_t) std::round(block.LLY()));
-  int32_t last_p_row = lo_row + p_row - 1;
-  int32_t hi_row = EndRow((int32_t) std::round(block.URY()));
+  int lo_row = StartRow((int) std::round(block.LLY()));
+  int last_p_row = lo_row + p_row - 1;
+  int hi_row = EndRow((int) std::round(block.URY()));
 
-  /*if (end_row >= int32_t(row_well_status_.size())) {
-    //BOOST_LOG_TRIVIAL(info)   << "  ly:     " << int32_t(block.LLY())       << "\n"
+  /*if (end_row >= int(row_well_status_.size())) {
+    //BOOST_LOG_TRIVIAL(info)   << "  ly:     " << int(block.LLY())       << "\n"
     //          << "  height: " << block.Height()   << "\n"
     //          << "  top:    " << Top()    << "\n"
     //          << "  bottom: " << Bottom() << "\n";
@@ -89,9 +89,9 @@ void WellLegalizer::MarkSpaceWellLeft(Block const &block, int32_t p_row) {
   assert(hi_row < tot_num_rows_);
   assert(lo_row >= 0);
 
-  int32_t end_x = int32_t(block.URX());
+  int end_x = int(block.URX());
 
-  for (int32_t i = lo_row; i <= hi_row; ++i) {
+  for (int i = lo_row; i <= hi_row; ++i) {
     block_contour_[i] = end_x;
     row_well_status_[i].is_n = (i > last_p_row);
   }
@@ -118,33 +118,33 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
    *
    * Cost function is displacement
    * ****/
-  int32_t init_x = int32_t(block.LLX());
-  int32_t init_y = int32_t(block.LLY());
+  int init_x = int(block.LLX());
+  int init_y = int(block.LLY());
 
-  int32_t height = int32_t(block.Height());
-  int32_t start_row = 0;
-  int32_t end_row = RegionTop() - RegionBottom() - height;
+  int height = int(block.Height());
+  int start_row = 0;
+  int end_row = RegionTop() - RegionBottom() - height;
   //BOOST_LOG_TRIVIAL(info)   << "    Starting row: " << start_row << "\n"
   //          << "    Ending row:   " << end_row   << "\n"
   //          << "    Block Height: " << block.Height() << "\n"
   //          << "    Top of the placement region " << Top() << "\n"
   //          << "    Number of rows: " << row_well_status_.size() << "\n"
-  //          << "    LX and LY: " << int32_t(block.LLX()) << "  " << int32_t(block.LLY()) << "\n";
+  //          << "    LX and LY: " << int(block.LLX()) << "  " << int(block.LLY()) << "\n";
 
-  int32_t best_row = 0;
-  int32_t best_loc = INT_MIN;
-  int32_t min_cost = INT_MAX;
-  int32_t p_height = block.TypePtr()->WellPtr()->PwellHeight(0);
+  int best_row = 0;
+  int best_loc = INT_MIN;
+  int min_cost = INT_MAX;
+  int p_height = block.TypePtr()->WellPtr()->PwellHeight(0);
 
-  int32_t tmp_cost = INT_MAX;
-  int32_t tmp_end_row = 0;
-  int32_t pn_boundary_row = 0;
-  int32_t tmp_loc = INT_MIN;
-  for (int32_t tmp_row = start_row; tmp_row <= end_row; ++tmp_row) {
+  int tmp_cost = INT_MAX;
+  int tmp_end_row = 0;
+  int pn_boundary_row = 0;
+  int tmp_loc = INT_MIN;
+  for (int tmp_row = start_row; tmp_row <= end_row; ++tmp_row) {
     // 1. find the non-overlap location
     tmp_end_row = tmp_row + height - 1;
     tmp_loc = RegionLeft();
-    for (int32_t i = tmp_row; i <= tmp_end_row; ++i) {
+    for (int i = tmp_row; i <= tmp_end_row; ++i) {
       tmp_loc = std::max(tmp_loc, block_contour_[i]);
     }
 
@@ -153,7 +153,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
     //    2.a check if the distance rule is satisfied
     pn_boundary_row = tmp_row + p_height;
     //    P well distance
-    for (int32_t i = tmp_row; i <= pn_boundary_row; ++i) {
+    for (int i = tmp_row; i <= pn_boundary_row; ++i) {
       if (block_contour_[i] == RegionLeft()) continue;
       if (!row_well_status_[i].is_n) {
         if (tmp_loc > block_contour_[i]
@@ -169,7 +169,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
     }
 
     //    N well distance
-    for (int32_t i = pn_boundary_row + 1; i <= tmp_end_row; ++i) {
+    for (int i = pn_boundary_row + 1; i <= tmp_end_row; ++i) {
       if (block_contour_[i] == RegionLeft()) continue;
       if (row_well_status_[i].is_n) {
         if (tmp_loc > block_contour_[i]
@@ -186,8 +186,8 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
 
     //    2.b check if the min-width rule is satisfied.
     //    P well min-width
-    int32_t shared_length = 0;
-    for (int32_t i = tmp_row; i <= pn_boundary_row; ++i) {
+    int shared_length = 0;
+    for (int i = tmp_row; i <= pn_boundary_row; ++i) {
       if (block_contour_[i] == RegionLeft()) continue;
       if (!(row_well_status_[i].is_n) && block_contour_[i] == tmp_loc) {
         ++shared_length;
@@ -201,7 +201,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
 
     shared_length = 0;
     //    N well min-width
-    for (int32_t i = pn_boundary_row + 1; i <= tmp_end_row; ++i) {
+    for (int i = pn_boundary_row + 1; i <= tmp_end_row; ++i) {
       if (block_contour_[i] == RegionLeft()) continue;
       if (row_well_status_[i].is_n && block_contour_[i] == tmp_loc) {
         ++shared_length;
@@ -216,7 +216,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
     tmp_cost = std::abs(tmp_loc - init_x)
         + std::abs(tmp_row + RegionBottom() - init_y);
     bool is_abutted = false;
-    for (int32_t i = tmp_row; i <= tmp_end_row; ++i) {
+    for (int i = tmp_row; i <= tmp_end_row; ++i) {
       if (block_contour_[i] == tmp_loc) {
         is_abutted = true;
         break;
@@ -248,10 +248,10 @@ void WellLegalizer::WellPlace(Block &block) {
    * 2. if the current location is legal, use that space
    * 3.   else find a new location
    * ****/
-  /*int32_t start_row = int32_t(block.LLY()-Bottom());
-  int32_t end_row = start_row + block.Height();
+  /*int start_row = int(block.LLY()-Bottom());
+  int end_row = start_row + block.Height();
   bool no_left_blocks = true;
-  for (int32_t i=start_row; i<=end_row; ++i) {
+  for (int i=start_row; i<=end_row; ++i) {
     if (row_well_status_[i].dist < n_max_plug_dist_) {
       no_left_blocks = false;
       break;
@@ -276,15 +276,15 @@ void WellLegalizer::WellPlace(Block &block) {
 }
 
 bool WellLegalizer::IsCurLocWellDistanceLeft(
-    int32_t loc_x,
-    int32_t lo_row,
-    int32_t hi_row,
-    int32_t p_row
+    int loc_x,
+    int lo_row,
+    int hi_row,
+    int p_row
 ) {
   /****
    * Returns if the N/P well distance to its left hand side neighbors are satisfied
    ****/
-  int32_t last_p_row = lo_row + p_row - 1;
+  int last_p_row = lo_row + p_row - 1;
   assert(last_p_row >= lo_row);
   assert(hi_row >= last_p_row);
 
@@ -292,7 +292,7 @@ bool WellLegalizer::IsCurLocWellDistanceLeft(
   bool tmp_row_well_clean;
 
   // for the P well of this block, check if the distance is satisfied
-  for (int32_t i = lo_row; i <= last_p_row; ++i) {
+  for (int i = lo_row; i <= last_p_row; ++i) {
     if (block_contour_[i] == left_) continue;
     if (!row_well_status_[i].is_n) {
       tmp_row_well_clean = (loc_x == block_contour_[i]
@@ -309,7 +309,7 @@ bool WellLegalizer::IsCurLocWellDistanceLeft(
 
   // if the P well distance rule is satisfied, then check if the N well distance rule is satisfied
   if (is_well_distance_legal) {
-    for (int32_t i = last_p_row + 1; i <= hi_row; ++i) {
+    for (int i = last_p_row + 1; i <= hi_row; ++i) {
       if (block_contour_[i] == left_) continue;
       if (row_well_status_[i].is_n) {
         tmp_row_well_clean = (loc_x == block_contour_[i]
@@ -330,8 +330,8 @@ bool WellLegalizer::IsCurLocWellDistanceLeft(
   if (is_well_distance_legal) {
     // P well
     if (row_well_status_[lo_row].IsNWell()) {
-      for (int32_t i = 1; i <= pp_spacing_; ++i) {
-        int32_t lo_row_minus_i = lo_row - i;
+      for (int i = 1; i <= pp_spacing_; ++i) {
+        int lo_row_minus_i = lo_row - i;
         if (lo_row_minus_i >= 0
             && row_well_status_[lo_row_minus_i].IsPWell()) {
           return false;
@@ -339,8 +339,8 @@ bool WellLegalizer::IsCurLocWellDistanceLeft(
       }
     }
     if (row_well_status_[last_p_row].IsNWell()) {
-      for (int32_t i = 1; i <= pp_spacing_; ++i) {
-        int32_t last_p_add_i = last_p_row + i;
+      for (int i = 1; i <= pp_spacing_; ++i) {
+        int last_p_add_i = last_p_row + i;
         if (last_p_add_i < tot_num_rows_
             && row_well_status_[last_p_add_i].IsPWell()) {
           return false;
@@ -349,10 +349,10 @@ bool WellLegalizer::IsCurLocWellDistanceLeft(
     }
 
     // N well
-    int32_t first_n_row = last_p_row + 1;
+    int first_n_row = last_p_row + 1;
     if (row_well_status_[first_n_row].IsPWell()) {
-      for (int32_t i = 1; i <= nn_spacing_; ++i) {
-        int32_t first_n_row_minus_i = first_n_row - i;
+      for (int i = 1; i <= nn_spacing_; ++i) {
+        int first_n_row_minus_i = first_n_row - i;
         if (first_n_row_minus_i >= 0
             && row_well_status_[first_n_row_minus_i].IsNWell()) {
           return false;
@@ -361,8 +361,8 @@ bool WellLegalizer::IsCurLocWellDistanceLeft(
     }
 
     if (row_well_status_[hi_row].IsPWell()) {
-      for (int32_t i = 1; i <= nn_spacing_; ++i) {
-        int32_t hi_row_add_i = hi_row + i;
+      for (int i = 1; i <= nn_spacing_; ++i) {
+        int hi_row_add_i = hi_row + i;
         if (hi_row_add_i < tot_num_rows_
             && row_well_status_[hi_row_add_i].IsNWell()) {
           return false;
@@ -376,17 +376,17 @@ bool WellLegalizer::IsCurLocWellDistanceLeft(
 }
 
 bool WellLegalizer::IsCurLocWellMinWidthLeft(
-    int32_t loc_x,
-    int32_t lo_row,
-    int32_t hi_row,
-    int32_t p_row
+    int loc_x,
+    int lo_row,
+    int hi_row,
+    int p_row
 ) {
   // check if the min-width rule is satisfied.
   //    P well min-width
-  int32_t shared_well_height = 0;
-  int32_t boundary_row = lo_row + p_row - 1;
+  int shared_well_height = 0;
+  int boundary_row = lo_row + p_row - 1;
   bool is_well_min_width_legal = true;
-  for (int32_t i = lo_row; i <= boundary_row; ++i) {
+  for (int i = lo_row; i <= boundary_row; ++i) {
     if (block_contour_[i] == left_) continue;
     if (!(row_well_status_[i].is_n) && block_contour_[i] == loc_x) {
       ++shared_well_height;
@@ -401,7 +401,7 @@ bool WellLegalizer::IsCurLocWellMinWidthLeft(
   if (is_well_min_width_legal) {
     shared_well_height = 0;
     is_well_min_width_legal = true;
-    for (int32_t i = boundary_row + 1; i <= hi_row; ++i) {
+    for (int i = boundary_row + 1; i <= hi_row; ++i) {
       if (block_contour_[i] == left_) continue;
       if (row_well_status_[i].is_n && block_contour_[i] == loc_x) {
         ++shared_well_height;
@@ -417,13 +417,13 @@ bool WellLegalizer::IsCurLocWellMinWidthLeft(
 }
 
 bool WellLegalizer::IsCurrentLocLegalLeft(
-    Value2D<int32_t> &loc,
-    int32_t width,
-    int32_t height,
-    int32_t p_row
+    Value2D<int> &loc,
+    int width,
+    int height,
+    int p_row
 ) {
-  int32_t lo_row = StartRow(loc.y);
-  int32_t hi_row = EndRow(loc.y + height);
+  int lo_row = StartRow(loc.y);
+  int hi_row = EndRow(loc.y + height);
   return IsCurrentLocLegalLeft(loc.x, width, lo_row, hi_row, p_row);
 }
 
@@ -437,11 +437,11 @@ bool WellLegalizer::IsCurrentLocLegalLeft(
  * 3. otherwise, return true
  * ****/
 bool WellLegalizer::IsCurrentLocLegalLeft(
-    int32_t loc_x,
-    int32_t width,
-    int32_t lo_row,
-    int32_t hi_row,
-    int32_t p_row
+    int loc_x,
+    int width,
+    int lo_row,
+    int hi_row,
+    int p_row
 ) {
   bool is_current_loc_legal;
 
@@ -454,7 +454,7 @@ bool WellLegalizer::IsCurrentLocLegalLeft(
 
   // 2. check if the space covers any placed blocks
   is_current_loc_legal = true;
-  for (int32_t i = lo_row; i <= hi_row; ++i) {
+  for (int i = lo_row; i <= hi_row; ++i) {
     if (block_contour_[i] > loc_x) {
       is_current_loc_legal = false;
       break;
@@ -484,11 +484,11 @@ bool WellLegalizer::IsCurrentLocLegalLeft(
   return true;
 }
 
-bool WellLegalizer::FindLocLeft(Value2D<int32_t> &loc,
-                                int32_t num,
-                                int32_t width,
-                                int32_t height,
-                                int32_t p_row) {
+bool WellLegalizer::FindLocLeft(Value2D<int> &loc,
+                                int num,
+                                int width,
+                                int height,
+                                int p_row) {
   /****
    * Returns whether a legal location can be found, and put the final location to @params loc
    *
@@ -508,24 +508,24 @@ bool WellLegalizer::FindLocLeft(Value2D<int32_t> &loc,
    * ****/
   bool is_successful;
 
-  int32_t blk_row_height;
-  int32_t left_block_bound;
-  int32_t left_white_space_bound;
+  int blk_row_height;
+  int left_block_bound;
+  int left_white_space_bound;
 
-  int32_t max_search_row;
-  int32_t search_start_row;
-  int32_t search_end_row;
+  int max_search_row;
+  int search_start_row;
+  int search_end_row;
 
-  int32_t best_row;
-  int32_t best_loc_x;
+  int best_row;
+  int best_loc_x;
   double min_cost;
 
   double tmp_cost;
-  int32_t tmp_end_row;
-  int32_t tmp_x;
-  int32_t tmp_y;
+  int tmp_end_row;
+  int tmp_x;
+  int tmp_y;
 
-  left_block_bound = (int32_t) std::round(loc.x - k_left_ * width);
+  left_block_bound = (int) std::round(loc.x - k_left_ * width);
   //left_block_bound = loc.x;
 
   max_search_row = MaxRow(height);
@@ -538,7 +538,7 @@ bool WellLegalizer::FindLocLeft(Value2D<int32_t> &loc,
   best_loc_x = INT_MIN;
   min_cost = DBL_MAX;
 
-  for (int32_t tmp_start_row = search_start_row; tmp_start_row <= search_end_row;
+  for (int tmp_start_row = search_start_row; tmp_start_row <= search_end_row;
        ++tmp_start_row) {
     tmp_end_row = tmp_start_row + blk_row_height - 1;
     left_white_space_bound = WhiteSpaceBoundLeft(loc.x,
@@ -549,7 +549,7 @@ bool WellLegalizer::FindLocLeft(Value2D<int32_t> &loc,
     tmp_x = std::max(left_white_space_bound, left_block_bound);
 
     // make sure no overlap
-    for (int32_t n = tmp_start_row; n <= tmp_end_row; ++n) {
+    for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
       tmp_x = std::max(tmp_x, block_contour_[n]);
     }
 
@@ -597,13 +597,13 @@ bool WellLegalizer::FindLocLeft(Value2D<int32_t> &loc,
 }
 
 bool WellLegalizer::WellLegalizationLeft() {
-  int32_t fail_count = 0;
+  int fail_count = 0;
   bool is_successful = true;
   block_contour_.assign(block_contour_.size(), left_);
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
 
-  int32_t sz = blk_inits_.size();
-  for (int32_t i = 0; i < sz; ++i) {
+  int sz = blk_inits_.size();
+  for (int i = 0; i < sz; ++i) {
     blk_inits_[i].blk_ptr = &(block_list[i]);
     blk_inits_[i].x = block_list[i].LLX();
     blk_inits_[i].y = block_list[i].LLY();
@@ -617,11 +617,11 @@ bool WellLegalizer::WellLegalizationLeft() {
       }
   );
 
-  int32_t height;
-  int32_t width;
-  int32_t p_well_row_height;
+  int height;
+  int width;
+  int p_well_row_height;
 
-  Value2D<int32_t> res;
+  Value2D<int> res;
   bool is_current_loc_legal;
   bool is_legal_loc_found;
 
@@ -629,10 +629,10 @@ bool WellLegalizer::WellLegalizationLeft() {
     auto &block = *(pair.blk_ptr);
     if (block.IsFixed()) continue;
 
-    res.x = int32_t(std::round(block.LLX()));
+    res.x = int(std::round(block.LLX()));
     res.y = AlignLocToRowLoc(block.LLY());
-    height = int32_t(block.Height());
-    width = int32_t(block.Width());
+    height = int(block.Height());
+    width = int(block.Width());
 
     p_well_row_height =
         HeightToRow(block.TypePtr()->WellPtr()->PwellHeight(0));
@@ -664,16 +664,16 @@ bool WellLegalizer::WellLegalizationLeft() {
   return is_successful;
 }
 
-void WellLegalizer::MarkSpaceWellRight(Block const &block, int32_t p_row) {
+void WellLegalizer::MarkSpaceWellRight(Block const &block, int p_row) {
   /****
    * Mark the space used by this block by changing the start point of available space in each related row
    * ****/
-  int32_t lo_row = StartRow((int32_t) std::round(block.LLY()));
-  int32_t last_p_row = lo_row + p_row - 1;
-  int32_t hi_row = EndRow((int32_t) std::round(block.URY()));
+  int lo_row = StartRow((int) std::round(block.LLY()));
+  int last_p_row = lo_row + p_row - 1;
+  int hi_row = EndRow((int) std::round(block.URY()));
 
-  /*if (end_row >= int32_t(row_well_status_.size())) {
-    //BOOST_LOG_TRIVIAL(info)   << "  ly:     " << int32_t(block.LLY())       << "\n"
+  /*if (end_row >= int(row_well_status_.size())) {
+    //BOOST_LOG_TRIVIAL(info)   << "  ly:     " << int(block.LLY())       << "\n"
     //          << "  height: " << block.Height()   << "\n"
     //          << "  top:    " << Top()    << "\n"
     //          << "  bottom: " << Bottom() << "\n";
@@ -684,25 +684,25 @@ void WellLegalizer::MarkSpaceWellRight(Block const &block, int32_t p_row) {
   assert(hi_row < tot_num_rows_);
   assert(lo_row >= 0);
 
-  int32_t end_x = int32_t(block.LLX());
+  int end_x = int(block.LLX());
 
-  for (int32_t i = lo_row; i <= hi_row; ++i) {
+  for (int i = lo_row; i <= hi_row; ++i) {
     block_contour_[i] = end_x;
     row_well_status_[i].is_n = (i > last_p_row);
   }
 }
 
-bool WellLegalizer::IsCurLocWellDistanceRight(int32_t loc_x,
-                                              int32_t lo_row,
-                                              int32_t hi_row,
-                                              int32_t p_row) {
-  int32_t last_p_row = lo_row + p_row - 1;
+bool WellLegalizer::IsCurLocWellDistanceRight(int loc_x,
+                                              int lo_row,
+                                              int hi_row,
+                                              int p_row) {
+  int last_p_row = lo_row + p_row - 1;
   assert(last_p_row >= lo_row);
   assert(hi_row >= last_p_row);
 
   bool is_well_distance_legal = true;
   bool tmp_row_well_clean;
-  for (int32_t i = lo_row; i <= last_p_row; ++i) {
+  for (int i = lo_row; i <= last_p_row; ++i) {
     if (block_contour_[i] == right_) continue;
     if (!row_well_status_[i].is_n) {
       tmp_row_well_clean = (loc_x == block_contour_[i]
@@ -718,7 +718,7 @@ bool WellLegalizer::IsCurLocWellDistanceRight(int32_t loc_x,
   }
 
   if (is_well_distance_legal) {
-    for (int32_t i = last_p_row + 1; i <= hi_row; ++i) {
+    for (int i = last_p_row + 1; i <= hi_row; ++i) {
       if (block_contour_[i] == right_) continue;
       if (row_well_status_[i].is_n) {
         tmp_row_well_clean = (loc_x == block_contour_[i]
@@ -739,8 +739,8 @@ bool WellLegalizer::IsCurLocWellDistanceRight(int32_t loc_x,
   if (is_well_distance_legal) {
     // P well
     if (row_well_status_[lo_row].IsNWell()) {
-      for (int32_t i = 1; i <= pp_spacing_; ++i) {
-        int32_t lo_row_minus_i = lo_row - i;
+      for (int i = 1; i <= pp_spacing_; ++i) {
+        int lo_row_minus_i = lo_row - i;
         if (lo_row_minus_i >= 0
             && row_well_status_[lo_row_minus_i].IsPWell()) {
           return false;
@@ -748,8 +748,8 @@ bool WellLegalizer::IsCurLocWellDistanceRight(int32_t loc_x,
       }
     }
     if (row_well_status_[last_p_row].IsNWell()) {
-      for (int32_t i = 1; i <= pp_spacing_; ++i) {
-        int32_t last_p_add_i = last_p_row + i;
+      for (int i = 1; i <= pp_spacing_; ++i) {
+        int last_p_add_i = last_p_row + i;
         if (last_p_add_i < tot_num_rows_
             && row_well_status_[last_p_add_i].IsPWell()) {
           return false;
@@ -758,10 +758,10 @@ bool WellLegalizer::IsCurLocWellDistanceRight(int32_t loc_x,
     }
 
     // N well
-    int32_t first_n_row = last_p_row + 1;
+    int first_n_row = last_p_row + 1;
     if (row_well_status_[first_n_row].IsPWell()) {
-      for (int32_t i = 1; i <= nn_spacing_; ++i) {
-        int32_t first_n_row_minus_i = first_n_row - i;
+      for (int i = 1; i <= nn_spacing_; ++i) {
+        int first_n_row_minus_i = first_n_row - i;
         if (first_n_row_minus_i >= 0
             && row_well_status_[first_n_row_minus_i].IsNWell()) {
           return false;
@@ -770,8 +770,8 @@ bool WellLegalizer::IsCurLocWellDistanceRight(int32_t loc_x,
     }
 
     if (row_well_status_[hi_row].IsPWell()) {
-      for (int32_t i = 1; i <= nn_spacing_; ++i) {
-        int32_t hi_row_add_i = hi_row + i;
+      for (int i = 1; i <= nn_spacing_; ++i) {
+        int hi_row_add_i = hi_row + i;
         if (hi_row_add_i < tot_num_rows_
             && row_well_status_[hi_row_add_i].IsNWell()) {
           return false;
@@ -784,14 +784,14 @@ bool WellLegalizer::IsCurLocWellDistanceRight(int32_t loc_x,
   return is_well_distance_legal;
 }
 
-bool WellLegalizer::IsCurLocWellMinWidthRight(int32_t loc_x,
-                                              int32_t lo_row,
-                                              int32_t hi_row,
-                                              int32_t p_row) {
-  int32_t shared_well_height = 0;
-  int32_t boundary_row = lo_row + p_row - 1;
+bool WellLegalizer::IsCurLocWellMinWidthRight(int loc_x,
+                                              int lo_row,
+                                              int hi_row,
+                                              int p_row) {
+  int shared_well_height = 0;
+  int boundary_row = lo_row + p_row - 1;
   bool is_well_min_width_legal = true;
-  for (int32_t i = lo_row; i <= boundary_row; ++i) {
+  for (int i = lo_row; i <= boundary_row; ++i) {
     if (block_contour_[i] == right_) continue;
     if (!(row_well_status_[i].is_n) && block_contour_[i] == loc_x) {
       ++shared_well_height;
@@ -806,7 +806,7 @@ bool WellLegalizer::IsCurLocWellMinWidthRight(int32_t loc_x,
   if (is_well_min_width_legal) {
     shared_well_height = 0;
     is_well_min_width_legal = true;
-    for (int32_t i = boundary_row + 1; i <= hi_row; ++i) {
+    for (int i = boundary_row + 1; i <= hi_row; ++i) {
       if (block_contour_[i] == right_) continue;
       if (row_well_status_[i].is_n && block_contour_[i] == loc_x) {
         ++shared_well_height;
@@ -821,20 +821,20 @@ bool WellLegalizer::IsCurLocWellMinWidthRight(int32_t loc_x,
   return is_well_min_width_legal;
 }
 
-bool WellLegalizer::IsCurrentLocLegalRight(Value2D<int32_t> &loc,
-                                           int32_t width,
-                                           int32_t height,
-                                           int32_t p_row) {
-  int32_t lo_row = StartRow(loc.y);
-  int32_t hi_row = EndRow(loc.y + height);
+bool WellLegalizer::IsCurrentLocLegalRight(Value2D<int> &loc,
+                                           int width,
+                                           int height,
+                                           int p_row) {
+  int lo_row = StartRow(loc.y);
+  int hi_row = EndRow(loc.y + height);
   return IsCurrentLocLegalRight(loc.x, width, lo_row, hi_row, p_row);
 }
 
-bool WellLegalizer::IsCurrentLocLegalRight(int32_t loc_x,
-                                           int32_t width,
-                                           int32_t lo_row,
-                                           int32_t hi_row,
-                                           int32_t p_row) {
+bool WellLegalizer::IsCurrentLocLegalRight(int loc_x,
+                                           int width,
+                                           int lo_row,
+                                           int hi_row,
+                                           int p_row) {
 /****
    * Returns whether the current location is legal
    *
@@ -856,7 +856,7 @@ bool WellLegalizer::IsCurrentLocLegalRight(int32_t loc_x,
 
   // 2. check if the space covers any placed blocks
   is_current_loc_legal = true;
-  for (int32_t i = lo_row; i <= hi_row; ++i) {
+  for (int i = lo_row; i <= hi_row; ++i) {
     if (block_contour_[i] < loc_x) {
       is_current_loc_legal = false;
       break;
@@ -887,31 +887,31 @@ bool WellLegalizer::IsCurrentLocLegalRight(int32_t loc_x,
   return true;
 }
 
-bool WellLegalizer::FindLocRight(Value2D<int32_t> &loc,
-                                 int32_t num,
-                                 int32_t width,
-                                 int32_t height,
-                                 int32_t p_row) {
+bool WellLegalizer::FindLocRight(Value2D<int> &loc,
+                                 int num,
+                                 int width,
+                                 int height,
+                                 int p_row) {
   bool is_successful;
 
-  int32_t blk_row_height;
-  int32_t right_block_bound;
-  int32_t right_white_space_bound;
+  int blk_row_height;
+  int right_block_bound;
+  int right_white_space_bound;
 
-  int32_t max_search_row;
-  int32_t search_start_row;
-  int32_t search_end_row;
+  int max_search_row;
+  int search_start_row;
+  int search_end_row;
 
-  int32_t best_row;
-  int32_t best_loc_x;
+  int best_row;
+  int best_loc_x;
   double min_cost;
 
   double tmp_cost;
-  int32_t tmp_end_row;
-  int32_t tmp_x;
-  int32_t tmp_y;
+  int tmp_end_row;
+  int tmp_x;
+  int tmp_y;
 
-  right_block_bound = (int32_t) std::round(loc.x + k_left_ * width);
+  right_block_bound = (int) std::round(loc.x + k_left_ * width);
   //right_block_bound = loc.x;
 
   max_search_row = MaxRow(height);
@@ -924,7 +924,7 @@ bool WellLegalizer::FindLocRight(Value2D<int32_t> &loc,
   best_loc_x = INT_MAX;
   min_cost = DBL_MAX;
 
-  for (int32_t tmp_start_row = search_start_row; tmp_start_row <= search_end_row;
+  for (int tmp_start_row = search_start_row; tmp_start_row <= search_end_row;
        ++tmp_start_row) {
     tmp_end_row = tmp_start_row + blk_row_height - 1;
     right_white_space_bound = WhiteSpaceBoundRight(loc.x - width,
@@ -935,7 +935,7 @@ bool WellLegalizer::FindLocRight(Value2D<int32_t> &loc,
     tmp_x = std::min(right_white_space_bound, right_block_bound);
     //tmp_x = std::min(right_, right_block_bound);
 
-    for (int32_t n = tmp_start_row; n <= tmp_end_row; ++n) {
+    for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
       tmp_x = std::min(tmp_x, block_contour_[n]);
     }
 
@@ -976,13 +976,13 @@ bool WellLegalizer::FindLocRight(Value2D<int32_t> &loc,
 }
 
 bool WellLegalizer::WellLegalizationRight() {
-  int32_t fail_count = 0;
+  int fail_count = 0;
   bool is_successful = true;
   block_contour_.assign(block_contour_.size(), right_);
   std::vector<Block> &block_list = ckt_ptr_->Blocks();
 
-  int32_t sz = blk_inits_.size();
-  for (int32_t i = 0; i < sz; ++i) {
+  int sz = blk_inits_.size();
+  for (int i = 0; i < sz; ++i) {
     blk_inits_[i].blk_ptr = &(block_list[i]);
     blk_inits_[i].x = block_list[i].URX();
     blk_inits_[i].y = block_list[i].LLY();
@@ -995,11 +995,11 @@ bool WellLegalizer::WellLegalizationRight() {
       }
   );
 
-  int32_t height;
-  int32_t width;
-  int32_t p_well_row_height;
+  int height;
+  int width;
+  int p_well_row_height;
 
-  Value2D<int32_t> res;
+  Value2D<int> res;
   bool is_current_loc_legal;
   bool is_legal_loc_found;
 
@@ -1007,10 +1007,10 @@ bool WellLegalizer::WellLegalizationRight() {
     auto &block = *(pair.blk_ptr);
     if (block.IsFixed()) continue;
 
-    res.x = int32_t(std::round(block.URX()));
+    res.x = int(std::round(block.URX()));
     res.y = AlignLocToRowLoc(block.LLY());
-    height = int32_t(block.Height());
-    width = int32_t(block.Width());
+    height = int(block.Height());
+    width = int(block.Width());
 
     p_well_row_height =
         HeightToRow(block.TypePtr()->WellPtr()->PwellHeight(0));

@@ -31,7 +31,7 @@ FreeSegmentList::FreeSegmentList() {
   size_ = 0;
 }
 
-FreeSegmentList::FreeSegmentList(int32_t start, int32_t stop, int32_t min_width)
+FreeSegmentList::FreeSegmentList(int start, int stop, int min_width)
     : min_width_(min_width) {
   head_ = new FreeSegment(start, stop);
   tail_ = head_;
@@ -64,7 +64,7 @@ void FreeSegmentList::Append(FreeSegment *segList) {
   }
 }
 
-bool FreeSegmentList::EmplaceBack(int32_t start, int32_t end) {
+bool FreeSegmentList::EmplaceBack(int start, int end) {
   auto *seg_ptr = new FreeSegment(start, end);
   if (head_ == nullptr) {
     head_ = seg_ptr;
@@ -220,7 +220,7 @@ bool FreeSegmentList::ApplyMask(FreeSegmentList &maskRow) {
   return true;
 }
 
-void FreeSegmentList::RemoveShortSeg(int32_t width) {
+void FreeSegmentList::RemoveShortSeg(int width) {
   /****to understand this member function, one needs to understand member function removeSeg()
    * the member function works in the following way:
    * traverse the linked list
@@ -237,7 +237,7 @@ void FreeSegmentList::RemoveShortSeg(int32_t width) {
   }
 }
 
-void FreeSegmentList::UseSpace(int32_t start, int32_t length) {
+void FreeSegmentList::UseSpace(int start, int length) {
   /****
    * It is for sure that [start, start+length] sits in one of the segments
    * To use a segment of this segment list:
@@ -246,7 +246,7 @@ void FreeSegmentList::UseSpace(int32_t start, int32_t length) {
    *    3. use right part (shrink this segment from right side);
    *    4. use middle part (split this segment into two segments)
    * ****/
-  int32_t end_loc = start + length;
+  int end_loc = start + length;
   bool isSegFound = false;
   FreeSegment target(start, end_loc);
   for (auto *current = Head(); current != nullptr; current = current->Next()) {
@@ -275,7 +275,7 @@ void FreeSegmentList::UseSpace(int32_t start, int32_t length) {
   }
 }
 
-bool FreeSegmentList::IsSpaceAvail(int32_t x_loc, int32_t width) {
+bool FreeSegmentList::IsSpaceAvail(int x_loc, int width) {
   /****
    * In order to know if interval [x_loc, x_loc + width] is available, we just need to check if this segment sits in a FreeSegment in the linked-list
    * A speed-up algorithm is known, will implement it
@@ -298,7 +298,7 @@ bool FreeSegmentList::IsSpaceAvail(int32_t x_loc, int32_t width) {
 /****
  * We assume any segment in this list has a length longer than block width
  * ****/
-int32_t FreeSegmentList::MinDispLoc(int32_t width) {
+int FreeSegmentList::MinDispLoc(int width) {
   DaliExpects(
       Head()->Length() >= width,
       "Segment length should be longer than block width"

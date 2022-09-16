@@ -59,7 +59,7 @@ int main() {
 
   // for testing dali APIs for interact
   //dali.InstantiateIoPlacer();
-  /*int32_t count = 11;
+  /*int count = 11;
   char *arguments[11] = {
       "place-io",
       "--auto-place",
@@ -74,7 +74,7 @@ int main() {
       "m1"
   };*/
 
-  int32_t count = 2;
+  int count = 2;
   char *arguments[2] = {
       (char *) "place-io",
       (char *) "m1"
@@ -84,7 +84,7 @@ int main() {
   //dali.AutoIoPinPlacement();
   dali.ExportToPhyDB();
 
-  int32_t place_count = 12;
+  int place_count = 12;
   char *place_argvs[12] = {
       (char *) "place-io",
       (char *) "--place",

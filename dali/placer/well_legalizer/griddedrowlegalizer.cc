@@ -41,8 +41,8 @@ void GriddedRowLegalizer::CheckWellInfo() {
   Tech &tech = ckt_ptr_->tech();
   WellLayer &n_well_layer = tech.NwellLayer();
   double grid_value_x = ckt_ptr_->GridValueX();
-  int32_t same_spacing = std::ceil(n_well_layer.Spacing() / grid_value_x);
-  int32_t op_spacing = std::ceil(n_well_layer.OppositeSpacing() / grid_value_x);
+  int same_spacing = std::ceil(n_well_layer.Spacing() / grid_value_x);
+  int op_spacing = std::ceil(n_well_layer.OppositeSpacing() / grid_value_x);
   well_spacing_ = std::max(same_spacing, op_spacing);
 
   auto *tap_cell_well = well_tap_type_ptr_->WellPtr();
@@ -50,7 +50,7 @@ void GriddedRowLegalizer::CheckWellInfo() {
   tap_cell_n_height_ = tap_cell_well->NwellHeight(0);
 }
 
-void GriddedRowLegalizer::SetThreads(int32_t number_of_threads) {
+void GriddedRowLegalizer::SetThreads(int number_of_threads) {
   DaliExpects(number_of_threads > 0, "negative threads?");
   number_of_threads_ = number_of_threads;
 }
@@ -65,7 +65,7 @@ void GriddedRowLegalizer::SetExternalSpacePartitioner(
   space_partitioner_ = p_external_partitioner;
 }
 
-void GriddedRowLegalizer::SetPartitionMode(int32_t partitioning_mode) {
+void GriddedRowLegalizer::SetPartitionMode(int partitioning_mode) {
   partitioning_mode_ = partitioning_mode;
 }
 
@@ -225,7 +225,7 @@ void GriddedRowLegalizer::RestoreConsensusLocX() {
   }
 }
 
-void GriddedRowLegalizer::SetLegalizationMaxIteration(int32_t max_iteration) {
+void GriddedRowLegalizer::SetLegalizationMaxIteration(int max_iteration) {
   greedy_max_iter_ = max_iteration;
 }
 
@@ -618,7 +618,7 @@ void GriddedRowLegalizer::ReportStandardCellDisplacement() {
   double max_manhattan_disp = 0;
   double sum_eucli_disp = 0;
   double max_euclidean_disp = 0;
-  int32_t cell_count = 0;
+  int cell_count = 0;
   auto &blocks = ckt_ptr_->Blocks();
   for (Block &blk : blocks) {
     if (IsDummyBlock(blk)) continue;
@@ -693,7 +693,7 @@ void GriddedRowLegalizer::GenMatlabClusterTable(std::string const &name_of_file)
 
 void GriddedRowLegalizer::GenMATLABWellTable(
     std::string const &name_of_file,
-    int32_t well_emit_mode
+    int well_emit_mode
 ) {
   std::string frame_file = name_of_file + "_outline.txt";
   ckt_ptr_->GenMATLABWellTable(name_of_file, false);

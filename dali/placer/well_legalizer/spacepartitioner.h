@@ -52,10 +52,10 @@ class AbstractSpacePartitioner {
   virtual void SetInputCircuit(Circuit *p_ckt);
   virtual void SetOutput(std::vector<ClusterStripe> *p_col_list);
   virtual void SetReservedSpaceToBoundaries(
-      int32_t l_space, int32_t r_space, int32_t b_space, int32_t t_space
+      int l_space, int r_space, int b_space, int t_space
   );
-  virtual void SetPartitionMode(int32_t partition_mode);
-  virtual void SetMaxRowWidth(int32_t max_row_width);
+  virtual void SetPartitionMode(int partition_mode);
+  virtual void SetMaxRowWidth(int max_row_width);
 
   virtual bool StartPartitioning() = 0;
  protected:
@@ -63,13 +63,13 @@ class AbstractSpacePartitioner {
   std::vector<ClusterStripe> *p_col_list_ = nullptr;
 
   // some distances reserved to every edge
-  int32_t l_space_ = 0;
-  int32_t r_space_ = 0;
-  int32_t b_space_ = 0;
-  int32_t t_space_ = 0;
+  int l_space_ = 0;
+  int r_space_ = 0;
+  int b_space_ = 0;
+  int t_space_ = 0;
 
-  int32_t partition_mode_ = 0;
-  int32_t max_row_width_ = -1;
+  int partition_mode_ = 0;
+  int max_row_width_ = -1;
 };
 
 enum class DefaultPartitionMode {
@@ -101,33 +101,33 @@ class DefaultSpacePartitioner : public AbstractSpacePartitioner {
   void PlotSimpleStripes(std::string const &name_of_file = "stripe_space.txt");
  private:
   /**** well parameters ****/
-  int32_t max_unplug_length_ = 0;
-  int32_t well_spacing_ = 0;
+  int max_unplug_length_ = 0;
+  int well_spacing_ = 0;
 
   /**** stripe parameters ****/
-  int32_t max_cell_width_ = 0;
+  int max_cell_width_ = 0;
   double stripe_width_factor_ = 2.0;
 
   /**** write result to an external container in a legalizer ****/
-  int32_t cluster_width_ = 0;
-  int32_t tot_col_num_ = 0;
-  int32_t stripe_width_ = 0;
+  int cluster_width_ = 0;
+  int tot_col_num_ = 0;
+  int stripe_width_ = 0;
 
   /**** row information ****/
   bool row_height_set_ = false;
-  int32_t row_height_ = 0;
-  int32_t tot_num_rows_ = 0;
+  int row_height_ = 0;
+  int tot_num_rows_ = 0;
   std::vector<std::vector<SegI>> white_space_in_rows_;
 
-  int32_t Left() const;
-  int32_t Right() const;
-  int32_t Bottom() const;
-  int32_t Top() const;
+  int Left() const;
+  int Right() const;
+  int Bottom() const;
+  int Top() const;
 
-  int32_t StartRow(int32_t y_loc) const;
-  int32_t EndRow(int32_t y_loc) const;
-  int32_t RowToLoc(int32_t row_num, int32_t displacement = 0) const;
-  int32_t LocToCol(int32_t x) const;
+  int StartRow(int y_loc) const;
+  int EndRow(int y_loc) const;
+  int RowToLoc(int row_num, int displacement = 0) const;
+  int LocToCol(int x) const;
 };
 
 }

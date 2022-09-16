@@ -43,7 +43,7 @@ class Placer {
 
   void SetInputCircuit(Circuit *circuit);
 
-  void SetNumThreads(int32_t num_threads);
+  void SetNumThreads(int num_threads);
 
   void SetPlacementDensity(double density = 2.0 / 3.0);
   double PlacementDensity() const;
@@ -53,16 +53,16 @@ class Placer {
 
   void CheckPlacementBoundary();
   void SetBoundaryAuto();
-  void SetBoundary(int32_t left, int32_t right, int32_t bottom, int32_t top);
+  void SetBoundary(int left, int right, int bottom, int top);
   void SetBoundaryFromCircuit();
   void ReportBoundaries() const;
 
-  int32_t RegionLeft() const { return left_; }
-  int32_t RegionRight() const { return right_; }
-  int32_t RegionBottom() const { return bottom_; }
-  int32_t RegionTop() const { return top_; }
-  int32_t RegionWidth() const { return right_ - left_; }
-  int32_t RegionHeight() const { return top_ - bottom_; }
+  int RegionLeft() const { return left_; }
+  int RegionRight() const { return right_; }
+  int RegionBottom() const { return bottom_; }
+  int RegionTop() const { return top_; }
+  int RegionWidth() const { return right_ - left_; }
+  int RegionHeight() const { return top_ - bottom_; }
 
   void UpdateAspectRatio();
   void NetSortBlkPin();
@@ -123,7 +123,7 @@ class Placer {
   /****File I/O member functions****/
   virtual void GenMATLABWellTable(
       std::string const &name_of_file,
-      [[maybe_unused]]int32_t well_emit_mode
+      [[maybe_unused]]int well_emit_mode
   ) {
     ckt_ptr_->GenMATLABWellTable(name_of_file);
   }
@@ -134,7 +134,7 @@ class Placer {
   );
   virtual void EmitDEFWellFile(
       [[maybe_unused]]std::string const &name_of_file,
-      [[maybe_unused]]int32_t well_emit_mode,
+      [[maybe_unused]]int well_emit_mode,
       [[maybe_unused]]bool enable_emitting_cluster = true
   );
 
@@ -145,14 +145,14 @@ class Placer {
   bool IsDummyBlock(Block &blk);
  protected:
   /* essential data entries */
-  int32_t num_threads_;
+  int num_threads_;
   double aspect_ratio_; // placement region Height/Width
   double placement_density_;
 
   /* the following entries are derived data
    * note that the following entries can be manually changed
    * if so, the aspect_ratio_ or filling_rate_ might also be changed */
-  int32_t left_, right_, bottom_, top_;
+  int left_, right_, bottom_, top_;
   // boundaries of the placement region
   Circuit *ckt_ptr_;
 

@@ -41,9 +41,6 @@ struct Value2D {
   T y;
   explicit Value2D(T x_init = 0, T y_init = 0) : x(x_init), y(y_init) {}
 
-  // assignment operator modifies object
-  Value2D &operator=(const Value2D &a) = default;
-
   // add operator. doesn't modify object
   Value2D operator+(const Value2D &a) const {
     return Value2D(a.x + x, a.y + y);
@@ -88,7 +85,7 @@ struct Value2D {
 };
 
 typedef Value2D<double> double2d;
-typedef Value2D<int32_t> int2d;
+typedef Value2D<int> int2d;
 
 template<class T>
 struct Rect {
@@ -170,7 +167,7 @@ struct Rect {
 };
 
 typedef Rect<double> RectD;
-typedef Rect<int32_t> RectI;
+typedef Rect<int> RectI;
 
 template<class T>
 struct Seg {
@@ -194,12 +191,12 @@ struct Seg {
   }
 };
 
-typedef Seg<int32_t> SegI;
+typedef Seg<int> SegI;
 
 struct IndexVal {
-  int32_t col;
+  int col;
   double val;
-  IndexVal(int32_t col_init, double val_init) : col(col_init), val(val_init) {}
+  IndexVal(int col_init, double val_init) : col(col_init), val(val_init) {}
 };
 
 }

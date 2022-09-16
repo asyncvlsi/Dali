@@ -78,10 +78,10 @@ UniformInitializer::UniformInitializer(
 void UniformInitializer::RandomPlace() {
   PrintStartStatement();
 
-  int32_t region_width = ckt_ptr_->RegionWidth();
-  int32_t region_height = ckt_ptr_->RegionHeight();
-  int32_t region_llx = ckt_ptr_->RegionLLX();
-  int32_t region_lly = ckt_ptr_->RegionLLY();
+  int region_width = ckt_ptr_->RegionWidth();
+  int region_height = ckt_ptr_->RegionHeight();
+  int region_llx = ckt_ptr_->RegionLLX();
+  int region_lly = ckt_ptr_->RegionLLY();
 
   // initialize the random number generator
   std::minstd_rand0 generator{random_seed_};
@@ -126,12 +126,12 @@ void GaussianInitializer::RandomPlace() {
   std::minstd_rand0 generator{random_seed_};
   std::normal_distribution<double> normal_distribution(0.0, std_dev_);
 
-  int32_t region_width = ckt_ptr_->RegionWidth();
-  int32_t region_height = ckt_ptr_->RegionHeight();
-  int32_t region_llx = ckt_ptr_->RegionLLX();
-  int32_t region_urx = ckt_ptr_->RegionURX();
-  int32_t region_lly = ckt_ptr_->RegionLLY();
-  int32_t region_ury = ckt_ptr_->RegionURY();
+  int region_width = ckt_ptr_->RegionWidth();
+  int region_height = ckt_ptr_->RegionHeight();
+  int region_llx = ckt_ptr_->RegionLLX();
+  int region_urx = ckt_ptr_->RegionURX();
+  int region_lly = ckt_ptr_->RegionLLY();
+  int region_ury = ckt_ptr_->RegionURY();
   double center_x = (region_urx + region_llx) / 2.0;
   double center_y = (region_ury + region_lly) / 2.0;
   for (auto &blk : ckt_ptr_->Blocks()) {
@@ -162,10 +162,10 @@ void InitializerGridBin::UpdateDensity() {
 }
 
 void InitializerGridBin::SetBoundary(
-    int32_t lx,
-    int32_t ly,
-    int32_t ux,
-    int32_t uy
+    int lx,
+    int ly,
+    int ux,
+    int uy
 ) {
   lx_ = lx;
   ly_ = ly;
@@ -183,10 +183,10 @@ void InitializerGridBin::UpdateMacroArea() {
   for (auto &macro_ptr : macros_) {
     DaliExpects(macro_ptr->IsFixed(), "Only supports fixed macros");
     RectI fixed_blk_rect(
-        static_cast<int32_t>(std::round(macro_ptr->LLX())),
-        static_cast<int32_t>(std::round(macro_ptr->LLY())),
-        static_cast<int32_t>(std::round(macro_ptr->URX())),
-        static_cast<int32_t>(std::round(macro_ptr->URY()))
+        static_cast<int>(std::round(macro_ptr->LLX())),
+        static_cast<int>(std::round(macro_ptr->LLY())),
+        static_cast<int>(std::round(macro_ptr->URX())),
+        static_cast<int>(std::round(macro_ptr->URY()))
     );
     if (bin_rect.IsOverlap(fixed_blk_rect)) {
       rects.push_back(bin_rect.GetOverlapRect(fixed_blk_rect));
@@ -205,18 +205,18 @@ void InitializerGridBin::AddBlock(Block *blk) {
 
 void InitializerGridBin::InitializeBlockLocation(
     uint32_t random_seed,
-    int32_t num_trials
+    int num_trials
 ) {
   // initialize the random number generator
   std::minstd_rand0 generator{random_seed};
   std::uniform_real_distribution<double> distribution(0, 1);
 
-  int32_t region_width = ux_ - lx_;
-  int32_t region_height = uy_ - ly_;
+  int region_width = ux_ - lx_;
+  int region_height = uy_ - ly_;
 
   for (auto &blk_ptr : blocks_) {
     if (!blk_ptr->IsMovable()) continue;
-    for (int32_t i = 0; i < num_trials; ++i) {
+    for (int i = 0; i < num_trials; ++i) {
       double x_loc = lx_ + region_width * distribution(generator);
       double y_loc = ly_ + region_height * distribution(generator);
       blk_ptr->SetCenterX(x_loc);
@@ -249,10 +249,10 @@ void MonteCarloInitializer::RandomPlace() {
   InitializeGridBin();
   AssignFixedMacroToGridBin();
 
-  int32_t region_width = ckt_ptr_->RegionWidth();
-  int32_t region_height = ckt_ptr_->RegionHeight();
-  int32_t region_llx = ckt_ptr_->RegionLLX();
-  int32_t region_lly = ckt_ptr_->RegionLLY();
+  int region_width = ckt_ptr_->RegionWidth();
+  int region_height = ckt_ptr_->RegionHeight();
+  int region_llx = ckt_ptr_->RegionLLX();
+  int region_lly = ckt_ptr_->RegionLLY();
 
   // initialize the random number generator
   std::minstd_rand0 generator{random_seed_};
@@ -261,7 +261,7 @@ void MonteCarloInitializer::RandomPlace() {
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
   for (auto &blk : blocks) {
     if (!blk.IsMovable()) continue;
-    for (int32_t i = 0; i < num_trials_; ++i) {
+    for (int i = 0; i < num_trials_; ++i) {
       double init_x = region_llx + region_width * distribution(generator);
       double init_y = region_lly + region_height * distribution(generator);
       blk.SetCenterX(init_x);
@@ -279,7 +279,7 @@ void MonteCarloInitializer::RandomPlace() {
  * @brief Initialize a grid bin to store fixed macros in each bin
  */
 void MonteCarloInitializer::InitializeGridBin() {
-  int32_t region_width = ckt_ptr_->RegionWidth();
+  int region_width = ckt_ptr_->RegionWidth();
   double average_blk_width = ckt_ptr_->AveMovBlkWidth();
   bin_width_ = region_width / grid_cnt_x_;
   if (bin_width_ < blk_size_factor_ * average_blk_width) {
@@ -287,7 +287,7 @@ void MonteCarloInitializer::InitializeGridBin() {
     grid_cnt_x_ = std::ceil(region_width / static_cast<double>(bin_width_));
   }
 
-  int32_t region_height = ckt_ptr_->RegionHeight();
+  int region_height = ckt_ptr_->RegionHeight();
   double average_blk_height = ckt_ptr_->AveMovBlkHeight();
   bin_height_ = region_height / grid_cnt_y_;
   if (bin_height_ < blk_size_factor_ * average_blk_height) {
@@ -303,10 +303,10 @@ void MonteCarloInitializer::InitializeGridBin() {
  * @brief For each grid bin, store the list of blocks overlap with it.
  */
 void MonteCarloInitializer::AssignFixedMacroToGridBin() {
-  int32_t region_llx = ckt_ptr_->RegionLLX();
-  int32_t region_urx = ckt_ptr_->RegionURX();
-  int32_t region_lly = ckt_ptr_->RegionLLY();
-  int32_t region_ury = ckt_ptr_->RegionURY();
+  int region_llx = ckt_ptr_->RegionLLX();
+  int region_urx = ckt_ptr_->RegionURX();
+  int region_lly = ckt_ptr_->RegionLLY();
+  int region_ury = ckt_ptr_->RegionURY();
   for (auto &blk : ckt_ptr_->Blocks()) {
     // skip movable blocks, this condition may need to be updated in the future
     if (blk.IsMovable()) continue;
@@ -318,20 +318,20 @@ void MonteCarloInitializer::AssignFixedMacroToGridBin() {
     if (blk.URY() <= region_lly) continue;
 
     // find the (x, y) index of the lower-left corner
-    int32_t lx_index = std::floor((blk.LLX() - region_llx) / bin_width_);
-    int32_t ly_index = std::floor((blk.LLY() - region_lly) / bin_height_);
+    int lx_index = std::floor((blk.LLX() - region_llx) / bin_width_);
+    int ly_index = std::floor((blk.LLY() - region_lly) / bin_height_);
     lx_index = std::max(lx_index, 0);
     ly_index = std::max(ly_index, 0);
 
     // find the (x, y) index of the upper-right corner
-    int32_t ux_index = std::floor((blk.URX() - region_llx) / bin_width_);
-    int32_t uy_index = std::floor((blk.URY() - region_lly) / bin_height_);
+    int ux_index = std::floor((blk.URX() - region_llx) / bin_width_);
+    int uy_index = std::floor((blk.URY() - region_lly) / bin_height_);
     ux_index = std::min(ux_index, grid_cnt_x_ - 1);
     uy_index = std::min(uy_index, grid_cnt_y_ - 1);
 
     // every grid bin overlaps with this fixed macro should cache this information for future reference
-    for (int32_t ix = lx_index; ix <= ux_index; ++ix) {
-      for (int32_t iy = ly_index; iy <= uy_index; ++iy) {
+    for (int ix = lx_index; ix <= ux_index; ++ix) {
+      for (int iy = ly_index; iy <= uy_index; ++iy) {
         // we can ignore the case where this fixed macro only touches the boundary of this grid bin.
         // but it is ok not to do it because this will only lead to a small performance penalty
         grid_bins_[ix][iy].Macros().push_back(&blk);
@@ -347,12 +347,12 @@ void MonteCarloInitializer::AssignFixedMacroToGridBin() {
  * @return a boolean value indicate if the above check is passed or not.
  */
 bool MonteCarloInitializer::IsBlkLocationValid(Block &blk) {
-  int32_t region_llx = ckt_ptr_->RegionLLX();
-  int32_t region_lly = ckt_ptr_->RegionLLY();
+  int region_llx = ckt_ptr_->RegionLLX();
+  int region_lly = ckt_ptr_->RegionLLY();
   double x_loc = blk.X();
   double y_loc = blk.Y();
-  int32_t ix = std::floor((x_loc - region_llx) / bin_width_);
-  int32_t iy = std::floor((y_loc - region_lly) / bin_height_);
+  int ix = std::floor((x_loc - region_llx) / bin_width_);
+  int iy = std::floor((y_loc - region_lly) / bin_height_);
   ix = std::max(ix, 0);
   ix = std::min(ix, grid_cnt_x_ - 1);
   iy = std::max(iy, 0);
@@ -383,8 +383,8 @@ void DensityAwareInitializer::RandomPlace() {
   InitializePriorityQueue();
   AssignBlockToGridBin();
 
-  for (int32_t ix = 0; ix < grid_cnt_x_; ++ix) {
-    for (int32_t iy = 0; iy < grid_cnt_y_; ++iy) {
+  for (int ix = 0; ix < grid_cnt_x_; ++ix) {
+    for (int iy = 0; iy < grid_cnt_y_; ++iy) {
       grid_bins_[ix][iy].InitializeBlockLocation(
           random_seed_ + ix * 10 + iy,
           num_trials_
@@ -398,16 +398,16 @@ void DensityAwareInitializer::RandomPlace() {
 void DensityAwareInitializer::InitializeGridBin() {
   MonteCarloInitializer::InitializeGridBin();
 
-  int32_t region_lx = ckt_ptr_->RegionLLX();
-  int32_t region_ly = ckt_ptr_->RegionLLY();
-  int32_t region_ux = ckt_ptr_->RegionURX();
-  int32_t region_uy = ckt_ptr_->RegionURY();
-  for (int32_t ix = 0; ix < grid_cnt_x_; ++ix) {
-    for (int32_t iy = 0; iy < grid_cnt_y_; ++iy) {
-      int32_t lx = region_lx + ix * bin_width_;
-      int32_t ly = region_ly + iy * bin_height_;
-      int32_t ux = lx + bin_width_;
-      int32_t uy = ly + bin_height_;
+  int region_lx = ckt_ptr_->RegionLLX();
+  int region_ly = ckt_ptr_->RegionLLY();
+  int region_ux = ckt_ptr_->RegionURX();
+  int region_uy = ckt_ptr_->RegionURY();
+  for (int ix = 0; ix < grid_cnt_x_; ++ix) {
+    for (int iy = 0; iy < grid_cnt_y_; ++iy) {
+      int lx = region_lx + ix * bin_width_;
+      int ly = region_ly + iy * bin_height_;
+      int ux = lx + bin_width_;
+      int uy = ly + bin_height_;
       ux = std::min(ux, region_ux);
       uy = std::min(uy, region_uy);
       grid_bins_[ix][iy].SetBoundary(lx, ly, ux, uy);
@@ -418,16 +418,16 @@ void DensityAwareInitializer::InitializeGridBin() {
 
 void DensityAwareInitializer::AssignFixedMacroToGridBin() {
   MonteCarloInitializer::AssignFixedMacroToGridBin();
-  for (int32_t ix = 0; ix < grid_cnt_x_; ++ix) {
-    for (int32_t iy = 0; iy < grid_cnt_y_; ++iy) {
+  for (int ix = 0; ix < grid_cnt_x_; ++ix) {
+    for (int iy = 0; iy < grid_cnt_y_; ++iy) {
       grid_bins_[ix][iy].UpdateMacroArea();
     }
   }
 }
 
 void DensityAwareInitializer::InitializePriorityQueue() {
-  for (int32_t ix = 0; ix < grid_cnt_x_; ++ix) {
-    for (int32_t iy = 0; iy < grid_cnt_y_; ++iy) {
+  for (int ix = 0; ix < grid_cnt_x_; ++ix) {
+    for (int iy = 0; iy < grid_cnt_y_; ++iy) {
       density_queue_.emplace(&(grid_bins_[ix][iy]));
     }
   }

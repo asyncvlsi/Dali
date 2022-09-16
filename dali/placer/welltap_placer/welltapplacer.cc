@@ -41,7 +41,7 @@ void WellTapPlacer::FetchRowsFromPhyDB() {
   if (sz == 0) return;
   rows_.reserve(sz);
 
-  int32_t site_id = row_vec[0].GetSiteId();
+  int site_id = row_vec[0].GetSiteId();
   auto &sites = phy_db_->GetTechPtr()->GetSitesRef();
   auto site_name = sites[site_id].GetName();
   for (auto &site : sites) {
@@ -51,20 +51,20 @@ void WellTapPlacer::FetchRowsFromPhyDB() {
     }
   }
 
-  row_height_ = (int32_t) std::round(
+  row_height_ = (int) std::round(
       site_ptr_->GetHeight() * phy_db_->design().GetUnitsDistanceMicrons()
   );
-  row_step_ = (int32_t) std::round(
+  row_step_ = (int) std::round(
       site_ptr_->GetWidth() * phy_db_->design().GetUnitsDistanceMicrons()
   );
 
   DaliExpects(site_ptr_ != nullptr, "Cannot find Site in PhyDB");
   bottom_ = row_vec[0].GetOriginY();
   top_ = row_vec.back().GetOriginY() + row_height_;
-  int32_t prev_y = row_vec[0].GetOriginY();
+  int prev_y = row_vec[0].GetOriginY();
   for (auto &phydb_row : row_vec) {
-    int32_t orig_x = phydb_row.GetOriginX();
-    int32_t orig_y = phydb_row.GetOriginY();
+    int orig_x = phydb_row.GetOriginX();
+    int orig_y = phydb_row.GetOriginY();
     DaliExpects(
         orig_y == prev_y,
         "Only support well-tap insertion for closely packed rows"
@@ -90,30 +90,30 @@ void WellTapPlacer::InitializeWhiteSpaceInRows() {
   for (auto &comp : phy_db_->GetDesignPtr()->GetComponentsRef()) {
     if (comp.GetPlacementStatus() != phydb::PlaceStatus::FIXED) continue;
     phydb::Macro *macro = comp.GetMacro();
-    int32_t comp_width = (int32_t) std::round(
+    int comp_width = (int) std::round(
         macro->GetWidth() * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons()
     );
-    int32_t comp_height = (int32_t) std::round(
+    int comp_height = (int) std::round(
         macro->GetHeight() * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons()
     );
 
-    int32_t comp_lx = comp.GetLocation().x;
-    int32_t comp_ly = comp.GetLocation().y;
-    int32_t comp_ux = comp_lx + comp_width;
-    int32_t comp_uy = comp_ly + comp_height;
+    int comp_lx = comp.GetLocation().x;
+    int comp_ly = comp.GetLocation().y;
+    int comp_ux = comp_lx + comp_width;
+    int comp_uy = comp_ly + comp_height;
 
-    int32_t start_row = StartRow(comp_ly);
-    int32_t end_row = EndRow(comp_uy);
+    int start_row = StartRow(comp_ly);
+    int end_row = EndRow(comp_uy);
 
     start_row = std::max(0, start_row);
-    end_row = std::min((int32_t) rows_.size() - 1, end_row);
+    end_row = std::min((int) rows_.size() - 1, end_row);
 
-    for (int32_t i = start_row; i <= end_row; ++i) {
-      int32_t start_col = StartCol(comp_lx, rows_[i].orig_x);
-      int32_t end_col = EndCol(comp_ux, rows_[i].orig_x);
+    for (int i = start_row; i <= end_row; ++i) {
+      int start_col = StartCol(comp_lx, rows_[i].orig_x);
+      int end_col = EndCol(comp_ux, rows_[i].orig_x);
       start_col = std::max(0, start_col);
-      end_col = std::min((int32_t) rows_[i].num_x - 1, end_col);
-      for (int32_t j = start_col; j <= end_col; ++j) {
+      end_col = std::min((int) rows_[i].num_x - 1, end_col);
+      for (int j = start_col; j <= end_col; ++j) {
         rows_[i].avail_sites[j] = false;
       }
     }
@@ -123,22 +123,22 @@ void WellTapPlacer::InitializeWhiteSpaceInRows() {
 void WellTapPlacer::SetCell(phydb::Macro *cell) {
   DaliExpects(cell != nullptr, "Cannot use nullptr as well-tap cell");
   cell_ = cell;
-  cell_width_ = (int32_t) std::ceil(
+  cell_width_ = (int) std::ceil(
       cell->GetWidth() * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons()
           / row_step_);
 }
 
 void WellTapPlacer::SetCellInterval(double cell_interval_microns) {
-  int32_t unit_micron = phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons();
-  cell_interval_ = (int32_t) std::floor(
+  int unit_micron = phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons();
+  cell_interval_ = (int) std::floor(
       cell_interval_microns * unit_micron / row_step_
   );
   //std::cout << cell_interval_ << "\n";
 }
 
 void WellTapPlacer::SetCellMinDistanceToBoundary(double cell_min_distance_to_boundary_microns) {
-  int32_t unit_micron = phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons();
-  cell_min_distance_to_boundary_ = (int32_t) std::ceil(
+  int unit_micron = phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons();
+  cell_min_distance_to_boundary_ = (int) std::ceil(
       cell_min_distance_to_boundary_microns * unit_micron / row_step_
   );
   //std::cout << cell_min_distance_to_boundary_ << "\n";
@@ -149,10 +149,10 @@ void WellTapPlacer::UseCheckerBoardMode(bool is_checker_board) {
 }
 
 void WellTapPlacer::AddWellTapToRowUniform(Row &row,
-                                           int32_t first_loc,
-                                           int32_t interval) {
-  int32_t lo_col = 0;
-  int32_t hi_col = -1;
+                                           int first_loc,
+                                           int interval) {
+  int lo_col = 0;
+  int hi_col = -1;
   while (lo_col < row.num_x && hi_col < row.num_x) {
     // find the first available sites on the right hand side of the previous high bound
     for (lo_col = hi_col + 1; lo_col < row.num_x; ++lo_col) {
@@ -171,11 +171,11 @@ void WellTapPlacer::AddWellTapToRowUniform(Row &row,
     // now we have a range of available sites [lo_col, hi_col]
 
     // we do a left->right scan to insert well tap cells for the first round
-    int32_t leftmost_tap_col = INT_MAX;
-    int32_t rightmost_tap_col = INT_MIN;
-    int32_t number_of_cell_created = 0;
-    for (int32_t i = lo_col; i <= hi_col; ++i) {
-      int32_t loc_x = row.orig_x + i * row_step_;
+    int leftmost_tap_col = INT_MAX;
+    int rightmost_tap_col = INT_MIN;
+    int number_of_cell_created = 0;
+    for (int i = lo_col; i <= hi_col; ++i) {
+      int loc_x = row.orig_x + i * row_step_;
       if ((loc_x - first_loc) % (interval * row_step_) == 0) {
         row.well_taps[i] = true;
         leftmost_tap_col = std::min(leftmost_tap_col, i);
@@ -209,7 +209,7 @@ void WellTapPlacer::AddWellTapToRowUniform(Row &row,
 }
 
 void WellTapPlacer::AddWellTapUniform() {
-  int32_t first_loc = ((cell_interval_ - cell_width_) / 2) * row_step_ + left_;
+  int first_loc = ((cell_interval_ - cell_width_) / 2) * row_step_ + left_;
   for (auto &row : rows_) {
     AddWellTapToRowUniform(row, first_loc, cell_interval_);
   }
@@ -217,21 +217,21 @@ void WellTapPlacer::AddWellTapUniform() {
 
 void WellTapPlacer::AddWellTapCheckerBoard() {
   // add well tap cell using half cell interval
-  int32_t half_cell_interval = cell_interval_ / 2;
-  int32_t first_loc = left_;
+  int half_cell_interval = cell_interval_ / 2;
+  int first_loc = left_;
   for (auto &row : rows_) {
     AddWellTapToRowUniform(row, first_loc, half_cell_interval);
   }
 
   // trim redundant well tap cells
   // there is no need to trim the first and last row
-  int32_t tot_num_rows = (int32_t) rows_.size();
-  for (int32_t r = 1; r < tot_num_rows - 1; ++r) {
+  int tot_num_rows = (int) rows_.size();
+  for (int r = 1; r < tot_num_rows - 1; ++r) {
     bool is_odd_row = r % 2 == 1;
     Row &cur_row = rows_[r];
     Row &prev_row = rows_[r - 1];
     Row &next_row = rows_[r + 1];
-    for (int32_t i = 0; i < cur_row.num_x; ++i) {
+    for (int i = 0; i < cur_row.num_x; ++i) {
       if (cur_row.well_taps[i]) {
         if (i % half_cell_interval != 0) {
           if (prev_row.well_taps[i] && next_row.well_taps[i]) {
@@ -260,16 +260,16 @@ void WellTapPlacer::AddWellTap() {
 
 void WellTapPlacer::ExportWellTapCellsToPhyDB() {
   if (rows_.empty()) return;
-  int32_t counter = 0;
+  int counter = 0;
   std::string macro_name = cell_->GetName();
   phydb::PlaceStatus place_status = phydb::PlaceStatus::FIXED;
   for (auto &row : rows_) {
-    for (int32_t i = 0; i < row.num_x; ++i) {
+    for (int i = 0; i < row.num_x; ++i) {
       if (row.well_taps[i]) {
         std::string welltap_cell_name =
             "welltap" + std::to_string(counter++);
-        int32_t llx = row.orig_x + i * row_step_;
-        int32_t lly = row.orig_y;
+        int llx = row.orig_x + i * row_step_;
+        int lly = row.orig_y;
         phydb::CompOrient orient =
             row.is_N ? phydb::CompOrient::N : phydb::CompOrient::FS;
         phydb::Macro *macro_ptr = phy_db_->GetMacroPtr(macro_name);
@@ -295,12 +295,12 @@ void WellTapPlacer::PlotAvailSpace() {
   std::ofstream ost("avail_space.txt");
   DaliExpects(ost.is_open(), "Cannot open output file: avail_space.txt");
   for (auto &row : rows_) {
-    for (int32_t i = 0; i < row.num_x; ++i) {
+    for (int i = 0; i < row.num_x; ++i) {
       if (!row.avail_sites[i]) continue;
-      int32_t lx = row.orig_x + i * row_step_;
-      int32_t ux = lx + row_step_;
-      int32_t ly = row.orig_y;
-      int32_t uy = row.orig_y + row_height_;
+      int lx = row.orig_x + i * row_step_;
+      int ux = lx + row_step_;
+      int ly = row.orig_y;
+      int uy = row.orig_y + row_height_;
       ost << lx << "\t"
           << ux << "\t"
           << ux << "\t"

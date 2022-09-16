@@ -32,21 +32,21 @@ namespace dali {
 
 class FreeSegment {
  private:
-  int32_t start_;
-  int32_t end_;
+  int start_;
+  int end_;
   FreeSegment *prev_ = nullptr; // Pointer to previous free segment
   FreeSegment *next_ = nullptr; // Pointer to Next free segment
  public:
-  explicit FreeSegment(int32_t start = 0, int32_t stop = 0);
+  explicit FreeSegment(int start = 0, int stop = 0);
   bool SetPrev(FreeSegment *preFreeSeg_ptr);
   bool SetNext(FreeSegment *nextFreeSeg_ptr);
   bool LinkSingleSeg(FreeSegment *seg_ptr);
   FreeSegment *Next();
   FreeSegment *Prev();
-  void SetSpan(int32_t startLoc, int32_t endLoc);
-  int32_t Start() const;
-  int32_t End() const;
-  int32_t Length() const;
+  void SetSpan(int startLoc, int endLoc);
+  int Start() const;
+  int End() const;
+  int Length() const;
   bool IsOverlap(FreeSegment *seg) const;
   bool IsTouch(FreeSegment *seg) const;
   bool IsDominate(FreeSegment *seg) const;
@@ -75,7 +75,7 @@ inline FreeSegment *FreeSegment::Prev() {
   return prev_;
 }
 
-inline void FreeSegment::SetSpan(int32_t startLoc, int32_t endLoc) {
+inline void FreeSegment::SetSpan(int startLoc, int endLoc) {
   if (startLoc > endLoc) {
     BOOST_LOG_TRIVIAL(info)
       << "Cannot set the span of a segment with start larger than End, Start"
@@ -87,15 +87,15 @@ inline void FreeSegment::SetSpan(int32_t startLoc, int32_t endLoc) {
   end_ = endLoc;
 }
 
-inline int32_t FreeSegment::Start() const {
+inline int FreeSegment::Start() const {
   return start_;
 }
 
-inline int32_t FreeSegment::End() const {
+inline int FreeSegment::End() const {
   return end_;
 }
 
-inline int32_t FreeSegment::Length() const {
+inline int FreeSegment::Length() const {
   return end_ - start_;
 }
 

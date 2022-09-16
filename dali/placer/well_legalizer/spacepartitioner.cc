@@ -33,7 +33,7 @@ void AbstractSpacePartitioner::SetOutput(std::vector<ClusterStripe> *p_col_list)
 }
 
 void AbstractSpacePartitioner::SetReservedSpaceToBoundaries(
-    int32_t l_space, int32_t r_space, int32_t b_space, int32_t t_space
+    int l_space, int r_space, int b_space, int t_space
 ) {
   l_space_ = l_space;
   r_space_ = r_space;
@@ -41,11 +41,11 @@ void AbstractSpacePartitioner::SetReservedSpaceToBoundaries(
   t_space_ = t_space;
 }
 
-void AbstractSpacePartitioner::SetPartitionMode(int32_t partition_mode) {
+void AbstractSpacePartitioner::SetPartitionMode(int partition_mode) {
   partition_mode_ = partition_mode;
 }
 
-void AbstractSpacePartitioner::SetMaxRowWidth(int32_t max_row_width) {
+void AbstractSpacePartitioner::SetMaxRowWidth(int max_row_width) {
   max_row_width_ = max_row_width;
 }
 
@@ -53,12 +53,12 @@ void DefaultSpacePartitioner::FetchWellParameters() {
   Tech &tech = p_ckt_->tech();
   WellLayer &n_well_layer = tech.NwellLayer();
   double grid_value_x = p_ckt_->GridValueX();
-  int32_t same_well_spacing = std::ceil(n_well_layer.Spacing() / grid_value_x);
-  int32_t op_well_spacing =
+  int same_well_spacing = std::ceil(n_well_layer.Spacing() / grid_value_x);
+  int op_well_spacing =
       std::ceil(n_well_layer.OppositeSpacing() / grid_value_x);
   well_spacing_ = std::max(same_well_spacing, op_well_spacing);
   max_unplug_length_ =
-      (int32_t) std::floor(n_well_layer.MaxPlugDist() / grid_value_x);
+      (int) std::floor(n_well_layer.MaxPlugDist() / grid_value_x);
 }
 
 void DefaultSpacePartitioner::DetectAvailSpace() {
@@ -73,18 +73,18 @@ void DefaultSpacePartitioner::DetectAvailSpace() {
   bool out_of_range;
   for (auto &block : p_ckt_->Blocks()) {
     if (block.IsMovable()) continue;
-    int32_t ly = int32_t(std::floor(block.LLY()));
-    int32_t uy = int32_t(std::ceil(block.URY()));
-    int32_t lx = int32_t(std::floor(block.LLX()));
-    int32_t ux = int32_t(std::ceil(block.URX()));
+    int ly = int(std::floor(block.LLY()));
+    int uy = int(std::ceil(block.URY()));
+    int lx = int(std::floor(block.LLX()));
+    int ux = int(std::ceil(block.URX()));
 
     out_of_range = (ly >= Top()) || (uy <= Bottom())
         || (lx >= Right()) || (ux <= Left());
 
     if (out_of_range) continue;
 
-    int32_t start_row = StartRow(ly);
-    int32_t end_row = EndRow(uy);
+    int start_row = StartRow(ly);
+    int end_row = EndRow(uy);
 
     start_row = std::max(0, start_row);
     end_row = std::min(tot_num_rows_ - 1, end_row);
@@ -92,7 +92,7 @@ void DefaultSpacePartitioner::DetectAvailSpace() {
     tmp.lo = std::max(Left(), lx);
     tmp.hi = std::min(Right(), ux);
     if (tmp.hi > tmp.lo) {
-      for (int32_t i = start_row; i <= end_row; ++i) {
+      for (int i = start_row; i <= end_row; ++i) {
         macro_segments[i].push_back(tmp);
       }
     }
@@ -101,16 +101,16 @@ void DefaultSpacePartitioner::DetectAvailSpace() {
     MergeIntervals(intervals);
   }
 
-  std::vector<std::vector<int32_t>> intermediate_seg_rows;
+  std::vector<std::vector<int>> intermediate_seg_rows;
   intermediate_seg_rows.resize(tot_num_rows_);
-  for (int32_t i = 0; i < tot_num_rows_; ++i) {
+  for (int i = 0; i < tot_num_rows_; ++i) {
     if (macro_segments[i].empty()) {
       intermediate_seg_rows[i].push_back(Left());
       intermediate_seg_rows[i].push_back(Right());
       continue;
     }
-    int32_t segments_size = int32_t(macro_segments[i].size());
-    for (int32_t j = 0; j < segments_size; ++j) {
+    int segments_size = int(macro_segments[i].size());
+    for (int j = 0; j < segments_size; ++j) {
       auto &interval = macro_segments[i][j];
       if (interval.lo == Left() && interval.hi < Right()) {
         intermediate_seg_rows[i].push_back(interval.hi);
@@ -132,11 +132,11 @@ void DefaultSpacePartitioner::DetectAvailSpace() {
   }
 
   white_space_in_rows_.resize(tot_num_rows_);
-  int32_t min_blk_width = int32_t(p_ckt_->MinBlkWidth());
-  for (int32_t i = 0; i < tot_num_rows_; ++i) {
-    int32_t len = int32_t(intermediate_seg_rows[i].size());
+  int min_blk_width = int(p_ckt_->MinBlkWidth());
+  for (int i = 0; i < tot_num_rows_; ++i) {
+    int len = int(intermediate_seg_rows[i].size());
     white_space_in_rows_[i].reserve(len / 2);
-    for (int32_t j = 0; j < len; j += 2) {
+    for (int j = 0; j < len; j += 2) {
       if (intermediate_seg_rows[i][j + 1] - intermediate_seg_rows[i][j]
           >= min_blk_width) {
         white_space_in_rows_[i].emplace_back(
@@ -152,7 +152,7 @@ void DefaultSpacePartitioner::UpdateWhiteSpaceInCol(ClusterStripe &col) {
   SegI stripe_seg(col.LLX(), col.URX());
   col.white_space_.clear();
   col.white_space_.resize(tot_num_rows_);
-  for (int32_t i = 0; i < tot_num_rows_; ++i) {
+  for (int i = 0; i < tot_num_rows_; ++i) {
     for (auto &seg : white_space_in_rows_[i]) {
       SegI *tmp_seg = stripe_seg.Joint(seg);
       if (tmp_seg != nullptr) {
@@ -184,9 +184,9 @@ void DefaultSpacePartitioner::UpdateWhiteSpaceInCol(ClusterStripe &col) {
 
 void DefaultSpacePartitioner::DecomposeSpaceToSimpleStripes() {
   for (auto &col : *p_col_list_) {
-    for (int32_t i = 0; i < tot_num_rows_; ++i) {
+    for (int i = 0; i < tot_num_rows_; ++i) {
       for (auto &seg : col.white_space_[i]) {
-        int32_t y_loc = RowToLoc(i);
+        int y_loc = RowToLoc(i);
         Stripe *stripe = col.GetStripeMatchSeg(seg, y_loc);
         if (stripe == nullptr) {
           col.stripe_list_.emplace_back();
@@ -225,18 +225,18 @@ void DefaultSpacePartitioner::AssignBlockToColBasedOnWhiteSpace() {
   // assign blocks to columns
   std::vector<Block> &block_list = p_ckt_->Blocks();
   std::vector<ClusterStripe> &col_list = *p_col_list_;
-  int32_t sz = (int32_t) block_list.size();
-  std::vector<int32_t> block_column_assign(sz, -1);
-  for (int32_t i = 0; i < tot_col_num_; ++i) {
+  int sz = (int) block_list.size();
+  std::vector<int> block_column_assign(sz, -1);
+  for (int i = 0; i < tot_col_num_; ++i) {
     col_list[i].block_count_ = 0;
     col_list[i].block_list_.clear();
   }
 
-  for (int32_t i = 0; i < sz; ++i) {
+  for (int i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) continue;
-    int32_t col_num = LocToCol((int32_t) std::round(block_list[i].X()));
+    int col_num = LocToCol((int) std::round(block_list[i].X()));
 
-    std::vector<int32_t> pos_col;
+    std::vector<int> pos_col;
     std::vector<double> distance;
     if (col_num > 0) {
       pos_col.push_back(col_num - 1);
@@ -270,14 +270,14 @@ void DefaultSpacePartitioner::AssignBlockToColBasedOnWhiteSpace() {
           + block_list[i].Name());
     }
   }
-  for (int32_t i = 0; i < tot_col_num_; ++i) {
-    int32_t capacity = col_list[i].block_count_;
+  for (int i = 0; i < tot_col_num_; ++i) {
+    int capacity = col_list[i].block_count_;
     col_list[i].block_list_.reserve(capacity);
   }
 
-  for (int32_t i = 0; i < sz; ++i) {
+  for (int i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) continue;
-    int32_t col_num = block_column_assign[i];
+    int col_num = block_column_assign[i];
     if (col_num >= 0) {
       col_list[col_num].block_list_.push_back(&block_list[i]);
     }
@@ -313,7 +313,7 @@ bool DefaultSpacePartitioner::StartPartitioning() {
   if (cluster_width_ <= 0) {
     BOOST_LOG_TRIVIAL(info)
       << "Using default gridded row width: 2*max_unplug_length_\n";
-    stripe_width_ = (int32_t) std::round(max_unplug_length_ * stripe_width_factor_);
+    stripe_width_ = (int) std::round(max_unplug_length_ * stripe_width_factor_);
   } else {
     DaliWarns(
         cluster_width_ < max_unplug_length_,
@@ -322,15 +322,15 @@ bool DefaultSpacePartitioner::StartPartitioning() {
     stripe_width_ = cluster_width_;
   }
   stripe_width_ = stripe_width_ + well_spacing_;
-  int32_t region_width = Right() - Left();
-  int32_t region_height = Top() - Bottom();
+  int region_width = Right() - Left();
+  int region_height = Top() - Bottom();
   if (stripe_width_ > region_width) {
     stripe_width_ = region_width;
   }
   tot_col_num_ = std::ceil(region_width / (double) stripe_width_);
   BOOST_LOG_TRIVIAL(info)
     << "  Total number of columns: " << tot_col_num_ << "\n";
-  int32_t max_clusters_per_col = region_height / p_ckt_->MinBlkHeight();
+  int max_clusters_per_col = region_height / p_ckt_->MinBlkHeight();
   col_list.resize(tot_col_num_);
   stripe_width_ = region_width / tot_col_num_;
   BOOST_LOG_TRIVIAL(info)
@@ -338,7 +338,7 @@ bool DefaultSpacePartitioner::StartPartitioning() {
     << stripe_width_ << "\n";
   DaliWarns(stripe_width_ < max_cell_width_,
             "Maximum cell width is longer than gridded row width?");
-  for (int32_t i = 0; i < tot_col_num_; ++i) {
+  for (int i = 0; i < tot_col_num_; ++i) {
     col_list[i].lx_ = Left() + i * stripe_width_;
     col_list[i].width_ = stripe_width_ - well_spacing_;
     DaliExpects(col_list[i].width_ > 0,
@@ -370,7 +370,7 @@ void DefaultSpacePartitioner::PlotAvailSpace(std::string const &name_of_file) {
       Left(), Bottom(), Right(), Top(),
       true, 1, 1, 1
   );
-  for (int32_t i = 0; i < tot_num_rows_; ++i) {
+  for (int i = 0; i < tot_num_rows_; ++i) {
     auto &row = white_space_in_rows_[i];
     for (auto &seg : row) {
       SaveMatlabPatchRect(
@@ -406,7 +406,7 @@ void DefaultSpacePartitioner::PlotAvailSpaceInCols(std::string const &name_of_fi
       true, 1, 1, 1
   );
   for (auto &col : *p_col_list_) {
-    for (int32_t i = 0; i < tot_num_rows_; ++i) {
+    for (int i = 0; i < tot_num_rows_; ++i) {
       auto &row = col.white_space_[i];
       for (auto &seg : row) {
         SaveMatlabPatchRect(
@@ -462,41 +462,41 @@ void DefaultSpacePartitioner::PlotSimpleStripes(std::string const &name_of_file)
   }
 }
 
-int32_t DefaultSpacePartitioner::Left() const {
+int DefaultSpacePartitioner::Left() const {
   return p_ckt_->RegionLLX() + l_space_;
 }
 
-int32_t DefaultSpacePartitioner::Right() const {
+int DefaultSpacePartitioner::Right() const {
   return p_ckt_->RegionURX() - r_space_;
 }
 
-int32_t DefaultSpacePartitioner::Bottom() const {
+int DefaultSpacePartitioner::Bottom() const {
   return p_ckt_->RegionLLY() + b_space_;
 }
 
-int32_t DefaultSpacePartitioner::Top() const {
+int DefaultSpacePartitioner::Top() const {
   return p_ckt_->RegionURY() - t_space_;
 }
 
-int32_t DefaultSpacePartitioner::StartRow(int32_t y_loc) const {
+int DefaultSpacePartitioner::StartRow(int y_loc) const {
   return (y_loc - Bottom()) / row_height_;
 }
 
-int32_t DefaultSpacePartitioner::EndRow(int32_t y_loc) const {
-  int32_t relative_y = y_loc - Bottom();
-  int32_t res = relative_y / row_height_;
+int DefaultSpacePartitioner::EndRow(int y_loc) const {
+  int relative_y = y_loc - Bottom();
+  int res = relative_y / row_height_;
   if (relative_y % row_height_ == 0) {
     --res;
   }
   return res;
 }
 
-int32_t DefaultSpacePartitioner::RowToLoc(int32_t row_num, int32_t displacement) const {
+int DefaultSpacePartitioner::RowToLoc(int row_num, int displacement) const {
   return row_num * row_height_ + Bottom() + displacement;
 }
 
-int32_t DefaultSpacePartitioner::LocToCol(int32_t x) const {
-  int32_t col_num = (x - Left()) / stripe_width_;
+int DefaultSpacePartitioner::LocToCol(int x) const {
+  int col_num = (x - Left()) / stripe_width_;
   if (col_num < 0) {
     col_num = 0;
   }

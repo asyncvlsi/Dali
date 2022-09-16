@@ -24,12 +24,12 @@
 
 namespace dali {
 
-TetrisSpace::TetrisSpace(int32_t left,
-                         int32_t right,
-                         int32_t bottom,
-                         int32_t top,
-                         int32_t rowHeight,
-                         int32_t minWidth) : scan_line_(left),
+TetrisSpace::TetrisSpace(int left,
+                         int right,
+                         int bottom,
+                         int top,
+                         int rowHeight,
+                         int minWidth) : scan_line_(left),
                                          left_(left),
                                          right_(right),
                                          bottom_(bottom),
@@ -38,7 +38,7 @@ TetrisSpace::TetrisSpace(int32_t left,
                                          min_width_(minWidth) {
   tot_num_row_ = (top_ - bottom_) / rowHeight;
   top_ -= (top_ - bottom_) % rowHeight;
-  for (int32_t i = 0; i < tot_num_row_; ++i) {
+  for (int i = 0; i < tot_num_row_; ++i) {
     FreeSegmentList tmpRow;
     free_segment_rows.push_back(tmpRow);
   }
@@ -49,8 +49,8 @@ TetrisSpace::TetrisSpace(int32_t left,
   }
 }
 
-int32_t TetrisSpace::ToStartRow(int32_t y_loc) {
-  int32_t row_num = (y_loc - bottom_) / row_height_;
+int TetrisSpace::ToStartRow(int y_loc) {
+  int row_num = (y_loc - bottom_) / row_height_;
   if ((row_num < 0) || (row_num >= tot_num_row_)) {
     BOOST_LOG_TRIVIAL(info) << "Fatal error:" << std::endl;
     BOOST_LOG_TRIVIAL(info) << "  y_loc out of range, y_loc, bottom_, top_: "
@@ -62,9 +62,9 @@ int32_t TetrisSpace::ToStartRow(int32_t y_loc) {
   return (row_num);
 }
 
-int32_t TetrisSpace::ToEndRow(int32_t y_loc) {
-  int32_t relative_y = y_loc - bottom_;
-  int32_t row_num = relative_y / row_height_;
+int TetrisSpace::ToEndRow(int y_loc) {
+  int relative_y = y_loc - bottom_;
+  int row_num = relative_y / row_height_;
   if (relative_y % row_height_ == 0) {
     --row_num;
   }
@@ -84,30 +84,30 @@ int32_t TetrisSpace::ToEndRow(int32_t y_loc) {
   return (row_num);
 }
 
-void TetrisSpace::UseSpace(int32_t llx, int32_t lly, int32_t width, int32_t height) {
-  int32_t start_row = ToStartRow(lly);
-  int32_t end_row = ToEndRow(lly + height);
-  for (int32_t i = start_row; i <= end_row; ++i) {
+void TetrisSpace::UseSpace(int llx, int lly, int width, int height) {
+  int start_row = ToStartRow(lly);
+  int end_row = ToEndRow(lly + height);
+  for (int i = start_row; i <= end_row; ++i) {
     free_segment_rows[i].UseSpace(llx, width);
   }
 }
 
-void TetrisSpace::FindCommonSegments(int32_t startRowNum,
-                                     int32_t endRowNum,
+void TetrisSpace::FindCommonSegments(int startRowNum,
+                                     int endRowNum,
                                      FreeSegmentList &commonSegments) {
   if (endRowNum < startRowNum) {
     assert (endRowNum >= startRowNum);
   }
-  if ((startRowNum < 0) || (endRowNum > (int32_t) (free_segment_rows.size()))) {
-    assert((startRowNum >= 0) && (endRowNum <= (int32_t) free_segment_rows.size()));
+  if ((startRowNum < 0) || (endRowNum > (int) (free_segment_rows.size()))) {
+    assert((startRowNum >= 0) && (endRowNum <= (int) free_segment_rows.size()));
   }
-  for (int32_t i = startRowNum; i < endRowNum; ++i) {
+  for (int i = startRowNum; i < endRowNum; ++i) {
     commonSegments.ApplyMask(free_segment_rows[i]);
     if (commonSegments.Empty()) break;
   }
 }
 
-bool TetrisSpace::IsSpaceAvail(int32_t llx, int32_t lly, int32_t width, int32_t height) {
+bool TetrisSpace::IsSpaceAvail(int llx, int lly, int width, int height) {
   /****
    * 1. Check if the current location is in the placement region, if not return false. We need to find a new location;
    * If in this region:
@@ -123,8 +123,8 @@ bool TetrisSpace::IsSpaceAvail(int32_t llx, int32_t lly, int32_t width, int32_t 
     return false;
   }
 
-  int32_t start_row = ToStartRow(lly);
-  int32_t end_row = ToEndRow(lly + height);
+  int start_row = ToStartRow(lly);
+  int end_row = ToEndRow(lly + height);
   if (end_row >= tot_num_row_) {
     BOOST_LOG_TRIVIAL(info) << "Fatal error:\n";
     BOOST_LOG_TRIVIAL(info) << "  row info:   " << start_row << "  " << end_row
@@ -134,7 +134,7 @@ bool TetrisSpace::IsSpaceAvail(int32_t llx, int32_t lly, int32_t width, int32_t 
     exit(1);
   }
   bool all_row_avail = true;
-  for (int32_t i = start_row; i <= end_row; ++i) {
+  for (int i = start_row; i <= end_row; ++i) {
     if (!free_segment_rows[i].IsSpaceAvail(llx, width)) {
       all_row_avail = false;
       break;
@@ -146,10 +146,10 @@ bool TetrisSpace::IsSpaceAvail(int32_t llx, int32_t lly, int32_t width, int32_t 
   return all_row_avail;
 }
 
-bool TetrisSpace::FindBlockLoc(int32_t llx,
-                               int32_t lly,
-                               int32_t width,
-                               int32_t height,
+bool TetrisSpace::FindBlockLoc(int llx,
+                               int lly,
+                               int width,
+                               int height,
                                int2d &result_loc) {
   if (llx < left_) {
     scan_line_ = left_;
@@ -160,18 +160,18 @@ bool TetrisSpace::FindBlockLoc(int32_t llx,
     scan_line_ = right_;
   }
   double min_cost = DBL_MAX;
-  int32_t effective_height = (int32_t) (std::ceil((double) height / row_height_));
-  int32_t top_row_to_check =
-      (int32_t) (free_segment_rows.size()) - (effective_height - 1);
+  int effective_height = (int) (std::ceil((double) height / row_height_));
+  int top_row_to_check =
+      (int) (free_segment_rows.size()) - (effective_height - 1);
   bool all_row_fail = true;
-  int32_t min_disp_x;
+  int min_disp_x;
   std::vector<int2d> candidate_list;
 
-  int32_t min_row = ToStartRow(std::max(bottom_, lly - 2 * height));
-  int32_t max_row =
+  int min_row = ToStartRow(std::max(bottom_, lly - 2 * height));
+  int max_row =
       ToEndRow(std::min(top_, lly + 2 * height)) - height / row_height_;
 
-  for (int32_t i = min_row; i < max_row; ++i) {
+  for (int i = min_row; i < max_row; ++i) {
     FreeSegmentList common_segments(scan_line_, right_, min_width_);
     FindCommonSegments(i, i + effective_height, common_segments);
     common_segments.RemoveShortSeg(width);
@@ -185,11 +185,11 @@ bool TetrisSpace::FindBlockLoc(int32_t llx,
   }
 
   while (all_row_fail) {
-    int32_t old_min_row = min_row;
-    int32_t old_max_row = max_row;
+    int old_min_row = min_row;
+    int old_max_row = max_row;
     min_row = std::max(0, min_row - 2 * height);
     max_row = std::min(top_row_to_check, max_row + 2 * height);
-    for (int32_t i = min_row; i < max_row; ++i) {
+    for (int i = min_row; i < max_row; ++i) {
       if (i >= old_min_row && i < old_max_row) continue;
       FreeSegmentList common_segments(scan_line_, right_, min_width_);
       FindCommonSegments(i, i + effective_height, common_segments);
@@ -221,11 +221,11 @@ bool TetrisSpace::FindBlockLoc(int32_t llx,
     }
   }
 
-  int32_t x_loc = best_loc.x;
-  int32_t y_loc = best_loc.y * row_height_ + bottom_;
+  int x_loc = best_loc.x;
+  int y_loc = best_loc.y * row_height_ + bottom_;
   UseSpace(x_loc, y_loc, width, height);
 
-  int32_t overhead = effective_height * row_height_ - height;
+  int overhead = effective_height * row_height_ - height;
   best_loc.y = best_loc.y * row_height_ + bottom_ + overhead / 2;
   result_loc = best_loc;
   return true;

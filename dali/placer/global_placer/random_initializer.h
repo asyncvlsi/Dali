@@ -120,21 +120,21 @@ class InitializerGridBin {
   std::vector<Block *> &Macros();
   double GetDensity() const;
   void UpdateDensity();
-  void SetBoundary(int32_t lx, int32_t ly, int32_t ux, int32_t uy);
+  void SetBoundary(int lx, int ly, int ux, int uy);
   void UpdateTotalArea();
   void UpdateMacroArea();
   void AddBlock(Block *blk);
-  void InitializeBlockLocation(uint32_t random_seed, int32_t num_trials);
+  void InitializeBlockLocation(uint32_t random_seed, int num_trials);
  private:
   std::vector<Block *> macros_;
   std::vector<Block *> blocks_;
   double density_ = 0;
   unsigned long long total_area_ = 0;
   unsigned long long used_area_ = 0;
-  int32_t lx_ = 0;
-  int32_t ly_ = 0;
-  int32_t ux_ = 0;
-  int32_t uy_ = 0;
+  int lx_ = 0;
+  int ly_ = 0;
+  int ux_ = 0;
+  int uy_ = 0;
 };
 
 struct CompareInitializerGridBinPtr {
@@ -171,13 +171,13 @@ class MonteCarloInitializer : public RandomInitializer {
   virtual void AssignFixedMacroToGridBin();
   bool IsBlkLocationValid(Block &blk);
 
-  int32_t grid_cnt_x_ = 30;
-  int32_t grid_cnt_y_ = 30;
-  int32_t bin_width_ = 0;
-  int32_t bin_height_ = 0;
-  int32_t blk_size_factor_ = 5;
+  int grid_cnt_x_ = 30;
+  int grid_cnt_y_ = 30;
+  int bin_width_ = 0;
+  int bin_height_ = 0;
+  int blk_size_factor_ = 5;
   std::vector<std::vector<InitializerGridBin>> grid_bins_;
-  int32_t num_trials_ = 50;
+  int num_trials_ = 50;
 };
 
 /****

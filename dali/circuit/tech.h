@@ -76,7 +76,7 @@ class Tech {
  private:
   /**** manufacturing grid ****/
   double manufacturing_grid_ = 0;
-  int32_t database_microns_ = 0;
+  int database_microns_ = 0;
 
   /*** *grid value along X and Y ****/
   bool is_grid_set_ = false;
@@ -85,7 +85,7 @@ class Tech {
 
   /**** metal layers ****/
   std::vector<MetalLayer> metal_list_;
-  std::unordered_map<std::string, int32_t> metal_name_map_;
+  std::unordered_map<std::string, int> metal_name_map_;
 
   /**** macros ****/
   std::unordered_map<std::string, BlockType *> block_type_map_;

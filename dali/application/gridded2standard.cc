@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
   std::string lef_file_name;
   std::string cel_file_name;
   std::string out_file_name;
-  int32_t mode = 0;
+  int mode = 0;
 
   for (int i = 1; i < argc;) {
     std::string arg(argv[i++]);

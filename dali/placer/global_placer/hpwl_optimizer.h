@@ -41,11 +41,11 @@ typedef IndexVal D;
 
 class HpwlOptimizer {
  public:
-  HpwlOptimizer(Circuit *ckt_ptr, int32_t num_threads);
+  HpwlOptimizer(Circuit *ckt_ptr, int num_threads);
   virtual ~HpwlOptimizer() = default;
   virtual void Initialize() = 0;
-  void SetNumThreads(int32_t num_threads) { num_threads_ = num_threads; }
-  void SetIteration(int32_t cur_iter) { cur_iter_ = cur_iter; }
+  void SetNumThreads(int num_threads) { num_threads_ = num_threads; }
+  void SetIteration(int cur_iter) { cur_iter_ = cur_iter; }
   virtual double OptimizeHpwl() = 0;
   virtual double GetTime() = 0;
   virtual void Close() = 0;
@@ -55,8 +55,8 @@ class HpwlOptimizer {
   void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
  protected:
   Circuit *ckt_ptr_ = nullptr;
-  int32_t cur_iter_ = 0;
-  int32_t num_threads_ = 1;
+  int cur_iter_ = 0;
+  int num_threads_ = 1;
   std::vector<double> lower_bound_hpwl_;
   std::vector<double> lower_bound_hpwl_x_;
   std::vector<double> lower_bound_hpwl_y_;
@@ -70,7 +70,7 @@ class HpwlOptimizer {
 
 class B2BHpwlOptimizer : public HpwlOptimizer {
  public:
-  B2BHpwlOptimizer(Circuit *ckt_ptr, int32_t num_threads) :
+  B2BHpwlOptimizer(Circuit *ckt_ptr, int num_threads) :
       HpwlOptimizer(ckt_ptr, num_threads) {}
   ~B2BHpwlOptimizer() override = default;
 
@@ -81,10 +81,10 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   virtual void BuildProblemY();
   bool IsSeriesConverge(
       std::vector<double> &data,
-      int32_t window_size,
+      int window_size,
       double tolerance
   );
-  bool IsSeriesOscillate(std::vector<double> &data, int32_t window_size);
+  bool IsSeriesOscillate(std::vector<double> &data, int window_size);
   virtual double OptimizeQuadraticMetricX(double cg_stop_criterion);
   virtual double OptimizeQuadraticMetricY(double cg_stop_criterion);
   void PullBlockBackToRegion();
@@ -96,8 +96,8 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   virtual void BuildProblemWithAnchorX();
   virtual void BuildProblemWithAnchorY();
   void BackUpBlockLocation();
-  void OptimizeHpwlXWithAnchor(int32_t num_threads);
-  void OptimizeHpwlYWithAnchor(int32_t num_threads);
+  void OptimizeHpwlXWithAnchor(int num_threads);
+  void OptimizeHpwlYWithAnchor(int num_threads);
   double OptimizeHpwl() override;
 
   double GetTime() override;
@@ -107,9 +107,9 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   // this is to make sure cg_tolerance is the same for different machines
   double cg_tolerance_ = 1e-35;
   // cg solver runs this amount of iterations to optimize the quadratic metric everytime
-  int32_t cg_iteration_ = 10;
+  int cg_iteration_ = 10;
   // cg solver runs at most this amount of iterations to optimize the quadratic metric, this number should be adaptive to circuit size
-  int32_t cg_iteration_max_num_ = 1000;
+  int cg_iteration_max_num_ = 1000;
   // cg solver stops if the cost change is less than this value for 3 iterations
   double cg_stop_criterion_ = 0.0025;
   // stop update net model if the cost change is less than this value for 3 iterations
@@ -122,8 +122,8 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   // this value will be set to 1/epsilon_factor_ times the average movable cell height
   double height_epsilon_ = 1e-5;
 
-  std::vector<int32_t> Ax_row_size;
-  std::vector<int32_t> Ay_row_size;
+  std::vector<int> Ax_row_size;
+  std::vector<int> Ay_row_size;
   std::vector<std::vector<D>> ADx;
   std::vector<std::vector<D>> ADy;
 
@@ -144,7 +144,7 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   std::vector<SpMat::InnerIterator> SpMat_diag_x;
   std::vector<SpMat::InnerIterator> SpMat_diag_y;
 
-  int32_t b2b_update_max_iteration_ = 50;
+  int b2b_update_max_iteration_ = 50;
   size_t net_ignore_threshold_ = 100;
 
   double tot_triplets_time_x = 0;
@@ -165,7 +165,7 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
 
 class StarHpwlOptimizer : public B2BHpwlOptimizer {
  public:
-  StarHpwlOptimizer(Circuit *ckt_ptr, int32_t num_threads) :
+  StarHpwlOptimizer(Circuit *ckt_ptr, int num_threads) :
       B2BHpwlOptimizer(ckt_ptr, num_threads) {}
   ~StarHpwlOptimizer() override = default;
 
@@ -177,7 +177,7 @@ class StarHpwlOptimizer : public B2BHpwlOptimizer {
 
 class HpwlHpwlOptimizer : public B2BHpwlOptimizer {
  public:
-  HpwlHpwlOptimizer(Circuit *ckt_ptr, int32_t num_threads) :
+  HpwlHpwlOptimizer(Circuit *ckt_ptr, int num_threads) :
       B2BHpwlOptimizer(ckt_ptr, num_threads) {}
   ~HpwlHpwlOptimizer() override = default;
 
@@ -189,7 +189,7 @@ class HpwlHpwlOptimizer : public B2BHpwlOptimizer {
 
 class StarHpwlHpwlOptimizer : public B2BHpwlOptimizer {
  public:
-  StarHpwlHpwlOptimizer(Circuit *ckt_ptr, int32_t num_threads)
+  StarHpwlHpwlOptimizer(Circuit *ckt_ptr, int num_threads)
       : B2BHpwlOptimizer(ckt_ptr, num_threads) {}
   ~StarHpwlHpwlOptimizer() override = default;
 

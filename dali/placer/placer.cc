@@ -75,7 +75,7 @@ void Placer::SetInputCircuit(Circuit *circuit) {
  *
  * @param num_threads: the number of threads
  */
-void Placer::SetNumThreads(int32_t num_threads) {
+void Placer::SetNumThreads(int num_threads) {
   if (num_threads < 1) {
     num_threads = 1;
     DaliWarning(
@@ -83,7 +83,7 @@ void Placer::SetNumThreads(int32_t num_threads) {
             << num_threads << ") for placer is less than 1, using 1 instead"
     );
   }
-  int32_t max_num_threads = omp_get_max_threads();
+  int max_num_threads = omp_get_max_threads();
   if (num_threads > max_num_threads) {
     num_threads = max_num_threads;
     DaliWarning(
@@ -156,19 +156,19 @@ void Placer::SetBoundaryAuto() {
   DaliExpects(ckt_ptr_ != nullptr,
               "Must set input circuit before setting boundaries");
   auto tot_block_area = ckt_ptr_->TotBlkArea();
-  int32_t width = std::ceil(std::sqrt(
+  int width = std::ceil(std::sqrt(
       double(tot_block_area) / aspect_ratio_ / placement_density_));
-  int32_t height = std::ceil(width * aspect_ratio_);
+  int height = std::ceil(width * aspect_ratio_);
   BOOST_LOG_TRIVIAL(info) << "Pre-set aspect ratio: " << aspect_ratio_
                           << "\n";
   aspect_ratio_ = height / (double) width;
   BOOST_LOG_TRIVIAL(info) << "Adjusted aspect rate: " << aspect_ratio_
                           << "\n";
-  left_ = (int32_t) (ckt_ptr_->AveBlkWidth());
+  left_ = (int) (ckt_ptr_->AveBlkWidth());
   right_ = left_ + width;
-  bottom_ = (int32_t) (ckt_ptr_->AveBlkWidth());
+  bottom_ = (int) (ckt_ptr_->AveBlkWidth());
   top_ = bottom_ + height;
-  int32_t area = height * width;
+  int area = height * width;
   BOOST_LOG_TRIVIAL(info) << "Pre-set filling rate: " << placement_density_
                           << "\n";
   placement_density_ = double(tot_block_area) / area;
@@ -177,7 +177,7 @@ void Placer::SetBoundaryAuto() {
   CheckPlacementBoundary();
 }
 
-void Placer::SetBoundary(int32_t left, int32_t right, int32_t bottom, int32_t top) {
+void Placer::SetBoundary(int left, int right, int bottom, int top) {
   DaliExpects(ckt_ptr_ != nullptr,
               "Must set input circuit before setting boundaries");
   DaliExpects(left < right,
@@ -283,11 +283,11 @@ bool Placer::SaveNodeTerminal(
       height = block.Height();
       low_x = block.LLX();
       low_y = block.LLY();
-      for (int32_t j = 0; j < height; j++) {
+      for (int j = 0; j < height; j++) {
         ost << low_x << "\t" << low_y + j << "\n";
         ost << low_x + width << "\t" << low_y + j << "\n";
       }
-      for (int32_t j = 0; j < width; j++) {
+      for (int j = 0; j < width; j++) {
         ost << low_x + j << "\t" << low_y << "\n";
         ost << low_x + j << "\t" << low_y + height << "\n";
       }
@@ -300,7 +300,7 @@ bool Placer::SaveNodeTerminal(
 
 void Placer::EmitDEFWellFile(
     [[maybe_unused]]std::string const &name_of_file,
-    [[maybe_unused]]int32_t well_emit_mode,
+    [[maybe_unused]]int well_emit_mode,
     [[maybe_unused]]bool enable_emitting_cluster
 ) {
   DaliFatal("You should not use this member function");

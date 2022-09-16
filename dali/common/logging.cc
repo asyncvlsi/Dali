@@ -47,7 +47,7 @@ boost::shared_ptr<console_sink_t> g_console_sink = nullptr;
  * @return boost severity level
  */
 severity StrToLoggingLevel(const std::string &severity_level_str) {
-  int32_t level;
+  int level;
   try {
     level = std::stoi(severity_level_str);
   } catch (...) {
@@ -94,8 +94,8 @@ void InitLogging(
   if (file_name.empty()) {
     std::string base_name = "dali";
     std::string extension = ".log";
-    int32_t upper_limits = 2048;
-    for (int32_t i = 0; i < upper_limits; ++i) {
+    int upper_limits = 2048;
+    for (int i = 0; i < upper_limits; ++i) {
       file_name += base_name;
       file_name += std::to_string(i);
       file_name += extension;

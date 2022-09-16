@@ -24,7 +24,7 @@
 
 namespace dali {
 
-IoPin::IoPin(std::pair<const std::string, int32_t> *name_id_pair_ptr) :
+IoPin::IoPin(std::pair<const std::string, int> *name_id_pair_ptr) :
     name_id_pair_ptr_(name_id_pair_ptr),
     net_ptr_(nullptr),
     signal_direction_(INPUT),
@@ -40,7 +40,7 @@ IoPin::IoPin(std::pair<const std::string, int32_t> *name_id_pair_ptr) :
 }
 
 IoPin::IoPin(
-    std::pair<const std::string, int32_t> *name_id_pair_ptr,
+    std::pair<const std::string, int> *name_id_pair_ptr,
     double loc_x,
     double loc_y
 ) : name_id_pair_ptr_(name_id_pair_ptr),
@@ -58,7 +58,7 @@ IoPin::IoPin(
 }
 
 IoPin::IoPin(
-    std::pair<const std::string, int32_t> *name_id_pair_ptr,
+    std::pair<const std::string, int> *name_id_pair_ptr,
     SignalDirection direction,
     PlaceStatus init_place_status,
     double loc_x,
@@ -103,7 +103,7 @@ const std::string &IoPin::Name() const {
   return name_id_pair_ptr_->first;
 }
 
-int32_t IoPin::Id() const {
+int IoPin::Id() const {
   return name_id_pair_ptr_->second;
 }
 
@@ -238,19 +238,19 @@ double IoPin::UY(double spacing) const {
   return y_ + rects_[orient_ - N].URY() + spacing;
 }
 
-void IoPin::SetFinalX(int32_t final_x) {
+void IoPin::SetFinalX(int final_x) {
   final_x_ = final_x;
 }
 
-int32_t IoPin::FinalX() const {
+int IoPin::FinalX() const {
   return final_x_;
 }
 
-void IoPin::SetFinalY(int32_t final_y) {
+void IoPin::SetFinalY(int final_y) {
   final_y_ = final_y;
 }
 
-int32_t IoPin::FinalY() const {
+int IoPin::FinalY() const {
   return final_y_;
 }
 

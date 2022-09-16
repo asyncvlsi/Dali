@@ -26,16 +26,16 @@
 namespace dali {
 
 struct BlockRegion {
-  BlockRegion(Block *blk, int32_t id) : p_blk(blk), region_id(id) {}
+  BlockRegion(Block *blk, int id) : p_blk(blk), region_id(id) {}
   Block *p_blk = nullptr;
-  int32_t region_id = 0;
+  int region_id = 0;
 };
 
 /****
  * @brief A structure containing information of a block for minimizing displacement
  */
 struct BlkDispVar {
-  int32_t w;                          // width of this block
+  int w;                          // width of this block
   double x_0;                     // initial location
   double e;                       // weight of initial location
   double x_a;                     // anchor location
@@ -43,7 +43,7 @@ struct BlkDispVar {
   double x;                       // place to store final location
   BlockRegion blk_rgn;            // pointer to the block or dummy block
   double segment_weight_;
-  BlkDispVar(int32_t width, double x_init, double weight = 1.0) :
+  BlkDispVar(int width, double x_init, double weight = 1.0) :
       w(width),
       x_0(x_init),
       e(weight),
@@ -53,7 +53,7 @@ struct BlkDispVar {
       blk_rgn(nullptr, 0),
       segment_weight_(1.0) {}
 
-  int32_t Width() { return w; }
+  int Width() { return w; }
   double InitX() { return x_0; }
   double Weight() { return e; }
   double AnchorX() { return x_a; }

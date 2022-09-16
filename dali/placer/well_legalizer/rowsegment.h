@@ -35,18 +35,18 @@ class RowSegment {
  public:
   RowSegment() = default;
 
-  void SetLLX(int32_t lx);
-  void SetURX(int32_t ux);
-  void SetWidth(int32_t width);
-  void SetUsedSize(int32_t used_size);
+  void SetLLX(int lx);
+  void SetURX(int ux);
+  void SetWidth(int width);
+  void SetUsedSize(int used_size);
 
-  int32_t LLX() const;
-  int32_t URX() const;
-  int32_t Width() const;
-  int32_t UsedSize() const;
+  int LLX() const;
+  int URX() const;
+  int Width() const;
+  int UsedSize() const;
 
   std::vector<BlockRegion> &BlkRegions();
-  void AddBlockRegion(Block *blk_ptr, int32_t region_id);
+  void AddBlockRegion(Block *blk_ptr, int region_id);
   void MinDisplacementLegalization(bool use_init_loc);
   void SnapCellToPlacementGrid();
 
@@ -54,22 +54,22 @@ class RowSegment {
   void FitInRange(std::vector<BlkDispVar> &vars);
   double DispCost(
       std::vector<BlkDispVar> &vars,
-      int32_t l, int32_t r,
+      int l, int r,
       bool is_linear
   );
   void FindBestLocalOrder(
       std::vector<BlkDispVar> &res,
       double &best_cost,
       std::vector<BlkDispVar> &vars,
-      int32_t cur, int32_t l, int32_t r,
+      int cur, int l, int r,
       double left_bound, double right_bound,
-      double gap, int32_t range,
+      double gap, int range,
       bool is_linear
   );
   void LocalReorder(
       std::vector<BlkDispVar> &vars,
-      int32_t range = 3,
-      int32_t omit = 0,
+      int range = 3,
+      int omit = 0,
       bool is_linear = false
   );
   void LocalReorder2(
@@ -97,9 +97,9 @@ class RowSegment {
  private:
   // list of blocks in this segment
   std::vector<BlockRegion> blk_regions_;
-  int32_t lx_ = INT_MIN;
-  int32_t width_ = 0;
-  int32_t used_size_ = 0;
+  int lx_ = INT_MIN;
+  int width_ = 0;
+  int used_size_ = 0;
 
   /**** for iterative displacement optimization ****/
   double opt_anchor_weight_ = 0;

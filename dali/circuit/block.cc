@@ -37,9 +37,9 @@ Block::Block() :
 
 Block::Block(
     BlockType *type_ptr,
-    std::pair<const std::string, int32_t> *name_id_pair_ptr,
-    int32_t llx,
-    int32_t lly,
+    std::pair<const std::string, int> *name_id_pair_ptr,
+    int llx,
+    int lly,
     bool movable,
     BlockOrient orient
 ) : type_ptr_(type_ptr),
@@ -61,9 +61,9 @@ Block::Block(
 
 Block::Block(
     BlockType *type_ptr,
-    std::pair<const std::string, int32_t> *name_id_pair_ptr,
-    int32_t llx,
-    int32_t lly,
+    std::pair<const std::string, int> *name_id_pair_ptr,
+    int llx,
+    int lly,
     PlaceStatus place_state,
     BlockOrient orient
 ) : type_ptr_(type_ptr),
@@ -79,7 +79,7 @@ Block::Block(
   aux_ptr_ = nullptr;
 }
 
-void Block::SetHeight(int32_t height) {
+void Block::SetHeight(int height) {
   eff_height_ = height;
   eff_area_ = eff_height_ * type_ptr_->Width();
 }
@@ -162,7 +162,7 @@ double Block::OverlapArea(const Block &blk) const {
   return overlap_area;
 }
 
-void Block::SetStretchLength(size_t index, int32_t length) {
+void Block::SetStretchLength(size_t index, int length) {
   size_t sz = stretch_length_.size();
   DaliExpects(index < sz, "Out of bound");
   if (IsFlipped()) {
@@ -173,18 +173,18 @@ void Block::SetStretchLength(size_t index, int32_t length) {
       std::accumulate(stretch_length_.begin(), stretch_length_.end(), 0);
 }
 
-std::vector<int32_t> &Block::StretchLengths() {
+std::vector<int> &Block::StretchLengths() {
   return stretch_length_;
 }
 
-int32_t Block::CumulativeStretchLength(size_t index) {
+int Block::CumulativeStretchLength(size_t index) {
   if (TypePtr()->WellPtr()->RegionCount() == 1) return 0;
   if (stretch_length_.empty()) return 0;
 
   size_t sz = stretch_length_.size();
   DaliExpects(index <= sz, "Out of bound");
 
-  int32_t res = 0;
+  int res = 0;
   for (size_t i = 0; i < index; ++i) {
     res += stretch_length_[i];
   }
@@ -215,7 +215,7 @@ void Block::ExportWellToMatlabPatchRect(std::ofstream &ost) {
   std::vector<RectI> p_well_shapes;
   BlockTypeWell *multi_well = TypePtr()->WellPtr();
   if (multi_well != nullptr) {
-    for (int32_t i = 0; i < multi_well->RegionCount(); ++i) {
+    for (int i = 0; i < multi_well->RegionCount(); ++i) {
       n_well_shapes.push_back(multi_well->NwellRect(i));
       p_well_shapes.push_back(multi_well->PwellRect(i));
     }
@@ -223,7 +223,7 @@ void Block::ExportWellToMatlabPatchRect(std::ofstream &ost) {
 
   size_t sz = n_well_shapes.size();
   for (size_t i = 0; i < sz; ++i) {
-    int32_t length = CumulativeStretchLength(i);
+    int length = CumulativeStretchLength(i);
     if (Orient() == N) {
       RectD n_rect(
           LLX() + n_well_shapes[i].LLX(),

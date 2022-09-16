@@ -34,7 +34,7 @@ namespace dali {
  *
  * @param max_iter: maximum number of iterations.
  */
-void GlobalPlacer::SetMaxIteration(int32_t max_iter) {
+void GlobalPlacer::SetMaxIteration(int max_iter) {
   DaliExpects(max_iter >= 0, "negative number of iterations?");
   max_iter_ = max_iter;
 }
@@ -170,16 +170,16 @@ bool GlobalPlacer::IsBlockListOrNetListEmpty() const {
 
 bool GlobalPlacer::IsSeriesConverge(
     std::vector<double> &series,
-    int32_t window_size,
+    int window_size,
     double tolerance
 ) {
-  auto sz = static_cast<int32_t>(series.size());
+  auto sz = static_cast<int>(series.size());
   if (sz < window_size) {
     return false;
   }
   double max_val = -DBL_MAX;
   double min_val = DBL_MAX;
-  for (int32_t i = 0; i < window_size; ++i) {
+  for (int i = 0; i < window_size; ++i) {
     max_val = std::max(max_val, series[sz - 1 - i]);
     min_val = std::min(min_val, series[sz - 1 - i]);
   }
@@ -251,7 +251,7 @@ void GlobalPlacer::PrintHpwl() const {
   double lo_hpwl = optimizer_->GetHpwls().back();
   double hi_hpwl = legalizer_->GetHpwls().back();
   std::string buffer(1024, '\0');
-  int32_t written_length = sprintf(
+  int written_length = sprintf(
       &buffer[0],
       "  iter-%-3d: %.4e  %.4e\n", cur_iter_, lo_hpwl, hi_hpwl
   );

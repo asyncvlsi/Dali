@@ -47,16 +47,16 @@ class IoPlacer {
   void SetPhyDB(phydb::PhyDB *phy_db_ptr);
 
   bool PartialPlaceIoPin();
-  bool PartialPlaceCmd(int32_t argc, char **argv);
+  bool PartialPlaceCmd(int argc, char **argv);
 
-  bool ConfigSetMetalLayer(int32_t boundary_index, int32_t metal_layer_index);
-  bool ConfigSetGlobalMetalLayer(int32_t metal_layer_index);
+  bool ConfigSetMetalLayer(int boundary_index, int metal_layer_index);
+  bool ConfigSetGlobalMetalLayer(int metal_layer_index);
   bool ConfigAutoPlace();
 
-  bool ConfigBoundaryMetal(int32_t argc, char **argv);
+  bool ConfigBoundaryMetal(int argc, char **argv);
 
   static void ReportConfigUsage();
-  bool ConfigCmd(int32_t argc, char **argv);
+  bool ConfigCmd(int argc, char **argv);
 
   bool CheckConfiguration();
 
@@ -67,7 +67,7 @@ class IoPlacer {
   void AdjustIoPinLocationForPhyDB();
 
   bool AutoPlaceIoPin();
-  bool AutoPlaceCmd(int32_t argc, char **argv);
+  bool AutoPlaceCmd(int argc, char **argv);
  private:
   Circuit *p_ckt_ = nullptr;
   phydb::PhyDB *phy_db_ptr_ = nullptr;

@@ -37,11 +37,11 @@ class GriddedRowLegalizer : public Placer {
   GriddedRowLegalizer() = default;
 
   void CheckWellInfo();
-  void SetThreads(int32_t number_of_threads);
+  void SetThreads(int number_of_threads);
   void SetUseCplex(bool use_cplex);
 
   void SetExternalSpacePartitioner(AbstractSpacePartitioner *p_external_partitioner);
-  void SetPartitionMode(int32_t partitioning_mode_);
+  void SetPartitionMode(int partitioning_mode_);
   void SetMaxRowWidth(double max_row_width);
   void PartitionSpaceAndBlocks();
 
@@ -64,7 +64,7 @@ class GriddedRowLegalizer : public Placer {
   void RestoreQPLocX();
   void RestoreConsensusLocX();
 
-  void SetLegalizationMaxIteration(int32_t max_iteration);
+  void SetLegalizationMaxIteration(int max_iteration);
   bool StripeLegalizationUpward(Stripe &stripe, bool use_init_loc);
   bool StripeLegalizationDownward(Stripe &stripe, bool use_init_loc);
   void CleanUpTemporaryRowSegments();
@@ -102,7 +102,7 @@ class GriddedRowLegalizer : public Placer {
   void GenMatlabClusterTable(std::string const &name_of_file);
   void GenMATLABWellTable(
       std::string const &name_of_file,
-      int32_t well_emit_mode
+      int well_emit_mode
   ) override;
   void GenSubCellTable(std::string const &name_of_file);
   void GenDisplacement(std::string const &name_of_file);
@@ -110,25 +110,25 @@ class GriddedRowLegalizer : public Placer {
   void ReportEffectiveDensity();
  private:
   // space partitioner
-  int32_t partitioning_mode_ = 0;
-  int32_t max_row_width_ = -1;
+  int partitioning_mode_ = 0;
+  int max_row_width_ = -1;
   AbstractSpacePartitioner *space_partitioner_ = nullptr;
 
-  int32_t well_spacing_ = 0;
-  int32_t tap_cell_p_height_ = 0;
-  int32_t tap_cell_n_height_ = 0;
+  int well_spacing_ = 0;
+  int tap_cell_p_height_ = 0;
+  int tap_cell_n_height_ = 0;
 
   std::vector<ClusterStripe> col_list_;
 
   bool is_well_tap_needed_ = true;
   bool is_checker_board_mode_ = false;
-  int32_t tap_cell_interval_grid_ = -1;
+  int tap_cell_interval_grid_ = -1;
   BlockType *well_tap_type_ptr_ = nullptr;
 
-  int32_t greedy_cur_iter_ = 0;
-  int32_t greedy_max_iter_ = 30;
+  int greedy_cur_iter_ = 0;
+  int greedy_max_iter_ = 30;
 
-  int32_t consensus_max_iter_ = 1000;
+  int consensus_max_iter_ = 1000;
 
   bool is_init_loc_cached_ = false;
   bool is_greedy_loc_cached_ = false;
@@ -136,7 +136,7 @@ class GriddedRowLegalizer : public Placer {
   bool is_cons_loc_cached_ = false;
   std::vector<LgBlkAux> blk_auxs_;
 
-  int32_t number_of_threads_ = 1;
+  int number_of_threads_ = 1;
   bool use_cplex_ = false;
 
   void SetWellTapCellNecessary(bool is_well_tap_needed);

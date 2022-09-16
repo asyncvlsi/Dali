@@ -92,10 +92,10 @@ struct IoBoundarySpace {
 
   IoBoundarySpace(bool is_horizontal, double boundary_loc);
   void AddLayer(MetalLayer *metal_layer);
-  void SetIoPinLimit(int32_t limit);
+  void SetIoPinLimit(int limit);
   bool AutoPlaceIoPin();
  private:
-  int32_t iopin_limit_ = 0;
+  int iopin_limit_ = 0;
   bool is_iopin_limit_set_ = false;
   bool is_horizontal_;
   double boundary_loc_ = 0;

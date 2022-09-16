@@ -51,7 +51,7 @@ class RoughLegalizer {
 
   // save intermediate result for debugging and/or visualization
   bool should_save_intermediate_result_ = false;
-  int32_t cur_iter_ = 0;
+  int cur_iter_ = 0;
 };
 
 class LookAheadLegalizer : public RoughLegalizer {
@@ -87,14 +87,14 @@ class LookAheadLegalizer : public RoughLegalizer {
   double GetTime() override;
   void Close() override;
  private:
-  int32_t number_of_cell_in_bin_ = 30;
-  int32_t cluster_upper_size = 3;
+  int number_of_cell_in_bin_ = 30;
+  int cluster_upper_size = 3;
 
   // look ahead legalization member function implemented below
-  int32_t grid_bin_height = 0;
-  int32_t grid_bin_width = 0;
-  int32_t grid_cnt_x = 0;
-  int32_t grid_cnt_y = 0;
+  int grid_bin_height = 0;
+  int grid_bin_width = 0;
+  int grid_cnt_x = 0;
+  int grid_cnt_y = 0;
   std::vector<std::vector<GridBin>> grid_bin_mesh;
   std::vector<std::vector<unsigned long long>> grid_bin_white_space_LUT;
 
