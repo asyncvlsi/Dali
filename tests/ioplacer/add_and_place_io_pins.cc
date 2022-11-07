@@ -52,7 +52,7 @@ int main() {
   RemoveAllIoPins(p_phy_db0);
 
   // initialize Dali to use its API to add and place I/O pins
-  Dali dali(p_phy_db0, boost::log::trivial::debug, "", true);
+  Dali dali(p_phy_db0, boost::log::trivial::debug, "");
   dali.InstantiateIoPlacer();
 
   // read the DEF file back to the memory, and perform checking

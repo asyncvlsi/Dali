@@ -34,15 +34,19 @@ class Dali {
   Dali(
       phydb::PhyDB *phy_db_ptr,
       const std::string &severity_level,
-      const std::string &log_file_name = "",
-      bool has_log_prefix = true
+      const std::string &log_file_name = ""
   );
   Dali(
       phydb::PhyDB *phy_db_ptr,
       severity severity_level,
-      const std::string &log_file_name = "",
-      bool has_log_prefix = true
+      const std::string &log_file_name = ""
   );
+
+  void ShowParamsList();
+  void LoadParamsFromConfig();
+
+  void SetLogPrefix(bool has_log_prefix);
+  void SetNumThreads(int num_threads);
 
   Circuit &GetCircuit();
   phydb::PhyDB *GetPhyDBPtr();
@@ -64,7 +68,7 @@ class Dali {
   bool TimingDrivenPlacement(double density, int number_of_threads);
 #endif
 
-  bool StartPlacement(double density, int number_of_threads = 1);
+  bool StartPlacement(double density = -1, int number_of_threads = 1);
 
   void AddWellTaps(
       phydb::Macro *cell,
@@ -90,6 +94,24 @@ class Dali {
 
   void InstantiateIoPlacer();
  private:
+  // options
+  std::string prefix_ = "dali.";
+  severity severity_level_ = boost::log::trivial::info;
+  std::string log_file_name_;
+  bool has_log_prefix_ = true;
+  int num_threads_ = 1;
+  DefaultPartitionMode well_legalization_mode_ = DefaultPartitionMode::STRICT;
+  bool has_no_global_ = false;
+  bool has_no_legal_ = false;
+  bool has_no_io_place_ = false;
+  double target_density_ = -1;
+  int io_metal_layer_ = 0;
+  bool enable_export_well_cluster_for_matlab_ = false;
+  bool has_well_tap_ = true;
+  double max_row_width_ = 0;
+  bool is_standard_cell_ = false;
+
+  // circuit and placer
   Circuit circuit_;
   phydb::PhyDB *phy_db_ptr_ = nullptr;
   GlobalPlacer gb_placer_;

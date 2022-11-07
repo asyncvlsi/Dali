@@ -300,7 +300,12 @@ bool LGTetrisEx::IsSpaceLegal(
 }
 
 bool LGTetrisEx::IsFitToRow(int row_id, Block &block) const {
-  int region_cnt = block.TypePtr()->WellPtr()->RegionCount();
+  auto well_ptr = block.TypePtr()->WellPtr();
+  if (well_ptr == nullptr) {
+    // if there is no well_ptr, we can assume it is a standard cell design
+    return true;
+  }
+  int region_cnt = well_ptr->RegionCount();
   if (region_cnt & 1) { // odd region_cnt can be placed into any rows
     return true;
   }
@@ -314,7 +319,14 @@ bool LGTetrisEx::IsFitToRow(int row_id, Block &block) const {
 }
 
 bool LGTetrisEx::ShouldOrientN(int row_id, Block &block) const {
-  bool is_gnd_bottom = block.TypePtr()->WellPtr()->IsNwellAbovePwell(0);
+  auto well_ptr = block.TypePtr()->WellPtr();
+  bool is_gnd_bottom = true;
+  if (well_ptr == nullptr) {
+    // if there is no well_ptr, we can assume it is a standard cell design
+    is_gnd_bottom = true;
+  } else {
+    is_gnd_bottom = block.TypePtr()->WellPtr()->IsNwellAbovePwell(0);
+  }
   bool is_row_even = !(row_id & 1);
   bool is_row_N = (is_row_even && is_first_row_N_) ||
       (!is_row_even && !is_first_row_N_);

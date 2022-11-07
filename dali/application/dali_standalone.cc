@@ -24,13 +24,14 @@
 #include <iostream>
 #include <memory>
 
+#include <common/config.h>
+
 #include <phydb/phydb.h>
 
-#include "dali/circuit/circuit.h"
 #include "dali/common/elapsed_time.h"
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
-
+#include "dali/dali.h"
 #include "dali/placer.h"
 
 using namespace dali;
@@ -121,6 +122,7 @@ int main(int argc, char *argv[]) {
       str_target_density = std::string(argv[i++]);
       try {
         target_density = std::stod(str_target_density);
+        config_set_real("dali.target_density", target_density);
       } catch (...) {
         std::cout << "Invalid target density!\n";
         ReportUsage();
@@ -130,6 +132,7 @@ int main(int argc, char *argv[]) {
       std::string str_metal_layer_num = std::string(argv[i++]);
       try {
         io_metal_layer = std::stoi(str_metal_layer_num) - 1;
+        config_set_int("dali.io_metal_layer", io_metal_layer);
       } catch (...) {
         std::cout << "Invalid metal layer number!\n";
         ReportUsage();
@@ -137,34 +140,23 @@ int main(int argc, char *argv[]) {
       }
     } else if (arg == "-v" && i < argc) {
       str_verbose_level = std::string(argv[i++]);
-      try {
-        verbose_level = StrToLoggingLevel(str_verbose_level);
-      } catch (...) {
-        std::cout << "Invalid stoi conversion: " << str_verbose_level << "\n";
-        ReportUsage();
-        return 1;
-      }
+      config_set_string("dali.severity_level", str_verbose_level.c_str());
     } else if (arg == "-lognoprefix") {
       has_log_prefix = false;
+      config_set_int("dali.has_log_prefix", 0);
     } else if (arg == "-wlgmode" && i < argc) {
       std::string str_wlg_mode = std::string(argv[i++]);
-      if (str_wlg_mode == "scavenge") {
-        well_legalization_mode =
-            static_cast<int>(DefaultPartitionMode::SCAVENGE);
-      } else if (str_wlg_mode == "strict") {
-        well_legalization_mode = static_cast<int>(DefaultPartitionMode::STRICT);
-      } else {
-        std::cout << "Unknown well legalization mode: " << str_wlg_mode << "\n";
-        ReportUsage();
-        return 1;
-      }
+      config_set_string("dali.well_legalization_mode", str_wlg_mode.c_str());
     } else if (arg == "-nolegal") {
       is_no_legal = true;
+      config_set_int("dali.has_no_legal", 1);
     } else if (arg == "-noglobal") {
       is_no_global = true;
+      config_set_int("dali.has_no_global", 1);
     } else if (arg == "-maxrowwidth" && i < argc) {
       try {
         max_row_width = std::stod(argv[i++]);
+        config_set_real("dali.max_row_width", max_row_width);
       } catch (...) {
         std::cout << "Invalid max row width!\n";
         ReportUsage();
@@ -172,13 +164,17 @@ int main(int argc, char *argv[]) {
       }
     } else if (arg == "-nowelltap") {
       is_well_tap_needed = false;
+      config_set_int("dali.has_well_tap_", 0);
     } else if (arg == "-noioplace") {
       is_no_io_place = true;
+      config_set_int("dali.has_no_io_place_", 1);
     } else if (arg == "-clsmatlab") {
       export_well_cluster_for_matlab = true;
+      config_set_int("dali.enable_export_well_cluster_for_matlab", 1);
     } else if (arg == "-log" && i < argc) {
       log_file_name = std::string(argv[i++]);
-      if (lef_file_name.empty()) {
+      config_set_string("dali.log_file_name", log_file_name.c_str());
+      if (log_file_name.empty()) {
         std::cout << "Invalid name for log file!\n";
         ReportUsage();
         return 1;
@@ -188,7 +184,7 @@ int main(int argc, char *argv[]) {
       try {
         lg_threads = std::max(std::stoi(str_lgthreads), 1);
       } catch (...) {
-        std::cout << "Invalid metal layer number!\n";
+        std::cout << "Invalid number of threads!\n";
         ReportUsage();
         return 1;
       }
@@ -199,7 +195,7 @@ int main(int argc, char *argv[]) {
       try {
         gb_maxiter = std::stoi(str_gb_maxiter);
       } catch (...) {
-        std::cout << "Invalid metal layer number!\n";
+        std::cout << "Invalid number of iterations!\n";
         ReportUsage();
         return 1;
       }
@@ -207,6 +203,7 @@ int main(int argc, char *argv[]) {
       std::string str_nthreads = std::string(argv[i++]);
       try {
         num_threads = std::stoi(str_nthreads);
+        config_set_int("dali.num_threads", num_threads);
       } catch (...) {
         std::cout << "Invalid number of threads!\n";
         ReportUsage();
@@ -218,25 +215,6 @@ int main(int argc, char *argv[]) {
       return 1;
     }
   }
-
-  // initialize logger
-  InitLogging(
-      log_file_name,
-      verbose_level,
-      has_log_prefix
-  );
-
-  // print the software statement
-  PrintSoftwareStatement();
-
-  // print the current time
-  using std::chrono::system_clock;
-  system_clock::time_point today = system_clock::now();
-  std::time_t tt = system_clock::to_time_t(today);
-  BOOST_LOG_TRIVIAL(info) << "Today is: " << ctime(&tt) << "\n";
-
-  // save command line arguments for future reference
-  SaveArgs(argc, argv);
 
   // start the timer to record the runtime
   ElapsedTime elapsed_time;
@@ -260,94 +238,23 @@ int main(int argc, char *argv[]) {
   }
 
   // (2). initialize Circuit
-  Circuit circuit;
-  circuit.InitializeFromPhyDB(&phy_db);
-  if (!m_cell_file_name.empty()) {
-    circuit.ReadMultiWellCell(m_cell_file_name);
-  }
-  circuit.ReportBriefSummary();
+  Dali dali(&phy_db, verbose_level, log_file_name);
+  // print the software statement
+  PrintSoftwareStatement();
 
-  // set the placement density
-  if (target_density == -1) {
-    double default_density = 0.7;
-    target_density = std::max(circuit.WhiteSpaceUsage(), default_density);
-    BOOST_LOG_TRIVIAL(info)
-      << "Target density not provided, set it to default value: "
-      << target_density << "\n";
-  }
+  // print the current time
+  using std::chrono::system_clock;
+  system_clock::time_point today = system_clock::now();
+  std::time_t tt = system_clock::to_time_t(today);
+  BOOST_LOG_TRIVIAL(info) << "Today is: " << ctime(&tt) << "\n";
 
-  // start placement
-  // (1). global placement
-  auto gb_placer = std::make_unique<GlobalPlacer>();
-  gb_placer->SetInputCircuit(&circuit);
-  gb_placer->SetNumThreads(num_threads);
-  gb_placer->SetMaxIteration(gb_maxiter);
-  if (!is_no_global) {
-    gb_placer->SetPlacementDensity(target_density);
-    //gb_placer->ReportBoundaries();
-    gb_placer->StartPlacement();
-  }
-  if (export_well_cluster_for_matlab) {
-    circuit.GenMATLABTable("gb_result.txt");
-  }
+  // save command line arguments for future reference
+  SaveArgs(argc, argv);
 
-  // (2). legalization
-  if (!cell_file_name.empty()) {
-    // (a). single row gridded cell legalization
-    auto well_legalizer = std::make_unique<StdClusterWellLegalizer>();
-    well_legalizer->TakeOver(gb_placer.get());
-    well_legalizer->SetStripePartitionMode(well_legalization_mode);
-    well_legalizer->StartPlacement();
-    if (export_well_cluster_for_matlab) {
-      circuit.GenMATLABTable("sc_result.txt");
-      well_legalizer->GenMatlabClusterTable("sc_result");
-      well_legalizer->GenMATLABWellTable("scw", 0);
-    }
-
-    if (!output_name.empty()) {
-      well_legalizer->EmitDEFWellFile(output_name, 1);
-    }
-  } else if (!m_cell_file_name.empty()) {
-    // (b). multi row gridded cell legalization
-    auto multi_well_legalizer = std::make_unique<GriddedRowLegalizer>();
-    multi_well_legalizer->SetThreads(lg_threads);
-    multi_well_legalizer->SetUseCplex(lg_cplex);
-    multi_well_legalizer->TakeOver(gb_placer.get());
-    multi_well_legalizer->SetWellTapCellParameters(
-        is_well_tap_needed, false, -1, ""
-    );
-    multi_well_legalizer->SetMaxRowWidth(max_row_width);
-    multi_well_legalizer->SetPartitionMode(well_legalization_mode);
-    multi_well_legalizer->StartPlacement();
-    if (export_well_cluster_for_matlab) {
-      circuit.GenMATLABTable("sc_result.txt");
-      multi_well_legalizer->GenMatlabClusterTable("sc_result");
-      multi_well_legalizer->GenMATLABWellTable("scw", 0);
-      multi_well_legalizer->GenDisplacement("disp_result.txt");
-    }
-
-    if (!output_name.empty()) {
-      multi_well_legalizer->EmitDEFWellFile(output_name, 1);
-    }
-  } else {
-    // (c). Tetris Legalization
-    if (!is_no_legal) {
-      auto legalizer = std::make_unique<LGTetrisEx>();
-      legalizer->TakeOver(gb_placer.get());
-      legalizer->StartPlacement();
-    }
-  }
-
-  if (!is_no_io_place) {
-    auto io_placer = std::make_unique<IoPlacer>(&phy_db, &circuit);
-    bool is_ioplacer_config_success =
-        io_placer->ConfigSetGlobalMetalLayer(io_metal_layer);
-    DaliExpects(is_ioplacer_config_success,
-                "Cannot successfully configure I/O placer");
-    io_placer->AutoPlaceIoPin();
-  }
+  dali.StartPlacement();
 
   // save placement result
+  auto circuit = dali.GetCircuit();
   circuit.SaveDefFile(output_name, "", def_file_name, 1, 1, 2, 1);
   circuit.SaveDefFile(output_name, "_io", def_file_name, 1, 1, 1, 1);
   circuit.SaveDefFile(output_name, "_filling", def_file_name, 1, 4, 2, 0);

@@ -43,7 +43,7 @@ class IoPlacer {
   explicit IoPlacer(phydb::PhyDB *phy_db, Circuit *circuit_);
 
   void InitializeBoundarySpaces();
-  void SetCiruit(Circuit *circuit);
+  void SetCircuit(Circuit *circuit);
   void SetPhyDB(phydb::PhyDB *phy_db_ptr);
 
   bool PartialPlaceIoPin();

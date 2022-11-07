@@ -55,7 +55,7 @@ int main() {
   SetAllIoPinsToUnplaced(p_phy_db);
 
   // initialize Dali
-  Dali dali(p_phy_db, boost::log::trivial::info, "", true);
+  Dali dali(p_phy_db, boost::log::trivial::info, "");
 
   // perform IO placement
   std::string layer_name("Metal1");

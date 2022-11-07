@@ -41,9 +41,9 @@ Tech::Tech()
 *    auto *T = new T();
 * ****/
 Tech::~Tech() {
-  for (auto &pair: block_type_map_) {
-    delete pair.second;
-  }
+  //for (auto &pair: block_type_map_) {
+  //  delete pair.second;
+  //}
 }
 
 double Tech::GetManufacturingGrid() const {

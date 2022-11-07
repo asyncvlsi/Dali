@@ -37,7 +37,7 @@ IoPlacer::IoPlacer() {
 
 IoPlacer::IoPlacer(phydb::PhyDB *phy_db, Circuit *circuit) {
   SetPhyDB(phy_db);
-  SetCiruit(circuit);
+  SetCircuit(circuit);
   InitializeBoundarySpaces();
 }
 
@@ -63,7 +63,7 @@ void IoPlacer::InitializeBoundarySpaces() {
 
 }
 
-void IoPlacer::SetCiruit(Circuit *circuit) {
+void IoPlacer::SetCircuit(Circuit *circuit) {
   DaliExpects(circuit != nullptr,
               "Cannot initialize an IoPlacer without providing a valid Circuit pointer");
   p_ckt_ = circuit;

@@ -22,6 +22,10 @@
 
 #include <cstdlib>
 
+#include <iostream>
+
+#include <common/config.h>
+
 #include "dali/common/helper.h"
 #include "dali/common/phydb_helper.h"
 
@@ -30,32 +34,141 @@ namespace dali {
 Dali::Dali(
     phydb::PhyDB *phy_db_ptr,
     const std::string &severity_level,
-    const std::string &log_file_name,
-    bool has_log_prefix
+    const std::string &log_file_name
 ) {
-  auto boost_severity_level = StrToLoggingLevel(severity_level);
-  InitLogging(
-      log_file_name,
-      boost_severity_level,
-      has_log_prefix
-  );
   phy_db_ptr_ = phy_db_ptr;
-  circuit_.InitializeFromPhyDB(phy_db_ptr);
+  severity_level_ = StrToLoggingLevel(severity_level);
+  log_file_name_ = log_file_name;
+  LoadParamsFromConfig();
+  InitLogging(
+      log_file_name_,
+      severity_level_,
+      has_log_prefix_
+  );
 }
 
 Dali::Dali(
     phydb::PhyDB *phy_db_ptr,
     severity severity_level,
-    const std::string &log_file_name,
-    bool has_log_prefix
+    const std::string &log_file_name
 ) {
-  InitLogging(
-      log_file_name,
-      severity_level,
-      has_log_prefix
-  );
   phy_db_ptr_ = phy_db_ptr;
-  circuit_.InitializeFromPhyDB(phy_db_ptr);
+  severity_level_ = severity_level;
+  log_file_name_ = log_file_name;
+  LoadParamsFromConfig();
+  InitLogging(
+      log_file_name_,
+      severity_level_,
+      has_log_prefix_
+  );
+}
+
+void Dali::ShowParamsList() {
+  std::cout
+      << "List of Dali parameters\n"
+      << "  " << prefix_ + "severity_level: str\n"
+      << "  " << prefix_ + "log_file_name: str\n"
+      << "  " << prefix_ + "has_log_prefix: int\n"
+      << "  " << prefix_ + "num_threads: int\n"
+      << "  " << prefix_ + "well_legalization_mode: str\n"
+      << "  " << prefix_ + "has_no_global: int\n"
+      << "  " << prefix_ + "has_no_legal: int\n"
+      << "  " << prefix_ + "has_no_io_place: int\n"
+      << "  " << prefix_ + "target_density: double\n"
+      << "  " << prefix_ + "io_metal_layer: int\n"
+      << "  " << prefix_ + "enable_export_well_cluster_for_matlab: int\n"
+      << "  " << prefix_ + "has_well_tap: int\n"
+      << "  " << prefix_ + "max_row_width: double\n"
+      << "  " << prefix_ + "is_standard_cell: int\n";
+}
+
+void Dali::LoadParamsFromConfig() {
+  std::string param_name = prefix_ + "severity_level";
+  if (config_exists(param_name.c_str())) {
+    severity_level_ = StrToLoggingLevel(config_get_string(param_name.c_str()));
+  }
+
+  param_name = prefix_ + "log_file_name";
+  if (config_exists(param_name.c_str())) {
+    log_file_name_ = config_get_string(param_name.c_str());
+  }
+
+  param_name = prefix_ + "has_log_prefix";
+  if (config_exists(param_name.c_str())) {
+    has_log_prefix_ = config_get_int(param_name.c_str()) == 1;
+  }
+
+  param_name = prefix_ + "num_threads";
+  if (config_exists(param_name.c_str())) {
+    num_threads_ = config_get_int(param_name.c_str());
+  }
+
+  param_name = prefix_ + "well_legalization_mode";
+  if (config_exists(param_name.c_str())) {
+    std::string model_name = config_get_string(param_name.c_str());
+    if (model_name == "scavenge") {
+      well_legalization_mode_ = DefaultPartitionMode::SCAVENGE;
+    } else if (model_name == "strict") {
+      well_legalization_mode_ = DefaultPartitionMode::STRICT;
+    } else {
+      std::cout << "Ignore unknown well_legalization_mode: " << model_name
+                << "\n";
+    }
+  }
+
+  param_name = prefix_ + "has_no_global";
+  if (config_exists(param_name.c_str())) {
+    has_no_global_ = config_get_int(param_name.c_str()) == 1;
+  }
+
+  param_name = prefix_ + "has_no_legal";
+  if (config_exists(param_name.c_str())) {
+    has_no_legal_ = config_get_int(param_name.c_str()) == 1;
+  }
+
+  param_name = prefix_ + "has_no_io_place";
+  if (config_exists(param_name.c_str())) {
+    has_no_io_place_ = config_get_int(param_name.c_str()) == 1;
+  }
+
+  param_name = prefix_ + "target_density";
+  if (config_exists(param_name.c_str())) {
+    target_density_ = config_get_real(param_name.c_str());
+  }
+
+  param_name = prefix_ + "io_metal_layer";
+  if (config_exists(param_name.c_str())) {
+    io_metal_layer_ = config_get_int(param_name.c_str());
+  }
+
+  param_name = prefix_ + "enable_export_well_cluster_for_matlab";
+  if (config_exists(param_name.c_str())) {
+    enable_export_well_cluster_for_matlab_ =
+        config_get_int(param_name.c_str()) == 1;
+  }
+
+  param_name = prefix_ + "has_well_tap";
+  if (config_exists(param_name.c_str())) {
+    has_well_tap_ = config_get_int(param_name.c_str()) == 1;
+  }
+
+  param_name = prefix_ + "max_row_width";
+  if (config_exists(param_name.c_str())) {
+    max_row_width_ = config_get_real(param_name.c_str());
+  }
+
+  param_name = prefix_ + "is_standard_cell";
+  if (config_exists(param_name.c_str())) {
+    is_standard_cell_ = config_get_int(param_name.c_str()) == 1;
+  }
+}
+
+void Dali::SetLogPrefix(bool has_log_prefix) {
+  has_log_prefix_ = has_log_prefix;
+}
+
+void Dali::SetNumThreads(int num_threads) {
+  num_threads_ = num_threads;
 }
 
 Circuit &Dali::GetCircuit() {
@@ -194,18 +307,71 @@ bool Dali::TimingDrivenPlacement(double density, int number_of_threads) {
 #endif
 
 bool Dali::StartPlacement(double density, int number_of_threads) {
-  circuit_.ReportBriefSummary();
-  circuit_.ReportHPWL();
-
-#if PHYDB_USE_GALOIS
-  bool is_td = ShouldPerformTimingDrivenPlacement();
-  if (is_td) {
-    return TimingDrivenPlacement(density, number_of_threads);
+  if (density > 0) {
+    target_density_ = density;
   }
-#endif
-  GlobalPlace(density, number_of_threads);
-  bool is_success = UnifiedLegalization();
-  return is_success;
+  if (number_of_threads >= 1) {
+    num_threads_ = number_of_threads;
+  }
+
+  circuit_.InitializeFromPhyDB(phy_db_ptr_);
+  circuit_.ReportBriefSummary();
+
+  // set the placement density
+  if (target_density_ == -1) {
+    double default_density = 0.7;
+    target_density_ = std::max(circuit_.WhiteSpaceUsage(), default_density);
+    BOOST_LOG_TRIVIAL(info)
+      << "Target density not provided, set it to default value: "
+      << target_density_ << "\n";
+  }
+
+  // start placement
+  // (1). global placement
+  auto gb_placer = std::make_unique<GlobalPlacer>();
+  gb_placer->SetInputCircuit(&circuit_);
+  gb_placer->SetNumThreads(num_threads_);
+  if (!has_no_global_) {
+    gb_placer->SetPlacementDensity(target_density_);
+    //gb_placer->ReportBoundaries();
+    gb_placer->StartPlacement();
+  }
+  if (enable_export_well_cluster_for_matlab_) {
+    circuit_.GenMATLABTable("gb_result.txt");
+  }
+
+  // (2). legalization
+  if (!is_standard_cell_) {
+    // (a). single row gridded cell legalization
+    auto well_legalizer = std::make_unique<StdClusterWellLegalizer>();
+    well_legalizer->TakeOver(gb_placer.get());
+    well_legalizer->SetStripePartitionMode(static_cast<int>(well_legalization_mode_));
+    well_legalizer->StartPlacement();
+    if (enable_export_well_cluster_for_matlab_) {
+      well_legalizer->GenMatlabClusterTable("sc_result");
+      well_legalizer->GenMATLABWellTable("scw", 0);
+    }
+  } else {
+    if (!has_no_legal_) {
+      auto legalizer = std::make_unique<LGTetrisEx>();
+      legalizer->TakeOver(gb_placer.get());
+      legalizer->StartPlacement();
+    }
+  }
+  if (enable_export_well_cluster_for_matlab_) {
+    circuit_.GenMATLABTable("lg_result.txt");
+  }
+
+  if (!has_no_io_place_) {
+    auto io_placer = std::make_unique<IoPlacer>(phy_db_ptr_, &circuit_);
+    bool is_ioplacer_config_success =
+        io_placer->ConfigSetGlobalMetalLayer(io_metal_layer_);
+    DaliExpects(is_ioplacer_config_success,
+                "Cannot successfully configure I/O placer");
+    io_placer->AutoPlaceIoPin();
+  }
+
+  return true;
 }
 
 void Dali::AddWellTaps(
@@ -277,20 +443,12 @@ bool Dali::AddWellTaps(int argc, char **argv) {
  * @return void
  */
 bool Dali::GlobalPlace(double density, int num_threads) {
-  //std::string config_file = "dali.conf";
   gb_placer_.SetNumThreads(num_threads);
-  //gb_placer_.LoadConf(config_file);
   gb_placer_.SetInputCircuit(&circuit_);
   gb_placer_.SetShouldSaveIntermediateResult(false);
   gb_placer_.SetBoundaryFromCircuit();
   gb_placer_.SetPlacementDensity(density);
-  //gb_placer_.ReportBoundaries();
   return gb_placer_.StartPlacement();
-  //gb_placer_.SaveDEFFile("benchmark_1K_dali.def", def_file_name);
-  //gb_placer_.GenMATLABTable("gb_result.txt");
-  //circuit.GenLongNetTable("gb_longnet.txt");
-  //gb_placer_->GenMATLABWellTable("gb_result");
-  //circuit.ReportNetFanOutHistogram();
 }
 
 /**
@@ -305,28 +463,10 @@ bool Dali::GlobalPlace(double density, int num_threads) {
  * @return void
  */
 bool Dali::UnifiedLegalization() {
-  /*
-  legalizer_.TakeOver(&gb_placer_);
-  legalizer_.IsPrintDisplacement(true);
-  legalizer_.should_save_intermediate_result_ = false;
-  legalizer_.StartPlacement();
-  legalizer_.GenMATLABTable("lg_result.txt");
-  legalizer_.GenDisplacement("disp_result.txt");
-  //circuit.GenLongNetTable("lg_longnet.txt");
-  //legalizer_->SaveDEFFile("circuit.def", def_file);
-   */
-
   well_legalizer_.TakeOver(&gb_placer_);
   well_legalizer_.SetStripePartitionMode(int(DefaultPartitionMode::SCAVENGE));
   well_legalizer_.is_dump = false;
   return well_legalizer_.StartPlacement();
-  //well_legalizer_.GenMatlabClusterTable("sc_result");
-  //well_legalizer_.GenMATLABTable("sc_result.txt");
-  //well_legalizer_.GenMatlabClusterTable("sc_result");
-  //well_legalizer_.GenMATLABWellTable("scw", 0);
-  //circuit.GenLongNetTable("sc_longnet.txt");
-
-  //well_legalizer_.EmitDEFWellFile("circuit", 1, false);
 }
 
 /**
