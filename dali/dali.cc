@@ -328,13 +328,12 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
 
   // start placement
   // (1). global placement
-  auto gb_placer = std::make_unique<GlobalPlacer>();
-  gb_placer->SetInputCircuit(&circuit_);
-  gb_placer->SetNumThreads(num_threads_);
+  gb_placer_.SetInputCircuit(&circuit_);
+  gb_placer_.SetNumThreads(num_threads_);
   if (!has_no_global_) {
-    gb_placer->SetPlacementDensity(target_density_);
+    gb_placer_.SetPlacementDensity(target_density_);
     //gb_placer->ReportBoundaries();
-    gb_placer->StartPlacement();
+    gb_placer_.StartPlacement();
   }
   if (enable_export_well_cluster_for_matlab_) {
     circuit_.GenMATLABTable("gb_result.txt");
@@ -343,19 +342,17 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
   // (2). legalization
   if (!is_standard_cell_) {
     // (a). single row gridded cell legalization
-    auto well_legalizer = std::make_unique<StdClusterWellLegalizer>();
-    well_legalizer->TakeOver(gb_placer.get());
-    well_legalizer->SetStripePartitionMode(static_cast<int>(well_legalization_mode_));
-    well_legalizer->StartPlacement();
+    well_legalizer_.TakeOver(&gb_placer_);
+    well_legalizer_.SetStripePartitionMode(static_cast<int>(well_legalization_mode_));
+    well_legalizer_.StartPlacement();
     if (enable_export_well_cluster_for_matlab_) {
-      well_legalizer->GenMatlabClusterTable("sc_result");
-      well_legalizer->GenMATLABWellTable("scw", 0);
+      well_legalizer_.GenMatlabClusterTable("sc_result");
+      well_legalizer_.GenMATLABWellTable("scw", 0);
     }
   } else {
     if (!has_no_legal_) {
-      auto legalizer = std::make_unique<LGTetrisEx>();
-      legalizer->TakeOver(gb_placer.get());
-      legalizer->StartPlacement();
+      legalizer_.TakeOver(&gb_placer_);
+      legalizer_.StartPlacement();
     }
   }
   if (enable_export_well_cluster_for_matlab_) {
