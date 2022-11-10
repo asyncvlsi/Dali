@@ -349,6 +349,7 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
       well_legalizer_.GenMatlabClusterTable("sc_result");
       well_legalizer_.GenMATLABWellTable("scw", 0);
     }
+    well_legalizer_.EmitDEFWellFile("dali_out", 1);
   } else {
     if (!has_no_legal_) {
       legalizer_.TakeOver(&gb_placer_);
