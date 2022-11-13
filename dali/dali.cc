@@ -43,7 +43,7 @@ Dali::Dali(
   InitLogging(
       log_file_name_,
       severity_level_,
-      has_log_prefix_
+      no_log_prefix_
   );
 }
 
@@ -59,43 +59,39 @@ Dali::Dali(
   InitLogging(
       log_file_name_,
       severity_level_,
-      has_log_prefix_
+      no_log_prefix_
   );
 }
 
 void Dali::ShowParamsList() {
   std::cout
       << "List of Dali parameters\n"
-      << "  " << prefix_ + "severity_level: str\n"
+      << "  " << prefix_ + "severity_level: int (0-5)\n"
       << "  " << prefix_ + "log_file_name: str\n"
-      << "  " << prefix_ + "has_log_prefix: int\n"
+      << "  " << prefix_ + "disable_log_prefix: bool\n"
       << "  " << prefix_ + "num_threads: int\n"
       << "  " << prefix_ + "well_legalization_mode: str\n"
-      << "  " << prefix_ + "has_no_global: int\n"
-      << "  " << prefix_ + "has_no_legal: int\n"
-      << "  " << prefix_ + "has_no_io_place: int\n"
+      << "  " << prefix_ + "disable_global_place: bool\n"
+      << "  " << prefix_ + "disable_legalization: bool\n"
+      << "  " << prefix_ + "disable_io_place: bool\n"
       << "  " << prefix_ + "target_density: double\n"
       << "  " << prefix_ + "io_metal_layer: int\n"
-      << "  " << prefix_ + "enable_export_well_cluster_for_matlab: int\n"
-      << "  " << prefix_ + "has_well_tap: int\n"
+      << "  " << prefix_ + "export_well_cluster_matlab: bool\n"
+      << "  " << prefix_ + "disable_welltap: bool\n"
       << "  " << prefix_ + "max_row_width: double\n"
-      << "  " << prefix_ + "is_standard_cell: int\n";
+      << "  " << prefix_ + "is_standard_cell: bool\n"
+      << "  " << prefix_ + "output_name: str\n";
 }
 
 void Dali::LoadParamsFromConfig() {
-  std::string param_name = prefix_ + "severity_level";
-  if (config_exists(param_name.c_str())) {
-    severity_level_ = StrToLoggingLevel(config_get_string(param_name.c_str()));
-  }
-
-  param_name = prefix_ + "log_file_name";
+  std::string param_name = prefix_ + "log_file_name";
   if (config_exists(param_name.c_str())) {
     log_file_name_ = config_get_string(param_name.c_str());
   }
 
-  param_name = prefix_ + "has_log_prefix";
+  param_name = prefix_ + "disable_log_prefix";
   if (config_exists(param_name.c_str())) {
-    has_log_prefix_ = config_get_int(param_name.c_str()) == 1;
+    no_log_prefix_ = config_get_int(param_name.c_str()) == 1;
   }
 
   param_name = prefix_ + "num_threads";
@@ -116,17 +112,17 @@ void Dali::LoadParamsFromConfig() {
     }
   }
 
-  param_name = prefix_ + "has_no_global";
+  param_name = prefix_ + "disable_global_place";
   if (config_exists(param_name.c_str())) {
     has_no_global_ = config_get_int(param_name.c_str()) == 1;
   }
 
-  param_name = prefix_ + "has_no_legal";
+  param_name = prefix_ + "disable_legalization";
   if (config_exists(param_name.c_str())) {
     has_no_legal_ = config_get_int(param_name.c_str()) == 1;
   }
 
-  param_name = prefix_ + "has_no_io_place";
+  param_name = prefix_ + "disable_io_place";
   if (config_exists(param_name.c_str())) {
     has_no_io_place_ = config_get_int(param_name.c_str()) == 1;
   }
@@ -141,13 +137,13 @@ void Dali::LoadParamsFromConfig() {
     io_metal_layer_ = config_get_int(param_name.c_str());
   }
 
-  param_name = prefix_ + "enable_export_well_cluster_for_matlab";
+  param_name = prefix_ + "export_well_cluster_matlab";
   if (config_exists(param_name.c_str())) {
     enable_export_well_cluster_for_matlab_ =
         config_get_int(param_name.c_str()) == 1;
   }
 
-  param_name = prefix_ + "has_well_tap";
+  param_name = prefix_ + "disable_welltap";
   if (config_exists(param_name.c_str())) {
     has_well_tap_ = config_get_int(param_name.c_str()) == 1;
   }
@@ -161,10 +157,15 @@ void Dali::LoadParamsFromConfig() {
   if (config_exists(param_name.c_str())) {
     is_standard_cell_ = config_get_int(param_name.c_str()) == 1;
   }
+
+  param_name = prefix_ + "output_name";
+  if (config_exists(param_name.c_str())) {
+    output_name_ = config_get_string(param_name.c_str());
+  }
 }
 
-void Dali::SetLogPrefix(bool has_log_prefix) {
-  has_log_prefix_ = has_log_prefix;
+void Dali::SetLogPrefix(bool disable_log_prefix) {
+  no_log_prefix_ = disable_log_prefix;
 }
 
 void Dali::SetNumThreads(int num_threads) {
@@ -546,8 +547,10 @@ void Dali::ExportToDEF(
       1,
       4,
       2,
-      1
+      0
   );
+  circuit_.SaveDefFileComponent(output_def_name + "_comp.def",
+                                input_def_file_full_name);
   circuit_.InitNetFanoutHistogram();
   circuit_.ReportNetFanoutHistogram();
   circuit_.ReportHPWLHistogramLinear();

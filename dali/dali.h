@@ -45,7 +45,7 @@ class Dali {
   void ShowParamsList();
   void LoadParamsFromConfig();
 
-  void SetLogPrefix(bool has_log_prefix);
+  void SetLogPrefix(bool disable_log_prefix);
   void SetNumThreads(int num_threads);
 
   Circuit &GetCircuit();
@@ -98,7 +98,7 @@ class Dali {
   std::string prefix_ = "dali.";
   severity severity_level_ = boost::log::trivial::info;
   std::string log_file_name_;
-  bool has_log_prefix_ = true;
+  bool no_log_prefix_ = false;
   int num_threads_ = 1;
   DefaultPartitionMode well_legalization_mode_ = DefaultPartitionMode::STRICT;
   bool has_no_global_ = false;
@@ -110,6 +110,7 @@ class Dali {
   bool has_well_tap_ = true;
   double max_row_width_ = 0;
   bool is_standard_cell_ = false;
+  std::string output_name_ = "dali_out";
 
   // circuit and placer
   Circuit circuit_;

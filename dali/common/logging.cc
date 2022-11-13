@@ -40,21 +40,7 @@ typedef sink::synchronous_sink<sink::basic_text_ostream_backend<char>>
     console_sink_t;
 boost::shared_ptr<console_sink_t> g_console_sink = nullptr;
 
-/****
- * @brief Convert a string number (0-5) to the corresponding boost logging level
- *
- * @param severity_level_str: severity level string
- * @return boost severity level
- */
-severity StrToLoggingLevel(const std::string &severity_level_str) {
-  int level;
-  try {
-    level = std::stoi(severity_level_str);
-  } catch (...) {
-    std::cout << "Invalid dali verbosity level (0-5)!\n";
-    exit(1);
-  }
-
+severity IntToLoggingLevel(int level) {
   switch (level) {
     case 0  : { return severity::fatal; }
     case 1  : { return severity::error; }
@@ -70,6 +56,24 @@ severity StrToLoggingLevel(const std::string &severity_level_str) {
 }
 
 /****
+ * @brief Convert a string number (0-5) to the corresponding boost logging level
+ *
+ * @param severity_level_str: severity level string
+ * @return boost severity level
+ */
+severity StrToLoggingLevel(const std::string &severity_level_str) {
+  int level;
+  try {
+    level = std::stoi(severity_level_str);
+  } catch (...) {
+    std::cout << "Invalid dali verbosity level (0-5)!\n";
+    exit(1);
+  }
+
+  return IntToLoggingLevel(level);
+}
+
+/****
  * @brief Initialize the logging system. The log will be directed to the
  * console and a log file.
  *
@@ -78,13 +82,13 @@ severity StrToLoggingLevel(const std::string &severity_level_str) {
  * where X is the first number which makes the log file name different from any
  * other files in the working directory.
  * @param severity_level: 0 (fatal) - 5 (trace)
- * @param has_log_prefix: if true, then the log file will have time_stamp,
+ * @param disable_log_prefix: if false, then the log file will have time_stamp,
  * thread_id, and severity level as the prefix.
  */
 void InitLogging(
     const std::string &log_file_name,
     severity severity_level,
-    bool has_log_prefix
+    bool disable_log_prefix
 ) {
   // in case the logging system has been initialized, we need to close it first
   CloseLogging();
@@ -110,15 +114,15 @@ void InitLogging(
   }
 
   // add a file sink
-  if (has_log_prefix) {
+  if (disable_log_prefix) {
     g_file_sink = boost::log::add_file_log(
         keywords::file_name = file_name,
-        keywords::format = "[%TimeStamp%] [%ThreadID%] [%Severity%] %Message%"
+        keywords::format = "%Message%"
     );
   } else {
     g_file_sink = boost::log::add_file_log(
         keywords::file_name = file_name,
-        keywords::format = "%Message%"
+        keywords::format = "[%TimeStamp%] [%ThreadID%] [%Severity%] %Message%"
     );
   }
   g_file_sink->locked_backend()->set_auto_newline_mode(

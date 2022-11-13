@@ -47,12 +47,13 @@ namespace dali {
 
 typedef boost::log::trivial::severity_level severity;
 
+severity IntToLoggingLevel(int level);
 severity StrToLoggingLevel(const std::string &severity_level_str);
 
 void InitLogging(
     const std::string &log_file_name = "",
     severity severity_level = boost::log::trivial::info,
-    bool has_log_prefix = true
+    bool disable_log_prefix = false
 );
 
 void CloseLogging();
