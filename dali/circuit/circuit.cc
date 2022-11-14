@@ -2513,7 +2513,7 @@ void Circuit::LoadCell(phydb::PhyDB *phy_db_ptr) {
 
   for (auto &macro : phy_db_tech.GetMacrosRef()) {
     std::string macro_name(macro.GetName());
-    phydb::MacroWell *macro_well = macro.GetWellPtr();
+    auto &macro_well = macro.WellPtrRef();
     DaliExpects(macro_well != nullptr,
                 "No well info provided for MACRO: " + macro_name);
     AddBlockTypeWell(macro_name);

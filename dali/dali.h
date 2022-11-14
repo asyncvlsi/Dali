@@ -68,6 +68,7 @@ class Dali {
   bool TimingDrivenPlacement(double density, int number_of_threads);
 #endif
 
+  void PlaceFillerCells(); // TODO: 2
   bool StartPlacement(double density = -1, int number_of_threads = 1);
 
   void AddWellTaps(
@@ -98,16 +99,16 @@ class Dali {
   std::string prefix_ = "dali.";
   severity severity_level_ = boost::log::trivial::info;
   std::string log_file_name_;
-  bool no_log_prefix_ = false;
+  bool disable_log_prefix_ = false;
   int num_threads_ = 1;
   DefaultPartitionMode well_legalization_mode_ = DefaultPartitionMode::STRICT;
-  bool has_no_global_ = false;
-  bool has_no_legal_ = false;
-  bool has_no_io_place_ = false;
+  bool disable_global_place_ = false;
+  bool disable_legalization_ = false;
+  bool disable_io_place_ = false;
   double target_density_ = -1;
   int io_metal_layer_ = 0;
-  bool enable_export_well_cluster_for_matlab_ = false;
-  bool has_well_tap_ = true;
+  bool export_well_cluster_matlab_ = false;
+  bool disable_welltap_ = true;
   double max_row_width_ = 0;
   bool is_standard_cell_ = false;
   std::string output_name_ = "dali_out";

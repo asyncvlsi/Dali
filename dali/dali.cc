@@ -43,7 +43,7 @@ Dali::Dali(
   InitLogging(
       log_file_name_,
       severity_level_,
-      no_log_prefix_
+      disable_log_prefix_
   );
 }
 
@@ -59,7 +59,7 @@ Dali::Dali(
   InitLogging(
       log_file_name_,
       severity_level_,
-      no_log_prefix_
+      disable_log_prefix_
   );
 }
 
@@ -91,12 +91,12 @@ void Dali::LoadParamsFromConfig() {
 
   param_name = prefix_ + "disable_log_prefix";
   if (config_exists(param_name.c_str())) {
-    no_log_prefix_ = config_get_int(param_name.c_str()) == 1;
+    SetLogPrefix(config_get_int(param_name.c_str()) == 1);
   }
 
   param_name = prefix_ + "num_threads";
   if (config_exists(param_name.c_str())) {
-    num_threads_ = config_get_int(param_name.c_str());
+    SetNumThreads(config_get_int(param_name.c_str()));
   }
 
   param_name = prefix_ + "well_legalization_mode";
@@ -114,17 +114,17 @@ void Dali::LoadParamsFromConfig() {
 
   param_name = prefix_ + "disable_global_place";
   if (config_exists(param_name.c_str())) {
-    has_no_global_ = config_get_int(param_name.c_str()) == 1;
+    disable_global_place_ = config_get_int(param_name.c_str()) == 1;
   }
 
   param_name = prefix_ + "disable_legalization";
   if (config_exists(param_name.c_str())) {
-    has_no_legal_ = config_get_int(param_name.c_str()) == 1;
+    disable_legalization_ = config_get_int(param_name.c_str()) == 1;
   }
 
   param_name = prefix_ + "disable_io_place";
   if (config_exists(param_name.c_str())) {
-    has_no_io_place_ = config_get_int(param_name.c_str()) == 1;
+    disable_io_place_ = config_get_int(param_name.c_str()) == 1;
   }
 
   param_name = prefix_ + "target_density";
@@ -139,13 +139,12 @@ void Dali::LoadParamsFromConfig() {
 
   param_name = prefix_ + "export_well_cluster_matlab";
   if (config_exists(param_name.c_str())) {
-    enable_export_well_cluster_for_matlab_ =
-        config_get_int(param_name.c_str()) == 1;
+    export_well_cluster_matlab_ = config_get_int(param_name.c_str()) == 1;
   }
 
   param_name = prefix_ + "disable_welltap";
   if (config_exists(param_name.c_str())) {
-    has_well_tap_ = config_get_int(param_name.c_str()) == 1;
+    disable_welltap_ = config_get_int(param_name.c_str()) == 1;
   }
 
   param_name = prefix_ + "max_row_width";
@@ -165,7 +164,7 @@ void Dali::LoadParamsFromConfig() {
 }
 
 void Dali::SetLogPrefix(bool disable_log_prefix) {
-  no_log_prefix_ = disable_log_prefix;
+  disable_log_prefix_ = disable_log_prefix;
 }
 
 void Dali::SetNumThreads(int num_threads) {
@@ -331,12 +330,12 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
   // (1). global placement
   gb_placer_.SetInputCircuit(&circuit_);
   gb_placer_.SetNumThreads(num_threads_);
-  if (!has_no_global_) {
+  if (!disable_global_place_) {
     gb_placer_.SetPlacementDensity(target_density_);
     //gb_placer->ReportBoundaries();
     gb_placer_.StartPlacement();
   }
-  if (enable_export_well_cluster_for_matlab_) {
+  if (export_well_cluster_matlab_) {
     circuit_.GenMATLABTable("gb_result.txt");
   }
 
@@ -346,22 +345,22 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
     well_legalizer_.TakeOver(&gb_placer_);
     well_legalizer_.SetStripePartitionMode(static_cast<int>(well_legalization_mode_));
     well_legalizer_.StartPlacement();
-    if (enable_export_well_cluster_for_matlab_) {
+    if (export_well_cluster_matlab_) {
       well_legalizer_.GenMatlabClusterTable("sc_result");
       well_legalizer_.GenMATLABWellTable("scw", 0);
     }
     well_legalizer_.EmitDEFWellFile("dali_out", 1);
   } else {
-    if (!has_no_legal_) {
+    if (!disable_legalization_) {
       legalizer_.TakeOver(&gb_placer_);
       legalizer_.StartPlacement();
     }
   }
-  if (enable_export_well_cluster_for_matlab_) {
+  if (export_well_cluster_matlab_) {
     circuit_.GenMATLABTable("lg_result.txt");
   }
 
-  if (!has_no_io_place_) {
+  if (!disable_io_place_) {
     auto io_placer = std::make_unique<IoPlacer>(phy_db_ptr_, &circuit_);
     bool is_ioplacer_config_success =
         io_placer->ConfigSetGlobalMetalLayer(io_metal_layer_);
