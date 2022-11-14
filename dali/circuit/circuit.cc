@@ -339,6 +339,28 @@ BlockType *Circuit::AddWellTapBlockType(
   );
 }
 
+BlockType *Circuit::AddFillerBlockType(
+    std::string const &block_type_name,
+    double width,
+    double height
+) {
+  double residual = AbsResidual(width, GridValueX());
+  DaliExpects(residual < constants_.epsilon,
+              "BlockType width is not integer multiple of grid value in X: "
+                  + block_type_name);
+
+  residual = AbsResidual(height, GridValueY());
+  DaliExpects(residual < constants_.epsilon,
+              "BlockType height is not integer multiple of grid value in Y: "
+                  + block_type_name);
+
+  int gridded_width = (int) std::round(width / GridValueX());
+  int gridded_height = (int) std::round(height / GridValueY());
+  return AddFillerBlockTypeWithGridUnit(
+      block_type_name, gridded_width, gridded_height
+  );
+}
+
 Pin *Circuit::AddBlkTypePin(
     BlockType *blk_type_ptr,
     std::string const &pin_name,
@@ -2093,7 +2115,9 @@ BlockType *Circuit::AddBlockTypeWithGridUnit(
   );
   auto tmp_ptr = new BlockType(&(ret.first->first), width, height);
   ret.first->second = tmp_ptr;
-  if (tmp_ptr->Area() > INT_MAX) tmp_ptr->Report();
+  if (tmp_ptr->Area() > INT_MAX) {
+    tmp_ptr->Report();
+  }
   return tmp_ptr;
 }
 
@@ -2106,6 +2130,17 @@ BlockType *Circuit::AddWellTapBlockTypeWithGridUnit(
       AddBlockTypeWithGridUnit(block_type_name, width, height);
   tech_.well_tap_cell_ptrs_.push_back(well_tap_ptr);
   return well_tap_ptr;
+}
+
+BlockType *Circuit::AddFillerBlockTypeWithGridUnit(
+    std::string const &block_type_name,
+    int width,
+    int height
+) {
+  BlockType *filler_ptr =
+      AddBlockTypeWithGridUnit(block_type_name, width, height);
+  tech_.filler_ptrs_.emplace_back(filler_ptr);
+  return filler_ptr;
 }
 
 void Circuit::SetBoundary(int left, int bottom, int right, int top) {
@@ -2382,6 +2417,8 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
     BlockType *blk_type = nullptr;
     if (macro.GetClass() == phydb::MacroClass::CORE_WELLTAP) {
       blk_type = AddWellTapBlockType(macro_name, width, height);
+    } else if (macro.GetClass() == phydb::MacroClass::CORE_SPACER) {
+      blk_type = AddFillerBlockType(macro_name, width, height);
     } else {
       blk_type = AddBlockType(macro_name, width, height);
     }

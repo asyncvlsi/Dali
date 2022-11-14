@@ -55,6 +55,10 @@ std::vector<BlockType *> &Tech::WellTapCellPtrs() {
   return well_tap_cell_ptrs_;
 }
 
+std::vector<std::unique_ptr<BlockType>> &Tech::FillerCellPtrs() {
+  return filler_ptrs_;
+}
+
 BlockType *Tech::IoDummyBlkTypePtr() {
   return io_dummy_blk_type_ptr_;
 }

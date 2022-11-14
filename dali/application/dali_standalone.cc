@@ -202,7 +202,11 @@ int main(int argc, char *argv[]) {
         ReportUsage();
         return 1;
       }
-    } else {
+    } else if (arg == "-is_standard_cell") {
+      config_set_int("dali.is_standard_cell", 1);
+    } else if (arg == "-enable_filler_cell") {
+      config_set_int("dali.enable_filler_cell", 1);
+    }else {
       std::cout << "Unknown flag\n";
       std::cout << arg << "\n";
       return 1;
@@ -248,6 +252,9 @@ int main(int argc, char *argv[]) {
 
   // save placement result
   dali.ExportToDEF(def_file_name, output_name);
+  dali.ExportToPhyDB();
+
+  phy_db.WriteDef("phydb.def");
 
   elapsed_time.RecordEndTime();
   BOOST_LOG_TRIVIAL(info)

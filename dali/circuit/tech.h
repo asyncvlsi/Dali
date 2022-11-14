@@ -22,6 +22,7 @@
 #define DALI_CIRCUIT_TECH_H_
 
 #include <list>
+#include <memory>
 #include <unordered_map>
 #include <vector>
 
@@ -43,6 +44,9 @@ class Tech {
 
   // get all kinds of well tap cells
   std::vector<BlockType *> &WellTapCellPtrs();
+
+  // get all filler cells
+  std::vector<std::unique_ptr<BlockType>> &FillerCellPtrs();
 
   // get the dummy BlockType for IOPINs
   BlockType *IoDummyBlkTypePtr();
@@ -92,6 +96,7 @@ class Tech {
   std::list<BlockTypeWell> multi_well_list_;
   BlockType *io_dummy_blk_type_ptr_ = nullptr;
   std::vector<BlockType *> well_tap_cell_ptrs_;
+  std::vector<std::unique_ptr<BlockType>> filler_ptrs_;
 
   /**** row height ****/
   double row_height_ = 0;

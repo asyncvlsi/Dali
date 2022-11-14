@@ -68,7 +68,7 @@ class Dali {
   bool TimingDrivenPlacement(double density, int number_of_threads);
 #endif
 
-  void PlaceFillerCells(); // TODO: 2
+  void CreateFillerCells(int upper_width);
   bool StartPlacement(double density = -1, int number_of_threads = 1);
 
   void AddWellTaps(
@@ -111,6 +111,7 @@ class Dali {
   bool disable_welltap_ = true;
   double max_row_width_ = 0;
   bool is_standard_cell_ = false;
+  bool enable_filler_cell_ = false;
   std::string output_name_ = "dali_out";
 
   // circuit and placer
@@ -134,6 +135,7 @@ class Dali {
 
   void ExportOrdinaryComponentsToPhyDB();
   void ExportWellTapCellsToPhyDB();
+  void ExportFillerCellsToPhyDB();
   void ExportComponentsToPhyDB();
   void ExportIoPinsToPhyDB();
   void ExportMiniRowsToPhyDB();

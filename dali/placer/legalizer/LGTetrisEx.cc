@@ -81,7 +81,7 @@ void LGTetrisEx::InitializeFromGriddedRowLegalizer(GriddedRowLegalizer *grlg) {
   row_segments_.resize(tot_num_rows_);
   for (int i = 0; i < tot_num_rows_; ++i) {
     auto &row = stripe.gridded_rows_[i];
-    for (auto &seg: row.Segments()) {
+    for (auto &seg : row.Segments()) {
       row_segments_[i].emplace_back(seg.LLX(), seg.URX());
     }
   }
@@ -96,7 +96,11 @@ void LGTetrisEx::InitializeFromGriddedRowLegalizer(GriddedRowLegalizer *grlg) {
 
 void LGTetrisEx::SetRowInfoAuto() {
   if (!row_height_set_) {
-    row_height_ = ckt_ptr_->RowHeightGridUnit();
+    if (!ckt_ptr_->design().Blocks().empty()) {
+      row_height_ = ckt_ptr_->design().Blocks()[0].Height();
+    } else {
+      row_height_ = ckt_ptr_->RowHeightGridUnit();
+    }
   }
   tot_num_rows_ = (top_ - bottom_) / row_height_;
   block_contour_.resize(tot_num_rows_, left_);
@@ -108,7 +112,7 @@ void LGTetrisEx::DetectWhiteSpace() {
   Seg tmp(0, 0);
   bool out_of_range;
   auto &blocks = ckt_ptr_->Blocks();
-  for (auto &block: blocks) {
+  for (auto &block : blocks) {
     if (IsDummyBlock(block)) continue;
     if (block.IsMovable()) continue;
     int ly = int(std::floor(block.LLY()));
@@ -135,7 +139,7 @@ void LGTetrisEx::DetectWhiteSpace() {
       }
     }
   }
-  for (auto &intervals: macro_segments) {
+  for (auto &intervals : macro_segments) {
     MergeIntervals(intervals);
   }
 
@@ -341,7 +345,7 @@ void LGTetrisEx::InitBlockContourForward() {
 void LGTetrisEx::InitAndSortBlockAscendingX() {
   blk_inits_.clear();
   auto &blocks = ckt_ptr_->Blocks();
-  for (auto &blk: blocks) {
+  for (auto &blk : blocks) {
     // skipp dummy blocks and fixed blocks
     if (IsDummyBlock(blk)) continue;
     if (blk.IsFixed()) continue;
@@ -433,7 +437,7 @@ int LGTetrisEx::WhiteSpaceBoundLeft(
 
   for (int i = lo_row; i <= hi_row; ++i) {
     tmp_bound = left_;
-    for (auto &seg: row_segments_[i]) {
+    for (auto &seg : row_segments_[i]) {
       if (seg.lo <= lo_x && seg.hi >= hi_x) {
         tmp_bound = seg.lo;
         min_distance = 0;
@@ -649,7 +653,7 @@ bool LGTetrisEx::LocalLegalizationLeft() {
   InitAndSortBlockAscendingX();
 
   bool is_successful = true;
-  for (auto &blk_init_pair: blk_inits_) {
+  for (auto &blk_init_pair : blk_inits_) {
     auto &block = *(blk_init_pair.blk_ptr);
 
     Value2D<int> target_loc;
@@ -687,7 +691,7 @@ void LGTetrisEx::InitBlockContourBackward() {
 void LGTetrisEx::InitAndSortBlockDescendingX() {
   blk_inits_.clear();
   auto &blocks = ckt_ptr_->Blocks();
-  for (auto &blk: blocks) {
+  for (auto &blk : blocks) {
     if (IsDummyBlock(blk)) continue;
     if (blk.IsFixed()) continue;
     double x_loc = blk.URX() + k_width_ * blk.Width()
@@ -773,7 +777,7 @@ int LGTetrisEx::WhiteSpaceBoundRight(
 
   for (int i = lo_row; i <= hi_row; ++i) {
     tmp_bound = right_;
-    for (auto &seg: row_segments_[i]) {
+    for (auto &seg : row_segments_[i]) {
       if (seg.lo <= lo_x && seg.hi >= hi_x) {
         tmp_bound = seg.hi;
         min_distance = 0;
@@ -989,7 +993,7 @@ bool LGTetrisEx::LocalLegalizationRight() {
   InitAndSortBlockDescendingX();
 
   bool is_successful = true;
-  for (auto &blk_init_pair: blk_inits_) {
+  for (auto &blk_init_pair : blk_inits_) {
     auto &block = *(blk_init_pair.blk_ptr);
     Value2D<int> target_loc;
     target_loc.x = int(std::round(block.URX()));
@@ -1030,10 +1034,10 @@ double LGTetrisEx::EstimatedHPWL(Block &block, int x, int y) {
   double min_y = y;
   double tot_hpwl = 0;
   auto &net_list = ckt_ptr_->Nets();
-  for (auto &net_num: block.NetList()) {
+  for (auto &net_num : block.NetList()) {
     auto &net = net_list[net_num];
     if (net.PinCnt() > 100) continue;
-    for (auto &blk_pin: net.BlockPins()) {
+    for (auto &blk_pin : net.BlockPins()) {
       if (blk_pin.BlkPtr() != &block) {
         min_x = std::min(min_x, blk_pin.AbsX());
         min_y = std::min(min_y, blk_pin.AbsY());
@@ -1114,6 +1118,79 @@ bool LGTetrisEx::StartRowAssignment() {
   return true;
 }
 
+void LGTetrisEx::PlaceFillerCells() {
+  BOOST_LOG_TRIVIAL(info) << "  Insert filler cells\n";
+  std::unordered_set<int> filler_widths_set;
+  for (auto &filler : ckt_ptr_->tech().FillerCellPtrs()) {
+    filler_widths_set.insert(filler->Width());
+  }
+  std::vector<int>
+      filler_widths(filler_widths_set.begin(), filler_widths_set.end());
+  std::sort(
+      filler_widths.begin(),
+      filler_widths.end()
+  );
+
+  std::vector < Block * > tmp_row;
+  std::vector<std::vector<Block *>>
+      rows_of_blocks(row_segments_.size(), tmp_row);
+
+  std::vector<Block> &blocks = ckt_ptr_->design().Blocks();
+  for (auto &blk : blocks) {
+    int row_id = LocToRow(std::floor(blk.Y()));
+    rows_of_blocks[row_id].push_back(&blk);
+  }
+
+  int left = RegionLeft();
+  int right = RegionRight();
+  int filler_counter = 0;
+  auto &filler_cells = ckt_ptr_->design().Fillers();
+  BlockType *filler_type_ptr = ckt_ptr_->tech().FillerCellPtrs()[0].get();
+  BlockOrient orient = is_first_row_N_ ? N : FS;
+  for (int row_id = 0; row_id < static_cast<int>(rows_of_blocks.size());
+       ++row_id) {
+    auto &row = rows_of_blocks[row_id];
+    std::sort(
+        row.begin(),
+        row.end(),
+        [](const Block *blk0, const Block *blk1) {
+          return blk0->LLX() < blk1->LLX();
+        }
+    );
+
+    int y_loc = RowToLoc(row_id);
+    int contour = left;
+    for (auto &blk_ptr : row) {
+      int space = static_cast<int>(std::round(blk_ptr->LLX())) - contour;
+      if (space > 0) {
+        for (int i = 0; i < space; ++i) {
+          std::string filler_cell_name =
+              "__filler_cell_component__" + std::to_string(filler_counter++);
+          filler_cells.emplace_back();
+          auto &filler_cell = filler_cells.back();
+          filler_cell.SetPlacementStatus(PLACED);
+          filler_cell.SetType(filler_type_ptr);
+          int map_size = static_cast<int>(ckt_ptr_->design().FillerNameIdMap().size());
+          auto ret = ckt_ptr_->design().FillerNameIdMap().insert(
+              std::pair<std::string, int>(filler_cell_name, map_size)
+          );
+          auto *name_id_pair_ptr = &(*ret.first);
+          filler_cell.SetNameNumPair(name_id_pair_ptr);
+          filler_cell.SetLLX(contour + i);
+          filler_cell.SetLLY(y_loc);
+          filler_cell.SetOrient(orient);
+        }
+        contour = static_cast<int>(std::round(blk_ptr->URX()));
+      }
+    }
+    if (orient == N) {
+      orient = FS;
+    } else {
+      orient = N;
+    }
+  }
+}
+
 void LGTetrisEx::GenAvailSpace(std::string const &name_of_file) {
   BOOST_LOG_TRIVIAL(info) << "Generating available space, dump result to: "
                           << name_of_file << "\n";
@@ -1129,7 +1206,7 @@ void LGTetrisEx::GenAvailSpace(std::string const &name_of_file) {
       << RegionTop() << "\n";
   for (int i = 0; i < tot_num_rows_; ++i) {
     auto &row = row_segments_[i];
-    for (auto &seg: row) {
+    for (auto &seg : row) {
       ost << seg.lo << "\t"
           << seg.hi << "\t"
           << seg.hi << "\t"
@@ -1142,7 +1219,7 @@ void LGTetrisEx::GenAvailSpace(std::string const &name_of_file) {
   }
 
   auto &blocks = ckt_ptr_->Blocks();
-  for (auto &block: blocks) {
+  for (auto &block : blocks) {
     if (block.IsMovable()) continue;
     ost << block.LLX() << "\t"
         << block.URX() << "\t"

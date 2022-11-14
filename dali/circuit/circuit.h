@@ -210,6 +210,13 @@ class Circuit {
       double height
   );
 
+  // add a BlockType for filler cell
+  BlockType *AddFillerBlockType(
+      std::string const &block_type_name,
+      double width,
+      double height
+  );
+
   // add a cell pin with a given name to a BlockType
   Pin *AddBlkTypePin(
       BlockType *blk_type_ptr,
@@ -583,6 +590,12 @@ class Circuit {
 
   // add a BlockType with name, with, and height. The return value is a pointer to this new BlockType for adding pins. Unit in grid value
   BlockType *AddWellTapBlockTypeWithGridUnit(
+      std::string const &block_type_name,
+      int width,
+      int height
+  );
+
+  BlockType *AddFillerBlockTypeWithGridUnit(
       std::string const &block_type_name,
       int width,
       int height

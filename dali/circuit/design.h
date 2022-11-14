@@ -88,6 +88,14 @@ class Design {
     return tap_name_id_map_;
   };
 
+  // get all filler cells
+  std::vector<Block> &Fillers() { return fillers_; }
+
+  // get filler cell name-id map
+  std::unordered_map<std::string, int> &FillerNameIdMap() {
+    return filler_name_id_map_;
+  };
+
   // get all iopins
   std::vector<IoPin> &IoPins() { return iopins_; }
 
@@ -127,6 +135,8 @@ class Design {
   std::unordered_map<std::string, int> blk_name_id_map_;
   std::vector<Block> welltaps_;
   std::unordered_map<std::string, int> tap_name_id_map_;
+  std::vector<Block> fillers_;
+  std::unordered_map<std::string, int> filler_name_id_map_;
   // number of blocks added by calling the AddBlock() API
   int real_block_count_ = 0;
   // number of blocks given in DEF, these two numbers are supposed to be the same

@@ -80,6 +80,8 @@ class LGTetrisEx : public Placer {
 
   bool StartPlacement() override;
 
+  void PlaceFillerCells();
+
   bool StartRowAssignment();
 
   void GenAvailSpace(std::string const &name_of_file = "avail_space.txt");

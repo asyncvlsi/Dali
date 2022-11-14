@@ -80,6 +80,7 @@ void Dali::ShowParamsList() {
       << "  " << prefix_ + "disable_welltap: bool\n"
       << "  " << prefix_ + "max_row_width: double\n"
       << "  " << prefix_ + "is_standard_cell: bool\n"
+      << "  " << prefix_ + "enable_filler_cell: bool\n"
       << "  " << prefix_ + "output_name: str\n";
 }
 
@@ -155,6 +156,11 @@ void Dali::LoadParamsFromConfig() {
   param_name = prefix_ + "is_standard_cell";
   if (config_exists(param_name.c_str())) {
     is_standard_cell_ = config_get_int(param_name.c_str()) == 1;
+  }
+
+  param_name = prefix_ + "enable_filler_cell";
+  if (config_exists(param_name.c_str())) {
+    enable_filler_cell_ = config_get_int(param_name.c_str()) == 1;
   }
 
   param_name = prefix_ + "output_name";
@@ -306,6 +312,33 @@ bool Dali::TimingDrivenPlacement(double density, int number_of_threads) {
 
 #endif
 
+/****
+ * Create Filler Cell BlockType and export it to PhyDB.
+ * Assuming this is only for a standard cell design.
+ *
+ * @param upper_width: create 1X width filler cell, up to upper_widthX
+ */
+void Dali::CreateFillerCells(int upper_width) {
+  double filler_height = phy_db_ptr_->tech().GetMacrosRef().begin()->GetHeight();
+  for (int i = 1; i <= upper_width; ++i) {
+    double width = i * circuit_.GridValueX();
+    std::string filler_name = "__filler__X" + std::to_string(i) + "__";
+    phydb::Macro *phydb_macro = phy_db_ptr_->AddMacro(filler_name);
+    DaliExpects(phydb_macro != nullptr, "cannot add filler cell?");
+    phydb_macro->SetOrigin(0, 0);
+    phydb_macro->SetSize(width, filler_height);
+    phydb_macro->SetClass(phydb::MacroClass::CORE_SPACER);
+    phydb_macro->SetSymmetry(
+        true,
+        false,
+        false
+    );
+
+    circuit_.AddFillerBlockType(filler_name, width, filler_height);
+  }
+  phy_db_ptr_->AddDummyWell();
+}
+
 bool Dali::StartPlacement(double density, int number_of_threads) {
   if (density > 0) {
     target_density_ = density;
@@ -340,20 +373,23 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
   }
 
   // (2). legalization
-  if (!is_standard_cell_) {
-    // (a). single row gridded cell legalization
-    well_legalizer_.TakeOver(&gb_placer_);
-    well_legalizer_.SetStripePartitionMode(static_cast<int>(well_legalization_mode_));
-    well_legalizer_.StartPlacement();
-    if (export_well_cluster_matlab_) {
-      well_legalizer_.GenMatlabClusterTable("sc_result");
-      well_legalizer_.GenMATLABWellTable("scw", 0);
-    }
-    well_legalizer_.EmitDEFWellFile("dali_out", 1);
-  } else {
-    if (!disable_legalization_) {
+  if (!disable_legalization_) {
+    if (is_standard_cell_) {
       legalizer_.TakeOver(&gb_placer_);
       legalizer_.StartPlacement();
+      if (enable_filler_cell_) {
+        CreateFillerCells(2);
+        legalizer_.PlaceFillerCells();
+      }
+    } else {
+      well_legalizer_.TakeOver(&gb_placer_);
+      well_legalizer_.SetStripePartitionMode(static_cast<int>(well_legalization_mode_));
+      well_legalizer_.StartPlacement();
+      if (export_well_cluster_matlab_) {
+        well_legalizer_.GenMatlabClusterTable("sc_result");
+        well_legalizer_.GenMATLABWellTable("scw", 0);
+      }
+      well_legalizer_.EmitDEFWellFile("dali_out", 1);
     }
   }
   if (export_well_cluster_matlab_) {
@@ -648,9 +684,39 @@ void Dali::ExportWellTapCellsToPhyDB() {
   }
 }
 
+void Dali::ExportFillerCellsToPhyDB() {
+  double factor_x = circuit_.DistanceMicrons() * circuit_.GridValueX();
+  double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
+  for (auto &block : circuit_.design().Fillers()) {
+    std::string comp_name = block.Name();
+    std::string macro_name = block.TypeName();
+    int lx = (int) (block.LLX() * factor_x)
+        + circuit_.design().DieAreaOffsetX();
+    int ly = (int) (block.LLY() * factor_y)
+        + circuit_.design().DieAreaOffsetY();
+    auto place_status = phydb::PlaceStatus(block.Status());
+    auto orient = phydb::CompOrient(block.Orient());
+
+    auto *phydb_macro_ptr = phy_db_ptr_->GetMacroPtr(macro_name);
+    DaliExpects(
+        phydb_macro_ptr != nullptr,
+        "Cannot find " << macro_name << " in PhyDB?!"
+    );
+    phy_db_ptr_->AddComponent(
+        comp_name,
+        phydb_macro_ptr,
+        place_status,
+        lx, ly,
+        orient,
+        phydb::CompSource::DIST
+    );
+  }
+}
+
 void Dali::ExportComponentsToPhyDB() {
   ExportOrdinaryComponentsToPhyDB();
   ExportWellTapCellsToPhyDB();
+  ExportFillerCellsToPhyDB();
 }
 
 void Dali::ExportIoPinsToPhyDB() {
