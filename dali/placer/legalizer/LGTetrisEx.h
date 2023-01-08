@@ -78,16 +78,15 @@ class LGTetrisEx : public Placer {
   void UpdateLeftLimitFactor();
   double EstimatedHPWL(Block &block, int x, int y);
 
+  void ExportRowsToCircuit();
   bool StartPlacement() override;
-
-  void PlaceFillerCells();
 
   bool StartRowAssignment();
 
   void GenAvailSpace(std::string const &name_of_file = "avail_space.txt");
  protected:
   bool is_row_assignment_ = false;
-  std::vector<std::vector<SegI>> row_segments_;
+  std::vector<std::vector<SegI>> rows_;
   std::vector<int> block_contour_;
   std::vector<BlkInitPair> blk_inits_;
 

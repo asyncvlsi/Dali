@@ -312,33 +312,6 @@ bool Dali::TimingDrivenPlacement(double density, int number_of_threads) {
 
 #endif
 
-/****
- * Create Filler Cell BlockType and export it to PhyDB.
- * Assuming this is only for a standard cell design.
- *
- * @param upper_width: create 1X width filler cell, up to upper_widthX
- */
-void Dali::CreateFillerCells(int upper_width) {
-  double filler_height = phy_db_ptr_->tech().GetMacrosRef().begin()->GetHeight();
-  for (int i = 1; i <= upper_width; ++i) {
-    double width = i * circuit_.GridValueX();
-    std::string filler_name = "__filler__X" + std::to_string(i) + "__";
-    phydb::Macro *phydb_macro = phy_db_ptr_->AddMacro(filler_name);
-    DaliExpects(phydb_macro != nullptr, "cannot add filler cell?");
-    phydb_macro->SetOrigin(0, 0);
-    phydb_macro->SetSize(width, filler_height);
-    phydb_macro->SetClass(phydb::MacroClass::CORE_SPACER);
-    phydb_macro->SetSymmetry(
-        true,
-        false,
-        false
-    );
-
-    circuit_.AddFillerBlockType(filler_name, width, filler_height);
-  }
-  phy_db_ptr_->AddDummyWell();
-}
-
 bool Dali::StartPlacement(double density, int number_of_threads) {
   if (density > 0) {
     target_density_ = density;
@@ -377,10 +350,6 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
     if (is_standard_cell_) {
       legalizer_.TakeOver(&gb_placer_);
       legalizer_.StartPlacement();
-      if (enable_filler_cell_) {
-        CreateFillerCells(2);
-        legalizer_.PlaceFillerCells();
-      }
     } else {
       well_legalizer_.TakeOver(&gb_placer_);
       well_legalizer_.SetStripePartitionMode(static_cast<int>(well_legalization_mode_));
@@ -394,6 +363,13 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
   }
   if (export_well_cluster_matlab_) {
     circuit_.GenMATLABTable("lg_result.txt");
+  }
+
+  if (enable_filler_cell_) {
+    filler_cell_placer_.TakeOver(&gb_placer_);
+    filler_cell_placer_.phy_db_ptr_ = phy_db_ptr_;
+    filler_cell_placer_.CreateFillerCells(2);
+    filler_cell_placer_.PlaceFillerCells();
   }
 
   if (!disable_io_place_) {

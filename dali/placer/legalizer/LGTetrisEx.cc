@@ -77,12 +77,12 @@ void LGTetrisEx::InitializeFromGriddedRowLegalizer(GriddedRowLegalizer *grlg) {
   top_ = stripe.URY();
 
   // rows
-  row_segments_.clear();
-  row_segments_.resize(tot_num_rows_);
+  rows_.clear();
+  rows_.resize(tot_num_rows_);
   for (int i = 0; i < tot_num_rows_; ++i) {
     auto &row = stripe.gridded_rows_[i];
     for (auto &seg : row.Segments()) {
-      row_segments_[i].emplace_back(seg.LLX(), seg.URX());
+      rows_[i].emplace_back(seg.LLX(), seg.URX());
     }
   }
 
@@ -173,15 +173,15 @@ void LGTetrisEx::DetectWhiteSpace() {
     }
   }
 
-  row_segments_.resize(tot_num_rows_);
+  rows_.resize(tot_num_rows_);
   int min_blk_width = int(ckt_ptr_->MinBlkWidth());
   for (int i = 0; i < tot_num_rows_; ++i) {
     int len = int(intermediate_seg_rows[i].size());
-    row_segments_[i].reserve(len / 2);
+    rows_[i].reserve(len / 2);
     for (int j = 0; j < len; j += 2) {
       if (intermediate_seg_rows[i][j + 1] - intermediate_seg_rows[i][j]
           >= min_blk_width) {
-        row_segments_[i].emplace_back(
+        rows_[i].emplace_back(
             intermediate_seg_rows[i][j],
             intermediate_seg_rows[i][j + 1]
         );
@@ -276,20 +276,20 @@ bool LGTetrisEx::IsSpaceLegal(
 
   bool is_all_row_legal = true;
   for (int i = lo_row; i <= hi_row; ++i) {
-    seg_count = row_segments_[i].size();
+    seg_count = rows_[i].size();
     is_tmp_row_legal = false;
     for (int j = 0; j < seg_count; ++j) {
-      if (row_segments_[i][j].lo <= lo_x
-          && row_segments_[i][j].hi >= hi_x) {
+      if (rows_[i][j].lo <= lo_x
+          && rows_[i][j].hi >= hi_x) {
         is_tmp_row_legal = true;
         break;
       }
 
-      is_partial_cover_lo = row_segments_[i][j].lo > lo_x
-          && row_segments_[i][j].lo < hi_x;
-      is_partial_cover_hi = row_segments_[i][j].hi > lo_x
-          && row_segments_[i][j].hi < hi_x;
-      is_before_seg = row_segments_[i][j].lo >= hi_x;
+      is_partial_cover_lo = rows_[i][j].lo > lo_x
+          && rows_[i][j].lo < hi_x;
+      is_partial_cover_hi = rows_[i][j].hi > lo_x
+          && rows_[i][j].hi < hi_x;
+      is_before_seg = rows_[i][j].lo >= hi_x;
       if (is_partial_cover_lo || is_partial_cover_hi || is_before_seg) {
         break;
       }
@@ -437,7 +437,7 @@ int LGTetrisEx::WhiteSpaceBoundLeft(
 
   for (int i = lo_row; i <= hi_row; ++i) {
     tmp_bound = left_;
-    for (auto &seg : row_segments_[i]) {
+    for (auto &seg : rows_[i]) {
       if (seg.lo <= lo_x && seg.hi >= hi_x) {
         tmp_bound = seg.lo;
         min_distance = 0;
@@ -777,7 +777,7 @@ int LGTetrisEx::WhiteSpaceBoundRight(
 
   for (int i = lo_row; i <= hi_row; ++i) {
     tmp_bound = right_;
-    for (auto &seg : row_segments_[i]) {
+    for (auto &seg : rows_[i]) {
       if (seg.lo <= lo_x && seg.hi >= hi_x) {
         tmp_bound = seg.hi;
         min_distance = 0;
@@ -1051,6 +1051,48 @@ double LGTetrisEx::EstimatedHPWL(Block &block, int x, int y) {
   return tot_hpwl;
 }
 
+void LGTetrisEx::ExportRowsToCircuit() {
+  std::vector<GeneralRow> &rows = ckt_ptr_->design().Rows();
+  rows.clear();
+  rows.reserve(tot_num_rows_);
+  bool is_orient_N = is_first_row_N_;
+
+  // initialize rows in circuit
+  for (int i = 0; i < tot_num_rows_; ++i) {
+    rows.emplace_back();
+    auto last_row = rows.back();
+    last_row.SetLY(i * row_height_ + RegionBottom());
+    last_row.SetHeight(row_height_);
+    last_row.SetOrient(is_orient_N);
+
+    auto row_segments = last_row.RowSegments();
+    row_segments.reserve(rows_[i].size());
+    for (auto &seg : rows_[i]) {
+      row_segments.emplace_back();
+      auto &last_segment = row_segments.back();
+      last_segment.SetLX(seg.lo);
+      last_segment.SetWidth(seg.Span());
+    }
+    is_orient_N = !is_orient_N;
+  }
+
+  // associate blocks to the right row segment
+  auto &blocks = ckt_ptr_->Blocks();
+  for (auto &block : blocks) {
+    if (block.IsMovable()) continue;
+    int row_id = LocToRow(block.LLY());
+    bool is_associated = false;
+    for (auto &seg: rows[row_id].RowSegments()) {
+      if (block.LLX() >= seg.LX() && block.URX() <= seg.UX()) {
+        is_associated = true;
+        seg.AddBlock(&block);
+        break;
+      }
+    }
+    DaliExpects(is_associated, "cannot find a row segment for a block");
+  }
+}
+
 bool LGTetrisEx::StartPlacement() {
   PrintStartStatement("LGTetrisEx Legalization");
 
@@ -1074,6 +1116,9 @@ bool LGTetrisEx::StartPlacement() {
     }
   }
 
+  if (is_success) {
+    ExportRowsToCircuit();
+  }
   PrintEndStatement("LGTetrisEx Legalization", is_success);
 
   return true;
@@ -1118,79 +1163,6 @@ bool LGTetrisEx::StartRowAssignment() {
   return true;
 }
 
-void LGTetrisEx::PlaceFillerCells() {
-  BOOST_LOG_TRIVIAL(info) << "  Insert filler cells\n";
-  std::unordered_set<int> filler_widths_set;
-  for (auto &filler : ckt_ptr_->tech().FillerCellPtrs()) {
-    filler_widths_set.insert(filler->Width());
-  }
-  std::vector<int>
-      filler_widths(filler_widths_set.begin(), filler_widths_set.end());
-  std::sort(
-      filler_widths.begin(),
-      filler_widths.end()
-  );
-
-  std::vector < Block * > tmp_row;
-  std::vector<std::vector<Block *>>
-      rows_of_blocks(row_segments_.size(), tmp_row);
-
-  std::vector<Block> &blocks = ckt_ptr_->design().Blocks();
-  for (auto &blk : blocks) {
-    int row_id = LocToRow(std::floor(blk.Y()));
-    rows_of_blocks[row_id].push_back(&blk);
-  }
-
-  int left = RegionLeft();
-  int right = RegionRight();
-  int filler_counter = 0;
-  auto &filler_cells = ckt_ptr_->design().Fillers();
-  BlockType *filler_type_ptr = ckt_ptr_->tech().FillerCellPtrs()[0].get();
-  BlockOrient orient = is_first_row_N_ ? N : FS;
-  for (int row_id = 0; row_id < static_cast<int>(rows_of_blocks.size());
-       ++row_id) {
-    auto &row = rows_of_blocks[row_id];
-    std::sort(
-        row.begin(),
-        row.end(),
-        [](const Block *blk0, const Block *blk1) {
-          return blk0->LLX() < blk1->LLX();
-        }
-    );
-
-    int y_loc = RowToLoc(row_id);
-    int contour = left;
-    for (auto &blk_ptr : row) {
-      int space = static_cast<int>(std::round(blk_ptr->LLX())) - contour;
-      if (space > 0) {
-        for (int i = 0; i < space; ++i) {
-          std::string filler_cell_name =
-              "__filler_cell_component__" + std::to_string(filler_counter++);
-          filler_cells.emplace_back();
-          auto &filler_cell = filler_cells.back();
-          filler_cell.SetPlacementStatus(PLACED);
-          filler_cell.SetType(filler_type_ptr);
-          int map_size = static_cast<int>(ckt_ptr_->design().FillerNameIdMap().size());
-          auto ret = ckt_ptr_->design().FillerNameIdMap().insert(
-              std::pair<std::string, int>(filler_cell_name, map_size)
-          );
-          auto *name_id_pair_ptr = &(*ret.first);
-          filler_cell.SetNameNumPair(name_id_pair_ptr);
-          filler_cell.SetLLX(contour + i);
-          filler_cell.SetLLY(y_loc);
-          filler_cell.SetOrient(orient);
-        }
-        contour = static_cast<int>(std::round(blk_ptr->URX()));
-      }
-    }
-    if (orient == N) {
-      orient = FS;
-    } else {
-      orient = N;
-    }
-  }
-}
-
 void LGTetrisEx::GenAvailSpace(std::string const &name_of_file) {
   BOOST_LOG_TRIVIAL(info) << "Generating available space, dump result to: "
                           << name_of_file << "\n";
@@ -1205,7 +1177,7 @@ void LGTetrisEx::GenAvailSpace(std::string const &name_of_file) {
       << RegionTop() << "\t"
       << RegionTop() << "\n";
   for (int i = 0; i < tot_num_rows_; ++i) {
-    auto &row = row_segments_[i];
+    auto &row = rows_[i];
     for (auto &seg : row) {
       ost << seg.lo << "\t"
           << seg.hi << "\t"

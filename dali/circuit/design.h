@@ -29,6 +29,7 @@
 #include "block.h"
 #include "iopin.h"
 #include "net.h"
+#include "row.h"
 
 namespace dali {
 
@@ -36,9 +37,12 @@ namespace dali {
  * This is a struct for getting the statistics of net size and wire-length.
  */
 struct NetHistogram {
-  std::vector<size_t> buckets{2, 3, 4, 20, 40, 80, 160}; // this list defines the buckets for net size
-  std::vector<size_t> counts;                            // the number of nets in each bucket
-  std::vector<double> percents;                          // the percentage of nets in each bucket
+  // this list defines the buckets for net size
+  std::vector<size_t> buckets{2, 3, 4, 20, 40, 80, 160};
+  // the number of nets in each bucket
+  std::vector<size_t> counts;
+  // the percentage of nets in each bucket
+  std::vector<double> percents;
   std::vector<double> sum_hpwls;
   std::vector<double> ave_hpwls;
   std::vector<double> min_hpwls;
@@ -102,6 +106,9 @@ class Design {
   // get all nets
   std::vector<Net> &Nets() { return nets_; }
 
+  // get all rows
+  std::vector<GeneralRow> &Rows() { return rows_; }
+
   void UpdateFanOutHistogram(size_t net_size);
   void InitNetFanOutHistogram(std::vector<size_t> *histo_x = nullptr);
   void UpdateNetHPWLHistogram(size_t net_size, double hpwl);
@@ -157,6 +164,9 @@ class Design {
   int net_count_limit_ = 0;
   std::unordered_map<std::string, int> net_name_id_map_;
   NetHistogram net_histogram_;
+
+  /****rows***/
+  std::vector<GeneralRow> rows_;
 
   /****statistical data of the circuit****/
   unsigned long tot_width_ = 0;

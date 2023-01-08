@@ -1,6 +1,6 @@
 /*******************************************************************************
  *
- * Copyright (c) 2021 Yihang Yang
+ * Copyright (c) 2023 Yihang Yang
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -18,32 +18,26 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_PLACER_H_
-#define DALI_PLACER_H_
+#ifndef DALI_PLACER_FILLER_CELL_PLACER_FILLER_CELL_PLACER_H_
+#define DALI_PLACER_FILLER_CELL_PLACER_FILLER_CELL_PLACER_H_
 
-/****placer base class****/
+#include <phydb/phydb.h>
+
 #include "dali/placer/placer.h"
 
-/****Global placer****/
-#include "dali/placer/global_placer/global_placer.h"
+namespace dali {
 
-/****Legalizer****/
-#include "dali/placer/legalizer/LGTetris.h"
-#include "dali/placer/legalizer/LGTetrisEx.h"
+class FillerCellPlacer : public Placer{
+  friend class Dali;
+ public:
+  FillerCellPlacer() = default;
 
-/****Well Legalizer****/
-#include "dali/placer/well_legalizer/stdclusterwelllegalizer.h"
-#include "dali/placer/well_legalizer/welllegalizer.h"
-#include "dali/placer/well_legalizer/griddedrowlegalizer.h"
+  void CreateFillerCells(int upper_width);
+  void PlaceFillerCells();
+ private:
+  phydb::PhyDB *phy_db_ptr_ = nullptr;
+};
 
-/****Well Placement Flow****/
-#include "dali/placer/well_place_flow/wellplaceflow.h"
-#include "dali/placer/welltap_placer/welltapplacer.h"
+} // dali
 
-/****Filler Cell Placer****/
-#include "dali/placer/filler_cell_placer/filler_cell_placer.h"
-
-/****IO Placer****/
-#include "dali/placer/io_placer/ioplacer.h"
-
-#endif //DALI_PLACER_H_
+#endif //DALI_PLACER_FILLER_CELL_PLACER_FILLER_CELL_PLACER_H_

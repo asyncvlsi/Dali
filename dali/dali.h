@@ -121,6 +121,7 @@ class Dali {
   LGTetrisEx legalizer_;
   StdClusterWellLegalizer well_legalizer_;
   WellTapPlacer *well_tap_placer_ = nullptr;
+  FillerCellPlacer filler_cell_placer_;
   IoPlacer *io_placer_ = nullptr;
   StarPiModelEstimator *rc_estimator = nullptr;
 
