@@ -1060,12 +1060,12 @@ void LGTetrisEx::ExportRowsToCircuit() {
   // initialize rows in circuit
   for (int i = 0; i < tot_num_rows_; ++i) {
     rows.emplace_back();
-    auto last_row = rows.back();
+    auto &last_row = rows.back();
     last_row.SetLY(i * row_height_ + RegionBottom());
     last_row.SetHeight(row_height_);
     last_row.SetOrient(is_orient_N);
 
-    auto row_segments = last_row.RowSegments();
+    auto &row_segments = last_row.RowSegments();
     row_segments.reserve(rows_[i].size());
     for (auto &seg : rows_[i]) {
       row_segments.emplace_back();
@@ -1079,7 +1079,7 @@ void LGTetrisEx::ExportRowsToCircuit() {
   // associate blocks to the right row segment
   auto &blocks = ckt_ptr_->Blocks();
   for (auto &block : blocks) {
-    if (block.IsMovable()) continue;
+      if (block.IsFixed()) continue;
     int row_id = LocToRow(block.LLY());
     bool is_associated = false;
     for (auto &seg: rows[row_id].RowSegments()) {

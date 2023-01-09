@@ -32,7 +32,7 @@ namespace dali {
  * This class stands for a segment of continuous white space in a row.
  */
 class GeneralRowSegment {
-  friend class Row;
+  friend class GeneralRow;
  public:
   GeneralRowSegment() = default;
   void SetLX(int lx);
