@@ -43,6 +43,8 @@ class GeneralRowSegment {
   int UX() const;
   int Width() const;
   std::vector<Block *> &Blocks();
+
+  void SortBlocks();
  private:
   int lx_ = 0; // lower left x coordinate
   int width_ = -1; // width of this row segment

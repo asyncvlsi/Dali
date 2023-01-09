@@ -20,6 +20,8 @@
  ******************************************************************************/
 #include "row.h"
 
+#include <algorithm>
+
 namespace dali {
 
 void GeneralRowSegment::SetLX(int lx) {
@@ -48,6 +50,16 @@ int GeneralRowSegment::Width() const {
 
 std::vector<Block *> &GeneralRowSegment::Blocks() {
   return blocks_;
+}
+
+void GeneralRowSegment::SortBlocks() {
+  std::sort(
+      blocks_.begin(),
+      blocks_.end(),
+      [](const Block *blk_ptr0, const Block *blk_ptr1) {
+        return blk_ptr0->LLX() < blk_ptr1->LLX();
+      }
+  );
 }
 
 void GeneralRow::SetLY(int ly) {

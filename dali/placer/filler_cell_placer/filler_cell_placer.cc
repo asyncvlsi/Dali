@@ -53,11 +53,13 @@ void FillerCellPlacer::CreateFillerCellTypes(int upper_width) {
   phy_db_ptr_->AddDummyWell();
 }
 
-void FillerCellPlacer::PlaceFillerCells(int lx,
-                                        int ux,
-                                        int ly,
-                                        bool is_orient_N,
-                                        int &filler_counter) {
+void FillerCellPlacer::PlaceFillerCells(
+    int lx,
+    int ux,
+    int ly,
+    bool is_orient_N,
+    int &filler_counter
+) {
   if (ux <= lx) {
     return;
   }
@@ -100,13 +102,17 @@ bool FillerCellPlacer::StartPlacement() {
   std::vector<GeneralRow> &rows = ckt_ptr_->design().Rows();
   int filler_counter = 0;
   for (auto &row : rows) {
+    std::cout << "row" << "\n";
     for (auto &segment : row.RowSegments()) {
+      segment.SortBlocks();
       int lx = segment.LX();
       for (auto &blk_ptr : segment.Blocks()) {
-        int ux = blk_ptr->URX();
+        int ux = blk_ptr->LLX();
+        std::cout << lx << " " << ux << "\n";
         PlaceFillerCells(lx, ux, row.LY(), row.IsOrientN(), filler_counter);
-        lx = ux;
+        lx = blk_ptr->URX();
       }
+      std::cout << lx << " " << segment.UX() << "\n";
       PlaceFillerCells(
           lx,
           segment.UX(),
