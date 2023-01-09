@@ -102,17 +102,14 @@ bool FillerCellPlacer::StartPlacement() {
   std::vector<GeneralRow> &rows = ckt_ptr_->design().Rows();
   int filler_counter = 0;
   for (auto &row : rows) {
-    std::cout << "row" << "\n";
     for (auto &segment : row.RowSegments()) {
       segment.SortBlocks();
       int lx = segment.LX();
       for (auto &blk_ptr : segment.Blocks()) {
         int ux = blk_ptr->LLX();
-        std::cout << lx << " " << ux << "\n";
         PlaceFillerCells(lx, ux, row.LY(), row.IsOrientN(), filler_counter);
         lx = blk_ptr->URX();
       }
-      std::cout << lx << " " << segment.UX() << "\n";
       PlaceFillerCells(
           lx,
           segment.UX(),
