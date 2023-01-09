@@ -187,6 +187,10 @@ class BlockTypeWell {
 
   RectI &PwellRect(int index);
 
+  std::vector<RectI> &Nrects() { return n_rects_; }
+
+  std::vector<RectI> &Prects() { return p_rects_; }
+
   void Report() const;
 
   /**** for old code ****/

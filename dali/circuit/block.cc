@@ -215,9 +215,13 @@ void Block::ExportWellToMatlabPatchRect(std::ofstream &ost) {
   std::vector<RectI> p_well_shapes;
   BlockTypeWell *multi_well = TypePtr()->WellPtr();
   if (multi_well != nullptr) {
-    for (int i = 0; i < multi_well->RegionCount(); ++i) {
-      n_well_shapes.push_back(multi_well->NwellRect(i));
-      p_well_shapes.push_back(multi_well->PwellRect(i));
+    auto &n_rects = multi_well->Nrects();
+    for (auto &rect: n_rects) {
+      n_well_shapes.push_back(rect);
+    }
+    auto &p_rects = multi_well->Prects();
+    for (auto &rect: p_rects) {
+      p_well_shapes.push_back(rect);
     }
   }
 

@@ -383,7 +383,7 @@ bool StdClusterWellLegalizer::StripeLegalizationTopDown(Stripe &stripe) {
   stripe.used_height_ = 0;
   stripe.cluster_count_ = 0;
   stripe.front_row_ = nullptr;
-  stripe.is_bottom_up_ = false;
+  stripe.is_bottom_up_ = true;
 
   std::sort(
       stripe.blk_ptrs_vec_.begin(),
@@ -1510,7 +1510,6 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
             + ckt_ptr_->design().DieAreaOffsetX();
         int rect_ury = (int) (uy * factor_y)
             + ckt_ptr_->design().DieAreaOffsetY();
-
         phydb_layout_container->AddRectSignalLayer(
             signal_name,
             layer_name,
@@ -1574,7 +1573,6 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
               + ckt_ptr_->design().DieAreaOffsetX();
           int rect_ury = (int) (uy * factor_y)
               + ckt_ptr_->design().DieAreaOffsetY();
-
           phydb_layout_container->AddRectSignalLayer(
               signal_name,
               layer_name,
