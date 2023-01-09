@@ -368,8 +368,8 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
   if (enable_filler_cell_) {
     filler_cell_placer_.TakeOver(&gb_placer_);
     filler_cell_placer_.phy_db_ptr_ = phy_db_ptr_;
-    filler_cell_placer_.CreateFillerCells(2);
-    filler_cell_placer_.PlaceFillerCells();
+    filler_cell_placer_.CreateFillerCellTypes(2);
+    filler_cell_placer_.StartPlacement();
   }
 
   if (!disable_io_place_) {

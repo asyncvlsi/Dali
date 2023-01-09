@@ -30,7 +30,7 @@ namespace dali {
  *
  * @param upper_width: create 1X width filler cell, up to upper_widthX
  */
-void FillerCellPlacer::CreateFillerCells(int upper_width) {
+void FillerCellPlacer::CreateFillerCellTypes(int upper_width) {
   DaliExpects(phy_db_ptr_ != nullptr, "phydb ptr not set");
   double
       filler_height = phy_db_ptr_->tech().GetMacrosRef().begin()->GetHeight();
@@ -53,7 +53,38 @@ void FillerCellPlacer::CreateFillerCells(int upper_width) {
   phy_db_ptr_->AddDummyWell();
 }
 
-void FillerCellPlacer::PlaceFillerCells() {
+void FillerCellPlacer::PlaceFillerCells(int lx,
+                                        int ux,
+                                        int ly,
+                                        bool is_orient_N,
+                                        int &filler_counter) {
+  if (ux <= lx) {
+    return;
+  }
+  auto &filler_cells = ckt_ptr_->design().Fillers();
+  BlockType *filler_type_ptr = ckt_ptr_->tech().FillerCellPtrs()[0].get();
+  int space = ux - lx;
+  for (int i = 0; i < space; ++i) {
+    std::string filler_cell_name =
+        "__filler_cell_component__" + std::to_string(filler_counter++);
+    filler_cells.emplace_back();
+    auto &filler_cell = filler_cells.back();
+    filler_cell.SetPlacementStatus(PLACED);
+    filler_cell.SetType(filler_type_ptr);
+    int map_size =
+        static_cast<int>(ckt_ptr_->design().FillerNameIdMap().size());
+    auto ret = ckt_ptr_->design().FillerNameIdMap().insert(
+        std::pair<std::string, int>(filler_cell_name, map_size)
+    );
+    auto *name_id_pair_ptr = &(*ret.first);
+    filler_cell.SetNameNumPair(name_id_pair_ptr);
+    filler_cell.SetLLX(lx + i);
+    filler_cell.SetLLY(ly);
+    filler_cell.SetOrient(is_orient_N ? N : FS);
+  }
+}
+
+bool FillerCellPlacer::StartPlacement() {
   BOOST_LOG_TRIVIAL(info) << "  Insert filler cells\n";
   std::unordered_set<int> filler_cell_widths;
   for (auto &filler : ckt_ptr_->tech().FillerCellPtrs()) {
@@ -68,37 +99,25 @@ void FillerCellPlacer::PlaceFillerCells() {
 
   std::vector<GeneralRow> &rows = ckt_ptr_->design().Rows();
   int filler_counter = 0;
-  auto &filler_cells = ckt_ptr_->design().Fillers();
-  BlockType *filler_type_ptr = ckt_ptr_->tech().FillerCellPtrs()[0].get();
   for (auto &row : rows) {
     for (auto &segment : row.RowSegments()) {
-      int contour = segment.LX();
+      int lx = segment.LX();
       for (auto &blk_ptr : segment.Blocks()) {
-        int space = static_cast<int>(std::round(blk_ptr->LLX())) - contour;
-        if (space > 0) {
-          for (int i = 0; i < space; ++i) {
-            std::string filler_cell_name =
-                "__filler_cell_component__" + std::to_string(filler_counter++);
-            filler_cells.emplace_back();
-            auto &filler_cell = filler_cells.back();
-            filler_cell.SetPlacementStatus(PLACED);
-            filler_cell.SetType(filler_type_ptr);
-            int map_size =
-                static_cast<int>(ckt_ptr_->design().FillerNameIdMap().size());
-            auto ret = ckt_ptr_->design().FillerNameIdMap().insert(
-                std::pair<std::string, int>(filler_cell_name, map_size)
-            );
-            auto *name_id_pair_ptr = &(*ret.first);
-            filler_cell.SetNameNumPair(name_id_pair_ptr);
-            filler_cell.SetLLX(contour + i);
-            filler_cell.SetLLY(row.LY());
-            filler_cell.SetOrient(row.IsOrientN() ? N : FS);
-          }
-          contour = static_cast<int>(std::round(blk_ptr->URX()));
-        }
+        int ux = blk_ptr->URX();
+        PlaceFillerCells(lx, ux, row.LY(), row.IsOrientN(), filler_counter);
+        lx = ux;
       }
+      PlaceFillerCells(
+          lx,
+          segment.UX(),
+          row.LY(),
+          row.IsOrientN(),
+          filler_counter
+      );
     }
   }
+
+  return true;
 }
 
 } // dali

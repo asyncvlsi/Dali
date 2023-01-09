@@ -32,8 +32,9 @@ class FillerCellPlacer : public Placer{
  public:
   FillerCellPlacer() = default;
 
-  void CreateFillerCells(int upper_width);
-  void PlaceFillerCells();
+  void CreateFillerCellTypes(int upper_width);
+  void PlaceFillerCells(int lx, int ux, int ly, bool is_orient_N, int &filler_counter);
+  bool StartPlacement();
  private:
   phydb::PhyDB *phy_db_ptr_ = nullptr;
 };
