@@ -21,6 +21,7 @@
 #include "stdclusterwelllegalizer.h"
 
 #include <algorithm>
+#include <set>
 
 #include "dali/common/helper.h"
 #include "dali/placer/well_legalizer/stripehelper.h"

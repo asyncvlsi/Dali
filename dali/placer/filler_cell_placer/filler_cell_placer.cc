@@ -20,6 +20,9 @@
  ******************************************************************************/
 #include "filler_cell_placer.h"
 
+#include <fstream>
+#include <string>
+
 #include "dali/common/logging.h"
 
 namespace dali {
@@ -32,8 +35,14 @@ namespace dali {
  */
 void FillerCellPlacer::CreateFillerCellTypes(int upper_width) {
   DaliExpects(phy_db_ptr_ != nullptr, "phydb ptr not set");
-  double
-      filler_height = phy_db_ptr_->tech().GetMacrosRef().begin()->GetHeight();
+
+  BOOST_LOG_TRIVIAL(info) << "Creating and exporting filler cells\n";
+  std::string filler_lef_file_name = "dali_out_filler.lef";
+  std::ofstream ost(filler_lef_file_name);
+  DaliExpects(ost.is_open(), "cannot open file: " << filler_lef_file_name);
+
+  double filler_height =
+      phy_db_ptr_->tech().GetMacrosRef().begin()->GetHeight();
   for (int i = 1; i <= upper_width; ++i) {
     double width = i * ckt_ptr_->GridValueX();
     std::string filler_name = "__filler__X" + std::to_string(i) + "__";
@@ -47,10 +56,14 @@ void FillerCellPlacer::CreateFillerCellTypes(int upper_width) {
         false,
         false
     );
+    phy_db_ptr_->tech().AutoAddPowerGroundPin(filler_name);
+    phydb_macro->ExportToFile(ost);
 
     ckt_ptr_->AddFillerBlockType(filler_name, width, filler_height);
   }
   phy_db_ptr_->AddDummyWell();
+  BOOST_LOG_TRIVIAL(info) << "Filler cells exported to "
+                          << filler_lef_file_name << "\n";
 }
 
 void FillerCellPlacer::PlaceFillerCells(
