@@ -163,7 +163,7 @@ void Dali::LoadParamsFromConfig() {
     enable_filler_cell_ = config_get_int(param_name.c_str()) == 1;
   }
 
-  param_name = prefix_ + "enable_shrink_off_grid_die_area_";
+  param_name = prefix_ + "enable_shrink_off_grid_die_area";
   if (config_exists(param_name.c_str())) {
     enable_shrink_off_grid_die_area_ = config_get_int(param_name.c_str()) == 1;
   }
