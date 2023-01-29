@@ -241,6 +241,9 @@ class Circuit {
   // get DEF UNITS DISTANCE MICRONS
   int DistanceMicrons() const;
 
+  // enable shrink off grid die area
+  void SetEnableShrinkOffGridDieArea(bool enable_shrink_off_grid_die_area);
+
   // set die area, unit in manufacturing grid
   void SetDieArea(int lower_x, int lower_y, int upper_x, int upper_y);
 
@@ -578,6 +581,7 @@ class Circuit {
   Design design_; // information in DEF
   phydb::PhyDB *phy_db_ptr_ = nullptr;
   CircuitConstants constants_;
+  bool enable_shrink_off_grid_die_area_ = false;
 
   void LoadImaginaryCellFile();
 
@@ -634,6 +638,12 @@ class Circuit {
 
   // create well information container for a given BlockType
   BlockTypeWell *AddBlockTypeWell(BlockType *blk_type);
+
+  // shrink off grid die area
+  RectI ShrinkOffGridDieArea(int lower_x, int lower_y, int upper_x, int upper_y);
+
+  // shift off grid die area
+  RectI ShiftOffGridDieArea(int lower_x, int lower_y, int upper_x, int upper_y);
 
   // load information in LEF
   void LoadTech(phydb::PhyDB *phy_db_ptr);

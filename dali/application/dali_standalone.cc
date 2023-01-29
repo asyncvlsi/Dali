@@ -206,7 +206,9 @@ int main(int argc, char *argv[]) {
       config_set_int("dali.is_standard_cell", 1);
     } else if (arg == "-enable_filler_cell") {
       config_set_int("dali.enable_filler_cell", 1);
-    }else {
+    } else if (arg == "-enable_shrink_off_grid_die_area_") {
+      config_set_int("dali.enable_shrink_off_grid_die_area_", 1);
+    } else {
       std::cout << "Unknown flag\n";
       std::cout << arg << "\n";
       return 1;

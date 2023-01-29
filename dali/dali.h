@@ -68,7 +68,6 @@ class Dali {
   bool TimingDrivenPlacement(double density, int number_of_threads);
 #endif
 
-  void CreateFillerCells(int upper_width);
   bool StartPlacement(double density = -1, int number_of_threads = 1);
 
   void AddWellTaps(
@@ -112,6 +111,7 @@ class Dali {
   double max_row_width_ = 0;
   bool is_standard_cell_ = false;
   bool enable_filler_cell_ = false;
+  bool enable_shrink_off_grid_die_area_ = false;
   std::string output_name_ = "dali_out";
 
   // circuit and placer

@@ -163,6 +163,11 @@ void Dali::LoadParamsFromConfig() {
     enable_filler_cell_ = config_get_int(param_name.c_str()) == 1;
   }
 
+  param_name = prefix_ + "enable_shrink_off_grid_die_area_";
+  if (config_exists(param_name.c_str())) {
+    enable_shrink_off_grid_die_area_ = config_get_int(param_name.c_str()) == 1;
+  }
+
   param_name = prefix_ + "output_name";
   if (config_exists(param_name.c_str())) {
     output_name_ = config_get_string(param_name.c_str());
@@ -320,6 +325,7 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
     num_threads_ = number_of_threads;
   }
 
+  circuit_.SetEnableShrinkOffGridDieArea(enable_shrink_off_grid_die_area_);
   circuit_.InitializeFromPhyDB(phy_db_ptr_);
   circuit_.ReportBriefSummary();
 
