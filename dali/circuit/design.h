@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "block.h"
+#include "diearea.h"
 #include "iopin.h"
 #include "net.h"
 #include "row.h"
@@ -65,17 +66,17 @@ class Design {
   int DistanceMicrons() const { return distance_microns_; }
 
   // get the location of placement boundaries
-  int RegionLeft() const { return region_left_; }
-  int RegionRight() const { return region_right_; }
-  int RegionBottom() const { return region_bottom_; }
-  int RegionTop() const { return region_top_; }
+  int RegionLeft() const { return die_area_.region_left_; }
+  int RegionRight() const { return die_area_.region_right_; }
+  int RegionBottom() const { return die_area_.region_bottom_; }
+  int RegionTop() const { return die_area_.region_top_; }
 
   // locations of cells in Dali is on grid, but they do not have to be on grid
   // in a DEF file. The following two APIs return the offset along each direction.
-  int DieAreaOffsetX() const { return die_area_offset_x_; }
-  int DieAreaOffsetY() const { return die_area_offset_y_; }
-  int DieAreaOffsetXResidual() const { return die_area_offset_x_residual_; }
-  int DieAreaOffsetYResidual() const { return die_area_offset_y_residual_; }
+  int DieAreaOffsetX() const { return die_area_.die_area_offset_x_; }
+  int DieAreaOffsetY() const { return die_area_.die_area_offset_y_; }
+  int DieAreaOffsetXResidual() const { return die_area_.die_area_offset_x_residual_; }
+  int DieAreaOffsetYResidual() const { return die_area_.die_area_offset_y_residual_; }
 
   // get all blocks
   std::vector<Block> &Blocks() { return blocks_; }
@@ -121,20 +122,7 @@ class Design {
   int distance_microns_ = 0;
 
   /****die area****/
-  int region_left_ = 0; // unit is grid value x
-  int region_right_ = 0; // unit is grid value x
-  int region_bottom_ = 0; // unit is grid value y
-  int region_top_ = 0; // unit is grid value y
-  bool die_area_set_ = false;
-
-  // if left boundary is not on grid, then how much distance should we shift it to make it on grid
-  int die_area_offset_x_ = 0; // unit is manufacturing grid
-  // if right boundary is still not on grid after shifting, this number is the residual
-  int die_area_offset_x_residual_ = 0; // unit is manufacturing grid
-  // if bottom boundary is not on grid, then how much distance should we shift it to make it on grid
-  int die_area_offset_y_ = 0; // unit is manufacturing grid
-  // if top boundary is still not on grid after shifting, this number is the residual
-  int die_area_offset_y_residual_ = 0; // unit is manufacturing grid
+  DieArea die_area_;
 
   /****list of instances****/
   // block list consists of blocks and dummy blocks for pre-placed IOPINs

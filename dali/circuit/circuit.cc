@@ -419,44 +419,56 @@ void Circuit::SetDieArea(int lower_x, int lower_y, int upper_x, int upper_y) {
 
   // TODO, extract placement boundary from rows if they are any rows
   if (enable_shrink_off_grid_die_area_) {
-    RectI shrunk_die_area = ShrinkOffGridDieArea(lower_x, lower_y, upper_x, upper_y);
-    SetBoundary(shrunk_die_area.LLX(), shrunk_die_area.LLY(), shrunk_die_area.URX(), shrunk_die_area.URY());
+    RectI shrunk_die_area =
+        ShrinkOffGridDieArea(lower_x, lower_y, upper_x, upper_y);
+    SetBoundary(
+        shrunk_die_area.LLX(),
+        shrunk_die_area.LLY(),
+        shrunk_die_area.URX(),
+        shrunk_die_area.URY()
+    );
   } else {
-    RectI shifted_die_area = ShiftOffGridDieArea(lower_x, lower_y, upper_x, upper_y);
-    SetBoundary(shifted_die_area.LLX(), shifted_die_area.LLY(), shifted_die_area.URX(), shifted_die_area.URY());
+    RectI shifted_die_area =
+        ShiftOffGridDieArea(lower_x, lower_y, upper_x, upper_y);
+    SetBoundary(
+        shifted_die_area.LLX(),
+        shifted_die_area.LLY(),
+        shifted_die_area.URX(),
+        shifted_die_area.URY()
+    );
   }
 }
 
 int Circuit::RegionLLX() const {
-  return design_.region_left_;
+  return design_.die_area_.region_left_;
 }
 
 int Circuit::RegionURX() const {
-  return design_.region_right_;
+  return design_.die_area_.region_right_;
 }
 
 int Circuit::RegionLLY() const {
-  return design_.region_bottom_;
+  return design_.die_area_.region_bottom_;
 }
 
 int Circuit::RegionURY() const {
-  return design_.region_top_;
+  return design_.die_area_.region_top_;
 }
 
 int Circuit::RegionWidth() const {
-  return design_.region_right_ - design_.region_left_;
+  return design_.die_area_.region_right_ - design_.die_area_.region_left_;
 }
 
 int Circuit::RegionHeight() const {
-  return design_.region_top_ - design_.region_bottom_;
+  return design_.die_area_.region_top_ - design_.die_area_.region_bottom_;
 }
 
 int Circuit::DieAreaOffsetX() const {
-  return design_.die_area_offset_x_;
+  return design_.die_area_.die_area_offset_x_;
 }
 
 int Circuit::DieAreaOffsetY() const {
-  return design_.die_area_offset_y_;
+  return design_.die_area_.die_area_offset_y_;
 }
 
 void Circuit::SetListCapacity(
@@ -513,11 +525,13 @@ void Circuit::AddBlock(
 
 void Circuit::UpdateTotalBlkArea() {
   design_.tot_white_space_ =
-      (unsigned long long) (design_.region_right_ - design_.region_left_) *
-          (unsigned long long) (design_.region_top_ - design_.region_bottom_);
+      (unsigned long long) (design_.die_area_.region_right_
+          - design_.die_area_.region_left_) *
+          (unsigned long long) (design_.die_area_.region_top_
+              - design_.die_area_.region_bottom_);
   RectI bin_rect(
-      design_.region_left_, design_.region_bottom_,
-      design_.region_right_, design_.region_top_
+      design_.die_area_.region_left_, design_.die_area_.region_bottom_,
+      design_.die_area_.region_right_, design_.die_area_.region_top_
   );
   std::vector<Block> &blocks = Blocks();
 
@@ -1666,11 +1680,11 @@ void Circuit::SaveIoPin(
         << " "
         << LocDali2PhydbY(iopin.Y())
         << " ) ";
-    if (iopin.X() == design_.region_left_) {
+    if (iopin.X() == design_.die_area_.region_left_) {
       ost << "E";
-    } else if (iopin.X() == design_.region_right_) {
+    } else if (iopin.X() == design_.die_area_.region_right_) {
       ost << "W";
-    } else if (iopin.Y() == design_.region_bottom_) {
+    } else if (iopin.Y() == design_.die_area_.region_bottom_) {
       ost << "N";
     } else {
       ost << "S";
@@ -2111,11 +2125,11 @@ void Circuit::SetBoundary(int left, int bottom, int right, int top) {
               "Right boundary is not larger than Left boundary?");
   DaliExpects(top > bottom,
               "Top boundary is not larger than Bottom boundary?");
-  design_.region_left_ = left;
-  design_.region_right_ = right;
-  design_.region_bottom_ = bottom;
-  design_.region_top_ = top;
-  design_.die_area_set_ = true;
+  design_.die_area_.region_left_ = left;
+  design_.die_area_.region_right_ = right;
+  design_.die_area_.region_bottom_ = bottom;
+  design_.die_area_.region_top_ = top;
+  design_.die_area_.die_area_set_ = true;
 }
 
 void Circuit::BlockTypeSizeMicrometerToGridValue(
@@ -2283,7 +2297,12 @@ BlockTypeWell *Circuit::AddBlockTypeWell(BlockType *blk_type) {
   return blk_type->WellPtr();
 }
 
-RectI Circuit::ShrinkOffGridDieArea(int lower_x, int lower_y, int upper_x, int upper_y) {
+RectI Circuit::ShrinkOffGridDieArea(
+    int lower_x,
+    int lower_y,
+    int upper_x,
+    int upper_y
+) {
   int factor_x = DistanceScaleFactorX();
   int factor_y = DistanceScaleFactorY();
 
@@ -2304,7 +2323,8 @@ RectI Circuit::ShrinkOffGridDieArea(int lower_x, int lower_y, int upper_x, int u
     right = std::floor(f_right);
     BOOST_LOG_TRIVIAL(info)
       << "right placement boundary is not on placement grid: \n"
-      << "  shrink right from " << upper_x << " to " << right * factor_x << "\n";
+      << "  shrink right from " << upper_x << " to " << right * factor_x
+      << "\n";
   } else {
     right = static_cast<int>(std::round(f_right));
   }
@@ -2315,7 +2335,8 @@ RectI Circuit::ShrinkOffGridDieArea(int lower_x, int lower_y, int upper_x, int u
     bottom = std::ceil(f_bottom);
     BOOST_LOG_TRIVIAL(info)
       << "bottom placement boundary is not on placement grid: \n"
-      << "  shrink bottom from " << lower_y << " to " << bottom * factor_y << "\n";
+      << "  shrink bottom from " << lower_y << " to " << bottom * factor_y
+      << "\n";
   } else {
     bottom = static_cast<int>(std::round(f_bottom));
   }
@@ -2331,31 +2352,36 @@ RectI Circuit::ShrinkOffGridDieArea(int lower_x, int lower_y, int upper_x, int u
     top = static_cast<int>(std::round(f_top));
   }
 
-  design_.die_area_offset_x_ = 0;
-  design_.die_area_offset_y_ = 0;
-  design_.die_area_offset_x_residual_ = 0;
-  design_.die_area_offset_y_residual_ = 0;
+  design_.die_area_.die_area_offset_x_ = 0;
+  design_.die_area_.die_area_offset_y_ = 0;
+  design_.die_area_.die_area_offset_x_residual_ = 0;
+  design_.die_area_.die_area_offset_y_residual_ = 0;
 
   return {left, bottom, right, top};
 }
 
-RectI Circuit::ShiftOffGridDieArea(int lower_x, int lower_y, int upper_x, int upper_y) {
+RectI Circuit::ShiftOffGridDieArea(
+    int lower_x,
+    int lower_y,
+    int upper_x,
+    int upper_y
+) {
   int factor_x = DistanceScaleFactorX();
   int factor_y = DistanceScaleFactorY();
 
-  design_.die_area_offset_x_ = lower_x % factor_x;
-  design_.die_area_offset_y_ = lower_y % factor_y;
-  int adjusted_lower_x = lower_x - design_.die_area_offset_x_;
-  int adjusted_lower_y = lower_y - design_.die_area_offset_y_;
-  int adjusted_upper_x = upper_x - design_.die_area_offset_x_;
-  int adjusted_upper_y = upper_y - design_.die_area_offset_y_;
-  if (design_.die_area_offset_x_ != 0) {
+  design_.die_area_.die_area_offset_x_ = lower_x % factor_x;
+  design_.die_area_.die_area_offset_y_ = lower_y % factor_y;
+  int adjusted_lower_x = lower_x - design_.die_area_.die_area_offset_x_;
+  int adjusted_lower_y = lower_y - design_.die_area_.die_area_offset_y_;
+  int adjusted_upper_x = upper_x - design_.die_area_.die_area_offset_x_;
+  int adjusted_upper_y = upper_y - design_.die_area_.die_area_offset_y_;
+  if (design_.die_area_.die_area_offset_x_ != 0) {
     BOOST_LOG_TRIVIAL(info)
       << "left placement boundary is not on placement grid: \n"
       << "  shift left from " << lower_x << " to " << adjusted_lower_x << "\n"
       << "  shift right from " << upper_x << " to " << adjusted_upper_x << "\n";
   }
-  if (design_.die_area_offset_y_ != 0) {
+  if (design_.die_area_.die_area_offset_y_ != 0) {
     BOOST_LOG_TRIVIAL(info)
       << "bottom placement boundary is not on placement grid: \n"
       << "  shift bottom from " << lower_y << " to " << adjusted_lower_y << "\n"
@@ -2368,17 +2394,17 @@ RectI Circuit::ShiftOffGridDieArea(int lower_x, int lower_y, int upper_x, int up
   int left = lower_x / factor_x;
   int bottom = lower_y / factor_y;
 
-  design_.die_area_offset_x_residual_ = upper_x % factor_x;
-  design_.die_area_offset_y_residual_ = upper_y % factor_y;
-  adjusted_upper_x = upper_x - design_.die_area_offset_x_residual_;
-  adjusted_upper_y = upper_y - design_.die_area_offset_y_residual_;
-  if (design_.die_area_offset_x_residual_ != 0) {
+  design_.die_area_.die_area_offset_x_residual_ = upper_x % factor_x;
+  design_.die_area_.die_area_offset_y_residual_ = upper_y % factor_y;
+  adjusted_upper_x = upper_x - design_.die_area_.die_area_offset_x_residual_;
+  adjusted_upper_y = upper_y - design_.die_area_.die_area_offset_y_residual_;
+  if (design_.die_area_.die_area_offset_x_residual_ != 0) {
     BOOST_LOG_TRIVIAL(info)
       << "right placement boundary is not on placement grid: \n"
       << "  shrink right from " << upper_x << " to " << adjusted_upper_x
       << "\n";
   }
-  if (design_.die_area_offset_y_residual_ != 0) {
+  if (design_.die_area_.die_area_offset_y_residual_ != 0) {
     BOOST_LOG_TRIVIAL(info)
       << "top placement boundary is not on placement grid: \n"
       << "  shrink top from " << upper_y << " to " << adjusted_upper_y << "\n";
