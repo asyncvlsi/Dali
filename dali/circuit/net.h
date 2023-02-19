@@ -44,7 +44,7 @@ class Net {
  public:
   Net(
       std::pair<const std::string, int> *name_id_pair_ptr,
-      int capacity,
+      size_t capacity,
       double weight
   );
 

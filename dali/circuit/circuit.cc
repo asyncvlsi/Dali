@@ -46,14 +46,12 @@ void Circuit::InitializeFromPhyDB(phydb::PhyDB *phy_db_ptr) {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
-  DaliExpects(phy_db_ptr != nullptr,
-              "Dali cannot initialize from a PhyDB which is a nullptr!");
-  phy_db_ptr_ = phy_db_ptr;
+  SetPhyDB(phy_db_ptr);
 
   PrintHorizontalLine();
   BOOST_LOG_TRIVIAL(info) << "Load information from PhyDB\n";
   LoadTech(phy_db_ptr_);
-  LoadDesign(phy_db_ptr_);
+  LoadDesign();
   LoadCell(phy_db_ptr_);
   UpdateTotalBlkArea();
 
@@ -471,16 +469,11 @@ int Circuit::DieAreaOffsetY() const {
   return design_.die_area_.die_area_offset_y_;
 }
 
-void Circuit::ReserveSpaceForDesign(
-    int components_count,
-    int pins_count,
-    int nets_count
+void Circuit::ReserveSpaceForDesignImp(
+    size_t components_count,
+    size_t pins_count,
+    size_t nets_count
 ) {
-  DaliExpects(components_count >= 0, "Negative number of components?");
-  DaliExpects(pins_count >= 0, "Negative number of IOPINs?");
-  DaliExpects(nets_count >= 0, "Negative number of NETs?");
-  DaliExpects(components_count <= INT_MAX - pins_count,
-              "Too many components and pins, total number larger than INT_MAX");
   design_.blocks_.reserve(components_count + pins_count);
   design_.iopins_.reserve(pins_count);
   design_.nets_.reserve(nets_count);
@@ -678,7 +671,11 @@ Net *Circuit::GetNetPtr(std::string const &net_name) {
  * @param capacity: maximum number of possible pins in this net
  * @param weight:   weight of this net, if less than 0, then default net weight will be used
  * ****/
-Net *Circuit::AddNet(std::string const &net_name, int capacity, double weight) {
+Net *Circuit::AddNet(
+    std::string const &net_name,
+    size_t capacity,
+    double weight
+) {
   DaliExpects(!IsNetExisting(net_name),
               "Net exists, cannot create this net again: " + net_name);
   int map_size = (int) design_.net_name_id_map_.size();
@@ -2077,14 +2074,23 @@ void Circuit::LoadImaginaryCellFile() {
   }
 }
 
+void Circuit::SetPhyDB(phydb::PhyDB *phy_db_ptr) {
+  DaliExpects(
+      phy_db_ptr != nullptr,
+      "Dali cannot initialize from a PhyDB which is a nullptr!"
+  );
+  phy_db_ptr_ = phy_db_ptr;
+}
+
 BlockType *Circuit::AddBlockTypeWithGridUnit(
     std::string const &block_type_name,
     int width,
     int height
 ) {
-  DaliExpects(!IsBlockTypeExisting(block_type_name),
-              "BlockType exist, cannot create this block type again: "
-                  + block_type_name);
+  DaliExpects(
+      !IsBlockTypeExisting(block_type_name),
+      "BlockType exist, cannot create this block type again: " + block_type_name
+  );
   auto ret = tech_.block_type_map_.insert(
       std::unordered_map<std::string, BlockType *>::value_type(
           block_type_name, nullptr
@@ -2552,10 +2558,8 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
   }
 }
 
-void Circuit::LoadDesign(phydb::PhyDB *phy_db_ptr) {
-  auto &phy_db_design = *(phy_db_ptr->GetDesignPtr());
-
-  // 1. reserve space for COMPONENTS, IOPINS, and NETS
+void Circuit::ReserveSpaceForDesign() {
+  auto &phy_db_design = *(phy_db_ptr_->GetDesignPtr());
   auto &components = phy_db_design.GetComponentsRef();
   int components_size = (int) components.size();
 
@@ -2564,14 +2568,24 @@ void Circuit::LoadDesign(phydb::PhyDB *phy_db_ptr) {
 
   auto &nets = phy_db_design.GetNetsRef();
   int nets_size = (int) nets.size();
-  ReserveSpaceForDesign(components_size, pins_size, nets_size);
 
-  // 2. load UNITS DISTANCE MICRONS and DIEAREA
+  ReserveSpaceForDesignImp(components_size, pins_size, nets_size);
+}
+
+void Circuit::LoadUnits() {
+  auto &phy_db_design = *(phy_db_ptr_->GetDesignPtr());
   SetUnitsDistanceMicrons(phy_db_design.GetUnitsDistanceMicrons());
+}
+
+void Circuit::LoadDieArea() {
+  auto &phy_db_design = *(phy_db_ptr_->GetDesignPtr());
   auto die_area = phy_db_design.GetDieArea();
   SetDieArea(die_area.LLX(), die_area.LLY(), die_area.URX(), die_area.URY());
+}
 
-  // 3. load all components
+void Circuit::LoadComponents() {
+  auto &phy_db_design = *(phy_db_ptr_->GetDesignPtr());
+  auto &components = phy_db_design.GetComponentsRef();
   for (auto &comp : components) {
     std::string blk_name(comp.GetName());
     std::string blk_type_name(comp.GetMacro()->GetName());
@@ -2584,34 +2598,49 @@ void Circuit::LoadDesign(phydb::PhyDB *phy_db_ptr) {
     auto orient = BlockOrient(comp.GetOrientation());
     AddBlock(blk_name, blk_type_name, lx, ly, place_status, orient);
   }
+}
 
-  // 4. load all IOPINs
-  for (auto &iopin : iopins) {
-    AddIoPinFromPhyDB(iopin);
+void Circuit::LoadIoPins() {
+  auto &phy_db_design = *(phy_db_ptr_->GetDesignPtr());
+  auto &io_pins = phy_db_design.GetIoPinsRef();
+  for (auto &io_pin : io_pins) {
+    AddIoPinFromPhyDB(io_pin);
   }
+}
 
-  // 5. load all NETs
+void Circuit::LoadNets() {
+  auto &phy_db_design = *(phy_db_ptr_->GetDesignPtr());
+  auto &components = phy_db_design.GetComponentsRef();
+  auto &io_pins = phy_db_design.GetIoPinsRef();
+  auto &nets = phy_db_design.GetNetsRef();
   for (auto &net : nets) {
     std::string net_name(net.GetName());
     auto &net_pins = net.GetPinsRef();
-    std::vector<int> &iopin_ids = net.GetIoPinIdsRef();
-    int net_capacity = int(net_pins.size() + iopin_ids.size());
+    std::vector<int> &io_pin_ids = net.GetIoPinIdsRef();
+    int net_capacity = int(net_pins.size() + io_pin_ids.size());
     AddNet(net_name, net_capacity, design_.normal_signal_weight_);
 
-    for (int &id : iopin_ids) {
-      AddIoPinToNet(iopins[id].GetName(), net_name);
+    for (int &id : io_pin_ids) {
+      AddIoPinToNet(io_pins[id].GetName(), net_name);
     }
     int sz = (int) net_pins.size();
     for (int i = 0; i < sz; ++i) {
       int comp_id = net_pins[i].InstanceId();
-      std::string comp_name =
-          phy_db_ptr_->GetDesignPtr()->GetComponentsRef()[comp_id].GetName();
+      std::string const &comp_name = components[comp_id].GetName();
       int pin_id = net_pins[i].PinId();
-      std::string pin_name =
-          phy_db_ptr_->GetDesignPtr()->GetComponentsRef()[comp_id].GetMacro()->GetPinsRef()[pin_id].GetName();
+      std::string const &pin_name = components[comp_id].GetPinName(pin_id);
       AddBlkPinToNet(comp_name, pin_name, net_name);
     }
   }
+}
+
+void Circuit::LoadDesign() {
+  ReserveSpaceForDesign();
+  LoadUnits();
+  LoadDieArea();
+  LoadComponents();
+  LoadIoPins();
+  LoadNets();
 }
 
 void Circuit::LoadCell(phydb::PhyDB *phy_db_ptr) {

@@ -30,7 +30,7 @@ namespace dali {
 
 Net::Net(
     std::pair<const std::string, int> *name_id_pair_ptr,
-    int capacity,
+    size_t capacity,
     double weight
 ) : name_id_pair_ptr_(name_id_pair_ptr), weight_(weight) {
   cnt_fixed_ = 0;

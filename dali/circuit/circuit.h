@@ -272,7 +272,7 @@ class Circuit {
   int DieAreaOffsetY() const;
 
   // set the capacity of COMPONENTs, PINs, and NETs, it is not allowed to add more items than their corresponding capacity
-  void ReserveSpaceForDesign(int components_count, int pins_count, int nets_count);
+  void ReserveSpaceForDesignImp(size_t components_count, size_t pins_count, size_t nets_count);
 
   /**** APIs for Block (COMPONENTS in DEF) ****/
   // get all blocks
@@ -351,7 +351,7 @@ class Circuit {
   // add a net with given name and capacity (number of cell pins)
   Net *AddNet(
       std::string const &net_name,
-      int capacity,
+      size_t capacity,
       double weight = -1
   );
 
@@ -585,6 +585,8 @@ class Circuit {
 
   void LoadImaginaryCellFile();
 
+  void SetPhyDB(phydb::PhyDB *phy_db_ptr);
+
   // add a BlockType with name, with, and height. The return value is a pointer to this new BlockType for adding pins. Unit in grid value
   BlockType *AddBlockTypeWithGridUnit(
       std::string const &block_type_name,
@@ -649,7 +651,13 @@ class Circuit {
   void LoadTech(phydb::PhyDB *phy_db_ptr);
   
   // load information in DEF
-  void LoadDesign(phydb::PhyDB *phy_db_ptr);
+  void ReserveSpaceForDesign();
+  void LoadUnits();
+  void LoadDieArea();
+  void LoadComponents();
+  void LoadIoPins();
+  void LoadNets();
+  void LoadDesign();
 
   // load information in CELL
   void LoadCell(phydb::PhyDB *phy_db_ptr);

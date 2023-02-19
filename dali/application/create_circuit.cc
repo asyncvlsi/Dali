@@ -51,13 +51,15 @@ int main() {
   metal_layer_name = "m1";
   circuit.AddMetalLayer(metal_layer_name, 0.1, 0.1, 0.042, 0.2, 0.2, VERTICAL);
   metal_layer_name = "m2";
-  circuit.AddMetalLayer(metal_layer_name,
-                        0.1,
-                        0.1,
-                        0.042,
-                        0.2,
-                        0.2,
-                        HORIZONTAL);
+  circuit.AddMetalLayer(
+      metal_layer_name,
+      0.1,
+      0.1,
+      0.042,
+      0.2,
+      0.2,
+      HORIZONTAL
+  );
 
   // set grid value and row height
   circuit.SetGridValue(0.2, 0.2);
@@ -98,7 +100,7 @@ int main() {
   circuit.SetDieArea(die_left, die_bottom, die_right, die_top);
 
   // specify how many instances there are.
-  circuit.ReserveSpaceForDesign(2, 2, 3);
+  circuit.ReserveSpaceForDesignImp(2, 2, 3);
 
   // add block instances
   std::string inv1_name = "inv1";
