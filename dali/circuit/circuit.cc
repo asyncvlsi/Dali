@@ -471,7 +471,7 @@ int Circuit::DieAreaOffsetY() const {
   return design_.die_area_.die_area_offset_y_;
 }
 
-void Circuit::SetListCapacity(
+void Circuit::ReserveSpaceForDesign(
     int components_count,
     int pins_count,
     int nets_count
@@ -2557,14 +2557,14 @@ void Circuit::LoadDesign(phydb::PhyDB *phy_db_ptr) {
 
   // 1. reserve space for COMPONENTS, IOPINS, and NETS
   auto &components = phy_db_design.GetComponentsRef();
-  int components_count = (int) components.size();
+  int components_size = (int) components.size();
 
   auto &iopins = phy_db_design.GetIoPinsRef();
-  int pins_count = (int) iopins.size();
+  int pins_size = (int) iopins.size();
 
   auto &nets = phy_db_design.GetNetsRef();
-  int nets_count = (int) nets.size();
-  SetListCapacity(components_count, pins_count, nets_count);
+  int nets_size = (int) nets.size();
+  ReserveSpaceForDesign(components_size, pins_size, nets_size);
 
   // 2. load UNITS DISTANCE MICRONS and DIEAREA
   SetUnitsDistanceMicrons(phy_db_design.GetUnitsDistanceMicrons());

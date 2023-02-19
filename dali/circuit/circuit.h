@@ -272,7 +272,7 @@ class Circuit {
   int DieAreaOffsetY() const;
 
   // set the capacity of COMPONENTs, PINs, and NETs, it is not allowed to add more items than their corresponding capacity
-  void SetListCapacity(int components_count, int pins_count, int nets_count);
+  void ReserveSpaceForDesign(int components_count, int pins_count, int nets_count);
 
   /**** APIs for Block (COMPONENTS in DEF) ****/
   // get all blocks
@@ -647,7 +647,7 @@ class Circuit {
 
   // load information in LEF
   void LoadTech(phydb::PhyDB *phy_db_ptr);
-
+  
   // load information in DEF
   void LoadDesign(phydb::PhyDB *phy_db_ptr);
 

@@ -98,7 +98,7 @@ int main() {
   circuit.SetDieArea(die_left, die_bottom, die_right, die_top);
 
   // specify how many instances there are.
-  circuit.SetListCapacity(2, 2, 3);
+  circuit.ReserveSpaceForDesign(2, 2, 3);
 
   // add block instances
   std::string inv1_name = "inv1";
