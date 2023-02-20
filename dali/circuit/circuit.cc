@@ -437,6 +437,12 @@ void Circuit::SetDieArea(int lower_x, int lower_y, int upper_x, int upper_y) {
   }
 }
 
+void Circuit::SetRectilinearDieArea(std::vector<int2d> &rectilinear_die_area) {
+  design_.die_area_.distance_scale_factor_x_ = DistanceScaleFactorX();
+  design_.die_area_.distance_scale_factor_y_ = DistanceScaleFactorY();
+  design_.die_area_.SetRawRectilinearDieArea(rectilinear_die_area);
+}
+
 int Circuit::RegionLLX() const {
   return design_.die_area_.region_left_;
 }
@@ -2578,9 +2584,17 @@ void Circuit::LoadUnits() {
 }
 
 void Circuit::LoadDieArea() {
-  auto &phy_db_design = *(phy_db_ptr_->GetDesignPtr());
-  auto die_area = phy_db_design.GetDieArea();
+  auto die_area = phy_db_ptr_->GetDieArea();
   SetDieArea(die_area.LLX(), die_area.LLY(), die_area.URX(), die_area.URY());
+
+  auto phydb_rectilinear_polygon_die_area =
+      phy_db_ptr_->RectilinearPolygonDieAreaRef();
+  std::vector<int2d> polygon_die_area;
+  polygon_die_area.reserve(phydb_rectilinear_polygon_die_area.size());
+  for (auto &point: phydb_rectilinear_polygon_die_area) {
+    polygon_die_area.emplace_back(point.x, point.y);
+  }
+  SetRectilinearDieArea(polygon_die_area);
 }
 
 void Circuit::LoadComponents() {

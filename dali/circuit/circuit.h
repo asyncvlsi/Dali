@@ -247,6 +247,9 @@ class Circuit {
   // set die area, unit in manufacturing grid
   void SetDieArea(int lower_x, int lower_y, int upper_x, int upper_y);
 
+  // set rectilinear die area, unit in manufacturing grid;
+  void SetRectilinearDieArea(std::vector<int2d> &rectilinear_die_area);
+
   // return lower x of the placement region, unit is grid value in x
   int RegionLLX() const;
 

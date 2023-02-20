@@ -82,6 +82,11 @@ struct Value2D {
     x = 0;
     y = 0;
   }
+
+  friend std::ostream &operator<<(std::ostream &ost, const Value2D &value_2_d) {
+    ost << "(" << value_2_d.x << ", " << value_2_d.y << ")";
+    return ost;
+  }
 };
 
 typedef Value2D<double> double2d;

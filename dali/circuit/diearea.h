@@ -30,12 +30,19 @@ class DieArea {
   friend class Design;
  public:
   DieArea() = default;
+
+  void SetRawRectilinearDieArea(std::vector<int2d> &raw_rectilinear_die_area);
  private:
+  int distance_scale_factor_x_ = 0;
+  int distance_scale_factor_y_ = 0;
+
   int region_left_ = 0; // unit is grid value x
   int region_right_ = 0; // unit is grid value x
   int region_bottom_ = 0; // unit is grid value y
   int region_top_ = 0; // unit is grid value y
   bool die_area_set_ = false;
+
+  std::vector<int2d> rectilinear_die_area_;
 
   // if left boundary is not on grid, then how much distance should we shift it to make it on grid
   int die_area_offset_x_ = 0; // unit is manufacturing grid
@@ -45,6 +52,18 @@ class DieArea {
   int die_area_offset_y_ = 0; // unit is manufacturing grid
   // if top boundary is still not on grid after shifting, this number is the residual
   int die_area_offset_y_residual_ = 0; // unit is manufacturing grid
+
+  int recursion_limit_ = 1000;
+  int current_recursion_ = 0;
+
+  void MaybeExpandTwoPointsToFour();
+  void CheckRectilinearLines();
+  void CheckIntersectingLines();
+  void ShrinkOffGridDieArea();
+  void ConvertToGridValueUnit();
+  void CheckAndRemoveRedundantPoints();
+  void DetectMinimumBoundingBox();
+  void CreatePlacementBlockages();
 };
 
 } // dali
