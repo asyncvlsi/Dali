@@ -2587,11 +2587,11 @@ void Circuit::LoadDieArea() {
   auto die_area = phy_db_ptr_->GetDieArea();
   SetDieArea(die_area.LLX(), die_area.LLY(), die_area.URX(), die_area.URY());
 
-  auto phydb_rectilinear_polygon_die_area =
+  auto rectilinear_polygon_die_area =
       phy_db_ptr_->RectilinearPolygonDieAreaRef();
   std::vector<int2d> polygon_die_area;
-  polygon_die_area.reserve(phydb_rectilinear_polygon_die_area.size());
-  for (auto &point: phydb_rectilinear_polygon_die_area) {
+  polygon_die_area.reserve(rectilinear_polygon_die_area.size());
+  for (auto &point : rectilinear_polygon_die_area) {
     polygon_die_area.emplace_back(point.x, point.y);
   }
   SetRectilinearDieArea(polygon_die_area);

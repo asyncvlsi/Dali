@@ -59,9 +59,12 @@ class DieArea {
   void MaybeExpandTwoPointsToFour();
   void CheckRectilinearLines();
   void CheckIntersectingLines();
+  bool IsPointOffGrid(int2d point);
+  int2d GetNearestOnGridInDieAreaPoint(int2d point);
   void ShrinkOffGridDieArea();
   void ConvertToGridValueUnit();
   void CheckAndRemoveRedundantPoints();
+  void CheckAndRemoveRedundantPointsImp();
   void DetectMinimumBoundingBox();
   void CreatePlacementBlockages();
 };

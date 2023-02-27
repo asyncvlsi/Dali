@@ -79,7 +79,7 @@ int main() {
   double in_ux = 0.2;
   double in_uy = 0.9;
   Pin *in_pin_ptr = circuit.AddBlkTypePin(inv_ptr, in_name, true);
-  in_pin_ptr->SetOffset((in_lx + in_uy) / 2.0, (in_ly + in_uy) / 2.0);
+  in_pin_ptr->SetOffset((in_lx + in_ux) / 2.0, (in_ly + in_uy) / 2.0);
 
   std::string out_name = "OUT";
   double out_lx = 0.6;

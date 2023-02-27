@@ -23,7 +23,52 @@
 namespace dali {
 
 bool IsPointInDieArea(int2d point, std::vector<int2d> &rectilinear_die_area) {
+  // TODO: to be implemented
   return false;
+}
+
+void CheckCommonSegment(
+    std::pair<int2d, int2d> &seg_0,
+    std::pair<int2d, int2d> &seg_1
+) {
+  bool is_horizontal_0 = (seg_0.first.y == seg_0.second.y);
+  bool is_horizontal_1 = (seg_1.first.y == seg_1.second.y);
+
+  if (is_horizontal_0 && is_horizontal_1) {
+    DaliExpects(
+        (seg_0.first.y != seg_1.first.y),
+        "Die area contains intersecting lines\n"
+            << "line: " << seg_0.first << " " << seg_0.second << "\n"
+            << "line: " << seg_1.first << " " << seg_1.second
+    );
+  } else if ((!is_horizontal_0) && (!is_horizontal_1)) {
+    DaliExpects(
+        (seg_0.first.x != seg_1.first.x),
+        "Die area contains intersecting lines\n"
+            << "line: " << seg_0.first << " " << seg_0.second << "\n"
+            << "line: " << seg_1.first << " " << seg_1.second
+    );
+  } else if (is_horizontal_0 && (!is_horizontal_1)) {
+    int x_1 = seg_1.first.x;
+    int low_0 = std::min(seg_0.first.x, seg_0.second.x);
+    int high_0 = std::max(seg_0.first.x, seg_0.second.x);
+    DaliExpects(
+        (low_0 >= x_1) || (x_1 >= high_0),
+        "Die area contains intersecting lines\n"
+            << "line: " << seg_0.first << " " << seg_0.second << "\n"
+            << "line: " << seg_1.first << " " << seg_1.second
+    );
+  } else { // !is_horizontal_0 && is_horizontal_1
+    int x_0 = seg_0.first.x;
+    int low_1 = std::min(seg_1.first.x, seg_1.second.x);
+    int high_1 = std::max(seg_1.first.x, seg_1.second.x);
+    DaliExpects(
+        (low_1 >= x_0) || (x_0 >= high_1),
+        "Die area contains intersecting lines\n"
+            << "line: " << seg_0.first << " " << seg_0.second << "\n"
+            << "line: " << seg_1.first << " " << seg_1.second
+    );
+  }
 }
 
 /****
@@ -40,14 +85,18 @@ void DieArea::SetRawRectilinearDieArea(
   rectilinear_die_area_ = raw_rectilinear_die_area;
   MaybeExpandTwoPointsToFour();
 
-  // basic sanity checks
+  // basic sanity checks before converting to grid value unit
   CheckRectilinearLines();
   CheckIntersectingLines();
+  CheckAndRemoveRedundantPoints();
 
+  // convert to grid value unit
   ShrinkOffGridDieArea();
   ConvertToGridValueUnit();
 
-  current_recursion_ = 0;
+  // basic sanity checks after converting to grid value unit
+  CheckRectilinearLines();
+  CheckIntersectingLines();
   CheckAndRemoveRedundantPoints();
 
   DetectMinimumBoundingBox();
@@ -101,12 +150,13 @@ void DieArea::CheckRectilinearLines() {
     DaliExpects(
         is_same_x_coordinate != is_same_y_coordinate,
         "Die area contains illegal non-rectilinear points "
-            << first_point << second_point
+            << first_point << " " << second_point
     );
   }
 }
 
 void DieArea::CheckIntersectingLines() {
+  // separate horizontal lines and vertical lines
   std::vector<std::pair<int2d, int2d>> horizontal_lines;
   std::vector<std::pair<int2d, int2d>> vertical_lines;
   size_t num_points = rectilinear_die_area_.size();
@@ -127,26 +177,67 @@ void DieArea::CheckIntersectingLines() {
   }
 
   // check if two horizontal lines share the same segment
+  size_t num_horizontal_lines = horizontal_lines.size();
+  for (size_t i = 0; i < num_horizontal_lines - 1; ++i) {
+    for (size_t j = i + 1; j < num_horizontal_lines; ++j) {
+      CheckCommonSegment(horizontal_lines[i], horizontal_lines[j]);
+    }
+  }
 
   // check if two vertical lines share the same segment
+  size_t num_vertical_lines = vertical_lines.size();
+  for (size_t i = 0; i < num_vertical_lines - 1; ++i) {
+    for (size_t j = i + 1; j < num_vertical_lines; ++j) {
+      CheckCommonSegment(vertical_lines[i], vertical_lines[j]);
+    }
+  }
 
   // check if a horizontal line intersect with a vertical line
+  for (size_t i = 0; i < num_horizontal_lines; ++i) {
+    for (size_t j = 0; j < num_vertical_lines; ++j) {
+      CheckCommonSegment(horizontal_lines[i], vertical_lines[j]);
+    }
+  }
 }
 
+bool DieArea::IsPointOffGrid(int2d point) {
+  // TODO: to be implemented
+  return false;
+}
+
+int2d DieArea::GetNearestOnGridInDieAreaPoint(int2d point) {
+  // TODO: to be implemented
+  return int2d{0, 0};
+}
 
 void DieArea::ShrinkOffGridDieArea() {
-
+  size_t num_points = rectilinear_die_area_.size();
+  for (size_t i = 0; i < num_points; ++i) {
+    auto &point = rectilinear_die_area_[i];
+    if (IsPointOffGrid(point)) {
+      auto new_location = GetNearestOnGridInDieAreaPoint(point);
+      rectilinear_die_area_[i] = new_location;
+    }
+  }
 }
 
 void DieArea::ConvertToGridValueUnit() {
+  for (auto &point: rectilinear_die_area_) {
+    point.x = point.x / distance_scale_factor_x_;
+    point.y = point.y / distance_scale_factor_y_;
+  }
+}
 
+void DieArea::CheckAndRemoveRedundantPoints() {
+  current_recursion_ = 0;
+  CheckAndRemoveRedundantPointsImp();
 }
 
 /****
  * Remove redundant points when more than three consecutive points are in the
  * same line.
  */
-void DieArea::CheckAndRemoveRedundantPoints() {
+void DieArea::CheckAndRemoveRedundantPointsImp() {
   current_recursion_ += 1;
   DaliExpects(
       current_recursion_ < recursion_limit_,
@@ -192,7 +283,7 @@ void DieArea::CheckAndRemoveRedundantPoints() {
 
   // if there is redundancy, we may need to check again
   if (new_rectilinear_die_area_.size() != num_points) {
-    CheckAndRemoveRedundantPoints();
+    CheckAndRemoveRedundantPointsImp();
   }
 }
 

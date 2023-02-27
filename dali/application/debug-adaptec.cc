@@ -37,7 +37,7 @@ using namespace dali;
 int main(int argc, char **argv) {
   InitLogging("", boost::log::trivial::trace, false);
 
-  double tune_param;
+  double tune_param = 0;
   for (int i = 1; i < argc;) {
     std::string arg(argv[i++]);
     if ((arg == "-param") && i < argc) {
