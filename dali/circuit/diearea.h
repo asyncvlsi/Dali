@@ -31,7 +31,7 @@ class DieArea {
  public:
   DieArea() = default;
 
-  void SetRawRectilinearDieArea(std::vector<int2d> &raw_rectilinear_die_area);
+  void SetRawRectilinearDieArea(std::vector<int2d> &rectilinear_die_area);
  private:
   int distance_scale_factor_x_ = 0;
   int distance_scale_factor_y_ = 0;
@@ -43,6 +43,8 @@ class DieArea {
   bool die_area_set_ = false;
 
   std::vector<int2d> rectilinear_die_area_;
+
+  std::vector<RectI> placement_blockages_;
 
   // if left boundary is not on grid, then how much distance should we shift it to make it on grid
   int die_area_offset_x_ = 0; // unit is manufacturing grid
@@ -59,13 +61,11 @@ class DieArea {
   void MaybeExpandTwoPointsToFour();
   void CheckRectilinearLines();
   void CheckIntersectingLines();
-  bool IsPointOffGrid(int2d point);
-  int2d GetNearestOnGridInDieAreaPoint(int2d point);
-  void ShrinkOffGridDieArea();
-  void ConvertToGridValueUnit();
   void CheckAndRemoveRedundantPoints();
   void CheckAndRemoveRedundantPointsImp();
   void DetectMinimumBoundingBox();
+  void ShrinkOffGridBoundingBox();
+  bool IsPointInDieArea(double2d point) const;
   void CreatePlacementBlockages();
 };
 
