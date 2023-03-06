@@ -198,15 +198,16 @@ void BoxBin::UpdateCellList(std::vector<std::vector<GridBin> > &grid_bin_matrix)
   }
 }
 
-void BoxBin::update_boundaries(std::vector<std::vector<GridBin> > &grid_bin_matrix) {
+void BoxBin::UpdateBoundaries(std::vector<std::vector<GridBin> > &grid_bin_matrix) {
   left = grid_bin_matrix[ll_index.x][ll_index.y].left;
   bottom = grid_bin_matrix[ll_index.x][ll_index.y].bottom;
   right = grid_bin_matrix[ur_index.x][ur_index.y].right;
   top = grid_bin_matrix[ur_index.x][ur_index.y].top;
 }
 
-void BoxBin::UpdateWhiteSpaceAndFixedblocks(
-    std::vector<Block *> &box_fixed_blocks
+void BoxBin::UpdateWhiteSpaceAndFixedBlocks(
+    std::vector<Block *> &box_fixed_blocks,
+    std::vector<RectI *> &dummy_placement_blockages
 ) {
   total_white_space = (unsigned long long) (right - left) *
       (unsigned long long) (top - bottom);
@@ -227,11 +228,20 @@ void BoxBin::UpdateWhiteSpaceAndFixedblocks(
     }
   }
 
+  for (auto &blockage_ptr : dummy_placement_blockages) {
+    auto &blockage = *blockage_ptr;
+    if (bin_rect.IsOverlap(blockage)) {
+      dummy_placement_blockages_.push_back(blockage_ptr);
+      rects.push_back(bin_rect.GetOverlapRect(blockage));
+    }
+  }
+
   unsigned long long used_area = GetCoverArea(rects);
   if (total_white_space < used_area) {
-    DaliExpects(false,
-                "Fixed blocks takes more space than available space? "
-                    << total_white_space << " " << used_area
+    DaliExpects(
+        false,
+        "Fixed blocks takes more space than available space? "
+            << total_white_space << " " << used_area
     );
   }
 
@@ -241,7 +251,7 @@ void BoxBin::UpdateWhiteSpaceAndFixedblocks(
 void BoxBin::UpdateObsBoundary() {
   vertical_cutlines.clear();
   horizontal_cutlines.clear();
-  if (fixed_blocks.empty()) {
+  if (fixed_blocks.empty() && dummy_placement_blockages_.empty()) {
     return;
   }
   for (auto &blk_ptr : fixed_blocks) {
@@ -257,6 +267,21 @@ void BoxBin::UpdateObsBoundary() {
     }
     if ((bottom < node.URY()) && (top > node.URY())) {
       horizontal_cutlines.push_back((int) node.URY());
+    }
+  }
+  for (auto &blockage_ptr : dummy_placement_blockages_) {
+    RectI &blockage = *blockage_ptr;
+    if ((left < blockage.LLX()) && (right > blockage.LLX())) {
+      vertical_cutlines.push_back((int) blockage.LLX());
+    }
+    if ((left < blockage.URX()) && (right > blockage.URX())) {
+      vertical_cutlines.push_back((int) blockage.URX());
+    }
+    if ((bottom < blockage.LLY()) && (top > blockage.LLY())) {
+      horizontal_cutlines.push_back((int) blockage.LLY());
+    }
+    if ((bottom < blockage.URY()) && (top > blockage.URY())) {
+      horizontal_cutlines.push_back((int) blockage.URY());
     }
   }
   /* sort boundaries in the ascending order */

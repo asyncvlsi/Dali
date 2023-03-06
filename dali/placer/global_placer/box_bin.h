@@ -75,6 +75,7 @@ class BoxBin {
    * if there is no terminal in the grid bin, do not have to further split the box into smaller boxs,
    * otherwise split the box into smaller boxes, until there is no terminals in any boxes*/
   std::vector<Block *> fixed_blocks;
+  std::vector<RectI *> dummy_placement_blockages_;
   void UpdateFixedBlkList(std::vector<std::vector<GridBin> > &grid_bin_matrix) {
     fixed_blocks = grid_bin_matrix[ll_index.x][ll_index.y].fixed_blocks;
   };
@@ -92,9 +93,12 @@ class BoxBin {
   int right;
   int bottom;
   int top;
-  void update_boundaries(std::vector<std::vector<GridBin> > &grid_bin_matrix);
+  void UpdateBoundaries(std::vector<std::vector<GridBin> > &grid_bin_matrix);
   /* update_white_space can only be called when left, right, bottom, top are updated */
-  void UpdateWhiteSpaceAndFixedblocks(std::vector<Block *> &box_fixed_blocks);
+  void UpdateWhiteSpaceAndFixedBlocks(
+      std::vector<Block *> &box_fixed_blocks,
+      std::vector<RectI *> &dummy_placement_blockages
+  );
 
   void update_all_terminal(std::vector<std::vector<GridBin>> &grid_bin_matrix);
   void update_cell_area();

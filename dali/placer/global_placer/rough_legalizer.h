@@ -62,6 +62,7 @@ class LookAheadLegalizer : public RoughLegalizer {
   void InitializeGridBinSize();
   void UpdateAttributesForAllGridBins();
   void UpdateFixedBlocksInGridBins();
+  void UpdateDummyPlacementBlockagesInGridBins();
   void UpdateWhiteSpaceInGridBin(GridBin &grid_bin);
   void InitGridBins();
   void InitWhiteSpaceLUT();

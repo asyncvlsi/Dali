@@ -214,6 +214,11 @@ class Block {
         || blk.LLY() > URY());
   }
 
+  bool IsOverlap(const RectI &rect) const {
+    return !(LLX() > rect.URX() || rect.LLX() > URX() || LLY() > rect.URY()
+        || rect.LLY() > URY());
+  }
+
   // returns whether this Block overlaps with Block @param blk
   bool IsOverlap(const Block *blk) const { return IsOverlap(*blk); }
 

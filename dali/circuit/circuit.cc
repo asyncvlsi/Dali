@@ -528,7 +528,7 @@ void Circuit::UpdateTotalBlkArea() {
           - design_.die_area_.region_left_) *
           (unsigned long long) (design_.die_area_.region_top_
               - design_.die_area_.region_bottom_);
-  RectI bin_rect(
+  RectI die_area_bbox(
       design_.die_area_.region_left_, design_.die_area_.region_bottom_,
       design_.die_area_.region_right_, design_.die_area_.region_top_
   );
@@ -543,27 +543,32 @@ void Circuit::UpdateTotalBlkArea() {
         static_cast<int>(std::round(blk.URX())),
         static_cast<int>(std::round(blk.URY()))
     );
-    if (bin_rect.IsOverlap(fixed_blk_rect)) {
-      rects.push_back(bin_rect.GetOverlapRect(fixed_blk_rect));
+    if (die_area_bbox.IsOverlap(fixed_blk_rect)) {
+      rects.push_back(die_area_bbox.GetOverlapRect(fixed_blk_rect));
+    }
+  }
+  for (auto &blockage : design_.die_area_.placement_blockages_) {
+    if (die_area_bbox.IsOverlap(blockage)) {
+      rects.push_back(die_area_bbox.GetOverlapRect(blockage));
     }
   }
 
-  design_.tot_fixed_blk_cover_area_ = GetCoverArea(rects);
-  if (design_.tot_white_space_ < design_.tot_fixed_blk_cover_area_) {
-    DaliExpects(false,
-                "Fixed blocks takes more space than available space? "
-                    + std::to_string(design_.tot_blk_area_) + " "
-                    + std::to_string(design_.tot_fixed_blk_cover_area_)
+  design_.total_blockage_cover_area_ = GetCoverArea(rects);
+  if (design_.tot_white_space_ < design_.total_blockage_cover_area_) {
+    DaliExpects(
+        false,
+        "Fixed blocks takes more space than available space? "
+            + std::to_string(design_.tot_blk_area_) + " "
+            + std::to_string(design_.total_blockage_cover_area_)
     );
   }
-  design_.tot_white_space_ -= design_.tot_fixed_blk_cover_area_;
-  design_.tot_blk_area_ = design_.tot_fixed_blk_cover_area_
+  design_.tot_white_space_ -= design_.total_blockage_cover_area_;
+  design_.tot_blk_area_ = design_.total_blockage_cover_area_
       + design_.tot_mov_blk_area_;
 }
 
 void Circuit::ReportBlockList() {
-  BOOST_LOG_TRIVIAL(info) << "Total Block: " << design_.blocks_.size()
-                          << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Total Block: " << design_.blocks_.size() << "\n";
   for (auto &block : design_.blocks_) {
     block.Report();
   }
@@ -2584,9 +2589,6 @@ void Circuit::LoadUnits() {
 }
 
 void Circuit::LoadDieArea() {
-  auto die_area = phy_db_ptr_->GetDieArea();
-  SetDieArea(die_area.LLX(), die_area.LLY(), die_area.URX(), die_area.URY());
-
   auto rectilinear_polygon_die_area =
       phy_db_ptr_->RectilinearPolygonDieAreaRef();
   std::vector<int2d> polygon_die_area;

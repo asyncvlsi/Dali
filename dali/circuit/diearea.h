@@ -32,6 +32,7 @@ class DieArea {
   DieArea() = default;
 
   void SetRawRectilinearDieArea(std::vector<int2d> &rectilinear_die_area);
+  std::vector<RectI> &PlacementBlockages() { return placement_blockages_; }
  private:
   int distance_scale_factor_x_ = 0;
   int distance_scale_factor_y_ = 0;
@@ -67,6 +68,7 @@ class DieArea {
   void ShrinkOffGridBoundingBox();
   bool IsPointInDieArea(double2d point) const;
   void CreatePlacementBlockages();
+  void ConvertPlacementBlockagesToGridUnit();
 };
 
 } // dali

@@ -26,6 +26,7 @@
 #include <list>
 
 #include "dali/common/helper.h"
+#include "dali/common/misc.h"
 
 namespace dali {
 
@@ -109,21 +110,44 @@ void LGTetrisEx::SetRowInfoAuto() {
 void LGTetrisEx::DetectWhiteSpace() {
   std::vector<std::vector<SegI>> macro_segments;
   macro_segments.resize(tot_num_rows_);
-  Seg tmp(0, 0);
-  bool out_of_range;
+
+  // find all placement blockages
+  std::vector<RectI> placement_blockages;
+
   auto &blocks = ckt_ptr_->Blocks();
   for (auto &block : blocks) {
-    if (IsDummyBlock(block)) continue;
-    if (block.IsMovable()) continue;
-    int ly = int(std::floor(block.LLY()));
-    int uy = int(std::ceil(block.URY()));
+    if (IsDummyBlock(block)) {
+      continue;
+    }
+    if (block.IsMovable()) {
+      continue;
+    }
     int lx = int(std::floor(block.LLX()));
+    int ly = int(std::floor(block.LLY()));
     int ux = int(std::ceil(block.URX()));
+    int uy = int(std::ceil(block.URY()));
 
-    out_of_range = (ly >= RegionTop()) || (uy <= RegionBottom())
+    placement_blockages.emplace_back(lx, ly, ux, uy);
+  }
+
+  auto &dummy_placement_blockage =
+      ckt_ptr_->design().GetDieArea().PlacementBlockages();
+  for (auto &blockage: dummy_placement_blockage) {
+    placement_blockages.push_back(blockage);
+  }
+
+  for (auto &blockage : placement_blockages) {
+    int lx = blockage.LLX();
+    int ly = blockage.LLY();
+    int ux = blockage.URX();
+    int uy = blockage.URY();
+
+    bool out_of_range = (ly >= RegionTop()) || (uy <= RegionBottom())
         || (lx >= RegionRight()) || (ux <= RegionLeft());
 
-    if (out_of_range) continue;
+    if (out_of_range) {
+      continue;
+    }
 
     int start_row = StartRow(ly);
     int end_row = EndRow(uy);
@@ -131,6 +155,7 @@ void LGTetrisEx::DetectWhiteSpace() {
     start_row = std::max(0, start_row);
     end_row = std::min(tot_num_rows_ - 1, end_row);
 
+    Seg tmp(0, 0);
     tmp.lo = std::max(RegionLeft(), lx);
     tmp.hi = std::min(RegionRight(), ux);
     if (tmp.hi > tmp.lo) {

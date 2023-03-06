@@ -36,15 +36,25 @@ void CheckCommonSegment(
   bool is_horizontal_1 = (seg_1.first.y == seg_1.second.y);
 
   if (is_horizontal_0 && is_horizontal_1) {
+    bool not_same_y = (seg_0.first.y != seg_1.first.y);
+    bool no_common_x = (std::min(seg_0.first.x, seg_0.second.x) >
+        std::max(seg_1.first.x, seg_1.second.x))
+        || (std::max(seg_0.first.x, seg_0.second.x)
+            < std::min(seg_1.first.x, seg_1.second.x));
     DaliExpects(
-        (seg_0.first.y != seg_1.first.y),
+        not_same_y || (!not_same_y && no_common_x),
         "Die area contains intersecting lines\n"
             << "line: " << seg_0.first << " " << seg_0.second << "\n"
             << "line: " << seg_1.first << " " << seg_1.second
     );
   } else if ((!is_horizontal_0) && (!is_horizontal_1)) {
+    bool not_same_x = (seg_0.first.x != seg_1.first.x);
+    bool no_common_y = (std::min(seg_0.first.y, seg_0.second.y) >
+        std::max(seg_1.first.y, seg_1.second.y))
+        || (std::max(seg_0.first.y, seg_0.second.y)
+            < std::min(seg_1.first.y, seg_1.second.y));
     DaliExpects(
-        (seg_0.first.x != seg_1.first.x),
+        not_same_x || (!not_same_x && no_common_y),
         "Die area contains intersecting lines\n"
             << "line: " << seg_0.first << " " << seg_0.second << "\n"
             << "line: " << seg_1.first << " " << seg_1.second
@@ -91,6 +101,7 @@ void DieArea::SetRawRectilinearDieArea(
   DetectMinimumBoundingBox();
   ShrinkOffGridBoundingBox();
   CreatePlacementBlockages();
+  ConvertPlacementBlockagesToGridUnit();
 }
 
 void DieArea::MaybeExpandTwoPointsToFour() {
@@ -266,48 +277,56 @@ void DieArea::DetectMinimumBoundingBox() {
 void DieArea::ShrinkOffGridBoundingBox() {
   double f_left = region_left_ / static_cast<double>(distance_scale_factor_x_);
   if (AbsResidual(f_left, 1) > 1e-5) {
-    region_left_ = std::ceil(f_left);
+    int shrunk_region_left_ = static_cast<int>(std::round(std::ceil(f_left)));
     BOOST_LOG_TRIVIAL(info)
       << "left placement boundary is not on placement grid: \n"
       << "  shrink left from " << region_left_ << " to "
-      << region_left_ * distance_scale_factor_x_ << "\n";
+      << shrunk_region_left_ * distance_scale_factor_x_ << "\n";
+    region_left_ = shrunk_region_left_;
   } else {
     region_left_ = static_cast<int>(std::round(f_left));
   }
 
-  double
-      f_right = region_right_ / static_cast<double>(distance_scale_factor_x_);
+  double f_right =
+      region_right_ / static_cast<double>(distance_scale_factor_x_);
   if (AbsResidual(f_right, 1) > 1e-5) {
-    region_right_ = std::floor(f_right);
+    int shrunk_region_right_ = static_cast<int>(
+        std::round(std::floor(f_right))
+    );
     BOOST_LOG_TRIVIAL(info)
       << "right placement boundary is not on placement grid: \n"
       << "  shrink right from " << region_right_ << " to "
-      << region_right_ * distance_scale_factor_x_
-      << "\n";
+      << shrunk_region_right_ * distance_scale_factor_x_ << "\n";
+    region_right_ = shrunk_region_right_;
   } else {
     region_right_ = static_cast<int>(std::round(f_right));
   }
 
-  double
-      f_bottom = region_bottom_ / static_cast<double>(distance_scale_factor_y_);
+  double f_bottom =
+      region_bottom_ / static_cast<double>(distance_scale_factor_y_);
   if (AbsResidual(f_bottom, 1) > 1e-5) {
-    region_bottom_ = std::ceil(f_bottom);
+    int shrunk_region_bottom_ = static_cast<int>(
+        std::round(std::ceil(f_bottom))
+    );
     BOOST_LOG_TRIVIAL(info)
       << "bottom placement boundary is not on placement grid: \n"
       << "  shrink bottom from " << region_bottom_ << " to "
-      << region_bottom_ * distance_scale_factor_y_
-      << "\n";
+      << shrunk_region_bottom_ * distance_scale_factor_y_ << "\n";
+    region_bottom_ = shrunk_region_bottom_;
   } else {
     region_bottom_ = static_cast<int>(std::round(f_bottom));
   }
 
   double f_top = region_top_ / static_cast<double>(distance_scale_factor_y_);
   if (AbsResidual(f_top, 1) > 1e-5) {
-    region_top_ = std::floor(f_top);
+    int shrunk_region_top_ = static_cast<int>(
+        std::round(std::floor(f_top))
+    );
     BOOST_LOG_TRIVIAL(info)
       << "top placement boundary is not on placement grid: \n"
       << "  shrink top from " << region_top_ << " to "
-      << region_top_ * distance_scale_factor_y_ << "\n";
+      << shrunk_region_top_ * distance_scale_factor_y_ << "\n";
+    region_top_ = shrunk_region_top_;
   } else {
     region_top_ = static_cast<int>(std::round(f_top));
   }
@@ -408,6 +427,55 @@ void DieArea::CreatePlacementBlockages() {
       }
     }
   }
+}
+
+/****
+ * Convert placement blockages to grid unit. And expand (yeah, not shrink)
+ * off-grid placement blockages to the nearest grid points.
+ */
+void DieArea::ConvertPlacementBlockagesToGridUnit() {
+  std::vector<RectI> shrunk_placement_blockages_;
+  for (auto &blockage : placement_blockages_) {
+    int new_lx = 0;
+    double lx = blockage.LLX() / static_cast<double>(distance_scale_factor_x_);
+    if (AbsResidual(lx, 1) > 1e-5) {
+      int shrunk_lx_ = static_cast<int>(std::round(std::floor(lx)));
+      new_lx = shrunk_lx_;
+    } else {
+      new_lx = static_cast<int>(std::round(lx));
+    }
+
+    int new_ux = 0;
+    double ux = blockage.URX() / static_cast<double>(distance_scale_factor_x_);
+    if (AbsResidual(ux, 1) > 1e-5) {
+      int shrunk_ux = static_cast<int>(std::round(std::ceil(ux)));
+      new_ux = shrunk_ux;
+    } else {
+      new_ux = static_cast<int>(std::round(ux));
+    }
+
+    int new_ly = 0;
+    double ly = blockage.LLY() / static_cast<double>(distance_scale_factor_y_);
+    if (AbsResidual(ly, 1) > 1e-5) {
+      int shrunk_ly = static_cast<int>(std::round(std::floor(ly)));
+      new_ly = shrunk_ly;
+    } else {
+      new_ly = static_cast<int>(std::round(ly));
+    }
+
+    int new_uy = 0;
+    double uy = blockage.URY() / static_cast<double>(distance_scale_factor_y_);
+    if (AbsResidual(uy, 1) > 1e-5) {
+      int shrunk_uy = static_cast<int>(std::round(std::ceil(uy)));
+      new_uy = shrunk_uy;
+    } else {
+      new_uy = static_cast<int>(std::round(uy));
+    }
+
+    shrunk_placement_blockages_.emplace_back(new_lx, new_ly, new_ux, new_uy);
+  }
+
+  placement_blockages_.swap(shrunk_placement_blockages_);
 }
 
 } // dali

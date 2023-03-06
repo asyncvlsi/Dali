@@ -110,6 +110,7 @@ class GridBin {
   bool global_placed;
   std::vector<Block *> cell_list;
   std::vector<Block *> fixed_blocks;
+  std::vector<RectI *> dummy_placement_blockages_;
   std::vector<GridBinIndex> adjacent_bin_index;
 
   int LLX() { return left; }

@@ -110,6 +110,8 @@ class Design {
   // get all rows
   std::vector<GeneralRow> &Rows() { return rows_; }
 
+  DieArea &GetDieArea() { return die_area_; }
+
   void UpdateFanOutHistogram(size_t net_size);
   void InitNetFanOutHistogram(std::vector<size_t> *histo_x = nullptr);
   void UpdateNetHPWLHistogram(size_t net_size, double hpwl);
@@ -160,7 +162,7 @@ class Design {
   unsigned long tot_width_ = 0;
   unsigned long tot_height_ = 0;
   unsigned long long tot_blk_area_ = 0;
-  unsigned long long tot_fixed_blk_cover_area_ = 0;
+  unsigned long long total_blockage_cover_area_ = 0;
   unsigned long long tot_white_space_ = 0;
   unsigned long tot_mov_width_ = 0;
   unsigned long tot_mov_height_ = 0;
