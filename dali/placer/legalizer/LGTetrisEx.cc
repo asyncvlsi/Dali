@@ -112,35 +112,14 @@ void LGTetrisEx::DetectWhiteSpace() {
   macro_segments.resize(tot_num_rows_);
 
   // find all placement blockages
-  std::vector<RectI> placement_blockages;
-
-  auto &blocks = ckt_ptr_->Blocks();
-  for (auto &block : blocks) {
-    if (IsDummyBlock(block)) {
-      continue;
-    }
-    if (block.IsMovable()) {
-      continue;
-    }
-    int lx = int(std::floor(block.LLX()));
-    int ly = int(std::floor(block.LLY()));
-    int ux = int(std::ceil(block.URX()));
-    int uy = int(std::ceil(block.URY()));
-
-    placement_blockages.emplace_back(lx, ly, ux, uy);
-  }
-
-  auto &dummy_placement_blockage =
-      ckt_ptr_->design().GetDieArea().PlacementBlockages();
-  for (auto &blockage: dummy_placement_blockage) {
-    placement_blockages.push_back(blockage);
-  }
+  auto &placement_blockages = ckt_ptr_->design().PlacementBlockages();
 
   for (auto &blockage : placement_blockages) {
-    int lx = blockage.LLX();
-    int ly = blockage.LLY();
-    int ux = blockage.URX();
-    int uy = blockage.URY();
+    auto &rect = blockage.GetRect();
+    int lx = rect.LLX();
+    int ly = rect.LLY();
+    int ux = rect.URX();
+    int uy = rect.URY();
 
     bool out_of_range = (ly >= RegionTop()) || (uy <= RegionBottom())
         || (lx >= RegionRight()) || (ux <= RegionLeft());

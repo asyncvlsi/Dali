@@ -441,6 +441,7 @@ void Circuit::SetRectilinearDieArea(std::vector<int2d> &rectilinear_die_area) {
   design_.die_area_.distance_scale_factor_x_ = DistanceScaleFactorX();
   design_.die_area_.distance_scale_factor_y_ = DistanceScaleFactorY();
   design_.die_area_.SetRawRectilinearDieArea(rectilinear_die_area);
+  design_.UpdateDieAreaPlacementBlockages();
 }
 
 int Circuit::RegionLLX() const {
@@ -534,22 +535,12 @@ void Circuit::UpdateTotalBlkArea() {
   );
   std::vector<Block> &blocks = Blocks();
 
+  design_.UpdatePlacementBlockages();
+
   std::vector<RectI> rects;
-  for (auto &blk : blocks) {
-    if (blk.IsMovable()) continue;
-    RectI fixed_blk_rect(
-        static_cast<int>(std::round(blk.LLX())),
-        static_cast<int>(std::round(blk.LLY())),
-        static_cast<int>(std::round(blk.URX())),
-        static_cast<int>(std::round(blk.URY()))
-    );
-    if (die_area_bbox.IsOverlap(fixed_blk_rect)) {
-      rects.push_back(die_area_bbox.GetOverlapRect(fixed_blk_rect));
-    }
-  }
-  for (auto &blockage : design_.die_area_.placement_blockages_) {
-    if (die_area_bbox.IsOverlap(blockage)) {
-      rects.push_back(die_area_bbox.GetOverlapRect(blockage));
+  for (auto &blockage : design_.PlacementBlockages()) {
+    if (die_area_bbox.IsOverlap(blockage.GetRect())) {
+      rects.push_back(die_area_bbox.GetOverlapRect(blockage.GetRect()));
     }
   }
 
@@ -1420,7 +1411,7 @@ void Circuit::GenMATLABTable(
     }
   }
   // save well-tap cells
-  for (auto &block : design_.welltaps_) {
+  for (auto &block : design_.well_taps_) {
     SaveMatlabPatchRect(
         ost,
         block.LLX(), block.LLY(), block.URX(), block.URY(),
@@ -1447,7 +1438,7 @@ void Circuit::GenMATLABWellTable(
       block.ExportWellToMatlabPatchRect(ost);
     }
   }
-  for (auto &block : design_.welltaps_) {
+  for (auto &block : design_.well_taps_) {
     block.ExportWellToMatlabPatchRect(ost);
   }
   ost.close();
@@ -1511,7 +1502,7 @@ void Circuit::SaveNormalCells(
 }
 
 void Circuit::SaveWellTapCells(std::ofstream &ost) {
-  for (auto &blk : design_.welltaps_) {
+  for (auto &blk : design_.well_taps_) {
     SaveCell(ost, blk);
   }
 }
@@ -1553,7 +1544,7 @@ void Circuit::ExportNormalCells(std::ofstream &ost) {
     if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
     ++cell_count;
   }
-  cell_count += design_.welltaps_.size();
+  cell_count += design_.well_taps_.size();
   ost << "COMPONENTS " << cell_count << " ;\n";
   SaveNormalCells(ost);
   SaveWellTapCells(ost);
@@ -1561,7 +1552,7 @@ void Circuit::ExportNormalCells(std::ofstream &ost) {
 }
 
 void Circuit::ExportWellTapCells(std::ofstream &ost) {
-  size_t cell_count = design_.welltaps_.size();
+  size_t cell_count = design_.well_taps_.size();
   ost << "COMPONENTS " << cell_count << " ;\n";
   SaveWellTapCells(ost);
   ost << "END COMPONENTS\n\n";
@@ -1576,7 +1567,7 @@ void Circuit::ExportNormalAndWellTapCells(
     if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
     ++cell_count;
   }
-  cell_count += design_.welltaps_.size();
+  cell_count += design_.well_taps_.size();
   cell_count += 1;
   ost << "COMPONENTS " << cell_count << " ;\n";
   SaveCircuitWellCoverCell(ost, base_name);
@@ -1594,7 +1585,7 @@ void Circuit::ExportNormalWellTapAndCoverCells(
     if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
     ++cell_count;
   }
-  cell_count += design_.welltaps_.size();
+  cell_count += design_.well_taps_.size();
   cell_count += 2;
   ost << "COMPONENTS " << cell_count << " ;\n";
   SaveCircuitWellCoverCell(ost, base_name);
@@ -1614,7 +1605,7 @@ void Circuit::ExportCellsExcept(
     if (block.Status() == UNPLACED) continue;
     ++cell_count;
   }
-  cell_count += design_.welltaps_.size();
+  cell_count += design_.well_taps_.size();
   ost << "COMPONENTS " << cell_count << " ;\n";
   SaveNormalCells(ost, filter_out);
   SaveWellTapCells(ost);
@@ -1768,14 +1759,14 @@ void Circuit::ExportPowerNetsForWellTapCells(std::ofstream &ost) {
   // GND
   ost << "- ggnndd\n";
   ost << " ";
-  for (auto &block : design_.welltaps_) {
+  for (auto &block : design_.well_taps_) {
     ost << " ( " << block.Name() << " g0 )";
   }
   ost << "\n" << " ;\n";
   //Vdd
   ost << "- vvdddd\n";
   ost << " ";
-  for (auto &block : design_.welltaps_) {
+  for (auto &block : design_.well_taps_) {
     ost << " ( " << block.Name() << " v0 )";
   }
   ost << "\n" << " ;\n";
@@ -2231,6 +2222,7 @@ void Circuit::AddBlock(
     design_.tot_mov_height_ += design_.blocks_.back().Height();
   } else {
     ++design_.tot_fixed_blk_num_;
+    design_.AddFixedCellPlacementBlockage(design_.blocks_.back());
   }
   if (design_.blocks_.back().Height() < design_.blk_min_height_) {
     design_.blk_min_height_ = design_.blocks_.back().Height();

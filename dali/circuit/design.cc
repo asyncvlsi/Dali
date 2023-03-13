@@ -23,7 +23,83 @@
 #include <cfloat>
 #include <cstdio>
 
+#include "dali/common/helper.h"
+
 namespace dali {
+
+void Design::AddIntrinsicPlacementBlockage(
+    int lx, int ly, int ux, int uy
+) {
+  intrinsic_blockages_.emplace_back(lx, ly, ux, uy);
+}
+
+void Design::AddFixedCellPlacementBlockage(Block &block) {
+  int new_lx = 0;
+  double lx = block.LLX();
+  if (AbsResidual(lx, 1) > 1e-5) {
+    int shrunk_lx_ = static_cast<int>(std::round(std::floor(lx)));
+    new_lx = shrunk_lx_;
+  } else {
+    new_lx = static_cast<int>(std::round(lx));
+  }
+
+  int new_ux = 0;
+  double ux = block.URX();
+  if (AbsResidual(ux, 1) > 1e-5) {
+    int shrunk_ux = static_cast<int>(std::round(std::ceil(ux)));
+    new_ux = shrunk_ux;
+  } else {
+    new_ux = static_cast<int>(std::round(ux));
+  }
+
+  int new_ly = 0;
+  double ly = block.LLY();
+  if (AbsResidual(ly, 1) > 1e-5) {
+    int shrunk_ly = static_cast<int>(std::round(std::floor(ly)));
+    new_ly = shrunk_ly;
+  } else {
+    new_ly = static_cast<int>(std::round(ly));
+  }
+
+  int new_uy = 0;
+  double uy = block.URY();
+  if (AbsResidual(uy, 1) > 1e-5) {
+    int shrunk_uy = static_cast<int>(std::round(std::ceil(uy)));
+    new_uy = shrunk_uy;
+  } else {
+    new_uy = static_cast<int>(std::round(uy));
+  }
+
+  fixed_cell_blockages_.emplace_back(new_lx, new_ly, new_ux, new_uy);
+}
+
+void Design::UpdateDieAreaPlacementBlockages() {
+  for (auto &rect : die_area_.PlacementBlockages()) {
+    die_area_dummy_blockages_.emplace_back(rect);
+  }
+}
+
+void Design::UpdatePlacementBlockages() {
+  all_blockages_.clear();
+  all_blockages_.reserve(intrinsic_blockages_.size() +
+      fixed_cell_blockages_.size() +
+      die_area_dummy_blockages_.size()
+  );
+
+  for (auto &blockage : intrinsic_blockages_) {
+    all_blockages_.push_back(blockage);
+  }
+  for (auto &blockage : fixed_cell_blockages_) {
+    all_blockages_.push_back(blockage);
+  }
+  for (auto &blockage : die_area_dummy_blockages_) {
+    all_blockages_.push_back(blockage);
+  }
+}
+
+const std::vector<PlacementBlockage> &Design::PlacementBlockages() const {
+  return all_blockages_;
+}
 
 /****
  * Increment the count of net in the corresponding bin using binary search
@@ -84,8 +160,9 @@ void Design::InitNetFanOutHistogram(std::vector<size_t> *histo_x) {
     net_histogram_.tot_net_count += net_histogram_.counts[i];
   }
   for (size_t i = 0; i < sz; ++i) {
-    net_histogram_.percents[i] = 100.0 * static_cast<double>(net_histogram_.counts[i])
-        / static_cast<double>(net_histogram_.tot_net_count);
+    net_histogram_.percents[i] =
+        100.0 * static_cast<double>(net_histogram_.counts[i])
+            / static_cast<double>(net_histogram_.tot_net_count);
   }
 }
 
@@ -128,7 +205,8 @@ void Design::ReportNetFanOutHistogram() {
   for (size_t i = 0; i < sz; ++i) {
     if (net_histogram_.counts[i] > 0) {
       net_histogram_.ave_hpwls[i] =
-          net_histogram_.sum_hpwls[i] / static_cast<double>(net_histogram_.counts[i]);
+          net_histogram_.sum_hpwls[i]
+              / static_cast<double>(net_histogram_.counts[i]);
     } else {
       net_histogram_.ave_hpwls[i] = 0;
     }

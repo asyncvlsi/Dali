@@ -30,6 +30,7 @@
 #include "diearea.h"
 #include "iopin.h"
 #include "net.h"
+#include "placement_blockage.h"
 #include "row.h"
 
 namespace dali {
@@ -86,7 +87,7 @@ class Design {
   int RealBlkCnt() const { return real_block_count_; }
 
   // get all well tap cells
-  std::vector<Block> &WellTaps() { return welltaps_; }
+  std::vector<Block> &WellTaps() { return well_taps_; }
 
   // get well tap cell name-id map
   std::unordered_map<std::string, int> &TapNameIdMap() {
@@ -112,6 +113,19 @@ class Design {
 
   DieArea &GetDieArea() { return die_area_; }
 
+  void AddIntrinsicPlacementBlockage(
+      int lx, int ly, int ux, int uy
+  );
+
+  void AddFixedCellPlacementBlockage(Block &block);
+
+  void UpdateDieAreaPlacementBlockages();
+
+  // update all placement blockages
+  void UpdatePlacementBlockages();
+
+  const std::vector<PlacementBlockage> &PlacementBlockages() const;
+
   void UpdateFanOutHistogram(size_t net_size);
   void InitNetFanOutHistogram(std::vector<size_t> *histo_x = nullptr);
   void UpdateNetHPWLHistogram(size_t net_size, double hpwl);
@@ -130,7 +144,7 @@ class Design {
   // block list consists of blocks and dummy blocks for pre-placed IOPINs
   std::vector<Block> blocks_;
   std::unordered_map<std::string, int> blk_name_id_map_;
-  std::vector<Block> welltaps_;
+  std::vector<Block> well_taps_;
   std::unordered_map<std::string, int> tap_name_id_map_;
   std::vector<Block> fillers_;
   std::unordered_map<std::string, int> filler_name_id_map_;
@@ -138,6 +152,12 @@ class Design {
   int real_block_count_ = 0;
   // number of blocks given in DEF, these two numbers are supposed to be the same
   int blk_count_limit_ = 0;
+
+  /****placement blockages****/
+  std::vector<PlacementBlockage> intrinsic_blockages_;
+  std::vector<PlacementBlockage> fixed_cell_blockages_;
+  std::vector<PlacementBlockage> die_area_dummy_blockages_;
+  std::vector<PlacementBlockage> all_blockages_;
 
   /****list of IO Pins****/
   std::vector<IoPin> iopins_;

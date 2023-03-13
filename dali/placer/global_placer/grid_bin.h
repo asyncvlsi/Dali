@@ -27,6 +27,7 @@
 #include <boost/functional/hash.hpp>
 
 #include "dali/circuit/block.h"
+#include "dali/circuit/placement_blockage.h"
 
 namespace dali {
 
@@ -109,8 +110,7 @@ class GridBin {
   bool cluster_visited;
   bool global_placed;
   std::vector<Block *> cell_list;
-  std::vector<Block *> fixed_blocks;
-  std::vector<RectI *> dummy_placement_blockages_;
+  std::vector<const PlacementBlockage *> placement_blockages_;
   std::vector<GridBinIndex> adjacent_bin_index;
 
   int LLX() { return left; }

@@ -100,24 +100,24 @@ void LookAheadLegalizer::UpdateAttributesForAllGridBins() {
  * For each fixed block, we need to store its index in grid bins it overlaps with.
  * This can help us to compute available white space in each grid bin.
  */
-void LookAheadLegalizer::UpdateFixedBlocksInGridBins() {
-  for (auto &blk : ckt_ptr_->Blocks()) {
+void LookAheadLegalizer::UpdatePlacementBlockagesInGridBins() {
+  for (auto &blockage : ckt_ptr_->design().PlacementBlockages()) {
+    const RectI &rect = blockage.GetRect();
     /* find the left, right, bottom, top index of the grid */
-    if (blk.IsMovable()) continue;
-    bool fixed_blk_out_of_region = int(blk.LLX()) >= ckt_ptr_->RegionURX()
-        || int(blk.URX()) <= ckt_ptr_->RegionLLX()
-        || int(blk.LLY()) >= ckt_ptr_->RegionURY()
-        || int(blk.URY()) <= ckt_ptr_->RegionLLY();
+    bool blockage_blk_out_of_region = rect.LLX() >= ckt_ptr_->RegionURX()
+        || rect.URX() <= ckt_ptr_->RegionLLX()
+        || rect.LLY() >= ckt_ptr_->RegionURY()
+        || rect.URY() <= ckt_ptr_->RegionLLY();
     // TODO: test and clean up this part of code using an adaptec benchmark
-    if (fixed_blk_out_of_region) continue;
+    if (blockage_blk_out_of_region) continue;
     int left_index = std::floor(
-        (blk.LLX() - ckt_ptr_->RegionLLX()) / grid_bin_width);
+        (rect.LLX() - ckt_ptr_->RegionLLX()) / grid_bin_width);
     int right_index = std::floor(
-        (blk.URX() - ckt_ptr_->RegionLLX()) / grid_bin_width);
+        (rect.URX() - ckt_ptr_->RegionLLX()) / grid_bin_width);
     int bottom_index = std::floor(
-        (blk.LLY() - ckt_ptr_->RegionLLY()) / grid_bin_height);
+        (rect.LLY() - ckt_ptr_->RegionLLY()) / grid_bin_height);
     int top_index = std::floor(
-        (blk.URY() - ckt_ptr_->RegionLLY()) / grid_bin_height);
+        (rect.URY() - ckt_ptr_->RegionLLY()) / grid_bin_height);
     /* the grid boundaries might be the placement region boundaries
      * if a block touches the rightmost and topmost boundaries,
      * the index need to be fixed to make sure no memory access out of scope */
@@ -137,50 +137,14 @@ void LookAheadLegalizer::UpdateFixedBlocksInGridBins() {
          * the top/right of a fixed block overlap with the bottom/left of
          * a grid box. if this case happens, we need to ignore this fixed
          * block for this grid box. */
-        bool blk_out_of_bin =
-            int(blk.LLX() >= grid_bin_mesh[j][k].right) ||
-                int(blk.URX() <= grid_bin_mesh[j][k].left) ||
-                int(blk.LLY() >= grid_bin_mesh[j][k].top) ||
-                int(blk.URY() <= grid_bin_mesh[j][k].bottom);
-        if (blk_out_of_bin) continue;
-        grid_bin_mesh[j][k].fixed_blocks.push_back(&blk);
-      }
-    }
-  }
-}
-
-void LookAheadLegalizer::UpdateDummyPlacementBlockagesInGridBins() {
-  for (auto &blockage : ckt_ptr_->design().GetDieArea().PlacementBlockages()) {
-    bool is_blockage_out_of_region =
-        int(blockage.LLX()) >= ckt_ptr_->RegionURX()
-            || int(blockage.URX()) <= ckt_ptr_->RegionLLX()
-            || int(blockage.LLY()) >= ckt_ptr_->RegionURY()
-            || int(blockage.URY()) <= ckt_ptr_->RegionLLY();
-
-    if (is_blockage_out_of_region) continue;
-    int left_index = std::floor(
-        (blockage.LLX() - ckt_ptr_->RegionLLX()) / grid_bin_width);
-    int right_index = std::floor(
-        (blockage.URX() - ckt_ptr_->RegionLLX()) / grid_bin_width);
-    int bottom_index = std::floor(
-        (blockage.LLY() - ckt_ptr_->RegionLLY()) / grid_bin_height);
-    int top_index = std::floor(
-        (blockage.URY() - ckt_ptr_->RegionLLY()) / grid_bin_height);
-
-    if (left_index < 0) left_index = 0;
-    if (right_index >= grid_cnt_x) right_index = grid_cnt_x - 1;
-    if (bottom_index < 0) bottom_index = 0;
-    if (top_index >= grid_cnt_y) top_index = grid_cnt_y - 1;
-
-    for (int j = left_index; j <= right_index; ++j) {
-      for (int k = bottom_index; k <= top_index; ++k) {
-        bool is_blockage_out_of_bin =
-            int(blockage.LLX() >= grid_bin_mesh[j][k].right) ||
-                int(blockage.URX() <= grid_bin_mesh[j][k].left) ||
-                int(blockage.LLY() >= grid_bin_mesh[j][k].top) ||
-                int(blockage.URY() <= grid_bin_mesh[j][k].bottom);
-        if (is_blockage_out_of_bin) continue;
-        grid_bin_mesh[j][k].dummy_placement_blockages_.push_back(&blockage);
+        bool blk_out_of_bin = rect.LLX() >= grid_bin_mesh[j][k].right
+            || rect.URX() <= grid_bin_mesh[j][k].left
+            || rect.LLY() >= grid_bin_mesh[j][k].top
+            || rect.URY() <= grid_bin_mesh[j][k].bottom;
+        if (blk_out_of_bin) {
+          continue;
+        }
+        grid_bin_mesh[j][k].placement_blockages_.push_back(&blockage);
       }
     }
   }
@@ -192,23 +156,10 @@ void LookAheadLegalizer::UpdateWhiteSpaceInGridBin(GridBin &grid_bin) {
   );
 
   std::vector<RectI> rects;
-  for (auto &fixed_blk_ptr : grid_bin.fixed_blocks) {
-    auto &fixed_blk = *fixed_blk_ptr;
-    RectI fixed_blk_rect(
-        static_cast<int>(std::round(fixed_blk.LLX())),
-        static_cast<int>(std::round(fixed_blk.LLY())),
-        static_cast<int>(std::round(fixed_blk.URX())),
-        static_cast<int>(std::round(fixed_blk.URY()))
-    );
-    if (bin_rect.IsOverlap(fixed_blk_rect)) {
-      rects.push_back(bin_rect.GetOverlapRect(fixed_blk_rect));
-    }
-  }
-
-  for (auto &blockage_ptr : grid_bin.dummy_placement_blockages_) {
-    auto &blockage = *blockage_ptr;
-    if (bin_rect.IsOverlap(blockage)) {
-      rects.push_back(bin_rect.GetOverlapRect(blockage));
+  for (auto blockage_ptr : grid_bin.placement_blockages_) {
+    auto &rect = blockage_ptr->GetRect();
+    if (bin_rect.IsOverlap(rect)) {
+      rects.push_back(bin_rect.GetOverlapRect(rect));
     }
   }
 
@@ -232,8 +183,7 @@ void LookAheadLegalizer::UpdateWhiteSpaceInGridBin(GridBin &grid_bin) {
 void LookAheadLegalizer::InitGridBins() {
   InitializeGridBinSize();
   UpdateAttributesForAllGridBins();
-  UpdateFixedBlocksInGridBins();
-  UpdateDummyPlacementBlockagesInGridBins();
+  UpdatePlacementBlockagesInGridBins();
 
   // update white spaces in grid bins
   for (auto &grid_bin_column : grid_bin_mesh) {
@@ -371,21 +321,17 @@ void LookAheadLegalizer::UpdateGridBinState() {
       }
       if (!grid_bin.OverFill()) {
         for (auto &blk_ptr : grid_bin.cell_list) {
-          for (auto &fixed_blk_ptr : grid_bin.fixed_blocks) {
-            over_fill = blk_ptr->IsOverlap(*fixed_blk_ptr);
+          for (auto &blockage_ptr : grid_bin.placement_blockages_) {
+            auto &rect = blockage_ptr->GetRect();
+            over_fill = blk_ptr->IsOverlap(rect);
             if (over_fill) {
               grid_bin.over_fill = true;
               break;
             }
           }
-          for (auto &blockage_ptr : grid_bin.dummy_placement_blockages_) {
-            over_fill = blk_ptr->IsOverlap(*blockage_ptr);
-            if (over_fill) {
-              grid_bin.over_fill = true;
-              break;
-            }
+          if (over_fill) {
+            break;
           }
-          if (over_fill) break;
           // two breaks have to be used to break two loops
         }
       }
@@ -655,8 +601,8 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
   R.top = int(R.ur_point.y);
 
   if (R.ll_index == R.ur_index) {
-    R.UpdateFixedBlkList(grid_bin_mesh);
-    if (R.IsContainFixedBlk()) {
+    R.UpdatePlacementBlockages(grid_bin_mesh);
+    if (R.HasPlacementBlockages()) {
       R.UpdateObsBoundary();
     }
   }
@@ -702,12 +648,10 @@ void LookAheadLegalizer::SplitGridBox(BoxBin &box) {
     box2.left = box.left;
     box2.bottom = box.horizontal_cutlines[0];
     box1.UpdateWhiteSpaceAndFixedBlocks(
-        box.fixed_blocks,
-        box.dummy_placement_blockages_
+        box.placement_blockages_
     );
     box2.UpdateWhiteSpaceAndFixedBlocks(
-        box.fixed_blocks,
-        box.dummy_placement_blockages_
+        box.placement_blockages_
     );
 
     if (
@@ -754,12 +698,10 @@ void LookAheadLegalizer::SplitGridBox(BoxBin &box) {
     box2.left = box.vertical_cutlines[0];
     box2.bottom = box.bottom;
     box1.UpdateWhiteSpaceAndFixedBlocks(
-        box.fixed_blocks,
-        box.dummy_placement_blockages_
+        box.placement_blockages_
     );
     box2.UpdateWhiteSpaceAndFixedBlocks(
-        box.fixed_blocks,
-        box.dummy_placement_blockages_
+        box.placement_blockages_
     );
 
     if (
@@ -975,11 +917,11 @@ void LookAheadLegalizer::SplitBox(BoxBin &box) {
     box2.total_cell_area = box.total_cell_area_high;
 
     if (box1.ll_index == box1.ur_index) {
-      box1.UpdateFixedBlkList(grid_bin_mesh);
+      box1.UpdatePlacementBlockages(grid_bin_mesh);
       box1.UpdateObsBoundary();
     }
     if (box2.ll_index == box2.ur_index) {
-      box2.UpdateFixedBlkList(grid_bin_mesh);
+      box2.UpdatePlacementBlockages(grid_bin_mesh);
       box2.UpdateObsBoundary();
     }
 
@@ -1004,7 +946,7 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
     box2.cell_list = box.cell_list;
     box2.total_cell_area = box.total_cell_area;
     if (box2.ll_index == box2.ur_index) {
-      box2.UpdateFixedBlkList(grid_bin_mesh);
+      box2.UpdatePlacementBlockages(grid_bin_mesh);
       box2.UpdateObsBoundary();
     }
 
@@ -1022,7 +964,7 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
     box1.cell_list = box.cell_list;
     box1.total_cell_area = box.total_cell_area;
     if (box1.ll_index == box1.ur_index) {
-      box1.UpdateFixedBlkList(grid_bin_mesh);
+      box1.UpdatePlacementBlockages(grid_bin_mesh);
       box1.UpdateObsBoundary();
     }
 
@@ -1055,7 +997,7 @@ bool LookAheadLegalizer::RecursiveBisectionBlockSpreading() {
     // (b) and with no fixed macros inside
     if (box.ll_index == box.ur_index) {
       //UpdateGridBinBlocks(box);
-      if (box.IsContainFixedBlk()) { // if there is a fixed macro inside a box, keep splitting the box
+      if (box.HasPlacementBlockages()) { // if there is a fixed macro inside a box, keep splitting the box
         SplitGridBox(box);
         queue_box_bin.pop();
         continue;

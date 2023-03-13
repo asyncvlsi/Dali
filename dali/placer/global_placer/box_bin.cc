@@ -206,33 +206,18 @@ void BoxBin::UpdateBoundaries(std::vector<std::vector<GridBin> > &grid_bin_matri
 }
 
 void BoxBin::UpdateWhiteSpaceAndFixedBlocks(
-    std::vector<Block *> &box_fixed_blocks,
-    std::vector<RectI *> &dummy_placement_blockages
+    std::vector<const PlacementBlockage *> &placement_blockages
 ) {
   total_white_space = (unsigned long long) (right - left) *
       (unsigned long long) (top - bottom);
   RectI bin_rect(left, bottom, right, top);
 
   std::vector<RectI> rects;
-  for (auto &fixed_blk_ptr : box_fixed_blocks) {
-    auto &fixed_blk = *fixed_blk_ptr;
-    RectI fixed_blk_rect(
-        static_cast<int>(std::round(fixed_blk.LLX())),
-        static_cast<int>(std::round(fixed_blk.LLY())),
-        static_cast<int>(std::round(fixed_blk.URX())),
-        static_cast<int>(std::round(fixed_blk.URY()))
-    );
-    if (bin_rect.IsOverlap(fixed_blk_rect)) {
-      fixed_blocks.push_back(fixed_blk_ptr);
-      rects.push_back(bin_rect.GetOverlapRect(fixed_blk_rect));
-    }
-  }
-
-  for (auto &blockage_ptr : dummy_placement_blockages) {
+  for (auto &blockage_ptr : placement_blockages) {
     auto &blockage = *blockage_ptr;
-    if (bin_rect.IsOverlap(blockage)) {
-      dummy_placement_blockages_.push_back(blockage_ptr);
-      rects.push_back(bin_rect.GetOverlapRect(blockage));
+    if (bin_rect.IsOverlap(blockage.GetRect())) {
+      placement_blockages_.push_back(blockage_ptr);
+      rects.push_back(bin_rect.GetOverlapRect(blockage.GetRect()));
     }
   }
 
@@ -251,37 +236,23 @@ void BoxBin::UpdateWhiteSpaceAndFixedBlocks(
 void BoxBin::UpdateObsBoundary() {
   vertical_cutlines.clear();
   horizontal_cutlines.clear();
-  if (fixed_blocks.empty() && dummy_placement_blockages_.empty()) {
+  if (placement_blockages_.empty()) {
     return;
   }
-  for (auto &blk_ptr : fixed_blocks) {
-    Block &node = *blk_ptr;
-    if ((left < node.LLX()) && (right > node.LLX())) {
-      vertical_cutlines.push_back((int) node.LLX());
+  for (auto &blockage_ptr : placement_blockages_) {
+    const RectI &rect = blockage_ptr->GetRect();
+
+    if ((left < rect.LLX()) && (right > rect.LLX())) {
+      vertical_cutlines.push_back((int) rect.LLX());
     }
-    if ((left < node.URX()) && (right > node.URX())) {
-      vertical_cutlines.push_back((int) node.URX());
+    if ((left < rect.URX()) && (right > rect.URX())) {
+      vertical_cutlines.push_back((int) rect.URX());
     }
-    if ((bottom < node.LLY()) && (top > node.LLY())) {
-      horizontal_cutlines.push_back((int) node.LLY());
+    if ((bottom < rect.LLY()) && (top > rect.LLY())) {
+      horizontal_cutlines.push_back((int) rect.LLY());
     }
-    if ((bottom < node.URY()) && (top > node.URY())) {
-      horizontal_cutlines.push_back((int) node.URY());
-    }
-  }
-  for (auto &blockage_ptr : dummy_placement_blockages_) {
-    RectI &blockage = *blockage_ptr;
-    if ((left < blockage.LLX()) && (right > blockage.LLX())) {
-      vertical_cutlines.push_back((int) blockage.LLX());
-    }
-    if ((left < blockage.URX()) && (right > blockage.URX())) {
-      vertical_cutlines.push_back((int) blockage.URX());
-    }
-    if ((bottom < blockage.LLY()) && (top > blockage.LLY())) {
-      horizontal_cutlines.push_back((int) blockage.LLY());
-    }
-    if ((bottom < blockage.URY()) && (top > blockage.URY())) {
-      horizontal_cutlines.push_back((int) blockage.URY());
+    if ((bottom < rect.URY()) && (top > rect.URY())) {
+      horizontal_cutlines.push_back((int) rect.URY());
     }
   }
   /* sort boundaries in the ascending order */
@@ -727,12 +698,12 @@ void BoxBin::Report() {
   }
   BOOST_LOG_TRIVIAL(info) << "\nend\n";
 
-  BOOST_LOG_TRIVIAL(info) << "terminal list: " << fixed_blocks.size() << "\n";
-  for (auto &p_fixed_blk : fixed_blocks) {
+  BOOST_LOG_TRIVIAL(info) << "blockage list: " << placement_blockages_.size() << "\n";
+  for (auto &p_blockage : placement_blockages_) {
+    const RectI &rect = p_blockage->GetRect();
     BOOST_LOG_TRIVIAL(info)
-      << p_fixed_blk->Name() << ", "
-      << "(" << p_fixed_blk->LLX() << ", " << p_fixed_blk->LLY() << "), "
-      << "(" << p_fixed_blk->URX() << ", " << p_fixed_blk->URY() << ")\n";
+      << "(" << rect.LLX() << ", " << rect.LLY() << "), "
+      << "(" << rect.URX() << ", " << rect.URY() << ")\n";
   }
   BOOST_LOG_TRIVIAL(info) << "\nend\n";
 

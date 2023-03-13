@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "dali/circuit/block.h"
+#include "dali/circuit/placement_blockage.h"
 #include "dali/placer/global_placer/cell_cut_point.h"
 #include "dali/placer/global_placer/grid_bin.h"
 
@@ -74,13 +75,12 @@ class BoxBin {
   /* the cell_id for terminals in the box, will be updated only when the box is a GridBin
    * if there is no terminal in the grid bin, do not have to further split the box into smaller boxs,
    * otherwise split the box into smaller boxes, until there is no terminals in any boxes*/
-  std::vector<Block *> fixed_blocks;
-  std::vector<RectI *> dummy_placement_blockages_;
-  void UpdateFixedBlkList(std::vector<std::vector<GridBin> > &grid_bin_matrix) {
-    fixed_blocks = grid_bin_matrix[ll_index.x][ll_index.y].fixed_blocks;
+  std::vector<const PlacementBlockage *> placement_blockages_;
+  void UpdatePlacementBlockages(std::vector<std::vector<GridBin> > &grid_bin_matrix) {
+    placement_blockages_ = grid_bin_matrix[ll_index.x][ll_index.y].placement_blockages_;
   };
-  /* UpdateFixedBlkList can only be called when the box is a grid_bin_box */
-  bool IsContainFixedBlk() const { return !fixed_blocks.empty(); };
+  /* UpdatePlacementBlockages can only be called when the box is a grid_bin_box */
+  bool HasPlacementBlockages() const { return !placement_blockages_.empty(); };
 
   std::vector<int> vertical_cutlines;
   std::vector<int> horizontal_cutlines;
@@ -96,8 +96,7 @@ class BoxBin {
   void UpdateBoundaries(std::vector<std::vector<GridBin> > &grid_bin_matrix);
   /* update_white_space can only be called when left, right, bottom, top are updated */
   void UpdateWhiteSpaceAndFixedBlocks(
-      std::vector<Block *> &box_fixed_blocks,
-      std::vector<RectI *> &dummy_placement_blockages
+      std::vector<const PlacementBlockage *> &placement_blockages
   );
 
   void update_all_terminal(std::vector<std::vector<GridBin>> &grid_bin_matrix);
