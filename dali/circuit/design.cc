@@ -27,15 +27,10 @@
 
 namespace dali {
 
-void Design::AddIntrinsicPlacementBlockage(
-    int lx, int ly, int ux, int uy
+RectI Design::ExpandOffGridPlacementBlockage(
+    double lx, double ly, double ux, double uy
 ) {
-  intrinsic_blockages_.emplace_back(lx, ly, ux, uy);
-}
-
-void Design::AddFixedCellPlacementBlockage(Block &block) {
   int new_lx = 0;
-  double lx = block.LLX();
   if (AbsResidual(lx, 1) > 1e-5) {
     int shrunk_lx_ = static_cast<int>(std::round(std::floor(lx)));
     new_lx = shrunk_lx_;
@@ -44,7 +39,6 @@ void Design::AddFixedCellPlacementBlockage(Block &block) {
   }
 
   int new_ux = 0;
-  double ux = block.URX();
   if (AbsResidual(ux, 1) > 1e-5) {
     int shrunk_ux = static_cast<int>(std::round(std::ceil(ux)));
     new_ux = shrunk_ux;
@@ -53,7 +47,6 @@ void Design::AddFixedCellPlacementBlockage(Block &block) {
   }
 
   int new_ly = 0;
-  double ly = block.LLY();
   if (AbsResidual(ly, 1) > 1e-5) {
     int shrunk_ly = static_cast<int>(std::round(std::floor(ly)));
     new_ly = shrunk_ly;
@@ -62,7 +55,6 @@ void Design::AddFixedCellPlacementBlockage(Block &block) {
   }
 
   int new_uy = 0;
-  double uy = block.URY();
   if (AbsResidual(uy, 1) > 1e-5) {
     int shrunk_uy = static_cast<int>(std::round(std::ceil(uy)));
     new_uy = shrunk_uy;
@@ -70,7 +62,24 @@ void Design::AddFixedCellPlacementBlockage(Block &block) {
     new_uy = static_cast<int>(std::round(uy));
   }
 
-  fixed_cell_blockages_.emplace_back(new_lx, new_ly, new_ux, new_uy);
+  return {new_lx, new_ly, new_ux, new_uy};
+}
+
+void Design::AddIntrinsicPlacementBlockage(
+    double lx, double ly, double ux, double uy
+) {
+  auto rect = ExpandOffGridPlacementBlockage(
+      lx, ly, ux, uy
+  );
+  intrinsic_blockages_.emplace_back(rect);
+}
+
+void Design::AddFixedCellPlacementBlockage(Block &block) {
+  auto rect = ExpandOffGridPlacementBlockage(
+      block.LLX(), block.LLY(),
+      block.URX(), block.URY()
+  );
+  fixed_cell_blockages_.emplace_back(rect);
 }
 
 void Design::UpdateDieAreaPlacementBlockages() {

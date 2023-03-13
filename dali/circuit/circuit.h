@@ -335,6 +335,9 @@ class Circuit {
   // add an I/O pin from a PhyDB I/O pin
   void AddIoPinFromPhyDB(phydb::IOPin &iopin);
 
+  // add a placement blockage from a PhyDB blockage
+  void AddPlacementBlockageFromPhyDB(phydb::Blockage &blockage);
+
   // print all I/O pins
   void ReportIOPin();
 
@@ -659,6 +662,7 @@ class Circuit {
   void LoadDieArea();
   void LoadComponents();
   void LoadIoPins();
+  void LoadPlacementBlockages();
   void LoadNets();
   void LoadDesign();
 

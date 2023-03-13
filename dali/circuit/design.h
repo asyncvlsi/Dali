@@ -114,7 +114,7 @@ class Design {
   DieArea &GetDieArea() { return die_area_; }
 
   void AddIntrinsicPlacementBlockage(
-      int lx, int ly, int ux, int uy
+      double lx, double ly, double ux, double uy
   );
 
   void AddFixedCellPlacementBlockage(Block &block);
@@ -193,6 +193,11 @@ class Design {
   int blk_max_width_ = INT_MIN;
   int blk_min_height_ = INT_MAX;
   int blk_max_height_ = INT_MIN;
+
+  /****helper functions****/
+  RectI ExpandOffGridPlacementBlockage(
+      double lx, double ly, double ux, double uy
+  );
 };
 
 }

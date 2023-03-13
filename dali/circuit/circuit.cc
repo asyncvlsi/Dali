@@ -533,7 +533,6 @@ void Circuit::UpdateTotalBlkArea() {
       design_.die_area_.region_left_, design_.die_area_.region_bottom_,
       design_.die_area_.region_right_, design_.die_area_.region_top_
   );
-  std::vector<Block> &blocks = Blocks();
 
   design_.UpdatePlacementBlockages();
 
@@ -633,6 +632,22 @@ void Circuit::AddIoPinFromPhyDB(phydb::IOPin &iopin) {
     pin->SetLayerPtr(metal_layer);
   } else {
     AddIoPin(iopin_name, UNPLACED, sig_use, sig_dir);
+  }
+}
+
+void Circuit::AddPlacementBlockageFromPhyDB(phydb::Blockage &blockage) {
+  auto &rects = blockage.GetRectsRef();
+  DaliExpects(
+      !rects.empty(),
+      "Dali only support rectangular placement blockages now"
+  );
+  for (auto &rect: rects) {
+    double lx = LocPhydb2DaliX(rect.ll.x);
+    double ly = LocPhydb2DaliY(rect.ll.y);
+    double ux = LocPhydb2DaliX(rect.ur.x);
+    double uy = LocPhydb2DaliY(rect.ur.y);
+    printf("%f %f %f %f\n", lx, ly, ux, uy);
+    design_.AddIntrinsicPlacementBlockage(lx, ly, ux, uy);
   }
 }
 
@@ -2616,6 +2631,17 @@ void Circuit::LoadIoPins() {
   }
 }
 
+void Circuit::LoadPlacementBlockages() {
+  auto &phy_db_design = *(phy_db_ptr_->GetDesignPtr());
+  auto &blockages = phy_db_design.GetBlockagesRef();
+  for (auto &blockage : blockages) {
+    if (blockage.IsPlacement()) {
+      AddPlacementBlockageFromPhyDB(blockage);
+    }
+    std::cout << "is placement\n";
+  }
+}
+
 void Circuit::LoadNets() {
   auto &phy_db_design = *(phy_db_ptr_->GetDesignPtr());
   auto &components = phy_db_design.GetComponentsRef();
@@ -2648,6 +2674,7 @@ void Circuit::LoadDesign() {
   LoadDieArea();
   LoadComponents();
   LoadIoPins();
+  LoadPlacementBlockages();
   LoadNets();
 }
 
