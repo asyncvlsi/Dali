@@ -108,6 +108,10 @@ endif()
 add_compile_options(-fopenmp)
 add_compile_options(-Wall -Wextra -Wshadow -Wnon-virtual-dtor -Werror=return-type -pedantic)
 
+if(DEFINED NEED_LIBCXXFS)
+    add_link_options(-lstdc++fs)
+endif()
+
 # Set the output directory of static libraries
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
