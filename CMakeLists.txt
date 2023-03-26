@@ -108,9 +108,6 @@ endif()
 add_compile_options(-fopenmp)
 add_compile_options(-Wall -Wextra -Wshadow -Wnon-virtual-dtor -Werror=return-type -pedantic)
 
-if(DEFINED NEED_LIBCXXFS)
-    add_link_options(-lstdc++fs)
-endif()
 
 # Set the output directory of static libraries
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
@@ -136,6 +133,13 @@ add_library(
     STATIC
     ${SOURCES}
 )
+
+if(DEFINED NEED_LIBCXXFS)
+    set(LIBCXXFS_LIB "stdc++fs")
+else()
+    set(LIBCXXFX_LIB "")
+endif()
+
 target_link_libraries(
     dalilib
     ${ACT_LIBRARY} ${ACTVLSILIB_LIBRARY} ${PHYDB_LIBRARY}
@@ -144,6 +148,7 @@ target_link_libraries(
     ${CPLEX_LIBRARIES} m pthread dl
     ${Boost_LIBRARIES}
     OpenMP::OpenMP_CXX
+    ${LIBCXXFS_LIB}
 )
 
 # Stand-alone placer, building from the dalilib library
