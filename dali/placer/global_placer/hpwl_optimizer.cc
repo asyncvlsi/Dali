@@ -410,6 +410,9 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
     }
     double evaluate_result = ckt_ptr_->WeightedHPWLX();
     eval_history.push_back(evaluate_result);
+    if (evaluate_result < hpwl_early_stop_threshold_){
+      break;
+    }
     //BOOST_LOG_TRIVIAL(info)  <<"  %d WeightedHPWLX: %e\n", i, evaluate_result);
     if (eval_history.size() >= 3) {
       bool is_converge = IsSeriesConverge(eval_history, 3, cg_stop_criterion);
@@ -465,6 +468,9 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
     }
     double evaluate_result = ckt_ptr_->WeightedHPWLY();
     eval_history.push_back(evaluate_result);
+    if (evaluate_result < hpwl_early_stop_threshold_){
+      break;
+    }
     //BOOST_LOG_TRIVIAL(info)  <<"  %d WeightedHPWLY: %e\n", i, evaluate_result);
     if (eval_history.size() >= 3) {
       bool is_converge = IsSeriesConverge(eval_history, 3, cg_stop_criterion);
@@ -669,6 +675,9 @@ void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(int num_threads) {
     BuildProblemWithAnchorX();
     double evaluate_result = OptimizeQuadraticMetricX(cg_stop_criterion_);
     eval_history_x.push_back(evaluate_result);
+    if (evaluate_result < hpwl_early_stop_threshold_){
+      break;
+    }
     if (eval_history_x.size() >= 3) {
       bool is_converge = IsSeriesConverge(
           eval_history_x,
@@ -722,6 +731,9 @@ void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(int num_threads) {
     double evaluate_result =
         OptimizeQuadraticMetricY(cg_stop_criterion_);
     eval_history_y.push_back(evaluate_result);
+    if (evaluate_result < hpwl_early_stop_threshold_){
+      break;
+    }
     if (eval_history_y.size() >= 3) {
       bool is_converge = IsSeriesConverge(
           eval_history_y,
