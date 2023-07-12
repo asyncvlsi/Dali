@@ -358,6 +358,7 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
       legalizer_.StartPlacement();
     } else {
       well_legalizer_.TakeOver(&gb_placer_);
+      well_legalizer_.disable_welltap_ = disable_welltap_;
       well_legalizer_.SetStripePartitionMode(static_cast<int>(well_legalization_mode_));
       well_legalizer_.StartPlacement();
       if (export_well_cluster_matlab_) {

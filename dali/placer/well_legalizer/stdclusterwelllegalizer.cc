@@ -1040,10 +1040,14 @@ bool StdClusterWellLegalizer::StartPlacement() {
   //circuit_ptr_->GenMATLABWellTable("lop", false);
   //GenMatlabClusterTable("lop_result");
 
-  BOOST_LOG_TRIVIAL(info) << "Insert well tap cells\n";
-  InsertWellTap();
-  //circuit_ptr_->GenMATLABWellTable("wtc", false);
-  //GenMatlabClusterTable("wtc_result");
+  if (disable_welltap_) {
+    BOOST_LOG_TRIVIAL(info) << "Skip inserting well tap cells\n";
+  } else {
+    BOOST_LOG_TRIVIAL(info) << "Insert well tap cells\n";
+    InsertWellTap();
+    //circuit_ptr_->GenMATLABWellTable("wtc", false);
+    //GenMatlabClusterTable("wtc_result");
+  }
 
   PrintEndStatement("Standard Cluster Well Legalization", is_success);
   //ReportEffectiveSpaceUtilization();
