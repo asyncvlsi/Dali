@@ -102,7 +102,7 @@ void Placer::SetPlacementDensity(double density) {
       "Invalid value: value should be in range (0, 1]"
   );
   DaliExpects(
-      ckt_ptr_->WhiteSpaceUsage() < density,
+      ckt_ptr_->WhiteSpaceUsage() <= density,
       "Cannot set target density smaller than average white space utility!"
   );
   placement_density_ = density;
