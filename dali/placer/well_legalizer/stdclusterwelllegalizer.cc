@@ -1022,11 +1022,15 @@ bool StdClusterWellLegalizer::StartPlacement() {
   //circuit_ptr_->GenMATLABWellTable("clu", false);
   //GenMatlabClusterTable("clu_result");
 
-  BOOST_LOG_TRIVIAL(info) << "Flip cluster orientation\n";
-  UpdateClusterOrient();
-  ReportHPWL();
-  //circuit_ptr_->GenMATLABWellTable("ori", false);
-  //GenMatlabClusterTable("ori_result");
+  if (disable_cell_flip_) {
+    BOOST_LOG_TRIVIAL(info) << "Skip flipping cluster orientation\n";
+  } else {
+    BOOST_LOG_TRIVIAL(info) << "Flip cluster orientation\n";
+    UpdateClusterOrient();
+    ReportHPWL();
+    //circuit_ptr_->GenMATLABWellTable("ori", false);
+    //GenMatlabClusterTable("ori_result");
+  }
 
   BOOST_LOG_TRIVIAL(info) << "Perform local reordering\n";
   for (int i = 0; i < 6; ++i) {

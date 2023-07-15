@@ -97,6 +97,8 @@ class LGTetrisEx : public Placer {
 
   bool legalize_from_left_;
 
+  bool disable_cell_flip_ = false;
+
   size_t cur_iter_;
   size_t max_iter_;
 

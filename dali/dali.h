@@ -108,6 +108,7 @@ class Dali {
   int io_metal_layer_ = 0;
   bool export_well_cluster_matlab_ = false;
   bool disable_welltap_ = false;
+  bool disable_cell_flip_ = false;
   double max_row_width_ = 0;
   bool is_standard_cell_ = false;
   bool enable_filler_cell_ = false;

@@ -148,6 +148,11 @@ void Dali::LoadParamsFromConfig() {
     disable_welltap_ = config_get_int(param_name.c_str()) == 1;
   }
 
+  param_name = prefix_ + "disable_cell_flip";
+  if (config_exists(param_name.c_str())) {
+    disable_cell_flip_ = config_get_int(param_name.c_str()) == 1;
+  }
+
   param_name = prefix_ + "max_row_width";
   if (config_exists(param_name.c_str())) {
     max_row_width_ = config_get_real(param_name.c_str());
@@ -355,10 +360,12 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
   if (!disable_legalization_) {
     if (is_standard_cell_) {
       legalizer_.TakeOver(&gb_placer_);
+      legalizer_.disable_cell_flip_ = disable_cell_flip_,
       legalizer_.StartPlacement();
     } else {
       well_legalizer_.TakeOver(&gb_placer_);
       well_legalizer_.disable_welltap_ = disable_welltap_;
+      well_legalizer_.disable_cell_flip_ = disable_cell_flip_,
       well_legalizer_.SetStripePartitionMode(static_cast<int>(well_legalization_mode_));
       well_legalizer_.StartPlacement();
       if (export_well_cluster_matlab_) {

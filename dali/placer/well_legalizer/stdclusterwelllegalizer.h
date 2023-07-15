@@ -119,6 +119,9 @@ class StdClusterWellLegalizer : public Placer {
   int well_tap_cell_width_;
   int well_spacing_;
 
+  /**** cell orientation ****/
+  bool disable_cell_flip_ = false;
+
   /**** stripe parameters ****/
   int stripe_mode_ = 0;
   DefaultSpacePartitioner space_partitioner_;

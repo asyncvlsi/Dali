@@ -180,6 +180,8 @@ int main(int argc, char *argv[]) {
       }
     } else if (arg == "-disable_welltap") {
       config_set_int("dali.disable_welltap", 1);
+    } else if (arg == "-disable_cell_flip"){
+      config_set_int("dali.disable_cell_flip", 1);
     } else if (arg == "-disable_io_place") {
       config_set_int("dali.disable_io_place", 1);
     } else if (arg == "-export_well_cluster_matlab") {

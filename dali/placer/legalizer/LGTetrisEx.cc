@@ -327,6 +327,11 @@ bool LGTetrisEx::IsFitToRow(int row_id, Block &block) const {
 }
 
 bool LGTetrisEx::ShouldOrientN(int row_id, Block &block) const {
+  // if cell flip is disabled, then cell orientation is always N
+  if (disable_cell_flip_) {
+    return true;
+  }
+
   auto well_ptr = block.TypePtr()->WellPtr();
   bool is_gnd_bottom = true;
   if (well_ptr == nullptr) {
@@ -1123,6 +1128,9 @@ bool LGTetrisEx::StartPlacement() {
   if (is_success) {
     ExportRowsToCircuit();
   }
+
+  // TODO: local reordering
+
   PrintEndStatement("LGTetrisEx Legalization", is_success);
 
   return true;
