@@ -641,7 +641,7 @@ void Circuit::AddPlacementBlockageFromPhyDB(phydb::Blockage &blockage) {
       !rects.empty(),
       "Dali only support rectangular placement blockages now"
   );
-  for (auto &rect: rects) {
+  for (auto &rect : rects) {
     double lx = LocPhydb2DaliX(rect.ll.x);
     double ly = LocPhydb2DaliY(rect.ll.y);
     double ux = LocPhydb2DaliX(rect.ur.x);
@@ -1316,12 +1316,20 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
   BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
+/**
+ * Reports the HPWL (Half Perimeter Wire Length) histogram using logarithmic scale bins.
+ *
+ * @param bin_num The number of bins for the histogram.
+ */
 void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
   std::vector<double> hpwl_list;
-  double min_hpwl = DBL_MAX;
-  double max_hpwl = -DBL_MAX;
+  double min_hpwl = std::numeric_limits<double>::max();
+  double max_hpwl = -std::numeric_limits<double>::max();
   hpwl_list.reserve(design_.nets_.size());
   double factor = GridValueY() / GridValueX();
+  int num_nets_non_zero_hpwl = 0;
+
+  // Calculate the HPWL for each net and store the logarithm of the HPWL values
   for (auto &net : design_.nets_) {
     double tmp_hpwl = net.WeightedHPWLX() + net.WeightedHPWLY() * factor;
     if (tmp_hpwl > 0) {
@@ -1329,46 +1337,55 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
       hpwl_list.push_back(log_hpwl);
       min_hpwl = std::min(min_hpwl, log_hpwl);
       max_hpwl = std::max(max_hpwl, log_hpwl);
+      ++num_nets_non_zero_hpwl;
     }
   }
 
-  double step = (max_hpwl - min_hpwl) / bin_num;
-  std::vector<int> count(bin_num, 0);
-  for (auto &hpwl : hpwl_list) {
-    int tmp_num = (int) std::floor((hpwl - min_hpwl) / step);
-    if (tmp_num == bin_num) {
-      tmp_num = bin_num - 1;
+  double step;
+  std::vector<int> count;
+  double max_diff = max_hpwl - min_hpwl;
+
+  // If the maximum difference is too small, create a single bin
+  if (max_diff < 1e-5) {
+    step = 0;
+    bin_num = 1;
+    count.emplace_back(num_nets_non_zero_hpwl);
+  } else {
+    step = (max_hpwl - min_hpwl) / bin_num;
+    count.assign(bin_num, 0);
+
+    // Count the number of HPWL values falling into each bin
+    for (const auto &hpwl : hpwl_list) {
+      int tmp_num = static_cast<int>(std::floor((hpwl - min_hpwl) / step));
+      if (tmp_num == bin_num) {
+        tmp_num = bin_num - 1;
+      }
+      ++count[tmp_num];
     }
-    ++count[tmp_num];
   }
 
-  int tot_count = design_.nets_.size();
+  // Output the HPWL histogram
   BOOST_LOG_TRIVIAL(info) << "\n";
-  BOOST_LOG_TRIVIAL(info)
-    << "                  HPWL histogram (log scale bins)\n";
-  BOOST_LOG_TRIVIAL(info)
-    << "===================================================================\n";
+  BOOST_LOG_TRIVIAL(info) << "                  HPWL histogram (log scale bins)\n";
+  BOOST_LOG_TRIVIAL(info) << "===================================================================\n";
   BOOST_LOG_TRIVIAL(info) << "   HPWL interval         Count\n";
+
   for (int i = 0; i < bin_num; ++i) {
     double lo = std::pow(10, min_hpwl + step * i);
     double hi = std::pow(10, min_hpwl + step * (i + 1));
 
     std::string buffer(1024, '\0');
-    int written_length =
-        sprintf(&buffer[0], "  [%.1e, %.1e) %8d  ", lo, hi, count[i]);
+    int written_length = sprintf(&buffer[0], "  [%.1e, %.1e) %8d  ", lo, hi, count[i]);
     buffer.resize(written_length);
 
-    int percent = std::ceil(50 * count[i] / (double) tot_count);
-    for (int j = 0; j < percent; ++j) {
-      buffer.push_back('*');
-    }
+    int percent = std::ceil(50 * count[i] / design_.nets_.size());
+    buffer.append(percent, '*');
     buffer.push_back('\n');
     BOOST_LOG_TRIVIAL(info) << buffer;
   }
-  BOOST_LOG_TRIVIAL(info)
-    << "===================================================================\n";
-  BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: "
-                          << GridValueX() << " um\n";
+
+  BOOST_LOG_TRIVIAL(info) << "===================================================================\n";
+  BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: " << GridValueX() << " um\n";
   BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
