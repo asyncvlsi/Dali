@@ -45,7 +45,7 @@ include(cmake/FindGaloisEDA.cmake)
 ############################################################################
 # Detect if OpenMP library exists
 ############################################################################
-find_package(OpenMP REQUIRED)
+include(cmake/FindOpenMPPackage.cmake)
 
 ############################################################################
 # Detect if Boost library exists
@@ -102,9 +102,6 @@ else(CMAKE_BUILD_TYPE MATCHES RELEASE)
     message(STATUS "RELEASE build type")
 endif()
 
-if(APPLE)
-    add_compile_options(-Xpreprocessor)
-endif()
 add_compile_options(-fopenmp)
 add_compile_options(-Wall -Wextra -Wshadow -Wnon-virtual-dtor -Werror=return-type -pedantic)
 
