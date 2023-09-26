@@ -39,8 +39,8 @@ inline std::string get_git_version_full() {
 
 inline std::string get_git_version_short() {
   std::string git_version_full(GIT_VERSION);
-  if (git_version_full == std::string(GIT_VERSION_NOT_FOUND)) {
-    return {GIT_VERSION_NOT_FOUND};
+  if (git_version_full == GIT_VERSION_NOT_FOUND) {
+    return GIT_VERSION_NOT_FOUND;
   } else {
     return git_version_full.substr(0, 12);
   }
