@@ -29,6 +29,7 @@
 #include <phydb/phydb.h>
 
 #include "dali/common/elapsed_time.h"
+#include "dali/common/git_version.h"
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
 #include "dali/dali.h"
@@ -72,6 +73,7 @@ void PrintSoftwareStatement() {
       << "  |     THERE IS NO WARRANTY                     |\n"
       << "  |                                              |\n"
       << "  |     build time: " << __DATE__ << " " << __TIME__ << "         |\n"
+      << "  |     commit: " << get_git_version_short() << "                     |\n"
       << "  |                                              |\n"
       << "  +----------------------------------------------+\n\n";
 }

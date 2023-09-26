@@ -63,6 +63,11 @@ include_directories(${Boost_INCLUDE_DIRS})
 include(cmake/FindCPLEX.cmake)
 
 ############################################################################
+# Set Git Commit
+############################################################################
+include(cmake/FindGitCommitVersion.cmake)
+
+############################################################################
 # for building a standalone static executable
 ############################################################################
 set(BUILD_STATIC_EXECUTABLES FALSE)

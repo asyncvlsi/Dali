@@ -26,6 +26,7 @@
 
 #include <common/config.h>
 
+#include "dali/common/git_version.h"
 #include "dali/common/helper.h"
 #include "dali/common/phydb_helper.h"
 
@@ -394,6 +395,8 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
                 "Cannot successfully configure I/O placer");
     io_placer->AutoPlaceIoPin();
   }
+
+  BOOST_LOG_TRIVIAL(debug) << "dali git commit: " << get_git_version_short() << "\n";
 
   return true;
 }
