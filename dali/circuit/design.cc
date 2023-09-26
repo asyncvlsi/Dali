@@ -235,15 +235,16 @@ void Design::ReportNetFanOutHistogram() {
     << "=================================================================================================\n";
   BOOST_LOG_TRIVIAL(info)
     << "  Net         Count     Percent/%      sum HPWL        ave HPWL        min HPWL        max HPWL\n";
-
+  size_t buffer_length = 1024;
   for (size_t i = 0; i < sz - 1; ++i) {
     size_t lo = net_histogram_.buckets[i];
     size_t hi = net_histogram_.buckets[i + 1] - 1;
-    std::string buffer(1024, '\0');
+    std::string buffer(buffer_length, '\0');
     int written_length;
     if (lo == hi) {
-      written_length = sprintf(
+      written_length = snprintf(
           &buffer[0],
+          buffer_length,
           "%4ld       %8ld       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
           lo,
           net_histogram_.counts[i],
@@ -254,8 +255,9 @@ void Design::ReportNetFanOutHistogram() {
           net_histogram_.max_hpwls[i]
       );
     } else {
-      written_length = sprintf(
+      written_length = snprintf(
           &buffer[0],
+          buffer_length,
           "%4ld-%-4ld  %8ld       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
           lo,
           hi,
@@ -270,10 +272,11 @@ void Design::ReportNetFanOutHistogram() {
     buffer.resize(written_length);
     BOOST_LOG_TRIVIAL(info) << buffer;
   }
-  std::string buffer(1024, '\0');
+  std::string buffer(buffer_length, '\0');
   int written_length;
-  written_length = sprintf(
+  written_length = snprintf(
       &buffer[0],
+      buffer_length,
       "%4ld+      %8ld       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
       net_histogram_.buckets[sz - 1],
       net_histogram_.counts[sz - 1],

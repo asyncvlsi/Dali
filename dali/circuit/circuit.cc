@@ -1293,13 +1293,14 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
   BOOST_LOG_TRIVIAL(info)
     << "===================================================================\n";
   BOOST_LOG_TRIVIAL(info) << "   HPWL interval         Count\n";
+  size_t buffer_length = 1024;
   for (int i = 0; i < bin_num; ++i) {
     double lo = min_hpwl + step * i;
     double hi = lo + step;
 
-    std::string buffer(1024, '\0');
+    std::string buffer(buffer_length, '\0');
     int written_length =
-        sprintf(&buffer[0], "  [%.1e, %.1e) %8d  ", lo, hi, count[i]);
+        snprintf(&buffer[0], buffer_length, "  [%.1e, %.1e) %8d  ", lo, hi, count[i]);
     buffer.resize(written_length);
 
     int percent = std::ceil(50 * count[i] / (double) tot_count);
@@ -1370,12 +1371,13 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
   BOOST_LOG_TRIVIAL(info) << "===================================================================\n";
   BOOST_LOG_TRIVIAL(info) << "   HPWL interval         Count\n";
 
+  size_t buffer_length = 1024;
   for (int i = 0; i < bin_num; ++i) {
     double lo = std::pow(10, min_hpwl + step * i);
     double hi = std::pow(10, min_hpwl + step * (i + 1));
 
-    std::string buffer(1024, '\0');
-    int written_length = sprintf(&buffer[0], "  [%.1e, %.1e) %8d  ", lo, hi, count[i]);
+    std::string buffer(buffer_length, '\0');
+    int written_length = snprintf(&buffer[0], buffer_length, "  [%.1e, %.1e) %8d  ", lo, hi, count[i]);
     buffer.resize(written_length);
 
     int percent = std::ceil(50 * count[i] / design_.nets_.size());

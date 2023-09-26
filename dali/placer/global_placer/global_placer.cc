@@ -250,10 +250,15 @@ void GlobalPlacer::PrintHpwl() const {
   if (optimizer_->GetHpwls().empty() || legalizer_->GetHpwls().empty()) return;
   double lo_hpwl = optimizer_->GetHpwls().back();
   double hi_hpwl = legalizer_->GetHpwls().back();
-  std::string buffer(1024, '\0');
-  int written_length = sprintf(
+  size_t buffer_size = 1024;
+  std::string buffer(buffer_size, '\0');
+  int written_length = snprintf(
       &buffer[0],
-      "  iter-%-3d: %.4e  %.4e\n", cur_iter_, lo_hpwl, hi_hpwl
+      buffer_size,
+      "  iter-%-3d: %.4e  %.4e\n",
+      cur_iter_,
+      lo_hpwl,
+      hi_hpwl
   );
   buffer.resize(written_length);
   BOOST_LOG_TRIVIAL(info) << buffer;

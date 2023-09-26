@@ -471,21 +471,6 @@ int LGTetrisEx::WhiteSpaceBoundLeft(
  * Returns whether a legal location can be found, and put the final location to @params loc
  * ****/
 bool LGTetrisEx::FindLocLeft(Value2D<int> &loc, Block &block) {
-  bool is_successful;
-
-  int left_white_space_bound;
-  int search_start_row;
-  int search_end_row;
-
-  int best_row;
-  int best_loc_x;
-  double min_cost;
-
-  double tmp_cost;
-  int tmp_end_row;
-  int tmp_x;
-  int tmp_y;
-
   int width = block.Width();
   int height = block.Height();
 
@@ -495,32 +480,35 @@ bool LGTetrisEx::FindLocLeft(Value2D<int> &loc, Block &block) {
 
   int lower_search_y = static_cast<int>(std::round(loc.y - k_start * height));
   int upper_search_y = static_cast<int>(std::round(loc.y + k_end * height));
-  search_start_row = std::max(0, LocToRow(lower_search_y));
-  search_end_row = std::min(max_search_row, LocToRow(upper_search_y));
+  int search_start_row = std::max(0, LocToRow(lower_search_y));
+  int search_end_row = std::min(max_search_row, LocToRow(upper_search_y));
 
-  best_row = 0;
-  best_loc_x = INT_MIN;
-  min_cost = DBL_MAX;
+  int best_row = 0;
+  int best_loc_x = INT_MIN;
+  double min_cost = DBL_MAX;
 
   for (int tmp_start_row = search_start_row; tmp_start_row <= search_end_row;
        ++tmp_start_row) {
-    tmp_end_row = tmp_start_row + blk_row_height - 1;
-    if (!IsFitToRow(tmp_start_row, block)) continue;
+    int tmp_end_row = tmp_start_row + blk_row_height - 1;
+    bool is_fit_to_row = IsFitToRow(tmp_start_row, block);
+    if (!is_fit_to_row) {
+      continue;
+    }
     //left_white_space_bound = left_;
-    left_white_space_bound = WhiteSpaceBoundLeft(
+    int left_white_space_bound = WhiteSpaceBoundLeft(
         loc.x, loc.x + width,
         tmp_start_row, tmp_end_row
     );
 
-    tmp_x = std::max(left_white_space_bound, left_block_bound);
+    int tmp_x = std::max(left_white_space_bound, left_block_bound);
 
     for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
       tmp_x = std::max(tmp_x, block_contour_[n]);
     }
 
-    tmp_y = RowToLoc(tmp_start_row);
+    int tmp_y = RowToLoc(tmp_start_row);
 
-    tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y);
+    double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y);
     if (tmp_cost < min_cost) {
       best_loc_x = tmp_x;
       best_row = tmp_start_row;
@@ -544,23 +532,23 @@ bool LGTetrisEx::FindLocLeft(Value2D<int> &loc, Block &block) {
     search_end_row =
         std::min(max_search_row, search_end_row + extended_range);
     for (int tmp_start_row = search_start_row;
-         tmp_start_row < old_start_row; ++tmp_start_row) {
-      tmp_end_row = tmp_start_row + blk_row_height - 1;
+         tmp_start_row <= old_start_row; ++tmp_start_row) {
+      int tmp_end_row = tmp_start_row + blk_row_height - 1;
       if (!IsFitToRow(tmp_start_row, block)) continue;
-      left_white_space_bound = WhiteSpaceBoundLeft(
+      int left_white_space_bound = WhiteSpaceBoundLeft(
           loc.x, loc.x + width,
           tmp_start_row, tmp_end_row
       );
-      tmp_x = std::max(left_white_space_bound, left_block_bound);
+      int tmp_x = std::max(left_white_space_bound, left_block_bound);
 
       for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
         tmp_x = std::max(tmp_x, block_contour_[n]);
       }
 
-      tmp_y = RowToLoc(tmp_start_row);
+      int tmp_y = RowToLoc(tmp_start_row);
       //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
 
-      tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y);
+      double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y);
       if (tmp_cost < min_cost) {
         best_loc_x = tmp_x;
         best_row = tmp_start_row;
@@ -580,24 +568,24 @@ bool LGTetrisEx::FindLocLeft(Value2D<int> &loc, Block &block) {
         }
       }
     }
-    for (int tmp_start_row = old_end_row; tmp_start_row < search_end_row;
+    for (int tmp_start_row = old_end_row; tmp_start_row <= search_end_row;
          ++tmp_start_row) {
-      tmp_end_row = tmp_start_row + blk_row_height - 1;
+      int tmp_end_row = tmp_start_row + blk_row_height - 1;
       if (!IsFitToRow(tmp_start_row, block)) continue;
-      left_white_space_bound = WhiteSpaceBoundLeft(
+      int left_white_space_bound = WhiteSpaceBoundLeft(
           loc.x, loc.x + width,
           tmp_start_row, tmp_end_row
       );
-      tmp_x = std::max(left_white_space_bound, left_block_bound);
+      int tmp_x = std::max(left_white_space_bound, left_block_bound);
 
       for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
         tmp_x = std::max(tmp_x, block_contour_[n]);
       }
 
-      tmp_y = RowToLoc(tmp_start_row);
+      int tmp_y = RowToLoc(tmp_start_row);
       //double tmp_hpwl = EstimatedHPWL(block, tmp_x, tmp_y);
 
-      tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y);
+      double tmp_cost = std::abs(tmp_x - loc.x) + std::abs(tmp_y - loc.y);
       if (tmp_cost < min_cost) {
         best_loc_x = tmp_x;
         best_row = tmp_start_row;
@@ -621,7 +609,7 @@ bool LGTetrisEx::FindLocLeft(Value2D<int> &loc, Block &block) {
   }
 
   // if still cannot find a legal location, enter fail mode
-  is_successful = IsSpaceLegal(
+  bool is_successful = IsSpaceLegal(
       best_loc_x, best_loc_x + width,
       best_row, best_row + blk_row_height - 1
   );

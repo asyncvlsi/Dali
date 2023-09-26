@@ -38,9 +38,10 @@ void ElapsedTime::RecordEndTime() {
 }
 
 void ElapsedTime::PrintTimeElapsed(severity lvl) const {
-  std::string buffer(1024, '\0');
-  int written_length = sprintf(
-      &buffer[0], "(wall time: %fs, cpu time: %f)\n", wall_time_, cpu_time_
+  size_t buffer_length = 1024;
+  std::string buffer(buffer_length, '\0');
+  int written_length = snprintf(
+      &buffer[0], buffer_length, "(wall time: %fs, cpu time: %f)\n", wall_time_, cpu_time_
   );
   buffer.resize(written_length);
   switch (lvl) {
