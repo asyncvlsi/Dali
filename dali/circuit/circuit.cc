@@ -315,23 +315,36 @@ BlockType *Circuit::AddBlockType(
   );
 }
 
+int Circuit::GetRoundOrCeilGriddedWidth(double width, std::string const &block_type_name) const {
+  double residual = AbsResidual(width, GridValueX());
+  int gridded_width = (int) std::round(width / GridValueX());
+  if(residual > constants_.epsilon) {
+    DaliWarning("BlockType width is not integer multiple of grid value in X: "
+                    + block_type_name + " rounding up");
+    gridded_width = (int) std::ceil(width / GridValueX());
+  }
+  return gridded_width;
+}
+
+int Circuit::GetRoundOrCeilGriddedHeight(double height, std::string const &block_type_name) const {
+  double residual = AbsResidual(height, GridValueY());
+  int gridded_height = (int) std::round(height / GridValueY());
+  if(residual > constants_.epsilon) {
+    DaliWarning("BlockType height is not integer multiple of grid value in Y: "
+                    + block_type_name + " rounding up");
+    gridded_height = (int) std::ceil(height / GridValueY());
+  }
+  return gridded_height;
+}
+
 BlockType *Circuit::AddWellTapBlockType(
     std::string const &block_type_name,
     double width,
     double height
 ) {
-  double residual = AbsResidual(width, GridValueX());
-  DaliExpects(residual < constants_.epsilon,
-              "BlockType width is not integer multiple of grid value in X: "
-                  + block_type_name);
+  int gridded_width = GetRoundOrCeilGriddedWidth(width, block_type_name);
+  int gridded_height = GetRoundOrCeilGriddedHeight(height, block_type_name);
 
-  residual = AbsResidual(height, GridValueY());
-  DaliExpects(residual < constants_.epsilon,
-              "BlockType height is not integer multiple of grid value in Y: "
-                  + block_type_name);
-
-  int gridded_width = (int) std::round(width / GridValueX());
-  int gridded_height = (int) std::round(height / GridValueY());
   return AddWellTapBlockTypeWithGridUnit(
       block_type_name, gridded_width, gridded_height
   );
@@ -342,17 +355,8 @@ BlockType *Circuit::AddFillerBlockType(
     double width,
     double height
 ) {
-  double residual = AbsResidual(width, GridValueX());
-  int gridded_width = (int) std::ceil(width / GridValueX());
-  DaliWarns(residual > constants_.epsilon,
-              "BlockType width is not integer multiple of grid value in X: "
-                  + block_type_name);
-
-  residual = AbsResidual(height, GridValueY());
-  int gridded_height = (int) std::ceil(height / GridValueY());
-  DaliWarns(residual > constants_.epsilon,
-              "BlockType height is not integer multiple of grid value in Y: "
-                  + block_type_name);
+  int gridded_width = GetRoundOrCeilGriddedWidth(width, block_type_name);
+  int gridded_height = GetRoundOrCeilGriddedHeight(height, block_type_name);
 
   return AddFillerBlockTypeWithGridUnit(
       block_type_name, gridded_width, gridded_height

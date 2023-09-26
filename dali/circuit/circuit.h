@@ -203,6 +203,8 @@ class Circuit {
       double height
   );
 
+  int GetRoundOrCeilGriddedWidth(double width, std::string const &block_type_name) const;
+  int GetRoundOrCeilGriddedHeight(double height, std::string const &block_type_name) const;
   // add a BlockType for well tap cell
   BlockType *AddWellTapBlockType(
       std::string const &block_type_name,
