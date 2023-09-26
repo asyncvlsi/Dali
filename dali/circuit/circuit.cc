@@ -343,17 +343,17 @@ BlockType *Circuit::AddFillerBlockType(
     double height
 ) {
   double residual = AbsResidual(width, GridValueX());
-  DaliExpects(residual < constants_.epsilon,
+  int gridded_width = (int) std::ceil(width / GridValueX());
+  DaliWarns(residual > constants_.epsilon,
               "BlockType width is not integer multiple of grid value in X: "
                   + block_type_name);
 
   residual = AbsResidual(height, GridValueY());
-  DaliExpects(residual < constants_.epsilon,
+  int gridded_height = (int) std::ceil(height / GridValueY());
+  DaliWarns(residual > constants_.epsilon,
               "BlockType height is not integer multiple of grid value in Y: "
                   + block_type_name);
 
-  int gridded_width = (int) std::round(width / GridValueX());
-  int gridded_height = (int) std::round(height / GridValueY());
   return AddFillerBlockTypeWithGridUnit(
       block_type_name, gridded_width, gridded_height
   );

@@ -33,7 +33,7 @@
 
 namespace dali {
 
-std::string get_git_version_full() {
+inline std::string get_git_version_full() {
   std::string git_version_full(GIT_VERSION);
   if (git_version_full.empty()) {
     return {GIT_VERSION_NOT_FOUND};
@@ -42,7 +42,7 @@ std::string get_git_version_full() {
   }
 }
 
-std::string get_git_version_short() {
+inline std::string get_git_version_short() {
   std::string git_version_full(GIT_VERSION);
   if (git_version_full.empty()) {
     return {GIT_VERSION_NOT_FOUND};

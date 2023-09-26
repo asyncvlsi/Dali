@@ -22,7 +22,6 @@
 
 #include <chrono>
 #include <iostream>
-#include <memory>
 
 #include <common/config.h>
 

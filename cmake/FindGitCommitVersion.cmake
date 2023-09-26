@@ -23,6 +23,8 @@ else ()
     set(GIT_VERSION "")
 endif()
 
+message(STATUS "Git commit hash: ${GIT_VERSION}")
+
 # Configure the version.h header file
 configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/dali/common/git_version.h.in

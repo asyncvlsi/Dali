@@ -48,6 +48,7 @@ jobs:
             mkdir build
             cd build
             cmake ..
+            cat ../dali/common/git_version.h
             make install
   centos7:
     docker:
