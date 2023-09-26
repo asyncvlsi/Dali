@@ -4,6 +4,9 @@
 # a header file (git_version.h) containing the Git commit hash if Git is
 # available, or "git version not found" if Git is not installed.
 
+set(GIT_VERSION_NOT_FOUND "git version not found")
+set(GIT_VERSION ${GIT_VERSION_NOT_FOUND})
+
 # Check if git binary exists
 execute_process(
         COMMAND command -v git
@@ -19,8 +22,6 @@ if(GIT_FOUND)
             OUTPUT_VARIABLE GIT_VERSION
             OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-else ()
-    set(GIT_VERSION "")
 endif()
 
 message(STATUS "Git commit hash: ${GIT_VERSION}")
