@@ -28,7 +28,7 @@
 
 #include <string>
 
-#define GIT_VERSION_NOT_FOUND "@GIT_VERSION_NOT_FOUND@"
+#cmakedefine GIT_VERSION_NOT_FOUND "@GIT_VERSION_NOT_FOUND@"
 #cmakedefine GIT_VERSION "@GIT_VERSION@"
 
 namespace dali {
