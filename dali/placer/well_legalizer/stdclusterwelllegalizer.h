@@ -115,6 +115,7 @@ class StdClusterWellLegalizer : public Placer {
 
   /**** well parameters ****/
   bool disable_welltap_ = false;
+  int num_of_tap_cell_ = 2;
   int max_unplug_length_;
   int well_tap_cell_width_;
   int well_spacing_;

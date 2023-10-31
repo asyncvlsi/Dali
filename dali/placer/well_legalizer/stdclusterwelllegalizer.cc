@@ -97,6 +97,11 @@ void StdClusterWellLegalizer::SaveInitialBlockLocation() {
 }
 
 void StdClusterWellLegalizer::InitializeWellLegalizer(int cluster_width) {
+  if (disable_welltap_) {
+    num_of_tap_cell_ = 0;
+    BOOST_LOG_TRIVIAL(info) << "set number of tap cells to 0, since well tap is disabled\n";
+  }
+
   CheckWellStatus();
 
   // fetch parameters related to N/P-well
@@ -104,9 +109,15 @@ void StdClusterWellLegalizer::InitializeWellLegalizer(int cluster_width) {
 
   space_partitioner_.SetInputCircuit(ckt_ptr_);
   space_partitioner_.SetOutput(&col_list_);
-  space_partitioner_.SetReservedSpaceToBoundaries(
-      well_spacing_, well_spacing_, 1, 1
-  );
+  if (disable_welltap_) {
+    space_partitioner_.SetReservedSpaceToBoundaries(
+        0, 0, 0, 0
+    );
+  } else {
+    space_partitioner_.SetReservedSpaceToBoundaries(
+        well_spacing_, well_spacing_, 1, 1
+    );
+  }
   space_partitioner_.SetPartitionMode(stripe_mode_);
   space_partitioner_.SetMaxRowWidth(cluster_width);
   space_partitioner_.StartPartitioning();
@@ -132,9 +143,9 @@ void StdClusterWellLegalizer::CreateClusterAndAppendSingleWellBlock(
   int n_well_height = blk_well->Nheight();
 
   //int num_of_tap_cell = (int) std::ceil(stripe.Width() / max_unplug_length_);
-  int num_of_tap_cell = 2;
-  front_row->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_
-                             + num_of_tap_cell * space_to_well_tap_);
+
+  front_row->SetUsedSize(width + num_of_tap_cell_ * well_tap_cell_width_
+                             + num_of_tap_cell_ * space_to_well_tap_);
   front_row->UpdateWellHeightUpward(tap_cell_p_height_,
                                     tap_cell_n_height_);
   front_row->UpdateWellHeightUpward(p_well_height, n_well_height);
@@ -1451,6 +1462,10 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
 }
 
 void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
+  if (disable_welltap_) {
+    BOOST_LOG_TRIVIAL(info) << "Skip export Pplus/Nplus fillings to PhyDB since well tap is disabled\n";
+    return;
+  }
   DaliExpects(phydb_ptr != nullptr, "Cannot export plus layer to a nullptr");
   BOOST_LOG_TRIVIAL(info) << "Export Pplus/Nplus fillings to PhyDB\n";
   std::string NP_name = "nplus";
@@ -1716,6 +1731,10 @@ void StdClusterWellLegalizer::ExportWellToPhyDB(
     phydb::PhyDB *phydb_ptr,
     int well_emit_mode
 ) {
+  if (disable_welltap_) {
+    BOOST_LOG_TRIVIAL(info) << "Skip export wells to PhyDB since well tap is disabled\n";
+    return;
+  }
   switch (well_emit_mode) {
     case 0:BOOST_LOG_TRIVIAL(info) << "Export N/P wells to PhyDB\n";
       break;

@@ -166,6 +166,7 @@ void Circuit::SetGridValue(double grid_value_x, double grid_value_y) {
   tech_.grid_value_x_ = grid_value_x;
   tech_.grid_value_y_ = grid_value_y;
   tech_.is_grid_set_ = true;
+  SetRowHeight(grid_value_y);
 }
 
 void Circuit::SetGridFromMetalPitch() {
@@ -2705,7 +2706,7 @@ void Circuit::LoadCell(phydb::PhyDB *phy_db_ptr) {
   auto &phy_db_tech = *(phy_db_ptr->GetTechPtr());
   if (!phy_db_tech.IsWellInfoSet()) {
     BOOST_LOG_TRIVIAL(info) << "N/P-Well layer info not found in PhyDB\n";
-    return;
+    BOOST_LOG_TRIVIAL(info) << "Will come up with some fake info\n";
   }
 
   double same_diff_spacing = 0, any_diff_spacing = 0;
@@ -2720,6 +2721,9 @@ void Circuit::LoadCell(phydb::PhyDB *phy_db_ptr) {
     double max_plug_dist = n_well_layer->GetMaxPlugDist();
     double overhang = n_well_layer->GetOverhang();
     SetNwellParams(width, spacing, op_spacing, max_plug_dist, overhang);
+  } else {
+    BOOST_LOG_TRIVIAL(info) << "No N-well layer info provided, creating fake info\n";
+    SetNwellParams(0.0, 0.0, 0.0, 1e8, 0.0);
   }
 
   auto *p_well_layer = phy_db_tech.GetPwellLayerPtr();
@@ -2730,31 +2734,47 @@ void Circuit::LoadCell(phydb::PhyDB *phy_db_ptr) {
     double max_plug_dist = p_well_layer->GetMaxPlugDist();
     double overhang = p_well_layer->GetOverhang();
     SetPwellParams(width, spacing, op_spacing, max_plug_dist, overhang);
+  } else {
+    BOOST_LOG_TRIVIAL(info) << "No P-well layer info provided, creating fake info\n";
+    SetPwellParams(0.0, 0.0, 0.0, 1e8, 0.0);
   }
 
   for (auto &macro : phy_db_tech.GetMacrosRef()) {
     std::string macro_name(macro.GetName());
     auto &macro_well = macro.WellPtrRef();
-    DaliExpects(macro_well != nullptr,
-                "No well info provided for MACRO: " + macro_name);
     AddBlockTypeWell(macro_name);
 
-    auto *n_rect = macro_well->GetNwellRectPtr();
-    auto *p_rect = macro_well->GetPwellRectPtr();
-    if (n_rect == nullptr && p_rect == nullptr) {
-      DaliExpects(false, "N/P-well geometries not provided for MACRO: "
-          + macro_name);
-    }
-    if (n_rect != nullptr) {
+    if (macro_well != nullptr) {
+      auto *n_rect = macro_well->GetNwellRectPtr();
+      auto *p_rect = macro_well->GetPwellRectPtr();
+      if (n_rect == nullptr && p_rect == nullptr) {
+        DaliExpects(false, "N/P-well geometries not provided for MACRO: "
+            + macro_name);
+      }
+      if (n_rect != nullptr) {
+        SetWellRect(
+            macro_name, true, n_rect->LLX(),
+            n_rect->LLY(), n_rect->URX(), n_rect->URY()
+        );
+      }
+      if (p_rect != nullptr) {
+        SetWellRect(
+            macro_name, false, p_rect->LLX(),
+            p_rect->LLY(), p_rect->URX(), p_rect->URY()
+        );
+      }
+    } else {
+      BOOST_LOG_TRIVIAL(info) << "No well info provided for MACRO: " + macro_name << "\n";
+      BOOST_LOG_TRIVIAL(info) << "Creating fake well info for MACRO: " + macro_name << "\n";
+      double height = macro.GetHeight();
+      double width = macro.GetWidth();
       SetWellRect(
-          macro_name, true, n_rect->LLX(),
-          n_rect->LLY(), n_rect->URX(), n_rect->URY()
+          macro_name, false, 0,
+          0, width, height/2.0
       );
-    }
-    if (p_rect != nullptr) {
       SetWellRect(
-          macro_name, false, p_rect->LLX(),
-          p_rect->LLY(), p_rect->URX(), p_rect->URY()
+          macro_name, true, 0,
+          height/2.0, width, height
       );
     }
   }
