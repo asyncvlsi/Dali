@@ -28,6 +28,7 @@
 
 #include "dali/common/git_version.h"
 #include "dali/common/helper.h"
+#include "dali/common/logging.h"
 #include "dali/common/phydb_helper.h"
 
 namespace dali {
@@ -62,27 +63,6 @@ Dali::Dali(
       severity_level_,
       disable_log_prefix_
   );
-}
-
-void Dali::ShowParamsList() {
-  std::cout
-      << "List of Dali parameters\n"
-      << "  " << prefix_ + "severity_level: int (0-5)\n"
-      << "  " << prefix_ + "log_file_name: str\n"
-      << "  " << prefix_ + "disable_log_prefix: bool\n"
-      << "  " << prefix_ + "num_threads: int\n"
-      << "  " << prefix_ + "well_legalization_mode: str\n"
-      << "  " << prefix_ + "disable_global_place: bool\n"
-      << "  " << prefix_ + "disable_legalization: bool\n"
-      << "  " << prefix_ + "disable_io_place: bool\n"
-      << "  " << prefix_ + "target_density: double\n"
-      << "  " << prefix_ + "io_metal_layer: int\n"
-      << "  " << prefix_ + "export_well_cluster_matlab: bool\n"
-      << "  " << prefix_ + "disable_welltap: bool\n"
-      << "  " << prefix_ + "max_row_width: double\n"
-      << "  " << prefix_ + "is_standard_cell: bool\n"
-      << "  " << prefix_ + "enable_filler_cell: bool\n"
-      << "  " << prefix_ + "output_name: str\n";
 }
 
 void Dali::LoadParamsFromConfig() {
@@ -167,6 +147,12 @@ void Dali::LoadParamsFromConfig() {
   param_name = prefix_ + "enable_filler_cell";
   if (config_exists(param_name.c_str())) {
     enable_filler_cell_ = config_get_int(param_name.c_str()) == 1;
+  }
+
+  param_name = prefix_ + "enable_end_cap_cell";
+  if (config_exists(param_name.c_str())) {
+    enable_end_cap_cell_ = config_get_int(param_name.c_str()) == 1;
+    DaliExpects(false, "Function not yet implemented");
   }
 
   param_name = prefix_ + "enable_shrink_off_grid_die_area";
@@ -362,12 +348,12 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
     if (is_standard_cell_) {
       legalizer_.TakeOver(&gb_placer_);
       legalizer_.disable_cell_flip_ = disable_cell_flip_,
-      legalizer_.StartPlacement();
+          legalizer_.StartPlacement();
     } else {
       well_legalizer_.TakeOver(&gb_placer_);
       well_legalizer_.disable_welltap_ = disable_welltap_;
       well_legalizer_.disable_cell_flip_ = disable_cell_flip_,
-      well_legalizer_.SetStripePartitionMode(static_cast<int>(well_legalization_mode_));
+          well_legalizer_.SetStripePartitionMode(static_cast<int>(well_legalization_mode_));
       well_legalizer_.StartPlacement();
       if (export_well_cluster_matlab_) {
         well_legalizer_.GenMatlabClusterTable("sc_result");

@@ -112,6 +112,7 @@ class Dali {
   double max_row_width_ = 0;
   bool is_standard_cell_ = false;
   bool enable_filler_cell_ = false;
+  bool enable_end_cap_cell_ = false;
   bool enable_shrink_off_grid_die_area_ = false;
   std::string output_name_ = "dali_out";
 

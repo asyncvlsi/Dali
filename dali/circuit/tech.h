@@ -97,8 +97,10 @@ class Tech {
   BlockType *io_dummy_blk_type_ptr_ = nullptr;
   std::vector<BlockType *> well_tap_cell_ptrs_;
   std::vector<std::unique_ptr<BlockType>> filler_ptrs_;
-  BlockType * pre_end_cap_cell_ptr_ = nullptr;
-  BlockType * post_end_cap_cell_ptr_ = nullptr;
+  // pre and post end cap cell types are for standard cell placement
+  BlockType *pre_end_cap_cell_ptr_ = nullptr;
+  BlockType *post_end_cap_cell_ptr_ = nullptr;
+  // TODO auto create pre and post end cap cell blackbox types
 
   /**** row height ****/
   double row_height_ = 0;

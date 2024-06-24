@@ -184,7 +184,7 @@ int main(int argc, char *argv[]) {
       }
     } else if (arg == "-disable_welltap") {
       config_set_int("dali.disable_welltap", 1);
-    } else if (arg == "-disable_cell_flip"){
+    } else if (arg == "-disable_cell_flip") {
       config_set_int("dali.disable_cell_flip", 1);
     } else if (arg == "-disable_io_place") {
       config_set_int("dali.disable_io_place", 1);
@@ -212,11 +212,12 @@ int main(int argc, char *argv[]) {
       config_set_int("dali.is_standard_cell", 1);
     } else if (arg == "-enable_filler_cell") {
       config_set_int("dali.enable_filler_cell", 1);
+    } else if (arg == "-enable_end_cap_cell") {
+      config_set_int("dali.enable_end_cap_cell", 1);
     } else if (arg == "-enable_shrink_off_grid_die_area") {
       config_set_int("dali.enable_shrink_off_grid_die_area", 1);
     } else {
-      std::cout << "Unknown flag\n";
-      std::cout << arg << "\n";
+      DaliExpects(false, "Unknown arg: " << arg);
       return 1;
     }
   }
