@@ -319,7 +319,7 @@ BlockType *Circuit::AddBlockType(
 int Circuit::GetRoundOrCeilGriddedWidth(double width, std::string const &block_type_name) const {
   double residual = AbsResidual(width, GridValueX());
   int gridded_width = (int) std::round(width / GridValueX());
-  if(residual > constants_.epsilon) {
+  if (residual > constants_.epsilon) {
     DaliWarning("BlockType width is not integer multiple of grid value in X: "
                     + block_type_name + " rounding up");
     gridded_width = (int) std::ceil(width / GridValueX());
@@ -330,7 +330,7 @@ int Circuit::GetRoundOrCeilGriddedWidth(double width, std::string const &block_t
 int Circuit::GetRoundOrCeilGriddedHeight(double height, std::string const &block_type_name) const {
   double residual = AbsResidual(height, GridValueY());
   int gridded_height = (int) std::round(height / GridValueY());
-  if(residual > constants_.epsilon) {
+  if (residual > constants_.epsilon) {
     DaliWarning("BlockType height is not integer multiple of grid value in Y: "
                     + block_type_name + " rounding up");
     gridded_height = (int) std::ceil(height / GridValueY());
@@ -2564,6 +2564,12 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
       blk_type = AddWellTapBlockType(macro_name, width, height);
     } else if (macro.GetClass() == phydb::MacroClass::CORE_SPACER) {
       blk_type = AddFillerBlockType(macro_name, width, height);
+    } else if (macro.GetClass() == phydb::MacroClass::ENDCAP_PRE) {
+      blk_type = AddBlockType(macro_name, width, height);
+      tech_.pre_end_cap_cell_ptr_ = blk_type;
+    } else if (macro.GetClass() == phydb::MacroClass::ENDCAP_POST) {
+      blk_type = AddBlockType(macro_name, width, height);
+      tech_.post_end_cap_cell_ptr_ = blk_type;
     } else {
       blk_type = AddBlockType(macro_name, width, height);
     }
@@ -2770,11 +2776,11 @@ void Circuit::LoadCell(phydb::PhyDB *phy_db_ptr) {
       double width = macro.GetWidth();
       SetWellRect(
           macro_name, false, 0,
-          0, width, height/2.0
+          0, width, height / 2.0
       );
       SetWellRect(
           macro_name, true, 0,
-          height/2.0, width, height
+          height / 2.0, width, height
       );
     }
   }

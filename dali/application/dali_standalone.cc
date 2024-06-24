@@ -78,6 +78,9 @@ void PrintSoftwareStatement() {
 }
 
 int main(int argc, char *argv[]) {
+  // print the software statement
+  PrintSoftwareStatement();
+
   // parameters that can be configured via the command line
   std::string lef_file_name;
   std::string def_file_name;
@@ -241,8 +244,6 @@ int main(int argc, char *argv[]) {
 
   // (2). initialize Circuit
   Dali dali(&phy_db, verbose_level, log_file_name);
-  // print the software statement
-  PrintSoftwareStatement();
 
   // print the current time
   using std::chrono::system_clock;
