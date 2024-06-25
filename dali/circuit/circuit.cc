@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <string>
 
 #include "dali/common/elapsed_time.h"
@@ -2718,6 +2719,13 @@ void Circuit::LoadCell(phydb::PhyDB *phy_db_ptr) {
   double same_diff_spacing = 0, any_diff_spacing = 0;
   phy_db_tech.GetDiffWellSpacing(same_diff_spacing, any_diff_spacing);
   SetLegalizerSpacing(same_diff_spacing, any_diff_spacing);
+
+  phy_db_tech.GetEndCapMinWidthHeight(
+      tech_.pre_end_cap_min_width_,
+      tech_.pre_end_cap_min_height_,
+      tech_.post_end_cap_min_width_,
+      tech_.post_end_cap_min_height_
+  );
 
   auto *n_well_layer = phy_db_tech.GetNwellLayerPtr();
   if (n_well_layer != nullptr) {

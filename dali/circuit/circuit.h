@@ -657,7 +657,7 @@ class Circuit {
 
   // load information in LEF
   void LoadTech(phydb::PhyDB *phy_db_ptr);
-  
+
   // load information in DEF
   void ReserveSpaceForDesign();
   void LoadUnits();

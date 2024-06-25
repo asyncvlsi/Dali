@@ -82,7 +82,7 @@ class Tech {
   double manufacturing_grid_ = 0;
   int database_microns_ = 0;
 
-  /*** *grid value along X and Y ****/
+  /**** grid value along X and Y ****/
   bool is_grid_set_ = false;
   double grid_value_x_ = 1;
   double grid_value_y_ = 1;
@@ -113,6 +113,12 @@ class Tech {
   WellLayer pwell_layer_;
   double same_diff_spacing_;
   double any_diff_spacing_;
+
+  /**** end cap width and height info ****/
+  std::optional<double> pre_end_cap_min_width_ = std::nullopt;
+  std::optional<double> pre_end_cap_min_height_ = std::nullopt;
+  std::optional<double> post_end_cap_min_width_ = std::nullopt;
+  std::optional<double> post_end_cap_min_height_ = std::nullopt;
 };
 
 }
