@@ -152,7 +152,6 @@ void Dali::LoadParamsFromConfig() {
   param_name = prefix_ + "enable_end_cap_cell";
   if (config_exists(param_name.c_str())) {
     enable_end_cap_cell_ = config_get_int(param_name.c_str()) == 1;
-    DaliExpects(false, "Function not yet implemented");
   }
 
   param_name = prefix_ + "enable_shrink_off_grid_die_area";
@@ -347,13 +346,14 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
   if (!disable_legalization_) {
     if (is_standard_cell_) {
       legalizer_.TakeOver(&gb_placer_);
-      legalizer_.disable_cell_flip_ = disable_cell_flip_,
-          legalizer_.StartPlacement();
+      legalizer_.disable_cell_flip_ = disable_cell_flip_;
+      legalizer_.StartPlacement();
     } else {
       well_legalizer_.TakeOver(&gb_placer_);
       well_legalizer_.disable_welltap_ = disable_welltap_;
-      well_legalizer_.disable_cell_flip_ = disable_cell_flip_,
-          well_legalizer_.SetStripePartitionMode(static_cast<int>(well_legalization_mode_));
+      well_legalizer_.disable_cell_flip_ = disable_cell_flip_;
+      well_legalizer_.enable_end_cap_cell_ = enable_end_cap_cell_;
+      well_legalizer_.SetStripePartitionMode(static_cast<int>(well_legalization_mode_));
       well_legalizer_.StartPlacement();
       if (export_well_cluster_matlab_) {
         well_legalizer_.GenMatlabClusterTable("sc_result");

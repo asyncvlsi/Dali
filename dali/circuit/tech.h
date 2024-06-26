@@ -74,6 +74,12 @@ class Tech {
   // create fake well for standard cells
   void CreateFakeWellForStandardCell(phydb::PhyDB *phy_db);
 
+  // get end cap cell info
+  int PreEndCapMinWidth() const;
+  int PreEndCapMinHeight() const;
+  int PostEndCapMinWidth() const;
+  int PostEndCapMinHeight() const;
+
   // print information
   void Report() const;
 

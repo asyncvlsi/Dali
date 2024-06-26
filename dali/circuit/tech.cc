@@ -27,6 +27,8 @@
 #include <algorithm>
 #include <unordered_set>
 
+#include "dali/common/helper.h"
+
 namespace dali {
 
 Tech::Tech()
@@ -93,7 +95,7 @@ bool Tech::IsGndAtBottom(phydb::Macro *macro) {
 
   double gnd_bottom_line = DBL_MAX;
   double vdd_bottom_line = DBL_MAX;
-  for (auto &pin: macro->GetPinsRef()) {
+  for (auto &pin : macro->GetPinsRef()) {
     std::string pin_name = pin.GetName();
     std::for_each(
         pin_name.begin(),
@@ -101,14 +103,14 @@ bool Tech::IsGndAtBottom(phydb::Macro *macro) {
         [](char &c) { c = tolower(c); }
     );
     if (gnd_names.find(pin_name) != gnd_names.end()) {
-      for (auto &layer_rect: pin.GetLayerRectRef()) {
-        for (auto &rect: layer_rect.GetRects()) {
+      for (auto &layer_rect : pin.GetLayerRectRef()) {
+        for (auto &rect : layer_rect.GetRects()) {
           gnd_bottom_line = std::min(gnd_bottom_line, rect.LLY());
         }
       }
     } else if (vdd_names.find(pin_name) != vdd_names.end()) {
-      for (auto &layer_rect: pin.GetLayerRectRef()) {
-        for (auto &rect: layer_rect.GetRects()) {
+      for (auto &layer_rect : pin.GetLayerRectRef()) {
+        for (auto &rect : layer_rect.GetRects()) {
           vdd_bottom_line = std::min(vdd_bottom_line, rect.LLY());
         }
       }
@@ -133,7 +135,7 @@ bool Tech::IsGndAtBottom(phydb::Macro *macro) {
 
 void Tech::CreateFakeWellForStandardCell(phydb::PhyDB *phy_db) {
   std::unordered_set<int> height_set;
-  for (auto &[name, blk_type]: block_type_map_) {
+  for (auto &[name, blk_type] : block_type_map_) {
     if (blk_type == io_dummy_blk_type_ptr_) continue;
     height_set.insert(blk_type->Height());
     multi_well_list_.emplace_back(blk_type);
@@ -153,7 +155,7 @@ void Tech::CreateFakeWellForStandardCell(phydb::PhyDB *phy_db) {
   int p_height = standard_height - n_height;
   DaliExpects(n_height > 0 || p_height > 0, "Both heights are 0?");
 
-  for (auto &[name, blk_type]: block_type_map_) {
+  for (auto &[name, blk_type] : block_type_map_) {
     if (blk_type == io_dummy_blk_type_ptr_) continue;
     auto *macro = phy_db->GetMacroPtr(name);
     int region_cnt = (int) std::round(blk_type->Height() / standard_height);
@@ -177,6 +179,22 @@ void Tech::CreateFakeWellForStandardCell(phydb::PhyDB *phy_db) {
       is_pwell = !is_pwell;
     }
   }
+}
+
+int Tech::PreEndCapMinWidth() const {
+  return static_cast<int>(RoundOrCeiling(pre_end_cap_min_width_.value_or(0) / grid_value_x_));
+}
+
+int Tech::PreEndCapMinHeight() const {
+  return static_cast<int>(RoundOrCeiling(pre_end_cap_min_height_.value_or(0) / grid_value_y_));
+}
+
+int Tech::PostEndCapMinWidth() const {
+  return static_cast<int>(RoundOrCeiling(post_end_cap_min_width_.value_or(0) / grid_value_x_));
+}
+
+int Tech::PostEndCapMinHeight() const {
+  return static_cast<int>(RoundOrCeiling(post_end_cap_min_height_.value_or(0) / grid_value_y_));
 }
 
 void Tech::Report() const {

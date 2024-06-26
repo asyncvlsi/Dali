@@ -79,6 +79,13 @@ void StdClusterWellLegalizer::FetchNpWellParams() {
   BOOST_LOG_TRIVIAL(info) << "  Well tap cell width: " << well_tap_cell_width_
                           << "\n";
 
+  if (enable_end_cap_cell_) {
+    pre_end_cap_min_width_ = ckt_ptr_->tech().PreEndCapMinWidth();
+    pre_end_cap_min_height_ = ckt_ptr_->tech().PreEndCapMinHeight();
+    post_end_cap_min_width_ = ckt_ptr_->tech().PostEndCapMinWidth();
+    post_end_cap_min_height_ = ckt_ptr_->tech().PostEndCapMinHeight();
+  }
+
   well_tap_cell_ = (ckt_ptr_->tech().WellTapCellPtrs()[0]);
   auto *tap_cell_well = well_tap_cell_->WellPtr();
   tap_cell_p_height_ = tap_cell_well->Pheight();
@@ -142,12 +149,19 @@ void StdClusterWellLegalizer::CreateClusterAndAppendSingleWellBlock(
   int p_well_height = blk_well->Pheight();
   int n_well_height = blk_well->Nheight();
 
-  //int num_of_tap_cell = (int) std::ceil(stripe.Width() / max_unplug_length_);
+  int space_for_well_tap = num_of_tap_cell_ * well_tap_cell_width_
+      + num_of_tap_cell_ * space_to_well_tap_;
 
-  front_row->SetUsedSize(width + num_of_tap_cell_ * well_tap_cell_width_
-                             + num_of_tap_cell_ * space_to_well_tap_);
-  front_row->UpdateWellHeightUpward(tap_cell_p_height_,
-                                    tap_cell_n_height_);
+  int space_for_end_cap = 0;
+  if (enable_end_cap_cell_) {
+    space_for_end_cap = pre_end_cap_min_width_ + post_end_cap_min_width_;
+  }
+
+  front_row->SetUsedSize(space_for_well_tap + space_for_end_cap + width);
+  front_row->UpdateWellHeightUpward(
+      tap_cell_p_height_,
+      tap_cell_n_height_
+  );
   front_row->UpdateWellHeightUpward(p_well_height, n_well_height);
   front_row->SetLLY(init_y);
   front_row->SetLLX(stripe.LLX());

@@ -123,6 +123,13 @@ class StdClusterWellLegalizer : public Placer {
   /**** cell orientation ****/
   bool disable_cell_flip_ = false;
 
+  /**** end cap cell ****/
+  bool enable_end_cap_cell_ = false;
+  int pre_end_cap_min_width_ = 0;
+  int pre_end_cap_min_height_ = 0;
+  int post_end_cap_min_width_ = 0;
+  int post_end_cap_min_height_ = 0;
+
   /**** stripe parameters ****/
   int stripe_mode_ = 0;
   DefaultSpacePartitioner space_partitioner_;
