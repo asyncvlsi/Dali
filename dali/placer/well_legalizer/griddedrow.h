@@ -31,6 +31,15 @@
 namespace dali {
 
 class GriddedRow {
+  /*
+   * For a gridded row, its overall structure is like this
+   * ┌──────────────────┬──────────────┬──────────────┬─────────────────────────────────────────┬───────────────┬──────────────┬───────────────────┐
+   * │                  │              │              │                                         │               │              │                   │
+   * │ pre_end_cap_cell │ welltap_cell │ordinary_cell │    ordinary cells and welltap cells     │ ordinary_cell │ welltap_cell │ post_end_cap_cell │
+   * │                  │              │              │                                         │               │              │                   │
+   * └──────────────────┴──────────────┴──────────────┴─────────────────────────────────────────┴───────────────┴──────────────┴───────────────────┘
+   * The post end cap cell are optional, they will only be inserted into a gridded row when enable_end_cap_cell is true.
+   */
   friend class Stripe;
  public:
   GriddedRow() = default;

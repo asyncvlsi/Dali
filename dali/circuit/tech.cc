@@ -185,16 +185,24 @@ int Tech::PreEndCapMinWidth() const {
   return static_cast<int>(RoundOrCeiling(pre_end_cap_min_width_.value_or(0) / grid_value_x_));
 }
 
-int Tech::PreEndCapMinHeight() const {
-  return static_cast<int>(RoundOrCeiling(pre_end_cap_min_height_.value_or(0) / grid_value_y_));
+int Tech::PreEndCapMinPHeight() const {
+  return static_cast<int>(RoundOrCeiling(pre_end_cap_min_p_height_.value_or(0) / grid_value_y_));
+}
+
+int Tech::PreEndCapMinNHeight() const {
+  return static_cast<int>(RoundOrCeiling(pre_end_cap_min_n_height_.value_or(0) / grid_value_y_));
 }
 
 int Tech::PostEndCapMinWidth() const {
   return static_cast<int>(RoundOrCeiling(post_end_cap_min_width_.value_or(0) / grid_value_x_));
 }
 
-int Tech::PostEndCapMinHeight() const {
-  return static_cast<int>(RoundOrCeiling(post_end_cap_min_height_.value_or(0) / grid_value_y_));
+int Tech::PostEndCapMinPHeight() const {
+  return static_cast<int>(RoundOrCeiling(post_end_cap_min_p_height_.value_or(0) / grid_value_y_));
+}
+
+int Tech::PostEndCapMinNHeight() const {
+  return static_cast<int>(RoundOrCeiling(post_end_cap_min_n_height_.value_or(0) / grid_value_y_));
 }
 
 void Tech::Report() const {

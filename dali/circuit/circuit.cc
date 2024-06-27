@@ -2720,12 +2720,12 @@ void Circuit::LoadCell(phydb::PhyDB *phy_db_ptr) {
   phy_db_tech.GetDiffWellSpacing(same_diff_spacing, any_diff_spacing);
   SetLegalizerSpacing(same_diff_spacing, any_diff_spacing);
 
-  phy_db_tech.GetEndCapMinWidthHeight(
-      tech_.pre_end_cap_min_width_,
-      tech_.pre_end_cap_min_height_,
-      tech_.post_end_cap_min_width_,
-      tech_.post_end_cap_min_height_
-  );
+  tech_.pre_end_cap_min_width_ = phy_db_tech.GetPreEndCapMinWidth();
+  tech_.pre_end_cap_min_p_height_ = phy_db_tech.GetPreEndCapMinPHeight();
+  tech_.pre_end_cap_min_n_height_ = phy_db_tech.GetPreEndCapMinNHeight();
+  tech_.post_end_cap_min_width_ = phy_db_tech.GetPreEndCapMinWidth();
+  tech_.post_end_cap_min_p_height_ = phy_db_tech.GetPostEndCapMinPHeight();
+  tech_.post_end_cap_min_n_height_ = phy_db_tech.GetPostEndCapMinNHeight();
 
   auto *n_well_layer = phy_db_tech.GetNwellLayerPtr();
   if (n_well_layer != nullptr) {

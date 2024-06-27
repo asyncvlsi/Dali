@@ -81,9 +81,22 @@ void StdClusterWellLegalizer::FetchNpWellParams() {
 
   if (enable_end_cap_cell_) {
     pre_end_cap_min_width_ = ckt_ptr_->tech().PreEndCapMinWidth();
-    pre_end_cap_min_height_ = ckt_ptr_->tech().PreEndCapMinHeight();
+    BOOST_LOG_TRIVIAL(info) << "  pre_end_cap_min_width: " << pre_end_cap_min_width_ << "\n";
+
+    pre_end_cap_min_p_height_ = ckt_ptr_->tech().PreEndCapMinPHeight();
+    BOOST_LOG_TRIVIAL(info) << "  pre_end_cap_min_p_height: " << pre_end_cap_min_p_height_ << "\n";
+
+    pre_end_cap_min_n_height_ = ckt_ptr_->tech().PreEndCapMinNHeight();
+    BOOST_LOG_TRIVIAL(info) << "  pre_end_cap_min_n_height: " << pre_end_cap_min_n_height_ << "\n";
+
     post_end_cap_min_width_ = ckt_ptr_->tech().PostEndCapMinWidth();
-    post_end_cap_min_height_ = ckt_ptr_->tech().PostEndCapMinHeight();
+    BOOST_LOG_TRIVIAL(info) << "  post_end_cap_min_width: " << post_end_cap_min_width_ << "\n";
+
+    post_end_cap_min_p_height_ = ckt_ptr_->tech().PostEndCapMinPHeight();
+    BOOST_LOG_TRIVIAL(info) << "  post_end_cap_min_p_height: " << post_end_cap_min_p_height_ << "\n";
+
+    post_end_cap_min_n_height_ = ckt_ptr_->tech().PostEndCapMinNHeight();
+    BOOST_LOG_TRIVIAL(info) << "  post_end_cap_min_n_height: " << post_end_cap_min_n_height_ << "\n";
   }
 
   well_tap_cell_ = (ckt_ptr_->tech().WellTapCellPtrs()[0]);

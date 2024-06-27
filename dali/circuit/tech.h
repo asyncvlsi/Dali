@@ -76,9 +76,11 @@ class Tech {
 
   // get end cap cell info
   int PreEndCapMinWidth() const;
-  int PreEndCapMinHeight() const;
+  int PreEndCapMinPHeight() const;
+  int PreEndCapMinNHeight() const;
   int PostEndCapMinWidth() const;
-  int PostEndCapMinHeight() const;
+  int PostEndCapMinPHeight() const;
+  int PostEndCapMinNHeight() const;
 
   // print information
   void Report() const;
@@ -122,9 +124,11 @@ class Tech {
 
   /**** end cap width and height info ****/
   std::optional<double> pre_end_cap_min_width_ = std::nullopt;
-  std::optional<double> pre_end_cap_min_height_ = std::nullopt;
+  std::optional<double> pre_end_cap_min_p_height_ = std::nullopt;
+  std::optional<double> pre_end_cap_min_n_height_ = std::nullopt;
   std::optional<double> post_end_cap_min_width_ = std::nullopt;
-  std::optional<double> post_end_cap_min_height_ = std::nullopt;
+  std::optional<double> post_end_cap_min_p_height_ = std::nullopt;
+  std::optional<double> post_end_cap_min_n_height_ = std::nullopt;
 };
 
 }
