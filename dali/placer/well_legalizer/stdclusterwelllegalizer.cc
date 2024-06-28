@@ -168,13 +168,20 @@ void StdClusterWellLegalizer::CreateClusterAndAppendSingleWellBlock(
   int space_for_end_cap = 0;
   if (enable_end_cap_cell_) {
     space_for_end_cap = pre_end_cap_min_width_ + post_end_cap_min_width_;
+    // row height should be able to accommodate pre- and post-end cap cell
+    front_row->UpdateWellHeightUpward(
+        std::max(pre_end_cap_min_p_height_, post_end_cap_min_p_height_),
+        std::max(pre_end_cap_min_n_height_, post_end_cap_min_n_height_)
+    );
   }
 
   front_row->SetUsedSize(space_for_well_tap + space_for_end_cap + width);
+  // row height should be able to accommodate well tap cell
   front_row->UpdateWellHeightUpward(
       tap_cell_p_height_,
       tap_cell_n_height_
   );
+  // row height should be able to accommodate ordinary cell
   front_row->UpdateWellHeightUpward(p_well_height, n_well_height);
   front_row->SetLLY(init_y);
   front_row->SetLLX(stripe.LLX());

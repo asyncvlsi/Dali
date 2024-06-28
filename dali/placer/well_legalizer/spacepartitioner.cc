@@ -198,8 +198,7 @@ void DefaultSpacePartitioner::DecomposeSpaceToSimpleStripes() {
           stripe->contour_ = y_loc;
           stripe->front_row_ = nullptr;
           stripe->used_height_ = 0;
-          stripe->max_blk_capacity_per_cluster_ =
-              stripe->width_ / p_ckt_->MinBlkWidth();
+          stripe->max_blk_capacity_per_cluster_ = stripe->width_ / p_ckt_->MinBlkWidth();
         } else {
           stripe->height_ += row_height_;
         }
@@ -305,14 +304,12 @@ bool DefaultSpacePartitioner::StartPartitioning() {
       max_cell_width_ = std::max(max_cell_width_, blk.Width());
     }
   }
-  BOOST_LOG_TRIVIAL(info)
-    << "Max movable cell width: " << max_cell_width_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Max movable cell width: " << max_cell_width_ << "\n";
 
   // determine the width of columns
   cluster_width_ = max_row_width_;
   if (cluster_width_ <= 0) {
-    BOOST_LOG_TRIVIAL(info)
-      << "Using default gridded row width: 2*max_unplug_length_\n";
+    BOOST_LOG_TRIVIAL(info) << "Using default gridded row width: 2*max_unplug_length_\n";
     stripe_width_ = (int) std::round(max_unplug_length_ * stripe_width_factor_);
   } else {
     DaliWarns(
@@ -336,13 +333,17 @@ bool DefaultSpacePartitioner::StartPartitioning() {
   BOOST_LOG_TRIVIAL(info)
     << "  Gridded row width: " << stripe_width_ * p_ckt_->GridValueX() << "um, "
     << stripe_width_ << "\n";
-  DaliWarns(stripe_width_ < max_cell_width_,
-            "Maximum cell width is longer than gridded row width?");
+  DaliWarns(
+      stripe_width_ < max_cell_width_,
+      "Maximum cell width is longer than gridded row width?"
+  );
   for (int i = 0; i < tot_col_num_; ++i) {
     col_list[i].lx_ = Left() + i * stripe_width_;
     col_list[i].width_ = stripe_width_ - well_spacing_;
-    DaliExpects(col_list[i].width_ > 0,
-                "CELL configuration is problematic, leading to non-positive column width");
+    DaliExpects(
+        col_list[i].width_ > 0,
+        "CELL configuration is problematic, leading to non-positive column width"
+    );
     UpdateWhiteSpaceInCol(col_list[i]);
   }
   if (partition_mode_ == 1) {
