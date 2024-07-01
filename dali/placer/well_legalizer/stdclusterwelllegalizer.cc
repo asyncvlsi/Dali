@@ -1010,8 +1010,21 @@ void StdClusterWellLegalizer::InsertWellTap() {
       }
     }
   }
-  BOOST_LOG_TRIVIAL(info) << "Inserting complete: " << tot_tap_cell_num
+  BOOST_LOG_TRIVIAL(info) << "Insertion complete: " << tot_tap_cell_num
                           << " well tap cell created\n";
+}
+
+void StdClusterWellLegalizer::CreateEndCapCellTypes() {
+  for (auto &col : col_list_) {
+    for (auto &stripe : col.stripe_list_) {
+      for (auto &row : stripe.gridded_rows_) {
+        std::tuple<int, int> np_height = {row.NHeight(), row.PHeight()};
+        if (end_cap_cell_np_heights_to_type.find(np_height) == end_cap_cell_np_heights_to_type.end()) {
+          end_cap_cell_np_heights_to_type[np_height] = nullptr; // use nullptr as a placeholder
+        }
+      }
+    }
+  }
 }
 
 void StdClusterWellLegalizer::ClearCachedData() {
@@ -1096,6 +1109,13 @@ bool StdClusterWellLegalizer::StartPlacement() {
     InsertWellTap();
     //circuit_ptr_->GenMATLABWellTable("wtc", false);
     //GenMatlabClusterTable("wtc_result");
+  }
+
+  if (enable_end_cap_cell_) {
+    BOOST_LOG_TRIVIAL(info) << "Create end cap cells\n";
+    CreateEndCapCellTypes();
+  } else {
+    BOOST_LOG_TRIVIAL(info) << "Skip creating end cap cells\n";
   }
 
   PrintEndStatement("Standard Cluster Well Legalization", is_success);

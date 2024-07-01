@@ -21,10 +21,14 @@
 #ifndef DALI_PLACER_WELLLEGALIZER_STDCLUSTERWELLLEGALIZER_H_
 #define DALI_PLACER_WELLLEGALIZER_STDCLUSTERWELLLEGALIZER_H_
 
+#include <map>
+#include <tuple>
+
 #include "blockcluster.h"
 #include "blocksegment.h"
 #include "griddedrow.h"
 #include "dali/circuit/block.h"
+#include "dali/circuit/block_type.h"
 #include "dali/common/misc.h"
 #include "dali/placer/legalizer/LGTetrisEx.h"
 #include "dali/placer/placer.h"
@@ -86,6 +90,8 @@ class StdClusterWellLegalizer : public Placer {
   void UpdateClusterOrient();
   void InsertWellTap();
 
+  void CreateEndCapCellTypes();
+
   void ClearCachedData();
   bool WellLegalize();
 
@@ -131,6 +137,7 @@ class StdClusterWellLegalizer : public Placer {
   int post_end_cap_min_width_ = 0;
   int post_end_cap_min_p_height_ = 0;
   int post_end_cap_min_n_height_ = 0;
+  std::map<std::tuple<int /* N height */, int /* P height */>, BlockType *> end_cap_cell_np_heights_to_type;
 
   /**** stripe parameters ****/
   int stripe_mode_ = 0;
