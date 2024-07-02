@@ -108,7 +108,7 @@ class Tech {
   // pre and post end cap cell types are for standard cell placement
   BlockType *pre_end_cap_cell_ptr_ = nullptr;
   BlockType *post_end_cap_cell_ptr_ = nullptr;
-  // TODO auto create pre and post end cap cell blackbox types
+  std::unordered_map<std::string, BlockType *> end_cap_cell_type_map_;
 
   /**** row height ****/
   double row_height_ = 0;

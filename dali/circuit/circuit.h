@@ -431,6 +431,14 @@ class Circuit {
       double uy
   );
 
+  // create end cap cell type for gridded rows
+  BlockType *CreateEndCapCellType(
+      std::string const &end_cap_cell_type_name,
+      int width,
+      int n_well_height_in_grid_unit,
+      int p_well_height_in_grid_unit
+  );
+
   // report the well shape for each BlockType for debugging purposes
   void ReportWellShape();
 

@@ -1014,13 +1014,43 @@ void StdClusterWellLegalizer::InsertWellTap() {
                           << " well tap cell created\n";
 }
 
+/**
+ * @brief Creates end-cap cell types for each unique (NHeight, PHeight) combination found in the gridded rows of stripes in columns.
+ *
+ * This function iterates through the columns, stripes, and gridded rows in the column list.
+ * For each unique combination of NHeight and PHeight in a row, it creates both pre and post end-cap cell types.
+ * These cell types are then stored in the `pre_end_cap_cell_np_heights_to_type` map to avoid duplication.
+ */
 void StdClusterWellLegalizer::CreateEndCapCellTypes() {
   for (auto &col : col_list_) {
     for (auto &stripe : col.stripe_list_) {
       for (auto &row : stripe.gridded_rows_) {
         std::tuple<int, int> np_height = {row.NHeight(), row.PHeight()};
-        if (end_cap_cell_np_heights_to_type.find(np_height) == end_cap_cell_np_heights_to_type.end()) {
-          end_cap_cell_np_heights_to_type[np_height] = nullptr; // use nullptr as a placeholder
+
+        // Check if the end-cap cell type for this height combination already exists
+        if (pre_end_cap_cell_np_heights_to_type.find(np_height) == pre_end_cap_cell_np_heights_to_type.end()) {
+
+          // Create and register the pre end-cap cell type
+          std::string pre_end_cap_cell_name =
+              "pre_end_cap_n_height_" + std::to_string(row.NHeight()) + "_p_height_" + std::to_string(row.PHeight());
+          BlockType *pre_end_cap_cell_type_ptr = ckt_ptr_->CreateEndCapCellType(
+              pre_end_cap_cell_name,
+              ckt_ptr_->tech().PreEndCapMinWidth(),
+              row.NHeight(),
+              row.PHeight()
+          );
+          pre_end_cap_cell_np_heights_to_type[np_height] = pre_end_cap_cell_type_ptr;
+
+          // Create and register the post end-cap cell type
+          std::string post_end_cap_cell_name =
+              "post_end_cap_n_height_" + std::to_string(row.NHeight()) + "_p_height_" + std::to_string(row.PHeight());
+          BlockType *post_end_cap_cell_type_ptr = ckt_ptr_->CreateEndCapCellType(
+              post_end_cap_cell_name,
+              ckt_ptr_->tech().PostEndCapMinWidth(),
+              row.NHeight(),
+              row.PHeight()
+          );
+          post_end_cap_cell_np_heights_to_type[np_height] = post_end_cap_cell_type_ptr;
         }
       }
     }

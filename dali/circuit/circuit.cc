@@ -941,6 +941,61 @@ void Circuit::SetWellRect(
   well->AddWellRect(is_n, lx_grid, ly_grid, ux_grid, uy_grid);
 }
 
+/**
+ * @brief Creates a new end-cap cell type and registers it in the circuit's technology.
+ *
+ * This function creates a new end-cap cell type with the specified parameters if it doesn't already exist.
+ * It checks for the existence of the end-cap cell type in `tech_.end_cap_cell_type_map_` and throws an error
+ * if the type already exists.
+ *
+ * @param end_cap_cell_type_name The name of the end-cap cell type to create.
+ * @param width Width of the end-cap cell type.
+ * @param n_well_height_in_grid_unit Height of the N-well component in grid units.
+ * @param p_well_height_in_grid_unit Height of the P-well component in grid units.
+ * @return Pointer to the created BlockType representing the end-cap cell type.
+ */
+BlockType *Circuit::CreateEndCapCellType(
+    std::string const &end_cap_cell_type_name,
+    int width,
+    int n_well_height_in_grid_unit,
+    int p_well_height_in_grid_unit
+) {
+  // Check if the end-cap cell type already exists
+  bool is_end_cap_cell_existing =
+      tech_.end_cap_cell_type_map_.find(end_cap_cell_type_name) != tech_.end_cap_cell_type_map_.end();
+  DaliExpects(!is_end_cap_cell_existing,
+              "End Cap cell type exists, cannot create this block type again: " + end_cap_cell_type_name);
+
+  // Insert the new end-cap cell type into the map
+  auto ret = tech_.end_cap_cell_type_map_.insert(
+      std::unordered_map<std::string, BlockType *>::value_type(
+          end_cap_cell_type_name, nullptr
+      )
+  );
+
+  // Calculate the total height
+  int height = n_well_height_in_grid_unit + p_well_height_in_grid_unit;
+
+  // Create a new BlockType for the end-cap cell type
+  auto tmp_ptr = new BlockType(&(ret.first->first), width, height);
+  ret.first->second = tmp_ptr;
+
+  // Report if the area exceeds INT_MAX
+  if (tmp_ptr->Area() > INT_MAX) {
+    tmp_ptr->Report();
+  }
+
+  // Add the BlockType to the multi-well list
+  tech_.multi_well_list_.emplace_back(tmp_ptr);
+
+  // Get a pointer to the added well and configure its rectangles
+  auto *well_ptr = &(tech_.multi_well_list_.back());
+  well_ptr->AddWellRect(false, 0, 0, width, p_well_height_in_grid_unit);
+  well_ptr->AddWellRect(true, 0, p_well_height_in_grid_unit, width, height);
+
+  return tmp_ptr;
+}
+
 void Circuit::ReportWellShape() {
   for (auto &blk_type_well : tech_.multi_well_list_) {
     blk_type_well.Report();
