@@ -33,10 +33,6 @@ StdClusterWellLegalizer::StdClusterWellLegalizer() {
   well_tap_cell_width_ = 0;
 }
 
-StdClusterWellLegalizer::~StdClusterWellLegalizer() {
-  well_tap_cell_ = nullptr;
-}
-
 void StdClusterWellLegalizer::LoadConf(std::string const &config_file) {
   config_read(config_file.c_str());
   DaliExpects(false, "Not implemented");
@@ -63,21 +59,28 @@ void StdClusterWellLegalizer::FetchNpWellParams() {
   well_spacing_ = std::max(same_well_spacing, op_well_spacing);
   max_unplug_length_ =
       (int) std::floor(n_well_layer.MaxPlugDist() / grid_value_x);
-  DaliExpects(!tech.WellTapCellPtrs().empty(),
-              "Cannot find the definition of well tap cell, well legalization cannot proceed\n");
-  well_tap_cell_ = tech.WellTapCellPtrs()[0];
-  well_tap_cell_width_ = well_tap_cell_->Width();
+  DaliExpects(
+      !ckt_ptr_->tech().WellTapCellIds().empty(),
+      "Cannot find the definition of well tap cell, well legalization cannot proceed\n"
+  );
+  int well_tap_cell_type_id = ckt_ptr_->tech().WellTapCellIds()[0];
+  well_tap_cell_ptr_ = &(ckt_ptr_->tech().BlockTypes()[well_tap_cell_type_id]);
+  well_tap_cell_width_ = well_tap_cell_ptr_->Width();
 
-  BOOST_LOG_TRIVIAL(info) << "  Well max plug distance: "
-                          << n_well_layer.MaxPlugDist() << "um, "
-                          << max_unplug_length_ << " \n";
-  BOOST_LOG_TRIVIAL(info) << "  GridValueX: " << ckt_ptr_->GridValueX()
-                          << " um\n";
-  BOOST_LOG_TRIVIAL(info) << "  Well spacing: "
-                          << n_well_layer.Spacing() << "um, "
-                          << well_spacing_ << "\n";
-  BOOST_LOG_TRIVIAL(info) << "  Well tap cell width: " << well_tap_cell_width_
-                          << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "  Well max plug distance: "
+    << n_well_layer.MaxPlugDist() << "um, "
+    << max_unplug_length_ << " \n";
+  BOOST_LOG_TRIVIAL(info)
+    << "  GridValueX: " << ckt_ptr_->GridValueX()
+    << " um\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "  Well spacing: "
+    << n_well_layer.Spacing() << "um, "
+    << well_spacing_ << "\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "  Well tap cell width: " << well_tap_cell_width_
+    << "\n";
 
   if (enable_end_cap_cell_) {
     pre_end_cap_min_width_ = ckt_ptr_->tech().PreEndCapMinWidth();
@@ -99,8 +102,7 @@ void StdClusterWellLegalizer::FetchNpWellParams() {
     BOOST_LOG_TRIVIAL(info) << "  post_end_cap_min_n_height: " << post_end_cap_min_n_height_ << "\n";
   }
 
-  well_tap_cell_ = (ckt_ptr_->tech().WellTapCellPtrs()[0]);
-  auto *tap_cell_well = well_tap_cell_->WellPtr();
+  auto *tap_cell_well = well_tap_cell_ptr_->WellPtr();
   tap_cell_p_height_ = tap_cell_well->Pheight();
   tap_cell_n_height_ = tap_cell_well->Nheight();
 }
@@ -990,13 +992,13 @@ void StdClusterWellLegalizer::InsertWellTap() {
         int tap_cell_num = 2;
         tot_tap_cell_num += tap_cell_num;
         int step = row.Width();
-        int tap_cell_loc = row.LLX() - well_tap_cell_->Width() / 2;
+        int tap_cell_loc = row.LLX() - well_tap_cell_ptr_->Width() / 2;
         for (int i = 0; i < tap_cell_num; ++i) {
           std::string block_name = "__well_tap__" + std::to_string(counter++);
           tap_cell_list.emplace_back();
           auto &tap_cell = tap_cell_list.back();
           tap_cell.SetPlacementStatus(PLACED);
-          tap_cell.SetType(ckt_ptr_->tech().WellTapCellPtrs()[0]);
+          tap_cell.SetType(well_tap_cell_ptr_);
           int map_size = ckt_ptr_->design().TapNameIdMap().size();
           auto ret = ckt_ptr_->design().TapNameIdMap().insert(
               std::pair<std::string, int>(block_name, map_size)
@@ -1022,6 +1024,21 @@ void StdClusterWellLegalizer::InsertWellTap() {
  * These cell types are then stored in the `pre_end_cap_cell_np_heights_to_type` map to avoid duplication.
  */
 void StdClusterWellLegalizer::CreateEndCapCellTypes() {
+  int num_of_end_cap_cell_types = 0;
+  for (auto &col : col_list_) {
+    for (auto &stripe : col.stripe_list_) {
+      for (auto &row : stripe.gridded_rows_) {
+        std::tuple<int, int> np_height = {row.NHeight(), row.PHeight()};
+
+        // Check if the end-cap cell type for this height combination already exists
+        if (pre_end_cap_cell_np_heights_to_type.find(np_height) == pre_end_cap_cell_np_heights_to_type.end()) {
+          num_of_end_cap_cell_types += 1;
+        }
+      }
+    }
+  }
+
+  ckt_ptr_->ReserveSpaceForEndCapCellType(num_of_end_cap_cell_types);
   for (auto &col : col_list_) {
     for (auto &stripe : col.stripe_list_) {
       for (auto &row : stripe.gridded_rows_) {
@@ -1168,8 +1185,7 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
       max_p_height = type->WellPtr()->Pheight();
     }
   }
-  BlockTypeWell *well_tap_cell_well_info =
-      ckt_ptr_->tech().WellTapCellPtrs()[0]->WellPtr();
+  BlockTypeWell *well_tap_cell_well_info = well_tap_cell_ptr_->WellPtr();
   if (well_tap_cell_well_info->Nheight() > max_n_height) {
     max_n_height = well_tap_cell_well_info->Nheight();
   }
@@ -1245,7 +1261,7 @@ void StdClusterWellLegalizer::GenPPNP(const std::string &name_of_file) {
   std::ofstream ostpp(pp_file.c_str());
   DaliExpects(ostpp.is_open(), "Cannot open output file: " + pp_file);
 
-  int adjust_width = well_tap_cell_->Width();
+  int adjust_width = well_tap_cell_ptr_->Width();
 
   for (auto &col : col_list_) {
     for (auto &stripe : col.stripe_list_) {
@@ -1426,7 +1442,7 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const &name_of_file) {
       << ckt_ptr_->LocDali2PhydbX(RegionRight()) << " "
       << ckt_ptr_->LocDali2PhydbY(RegionTop()) << "\n";
 
-  int adjust_width = well_tap_cell_->Width();
+  int adjust_width = well_tap_cell_ptr_->Width();
 
   for (auto &col : col_list_) {
     for (auto &stripe : col.stripe_list_) {
@@ -1572,7 +1588,7 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr) {
       bbox_ury
   );
 
-  int adjust_width = well_tap_cell_->Width();
+  int adjust_width = well_tap_cell_ptr_->Width();
 
   for (auto &col : col_list_) {
     for (auto &stripe : col.stripe_list_) {
@@ -1723,18 +1739,21 @@ void StdClusterWellLegalizer::EmitWellRect(std::string const &name_of_file,
   // emit rect file
   switch (well_emit_mode) {
     case 0: {
-      BOOST_LOG_TRIVIAL(info) << "Writing N/P-well rect file: "
-                              << name_of_file << "\n";
+      BOOST_LOG_TRIVIAL(info)
+        << "Writing N/P-well rect file: "
+        << name_of_file << "\n";
       break;
     }
     case 1: {
-      BOOST_LOG_TRIVIAL(info) << "Writing N-well rect file: "
-                              << name_of_file << "\n";
+      BOOST_LOG_TRIVIAL(info)
+        << "Writing N-well rect file: "
+        << name_of_file << "\n";
       break;
     }
     case 2: {
-      BOOST_LOG_TRIVIAL(info) << "Writing P-well rect file: "
-                              << name_of_file << "\n";
+      BOOST_LOG_TRIVIAL(info)
+        << "Writing P-well rect file: "
+        << name_of_file << "\n";
       break;
     }
     default: {
@@ -1826,8 +1845,10 @@ void StdClusterWellLegalizer::ExportWellToPhyDB(
       break;
     case 2:BOOST_LOG_TRIVIAL(info) << "Export P wells tp PhyDB\n";
       break;
-    default:DaliExpects(false,
-                        "Invalid value for well_emit_mode in StdClusterWellLegalizer::EmitDEFWellFile()");
+    default:DaliExpects(
+          false,
+          "Invalid value for well_emit_mode in StdClusterWellLegalizer::EmitDEFWellFile()"
+      );
   }
   double factor_x = ckt_ptr_->design().DistanceMicrons()
       * ckt_ptr_->GridValueX();

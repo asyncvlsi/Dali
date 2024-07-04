@@ -187,8 +187,7 @@ class Circuit {
   void ReportMetalLayers();
 
   /****API for BlockType****/
-  // get a map containing all BlockTypes
-  std::unordered_map<std::string, BlockType *> &BlockTypeMap();
+  std::vector<BlockType> &BlockTypes();
 
   // check if a BlockType with a given name exists or not
   bool IsBlockTypeExisting(std::string const &block_type_name);
@@ -206,7 +205,7 @@ class Circuit {
   int GetRoundOrCeilGriddedWidth(double width, std::string const &block_type_name) const;
   int GetRoundOrCeilGriddedHeight(double height, std::string const &block_type_name) const;
   // add a BlockType for well tap cell
-  BlockType *AddWellTapBlockType(
+  int AddWellTapBlockType(
       std::string const &block_type_name,
       double width,
       double height
@@ -432,6 +431,7 @@ class Circuit {
   );
 
   // create end cap cell type for gridded rows
+  void ReserveSpaceForEndCapCellType(int num_of_end_cap_cell_types);
   BlockType *CreateEndCapCellType(
       std::string const &end_cap_cell_type_name,
       int width,
@@ -611,7 +611,7 @@ class Circuit {
   );
 
   // add a BlockType with name, with, and height. The return value is a pointer to this new BlockType for adding pins. Unit in grid value
-  BlockType *AddWellTapBlockTypeWithGridUnit(
+  int AddWellTapBlockTypeWithGridUnit(
       std::string const &block_type_name,
       int width,
       int height
@@ -655,7 +655,7 @@ class Circuit {
   IoPin *AddPlacedIOPin(std::string const &iopin_name, double lx, double ly);
 
   // create well information container for a given BlockType
-  BlockTypeWell *AddBlockTypeWell(BlockType *blk_type);
+  BlockTypeWell *AddBlockTypeWell(BlockType &block_type);
 
   // shrink off grid die area
   RectI ShrinkOffGridDieArea(int lower_x, int lower_y, int upper_x, int upper_y);

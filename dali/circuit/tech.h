@@ -38,12 +38,11 @@ class Tech {
   friend class Circuit;
  public:
   Tech();
-  ~Tech();
 
   double GetManufacturingGrid() const;
 
   // get all kinds of well tap cells
-  std::vector<BlockType *> &WellTapCellPtrs();
+  std::vector<int> &WellTapCellIds();
 
   // get all filler cells
   std::vector<std::unique_ptr<BlockType>> &FillerCellPtrs();
@@ -66,10 +65,10 @@ class Tech {
   // is any well layer available?
   bool IsWellInfoSet() const;
 
-  // get all multi-well for cells
-  std::list<BlockTypeWell> &MultiWells();
-
   static bool IsGndAtBottom(phydb::Macro *macro);
+
+  // get all multi-well for cells
+  std::vector<BlockType> &BlockTypes();
 
   // create fake well for standard cells
   void CreateFakeWellForStandardCell(phydb::PhyDB *phy_db);
@@ -100,15 +99,16 @@ class Tech {
   std::unordered_map<std::string, int> metal_name_map_;
 
   /**** macros ****/
-  std::unordered_map<std::string, BlockType *> block_type_map_;
-  std::list<BlockTypeWell> multi_well_list_;
+  std::unordered_map<std::string, int> blk_type_name_id_map_;
+  std::vector<BlockType> block_types_;
   BlockType *io_dummy_blk_type_ptr_ = nullptr;
-  std::vector<BlockType *> well_tap_cell_ptrs_;
+  std::vector<int> well_tap_cell_type_ids_;
   std::vector<std::unique_ptr<BlockType>> filler_ptrs_;
   // pre and post end cap cell types are for standard cell placement
   BlockType *pre_end_cap_cell_ptr_ = nullptr;
   BlockType *post_end_cap_cell_ptr_ = nullptr;
-  std::unordered_map<std::string, BlockType *> end_cap_cell_type_map_;
+  std::unordered_map<std::string, int> end_cap_cell_type_name_id_map_;
+  std::vector<BlockType> end_cap_cell_types_;
 
   /**** row height ****/
   double row_height_ = 0;

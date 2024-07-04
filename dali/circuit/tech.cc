@@ -37,24 +37,13 @@ Tech::Tech()
       same_diff_spacing_(-1),
       any_diff_spacing_(-1) {}
 
-/****
-* This destructor free the memory allocated for unordered_map<key, *T>
-* because T is initialized by
-*    auto *T = new T();
-* ****/
-Tech::~Tech() {
-  for (auto &pair : block_type_map_) {
-    delete pair.second;
-  }
-}
-
 double Tech::GetManufacturingGrid() const {
   DaliExpects(manufacturing_grid_ > 0, "Manufacturing grid not set");
   return manufacturing_grid_;
 }
 
-std::vector<BlockType *> &Tech::WellTapCellPtrs() {
-  return well_tap_cell_ptrs_;
+std::vector<int> &Tech::WellTapCellIds() {
+  return well_tap_cell_type_ids_;
 }
 
 std::vector<std::unique_ptr<BlockType>> &Tech::FillerCellPtrs() {
@@ -83,10 +72,6 @@ bool Tech::IsPwellSet() const {
 
 bool Tech::IsWellInfoSet() const {
   return n_set_ || p_set_;
-}
-
-std::list<BlockTypeWell> &Tech::MultiWells() {
-  return multi_well_list_;
 }
 
 bool Tech::IsGndAtBottom(phydb::Macro *macro) {
@@ -133,12 +118,15 @@ bool Tech::IsGndAtBottom(phydb::Macro *macro) {
   return true;
 }
 
+std::vector<BlockType> &Tech::BlockTypes() {
+  return block_types_;
+}
+
 void Tech::CreateFakeWellForStandardCell(phydb::PhyDB *phy_db) {
   std::unordered_set<int> height_set;
-  for (auto &[name, blk_type] : block_type_map_) {
-    if (blk_type == io_dummy_blk_type_ptr_) continue;
-    height_set.insert(blk_type->Height());
-    multi_well_list_.emplace_back(blk_type);
+  for (auto &block_type : block_types_) {
+    if (&block_type == io_dummy_blk_type_ptr_) continue;
+    height_set.insert(block_type.Height());
   }
 
   DaliExpects(!height_set.empty(), "No cell height?");
@@ -155,29 +143,34 @@ void Tech::CreateFakeWellForStandardCell(phydb::PhyDB *phy_db) {
   int p_height = standard_height - n_height;
   DaliExpects(n_height > 0 || p_height > 0, "Both heights are 0?");
 
-  for (auto &[name, blk_type] : block_type_map_) {
-    if (blk_type == io_dummy_blk_type_ptr_) continue;
-    auto *macro = phy_db->GetMacroPtr(name);
-    int region_cnt = (int) std::round(blk_type->Height() / standard_height);
-    auto *well_ptr = blk_type->WellPtr();
+  for (auto &block_type : block_types_) {
+    if (&block_type == io_dummy_blk_type_ptr_) continue;
+    auto *macro = phy_db->GetMacroPtr(block_type.Name());
+    int region_cnt = (int) std::round(block_type.Height() / standard_height);
+
+    // Create the well info
+    auto well_ptr = std::make_unique<BlockTypeWell>();
     int accumulative_height = 0;
     bool is_pwell = IsGndAtBottom(macro);
     for (int i = 0; i < 2 * region_cnt; ++i) {
       if (is_pwell) {
         well_ptr->AddNwellRect(
             0, accumulative_height,
-            blk_type->Width(), accumulative_height + n_height
+            block_type.Width(), accumulative_height + n_height
         );
         accumulative_height += n_height;
       } else {
         well_ptr->AddPwellRect(
             0, accumulative_height,
-            blk_type->Width(), accumulative_height + p_height
+            block_type.Width(), accumulative_height + p_height
         );
         accumulative_height += p_height;
       }
       is_pwell = !is_pwell;
     }
+
+    // Move well info to BlockType
+    block_type.SetWellPtr(well_ptr);
   }
 }
 

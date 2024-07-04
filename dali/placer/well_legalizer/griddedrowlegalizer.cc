@@ -34,8 +34,11 @@
 namespace dali {
 
 void GriddedRowLegalizer::CheckWellInfo() {
-  for (auto &multi_well : ckt_ptr_->tech().MultiWells()) {
-    multi_well.CheckLegality();
+  for (auto &block_type : ckt_ptr_->tech().BlockTypes()) {
+    auto well_ptr = block_type.WellPtr();
+    if (well_ptr != nullptr) {
+      well_ptr->CheckLegality();
+    }
   }
 
   Tech &tech = ckt_ptr_->tech();
@@ -835,9 +838,12 @@ void GriddedRowLegalizer::SetWellTapCellType(
   if (well_tap_type_name.empty()) {
     BOOST_LOG_TRIVIAL(info)
       << "Well tap cell type not specified\n";
-    DaliExpects(!ckt_ptr_->tech().WellTapCellPtrs().empty(),
-                "No well tap cells provided in the cell library?");
-    well_tap_type_ptr_ = ckt_ptr_->tech().WellTapCellPtrs()[0];
+    DaliExpects(
+        !ckt_ptr_->tech().WellTapCellIds().empty(),
+        "No well tap cells provided in the cell library?"
+    );
+    int well_tap_cell_type_id = ckt_ptr_->tech().WellTapCellIds()[0];
+    well_tap_type_ptr_ = &(ckt_ptr_->tech().BlockTypes()[well_tap_cell_type_id]);
     BOOST_LOG_TRIVIAL(info)
       << "Using the default well tap cell: "
       << well_tap_type_ptr_->Name() << "\n";

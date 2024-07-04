@@ -285,21 +285,22 @@ void Circuit::ReportMetalLayers() {
   BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
-std::unordered_map<std::string, BlockType *> &Circuit::BlockTypeMap() {
-  return tech_.block_type_map_;
+std::vector<BlockType> &Circuit::BlockTypes() {
+  return tech_.BlockTypes();
 }
 
 bool Circuit::IsBlockTypeExisting(std::string const &block_type_name) {
-  return tech_.block_type_map_.find(block_type_name)
-      != tech_.block_type_map_.end();
+  return tech_.blk_type_name_id_map_.find(block_type_name)
+      != tech_.blk_type_name_id_map_.end();
 }
 
 BlockType *Circuit::GetBlockTypePtr(std::string const &block_type_name) {
-  auto res = tech_.block_type_map_.find(block_type_name);
-  if (res == tech_.block_type_map_.end()) {
+  auto res = tech_.blk_type_name_id_map_.find(block_type_name);
+  if (res == tech_.blk_type_name_id_map_.end()) {
     DaliExpects(false, "Cannot find block_type_name: " + block_type_name);
   }
-  return res->second;
+  int block_type_index = res->second;
+  return &(tech_.block_types_[block_type_index]);
 }
 
 BlockType *Circuit::AddBlockType(
@@ -339,7 +340,7 @@ int Circuit::GetRoundOrCeilGriddedHeight(double height, std::string const &block
   return gridded_height;
 }
 
-BlockType *Circuit::AddWellTapBlockType(
+int Circuit::AddWellTapBlockType(
     std::string const &block_type_name,
     double width,
     double height
@@ -377,27 +378,24 @@ Pin *Circuit::AddBlkTypePin(
 void Circuit::ReportBlockType() {
   BOOST_LOG_TRIVIAL(info)
     << "Total BlockType: "
-    << tech_.block_type_map_.size() << std::endl;
-  for (auto &pair : tech_.block_type_map_) {
-    pair.second->Report();
+    << tech_.blk_type_name_id_map_.size() << std::endl;
+  for (auto &block_type : tech_.block_types_) {
+    block_type.Report();
   }
   BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
 void Circuit::CopyBlockType(Circuit &circuit) {
-  BlockType *blk_type = nullptr;
-  BlockType *blk_type_new = nullptr;
-  for (auto &item : circuit.tech_.block_type_map_) {
-    blk_type = item.second;
-    auto type_name = blk_type->Name();
+  for (auto &block_type : circuit.tech_.block_types_) {
+    auto type_name = block_type.Name();
     if (type_name == "PIN") continue;
-    blk_type_new = AddBlockTypeWithGridUnit(
+    BlockType *new_block_type = AddBlockTypeWithGridUnit(
         type_name,
-        blk_type->Width(),
-        blk_type->Height()
+        block_type.Width(),
+        block_type.Height()
     );
-    for (auto &pin : blk_type->PinList()) {
-      blk_type_new->AddPin(pin.Name(), pin.OffsetX(), pin.OffsetY());
+    for (auto &pin : block_type.PinList()) {
+      new_block_type->AddPin(pin.Name(), pin.OffsetX(), pin.OffsetY());
     }
   }
 }
@@ -869,7 +867,7 @@ void Circuit::SetLegalizerSpacing(double same_spacing, double any_spacing) {
 
 BlockTypeWell *Circuit::AddBlockTypeWell(std::string const &blk_type_name) {
   BlockType *blk_type_ptr = GetBlockTypePtr(blk_type_name);
-  return AddBlockTypeWell(blk_type_ptr);
+  return AddBlockTypeWell(*blk_type_ptr);
 }
 
 // TODO: discuss with Rajit about the necessity of having N/P-wells not fully covering the prBoundary of a given cell.
@@ -941,6 +939,10 @@ void Circuit::SetWellRect(
   well->AddWellRect(is_n, lx_grid, ly_grid, ux_grid, uy_grid);
 }
 
+void Circuit::ReserveSpaceForEndCapCellType(int num_of_end_cap_cell_types) {
+  tech_.end_cap_cell_types_.reserve(num_of_end_cap_cell_types);
+}
+
 /**
  * @brief Creates a new end-cap cell type and registers it in the circuit's technology.
  *
@@ -962,43 +964,51 @@ BlockType *Circuit::CreateEndCapCellType(
 ) {
   // Check if the end-cap cell type already exists
   bool is_end_cap_cell_existing =
-      tech_.end_cap_cell_type_map_.find(end_cap_cell_type_name) != tech_.end_cap_cell_type_map_.end();
-  DaliExpects(!is_end_cap_cell_existing,
-              "End Cap cell type exists, cannot create this block type again: " + end_cap_cell_type_name);
+      tech_.end_cap_cell_type_name_id_map_.find(end_cap_cell_type_name) != tech_.end_cap_cell_type_name_id_map_.end();
+  DaliExpects(
+      !is_end_cap_cell_existing,
+      "End Cap cell type exists, cannot create this block type again: " + end_cap_cell_type_name
+  );
 
-  // Insert the new end-cap cell type into the map
-  auto ret = tech_.end_cap_cell_type_map_.insert(
-      std::unordered_map<std::string, BlockType *>::value_type(
-          end_cap_cell_type_name, nullptr
-      )
+  DaliExpects(
+      tech_.end_cap_cell_types_.size() < tech_.end_cap_cell_types_.capacity(),
+      "Expect " << tech_.end_cap_cell_types_.capacity() << " end cap cells, now one more is added? "
+                << end_cap_cell_type_name
   );
 
   // Calculate the total height
   int height = n_well_height_in_grid_unit + p_well_height_in_grid_unit;
 
   // Create a new BlockType for the end-cap cell type
-  auto tmp_ptr = new BlockType(&(ret.first->first), width, height);
-  ret.first->second = tmp_ptr;
+  tech_.end_cap_cell_type_name_id_map_[end_cap_cell_type_name] = static_cast<int>(tech_.end_cap_cell_types_.size());
+  auto ret = tech_.end_cap_cell_type_name_id_map_.find(end_cap_cell_type_name);
+  tech_.end_cap_cell_types_.emplace_back(&(ret->first), width, height);
+  auto &block_type = tech_.block_types_.back();
 
   // Report if the area exceeds INT_MAX
-  if (tmp_ptr->Area() > INT_MAX) {
-    tmp_ptr->Report();
+  if (block_type.Area() > INT_MAX) {
+    block_type.Report();
   }
 
-  // Add the BlockType to the multi-well list
-  tech_.multi_well_list_.emplace_back(tmp_ptr);
 
   // Get a pointer to the added well and configure its rectangles
-  auto *well_ptr = &(tech_.multi_well_list_.back());
+  auto well_ptr = std::make_unique<BlockTypeWell>();
   well_ptr->AddWellRect(false, 0, 0, width, p_well_height_in_grid_unit);
   well_ptr->AddWellRect(true, 0, p_well_height_in_grid_unit, width, height);
+  block_type.SetWellPtr(well_ptr);
 
-  return tmp_ptr;
+  return &block_type;
 }
 
 void Circuit::ReportWellShape() {
-  for (auto &blk_type_well : tech_.multi_well_list_) {
-    blk_type_well.Report();
+  for (auto &block_type : tech_.block_types_) {
+    auto raw_well_ptr = block_type.WellPtr();
+    if (raw_well_ptr == nullptr) {
+      BOOST_LOG_TRIVIAL(info)
+        << "no well info for BlockType " << block_type.Name() << "\n";
+    } else {
+      raw_well_ptr->Report();
+    }
   }
 }
 
@@ -1019,24 +1029,27 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
           getline(ist, line);
           StrTokenize(line, legalizer_fields);
           if (legalizer_fields.size() != 2) {
-            std::cout << "Expect: SPACING + Value, get: " + line
-                      << std::endl;
+            BOOST_LOG_TRIVIAL(fatal)
+              << "Expect: SPACING + Value, get: " + line
+              << std::endl;
             exit(1);
           }
           if (legalizer_fields[0] == "SAME_DIFF_SPACING") {
             try {
               same_diff_spacing = std::stod(legalizer_fields[1]);
             } catch (...) {
-              std::cout << "Invalid stod conversion: " + line
-                        << std::endl;
+              BOOST_LOG_TRIVIAL(fatal)
+                << "Invalid stod conversion: " + line
+                << std::endl;
               exit(1);
             }
           } else if (legalizer_fields[0] == "ANY_DIFF_SPACING") {
             try {
               any_diff_spacing = std::stod(legalizer_fields[1]);
             } catch (...) {
-              std::cout << "Invalid stod conversion: " + line
-                        << std::endl;
+              BOOST_LOG_TRIVIAL(fatal)
+                << "Invalid stod conversion: " + line
+                << std::endl;
               exit(1);
             }
           }
@@ -1048,7 +1061,9 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
         bool is_n_well = (well_fields[1] == "nwell");
         if (!is_n_well) {
           if (well_fields[1] != "pwell") {
-            std::cout << "Unknow N/P well type: " + well_fields[1] << std::endl;
+            BOOST_LOG_TRIVIAL(fatal)
+              << "Unknow N/P well type: " + well_fields[1]
+              << std::endl;
             exit(1);
           }
         }
@@ -1064,9 +1079,9 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
             try {
               width = std::stod(well_fields[1]);
             } catch (...) {
-              std::cout
-                  << "Invalid stod conversion: " + well_fields[1]
-                  << std::endl;
+              BOOST_LOG_TRIVIAL(fatal)
+                << "Invalid stod conversion: " + well_fields[1]
+                << std::endl;
               exit(1);
             }
           } else if (line.find("OPPOSPACING") != std::string::npos) {
@@ -1074,9 +1089,9 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
             try {
               op_spacing = std::stod(well_fields[1]);
             } catch (...) {
-              std::cout
-                  << "Invalid stod conversion: " + well_fields[1]
-                  << std::endl;
+              BOOST_LOG_TRIVIAL(fatal)
+                << "Invalid stod conversion: " + well_fields[1]
+                << std::endl;
               exit(1);
             }
           } else if (line.find("SPACING") != std::string::npos) {
@@ -1084,9 +1099,9 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
             try {
               spacing = std::stod(well_fields[1]);
             } catch (...) {
-              std::cout
-                  << "Invalid stod conversion: " + well_fields[1]
-                  << std::endl;
+              BOOST_LOG_TRIVIAL(fatal)
+                << "Invalid stod conversion: " + well_fields[1]
+                << std::endl;
               exit(1);
             }
           } else if (line.find("MAXPLUGDIST") != std::string::npos) {
@@ -1094,9 +1109,9 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
             try {
               max_plug_dist = std::stod(well_fields[1]);
             } catch (...) {
-              std::cout
-                  << "Invalid stod conversion: " + well_fields[1]
-                  << std::endl;
+              BOOST_LOG_TRIVIAL(fatal)
+                << "Invalid stod conversion: " + well_fields[1]
+                << std::endl;
               exit(1);
             }
           } else if (line.find("MAXPLUGDIST") != std::string::npos) {
@@ -1104,9 +1119,9 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
             try {
               overhang = std::stod(well_fields[1]);
             } catch (...) {
-              std::cout
-                  << "Invalid stod conversion: " + well_fields[1]
-                  << std::endl;
+              BOOST_LOG_TRIVIAL(fatal)
+                << "Invalid stod conversion: " + well_fields[1]
+                << std::endl;
               exit(1);
             }
           } else {}
@@ -1132,8 +1147,8 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
       StrTokenize(line, macro_fields);
       std::string end_macro_flag = "END " + macro_fields[1];
       BlockType *p_blk_type = GetBlockTypePtr(macro_fields[1]);
-      tech_.multi_well_list_.emplace_back(p_blk_type);
-      auto *well_ptr = &(tech_.multi_well_list_.back());
+      auto new_well_ptr = std::make_unique<BlockTypeWell>();
+      p_blk_type->SetWellPtr(new_well_ptr);
       do {
         getline(ist, line);
         if (line.find("REGION") != std::string::npos) {
@@ -1174,15 +1189,15 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
                         << "\n";
                     }
                   } catch (...) {
-                    std::cout << "Invalid stod conversion: " + line
-                              << std::endl;
+                    BOOST_LOG_TRIVIAL(fatal) << "Invalid stod conversion: " + line
+                                             << std::endl;
                     exit(1);
                   }
                   int lx_grid = int(std::round(lx / GridValueX()));
                   int ly_grid = int(std::round(ly / GridValueY()));
                   int ux_grid = int(std::round(ux / GridValueX()));
                   int uy_grid = int(std::round(uy / GridValueY()));
-                  well_ptr->AddWellRect(
+                  p_blk_type->WellPtr()->AddWellRect(
                       is_n, lx_grid, ly_grid, ux_grid, uy_grid
                   );
                 }
@@ -1194,7 +1209,7 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
         }
       } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
       //well_ptr->Report();
-      well_ptr->CheckLegality();
+      p_blk_type->WellPtr()->CheckLegality();
     }
   }
   //ReportWellShape();
@@ -2141,12 +2156,11 @@ void Circuit::CreateFakeWellForStandardCell() {
 void Circuit::LoadImaginaryCellFile() {
   // 1. create fake well tap cell
   std::string tap_cell_name("welltap_svt");
-  BlockType *tmp_well_tap_cell = AddBlockTypeWithGridUnit(
+  AddWellTapBlockTypeWithGridUnit(
       tap_cell_name,
       MinBlkWidth(),
       MinBlkHeight()
   );
-  tech_.WellTapCellPtrs().push_back(tmp_well_tap_cell);
 
   // 2. create fake well parameters
   double fake_same_diff_spacing = 0;
@@ -2162,12 +2176,11 @@ void Circuit::LoadImaginaryCellFile() {
   SetNwellParams(width, spacing, op_spacing, max_plug_dist, overhang);
 
   // 3. create fake NP-well geometries for each BlockType
-  for (auto &pair : tech_.block_type_map_) {
-    auto *blk_type = pair.second;
-    BlockTypeWell *well = AddBlockTypeWell(blk_type);
-    int np_edge = blk_type->Height() / 2;
-    well->AddPwellRect(0, 0, blk_type->Width(), np_edge);
-    well->AddNwellRect(0, 0, blk_type->Width(), blk_type->Height());
+  for (auto &block_type : tech_.block_types_) {
+    BlockTypeWell *well = AddBlockTypeWell(block_type);
+    int np_edge = block_type.Height() / 2;
+    well->AddPwellRect(0, 0, block_type.Width(), np_edge);
+    well->AddNwellRect(0, 0, block_type.Width(), block_type.Height());
   }
 }
 
@@ -2188,28 +2201,27 @@ BlockType *Circuit::AddBlockTypeWithGridUnit(
       !IsBlockTypeExisting(block_type_name),
       "BlockType exist, cannot create this block type again: " + block_type_name
   );
-  auto ret = tech_.block_type_map_.insert(
-      std::unordered_map<std::string, BlockType *>::value_type(
-          block_type_name, nullptr
-      )
-  );
-  auto tmp_ptr = new BlockType(&(ret.first->first), width, height);
-  ret.first->second = tmp_ptr;
-  if (tmp_ptr->Area() > INT_MAX) {
-    tmp_ptr->Report();
+
+  tech_.blk_type_name_id_map_[block_type_name] = static_cast<int>(tech_.block_types_.size());
+  auto ret = tech_.blk_type_name_id_map_.find(block_type_name);
+  tech_.block_types_.emplace_back(&(ret->first), width, height);
+
+  auto &block_type = tech_.block_types_.back();
+  if (block_type.Area() > INT_MAX) {
+    block_type.Report();
   }
-  return tmp_ptr;
+  return &block_type;
 }
 
-BlockType *Circuit::AddWellTapBlockTypeWithGridUnit(
+int Circuit::AddWellTapBlockTypeWithGridUnit(
     std::string const &block_type_name,
     int width,
     int height
 ) {
-  BlockType *well_tap_ptr =
-      AddBlockTypeWithGridUnit(block_type_name, width, height);
-  tech_.well_tap_cell_ptrs_.push_back(well_tap_ptr);
-  return well_tap_ptr;
+  AddBlockTypeWithGridUnit(block_type_name, width, height);
+  int well_tap_cell_id = tech_.blk_type_name_id_map_[block_type_name];
+  tech_.well_tap_cell_type_ids_.push_back(well_tap_cell_id);
+  return well_tap_cell_id;
 }
 
 BlockType *Circuit::AddFillerBlockTypeWithGridUnit(
@@ -2224,10 +2236,14 @@ BlockType *Circuit::AddFillerBlockTypeWithGridUnit(
 }
 
 void Circuit::SetBoundary(int left, int bottom, int right, int top) {
-  DaliExpects(right > left,
-              "Right boundary is not larger than Left boundary?");
-  DaliExpects(top > bottom,
-              "Top boundary is not larger than Bottom boundary?");
+  DaliExpects(
+      right > left,
+      "Right boundary is not larger than Left boundary?"
+  );
+  DaliExpects(
+      top > bottom,
+      "Top boundary is not larger than Bottom boundary?"
+  );
   design_.die_area_.region_left_ = left;
   design_.die_area_.region_right_ = right;
   design_.die_area_.region_bottom_ = bottom;
@@ -2395,10 +2411,10 @@ IoPin *Circuit::AddPlacedIOPin(
   return &(design_.iopins_.back());
 }
 
-BlockTypeWell *Circuit::AddBlockTypeWell(BlockType *blk_type) {
-  tech_.multi_well_list_.emplace_back(blk_type);
-  blk_type->SetWell(&(tech_.multi_well_list_.back()));
-  return blk_type->WellPtr();
+BlockTypeWell *Circuit::AddBlockTypeWell(BlockType &block_type) {
+  auto new_well_ptr = std::make_unique<BlockTypeWell>();
+  block_type.SetWellPtr(new_well_ptr);
+  return block_type.WellPtr();
 }
 
 RectI Circuit::ShrinkOffGridDieArea(
@@ -2617,7 +2633,8 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
     double height = macro.GetHeight();
     BlockType *blk_type = nullptr;
     if (macro.GetClass() == phydb::MacroClass::CORE_WELLTAP) {
-      blk_type = AddWellTapBlockType(macro_name, width, height);
+      int block_index = AddWellTapBlockType(macro_name, width, height);
+      blk_type = &(tech_.BlockTypes()[block_index]);
     } else if (macro.GetClass() == phydb::MacroClass::CORE_SPACER) {
       blk_type = AddFillerBlockType(macro_name, width, height);
     } else if (macro.GetClass() == phydb::MacroClass::ENDCAP_PRE) {
@@ -2724,7 +2741,6 @@ void Circuit::LoadPlacementBlockages() {
     if (blockage.IsPlacement()) {
       AddPlacementBlockageFromPhyDB(blockage);
     }
-    std::cout << "is placement\n";
   }
 }
 

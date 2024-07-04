@@ -21,6 +21,7 @@
 #ifndef DALI_CIRCUIT_BLOCKTYPE_H_
 #define DALI_CIRCUIT_BLOCKTYPE_H_
 
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -73,10 +74,10 @@ class BlockType {
   Pin *GetPinPtr(std::string const &pin_name);
 
   // set the well information for this BlockType
-  void SetWell(BlockTypeWell *well_ptr);
+  void SetWellPtr(std::unique_ptr<BlockTypeWell> &well_ptr);
 
   // get the pointer to the well of this BlockType
-  BlockTypeWell *WellPtr() const { return well_ptr_; }
+  BlockTypeWell *WellPtr() const { return well_ptr_.get(); }
 
   // set the width of this BlockType and update its area
   void SetWidth(int width);
@@ -105,7 +106,7 @@ class BlockType {
   const std::string *name_ptr_;
   int width_, height_;
   long long area_;
-  BlockTypeWell *well_ptr_ = nullptr;
+  std::unique_ptr<BlockTypeWell> well_ptr_ = nullptr;
   std::vector<Pin> pin_list_;
   std::unordered_map<std::string, int> pin_name_id_map_;
 
@@ -148,11 +149,8 @@ class BlockType {
  *     +-----------------+
  * ****/
 class BlockTypeWell {
+  friend class BlockType;
  public:
-  explicit BlockTypeWell(BlockType *type_ptr) : type_ptr_(type_ptr) {
-    type_ptr_->SetWell(this);
-  }
-
   void AddNwellRect(int llx, int lly, int urx, int ury);
 
   void AddPwellRect(int llx, int lly, int urx, int ury);

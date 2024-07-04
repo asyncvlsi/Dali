@@ -98,9 +98,10 @@ Pin *BlockType::GetPinPtr(std::string const &pin_name) {
   return nullptr;
 }
 
-void BlockType::SetWell(BlockTypeWell *well_ptr) {
+void BlockType::SetWellPtr(std::unique_ptr<BlockTypeWell> &well_ptr) {
   DaliExpects(well_ptr != nullptr, "m_well_ptr is a nullptr?");
-  well_ptr_ = well_ptr;
+  well_ptr_ = std::move(well_ptr);
+  well_ptr_->type_ptr_ = this;
 }
 
 void BlockType::SetWidth(int width) {
@@ -124,7 +125,7 @@ void BlockType::Report() const {
     << "  BlockType name: " << Name() << "\n"
     << "    width, height: " << Width() << " " << Height() << "\n"
     << "    pin list:\n";
-  for (const auto&[name, id]: pin_name_id_map_) {
+  for (const auto &[name, id] : pin_name_id_map_) {
     BOOST_LOG_TRIVIAL(info)
       << "      " << name << " " << id
       << " (" << pin_list_[id].OffsetX() << ", " << pin_list_[id].OffsetY()
@@ -296,7 +297,6 @@ int BlockTypeWell::Pheight() {
     return n_rects_[0].LLY();
   }
   DaliExpects(false, "No rects found in well?");
-  return 0;
 }
 
 int BlockTypeWell::Nheight() {
@@ -306,7 +306,6 @@ int BlockTypeWell::Nheight() {
     return type_ptr_->Height() - n_rects_[0].LLY();
   }
   DaliExpects(false, "No rects found in well?");
-  return 0;
 }
 
 }

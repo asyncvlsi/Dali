@@ -41,7 +41,6 @@ class StdClusterWellLegalizer : public Placer {
   friend class Dali;
  public:
   StdClusterWellLegalizer();
-  ~StdClusterWellLegalizer() override;
   void LoadConf(std::string const &config_file) override;
 
   void CheckWellStatus();
@@ -145,7 +144,7 @@ class StdClusterWellLegalizer : public Placer {
   DefaultSpacePartitioner space_partitioner_;
 
   /**** cached well tap cell parameters ****/
-  BlockType *well_tap_cell_ = nullptr;
+  BlockType *well_tap_cell_ptr_ = nullptr;
   int tap_cell_p_height_;
   int tap_cell_n_height_;
   int space_to_well_tap_ = 1;
