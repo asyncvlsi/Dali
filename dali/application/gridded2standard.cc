@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
   //circuit.ReadLefFile(lef_file_name);
 
   MetalLayer *hor_layer = nullptr;
-  for (auto &metal_layer: circuit.Metals()) {
+  for (auto &metal_layer : circuit.Metals()) {
     if (metal_layer.Direction() == HORIZONTAL) {
       hor_layer = &metal_layer;
       BOOST_LOG_TRIVIAL(info) << "Horizontal metal layer is: "
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
     }
   }
   std::vector<TypeLayerBBox> bbox_list;
-  bbox_list.reserve(circuit.BlockTypeMap().size());
+  bbox_list.reserve(circuit.BlockTypes().size());
   std::ifstream ist;
   ist.open(lef_file_name.c_str());
   DaliExpects(ist.is_open(), "Cannot open file " + lef_file_name);
@@ -184,7 +184,7 @@ int main(int argc, char *argv[]) {
   double std_n_height = 0;
   double std_p_height = 0;
   double std_height = 0;
-  for (auto &type_bbox: bbox_list) {
+  for (auto &type_bbox : bbox_list) {
     BlockType *type = type_bbox.blk_type;
     if (type == circuit.tech().IoDummyBlkTypePtr()) continue;
     double n_height = type->WellPtr()->Nheight() * circuit.GridValueY()
@@ -249,7 +249,7 @@ int main(int argc, char *argv[]) {
       BOOST_LOG_TRIVIAL(info) << "modifying " << type_name << "\n";
 
       TypeLayerBBox *bbox_ptr = nullptr;
-      for (auto &bbox: bbox_list) {
+      for (auto &bbox : bbox_list) {
         if (bbox.blk_type->Name() == type_name) {
           bbox_ptr = &bbox;
           break;
