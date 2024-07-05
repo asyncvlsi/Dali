@@ -224,16 +224,6 @@ target_link_libraries(
         PRIVATE dalilib
 )
 
-# Stand-alone gridded cell design to standard cell design tool
-add_executable(
-        gridded2standard
-        dali/application/gridded2standard.cc
-)
-target_link_libraries(
-        gridded2standard
-        PRIVATE dalilib
-)
-
 # Stand-alone custom cell design to standard cell design tool
 add_executable(
         create_circuit
