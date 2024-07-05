@@ -119,12 +119,12 @@ bool Tech::IsGndAtBottom(phydb::Macro *macro) {
 }
 
 std::vector<BlockType> &Tech::BlockTypes() {
-  return block_types_;
+  return block_type_collection_.Instances();
 }
 
 void Tech::CreateFakeWellForStandardCell(phydb::PhyDB *phy_db) {
   std::unordered_set<int> height_set;
-  for (auto &block_type : block_types_) {
+  for (auto &block_type : BlockTypes()) {
     if (&block_type == io_dummy_blk_type_ptr_) continue;
     height_set.insert(block_type.Height());
   }
@@ -143,34 +143,34 @@ void Tech::CreateFakeWellForStandardCell(phydb::PhyDB *phy_db) {
   int p_height = standard_height - n_height;
   DaliExpects(n_height > 0 || p_height > 0, "Both heights are 0?");
 
-  for (auto &block_type : block_types_) {
+  for (auto &block_type : BlockTypes()) {
     if (&block_type == io_dummy_blk_type_ptr_) continue;
     auto *macro = phy_db->GetMacroPtr(block_type.Name());
     int region_cnt = (int) std::round(block_type.Height() / standard_height);
 
     // Create the well info
-    auto well_ptr = std::make_unique<BlockTypeWell>();
     int accumulative_height = 0;
     bool is_pwell = IsGndAtBottom(macro);
     for (int i = 0; i < 2 * region_cnt; ++i) {
       if (is_pwell) {
-        well_ptr->AddNwellRect(
-            0, accumulative_height,
-            block_type.Width(), accumulative_height + n_height
+        block_type.AddNwellRect(
+            0,
+            accumulative_height,
+            block_type.Width(),
+            accumulative_height + n_height
         );
         accumulative_height += n_height;
       } else {
-        well_ptr->AddPwellRect(
-            0, accumulative_height,
-            block_type.Width(), accumulative_height + p_height
+        block_type.AddPwellRect(
+            0,
+            accumulative_height,
+            block_type.Width(),
+            accumulative_height + p_height
         );
         accumulative_height += p_height;
       }
       is_pwell = !is_pwell;
     }
-
-    // Move well info to BlockType
-    block_type.SetWellPtr(well_ptr);
   }
 }
 

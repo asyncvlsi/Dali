@@ -23,13 +23,8 @@
 namespace dali {
 
 BlockType::BlockType(
-    const std::string *name_ptr,
-    int width,
-    int height
-) : name_ptr_(name_ptr),
-    width_(width),
-    height_(height),
-    area_(width_ * height_) {}
+    std::string const *name_ptr
+) : name_ptr_(name_ptr) {}
 
 int BlockType::GetPinId(std::string const &pin_name) const {
   auto ret = pin_name_id_map_.find(pin_name);
@@ -98,12 +93,6 @@ Pin *BlockType::GetPinPtr(std::string const &pin_name) {
   return nullptr;
 }
 
-void BlockType::SetWellPtr(std::unique_ptr<BlockTypeWell> &well_ptr) {
-  DaliExpects(well_ptr != nullptr, "m_well_ptr is a nullptr?");
-  well_ptr_ = std::move(well_ptr);
-  well_ptr_->type_ptr_ = this;
-}
-
 void BlockType::SetWidth(int width) {
   width_ = width;
   UpdateArea();
@@ -138,17 +127,19 @@ void BlockType::UpdateArea() {
   area_ = static_cast<long long>(width_) * static_cast<long long>(height_);
 }
 
-void BlockTypeWell::AddNwellRect(int llx, int lly, int urx, int ury) {
+void BlockType::AddNwellRect(int llx, int lly, int urx, int ury) {
+  has_well_info_ = true;
   n_rects_.emplace_back(llx, lly, urx, ury);
   region_count_ = static_cast<int>(std::max(n_rects_.size(), p_rects_.size()));
 }
 
-void BlockTypeWell::AddPwellRect(int llx, int lly, int urx, int ury) {
+void BlockType::AddPwellRect(int llx, int lly, int urx, int ury) {
+  has_well_info_ = true;
   p_rects_.emplace_back(llx, lly, urx, ury);
   region_count_ = static_cast<int>(std::max(n_rects_.size(), p_rects_.size()));
 }
 
-void BlockTypeWell::AddWellRect(
+void BlockType::AddWellRect(
     bool is_n, int llx, int lly, int urx, int ury
 ) {
   if (is_n) {
@@ -158,28 +149,28 @@ void BlockTypeWell::AddWellRect(
   }
 }
 
-void BlockTypeWell::SetExtraBottomExtension(int bot_extension) {
+void BlockType::SetExtraBottomExtension(int bot_extension) {
   extra_bot_extension_ = bot_extension;
 }
 
-void BlockTypeWell::SetExtraTopExtension(int top_extension) {
+void BlockType::SetExtraTopExtension(int top_extension) {
   extra_top_extension_ = top_extension;
 }
 
-bool BlockTypeWell::IsNwellAbovePwell(int region_id) const {
+bool BlockType::IsNwellAbovePwell(int region_id) const {
   DaliExpects(region_id < region_count_, "Index out of bound");
   return p_rects_[region_id].LLY() <= n_rects_[region_id].LLY();
 }
 
-int BlockTypeWell::RegionCount() const {
+int BlockType::RegionCount() const {
   return region_count_;
 }
 
-bool BlockTypeWell::HasOddRegions() const {
+bool BlockType::HasOddRegions() const {
   return region_count_ & 1;
 }
 
-bool BlockTypeWell::IsWellAbutted() {
+bool BlockType::IsWellAbutted() {
   int row_count = RegionCount();
   std::vector<int> y_edges;
   bool is_well_p = IsNwellAbovePwell(0);
@@ -206,22 +197,22 @@ bool BlockTypeWell::IsWellAbutted() {
   return true;
 }
 
-bool BlockTypeWell::IsCellHeightConsistent() {
+bool BlockType::IsCellHeightConsistent() {
   int cell_height = std::max(n_rects_.back().URY(), p_rects_.back().URY());
-  int lef_height = type_ptr_->Height();
+  int lef_height = Height();
   return cell_height == lef_height;
 }
 
-void BlockTypeWell::CheckLegality() {
+void BlockType::CheckLegality() {
   DaliExpects(n_rects_.size() == p_rects_.size(),
-              "Nwell count is different from Pwell count " + type_ptr_->Name());
+              "Nwell count is different from Pwell count " + Name());
   DaliExpects(IsWellAbutted(),
-              "Wells are not abutted for cell " + type_ptr_->Name());
+              "Wells are not abutted for cell " + Name());
   DaliExpects(IsCellHeightConsistent(),
-              "Macro/well height inconsistency" + type_ptr_->Name());
+              "Macro/well height inconsistency" + Name());
 }
 
-int BlockTypeWell::NwellHeight(int region_id, bool is_flipped) const {
+int BlockType::NwellHeight(int region_id, bool is_flipped) const {
   DaliExpects(region_id < region_count_, "Index out of bound");
   if (is_flipped) {
     region_id = region_count_ - 1 - region_id;
@@ -229,7 +220,7 @@ int BlockTypeWell::NwellHeight(int region_id, bool is_flipped) const {
   return n_rects_[region_id].Height();
 }
 
-int BlockTypeWell::PwellHeight(int region_id, bool is_flipped) const {
+int BlockType::PwellHeight(int region_id, bool is_flipped) const {
   DaliExpects(region_id < region_count_, "Index out of bound");
   if (is_flipped) {
     region_id = region_count_ - 1 - region_id;
@@ -237,7 +228,7 @@ int BlockTypeWell::PwellHeight(int region_id, bool is_flipped) const {
   return p_rects_[region_id].Height();
 }
 
-int BlockTypeWell::RegionHeight(int region_id, bool is_flipped) const {
+int BlockType::RegionHeight(int region_id, bool is_flipped) const {
   DaliExpects(region_id < region_count_, "Index out of bound");
   if (is_flipped) {
     region_id = region_count_ - 1 - region_id;
@@ -251,7 +242,7 @@ int BlockTypeWell::RegionHeight(int region_id, bool is_flipped) const {
  * @param is_flipped
  * @return
  */
-int BlockTypeWell::AdjacentRegionEdgeDistance(
+int BlockType::AdjacentRegionEdgeDistance(
     int index, bool is_flipped
 ) const {
   int row_cnt = RegionCount();
@@ -266,19 +257,19 @@ int BlockTypeWell::AdjacentRegionEdgeDistance(
   }
 }
 
-RectI &BlockTypeWell::NwellRect(int index) {
+RectI &BlockType::NwellRect(int index) {
   DaliExpects(index < RegionCount(), "Out of bound");
   return n_rects_[index];
 }
 
-RectI &BlockTypeWell::PwellRect(int index) {
+RectI &BlockType::PwellRect(int index) {
   DaliExpects(index < RegionCount(), "Out of bound");
   return p_rects_[index];
 }
 
-void BlockTypeWell::Report() const {
+void BlockType::ReportWellInfo() const {
   BOOST_LOG_TRIVIAL(info)
-    << "  Well of BlockType: " << type_ptr_->Name() << "\n";
+    << "  Well of BlockType: " << Name() << "\n";
   size_t sz = RegionCount();
   for (size_t i = 0; i < sz; ++i) {
     BOOST_LOG_TRIVIAL(info)
@@ -290,7 +281,7 @@ void BlockTypeWell::Report() const {
   }
 }
 
-int BlockTypeWell::Pheight() {
+int BlockType::Pheight() {
   if (!p_rects_.empty()) {
     return p_rects_[0].URY();
   } else if (!n_rects_.empty()) {
@@ -299,11 +290,11 @@ int BlockTypeWell::Pheight() {
   DaliExpects(false, "No rects found in well?");
 }
 
-int BlockTypeWell::Nheight() {
+int BlockType::Nheight() {
   if (!p_rects_.empty()) {
-    return type_ptr_->Height() - p_rects_[0].URY();
+    return Height() - p_rects_[0].URY();
   } else if (!n_rects_.empty()) {
-    return type_ptr_->Height() - n_rects_[0].LLY();
+    return Height() - n_rects_[0].LLY();
   }
   DaliExpects(false, "No rects found in well?");
 }

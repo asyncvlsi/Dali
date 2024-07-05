@@ -80,8 +80,8 @@ struct BlkDispVar {
     }
   }
 
-  bool IsMultideckCell() {
-    return blk_rgn.p_blk->TypePtr()->WellPtr()->RegionCount() > 1;
+  bool IsMultideckCell() const {
+    return blk_rgn.p_blk->TypePtr()->RegionCount() > 1;
   }
   bool TendToRight() {
     const double epsilon = 0.01;

@@ -178,7 +178,7 @@ std::vector<int> &Block::StretchLengths() {
 }
 
 int Block::CumulativeStretchLength(size_t index) {
-  if (TypePtr()->WellPtr()->RegionCount() == 1) return 0;
+  if (TypePtr()->RegionCount() == 1) return 0;
   if (stretch_length_.empty()) return 0;
 
   size_t sz = stretch_length_.size();
@@ -213,14 +213,13 @@ void Block::ReportNet() {
 void Block::ExportWellToMatlabPatchRect(std::ofstream &ost) {
   std::vector<RectI> n_well_shapes;
   std::vector<RectI> p_well_shapes;
-  BlockTypeWell *multi_well = TypePtr()->WellPtr();
-  if (multi_well != nullptr) {
-    auto &n_rects = multi_well->Nrects();
-    for (auto &rect: n_rects) {
+  if (TypePtr()->HasWellInfo()) {
+    auto &n_rects = TypePtr()->Nrects();
+    for (auto &rect : n_rects) {
       n_well_shapes.push_back(rect);
     }
-    auto &p_rects = multi_well->Prects();
-    for (auto &rect: p_rects) {
+    auto &p_rects = TypePtr()->Prects();
+    for (auto &rect : p_rects) {
       p_well_shapes.push_back(rect);
     }
   }

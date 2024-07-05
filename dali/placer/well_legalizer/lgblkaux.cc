@@ -23,9 +23,8 @@
 namespace dali {
 
 LgBlkAux::LgBlkAux(Block *blk_ptr) : BlockAux(blk_ptr) {
-  BlockTypeWell *well_ptr = blk_ptr->TypePtr()->WellPtr();
-  DaliExpects(well_ptr != nullptr, "A block has no wellptr?");
-  int region_cnt = well_ptr->RegionCount();
+  DaliExpects(blk_ptr->TypePtr()->HasWellInfo(), "A block has no wellptr?");
+  int region_cnt = blk_ptr->TypePtr()->RegionCount();
   sub_locs_.resize(region_cnt, blk_ptr->LLX());
   weights_.resize(region_cnt, 1.0);
   average_loc_ = blk_ptr->LLX();

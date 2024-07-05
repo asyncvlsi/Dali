@@ -264,8 +264,7 @@ void Stripe::UpdateFrontClusterUpward(int p_height, int n_height) {
  * @param p_blk
  */
 void Stripe::SimplyAddFollowingClusters(Block *p_blk, bool is_upward) {
-  BlockTypeWell *well = p_blk->TypePtr()->WellPtr();
-  int region_count = well->RegionCount();
+  int region_count = p_blk->TypePtr()->RegionCount();
   for (int i = 1; i < region_count; ++i) {
     int row_index = front_id_ + i;
     if (row_index >= static_cast<int>(gridded_rows_.size())) {
@@ -354,9 +353,11 @@ size_t Stripe::FitBlocksToFrontSpaceUpwardWithDispCheck(
   for (size_t i = start_id; i < blocks_sz; ++i) {
     Block *p_blk = blk_ptrs_vec_[i];
     if (gridded_rows_[front_id_].IsOrientMatching(p_blk, 0)) {
-      if (AddBlockToFrontClusterWithDispCheck(p_blk,
-                                              displacement_upper_limit,
-                                              true)) {
+      if (AddBlockToFrontClusterWithDispCheck(
+          p_blk,
+          displacement_upper_limit,
+          true)
+          ) {
         legalized_blocks.push_back(p_blk);
       } else {
         skipped_blocks.push_back(p_blk);
@@ -420,12 +421,10 @@ void Stripe::UpdateBlockStretchLength() {
       int id = blk_region.region_id;
       if (id >= 1) {
         Block *p_blk = blk_region.p_blk;
-        BlockTypeWell *well = blk_region.p_blk->TypePtr()->WellPtr();
         --id;
-        int well_edge_distance =
-            well->AdjacentRegionEdgeDistance(id, p_blk->IsFlipped());
-        int actual_edge_distance = (cur_cluster.LLY() + cur_cluster.PNEdge()) -
-            (pre_cluster.LLY() + pre_cluster.PNEdge());
+        int well_edge_distance = blk_region.p_blk->TypePtr()->AdjacentRegionEdgeDistance(id, p_blk->IsFlipped());
+        int actual_edge_distance =
+            (cur_cluster.LLY() + cur_cluster.PNEdge()) - (pre_cluster.LLY() + pre_cluster.PNEdge());
         int length = actual_edge_distance - well_edge_distance;
         p_blk->SetStretchLength(id, length);
       }
@@ -449,13 +448,13 @@ void Stripe::UpdateFrontClusterDownward(int p_height, int n_height) {
     if (blk_ptrs_vec_.empty()) {
       is_orient_N = is_first_row_orient_N_;
     } else {
-      BlockTypeWell *well_ptr = blk_ptrs_vec_[0]->TypePtr()->WellPtr();
+      BlockType *block_type_ptr = blk_ptrs_vec_[0]->TypePtr();
       bool is_blk_flipped = blk_ptrs_vec_[0]->IsFlipped();
       if (is_blk_flipped) {
-        is_orient_N = !well_ptr->IsNwellAbovePwell(0);
+        is_orient_N = !block_type_ptr->IsNwellAbovePwell(0);
       } else {
-        int region_id = well_ptr->RegionCount() - 1;
-        is_orient_N = well_ptr->IsNwellAbovePwell(region_id);
+        int region_id = block_type_ptr->RegionCount() - 1;
+        is_orient_N = block_type_ptr->IsNwellAbovePwell(region_id);
       }
     }
   } else {
@@ -485,7 +484,7 @@ size_t Stripe::FitBlocksToFrontSpaceDownward(
     if (!gridded_rows_[front_id_].IsOverlap(p_blk, current_iteration, false)) {
       break;
     }
-    int region_id = p_blk->TypePtr()->WellPtr()->RegionCount() - 1;
+    int region_id = p_blk->TypePtr()->RegionCount() - 1;
     if (gridded_rows_[front_id_].IsOrientMatching(p_blk, region_id)) {
       if (AddBlockToFrontCluster(p_blk, false)) {
         legalized_blocks.push_back(p_blk);
@@ -938,7 +937,7 @@ double Stripe::EstimateCost(
     SegI &range,
     double density
 ) {
-  int region_cnt = blk_ptr->TypePtr()->WellPtr()->RegionCount();
+  int region_cnt = blk_ptr->TypePtr()->RegionCount();
   std::vector<SegI> spaces;
   spaces.emplace_back(LLX(), URX());
   for (int i = 0; i < region_cnt; ++i) {
@@ -980,7 +979,7 @@ double Stripe::EstimateCost(
 }
 
 void Stripe::AddBlockToRow(int row_id, Block *blk_ptr, SegI range) {
-  int region_cnt = blk_ptr->TypePtr()->WellPtr()->RegionCount();
+  int region_cnt = blk_ptr->TypePtr()->RegionCount();
   blk_ptr->SetLLY(gridded_rows_[row_id].LLY());
   for (int i = 0; i < region_cnt; ++i) {
     gridded_rows_[row_id + i].AddStandardCell(blk_ptr, i, range);

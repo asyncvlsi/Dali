@@ -35,9 +35,8 @@ namespace dali {
 
 void GriddedRowLegalizer::CheckWellInfo() {
   for (auto &block_type : ckt_ptr_->tech().BlockTypes()) {
-    auto well_ptr = block_type.WellPtr();
-    if (well_ptr != nullptr) {
-      well_ptr->CheckLegality();
+    if (block_type.HasWellInfo()) {
+      block_type.CheckLegality();
     }
   }
 
@@ -47,10 +46,9 @@ void GriddedRowLegalizer::CheckWellInfo() {
   int same_spacing = std::ceil(n_well_layer.Spacing() / grid_value_x);
   int op_spacing = std::ceil(n_well_layer.OppositeSpacing() / grid_value_x);
   well_spacing_ = std::max(same_spacing, op_spacing);
-
-  auto *tap_cell_well = well_tap_type_ptr_->WellPtr();
-  tap_cell_p_height_ = tap_cell_well->PwellHeight(0);
-  tap_cell_n_height_ = tap_cell_well->NwellHeight(0);
+  
+  tap_cell_p_height_ = well_tap_type_ptr_->PwellHeight(0);
+  tap_cell_n_height_ = well_tap_type_ptr_->NwellHeight(0);
 }
 
 void GriddedRowLegalizer::SetThreads(int number_of_threads) {

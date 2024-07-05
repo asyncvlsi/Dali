@@ -42,9 +42,10 @@ void StdClusterWellLegalizer::CheckWellStatus() {
   auto &blocks = ckt_ptr_->Blocks();
   for (Block &blk : blocks) {
     if (blk.IsMovable()) {
-      BlockTypeWell *well_ptr = blk.TypePtr()->WellPtr();
-      DaliExpects(well_ptr != nullptr,
-                  "Cannot find well info for cell: " << blk.Name());
+      DaliExpects(
+          blk.TypePtr()->HasWellInfo(),
+          "Cannot find well info for cell: " << blk.Name()
+      );
     }
   }
 }
@@ -102,9 +103,8 @@ void StdClusterWellLegalizer::FetchNpWellParams() {
     BOOST_LOG_TRIVIAL(info) << "  post_end_cap_min_n_height: " << post_end_cap_min_n_height_ << "\n";
   }
 
-  auto *tap_cell_well = well_tap_cell_ptr_->WellPtr();
-  tap_cell_p_height_ = tap_cell_well->Pheight();
-  tap_cell_n_height_ = tap_cell_well->Nheight();
+  tap_cell_p_height_ = well_tap_cell_ptr_->Pheight();
+  tap_cell_n_height_ = well_tap_cell_ptr_->Nheight();
 }
 
 void StdClusterWellLegalizer::SaveInitialBlockLocation() {
@@ -160,9 +160,8 @@ void StdClusterWellLegalizer::CreateClusterAndAppendSingleWellBlock(
   int init_y = (int) std::round(blk.LLY());
   init_y = std::max(init_y, stripe.contour_);
 
-  auto *blk_well = blk.TypePtr()->WellPtr();
-  int p_well_height = blk_well->Pheight();
-  int n_well_height = blk_well->Nheight();
+  int p_well_height = blk.TypePtr()->Pheight();
+  int n_well_height = blk.TypePtr()->Nheight();
 
   int space_for_well_tap = num_of_tap_cell_ * well_tap_cell_width_
       + num_of_tap_cell_ * space_to_well_tap_;
@@ -200,9 +199,8 @@ void StdClusterWellLegalizer::AppendSingleWellBlockToFrontCluster(
     Block &blk
 ) {
   int width = blk.Width();
-  BlockTypeWell *blk_well = blk.TypePtr()->WellPtr();
-  int p_well_height = blk_well->Pheight();
-  int n_well_height = blk_well->Nheight();
+  int p_well_height = blk.TypePtr()->Pheight();
+  int n_well_height = blk.TypePtr()->Nheight();
 
   GriddedRow *front_row = stripe.front_row_;
   front_row->AddBlock(&blk);
@@ -254,9 +252,8 @@ void StdClusterWellLegalizer::AppendBlockToColTopDown(
   init_y = std::min(init_y, stripe.contour_);
 
   GriddedRow *front_row;
-  auto *blk_well = blk.TypePtr()->WellPtr();
-  int p_well_height = blk_well->Pheight();
-  int n_well_height = blk_well->Nheight();
+  int p_well_height = blk.TypePtr()->Pheight();
+  int n_well_height = blk.TypePtr()->Nheight();
   if (is_new_row_needed) {
     stripe.gridded_rows_.emplace_back();
     front_row = &(stripe.gridded_rows_.back());
@@ -307,9 +304,8 @@ void StdClusterWellLegalizer::AppendBlockToColBottomUpCompact(
   init_y = std::max(init_y, stripe.contour_);
 
   GriddedRow *front_cluster;
-  auto *well = blk.TypePtr()->WellPtr();
-  int p_well_height = well->Pheight();
-  int n_well_height = well->Nheight();
+  int p_well_height = blk.TypePtr()->Pheight();
+  int n_well_height = blk.TypePtr()->Nheight();
   if (is_new_cluster_needed) {
     stripe.gridded_rows_.emplace_back();
     front_cluster = &(stripe.gridded_rows_.back());
@@ -360,9 +356,8 @@ void StdClusterWellLegalizer::AppendBlockToColTopDownCompact(
   init_y = std::min(init_y, stripe.contour_);
 
   GriddedRow *front_cluster;
-  auto *well = blk.TypePtr()->WellPtr();
-  int p_well_height = well->Pheight();
-  int n_well_height = well->Nheight();
+  int p_well_height = blk.TypePtr()->Pheight();
+  int n_well_height = blk.TypePtr()->Nheight();
   if (is_new_cluster_needed) {
     stripe.gridded_rows_.emplace_back();
     front_cluster = &(stripe.gridded_rows_.back());
@@ -1024,54 +1019,40 @@ void StdClusterWellLegalizer::InsertWellTap() {
  * These cell types are then stored in the `pre_end_cap_cell_np_heights_to_type` map to avoid duplication.
  */
 void StdClusterWellLegalizer::CreateEndCapCellTypes() {
-  int num_of_end_cap_cell_types = 0;
   for (auto &col : col_list_) {
     for (auto &stripe : col.stripe_list_) {
       for (auto &row : stripe.gridded_rows_) {
         std::tuple<int, int> np_height = {row.NHeight(), row.PHeight()};
 
         // Check if the end-cap cell type for this height combination already exists
-        if (pre_end_cap_cell_np_heights_to_type.find(np_height) == pre_end_cap_cell_np_heights_to_type.end()) {
-          num_of_end_cap_cell_types += 1;
-        }
-      }
-    }
-  }
-
-  ckt_ptr_->ReserveSpaceForEndCapCellType(num_of_end_cap_cell_types);
-  for (auto &col : col_list_) {
-    for (auto &stripe : col.stripe_list_) {
-      for (auto &row : stripe.gridded_rows_) {
-        std::tuple<int, int> np_height = {row.NHeight(), row.PHeight()};
-
-        // Check if the end-cap cell type for this height combination already exists
-        if (pre_end_cap_cell_np_heights_to_type.find(np_height) == pre_end_cap_cell_np_heights_to_type.end()) {
+        if (pre_end_cap_cell_np_heights_to_type_id.find(np_height) == pre_end_cap_cell_np_heights_to_type_id.end()) {
 
           // Create and register the pre end-cap cell type
           std::string pre_end_cap_cell_name =
               "pre_end_cap_n_height_" + std::to_string(row.NHeight()) + "_p_height_" + std::to_string(row.PHeight());
-          BlockType *pre_end_cap_cell_type_ptr = ckt_ptr_->CreateEndCapCellType(
+          int pre_end_cap_cell_type_id = ckt_ptr_->CreateEndCapCellType(
               pre_end_cap_cell_name,
               ckt_ptr_->tech().PreEndCapMinWidth(),
               row.NHeight(),
               row.PHeight()
           );
-          pre_end_cap_cell_np_heights_to_type[np_height] = pre_end_cap_cell_type_ptr;
+          pre_end_cap_cell_np_heights_to_type_id[np_height] = pre_end_cap_cell_type_id;
 
           // Create and register the post end-cap cell type
           std::string post_end_cap_cell_name =
               "post_end_cap_n_height_" + std::to_string(row.NHeight()) + "_p_height_" + std::to_string(row.PHeight());
-          BlockType *post_end_cap_cell_type_ptr = ckt_ptr_->CreateEndCapCellType(
+          int post_end_cap_cell_type_id = ckt_ptr_->CreateEndCapCellType(
               post_end_cap_cell_name,
               ckt_ptr_->tech().PostEndCapMinWidth(),
               row.NHeight(),
               row.PHeight()
           );
-          post_end_cap_cell_np_heights_to_type[np_height] = post_end_cap_cell_type_ptr;
+          post_end_cap_cell_np_heights_to_type_id[np_height] = post_end_cap_cell_type_id;
         }
       }
     }
   }
+  ckt_ptr_->tech().EndCapCellTypeCollection().Freeze();
 }
 
 void StdClusterWellLegalizer::ClearCachedData() {
@@ -1100,13 +1081,15 @@ bool StdClusterWellLegalizer::WellLegalize() {
   ReportHPWL();
 
   if (is_success) {
-    BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
-                            << "Standard Cluster Well Legalization complete!\n"
-                            << "\033[0m";
+    BOOST_LOG_TRIVIAL(info)
+      << "\033[0;36m"
+      << "Standard Cluster Well Legalization complete!\n"
+      << "\033[0m";
   } else {
-    BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
-                            << "Standard Cluster Well Legalization fail!\n"
-                            << "\033[0m";
+    BOOST_LOG_TRIVIAL(info)
+      << "\033[0;36m"
+      << "Standard Cluster Well Legalization fail!\n"
+      << "\033[0m";
   }
 
   return is_success;
@@ -1178,19 +1161,18 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
   for (auto &blk : ckt_ptr_->design().Blocks()) {
     BlockType *type = blk.TypePtr();
     if (type == ckt_ptr_->tech().IoDummyBlkTypePtr()) continue;;
-    if (type->WellPtr()->Nheight() > max_n_height) {
-      max_n_height = type->WellPtr()->Nheight();
+    if (type->Nheight() > max_n_height) {
+      max_n_height = type->Nheight();
     }
-    if (type->WellPtr()->Pheight() > max_p_height) {
-      max_p_height = type->WellPtr()->Pheight();
+    if (type->Pheight() > max_p_height) {
+      max_p_height = type->Pheight();
     }
   }
-  BlockTypeWell *well_tap_cell_well_info = well_tap_cell_ptr_->WellPtr();
-  if (well_tap_cell_well_info->Nheight() > max_n_height) {
-    max_n_height = well_tap_cell_well_info->Nheight();
+  if (well_tap_cell_ptr_->Nheight() > max_n_height) {
+    max_n_height = well_tap_cell_ptr_->Nheight();
   }
-  if (well_tap_cell_well_info->Pheight() > max_p_height) {
-    max_p_height = well_tap_cell_well_info->Pheight();
+  if (well_tap_cell_ptr_->Pheight() > max_p_height) {
+    max_p_height = well_tap_cell_ptr_->Pheight();
   }
   int max_height = max_n_height + max_p_height;
 

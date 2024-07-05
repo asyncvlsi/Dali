@@ -88,13 +88,13 @@ void RowSegment::MinDisplacementLegalization(bool use_init_loc) {
   std::vector<BlkDispVar> vars;
   vars.reserve(blk_regions_.size());
   if (use_init_loc) {
-    for (auto &blk_rgn: blk_regions_) {
+    for (auto &blk_rgn : blk_regions_) {
       auto aux_ptr = static_cast<LgBlkAux *>(blk_rgn.p_blk->AuxPtr());
       vars.emplace_back(blk_rgn.p_blk->Width(), aux_ptr->InitLoc().x, 1.0);
       vars.back().blk_rgn = blk_rgn;
     }
   } else {
-    for (auto &blk_rgn: blk_regions_) {
+    for (auto &blk_rgn : blk_regions_) {
       vars.emplace_back(blk_rgn.p_blk->Width(), blk_rgn.p_blk->LLX(), 1.0);
       vars.back().blk_rgn = blk_rgn;
     }
@@ -104,13 +104,13 @@ void RowSegment::MinDisplacementLegalization(bool use_init_loc) {
   MinimizeQuadraticDisplacement(vars, LLX(), URX());
 
   // set block locations from vars
-  for (auto &var: vars) {
+  for (auto &var : vars) {
     var.UpdateBlkLocation();
   }
 }
 
 void RowSegment::SnapCellToPlacementGrid() {
-  for (auto &blk_region: blk_regions_) {
+  for (auto &blk_region : blk_regions_) {
     blk_region.p_blk->SetLLX(std::round(blk_region.p_blk->LLX()));
   }
 }
@@ -121,7 +121,7 @@ void RowSegment::SetOptimalAnchorWeight(double weight) {
 
 void RowSegment::FitInRange(std::vector<BlkDispVar> &vars) {
   double left_contour = LLX();
-  for (auto &var: vars) {
+  for (auto &var : vars) {
     if (var.Solution() < left_contour) {
       var.SetSolution(left_contour);
     }
@@ -311,7 +311,7 @@ std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement(
   if (is_weighted_anchor) {
     int sub_cell_cnt = 0;
     double sum_discrepancy = 0;
-    for (auto &blk_rgn: blk_regions_) {
+    for (auto &blk_rgn : blk_regions_) {
       Block *blk_ptr = blk_rgn.p_blk;
       auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
       double average_loc = aux_ptr->AverageLoc();
@@ -330,9 +330,9 @@ std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement(
   //vars.emplace_back(0, LLX(), 0);
   //double max_weight = 0;
   vars.reserve(blk_regions_.size());
-  for (auto &blk_rgn: blk_regions_) {
+  for (auto &blk_rgn : blk_regions_) {
     Block *blk_ptr = blk_rgn.p_blk;
-    int region_cnt = blk_ptr->TypePtr()->WellPtr()->RegionCount();
+    int region_cnt = blk_ptr->TypePtr()->RegionCount();
     auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
     vars.emplace_back(
         blk_ptr->Width(),
@@ -398,7 +398,7 @@ std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(
   if (is_weighted_anchor) {
     int sub_cell_cnt = 0;
     double sum_discrepancy = 0;
-    for (auto &blk_rgn: blk_regions_) {
+    for (auto &blk_rgn : blk_regions_) {
       Block *blk_ptr = blk_rgn.p_blk;
       auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
       //int region_cnt = blk_ptr->TypePtr()->WellPtr()->RegionCount();
@@ -416,9 +416,9 @@ std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(
 
   // create variables
   vars.reserve(blk_regions_.size());
-  for (auto &blk_rgn: blk_regions_) {
+  for (auto &blk_rgn : blk_regions_) {
     Block *blk_ptr = blk_rgn.p_blk;
-    int region_cnt = blk_ptr->TypePtr()->WellPtr()->RegionCount();
+    int region_cnt = blk_ptr->TypePtr()->RegionCount();
     auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
     vars.emplace_back(
         blk_ptr->Width(),
@@ -466,7 +466,7 @@ void RowSegment::GenSubCellTable(
       false, 0, 0, 0
   );
 
-  for (auto &blk_rgn: blk_regions_) {
+  for (auto &blk_rgn : blk_regions_) {
     Block *blk_ptr = blk_rgn.p_blk;
     auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
     double ly = std::max(blk_ptr->LLY(), row_ly);

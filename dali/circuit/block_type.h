@@ -47,74 +47,8 @@ class BlockTypeWell;
  *     height: the height of its placement and routing boundary
  *     well: this is for gridded cell placement, N/P-well shapes are needed for alignment in a local cluster
  *     pin: a list of cell pins with shapes and offsets
- */
-class BlockType {
- public:
-  BlockType(const std::string *name_ptr, int width, int height);
-
-  const std::string &Name() const { return *name_ptr_; }
-
-  // check if a pin with a given name exists in this BlockType or not
-  bool IsPinExisting(std::string const &pin_name) const {
-    return pin_name_id_map_.find(pin_name) != pin_name_id_map_.end();
-  }
-
-  // return the index of a pin with a given name
-  int GetPinId(std::string const &pin_name) const;
-
-  // return a pointer to a newly allocated location for a Pin with a given name
-  // if this member function is used to create pins, one needs to set pin shapes using the return pointer
-  Pin *AddPin(std::string const &pin_name, bool is_input);
-
-  // add a pin with a given name and x/y offset
-  void AddPin(std::string const &pin_name, double x_offset, double y_offset);
-
-  // get the pointer to the pin with the given name
-  // if such a pin does not exist, the return value is nullptr
-  Pin *GetPinPtr(std::string const &pin_name);
-
-  // set the well information for this BlockType
-  void SetWellPtr(std::unique_ptr<BlockTypeWell> &well_ptr);
-
-  // get the pointer to the well of this BlockType
-  BlockTypeWell *WellPtr() const { return well_ptr_.get(); }
-
-  // set the width of this BlockType and update its area
-  void SetWidth(int width);
-
-  // get the width of this BlockType
-  int Width() const { return width_; }
-
-  // set the height of this BlockType and update its area
-  void SetHeight(int height);
-
-  void SetSize(int width, int height);
-
-  // get the height of this BlockType
-  int Height() const { return height_; }
-
-  // get the area of this BlockType
-  long long Area() const { return area_; }
-
-  // get the pointer to the list of cell pins
-  std::vector<Pin> &PinList() { return pin_list_; }
-
-  // report the information of this BlockType for debugging purposes
-  void Report() const;
-
- private:
-  const std::string *name_ptr_;
-  int width_, height_;
-  long long area_;
-  std::unique_ptr<BlockTypeWell> well_ptr_ = nullptr;
-  std::vector<Pin> pin_list_;
-  std::unordered_map<std::string, int> pin_name_id_map_;
-
-  void UpdateArea();
-};
-
-/****
- * This class BlockTypeWell provides the N/P-well geometries for a BlockType.
+ *
+ * Optionally, this class also contains N/P-well info
  * Assumptions:
  *  1. BlockType has at least one well region, each of which contains both a N-well
  *     and a P-well rectangle.
@@ -147,10 +81,61 @@ class BlockType {
  *     |                 |
  *     |                 |
  *     +-----------------+
- * ****/
-class BlockTypeWell {
-  friend class BlockType;
+ */
+class BlockType {
  public:
+  explicit BlockType(std::string const *name_ptr);
+
+  [[nodiscard]]  const std::string &Name() const { return *name_ptr_; }
+
+  // check if a pin with a given name exists in this BlockType or not
+  [[nodiscard]] bool IsPinExisting(std::string const &pin_name) const {
+    return pin_name_id_map_.find(pin_name) != pin_name_id_map_.end();
+  }
+
+  // return the index of a pin with a given name
+  int GetPinId(std::string const &pin_name) const;
+
+  // return a pointer to a newly allocated location for a Pin with a given name
+  // if this member function is used to create pins, one needs to set pin shapes using the return pointer
+  Pin *AddPin(std::string const &pin_name, bool is_input);
+
+  // add a pin with a given name and x/y offset
+  void AddPin(std::string const &pin_name, double x_offset, double y_offset);
+
+  // get the pointer to the pin with the given name
+  // if such a pin does not exist, the return value is nullptr
+  Pin *GetPinPtr(std::string const &pin_name);
+
+  // set the width of this BlockType and update its area
+  void SetWidth(int width);
+
+  // get the width of this BlockType
+  int Width() const { return width_; }
+
+  // set the height of this BlockType and update its area
+  void SetHeight(int height);
+
+  void SetSize(int width, int height);
+
+  // get the height of this BlockType
+  int Height() const { return height_; }
+
+  // get the area of this BlockType
+  long long Area() const { return area_; }
+
+  // get the pointer to the list of cell pins
+  std::vector<Pin> &PinList() { return pin_list_; }
+
+  // report the information of this BlockType for debugging purposes
+  void Report() const;
+
+  // Recompute area
+  void UpdateArea();
+
+  /**** API for N/P-well info ****/
+  bool HasWellInfo() const { return has_well_info_; }
+
   void AddNwellRect(int llx, int lly, int urx, int ury);
 
   void AddPwellRect(int llx, int lly, int urx, int ury);
@@ -189,14 +174,21 @@ class BlockTypeWell {
 
   std::vector<RectI> &Prects() { return p_rects_; }
 
-  void Report() const;
+  void ReportWellInfo() const;
 
   /**** for old code ****/
   int Pheight();
   int Nheight();
 
  private:
-  BlockType *type_ptr_ = nullptr;
+  const std::string *name_ptr_;
+  int width_ = 0;
+  int height_ = 0;
+  long long area_ = 0;
+  std::vector<Pin> pin_list_;
+  std::unordered_map<std::string, int> pin_name_id_map_;
+
+  bool has_well_info_ = false;
   std::vector<RectI> n_rects_;
   std::vector<RectI> p_rects_;
   int region_count_ = 0;

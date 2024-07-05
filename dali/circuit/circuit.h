@@ -417,9 +417,6 @@ class Circuit {
   // set same_spacing (NN and PP) and any_spacing (NP)
   void SetLegalizerSpacing(double same_spacing, double any_spacing);
 
-  // create well information container for a given BlockType
-  BlockTypeWell *AddBlockTypeWell(std::string const &blk_type_name);
-
   // set the N/P-well shape of a given BlockType, unit in micron
   void SetWellRect(
       std::string const &blk_type_name,
@@ -431,8 +428,7 @@ class Circuit {
   );
 
   // create end cap cell type for gridded rows
-  void ReserveSpaceForEndCapCellType(int num_of_end_cap_cell_types);
-  BlockType *CreateEndCapCellType(
+  int CreateEndCapCellType(
       std::string const &end_cap_cell_type_name,
       int width,
       int n_well_height_in_grid_unit,
@@ -653,9 +649,6 @@ class Circuit {
 
   // add a placed IOPin
   IoPin *AddPlacedIOPin(std::string const &iopin_name, double lx, double ly);
-
-  // create well information container for a given BlockType
-  BlockTypeWell *AddBlockTypeWell(BlockType &block_type);
 
   // shrink off grid die area
   RectI ShrinkOffGridDieArea(int lower_x, int lower_y, int upper_x, int upper_y);

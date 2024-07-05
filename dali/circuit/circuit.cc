@@ -290,17 +290,12 @@ std::vector<BlockType> &Circuit::BlockTypes() {
 }
 
 bool Circuit::IsBlockTypeExisting(std::string const &block_type_name) {
-  return tech_.blk_type_name_id_map_.find(block_type_name)
-      != tech_.blk_type_name_id_map_.end();
+  return tech_.block_type_collection_.NameExists(block_type_name);
 }
 
 BlockType *Circuit::GetBlockTypePtr(std::string const &block_type_name) {
-  auto res = tech_.blk_type_name_id_map_.find(block_type_name);
-  if (res == tech_.blk_type_name_id_map_.end()) {
-    DaliExpects(false, "Cannot find block_type_name: " + block_type_name);
-  }
-  int block_type_index = res->second;
-  return &(tech_.block_types_[block_type_index]);
+  BlockType *block_type_ptr = tech_.block_type_collection_.GetInstanceByName(block_type_name);
+  return block_type_ptr;
 }
 
 BlockType *Circuit::AddBlockType(
@@ -378,15 +373,15 @@ Pin *Circuit::AddBlkTypePin(
 void Circuit::ReportBlockType() {
   BOOST_LOG_TRIVIAL(info)
     << "Total BlockType: "
-    << tech_.blk_type_name_id_map_.size() << std::endl;
-  for (auto &block_type : tech_.block_types_) {
+    << tech_.block_type_collection_.GetSize() << std::endl;
+  for (auto &block_type : tech_.BlockTypes()) {
     block_type.Report();
   }
   BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
 void Circuit::CopyBlockType(Circuit &circuit) {
-  for (auto &block_type : circuit.tech_.block_types_) {
+  for (auto &block_type : circuit.tech_.BlockTypes()) {
     auto type_name = block_type.Name();
     if (type_name == "PIN") continue;
     BlockType *new_block_type = AddBlockTypeWithGridUnit(
@@ -414,10 +409,14 @@ void Circuit::SetEnableShrinkOffGridDieArea(bool enable_shrink_off_grid_die_area
 }
 
 void Circuit::SetDieArea(int lower_x, int lower_y, int upper_x, int upper_y) {
-  DaliExpects(GridValueX() > 0 && GridValueY() > 0,
-              "Need to set positive grid values before setting placement boundary");
-  DaliExpects(design_.distance_microns_ > 0,
-              "Need to set def_distance_microns before setting placement boundary using Circuit::SetDieArea()");
+  DaliExpects(
+      GridValueX() > 0 && GridValueY() > 0,
+      "Need to set positive grid values before setting placement boundary"
+  );
+  DaliExpects(
+      design_.distance_microns_ > 0,
+      "Need to set def_distance_microns before setting placement boundary using Circuit::SetDieArea()"
+  );
 
   // TODO, extract placement boundary from rows if they are any rows
   if (enable_shrink_off_grid_die_area_) {
@@ -865,11 +864,6 @@ void Circuit::SetLegalizerSpacing(double same_spacing, double any_spacing) {
   tech_.any_diff_spacing_ = any_spacing;
 }
 
-BlockTypeWell *Circuit::AddBlockTypeWell(std::string const &blk_type_name) {
-  BlockType *blk_type_ptr = GetBlockTypePtr(blk_type_name);
-  return AddBlockTypeWell(*blk_type_ptr);
-}
-
 // TODO: discuss with Rajit about the necessity of having N/P-wells not fully covering the prBoundary of a given cell.
 void Circuit::SetWellRect(
     std::string const &blk_type_name,
@@ -931,16 +925,7 @@ void Circuit::SetWellRect(
   int ux_grid = int(std::round(ux / GridValueX()));
   int uy_grid = int(std::round(uy / GridValueY()));
 
-  BlockTypeWell *well = blk_type_ptr->WellPtr();
-  DaliExpects(
-      well != nullptr,
-      "Well uninitialized for BlockType: " << blk_type_name
-  );
-  well->AddWellRect(is_n, lx_grid, ly_grid, ux_grid, uy_grid);
-}
-
-void Circuit::ReserveSpaceForEndCapCellType(int num_of_end_cap_cell_types) {
-  tech_.end_cap_cell_types_.reserve(num_of_end_cap_cell_types);
+  blk_type_ptr->AddWellRect(is_n, lx_grid, ly_grid, ux_grid, uy_grid);
 }
 
 /**
@@ -954,60 +939,42 @@ void Circuit::ReserveSpaceForEndCapCellType(int num_of_end_cap_cell_types) {
  * @param width Width of the end-cap cell type.
  * @param n_well_height_in_grid_unit Height of the N-well component in grid units.
  * @param p_well_height_in_grid_unit Height of the P-well component in grid units.
- * @return Pointer to the created BlockType representing the end-cap cell type.
+ * @return id of the created BlockType representing the end-cap cell type.
  */
-BlockType *Circuit::CreateEndCapCellType(
+int Circuit::CreateEndCapCellType(
     std::string const &end_cap_cell_type_name,
     int width,
     int n_well_height_in_grid_unit,
     int p_well_height_in_grid_unit
 ) {
-  // Check if the end-cap cell type already exists
-  bool is_end_cap_cell_existing =
-      tech_.end_cap_cell_type_name_id_map_.find(end_cap_cell_type_name) != tech_.end_cap_cell_type_name_id_map_.end();
-  DaliExpects(
-      !is_end_cap_cell_existing,
-      "End Cap cell type exists, cannot create this block type again: " + end_cap_cell_type_name
-  );
-
-  DaliExpects(
-      tech_.end_cap_cell_types_.size() < tech_.end_cap_cell_types_.capacity(),
-      "Expect " << tech_.end_cap_cell_types_.capacity() << " end cap cells, now one more is added? "
-                << end_cap_cell_type_name
-  );
+  // Create a new BlockType for the end-cap cell type
+  auto &new_end_cap_cell_type = tech_.end_cap_cell_type_collection_.CreateInstance(end_cap_cell_type_name);
 
   // Calculate the total height
   int height = n_well_height_in_grid_unit + p_well_height_in_grid_unit;
 
-  // Create a new BlockType for the end-cap cell type
-  tech_.end_cap_cell_type_name_id_map_[end_cap_cell_type_name] = static_cast<int>(tech_.end_cap_cell_types_.size());
-  auto ret = tech_.end_cap_cell_type_name_id_map_.find(end_cap_cell_type_name);
-  tech_.end_cap_cell_types_.emplace_back(&(ret->first), width, height);
-  auto &block_type = tech_.block_types_.back();
+  // Set width height
+  new_end_cap_cell_type.SetSize(width, height);
 
   // Report if the area exceeds INT_MAX
-  if (block_type.Area() > INT_MAX) {
-    block_type.Report();
+  if (new_end_cap_cell_type.Area() > INT_MAX) {
+    new_end_cap_cell_type.Report();
   }
 
+  // Add well info
+  new_end_cap_cell_type.AddWellRect(false, 0, 0, width, p_well_height_in_grid_unit);
+  new_end_cap_cell_type.AddWellRect(true, 0, p_well_height_in_grid_unit, width, height);
 
-  // Get a pointer to the added well and configure its rectangles
-  auto well_ptr = std::make_unique<BlockTypeWell>();
-  well_ptr->AddWellRect(false, 0, 0, width, p_well_height_in_grid_unit);
-  well_ptr->AddWellRect(true, 0, p_well_height_in_grid_unit, width, height);
-  block_type.SetWellPtr(well_ptr);
-
-  return &block_type;
+  return tech_.end_cap_cell_type_collection_.GetInstanceIdByName(end_cap_cell_type_name);
 }
 
 void Circuit::ReportWellShape() {
-  for (auto &block_type : tech_.block_types_) {
-    auto raw_well_ptr = block_type.WellPtr();
-    if (raw_well_ptr == nullptr) {
+  for (auto &block_type : tech_.BlockTypes()) {
+    if (block_type.HasWellInfo()) {
+      block_type.ReportWellInfo();
+    } else {
       BOOST_LOG_TRIVIAL(info)
         << "no well info for BlockType " << block_type.Name() << "\n";
-    } else {
-      raw_well_ptr->Report();
     }
   }
 }
@@ -1147,8 +1114,6 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
       StrTokenize(line, macro_fields);
       std::string end_macro_flag = "END " + macro_fields[1];
       BlockType *p_blk_type = GetBlockTypePtr(macro_fields[1]);
-      auto new_well_ptr = std::make_unique<BlockTypeWell>();
-      p_blk_type->SetWellPtr(new_well_ptr);
       do {
         getline(ist, line);
         if (line.find("REGION") != std::string::npos) {
@@ -1197,7 +1162,7 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
                   int ly_grid = int(std::round(ly / GridValueY()));
                   int ux_grid = int(std::round(ux / GridValueX()));
                   int uy_grid = int(std::round(uy / GridValueY()));
-                  p_blk_type->WellPtr()->AddWellRect(
+                  p_blk_type->AddWellRect(
                       is_n, lx_grid, ly_grid, ux_grid, uy_grid
                   );
                 }
@@ -1209,7 +1174,7 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
         }
       } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
       //well_ptr->Report();
-      p_blk_type->WellPtr()->CheckLegality();
+      p_blk_type->CheckLegality();
     }
   }
   //ReportWellShape();
@@ -2176,11 +2141,10 @@ void Circuit::LoadImaginaryCellFile() {
   SetNwellParams(width, spacing, op_spacing, max_plug_dist, overhang);
 
   // 3. create fake NP-well geometries for each BlockType
-  for (auto &block_type : tech_.block_types_) {
-    BlockTypeWell *well = AddBlockTypeWell(block_type);
+  for (auto &block_type : tech_.BlockTypes()) {
     int np_edge = block_type.Height() / 2;
-    well->AddPwellRect(0, 0, block_type.Width(), np_edge);
-    well->AddNwellRect(0, 0, block_type.Width(), block_type.Height());
+    block_type.AddPwellRect(0, 0, block_type.Width(), np_edge);
+    block_type.AddNwellRect(0, 0, block_type.Width(), block_type.Height());
   }
 }
 
@@ -2202,11 +2166,9 @@ BlockType *Circuit::AddBlockTypeWithGridUnit(
       "BlockType exist, cannot create this block type again: " + block_type_name
   );
 
-  tech_.blk_type_name_id_map_[block_type_name] = static_cast<int>(tech_.block_types_.size());
-  auto ret = tech_.blk_type_name_id_map_.find(block_type_name);
-  tech_.block_types_.emplace_back(&(ret->first), width, height);
+  BlockType &block_type = tech_.block_type_collection_.CreateInstance(block_type_name);
+  block_type.SetSize(width, height);
 
-  auto &block_type = tech_.block_types_.back();
   if (block_type.Area() > INT_MAX) {
     block_type.Report();
   }
@@ -2219,7 +2181,7 @@ int Circuit::AddWellTapBlockTypeWithGridUnit(
     int height
 ) {
   AddBlockTypeWithGridUnit(block_type_name, width, height);
-  int well_tap_cell_id = tech_.blk_type_name_id_map_[block_type_name];
+  int well_tap_cell_id = tech_.block_type_collection_.GetInstanceIdByName(block_type_name);
   tech_.well_tap_cell_type_ids_.push_back(well_tap_cell_id);
   return well_tap_cell_id;
 }
@@ -2409,12 +2371,6 @@ IoPin *Circuit::AddPlacedIOPin(
   );
 
   return &(design_.iopins_.back());
-}
-
-BlockTypeWell *Circuit::AddBlockTypeWell(BlockType &block_type) {
-  auto new_well_ptr = std::make_unique<BlockTypeWell>();
-  block_type.SetWellPtr(new_well_ptr);
-  return block_type.WellPtr();
 }
 
 RectI Circuit::ShrinkOffGridDieArea(
@@ -2677,6 +2633,7 @@ void Circuit::LoadTech(phydb::PhyDB *phy_db_ptr) {
       new_pin->SetBoundingBoxSize(bbox_width, bbox_height);
     }
   }
+  tech_.block_type_collection_.Freeze();
 }
 
 void Circuit::ReserveSpaceForDesign() {
@@ -2827,7 +2784,6 @@ void Circuit::LoadCell(phydb::PhyDB *phy_db_ptr) {
   for (auto &macro : phy_db_tech.GetMacrosRef()) {
     std::string macro_name(macro.GetName());
     auto &macro_well = macro.WellPtrRef();
-    AddBlockTypeWell(macro_name);
 
     if (macro_well != nullptr) {
       auto *n_rect = macro_well->GetNwellRectPtr();

@@ -30,6 +30,7 @@
 
 #include "block.h"
 #include "block_type.h"
+#include "dali/common/named_instance_collection.h"
 #include "layer.h"
 
 namespace dali {
@@ -67,8 +68,10 @@ class Tech {
 
   static bool IsGndAtBottom(phydb::Macro *macro);
 
-  // get all multi-well for cells
+  // get block types
   std::vector<BlockType> &BlockTypes();
+  NamedInstanceCollection<BlockType> &BlockTypeCollection() { return block_type_collection_; }
+  NamedInstanceCollection<BlockType> &EndCapCellTypeCollection() { return end_cap_cell_type_collection_; }
 
   // create fake well for standard cells
   void CreateFakeWellForStandardCell(phydb::PhyDB *phy_db);
@@ -99,16 +102,14 @@ class Tech {
   std::unordered_map<std::string, int> metal_name_map_;
 
   /**** macros ****/
-  std::unordered_map<std::string, int> blk_type_name_id_map_;
-  std::vector<BlockType> block_types_;
+  NamedInstanceCollection<BlockType> block_type_collection_;
   BlockType *io_dummy_blk_type_ptr_ = nullptr;
   std::vector<int> well_tap_cell_type_ids_;
   std::vector<std::unique_ptr<BlockType>> filler_ptrs_;
   // pre and post end cap cell types are for standard cell placement
   BlockType *pre_end_cap_cell_ptr_ = nullptr;
   BlockType *post_end_cap_cell_ptr_ = nullptr;
-  std::unordered_map<std::string, int> end_cap_cell_type_name_id_map_;
-  std::vector<BlockType> end_cap_cell_types_;
+  NamedInstanceCollection<BlockType> end_cap_cell_type_collection_;
 
   /**** row height ****/
   double row_height_ = 0;

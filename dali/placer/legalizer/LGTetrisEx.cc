@@ -308,17 +308,16 @@ bool LGTetrisEx::IsSpaceLegal(
 }
 
 bool LGTetrisEx::IsFitToRow(int row_id, Block &block) const {
-  auto well_ptr = block.TypePtr()->WellPtr();
-  if (well_ptr == nullptr) {
+  if (block.TypePtr()->HasWellInfo()) {
     // if there is no well_ptr, we can assume it is a standard cell design
     return true;
   }
-  int region_cnt = well_ptr->RegionCount();
+  int region_cnt = block.TypePtr()->RegionCount();
   if (region_cnt & 1) { // odd region_cnt can be placed into any rows
     return true;
   }
   // even region_cnt can only be placed into every other row
-  bool is_gnd_bottom = block.TypePtr()->WellPtr()->IsNwellAbovePwell(0);
+  bool is_gnd_bottom = block.TypePtr()->IsNwellAbovePwell(0);
   bool is_row_even = !(row_id & 1);
   bool is_row_N = (is_row_even && is_first_row_N_) ||
       (!is_row_even && !is_first_row_N_);
@@ -332,13 +331,12 @@ bool LGTetrisEx::ShouldOrientN(int row_id, Block &block) const {
     return true;
   }
 
-  auto well_ptr = block.TypePtr()->WellPtr();
   bool is_gnd_bottom = true;
-  if (well_ptr == nullptr) {
+  if (block.TypePtr()->HasWellInfo()) {
     // if there is no well_ptr, we can assume it is a standard cell design
     is_gnd_bottom = true;
   } else {
-    is_gnd_bottom = block.TypePtr()->WellPtr()->IsNwellAbovePwell(0);
+    is_gnd_bottom = block.TypePtr()->IsNwellAbovePwell(0);
   }
   bool is_row_even = !(row_id & 1);
   bool is_row_N = (is_row_even && is_first_row_N_) ||
@@ -1076,10 +1074,10 @@ void LGTetrisEx::ExportRowsToCircuit() {
   // associate blocks to the right row segment
   auto &blocks = ckt_ptr_->Blocks();
   for (auto &block : blocks) {
-      if (block.IsFixed()) continue;
+    if (block.IsFixed()) continue;
     int row_id = LocToRow(block.LLY());
     bool is_associated = false;
-    for (auto &seg: rows[row_id].RowSegments()) {
+    for (auto &seg : rows[row_id].RowSegments()) {
       if (block.LLX() >= seg.LX() && block.URX() <= seg.UX()) {
         is_associated = true;
         seg.AddBlock(&block);

@@ -136,8 +136,8 @@ class StdClusterWellLegalizer : public Placer {
   int post_end_cap_min_width_ = 0;
   int post_end_cap_min_p_height_ = 0;
   int post_end_cap_min_n_height_ = 0;
-  std::map<std::tuple<int /* N height */, int /* P height */>, BlockType *> pre_end_cap_cell_np_heights_to_type;
-  std::map<std::tuple<int /* N height */, int /* P height */>, BlockType *> post_end_cap_cell_np_heights_to_type;
+  std::map<std::tuple<int /* N height */, int /* P height */>, int> pre_end_cap_cell_np_heights_to_type_id;
+  std::map<std::tuple<int /* N height */, int /* P height */>, int> post_end_cap_cell_np_heights_to_type_id;
 
   /**** stripe parameters ****/
   int stripe_mode_ = 0;
