@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "block.h"
+#include "dali/common/named_instance_collection.h"
 #include "diearea.h"
 #include "iopin.h"
 #include "net.h"
@@ -61,7 +62,7 @@ class Design {
   friend class Circuit;
  public:
   // get the name of this design
-  const std::string &Name() const { return name_; }
+  std::string const &Name() const { return name_; }
 
   // get DEF distance microns
   int DistanceMicrons() const { return distance_microns_; }
@@ -80,27 +81,34 @@ class Design {
   int DieAreaOffsetYResidual() const { return die_area_.die_area_offset_y_residual_; }
 
   // get all blocks
-  std::vector<Block> &Blocks() { return blocks_; }
+  std::vector<Block> &Blocks() { return block_collection_.Instances(); }
+
+  std::unordered_map<std::string, size_t> &BlockNameIdMap() { return block_collection_.NameToIdMap(); }
 
   // some blocks are imaginary (for example, fixed IOPINs), this function
   // returns the number of real blocks (for example, gates)
   int RealBlkCnt() const { return real_block_count_; }
 
   // get all well tap cells
-  std::vector<Block> &WellTaps() { return well_taps_; }
+  std::vector<Block> &WellTaps() { return well_tap_cell_collection_.Instances(); }
 
   // get well tap cell name-id map
-  std::unordered_map<std::string, int> &TapNameIdMap() {
-    return tap_name_id_map_;
+  std::unordered_map<std::string, size_t> &TapNameIdMap() {
+    return well_tap_cell_collection_.NameToIdMap();
   };
 
   // get all filler cells
-  std::vector<Block> &Fillers() { return fillers_; }
+  std::vector<Block> &Fillers() { return filler_cell_collection_.Instances(); }
 
   // get filler cell name-id map
-  std::unordered_map<std::string, int> &FillerNameIdMap() {
-    return filler_name_id_map_;
+  std::unordered_map<std::string, size_t> &FillerNameIdMap() {
+    return filler_cell_collection_.NameToIdMap();
   };
+
+  NamedInstanceCollection<Block> &BlockCollection() { return block_collection_; }
+  NamedInstanceCollection<Block> &WellTapCellCollection() { return well_tap_cell_collection_; }
+  NamedInstanceCollection<Block> &FillerCellCollection() { return filler_cell_collection_; };
+  NamedInstanceCollection<Block> &EndCapCellCollection() { return end_cap_cell_collection_; }
 
   // get all iopins
   std::vector<IoPin> &IoPins() { return iopins_; }
@@ -124,7 +132,7 @@ class Design {
   // update all placement blockages
   void UpdatePlacementBlockages();
 
-  const std::vector<PlacementBlockage> &PlacementBlockages() const;
+  [[nodiscard]] const std::vector<PlacementBlockage> &PlacementBlockages() const;
 
   void UpdateFanOutHistogram(size_t net_size);
   void InitNetFanOutHistogram(std::vector<size_t> *histo_x = nullptr);
@@ -141,13 +149,10 @@ class Design {
   DieArea die_area_;
 
   /****list of instances****/
-  // block list consists of blocks and dummy blocks for pre-placed IOPINs
-  std::vector<Block> blocks_;
-  std::unordered_map<std::string, int> blk_name_id_map_;
-  std::vector<Block> well_taps_;
-  std::unordered_map<std::string, int> tap_name_id_map_;
-  std::vector<Block> fillers_;
-  std::unordered_map<std::string, int> filler_name_id_map_;
+  NamedInstanceCollection<Block> block_collection_;
+  NamedInstanceCollection<Block> well_tap_cell_collection_;
+  NamedInstanceCollection<Block> filler_cell_collection_;
+  NamedInstanceCollection<Block> end_cap_cell_collection_;
   // number of blocks added by calling the AddBlock() API
   int real_block_count_ = 0;
   // number of blocks given in DEF, these two numbers are supposed to be the same

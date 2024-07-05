@@ -639,7 +639,7 @@ void Dali::ExportWellTapCellsToPhyDB() {
   double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
   for (auto &block : circuit_.design().WellTaps()) {
     std::string comp_name = block.Name();
-    std::string macro_name = block.TypeName();
+    std::string macro_name = block.TypePtr()->Name();
     int lx = (int) (block.LLX() * factor_x)
         + circuit_.design().DieAreaOffsetX();
     int ly = (int) (block.LLY() * factor_y)
@@ -668,7 +668,7 @@ void Dali::ExportFillerCellsToPhyDB() {
   double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
   for (auto &block : circuit_.design().Fillers()) {
     std::string comp_name = block.Name();
-    std::string macro_name = block.TypeName();
+    std::string macro_name = block.TypePtr()->Name();
     int lx = (int) (block.LLX() * factor_x)
         + circuit_.design().DieAreaOffsetX();
     int ly = (int) (block.LLY() * factor_y)
@@ -699,16 +699,22 @@ void Dali::ExportComponentsToPhyDB() {
 }
 
 void Dali::ExportIoPinsToPhyDB() {
-  DaliExpects(!circuit_.Metals().empty(),
-              "Need metal layer info to generate PIN location\n");
+  DaliExpects(
+      !circuit_.Metals().empty(),
+      "Need metal layer info to generate PIN location\n"
+  );
   for (auto &iopin : circuit_.design().IoPins()) {
     if (!iopin.IsPrePlaced() && iopin.IsPlaced()) {
-      DaliExpects(iopin.LayerPtr() != nullptr,
-                  "IOPIN metal layer not set? Cannot export it to PhyDB");
+      DaliExpects(
+          iopin.LayerPtr() != nullptr,
+          "IOPIN metal layer not set? Cannot export it to PhyDB"
+      );
       std::string metal_name = iopin.LayerPtr()->Name();
       std::string iopin_name = iopin.Name();
-      DaliExpects(phy_db_ptr_->IsIoPinExisting(iopin_name),
-                  "IOPIN not in PhyDB? " << iopin_name);
+      DaliExpects(
+          phy_db_ptr_->IsIoPinExisting(iopin_name),
+          "IOPIN not in PhyDB? " << iopin_name
+      );
       phydb::IOPin *phydb_iopin = phy_db_ptr_->GetIoPinPtr(iopin_name);
       auto &rect = iopin.GetShape();
       int llx = circuit_.Micron2DatabaseUnit(rect.LLX());

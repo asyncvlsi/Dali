@@ -484,31 +484,25 @@ void Circuit::ReserveSpaceForDesignImp(
     size_t pins_count,
     size_t nets_count
 ) {
-  design_.blocks_.reserve(components_count + pins_count);
+  design_.Blocks().reserve(components_count + pins_count);
   design_.iopins_.reserve(pins_count);
   design_.nets_.reserve(nets_count);
 }
 
 std::vector<Block> &Circuit::Blocks() {
-  return design_.blocks_;
+  return design_.Blocks();
 }
 
 bool Circuit::IsBlockExisting(std::string const &block_name) {
-  return !(design_.blk_name_id_map_.find(block_name)
-      == design_.blk_name_id_map_.end());
+  return design_.block_collection_.NameExists(block_name);
 }
 
 int Circuit::GetBlockId(std::string const &block_name) {
-  auto ret = design_.blk_name_id_map_.find(block_name);
-  if (ret == design_.blk_name_id_map_.end()) {
-    DaliExpects(false, "Block name does not exist, cannot get index "
-        + block_name);
-  }
-  return ret->second;
+  return design_.block_collection_.GetInstanceIdByName(block_name);
 }
 
 Block *Circuit::GetBlockPtr(std::string const &block_name) {
-  return &design_.blocks_[GetBlockId(block_name)];
+  return design_.block_collection_.GetInstanceByName(block_name);
 }
 
 void Circuit::AddBlock(
@@ -561,15 +555,15 @@ void Circuit::UpdateTotalBlkArea() {
 }
 
 void Circuit::ReportBlockList() {
-  BOOST_LOG_TRIVIAL(info) << "Total Block: " << design_.blocks_.size() << "\n";
-  for (auto &block : design_.blocks_) {
+  BOOST_LOG_TRIVIAL(info) << "Total Block: " << design_.Blocks().size() << "\n";
+  for (auto &block : design_.Blocks()) {
     block.Report();
   }
   BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
 void Circuit::ReportBlockMap() {
-  for (auto &it : design_.blk_name_id_map_) {
+  for (auto &it : design_.BlockNameIdMap()) {
     BOOST_LOG_TRIVIAL(info) << it.first << " " << it.second << "\n";
   }
 }
@@ -1154,8 +1148,9 @@ void Circuit::ReadMultiWellCell(std::string const &name_of_file) {
                         << "\n";
                     }
                   } catch (...) {
-                    BOOST_LOG_TRIVIAL(fatal) << "Invalid stod conversion: " + line
-                                             << std::endl;
+                    BOOST_LOG_TRIVIAL(fatal)
+                      << "Invalid stod conversion: " + line
+                      << std::endl;
                     exit(1);
                   }
                   int lx_grid = int(std::round(lx / GridValueX()));
@@ -1208,8 +1203,9 @@ int Circuit::TotMovBlkCnt() const {
   return design_.tot_mov_blk_num_;
 }
 
-int Circuit::TotFixedBlkCnt() const {
-  return (int) design_.blocks_.size() - design_.tot_mov_blk_num_;
+int Circuit::TotFixedBlkCnt() {
+  // TODO: fix int type
+  return static_cast<int>(design_.Blocks().size()) - design_.tot_mov_blk_num_;
 }
 
 double Circuit::AveBlkWidth() const {
@@ -1477,7 +1473,7 @@ void Circuit::GenMATLABTable(
   );
   if (!only_well_tap) {
     // save ordinary cells
-    for (auto &block : design_.blocks_) {
+    for (auto &block : design_.Blocks()) {
       SaveMatlabPatchRect(
           ost,
           block.LLX(), block.LLY(), block.URX(), block.URY(),
@@ -1486,7 +1482,7 @@ void Circuit::GenMATLABTable(
     }
   }
   // save well-tap cells
-  for (auto &block : design_.well_taps_) {
+  for (auto &block : design_.WellTaps()) {
     SaveMatlabPatchRect(
         ost,
         block.LLX(), block.LLY(), block.URX(), block.URY(),
@@ -1509,11 +1505,11 @@ void Circuit::GenMATLABWellTable(
   std::ofstream ost(unplug_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + unplug_file);
   if (!only_well_tap) {
-    for (auto &block : design_.blocks_) {
+    for (auto &block : design_.Blocks()) {
       block.ExportWellToMatlabPatchRect(ost);
     }
   }
-  for (auto &block : design_.well_taps_) {
+  for (auto &block : design_.WellTaps()) {
     block.ExportWellToMatlabPatchRect(ost);
   }
   ost.close();
@@ -1553,7 +1549,7 @@ void Circuit::GenLongNetTable(std::string const &name_of_file) {
 void Circuit::SaveCell(std::ofstream &ost, Block &blk) const {
   ost << "- "
       << blk.Name() << " "
-      << blk.TypeName() << " + "
+      << blk.TypePtr()->Name() << " + "
       << blk.StatusStr() << " "
       << "( "
       << LocDali2PhydbX(blk.LLX()) << " " << LocDali2PhydbY(blk.LLY())
@@ -1566,7 +1562,7 @@ void Circuit::SaveNormalCells(
     std::ofstream &ost,
     std::unordered_set<PlaceStatus> *filter_out
 ) {
-  for (auto &blk : design_.blocks_) {
+  for (auto &blk : design_.Blocks()) {
     if (blk.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
     if (filter_out != nullptr
         && filter_out->find(blk.Status()) != filter_out->end()) {
@@ -1577,7 +1573,7 @@ void Circuit::SaveNormalCells(
 }
 
 void Circuit::SaveWellTapCells(std::ofstream &ost) {
-  for (auto &blk : design_.well_taps_) {
+  for (auto &blk : design_.WellTaps()) {
     SaveCell(ost, blk);
   }
 }
@@ -1615,11 +1611,14 @@ void Circuit::SaveCircuitPpnpCoverCell(
 void Circuit::ExportNormalCells(std::ofstream &ost) {
   //count the number of normal cells
   size_t cell_count = 0;
-  for (auto &block : design_.blocks_) { // skip dummy cells for I/O pins
-    if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
+  for (auto &block : design_.Blocks()) {
+    // skip dummy cells for I/O pins
+    if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) {
+      continue;
+    }
     ++cell_count;
   }
-  cell_count += design_.well_taps_.size();
+  cell_count += design_.WellTaps().size();
   ost << "COMPONENTS " << cell_count << " ;\n";
   SaveNormalCells(ost);
   SaveWellTapCells(ost);
@@ -1627,7 +1626,7 @@ void Circuit::ExportNormalCells(std::ofstream &ost) {
 }
 
 void Circuit::ExportWellTapCells(std::ofstream &ost) {
-  size_t cell_count = design_.well_taps_.size();
+  size_t cell_count = design_.WellTaps().size();
   ost << "COMPONENTS " << cell_count << " ;\n";
   SaveWellTapCells(ost);
   ost << "END COMPONENTS\n\n";
@@ -1638,11 +1637,11 @@ void Circuit::ExportNormalAndWellTapCells(
     std::string const &base_name
 ) {
   size_t cell_count = 0;
-  for (auto &block : design_.blocks_) {
+  for (auto &block : design_.Blocks()) {
     if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
     ++cell_count;
   }
-  cell_count += design_.well_taps_.size();
+  cell_count += design_.WellTaps().size();
   cell_count += 1;
   ost << "COMPONENTS " << cell_count << " ;\n";
   SaveCircuitWellCoverCell(ost, base_name);
@@ -1656,11 +1655,11 @@ void Circuit::ExportNormalWellTapAndCoverCells(
     std::string const &base_name
 ) {
   size_t cell_count = 0;
-  for (auto &block : design_.blocks_) {
+  for (auto &block : design_.Blocks()) {
     if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
     ++cell_count;
   }
-  cell_count += design_.well_taps_.size();
+  cell_count += design_.WellTaps().size();
   cell_count += 2;
   ost << "COMPONENTS " << cell_count << " ;\n";
   SaveCircuitWellCoverCell(ost, base_name);
@@ -1675,12 +1674,12 @@ void Circuit::ExportCellsExcept(
     std::unordered_set<PlaceStatus> *filter_out
 ) {
   size_t cell_count = 0;
-  for (auto &block : design_.blocks_) {
+  for (auto &block : design_.Blocks()) {
     if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
     if (block.Status() == UNPLACED) continue;
     ++cell_count;
   }
-  cell_count += design_.well_taps_.size();
+  cell_count += design_.WellTaps().size();
   ost << "COMPONENTS " << cell_count << " ;\n";
   SaveNormalCells(ost, filter_out);
   SaveWellTapCells(ost);
@@ -1834,14 +1833,14 @@ void Circuit::ExportPowerNetsForWellTapCells(std::ofstream &ost) {
   // GND
   ost << "- ggnndd\n";
   ost << " ";
-  for (auto &block : design_.well_taps_) {
+  for (auto &block : design_.WellTaps()) {
     ost << " ( " << block.Name() << " g0 )";
   }
   ost << "\n" << " ;\n";
   //Vdd
   ost << "- vvdddd\n";
   ost << " ";
-  for (auto &block : design_.well_taps_) {
+  for (auto &block : design_.WellTaps()) {
     ost << " ( " << block.Name() << " v0 )";
   }
   ost << "\n" << " ;\n";
@@ -2002,8 +2001,8 @@ void Circuit::SaveBookshelfNode(std::string const &name_of_file) {
   ost << "# this line is here just for ntuplace to recognize this file \n\n";
   ost << "NumNodes : \t\t" << design_.tot_mov_blk_num_ << "\n"
       << "NumTerminals : \t\t"
-      << design_.blocks_.size() - design_.tot_mov_blk_num_ << "\n";
-  for (auto &block : design_.blocks_) {
+      << Blocks().size() - design_.tot_mov_blk_num_ << "\n";
+  for (auto &block : Blocks()) {
     ost << "\t" << block.Name()
         << "\t" << block.Width() * design_.distance_microns_ * GridValueX()
         << "\t" << block.Height() * design_.distance_microns_ * GridValueY()
@@ -2048,7 +2047,7 @@ void Circuit::SaveBookshelfPl(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file " + name_of_file);
   ost << "# this line is here just for ntuplace to recognize this file \n\n";
-  for (auto &block : design_.blocks_) {
+  for (auto &block : Blocks()) {
     ost << block.Name()
         << "\t" << int(block.LLX() * design_.distance_microns_ * GridValueX())
         << "\t" << int(block.LLY() * design_.distance_microns_ * GridValueY());
@@ -2262,52 +2261,59 @@ void Circuit::AddBlock(
     BlockOrient orient,
     bool is_real_cel
 ) {
-  DaliExpects(design_.nets_.empty(),
-              "Cannot add new Block, because net_list now is not empty");
-  DaliExpects(design_.blocks_.size() < design_.blocks_.capacity(),
-              "Cannot add new Block, because block list is full");
-  DaliExpects(!IsBlockExisting(block_name),
-              "Block exists, cannot create this block again: " + block_name);
-  int id = static_cast<int>(design_.blk_name_id_map_.size());
+  DaliExpects(
+      design_.nets_.empty(),
+      "Cannot add new Block, because net_list now is not empty"
+  );
+  DaliExpects(
+      Blocks().size() < Blocks().capacity(),
+      "Cannot add new Block, because block list is full"
+  );
+  DaliExpects(
+      !IsBlockExisting(block_name),
+      "Block exists, cannot create this block again: " + block_name
+  );
+  int id = static_cast<int>(design_.BlockNameIdMap().size());
   if (id < 0 || id > INT_MAX) {
     DaliExpects(false, "Cannot add more blocks, the limit is INT_MAX");
   }
-  auto ret = design_.blk_name_id_map_.insert(
-      std::unordered_map<std::string, int>::value_type(block_name, id)
-  );
-  std::pair<const std::string, int> *name_id_pair_ptr = &(*ret.first);
-  design_.blocks_.emplace_back(
-      block_type_ptr, name_id_pair_ptr, llx, lly, place_status, orient
-  );
+
+  Block &block = design_.block_collection_.CreateInstance(block_name);
+  block.SetType(block_type_ptr);
+  block.SetId(design_.block_collection_.GetInstanceIdByName(block_name));
+  block.SetLLX(llx);
+  block.SetLLY(lly);
+  block.SetPlacementStatus(place_status);
+  block.SetOrient(orient);
 
   if (!is_real_cel) return;
   // update statistics of blocks
   ++design_.real_block_count_;
-  design_.tot_width_ += design_.blocks_.back().Width();
-  design_.tot_height_ += design_.blocks_.back().Height();
-  if (design_.blocks_.back().IsMovable()) {
+  design_.tot_width_ += block.Width();
+  design_.tot_height_ += block.Height();
+  if (block.IsMovable()) {
     ++design_.tot_mov_blk_num_;
     auto old_tot_mov_area = design_.tot_mov_blk_area_;
-    design_.tot_mov_blk_area_ += design_.blocks_.back().Area();
+    design_.tot_mov_blk_area_ += block.Area();
     DaliExpects(old_tot_mov_area <= design_.tot_mov_blk_area_,
                 "Total Movable Block Area Overflow, choose a different MANUFACTURINGGRID/unit");
-    design_.tot_mov_width_ += design_.blocks_.back().Width();
-    design_.tot_mov_height_ += design_.blocks_.back().Height();
+    design_.tot_mov_width_ += block.Width();
+    design_.tot_mov_height_ += block.Height();
   } else {
     ++design_.tot_fixed_blk_num_;
-    design_.AddFixedCellPlacementBlockage(design_.blocks_.back());
+    design_.AddFixedCellPlacementBlockage(block);
   }
-  if (design_.blocks_.back().Height() < design_.blk_min_height_) {
-    design_.blk_min_height_ = design_.blocks_.back().Height();
+  if (block.Height() < design_.blk_min_height_) {
+    design_.blk_min_height_ = block.Height();
   }
-  if (design_.blocks_.back().Height() > design_.blk_max_height_) {
-    design_.blk_max_height_ = design_.blocks_.back().Height();
+  if (block.Height() > design_.blk_max_height_) {
+    design_.blk_max_height_ = block.Height();
   }
-  if (design_.blocks_.back().Width() < design_.blk_min_width_) {
-    design_.blk_min_width_ = design_.blocks_.back().Width();
+  if (block.Width() < design_.blk_min_width_) {
+    design_.blk_min_width_ = block.Width();
   }
-  if (design_.blocks_.back().Width() > design_.blk_min_width_) {
-    design_.blk_max_width_ = design_.blocks_.back().Width();
+  if (block.Width() > design_.blk_min_width_) {
+    design_.blk_max_width_ = block.Width();
   }
 }
 
@@ -2735,6 +2741,8 @@ void Circuit::LoadDesign() {
   LoadIoPins();
   LoadPlacementBlockages();
   LoadNets();
+
+  design().BlockCollection().Freeze();
 }
 
 void Circuit::LoadCell(phydb::PhyDB *phy_db_ptr) {

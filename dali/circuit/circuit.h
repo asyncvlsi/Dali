@@ -464,7 +464,7 @@ class Circuit {
   int TotMovBlkCnt() const;
 
   // returns the total number of fixed blocks
-  int TotFixedBlkCnt() const;
+  int TotFixedBlkCnt();
 
   // returns the average width of blocks
   double AveBlkWidth() const;

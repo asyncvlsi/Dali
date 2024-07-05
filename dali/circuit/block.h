@@ -49,36 +49,17 @@ class BlockAux;
 
 class Block {
  public:
-  Block();
-  Block(
-      BlockType *type_ptr,
-      std::pair<const std::string, int> *name_id_pair_ptr,
-      int llx,
-      int lly,
-      bool movable = true,
-      BlockOrient orient = N
-  );
-  Block(
-      BlockType *type_ptr,
-      std::pair<const std::string, int> *name_id_pair_ptr,
-      int llx,
-      int lly,
-      PlaceStatus place_state = UNPLACED,
-      BlockOrient orient = N
-  );
+  explicit Block(std::string const *name_ptr) : name_ptr_(name_ptr) {}
 
   /****member functions for attributes access****/
   // get the Block name
-  const std::string &Name() { return name_id_pair_ptr_->first; }
+  const std::string &Name() { return *name_ptr_; }
 
   // get BlockType of this Block
   BlockType *TypePtr() const { return type_ptr_; }
 
-  // get BlockType of this Block
-  const std::string &TypeName() const { return type_ptr_->Name(); }
-
   // get the index of this Block in the vector of instances
-  int Id() const { return name_id_pair_ptr_->second; }
+  int Id() const { return id_; }
 
   // get the width of this Block
   int Width() const { return type_ptr_->Width(); }
@@ -148,9 +129,9 @@ class Block {
   // get the pointer to the auxiliary information
   BlockAux *AuxPtr() const { return aux_ptr_; }
 
-  // set the NameNumPair, first: name, second: number
-  void SetNameNumPair(std::pair<const std::string, int> *name_id_pair_ptr) {
-    name_id_pair_ptr_ = name_id_pair_ptr;
+  // set Id
+  void SetId(size_t id) {
+    id_ = id;
   }
 
   // set the BlockType of this Block
@@ -239,19 +220,20 @@ class Block {
   void ExportWellToMatlabPatchRect(std::ofstream &ost);
 
  protected:
-  BlockType *type_ptr_; // type
+  BlockType *type_ptr_ = nullptr; // type
   // name for finding its index in block_list
-  std::pair<const std::string, int> *name_id_pair_ptr_;
-  double llx_; // lower x coordinate, data type double, for global placement
-  double lly_; // lower y coordinate
+  std::string const *name_ptr_ = nullptr;
+  int id_ = 0;
+  double llx_ = 0; // lower x coordinate, data type double, for global placement
+  double lly_ = 0; // lower y coordinate
   std::vector<int> nets_; // the list of nets connected to this cell
-  PlaceStatus place_status_; // placement status, i.e, PLACED, FIXED, UNPLACED
-  BlockOrient orient_; // orientation, normally, N or FS
+  PlaceStatus place_status_ = UNPLACED; // placement status, i.e, PLACED, FIXED, UNPLACED
+  BlockOrient orient_ = N; // orientation, normally, N or FS
   BlockAux *aux_ptr_ = nullptr; // points to auxiliary information if needed
 
   // cached height, also used to store effective height, the unit is grid value in the y-direction
-  int eff_height_;
-  long long eff_area_; // cached effective area
+  int eff_height_ = 0;
+  long long eff_area_ = 0; // cached effective area
 
   std::vector<int> stretch_length_; // TODO : move these two attributes to LgBlkAux
   double tot_stretch_length = 0;

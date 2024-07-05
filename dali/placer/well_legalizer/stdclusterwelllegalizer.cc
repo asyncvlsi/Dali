@@ -990,16 +990,10 @@ void StdClusterWellLegalizer::InsertWellTap() {
         int tap_cell_loc = row.LLX() - well_tap_cell_ptr_->Width() / 2;
         for (int i = 0; i < tap_cell_num; ++i) {
           std::string block_name = "__well_tap__" + std::to_string(counter++);
-          tap_cell_list.emplace_back();
-          auto &tap_cell = tap_cell_list.back();
+          Block &tap_cell = ckt_ptr_->design().WellTapCellCollection().CreateInstance(block_name);
           tap_cell.SetPlacementStatus(PLACED);
           tap_cell.SetType(well_tap_cell_ptr_);
-          int map_size = ckt_ptr_->design().TapNameIdMap().size();
-          auto ret = ckt_ptr_->design().TapNameIdMap().insert(
-              std::pair<std::string, int>(block_name, map_size)
-          );
-          auto *name_id_pair_ptr = &(*ret.first);
-          tap_cell.SetNameNumPair(name_id_pair_ptr);
+          tap_cell.SetId(ckt_ptr_->design().WellTapCellCollection().GetInstanceIdByName(block_name));
           row.InsertWellTapCell(tap_cell, tap_cell_loc);
           tap_cell_loc += step;
         }
@@ -1007,8 +1001,10 @@ void StdClusterWellLegalizer::InsertWellTap() {
       }
     }
   }
-  BOOST_LOG_TRIVIAL(info) << "Insertion complete: " << tot_tap_cell_num
-                          << " well tap cell created\n";
+  BOOST_LOG_TRIVIAL(info)
+    << "Insertion complete: "
+    << tot_tap_cell_num
+    << " well tap cell created\n";
 }
 
 /**

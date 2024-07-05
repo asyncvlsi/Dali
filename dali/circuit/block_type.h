@@ -181,7 +181,7 @@ class BlockType {
   int Nheight();
 
  private:
-  const std::string *name_ptr_;
+  std::string const *name_ptr_;
   int width_ = 0;
   int height_ = 0;
   long long area_ = 0;

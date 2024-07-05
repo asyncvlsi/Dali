@@ -82,17 +82,10 @@ void FillerCellPlacer::PlaceFillerCells(
   for (int i = 0; i < space; ++i) {
     std::string filler_cell_name =
         "__filler_cell_component__" + std::to_string(filler_counter++);
-    filler_cells.emplace_back();
-    auto &filler_cell = filler_cells.back();
+    Block &filler_cell = ckt_ptr_->design().FillerCellCollection().CreateInstance(filler_cell_name);
     filler_cell.SetPlacementStatus(PLACED);
     filler_cell.SetType(filler_type_ptr);
-    int map_size =
-        static_cast<int>(ckt_ptr_->design().FillerNameIdMap().size());
-    auto ret = ckt_ptr_->design().FillerNameIdMap().insert(
-        std::pair<std::string, int>(filler_cell_name, map_size)
-    );
-    auto *name_id_pair_ptr = &(*ret.first);
-    filler_cell.SetNameNumPair(name_id_pair_ptr);
+    filler_cell.SetId(ckt_ptr_->design().FillerCellCollection().GetInstanceIdByName(filler_cell_name));
     filler_cell.SetLLX(lx + i);
     filler_cell.SetLLY(ly);
     filler_cell.SetOrient(is_orient_N ? N : FS);
