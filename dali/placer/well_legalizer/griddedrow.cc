@@ -246,7 +246,6 @@ void GriddedRow::LegalizeLooseX(int space_to_well_tap) {
   }
 
   int ux = lx_ + width_;
-  //if (block_contour > ux) {
   std::sort(
       blk_list_.begin(),
       blk_list_.end(),
@@ -263,7 +262,6 @@ void GriddedRow::LegalizeLooseX(int space_to_well_tap) {
       block_contour -= space_to_well_tap;
     }
   }
-  //}
 }
 
 void GriddedRow::SetOrient(bool is_orient_N) {

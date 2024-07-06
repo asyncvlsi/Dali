@@ -90,6 +90,7 @@ class StdClusterWellLegalizer : public Placer {
   void InsertWellTap();
 
   void CreateEndCapCellTypes();
+  void InsertEndCapCells();
 
   void ClearCachedData();
   bool WellLegalize();

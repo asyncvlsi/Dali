@@ -100,6 +100,18 @@ class NamedInstanceCollection {
     return frozen_;
   }
 
+  // Clear all instances
+  void Clear() {
+    name_to_id_map_.clear();
+    instances_.clear();
+    frozen_ = false;
+  }
+
+  // Reserve space
+  void Reserve(size_t size) {
+    instances_.reserve(size);
+  }
+
  private:
   std::unordered_map<std::string, size_t> name_to_id_map_;
   std::vector<T> instances_;

@@ -287,7 +287,7 @@ int BlockType::Pheight() {
   } else if (!n_rects_.empty()) {
     return n_rects_[0].LLY();
   }
-  DaliExpects(false, "No rects found in well?");
+  DaliExpects(false, "No rects found in well for " << Name());
 }
 
 int BlockType::Nheight() {
@@ -296,7 +296,7 @@ int BlockType::Nheight() {
   } else if (!n_rects_.empty()) {
     return Height() - n_rects_[0].LLY();
   }
-  DaliExpects(false, "No rects found in well?");
+  DaliExpects(false, "No rects found in well for " << Name());
 }
 
 }
