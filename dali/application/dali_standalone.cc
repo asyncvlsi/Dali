@@ -258,9 +258,11 @@ int main(int argc, char *argv[]) {
   dali.StartPlacement();
 
   // save placement result
+  // dali.MaybeExportToLEF(lef_file_name, output_name);
   dali.ExportToDEF(def_file_name, output_name);
-  dali.ExportToPhyDB();
 
+  // save placement result via PhyDB
+  dali.ExportToPhyDB();
   phy_db.WriteDef("phydb.def");
 
   elapsed_time.RecordEndTime();

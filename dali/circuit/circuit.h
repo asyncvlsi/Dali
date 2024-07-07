@@ -676,9 +676,10 @@ class Circuit {
   void SaveCell(std::ofstream &ost, Block &blk) const;
   void SaveNormalCells(
       std::ofstream &ost,
-      std::unordered_set<PlaceStatus> *filter_out = nullptr
+      std::unordered_set<PlaceStatus> *filter = nullptr
   );
   void SaveWellTapCells(std::ofstream &ost);
+  void SaveEndCapCells(std::ofstream &ost);
   void SaveCircuitWellCoverCell(
       std::ofstream &ost,
       std::string const &base_name
@@ -699,7 +700,7 @@ class Circuit {
   );
   void ExportCellsExcept(
       std::ofstream &ost,
-      std::unordered_set<PlaceStatus> *filter_out = nullptr
+      std::unordered_set<PlaceStatus> *filter = nullptr
   );
   void ExportCells(
       std::ofstream &ost,

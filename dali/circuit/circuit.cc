@@ -1578,6 +1578,12 @@ void Circuit::SaveWellTapCells(std::ofstream &ost) {
   }
 }
 
+void Circuit::SaveEndCapCells(std::ofstream &ost) {
+  for (auto &block : design_.EndCapCellCollection().Instances()) {
+    SaveCell(ost, block);
+  }
+}
+
 void Circuit::SaveCircuitWellCoverCell(
     std::ofstream &ost,
     std::string const &base_name
@@ -1619,9 +1625,11 @@ void Circuit::ExportNormalCells(std::ofstream &ost) {
     ++cell_count;
   }
   cell_count += design_.WellTaps().size();
+  cell_count += design_.EndCapCellCollection().Instances().size();
   ost << "COMPONENTS " << cell_count << " ;\n";
   SaveNormalCells(ost);
   SaveWellTapCells(ost);
+  SaveEndCapCells(ost);
   ost << "END COMPONENTS\n\n";
 }
 
@@ -1642,11 +1650,13 @@ void Circuit::ExportNormalAndWellTapCells(
     ++cell_count;
   }
   cell_count += design_.WellTaps().size();
+  cell_count += design_.EndCapCellCollection().Instances().size();
   cell_count += 1;
   ost << "COMPONENTS " << cell_count << " ;\n";
   SaveCircuitWellCoverCell(ost, base_name);
   SaveNormalCells(ost);
   SaveWellTapCells(ost);
+  SaveEndCapCells(ost);
   ost << "END COMPONENTS\n\n";
 }
 
@@ -1660,18 +1670,20 @@ void Circuit::ExportNormalWellTapAndCoverCells(
     ++cell_count;
   }
   cell_count += design_.WellTaps().size();
+  cell_count += design_.EndCapCellCollection().Instances().size();
   cell_count += 2;
   ost << "COMPONENTS " << cell_count << " ;\n";
   SaveCircuitWellCoverCell(ost, base_name);
   SaveCircuitPpnpCoverCell(ost, base_name);
   SaveNormalCells(ost);
   SaveWellTapCells(ost);
+  SaveEndCapCells(ost);
   ost << "END COMPONENTS\n\n";
 }
 
 void Circuit::ExportCellsExcept(
     std::ofstream &ost,
-    std::unordered_set<PlaceStatus> *filter_out
+    std::unordered_set<PlaceStatus> *filter
 ) {
   size_t cell_count = 0;
   for (auto &block : design_.Blocks()) {
@@ -1681,7 +1693,7 @@ void Circuit::ExportCellsExcept(
   }
   cell_count += design_.WellTaps().size();
   ost << "COMPONENTS " << cell_count << " ;\n";
-  SaveNormalCells(ost, filter_out);
+  SaveNormalCells(ost, filter);
   SaveWellTapCells(ost);
   ost << "END COMPONENTS\n\n";
 }

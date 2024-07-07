@@ -377,8 +377,10 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
     auto io_placer = std::make_unique<IoPlacer>(phy_db_ptr_, &circuit_);
     bool is_ioplacer_config_success =
         io_placer->ConfigSetGlobalMetalLayer(io_metal_layer_);
-    DaliExpects(is_ioplacer_config_success,
-                "Cannot successfully configure I/O placer");
+    DaliExpects(
+        is_ioplacer_config_success,
+        "Cannot successfully configure I/O placer"
+    );
     io_placer->AutoPlaceIoPin();
   }
 
@@ -563,8 +565,10 @@ void Dali::ExportToDEF(
       2,
       0
   );
-  circuit_.SaveDefFileComponent(output_def_name + "_comp.def",
-                                input_def_file_full_name);
+  circuit_.SaveDefFileComponent(
+      output_def_name + "_comp.def",
+      input_def_file_full_name
+  );
   circuit_.InitNetFanoutHistogram();
   circuit_.ReportNetFanoutHistogram();
   circuit_.ReportHPWLHistogramLinear();
