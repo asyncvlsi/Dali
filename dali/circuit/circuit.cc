@@ -1546,6 +1546,79 @@ void Circuit::GenLongNetTable(std::string const &name_of_file) {
   ost.close();
 }
 
+/**
+ * @brief Exports the end cap cells to the given output stream.
+ *
+ * This function iterates through the end cap cell types in the technology
+ * database, formats the relevant information, and writes it to the provided
+ * output stream in the specified format. It expects a valid PhyDB pointer and
+ * at least one site to be present.
+ *
+ * @param ost Output stream to write the end cap cell information to.
+ */
+void Circuit::ExportEndCapCells(
+    std::ofstream &ost
+) {
+  DaliExpects(phy_db_ptr_ != nullptr, "Expect PhyDB pointer to be non-null");
+  auto &sites = phy_db_ptr_->GetSitesRef();
+  DaliExpects(!sites.empty(), "Expect at least one site");
+  std::string site_name = sites[0].GetName();
+
+  for (auto &end_cap_cell_type : tech().EndCapCellTypeCollection().Instances()) {
+    std::string end_cap_type = "POST";
+    if (end_cap_cell_type.Name().find("pre") != std::string::npos) {
+      end_cap_type = "PRE";
+    }
+
+    double width = end_cap_cell_type.Width() * GridValueX();
+    double height = end_cap_cell_type.Height() * GridValueY();
+
+    ost << "MACRO " << end_cap_cell_type.Name() << "\n";
+    ost << "    CLASS ENDCAP " << end_cap_type << " ;\n";
+    ost << "    FOREIGN " << end_cap_cell_type.Name() << " 0.0 0.0 ;\n";
+    ost << "    ORIGIN 0.0 0.0 ;\n";
+    ost << "    SIZE " << width << " BY " << height << " ;\n";
+    ost << "    SYMMETRY Y ;\n";
+    ost << "    SITE " << site_name << " ;\n";
+    ost << "END " << end_cap_cell_type.Name() << "\n";
+    ost << "\n";
+  }
+}
+
+/**
+ * @brief Saves a LEF file with additional end cap cell information.
+ *
+ * This function reads an input LEF file, copies its contents to a new output LEF file,
+ * and appends end cap cell information to the output file. The new output LEF file
+ * is named by appending "_with_end_cap.lef" to the provided output name.
+ *
+ * @param input_lef_file_full_name The full name of the input LEF file.
+ * @param output_lef_name The base name for the output LEF file.
+ */
+void Circuit::SaveLefFile(
+    std::string const &input_lef_file_full_name,
+    std::string const &output_lef_name
+) {
+  std::string output_lef_file_full_name = output_lef_name + "_with_end_cap.lef";
+  BOOST_LOG_TRIVIAL(info) << "Writing LEF file: " << output_lef_file_full_name << "\n";
+  std::ofstream ost(output_lef_file_full_name.c_str());
+  DaliExpects(ost.is_open(), "Cannot open output file " + output_lef_file_full_name);
+  std::ifstream ist(input_lef_file_full_name.c_str());
+  DaliExpects(ist.is_open(), "Cannot open input file " + input_lef_file_full_name);
+
+  std::string line;
+  // Copy all information to new LEF file
+  while (std::getline(ist, line)) {
+    ost << line << "\n";
+  }
+  ost << "\n";
+
+  ExportEndCapCells(ost);
+
+  ost.close();
+  ist.close();
+}
+
 void Circuit::SaveCell(std::ofstream &ost, Block &blk) const {
   ost << "- "
       << blk.Name() << " "
@@ -1956,6 +2029,9 @@ void Circuit::SaveDefFile(
   ExportNets(ost, save_net);
 
   ost << "END DESIGN\n";
+
+  ost.close();
+  ist.close();
 }
 
 void Circuit::SaveDefFileComponent(

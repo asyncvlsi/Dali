@@ -534,6 +534,19 @@ void Dali::Close() {
   CloseLogging();
 }
 
+void Dali::MaybeExportToLEF(
+    std::string const &input_lef_file_full_name,
+    std::string const &output_lef_name
+) {
+  if (!enable_end_cap_cell_) {
+    return;
+  }
+  circuit_.SaveLefFile(
+      input_lef_file_full_name,
+      output_lef_name
+  );
+}
+
 void Dali::ExportToDEF(
     std::string const &input_def_file_full_name,
     std::string const &output_def_name

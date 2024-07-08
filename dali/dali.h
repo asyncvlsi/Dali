@@ -87,6 +87,10 @@ class Dali {
   void ExportToPhyDB();
   void Close();
 
+  void MaybeExportToLEF(
+      std::string const &input_lef_file_full_name,
+      std::string const &output_lef_name
+  );
   void ExportToDEF(
       std::string const &input_def_file_full_name,
       std::string const &output_def_name = "circuit"

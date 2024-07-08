@@ -553,6 +553,12 @@ class Circuit {
   // save long nets as a Matlab table
   void GenLongNetTable(std::string const &name_of_file);
 
+  // Save new macros to a LEF file
+  void SaveLefFile(
+      std::string const &input_lef_file_full_name,
+      std::string const &output_lef_name
+  );
+
   // save placement to a DEF file with many options
   void SaveDefFile(
       std::string const &base_name,
@@ -714,6 +720,9 @@ class Circuit {
   void ExportAllNets(std::ofstream &ost);
   void ExportPowerNetsForWellTapCells(std::ofstream &ost);
   void ExportNets(std::ofstream &ost, int mode);
+  void ExportEndCapCells(
+      std::ofstream &ost
+  );
 };
 
 }

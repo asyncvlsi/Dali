@@ -258,7 +258,7 @@ int main(int argc, char *argv[]) {
   dali.StartPlacement();
 
   // save placement result
-  // dali.MaybeExportToLEF(lef_file_name, output_name);
+  dali.MaybeExportToLEF(lef_file_name, output_name);
   dali.ExportToDEF(def_file_name, output_name);
 
   // save placement result via PhyDB
