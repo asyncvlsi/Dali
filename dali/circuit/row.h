@@ -33,6 +33,7 @@ namespace dali {
  */
 class GeneralRowSegment {
   friend class GeneralRow;
+
  public:
   GeneralRowSegment() = default;
   void SetLX(int lx);
@@ -45,10 +46,11 @@ class GeneralRowSegment {
   std::vector<Block *> &Blocks();
 
   void SortBlocks();
+
  private:
-  int lx_ = 0; // lower left x coordinate
-  int width_ = -1; // width of this row segment
-  std::vector<Block *> blocks_; // list of blocks in this row segment
+  int lx_ = 0;                   // lower left x coordinate
+  int width_ = -1;               // width of this row segment
+  std::vector<Block *> blocks_;  // list of blocks in this row segment
 };
 
 /****
@@ -77,15 +79,16 @@ class GeneralRow {
   int PwellHeight() const;
   int NwellHeight() const;
   std::vector<GeneralRowSegment> &RowSegments();
+
  private:
-  int ly_ = 0; // lower left y coordinate
-  int height_ = -1; // height of this row
-  bool is_orient_N_ = true; // orientation of this row
-  int p_well_height_ = -1; // height of P-well
-  int n_well_height_ = -1; // height of N-well
+  int ly_ = 0;               // lower left y coordinate
+  int height_ = -1;          // height of this row
+  bool is_orient_N_ = true;  // orientation of this row
+  int p_well_height_ = -1;   // height of P-well
+  int n_well_height_ = -1;   // height of N-well
   std::vector<GeneralRowSegment> row_segments_;
 };
 
-} // dali
+}  // namespace dali
 
-#endif //DALI_CIRCUIT_ROW_H_
+#endif  // DALI_CIRCUIT_ROW_H_

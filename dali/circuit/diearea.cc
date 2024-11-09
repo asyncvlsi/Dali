@@ -28,57 +28,47 @@
 
 namespace dali {
 
-void CheckCommonSegment(
-    std::pair<int2d, int2d> &seg_0,
-    std::pair<int2d, int2d> &seg_1
-) {
+void CheckCommonSegment(std::pair<int2d, int2d> &seg_0,
+                        std::pair<int2d, int2d> &seg_1) {
   bool is_horizontal_0 = (seg_0.first.y == seg_0.second.y);
   bool is_horizontal_1 = (seg_1.first.y == seg_1.second.y);
 
   if (is_horizontal_0 && is_horizontal_1) {
     bool not_same_y = (seg_0.first.y != seg_1.first.y);
     bool no_common_x = (std::min(seg_0.first.x, seg_0.second.x) >
-        std::max(seg_1.first.x, seg_1.second.x))
-        || (std::max(seg_0.first.x, seg_0.second.x)
-            < std::min(seg_1.first.x, seg_1.second.x));
-    DaliExpects(
-        not_same_y || (!not_same_y && no_common_x),
-        "Die area contains intersecting lines\n"
-            << "line: " << seg_0.first << " " << seg_0.second << "\n"
-            << "line: " << seg_1.first << " " << seg_1.second
-    );
+                        std::max(seg_1.first.x, seg_1.second.x)) ||
+                       (std::max(seg_0.first.x, seg_0.second.x) <
+                        std::min(seg_1.first.x, seg_1.second.x));
+    DaliExpects(not_same_y || (!not_same_y && no_common_x),
+                "Die area contains intersecting lines\n"
+                    << "line: " << seg_0.first << " " << seg_0.second << "\n"
+                    << "line: " << seg_1.first << " " << seg_1.second);
   } else if ((!is_horizontal_0) && (!is_horizontal_1)) {
     bool not_same_x = (seg_0.first.x != seg_1.first.x);
     bool no_common_y = (std::min(seg_0.first.y, seg_0.second.y) >
-        std::max(seg_1.first.y, seg_1.second.y))
-        || (std::max(seg_0.first.y, seg_0.second.y)
-            < std::min(seg_1.first.y, seg_1.second.y));
-    DaliExpects(
-        not_same_x || (!not_same_x && no_common_y),
-        "Die area contains intersecting lines\n"
-            << "line: " << seg_0.first << " " << seg_0.second << "\n"
-            << "line: " << seg_1.first << " " << seg_1.second
-    );
+                        std::max(seg_1.first.y, seg_1.second.y)) ||
+                       (std::max(seg_0.first.y, seg_0.second.y) <
+                        std::min(seg_1.first.y, seg_1.second.y));
+    DaliExpects(not_same_x || (!not_same_x && no_common_y),
+                "Die area contains intersecting lines\n"
+                    << "line: " << seg_0.first << " " << seg_0.second << "\n"
+                    << "line: " << seg_1.first << " " << seg_1.second);
   } else if (is_horizontal_0 && (!is_horizontal_1)) {
     int x_1 = seg_1.first.x;
     int low_0 = std::min(seg_0.first.x, seg_0.second.x);
     int high_0 = std::max(seg_0.first.x, seg_0.second.x);
-    DaliExpects(
-        (low_0 >= x_1) || (x_1 >= high_0),
-        "Die area contains intersecting lines\n"
-            << "line: " << seg_0.first << " " << seg_0.second << "\n"
-            << "line: " << seg_1.first << " " << seg_1.second
-    );
-  } else { // !is_horizontal_0 && is_horizontal_1
+    DaliExpects((low_0 >= x_1) || (x_1 >= high_0),
+                "Die area contains intersecting lines\n"
+                    << "line: " << seg_0.first << " " << seg_0.second << "\n"
+                    << "line: " << seg_1.first << " " << seg_1.second);
+  } else {  // !is_horizontal_0 && is_horizontal_1
     int x_0 = seg_0.first.x;
     int low_1 = std::min(seg_1.first.x, seg_1.second.x);
     int high_1 = std::max(seg_1.first.x, seg_1.second.x);
-    DaliExpects(
-        (low_1 >= x_0) || (x_0 >= high_1),
-        "Die area contains intersecting lines\n"
-            << "line: " << seg_0.first << " " << seg_0.second << "\n"
-            << "line: " << seg_1.first << " " << seg_1.second
-    );
+    DaliExpects((low_1 >= x_0) || (x_0 >= high_1),
+                "Die area contains intersecting lines\n"
+                    << "line: " << seg_0.first << " " << seg_0.second << "\n"
+                    << "line: " << seg_1.first << " " << seg_1.second);
   }
 }
 
@@ -91,8 +81,7 @@ void CheckCommonSegment(
  * @param rectilinear_die_area
  */
 void DieArea::SetRawRectilinearDieArea(
-    std::vector<int2d> &rectilinear_die_area
-) {
+    std::vector<int2d> &rectilinear_die_area) {
   rectilinear_die_area_ = rectilinear_die_area;
   MaybeExpandTwoPointsToFour();
   CheckRectilinearLines();
@@ -107,9 +96,8 @@ void DieArea::SetRawRectilinearDieArea(
 void DieArea::MaybeExpandTwoPointsToFour() {
   size_t num_points = rectilinear_die_area_.size();
   DaliExpects(num_points > 1, "Only one point to specify die area?");
-  DaliExpects(
-      num_points != 3, "Not sure how to handle three points as the die area"
-  );
+  DaliExpects(num_points != 3,
+              "Not sure how to handle three points as the die area");
 
   if (num_points > 2) {
     return;
@@ -148,11 +136,9 @@ void DieArea::CheckRectilinearLines() {
     // these two points should share either x or y coordinate
     bool is_same_x_coordinate = (first_point.x == second_point.x);
     bool is_same_y_coordinate = (first_point.y == second_point.y);
-    DaliExpects(
-        is_same_x_coordinate != is_same_y_coordinate,
-        "Die area contains illegal non-rectilinear points "
-            << first_point << " " << second_point
-    );
+    DaliExpects(is_same_x_coordinate != is_same_y_coordinate,
+                "Die area contains illegal non-rectilinear points "
+                    << first_point << " " << second_point);
   }
 }
 
@@ -212,10 +198,8 @@ void DieArea::CheckAndRemoveRedundantPoints() {
  */
 void DieArea::CheckAndRemoveRedundantPointsImp() {
   current_recursion_ += 1;
-  DaliExpects(
-      current_recursion_ < recursion_limit_,
-      "Too many redundant points? Something wrong in the code?"
-  );
+  DaliExpects(current_recursion_ < recursion_limit_,
+              "Too many redundant points? Something wrong in the code?");
 
   size_t num_points = rectilinear_die_area_.size();
   std::vector redundancy(num_points, false);
@@ -244,10 +228,8 @@ void DieArea::CheckAndRemoveRedundantPointsImp() {
   std::vector<int2d> new_rectilinear_die_area_;
   for (size_t i = 0; i < num_points; ++i) {
     if (!redundancy[i]) {
-      new_rectilinear_die_area_.emplace_back(
-          rectilinear_die_area_[i].x,
-          rectilinear_die_area_[i].y
-      );
+      new_rectilinear_die_area_.emplace_back(rectilinear_die_area_[i].x,
+                                             rectilinear_die_area_[i].y);
     }
   }
 
@@ -279,9 +261,9 @@ void DieArea::ShrinkOffGridBoundingBox() {
   if (AbsResidual(f_left, 1) > 1e-5) {
     int shrunk_region_left_ = static_cast<int>(std::round(std::ceil(f_left)));
     BOOST_LOG_TRIVIAL(info)
-      << "left placement boundary is not on placement grid: \n"
-      << "  shrink left from " << region_left_ << " to "
-      << shrunk_region_left_ * distance_scale_factor_x_ << "\n";
+        << "left placement boundary is not on placement grid: \n"
+        << "  shrink left from " << region_left_ << " to "
+        << shrunk_region_left_ * distance_scale_factor_x_ << "\n";
     region_left_ = shrunk_region_left_;
   } else {
     region_left_ = static_cast<int>(std::round(f_left));
@@ -290,13 +272,12 @@ void DieArea::ShrinkOffGridBoundingBox() {
   double f_right =
       region_right_ / static_cast<double>(distance_scale_factor_x_);
   if (AbsResidual(f_right, 1) > 1e-5) {
-    int shrunk_region_right_ = static_cast<int>(
-        std::round(std::floor(f_right))
-    );
+    int shrunk_region_right_ =
+        static_cast<int>(std::round(std::floor(f_right)));
     BOOST_LOG_TRIVIAL(info)
-      << "right placement boundary is not on placement grid: \n"
-      << "  shrink right from " << region_right_ << " to "
-      << shrunk_region_right_ * distance_scale_factor_x_ << "\n";
+        << "right placement boundary is not on placement grid: \n"
+        << "  shrink right from " << region_right_ << " to "
+        << shrunk_region_right_ * distance_scale_factor_x_ << "\n";
     region_right_ = shrunk_region_right_;
   } else {
     region_right_ = static_cast<int>(std::round(f_right));
@@ -305,13 +286,12 @@ void DieArea::ShrinkOffGridBoundingBox() {
   double f_bottom =
       region_bottom_ / static_cast<double>(distance_scale_factor_y_);
   if (AbsResidual(f_bottom, 1) > 1e-5) {
-    int shrunk_region_bottom_ = static_cast<int>(
-        std::round(std::ceil(f_bottom))
-    );
+    int shrunk_region_bottom_ =
+        static_cast<int>(std::round(std::ceil(f_bottom)));
     BOOST_LOG_TRIVIAL(info)
-      << "bottom placement boundary is not on placement grid: \n"
-      << "  shrink bottom from " << region_bottom_ << " to "
-      << shrunk_region_bottom_ * distance_scale_factor_y_ << "\n";
+        << "bottom placement boundary is not on placement grid: \n"
+        << "  shrink bottom from " << region_bottom_ << " to "
+        << shrunk_region_bottom_ * distance_scale_factor_y_ << "\n";
     region_bottom_ = shrunk_region_bottom_;
   } else {
     region_bottom_ = static_cast<int>(std::round(f_bottom));
@@ -319,13 +299,11 @@ void DieArea::ShrinkOffGridBoundingBox() {
 
   double f_top = region_top_ / static_cast<double>(distance_scale_factor_y_);
   if (AbsResidual(f_top, 1) > 1e-5) {
-    int shrunk_region_top_ = static_cast<int>(
-        std::round(std::floor(f_top))
-    );
+    int shrunk_region_top_ = static_cast<int>(std::round(std::floor(f_top)));
     BOOST_LOG_TRIVIAL(info)
-      << "top placement boundary is not on placement grid: \n"
-      << "  shrink top from " << region_top_ << " to "
-      << shrunk_region_top_ * distance_scale_factor_y_ << "\n";
+        << "top placement boundary is not on placement grid: \n"
+        << "  shrink top from " << region_top_ << " to "
+        << shrunk_region_top_ * distance_scale_factor_y_ << "\n";
     region_top_ = shrunk_region_top_;
   } else {
     region_top_ = static_cast<int>(std::round(f_top));
@@ -389,12 +367,8 @@ void DieArea::CreatePlacementBlockages() {
     sort_x_lines.emplace_back(line);
   }
   std::sort(
-      sort_x_lines.begin(),
-      sort_x_lines.end(),
-      [](const int &line_0, const int &line_1) {
-        return line_0 < line_1;
-      }
-  );
+      sort_x_lines.begin(), sort_x_lines.end(),
+      [](const int &line_0, const int &line_1) { return line_0 < line_1; });
 
   // get sorted horizontal lines
   std::vector<int> sort_y_lines;
@@ -402,12 +376,8 @@ void DieArea::CreatePlacementBlockages() {
     sort_y_lines.emplace_back(line);
   }
   std::sort(
-      sort_y_lines.begin(),
-      sort_y_lines.end(),
-      [](const int &line_0, const int &line_1) {
-        return line_0 < line_1;
-      }
-  );
+      sort_y_lines.begin(), sort_y_lines.end(),
+      [](const int &line_0, const int &line_1) { return line_0 < line_1; });
 
   // These vertical lines and horizontal lines form an irregular rectangular
   // grid. This grid divides the whole region into many rectangles.
@@ -478,4 +448,4 @@ void DieArea::ConvertPlacementBlockagesToGridUnit() {
   placement_blockages_.swap(shrunk_placement_blockages_);
 }
 
-} // dali
+}  // namespace dali

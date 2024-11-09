@@ -21,12 +21,11 @@
 #ifndef DALI_PLACER_IOPLACER_IOPLACER_H_
 #define DALI_PLACER_IOPLACER_IOPLACER_H_
 
-#include <vector>
-
 #include <phydb/phydb.h>
 
-#include "dali/circuit/circuit.h"
+#include <vector>
 
+#include "dali/circuit/circuit.h"
 #include "ioboundaryspace.h"
 
 namespace dali {
@@ -68,12 +67,13 @@ class IoPlacer {
 
   bool AutoPlaceIoPin();
   bool AutoPlaceCmd(int argc, char **argv);
+
  private:
   Circuit *p_ckt_ = nullptr;
   phydb::PhyDB *phy_db_ptr_ = nullptr;
   std::vector<IoBoundarySpace> boundary_spaces_;
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_PLACER_IOPLACER_IOPLACER_H_
+#endif  // DALI_PLACER_IOPLACER_IOPLACER_H_

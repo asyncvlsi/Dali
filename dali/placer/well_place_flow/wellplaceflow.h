@@ -29,18 +29,16 @@ namespace dali {
 
 class WellPlaceFlow : public GlobalPlacer {
   StdClusterWellLegalizer well_legalizer_;
+
  public:
   WellPlaceFlow();
 
   bool StartPlacement() override;
 
-  void EmitDEFWellFile(
-      std::string const &name_of_file,
-      int well_emit_mode,
-      bool enable_emitting_cluster = true
-  ) override;
+  void EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode,
+                       bool enable_emitting_cluster = true) override;
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_
+#endif  // DALI_PLACER_WELLPLACEFLOW_WELLPLACEFLOW_H_

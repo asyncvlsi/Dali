@@ -32,6 +32,6 @@ PlaceStatus PlaceStatusPhyDB2Dali(phydb::PlaceStatus phydb_place_status);
 phydb::CompOrient OrientDali2PhyDB(BlockOrient dali_orient);
 BlockOrient OrientPhyDB2Dali(phydb::CompOrient phydb_orient);
 
-}
+}  // namespace dali
 
-#endif //DALI_COMMON_PHYDBHELPER_H_
+#endif  // DALI_COMMON_PHYDBHELPER_H_

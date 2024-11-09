@@ -27,9 +27,8 @@
 
 namespace dali {
 
-RectI Design::ExpandOffGridPlacementBlockage(
-    double lx, double ly, double ux, double uy
-) {
+RectI Design::ExpandOffGridPlacementBlockage(double lx, double ly, double ux,
+                                             double uy) {
   int new_lx = 0;
   if (AbsResidual(lx, 1) > 1e-5) {
     int shrunk_lx_ = static_cast<int>(std::round(std::floor(lx)));
@@ -65,20 +64,15 @@ RectI Design::ExpandOffGridPlacementBlockage(
   return {new_lx, new_ly, new_ux, new_uy};
 }
 
-void Design::AddIntrinsicPlacementBlockage(
-    double lx, double ly, double ux, double uy
-) {
-  auto rect = ExpandOffGridPlacementBlockage(
-      lx, ly, ux, uy
-  );
+void Design::AddIntrinsicPlacementBlockage(double lx, double ly, double ux,
+                                           double uy) {
+  auto rect = ExpandOffGridPlacementBlockage(lx, ly, ux, uy);
   intrinsic_blockages_.emplace_back(rect);
 }
 
 void Design::AddFixedCellPlacementBlockage(Block &block) {
-  auto rect = ExpandOffGridPlacementBlockage(
-      block.LLX(), block.LLY(),
-      block.URX(), block.URY()
-  );
+  auto rect = ExpandOffGridPlacementBlockage(block.LLX(), block.LLY(),
+                                             block.URX(), block.URY());
   fixed_cell_blockages_.emplace_back(rect);
 }
 
@@ -91,9 +85,8 @@ void Design::UpdateDieAreaPlacementBlockages() {
 void Design::UpdatePlacementBlockages() {
   all_blockages_.clear();
   all_blockages_.reserve(intrinsic_blockages_.size() +
-      fixed_cell_blockages_.size() +
-      die_area_dummy_blockages_.size()
-  );
+                         fixed_cell_blockages_.size() +
+                         die_area_dummy_blockages_.size());
 
   for (auto &blockage : intrinsic_blockages_) {
     all_blockages_.push_back(blockage);
@@ -145,7 +138,7 @@ void Design::UpdateFanOutHistogram(size_t net_size) {
 void Design::InitNetFanOutHistogram(std::vector<size_t> *histo_x) {
   if (histo_x != nullptr) {
     net_histogram_.buckets.clear();
-    int sz = (int) histo_x->size();
+    int sz = (int)histo_x->size();
     net_histogram_.buckets.assign(sz, 0);
     for (int i = 0; i < sz; ++i) {
       net_histogram_.buckets.push_back((*histo_x)[i]);
@@ -170,8 +163,8 @@ void Design::InitNetFanOutHistogram(std::vector<size_t> *histo_x) {
   }
   for (size_t i = 0; i < sz; ++i) {
     net_histogram_.percents[i] =
-        100.0 * static_cast<double>(net_histogram_.counts[i])
-            / static_cast<double>(net_histogram_.tot_net_count);
+        100.0 * static_cast<double>(net_histogram_.counts[i]) /
+        static_cast<double>(net_histogram_.tot_net_count);
   }
 }
 
@@ -214,8 +207,8 @@ void Design::ReportNetFanOutHistogram() {
   for (size_t i = 0; i < sz; ++i) {
     if (net_histogram_.counts[i] > 0) {
       net_histogram_.ave_hpwls[i] =
-          net_histogram_.sum_hpwls[i]
-              / static_cast<double>(net_histogram_.counts[i]);
+          net_histogram_.sum_hpwls[i] /
+          static_cast<double>(net_histogram_.counts[i]);
     } else {
       net_histogram_.ave_hpwls[i] = 0;
     }
@@ -230,11 +223,12 @@ void Design::ReportNetFanOutHistogram() {
 
   BOOST_LOG_TRIVIAL(info) << "\n";
   BOOST_LOG_TRIVIAL(info)
-    << "                                         Net histogram\n";
+      << "                                         Net histogram\n";
   BOOST_LOG_TRIVIAL(info)
-    << "=================================================================================================\n";
-  BOOST_LOG_TRIVIAL(info)
-    << "  Net         Count     Percent/%      sum HPWL        ave HPWL        min HPWL        max HPWL\n";
+      << "====================================================================="
+         "============================\n";
+  BOOST_LOG_TRIVIAL(info) << "  Net         Count     Percent/%      sum HPWL  "
+                             "      ave HPWL        min HPWL        max HPWL\n";
   size_t buffer_length = 1024;
   for (size_t i = 0; i < sz - 1; ++i) {
     size_t lo = net_histogram_.buckets[i];
@@ -242,32 +236,21 @@ void Design::ReportNetFanOutHistogram() {
     std::string buffer(buffer_length, '\0');
     int written_length;
     if (lo == hi) {
-      written_length = snprintf(
-          &buffer[0],
-          buffer_length,
-          "%4ld       %8ld       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
-          lo,
-          net_histogram_.counts[i],
-          net_histogram_.percents[i],
-          net_histogram_.sum_hpwls[i],
-          net_histogram_.ave_hpwls[i],
-          net_histogram_.min_hpwls[i],
-          net_histogram_.max_hpwls[i]
-      );
+      written_length =
+          snprintf(&buffer[0], buffer_length,
+                   "%4ld       %8ld       %4.1f         %.2e        %.2e       "
+                   " %.2e        %.2e\n",
+                   lo, net_histogram_.counts[i], net_histogram_.percents[i],
+                   net_histogram_.sum_hpwls[i], net_histogram_.ave_hpwls[i],
+                   net_histogram_.min_hpwls[i], net_histogram_.max_hpwls[i]);
     } else {
-      written_length = snprintf(
-          &buffer[0],
-          buffer_length,
-          "%4ld-%-4ld  %8ld       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
-          lo,
-          hi,
-          net_histogram_.counts[i],
-          net_histogram_.percents[i],
-          net_histogram_.sum_hpwls[i],
-          net_histogram_.ave_hpwls[i],
-          net_histogram_.min_hpwls[i],
-          net_histogram_.max_hpwls[i]
-      );
+      written_length =
+          snprintf(&buffer[0], buffer_length,
+                   "%4ld-%-4ld  %8ld       %4.1f         %.2e        %.2e      "
+                   "  %.2e        %.2e\n",
+                   lo, hi, net_histogram_.counts[i], net_histogram_.percents[i],
+                   net_histogram_.sum_hpwls[i], net_histogram_.ave_hpwls[i],
+                   net_histogram_.min_hpwls[i], net_histogram_.max_hpwls[i]);
     }
     buffer.resize(written_length);
     BOOST_LOG_TRIVIAL(info) << buffer;
@@ -275,25 +258,22 @@ void Design::ReportNetFanOutHistogram() {
   std::string buffer(buffer_length, '\0');
   int written_length;
   written_length = snprintf(
-      &buffer[0],
-      buffer_length,
-      "%4ld+      %8ld       %4.1f         %.2e        %.2e        %.2e        %.2e\n",
-      net_histogram_.buckets[sz - 1],
-      net_histogram_.counts[sz - 1],
-      net_histogram_.percents[sz - 1],
-      net_histogram_.sum_hpwls[sz - 1],
-      net_histogram_.ave_hpwls[sz - 1],
-      net_histogram_.min_hpwls[sz - 1],
-      net_histogram_.max_hpwls[sz - 1]
-  );
+      &buffer[0], buffer_length,
+      "%4ld+      %8ld       %4.1f         %.2e        %.2e        %.2e        "
+      "%.2e\n",
+      net_histogram_.buckets[sz - 1], net_histogram_.counts[sz - 1],
+      net_histogram_.percents[sz - 1], net_histogram_.sum_hpwls[sz - 1],
+      net_histogram_.ave_hpwls[sz - 1], net_histogram_.min_hpwls[sz - 1],
+      net_histogram_.max_hpwls[sz - 1]);
   buffer.resize(written_length);
   BOOST_LOG_TRIVIAL(info) << buffer;
   BOOST_LOG_TRIVIAL(info)
-    << "=================================================================================================\n";
+      << "====================================================================="
+         "============================\n";
   BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: "
                           << net_histogram_.hpwl_unit << " um\n";
   BOOST_LOG_TRIVIAL(info) << "\n";
-  //printf("%f\n", net_histogram_.tot_hpwl * 0.18);
+  // printf("%f\n", net_histogram_.tot_hpwl * 0.18);
 }
 
-}
+}  // namespace dali

@@ -30,9 +30,9 @@
 #include "dali/common/misc.h"
 
 /****
- * This header file contains class BlockType and BlockTypeWell. The former contains
- * some basic physical information of a kind of gate, and the later contains
- * N/P-well physical information.
+ * This header file contains class BlockType and BlockTypeWell. The former
+ * contains some basic physical information of a kind of gate, and the later
+ * contains N/P-well physical information.
  * ****/
 
 namespace dali {
@@ -45,13 +45,13 @@ class BlockTypeWell;
  *     name: the name of this kind of gate
  *     width: the width of its placement and routing boundary
  *     height: the height of its placement and routing boundary
- *     well: this is for gridded cell placement, N/P-well shapes are needed for alignment in a local cluster
- *     pin: a list of cell pins with shapes and offsets
+ *     well: this is for gridded cell placement, N/P-well shapes are needed for
+ * alignment in a local cluster pin: a list of cell pins with shapes and offsets
  *
  * Optionally, this class also contains N/P-well info
  * Assumptions:
- *  1. BlockType has at least one well region, each of which contains both a N-well
- *     and a P-well rectangle.
+ *  1. BlockType has at least one well region, each of which contains both a
+ * N-well and a P-well rectangle.
  *  2. The N-well and P-well in the same region must be abutted. This is for
  *     debugging purposes, also for compact physical layout.
  *  3. Adjacent regions must be abutted. If the actual regions are not abutted,
@@ -86,7 +86,7 @@ class BlockType {
  public:
   explicit BlockType(std::string const *name_ptr);
 
-  [[nodiscard]]  const std::string &Name() const { return *name_ptr_; }
+  [[nodiscard]] const std::string &Name() const { return *name_ptr_; }
 
   // check if a pin with a given name exists in this BlockType or not
   [[nodiscard]] bool IsPinExisting(std::string const &pin_name) const {
@@ -97,7 +97,8 @@ class BlockType {
   int GetPinId(std::string const &pin_name) const;
 
   // return a pointer to a newly allocated location for a Pin with a given name
-  // if this member function is used to create pins, one needs to set pin shapes using the return pointer
+  // if this member function is used to create pins, one needs to set pin shapes
+  // using the return pointer
   Pin *AddPin(std::string const &pin_name, bool is_input);
 
   // add a pin with a given name and x/y offset
@@ -196,6 +197,6 @@ class BlockType {
   int extra_top_extension_ = 0;
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_CIRCUIT_BLOCKTYPE_H_
+#endif  // DALI_CIRCUIT_BLOCKTYPE_H_

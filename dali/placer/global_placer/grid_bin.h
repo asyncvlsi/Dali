@@ -21,10 +21,9 @@
 #ifndef DALI_PLACER_GLOBAL_PLACER_GRID_BIN_H_
 #define DALI_PLACER_GLOBAL_PLACER_GRID_BIN_H_
 
+#include <boost/functional/hash.hpp>
 #include <set>
 #include <vector>
-
-#include <boost/functional/hash.hpp>
 
 #include "dali/circuit/block.h"
 #include "dali/circuit/placement_blockage.h"
@@ -60,8 +59,8 @@ struct GridBinIndex {
 
 struct GridBinIndexHasher {
   std::size_t operator()(const GridBinIndex &k) const {
-    using boost::hash_value;
     using boost::hash_combine;
+    using boost::hash_value;
 
     // Start with a hash value of 0    .
     std::size_t seed = 0;
@@ -105,7 +104,8 @@ class GridBin {
   unsigned long long cell_area;
   double filling_rate;
   bool all_terminal;
-  // a grid bin is over-filled, if filling rate is larger than the target, or cells locate on terminals
+  // a grid bin is over-filled, if filling rate is larger than the target, or
+  // cells locate on terminals
   bool over_fill;
   bool cluster_visited;
   bool global_placed;
@@ -120,8 +120,8 @@ class GridBin {
   int Height() { return top - bottom; }
   int Width() { return right - left; }
   unsigned long long Area() {
-    return (unsigned long long) (top - bottom)
-        * (unsigned long long) (right - left);
+    return (unsigned long long)(top - bottom) *
+           (unsigned long long)(right - left);
   }
   bool IsAllFixedBlk() { return all_terminal; }
   bool OverFill() { return over_fill; }
@@ -129,6 +129,6 @@ class GridBin {
   void Report();
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_PLACER_GLOBAL_PLACER_GRID_BIN_H_
+#endif  // DALI_PLACER_GLOBAL_PLACER_GRID_BIN_H_

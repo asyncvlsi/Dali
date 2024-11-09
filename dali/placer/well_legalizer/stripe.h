@@ -86,24 +86,19 @@ class Stripe {
   void SortBlocksBasedOnStretchedURY();
   void SortBlocksBasedOnYLocation(int criterion);
 
-  void PrecomputeWellTapCellLocation(
-      bool is_checker_board_mode,
-      int tap_cell_interval_grid,
-      BlockType *well_tap_type_ptr
-  );
+  void PrecomputeWellTapCellLocation(bool is_checker_board_mode,
+                                     int tap_cell_interval_grid,
+                                     BlockType *well_tap_type_ptr);
 
   void UpdateFrontClusterUpward(int p_height, int n_height);
   void SimplyAddFollowingClusters(Block *p_blk, bool is_upward);
   bool AddBlockToFrontCluster(Block *p_blk, bool is_upward);
-  bool AddBlockToFrontClusterWithDispCheck(
-      Block *p_blk,
-      double displacement_upper_limit,
-      bool is_upward
-  );
+  bool AddBlockToFrontClusterWithDispCheck(Block *p_blk,
+                                           double displacement_upper_limit,
+                                           bool is_upward);
   size_t FitBlocksToFrontSpaceUpward(size_t start_id, int current_iteration);
   size_t FitBlocksToFrontSpaceUpwardWithDispCheck(
-      size_t start_id, double displacement_upper_limit
-  );
+      size_t start_id, double displacement_upper_limit);
   void LegalizeFrontCluster(bool use_init_loc);
   void UpdateRemainingClusters(int p_height, int n_height, bool is_upward);
   void UpdateBlockStretchLength();
@@ -114,22 +109,17 @@ class Stripe {
   void UpdateBlockYLocation();
   void CleanUpTemporaryRowSegments();
 
-  size_t AddWellTapCells(
-      Circuit *p_ckt,
-      BlockType *well_tap_type_ptr,
-      size_t start_id
-  );
+  size_t AddWellTapCells(Circuit *p_ckt, BlockType *well_tap_type_ptr,
+                         size_t start_id);
 
   bool IsLeftmostPlacementLegal();
   bool IsStripeLegal();
 
   void CollectAllRowSegments();
   void UpdateSubCellLocs(std::vector<BlkDispVar> &vars);
-  void OptimizeDisplacementInEachRowSegment(
-      double lambda,
-      bool is_weighted_anchor,
-      bool is_reorder
-  );
+  void OptimizeDisplacementInEachRowSegment(double lambda,
+                                            bool is_weighted_anchor,
+                                            bool is_reorder);
   void ComputeAverageLoc();
   void ReportIterativeStatus(int i);
   bool IsDiscrepancyConverge();
@@ -145,9 +135,8 @@ class Stripe {
   std::unordered_map<Block *, IloInt> blk_ptr_2_tmp_id;
   std::unordered_map<IloInt, Block *> blk_tmp_id_2_ptr;
   void PopulateVariableArray(IloModel &model, IloNumVarArray &x);
-  void AddVariableConstraints(
-      IloModel &model, IloNumVarArray &x, IloRangeArray &c
-  );
+  void AddVariableConstraints(IloModel &model, IloNumVarArray &x,
+                              IloRangeArray &c);
   void ConstructQuadraticObjective(IloModel &model, IloNumVarArray &x);
   void CreateQPModel(IloModel &model, IloNumVarArray &x, IloRangeArray &c);
   bool SolveQPProblem(IloCplex &cplex, IloNumVarArray &var);
@@ -172,7 +161,7 @@ struct ClusterStripe {
 
   std::vector<RectI> well_rect_list_;
 
-  std::vector<std::vector<SegI>> white_space_; // white space in each row
+  std::vector<std::vector<SegI>> white_space_;  // white space in each row
   std::vector<Stripe> stripe_list_;
 
   int Width() const { return width_; }
@@ -184,6 +173,6 @@ struct ClusterStripe {
   void AssignBlockToSimpleStripe();
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_PLACER_WELLLEGALIZER_STRIPE_H_
+#endif  // DALI_PLACER_WELLLEGALIZER_STRIPE_H_

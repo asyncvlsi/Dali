@@ -22,8 +22,8 @@
 #define DALI_PLACER_LEGALIZER_LGTETRISEX_H_
 
 #include "dali/circuit/block.h"
-#include "dali/placer/displacement_viewer.h"
 #include "dali/common/misc.h"
+#include "dali/placer/displacement_viewer.h"
 #include "dali/placer/placer.h"
 #include "dali/placer/well_legalizer/griddedrowlegalizer.h"
 
@@ -31,6 +31,7 @@ namespace dali {
 
 class LGTetrisEx : public Placer {
   friend class Dali;
+
  public:
   LGTetrisEx();
 
@@ -84,6 +85,7 @@ class LGTetrisEx : public Placer {
   bool StartRowAssignment();
 
   void GenAvailSpace(std::string const &name_of_file = "avail_space.txt");
+
  protected:
   bool is_row_assignment_ = false;
   std::vector<std::vector<SegI>> rows_;
@@ -108,10 +110,10 @@ class LGTetrisEx : public Placer {
   double k_left_init_ = 0.5;
   double k_left_ = 0.5;
   double k_left_step_ = 0.5;
-  double k_start = 2; // 4
-  double k_end = 3; // 5
+  double k_start = 2;  // 4
+  double k_end = 3;    // 5
 
-  //cached data
+  // cached data
   int tot_num_rows_;
 
   // dump result
@@ -120,6 +122,6 @@ class LGTetrisEx : public Placer {
   double step_ratio = 0.1;
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_PLACER_LEGALIZER_LGTETRISEX_H_
+#endif  // DALI_PLACER_LEGALIZER_LGTETRISEX_H_

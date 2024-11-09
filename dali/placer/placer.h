@@ -22,11 +22,14 @@
 #ifndef DALI_PLACER_PLACER_H_
 #define DALI_PLACER_PLACER_H_
 
+// clang-format off
+#include <stdio.h>
+#include <common/config.h>
+// clang-format on
+
 #include <fstream>
 #include <iostream>
 #include <string>
-
-#include <common/config.h>
 
 #include "dali/circuit/circuit.h"
 #include "dali/common/elapsed_time.h"
@@ -69,48 +72,36 @@ class Placer {
   virtual bool StartPlacement();
 
   double WeightedHPWLX() {
-    DaliExpects(
-        ckt_ptr_ != nullptr,
-        "No input circuit specified, cannot compute WeightedHPWLX!"
-    );
+    DaliExpects(ckt_ptr_ != nullptr,
+                "No input circuit specified, cannot compute WeightedHPWLX!");
     return ckt_ptr_->WeightedHPWLX();
   }
   double WeightedHPWLY() {
-    DaliExpects(
-        ckt_ptr_ != nullptr,
-        "No input circuit specified, cannot compute WeightedHPWLY!"
-    );
+    DaliExpects(ckt_ptr_ != nullptr,
+                "No input circuit specified, cannot compute WeightedHPWLY!");
     return ckt_ptr_->WeightedHPWLY();
   }
   double WeightedHPWL() {
-    DaliExpects(
-        ckt_ptr_ != nullptr,
-        "No input circuit specified, cannot compute HPWL!"
-    );
+    DaliExpects(ckt_ptr_ != nullptr,
+                "No input circuit specified, cannot compute HPWL!");
     return ckt_ptr_->WeightedHPWL();
   }
 
   void ReportHPWL() {
-    DaliExpects(
-        ckt_ptr_ != nullptr,
-        "No input circuit specified, cannot compute HPWL!"
-    );
+    DaliExpects(ckt_ptr_ != nullptr,
+                "No input circuit specified, cannot compute HPWL!");
     ckt_ptr_->ReportHPWL();
   }
 
   void ReportBoundingBox() {
-    DaliExpects(
-        ckt_ptr_ != nullptr,
-        "No input circuit specified, cannot compute bounding box!"
-    );
+    DaliExpects(ckt_ptr_ != nullptr,
+                "No input circuit specified, cannot compute bounding box!");
     ckt_ptr_->ReportBoundingBox();
   }
 
   void ReportHPWLCtoC() {
-    DaliExpects(
-        ckt_ptr_ != nullptr,
-        "No input circuit specified, cannot compute HPWLCtoC!"
-    );
+    DaliExpects(ckt_ptr_ != nullptr,
+                "No input circuit specified, cannot compute HPWLCtoC!");
     ckt_ptr_->ReportHPWLCtoC();
   }
 
@@ -121,32 +112,29 @@ class Placer {
   void UpdateMovableBlkPlacementStatus();
 
   /****File I/O member functions****/
-  virtual void GenMATLABWellTable(
-      std::string const &name_of_file,
-      [[maybe_unused]]int well_emit_mode
-  ) {
+  virtual void GenMATLABWellTable(std::string const &name_of_file,
+                                  [[maybe_unused]] int well_emit_mode) {
     ckt_ptr_->GenMATLABWellTable(name_of_file);
   }
-  void GenMATLABScriptPlaced(std::string const &name_of_file = "block_net_list.m");
-  bool SaveNodeTerminal(
-      std::string const &terminal_file = "terminal.txt",
-      std::string const &node_file = "nodes.txt"
-  );
+  void GenMATLABScriptPlaced(
+      std::string const &name_of_file = "block_net_list.m");
+  bool SaveNodeTerminal(std::string const &terminal_file = "terminal.txt",
+                        std::string const &node_file = "nodes.txt");
   virtual void EmitDEFWellFile(
-      [[maybe_unused]]std::string const &name_of_file,
-      [[maybe_unused]]int well_emit_mode,
-      [[maybe_unused]]bool enable_emitting_cluster = true
-  );
+      [[maybe_unused]] std::string const &name_of_file,
+      [[maybe_unused]] int well_emit_mode,
+      [[maybe_unused]] bool enable_emitting_cluster = true);
 
   /****for testing purposes****/
   void ShiftX(double shift_x);
   void ShiftY(double shift_y);
 
   bool IsDummyBlock(Block &blk);
+
  protected:
   /* essential data entries */
   int num_threads_;
-  double aspect_ratio_; // placement region Height/Width
+  double aspect_ratio_;  // placement region Height/Width
   double placement_density_;
 
   /* the following entries are derived data
@@ -162,9 +150,10 @@ class Placer {
   double GetBlkHPWL(Block &blk);
 
   virtual void PrintStartStatement(std::string const &name_of_process);
-  virtual void PrintEndStatement(std::string const &name_of_process, bool is_success);
+  virtual void PrintEndStatement(std::string const &name_of_process,
+                                 bool is_success);
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_PLACER_PLACER_H_
+#endif  // DALI_PLACER_PLACER_H_

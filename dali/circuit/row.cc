@@ -24,55 +24,34 @@
 
 namespace dali {
 
-void GeneralRowSegment::SetLX(int lx) {
-  lx_ = lx;
-}
+void GeneralRowSegment::SetLX(int lx) { lx_ = lx; }
 
-void GeneralRowSegment::SetWidth(int width) {
-  width_ = width;
-}
+void GeneralRowSegment::SetWidth(int width) { width_ = width; }
 
 void GeneralRowSegment::AddBlock(Block *blk_ptr) {
   blocks_.emplace_back(blk_ptr);
 }
 
-int GeneralRowSegment::LX() const {
-  return lx_;
-}
+int GeneralRowSegment::LX() const { return lx_; }
 
-int GeneralRowSegment::UX() const {
-  return lx_ + width_;
-}
+int GeneralRowSegment::UX() const { return lx_ + width_; }
 
-int GeneralRowSegment::Width() const {
-  return width_;
-}
+int GeneralRowSegment::Width() const { return width_; }
 
-std::vector<Block *> &GeneralRowSegment::Blocks() {
-  return blocks_;
-}
+std::vector<Block *> &GeneralRowSegment::Blocks() { return blocks_; }
 
 void GeneralRowSegment::SortBlocks() {
-  std::sort(
-      blocks_.begin(),
-      blocks_.end(),
-      [](const Block *blk_ptr0, const Block *blk_ptr1) {
-        return blk_ptr0->LLX() < blk_ptr1->LLX();
-      }
-  );
+  std::sort(blocks_.begin(), blocks_.end(),
+            [](const Block *blk_ptr0, const Block *blk_ptr1) {
+              return blk_ptr0->LLX() < blk_ptr1->LLX();
+            });
 }
 
-void GeneralRow::SetLY(int ly) {
-  ly_ = ly;
-}
+void GeneralRow::SetLY(int ly) { ly_ = ly; }
 
-void GeneralRow::SetHeight(int height) {
-  height_ = height;
-}
+void GeneralRow::SetHeight(int height) { height_ = height; }
 
-void GeneralRow::SetOrient(bool is_orient_N) {
-  is_orient_N_ = is_orient_N;
-}
+void GeneralRow::SetOrient(bool is_orient_N) { is_orient_N_ = is_orient_N; }
 
 void GeneralRow::SetPwellHeight(int p_well_height) {
   p_well_height_ = p_well_height;
@@ -82,28 +61,18 @@ void GeneralRow::SetNwellHeight(int n_well_height) {
   n_well_height_ = n_well_height;
 }
 
-int GeneralRow::LY() const {
-  return ly_;
-}
+int GeneralRow::LY() const { return ly_; }
 
-int GeneralRow::Height() const {
-  return height_;
-}
+int GeneralRow::Height() const { return height_; }
 
-bool GeneralRow::IsOrientN() const {
-  return is_orient_N_;
-}
+bool GeneralRow::IsOrientN() const { return is_orient_N_; }
 
-int GeneralRow::PwellHeight() const {
-  return p_well_height_;
-}
+int GeneralRow::PwellHeight() const { return p_well_height_; }
 
-int GeneralRow::NwellHeight() const {
-  return n_well_height_;
-}
+int GeneralRow::NwellHeight() const { return n_well_height_; }
 
 std::vector<GeneralRowSegment> &GeneralRow::RowSegments() {
   return row_segments_;
 }
 
-} // dali
+}  // namespace dali

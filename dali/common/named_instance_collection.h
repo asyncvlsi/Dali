@@ -29,7 +29,7 @@
 
 namespace dali {
 
-template<typename T>
+template <typename T>
 class NamedInstanceCollection {
  public:
   // Adds an instance of T to the collection
@@ -38,7 +38,8 @@ class NamedInstanceCollection {
 
     // Check if the name already exists
     auto it = name_to_id_map_.find(name);
-    DaliExpects(it == name_to_id_map_.end(), "An instance with this name already exists: " << name);
+    DaliExpects(it == name_to_id_map_.end(),
+                "An instance with this name already exists: " << name);
     name_to_id_map_[name] = instances_.size();
 
     // instance contains a pointer to its name
@@ -50,20 +51,23 @@ class NamedInstanceCollection {
   // Retrieves an instance of T by name
   T *GetInstanceByName(std::string const &name) {
     auto it = name_to_id_map_.find(name);
-    DaliExpects(it != name_to_id_map_.end(), "Cannot find instance by name: " << name);
+    DaliExpects(it != name_to_id_map_.end(),
+                "Cannot find instance by name: " << name);
     return &instances_[it->second];
   }
 
   // Retrieves an instance id by name
   size_t GetInstanceIdByName(std::string const &name) {
     auto it = name_to_id_map_.find(name);
-    DaliExpects(it != name_to_id_map_.end(), "Cannot find instance by name: " << name);
+    DaliExpects(it != name_to_id_map_.end(),
+                "Cannot find instance by name: " << name);
     return it->second;
   }
 
   // Retrieves an instance of T by index (id)
   T *GetInstanceById(size_t id) {
-    DaliExpects(id < instances_.size(), "Cannot find instance by id, out of range: " << id);
+    DaliExpects(id < instances_.size(),
+                "Cannot find instance by id, out of range: " << id);
     return &instances_[id];
   }
 
@@ -73,32 +77,22 @@ class NamedInstanceCollection {
   }
 
   // Get the size of the collection
-  [[nodiscard]] size_t GetSize() const {
-    return instances_.size();
-  }
+  [[nodiscard]] size_t GetSize() const { return instances_.size(); }
 
   std::unordered_map<std::string, size_t> &NameToIdMap() {
     return name_to_id_map_;
   }
 
-  std::vector<T> &Instances() {
-    return instances_;
-  }
+  std::vector<T> &Instances() { return instances_; }
 
   // Freeze the collection to prevent creating new instances
-  void Freeze() {
-    frozen_ = true;
-  }
+  void Freeze() { frozen_ = true; }
 
   // Unfreeze the collection to allow creating new instances
-  void Unfreeze() {
-    frozen_ = false;
-  }
+  void Unfreeze() { frozen_ = false; }
 
   // Check if the collection is frozen
-  [[nodiscard]] bool IsFrozen() const {
-    return frozen_;
-  }
+  [[nodiscard]] bool IsFrozen() const { return frozen_; }
 
   // Clear all instances
   void Clear() {
@@ -108,9 +102,7 @@ class NamedInstanceCollection {
   }
 
   // Reserve space
-  void Reserve(size_t size) {
-    instances_.reserve(size);
-  }
+  void Reserve(size_t size) { instances_.reserve(size); }
 
  private:
   std::unordered_map<std::string, size_t> name_to_id_map_;
@@ -118,6 +110,6 @@ class NamedInstanceCollection {
   bool frozen_ = false;
 };
 
-} // dali
+}  // namespace dali
 
-#endif //DALI_DALI_COMMON_NAMED_INSTANCE_COLLECTION_H_
+#endif  // DALI_DALI_COMMON_NAMED_INSTANCE_COLLECTION_H_

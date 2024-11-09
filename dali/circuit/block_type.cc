@@ -22,9 +22,7 @@
 
 namespace dali {
 
-BlockType::BlockType(
-    std::string const *name_ptr
-) : name_ptr_(name_ptr) {}
+BlockType::BlockType(std::string const *name_ptr) : name_ptr_(name_ptr) {}
 
 int BlockType::GetPinId(std::string const &pin_name) const {
   auto ret = pin_name_id_map_.find(pin_name);
@@ -34,25 +32,16 @@ int BlockType::GetPinId(std::string const &pin_name) const {
   return -1;
 }
 
-Pin *BlockType::AddPin(
-    std::string const &pin_name,
-    bool is_input
-) {
+Pin *BlockType::AddPin(std::string const &pin_name, bool is_input) {
   auto ret = pin_name_id_map_.find(pin_name);
   if (ret != pin_name_id_map_.end()) {
     DaliExpects(
         false,
-        "Cannot add this pin in BlockType: " + Name()
-            + ", because this pin exists in blk_pin_list already: "
-            + pin_name
-    );
+        "Cannot add this pin in BlockType: " + Name() +
+            ", because this pin exists in blk_pin_list already: " + pin_name);
   }
-  pin_name_id_map_.insert(
-      std::unordered_map<std::string, int>::value_type(
-          pin_name,
-          static_cast<int>(pin_list_.size())
-      )
-  );
+  pin_name_id_map_.insert(std::unordered_map<std::string, int>::value_type(
+      pin_name, static_cast<int>(pin_list_.size())));
   std::pair<const std::string, int> *name_num_ptr =
       &(*pin_name_id_map_.find(pin_name));
   pin_list_.emplace_back(name_num_ptr, this);
@@ -60,26 +49,17 @@ Pin *BlockType::AddPin(
   return &pin_list_.back();
 }
 
-void BlockType::AddPin(
-    std::string const &pin_name,
-    double x_offset,
-    double y_offset
-) {
+void BlockType::AddPin(std::string const &pin_name, double x_offset,
+                       double y_offset) {
   auto ret = pin_name_id_map_.find(pin_name);
   if (ret != pin_name_id_map_.end()) {
     DaliExpects(
         false,
-        "Cannot add this pin in BlockType: " + Name()
-            + ", because this pin exists in blk_pin_list already: "
-            + pin_name
-    );
+        "Cannot add this pin in BlockType: " + Name() +
+            ", because this pin exists in blk_pin_list already: " + pin_name);
   }
-  pin_name_id_map_.insert(
-      std::unordered_map<std::string, int>::value_type(
-          pin_name,
-          static_cast<int>(pin_list_.size())
-      )
-  );
+  pin_name_id_map_.insert(std::unordered_map<std::string, int>::value_type(
+      pin_name, static_cast<int>(pin_list_.size())));
   std::pair<const std::string, int> *name_num_ptr =
       &(*pin_name_id_map_.find(pin_name));
   pin_list_.emplace_back(name_num_ptr, this, x_offset, y_offset);
@@ -110,15 +90,14 @@ void BlockType::SetSize(int width, int height) {
 }
 
 void BlockType::Report() const {
-  BOOST_LOG_TRIVIAL(info)
-    << "  BlockType name: " << Name() << "\n"
-    << "    width, height: " << Width() << " " << Height() << "\n"
-    << "    pin list:\n";
+  BOOST_LOG_TRIVIAL(info) << "  BlockType name: " << Name() << "\n"
+                          << "    width, height: " << Width() << " " << Height()
+                          << "\n"
+                          << "    pin list:\n";
   for (const auto &[name, id] : pin_name_id_map_) {
     BOOST_LOG_TRIVIAL(info)
-      << "      " << name << " " << id
-      << " (" << pin_list_[id].OffsetX() << ", " << pin_list_[id].OffsetY()
-      << ")\n";
+        << "      " << name << " " << id << " (" << pin_list_[id].OffsetX()
+        << ", " << pin_list_[id].OffsetY() << ")\n";
     pin_list_[id].Report();
   }
 }
@@ -139,9 +118,7 @@ void BlockType::AddPwellRect(int llx, int lly, int urx, int ury) {
   region_count_ = static_cast<int>(std::max(n_rects_.size(), p_rects_.size()));
 }
 
-void BlockType::AddWellRect(
-    bool is_n, int llx, int lly, int urx, int ury
-) {
+void BlockType::AddWellRect(bool is_n, int llx, int lly, int urx, int ury) {
   if (is_n) {
     AddNwellRect(llx, lly, urx, ury);
   } else {
@@ -162,13 +139,9 @@ bool BlockType::IsNwellAbovePwell(int region_id) const {
   return p_rects_[region_id].LLY() <= n_rects_[region_id].LLY();
 }
 
-int BlockType::RegionCount() const {
-  return region_count_;
-}
+int BlockType::RegionCount() const { return region_count_; }
 
-bool BlockType::HasOddRegions() const {
-  return region_count_ & 1;
-}
+bool BlockType::HasOddRegions() const { return region_count_ & 1; }
 
 bool BlockType::IsWellAbutted() {
   int row_count = RegionCount();
@@ -206,8 +179,7 @@ bool BlockType::IsCellHeightConsistent() {
 void BlockType::CheckLegality() {
   DaliExpects(n_rects_.size() == p_rects_.size(),
               "Nwell count is different from Pwell count " + Name());
-  DaliExpects(IsWellAbutted(),
-              "Wells are not abutted for cell " + Name());
+  DaliExpects(IsWellAbutted(), "Wells are not abutted for cell " + Name());
   DaliExpects(IsCellHeightConsistent(),
               "Macro/well height inconsistency" + Name());
 }
@@ -242,9 +214,7 @@ int BlockType::RegionHeight(int region_id, bool is_flipped) const {
  * @param is_flipped
  * @return
  */
-int BlockType::AdjacentRegionEdgeDistance(
-    int index, bool is_flipped
-) const {
+int BlockType::AdjacentRegionEdgeDistance(int index, bool is_flipped) const {
   int row_cnt = RegionCount();
   DaliExpects(index + 1 < row_cnt, "Out of bound");
   if (is_flipped) {
@@ -268,16 +238,15 @@ RectI &BlockType::PwellRect(int index) {
 }
 
 void BlockType::ReportWellInfo() const {
-  BOOST_LOG_TRIVIAL(info)
-    << "  Well of BlockType: " << Name() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "  Well of BlockType: " << Name() << "\n";
   size_t sz = RegionCount();
   for (size_t i = 0; i < sz; ++i) {
     BOOST_LOG_TRIVIAL(info)
-      << "    Pwell: " << p_rects_[i].LLX() << "  " << p_rects_[i].LLY()
-      << "  " << p_rects_[i].URX() << "  " << p_rects_[i].URY() << "\n";
+        << "    Pwell: " << p_rects_[i].LLX() << "  " << p_rects_[i].LLY()
+        << "  " << p_rects_[i].URX() << "  " << p_rects_[i].URY() << "\n";
     BOOST_LOG_TRIVIAL(info)
-      << "    Nwell: " << n_rects_[i].LLX() << "  " << n_rects_[i].LLY()
-      << "  " << n_rects_[i].URX() << "  " << n_rects_[i].URY() << "\n";
+        << "    Nwell: " << n_rects_[i].LLX() << "  " << n_rects_[i].LLY()
+        << "  " << n_rects_[i].URX() << "  " << n_rects_[i].URY() << "\n";
   }
 }
 
@@ -299,4 +268,4 @@ int BlockType::Nheight() {
   DaliExpects(false, "No rects found in well for " << Name());
 }
 
-}
+}  // namespace dali

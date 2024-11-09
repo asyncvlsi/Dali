@@ -18,11 +18,10 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#include <ctime>
-
-#include <iostream>
-
 #include <phydb/phydb.h>
+
+#include <ctime>
+#include <iostream>
 
 #include "dali/circuit/circuit.h"
 #include "dali/common/helper.h"
@@ -55,17 +54,17 @@ int main(int argc, char **argv) {
     }
   }
 
-  //std::string config_file = "dali.conf";
-  //config_read(config_file.c_str());
-  //std::string dump_file = "dali_dump.conf";
-  //FILE *fp = fopen(dump_file.c_str(), "w+");
-  //config_dump(fp);
+  // std::string config_file = "dali.conf";
+  // config_read(config_file.c_str());
+  // std::string dump_file = "dali_dump.conf";
+  // FILE *fp = fopen(dump_file.c_str(), "w+");
+  // config_dump(fp);
 
   int num_of_thread_openmp = 1;
   omp_set_num_threads(num_of_thread_openmp);
 
   Eigen::initParallel();
-  //Eigen::setNbThreads(1);
+  // Eigen::setNbThreads(1);
   BOOST_LOG_TRIVIAL(info) << "Eigen thread " << Eigen::nbThreads() << "\n";
 
   time_t Time = clock();
@@ -85,13 +84,13 @@ int main(int argc, char **argv) {
 
   Circuit circuit;
   circuit.InitializeFromPhyDB(&phy_db);
-  //circuit.SetGridValue(0.01, 0.01);
-  //circuit.ReadLefFile(adaptec1_lef);
-  //circuit.ReadDefFile(adaptec1_def);
-  //circuit.ReportBlockType();
-  //circuit.ReportBlockList();
-  //circuit.ReportNetList();
-  //circuit.GenMATLABTable("_result.txt");
+  // circuit.SetGridValue(0.01, 0.01);
+  // circuit.ReadLefFile(adaptec1_lef);
+  // circuit.ReadDefFile(adaptec1_def);
+  // circuit.ReportBlockType();
+  // circuit.ReportBlockList();
+  // circuit.ReportNetList();
+  // circuit.GenMATLABTable("_result.txt");
 
   BOOST_LOG_TRIVIAL(info) << "File loading complete, time: "
                           << double(clock() - Time) / CLOCKS_PER_SEC << " s"
@@ -101,7 +100,7 @@ int main(int argc, char **argv) {
   circuit.ReportHPWL();
 
   GlobalPlacer gb_placer;
-  //gb_placer_.net_model_update_stop_criterion_ = tune_param;
+  // gb_placer_.net_model_update_stop_criterion_ = tune_param;
   BOOST_LOG_TRIVIAL(info) << "tune_param: " << tune_param << "\n";
   gb_placer.SetInputCircuit(&circuit);
   gb_placer.SetBoundaryFromCircuit();
@@ -127,7 +126,7 @@ int main(int argc, char **argv) {
 
 #if TEST_WLG
   circuit.LoadImaginaryCellFile();
-  //circuit.ReportWellShape();
+  // circuit.ReportWellShape();
   auto *well_legalizer = new StdClusterWellLegalizer;
   well_legalizer->TakeOver(&gb_placer_);
   well_legalizer->SetRowHeight(1);
@@ -138,14 +137,14 @@ int main(int argc, char **argv) {
   delete well_legalizer;
 #endif
 
-  //circuit.InitNetFanoutHistogram();
-  //circuit.ReportNetFanOutHistogram();
-  //circuit.ReportHPWLHistogramLinear();
-  //circuit.ReportHPWLHistogramLogarithm();
+  // circuit.InitNetFanoutHistogram();
+  // circuit.ReportNetFanOutHistogram();
+  // circuit.ReportHPWLHistogramLinear();
+  // circuit.ReportHPWLHistogramLogarithm();
 
   Time = clock() - Time;
-  BOOST_LOG_TRIVIAL(info)
-    << "Execution time " << double(Time) / CLOCKS_PER_SEC << "s.\n";
+  BOOST_LOG_TRIVIAL(info) << "Execution time " << double(Time) / CLOCKS_PER_SEC
+                          << "s.\n";
   BOOST_LOG_TRIVIAL(info) << "tune_param: " << tune_param << "\n";
 
   return 0;

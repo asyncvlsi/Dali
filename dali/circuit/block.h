@@ -33,14 +33,16 @@
 #include "enums.h"
 
 /****
- * The class Block provides an abstraction of the physical placement status of an instance
- * a block can be a gate, can also be a large module, it includes information like
- * the Name of a gate/module, its Width and Height, its lower left corner (LLX, LLY),
- * the movability, orientation.
+ * The class Block provides an abstraction of the physical placement status of
+ * an instance a block can be a gate, can also be a large module, it includes
+ * information like the Name of a gate/module, its Width and Height, its lower
+ * left corner (LLX, LLY), the movability, orientation.
  *
  * LEFDEF manual version 5.8, page 129
- * After placement, a DEF COMPONENTS placement pt indicates where the lower-left corner of the placement bounding rectangle is placed after any possible rotations or flips.
- * The bounding rectangle width and height should be a multiple of the placement grid to allow for abutting cells.
+ * After placement, a DEF COMPONENTS placement pt indicates where the lower-left
+ * corner of the placement bounding rectangle is placed after any possible
+ * rotations or flips. The bounding rectangle width and height should be a
+ * multiple of the placement grid to allow for abutting cells.
  * ****/
 
 namespace dali {
@@ -64,8 +66,8 @@ class Block {
   // get the width of this Block
   int Width() const { return type_ptr_->Width(); }
 
-  // set the effective height of this Block, which can be different from the height of its type
-  // effective area is also updated at the same time
+  // set the effective height of this Block, which can be different from the
+  // height of its type effective area is also updated at the same time
   void SetHeight(int height);
 
   // set the Block height to its BlockType height
@@ -98,8 +100,8 @@ class Block {
 
   // get the boolean status of whether this Block is placed
   bool IsPlaced() const {
-    return place_status_ == PLACED || place_status_ == FIXED
-        || place_status_ == COVER;
+    return place_status_ == PLACED || place_status_ == FIXED ||
+           place_status_ == COVER;
   }
 
   // get the placement status of this Block
@@ -109,7 +111,8 @@ class Block {
   std::string StatusStr() const { return PlaceStatusStr(place_status_); }
 
   // get the boolean status of whether this Block is movable
-  // current assumption: UNPLACED and PLACED are movable, FIXED and COVER are unmovable
+  // current assumption: UNPLACED and PLACED are movable, FIXED and COVER are
+  // unmovable
   bool IsMovable() const {
     return place_status_ == UNPLACED || place_status_ == PLACED;
   }
@@ -130,9 +133,7 @@ class Block {
   BlockAux *AuxPtr() const { return aux_ptr_; }
 
   // set Id
-  void SetId(size_t id) {
-    id_ = id;
-  }
+  void SetId(size_t id) { id_ = id; }
 
   // set the BlockType of this Block
   void SetType(BlockType *type_ptr);
@@ -177,10 +178,12 @@ class Block {
   // increase y coordinate by a certain amount
   void IncreaseY(double displacement) { lly_ += displacement; }
 
-  // increase x coordinate by a certain amount, but the final location is bounded by @param lower, and upper
+  // increase x coordinate by a certain amount, but the final location is
+  // bounded by @param lower, and upper
   void IncreaseX(double displacement, double upper, double lower);
 
-  // increase y coordinate by a certain amount, but the final location is bounded by @param lower, and upper
+  // increase y coordinate by a certain amount, but the final location is
+  // bounded by @param lower, and upper
   void IncreaseY(double displacement, double upper, double lower);
 
   // decrease x coordinate by a certain amount
@@ -191,13 +194,13 @@ class Block {
 
   // returns whether this Block overlaps with Block @param blk
   bool IsOverlap(const Block &blk) const {
-    return !(LLX() > blk.URX() || blk.LLX() > URX() || LLY() > blk.URY()
-        || blk.LLY() > URY());
+    return !(LLX() > blk.URX() || blk.LLX() > URX() || LLY() > blk.URY() ||
+             blk.LLY() > URY());
   }
 
   bool IsOverlap(const RectI &rect) const {
-    return !(LLX() > rect.URX() || rect.LLX() > URX() || LLY() > rect.URY()
-        || rect.LLY() > URY());
+    return !(LLX() > rect.URX() || rect.LLX() > URX() || LLY() > rect.URY() ||
+             rect.LLY() > URY());
   }
 
   // returns whether this Block overlaps with Block @param blk
@@ -220,22 +223,26 @@ class Block {
   void ExportWellToMatlabPatchRect(std::ofstream &ost);
 
  protected:
-  BlockType *type_ptr_ = nullptr; // type
+  BlockType *type_ptr_ = nullptr;  // type
   // name for finding its index in block_list
   std::string const *name_ptr_ = nullptr;
   int id_ = 0;
-  double llx_ = 0; // lower x coordinate, data type double, for global placement
-  double lly_ = 0; // lower y coordinate
-  std::vector<int> nets_; // the list of nets connected to this cell
-  PlaceStatus place_status_ = UNPLACED; // placement status, i.e, PLACED, FIXED, UNPLACED
-  BlockOrient orient_ = N; // orientation, normally, N or FS
-  BlockAux *aux_ptr_ = nullptr; // points to auxiliary information if needed
+  double llx_ =
+      0;  // lower x coordinate, data type double, for global placement
+  double lly_ = 0;         // lower y coordinate
+  std::vector<int> nets_;  // the list of nets connected to this cell
+  PlaceStatus place_status_ =
+      UNPLACED;             // placement status, i.e, PLACED, FIXED, UNPLACED
+  BlockOrient orient_ = N;  // orientation, normally, N or FS
+  BlockAux *aux_ptr_ = nullptr;  // points to auxiliary information if needed
 
-  // cached height, also used to store effective height, the unit is grid value in the y-direction
+  // cached height, also used to store effective height, the unit is grid value
+  // in the y-direction
   int eff_height_ = 0;
-  long long eff_area_ = 0; // cached effective area
+  long long eff_area_ = 0;  // cached effective area
 
-  std::vector<int> stretch_length_; // TODO : move these two attributes to LgBlkAux
+  std::vector<int>
+      stretch_length_;  // TODO : move these two attributes to LgBlkAux
   double tot_stretch_length = 0;
 };
 
@@ -247,6 +254,7 @@ class BlockAux {
 
   // get the pointer pointing to the Block it belongs to
   Block *getBlockPtr() const { return blk_ptr_; }
+
  protected:
   Block *blk_ptr_;
 };
@@ -255,15 +263,11 @@ struct BlkInitPair {
   Block *blk_ptr;
   double x;
   double y;
-  explicit BlkInitPair(
-      Block *blk_ptr_init = nullptr,
-      double x_init = 0,
-      double y_init = 0
-  ) : blk_ptr(blk_ptr_init),
-      x(x_init),
-      y(y_init) {}
+  explicit BlkInitPair(Block *blk_ptr_init = nullptr, double x_init = 0,
+                       double y_init = 0)
+      : blk_ptr(blk_ptr_init), x(x_init), y(y_init) {}
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_CIRCUIT_BLOCK_H_
+#endif  // DALI_CIRCUIT_BLOCK_H_

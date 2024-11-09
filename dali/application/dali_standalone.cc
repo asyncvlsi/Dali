@@ -18,14 +18,15 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#include <ctime>
+// clang-format off
+#include <stdio.h>
+#include <common/config.h>
+// clang-format on
+#include <phydb/phydb.h>
 
 #include <chrono>
+#include <ctime>
 #include <iostream>
-
-#include <common/config.h>
-
-#include <phydb/phydb.h>
 
 #include "dali/common/elapsed_time.h"
 #include "dali/common/git_version.h"
@@ -37,6 +38,7 @@ using namespace dali;
 
 void ReportUsage() {
   std::cout
+      // clang-format off
       << "\033[0;36m"
       << "Usage: dali\n"
       << "  -lef <file.lef>\n"
@@ -52,10 +54,12 @@ void ReportUsage() {
       << "  -disable_log_prefix                        optional, if this flag is present, then only messages will be saved to the log file\n"
       << "(flag order does not matter)"
       << "\033[0m\n";
+  // clang-format on
 }
 
 void PrintSoftwareStatement() {
   std::cout
+      // clang-format off
       << "\n"
       << "  +----------------------------------------------+\n"
       << "  |                                              |\n"
@@ -75,6 +79,7 @@ void PrintSoftwareStatement() {
       << "  |     commit: " << get_git_version_short() << "                     |\n"
       << "  |                                              |\n"
       << "  +----------------------------------------------+\n\n";
+  // clang-format on
 }
 
 int main(int argc, char *argv[]) {
@@ -266,10 +271,11 @@ int main(int argc, char *argv[]) {
   phy_db.WriteDef("phydb.def");
 
   elapsed_time.RecordEndTime();
-  BOOST_LOG_TRIVIAL(info)
-    << "****End of placement "
-    << "(wall time: " << elapsed_time.GetWallTime() << "s, "
-    << "cpu time: " << elapsed_time.GetCpuTime() << "s)****\n";
+  BOOST_LOG_TRIVIAL(info) << "****End of placement "
+                          << "(wall time: " << elapsed_time.GetWallTime()
+                          << "s, "
+                          << "cpu time: " << elapsed_time.GetCpuTime()
+                          << "s)****\n";
 
   return 0;
 }

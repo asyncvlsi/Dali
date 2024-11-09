@@ -35,10 +35,7 @@ void Block::ResetHeight() {
 }
 
 bool Block::IsFlipped() const {
-  return orient_ == FN
-      || orient_ == FS
-      || orient_ == FW
-      || orient_ == FE;
+  return orient_ == FN || orient_ == FS || orient_ == FW || orient_ == FE;
 }
 
 void Block::SetType(BlockType *type_ptr) {
@@ -57,13 +54,9 @@ void Block::SetPlacementStatus(PlaceStatus place_status) {
   place_status_ = place_status;
 }
 
-void Block::SetOrient(BlockOrient orient) {
-  orient_ = orient;
-}
+void Block::SetOrient(BlockOrient orient) { orient_ = orient; }
 
-void Block::SetAux(BlockAux *aux) {
-  aux_ptr_ = aux;
-}
+void Block::SetAux(BlockAux *aux) { aux_ptr_ = aux; }
 
 void Block::SwapLoc(Block &blk) {
   double tmp_x = llx_;
@@ -118,9 +111,7 @@ void Block::SetStretchLength(size_t index, int length) {
       std::accumulate(stretch_length_.begin(), stretch_length_.end(), 0);
 }
 
-std::vector<int> &Block::StretchLengths() {
-  return stretch_length_;
-}
+std::vector<int> &Block::StretchLengths() { return stretch_length_; }
 
 int Block::CumulativeStretchLength(size_t index) {
   if (TypePtr()->RegionCount() == 1) return 0;
@@ -137,14 +128,15 @@ int Block::CumulativeStretchLength(size_t index) {
 }
 
 void Block::Report() {
-  BOOST_LOG_TRIVIAL(info)
-    << "  block name: " << Name() << "\n"
-    << "    block type: " << TypePtr()->Name() << "\n"
-    << "    width and height: " << Width() << " " << Height() << "\n"
-    << "    lower left corner: " << llx_ << " " << lly_ << "\n"
-    << "    movable: " << IsMovable() << "\n"
-    << "    orientation: " << OrientStr(orient_) << "\n"
-    << "    assigned primary key: " << Id() << "\n";
+  BOOST_LOG_TRIVIAL(info) << "  block name: " << Name() << "\n"
+                          << "    block type: " << TypePtr()->Name() << "\n"
+                          << "    width and height: " << Width() << " "
+                          << Height() << "\n"
+                          << "    lower left corner: " << llx_ << " " << lly_
+                          << "\n"
+                          << "    movable: " << IsMovable() << "\n"
+                          << "    orientation: " << OrientStr(orient_) << "\n"
+                          << "    assigned primary key: " << Id() << "\n";
 }
 
 void Block::ReportNet() {
@@ -173,39 +165,31 @@ void Block::ExportWellToMatlabPatchRect(std::ofstream &ost) {
   for (size_t i = 0; i < sz; ++i) {
     int length = CumulativeStretchLength(i);
     if (Orient() == N) {
-      RectD n_rect(
-          LLX() + n_well_shapes[i].LLX(),
-          LLY() + (n_well_shapes[i].LLY() + length),
-          LLX() + n_well_shapes[i].URX(),
-          LLY() + (n_well_shapes[i].URY() + length)
-      );
-      RectD p_rect(
-          LLX() + p_well_shapes[i].LLX(),
-          LLY() + (p_well_shapes[i].LLY() + length),
-          LLX() + p_well_shapes[i].URX(),
-          LLY() + (p_well_shapes[i].URY() + length)
-      );
+      RectD n_rect(LLX() + n_well_shapes[i].LLX(),
+                   LLY() + (n_well_shapes[i].LLY() + length),
+                   LLX() + n_well_shapes[i].URX(),
+                   LLY() + (n_well_shapes[i].URY() + length));
+      RectD p_rect(LLX() + p_well_shapes[i].LLX(),
+                   LLY() + (p_well_shapes[i].LLY() + length),
+                   LLX() + p_well_shapes[i].URX(),
+                   LLY() + (p_well_shapes[i].URY() + length));
       SaveMatlabPatchRegion(ost, n_rect, p_rect);
     } else if (Orient() == FS) {
-      RectD n_rect(
-          LLX() + n_well_shapes[i].LLX(),
-          URY() - (n_well_shapes[i].URY() + length),
-          LLX() + n_well_shapes[i].URX(),
-          URY() - (n_well_shapes[i].LLY() + length)
-      );
-      RectD p_rect(
-          LLX() + p_well_shapes[i].LLX(),
-          URY() - (p_well_shapes[i].URY() + length),
-          LLX() + p_well_shapes[i].URX(),
-          URY() - (p_well_shapes[i].LLY() + length)
-      );
+      RectD n_rect(LLX() + n_well_shapes[i].LLX(),
+                   URY() - (n_well_shapes[i].URY() + length),
+                   LLX() + n_well_shapes[i].URX(),
+                   URY() - (n_well_shapes[i].LLY() + length));
+      RectD p_rect(LLX() + p_well_shapes[i].LLX(),
+                   URY() - (p_well_shapes[i].URY() + length),
+                   LLX() + p_well_shapes[i].URX(),
+                   URY() - (p_well_shapes[i].LLY() + length));
       SaveMatlabPatchRegion(ost, n_rect, p_rect);
     } else {
       BOOST_LOG_TRIVIAL(debug)
-        << "Orientation not supported "
-        << __FILE__ << " : " << __LINE__ << " : " << __FUNCTION__ << "\n";
+          << "Orientation not supported " << __FILE__ << " : " << __LINE__
+          << " : " << __FUNCTION__ << "\n";
     }
   }
 }
 
-}
+}  // namespace dali

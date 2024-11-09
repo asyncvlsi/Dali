@@ -20,13 +20,12 @@
  ******************************************************************************/
 #include "logging.h"
 
-#include <filesystem>
-
 #include <boost/log/core.hpp>
 #include <boost/log/expressions.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
 #include <boost/log/utility/setup/console.hpp>
 #include <boost/log/utility/setup/file.hpp>
-#include <boost/log/utility/setup/common_attributes.hpp>
+#include <filesystem>
 
 namespace dali {
 
@@ -42,13 +41,25 @@ boost::shared_ptr<console_sink_t> g_console_sink = nullptr;
 
 severity IntToLoggingLevel(int level) {
   switch (level) {
-    case 0  : { return severity::fatal; }
-    case 1  : { return severity::error; }
-    case 2  : { return severity::warning; }
-    case 3  : { return severity::info; }
-    case 4  : { return severity::debug; }
-    case 5  : { return severity::trace; }
-    default : {
+    case 0: {
+      return severity::fatal;
+    }
+    case 1: {
+      return severity::error;
+    }
+    case 2: {
+      return severity::warning;
+    }
+    case 3: {
+      return severity::info;
+    }
+    case 4: {
+      return severity::debug;
+    }
+    case 5: {
+      return severity::trace;
+    }
+    default: {
       std::cout << "Invalid dali verbosity level (0-5)!\n";
       exit(1);
     }
@@ -77,19 +88,16 @@ severity StrToLoggingLevel(const std::string &severity_level_str) {
  * @brief Initialize the logging system. The log will be directed to the
  * console and a log file.
  *
- * @param log_file_name: the name of the log file. This parameter can be an empty
- * string. If it is empty, then the final log file name will be 'dali_X.log',
- * where X is the first number which makes the log file name different from any
- * other files in the working directory.
+ * @param log_file_name: the name of the log file. This parameter can be an
+ * empty string. If it is empty, then the final log file name will be
+ * 'dali_X.log', where X is the first number which makes the log file name
+ * different from any other files in the working directory.
  * @param severity_level: 0 (fatal) - 5 (trace)
  * @param disable_log_prefix: if false, then the log file will have time_stamp,
  * thread_id, and severity level as the prefix.
  */
-void InitLogging(
-    const std::string &log_file_name,
-    severity severity_level,
-    bool disable_log_prefix
-) {
+void InitLogging(const std::string &log_file_name, severity severity_level,
+                 bool disable_log_prefix) {
   // in case the logging system has been initialized, we need to close it first
   CloseLogging();
 
@@ -115,35 +123,27 @@ void InitLogging(
 
   // add a file sink
   if (disable_log_prefix) {
-    g_file_sink = boost::log::add_file_log(
-        keywords::file_name = file_name,
-        keywords::format = "%Message%"
-    );
+    g_file_sink = boost::log::add_file_log(keywords::file_name = file_name,
+                                           keywords::format = "%Message%");
   } else {
     g_file_sink = boost::log::add_file_log(
         keywords::file_name = file_name,
-        keywords::format = "[%TimeStamp%] [%ThreadID%] [%Severity%] %Message%"
-    );
+        keywords::format = "[%TimeStamp%] [%ThreadID%] [%Severity%] %Message%");
   }
   g_file_sink->locked_backend()->set_auto_newline_mode(
-      sink::auto_newline_mode::disabled_auto_newline
-  );
+      sink::auto_newline_mode::disabled_auto_newline);
   g_file_sink->locked_backend()->auto_flush(false);
 
   // add a console sink
   g_console_sink = boost::log::add_console_log(
-      std::cout,
-      boost::log::keywords::format = "%Message%"
-  );
+      std::cout, boost::log::keywords::format = "%Message%");
   g_console_sink->locked_backend()->set_auto_newline_mode(
-      sink::auto_newline_mode::disabled_auto_newline
-  );
+      sink::auto_newline_mode::disabled_auto_newline);
   g_console_sink->locked_backend()->auto_flush(false);
 
   // register attributes with the log core
-  boost::log::core::get()->set_filter(
-      boost::log::trivial::severity >= severity_level
-  );
+  boost::log::core::get()->set_filter(boost::log::trivial::severity >=
+                                      severity_level);
   boost::log::add_common_attributes();
 }
 
@@ -163,4 +163,4 @@ void CloseLogging() {
   }
 }
 
-}
+}  // namespace dali

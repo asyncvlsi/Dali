@@ -26,12 +26,12 @@
 
 #include "blockcluster.h"
 #include "blocksegment.h"
-#include "griddedrow.h"
 #include "dali/circuit/block.h"
 #include "dali/circuit/block_type.h"
 #include "dali/common/misc.h"
 #include "dali/placer/legalizer/LGTetrisEx.h"
 #include "dali/placer/placer.h"
+#include "griddedrow.h"
 #include "spacepartitioner.h"
 #include "stripe.h"
 
@@ -39,6 +39,7 @@ namespace dali {
 
 class StdClusterWellLegalizer : public Placer {
   friend class Dali;
+
  public:
   StdClusterWellLegalizer();
   void LoadConf(std::string const &config_file) override;
@@ -69,22 +70,13 @@ class StdClusterWellLegalizer : public Placer {
   bool TrialClusterLegalization(Stripe &stripe);
 
   double WireLengthCost(GriddedRow *cluster, int l, int r);
-  void FindBestLocalOrder(
-      std::vector<Block *> &res,
-      double &cost,
-      GriddedRow *cluster,
-      int cur,
-      int l,
-      int r,
-      int left_bound,
-      int right_bound,
-      int gap,
-      int range
-  );
+  void FindBestLocalOrder(std::vector<Block *> &res, double &cost,
+                          GriddedRow *cluster, int cur, int l, int r,
+                          int left_bound, int right_bound, int gap, int range);
   void LocalReorderInCluster(GriddedRow *cluster, int range = 3);
   void LocalReorderAllClusters();
 
-  //void SingleSegmentClusteringOptimization();
+  // void SingleSegmentClusteringOptimization();
 
   void UpdateClusterOrient();
   void InsertWellTap();
@@ -101,21 +93,17 @@ class StdClusterWellLegalizer : public Placer {
 
   /****member function for file IO****/
   void GenMatlabClusterTable(std::string const &name_of_file);
-  void GenMATLABWellTable(
-      std::string const &name_of_file,
-      int well_emit_mode
-  ) override;
+  void GenMATLABWellTable(std::string const &name_of_file,
+                          int well_emit_mode) override;
   void GenPPNP(std::string const &name_of_file);
-  void EmitDEFWellFile(
-      std::string const &name_of_file,
-      int well_emit_mode,
-      bool enable_emitting_cluster = true
-  ) override;
+  void EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode,
+                       bool enable_emitting_cluster = true) override;
   void EmitPPNPRect(std::string const &name_of_file);
   void ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr);
   void EmitWellRect(std::string const &name_of_file, int well_emit_mode);
   void ExportWellToPhyDB(phydb::PhyDB *phydb_ptr, int well_emit_mode);
   void EmitClusterRect(std::string const &name_of_file);
+
  private:
   bool is_first_row_orient_N_ = true;
 
@@ -137,8 +125,10 @@ class StdClusterWellLegalizer : public Placer {
   int post_end_cap_min_width_ = 0;
   int post_end_cap_min_p_height_ = 0;
   int post_end_cap_min_n_height_ = 0;
-  std::map<std::tuple<int /* N height */, int /* P height */>, int> pre_end_cap_cell_np_heights_to_type_id;
-  std::map<std::tuple<int /* N height */, int /* P height */>, int> post_end_cap_cell_np_heights_to_type_id;
+  std::map<std::tuple<int /* N height */, int /* P height */>, int>
+      pre_end_cap_cell_np_heights_to_type_id;
+  std::map<std::tuple<int /* N height */, int /* P height */>, int>
+      post_end_cap_cell_np_heights_to_type_id;
 
   /**** stripe parameters ****/
   int stripe_mode_ = 0;
@@ -152,7 +142,7 @@ class StdClusterWellLegalizer : public Placer {
 
   // list of index loc pair for location sort
   std::vector<BlkInitPair> index_loc_list_;
-  std::vector<ClusterStripe> col_list_; // list of stripes
+  std::vector<ClusterStripe> col_list_;  // list of stripes
 
   /**** parameters for legalization ****/
   int max_iter_ = 10;
@@ -163,9 +153,8 @@ class StdClusterWellLegalizer : public Placer {
   // dump result
   bool is_dump = false;
   int dump_count = 0;
-
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_PLACER_WELLLEGALIZER_STDCLUSTERWELLLEGALIZER_H_
+#endif  // DALI_PLACER_WELLLEGALIZER_STDCLUSTERWELLLEGALIZER_H_

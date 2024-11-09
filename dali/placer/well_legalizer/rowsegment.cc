@@ -22,51 +22,34 @@
 
 #include "dali/common/helper.h"
 #include "dali/placer/well_legalizer/blocksegment.h"
-#include "dali/placer/well_legalizer/optimizationhelper.h"
 #include "dali/placer/well_legalizer/lgblkaux.h"
+#include "dali/placer/well_legalizer/optimizationhelper.h"
 
 namespace dali {
 
-void RowSegment::SetLLX(int lx) {
-  lx_ = lx;
-}
+void RowSegment::SetLLX(int lx) { lx_ = lx; }
 
-void RowSegment::SetURX(int ux) {
-  lx_ = ux - width_;
-}
+void RowSegment::SetURX(int ux) { lx_ = ux - width_; }
 
-void RowSegment::SetWidth(int width) {
-  width_ = width;
-}
+void RowSegment::SetWidth(int width) { width_ = width; }
 
-void RowSegment::SetUsedSize(int used_size) {
-  used_size_ = used_size;
-}
+void RowSegment::SetUsedSize(int used_size) { used_size_ = used_size; }
 
-int RowSegment::LLX() const {
-  return lx_;
-}
+int RowSegment::LLX() const { return lx_; }
 
-int RowSegment::URX() const {
-  return lx_ + width_;
-}
+int RowSegment::URX() const { return lx_ + width_; }
 
-int RowSegment::Width() const {
-  return width_;
-}
+int RowSegment::Width() const { return width_; }
 
-int RowSegment::UsedSize() const {
-  return used_size_;
-}
+int RowSegment::UsedSize() const { return used_size_; }
 
-std::vector<BlockRegion> &RowSegment::BlkRegions() {
-  return blk_regions_;
-}
+std::vector<BlockRegion> &RowSegment::BlkRegions() { return blk_regions_; }
 
 /****
  * Add a given block to this segment.
  * Update used space and the block list
- * @param blk_ptr: a pointer to the block which needs to be added to this segment
+ * @param blk_ptr: a pointer to the block which needs to be added to this
+ * segment
  */
 void RowSegment::AddBlockRegion(Block *blk_ptr, int region_id) {
   used_size_ += blk_ptr->Width();
@@ -75,15 +58,12 @@ void RowSegment::AddBlockRegion(Block *blk_ptr, int region_id) {
 
 void RowSegment::MinDisplacementLegalization(bool use_init_loc) {
   if (blk_regions_.empty()) return;
-  std::sort(
-      blk_regions_.begin(),
-      blk_regions_.end(),
-      [](const BlockRegion &br0, const BlockRegion &br1) {
-        return (br0.p_blk->LLX() < br1.p_blk->LLX()) ||
-            ((br0.p_blk->LLX() == br1.p_blk->LLX())
-                && (br0.p_blk->Id() < br1.p_blk->Id()));
-      }
-  );
+  std::sort(blk_regions_.begin(), blk_regions_.end(),
+            [](const BlockRegion &br0, const BlockRegion &br1) {
+              return (br0.p_blk->LLX() < br1.p_blk->LLX()) ||
+                     ((br0.p_blk->LLX() == br1.p_blk->LLX()) &&
+                      (br0.p_blk->Id() < br1.p_blk->Id()));
+            });
 
   std::vector<BlkDispVar> vars;
   vars.reserve(blk_regions_.size());
@@ -140,12 +120,8 @@ void RowSegment::FitInRange(std::vector<BlkDispVar> &vars) {
   }
 }
 
-double RowSegment::DispCost(
-    std::vector<BlkDispVar> &vars,
-    int l,
-    int r,
-    bool is_linear
-) {
+double RowSegment::DispCost(std::vector<BlkDispVar> &vars, int l, int r,
+                            bool is_linear) {
   double quadratic_disp = 0;
   for (int i = l; i <= r; ++i) {
     double disp = std::fabs(vars[i].Solution() - vars[i].InitX());
@@ -154,20 +130,15 @@ double RowSegment::DispCost(
     } else {
       quadratic_disp += vars[i].Weight() * disp * disp;
     }
-
   }
   return quadratic_disp;
 }
 
-void RowSegment::FindBestLocalOrder(
-    std::vector<BlkDispVar> &res,
-    double &cost,
-    std::vector<BlkDispVar> &vars,
-    int cur, int l, int r,
-    double left_bound, double right_bound,
-    double gap, int range,
-    bool is_linear
-) {
+void RowSegment::FindBestLocalOrder(std::vector<BlkDispVar> &res, double &cost,
+                                    std::vector<BlkDispVar> &vars, int cur,
+                                    int l, int r, double left_bound,
+                                    double right_bound, double gap, int range,
+                                    bool is_linear) {
   if (cur == r) {
     vars[l].SetSolution(left_bound);
     vars[r].SetSolution(right_bound - vars[r].Width());
@@ -192,25 +163,17 @@ void RowSegment::FindBestLocalOrder(
       std::swap(vars[cur], vars[i]);
 
       // Recursion called
-      FindBestLocalOrder(
-          res, cost, vars,
-          cur + 1, l, r,
-          left_bound, right_bound, gap, range,
-          is_linear
-      );
+      FindBestLocalOrder(res, cost, vars, cur + 1, l, r, left_bound,
+                         right_bound, gap, range, is_linear);
 
-      //backtrack
+      // backtrack
       std::swap(vars[cur], vars[i]);
     }
   }
 }
 
-void RowSegment::LocalReorder(
-    std::vector<BlkDispVar> &vars,
-    int range,
-    int omit,
-    bool is_linear
-) {
+void RowSegment::LocalReorder(std::vector<BlkDispVar> &vars, int range,
+                              int omit, bool is_linear) {
   int sz = static_cast<int>(vars.size());
   if (sz < range) return;
 
@@ -229,12 +192,8 @@ void RowSegment::LocalReorder(
     double right_bound = vars[r].Solution() + vars[r].Width();
     double gap = (right_bound - left_bound - tot_blk_width) / (range - 1);
 
-    FindBestLocalOrder(
-        res_local_order, best_cost, vars,
-        l, l, r,
-        left_bound, right_bound, gap, range,
-        is_linear
-    );
+    FindBestLocalOrder(res_local_order, best_cost, vars, l, l, r, left_bound,
+                       right_bound, gap, range, is_linear);
     for (int j = 0; j < range; ++j) {
       vars[l + j] = res_local_order[j];
     }
@@ -249,15 +208,13 @@ void RowSegment::LocalReorder(
   }
 }
 
-void RowSegment::LocalReorder2(
-    std::vector<BlkDispVar> &vars
-) {
+void RowSegment::LocalReorder2(std::vector<BlkDispVar> &vars) {
   int sz = static_cast<int>(vars.size());
   if (sz <= 2) return;
   for (int i = 0; i < sz - 1;) {
     // if a multideck cell
     if (vars[i].IsMultideckCell()) {
-      if (vars[i].TendToRight()) { // have a tendency to move right
+      if (vars[i].TendToRight()) {  // have a tendency to move right
         if (i + 1 < sz) {
           if ((vars[i + 1].IsMultideckCell() && vars[i + 1].TendToLeft()) ||
               (!vars[i + 1].IsMultideckCell())) {
@@ -269,7 +226,7 @@ void RowSegment::LocalReorder2(
             continue;
           }
         }
-      } else if (vars[i].TendToLeft()) { // have a tendency to move left
+      } else if (vars[i].TendToLeft()) {  // have a tendency to move left
         if (i - 1 > 0) {
           if ((vars[i - 1].IsMultideckCell() && vars[i - 1].TendToRight()) ||
               (!vars[i - 1].IsMultideckCell())) {
@@ -288,23 +245,17 @@ void RowSegment::LocalReorder2(
 }
 
 std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement(
-    double lambda,
-    bool is_weighted_anchor,
-    bool is_reorder
-) {
+    double lambda, bool is_weighted_anchor, bool is_reorder) {
   std::vector<BlkDispVar> vars;
   if (blk_regions_.empty()) return vars;
 
   // sort cells based on their lower x location
-  std::sort(
-      blk_regions_.begin(),
-      blk_regions_.end(),
-      [](const BlockRegion &br0, const BlockRegion &br1) {
-        return (br0.p_blk->LLX() < br1.p_blk->LLX()) ||
-            ((br0.p_blk->LLX() == br1.p_blk->LLX())
-                && (br0.p_blk->Id() < br1.p_blk->Id()));
-      }
-  );
+  std::sort(blk_regions_.begin(), blk_regions_.end(),
+            [](const BlockRegion &br0, const BlockRegion &br1) {
+              return (br0.p_blk->LLX() < br1.p_blk->LLX()) ||
+                     ((br0.p_blk->LLX() == br1.p_blk->LLX()) &&
+                      (br0.p_blk->Id() < br1.p_blk->Id()));
+            });
 
   // compute average discrepancy
   double ave_discrepancy = 1;
@@ -326,19 +277,16 @@ std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement(
     }
   }
 
-  //vars.reserve(blk_regions_.size() + 2);
-  //vars.emplace_back(0, LLX(), 0);
-  //double max_weight = 0;
+  // vars.reserve(blk_regions_.size() + 2);
+  // vars.emplace_back(0, LLX(), 0);
+  // double max_weight = 0;
   vars.reserve(blk_regions_.size());
   for (auto &blk_rgn : blk_regions_) {
     Block *blk_ptr = blk_rgn.p_blk;
     int region_cnt = blk_ptr->TypePtr()->RegionCount();
     auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
-    vars.emplace_back(
-        blk_ptr->Width(),
-        aux_ptr->InitLoc().x,
-        lambda / region_cnt
-    );
+    vars.emplace_back(blk_ptr->Width(), aux_ptr->InitLoc().x,
+                      lambda / region_cnt);
     vars.back().blk_rgn = blk_rgn;
     if (region_cnt <= 1) continue;
     double weight_discrepancy = 1;
@@ -347,27 +295,26 @@ std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement(
       double average_loc = aux_ptr->AverageLoc();
       double tmp_discrepancy = std::fabs(average_loc - sub_loc);
       weight_discrepancy = pow(1 + tmp_discrepancy / ave_discrepancy, 2.0);
-      //weight_discrepancy = exp(tmp_discrepancy / ave_discrepancy);
+      // weight_discrepancy = exp(tmp_discrepancy / ave_discrepancy);
     }
     double weight = (1 - lambda) * weight_discrepancy;
-    //max_weight = std::max(weight, max_weight);
-    vars.back().SetAnchor(
-        aux_ptr->AverageLoc(),
-        weight // / region_cnt
+    // max_weight = std::max(weight, max_weight);
+    vars.back().SetAnchor(aux_ptr->AverageLoc(),
+                          weight  // / region_cnt
     );
   }
-  //vars.emplace_back(0, URX(), max_weight * 100);
-  //vars[0].SetWeight(max_weight * 100);
+  // vars.emplace_back(0, URX(), max_weight * 100);
+  // vars[0].SetWeight(max_weight * 100);
 
-  //MinimizeQuadraticDisplacement(vars, LLX(), URX());
-  //MinimizeQuadraticDisplacement(vars);
+  // MinimizeQuadraticDisplacement(vars, LLX(), URX());
+  // MinimizeQuadraticDisplacement(vars);
   AbacusPlaceRow(vars);
 
   if (is_weighted_anchor) {
     FitInRange(vars);
     if (is_reorder) {
       LocalReorder(vars, 3, 0, false);
-      //LocalReorder2(vars);
+      // LocalReorder2(vars);
     }
   }
 
@@ -375,23 +322,17 @@ std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement(
 }
 
 std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(
-    double lambda,
-    bool is_weighted_anchor,
-    bool is_reorder
-) {
+    double lambda, bool is_weighted_anchor, bool is_reorder) {
   std::vector<BlkDispVar> vars;
   if (blk_regions_.empty()) return vars;
 
   // sort cells based on their lower x location
-  std::sort(
-      blk_regions_.begin(),
-      blk_regions_.end(),
-      [](const BlockRegion &br0, const BlockRegion &br1) {
-        return (br0.p_blk->LLX() < br1.p_blk->LLX()) ||
-            ((br0.p_blk->LLX() == br1.p_blk->LLX())
-                && (br0.p_blk->Id() < br1.p_blk->Id()));
-      }
-  );
+  std::sort(blk_regions_.begin(), blk_regions_.end(),
+            [](const BlockRegion &br0, const BlockRegion &br1) {
+              return (br0.p_blk->LLX() < br1.p_blk->LLX()) ||
+                     ((br0.p_blk->LLX() == br1.p_blk->LLX()) &&
+                      (br0.p_blk->Id() < br1.p_blk->Id()));
+            });
 
   // compute average discrepancy
   double ave_discrepancy = 1;
@@ -401,7 +342,7 @@ std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(
     for (auto &blk_rgn : blk_regions_) {
       Block *blk_ptr = blk_rgn.p_blk;
       auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
-      //int region_cnt = blk_ptr->TypePtr()->WellPtr()->RegionCount();
+      // int region_cnt = blk_ptr->TypePtr()->WellPtr()->RegionCount();
       double average_loc = aux_ptr->AverageLoc();
       double sub_loc = aux_ptr->SubLocs()[blk_rgn.region_id];
       double tmp_discrepancy = std::fabs(average_loc - sub_loc);
@@ -420,11 +361,8 @@ std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(
     Block *blk_ptr = blk_rgn.p_blk;
     int region_cnt = blk_ptr->TypePtr()->RegionCount();
     auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
-    vars.emplace_back(
-        blk_ptr->Width(),
-        aux_ptr->InitLoc().x,
-        lambda / region_cnt
-    );
+    vars.emplace_back(blk_ptr->Width(), aux_ptr->InitLoc().x,
+                      lambda / region_cnt);
     vars.back().blk_rgn = blk_rgn;
     if (region_cnt <= 1) continue;
     double weight_discrepancy = 1;
@@ -434,13 +372,12 @@ std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(
       double tmp_discrepancy = std::fabs(average_loc - sub_loc);
       weight_discrepancy = pow(1 + tmp_discrepancy / ave_discrepancy, 1.0);
     }
-    vars.back().SetAnchor(
-        aux_ptr->AverageLoc(),
-        (1 - lambda) * weight_discrepancy // / region_cnt
+    vars.back().SetAnchor(aux_ptr->AverageLoc(),
+                          (1 - lambda) * weight_discrepancy  // / region_cnt
     );
   }
 
-  //MinimizeLinearDisplacement(vars, LLX(), URX());
+  // MinimizeLinearDisplacement(vars, LLX(), URX());
   MinimizeLinearDisplacement(vars);
 
   if (is_weighted_anchor) {
@@ -451,20 +388,13 @@ std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(
   return vars;
 }
 
-void RowSegment::GenSubCellTable(
-    std::ofstream &ost_cluster,
-    std::ofstream &ost_sub_cell,
-    std::ofstream &ost_discrepancy,
-    std::ofstream &ost_displacement,
-    double row_ly,
-    double row_uy
-) {
-  SaveMatlabPatchRect(
-      ost_cluster,
-      static_cast<double>(LLX()), row_ly,
-      static_cast<double>(URX()), row_uy,
-      false, 0, 0, 0
-  );
+void RowSegment::GenSubCellTable(std::ofstream &ost_cluster,
+                                 std::ofstream &ost_sub_cell,
+                                 std::ofstream &ost_discrepancy,
+                                 std::ofstream &ost_displacement, double row_ly,
+                                 double row_uy) {
+  SaveMatlabPatchRect(ost_cluster, static_cast<double>(LLX()), row_ly,
+                      static_cast<double>(URX()), row_uy, false, 0, 0, 0);
 
   for (auto &blk_rgn : blk_regions_) {
     Block *blk_ptr = blk_rgn.p_blk;
@@ -473,26 +403,23 @@ void RowSegment::GenSubCellTable(
     double uy = std::min(blk_ptr->URY(), row_uy);
     double sub_x = aux_ptr->SubLocs()[blk_rgn.region_id];
     double sub_y = ly;
-    SaveMatlabPatchRect(
-        ost_sub_cell,
-        sub_x, ly, sub_x + blk_ptr->Width(), uy,
-        true, 0, 1, 1
-    );
+    SaveMatlabPatchRect(ost_sub_cell, sub_x, ly, sub_x + blk_ptr->Width(), uy,
+                        true, 0, 1, 1);
 
     double disc_x = aux_ptr->AverageLoc() - sub_x;
     double disc_y = 0;
-    ost_discrepancy << sub_x << "  " << sub_y << "  "
-                    << disc_x << "  " << disc_y << "\n";
+    ost_discrepancy << sub_x << "  " << sub_y << "  " << disc_x << "  "
+                    << disc_y << "\n";
 
     double init_x = aux_ptr->InitLoc().x;
     double init_y = aux_ptr->InitLoc().y;
     if (blk_rgn.region_id == 0) {
       double disp_x = blk_ptr->LLX() - init_x;
       double disp_y = blk_ptr->LLY() - init_y;
-      ost_displacement << init_x << "  " << init_y << "  "
-                       << disp_x << "  " << disp_y << "\n";
+      ost_displacement << init_x << "  " << init_y << "  " << disp_x << "  "
+                       << disp_y << "\n";
     }
   }
 }
 
-}
+}  // namespace dali

@@ -19,7 +19,6 @@
  *
  ******************************************************************************/
 #include <ctime>
-
 #include <iostream>
 
 #include "dali/circuit/circuit.h"
@@ -53,7 +52,7 @@ int main(int argc, char *argv[]) {
   BOOST_LOG_TRIVIAL(info) << "  Average white space utility: "
                           << circuit.WhiteSpaceUsage() << "\n";
   circuit.ReportBriefSummary();
-  //circuit.ReportBlockType();
+  // circuit.ReportBlockType();
   circuit.ReportHPWL();
 
   dali::WellPlaceFlow well_place_flow;
@@ -68,8 +67,8 @@ int main(int argc, char *argv[]) {
   circuit.SaveDefFile(out_file_name, "", def_file_name, 1, 1, 2, 1);
 
   Time = clock() - Time;
-  BOOST_LOG_TRIVIAL(info) << "Execution time "
-                          << double(Time) / CLOCKS_PER_SEC << "s.\n";
+  BOOST_LOG_TRIVIAL(info) << "Execution time " << double(Time) / CLOCKS_PER_SEC
+                          << "s.\n";
 
   return 0;
 }

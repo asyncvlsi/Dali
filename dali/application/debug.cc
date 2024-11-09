@@ -19,9 +19,9 @@
  *
  ******************************************************************************/
 
-#include <ctime>
 #include <unistd.h>
 
+#include <ctime>
 #include <iostream>
 #include <vector>
 
@@ -41,7 +41,7 @@ int main() {
 
   // read LEF/DEF/CELL
   phydb::PhyDB phy_db;
-  //phy_db.SetPlacementGrids(0.01, 0.01);
+  // phy_db.SetPlacementGrids(0.01, 0.01);
   phy_db.ReadLef(lef_file_name);
   phy_db.ReadDef(def_file_name);
   phy_db.ReadCell(cell_file_name);
@@ -49,16 +49,16 @@ int main() {
   // initialize Dali
   Dali dali(&phy_db, boost::log::trivial::info);
 
-  //phydb::Macro *cell = phy_db.GetMacroPtr("WELLTAPX1");
-  //dali.AddWellTaps(cell, 60, true);
+  // phydb::Macro *cell = phy_db.GetMacroPtr("WELLTAPX1");
+  // dali.AddWellTaps(cell, 60, true);
   dali.StartPlacement(0.65);
-  //dali.GlobalPlace(1.00);
-  //dali.ExternalDetailedPlaceAndLegalize("innovus");
-  //dali.SimpleIoPinPlacement("m1");
-  //dali.ExportToDEF(def_file_name);
+  // dali.GlobalPlace(1.00);
+  // dali.ExternalDetailedPlaceAndLegalize("innovus");
+  // dali.SimpleIoPinPlacement("m1");
+  // dali.ExportToDEF(def_file_name);
 
   // for testing dali APIs for interact
-  //dali.InstantiateIoPlacer();
+  // dali.InstantiateIoPlacer();
   /*int count = 11;
   char *arguments[11] = {
       "place-io",
@@ -75,30 +75,17 @@ int main() {
   };*/
 
   int count = 2;
-  char *arguments[2] = {
-      (char *) "place-io",
-      (char *) "m1"
-  };
+  char *arguments[2] = {(char *)"place-io", (char *)"m1"};
 
   dali.IoPinPlacement(count, arguments);
-  //dali.AutoIoPinPlacement();
+  // dali.AutoIoPinPlacement();
   dali.ExportToPhyDB();
 
   int place_count = 12;
   char *place_argvs[12] = {
-      (char *) "place-io",
-      (char *) "--place",
-      (char *) "go",
-      (char *) "m2",
-      (char *) "-211",
-      (char *) "1",
-      (char *) "211",
-      (char *) "101",
-      (char *) "FIXED",
-      (char *) "362401",
-      (char *) "185401",
-      (char *) "E"
-  };
+      (char *)"place-io", (char *)"--place", (char *)"go",     (char *)"m2",
+      (char *)"-211",     (char *)"1",       (char *)"211",    (char *)"101",
+      (char *)"FIXED",    (char *)"362401",  (char *)"185401", (char *)"E"};
   dali.IoPinPlacement(place_count, place_argvs);
 
   phy_db.WriteDef("ioplace_default_1.def");
@@ -108,8 +95,8 @@ int main() {
   phy_db.SaveWellToRectFile(well_name);
 
   elapsed_time.RecordEndTime();
-  BOOST_LOG_TRIVIAL(info)
-    << "Execution time " << elapsed_time.GetWallTime() << "s.\n";
+  BOOST_LOG_TRIVIAL(info) << "Execution time " << elapsed_time.GetWallTime()
+                          << "s.\n";
   dali.Close();
 
   return 0;

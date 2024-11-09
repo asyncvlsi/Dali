@@ -33,6 +33,7 @@ namespace dali {
 
 class GriddedRowLegalizer : public Placer {
   friend class LGTetrisEx;
+
  public:
   GriddedRowLegalizer() = default;
 
@@ -40,17 +41,16 @@ class GriddedRowLegalizer : public Placer {
   void SetThreads(int number_of_threads);
   void SetUseCplex(bool use_cplex);
 
-  void SetExternalSpacePartitioner(AbstractSpacePartitioner *p_external_partitioner);
+  void SetExternalSpacePartitioner(
+      AbstractSpacePartitioner *p_external_partitioner);
   void SetPartitionMode(int partitioning_mode_);
   void SetMaxRowWidth(double max_row_width);
   void PartitionSpaceAndBlocks();
 
-  void SetWellTapCellParameters(
-      bool is_well_tap_needed = true,
-      bool is_checker_board_mode = false,
-      double tap_cell_interval_microns = -1,
-      std::string const &well_tap_type_name = ""
-  );
+  void SetWellTapCellParameters(bool is_well_tap_needed = true,
+                                bool is_checker_board_mode = false,
+                                double tap_cell_interval_microns = -1,
+                                std::string const &well_tap_type_name = "");
 
   void PrecomputeWellTapCellLocation();
 
@@ -70,14 +70,9 @@ class GriddedRowLegalizer : public Placer {
   void CleanUpTemporaryRowSegments();
   bool UpwardDownwardLegalization(bool use_init_loc = true);
 
-  bool StripeLegalizationUpwardWithDispCheck(
-      Stripe &stripe,
-      bool use_init_loc
-  );
-  bool StripeLegalizationDownwardWithDispCheck(
-      Stripe &stripe,
-      bool use_init_loc
-  );
+  bool StripeLegalizationUpwardWithDispCheck(Stripe &stripe, bool use_init_loc);
+  bool StripeLegalizationDownwardWithDispCheck(Stripe &stripe,
+                                               bool use_init_loc);
   bool UpwardDownwardLegalizationWithDispCheck(bool use_init_loc);
 
   bool IsLeftmostPlacementLegal();
@@ -100,14 +95,13 @@ class GriddedRowLegalizer : public Placer {
   void ReportOutOfBoundCell();
 
   void GenMatlabClusterTable(std::string const &name_of_file);
-  void GenMATLABWellTable(
-      std::string const &name_of_file,
-      int well_emit_mode
-  ) override;
+  void GenMATLABWellTable(std::string const &name_of_file,
+                          int well_emit_mode) override;
   void GenSubCellTable(std::string const &name_of_file);
   void GenDisplacement(std::string const &name_of_file);
 
   void ReportEffectiveDensity();
+
  private:
   // space partitioner
   int partitioning_mode_ = 0;
@@ -145,6 +139,6 @@ class GriddedRowLegalizer : public Placer {
   void SetWellTapCellType(std::string const &well_tap_type_name);
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_PLACER_WELL_LEGALIZER_GRIDDEDROWLEGALIZER_H_
+#endif  // DALI_PLACER_WELL_LEGALIZER_GRIDDEDROWLEGALIZER_H_

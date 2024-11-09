@@ -31,7 +31,7 @@
 
 namespace dali {
 
-template<class T>
+template <class T>
 struct DisplacementViewer {
  private:
   size_t sz_ = 0;
@@ -74,6 +74,6 @@ struct DisplacementViewer {
   }
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_COMMON_DISPLACEVIEWER_H_
+#endif  // DALI_COMMON_DISPLACEVIEWER_H_

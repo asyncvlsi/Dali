@@ -32,26 +32,27 @@ struct BlockRegion {
 };
 
 /****
- * @brief A structure containing information of a block for minimizing displacement
+ * @brief A structure containing information of a block for minimizing
+ * displacement
  */
 struct BlkDispVar {
-  int w;                          // width of this block
-  double x_0;                     // initial location
-  double e;                       // weight of initial location
-  double x_a;                     // anchor location
-  double a;                       // weight of anchor location
-  double x;                       // place to store final location
-  BlockRegion blk_rgn;            // pointer to the block or dummy block
+  int w;                // width of this block
+  double x_0;           // initial location
+  double e;             // weight of initial location
+  double x_a;           // anchor location
+  double a;             // weight of anchor location
+  double x;             // place to store final location
+  BlockRegion blk_rgn;  // pointer to the block or dummy block
   double segment_weight_;
-  BlkDispVar(int width, double x_init, double weight = 1.0) :
-      w(width),
-      x_0(x_init),
-      e(weight),
-      x_a(0.0),
-      a(0.0),
-      x(0.0),
-      blk_rgn(nullptr, 0),
-      segment_weight_(1.0) {}
+  BlkDispVar(int width, double x_init, double weight = 1.0)
+      : w(width),
+        x_0(x_init),
+        e(weight),
+        x_a(0.0),
+        a(0.0),
+        x(0.0),
+        blk_rgn(nullptr, 0),
+        segment_weight_(1.0) {}
 
   int Width() { return w; }
   double InitX() { return x_0; }
@@ -93,6 +94,6 @@ struct BlkDispVar {
   }
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_PLACER_WELL_LEGALIZER_BLOCKHELPER_H_
+#endif  // DALI_PLACER_WELL_LEGALIZER_BLOCKHELPER_H_

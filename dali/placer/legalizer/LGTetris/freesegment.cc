@@ -22,9 +22,7 @@
 
 namespace dali {
 
-FreeSegment::FreeSegment(int start, int stop) :
-    start_(start),
-    end_(stop) {
+FreeSegment::FreeSegment(int start, int stop) : start_(start), end_(stop) {
   assert(start <= stop);
 }
 
@@ -34,8 +32,8 @@ bool FreeSegment::LinkSingleSeg(FreeSegment *seg_ptr) {
     assert(seg_ptr != nullptr);
   }
   if ((this->Next() != nullptr) || (seg_ptr->Next() != nullptr)) {
-    BOOST_LOG_TRIVIAL(info)
-      << "This member function is not for concatenating multi nodes linked list\n";
+    BOOST_LOG_TRIVIAL(info) << "This member function is not for concatenating "
+                               "multi nodes linked list\n";
     assert((this->Next() == nullptr) && (seg_ptr->Next() == nullptr));
   }
   return (SetNext(seg_ptr) && seg_ptr->SetPrev(this));
@@ -44,11 +42,11 @@ bool FreeSegment::LinkSingleSeg(FreeSegment *seg_ptr) {
 FreeSegment *FreeSegment::SingleSegOr(FreeSegment *seg) {
   if ((Length() == 0) && (seg->Length() == 0)) {
     BOOST_LOG_TRIVIAL(info)
-      << "What?! two segments with Length 0 for OR operation\n";
+        << "What?! two segments with Length 0 for OR operation\n";
     return nullptr;
   }
   auto *result = new FreeSegment;
-  if (start_ > seg->End() || end_ < seg->Start()) { // no overlap, no touch
+  if (start_ > seg->End() || end_ < seg->Start()) {  // no overlap, no touch
     int firstStart, firstEnd, secondStart, secondEnd;
     if (start_ < seg->Start()) {
       firstStart = start_;
@@ -64,11 +62,11 @@ FreeSegment *FreeSegment::SingleSegOr(FreeSegment *seg) {
     result->SetSpan(firstStart, firstEnd);
     auto *secondSeg = new FreeSegment(secondStart, secondEnd);
     result->SetNext(secondSeg);
-  } else if (start_ == seg->End()) { // start_ touches the End of seg
+  } else if (start_ == seg->End()) {  // start_ touches the End of seg
     result->SetSpan(seg->Start(), end_);
-  } else if (end_ == seg->Start()) { // end_ touches the Start of seg
+  } else if (end_ == seg->Start()) {  // end_ touches the Start of seg
     result->SetSpan(start_, seg->End());
-  } else { // non-zero overlap
+  } else {  // non-zero overlap
     result->SetSpan(std::min(start_, seg->Start()), std::max(end_, seg->End()));
   }
   return result;
@@ -84,4 +82,4 @@ void FreeSegment::Clear() {
   }
 }
 
-}
+}  // namespace dali

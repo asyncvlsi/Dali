@@ -22,7 +22,6 @@
 #define DALI_CIRCUIT_DESIGN_H_
 
 #include <climits>
-
 #include <unordered_map>
 #include <vector>
 
@@ -56,10 +55,12 @@ struct NetHistogram {
 };
 
 /****
- * This class contain basic information of a design (or information in a DEF file)
+ * This class contain basic information of a design (or information in a DEF
+ * file)
  */
 class Design {
   friend class Circuit;
+
  public:
   // get the name of this design
   std::string const &Name() const { return name_; }
@@ -74,23 +75,32 @@ class Design {
   int RegionTop() const { return die_area_.region_top_; }
 
   // locations of cells in Dali is on grid, but they do not have to be on grid
-  // in a DEF file. The following two APIs return the offset along each direction.
+  // in a DEF file. The following two APIs return the offset along each
+  // direction.
   int DieAreaOffsetX() const { return die_area_.die_area_offset_x_; }
   int DieAreaOffsetY() const { return die_area_.die_area_offset_y_; }
-  int DieAreaOffsetXResidual() const { return die_area_.die_area_offset_x_residual_; }
-  int DieAreaOffsetYResidual() const { return die_area_.die_area_offset_y_residual_; }
+  int DieAreaOffsetXResidual() const {
+    return die_area_.die_area_offset_x_residual_;
+  }
+  int DieAreaOffsetYResidual() const {
+    return die_area_.die_area_offset_y_residual_;
+  }
 
   // get all blocks
   std::vector<Block> &Blocks() { return block_collection_.Instances(); }
 
-  std::unordered_map<std::string, size_t> &BlockNameIdMap() { return block_collection_.NameToIdMap(); }
+  std::unordered_map<std::string, size_t> &BlockNameIdMap() {
+    return block_collection_.NameToIdMap();
+  }
 
   // some blocks are imaginary (for example, fixed IOPINs), this function
   // returns the number of real blocks (for example, gates)
   int RealBlkCnt() const { return real_block_count_; }
 
   // get all well tap cells
-  std::vector<Block> &WellTaps() { return well_tap_cell_collection_.Instances(); }
+  std::vector<Block> &WellTaps() {
+    return well_tap_cell_collection_.Instances();
+  }
 
   // get well tap cell name-id map
   std::unordered_map<std::string, size_t> &TapNameIdMap() {
@@ -105,10 +115,18 @@ class Design {
     return filler_cell_collection_.NameToIdMap();
   };
 
-  NamedInstanceCollection<Block> &BlockCollection() { return block_collection_; }
-  NamedInstanceCollection<Block> &WellTapCellCollection() { return well_tap_cell_collection_; }
-  NamedInstanceCollection<Block> &FillerCellCollection() { return filler_cell_collection_; };
-  NamedInstanceCollection<Block> &EndCapCellCollection() { return end_cap_cell_collection_; }
+  NamedInstanceCollection<Block> &BlockCollection() {
+    return block_collection_;
+  }
+  NamedInstanceCollection<Block> &WellTapCellCollection() {
+    return well_tap_cell_collection_;
+  }
+  NamedInstanceCollection<Block> &FillerCellCollection() {
+    return filler_cell_collection_;
+  };
+  NamedInstanceCollection<Block> &EndCapCellCollection() {
+    return end_cap_cell_collection_;
+  }
 
   // get all iopins
   std::vector<IoPin> &IoPins() { return iopins_; }
@@ -121,9 +139,8 @@ class Design {
 
   DieArea &GetDieArea() { return die_area_; }
 
-  void AddIntrinsicPlacementBlockage(
-      double lx, double ly, double ux, double uy
-  );
+  void AddIntrinsicPlacementBlockage(double lx, double ly, double ux,
+                                     double uy);
 
   void AddFixedCellPlacementBlockage(Block &block);
 
@@ -132,12 +149,14 @@ class Design {
   // update all placement blockages
   void UpdatePlacementBlockages();
 
-  [[nodiscard]] const std::vector<PlacementBlockage> &PlacementBlockages() const;
+  [[nodiscard]] const std::vector<PlacementBlockage> &PlacementBlockages()
+      const;
 
   void UpdateFanOutHistogram(size_t net_size);
   void InitNetFanOutHistogram(std::vector<size_t> *histo_x = nullptr);
   void UpdateNetHPWLHistogram(size_t net_size, double hpwl);
   void ReportNetFanOutHistogram();
+
  private:
   /****design name****/
   std::string name_;
@@ -155,7 +174,8 @@ class Design {
   NamedInstanceCollection<Block> end_cap_cell_collection_;
   // number of blocks added by calling the AddBlock() API
   int real_block_count_ = 0;
-  // number of blocks given in DEF, these two numbers are supposed to be the same
+  // number of blocks given in DEF, these two numbers are supposed to be the
+  // same
   int blk_count_limit_ = 0;
 
   /****placement blockages****/
@@ -200,11 +220,10 @@ class Design {
   int blk_max_height_ = INT_MIN;
 
   /****helper functions****/
-  RectI ExpandOffGridPlacementBlockage(
-      double lx, double ly, double ux, double uy
-  );
+  RectI ExpandOffGridPlacementBlockage(double lx, double ly, double ux,
+                                       double uy);
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_CIRCUIT_DESIGN_H_
+#endif  // DALI_CIRCUIT_DESIGN_H_

@@ -22,31 +22,24 @@
 #define DALI_PLACER_WELL_LEGALIZER_OPTIMIZATIONHELPER_H_
 
 #include <cfloat>
-
 #include <vector>
 
 #include "dali/placer/well_legalizer/blockhelper.h"
 
 namespace dali {
 
-void MinimizeQuadraticDisplacement(
-    std::vector<BlkDispVar> &vars,
-    double lower_limit = -DBL_MAX,
-    double upper_limit = DBL_MAX
-);
+void MinimizeQuadraticDisplacement(std::vector<BlkDispVar> &vars,
+                                   double lower_limit = -DBL_MAX,
+                                   double upper_limit = DBL_MAX);
 
-void MinimizeLinearDisplacement(
-    std::vector<BlkDispVar> &vars,
-    double lower_limit = -DBL_MAX,
-    double upper_limit = DBL_MAX
-);
+void MinimizeLinearDisplacement(std::vector<BlkDispVar> &vars,
+                                double lower_limit = -DBL_MAX,
+                                double upper_limit = DBL_MAX);
 
-void AbacusPlaceRow(
-    std::vector<BlkDispVar> &vars,
-    double lower_limit = -DBL_MAX,
-    double upper_limit = DBL_MAX
-);
+void AbacusPlaceRow(std::vector<BlkDispVar> &vars,
+                    double lower_limit = -DBL_MAX,
+                    double upper_limit = DBL_MAX);
 
-}
+}  // namespace dali
 
-#endif //DALI_PLACER_WELL_LEGALIZER_OPTIMIZATIONHELPER_H_
+#endif  // DALI_PLACER_WELL_LEGALIZER_OPTIMIZATIONHELPER_H_

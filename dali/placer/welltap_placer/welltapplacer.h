@@ -21,10 +21,10 @@
 #ifndef DALI_PLACER_WELLTAPPLACER_WELLTAPPLACER_H_
 #define DALI_PLACER_WELLTAPPLACER_WELLTAPPLACER_H_
 
+#include <phydb/phydb.h>
+
 #include <list>
 #include <vector>
-
-#include <phydb/phydb.h>
 
 #include "dali/circuit/block_type.h"
 #include "dali/common/misc.h"
@@ -41,18 +41,19 @@ struct Row {
   int orig_x = 0;
   int orig_y = 0;
   int num_x = 0;
-  std::vector<bool> avail_sites; // white space segments
+  std::vector<bool> avail_sites;  // white space segments
   std::vector<bool> well_taps;
 
-  bool is_N = true; // orientation
+  bool is_N = true;  // orientation
 };
 
 /**
  * A class for inserting well-tap cells.
  * List of parameters:
  * 1. cell_: the kind of well-tap cell to use.
- * 2. cell_interval: the maximum distance from the center of one well-tap cell to the center of
- *    the following well-tap cell in the same row. Unit is core site width.
+ * 2. cell_interval: the maximum distance from the center of one well-tap cell
+ * to the center of the following well-tap cell in the same row. Unit is core
+ * site width.
  * 3. is_checker_board: placing well-tap cells in checker_board mode or not.
  */
 class WellTapPlacer {
@@ -65,12 +66,12 @@ class WellTapPlacer {
   int row_height_ = 0;
   int row_step_ = 0;
 
-  std::vector<Row> rows_; // white space in each row
+  std::vector<Row> rows_;  // white space in each row
 
-  phydb::Macro *cell_ = nullptr; // pointer to well-tap cell
-  int cell_width_ = -1; // unit is row_step_
-  int cell_interval_ = -1; // unit is row_step_
-  int cell_min_distance_to_boundary_ = -1; // unit is row_step_
+  phydb::Macro *cell_ = nullptr;            // pointer to well-tap cell
+  int cell_width_ = -1;                     // unit is row_step_
+  int cell_interval_ = -1;                  // unit is row_step_
+  int cell_min_distance_to_boundary_ = -1;  // unit is row_step_
   bool is_checker_board_ = true;
 
  public:
@@ -80,7 +81,8 @@ class WellTapPlacer {
   void InitializeWhiteSpaceInRows();
   void SetCell(phydb::Macro *cell);
   void SetCellInterval(double cell_interval_microns);
-  void SetCellMinDistanceToBoundary(double cell_min_distance_to_boundary_microns);
+  void SetCellMinDistanceToBoundary(
+      double cell_min_distance_to_boundary_microns);
   void UseCheckerBoardMode(bool is_checker_board);
   void AddWellTapToRowUniform(Row &row, int first_loc, int interval);
   void AddWellTapUniform();
@@ -99,9 +101,7 @@ class WellTapPlacer {
     }
     return res;
   }
-  int StartCol(int x_loc, int orig_x) {
-    return (x_loc - orig_x) / row_step_;
-  }
+  int StartCol(int x_loc, int orig_x) { return (x_loc - orig_x) / row_step_; }
   int EndCol(int x_loc, int orig_x) {
     int relative_x = x_loc - orig_x;
     int res = relative_x / row_step_;
@@ -112,6 +112,6 @@ class WellTapPlacer {
   }
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_PLACER_WELLTAPPLACER_WELLTAPPLACER_H_
+#endif  // DALI_PLACER_WELLTAPPLACER_WELLTAPPLACER_H_

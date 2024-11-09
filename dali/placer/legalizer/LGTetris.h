@@ -29,13 +29,14 @@
 #include "dali/placer/placer.h"
 
 /****
- * The default setting of this legalizer expects a reasonably good placement as an input;
- * "Reasonably good" means:
+ * The default setting of this legalizer expects a reasonably good placement as
+ * an input; "Reasonably good" means:
  *  1. All blocks are inside placement region
  *  2. There are few or no location with extremely high block density
  *  3. Maybe something else should be added here
- * There is a setting of this legalizer, which can handle bad placement input really well,
- * but who wants bad input? The Global placer and detailed placer should have done their job well;
+ * There is a setting of this legalizer, which can handle bad placement input
+ * really well, but who wants bad input? The Global placer and detailed placer
+ * should have done their job well;
  * ****/
 
 namespace dali {
@@ -46,6 +47,7 @@ class TetrisLegalizer : public Placer {
   int current_iteration_;
   bool flipped_;
   std::vector<BlkInitPair> index_loc_list_;
+
  public:
   TetrisLegalizer();
   void InitLegalizer();
@@ -57,6 +59,6 @@ class TetrisLegalizer : public Placer {
   bool StartPlacement() override;
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_PLACER_LEGALIZER_LGTETRIS_H_
+#endif  // DALI_PLACER_LEGALIZER_LGTETRIS_H_

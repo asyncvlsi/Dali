@@ -55,20 +55,21 @@ class LgBlkAux : public BlockAux {
   double2d GreedyLoc();
   double2d QPLoc();
   double2d ConsLoc();
- private:
-  double2d init_loc_;     // location before legalization
-  double2d greedy_loc_;   // location from the greedy legalization algorithm
-  double2d qp_loc_;       // location from quadratic programming
-  double2d cons_loc_;     // location from the consensus algorithm
 
-  std::vector<double> sub_locs_; // locations from different sub-cells
-  std::vector<double> weights_;  // weights of clusters they belong to
+ private:
+  double2d init_loc_;    // location before legalization
+  double2d greedy_loc_;  // location from the greedy legalization algorithm
+  double2d qp_loc_;      // location from quadratic programming
+  double2d cons_loc_;    // location from the consensus algorithm
+
+  std::vector<double> sub_locs_;  // locations from different sub-cells
+  std::vector<double> weights_;   // weights of clusters they belong to
   double average_loc_ = DBL_MAX;
 
   std::vector<int> stretch_length_;
   double tot_stretch_length = 0;
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_PLACER_WELL_LEGALIZER_LGBLKAUX_H_
+#endif  // DALI_PLACER_WELL_LEGALIZER_LGBLKAUX_H_

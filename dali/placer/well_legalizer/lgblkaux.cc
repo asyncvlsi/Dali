@@ -70,21 +70,13 @@ void LgBlkAux::RecoverConsLoc() {
   blk_ptr_->SetLLY(cons_loc_.y);
 }
 
-void LgBlkAux::RecoverInitLocX() {
-  blk_ptr_->SetLLX(init_loc_.x);
-}
+void LgBlkAux::RecoverInitLocX() { blk_ptr_->SetLLX(init_loc_.x); }
 
-void LgBlkAux::RecoverGreedyLocX() {
-  blk_ptr_->SetLLX(greedy_loc_.x);
-}
+void LgBlkAux::RecoverGreedyLocX() { blk_ptr_->SetLLX(greedy_loc_.x); }
 
-void LgBlkAux::RecoverQPLocX() {
-  blk_ptr_->SetLLX(qp_loc_.x);
-}
+void LgBlkAux::RecoverQPLocX() { blk_ptr_->SetLLX(qp_loc_.x); }
 
-void LgBlkAux::RecoverConsLocX() {
-  blk_ptr_->SetLLX(cons_loc_.x);
-}
+void LgBlkAux::RecoverConsLocX() { blk_ptr_->SetLLX(cons_loc_.x); }
 
 void LgBlkAux::SetSubCellLoc(int id, double loc, double weight) {
   sub_locs_[id] = loc;
@@ -109,28 +101,16 @@ void LgBlkAux::ComputeAverageLoc() {
   average_loc_ = sum_weight_loc / sum_weight;
 }
 
-std::vector<double> &LgBlkAux::SubLocs() {
-  return sub_locs_;
-}
+std::vector<double> &LgBlkAux::SubLocs() { return sub_locs_; }
 
-double LgBlkAux::AverageLoc() {
-  return average_loc_;
-}
+double LgBlkAux::AverageLoc() { return average_loc_; }
 
-double2d LgBlkAux::InitLoc() {
-  return init_loc_;
-}
+double2d LgBlkAux::InitLoc() { return init_loc_; }
 
-double2d LgBlkAux::GreedyLoc() {
-  return greedy_loc_;
-}
+double2d LgBlkAux::GreedyLoc() { return greedy_loc_; }
 
-double2d LgBlkAux::QPLoc() {
-  return qp_loc_;
-}
+double2d LgBlkAux::QPLoc() { return qp_loc_; }
 
-double2d LgBlkAux::ConsLoc() {
-  return cons_loc_;
-}
+double2d LgBlkAux::ConsLoc() { return cons_loc_; }
 
-}
+}  // namespace dali

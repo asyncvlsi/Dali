@@ -21,11 +21,10 @@
 #ifndef DALI_FREESEGMENTLIST_H
 #define DALI_FREESEGMENTLIST_H
 
-#include "freesegment.h"
-
 #include <cassert>
-
 #include <iostream>
+
+#include "freesegment.h"
 
 namespace dali {
 
@@ -40,9 +39,7 @@ class FreeSegmentList {
   FreeSegmentList();
   FreeSegmentList(int start, int stop, int min_width);
   ~FreeSegmentList();
-  size_t size() const {
-    return size_;
-  }
+  size_t size() const { return size_; }
   int Left() const {
     if (head_ == nullptr) {
       BOOST_LOG_TRIVIAL(info) << "Empty linked list, Left() not available\n";
@@ -77,6 +74,6 @@ class FreeSegmentList {
   void Show();
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_FREESEGMENTLIST_H
+#endif  // DALI_FREESEGMENTLIST_H

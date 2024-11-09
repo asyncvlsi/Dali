@@ -52,48 +52,26 @@ class RowSegment {
 
   void SetOptimalAnchorWeight(double weight);
   void FitInRange(std::vector<BlkDispVar> &vars);
-  double DispCost(
-      std::vector<BlkDispVar> &vars,
-      int l, int r,
-      bool is_linear
-  );
-  void FindBestLocalOrder(
-      std::vector<BlkDispVar> &res,
-      double &best_cost,
-      std::vector<BlkDispVar> &vars,
-      int cur, int l, int r,
-      double left_bound, double right_bound,
-      double gap, int range,
-      bool is_linear
-  );
-  void LocalReorder(
-      std::vector<BlkDispVar> &vars,
-      int range = 3,
-      int omit = 0,
-      bool is_linear = false
-  );
-  void LocalReorder2(
-      std::vector<BlkDispVar> &vars
-  );
-  std::vector<BlkDispVar> OptimizeQuadraticDisplacement(
-      double lambda,
-      bool is_weighted_anchor,
-      bool is_reorder
-  );
-  std::vector<BlkDispVar> OptimizeLinearDisplacement(
-      double lambda,
-      bool is_weighted_anchor,
-      bool is_reorder
-  );
+  double DispCost(std::vector<BlkDispVar> &vars, int l, int r, bool is_linear);
+  void FindBestLocalOrder(std::vector<BlkDispVar> &res, double &best_cost,
+                          std::vector<BlkDispVar> &vars, int cur, int l, int r,
+                          double left_bound, double right_bound, double gap,
+                          int range, bool is_linear);
+  void LocalReorder(std::vector<BlkDispVar> &vars, int range = 3, int omit = 0,
+                    bool is_linear = false);
+  void LocalReorder2(std::vector<BlkDispVar> &vars);
+  std::vector<BlkDispVar> OptimizeQuadraticDisplacement(double lambda,
+                                                        bool is_weighted_anchor,
+                                                        bool is_reorder);
+  std::vector<BlkDispVar> OptimizeLinearDisplacement(double lambda,
+                                                     bool is_weighted_anchor,
+                                                     bool is_reorder);
 
-  void GenSubCellTable(
-      std::ofstream &ost_cluster,
-      std::ofstream &ost_sub_cell,
-      std::ofstream &ost_discrepancy,
-      std::ofstream &ost_displacement,
-      double row_ly,
-      double row_uy
-  );
+  void GenSubCellTable(std::ofstream &ost_cluster, std::ofstream &ost_sub_cell,
+                       std::ofstream &ost_discrepancy,
+                       std::ofstream &ost_displacement, double row_ly,
+                       double row_uy);
+
  private:
   // list of blocks in this segment
   std::vector<BlockRegion> blk_regions_;
@@ -105,6 +83,6 @@ class RowSegment {
   double opt_anchor_weight_ = 0;
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_PLACER_WELL_LEGALIZER_ROWSEGMENT_H_
+#endif  // DALI_PLACER_WELL_LEGALIZER_ROWSEGMENT_H_

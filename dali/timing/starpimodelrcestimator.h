@@ -27,11 +27,11 @@
 namespace dali {
 class StarPiModelEstimator : protected phydb::AbstractRcEstimator {
  public:
-  explicit StarPiModelEstimator(
-      phydb::PhyDB *phydb_ptr
-  ) : AbstractRcEstimator(phydb_ptr) {}
+  explicit StarPiModelEstimator(phydb::PhyDB *phydb_ptr)
+      : AbstractRcEstimator(phydb_ptr) {}
   ~StarPiModelEstimator() override = default;
   void PushNetRCToManager() override;
+
  private:
   int distance_micron_ = 0;
   bool edge_pushed_to_spef_manager_ = false;
@@ -40,13 +40,10 @@ class StarPiModelEstimator : protected phydb::AbstractRcEstimator {
 
   void AddEdgesToManager();
   void FindFirstHorizontalAndVerticalMetalLayer();
-  void GetResistanceAndCapacitance(
-      phydb::Point2D<int> &driver_loc,
-      phydb::Point2D<int> &load_loc,
-      double &resistance,
-      double &capacitance
-  );
+  void GetResistanceAndCapacitance(phydb::Point2D<int> &driver_loc,
+                                   phydb::Point2D<int> &load_loc,
+                                   double &resistance, double &capacitance);
 };
-}
+}  // namespace dali
 
-#endif //DALI_TIMING_STARPIMODELRCESTIMATOR_H_
+#endif  // DALI_TIMING_STARPIMODELRCESTIMATOR_H_

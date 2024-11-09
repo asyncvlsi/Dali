@@ -20,10 +20,9 @@
  ******************************************************************************/
 #ifndef DALI_PLACER_GLOBAL_PLACER_HPWL_OPTIMIZER_H_
 #define DALI_PLACER_GLOBAL_PLACER_HPWL_OPTIMIZER_H_
-#include <vector>
-
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/Sparse>
+#include <vector>
 
 #include "dali/circuit/circuit.h"
 #include "dali/placer/global_placer/blkpairnets.h"
@@ -34,9 +33,11 @@ typedef Eigen::Index EgId;
 typedef std::pair<EgId, EgId> PairEgId;
 // declares a row-major sparse matrix type of double
 typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat;
-// A triplet is a simple object representing a non-zero entry as the triplet: row index, column index, value.
+// A triplet is a simple object representing a non-zero entry as the triplet:
+// row index, column index, value.
 typedef Eigen::Triplet<double> T;
-// A "doublet" is a simple object representing a non-zero entry as: column index, value, for a given row index.
+// A "doublet" is a simple object representing a non-zero entry as: column
+// index, value, for a given row index.
 typedef IndexVal D;
 
 class HpwlOptimizer {
@@ -53,6 +54,7 @@ class HpwlOptimizer {
   std::vector<double> &GetHpwlsX() { return lower_bound_hpwl_x_; }
   std::vector<double> &GetHpwlsY() { return lower_bound_hpwl_y_; }
   void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
+
  protected:
   Circuit *ckt_ptr_ = nullptr;
   int cur_iter_ = 0;
@@ -61,7 +63,8 @@ class HpwlOptimizer {
   std::vector<double> lower_bound_hpwl_x_;
   std::vector<double> lower_bound_hpwl_y_;
 
-  // stop update net model if the cost change is less than this value for 3 iterations
+  // stop update net model if the cost change is less than this value for 3
+  // iterations
   double net_model_update_stop_criterion_ = 0.01;
 
   // save intermediate result for debugging and/or visualization
@@ -70,8 +73,8 @@ class HpwlOptimizer {
 
 class B2BHpwlOptimizer : public HpwlOptimizer {
  public:
-  B2BHpwlOptimizer(Circuit *ckt_ptr, int num_threads) :
-      HpwlOptimizer(ckt_ptr, num_threads) {}
+  B2BHpwlOptimizer(Circuit *ckt_ptr, int num_threads)
+      : HpwlOptimizer(ckt_ptr, num_threads) {}
   ~B2BHpwlOptimizer() override = default;
 
   void UpdateEpsilon();
@@ -79,11 +82,8 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
 
   virtual void BuildProblemX();
   virtual void BuildProblemY();
-  bool IsSeriesConverge(
-      std::vector<double> &data,
-      int window_size,
-      double tolerance
-  );
+  bool IsSeriesConverge(std::vector<double> &data, int window_size,
+                        double tolerance);
   bool IsSeriesOscillate(std::vector<double> &data, int window_size);
   virtual double OptimizeQuadraticMetricX(double cg_stop_criterion);
   virtual double OptimizeQuadraticMetricY(double cg_stop_criterion);
@@ -102,24 +102,31 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
 
   double GetTime() override;
   void Close() override;
+
  protected:
   /**** parameters for CG solver optimization configuration ****/
   // this is to make sure cg_tolerance is the same for different machines
   double cg_tolerance_ = 1e-35;
-  // cg solver runs this amount of iterations to optimize the quadratic metric everytime
+  // cg solver runs this amount of iterations to optimize the quadratic metric
+  // everytime
   int cg_iteration_ = 10;
-  // cg solver runs at most this amount of iterations to optimize the quadratic metric, this number should be adaptive to circuit size
+  // cg solver runs at most this amount of iterations to optimize the quadratic
+  // metric, this number should be adaptive to circuit size
   int cg_iteration_max_num_ = 1000;
   // cg solver stops if the cost change is less than this value for 3 iterations
   double cg_stop_criterion_ = 0.0025;
-  // stop update net model if the cost change is less than this value for 3 iterations
+  // stop update net model if the cost change is less than this value for 3
+  // iterations
   double net_model_update_stop_criterion_ = 0.01;
 
-  /**** two small positive numbers used to avoid divergence when calculating net weights ****/
+  /**** two small positive numbers used to avoid divergence when calculating net
+   * weights ****/
   double epsilon_factor_ = 1.5;
-  // this value will be set to 1/epsilon_factor_ times the average movable cell width
+  // this value will be set to 1/epsilon_factor_ times the average movable cell
+  // width
   double width_epsilon_ = 1e-5;
-  // this value will be set to 1/epsilon_factor_ times the average movable cell height
+  // this value will be set to 1/epsilon_factor_ times the average movable cell
+  // height
   double height_epsilon_ = 1e-5;
   // early stop threshold
   double hpwl_early_stop_threshold_ = 1.0;
@@ -167,8 +174,8 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
 
 class StarHpwlOptimizer : public B2BHpwlOptimizer {
  public:
-  StarHpwlOptimizer(Circuit *ckt_ptr, int num_threads) :
-      B2BHpwlOptimizer(ckt_ptr, num_threads) {}
+  StarHpwlOptimizer(Circuit *ckt_ptr, int num_threads)
+      : B2BHpwlOptimizer(ckt_ptr, num_threads) {}
   ~StarHpwlOptimizer() override = default;
 
   void BuildProblemX() override;
@@ -179,8 +186,8 @@ class StarHpwlOptimizer : public B2BHpwlOptimizer {
 
 class HpwlHpwlOptimizer : public B2BHpwlOptimizer {
  public:
-  HpwlHpwlOptimizer(Circuit *ckt_ptr, int num_threads) :
-      B2BHpwlOptimizer(ckt_ptr, num_threads) {}
+  HpwlHpwlOptimizer(Circuit *ckt_ptr, int num_threads)
+      : B2BHpwlOptimizer(ckt_ptr, num_threads) {}
   ~HpwlHpwlOptimizer() override = default;
 
   void BuildProblemX() override;
@@ -208,11 +215,12 @@ class StarHpwlHpwlOptimizer : public B2BHpwlOptimizer {
   double OptimizeQuadraticMetricY(double cg_stop_criterion) override;
 
   void UpdateAnchorAlpha() override;
+
  private:
   std::vector<BlkPairNets> blk_pair_net_list_;
   std::unordered_map<PairEgId, EgId, boost::hash<PairEgId>> blk_pair_map_;
 };
 
-} // dali
+}  // namespace dali
 
-#endif //DALI_PLACER_GLOBAL_PLACER_HPWL_OPTIMIZER_H_
+#endif  // DALI_PLACER_GLOBAL_PLACER_HPWL_OPTIMIZER_H_

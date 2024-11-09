@@ -50,6 +50,6 @@ struct CellCutPoint {
   }
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_PLACER_GLOBAL_PLACER_CELLCUTPOINT_H_
+#endif  // DALI_PLACER_GLOBAL_PLACER_CELLCUTPOINT_H_

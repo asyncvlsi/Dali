@@ -27,14 +27,13 @@ namespace dali {
 
 WellPlaceFlow::WellPlaceFlow() : GlobalPlacer() {}
 
-bool WellPlaceFlow::StartPlacement() { // TODO: do not use this
+bool WellPlaceFlow::StartPlacement() {  // TODO: do not use this
   if (ckt_ptr_->Blocks().empty()) {
-    BOOST_LOG_TRIVIAL(info)
-      << "Empty block list, nothing to place!\n";
+    BOOST_LOG_TRIVIAL(info) << "Empty block list, nothing to place!\n";
   }
   if (ckt_ptr_->Nets().empty()) {
     BOOST_LOG_TRIVIAL(info)
-      << "Empty net list, nothing to optimize during placement!\n";
+        << "Empty net list, nothing to optimize during placement!\n";
   }
 
   PrintStartStatement("well place flow");
@@ -45,9 +44,10 @@ bool WellPlaceFlow::StartPlacement() { // TODO: do not use this
   InitializeBlockLocation();
 
   optimizer_->OptimizeHpwl();
-  //BOOST_LOG_TRIVIAL(info)   << cg_total_hpwl_ << "  " << circuit_ptr_->HPWL() << "\n";
+  // BOOST_LOG_TRIVIAL(info)   << cg_total_hpwl_ << "  " << circuit_ptr_->HPWL()
+  // << "\n";
 
-  //bool old_success = false;
+  // bool old_success = false;
   max_iter_ = 50;
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     BOOST_LOG_TRIVIAL(trace) << cur_iter_ << "-th iteration\n";
@@ -59,37 +59,38 @@ bool WellPlaceFlow::StartPlacement() { // TODO: do not use this
 
       StdClusterWellLegalizer well_legalizer;
       well_legalizer.TakeOver(this);
-      well_legalizer.SetStripePartitionMode(int(DefaultPartitionMode::SCAVENGE));
+      well_legalizer.SetStripePartitionMode(
+          int(DefaultPartitionMode::SCAVENGE));
       well_legalizer.WellLegalize();
       legalizer_->GetHpwls().back() = ckt_ptr_->WeightedHPWL();
 
-      //StdClusterWellLegalizer well_legalizer;
-      //well_legalizer.TakeOver(this);
-      //bool is_success = well_legalizer.StartPlacement();
-      //well_legalizer_.GenMatlabClusterTable("sc_result");
-      //well_legalizer_.GenMATLABWellTable("scw", 0);
-      //if (!is_success && !old_success) {
-      //  filling_rate_ = filling_rate_ * 0.99;
-      //  BOOST_LOG_TRIVIAL(info)   << "Adjusted filling rate: " << filling_rate_ << "\n";
-      //  BOOST_LOG_TRIVIAL(info)   << "White space usage: " << circuit_ptr_->WhiteSpaceUsage() << "\n";
-      //}
-      //if (!old_success) {
-      //  old_success = is_success;
-      //}
+      // StdClusterWellLegalizer well_legalizer;
+      // well_legalizer.TakeOver(this);
+      // bool is_success = well_legalizer.StartPlacement();
+      // well_legalizer_.GenMatlabClusterTable("sc_result");
+      // well_legalizer_.GenMATLABWellTable("scw", 0);
+      // if (!is_success && !old_success) {
+      //   filling_rate_ = filling_rate_ * 0.99;
+      //   BOOST_LOG_TRIVIAL(info)   << "Adjusted filling rate: " <<
+      //   filling_rate_ << "\n"; BOOST_LOG_TRIVIAL(info)   << "White space
+      //   usage: " << circuit_ptr_->WhiteSpaceUsage() << "\n";
+      // }
+      // if (!old_success) {
+      //   old_success = is_success;
+      // }
     }
     BOOST_LOG_TRIVIAL(info)
-      << "It " << cur_iter_ << ": \t"
-      << optimizer_->GetHpwls().back() << " "
-      << legalizer_->GetHpwls().back() << "\n";
+        << "It " << cur_iter_ << ": \t" << optimizer_->GetHpwls().back() << " "
+        << legalizer_->GetHpwls().back() << "\n";
     optimizer_->OptimizeHpwl();
   }
 
-  BOOST_LOG_TRIVIAL(info)
-    << "\033[0;36m" << "Global Placement complete\n" << "\033[0m";
-  BOOST_LOG_TRIVIAL(info)
-    << "(cg time: " << optimizer_->GetTime() << "s, lal time: " << legalizer_->GetTime() << "s)\n";
+  BOOST_LOG_TRIVIAL(info) << "\033[0;36m" << "Global Placement complete\n"
+                          << "\033[0m";
+  BOOST_LOG_TRIVIAL(info) << "(cg time: " << optimizer_->GetTime()
+                          << "s, lal time: " << legalizer_->GetTime() << "s)\n";
   legalizer_->Close();
-  //CheckAndShift();
+  // CheckAndShift();
   UpdateMovableBlkPlacementStatus();
   ReportHPWL();
 
@@ -102,16 +103,11 @@ bool WellPlaceFlow::StartPlacement() { // TODO: do not use this
   return true;
 }
 
-void WellPlaceFlow::EmitDEFWellFile(
-    std::string const &name_of_file,
-    int well_emit_mode,
-    bool enable_emitting_cluster
-) {
-  well_legalizer_.EmitDEFWellFile(
-      name_of_file,
-      well_emit_mode,
-      enable_emitting_cluster
-  );
+void WellPlaceFlow::EmitDEFWellFile(std::string const &name_of_file,
+                                    int well_emit_mode,
+                                    bool enable_emitting_cluster) {
+  well_legalizer_.EmitDEFWellFile(name_of_file, well_emit_mode,
+                                  enable_emitting_cluster);
 }
 
-}
+}  // namespace dali

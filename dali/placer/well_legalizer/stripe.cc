@@ -34,11 +34,11 @@ bool Stripe::HasNoRowsSpillingOut() const {
   if (gridded_rows_.empty()) return true;
 
   // check if the first row fully inside the placement region
-  bool is_first_row_fully_in = gridded_rows_[0].LLY() >= LLY() &&
-      gridded_rows_[0].URY() <= URY();
+  bool is_first_row_fully_in =
+      gridded_rows_[0].LLY() >= LLY() && gridded_rows_[0].URY() <= URY();
   // check if the last row fully inside the placement region
   bool is_last_row_fully_in = gridded_rows_.back().LLY() >= LLY() &&
-      gridded_rows_.back().URY() <= URY();
+                              gridded_rows_.back().URY() <= URY();
 
   return is_first_row_fully_in && is_last_row_fully_in;
 }
@@ -48,18 +48,15 @@ void Stripe::MinDisplacementAdjustment() {
     row.UpdateMinDisplacementLLY();
   }
 
-  std::sort(
-      gridded_rows_.begin(),
-      gridded_rows_.end(),
-      [](const GriddedRow &cluster0, const GriddedRow &cluster1) {
-        return cluster0.MinDisplacementLLY()
-            < cluster1.MinDisplacementLLY();
-      }
-  );
+  std::sort(gridded_rows_.begin(), gridded_rows_.end(),
+            [](const GriddedRow &cluster0, const GriddedRow &cluster1) {
+              return cluster0.MinDisplacementLLY() <
+                     cluster1.MinDisplacementLLY();
+            });
 
   std::vector<ClusterSegment> segments;
 
-  int sz = (int) gridded_rows_.size();
+  int sz = (int)gridded_rows_.size();
   int lower_bound = ly_;
   int upper_bound = ly_ + height_;
   for (int i = 0; i < sz; ++i) {
@@ -78,8 +75,8 @@ void Stripe::MinDisplacementAdjustment() {
     size_t seg_sz = segments.size();
     if (seg_sz == 1) continue;
 
-    // check if this segment overlap with the previous one, if yes, merge these two segments
-    // repeats until this is no overlap or only one segment left
+    // check if this segment overlap with the previous one, if yes, merge these
+    // two segments repeats until this is no overlap or only one segment left
 
     ClusterSegment *cur_seg = &(segments[seg_sz - 1]);
     ClusterSegment *prev_seg = &(segments[seg_sz - 2]);
@@ -100,36 +97,27 @@ void Stripe::MinDisplacementAdjustment() {
 }
 
 void Stripe::SortBlocksBasedOnLLY() {
-  std::sort(
-      blk_ptrs_vec_.begin(),
-      blk_ptrs_vec_.end(),
-      [](const Block *lhs, const Block *rhs) {
-        return (lhs->LLY() < rhs->LLY())
-            || (lhs->LLY() == rhs->LLY() && lhs->LLX() < rhs->LLX());
-      }
-  );
+  std::sort(blk_ptrs_vec_.begin(), blk_ptrs_vec_.end(),
+            [](const Block *lhs, const Block *rhs) {
+              return (lhs->LLY() < rhs->LLY()) ||
+                     (lhs->LLY() == rhs->LLY() && lhs->LLX() < rhs->LLX());
+            });
 }
 
 void Stripe::SortBlocksBasedOnURY() {
-  std::sort(
-      blk_ptrs_vec_.begin(),
-      blk_ptrs_vec_.end(),
-      [](const Block *lhs, const Block *rhs) {
-        return (lhs->URY() < rhs->URY())
-            || (lhs->URY() == rhs->URY() && lhs->LLX() < rhs->LLX());
-      }
-  );
+  std::sort(blk_ptrs_vec_.begin(), blk_ptrs_vec_.end(),
+            [](const Block *lhs, const Block *rhs) {
+              return (lhs->URY() < rhs->URY()) ||
+                     (lhs->URY() == rhs->URY() && lhs->LLX() < rhs->LLX());
+            });
 }
 
 void Stripe::SortBlocksBasedOnStretchedURY() {
-  std::sort(
-      blk_ptrs_vec_.begin(),
-      blk_ptrs_vec_.end(),
-      [](const Block *lhs, const Block *rhs) {
-        return (lhs->URY() > rhs->URY())
-            || (lhs->URY() == rhs->URY() && lhs->LLX() < rhs->LLX());
-      }
-  );
+  std::sort(blk_ptrs_vec_.begin(), blk_ptrs_vec_.end(),
+            [](const Block *lhs, const Block *rhs) {
+              return (lhs->URY() > rhs->URY()) ||
+                     (lhs->URY() == rhs->URY() && lhs->LLX() < rhs->LLX());
+            });
 }
 
 void Stripe::SortBlocksBasedOnYLocation(int criterion) {
@@ -152,11 +140,9 @@ void Stripe::SortBlocksBasedOnYLocation(int criterion) {
   }
 }
 
-void Stripe::PrecomputeWellTapCellLocation(
-    bool is_checker_board_mode,
-    int tap_cell_interval_grid,
-    BlockType *well_tap_type_ptr
-) {
+void Stripe::PrecomputeWellTapCellLocation(bool is_checker_board_mode,
+                                           int tap_cell_interval_grid,
+                                           BlockType *well_tap_type_ptr) {
   is_checkerboard_mode_ = is_checker_board_mode;
   DaliExpects(tap_cell_interval_grid > 0,
               "Non-positive well-tap cell interval?");
@@ -168,18 +154,18 @@ void Stripe::PrecomputeWellTapCellLocation(
   std::vector<int> locations;
 
   if (is_checkerboard_mode_) {
-    if (tap_cell_interval_grid & 1) { // if this interval is an odd number
+    if (tap_cell_interval_grid & 1) {  // if this interval is an odd number
       int new_tap_cell_interval_grid = tap_cell_interval_grid - 1;
       BOOST_LOG_TRIVIAL(info)
-        << "Rounding well tap cell interval from " << tap_cell_interval_grid
-        << " to " << new_tap_cell_interval_grid << "\n";
+          << "Rounding well tap cell interval from " << tap_cell_interval_grid
+          << " to " << new_tap_cell_interval_grid << "\n";
       tap_cell_interval_grid = new_tap_cell_interval_grid;
     }
     tap_cell_interval_grid = tap_cell_interval_grid / 2;
   }
 
   // compute how many well-tap cells are needed
-  int space_to_left = 0; // TODO: this can be a parameter exposed to users
+  int space_to_left = 0;  // TODO: this can be a parameter exposed to users
   int well_tap_cell_loc = lx_ + space_to_left;
   int number_of_well_tap_cell =
       (width_ - space_to_left) / tap_cell_interval_grid + 1;
@@ -194,7 +180,8 @@ void Stripe::PrecomputeWellTapCellLocation(
   if (last_ux > URX()) {
     locations.back() = right_most_loc;
   } else {
-    // check if the last segment is longer than half of the well tap cell interval
+    // check if the last segment is longer than half of the well tap cell
+    // interval
     if (URX() - last_ux >= tap_cell_interval_grid / 2.0) {
       locations.emplace_back(right_most_loc);
     }
@@ -203,13 +190,13 @@ void Stripe::PrecomputeWellTapCellLocation(
   // finalize well-tap cell locations
   if (is_checkerboard_mode_) {
     size_t sz = locations.size();
-    size_t half_sz = (sz + 1) >> 1; // divide by 2
+    size_t half_sz = (sz + 1) >> 1;  // divide by 2
     well_tap_cell_location_even_.reserve(half_sz);
     well_tap_cell_location_odd_.reserve(half_sz);
     for (size_t i = 0; i < sz; ++i) {
       int lo_loc = locations[i];
       int hi_loc = locations[i] + well_tap_cell_width_;
-      if (i & 1) { // if index i is an odd number
+      if (i & 1) {  // if index i is an odd number
         well_tap_cell_location_odd_.emplace_back(lo_loc, hi_loc);
       } else {
         well_tap_cell_location_even_.emplace_back(lo_loc, hi_loc);
@@ -259,7 +246,8 @@ void Stripe::UpdateFrontClusterUpward(int p_height, int n_height) {
 
 /****
  * Add following clusters and set orientation accordingly.
- * Add the corresponding block region into these clusters based on row orientation and block orientation.
+ * Add the corresponding block region into these clusters based on row
+ * orientation and block orientation.
  *
  * @param p_blk
  */
@@ -288,15 +276,9 @@ bool Stripe::AddBlockToFrontCluster(Block *p_blk, bool is_upward) {
 }
 
 bool Stripe::AddBlockToFrontClusterWithDispCheck(
-    Block *p_blk,
-    double displacement_upper_limit,
-    bool is_upward
-) {
+    Block *p_blk, double displacement_upper_limit, bool is_upward) {
   bool res = gridded_rows_[front_id_].AttemptToAddWithDispCheck(
-      p_blk,
-      displacement_upper_limit,
-      is_upward
-  );
+      p_blk, displacement_upper_limit, is_upward);
   if (!res) return false;
 
   // add this block to other clusters above the front cluster
@@ -305,10 +287,8 @@ bool Stripe::AddBlockToFrontClusterWithDispCheck(
   return true;
 }
 
-size_t Stripe::FitBlocksToFrontSpaceUpward(
-    size_t start_id,
-    int current_iteration
-) {
+size_t Stripe::FitBlocksToFrontSpaceUpward(size_t start_id,
+                                           int current_iteration) {
   std::vector<Block *> legalized_blocks;
   std::vector<Block *> skipped_blocks;
 
@@ -344,8 +324,7 @@ size_t Stripe::FitBlocksToFrontSpaceUpward(
 }
 
 size_t Stripe::FitBlocksToFrontSpaceUpwardWithDispCheck(
-    size_t start_id, double displacement_upper_limit
-) {
+    size_t start_id, double displacement_upper_limit) {
   std::vector<Block *> legalized_blocks;
   std::vector<Block *> skipped_blocks;
 
@@ -353,11 +332,8 @@ size_t Stripe::FitBlocksToFrontSpaceUpwardWithDispCheck(
   for (size_t i = start_id; i < blocks_sz; ++i) {
     Block *p_blk = blk_ptrs_vec_[i];
     if (gridded_rows_[front_id_].IsOrientMatching(p_blk, 0)) {
-      if (AddBlockToFrontClusterWithDispCheck(
-          p_blk,
-          displacement_upper_limit,
-          true)
-          ) {
+      if (AddBlockToFrontClusterWithDispCheck(p_blk, displacement_upper_limit,
+                                              true)) {
         legalized_blocks.push_back(p_blk);
       } else {
         skipped_blocks.push_back(p_blk);
@@ -385,11 +361,8 @@ void Stripe::LegalizeFrontCluster(bool use_init_loc) {
   gridded_rows_[front_id_].LegalizeSegmentsX(use_init_loc);
 }
 
-void Stripe::UpdateRemainingClusters(
-    int p_height,
-    int n_height,
-    bool is_upward
-) {
+void Stripe::UpdateRemainingClusters(int p_height, int n_height,
+                                     bool is_upward) {
   size_t sz = gridded_rows_.size();
   for (size_t i = front_id_ + 1; i < sz; ++i) {
     gridded_rows_[i].SetLLX(lx_);
@@ -422,9 +395,11 @@ void Stripe::UpdateBlockStretchLength() {
       if (id >= 1) {
         Block *p_blk = blk_region.p_blk;
         --id;
-        int well_edge_distance = blk_region.p_blk->TypePtr()->AdjacentRegionEdgeDistance(id, p_blk->IsFlipped());
-        int actual_edge_distance =
-            (cur_cluster.LLY() + cur_cluster.PNEdge()) - (pre_cluster.LLY() + pre_cluster.PNEdge());
+        int well_edge_distance =
+            blk_region.p_blk->TypePtr()->AdjacentRegionEdgeDistance(
+                id, p_blk->IsFlipped());
+        int actual_edge_distance = (cur_cluster.LLY() + cur_cluster.PNEdge()) -
+                                   (pre_cluster.LLY() + pre_cluster.PNEdge());
         int length = actual_edge_distance - well_edge_distance;
         p_blk->SetStretchLength(id, length);
       }
@@ -471,10 +446,8 @@ void Stripe::UpdateFrontClusterDownward(int p_height, int n_height) {
   }
 }
 
-size_t Stripe::FitBlocksToFrontSpaceDownward(
-    size_t start_id,
-    int current_iteration
-) {
+size_t Stripe::FitBlocksToFrontSpaceDownward(size_t start_id,
+                                             int current_iteration) {
   std::vector<Block *> legalized_blocks;
   std::vector<Block *> skipped_blocks;
 
@@ -532,8 +505,8 @@ void Stripe::UpdateBlockYLocation() {
  *
  * Temporary row segments are created by the greedy legalization algorithm fore
  * simplifying the code implementation. These temporary row segments are not
- * real row segments, and thus they need to be cleaned up in order not to confuse
- * following processes.
+ * real row segments, and thus they need to be cleaned up in order not to
+ * confuse following processes.
  *
  */
 void Stripe::CleanUpTemporaryRowSegments() {
@@ -553,21 +526,16 @@ void Stripe::CleanUpTemporaryRowSegments() {
   }
 }
 
-size_t Stripe::AddWellTapCells(
-    Circuit *p_ckt,
-    BlockType *well_tap_type_ptr,
-    size_t start_id
-) {
+size_t Stripe::AddWellTapCells(Circuit *p_ckt, BlockType *well_tap_type_ptr,
+                               size_t start_id) {
   size_t row_cnt = gridded_rows_.size();
   for (size_t i = 0; i < row_cnt; ++i) {
     if (i & 1) {
       start_id = gridded_rows_[i].AddWellTapCells(
-          p_ckt, well_tap_type_ptr, start_id, well_tap_cell_location_odd_
-      );
+          p_ckt, well_tap_type_ptr, start_id, well_tap_cell_location_odd_);
     } else {
       start_id = gridded_rows_[i].AddWellTapCells(
-          p_ckt, well_tap_type_ptr, start_id, well_tap_cell_location_even_
-      );
+          p_ckt, well_tap_type_ptr, start_id, well_tap_cell_location_even_);
     }
   }
   return start_id;
@@ -575,17 +543,15 @@ size_t Stripe::AddWellTapCells(
 
 bool Stripe::IsLeftmostPlacementLegal() {
   std::sort(
-      blk_ptrs_vec_.begin(),
-      blk_ptrs_vec_.end(),
+      blk_ptrs_vec_.begin(), blk_ptrs_vec_.end(),
       [](const Block *blk0, const Block *blk1) {
         return (blk0->LLX() < blk1->LLX()) ||
-            ((blk0->LLX() == blk1->LLX()) && (blk0->Id() < blk1->Id()));
-      }
-  );
+               ((blk0->LLX() == blk1->LLX()) && (blk0->Id() < blk1->Id()));
+      });
 
   DaliExpects(false, "To be implemented");
-  //for (Block *&blk : blk_ptrs_vec_) {
-  //}
+  // for (Block *&blk : blk_ptrs_vec_) {
+  // }
 
   return true;
 }
@@ -613,31 +579,25 @@ void Stripe::CollectAllRowSegments() {
 void Stripe::UpdateSubCellLocs(std::vector<BlkDispVar> &vars) {
   for (BlkDispVar &var : vars) {
     Block *blk_ptr = var.blk_rgn.p_blk;
-    if (blk_ptr == nullptr) continue; // skip dummy cells
+    if (blk_ptr == nullptr) continue;  // skip dummy cells
     auto *aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
-    aux_ptr->SetSubCellLoc(
-        var.blk_rgn.region_id,
-        var.Solution(),
-        var.SegmentWeight()
-    );
+    aux_ptr->SetSubCellLoc(var.blk_rgn.region_id, var.Solution(),
+                           var.SegmentWeight());
   }
 }
 
-void Stripe::OptimizeDisplacementInEachRowSegment(
-    double lambda,
-    bool is_weighted_anchor,
-    bool is_reorder
-) {
+void Stripe::OptimizeDisplacementInEachRowSegment(double lambda,
+                                                  bool is_weighted_anchor,
+                                                  bool is_reorder) {
   size_t sz = row_seg_ptrs_.size();
 #pragma omp parallel for
   for (size_t i = 0; i < sz; ++i) {
     RowSegment *seg = row_seg_ptrs_[i];
-    std::vector<BlkDispVar> vars =
-        seg->OptimizeQuadraticDisplacement(lambda,
-                                           is_weighted_anchor,
-                                           is_reorder);
-    //std::vector<BlkDispVar> vars =
-    //    seg->OptimizeLinearDisplacement(lambda, is_weighted_anchor, is_reorder);
+    std::vector<BlkDispVar> vars = seg->OptimizeQuadraticDisplacement(
+        lambda, is_weighted_anchor, is_reorder);
+    // std::vector<BlkDispVar> vars =
+    //     seg->OptimizeLinearDisplacement(lambda, is_weighted_anchor,
+    //     is_reorder);
     UpdateSubCellLocs(vars);
   }
 }
@@ -678,9 +638,8 @@ void Stripe::ReportIterativeStatus(int i) {
   displacements_.push_back(disp_x);
   discrepancies_.push_back(discrepancy);
 
-  BOOST_LOG_TRIVIAL(info)
-    << "Iter " << i << ", displacement: " << disp_x
-    << ", discrepancy: " << discrepancy << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Iter " << i << ", displacement: " << disp_x
+                          << ", discrepancy: " << discrepancy << "\n";
 }
 
 bool Stripe::IsDiscrepancyConverge() {
@@ -702,21 +661,18 @@ void Stripe::SetBlockLoc() {
   }
 }
 
-void Stripe::ClearMultiRowCellBreaking() {
-  row_seg_ptrs_.clear();
-}
+void Stripe::ClearMultiRowCellBreaking() { row_seg_ptrs_.clear(); }
 
 void Stripe::IterativeCellReordering(int max_iter, int number_of_threads) {
   CollectAllRowSegments();
   omp_set_num_threads(number_of_threads);
   bool is_weighted_anchor = false;
   for (int i = 0; i < max_iter; ++i) {
-    //double decay = 30.0; // the bigger, the closer to CPLEX result
-    //double lambda = exp(-i / decay);
+    // double decay = 30.0; // the bigger, the closer to CPLEX result
+    // double lambda = exp(-i / decay);
     double lambda = 1 / double(i + 1);
-    OptimizeDisplacementInEachRowSegment(
-        lambda, is_weighted_anchor, i % 10 == 0
-    );
+    OptimizeDisplacementInEachRowSegment(lambda, is_weighted_anchor,
+                                         i % 10 == 0);
     ComputeAverageLoc();
     ReportIterativeStatus(i);
     if (!is_weighted_anchor) {
@@ -749,12 +705,12 @@ size_t Stripe::OutOfBoundCell() {
 void Stripe::PopulateVariableArray(IloModel &model, IloNumVarArray &x) {
   IloEnv env = model.getEnv();
   IloInt cnt = 0;
-  for (auto &row: gridded_rows_) {
-    for (auto &blk_region: row.blk_regions_) {
+  for (auto &row : gridded_rows_) {
+    for (auto &blk_region : row.blk_regions_) {
       Block *blk_ptr = blk_region.p_blk;
       if (blk_ptr_2_tmp_id.find(blk_ptr) == blk_ptr_2_tmp_id.end()) {
-        //x.add(IloNumVar(env, lx_, lx_ + width_));
-        //x.add(IloNumVar(env, lx_, IloInfinity));
+        // x.add(IloNumVar(env, lx_, lx_ + width_));
+        // x.add(IloNumVar(env, lx_, IloInfinity));
         x.add(IloNumVar(env, -IloInfinity, IloInfinity));
         blk_ptr_2_tmp_id[blk_ptr] = cnt;
         blk_tmp_id_2_ptr[cnt] = blk_ptr;
@@ -764,12 +720,9 @@ void Stripe::PopulateVariableArray(IloModel &model, IloNumVarArray &x) {
   }
 }
 
-void Stripe::AddVariableConstraints(
-    IloModel &model,
-    IloNumVarArray &x,
-    IloRangeArray &c
-) {
-  for (auto &row: gridded_rows_) {
+void Stripe::AddVariableConstraints(IloModel &model, IloNumVarArray &x,
+                                    IloRangeArray &c) {
+  for (auto &row : gridded_rows_) {
     size_t blk_cnt = row.blk_regions_.size();
     for (size_t i = 0; i < blk_cnt; ++i) {
       if (i > 0) {
@@ -786,14 +739,11 @@ void Stripe::AddVariableConstraints(
   model.add(c);
 }
 
-void Stripe::ConstructQuadraticObjective(
-    IloModel &model,
-    IloNumVarArray &x
-) {
+void Stripe::ConstructQuadraticObjective(IloModel &model, IloNumVarArray &x) {
   IloEnv env = model.getEnv();
   IloExpr objExpr(env);
-  for (auto &row: gridded_rows_) {
-    for (auto &blk_region: row.blk_regions_) {
+  for (auto &row : gridded_rows_) {
+    for (auto &blk_region : row.blk_regions_) {
       Block *blk_ptr = blk_region.p_blk;
       auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
       double2d init = aux_ptr->InitLoc();
@@ -806,11 +756,8 @@ void Stripe::ConstructQuadraticObjective(
   objExpr.end();
 }
 
-void Stripe::CreateQPModel(
-    IloModel &model,
-    IloNumVarArray &x,
-    IloRangeArray &c
-) {
+void Stripe::CreateQPModel(IloModel &model, IloNumVarArray &x,
+                           IloRangeArray &c) {
   PopulateVariableArray(model, x);
   AddVariableConstraints(model, x, c);
   ConstructQuadraticObjective(model, x);
@@ -822,16 +769,16 @@ bool Stripe::SolveQPProblem(IloCplex &cplex, IloNumVarArray &var) {
   IloBool is_solved = cplex.solve();
 
   if (is_solved) {
-    //BOOST_LOG_TRIVIAL(info)
-    //  << "Solution status = " << cplex.getStatus() << "\n";
-    //BOOST_LOG_TRIVIAL(info)
-    //  << "Solution value  = " << cplex.getObjValue() << "\n";
+    // BOOST_LOG_TRIVIAL(info)
+    //   << "Solution status = " << cplex.getStatus() << "\n";
+    // BOOST_LOG_TRIVIAL(info)
+    //   << "Solution value  = " << cplex.getObjValue() << "\n";
 
     IloNumArray val(env);
     cplex.getValues(val, var);
     IloInt nvars = var.getSize();
     for (IloInt j = 0; j < nvars; ++j) {
-      //env.out() << "Variable " << j << ": Value = " << val[j] << endl;
+      // env.out() << "Variable " << j << ": Value = " << val[j] << endl;
       Block *blk_ptr = blk_tmp_id_2_ptr[j];
       blk_ptr->SetLLX(val[j]);
     }
@@ -843,7 +790,8 @@ bool Stripe::SolveQPProblem(IloCplex &cplex, IloNumVarArray &var) {
   return is_solved;
 }
 
-bool Stripe::OptimizeDisplacementUsingQuadraticProgramming(int number_of_threads) {
+bool Stripe::OptimizeDisplacementUsingQuadraticProgramming(
+    int number_of_threads) {
   bool is_solved = true;
 
   SortBlocksInEachRow();
@@ -894,8 +842,8 @@ void Stripe::ImportStandardRowSegments(phydb::PhyDB &phydb, Circuit &ckt) {
     gridded_row.SetLLX(llx);
     lx_ = std::min(lx_, gridded_row.LLX());
 
-    double d_width = static_cast<double>(row.GetNumX()) * row.GetStepX()
-        / ckt.DatabaseMicrons() / ckt.GridValueX();
+    double d_width = static_cast<double>(row.GetNumX()) * row.GetStepX() /
+                     ckt.DatabaseMicrons() / ckt.GridValueX();
     DaliExpects(AbsResidual(d_width, 1) < 1e-5,
                 "row width loc is not an integer");
     int width = static_cast<int>(d_width);
@@ -931,21 +879,14 @@ int Stripe::LocY2RowId(double lly) {
   return static_cast<int>(std::round(height / row_height_));
 }
 
-double Stripe::EstimateCost(
-    int row_id,
-    Block *blk_ptr,
-    SegI &range,
-    double density
-) {
+double Stripe::EstimateCost(int row_id, Block *blk_ptr, SegI &range,
+                            double density) {
   int region_cnt = blk_ptr->TypePtr()->RegionCount();
   std::vector<SegI> spaces;
   spaces.emplace_back(LLX(), URX());
   for (int i = 0; i < region_cnt; ++i) {
-    gridded_rows_[row_id + i].UpdateCommonSegment(
-        spaces,
-        blk_ptr->Width(),
-        density
-    );
+    gridded_rows_[row_id + i].UpdateCommonSegment(spaces, blk_ptr->Width(),
+                                                  density);
   }
 
   if (spaces.empty()) {
@@ -973,7 +914,7 @@ double Stripe::EstimateCost(
   }
 
   range = spaces[min_id];
-  //return min_cost;
+  // return min_cost;
   double y_cost = std::fabs(blk_ptr->LLY() - gridded_rows_[row_id].LLY());
   return min_cost + y_cost;
 }
@@ -988,14 +929,12 @@ void Stripe::AddBlockToRow(int row_id, Block *blk_ptr, SegI range) {
 
 void Stripe::AssignStandardCellsToRowSegments(/*double white_space_usage*/) {
   std::sort(
-      blk_ptrs_vec_.begin(),
-      blk_ptrs_vec_.end(),
+      blk_ptrs_vec_.begin(), blk_ptrs_vec_.end(),
       [](const Block *blk0, const Block *blk1) {
         return (blk0->LLY() < blk1->LLY()) ||
-            ((blk0->LLY() == blk1->LLY()) && (blk0->Id() < blk1->Id()));
-      }
-  );
-  //int row_cnt = static_cast<int>(gridded_rows_.size());
+               ((blk0->LLY() == blk1->LLY()) && (blk0->Id() < blk1->Id()));
+      });
+  // int row_cnt = static_cast<int>(gridded_rows_.size());
   for (auto &blk_ptr : blk_ptrs_vec_) {
     int row_id = LocY2RowId(blk_ptr->LLY());
     SegI range(blk_ptr->LLX(), blk_ptr->URX());
@@ -1006,8 +945,8 @@ void Stripe::AssignStandardCellsToRowSegments(/*double white_space_usage*/) {
 Stripe *ClusterStripe::GetStripeMatchSeg(SegI seg, int y_loc) {
   Stripe *res = nullptr;
   for (auto &Stripe : stripe_list_) {
-    if ((Stripe.URY() == y_loc) && (Stripe.LLX() == seg.lo)
-        && (Stripe.URX() == seg.hi)) {
+    if ((Stripe.URY() == y_loc) && (Stripe.LLX() == seg.lo) &&
+        (Stripe.URX() == seg.hi)) {
       res = &Stripe;
       break;
     }
@@ -1020,10 +959,8 @@ Stripe *ClusterStripe::GetStripeMatchBlk(Block *blk_ptr) {
   double center_x = blk_ptr->X();
   double center_y = blk_ptr->Y();
   for (auto &Stripe : stripe_list_) {
-    if ((Stripe.LLY() <= center_y) &&
-        (Stripe.URY() > center_y) &&
-        (Stripe.LLX() <= center_x) &&
-        (Stripe.URX() > center_x)) {
+    if ((Stripe.LLY() <= center_y) && (Stripe.URY() > center_y) &&
+        (Stripe.LLX() <= center_x) && (Stripe.URX() > center_x)) {
       res = &Stripe;
       break;
     }
@@ -1043,23 +980,16 @@ Stripe *ClusterStripe::GetStripeClosestToBlk(Block *blk_ptr, double &distance) {
       res = &Stripe;
       tmp_distance = 0;
     } else if ((Stripe.LLX() <= center_x) && (Stripe.URX() > center_x)) {
-      tmp_distance = std::min(
-          std::abs(center_y - Stripe.LLY()),
-          std::abs(center_y - Stripe.URY())
-      );
+      tmp_distance = std::min(std::abs(center_y - Stripe.LLY()),
+                              std::abs(center_y - Stripe.URY()));
     } else if ((Stripe.LLY() <= center_y) && (Stripe.URY() > center_y)) {
-      tmp_distance = std::min(
-          std::abs(center_x - Stripe.LLX()),
-          std::abs(center_x - Stripe.URX())
-      );
+      tmp_distance = std::min(std::abs(center_x - Stripe.LLX()),
+                              std::abs(center_x - Stripe.URX()));
     } else {
-      tmp_distance = std::min(
-          std::abs(center_x - Stripe.LLX()),
-          std::abs(center_x - Stripe.URX())
-      ) + std::min(
-          std::abs(center_y - Stripe.LLY()),
-          std::abs(center_y - Stripe.URY())
-      );
+      tmp_distance = std::min(std::abs(center_x - Stripe.LLX()),
+                              std::abs(center_x - Stripe.URX())) +
+                     std::min(std::abs(center_y - Stripe.LLY()),
+                              std::abs(center_y - Stripe.URY()));
     }
     if (tmp_distance < min_distance) {
       min_distance = tmp_distance;
@@ -1094,4 +1024,4 @@ void ClusterStripe::AssignBlockToSimpleStripe() {
   }
 }
 
-}
+}  // namespace dali

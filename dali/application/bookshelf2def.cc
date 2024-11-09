@@ -20,7 +20,8 @@
  ******************************************************************************/
 
 /****
- * This can extract location of cells from a bookshelf .pl file, and generate a new DEF file with these locations.
+ * This can extract location of cells from a bookshelf .pl file, and generate a
+ * new DEF file with these locations.
  * ****/
 #include <iostream>
 
@@ -69,7 +70,7 @@ int main(int argc, char *argv[]) {
       out_def_name = std::string(argv[i++]) + ".def";
     } else {
       BOOST_LOG_TRIVIAL(info)
-        << "Unknown command line option: " << argv[i] << "\n";
+          << "Unknown command line option: " << argv[i] << "\n";
       return 1;
     }
   }
@@ -77,8 +78,8 @@ int main(int argc, char *argv[]) {
   Circuit circuit;
   circuit.SetGridValue(x_grid, y_grid);
   DaliExpects(false, "Fix read LEF/DEF");
-  //circuit.ReadLefFile(lef_file_name);
-  //circuit.ReadDefFile(def_file_name);
+  // circuit.ReadLefFile(lef_file_name);
+  // circuit.ReadDefFile(def_file_name);
   circuit.LoadBookshelfPl(pl_file_name);
   circuit.SaveDefFile(out_def_name, "", def_file_name, 1, 1, 1, 1);
 
@@ -86,14 +87,13 @@ int main(int argc, char *argv[]) {
 }
 
 void ReportUsage() {
-  BOOST_LOG_TRIVIAL(info)
-    << "\033[0;36m"
-    << "Usage: bookshelf2def\n"
-    << " -lef      <file.lef>\n"
-    << " -def      <file.def>\n"
-    << " -pl       <file.pl>\n"
-    << " -g/-grid  grid_value_x grid_value_y\n"
-    << " -o        <out_name>.def\n"
-    << "(order does not matter)"
-    << "\033[0m\n";
+  BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
+                          << "Usage: bookshelf2def\n"
+                          << " -lef      <file.lef>\n"
+                          << " -def      <file.def>\n"
+                          << " -pl       <file.pl>\n"
+                          << " -g/-grid  grid_value_x grid_value_y\n"
+                          << " -o        <out_name>.def\n"
+                          << "(order does not matter)"
+                          << "\033[0m\n";
 }

@@ -6,6 +6,6 @@ namespace dali {
 size_t getPeakRSS();
 size_t getCurrentRSS();
 
-}
+}  // namespace dali
 
-#endif //DALI_COMMON_MEMORY_H_
+#endif  // DALI_COMMON_MEMORY_H_

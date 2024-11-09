@@ -53,4 +53,4 @@ void BlkPairNets::WriteY() {
   }
 }
 
-}
+}  // namespace dali

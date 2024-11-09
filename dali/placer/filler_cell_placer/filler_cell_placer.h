@@ -27,18 +27,21 @@
 
 namespace dali {
 
-class FillerCellPlacer : public Placer{
+class FillerCellPlacer : public Placer {
   friend class Dali;
+
  public:
   FillerCellPlacer() = default;
 
   void CreateFillerCellTypes(int upper_width);
-  void PlaceFillerCells(int lx, int ux, int ly, bool is_orient_N, int &filler_counter);
+  void PlaceFillerCells(int lx, int ux, int ly, bool is_orient_N,
+                        int &filler_counter);
   bool StartPlacement() override;
+
  private:
   phydb::PhyDB *phy_db_ptr_ = nullptr;
 };
 
-} // dali
+}  // namespace dali
 
-#endif //DALI_PLACER_FILLER_CELL_PLACER_FILLER_CELL_PLACER_H_
+#endif  // DALI_PLACER_FILLER_CELL_PLACER_FILLER_CELL_PLACER_H_

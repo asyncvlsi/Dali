@@ -40,12 +40,14 @@ void GlobalPlacer::SetMaxIteration(int max_iter) {
 }
 
 /****
- * @brief Set an internal boolean variable to save or not save intermediate results.
+ * @brief Set an internal boolean variable to save or not save intermediate
+ * results.
  *
  * @param should_save_intermediate_result : if true, intermediate results will
  * be saved; otherwise, not.
  */
-void GlobalPlacer::SetShouldSaveIntermediateResult(bool should_save_intermediate_result) {
+void GlobalPlacer::SetShouldSaveIntermediateResult(
+    bool should_save_intermediate_result) {
   should_save_intermediate_result_ = should_save_intermediate_result;
 }
 
@@ -99,27 +101,28 @@ void GlobalPlacer::CloseOptimizerAndLegalizer() {
 void GlobalPlacer::InitializeBlockLocation() {
   std::unique_ptr<RandomInitializer> initializer(nullptr);
   switch (initializer_type_) {
-    case RandomInitializerType::UNIFORM : {
+    case RandomInitializerType::UNIFORM: {
       initializer = std::make_unique<UniformInitializer>(ckt_ptr_, 1);
       break;
     }
-    case RandomInitializerType::GAUSSIAN : {
+    case RandomInitializerType::GAUSSIAN: {
       initializer = std::make_unique<GaussianInitializer>(ckt_ptr_, 1);
       break;
     }
-    case RandomInitializerType::MONTE_CARLO : {
+    case RandomInitializerType::MONTE_CARLO: {
       initializer = std::make_unique<MonteCarloInitializer>(ckt_ptr_, 1);
       break;
     }
-    case RandomInitializerType::DENSITY_AWARE : {
+    case RandomInitializerType::DENSITY_AWARE: {
       initializer = std::make_unique<DensityAwareInitializer>(ckt_ptr_, 1);
       break;
     }
-    default : {
+    default: {
       DaliFatal("Unknown random initializer type");
     }
   }
-  initializer->SetShouldSaveIntermediateResult(should_save_intermediate_result_);
+  initializer->SetShouldSaveIntermediateResult(
+      should_save_intermediate_result_);
   initializer->RandomPlace();
 }
 
@@ -152,27 +155,25 @@ bool GlobalPlacer::StartPlacement() {
 /****
  * @brief Check if block_list is empty or net_list is empty. If either of them
  * is empty, return true, so that the global placement can be skipped.
- * @return a boolean value indicate whether block_list or net_list is empty or not.
+ * @return a boolean value indicate whether block_list or net_list is empty or
+ * not.
  */
 bool GlobalPlacer::IsBlockListOrNetListEmpty() const {
   if (ckt_ptr_->Blocks().empty()) {
     BOOST_LOG_TRIVIAL(info)
-      << "Empty block list, nothing to place! Skip global placement!\n";
+        << "Empty block list, nothing to place! Skip global placement!\n";
     return true;
   }
   if (ckt_ptr_->Nets().empty()) {
     BOOST_LOG_TRIVIAL(info)
-      << "Empty net list, nothing to optimize! Skip global placement!\n";
+        << "Empty net list, nothing to optimize! Skip global placement!\n";
     return true;
   }
   return false;
 }
 
-bool GlobalPlacer::IsSeriesConverge(
-    std::vector<double> &series,
-    int window_size,
-    double tolerance
-) {
+bool GlobalPlacer::IsSeriesConverge(std::vector<double> &series,
+                                    int window_size, double tolerance) {
   auto sz = static_cast<int>(series.size());
   if (sz < window_size) {
     return false;
@@ -193,7 +194,8 @@ bool GlobalPlacer::IsSeriesConverge(
 }
 
 /****
- * @brief Returns true or false indicating the convergence of the global placement.
+ * @brief Returns true or false indicating the convergence of the global
+ * placement.
  *
  * Stopping criteria (SimPL, option 1):
  *    (a). the gap is reduced to 25% of the gap in the tenth iteration and
@@ -215,14 +217,11 @@ bool GlobalPlacer::IsPlacementConverge() {
       double tenth_gap = upper_bound_hpwl[9] - lower_bound_hpwl[9];
       double last_gap = upper_bound_hpwl.back() - lower_bound_hpwl.back();
       double gap_ratio = last_gap / tenth_gap;
-      if (gap_ratio < 0.1) { // (a)
+      if (gap_ratio < 0.1) {  // (a)
         res = true;
-      } else if (gap_ratio < 0.25) { // (b)
-        res = IsSeriesConverge(
-            upper_bound_hpwl,
-            3,
-            simpl_LAL_converge_criterion_
-        );
+      } else if (gap_ratio < 0.25) {  // (b)
+        res = IsSeriesConverge(upper_bound_hpwl, 3,
+                               simpl_LAL_converge_criterion_);
       } else {
         res = false;
       }
@@ -233,8 +232,8 @@ bool GlobalPlacer::IsPlacementConverge() {
     } else {
       double lower_bound = lower_bound_hpwl.back();
       double upper_bound = upper_bound_hpwl.back();
-      res = (lower_bound < upper_bound)
-          && (upper_bound / lower_bound - 1 < polar_converge_criterion_);
+      res = (lower_bound < upper_bound) &&
+            (upper_bound / lower_bound - 1 < polar_converge_criterion_);
     }
   } else {
     DaliExpects(false, "Unknown Convergence Criteria!");
@@ -252,14 +251,9 @@ void GlobalPlacer::PrintHpwl() const {
   double hi_hpwl = legalizer_->GetHpwls().back();
   size_t buffer_size = 1024;
   std::string buffer(buffer_size, '\0');
-  int written_length = snprintf(
-      &buffer[0],
-      buffer_size,
-      "  iter-%-3d: %.4e  %.4e\n",
-      cur_iter_,
-      lo_hpwl,
-      hi_hpwl
-  );
+  int written_length =
+      snprintf(&buffer[0], buffer_size, "  iter-%-3d: %.4e  %.4e\n", cur_iter_,
+               lo_hpwl, hi_hpwl);
   buffer.resize(written_length);
   BOOST_LOG_TRIVIAL(info) << buffer;
   BOOST_LOG_TRIVIAL(debug) << cur_iter_ << "-th iteration completed\n";
@@ -268,22 +262,18 @@ void GlobalPlacer::PrintHpwl() const {
 /****
  * @brief Printf the summary of global placement.
  */
-void GlobalPlacer::PrintEndStatement(
-    std::string const &name_of_process,
-    bool is_success
-) {
-  BOOST_LOG_TRIVIAL(debug)
-    << "  Iterative look-ahead legalization complete\n";
-  BOOST_LOG_TRIVIAL(debug)
-    << "  Total number of iteration: " << cur_iter_ + 1 << "\n";
-  BOOST_LOG_TRIVIAL(debug)
-    << "  Lower bound: " << optimizer_->GetHpwls() << "\n";
-  BOOST_LOG_TRIVIAL(debug)
-    << "  Upper bound: " << legalizer_->GetHpwls() << "\n";
-  BOOST_LOG_TRIVIAL(debug)
-    << "cg time: " << optimizer_->GetTime()
-    << "s, lal time: " << legalizer_->GetTime() << "s\n";
+void GlobalPlacer::PrintEndStatement(std::string const &name_of_process,
+                                     bool is_success) {
+  BOOST_LOG_TRIVIAL(debug) << "  Iterative look-ahead legalization complete\n";
+  BOOST_LOG_TRIVIAL(debug) << "  Total number of iteration: " << cur_iter_ + 1
+                           << "\n";
+  BOOST_LOG_TRIVIAL(debug) << "  Lower bound: " << optimizer_->GetHpwls()
+                           << "\n";
+  BOOST_LOG_TRIVIAL(debug) << "  Upper bound: " << legalizer_->GetHpwls()
+                           << "\n";
+  BOOST_LOG_TRIVIAL(debug) << "cg time: " << optimizer_->GetTime()
+                           << "s, lal time: " << legalizer_->GetTime() << "s\n";
   Placer::PrintEndStatement(name_of_process, is_success);
 }
 
-}
+}  // namespace dali

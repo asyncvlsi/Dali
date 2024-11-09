@@ -24,21 +24,16 @@
 
 namespace dali {
 
-void OptRegDist::FindOptimalRegionX(
-    Block &blk,
-    double &lx,
-    double &ly,
-    double &ux,
-    double &uy
-) const {
+void OptRegDist::FindOptimalRegionX(Block &blk, double &lx, double &ly,
+                                    double &ux, double &uy) const {
   std::vector<double> loc_list_x;
   std::vector<double> loc_list_y;
   auto &net_list = circuit_->design().Nets();
-  for (auto &it: blk.NetList()) {
+  for (auto &it : blk.NetList()) {
     // find offset
     double offset_x = DBL_MAX;
     double offset_y = DBL_MAX;
-    for (auto &blk_pin: net_list[it].BlockPins()) {
+    for (auto &blk_pin : net_list[it].BlockPins()) {
       if (blk_pin.BlkPtr() == &blk) {
         offset_x = blk_pin.OffsetX();
         offset_y = blk_pin.OffsetY();
@@ -51,7 +46,7 @@ void OptRegDist::FindOptimalRegionX(
     double max_x = -1e10;
     double min_y = 1e10;
     double max_y = -1e10;
-    for (auto &blk_pin: net_list[it].BlockPins()) {
+    for (auto &blk_pin : net_list[it].BlockPins()) {
       if (blk_pin.BlkPtr() == &blk) {
         continue;
       } else {
@@ -104,7 +99,7 @@ void OptRegDist::SaveFile(std::string const &file_name) const {
   double lx, ly, ux, uy;
   double llx, lly;
   double res;
-  for (auto &blk: circuit_->design().Blocks()) {
+  for (auto &blk : circuit_->design().Blocks()) {
     FindOptimalRegionX(blk, lx, ly, ux, uy);
     llx = blk.LLX();
     lly = blk.LLY();
@@ -117,12 +112,9 @@ void OptRegDist::SaveFile(std::string const &file_name) const {
     } else if (y_optimal) {
       res = std::min(std::fabs(lly - ly), std::fabs(lly - uy));
     } else {
-      double x_distance =
-          std::min(std::fabs(llx - lx), std::fabs(llx - ux));
-      double y_distance =
-          std::min(std::fabs(lly - ly), std::fabs(lly - uy));
-      res = std::sqrt(
-          x_distance * x_distance + y_distance * y_distance);
+      double x_distance = std::min(std::fabs(llx - lx), std::fabs(llx - ux));
+      double y_distance = std::min(std::fabs(lly - ly), std::fabs(lly - uy));
+      res = std::sqrt(x_distance * x_distance + y_distance * y_distance);
     }
     ost << res / ave_size << "\n";
   }
@@ -130,4 +122,4 @@ void OptRegDist::SaveFile(std::string const &file_name) const {
   BOOST_LOG_TRIVIAL(info) << "average cell width: " << ave_size << "\n";
 }
 
-}
+}  // namespace dali

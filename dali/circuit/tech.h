@@ -21,12 +21,12 @@
 #ifndef DALI_CIRCUIT_TECH_H_
 #define DALI_CIRCUIT_TECH_H_
 
+#include <phydb/phydb.h>
+
 #include <list>
 #include <memory>
 #include <unordered_map>
 #include <vector>
-
-#include <phydb/phydb.h>
 
 #include "block.h"
 #include "block_type.h"
@@ -37,6 +37,7 @@ namespace dali {
 
 class Tech {
   friend class Circuit;
+
  public:
   Tech();
 
@@ -70,8 +71,12 @@ class Tech {
 
   // get block types
   std::vector<BlockType> &BlockTypes();
-  NamedInstanceCollection<BlockType> &BlockTypeCollection() { return block_type_collection_; }
-  NamedInstanceCollection<BlockType> &EndCapCellTypeCollection() { return end_cap_cell_type_collection_; }
+  NamedInstanceCollection<BlockType> &BlockTypeCollection() {
+    return block_type_collection_;
+  }
+  NamedInstanceCollection<BlockType> &EndCapCellTypeCollection() {
+    return end_cap_cell_type_collection_;
+  }
 
   // create fake well for standard cells
   void CreateFakeWellForStandardCell(phydb::PhyDB *phy_db);
@@ -132,6 +137,6 @@ class Tech {
   std::optional<double> post_end_cap_min_n_height_ = std::nullopt;
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_CIRCUIT_TECH_H_
+#endif  // DALI_CIRCUIT_TECH_H_

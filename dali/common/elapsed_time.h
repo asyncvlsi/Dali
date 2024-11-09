@@ -21,8 +21,8 @@
 #ifndef DALI_COMMON_ELAPSED_TIME_H_
 #define DALI_COMMON_ELAPSED_TIME_H_
 
-#include <ctime>
 #include <chrono>
+#include <ctime>
 
 #include "logging.h"
 
@@ -36,6 +36,7 @@ class ElapsedTime {
   void PrintTimeElapsed(severity lvl = boost::log::trivial::info) const;
   double GetWallTime() const;
   double GetCpuTime() const;
+
  private:
   std::chrono::time_point<std::chrono::steady_clock> start_wall_time_;
   std::chrono::time_point<std::chrono::steady_clock> end_wall_time_;
@@ -47,6 +48,6 @@ class ElapsedTime {
   double cpu_time_ = 0;
 };
 
-} // dali
+}  // namespace dali
 
-#endif //DALI_COMMON_ELAPSED_TIME_H_
+#endif  // DALI_COMMON_ELAPSED_TIME_H_

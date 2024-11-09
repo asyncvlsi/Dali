@@ -26,9 +26,9 @@
 #include <vector>
 
 #include "block.h"
-#include "net_pin.h"
 #include "dali/common/logging.h"
 #include "dali/common/misc.h"
+#include "net_pin.h"
 
 namespace dali {
 
@@ -36,17 +36,14 @@ class NetAux;
 class IoPin;
 
 /****
- * This is a class for nets. When initializing a net, its capacity and weight need
- * to be specified.
- * One can use AddBlkPinPair() and AddIoPin() to add pins to a net.
+ * This is a class for nets. When initializing a net, its capacity and weight
+ * need to be specified. One can use AddBlkPinPair() and AddIoPin() to add pins
+ * to a net.
  */
 class Net {
  public:
-  Net(
-      std::pair<const std::string, int> *name_id_pair_ptr,
-      size_t capacity,
-      double weight
-  );
+  Net(std::pair<const std::string, int> *name_id_pair_ptr, size_t capacity,
+      double weight);
 
   // get the name of this net
   const std::string &Name() const;
@@ -82,19 +79,23 @@ class Net {
   // get auxiliary information
   NetAux *Aux();
 
-  // if a given block is not in this net, what is the lower and upper bound of this net in the x direction
+  // if a given block is not in this net, what is the lower and upper bound of
+  // this net in the x direction
   void GetXBoundIfBlkAbsent(Block *blk_ptr, double &lo, double &hi);
 
-  // if a given block is not in this net, what is the lower and upper bound of this net in the y direction
+  // if a given block is not in this net, what is the lower and upper bound of
+  // this net in the y direction
   void GetYBoundIfBlkAbsent(Block *blk_ptr, double &lo, double &hi);
 
   // sort block pins based on block ids and pin ids
   void SortBlkPinList();
 
-  // find the indices for pins with maximum x location and minimum x location in this net
+  // find the indices for pins with maximum x location and minimum x location in
+  // this net
   void UpdateMaxMinIdX();
 
-  // find the indices for pins with maximum y location and minimum y location in this net
+  // find the indices for pins with maximum y location and minimum y location in
+  // this net
   void UpdateMaxMinIdY();
 
   // find the indices for pins in both directions
@@ -173,6 +174,7 @@ class Net {
   double HPWLCtoCY();
 
   double HPWLCtoC();
+
  protected:
   std::pair<const std::string, int> *name_id_pair_ptr_;
   double weight_;
@@ -193,13 +195,13 @@ class Net {
 
 class NetAux {
  public:
-  explicit NetAux(Net *net_ptr)
-      : net_ptr_(net_ptr) { net_ptr_->SetAux(this); }
+  explicit NetAux(Net *net_ptr) : net_ptr_(net_ptr) { net_ptr_->SetAux(this); }
   Net *GetNet() const { return net_ptr_; }
+
  protected:
   Net *net_ptr_;
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_CIRCUIT_NET_H_
+#endif  // DALI_CIRCUIT_NET_H_

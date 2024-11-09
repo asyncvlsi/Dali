@@ -29,8 +29,8 @@
 #include "enums.h"
 
 /****
- * This header file contains class Layer, which is an abstract class for MetalLayer
- * and WellLayer. All these classes are defined in this file.
+ * This header file contains class Layer, which is an abstract class for
+ * MetalLayer and WellLayer. All these classes are defined in this file.
  * ****/
 
 namespace dali {
@@ -56,6 +56,7 @@ class Layer {
 
   // get the min spacing
   double Spacing() const { return spacing_; }
+
  protected:
   double width_;
   double spacing_;
@@ -68,12 +69,9 @@ class Layer {
 class MetalLayer : public Layer {
  public:
   explicit MetalLayer(std::pair<const std::string, int> *name_id_pair_ptr);
-  MetalLayer(
-      double width,
-      double spacing,
-      std::pair<const std::string, int> *name_id_pair_ptr,
-      MetalDirection direction = HORIZONTAL
-  );
+  MetalLayer(double width, double spacing,
+             std::pair<const std::string, int> *name_id_pair_ptr,
+             MetalDirection direction = HORIZONTAL);
 
   // get the name of this layer
   const std::string &Name() const;
@@ -90,7 +88,8 @@ class MetalLayer : public Layer {
   // compute and get the min height
   double MinHeight() const;
 
-  // set the pitch of this layer, this can be different from min_width + min_spacing
+  // set the pitch of this layer, this can be different from min_width +
+  // min_spacing
   void SetPitch(double x_pitch, double y_pitch);
 
   // automatically compute pitches from min_width and min_spacing
@@ -113,6 +112,7 @@ class MetalLayer : public Layer {
 
   // print information of this layer
   void Report() const;
+
  private:
   std::pair<const std::string, int> *name_id_pair_ptr_;
   double min_area_;
@@ -128,22 +128,12 @@ class MetalLayer : public Layer {
 class WellLayer : public Layer {
  public:
   WellLayer();
-  WellLayer(
-      double width,
-      double spacing,
-      double opposite_spacing,
-      double max_plug_dist,
-      double overhang
-  );
+  WellLayer(double width, double spacing, double opposite_spacing,
+            double max_plug_dist, double overhang);
 
   // set all parameters
-  void SetParams(
-      double width,
-      double spacing,
-      double opposite_spacing,
-      double max_plug_dist,
-      double overhang
-  );
+  void SetParams(double width, double spacing, double opposite_spacing,
+                 double max_plug_dist, double overhang);
 
   // set opposite spacing
   void SetOppositeSpacing(double opposite_spacing);
@@ -165,12 +155,13 @@ class WellLayer : public Layer {
 
   // print information of this layer
   void Report() const;
+
  private:
   double opposite_spacing_;
   double max_plug_dist_;
   double overhang_;
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_CIRCUIT_LAYER_H_
+#endif  // DALI_CIRCUIT_LAYER_H_

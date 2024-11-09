@@ -77,4 +77,4 @@ void GridBin::Report() {
                           << "  over fill:   " << over_fill << "\n";
 }
 
-}
+}  // namespace dali

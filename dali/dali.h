@@ -31,16 +31,10 @@ namespace dali {
 
 class Dali {
  public:
-  Dali(
-      phydb::PhyDB *phy_db_ptr,
-      const std::string &severity_level,
-      const std::string &log_file_name = ""
-  );
-  Dali(
-      phydb::PhyDB *phy_db_ptr,
-      severity severity_level,
-      const std::string &log_file_name = ""
-  );
+  Dali(phydb::PhyDB *phy_db_ptr, const std::string &severity_level,
+       const std::string &log_file_name = "");
+  Dali(phydb::PhyDB *phy_db_ptr, severity severity_level,
+       const std::string &log_file_name = "");
 
   void ShowParamsList();
   void LoadParamsFromConfig();
@@ -70,33 +64,25 @@ class Dali {
 
   bool StartPlacement(double density = -1, int number_of_threads = 1);
 
-  void AddWellTaps(
-      phydb::Macro *cell,
-      double cell_interval_microns,
-      bool is_checker_board
-  );
+  void AddWellTaps(phydb::Macro *cell, double cell_interval_microns,
+                   bool is_checker_board);
   bool AddWellTaps(int argc, char **argv);
   bool GlobalPlace(double density, int num_threads = 1);
   bool UnifiedLegalization();
 
-  void ExternalDetailedPlaceAndLegalize(
-      std::string const &engine,
-      bool load_dp_result = true
-  );
+  void ExternalDetailedPlaceAndLegalize(std::string const &engine,
+                                        bool load_dp_result = true);
 
   void ExportToPhyDB();
   void Close();
 
-  void MaybeExportToLEF(
-      std::string const &input_lef_file_full_name,
-      std::string const &output_lef_name
-  );
-  void ExportToDEF(
-      std::string const &input_def_file_full_name,
-      std::string const &output_def_name = "circuit"
-  );
+  void MaybeExportToLEF(std::string const &input_lef_file_full_name,
+                        std::string const &output_lef_name);
+  void ExportToDEF(std::string const &input_def_file_full_name,
+                   std::string const &output_def_name = "circuit");
 
   void InstantiateIoPlacer();
+
  private:
   // options
   std::string prefix_ = "dali.";
@@ -136,9 +122,7 @@ class Dali {
   static void ReportIoPlacementUsage();
 
   std::string CreateDetailedPlacementAndLegalizationScript(
-      std::string const &engine,
-      std::string const &script_name
-  );
+      std::string const &engine, std::string const &script_name);
 
   void ExportOrdinaryComponentsToPhyDB();
   void ExportWellTapCellsToPhyDB();
@@ -150,6 +134,6 @@ class Dali {
   void ExportWellToPhyDB();
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_DALI_H_
+#endif  // DALI_DALI_H_

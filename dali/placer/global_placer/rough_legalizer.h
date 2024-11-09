@@ -42,6 +42,7 @@ class RoughLegalizer {
   std::vector<double> &GetHpwlsX() { return upper_bound_hpwl_x_; }
   std::vector<double> &GetHpwlsY() { return upper_bound_hpwl_y_; }
   void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
+
  protected:
   Circuit *ckt_ptr_ = nullptr;
   double placement_density_ = 1.0;
@@ -73,10 +74,8 @@ class LookAheadLegalizer : public RoughLegalizer {
   void UpdateClusterArea(GridBinCluster &cluster);
   void UpdateClusterList();
   void UpdateLargestCluster();
-  uint32_t LookUpWhiteSpace(
-      GridBinIndex const &ll_index,
-      GridBinIndex const &ur_index
-  );
+  uint32_t LookUpWhiteSpace(GridBinIndex const &ll_index,
+                            GridBinIndex const &ur_index);
   uint32_t LookUpWhiteSpace(WindowQuadruple &window);
   void FindMinimumBoxForLargestCluster();
   void SplitGridBox(BoxBin &box);
@@ -87,6 +86,7 @@ class LookAheadLegalizer : public RoughLegalizer {
 
   double GetTime() override;
   void Close() override;
+
  private:
   int number_of_cell_in_bin_ = 30;
   int cluster_upper_size = 3;
@@ -111,6 +111,6 @@ class LookAheadLegalizer : public RoughLegalizer {
   double tot_lal_time = 0;
 };
 
-} // dali
+}  // namespace dali
 
-#endif //DALI_PLACER_GLOBAL_PLACER_ROUGH_LEGALIZER_H_
+#endif  // DALI_PLACER_GLOBAL_PLACER_ROUGH_LEGALIZER_H_

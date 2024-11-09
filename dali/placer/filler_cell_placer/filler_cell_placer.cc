@@ -51,28 +51,19 @@ void FillerCellPlacer::CreateFillerCellTypes(int upper_width) {
     phydb_macro->SetOrigin(0, 0);
     phydb_macro->SetSize(width, filler_height);
     phydb_macro->SetClass(phydb::MacroClass::CORE_SPACER);
-    phydb_macro->SetSymmetry(
-        true,
-        false,
-        false
-    );
+    phydb_macro->SetSymmetry(true, false, false);
     phy_db_ptr_->tech().AutoAddPowerGroundPin(filler_name);
     phydb_macro->ExportToFile(ost);
 
     ckt_ptr_->AddFillerBlockType(filler_name, width, filler_height);
   }
   phy_db_ptr_->AddDummyWell();
-  BOOST_LOG_TRIVIAL(info) << "Filler cells exported to "
-                          << filler_lef_file_name << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Filler cells exported to " << filler_lef_file_name
+                          << "\n";
 }
 
-void FillerCellPlacer::PlaceFillerCells(
-    int lx,
-    int ux,
-    int ly,
-    bool is_orient_N,
-    int &filler_counter
-) {
+void FillerCellPlacer::PlaceFillerCells(int lx, int ux, int ly,
+                                        bool is_orient_N, int &filler_counter) {
   if (ux <= lx) {
     return;
   }
@@ -82,10 +73,14 @@ void FillerCellPlacer::PlaceFillerCells(
   for (int i = 0; i < space; ++i) {
     std::string filler_cell_name =
         "__filler_cell_component__" + std::to_string(filler_counter++);
-    Block &filler_cell = ckt_ptr_->design().FillerCellCollection().CreateInstance(filler_cell_name);
+    Block &filler_cell =
+        ckt_ptr_->design().FillerCellCollection().CreateInstance(
+            filler_cell_name);
     filler_cell.SetPlacementStatus(PLACED);
     filler_cell.SetType(filler_type_ptr);
-    filler_cell.SetId(ckt_ptr_->design().FillerCellCollection().GetInstanceIdByName(filler_cell_name));
+    filler_cell.SetId(
+        ckt_ptr_->design().FillerCellCollection().GetInstanceIdByName(
+            filler_cell_name));
     filler_cell.SetLLX(lx + i);
     filler_cell.SetLLY(ly);
     filler_cell.SetOrient(is_orient_N ? N : FS);
@@ -98,12 +93,9 @@ bool FillerCellPlacer::StartPlacement() {
   for (auto &filler : ckt_ptr_->tech().FillerCellPtrs()) {
     filler_cell_widths.insert(filler->Width());
   }
-  std::vector<int>
-      filler_widths(filler_cell_widths.begin(), filler_cell_widths.end());
-  std::sort(
-      filler_widths.begin(),
-      filler_widths.end()
-  );
+  std::vector<int> filler_widths(filler_cell_widths.begin(),
+                                 filler_cell_widths.end());
+  std::sort(filler_widths.begin(), filler_widths.end());
 
   std::vector<GeneralRow> &rows = ckt_ptr_->design().Rows();
   int filler_counter = 0;
@@ -116,17 +108,12 @@ bool FillerCellPlacer::StartPlacement() {
         PlaceFillerCells(lx, ux, row.LY(), row.IsOrientN(), filler_counter);
         lx = blk_ptr->URX();
       }
-      PlaceFillerCells(
-          lx,
-          segment.UX(),
-          row.LY(),
-          row.IsOrientN(),
-          filler_counter
-      );
+      PlaceFillerCells(lx, segment.UX(), row.LY(), row.IsOrientN(),
+                       filler_counter);
     }
   }
 
   return true;
 }
 
-} // dali
+}  // namespace dali

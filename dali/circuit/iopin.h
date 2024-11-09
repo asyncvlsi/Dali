@@ -25,9 +25,9 @@
 
 #include "dali/common/logging.h"
 #include "dali/common/misc.h"
+#include "enums.h"
 #include "layer.h"
 #include "net.h"
-#include "enums.h"
 
 namespace dali {
 
@@ -44,27 +44,13 @@ class Net;
 class IoPin {
  public:
   explicit IoPin(std::pair<const std::string, int> *name_id_pair_ptr);
-  IoPin(
-      std::pair<const std::string, int> *name_id_pair_ptr,
-      double loc_x,
-      double loc_y
-  );
-  IoPin(
-      std::pair<const std::string, int> *name_id_pair_ptr,
-      SignalDirection direction,
-      PlaceStatus init_place_status,
-      double loc_x,
-      double loc_y
-  );
-  IoPin(
-      double loc_x,
-      double loc_y,
-      BlockOrient orient,
-      double llx,
-      double lly,
-      double urx,
-      double ury
-  );
+  IoPin(std::pair<const std::string, int> *name_id_pair_ptr, double loc_x,
+        double loc_y);
+  IoPin(std::pair<const std::string, int> *name_id_pair_ptr,
+        SignalDirection direction, PlaceStatus init_place_status, double loc_x,
+        double loc_y);
+  IoPin(double loc_x, double loc_y, BlockOrient orient, double llx, double lly,
+        double urx, double ury);
 
   // get the name
   const std::string &Name() const;
@@ -144,11 +130,7 @@ class IoPin {
   // get the y location, it is supposed to be the center on a placement boundary
   double Y() const;
 
-  void SetLoc(
-      double loc_x,
-      double loc_y,
-      PlaceStatus place_status = PLACED
-  );
+  void SetLoc(double loc_x, double loc_y, PlaceStatus place_status = PLACED);
 
   // lower left x
   double LX(double spacing = 0) const;
@@ -171,7 +153,7 @@ class IoPin {
   // set final y
   void SetFinalY(int final_y);
 
-  //get final y
+  // get final y
   int FinalY() const;
 
   // set orientation
@@ -188,20 +170,21 @@ class IoPin {
   SignalDirection signal_direction_;
   SignalUse signal_use_;
   MetalLayer *layer_ptr_;
-  std::vector<RectD> rects_; // rectangles for all orientations
+  std::vector<RectD> rects_;  // rectangles for all orientations
   bool is_shape_set_ = false;
   PlaceStatus init_place_status_;
   PlaceStatus place_status_;
-  double x_; // grid unit
-  double y_; // grid unit
-  int final_x_ = 0; // database unit
-  int final_y_ = 0; // database unit
+  double x_;         // grid unit
+  double y_;         // grid unit
+  int final_x_ = 0;  // database unit
+  int final_y_ = 0;  // database unit
   BlockOrient orient_;
 
-  // set shape of its physical geometry, and compute rects for different orientations
+  // set shape of its physical geometry, and compute rects for different
+  // orientations
   void SetRect(double llx, double lly, double urx, double ury);
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_CIRCUIT_IOPIN_H_
+#endif  // DALI_CIRCUIT_IOPIN_H_

@@ -24,12 +24,11 @@ namespace dali {
 
 BlkCluster::BlkCluster() = default;
 
-BlkCluster::BlkCluster(int well_extension_x_init,
-                       int well_extension_y_init,
-                       int plug_width_init) :
-    well_extension_x_(well_extension_x_init),
-    well_extension_y_(well_extension_y_init),
-    plug_width_(plug_width_init) {}
+BlkCluster::BlkCluster(int well_extension_x_init, int well_extension_y_init,
+                       int plug_width_init)
+    : well_extension_x_(well_extension_x_init),
+      well_extension_y_(well_extension_y_init),
+      plug_width_(plug_width_init) {}
 
 void BlkCluster::AppendBlock(Block &block) {
   if (blk_ptr_list_.empty()) {
@@ -52,16 +51,15 @@ void BlkCluster::OptimizeHeight() {
   /****
    * This function aligns all N/P well boundaries of cells inside a cluster
    * ****/
-
 }
 
 void BlkCluster::UpdateBlockLocation() {
   int current_loc = lx_;
-  for (auto &blk_ptr: blk_ptr_list_) {
+  for (auto &blk_ptr : blk_ptr_list_) {
     blk_ptr->SetLLX(current_loc);
     blk_ptr->SetCenterY(this->CenterY());
     current_loc += blk_ptr->Width();
   }
 }
 
-}
+}  // namespace dali

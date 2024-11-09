@@ -26,59 +26,45 @@
 
 namespace dali {
 
-IoPinCluster::IoPinCluster(
-    bool is_horizontal_init,
-    double boundary_loc_init,
-    double lo_init,
-    double span_init
-) :
-    is_horizontal(is_horizontal_init),
-    boundary_loc(boundary_loc_init),
-    low(lo_init),
-    span(span_init) {}
+IoPinCluster::IoPinCluster(bool is_horizontal_init, double boundary_loc_init,
+                           double lo_init, double span_init)
+    : is_horizontal(is_horizontal_init),
+      boundary_loc(boundary_loc_init),
+      low(lo_init),
+      span(span_init) {}
 
 IoPinCluster::~IoPinCluster() {
-  for (auto &ptr: iopin_ptr_list) {
+  for (auto &ptr : iopin_ptr_list) {
     ptr = nullptr;
   }
 }
 
-double IoPinCluster::Low() const {
-  return low;
-}
+double IoPinCluster::Low() const { return low; }
 
-double IoPinCluster::High() const {
-  return low + span;
-}
+double IoPinCluster::High() const { return low + span; }
 
 void IoPinCluster::UniformLegalize() {
   if (is_horizontal) {
-    std::sort(
-        iopin_ptr_list.begin(),
-        iopin_ptr_list.end(),
-        [](const IoPin *lhs, const IoPin *rhs) {
-          return (lhs->X() < rhs->X());
-        }
-    );
+    std::sort(iopin_ptr_list.begin(), iopin_ptr_list.end(),
+              [](const IoPin *lhs, const IoPin *rhs) {
+                return (lhs->X() < rhs->X());
+              });
 
     double hi = low + span;
-    int sz = (int) iopin_ptr_list.size();
+    int sz = (int)iopin_ptr_list.size();
     double step = (hi - low) / (sz + 1);
     for (int i = 0; i < sz; ++i) {
       double loc = std::round(low + (i + 1) * step);
       iopin_ptr_list[i]->SetLoc(loc, boundary_loc, PLACED);
     }
   } else {
-    std::sort(
-        iopin_ptr_list.begin(),
-        iopin_ptr_list.end(),
-        [](const IoPin *lhs, const IoPin *rhs) {
-          return (lhs->Y() < rhs->Y());
-        }
-    );
+    std::sort(iopin_ptr_list.begin(), iopin_ptr_list.end(),
+              [](const IoPin *lhs, const IoPin *rhs) {
+                return (lhs->Y() < rhs->Y());
+              });
 
     double hi = low + span;
-    int sz = (int) iopin_ptr_list.size();
+    int sz = (int)iopin_ptr_list.size();
     double step = (hi - low) / (sz + 1);
     for (int i = 0; i < sz; ++i) {
       double loc = std::round(low + (i + 1) * step);
@@ -99,18 +85,16 @@ void IoPinCluster::Legalize() {
   }
 }
 
-IoBoundaryLayerSpace::IoBoundaryLayerSpace(
-    bool is_horizontal_init,
-    double boundary_loc_init,
-    MetalLayer *metal_layer_init
-) :
-    is_horizontal(is_horizontal_init),
-    boundary_loc(boundary_loc_init),
-    metal_layer(metal_layer_init) {}
+IoBoundaryLayerSpace::IoBoundaryLayerSpace(bool is_horizontal_init,
+                                           double boundary_loc_init,
+                                           MetalLayer *metal_layer_init)
+    : is_horizontal(is_horizontal_init),
+      boundary_loc(boundary_loc_init),
+      metal_layer(metal_layer_init) {}
 
 IoBoundaryLayerSpace::~IoBoundaryLayerSpace() {
   metal_layer = nullptr;
-  for (auto &ptr: iopin_ptr_list) {
+  for (auto &ptr : iopin_ptr_list) {
     ptr = nullptr;
   }
   pin_clusters.clear();
@@ -124,7 +108,7 @@ void IoBoundaryLayerSpace::ComputeDefaultShape(double manufacturing_grid) {
   double min_area = metal_layer->MinArea();
   double width = metal_layer->Width();
   double height = min_area / width;
-  height = std::max(height, width); // height is always no less than width
+  height = std::max(height, width);  // height is always no less than width
 
   width = RoundOrCeiling(width / manufacturing_grid) * manufacturing_grid;
   height = RoundOrCeiling(height / manufacturing_grid) * manufacturing_grid;
@@ -135,12 +119,8 @@ void IoBoundaryLayerSpace::ComputeDefaultShape(double manufacturing_grid) {
   double grid_half_height = RoundOrCeiling(height / 2.0 / manufacturing_grid);
   double half_height = grid_half_height * manufacturing_grid;
 
-  default_horizontal_shape.SetValue(
-      -half_height, 0, half_height, width
-  );
-  default_vertical_shape.SetValue(
-      -half_width, 0, half_width, height
-  );
+  default_horizontal_shape.SetValue(-half_height, 0, half_height, width);
+  default_vertical_shape.SetValue(-half_width, 0, half_width, height);
 }
 
 void IoBoundaryLayerSpace::UpdateIoPinShapeAndLayer() {
@@ -157,8 +137,8 @@ void IoBoundaryLayerSpace::UpdateIoPinShapeAndLayer() {
     ury = default_vertical_shape.URY();
   }
 
-  for (auto &pin_cluster: pin_clusters) {
-    for (auto &pin_ptr: pin_cluster.iopin_ptr_list) {
+  for (auto &pin_cluster : pin_clusters) {
+    for (auto &pin_ptr : pin_cluster.iopin_ptr_list) {
       if (!pin_ptr->IsShapeSet()) {
         pin_ptr->SetShape(llx, lly, urx, ury);
         pin_ptr->SetLayerPtr(metal_layer);
@@ -167,26 +147,22 @@ void IoBoundaryLayerSpace::UpdateIoPinShapeAndLayer() {
   }
 }
 
-void IoBoundaryLayerSpace::UniformAssignIoPinToCluster() {
-
-}
+void IoBoundaryLayerSpace::UniformAssignIoPinToCluster() {}
 
 void IoBoundaryLayerSpace::GreedyAssignIoPinToCluster() {
   if (is_horizontal) {
-    std::sort(iopin_ptr_list.begin(),
-              iopin_ptr_list.end(),
+    std::sort(iopin_ptr_list.begin(), iopin_ptr_list.end(),
               [](const IoPin *lhs, const IoPin *rhs) {
                 return (lhs->X() < rhs->X());
               });
-    for (auto &iopin_ptr: iopin_ptr_list) {
-      int len = (int) pin_clusters.size();
+    for (auto &iopin_ptr : iopin_ptr_list) {
+      int len = (int)pin_clusters.size();
       double min_distance = DBL_MAX;
       int min_index = 0;
       for (int i = 0; i < len; ++i) {
-        double distance = std::min(
-            std::fabs(iopin_ptr->X() - pin_clusters[i].Low()),
-            std::fabs(iopin_ptr->X() - pin_clusters[i].High())
-        );
+        double distance =
+            std::min(std::fabs(iopin_ptr->X() - pin_clusters[i].Low()),
+                     std::fabs(iopin_ptr->X() - pin_clusters[i].High()));
         if (distance < min_distance) {
           min_distance = distance;
           min_index = i;
@@ -195,20 +171,18 @@ void IoBoundaryLayerSpace::GreedyAssignIoPinToCluster() {
       pin_clusters[min_index].iopin_ptr_list.push_back(iopin_ptr);
     }
   } else {
-    std::sort(iopin_ptr_list.begin(),
-              iopin_ptr_list.end(),
+    std::sort(iopin_ptr_list.begin(), iopin_ptr_list.end(),
               [](const IoPin *lhs, const IoPin *rhs) {
                 return (lhs->Y() < rhs->Y());
               });
-    for (auto &iopin_ptr: iopin_ptr_list) {
-      int len = (int) pin_clusters.size();
+    for (auto &iopin_ptr : iopin_ptr_list) {
+      int len = (int)pin_clusters.size();
       double min_distance = DBL_MAX;
       int min_index = 0;
       for (int i = 0; i < len; ++i) {
-        double distance = std::min(
-            std::fabs(iopin_ptr->Y() - pin_clusters[i].Low()),
-            std::fabs(iopin_ptr->Y() - pin_clusters[i].High())
-        );
+        double distance =
+            std::min(std::fabs(iopin_ptr->Y() - pin_clusters[i].Low()),
+                     std::fabs(iopin_ptr->Y() - pin_clusters[i].High()));
         if (distance < min_distance) {
           min_distance = distance;
           min_index = i;
@@ -223,9 +197,8 @@ void IoBoundaryLayerSpace::AssignIoPinToCluster() {
   GreedyAssignIoPinToCluster();
 }
 
-IoBoundarySpace::IoBoundarySpace(bool is_horizontal, double boundary_loc) :
-    is_horizontal_(is_horizontal),
-    boundary_loc_(boundary_loc) {}
+IoBoundarySpace::IoBoundarySpace(bool is_horizontal, double boundary_loc)
+    : is_horizontal_(is_horizontal), boundary_loc_(boundary_loc) {}
 
 void IoBoundarySpace::AddLayer(MetalLayer *metal_layer) {
   layer_spaces_.emplace_back(is_horizontal_, boundary_loc_, metal_layer);
@@ -237,15 +210,15 @@ void IoBoundarySpace::SetIoPinLimit(int limit) {
 }
 
 bool IoBoundarySpace::AutoPlaceIoPin() {
-  for (auto &layer_space: layer_spaces_) {
+  for (auto &layer_space : layer_spaces_) {
     layer_space.ComputeDefaultShape(manufacturing_grid_);
     layer_space.AssignIoPinToCluster();
     layer_space.UpdateIoPinShapeAndLayer();
-    for (auto &pin_cluster: layer_space.pin_clusters) {
+    for (auto &pin_cluster : layer_space.pin_clusters) {
       pin_cluster.Legalize();
     }
   }
   return true;
 }
 
-}
+}  // namespace dali

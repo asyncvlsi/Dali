@@ -24,7 +24,6 @@
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
-
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -35,7 +34,7 @@
 
 namespace dali {
 
-template<class T>
+template <class T>
 struct Value2D {
   T x;
   T y;
@@ -53,9 +52,7 @@ struct Value2D {
   }
 
   // equality comparison. doesn't modify object
-  bool operator==(const Value2D &a) const {
-    return (x == a.x && y == a.y);
-  }
+  bool operator==(const Value2D &a) const { return (x == a.x && y == a.y); }
 
   Value2D operator*(const double scale) const {
     return Value2D(x * scale, y * scale);
@@ -92,10 +89,11 @@ struct Value2D {
 typedef Value2D<double> double2d;
 typedef Value2D<int> int2d;
 
-template<class T>
+template <class T>
 struct Rect {
  private:
   T llx_, lly_, urx_, ury_;
+
  public:
   Rect() : llx_(0), lly_(0), urx_(0), ury_(0) {}
   Rect(T llx, T lly, T urx, T ury)
@@ -103,16 +101,12 @@ struct Rect {
     DaliExpects(llx_ <= urx_ && lly_ <= ury_, "Invalid Rect?");
   }
   bool operator==(Rect<T> const &rhs) const {
-    return (llx_ == rhs.llx_)
-        && (lly_ == rhs.llx_)
-        && (urx_ == rhs.llx_)
-        && (ury_ == rhs.llx_);
+    return (llx_ == rhs.llx_) && (lly_ == rhs.llx_) && (urx_ == rhs.llx_) &&
+           (ury_ == rhs.llx_);
   }
   bool operator!=(Rect<T> const &rhs) const {
-    return (llx_ != rhs.llx_)
-        || (lly_ != rhs.llx_)
-        || (urx_ != rhs.llx_)
-        || (ury_ != rhs.llx_);
+    return (llx_ != rhs.llx_) || (lly_ != rhs.llx_) || (urx_ != rhs.llx_) ||
+           (ury_ != rhs.llx_);
   }
   bool operator<(Rect<T> const &rhs) const {
     if (llx_ < rhs.llx_) {
@@ -121,12 +115,11 @@ struct Rect {
     if ((llx_ == rhs.llx_) && (lly_ < rhs.lly_)) {
       return true;
     }
-    if ((llx_ == rhs.llx_) && (lly_ == rhs.lly_) &&
-        (urx_ < rhs.urx_)) {
+    if ((llx_ == rhs.llx_) && (lly_ == rhs.lly_) && (urx_ < rhs.urx_)) {
       return true;
     }
-    if ((llx_ == rhs.llx_) && (lly_ == rhs.lly_) &&
-        (urx_ == rhs.urx_) && (ury_ < rhs.ury_)) {
+    if ((llx_ == rhs.llx_) && (lly_ == rhs.lly_) && (urx_ == rhs.urx_) &&
+        (ury_ < rhs.ury_)) {
       return true;
     }
     return false;
@@ -145,10 +138,8 @@ struct Rect {
     DaliExpects(llx_ <= urx_ && lly_ <= ury_, "Invalid Rect?");
   }
   bool IsOverlap(Rect<T> const &rhs) const {
-    return !(LLX() >= rhs.URX() ||
-        rhs.LLX() >= URX() ||
-        LLY() >= rhs.URY() ||
-        rhs.LLY() >= URY());
+    return !(LLX() >= rhs.URX() || rhs.LLX() >= URX() || LLY() >= rhs.URY() ||
+             rhs.LLY() >= URY());
   }
   Rect<T> GetOverlapRect(Rect<T> const &rhs) const {
     double llx, urx, lly, ury;
@@ -158,33 +149,25 @@ struct Rect {
     ury = std::min(URY(), rhs.URY());
     return Rect<T>(llx, lly, urx, ury);
   }
-  bool CheckValidity() {
-    return llx_ <= urx_ && lly_ <= ury_;
-  }
+  bool CheckValidity() { return llx_ <= urx_ && lly_ <= ury_; }
   friend std::ostream &operator<<(std::ostream &ost, const Rect &rect) {
     ost << "(" << rect.LLX() << ", " << rect.LLY() << "), "
         << "(" << rect.URX() << ", " << rect.URY() << ")";
     return ost;
   }
-  void Report() const {
-    BOOST_LOG_TRIVIAL(info) << *this << "\n";
-  }
+  void Report() const { BOOST_LOG_TRIVIAL(info) << *this << "\n"; }
 };
 
 typedef Rect<double> RectD;
 typedef Rect<int> RectI;
 
-template<class T>
+template <class T>
 struct Seg {
   T lo;
   T hi;
   explicit Seg(T lo_init = 0, T hi_init = 0) : lo(lo_init), hi(hi_init) {}
-  T Span() const {
-    return hi - lo;
-  }
-  bool Overlap(Seg<T> const &rhs) {
-    return (lo < rhs.hi) && (hi > rhs.lo);
-  }
+  T Span() const { return hi - lo; }
+  bool Overlap(Seg<T> const &rhs) { return (lo < rhs.hi) && (hi > rhs.lo); }
   Seg<T> *Joint(Seg<T> const &rhs) {
     Seg<T> *res = nullptr;
     if (Overlap(rhs)) {
@@ -204,6 +187,6 @@ struct IndexVal {
   IndexVal(int col_init, double val_init) : col(col_init), val(val_init) {}
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_COMMON_MISC_H_
+#endif  // DALI_COMMON_MISC_H_

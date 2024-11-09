@@ -50,8 +50,8 @@ int main(int argc, char *argv[]) {
     } else if ((arg == "-bs" || arg == "-bookshelf") && i < argc) {
       book_shelf_out = std::string(argv[i++]);
     } else {
-      BOOST_LOG_TRIVIAL(info) << "Unknown command line option: "
-                              << argv[i] << "\n";
+      BOOST_LOG_TRIVIAL(info)
+          << "Unknown command line option: " << argv[i] << "\n";
       return 1;
     }
   }
@@ -73,12 +73,12 @@ int main(int argc, char *argv[]) {
 }
 
 void ReportUsage() {
-  BOOST_LOG_TRIVIAL(info)
-    << "\033[0;36m"
-    << "Usage: lefdef2bookshelf\n"
-    << " -lef <file.lef>\n"
-    << " -def <file.def>\n"
-    << " -bs/-bookshelf <output> (.aux .nets .nodes .pl .scl .wts file will be created)\n"
-    << "(order does not matter)"
-    << "\033[0m\n";
+  BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
+                          << "Usage: lefdef2bookshelf\n"
+                          << " -lef <file.lef>\n"
+                          << " -def <file.def>\n"
+                          << " -bs/-bookshelf <output> (.aux .nets .nodes .pl "
+                             ".scl .wts file will be created)\n"
+                          << "(order does not matter)"
+                          << "\033[0m\n";
 }

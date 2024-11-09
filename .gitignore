@@ -53,3 +53,6 @@ dali/common/git_version.h
 
 # Ignore Mac specific files
 *.DS_Store
+
+# Ignore vscode files
+*.vscode*

@@ -28,26 +28,18 @@
 
 namespace dali {
 
-void GenClusterTable(
-    std::string const &name_of_file,
-    std::vector<ClusterStripe> &col_list_
-);
+void GenClusterTable(std::string const &name_of_file,
+                     std::vector<ClusterStripe> &col_list_);
 
-void CollectWellFillingRects(
-    Stripe &stripe,
-    int bottom_boundary,
-    int top_boundary,
-    std::vector<RectI> &n_rects, std::vector<RectI> &p_rects
-);
+void CollectWellFillingRects(Stripe &stripe, int bottom_boundary,
+                             int top_boundary, std::vector<RectI> &n_rects,
+                             std::vector<RectI> &p_rects);
 
-void GenMATLABWellFillingTable(
-    std::string const &base_file_name,
-    std::vector<ClusterStripe> &col_list,
-    int bottom_boundary,
-    int top_boundary,
-    int well_emit_mode = 0
-);
+void GenMATLABWellFillingTable(std::string const &base_file_name,
+                               std::vector<ClusterStripe> &col_list,
+                               int bottom_boundary, int top_boundary,
+                               int well_emit_mode = 0);
 
-}
+}  // namespace dali
 
-#endif //DALI_PLACER_WELL_LEGALIZER_STRIPEHELPER_H_
+#endif  // DALI_PLACER_WELL_LEGALIZER_STRIPEHELPER_H_

@@ -27,14 +27,16 @@ void AbstractSpacePartitioner::SetInputCircuit(Circuit *p_ckt) {
   p_ckt_ = p_ckt;
 }
 
-void AbstractSpacePartitioner::SetOutput(std::vector<ClusterStripe> *p_col_list) {
+void AbstractSpacePartitioner::SetOutput(
+    std::vector<ClusterStripe> *p_col_list) {
   DaliExpects(p_col_list != nullptr, "Save partitioning result to a nullptr?");
   p_col_list_ = p_col_list;
 }
 
-void AbstractSpacePartitioner::SetReservedSpaceToBoundaries(
-    int l_space, int r_space, int b_space, int t_space
-) {
+void AbstractSpacePartitioner::SetReservedSpaceToBoundaries(int l_space,
+                                                            int r_space,
+                                                            int b_space,
+                                                            int t_space) {
   l_space_ = l_space;
   r_space_ = r_space;
   b_space_ = b_space;
@@ -58,7 +60,7 @@ void DefaultSpacePartitioner::FetchWellParameters() {
       std::ceil(n_well_layer.OppositeSpacing() / grid_value_x);
   well_spacing_ = std::max(same_well_spacing, op_well_spacing);
   max_unplug_length_ =
-      (int) std::floor(n_well_layer.MaxPlugDist() / grid_value_x);
+      (int)std::floor(n_well_layer.MaxPlugDist() / grid_value_x);
 }
 
 void DefaultSpacePartitioner::DetectAvailSpace() {
@@ -78,8 +80,8 @@ void DefaultSpacePartitioner::DetectAvailSpace() {
     int lx = int(std::floor(block.LLX()));
     int ux = int(std::ceil(block.URX()));
 
-    out_of_range = (ly >= Top()) || (uy <= Bottom())
-        || (lx >= Right()) || (ux <= Left());
+    out_of_range =
+        (ly >= Top()) || (uy <= Bottom()) || (lx >= Right()) || (ux <= Left());
 
     if (out_of_range) continue;
 
@@ -137,12 +139,10 @@ void DefaultSpacePartitioner::DetectAvailSpace() {
     int len = int(intermediate_seg_rows[i].size());
     white_space_in_rows_[i].reserve(len / 2);
     for (int j = 0; j < len; j += 2) {
-      if (intermediate_seg_rows[i][j + 1] - intermediate_seg_rows[i][j]
-          >= min_blk_width) {
-        white_space_in_rows_[i].emplace_back(
-            intermediate_seg_rows[i][j],
-            intermediate_seg_rows[i][j + 1]
-        );
+      if (intermediate_seg_rows[i][j + 1] - intermediate_seg_rows[i][j] >=
+          min_blk_width) {
+        white_space_in_rows_[i].emplace_back(intermediate_seg_rows[i][j],
+                                             intermediate_seg_rows[i][j + 1]);
       }
     }
   }
@@ -198,7 +198,8 @@ void DefaultSpacePartitioner::DecomposeSpaceToSimpleStripes() {
           stripe->contour_ = y_loc;
           stripe->front_row_ = nullptr;
           stripe->used_height_ = 0;
-          stripe->max_blk_capacity_per_cluster_ = stripe->width_ / p_ckt_->MinBlkWidth();
+          stripe->max_blk_capacity_per_cluster_ =
+              stripe->width_ / p_ckt_->MinBlkWidth();
         } else {
           stripe->height_ += row_height_;
         }
@@ -206,25 +207,27 @@ void DefaultSpacePartitioner::DecomposeSpaceToSimpleStripes() {
     }
   }
 
-  //col_list_[tot_col_num_ - 1].stripe_list_[0].width_ =
-  //    RegionRight() - col_list_[tot_col_num_ - 1].stripe_list_[0].LLX() - well_spacing_;
-  //col_list_[tot_col_num_ - 1].stripe_list_[0].max_blk_capacity_per_cluster_ =
-  //    col_list_[tot_col_num_ - 1].stripe_list_[0].width_ / circuit_ptr_->MinBlkWidth();
+  // col_list_[tot_col_num_ - 1].stripe_list_[0].width_ =
+  //     RegionRight() - col_list_[tot_col_num_ - 1].stripe_list_[0].LLX() -
+  //     well_spacing_;
+  // col_list_[tot_col_num_ - 1].stripe_list_[0].max_blk_capacity_per_cluster_ =
+  //     col_list_[tot_col_num_ - 1].stripe_list_[0].width_ /
+  //     circuit_ptr_->MinBlkWidth();
   /*for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
       stripe.height_ -= row_height_;
     }
   }*/
 
-  //PlotSimpleStripes();
-  //PlotAvailSpaceInCols();
+  // PlotSimpleStripes();
+  // PlotAvailSpaceInCols();
 }
 
 void DefaultSpacePartitioner::AssignBlockToColBasedOnWhiteSpace() {
   // assign blocks to columns
   std::vector<Block> &block_list = p_ckt_->Blocks();
   std::vector<ClusterStripe> &col_list = *p_col_list_;
-  int sz = (int) block_list.size();
+  int sz = (int)block_list.size();
   std::vector<int> block_column_assign(sz, -1);
   for (int i = 0; i < tot_col_num_; ++i) {
     col_list[i].block_count_ = 0;
@@ -233,7 +236,7 @@ void DefaultSpacePartitioner::AssignBlockToColBasedOnWhiteSpace() {
 
   for (int i = 0; i < sz; ++i) {
     if (block_list[i].IsFixed()) continue;
-    int col_num = LocToCol((int) std::round(block_list[i].X()));
+    int col_num = LocToCol((int)std::round(block_list[i].X()));
 
     std::vector<int> pos_col;
     std::vector<double> distance;
@@ -252,9 +255,8 @@ void DefaultSpacePartitioner::AssignBlockToColBasedOnWhiteSpace() {
     double min_dist = DBL_MAX;
     for (auto &num : pos_col) {
       double tmp_dist;
-      Stripe *res = col_list[num].GetStripeClosestToBlk(
-          &block_list[i], tmp_dist
-      );
+      Stripe *res =
+          col_list[num].GetStripeClosestToBlk(&block_list[i], tmp_dist);
       if (tmp_dist < min_dist) {
         stripe = res;
         col_num = num;
@@ -265,8 +267,8 @@ void DefaultSpacePartitioner::AssignBlockToColBasedOnWhiteSpace() {
       col_list[col_num].block_count_++;
       block_column_assign[i] = col_num;
     } else {
-      DaliExpects(false, "Cannot find a column to place cell: "
-          + block_list[i].Name());
+      DaliExpects(
+          false, "Cannot find a column to place cell: " + block_list[i].Name());
     }
   }
   for (int i = 0; i < tot_col_num_; ++i) {
@@ -304,18 +306,20 @@ bool DefaultSpacePartitioner::StartPartitioning() {
       max_cell_width_ = std::max(max_cell_width_, blk.Width());
     }
   }
-  BOOST_LOG_TRIVIAL(info) << "Max movable cell width: " << max_cell_width_ << "\n";
+  BOOST_LOG_TRIVIAL(info) << "Max movable cell width: " << max_cell_width_
+                          << "\n";
 
   // determine the width of columns
   cluster_width_ = max_row_width_;
   if (cluster_width_ <= 0) {
-    BOOST_LOG_TRIVIAL(info) << "Using default gridded row width: 2*max_unplug_length_\n";
-    stripe_width_ = (int) std::round(max_unplug_length_ * stripe_width_factor_);
+    BOOST_LOG_TRIVIAL(info)
+        << "Using default gridded row width: 2*max_unplug_length_\n";
+    stripe_width_ = (int)std::round(max_unplug_length_ * stripe_width_factor_);
   } else {
-    DaliWarns(
-        cluster_width_ < max_unplug_length_,
-        "Specified gridded row width is smaller than max_unplug_length_, space is wasted, may not be able to successfully complete well legalization"
-    );
+    DaliWarns(cluster_width_ < max_unplug_length_,
+              "Specified gridded row width is smaller than max_unplug_length_, "
+              "space is wasted, may not be able to successfully complete well "
+              "legalization");
     stripe_width_ = cluster_width_;
   }
   stripe_width_ = stripe_width_ + well_spacing_;
@@ -324,26 +328,23 @@ bool DefaultSpacePartitioner::StartPartitioning() {
   if (stripe_width_ > region_width) {
     stripe_width_ = region_width;
   }
-  tot_col_num_ = std::ceil(region_width / (double) stripe_width_);
-  BOOST_LOG_TRIVIAL(info)
-    << "  Total number of columns: " << tot_col_num_ << "\n";
+  tot_col_num_ = std::ceil(region_width / (double)stripe_width_);
+  BOOST_LOG_TRIVIAL(info) << "  Total number of columns: " << tot_col_num_
+                          << "\n";
   int max_clusters_per_col = region_height / p_ckt_->MinBlkHeight();
   col_list.resize(tot_col_num_);
   stripe_width_ = region_width / tot_col_num_;
-  BOOST_LOG_TRIVIAL(info)
-    << "  Gridded row width: " << stripe_width_ * p_ckt_->GridValueX() << "um, "
-    << stripe_width_ << "\n";
-  DaliWarns(
-      stripe_width_ < max_cell_width_,
-      "Maximum cell width is longer than gridded row width?"
-  );
+  BOOST_LOG_TRIVIAL(info) << "  Gridded row width: "
+                          << stripe_width_ * p_ckt_->GridValueX() << "um, "
+                          << stripe_width_ << "\n";
+  DaliWarns(stripe_width_ < max_cell_width_,
+            "Maximum cell width is longer than gridded row width?");
   for (int i = 0; i < tot_col_num_; ++i) {
     col_list[i].lx_ = Left() + i * stripe_width_;
     col_list[i].width_ = stripe_width_ - well_spacing_;
-    DaliExpects(
-        col_list[i].width_ > 0,
-        "CELL configuration is problematic, leading to non-positive column width"
-    );
+    DaliExpects(col_list[i].width_ > 0,
+                "CELL configuration is problematic, leading to non-positive "
+                "column width");
     UpdateWhiteSpaceInCol(col_list[i]);
   }
   if (partition_mode_ == 1) {
@@ -351,12 +352,12 @@ bool DefaultSpacePartitioner::StartPartitioning() {
     UpdateWhiteSpaceInCol(col_list.back());
   }
   DecomposeSpaceToSimpleStripes();
-  //cluster_list_.reserve(tot_col_num_ * max_clusters_per_col);
+  // cluster_list_.reserve(tot_col_num_ * max_clusters_per_col);
 
-  //BOOST_LOG_TRIVIAL(info)  <<"left: %d, right: %d\n", left_, right_);
+  // BOOST_LOG_TRIVIAL(info)  <<"left: %d, right: %d\n", left_, right_);
   BOOST_LOG_TRIVIAL(info)
-    << "Maximum possible number of gridded rows in a column: "
-    << max_clusters_per_col << "\n";
+      << "Maximum possible number of gridded rows in a column: "
+      << max_clusters_per_col << "\n";
 
   AssignBlockToColBasedOnWhiteSpace();
 
@@ -366,100 +367,60 @@ bool DefaultSpacePartitioner::StartPartitioning() {
 void DefaultSpacePartitioner::PlotAvailSpace(std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
-  SaveMatlabPatchRect(
-      ost,
-      Left(), Bottom(), Right(), Top(),
-      true, 1, 1, 1
-  );
+  SaveMatlabPatchRect(ost, Left(), Bottom(), Right(), Top(), true, 1, 1, 1);
   for (int i = 0; i < tot_num_rows_; ++i) {
     auto &row = white_space_in_rows_[i];
     for (auto &seg : row) {
-      SaveMatlabPatchRect(
-          ost,
-          seg.lo,
-          i * row_height_ + Bottom(),
-          seg.hi,
-          (i + 1) * row_height_ + Bottom(),
-          true,
-          1,
-          1,
-          1
-      );
+      SaveMatlabPatchRect(ost, seg.lo, i * row_height_ + Bottom(), seg.hi,
+                          (i + 1) * row_height_ + Bottom(), true, 1, 1, 1);
     }
   }
 
   for (auto &block : p_ckt_->Blocks()) {
     if (block.IsMovable()) continue;
-    SaveMatlabPatchRect(
-        ost,
-        block.LLX(), block.LLY(), block.URX(), block.URY(),
-        true, 1, 1, 1
-    );
+    SaveMatlabPatchRect(ost, block.LLX(), block.LLY(), block.URX(), block.URY(),
+                        true, 1, 1, 1);
   }
 }
 
-void DefaultSpacePartitioner::PlotAvailSpaceInCols(std::string const &name_of_file) {
+void DefaultSpacePartitioner::PlotAvailSpaceInCols(
+    std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
-  SaveMatlabPatchRect(
-      ost,
-      Left(), Bottom(), Right(), Top(),
-      true, 1, 1, 1
-  );
+  SaveMatlabPatchRect(ost, Left(), Bottom(), Right(), Top(), true, 1, 1, 1);
   for (auto &col : *p_col_list_) {
     for (int i = 0; i < tot_num_rows_; ++i) {
       auto &row = col.white_space_[i];
       for (auto &seg : row) {
-        SaveMatlabPatchRect(
-            ost,
-            seg.lo,
-            i * row_height_ + Bottom(),
-            seg.hi,
-            (i + 1) * row_height_ + Bottom(),
-            true,
-            0,
-            1,
-            1
-        );
+        SaveMatlabPatchRect(ost, seg.lo, i * row_height_ + Bottom(), seg.hi,
+                            (i + 1) * row_height_ + Bottom(), true, 0, 1, 1);
       }
     }
   }
 
   for (auto &block : p_ckt_->Blocks()) {
     if (block.IsMovable()) continue;
-    SaveMatlabPatchRect(
-        ost,
-        block.LLX(), block.LLY(), block.URX(), block.URY(),
-        true, 0, 1, 1
-    );
+    SaveMatlabPatchRect(ost, block.LLX(), block.LLY(), block.URX(), block.URY(),
+                        true, 0, 1, 1);
   }
 }
 
-void DefaultSpacePartitioner::PlotSimpleStripes(std::string const &name_of_file) {
+void DefaultSpacePartitioner::PlotSimpleStripes(
+    std::string const &name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
-  SaveMatlabPatchRect(
-      ost,
-      Left(), Bottom(), Right(), Top(),
-      true, 1, 1, 1
-  );
+  SaveMatlabPatchRect(ost, Left(), Bottom(), Right(), Top(), true, 1, 1, 1);
   for (auto &col : *p_col_list_) {
     for (auto &stripe : col.stripe_list_) {
-      SaveMatlabPatchRect(
-          ost,
-          stripe.LLX(), stripe.LLY(), stripe.URX(), stripe.URY(),
-          true, 0.8, 0.8, 0.8
-      );
+      SaveMatlabPatchRect(ost, stripe.LLX(), stripe.LLY(), stripe.URX(),
+                          stripe.URY(), true, 0.8, 0.8, 0.8);
     }
   }
 
   for (auto &block : p_ckt_->Blocks()) {
     if (block.IsMovable()) continue;
-    SaveMatlabPatchRect(
-        ost,
-        block.LLX(), block.LLY(), block.URX(), block.URY(),
-        true, 0, 1, 1
-    );
+    SaveMatlabPatchRect(ost, block.LLX(), block.LLY(), block.URX(), block.URY(),
+                        true, 0, 1, 1);
   }
 }
 
@@ -507,4 +468,4 @@ int DefaultSpacePartitioner::LocToCol(int x) const {
   return col_num;
 }
 
-}
+}  // namespace dali

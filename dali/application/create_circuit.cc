@@ -19,14 +19,14 @@
  *
  ******************************************************************************/
 
-/**** the following is an example to add a BlockType with one cell pin to a Circuit
- * std::string blk_type_name = "nand2"; // block type with name nand2
- * int width = 4; // width 4
- * int height = 8; // height 8
- * BlockType *blk_type_ptr = circuit.AddBlockType(blk_type_name, width, height); // add this BlockType to circuit
- * std::string pin_name = "in"; // block pin with name "in"
- * Pin *pin_ptr = circuit.AddBlkTypePin(blk_type_ptr, pin_name); // add this Pin to this BlockType
- * circuit.AddBlkTypePinRect(pin_ptr, 0, 1.9, 0.2, 2.1); // add the shape of this Pin
+/**** the following is an example to add a BlockType with one cell pin to a
+ *Circuit std::string blk_type_name = "nand2"; // block type with name nand2 int
+ *width = 4; // width 4 int height = 8; // height 8 BlockType *blk_type_ptr =
+ *circuit.AddBlockType(blk_type_name, width, height); // add this BlockType to
+ *circuit std::string pin_name = "in"; // block pin with name "in" Pin *pin_ptr
+ *= circuit.AddBlkTypePin(blk_type_ptr, pin_name); // add this Pin to this
+ *BlockType circuit.AddBlkTypePinRect(pin_ptr, 0, 1.9, 0.2, 2.1); // add the
+ *shape of this Pin
  ****/
 
 #include "dali/circuit/circuit.h"
@@ -46,20 +46,14 @@ int main() {
   circuit.SetDatabaseMicrons(1000);
   circuit.SetManufacturingGrid(0.001);
 
-  // set metal layer if you want to do IO Placement and use metal pitches as grid value
+  // set metal layer if you want to do IO Placement and use metal pitches as
+  // grid value
   std::string metal_layer_name;
   metal_layer_name = "m1";
   circuit.AddMetalLayer(metal_layer_name, 0.1, 0.1, 0.042, 0.2, 0.2, VERTICAL);
   metal_layer_name = "m2";
-  circuit.AddMetalLayer(
-      metal_layer_name,
-      0.1,
-      0.1,
-      0.042,
-      0.2,
-      0.2,
-      HORIZONTAL
-  );
+  circuit.AddMetalLayer(metal_layer_name, 0.1, 0.1, 0.042, 0.2, 0.2,
+                        HORIZONTAL);
 
   // set grid value and row height
   circuit.SetGridValue(0.2, 0.2);
@@ -69,8 +63,8 @@ int main() {
   std::string inv_type_name = "INV2";
   double inv_width = 0.8;
   double inv_height = 1.6;
-  BlockType
-      *inv_ptr = circuit.AddBlockType(inv_type_name, inv_width, inv_height);
+  BlockType *inv_ptr =
+      circuit.AddBlockType(inv_type_name, inv_width, inv_height);
 
   // add cell pins
   std::string in_name = "IN";
@@ -89,7 +83,8 @@ int main() {
   Pin *out_pin_ptr = circuit.AddBlkTypePin(inv_ptr, out_name, false);
   out_pin_ptr->SetOffset((out_lx + out_ly) / 2.0, (out_ux + out_uy) / 2.0);
 
-  // set DEF Units distance microns, which would be better the same as LEF database micron.
+  // set DEF Units distance microns, which would be better the same as LEF
+  // database micron.
   circuit.SetUnitsDistanceMicrons(1000);
 
   // set die area

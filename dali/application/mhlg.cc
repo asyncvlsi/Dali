@@ -18,15 +18,14 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+#include <phydb/phydb.h>
+
 #include <string>
 #include <vector>
-
-#include <phydb/phydb.h>
 
 #include "dali/circuit/circuit.h"
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
-
 #include "dali/placer.h"
 
 using namespace dali;
@@ -133,7 +132,8 @@ int main(int argc, char *argv[]) {
 
   tetris_legalizer->SetWidthHeightFactor(k_width, k_height);
   tetris_legalizer->SetLeftBoundFactor(k_left, k_left_step);
-  tetris_legalizer->InitializeFromGriddedRowLegalizer(multi_well_legalizer.get());
+  tetris_legalizer->InitializeFromGriddedRowLegalizer(
+      multi_well_legalizer.get());
   tetris_legalizer->SetMaxIteration(10);
   tetris_legalizer->StartRowAssignment();
 
@@ -150,34 +150,34 @@ int main(int argc, char *argv[]) {
   multi_well_legalizer->ReportStandardCellDisplacement();
    */
 
-
-  //tetris_legalizer->InitializeFromGriddedRowLegalizer(multi_well_legalizer.get());
-  //tetris_legalizer->IsPrintDisplacement(true);
-  //tetris_legalizer->StartMultiHeightLegalization();
-  //tetris_legalizer->GenMATLABTable("lg1_result.txt");
-  //tetris_legalizer->GenDisplacement("disp1_result.txt");
+  // tetris_legalizer->InitializeFromGriddedRowLegalizer(multi_well_legalizer.get());
+  // tetris_legalizer->IsPrintDisplacement(true);
+  // tetris_legalizer->StartMultiHeightLegalization();
+  // tetris_legalizer->GenMATLABTable("lg1_result.txt");
+  // tetris_legalizer->GenDisplacement("disp1_result.txt");
 
   if (!output_name.empty()) {
     circuit.SaveDefFile(output_name, "", def_files[0], 1, 1, 2, 1);
   }
 
   elapsed_time.RecordEndTime();
-  BOOST_LOG_TRIVIAL(info)
-    << "****End of placement "
-    << "(wall time: " << elapsed_time.GetWallTime() << "s, "
-    << "cpu time: " << elapsed_time.GetCpuTime() << "s)****\n";
+  BOOST_LOG_TRIVIAL(info) << "****End of placement "
+                          << "(wall time: " << elapsed_time.GetWallTime()
+                          << "s, "
+                          << "cpu time: " << elapsed_time.GetCpuTime()
+                          << "s)****\n";
 
   return 0;
 }
 
 void ReportUsage() {
-  std::cout
-      << "\033[0;36m"
-      << "Usage: mhlg\n"
-      << "  -lef         <file.lef>\n"
-      << "  -def         <file.def>\n"
-      << "  -o           <output_name>.def (optional, default output file name dali_out.def)\n"
-      << "  -t           #threads (optional, default 1)\n"
-      << "(flag order does not matter)"
-      << "\033[0m\n";
+  std::cout << "\033[0;36m"
+            << "Usage: mhlg\n"
+            << "  -lef         <file.lef>\n"
+            << "  -def         <file.def>\n"
+            << "  -o           <output_name>.def (optional, default output "
+               "file name dali_out.def)\n"
+            << "  -t           #threads (optional, default 1)\n"
+            << "(flag order does not matter)"
+            << "\033[0m\n";
 }

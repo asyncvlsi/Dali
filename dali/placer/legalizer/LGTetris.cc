@@ -40,17 +40,21 @@ void TetrisLegalizer::SetMaxItr(int max_iteration) {
 
 void TetrisLegalizer::FastShift(int failure_point) {
   /****
-   * This method is to FastShiftLeft() the blocks following the failure_point (included) to reasonable locations in order to keep block orders
-   *    1. tetrisSpace.IsSpaceAvail() fails to place a block when the current location of this block is illegal
-   *    2. tetrisSpace.FindBlockLoc() fails to place a block when there is no possible legal location on the right hand side of this block,
-   * if failure_point is the first block
-   *    we shift the bounding box of all blocks to the placement region,
-   *    the bounding box left and bottom boundaries touch the left and bottom boundaries of placement region,
-   *    note that the bounding box might be larger than the placement region, but should not be much larger
+   * This method is to FastShiftLeft() the blocks following the failure_point
+   * (included) to reasonable locations in order to keep block orders
+   *    1. tetrisSpace.IsSpaceAvail() fails to place a block when the current
+   * location of this block is illegal
+   *    2. tetrisSpace.FindBlockLoc() fails to place a block when there is no
+   * possible legal location on the right hand side of this block, if
+   * failure_point is the first block we shift the bounding box of all blocks to
+   * the placement region, the bounding box left and bottom boundaries touch the
+   * left and bottom boundaries of placement region, note that the bounding box
+   * might be larger than the placement region, but should not be much larger
    * else:
-   *    we shift the bounding box of the remaining blocks to the right hand side of the block just placed
-   *    the bottom boundary of the bounding box will not be changed
-   *    only the left boundary of the bounding box will be shifted to the right hand side of the block just placed
+   *    we shift the bounding box of the remaining blocks to the right hand side
+   * of the block just placed the bottom boundary of the bounding box will not
+   * be changed only the left boundary of the bounding box will be shifted to
+   * the right hand side of the block just placed
    * ****/
   std::vector<Block> &blocks = ckt_ptr_->Blocks();
   double bounding_left;
@@ -73,8 +77,8 @@ void TetrisLegalizer::FastShift(int failure_point) {
     Block *failed_block = index_loc_list_[failure_point].blk_ptr;
     bounding_left = failed_block->LLX();
     Block *last_placed_block = index_loc_list_[failure_point - 1].blk_ptr;
-    int left_new = (int) std::round(last_placed_block->LLX());
-    //BOOST_LOG_TRIVIAL(info)   << left_new << "  " << bounding_left << "\n";
+    int left_new = (int)std::round(last_placed_block->LLX());
+    // BOOST_LOG_TRIVIAL(info)   << left_new << "  " << bounding_left << "\n";
     for (size_t i = failure_point; i < index_loc_list_.size(); ++i) {
       Block *blk_ptr = index_loc_list_[i].blk_ptr;
       blk_ptr->IncreaseX(left_new + init_diff - bounding_left);
@@ -101,7 +105,7 @@ void TetrisLegalizer::FlipPlacement() {
   for (auto &block : blocks) {
     block.SetLLX(sum_left_right - block.URX());
   }
-  //GenMATLABScript("flip_result.txt");
+  // GenMATLABScript("flip_result.txt");
 }
 
 bool TetrisLegalizer::TetrisLegal() {
@@ -122,54 +126,55 @@ bool TetrisLegalizer::TetrisLegal() {
     }
   }*/
 
-  // 2. sort blocks based on their lower Left corners. Further optimization is doable here.
+  // 2. sort blocks based on their lower Left corners. Further optimization is
+  // doable here.
 
   for (size_t i = 0; i < index_loc_list_.size(); ++i) {
     index_loc_list_[i].blk_ptr = &(blocks[i]);
     index_loc_list_[i].x = blocks[i].LLX();
     index_loc_list_[i].y = blocks[i].LLY();
   }
-  std::sort(
-      index_loc_list_.begin(),
-      index_loc_list_.end(),
-      [](const BlkInitPair &pair0, const BlkInitPair &pair1) {
-        return (pair0.x < pair1.x)
-            || ((pair0.x == pair1.x) && (pair0.y < pair1.y));
-      }
-  );
+  std::sort(index_loc_list_.begin(), index_loc_list_.end(),
+            [](const BlkInitPair &pair0, const BlkInitPair &pair1) {
+              return (pair0.x < pair1.x) ||
+                     ((pair0.x == pair1.x) && (pair0.y < pair1.y));
+            });
 
   /*for (auto &pair: index_loc_list_) {
     BOOST_LOG_TRIVIAL(info)   << blocks[pair.num].LLX() << "\n";
   }*/
 
   // 3. initialize the data structure to store row usage
-  //int maxHeight = GetCircuitRef().MaxBlkHeight();
+  // int maxHeight = GetCircuitRef().MaxBlkHeight();
   int minWidth = ckt_ptr_->MinBlkWidth();
-  //int minHeight = GetCircuitRef().MinBlkHeight();
+  // int minHeight = GetCircuitRef().MinBlkHeight();
 
   BOOST_LOG_TRIVIAL(info) << "Building LGTetris space" << std::endl;
-  TetrisSpace tetrisSpace
-      (RegionLeft(), RegionRight(), RegionBottom(), RegionTop(), 1, minWidth);
+  TetrisSpace tetrisSpace(RegionLeft(), RegionRight(), RegionBottom(),
+                          RegionTop(), 1, minWidth);
   int llx, lly;
   int width, height;
-  //int count = 0;
+  // int count = 0;
   for (size_t i = 0; i < index_loc_list_.size(); ++i) {
     auto bk_ptr = index_loc_list_[i].blk_ptr;
     width = bk_ptr->Width();
     height = bk_ptr->Height();
     /****
      * After "integerization" of the current location from "double" to "int":
-     * 1. if the current location is legal, the location of this block don't have to be changed,
-     *  IsSpaceAvail() will mark the space occupied by this block to be "used", and for sure this space is no more available
+     * 1. if the current location is legal, the location of this block don't
+     * have to be changed, IsSpaceAvail() will mark the space occupied by this
+     * block to be "used", and for sure this space is no more available
      * 2. if the current location is illegal,
-     *  FindBlockLoc() will find a legal location for this block, and mark that space used.
+     *  FindBlockLoc() will find a legal location for this block, and mark that
+     * space used.
      * 3. If FindBlocLoc() fails to find a legal location,
-     *  FastShiftLeft() the remaining blocks to the right hand side of the last placed block, in order to keep block orders
-     *  FlipPlacement() will flip the placement in the x-direction
-     *  if current_iteration does not reach the maximum allowed number, then do the legalization in a reverse order
+     *  FastShiftLeft() the remaining blocks to the right hand side of the last
+     * placed block, in order to keep block orders FlipPlacement() will flip the
+     * placement in the x-direction if current_iteration does not reach the
+     * maximum allowed number, then do the legalization in a reverse order
      * ****/
-    llx = (int) std::round(bk_ptr->LLX());
-    lly = (int) std::round(bk_ptr->LLY());
+    llx = (int)std::round(bk_ptr->LLX());
+    lly = (int)std::round(bk_ptr->LLY());
     bool is_current_loc_legal =
         tetrisSpace.IsSpaceAvail(llx, lly, width, height);
     if (is_current_loc_legal) {
@@ -190,7 +195,7 @@ bool TetrisLegalizer::TetrisLegal() {
     std::string file_name = std::to_string(count);
     BOOST_LOG_TRIVIAL(info)   << count << "  " << is_current_loc_legal << "\n";
      GenMATLABScriptPlaced(file_name);*/
-    //count++;
+    // count++;
   }
   return true;
 }
@@ -206,7 +211,8 @@ bool TetrisLegalizer::StartPlacement() {
   bool is_successful = false;
   for (current_iteration_ = 0; current_iteration_ < max_iteration_;
        ++current_iteration_) {
-    // if a legal location is not found, need to reverse the legalization process
+    // if a legal location is not found, need to reverse the legalization
+    // process
     is_successful = TetrisLegal();
     if (!is_successful) {
       FlipPlacement();
@@ -223,4 +229,4 @@ bool TetrisLegalizer::StartPlacement() {
   return is_successful;
 }
 
-}
+}  // namespace dali

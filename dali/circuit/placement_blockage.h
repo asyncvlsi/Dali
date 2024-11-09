@@ -32,10 +32,11 @@ class PlacementBlockage {
   PlacementBlockage(int lx, int ly, int ux, int uy) : rect_(lx, ly, ux, uy) {}
   const RectI &GetRect() const { return rect_; }
   void SetRect(RectI &rect) { rect_ = rect; }
+
  private:
   RectI rect_;
 };
 
-} // dali
+}  // namespace dali
 
-#endif //DALI_CIRCUIT_PLACEMENT_BLOCKAGE_H_
+#endif  // DALI_CIRCUIT_PLACEMENT_BLOCKAGE_H_

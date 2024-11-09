@@ -44,6 +44,7 @@ class GlobalPlacer : public Placer {
   void InitializeBlockLocation();
 
   bool StartPlacement() override;
+
  protected:
   // for look ahead legalization
   int cur_iter_ = 0;
@@ -56,23 +57,18 @@ class GlobalPlacer : public Placer {
   bool should_save_intermediate_result_ = false;
 
   bool IsBlockListOrNetListEmpty() const;
-  static bool IsSeriesConverge(
-      std::vector<double> &series,
-      int window_size,
-      double tolerance
-  );
+  static bool IsSeriesConverge(std::vector<double> &series, int window_size,
+                               double tolerance);
   bool IsPlacementConverge();
   void PrintHpwl() const;
-  void PrintEndStatement(
-      std::string const &name_of_process,
-      bool is_success
-  ) override;
+  void PrintEndStatement(std::string const &name_of_process,
+                         bool is_success) override;
 
   RandomInitializerType initializer_type_ = RandomInitializerType::UNIFORM;
   HpwlOptimizer *optimizer_ = nullptr;
   RoughLegalizer *legalizer_ = nullptr;
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_PLACER_GLOBAL_PLACER_GLOBAL_PLACER_H_
+#endif  // DALI_PLACER_GLOBAL_PLACER_GLOBAL_PLACER_H_

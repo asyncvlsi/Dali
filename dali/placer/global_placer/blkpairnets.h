@@ -21,10 +21,9 @@
 #ifndef DALI_PLACER_GLOBAL_PLACER_BLKPAIRNETS_H_
 #define DALI_PLACER_GLOBAL_PLACER_BLKPAIRNETS_H_
 
-#include <vector>
-
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/Sparse>
+#include <vector>
 
 #include "dali/circuit/net.h"
 
@@ -34,16 +33,11 @@ typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat;
 
 class BlkBlkEdge {
  public:
-  BlkBlkEdge(
-      Net *net_ptr,
-      int d_index,
-      int l_index
-  ) : net(net_ptr),
-      d(d_index),
-      l(l_index) {}
-  Net *net; // the pointer to the net containing two blocks
-  int d; // driver index
-  int l; // load index
+  BlkBlkEdge(Net *net_ptr, int d_index, int l_index)
+      : net(net_ptr), d(d_index), l(l_index) {}
+  Net *net;  // the pointer to the net containing two blocks
+  int d;     // driver index
+  int l;     // load index
 };
 
 class BlkPairNets {
@@ -77,6 +71,6 @@ class BlkPairNets {
   void WriteY();
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_PLACER_GLOBAL_PLACER_BLKPAIRNETS_H_
+#endif  // DALI_PLACER_GLOBAL_PLACER_BLKPAIRNETS_H_

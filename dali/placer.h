@@ -32,9 +32,9 @@
 #include "dali/placer/legalizer/LGTetrisEx.h"
 
 /****Well Legalizer****/
+#include "dali/placer/well_legalizer/griddedrowlegalizer.h"
 #include "dali/placer/well_legalizer/stdclusterwelllegalizer.h"
 #include "dali/placer/well_legalizer/welllegalizer.h"
-#include "dali/placer/well_legalizer/griddedrowlegalizer.h"
 
 /****Well Placement Flow****/
 #include "dali/placer/well_place_flow/wellplaceflow.h"
@@ -46,4 +46,4 @@
 /****IO Placer****/
 #include "dali/placer/io_placer/ioplacer.h"
 
-#endif //DALI_PLACER_H_
+#endif  // DALI_PLACER_H_

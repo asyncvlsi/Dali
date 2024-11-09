@@ -21,8 +21,8 @@
 #include "helper.h"
 
 #include <cmath>
-#include <unordered_set>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "dali/common/logging.h"
@@ -41,20 +41,17 @@ void SaveArgs(int argc, char *argv[]) {
 }
 
 std::vector<std::vector<std::string>> ParseArguments(
-    int argc,
-    char *argv[],
-    std::string const &flag_prefix
-) {
+    int argc, char *argv[], std::string const &flag_prefix) {
   std::vector<std::vector<std::string>> options;
   for (int i = 1; i < argc; ++i) {
     std::string arg(argv[i]);
-    if (arg.substr(0, flag_prefix.size())== flag_prefix) {
+    if (arg.substr(0, flag_prefix.size()) == flag_prefix) {
       // this is a new flag
       options.emplace_back();
       options.back().emplace_back(arg);
-    } else if (!options.empty()) { // this is an option for the latest flag
+    } else if (!options.empty()) {  // this is an option for the latest flag
       options.back().emplace_back(arg);
-    } else { // option with no flag declared in advance?
+    } else {  // option with no flag declared in advance?
       DaliExpects(false, "there is no flag declared before: " << arg);
     }
   }
@@ -74,19 +71,15 @@ class SegmentTree {
   int count;
   long long total;
 
-  SegmentTree(int start0, int end0, std::vector<int> &X0) :
-      start(start0),
-      end(end0),
-      X(X0) {
+  SegmentTree(int start0, int end0, std::vector<int> &X0)
+      : start(start0), end(end0), X(X0) {
     left = nullptr;
     right = nullptr;
     count = 0;
     total = 0;
   }
 
-  int GetRangeMid() const {
-    return start + (end - start) / 2;
-  }
+  int GetRangeMid() const { return start + (end - start) / 2; }
 
   SegmentTree *GetLeft() {
     if (left == nullptr) {
@@ -114,8 +107,10 @@ long long SegmentTree::Update(int i, int j, int val) {
     GetRight()->Update(std::max(GetRangeMid(), i), j, val);
   }
 
-  if (count > 0) total = X[end] - X[start];
-  else total = GetLeft()->total + GetRight()->total;
+  if (count > 0)
+    total = X[end] - X[start];
+  else
+    total = GetLeft()->total + GetRight()->total;
 
   return total;
 }
@@ -127,7 +122,8 @@ unsigned long long GetCoverArea(std::vector<RectI> &rects) {
   int event_open = 1, event_close = -1;
   // event is a tuple containing {y_loc, open/close event, lower_x, upper_x}
   std::vector<std::vector<int>> events;
-  // each rectangle can create at most 2 events if area is positive, otherwise 0 event
+  // each rectangle can create at most 2 events if area is positive, otherwise 0
+  // event
   events.reserve(rects.size() * 2);
   std::unordered_set<int> x_values_set;
 
@@ -147,13 +143,10 @@ unsigned long long GetCoverArea(std::vector<RectI> &rects) {
   if (events.empty()) return 0;
 
   // sort all events based on y location of an event
-  std::sort(
-      events.begin(),
-      events.end(),
-      [](std::vector<int> const &event0, std::vector<int> const &event1) {
-        return event0[0] < event1[0];
-      }
-  );
+  std::sort(events.begin(), events.end(),
+            [](std::vector<int> const &event0, std::vector<int> const &event1) {
+              return event0[0] < event1[0];
+            });
 
   // build a map to find index from x value
   std::vector<int> x_values;
@@ -166,8 +159,7 @@ unsigned long long GetCoverArea(std::vector<RectI> &rects) {
   std::unordered_map<int, int> x_value_id_map;
   for (int i = 0; i < sz; ++i) {
     x_value_id_map.insert(
-        std::unordered_map<int, int>::value_type(x_values[i], i)
-    );
+        std::unordered_map<int, int>::value_type(x_values[i], i));
   }
 
   SegmentTree active(0, sz - 1, x_values);
@@ -261,15 +253,16 @@ bool IsExecutableExisting(std::string const &executable_path) {
 void ReportMemory() {
   auto peak_mem = getPeakRSS();
   auto curr_mem = getCurrentRSS();
-  BOOST_LOG_TRIVIAL(info)
-    << "(peak memory: " << (peak_mem >> 20u) << "MB, "
-    << " current memory: " << (curr_mem >> 20u) << "MB)\n";
+  BOOST_LOG_TRIVIAL(info) << "(peak memory: " << (peak_mem >> 20u) << "MB, "
+                          << " current memory: " << (curr_mem >> 20u)
+                          << "MB)\n";
 }
 
 /****
  * This member function comes from a solution I submitted to LeetCode, lol
  *
- * If two intervals overlap with each other, these two intervals will be merged into one
+ * If two intervals overlap with each other, these two intervals will be merged
+ * into one
  *
  * This function can merge a list of intervals
  * ****/
@@ -277,14 +270,10 @@ void MergeIntervals(std::vector<SegI> &intervals) {
   size_t sz = intervals.size();
   if (sz <= 1) return;
 
-  std::sort(
-      intervals.begin(),
-      intervals.end(),
-      [](const SegI &inter1,
-         const SegI &inter2) {
-        return inter1.lo < inter2.lo;
-      }
-  );
+  std::sort(intervals.begin(), intervals.end(),
+            [](const SegI &inter1, const SegI &inter2) {
+              return inter1.lo < inter2.lo;
+            });
 
   std::vector<SegI> res;
 
@@ -309,4 +298,4 @@ void MergeIntervals(std::vector<SegI> &intervals) {
   intervals = res;
 }
 
-}
+}  // namespace dali

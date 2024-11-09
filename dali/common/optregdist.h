@@ -34,17 +34,12 @@ namespace dali {
 class OptRegDist {
  public:
   Circuit *circuit_ = nullptr;
-  void FindOptimalRegionX(
-      Block &blk,
-      double &lx,
-      double &ly,
-      double &ux,
-      double &uy
-  ) const;
+  void FindOptimalRegionX(Block &blk, double &lx, double &ly, double &ux,
+                          double &uy) const;
 
   void SaveFile(std::string const &file_name) const;
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_COMMON_OPTREGDIST_H_
+#endif  // DALI_COMMON_OPTREGDIST_H_

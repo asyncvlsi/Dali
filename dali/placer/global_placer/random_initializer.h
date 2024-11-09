@@ -22,8 +22,8 @@
 #define DALI_PLACER_GLOBAL_PLACER_RANDOM_INITIALIZER_H_
 
 #include <queue>
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 
 #include "dali/circuit/block.h"
 #include "dali/circuit/circuit.h"
@@ -56,8 +56,7 @@ class RandomInitializer {
 
   // interface functions
   virtual void SetParameters(
-      std::unordered_map<std::string, std::string> &params_dict
-  );
+      std::unordered_map<std::string, std::string> &params_dict);
   void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
   virtual void RandomPlace() = 0;
 
@@ -80,10 +79,7 @@ class RandomInitializer {
  */
 class UniformInitializer : public RandomInitializer {
  public:
-  explicit UniformInitializer(
-      Circuit *ckt_ptr,
-      uint32_t random_seed = 1
-  );
+  explicit UniformInitializer(Circuit *ckt_ptr, uint32_t random_seed = 1);
   ~UniformInitializer() override = default;
   void RandomPlace() override;
 };
@@ -94,19 +90,17 @@ class UniformInitializer : public RandomInitializer {
  * the size of cells.
  * The center of the distribution is the center of the placement region, which
  * is assumed to be a rectangle.
- * The deviation of this distribution will be scaled by the region width and height.
+ * The deviation of this distribution will be scaled by the region width and
+ * height.
  */
 class GaussianInitializer : public RandomInitializer {
  public:
-  explicit GaussianInitializer(
-      Circuit *ckt_ptr,
-      uint32_t = 1
-  );
+  explicit GaussianInitializer(Circuit *ckt_ptr, uint32_t = 1);
   ~GaussianInitializer() override = default;
   void SetParameters(
-      std::unordered_map<std::string, std::string> &params_dict
-  ) override;
+      std::unordered_map<std::string, std::string> &params_dict) override;
   void RandomPlace() override;
+
  protected:
   double std_dev_ = 1.0 / 3.0;
 };
@@ -125,6 +119,7 @@ class InitializerGridBin {
   void UpdateMacroArea();
   void AddBlock(Block *blk);
   void InitializeBlockLocation(uint32_t random_seed, int num_trials);
+
  private:
   std::vector<Block *> macros_;
   std::vector<Block *> blocks_;
@@ -156,16 +151,15 @@ struct CompareInitializerGridBinPtr {
  * Future work: we can make it possible to set these parameters by users.
  *
  * Note: this initializer is designed for the scenario where all macros are
- * fixed (not unplaced or placed). It may not work very well for other scenarios.
+ * fixed (not unplaced or placed). It may not work very well for other
+ * scenarios.
  */
 class MonteCarloInitializer : public RandomInitializer {
  public:
-  explicit MonteCarloInitializer(
-      Circuit *ckt_ptr,
-      uint32_t random_seed = 1
-  );
+  explicit MonteCarloInitializer(Circuit *ckt_ptr, uint32_t random_seed = 1);
   ~MonteCarloInitializer() override = default;
   void RandomPlace() override;
+
  protected:
   virtual void InitializeGridBin();
   virtual void AssignFixedMacroToGridBin();
@@ -188,27 +182,26 @@ class MonteCarloInitializer : public RandomInitializer {
  *   2. for each cell, find the grid bin with the smallest cell density;
  *
  * Note: this initializer is designed for the scenario where all macros are
- * fixed (not unplaced or placed). It may not work very well for other scenarios.
+ * fixed (not unplaced or placed). It may not work very well for other
+ * scenarios.
  */
 class DensityAwareInitializer : public MonteCarloInitializer {
  public:
-  explicit DensityAwareInitializer(
-      Circuit *ckt_ptr,
-      uint32_t random_seed = 1
-  );
+  explicit DensityAwareInitializer(Circuit *ckt_ptr, uint32_t random_seed = 1);
   ~DensityAwareInitializer() override = default;
   void RandomPlace() override;
+
  protected:
   void InitializeGridBin() override;
   void AssignFixedMacroToGridBin() override;
 
-  std::priority_queue<InitializerGridBin *,
-                      std::vector<InitializerGridBin *>,
-                      CompareInitializerGridBinPtr> density_queue_;
+  std::priority_queue<InitializerGridBin *, std::vector<InitializerGridBin *>,
+                      CompareInitializerGridBinPtr>
+      density_queue_;
   void InitializePriorityQueue();
   void AssignBlockToGridBin();
 };
 
-} // dali
+}  // namespace dali
 
-#endif //DALI_PLACER_GLOBAL_PLACER_RANDOM_INITIALIZER_H_
+#endif  // DALI_PLACER_GLOBAL_PLACER_RANDOM_INITIALIZER_H_

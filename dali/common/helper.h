@@ -33,17 +33,15 @@ namespace dali {
 void SaveArgs(int argc, char *argv[]);
 
 std::vector<std::vector<std::string>> ParseArguments(
-    int argc,
-    char *argv[],
-    std::string const &flag_prefix
-);
+    int argc, char *argv[], std::string const &flag_prefix);
 
 // custom residual function, return: |x - round(x/y) * y|
 double AbsResidual(double x, double y);
 
 unsigned long long GetCoverArea(std::vector<RectI> &rects);
 
-// perform round() when x is close to an integer within an epsilon, other perform ceiling()
+// perform round() when x is close to an integer within an epsilon, other
+// perform ceiling()
 double RoundOrCeiling(double x, double epsilon = 1e-5);
 
 // splits a line into many words
@@ -74,56 +72,34 @@ void MergeIntervals(std::vector<SegI> &intervals);
  *
  * (0,0,0) black, (1,1,1) white
  */
-template<class T>
-void SaveMatlabPatchRect(
-    std::ofstream &ost,
-    T lx, T ly, T ux, T uy,
-    bool has_rgb = false,
-    double r = 0.0, double g = 0.0, double b = 0.0
-) {
-  ost << lx
-      << "\t" << ux
-      << "\t" << ux
-      << "\t" << lx
-      << "\t" << ly
-      << "\t" << ly
-      << "\t" << uy
-      << "\t" << uy;
+template <class T>
+void SaveMatlabPatchRect(std::ofstream &ost, T lx, T ly, T ux, T uy,
+                         bool has_rgb = false, double r = 0.0, double g = 0.0,
+                         double b = 0.0) {
+  ost << lx << "\t" << ux << "\t" << ux << "\t" << lx << "\t" << ly << "\t"
+      << ly << "\t" << uy << "\t" << uy;
   if (has_rgb) {
-    ost << "\t" << r
-        << "\t" << g
-        << "\t" << b;
+    ost << "\t" << r << "\t" << g << "\t" << b;
   }
   ost << "\n";
 }
 
-template<class T>
-void SaveMatlabPatchRegion(
-    std::ofstream &ost,
-    Rect<T> &n_rect, Rect<T> &p_rect
-) {
-  ost << n_rect.LLX() << "\t"
-      << n_rect.URX() << "\t"
-      << n_rect.URX() << "\t"
-      << n_rect.LLX() << "\t"
-      << n_rect.LLY() << "\t"
-      << n_rect.LLY() << "\t"
-      << n_rect.URY() << "\t"
-      << n_rect.URY() << "\t"
-      << p_rect.LLX() << "\t"
-      << p_rect.URX() << "\t"
-      << p_rect.URX() << "\t"
-      << p_rect.LLX() << "\t"
-      << p_rect.LLY() << "\t"
-      << p_rect.LLY() << "\t"
-      << p_rect.URY() << "\t"
+template <class T>
+void SaveMatlabPatchRegion(std::ofstream &ost, Rect<T> &n_rect,
+                           Rect<T> &p_rect) {
+  ost << n_rect.LLX() << "\t" << n_rect.URX() << "\t" << n_rect.URX() << "\t"
+      << n_rect.LLX() << "\t" << n_rect.LLY() << "\t" << n_rect.LLY() << "\t"
+      << n_rect.URY() << "\t" << n_rect.URY() << "\t" << p_rect.LLX() << "\t"
+      << p_rect.URX() << "\t" << p_rect.URX() << "\t" << p_rect.LLX() << "\t"
+      << p_rect.LLY() << "\t" << p_rect.LLY() << "\t" << p_rect.URY() << "\t"
       << p_rect.URY() << "\n";
 }
 
 inline void PrintHorizontalLine() {
-  BOOST_LOG_TRIVIAL(info) << "------------------------------------------------------------\n";
+  BOOST_LOG_TRIVIAL(info)
+      << "------------------------------------------------------------\n";
 }
 
-}
+}  // namespace dali
 
-#endif //DALI_COMMON_HELPER_H_
+#endif  // DALI_COMMON_HELPER_H_

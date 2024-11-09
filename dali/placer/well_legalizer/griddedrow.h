@@ -31,6 +31,7 @@
 namespace dali {
 
 class GriddedRow {
+  // clang-format off
   /*
    * For a gridded row, its overall structure is like this
    * ┌──────────────────┬──────────────┬──────────────┬─────────────────────────────────────────┬───────────────┬──────────────┬───────────────────┐
@@ -40,7 +41,9 @@ class GriddedRow {
    * └──────────────────┴──────────────┴──────────────┴─────────────────────────────────────────┴───────────────┴──────────────┴───────────────────┘
    * The post end cap cell are optional, they will only be inserted into a gridded row when enable_end_cap_cell is true.
    */
+  // clang-format on
   friend class Stripe;
+
  public:
   GriddedRow() = default;
 
@@ -94,10 +97,8 @@ class GriddedRow {
   double MinDisplacementLLY() const;
 
   std::vector<RowSegment> &Segments();
-  void UpdateSegments(
-      std::vector<SegI> &blockage,
-      bool is_existing_blocks_considered
-  );
+  void UpdateSegments(std::vector<SegI> &blockage,
+                      bool is_existing_blocks_considered);
   void AssignBlocksToSegments();
   bool IsBelowMiddleLine(Block *p_blk) const;
   bool IsBelowTopPlusKFirstRegionHeight(Block *p_blk, int iteration) const;
@@ -109,43 +110,35 @@ class GriddedRow {
   void AddBlockRegion(Block *p_blk, int region_id, bool is_upward);
   std::vector<BlockRegion> &BlkRegions();
   bool AttemptToAdd(Block *p_blk, bool is_upward = true);
-  bool AttemptToAddWithDispCheck(
-      Block *p_blk,
-      double displacement_upper_limit,
-      bool is_upward
-  );
+  bool AttemptToAddWithDispCheck(Block *p_blk, double displacement_upper_limit,
+                                 bool is_upward);
   BlockOrient ComputeBlockOrient(Block *p_blk, bool is_upward) const;
   void LegalizeSegmentsX(bool use_init_loc);
   void LegalizeSegmentsY();
   void RecomputeHeight(int p_well_height, int n_well_height);
   void InitializeBlockStretching();
 
-  size_t AddWellTapCells(
-      Circuit *p_ckt,
-      BlockType *well_tap_type_ptr,
-      size_t start_id,
-      std::vector<SegI> &well_tap_cell_locs
-  );
+  size_t AddWellTapCells(Circuit *p_ckt, BlockType *well_tap_type_ptr,
+                         size_t start_id,
+                         std::vector<SegI> &well_tap_cell_locs);
 
   void SortBlockRegions();
 
   bool IsRowLegal();
 
-  void GenSubCellTable(
-      std::ofstream &ost_cluster,
-      std::ofstream &ost_sub_cell,
-      std::ofstream &ost_discrepancy,
-      std::ofstream &ost_displacement
-  );
+  void GenSubCellTable(std::ofstream &ost_cluster, std::ofstream &ost_sub_cell,
+                       std::ofstream &ost_discrepancy,
+                       std::ofstream &ost_displacement);
 
-  void UpdateCommonSegment(std::vector<SegI> &avail_spaces, int width, double density);
+  void UpdateCommonSegment(std::vector<SegI> &avail_spaces, int width,
+                           double density);
   void AddStandardCell(Block *p_blk, int region_id, SegI range);
 
   size_t OutOfBoundCell();
 
  private:
-  bool is_orient_N_ = true; // orientation of this cluster
-  std::vector<Block *> blk_list_; // list of blocks in this cluster
+  bool is_orient_N_ = true;        // orientation of this cluster
+  std::vector<Block *> blk_list_;  // list of blocks in this cluster
   std::unordered_map<Block *, double2d> blk_initial_location_;
 
   /**** number of tap cells needed, and pointers to tap cells ****/
@@ -157,7 +150,8 @@ class GriddedRow {
   int ly_;
   int width_;
 
-  /**** total width of cells in this cluster, including reserved space for tap cells ****/
+  /**** total width of cells in this cluster, including reserved space for tap
+   * cells ****/
   int used_size_ = 0;
 
   /**** maximum p-well height and n-well height ****/
@@ -177,6 +171,7 @@ class ClusterSegment {
  private:
   int ly_;
   int height_;
+
  public:
   ClusterSegment(GriddedRow *cluster_ptr, int loc)
       : ly_(loc), height_(cluster_ptr->Height()) {
@@ -188,13 +183,11 @@ class ClusterSegment {
   int UY() const { return ly_ + height_; }
   int Height() const { return height_; }
 
-  bool IsNotOnBottom(ClusterSegment &sc) const {
-    return sc.LY() < UY();
-  }
+  bool IsNotOnBottom(ClusterSegment &sc) const { return sc.LY() < UY(); }
   void Merge(ClusterSegment &sc, int lower_bound, int upper_bound);
   void UpdateClusterLocation();
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_PLACER_WELLLEGALIZER_GRIDDEDROW_H_
+#endif  // DALI_PLACER_WELLLEGALIZER_GRIDDEDROW_H_

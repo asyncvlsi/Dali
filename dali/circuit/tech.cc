@@ -21,10 +21,9 @@
 
 #include "tech.h"
 
+#include <algorithm>
 #include <cctype>
 #include <cfloat>
-
-#include <algorithm>
 #include <unordered_set>
 
 #include "dali/common/helper.h"
@@ -42,37 +41,23 @@ double Tech::GetManufacturingGrid() const {
   return manufacturing_grid_;
 }
 
-std::vector<int> &Tech::WellTapCellIds() {
-  return well_tap_cell_type_ids_;
-}
+std::vector<int> &Tech::WellTapCellIds() { return well_tap_cell_type_ids_; }
 
 std::vector<std::unique_ptr<BlockType>> &Tech::FillerCellPtrs() {
   return filler_ptrs_;
 }
 
-BlockType *Tech::IoDummyBlkTypePtr() {
-  return io_dummy_blk_type_ptr_;
-}
+BlockType *Tech::IoDummyBlkTypePtr() { return io_dummy_blk_type_ptr_; }
 
-WellLayer &Tech::NwellLayer() {
-  return nwell_layer_;
-}
+WellLayer &Tech::NwellLayer() { return nwell_layer_; }
 
-WellLayer &Tech::PwellLayer() {
-  return pwell_layer_;
-}
+WellLayer &Tech::PwellLayer() { return pwell_layer_; }
 
-bool Tech::IsNwellSet() const {
-  return n_set_;
-}
+bool Tech::IsNwellSet() const { return n_set_; }
 
-bool Tech::IsPwellSet() const {
-  return p_set_;
-}
+bool Tech::IsPwellSet() const { return p_set_; }
 
-bool Tech::IsWellInfoSet() const {
-  return n_set_ || p_set_;
-}
+bool Tech::IsWellInfoSet() const { return n_set_ || p_set_; }
 
 bool Tech::IsGndAtBottom(phydb::Macro *macro) {
   const std::unordered_set<std::string> gnd_names = {"vss", "gnd"};
@@ -82,11 +67,8 @@ bool Tech::IsGndAtBottom(phydb::Macro *macro) {
   double vdd_bottom_line = DBL_MAX;
   for (auto &pin : macro->GetPinsRef()) {
     std::string pin_name = pin.GetName();
-    std::for_each(
-        pin_name.begin(),
-        pin_name.end(),
-        [](char &c) { c = tolower(c); }
-    );
+    std::for_each(pin_name.begin(), pin_name.end(),
+                  [](char &c) { c = tolower(c); });
     if (gnd_names.find(pin_name) != gnd_names.end()) {
       for (auto &layer_rect : pin.GetLayerRectRef()) {
         for (auto &rect : layer_rect.GetRects()) {
@@ -132,11 +114,8 @@ void Tech::CreateFakeWellForStandardCell(phydb::PhyDB *phy_db) {
   DaliExpects(!height_set.empty(), "No cell height?");
 
   std::vector<int> height_vec(height_set.begin(), height_set.end());
-  std::sort(
-      height_vec.begin(),
-      height_vec.end(),
-      [](const int &h0, const int &h1) { return h0 < h1; }
-  );
+  std::sort(height_vec.begin(), height_vec.end(),
+            [](const int &h0, const int &h1) { return h0 < h1; });
 
   int standard_height = height_vec[0];
   int n_height = standard_height / 2;
@@ -146,27 +125,19 @@ void Tech::CreateFakeWellForStandardCell(phydb::PhyDB *phy_db) {
   for (auto &block_type : BlockTypes()) {
     if (&block_type == io_dummy_blk_type_ptr_) continue;
     auto *macro = phy_db->GetMacroPtr(block_type.Name());
-    int region_cnt = (int) std::round(block_type.Height() / standard_height);
+    int region_cnt = (int)std::round(block_type.Height() / standard_height);
 
     // Create the well info
     int accumulative_height = 0;
     bool is_pwell = IsGndAtBottom(macro);
     for (int i = 0; i < 2 * region_cnt; ++i) {
       if (is_pwell) {
-        block_type.AddNwellRect(
-            0,
-            accumulative_height,
-            block_type.Width(),
-            accumulative_height + n_height
-        );
+        block_type.AddNwellRect(0, accumulative_height, block_type.Width(),
+                                accumulative_height + n_height);
         accumulative_height += n_height;
       } else {
-        block_type.AddPwellRect(
-            0,
-            accumulative_height,
-            block_type.Width(),
-            accumulative_height + p_height
-        );
+        block_type.AddPwellRect(0, accumulative_height, block_type.Width(),
+                                accumulative_height + p_height);
         accumulative_height += p_height;
       }
       is_pwell = !is_pwell;
@@ -175,27 +146,33 @@ void Tech::CreateFakeWellForStandardCell(phydb::PhyDB *phy_db) {
 }
 
 int Tech::PreEndCapMinWidth() const {
-  return static_cast<int>(RoundOrCeiling(pre_end_cap_min_width_.value_or(0) / grid_value_x_));
+  return static_cast<int>(
+      RoundOrCeiling(pre_end_cap_min_width_.value_or(0) / grid_value_x_));
 }
 
 int Tech::PreEndCapMinPHeight() const {
-  return static_cast<int>(RoundOrCeiling(pre_end_cap_min_p_height_.value_or(0) / grid_value_y_));
+  return static_cast<int>(
+      RoundOrCeiling(pre_end_cap_min_p_height_.value_or(0) / grid_value_y_));
 }
 
 int Tech::PreEndCapMinNHeight() const {
-  return static_cast<int>(RoundOrCeiling(pre_end_cap_min_n_height_.value_or(0) / grid_value_y_));
+  return static_cast<int>(
+      RoundOrCeiling(pre_end_cap_min_n_height_.value_or(0) / grid_value_y_));
 }
 
 int Tech::PostEndCapMinWidth() const {
-  return static_cast<int>(RoundOrCeiling(post_end_cap_min_width_.value_or(0) / grid_value_x_));
+  return static_cast<int>(
+      RoundOrCeiling(post_end_cap_min_width_.value_or(0) / grid_value_x_));
 }
 
 int Tech::PostEndCapMinPHeight() const {
-  return static_cast<int>(RoundOrCeiling(post_end_cap_min_p_height_.value_or(0) / grid_value_y_));
+  return static_cast<int>(
+      RoundOrCeiling(post_end_cap_min_p_height_.value_or(0) / grid_value_y_));
 }
 
 int Tech::PostEndCapMinNHeight() const {
-  return static_cast<int>(RoundOrCeiling(post_end_cap_min_n_height_.value_or(0) / grid_value_y_));
+  return static_cast<int>(
+      RoundOrCeiling(post_end_cap_min_n_height_.value_or(0) / grid_value_y_));
 }
 
 void Tech::Report() const {
@@ -209,4 +186,4 @@ void Tech::Report() const {
   }
 }
 
-}
+}  // namespace dali

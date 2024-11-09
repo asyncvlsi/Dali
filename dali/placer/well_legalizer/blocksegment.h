@@ -29,6 +29,7 @@ struct BlockSegment {
  private:
   int lx_;
   int width_;
+
  public:
   BlockSegment(Block *blk_ptr, int loc) : lx_(loc), width_(blk_ptr->Width()) {
     blk_ptrs.push_back(blk_ptr);
@@ -41,15 +42,13 @@ struct BlockSegment {
   int UX() const { return lx_ + width_; }
   int Width() const { return width_; }
 
-  bool IsNotOnLeft(BlockSegment &sc) const {
-    return sc.LX() < UX();
-  }
+  bool IsNotOnLeft(BlockSegment &sc) const { return sc.LX() < UX(); }
   void Merge(BlockSegment &sc, int lower_bound, int upper_bound);
   void UpdateBlockLocation();
 
   void Report() const;
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_PLACER_WELLLEGALIZER_BLOCKSEGMENT_H_
+#endif  // DALI_PLACER_WELLLEGALIZER_BLOCKSEGMENT_H_

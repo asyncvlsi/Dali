@@ -36,16 +36,10 @@ class BlockType;
  */
 class Pin {
  public:
-  Pin(
-      std::pair<const std::string, int> *name_id_pair_ptr,
-      BlockType *blk_type_ptr
-  );
-  Pin(
-      std::pair<const std::string, int> *name_id_pair_ptr,
-      BlockType *blk_type_ptr,
-      double x_offset,
-      double y_offset
-  );
+  Pin(std::pair<const std::string, int> *name_id_pair_ptr,
+      BlockType *blk_type_ptr);
+  Pin(std::pair<const std::string, int> *name_id_pair_ptr,
+      BlockType *blk_type_ptr, double x_offset, double y_offset);
 
   // get name of this pin
   const std::string &Name() const;
@@ -79,6 +73,7 @@ class Pin {
 
   // print information of this pin
   void Report() const;
+
  private:
   std::pair<const std::string, int> *name_id_pair_ptr_;
   BlockType *blk_type_ptr_;
@@ -94,6 +89,6 @@ class Pin {
   void CalculateOffset(double x_offset, double y_offset);
 };
 
-}
+}  // namespace dali
 
-#endif //DALI_CIRCUIT_PIN_H_
+#endif  // DALI_CIRCUIT_PIN_H_

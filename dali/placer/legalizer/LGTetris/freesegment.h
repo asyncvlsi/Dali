@@ -21,9 +21,8 @@
 #ifndef DALI_FREESEGMENT_H
 #define DALI_FREESEGMENT_H
 
-#include <cassert>
-
 #include <algorithm>
+#include <cassert>
 #include <iostream>
 
 #include "dali/common/logging.h"
@@ -34,8 +33,8 @@ class FreeSegment {
  private:
   int start_;
   int end_;
-  FreeSegment *prev_ = nullptr; // Pointer to previous free segment
-  FreeSegment *next_ = nullptr; // Pointer to Next free segment
+  FreeSegment *prev_ = nullptr;  // Pointer to previous free segment
+  FreeSegment *next_ = nullptr;  // Pointer to Next free segment
  public:
   explicit FreeSegment(int start = 0, int stop = 0);
   bool SetPrev(FreeSegment *preFreeSeg_ptr);
@@ -67,37 +66,26 @@ inline bool FreeSegment::SetNext(FreeSegment *nextFreeSeg_ptr) {
   return true;
 }
 
-inline FreeSegment *FreeSegment::Next() {
-  return next_;
-}
+inline FreeSegment *FreeSegment::Next() { return next_; }
 
-inline FreeSegment *FreeSegment::Prev() {
-  return prev_;
-}
+inline FreeSegment *FreeSegment::Prev() { return prev_; }
 
 inline void FreeSegment::SetSpan(int startLoc, int endLoc) {
   if (startLoc > endLoc) {
     BOOST_LOG_TRIVIAL(info)
-      << "Cannot set the span of a segment with start larger than End, Start"
-      << startLoc
-      << " End: " << endLoc << std::endl;
+        << "Cannot set the span of a segment with start larger than End, Start"
+        << startLoc << " End: " << endLoc << std::endl;
     assert(startLoc <= endLoc);
   }
   start_ = startLoc;
   end_ = endLoc;
 }
 
-inline int FreeSegment::Start() const {
-  return start_;
-}
+inline int FreeSegment::Start() const { return start_; }
 
-inline int FreeSegment::End() const {
-  return end_;
-}
+inline int FreeSegment::End() const { return end_; }
 
-inline int FreeSegment::Length() const {
-  return end_ - start_;
-}
+inline int FreeSegment::Length() const { return end_ - start_; }
 
 inline bool FreeSegment::IsOverlap(FreeSegment *seg) const {
   if ((Length() == 0) || (seg->Length() == 0)) {
@@ -118,7 +106,8 @@ inline bool FreeSegment::IsTouch(FreeSegment *seg) const {
 
 inline bool FreeSegment::IsDominate(FreeSegment *seg) const {
   /****
-   * If this FreeSegment is on the right hand side of seg, and has common overlap length 0, return true
+   * If this FreeSegment is on the right hand side of seg, and has common
+   * overlap length 0, return true
    *
    * example: |---seg---| ... |---this seg---|, return true
    * example: |---seg---|---this seg---|, return true
@@ -152,6 +141,6 @@ inline FreeSegment *FreeSegment::SingleSegAnd(FreeSegment *seg) {
   return result;
 }
 
-}
+}  // namespace dali
 
-#endif //DALI_FREESEGMENT_H
+#endif  // DALI_FREESEGMENT_H

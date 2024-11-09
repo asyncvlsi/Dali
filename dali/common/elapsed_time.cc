@@ -40,48 +40,43 @@ void ElapsedTime::RecordEndTime() {
 void ElapsedTime::PrintTimeElapsed(severity lvl) const {
   size_t buffer_length = 1024;
   std::string buffer(buffer_length, '\0');
-  int written_length = snprintf(
-      &buffer[0], buffer_length, "(wall time: %fs, cpu time: %f)\n", wall_time_, cpu_time_
-  );
+  int written_length =
+      snprintf(&buffer[0], buffer_length, "(wall time: %fs, cpu time: %f)\n",
+               wall_time_, cpu_time_);
   buffer.resize(written_length);
   switch (lvl) {
-    case boost::log::trivial::trace : {
+    case boost::log::trivial::trace: {
       BOOST_LOG_TRIVIAL(trace) << buffer;
       break;
     }
-    case boost::log::trivial::debug : {
+    case boost::log::trivial::debug: {
       BOOST_LOG_TRIVIAL(debug) << buffer;
       break;
     }
-    case boost::log::trivial::info : {
+    case boost::log::trivial::info: {
       BOOST_LOG_TRIVIAL(info) << buffer;
       break;
     }
-    case boost::log::trivial::warning : {
+    case boost::log::trivial::warning: {
       BOOST_LOG_TRIVIAL(warning) << buffer;
       break;
     }
-    case boost::log::trivial::error : {
+    case boost::log::trivial::error: {
       BOOST_LOG_TRIVIAL(error) << buffer;
       break;
     }
-    case boost::log::trivial::fatal : {
+    case boost::log::trivial::fatal: {
       BOOST_LOG_TRIVIAL(fatal) << buffer;
       break;
     }
-    default : {
+    default: {
       DaliFatal("Unknown Boost severity level");
     }
   }
-
 }
 
-double ElapsedTime::GetWallTime() const {
-  return wall_time_;
-}
+double ElapsedTime::GetWallTime() const { return wall_time_; }
 
-double ElapsedTime::GetCpuTime() const {
-  return cpu_time_;
-}
+double ElapsedTime::GetCpuTime() const { return cpu_time_; }
 
-} // dali
+}  // namespace dali
