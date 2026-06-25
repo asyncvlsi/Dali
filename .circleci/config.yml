@@ -50,8 +50,11 @@ jobs:
             cd build
             cmake ..
             make
-            ctest --output-on-failure
+            mkdir -p test-results
+            ctest --output-on-failure --output-junit test-results/ctest-results.xml
             make install
+      - store_test_results:
+          path: Dali/build/test-results
   centos7:
     docker:
       - image: centos:7
