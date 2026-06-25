@@ -17,6 +17,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # ------------------------------------------------------------------------------
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
     module/eigen-git-mirror
 )
 
@@ -61,10 +62,7 @@ include(cmake/FindOpenMPPackage.cmake)
 
 # Detect if Boost library exists
 find_package(Boost 1.71.0 COMPONENTS log_setup log REQUIRED)
-message(STATUS "Boost library path: ${Boost_LIBRARY_DIRS}")
-message(STATUS "Boost include path: ${Boost_INCLUDE_DIR}")
-message(STATUS "Boost libs: ${Boost_LIBRARIES}")
-include_directories(${Boost_INCLUDE_DIRS})
+
 
 # Detect if CPLEX library exists
 include(cmake/FindCPLEX.cmake)

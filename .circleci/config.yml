@@ -113,7 +113,7 @@ jobs:
             cd Dali
             mkdir build
             cd build
-            cmake -D Boost_INCLUDE_DIR=$ACT_HOME/include ..  || exit 1
+            cmake ..  || exit 1
             make install  || exit 1
             
 workflows:
