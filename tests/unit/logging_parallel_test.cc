@@ -18,10 +18,10 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#include <cstdlib>
+#include <gtest/gtest.h>
+
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <map>
 #include <sstream>
 #include <string>
@@ -41,14 +41,9 @@ std::string ExpectedRecord(int thread_id, int message_id) {
   return record.str();
 }
 
-void Fail(const std::string& message) {
-  std::cerr << message << "\n";
-  std::exit(1);
-}
-
 }  // namespace
 
-int main() {
+TEST(LoggingTest, WritesCompleteRecordsFromParallelThreads) {
   const std::filesystem::path log_file =
       std::filesystem::temp_directory_path() / "dali_parallel_logging_test.log";
   std::filesystem::remove(log_file);
@@ -72,9 +67,7 @@ int main() {
   dali::CloseLogging();
 
   std::ifstream input(log_file);
-  if (!input.is_open()) {
-    Fail("Failed to open parallel logging test output");
-  }
+  ASSERT_TRUE(input.is_open());
 
   std::map<std::string, int> record_counts;
   std::string line;
@@ -84,26 +77,14 @@ int main() {
     ++record_counts[line];
   }
 
-  const int expected_line_count = kThreadCount * kMessagesPerThread;
-  if (line_count != expected_line_count) {
-    std::ostringstream message;
-    message << "Expected " << expected_line_count << " log records, got "
-            << line_count;
-    Fail(message.str());
-  }
+  EXPECT_EQ(line_count, kThreadCount * kMessagesPerThread);
 
   for (int thread_id = 0; thread_id < kThreadCount; ++thread_id) {
     for (int message_id = 0; message_id < kMessagesPerThread; ++message_id) {
       const std::string expected = ExpectedRecord(thread_id, message_id);
-      if (record_counts[expected] != 1) {
-        std::ostringstream message;
-        message << "Expected exactly one record for '" << expected << "', got "
-                << record_counts[expected];
-        Fail(message.str());
-      }
+      EXPECT_EQ(record_counts[expected], 1) << expected;
     }
   }
 
   std::filesystem::remove(log_file);
-  return 0;
 }

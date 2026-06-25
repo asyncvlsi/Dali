@@ -43,11 +43,14 @@ jobs:
       - run:
           name: "Install Dali"
           command: |
+            apt install -y libgtest-dev
             git clone --recursive https://github.com/asyncvlsi/Dali.git
             cd Dali
             mkdir build
             cd build
             cmake ..
+            make
+            ctest --output-on-failure
             make install
   centos7:
     docker:

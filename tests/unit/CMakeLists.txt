@@ -1,8 +1,23 @@
 cmake_minimum_required(VERSION 3.12)
 
+find_package(GTest QUIET)
+if (NOT GTest_FOUND)
+    message(STATUS "GoogleTest not found; skipping tests/unit")
+    return()
+endif ()
+
+if (TARGET GTest::gtest_main)
+    set(DALI_GTEST_MAIN GTest::gtest_main)
+elseif (TARGET GTest::Main)
+    set(DALI_GTEST_MAIN GTest::Main)
+else ()
+    message(STATUS "GoogleTest main target not found; skipping tests/unit")
+    return()
+endif ()
+
 function(add_dali_unit_test test_name source_file)
     add_executable(${test_name} ${source_file})
-    target_link_libraries(${test_name} PRIVATE dalilib)
+    target_link_libraries(${test_name} PRIVATE dalilib ${DALI_GTEST_MAIN})
     add_test(NAME ${test_name} COMMAND ${test_name})
 endfunction()
 
