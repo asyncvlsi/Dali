@@ -1100,13 +1100,12 @@ bool ExtendedTetrisLegalizer::StartRowAssignment() {
       break;
     }
   }
-  BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
-                          << "Row assignment complete (" << cur_iter_ + 1
-                          << ")\n"
-                          << "\033[0m";
+  LOG(info) << "\033[0;36m"
+            << "Row assignment complete (" << cur_iter_ + 1 << ")\n"
+            << "\033[0m";
 
   if (!is_success) {
-    BOOST_LOG_TRIVIAL(info) << "Placement illegal\n";
+    LOG(info) << "Placement illegal\n";
   }
 
   ReportHPWL();
@@ -1121,8 +1120,8 @@ bool ExtendedTetrisLegalizer::StartRowAssignment() {
 }
 
 void ExtendedTetrisLegalizer::GenAvailSpace(std::string const& name_of_file) {
-  BOOST_LOG_TRIVIAL(info) << "Generating available space, dump result to: "
-                          << name_of_file << "\n";
+  LOG(info) << "Generating available space, dump result to: " << name_of_file
+            << "\n";
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " << name_of_file);
   ost << RegionLeft() << "\t" << RegionRight() << "\t" << RegionRight() << "\t"

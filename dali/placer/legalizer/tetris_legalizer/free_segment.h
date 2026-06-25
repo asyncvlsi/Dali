@@ -72,7 +72,7 @@ inline FreeSegment* FreeSegment::Prev() { return prev_; }
 
 inline void FreeSegment::SetSpan(int startLoc, int endLoc) {
   if (startLoc > endLoc) {
-    BOOST_LOG_TRIVIAL(info)
+    LOG(info)
         << "Cannot set the span of a segment with start larger than End, Start"
         << startLoc << " End: " << endLoc << std::endl;
     assert(startLoc <= endLoc);
@@ -89,7 +89,7 @@ inline int FreeSegment::Length() const { return end_ - start_; }
 
 inline bool FreeSegment::IsOverlap(FreeSegment* seg) const {
   if ((Length() == 0) || (seg->Length() == 0)) {
-    BOOST_LOG_TRIVIAL(info) << "Length 0 segment?!\n";
+    LOG(info) << "Length 0 segment?!\n";
     return false;
   }
   bool notOverlap = (end_ <= seg->Start()) || (start_ >= seg->End());
@@ -98,7 +98,7 @@ inline bool FreeSegment::IsOverlap(FreeSegment* seg) const {
 
 inline bool FreeSegment::IsTouch(FreeSegment* seg) const {
   if ((Length() == 0) || (seg->Length() == 0)) {
-    BOOST_LOG_TRIVIAL(info) << "Length 0 segment?!\n";
+    LOG(info) << "Length 0 segment?!\n";
     return false;
   }
   return (end_ == seg->Start()) || (start_ == seg->End());

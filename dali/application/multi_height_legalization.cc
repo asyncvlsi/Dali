@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  InitLogging("", boost::log::trivial::info, true);
+  InitLogging("", severity::info, true);
   SaveArgs(argc, argv);
   std::vector<std::vector<std::string>> options =
       ParseArguments(argc, argv, "--");
@@ -161,11 +161,9 @@ int main(int argc, char* argv[]) {
   }
 
   elapsed_time.RecordEndTime();
-  BOOST_LOG_TRIVIAL(info) << "****End of placement "
-                          << "(wall time: " << elapsed_time.GetWallTime()
-                          << "s, "
-                          << "cpu time: " << elapsed_time.GetCpuTime()
-                          << "s)****\n";
+  LOG(info) << "****End of placement "
+            << "(wall time: " << elapsed_time.GetWallTime() << "s, "
+            << "cpu time: " << elapsed_time.GetCpuTime() << "s)****\n";
 
   return 0;
 }

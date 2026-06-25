@@ -29,12 +29,13 @@
 using namespace dali;
 
 /****
- * @brief Testcase for IoPlacement command "place-io --add" and "place-io --place".
+ * @brief Testcase for IoPlacement command "place-io --add" and "place-io
+ * --place".
  *
  * This is a simple testcase to show that using command
  *     "add-io <pin_name> <net_name> <direction> <use>"
- *     "place-io <pin_name> <metal_name> <lx> <ly> <ux> <uy> <placement_status> <x> <y> <orientation>"
- * we can obtain a placement result satisfying:
+ *     "place-io <pin_name> <metal_name> <lx> <ly> <ux> <uy> <placement_status>
+ * <x> <y> <orientation>" we can obtain a placement result satisfying:
  * 1. all I/O pins have final locations, shapes, and orientation as we set.
  *
  * @return 0 if this test is passed, 1 if failed
@@ -44,7 +45,7 @@ int main() {
   std::string def_file_name = "ispd19_test3.input.def";
 
   // initialize PhyDB
-  auto *p_phy_db0 = new phydb::PhyDB;
+  auto* p_phy_db0 = new phydb::PhyDB;
   p_phy_db0->ReadLef(lef_file_name);
   p_phy_db0->ReadDef(def_file_name);
 
@@ -52,35 +53,24 @@ int main() {
   RemoveAllIoPins(p_phy_db0);
 
   // initialize Dali to use its API to add and place I/O pins
-  Dali dali(p_phy_db0, boost::log::trivial::debug, "");
+  Dali dali(p_phy_db0, severity::debug, "");
   dali.InstantiateIoPlacer();
 
   // read the DEF file back to the memory, and perform checking
-  auto *p_phy_db1 = new phydb::PhyDB;
+  auto* p_phy_db1 = new phydb::PhyDB;
   p_phy_db1->ReadLef(lef_file_name);
   p_phy_db1->ReadDef(def_file_name);
 
   // add all I/O pins to the first PhyDB instance
-  for (auto &iopin: p_phy_db1->design().GetIoPinsRef()) {
-    auto *p_iopin = p_phy_db0->AddIoPin(
-        iopin.GetName(),
-        iopin.GetDirection(),
-        iopin.GetUse()
-    );
+  for (auto& iopin : p_phy_db1->design().GetIoPinsRef()) {
+    auto* p_iopin = p_phy_db0->AddIoPin(iopin.GetName(), iopin.GetDirection(),
+                                        iopin.GetUse());
     p_iopin->SetNetId(iopin.GetNetId());
-    p_iopin->SetShape(
-        iopin.GetLayerName(),
-        iopin.GetRect().LLX(),
-        iopin.GetRect().LLY(),
-        iopin.GetRect().URX(),
-        iopin.GetRect().URY()
-    );
-    p_iopin->SetPlacement(
-        iopin.GetPlacementStatus(),
-        iopin.GetLocation().x,
-        iopin.GetLocation().y,
-        iopin.GetOrientation()
-    );
+    p_iopin->SetShape(iopin.GetLayerName(), iopin.GetRect().LLX(),
+                      iopin.GetRect().LLY(), iopin.GetRect().URX(),
+                      iopin.GetRect().URY());
+    p_iopin->SetPlacement(iopin.GetPlacementStatus(), iopin.GetLocation().x,
+                          iopin.GetLocation().y, iopin.GetOrientation());
   }
 
   p_phy_db0->WriteDef("add_and_place_io_pins.def");

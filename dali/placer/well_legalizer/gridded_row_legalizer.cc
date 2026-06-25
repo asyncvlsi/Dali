@@ -69,17 +69,15 @@ void GriddedRowLegalizer::SetPartitionMode(int partitioning_mode) {
 }
 
 void GriddedRowLegalizer::SetMaxRowWidth(double max_row_width) {
-  BOOST_LOG_TRIVIAL(info) << "Provided max row width: " << max_row_width
-                          << " um\n";
-  BOOST_LOG_TRIVIAL(info) << "Gridded value x: " << ckt_ptr_->GridValueX()
-                          << " um\n";
+  LOG(info) << "Provided max row width: " << max_row_width << " um\n";
+  LOG(info) << "Gridded value x: " << ckt_ptr_->GridValueX() << " um\n";
   if (max_row_width < 0) {
     max_row_width_ = RegionRight() - RegionLeft();
   } else {
     max_row_width_ = std::floor(max_row_width / ckt_ptr_->GridValueX());
   }
-  BOOST_LOG_TRIVIAL(info) << "Max row width in grid unit : "
-                          << tap_cell_interval_grid_ << "\n";
+  LOG(info) << "Max row width in grid unit : " << tap_cell_interval_grid_
+            << "\n";
 }
 
 void GriddedRowLegalizer::PartitionSpaceAndBlocks() {
@@ -272,7 +270,7 @@ void GriddedRowLegalizer::CleanUpTemporaryRowSegments() {
 }
 
 bool GriddedRowLegalizer::UpwardDownwardLegalization(bool use_init_loc) {
-  BOOST_LOG_TRIVIAL(info) << "Start upward-downward legalization\n";
+  LOG(info) << "Start upward-downward legalization\n";
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
@@ -335,7 +333,7 @@ bool GriddedRowLegalizer::StripeLegalizationDownwardWithDispCheck(
 
 bool GriddedRowLegalizer::UpwardDownwardLegalizationWithDispCheck(
     bool use_init_loc) {
-  BOOST_LOG_TRIVIAL(info)
+  LOG(info)
       << "Start upward-downward legalization with displacement checking\n";
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
@@ -395,8 +393,7 @@ bool GriddedRowLegalizer::IsPlacementLegal() {
 
 bool GriddedRowLegalizer::OptimizeDisplacementUsingQuadraticProgramming() {
 #if DALI_USE_CPLEX
-  BOOST_LOG_TRIVIAL(info)
-      << "Optimizing displacement X using quadratic programming\n";
+  LOG(info) << "Optimizing displacement X using quadratic programming\n";
   double wall_time = get_wall_time();
   double cpu_time = get_cpu_time();
 
@@ -410,28 +407,27 @@ bool GriddedRowLegalizer::OptimizeDisplacementUsingQuadraticProgramming() {
   }
 
   if (is_successful) {
-    BOOST_LOG_TRIVIAL(info) << "Quadratic programming complete\n";
+    LOG(info) << "Quadratic programming complete\n";
   } else {
-    BOOST_LOG_TRIVIAL(info) << "Quadratic programming solution not found\n";
+    LOG(info) << "Quadratic programming solution not found\n";
   }
 
   wall_time = get_wall_time() - wall_time;
   cpu_time = get_cpu_time() - cpu_time;
-  BOOST_LOG_TRIVIAL(info) << "(wall time: " << wall_time
-                          << "s, cpu time: " << cpu_time << "s)\n";
+  LOG(info) << "(wall time: " << wall_time << "s, cpu time: " << cpu_time
+            << "s)\n";
 
   ReportDisplacement();
   return is_successful;
 #else
-  BOOST_LOG_TRIVIAL(info) << "Skip optimizing displacement using quadratic "
-                             "programming: CPLEX not found\n";
+  LOG(info) << "Skip optimizing displacement using quadratic "
+               "programming: CPLEX not found\n";
   return true;
 #endif
 }
 
 bool GriddedRowLegalizer::IterativeDisplacementOptimization() {
-  BOOST_LOG_TRIVIAL(info)
-      << "Optimizing displacement X using the consensus algorithm\n";
+  LOG(info) << "Optimizing displacement X using the consensus algorithm\n";
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
@@ -478,7 +474,7 @@ void GriddedRowLegalizer::EmbodyWellTapCells() {
 
 void GriddedRowLegalizer::ReportDisplacement() {
   if (!is_init_loc_cached_) {
-    BOOST_LOG_TRIVIAL(info)
+    LOG(info)
         << "Initial locations are not saved, cannot compute displacement\n";
   }
   double disp_x = 0, disp_y = 0;
@@ -500,22 +496,20 @@ void GriddedRowLegalizer::ReportDisplacement() {
   quadratic_disp_x *= ckt_ptr_->GridValueX() * ckt_ptr_->GridValueX();
   quadratic_disp_y *= ckt_ptr_->GridValueY() * ckt_ptr_->GridValueY();
   auto count = static_cast<double>(ckt_ptr_->TotMovBlkCnt());
-  BOOST_LOG_TRIVIAL(info) << "  Current linear displacement\n";
-  BOOST_LOG_TRIVIAL(info) << "    x: " << disp_x << "(" << disp_x / count << ")"
-                          << ", y: " << disp_y << "(" << disp_y / count << ")"
-                          << ", sum: " << disp_x + disp_y << "("
-                          << (disp_x + disp_y) / count << ")"
-                          << " um\n";
-  BOOST_LOG_TRIVIAL(info) << "  Current quadratic displacement\n";
-  BOOST_LOG_TRIVIAL(info) << "    x: " << quadratic_disp_x << "("
-                          << quadratic_disp_x / count << ")"
-                          << ", y: " << quadratic_disp_y << "("
-                          << quadratic_disp_y / count << ")"
-                          << ", sum: " << quadratic_disp_x + quadratic_disp_y
-                          << "("
-                          << (quadratic_disp_x + quadratic_disp_y) / count
-                          << ")"
-                          << " um^2\n";
+  LOG(info) << "  Current linear displacement\n";
+  LOG(info) << "    x: " << disp_x << "(" << disp_x / count << ")"
+            << ", y: " << disp_y << "(" << disp_y / count << ")"
+            << ", sum: " << disp_x + disp_y << "(" << (disp_x + disp_y) / count
+            << ")"
+            << " um\n";
+  LOG(info) << "  Current quadratic displacement\n";
+  LOG(info) << "    x: " << quadratic_disp_x << "(" << quadratic_disp_x / count
+            << ")"
+            << ", y: " << quadratic_disp_y << "(" << quadratic_disp_y / count
+            << ")"
+            << ", sum: " << quadratic_disp_x + quadratic_disp_y << "("
+            << (quadratic_disp_x + quadratic_disp_y) / count << ")"
+            << " um^2\n";
 }
 
 bool GriddedRowLegalizer::StartPlacement() {
@@ -587,7 +581,7 @@ void GriddedRowLegalizer::AssignStandardCellsToRowSegments() {
 
 void GriddedRowLegalizer::ReportStandardCellDisplacement() {
   if (!is_init_loc_cached_) {
-    BOOST_LOG_TRIVIAL(info)
+    LOG(info)
         << "Initial locations are not saved, cannot compute displacement\n";
   }
   double sum_disp_x = 0, sum_disp_y = 0;
@@ -615,27 +609,25 @@ void GriddedRowLegalizer::ReportStandardCellDisplacement() {
     max_euclidean_disp = std::max(max_euclidean_disp, tmp_euclidean_disp);
     ++cell_count;
   }
-  BOOST_LOG_TRIVIAL(info) << "Standard cell legalization summary\n";
-  BOOST_LOG_TRIVIAL(info) << "  sum manhattan displacement\n";
-  BOOST_LOG_TRIVIAL(info) << "    x: " << sum_disp_x << ", y: " << sum_disp_y
-                          << ", sum: " << sum_disp_x + sum_disp_y << " sites\n";
-  BOOST_LOG_TRIVIAL(info) << "  average manhattan displacement\n";
-  BOOST_LOG_TRIVIAL(info) << "    x: " << sum_disp_x / cell_count
-                          << ", y: " << sum_disp_y / cell_count
-                          << ", sum: " << (sum_disp_x + sum_disp_y) / cell_count
-                          << " sites\n";
-  BOOST_LOG_TRIVIAL(info) << "  max manhattan displacement\n";
-  BOOST_LOG_TRIVIAL(info) << "    x: " << max_disp_x << ", y: " << max_disp_y
-                          << " sites\n";
-  BOOST_LOG_TRIVIAL(info) << "  max sum manhattan displacement: "
-                          << max_manhattan_disp << " sites\n";
+  LOG(info) << "Standard cell legalization summary\n";
+  LOG(info) << "  sum manhattan displacement\n";
+  LOG(info) << "    x: " << sum_disp_x << ", y: " << sum_disp_y
+            << ", sum: " << sum_disp_x + sum_disp_y << " sites\n";
+  LOG(info) << "  average manhattan displacement\n";
+  LOG(info) << "    x: " << sum_disp_x / cell_count
+            << ", y: " << sum_disp_y / cell_count
+            << ", sum: " << (sum_disp_x + sum_disp_y) / cell_count
+            << " sites\n";
+  LOG(info) << "  max manhattan displacement\n";
+  LOG(info) << "    x: " << max_disp_x << ", y: " << max_disp_y << " sites\n";
+  LOG(info) << "  max sum manhattan displacement: " << max_manhattan_disp
+            << " sites\n";
 
-  BOOST_LOG_TRIVIAL(info) << "  sum euclidean displacement: " << sum_eucli_disp
-                          << " sites\n";
-  BOOST_LOG_TRIVIAL(info) << "  average euclidean displacement: "
-                          << sum_eucli_disp / cell_count << " sites\n";
-  BOOST_LOG_TRIVIAL(info) << "  max euclidean displacement: "
-                          << max_euclidean_disp << " sites\n";
+  LOG(info) << "  sum euclidean displacement: " << sum_eucli_disp << " sites\n";
+  LOG(info) << "  average euclidean displacement: "
+            << sum_eucli_disp / cell_count << " sites\n";
+  LOG(info) << "  max euclidean displacement: " << max_euclidean_disp
+            << " sites\n";
 }
 
 bool GriddedRowLegalizer::StartStandardLegalization() {
@@ -654,8 +646,7 @@ void GriddedRowLegalizer::ReportOutOfBoundCell() {
       cnt += stripe.OutOfBoundCell();
     }
   }
-  BOOST_LOG_TRIVIAL(info)
-      << cnt << " cells out of the corresponding cluster boundary!\n";
+  LOG(info) << cnt << " cells out of the corresponding cluster boundary!\n";
 }
 
 void GriddedRowLegalizer::GenMatlabClusterTable(
@@ -714,9 +705,8 @@ void GriddedRowLegalizer::GenDisplacement(std::string const& name_of_file) {
   for (auto& block : block_list) {
     if (IsDummyBlock(block)) continue;
     if (block.AuxPtr() == nullptr) {
-      BOOST_LOG_TRIVIAL(warning)
-          << "Block " << block.Name()
-          << " has not AuxPtr, cannot generate displacement vector\n";
+      LOG(warning) << "Block " << block.Name()
+                   << " has not AuxPtr, cannot generate displacement vector\n";
       continue;
     }
     auto aux_ptr = static_cast<LegalizerBlockAux*>(block.AuxPtr());
@@ -744,67 +734,61 @@ void GriddedRowLegalizer::ReportEffectiveDensity() {
   double eff_density = static_cast<double>(tot_eff_area) /
                        static_cast<double>(RegionWidth()) /
                        static_cast<double>(RegionHeight()) * 100;
-  BOOST_LOG_TRIVIAL(info) << "Effective density: " << eff_density << "%\n";
+  LOG(info) << "Effective density: " << eff_density << "%\n";
 }
 
 void GriddedRowLegalizer::SetWellTapCellNecessary(bool is_well_tap_needed) {
   is_well_tap_needed_ = is_well_tap_needed;
   std::string is_needed = is_well_tap_needed_ ? "True" : "False";
-  BOOST_LOG_TRIVIAL(info) << "Place well tap cells: " << is_needed << "\n";
+  LOG(info) << "Place well tap cells: " << is_needed << "\n";
 }
 
 void GriddedRowLegalizer::SetWellTapCellPlacementMode(
     bool is_checker_board_mode) {
   is_checker_board_mode_ = is_checker_board_mode;
   std::string is_mode_on = is_checker_board_mode_ ? "True" : "False";
-  BOOST_LOG_TRIVIAL(info) << "Checkerboard mode on: " << is_mode_on << "\n";
+  LOG(info) << "Checkerboard mode on: " << is_mode_on << "\n";
 }
 
 void GriddedRowLegalizer::SetWellTapCellInterval(
     double tap_cell_interval_microns) {
   if (tap_cell_interval_microns > 0) {
-    BOOST_LOG_TRIVIAL(info)
-        << "Provided well tap cell interval: " << tap_cell_interval_microns
-        << " um\n";
+    LOG(info) << "Provided well tap cell interval: "
+              << tap_cell_interval_microns << " um\n";
   } else {
     Tech& tech = ckt_ptr_->tech();
     WellLayer& n_well_layer = tech.NwellLayer();
     double max_unplug_length = n_well_layer.MaxPlugDist();
     if (is_checker_board_mode_) {
       tap_cell_interval_microns = 4 * max_unplug_length;
-      BOOST_LOG_TRIVIAL(info)
-          << "Using default well tap cell interval 4*max_unplug_length: "
-          << tap_cell_interval_microns << " um\n";
+      LOG(info) << "Using default well tap cell interval 4*max_unplug_length: "
+                << tap_cell_interval_microns << " um\n";
     } else {
       tap_cell_interval_microns = 2 * max_unplug_length;
-      BOOST_LOG_TRIVIAL(info)
-          << "Using default well tap cell interval 2*max_unplug_length: "
-          << tap_cell_interval_microns << " um\n";
+      LOG(info) << "Using default well tap cell interval 2*max_unplug_length: "
+                << tap_cell_interval_microns << " um\n";
     }
   }
-  BOOST_LOG_TRIVIAL(info) << "Gridded value x: " << ckt_ptr_->GridValueX()
-                          << " um\n";
+  LOG(info) << "Gridded value x: " << ckt_ptr_->GridValueX() << " um\n";
   tap_cell_interval_grid_ =
       std::floor(tap_cell_interval_microns / ckt_ptr_->GridValueX());
-  BOOST_LOG_TRIVIAL(info) << "Well tap cell interval in grid unit : "
-                          << tap_cell_interval_grid_ << "\n";
+  LOG(info) << "Well tap cell interval in grid unit : "
+            << tap_cell_interval_grid_ << "\n";
 }
 
 void GriddedRowLegalizer::SetWellTapCellType(
     std::string const& well_tap_type_name) {
   if (well_tap_type_name.empty()) {
-    BOOST_LOG_TRIVIAL(info) << "Well tap cell type not specified\n";
+    LOG(info) << "Well tap cell type not specified\n";
     DaliExpects(!ckt_ptr_->tech().WellTapCellIds().empty(),
                 "No well tap cells provided in the cell library?");
     int well_tap_cell_type_id = ckt_ptr_->tech().WellTapCellIds()[0];
     well_tap_type_ptr_ =
         &(ckt_ptr_->tech().BlockTypes()[well_tap_cell_type_id]);
-    BOOST_LOG_TRIVIAL(info)
-        << "Using the default well tap cell: " << well_tap_type_ptr_->Name()
-        << "\n";
+    LOG(info) << "Using the default well tap cell: "
+              << well_tap_type_ptr_->Name() << "\n";
   } else {
-    BOOST_LOG_TRIVIAL(info)
-        << "Provided well tap cell type: " << well_tap_type_name << "\n";
+    LOG(info) << "Provided well tap cell type: " << well_tap_type_name << "\n";
     well_tap_type_ptr_ = ckt_ptr_->GetBlockTypePtr(well_tap_type_name);
   }
 }

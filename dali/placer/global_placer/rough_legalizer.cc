@@ -52,8 +52,8 @@ void LookAheadLegalizer::InitializeGridBinSize() {
   grid_bin_width = grid_bin_height;
   grid_cnt_x = std::ceil(double(ckt_ptr_->RegionWidth()) / grid_bin_width);
   grid_cnt_y = std::ceil(double(ckt_ptr_->RegionHeight()) / grid_bin_height);
-  BOOST_LOG_TRIVIAL(debug) << "  Global placement bin width, height: "
-                           << grid_bin_width << "  " << grid_bin_height << "\n";
+  LOG(debug) << "  Global placement bin width, height: " << grid_bin_width
+             << "  " << grid_bin_height << "\n";
 
   std::vector<GridBin> temp_grid_bin_column(grid_cnt_y);
   grid_bin_mesh.resize(grid_cnt_x, temp_grid_bin_column);
@@ -577,7 +577,7 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
     } else {
       break;
     }
-    // BOOST_LOG_TRIVIAL(info)   << R.total_white_space << "  " <<
+    // LOG(info)   << R.total_white_space << "  " <<
     // R.filling_rate << "  " << FillingRate() << "\n";
   }
 
@@ -602,8 +602,8 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
     }
   }
   queue_box_bin.push(R);
-  // BOOST_LOG_TRIVIAL(info)   << "Bounding box total white space: " <<
-  // queue_box_bin.front().total_white_space << "\n"; BOOST_LOG_TRIVIAL(info) <<
+  // LOG(info)   << "Bounding box total white space: " <<
+  // queue_box_bin.front().total_white_space << "\n"; LOG(info) <<
   // "Bounding box total cell area: " << queue_box_bin.front().total_cell_area
   // << "\n";
 
@@ -859,8 +859,8 @@ void LookAheadLegalizer::SplitBox(BoxBin& box) {
   }
   box1.update_cell_area_white_space(grid_bin_mesh);
   box2.update_cell_area_white_space(grid_bin_mesh);
-  // BOOST_LOG_TRIVIAL(info)   << box1.ll_index_ << box1.ur_index_ << "\n";
-  // BOOST_LOG_TRIVIAL(info)   << box2.ll_index_ << box2.ur_index_ << "\n";
+  // LOG(info)   << box1.ll_index_ << box1.ur_index_ << "\n";
+  // LOG(info)   << box2.ll_index_ << box2.ur_index_ << "\n";
   // box1.update_all_terminal(grid_bin_matrix);
   // box2.update_all_terminal(grid_bin_matrix);
   //  if the white space in one bin is dominating the other, ignore the smaller
@@ -877,8 +877,8 @@ void LookAheadLegalizer::SplitBox(BoxBin& box) {
   box2.UpdateBoundaries(grid_bin_mesh);
 
   if (dominating_box_flag == 0) {
-    // BOOST_LOG_TRIVIAL(info)   << "cell list size: " << box.cell_list.size()
-    // << "\n"; box.update_cell_area(block_list); BOOST_LOG_TRIVIAL(info)   <<
+    // LOG(info)   << "cell list size: " << box.cell_list.size()
+    // << "\n"; box.update_cell_area(block_list); LOG(info)   <<
     // "total_cell_area: " << box.total_cell_area << "\n";
     box.update_cut_point_cell_list_low_high(box1.total_white_space,
                                             box2.total_white_space);
@@ -901,12 +901,12 @@ void LookAheadLegalizer::SplitBox(BoxBin& box) {
     }
 
     /*if ((box1.left < LEFT) || (box1.bottom < BOTTOM)) {
-  BOOST_LOG_TRIVIAL(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM <<
-"\n"; BOOST_LOG_TRIVIAL(info)   << box1.left << " " << box1.bottom << "\n";
+  LOG(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM <<
+"\n"; LOG(info)   << box1.left << " " << box1.bottom << "\n";
 }
 if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
-  BOOST_LOG_TRIVIAL(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM <<
-"\n"; BOOST_LOG_TRIVIAL(info)   << box2.left << " " << box2.bottom << "\n";
+  LOG(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM <<
+"\n"; LOG(info)   << box2.left << " " << box2.bottom << "\n";
 }*/
 
     queue_box_bin.push(box1);
@@ -928,8 +928,8 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
     }
 
     /*if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
-  BOOST_LOG_TRIVIAL(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM <<
-"\n"; BOOST_LOG_TRIVIAL(info)   << box2.left << " " << box2.bottom << "\n";
+  LOG(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM <<
+"\n"; LOG(info)   << box2.left << " " << box2.bottom << "\n";
 }*/
 
     queue_box_bin.push(box2);
@@ -947,8 +947,8 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
     }
 
     /*if ((box1.left < LEFT) || (box1.bottom < BOTTOM)) {
-  BOOST_LOG_TRIVIAL(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM <<
-"\n"; BOOST_LOG_TRIVIAL(info)   << box1.left << " " << box1.bottom << "\n";
+  LOG(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM <<
+"\n"; LOG(info)   << box1.left << " " << box1.bottom << "\n";
 }*/
 
     queue_box_bin.push(box1);
@@ -1008,7 +1008,7 @@ double LookAheadLegalizer::RemoveCellOverlap() {
     UpdateLargestCluster();
     FindMinimumBoxForLargestCluster();
     RecursiveBisectionBlockSpreading();
-    // BOOST_LOG_TRIVIAL(info) << "cluster count: " << cluster_set.size() <<
+    // LOG(info) << "cluster count: " << cluster_set.size() <<
     // "\n";
   } while (!cluster_set.empty());
 
@@ -1020,7 +1020,7 @@ double LookAheadLegalizer::RemoveCellOverlap() {
   upper_bound_hpwl_x_.push_back(evaluate_result_x);
   double evaluate_result_y = ckt_ptr_->WeightedHPWLY();
   upper_bound_hpwl_y_.push_back(evaluate_result_y);
-  BOOST_LOG_TRIVIAL(debug) << "Look-ahead legalization complete\n";
+  LOG(debug) << "Look-ahead legalization complete\n";
 
   elapsed_time.RecordEndTime();
   tot_lal_time += elapsed_time.GetWallTime();
@@ -1032,16 +1032,14 @@ double LookAheadLegalizer::RemoveCellOverlap() {
     // DumpLookAheadDisplacement("displace_" + std::to_string(cur_iter_), 1);
   }
 
-  BOOST_LOG_TRIVIAL(debug) << "(UpdateGridBinState time: "
-                           << update_grid_bin_state_time_ << "s)\n";
-  BOOST_LOG_TRIVIAL(debug) << "(UpdateClusterList time: "
-                           << update_cluster_list_time_ << "s)\n";
-  BOOST_LOG_TRIVIAL(debug) << "(FindMinimumBoxForLargestCluster time: "
-                           << find_minimum_box_for_largest_cluster_time_
-                           << "s)\n";
-  BOOST_LOG_TRIVIAL(debug) << "(RecursiveBisectionBlockSpreading time: "
-                           << recursive_bisection_block_spreading_time_
-                           << "s)\n";
+  LOG(debug) << "(UpdateGridBinState time: " << update_grid_bin_state_time_
+             << "s)\n";
+  LOG(debug) << "(UpdateClusterList time: " << update_cluster_list_time_
+             << "s)\n";
+  LOG(debug) << "(FindMinimumBoxForLargestCluster time: "
+             << find_minimum_box_for_largest_cluster_time_ << "s)\n";
+  LOG(debug) << "(RecursiveBisectionBlockSpreading time: "
+             << recursive_bisection_block_spreading_time_ << "s)\n";
 
   upper_bound_hpwl_.push_back(evaluate_result_x + evaluate_result_y);
   return upper_bound_hpwl_.back();

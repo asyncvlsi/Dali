@@ -260,10 +260,9 @@ void DieArea::ShrinkOffGridBoundingBox() {
   double f_left = region_left_ / static_cast<double>(distance_scale_factor_x_);
   if (AbsResidual(f_left, 1) > 1e-5) {
     int shrunk_region_left_ = static_cast<int>(std::round(std::ceil(f_left)));
-    BOOST_LOG_TRIVIAL(info)
-        << "left placement boundary is not on placement grid: \n"
-        << "  shrink left from " << region_left_ << " to "
-        << shrunk_region_left_ * distance_scale_factor_x_ << "\n";
+    LOG(info) << "left placement boundary is not on placement grid: \n"
+              << "  shrink left from " << region_left_ << " to "
+              << shrunk_region_left_ * distance_scale_factor_x_ << "\n";
     region_left_ = shrunk_region_left_;
   } else {
     region_left_ = static_cast<int>(std::round(f_left));
@@ -274,10 +273,9 @@ void DieArea::ShrinkOffGridBoundingBox() {
   if (AbsResidual(f_right, 1) > 1e-5) {
     int shrunk_region_right_ =
         static_cast<int>(std::round(std::floor(f_right)));
-    BOOST_LOG_TRIVIAL(info)
-        << "right placement boundary is not on placement grid: \n"
-        << "  shrink right from " << region_right_ << " to "
-        << shrunk_region_right_ * distance_scale_factor_x_ << "\n";
+    LOG(info) << "right placement boundary is not on placement grid: \n"
+              << "  shrink right from " << region_right_ << " to "
+              << shrunk_region_right_ * distance_scale_factor_x_ << "\n";
     region_right_ = shrunk_region_right_;
   } else {
     region_right_ = static_cast<int>(std::round(f_right));
@@ -288,10 +286,9 @@ void DieArea::ShrinkOffGridBoundingBox() {
   if (AbsResidual(f_bottom, 1) > 1e-5) {
     int shrunk_region_bottom_ =
         static_cast<int>(std::round(std::ceil(f_bottom)));
-    BOOST_LOG_TRIVIAL(info)
-        << "bottom placement boundary is not on placement grid: \n"
-        << "  shrink bottom from " << region_bottom_ << " to "
-        << shrunk_region_bottom_ * distance_scale_factor_y_ << "\n";
+    LOG(info) << "bottom placement boundary is not on placement grid: \n"
+              << "  shrink bottom from " << region_bottom_ << " to "
+              << shrunk_region_bottom_ * distance_scale_factor_y_ << "\n";
     region_bottom_ = shrunk_region_bottom_;
   } else {
     region_bottom_ = static_cast<int>(std::round(f_bottom));
@@ -300,10 +297,9 @@ void DieArea::ShrinkOffGridBoundingBox() {
   double f_top = region_top_ / static_cast<double>(distance_scale_factor_y_);
   if (AbsResidual(f_top, 1) > 1e-5) {
     int shrunk_region_top_ = static_cast<int>(std::round(std::floor(f_top)));
-    BOOST_LOG_TRIVIAL(info)
-        << "top placement boundary is not on placement grid: \n"
-        << "  shrink top from " << region_top_ << " to "
-        << shrunk_region_top_ * distance_scale_factor_y_ << "\n";
+    LOG(info) << "top placement boundary is not on placement grid: \n"
+              << "  shrink top from " << region_top_ << " to "
+              << shrunk_region_top_ * distance_scale_factor_y_ << "\n";
     region_top_ = shrunk_region_top_;
   } else {
     region_top_ = static_cast<int>(std::round(f_top));

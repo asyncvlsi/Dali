@@ -94,7 +94,7 @@ class Dali {
  private:
   // options
   std::string prefix_ = "dali.";
-  severity severity_level_ = boost::log::trivial::info;
+  severity severity_level_ = severity::info;
   std::string log_file_name_;
   bool disable_log_prefix_ = false;
   int num_threads_ = 1;

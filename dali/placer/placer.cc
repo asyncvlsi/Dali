@@ -51,8 +51,8 @@ Placer::Placer(double aspect_ratio, double filling_rate)
       ckt_ptr_(nullptr) {}
 
 void Placer::LoadConf([[maybe_unused]] std::string const& config_file) {
-  BOOST_LOG_TRIVIAL(warning) << "This is a virtual function, which is not "
-                                "supposed to be called directly\n";
+  LOG(warning) << "This is a virtual function, which is not "
+                  "supposed to be called directly\n";
 };
 
 void Placer::SetCircuit(Circuit* circuit) {
@@ -60,10 +60,10 @@ void Placer::SetCircuit(Circuit* circuit) {
               "Invalid input circuit: not allowed to set nullptr as an input!");
   ckt_ptr_ = circuit;
   if (ckt_ptr_->Blocks().empty()) {
-    BOOST_LOG_TRIVIAL(info) << "Empty block list, nothing to place!\n";
+    LOG(info) << "Empty block list, nothing to place!\n";
   }
   if (ckt_ptr_->Nets().empty()) {
-    BOOST_LOG_TRIVIAL(info) << "Empty net list, nothing to optimize!\n";
+    LOG(info) << "Empty net list, nothing to optimize!\n";
   }
   SetBoundaryFromCircuit();
 }
@@ -141,19 +141,17 @@ void Placer::SetBoundaryAuto() {
   int width = std::ceil(
       std::sqrt(double(tot_block_area) / aspect_ratio_ / placement_density_));
   int height = std::ceil(width * aspect_ratio_);
-  BOOST_LOG_TRIVIAL(info) << "Pre-set aspect ratio: " << aspect_ratio_ << "\n";
+  LOG(info) << "Pre-set aspect ratio: " << aspect_ratio_ << "\n";
   aspect_ratio_ = height / (double)width;
-  BOOST_LOG_TRIVIAL(info) << "Adjusted aspect rate: " << aspect_ratio_ << "\n";
+  LOG(info) << "Adjusted aspect rate: " << aspect_ratio_ << "\n";
   left_ = (int)(ckt_ptr_->AveBlkWidth());
   right_ = left_ + width;
   bottom_ = (int)(ckt_ptr_->AveBlkWidth());
   top_ = bottom_ + height;
   int area = height * width;
-  BOOST_LOG_TRIVIAL(info) << "Pre-set filling rate: " << placement_density_
-                          << "\n";
+  LOG(info) << "Pre-set filling rate: " << placement_density_ << "\n";
   placement_density_ = double(tot_block_area) / area;
-  BOOST_LOG_TRIVIAL(info) << "Adjusted filling rate: " << placement_density_
-                          << "\n";
+  LOG(info) << "Adjusted filling rate: " << placement_density_ << "\n";
   CheckPlacementBoundary();
 }
 
@@ -172,11 +170,9 @@ void Placer::SetBoundary(int left, int right, int bottom, int top) {
   DaliExpects(tot_area >= tot_block_area,
               "Invalid boundary setting: given region has smaller area than "
               "total block area!");
-  BOOST_LOG_TRIVIAL(info) << "Pre-set filling rate: " << placement_density_
-                          << "\n";
+  LOG(info) << "Pre-set filling rate: " << placement_density_ << "\n";
   placement_density_ = (double)tot_block_area / (double)tot_area;
-  BOOST_LOG_TRIVIAL(info) << "Adjusted filling rate: " << placement_density_
-                          << "\n";
+  LOG(info) << "Adjusted filling rate: " << placement_density_ << "\n";
   left_ = left;
   right_ = right;
   bottom_ = bottom;
@@ -193,9 +189,9 @@ void Placer::SetBoundaryFromCircuit() {
 }
 
 void Placer::ReportBoundaries() const {
-  BOOST_LOG_TRIVIAL(info) << "Left, Right, Bottom, Top:\n  " << RegionLeft()
-                          << ", " << RegionRight() << ", " << RegionBottom()
-                          << ", " << RegionTop() << "\n";
+  LOG(info) << "Left, Right, Bottom, Top:\n  " << RegionLeft() << ", "
+            << RegionRight() << ", " << RegionBottom() << ", " << RegionTop()
+            << "\n";
 }
 
 void Placer::UpdateAspectRatio() {
@@ -211,9 +207,9 @@ void Placer::NetSortBlkPin() {
 }
 
 bool Placer::StartPlacement() {
-  BOOST_LOG_TRIVIAL(fatal) << "Error!\n"
-                           << "This function should not be called! You need to "
-                              "implement it yourself!\n";
+  LOG(fatal) << "Error!\n"
+             << "This function should not be called! You need to "
+                "implement it yourself!\n";
   return false;
 }
 
@@ -285,7 +281,7 @@ void Placer::EmitDEFWellFile([[maybe_unused]] std::string const& name_of_file,
  */
 void Placer::CheckTargetDensity() const {
   double epsilon = 1e-3;
-  BOOST_LOG_TRIVIAL(info) << "  target density: " << placement_density_ << "\n";
+  LOG(info) << "  target density: " << placement_density_ << "\n";
   DaliExpects(placement_density_ > epsilon,
               "Filling rate should be in a proper range, for example [0.1, 1], "
               "current value: "
@@ -344,7 +340,7 @@ bool Placer::IsDummyBlock(Block& blk) {
 void Placer::PrintStartStatement(std::string const& name_of_process) {
   elapsed_time_.RecordStartTime();
   PrintHorizontalLine();
-  BOOST_LOG_TRIVIAL(info) << "Start " << name_of_process << "\n";
+  LOG(info) << "Start " << name_of_process << "\n";
 }
 
 void Placer::PrintEndStatement(std::string const& name_of_process,
@@ -352,11 +348,9 @@ void Placer::PrintEndStatement(std::string const& name_of_process,
   ReportHPWL();
 
   if (is_success) {
-    BOOST_LOG_TRIVIAL(info)
-        << "\033[0;36m" << name_of_process << " completed" << "\033[0m\n";
+    LOG(info) << "\033[0;36m" << name_of_process << " completed" << "\033[0m\n";
   } else {
-    BOOST_LOG_TRIVIAL(info)
-        << "\033[0;31m" << name_of_process << " failed" << "\033[0m\n";
+    LOG(info) << "\033[0;31m" << name_of_process << " failed" << "\033[0m\n";
   }
 
   // report time

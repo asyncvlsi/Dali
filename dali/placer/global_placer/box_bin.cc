@@ -64,14 +64,14 @@ void BoxBin::update_cell_area() {
     node = &Nodelist[cell_id];
     temp_total_cell_area += node->Area();
   }
-  BOOST_LOG_TRIVIAL(info)   << "Total cell area: " << total_cell_area << "  " <<
+  LOG(info)   << "Total cell area: " << total_cell_area << "  " <<
   temp_total_cell_area << "\n"; temp_total_cell_area = 0; for (auto &node:
   Nodelist) { if (node.isterminal()) continue; if ((node.x0 >= ll_point.x) &&
   (node.x0 < ur_point.x) && (node.y0 >= ll_point.y) && (node.y0 < ur_point.y)) {
       temp_total_cell_area += node.Area();
     }
   }
-  BOOST_LOG_TRIVIAL(info)   << "Total cell area: " << total_cell_area << "  " <<
+  LOG(info)   << "Total cell area: " << total_cell_area << "  " <<
   temp_total_cell_area << "\n";
   */
 
@@ -128,7 +128,7 @@ void BoxBin::UpdateCellAreaWhiteSpaceFillingRate(
 void BoxBin::ExpandBox(int grid_cnt_x, int grid_cnt_y) {
   if (ll_index.x == 0 && ll_index.y == 0 && ur_index.x == grid_cnt_x - 1 &&
       ur_index.y == grid_cnt_y - 1) {
-    BOOST_LOG_TRIVIAL(fatal) << "Reach maximum, cannot further expand\n";
+    LOG(fatal) << "Reach maximum, cannot further expand\n";
   }
   if (ll_index.x > 0) --ll_index.x;
   if (ll_index.y > 0) --ll_index.y;
@@ -140,7 +140,7 @@ bool BoxBin::write_box_boundary(std::string const& NameOfFile) {
   std::ofstream ost;
   ost.open(NameOfFile.c_str(), std::ios::app);
   if (ost.is_open() == 0) {
-    BOOST_LOG_TRIVIAL(info) << "Cannot open file" << NameOfFile << "\n";
+    LOG(info) << "Cannot open file" << NameOfFile << "\n";
     return false;
   }
   double low_x, low_y, width, height;
@@ -165,7 +165,7 @@ bool BoxBin::write_cell_region(std::string const& NameOfFile) {
   std::ofstream ost;
   ost.open(NameOfFile.c_str(), std::ios::app);
   if (ost.is_open() == 0) {
-    BOOST_LOG_TRIVIAL(info) << "Cannot open file" << NameOfFile << "\n";
+    LOG(info) << "Cannot open file" << NameOfFile << "\n";
     return false;
   }
   double low_x, low_y, width, height;
@@ -289,16 +289,16 @@ void BoxBin::UpdateObsBoundary() {
     }
   }
   /*
-  BOOST_LOG_TRIVIAL(info)   << "Horizontal_obs_boundaries: ";
+  LOG(info)   << "Horizontal_obs_boundaries: ";
   for (auto &boundary: horizontal_obstacle_boundaries) {
-    BOOST_LOG_TRIVIAL(info)   << boundary << " ";
+    LOG(info)   << boundary << " ";
   }
-  BOOST_LOG_TRIVIAL(info)   << "\n";
-  BOOST_LOG_TRIVIAL(info)   << "Vertical_obs_boundaries: ";
+  LOG(info)   << "\n";
+  LOG(info)   << "Vertical_obs_boundaries: ";
   for (auto &boundary: vertical_obstacle_boundaries) {
-    BOOST_LOG_TRIVIAL(info)   << boundary << " ";
+    LOG(info)   << boundary << " ";
   }
-  BOOST_LOG_TRIVIAL(info)   << "\n";
+  LOG(info)   << "\n";
   */
 }
 
@@ -310,7 +310,7 @@ bool BoxBin::write_cell_in_box(std::string const& NameOfFile) {
   std::ofstream ost;
   ost.open(NameOfFile.c_str(), std::ios::app);
   if (ost.is_open() == 0) {
-    BOOST_LOG_TRIVIAL(info) << "Cannot open file" << NameOfFile << "\n";
+    LOG(info) << "Cannot open file" << NameOfFile << "\n";
     return false;
   }
   for (auto& blk_ptr : cell_list) {
@@ -361,7 +361,7 @@ bool BoxBin::update_cut_index_white_space(
 
     for (cut_ur_index.y = ll_index.y; cut_ur_index.y < ur_index.y - 1;
          cut_ur_index.y++) {
-      // BOOST_LOG_TRIVIAL(info)   << cut_ur_index.y << "\n";
+      // LOG(info)   << cut_ur_index.y << "\n";
       white_space_low =
           white_space_LUT(grid_bin_white_space_LUT, ll_index, cut_ur_index);
       error =
@@ -385,7 +385,7 @@ bool BoxBin::update_cut_index_white_space(
 
     for (cut_ur_index.x = ll_index.x; cut_ur_index.x < ur_index.x - 1;
          cut_ur_index.x++) {
-      // BOOST_LOG_TRIVIAL(info)   << cut_ur_index.x << "\n";
+      // LOG(info)   << cut_ur_index.x << "\n";
       white_space_low =
           white_space_LUT(grid_bin_white_space_LUT, ll_index, cut_ur_index);
       error =
@@ -420,7 +420,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(
     cut_line_low = ll_point.y;
     cut_line_high = ur_point.y;
     for (int i = 0; i < 20; i++) {
-      // BOOST_LOG_TRIVIAL(info)   << i << "\n";
+      // LOG(info)   << i << "\n";
       cell_area_low = 0;
       cut_line = (cut_line_low + cut_line_high) / 2;
       for (auto& blk_ptr : cell_list) {
@@ -428,7 +428,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(
           cell_area_low += blk_ptr->Area();
         }
       }
-      // BOOST_LOG_TRIVIAL(info)   << cell_area_low/(double)total_cell_area <<
+      // LOG(info)   << cell_area_low/(double)total_cell_area <<
       // "\n";
       double tmp_ratio = double(total_cell_area) / double(cell_area_low);
       // TODO: this precision has some influence on the final result
@@ -444,7 +444,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(
     total_cell_area_high = total_cell_area - total_cell_area_low;
     cut_ll_point.y = cut_line;
     cut_ur_point.y = cut_line;
-    // BOOST_LOG_TRIVIAL(info)   << cut_line << " LLY " << ll_point.y << " URY "
+    // LOG(info)   << cut_line << " LLY " << ll_point.y << " URY "
     // << ll_point.y << "\n";
     for (auto& blk_ptr : cell_list) {
       if (blk_ptr->Y() < cut_line) {
@@ -459,7 +459,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(
     cut_line_low = ll_point.x;
     cut_line_high = ur_point.x;
     for (int i = 0; i < 20; i++) {
-      // BOOST_LOG_TRIVIAL(info)   << i << "\n";
+      // LOG(info)   << i << "\n";
       cell_area_low = 0;
       cut_line = (cut_line_low + cut_line_high) / 2;
       for (auto& blk_ptr : cell_list) {
@@ -467,7 +467,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(
           cell_area_low += blk_ptr->Area();
         }
       }
-      // BOOST_LOG_TRIVIAL(info)   << cell_area_low/(double)total_cell_area <<
+      // LOG(info)   << cell_area_low/(double)total_cell_area <<
       // "\n";
       double tmp_ratio = double(total_cell_area) / double(cell_area_low);
       if (ratio > tmp_ratio) {
@@ -482,7 +482,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(
     total_cell_area_high = total_cell_area - total_cell_area_low;
     cut_ll_point.x = cut_line;
     cut_ur_point.x = cut_line;
-    // BOOST_LOG_TRIVIAL(info)   << cut_line << " LLX " << ll_point.x << " URX "
+    // LOG(info)   << cut_line << " LLX " << ll_point.x << " URX "
     // << ur_point.x << "\n";
     for (auto& blk_ptr : cell_list) {
       if (blk_ptr->X() < cut_line) {
@@ -523,12 +523,12 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(int& cut_line_w,
     cut_line_w = bottom + (int)(low_white_space_total_ratio * box_height);
     /*
     if ((box_height % ave_blk_height == 0) && (box_height > ave_blk_height)) {
-      //BOOST_LOG_TRIVIAL(info)   << left << " " << right << " " << bottom << "
+      //LOG(info)   << left << " " << right << " " << bottom << "
     " << top << "\n"; low_white_space_total_ratio =
     std::floor(row_num/2.0)/row_num; cut_line_w = bottom +
     (int)(low_white_space_total_ratio * box_height); } else {
-      BOOST_LOG_TRIVIAL(info)   << left << " " << right << " " << bottom << " "
-    << top << "\n"; BOOST_LOG_TRIVIAL(info)   << "Error: out of expectation, bin
+      LOG(info)   << left << " " << right << " " << bottom << " "
+    << top << "\n"; LOG(info)   << "Error: out of expectation, bin
     height is not the integer multiple of standard cell height!\n"; exit(1);
     }*/
 
@@ -561,7 +561,7 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(int& cut_line_w,
       tmp_tot_cell_area_low += node->Area();
       cell_area_low_percentage =
           double(tmp_tot_cell_area_low) / double(total_cell_area);
-      // BOOST_LOG_TRIVIAL(info)   << i << " " << cell_area_low_percentage <<
+      // LOG(info)   << i << " " << cell_area_low_percentage <<
       // "\n";
       if (fabs(cell_area_low_percentage - low_white_space_total_ratio) <
           mini_error) {
@@ -570,7 +570,7 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(int& cut_line_w,
         index_tot_cell_low_closest_to_half = i;
       }
       if (cell_area_low_percentage >= low_white_space_total_ratio) {
-        // BOOST_LOG_TRIVIAL(info)   << "mini_error: " << mini_error << " index:
+        // LOG(info)   << "mini_error: " << mini_error << " index:
         // " << index_tot_cell_low_closest_to_half << "\n";
         break;
       }
@@ -630,14 +630,14 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(int& cut_line_w,
       tmp_tot_cell_area_low += node->Area();
       cell_area_low_percentage =
           double(tmp_tot_cell_area_low) / double(total_cell_area);
-      // BOOST_LOG_TRIVIAL(info)   << i << " " << cell_area_low_percentage <<
+      // LOG(info)   << i << " " << cell_area_low_percentage <<
       // "\n";
       if (fabs(cell_area_low_percentage - 1 / ratio) < mini_error) {
         mini_error = fabs(cell_area_low_percentage - 1 / ratio);
         index_tot_cell_low_closest_to_half = i;
       }
       if (cell_area_low_percentage > 0.5) {
-        // BOOST_LOG_TRIVIAL(info)   << "mini_error: " << mini_error << " index:
+        // LOG(info)   << "mini_error: " << mini_error << " index:
         // " << index_tot_cell_low_closest_to_half << "\n";
         break;
       }
@@ -678,61 +678,60 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(int& cut_line_w,
 
 void BoxBin::Report() {
   std::string cur_direction = cut_direction_x ? "x" : "y";
-  BOOST_LOG_TRIVIAL(info)
-      << "cut direction: " << cur_direction << "\n"
-      << "white spaces all used by macros: " << all_terminal << "\n"
-      << "total white space: " << total_white_space << "\n"
-      << "grid bin index: " << ll_index << " " << ur_index << "\n"
-      << "grid bin cut index: " << cut_ll_index << " " << cut_ur_index << "\n"
-      << "box coordinate: " << ll_point << " " << ur_point << "\n"
-      << "box cut coordinate: " << cut_ll_point << " " << cut_ur_point << "\n"
-      << "total cell area: " << total_cell_area << "\n"
-      << "total cell area low: " << total_cell_area_low << "\n"
-      << "total cell area high: " << total_cell_area_high << "\n"
-      << "shape: (" << left << ", " << bottom << ") (" << right << ", " << top
-      << ")\n";
+  LOG(info) << "cut direction: " << cur_direction << "\n"
+            << "white spaces all used by macros: " << all_terminal << "\n"
+            << "total white space: " << total_white_space << "\n"
+            << "grid bin index: " << ll_index << " " << ur_index << "\n"
+            << "grid bin cut index: " << cut_ll_index << " " << cut_ur_index
+            << "\n"
+            << "box coordinate: " << ll_point << " " << ur_point << "\n"
+            << "box cut coordinate: " << cut_ll_point << " " << cut_ur_point
+            << "\n"
+            << "total cell area: " << total_cell_area << "\n"
+            << "total cell area low: " << total_cell_area_low << "\n"
+            << "total cell area high: " << total_cell_area_high << "\n"
+            << "shape: (" << left << ", " << bottom << ") (" << right << ", "
+            << top << ")\n";
 
-  BOOST_LOG_TRIVIAL(info) << "cell list: " << cell_list.size() << "\n";
+  LOG(info) << "cell list: " << cell_list.size() << "\n";
   for (auto& p_blk : cell_list) {
-    BOOST_LOG_TRIVIAL(info)
-        << p_blk->Name() << ", "
-        << "(" << p_blk->LLX() << ", " << p_blk->LLY() << "), "
-        << "(" << p_blk->URX() << ", " << p_blk->URY() << ")\n";
+    LOG(info) << p_blk->Name() << ", "
+              << "(" << p_blk->LLX() << ", " << p_blk->LLY() << "), "
+              << "(" << p_blk->URX() << ", " << p_blk->URY() << ")\n";
   }
-  BOOST_LOG_TRIVIAL(info) << "\nend\n";
+  LOG(info) << "\nend\n";
 
-  BOOST_LOG_TRIVIAL(info) << "cell list low: " << cell_list_low.size() << "\n";
+  LOG(info) << "cell list low: " << cell_list_low.size() << "\n";
   for (auto& num : cell_list_low) {
-    BOOST_LOG_TRIVIAL(info) << num << ", ";
+    LOG(info) << num << ", ";
   }
-  BOOST_LOG_TRIVIAL(info) << "\nend\n";
+  LOG(info) << "\nend\n";
 
-  BOOST_LOG_TRIVIAL(info) << "cell list hi: " << cell_list_high.size() << "\n";
+  LOG(info) << "cell list hi: " << cell_list_high.size() << "\n";
   for (auto& num : cell_list_high) {
-    BOOST_LOG_TRIVIAL(info) << num << ", ";
+    LOG(info) << num << ", ";
   }
-  BOOST_LOG_TRIVIAL(info) << "\nend\n";
+  LOG(info) << "\nend\n";
 
-  BOOST_LOG_TRIVIAL(info) << "blockage list: " << placement_blockages_.size()
-                          << "\n";
+  LOG(info) << "blockage list: " << placement_blockages_.size() << "\n";
   for (auto& p_blockage : placement_blockages_) {
     const RectI& rect = p_blockage->GetRect();
-    BOOST_LOG_TRIVIAL(info) << "(" << rect.LLX() << ", " << rect.LLY() << "), "
-                            << "(" << rect.URX() << ", " << rect.URY() << ")\n";
+    LOG(info) << "(" << rect.LLX() << ", " << rect.LLY() << "), "
+              << "(" << rect.URX() << ", " << rect.URY() << ")\n";
   }
-  BOOST_LOG_TRIVIAL(info) << "\nend\n";
+  LOG(info) << "\nend\n";
 
-  BOOST_LOG_TRIVIAL(info) << "vertical boundaries\n";
+  LOG(info) << "vertical boundaries\n";
   for (auto& num : vertical_cutlines) {
-    BOOST_LOG_TRIVIAL(info) << num << ", ";
+    LOG(info) << num << ", ";
   }
-  BOOST_LOG_TRIVIAL(info) << "\nend\n";
+  LOG(info) << "\nend\n";
 
-  BOOST_LOG_TRIVIAL(info) << "horizontal boundaries\n";
+  LOG(info) << "horizontal boundaries\n";
   for (auto& num : horizontal_cutlines) {
-    BOOST_LOG_TRIVIAL(info) << num << ", ";
+    LOG(info) << num << ", ";
   }
-  BOOST_LOG_TRIVIAL(info) << "\nend\n";
+  LOG(info) << "\nend\n";
 }
 
 }  // namespace dali

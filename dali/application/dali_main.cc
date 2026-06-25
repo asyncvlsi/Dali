@@ -47,7 +47,7 @@ struct CommandLineOptions {
   std::string ignored_mcell_file_name;
   std::string output_name = "dali_out";
   std::string log_file_name;
-  severity verbose_level = boost::log::trivial::info;
+  severity verbose_level = severity::info;
   double x_grid = 0;
   double y_grid = 0;
 };
@@ -303,7 +303,7 @@ int main(int argc, char* argv[]) {
   using std::chrono::system_clock;
   system_clock::time_point today = system_clock::now();
   std::time_t tt = system_clock::to_time_t(today);
-  BOOST_LOG_TRIVIAL(info) << "Today is: " << ctime(&tt) << "\n";
+  LOG(info) << "Today is: " << ctime(&tt) << "\n";
 
   // save command line arguments for future reference
   SaveArgs(argc, argv);
@@ -320,11 +320,9 @@ int main(int argc, char* argv[]) {
   phy_db.WriteDef("phydb.def");
 
   elapsed_time.RecordEndTime();
-  BOOST_LOG_TRIVIAL(info) << "****End of placement "
-                          << "(wall time: " << elapsed_time.GetWallTime()
-                          << "s, "
-                          << "cpu time: " << elapsed_time.GetCpuTime()
-                          << "s)****\n";
+  LOG(info) << "****End of placement "
+            << "(wall time: " << elapsed_time.GetWallTime() << "s, "
+            << "cpu time: " << elapsed_time.GetCpuTime() << "s)****\n";
 
   return 0;
 }

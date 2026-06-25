@@ -90,8 +90,7 @@ void OptimalRegionDistance::FindOptimalRegionX(Block& blk, double& lx,
 }
 
 void OptimalRegionDistance::SaveFile(std::string const& file_name) const {
-  BOOST_LOG_TRIVIAL(info) << "Writing optimal region distance file: "
-                          << file_name;
+  LOG(info) << "Writing optimal region distance file: " << file_name;
   std::ofstream ost(file_name.c_str());
   DaliExpects(ost.is_open(), "Cannot open file " << file_name);
 
@@ -119,8 +118,8 @@ void OptimalRegionDistance::SaveFile(std::string const& file_name) const {
     }
     ost << res / ave_size << "\n";
   }
-  BOOST_LOG_TRIVIAL(info) << ", done\n";
-  BOOST_LOG_TRIVIAL(info) << "average cell width: " << ave_size << "\n";
+  LOG(info) << ", done\n";
+  LOG(info) << "average cell width: " << ave_size << "\n";
 }
 
 }  // namespace dali

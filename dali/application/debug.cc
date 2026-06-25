@@ -47,7 +47,7 @@ int main() {
   phy_db.ReadCell(cell_file_name);
 
   // initialize Dali
-  Dali dali(&phy_db, boost::log::trivial::info);
+  Dali dali(&phy_db, severity::info);
 
   // phydb::Macro *cell = phy_db.GetMacroPtr("WELLTAPX1");
   // dali.AddWellTaps(cell, 60, true);
@@ -95,8 +95,7 @@ int main() {
   phy_db.SaveWellToRectFile(well_name);
 
   elapsed_time.RecordEndTime();
-  BOOST_LOG_TRIVIAL(info) << "Execution time " << elapsed_time.GetWallTime()
-                          << "s.\n";
+  LOG(info) << "Execution time " << elapsed_time.GetWallTime() << "s.\n";
   dali.Close();
 
   return 0;

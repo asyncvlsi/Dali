@@ -46,7 +46,7 @@ class ElapsedTime {
 
   /** Print the cached elapsed wall-clock and CPU time at the requested level.
    */
-  void PrintTimeElapsed(severity lvl = boost::log::trivial::info) const;
+  void PrintTimeElapsed(severity lvl = severity::info) const;
 
   /** Return the cached wall-clock time in seconds. */
   double GetWallTime() const;

@@ -42,14 +42,14 @@ class FreeSegmentList {
   size_t size() const { return size_; }
   int Left() const {
     if (head_ == nullptr) {
-      BOOST_LOG_TRIVIAL(info) << "Empty linked list, Left() not available\n";
+      LOG(info) << "Empty linked list, Left() not available\n";
       assert(head_ != nullptr);
     }
     return head_->Start();
   }
   int Right() const {
     if (tail_ == nullptr) {
-      BOOST_LOG_TRIVIAL(info) << "Empty linked list, Right() not available\n";
+      LOG(info) << "Empty linked list, Right() not available\n";
       assert(tail_ != nullptr);
     }
     return tail_->End();

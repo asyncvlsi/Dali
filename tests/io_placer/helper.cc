@@ -123,8 +123,8 @@ bool IoPinPlacedOnBoundary(phydb::IOPin& iopin, int left, int right, int bottom,
                            int top) {
   if (iopin.GetPlacementStatus() != phydb::PlaceStatus::PLACED &&
       iopin.GetPlacementStatus() != phydb::PlaceStatus::FIXED) {
-    BOOST_LOG_TRIVIAL(info) << "placement status of iopin: " << iopin.GetName()
-                            << " is not PLACED or FIXED\n";
+    LOG(info) << "placement status of iopin: " << iopin.GetName()
+              << " is not PLACED or FIXED\n";
     return false;
   }
   bool res = true;
@@ -132,30 +132,28 @@ bool IoPinPlacedOnBoundary(phydb::IOPin& iopin, int left, int right, int bottom,
   int y = iopin.GetLocation().y;
   if (x == left || x == right) {
     if (!(bottom <= y && y <= top)) {
-      BOOST_LOG_TRIVIAL(info) << "x location of iopin " << iopin.GetName()
-                              << " is on a vertical boundary,"
-                              << "but y location is out of the boundary\n";
+      LOG(info) << "x location of iopin " << iopin.GetName()
+                << " is on a vertical boundary,"
+                << "but y location is out of the boundary\n";
       res = false;
     }
   } else if (y == bottom || y == top) {
     if (!(left <= x && x <= right)) {
-      BOOST_LOG_TRIVIAL(info) << "y location of iopin " << iopin.GetName()
-                              << " is on a horizontal boundary,"
-                              << "but x location is out of the boundary\n";
+      LOG(info) << "y location of iopin " << iopin.GetName()
+                << " is on a horizontal boundary,"
+                << "but x location is out of the boundary\n";
       res = false;
     }
   } else {
-    BOOST_LOG_TRIVIAL(info)
-        << "iopin " << iopin.GetName() << " is not on a boundary\n";
+    LOG(info) << "iopin " << iopin.GetName() << " is not on a boundary\n";
     res = false;
   }
 
   if (!res) {
-    BOOST_LOG_TRIVIAL(info) << "  Pin location(" << x << ", " << y << ")\n"
-                            << "    size " << iopin.GetRect() << "\n";
-    BOOST_LOG_TRIVIAL(info)
-        << "  Placement boundary (" << left << ", " << bottom << "), (" << right
-        << ", " << top << ")\n";
+    LOG(info) << "  Pin location(" << x << ", " << y << ")\n"
+              << "    size " << iopin.GetRect() << "\n";
+    LOG(info) << "  Placement boundary (" << left << ", " << bottom << "), ("
+              << right << ", " << top << ")\n";
   }
 
   return res;
@@ -171,8 +169,8 @@ bool IoPinPlacedOnBoundary(phydb::IOPin& iopin, int left, int right, int bottom,
  */
 bool IsEveryIoPinPlacedOnBoundary(phydb::PhyDB* p_phydb) {
   if (p_phydb == nullptr) {
-    BOOST_LOG_TRIVIAL(warning) << "Cannot check if every iopin is placed on "
-                                  "placement boundaries for nullptr input\n";
+    LOG(warning) << "Cannot check if every iopin is placed on "
+                    "placement boundaries for nullptr input\n";
     return false;
   }
 
@@ -192,11 +190,11 @@ bool IsEveryIoPinPlacedOnBoundary(phydb::PhyDB* p_phydb) {
     }
   }
 
-  BOOST_LOG_TRIVIAL(info) << "All iopins are placed on placement boundaries? ";
+  LOG(info) << "All iopins are placed on placement boundaries? ";
   if (res) {
-    BOOST_LOG_TRIVIAL(info) << "Yes\n";
+    LOG(info) << "Yes\n";
   } else {
-    BOOST_LOG_TRIVIAL(info) << "No\n";
+    LOG(info) << "No\n";
   }
 
   return res;
@@ -221,19 +219,19 @@ bool IsIoPinNotOverlapping(phydb::IOPin& io_pin0, phydb::IOPin& io_pin1) {
                     bbox0.ly > bbox1.uy || bbox1.ly > bbox0.uy;
 
   if (!no_overlap) {
-    BOOST_LOG_TRIVIAL(info) << "iopin " << io_pin0.GetName() << "\n"
-                            << "    loc: (" << x0 << ", " << y0 << ")"
-                            << "    size: " << shape0 << "\n"
-                            << "    orin: " << OrientStr(orient0) << "\n"
-                            << "    shape: (" << bbox0.lx << ", " << bbox0.ly
-                            << ") (" << bbox0.ux << ", " << bbox0.uy << ")\n"
-                            << "overlaps with \n"
-                            << "iopin " << io_pin0.GetName() << "\n"
-                            << "    loc: (" << x1 << ", " << y1 << ")"
-                            << "    size: " << shape1 << "\n"
-                            << "    orin: " << OrientStr(orient1) << "\n"
-                            << "    shape: (" << bbox1.lx << ", " << bbox1.ly
-                            << ") (" << bbox1.ux << ", " << bbox1.uy << ")\n";
+    LOG(info) << "iopin " << io_pin0.GetName() << "\n"
+              << "    loc: (" << x0 << ", " << y0 << ")"
+              << "    size: " << shape0 << "\n"
+              << "    orin: " << OrientStr(orient0) << "\n"
+              << "    shape: (" << bbox0.lx << ", " << bbox0.ly << ") ("
+              << bbox0.ux << ", " << bbox0.uy << ")\n"
+              << "overlaps with \n"
+              << "iopin " << io_pin0.GetName() << "\n"
+              << "    loc: (" << x1 << ", " << y1 << ")"
+              << "    size: " << shape1 << "\n"
+              << "    orin: " << OrientStr(orient1) << "\n"
+              << "    shape: (" << bbox1.lx << ", " << bbox1.ly << ") ("
+              << bbox1.ux << ", " << bbox1.uy << ")\n";
   }
 
   return no_overlap;
@@ -265,20 +263,19 @@ bool IsIoPinNoSpacingViolation(phydb::PhyDB* p_phydb, phydb::IOPin& io_pin0,
                     bbox0.ly > bbox1.uy || bbox1.ly > bbox0.uy;
 
   if (!no_overlap) {
-    BOOST_LOG_TRIVIAL(info)
-        << "iopin " << io_pin0.GetName() << "\n"
-        << "    loc: (" << x0 << ", " << y0 << ")"
-        << "    size: " << shape0 << "\n"
-        << "    orin: " << OrientStr(orient0) << "\n"
-        << "    shape(+- spacing/2.0): (" << bbox0.lx << ", " << bbox0.ly
-        << ") (" << bbox0.ux << ", " << bbox0.uy << ")\n"
-        << "violates the min-spacing rule with \n"
-        << "iopin " << io_pin0.GetName() << "\n"
-        << "    loc: (" << x1 << ", " << y1 << ")"
-        << "    size: " << shape1 << "\n"
-        << "    orin: " << OrientStr(orient1) << "\n"
-        << "    shape(+- spacing/2.0): (" << bbox1.lx << ", " << bbox1.ly
-        << ") (" << bbox1.ux << ", " << bbox1.uy << ")\n";
+    LOG(info) << "iopin " << io_pin0.GetName() << "\n"
+              << "    loc: (" << x0 << ", " << y0 << ")"
+              << "    size: " << shape0 << "\n"
+              << "    orin: " << OrientStr(orient0) << "\n"
+              << "    shape(+- spacing/2.0): (" << bbox0.lx << ", " << bbox0.ly
+              << ") (" << bbox0.ux << ", " << bbox0.uy << ")\n"
+              << "violates the min-spacing rule with \n"
+              << "iopin " << io_pin0.GetName() << "\n"
+              << "    loc: (" << x1 << ", " << y1 << ")"
+              << "    size: " << shape1 << "\n"
+              << "    orin: " << OrientStr(orient1) << "\n"
+              << "    shape(+- spacing/2.0): (" << bbox1.lx << ", " << bbox1.ly
+              << ") (" << bbox1.ux << ", " << bbox1.uy << ")\n";
   }
 
   return no_overlap;
@@ -294,8 +291,8 @@ bool IsIoPinNoSpacingViolation(phydb::PhyDB* p_phydb, phydb::IOPin& io_pin0,
  */
 bool IsNoIoPinOverlapAndSpacingViolation(phydb::PhyDB* p_phydb) {
   if (p_phydb == nullptr) {
-    BOOST_LOG_TRIVIAL(warning) << "Cannot check if every iopin is placed on "
-                                  "placement boundaries for nullptr input\n";
+    LOG(warning) << "Cannot check if every iopin is placed on "
+                    "placement boundaries for nullptr input\n";
     return false;
   }
 
@@ -319,11 +316,11 @@ bool IsNoIoPinOverlapAndSpacingViolation(phydb::PhyDB* p_phydb) {
     }
   }
 
-  BOOST_LOG_TRIVIAL(info) << "All iopins satisfy spacing rules? ";
+  LOG(info) << "All iopins satisfy spacing rules? ";
   if (res) {
-    BOOST_LOG_TRIVIAL(info) << "Yes\n";
+    LOG(info) << "Yes\n";
   } else {
-    BOOST_LOG_TRIVIAL(info) << "No\n";
+    LOG(info) << "No\n";
   }
 
   return res;
@@ -340,8 +337,8 @@ bool IsNoIoPinOverlapAndSpacingViolation(phydb::PhyDB* p_phydb) {
  */
 bool IsEveryIoPinOnMetal(phydb::PhyDB* p_phydb, std::string const& layer_name) {
   if (p_phydb == nullptr) {
-    BOOST_LOG_TRIVIAL(warning) << "Cannot check if every iopin is placed on "
-                                  "placement boundaries for nullptr input\n";
+    LOG(warning) << "Cannot check if every iopin is placed on "
+                    "placement boundaries for nullptr input\n";
     return false;
   }
 
@@ -351,17 +348,16 @@ bool IsEveryIoPinOnMetal(phydb::PhyDB* p_phydb, std::string const& layer_name) {
   for (auto& iopin : iopins) {
     if (iopin.GetLayerName() != layer_name) {
       res = false;
-      BOOST_LOG_TRIVIAL(info)
-          << "iopin " << iopin.GetName()
-          << " is not on the give layer: " << layer_name << "\n";
+      LOG(info) << "iopin " << iopin.GetName()
+                << " is not on the give layer: " << layer_name << "\n";
     }
   }
 
-  BOOST_LOG_TRIVIAL(info) << "All iopins are on layer: " << layer_name << "? ";
+  LOG(info) << "All iopins are on layer: " << layer_name << "? ";
   if (res) {
-    BOOST_LOG_TRIVIAL(info) << "Yes\n";
+    LOG(info) << "Yes\n";
   } else {
-    BOOST_LOG_TRIVIAL(info) << "No\n";
+    LOG(info) << "No\n";
   }
 
   return res;
@@ -369,8 +365,8 @@ bool IsEveryIoPinOnMetal(phydb::PhyDB* p_phydb, std::string const& layer_name) {
 
 bool IsEveryIoPinManufacturable(phydb::PhyDB* p_phydb) {
   if (p_phydb == nullptr) {
-    BOOST_LOG_TRIVIAL(warning) << "Cannot check if every iopin is placed on "
-                                  "placement boundaries for nullptr input\n";
+    LOG(warning) << "Cannot check if every iopin is placed on "
+                    "placement boundaries for nullptr input\n";
     return false;
   }
 
@@ -391,19 +387,18 @@ bool IsEveryIoPinManufacturable(phydb::PhyDB* p_phydb) {
 
     if (!is_manufacturable) {
       res = false;
-      BOOST_LOG_TRIVIAL(info)
-          << "iopin " << iopin.GetName() << " has a rect: " << shape
-          << " not on manufacturing grid\n"
-          << "manufacturing grid: " << manufacturing_grid << " um, or " << grid
-          << " database unit\n";
+      LOG(info) << "iopin " << iopin.GetName() << " has a rect: " << shape
+                << " not on manufacturing grid\n"
+                << "manufacturing grid: " << manufacturing_grid << " um, or "
+                << grid << " database unit\n";
     }
   }
 
-  BOOST_LOG_TRIVIAL(info) << "All iopins are manufacturable? ";
+  LOG(info) << "All iopins are manufacturable? ";
   if (res) {
-    BOOST_LOG_TRIVIAL(info) << "Yes\n";
+    LOG(info) << "Yes\n";
   } else {
-    BOOST_LOG_TRIVIAL(info) << "No\n";
+    LOG(info) << "No\n";
   }
 
   return res;
@@ -411,8 +406,8 @@ bool IsEveryIoPinManufacturable(phydb::PhyDB* p_phydb) {
 
 bool IsEveryIoPinInsideDieArea(phydb::PhyDB* p_phydb) {
   if (p_phydb == nullptr) {
-    BOOST_LOG_TRIVIAL(warning) << "Cannot check if every iopin is placed on "
-                                  "placement boundaries for nullptr input\n";
+    LOG(warning) << "Cannot check if every iopin is placed on "
+                    "placement boundaries for nullptr input\n";
     return false;
   }
 
@@ -429,27 +424,25 @@ bool IsEveryIoPinInsideDieArea(phydb::PhyDB* p_phydb) {
         (bbox.uy >= die_area.LLY() && bbox.uy <= die_area.URY());
     if (!is_in_die_area) {
       res = false;
-      BOOST_LOG_TRIVIAL(info)
-          << "iopin " << iopin.GetName() << "is out of die area: "
-          << "(" << bbox.lx << ", " << bbox.ly << ") (" << bbox.ux << ", "
-          << bbox.uy << ")\n"
-          << " die area: " << die_area << "\n";
+      LOG(info) << "iopin " << iopin.GetName() << "is out of die area: "
+                << "(" << bbox.lx << ", " << bbox.ly << ") (" << bbox.ux << ", "
+                << bbox.uy << ")\n"
+                << " die area: " << die_area << "\n";
     }
   }
 
-  BOOST_LOG_TRIVIAL(info) << "All iopins are inside the diea area? ";
+  LOG(info) << "All iopins are inside the diea area? ";
   if (res) {
-    BOOST_LOG_TRIVIAL(info) << "Yes\n";
+    LOG(info) << "Yes\n";
   } else {
-    BOOST_LOG_TRIVIAL(info) << "No\n";
+    LOG(info) << "No\n";
   }
   return res;
 }
 
 void RemoveAllIoPins(phydb::PhyDB* p_phydb) {
   if (p_phydb == nullptr) {
-    BOOST_LOG_TRIVIAL(warning)
-        << "Cannot remove I/O pins for a nullptr input\n";
+    LOG(warning) << "Cannot remove I/O pins for a nullptr input\n";
     return;
   }
   p_phydb->design().GetIoPinsRef().clear();
@@ -462,8 +455,7 @@ void RemoveAllIoPins(phydb::PhyDB* p_phydb) {
 bool IsEveryIoPinAddedAndPlacedCorrectly(phydb::PhyDB* p_phydb0,
                                          phydb::PhyDB* p_phydb1) {
   if (p_phydb0 == nullptr || p_phydb1 == nullptr) {
-    BOOST_LOG_TRIVIAL(warning)
-        << "Cannot check the correctness for null PhyDB pointers\n";
+    LOG(warning) << "Cannot check the correctness for null PhyDB pointers\n";
     return false;
   }
 
@@ -471,78 +463,78 @@ bool IsEveryIoPinAddedAndPlacedCorrectly(phydb::PhyDB* p_phydb0,
   for (auto& iopin0 : p_phydb0->design().GetIoPinsRef()) {
     auto* iopin1 = p_phydb1->GetIoPinPtr(iopin0.GetName());
     if (iopin1 == nullptr) {
-      BOOST_LOG_TRIVIAL(info)
-          << "Cannot find " << iopin0.GetName() << " in the second instance\n";
+      LOG(info) << "Cannot find " << iopin0.GetName()
+                << " in the second instance\n";
       res = false;
       break;
     }
     if (iopin0.GetDirection() != iopin1->GetDirection()) {
-      BOOST_LOG_TRIVIAL(info) << "different direction\n";
+      LOG(info) << "different direction\n";
       res = false;
       break;
     }
     if (iopin0.GetUse() != iopin1->GetUse()) {
-      BOOST_LOG_TRIVIAL(info) << "different use\n";
+      LOG(info) << "different use\n";
       res = false;
       break;
     }
     if (iopin0.GetNetId() != iopin1->GetNetId()) {
-      BOOST_LOG_TRIVIAL(info) << "different net\n";
+      LOG(info) << "different net\n";
       res = false;
       break;
     }
     if (iopin0.GetLayerName() != iopin1->GetLayerName()) {
-      BOOST_LOG_TRIVIAL(info) << "different layer name\n";
+      LOG(info) << "different layer name\n";
       res = false;
       break;
     }
     if (iopin0.GetRect().LLX() != iopin1->GetRect().LLX()) {
-      BOOST_LOG_TRIVIAL(info) << "different shape llx\n";
+      LOG(info) << "different shape llx\n";
       res = false;
       break;
     }
     if (iopin0.GetRect().LLY() != iopin1->GetRect().LLY()) {
-      BOOST_LOG_TRIVIAL(info) << "different shape lly\n";
+      LOG(info) << "different shape lly\n";
       res = false;
       break;
     }
     if (iopin0.GetRect().URX() != iopin1->GetRect().URX()) {
-      BOOST_LOG_TRIVIAL(info) << "different shape urx\n";
+      LOG(info) << "different shape urx\n";
       res = false;
       break;
     }
     if (iopin0.GetRect().URY() != iopin1->GetRect().URY()) {
-      BOOST_LOG_TRIVIAL(info) << "different shape ury\n";
+      LOG(info) << "different shape ury\n";
       res = false;
       break;
     }
     if (iopin0.GetPlacementStatus() != iopin1->GetPlacementStatus()) {
-      BOOST_LOG_TRIVIAL(info) << "different placement status\n";
+      LOG(info) << "different placement status\n";
       res = false;
       break;
     }
     if (iopin0.GetOrientation() != iopin1->GetOrientation()) {
-      BOOST_LOG_TRIVIAL(info) << "different orientation\n";
+      LOG(info) << "different orientation\n";
       res = false;
       break;
     }
     if (iopin0.GetLocation().x != iopin1->GetLocation().x) {
-      BOOST_LOG_TRIVIAL(info) << "different location x\n";
+      LOG(info) << "different location x\n";
       res = false;
       break;
     }
     if (iopin0.GetLocation().y != iopin1->GetLocation().y) {
-      BOOST_LOG_TRIVIAL(info) << "different location y\n";
+      LOG(info) << "different location y\n";
       res = false;
       break;
     }
   }
 
-  BOOST_LOG_TRIVIAL(info) << "All iopins are correctly added and placed? ";
+  LOG(info) << "All iopins are correctly added and placed? ";
   if (res) {
-    BOOST_LOG_TRIVIAL(info) << "Yes\n";
+    LOG(info) << "Yes\n";
   } else {
-    BOOST_LOG_TRIVIAL(info) << "No\n";
+    LOG(info) << "No\n";
   }
   return res;
 }

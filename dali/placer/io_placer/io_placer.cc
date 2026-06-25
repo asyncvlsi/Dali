@@ -84,8 +84,8 @@ bool IoPlacer::ConfigSetMetalLayer(int boundary_index, int metal_layer_index) {
   bool is_legal_index = (metal_layer_index >= 0) &&
                         (metal_layer_index < (int)circuit_->Metals().size());
   if (!is_legal_index) {
-    BOOST_LOG_TRIVIAL(info)
-        << "metal layer index is a bad value: " << metal_layer_index << "\n";
+    LOG(info) << "metal layer index is a bad value: " << metal_layer_index
+              << "\n";
     return false;
   }
   MetalLayer* metal_layer = &(circuit_->Metals()[metal_layer_index]);
@@ -116,7 +116,7 @@ bool IoPlacer::ConfigBoundaryMetal(int argc, char** argv) {
       std::string metal_name = std::string(argv[i++]);
       bool is_layer_existing = circuit_->IsMetalLayerExisting(metal_name);
       if (!is_layer_existing) {
-        BOOST_LOG_TRIVIAL(fatal) << "Invalid metal layer name!\n";
+        LOG(fatal) << "Invalid metal layer name!\n";
         ReportConfigUsage();
         return false;
       }
@@ -135,15 +135,14 @@ bool IoPlacer::ConfigBoundaryMetal(int argc, char** argv) {
         bool is_success = ConfigSetMetalLayer(TOP, metal_index);
         std::cout << is_success << "\n";
       } else {
-        BOOST_LOG_TRIVIAL(fatal)
+        LOG(fatal)
             << "Invalid boundary, possible values: left, right, bottom, top\n";
         ReportConfigUsage();
         return false;
       }
       std::cout << arg << "  " << metal_name << "\n";
     } else {
-      BOOST_LOG_TRIVIAL(fatal)
-          << "Boundary specified, but metal layer is not given\n";
+      LOG(fatal) << "Boundary specified, but metal layer is not given\n";
       ReportConfigUsage();
       return false;
     }
@@ -152,7 +151,7 @@ bool IoPlacer::ConfigBoundaryMetal(int argc, char** argv) {
 }
 
 void IoPlacer::ReportConfigUsage() {
-  BOOST_LOG_TRIVIAL(info)
+  LOG(info)
       << "\033[0;36m"
       << "Usage: place-io -c/--config\n"
       << "  -h/--help\n"
@@ -186,7 +185,7 @@ bool IoPlacer::ConfigCmd(int argc, char** argv) {
       MetalLayer* metal_layer = circuit_->GetMetalLayerPtr(option_str);
       return SetGlobalMetalLayer(metal_layer->Id());
     }
-    BOOST_LOG_TRIVIAL(fatal) << "Unknown flag: " << option_str << "\n";
+    LOG(fatal) << "Unknown flag: " << option_str << "\n";
     ReportConfigUsage();
     return false;
   }
@@ -196,9 +195,8 @@ bool IoPlacer::ConfigCmd(int argc, char** argv) {
 bool IoPlacer::CheckConfiguration() {
   for (int i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
     if (boundary_spaces_[i].layer_spaces_.empty()) {
-      BOOST_LOG_TRIVIAL(error)
-          << "No metal layer configured for I/O placement boundary " << i
-          << "\n";
+      LOG(error) << "No metal layer configured for I/O placement boundary " << i
+                 << "\n";
       ReportConfigUsage();
       return false;
     }
@@ -300,9 +298,8 @@ bool IoPlacer::AssignIoPinToBoundaryLayers() {
     Net* net = iopin.NetPtr();
     if (net->BlockPins().empty()) {
       // if this net only contain this IOPIN, do nothing
-      BOOST_LOG_TRIVIAL(warning)
-          << "Net " << net->Name() << " only contains IOPIN " << iopin.Name()
-          << ", skip placing this IOPIN\n";
+      LOG(warning) << "Net " << net->Name() << " only contains IOPIN "
+                   << iopin.Name() << ", skip placing this IOPIN\n";
       continue;
     }
     net->UpdateMaxMinIndex();
@@ -398,11 +395,11 @@ void IoPlacer::AdjustIoPinLocationForPhyDB() {
 
 bool IoPlacer::RunAutoPlacement() {
   PrintHorizontalLine();
-  BOOST_LOG_TRIVIAL(info) << "Start I/O Placement\n";
+  LOG(info) << "Start I/O Placement\n";
   if (!CheckConfiguration()) {
-    BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
-                            << "I/O Placement fail!\n"
-                            << "\033[0m";
+    LOG(info) << "\033[0;36m"
+              << "I/O Placement fail!\n"
+              << "\033[0m";
     return false;
   }
 
@@ -411,16 +408,16 @@ bool IoPlacer::RunAutoPlacement() {
   PlaceIoPinOnEachBoundary();
   AdjustIoPinLocationForPhyDB();
 
-  BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
-                          << "I/O Placement complete!"
-                          << "\033[0m\n";
+  LOG(info) << "\033[0;36m"
+            << "I/O Placement complete!"
+            << "\033[0m\n";
   return true;
 }
 
 bool IoPlacer::AutoPlaceCmd(int argc, char** argv) {
   bool is_config_successful = ConfigCmd(argc, argv);
   if (!is_config_successful) {
-    BOOST_LOG_TRIVIAL(fatal) << "Cannot successfully configure the IoPlacer\n";
+    LOG(fatal) << "Cannot successfully configure the IoPlacer\n";
     return false;
   }
   return RunAutoPlacement();

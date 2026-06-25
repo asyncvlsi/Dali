@@ -77,7 +77,7 @@ void WellLegalizer::MarkSpaceWellLeft(Block const& block, int p_row) {
   int hi_row = EndRow((int)std::round(block.URY()));
 
   /*if (end_row >= int(row_well_status_.size())) {
-    //BOOST_LOG_TRIVIAL(info)   << "  ly:     " << int(block.LLY())       <<
+    //LOG(info)   << "  ly:     " << int(block.LLY())       <<
   "\n"
     //          << "  height: " << block.Height()   << "\n"
     //          << "  top:    " << Top()    << "\n"
@@ -121,7 +121,7 @@ bool WellLegalizer::FindLocation(Block& block, int2d& res) {
   int height = int(block.Height());
   int start_row = 0;
   int end_row = RegionTop() - RegionBottom() - height;
-  // BOOST_LOG_TRIVIAL(info)   << "    Starting row: " << start_row << "\n"
+  // LOG(info)   << "    Starting row: " << start_row << "\n"
   //           << "    Ending row:   " << end_row   << "\n"
   //           << "    Block Height: " << block.Height() << "\n"
   //           << "    Top of the placement region " << Top() << "\n"
@@ -234,7 +234,7 @@ bool WellLegalizer::FindLocation(Block& block, int2d& res) {
   res.x = best_loc;
   res.y = best_row + RegionBottom();
 
-  // BOOST_LOG_TRIVIAL(info)   << res.x << "  " << res.y << "  " << min_cost <<
+  // LOG(info)   << res.x << "  " << res.y << "  " << min_cost <<
   // "  " << block.Num() << "\n";
 
   return (min_cost < INT_MAX);
@@ -431,7 +431,7 @@ bool WellLegalizer::IsCurrentLocLegalLeft(int loc_x, int width, int lo_row,
   // 1. check if the space itself is legal
   is_current_loc_legal = IsSpaceLegal(loc_x, loc_x + width, lo_row, hi_row);
   if (!is_current_loc_legal) {
-    // BOOST_LOG_TRIVIAL(info)   << "Space illegal\n";
+    // LOG(info)   << "Space illegal\n";
     return false;
   }
 
@@ -444,7 +444,7 @@ bool WellLegalizer::IsCurrentLocLegalLeft(int loc_x, int width, int lo_row,
     }
   }
   if (!is_current_loc_legal) {
-    // BOOST_LOG_TRIVIAL(info)   << "Overlap illegal\n";
+    // LOG(info)   << "Overlap illegal\n";
     return false;
   }
 
@@ -453,7 +453,7 @@ bool WellLegalizer::IsCurrentLocLegalLeft(int loc_x, int width, int lo_row,
   bool is_well_distance_legal =
       IsCurLocWellDistanceLeft(loc_x, lo_row, hi_row, p_row);
   if (!is_well_distance_legal) {
-    // BOOST_LOG_TRIVIAL(info)   << "Well distance illegal\n";
+    // LOG(info)   << "Well distance illegal\n";
     return false;
   }
 
@@ -461,7 +461,7 @@ bool WellLegalizer::IsCurrentLocLegalLeft(int loc_x, int width, int lo_row,
   bool is_well_min_width_legal =
       IsCurLocWellMinWidthLeft(loc_x, lo_row, hi_row, p_row);
   if (!is_well_min_width_legal) {
-    // BOOST_LOG_TRIVIAL(info)   << "Min width illegal\n";
+    // LOG(info)   << "Min width illegal\n";
     return false;
   }
 
@@ -557,7 +557,7 @@ bool WellLegalizer::FindLocLeft(Value2D<int>& loc, int num, int width,
     }
 
     /*if (num == 614) {
-      BOOST_LOG_TRIVIAL(info)   << "x: " << tmp_x << "\n"
+      LOG(info)   << "x: " << tmp_x << "\n"
                 << "y: " << RowToLoc(tmp_start_row) << "\n"
                 << "cost: " << tmp_cost << "\n";
     }*/
@@ -616,20 +616,20 @@ bool WellLegalizer::WellLegalizationLeft() {
       is_legal_loc_found = FindLocLeft(res, pair.blk_ptr->Id(), width, height,
                                        p_well_row_height);
       if (!is_legal_loc_found) {
-        // BOOST_LOG_TRIVIAL(info)  <<"LNum: %d, lx: %d, ly: %d\n", pair.num,
+        // LOG(info)  <<"LNum: %d, lx: %d, ly: %d\n", pair.num,
         // res.x, res.y);
         ++fail_count;
         is_successful = false;
       }
     }
-    // BOOST_LOG_TRIVIAL(info)  <<"LNum final: %d, lx: %d, ly: %d\n", pair.num,
+    // LOG(info)  <<"LNum final: %d, lx: %d, ly: %d\n", pair.num,
     // res.x, res.y);
 
     block.SetLoc(res.x, res.y);
     MarkSpaceWellLeft(block, p_well_row_height);
   }
 
-  BOOST_LOG_TRIVIAL(info) << "fail count: " << fail_count << "\n";
+  LOG(info) << "fail count: " << fail_count << "\n";
 
   return is_successful;
 }
@@ -644,7 +644,7 @@ void WellLegalizer::MarkSpaceWellRight(Block const& block, int p_row) {
   int hi_row = EndRow((int)std::round(block.URY()));
 
   /*if (end_row >= int(row_well_status_.size())) {
-    //BOOST_LOG_TRIVIAL(info)   << "  ly:     " << int(block.LLY())       <<
+    //LOG(info)   << "  ly:     " << int(block.LLY())       <<
   "\n"
     //          << "  height: " << block.Height()   << "\n"
     //          << "  top:    " << Top()    << "\n"
@@ -812,7 +812,7 @@ bool WellLegalizer::IsCurrentLocLegalRight(int loc_x, int width, int lo_row,
   // 1. check if the space itself is legal
   is_current_loc_legal = IsSpaceLegal(loc_x - width, loc_x, lo_row, hi_row);
   if (!is_current_loc_legal) {
-    // BOOST_LOG_TRIVIAL(info)   << "Space illegal\n";
+    // LOG(info)   << "Space illegal\n";
     return false;
   }
 
@@ -825,7 +825,7 @@ bool WellLegalizer::IsCurrentLocLegalRight(int loc_x, int width, int lo_row,
     }
   }
   if (!is_current_loc_legal) {
-    // BOOST_LOG_TRIVIAL(info)   << "Overlap illegal\n";
+    // LOG(info)   << "Overlap illegal\n";
     return false;
   }
 
@@ -834,7 +834,7 @@ bool WellLegalizer::IsCurrentLocLegalRight(int loc_x, int width, int lo_row,
   bool is_well_distance_legal =
       IsCurLocWellDistanceRight(loc_x, lo_row, hi_row, p_row);
   if (!is_well_distance_legal) {
-    // BOOST_LOG_TRIVIAL(info)   << "Well distance illegal\n";
+    // LOG(info)   << "Well distance illegal\n";
     return false;
   }
 
@@ -842,7 +842,7 @@ bool WellLegalizer::IsCurrentLocLegalRight(int loc_x, int width, int lo_row,
   bool is_well_min_width_legal =
       IsCurLocWellMinWidthRight(loc_x, lo_row, hi_row, p_row);
   if (!is_well_min_width_legal) {
-    // BOOST_LOG_TRIVIAL(info)   << "Min width illegal\n";
+    // LOG(info)   << "Min width illegal\n";
     return false;
   }
 
@@ -967,17 +967,17 @@ bool WellLegalizer::WellLegalizationRight() {
 
     p_well_row_height = HeightToRow(block.TypePtr()->PwellHeight(0));
 
-    // BOOST_LOG_TRIVIAL(info)   << block.Num() << "\n";
+    // LOG(info)   << block.Num() << "\n";
     is_current_loc_legal =
         IsCurrentLocLegalRight(res, width, height, p_well_row_height);
 
     if (!is_current_loc_legal) {
-      // BOOST_LOG_TRIVIAL(info)  <<"Num: %d, lx: %d, ly: %d\n", pair.num,
+      // LOG(info)  <<"Num: %d, lx: %d, ly: %d\n", pair.num,
       // res.x, res.y);
       is_legal_loc_found = FindLocRight(res, pair.blk_ptr->Id(), width, height,
                                         p_well_row_height);
       if (!is_legal_loc_found) {
-        // BOOST_LOG_TRIVIAL(info)  <<"RNum: %d, lx: %d, ly: %d\n", pair.num,
+        // LOG(info)  <<"RNum: %d, lx: %d, ly: %d\n", pair.num,
         // res.x, res.y);
         ++fail_count;
         is_successful = false;
@@ -990,7 +990,7 @@ bool WellLegalizer::WellLegalizationRight() {
     MarkSpaceWellRight(block, p_well_row_height);
   }
 
-  BOOST_LOG_TRIVIAL(info) << "fail count: " << fail_count << "\n";
+  LOG(info) << "fail count: " << fail_count << "\n";
 
   return is_successful;
 }
@@ -999,28 +999,27 @@ bool WellLegalizer::StartPlacement() {
   PrintStartStatement("Well Legalization");
 
   InitWellLegalizer();
-  BOOST_LOG_TRIVIAL(info) << "  Number of rows: " << row_well_status_.size()
-                          << "\n"
-                          << "  Number of blocks: " << blk_inits_.size() << "\n"
-                          << "  Well Rules:\n"
-                          << "    NN spacing: " << nn_spacing_ << "\n"
-                          << "    PP spacing: " << pp_spacing_ << "\n"
-                          << "    NP spacing: " << np_spacing_ << "\n"
-                          << "    MaxNDist:   " << n_max_plug_dist_ << "\n"
-                          << "    MaxPDist:   " << p_max_plug_dist_ << "\n"
-                          << "    MinNWidth:  " << n_min_width_ << "\n"
-                          << "    MinPWidth:  " << p_min_width_ << "\n";
+  LOG(info) << "  Number of rows: " << row_well_status_.size() << "\n"
+            << "  Number of blocks: " << blk_inits_.size() << "\n"
+            << "  Well Rules:\n"
+            << "    NN spacing: " << nn_spacing_ << "\n"
+            << "    PP spacing: " << pp_spacing_ << "\n"
+            << "    NP spacing: " << np_spacing_ << "\n"
+            << "    MaxNDist:   " << n_max_plug_dist_ << "\n"
+            << "    MaxPDist:   " << p_max_plug_dist_ << "\n"
+            << "    MinNWidth:  " << n_min_width_ << "\n"
+            << "    MinPWidth:  " << p_min_width_ << "\n";
 
   bool is_success = false;
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
-    BOOST_LOG_TRIVIAL(info) << "Current iteration: " << cur_iter_ << "\n";
+    LOG(info) << "Current iteration: " << cur_iter_ << "\n";
     // well_mis_align_cost_factor_ = cur_iter_ + 1;
     if (legalize_from_left_) {
       is_success = WellLegalizationLeft();
     } else {
       is_success = WellLegalizationRight();
     }
-    // BOOST_LOG_TRIVIAL(info)   << "Current iteration: " << is_success << "  "
+    // LOG(info)   << "Current iteration: " << is_success << "  "
     // << legalize_from_left_ << "\n";
     legalize_from_left_ = !legalize_from_left_;
     ++k_left_;

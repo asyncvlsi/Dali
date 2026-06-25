@@ -90,14 +90,13 @@ void BlockType::SetSize(int width, int height) {
 }
 
 void BlockType::Report() const {
-  BOOST_LOG_TRIVIAL(info) << "  BlockType name: " << Name() << "\n"
-                          << "    width, height: " << Width() << " " << Height()
-                          << "\n"
-                          << "    pin list:\n";
+  LOG(info) << "  BlockType name: " << Name() << "\n"
+            << "    width, height: " << Width() << " " << Height() << "\n"
+            << "    pin list:\n";
   for (const auto& [name, id] : pin_name_id_map_) {
-    BOOST_LOG_TRIVIAL(info)
-        << "      " << name << " " << id << " (" << pin_list_[id].OffsetX()
-        << ", " << pin_list_[id].OffsetY() << ")\n";
+    LOG(info) << "      " << name << " " << id << " ("
+              << pin_list_[id].OffsetX() << ", " << pin_list_[id].OffsetY()
+              << ")\n";
     pin_list_[id].Report();
   }
 }
@@ -238,15 +237,13 @@ RectI& BlockType::PwellRect(int index) {
 }
 
 void BlockType::ReportWellInfo() const {
-  BOOST_LOG_TRIVIAL(info) << "  Well of BlockType: " << Name() << "\n";
+  LOG(info) << "  Well of BlockType: " << Name() << "\n";
   size_t sz = RegionCount();
   for (size_t i = 0; i < sz; ++i) {
-    BOOST_LOG_TRIVIAL(info)
-        << "    Pwell: " << p_rects_[i].LLX() << "  " << p_rects_[i].LLY()
-        << "  " << p_rects_[i].URX() << "  " << p_rects_[i].URY() << "\n";
-    BOOST_LOG_TRIVIAL(info)
-        << "    Nwell: " << n_rects_[i].LLX() << "  " << n_rects_[i].LLY()
-        << "  " << n_rects_[i].URX() << "  " << n_rects_[i].URY() << "\n";
+    LOG(info) << "    Pwell: " << p_rects_[i].LLX() << "  " << p_rects_[i].LLY()
+              << "  " << p_rects_[i].URX() << "  " << p_rects_[i].URY() << "\n";
+    LOG(info) << "    Nwell: " << n_rects_[i].LLX() << "  " << n_rects_[i].LLY()
+              << "  " << n_rects_[i].URX() << "  " << n_rects_[i].URY() << "\n";
   }
 }
 

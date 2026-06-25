@@ -76,13 +76,11 @@ double Pin::HalfBboxWidth() const { return half_bbox_width_; }
 double Pin::HalfBboxHeight() const { return half_bbox_height_; }
 
 void Pin::Report() const {
-  BOOST_LOG_TRIVIAL(info) << Name() << " (" << OffsetX() << ", " << OffsetY()
-                          << ")";
+  LOG(info) << Name() << " (" << OffsetX() << ", " << OffsetY() << ")";
   for (int i = 0; i < 8; ++i) {
-    BOOST_LOG_TRIVIAL(info)
-        << "   (" << x_offset_[i] << ", " << y_offset_[i] << ")";
+    LOG(info) << "   (" << x_offset_[i] << ", " << y_offset_[i] << ")";
   }
-  BOOST_LOG_TRIVIAL(info) << "\n";
+  LOG(info) << "\n";
 }
 
 void Pin::CalculateOffset(double x_offset, double y_offset) {

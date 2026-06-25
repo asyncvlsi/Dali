@@ -156,9 +156,9 @@ void Stripe::PrecomputeWellTapCellLocation(bool is_checker_board_mode,
   if (is_checkerboard_mode_) {
     if (tap_cell_interval_grid & 1) {  // if this interval is an odd number
       int new_tap_cell_interval_grid = tap_cell_interval_grid - 1;
-      BOOST_LOG_TRIVIAL(info)
-          << "Rounding well tap cell interval from " << tap_cell_interval_grid
-          << " to " << new_tap_cell_interval_grid << "\n";
+      LOG(info) << "Rounding well tap cell interval from "
+                << tap_cell_interval_grid << " to "
+                << new_tap_cell_interval_grid << "\n";
       tap_cell_interval_grid = new_tap_cell_interval_grid;
     }
     tap_cell_interval_grid = tap_cell_interval_grid / 2;
@@ -639,8 +639,8 @@ void Stripe::ReportIterativeStatus(int i) {
   displacements_.push_back(disp_x);
   discrepancies_.push_back(discrepancy);
 
-  BOOST_LOG_TRIVIAL(info) << "Iter " << i << ", displacement: " << disp_x
-                          << ", discrepancy: " << discrepancy << "\n";
+  LOG(info) << "Iter " << i << ", displacement: " << disp_x
+            << ", discrepancy: " << discrepancy << "\n";
 }
 
 bool Stripe::IsDiscrepancyConverged() {
@@ -684,8 +684,8 @@ void Stripe::IterativeCellReordering(int max_iter, int number_of_threads) {
   SetBlockLoc();
   omp_set_num_threads(1);
   ClearMultiRowCellBreaking();
-  BOOST_LOG_TRIVIAL(info) << "displacement: " << displacements_ << "\n";
-  BOOST_LOG_TRIVIAL(info) << "discrepancy : " << discrepancies_ << "\n";
+  LOG(info) << "displacement: " << displacements_ << "\n";
+  LOG(info) << "discrepancy : " << discrepancies_ << "\n";
 }
 
 void Stripe::SortBlocksInEachRow() {
@@ -770,9 +770,9 @@ bool Stripe::SolveQPProblem(IloCplex& cplex, IloNumVarArray& var) {
   IloBool is_solved = cplex.solve();
 
   if (is_solved) {
-    // BOOST_LOG_TRIVIAL(info)
+    // LOG(info)
     //   << "Solution status = " << cplex.getStatus() << "\n";
-    // BOOST_LOG_TRIVIAL(info)
+    // LOG(info)
     //   << "Solution value  = " << cplex.getObjValue() << "\n";
 
     IloNumArray val(env);
@@ -785,7 +785,7 @@ bool Stripe::SolveQPProblem(IloCplex& cplex, IloNumVarArray& var) {
     }
     val.end();
   } else {
-    BOOST_LOG_TRIVIAL(info) << "Problem cannot be solved\n";
+    LOG(info) << "Problem cannot be solved\n";
   }
 
   return is_solved;
@@ -813,10 +813,10 @@ bool Stripe::OptimizeDisplacementUsingQuadraticProgramming(
     // solve the QP problem
     is_solved = SolveQPProblem(cplex, var);
   } catch (IloException& e) {
-    BOOST_LOG_TRIVIAL(error) << "Concert exception caught: " << e << "\n";
+    LOG(error) << "Concert exception caught: " << e << "\n";
     is_solved = false;
   } catch (...) {
-    BOOST_LOG_TRIVIAL(error) << "Unknown exception caught" << "\n";
+    LOG(error) << "Unknown exception caught" << "\n";
     is_solved = false;
   }
 

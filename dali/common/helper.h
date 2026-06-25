@@ -102,8 +102,7 @@ void SaveMatlabPatchRegion(std::ofstream& ost, Rect<T> const& n_rect,
 
 /** Log a visual separator line. */
 inline void PrintHorizontalLine() {
-  BOOST_LOG_TRIVIAL(info)
-      << "------------------------------------------------------------\n";
+  LOG(info) << "------------------------------------------------------------\n";
 }
 
 }  // namespace dali

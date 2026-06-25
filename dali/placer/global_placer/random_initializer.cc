@@ -43,9 +43,8 @@ void RandomInitializer::SetShouldSaveIntermediateResult(
 
 void RandomInitializer::PrintStartStatement() {
   elapsed_time_.RecordStartTime();
-  BOOST_LOG_TRIVIAL(info) << "  Block location initialization:\n"
-                          << "    HPWL before, " << ckt_ptr_->WeightedHPWL()
-                          << "\n";
+  LOG(info) << "  Block location initialization:\n"
+            << "    HPWL before, " << ckt_ptr_->WeightedHPWL() << "\n";
 }
 
 void RandomInitializer::SetParameters(
@@ -53,12 +52,10 @@ void RandomInitializer::SetParameters(
         params_dict) {}
 
 void RandomInitializer::PrintEndStatement() {
-  BOOST_LOG_TRIVIAL(debug) << "    " << initializer_name_
-                           << " initialization complete\n";
-  BOOST_LOG_TRIVIAL(info) << "    HPWL after, " << ckt_ptr_->WeightedHPWL()
-                          << "\n";
+  LOG(debug) << "    " << initializer_name_ << " initialization complete\n";
+  LOG(info) << "    HPWL after, " << ckt_ptr_->WeightedHPWL() << "\n";
   elapsed_time_.RecordEndTime();
-  elapsed_time_.PrintTimeElapsed(boost::log::trivial::debug);
+  elapsed_time_.PrintTimeElapsed(severity::debug);
   if (should_save_intermediate_result_) {
     ckt_ptr_->GenMATLABTable("rand_init.txt");
   }

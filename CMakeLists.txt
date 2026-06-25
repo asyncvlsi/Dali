@@ -52,7 +52,7 @@ find_library(DEF_LIBRARY NAMES def PATHS $ENV{ACT_HOME}/lib REQUIRED)
 message(STATUS "Found libdef.a: ${DEF_LIBRARY}")
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#Dependencies : Galois, OpenMP, Boost, CPLEX, Git Commit
+#Dependencies : Galois, OpenMP, Boost headers, CPLEX, Git Commit
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 #Detect if galois_eda library exists
 include(cmake/FindGaloisEDA.cmake)
@@ -60,8 +60,9 @@ include(cmake/FindGaloisEDA.cmake)
 #Detect if OpenMP library exists
 include(cmake/FindOpenMPPackage.cmake)
 
-#Detect if Boost library exists
-find_package(Boost 1.71.0 COMPONENTS log_setup log REQUIRED)
+#Detect Boost headers required by ACT/PhyDB public headers
+find_package(Boost 1.71.0 REQUIRED)
+include_directories(${Boost_INCLUDE_DIRS})
 
 #Detect if CPLEX library exists
 include(cmake/FindCPLEX.cmake)
@@ -146,7 +147,6 @@ target_link_libraries(
     ${Galois_LIBRARIES}
     ${LEF_LIBRARY} ${DEF_LIBRARY}
     ${CPLEX_LIBRARIES} m pthread dl
-    ${Boost_LIBRARIES}
     OpenMP::OpenMP_CXX
     ${LIBCXXFS_LIB}
 )
@@ -173,7 +173,7 @@ add_dali_executable(mhlg dali/application/multi_height_legalization.cc)
 # Tests
 # ------------------------------------------------------------------------------
 enable_testing()
-add_subdirectory(tests/boost_test)
+add_subdirectory(tests/unit)
 add_subdirectory(tests/io_placer)
 
 # ------------------------------------------------------------------------------

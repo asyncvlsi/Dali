@@ -78,7 +78,7 @@ void TetrisLegalizer::FastShift(int failure_point) {
     bounding_left = failed_block->LLX();
     Block* last_placed_block = index_loc_list_[failure_point - 1].blk_ptr;
     int left_new = (int)std::round(last_placed_block->LLX());
-    // BOOST_LOG_TRIVIAL(info)   << left_new << "  " << bounding_left << "\n";
+    // LOG(info)   << left_new << "  " << bounding_left << "\n";
     for (size_t i = failure_point; i < index_loc_list_.size(); ++i) {
       Block* blk_ptr = index_loc_list_[i].blk_ptr;
       blk_ptr->IncreaseX(left_new + init_diff - bounding_left);
@@ -142,7 +142,7 @@ bool TetrisLegalizer::TetrisLegal() {
       });
 
   /*for (auto &pair: index_loc_list_) {
-    BOOST_LOG_TRIVIAL(info)   << blocks[pair.num].LLX() << "\n";
+    LOG(info)   << blocks[pair.num].LLX() << "\n";
   }*/
 
   // 3. initialize the data structure to store row usage
@@ -150,7 +150,7 @@ bool TetrisLegalizer::TetrisLegal() {
   int minWidth = ckt_ptr_->MinBlkWidth();
   // int minHeight = GetCircuitRef().MinBlkHeight();
 
-  BOOST_LOG_TRIVIAL(info) << "Building Tetris legalizer space" << std::endl;
+  LOG(info) << "Building Tetris legalizer space" << std::endl;
   TetrisSpace tetrisSpace(RegionLeft(), RegionRight(), RegionBottom(),
                           RegionTop(), 1, minWidth);
   int llx, lly;
@@ -188,13 +188,13 @@ bool TetrisLegalizer::TetrisLegal() {
         bk_ptr->SetLoc(result_loc.x, result_loc.y);
       } else {
         FastShift(i);
-        BOOST_LOG_TRIVIAL(info) << "Tetris legalization iteration...\n";
+        LOG(info) << "Tetris legalization iteration...\n";
         return false;
       }
     }
     /*blocks[block_num].is_placed = true;
     std::string file_name = std::to_string(count);
-    BOOST_LOG_TRIVIAL(info)   << count << "  " << is_current_loc_legal << "\n";
+    LOG(info)   << count << "  " << is_current_loc_legal << "\n";
      GenMATLABScriptPlaced(file_name);*/
     // count++;
   }

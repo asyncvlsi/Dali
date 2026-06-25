@@ -46,7 +46,7 @@ void Circuit::InitializeFromPhyDB(phydb::PhyDB* phy_db_ptr) {
   SetPhyDB(phy_db_ptr);
 
   PrintHorizontalLine();
-  BOOST_LOG_TRIVIAL(info) << "Load information from PhyDB\n";
+  LOG(info) << "Load information from PhyDB\n";
   LoadTech(phy_db_ptr_);
   LoadDesign();
   LoadCell(phy_db_ptr_);
@@ -174,8 +174,8 @@ void Circuit::SetGridFromMetalPitch() {
   DaliExpects(
       ver_layer != nullptr,
       "Cannot find a vertical metal layer! Circuit::SetGridFromMetalPitch()");
-  // BOOST_LOG_TRIVIAL(info)   << "vertical layer: " << *ver_layer->Name() << "
-  // " << ver_layer->PitchX() << "\n"; BOOST_LOG_TRIVIAL(info)   << "horizontal
+  // LOG(info)   << "vertical layer: " << *ver_layer->Name() << "
+  // " << ver_layer->PitchX() << "\n"; LOG(info)   << "horizontal
   // layer: " << *hor_layer->Name() << "  " << hor_layer->PitchY() << "\n";
   SetGridValue(ver_layer->PitchX(), hor_layer->PitchY());
 }
@@ -186,7 +186,7 @@ double Circuit::GridValueY() const { return tech_.grid_value_y_; }
 
 void Circuit::SetRowHeight(double row_height) {
   DaliExpects(row_height > 0, "Setting row height to a negative value?");
-  // BOOST_LOG_TRIVIAL(info) << row_height << "  " << GridValueY() << std::endl;
+  // LOG(info) << row_height << "  " << GridValueY() << std::endl;
   double residual = AbsResidual(row_height, GridValueY());
   DaliExpects(residual < constants_.epsilon,
               "Site height is not integer multiple of grid value in Y");
@@ -245,12 +245,11 @@ MetalLayer* Circuit::AddMetalLayer(std::string const& metal_name, double width,
 
 // report metal layer information for debugging purposes
 void Circuit::ReportMetalLayers() {
-  BOOST_LOG_TRIVIAL(info) << "Total MetalLayer: " << tech_.metal_list_.size()
-                          << "\n";
+  LOG(info) << "Total MetalLayer: " << tech_.metal_list_.size() << "\n";
   for (auto& metal_layer : tech_.metal_list_) {
     metal_layer.Report();
   }
-  BOOST_LOG_TRIVIAL(info) << "\n";
+  LOG(info) << "\n";
 }
 
 std::vector<BlockType>& Circuit::BlockTypes() { return tech_.BlockTypes(); }
@@ -325,13 +324,12 @@ Pin* Circuit::AddBlkTypePin(BlockType* blk_type_ptr,
 }
 
 void Circuit::ReportBlockType() {
-  BOOST_LOG_TRIVIAL(info) << "Total BlockType: "
-                          << tech_.block_type_collection_.GetSize()
-                          << std::endl;
+  LOG(info) << "Total BlockType: " << tech_.block_type_collection_.GetSize()
+            << std::endl;
   for (auto& block_type : tech_.BlockTypes()) {
     block_type.Report();
   }
-  BOOST_LOG_TRIVIAL(info) << "\n";
+  LOG(info) << "\n";
 }
 
 void Circuit::CopyBlockType(Circuit& circuit) {
@@ -471,16 +469,16 @@ void Circuit::UpdateTotalBlkArea() {
 }
 
 void Circuit::ReportBlockList() {
-  BOOST_LOG_TRIVIAL(info) << "Total Block: " << design_.Blocks().size() << "\n";
+  LOG(info) << "Total Block: " << design_.Blocks().size() << "\n";
   for (auto& block : design_.Blocks()) {
     block.Report();
   }
-  BOOST_LOG_TRIVIAL(info) << "\n";
+  LOG(info) << "\n";
 }
 
 void Circuit::ReportBlockMap() {
   for (auto& it : design_.BlockNameIdMap()) {
-    BOOST_LOG_TRIVIAL(info) << it.first << " " << it.second << "\n";
+    LOG(info) << it.first << " " << it.second << "\n";
   }
 }
 
@@ -556,11 +554,11 @@ void Circuit::AddPlacementBlockageFromPhyDB(phydb::Blockage& blockage) {
 }
 
 void Circuit::ReportIOPin() {
-  BOOST_LOG_TRIVIAL(info) << "Total IOPin: " << design_.iopins_.size() << "\n";
+  LOG(info) << "Total IOPin: " << design_.iopins_.size() << "\n";
   for (auto& iopin : design_.iopins_) {
     iopin.Report();
   }
-  BOOST_LOG_TRIVIAL(info) << "\n";
+  LOG(info) << "\n";
 }
 
 std::vector<Net>& Circuit::Nets() { return design_.nets_; }
@@ -629,22 +627,21 @@ void Circuit::AddBlkPinToNet(std::string const& blk_name,
 }
 
 void Circuit::ReportNetList() {
-  BOOST_LOG_TRIVIAL(info) << "Total Net: " << design_.nets_.size() << "\n";
+  LOG(info) << "Total Net: " << design_.nets_.size() << "\n";
   for (auto& net : design_.nets_) {
-    BOOST_LOG_TRIVIAL(info)
-        << "  " << net.Name() << "  " << net.Weight() << "\n";
+    LOG(info) << "  " << net.Name() << "  " << net.Weight() << "\n";
     for (auto& block_pin : net.BlockPins()) {
-      BOOST_LOG_TRIVIAL(info) << "\t" << " (" << block_pin.BlockName() << " "
-                              << block_pin.PinName() << ") "
-                              << "\n";
+      LOG(info) << "\t" << " (" << block_pin.BlockName() << " "
+                << block_pin.PinName() << ") "
+                << "\n";
     }
   }
-  BOOST_LOG_TRIVIAL(info) << "\n";
+  LOG(info) << "\n";
 }
 
 void Circuit::ReportNetMap() {
   for (auto& it : design_.net_name_id_map_) {
-    BOOST_LOG_TRIVIAL(info) << it.first << " " << it.second << "\n";
+    LOG(info) << it.first << " " << it.second << "\n";
   }
 }
 
@@ -681,36 +678,27 @@ void Circuit::ReportNetFanoutHistogram() {
 
 void Circuit::ReportBriefSummary() {
   PrintHorizontalLine();
-  BOOST_LOG_TRIVIAL(info) << "Circuit brief summary:\n";
-  BOOST_LOG_TRIVIAL(info) << "  movable blocks: " << TotMovBlkCnt() << "\n";
-  BOOST_LOG_TRIVIAL(info) << "  fixed blocks:   " << design_.tot_fixed_blk_num_
-                          << "\n";
-  BOOST_LOG_TRIVIAL(info) << "  blocks:         " << TotBlkCnt() << "\n";
-  BOOST_LOG_TRIVIAL(info) << "  iopins:         " << design_.iopins_.size()
-                          << "\n";
-  BOOST_LOG_TRIVIAL(info) << "  nets:           " << design_.nets_.size()
-                          << "\n";
-  BOOST_LOG_TRIVIAL(info) << "  grid size x/y:  " << GridValueX() << "/"
-                          << GridValueY() << "um\n";
-  BOOST_LOG_TRIVIAL(info) << "  total movable blk area: "
-                          << design_.tot_mov_blk_area_ << "\n";
-  BOOST_LOG_TRIVIAL(info) << "  total white space     : "
-                          << design_.tot_white_space_ << "\n";
-  BOOST_LOG_TRIVIAL(info) << "  total block area      : "
-                          << design_.tot_blk_area_ << "\n";
-  BOOST_LOG_TRIVIAL(info) << "  total space: "
-                          << (long long)RegionWidth() *
-                                 (long long)RegionHeight()
-                          << "\n";
-  BOOST_LOG_TRIVIAL(info) << "    left:   " << RegionLLX() << "\n";
-  BOOST_LOG_TRIVIAL(info) << "    right:  " << RegionURX() << "\n";
-  BOOST_LOG_TRIVIAL(info) << "    bottom: " << RegionLLY() << "\n";
-  BOOST_LOG_TRIVIAL(info) << "    top:    " << RegionURY() << "\n";
-  BOOST_LOG_TRIVIAL(info) << "  average movable width/height: "
-                          << AveMovBlkWidth() << "/" << AveMovBlkHeight()
-                          << "um\n";
-  BOOST_LOG_TRIVIAL(info) << "  white space utility: " << WhiteSpaceUsage()
-                          << "\n";
+  LOG(info) << "Circuit brief summary:\n";
+  LOG(info) << "  movable blocks: " << TotMovBlkCnt() << "\n";
+  LOG(info) << "  fixed blocks:   " << design_.tot_fixed_blk_num_ << "\n";
+  LOG(info) << "  blocks:         " << TotBlkCnt() << "\n";
+  LOG(info) << "  iopins:         " << design_.iopins_.size() << "\n";
+  LOG(info) << "  nets:           " << design_.nets_.size() << "\n";
+  LOG(info) << "  grid size x/y:  " << GridValueX() << "/" << GridValueY()
+            << "um\n";
+  LOG(info) << "  total movable blk area: " << design_.tot_mov_blk_area_
+            << "\n";
+  LOG(info) << "  total white space     : " << design_.tot_white_space_ << "\n";
+  LOG(info) << "  total block area      : " << design_.tot_blk_area_ << "\n";
+  LOG(info) << "  total space: "
+            << (long long)RegionWidth() * (long long)RegionHeight() << "\n";
+  LOG(info) << "    left:   " << RegionLLX() << "\n";
+  LOG(info) << "    right:  " << RegionURX() << "\n";
+  LOG(info) << "    bottom: " << RegionLLY() << "\n";
+  LOG(info) << "    top:    " << RegionURY() << "\n";
+  LOG(info) << "  average movable width/height: " << AveMovBlkWidth() << "/"
+            << AveMovBlkHeight() << "um\n";
+  LOG(info) << "  white space utility: " << WhiteSpaceUsage() << "\n";
   ReportHPWL();
 }
 
@@ -766,17 +754,15 @@ void Circuit::SetWellRect(std::string const& blk_type_name, bool is_n,
               "Cannot find BlockType with name: " << blk_type_name);
   double ly_residual = AbsResidual(ly, GridValueY());
   if (ly_residual > constants_.epsilon) {
-    BOOST_LOG_TRIVIAL(debug)
-        << "NOTE: ly of well rect for " << blk_type_name
-        << " is not an integer multiple of grid value y\n"
-        << "  ly: " << ly << ", grid value y: " << GridValueY() << "\n";
+    LOG(debug) << "NOTE: ly of well rect for " << blk_type_name
+               << " is not an integer multiple of grid value y\n"
+               << "  ly: " << ly << ", grid value y: " << GridValueY() << "\n";
   }
   double uy_residual = AbsResidual(uy, GridValueY());
   if (uy_residual > constants_.epsilon) {
-    BOOST_LOG_TRIVIAL(debug)
-        << "NOTE: uy of well rect for " << blk_type_name
-        << " is not an integer multiple of grid value y\n"
-        << "  uy: " << uy << ", grid value y: " << GridValueY() << "\n";
+    LOG(debug) << "NOTE: uy of well rect for " << blk_type_name
+               << " is not an integer multiple of grid value y\n"
+               << "  uy: " << uy << ", grid value y: " << GridValueY() << "\n";
   }
   int lx_grid = int(std::round(lx / GridValueX()));
   int ly_grid = int(std::round(ly / GridValueY()));
@@ -837,8 +823,7 @@ void Circuit::ReportWellShape() {
     if (block_type.HasWellInfo()) {
       block_type.ReportWellInfo();
     } else {
-      BOOST_LOG_TRIVIAL(info)
-          << "no well info for BlockType " << block_type.Name() << "\n";
+      LOG(info) << "no well info for BlockType " << block_type.Name() << "\n";
     }
   }
 }
@@ -860,24 +845,21 @@ void Circuit::ReadMultiWellCell(std::string const& name_of_file) {
           getline(ist, line);
           StrTokenize(line, legalizer_fields);
           if (legalizer_fields.size() != 2) {
-            BOOST_LOG_TRIVIAL(fatal)
-                << "Expect: SPACING + Value, get: " + line << std::endl;
+            LOG(fatal) << "Expect: SPACING + Value, get: " + line << std::endl;
             exit(1);
           }
           if (legalizer_fields[0] == "SAME_DIFF_SPACING") {
             try {
               same_diff_spacing = std::stod(legalizer_fields[1]);
             } catch (...) {
-              BOOST_LOG_TRIVIAL(fatal)
-                  << "Invalid stod conversion: " + line << std::endl;
+              LOG(fatal) << "Invalid stod conversion: " + line << std::endl;
               exit(1);
             }
           } else if (legalizer_fields[0] == "ANY_DIFF_SPACING") {
             try {
               any_diff_spacing = std::stod(legalizer_fields[1]);
             } catch (...) {
-              BOOST_LOG_TRIVIAL(fatal)
-                  << "Invalid stod conversion: " + line << std::endl;
+              LOG(fatal) << "Invalid stod conversion: " + line << std::endl;
               exit(1);
             }
           }
@@ -889,8 +871,8 @@ void Circuit::ReadMultiWellCell(std::string const& name_of_file) {
         bool is_n_well = (well_fields[1] == "nwell");
         if (!is_n_well) {
           if (well_fields[1] != "pwell") {
-            BOOST_LOG_TRIVIAL(fatal)
-                << "Unknow N/P well type: " + well_fields[1] << std::endl;
+            LOG(fatal) << "Unknow N/P well type: " + well_fields[1]
+                       << std::endl;
             exit(1);
           }
         }
@@ -906,8 +888,8 @@ void Circuit::ReadMultiWellCell(std::string const& name_of_file) {
             try {
               width = std::stod(well_fields[1]);
             } catch (...) {
-              BOOST_LOG_TRIVIAL(fatal)
-                  << "Invalid stod conversion: " + well_fields[1] << std::endl;
+              LOG(fatal) << "Invalid stod conversion: " + well_fields[1]
+                         << std::endl;
               exit(1);
             }
           } else if (line.find("OPPOSPACING") != std::string::npos) {
@@ -915,8 +897,8 @@ void Circuit::ReadMultiWellCell(std::string const& name_of_file) {
             try {
               op_spacing = std::stod(well_fields[1]);
             } catch (...) {
-              BOOST_LOG_TRIVIAL(fatal)
-                  << "Invalid stod conversion: " + well_fields[1] << std::endl;
+              LOG(fatal) << "Invalid stod conversion: " + well_fields[1]
+                         << std::endl;
               exit(1);
             }
           } else if (line.find("SPACING") != std::string::npos) {
@@ -924,8 +906,8 @@ void Circuit::ReadMultiWellCell(std::string const& name_of_file) {
             try {
               spacing = std::stod(well_fields[1]);
             } catch (...) {
-              BOOST_LOG_TRIVIAL(fatal)
-                  << "Invalid stod conversion: " + well_fields[1] << std::endl;
+              LOG(fatal) << "Invalid stod conversion: " + well_fields[1]
+                         << std::endl;
               exit(1);
             }
           } else if (line.find("MAXPLUGDIST") != std::string::npos) {
@@ -933,8 +915,8 @@ void Circuit::ReadMultiWellCell(std::string const& name_of_file) {
             try {
               max_plug_dist = std::stod(well_fields[1]);
             } catch (...) {
-              BOOST_LOG_TRIVIAL(fatal)
-                  << "Invalid stod conversion: " + well_fields[1] << std::endl;
+              LOG(fatal) << "Invalid stod conversion: " + well_fields[1]
+                         << std::endl;
               exit(1);
             }
           } else if (line.find("MAXPLUGDIST") != std::string::npos) {
@@ -942,8 +924,8 @@ void Circuit::ReadMultiWellCell(std::string const& name_of_file) {
             try {
               overhang = std::stod(well_fields[1]);
             } catch (...) {
-              BOOST_LOG_TRIVIAL(fatal)
-                  << "Invalid stod conversion: " + well_fields[1] << std::endl;
+              LOG(fatal) << "Invalid stod conversion: " + well_fields[1]
+                         << std::endl;
               exit(1);
             }
           } else {
@@ -988,7 +970,7 @@ void Circuit::ReadMultiWellCell(std::string const& name_of_file) {
                     uy = std::stod(shape_fields[4]);
                     double ly_residual = AbsResidual(ly, GridValueY());
                     if (ly_residual > constants_.epsilon) {
-                      BOOST_LOG_TRIVIAL(trace)
+                      LOG(trace)
                           << "WARNING: ly of well rect for " << macro_fields[1]
                           << " is not an integer multiple of grid value y\n"
                           << "  ly: " << ly
@@ -996,14 +978,14 @@ void Circuit::ReadMultiWellCell(std::string const& name_of_file) {
                     }
                     double uy_residual = AbsResidual(uy, GridValueY());
                     if (uy_residual > constants_.epsilon) {
-                      BOOST_LOG_TRIVIAL(trace)
+                      LOG(trace)
                           << "WARNING: uy of well rect for " << macro_fields[1]
                           << " is not an integer multiple of grid value y\n"
                           << "  uy: " << uy
                           << ", grid value y: " << GridValueY() << "\n";
                     }
                   } catch (...) {
-                    BOOST_LOG_TRIVIAL(fatal)
+                    LOG(fatal)
                         << "Invalid stod conversion: " + line << std::endl;
                     exit(1);
                   }
@@ -1108,8 +1090,7 @@ double Circuit::WeightedHPWL() {
 }
 
 void Circuit::ReportHPWL() {
-  BOOST_LOG_TRIVIAL(info) << "  current weighted HPWL: " << WeightedHPWL()
-                          << "um\n";
+  LOG(info) << "  current weighted HPWL: " << WeightedHPWL() << "um\n";
 }
 
 double Circuit::WeightedBoundingBoxX() {
@@ -1133,8 +1114,7 @@ double Circuit::WeightedBoundingBox() {
 }
 
 void Circuit::ReportBoundingBox() {
-  BOOST_LOG_TRIVIAL(info) << "  current weighted bbox: "
-                          << WeightedBoundingBox() << " um\n";
+  LOG(info) << "  current weighted bbox: " << WeightedBoundingBox() << " um\n";
 }
 
 void Circuit::ReportHPWLHistogramLinear(int bin_num) {
@@ -1163,12 +1143,11 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
   }
 
   int tot_count = design_.nets_.size();
-  BOOST_LOG_TRIVIAL(info) << "\n";
-  BOOST_LOG_TRIVIAL(info)
-      << "                  HPWL histogram (linear scale bins)\n";
-  BOOST_LOG_TRIVIAL(info) << "================================================="
-                             "==================\n";
-  BOOST_LOG_TRIVIAL(info) << "   HPWL interval         Count\n";
+  LOG(info) << "\n";
+  LOG(info) << "                  HPWL histogram (linear scale bins)\n";
+  LOG(info) << "================================================="
+               "==================\n";
+  LOG(info) << "   HPWL interval         Count\n";
   size_t buffer_length = 1024;
   for (int i = 0; i < bin_num; ++i) {
     double lo = min_hpwl + step * i;
@@ -1184,13 +1163,12 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
       buffer.push_back('*');
     }
     buffer.push_back('\n');
-    BOOST_LOG_TRIVIAL(info) << buffer;
+    LOG(info) << buffer;
   }
-  BOOST_LOG_TRIVIAL(info) << "================================================="
-                             "==================\n";
-  BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: " << GridValueX()
-                          << " um\n";
-  BOOST_LOG_TRIVIAL(info) << "\n";
+  LOG(info) << "================================================="
+               "==================\n";
+  LOG(info) << " * HPWL unit, grid value in X: " << GridValueX() << " um\n";
+  LOG(info) << "\n";
 }
 
 /**
@@ -1243,12 +1221,11 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
   }
 
   // Output the HPWL histogram
-  BOOST_LOG_TRIVIAL(info) << "\n";
-  BOOST_LOG_TRIVIAL(info)
-      << "                  HPWL histogram (log scale bins)\n";
-  BOOST_LOG_TRIVIAL(info) << "================================================="
-                             "==================\n";
-  BOOST_LOG_TRIVIAL(info) << "   HPWL interval         Count\n";
+  LOG(info) << "\n";
+  LOG(info) << "                  HPWL histogram (log scale bins)\n";
+  LOG(info) << "================================================="
+               "==================\n";
+  LOG(info) << "   HPWL interval         Count\n";
 
   size_t buffer_length = 1024;
   for (int i = 0; i < bin_num; ++i) {
@@ -1263,14 +1240,13 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
     int percent = std::ceil(50 * count[i] / design_.nets_.size());
     buffer.append(percent, '*');
     buffer.push_back('\n');
-    BOOST_LOG_TRIVIAL(info) << buffer;
+    LOG(info) << buffer;
   }
 
-  BOOST_LOG_TRIVIAL(info) << "================================================="
-                             "==================\n";
-  BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: " << GridValueX()
-                          << " um\n";
-  BOOST_LOG_TRIVIAL(info) << "\n";
+  LOG(info) << "================================================="
+               "==================\n";
+  LOG(info) << " * HPWL unit, grid value in X: " << GridValueX() << " um\n";
+  LOG(info) << "\n";
 }
 
 double Circuit::HPWLCtoCX() {
@@ -1292,7 +1268,7 @@ double Circuit::HPWLCtoCY() {
 double Circuit::HPWLCtoC() { return HPWLCtoCX() + HPWLCtoCY(); }
 
 void Circuit::ReportHPWLCtoC() {
-  BOOST_LOG_TRIVIAL(info) << "  Current HPWL: " << HPWLCtoC() << " um\n";
+  LOG(info) << "  Current HPWL: " << HPWLCtoC() << " um\n";
 }
 
 void Circuit::SaveOptimalRegionDistance(std::string const& file_name) {
@@ -1365,11 +1341,10 @@ void Circuit::GenLongNetTable(std::string const& name_of_file) {
     }
   }
   ave_hpwl /= count;
-  BOOST_LOG_TRIVIAL(info) << "Long net report: \n"
-                          << "  threshold: " << multi_factor << " " << threshold
-                          << "\n"
-                          << "  count:     " << count << "\n"
-                          << "  ave_hpwl:  " << ave_hpwl << "\n";
+  LOG(info) << "Long net report: \n"
+            << "  threshold: " << multi_factor << " " << threshold << "\n"
+            << "  count:     " << count << "\n"
+            << "  ave_hpwl:  " << ave_hpwl << "\n";
 
   ost.close();
 }
@@ -1426,8 +1401,7 @@ void Circuit::ExportEndCapCells(std::ofstream& ost) {
 void Circuit::SaveLefFile(std::string const& input_lef_file_full_name,
                           std::string const& output_lef_name) {
   std::string output_lef_file_full_name = output_lef_name + "_with_end_cap.lef";
-  BOOST_LOG_TRIVIAL(info) << "Writing LEF file: " << output_lef_file_full_name
-                          << "\n";
+  LOG(info) << "Writing LEF file: " << output_lef_file_full_name << "\n";
   std::ofstream ost(output_lef_file_full_name.c_str());
   DaliExpects(ost.is_open(),
               "Cannot open output file " + output_lef_file_full_name);
@@ -1782,7 +1756,7 @@ void Circuit::SaveDefFile(std::string const& base_name,
                           [[maybe_unused]] int save_floorplan, int save_cell,
                           int save_iopin, int save_net) {
   std::string file_name = base_name + name_padding + ".def";
-  BOOST_LOG_TRIVIAL(info) << "Writing DEF file: " << file_name << "\n";
+  LOG(info) << "Writing DEF file: " << file_name << "\n";
   std::ofstream ost(file_name.c_str());
   DaliExpects(ost.is_open(), "Cannot open file " + file_name);
   std::ifstream ist(def_file_name.c_str());
@@ -1823,7 +1797,7 @@ void Circuit::SaveDefFile(std::string const& base_name,
 void Circuit::SaveDefFileComponent(std::string const& name_of_file,
                                    std::string const& def_file_name) {
   std::string file_name = name_of_file;
-  BOOST_LOG_TRIVIAL(info) << "Writing DEF file: " << file_name << "\n";
+  LOG(info) << "Writing DEF file: " << file_name << "\n";
   std::ofstream ost(file_name.c_str());
   DaliExpects(ost.is_open(), "Cannot open file " + file_name);
   std::ifstream ist(def_file_name.c_str());
@@ -2068,7 +2042,7 @@ void Circuit::BlockTypeSizeMicrometerToGridValue(
     gridded_width = (int)std::round(width / GridValueX());
   } else {
     gridded_width = (int)std::ceil(width / GridValueX());
-    BOOST_LOG_TRIVIAL(warning)
+    LOG(warning)
         << "BlockType width is not integer multiple of the grid value along X: "
         << block_type_name << "\n"
         << "    width: " << width << " um\n"
@@ -2084,7 +2058,7 @@ void Circuit::BlockTypeSizeMicrometerToGridValue(
     gridded_height = (int)std::round(height / GridValueY());
   } else {
     gridded_height = (int)std::ceil(height / GridValueY());
-    BOOST_LOG_TRIVIAL(warning)
+    LOG(warning)
         << "BlockType height is not integer multiple of the grid value along "
            "Y: "
         << block_type_name << "\n"
@@ -2214,10 +2188,9 @@ RectI Circuit::ShrinkOffGridDieArea(int lower_x, int lower_y, int upper_x,
   double f_left = lower_x / static_cast<double>(factor_x);
   if (AbsResidual(f_left, 1) > 1e-5) {
     left = std::ceil(f_left);
-    BOOST_LOG_TRIVIAL(info)
-        << "left placement boundary is not on placement grid: \n"
-        << "  shrink left from " << lower_x << " to " << left * factor_x
-        << "\n";
+    LOG(info) << "left placement boundary is not on placement grid: \n"
+              << "  shrink left from " << lower_x << " to " << left * factor_x
+              << "\n";
   } else {
     left = static_cast<int>(std::round(f_left));
   }
@@ -2226,10 +2199,9 @@ RectI Circuit::ShrinkOffGridDieArea(int lower_x, int lower_y, int upper_x,
   double f_right = upper_x / static_cast<double>(factor_x);
   if (AbsResidual(f_right, 1) > 1e-5) {
     right = std::floor(f_right);
-    BOOST_LOG_TRIVIAL(info)
-        << "right placement boundary is not on placement grid: \n"
-        << "  shrink right from " << upper_x << " to " << right * factor_x
-        << "\n";
+    LOG(info) << "right placement boundary is not on placement grid: \n"
+              << "  shrink right from " << upper_x << " to " << right * factor_x
+              << "\n";
   } else {
     right = static_cast<int>(std::round(f_right));
   }
@@ -2238,10 +2210,9 @@ RectI Circuit::ShrinkOffGridDieArea(int lower_x, int lower_y, int upper_x,
   double f_bottom = lower_y / static_cast<double>(factor_y);
   if (AbsResidual(f_bottom, 1) > 1e-5) {
     bottom = std::ceil(f_bottom);
-    BOOST_LOG_TRIVIAL(info)
-        << "bottom placement boundary is not on placement grid: \n"
-        << "  shrink bottom from " << lower_y << " to " << bottom * factor_y
-        << "\n";
+    LOG(info) << "bottom placement boundary is not on placement grid: \n"
+              << "  shrink bottom from " << lower_y << " to "
+              << bottom * factor_y << "\n";
   } else {
     bottom = static_cast<int>(std::round(f_bottom));
   }
@@ -2250,9 +2221,9 @@ RectI Circuit::ShrinkOffGridDieArea(int lower_x, int lower_y, int upper_x,
   double f_top = upper_y / static_cast<double>(factor_y);
   if (AbsResidual(f_top, 1) > 1e-5) {
     top = std::floor(f_top);
-    BOOST_LOG_TRIVIAL(info)
-        << "top placement boundary is not on placement grid: \n"
-        << "  shrink top from " << upper_y << " to " << top * factor_y << "\n";
+    LOG(info) << "top placement boundary is not on placement grid: \n"
+              << "  shrink top from " << upper_y << " to " << top * factor_y
+              << "\n";
   } else {
     top = static_cast<int>(std::round(f_top));
   }
@@ -2277,18 +2248,18 @@ RectI Circuit::ShiftOffGridDieArea(int lower_x, int lower_y, int upper_x,
   int adjusted_upper_x = upper_x - design_.die_area_.die_area_offset_x_;
   int adjusted_upper_y = upper_y - design_.die_area_.die_area_offset_y_;
   if (design_.die_area_.die_area_offset_x_ != 0) {
-    BOOST_LOG_TRIVIAL(info)
-        << "left placement boundary is not on placement grid: \n"
-        << "  shift left from " << lower_x << " to " << adjusted_lower_x << "\n"
-        << "  shift right from " << upper_x << " to " << adjusted_upper_x
-        << "\n";
+    LOG(info) << "left placement boundary is not on placement grid: \n"
+              << "  shift left from " << lower_x << " to " << adjusted_lower_x
+              << "\n"
+              << "  shift right from " << upper_x << " to " << adjusted_upper_x
+              << "\n";
   }
   if (design_.die_area_.die_area_offset_y_ != 0) {
-    BOOST_LOG_TRIVIAL(info)
-        << "bottom placement boundary is not on placement grid: \n"
-        << "  shift bottom from " << lower_y << " to " << adjusted_lower_y
-        << "\n"
-        << "  shift top from " << upper_y << " to " << adjusted_upper_y << "\n";
+    LOG(info) << "bottom placement boundary is not on placement grid: \n"
+              << "  shift bottom from " << lower_y << " to " << adjusted_lower_y
+              << "\n"
+              << "  shift top from " << upper_y << " to " << adjusted_upper_y
+              << "\n";
   }
   lower_x = adjusted_lower_x;
   lower_y = adjusted_lower_y;
@@ -2302,16 +2273,14 @@ RectI Circuit::ShiftOffGridDieArea(int lower_x, int lower_y, int upper_x,
   adjusted_upper_x = upper_x - design_.die_area_.die_area_offset_x_residual_;
   adjusted_upper_y = upper_y - design_.die_area_.die_area_offset_y_residual_;
   if (design_.die_area_.die_area_offset_x_residual_ != 0) {
-    BOOST_LOG_TRIVIAL(info)
-        << "right placement boundary is not on placement grid: \n"
-        << "  shrink right from " << upper_x << " to " << adjusted_upper_x
-        << "\n";
+    LOG(info) << "right placement boundary is not on placement grid: \n"
+              << "  shrink right from " << upper_x << " to " << adjusted_upper_x
+              << "\n";
   }
   if (design_.die_area_.die_area_offset_y_residual_ != 0) {
-    BOOST_LOG_TRIVIAL(info)
-        << "top placement boundary is not on placement grid: \n"
-        << "  shrink top from " << upper_y << " to " << adjusted_upper_y
-        << "\n";
+    LOG(info) << "top placement boundary is not on placement grid: \n"
+              << "  shrink top from " << upper_y << " to " << adjusted_upper_y
+              << "\n";
   }
   upper_x = adjusted_upper_x;
   upper_y = adjusted_upper_y;
@@ -2328,15 +2297,13 @@ void Circuit::LoadTech(phydb::PhyDB* phy_db_ptr) {
   DaliExpects(phy_db_tech.GetDatabaseMicron() > 0,
               "Bad DATABASE MICRONS from PhyDB");
   SetDatabaseMicrons(phy_db_tech.GetDatabaseMicron());
-  BOOST_LOG_TRIVIAL(trace) << "  DATABASE MICRONS " << tech_.database_microns_
-                           << "\n";
+  LOG(trace) << "  DATABASE MICRONS " << tech_.database_microns_ << "\n";
   if (phy_db_tech.GetManufacturingGrid() > constants_.epsilon) {
     SetManufacturingGrid(phy_db_tech.GetManufacturingGrid());
   } else {
     SetManufacturingGrid(1.0 / tech_.database_microns_);
   }
-  BOOST_LOG_TRIVIAL(trace) << "  MANUFACTURINGGRID "
-                           << tech_.manufacturing_grid_ << "\n";
+  LOG(trace) << "  MANUFACTURINGGRID " << tech_.manufacturing_grid_ << "\n";
 
   // 2. placement grid and metal layers
   double grid_value_x = 0;
@@ -2346,18 +2313,18 @@ void Circuit::LoadTech(phydb::PhyDB* phy_db_ptr) {
   if (is_placement_grid_set) {
     SetGridValue(grid_value_x, grid_value_y);
   } else {
-    BOOST_LOG_TRIVIAL(info) << "  placement grid not set in PhyDB\n";
-    BOOST_LOG_TRIVIAL(info) << "  checking sites\n";
+    LOG(info) << "  placement grid not set in PhyDB\n";
+    LOG(info) << "  checking sites\n";
     auto& sites = phy_db_tech.GetSitesRef();
     if (!sites.empty()) {
       grid_value_x = sites[0].GetWidth();
       grid_value_y = sites[0].GetHeight();
-      BOOST_LOG_TRIVIAL(info) << "    width : " << grid_value_x << "um\n";
-      BOOST_LOG_TRIVIAL(info) << "    height: " << grid_value_y << "um\n";
+      LOG(info) << "    width : " << grid_value_x << "um\n";
+      LOG(info) << "    height: " << grid_value_y << "um\n";
       SetGridValue(grid_value_x, grid_value_y);
       SetRowHeight(grid_value_y);
     } else {
-      BOOST_LOG_TRIVIAL(info) << "  no sites found\n";
+      LOG(info) << "  no sites found\n";
     }
   }
 
@@ -2384,9 +2351,9 @@ void Circuit::LoadTech(phydb::PhyDB* phy_db_ptr) {
         min_spacing = layer.GetSpacing();
       }
       if (min_spacing <= 0) {
-        BOOST_LOG_TRIVIAL(warning)
-            << "A valid min spacing is not found for layer: " + layer_name
-            << ", use its min width instead\n";
+        LOG(warning) << "A valid min spacing is not found for layer: " +
+                            layer_name
+                     << ", use its min width instead\n";
         min_spacing = min_width;
       }
 
@@ -2559,8 +2526,8 @@ void Circuit::LoadDesign() {
 void Circuit::LoadCell(phydb::PhyDB* phy_db_ptr) {
   auto& phy_db_tech = *(phy_db_ptr->GetTechPtr());
   if (!phy_db_tech.IsWellInfoSet()) {
-    BOOST_LOG_TRIVIAL(info) << "N/P-Well layer info not found in PhyDB\n";
-    BOOST_LOG_TRIVIAL(info) << "Will come up with some fake info\n";
+    LOG(info) << "N/P-Well layer info not found in PhyDB\n";
+    LOG(info) << "Will come up with some fake info\n";
   }
 
   double same_diff_spacing = 0, any_diff_spacing = 0;
@@ -2583,8 +2550,7 @@ void Circuit::LoadCell(phydb::PhyDB* phy_db_ptr) {
     double overhang = n_well_layer->GetOverhang();
     SetNwellParams(width, spacing, op_spacing, max_plug_dist, overhang);
   } else {
-    BOOST_LOG_TRIVIAL(info)
-        << "No N-well layer info provided, creating fake info\n";
+    LOG(info) << "No N-well layer info provided, creating fake info\n";
     SetNwellParams(0.0, 0.0, 0.0, 1e8, 0.0);
   }
 
@@ -2597,8 +2563,7 @@ void Circuit::LoadCell(phydb::PhyDB* phy_db_ptr) {
     double overhang = p_well_layer->GetOverhang();
     SetPwellParams(width, spacing, op_spacing, max_plug_dist, overhang);
   } else {
-    BOOST_LOG_TRIVIAL(info)
-        << "No P-well layer info provided, creating fake info\n";
+    LOG(info) << "No P-well layer info provided, creating fake info\n";
     SetPwellParams(0.0, 0.0, 0.0, 1e8, 0.0);
   }
 
@@ -2622,10 +2587,8 @@ void Circuit::LoadCell(phydb::PhyDB* phy_db_ptr) {
                     p_rect->URX(), p_rect->URY());
       }
     } else {
-      BOOST_LOG_TRIVIAL(info)
-          << "No well info provided for MACRO: " + macro_name << "\n";
-      BOOST_LOG_TRIVIAL(info)
-          << "Creating fake well info for MACRO: " + macro_name << "\n";
+      LOG(info) << "No well info provided for MACRO: " + macro_name << "\n";
+      LOG(info) << "Creating fake well info for MACRO: " + macro_name << "\n";
       double height = macro.GetHeight();
       double width = macro.GetWidth();
       SetWellRect(macro_name, false, 0, 0, width, height / 2.0);

@@ -207,8 +207,8 @@ BlockOrient IoPin::GetOrient() const { return orient_; }
 
 void IoPin::Report() const {
   std::string net_name = (net_ptr_ == nullptr) ? "NA" : net_ptr_->Name();
-  BOOST_LOG_TRIVIAL(info) << "  I/O PIN name: " << Name() << "\n"
-                          << "    Net connected: " << net_name << "\n";
+  LOG(info) << "  I/O PIN name: " << Name() << "\n"
+            << "    Net connected: " << net_name << "\n";
 }
 
 void IoPin::SetRect(double llx, double lly, double urx, double ury) {

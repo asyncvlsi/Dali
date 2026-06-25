@@ -47,10 +47,10 @@ int main(int argc, char* argv[]) {
   Circuit circuit;
   circuit.InitializeFromPhyDB(&phy_db);
 
-  BOOST_LOG_TRIVIAL(info) << "File loading complete, time: "
-                          << double(clock() - Time) / CLOCKS_PER_SEC << " s\n";
-  BOOST_LOG_TRIVIAL(info) << "  Average white space utility: "
-                          << circuit.WhiteSpaceUsage() << "\n";
+  LOG(info) << "File loading complete, time: "
+            << double(clock() - Time) / CLOCKS_PER_SEC << " s\n";
+  LOG(info) << "  Average white space utility: " << circuit.WhiteSpaceUsage()
+            << "\n";
   circuit.ReportBriefSummary();
   // circuit.ReportBlockType();
   circuit.ReportHPWL();
@@ -67,8 +67,7 @@ int main(int argc, char* argv[]) {
   circuit.SaveDefFile(out_file_name, "", def_file_name, 1, 1, 2, 1);
 
   Time = clock() - Time;
-  BOOST_LOG_TRIVIAL(info) << "Execution time " << double(Time) / CLOCKS_PER_SEC
-                          << "s.\n";
+  LOG(info) << "Execution time " << double(Time) / CLOCKS_PER_SEC << "s.\n";
 
   return 0;
 }

@@ -58,15 +58,12 @@ void Net::AddBlkPinPair(Block* block_ptr, Pin* pin_ptr) {
     int p_minus_one = int(blk_pins_.size()) - 1;
     inv_p_ = p_minus_one > 0 ? 1.0 * weight_ / p_minus_one : 0;
   } else {
-    BOOST_LOG_TRIVIAL(info)
-        << "Pre-assigned net capacity is full: " << blk_pins_.capacity()
-        << ", cannot add more pin to this net:\n";
-    BOOST_LOG_TRIVIAL(info)
-        << "net name: " << Name() << ", net weight: " << Weight() << "\n";
+    LOG(info) << "Pre-assigned net capacity is full: " << blk_pins_.capacity()
+              << ", cannot add more pin to this net:\n";
+    LOG(info) << "net name: " << Name() << ", net weight: " << Weight() << "\n";
     for (auto& block_pin_pair : blk_pins_) {
-      BOOST_LOG_TRIVIAL(info)
-          << "\t" << " (" << block_pin_pair.BlockName() << " "
-          << block_pin_pair.PinName() << ") " << "\n";
+      LOG(info) << "\t" << " (" << block_pin_pair.BlockName() << " "
+                << block_pin_pair.PinName() << ") " << "\n";
     }
     exit(1);
   }

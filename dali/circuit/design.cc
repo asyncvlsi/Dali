@@ -221,14 +221,13 @@ void Design::ReportNetFanOutHistogram() {
     }
   }
 
-  BOOST_LOG_TRIVIAL(info) << "\n";
-  BOOST_LOG_TRIVIAL(info)
-      << "                                         Net histogram\n";
-  BOOST_LOG_TRIVIAL(info)
+  LOG(info) << "\n";
+  LOG(info) << "                                         Net histogram\n";
+  LOG(info)
       << "====================================================================="
          "============================\n";
-  BOOST_LOG_TRIVIAL(info) << "  Net         Count     Percent/%      sum HPWL  "
-                             "      ave HPWL        min HPWL        max HPWL\n";
+  LOG(info) << "  Net         Count     Percent/%      sum HPWL  "
+               "      ave HPWL        min HPWL        max HPWL\n";
   size_t buffer_length = 1024;
   for (size_t i = 0; i < sz - 1; ++i) {
     size_t lo = net_histogram_.buckets[i];
@@ -253,7 +252,7 @@ void Design::ReportNetFanOutHistogram() {
                    net_histogram_.min_hpwls[i], net_histogram_.max_hpwls[i]);
     }
     buffer.resize(written_length);
-    BOOST_LOG_TRIVIAL(info) << buffer;
+    LOG(info) << buffer;
   }
   std::string buffer(buffer_length, '\0');
   int written_length;
@@ -266,13 +265,13 @@ void Design::ReportNetFanOutHistogram() {
       net_histogram_.ave_hpwls[sz - 1], net_histogram_.min_hpwls[sz - 1],
       net_histogram_.max_hpwls[sz - 1]);
   buffer.resize(written_length);
-  BOOST_LOG_TRIVIAL(info) << buffer;
-  BOOST_LOG_TRIVIAL(info)
+  LOG(info) << buffer;
+  LOG(info)
       << "====================================================================="
          "============================\n";
-  BOOST_LOG_TRIVIAL(info) << " * HPWL unit, grid value in X: "
-                          << net_histogram_.hpwl_unit << " um\n";
-  BOOST_LOG_TRIVIAL(info) << "\n";
+  LOG(info) << " * HPWL unit, grid value in X: " << net_histogram_.hpwl_unit
+            << " um\n";
+  LOG(info) << "\n";
   // printf("%f\n", net_histogram_.tot_hpwl * 0.18);
 }
 

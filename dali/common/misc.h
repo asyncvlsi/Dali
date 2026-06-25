@@ -152,7 +152,7 @@ struct Rect {
         << "(" << rect.URX() << ", " << rect.URY() << ")";
     return ost;
   }
-  void Report() const { BOOST_LOG_TRIVIAL(info) << *this << "\n"; }
+  void Report() const { LOG(info) << *this << "\n"; }
 };
 
 typedef Rect<double> RectD;

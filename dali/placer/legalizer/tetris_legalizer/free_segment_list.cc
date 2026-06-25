@@ -44,7 +44,7 @@ void FreeSegmentList::Append(FreeSegment* segList) {
   /****push a list of free segments into the linked list with some sanity
    * check****/
   if (segList == nullptr) {
-    BOOST_LOG_TRIVIAL(info) << "push nullptr to linked list?\n";
+    LOG(info) << "push nullptr to linked list?\n";
     assert(segList != nullptr);
   } else {
     if (head_ == nullptr) {
@@ -70,7 +70,7 @@ bool FreeSegmentList::EmplaceBack(int start, int end) {
     tail_ = seg_ptr;
   } else {
     if (start < Right()) {
-      BOOST_LOG_TRIVIAL(info)
+      LOG(info)
           << "Illegal segment emplace back, Start: " << start
           << " is required to be no less than the Right End of current linked "
              "list: "
@@ -87,13 +87,12 @@ bool FreeSegmentList::EmplaceBack(int start, int end) {
 void FreeSegmentList::PushBack(FreeSegment* seg) {
   /****push a single free segment into the linked list****/
   if (seg == nullptr) {
-    BOOST_LOG_TRIVIAL(info) << "push nullptr to linked list?\n";
+    LOG(info) << "push nullptr to linked list?\n";
     assert(seg != nullptr);
   }
   if (seg->Next() != nullptr) {
-    BOOST_LOG_TRIVIAL(info)
-        << "argument has more than one nodes inside, please use method "
-           "Append() instead of PushBack\n";
+    LOG(info) << "argument has more than one nodes inside, please use method "
+                 "Append() instead of PushBack\n";
     assert(seg->Next() == nullptr);
   }
   if (Empty()) {
@@ -102,7 +101,7 @@ void FreeSegmentList::PushBack(FreeSegment* seg) {
     ++size_;
   } else {
     if (Right() > seg->Start()) {
-      BOOST_LOG_TRIVIAL(info)
+      LOG(info)
           << "Cannot push segment into list, because the Right of list is: "
           << Right()
           << " larger than the Start of segment to push: " << seg->Start()
@@ -273,7 +272,7 @@ void FreeSegmentList::UseSpace(int start, int length) {
   }
 
   if (!isSegFound) {
-    BOOST_LOG_TRIVIAL(info)
+    LOG(info)
         << "What? there are bugs in the code, the program should not reach here"
         << std::endl;
     assert(isSegFound);
@@ -288,7 +287,7 @@ bool FreeSegmentList::IsSpaceAvail(int x_loc, int width) {
    * ****/
   FreeSegment target(x_loc, x_loc + width);
   bool is_avail = false;
-  // BOOST_LOG_TRIVIAL(info)   << Head() << "\n";
+  // LOG(info)   << Head() << "\n";
   for (auto* current = Head(); current != nullptr; current = current->Next()) {
     if (current->IsContain(&target)) {
       is_avail = true;
@@ -312,23 +311,22 @@ int FreeSegmentList::MinDispLoc(int width) {
 
 void FreeSegmentList::Show() {
   if (head_ == nullptr) {
-    BOOST_LOG_TRIVIAL(info) << "Empty list, nothing to display" << std::endl;
+    LOG(info) << "Empty list, nothing to display" << std::endl;
   } else {
-    BOOST_LOG_TRIVIAL(info) << "MinWidth: " << min_width_ << "  ";
+    LOG(info) << "MinWidth: " << min_width_ << "  ";
     FreeSegment* current = head_;
     size_t count = 0;
     while (count < size_) {
-      BOOST_LOG_TRIVIAL(info)
-          << "( " << current->Start() << " " << current->End() << " )";
+      LOG(info) << "( " << current->Start() << " " << current->End() << " )";
       current = current->Next();
       if (current != nullptr) {
-        BOOST_LOG_TRIVIAL(info) << " -> ";
+        LOG(info) << " -> ";
       } else {
         break;
       }
       ++count;
     }
-    BOOST_LOG_TRIVIAL(info) << std::endl;
+    LOG(info) << std::endl;
   }
 }
 

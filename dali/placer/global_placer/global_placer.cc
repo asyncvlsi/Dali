@@ -162,12 +162,11 @@ bool GlobalPlacer::StartPlacement() {
  */
 bool GlobalPlacer::IsBlockListOrNetListEmpty() const {
   if (ckt_ptr_->Blocks().empty()) {
-    BOOST_LOG_TRIVIAL(info)
-        << "Empty block list, nothing to place! Skip global placement!\n";
+    LOG(info) << "Empty block list, nothing to place! Skip global placement!\n";
     return true;
   }
   if (ckt_ptr_->Nets().empty()) {
-    BOOST_LOG_TRIVIAL(info)
+    LOG(info)
         << "Empty net list, nothing to optimize! Skip global placement!\n";
     return true;
   }
@@ -257,8 +256,8 @@ void GlobalPlacer::PrintHpwl() const {
       snprintf(&buffer[0], buffer_size, "  iter-%-3d: %.4e  %.4e\n", cur_iter_,
                lo_hpwl, hi_hpwl);
   buffer.resize(written_length);
-  BOOST_LOG_TRIVIAL(info) << buffer;
-  BOOST_LOG_TRIVIAL(debug) << cur_iter_ << "-th iteration completed\n";
+  LOG(info) << buffer;
+  LOG(debug) << cur_iter_ << "-th iteration completed\n";
 }
 
 /****
@@ -266,15 +265,12 @@ void GlobalPlacer::PrintHpwl() const {
  */
 void GlobalPlacer::PrintEndStatement(std::string const& name_of_process,
                                      bool is_success) {
-  BOOST_LOG_TRIVIAL(debug) << "  Iterative look-ahead legalization complete\n";
-  BOOST_LOG_TRIVIAL(debug) << "  Total number of iteration: " << cur_iter_ + 1
-                           << "\n";
-  BOOST_LOG_TRIVIAL(debug) << "  Lower bound: " << optimizer_->GetHpwls()
-                           << "\n";
-  BOOST_LOG_TRIVIAL(debug) << "  Upper bound: " << legalizer_->GetHpwls()
-                           << "\n";
-  BOOST_LOG_TRIVIAL(debug) << "cg time: " << optimizer_->GetTime()
-                           << "s, lal time: " << legalizer_->GetTime() << "s\n";
+  LOG(debug) << "  Iterative look-ahead legalization complete\n";
+  LOG(debug) << "  Total number of iteration: " << cur_iter_ + 1 << "\n";
+  LOG(debug) << "  Lower bound: " << optimizer_->GetHpwls() << "\n";
+  LOG(debug) << "  Upper bound: " << legalizer_->GetHpwls() << "\n";
+  LOG(debug) << "cg time: " << optimizer_->GetTime()
+             << "s, lal time: " << legalizer_->GetTime() << "s\n";
   Placer::PrintEndStatement(name_of_process, is_success);
 }
 

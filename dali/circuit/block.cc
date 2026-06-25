@@ -128,23 +128,21 @@ int Block::CumulativeStretchLength(size_t index) {
 }
 
 void Block::Report() {
-  BOOST_LOG_TRIVIAL(info) << "  block name: " << Name() << "\n"
-                          << "    block type: " << TypePtr()->Name() << "\n"
-                          << "    width and height: " << Width() << " "
-                          << Height() << "\n"
-                          << "    lower left corner: " << llx_ << " " << lly_
-                          << "\n"
-                          << "    movable: " << IsMovable() << "\n"
-                          << "    orientation: " << OrientStr(orient_) << "\n"
-                          << "    assigned primary key: " << Id() << "\n";
+  LOG(info) << "  block name: " << Name() << "\n"
+            << "    block type: " << TypePtr()->Name() << "\n"
+            << "    width and height: " << Width() << " " << Height() << "\n"
+            << "    lower left corner: " << llx_ << " " << lly_ << "\n"
+            << "    movable: " << IsMovable() << "\n"
+            << "    orientation: " << OrientStr(orient_) << "\n"
+            << "    assigned primary key: " << Id() << "\n";
 }
 
 void Block::ReportNet() {
-  BOOST_LOG_TRIVIAL(info) << Name() << " connects to:\n";
+  LOG(info) << Name() << " connects to:\n";
   for (auto& net_num : nets_) {
-    BOOST_LOG_TRIVIAL(info) << net_num << "  ";
+    LOG(info) << net_num << "  ";
   }
-  BOOST_LOG_TRIVIAL(info) << "\n";
+  LOG(info) << "\n";
 }
 
 void Block::ExportWellToMatlabPatchRect(std::ofstream& ost) {
@@ -185,9 +183,8 @@ void Block::ExportWellToMatlabPatchRect(std::ofstream& ost) {
                    URY() - (p_well_shapes[i].LLY() + length));
       SaveMatlabPatchRegion(ost, n_rect, p_rect);
     } else {
-      BOOST_LOG_TRIVIAL(debug)
-          << "Orientation not supported " << __FILE__ << " : " << __LINE__
-          << " : " << __FUNCTION__ << "\n";
+      LOG(debug) << "Orientation not supported " << __FILE__ << " : "
+                 << __LINE__ << " : " << __FUNCTION__ << "\n";
     }
   }
 }

@@ -29,11 +29,10 @@ WellPlaceFlow::WellPlaceFlow() : GlobalPlacer() {}
 
 bool WellPlaceFlow::StartPlacement() {  // TODO: do not use this
   if (ckt_ptr_->Blocks().empty()) {
-    BOOST_LOG_TRIVIAL(info) << "Empty block list, nothing to place!\n";
+    LOG(info) << "Empty block list, nothing to place!\n";
   }
   if (ckt_ptr_->Nets().empty()) {
-    BOOST_LOG_TRIVIAL(info)
-        << "Empty net list, nothing to optimize during placement!\n";
+    LOG(info) << "Empty net list, nothing to optimize during placement!\n";
   }
 
   PrintStartStatement("well place flow");
@@ -44,13 +43,13 @@ bool WellPlaceFlow::StartPlacement() {  // TODO: do not use this
   InitializeBlockLocation();
 
   optimizer_->OptimizeHpwl();
-  // BOOST_LOG_TRIVIAL(info)   << cg_total_hpwl_ << "  " << circuit_ptr_->HPWL()
+  // LOG(info)   << cg_total_hpwl_ << "  " << circuit_ptr_->HPWL()
   // << "\n";
 
   // bool old_success = false;
   max_iter_ = 50;
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
-    BOOST_LOG_TRIVIAL(trace) << cur_iter_ << "-th iteration\n";
+    LOG(trace) << cur_iter_ << "-th iteration\n";
     legalizer_->RemoveCellOverlap();
     if (cur_iter_ > 10) {
       ExtendedTetrisLegalizer legalizer;
@@ -71,24 +70,23 @@ bool WellPlaceFlow::StartPlacement() {  // TODO: do not use this
       // well_legalizer_.GenMATLABWellTable("scw", 0);
       // if (!is_success && !old_success) {
       //   filling_rate_ = filling_rate_ * 0.99;
-      //   BOOST_LOG_TRIVIAL(info)   << "Adjusted filling rate: " <<
-      //   filling_rate_ << "\n"; BOOST_LOG_TRIVIAL(info)   << "White space
+      //   LOG(info)   << "Adjusted filling rate: " <<
+      //   filling_rate_ << "\n"; LOG(info)   << "White space
       //   usage: " << circuit_ptr_->WhiteSpaceUsage() << "\n";
       // }
       // if (!old_success) {
       //   old_success = is_success;
       // }
     }
-    BOOST_LOG_TRIVIAL(info)
-        << "It " << cur_iter_ << ": \t" << optimizer_->GetHpwls().back() << " "
-        << legalizer_->GetHpwls().back() << "\n";
+    LOG(info) << "It " << cur_iter_ << ": \t" << optimizer_->GetHpwls().back()
+              << " " << legalizer_->GetHpwls().back() << "\n";
     optimizer_->OptimizeHpwl();
   }
 
-  BOOST_LOG_TRIVIAL(info) << "\033[0;36m" << "Global Placement complete\n"
-                          << "\033[0m";
-  BOOST_LOG_TRIVIAL(info) << "(cg time: " << optimizer_->GetTime()
-                          << "s, lal time: " << legalizer_->GetTime() << "s)\n";
+  LOG(info) << "\033[0;36m" << "Global Placement complete\n"
+            << "\033[0m";
+  LOG(info) << "(cg time: " << optimizer_->GetTime()
+            << "s, lal time: " << legalizer_->GetTime() << "s)\n";
   legalizer_->Close();
   // CheckAndShift();
   UpdateMovableBlkPlacementStatus();

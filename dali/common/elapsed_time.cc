@@ -44,32 +44,32 @@ void ElapsedTime::PrintTimeElapsed(severity lvl) const {
   message << "(wall time: " << wall_time_ << "s, cpu time: " << cpu_time_
           << ")\n";
   switch (lvl) {
-    case boost::log::trivial::trace: {
-      BOOST_LOG_TRIVIAL(trace) << message.str();
+    case severity::trace: {
+      LOG(trace) << message.str();
       break;
     }
-    case boost::log::trivial::debug: {
-      BOOST_LOG_TRIVIAL(debug) << message.str();
+    case severity::debug: {
+      LOG(debug) << message.str();
       break;
     }
-    case boost::log::trivial::info: {
-      BOOST_LOG_TRIVIAL(info) << message.str();
+    case severity::info: {
+      LOG(info) << message.str();
       break;
     }
-    case boost::log::trivial::warning: {
-      BOOST_LOG_TRIVIAL(warning) << message.str();
+    case severity::warning: {
+      LOG(warning) << message.str();
       break;
     }
-    case boost::log::trivial::error: {
-      BOOST_LOG_TRIVIAL(error) << message.str();
+    case severity::error: {
+      LOG(error) << message.str();
       break;
     }
-    case boost::log::trivial::fatal: {
-      BOOST_LOG_TRIVIAL(fatal) << message.str();
+    case severity::fatal: {
+      LOG(fatal) << message.str();
       break;
     }
     default: {
-      DaliFatal("Unknown Boost severity level");
+      DaliFatal("Unknown logging severity level");
     }
   }
 }

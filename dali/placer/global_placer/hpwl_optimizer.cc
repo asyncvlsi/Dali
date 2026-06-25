@@ -408,7 +408,7 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
     if (evaluate_result < hpwl_early_stop_threshold_) {
       break;
     }
-    // BOOST_LOG_TRIVIAL(info)  <<"  %d WeightedHPWLX: %e\n", i,
+    // LOG(info)  <<"  %d WeightedHPWLX: %e\n", i,
     // evaluate_result);
     if (eval_history.size() >= 3) {
       bool is_converge = IsSeriesConverged(eval_history, 3, cg_stop_criterion);
@@ -417,13 +417,13 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
         break;
       }
       if (is_oscillate) {
-        BOOST_LOG_TRIVIAL(trace) << "oscillation detected\n";
+        LOG(trace) << "oscillation detected\n";
         break;
       }
     }
   }
-  BOOST_LOG_TRIVIAL(trace) << "      Metric optimization in X, sequence: "
-                           << eval_history << "\n";
+  LOG(trace) << "      Metric optimization in X, sequence: " << eval_history
+             << "\n";
   elapsed_time.RecordEndTime();
   tot_cg_solver_time_x += elapsed_time.GetWallTime();
 
@@ -466,7 +466,7 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
     if (evaluate_result < hpwl_early_stop_threshold_) {
       break;
     }
-    // BOOST_LOG_TRIVIAL(info)  <<"  %d WeightedHPWLY: %e\n", i,
+    // LOG(info)  <<"  %d WeightedHPWLY: %e\n", i,
     // evaluate_result);
     if (eval_history.size() >= 3) {
       bool is_converge = IsSeriesConverged(eval_history, 3, cg_stop_criterion);
@@ -475,13 +475,13 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
         break;
       }
       if (is_oscillate) {
-        BOOST_LOG_TRIVIAL(trace) << "oscillation detected\n";
+        LOG(trace) << "oscillation detected\n";
         break;
       }
     }
   }
-  BOOST_LOG_TRIVIAL(trace) << "      Metric optimization in Y, sequence: "
-                           << eval_history << "\n";
+  LOG(trace) << "      Metric optimization in Y, sequence: " << eval_history
+             << "\n";
   elapsed_time.RecordEndTime();
   tot_cg_solver_time_y += elapsed_time.GetWallTime();
 
@@ -650,10 +650,9 @@ void B2BHpwlOptimizer::BackUpBlockLocation() {
 
 void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(int num_threads) {
   Eigen::setNbThreads(num_threads);
-  BOOST_LOG_TRIVIAL(trace) << "threads in branch x: " << num_threads
-                           << " actual number of threads: "
-                           << omp_get_max_threads()
-                           << " Eigen threads: " << Eigen::nbThreads() << "\n";
+  LOG(trace) << "threads in branch x: " << num_threads
+             << " actual number of threads: " << omp_get_max_threads()
+             << " Eigen threads: " << Eigen::nbThreads() << "\n";
 
   std::vector<Block>& block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
@@ -670,7 +669,7 @@ void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(int num_threads) {
   int b2b_update_it_x = 0;
   for (b2b_update_it_x = 0; b2b_update_it_x < b2b_update_max_iteration_;
        ++b2b_update_it_x) {
-    BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
+    LOG(trace) << "    Iterative net model update\n";
     BuildProblemWithAnchorX();
     double evaluate_result = OptimizeQuadraticMetricX(cg_stop_criterion_);
     eval_history_x.push_back(evaluate_result);
@@ -685,13 +684,13 @@ void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(int num_threads) {
         break;
       }
       if (is_oscillate) {
-        BOOST_LOG_TRIVIAL(trace) << "Net model update oscillation detected X\n";
+        LOG(trace) << "Net model update oscillation detected X\n";
         break;
       }
     }
   }
-  BOOST_LOG_TRIVIAL(trace) << "  Optimization summary X, iterations x: "
-                           << b2b_update_it_x << ", " << eval_history_x << "\n";
+  LOG(trace) << "  Optimization summary X, iterations x: " << b2b_update_it_x
+             << ", " << eval_history_x << "\n";
   DaliExpects(
       !eval_history_x.empty(),
       "Cannot return a valid value because the result is not evaluated!");
@@ -699,8 +698,8 @@ void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(int num_threads) {
 }
 
 void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(int num_threads) {
-  BOOST_LOG_TRIVIAL(trace) << "threads in branch y: " << omp_get_max_threads()
-                           << " Eigen threads: " << Eigen::nbThreads() << "\n";
+  LOG(trace) << "threads in branch y: " << omp_get_max_threads()
+             << " Eigen threads: " << Eigen::nbThreads() << "\n";
 
   std::vector<Block>& block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
@@ -717,7 +716,7 @@ void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(int num_threads) {
   int b2b_update_it_y = 0;
   for (b2b_update_it_y = 0; b2b_update_it_y < b2b_update_max_iteration_;
        ++b2b_update_it_y) {
-    BOOST_LOG_TRIVIAL(trace) << "    Iterative net model update\n";
+    LOG(trace) << "    Iterative net model update\n";
     BuildProblemWithAnchorY();
     double evaluate_result = OptimizeQuadraticMetricY(cg_stop_criterion_);
     eval_history_y.push_back(evaluate_result);
@@ -732,13 +731,13 @@ void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(int num_threads) {
         break;
       }
       if (is_oscillate) {
-        BOOST_LOG_TRIVIAL(trace) << "Net model update oscillation detected Y\n";
+        LOG(trace) << "Net model update oscillation detected Y\n";
         break;
       }
     }
   }
-  BOOST_LOG_TRIVIAL(trace) << "  Optimization summary Y, iterations y: "
-                           << b2b_update_it_y << ", " << eval_history_y << "\n";
+  LOG(trace) << "  Optimization summary Y, iterations y: " << b2b_update_it_y
+             << ", " << eval_history_y << "\n";
   DaliExpects(
       !eval_history_y.empty(),
       "Cannot return a valid value because the result is not evaluated!");
@@ -757,8 +756,8 @@ double B2BHpwlOptimizer::OptimizeHpwl() {
   UpdateAnchorLocation();
   UpdateAnchorAlpha();
   // UpdateAnchorNetWeight();
-  BOOST_LOG_TRIVIAL(trace) << "alpha: " << alpha << "\n";
-  BOOST_LOG_TRIVIAL(trace) << "OpenMP threads, " << num_threads_ << "\n";
+  LOG(trace) << "alpha: " << alpha << "\n";
+  LOG(trace) << "OpenMP threads, " << num_threads_ << "\n";
 
 #pragma omp parallel num_threads(std::min(num_threads_, 2)) default(none) \
     shared(avail_threads_num)
@@ -773,7 +772,7 @@ double B2BHpwlOptimizer::OptimizeHpwl() {
 
   PullBlockBackToRegion();
 
-  BOOST_LOG_TRIVIAL(trace) << "Quadratic Placement With Anchor Complete\n";
+  LOG(trace) << "Quadratic Placement With Anchor Complete\n";
 
   elapsed_time.RecordEndTime();
   tot_cg_time += elapsed_time.GetWallTime();
@@ -790,31 +789,26 @@ double B2BHpwlOptimizer::OptimizeHpwl() {
 double B2BHpwlOptimizer::GetTime() { return tot_cg_time; }
 
 void B2BHpwlOptimizer::Close() {
-  BOOST_LOG_TRIVIAL(debug) << "total triplets time: " << tot_triplets_time_x
-                           << "s, " << tot_triplets_time_y << "s, "
-                           << tot_triplets_time_x + tot_triplets_time_y
-                           << "s\n";
-  BOOST_LOG_TRIVIAL(debug) << "total matrix from triplets time: "
-                           << tot_matrix_from_triplets_x << "s, "
-                           << tot_matrix_from_triplets_y << "s, "
-                           << tot_matrix_from_triplets_x +
-                                  tot_matrix_from_triplets_y
-                           << "s\n";
-  BOOST_LOG_TRIVIAL(debug) << "total cg solver time: " << tot_cg_solver_time_x
-                           << "s, " << tot_cg_solver_time_y << "s, "
-                           << tot_cg_solver_time_x + tot_cg_solver_time_y
-                           << "s\n";
-  BOOST_LOG_TRIVIAL(debug) << "total loc update time: " << tot_loc_update_time_x
-                           << "s, " << tot_loc_update_time_y << "s, "
-                           << tot_loc_update_time_x + tot_loc_update_time_y
-                           << "s\n";
+  LOG(debug) << "total triplets time: " << tot_triplets_time_x << "s, "
+             << tot_triplets_time_y << "s, "
+             << tot_triplets_time_x + tot_triplets_time_y << "s\n";
+  LOG(debug) << "total matrix from triplets time: "
+             << tot_matrix_from_triplets_x << "s, "
+             << tot_matrix_from_triplets_y << "s, "
+             << tot_matrix_from_triplets_x + tot_matrix_from_triplets_y
+             << "s\n";
+  LOG(debug) << "total cg solver time: " << tot_cg_solver_time_x << "s, "
+             << tot_cg_solver_time_y << "s, "
+             << tot_cg_solver_time_x + tot_cg_solver_time_y << "s\n";
+  LOG(debug) << "total loc update time: " << tot_loc_update_time_x << "s, "
+             << tot_loc_update_time_y << "s, "
+             << tot_loc_update_time_x + tot_loc_update_time_y << "s\n";
   double tot_time_x = tot_triplets_time_x + tot_matrix_from_triplets_x +
                       tot_cg_solver_time_x + tot_loc_update_time_x;
   double tot_time_y = tot_triplets_time_y + tot_matrix_from_triplets_y +
                       tot_cg_solver_time_y + tot_loc_update_time_y;
-  BOOST_LOG_TRIVIAL(debug) << "total x/y time: " << tot_time_x << "s, "
-                           << tot_time_y << "s, " << tot_time_x + tot_time_y
-                           << "s\n";
+  LOG(debug) << "total x/y time: " << tot_time_x << "s, " << tot_time_y << "s, "
+             << tot_time_x + tot_time_y << "s\n";
 }
 
 void StarHpwlOptimizer::BuildProblemX() {
@@ -1152,7 +1146,7 @@ void StarHpwlHpwlOptimizer::InitializeDriverLoadPairs() {
   for (auto& blk_pair : blk_pair_net_list_) {
     int num0 = blk_pair.blk_num0;
     int num1 = blk_pair.blk_num1;
-    // BOOST_LOG_TRIVIAL(info)   << num0 << " " << num1 << "\n";
+    // LOG(info)   << num0 << " " << num1 << "\n";
     pair_connect[num0].push_back(&blk_pair);
     pair_connect[num1].push_back(&blk_pair);
   }
@@ -1211,7 +1205,7 @@ void StarHpwlHpwlOptimizer::InitializeDriverLoadPairs() {
       key.first = std::max(row, col);
       key.second = std::min(row, col);
       if (blk_pair_map_.find(key) == blk_pair_map_.end()) {
-        BOOST_LOG_TRIVIAL(info) << row << " " << col << std::endl;
+        LOG(info) << row << " " << col << std::endl;
         DaliExpects(false,
                     "Cannot find block pair in the database, something wrong "
                     "happens\n");
@@ -1252,7 +1246,7 @@ void StarHpwlHpwlOptimizer::InitializeDriverLoadPairs() {
       key.first = std::max(row, col);
       key.second = std::min(row, col);
       if (blk_pair_map_.find(key) == blk_pair_map_.end()) {
-        BOOST_LOG_TRIVIAL(info) << row << " " << col << std::endl;
+        LOG(info) << row << " " << col << std::endl;
         DaliExpects(false,
                     "Cannot find block pair in the database, something wrong "
                     "happens\n");
@@ -1669,7 +1663,7 @@ double StarHpwlHpwlOptimizer::OptimizeQuadraticMetricX(
     }
     double evaluate_result = ckt_ptr_->WeightedHPWLX();
     eval_history.push_back(evaluate_result);
-    // BOOST_LOG_TRIVIAL(info)  <<"  %d WeightedHPWLX: %e\n", i,
+    // LOG(info)  <<"  %d WeightedHPWLX: %e\n", i,
     // evaluate_result);
     if (eval_history.size() >= 3) {
       bool is_converge = IsSeriesConverged(eval_history, 3, cg_stop_criterion);
@@ -1678,13 +1672,13 @@ double StarHpwlHpwlOptimizer::OptimizeQuadraticMetricX(
         break;
       }
       if (is_oscillate) {
-        BOOST_LOG_TRIVIAL(trace) << "oscillation detected\n";
+        LOG(trace) << "oscillation detected\n";
         break;
       }
     }
   }
-  BOOST_LOG_TRIVIAL(trace) << "      Metric optimization in X, sequence: "
-                           << eval_history << "\n";
+  LOG(trace) << "      Metric optimization in X, sequence: " << eval_history
+             << "\n";
   elapsed_time.RecordEndTime();
   tot_cg_solver_time_x += elapsed_time.GetWallTime();
 
@@ -1719,7 +1713,7 @@ double StarHpwlHpwlOptimizer::OptimizeQuadraticMetricY(
     }
     double evaluate_result = ckt_ptr_->WeightedHPWLY();
     eval_history.push_back(evaluate_result);
-    // BOOST_LOG_TRIVIAL(info)  <<"  %d WeightedHPWLY: %e\n", i,
+    // LOG(info)  <<"  %d WeightedHPWLY: %e\n", i,
     // evaluate_result);
     if (eval_history.size() >= 3) {
       bool is_converge = IsSeriesConverged(eval_history, 3, cg_stop_criterion);
@@ -1728,13 +1722,13 @@ double StarHpwlHpwlOptimizer::OptimizeQuadraticMetricY(
         break;
       }
       if (is_oscillate) {
-        BOOST_LOG_TRIVIAL(trace) << "oscillation detected\n";
+        LOG(trace) << "oscillation detected\n";
         break;
       }
     }
   }
-  BOOST_LOG_TRIVIAL(trace) << "      Metric optimization in Y, sequence: "
-                           << eval_history << "\n";
+  LOG(trace) << "      Metric optimization in Y, sequence: " << eval_history
+             << "\n";
   elapsed_time.RecordEndTime();
   tot_cg_solver_time_y += elapsed_time.GetWallTime();
 

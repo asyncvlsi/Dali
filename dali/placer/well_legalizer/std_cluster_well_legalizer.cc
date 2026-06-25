@@ -65,42 +65,36 @@ void StdClusterWellLegalizer::FetchNpWellParams() {
   well_tap_cell_ptr_ = &(ckt_ptr_->tech().BlockTypes()[well_tap_cell_type_id]);
   well_tap_cell_width_ = well_tap_cell_ptr_->Width();
 
-  BOOST_LOG_TRIVIAL(info) << "  Well max plug distance: "
-                          << n_well_layer.MaxPlugDist() << "um, "
-                          << max_unplug_length_ << " \n";
-  BOOST_LOG_TRIVIAL(info) << "  GridValueX: " << ckt_ptr_->GridValueX()
-                          << " um\n";
-  BOOST_LOG_TRIVIAL(info) << "  Well spacing: " << n_well_layer.Spacing()
-                          << "um, " << well_spacing_ << "\n";
-  BOOST_LOG_TRIVIAL(info) << "  Well tap cell width: " << well_tap_cell_width_
-                          << "\n";
+  LOG(info) << "  Well max plug distance: " << n_well_layer.MaxPlugDist()
+            << "um, " << max_unplug_length_ << " \n";
+  LOG(info) << "  GridValueX: " << ckt_ptr_->GridValueX() << " um\n";
+  LOG(info) << "  Well spacing: " << n_well_layer.Spacing() << "um, "
+            << well_spacing_ << "\n";
+  LOG(info) << "  Well tap cell width: " << well_tap_cell_width_ << "\n";
 
   if (enable_end_cap_cell_) {
     pre_end_cap_min_width_ = ckt_ptr_->tech().PreEndCapMinWidth();
-    BOOST_LOG_TRIVIAL(info)
-        << "  pre_end_cap_min_width: " << pre_end_cap_min_width_ << "\n";
+    LOG(info) << "  pre_end_cap_min_width: " << pre_end_cap_min_width_ << "\n";
 
     pre_end_cap_min_p_height_ = ckt_ptr_->tech().PreEndCapMinPHeight();
-    BOOST_LOG_TRIVIAL(info)
-        << "  pre_end_cap_min_p_height: " << pre_end_cap_min_p_height_ << "\n";
+    LOG(info) << "  pre_end_cap_min_p_height: " << pre_end_cap_min_p_height_
+              << "\n";
 
     pre_end_cap_min_n_height_ = ckt_ptr_->tech().PreEndCapMinNHeight();
-    BOOST_LOG_TRIVIAL(info)
-        << "  pre_end_cap_min_n_height: " << pre_end_cap_min_n_height_ << "\n";
+    LOG(info) << "  pre_end_cap_min_n_height: " << pre_end_cap_min_n_height_
+              << "\n";
 
     post_end_cap_min_width_ = ckt_ptr_->tech().PostEndCapMinWidth();
-    BOOST_LOG_TRIVIAL(info)
-        << "  post_end_cap_min_width: " << post_end_cap_min_width_ << "\n";
+    LOG(info) << "  post_end_cap_min_width: " << post_end_cap_min_width_
+              << "\n";
 
     post_end_cap_min_p_height_ = ckt_ptr_->tech().PostEndCapMinPHeight();
-    BOOST_LOG_TRIVIAL(info)
-        << "  post_end_cap_min_p_height: " << post_end_cap_min_p_height_
-        << "\n";
+    LOG(info) << "  post_end_cap_min_p_height: " << post_end_cap_min_p_height_
+              << "\n";
 
     post_end_cap_min_n_height_ = ckt_ptr_->tech().PostEndCapMinNHeight();
-    BOOST_LOG_TRIVIAL(info)
-        << "  post_end_cap_min_n_height: " << post_end_cap_min_n_height_
-        << "\n";
+    LOG(info) << "  post_end_cap_min_n_height: " << post_end_cap_min_n_height_
+              << "\n";
   }
 
   tap_cell_p_height_ = well_tap_cell_ptr_->Pheight();
@@ -121,8 +115,7 @@ void StdClusterWellLegalizer::SaveInitialBlockLocation() {
 void StdClusterWellLegalizer::InitializeWellLegalizer(int cluster_width) {
   if (disable_welltap_) {
     num_of_tap_cell_ = 0;
-    BOOST_LOG_TRIVIAL(info)
-        << "set number of tap cells to 0, since well tap is disabled\n";
+    LOG(info) << "set number of tap cells to 0, since well tap is disabled\n";
   }
 
   CheckWellStatus();
@@ -420,11 +413,11 @@ bool StdClusterWellLegalizer::StripeLegalizationTopDown(Stripe& stripe) {
     gridded_row.UpdateBlockLocY();
   }
 
-  /*BOOST_LOG_TRIVIAL(info)   << "Reverse clustering: ";
+  /*LOG(info)   << "Reverse clustering: ";
   if (stripe.contour_ >= RegionLLY()) {
-    BOOST_LOG_TRIVIAL(info)   << "success\n";
+    LOG(info)   << "success\n";
   } else {
-    BOOST_LOG_TRIVIAL(info)   << "fail\n";
+    LOG(info)   << "fail\n";
   }*/
 
   return stripe.HasNoRowsSpillingOut();
@@ -478,11 +471,11 @@ bool StdClusterWellLegalizer::StripeLegalizationTopDownCompact(Stripe& stripe) {
     cluster.UpdateBlockLocY();
   }
 
-  /*BOOST_LOG_TRIVIAL(info)   << "Reverse clustering: ";
+  /*LOG(info)   << "Reverse clustering: ";
   if (stripe.contour_ >= RegionLLY()) {
-    BOOST_LOG_TRIVIAL(info)   << "success\n";
+    LOG(info)   << "success\n";
   } else {
-    BOOST_LOG_TRIVIAL(info)   << "fail\n";
+    LOG(info)   << "fail\n";
   }*/
 
   return stripe.contour_ >= RegionBottom();
@@ -558,9 +551,9 @@ bool StdClusterWellLegalizer::BlockClusteringLoose() {
       }
       res = res && is_success;
       /*if (is_success) {
-        BOOST_LOG_TRIVIAL(info)  <<"stripe legalization success, %d\n", i);
+        LOG(info)  <<"stripe legalization success, %d\n", i);
       } else {
-        BOOST_LOG_TRIVIAL(info)  <<"stripe legalization fail, %d\n", i);
+        LOG(info)  <<"stripe legalization fail, %d\n", i);
       }*/
 
       for (auto& row : stripe.gridded_rows_) {
@@ -627,7 +620,7 @@ bool StdClusterWellLegalizer::TrialClusterLegalization(Stripe& stripe) {
     cluster_list[i] = &stripe.gridded_rows_[i];
   }
 
-  // BOOST_LOG_TRIVIAL(info)   << "used height/RegionHeight(): " <<
+  // LOG(info)   << "used height/RegionHeight(): " <<
   // col.used_height_ / (double) RegionHeight() << "\n";
   if (stripe.used_height_ <= RegionHeight()) {
     if (stripe.is_bottom_up_) {
@@ -725,7 +718,7 @@ double StdClusterWellLegalizer::WireLengthCost(GriddedRow* cluster, int l,
 void StdClusterWellLegalizer::FindBestLocalOrder(
     std::vector<Block*>& res, double& cost, GriddedRow* cluster, int cur, int l,
     int r, int left_bound, int right_bound, int gap, int range) {
-  // BOOST_LOG_TRIVIAL(info)  <<"l : %d, r: %d\n", l, r);
+  // LOG(info)  <<"l : %d, r: %d\n", l, r);
   if (cur == r) {
     cluster->Blocks()[l]->SetLLX(left_bound);
     cluster->Blocks()[r]->SetURX(right_bound);
@@ -840,7 +833,7 @@ void StdClusterWellLegalizer::LocalReorderAllClusters() {
 
 /*
 void StdClusterWellLegalizer::SingleSegmentClusteringOptimization() {
-  BOOST_LOG_TRIVIAL(info) << "Start single segment clustering\n";
+  LOG(info) << "Start single segment clustering\n";
 
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
@@ -883,7 +876,7 @@ void StdClusterWellLegalizer::SingleSegmentClusteringOptimization() {
             }
           }
 
-          //BOOST_LOG_TRIVIAL(info)   << is_overlap << "\n";
+          //LOG(info)   << is_overlap << "\n";
 
         } while (is_overlap);
 
@@ -955,8 +948,8 @@ void StdClusterWellLegalizer::InsertWellTap() {
   }
 
   ckt_ptr_->design().WellTapCellCollection().Freeze();
-  BOOST_LOG_TRIVIAL(info) << "Insertion complete: " << tot_tap_cell_num
-                          << " well tap cell created\n";
+  LOG(info) << "Insertion complete: " << tot_tap_cell_num
+            << " well tap cell created\n";
 }
 
 /**
@@ -1071,8 +1064,8 @@ void StdClusterWellLegalizer::InsertEndCapCells() {
   }
 
   ckt_ptr_->design().EndCapCellCollection().Freeze();
-  BOOST_LOG_TRIVIAL(info) << "Insertion complete: " << total_num_end_cap_cells
-                          << " pre- and post- end cap cells created\n";
+  LOG(info) << "Insertion complete: " << total_num_end_cap_cells
+            << " pre- and post- end cap cells created\n";
 }
 
 void StdClusterWellLegalizer::ClearCachedData() {
@@ -1101,13 +1094,13 @@ bool StdClusterWellLegalizer::WellLegalize() {
   ReportHPWL();
 
   if (is_success) {
-    BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
-                            << "Standard Cluster Well Legalization complete!\n"
-                            << "\033[0m";
+    LOG(info) << "\033[0;36m"
+              << "Standard Cluster Well Legalization complete!\n"
+              << "\033[0m";
   } else {
-    BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
-                            << "Standard Cluster Well Legalization fail!\n"
-                            << "\033[0m";
+    LOG(info) << "\033[0;36m"
+              << "Standard Cluster Well Legalization fail!\n"
+              << "\033[0m";
   }
 
   return is_success;
@@ -1120,7 +1113,7 @@ bool StdClusterWellLegalizer::StartPlacement() {
 
   bool is_success = true;
   InitializeWellLegalizer();
-  BOOST_LOG_TRIVIAL(info) << "Form block clustering\n";
+  LOG(info) << "Form block clustering\n";
   // BlockClustering();
   // is_success = BlockClusteringCompact();
   is_success = BlockClusteringLoose();
@@ -1129,21 +1122,21 @@ bool StdClusterWellLegalizer::StartPlacement() {
   // GenMatlabClusterTable("clu_result");
 
   if (disable_cell_flip_) {
-    BOOST_LOG_TRIVIAL(info) << "Skip flipping cluster orientation\n";
+    LOG(info) << "Skip flipping cluster orientation\n";
   } else {
-    BOOST_LOG_TRIVIAL(info) << "Flip cluster orientation\n";
+    LOG(info) << "Flip cluster orientation\n";
     UpdateClusterOrient();
     ReportHPWL();
     // circuit_ptr_->GenMATLABWellTable("ori", false);
     // GenMatlabClusterTable("ori_result");
   }
 
-  BOOST_LOG_TRIVIAL(info) << "Perform local reordering\n";
+  LOG(info) << "Perform local reordering\n";
   for (int i = 0; i < 6; ++i) {
-    BOOST_LOG_TRIVIAL(info) << "reorder iteration: " << i << "\n";
+    LOG(info) << "reorder iteration: " << i << "\n";
     LocalReorderAllClusters();
     ReportHPWL();
-    // BOOST_LOG_TRIVIAL(info) << "optimization: " << i;
+    // LOG(info) << "optimization: " << i;
     // SingleSegmentClusteringOptimization();
     // ReportHPWL();
   }
@@ -1151,20 +1144,20 @@ bool StdClusterWellLegalizer::StartPlacement() {
   // GenMatlabClusterTable("lop_result");
 
   if (disable_welltap_) {
-    BOOST_LOG_TRIVIAL(info) << "Skip inserting well tap cells\n";
+    LOG(info) << "Skip inserting well tap cells\n";
   } else {
-    BOOST_LOG_TRIVIAL(info) << "Insert well tap cells\n";
+    LOG(info) << "Insert well tap cells\n";
     InsertWellTap();
     // circuit_ptr_->GenMATLABWellTable("wtc", false);
     // GenMatlabClusterTable("wtc_result");
   }
 
   if (enable_end_cap_cell_) {
-    BOOST_LOG_TRIVIAL(info) << "Create end cap cells\n";
+    LOG(info) << "Create end cap cells\n";
     CreateEndCapCellTypes();
     InsertEndCapCells();
   } else {
-    BOOST_LOG_TRIVIAL(info) << "Skip creating end cap cells\n";
+    LOG(info) << "Skip creating end cap cells\n";
   }
 
   PrintEndStatement("Standard Cluster Well Legalization", is_success);
@@ -1211,24 +1204,20 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
     }
   }
   double factor = ckt_ptr_->GridValueX() * ckt_ptr_->GridValueY();
-  BOOST_LOG_TRIVIAL(info) << "Total placement area: "
-                          << (RegionWidth() * RegionHeight()) * factor
-                          << " um^2\n";
-  BOOST_LOG_TRIVIAL(info) << "Total block area: "
-                          << ckt_ptr_->TotBlkArea() * factor << " ("
-                          << ckt_ptr_->TotBlkArea() / (double)RegionWidth() /
-                                 (double)RegionHeight()
-                          << ") um^2\n";
-  BOOST_LOG_TRIVIAL(info) << "Total effective block area: "
-                          << tot_eff_blk_area * factor << " ("
-                          << tot_eff_blk_area / (double)RegionWidth() /
-                                 (double)RegionHeight()
-                          << ") um^2\n";
-  BOOST_LOG_TRIVIAL(info) << "Total standard block area (lower bound):"
-                          << tot_std_blk_area * factor << " ("
-                          << tot_std_blk_area / (double)RegionWidth() /
-                                 (double)RegionHeight()
-                          << ") um^2\n";
+  LOG(info) << "Total placement area: "
+            << (RegionWidth() * RegionHeight()) * factor << " um^2\n";
+  LOG(info) << "Total block area: " << ckt_ptr_->TotBlkArea() * factor << " ("
+            << ckt_ptr_->TotBlkArea() / (double)RegionWidth() /
+                   (double)RegionHeight()
+            << ") um^2\n";
+  LOG(info) << "Total effective block area: " << tot_eff_blk_area * factor
+            << " ("
+            << tot_eff_blk_area / (double)RegionWidth() / (double)RegionHeight()
+            << ") um^2\n";
+  LOG(info) << "Total standard block area (lower bound):"
+            << tot_std_blk_area * factor << " ("
+            << tot_std_blk_area / (double)RegionWidth() / (double)RegionHeight()
+            << ") um^2\n";
 }
 
 void StdClusterWellLegalizer::GenMatlabClusterTable(
@@ -1387,8 +1376,7 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const& name_of_file) {
   std::string NP_name = "nplus";
   std::string PP_name = "pplus";
 
-  BOOST_LOG_TRIVIAL(info) << "Writing PP and NP rect file: " << name_of_file
-                          << "\n";
+  LOG(info) << "Writing PP and NP rect file: " << name_of_file << "\n";
 
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
@@ -1514,12 +1502,12 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const& name_of_file) {
 
 void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB* phydb_ptr) {
   if (disable_welltap_) {
-    BOOST_LOG_TRIVIAL(info) << "Skip export Pplus/Nplus fillings to PhyDB "
-                               "since well tap is disabled\n";
+    LOG(info) << "Skip export Pplus/Nplus fillings to PhyDB "
+                 "since well tap is disabled\n";
     return;
   }
   DaliExpects(phydb_ptr != nullptr, "Cannot export plus layer to a nullptr");
-  BOOST_LOG_TRIVIAL(info) << "Export Pplus/Nplus fillings to PhyDB\n";
+  LOG(info) << "Export Pplus/Nplus fillings to PhyDB\n";
   std::string NP_name = "nplus";
   std::string PP_name = "pplus";
 
@@ -1667,18 +1655,15 @@ void StdClusterWellLegalizer::EmitWellRect(std::string const& name_of_file,
   // emit rect file
   switch (well_emit_mode) {
     case 0: {
-      BOOST_LOG_TRIVIAL(info)
-          << "Writing N/P-well rect file: " << name_of_file << "\n";
+      LOG(info) << "Writing N/P-well rect file: " << name_of_file << "\n";
       break;
     }
     case 1: {
-      BOOST_LOG_TRIVIAL(info)
-          << "Writing N-well rect file: " << name_of_file << "\n";
+      LOG(info) << "Writing N-well rect file: " << name_of_file << "\n";
       break;
     }
     case 2: {
-      BOOST_LOG_TRIVIAL(info)
-          << "Writing P-well rect file: " << name_of_file << "\n";
+      LOG(info) << "Writing P-well rect file: " << name_of_file << "\n";
       break;
     }
     default: {
@@ -1755,19 +1740,18 @@ void StdClusterWellLegalizer::EmitWellRect(std::string const& name_of_file,
 void StdClusterWellLegalizer::ExportWellToPhyDB(phydb::PhyDB* phydb_ptr,
                                                 int well_emit_mode) {
   if (disable_welltap_) {
-    BOOST_LOG_TRIVIAL(info)
-        << "Skip export wells to PhyDB since well tap is disabled\n";
+    LOG(info) << "Skip export wells to PhyDB since well tap is disabled\n";
     return;
   }
   switch (well_emit_mode) {
     case 0:
-      BOOST_LOG_TRIVIAL(info) << "Export N/P wells to PhyDB\n";
+      LOG(info) << "Export N/P wells to PhyDB\n";
       break;
     case 1:
-      BOOST_LOG_TRIVIAL(info) << "Export N wells to PhyDB\n";
+      LOG(info) << "Export N wells to PhyDB\n";
       break;
     case 2:
-      BOOST_LOG_TRIVIAL(info) << "Export P wells tp PhyDB\n";
+      LOG(info) << "Export P wells tp PhyDB\n";
       break;
     default:
       DaliExpects(false,
@@ -1829,8 +1813,7 @@ void StdClusterWellLegalizer::ExportWellToPhyDB(phydb::PhyDB* phydb_ptr,
  * Emits a rect file for power routing
  * ****/
 void StdClusterWellLegalizer::EmitClusterRect(std::string const& name_of_file) {
-  BOOST_LOG_TRIVIAL(info) << "Writing cluster rect file: " << name_of_file
-                          << "\n";
+  LOG(info) << "Writing cluster rect file: " << name_of_file << "\n";
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 

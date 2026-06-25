@@ -20,24 +20,100 @@
  ******************************************************************************/
 #include "logging.h"
 
-#include <boost/log/core.hpp>
-#include <boost/log/expressions.hpp>
-#include <boost/log/utility/setup/common_attributes.hpp>
-#include <boost/log/utility/setup/console.hpp>
-#include <boost/log/utility/setup/file.hpp>
+#include <chrono>
+#include <ctime>
 #include <filesystem>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <mutex>
+#include <sstream>
+#include <string>
+#include <thread>
 
 namespace dali {
+namespace {
 
-namespace keywords = boost::log::keywords;
-namespace sink = boost::log::sinks;
+std::ofstream g_log_file;
+std::mutex g_log_mutex;
+severity g_min_severity = severity::info;
+bool g_disable_log_prefix = false;
 
-using FileSink = sink::synchronous_sink<sink::text_file_backend>;
-boost::shared_ptr<FileSink> g_file_sink = nullptr;
+bool ShouldLog(severity level) {
+  return static_cast<int>(level) >= static_cast<int>(g_min_severity);
+}
 
-using ConsoleSink =
-    sink::synchronous_sink<sink::basic_text_ostream_backend<char>>;
-boost::shared_ptr<ConsoleSink> g_console_sink = nullptr;
+std::string FindAvailableLogFileName() {
+  constexpr int kUpperLimit = 2048;
+  for (int i = 0; i < kUpperLimit; ++i) {
+    std::string file_name = "dali" + std::to_string(i) + ".log";
+    if (!std::filesystem::exists(file_name)) {
+      return file_name;
+    }
+  }
+  return "dali_out_of_bounds.log";
+}
+
+std::string CurrentTimestamp() {
+  auto now = std::chrono::system_clock::now();
+  std::time_t current_time = std::chrono::system_clock::to_time_t(now);
+  std::tm local_time{};
+  localtime_r(&current_time, &local_time);
+
+  std::ostringstream timestamp;
+  timestamp << std::put_time(&local_time, "%Y-%m-%d %H:%M:%S");
+  return timestamp.str();
+}
+
+std::string LogPrefix(severity level) {
+  std::ostringstream prefix;
+  prefix << "[" << CurrentTimestamp() << "] [" << std::this_thread::get_id()
+         << "] [" << SeverityName(level) << "] ";
+  return prefix.str();
+}
+
+}  // namespace
+
+const char* SeverityName(severity level) {
+  switch (level) {
+    case severity::trace:
+      return "trace";
+    case severity::debug:
+      return "debug";
+    case severity::info:
+      return "info";
+    case severity::warning:
+      return "warning";
+    case severity::error:
+      return "error";
+    case severity::fatal:
+      return "fatal";
+  }
+  return "unknown";
+}
+
+LogMessage::LogMessage(severity level) : level_(level) {}
+
+LogMessage::~LogMessage() {
+  if (!ShouldLog(level_)) {
+    return;
+  }
+
+  std::lock_guard<std::mutex> lock(g_log_mutex);
+  const std::string message = stream_.str();
+  std::cout << message;
+  std::cout.flush();
+
+  if (g_log_file.is_open()) {
+    if (!g_disable_log_prefix) {
+      g_log_file << LogPrefix(level_);
+    }
+    g_log_file << message;
+    g_log_file.flush();
+  }
+}
+
+std::ostream& LogMessage::Stream() { return stream_; }
 
 severity IntToLoggingLevel(int level) {
   switch (level) {
@@ -80,63 +156,23 @@ severity StrToLoggingLevel(const std::string& severity_level_str) {
 
 void InitLogging(const std::string& log_file_name, severity severity_level,
                  bool disable_log_prefix) {
-  // in case the logging system has been initialized, we need to close it first
   CloseLogging();
 
-  // determine the log file name
-  std::string file_name = log_file_name;
-  if (file_name.empty()) {
-    std::string base_name = "dali";
-    std::string extension = ".log";
-    int upper_limits = 2048;
-    for (int i = 0; i < upper_limits; ++i) {
-      file_name += base_name;
-      file_name += std::to_string(i);
-      file_name += extension;
-      if (!std::filesystem::exists(file_name)) {
-        break;
-      }
-      file_name.clear();
-    }
-    if (file_name.empty()) {
-      file_name = "dali_out_of_bounds.log";
-    }
+  g_min_severity = severity_level;
+  g_disable_log_prefix = disable_log_prefix;
+
+  const std::string file_name =
+      log_file_name.empty() ? FindAvailableLogFileName() : log_file_name;
+  g_log_file.open(file_name, std::ios::out);
+  if (!g_log_file.is_open()) {
+    std::cerr << "Failed to open log file: " << file_name << "\n";
   }
-
-  // add a file sink
-  if (disable_log_prefix) {
-    g_file_sink = boost::log::add_file_log(keywords::file_name = file_name,
-                                           keywords::format = "%Message%");
-  } else {
-    g_file_sink = boost::log::add_file_log(
-        keywords::file_name = file_name,
-        keywords::format = "[%TimeStamp%] [%ThreadID%] [%Severity%] %Message%");
-  }
-  g_file_sink->locked_backend()->set_auto_newline_mode(
-      sink::auto_newline_mode::disabled_auto_newline);
-  g_file_sink->locked_backend()->auto_flush(false);
-
-  // add a console sink
-  g_console_sink = boost::log::add_console_log(
-      std::cout, boost::log::keywords::format = "%Message%");
-  g_console_sink->locked_backend()->set_auto_newline_mode(
-      sink::auto_newline_mode::disabled_auto_newline);
-  g_console_sink->locked_backend()->auto_flush(false);
-
-  // register attributes with the log core
-  boost::log::core::get()->set_filter(boost::log::trivial::severity >=
-                                      severity_level);
-  boost::log::add_common_attributes();
 }
 
 void CloseLogging() {
-  if (g_file_sink != nullptr) {
-    boost::log::core::get()->remove_sink(g_file_sink);
-    g_file_sink.reset();
-  }
-  if (g_console_sink != nullptr) {
-    boost::log::core::get()->remove_sink(g_console_sink);
-    g_console_sink.reset();
+  std::lock_guard<std::mutex> lock(g_log_mutex);
+  if (g_log_file.is_open()) {
+    g_log_file.close();
   }
 }
 

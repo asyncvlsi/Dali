@@ -97,14 +97,12 @@ std::string MetalLayer::DirectionStr() const {
 }
 
 void MetalLayer::Report() const {
-  BOOST_LOG_TRIVIAL(info) << "  MetalLayer Name: " << Name() << "\n"
-                          << "    Assigned Num: " << Id() << "\n"
-                          << "    Width and Spacing: " << Width() << " "
-                          << Spacing() << "\n"
-                          << "    MinArea: " << MinArea() << "\n"
-                          << "    Direction: " << DirectionStr() << "\n"
-                          << "    Pitch: " << PitchX() << "  " << PitchY()
-                          << "\n";
+  LOG(info) << "  MetalLayer Name: " << Name() << "\n"
+            << "    Assigned Num: " << Id() << "\n"
+            << "    Width and Spacing: " << Width() << " " << Spacing() << "\n"
+            << "    MinArea: " << MinArea() << "\n"
+            << "    Direction: " << DirectionStr() << "\n"
+            << "    Pitch: " << PitchX() << "  " << PitchY() << "\n";
 }
 
 WellLayer::WellLayer()
@@ -151,12 +149,11 @@ void WellLayer::SetOverhang(double overhang) {
 double WellLayer::Overhang() const { return overhang_; }
 
 void WellLayer::Report() const {
-  BOOST_LOG_TRIVIAL(info) << "    Width:       " << Width() << " um\n"
-                          << "    Spacing:     " << Spacing() << " um\n"
-                          << "    OppositeSpacing:   " << OppositeSpacing()
-                          << " um\n"
-                          << "    MaxPlugDist: " << MaxPlugDist() << " um\n"
-                          << "    Overhang:    " << Overhang() << "um\n";
+  LOG(info) << "    Width:       " << Width() << " um\n"
+            << "    Spacing:     " << Spacing() << " um\n"
+            << "    OppositeSpacing:   " << OppositeSpacing() << " um\n"
+            << "    MaxPlugDist: " << MaxPlugDist() << " um\n"
+            << "    Overhang:    " << Overhang() << "um\n";
 }
 
 }  // namespace dali

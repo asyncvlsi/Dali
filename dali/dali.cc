@@ -51,28 +51,28 @@ Dali::Dali(phydb::PhyDB* phy_db_ptr, severity severity_level,
 }
 
 void Dali::ShowParamsList() {
-  BOOST_LOG_TRIVIAL(info)
-      << "Dali runtime parameters:\n"
-      << "  log_file_name: " << log_file_name_ << "\n"
-      << "  disable_log_prefix: " << disable_log_prefix_ << "\n"
-      << "  num_threads: " << num_threads_ << "\n"
-      << "  well_legalization_mode: "
-      << static_cast<int>(well_legalization_mode_) << "\n"
-      << "  disable_global_place: " << disable_global_place_ << "\n"
-      << "  disable_legalization: " << disable_legalization_ << "\n"
-      << "  disable_io_place: " << disable_io_place_ << "\n"
-      << "  target_density: " << target_density_ << "\n"
-      << "  io_metal_layer: " << io_metal_layer_ << "\n"
-      << "  export_well_cluster_matlab: " << export_well_cluster_matlab_ << "\n"
-      << "  disable_welltap: " << disable_welltap_ << "\n"
-      << "  disable_cell_flip: " << disable_cell_flip_ << "\n"
-      << "  max_row_width: " << max_row_width_ << "\n"
-      << "  is_standard_cell: " << is_standard_cell_ << "\n"
-      << "  enable_filler_cell: " << enable_filler_cell_ << "\n"
-      << "  enable_end_cap_cell: " << enable_end_cap_cell_ << "\n"
-      << "  enable_shrink_off_grid_die_area: "
-      << enable_shrink_off_grid_die_area_ << "\n"
-      << "  output_name: " << output_name_ << "\n";
+  LOG(info) << "Dali runtime parameters:\n"
+            << "  log_file_name: " << log_file_name_ << "\n"
+            << "  disable_log_prefix: " << disable_log_prefix_ << "\n"
+            << "  num_threads: " << num_threads_ << "\n"
+            << "  well_legalization_mode: "
+            << static_cast<int>(well_legalization_mode_) << "\n"
+            << "  disable_global_place: " << disable_global_place_ << "\n"
+            << "  disable_legalization: " << disable_legalization_ << "\n"
+            << "  disable_io_place: " << disable_io_place_ << "\n"
+            << "  target_density: " << target_density_ << "\n"
+            << "  io_metal_layer: " << io_metal_layer_ << "\n"
+            << "  export_well_cluster_matlab: " << export_well_cluster_matlab_
+            << "\n"
+            << "  disable_welltap: " << disable_welltap_ << "\n"
+            << "  disable_cell_flip: " << disable_cell_flip_ << "\n"
+            << "  max_row_width: " << max_row_width_ << "\n"
+            << "  is_standard_cell: " << is_standard_cell_ << "\n"
+            << "  enable_filler_cell: " << enable_filler_cell_ << "\n"
+            << "  enable_end_cap_cell: " << enable_end_cap_cell_ << "\n"
+            << "  enable_shrink_off_grid_die_area: "
+            << enable_shrink_off_grid_die_area_ << "\n"
+            << "  output_name: " << output_name_ << "\n";
 }
 
 void Dali::LoadParamsFromConfig() {
@@ -205,7 +205,7 @@ bool Dali::RunIoPinAutoPlacement() {
 }
 
 void Dali::ReportIoPlacementUsage() {
-  BOOST_LOG_TRIVIAL(info)
+  LOG(info)
       << "\033[0;36m"
       << "Usage: place-io (followed by one of the options below)\n"
       << "  -h/--help\n"
@@ -242,8 +242,7 @@ bool Dali::IoPinPlacement(int argc, char** argv) {
   } else if (option_str == "-ap" or option_str == "--auto-place") {
     return io_placer_->AutoPlaceCmd(argc - 2, argv + 2);
   } else {
-    BOOST_LOG_TRIVIAL(warning)
-        << "IoPlace flag not specified, use --auto-place by default\n";
+    LOG(warning) << "IoPlace flag not specified, use --auto-place by default\n";
     return io_placer_->AutoPlaceCmd(argc - 1, argv + 1);
   }
 }
@@ -327,9 +326,8 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
   if (target_density_ == -1) {
     double default_density = 0.7;
     target_density_ = std::max(circuit_.WhiteSpaceUsage(), default_density);
-    BOOST_LOG_TRIVIAL(info)
-        << "Target density not provided, set it to default value: "
-        << target_density_ << "\n";
+    LOG(info) << "Target density not provided, set it to default value: "
+              << target_density_ << "\n";
   }
 
   // start placement
@@ -340,7 +338,7 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
     gb_placer_.SetPlacementDensity(target_density_);
     // gb_placer->ReportBoundaries();
     if (!gb_placer_.StartPlacement()) {
-      BOOST_LOG_TRIVIAL(error) << "Global placement failed\n";
+      LOG(error) << "Global placement failed\n";
       return false;
     }
   }
@@ -354,7 +352,7 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
       legalizer_.CopyPlacementContextFrom(&gb_placer_);
       legalizer_.disable_cell_flip_ = disable_cell_flip_;
       if (!legalizer_.StartPlacement()) {
-        BOOST_LOG_TRIVIAL(error) << "Standard-cell legalization failed\n";
+        LOG(error) << "Standard-cell legalization failed\n";
         return false;
       }
     } else {
@@ -365,7 +363,7 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
       well_legalizer_.SetStripePartitionMode(
           static_cast<int>(well_legalization_mode_));
       if (!well_legalizer_.StartPlacement()) {
-        BOOST_LOG_TRIVIAL(error) << "Well legalization failed\n";
+        LOG(error) << "Well legalization failed\n";
         return false;
       }
       if (export_well_cluster_matlab_) {
@@ -384,7 +382,7 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
     filler_cell_placer_.phy_db_ptr_ = phy_db_ptr_;
     filler_cell_placer_.CreateFillerCellTypes(2);
     if (!filler_cell_placer_.StartPlacement()) {
-      BOOST_LOG_TRIVIAL(error) << "Filler-cell placement failed\n";
+      LOG(error) << "Filler-cell placement failed\n";
       return false;
     }
   }
@@ -396,13 +394,12 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
     DaliExpects(is_io_placer_config_success,
                 "Cannot successfully configure I/O placer");
     if (!io_placer->RunAutoPlacement()) {
-      BOOST_LOG_TRIVIAL(error) << "I/O pin placement failed\n";
+      LOG(error) << "I/O pin placement failed\n";
       return false;
     }
   }
 
-  BOOST_LOG_TRIVIAL(debug) << "dali git commit: " << get_git_version_short()
-                           << "\n";
+  LOG(debug) << "dali git commit: " << get_git_version_short() << "\n";
 
   return true;
 }
@@ -510,21 +507,20 @@ bool Dali::UnifiedLegalization() {
 void Dali::ExternalDetailedPlaceAndLegalize(std::string const& engine,
                                             bool load_dp_result) {
   // create a script for detailed placement and legalization
-  BOOST_LOG_TRIVIAL(info)
-      << "Creating detailed placement and legalization script...\n";
+  LOG(info) << "Creating detailed placement and legalization script...\n";
   std::string dp_script_name = "dali_" + engine + ".cmd";
   std::string legal_def_file =
       CreateDetailedPlacementAndLegalizationScript(engine, dp_script_name);
 
   // system call
-  BOOST_LOG_TRIVIAL(info) << "System call...\n";
+  LOG(info) << "System call...\n";
   std::string command = engine + " < " + dp_script_name;
   int res = std::system(command.c_str());
-  BOOST_LOG_TRIVIAL(info) << engine << " return code: " << res << "\n";
+  LOG(info) << engine << " return code: " << res << "\n";
 
   if (load_dp_result) {
     phy_db_ptr_->OverrideComponentLocsFromDef(legal_def_file);
-    BOOST_LOG_TRIVIAL(info) << "New placement loaded back to PhyDB\n";
+    LOG(info) << "New placement loaded back to PhyDB\n";
   }
 }
 

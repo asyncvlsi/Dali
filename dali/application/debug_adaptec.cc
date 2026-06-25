@@ -34,7 +34,7 @@
 using namespace dali;
 
 int main(int argc, char** argv) {
-  InitLogging("", boost::log::trivial::trace, false);
+  InitLogging("", severity::trace, false);
 
   double tune_param = 0;
   for (int i = 1; i < argc;) {
@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
 
   Eigen::initParallel();
   // Eigen::setNbThreads(1);
-  BOOST_LOG_TRIVIAL(info) << "Eigen thread " << Eigen::nbThreads() << "\n";
+  LOG(info) << "Eigen thread " << Eigen::nbThreads() << "\n";
 
   time_t Time = clock();
 
@@ -92,16 +92,15 @@ int main(int argc, char** argv) {
   // circuit.ReportNetList();
   // circuit.GenMATLABTable("_result.txt");
 
-  BOOST_LOG_TRIVIAL(info) << "File loading complete, time: "
-                          << double(clock() - Time) / CLOCKS_PER_SEC << " s"
-                          << std::endl;
+  LOG(info) << "File loading complete, time: "
+            << double(clock() - Time) / CLOCKS_PER_SEC << " s" << std::endl;
 
   circuit.ReportBriefSummary();
   circuit.ReportHPWL();
 
   GlobalPlacer gb_placer;
   // gb_placer_.net_model_update_stop_criterion_ = tune_param;
-  BOOST_LOG_TRIVIAL(info) << "tune_param: " << tune_param << "\n";
+  LOG(info) << "tune_param: " << tune_param << "\n";
   gb_placer.SetCircuit(&circuit);
   gb_placer.SetBoundaryFromCircuit();
   gb_placer.SetPlacementDensity(0.9);
@@ -143,9 +142,8 @@ int main(int argc, char** argv) {
   // circuit.ReportHPWLHistogramLogarithm();
 
   Time = clock() - Time;
-  BOOST_LOG_TRIVIAL(info) << "Execution time " << double(Time) / CLOCKS_PER_SEC
-                          << "s.\n";
-  BOOST_LOG_TRIVIAL(info) << "tune_param: " << tune_param << "\n";
+  LOG(info) << "Execution time " << double(Time) / CLOCKS_PER_SEC << "s.\n";
+  LOG(info) << "tune_param: " << tune_param << "\n";
 
   return 0;
 }

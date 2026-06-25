@@ -36,7 +36,7 @@ namespace dali {
 void FillerCellPlacer::CreateFillerCellTypes(int upper_width) {
   DaliExpects(phy_db_ptr_ != nullptr, "phydb ptr not set");
 
-  BOOST_LOG_TRIVIAL(info) << "Creating and exporting filler cells\n";
+  LOG(info) << "Creating and exporting filler cells\n";
   std::string filler_lef_file_name = "dali_out_filler.lef";
   std::ofstream ost(filler_lef_file_name);
   DaliExpects(ost.is_open(), "cannot open file: " << filler_lef_file_name);
@@ -58,8 +58,7 @@ void FillerCellPlacer::CreateFillerCellTypes(int upper_width) {
     ckt_ptr_->AddFillerBlockType(filler_name, width, filler_height);
   }
   phy_db_ptr_->AddDummyWell();
-  BOOST_LOG_TRIVIAL(info) << "Filler cells exported to " << filler_lef_file_name
-                          << "\n";
+  LOG(info) << "Filler cells exported to " << filler_lef_file_name << "\n";
 }
 
 void FillerCellPlacer::PlaceFillerCells(int lx, int ux, int ly,
@@ -92,7 +91,7 @@ void FillerCellPlacer::PlaceFillerCells(int lx, int ux, int ly,
 }
 
 bool FillerCellPlacer::StartPlacement() {
-  BOOST_LOG_TRIVIAL(info) << "  Insert filler cells\n";
+  LOG(info) << "  Insert filler cells\n";
   std::unordered_set<int> filler_cell_widths;
   for (auto& filler : ckt_ptr_->tech().FillerCellPtrs()) {
     filler_cell_widths.insert(filler->Width());

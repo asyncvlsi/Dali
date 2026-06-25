@@ -49,10 +49,9 @@ TetrisSpace::TetrisSpace(int left, int right, int bottom, int top,
 int TetrisSpace::ToStartRow(int y_loc) {
   int row_num = (y_loc - bottom_) / row_height_;
   if ((row_num < 0) || (row_num >= tot_num_row_)) {
-    BOOST_LOG_TRIVIAL(info) << "Fatal error:" << std::endl;
-    BOOST_LOG_TRIVIAL(info)
-        << "  y_loc out of range, y_loc, bottom_, top_: " << y_loc << "  "
-        << bottom_ << "  " << top_ << std::endl;
+    LOG(info) << "Fatal error:" << std::endl;
+    LOG(info) << "  y_loc out of range, y_loc, bottom_, top_: " << y_loc << "  "
+              << bottom_ << "  " << top_ << std::endl;
     DaliExpects(false, "ToStartRow conversion fail");
   }
   return (row_num);
@@ -65,15 +64,13 @@ int TetrisSpace::ToEndRow(int y_loc) {
     --row_num;
   }
   if ((row_num < 0) || (row_num >= tot_num_row_)) {
-    BOOST_LOG_TRIVIAL(info) << "Fatal error:" << std::endl;
-    BOOST_LOG_TRIVIAL(info)
-        << "  y_loc out of range, y_loc, bottom_, top_: " << y_loc << "  "
-        << bottom_ << "  " << top_ << std::endl;
-    BOOST_LOG_TRIVIAL(info)
-        << "  relative y location:" << relative_y << std::endl;
-    BOOST_LOG_TRIVIAL(info) << "  row height:" << row_height_ << std::endl;
-    BOOST_LOG_TRIVIAL(info) << "  row num: " << row_num << std::endl;
-    BOOST_LOG_TRIVIAL(info) << "  total row num: " << tot_num_row_ << std::endl;
+    LOG(info) << "Fatal error:" << std::endl;
+    LOG(info) << "  y_loc out of range, y_loc, bottom_, top_: " << y_loc << "  "
+              << bottom_ << "  " << top_ << std::endl;
+    LOG(info) << "  relative y location:" << relative_y << std::endl;
+    LOG(info) << "  row height:" << row_height_ << std::endl;
+    LOG(info) << "  row num: " << row_num << std::endl;
+    LOG(info) << "  total row num: " << tot_num_row_ << std::endl;
     DaliExpects(false, "ToEndRow conversion fail");
   }
   return (row_num);
@@ -120,11 +117,11 @@ bool TetrisSpace::IsSpaceAvail(int llx, int lly, int width, int height) {
   int start_row = ToStartRow(lly);
   int end_row = ToEndRow(lly + height);
   if (end_row >= tot_num_row_) {
-    BOOST_LOG_TRIVIAL(info) << "Fatal error:\n";
-    BOOST_LOG_TRIVIAL(info) << "  row info:   " << start_row << "  " << end_row
-                            << "  " << tot_num_row_ << "\n";
-    BOOST_LOG_TRIVIAL(info) << "  lly info: " << lly << "  " << lly + height
-                            << "  " << top_ << "\n";
+    LOG(info) << "Fatal error:\n";
+    LOG(info) << "  row info:   " << start_row << "  " << end_row << "  "
+              << tot_num_row_ << "\n";
+    LOG(info) << "  lly info: " << lly << "  " << lly + height << "  " << top_
+              << "\n";
     exit(1);
   }
   bool all_row_avail = true;

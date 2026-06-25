@@ -307,14 +307,12 @@ bool DefaultSpacePartitioner::StartPartitioning() {
       max_cell_width_ = std::max(max_cell_width_, blk.Width());
     }
   }
-  BOOST_LOG_TRIVIAL(info) << "Max movable cell width: " << max_cell_width_
-                          << "\n";
+  LOG(info) << "Max movable cell width: " << max_cell_width_ << "\n";
 
   // determine the width of columns
   cluster_width_ = max_row_width_;
   if (cluster_width_ <= 0) {
-    BOOST_LOG_TRIVIAL(info)
-        << "Using default gridded row width: 2*max_unplug_length_\n";
+    LOG(info) << "Using default gridded row width: 2*max_unplug_length_\n";
     stripe_width_ = (int)std::round(max_unplug_length_ * stripe_width_factor_);
   } else {
     DaliWarns(cluster_width_ < max_unplug_length_,
@@ -330,14 +328,12 @@ bool DefaultSpacePartitioner::StartPartitioning() {
     stripe_width_ = region_width;
   }
   tot_col_num_ = std::ceil(region_width / (double)stripe_width_);
-  BOOST_LOG_TRIVIAL(info) << "  Total number of columns: " << tot_col_num_
-                          << "\n";
+  LOG(info) << "  Total number of columns: " << tot_col_num_ << "\n";
   int max_clusters_per_col = region_height / circuit_->MinBlkHeight();
   col_list.resize(tot_col_num_);
   stripe_width_ = region_width / tot_col_num_;
-  BOOST_LOG_TRIVIAL(info) << "  Gridded row width: "
-                          << stripe_width_ * circuit_->GridValueX() << "um, "
-                          << stripe_width_ << "\n";
+  LOG(info) << "  Gridded row width: " << stripe_width_ * circuit_->GridValueX()
+            << "um, " << stripe_width_ << "\n";
   DaliWarns(stripe_width_ < max_cell_width_,
             "Maximum cell width is longer than gridded row width?");
   for (int i = 0; i < tot_col_num_; ++i) {
@@ -355,10 +351,9 @@ bool DefaultSpacePartitioner::StartPartitioning() {
   DecomposeSpaceToSimpleStripes();
   // cluster_list_.reserve(tot_col_num_ * max_clusters_per_col);
 
-  // BOOST_LOG_TRIVIAL(info)  <<"left: %d, right: %d\n", left_, right_);
-  BOOST_LOG_TRIVIAL(info)
-      << "Maximum possible number of gridded rows in a column: "
-      << max_clusters_per_col << "\n";
+  // LOG(info)  <<"left: %d, right: %d\n", left_, right_);
+  LOG(info) << "Maximum possible number of gridded rows in a column: "
+            << max_clusters_per_col << "\n";
 
   AssignBlockToColBasedOnWhiteSpace();
 

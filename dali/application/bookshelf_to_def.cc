@@ -62,15 +62,14 @@ int main(int argc, char* argv[]) {
         x_grid = std::stod(str_x_grid);
         y_grid = std::stod(str_y_grid);
       } catch (...) {
-        BOOST_LOG_TRIVIAL(info) << "Invalid input files!\n";
+        LOG(info) << "Invalid input files!\n";
         ReportUsage();
         return 1;
       }
     } else if (arg == "-o" && i < argc) {
       out_def_name = std::string(argv[i++]) + ".def";
     } else {
-      BOOST_LOG_TRIVIAL(info)
-          << "Unknown command line option: " << argv[i] << "\n";
+      LOG(info) << "Unknown command line option: " << argv[i] << "\n";
       return 1;
     }
   }
@@ -87,13 +86,13 @@ int main(int argc, char* argv[]) {
 }
 
 void ReportUsage() {
-  BOOST_LOG_TRIVIAL(info) << "\033[0;36m"
-                          << "Usage: bookshelf2def\n"
-                          << " -lef      <file.lef>\n"
-                          << " -def      <file.def>\n"
-                          << " -pl       <file.pl>\n"
-                          << " -g/-grid  grid_value_x grid_value_y\n"
-                          << " -o        <out_name>.def\n"
-                          << "(order does not matter)"
-                          << "\033[0m\n";
+  LOG(info) << "\033[0;36m"
+            << "Usage: bookshelf2def\n"
+            << " -lef      <file.lef>\n"
+            << " -def      <file.def>\n"
+            << " -pl       <file.pl>\n"
+            << " -g/-grid  grid_value_x grid_value_y\n"
+            << " -o        <out_name>.def\n"
+            << "(order does not matter)"
+            << "\033[0m\n";
 }

@@ -177,11 +177,11 @@ int Tech::PostEndCapMinNHeight() const {
 
 void Tech::Report() const {
   if (n_set_) {
-    BOOST_LOG_TRIVIAL(info) << "  Layer name: nwell\n";
+    LOG(info) << "  Layer name: nwell\n";
     nwell_layer_.Report();
   }
   if (p_set_) {
-    BOOST_LOG_TRIVIAL(info) << "  Layer name: pwell\n";
+    LOG(info) << "  Layer name: pwell\n";
     pwell_layer_.Report();
   }
 }
