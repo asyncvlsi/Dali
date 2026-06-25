@@ -13,7 +13,7 @@
   * Si2 LEF/DEF parser, a mirror can be found [here](https://github.com/asyncvlsi/lefdef)
   * [PhyDB](https://github.com/asyncvlsi/phyDB)
   * OpenMP (for MacOS user, `libomp` from Homebrew will work)
-  * GoogleTest is optional. If CMake cannot find it, tests in `tests/unit` are
+  * GoogleTest is optional. If CMake cannot find it, tests in `tests/common` are
     skipped while the rest of the build remains available. On Ubuntu/Debian,
     install it with `sudo apt install libgtest-dev`.
   
@@ -37,8 +37,8 @@ After configuring and building from the `build/` directory, run:
     $ ctest --output-on-failure
 
 This runs all unit tests currently registered with CTest, including:
-  * GoogleTest-based unit tests in `tests/unit`, if GoogleTest was found
-  * I/O placer tests in `tests/io_placer`
+  * GoogleTest-based unit tests in `tests/common`, if GoogleTest was found
+  * I/O placer tests in `tests/placer/io_placer`
 
 If the test executables have not been built yet, build first:
 
