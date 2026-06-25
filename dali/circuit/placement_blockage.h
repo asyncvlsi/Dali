@@ -26,12 +26,17 @@
 
 namespace dali {
 
+/** Placement region unavailable for movable cells. */
 class PlacementBlockage {
  public:
-  explicit PlacementBlockage(RectI &rect) : rect_(rect) {}
+  explicit PlacementBlockage(RectI const& rect) : rect_(rect) {}
   PlacementBlockage(int lx, int ly, int ux, int uy) : rect_(lx, ly, ux, uy) {}
-  const RectI &GetRect() const { return rect_; }
-  void SetRect(RectI &rect) { rect_ = rect; }
+
+  /** Return the blockage rectangle in Dali grid units. */
+  const RectI& GetRect() const { return rect_; }
+
+  /** Replace the blockage rectangle. */
+  void SetRect(RectI const& rect) { rect_ = rect; }
 
  private:
   RectI rect_;

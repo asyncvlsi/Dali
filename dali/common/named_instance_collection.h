@@ -29,11 +29,17 @@
 
 namespace dali {
 
+/**
+ * Owns a vector of named instances and provides stable name-to-id lookup.
+ *
+ * T must be constructible from a pointer to the stored name string. Creation
+ * can be frozen after setup to catch accidental late mutations.
+ */
 template <typename T>
 class NamedInstanceCollection {
  public:
-  // Adds an instance of T to the collection
-  T &CreateInstance(std::string const &name) {
+  /** Create and return a new named instance. */
+  T& CreateInstance(std::string const& name) {
     DaliExpects(!frozen_, "Cannot create new instance: collection is frozen.");
 
     // Check if the name already exists
@@ -48,60 +54,63 @@ class NamedInstanceCollection {
     return instances_.back();
   }
 
-  // Retrieves an instance of T by name
-  T *GetInstanceByName(std::string const &name) {
+  /** Return the instance with the given name. Exits if the name is unknown. */
+  T* GetInstanceByName(std::string const& name) {
     auto it = name_to_id_map_.find(name);
     DaliExpects(it != name_to_id_map_.end(),
                 "Cannot find instance by name: " << name);
     return &instances_[it->second];
   }
 
-  // Retrieves an instance id by name
-  size_t GetInstanceIdByName(std::string const &name) {
+  /** Return the instance id for the given name. Exits if the name is unknown.
+   */
+  size_t GetInstanceIdByName(std::string const& name) {
     auto it = name_to_id_map_.find(name);
     DaliExpects(it != name_to_id_map_.end(),
                 "Cannot find instance by name: " << name);
     return it->second;
   }
 
-  // Retrieves an instance of T by index (id)
-  T *GetInstanceById(size_t id) {
+  /** Return the instance at id. Exits if id is out of range. */
+  T* GetInstanceById(size_t id) {
     DaliExpects(id < instances_.size(),
                 "Cannot find instance by id, out of range: " << id);
     return &instances_[id];
   }
 
-  // Check if a name exists in the collection
-  [[nodiscard]] bool NameExists(std::string const &name) const {
+  /** Return true when name exists in the collection. */
+  [[nodiscard]] bool NameExists(std::string const& name) const {
     return name_to_id_map_.find(name) != name_to_id_map_.end();
   }
 
-  // Get the size of the collection
+  /** Return the number of stored instances. */
   [[nodiscard]] size_t GetSize() const { return instances_.size(); }
 
-  std::unordered_map<std::string, size_t> &NameToIdMap() {
+  /** Return the mutable name-to-id map. */
+  std::unordered_map<std::string, size_t>& NameToIdMap() {
     return name_to_id_map_;
   }
 
-  std::vector<T> &Instances() { return instances_; }
+  /** Return the mutable instance storage. */
+  std::vector<T>& Instances() { return instances_; }
 
-  // Freeze the collection to prevent creating new instances
+  /** Prevent future CreateInstance calls until Unfreeze() is called. */
   void Freeze() { frozen_ = true; }
 
-  // Unfreeze the collection to allow creating new instances
+  /** Allow future CreateInstance calls. */
   void Unfreeze() { frozen_ = false; }
 
-  // Check if the collection is frozen
+  /** Return true when new instance creation is disabled. */
   [[nodiscard]] bool IsFrozen() const { return frozen_; }
 
-  // Clear all instances
+  /** Remove all instances, lookup entries, and the frozen state. */
   void Clear() {
     name_to_id_map_.clear();
     instances_.clear();
     frozen_ = false;
   }
 
-  // Reserve space
+  /** Reserve storage for instances. */
   void Reserve(size_t size) { instances_.reserve(size); }
 
  private:

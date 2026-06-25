@@ -26,8 +26,8 @@
 
 namespace dali {
 
-Pin::Pin(std::pair<const std::string, int> *name_id_pair_ptr,
-         BlockType *blk_type_ptr)
+Pin::Pin(std::pair<const std::string, int>* name_id_pair_ptr,
+         BlockType* blk_type_ptr)
     : name_id_pair_ptr_(name_id_pair_ptr),
       blk_type_ptr_(blk_type_ptr),
       is_input_(true) {
@@ -36,8 +36,8 @@ Pin::Pin(std::pair<const std::string, int> *name_id_pair_ptr,
   y_offset_.resize(NUM_OF_ORIENT, 0);
 }
 
-Pin::Pin(std::pair<const std::string, int> *name_id_pair_ptr,
-         BlockType *blk_type_ptr, double x_offset, double y_offset)
+Pin::Pin(std::pair<const std::string, int>* name_id_pair_ptr,
+         BlockType* blk_type_ptr, double x_offset, double y_offset)
     : name_id_pair_ptr_(name_id_pair_ptr),
       blk_type_ptr_(blk_type_ptr),
       is_input_(true) {
@@ -48,7 +48,7 @@ Pin::Pin(std::pair<const std::string, int> *name_id_pair_ptr,
   CalculateOffset(x_offset, y_offset);
 }
 
-const std::string &Pin::Name() const { return name_id_pair_ptr_->first; }
+const std::string& Pin::Name() const { return name_id_pair_ptr_->first; }
 
 int Pin::Id() const { return name_id_pair_ptr_->second; }
 
@@ -71,9 +71,9 @@ void Pin::SetIoType(bool is_input) { is_input_ = is_input; }
 
 bool Pin::IsInput() const { return is_input_; }
 
-double Pin::HalfBboxWidth() { return half_bbox_width_; }
+double Pin::HalfBboxWidth() const { return half_bbox_width_; }
 
-double Pin::HalfBboxHeight() { return half_bbox_height_; }
+double Pin::HalfBboxHeight() const { return half_bbox_height_; }
 
 void Pin::Report() const {
   BOOST_LOG_TRIVIAL(info) << Name() << " (" << OffsetX() << ", " << OffsetY()

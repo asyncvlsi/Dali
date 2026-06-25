@@ -38,7 +38,7 @@ bool Block::IsFlipped() const {
   return orient_ == FN || orient_ == FS || orient_ == FW || orient_ == FE;
 }
 
-void Block::SetType(BlockType *type_ptr) {
+void Block::SetType(BlockType* type_ptr) {
   DaliExpects(type_ptr != nullptr, "Set BlockType to nullptr?");
   type_ptr_ = type_ptr;
   eff_height_ = type_ptr_->Height();
@@ -56,9 +56,9 @@ void Block::SetPlacementStatus(PlaceStatus place_status) {
 
 void Block::SetOrient(BlockOrient orient) { orient_ = orient; }
 
-void Block::SetAux(BlockAux *aux) { aux_ptr_ = aux; }
+void Block::SetAux(BlockAux* aux) { aux_ptr_ = aux; }
 
-void Block::SwapLoc(Block &blk) {
+void Block::SwapLoc(Block& blk) {
   double tmp_x = llx_;
   double tmp_y = lly_;
   llx_ = blk.LLX();
@@ -87,7 +87,7 @@ void Block::IncreaseY(double displacement, double upper, double lower) {
   }
 }
 
-double Block::OverlapArea(const Block &blk) const {
+double Block::OverlapArea(const Block& blk) const {
   double overlap_area = 0;
   if (IsOverlap(blk)) {
     double llx, urx, lly, ury;
@@ -111,7 +111,7 @@ void Block::SetStretchLength(size_t index, int length) {
       std::accumulate(stretch_length_.begin(), stretch_length_.end(), 0);
 }
 
-std::vector<int> &Block::StretchLengths() { return stretch_length_; }
+std::vector<int>& Block::StretchLengths() { return stretch_length_; }
 
 int Block::CumulativeStretchLength(size_t index) {
   if (TypePtr()->RegionCount() == 1) return 0;
@@ -141,22 +141,22 @@ void Block::Report() {
 
 void Block::ReportNet() {
   BOOST_LOG_TRIVIAL(info) << Name() << " connects to:\n";
-  for (auto &net_num : nets_) {
+  for (auto& net_num : nets_) {
     BOOST_LOG_TRIVIAL(info) << net_num << "  ";
   }
   BOOST_LOG_TRIVIAL(info) << "\n";
 }
 
-void Block::ExportWellToMatlabPatchRect(std::ofstream &ost) {
+void Block::ExportWellToMatlabPatchRect(std::ofstream& ost) {
   std::vector<RectI> n_well_shapes;
   std::vector<RectI> p_well_shapes;
   if (TypePtr()->HasWellInfo()) {
-    auto &n_rects = TypePtr()->Nrects();
-    for (auto &rect : n_rects) {
+    auto& n_rects = TypePtr()->Nrects();
+    for (auto& rect : n_rects) {
       n_well_shapes.push_back(rect);
     }
-    auto &p_rects = TypePtr()->Prects();
-    for (auto &rect : p_rects) {
+    auto& p_rects = TypePtr()->Prects();
+    for (auto& rect : p_rects) {
       p_well_shapes.push_back(rect);
     }
   }

@@ -24,7 +24,7 @@
 
 namespace dali {
 
-IoPin::IoPin(std::pair<const std::string, int> *name_id_pair_ptr)
+IoPin::IoPin(std::pair<const std::string, int>* name_id_pair_ptr)
     : name_id_pair_ptr_(name_id_pair_ptr),
       net_ptr_(nullptr),
       signal_direction_(INPUT),
@@ -39,7 +39,7 @@ IoPin::IoPin(std::pair<const std::string, int> *name_id_pair_ptr)
   rects_[0].SetValue(0, 0, 0, 0);
 }
 
-IoPin::IoPin(std::pair<const std::string, int> *name_id_pair_ptr, double loc_x,
+IoPin::IoPin(std::pair<const std::string, int>* name_id_pair_ptr, double loc_x,
              double loc_y)
     : name_id_pair_ptr_(name_id_pair_ptr),
       net_ptr_(nullptr),
@@ -55,7 +55,7 @@ IoPin::IoPin(std::pair<const std::string, int> *name_id_pair_ptr, double loc_x,
   rects_[0].SetValue(0, 0, 0, 0);
 }
 
-IoPin::IoPin(std::pair<const std::string, int> *name_id_pair_ptr,
+IoPin::IoPin(std::pair<const std::string, int>* name_id_pair_ptr,
              SignalDirection direction, PlaceStatus init_place_status,
              double loc_x, double loc_y)
     : name_id_pair_ptr_(name_id_pair_ptr),
@@ -88,19 +88,19 @@ IoPin::IoPin(double loc_x, double loc_y, BlockOrient orient, double llx,
   SetRect(llx, lly, urx, ury);
 }
 
-const std::string &IoPin::Name() const { return name_id_pair_ptr_->first; }
+const std::string& IoPin::Name() const { return name_id_pair_ptr_->first; }
 
 int IoPin::Id() const { return name_id_pair_ptr_->second; }
 
-void IoPin::SetNetPtr(Net *net_ptr) {
+void IoPin::SetNetPtr(Net* net_ptr) {
   DaliExpects(net_ptr != nullptr,
               "Why do you need to set net_ptr in an I/O pin to a nullptr?");
   net_ptr_ = net_ptr;
 }
 
-Net *IoPin::NetPtr() const { return net_ptr_; }
+Net* IoPin::NetPtr() const { return net_ptr_; }
 
-const std::string &IoPin::NetName() const {
+const std::string& IoPin::NetName() const {
   DaliExpects(net_ptr_ != nullptr,
               "Cannot get net name because net_ptr_ is a nullptr");
   return net_ptr_->Name();
@@ -122,15 +122,15 @@ SignalUse IoPin::SigUse() const { return signal_use_; }
 
 std::string IoPin::SigUseStr() const { return SignalUseStr(signal_use_); }
 
-void IoPin::SetLayerPtr(MetalLayer *layer_ptr) {
+void IoPin::SetLayerPtr(MetalLayer* layer_ptr) {
   DaliExpects(layer_ptr != nullptr,
               "Why do you need to set layer_ptr in an I/O pin to a nullptr?");
   layer_ptr_ = layer_ptr;
 }
 
-MetalLayer *IoPin::LayerPtr() const { return layer_ptr_; }
+MetalLayer* IoPin::LayerPtr() const { return layer_ptr_; }
 
-const std::string &IoPin::LayerName() const {
+const std::string& IoPin::LayerName() const {
   DaliExpects(layer_ptr_ != nullptr,
               "Cannot get layer name because layer_ptr_ is a nullptr");
   return layer_ptr_->Name();
@@ -141,7 +141,7 @@ void IoPin::SetShape(double llx, double lly, double urx, double ury) {
   SetRect(llx, lly, urx, ury);
 }
 
-RectD &IoPin::GetShape() { return rects_[0]; }
+RectD& IoPin::GetShape() { return rects_[0]; }
 
 bool IoPin::IsShapeSet() const { return is_shape_set_; }
 

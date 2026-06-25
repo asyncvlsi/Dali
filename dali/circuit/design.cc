@@ -70,14 +70,14 @@ void Design::AddIntrinsicPlacementBlockage(double lx, double ly, double ux,
   intrinsic_blockages_.emplace_back(rect);
 }
 
-void Design::AddFixedCellPlacementBlockage(Block &block) {
+void Design::AddFixedCellPlacementBlockage(Block& block) {
   auto rect = ExpandOffGridPlacementBlockage(block.LLX(), block.LLY(),
                                              block.URX(), block.URY());
   fixed_cell_blockages_.emplace_back(rect);
 }
 
 void Design::UpdateDieAreaPlacementBlockages() {
-  for (auto &rect : die_area_.PlacementBlockages()) {
+  for (auto& rect : die_area_.PlacementBlockages()) {
     die_area_dummy_blockages_.emplace_back(rect);
   }
 }
@@ -88,18 +88,18 @@ void Design::UpdatePlacementBlockages() {
                          fixed_cell_blockages_.size() +
                          die_area_dummy_blockages_.size());
 
-  for (auto &blockage : intrinsic_blockages_) {
+  for (auto& blockage : intrinsic_blockages_) {
     all_blockages_.push_back(blockage);
   }
-  for (auto &blockage : fixed_cell_blockages_) {
+  for (auto& blockage : fixed_cell_blockages_) {
     all_blockages_.push_back(blockage);
   }
-  for (auto &blockage : die_area_dummy_blockages_) {
+  for (auto& blockage : die_area_dummy_blockages_) {
     all_blockages_.push_back(blockage);
   }
 }
 
-const std::vector<PlacementBlockage> &Design::PlacementBlockages() const {
+const std::vector<PlacementBlockage>& Design::PlacementBlockages() const {
   return all_blockages_;
 }
 
@@ -135,7 +135,7 @@ void Design::UpdateFanOutHistogram(size_t net_size) {
  * If histo_x is a nullptr, then using default histogram bins
  * Classify nets to these bins, and compute the corresponding percentage
  * ****/
-void Design::InitNetFanOutHistogram(std::vector<size_t> *histo_x) {
+void Design::InitNetFanOutHistogram(std::vector<size_t>* histo_x) {
   if (histo_x != nullptr) {
     net_histogram_.buckets.clear();
     int sz = (int)histo_x->size();
@@ -152,7 +152,7 @@ void Design::InitNetFanOutHistogram(std::vector<size_t> *histo_x) {
   net_histogram_.ave_hpwls.assign(sz, 0);
   net_histogram_.min_hpwls.assign(sz, 0);
   net_histogram_.max_hpwls.assign(sz, 0);
-  for (auto &net : nets_) {
+  for (auto& net : nets_) {
     size_t net_size = net.PinCnt();
     UpdateFanOutHistogram(net_size);
   }

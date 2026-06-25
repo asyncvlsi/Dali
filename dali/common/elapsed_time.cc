@@ -21,6 +21,8 @@
 
 #include "elapsed_time.h"
 
+#include <sstream>
+
 namespace dali {
 
 void ElapsedTime::RecordStartTime() {
@@ -38,35 +40,32 @@ void ElapsedTime::RecordEndTime() {
 }
 
 void ElapsedTime::PrintTimeElapsed(severity lvl) const {
-  size_t buffer_length = 1024;
-  std::string buffer(buffer_length, '\0');
-  int written_length =
-      snprintf(&buffer[0], buffer_length, "(wall time: %fs, cpu time: %f)\n",
-               wall_time_, cpu_time_);
-  buffer.resize(written_length);
+  std::ostringstream message;
+  message << "(wall time: " << wall_time_ << "s, cpu time: " << cpu_time_
+          << ")\n";
   switch (lvl) {
     case boost::log::trivial::trace: {
-      BOOST_LOG_TRIVIAL(trace) << buffer;
+      BOOST_LOG_TRIVIAL(trace) << message.str();
       break;
     }
     case boost::log::trivial::debug: {
-      BOOST_LOG_TRIVIAL(debug) << buffer;
+      BOOST_LOG_TRIVIAL(debug) << message.str();
       break;
     }
     case boost::log::trivial::info: {
-      BOOST_LOG_TRIVIAL(info) << buffer;
+      BOOST_LOG_TRIVIAL(info) << message.str();
       break;
     }
     case boost::log::trivial::warning: {
-      BOOST_LOG_TRIVIAL(warning) << buffer;
+      BOOST_LOG_TRIVIAL(warning) << message.str();
       break;
     }
     case boost::log::trivial::error: {
-      BOOST_LOG_TRIVIAL(error) << buffer;
+      BOOST_LOG_TRIVIAL(error) << message.str();
       break;
     }
     case boost::log::trivial::fatal: {
-      BOOST_LOG_TRIVIAL(fatal) << buffer;
+      BOOST_LOG_TRIVIAL(fatal) << message.str();
       break;
     }
     default: {

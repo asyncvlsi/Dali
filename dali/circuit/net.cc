@@ -27,7 +27,7 @@
 
 namespace dali {
 
-Net::Net(std::pair<const std::string, int> *name_id_pair_ptr, size_t capacity,
+Net::Net(std::pair<const std::string, int>* name_id_pair_ptr, size_t capacity,
          double weight)
     : name_id_pair_ptr_(name_id_pair_ptr), weight_(weight) {
   cnt_fixed_ = 0;
@@ -40,11 +40,11 @@ Net::Net(std::pair<const std::string, int> *name_id_pair_ptr, size_t capacity,
   blk_pins_.reserve(capacity);
 }
 
-const std::string &Net::Name() const { return name_id_pair_ptr_->first; }
+const std::string& Net::Name() const { return name_id_pair_ptr_->first; }
 
 int Net::Id() const { return name_id_pair_ptr_->second; }
 
-void Net::AddBlkPinPair(Block *block_ptr, Pin *pin_ptr) {
+void Net::AddBlkPinPair(Block* block_ptr, Pin* pin_ptr) {
   if (blk_pins_.size() < blk_pins_.capacity()) {
     blk_pins_.emplace_back(block_ptr, pin_ptr);
     if (!(pin_ptr->IsInput())) driver_pin_index = int(blk_pins_.size()) - 1;
@@ -63,7 +63,7 @@ void Net::AddBlkPinPair(Block *block_ptr, Pin *pin_ptr) {
         << ", cannot add more pin to this net:\n";
     BOOST_LOG_TRIVIAL(info)
         << "net name: " << Name() << ", net weight: " << Weight() << "\n";
-    for (auto &block_pin_pair : blk_pins_) {
+    for (auto& block_pin_pair : blk_pins_) {
       BOOST_LOG_TRIVIAL(info)
           << "\t" << " (" << block_pin_pair.BlockName() << " "
           << block_pin_pair.PinName() << ") " << "\n";
@@ -72,11 +72,11 @@ void Net::AddBlkPinPair(Block *block_ptr, Pin *pin_ptr) {
   }
 }
 
-std::vector<NetPin> &Net::BlockPins() { return blk_pins_; }
+std::vector<NetPin>& Net::BlockPins() { return blk_pins_; }
 
-void Net::AddIoPin(IoPin *io_pin) { iopin_ptrs_.push_back(io_pin); }
+void Net::AddIoPin(IoPin* io_pin) { iopin_ptrs_.push_back(io_pin); }
 
-std::vector<IoPin *> &Net::IoPinPtrs() { return iopin_ptrs_; }
+std::vector<IoPin*>& Net::IoPinPtrs() { return iopin_ptrs_; }
 
 void Net::SetWeight(double weight) { weight_ = weight; }
 
@@ -86,14 +86,14 @@ size_t Net::PinCnt() const { return blk_pins_.size(); }
 
 double Net::InvP() const { return inv_p_; }
 
-void Net::SetAux(NetAux *aux) {
+void Net::SetAux(NetAux* aux) {
   DaliExpects(aux != nullptr, "Cannot set aux_ptr_ to nullptr");
   aux_ptr_ = aux;
 }
 
-NetAux *Net::Aux() { return aux_ptr_; }
+NetAux* Net::Aux() { return aux_ptr_; }
 
-void Net::GetXBoundIfBlkAbsent(Block *blk_ptr, double &lo, double &hi) {
+void Net::GetXBoundIfBlkAbsent(Block* blk_ptr, double& lo, double& hi) {
   lo = -DBL_MAX;
   hi = DBL_MAX;
 
@@ -106,7 +106,7 @@ void Net::GetXBoundIfBlkAbsent(Block *blk_ptr, double &lo, double &hi) {
   double min_x = DBL_MAX;
   double tmp_pin_loc;
 
-  for (auto &pair : blk_pins_) {
+  for (auto& pair : blk_pins_) {
     if (pair.BlkPtr() == blk_ptr) continue;
     tmp_pin_loc = pair.AbsX();
     if (max_x < tmp_pin_loc) {
@@ -123,7 +123,7 @@ void Net::GetXBoundIfBlkAbsent(Block *blk_ptr, double &lo, double &hi) {
   }
 }
 
-void Net::GetYBoundIfBlkAbsent(Block *blk_ptr, double &lo, double &hi) {
+void Net::GetYBoundIfBlkAbsent(Block* blk_ptr, double& lo, double& hi) {
   lo = -DBL_MAX;
   hi = DBL_MAX;
 
@@ -136,7 +136,7 @@ void Net::GetYBoundIfBlkAbsent(Block *blk_ptr, double &lo, double &hi) {
   double min_y = DBL_MAX;
   double tmp_pin_loc;
 
-  for (auto &pair : blk_pins_) {
+  for (auto& pair : blk_pins_) {
     if (pair.BlkPtr() == blk_ptr) continue;
     tmp_pin_loc = pair.AbsY();
     if (max_y < tmp_pin_loc) {
@@ -255,13 +255,13 @@ int Net::MaxBlkPinIdY() const { return max_y_pin_id_; }
 
 int Net::MinBlkPinIdY() const { return min_y_pin_id_; }
 
-Block *Net::MaxBlkPtrX() const { return blk_pins_[max_x_pin_id_].BlkPtr(); }
+Block* Net::MaxBlkPtrX() const { return blk_pins_[max_x_pin_id_].BlkPtr(); }
 
-Block *Net::MinBlkPtrX() const { return blk_pins_[min_x_pin_id_].BlkPtr(); }
+Block* Net::MinBlkPtrX() const { return blk_pins_[min_x_pin_id_].BlkPtr(); }
 
-Block *Net::MaxBlkPtrY() const { return blk_pins_[max_y_pin_id_].BlkPtr(); }
+Block* Net::MaxBlkPtrY() const { return blk_pins_[max_y_pin_id_].BlkPtr(); }
 
-Block *Net::MinBlkPtrY() const { return blk_pins_[min_y_pin_id_].BlkPtr(); }
+Block* Net::MinBlkPtrY() const { return blk_pins_[min_y_pin_id_].BlkPtr(); }
 
 double Net::WeightedHPWLX() {
   if (blk_pins_.size() <= 1) return 0;
@@ -285,7 +285,7 @@ double Net::WeightedBboxX() {
   if (blk_pins_.size() <= 1) return 0;
   double max_x = blk_pins_[0].AbsX();
   double min_x = blk_pins_[0].AbsX();
-  for (auto &blk_pin : blk_pins_) {
+  for (auto& blk_pin : blk_pins_) {
     double center_x = blk_pin.AbsX();
     double half_width = blk_pin.PinPtr()->HalfBboxWidth();
     max_x = std::max(max_x, center_x + half_width);
@@ -298,7 +298,7 @@ double Net::WeightedBboxY() {
   if (blk_pins_.size() <= 1) return 0;
   double max_y = blk_pins_[0].AbsY();
   double min_y = blk_pins_[0].AbsY();
-  for (auto &blk_pin : blk_pins_) {
+  for (auto& blk_pin : blk_pins_) {
     double center_y = blk_pin.AbsY();
     double half_height = blk_pin.PinPtr()->HalfBboxHeight();
     max_y = std::max(max_y, center_y + half_height);
@@ -366,7 +366,7 @@ void Net::UpdateMaxMinCtoC() {
 
 int Net::MaxPinCtoCX() {
   int max_pin_index = 0;
-  auto *block = blk_pins_[0].BlkPtr();
+  auto* block = blk_pins_[0].BlkPtr();
   double max_x = block->X();
   int sz = static_cast<int>(blk_pins_.size());
   for (int i = 0; i < sz; i++) {
@@ -381,7 +381,7 @@ int Net::MaxPinCtoCX() {
 
 int Net::MinPinCtoCX() {
   int min_pin_index = 0;
-  auto *block = blk_pins_[0].BlkPtr();
+  auto* block = blk_pins_[0].BlkPtr();
   double min_x = block->X();
   int sz = static_cast<int>(blk_pins_.size());
   for (int i = 0; i < sz; i++) {
@@ -396,7 +396,7 @@ int Net::MinPinCtoCX() {
 
 int Net::MaxPinCtoCY() {
   int max_pin_index = 0;
-  auto *block = blk_pins_[0].BlkPtr();
+  auto* block = blk_pins_[0].BlkPtr();
   double max_y = block->Y();
   int sz = static_cast<int>(blk_pins_.size());
   for (int i = 0; i < sz; i++) {
@@ -411,7 +411,7 @@ int Net::MaxPinCtoCY() {
 
 int Net::MinPinCtoCY() {
   int min_pin_index = 0;
-  auto *block = blk_pins_[0].BlkPtr();
+  auto* block = blk_pins_[0].BlkPtr();
   double min_y = block->Y();
   int sz = static_cast<int>(blk_pins_.size());
   for (int i = 0; i < sz; i++) {
@@ -426,11 +426,11 @@ int Net::MinPinCtoCY() {
 
 double Net::HPWLCtoCX() {
   if (blk_pins_.empty()) return 0;
-  auto *block = blk_pins_[0].BlkPtr();
+  auto* block = blk_pins_[0].BlkPtr();
   double max_x = block->X();
   double min_x = block->X();
 
-  for (auto &pin : blk_pins_) {
+  for (auto& pin : blk_pins_) {
     block = pin.BlkPtr();
     if (max_x < block->X()) {
       max_x = block->X();
@@ -445,11 +445,11 @@ double Net::HPWLCtoCX() {
 
 double Net::HPWLCtoCY() {
   if (blk_pins_.empty()) return 0;
-  auto *block = blk_pins_[0].BlkPtr();
+  auto* block = blk_pins_[0].BlkPtr();
   double max_y = block->Y();
   double min_y = block->Y();
 
-  for (auto &pin : blk_pins_) {
+  for (auto& pin : blk_pins_) {
     block = pin.BlkPtr();
     if (max_y < block->Y()) {
       max_y = block->Y();

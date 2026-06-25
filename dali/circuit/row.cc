@@ -28,7 +28,7 @@ void GeneralRowSegment::SetLX(int lx) { lx_ = lx; }
 
 void GeneralRowSegment::SetWidth(int width) { width_ = width; }
 
-void GeneralRowSegment::AddBlock(Block *blk_ptr) {
+void GeneralRowSegment::AddBlock(Block* blk_ptr) {
   blocks_.emplace_back(blk_ptr);
 }
 
@@ -38,11 +38,11 @@ int GeneralRowSegment::UX() const { return lx_ + width_; }
 
 int GeneralRowSegment::Width() const { return width_; }
 
-std::vector<Block *> &GeneralRowSegment::Blocks() { return blocks_; }
+std::vector<Block*>& GeneralRowSegment::Blocks() { return blocks_; }
 
 void GeneralRowSegment::SortBlocks() {
   std::sort(blocks_.begin(), blocks_.end(),
-            [](const Block *blk_ptr0, const Block *blk_ptr1) {
+            [](const Block* blk_ptr0, const Block* blk_ptr1) {
               return blk_ptr0->LLX() < blk_ptr1->LLX();
             });
 }
@@ -71,7 +71,7 @@ int GeneralRow::PwellHeight() const { return p_well_height_; }
 
 int GeneralRow::NwellHeight() const { return n_well_height_; }
 
-std::vector<GeneralRowSegment> &GeneralRow::RowSegments() {
+std::vector<GeneralRowSegment>& GeneralRow::RowSegments() {
   return row_segments_;
 }
 

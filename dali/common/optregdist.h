@@ -30,14 +30,20 @@ namespace dali {
 
 // TODO: move this to circuit or placer as a member function
 
-// optimal region distance
+/** Computes and exports each block's distance to its HPWL-optimal region. */
 class OptRegDist {
  public:
-  Circuit *circuit_ = nullptr;
-  void FindOptimalRegionX(Block &blk, double &lx, double &ly, double &ux,
-                          double &uy) const;
+  Circuit* circuit_ = nullptr;
 
-  void SaveFile(std::string const &file_name) const;
+  /**
+   * Find the x/y interval where moving blk does not increase connected-net
+   * HPWL.
+   */
+  void FindOptimalRegionX(Block& blk, double& lx, double& ly, double& ux,
+                          double& uy) const;
+
+  /** Write normalized optimal-region distances for all design blocks. */
+  void SaveFile(std::string const& file_name) const;
 };
 
 }  // namespace dali

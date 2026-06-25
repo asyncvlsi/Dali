@@ -25,6 +25,7 @@
 
 #include <list>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -35,53 +36,61 @@
 
 namespace dali {
 
+/** Technology database derived from LEF/CELL data. */
 class Tech {
   friend class Circuit;
 
  public:
   Tech();
 
+  /** Return manufacturing grid in microns. */
   double GetManufacturingGrid() const;
 
-  // get all kinds of well tap cells
-  std::vector<int> &WellTapCellIds();
+  /** Return ids of block types marked as well tap cells. */
+  std::vector<int>& WellTapCellIds();
 
-  // get all filler cells
-  std::vector<std::unique_ptr<BlockType>> &FillerCellPtrs();
+  /** Return generated filler-cell block types. */
+  std::vector<std::unique_ptr<BlockType>>& FillerCellPtrs();
 
-  // get the dummy BlockType for IOPINs
-  BlockType *IoDummyBlkTypePtr();
+  /** Return the synthetic block type used to model I/O pins. */
+  BlockType* IoDummyBlkTypePtr();
 
-  // get Nwell layer
-  WellLayer &NwellLayer();
+  /** Return N-well layer parameters. */
+  WellLayer& NwellLayer();
 
-  // get Pwell layer
-  WellLayer &PwellLayer();
+  /** Return P-well layer parameters. */
+  WellLayer& PwellLayer();
 
-  // is Nwell parameters available?
+  /** Return true if N-well parameters were loaded. */
   bool IsNwellSet() const;
 
-  // is Pwell parameters available?
+  /** Return true if P-well parameters were loaded. */
   bool IsPwellSet() const;
 
-  // is any well layer available?
+  /** Return true if either well layer is available. */
   bool IsWellInfoSet() const;
 
-  static bool IsGndAtBottom(phydb::Macro *macro);
+  /** Return true when a macro's ground pin is below its power pin. */
+  static bool IsGndAtBottom(phydb::Macro* macro);
 
-  // get block types
-  std::vector<BlockType> &BlockTypes();
-  NamedInstanceCollection<BlockType> &BlockTypeCollection() {
+  /** Return all loaded standard block types. */
+  std::vector<BlockType>& BlockTypes();
+
+  /** Return the named collection for standard block types. */
+  NamedInstanceCollection<BlockType>& BlockTypeCollection() {
     return block_type_collection_;
   }
-  NamedInstanceCollection<BlockType> &EndCapCellTypeCollection() {
+
+  /** Return the named collection for generated end-cap cell types. */
+  NamedInstanceCollection<BlockType>& EndCapCellTypeCollection() {
     return end_cap_cell_type_collection_;
   }
 
-  // create fake well for standard cells
-  void CreateFakeWellForStandardCell(phydb::PhyDB *phy_db);
+  /** Synthesize simple well rectangles for standard cells when CELL lacks them.
+   */
+  void CreateFakeWellForStandardCell(phydb::PhyDB* phy_db);
 
-  // get end cap cell info
+  /** Return minimum pre-end-cap width in Dali grid units. */
   int PreEndCapMinWidth() const;
   int PreEndCapMinPHeight() const;
   int PreEndCapMinNHeight() const;
@@ -108,12 +117,12 @@ class Tech {
 
   /**** macros ****/
   NamedInstanceCollection<BlockType> block_type_collection_;
-  BlockType *io_dummy_blk_type_ptr_ = nullptr;
+  BlockType* io_dummy_blk_type_ptr_ = nullptr;
   std::vector<int> well_tap_cell_type_ids_;
   std::vector<std::unique_ptr<BlockType>> filler_ptrs_;
   // pre and post end cap cell types are for standard cell placement
-  BlockType *pre_end_cap_cell_ptr_ = nullptr;
-  BlockType *post_end_cap_cell_ptr_ = nullptr;
+  BlockType* pre_end_cap_cell_ptr_ = nullptr;
+  BlockType* post_end_cap_cell_ptr_ = nullptr;
   NamedInstanceCollection<BlockType> end_cap_cell_type_collection_;
 
   /**** row height ****/

@@ -31,52 +31,50 @@ namespace dali {
 
 class BlockType;
 
-/****
- * This class stores basic information of a gate pin for placement.
- */
+/** Cell pin geometry and orientation-aware offsets for placement. */
 class Pin {
  public:
-  Pin(std::pair<const std::string, int> *name_id_pair_ptr,
-      BlockType *blk_type_ptr);
-  Pin(std::pair<const std::string, int> *name_id_pair_ptr,
-      BlockType *blk_type_ptr, double x_offset, double y_offset);
+  Pin(std::pair<const std::string, int>* name_id_pair_ptr,
+      BlockType* blk_type_ptr);
+  Pin(std::pair<const std::string, int>* name_id_pair_ptr,
+      BlockType* blk_type_ptr, double x_offset, double y_offset);
 
-  // get name of this pin
-  const std::string &Name() const;
+  /** Return the pin name. */
+  const std::string& Name() const;
 
-  // get the internal index
+  /** Return the pin id within its block type. */
   int Id() const;
 
-  // set offsets for N orientation, and compute offsets for all orientations
+  /** Set N-orientation offset and compute offsets for all orientations. */
   void SetOffset(double x_offset, double y_offset);
 
-  // set the width and height of the bounding box of this pin
+  /** Set the physical pin bounding-box size. */
   void SetBoundingBoxSize(double width, double height);
 
-  // get the offset along x direction for a given block orientation
+  /** Return x offset for a given block orientation. */
   double OffsetX(BlockOrient orient = N) const;
 
-  // get the offset along y direction for a given block orientation
+  /** Return y offset for a given block orientation. */
   double OffsetY(BlockOrient orient = N) const;
 
-  // set if this pin is an input pin or output pin
+  /** Mark this pin as input or output. */
   void SetIoType(bool is_input);
 
-  // is this pin an input pin?
+  /** Return true when this pin is an input. */
   bool IsInput() const;
 
-  // half of the bounding box width
-  double HalfBboxWidth();
+  /** Return half of the physical pin bounding-box width. */
+  double HalfBboxWidth() const;
 
-  // half of the bounding box height
-  double HalfBboxHeight();
+  /** Return half of the physical pin bounding-box height. */
+  double HalfBboxHeight() const;
 
-  // print information of this pin
+  /** Log pin information for debugging. */
   void Report() const;
 
  private:
-  std::pair<const std::string, int> *name_id_pair_ptr_;
-  BlockType *blk_type_ptr_;
+  std::pair<const std::string, int>* name_id_pair_ptr_;
+  BlockType* blk_type_ptr_;
 
   bool is_input_;
   bool manual_set_;

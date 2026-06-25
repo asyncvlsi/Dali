@@ -22,9 +22,9 @@
 
 namespace dali {
 
-BlockType::BlockType(std::string const *name_ptr) : name_ptr_(name_ptr) {}
+BlockType::BlockType(std::string const* name_ptr) : name_ptr_(name_ptr) {}
 
-int BlockType::GetPinId(std::string const &pin_name) const {
+int BlockType::GetPinId(std::string const& pin_name) const {
   auto ret = pin_name_id_map_.find(pin_name);
   if (ret != pin_name_id_map_.end()) {
     return ret->second;
@@ -32,7 +32,7 @@ int BlockType::GetPinId(std::string const &pin_name) const {
   return -1;
 }
 
-Pin *BlockType::AddPin(std::string const &pin_name, bool is_input) {
+Pin* BlockType::AddPin(std::string const& pin_name, bool is_input) {
   auto ret = pin_name_id_map_.find(pin_name);
   if (ret != pin_name_id_map_.end()) {
     DaliExpects(
@@ -42,14 +42,14 @@ Pin *BlockType::AddPin(std::string const &pin_name, bool is_input) {
   }
   pin_name_id_map_.insert(std::unordered_map<std::string, int>::value_type(
       pin_name, static_cast<int>(pin_list_.size())));
-  std::pair<const std::string, int> *name_num_ptr =
+  std::pair<const std::string, int>* name_num_ptr =
       &(*pin_name_id_map_.find(pin_name));
   pin_list_.emplace_back(name_num_ptr, this);
   pin_list_.back().SetIoType(is_input);
   return &pin_list_.back();
 }
 
-void BlockType::AddPin(std::string const &pin_name, double x_offset,
+void BlockType::AddPin(std::string const& pin_name, double x_offset,
                        double y_offset) {
   auto ret = pin_name_id_map_.find(pin_name);
   if (ret != pin_name_id_map_.end()) {
@@ -60,12 +60,12 @@ void BlockType::AddPin(std::string const &pin_name, double x_offset,
   }
   pin_name_id_map_.insert(std::unordered_map<std::string, int>::value_type(
       pin_name, static_cast<int>(pin_list_.size())));
-  std::pair<const std::string, int> *name_num_ptr =
+  std::pair<const std::string, int>* name_num_ptr =
       &(*pin_name_id_map_.find(pin_name));
   pin_list_.emplace_back(name_num_ptr, this, x_offset, y_offset);
 }
 
-Pin *BlockType::GetPinPtr(std::string const &pin_name) {
+Pin* BlockType::GetPinPtr(std::string const& pin_name) {
   auto res = pin_name_id_map_.find(pin_name);
   if (res != pin_name_id_map_.end()) {
     return &(pin_list_[res->second]);
@@ -94,7 +94,7 @@ void BlockType::Report() const {
                           << "    width, height: " << Width() << " " << Height()
                           << "\n"
                           << "    pin list:\n";
-  for (const auto &[name, id] : pin_name_id_map_) {
+  for (const auto& [name, id] : pin_name_id_map_) {
     BOOST_LOG_TRIVIAL(info)
         << "      " << name << " " << id << " (" << pin_list_[id].OffsetX()
         << ", " << pin_list_[id].OffsetY() << ")\n";
@@ -227,12 +227,12 @@ int BlockType::AdjacentRegionEdgeDistance(int index, bool is_flipped) const {
   }
 }
 
-RectI &BlockType::NwellRect(int index) {
+RectI& BlockType::NwellRect(int index) {
   DaliExpects(index < RegionCount(), "Out of bound");
   return n_rects_[index];
 }
 
-RectI &BlockType::PwellRect(int index) {
+RectI& BlockType::PwellRect(int index) {
   DaliExpects(index < RegionCount(), "Out of bound");
   return p_rects_[index];
 }

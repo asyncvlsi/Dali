@@ -28,8 +28,8 @@
 
 namespace dali {
 
-void CheckCommonSegment(std::pair<int2d, int2d> &seg_0,
-                        std::pair<int2d, int2d> &seg_1) {
+void CheckCommonSegment(std::pair<int2d, int2d>& seg_0,
+                        std::pair<int2d, int2d>& seg_1) {
   bool is_horizontal_0 = (seg_0.first.y == seg_0.second.y);
   bool is_horizontal_1 = (seg_1.first.y == seg_1.second.y);
 
@@ -81,7 +81,7 @@ void CheckCommonSegment(std::pair<int2d, int2d> &seg_0,
  * @param rectilinear_die_area
  */
 void DieArea::SetRawRectilinearDieArea(
-    std::vector<int2d> &rectilinear_die_area) {
+    std::vector<int2d> const& rectilinear_die_area) {
   rectilinear_die_area_ = rectilinear_die_area;
   MaybeExpandTwoPointsToFour();
   CheckRectilinearLines();
@@ -248,7 +248,7 @@ void DieArea::DetectMinimumBoundingBox() {
   region_bottom_ = rectilinear_die_area_[0].y;
   region_top_ = region_bottom_;
 
-  for (auto &point : rectilinear_die_area_) {
+  for (auto& point : rectilinear_die_area_) {
     region_left_ = std::min(region_left_, point.x);
     region_right_ = std::max(region_right_, point.x);
     region_bottom_ = std::min(region_bottom_, point.y);
@@ -356,28 +356,28 @@ void DieArea::CreatePlacementBlockages() {
   // get all vertical lines and horizontal lines
   std::unordered_set<int> x_lines;
   std::unordered_set<int> y_lines;
-  for (auto &point : rectilinear_die_area_) {
+  for (auto& point : rectilinear_die_area_) {
     x_lines.insert(point.x);
     y_lines.insert(point.y);
   }
 
   // get sorted vertical lines
   std::vector<int> sort_x_lines;
-  for (auto &line : x_lines) {
+  for (auto& line : x_lines) {
     sort_x_lines.emplace_back(line);
   }
   std::sort(
       sort_x_lines.begin(), sort_x_lines.end(),
-      [](const int &line_0, const int &line_1) { return line_0 < line_1; });
+      [](const int& line_0, const int& line_1) { return line_0 < line_1; });
 
   // get sorted horizontal lines
   std::vector<int> sort_y_lines;
-  for (auto &line : y_lines) {
+  for (auto& line : y_lines) {
     sort_y_lines.emplace_back(line);
   }
   std::sort(
       sort_y_lines.begin(), sort_y_lines.end(),
-      [](const int &line_0, const int &line_1) { return line_0 < line_1; });
+      [](const int& line_0, const int& line_1) { return line_0 < line_1; });
 
   // These vertical lines and horizontal lines form an irregular rectangular
   // grid. This grid divides the whole region into many rectangles.
@@ -405,7 +405,7 @@ void DieArea::CreatePlacementBlockages() {
  */
 void DieArea::ConvertPlacementBlockagesToGridUnit() {
   std::vector<RectI> shrunk_placement_blockages_;
-  for (auto &blockage : placement_blockages_) {
+  for (auto& blockage : placement_blockages_) {
     int new_lx = 0;
     double lx = blockage.LLX() / static_cast<double>(distance_scale_factor_x_);
     if (AbsResidual(lx, 1) > 1e-5) {

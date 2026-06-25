@@ -35,9 +35,7 @@
 
 namespace dali {
 
-/****
- * This is a struct for getting the statistics of net size and wire-length.
- */
+/** Net fanout and HPWL statistics grouped into configured fanout buckets. */
 struct NetHistogram {
   // this list defines the buckets for net size
   std::vector<size_t> buckets{2, 3, 4, 20, 40, 80, 160};
@@ -54,106 +52,125 @@ struct NetHistogram {
   double hpwl_unit;
 };
 
-/****
- * This class contain basic information of a design (or information in a DEF
- * file)
- */
+/** DEF-side design data: instances, nets, rows, die area, and blockages. */
 class Design {
   friend class Circuit;
 
  public:
-  // get the name of this design
-  std::string const &Name() const { return name_; }
+  /** Return the design name. */
+  std::string const& Name() const { return name_; }
 
-  // get DEF distance microns
+  /** Return DEF UNITS DISTANCE MICRONS. */
   int DistanceMicrons() const { return distance_microns_; }
 
-  // get the location of placement boundaries
+  /** Return left placement boundary in Dali grid units. */
   int RegionLeft() const { return die_area_.region_left_; }
+
+  /** Return right placement boundary in Dali grid units. */
   int RegionRight() const { return die_area_.region_right_; }
+
+  /** Return bottom placement boundary in Dali grid units. */
   int RegionBottom() const { return die_area_.region_bottom_; }
+
+  /** Return top placement boundary in Dali grid units. */
   int RegionTop() const { return die_area_.region_top_; }
 
-  // locations of cells in Dali is on grid, but they do not have to be on grid
-  // in a DEF file. The following two APIs return the offset along each
-  // direction.
+  /** Return x shift used to align off-grid DEF die area to Dali grid. */
   int DieAreaOffsetX() const { return die_area_.die_area_offset_x_; }
+
+  /** Return y shift used to align off-grid DEF die area to Dali grid. */
   int DieAreaOffsetY() const { return die_area_.die_area_offset_y_; }
+
+  /** Return x residual after aligning die area to Dali grid. */
   int DieAreaOffsetXResidual() const {
     return die_area_.die_area_offset_x_residual_;
   }
+
+  /** Return y residual after aligning die area to Dali grid. */
   int DieAreaOffsetYResidual() const {
     return die_area_.die_area_offset_y_residual_;
   }
 
-  // get all blocks
-  std::vector<Block> &Blocks() { return block_collection_.Instances(); }
+  /** Return all regular block instances. */
+  std::vector<Block>& Blocks() { return block_collection_.Instances(); }
 
-  std::unordered_map<std::string, size_t> &BlockNameIdMap() {
+  /** Return regular block name-to-id lookup. */
+  std::unordered_map<std::string, size_t>& BlockNameIdMap() {
     return block_collection_.NameToIdMap();
   }
 
-  // some blocks are imaginary (for example, fixed IOPINs), this function
-  // returns the number of real blocks (for example, gates)
+  /** Return the number of real, user/design-created blocks. */
   int RealBlkCnt() const { return real_block_count_; }
 
-  // get all well tap cells
-  std::vector<Block> &WellTaps() {
+  /** Return well tap cell instances. */
+  std::vector<Block>& WellTaps() {
     return well_tap_cell_collection_.Instances();
   }
 
-  // get well tap cell name-id map
-  std::unordered_map<std::string, size_t> &TapNameIdMap() {
+  /** Return well tap cell name-to-id lookup. */
+  std::unordered_map<std::string, size_t>& TapNameIdMap() {
     return well_tap_cell_collection_.NameToIdMap();
   };
 
-  // get all filler cells
-  std::vector<Block> &Fillers() { return filler_cell_collection_.Instances(); }
+  /** Return filler cell instances. */
+  std::vector<Block>& Fillers() { return filler_cell_collection_.Instances(); }
 
-  // get filler cell name-id map
-  std::unordered_map<std::string, size_t> &FillerNameIdMap() {
+  /** Return filler cell name-to-id lookup. */
+  std::unordered_map<std::string, size_t>& FillerNameIdMap() {
     return filler_cell_collection_.NameToIdMap();
   };
 
-  NamedInstanceCollection<Block> &BlockCollection() {
+  /** Return regular block collection. */
+  NamedInstanceCollection<Block>& BlockCollection() {
     return block_collection_;
   }
-  NamedInstanceCollection<Block> &WellTapCellCollection() {
+
+  /** Return well tap cell collection. */
+  NamedInstanceCollection<Block>& WellTapCellCollection() {
     return well_tap_cell_collection_;
   }
-  NamedInstanceCollection<Block> &FillerCellCollection() {
+
+  /** Return filler cell collection. */
+  NamedInstanceCollection<Block>& FillerCellCollection() {
     return filler_cell_collection_;
   };
-  NamedInstanceCollection<Block> &EndCapCellCollection() {
+
+  /** Return end-cap cell collection. */
+  NamedInstanceCollection<Block>& EndCapCellCollection() {
     return end_cap_cell_collection_;
   }
 
-  // get all iopins
-  std::vector<IoPin> &IoPins() { return iopins_; }
+  /** Return all I/O pins. */
+  std::vector<IoPin>& IoPins() { return iopins_; }
 
-  // get all nets
-  std::vector<Net> &Nets() { return nets_; }
+  /** Return all nets. */
+  std::vector<Net>& Nets() { return nets_; }
 
-  // get all rows
-  std::vector<GeneralRow> &Rows() { return rows_; }
+  /** Return all placement rows. */
+  std::vector<GeneralRow>& Rows() { return rows_; }
 
-  DieArea &GetDieArea() { return die_area_; }
+  /** Return die area model. */
+  DieArea& GetDieArea() { return die_area_; }
 
+  /** Add a user/DEF placement blockage. */
   void AddIntrinsicPlacementBlockage(double lx, double ly, double ux,
                                      double uy);
 
-  void AddFixedCellPlacementBlockage(Block &block);
+  /** Add a placement blockage covering a fixed block. */
+  void AddFixedCellPlacementBlockage(Block& block);
 
+  /** Refresh blockages implied by rectilinear die area. */
   void UpdateDieAreaPlacementBlockages();
 
-  // update all placement blockages
+  /** Rebuild the combined placement blockage list. */
   void UpdatePlacementBlockages();
 
-  [[nodiscard]] const std::vector<PlacementBlockage> &PlacementBlockages()
+  /** Return all active placement blockages. */
+  [[nodiscard]] const std::vector<PlacementBlockage>& PlacementBlockages()
       const;
 
   void UpdateFanOutHistogram(size_t net_size);
-  void InitNetFanOutHistogram(std::vector<size_t> *histo_x = nullptr);
+  void InitNetFanOutHistogram(std::vector<size_t>* histo_x = nullptr);
   void UpdateNetHPWLHistogram(size_t net_size, double hpwl);
   void ReportNetFanOutHistogram();
 

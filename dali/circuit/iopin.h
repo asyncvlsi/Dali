@@ -33,143 +33,138 @@ namespace dali {
 
 class Net;
 
-/****
- * This class contains basic information of an I/O pin. In this class, users can
- * find many attributes like:
- *     name: name of an I/O pin
- *     index: internal index
- *     net: the net this I/O pin belongs to
- * and many other things including I/O pin usage and physical geometry.
- */
+/** DEF I/O pin with net, signal metadata, placement status, and geometry. */
 class IoPin {
  public:
-  explicit IoPin(std::pair<const std::string, int> *name_id_pair_ptr);
-  IoPin(std::pair<const std::string, int> *name_id_pair_ptr, double loc_x,
+  explicit IoPin(std::pair<const std::string, int>* name_id_pair_ptr);
+  IoPin(std::pair<const std::string, int>* name_id_pair_ptr, double loc_x,
         double loc_y);
-  IoPin(std::pair<const std::string, int> *name_id_pair_ptr,
+  IoPin(std::pair<const std::string, int>* name_id_pair_ptr,
         SignalDirection direction, PlaceStatus init_place_status, double loc_x,
         double loc_y);
   IoPin(double loc_x, double loc_y, BlockOrient orient, double llx, double lly,
         double urx, double ury);
 
-  // get the name
-  const std::string &Name() const;
+  /** Return the I/O pin name. */
+  const std::string& Name() const;
 
-  // get the index
+  /** Return the I/O pin id. */
   int Id() const;
 
-  // set net pointer
-  void SetNetPtr(Net *net_ptr);
+  /** Attach the net this I/O pin belongs to. */
+  void SetNetPtr(Net* net_ptr);
 
-  // get the pointer to the net this IOPIN belongs to
-  Net *NetPtr() const;
+  /** Return the net this I/O pin belongs to. */
+  Net* NetPtr() const;
 
-  // get the net name
-  const std::string &NetName() const;
+  /** Return the connected net name. */
+  const std::string& NetName() const;
 
-  // set signal direction
+  /** Set DEF signal direction. */
   void SetSigDirection(SignalDirection direction);
 
-  // get signal direction
+  /** Return DEF signal direction. */
   SignalDirection SigDirection() const;
 
-  // get the string corresponding to the signal direction
+  /** Return DEF signal direction as a string. */
   std::string SigDirectStr() const;
 
-  // set signal use
+  /** Set DEF signal use. */
   void SetSigUse(SignalUse use);
 
-  // get signal use
+  /** Return DEF signal use. */
   SignalUse SigUse() const;
 
-  // get the string corresponding to the signal use
+  /** Return DEF signal use as a string. */
   std::string SigUseStr() const;
 
-  // set layer pointer
-  void SetLayerPtr(MetalLayer *layer_ptr);
+  /** Attach the metal layer used by this pin shape. */
+  void SetLayerPtr(MetalLayer* layer_ptr);
 
-  // get the metal layer used to create its physical geometry
-  MetalLayer *LayerPtr() const;
+  /** Return the metal layer used by this pin shape. */
+  MetalLayer* LayerPtr() const;
 
-  // get the metal layer name
-  const std::string &LayerName() const;
+  /** Return the metal layer name. */
+  const std::string& LayerName() const;
 
-  // set shape of its physical geometry
+  /** Set pin shape in local coordinates and cache oriented variants. */
   void SetShape(double llx, double lly, double urx, double ury);
 
-  // get the geometry
-  RectD &GetShape();
+  /** Return the N-orientation pin shape. */
+  RectD& GetShape();
 
-  // is the shape set?
+  /** Return true when pin geometry is available. */
   bool IsShapeSet() const;
 
-  // set the placement status before dali
+  /** Set placement status before Dali modifies this pin. */
   void SetInitPlaceStatus(PlaceStatus init_place_status);
 
-  // is this IOPIN placed before dali?
+  /** Return true when the pin was already placed before Dali. */
   bool IsPrePlaced() const;
 
-  // set placement status
+  /** Set current placement status. */
   void SetPlaceStatus(PlaceStatus place_status);
 
-  // is this IOPIN placed by dali?
+  /** Return true when the pin currently has a placed/fixed/cover status. */
   bool IsPlaced() const;
 
-  // get placement status
+  /** Return current placement status. */
   PlaceStatus GetPlaceStatus() const;
 
-  // set the x location
+  /** Set x location in Dali grid units. */
   void SetLocX(double loc_x);
 
-  // get the x location, it is supposed to be the center on a placement boundary
+  /** Return x location, normally the center point on a placement boundary. */
   double X() const;
 
-  // set the y location
+  /** Set y location in Dali grid units. */
   void SetLocY(double loc_y);
 
-  // get the y location, it is supposed to be the center on a placement boundary
+  /** Return y location, normally the center point on a placement boundary. */
   double Y() const;
 
+  /** Set location and placement status together. */
   void SetLoc(double loc_x, double loc_y, PlaceStatus place_status = PLACED);
 
-  // lower left x
+  /** Return lower x boundary with optional spacing expansion. */
   double LX(double spacing = 0) const;
 
-  // upper right x
+  /** Return upper x boundary with optional spacing expansion. */
   double UX(double spacing = 0) const;
 
-  // lower left y
+  /** Return lower y boundary with optional spacing expansion. */
   double LY(double spacing = 0) const;
 
-  // upper right y
+  /** Return upper y boundary with optional spacing expansion. */
   double UY(double spacing = 0) const;
 
-  // set final x
+  /** Set final x coordinate in database units. */
   void SetFinalX(int final_x);
 
-  // get final x
+  /** Return final x coordinate in database units. */
   int FinalX() const;
 
-  // set final y
+  /** Set final y coordinate in database units. */
   void SetFinalY(int final_y);
 
-  // get final y
+  /** Return final y coordinate in database units. */
   int FinalY() const;
 
-  // set orientation
+  /** Set final orientation. */
   void SetOrient(BlockOrient orient);
 
-  // get orientation
+  /** Return final orientation. */
   BlockOrient GetOrient() const;
 
+  /** Log I/O pin information for debugging. */
   void Report() const;
 
  private:
-  std::pair<const std::string, int> *name_id_pair_ptr_;
-  Net *net_ptr_;
+  std::pair<const std::string, int>* name_id_pair_ptr_;
+  Net* net_ptr_;
   SignalDirection signal_direction_;
   SignalUse signal_use_;
-  MetalLayer *layer_ptr_;
+  MetalLayer* layer_ptr_;
   std::vector<RectD> rects_;  // rectangles for all orientations
   bool is_shape_set_ = false;
   PlaceStatus init_place_status_;

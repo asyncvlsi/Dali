@@ -32,12 +32,12 @@ namespace dali {
 namespace keywords = boost::log::keywords;
 namespace sink = boost::log::sinks;
 
-typedef sink::synchronous_sink<sink::text_file_backend> file_sink_t;
-boost::shared_ptr<file_sink_t> g_file_sink = nullptr;
+using FileSink = sink::synchronous_sink<sink::text_file_backend>;
+boost::shared_ptr<FileSink> g_file_sink = nullptr;
 
-typedef sink::synchronous_sink<sink::basic_text_ostream_backend<char>>
-    console_sink_t;
-boost::shared_ptr<console_sink_t> g_console_sink = nullptr;
+using ConsoleSink =
+    sink::synchronous_sink<sink::basic_text_ostream_backend<char>>;
+boost::shared_ptr<ConsoleSink> g_console_sink = nullptr;
 
 severity IntToLoggingLevel(int level) {
   switch (level) {
@@ -66,13 +66,7 @@ severity IntToLoggingLevel(int level) {
   }
 }
 
-/****
- * @brief Convert a string number (0-5) to the corresponding boost logging level
- *
- * @param severity_level_str: severity level string
- * @return boost severity level
- */
-severity StrToLoggingLevel(const std::string &severity_level_str) {
+severity StrToLoggingLevel(const std::string& severity_level_str) {
   int level;
   try {
     level = std::stoi(severity_level_str);
@@ -84,19 +78,7 @@ severity StrToLoggingLevel(const std::string &severity_level_str) {
   return IntToLoggingLevel(level);
 }
 
-/****
- * @brief Initialize the logging system. The log will be directed to the
- * console and a log file.
- *
- * @param log_file_name: the name of the log file. This parameter can be an
- * empty string. If it is empty, then the final log file name will be
- * 'dali_X.log', where X is the first number which makes the log file name
- * different from any other files in the working directory.
- * @param severity_level: 0 (fatal) - 5 (trace)
- * @param disable_log_prefix: if false, then the log file will have time_stamp,
- * thread_id, and severity level as the prefix.
- */
-void InitLogging(const std::string &log_file_name, severity severity_level,
+void InitLogging(const std::string& log_file_name, severity severity_level,
                  bool disable_log_prefix) {
   // in case the logging system has been initialized, we need to close it first
   CloseLogging();
@@ -147,11 +129,6 @@ void InitLogging(const std::string &log_file_name, severity severity_level,
   boost::log::add_common_attributes();
 }
 
-/****
- * @brief Close the logging system by removing and resetting the file sink
- * and console sink. Nothing will happen if the logging system has not been
- * initialized.
- */
 void CloseLogging() {
   if (g_file_sink != nullptr) {
     boost::log::core::get()->remove_sink(g_file_sink);

@@ -29,8 +29,8 @@
 #include <string>
 #include <vector>
 
-inline boost::log::record_ostream &operator<<(boost::log::record_ostream &p,
-                                              std::vector<double> &v) {
+inline boost::log::record_ostream& operator<<(boost::log::record_ostream& p,
+                                              std::vector<double>& v) {
   p << "[";
   for (size_t i = 0; i < v.size(); ++i) {
     p << v[i];
@@ -44,13 +44,23 @@ namespace dali {
 
 typedef boost::log::trivial::severity_level severity;
 
+/** Convert Dali verbosity level 0-5 to a Boost severity level. */
 severity IntToLoggingLevel(int level);
-severity StrToLoggingLevel(const std::string &severity_level_str);
 
-void InitLogging(const std::string &log_file_name = "",
+/** Convert a Dali verbosity string 0-5 to a Boost severity level. */
+severity StrToLoggingLevel(const std::string& severity_level_str);
+
+/**
+ * Initialize console and file logging.
+ *
+ * If log_file_name is empty, a unique dali<N>.log file is created in the
+ * current working directory.
+ */
+void InitLogging(const std::string& log_file_name = "",
                  severity severity_level = boost::log::trivial::info,
                  bool disable_log_prefix = false);
 
+/** Remove active logging sinks and release their resources. */
 void CloseLogging();
 
 #define DaliExpects(e, error_message)                                     \

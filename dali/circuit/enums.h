@@ -25,16 +25,25 @@
 
 namespace dali {
 
+/** DEF/LEF metal routing direction. */
 enum MetalDirection { HORIZONTAL = 0, VERTICAL = 1, DIAG45 = 2, DIAG135 = 3 };
 
-MetalDirection StrToMetalDirection(std::string const &str_metal_direction);
+/** Convert DEF/LEF metal direction string to enum. */
+MetalDirection StrToMetalDirection(std::string const& str_metal_direction);
+
+/** Convert metal direction enum to DEF/LEF string. */
 std::string MetalDirectionStr(MetalDirection metal_direction);
 
+/** DEF component orientation. */
 enum BlockOrient { N = 0, S = 1, W = 2, E = 3, FN = 4, FS = 5, FW = 6, FE = 7 };
 
-BlockOrient StrToOrient(std::string const &str_orient);
+/** Convert DEF orientation string to enum. */
+BlockOrient StrToOrient(std::string const& str_orient);
+
+/** Convert orientation enum to DEF string. */
 std::string OrientStr(BlockOrient orient);
 
+/** DEF placement status. */
 enum PlaceStatus {
   COVER = 0,
   FIXED = 1,
@@ -42,14 +51,22 @@ enum PlaceStatus {
   UNPLACED = 3,
 };
 
-PlaceStatus StrToPlaceStatus(std::string const &str_place_status);
+/** Convert DEF placement-status string to enum. */
+PlaceStatus StrToPlaceStatus(std::string const& str_place_status);
+
+/** Convert placement-status enum to DEF string. */
 std::string PlaceStatusStr(PlaceStatus place_status);
 
+/** DEF signal direction. */
 enum SignalDirection { INPUT = 0, OUTPUT = 1, INOUT = 2, FEEDTHRU = 3 };
 
-SignalDirection StrToSignalDirection(std::string const &str_signal_direction);
+/** Convert DEF signal-direction string to enum. */
+SignalDirection StrToSignalDirection(std::string const& str_signal_direction);
+
+/** Convert signal-direction enum to DEF string. */
 std::string SignalDirectionStr(SignalDirection signal_direction);
 
+/** DEF signal use. */
 enum SignalUse {
   SIGNAL = 0,
   POWER = 1,
@@ -61,7 +78,10 @@ enum SignalUse {
   RESET = 7
 };
 
-SignalUse StrToSignalUse(std::string const &str_signal_use);
+/** Convert DEF signal-use string to enum. */
+SignalUse StrToSignalUse(std::string const& str_signal_use);
+
+/** Convert signal-use enum to DEF string. */
 std::string SignalUseStr(SignalUse signal_use);
 
 }  // namespace dali

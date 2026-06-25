@@ -41,17 +41,17 @@ double Tech::GetManufacturingGrid() const {
   return manufacturing_grid_;
 }
 
-std::vector<int> &Tech::WellTapCellIds() { return well_tap_cell_type_ids_; }
+std::vector<int>& Tech::WellTapCellIds() { return well_tap_cell_type_ids_; }
 
-std::vector<std::unique_ptr<BlockType>> &Tech::FillerCellPtrs() {
+std::vector<std::unique_ptr<BlockType>>& Tech::FillerCellPtrs() {
   return filler_ptrs_;
 }
 
-BlockType *Tech::IoDummyBlkTypePtr() { return io_dummy_blk_type_ptr_; }
+BlockType* Tech::IoDummyBlkTypePtr() { return io_dummy_blk_type_ptr_; }
 
-WellLayer &Tech::NwellLayer() { return nwell_layer_; }
+WellLayer& Tech::NwellLayer() { return nwell_layer_; }
 
-WellLayer &Tech::PwellLayer() { return pwell_layer_; }
+WellLayer& Tech::PwellLayer() { return pwell_layer_; }
 
 bool Tech::IsNwellSet() const { return n_set_; }
 
@@ -59,25 +59,25 @@ bool Tech::IsPwellSet() const { return p_set_; }
 
 bool Tech::IsWellInfoSet() const { return n_set_ || p_set_; }
 
-bool Tech::IsGndAtBottom(phydb::Macro *macro) {
+bool Tech::IsGndAtBottom(phydb::Macro* macro) {
   const std::unordered_set<std::string> gnd_names = {"vss", "gnd"};
   const std::unordered_set<std::string> vdd_names = {"vdd"};
 
   double gnd_bottom_line = DBL_MAX;
   double vdd_bottom_line = DBL_MAX;
-  for (auto &pin : macro->GetPinsRef()) {
+  for (auto& pin : macro->GetPinsRef()) {
     std::string pin_name = pin.GetName();
     std::for_each(pin_name.begin(), pin_name.end(),
-                  [](char &c) { c = tolower(c); });
+                  [](char& c) { c = tolower(c); });
     if (gnd_names.find(pin_name) != gnd_names.end()) {
-      for (auto &layer_rect : pin.GetLayerRectRef()) {
-        for (auto &rect : layer_rect.GetRects()) {
+      for (auto& layer_rect : pin.GetLayerRectRef()) {
+        for (auto& rect : layer_rect.GetRects()) {
           gnd_bottom_line = std::min(gnd_bottom_line, rect.LLY());
         }
       }
     } else if (vdd_names.find(pin_name) != vdd_names.end()) {
-      for (auto &layer_rect : pin.GetLayerRectRef()) {
-        for (auto &rect : layer_rect.GetRects()) {
+      for (auto& layer_rect : pin.GetLayerRectRef()) {
+        for (auto& rect : layer_rect.GetRects()) {
           vdd_bottom_line = std::min(vdd_bottom_line, rect.LLY());
         }
       }
@@ -100,13 +100,13 @@ bool Tech::IsGndAtBottom(phydb::Macro *macro) {
   return true;
 }
 
-std::vector<BlockType> &Tech::BlockTypes() {
+std::vector<BlockType>& Tech::BlockTypes() {
   return block_type_collection_.Instances();
 }
 
-void Tech::CreateFakeWellForStandardCell(phydb::PhyDB *phy_db) {
+void Tech::CreateFakeWellForStandardCell(phydb::PhyDB* phy_db) {
   std::unordered_set<int> height_set;
-  for (auto &block_type : BlockTypes()) {
+  for (auto& block_type : BlockTypes()) {
     if (&block_type == io_dummy_blk_type_ptr_) continue;
     height_set.insert(block_type.Height());
   }
@@ -115,16 +115,16 @@ void Tech::CreateFakeWellForStandardCell(phydb::PhyDB *phy_db) {
 
   std::vector<int> height_vec(height_set.begin(), height_set.end());
   std::sort(height_vec.begin(), height_vec.end(),
-            [](const int &h0, const int &h1) { return h0 < h1; });
+            [](const int& h0, const int& h1) { return h0 < h1; });
 
   int standard_height = height_vec[0];
   int n_height = standard_height / 2;
   int p_height = standard_height - n_height;
   DaliExpects(n_height > 0 || p_height > 0, "Both heights are 0?");
 
-  for (auto &block_type : BlockTypes()) {
+  for (auto& block_type : BlockTypes()) {
     if (&block_type == io_dummy_blk_type_ptr_) continue;
-    auto *macro = phy_db->GetMacroPtr(block_type.Name());
+    auto* macro = phy_db->GetMacroPtr(block_type.Name());
     int region_cnt = (int)std::round(block_type.Height() / standard_height);
 
     // Create the well info

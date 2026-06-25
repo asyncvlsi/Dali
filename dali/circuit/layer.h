@@ -28,33 +28,24 @@
 #include "dali/common/misc.h"
 #include "enums.h"
 
-/****
- * This header file contains class Layer, which is an abstract class for
- * MetalLayer and WellLayer. All these classes are defined in this file.
- * ****/
-
 namespace dali {
 
-/****
- * This is an abstract class of any layers, this class contains:
- *     width: min width of this layer
- *     spacing: min spacing of this layer
- */
+/** Shared minimum-width and minimum-spacing data for technology layers. */
 class Layer {
  public:
   Layer();
   Layer(double width, double spacing);
 
-  // set the min width
+  /** Set minimum layer width. */
   void SetWidth(double width);
 
-  // get the min width
+  /** Return minimum layer width. */
   double Width() const { return width_; }
 
-  // set the min spacing
+  /** Set same-layer minimum spacing. */
   void SetSpacing(double spacing);
 
-  // get the min spacing
+  /** Return same-layer minimum spacing. */
   double Spacing() const { return spacing_; }
 
  protected:
@@ -62,30 +53,27 @@ class Layer {
   double spacing_;
 };
 
-/****
- * This is a class for metal layers, which contains basic information for
- * placement, mainly I/O placement.
- */
+/** Routing metal layer parameters used mainly by I/O placement. */
 class MetalLayer : public Layer {
  public:
-  explicit MetalLayer(std::pair<const std::string, int> *name_id_pair_ptr);
+  explicit MetalLayer(std::pair<const std::string, int>* name_id_pair_ptr);
   MetalLayer(double width, double spacing,
-             std::pair<const std::string, int> *name_id_pair_ptr,
+             std::pair<const std::string, int>* name_id_pair_ptr,
              MetalDirection direction = HORIZONTAL);
 
-  // get the name of this layer
-  const std::string &Name() const;
+  /** Return the metal layer name. */
+  const std::string& Name() const;
 
-  // get the index of this layer
+  /** Return the metal layer id. */
   int Id() const;
 
-  // set the min area
+  /** Set minimum metal area. */
   void SetMinArea(double min_area);
 
-  // get the min area
+  /** Return minimum metal area. */
   double MinArea() const;
 
-  // compute and get the min height
+  /** Return minimum height implied by minimum area and width. */
   double MinHeight() const;
 
   // set the pitch of this layer, this can be different from min_width +
@@ -114,17 +102,14 @@ class MetalLayer : public Layer {
   void Report() const;
 
  private:
-  std::pair<const std::string, int> *name_id_pair_ptr_;
+  std::pair<const std::string, int>* name_id_pair_ptr_;
   double min_area_;
   double x_pitch_;
   double y_pitch_;
   MetalDirection direction_;
 };
 
-/****
- * This is a class for N/P-well layers, which contains basic information for
- * placement, mainly well legalization.
- */
+/** N/P-well layer parameters used by well legalization. */
 class WellLayer : public Layer {
  public:
   WellLayer();

@@ -30,50 +30,54 @@
 
 namespace dali {
 
-void SaveArgs(int argc, char *argv[]);
+/** Log the command line used to start the current process. */
+void SaveArgs(int argc, char* argv[]);
 
+/**
+ * Group command-line arguments into flag-led option lists.
+ *
+ * Each argument beginning with flag_prefix starts a new group. Later arguments
+ * are appended to that group until the next prefixed flag is found.
+ */
 std::vector<std::vector<std::string>> ParseArguments(
-    int argc, char *argv[], std::string const &flag_prefix);
+    int argc, char* argv[], std::string const& flag_prefix);
 
-// custom residual function, return: |x - round(x/y) * y|
+/** Return the residual distance |x - round(x / y) * y|. */
 double AbsResidual(double x, double y);
 
-unsigned long long GetCoverArea(std::vector<RectI> &rects);
+/** Return the union area covered by a list of integer rectangles. */
+unsigned long long GetCoverArea(std::vector<RectI> const& rects);
 
-// perform round() when x is close to an integer within an epsilon, other
-// perform ceiling()
+/**
+ * Round x when it is within epsilon of an integer; otherwise return ceil(x).
+ */
 double RoundOrCeiling(double x, double epsilon = 1e-5);
 
-// splits a line into many words
-void StrTokenize(std::string const &line, std::vector<std::string> &res);
+/** Split a line on whitespace and common punctuation delimiters. */
+void StrTokenize(std::string const& line, std::vector<std::string>& res);
 
-// finds the first number in a string
-int FindFirstNumber(std::string const &str);
+/** Return the index of the first digit in a string, or -1 if none exists. */
+int FindFirstNumber(std::string const& str);
 
-// check if an executable can be found or not
-bool IsExecutableExisting(std::string const &executable_path);
+/** Return true when the executable can be found by the shell. */
+bool IsExecutableExisting(std::string const& executable_path);
 
+/** Log peak and current resident memory usage in megabytes. */
 void ReportMemory();
 
-void MergeIntervals(std::vector<SegI> &intervals);
+/** Sort and merge overlapping integer intervals in place. */
+void MergeIntervals(std::vector<SegI>& intervals);
 
-/****
- * Create a square with vertices at (lx,ly), (ux,ly), (ux,uy), and (lx,uy).
+/**
+ * Write a MATLAB patch row for a rectangle.
+ *
+ * The emitted vertices are (lx, ly), (ux, ly), (ux, uy), and (lx, uy).
  * Specify x as the x-coordinates of the vertices and y as the y-coordinates.
  * MATLAB command `patch` automatically connects the last (x,y) coordinate with
  * the first (x,y) coordinate.
- *
- * @param ost: output file stream
- * @param rect: the given rectangle
- * @param has_rgb: use rgb or not
- * @param r: red channel 0-1
- * @param g: green channel 0-1
- * @param b: blue channel 0-1
- *
- * (0,0,0) black, (1,1,1) white
  */
 template <class T>
-void SaveMatlabPatchRect(std::ofstream &ost, T lx, T ly, T ux, T uy,
+void SaveMatlabPatchRect(std::ofstream& ost, T lx, T ly, T ux, T uy,
                          bool has_rgb = false, double r = 0.0, double g = 0.0,
                          double b = 0.0) {
   ost << lx << "\t" << ux << "\t" << ux << "\t" << lx << "\t" << ly << "\t"
@@ -84,9 +88,10 @@ void SaveMatlabPatchRect(std::ofstream &ost, T lx, T ly, T ux, T uy,
   ost << "\n";
 }
 
+/** Write paired n-well and p-well rectangles as one MATLAB patch row. */
 template <class T>
-void SaveMatlabPatchRegion(std::ofstream &ost, Rect<T> &n_rect,
-                           Rect<T> &p_rect) {
+void SaveMatlabPatchRegion(std::ofstream& ost, Rect<T> const& n_rect,
+                           Rect<T> const& p_rect) {
   ost << n_rect.LLX() << "\t" << n_rect.URX() << "\t" << n_rect.URX() << "\t"
       << n_rect.LLX() << "\t" << n_rect.LLY() << "\t" << n_rect.LLY() << "\t"
       << n_rect.URY() << "\t" << n_rect.URY() << "\t" << p_rect.LLX() << "\t"
@@ -95,6 +100,7 @@ void SaveMatlabPatchRegion(std::ofstream &ost, Rect<T> &n_rect,
       << p_rect.URY() << "\n";
 }
 
+/** Log a visual separator line. */
 inline void PrintHorizontalLine() {
   BOOST_LOG_TRIVIAL(info)
       << "------------------------------------------------------------\n";

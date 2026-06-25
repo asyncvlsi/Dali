@@ -32,113 +32,102 @@
 #include "dali/common/misc.h"
 #include "enums.h"
 
-/****
- * The class Block provides an abstraction of the physical placement status of
- * an instance a block can be a gate, can also be a large module, it includes
- * information like the Name of a gate/module, its Width and Height, its lower
- * left corner (LLX, LLY), the movability, orientation.
- *
- * LEFDEF manual version 5.8, page 129
- * After placement, a DEF COMPONENTS placement pt indicates where the lower-left
- * corner of the placement bounding rectangle is placed after any possible
- * rotations or flips. The bounding rectangle width and height should be a
- * multiple of the placement grid to allow for abutting cells.
- * ****/
-
 namespace dali {
 
 class BlockAux;
 
+/**
+ * Physical instance in a design.
+ *
+ * A block can represent a standard cell, macro, filler, well tap, or generated
+ * helper instance. Its location is stored as the lower-left corner of the
+ * placement bounding rectangle, matching DEF COMPONENT placement semantics.
+ */
 class Block {
  public:
-  explicit Block(std::string const *name_ptr) : name_ptr_(name_ptr) {}
+  explicit Block(std::string const* name_ptr) : name_ptr_(name_ptr) {}
 
-  /****member functions for attributes access****/
-  // get the Block name
-  const std::string &Name() { return *name_ptr_; }
+  /** Return the block instance name. */
+  const std::string& Name() const { return *name_ptr_; }
 
-  // get BlockType of this Block
-  BlockType *TypePtr() const { return type_ptr_; }
+  /** Return the master/type that defines this block's dimensions and pins. */
+  BlockType* TypePtr() const { return type_ptr_; }
 
-  // get the index of this Block in the vector of instances
+  /** Return the block's internal design id. */
   int Id() const { return id_; }
 
-  // get the width of this Block
+  /** Return the block width in Dali grid units. */
   int Width() const { return type_ptr_->Width(); }
 
-  // set the effective height of this Block, which can be different from the
-  // height of its type effective area is also updated at the same time
+  /** Set effective height and update the cached effective area. */
   void SetHeight(int height);
 
-  // set the Block height to its BlockType height
-  // area is also updated at the same time
+  /** Reset effective height and area from the block type. */
   void ResetHeight();
 
-  // get the height of this Block
+  /** Return the effective height in Dali grid units. */
   int Height() const { return eff_height_; }
 
-  // get lower left x coordinate
+  /** Return lower-left x coordinate in Dali grid units. */
   double LLX() const { return llx_; }
 
-  // get lower left y coordinate
+  /** Return lower-left y coordinate in Dali grid units. */
   double LLY() const { return lly_; }
 
-  // get upper right x coordinate
+  /** Return upper-right x coordinate in Dali grid units. */
   double URX() const { return llx_ + Width(); }
 
-  // get upper right y coordinate
+  /** Return upper-right y coordinate, including any stretch length. */
   double URY() const { return lly_ + Height() + tot_stretch_length; }
 
-  // get center x coordinate
+  /** Return center x coordinate in Dali grid units. */
   double X() const { return llx_ + Width() / 2.0; }
 
-  // get center y coordinate
+  /** Return center y coordinate in Dali grid units. */
   double Y() const { return lly_ + Height() / 2.0; }
 
-  // get the indices of nets containing this Block
-  std::vector<int> &NetList() { return nets_; }
+  /** Return the ids of nets connected to this block. */
+  std::vector<int>& NetList() { return nets_; }
 
-  // get the boolean status of whether this Block is placed
+  /** Return true if this block has a placed, fixed, or cover status. */
   bool IsPlaced() const {
     return place_status_ == PLACED || place_status_ == FIXED ||
            place_status_ == COVER;
   }
 
-  // get the placement status of this Block
+  /** Return the placement status. */
   PlaceStatus Status() const { return place_status_; }
 
-  // get the string placement status of this Block
+  /** Return the placement status as a DEF-style string. */
   std::string StatusStr() const { return PlaceStatusStr(place_status_); }
 
-  // get the boolean status of whether this Block is movable
-  // current assumption: UNPLACED and PLACED are movable, FIXED and COVER are
-  // unmovable
+  /** Return true for statuses Dali treats as movable: UNPLACED or PLACED. */
   bool IsMovable() const {
     return place_status_ == UNPLACED || place_status_ == PLACED;
   }
 
-  // get the boolean status of whether this Block is unmovable
+  /** Return true when this block is fixed or cover. */
   bool IsFixed() const { return !IsMovable(); }
 
-  // get the area of this Block
+  /** Return cached effective area in grid-unit squared. */
   long long Area() const { return eff_area_; }
 
-  // get the Orientation of this Block
+  /** Return the current block orientation. */
   BlockOrient Orient() const { return orient_; }
 
-  // is the cell placed in a flipped way
+  /** Return true when the orientation mirrors the block. */
   bool IsFlipped() const;
 
-  // get the pointer to the auxiliary information
-  BlockAux *AuxPtr() const { return aux_ptr_; }
+  /** Return optional auxiliary placement data attached by a later flow. */
+  BlockAux* AuxPtr() const { return aux_ptr_; }
 
-  // set Id
+  /** Set the internal design id. */
   void SetId(size_t id) { id_ = id; }
 
-  // set the BlockType of this Block
-  void SetType(BlockType *type_ptr);
+  /** Set the block type and reset effective dimensions from it. */
+  void SetType(BlockType* type_ptr);
 
-  // set the lower left x and y coordinate of this Block
+  /** Set lower-left location in Dali grid units. */
   void SetLoc(double lx, double ly);
 
   // set the lower left x coordinate
@@ -166,11 +155,10 @@ class Block {
   void SetOrient(BlockOrient orient);
 
   // set the pointer to the auxiliary information
-  void SetAux(BlockAux *aux);
+  void SetAux(BlockAux* aux);
 
-  // swap the location of this Block with the Block @param blk
-  // this member function ONLY swaps location
-  void SwapLoc(Block &blk);
+  /** Swap only the lower-left location with another block. */
+  void SwapLoc(Block& blk);
 
   // increase x coordinate by a certain amount
   void IncreaseX(double displacement) { llx_ += displacement; }
@@ -192,40 +180,44 @@ class Block {
   // decrease y coordinate by a certain amount
   void DecreaseY(double displacement) { lly_ -= displacement; }
 
-  // returns whether this Block overlaps with Block @param blk
-  bool IsOverlap(const Block &blk) const {
+  /** Return true when this block overlaps another block. */
+  bool IsOverlap(const Block& blk) const {
     return !(LLX() > blk.URX() || blk.LLX() > URX() || LLY() > blk.URY() ||
              blk.LLY() > URY());
   }
 
-  bool IsOverlap(const RectI &rect) const {
+  bool IsOverlap(const RectI& rect) const {
     return !(LLX() > rect.URX() || rect.LLX() > URX() || LLY() > rect.URY() ||
              rect.LLY() > URY());
   }
 
-  // returns whether this Block overlaps with Block @param blk
-  bool IsOverlap(const Block *blk) const { return IsOverlap(*blk); }
+  /** Return true when this block overlaps another block pointer. */
+  bool IsOverlap(const Block* blk) const { return IsOverlap(*blk); }
 
-  // returns the overlap area between this Block and Block @param blk
-  double OverlapArea(const Block &blk) const;
+  /** Return the overlap area with another block. */
+  double OverlapArea(const Block& blk) const;
 
   // set stretch length
   void SetStretchLength(size_t index, int length);
 
   // returns the stretching lengths
-  std::vector<int> &StretchLengths();
+  std::vector<int>& StretchLengths();
 
   int CumulativeStretchLength(size_t index);
 
-  /****Report info of this Block, for debugging purposes****/
+  /** Log detailed block information for debugging. */
   void Report();
+
+  /** Log the nets connected to this block. */
   void ReportNet();
-  void ExportWellToMatlabPatchRect(std::ofstream &ost);
+
+  /** Write this block's well geometry as MATLAB patch rectangles. */
+  void ExportWellToMatlabPatchRect(std::ofstream& ost);
 
  protected:
-  BlockType *type_ptr_ = nullptr;  // type
+  BlockType* type_ptr_ = nullptr;  // type
   // name for finding its index in block_list
-  std::string const *name_ptr_ = nullptr;
+  std::string const* name_ptr_ = nullptr;
   int id_ = 0;
   double llx_ =
       0;  // lower x coordinate, data type double, for global placement
@@ -234,7 +226,7 @@ class Block {
   PlaceStatus place_status_ =
       UNPLACED;             // placement status, i.e, PLACED, FIXED, UNPLACED
   BlockOrient orient_ = N;  // orientation, normally, N or FS
-  BlockAux *aux_ptr_ = nullptr;  // points to auxiliary information if needed
+  BlockAux* aux_ptr_ = nullptr;  // points to auxiliary information if needed
 
   // cached height, also used to store effective height, the unit is grid value
   // in the y-direction
@@ -248,22 +240,25 @@ class Block {
 
 class BlockAux {
  public:
-  explicit BlockAux(Block *blk_ptr) : blk_ptr_(blk_ptr) {
+  explicit BlockAux(Block* blk_ptr) : blk_ptr_(blk_ptr) {
     blk_ptr->SetAux(this);
   }
 
-  // get the pointer pointing to the Block it belongs to
-  Block *getBlockPtr() const { return blk_ptr_; }
+  /** Return the block that owns this auxiliary data. */
+  Block* GetBlockPtr() const { return blk_ptr_; }
+
+  /** Return the block that owns this auxiliary data. */
+  Block* getBlockPtr() const { return GetBlockPtr(); }
 
  protected:
-  Block *blk_ptr_;
+  Block* blk_ptr_;
 };
 
 struct BlkInitPair {
-  Block *blk_ptr;
+  Block* blk_ptr;
   double x;
   double y;
-  explicit BlkInitPair(Block *blk_ptr_init = nullptr, double x_init = 0,
+  explicit BlkInitPair(Block* blk_ptr_init = nullptr, double x_init = 0,
                        double y_init = 0)
       : blk_ptr(blk_ptr_init), x(x_init), y(y_init) {}
 };

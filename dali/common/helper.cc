@@ -20,7 +20,10 @@
  ******************************************************************************/
 #include "helper.h"
 
+#include <algorithm>
 #include <cmath>
+#include <cstdlib>
+#include <memory>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -30,7 +33,7 @@
 
 namespace dali {
 
-void SaveArgs(int argc, char *argv[]) {
+void SaveArgs(int argc, char* argv[]) {
   std::string cmd_line_arguments;
   for (int i = 0; i < argc; ++i) {
     cmd_line_arguments += argv[i];
@@ -41,7 +44,7 @@ void SaveArgs(int argc, char *argv[]) {
 }
 
 std::vector<std::vector<std::string>> ParseArguments(
-    int argc, char *argv[], std::string const &flag_prefix) {
+    int argc, char* argv[], std::string const& flag_prefix) {
   std::vector<std::vector<std::string>> options;
   for (int i = 1; i < argc; ++i) {
     std::string arg(argv[i]);
@@ -64,62 +67,62 @@ double AbsResidual(double x, double y) {
 
 class SegmentTree {
  public:
-  int start, end;
-  std::vector<int> X;
-  SegmentTree *left;
-  SegmentTree *right;
-  int count;
-  long long total;
-
-  SegmentTree(int start0, int end0, std::vector<int> &X0)
-      : start(start0), end(end0), X(X0) {
-    left = nullptr;
-    right = nullptr;
-    count = 0;
-    total = 0;
-  }
-
-  int GetRangeMid() const { return start + (end - start) / 2; }
-
-  SegmentTree *GetLeft() {
-    if (left == nullptr) {
-      left = new SegmentTree(start, GetRangeMid(), X);
-    }
-    return left;
-  }
-
-  SegmentTree *GetRight() {
-    if (right == nullptr) {
-      right = new SegmentTree(GetRangeMid(), end, X);
-    }
-    return right;
-  }
+  SegmentTree(int start, int end, std::vector<int> const& x_locations)
+      : start_(start), end_(end), x_locations_(x_locations) {}
 
   long long Update(int i, int j, int val);
+  long long Total() const { return total_; }
+
+ private:
+  int GetRangeMid() const { return start_ + (end_ - start_) / 2; }
+
+  SegmentTree& GetLeft() {
+    if (left_ == nullptr) {
+      left_ =
+          std::make_unique<SegmentTree>(start_, GetRangeMid(), x_locations_);
+    }
+    return *left_;
+  }
+
+  SegmentTree& GetRight() {
+    if (right_ == nullptr) {
+      right_ = std::make_unique<SegmentTree>(GetRangeMid(), end_, x_locations_);
+    }
+    return *right_;
+  }
+
+  int start_;
+  int end_;
+  std::vector<int> const& x_locations_;
+  std::unique_ptr<SegmentTree> left_;
+  std::unique_ptr<SegmentTree> right_;
+  int count_ = 0;
+  long long total_ = 0;
 };
 
 long long SegmentTree::Update(int i, int j, int val) {
   if (i >= j) return 0;
-  if (start == i && end == j) {
-    count += val;
+  if (start_ == i && end_ == j) {
+    count_ += val;
   } else {
-    GetLeft()->Update(i, std::min(GetRangeMid(), j), val);
-    GetRight()->Update(std::max(GetRangeMid(), i), j, val);
+    GetLeft().Update(i, std::min(GetRangeMid(), j), val);
+    GetRight().Update(std::max(GetRangeMid(), i), j, val);
   }
 
-  if (count > 0)
-    total = X[end] - X[start];
+  if (count_ > 0)
+    total_ = x_locations_[end_] - x_locations_[start_];
   else
-    total = GetLeft()->total + GetRight()->total;
+    total_ = GetLeft().Total() + GetRight().Total();
 
-  return total;
+  return total_;
 }
 
-unsigned long long GetCoverArea(std::vector<RectI> &rects) {
+unsigned long long GetCoverArea(std::vector<RectI> const& rects) {
   // no rectangles, return 0 immediately
   if (rects.empty()) return 0;
 
-  int event_open = 1, event_close = -1;
+  constexpr int event_open = 1;
+  constexpr int event_close = -1;
   // event is a tuple containing {y_loc, open/close event, lower_x, upper_x}
   std::vector<std::vector<int>> events;
   // each rectangle can create at most 2 events if area is positive, otherwise 0
@@ -128,7 +131,7 @@ unsigned long long GetCoverArea(std::vector<RectI> &rects) {
   std::unordered_set<int> x_values_set;
 
   // create an event only when a rectangle has an area larger than 0
-  for (auto &rec : rects) {
+  for (auto const& rec : rects) {
     if (!rec.CheckValidity()) {
       DaliExpects(false, "Something wrong with this rectangle? " << rec);
     }
@@ -144,7 +147,7 @@ unsigned long long GetCoverArea(std::vector<RectI> &rects) {
 
   // sort all events based on y location of an event
   std::sort(events.begin(), events.end(),
-            [](std::vector<int> const &event0, std::vector<int> const &event1) {
+            [](std::vector<int> const& event0, std::vector<int> const& event1) {
               return event0[0] < event1[0];
             });
 
@@ -152,7 +155,7 @@ unsigned long long GetCoverArea(std::vector<RectI> &rects) {
   std::vector<int> x_values;
   int sz = static_cast<int>(x_values_set.size());
   x_values.reserve(sz);
-  for (auto &val : x_values_set) {
+  for (auto const& val : x_values_set) {
     x_values.push_back(val);
   }
   std::sort(x_values.begin(), x_values.end());
@@ -166,7 +169,7 @@ unsigned long long GetCoverArea(std::vector<RectI> &rects) {
   long long ans = 0;
   long long cur_x_sum = 0;
   int cur_y = events[0][0];
-  for (auto &event : events) {
+  for (auto const& event : events) {
     int y = event[0], type = event[1], x1 = event[2], x2 = event[3];
     ans += cur_x_sum * (y - cur_y);
     cur_x_sum = active.Update(x_value_id_map[x1], x_value_id_map[x2], type);
@@ -183,16 +186,17 @@ double RoundOrCeiling(double x, double epsilon) {
   return std::round(x);
 }
 
-void StrTokenize(std::string const &line, std::vector<std::string> &res) {
-  static std::vector<char> delimiter_list{' ', ':', ';', '\t', '\r', '\n'};
+void StrTokenize(std::string const& line, std::vector<std::string>& res) {
+  static const std::vector<char> delimiter_list{' ',  ':',  ';',
+                                                '\t', '\r', '\n'};
 
   res.clear();
   std::string empty_str;
   bool is_delimiter, old_is_delimiter = true;
   int current_field = -1;
-  for (auto &c : line) {
+  for (auto const& c : line) {
     is_delimiter = false;
-    for (auto &delimiter : delimiter_list) {
+    for (auto const& delimiter : delimiter_list) {
       if (c == delimiter) {
         is_delimiter = true;
         break;
@@ -212,13 +216,7 @@ void StrTokenize(std::string const &line, std::vector<std::string> &res) {
   }
 }
 
-/****
- * this function assumes that the input string is a concatenation of
- * a pure English char string, and a pure digit string
- * like "metal7", "metal12", etc.
- * it will return the location of the first digit
- * ****/
-int FindFirstNumber(std::string const &str) {
+int FindFirstNumber(std::string const& str) {
   int res = -1;
   size_t sz = str.size();
   for (size_t i = 0; i < sz; ++i) {
@@ -236,14 +234,7 @@ int FindFirstNumber(std::string const &str) {
   return res;
 }
 
-/**
- * Check if a binary executable exists or not using BSD's "which" command.
- * We will use the property that "which" returns the number of failed arguments
- *
- * @param executable_path, the full path or name of an external executable.
- * @return true if this executable can be found.
- */
-bool IsExecutableExisting(std::string const &executable_path) {
+bool IsExecutableExisting(std::string const& executable_path) {
   // system call
   std::string command = "which " + executable_path + " >/dev/null";
   int res = std::system(command.c_str());
@@ -258,20 +249,12 @@ void ReportMemory() {
                           << "MB)\n";
 }
 
-/****
- * This member function comes from a solution I submitted to LeetCode, lol
- *
- * If two intervals overlap with each other, these two intervals will be merged
- * into one
- *
- * This function can merge a list of intervals
- * ****/
-void MergeIntervals(std::vector<SegI> &intervals) {
+void MergeIntervals(std::vector<SegI>& intervals) {
   size_t sz = intervals.size();
   if (sz <= 1) return;
 
   std::sort(intervals.begin(), intervals.end(),
-            [](const SegI &inter1, const SegI &inter2) {
+            [](const SegI& inter1, const SegI& inter2) {
               return inter1.lo < inter2.lo;
             });
 

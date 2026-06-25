@@ -29,112 +29,69 @@
 #include "dali/common/logging.h"
 #include "dali/common/misc.h"
 
-/****
- * This header file contains class BlockType and BlockTypeWell. The former
- * contains some basic physical information of a kind of gate, and the later
- * contains N/P-well physical information.
- * ****/
-
 namespace dali {
 
 class BlockTypeWell;
 
-/****
- * The class BlockType is an abstraction of a kind of gate, like INV, NAND, NOR
- * Here are the attributes of BlockType:
- *     name: the name of this kind of gate
- *     width: the width of its placement and routing boundary
- *     height: the height of its placement and routing boundary
- *     well: this is for gridded cell placement, N/P-well shapes are needed for
- * alignment in a local cluster pin: a list of cell pins with shapes and offsets
+/**
+ * Physical master cell/macro used by block instances.
  *
- * Optionally, this class also contains N/P-well info
- * Assumptions:
- *  1. BlockType has at least one well region, each of which contains both a
- * N-well and a P-well rectangle.
- *  2. The N-well and P-well in the same region must be abutted. This is for
- *     debugging purposes, also for compact physical layout.
- *  3. Adjacent regions must be abutted. If the actual regions are not abutted,
- *     make them abutted.
- *     +-----------------+
- *     |                 |
- *     |                 |
- *     |    P-well       |
- *     |                 |
- *     |                 |
- *     +-----------------+  n_p_edge of Region1
- *     |                 |
- *     |                 |
- *     |    N-well       |
- *     |                 |
- *     |                 |
- *     +-----------------+  stretch mark
- *     |                 |
- *     |                 |
- *     |    N-well       |
- *     |                 |
- *     |                 |
- *     +-----------------+  n_p_edge of Region0
- *     |                 |
- *     |                 |
- *     |    P-well       |
- *     |                 |
- *     |                 |
- *     +-----------------+
+ * A block type stores placement dimensions, pins, and optional N/P-well
+ * rectangles for gridded-cell legalization. Well regions are expected to be
+ * paired and abutted so downstream legalizers can infer stretch boundaries.
  */
 class BlockType {
  public:
-  explicit BlockType(std::string const *name_ptr);
+  explicit BlockType(std::string const* name_ptr);
 
-  [[nodiscard]] const std::string &Name() const { return *name_ptr_; }
+  /** Return the block type name. */
+  [[nodiscard]] const std::string& Name() const { return *name_ptr_; }
 
-  // check if a pin with a given name exists in this BlockType or not
-  [[nodiscard]] bool IsPinExisting(std::string const &pin_name) const {
+  /** Return true if this type has a pin named pin_name. */
+  [[nodiscard]] bool IsPinExisting(std::string const& pin_name) const {
     return pin_name_id_map_.find(pin_name) != pin_name_id_map_.end();
   }
 
-  // return the index of a pin with a given name
-  int GetPinId(std::string const &pin_name) const;
+  /** Return the id of pin_name. Exits if the pin does not exist. */
+  int GetPinId(std::string const& pin_name) const;
 
-  // return a pointer to a newly allocated location for a Pin with a given name
-  // if this member function is used to create pins, one needs to set pin shapes
-  // using the return pointer
-  Pin *AddPin(std::string const &pin_name, bool is_input);
+  /** Create a pin and return it so callers can fill geometry. */
+  Pin* AddPin(std::string const& pin_name, bool is_input);
 
-  // add a pin with a given name and x/y offset
-  void AddPin(std::string const &pin_name, double x_offset, double y_offset);
+  /** Create a pin with a simple x/y offset. */
+  void AddPin(std::string const& pin_name, double x_offset, double y_offset);
 
-  // get the pointer to the pin with the given name
-  // if such a pin does not exist, the return value is nullptr
-  Pin *GetPinPtr(std::string const &pin_name);
+  /** Return the pin named pin_name, or nullptr if absent. */
+  Pin* GetPinPtr(std::string const& pin_name);
 
-  // set the width of this BlockType and update its area
+  /** Set width in Dali grid units and update area. */
   void SetWidth(int width);
 
-  // get the width of this BlockType
+  /** Return width in Dali grid units. */
   int Width() const { return width_; }
 
-  // set the height of this BlockType and update its area
+  /** Set height in Dali grid units and update area. */
   void SetHeight(int height);
 
+  /** Set width/height in Dali grid units and update area. */
   void SetSize(int width, int height);
 
-  // get the height of this BlockType
+  /** Return height in Dali grid units. */
   int Height() const { return height_; }
 
-  // get the area of this BlockType
+  /** Return area in grid-unit squared. */
   long long Area() const { return area_; }
 
-  // get the pointer to the list of cell pins
-  std::vector<Pin> &PinList() { return pin_list_; }
+  /** Return pins for this block type. */
+  std::vector<Pin>& PinList() { return pin_list_; }
 
-  // report the information of this BlockType for debugging purposes
+  /** Log block-type information for debugging. */
   void Report() const;
 
-  // Recompute area
+  /** Recompute cached area from width and height. */
   void UpdateArea();
 
-  /**** API for N/P-well info ****/
+  /** Return true when N/P-well rectangles are available. */
   bool HasWellInfo() const { return has_well_info_; }
 
   void AddNwellRect(int llx, int lly, int urx, int ury);
@@ -167,22 +124,24 @@ class BlockType {
 
   int AdjacentRegionEdgeDistance(int index, bool is_flipped = false) const;
 
-  RectI &NwellRect(int index);
+  RectI& NwellRect(int index);
 
-  RectI &PwellRect(int index);
+  RectI& PwellRect(int index);
 
-  std::vector<RectI> &Nrects() { return n_rects_; }
+  std::vector<RectI>& Nrects() { return n_rects_; }
 
-  std::vector<RectI> &Prects() { return p_rects_; }
+  std::vector<RectI>& Prects() { return p_rects_; }
 
   void ReportWellInfo() const;
 
-  /**** for old code ****/
+  /** Return first P-well height for legacy call sites. */
   int Pheight();
+
+  /** Return first N-well height for legacy call sites. */
   int Nheight();
 
  private:
-  std::string const *name_ptr_;
+  std::string const* name_ptr_;
   int width_ = 0;
   int height_ = 0;
   long long area_ = 0;

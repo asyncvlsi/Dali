@@ -28,57 +28,80 @@
 
 namespace dali {
 
-/****
- * This class stands for a segment of continuous white space in a row.
- */
+/** Continuous placement segment inside a row. */
 class GeneralRowSegment {
   friend class GeneralRow;
 
  public:
   GeneralRowSegment() = default;
+
+  /** Set lower-left x coordinate in grid units. */
   void SetLX(int lx);
+
+  /** Set segment width in grid units. */
   void SetWidth(int width);
-  void AddBlock(Block *blk_ptr);
 
+  /** Add a block assigned to this segment. */
+  void AddBlock(Block* blk_ptr);
+
+  /** Return lower-left x coordinate in grid units. */
   int LX() const;
-  int UX() const;
-  int Width() const;
-  std::vector<Block *> &Blocks();
 
+  /** Return upper-right x coordinate in grid units. */
+  int UX() const;
+
+  /** Return segment width in grid units. */
+  int Width() const;
+
+  /** Return blocks assigned to this segment. */
+  std::vector<Block*>& Blocks();
+
+  /** Sort assigned blocks by x location. */
   void SortBlocks();
 
  private:
-  int lx_ = 0;                   // lower left x coordinate
-  int width_ = -1;               // width of this row segment
-  std::vector<Block *> blocks_;  // list of blocks in this row segment
+  int lx_ = 0;                  // lower left x coordinate
+  int width_ = -1;              // width of this row segment
+  std::vector<Block*> blocks_;  // list of blocks in this row segment
 };
 
-/****
- * This is a general row for both standard cells and gridded cells.
- * A row consists of several segments sharing the same
- *   - y coordinate
- *   - height
- *   - orientation
- *   - p_well_height
- *   - n_well_height
- */
+/** Placement row shared by standard-cell and gridded-cell flows. */
 class GeneralRow {
  public:
   GeneralRow() = default;
-  /**** setters ****/
+
+  /** Set lower-left y coordinate in grid units. */
   void SetLY(int ly);
+
+  /** Set row height in grid units. */
   void SetHeight(int height);
+
+  /** Set row orientation, true for N orientation. */
   void SetOrient(bool is_orient_N);
+
+  /** Set P-well height in grid units. */
   void SetPwellHeight(int p_well_height);
+
+  /** Set N-well height in grid units. */
   void SetNwellHeight(int n_well_height);
 
-  /**** getters ****/
+  /** Return lower-left y coordinate in grid units. */
   int LY() const;
+
+  /** Return row height in grid units. */
   int Height() const;
+
+  /** Return true when row orientation is N. */
   bool IsOrientN() const;
+
+  /** Return P-well height in grid units. */
   int PwellHeight() const;
+
+  /** Return N-well height in grid units. */
   int NwellHeight() const;
-  std::vector<GeneralRowSegment> &RowSegments();
+
+  /** Return row segments. */
+  std::vector<GeneralRowSegment>& RowSegments();
 
  private:
   int ly_ = 0;               // lower left y coordinate

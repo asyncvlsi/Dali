@@ -34,25 +34,24 @@
 
 namespace dali {
 
+/** Pair of x/y values used for coordinates, offsets, and vector arithmetic. */
 template <class T>
 struct Value2D {
   T x;
   T y;
   explicit Value2D(T x_init = 0, T y_init = 0) : x(x_init), y(y_init) {}
 
-  // add operator. doesn't modify object
-  Value2D operator+(const Value2D &a) const {
+  Value2D operator+(const Value2D& a) const {
     return Value2D(a.x + x, a.y + y);
   }
 
-  Value2D operator+=(const Value2D &a) {
+  Value2D operator+=(const Value2D& a) {
     x += a.x;
     y += a.y;
     return *this;
   }
 
-  // equality comparison. doesn't modify object
-  bool operator==(const Value2D &a) const { return (x == a.x && y == a.y); }
+  bool operator==(const Value2D& a) const { return (x == a.x && y == a.y); }
 
   Value2D operator*(const double scale) const {
     return Value2D(x * scale, y * scale);
@@ -64,7 +63,7 @@ struct Value2D {
     return *this;
   }
 
-  void AddUp(const Value2D &a) {
+  void AddUp(const Value2D& a) {
     x += a.x;
     y += a.y;
   }
@@ -80,7 +79,7 @@ struct Value2D {
     y = 0;
   }
 
-  friend std::ostream &operator<<(std::ostream &ost, const Value2D &value_2_d) {
+  friend std::ostream& operator<<(std::ostream& ost, const Value2D& value_2_d) {
     ost << "(" << value_2_d.x << ", " << value_2_d.y << ")";
     return ost;
   }
@@ -89,6 +88,7 @@ struct Value2D {
 typedef Value2D<double> double2d;
 typedef Value2D<int> int2d;
 
+/** Axis-aligned rectangle represented by lower-left and upper-right corners. */
 template <class T>
 struct Rect {
  private:
@@ -100,15 +100,12 @@ struct Rect {
       : llx_(llx), lly_(lly), urx_(urx), ury_(ury) {
     DaliExpects(llx_ <= urx_ && lly_ <= ury_, "Invalid Rect?");
   }
-  bool operator==(Rect<T> const &rhs) const {
-    return (llx_ == rhs.llx_) && (lly_ == rhs.llx_) && (urx_ == rhs.llx_) &&
-           (ury_ == rhs.llx_);
+  bool operator==(Rect<T> const& rhs) const {
+    return (llx_ == rhs.llx_) && (lly_ == rhs.lly_) && (urx_ == rhs.urx_) &&
+           (ury_ == rhs.ury_);
   }
-  bool operator!=(Rect<T> const &rhs) const {
-    return (llx_ != rhs.llx_) || (lly_ != rhs.llx_) || (urx_ != rhs.llx_) ||
-           (ury_ != rhs.llx_);
-  }
-  bool operator<(Rect<T> const &rhs) const {
+  bool operator!=(Rect<T> const& rhs) const { return !(*this == rhs); }
+  bool operator<(Rect<T> const& rhs) const {
     if (llx_ < rhs.llx_) {
       return true;
     }
@@ -137,11 +134,11 @@ struct Rect {
     ury_ = ury;
     DaliExpects(llx_ <= urx_ && lly_ <= ury_, "Invalid Rect?");
   }
-  bool IsOverlap(Rect<T> const &rhs) const {
+  bool IsOverlap(Rect<T> const& rhs) const {
     return !(LLX() >= rhs.URX() || rhs.LLX() >= URX() || LLY() >= rhs.URY() ||
              rhs.LLY() >= URY());
   }
-  Rect<T> GetOverlapRect(Rect<T> const &rhs) const {
+  Rect<T> GetOverlapRect(Rect<T> const& rhs) const {
     double llx, urx, lly, ury;
     llx = std::max(LLX(), rhs.LLX());
     urx = std::min(URX(), rhs.URX());
@@ -149,8 +146,8 @@ struct Rect {
     ury = std::min(URY(), rhs.URY());
     return Rect<T>(llx, lly, urx, ury);
   }
-  bool CheckValidity() { return llx_ <= urx_ && lly_ <= ury_; }
-  friend std::ostream &operator<<(std::ostream &ost, const Rect &rect) {
+  bool CheckValidity() const { return llx_ <= urx_ && lly_ <= ury_; }
+  friend std::ostream& operator<<(std::ostream& ost, const Rect& rect) {
     ost << "(" << rect.LLX() << ", " << rect.LLY() << "), "
         << "(" << rect.URX() << ", " << rect.URY() << ")";
     return ost;
@@ -161,15 +158,18 @@ struct Rect {
 typedef Rect<double> RectD;
 typedef Rect<int> RectI;
 
+/** One-dimensional closed-open interval [lo, hi). */
 template <class T>
 struct Seg {
   T lo;
   T hi;
   explicit Seg(T lo_init = 0, T hi_init = 0) : lo(lo_init), hi(hi_init) {}
   T Span() const { return hi - lo; }
-  bool Overlap(Seg<T> const &rhs) { return (lo < rhs.hi) && (hi > rhs.lo); }
-  Seg<T> *Joint(Seg<T> const &rhs) {
-    Seg<T> *res = nullptr;
+  bool Overlap(Seg<T> const& rhs) const {
+    return (lo < rhs.hi) && (hi > rhs.lo);
+  }
+  Seg<T>* Joint(Seg<T> const& rhs) {
+    Seg<T>* res = nullptr;
     if (Overlap(rhs)) {
       res = new Seg<T>();
       res->lo = std::max(lo, rhs.lo);

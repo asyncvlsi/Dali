@@ -35,70 +35,64 @@ namespace dali {
 class NetAux;
 class IoPin;
 
-/****
- * This is a class for nets. When initializing a net, its capacity and weight
- * need to be specified. One can use AddBlkPinPair() and AddIoPin() to add pins
- * to a net.
- */
+/** Electrical net with connected block pins, I/O pins, and HPWL helpers. */
 class Net {
  public:
-  Net(std::pair<const std::string, int> *name_id_pair_ptr, size_t capacity,
+  Net(std::pair<const std::string, int>* name_id_pair_ptr, size_t capacity,
       double weight);
 
-  // get the name of this net
-  const std::string &Name() const;
+  /** Return the net name. */
+  const std::string& Name() const;
 
-  // get the internal index
+  /** Return the net id. */
   int Id() const;
 
-  // add block/pin pair to this net
-  void AddBlkPinPair(Block *block_ptr, Pin *pin_ptr);
+  /** Add a connected block/pin pair. */
+  void AddBlkPinPair(Block* block_ptr, Pin* pin_ptr);
 
-  std::vector<NetPin> &BlockPins();
+  /** Return connected block pins. */
+  std::vector<NetPin>& BlockPins();
 
-  // add an I/O pin to this net
-  void AddIoPin(IoPin *io_pin);
+  /** Add a connected I/O pin. */
+  void AddIoPin(IoPin* io_pin);
 
-  std::vector<IoPin *> &IoPinPtrs();
+  /** Return connected I/O pins. */
+  std::vector<IoPin*>& IoPinPtrs();
 
-  // set the net weight
+  /** Set net weight used by wirelength metrics. */
   void SetWeight(double weight);
 
-  // get the net weight
+  /** Return net weight used by wirelength metrics. */
   double Weight() const;
 
-  // get the number of pins in this net
+  /** Return total connected block and I/O pin count. */
   size_t PinCnt() const;
 
-  // get 1/(p-1), where p in the number of pins in this net
+  /** Return 1/(p-1), where p is PinCnt(). */
   double InvP() const;
 
-  // set auxiliary information
-  void SetAux(NetAux *aux);
+  /** Attach auxiliary data owned by a downstream algorithm. */
+  void SetAux(NetAux* aux);
 
-  // get auxiliary information
-  NetAux *Aux();
+  /** Return attached auxiliary data, if any. */
+  NetAux* Aux();
 
-  // if a given block is not in this net, what is the lower and upper bound of
-  // this net in the x direction
-  void GetXBoundIfBlkAbsent(Block *blk_ptr, double &lo, double &hi);
+  /** Return x bounds if blk_ptr were excluded from this net. */
+  void GetXBoundIfBlkAbsent(Block* blk_ptr, double& lo, double& hi);
 
-  // if a given block is not in this net, what is the lower and upper bound of
-  // this net in the y direction
-  void GetYBoundIfBlkAbsent(Block *blk_ptr, double &lo, double &hi);
+  /** Return y bounds if blk_ptr were excluded from this net. */
+  void GetYBoundIfBlkAbsent(Block* blk_ptr, double& lo, double& hi);
 
-  // sort block pins based on block ids and pin ids
+  /** Sort block pins by block id, then pin id. */
   void SortBlkPinList();
 
-  // find the indices for pins with maximum x location and minimum x location in
-  // this net
+  /** Update cached indices of min/max x block pins. */
   void UpdateMaxMinIdX();
 
-  // find the indices for pins with maximum y location and minimum y location in
-  // this net
+  /** Update cached indices of min/max y block pins. */
   void UpdateMaxMinIdY();
 
-  // find the indices for pins in both directions
+  /** Update cached min/max pin indices in both dimensions. */
   void UpdateMaxMinIndex();
 
   // get the index of the BlockPin pair with the maximum x location
@@ -114,16 +108,16 @@ class Net {
   int MinBlkPinIdY() const;
 
   // get the Block pointer of the BlockPin pair with the maximum x location
-  Block *MaxBlkPtrX() const;
+  Block* MaxBlkPtrX() const;
 
   // get the Block pointer of the BlockPin pair with the minimum x location
-  Block *MinBlkPtrX() const;
+  Block* MinBlkPtrX() const;
 
   // get the Block pointer of the BlockPin pair with the maximum y location
-  Block *MaxBlkPtrY() const;
+  Block* MaxBlkPtrY() const;
 
   // get the Block pointer of the BlockPin pair with the minimum y location
-  Block *MinBlkPtrY() const;
+  Block* MinBlkPtrY() const;
 
   // get the weighted HPWLX of this net
   double WeightedHPWLX();
@@ -176,11 +170,11 @@ class Net {
   double HPWLCtoC();
 
  protected:
-  std::pair<const std::string, int> *name_id_pair_ptr_;
+  std::pair<const std::string, int>* name_id_pair_ptr_;
   double weight_;
   int cnt_fixed_;
   std::vector<NetPin> blk_pins_;
-  std::vector<IoPin *> iopin_ptrs_;
+  std::vector<IoPin*> iopin_ptrs_;
 
   // cached data
   int max_x_pin_id_, min_x_pin_id_;
@@ -190,16 +184,16 @@ class Net {
   int driver_pin_index = -1;
 
   // auxiliary information
-  NetAux *aux_ptr_;
+  NetAux* aux_ptr_;
 };
 
 class NetAux {
  public:
-  explicit NetAux(Net *net_ptr) : net_ptr_(net_ptr) { net_ptr_->SetAux(this); }
-  Net *GetNet() const { return net_ptr_; }
+  explicit NetAux(Net* net_ptr) : net_ptr_(net_ptr) { net_ptr_->SetAux(this); }
+  Net* GetNet() const { return net_ptr_; }
 
  protected:
-  Net *net_ptr_;
+  Net* net_ptr_;
 };
 
 }  // namespace dali

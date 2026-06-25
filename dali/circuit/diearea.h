@@ -25,6 +25,7 @@
 
 namespace dali {
 
+/** Rectilinear DEF die area and the derived legal placement box/blockages. */
 class DieArea {
   friend class Circuit;
   friend class Design;
@@ -32,8 +33,12 @@ class DieArea {
  public:
   DieArea() = default;
 
-  void SetRawRectilinearDieArea(std::vector<int2d> &rectilinear_die_area);
-  std::vector<RectI> &PlacementBlockages() { return placement_blockages_; }
+  /** Set raw rectilinear die-area vertices in manufacturing-grid units. */
+  void SetRawRectilinearDieArea(std::vector<int2d> const& rectilinear_die_area);
+
+  /** Return placement blockages created from non-rectangular die area regions.
+   */
+  std::vector<RectI>& PlacementBlockages() { return placement_blockages_; }
 
  private:
   int distance_scale_factor_x_ = 0;
