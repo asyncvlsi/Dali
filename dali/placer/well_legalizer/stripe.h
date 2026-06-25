@@ -18,14 +18,14 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_PLACER_WELLLEGALIZER_STRIPE_H_
-#define DALI_PLACER_WELLLEGALIZER_STRIPE_H_
+#ifndef DALI_PLACER_WELL_LEGALIZER_STRIPE_H_
+#define DALI_PLACER_WELL_LEGALIZER_STRIPE_H_
 
 #include "dali/circuit/block.h"
 #include "dali/circuit/circuit.h"
 #include "dali/common/config.h"
 #include "dali/common/misc.h"
-#include "dali/placer/well_legalizer/griddedrow.h"
+#include "dali/placer/well_legalizer/gridded_row.h"
 
 #if DALI_USE_CPLEX
 #include <ilcplex/ilocplex.h>
@@ -129,13 +129,13 @@ class Stripe {
   bool IsStripeLegal();
 
   void CollectAllRowSegments();
-  void UpdateSubCellLocs(std::vector<BlkDispVar>& vars);
+  void UpdateSubCellLocs(std::vector<BlockDisplacementVariable>& vars);
   void OptimizeDisplacementInEachRowSegment(double lambda,
                                             bool is_weighted_anchor,
                                             bool is_reorder);
   void ComputeAverageLoc();
   void ReportIterativeStatus(int i);
-  bool IsDiscrepancyConverge();
+  bool IsDiscrepancyConverged();
   void SetBlockLoc();
   void ClearMultiRowCellBreaking();
   void IterativeCellReordering(int max_iter, int number_of_threads = 1);
@@ -194,4 +194,4 @@ struct ClusterStripe {
 
 }  // namespace dali
 
-#endif  // DALI_PLACER_WELLLEGALIZER_STRIPE_H_
+#endif  // DALI_PLACER_WELL_LEGALIZER_STRIPE_H_

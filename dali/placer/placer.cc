@@ -55,7 +55,7 @@ void Placer::LoadConf([[maybe_unused]] std::string const& config_file) {
                                 "supposed to be called directly\n";
 };
 
-void Placer::SetInputCircuit(Circuit* circuit) {
+void Placer::SetCircuit(Circuit* circuit) {
   DaliExpects(circuit != nullptr,
               "Invalid input circuit: not allowed to set nullptr as an input!");
   ckt_ptr_ = circuit;
@@ -217,7 +217,7 @@ bool Placer::StartPlacement() {
   return false;
 }
 
-void Placer::TakeOver(Placer* placer) {
+void Placer::CopyPlacementContextFrom(Placer* placer) {
   aspect_ratio_ = placer->AspectRatio();
   placement_density_ = placer->PlacementDensity();
   left_ = placer->RegionLeft();

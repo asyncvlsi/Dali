@@ -47,7 +47,7 @@ class Placer {
   virtual void LoadConf(std::string const& config_file);
 
   /** Attach the circuit to be placed. */
-  void SetInputCircuit(Circuit* circuit);
+  void SetCircuit(Circuit* circuit);
 
   /** Set the number of threads used by derived placers. */
   void SetNumThreads(int num_threads);
@@ -152,7 +152,7 @@ class Placer {
   }
 
   /** Copy common placement state from another placer. */
-  void TakeOver(Placer* placer);
+  void CopyPlacementContextFrom(Placer* placer);
 
   /** Validate target density settings. */
   void CheckTargetDensity() const;

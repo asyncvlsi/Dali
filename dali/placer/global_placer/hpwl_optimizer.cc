@@ -326,8 +326,8 @@ void B2BHpwlOptimizer::BuildProblemY() {
   tot_triplets_time_y += elapsed_time.GetWallTime();
 }
 
-bool B2BHpwlOptimizer::IsSeriesConverge(std::vector<double>& data,
-                                        int window_size, double tolerance) {
+bool B2BHpwlOptimizer::IsSeriesConverged(std::vector<double>& data,
+                                         int window_size, double tolerance) {
   int sz = (int)data.size();
   if (sz < window_size) {
     return false;
@@ -411,7 +411,7 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
     // BOOST_LOG_TRIVIAL(info)  <<"  %d WeightedHPWLX: %e\n", i,
     // evaluate_result);
     if (eval_history.size() >= 3) {
-      bool is_converge = IsSeriesConverge(eval_history, 3, cg_stop_criterion);
+      bool is_converge = IsSeriesConverged(eval_history, 3, cg_stop_criterion);
       bool is_oscillate = IsSeriesOscillate(eval_history, 5);
       if (is_converge) {
         break;
@@ -469,7 +469,7 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
     // BOOST_LOG_TRIVIAL(info)  <<"  %d WeightedHPWLY: %e\n", i,
     // evaluate_result);
     if (eval_history.size() >= 3) {
-      bool is_converge = IsSeriesConverge(eval_history, 3, cg_stop_criterion);
+      bool is_converge = IsSeriesConverged(eval_history, 3, cg_stop_criterion);
       bool is_oscillate = IsSeriesOscillate(eval_history, 5);
       if (is_converge) {
         break;
@@ -678,8 +678,8 @@ void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(int num_threads) {
       break;
     }
     if (eval_history_x.size() >= 3) {
-      bool is_converge =
-          IsSeriesConverge(eval_history_x, 3, net_model_update_stop_criterion_);
+      bool is_converge = IsSeriesConverged(eval_history_x, 3,
+                                           net_model_update_stop_criterion_);
       bool is_oscillate = IsSeriesOscillate(eval_history_x, 5);
       if (is_converge) {
         break;
@@ -725,8 +725,8 @@ void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(int num_threads) {
       break;
     }
     if (eval_history_y.size() >= 3) {
-      bool is_converge =
-          IsSeriesConverge(eval_history_y, 3, net_model_update_stop_criterion_);
+      bool is_converge = IsSeriesConverged(eval_history_y, 3,
+                                           net_model_update_stop_criterion_);
       bool is_oscillate = IsSeriesOscillate(eval_history_y, 5);
       if (is_converge) {
         break;
@@ -1162,14 +1162,15 @@ void StarHpwlHpwlOptimizer::InitializeDriverLoadPairs() {
   for (int i = 0; i < sz; ++i) {
     diagonal_pair.emplace_back(i, i);
     pair_connect[i].push_back(&(diagonal_pair[i]));
-    std::sort(pair_connect[i].begin(), pair_connect[i].end(),
-              [](const BlkPairNets* blk_pair0, const BlkPairNets* blk_pair1) {
-                if (blk_pair0->blk_num0 == blk_pair1->blk_num0) {
-                  return blk_pair0->blk_num1 < blk_pair1->blk_num1;
-                } else {
-                  return blk_pair0->blk_num0 < blk_pair1->blk_num0;
-                }
-              });
+    std::sort(
+        pair_connect[i].begin(), pair_connect[i].end(),
+        [](const BlockPairNets* blk_pair0, const BlockPairNets* blk_pair1) {
+          if (blk_pair0->blk_num0 == blk_pair1->blk_num0) {
+            return blk_pair0->blk_num1 < blk_pair1->blk_num1;
+          } else {
+            return blk_pair0->blk_num0 < blk_pair1->blk_num0;
+          }
+        });
   }
 
   std::vector<int> row_size(sz, 1);
@@ -1331,11 +1332,11 @@ void StarHpwlHpwlOptimizer::BuildProblemX() {
   }
 
   // double decay_length = decay_factor * ckt_ptr_->AveBlkHeight();
-  std::vector<BlkPairNets>& blk_pair_net_list = blk_pair_net_list_;
+  std::vector<BlockPairNets>& blk_pair_net_list = blk_pair_net_list_;
   int pair_sz = blk_pair_net_list.size();
   // #pragma omp parallel for
   for (int i = 0; i < pair_sz; ++i) {
-    BlkPairNets& blk_pair = blk_pair_net_list[i];
+    BlockPairNets& blk_pair = blk_pair_net_list[i];
     blk_pair.ClearX();
     for (auto& edge : blk_pair.edges) {
       Net& net = *(edge.net);
@@ -1472,11 +1473,11 @@ void StarHpwlHpwlOptimizer::BuildProblemY() {
   }
 
   // double decay_length = decay_factor * ckt_ptr_->AveBlkHeight();
-  std::vector<BlkPairNets>& blk_pair_net_list = blk_pair_net_list_;
+  std::vector<BlockPairNets>& blk_pair_net_list = blk_pair_net_list_;
   int pair_sz = blk_pair_net_list.size();
   // #pragma omp parallel for
   for (int i = 0; i < pair_sz; ++i) {
-    BlkPairNets& blk_pair = blk_pair_net_list[i];
+    BlockPairNets& blk_pair = blk_pair_net_list[i];
     blk_pair.ClearY();
     for (auto& edge : blk_pair.edges) {
       Net& net = *(edge.net);
@@ -1671,7 +1672,7 @@ double StarHpwlHpwlOptimizer::OptimizeQuadraticMetricX(
     // BOOST_LOG_TRIVIAL(info)  <<"  %d WeightedHPWLX: %e\n", i,
     // evaluate_result);
     if (eval_history.size() >= 3) {
-      bool is_converge = IsSeriesConverge(eval_history, 3, cg_stop_criterion);
+      bool is_converge = IsSeriesConverged(eval_history, 3, cg_stop_criterion);
       bool is_oscillate = IsSeriesOscillate(eval_history, 5);
       if (is_converge) {
         break;
@@ -1721,7 +1722,7 @@ double StarHpwlHpwlOptimizer::OptimizeQuadraticMetricY(
     // BOOST_LOG_TRIVIAL(info)  <<"  %d WeightedHPWLY: %e\n", i,
     // evaluate_result);
     if (eval_history.size() >= 3) {
-      bool is_converge = IsSeriesConverge(eval_history, 3, cg_stop_criterion);
+      bool is_converge = IsSeriesConverged(eval_history, 3, cg_stop_criterion);
       bool is_oscillate = IsSeriesOscillate(eval_history, 5);
       if (is_converge) {
         break;

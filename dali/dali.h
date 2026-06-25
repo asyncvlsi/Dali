@@ -23,9 +23,11 @@
 
 #include <phydb/phydb.h>
 
+#include <memory>
+
 #include "dali/circuit/circuit.h"
 #include "dali/placer.h"
-#include "dali/timing/starpimodelrcestimator.h"
+#include "dali/timing/star_pi_model_estimator.h"
 
 namespace dali {
 
@@ -36,6 +38,7 @@ class Dali {
        const std::string& log_file_name = "");
   Dali(phydb::PhyDB* phy_db_ptr, severity severity_level,
        const std::string& log_file_name = "");
+  ~Dali() = default;
 
   /** Load runtime options from the ACT config database. */
   void ShowParamsList();
@@ -47,9 +50,9 @@ class Dali {
   Circuit& GetCircuit();
   phydb::PhyDB* GetPhyDBPtr();
 
-  bool ConfigIoPlacerAllInOneLayer(std::string const& layer_name);
+  bool SetIoPlacerGlobalMetalLayer(std::string const& layer_name);
   bool ConfigIoPlacer();
-  bool StartIoPinAutoPlacement();
+  bool RunIoPinAutoPlacement();
   bool IoPinPlacement(int argc, char** argv);
 
   bool ShouldPerformTimingDrivenPlacement();
@@ -115,12 +118,12 @@ class Dali {
   Circuit circuit_;
   phydb::PhyDB* phy_db_ptr_ = nullptr;
   GlobalPlacer gb_placer_;
-  LGTetrisEx legalizer_;
+  ExtendedTetrisLegalizer legalizer_;
   StdClusterWellLegalizer well_legalizer_;
-  WellTapPlacer* well_tap_placer_ = nullptr;
+  std::unique_ptr<WellTapPlacer> well_tap_placer_;
   FillerCellPlacer filler_cell_placer_;
-  IoPlacer* io_placer_ = nullptr;
-  StarPiModelEstimator* rc_estimator = nullptr;
+  std::unique_ptr<IoPlacer> io_placer_;
+  std::unique_ptr<StarPiModelEstimator> rc_estimator;
 
   int max_td_place_num_ = 2;
 

@@ -67,7 +67,11 @@ void FillerCellPlacer::PlaceFillerCells(int lx, int ux, int ly,
   if (ux <= lx) {
     return;
   }
-  auto& filler_cells = ckt_ptr_->design().Fillers();
+
+  // Keep the current policy simple and deterministic by instantiating 1X
+  // fillers only. The flow already creates larger filler masters, so this can
+  // be extended later to use a mixed-width strategy if reducing instance count
+  // becomes important.
   BlockType* filler_type_ptr = ckt_ptr_->tech().FillerCellPtrs()[0].get();
   int space = ux - lx;
   for (int i = 0; i < space; ++i) {

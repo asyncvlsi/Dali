@@ -33,7 +33,7 @@
 #include "dali/circuit/enums.h"
 #include "dali/common/elapsed_time.h"
 #include "dali/common/helper.h"
-#include "dali/common/optregdist.h"
+#include "dali/common/opt_reg_dist.h"
 
 namespace dali {
 
@@ -1296,7 +1296,7 @@ void Circuit::ReportHPWLCtoC() {
 }
 
 void Circuit::SaveOptimalRegionDistance(std::string const& file_name) {
-  OptRegDist distance_calculator;
+  OptimalRegionDistance distance_calculator;
   distance_calculator.circuit_ = this;
   distance_calculator.SaveFile(file_name);
 }

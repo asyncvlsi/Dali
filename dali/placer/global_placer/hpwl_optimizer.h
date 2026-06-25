@@ -25,7 +25,7 @@
 #include <vector>
 
 #include "dali/circuit/circuit.h"
-#include "dali/placer/global_placer/blkpairnets.h"
+#include "dali/placer/global_placer/block_pair_nets.h"
 
 namespace dali {
 
@@ -104,8 +104,8 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
 
   virtual void BuildProblemX();
   virtual void BuildProblemY();
-  bool IsSeriesConverge(std::vector<double>& data, int window_size,
-                        double tolerance);
+  bool IsSeriesConverged(std::vector<double>& data, int window_size,
+                         double tolerance);
   bool IsSeriesOscillate(std::vector<double>& data, int window_size);
   virtual double OptimizeQuadraticMetricX(double cg_stop_criterion);
   virtual double OptimizeQuadraticMetricY(double cg_stop_criterion);
@@ -170,8 +170,8 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   std::vector<T> coefficients_y_;
   Eigen::ConjugateGradient<SpMat, Eigen::Lower | Eigen::Upper> cg_x_;
   Eigen::ConjugateGradient<SpMat, Eigen::Lower | Eigen::Upper> cg_y_;
-  std::vector<std::vector<BlkPairNets*>> pair_connect;
-  std::vector<BlkPairNets> diagonal_pair;
+  std::vector<std::vector<BlockPairNets*>> pair_connect;
+  std::vector<BlockPairNets> diagonal_pair;
   std::vector<SpMat::InnerIterator> SpMat_diag_x;
   std::vector<SpMat::InnerIterator> SpMat_diag_y;
 
@@ -242,7 +242,7 @@ class StarHpwlHpwlOptimizer : public B2BHpwlOptimizer {
   void UpdateAnchorAlpha() override;
 
  private:
-  std::vector<BlkPairNets> blk_pair_net_list_;
+  std::vector<BlockPairNets> blk_pair_net_list_;
   std::unordered_map<PairEgId, EgId, boost::hash<PairEgId>> blk_pair_map_;
 };
 

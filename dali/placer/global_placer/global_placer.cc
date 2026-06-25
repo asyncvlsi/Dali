@@ -84,10 +84,12 @@ void GlobalPlacer::CloseOptimizerAndLegalizer() {
   if (optimizer_ != nullptr) {
     optimizer_->Close();
     delete optimizer_;
+    optimizer_ = nullptr;
   }
   if (legalizer_ != nullptr) {
     legalizer_->Close();
     delete legalizer_;
+    legalizer_ = nullptr;
   }
 }
 
@@ -143,7 +145,7 @@ bool GlobalPlacer::StartPlacement() {
     optimizer_->OptimizeHpwl();
     legalizer_->RemoveCellOverlap();
     PrintHpwl();
-    if (IsPlacementConverge()) break;
+    if (IsPlacementConverged()) break;
   }
   UpdateMovableBlkPlacementStatus();
 
@@ -172,8 +174,8 @@ bool GlobalPlacer::IsBlockListOrNetListEmpty() const {
   return false;
 }
 
-bool GlobalPlacer::IsSeriesConverge(std::vector<double>& series,
-                                    int window_size, double tolerance) {
+bool GlobalPlacer::IsSeriesConverged(std::vector<double>& series,
+                                     int window_size, double tolerance) {
   auto sz = static_cast<int>(series.size());
   if (sz < window_size) {
     return false;
@@ -205,7 +207,7 @@ bool GlobalPlacer::IsSeriesConverge(std::vector<double>& series,
  *    the gap between lower bound wire-length and upper bound wire-length is
  *    less than 8%
  * ****/
-bool GlobalPlacer::IsPlacementConverge() {
+bool GlobalPlacer::IsPlacementConverged() {
   bool res;
   auto& lower_bound_hpwl = optimizer_->GetHpwls();
   auto& upper_bound_hpwl = legalizer_->GetHpwls();
@@ -220,8 +222,8 @@ bool GlobalPlacer::IsPlacementConverge() {
       if (gap_ratio < 0.1) {  // (a)
         res = true;
       } else if (gap_ratio < 0.25) {  // (b)
-        res = IsSeriesConverge(upper_bound_hpwl, 3,
-                               simpl_LAL_converge_criterion_);
+        res = IsSeriesConverged(upper_bound_hpwl, 3,
+                                simpl_LAL_converge_criterion_);
       } else {
         res = false;
       }

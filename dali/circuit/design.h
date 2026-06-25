@@ -27,8 +27,8 @@
 
 #include "block.h"
 #include "dali/common/named_instance_collection.h"
-#include "diearea.h"
-#include "iopin.h"
+#include "die_area.h"
+#include "io_pin.h"
 #include "net.h"
 #include "placement_blockage.h"
 #include "row.h"

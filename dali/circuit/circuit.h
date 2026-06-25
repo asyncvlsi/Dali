@@ -34,7 +34,7 @@
 #include "dali/common/logging.h"
 #include "design.h"
 #include "enums.h"
-#include "iopin.h"
+#include "io_pin.h"
 #include "layer.h"
 #include "net.h"
 #include "tech.h"

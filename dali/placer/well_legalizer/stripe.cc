@@ -24,9 +24,9 @@
 
 #include <algorithm>
 
-#include "dali/placer/well_legalizer/blockhelper.h"
-#include "dali/placer/well_legalizer/lgblkaux.h"
-#include "dali/placer/well_legalizer/stripehelper.h"
+#include "dali/placer/well_legalizer/block_helper.h"
+#include "dali/placer/well_legalizer/legalizer_block_aux.h"
+#include "dali/placer/well_legalizer/stripe_helper.h"
 
 namespace dali {
 
@@ -393,10 +393,10 @@ void Stripe::UpdateBlockStretchLength() {
     for (auto& blk_region : cur_cluster.blk_regions_) {
       int id = blk_region.region_id;
       if (id >= 1) {
-        Block* p_blk = blk_region.p_blk;
+        Block* p_blk = blk_region.block;
         --id;
         int well_edge_distance =
-            blk_region.p_blk->TypePtr()->AdjacentRegionEdgeDistance(
+            blk_region.block->TypePtr()->AdjacentRegionEdgeDistance(
                 id, p_blk->IsFlipped());
         int actual_edge_distance = (cur_cluster.LLY() + cur_cluster.PNEdge()) -
                                    (pre_cluster.LLY() + pre_cluster.PNEdge());
@@ -576,12 +576,12 @@ void Stripe::CollectAllRowSegments() {
   }
 }
 
-void Stripe::UpdateSubCellLocs(std::vector<BlkDispVar>& vars) {
-  for (BlkDispVar& var : vars) {
-    Block* blk_ptr = var.blk_rgn.p_blk;
+void Stripe::UpdateSubCellLocs(std::vector<BlockDisplacementVariable>& vars) {
+  for (BlockDisplacementVariable& var : vars) {
+    Block* blk_ptr = var.block_region.block;
     if (blk_ptr == nullptr) continue;  // skip dummy cells
-    auto* aux_ptr = static_cast<LgBlkAux*>(blk_ptr->AuxPtr());
-    aux_ptr->SetSubCellLoc(var.blk_rgn.region_id, var.Solution(),
+    auto* aux_ptr = static_cast<LegalizerBlockAux*>(blk_ptr->AuxPtr());
+    aux_ptr->SetSubCellLoc(var.block_region.region_id, var.Solution(),
                            var.SegmentWeight());
   }
 }
@@ -593,9 +593,10 @@ void Stripe::OptimizeDisplacementInEachRowSegment(double lambda,
 #pragma omp parallel for
   for (size_t i = 0; i < sz; ++i) {
     RowSegment* seg = row_seg_ptrs_[i];
-    std::vector<BlkDispVar> vars = seg->OptimizeQuadraticDisplacement(
-        lambda, is_weighted_anchor, is_reorder);
-    // std::vector<BlkDispVar> vars =
+    std::vector<BlockDisplacementVariable> vars =
+        seg->OptimizeQuadraticDisplacement(lambda, is_weighted_anchor,
+                                           is_reorder);
+    // std::vector<BlockDisplacementVariable> vars =
     //     seg->OptimizeLinearDisplacement(lambda, is_weighted_anchor,
     //     is_reorder);
     UpdateSubCellLocs(vars);
@@ -607,7 +608,7 @@ void Stripe::ComputeAverageLoc() {
 #pragma omp parallel for
   for (size_t i = 0; i < sz; ++i) {
     Block* blk_ptr = blk_ptrs_vec_[i];
-    auto aux_ptr = static_cast<LgBlkAux*>(blk_ptr->AuxPtr());
+    auto aux_ptr = static_cast<LegalizerBlockAux*>(blk_ptr->AuxPtr());
     aux_ptr->ComputeAverageLoc();
     blk_ptr->SetLLX(aux_ptr->AverageLoc());
   }
@@ -619,7 +620,7 @@ void Stripe::ReportIterativeStatus(int i) {
   max_discrepancy_ = 0;
   for (auto& blk_ptr : blk_ptrs_vec_) {
     // compute displacement from init_x to average_x
-    auto aux_ptr = static_cast<LgBlkAux*>(blk_ptr->AuxPtr());
+    auto aux_ptr = static_cast<LegalizerBlockAux*>(blk_ptr->AuxPtr());
     double2d init_loc = aux_ptr->InitLoc();
     double tmp_disp_x = std::fabs(aux_ptr->AverageLoc() - init_loc.x);
     disp_x += tmp_disp_x;
@@ -642,7 +643,7 @@ void Stripe::ReportIterativeStatus(int i) {
                           << ", discrepancy: " << discrepancy << "\n";
 }
 
-bool Stripe::IsDiscrepancyConverge() {
+bool Stripe::IsDiscrepancyConverged() {
   if (discrepancies_.size() <= 1) return false;
   size_t sz = discrepancies_.size();
   double last_difference =
@@ -656,7 +657,7 @@ void Stripe::SetBlockLoc() {
 #pragma omp parallel for
   for (size_t i = 0; i < sz; ++i) {
     Block* blk_ptr = blk_ptrs_vec_[i];
-    auto aux_ptr = static_cast<LgBlkAux*>(blk_ptr->AuxPtr());
+    auto aux_ptr = static_cast<LegalizerBlockAux*>(blk_ptr->AuxPtr());
     blk_ptr->SetLLX(std::round(aux_ptr->AverageLoc()));
   }
 }
@@ -676,7 +677,7 @@ void Stripe::IterativeCellReordering(int max_iter, int number_of_threads) {
     ComputeAverageLoc();
     ReportIterativeStatus(i);
     if (!is_weighted_anchor) {
-      is_weighted_anchor = IsDiscrepancyConverge();
+      is_weighted_anchor = IsDiscrepancyConverged();
     }
     if (max_discrepancy_ < 0.1) break;
   }
@@ -707,7 +708,7 @@ void Stripe::PopulateVariableArray(IloModel& model, IloNumVarArray& x) {
   IloInt cnt = 0;
   for (auto& row : gridded_rows_) {
     for (auto& blk_region : row.blk_regions_) {
-      Block* blk_ptr = blk_region.p_blk;
+      Block* blk_ptr = blk_region.block;
       if (blk_ptr_2_tmp_id.find(blk_ptr) == blk_ptr_2_tmp_id.end()) {
         // x.add(IloNumVar(env, lx_, lx_ + width_));
         // x.add(IloNumVar(env, lx_, IloInfinity));
@@ -726,10 +727,10 @@ void Stripe::AddVariableConstraints(IloModel& model, IloNumVarArray& x,
     size_t blk_cnt = row.blk_regions_.size();
     for (size_t i = 0; i < blk_cnt; ++i) {
       if (i > 0) {
-        Block* blk_ptr0 = row.blk_regions_[i - 1].p_blk;
+        Block* blk_ptr0 = row.blk_regions_[i - 1].block;
         IloInt id0 = blk_ptr_2_tmp_id[blk_ptr0];
         int width = blk_ptr0->Width();
-        Block* blk_ptr1 = row.blk_regions_[i].p_blk;
+        Block* blk_ptr1 = row.blk_regions_[i].block;
         IloInt id1 = blk_ptr_2_tmp_id[blk_ptr1];
         c.add(x[id1] - x[id0] >= width);
       }
@@ -744,8 +745,8 @@ void Stripe::ConstructQuadraticObjective(IloModel& model, IloNumVarArray& x) {
   IloExpr objExpr(env);
   for (auto& row : gridded_rows_) {
     for (auto& blk_region : row.blk_regions_) {
-      Block* blk_ptr = blk_region.p_blk;
-      auto aux_ptr = static_cast<LgBlkAux*>(blk_ptr->AuxPtr());
+      Block* blk_ptr = blk_region.block;
+      auto aux_ptr = static_cast<LegalizerBlockAux*>(blk_ptr->AuxPtr());
       double2d init = aux_ptr->InitLoc();
       IloInt id = blk_ptr_2_tmp_id[blk_ptr];
       objExpr += 1.0 * x[id] * x[id] - 2 * init.x * x[id];

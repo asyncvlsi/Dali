@@ -161,20 +161,20 @@ endmacro()
 
 add_dali_executable(dali dali/application/dali_main.cc)
 add_dali_executable(dali-debug dali/application/debug.cc)
-add_dali_executable(wellflow dali/application/wellflow.cc)
-add_dali_executable(adaptec-debug dali/application/debug-adaptec.cc)
+add_dali_executable(wellflow dali/application/well_flow.cc)
+add_dali_executable(adaptec-debug dali/application/debug_adaptec.cc)
 add_dali_executable(hpwl dali/application/hpwl.cc)
-add_dali_executable(lefdef2bookshelf dali/application/lefdef2bookshelf.cc)
-add_dali_executable(bookshelf2def dali/application/bookshelf2def.cc)
+add_dali_executable(lefdef2bookshelf dali/application/lef_def_to_bookshelf.cc)
+add_dali_executable(bookshelf2def dali/application/bookshelf_to_def.cc)
 add_dali_executable(create_circuit dali/application/create_circuit.cc)
-add_dali_executable(mhlg dali/application/mhlg.cc)
+add_dali_executable(mhlg dali/application/multi_height_legalization.cc)
 
 # ------------------------------------------------------------------------------
 # Tests
 # ------------------------------------------------------------------------------
 enable_testing()
 add_subdirectory(tests/boost_test)
-add_subdirectory(tests/ioplacer)
+add_subdirectory(tests/io_placer)
 
 # ------------------------------------------------------------------------------
 # Installation Rules

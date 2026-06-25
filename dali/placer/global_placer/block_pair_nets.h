@@ -1,0 +1,85 @@
+/*******************************************************************************
+ *
+ * Copyright (c) 2021 Yihang Yang
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
+ *
+ ******************************************************************************/
+#ifndef DALI_PLACER_GLOBAL_PLACER_BLOCK_PAIR_NETS_H_
+#define DALI_PLACER_GLOBAL_PLACER_BLOCK_PAIR_NETS_H_
+
+#include <Eigen/IterativeLinearSolvers>
+#include <Eigen/Sparse>
+#include <vector>
+
+#include "dali/circuit/net.h"
+
+namespace dali {
+// Declares a row-major sparse matrix type of double.
+typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat;
+
+/** Directed driver/load edge induced by one net between two blocks. */
+class BlockBlockEdge {
+ public:
+  BlockBlockEdge(Net* net_ptr, int d_index, int l_index)
+      : net(net_ptr), d(d_index), l(l_index) {}
+  Net* net;  // the pointer to the net containing two blocks
+  int d;     // driver index
+  int l;     // load index
+};
+
+/** Accumulates quadratic objective terms for one pair of connected blocks. */
+class BlockPairNets {
+ public:
+  BlockPairNets(int blk0, int blk1) : blk_num0(blk0), blk_num1(blk1) {}
+  std::vector<BlockBlockEdge> edges;
+  int blk_num0;
+  int blk_num1;
+
+  double e00x = 0;
+  double e01x = 0;
+  double e10x = 0;
+  double e11x = 0;
+  double b0x = 0;
+  double b1x = 0;
+  SpMat::InnerIterator it01x;
+  SpMat::InnerIterator it10x;
+
+  double e00y = 0;
+  double e01y = 0;
+  double e10y = 0;
+  double e11y = 0;
+  double b0y = 0;
+  double b1y = 0;
+  SpMat::InnerIterator it01y;
+  SpMat::InnerIterator it10y;
+
+  /** Clear accumulated x-direction coefficients. */
+  void ClearX();
+
+  /** Write accumulated x-direction coefficients to sparse-matrix iterators. */
+  void WriteX();
+
+  /** Clear accumulated y-direction coefficients. */
+  void ClearY();
+
+  /** Write accumulated y-direction coefficients to sparse-matrix iterators. */
+  void WriteY();
+};
+
+}  // namespace dali
+
+#endif  // DALI_PLACER_GLOBAL_PLACER_BLOCK_PAIR_NETS_H_

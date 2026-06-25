@@ -69,9 +69,9 @@ class GlobalPlacer : public Placer {
   bool should_save_intermediate_result_ = false;
 
   bool IsBlockListOrNetListEmpty() const;
-  static bool IsSeriesConverge(std::vector<double>& series, int window_size,
-                               double tolerance);
-  bool IsPlacementConverge();
+  static bool IsSeriesConverged(std::vector<double>& series, int window_size,
+                                double tolerance);
+  bool IsPlacementConverged();
   void PrintHpwl() const;
   void PrintEndStatement(std::string const& name_of_process,
                          bool is_success) override;

@@ -35,7 +35,7 @@ After configuring and building from the `build/` directory, run:
 
 This runs all unit tests currently registered with CTest, including:
   * Boost-based unit tests in `tests/boost_test`
-  * I/O placer tests in `tests/ioplacer`
+  * I/O placer tests in `tests/io_placer`
 
 If the test executables have not been built yet, build first:
 

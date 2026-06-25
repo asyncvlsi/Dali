@@ -28,22 +28,22 @@
 #include "dali/placer/global_placer/global_placer.h"
 
 /****Legalizer****/
-#include "dali/placer/legalizer/LGTetris.h"
-#include "dali/placer/legalizer/LGTetrisEx.h"
+#include "dali/placer/legalizer/extended_tetris_legalizer.h"
+#include "dali/placer/legalizer/tetris_legalizer.h"
 
 /****Well Legalizer****/
-#include "dali/placer/well_legalizer/griddedrowlegalizer.h"
-#include "dali/placer/well_legalizer/stdclusterwelllegalizer.h"
-#include "dali/placer/well_legalizer/welllegalizer.h"
+#include "dali/placer/well_legalizer/gridded_row_legalizer.h"
+#include "dali/placer/well_legalizer/std_cluster_well_legalizer.h"
+#include "dali/placer/well_legalizer/well_legalizer.h"
 
 /****Well Placement Flow****/
-#include "dali/placer/well_place_flow/wellplaceflow.h"
-#include "dali/placer/welltap_placer/welltapplacer.h"
+#include "dali/placer/well_place_flow/well_place_flow.h"
+#include "dali/placer/well_tap_placer/well_tap_placer.h"
 
 /****Filler Cell Placer****/
 #include "dali/placer/filler_cell_placer/filler_cell_placer.h"
 
 /****IO Placer****/
-#include "dali/placer/io_placer/ioplacer.h"
+#include "dali/placer/io_placer/io_placer.h"
 
 #endif  // DALI_PLACER_H_

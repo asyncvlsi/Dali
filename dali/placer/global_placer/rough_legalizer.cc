@@ -1012,7 +1012,7 @@ double LookAheadLegalizer::RemoveCellOverlap() {
     // "\n";
   } while (!cluster_set.empty());
 
-  // LGTetrisEx legalizer_;
+  // ExtendedTetrisLegalizer legalizer_;
   // legalizer_.TakeOver(this);
   // legalizer_.StartPlacement();
 

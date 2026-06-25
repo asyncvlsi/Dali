@@ -50,6 +50,31 @@ Dali::Dali(phydb::PhyDB* phy_db_ptr, severity severity_level,
   InitLogging(log_file_name_, severity_level_, disable_log_prefix_);
 }
 
+void Dali::ShowParamsList() {
+  BOOST_LOG_TRIVIAL(info)
+      << "Dali runtime parameters:\n"
+      << "  log_file_name: " << log_file_name_ << "\n"
+      << "  disable_log_prefix: " << disable_log_prefix_ << "\n"
+      << "  num_threads: " << num_threads_ << "\n"
+      << "  well_legalization_mode: "
+      << static_cast<int>(well_legalization_mode_) << "\n"
+      << "  disable_global_place: " << disable_global_place_ << "\n"
+      << "  disable_legalization: " << disable_legalization_ << "\n"
+      << "  disable_io_place: " << disable_io_place_ << "\n"
+      << "  target_density: " << target_density_ << "\n"
+      << "  io_metal_layer: " << io_metal_layer_ << "\n"
+      << "  export_well_cluster_matlab: " << export_well_cluster_matlab_ << "\n"
+      << "  disable_welltap: " << disable_welltap_ << "\n"
+      << "  disable_cell_flip: " << disable_cell_flip_ << "\n"
+      << "  max_row_width: " << max_row_width_ << "\n"
+      << "  is_standard_cell: " << is_standard_cell_ << "\n"
+      << "  enable_filler_cell: " << enable_filler_cell_ << "\n"
+      << "  enable_end_cap_cell: " << enable_end_cap_cell_ << "\n"
+      << "  enable_shrink_off_grid_die_area: "
+      << enable_shrink_off_grid_die_area_ << "\n"
+      << "  output_name: " << output_name_ << "\n";
+}
+
 void Dali::LoadParamsFromConfig() {
   std::string param_name = prefix_ + "log_file_name";
   if (config_exists(param_name.c_str())) {
@@ -160,23 +185,23 @@ Circuit& Dali::GetCircuit() { return circuit_; }
 
 phydb::PhyDB* Dali::GetPhyDBPtr() { return phy_db_ptr_; }
 
-bool Dali::ConfigIoPlacerAllInOneLayer(std::string const& layer_name) {
+bool Dali::SetIoPlacerGlobalMetalLayer(std::string const& layer_name) {
   InitializeCircuitFromPhyDBIfNeeded();
   DaliExpects(io_placer_ != nullptr, "Please initialize I/O placer first");
   bool is_metal_name = circuit_.IsMetalLayerExisting(layer_name);
   if (is_metal_name) {
     MetalLayer* metal_layer = circuit_.GetMetalLayerPtr(layer_name);
-    return io_placer_->ConfigSetGlobalMetalLayer(metal_layer->Id());
+    return io_placer_->SetGlobalMetalLayer(metal_layer->Id());
   }
   return false;
 }
 
 bool Dali::ConfigIoPlacer() { return true; }
 
-bool Dali::StartIoPinAutoPlacement() {
+bool Dali::RunIoPinAutoPlacement() {
   InitializeCircuitFromPhyDBIfNeeded();
   DaliExpects(io_placer_ != nullptr, "Please initialize I/O placer first");
-  return io_placer_->AutoPlaceIoPin();
+  return io_placer_->RunAutoPlacement();
 }
 
 void Dali::ReportIoPlacementUsage() {
@@ -228,7 +253,7 @@ bool Dali::ShouldPerformTimingDrivenPlacement() {
 }
 
 void Dali::InitializeRCEstimator() {
-  rc_estimator = new StarPiModelEstimator(phy_db_ptr_);
+  rc_estimator = std::make_unique<StarPiModelEstimator>(phy_db_ptr_);
 }
 
 #if PHYDB_USE_GALOIS
@@ -309,12 +334,15 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
 
   // start placement
   // (1). global placement
-  gb_placer_.SetInputCircuit(&circuit_);
+  gb_placer_.SetCircuit(&circuit_);
   gb_placer_.SetNumThreads(num_threads_);
   if (!disable_global_place_) {
     gb_placer_.SetPlacementDensity(target_density_);
     // gb_placer->ReportBoundaries();
-    gb_placer_.StartPlacement();
+    if (!gb_placer_.StartPlacement()) {
+      BOOST_LOG_TRIVIAL(error) << "Global placement failed\n";
+      return false;
+    }
   }
   if (export_well_cluster_matlab_) {
     circuit_.GenMATLABTable("gb_result.txt");
@@ -323,22 +351,28 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
   // (2). legalization
   if (!disable_legalization_) {
     if (is_standard_cell_) {
-      legalizer_.TakeOver(&gb_placer_);
+      legalizer_.CopyPlacementContextFrom(&gb_placer_);
       legalizer_.disable_cell_flip_ = disable_cell_flip_;
-      legalizer_.StartPlacement();
+      if (!legalizer_.StartPlacement()) {
+        BOOST_LOG_TRIVIAL(error) << "Standard-cell legalization failed\n";
+        return false;
+      }
     } else {
-      well_legalizer_.TakeOver(&gb_placer_);
+      well_legalizer_.CopyPlacementContextFrom(&gb_placer_);
       well_legalizer_.disable_welltap_ = disable_welltap_;
       well_legalizer_.disable_cell_flip_ = disable_cell_flip_;
       well_legalizer_.enable_end_cap_cell_ = enable_end_cap_cell_;
       well_legalizer_.SetStripePartitionMode(
           static_cast<int>(well_legalization_mode_));
-      well_legalizer_.StartPlacement();
+      if (!well_legalizer_.StartPlacement()) {
+        BOOST_LOG_TRIVIAL(error) << "Well legalization failed\n";
+        return false;
+      }
       if (export_well_cluster_matlab_) {
         well_legalizer_.GenMatlabClusterTable("sc_result");
         well_legalizer_.GenMATLABWellTable("scw", 0);
       }
-      well_legalizer_.EmitDEFWellFile("dali_out", 1);
+      well_legalizer_.EmitDEFWellFile(output_name_, 1);
     }
   }
   if (export_well_cluster_matlab_) {
@@ -346,19 +380,25 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
   }
 
   if (enable_filler_cell_) {
-    filler_cell_placer_.TakeOver(&gb_placer_);
+    filler_cell_placer_.CopyPlacementContextFrom(&gb_placer_);
     filler_cell_placer_.phy_db_ptr_ = phy_db_ptr_;
     filler_cell_placer_.CreateFillerCellTypes(2);
-    filler_cell_placer_.StartPlacement();
+    if (!filler_cell_placer_.StartPlacement()) {
+      BOOST_LOG_TRIVIAL(error) << "Filler-cell placement failed\n";
+      return false;
+    }
   }
 
   if (!disable_io_place_) {
     auto io_placer = std::make_unique<IoPlacer>(phy_db_ptr_, &circuit_);
-    bool is_ioplacer_config_success =
-        io_placer->ConfigSetGlobalMetalLayer(io_metal_layer_);
-    DaliExpects(is_ioplacer_config_success,
+    bool is_io_placer_config_success =
+        io_placer->SetGlobalMetalLayer(io_metal_layer_);
+    DaliExpects(is_io_placer_config_success,
                 "Cannot successfully configure I/O placer");
-    io_placer->AutoPlaceIoPin();
+    if (!io_placer->RunAutoPlacement()) {
+      BOOST_LOG_TRIVIAL(error) << "I/O pin placement failed\n";
+      return false;
+    }
   }
 
   BOOST_LOG_TRIVIAL(debug) << "dali git commit: " << get_git_version_short()
@@ -369,7 +409,7 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
 
 void Dali::AddWellTaps(phydb::Macro* cell, double cell_interval_microns,
                        bool is_checker_board) {
-  well_tap_placer_ = new WellTapPlacer(phy_db_ptr_);
+  well_tap_placer_ = std::make_unique<WellTapPlacer>(phy_db_ptr_);
 
   well_tap_placer_->FetchRowsFromPhyDB();
   well_tap_placer_->InitializeWhiteSpaceInRows();
@@ -383,8 +423,7 @@ void Dali::AddWellTaps(phydb::Macro* cell, double cell_interval_microns,
   well_tap_placer_->PlotAvailSpace();
 
   well_tap_placer_->ExportWellTapCellsToPhyDB();
-
-  delete well_tap_placer_;
+  well_tap_placer_.reset();
 }
 
 bool Dali::AddWellTaps(int argc, char** argv) {
@@ -434,7 +473,7 @@ bool Dali::AddWellTaps(int argc, char** argv) {
  */
 bool Dali::GlobalPlace(double density, int num_threads) {
   gb_placer_.SetNumThreads(num_threads);
-  gb_placer_.SetInputCircuit(&circuit_);
+  gb_placer_.SetCircuit(&circuit_);
   gb_placer_.SetShouldSaveIntermediateResult(false);
   gb_placer_.SetBoundaryFromCircuit();
   gb_placer_.SetPlacementDensity(density);
@@ -453,7 +492,7 @@ bool Dali::GlobalPlace(double density, int num_threads) {
  * @return void
  */
 bool Dali::UnifiedLegalization() {
-  well_legalizer_.TakeOver(&gb_placer_);
+  well_legalizer_.CopyPlacementContextFrom(&gb_placer_);
   well_legalizer_.SetStripePartitionMode(int(DefaultPartitionMode::SCAVENGE));
   well_legalizer_.is_dump = false;
   return well_legalizer_.StartPlacement();
@@ -531,8 +570,8 @@ void Dali::ExportToDEF(std::string const& input_def_file_full_name,
 
 void Dali::InstantiateIoPlacer() {
   InitializeCircuitFromPhyDBIfNeeded();
-  if (io_placer_ == nullptr) {
-    io_placer_ = new IoPlacer(phy_db_ptr_, &circuit_);
+  if (!io_placer_) {
+    io_placer_ = std::make_unique<IoPlacer>(phy_db_ptr_, &circuit_);
   }
 }
 
