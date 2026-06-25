@@ -28,19 +28,14 @@
 #include "dali/placer/legalizer/LGTetris/tetrisspace.h"
 #include "dali/placer/placer.h"
 
-/****
- * The default setting of this legalizer expects a reasonably good placement as
- * an input; "Reasonably good" means:
- *  1. All blocks are inside placement region
- *  2. There are few or no location with extremely high block density
- *  3. Maybe something else should be added here
- * There is a setting of this legalizer, which can handle bad placement input
- * really well, but who wants bad input? The Global placer and detailed placer
- * should have done their job well;
- * ****/
-
 namespace dali {
 
+/**
+ * Tetris-style detailed legalizer for reasonably placed standard cells.
+ *
+ * The input is expected to be inside the placement boundary with limited local
+ * density spikes, typically after global placement.
+ */
 class TetrisLegalizer : public Placer {
  private:
   int max_iteration_;
@@ -50,12 +45,26 @@ class TetrisLegalizer : public Placer {
 
  public:
   TetrisLegalizer();
+
+  /** Initialize internal legalization state. */
   void InitLegalizer();
+
+  /** Set maximum legalization iterations. */
   void SetMaxItr(int max_iteration);
+
+  /** Reset current legalization iteration. */
   void ResetItr() { current_iteration_ = 0; }
+
+  /** Shift cells quickly after a failed legalization point. */
   void FastShift(int failure_point);
+
+  /** Flip placement direction for another legalization attempt. */
   void FlipPlacement();
+
+  /** Run the Tetris legalization pass. */
   bool TetrisLegal();
+
+  /** Run the placer interface entry point. */
   bool StartPlacement() override;
 };
 

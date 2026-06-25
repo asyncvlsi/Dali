@@ -33,21 +33,21 @@ struct BlkDispVarSegment {
   double sum_e_;
 
  public:
-  BlkDispVarSegment(BlkDispVar *var, double lx)
+  BlkDispVarSegment(BlkDispVar* var, double lx)
       : lx_(lx), width_(var->Width()) {
     vars_.push_back(var);
     sum_es_ = var->Weight() * var->InitX();
     sum_e_ = var->Weight();
   }
-  std::vector<BlkDispVar *> vars_;
+  std::vector<BlkDispVar*> vars_;
 
   double LX() const { return lx_; }
   double UX() const { return lx_ + width_; }
   int Width() const { return width_; }
 
-  bool IsNotOnLeft(BlkDispVarSegment &sc) const { return sc.LX() < UX(); }
-  void Merge(BlkDispVarSegment &seg, double lower_bound, double upper_bound);
-  void LinearMerge(BlkDispVarSegment &seg, double lower_bound,
+  bool IsNotOnLeft(BlkDispVarSegment& sc) const { return sc.LX() < UX(); }
+  void Merge(BlkDispVarSegment& seg, double lower_bound, double upper_bound);
+  void LinearMerge(BlkDispVarSegment& seg, double lower_bound,
                    double upper_bound);
   void UpdateVarLoc();
 };
@@ -60,10 +60,10 @@ struct BlkDispVarSegment {
  * @param lower_bound
  * @param upper_bound
  */
-void BlkDispVarSegment::Merge(BlkDispVarSegment &seg, double lower_bound,
+void BlkDispVarSegment::Merge(BlkDispVarSegment& seg, double lower_bound,
                               double upper_bound) {
   vars_.reserve(vars_.size() + seg.vars_.size());
-  for (auto &var : seg.vars_) {
+  for (auto& var : seg.vars_) {
     sum_es_ += var->Weight() * (var->InitX() - width_);
     sum_e_ += var->Weight();
     width_ += var->Width();
@@ -79,10 +79,10 @@ void BlkDispVarSegment::Merge(BlkDispVarSegment &seg, double lower_bound,
   }
 }
 
-void BlkDispVarSegment::LinearMerge(BlkDispVarSegment &seg, double lower_bound,
+void BlkDispVarSegment::LinearMerge(BlkDispVarSegment& seg, double lower_bound,
                                     double upper_bound) {
   vars_.reserve(vars_.size() + seg.vars_.size());
-  for (auto &var : seg.vars_) {
+  for (auto& var : seg.vars_) {
     vars_.push_back(var);
   }
   sum_e_ += seg.sum_e_;
@@ -97,18 +97,18 @@ void BlkDispVarSegment::LinearMerge(BlkDispVarSegment &seg, double lower_bound,
   std::vector<WeightLocPair> es_;
   es_.reserve(vars_.size());
   int accumulative_width = 0;
-  for (auto &var : vars_) {
+  for (auto& var : vars_) {
     es_.emplace_back(var->Weight(), var->InitX() - accumulative_width);
     accumulative_width += var->Width();
   }
 
   std::sort(es_.begin(), es_.end(),
-            [](const WeightLocPair &pair0, const WeightLocPair &pair1) {
+            [](const WeightLocPair& pair0, const WeightLocPair& pair1) {
               return pair0.s < pair1.s;
             });
 
   double accumulative_weight = 0;
-  for (auto &[e, s] : es_) {
+  for (auto& [e, s] : es_) {
     accumulative_weight += e;
     if (2 * accumulative_weight >= sum_e_) {
       lx_ = s;
@@ -126,7 +126,7 @@ void BlkDispVarSegment::LinearMerge(BlkDispVarSegment &seg, double lower_bound,
 
 void BlkDispVarSegment::UpdateVarLoc() {
   double cur_loc = lx_;
-  for (auto &var : vars_) {
+  for (auto& var : vars_) {
     var->SetSolution(cur_loc);
     var->SetClusterWeight(sum_e_);
     cur_loc += var->Width();
@@ -152,7 +152,7 @@ void BlkDispVarSegment::UpdateVarLoc() {
  * @param lower_limit: lower bound
  * @param upper_limit: upper bound
  */
-void MinimizeQuadraticDisplacement(std::vector<BlkDispVar> &vars,
+void MinimizeQuadraticDisplacement(std::vector<BlkDispVar>& vars,
                                    double lower_limit, double upper_limit) {
   std::vector<BlkDispVarSegment> segments;
 
@@ -170,8 +170,8 @@ void MinimizeQuadraticDisplacement(std::vector<BlkDispVar> &vars,
 
     // check if this segment overlap with the previous one, if yes, merge these
     // two segments repeats until this is no overlap or only one segment left
-    BlkDispVarSegment *cur_seg = &(segments[seg_sz - 1]);
-    BlkDispVarSegment *prev_seg = &(segments[seg_sz - 2]);
+    BlkDispVarSegment* cur_seg = &(segments[seg_sz - 1]);
+    BlkDispVarSegment* prev_seg = &(segments[seg_sz - 2]);
     while (prev_seg->IsNotOnLeft(*cur_seg)) {
       prev_seg->Merge(*cur_seg, lower_limit, upper_limit);
       segments.pop_back();
@@ -183,7 +183,7 @@ void MinimizeQuadraticDisplacement(std::vector<BlkDispVar> &vars,
     }
   }
 
-  for (auto &seg : segments) {
+  for (auto& seg : segments) {
     seg.UpdateVarLoc();
   }
 }
@@ -206,7 +206,7 @@ void MinimizeQuadraticDisplacement(std::vector<BlkDispVar> &vars,
  * @param lower_limit: lower bound
  * @param upper_limit: upper bound
  */
-void MinimizeLinearDisplacement(std::vector<BlkDispVar> &vars,
+void MinimizeLinearDisplacement(std::vector<BlkDispVar>& vars,
                                 double lower_limit, double upper_limit) {
   std::vector<BlkDispVarSegment> segments;
 
@@ -224,8 +224,8 @@ void MinimizeLinearDisplacement(std::vector<BlkDispVar> &vars,
 
     // check if this segment overlap with the previous one, if yes, merge these
     // two segments repeats until this is no overlap or only one segment left
-    BlkDispVarSegment *cur_seg = &(segments[seg_sz - 1]);
-    BlkDispVarSegment *prev_seg = &(segments[seg_sz - 2]);
+    BlkDispVarSegment* cur_seg = &(segments[seg_sz - 1]);
+    BlkDispVarSegment* prev_seg = &(segments[seg_sz - 2]);
     while (prev_seg->IsNotOnLeft(*cur_seg)) {
       prev_seg->LinearMerge(*cur_seg, lower_limit, upper_limit);
       segments.pop_back();
@@ -237,7 +237,7 @@ void MinimizeLinearDisplacement(std::vector<BlkDispVar> &vars,
     }
   }
 
-  for (auto &seg : segments) {
+  for (auto& seg : segments) {
     seg.UpdateVarLoc();
   }
 }
@@ -252,7 +252,7 @@ struct blocksegment {
 
   int CellCount() const { return last_id - first_id + 1; }
   void UpdatePosition() { x = sum_es_ / sum_e_; }
-  void AddCell(BlkDispVar &var, int i);
+  void AddCell(BlkDispVar& var, int i);
   void SetX(double init_x) { x = init_x; }
   void SetFirstId(int i) { first_id = i; }
   int LastId() { return last_id; }
@@ -261,27 +261,27 @@ struct blocksegment {
   double TotalWeightedLoc() { return sum_es_; }
   double LX() const { return x; }
   double UX() const { return x + width; }
-  void AddSegment(blocksegment &seg);
+  void AddSegment(blocksegment& seg);
 };
 
-void blocksegment::AddCell(BlkDispVar &var, int i) {
+void blocksegment::AddCell(BlkDispVar& var, int i) {
   last_id = i;
   sum_e_ += var.Weight();
   sum_es_ += var.Weight() * (var.InitX() - width);
   width += var.Width();
 }
 
-void blocksegment::AddSegment(blocksegment &seg) {
+void blocksegment::AddSegment(blocksegment& seg) {
   last_id = seg.LastId();
   sum_e_ += seg.TotalWeight();
   sum_es_ += seg.TotalWeightedLoc() - seg.TotalWeight() * width;
   width += seg.Width();
 }
 
-void CollapseSegment(std::vector<blocksegment> &segments, double lower_limit,
+void CollapseSegment(std::vector<blocksegment>& segments, double lower_limit,
                      double upper_limit) {
   DaliExpects(!segments.empty(), "Impossible to be empty!");
-  blocksegment &cur_seg = segments.back();
+  blocksegment& cur_seg = segments.back();
   cur_seg.UpdatePosition();
   if (cur_seg.LX() < lower_limit) {
     cur_seg.SetX(lower_limit);
@@ -292,7 +292,7 @@ void CollapseSegment(std::vector<blocksegment> &segments, double lower_limit,
 
   size_t seg_sz = segments.size();
   if (seg_sz == 1) return;
-  blocksegment &prev_seg = segments[seg_sz - 2];
+  blocksegment& prev_seg = segments[seg_sz - 2];
   if (prev_seg.UX() > cur_seg.LX()) {
     prev_seg.AddSegment(cur_seg);
     segments.pop_back();
@@ -300,7 +300,7 @@ void CollapseSegment(std::vector<blocksegment> &segments, double lower_limit,
   }
 }
 
-void AbacusPlaceRow(std::vector<BlkDispVar> &vars, double lower_limit,
+void AbacusPlaceRow(std::vector<BlkDispVar>& vars, double lower_limit,
                     double upper_limit) {
   if (vars.empty()) return;
   std::vector<blocksegment> segments;
@@ -309,19 +309,19 @@ void AbacusPlaceRow(std::vector<BlkDispVar> &vars, double lower_limit,
   for (int i = 0; i < sz; ++i) {
     if ((i == 0) || (segments.back().UX() <= vars[i].InitX())) {
       segments.emplace_back();
-      blocksegment &last_seg = segments.back();
+      blocksegment& last_seg = segments.back();
       last_seg.SetX(vars[i].InitX());
       last_seg.SetFirstId(i);
       last_seg.AddCell(vars[i], i);
     } else {
-      blocksegment &last_seg = segments.back();
+      blocksegment& last_seg = segments.back();
       last_seg.AddCell(vars[i], i);
       CollapseSegment(segments, lower_limit, upper_limit);
     }
   }
 
   int i = 0;
-  for (auto &seg : segments) {
+  for (auto& seg : segments) {
     double x = seg.LX();
     for (; i <= seg.LastId(); ++i) {
       vars[i].SetSolution(x);

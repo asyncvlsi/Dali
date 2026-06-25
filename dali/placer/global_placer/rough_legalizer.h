@@ -30,57 +30,76 @@
 
 namespace dali {
 
+/** Interface for rough legalizers that remove gross cell overlap. */
 class RoughLegalizer {
  public:
-  explicit RoughLegalizer(Circuit *ckt_ptr);
+  explicit RoughLegalizer(Circuit* ckt_ptr);
   virtual ~RoughLegalizer() = default;
+
+  /** Initialize legalizer state for a target placement density. */
   virtual void Initialize(double placement_density) = 0;
+
+  /** Spread cells to reduce overlap and return current HPWL. */
   virtual double RemoveCellOverlap() = 0;
+
+  /** Return total legalizer runtime in seconds. */
   virtual double GetTime() = 0;
+
+  /** Release legalizer resources. */
   virtual void Close() = 0;
-  std::vector<double> &GetHpwls() { return upper_bound_hpwl_; }
-  std::vector<double> &GetHpwlsX() { return upper_bound_hpwl_x_; }
-  std::vector<double> &GetHpwlsY() { return upper_bound_hpwl_y_; }
+
+  /** Return upper-bound HPWL history. */
+  std::vector<double>& GetHpwls() { return upper_bound_hpwl_; }
+
+  /** Return x upper-bound HPWL history. */
+  std::vector<double>& GetHpwlsX() { return upper_bound_hpwl_x_; }
+
+  /** Return y upper-bound HPWL history. */
+  std::vector<double>& GetHpwlsY() { return upper_bound_hpwl_y_; }
+
+  /** Enable or disable intermediate placement dumps. */
   void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
 
  protected:
-  Circuit *ckt_ptr_ = nullptr;
+  Circuit* ckt_ptr_ = nullptr;
   double placement_density_ = 1.0;
   std::vector<double> upper_bound_hpwl_;
   std::vector<double> upper_bound_hpwl_x_;
   std::vector<double> upper_bound_hpwl_y_;
 
-  // save intermediate result for debugging and/or visualization
+  // Save intermediate result for debugging and/or visualization.
   bool should_save_intermediate_result_ = false;
   int cur_iter_ = 0;
 };
 
+/** Look-ahead legalization using grid bins and recursive bisection spreading.
+ */
 class LookAheadLegalizer : public RoughLegalizer {
  public:
-  explicit LookAheadLegalizer(Circuit *ckt_ptr) : RoughLegalizer(ckt_ptr) {}
+  explicit LookAheadLegalizer(Circuit* ckt_ptr) : RoughLegalizer(ckt_ptr) {}
   ~LookAheadLegalizer() override = default;
 
   void InitializeGridBinSize();
   void UpdateAttributesForAllGridBins();
   void UpdatePlacementBlockagesInGridBins();
   void UpdateDummyPlacementBlockagesInGridBins();
-  void UpdateWhiteSpaceInGridBin(GridBin &grid_bin);
+  void UpdateWhiteSpaceInGridBin(GridBin& grid_bin);
   void InitGridBins();
   void InitWhiteSpaceLUT();
   void Initialize(double placement_density) override;
 
   void ClearGridBinFlag();
   void UpdateGridBinState();
-  void UpdateClusterArea(GridBinCluster &cluster);
+  void UpdateClusterArea(GridBinCluster& cluster);
   void UpdateClusterList();
   void UpdateLargestCluster();
-  uint32_t LookUpWhiteSpace(GridBinIndex const &ll_index,
-                            GridBinIndex const &ur_index);
-  uint32_t LookUpWhiteSpace(WindowQuadruple &window);
+  uint32_t LookUpWhiteSpace(GridBinIndex const& ll_index,
+                            GridBinIndex const& ur_index);
+  uint32_t LookUpWhiteSpace(WindowQuadruple& window);
   void FindMinimumBoxForLargestCluster();
-  void SplitGridBox(BoxBin &box);
-  void PlaceBlkInBox(BoxBin &box);
-  void SplitBox(BoxBin &box);
+  void SplitGridBox(BoxBin& box);
+  void PlaceBlkInBox(BoxBin& box);
+  void SplitBox(BoxBin& box);
   bool RecursiveBisectionBlockSpreading();
   double RemoveCellOverlap() override;
 

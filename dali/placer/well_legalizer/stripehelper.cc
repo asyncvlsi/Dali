@@ -23,15 +23,15 @@
 
 namespace dali {
 
-void GenClusterTable(std::string const &name_of_file,
-                     std::vector<ClusterStripe> &col_list_) {
+void GenClusterTable(std::string const& name_of_file,
+                     std::vector<ClusterStripe>& col_list_) {
   std::string cluster_file = name_of_file + "_cluster.txt";
   std::ofstream ost(cluster_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " << cluster_file);
 
-  for (auto &col : col_list_) {
-    for (auto &stripe : col.stripe_list_) {
-      for (auto &cluster : stripe.gridded_rows_) {
+  for (auto& col : col_list_) {
+    for (auto& stripe : col.stripe_list_) {
+      for (auto& cluster : stripe.gridded_rows_) {
         std::vector<int> llx;
         std::vector<int> lly;
         std::vector<int> urx;
@@ -54,9 +54,9 @@ void GenClusterTable(std::string const &name_of_file,
   ost.close();
 }
 
-void CollectWellFillingRects(Stripe &stripe, int bottom_boundary,
-                             int top_boundary, std::vector<RectI> &n_rects,
-                             std::vector<RectI> &p_rects) {
+void CollectWellFillingRects(Stripe& stripe, int bottom_boundary,
+                             int top_boundary, std::vector<RectI>& n_rects,
+                             std::vector<RectI>& p_rects) {
   int loc_bottom = bottom_boundary;
   if (!stripe.gridded_rows_.empty()) {
     loc_bottom = std::min(loc_bottom, stripe.gridded_rows_[0].LLY());
@@ -74,7 +74,7 @@ void CollectWellFillingRects(Stripe &stripe, int bottom_boundary,
     pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
     pn_edge_list.push_back(loc_top);
   }
-  for (auto &row : stripe.gridded_rows_) {
+  for (auto& row : stripe.gridded_rows_) {
     pn_edge_list.push_back(row.LLY() + row.PNEdge());
   }
   if (stripe.is_bottom_up_) {
@@ -107,8 +107,8 @@ void CollectWellFillingRects(Stripe &stripe, int bottom_boundary,
   }
 }
 
-void GenMATLABWellFillingTable(std::string const &base_file_name,
-                               std::vector<ClusterStripe> &col_list,
+void GenMATLABWellFillingTable(std::string const& base_file_name,
+                               std::vector<ClusterStripe>& col_list,
                                int bottom_boundary, int top_boundary,
                                int well_emit_mode) {
   std::string p_file = base_file_name + "_pwell.txt";
@@ -119,20 +119,20 @@ void GenMATLABWellFillingTable(std::string const &base_file_name,
   std::ofstream ostn(n_file.c_str());
   DaliExpects(ostn.is_open(), "Cannot open output file: " << n_file);
 
-  for (auto &col : col_list) {
-    for (auto &stripe : col.stripe_list_) {
+  for (auto& col : col_list) {
+    for (auto& stripe : col.stripe_list_) {
       std::vector<RectI> n_rects;
       std::vector<RectI> p_rects;
       CollectWellFillingRects(stripe, bottom_boundary, top_boundary, n_rects,
                               p_rects);
       if (well_emit_mode != 1) {
-        for (auto &rect : p_rects) {
+        for (auto& rect : p_rects) {
           SaveMatlabPatchRect(ostp, rect.LLX(), rect.LLY(), rect.URX(),
                               rect.URY());
         }
       }
       if (well_emit_mode != 2) {
-        for (auto &rect : n_rects) {
+        for (auto& rect : n_rects) {
           SaveMatlabPatchRect(ostn, rect.LLX(), rect.LLY(), rect.URX(),
                               rect.URY());
         }

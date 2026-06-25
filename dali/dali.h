@@ -29,26 +29,28 @@
 
 namespace dali {
 
+/** Main application facade that owns the circuit model and placement stages. */
 class Dali {
  public:
-  Dali(phydb::PhyDB *phy_db_ptr, const std::string &severity_level,
-       const std::string &log_file_name = "");
-  Dali(phydb::PhyDB *phy_db_ptr, severity severity_level,
-       const std::string &log_file_name = "");
+  Dali(phydb::PhyDB* phy_db_ptr, const std::string& severity_level,
+       const std::string& log_file_name = "");
+  Dali(phydb::PhyDB* phy_db_ptr, severity severity_level,
+       const std::string& log_file_name = "");
 
+  /** Load runtime options from the ACT config database. */
   void ShowParamsList();
   void LoadParamsFromConfig();
 
   void SetLogPrefix(bool disable_log_prefix);
   void SetNumThreads(int num_threads);
 
-  Circuit &GetCircuit();
-  phydb::PhyDB *GetPhyDBPtr();
+  Circuit& GetCircuit();
+  phydb::PhyDB* GetPhyDBPtr();
 
-  bool ConfigIoPlacerAllInOneLayer(std::string const &layer_name);
+  bool ConfigIoPlacerAllInOneLayer(std::string const& layer_name);
   bool ConfigIoPlacer();
   bool StartIoPinAutoPlacement();
-  bool IoPinPlacement(int argc, char **argv);
+  bool IoPinPlacement(int argc, char** argv);
 
   bool ShouldPerformTimingDrivenPlacement();
   void InitializeRCEstimator();
@@ -62,24 +64,27 @@ class Dali {
   bool TimingDrivenPlacement(double density, int number_of_threads);
 #endif
 
+  /** Run the default placement pipeline used by the main `dali` app. */
   bool StartPlacement(double density = -1, int number_of_threads = 1);
 
-  void AddWellTaps(phydb::Macro *cell, double cell_interval_microns,
+  void AddWellTaps(phydb::Macro* cell, double cell_interval_microns,
                    bool is_checker_board);
-  bool AddWellTaps(int argc, char **argv);
+  bool AddWellTaps(int argc, char** argv);
   bool GlobalPlace(double density, int num_threads = 1);
   bool UnifiedLegalization();
 
-  void ExternalDetailedPlaceAndLegalize(std::string const &engine,
+  void ExternalDetailedPlaceAndLegalize(std::string const& engine,
                                         bool load_dp_result = true);
 
   void ExportToPhyDB();
   void Close();
 
-  void MaybeExportToLEF(std::string const &input_lef_file_full_name,
-                        std::string const &output_lef_name);
-  void ExportToDEF(std::string const &input_def_file_full_name,
-                   std::string const &output_def_name = "circuit");
+  /** Export generated end-cap LEF when that flow is enabled. */
+  void MaybeExportToLEF(std::string const& input_lef_file_full_name,
+                        std::string const& output_lef_name);
+  /** Write placement outputs and placement-quality reports to DEF files. */
+  void ExportToDEF(std::string const& input_def_file_full_name,
+                   std::string const& output_def_name = "circuit");
 
   void InstantiateIoPlacer();
 
@@ -108,21 +113,21 @@ class Dali {
 
   // circuit and placer
   Circuit circuit_;
-  phydb::PhyDB *phy_db_ptr_ = nullptr;
+  phydb::PhyDB* phy_db_ptr_ = nullptr;
   GlobalPlacer gb_placer_;
   LGTetrisEx legalizer_;
   StdClusterWellLegalizer well_legalizer_;
-  WellTapPlacer *well_tap_placer_ = nullptr;
+  WellTapPlacer* well_tap_placer_ = nullptr;
   FillerCellPlacer filler_cell_placer_;
-  IoPlacer *io_placer_ = nullptr;
-  StarPiModelEstimator *rc_estimator = nullptr;
+  IoPlacer* io_placer_ = nullptr;
+  StarPiModelEstimator* rc_estimator = nullptr;
 
   int max_td_place_num_ = 2;
 
   static void ReportIoPlacementUsage();
 
   std::string CreateDetailedPlacementAndLegalizationScript(
-      std::string const &engine, std::string const &script_name);
+      std::string const& engine, std::string const& script_name);
 
   void ExportOrdinaryComponentsToPhyDB();
   void ExportWellTapCellsToPhyDB();
@@ -132,6 +137,9 @@ class Dali {
   void ExportMiniRowsToPhyDB();
   void ExportPpNpToPhyDB();
   void ExportWellToPhyDB();
+  void InitializeCircuitFromPhyDBIfNeeded();
+
+  bool is_circuit_initialized_ = false;
 };
 
 }  // namespace dali

@@ -28,6 +28,19 @@ One can use the following command to specify the installation destination and in
 
     $ cmake .. -DCMAKE_INSTALL_PREFIX=path/to/installation
 
+### Run unit tests
+After configuring and building from the `build/` directory, run:
+
+    $ ctest --output-on-failure
+
+This runs all unit tests currently registered with CTest, including:
+  * Boost-based unit tests in `tests/boost_test`
+  * I/O placer tests in `tests/ioplacer`
+
+If the test executables have not been built yet, build first:
+
+    $ make
+
 ### 3rd Party Module List
   * Eigen: sparse matrix iterative linear solver
   

@@ -25,6 +25,7 @@
 
 namespace dali {
 
+/** Cluster of blocks that share legalized well geometry. */
 struct BlkCluster {
   BlkCluster();
   BlkCluster(int well_extension_x_init, int well_extension_y_init,
@@ -40,18 +41,33 @@ struct BlkCluster {
   int height_;
   int lx_;
   int ly_;
-  std::vector<Block *> blk_ptr_list_;
+  std::vector<Block*> blk_ptr_list_;
 
-  // cached value;
+  // Cached legalized x location.
   int modified_lx_;
 
+  /** Return cluster width in Dali grid units. */
   int Width() const { return width_; }
+
+  /** Return cluster height in Dali grid units. */
   int Height() const { return height_; }
+
+  /** Return cluster area in grid-unit squared. */
   long Area() const { return width_ * height_; }
+
+  /** Return upper x based on the legalized x location. */
   int InnerUX() const { return modified_lx_ + width_; }
+
+  /** Return lower-left x in Dali grid units. */
   int LLX() const { return lx_; }
+
+  /** Return lower-left y in Dali grid units. */
   int LLY() const { return ly_; }
+
+  /** Return upper-right x in Dali grid units. */
   int URX() const { return lx_ + width_; }
+
+  /** Return upper-right y in Dali grid units. */
   int URY() const { return ly_ + height_; }
   double CenterX() const { return lx_ + width_ / 2.0; }
   double CenterY() const { return ly_ + height_ / 2.0; }
@@ -75,19 +91,25 @@ struct BlkCluster {
   void IncreX(int displacement) { lx_ += displacement; }
   void IncreY(int displacement) { ly_ += displacement; }
 
-  void AppendBlock(Block &block);
+  /** Append one block and update cluster dimensions. */
+  void AppendBlock(Block& block);
+
+  /** Optimize cluster height based on contained blocks. */
   void OptimizeHeight();
+
+  /** Write the cluster location back to contained blocks. */
   void UpdateBlockLocation();
 };
 
+/** Pairing of a cluster pointer and candidate x/y location. */
 struct CluPtrLocPair {
-  BlkCluster *clus_ptr;
+  BlkCluster* clus_ptr;
   int x;
   int y;
-  explicit CluPtrLocPair(BlkCluster *clus_ptr_init = nullptr, int x_init = 0,
+  explicit CluPtrLocPair(BlkCluster* clus_ptr_init = nullptr, int x_init = 0,
                          int y_init = 0)
       : clus_ptr(clus_ptr_init), x(x_init), y(y_init) {}
-  bool operator<(const CluPtrLocPair &rhs) const {
+  bool operator<(const CluPtrLocPair& rhs) const {
     return (x < rhs.x) || ((x == rhs.x) && (y < rhs.y));
   }
 };

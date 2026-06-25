@@ -26,7 +26,7 @@ FreeSegment::FreeSegment(int start, int stop) : start_(start), end_(stop) {
   assert(start <= stop);
 }
 
-bool FreeSegment::LinkSingleSeg(FreeSegment *seg_ptr) {
+bool FreeSegment::LinkSingleSeg(FreeSegment* seg_ptr) {
   if (seg_ptr == nullptr) {
     BOOST_LOG_TRIVIAL(info) << "Want to link to an Empty pointer?\n";
     assert(seg_ptr != nullptr);
@@ -39,13 +39,13 @@ bool FreeSegment::LinkSingleSeg(FreeSegment *seg_ptr) {
   return (SetNext(seg_ptr) && seg_ptr->SetPrev(this));
 }
 
-FreeSegment *FreeSegment::SingleSegOr(FreeSegment *seg) {
+FreeSegment* FreeSegment::SingleSegOr(FreeSegment* seg) {
   if ((Length() == 0) && (seg->Length() == 0)) {
     BOOST_LOG_TRIVIAL(info)
         << "What?! two segments with Length 0 for OR operation\n";
     return nullptr;
   }
-  auto *result = new FreeSegment;
+  auto* result = new FreeSegment;
   if (start_ > seg->End() || end_ < seg->Start()) {  // no overlap, no touch
     int firstStart, firstEnd, secondStart, secondEnd;
     if (start_ < seg->Start()) {
@@ -60,7 +60,7 @@ FreeSegment *FreeSegment::SingleSegOr(FreeSegment *seg) {
       secondEnd = end_;
     }
     result->SetSpan(firstStart, firstEnd);
-    auto *secondSeg = new FreeSegment(secondStart, secondEnd);
+    auto* secondSeg = new FreeSegment(secondStart, secondEnd);
     result->SetNext(secondSeg);
   } else if (start_ == seg->End()) {  // start_ touches the End of seg
     result->SetSpan(seg->Start(), end_);
@@ -73,8 +73,8 @@ FreeSegment *FreeSegment::SingleSegOr(FreeSegment *seg) {
 }
 
 void FreeSegment::Clear() {
-  FreeSegment *current = this;
-  FreeSegment *next = nullptr;
+  FreeSegment* current = this;
+  FreeSegment* next = nullptr;
   while (current != nullptr) {
     next = current->Next();
     delete current;

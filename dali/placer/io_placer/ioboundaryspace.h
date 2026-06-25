@@ -28,9 +28,7 @@
 
 namespace dali {
 
-/**
- * A structure for storing IOPINs on a boundary segment for a given metal layer.
- */
+/** I/O pins assigned to one continuous boundary segment on one metal layer. */
 struct IoPinCluster {
   IoPinCluster(bool is_horizontal_init, double boundary_loc_init,
                double lo_init, double span_init);
@@ -42,45 +40,59 @@ struct IoPinCluster {
   double span;          // the width or height of this cluster
   bool is_uniform_mode =
       true;  // uniformly distribute IOPINs in this cluster or not
-  std::vector<IoPin *> iopin_ptr_list;  // IOPINs  in this cluster
+  std::vector<IoPin*> iopin_ptr_list;  // IOPINs  in this cluster
 
+  /** Return low coordinate of the cluster interval. */
   double Low() const;
+
+  /** Return high coordinate of the cluster interval. */
   double High() const;
+
+  /** Legalize pins using uniform spacing. */
   void UniformLegalize();
+
+  /** Legalize pins greedily around their current locations. */
   void GreedyLegalize();
+
+  /** Legalize pins using the configured cluster mode. */
   void Legalize();
 };
 
-/**
- * A structure for storing IOPINs on a boundary for a given metal layer.
- * If there is no blockage on the boundary, then it only contains one
- * IoPinCluster.
+/** Boundary resources for one metal layer, split into available pin clusters.
  */
 struct IoBoundaryLayerSpace {
   IoBoundaryLayerSpace(bool is_horizontal_init, double boundary_loc_init,
-                       MetalLayer *metal_layer_init);
+                       MetalLayer* metal_layer_init);
   ~IoBoundaryLayerSpace();
   bool is_horizontal;
   double boundary_loc;
-  MetalLayer *metal_layer;
+  MetalLayer* metal_layer;
   RectD default_horizontal_shape;  // unit in micron
   RectD default_vertical_shape;    // unit in micron
   bool is_using_horizontal = true;
-  std::vector<IoPin *> iopin_ptr_list;
+  std::vector<IoPin*> iopin_ptr_list;
   std::vector<IoPinCluster> pin_clusters;
 
+  /** Add an available boundary segment. */
   void AddCluster(double low, double span);
 
+  /** Compute default pin shapes from layer and manufacturing-grid rules. */
   void ComputeDefaultShape(double manufacturing_grid);
+
+  /** Apply default shape and layer to assigned I/O pins. */
   void UpdateIoPinShapeAndLayer();
+
+  /** Assign pins uniformly to available clusters. */
   void UniformAssignIoPinToCluster();
+
+  /** Assign pins greedily to available clusters. */
   void GreedyAssignIoPinToCluster();
+
+  /** Assign pins to clusters using the configured mode. */
   void AssignIoPinToCluster();
 };
 
-/**
- * A structure for storing IOPINs on a boundary for all possible metal layer.
- */
+/** I/O placement resources for one die boundary across all allowed layers. */
 struct IoBoundarySpace {
   friend class IoPlacer;
 
@@ -88,8 +100,14 @@ struct IoBoundarySpace {
   std::vector<IoBoundaryLayerSpace> layer_spaces_;
 
   IoBoundarySpace(bool is_horizontal, double boundary_loc);
-  void AddLayer(MetalLayer *metal_layer);
+
+  /** Add a metal layer resource on this boundary. */
+  void AddLayer(MetalLayer* metal_layer);
+
+  /** Limit the number of pins assigned to this boundary. */
   void SetIoPinLimit(int limit);
+
+  /** Place pins assigned to this boundary. */
   bool AutoPlaceIoPin();
 
  private:

@@ -27,15 +27,18 @@
 
 namespace dali {
 
+/** End-to-end placement flow with global placement and well legalization. */
 class WellPlaceFlow : public GlobalPlacer {
   StdClusterWellLegalizer well_legalizer_;
 
  public:
   WellPlaceFlow();
 
+  /** Run global placement followed by gridded well legalization. */
   bool StartPlacement() override;
 
-  void EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode,
+  /** Emit DEF with well-legalized cells and optional cluster geometry. */
+  void EmitDEFWellFile(std::string const& name_of_file, int well_emit_mode,
                        bool enable_emitting_cluster = true) override;
 };
 

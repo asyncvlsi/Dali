@@ -37,43 +37,57 @@
 
 namespace dali {
 
+/** Standard cluster-based well legalizer and DEF/well-shape emitter. */
 class StdClusterWellLegalizer : public Placer {
   friend class Dali;
 
  public:
   StdClusterWellLegalizer();
-  void LoadConf(std::string const &config_file) override;
 
+  /** Load well legalizer configuration. */
+  void LoadConf(std::string const& config_file) override;
+
+  /** Verify N/P-well prerequisites on the input circuit. */
   void CheckWellStatus();
+
+  /** Set stripe partitioning mode. */
   void SetStripePartitionMode(int mode) { stripe_mode_ = mode; }
+
+  /** Set the orientation of the first generated row. */
   void SetFirstRowOrientN(bool is_N) { is_first_row_orient_N_ = is_N; }
+
+  /** Load N/P-well parameters from the input circuit. */
   void FetchNpWellParams();
+
+  /** Cache block locations before legalization. */
   void SaveInitialBlockLocation();
+
+  /** Initialize stripes, clusters, and cached parameters. */
   void InitializeWellLegalizer(int cluster_width = 0);
 
-  void CreateClusterAndAppendSingleWellBlock(Stripe &stripe, Block &blk);
-  void AppendSingleWellBlockToFrontCluster(Stripe &stripe, Block &blk);
-  void AppendBlockToColBottomUp(Stripe &stripe, Block &blk);
-  void AppendBlockToColTopDown(Stripe &stripe, Block &blk);
-  void AppendBlockToColBottomUpCompact(Stripe &stripe, Block &blk);
-  void AppendBlockToColTopDownCompact(Stripe &stripe, Block &blk);
+  void CreateClusterAndAppendSingleWellBlock(Stripe& stripe, Block& blk);
+  void AppendSingleWellBlockToFrontCluster(Stripe& stripe, Block& blk);
+  void AppendBlockToColBottomUp(Stripe& stripe, Block& blk);
+  void AppendBlockToColTopDown(Stripe& stripe, Block& blk);
+  void AppendBlockToColBottomUpCompact(Stripe& stripe, Block& blk);
+  void AppendBlockToColTopDownCompact(Stripe& stripe, Block& blk);
 
-  bool StripeLegalizationBottomUp(Stripe &stripe);
-  bool StripeLegalizationTopDown(Stripe &stripe);
-  bool StripeLegalizationBottomUpCompact(Stripe &stripe);
-  bool StripeLegalizationTopDownCompact(Stripe &stripe);
+  bool StripeLegalizationBottomUp(Stripe& stripe);
+  bool StripeLegalizationTopDown(Stripe& stripe);
+  bool StripeLegalizationBottomUpCompact(Stripe& stripe);
+  bool StripeLegalizationTopDownCompact(Stripe& stripe);
 
   bool BlockClustering();
   bool BlockClusteringLoose();
   bool BlockClusteringCompact();
 
-  bool TrialClusterLegalization(Stripe &stripe);
+  bool TrialClusterLegalization(Stripe& stripe);
 
-  double WireLengthCost(GriddedRow *cluster, int l, int r);
-  void FindBestLocalOrder(std::vector<Block *> &res, double &cost,
-                          GriddedRow *cluster, int cur, int l, int r,
+  double WireLengthCost(GriddedRow* cluster, int l, int r);
+  void FindBestLocalOrder(std::vector<Block*>& res, double& cost,
+                          GriddedRow* cluster, int cur, int l, int r,
                           int left_bound, int right_bound, int gap, int range);
-  void LocalReorderInCluster(GriddedRow *cluster, int range = 3);
+  void LocalReorderInCluster(GriddedRow* cluster, int range = 3);
   void LocalReorderAllClusters();
 
   // void SingleSegmentClusteringOptimization();
@@ -92,17 +106,17 @@ class StdClusterWellLegalizer : public Placer {
   void ReportEffectiveSpaceUtilization();
 
   /****member function for file IO****/
-  void GenMatlabClusterTable(std::string const &name_of_file);
-  void GenMATLABWellTable(std::string const &name_of_file,
+  void GenMatlabClusterTable(std::string const& name_of_file);
+  void GenMATLABWellTable(std::string const& name_of_file,
                           int well_emit_mode) override;
-  void GenPPNP(std::string const &name_of_file);
-  void EmitDEFWellFile(std::string const &name_of_file, int well_emit_mode,
+  void GenPPNP(std::string const& name_of_file);
+  void EmitDEFWellFile(std::string const& name_of_file, int well_emit_mode,
                        bool enable_emitting_cluster = true) override;
-  void EmitPPNPRect(std::string const &name_of_file);
-  void ExportPpNpToPhyDB(phydb::PhyDB *phydb_ptr);
-  void EmitWellRect(std::string const &name_of_file, int well_emit_mode);
-  void ExportWellToPhyDB(phydb::PhyDB *phydb_ptr, int well_emit_mode);
-  void EmitClusterRect(std::string const &name_of_file);
+  void EmitPPNPRect(std::string const& name_of_file);
+  void ExportPpNpToPhyDB(phydb::PhyDB* phydb_ptr);
+  void EmitWellRect(std::string const& name_of_file, int well_emit_mode);
+  void ExportWellToPhyDB(phydb::PhyDB* phydb_ptr, int well_emit_mode);
+  void EmitClusterRect(std::string const& name_of_file);
 
  private:
   bool is_first_row_orient_N_ = true;
@@ -135,7 +149,7 @@ class StdClusterWellLegalizer : public Placer {
   DefaultSpacePartitioner space_partitioner_;
 
   /**** cached well tap cell parameters ****/
-  BlockType *well_tap_cell_ptr_ = nullptr;
+  BlockType* well_tap_cell_ptr_ = nullptr;
   int tap_cell_p_height_;
   int tap_cell_n_height_;
   int space_to_well_tap_ = 1;

@@ -27,19 +27,25 @@
 
 namespace dali {
 
+/** Creates and places filler cells in row whitespace. */
 class FillerCellPlacer : public Placer {
   friend class Dali;
 
  public:
   FillerCellPlacer() = default;
 
+  /** Create filler-cell master types up to upper_width. */
   void CreateFillerCellTypes(int upper_width);
+
+  /** Fill one row interval with filler cells. */
   void PlaceFillerCells(int lx, int ux, int ly, bool is_orient_N,
-                        int &filler_counter);
+                        int& filler_counter);
+
+  /** Run filler-cell placement for the attached circuit. */
   bool StartPlacement() override;
 
  private:
-  phydb::PhyDB *phy_db_ptr_ = nullptr;
+  phydb::PhyDB* phy_db_ptr_ = nullptr;
 };
 
 }  // namespace dali

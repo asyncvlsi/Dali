@@ -106,7 +106,7 @@ size_t getCurrentRSS() {
     defined(unix)
   /* Linux ---------------------------------------------------- */
   long rss = 0L;
-  FILE *fp = NULL;
+  FILE* fp = NULL;
   if ((fp = fopen("/proc/self/statm", "r")) == NULL)
     return (size_t)0L; /* Can't open? */
   if (fscanf(fp, "%*s%ld", &rss) != 1) {

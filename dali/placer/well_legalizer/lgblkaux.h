@@ -28,17 +28,33 @@
 
 namespace dali {
 
+/** Auxiliary legalization locations cached on each block. */
 class LgBlkAux : public BlockAux {
  public:
-  explicit LgBlkAux(Block *blk_ptr);
+  explicit LgBlkAux(Block* blk_ptr);
+
+  /** Cache the block's current location as its initial location. */
   void StoreCurLocAsInitLoc();
+
+  /** Cache the block's current location as its greedy legalization location. */
   void StoreCurLocAsGreedyLoc();
+
+  /** Cache the block's current location as its QP legalization location. */
   void StoreCurLocAsQPLoc();
+
+  /** Cache the block's current location as its consensus location. */
   void StoreCurLocAsConsLoc();
 
+  /** Restore the block to its initial location. */
   void RecoverInitLoc();
+
+  /** Restore the block to its greedy legalization location. */
   void RecoverGreedyLoc();
+
+  /** Restore the block to its QP legalization location. */
   void RecoverQPLoc();
+
+  /** Restore the block to its consensus location. */
   void RecoverConsLoc();
 
   void RecoverInitLocX();
@@ -46,9 +62,16 @@ class LgBlkAux : public BlockAux {
   void RecoverQPLocX();
   void RecoverConsLocX();
 
+  /** Store one sub-cell legalization location and weight. */
   void SetSubCellLoc(int id, double loc, double weight);
+
+  /** Compute weighted average location from sub-cell locations. */
   void ComputeAverageLoc();
-  std::vector<double> &SubLocs();
+
+  /** Return sub-cell locations. */
+  std::vector<double>& SubLocs();
+
+  /** Return cached weighted average location. */
   double AverageLoc();
 
   double2d InitLoc();

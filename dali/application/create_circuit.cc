@@ -63,7 +63,7 @@ int main() {
   std::string inv_type_name = "INV2";
   double inv_width = 0.8;
   double inv_height = 1.6;
-  BlockType *inv_ptr =
+  BlockType* inv_ptr =
       circuit.AddBlockType(inv_type_name, inv_width, inv_height);
 
   // add cell pins
@@ -72,7 +72,7 @@ int main() {
   double in_ly = 0.7;
   double in_ux = 0.2;
   double in_uy = 0.9;
-  Pin *in_pin_ptr = circuit.AddBlkTypePin(inv_ptr, in_name, true);
+  Pin* in_pin_ptr = circuit.AddBlkTypePin(inv_ptr, in_name, true);
   in_pin_ptr->SetOffset((in_lx + in_ux) / 2.0, (in_ly + in_uy) / 2.0);
 
   std::string out_name = "OUT";
@@ -80,7 +80,7 @@ int main() {
   double out_ly = 0.7;
   double out_ux = 0.8;
   double out_uy = 0.9;
-  Pin *out_pin_ptr = circuit.AddBlkTypePin(inv_ptr, out_name, false);
+  Pin* out_pin_ptr = circuit.AddBlkTypePin(inv_ptr, out_name, false);
   out_pin_ptr->SetOffset((out_lx + out_ly) / 2.0, (out_ux + out_uy) / 2.0);
 
   // set DEF Units distance microns, which would be better the same as LEF

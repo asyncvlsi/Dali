@@ -28,40 +28,40 @@
 
 namespace dali {
 
-/****
- * This is a base class for SpacePartitioner. This partitioner is used by well
- * legalizers to clean up design rule checking errors related to N/P-wells.
+/**
+ * Partitions the placement region into rectangular stripes for well
+ * legalization.
  *
- * An example code snippet in a well legalizer is like the following:
- *   p_partitioner->SetInputCircuit(p_ckt);
- *   p_partitioner->SetOutput(&col_list);
- *   p_partitioner->SetReservedSpaceToBoundaries(l_space, r_space, b_space,
- * t_space); p_partitioner->SetPartitionMode(partition_mode);
- *   p_partitioner->StartPartitioning();
- *
- * After partitioning, the whole placement region and circuit is partitioned
- * into several smaller rectangular placement regions and sub-circuits. The
- * partitioning results are saved in the output container. Then the well
- * legalizer will take over from here, and perform legalization is each
- * rectangular placement region.
+ * The output ClusterStripe list is consumed by well legalizers, which legalize
+ * each rectangular sub-region independently.
  */
 class AbstractSpacePartitioner {
  public:
   AbstractSpacePartitioner() = default;
   virtual ~AbstractSpacePartitioner() = default;
 
-  virtual void SetInputCircuit(Circuit *p_ckt);
-  virtual void SetOutput(std::vector<ClusterStripe> *p_col_list);
+  /** Set the circuit to partition. */
+  virtual void SetInputCircuit(Circuit* p_ckt);
+
+  /** Set the output stripe container. */
+  virtual void SetOutput(std::vector<ClusterStripe>* p_col_list);
+
+  /** Reserve whitespace along placement boundaries. */
   virtual void SetReservedSpaceToBoundaries(int l_space, int r_space,
                                             int b_space, int t_space);
+
+  /** Set partitioning mode. */
   virtual void SetPartitionMode(int partition_mode);
+
+  /** Set maximum row width for generated stripes. */
   virtual void SetMaxRowWidth(int max_row_width);
 
+  /** Run partitioning and populate the output stripe container. */
   virtual bool StartPartitioning() = 0;
 
  protected:
-  Circuit *p_ckt_ = nullptr;
-  std::vector<ClusterStripe> *p_col_list_ = nullptr;
+  Circuit* p_ckt_ = nullptr;
+  std::vector<ClusterStripe>* p_col_list_ = nullptr;
 
   // some distances reserved to every edge
   int l_space_ = 0;
@@ -75,11 +75,7 @@ class AbstractSpacePartitioner {
 
 enum class DefaultPartitionMode { STRICT = 0, SCAVENGE = 1 };
 
-/****
- * The default space partitioner. If no external space partitioner is provided
- * during well legalization, the well legalizer will use this default space
- * partitioner to partition placement region and circuit.
- */
+/** Default well-legalizer space partitioner. */
 class DefaultSpacePartitioner : public AbstractSpacePartitioner {
  public:
   DefaultSpacePartitioner() = default;
@@ -87,17 +83,17 @@ class DefaultSpacePartitioner : public AbstractSpacePartitioner {
 
   void FetchWellParameters();
   void DetectAvailSpace();
-  void UpdateWhiteSpaceInCol(ClusterStripe &col);
+  void UpdateWhiteSpaceInCol(ClusterStripe& col);
   void DecomposeSpaceToSimpleStripes();
   void AssignBlockToColBasedOnWhiteSpace();
 
   bool StartPartitioning() override;
 
   /**** member functions for debugging ****/
-  void PlotAvailSpace(std::string const &name_of_file = "avail_space.txt");
+  void PlotAvailSpace(std::string const& name_of_file = "avail_space.txt");
   void PlotAvailSpaceInCols(
-      std::string const &name_of_file = "avail_space.txt");
-  void PlotSimpleStripes(std::string const &name_of_file = "stripe_space.txt");
+      std::string const& name_of_file = "avail_space.txt");
+  void PlotSimpleStripes(std::string const& name_of_file = "stripe_space.txt");
 
  private:
   /**** well parameters ****/

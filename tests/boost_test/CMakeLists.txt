@@ -14,3 +14,8 @@ target_link_libraries(Boost_Tests_run
     PRIVATE dalilib
     ${Boost_LIBRARIES}
 )
+
+add_test(
+    NAME boost_misc_test
+    COMMAND Boost_Tests_run
+)

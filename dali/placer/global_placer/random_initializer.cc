@@ -30,7 +30,7 @@
 
 namespace dali {
 
-RandomInitializer::RandomInitializer(Circuit *ckt_ptr, uint32_t random_seed)
+RandomInitializer::RandomInitializer(Circuit* ckt_ptr, uint32_t random_seed)
     : ckt_ptr_(ckt_ptr), random_seed_(random_seed) {
   DaliExpects(ckt_ptr_ != nullptr, "Ckt is a null ptr?");
   initializer_name_ = "abstract random";
@@ -49,8 +49,8 @@ void RandomInitializer::PrintStartStatement() {
 }
 
 void RandomInitializer::SetParameters(
-    [[maybe_unused]] std::unordered_map<std::string, std::string>
-        &params_dict) {}
+    [[maybe_unused]] std::unordered_map<std::string, std::string>&
+        params_dict) {}
 
 void RandomInitializer::PrintEndStatement() {
   BOOST_LOG_TRIVIAL(debug) << "    " << initializer_name_
@@ -64,7 +64,7 @@ void RandomInitializer::PrintEndStatement() {
   }
 }
 
-UniformInitializer::UniformInitializer(Circuit *ckt_ptr, uint32_t random_seed)
+UniformInitializer::UniformInitializer(Circuit* ckt_ptr, uint32_t random_seed)
     : RandomInitializer(ckt_ptr, random_seed) {
   initializer_name_ = "uniform";
 }
@@ -81,8 +81,8 @@ void UniformInitializer::RandomPlace() {
   std::minstd_rand0 generator{random_seed_};
   std::uniform_real_distribution<double> distribution(0, 1);
 
-  std::vector<Block> &blocks = ckt_ptr_->Blocks();
-  for (auto &blk : blocks) {
+  std::vector<Block>& blocks = ckt_ptr_->Blocks();
+  for (auto& blk : blocks) {
     if (!blk.IsMovable()) continue;
     double init_x = region_llx + region_width * distribution(generator);
     double init_y = region_lly + region_height * distribution(generator);
@@ -93,13 +93,13 @@ void UniformInitializer::RandomPlace() {
   PrintEndStatement();
 }
 
-GaussianInitializer::GaussianInitializer(Circuit *ckt_ptr, uint32_t random_seed)
+GaussianInitializer::GaussianInitializer(Circuit* ckt_ptr, uint32_t random_seed)
     : RandomInitializer(ckt_ptr, random_seed) {
   initializer_name_ = "Gaussian";
 }
 
 void GaussianInitializer::SetParameters(
-    std::unordered_map<std::string, std::string> &params_dict) {
+    std::unordered_map<std::string, std::string>& params_dict) {
   std::string std_dev_name = "std_dev";
   if (params_dict.find(std_dev_name) != params_dict.end()) {
     try {
@@ -125,7 +125,7 @@ void GaussianInitializer::RandomPlace() {
   int region_ury = ckt_ptr_->RegionURY();
   double center_x = (region_urx + region_llx) / 2.0;
   double center_y = (region_ury + region_lly) / 2.0;
-  for (auto &blk : ckt_ptr_->Blocks()) {
+  for (auto& blk : ckt_ptr_->Blocks()) {
     if (!blk.IsMovable()) continue;
     double x = center_x + region_width * normal_distribution(generator);
     double y = center_y + region_height * normal_distribution(generator);
@@ -140,7 +140,7 @@ void GaussianInitializer::RandomPlace() {
   PrintEndStatement();
 }
 
-std::vector<Block *> &InitializerGridBin::Macros() { return macros_; }
+std::vector<Block*>& InitializerGridBin::Macros() { return macros_; }
 
 double InitializerGridBin::GetDensity() const { return density_; }
 
@@ -162,7 +162,7 @@ void InitializerGridBin::UpdateTotalArea() {
 void InitializerGridBin::UpdateMacroArea() {
   RectI bin_rect(lx_, ly_, ux_, uy_);
   std::vector<RectI> rects;
-  for (auto &macro_ptr : macros_) {
+  for (auto& macro_ptr : macros_) {
     DaliExpects(macro_ptr->IsFixed(), "Only supports fixed macros");
     RectI fixed_blk_rect(static_cast<int>(std::round(macro_ptr->LLX())),
                          static_cast<int>(std::round(macro_ptr->LLY())),
@@ -177,7 +177,7 @@ void InitializerGridBin::UpdateMacroArea() {
   UpdateDensity();
 }
 
-void InitializerGridBin::AddBlock(Block *blk) {
+void InitializerGridBin::AddBlock(Block* blk) {
   blocks_.emplace_back(blk);
   used_area_ += blk->Area();
   UpdateDensity();
@@ -192,7 +192,7 @@ void InitializerGridBin::InitializeBlockLocation(uint32_t random_seed,
   int region_width = ux_ - lx_;
   int region_height = uy_ - ly_;
 
-  for (auto &blk_ptr : blocks_) {
+  for (auto& blk_ptr : blocks_) {
     if (!blk_ptr->IsMovable()) continue;
     for (int i = 0; i < num_trials; ++i) {
       double x_loc = lx_ + region_width * distribution(generator);
@@ -201,7 +201,7 @@ void InitializerGridBin::InitializeBlockLocation(uint32_t random_seed,
       blk_ptr->SetCenterY(y_loc);
       bool is_no_overlap = std::all_of(
           macros_.begin(), macros_.end(),
-          [&x_loc, &y_loc](const Block *macro_ptr) {
+          [&x_loc, &y_loc](const Block* macro_ptr) {
             return (x_loc >= macro_ptr->URX()) || (y_loc >= macro_ptr->URY()) ||
                    (x_loc <= macro_ptr->LLX()) || (y_loc <= macro_ptr->LLY());
           });
@@ -212,7 +212,7 @@ void InitializerGridBin::InitializeBlockLocation(uint32_t random_seed,
   }
 }
 
-MonteCarloInitializer::MonteCarloInitializer(Circuit *ckt_ptr,
+MonteCarloInitializer::MonteCarloInitializer(Circuit* ckt_ptr,
                                              uint32_t random_seed)
     : RandomInitializer(ckt_ptr, random_seed) {
   initializer_name_ = "Monte Carlo";
@@ -233,8 +233,8 @@ void MonteCarloInitializer::RandomPlace() {
   std::minstd_rand0 generator{random_seed_};
   std::uniform_real_distribution<double> distribution(0, 1);
 
-  std::vector<Block> &blocks = ckt_ptr_->Blocks();
-  for (auto &blk : blocks) {
+  std::vector<Block>& blocks = ckt_ptr_->Blocks();
+  for (auto& blk : blocks) {
     if (!blk.IsMovable()) continue;
     for (int i = 0; i < num_trials_; ++i) {
       double init_x = region_llx + region_width * distribution(generator);
@@ -282,7 +282,7 @@ void MonteCarloInitializer::AssignFixedMacroToGridBin() {
   int region_urx = ckt_ptr_->RegionURX();
   int region_lly = ckt_ptr_->RegionLLY();
   int region_ury = ckt_ptr_->RegionURY();
-  for (auto &blk : ckt_ptr_->Blocks()) {
+  for (auto& blk : ckt_ptr_->Blocks()) {
     // skip movable blocks, this condition may need to be updated in the future
     if (blk.IsMovable()) continue;
 
@@ -323,7 +323,7 @@ void MonteCarloInitializer::AssignFixedMacroToGridBin() {
  * @param blk: the block to be examined.
  * @return a boolean value indicate if the above check is passed or not.
  */
-bool MonteCarloInitializer::IsBlkLocationValid(Block &blk) {
+bool MonteCarloInitializer::IsBlkLocationValid(Block& blk) {
   int region_llx = ckt_ptr_->RegionLLX();
   int region_lly = ckt_ptr_->RegionLLY();
   double x_loc = blk.X();
@@ -334,15 +334,15 @@ bool MonteCarloInitializer::IsBlkLocationValid(Block &blk) {
   ix = std::min(ix, grid_cnt_x_ - 1);
   iy = std::max(iy, 0);
   iy = std::min(iy, grid_cnt_y_ - 1);
-  auto &macros = grid_bins_[ix][iy].Macros();
+  auto& macros = grid_bins_[ix][iy].Macros();
   return std::all_of(
-      macros.begin(), macros.end(), [&x_loc, &y_loc](const Block *macro_ptr) {
+      macros.begin(), macros.end(), [&x_loc, &y_loc](const Block* macro_ptr) {
         return (x_loc >= macro_ptr->URX()) || (y_loc >= macro_ptr->URY()) ||
                (x_loc <= macro_ptr->LLX()) || (y_loc <= macro_ptr->LLY());
       });
 }
 
-DensityAwareInitializer::DensityAwareInitializer(Circuit *ckt_ptr,
+DensityAwareInitializer::DensityAwareInitializer(Circuit* ckt_ptr,
                                                  uint32_t random_seed)
     : MonteCarloInitializer(ckt_ptr, random_seed) {
   initializer_name_ = "density-aware";
@@ -405,8 +405,8 @@ void DensityAwareInitializer::InitializePriorityQueue() {
 }
 
 void DensityAwareInitializer::AssignBlockToGridBin() {
-  std::vector<Block> &blocks = ckt_ptr_->Blocks();
-  for (auto &blk : blocks) {
+  std::vector<Block>& blocks = ckt_ptr_->Blocks();
+  for (auto& blk : blocks) {
     if (!blk.IsMovable()) continue;
     auto grid_bin = density_queue_.top();
     density_queue_.pop();

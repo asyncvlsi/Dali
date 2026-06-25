@@ -29,21 +29,39 @@
 
 namespace dali {
 
+/** Extended row-based local legalizer with well-aware row assignment support.
+ */
 class LGTetrisEx : public Placer {
   friend class Dali;
 
  public:
   LGTetrisEx();
 
+  /** Set row height in Dali grid units. */
   void SetRowHeight(int row_height);
+
+  /** Set maximum local legalization iterations. */
   void SetMaxIteration(size_t max_iter);
+
+  /** Set displacement cost factors for width and height. */
   void SetWidthHeightFactor(double k_width, double k_height);
+
+  /** Set left-bound search factors for iterative legalization. */
   void SetLeftBoundFactor(double k_left, double k_left_step);
 
-  void InitializeFromGriddedRowLegalizer(GriddedRowLegalizer *grlg);
+  /** Initialize row data from a gridded-row legalizer. */
+  void InitializeFromGriddedRowLegalizer(GriddedRowLegalizer* grlg);
+
+  /** Derive row information from the input circuit. */
   void SetRowInfoAuto();
+
+  /** Detect legal row whitespace. */
   void DetectWhiteSpace();
+
+  /** Initialize block id/location list. */
   void InitIndexLocList();
+
+  /** Initialize all local legalizer state. */
   void InitLegalizer();
 
   int RowHeight() const;
@@ -56,35 +74,35 @@ class LGTetrisEx : public Placer {
   int AlignLocToRowLoc(double y_loc) const;
   bool IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row) const;
 
-  bool IsFitToRow(int row_id, Block &block) const;
-  bool ShouldOrientN(int row_id, Block &block) const;
+  bool IsFitToRow(int row_id, Block& block) const;
+  bool ShouldOrientN(int row_id, Block& block) const;
 
   void InitBlockContourForward();
   void InitAndSortBlockAscendingX();
-  void UseSpaceLeft(Block const &block);
-  bool IsCurrentLocLegalLeft(Value2D<int> &loc, Block &block);
+  void UseSpaceLeft(Block const& block);
+  bool IsCurrentLocLegalLeft(Value2D<int>& loc, Block& block);
   int WhiteSpaceBoundLeft(int lo_x, int hi_x, int lo_row, int hi_row);
-  bool FindLocLeft(Value2D<int> &loc, Block &block);
+  bool FindLocLeft(Value2D<int>& loc, Block& block);
   bool LocalLegalizationLeft();
 
   void InitBlockContourBackward();
   void InitAndSortBlockDescendingX();
-  void UseSpaceRight(Block const &block);
-  bool IsCurrentLocLegalRight(Value2D<int> &loc, Block &block);
+  void UseSpaceRight(Block const& block);
+  bool IsCurrentLocLegalRight(Value2D<int>& loc, Block& block);
   int WhiteSpaceBoundRight(int lo_x, int hi_x, int lo_row, int hi_row);
-  bool FindLocRight(Value2D<int> &loc, Block &block);
+  bool FindLocRight(Value2D<int>& loc, Block& block);
   bool LocalLegalizationRight();
 
   void ResetLeftLimitFactor();
   void UpdateLeftLimitFactor();
-  double EstimatedHPWL(Block &block, int x, int y);
+  double EstimatedHPWL(Block& block, int x, int y);
 
   void ExportRowsToCircuit();
   bool StartPlacement() override;
 
   bool StartRowAssignment();
 
-  void GenAvailSpace(std::string const &name_of_file = "avail_space.txt");
+  void GenAvailSpace(std::string const& name_of_file = "avail_space.txt");
 
  protected:
   bool is_row_assignment_ = false;

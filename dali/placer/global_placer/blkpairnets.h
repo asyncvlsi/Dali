@@ -28,18 +28,20 @@
 #include "dali/circuit/net.h"
 
 namespace dali {
-// declares a row-major sparse matrix type of double
+// Declares a row-major sparse matrix type of double.
 typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat;
 
+/** Directed driver/load edge induced by one net between two blocks. */
 class BlkBlkEdge {
  public:
-  BlkBlkEdge(Net *net_ptr, int d_index, int l_index)
+  BlkBlkEdge(Net* net_ptr, int d_index, int l_index)
       : net(net_ptr), d(d_index), l(l_index) {}
-  Net *net;  // the pointer to the net containing two blocks
+  Net* net;  // the pointer to the net containing two blocks
   int d;     // driver index
   int l;     // load index
 };
 
+/** Accumulates quadratic objective terms for one pair of connected blocks. */
 class BlkPairNets {
  public:
   BlkPairNets(int blk0, int blk1) : blk_num0(blk0), blk_num1(blk1) {}
@@ -65,9 +67,16 @@ class BlkPairNets {
   SpMat::InnerIterator it01y;
   SpMat::InnerIterator it10y;
 
+  /** Clear accumulated x-direction coefficients. */
   void ClearX();
+
+  /** Write accumulated x-direction coefficients to sparse-matrix iterators. */
   void WriteX();
+
+  /** Clear accumulated y-direction coefficients. */
   void ClearY();
+
+  /** Write accumulated y-direction coefficients to sparse-matrix iterators. */
   void WriteY();
 };
 

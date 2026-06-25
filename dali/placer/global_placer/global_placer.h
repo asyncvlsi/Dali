@@ -30,43 +30,55 @@
 
 namespace dali {
 
+/** Global placement flow combining initialization, HPWL optimization, and rough
+ * legalization. */
 class GlobalPlacer : public Placer {
  public:
   GlobalPlacer() = default;
 
+  /** Set maximum global placement iterations. */
   void SetMaxIteration(int max_iter);
-  void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
-  void LoadConf(std::string const &config_file) override;
 
+  /** Enable or disable intermediate placement dumps. */
+  void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
+
+  /** Load global placer configuration. */
+  void LoadConf(std::string const& config_file) override;
+
+  /** Create optimizer and rough legalizer instances. */
   void InitializeOptimizerAndLegalizer();
+
+  /** Release optimizer and rough legalizer instances. */
   void CloseOptimizerAndLegalizer();
 
+  /** Initialize block locations before iterative placement. */
   void InitializeBlockLocation();
 
+  /** Run global placement. */
   bool StartPlacement() override;
 
  protected:
-  // for look ahead legalization
+  // Iteration and convergence controls for look-ahead legalization.
   int cur_iter_ = 0;
   int max_iter_ = 100;
   double simpl_LAL_converge_criterion_ = 0.005;
   double polar_converge_criterion_ = 0.08;
   int convergence_criteria_ = 1;
 
-  // save intermediate result for debugging and/or visualization
+  // Save intermediate result for debugging and/or visualization.
   bool should_save_intermediate_result_ = false;
 
   bool IsBlockListOrNetListEmpty() const;
-  static bool IsSeriesConverge(std::vector<double> &series, int window_size,
+  static bool IsSeriesConverge(std::vector<double>& series, int window_size,
                                double tolerance);
   bool IsPlacementConverge();
   void PrintHpwl() const;
-  void PrintEndStatement(std::string const &name_of_process,
+  void PrintEndStatement(std::string const& name_of_process,
                          bool is_success) override;
 
   RandomInitializerType initializer_type_ = RandomInitializerType::UNIFORM;
-  HpwlOptimizer *optimizer_ = nullptr;
-  RoughLegalizer *legalizer_ = nullptr;
+  HpwlOptimizer* optimizer_ = nullptr;
+  RoughLegalizer* legalizer_ = nullptr;
 };
 
 }  // namespace dali

@@ -30,8 +30,8 @@ namespace dali {
 
 class FreeSegmentList {
  private:
-  FreeSegment *head_;
-  FreeSegment *tail_;
+  FreeSegment* head_;
+  FreeSegment* tail_;
   int min_width_;
   size_t size_;
   /***derived data entries***/
@@ -54,19 +54,19 @@ class FreeSegmentList {
     }
     return tail_->End();
   }
-  FreeSegment *Head() const { return head_; }
-  FreeSegment *Tail() const { return tail_; }
+  FreeSegment* Head() const { return head_; }
+  FreeSegment* Tail() const { return tail_; }
   int MinWidth() const { return min_width_; }
   void SetMinWidth(int initMinWidth) { min_width_ = initMinWidth; }
-  void Append(FreeSegment *segList);
+  void Append(FreeSegment* segList);
   bool EmplaceBack(int start, int end);
-  void PushBack(FreeSegment *seg);
-  void Insert(FreeSegment *insertPosition, FreeSegment *segToInsert);
+  void PushBack(FreeSegment* seg);
+  void Insert(FreeSegment* insertPosition, FreeSegment* segToInsert);
   bool Empty() const;
-  void CopyFrom(FreeSegmentList &originList);
+  void CopyFrom(FreeSegmentList& originList);
   void Clear();
-  bool ApplyMask(FreeSegmentList &maskRow);
-  void RemoveSeg(FreeSegment *seg_in_list);
+  bool ApplyMask(FreeSegmentList& maskRow);
+  void RemoveSeg(FreeSegment* seg_in_list);
   void RemoveShortSeg(int width);
   void UseSpace(int start, int length);
   bool IsSpaceAvail(int x_loc, int width);

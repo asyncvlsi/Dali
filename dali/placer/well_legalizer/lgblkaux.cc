@@ -22,7 +22,7 @@
 
 namespace dali {
 
-LgBlkAux::LgBlkAux(Block *blk_ptr) : BlockAux(blk_ptr) {
+LgBlkAux::LgBlkAux(Block* blk_ptr) : BlockAux(blk_ptr) {
   DaliExpects(blk_ptr->TypePtr()->HasWellInfo(), "A block has no wellptr?");
   int region_cnt = blk_ptr->TypePtr()->RegionCount();
   sub_locs_.resize(region_cnt, blk_ptr->LLX());
@@ -101,7 +101,7 @@ void LgBlkAux::ComputeAverageLoc() {
   average_loc_ = sum_weight_loc / sum_weight;
 }
 
-std::vector<double> &LgBlkAux::SubLocs() { return sub_locs_; }
+std::vector<double>& LgBlkAux::SubLocs() { return sub_locs_; }
 
 double LgBlkAux::AverageLoc() { return average_loc_; }
 

@@ -42,8 +42,8 @@ BoxBin::BoxBin() {
 }
 
 void BoxBin::update_all_terminal(
-    std::vector<std::vector<GridBin>> &grid_bin_matrix) {
-  GridBin *bin;
+    std::vector<std::vector<GridBin>>& grid_bin_matrix) {
+  GridBin* bin;
   for (int x = ll_index.x; x <= ur_index.x; x++) {
     for (int y = ll_index.y; y <= ur_index.y; y++) {
       bin = &grid_bin_matrix[x][y];
@@ -76,13 +76,13 @@ void BoxBin::update_cell_area() {
   */
 
   total_cell_area = 0;
-  for (auto &blk_ptr : cell_list) {
+  for (auto& blk_ptr : cell_list) {
     total_cell_area += blk_ptr->Area();
   }
 }
 
 void BoxBin::update_cell_area_white_space(
-    std::vector<std::vector<GridBin>> &grid_bin_matrix) {
+    std::vector<std::vector<GridBin>>& grid_bin_matrix) {
   total_cell_area = 0;
   total_white_space = 0;
   for (int x = ll_index.x; x <= ur_index.x; x++) {
@@ -95,8 +95,8 @@ void BoxBin::update_cell_area_white_space(
 }
 
 void BoxBin::UpdateCellAreaWhiteSpaceFillingRate(
-    std::vector<std::vector<unsigned long long>> &grid_bin_white_space_LUT,
-    std::vector<std::vector<GridBin>> &grid_bin_matrix) {
+    std::vector<std::vector<unsigned long long>>& grid_bin_white_space_LUT,
+    std::vector<std::vector<GridBin>>& grid_bin_matrix) {
   if (ll_index.x == 0) {
     if (ll_index.y == 0) {
       total_white_space = grid_bin_white_space_LUT[ur_index.x][ur_index.y];
@@ -136,7 +136,7 @@ void BoxBin::ExpandBox(int grid_cnt_x, int grid_cnt_y) {
   if (ur_index.y < grid_cnt_y - 1) ++ur_index.y;
 }
 
-bool BoxBin::write_box_boundary(std::string const &NameOfFile) {
+bool BoxBin::write_box_boundary(std::string const& NameOfFile) {
   std::ofstream ost;
   ost.open(NameOfFile.c_str(), std::ios::app);
   if (ost.is_open() == 0) {
@@ -161,7 +161,7 @@ bool BoxBin::write_box_boundary(std::string const &NameOfFile) {
   return true;
 }
 
-bool BoxBin::write_cell_region(std::string const &NameOfFile) {
+bool BoxBin::write_cell_region(std::string const& NameOfFile) {
   std::ofstream ost;
   ost.open(NameOfFile.c_str(), std::ios::app);
   if (ost.is_open() == 0) {
@@ -187,11 +187,11 @@ bool BoxBin::write_cell_region(std::string const &NameOfFile) {
 }
 
 void BoxBin::UpdateCellList(
-    std::vector<std::vector<GridBin>> &grid_bin_matrix) {
+    std::vector<std::vector<GridBin>>& grid_bin_matrix) {
   cell_list.clear();
   for (int x = ll_index.x; x <= ur_index.x; x++) {
     for (int y = ll_index.y; y <= ur_index.y; y++) {
-      for (auto &blk_ptr : grid_bin_matrix[x][y].cell_list) {
+      for (auto& blk_ptr : grid_bin_matrix[x][y].cell_list) {
         cell_list.push_back(blk_ptr);
       }
       grid_bin_matrix[x][y].cell_list.clear();
@@ -202,7 +202,7 @@ void BoxBin::UpdateCellList(
 }
 
 void BoxBin::UpdateBoundaries(
-    std::vector<std::vector<GridBin>> &grid_bin_matrix) {
+    std::vector<std::vector<GridBin>>& grid_bin_matrix) {
   left = grid_bin_matrix[ll_index.x][ll_index.y].left;
   bottom = grid_bin_matrix[ll_index.x][ll_index.y].bottom;
   right = grid_bin_matrix[ur_index.x][ur_index.y].right;
@@ -210,14 +210,14 @@ void BoxBin::UpdateBoundaries(
 }
 
 void BoxBin::UpdateWhiteSpaceAndFixedBlocks(
-    std::vector<const PlacementBlockage *> &placement_blockages) {
+    std::vector<const PlacementBlockage*>& placement_blockages) {
   total_white_space =
       (unsigned long long)(right - left) * (unsigned long long)(top - bottom);
   RectI bin_rect(left, bottom, right, top);
 
   std::vector<RectI> rects;
-  for (auto &blockage_ptr : placement_blockages) {
-    auto &blockage = *blockage_ptr;
+  for (auto& blockage_ptr : placement_blockages) {
+    auto& blockage = *blockage_ptr;
     if (bin_rect.IsOverlap(blockage.GetRect())) {
       placement_blockages_.push_back(blockage_ptr);
       rects.push_back(bin_rect.GetOverlapRect(blockage.GetRect()));
@@ -239,8 +239,8 @@ void BoxBin::UpdateObsBoundary() {
   if (placement_blockages_.empty()) {
     return;
   }
-  for (auto &blockage_ptr : placement_blockages_) {
-    const RectI &rect = blockage_ptr->GetRect();
+  for (auto& blockage_ptr : placement_blockages_) {
+    const RectI& rect = blockage_ptr->GetRect();
 
     if ((left < rect.LLX()) && (right > rect.LLX())) {
       vertical_cutlines.push_back((int)rect.LLX());
@@ -306,14 +306,14 @@ bool BoxBin::IsMoreHorizontalCutlines() const {
   return horizontal_cutlines.size() > vertical_cutlines.size();
 }
 
-bool BoxBin::write_cell_in_box(std::string const &NameOfFile) {
+bool BoxBin::write_cell_in_box(std::string const& NameOfFile) {
   std::ofstream ost;
   ost.open(NameOfFile.c_str(), std::ios::app);
   if (ost.is_open() == 0) {
     BOOST_LOG_TRIVIAL(info) << "Cannot open file" << NameOfFile << "\n";
     return false;
   }
-  for (auto &blk_ptr : cell_list) {
+  for (auto& blk_ptr : cell_list) {
     if (blk_ptr->IsMovable()) {
       ost << blk_ptr->X() << "\t" << blk_ptr->Y() << "\n";
     }
@@ -323,8 +323,8 @@ bool BoxBin::write_cell_in_box(std::string const &NameOfFile) {
 }
 
 unsigned long long BoxBin::white_space_LUT(
-    std::vector<std::vector<unsigned long long>> &grid_bin_white_space_LUT,
-    GridBinIndex &ll, GridBinIndex &ur) {
+    std::vector<std::vector<unsigned long long>>& grid_bin_white_space_LUT,
+    GridBinIndex& ll, GridBinIndex& ur) {
   unsigned long long white_space;
   if (ll.x == 0) {
     if (ll.y == 0) {
@@ -348,7 +348,7 @@ unsigned long long BoxBin::white_space_LUT(
 }
 
 bool BoxBin::update_cut_index_white_space(
-    std::vector<std::vector<unsigned long long>> &grid_bin_white_space_LUT) {
+    std::vector<std::vector<unsigned long long>>& grid_bin_white_space_LUT) {
   double error, minimum_error = 1;
   unsigned long long white_space_low;
   int index_give_minimum_error;
@@ -404,8 +404,8 @@ bool BoxBin::update_cut_index_white_space(
 }
 
 bool BoxBin::update_cut_point_cell_list_low_high(
-    unsigned long long &box1_total_white_space,
-    unsigned long long &box2_total_white_space) {
+    unsigned long long& box1_total_white_space,
+    unsigned long long& box2_total_white_space) {
   // this member function will be called only when two white spaces are not
   // different from each other for several magnitudes
   unsigned long long cell_area_low = 0;
@@ -423,7 +423,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(
       // BOOST_LOG_TRIVIAL(info)   << i << "\n";
       cell_area_low = 0;
       cut_line = (cut_line_low + cut_line_high) / 2;
-      for (auto &blk_ptr : cell_list) {
+      for (auto& blk_ptr : cell_list) {
         if (blk_ptr->Y() < cut_line) {
           cell_area_low += blk_ptr->Area();
         }
@@ -446,7 +446,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(
     cut_ur_point.y = cut_line;
     // BOOST_LOG_TRIVIAL(info)   << cut_line << " LLY " << ll_point.y << " URY "
     // << ll_point.y << "\n";
-    for (auto &blk_ptr : cell_list) {
+    for (auto& blk_ptr : cell_list) {
       if (blk_ptr->Y() < cut_line) {
         cell_list_low.push_back(blk_ptr);
       } else {
@@ -462,7 +462,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(
       // BOOST_LOG_TRIVIAL(info)   << i << "\n";
       cell_area_low = 0;
       cut_line = (cut_line_low + cut_line_high) / 2;
-      for (auto &blk_ptr : cell_list) {
+      for (auto& blk_ptr : cell_list) {
         if (blk_ptr->X() < cut_line) {
           cell_area_low += blk_ptr->Area();
         }
@@ -484,7 +484,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(
     cut_ur_point.x = cut_line;
     // BOOST_LOG_TRIVIAL(info)   << cut_line << " LLX " << ll_point.x << " URX "
     // << ur_point.x << "\n";
-    for (auto &blk_ptr : cell_list) {
+    for (auto& blk_ptr : cell_list) {
       if (blk_ptr->X() < cut_line) {
         cell_list_low.push_back(blk_ptr);
       } else {
@@ -495,7 +495,7 @@ bool BoxBin::update_cut_point_cell_list_low_high(
   return true;
 }
 
-bool BoxBin::update_cut_point_cell_list_low_high_leaf(int &cut_line_w,
+bool BoxBin::update_cut_point_cell_list_low_high_leaf(int& cut_line_w,
                                                       int ave_blk_height) {
   unsigned long long cell_area_low = 0;
   double cut_line = 0;
@@ -547,7 +547,7 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(int &cut_line_w,
           mini_loc = node1->Y();
         }
       }
-      Block *tmp_cell_ptr = cell_list[mini_index];
+      Block* tmp_cell_ptr = cell_list[mini_index];
       cell_list[mini_index] = cell_list[i];
       cell_list[i] = tmp_cell_ptr;
     }
@@ -617,7 +617,7 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(int &cut_line_w,
           mini_loc = node1->X();
         }
       }
-      Block *tmp_cell_ptr = cell_list[mini_index];
+      Block* tmp_cell_ptr = cell_list[mini_index];
       cell_list[mini_index] = cell_list[i];
       cell_list[i] = tmp_cell_ptr;
     }
@@ -693,7 +693,7 @@ void BoxBin::Report() {
       << ")\n";
 
   BOOST_LOG_TRIVIAL(info) << "cell list: " << cell_list.size() << "\n";
-  for (auto &p_blk : cell_list) {
+  for (auto& p_blk : cell_list) {
     BOOST_LOG_TRIVIAL(info)
         << p_blk->Name() << ", "
         << "(" << p_blk->LLX() << ", " << p_blk->LLY() << "), "
@@ -702,34 +702,34 @@ void BoxBin::Report() {
   BOOST_LOG_TRIVIAL(info) << "\nend\n";
 
   BOOST_LOG_TRIVIAL(info) << "cell list low: " << cell_list_low.size() << "\n";
-  for (auto &num : cell_list_low) {
+  for (auto& num : cell_list_low) {
     BOOST_LOG_TRIVIAL(info) << num << ", ";
   }
   BOOST_LOG_TRIVIAL(info) << "\nend\n";
 
   BOOST_LOG_TRIVIAL(info) << "cell list hi: " << cell_list_high.size() << "\n";
-  for (auto &num : cell_list_high) {
+  for (auto& num : cell_list_high) {
     BOOST_LOG_TRIVIAL(info) << num << ", ";
   }
   BOOST_LOG_TRIVIAL(info) << "\nend\n";
 
   BOOST_LOG_TRIVIAL(info) << "blockage list: " << placement_blockages_.size()
                           << "\n";
-  for (auto &p_blockage : placement_blockages_) {
-    const RectI &rect = p_blockage->GetRect();
+  for (auto& p_blockage : placement_blockages_) {
+    const RectI& rect = p_blockage->GetRect();
     BOOST_LOG_TRIVIAL(info) << "(" << rect.LLX() << ", " << rect.LLY() << "), "
                             << "(" << rect.URX() << ", " << rect.URY() << ")\n";
   }
   BOOST_LOG_TRIVIAL(info) << "\nend\n";
 
   BOOST_LOG_TRIVIAL(info) << "vertical boundaries\n";
-  for (auto &num : vertical_cutlines) {
+  for (auto& num : vertical_cutlines) {
     BOOST_LOG_TRIVIAL(info) << num << ", ";
   }
   BOOST_LOG_TRIVIAL(info) << "\nend\n";
 
   BOOST_LOG_TRIVIAL(info) << "horizontal boundaries\n";
-  for (auto &num : horizontal_cutlines) {
+  for (auto& num : horizontal_cutlines) {
     BOOST_LOG_TRIVIAL(info) << num << ", ";
   }
   BOOST_LOG_TRIVIAL(info) << "\nend\n";

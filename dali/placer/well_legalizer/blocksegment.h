@@ -25,27 +25,39 @@
 
 namespace dali {
 
+/** Horizontal segment of one or more blocks for local legalization. */
 struct BlockSegment {
  private:
   int lx_;
   int width_;
 
  public:
-  BlockSegment(Block *blk_ptr, int loc) : lx_(loc), width_(blk_ptr->Width()) {
+  BlockSegment(Block* blk_ptr, int loc) : lx_(loc), width_(blk_ptr->Width()) {
     blk_ptrs.push_back(blk_ptr);
     initial_loc.push_back(loc);
   }
-  std::vector<Block *> blk_ptrs;
+  std::vector<Block*> blk_ptrs;
   std::vector<double> initial_loc;
 
+  /** Return lower x in Dali grid units. */
   int LX() const { return lx_; }
+
+  /** Return upper x in Dali grid units. */
   int UX() const { return lx_ + width_; }
+
+  /** Return segment width in Dali grid units. */
   int Width() const { return width_; }
 
-  bool IsNotOnLeft(BlockSegment &sc) const { return sc.LX() < UX(); }
-  void Merge(BlockSegment &sc, int lower_bound, int upper_bound);
+  /** Return true when sc overlaps or touches this segment from the left. */
+  bool IsNotOnLeft(BlockSegment& sc) const { return sc.LX() < UX(); }
+
+  /** Merge another segment while respecting legal bounds. */
+  void Merge(BlockSegment& sc, int lower_bound, int upper_bound);
+
+  /** Write segment locations back to contained blocks. */
   void UpdateBlockLocation();
 
+  /** Log segment state for debugging. */
   void Report() const;
 };
 

@@ -25,26 +25,28 @@
 
 namespace dali {
 
+/** Continuous cell-area cut point used during recursive bisection. */
 struct CellCutPoint {
   CellCutPoint() : x(0), y(0) {}
   CellCutPoint(double x0, double y0) : x(x0), y(y0) {}
   double x;
   double y;
 
+  /** Reset the cut point to (0, 0). */
   void init() {
     x = 0;
     y = 0;
   };
-  bool operator<(const CellCutPoint &rhs) const {
+  bool operator<(const CellCutPoint& rhs) const {
     return (x < rhs.x) || ((x == rhs.x) && (y < rhs.y));
   }
-  bool operator>(const CellCutPoint &rhs) const {
+  bool operator>(const CellCutPoint& rhs) const {
     return (x > rhs.x) || ((x == rhs.x) && (y > rhs.y));
   }
-  bool operator==(const CellCutPoint &rhs) const {
+  bool operator==(const CellCutPoint& rhs) const {
     return (x == rhs.x) && (y == rhs.y);
   }
-  friend std::ostream &operator<<(std::ostream &os, const CellCutPoint &p) {
+  friend std::ostream& operator<<(std::ostream& os, const CellCutPoint& p) {
     os << "(" << p.x << ", " << p.y << ") ";
     return os;
   }

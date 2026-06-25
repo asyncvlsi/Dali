@@ -33,7 +33,7 @@ namespace dali {
 
 IoPlacer::IoPlacer() { InitializeBoundarySpaces(); }
 
-IoPlacer::IoPlacer(phydb::PhyDB *phy_db, Circuit *circuit) {
+IoPlacer::IoPlacer(phydb::PhyDB* phy_db, Circuit* circuit) {
   SetPhyDB(phy_db);
   SetCircuit(circuit);
   InitializeBoundarySpaces();
@@ -55,14 +55,14 @@ void IoPlacer::InitializeBoundarySpaces() {
   }
 }
 
-void IoPlacer::SetCircuit(Circuit *circuit) {
+void IoPlacer::SetCircuit(Circuit* circuit) {
   DaliExpects(circuit != nullptr,
               "Cannot initialize an IoPlacer without providing a valid Circuit "
               "pointer");
   p_ckt_ = circuit;
 }
 
-void IoPlacer::SetPhyDB(phydb::PhyDB *phy_db_ptr) {
+void IoPlacer::SetPhyDB(phydb::PhyDB* phy_db_ptr) {
   DaliExpects(
       phy_db_ptr != nullptr,
       "Cannot initialize an IoPlacer without providing a valid PhyDB pointer");
@@ -74,7 +74,7 @@ bool IoPlacer::PartialPlaceIoPin() {
   return true;
 }
 
-bool IoPlacer::PartialPlaceCmd(int argc, char **argv) {
+bool IoPlacer::PartialPlaceCmd(int argc, char** argv) {
   DaliExpects(false, "to be implemented");
   return true;
 }
@@ -88,7 +88,7 @@ bool IoPlacer::ConfigSetMetalLayer(int boundary_index, int metal_layer_index) {
         << "metal layer index is a bad value: " << metal_layer_index << "\n";
     return false;
   }
-  MetalLayer *metal_layer = &(p_ckt_->Metals()[metal_layer_index]);
+  MetalLayer* metal_layer = &(p_ckt_->Metals()[metal_layer_index]);
   boundary_spaces_[boundary_index].AddLayer(metal_layer);
   return true;
 }
@@ -105,7 +105,7 @@ bool IoPlacer::ConfigSetGlobalMetalLayer(int metal_layer_index) {
 
 bool IoPlacer::ConfigAutoPlace() { return true; }
 
-bool IoPlacer::ConfigBoundaryMetal(int argc, char **argv) {
+bool IoPlacer::ConfigBoundaryMetal(int argc, char** argv) {
   if (argc < 2) {
     ReportConfigUsage();
     return false;
@@ -120,7 +120,7 @@ bool IoPlacer::ConfigBoundaryMetal(int argc, char **argv) {
         ReportConfigUsage();
         return false;
       }
-      MetalLayer *metal_layer = p_ckt_->GetMetalLayerPtr(metal_name);
+      MetalLayer* metal_layer = p_ckt_->GetMetalLayerPtr(metal_name);
       int metal_index = metal_layer->Id();
       if (arg == "left") {
         bool is_success = ConfigSetMetalLayer(LEFT, metal_index);
@@ -167,7 +167,7 @@ void IoPlacer::ReportConfigUsage() {
       << "\033[0m\n";
 }
 
-bool IoPlacer::ConfigCmd(int argc, char **argv) {
+bool IoPlacer::ConfigCmd(int argc, char** argv) {
   if (argc < 1) {
     ReportConfigUsage();
     return false;
@@ -183,7 +183,7 @@ bool IoPlacer::ConfigCmd(int argc, char **argv) {
     bool is_metal_name = p_ckt_->IsMetalLayerExisting(option_str);
     // when the command is like 'place-io <metal layer>'
     if (is_metal_name) {
-      MetalLayer *metal_layer = p_ckt_->GetMetalLayerPtr(option_str);
+      MetalLayer* metal_layer = p_ckt_->GetMetalLayerPtr(option_str);
       return ConfigSetGlobalMetalLayer(metal_layer->Id());
     }
     BOOST_LOG_TRIVIAL(fatal) << "Unknown flag: " << option_str << "\n";
@@ -193,13 +193,24 @@ bool IoPlacer::ConfigCmd(int argc, char **argv) {
 }
 
 // resource should be large enough for all IOPINs
-bool IoPlacer::CheckConfiguration() { return true; }
+bool IoPlacer::CheckConfiguration() {
+  for (int i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
+    if (boundary_spaces_[i].layer_spaces_.empty()) {
+      BOOST_LOG_TRIVIAL(error)
+          << "No metal layer configured for I/O placement boundary " << i
+          << "\n";
+      ReportConfigUsage();
+      return false;
+    }
+  }
+  return true;
+}
 
 bool IoPlacer::BuildResourceMap() {
   std::vector<std::vector<Seg<double>>> all_used_segments(
       NUM_OF_PLACE_BOUNDARY,
       std::vector<Seg<double>>(0));  // TODO: carry layer info
-  for (auto &iopin : p_ckt_->IoPins()) {
+  for (auto& iopin : p_ckt_->IoPins()) {
     if (iopin.IsPrePlaced()) {
       double spacing = iopin.LayerPtr()->Spacing();
       if (iopin.X() == p_ckt_->design().RegionLeft()) {
@@ -231,9 +242,9 @@ bool IoPlacer::BuildResourceMap() {
                                    (double)p_ckt_->design().RegionTop()};
 
   for (int i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
-    std::vector<Seg<double>> &used_segments = all_used_segments[i];
+    std::vector<Seg<double>>& used_segments = all_used_segments[i];
     std::sort(used_segments.begin(), used_segments.end(),
-              [](const Seg<double> &lhs, const Seg<double> &rhs) {
+              [](const Seg<double>& lhs, const Seg<double>& rhs) {
                 return (lhs.lo < rhs.lo);
               });
     std::vector<Seg<double>> avail_space;
@@ -281,12 +292,12 @@ bool IoPlacer::BuildResourceMap() {
 }
 
 bool IoPlacer::AssignIoPinToBoundaryLayers() {
-  for (auto &iopin : p_ckt_->IoPins()) {
+  for (auto& iopin : p_ckt_->IoPins()) {
     // do nothing for placed IOPINs
     if (iopin.IsPrePlaced()) continue;
 
     // find the bounding box of the net containing this IOPIN
-    Net *net = iopin.NetPtr();
+    Net* net = iopin.NetPtr();
     if (net->BlockPins().empty()) {
       // if this net only contain this IOPIN, do nothing
       BOOST_LOG_TRIVIAL(warning)
@@ -345,7 +356,7 @@ bool IoPlacer::AssignIoPinToBoundaryLayers() {
 }
 
 bool IoPlacer::PlaceIoPinOnEachBoundary() {
-  for (auto &boundary_space : boundary_spaces_) {
+  for (auto& boundary_space : boundary_spaces_) {
     boundary_space.AutoPlaceIoPin();
   }
   return true;
@@ -361,7 +372,8 @@ bool IoPlacer::PlaceIoPinOnEachBoundary() {
  * adjust their locations to address this problem.
  */
 void IoPlacer::AdjustIoPinLocationForPhyDB() {
-  for (auto &iopin : p_ckt_->IoPins()) {
+  const auto& die_area = phy_db_ptr_->GetDesignPtr()->GetDieArea();
+  for (auto& iopin : p_ckt_->IoPins()) {
     // ignore pre-placed I/O pins
     if (iopin.IsPrePlaced()) continue;
 
@@ -372,10 +384,10 @@ void IoPlacer::AdjustIoPinLocationForPhyDB() {
 
     // for I/O pins on the right/top boundary, need to adjust their location
     if (iopin.X() == p_ckt_->RegionURX()) {
-      final_x += p_ckt_->design().DieAreaOffsetXResidual();
+      final_x = die_area.URX();
     }
     if (iopin.Y() == p_ckt_->RegionURY()) {
-      final_y += p_ckt_->design().DieAreaOffsetYResidual();
+      final_y = die_area.URY();
     }
 
     // set final locations
@@ -405,7 +417,7 @@ bool IoPlacer::AutoPlaceIoPin() {
   return true;
 }
 
-bool IoPlacer::AutoPlaceCmd(int argc, char **argv) {
+bool IoPlacer::AutoPlaceCmd(int argc, char** argv) {
   bool is_config_successful = ConfigCmd(argc, argv);
   if (!is_config_successful) {
     BOOST_LOG_TRIVIAL(fatal) << "Cannot successfully configure the IoPlacer\n";

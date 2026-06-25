@@ -24,16 +24,16 @@
 
 namespace dali {
 
-void OptRegDist::FindOptimalRegionX(Block &blk, double &lx, double &ly,
-                                    double &ux, double &uy) const {
+void OptRegDist::FindOptimalRegionX(Block& blk, double& lx, double& ly,
+                                    double& ux, double& uy) const {
   std::vector<double> loc_list_x;
   std::vector<double> loc_list_y;
-  auto &net_list = circuit_->design().Nets();
-  for (auto &it : blk.NetList()) {
+  auto& net_list = circuit_->design().Nets();
+  for (auto& it : blk.NetList()) {
     // find offset
     double offset_x = DBL_MAX;
     double offset_y = DBL_MAX;
-    for (auto &blk_pin : net_list[it].BlockPins()) {
+    for (auto& blk_pin : net_list[it].BlockPins()) {
       if (blk_pin.BlkPtr() == &blk) {
         offset_x = blk_pin.OffsetX();
         offset_y = blk_pin.OffsetY();
@@ -46,7 +46,7 @@ void OptRegDist::FindOptimalRegionX(Block &blk, double &lx, double &ly,
     double max_x = -1e10;
     double min_y = 1e10;
     double max_y = -1e10;
-    for (auto &blk_pin : net_list[it].BlockPins()) {
+    for (auto& blk_pin : net_list[it].BlockPins()) {
       if (blk_pin.BlkPtr() == &blk) {
         continue;
       } else {
@@ -88,7 +88,7 @@ void OptRegDist::FindOptimalRegionX(Block &blk, double &lx, double &ly,
   uy = loc_list_y[hi_index];
 }
 
-void OptRegDist::SaveFile(std::string const &file_name) const {
+void OptRegDist::SaveFile(std::string const& file_name) const {
   BOOST_LOG_TRIVIAL(info) << "Writing optimal region distance file: "
                           << file_name;
   std::ofstream ost(file_name.c_str());
@@ -99,7 +99,7 @@ void OptRegDist::SaveFile(std::string const &file_name) const {
   double lx, ly, ux, uy;
   double llx, lly;
   double res;
-  for (auto &blk : circuit_->design().Blocks()) {
+  for (auto& blk : circuit_->design().Blocks()) {
     FindOptimalRegionX(blk, lx, ly, ux, uy);
     llx = blk.LLX();
     lly = blk.LLY();

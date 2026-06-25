@@ -31,12 +31,7 @@
 
 namespace dali {
 
-/**
- * A structure to define properties of a row for well-tap cell insertion
- * 1. white space segment
- * 2. orientation, N or FS
- * 3. lower left location of all well-tap cells
- */
+/** Row occupancy and orientation data used for well-tap insertion. */
 struct Row {
   int orig_x = 0;
   int orig_y = 0;
@@ -47,18 +42,10 @@ struct Row {
   bool is_N = true;  // orientation
 };
 
-/**
- * A class for inserting well-tap cells.
- * List of parameters:
- * 1. cell_: the kind of well-tap cell to use.
- * 2. cell_interval: the maximum distance from the center of one well-tap cell
- * to the center of the following well-tap cell in the same row. Unit is core
- * site width.
- * 3. is_checker_board: placing well-tap cells in checker_board mode or not.
- */
+/** Inserts well-tap cells into available PhyDB row sites. */
 class WellTapPlacer {
-  phydb::PhyDB *phy_db_ = nullptr;
-  phydb::Site *site_ptr_ = nullptr;
+  phydb::PhyDB* phy_db_ = nullptr;
+  phydb::Site* site_ptr_ = nullptr;
   int top_ = 0;
   int bottom_ = 0;
   int left_ = INT_MAX;
@@ -68,28 +55,51 @@ class WellTapPlacer {
 
   std::vector<Row> rows_;  // white space in each row
 
-  phydb::Macro *cell_ = nullptr;            // pointer to well-tap cell
+  phydb::Macro* cell_ = nullptr;            // pointer to well-tap cell
   int cell_width_ = -1;                     // unit is row_step_
   int cell_interval_ = -1;                  // unit is row_step_
   int cell_min_distance_to_boundary_ = -1;  // unit is row_step_
   bool is_checker_board_ = true;
 
  public:
-  explicit WellTapPlacer(phydb::PhyDB *phy_db);
+  explicit WellTapPlacer(phydb::PhyDB* phy_db);
   ~WellTapPlacer();
+
+  /** Load row/site data from PhyDB. */
   void FetchRowsFromPhyDB();
+
+  /** Initialize available whitespace in each row. */
   void InitializeWhiteSpaceInRows();
-  void SetCell(phydb::Macro *cell);
+
+  /** Set the macro used for inserted well taps. */
+  void SetCell(phydb::Macro* cell);
+
+  /** Set maximum same-row well-tap spacing in microns. */
   void SetCellInterval(double cell_interval_microns);
+
+  /** Set minimum well-tap distance to row boundary in microns. */
   void SetCellMinDistanceToBoundary(
       double cell_min_distance_to_boundary_microns);
+
+  /** Enable or disable checkerboard insertion. */
   void UseCheckerBoardMode(bool is_checker_board);
-  void AddWellTapToRowUniform(Row &row, int first_loc, int interval);
+
+  /** Add uniformly spaced well taps to one row. */
+  void AddWellTapToRowUniform(Row& row, int first_loc, int interval);
+
+  /** Add uniformly spaced well taps to every row. */
   void AddWellTapUniform();
+
+  /** Add well taps in checkerboard mode. */
   void AddWellTapCheckerBoard();
+
+  /** Add well taps using the configured mode. */
   void AddWellTap();
+
+  /** Export inserted well taps back to PhyDB. */
   void ExportWellTapCellsToPhyDB();
 
+  /** Dump available row space for debugging. */
   void PlotAvailSpace();
 
   int StartRow(int y_loc) { return (y_loc - bottom_) / row_height_; }

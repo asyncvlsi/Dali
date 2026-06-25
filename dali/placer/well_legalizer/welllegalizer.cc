@@ -35,13 +35,13 @@ WellLegalizer::WellLegalizer() : LGTetrisEx() {
 
 void WellLegalizer::InitWellLegalizer() {
   DaliExpects(ckt_ptr_ != nullptr, "Well Legalization fail: no input circuit!");
-  auto &tech = ckt_ptr_->tech();
+  auto& tech = ckt_ptr_->tech();
   DaliExpects(tech.IsNwellSet(),
               "Well Legalization fail: no N well parameters found!");
   DaliExpects(tech.IsPwellSet(),
               "Well Legalization fail: no P well parameters found!");
-  auto &n_layer = tech.NwellLayer();
-  auto &p_layer = tech.PwellLayer();
+  auto& n_layer = tech.NwellLayer();
+  auto& p_layer = tech.PwellLayer();
 
   double grid_value_x = ckt_ptr_->GridValueX();
   n_max_plug_dist_ = std::ceil(n_layer.MaxPlugDist() / grid_value_x);
@@ -58,7 +58,7 @@ void WellLegalizer::InitWellLegalizer() {
 
   InitLegalizer();
 
-  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  std::vector<Block>& block_list = ckt_ptr_->Blocks();
   int sz = block_list.size();
   init_loc_.resize(sz);
   for (int i = 0; i < sz; ++i) {
@@ -67,7 +67,7 @@ void WellLegalizer::InitWellLegalizer() {
   }
 }
 
-void WellLegalizer::MarkSpaceWellLeft(Block const &block, int p_row) {
+void WellLegalizer::MarkSpaceWellLeft(Block const& block, int p_row) {
   /****
    * Mark the space used by this block by changing the start point of available
    * space in each related row
@@ -96,7 +96,7 @@ void WellLegalizer::MarkSpaceWellLeft(Block const &block, int p_row) {
   }
 }
 
-void WellLegalizer::UpdatePNBoundary(Block const &block) {
+void WellLegalizer::UpdatePNBoundary(Block const& block) {
   /****
    * 1. If the newly placed gate block the alignment line, remove those lines.
    * 2. Adding a new line, which is the P/N boundary of this block.
@@ -107,7 +107,7 @@ void WellLegalizer::UpdatePNBoundary(Block const &block) {
   p_n_boundary_.insert(block.LLY() + block.TypePtr()->PwellHeight(0));
 }
 
-bool WellLegalizer::FindLocation(Block &block, int2d &res) {
+bool WellLegalizer::FindLocation(Block& block, int2d& res) {
   /****
    * For each row:
    *    Find the non-overlap location
@@ -240,7 +240,7 @@ bool WellLegalizer::FindLocation(Block &block, int2d &res) {
   return (min_cost < INT_MAX);
 }
 
-void WellLegalizer::WellPlace(Block &block) {
+void WellLegalizer::WellPlace(Block& block) {
   /****
    * 1. if there is no blocks on the left hand side of this block, switch the
    * type to plugged
@@ -407,7 +407,7 @@ bool WellLegalizer::IsCurLocWellMinWidthLeft(int loc_x, int lo_row, int hi_row,
   return is_well_min_width_legal;
 }
 
-bool WellLegalizer::IsCurrentLocLegalLeft(Value2D<int> &loc, int width,
+bool WellLegalizer::IsCurrentLocLegalLeft(Value2D<int>& loc, int width,
                                           int height, int p_row) {
   int lo_row = StartRow(loc.y);
   int hi_row = EndRow(loc.y + height);
@@ -468,7 +468,7 @@ bool WellLegalizer::IsCurrentLocLegalLeft(int loc_x, int width, int lo_row,
   return true;
 }
 
-bool WellLegalizer::FindLocLeft(Value2D<int> &loc, int num, int width,
+bool WellLegalizer::FindLocLeft(Value2D<int>& loc, int num, int width,
                                 int height, int p_row) {
   /****
    * Returns whether a legal location can be found, and put the final location
@@ -575,7 +575,7 @@ bool WellLegalizer::WellLegalizationLeft() {
   int fail_count = 0;
   bool is_successful = true;
   block_contour_.assign(block_contour_.size(), left_);
-  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  std::vector<Block>& block_list = ckt_ptr_->Blocks();
 
   int sz = blk_inits_.size();
   for (int i = 0; i < sz; ++i) {
@@ -584,7 +584,7 @@ bool WellLegalizer::WellLegalizationLeft() {
     blk_inits_[i].y = block_list[i].LLY();
   }
   std::sort(blk_inits_.begin(), blk_inits_.end(),
-            [](const BlkInitPair &pair0, const BlkInitPair &pair1) {
+            [](const BlkInitPair& pair0, const BlkInitPair& pair1) {
               return (pair0.x < pair1.x) ||
                      ((pair0.x == pair1.x) && (pair0.y < pair1.y));
             });
@@ -597,8 +597,8 @@ bool WellLegalizer::WellLegalizationLeft() {
   bool is_current_loc_legal;
   bool is_legal_loc_found;
 
-  for (auto &pair : blk_inits_) {
-    auto &block = *(pair.blk_ptr);
+  for (auto& pair : blk_inits_) {
+    auto& block = *(pair.blk_ptr);
     if (block.IsFixed()) continue;
 
     res.x = int(std::round(block.LLX()));
@@ -633,7 +633,7 @@ bool WellLegalizer::WellLegalizationLeft() {
   return is_successful;
 }
 
-void WellLegalizer::MarkSpaceWellRight(Block const &block, int p_row) {
+void WellLegalizer::MarkSpaceWellRight(Block const& block, int p_row) {
   /****
    * Mark the space used by this block by changing the start point of available
    * space in each related row
@@ -786,7 +786,7 @@ bool WellLegalizer::IsCurLocWellMinWidthRight(int loc_x, int lo_row, int hi_row,
   return is_well_min_width_legal;
 }
 
-bool WellLegalizer::IsCurrentLocLegalRight(Value2D<int> &loc, int width,
+bool WellLegalizer::IsCurrentLocLegalRight(Value2D<int>& loc, int width,
                                            int height, int p_row) {
   int lo_row = StartRow(loc.y);
   int hi_row = EndRow(loc.y + height);
@@ -848,7 +848,7 @@ bool WellLegalizer::IsCurrentLocLegalRight(int loc_x, int width, int lo_row,
   return true;
 }
 
-bool WellLegalizer::FindLocRight(Value2D<int> &loc, int num, int width,
+bool WellLegalizer::FindLocRight(Value2D<int>& loc, int num, int width,
                                  int height, int p_row) {
   bool is_successful;
 
@@ -933,7 +933,7 @@ bool WellLegalizer::WellLegalizationRight() {
   int fail_count = 0;
   bool is_successful = true;
   block_contour_.assign(block_contour_.size(), right_);
-  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  std::vector<Block>& block_list = ckt_ptr_->Blocks();
 
   int sz = blk_inits_.size();
   for (int i = 0; i < sz; ++i) {
@@ -942,7 +942,7 @@ bool WellLegalizer::WellLegalizationRight() {
     blk_inits_[i].y = block_list[i].LLY();
   }
   std::sort(blk_inits_.begin(), blk_inits_.end(),
-            [](const BlkInitPair &lhs, const BlkInitPair &rhs) {
+            [](const BlkInitPair& lhs, const BlkInitPair& rhs) {
               return (lhs.x > rhs.x) || (lhs.x == rhs.x && lhs.y > rhs.y);
             });
 
@@ -954,8 +954,8 @@ bool WellLegalizer::WellLegalizationRight() {
   bool is_current_loc_legal;
   bool is_legal_loc_found;
 
-  for (auto &pair : blk_inits_) {
-    auto &block = *(pair.blk_ptr);
+  for (auto& pair : blk_inits_) {
+    auto& block = *(pair.blk_ptr);
     if (block.IsFixed()) continue;
 
     res.x = int(std::round(block.URX()));

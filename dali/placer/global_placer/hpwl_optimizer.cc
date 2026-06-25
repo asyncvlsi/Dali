@@ -28,7 +28,7 @@
 
 namespace dali {
 
-HpwlOptimizer::HpwlOptimizer(Circuit *ckt_ptr, int num_threads) {
+HpwlOptimizer::HpwlOptimizer(Circuit* ckt_ptr, int num_threads) {
   DaliExpects(ckt_ptr != nullptr, "Circuit is a nullptr?");
   ckt_ptr_ = ckt_ptr;
   DaliExpects(num_threads >= 1, "Number of threads less than 1?");
@@ -89,8 +89,8 @@ void B2BHpwlOptimizer::Initialize() {
   cg_y_.setTolerance(cg_tolerance_);
 
   size_t coefficient_size = 0;
-  auto &nets = ckt_ptr_->Nets();
-  for (auto &net : nets) {
+  auto& nets = ckt_ptr_->Nets();
+  for (auto& net : nets) {
     size_t net_sz = net.PinCnt();
     // if a net has size n, then in total, there will be (2(n-2)+1)*4 non-zero
     // entries for the matrix
@@ -112,8 +112,8 @@ void B2BHpwlOptimizer::BuildProblemX() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
-  std::vector<Block> &blocks = ckt_ptr_->Blocks();
-  std::vector<Net> &nets = ckt_ptr_->Nets();
+  std::vector<Block>& blocks = ckt_ptr_->Blocks();
+  std::vector<Net>& nets = ckt_ptr_->Nets();
   size_t coefficients_capacity = coefficients_x_.capacity();
   coefficients_x_.resize(0);
   int sz = static_cast<int>(bx.size());
@@ -126,7 +126,7 @@ void B2BHpwlOptimizer::BuildProblemX() {
       (ckt_ptr_->RegionLLX() + ckt_ptr_->RegionURX()) / 2.0 * center_weight;
   // double decay_length = decay_factor * ckt_ptr_->AveBlkHeight();
 
-  for (auto &net : nets) {
+  for (auto& net : nets) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
     double inv_p = net.InvP();
     net.UpdateMaxMinIdX();
@@ -143,7 +143,7 @@ void B2BHpwlOptimizer::BuildProblemX() {
     bool is_movable_min = net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
     double offset_min = net.BlockPins()[min_pin_index].OffsetX();
 
-    for (auto &pair : net.BlockPins()) {
+    for (auto& pair : net.BlockPins()) {
       int blk_num = pair.BlkId();
       double pin_loc = pair.AbsX();
       bool is_movable = pair.BlkPtr()->IsMovable();
@@ -221,8 +221,8 @@ void B2BHpwlOptimizer::BuildProblemY() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
-  std::vector<Block> &blocks = ckt_ptr_->Blocks();
-  std::vector<Net> &nets = ckt_ptr_->Nets();
+  std::vector<Block>& blocks = ckt_ptr_->Blocks();
+  std::vector<Net>& nets = ckt_ptr_->Nets();
   size_t coefficients_capacity = coefficients_y_.capacity();
   coefficients_y_.resize(0);
   int sz = static_cast<int>(by.size());
@@ -235,7 +235,7 @@ void B2BHpwlOptimizer::BuildProblemY() {
       (ckt_ptr_->RegionLLY() + ckt_ptr_->RegionURY()) / 2.0 * center_weight;
   // double decay_length = decay_factor * ckt_ptr_->AveBlkHeight();
 
-  for (auto &net : nets) {
+  for (auto& net : nets) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
     double inv_p = net.InvP();
     net.UpdateMaxMinIdY();
@@ -252,7 +252,7 @@ void B2BHpwlOptimizer::BuildProblemY() {
     bool is_movable_min = net.BlockPins()[min_pin_index].BlkPtr()->IsMovable();
     double offset_min = net.BlockPins()[min_pin_index].OffsetY();
 
-    for (auto &pair : net.BlockPins()) {
+    for (auto& pair : net.BlockPins()) {
       int blk_num = pair.BlkId();
       double pin_loc = pair.AbsY();
       bool is_movable = pair.BlkPtr()->IsMovable();
@@ -326,7 +326,7 @@ void B2BHpwlOptimizer::BuildProblemY() {
   tot_triplets_time_y += elapsed_time.GetWallTime();
 }
 
-bool B2BHpwlOptimizer::IsSeriesConverge(std::vector<double> &data,
+bool B2BHpwlOptimizer::IsSeriesConverge(std::vector<double>& data,
                                         int window_size, double tolerance) {
   int sz = (int)data.size();
   if (sz < window_size) {
@@ -351,7 +351,7 @@ bool B2BHpwlOptimizer::IsSeriesConverge(std::vector<double> &data,
  * Returns if the given series of data is oscillating or not.
  * We will only look at the last several data points @param length.
  * ****/
-bool B2BHpwlOptimizer::IsSeriesOscillate(std::vector<double> &data,
+bool B2BHpwlOptimizer::IsSeriesOscillate(std::vector<double>& data,
                                          int window_size) {
   // if the given length is too short, we cannot know whether it is oscillating
   // or not.
@@ -391,7 +391,7 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
   tot_matrix_from_triplets_x += elapsed_time.GetWallTime();
 
   int sz = static_cast<int>(vx.size());
-  std::vector<Block> &blocks = ckt_ptr_->Blocks();
+  std::vector<Block>& blocks = ckt_ptr_->Blocks();
 
   elapsed_time.RecordStartTime();
   std::vector<double> eval_history;
@@ -449,7 +449,7 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
   tot_matrix_from_triplets_y += elapsed_time.GetWallTime();
 
   int sz = static_cast<int>(vy.size());
-  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  std::vector<Block>& block_list = ckt_ptr_->Blocks();
 
   elapsed_time.RecordStartTime();
   std::vector<double> eval_history;
@@ -501,7 +501,7 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
 
 void B2BHpwlOptimizer::PullBlockBackToRegion() {
   int sz = static_cast<int>(vx.size());
-  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  std::vector<Block>& block_list = ckt_ptr_->Blocks();
   double region_llx = ckt_ptr_->RegionLLX();
   double region_urx = ckt_ptr_->RegionURX();
   double region_lly = ckt_ptr_->RegionLLY();
@@ -539,7 +539,7 @@ void B2BHpwlOptimizer::PullBlockBackToRegion() {
 
 void B2BHpwlOptimizer::UpdateAnchorLocation() {
   if (cur_iter_ == 0) return;
-  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  std::vector<Block>& block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
 
   for (int i = 0; i < sz; ++i) {
@@ -572,7 +572,7 @@ void B2BHpwlOptimizer::UpdateAnchorAlpha() {
 }
 
 void B2BHpwlOptimizer::UpdateMaxMinX() {
-  std::vector<Net> &net_list = ckt_ptr_->Nets();
+  std::vector<Net>& net_list = ckt_ptr_->Nets();
   size_t sz = net_list.size();
   // #pragma omp parallel for
   for (size_t i = 0; i < sz; ++i) {
@@ -581,7 +581,7 @@ void B2BHpwlOptimizer::UpdateMaxMinX() {
 }
 
 void B2BHpwlOptimizer::UpdateMaxMinY() {
-  std::vector<Net> &net_list = ckt_ptr_->Nets();
+  std::vector<Net>& net_list = ckt_ptr_->Nets();
   size_t sz = net_list.size();
   // #pragma omp parallel for
   for (size_t i = 0; i < sz; ++i) {
@@ -597,7 +597,7 @@ void B2BHpwlOptimizer::BuildProblemWithAnchorX() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
-  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  std::vector<Block>& block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
 
   double weight = 0;
@@ -621,7 +621,7 @@ void B2BHpwlOptimizer::BuildProblemWithAnchorY() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
-  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  std::vector<Block>& block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
 
   double weight = 0;
@@ -639,7 +639,7 @@ void B2BHpwlOptimizer::BuildProblemWithAnchorY() {
 }
 
 void B2BHpwlOptimizer::BackUpBlockLocation() {
-  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  std::vector<Block>& block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
   // #pragma omp for
   for (int i = 0; i < sz; ++i) {
@@ -655,7 +655,7 @@ void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(int num_threads) {
                            << omp_get_max_threads()
                            << " Eigen threads: " << Eigen::nbThreads() << "\n";
 
-  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  std::vector<Block>& block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
 #pragma omp parallel num_threads(num_threads) default(none) \
     shared(block_list, sz)
@@ -702,7 +702,7 @@ void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(int num_threads) {
   BOOST_LOG_TRIVIAL(trace) << "threads in branch y: " << omp_get_max_threads()
                            << " Eigen threads: " << Eigen::nbThreads() << "\n";
 
-  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  std::vector<Block>& block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
 #pragma omp parallel num_threads(num_threads) default(none) \
     shared(block_list, sz)
@@ -821,8 +821,8 @@ void StarHpwlOptimizer::BuildProblemX() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
-  std::vector<Block> &blocks = ckt_ptr_->Blocks();
-  std::vector<Net> &nets = ckt_ptr_->Nets();
+  std::vector<Block>& blocks = ckt_ptr_->Blocks();
+  std::vector<Net>& nets = ckt_ptr_->Nets();
   size_t coefficients_capacity = coefficients_x_.capacity();
   coefficients_x_.resize(0);
 
@@ -836,7 +836,7 @@ void StarHpwlOptimizer::BuildProblemX() {
       (ckt_ptr_->RegionLLX() + ckt_ptr_->RegionURX()) / 2.0 * center_weight;
   // double decay_length = decay_factor * ckt_ptr_->AveBlkHeight();
 
-  for (auto &net : nets) {
+  for (auto& net : nets) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
     double inv_p = net.InvP();
 
@@ -846,7 +846,7 @@ void StarHpwlOptimizer::BuildProblemX() {
     bool driver_is_movable = net.BlockPins()[0].BlkPtr()->IsMovable();
     double driver_offset = net.BlockPins()[0].OffsetX();
 
-    for (auto &pair : net.BlockPins()) {
+    for (auto& pair : net.BlockPins()) {
       int blk_num = pair.BlkId();
       double pin_loc = pair.AbsX();
       bool is_movable = pair.BlkPtr()->IsMovable();
@@ -902,8 +902,8 @@ void StarHpwlOptimizer::BuildProblemY() {
   ElapsedTime elapsed_time;
   elapsed_time.GetWallTime();
 
-  std::vector<Block> &blocks = ckt_ptr_->Blocks();
-  std::vector<Net> &nets = ckt_ptr_->Nets();
+  std::vector<Block>& blocks = ckt_ptr_->Blocks();
+  std::vector<Net>& nets = ckt_ptr_->Nets();
   size_t coefficients_capacity = coefficients_y_.capacity();
   coefficients_y_.resize(0);
 
@@ -917,7 +917,7 @@ void StarHpwlOptimizer::BuildProblemY() {
       (ckt_ptr_->RegionLLY() + ckt_ptr_->RegionURY()) / 2.0 * center_weight;
   // double decay_length = decay_factor * ckt_ptr_->AveBlkHeight();
 
-  for (auto &net : nets) {
+  for (auto& net : nets) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
     double inv_p = net.InvP();
 
@@ -927,7 +927,7 @@ void StarHpwlOptimizer::BuildProblemY() {
     bool driver_is_movable = net.BlockPins()[0].BlkPtr()->IsMovable();
     double driver_offset = net.BlockPins()[0].OffsetY();
 
-    for (auto &pair : net.BlockPins()) {
+    for (auto& pair : net.BlockPins()) {
       int blk_num = pair.BlkId();
       double pin_loc = pair.AbsY();
       bool is_movable = pair.BlkPtr()->IsMovable();
@@ -986,8 +986,8 @@ void HpwlHpwlOptimizer::BuildProblemX() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
-  std::vector<Block> &blocks = ckt_ptr_->Blocks();
-  std::vector<Net> &nets = ckt_ptr_->Nets();
+  std::vector<Block>& blocks = ckt_ptr_->Blocks();
+  std::vector<Net>& nets = ckt_ptr_->Nets();
   size_t coefficients_capacity = coefficients_x_.capacity();
   coefficients_x_.resize(0);
 
@@ -1001,7 +1001,7 @@ void HpwlHpwlOptimizer::BuildProblemX() {
       (ckt_ptr_->RegionLLX() + ckt_ptr_->RegionURX()) / 2.0 * center_weight;
   // double decay_length = decay_factor * ckt_ptr_->AveBlkHeight();
 
-  for (auto &net : nets) {
+  for (auto& net : nets) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
     double inv_p = net.InvP();
     net.UpdateMaxMinIdX();
@@ -1066,8 +1066,8 @@ void HpwlHpwlOptimizer::BuildProblemY() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
-  std::vector<Block> &blocks = ckt_ptr_->Blocks();
-  std::vector<Net> &nets = ckt_ptr_->Nets();
+  std::vector<Block>& blocks = ckt_ptr_->Blocks();
+  std::vector<Net>& nets = ckt_ptr_->Nets();
   size_t coefficients_capacity = coefficients_y_.capacity();
   coefficients_y_.resize(0);
 
@@ -1081,7 +1081,7 @@ void HpwlHpwlOptimizer::BuildProblemY() {
       (ckt_ptr_->RegionLLY() + ckt_ptr_->RegionURY()) / 2.0 * center_weight;
   // double decay_length = decay_factor * ckt_ptr_->AveBlkHeight();
 
-  for (auto &net : nets) {
+  for (auto& net : nets) {
     if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
     double inv_p = net.InvP();
     net.UpdateMaxMinIdY();
@@ -1145,11 +1145,11 @@ void HpwlHpwlOptimizer::BuildProblemY() {
 void HpwlHpwlOptimizer::UpdateAnchorAlpha() { alpha = 0.005 * cur_iter_; }
 
 void StarHpwlHpwlOptimizer::InitializeDriverLoadPairs() {
-  std::vector<Block> &blocks = ckt_ptr_->Blocks();
+  std::vector<Block>& blocks = ckt_ptr_->Blocks();
   int sz = static_cast<int>(blocks.size());
 
   pair_connect.resize(sz);
-  for (auto &blk_pair : blk_pair_net_list_) {
+  for (auto& blk_pair : blk_pair_net_list_) {
     int num0 = blk_pair.blk_num0;
     int num1 = blk_pair.blk_num1;
     // BOOST_LOG_TRIVIAL(info)   << num0 << " " << num1 << "\n";
@@ -1163,7 +1163,7 @@ void StarHpwlHpwlOptimizer::InitializeDriverLoadPairs() {
     diagonal_pair.emplace_back(i, i);
     pair_connect[i].push_back(&(diagonal_pair[i]));
     std::sort(pair_connect[i].begin(), pair_connect[i].end(),
-              [](const BlkPairNets *blk_pair0, const BlkPairNets *blk_pair1) {
+              [](const BlkPairNets* blk_pair0, const BlkPairNets* blk_pair1) {
                 if (blk_pair0->blk_num0 == blk_pair1->blk_num0) {
                   return blk_pair0->blk_num1 < blk_pair1->blk_num1;
                 } else {
@@ -1174,7 +1174,7 @@ void StarHpwlHpwlOptimizer::InitializeDriverLoadPairs() {
 
   std::vector<int> row_size(sz, 1);
   for (int i = 0; i < sz; ++i) {
-    for (auto &blk_pair : pair_connect[i]) {
+    for (auto& blk_pair : pair_connect[i]) {
       int num0 = blk_pair->blk_num0;
       int num1 = blk_pair->blk_num1;
       if (num0 == num1) continue;
@@ -1186,7 +1186,7 @@ void StarHpwlHpwlOptimizer::InitializeDriverLoadPairs() {
   Ax.reserve(row_size);
   SpMat_diag_x.resize(sz);
   for (int i = 0; i < sz; ++i) {
-    for (auto &blk_pair : pair_connect[i]) {
+    for (auto& blk_pair : pair_connect[i]) {
       int num0 = blk_pair->blk_num0;
       int num1 = blk_pair->blk_num1;
       if (blocks[num0].IsMovable() && blocks[num1].IsMovable()) {
@@ -1227,7 +1227,7 @@ void StarHpwlHpwlOptimizer::InitializeDriverLoadPairs() {
   Ay.reserve(row_size);
   SpMat_diag_y.resize(sz);
   for (int i = 0; i < sz; ++i) {
-    for (auto &blk_pair : pair_connect[i]) {
+    for (auto& blk_pair : pair_connect[i]) {
       int num0 = blk_pair->blk_num0;
       int num1 = blk_pair->blk_num1;
       if (blocks[num0].IsMovable() && blocks[num1].IsMovable()) {
@@ -1299,8 +1299,8 @@ void StarHpwlHpwlOptimizer::Initialize() {
   cg_y_.setTolerance(cg_tolerance_);
 
   size_t coefficient_size = 0;
-  auto &nets = ckt_ptr_->Nets();
-  for (auto &net : nets) {
+  auto& nets = ckt_ptr_->Nets();
+  for (auto& net : nets) {
     size_t net_sz = net.PinCnt();
     // if a net has size n, then in total, there will be (2(n-2)+1)*4 non-zero
     // entries for the matrix
@@ -1331,14 +1331,14 @@ void StarHpwlHpwlOptimizer::BuildProblemX() {
   }
 
   // double decay_length = decay_factor * ckt_ptr_->AveBlkHeight();
-  std::vector<BlkPairNets> &blk_pair_net_list = blk_pair_net_list_;
+  std::vector<BlkPairNets>& blk_pair_net_list = blk_pair_net_list_;
   int pair_sz = blk_pair_net_list.size();
   // #pragma omp parallel for
   for (int i = 0; i < pair_sz; ++i) {
-    BlkPairNets &blk_pair = blk_pair_net_list[i];
+    BlkPairNets& blk_pair = blk_pair_net_list[i];
     blk_pair.ClearX();
-    for (auto &edge : blk_pair.edges) {
-      Net &net = *(edge.net);
+    for (auto& edge : blk_pair.edges) {
+      Net& net = *(edge.net);
       int d = edge.d;
       int l = edge.l;
       int driver_blk_num = net.BlockPins()[d].BlkId();
@@ -1429,7 +1429,7 @@ void StarHpwlHpwlOptimizer::BuildProblemX() {
   double center_weight = 0.03 / std::sqrt(sz);
   double weight_center_x =
       (ckt_ptr_->RegionLLX() + ckt_ptr_->RegionURX()) / 2.0 * center_weight;
-  std::vector<Block> &blocks = ckt_ptr_->Blocks();
+  std::vector<Block>& blocks = ckt_ptr_->Blocks();
   // #pragma omp parallel for
   for (int i = 0; i < sz; ++i) {
     if (blocks[i].IsFixed()) {
@@ -1438,7 +1438,7 @@ void StarHpwlHpwlOptimizer::BuildProblemX() {
     } else {
       double diag_val = 0;
       double b = 0;
-      for (auto &blk_pair : pair_connect[i]) {
+      for (auto& blk_pair : pair_connect[i]) {
         if (i == blk_pair->blk_num0) {
           diag_val += blk_pair->e00x;
           b += blk_pair->b0x;
@@ -1472,14 +1472,14 @@ void StarHpwlHpwlOptimizer::BuildProblemY() {
   }
 
   // double decay_length = decay_factor * ckt_ptr_->AveBlkHeight();
-  std::vector<BlkPairNets> &blk_pair_net_list = blk_pair_net_list_;
+  std::vector<BlkPairNets>& blk_pair_net_list = blk_pair_net_list_;
   int pair_sz = blk_pair_net_list.size();
   // #pragma omp parallel for
   for (int i = 0; i < pair_sz; ++i) {
-    BlkPairNets &blk_pair = blk_pair_net_list[i];
+    BlkPairNets& blk_pair = blk_pair_net_list[i];
     blk_pair.ClearY();
-    for (auto &edge : blk_pair.edges) {
-      Net &net = *(edge.net);
+    for (auto& edge : blk_pair.edges) {
+      Net& net = *(edge.net);
       int d = edge.d;
       int l = edge.l;
       int driver_blk_num = net.BlockPins()[d].BlkId();
@@ -1570,7 +1570,7 @@ void StarHpwlHpwlOptimizer::BuildProblemY() {
   double center_weight = 0.03 / std::sqrt(sz);
   double weight_center_y =
       (ckt_ptr_->RegionLLY() + ckt_ptr_->RegionURY()) / 2.0 * center_weight;
-  std::vector<Block> &blocks = ckt_ptr_->Blocks();
+  std::vector<Block>& blocks = ckt_ptr_->Blocks();
   // #pragma omp parallel for
   for (int i = 0; i < sz; ++i) {
     if (blocks[i].IsFixed()) {
@@ -1579,7 +1579,7 @@ void StarHpwlHpwlOptimizer::BuildProblemY() {
     } else {
       double diag_val = 0;
       double b = 0;
-      for (auto &blk_pair : pair_connect[i]) {
+      for (auto& blk_pair : pair_connect[i]) {
         if (i == blk_pair->blk_num0) {
           diag_val += blk_pair->e00y;
           b += blk_pair->b0y;
@@ -1609,7 +1609,7 @@ void StarHpwlHpwlOptimizer::BuildProblemWithAnchorX() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
-  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  std::vector<Block>& block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
 
   double weight = 0;
@@ -1633,7 +1633,7 @@ void StarHpwlHpwlOptimizer::BuildProblemWithAnchorY() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
-  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  std::vector<Block>& block_list = ckt_ptr_->Blocks();
   int sz = static_cast<int>(block_list.size());
 
   double weight = 0;
@@ -1656,7 +1656,7 @@ double StarHpwlHpwlOptimizer::OptimizeQuadraticMetricX(
   elapsed_time.RecordStartTime();
 
   int sz = vx.size();
-  std::vector<Block> &blocks = ckt_ptr_->Blocks();
+  std::vector<Block>& blocks = ckt_ptr_->Blocks();
 
   std::vector<double> eval_history;
   int max_rounds = cg_iteration_max_num_ / cg_iteration_;
@@ -1706,7 +1706,7 @@ double StarHpwlHpwlOptimizer::OptimizeQuadraticMetricY(
   elapsed_time.RecordStartTime();
 
   int sz = vx.size();
-  std::vector<Block> &block_list = ckt_ptr_->Blocks();
+  std::vector<Block>& block_list = ckt_ptr_->Blocks();
 
   std::vector<double> eval_history;
   int max_rounds = cg_iteration_max_num_ / cg_iteration_;

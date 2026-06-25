@@ -33,7 +33,7 @@
 
 using namespace dali;
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   InitLogging("", boost::log::trivial::trace, false);
 
   double tune_param = 0;
@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
 #if TEST_WLG
   circuit.LoadImaginaryCellFile();
   // circuit.ReportWellShape();
-  auto *well_legalizer = new StdClusterWellLegalizer;
+  auto* well_legalizer = new StdClusterWellLegalizer;
   well_legalizer->TakeOver(&gb_placer_);
   well_legalizer->SetRowHeight(1);
   well_legalizer->StartPlacement();

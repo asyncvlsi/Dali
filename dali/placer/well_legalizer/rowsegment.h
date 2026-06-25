@@ -45,21 +45,21 @@ class RowSegment {
   int Width() const;
   int UsedSize() const;
 
-  std::vector<BlockRegion> &BlkRegions();
-  void AddBlockRegion(Block *blk_ptr, int region_id);
+  std::vector<BlockRegion>& BlkRegions();
+  void AddBlockRegion(Block* blk_ptr, int region_id);
   void MinDisplacementLegalization(bool use_init_loc);
   void SnapCellToPlacementGrid();
 
   void SetOptimalAnchorWeight(double weight);
-  void FitInRange(std::vector<BlkDispVar> &vars);
-  double DispCost(std::vector<BlkDispVar> &vars, int l, int r, bool is_linear);
-  void FindBestLocalOrder(std::vector<BlkDispVar> &res, double &best_cost,
-                          std::vector<BlkDispVar> &vars, int cur, int l, int r,
+  void FitInRange(std::vector<BlkDispVar>& vars);
+  double DispCost(std::vector<BlkDispVar>& vars, int l, int r, bool is_linear);
+  void FindBestLocalOrder(std::vector<BlkDispVar>& res, double& best_cost,
+                          std::vector<BlkDispVar>& vars, int cur, int l, int r,
                           double left_bound, double right_bound, double gap,
                           int range, bool is_linear);
-  void LocalReorder(std::vector<BlkDispVar> &vars, int range = 3, int omit = 0,
+  void LocalReorder(std::vector<BlkDispVar>& vars, int range = 3, int omit = 0,
                     bool is_linear = false);
-  void LocalReorder2(std::vector<BlkDispVar> &vars);
+  void LocalReorder2(std::vector<BlkDispVar>& vars);
   std::vector<BlkDispVar> OptimizeQuadraticDisplacement(double lambda,
                                                         bool is_weighted_anchor,
                                                         bool is_reorder);
@@ -67,9 +67,9 @@ class RowSegment {
                                                      bool is_weighted_anchor,
                                                      bool is_reorder);
 
-  void GenSubCellTable(std::ofstream &ost_cluster, std::ofstream &ost_sub_cell,
-                       std::ofstream &ost_discrepancy,
-                       std::ofstream &ost_displacement, double row_ly,
+  void GenSubCellTable(std::ofstream& ost_cluster, std::ofstream& ost_sub_cell,
+                       std::ofstream& ost_discrepancy,
+                       std::ofstream& ost_displacement, double row_ly,
                        double row_uy);
 
  private:

@@ -32,7 +32,7 @@ using namespace dali;
 
 void ReportUsage();
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 5) {
     ReportUsage();
     return 1;
@@ -53,8 +53,8 @@ int main(int argc, char *argv[]) {
   double k_left = 0.5;
   double k_left_step = 0.5;
 
-  for (auto &option : options) {
-    std::string &flag = option[0];
+  for (auto& option : options) {
+    std::string& flag = option[0];
     if (flag == "--lef") {
       lef_files.assign(option.begin() + 1, option.end());
       DaliExpects(!lef_files.empty(), "No lef file provided!");
@@ -106,10 +106,10 @@ int main(int argc, char *argv[]) {
   // (1). initialize PhyDB
   phydb::PhyDB phy_db;
   phy_db.SetPlacementGrids(0.2, 0.2);
-  for (auto &lef_file_name : lef_files) {
+  for (auto& lef_file_name : lef_files) {
     phy_db.ReadLef(lef_file_name);
   }
-  for (auto &def_file_name : def_files) {
+  for (auto& def_file_name : def_files) {
     phy_db.ReadDef(def_file_name);
   }
 

@@ -31,26 +31,39 @@
 
 namespace dali {
 
+/** Multi-row well legalizer for gridded-cell placement. */
 class GriddedRowLegalizer : public Placer {
   friend class LGTetrisEx;
 
  public:
   GriddedRowLegalizer() = default;
 
+  /** Verify that required well data exists on the circuit. */
   void CheckWellInfo();
+
+  /** Set worker thread count. */
   void SetThreads(int number_of_threads);
+
+  /** Enable or disable CPLEX-based displacement optimization. */
   void SetUseCplex(bool use_cplex);
 
+  /** Inject an external space partitioner. */
   void SetExternalSpacePartitioner(
-      AbstractSpacePartitioner *p_external_partitioner);
+      AbstractSpacePartitioner* p_external_partitioner);
+
+  /** Set built-in partitioning mode. */
   void SetPartitionMode(int partitioning_mode_);
+
+  /** Set maximum legalized row width. */
   void SetMaxRowWidth(double max_row_width);
+
+  /** Partition placement area and blocks into legalization stripes. */
   void PartitionSpaceAndBlocks();
 
   void SetWellTapCellParameters(bool is_well_tap_needed = true,
                                 bool is_checker_board_mode = false,
                                 double tap_cell_interval_microns = -1,
-                                std::string const &well_tap_type_name = "");
+                                std::string const& well_tap_type_name = "");
 
   void PrecomputeWellTapCellLocation();
 
@@ -65,13 +78,13 @@ class GriddedRowLegalizer : public Placer {
   void RestoreConsensusLocX();
 
   void SetLegalizationMaxIteration(int max_iteration);
-  bool StripeLegalizationUpward(Stripe &stripe, bool use_init_loc);
-  bool StripeLegalizationDownward(Stripe &stripe, bool use_init_loc);
+  bool StripeLegalizationUpward(Stripe& stripe, bool use_init_loc);
+  bool StripeLegalizationDownward(Stripe& stripe, bool use_init_loc);
   void CleanUpTemporaryRowSegments();
   bool UpwardDownwardLegalization(bool use_init_loc = true);
 
-  bool StripeLegalizationUpwardWithDispCheck(Stripe &stripe, bool use_init_loc);
-  bool StripeLegalizationDownwardWithDispCheck(Stripe &stripe,
+  bool StripeLegalizationUpwardWithDispCheck(Stripe& stripe, bool use_init_loc);
+  bool StripeLegalizationDownwardWithDispCheck(Stripe& stripe,
                                                bool use_init_loc);
   bool UpwardDownwardLegalizationWithDispCheck(bool use_init_loc);
 
@@ -87,18 +100,18 @@ class GriddedRowLegalizer : public Placer {
 
   bool StartPlacement() override;
 
-  void ImportStandardRowSegments(phydb::PhyDB &phydb);
+  void ImportStandardRowSegments(phydb::PhyDB& phydb);
   void AssignStandardCellsToRowSegments();
   void ReportStandardCellDisplacement();
   bool StartStandardLegalization();
 
   void ReportOutOfBoundCell();
 
-  void GenMatlabClusterTable(std::string const &name_of_file);
-  void GenMATLABWellTable(std::string const &name_of_file,
+  void GenMatlabClusterTable(std::string const& name_of_file);
+  void GenMATLABWellTable(std::string const& name_of_file,
                           int well_emit_mode) override;
-  void GenSubCellTable(std::string const &name_of_file);
-  void GenDisplacement(std::string const &name_of_file);
+  void GenSubCellTable(std::string const& name_of_file);
+  void GenDisplacement(std::string const& name_of_file);
 
   void ReportEffectiveDensity();
 
@@ -106,7 +119,7 @@ class GriddedRowLegalizer : public Placer {
   // space partitioner
   int partitioning_mode_ = 0;
   int max_row_width_ = -1;
-  AbstractSpacePartitioner *space_partitioner_ = nullptr;
+  AbstractSpacePartitioner* space_partitioner_ = nullptr;
 
   int well_spacing_ = 0;
   int tap_cell_p_height_ = 0;
@@ -117,7 +130,7 @@ class GriddedRowLegalizer : public Placer {
   bool is_well_tap_needed_ = true;
   bool is_checker_board_mode_ = false;
   int tap_cell_interval_grid_ = -1;
-  BlockType *well_tap_type_ptr_ = nullptr;
+  BlockType* well_tap_type_ptr_ = nullptr;
 
   int greedy_cur_iter_ = 0;
   int greedy_max_iter_ = 30;
@@ -136,7 +149,7 @@ class GriddedRowLegalizer : public Placer {
   void SetWellTapCellNecessary(bool is_well_tap_needed);
   void SetWellTapCellPlacementMode(bool is_checker_board_mode);
   void SetWellTapCellInterval(double tap_cell_interval_microns);
-  void SetWellTapCellType(std::string const &well_tap_type_name);
+  void SetWellTapCellType(std::string const& well_tap_type_name);
 };
 
 }  // namespace dali

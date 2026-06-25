@@ -20,6 +20,8 @@
  ******************************************************************************/
 #include <phydb/phydb.h>
 
+#include <cstdio>
+
 #include "dali/dali.h"
 #include "helper.h"
 
@@ -47,7 +49,7 @@ int main() {
   std::string def_file_name = "ispd19_test3.input.def";
 
   // initialize PhyDB
-  auto *p_phy_db = new phydb::PhyDB;
+  auto* p_phy_db = new phydb::PhyDB;
   p_phy_db->ReadLef(lef_file_name);
   p_phy_db->ReadDef(def_file_name);
 
@@ -60,7 +62,10 @@ int main() {
   // perform IO placement
   std::string layer_name("Metal1");
   dali.InstantiateIoPlacer();
-  dali.ConfigIoPlacerAllInOneLayer(layer_name);
+  bool is_config_success = dali.ConfigIoPlacerAllInOneLayer(layer_name);
+  if (!is_config_success) {
+    return FAIL;
+  }
   bool is_ioplace_success = dali.StartIoPinAutoPlacement();
   if (!is_ioplace_success) {
     return FAIL;

@@ -3,7 +3,10 @@ cmake_minimum_required(VERSION 3.12)
 # Prepare benchmark
 add_test(
     NAME ioplacer_benchmark_preparation
-    COMMAND tar -xvzf ispd19_test3.tar.gz
+    COMMAND ${CMAKE_COMMAND}
+        -DINPUT_TAR=${CMAKE_CURRENT_SOURCE_DIR}/ispd19_test3.tar.gz
+        -DWORKDIR=${CMAKE_CURRENT_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/prepare_benchmark.cmake
     WORKING_DIRECTORY ../tests/ioplacer
 )
 

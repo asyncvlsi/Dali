@@ -56,7 +56,7 @@ void GlobalPlacer::SetShouldSaveIntermediateResult(
  *
  * @param config_file: name of the configuration file.
  */
-void GlobalPlacer::LoadConf(std::string const &config_file) {
+void GlobalPlacer::LoadConf(std::string const& config_file) {
   config_read(config_file.c_str());
   DaliFatal("This function is not fully implemented");
 }
@@ -172,7 +172,7 @@ bool GlobalPlacer::IsBlockListOrNetListEmpty() const {
   return false;
 }
 
-bool GlobalPlacer::IsSeriesConverge(std::vector<double> &series,
+bool GlobalPlacer::IsSeriesConverge(std::vector<double>& series,
                                     int window_size, double tolerance) {
   auto sz = static_cast<int>(series.size());
   if (sz < window_size) {
@@ -207,8 +207,8 @@ bool GlobalPlacer::IsSeriesConverge(std::vector<double> &series,
  * ****/
 bool GlobalPlacer::IsPlacementConverge() {
   bool res;
-  auto &lower_bound_hpwl = optimizer_->GetHpwls();
-  auto &upper_bound_hpwl = legalizer_->GetHpwls();
+  auto& lower_bound_hpwl = optimizer_->GetHpwls();
+  auto& upper_bound_hpwl = legalizer_->GetHpwls();
   if (convergence_criteria_ == 1) {
     // (a) and (b) requires at least 10 iterations
     if (lower_bound_hpwl.size() <= 10) {
@@ -262,7 +262,7 @@ void GlobalPlacer::PrintHpwl() const {
 /****
  * @brief Printf the summary of global placement.
  */
-void GlobalPlacer::PrintEndStatement(std::string const &name_of_process,
+void GlobalPlacer::PrintEndStatement(std::string const& name_of_process,
                                      bool is_success) {
   BOOST_LOG_TRIVIAL(debug) << "  Iterative look-ahead legalization complete\n";
   BOOST_LOG_TRIVIAL(debug) << "  Total number of iteration: " << cur_iter_ + 1

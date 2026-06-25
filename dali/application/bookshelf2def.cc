@@ -32,7 +32,7 @@ void ReportUsage();
 
 using namespace dali;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   /*if (argc != 9) {
     ReportUsage();
     return 1;

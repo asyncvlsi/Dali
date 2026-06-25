@@ -64,7 +64,7 @@ struct DisplacementViewer {
     v_[i] = y_prime - y_[i];
   }
 
-  void SaveDisplacementVector(std::string const &name_of_file) {
+  void SaveDisplacementVector(std::string const& name_of_file) {
     std::ofstream ost(name_of_file.c_str());
     DaliExpects(ost.is_open(), "Cannot open output file: " << name_of_file);
     for (size_t i = 0; i < sz_; ++i) {

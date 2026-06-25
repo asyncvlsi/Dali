@@ -34,7 +34,7 @@ IoPinCluster::IoPinCluster(bool is_horizontal_init, double boundary_loc_init,
       span(span_init) {}
 
 IoPinCluster::~IoPinCluster() {
-  for (auto &ptr : iopin_ptr_list) {
+  for (auto& ptr : iopin_ptr_list) {
     ptr = nullptr;
   }
 }
@@ -46,7 +46,7 @@ double IoPinCluster::High() const { return low + span; }
 void IoPinCluster::UniformLegalize() {
   if (is_horizontal) {
     std::sort(iopin_ptr_list.begin(), iopin_ptr_list.end(),
-              [](const IoPin *lhs, const IoPin *rhs) {
+              [](const IoPin* lhs, const IoPin* rhs) {
                 return (lhs->X() < rhs->X());
               });
 
@@ -59,7 +59,7 @@ void IoPinCluster::UniformLegalize() {
     }
   } else {
     std::sort(iopin_ptr_list.begin(), iopin_ptr_list.end(),
-              [](const IoPin *lhs, const IoPin *rhs) {
+              [](const IoPin* lhs, const IoPin* rhs) {
                 return (lhs->Y() < rhs->Y());
               });
 
@@ -87,14 +87,14 @@ void IoPinCluster::Legalize() {
 
 IoBoundaryLayerSpace::IoBoundaryLayerSpace(bool is_horizontal_init,
                                            double boundary_loc_init,
-                                           MetalLayer *metal_layer_init)
+                                           MetalLayer* metal_layer_init)
     : is_horizontal(is_horizontal_init),
       boundary_loc(boundary_loc_init),
       metal_layer(metal_layer_init) {}
 
 IoBoundaryLayerSpace::~IoBoundaryLayerSpace() {
   metal_layer = nullptr;
-  for (auto &ptr : iopin_ptr_list) {
+  for (auto& ptr : iopin_ptr_list) {
     ptr = nullptr;
   }
   pin_clusters.clear();
@@ -137,8 +137,8 @@ void IoBoundaryLayerSpace::UpdateIoPinShapeAndLayer() {
     ury = default_vertical_shape.URY();
   }
 
-  for (auto &pin_cluster : pin_clusters) {
-    for (auto &pin_ptr : pin_cluster.iopin_ptr_list) {
+  for (auto& pin_cluster : pin_clusters) {
+    for (auto& pin_ptr : pin_cluster.iopin_ptr_list) {
       if (!pin_ptr->IsShapeSet()) {
         pin_ptr->SetShape(llx, lly, urx, ury);
         pin_ptr->SetLayerPtr(metal_layer);
@@ -152,10 +152,10 @@ void IoBoundaryLayerSpace::UniformAssignIoPinToCluster() {}
 void IoBoundaryLayerSpace::GreedyAssignIoPinToCluster() {
   if (is_horizontal) {
     std::sort(iopin_ptr_list.begin(), iopin_ptr_list.end(),
-              [](const IoPin *lhs, const IoPin *rhs) {
+              [](const IoPin* lhs, const IoPin* rhs) {
                 return (lhs->X() < rhs->X());
               });
-    for (auto &iopin_ptr : iopin_ptr_list) {
+    for (auto& iopin_ptr : iopin_ptr_list) {
       int len = (int)pin_clusters.size();
       double min_distance = DBL_MAX;
       int min_index = 0;
@@ -172,10 +172,10 @@ void IoBoundaryLayerSpace::GreedyAssignIoPinToCluster() {
     }
   } else {
     std::sort(iopin_ptr_list.begin(), iopin_ptr_list.end(),
-              [](const IoPin *lhs, const IoPin *rhs) {
+              [](const IoPin* lhs, const IoPin* rhs) {
                 return (lhs->Y() < rhs->Y());
               });
-    for (auto &iopin_ptr : iopin_ptr_list) {
+    for (auto& iopin_ptr : iopin_ptr_list) {
       int len = (int)pin_clusters.size();
       double min_distance = DBL_MAX;
       int min_index = 0;
@@ -200,7 +200,7 @@ void IoBoundaryLayerSpace::AssignIoPinToCluster() {
 IoBoundarySpace::IoBoundarySpace(bool is_horizontal, double boundary_loc)
     : is_horizontal_(is_horizontal), boundary_loc_(boundary_loc) {}
 
-void IoBoundarySpace::AddLayer(MetalLayer *metal_layer) {
+void IoBoundarySpace::AddLayer(MetalLayer* metal_layer) {
   layer_spaces_.emplace_back(is_horizontal_, boundary_loc_, metal_layer);
 }
 
@@ -210,11 +210,11 @@ void IoBoundarySpace::SetIoPinLimit(int limit) {
 }
 
 bool IoBoundarySpace::AutoPlaceIoPin() {
-  for (auto &layer_space : layer_spaces_) {
+  for (auto& layer_space : layer_spaces_) {
     layer_space.ComputeDefaultShape(manufacturing_grid_);
     layer_space.AssignIoPinToCluster();
     layer_space.UpdateIoPinShapeAndLayer();
-    for (auto &pin_cluster : layer_space.pin_clusters) {
+    for (auto& pin_cluster : layer_space.pin_clusters) {
       pin_cluster.Legalize();
     }
   }

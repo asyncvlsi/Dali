@@ -39,6 +39,7 @@ cmake-build-release/
 
 # Ignore the build and lib dirs
 build/
+build-asan/
 
 # Ignore any executables
 bin/
@@ -48,8 +49,6 @@ lib/
 
 # Ignore any header files
 include/
-dali/common/config.h
-dali/common/git_version.h
 
 # Ignore Mac specific files
 *.DS_Store

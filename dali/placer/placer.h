@@ -36,100 +36,164 @@
 
 namespace dali {
 
+/** Base class for placement flows that operate on a Circuit. */
 class Placer {
  public:
   Placer();
   Placer(double aspect_ratio, double filling_rate);
   virtual ~Placer() = default;
 
-  virtual void LoadConf(std::string const &config_file);
+  /** Load placer options from a configuration file. */
+  virtual void LoadConf(std::string const& config_file);
 
-  void SetInputCircuit(Circuit *circuit);
+  /** Attach the circuit to be placed. */
+  void SetInputCircuit(Circuit* circuit);
 
+  /** Set the number of threads used by derived placers. */
   void SetNumThreads(int num_threads);
 
+  /** Set target placement density. */
   void SetPlacementDensity(double density = 2.0 / 3.0);
+
+  /** Return target placement density. */
   double PlacementDensity() const;
+
+  /** Set placement-region height/width ratio. */
   void SetAspectRatio(double ratio = 1.0);
+
+  /** Return placement-region height/width ratio. */
   double AspectRatio() const;
+
+  /** Set target whitespace-to-block-area ratio. */
   void SetSpaceBlockRatio(double ratio);
 
+  /** Verify that a placement boundary has been configured. */
   void CheckPlacementBoundary();
+
+  /** Derive placement boundary from area, density, and aspect ratio. */
   void SetBoundaryAuto();
+
+  /** Set placement boundary in Dali grid units. */
   void SetBoundary(int left, int right, int bottom, int top);
+
+  /** Copy placement boundary from the attached circuit. */
   void SetBoundaryFromCircuit();
+
+  /** Log current placement boundaries. */
   void ReportBoundaries() const;
 
+  /** Return left placement boundary in Dali grid units. */
   int RegionLeft() const { return left_; }
+
+  /** Return right placement boundary in Dali grid units. */
   int RegionRight() const { return right_; }
+
+  /** Return bottom placement boundary in Dali grid units. */
   int RegionBottom() const { return bottom_; }
+
+  /** Return top placement boundary in Dali grid units. */
   int RegionTop() const { return top_; }
+
+  /** Return placement-region width in Dali grid units. */
   int RegionWidth() const { return right_ - left_; }
+
+  /** Return placement-region height in Dali grid units. */
   int RegionHeight() const { return top_ - bottom_; }
 
+  /** Recompute aspect ratio from the current placement boundary. */
   void UpdateAspectRatio();
+
+  /** Sort block-pin lists on all nets. */
   void NetSortBlkPin();
+
+  /** Run the placement flow. */
   virtual bool StartPlacement();
 
+  /** Return weighted HPWL in x for the attached circuit. */
   double WeightedHPWLX() {
     DaliExpects(ckt_ptr_ != nullptr,
                 "No input circuit specified, cannot compute WeightedHPWLX!");
     return ckt_ptr_->WeightedHPWLX();
   }
+
+  /** Return weighted HPWL in y for the attached circuit. */
   double WeightedHPWLY() {
     DaliExpects(ckt_ptr_ != nullptr,
                 "No input circuit specified, cannot compute WeightedHPWLY!");
     return ckt_ptr_->WeightedHPWLY();
   }
+
+  /** Return total weighted HPWL for the attached circuit. */
   double WeightedHPWL() {
     DaliExpects(ckt_ptr_ != nullptr,
                 "No input circuit specified, cannot compute HPWL!");
     return ckt_ptr_->WeightedHPWL();
   }
 
+  /** Log weighted HPWL for the attached circuit. */
   void ReportHPWL() {
     DaliExpects(ckt_ptr_ != nullptr,
                 "No input circuit specified, cannot compute HPWL!");
     ckt_ptr_->ReportHPWL();
   }
 
+  /** Log weighted bounding box for the attached circuit. */
   void ReportBoundingBox() {
     DaliExpects(ckt_ptr_ != nullptr,
                 "No input circuit specified, cannot compute bounding box!");
     ckt_ptr_->ReportBoundingBox();
   }
 
+  /** Log center-to-center HPWL for the attached circuit. */
   void ReportHPWLCtoC() {
     DaliExpects(ckt_ptr_ != nullptr,
                 "No input circuit specified, cannot compute HPWLCtoC!");
     ckt_ptr_->ReportHPWLCtoC();
   }
 
-  void TakeOver(Placer *placer);
+  /** Copy common placement state from another placer. */
+  void TakeOver(Placer* placer);
+
+  /** Validate target density settings. */
   void CheckTargetDensity() const;
+
+  /** Validate net connectivity for placement. */
   void CheckNets();
+
+  /** Run general placement precondition checks. */
   void SanityCheck();
+
+  /** Mark movable blocks as placed after placement. */
   void UpdateMovableBlkPlacementStatus();
 
-  /****File I/O member functions****/
-  virtual void GenMATLABWellTable(std::string const &name_of_file,
+  /** Generate a MATLAB well table from the attached circuit. */
+  virtual void GenMATLABWellTable(std::string const& name_of_file,
                                   [[maybe_unused]] int well_emit_mode) {
     ckt_ptr_->GenMATLABWellTable(name_of_file);
   }
+
+  /** Generate a MATLAB script for placed block/net visualization. */
   void GenMATLABScriptPlaced(
-      std::string const &name_of_file = "block_net_list.m");
-  bool SaveNodeTerminal(std::string const &terminal_file = "terminal.txt",
-                        std::string const &node_file = "nodes.txt");
+      std::string const& name_of_file = "block_net_list.m");
+
+  /** Save Bookshelf terminal and node files. */
+  bool SaveNodeTerminal(std::string const& terminal_file = "terminal.txt",
+                        std::string const& node_file = "nodes.txt");
+
+  /** Emit DEF well geometry for flows that support it. */
   virtual void EmitDEFWellFile(
-      [[maybe_unused]] std::string const &name_of_file,
+      [[maybe_unused]] std::string const& name_of_file,
       [[maybe_unused]] int well_emit_mode,
       [[maybe_unused]] bool enable_emitting_cluster = true);
 
-  /****for testing purposes****/
+  /** Shift all blocks in x for testing. */
   void ShiftX(double shift_x);
+
+  /** Shift all blocks in y for testing. */
   void ShiftY(double shift_y);
 
-  bool IsDummyBlock(Block &blk);
+  /** Return true when blk is a dummy/helper block. */
+  bool IsDummyBlock(Block& blk);
 
  protected:
   /* essential data entries */
@@ -142,15 +206,15 @@ class Placer {
    * if so, the aspect_ratio_ or filling_rate_ might also be changed */
   int left_, right_, bottom_, top_;
   // boundaries of the placement region
-  Circuit *ckt_ptr_;
+  Circuit* ckt_ptr_;
 
   // record start/end time
   ElapsedTime elapsed_time_;
 
-  double GetBlkHPWL(Block &blk);
+  double GetBlkHPWL(Block& blk);
 
-  virtual void PrintStartStatement(std::string const &name_of_process);
-  virtual void PrintEndStatement(std::string const &name_of_process,
+  virtual void PrintStartStatement(std::string const& name_of_process);
+  virtual void PrintEndStatement(std::string const& name_of_process,
                                  bool is_success);
 };
 

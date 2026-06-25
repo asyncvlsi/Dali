@@ -12,9 +12,9 @@ endif ()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# ------------------------------------------------------------------------------
-# Include Directories & Module Path
-# ------------------------------------------------------------------------------
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+#Include Directories& Module Path
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
@@ -23,9 +23,9 @@ include_directories(
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-# ------------------------------------------------------------------------------
-# Dependency Detection: ACT_HOME
-# ------------------------------------------------------------------------------
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+#Dependency Detection : ACT_HOME
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 message(STATUS "Detecting environment variable ACT_HOME...")
 if (DEFINED ENV{ACT_HOME})
     message(STATUS "Environment variable ACT_HOME detected: $ENV{ACT_HOME}")
@@ -51,28 +51,27 @@ message(STATUS "Found liblef.a: ${LEF_LIBRARY}")
 find_library(DEF_LIBRARY NAMES def PATHS $ENV{ACT_HOME}/lib REQUIRED)
 message(STATUS "Found libdef.a: ${DEF_LIBRARY}")
 
-# ------------------------------------------------------------------------------
-# Dependencies: Galois, OpenMP, Boost, CPLEX, Git Commit
-# ------------------------------------------------------------------------------
-# Detect if galois_eda library exists
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+#Dependencies : Galois, OpenMP, Boost, CPLEX, Git Commit
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+#Detect if galois_eda library exists
 include(cmake/FindGaloisEDA.cmake)
 
-# Detect if OpenMP library exists
+#Detect if OpenMP library exists
 include(cmake/FindOpenMPPackage.cmake)
 
-# Detect if Boost library exists
+#Detect if Boost library exists
 find_package(Boost 1.71.0 COMPONENTS log_setup log REQUIRED)
 
-
-# Detect if CPLEX library exists
+#Detect if CPLEX library exists
 include(cmake/FindCPLEX.cmake)
 
-# Set Git Commit version
+#Set Git Commit version
 include(cmake/FindGitCommitVersion.cmake)
 
-# ------------------------------------------------------------------------------
-# Build Types and Options
-# ------------------------------------------------------------------------------
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+#Build Types and Options
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 set(BUILD_STATIC_EXECUTABLES FALSE)
 if (BUILD_STATIC_EXECUTABLES)
     set(CMAKE_EXE_LINKER_FLAGS -static)
@@ -84,16 +83,16 @@ if (BUILD_STATIC_EXECUTABLES)
     set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS)    # remove -rdynamic
     set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS)
 else ()
-    # Set RPATH to use for installed targets; append linker search path
+#Set RPATH to use for installed targets; append linker search path
     set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif ()
 
-# Set C++ compilation flags
+#Set C++ compilation flags
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O3")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
-# Set default build type to RELEASE if none specified
+#Set default build type to RELEASE if none specified
 set(default_build_type "RELEASE")
 if (NOT CMAKE_BUILD_TYPE)
     message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
@@ -110,14 +109,14 @@ endif ()
 add_compile_options(-fopenmp)
 add_compile_options(-Wall -Wextra -Wshadow -Wnon-virtual-dtor -Werror=return-type -pedantic)
 
-# Set output directories
+#Set output directories
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
-# ------------------------------------------------------------------------------
-# Library Target
-# ------------------------------------------------------------------------------
-# Glob all used circuit and placer source code
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+#Library Target
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+#Glob all used circuit and placer source code
 file(
     GLOB_RECURSE SOURCES
     dali/dali.cc
@@ -160,7 +159,7 @@ macro(add_dali_executable name source)
     target_link_libraries(${name} PRIVATE dalilib)
 endmacro()
 
-add_dali_executable(dali dali/application/dali_standalone.cc)
+add_dali_executable(dali dali/application/dali_main.cc)
 add_dali_executable(dali-debug dali/application/debug.cc)
 add_dali_executable(wellflow dali/application/wellflow.cc)
 add_dali_executable(adaptec-debug dali/application/debug-adaptec.cc)

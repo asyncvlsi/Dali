@@ -40,7 +40,7 @@ FreeSegmentList::FreeSegmentList(int start, int stop, int min_width)
 
 FreeSegmentList::~FreeSegmentList() { Clear(); }
 
-void FreeSegmentList::Append(FreeSegment *segList) {
+void FreeSegmentList::Append(FreeSegment* segList) {
   /****push a list of freesegment into the linked list with some sanity
    * check****/
   if (segList == nullptr) {
@@ -64,7 +64,7 @@ void FreeSegmentList::Append(FreeSegment *segList) {
 }
 
 bool FreeSegmentList::EmplaceBack(int start, int end) {
-  auto *seg_ptr = new FreeSegment(start, end);
+  auto* seg_ptr = new FreeSegment(start, end);
   if (head_ == nullptr) {
     head_ = seg_ptr;
     tail_ = seg_ptr;
@@ -84,7 +84,7 @@ bool FreeSegmentList::EmplaceBack(int start, int end) {
   return true;
 }
 
-void FreeSegmentList::PushBack(FreeSegment *seg) {
+void FreeSegmentList::PushBack(FreeSegment* seg) {
   /****push a single free segment into the linked list****/
   if (seg == nullptr) {
     BOOST_LOG_TRIVIAL(info) << "push nullptr to linked list?\n";
@@ -120,12 +120,12 @@ void FreeSegmentList::PushBack(FreeSegment *seg) {
   }
 }
 
-void FreeSegmentList::Insert(FreeSegment *insertPosition,
-                             FreeSegment *segToInsert) {
+void FreeSegmentList::Insert(FreeSegment* insertPosition,
+                             FreeSegment* segToInsert) {
   if (insertPosition == Tail()) {
     PushBack(segToInsert);
   } else {
-    FreeSegment *next = insertPosition->Next();
+    FreeSegment* next = insertPosition->Next();
     insertPosition->SetNext(segToInsert);
     segToInsert->SetNext(next);
     segToInsert->SetPrev(insertPosition);
@@ -136,10 +136,10 @@ void FreeSegmentList::Insert(FreeSegment *insertPosition,
 
 bool FreeSegmentList::Empty() const { return (size() == 0); }
 
-void FreeSegmentList::CopyFrom(FreeSegmentList &originList) {
+void FreeSegmentList::CopyFrom(FreeSegmentList& originList) {
   this->Clear();
   if (!originList.Empty()) {
-    for (FreeSegment *current = originList.Head(); current != nullptr;
+    for (FreeSegment* current = originList.Head(); current != nullptr;
          current = current->Next()) {
       EmplaceBack(current->Start(), current->End());
     }
@@ -149,8 +149,8 @@ void FreeSegmentList::CopyFrom(FreeSegmentList &originList) {
 
 void FreeSegmentList::Clear() {
   // Clear the linked list
-  FreeSegment *current = head_;
-  FreeSegment *next = nullptr;
+  FreeSegment* current = head_;
+  FreeSegment* next = nullptr;
   while (current != nullptr) {
     next = current->Next();
     delete current;
@@ -163,7 +163,7 @@ void FreeSegmentList::Clear() {
 }
 
 void FreeSegmentList::RemoveSeg(
-    FreeSegment *
+    FreeSegment*
         seg_in_list) {  // don't remove, traverse the linked list is good enough
   /****
    * remove a segment in the linked list
@@ -180,7 +180,7 @@ void FreeSegmentList::RemoveSeg(
               "Remove Empty pointer? Be careful, you can only remove nodes in "
               "the linked list");
   DaliExpects(!Empty(), "Nothing to remove from an Empty list!");
-  FreeSegment *current = seg_in_list;
+  FreeSegment* current = seg_in_list;
   if (size() == 1) {
     head_ = nullptr;
     tail_ = nullptr;
@@ -192,8 +192,8 @@ void FreeSegmentList::RemoveSeg(
       tail_ = current->Prev();
       tail_->SetNext(nullptr);
     } else {
-      FreeSegment *prev = current->Prev();
-      FreeSegment *next = current->Next();
+      FreeSegment* prev = current->Prev();
+      FreeSegment* next = current->Next();
       prev->SetNext(next);
       next->SetPrev(prev);
     }
@@ -202,17 +202,17 @@ void FreeSegmentList::RemoveSeg(
   delete current;
 }
 
-bool FreeSegmentList::ApplyMask(FreeSegmentList &maskRow) {
+bool FreeSegmentList::ApplyMask(FreeSegmentList& maskRow) {
   if (head_ == nullptr) {
     return false;
   }
   FreeSegmentList result;
-  for (FreeSegment *currentMaskSeg = maskRow.Head(); currentMaskSeg != nullptr;
+  for (FreeSegment* currentMaskSeg = maskRow.Head(); currentMaskSeg != nullptr;
        currentMaskSeg = currentMaskSeg->Next()) {
-    for (FreeSegment *current = Head(); current != nullptr;
+    for (FreeSegment* current = Head(); current != nullptr;
          current = current->Next()) {
       if (current->IsDominate(currentMaskSeg)) break;
-      FreeSegment *tmpSeg_ptr = currentMaskSeg->SingleSegAnd(current);
+      FreeSegment* tmpSeg_ptr = currentMaskSeg->SingleSegAnd(current);
       if (tmpSeg_ptr != nullptr) {
         result.PushBack(tmpSeg_ptr);
       }
@@ -232,8 +232,8 @@ void FreeSegmentList::RemoveShortSeg(int width) {
    * skip;
    * 3. set current pointer to its next.****/
   if (Empty()) return;
-  for (FreeSegment *current = Head(); current != nullptr;) {
-    FreeSegment *next = current->Next();
+  for (FreeSegment* current = Head(); current != nullptr;) {
+    FreeSegment* next = current->Next();
     if (current->Length() < width) {
       RemoveSeg(current);
     }
@@ -254,7 +254,7 @@ void FreeSegmentList::UseSpace(int start, int length) {
   int end_loc = start + length;
   bool isSegFound = false;
   FreeSegment target(start, end_loc);
-  for (auto *current = Head(); current != nullptr; current = current->Next()) {
+  for (auto* current = Head(); current != nullptr; current = current->Next()) {
     if (current->IsContain(&target)) {
       isSegFound = true;
       if (current->IsSameStartEnd(&target)) {
@@ -264,7 +264,7 @@ void FreeSegmentList::UseSpace(int start, int length) {
       } else if ((start > current->Start()) && (end_loc == current->End())) {
         current->SetSpan(current->Start(), start);
       } else {
-        auto *seg_ptr = new FreeSegment(end_loc, current->End());
+        auto* seg_ptr = new FreeSegment(end_loc, current->End());
         current->SetSpan(current->Start(), start);
         Insert(current, seg_ptr);
       }
@@ -289,7 +289,7 @@ bool FreeSegmentList::IsSpaceAvail(int x_loc, int width) {
   FreeSegment target(x_loc, x_loc + width);
   bool is_avail = false;
   // BOOST_LOG_TRIVIAL(info)   << Head() << "\n";
-  for (auto *current = Head(); current != nullptr; current = current->Next()) {
+  for (auto* current = Head(); current != nullptr; current = current->Next()) {
     if (current->IsContain(&target)) {
       is_avail = true;
       break;
@@ -315,7 +315,7 @@ void FreeSegmentList::Show() {
     BOOST_LOG_TRIVIAL(info) << "Empty list, nothing to display" << std::endl;
   } else {
     BOOST_LOG_TRIVIAL(info) << "MinWidth: " << min_width_ << "  ";
-    FreeSegment *current = head_;
+    FreeSegment* current = head_;
     size_t count = 0;
     while (count < size_) {
       BOOST_LOG_TRIVIAL(info)

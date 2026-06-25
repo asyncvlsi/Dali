@@ -50,12 +50,12 @@ Placer::Placer(double aspect_ratio, double filling_rate)
       top_(0),
       ckt_ptr_(nullptr) {}
 
-void Placer::LoadConf([[maybe_unused]] std::string const &config_file) {
+void Placer::LoadConf([[maybe_unused]] std::string const& config_file) {
   BOOST_LOG_TRIVIAL(warning) << "This is a virtual function, which is not "
                                 "supposed to be called directly\n";
 };
 
-void Placer::SetInputCircuit(Circuit *circuit) {
+void Placer::SetInputCircuit(Circuit* circuit) {
   DaliExpects(circuit != nullptr,
               "Invalid input circuit: not allowed to set nullptr as an input!");
   ckt_ptr_ = circuit;
@@ -116,10 +116,10 @@ void Placer::SetSpaceBlockRatio(double ratio) {
   placement_density_ = 1.0 / ratio;
 }
 
-double Placer::GetBlkHPWL(Block &blk) {
+double Placer::GetBlkHPWL(Block& blk) {
   double hpwl = 0;
-  std::vector<Net> &nets = ckt_ptr_->Nets();
-  for (auto &idx : blk.NetList()) {
+  std::vector<Net>& nets = ckt_ptr_->Nets();
+  for (auto& idx : blk.NetList()) {
     hpwl += nets[idx].WeightedHPWL();
   }
   return hpwl;
@@ -217,7 +217,7 @@ bool Placer::StartPlacement() {
   return false;
 }
 
-void Placer::TakeOver(Placer *placer) {
+void Placer::TakeOver(Placer* placer) {
   aspect_ratio_ = placer->AspectRatio();
   placement_density_ = placer->PlacementDensity();
   left_ = placer->RegionLeft();
@@ -227,14 +227,14 @@ void Placer::TakeOver(Placer *placer) {
   ckt_ptr_ = placer->ckt_ptr_;
 }
 
-void Placer::GenMATLABScriptPlaced(std::string const &name_of_file) {
+void Placer::GenMATLABScriptPlaced(std::string const& name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " << name_of_file);
   ost << RegionLeft() << " " << RegionBottom() << " "
       << RegionRight() - RegionLeft() << " " << RegionTop() - RegionBottom()
       << "\n";
-  auto &blocks = ckt_ptr_->Blocks();
-  for (auto &block : blocks) {
+  auto& blocks = ckt_ptr_->Blocks();
+  for (auto& block : blocks) {
     if (block.IsPlaced()) {
       ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " "
           << block.Height() << "\n";
@@ -243,14 +243,14 @@ void Placer::GenMATLABScriptPlaced(std::string const &name_of_file) {
   ost.close();
 }
 
-bool Placer::SaveNodeTerminal(std::string const &terminal_file,
-                              std::string const &node_file) {
+bool Placer::SaveNodeTerminal(std::string const& terminal_file,
+                              std::string const& node_file) {
   std::ofstream ost(terminal_file.c_str());
   std::ofstream ost1(node_file.c_str());
   DaliExpects(ost.is_open() && ost1.is_open(),
               "Cannot open file " << terminal_file << " or " << node_file);
-  auto &blocks = ckt_ptr_->Blocks();
-  for (auto &block : blocks) {
+  auto& blocks = ckt_ptr_->Blocks();
+  for (auto& block : blocks) {
     if (block.IsMovable()) {
       ost1 << block.X() << "\t" << block.Y() << "\n";
     } else {
@@ -274,7 +274,7 @@ bool Placer::SaveNodeTerminal(std::string const &terminal_file,
   return true;
 }
 
-void Placer::EmitDEFWellFile([[maybe_unused]] std::string const &name_of_file,
+void Placer::EmitDEFWellFile([[maybe_unused]] std::string const& name_of_file,
                              [[maybe_unused]] int well_emit_mode,
                              [[maybe_unused]] bool enable_emitting_cluster) {
   DaliFatal("You should not use this member function");
@@ -296,8 +296,8 @@ void Placer::CheckTargetDensity() const {
  * @brief: check if there is any empty nets
  */
 void Placer::CheckNets() {  // TODO: empty nets should be allowed
-  auto &nets = ckt_ptr_->Nets();
-  for (auto &net : nets) {
+  auto& nets = ckt_ptr_->Nets();
+  for (auto& net : nets) {
     if (net.BlockPins().empty()) {
       DaliWarning("Empty net or this net only contains unplaced IOPINs: "
                   << net.Name());
@@ -315,8 +315,8 @@ void Placer::SanityCheck() {
 }
 
 void Placer::UpdateMovableBlkPlacementStatus() {
-  auto &blocks = ckt_ptr_->Blocks();
-  for (auto &block : blocks) {
+  auto& blocks = ckt_ptr_->Blocks();
+  for (auto& block : blocks) {
     if (block.IsMovable()) {
       block.SetPlacementStatus(PLACED);
     }
@@ -324,30 +324,30 @@ void Placer::UpdateMovableBlkPlacementStatus() {
 }
 
 void Placer::ShiftX(double shift_x) {
-  auto &blocks = ckt_ptr_->Blocks();
-  for (auto &block : blocks) {
+  auto& blocks = ckt_ptr_->Blocks();
+  for (auto& block : blocks) {
     block.IncreaseX(shift_x);
   }
 }
 
 void Placer::ShiftY(double shift_y) {
-  auto &blocks = ckt_ptr_->Blocks();
-  for (auto &block : blocks) {
+  auto& blocks = ckt_ptr_->Blocks();
+  for (auto& block : blocks) {
     block.IncreaseY(shift_y);
   }
 }
 
-bool Placer::IsDummyBlock(Block &blk) {
+bool Placer::IsDummyBlock(Block& blk) {
   return blk.TypePtr() == ckt_ptr_->tech().IoDummyBlkTypePtr();
 }
 
-void Placer::PrintStartStatement(std::string const &name_of_process) {
+void Placer::PrintStartStatement(std::string const& name_of_process) {
   elapsed_time_.RecordStartTime();
   PrintHorizontalLine();
   BOOST_LOG_TRIVIAL(info) << "Start " << name_of_process << "\n";
 }
 
-void Placer::PrintEndStatement(std::string const &name_of_process,
+void Placer::PrintEndStatement(std::string const& name_of_process,
                                bool is_success) {
   ReportHPWL();
 

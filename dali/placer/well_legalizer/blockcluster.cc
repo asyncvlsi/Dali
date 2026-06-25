@@ -30,7 +30,7 @@ BlkCluster::BlkCluster(int well_extension_x_init, int well_extension_y_init,
       well_extension_y_(well_extension_y_init),
       plug_width_(plug_width_init) {}
 
-void BlkCluster::AppendBlock(Block &block) {
+void BlkCluster::AppendBlock(Block& block) {
   if (blk_ptr_list_.empty()) {
     lx_ = int(block.LLX()) - well_extension_x_;
     modified_lx_ = lx_ - well_extension_x_ - plug_width_;
@@ -55,7 +55,7 @@ void BlkCluster::OptimizeHeight() {
 
 void BlkCluster::UpdateBlockLocation() {
   int current_loc = lx_;
-  for (auto &blk_ptr : blk_ptr_list_) {
+  for (auto& blk_ptr : blk_ptr_list_) {
     blk_ptr->SetLLX(current_loc);
     blk_ptr->SetCenterY(this->CenterY());
     current_loc += blk_ptr->Width();

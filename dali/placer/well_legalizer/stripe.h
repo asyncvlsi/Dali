@@ -34,6 +34,7 @@ ILOSTLBEGIN
 
 namespace dali {
 
+/** Vertical legalization stripe containing gridded rows and assigned blocks. */
 class Stripe {
  public:
   int lx_;
@@ -45,14 +46,14 @@ class Stripe {
   int contour_;
   int used_height_;
   int cluster_count_;
-  GriddedRow *front_row_;
+  GriddedRow* front_row_;
   int front_id_;
   std::vector<GriddedRow> gridded_rows_;
   bool is_bottom_up_ = false;
 
   int block_count_;
-  std::vector<Block *> blk_ptrs_vec_;
-  std::unordered_map<Block *, int> blk_ptr_2_row_id_;
+  std::vector<Block*> blk_ptrs_vec_;
+  std::unordered_map<Block*, int> blk_ptr_2_row_id_;
 
   bool is_first_row_orient_N_ = true;
   std::vector<RectI> well_rect_list_;
@@ -62,7 +63,7 @@ class Stripe {
   std::vector<SegI> well_tap_cell_location_even_;
   std::vector<SegI> well_tap_cell_location_odd_;
 
-  std::vector<RowSegment *> row_seg_ptrs_;
+  std::vector<RowSegment*> row_seg_ptrs_;
 
   std::vector<double> displacements_;
   std::vector<double> discrepancies_;
@@ -70,13 +71,25 @@ class Stripe {
 
   double max_disp_ = 0;
 
+  /** Return lower-left x in Dali grid units. */
   int LLX() const { return lx_; }
+
+  /** Return lower-left y in Dali grid units. */
   int LLY() const { return ly_; }
+
+  /** Return upper-right x in Dali grid units. */
   int URX() const { return lx_ + width_; }
+
+  /** Return upper-right y in Dali grid units. */
   int URY() const { return ly_ + height_; }
+
+  /** Return stripe width in Dali grid units. */
   int Width() const { return width_; }
+
+  /** Return stripe height in Dali grid units. */
   int Height() const { return height_; }
 
+  /** Return true when all rows remain inside the stripe boundary. */
   bool HasNoRowsSpillingOut() const;
 
   void MinDisplacementAdjustment();
@@ -88,12 +101,12 @@ class Stripe {
 
   void PrecomputeWellTapCellLocation(bool is_checker_board_mode,
                                      int tap_cell_interval_grid,
-                                     BlockType *well_tap_type_ptr);
+                                     BlockType* well_tap_type_ptr);
 
   void UpdateFrontClusterUpward(int p_height, int n_height);
-  void SimplyAddFollowingClusters(Block *p_blk, bool is_upward);
-  bool AddBlockToFrontCluster(Block *p_blk, bool is_upward);
-  bool AddBlockToFrontClusterWithDispCheck(Block *p_blk,
+  void SimplyAddFollowingClusters(Block* p_blk, bool is_upward);
+  bool AddBlockToFrontCluster(Block* p_blk, bool is_upward);
+  bool AddBlockToFrontClusterWithDispCheck(Block* p_blk,
                                            double displacement_upper_limit,
                                            bool is_upward);
   size_t FitBlocksToFrontSpaceUpward(size_t start_id, int current_iteration);
@@ -109,14 +122,14 @@ class Stripe {
   void UpdateBlockYLocation();
   void CleanUpTemporaryRowSegments();
 
-  size_t AddWellTapCells(Circuit *p_ckt, BlockType *well_tap_type_ptr,
+  size_t AddWellTapCells(Circuit* p_ckt, BlockType* well_tap_type_ptr,
                          size_t start_id);
 
   bool IsLeftmostPlacementLegal();
   bool IsStripeLegal();
 
   void CollectAllRowSegments();
-  void UpdateSubCellLocs(std::vector<BlkDispVar> &vars);
+  void UpdateSubCellLocs(std::vector<BlkDispVar>& vars);
   void OptimizeDisplacementInEachRowSegment(double lambda,
                                             bool is_weighted_anchor,
                                             bool is_reorder);
@@ -132,44 +145,50 @@ class Stripe {
   size_t OutOfBoundCell();
 
 #if DALI_USE_CPLEX
-  std::unordered_map<Block *, IloInt> blk_ptr_2_tmp_id;
-  std::unordered_map<IloInt, Block *> blk_tmp_id_2_ptr;
-  void PopulateVariableArray(IloModel &model, IloNumVarArray &x);
-  void AddVariableConstraints(IloModel &model, IloNumVarArray &x,
-                              IloRangeArray &c);
-  void ConstructQuadraticObjective(IloModel &model, IloNumVarArray &x);
-  void CreateQPModel(IloModel &model, IloNumVarArray &x, IloRangeArray &c);
-  bool SolveQPProblem(IloCplex &cplex, IloNumVarArray &var);
+  std::unordered_map<Block*, IloInt> blk_ptr_2_tmp_id;
+  std::unordered_map<IloInt, Block*> blk_tmp_id_2_ptr;
+  void PopulateVariableArray(IloModel& model, IloNumVarArray& x);
+  void AddVariableConstraints(IloModel& model, IloNumVarArray& x,
+                              IloRangeArray& c);
+  void ConstructQuadraticObjective(IloModel& model, IloNumVarArray& x);
+  void CreateQPModel(IloModel& model, IloNumVarArray& x, IloRangeArray& c);
+  bool SolveQPProblem(IloCplex& cplex, IloNumVarArray& var);
   bool OptimizeDisplacementUsingQuadraticProgramming(int number_of_threads = 1);
 #endif
 
   /**** for standard cells ****/
   int row_height_ = 1;
-  void ImportStandardRowSegments(phydb::PhyDB &phydb, Circuit &ckt);
+  void ImportStandardRowSegments(phydb::PhyDB& phydb, Circuit& ckt);
   int LocY2RowId(double lly);
-  double EstimateCost(int row_id, Block *blk_ptr, SegI &range, double density);
-  void AddBlockToRow(int row_id, Block *blk_ptr, SegI range);
+  double EstimateCost(int row_id, Block* blk_ptr, SegI& range, double density);
+  void AddBlockToRow(int row_id, Block* blk_ptr, SegI range);
   void AssignStandardCellsToRowSegments(/*double white_space_usage*/);
 };
 
+/** Column-like collection of legalization stripes and their assigned blocks. */
 struct ClusterStripe {
   int lx_;
   int width_;
 
   int block_count_;
-  std::vector<Block *> block_list_;
+  std::vector<Block*> block_list_;
 
   std::vector<RectI> well_rect_list_;
 
   std::vector<std::vector<SegI>> white_space_;  // white space in each row
   std::vector<Stripe> stripe_list_;
 
+  /** Return stripe-column width in Dali grid units. */
   int Width() const { return width_; }
+
+  /** Return lower-left x in Dali grid units. */
   int LLX() const { return lx_; }
+
+  /** Return upper-right x in Dali grid units. */
   int URX() const { return lx_ + width_; }
-  Stripe *GetStripeMatchSeg(SegI seg, int y_loc);
-  Stripe *GetStripeMatchBlk(Block *blk_ptr);
-  Stripe *GetStripeClosestToBlk(Block *blk_ptr, double &distance);
+  Stripe* GetStripeMatchSeg(SegI seg, int y_loc);
+  Stripe* GetStripeMatchBlk(Block* blk_ptr);
+  Stripe* GetStripeClosestToBlk(Block* blk_ptr, double& distance);
   void AssignBlockToSimpleStripe();
 };
 

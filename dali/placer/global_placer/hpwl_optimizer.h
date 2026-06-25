@@ -31,7 +31,7 @@ namespace dali {
 
 typedef Eigen::Index EgId;
 typedef std::pair<EgId, EgId> PairEgId;
-// declares a row-major sparse matrix type of double
+// Declares a row-major sparse matrix type of double.
 typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat;
 // A triplet is a simple object representing a non-zero entry as the triplet:
 // row index, column index, value.
@@ -40,40 +40,62 @@ typedef Eigen::Triplet<double> T;
 // index, value, for a given row index.
 typedef IndexVal D;
 
+/** Abstract interface for global-placement HPWL optimizers. */
 class HpwlOptimizer {
  public:
-  HpwlOptimizer(Circuit *ckt_ptr, int num_threads);
+  HpwlOptimizer(Circuit* ckt_ptr, int num_threads);
   virtual ~HpwlOptimizer() = default;
+
+  /** Prepare optimizer state before iterative optimization. */
   virtual void Initialize() = 0;
+
+  /** Set number of worker threads. */
   void SetNumThreads(int num_threads) { num_threads_ = num_threads; }
+
+  /** Set current global-placement iteration. */
   void SetIteration(int cur_iter) { cur_iter_ = cur_iter; }
+
+  /** Optimize block locations and return the resulting HPWL estimate. */
   virtual double OptimizeHpwl() = 0;
+
+  /** Return total optimizer runtime in seconds. */
   virtual double GetTime() = 0;
+
+  /** Release optimizer resources. */
   virtual void Close() = 0;
-  std::vector<double> &GetHpwls() { return lower_bound_hpwl_; }
-  std::vector<double> &GetHpwlsX() { return lower_bound_hpwl_x_; }
-  std::vector<double> &GetHpwlsY() { return lower_bound_hpwl_y_; }
+
+  /** Return lower-bound HPWL history. */
+  std::vector<double>& GetHpwls() { return lower_bound_hpwl_; }
+
+  /** Return x lower-bound HPWL history. */
+  std::vector<double>& GetHpwlsX() { return lower_bound_hpwl_x_; }
+
+  /** Return y lower-bound HPWL history. */
+  std::vector<double>& GetHpwlsY() { return lower_bound_hpwl_y_; }
+
+  /** Enable or disable intermediate placement dumps. */
   void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
 
  protected:
-  Circuit *ckt_ptr_ = nullptr;
+  Circuit* ckt_ptr_ = nullptr;
   int cur_iter_ = 0;
   int num_threads_ = 1;
   std::vector<double> lower_bound_hpwl_;
   std::vector<double> lower_bound_hpwl_x_;
   std::vector<double> lower_bound_hpwl_y_;
 
-  // stop update net model if the cost change is less than this value for 3
-  // iterations
+  // Stop updating the net model if cost change is below this value for 3
+  // iterations.
   double net_model_update_stop_criterion_ = 0.01;
 
-  // save intermediate result for debugging and/or visualization
+  // Save intermediate result for debugging and/or visualization.
   bool should_save_intermediate_result_ = false;
 };
 
+/** Bound-to-bound quadratic HPWL optimizer. */
 class B2BHpwlOptimizer : public HpwlOptimizer {
  public:
-  B2BHpwlOptimizer(Circuit *ckt_ptr, int num_threads)
+  B2BHpwlOptimizer(Circuit* ckt_ptr, int num_threads)
       : HpwlOptimizer(ckt_ptr, num_threads) {}
   ~B2BHpwlOptimizer() override = default;
 
@@ -82,9 +104,9 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
 
   virtual void BuildProblemX();
   virtual void BuildProblemY();
-  bool IsSeriesConverge(std::vector<double> &data, int window_size,
+  bool IsSeriesConverge(std::vector<double>& data, int window_size,
                         double tolerance);
-  bool IsSeriesOscillate(std::vector<double> &data, int window_size);
+  bool IsSeriesOscillate(std::vector<double>& data, int window_size);
   virtual double OptimizeQuadraticMetricX(double cg_stop_criterion);
   virtual double OptimizeQuadraticMetricY(double cg_stop_criterion);
   void PullBlockBackToRegion();
@@ -148,7 +170,7 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   std::vector<T> coefficients_y_;
   Eigen::ConjugateGradient<SpMat, Eigen::Lower | Eigen::Upper> cg_x_;
   Eigen::ConjugateGradient<SpMat, Eigen::Lower | Eigen::Upper> cg_y_;
-  std::vector<std::vector<BlkPairNets *>> pair_connect;
+  std::vector<std::vector<BlkPairNets*>> pair_connect;
   std::vector<BlkPairNets> diagonal_pair;
   std::vector<SpMat::InnerIterator> SpMat_diag_x;
   std::vector<SpMat::InnerIterator> SpMat_diag_y;
@@ -172,9 +194,10 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   double alpha_step = 0.00;
 };
 
+/** Star-model quadratic HPWL optimizer. */
 class StarHpwlOptimizer : public B2BHpwlOptimizer {
  public:
-  StarHpwlOptimizer(Circuit *ckt_ptr, int num_threads)
+  StarHpwlOptimizer(Circuit* ckt_ptr, int num_threads)
       : B2BHpwlOptimizer(ckt_ptr, num_threads) {}
   ~StarHpwlOptimizer() override = default;
 
@@ -184,9 +207,10 @@ class StarHpwlOptimizer : public B2BHpwlOptimizer {
   void UpdateAnchorAlpha() override;
 };
 
+/** HPWL-weighted bound-to-bound optimizer variant. */
 class HpwlHpwlOptimizer : public B2BHpwlOptimizer {
  public:
-  HpwlHpwlOptimizer(Circuit *ckt_ptr, int num_threads)
+  HpwlHpwlOptimizer(Circuit* ckt_ptr, int num_threads)
       : B2BHpwlOptimizer(ckt_ptr, num_threads) {}
   ~HpwlHpwlOptimizer() override = default;
 
@@ -196,9 +220,10 @@ class HpwlHpwlOptimizer : public B2BHpwlOptimizer {
   void UpdateAnchorAlpha() override;
 };
 
+/** Star plus HPWL-weighted optimizer variant with driver/load pairs. */
 class StarHpwlHpwlOptimizer : public B2BHpwlOptimizer {
  public:
-  StarHpwlHpwlOptimizer(Circuit *ckt_ptr, int num_threads)
+  StarHpwlHpwlOptimizer(Circuit* ckt_ptr, int num_threads)
       : B2BHpwlOptimizer(ckt_ptr, num_threads) {}
   ~StarHpwlHpwlOptimizer() override = default;
 

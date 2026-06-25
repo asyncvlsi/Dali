@@ -26,8 +26,8 @@
 namespace dali {
 
 struct BlockRegion {
-  BlockRegion(Block *blk, int id) : p_blk(blk), region_id(id) {}
-  Block *p_blk = nullptr;
+  BlockRegion(Block* blk, int id) : p_blk(blk), region_id(id) {}
+  Block* p_blk = nullptr;
   int region_id = 0;
 };
 

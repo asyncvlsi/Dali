@@ -32,8 +32,8 @@
 
 namespace dali {
 
-Dali::Dali(phydb::PhyDB *phy_db_ptr, const std::string &severity_level,
-           const std::string &log_file_name) {
+Dali::Dali(phydb::PhyDB* phy_db_ptr, const std::string& severity_level,
+           const std::string& log_file_name) {
   phy_db_ptr_ = phy_db_ptr;
   severity_level_ = StrToLoggingLevel(severity_level);
   log_file_name_ = log_file_name;
@@ -41,8 +41,8 @@ Dali::Dali(phydb::PhyDB *phy_db_ptr, const std::string &severity_level,
   InitLogging(log_file_name_, severity_level_, disable_log_prefix_);
 }
 
-Dali::Dali(phydb::PhyDB *phy_db_ptr, severity severity_level,
-           const std::string &log_file_name) {
+Dali::Dali(phydb::PhyDB* phy_db_ptr, severity severity_level,
+           const std::string& log_file_name) {
   phy_db_ptr_ = phy_db_ptr;
   severity_level_ = severity_level;
   log_file_name_ = log_file_name;
@@ -156,15 +156,16 @@ void Dali::SetLogPrefix(bool disable_log_prefix) {
 
 void Dali::SetNumThreads(int num_threads) { num_threads_ = num_threads; }
 
-Circuit &Dali::GetCircuit() { return circuit_; }
+Circuit& Dali::GetCircuit() { return circuit_; }
 
-phydb::PhyDB *Dali::GetPhyDBPtr() { return phy_db_ptr_; }
+phydb::PhyDB* Dali::GetPhyDBPtr() { return phy_db_ptr_; }
 
-bool Dali::ConfigIoPlacerAllInOneLayer(std::string const &layer_name) {
+bool Dali::ConfigIoPlacerAllInOneLayer(std::string const& layer_name) {
+  InitializeCircuitFromPhyDBIfNeeded();
   DaliExpects(io_placer_ != nullptr, "Please initialize I/O placer first");
   bool is_metal_name = circuit_.IsMetalLayerExisting(layer_name);
   if (is_metal_name) {
-    MetalLayer *metal_layer = circuit_.GetMetalLayerPtr(layer_name);
+    MetalLayer* metal_layer = circuit_.GetMetalLayerPtr(layer_name);
     return io_placer_->ConfigSetGlobalMetalLayer(metal_layer->Id());
   }
   return false;
@@ -173,6 +174,7 @@ bool Dali::ConfigIoPlacerAllInOneLayer(std::string const &layer_name) {
 bool Dali::ConfigIoPlacer() { return true; }
 
 bool Dali::StartIoPinAutoPlacement() {
+  InitializeCircuitFromPhyDBIfNeeded();
   DaliExpects(io_placer_ != nullptr, "Please initialize I/O placer first");
   return io_placer_->AutoPlaceIoPin();
 }
@@ -196,7 +198,7 @@ void Dali::ReportIoPlacementUsage() {
       << "\033[0m\n";
 }
 
-bool Dali::IoPinPlacement(int argc, char **argv) {
+bool Dali::IoPinPlacement(int argc, char** argv) {
   if (argc < 2) {
     ReportIoPlacementUsage();
     return false;
@@ -231,7 +233,7 @@ void Dali::InitializeRCEstimator() {
 
 #if PHYDB_USE_GALOIS
 void Dali::FetchSlacks() {
-  phydb::ActPhyDBTimingAPI &timing_api = phy_db_ptr_->GetTimingApi();
+  phydb::ActPhyDBTimingAPI& timing_api = phy_db_ptr_->GetTimingApi();
   std::cout << "Number of timing constraints: "
             << timing_api.GetNumConstraints() << "\n";
   for (int i = 0; i < (int)timing_api.GetNumConstraints(); ++i) {
@@ -257,7 +259,7 @@ void Dali::InitializeTimingDrivenPlacement() {
 void Dali::UpdateRCs() { rc_estimator->PushNetRCToManager(); }
 
 void Dali::PerformTimingAnalysis() {
-  phydb::ActPhyDBTimingAPI &timing_api = phy_db_ptr_->GetTimingApi();
+  phydb::ActPhyDBTimingAPI& timing_api = phy_db_ptr_->GetTimingApi();
   timing_api.UpdateTimingIncremental();
 }
 
@@ -293,6 +295,7 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
 
   circuit_.SetEnableShrinkOffGridDieArea(enable_shrink_off_grid_die_area_);
   circuit_.InitializeFromPhyDB(phy_db_ptr_);
+  is_circuit_initialized_ = true;
   circuit_.ReportBriefSummary();
 
   // set the placement density
@@ -364,7 +367,7 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
   return true;
 }
 
-void Dali::AddWellTaps(phydb::Macro *cell, double cell_interval_microns,
+void Dali::AddWellTaps(phydb::Macro* cell, double cell_interval_microns,
                        bool is_checker_board) {
   well_tap_placer_ = new WellTapPlacer(phy_db_ptr_);
 
@@ -384,8 +387,8 @@ void Dali::AddWellTaps(phydb::Macro *cell, double cell_interval_microns,
   delete well_tap_placer_;
 }
 
-bool Dali::AddWellTaps(int argc, char **argv) {
-  phydb::Macro *cell = nullptr;
+bool Dali::AddWellTaps(int argc, char** argv) {
+  phydb::Macro* cell = nullptr;
   double cell_interval_microns = -1;
   bool is_checker_board = false;
   for (int i = 1; i < argc;) {
@@ -465,7 +468,7 @@ bool Dali::UnifiedLegalization() {
  *        placement back to PhyDB database.
  * @return void
  */
-void Dali::ExternalDetailedPlaceAndLegalize(std::string const &engine,
+void Dali::ExternalDetailedPlaceAndLegalize(std::string const& engine,
                                             bool load_dp_result) {
   // create a script for detailed placement and legalization
   BOOST_LOG_TRIVIAL(info)
@@ -502,16 +505,16 @@ void Dali::ExportToPhyDB() {
 
 void Dali::Close() { CloseLogging(); }
 
-void Dali::MaybeExportToLEF(std::string const &input_lef_file_full_name,
-                            std::string const &output_lef_name) {
+void Dali::MaybeExportToLEF(std::string const& input_lef_file_full_name,
+                            std::string const& output_lef_name) {
   if (!enable_end_cap_cell_) {
     return;
   }
   circuit_.SaveLefFile(input_lef_file_full_name, output_lef_name);
 }
 
-void Dali::ExportToDEF(std::string const &input_def_file_full_name,
-                       std::string const &output_def_name) {
+void Dali::ExportToDEF(std::string const& input_def_file_full_name,
+                       std::string const& output_def_name) {
   circuit_.SaveDefFile(output_def_name, "", input_def_file_full_name, 1, 1, 2,
                        1);
   circuit_.SaveDefFile(output_def_name, "_io", input_def_file_full_name, 1, 1,
@@ -527,9 +530,19 @@ void Dali::ExportToDEF(std::string const &input_def_file_full_name,
 }
 
 void Dali::InstantiateIoPlacer() {
+  InitializeCircuitFromPhyDBIfNeeded();
   if (io_placer_ == nullptr) {
     io_placer_ = new IoPlacer(phy_db_ptr_, &circuit_);
   }
+}
+
+void Dali::InitializeCircuitFromPhyDBIfNeeded() {
+  if (is_circuit_initialized_) {
+    return;
+  }
+  circuit_.SetEnableShrinkOffGridDieArea(enable_shrink_off_grid_die_area_);
+  circuit_.InitializeFromPhyDB(phy_db_ptr_);
+  is_circuit_initialized_ = true;
 }
 
 /**
@@ -542,7 +555,7 @@ void Dali::InstantiateIoPlacer() {
  * @return the DEF file name generated by the external placer.
  */
 std::string Dali::CreateDetailedPlacementAndLegalizationScript(
-    std::string const &engine, std::string const &script_name) {
+    std::string const& engine, std::string const& script_name) {
   // create script for innovus
   DaliExpects(engine == "innovus", "Only support Innovus now");
   std::ofstream ost(script_name);
@@ -565,7 +578,7 @@ std::string Dali::CreateDetailedPlacementAndLegalizationScript(
 void Dali::ExportOrdinaryComponentsToPhyDB() {
   double factor_x = circuit_.DistanceMicrons() * circuit_.GridValueX();
   double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
-  for (auto &block : circuit_.Blocks()) {
+  for (auto& block : circuit_.Blocks()) {
     if (block.TypePtr() == circuit_.tech().IoDummyBlkTypePtr()) {
       // skip dummy cells for I/O pins
       continue;
@@ -576,7 +589,7 @@ void Dali::ExportOrdinaryComponentsToPhyDB() {
     auto place_status = phydb::PlaceStatus(block.Status());
     auto orient = phydb::CompOrient(block.Orient());
 
-    phydb::Component *comp_ptr = phy_db_ptr_->GetComponentPtr(comp_name);
+    phydb::Component* comp_ptr = phy_db_ptr_->GetComponentPtr(comp_name);
     DaliExpects(comp_ptr != nullptr,
                 "No component in PhyDB with name: " << comp_name);
     comp_ptr->SetLocation(lx, ly);
@@ -588,7 +601,7 @@ void Dali::ExportOrdinaryComponentsToPhyDB() {
 void Dali::ExportWellTapCellsToPhyDB() {
   double factor_x = circuit_.DistanceMicrons() * circuit_.GridValueX();
   double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
-  for (auto &block : circuit_.design().WellTaps()) {
+  for (auto& block : circuit_.design().WellTaps()) {
     std::string comp_name = block.Name();
     std::string macro_name = block.TypePtr()->Name();
     int lx = (int)(block.LLX() * factor_x) + circuit_.design().DieAreaOffsetX();
@@ -596,7 +609,7 @@ void Dali::ExportWellTapCellsToPhyDB() {
     auto place_status = phydb::PlaceStatus(block.Status());
     auto orient = phydb::CompOrient(block.Orient());
 
-    auto *phydb_macro_ptr = phy_db_ptr_->GetMacroPtr(macro_name);
+    auto* phydb_macro_ptr = phy_db_ptr_->GetMacroPtr(macro_name);
     DaliExpects(phydb_macro_ptr != nullptr,
                 "Cannot find " << macro_name << " in PhyDB?!");
     phy_db_ptr_->AddComponent(comp_name, phydb_macro_ptr, place_status, lx, ly,
@@ -607,7 +620,7 @@ void Dali::ExportWellTapCellsToPhyDB() {
 void Dali::ExportFillerCellsToPhyDB() {
   double factor_x = circuit_.DistanceMicrons() * circuit_.GridValueX();
   double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
-  for (auto &block : circuit_.design().Fillers()) {
+  for (auto& block : circuit_.design().Fillers()) {
     std::string comp_name = block.Name();
     std::string macro_name = block.TypePtr()->Name();
     int lx = (int)(block.LLX() * factor_x) + circuit_.design().DieAreaOffsetX();
@@ -615,7 +628,7 @@ void Dali::ExportFillerCellsToPhyDB() {
     auto place_status = phydb::PlaceStatus(block.Status());
     auto orient = phydb::CompOrient(block.Orient());
 
-    auto *phydb_macro_ptr = phy_db_ptr_->GetMacroPtr(macro_name);
+    auto* phydb_macro_ptr = phy_db_ptr_->GetMacroPtr(macro_name);
     DaliExpects(phydb_macro_ptr != nullptr,
                 "Cannot find " << macro_name << " in PhyDB?!");
     phy_db_ptr_->AddComponent(comp_name, phydb_macro_ptr, place_status, lx, ly,
@@ -632,7 +645,7 @@ void Dali::ExportComponentsToPhyDB() {
 void Dali::ExportIoPinsToPhyDB() {
   DaliExpects(!circuit_.Metals().empty(),
               "Need metal layer info to generate PIN location\n");
-  for (auto &iopin : circuit_.design().IoPins()) {
+  for (auto& iopin : circuit_.design().IoPins()) {
     if (!iopin.IsPrePlaced() && iopin.IsPlaced()) {
       DaliExpects(iopin.LayerPtr() != nullptr,
                   "IOPIN metal layer not set? Cannot export it to PhyDB");
@@ -640,8 +653,8 @@ void Dali::ExportIoPinsToPhyDB() {
       std::string iopin_name = iopin.Name();
       DaliExpects(phy_db_ptr_->IsIoPinExisting(iopin_name),
                   "IOPIN not in PhyDB? " << iopin_name);
-      phydb::IOPin *phydb_iopin = phy_db_ptr_->GetIoPinPtr(iopin_name);
-      auto &rect = iopin.GetShape();
+      phydb::IOPin* phydb_iopin = phy_db_ptr_->GetIoPinPtr(iopin_name);
+      auto& rect = iopin.GetShape();
       int llx = circuit_.Micron2DatabaseUnit(rect.LLX());
       int lly = circuit_.Micron2DatabaseUnit(rect.LLY());
       int urx = circuit_.Micron2DatabaseUnit(rect.URX());
@@ -672,8 +685,8 @@ void Dali::ExportMiniRowsToPhyDB() {
   double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
 
   int counter = 0;
-  for (auto &col : well_legalizer_.col_list_) {
-    for (auto &strip : col.stripe_list_) {
+  for (auto& col : well_legalizer_.col_list_) {
+    for (auto& strip : col.stripe_list_) {
       std::string column_name = "column" + std::to_string(counter++);
       std::string bot_signal_;
       if (strip.is_first_row_orient_N_) {
@@ -681,7 +694,7 @@ void Dali::ExportMiniRowsToPhyDB() {
       } else {
         bot_signal_ = "Vdd";
       }
-      phydb::ClusterCol *p_col =
+      phydb::ClusterCol* p_col =
           phy_db_ptr_->AddClusterCol(column_name, bot_signal_);
 
       int col_lx =
@@ -691,7 +704,7 @@ void Dali::ExportMiniRowsToPhyDB() {
       p_col->SetXRange(col_lx, col_ux);
 
       if (strip.is_bottom_up_) {
-        for (auto &cluster : strip.gridded_rows_) {
+        for (auto& cluster : strip.gridded_rows_) {
           int row_ly = (int)(cluster.LLY() * factor_y) +
                        circuit_.design().DieAreaOffsetY();
           int row_uy = (int)(cluster.URY() * factor_y) +
@@ -701,7 +714,7 @@ void Dali::ExportMiniRowsToPhyDB() {
       } else {
         int sz = static_cast<int>(strip.gridded_rows_.size());
         for (int j = sz - 1; j >= 0; --j) {
-          auto &cluster = strip.gridded_rows_[j];
+          auto& cluster = strip.gridded_rows_[j];
           int row_ly = (int)(cluster.LLY() * factor_y) +
                        circuit_.design().DieAreaOffsetY();
           int row_uy = (int)(cluster.URY() * factor_y) +

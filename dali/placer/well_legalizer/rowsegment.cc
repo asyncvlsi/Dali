@@ -43,7 +43,7 @@ int RowSegment::Width() const { return width_; }
 
 int RowSegment::UsedSize() const { return used_size_; }
 
-std::vector<BlockRegion> &RowSegment::BlkRegions() { return blk_regions_; }
+std::vector<BlockRegion>& RowSegment::BlkRegions() { return blk_regions_; }
 
 /****
  * Add a given block to this segment.
@@ -51,7 +51,7 @@ std::vector<BlockRegion> &RowSegment::BlkRegions() { return blk_regions_; }
  * @param blk_ptr: a pointer to the block which needs to be added to this
  * segment
  */
-void RowSegment::AddBlockRegion(Block *blk_ptr, int region_id) {
+void RowSegment::AddBlockRegion(Block* blk_ptr, int region_id) {
   used_size_ += blk_ptr->Width();
   blk_regions_.emplace_back(blk_ptr, region_id);
 }
@@ -59,7 +59,7 @@ void RowSegment::AddBlockRegion(Block *blk_ptr, int region_id) {
 void RowSegment::MinDisplacementLegalization(bool use_init_loc) {
   if (blk_regions_.empty()) return;
   std::sort(blk_regions_.begin(), blk_regions_.end(),
-            [](const BlockRegion &br0, const BlockRegion &br1) {
+            [](const BlockRegion& br0, const BlockRegion& br1) {
               return (br0.p_blk->LLX() < br1.p_blk->LLX()) ||
                      ((br0.p_blk->LLX() == br1.p_blk->LLX()) &&
                       (br0.p_blk->Id() < br1.p_blk->Id()));
@@ -68,13 +68,13 @@ void RowSegment::MinDisplacementLegalization(bool use_init_loc) {
   std::vector<BlkDispVar> vars;
   vars.reserve(blk_regions_.size());
   if (use_init_loc) {
-    for (auto &blk_rgn : blk_regions_) {
-      auto aux_ptr = static_cast<LgBlkAux *>(blk_rgn.p_blk->AuxPtr());
+    for (auto& blk_rgn : blk_regions_) {
+      auto aux_ptr = static_cast<LgBlkAux*>(blk_rgn.p_blk->AuxPtr());
       vars.emplace_back(blk_rgn.p_blk->Width(), aux_ptr->InitLoc().x, 1.0);
       vars.back().blk_rgn = blk_rgn;
     }
   } else {
-    for (auto &blk_rgn : blk_regions_) {
+    for (auto& blk_rgn : blk_regions_) {
       vars.emplace_back(blk_rgn.p_blk->Width(), blk_rgn.p_blk->LLX(), 1.0);
       vars.back().blk_rgn = blk_rgn;
     }
@@ -84,13 +84,13 @@ void RowSegment::MinDisplacementLegalization(bool use_init_loc) {
   MinimizeQuadraticDisplacement(vars, LLX(), URX());
 
   // set block locations from vars
-  for (auto &var : vars) {
+  for (auto& var : vars) {
     var.UpdateBlkLocation();
   }
 }
 
 void RowSegment::SnapCellToPlacementGrid() {
-  for (auto &blk_region : blk_regions_) {
+  for (auto& blk_region : blk_regions_) {
     blk_region.p_blk->SetLLX(std::round(blk_region.p_blk->LLX()));
   }
 }
@@ -99,9 +99,9 @@ void RowSegment::SetOptimalAnchorWeight(double weight) {
   opt_anchor_weight_ = weight;
 }
 
-void RowSegment::FitInRange(std::vector<BlkDispVar> &vars) {
+void RowSegment::FitInRange(std::vector<BlkDispVar>& vars) {
   double left_contour = LLX();
-  for (auto &var : vars) {
+  for (auto& var : vars) {
     if (var.Solution() < left_contour) {
       var.SetSolution(left_contour);
     }
@@ -110,7 +110,7 @@ void RowSegment::FitInRange(std::vector<BlkDispVar> &vars) {
 
   double right_contour = URX();
   for (auto it = vars.rbegin(); it != vars.rend(); ++it) {
-    auto &var = *it;
+    auto& var = *it;
     int width = var.Width();
     double ux = var.Solution() + width;
     if (ux > right_contour) {
@@ -120,7 +120,7 @@ void RowSegment::FitInRange(std::vector<BlkDispVar> &vars) {
   }
 }
 
-double RowSegment::DispCost(std::vector<BlkDispVar> &vars, int l, int r,
+double RowSegment::DispCost(std::vector<BlkDispVar>& vars, int l, int r,
                             bool is_linear) {
   double quadratic_disp = 0;
   for (int i = l; i <= r; ++i) {
@@ -134,8 +134,8 @@ double RowSegment::DispCost(std::vector<BlkDispVar> &vars, int l, int r,
   return quadratic_disp;
 }
 
-void RowSegment::FindBestLocalOrder(std::vector<BlkDispVar> &res, double &cost,
-                                    std::vector<BlkDispVar> &vars, int cur,
+void RowSegment::FindBestLocalOrder(std::vector<BlkDispVar>& res, double& cost,
+                                    std::vector<BlkDispVar>& vars, int cur,
                                     int l, int r, double left_bound,
                                     double right_bound, double gap, int range,
                                     bool is_linear) {
@@ -172,7 +172,7 @@ void RowSegment::FindBestLocalOrder(std::vector<BlkDispVar> &res, double &cost,
   }
 }
 
-void RowSegment::LocalReorder(std::vector<BlkDispVar> &vars, int range,
+void RowSegment::LocalReorder(std::vector<BlkDispVar>& vars, int range,
                               int omit, bool is_linear) {
   int sz = static_cast<int>(vars.size());
   if (sz < range) return;
@@ -208,7 +208,7 @@ void RowSegment::LocalReorder(std::vector<BlkDispVar> &vars, int range,
   }
 }
 
-void RowSegment::LocalReorder2(std::vector<BlkDispVar> &vars) {
+void RowSegment::LocalReorder2(std::vector<BlkDispVar>& vars) {
   int sz = static_cast<int>(vars.size());
   if (sz <= 2) return;
   for (int i = 0; i < sz - 1;) {
@@ -251,7 +251,7 @@ std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement(
 
   // sort cells based on their lower x location
   std::sort(blk_regions_.begin(), blk_regions_.end(),
-            [](const BlockRegion &br0, const BlockRegion &br1) {
+            [](const BlockRegion& br0, const BlockRegion& br1) {
               return (br0.p_blk->LLX() < br1.p_blk->LLX()) ||
                      ((br0.p_blk->LLX() == br1.p_blk->LLX()) &&
                       (br0.p_blk->Id() < br1.p_blk->Id()));
@@ -262,9 +262,9 @@ std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement(
   if (is_weighted_anchor) {
     int sub_cell_cnt = 0;
     double sum_discrepancy = 0;
-    for (auto &blk_rgn : blk_regions_) {
-      Block *blk_ptr = blk_rgn.p_blk;
-      auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
+    for (auto& blk_rgn : blk_regions_) {
+      Block* blk_ptr = blk_rgn.p_blk;
+      auto aux_ptr = static_cast<LgBlkAux*>(blk_ptr->AuxPtr());
       double average_loc = aux_ptr->AverageLoc();
       double sub_loc = aux_ptr->SubLocs()[blk_rgn.region_id];
       double tmp_discrepancy = std::fabs(average_loc - sub_loc);
@@ -281,10 +281,10 @@ std::vector<BlkDispVar> RowSegment::OptimizeQuadraticDisplacement(
   // vars.emplace_back(0, LLX(), 0);
   // double max_weight = 0;
   vars.reserve(blk_regions_.size());
-  for (auto &blk_rgn : blk_regions_) {
-    Block *blk_ptr = blk_rgn.p_blk;
+  for (auto& blk_rgn : blk_regions_) {
+    Block* blk_ptr = blk_rgn.p_blk;
     int region_cnt = blk_ptr->TypePtr()->RegionCount();
-    auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
+    auto aux_ptr = static_cast<LgBlkAux*>(blk_ptr->AuxPtr());
     vars.emplace_back(blk_ptr->Width(), aux_ptr->InitLoc().x,
                       lambda / region_cnt);
     vars.back().blk_rgn = blk_rgn;
@@ -328,7 +328,7 @@ std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(
 
   // sort cells based on their lower x location
   std::sort(blk_regions_.begin(), blk_regions_.end(),
-            [](const BlockRegion &br0, const BlockRegion &br1) {
+            [](const BlockRegion& br0, const BlockRegion& br1) {
               return (br0.p_blk->LLX() < br1.p_blk->LLX()) ||
                      ((br0.p_blk->LLX() == br1.p_blk->LLX()) &&
                       (br0.p_blk->Id() < br1.p_blk->Id()));
@@ -339,9 +339,9 @@ std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(
   if (is_weighted_anchor) {
     int sub_cell_cnt = 0;
     double sum_discrepancy = 0;
-    for (auto &blk_rgn : blk_regions_) {
-      Block *blk_ptr = blk_rgn.p_blk;
-      auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
+    for (auto& blk_rgn : blk_regions_) {
+      Block* blk_ptr = blk_rgn.p_blk;
+      auto aux_ptr = static_cast<LgBlkAux*>(blk_ptr->AuxPtr());
       // int region_cnt = blk_ptr->TypePtr()->WellPtr()->RegionCount();
       double average_loc = aux_ptr->AverageLoc();
       double sub_loc = aux_ptr->SubLocs()[blk_rgn.region_id];
@@ -357,10 +357,10 @@ std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(
 
   // create variables
   vars.reserve(blk_regions_.size());
-  for (auto &blk_rgn : blk_regions_) {
-    Block *blk_ptr = blk_rgn.p_blk;
+  for (auto& blk_rgn : blk_regions_) {
+    Block* blk_ptr = blk_rgn.p_blk;
     int region_cnt = blk_ptr->TypePtr()->RegionCount();
-    auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
+    auto aux_ptr = static_cast<LgBlkAux*>(blk_ptr->AuxPtr());
     vars.emplace_back(blk_ptr->Width(), aux_ptr->InitLoc().x,
                       lambda / region_cnt);
     vars.back().blk_rgn = blk_rgn;
@@ -388,17 +388,17 @@ std::vector<BlkDispVar> RowSegment::OptimizeLinearDisplacement(
   return vars;
 }
 
-void RowSegment::GenSubCellTable(std::ofstream &ost_cluster,
-                                 std::ofstream &ost_sub_cell,
-                                 std::ofstream &ost_discrepancy,
-                                 std::ofstream &ost_displacement, double row_ly,
+void RowSegment::GenSubCellTable(std::ofstream& ost_cluster,
+                                 std::ofstream& ost_sub_cell,
+                                 std::ofstream& ost_discrepancy,
+                                 std::ofstream& ost_displacement, double row_ly,
                                  double row_uy) {
   SaveMatlabPatchRect(ost_cluster, static_cast<double>(LLX()), row_ly,
                       static_cast<double>(URX()), row_uy, false, 0, 0, 0);
 
-  for (auto &blk_rgn : blk_regions_) {
-    Block *blk_ptr = blk_rgn.p_blk;
-    auto aux_ptr = static_cast<LgBlkAux *>(blk_ptr->AuxPtr());
+  for (auto& blk_rgn : blk_regions_) {
+    Block* blk_ptr = blk_rgn.p_blk;
+    auto aux_ptr = static_cast<LgBlkAux*>(blk_ptr->AuxPtr());
     double ly = std::max(blk_ptr->LLY(), row_ly);
     double uy = std::min(blk_ptr->URY(), row_uy);
     double sub_x = aux_ptr->SubLocs()[blk_rgn.region_id];

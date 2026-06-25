@@ -46,7 +46,7 @@ void FillerCellPlacer::CreateFillerCellTypes(int upper_width) {
   for (int i = 1; i <= upper_width; ++i) {
     double width = i * ckt_ptr_->GridValueX();
     std::string filler_name = "__filler__X" + std::to_string(i) + "__";
-    phydb::Macro *phydb_macro = phy_db_ptr_->AddMacro(filler_name);
+    phydb::Macro* phydb_macro = phy_db_ptr_->AddMacro(filler_name);
     DaliExpects(phydb_macro != nullptr, "cannot add filler cell?");
     phydb_macro->SetOrigin(0, 0);
     phydb_macro->SetSize(width, filler_height);
@@ -63,17 +63,17 @@ void FillerCellPlacer::CreateFillerCellTypes(int upper_width) {
 }
 
 void FillerCellPlacer::PlaceFillerCells(int lx, int ux, int ly,
-                                        bool is_orient_N, int &filler_counter) {
+                                        bool is_orient_N, int& filler_counter) {
   if (ux <= lx) {
     return;
   }
-  auto &filler_cells = ckt_ptr_->design().Fillers();
-  BlockType *filler_type_ptr = ckt_ptr_->tech().FillerCellPtrs()[0].get();
+  auto& filler_cells = ckt_ptr_->design().Fillers();
+  BlockType* filler_type_ptr = ckt_ptr_->tech().FillerCellPtrs()[0].get();
   int space = ux - lx;
   for (int i = 0; i < space; ++i) {
     std::string filler_cell_name =
         "__filler_cell_component__" + std::to_string(filler_counter++);
-    Block &filler_cell =
+    Block& filler_cell =
         ckt_ptr_->design().FillerCellCollection().CreateInstance(
             filler_cell_name);
     filler_cell.SetPlacementStatus(PLACED);
@@ -90,20 +90,20 @@ void FillerCellPlacer::PlaceFillerCells(int lx, int ux, int ly,
 bool FillerCellPlacer::StartPlacement() {
   BOOST_LOG_TRIVIAL(info) << "  Insert filler cells\n";
   std::unordered_set<int> filler_cell_widths;
-  for (auto &filler : ckt_ptr_->tech().FillerCellPtrs()) {
+  for (auto& filler : ckt_ptr_->tech().FillerCellPtrs()) {
     filler_cell_widths.insert(filler->Width());
   }
   std::vector<int> filler_widths(filler_cell_widths.begin(),
                                  filler_cell_widths.end());
   std::sort(filler_widths.begin(), filler_widths.end());
 
-  std::vector<GeneralRow> &rows = ckt_ptr_->design().Rows();
+  std::vector<GeneralRow>& rows = ckt_ptr_->design().Rows();
   int filler_counter = 0;
-  for (auto &row : rows) {
-    for (auto &segment : row.RowSegments()) {
+  for (auto& row : rows) {
+    for (auto& segment : row.RowSegments()) {
       segment.SortBlocks();
       int lx = segment.LX();
-      for (auto &blk_ptr : segment.Blocks()) {
+      for (auto& blk_ptr : segment.Blocks()) {
         int ux = blk_ptr->LLX();
         PlaceFillerCells(lx, ux, row.LY(), row.IsOrientN(), filler_counter);
         lx = blk_ptr->URX();

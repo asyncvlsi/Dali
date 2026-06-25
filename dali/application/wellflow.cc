@@ -27,7 +27,7 @@
 
 using namespace dali;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   InitLogging();
   int num_of_thread = 1;
   omp_set_num_threads(num_of_thread);

@@ -30,35 +30,38 @@
 
 namespace dali {
 
+/** Integer index of a grid bin in the look-ahead legalizer mesh. */
 struct GridBinIndex {
  public:
   GridBinIndex() : x(0), y(0) {}
   GridBinIndex(int x0, int y0) : x(x0), y(y0) {}
   int x;
   int y;
+
+  /** Reset the index to (0, 0). */
   void init() {
     x = 0;
     y = 0;
   };
-  bool operator<(const GridBinIndex &rhs) const {
+  bool operator<(const GridBinIndex& rhs) const {
     bool is_less = (x < rhs.x) || ((x == rhs.x) && (y < rhs.y));
     return is_less;
   }
-  bool operator>(const GridBinIndex &rhs) const {
+  bool operator>(const GridBinIndex& rhs) const {
     bool is_great = (x > rhs.x) || ((x == rhs.x) && (y > rhs.y));
     return is_great;
   }
-  bool operator==(const GridBinIndex &rhs) const {
+  bool operator==(const GridBinIndex& rhs) const {
     return ((x == rhs.x) && (y == rhs.y));
   }
-  friend std::ostream &operator<<(std::ostream &os, const GridBinIndex &p) {
+  friend std::ostream& operator<<(std::ostream& os, const GridBinIndex& p) {
     os << "(" << p.x << ", " << p.y << ") ";
     return os;
   }
 };
 
 struct GridBinIndexHasher {
-  std::size_t operator()(const GridBinIndex &k) const {
+  std::size_t operator()(const GridBinIndex& k) const {
     using boost::hash_combine;
     using boost::hash_value;
 
@@ -75,23 +78,25 @@ struct GridBinIndexHasher {
   }
 };
 
+/** Connected overfilled-bin cluster used by look-ahead legalization. */
 struct GridBinCluster {
  public:
   GridBinCluster() : total_cell_area(0), total_white_space(0) {}
   unsigned long long total_cell_area;
   unsigned long long total_white_space;
   std::set<GridBinIndex> bin_set;
-  bool operator<(const GridBinCluster &rhs) const {
+  bool operator<(const GridBinCluster& rhs) const {
     return (total_cell_area < rhs.total_cell_area);
   }
-  bool operator>(const GridBinCluster &rhs) const {
+  bool operator>(const GridBinCluster& rhs) const {
     return (total_cell_area > rhs.total_cell_area);
   }
-  bool operator==(const GridBinCluster &rhs) const {
+  bool operator==(const GridBinCluster& rhs) const {
     return (total_cell_area == rhs.total_cell_area);
   }
 };
 
+/** Mesh bin storing local cell area, whitespace, blockages, and neighbors. */
 class GridBin {
  public:
   GridBin();
@@ -109,23 +114,44 @@ class GridBin {
   bool over_fill;
   bool cluster_visited;
   bool global_placed;
-  std::vector<Block *> cell_list;
-  std::vector<const PlacementBlockage *> placement_blockages_;
+  std::vector<Block*> cell_list;
+  std::vector<const PlacementBlockage*> placement_blockages_;
   std::vector<GridBinIndex> adjacent_bin_index;
 
-  int LLX() { return left; }
-  int LLY() { return bottom; }
-  int URX() { return right; }
-  int URY() { return top; }
-  int Height() { return top - bottom; }
-  int Width() { return right - left; }
-  unsigned long long Area() {
+  /** Return left boundary in Dali grid units. */
+  int LLX() const { return left; }
+
+  /** Return bottom boundary in Dali grid units. */
+  int LLY() const { return bottom; }
+
+  /** Return right boundary in Dali grid units. */
+  int URX() const { return right; }
+
+  /** Return top boundary in Dali grid units. */
+  int URY() const { return top; }
+
+  /** Return bin height in Dali grid units. */
+  int Height() const { return top - bottom; }
+
+  /** Return bin width in Dali grid units. */
+  int Width() const { return right - left; }
+
+  /** Return bin area in grid-unit squared. */
+  unsigned long long Area() const {
     return (unsigned long long)(top - bottom) *
            (unsigned long long)(right - left);
   }
-  bool IsAllFixedBlk() { return all_terminal; }
-  bool OverFill() { return over_fill; }
+
+  /** Return true when the bin is fully occupied by fixed blocks/blockages. */
+  bool IsAllFixedBlk() const { return all_terminal; }
+
+  /** Return true when the bin exceeds target utilization or has terminals. */
+  bool OverFill() const { return over_fill; }
+
+  /** Create the list of neighboring bin indices. */
   void create_adjacent_bin_list(int grid_cnt_x, int grid_cnt_y);
+
+  /** Log grid-bin state for debugging. */
   void Report();
 };
 

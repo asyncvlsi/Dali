@@ -75,17 +75,17 @@ int main() {
   };*/
 
   int count = 2;
-  char *arguments[2] = {(char *)"place-io", (char *)"m1"};
+  char* arguments[2] = {(char*)"place-io", (char*)"m1"};
 
   dali.IoPinPlacement(count, arguments);
   // dali.AutoIoPinPlacement();
   dali.ExportToPhyDB();
 
   int place_count = 12;
-  char *place_argvs[12] = {
-      (char *)"place-io", (char *)"--place", (char *)"go",     (char *)"m2",
-      (char *)"-211",     (char *)"1",       (char *)"211",    (char *)"101",
-      (char *)"FIXED",    (char *)"362401",  (char *)"185401", (char *)"E"};
+  char* place_argvs[12] = {(char*)"place-io", (char*)"--place", (char*)"go",
+                           (char*)"m2",       (char*)"-211",    (char*)"1",
+                           (char*)"211",      (char*)"101",     (char*)"FIXED",
+                           (char*)"362401",   (char*)"185401",  (char*)"E"};
   dali.IoPinPlacement(place_count, place_argvs);
 
   phy_db.WriteDef("ioplace_default_1.def");

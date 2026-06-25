@@ -56,31 +56,31 @@ void TetrisLegalizer::FastShift(int failure_point) {
    * be changed only the left boundary of the bounding box will be shifted to
    * the right hand side of the block just placed
    * ****/
-  std::vector<Block> &blocks = ckt_ptr_->Blocks();
+  std::vector<Block>& blocks = ckt_ptr_->Blocks();
   double bounding_left;
   if (failure_point == 0) {
     double bounding_bottom;
     bounding_left = blocks[0].LLX();
     bounding_bottom = blocks[0].LLY();
-    for (auto &block : blocks) {
+    for (auto& block : blocks) {
       if (block.LLY() < bounding_bottom) {
         bounding_bottom = block.LLY();
       }
     }
-    for (auto &block : blocks) {
+    for (auto& block : blocks) {
       block.IncreaseX(left_ - bounding_left);
       block.IncreaseY(bottom_ - bounding_bottom);
     }
   } else {
     double init_diff =
         index_loc_list_[failure_point - 1].x - index_loc_list_[failure_point].x;
-    Block *failed_block = index_loc_list_[failure_point].blk_ptr;
+    Block* failed_block = index_loc_list_[failure_point].blk_ptr;
     bounding_left = failed_block->LLX();
-    Block *last_placed_block = index_loc_list_[failure_point - 1].blk_ptr;
+    Block* last_placed_block = index_loc_list_[failure_point - 1].blk_ptr;
     int left_new = (int)std::round(last_placed_block->LLX());
     // BOOST_LOG_TRIVIAL(info)   << left_new << "  " << bounding_left << "\n";
     for (size_t i = failure_point; i < index_loc_list_.size(); ++i) {
-      Block *blk_ptr = index_loc_list_[i].blk_ptr;
+      Block* blk_ptr = index_loc_list_[i].blk_ptr;
       blk_ptr->IncreaseX(left_new + init_diff - bounding_left);
     }
   }
@@ -101,15 +101,15 @@ void TetrisLegalizer::FastShift(int failure_point) {
 void TetrisLegalizer::FlipPlacement() {
   flipped_ = !flipped_;
   int sum_left_right = left_ + right_;
-  std::vector<Block> &blocks = ckt_ptr_->Blocks();
-  for (auto &block : blocks) {
+  std::vector<Block>& blocks = ckt_ptr_->Blocks();
+  for (auto& block : blocks) {
     block.SetLLX(sum_left_right - block.URX());
   }
   // GenMATLABScript("flip_result.txt");
 }
 
 bool TetrisLegalizer::TetrisLegal() {
-  std::vector<Block> &blocks = ckt_ptr_->Blocks();
+  std::vector<Block>& blocks = ckt_ptr_->Blocks();
   // 1. move all blocks into placement region
   /*for (auto &block: blocks) {
     if (block.LLX() < Left()) {
@@ -135,7 +135,7 @@ bool TetrisLegalizer::TetrisLegal() {
     index_loc_list_[i].y = blocks[i].LLY();
   }
   std::sort(index_loc_list_.begin(), index_loc_list_.end(),
-            [](const BlkInitPair &pair0, const BlkInitPair &pair1) {
+            [](const BlkInitPair& pair0, const BlkInitPair& pair1) {
               return (pair0.x < pair1.x) ||
                      ((pair0.x == pair1.x) && (pair0.y < pair1.y));
             });
