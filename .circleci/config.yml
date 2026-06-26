@@ -5,6 +5,8 @@ jobs:
     docker:
       - image: ubuntu:22.04
     steps:
+      - checkout:
+          path: Dali
       - run:
           name: "Install ACT"
           command: |
@@ -44,8 +46,9 @@ jobs:
           name: "Install Dali"
           command: |
             apt install -y libgtest-dev
-            git clone --recursive https://github.com/asyncvlsi/Dali.git
             cd Dali
+            git submodule sync --recursive
+            git submodule update --init --recursive
             mkdir build
             cd build
             cmake ..
@@ -59,6 +62,8 @@ jobs:
     docker:
       - image: centos:7
     steps:
+      - checkout:
+          path: Dali
       - run:
           name: "Install ACT"
           command: |
@@ -115,8 +120,9 @@ jobs:
           command: |
             set +e
             source scl_source enable devtoolset-11
-            git clone --recursive https://github.com/asyncvlsi/Dali.git
             cd Dali
+            git submodule sync --recursive
+            git submodule update --init --recursive
             mkdir build
             cd build
             cmake ..  || exit 1
