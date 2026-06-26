@@ -129,6 +129,27 @@ void GlobalPlacer::InitializeBlockLocation() {
   initializer->RandomPlace();
 }
 
+void GlobalPlacer::PreparePlacement() {
+  SanityCheck();
+  InitializeBlockLocation();
+  InitializeOptimizerAndLegalizer();
+}
+
+void GlobalPlacer::RunPlacementIterations() {
+  for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
+    optimizer_->SetIteration(cur_iter_);
+    optimizer_->OptimizeHpwl();
+    legalizer_->RemoveCellOverlap();
+    PrintHpwl();
+    if (IsPlacementConverged()) break;
+  }
+}
+
+void GlobalPlacer::FinalizePlacement() {
+  UpdateMovableBlkPlacementStatus();
+  RecordPlacementMetric("global_placement", WeightedHPWL());
+}
+
 /****
  * @brief The entry point of global placement.
  * @return A boolean value indicating whether global placement can be
@@ -138,18 +159,9 @@ bool GlobalPlacer::StartPlacement() {
   if (IsBlockListOrNetListEmpty()) return true;
   PrintStartStatement("global placement");
 
-  SanityCheck();
-  InitializeBlockLocation();
-  InitializeOptimizerAndLegalizer();
-  for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
-    optimizer_->SetIteration(cur_iter_);
-    optimizer_->OptimizeHpwl();
-    legalizer_->RemoveCellOverlap();
-    PrintHpwl();
-    if (IsPlacementConverged()) break;
-  }
-  UpdateMovableBlkPlacementStatus();
-  RecordPlacementMetric("global_placement", WeightedHPWL());
+  PreparePlacement();
+  RunPlacementIterations();
+  FinalizePlacement();
 
   PrintEndStatement("Global placement", true);
   CloseOptimizerAndLegalizer();
