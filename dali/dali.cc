@@ -313,7 +313,7 @@ bool Dali::TimingDrivenPlacement(double density, int number_of_threads) {
 
 #endif
 
-bool Dali::StartPlacement(double density, int number_of_threads) {
+void Dali::ApplyPlacementOverrides(double density, int number_of_threads) {
   if (density > 0) {
     DaliExpects(density <= 1, "Target density must be in the range (0, 1]");
     target_density_ = density;
@@ -321,29 +321,31 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
   if (number_of_threads >= 1) {
     num_threads_ = number_of_threads;
   }
+}
 
+void Dali::InitializeMainPlacementCircuit() {
   circuit_.SetEnableShrinkOffGridDieArea(enable_shrink_off_grid_die_area_);
   circuit_.InitializeFromPhyDB(phy_db_ptr_);
   is_circuit_initialized_ = true;
   circuit_.ReportBriefSummary();
   ClearPlacementMetrics();
   RecordPlacementMetric("input", circuit_.WeightedHPWL());
+}
 
-  // set the placement density
+void Dali::ResolveTargetDensity() {
   if (target_density_ == -1) {
     double default_density = 0.7;
     target_density_ = std::max(circuit_.WhiteSpaceUsage(), default_density);
     LOG(info) << "Target density not provided, set it to default value: "
               << target_density_ << "\n";
   }
+}
 
-  // start placement
-  // (1). global placement
+bool Dali::RunGlobalPlacementStage() {
   gb_placer_.SetCircuit(&circuit_);
   gb_placer_.SetNumThreads(num_threads_);
   if (!disable_global_place_) {
     gb_placer_.SetPlacementDensity(target_density_);
-    // gb_placer->ReportBoundaries();
     if (!gb_placer_.StartPlacement()) {
       LOG(error) << "Global placement failed\n";
       return false;
@@ -352,59 +354,93 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
   if (export_well_cluster_matlab_) {
     circuit_.GenMATLABTable("gb_result.txt");
   }
+  return true;
+}
 
-  // (2). legalization
+bool Dali::RunStandardCellLegalization() {
+  legalizer_.CopyPlacementContextFrom(&gb_placer_);
+  legalizer_.disable_cell_flip_ = disable_cell_flip_;
+  if (!legalizer_.StartPlacement()) {
+    LOG(error) << "Standard-cell legalization failed\n";
+    return false;
+  }
+  return true;
+}
+
+bool Dali::RunWellLegalization() {
+  well_legalizer_.CopyPlacementContextFrom(&gb_placer_);
+  well_legalizer_.disable_welltap_ = disable_welltap_;
+  well_legalizer_.disable_cell_flip_ = disable_cell_flip_;
+  well_legalizer_.enable_end_cap_cell_ = enable_end_cap_cell_;
+  well_legalizer_.SetMaxRowWidth(max_row_width_);
+  well_legalizer_.SetStripePartitionMode(
+      static_cast<int>(well_legalization_mode_));
+  if (!well_legalizer_.StartPlacement()) {
+    LOG(error) << "Well legalization failed\n";
+    return false;
+  }
+  if (export_well_cluster_matlab_) {
+    well_legalizer_.GenMatlabClusterTable("sc_result");
+    well_legalizer_.GenMATLABWellTable("scw", 0);
+  }
+  well_legalizer_.EmitDEFWellFile(output_name_, 1);
+  return true;
+}
+
+bool Dali::RunLegalizationStage() {
   if (!disable_legalization_) {
     if (is_standard_cell_) {
-      legalizer_.CopyPlacementContextFrom(&gb_placer_);
-      legalizer_.disable_cell_flip_ = disable_cell_flip_;
-      if (!legalizer_.StartPlacement()) {
-        LOG(error) << "Standard-cell legalization failed\n";
+      if (!RunStandardCellLegalization()) {
         return false;
       }
-    } else {
-      well_legalizer_.CopyPlacementContextFrom(&gb_placer_);
-      well_legalizer_.disable_welltap_ = disable_welltap_;
-      well_legalizer_.disable_cell_flip_ = disable_cell_flip_;
-      well_legalizer_.enable_end_cap_cell_ = enable_end_cap_cell_;
-      well_legalizer_.SetMaxRowWidth(max_row_width_);
-      well_legalizer_.SetStripePartitionMode(
-          static_cast<int>(well_legalization_mode_));
-      if (!well_legalizer_.StartPlacement()) {
-        LOG(error) << "Well legalization failed\n";
-        return false;
-      }
-      if (export_well_cluster_matlab_) {
-        well_legalizer_.GenMatlabClusterTable("sc_result");
-        well_legalizer_.GenMATLABWellTable("scw", 0);
-      }
-      well_legalizer_.EmitDEFWellFile(output_name_, 1);
+    } else if (!RunWellLegalization()) {
+      return false;
     }
   }
   if (export_well_cluster_matlab_) {
     circuit_.GenMATLABTable("lg_result.txt");
   }
+  return true;
+}
 
-  if (enable_filler_cell_) {
-    filler_cell_placer_.CopyPlacementContextFrom(&gb_placer_);
-    filler_cell_placer_.phy_db_ptr_ = phy_db_ptr_;
-    filler_cell_placer_.CreateFillerCellTypes(2);
-    if (!filler_cell_placer_.StartPlacement()) {
-      LOG(error) << "Filler-cell placement failed\n";
-      return false;
-    }
+bool Dali::RunFillerCellPlacement() {
+  if (!enable_filler_cell_) {
+    return true;
   }
+  filler_cell_placer_.CopyPlacementContextFrom(&gb_placer_);
+  filler_cell_placer_.phy_db_ptr_ = phy_db_ptr_;
+  filler_cell_placer_.CreateFillerCellTypes(2);
+  if (!filler_cell_placer_.StartPlacement()) {
+    LOG(error) << "Filler-cell placement failed\n";
+    return false;
+  }
+  return true;
+}
 
-  if (!disable_io_place_) {
-    auto io_placer = std::make_unique<IoPlacer>(phy_db_ptr_, &circuit_);
-    bool is_io_placer_config_success =
-        io_placer->SetGlobalMetalLayer(io_metal_layer_);
-    DaliExpects(is_io_placer_config_success,
-                "Cannot successfully configure I/O placer");
-    if (!io_placer->RunAutoPlacement()) {
-      LOG(error) << "I/O pin placement failed\n";
-      return false;
-    }
+bool Dali::RunIoPinPlacementStage() {
+  if (disable_io_place_) {
+    return true;
+  }
+  auto io_placer = std::make_unique<IoPlacer>(phy_db_ptr_, &circuit_);
+  bool is_io_placer_config_success =
+      io_placer->SetGlobalMetalLayer(io_metal_layer_);
+  DaliExpects(is_io_placer_config_success,
+              "Cannot successfully configure I/O placer");
+  if (!io_placer->RunAutoPlacement()) {
+    LOG(error) << "I/O pin placement failed\n";
+    return false;
+  }
+  return true;
+}
+
+bool Dali::StartPlacement(double density, int number_of_threads) {
+  ApplyPlacementOverrides(density, number_of_threads);
+  InitializeMainPlacementCircuit();
+  ResolveTargetDensity();
+
+  if (!RunGlobalPlacementStage() || !RunLegalizationStage() ||
+      !RunFillerCellPlacement() || !RunIoPinPlacementStage()) {
+    return false;
   }
 
   LOG(debug) << "dali git commit: " << get_git_version_short() << "\n";

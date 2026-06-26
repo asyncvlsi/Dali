@@ -142,6 +142,21 @@ class Dali {
   void ExportWellToPhyDB();
   void InitializeCircuitFromPhyDBIfNeeded();
 
+  /** Apply explicit `StartPlacement` arguments before the flow starts. */
+  void ApplyPlacementOverrides(double density, int number_of_threads);
+  /** Initialize the circuit model and reset metrics for a standalone run. */
+  void InitializeMainPlacementCircuit();
+  /** Choose the target density when the user did not provide one. */
+  void ResolveTargetDensity();
+  /** Run global placement and optional global-placement debug export. */
+  bool RunGlobalPlacementStage();
+  /** Run the configured legalization path and optional legalization export. */
+  bool RunLegalizationStage();
+  bool RunStandardCellLegalization();
+  bool RunWellLegalization();
+  bool RunFillerCellPlacement();
+  bool RunIoPinPlacementStage();
+
   bool is_circuit_initialized_ = false;
 };
 
