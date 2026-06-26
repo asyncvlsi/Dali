@@ -9,15 +9,42 @@ jobs:
           name: "Install checkout dependencies"
           command: |
             apt update -y
-            apt install -y git
-      - run:
-          name: "Checkout Dali"
-          command: |
-            git clone "https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}.git" Dali
-            cd Dali
-            git checkout "$CIRCLE_SHA1"
-            git submodule sync --recursive
-            git submodule update --init --recursive
+            apt install -y git openssh-client
+      - when:
+          condition:
+            equal: ["https://github.com/asyncvlsi/Dali", << pipeline.project.git_url >>]
+          steps:
+            - run:
+                name: "Checkout Dali over HTTPS"
+                command: |
+                  echo "Checking out ${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+                  echo "CircleCI branch: ${CIRCLE_BRANCH:-<none>}"
+                  echo "CircleCI SHA: ${CIRCLE_SHA1}"
+                  repo_url="https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}.git"
+                  echo "Repository URL: ${repo_url}"
+                  git clone "${repo_url}" Dali
+                  cd Dali
+                  git checkout "$CIRCLE_SHA1"
+                  echo "Checked-out Dali remote: $(git remote get-url origin)"
+                  echo "Checked-out Dali HEAD: $(git rev-parse HEAD)"
+                  echo "Checked-out Dali commit: $(git log -1 --oneline)"
+                  git submodule sync --recursive
+                  git submodule update --init --recursive
+      - unless:
+          condition:
+            equal: ["https://github.com/asyncvlsi/Dali", << pipeline.project.git_url >>]
+          steps:
+            - checkout:
+                path: Dali
+            - run:
+                name: "Log Dali checkout"
+                command: |
+                  cd Dali
+                  echo "Checked-out Dali remote: $(git remote get-url origin)"
+                  echo "Checked-out Dali HEAD: $(git rev-parse HEAD)"
+                  echo "Checked-out Dali commit: $(git log -1 --oneline)"
+                  git submodule sync --recursive
+                  git submodule update --init --recursive
       - run:
           name: "Install ACT"
           command: |
@@ -67,86 +94,7 @@ jobs:
             make install
       - store_test_results:
           path: Dali/build/test-results
-  centos7:
-    docker:
-      - image: centos:7
-    steps:
-      - run:
-          name: "Install checkout dependencies"
-          command: |
-            yum install -y git
-      - run:
-          name: "Checkout Dali"
-          command: |
-            git clone "https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}.git" Dali
-            cd Dali
-            git checkout "$CIRCLE_SHA1"
-            git submodule sync --recursive
-            git submodule update --init --recursive
-      - run:
-          name: "Install ACT"
-          command: |
-            set +e
-            yum install -y centos-release-scl git wget
-            yum-config-manager --enable rhel-server-rhscl-7-rpms
-            echo "yum install -y devtoolset-11 libtool libedit-devel zlib-devel m4 flex bison libboost--devel | cat" | bash
-            source scl_source enable devtoolset-11
-            git clone https://github.com/asyncvlsi/act.git
-            #the boost prebuild needs act home to be in act 
-            mv act actsrc
-            mkdir act
-            export ACT_HOME=`pwd`/act
-            cd actsrc
-            export VLSI_TOOLS_SRC=`pwd`
-            echo export VLSI_TOOLS_SRC=`pwd` >> $BASH_ENV
-            echo export ACT_HOME=$ACT_HOME >> $BASH_ENV
-            ./configure $ACT_HOME || exit 1
-            ./build  || exit 1
-            make install
-      - run:
-          name: "Install Si2 LEF/DEF parser"
-          command: |
-            set +e
-            source scl_source enable devtoolset-11
-            git clone https://github.com/asyncvlsi/lefdef.git
-            cd lefdef
-            make  || exit 1
-            make install  || exit 1
-      - run:
-          name: "Install phyDB"
-          command: |
-            set +e
-            source scl_source enable devtoolset-11
-            #install new version of cmake
-            wget --quiet https://github.com/bics-rug/act-toolchain-prebuildfiles/raw/master/cmake-3.23.2-prebuild.tar.gz
-            echo "34fe140f10bbeb5e71c7529a26c53386439bbdab14c8efbfd71d86aa36cba578 cmake-3.23.2-prebuild.tar.gz" | sha256sum --check || exit 1
-            mkdir cmake && tar -C "cmake" --strip-components=1 -xf cmake-3.23.2-prebuild.tar.gz
-            cd cmake && make install && cd ..
-            # new version of boost
-            wget --quiet https://github.com/bics-rug/act-toolchain-prebuildfiles/raw/master/boost_1_79_0-prebuild.tar.gz
-            echo "2839c7fc868c032c5a73e5c63aebc605f35b4f2e0dac15b865ff5bede2f2ad6e boost_1_79_0-prebuild.tar.gz" | sha256sum --check || exit 1
-            mkdir -p src/org-boostorg-boost && tar -C src/org-boostorg-boost --strip-components=2 -xf boost_1_79_0-prebuild.tar.gz
-            cd src/org-boostorg-boost && ./b2 install && cd ../..
-
-            git clone https://github.com/asyncvlsi/phyDB.git
-            cd phyDB
-            mkdir build
-            cd build
-            cmake -D Boost_INCLUDE_DIR=$ACT_HOME/include ..  || exit 1
-            make install  || exit 1
-      - run:
-          name: "Install Dali"
-          command: |
-            set +e
-            source scl_source enable devtoolset-11
-            cd Dali
-            mkdir build
-            cd build
-            cmake ..  || exit 1
-            make install  || exit 1
-            
 workflows:
   build:
     jobs:
       - ubuntu22
-      #- centos7
