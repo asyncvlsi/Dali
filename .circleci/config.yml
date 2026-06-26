@@ -9,9 +9,15 @@ jobs:
           name: "Install checkout dependencies"
           command: |
             apt update -y
-            apt install -y git openssh-client
-      - checkout:
-          path: Dali
+            apt install -y git
+      - run:
+          name: "Checkout Dali"
+          command: |
+            git clone "https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}.git" Dali
+            cd Dali
+            git checkout "$CIRCLE_SHA1"
+            git submodule sync --recursive
+            git submodule update --init --recursive
       - run:
           name: "Install ACT"
           command: |
@@ -52,8 +58,6 @@ jobs:
           command: |
             apt install -y libgtest-dev
             cd Dali
-            git submodule sync --recursive
-            git submodule update --init --recursive
             mkdir build
             cd build
             cmake ..
@@ -70,9 +74,15 @@ jobs:
       - run:
           name: "Install checkout dependencies"
           command: |
-            yum install -y git openssh-clients
-      - checkout:
-          path: Dali
+            yum install -y git
+      - run:
+          name: "Checkout Dali"
+          command: |
+            git clone "https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}.git" Dali
+            cd Dali
+            git checkout "$CIRCLE_SHA1"
+            git submodule sync --recursive
+            git submodule update --init --recursive
       - run:
           name: "Install ACT"
           command: |
@@ -130,8 +140,6 @@ jobs:
             set +e
             source scl_source enable devtoolset-11
             cd Dali
-            git submodule sync --recursive
-            git submodule update --init --recursive
             mkdir build
             cd build
             cmake ..  || exit 1
