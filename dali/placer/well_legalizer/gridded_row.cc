@@ -597,7 +597,6 @@ void GriddedRow::InitializeBlockStretching() {
 size_t GriddedRow::AddWellTapCells(Circuit* p_ckt, BlockType* well_tap_type_ptr,
                                    size_t start_id,
                                    std::vector<SegI>& well_tap_cell_locs) {
-  auto& tap_cell_list = p_ckt->design().WellTaps();
   double y_loc = LLY();
   if (is_orient_N_) {
     y_loc += p_well_height_ - well_tap_type_ptr->PwellHeight(0, false);
@@ -608,11 +607,11 @@ size_t GriddedRow::AddWellTapCells(Circuit* p_ckt, BlockType* well_tap_type_ptr,
   for (auto& [lo_x, hi_x] : well_tap_cell_locs) {
     std::string block_name = "__well_tap__" + std::to_string(start_id++);
     Block& tap_cell =
-        p_ckt->design().FillerCellCollection().CreateInstance(block_name);
+        p_ckt->design().WellTapCellCollection().CreateInstance(block_name);
     tap_cell.SetPlacementStatus(PLACED);
     tap_cell.SetType(well_tap_type_ptr);
-    tap_cell.SetId(
-        p_ckt->design().FillerCellCollection().GetInstanceIdByName(block_name));
+    tap_cell.SetId(p_ckt->design().WellTapCellCollection().GetInstanceIdByName(
+        block_name));
     tap_cell.SetLLX(lo_x);
     tap_cell.SetLLY(y_loc);
     tap_cell.SetOrient(orient);

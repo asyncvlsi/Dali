@@ -27,8 +27,22 @@
 
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
+#include "dali/common/placement_metrics.h"
 
 namespace dali {
+namespace {
+
+double ClampCenterToBox(double center, double lower, double upper,
+                        double object_size) {
+  double min_center = lower + object_size / 2.0;
+  double max_center = upper - object_size / 2.0;
+  if (min_center > max_center) {
+    return (lower + upper) / 2.0;
+  }
+  return std::clamp(center, min_center, max_center);
+}
+
+}  // namespace
 
 RandomInitializer::RandomInitializer(Circuit* ckt_ptr, uint32_t random_seed)
     : ckt_ptr_(ckt_ptr), random_seed_(random_seed) {
@@ -43,6 +57,7 @@ void RandomInitializer::SetShouldSaveIntermediateResult(
 
 void RandomInitializer::PrintStartStatement() {
   elapsed_time_.RecordStartTime();
+  RecordPlacementMetric("initialization.before", ckt_ptr_->WeightedHPWL());
   LOG(info) << "  Block location initialization:\n"
             << "    HPWL before, " << ckt_ptr_->WeightedHPWL() << "\n";
 }
@@ -53,6 +68,7 @@ void RandomInitializer::SetParameters(
 
 void RandomInitializer::PrintEndStatement() {
   LOG(debug) << "    " << initializer_name_ << " initialization complete\n";
+  RecordPlacementMetric("initialization.after", ckt_ptr_->WeightedHPWL());
   LOG(info) << "    HPWL after, " << ckt_ptr_->WeightedHPWL() << "\n";
   elapsed_time_.RecordEndTime();
   elapsed_time_.PrintTimeElapsed(severity::debug);
@@ -83,6 +99,10 @@ void UniformInitializer::RandomPlace() {
     if (!blk.IsMovable()) continue;
     double init_x = region_llx + region_width * distribution(generator);
     double init_y = region_lly + region_height * distribution(generator);
+    init_x = ClampCenterToBox(init_x, region_llx, region_llx + region_width,
+                              blk.Width());
+    init_y = ClampCenterToBox(init_y, region_lly, region_lly + region_height,
+                              blk.Height());
     blk.SetCenterX(init_x);
     blk.SetCenterY(init_y);
   }
@@ -126,10 +146,8 @@ void GaussianInitializer::RandomPlace() {
     if (!blk.IsMovable()) continue;
     double x = center_x + region_width * normal_distribution(generator);
     double y = center_y + region_height * normal_distribution(generator);
-    x = std::max(x, (double)region_llx);
-    x = std::min(x, (double)region_urx);
-    y = std::max(y, (double)region_lly);
-    y = std::min(y, (double)region_ury);
+    x = ClampCenterToBox(x, region_llx, region_urx, blk.Width());
+    y = ClampCenterToBox(y, region_lly, region_ury, blk.Height());
     blk.SetCenterX(x);
     blk.SetCenterY(y);
   }
@@ -194,13 +212,16 @@ void InitializerGridBin::InitializeBlockLocation(uint32_t random_seed,
     for (int i = 0; i < num_trials; ++i) {
       double x_loc = lx_ + region_width * distribution(generator);
       double y_loc = ly_ + region_height * distribution(generator);
+      x_loc = ClampCenterToBox(x_loc, lx_, ux_, blk_ptr->Width());
+      y_loc = ClampCenterToBox(y_loc, ly_, uy_, blk_ptr->Height());
       blk_ptr->SetCenterX(x_loc);
       blk_ptr->SetCenterY(y_loc);
       bool is_no_overlap = std::all_of(
-          macros_.begin(), macros_.end(),
-          [&x_loc, &y_loc](const Block* macro_ptr) {
-            return (x_loc >= macro_ptr->URX()) || (y_loc >= macro_ptr->URY()) ||
-                   (x_loc <= macro_ptr->LLX()) || (y_loc <= macro_ptr->LLY());
+          macros_.begin(), macros_.end(), [blk_ptr](const Block* macro_ptr) {
+            return (blk_ptr->LLX() >= macro_ptr->URX()) ||
+                   (blk_ptr->LLY() >= macro_ptr->URY()) ||
+                   (blk_ptr->URX() <= macro_ptr->LLX()) ||
+                   (blk_ptr->URY() <= macro_ptr->LLY());
           });
       if (is_no_overlap) {
         break;
@@ -236,6 +257,10 @@ void MonteCarloInitializer::RandomPlace() {
     for (int i = 0; i < num_trials_; ++i) {
       double init_x = region_llx + region_width * distribution(generator);
       double init_y = region_lly + region_height * distribution(generator);
+      init_x = ClampCenterToBox(init_x, region_llx, region_llx + region_width,
+                                blk.Width());
+      init_y = ClampCenterToBox(init_y, region_lly, region_lly + region_height,
+                                blk.Height());
       blk.SetCenterX(init_x);
       blk.SetCenterY(init_y);
       if (IsBlkLocationValid(blk)) {
@@ -253,18 +278,24 @@ void MonteCarloInitializer::RandomPlace() {
 void MonteCarloInitializer::InitializeGridBin() {
   int region_width = ckt_ptr_->RegionWidth();
   double average_blk_width = ckt_ptr_->AveMovBlkWidth();
-  bin_width_ = region_width / grid_cnt_x_;
+  bin_width_ = std::max(1, region_width / grid_cnt_x_);
   if (bin_width_ < blk_size_factor_ * average_blk_width) {
     bin_width_ = std::ceil(blk_size_factor_ * average_blk_width);
-    grid_cnt_x_ = std::ceil(region_width / static_cast<double>(bin_width_));
+    bin_width_ = std::max(bin_width_, 1);
+    grid_cnt_x_ = std::max(
+        1, static_cast<int>(
+               std::ceil(region_width / static_cast<double>(bin_width_))));
   }
 
   int region_height = ckt_ptr_->RegionHeight();
   double average_blk_height = ckt_ptr_->AveMovBlkHeight();
-  bin_height_ = region_height / grid_cnt_y_;
+  bin_height_ = std::max(1, region_height / grid_cnt_y_);
   if (bin_height_ < blk_size_factor_ * average_blk_height) {
     bin_height_ = std::ceil(blk_size_factor_ * average_blk_height);
-    grid_cnt_y_ = std::ceil(region_height / static_cast<double>(bin_height_));
+    bin_height_ = std::max(bin_height_, 1);
+    grid_cnt_y_ = std::max(
+        1, static_cast<int>(
+               std::ceil(region_height / static_cast<double>(bin_height_))));
   }
 
   auto tmp_col = std::vector<InitializerGridBin>(grid_cnt_y_);
@@ -314,12 +345,7 @@ void MonteCarloInitializer::AssignFixedMacroToGridBin() {
   }
 }
 
-/****
- * @brief Check if the center of this block falls into a fixed macro.
- *
- * @param blk: the block to be examined.
- * @return a boolean value indicate if the above check is passed or not.
- */
+/** Return true if the current block rectangle avoids nearby fixed macros. */
 bool MonteCarloInitializer::IsBlkLocationValid(Block& blk) {
   int region_llx = ckt_ptr_->RegionLLX();
   int region_lly = ckt_ptr_->RegionLLY();
@@ -332,11 +358,13 @@ bool MonteCarloInitializer::IsBlkLocationValid(Block& blk) {
   iy = std::max(iy, 0);
   iy = std::min(iy, grid_cnt_y_ - 1);
   auto& macros = grid_bins_[ix][iy].Macros();
-  return std::all_of(
-      macros.begin(), macros.end(), [&x_loc, &y_loc](const Block* macro_ptr) {
-        return (x_loc >= macro_ptr->URX()) || (y_loc >= macro_ptr->URY()) ||
-               (x_loc <= macro_ptr->LLX()) || (y_loc <= macro_ptr->LLY());
-      });
+  return std::all_of(macros.begin(), macros.end(),
+                     [&blk](const Block* macro_ptr) {
+                       return (blk.LLX() >= macro_ptr->URX()) ||
+                              (blk.LLY() >= macro_ptr->URY()) ||
+                              (blk.URX() <= macro_ptr->LLX()) ||
+                              (blk.URY() <= macro_ptr->LLY());
+                     });
 }
 
 DensityAwareInitializer::DensityAwareInitializer(Circuit* ckt_ptr,

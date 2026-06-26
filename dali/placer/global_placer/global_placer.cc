@@ -26,6 +26,7 @@
 #include <memory>
 
 #include "dali/common/logging.h"
+#include "dali/common/placement_metrics.h"
 
 namespace dali {
 
@@ -148,6 +149,7 @@ bool GlobalPlacer::StartPlacement() {
     if (IsPlacementConverged()) break;
   }
   UpdateMovableBlkPlacementStatus();
+  RecordPlacementMetric("global_placement", WeightedHPWL());
 
   PrintEndStatement("Global placement", true);
   CloseOptimizerAndLegalizer();
@@ -190,6 +192,9 @@ bool GlobalPlacer::IsSeriesConverged(std::vector<double>& series,
   if (max_val < 1e-10 && min_val <= 1e-10) {
     return true;
   }
+  if (min_val <= 1e-10) {
+    return false;
+  }
   double ratio = max_val / min_val - 1;
   return ratio < tolerance;
 }
@@ -217,6 +222,9 @@ bool GlobalPlacer::IsPlacementConverged() {
     } else {
       double tenth_gap = upper_bound_hpwl[9] - lower_bound_hpwl[9];
       double last_gap = upper_bound_hpwl.back() - lower_bound_hpwl.back();
+      if (tenth_gap <= 1e-10) {
+        return last_gap <= 1e-10;
+      }
       double gap_ratio = last_gap / tenth_gap;
       if (gap_ratio < 0.1) {  // (a)
         res = true;
@@ -233,7 +241,7 @@ bool GlobalPlacer::IsPlacementConverged() {
     } else {
       double lower_bound = lower_bound_hpwl.back();
       double upper_bound = upper_bound_hpwl.back();
-      res = (lower_bound < upper_bound) &&
+      res = (lower_bound > 1e-10) && (lower_bound < upper_bound) &&
             (upper_bound / lower_bound - 1 < polar_converge_criterion_);
     }
   } else {

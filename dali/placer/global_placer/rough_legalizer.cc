@@ -21,6 +21,9 @@
 
 #include "rough_legalizer.h"
 
+#include <algorithm>
+#include <cmath>
+
 #include "dali/common/elapsed_time.h"
 #include "dali/common/logging.h"
 
@@ -49,9 +52,14 @@ void LookAheadLegalizer::InitializeGridBinSize() {
   double grid_bin_area =
       number_of_cell_in_bin_ * ckt_ptr_->AveMovBlkArea() / placement_density_;
   grid_bin_height = static_cast<int>(std::round(std::sqrt(grid_bin_area)));
+  grid_bin_height = std::max(grid_bin_height, 1);
   grid_bin_width = grid_bin_height;
-  grid_cnt_x = std::ceil(double(ckt_ptr_->RegionWidth()) / grid_bin_width);
-  grid_cnt_y = std::ceil(double(ckt_ptr_->RegionHeight()) / grid_bin_height);
+  grid_cnt_x =
+      std::max(1, static_cast<int>(std::ceil(double(ckt_ptr_->RegionWidth()) /
+                                             grid_bin_width)));
+  grid_cnt_y =
+      std::max(1, static_cast<int>(std::ceil(double(ckt_ptr_->RegionHeight()) /
+                                             grid_bin_height)));
   LOG(debug) << "  Global placement bin width, height: " << grid_bin_width
              << "  " << grid_bin_height << "\n";
 

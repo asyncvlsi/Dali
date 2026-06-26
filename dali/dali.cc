@@ -29,6 +29,7 @@
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
 #include "dali/common/phydb_helper.h"
+#include "dali/common/placement_metrics.h"
 
 namespace dali {
 
@@ -179,7 +180,10 @@ void Dali::SetLogPrefix(bool disable_log_prefix) {
   disable_log_prefix_ = disable_log_prefix;
 }
 
-void Dali::SetNumThreads(int num_threads) { num_threads_ = num_threads; }
+void Dali::SetNumThreads(int num_threads) {
+  DaliExpects(num_threads >= 1, "Number of threads must be positive");
+  num_threads_ = num_threads;
+}
 
 Circuit& Dali::GetCircuit() { return circuit_; }
 
@@ -311,6 +315,7 @@ bool Dali::TimingDrivenPlacement(double density, int number_of_threads) {
 
 bool Dali::StartPlacement(double density, int number_of_threads) {
   if (density > 0) {
+    DaliExpects(density <= 1, "Target density must be in the range (0, 1]");
     target_density_ = density;
   }
   if (number_of_threads >= 1) {
@@ -321,6 +326,8 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
   circuit_.InitializeFromPhyDB(phy_db_ptr_);
   is_circuit_initialized_ = true;
   circuit_.ReportBriefSummary();
+  ClearPlacementMetrics();
+  RecordPlacementMetric("input", circuit_.WeightedHPWL());
 
   // set the placement density
   if (target_density_ == -1) {
@@ -360,6 +367,7 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
       well_legalizer_.disable_welltap_ = disable_welltap_;
       well_legalizer_.disable_cell_flip_ = disable_cell_flip_;
       well_legalizer_.enable_end_cap_cell_ = enable_end_cap_cell_;
+      well_legalizer_.SetMaxRowWidth(max_row_width_);
       well_legalizer_.SetStripePartitionMode(
           static_cast<int>(well_legalization_mode_));
       if (!well_legalizer_.StartPlacement()) {
@@ -400,6 +408,7 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
   }
 
   LOG(debug) << "dali git commit: " << get_git_version_short() << "\n";
+  RecordPlacementMetric("final", circuit_.WeightedHPWL());
 
   return true;
 }
@@ -431,7 +440,7 @@ bool Dali::AddWellTaps(int argc, char** argv) {
     std::string arg(argv[i++]);
     if (arg == "-cell" && i < argc) {
       std::string macro_name = std::string(argv[i++]);
-      cell = phy_db_ptr_->GetMacroPtr("WELLTAPX1");
+      cell = phy_db_ptr_->GetMacroPtr(macro_name);
       if (cell == nullptr) {
         std::cout << "Cannot find well-tap cell: " << macro_name << "\n";
         return false;
@@ -455,6 +464,15 @@ bool Dali::AddWellTaps(int argc, char** argv) {
       std::cout << arg << "\n";
       return false;
     }
+  }
+
+  if (cell == nullptr) {
+    std::cout << "Well-tap cell is required\n";
+    return false;
+  }
+  if (cell_interval_microns <= 0) {
+    std::cout << "Well-tap cell interval must be positive\n";
+    return false;
   }
 
   AddWellTaps(cell, cell_interval_microns, is_checker_board);

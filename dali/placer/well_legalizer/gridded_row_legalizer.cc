@@ -76,8 +76,7 @@ void GriddedRowLegalizer::SetMaxRowWidth(double max_row_width) {
   } else {
     max_row_width_ = std::floor(max_row_width / ckt_ptr_->GridValueX());
   }
-  LOG(info) << "Max row width in grid unit : " << tap_cell_interval_grid_
-            << "\n";
+  LOG(info) << "Max row width in grid unit : " << max_row_width_ << "\n";
 }
 
 void GriddedRowLegalizer::PartitionSpaceAndBlocks() {
@@ -230,7 +229,7 @@ bool GriddedRowLegalizer::StripeLegalizationUpward(Stripe& stripe,
     stripe.UpdateFrontClusterUpward(tap_cell_p_height_, tap_cell_n_height_);
     processed_blk_cnt =
         stripe.FitBlocksToFrontSpaceUpward(processed_blk_cnt, greedy_cur_iter_);
-    stripe.LegalizeFrontCluster(true);
+    stripe.LegalizeFrontCluster(use_init_loc);
   }
   stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_, true);
   stripe.UpdateBlockYLocation();
@@ -252,7 +251,7 @@ bool GriddedRowLegalizer::StripeLegalizationDownward(Stripe& stripe,
     stripe.UpdateFrontClusterDownward(tap_cell_p_height_, tap_cell_n_height_);
     processed_blk_cnt = stripe.FitBlocksToFrontSpaceDownward(processed_blk_cnt,
                                                              greedy_cur_iter_);
-    stripe.LegalizeFrontCluster(true);
+    stripe.LegalizeFrontCluster(use_init_loc);
   }
   stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_, false);
   stripe.UpdateBlockYLocation();
@@ -316,7 +315,7 @@ bool GriddedRowLegalizer::StripeLegalizationUpwardWithDispCheck(
     stripe.UpdateFrontClusterUpward(tap_cell_p_height_, tap_cell_n_height_);
     processed_blk_cnt = stripe.FitBlocksToFrontSpaceUpwardWithDispCheck(
         processed_blk_cnt, greedy_cur_iter_);
-    stripe.LegalizeFrontCluster(true);
+    stripe.LegalizeFrontCluster(use_init_loc);
   }
   stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_, true);
   stripe.UpdateBlockYLocation();
@@ -327,6 +326,8 @@ bool GriddedRowLegalizer::StripeLegalizationUpwardWithDispCheck(
 
 bool GriddedRowLegalizer::StripeLegalizationDownwardWithDispCheck(
     Stripe& stripe, bool use_init_loc) {
+  (void)stripe;
+  (void)use_init_loc;
   DaliExpects(false, "to be implemented");
   return true;
 }
@@ -459,9 +460,9 @@ void GriddedRowLegalizer::EmbodyWellTapCells() {
           upper_limit_per_row * stripe.gridded_rows_.size();
     }
   }
-  auto& tap_cell_list = ckt_ptr_->design().WellTaps();
-  tap_cell_list.clear();
-  tap_cell_list.reserve(well_tap_cell_count_upper_limit);
+  auto& tap_cell_collection = ckt_ptr_->design().WellTapCellCollection();
+  tap_cell_collection.Clear();
+  tap_cell_collection.Reserve(well_tap_cell_count_upper_limit);
 
   // create well-tap cells
   size_t counter = 0;
@@ -470,6 +471,7 @@ void GriddedRowLegalizer::EmbodyWellTapCells() {
       counter = stripe.AddWellTapCells(ckt_ptr_, well_tap_type_ptr_, counter);
     }
   }
+  tap_cell_collection.Freeze();
 }
 
 void GriddedRowLegalizer::ReportDisplacement() {

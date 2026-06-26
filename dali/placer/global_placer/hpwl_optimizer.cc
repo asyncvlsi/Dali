@@ -69,7 +69,7 @@ void B2BHpwlOptimizer::Initialize() {
   ADx.resize(sz);
   ADy.resize(sz);
   Ax_row_size.assign(sz, 0);
-  Ax_row_size.assign(sz, 0);
+  Ay_row_size.assign(sz, 0);
 
   EgId eigen_sz = static_cast<EgId>(ckt_ptr_->Blocks().size());
   vx.resize(eigen_sz);
@@ -343,6 +343,9 @@ bool B2BHpwlOptimizer::IsSeriesConverged(std::vector<double>& data,
   if (max_val < 1e-10 && min_val <= 1e-10) {
     return true;
   }
+  if (min_val <= 1e-10) {
+    return false;
+  }
   double ratio = max_val / min_val - 1;
   return ratio < tolerance;
 }
@@ -506,7 +509,7 @@ void B2BHpwlOptimizer::PullBlockBackToRegion() {
   double region_urx = ckt_ptr_->RegionURX();
   double region_lly = ckt_ptr_->RegionLLY();
   double region_ury = ckt_ptr_->RegionURY();
-#pragma omp parallel num_threads(omp_get_max_threads()) default(none) \
+#pragma omp parallel num_threads(num_threads_) default(none) \
     shared(block_list, sz, region_llx, region_urx, region_lly, region_ury)
   {
 #pragma omp for
@@ -630,7 +633,7 @@ void B2BHpwlOptimizer::BuildProblemWithAnchorY() {
     if (block_list[i].IsFixed()) continue;
     pin_loc0 = block_list[i].LLY();
     pin_loc1 = y_anchor[i];
-    weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + width_epsilon_);
+    weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + height_epsilon_);
     by[i] += pin_loc1 * weight;
     coefficients_y_.emplace_back(T(i, i, weight));
   }
@@ -698,7 +701,8 @@ void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(int num_threads) {
 }
 
 void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(int num_threads) {
-  LOG(trace) << "threads in branch y: " << omp_get_max_threads()
+  LOG(trace) << "threads in branch y: " << num_threads
+             << " actual number of threads: " << omp_get_max_threads()
              << " Eigen threads: " << Eigen::nbThreads() << "\n";
 
   std::vector<Block>& block_list = ckt_ptr_->Blocks();
@@ -894,7 +898,7 @@ void StarHpwlOptimizer::BuildProblemX() {
 
 void StarHpwlOptimizer::BuildProblemY() {
   ElapsedTime elapsed_time;
-  elapsed_time.GetWallTime();
+  elapsed_time.RecordStartTime();
 
   std::vector<Block>& blocks = ckt_ptr_->Blocks();
   std::vector<Net>& nets = ckt_ptr_->Nets();
@@ -1274,7 +1278,7 @@ void StarHpwlHpwlOptimizer::Initialize() {
   ADx.resize(sz);
   ADy.resize(sz);
   Ax_row_size.assign(sz, 0);
-  Ax_row_size.assign(sz, 0);
+  Ay_row_size.assign(sz, 0);
 
   EgId eigen_sz = static_cast<EgId>(ckt_ptr_->Blocks().size());
   vx.resize(eigen_sz);
@@ -1637,7 +1641,7 @@ void StarHpwlHpwlOptimizer::BuildProblemWithAnchorY() {
     if (block_list[i].IsFixed()) continue;
     pin_loc0 = block_list[i].LLY();
     pin_loc1 = y_anchor[i];
-    weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + width_epsilon_);
+    weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + height_epsilon_);
     by[i] += pin_loc1 * weight;
     SpMat_diag_y[i].valueRef() += weight;
   }

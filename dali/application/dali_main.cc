@@ -33,6 +33,7 @@
 #include "dali/common/git_version.h"
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
+#include "dali/common/placement_metrics.h"
 #include "dali/dali.h"
 
 using namespace dali;
@@ -47,6 +48,7 @@ struct CommandLineOptions {
   std::string ignored_mcell_file_name;
   std::string output_name = "dali_out";
   std::string log_file_name;
+  std::string metrics_file_name = "dali_metrics.json";
   severity verbose_level = severity::info;
   double x_grid = 0;
   double y_grid = 0;
@@ -62,6 +64,7 @@ void ReportUsage() {
       << "  -def <file.def>\n"
       << "  -cell <file.cell>                          (optional, if provided, well placement flow will be triggered)\n"
       << "  -o/-output_name <output_name>.def          (optional, default output def file name dali_out.def)\n"
+      << "  -metrics_file <file.json>                  (optional, default dali_metrics.json)\n"
       << "  -g/-grid <grid_value_x> <grid_value_y>     (optional, default metal1 and metal2 pitch values)\n"
       << "  -d/-target_density <density>               (optional, value interval (0,1], default max(space_utility, 0.7))\n"
       << "  -disable_legalization                      optional, if this flag is present, then legalization is skipped\n"
@@ -182,6 +185,11 @@ bool ParseCommandLine(int argc, char* argv[], CommandLineOptions* options) {
         return false;
       }
       config_set_string("dali.output_name", options->output_name.c_str());
+    } else if (arg == "-metrics_file") {
+      if (!TryGetValue(argc, argv, &i, &options->metrics_file_name)) {
+        std::cout << "Invalid metrics file name!\n";
+        return false;
+      }
     } else if (arg == "-v") {
       if (!TryGetValue(argc, argv, &i, &value)) {
         std::cout << "Invalid verbosity level!\n";
@@ -201,7 +209,8 @@ bool ParseCommandLine(int argc, char* argv[], CommandLineOptions* options) {
     } else if (arg == "-d" || arg == "-target_density") {
       double target_density = 0;
       if (!TryGetValue(argc, argv, &i, &value) ||
-          !TryParseDouble(value, &target_density)) {
+          !TryParseDouble(value, &target_density) || target_density <= 0 ||
+          target_density > 1) {
         std::cout << "Invalid target density!\n";
         return false;
       }
@@ -251,7 +260,7 @@ bool ParseCommandLine(int argc, char* argv[], CommandLineOptions* options) {
     } else if (arg == "-num_threads") {
       int num_threads = 0;
       if (!TryGetValue(argc, argv, &i, &value) ||
-          !TryParseInt(value, &num_threads)) {
+          !TryParseInt(value, &num_threads) || num_threads < 1) {
         std::cout << "Invalid number of threads!\n";
         return false;
       }
@@ -310,6 +319,7 @@ int main(int argc, char* argv[]) {
 
   bool is_success = dali.StartPlacement();
   if (!is_success) {
+    WritePlacementMetricsJson(options.metrics_file_name, false);
     return 1;
   }
 
@@ -323,6 +333,7 @@ int main(int argc, char* argv[]) {
   LOG(info) << "****End of placement "
             << "(wall time: " << elapsed_time.GetWallTime() << "s, "
             << "cpu time: " << elapsed_time.GetCpuTime() << "s)****\n";
+  WritePlacementMetricsJson(options.metrics_file_name, true);
 
   return 0;
 }

@@ -53,6 +53,9 @@ class StdClusterWellLegalizer : public Placer {
   /** Set stripe partitioning mode. */
   void SetStripePartitionMode(int mode) { stripe_mode_ = mode; }
 
+  /** Set maximum legalized row width in microns. */
+  void SetMaxRowWidth(double max_row_width_microns);
+
   /** Set the orientation of the first generated row. */
   void SetFirstRowOrientN(bool is_N) { is_first_row_orient_N_ = is_N; }
 
@@ -63,7 +66,7 @@ class StdClusterWellLegalizer : public Placer {
   void SaveInitialBlockLocation();
 
   /** Initialize stripes, clusters, and cached parameters. */
-  void InitializeWellLegalizer(int cluster_width = 0);
+  void InitializeWellLegalizer(int cluster_width = -1);
 
   void CreateClusterAndAppendSingleWellBlock(Stripe& stripe, Block& blk);
   void AppendSingleWellBlockToFrontCluster(Stripe& stripe, Block& blk);
@@ -146,6 +149,7 @@ class StdClusterWellLegalizer : public Placer {
 
   /**** stripe parameters ****/
   int stripe_mode_ = 0;
+  int max_row_width_ = -1;
   DefaultSpacePartitioner space_partitioner_;
 
   /**** cached well tap cell parameters ****/

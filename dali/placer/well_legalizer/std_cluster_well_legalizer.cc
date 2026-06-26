@@ -21,9 +21,11 @@
 #include "std_cluster_well_legalizer.h"
 
 #include <algorithm>
+#include <cmath>
 #include <set>
 
 #include "dali/common/helper.h"
+#include "dali/common/placement_metrics.h"
 #include "dali/placer/well_legalizer/stripe_helper.h"
 
 namespace dali {
@@ -112,6 +114,16 @@ void StdClusterWellLegalizer::SaveInitialBlockLocation() {
   }
 }
 
+void StdClusterWellLegalizer::SetMaxRowWidth(double max_row_width_microns) {
+  if (max_row_width_microns < 0) {
+    max_row_width_ = -1;
+    return;
+  }
+  DaliExpects(ckt_ptr_ != nullptr, "Circuit must be set before row width");
+  max_row_width_ = std::floor(max_row_width_microns / ckt_ptr_->GridValueX());
+  LOG(info) << "Max row width in grid unit : " << max_row_width_ << "\n";
+}
+
 void StdClusterWellLegalizer::InitializeWellLegalizer(int cluster_width) {
   if (disable_welltap_) {
     num_of_tap_cell_ = 0;
@@ -132,7 +144,11 @@ void StdClusterWellLegalizer::InitializeWellLegalizer(int cluster_width) {
                                                     well_spacing_, 1, 1);
   }
   space_partitioner_.SetPartitionMode(stripe_mode_);
-  space_partitioner_.SetMaxRowWidth(cluster_width);
+  if (cluster_width >= 0) {
+    space_partitioner_.SetMaxRowWidth(cluster_width);
+  } else {
+    space_partitioner_.SetMaxRowWidth(max_row_width_);
+  }
   space_partitioner_.StartPartitioning();
 
   index_loc_list_.resize(ckt_ptr_->Blocks().size());
@@ -238,11 +254,8 @@ void StdClusterWellLegalizer::AppendBlockToColTopDown(Stripe& stripe,
     front_row = &(stripe.gridded_rows_.back());
     front_row->Blocks().reserve(stripe.max_blk_capacity_per_cluster_);
     front_row->AddBlock(&blk);
-    // int num_of_tap_cell = (int) std::ceil(stripe.Width() /
-    // max_unplug_length_);
-    int num_of_tap_cell = 2;
-    front_row->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_ +
-                           num_of_tap_cell * space_to_well_tap_);
+    front_row->SetUsedSize(width + num_of_tap_cell_ * well_tap_cell_width_ +
+                           num_of_tap_cell_ * space_to_well_tap_);
     front_row->UpdateWellHeightDownward(tap_cell_p_height_, tap_cell_n_height_);
     front_row->UpdateWellHeightDownward(p_well_height, n_well_height);
     front_row->SetURY(init_y);
@@ -287,11 +300,8 @@ void StdClusterWellLegalizer::AppendBlockToColBottomUpCompact(Stripe& stripe,
     front_cluster = &(stripe.gridded_rows_.back());
     front_cluster->Blocks().reserve(stripe.max_blk_capacity_per_cluster_);
     front_cluster->AddBlock(&blk);
-    // int num_of_tap_cell = (int) std::ceil(stripe.Width() /
-    // max_unplug_length_);
-    int num_of_tap_cell = 2;
-    front_cluster->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_ +
-                               num_of_tap_cell * space_to_well_tap_);
+    front_cluster->SetUsedSize(width + num_of_tap_cell_ * well_tap_cell_width_ +
+                               num_of_tap_cell_ * space_to_well_tap_);
     front_cluster->UpdateWellHeightUpward(tap_cell_p_height_,
                                           tap_cell_n_height_);
     front_cluster->SetLLY(init_y);
@@ -337,11 +347,8 @@ void StdClusterWellLegalizer::AppendBlockToColTopDownCompact(Stripe& stripe,
     front_cluster = &(stripe.gridded_rows_.back());
     front_cluster->Blocks().reserve(stripe.max_blk_capacity_per_cluster_);
     front_cluster->AddBlock(&blk);
-    // int num_of_tap_cell = (int) std::ceil(stripe.Width() /
-    // max_unplug_length_);
-    int num_of_tap_cell = 2;
-    front_cluster->SetUsedSize(width + num_of_tap_cell * well_tap_cell_width_ +
-                               num_of_tap_cell * space_to_well_tap_);
+    front_cluster->SetUsedSize(width + num_of_tap_cell_ * well_tap_cell_width_ +
+                               num_of_tap_cell_ * space_to_well_tap_);
     front_cluster->UpdateWellHeightDownward(tap_cell_p_height_,
                                             tap_cell_n_height_);
     front_cluster->UpdateWellHeightDownward(p_well_height, n_well_height);
@@ -397,7 +404,7 @@ bool StdClusterWellLegalizer::StripeLegalizationTopDown(Stripe& stripe) {
   stripe.used_height_ = 0;
   stripe.cluster_count_ = 0;
   stripe.front_row_ = nullptr;
-  stripe.is_bottom_up_ = true;
+  stripe.is_bottom_up_ = false;
 
   std::sort(stripe.blk_ptrs_vec_.begin(), stripe.blk_ptrs_vec_.end(),
             [](const Block* lhs, const Block* rhs) {
@@ -1037,7 +1044,7 @@ void StdClusterWellLegalizer::InsertEndCapCells() {
 
         // Create post end cap cell
         int post_end_cap_cell_type_id =
-            pre_end_cap_cell_np_heights_to_type_id[np_height];
+            post_end_cap_cell_np_heights_to_type_id[np_height];
         BlockType* post_end_cap_cell_type_ptr =
             ckt_ptr_->tech().EndCapCellTypeCollection().GetInstanceById(
                 post_end_cap_cell_type_id);
@@ -1118,6 +1125,7 @@ bool StdClusterWellLegalizer::StartPlacement() {
   // is_success = BlockClusteringCompact();
   is_success = BlockClusteringLoose();
   ReportHPWL();
+  RecordPlacementMetric("well_legalization.block_clustering", WeightedHPWL());
   // circuit_ptr_->GenMATLABWellTable("clu", false);
   // GenMatlabClusterTable("clu_result");
 
@@ -1127,6 +1135,7 @@ bool StdClusterWellLegalizer::StartPlacement() {
     LOG(info) << "Flip cluster orientation\n";
     UpdateClusterOrient();
     ReportHPWL();
+    RecordPlacementMetric("well_legalization.orientation", WeightedHPWL());
     // circuit_ptr_->GenMATLABWellTable("ori", false);
     // GenMatlabClusterTable("ori_result");
   }
@@ -1136,6 +1145,7 @@ bool StdClusterWellLegalizer::StartPlacement() {
     LOG(info) << "reorder iteration: " << i << "\n";
     LocalReorderAllClusters();
     ReportHPWL();
+    RecordPlacementMetric("well_legalization.local_reorder", WeightedHPWL());
     // LOG(info) << "optimization: " << i;
     // SingleSegmentClusteringOptimization();
     // ReportHPWL();
@@ -1151,6 +1161,7 @@ bool StdClusterWellLegalizer::StartPlacement() {
     // circuit_ptr_->GenMATLABWellTable("wtc", false);
     // GenMatlabClusterTable("wtc_result");
   }
+  RecordPlacementMetric("well_legalization.well_tap", WeightedHPWL());
 
   if (enable_end_cap_cell_) {
     LOG(info) << "Create end cap cells\n";

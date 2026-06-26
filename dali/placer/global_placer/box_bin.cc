@@ -22,10 +22,22 @@
 #include "box_bin.h"
 
 #include <cmath>
+#include <limits>
 
 #include "dali/common/helper.h"
 
 namespace dali {
+namespace {
+
+double ComputeFillingRate(unsigned long long cell_area,
+                          unsigned long long white_space) {
+  if (white_space == 0) {
+    return cell_area == 0 ? 0.0 : std::numeric_limits<double>::infinity();
+  }
+  return double(cell_area) / double(white_space);
+}
+
+}  // namespace
 
 BoxBin::BoxBin() {
   all_terminal = false;
@@ -91,7 +103,7 @@ void BoxBin::update_cell_area_white_space(
       total_cell_area += grid_bin_matrix[x][y].cell_area;
     }
   }
-  filling_rate = double(total_cell_area) / double(total_white_space);
+  filling_rate = ComputeFillingRate(total_cell_area, total_white_space);
 }
 
 void BoxBin::UpdateCellAreaWhiteSpaceFillingRate(
@@ -122,7 +134,7 @@ void BoxBin::UpdateCellAreaWhiteSpaceFillingRate(
       total_cell_area += grid_bin_matrix[x][y].cell_area;
     }
   }
-  filling_rate = double(total_cell_area) / double(total_white_space);
+  filling_rate = ComputeFillingRate(total_cell_area, total_white_space);
 }
 
 void BoxBin::ExpandBox(int grid_cnt_x, int grid_cnt_y) {
@@ -349,6 +361,8 @@ unsigned long long BoxBin::white_space_LUT(
 
 bool BoxBin::update_cut_index_white_space(
     std::vector<std::vector<unsigned long long>>& grid_bin_white_space_LUT) {
+  DaliExpects(total_white_space > 0,
+              "Cannot split a box without available white space");
   double error, minimum_error = 1;
   unsigned long long white_space_low;
   int index_give_minimum_error;
@@ -408,6 +422,10 @@ bool BoxBin::update_cut_point_cell_list_low_high(
     unsigned long long& box2_total_white_space) {
   // this member function will be called only when two white spaces are not
   // different from each other for several magnitudes
+  DaliExpects(box1_total_white_space > 0,
+              "Cannot split cell list against zero lower-box white space");
+  DaliExpects(total_cell_area > 0,
+              "Cannot split an empty cell list by cell area");
   unsigned long long cell_area_low = 0;
   double cut_line_low, cut_line_high;
   double cut_line = 0;
@@ -430,7 +448,9 @@ bool BoxBin::update_cut_point_cell_list_low_high(
       }
       // LOG(info)   << cell_area_low/(double)total_cell_area <<
       // "\n";
-      double tmp_ratio = double(total_cell_area) / double(cell_area_low);
+      double tmp_ratio = cell_area_low == 0
+                             ? std::numeric_limits<double>::infinity()
+                             : double(total_cell_area) / double(cell_area_low);
       // TODO: this precision has some influence on the final result
       if (ratio > tmp_ratio) {
         cut_line_high = cut_line;
@@ -469,7 +489,9 @@ bool BoxBin::update_cut_point_cell_list_low_high(
       }
       // LOG(info)   << cell_area_low/(double)total_cell_area <<
       // "\n";
-      double tmp_ratio = double(total_cell_area) / double(cell_area_low);
+      double tmp_ratio = cell_area_low == 0
+                             ? std::numeric_limits<double>::infinity()
+                             : double(total_cell_area) / double(cell_area_low);
       if (ratio > tmp_ratio) {
         cut_line_high = cut_line;
       } else if (ratio < tmp_ratio) {
@@ -497,6 +519,8 @@ bool BoxBin::update_cut_point_cell_list_low_high(
 
 bool BoxBin::update_cut_point_cell_list_low_high_leaf(int& cut_line_w,
                                                       int ave_blk_height) {
+  DaliExpects(total_cell_area > 0,
+              "Cannot split an empty leaf box by cell area");
   unsigned long long cell_area_low = 0;
   double cut_line = 0;
   // the above three cut-lines are for cells, thus they needs to be double

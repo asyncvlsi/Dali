@@ -68,7 +68,7 @@ class Dali {
 #endif
 
   /** Run the default placement pipeline used by the main `dali` app. */
-  bool StartPlacement(double density = -1, int number_of_threads = 1);
+  bool StartPlacement(double density = -1, int number_of_threads = -1);
 
   void AddWellTaps(phydb::Macro* cell, double cell_interval_microns,
                    bool is_checker_board);

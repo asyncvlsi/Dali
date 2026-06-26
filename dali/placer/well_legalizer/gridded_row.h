@@ -163,12 +163,12 @@ class GriddedRow {
 
   /**** number of tap cells needed, and pointers to tap cells ****/
   int tap_cell_num_ = 0;
-  Block* tap_cell_;
+  Block* tap_cell_ = nullptr;
 
   /**** x/y coordinates and dimension ****/
-  int lx_;
-  int ly_;
-  int width_;
+  int lx_ = 0;
+  int ly_ = 0;
+  int width_ = 0;
 
   /**** total width of cells in this cluster, including reserved space for tap
    * cells ****/
