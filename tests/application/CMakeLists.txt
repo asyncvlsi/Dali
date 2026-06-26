@@ -18,3 +18,7 @@ endif ()
 add_executable(application_dali_command_line_test dali_command_line_test.cc)
 target_link_libraries(application_dali_command_line_test PRIVATE dalilib ${DALI_GTEST_MAIN})
 add_test(NAME application_dali_command_line_test COMMAND application_dali_command_line_test)
+
+add_executable(application_dali_config_test dali_config_test.cc)
+target_link_libraries(application_dali_config_test PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(NAME application_dali_config_test COMMAND application_dali_config_test)
