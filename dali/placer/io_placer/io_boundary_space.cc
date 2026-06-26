@@ -20,7 +20,9 @@
  ******************************************************************************/
 #include "io_boundary_space.h"
 
+#include <algorithm>
 #include <cfloat>
+#include <cmath>
 
 #include "dali/common/helper.h"
 
