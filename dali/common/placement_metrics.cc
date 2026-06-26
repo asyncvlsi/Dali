@@ -13,8 +13,6 @@
 #include <fstream>
 #include <iomanip>
 #include <string>
-#include <utility>
-#include <vector>
 
 #include "dali/common/git_version.h"
 #include "dali/common/logging.h"
@@ -22,8 +20,8 @@
 namespace dali {
 namespace {
 
-std::vector<std::pair<std::string, double>>& Metrics() {
-  static std::vector<std::pair<std::string, double>> metrics;
+PlacementMetrics& GlobalPlacementMetrics() {
+  static PlacementMetrics metrics;
   return metrics;
 }
 
@@ -57,19 +55,20 @@ std::string JsonEscape(const std::string& text) {
 
 }  // namespace
 
-void ClearPlacementMetrics() { Metrics().clear(); }
+void PlacementMetrics::Clear() { metrics_.clear(); }
 
-void RecordPlacementMetric(const std::string& name, double value) {
-  for (auto& [metric_name, metric_value] : Metrics()) {
+void PlacementMetrics::Record(const std::string& name, double value) {
+  for (auto& [metric_name, metric_value] : metrics_) {
     if (metric_name == name) {
       metric_value = value;
       return;
     }
   }
-  Metrics().emplace_back(name, value);
+  metrics_.emplace_back(name, value);
 }
 
-bool WritePlacementMetricsJson(const std::string& file_name, bool completed) {
+bool PlacementMetrics::WriteJson(const std::string& file_name,
+                                 bool completed) const {
   std::ofstream ost(file_name);
   if (!ost.is_open()) {
     LOG(error) << "Cannot open placement metrics file: " << file_name << "\n";
@@ -82,11 +81,10 @@ bool WritePlacementMetricsJson(const std::string& file_name, bool completed) {
   ost << "  \"git_commit\": \"" << JsonEscape(get_git_version_short())
       << "\",\n";
   ost << "  \"stages\": {\n";
-  const auto& metrics = Metrics();
-  for (size_t i = 0; i < metrics.size(); ++i) {
-    const auto& [name, value] = metrics[i];
+  for (size_t i = 0; i < metrics_.size(); ++i) {
+    const auto& [name, value] = metrics_[i];
     ost << "    \"" << JsonEscape(name) << "\": " << value;
-    if (i + 1 < metrics.size()) {
+    if (i + 1 < metrics_.size()) {
       ost << ",";
     }
     ost << "\n";
@@ -94,6 +92,16 @@ bool WritePlacementMetricsJson(const std::string& file_name, bool completed) {
   ost << "  }\n";
   ost << "}\n";
   return true;
+}
+
+void ClearPlacementMetrics() { GlobalPlacementMetrics().Clear(); }
+
+void RecordPlacementMetric(const std::string& name, double value) {
+  GlobalPlacementMetrics().Record(name, value);
+}
+
+bool WritePlacementMetricsJson(const std::string& file_name, bool completed) {
+  return GlobalPlacementMetrics().WriteJson(file_name, completed);
 }
 
 }  // namespace dali

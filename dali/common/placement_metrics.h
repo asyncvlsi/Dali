@@ -12,8 +12,21 @@
 #define DALI_COMMON_PLACEMENT_METRICS_H_
 
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace dali {
+
+/** Collects named placement metrics and writes them in Dali's JSON format. */
+class PlacementMetrics {
+ public:
+  void Clear();
+  void Record(const std::string& name, double value);
+  bool WriteJson(const std::string& file_name, bool completed) const;
+
+ private:
+  std::vector<std::pair<std::string, double>> metrics_;
+};
 
 /** Clear all placement metrics recorded for the current process. */
 void ClearPlacementMetrics();

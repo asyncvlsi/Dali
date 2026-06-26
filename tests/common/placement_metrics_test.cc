@@ -30,13 +30,13 @@ TEST(PlacementMetricsTest, WritesCompletedJsonWithUpdatedStageValues) {
       "dali_placement_metrics_test.json";
   std::filesystem::remove(metrics_file);
 
-  dali::ClearPlacementMetrics();
-  dali::RecordPlacementMetric("input", 10.0);
-  dali::RecordPlacementMetric("global_placement", 20.0);
-  dali::RecordPlacementMetric("global_placement", 21.5);
-  dali::RecordPlacementMetric("stage\"with\\escapes", 30.0);
+  dali::PlacementMetrics metrics;
+  metrics.Record("input", 10.0);
+  metrics.Record("global_placement", 20.0);
+  metrics.Record("global_placement", 21.5);
+  metrics.Record("stage\"with\\escapes", 30.0);
 
-  ASSERT_TRUE(dali::WritePlacementMetricsJson(metrics_file.string(), true));
+  ASSERT_TRUE(metrics.WriteJson(metrics_file.string(), true));
 
   const std::string json = ReadFile(metrics_file);
   EXPECT_NE(json.find("\"completed\": true"), std::string::npos);
@@ -49,7 +49,7 @@ TEST(PlacementMetricsTest, WritesCompletedJsonWithUpdatedStageValues) {
   std::filesystem::remove(metrics_file);
 }
 
-TEST(PlacementMetricsTest, ClearRemovesOldStageValues) {
+TEST(PlacementMetricsTest, GlobalWrapperClearRemovesOldStageValues) {
   const std::filesystem::path metrics_file =
       std::filesystem::temp_directory_path() /
       "dali_placement_metrics_clear_test.json";
