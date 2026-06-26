@@ -21,6 +21,8 @@
 #include "well_legalizer.h"
 
 #include <algorithm>
+#include <cfloat>
+#include <climits>
 
 #include "dali/common/elapsed_time.h"
 #include "dali/common/helper.h"

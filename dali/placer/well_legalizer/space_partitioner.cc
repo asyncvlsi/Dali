@@ -21,6 +21,7 @@
 #include "space_partitioner.h"
 
 #include <algorithm>
+#include <cfloat>
 
 namespace dali {
 

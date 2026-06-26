@@ -21,6 +21,7 @@
 #include "row_segment.h"
 
 #include <algorithm>
+#include <cfloat>
 
 #include "dali/common/helper.h"
 #include "dali/placer/well_legalizer/block_segment.h"

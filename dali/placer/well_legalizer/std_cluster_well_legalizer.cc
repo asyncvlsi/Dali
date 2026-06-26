@@ -21,6 +21,7 @@
 #include "std_cluster_well_legalizer.h"
 
 #include <algorithm>
+#include <cfloat>
 #include <cmath>
 #include <set>
 

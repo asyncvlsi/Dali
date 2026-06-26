@@ -21,6 +21,7 @@
 #include "gridded_row.h"
 
 #include <algorithm>
+#include <cfloat>
 
 #include "dali/common/helper.h"
 

@@ -21,6 +21,7 @@
 #ifndef DALI_PLACER_WELL_LEGALIZER_WELL_LEGALIZER_H_
 #define DALI_PLACER_WELL_LEGALIZER_WELL_LEGALIZER_H_
 
+#include <climits>
 #include <set>
 #include <vector>
 

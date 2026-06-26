@@ -21,6 +21,7 @@
 #ifndef DALI_PLACER_WELL_LEGALIZER_ROW_SEGMENT_H_
 #define DALI_PLACER_WELL_LEGALIZER_ROW_SEGMENT_H_
 
+#include <climits>
 #include <unordered_map>
 #include <vector>
 

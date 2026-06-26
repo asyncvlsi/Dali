@@ -21,6 +21,7 @@
 #ifndef DALI_PLACER_WELL_LEGALIZER_GRIDDED_ROW_H_
 #define DALI_PLACER_WELL_LEGALIZER_GRIDDED_ROW_H_
 
+#include <cfloat>
 #include <unordered_map>
 
 #include "dali/circuit/block.h"

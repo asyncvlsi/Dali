@@ -23,6 +23,8 @@
 #include <omp.h>
 
 #include <algorithm>
+#include <cfloat>
+#include <climits>
 
 #include "dali/placer/well_legalizer/block_helper.h"
 #include "dali/placer/well_legalizer/legalizer_block_aux.h"

@@ -23,6 +23,7 @@
 
 #include <phydb/phydb.h>
 
+#include <climits>
 #include <list>
 #include <vector>
 

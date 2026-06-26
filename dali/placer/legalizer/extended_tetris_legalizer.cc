@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <cfloat>
+#include <climits>
 #include <list>
 
 #include "dali/common/helper.h"

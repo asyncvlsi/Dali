@@ -21,6 +21,7 @@
 #include "well_tap_placer.h"
 
 #include <algorithm>
+#include <climits>
 #include <fstream>
 
 namespace dali {
