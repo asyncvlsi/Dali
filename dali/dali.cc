@@ -24,6 +24,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <string>
 
 #include "dali/common/git_version.h"
 #include "dali/common/helper.h"
@@ -32,6 +33,41 @@
 #include "dali/common/placement_metrics.h"
 
 namespace dali {
+namespace {
+
+std::string ConfigName(const std::string& prefix, const char* name) {
+  return prefix + name;
+}
+
+bool ConfigExists(const std::string& name) {
+  return config_exists(name.c_str());
+}
+
+void LoadBoolConfig(const std::string& name, bool* value) {
+  if (ConfigExists(name)) {
+    *value = config_get_int(name.c_str()) == 1;
+  }
+}
+
+void LoadIntConfig(const std::string& name, int* value) {
+  if (ConfigExists(name)) {
+    *value = config_get_int(name.c_str());
+  }
+}
+
+void LoadRealConfig(const std::string& name, double* value) {
+  if (ConfigExists(name)) {
+    *value = config_get_real(name.c_str());
+  }
+}
+
+void LoadStringConfig(const std::string& name, std::string* value) {
+  if (ConfigExists(name)) {
+    *value = config_get_string(name.c_str());
+  }
+}
+
+}  // namespace
 
 Dali::Dali(phydb::PhyDB* phy_db_ptr, const std::string& severity_level,
            const std::string& log_file_name) {
@@ -77,23 +113,20 @@ void Dali::ShowParamsList() {
 }
 
 void Dali::LoadParamsFromConfig() {
-  std::string param_name = prefix_ + "log_file_name";
-  if (config_exists(param_name.c_str())) {
-    log_file_name_ = config_get_string(param_name.c_str());
-  }
+  LoadStringConfig(ConfigName(prefix_, "log_file_name"), &log_file_name_);
 
-  param_name = prefix_ + "disable_log_prefix";
-  if (config_exists(param_name.c_str())) {
-    SetLogPrefix(config_get_int(param_name.c_str()) == 1);
-  }
+  bool disable_log_prefix = disable_log_prefix_;
+  LoadBoolConfig(ConfigName(prefix_, "disable_log_prefix"),
+                 &disable_log_prefix);
+  SetLogPrefix(disable_log_prefix);
 
-  param_name = prefix_ + "num_threads";
-  if (config_exists(param_name.c_str())) {
+  std::string param_name = ConfigName(prefix_, "num_threads");
+  if (ConfigExists(param_name)) {
     SetNumThreads(config_get_int(param_name.c_str()));
   }
 
-  param_name = prefix_ + "well_legalization_mode";
-  if (config_exists(param_name.c_str())) {
+  param_name = ConfigName(prefix_, "well_legalization_mode");
+  if (ConfigExists(param_name)) {
     std::string model_name = config_get_string(param_name.c_str());
     if (model_name == "scavenge") {
       well_legalization_mode_ = DefaultPartitionMode::SCAVENGE;
@@ -105,75 +138,26 @@ void Dali::LoadParamsFromConfig() {
     }
   }
 
-  param_name = prefix_ + "disable_global_place";
-  if (config_exists(param_name.c_str())) {
-    disable_global_place_ = config_get_int(param_name.c_str()) == 1;
-  }
-
-  param_name = prefix_ + "disable_legalization";
-  if (config_exists(param_name.c_str())) {
-    disable_legalization_ = config_get_int(param_name.c_str()) == 1;
-  }
-
-  param_name = prefix_ + "disable_io_place";
-  if (config_exists(param_name.c_str())) {
-    disable_io_place_ = config_get_int(param_name.c_str()) == 1;
-  }
-
-  param_name = prefix_ + "target_density";
-  if (config_exists(param_name.c_str())) {
-    target_density_ = config_get_real(param_name.c_str());
-  }
-
-  param_name = prefix_ + "io_metal_layer";
-  if (config_exists(param_name.c_str())) {
-    io_metal_layer_ = config_get_int(param_name.c_str());
-  }
-
-  param_name = prefix_ + "export_well_cluster_matlab";
-  if (config_exists(param_name.c_str())) {
-    export_well_cluster_matlab_ = config_get_int(param_name.c_str()) == 1;
-  }
-
-  param_name = prefix_ + "disable_welltap";
-  if (config_exists(param_name.c_str())) {
-    disable_welltap_ = config_get_int(param_name.c_str()) == 1;
-  }
-
-  param_name = prefix_ + "disable_cell_flip";
-  if (config_exists(param_name.c_str())) {
-    disable_cell_flip_ = config_get_int(param_name.c_str()) == 1;
-  }
-
-  param_name = prefix_ + "max_row_width";
-  if (config_exists(param_name.c_str())) {
-    max_row_width_ = config_get_real(param_name.c_str());
-  }
-
-  param_name = prefix_ + "is_standard_cell";
-  if (config_exists(param_name.c_str())) {
-    is_standard_cell_ = config_get_int(param_name.c_str()) == 1;
-  }
-
-  param_name = prefix_ + "enable_filler_cell";
-  if (config_exists(param_name.c_str())) {
-    enable_filler_cell_ = config_get_int(param_name.c_str()) == 1;
-  }
-
-  param_name = prefix_ + "enable_end_cap_cell";
-  if (config_exists(param_name.c_str())) {
-    enable_end_cap_cell_ = config_get_int(param_name.c_str()) == 1;
-  }
-
-  param_name = prefix_ + "enable_shrink_off_grid_die_area";
-  if (config_exists(param_name.c_str())) {
-    enable_shrink_off_grid_die_area_ = config_get_int(param_name.c_str()) == 1;
-  }
-
-  param_name = prefix_ + "output_name";
-  if (config_exists(param_name.c_str())) {
-    output_name_ = config_get_string(param_name.c_str());
-  }
+  LoadBoolConfig(ConfigName(prefix_, "disable_global_place"),
+                 &disable_global_place_);
+  LoadBoolConfig(ConfigName(prefix_, "disable_legalization"),
+                 &disable_legalization_);
+  LoadBoolConfig(ConfigName(prefix_, "disable_io_place"), &disable_io_place_);
+  LoadRealConfig(ConfigName(prefix_, "target_density"), &target_density_);
+  LoadIntConfig(ConfigName(prefix_, "io_metal_layer"), &io_metal_layer_);
+  LoadBoolConfig(ConfigName(prefix_, "export_well_cluster_matlab"),
+                 &export_well_cluster_matlab_);
+  LoadBoolConfig(ConfigName(prefix_, "disable_welltap"), &disable_welltap_);
+  LoadBoolConfig(ConfigName(prefix_, "disable_cell_flip"), &disable_cell_flip_);
+  LoadRealConfig(ConfigName(prefix_, "max_row_width"), &max_row_width_);
+  LoadBoolConfig(ConfigName(prefix_, "is_standard_cell"), &is_standard_cell_);
+  LoadBoolConfig(ConfigName(prefix_, "enable_filler_cell"),
+                 &enable_filler_cell_);
+  LoadBoolConfig(ConfigName(prefix_, "enable_end_cap_cell"),
+                 &enable_end_cap_cell_);
+  LoadBoolConfig(ConfigName(prefix_, "enable_shrink_off_grid_die_area"),
+                 &enable_shrink_off_grid_die_area_);
+  LoadStringConfig(ConfigName(prefix_, "output_name"), &output_name_);
 }
 
 void Dali::SetLogPrefix(bool disable_log_prefix) {
