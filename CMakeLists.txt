@@ -121,6 +121,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 file(
     GLOB_RECURSE SOURCES
     dali/dali.cc
+    dali/application/dali_command_line.cc
     dali/circuit/*.cc
     dali/common/*.cc
     dali/placer/*.cc
@@ -173,6 +174,7 @@ add_dali_executable(mhlg dali/application/multi_height_legalization.cc)
 # Tests
 # ------------------------------------------------------------------------------
 enable_testing()
+add_subdirectory(tests/application)
 add_subdirectory(tests/common)
 add_subdirectory(tests/placer)
 

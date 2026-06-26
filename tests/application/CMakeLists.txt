@@ -1,0 +1,20 @@
+cmake_minimum_required(VERSION 3.12)
+
+find_package(GTest QUIET)
+if (NOT GTest_FOUND)
+    message(STATUS "GoogleTest not found; skipping tests/application")
+    return()
+endif ()
+
+if (TARGET GTest::gtest_main)
+    set(DALI_GTEST_MAIN GTest::gtest_main)
+elseif (TARGET GTest::Main)
+    set(DALI_GTEST_MAIN GTest::Main)
+else ()
+    message(STATUS "GoogleTest main target not found; skipping tests/application")
+    return()
+endif ()
+
+add_executable(application_dali_command_line_test dali_command_line_test.cc)
+target_link_libraries(application_dali_command_line_test PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(NAME application_dali_command_line_test COMMAND application_dali_command_line_test)
