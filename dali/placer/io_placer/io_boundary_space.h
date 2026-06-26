@@ -21,6 +21,7 @@
 #ifndef DALI_PLACER_IO_PLACER_IO_BOUNDARY_SPACE_H_
 #define DALI_PLACER_IO_PLACER_IO_BOUNDARY_SPACE_H_
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
