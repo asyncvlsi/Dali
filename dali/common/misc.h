@@ -21,6 +21,7 @@
 #ifndef DALI_COMMON_MISC_H_
 #define DALI_COMMON_MISC_H_
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstdlib>

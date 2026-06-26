@@ -20,6 +20,8 @@
  ******************************************************************************/
 #include "io_placer.h"
 
+#include <algorithm>
+
 #include "dali/common/logging.h"
 #include "dali/common/phydb_helper.h"
 

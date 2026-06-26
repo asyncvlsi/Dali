@@ -20,6 +20,8 @@
  ******************************************************************************/
 #include "space_partitioner.h"
 
+#include <algorithm>
+
 namespace dali {
 
 void AbstractSpacePartitioner::SetCircuit(Circuit* circuit) {

@@ -20,6 +20,8 @@
  ******************************************************************************/
 #include "row_segment.h"
 
+#include <algorithm>
+
 #include "dali/common/helper.h"
 #include "dali/placer/well_legalizer/block_segment.h"
 #include "dali/placer/well_legalizer/legalizer_block_aux.h"

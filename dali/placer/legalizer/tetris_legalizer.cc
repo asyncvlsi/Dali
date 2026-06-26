@@ -20,6 +20,8 @@
  ******************************************************************************/
 #include "tetris_legalizer.h"
 
+#include <algorithm>
+
 #include "dali/common/misc.h"
 
 namespace dali {

@@ -20,6 +20,8 @@
  ******************************************************************************/
 #include "free_segment.h"
 
+#include <algorithm>
+
 namespace dali {
 
 FreeSegment::FreeSegment(int start, int stop) : start_(start), end_(stop) {

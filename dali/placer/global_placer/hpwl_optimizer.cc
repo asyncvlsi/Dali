@@ -21,6 +21,7 @@
 
 #include "hpwl_optimizer.h"
 
+#include <algorithm>
 #include <cfloat>
 
 #include "dali/common/elapsed_time.h"

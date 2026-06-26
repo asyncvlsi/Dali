@@ -20,6 +20,8 @@
  ******************************************************************************/
 #include "legalizer_block_aux.h"
 
+#include <algorithm>
+
 namespace dali {
 
 LegalizerBlockAux::LegalizerBlockAux(Block* blk_ptr) : BlockAux(blk_ptr) {

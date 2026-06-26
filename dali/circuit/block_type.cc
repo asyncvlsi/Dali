@@ -20,6 +20,8 @@
  ******************************************************************************/
 #include "block_type.h"
 
+#include <algorithm>
+
 namespace dali {
 
 BlockType::BlockType(std::string const* name_ptr) : name_ptr_(name_ptr) {}

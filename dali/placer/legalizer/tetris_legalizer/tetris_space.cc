@@ -20,6 +20,7 @@
  ******************************************************************************/
 #include "tetris_space.h"
 
+#include <algorithm>
 #include <cfloat>
 
 namespace dali {

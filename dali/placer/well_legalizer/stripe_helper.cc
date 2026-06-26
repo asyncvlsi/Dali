@@ -21,6 +21,8 @@
 
 #include "stripe_helper.h"
 
+#include <algorithm>
+
 namespace dali {
 
 void GenClusterTable(std::string const& name_of_file,

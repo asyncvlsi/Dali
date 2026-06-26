@@ -20,6 +20,7 @@
  ******************************************************************************/
 #include "helper.h"
 
+#include <algorithm>
 #include <array>
 
 #include "dali/circuit/io_pin.h"

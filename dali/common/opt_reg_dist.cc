@@ -20,6 +20,7 @@
  ******************************************************************************/
 #include "opt_reg_dist.h"
 
+#include <algorithm>
 #include <cfloat>
 
 namespace dali {

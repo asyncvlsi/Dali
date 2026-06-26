@@ -22,6 +22,7 @@
 
 #include <common/config.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <string>

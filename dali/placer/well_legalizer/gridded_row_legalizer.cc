@@ -20,6 +20,7 @@
  ******************************************************************************/
 #include "gridded_row_legalizer.h"
 
+#include <algorithm>
 #include <cmath>
 
 #include "dali/common/config.h"

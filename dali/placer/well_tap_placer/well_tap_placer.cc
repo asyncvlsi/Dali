@@ -20,6 +20,7 @@
  ******************************************************************************/
 #include "well_tap_placer.h"
 
+#include <algorithm>
 #include <fstream>
 
 namespace dali {
