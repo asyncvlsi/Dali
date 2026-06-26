@@ -5,6 +5,11 @@ jobs:
     docker:
       - image: ubuntu:22.04
     steps:
+      - run:
+          name: "Install checkout dependencies"
+          command: |
+            apt update -y
+            apt install -y git openssh-client
       - checkout:
           path: Dali
       - run:
@@ -62,6 +67,10 @@ jobs:
     docker:
       - image: centos:7
     steps:
+      - run:
+          name: "Install checkout dependencies"
+          command: |
+            yum install -y git openssh-clients
       - checkout:
           path: Dali
       - run:
