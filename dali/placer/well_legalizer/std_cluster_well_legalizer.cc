@@ -1113,56 +1113,46 @@ bool StdClusterWellLegalizer::WellLegalize() {
   return is_success;
 }
 
-bool StdClusterWellLegalizer::StartPlacement() {
-  PrintStartStatement("standard cluster well legalization");
-
-  // circuit_ptr_->GenMATLABWellTable("lg", false);
-
-  bool is_success = true;
-  InitializeWellLegalizer();
+bool StdClusterWellLegalizer::RunBlockClusteringStage() {
   LOG(info) << "Form block clustering\n";
-  // BlockClustering();
-  // is_success = BlockClusteringCompact();
-  is_success = BlockClusteringLoose();
+  bool is_success = BlockClusteringLoose();
   ReportHPWL();
   RecordPlacementMetric("well_legalization.block_clustering", WeightedHPWL());
-  // circuit_ptr_->GenMATLABWellTable("clu", false);
-  // GenMatlabClusterTable("clu_result");
+  return is_success;
+}
 
+void StdClusterWellLegalizer::RunClusterOrientationStage() {
   if (disable_cell_flip_) {
     LOG(info) << "Skip flipping cluster orientation\n";
-  } else {
-    LOG(info) << "Flip cluster orientation\n";
-    UpdateClusterOrient();
-    ReportHPWL();
-    RecordPlacementMetric("well_legalization.orientation", WeightedHPWL());
-    // circuit_ptr_->GenMATLABWellTable("ori", false);
-    // GenMatlabClusterTable("ori_result");
+    return;
   }
+  LOG(info) << "Flip cluster orientation\n";
+  UpdateClusterOrient();
+  ReportHPWL();
+  RecordPlacementMetric("well_legalization.orientation", WeightedHPWL());
+}
 
+void StdClusterWellLegalizer::RunLocalReorderingStage() {
   LOG(info) << "Perform local reordering\n";
   for (int i = 0; i < 6; ++i) {
     LOG(info) << "reorder iteration: " << i << "\n";
     LocalReorderAllClusters();
     ReportHPWL();
     RecordPlacementMetric("well_legalization.local_reorder", WeightedHPWL());
-    // LOG(info) << "optimization: " << i;
-    // SingleSegmentClusteringOptimization();
-    // ReportHPWL();
   }
-  // circuit_ptr_->GenMATLABWellTable("lop", false);
-  // GenMatlabClusterTable("lop_result");
+}
 
+void StdClusterWellLegalizer::RunWellTapStage() {
   if (disable_welltap_) {
     LOG(info) << "Skip inserting well tap cells\n";
   } else {
     LOG(info) << "Insert well tap cells\n";
     InsertWellTap();
-    // circuit_ptr_->GenMATLABWellTable("wtc", false);
-    // GenMatlabClusterTable("wtc_result");
   }
   RecordPlacementMetric("well_legalization.well_tap", WeightedHPWL());
+}
 
+void StdClusterWellLegalizer::RunEndCapStage() {
   if (enable_end_cap_cell_) {
     LOG(info) << "Create end cap cells\n";
     CreateEndCapCellTypes();
@@ -1170,9 +1160,19 @@ bool StdClusterWellLegalizer::StartPlacement() {
   } else {
     LOG(info) << "Skip creating end cap cells\n";
   }
+}
+
+bool StdClusterWellLegalizer::StartPlacement() {
+  PrintStartStatement("standard cluster well legalization");
+
+  InitializeWellLegalizer();
+  bool is_success = RunBlockClusteringStage();
+  RunClusterOrientationStage();
+  RunLocalReorderingStage();
+  RunWellTapStage();
+  RunEndCapStage();
 
   PrintEndStatement("Standard Cluster Well Legalization", is_success);
-  // ReportEffectiveSpaceUtilization();
 
   return is_success;
 }

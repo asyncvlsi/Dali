@@ -122,6 +122,12 @@ class StdClusterWellLegalizer : public Placer {
   void EmitClusterRect(std::string const& name_of_file);
 
  private:
+  bool RunBlockClusteringStage();
+  void RunClusterOrientationStage();
+  void RunLocalReorderingStage();
+  void RunWellTapStage();
+  void RunEndCapStage();
+
   bool is_first_row_orient_N_ = true;
 
   /**** well parameters ****/
