@@ -173,6 +173,29 @@ Circuit& Dali::GetCircuit() { return circuit_; }
 
 phydb::PhyDB* Dali::GetPhyDBPtr() { return phy_db_ptr_; }
 
+Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
+  return RuntimeOptions{
+      log_file_name_,
+      disable_log_prefix_,
+      num_threads_,
+      well_legalization_mode_,
+      disable_global_place_,
+      disable_legalization_,
+      disable_io_place_,
+      target_density_,
+      io_metal_layer_,
+      export_well_cluster_matlab_,
+      disable_welltap_,
+      disable_cell_flip_,
+      max_row_width_,
+      is_standard_cell_,
+      enable_filler_cell_,
+      enable_end_cap_cell_,
+      enable_shrink_off_grid_die_area_,
+      output_name_,
+  };
+}
+
 bool Dali::SetIoPlacerGlobalMetalLayer(std::string const& layer_name) {
   InitializeCircuitFromPhyDBIfNeeded();
   DaliExpects(io_placer_ != nullptr, "Please initialize I/O placer first");

@@ -24,6 +24,7 @@
 #include <phydb/phydb.h>
 
 #include <memory>
+#include <string>
 
 #include "dali/circuit/circuit.h"
 #include "dali/placer.h"
@@ -34,6 +35,28 @@ namespace dali {
 /** Main application facade that owns the circuit model and placement stages. */
 class Dali {
  public:
+  /** Read-only snapshot of Dali runtime options after config loading. */
+  struct RuntimeOptions {
+    std::string log_file_name;
+    bool disable_log_prefix = false;
+    int num_threads = 1;
+    DefaultPartitionMode well_legalization_mode = DefaultPartitionMode::STRICT;
+    bool disable_global_place = false;
+    bool disable_legalization = false;
+    bool disable_io_place = false;
+    double target_density = -1;
+    int io_metal_layer = 0;
+    bool export_well_cluster_matlab = false;
+    bool disable_welltap = false;
+    bool disable_cell_flip = false;
+    double max_row_width = 0;
+    bool is_standard_cell = false;
+    bool enable_filler_cell = false;
+    bool enable_end_cap_cell = false;
+    bool enable_shrink_off_grid_die_area = false;
+    std::string output_name = "dali_out";
+  };
+
   Dali(phydb::PhyDB* phy_db_ptr, const std::string& severity_level,
        const std::string& log_file_name = "");
   Dali(phydb::PhyDB* phy_db_ptr, severity severity_level,
@@ -49,6 +72,7 @@ class Dali {
 
   Circuit& GetCircuit();
   phydb::PhyDB* GetPhyDBPtr();
+  RuntimeOptions GetRuntimeOptions() const;
 
   bool SetIoPlacerGlobalMetalLayer(std::string const& layer_name);
   bool ConfigIoPlacer();
