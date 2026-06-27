@@ -26,7 +26,7 @@
 #include <vector>
 
 #include "block.h"
-#include "dali/common/named_instance_collection.h"
+#include "dali/common/named_instance_registry.h"
 #include "die_area.h"
 #include "io_pin.h"
 #include "net.h"
@@ -121,22 +121,20 @@ class Design {
   };
 
   /** Return regular block collection. */
-  NamedInstanceCollection<Block>& BlockCollection() {
-    return block_collection_;
-  }
+  NamedInstanceRegistry<Block>& BlockCollection() { return block_collection_; }
 
   /** Return well tap cell collection. */
-  NamedInstanceCollection<Block>& WellTapCellCollection() {
+  NamedInstanceRegistry<Block>& WellTapCellCollection() {
     return well_tap_cell_collection_;
   }
 
   /** Return filler cell collection. */
-  NamedInstanceCollection<Block>& FillerCellCollection() {
+  NamedInstanceRegistry<Block>& FillerCellCollection() {
     return filler_cell_collection_;
   };
 
   /** Return end-cap cell collection. */
-  NamedInstanceCollection<Block>& EndCapCellCollection() {
+  NamedInstanceRegistry<Block>& EndCapCellCollection() {
     return end_cap_cell_collection_;
   }
 
@@ -185,10 +183,10 @@ class Design {
   DieArea die_area_;
 
   /****list of instances****/
-  NamedInstanceCollection<Block> block_collection_;
-  NamedInstanceCollection<Block> well_tap_cell_collection_;
-  NamedInstanceCollection<Block> filler_cell_collection_;
-  NamedInstanceCollection<Block> end_cap_cell_collection_;
+  NamedInstanceRegistry<Block> block_collection_;
+  NamedInstanceRegistry<Block> well_tap_cell_collection_;
+  NamedInstanceRegistry<Block> filler_cell_collection_;
+  NamedInstanceRegistry<Block> end_cap_cell_collection_;
   // number of blocks added by calling the AddBlock() API
   int real_block_count_ = 0;
   // number of blocks given in DEF, these two numbers are supposed to be the

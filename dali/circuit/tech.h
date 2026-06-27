@@ -31,7 +31,7 @@
 
 #include "block.h"
 #include "block_type.h"
-#include "dali/common/named_instance_collection.h"
+#include "dali/common/named_instance_registry.h"
 #include "layer.h"
 
 namespace dali {
@@ -77,12 +77,12 @@ class Tech {
   std::vector<BlockType>& BlockTypes();
 
   /** Return the named collection for standard block types. */
-  NamedInstanceCollection<BlockType>& BlockTypeCollection() {
+  NamedInstanceRegistry<BlockType>& BlockTypeCollection() {
     return block_type_collection_;
   }
 
   /** Return the named collection for generated end-cap cell types. */
-  NamedInstanceCollection<BlockType>& EndCapCellTypeCollection() {
+  NamedInstanceRegistry<BlockType>& EndCapCellTypeCollection() {
     return end_cap_cell_type_collection_;
   }
 
@@ -116,14 +116,14 @@ class Tech {
   std::unordered_map<std::string, int> metal_name_map_;
 
   /**** macros ****/
-  NamedInstanceCollection<BlockType> block_type_collection_;
+  NamedInstanceRegistry<BlockType> block_type_collection_;
   BlockType* io_dummy_blk_type_ptr_ = nullptr;
   std::vector<int> well_tap_cell_type_ids_;
   std::vector<std::unique_ptr<BlockType>> filler_ptrs_;
   // pre and post end cap cell types are for standard cell placement
   BlockType* pre_end_cap_cell_ptr_ = nullptr;
   BlockType* post_end_cap_cell_ptr_ = nullptr;
-  NamedInstanceCollection<BlockType> end_cap_cell_type_collection_;
+  NamedInstanceRegistry<BlockType> end_cap_cell_type_collection_;
 
   /**** row height ****/
   double row_height_ = 0;

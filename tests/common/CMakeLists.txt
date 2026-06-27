@@ -23,4 +23,6 @@ endfunction()
 
 add_dali_unit_test(common_misc_test misc_test.cc)
 add_dali_unit_test(common_logging_parallel_test logging_parallel_test.cc)
+add_dali_unit_test(common_named_instance_registry_test
+                   named_instance_registry_test.cc)
 add_dali_unit_test(common_placement_metrics_test placement_metrics_test.cc)

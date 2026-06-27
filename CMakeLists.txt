@@ -133,7 +133,7 @@ add_library(
     dalilib
     STATIC
     ${SOURCES}
-    dali/common/named_instance_collection.h
+    dali/common/named_instance_registry.h
 )
 
 if (DEFINED NEED_LIBCXXFS)

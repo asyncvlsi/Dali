@@ -607,12 +607,11 @@ size_t GriddedRow::AddWellTapCells(Circuit* p_ckt, BlockType* well_tap_type_ptr,
   BlockOrient orient = is_orient_N_ ? N : FS;
   for (auto& [lo_x, hi_x] : well_tap_cell_locs) {
     std::string block_name = "__well_tap__" + std::to_string(start_id++);
-    Block& tap_cell =
-        p_ckt->design().WellTapCellCollection().CreateInstance(block_name);
+    auto [tap_cell, tap_cell_id] =
+        p_ckt->design().WellTapCellCollection().CreateWithId(block_name);
     tap_cell.SetPlacementStatus(PLACED);
     tap_cell.SetType(well_tap_type_ptr);
-    tap_cell.SetId(p_ckt->design().WellTapCellCollection().GetInstanceIdByName(
-        block_name));
+    tap_cell.SetId(static_cast<int>(tap_cell_id));
     tap_cell.SetLLX(lo_x);
     tap_cell.SetLLY(y_loc);
     tap_cell.SetOrient(orient);

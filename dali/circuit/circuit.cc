@@ -794,8 +794,7 @@ int Circuit::CreateEndCapCellType(std::string const& end_cap_cell_type_name,
                                   int p_well_height_in_grid_unit) {
   // Create a new BlockType for the end-cap cell type
   auto& new_end_cap_cell_type =
-      tech_.end_cap_cell_type_collection_.CreateInstance(
-          end_cap_cell_type_name);
+      tech_.end_cap_cell_type_collection_.Create(end_cap_cell_type_name);
 
   // Calculate the total height
   int height = n_well_height_in_grid_unit + p_well_height_in_grid_unit;
@@ -1996,8 +1995,7 @@ BlockType* Circuit::AddBlockTypeWithGridUnit(std::string const& block_type_name,
               "BlockType exist, cannot create this block type again: " +
                   block_type_name);
 
-  BlockType& block_type =
-      tech_.block_type_collection_.CreateInstance(block_type_name);
+  BlockType& block_type = tech_.block_type_collection_.Create(block_type_name);
   block_type.SetSize(width, height);
 
   if (block_type.Area() > INT_MAX) {
@@ -2079,14 +2077,13 @@ void Circuit::AddBlock(std::string const& block_name, BlockType* block_type_ptr,
               "Cannot add new Block, because block list is full");
   DaliExpects(!IsBlockExisting(block_name),
               "Block exists, cannot create this block again: " + block_name);
-  int id = static_cast<int>(design_.BlockNameIdMap().size());
-  if (id < 0 || id > INT_MAX) {
-    DaliExpects(false, "Cannot add more blocks, the limit is INT_MAX");
-  }
+  size_t next_block_id = design_.BlockCollection().GetSize();
+  DaliExpects(next_block_id <= static_cast<size_t>(INT_MAX),
+              "Cannot add more blocks, the limit is INT_MAX");
 
-  Block& block = design_.block_collection_.CreateInstance(block_name);
+  auto [block, block_id] = design_.block_collection_.CreateWithId(block_name);
   block.SetType(block_type_ptr);
-  block.SetId(design_.block_collection_.GetInstanceIdByName(block_name));
+  block.SetId(static_cast<int>(block_id));
   block.SetLLX(llx);
   block.SetLLY(lly);
   block.SetPlacementStatus(place_status);

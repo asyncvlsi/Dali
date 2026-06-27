@@ -939,14 +939,12 @@ void StdClusterWellLegalizer::InsertWellTap() {
         int tap_cell_loc = row.LLX() - well_tap_cell_ptr_->Width() / 2;
         for (int i = 0; i < tap_cell_num; ++i) {
           std::string block_name = "__well_tap__" + std::to_string(counter++);
-          Block& tap_cell =
-              ckt_ptr_->design().WellTapCellCollection().CreateInstance(
+          auto [tap_cell, tap_cell_id] =
+              ckt_ptr_->design().WellTapCellCollection().CreateWithId(
                   block_name);
           tap_cell.SetPlacementStatus(PLACED);
           tap_cell.SetType(well_tap_cell_ptr_);
-          tap_cell.SetId(
-              ckt_ptr_->design().WellTapCellCollection().GetInstanceIdByName(
-                  block_name));
+          tap_cell.SetId(static_cast<int>(tap_cell_id));
           row.InsertWellTapCell(tap_cell, tap_cell_loc);
           tap_cell_loc += step;
         }
@@ -1033,14 +1031,12 @@ void StdClusterWellLegalizer::InsertEndCapCells() {
             row.LLX() - pre_end_cap_cell_type_ptr->Width() / 2;
         std::string pre_end_cap_cell_name =
             "__pre_end_cap_cell__" + std::to_string(row_counter);
-        Block& pre_end_cap_cell =
-            ckt_ptr_->design().EndCapCellCollection().CreateInstance(
+        auto [pre_end_cap_cell, pre_end_cap_cell_id] =
+            ckt_ptr_->design().EndCapCellCollection().CreateWithId(
                 pre_end_cap_cell_name);
         pre_end_cap_cell.SetPlacementStatus(PLACED);
         pre_end_cap_cell.SetType(pre_end_cap_cell_type_ptr);
-        pre_end_cap_cell.SetId(
-            ckt_ptr_->design().EndCapCellCollection().GetInstanceIdByName(
-                pre_end_cap_cell_name));
+        pre_end_cap_cell.SetId(static_cast<int>(pre_end_cap_cell_id));
         row.InsertWellTapCell(pre_end_cap_cell, pre_end_cap_cell_loc);
 
         // Create post end cap cell
@@ -1053,14 +1049,12 @@ void StdClusterWellLegalizer::InsertEndCapCells() {
             row.URX() + post_end_cap_cell_type_ptr->Width() / 2;
         std::string post_end_cap_cell_name =
             "__post_end_cap_cell__" + std::to_string(row_counter);
-        Block& post_end_cap_cell =
-            ckt_ptr_->design().EndCapCellCollection().CreateInstance(
+        auto [post_end_cap_cell, post_end_cap_cell_id] =
+            ckt_ptr_->design().EndCapCellCollection().CreateWithId(
                 post_end_cap_cell_name);
         post_end_cap_cell.SetPlacementStatus(PLACED);
         post_end_cap_cell.SetType(post_end_cap_cell_type_ptr);
-        post_end_cap_cell.SetId(
-            ckt_ptr_->design().EndCapCellCollection().GetInstanceIdByName(
-                post_end_cap_cell_name));
+        post_end_cap_cell.SetId(static_cast<int>(post_end_cap_cell_id));
         row.InsertWellTapCell(post_end_cap_cell, post_end_cap_cell_loc);
 
         total_num_end_cap_cells += 2;
