@@ -90,13 +90,23 @@ class Tech {
 
   /** Return minimum pre-end-cap width in Dali grid units. */
   int PreEndCapMinWidth() const;
+
+  /** Return minimum pre-end-cap P-well height in Dali grid units. */
   int PreEndCapMinPHeight() const;
+
+  /** Return minimum pre-end-cap N-well height in Dali grid units. */
   int PreEndCapMinNHeight() const;
+
+  /** Return minimum post-end-cap width in Dali grid units. */
   int PostEndCapMinWidth() const;
+
+  /** Return minimum post-end-cap P-well height in Dali grid units. */
   int PostEndCapMinPHeight() const;
+
+  /** Return minimum post-end-cap N-well height in Dali grid units. */
   int PostEndCapMinNHeight() const;
 
-  // print information
+  /** Log technology layer information for debugging. */
   void Report() const;
 
  private:
@@ -132,8 +142,8 @@ class Tech {
   bool p_set_ = false;
   WellLayer nwell_layer_;
   WellLayer pwell_layer_;
-  double same_diff_spacing_;
-  double any_diff_spacing_;
+  double same_diff_spacing_ = -1;
+  double any_diff_spacing_ = -1;
 
   /**** end cap width and height info ****/
   std::optional<double> pre_end_cap_min_width_ = std::nullopt;
