@@ -67,7 +67,6 @@ class WellLegalizer : public ExtendedTetrisLegalizer {
 
   double k_distance_ = 1;
   double k_min_width_ = 1;
-  double well_mis_align_cost_factor_;
 
  public:
   WellLegalizer();

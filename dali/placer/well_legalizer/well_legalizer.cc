@@ -1019,7 +1019,6 @@ bool WellLegalizer::StartPlacement() {
   bool is_success = false;
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     LOG(info) << "Current iteration: " << cur_iter_ << "\n";
-    // well_mis_align_cost_factor_ = cur_iter_ + 1;
     if (legalize_from_left_) {
       is_success = WellLegalizationLeft();
     } else {
