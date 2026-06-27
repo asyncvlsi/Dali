@@ -65,10 +65,10 @@ class Net {
   /** Return net weight used by wirelength metrics. */
   double Weight() const;
 
-  /** Return total connected component and I/O pin count. */
+  /** Return connected component-pin count used by placement models. */
   size_t PinCnt() const;
 
-  /** Return 1/(p-1), where p is PinCnt(). */
+  /** Return cached weighted 1/(p-1), where p is PinCnt(). */
   double InvP() const;
 
   /** Attach auxiliary data owned by a downstream algorithm. */
@@ -97,82 +97,88 @@ class Net {
   /** Update cached min/max pin indices in both dimensions. */
   void UpdateMaxMinIndex();
 
-  // get the index of the ComponentPin pair with the maximum x location
+  /** Return index of the component pin with maximum absolute x location. */
   int MaxComponentPinIdX() const;
 
-  // get the index of the ComponentPin pair with the minimum x location
+  /** Return index of the component pin with minimum absolute x location. */
   int MinComponentPinIdX() const;
 
-  // get the index of the ComponentPin pair with the maximum y location
+  /** Return index of the component pin with maximum absolute y location. */
   int MaxComponentPinIdY() const;
 
-  // get the index of the ComponentPin pair with the minimum y location
+  /** Return index of the component pin with minimum absolute y location. */
   int MinComponentPinIdY() const;
 
-  // get the Component pointer of the ComponentPin pair with the maximum x
-  // location
+  /** Return component pointer for the maximum-x component pin. */
   Component* MaxComponentPtrX() const;
 
-  // get the Component pointer of the ComponentPin pair with the minimum x
-  // location
+  /** Return component pointer for the minimum-x component pin. */
   Component* MinComponentPtrX() const;
 
-  // get the Component pointer of the ComponentPin pair with the maximum y
-  // location
+  /** Return component pointer for the maximum-y component pin. */
   Component* MaxComponentPtrY() const;
 
-  // get the Component pointer of the ComponentPin pair with the minimum y
-  // location
+  /** Return component pointer for the minimum-y component pin. */
   Component* MinComponentPtrY() const;
 
-  // get the weighted HPWLX of this net
+  /** Return weighted x-direction HPWL for component pins. */
   double WeightedHPWLX();
 
-  // get the weight HPWLY of this net
+  /** Return weighted y-direction HPWL for component pins. */
   double WeightedHPWLY();
 
-  // get the weight HPWL of this net
+  /** Return weighted HPWL for component pins. */
   double WeightedHPWL();
 
-  // get the weighted bounding box of this net
+  /** Return weighted x span of component pin bounding boxes. */
   double WeightedBboxX();
 
-  // get the weight bounding box of this net
+  /** Return weighted y span of component pin bounding boxes. */
   double WeightedBboxY();
 
-  // get the weight bounding box of this net
+  /** Return weighted bounding box span for component pin shapes. */
   double WeightedBbox();
 
-  // get the lower x bound of this net
+  /** Return cached lower x bound after UpdateMaxMinIdX(). */
   double MinX() const;
 
-  // get the upper x bound of this net
+  /** Return cached upper x bound after UpdateMaxMinIdX(). */
   double MaxX() const;
 
-  // get the lower y bound of this net
+  /** Return cached lower y bound after UpdateMaxMinIdY(). */
   double MinY() const;
 
-  // get the upper y bound of this net
+  /** Return cached upper y bound after UpdateMaxMinIdY(). */
   double MaxY() const;
 
+  /** Update cached extreme component centers in x direction. */
   void UpdateMaxMinCtoCX();
 
+  /** Update cached extreme component centers in y direction. */
   void UpdateMaxMinCtoCY();
 
+  /** Update cached extreme component-pin locations in both directions. */
   void UpdateMaxMinCtoC();
 
+  /** Return index of component pin with maximum component-center x. */
   int MaxPinCtoCX();
 
+  /** Return index of component pin with minimum component-center x. */
   int MinPinCtoCX();
 
+  /** Return index of component pin with maximum component-center y. */
   int MaxPinCtoCY();
 
+  /** Return index of component pin with minimum component-center y. */
   int MinPinCtoCY();
 
+  /** Return weighted x-direction HPWL using component centers. */
   double HPWLCtoCX();
 
+  /** Return weighted y-direction HPWL using component centers. */
   double HPWLCtoCY();
 
+  /** Return weighted HPWL using component centers. */
   double HPWLCtoC();
 
  protected:
@@ -182,10 +188,10 @@ class Net {
   std::vector<NetPin> component_pins_;
   std::vector<IoPin*> iopin_ptrs_;
 
-  // cached data
+  // Cached extreme component-pin indices.
   int max_x_pin_id_, min_x_pin_id_;
   int max_y_pin_id_, min_y_pin_id_;
-  // 1.0/(p-1), where p is the number of pins connected by this net
+  // weight_/(p-1), where p is the number of connected component pins.
   double inv_p_;
   int driver_pin_index = -1;
 
