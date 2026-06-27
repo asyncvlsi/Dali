@@ -242,8 +242,8 @@ class StarHpwlHpwlOptimizer : public B2BHpwlOptimizer {
   void UpdateAnchorAlpha() override;
 
  private:
-  std::vector<ComponentPairNets> blk_pair_net_list_;
-  std::unordered_map<PairEgId, EgId, boost::hash<PairEgId>> blk_pair_map_;
+  std::vector<ComponentPairNets> component_pair_net_list_;
+  std::unordered_map<PairEgId, EgId, boost::hash<PairEgId>> component_pair_map_;
 };
 
 }  // namespace dali

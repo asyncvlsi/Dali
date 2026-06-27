@@ -135,65 +135,70 @@ void B2BHpwlOptimizer::BuildProblemX() {
     int max_pin_index = net.MaxComponentPinIdX();
     int min_pin_index = net.MinComponentPinIdX();
 
-    int blk_num_max = net.ComponentPins()[max_pin_index].ComponentId();
+    int max_component_id = net.ComponentPins()[max_pin_index].ComponentId();
     double pin_loc_max = net.ComponentPins()[max_pin_index].AbsX();
     bool is_movable_max =
         net.ComponentPins()[max_pin_index].ComponentPtr()->IsMovable();
     double offset_max = net.ComponentPins()[max_pin_index].OffsetX();
 
-    int blk_num_min = net.ComponentPins()[min_pin_index].ComponentId();
+    int min_component_id = net.ComponentPins()[min_pin_index].ComponentId();
     double pin_loc_min = net.ComponentPins()[min_pin_index].AbsX();
     bool is_movable_min =
         net.ComponentPins()[min_pin_index].ComponentPtr()->IsMovable();
     double offset_min = net.ComponentPins()[min_pin_index].OffsetX();
 
     for (auto& pair : net.ComponentPins()) {
-      int blk_num = pair.ComponentId();
+      int component_id = pair.ComponentId();
       double pin_loc = pair.AbsX();
       bool is_movable = pair.ComponentPtr()->IsMovable();
       double offset = pair.OffsetX();
 
-      if (blk_num != blk_num_max) {
+      if (component_id != max_component_id) {
         double distance = std::fabs(pin_loc - pin_loc_max);
         double weight = inv_p / (distance + width_epsilon_);
         // weight_adjust = base_factor + adjust_factor * (1 - exp(-distance /
         // decay_length)); weight *= weight_adjust;
         if (!is_movable && is_movable_max) {
-          bx[blk_num_max] += (pin_loc - offset_max) * weight;
-          coefficients_x_.emplace_back(blk_num_max, blk_num_max, weight);
+          bx[max_component_id] += (pin_loc - offset_max) * weight;
+          coefficients_x_.emplace_back(max_component_id, max_component_id,
+                                       weight);
         } else if (is_movable && !is_movable_max) {
-          bx[blk_num] += (pin_loc_max - offset) * weight;
-          coefficients_x_.emplace_back(blk_num, blk_num, weight);
+          bx[component_id] += (pin_loc_max - offset) * weight;
+          coefficients_x_.emplace_back(component_id, component_id, weight);
         } else if (is_movable && is_movable_max) {
-          coefficients_x_.emplace_back(blk_num, blk_num, weight);
-          coefficients_x_.emplace_back(blk_num_max, blk_num_max, weight);
-          coefficients_x_.emplace_back(blk_num, blk_num_max, -weight);
-          coefficients_x_.emplace_back(blk_num_max, blk_num, -weight);
+          coefficients_x_.emplace_back(component_id, component_id, weight);
+          coefficients_x_.emplace_back(max_component_id, max_component_id,
+                                       weight);
+          coefficients_x_.emplace_back(component_id, max_component_id, -weight);
+          coefficients_x_.emplace_back(max_component_id, component_id, -weight);
           double offset_diff = (offset_max - offset) * weight;
-          bx[blk_num] += offset_diff;
-          bx[blk_num_max] -= offset_diff;
+          bx[component_id] += offset_diff;
+          bx[max_component_id] -= offset_diff;
         }
       }
 
-      if ((blk_num != blk_num_max) && (blk_num != blk_num_min)) {
+      if ((component_id != max_component_id) &&
+          (component_id != min_component_id)) {
         double distance = std::fabs(pin_loc - pin_loc_min);
         double weight = inv_p / (distance + width_epsilon_);
         // weight_adjust = adjust_factor * (1 - exp(-distance / decay_length));
         // weight *= weight_adjust;
         if (!is_movable && is_movable_min) {
-          bx[blk_num_min] += (pin_loc - offset_min) * weight;
-          coefficients_x_.emplace_back(blk_num_min, blk_num_min, weight);
+          bx[min_component_id] += (pin_loc - offset_min) * weight;
+          coefficients_x_.emplace_back(min_component_id, min_component_id,
+                                       weight);
         } else if (is_movable && !is_movable_min) {
-          bx[blk_num] += (pin_loc_min - offset) * weight;
-          coefficients_x_.emplace_back(blk_num, blk_num, weight);
+          bx[component_id] += (pin_loc_min - offset) * weight;
+          coefficients_x_.emplace_back(component_id, component_id, weight);
         } else if (is_movable && is_movable_min) {
-          coefficients_x_.emplace_back(blk_num, blk_num, weight);
-          coefficients_x_.emplace_back(blk_num_min, blk_num_min, weight);
-          coefficients_x_.emplace_back(blk_num, blk_num_min, -weight);
-          coefficients_x_.emplace_back(blk_num_min, blk_num, -weight);
+          coefficients_x_.emplace_back(component_id, component_id, weight);
+          coefficients_x_.emplace_back(min_component_id, min_component_id,
+                                       weight);
+          coefficients_x_.emplace_back(component_id, min_component_id, -weight);
+          coefficients_x_.emplace_back(min_component_id, component_id, -weight);
           double offset_diff = (offset_min - offset) * weight;
-          bx[blk_num] += offset_diff;
-          bx[blk_num_min] -= offset_diff;
+          bx[component_id] += offset_diff;
+          bx[min_component_id] -= offset_diff;
         }
       }
     }
@@ -246,65 +251,70 @@ void B2BHpwlOptimizer::BuildProblemY() {
     int max_pin_index = net.MaxComponentPinIdY();
     int min_pin_index = net.MinComponentPinIdY();
 
-    int blk_num_max = net.ComponentPins()[max_pin_index].ComponentId();
+    int max_component_id = net.ComponentPins()[max_pin_index].ComponentId();
     double pin_loc_max = net.ComponentPins()[max_pin_index].AbsY();
     bool is_movable_max =
         net.ComponentPins()[max_pin_index].ComponentPtr()->IsMovable();
     double offset_max = net.ComponentPins()[max_pin_index].OffsetY();
 
-    int blk_num_min = net.ComponentPins()[min_pin_index].ComponentId();
+    int min_component_id = net.ComponentPins()[min_pin_index].ComponentId();
     double pin_loc_min = net.ComponentPins()[min_pin_index].AbsY();
     bool is_movable_min =
         net.ComponentPins()[min_pin_index].ComponentPtr()->IsMovable();
     double offset_min = net.ComponentPins()[min_pin_index].OffsetY();
 
     for (auto& pair : net.ComponentPins()) {
-      int blk_num = pair.ComponentId();
+      int component_id = pair.ComponentId();
       double pin_loc = pair.AbsY();
       bool is_movable = pair.ComponentPtr()->IsMovable();
       double offset = pair.OffsetY();
 
-      if (blk_num != blk_num_max) {
+      if (component_id != max_component_id) {
         double distance = std::fabs(pin_loc - pin_loc_max);
         double weight = inv_p / (distance + height_epsilon_);
         // weight_adjust = base_factor + adjust_factor * (1 - exp(-distance /
         // decay_length)); weight *= weight_adjust;
         if (!is_movable && is_movable_max) {
-          by[blk_num_max] += (pin_loc - offset_max) * weight;
-          coefficients_y_.emplace_back(blk_num_max, blk_num_max, weight);
+          by[max_component_id] += (pin_loc - offset_max) * weight;
+          coefficients_y_.emplace_back(max_component_id, max_component_id,
+                                       weight);
         } else if (is_movable && !is_movable_max) {
-          by[blk_num] += (pin_loc_max - offset) * weight;
-          coefficients_y_.emplace_back(blk_num, blk_num, weight);
+          by[component_id] += (pin_loc_max - offset) * weight;
+          coefficients_y_.emplace_back(component_id, component_id, weight);
         } else if (is_movable && is_movable_max) {
-          coefficients_y_.emplace_back(blk_num, blk_num, weight);
-          coefficients_y_.emplace_back(blk_num_max, blk_num_max, weight);
-          coefficients_y_.emplace_back(blk_num, blk_num_max, -weight);
-          coefficients_y_.emplace_back(blk_num_max, blk_num, -weight);
+          coefficients_y_.emplace_back(component_id, component_id, weight);
+          coefficients_y_.emplace_back(max_component_id, max_component_id,
+                                       weight);
+          coefficients_y_.emplace_back(component_id, max_component_id, -weight);
+          coefficients_y_.emplace_back(max_component_id, component_id, -weight);
           double offset_diff = (offset_max - offset) * weight;
-          by[blk_num] += offset_diff;
-          by[blk_num_max] -= offset_diff;
+          by[component_id] += offset_diff;
+          by[max_component_id] -= offset_diff;
         }
       }
 
-      if ((blk_num != blk_num_max) && (blk_num != blk_num_min)) {
+      if ((component_id != max_component_id) &&
+          (component_id != min_component_id)) {
         double distance = std::fabs(pin_loc - pin_loc_min);
         double weight = inv_p / (distance + height_epsilon_);
         // weight_adjust = adjust_factor * (1 - exp(-distance / decay_length));
         // weight *= weight_adjust;
         if (!is_movable && is_movable_min) {
-          by[blk_num_min] += (pin_loc - offset_min) * weight;
-          coefficients_y_.emplace_back(blk_num_min, blk_num_min, weight);
+          by[min_component_id] += (pin_loc - offset_min) * weight;
+          coefficients_y_.emplace_back(min_component_id, min_component_id,
+                                       weight);
         } else if (is_movable && !is_movable_min) {
-          by[blk_num] += (pin_loc_min - offset) * weight;
-          coefficients_y_.emplace_back(blk_num, blk_num, weight);
+          by[component_id] += (pin_loc_min - offset) * weight;
+          coefficients_y_.emplace_back(component_id, component_id, weight);
         } else if (is_movable && is_movable_min) {
-          coefficients_y_.emplace_back(blk_num, blk_num, weight);
-          coefficients_y_.emplace_back(blk_num_min, blk_num_min, weight);
-          coefficients_y_.emplace_back(blk_num, blk_num_min, -weight);
-          coefficients_y_.emplace_back(blk_num_min, blk_num, -weight);
+          coefficients_y_.emplace_back(component_id, component_id, weight);
+          coefficients_y_.emplace_back(min_component_id, min_component_id,
+                                       weight);
+          coefficients_y_.emplace_back(component_id, min_component_id, -weight);
+          coefficients_y_.emplace_back(min_component_id, component_id, -weight);
           double offset_diff = (offset_min - offset) * weight;
-          by[blk_num] += offset_diff;
-          by[blk_num_min] -= offset_diff;
+          by[component_id] += offset_diff;
+          by[min_component_id] -= offset_diff;
         }
       }
     }
@@ -524,17 +534,17 @@ void B2BHpwlOptimizer::PullComponentBackToRegion() {
         if (vx[i] < region_llx) {
           vx[i] = region_llx;
         }
-        double blk_hi_bound_x = region_urx - component_list[i].Width();
-        if (vx[i] > blk_hi_bound_x) {
-          vx[i] = blk_hi_bound_x;
+        double component_hi_bound_x = region_urx - component_list[i].Width();
+        if (vx[i] > component_hi_bound_x) {
+          vx[i] = component_hi_bound_x;
         }
 
         if (vy[i] < region_lly) {
           vy[i] = region_lly;
         }
-        double blk_hi_bound_y = region_ury - component_list[i].Height();
-        if (vy[i] > blk_hi_bound_y) {
-          vy[i] = blk_hi_bound_y;
+        double component_hi_bound_y = region_ury - component_list[i].Height();
+        if (vy[i] > component_hi_bound_y) {
+          vy[i] = component_hi_bound_y;
         }
       }
     }
@@ -845,17 +855,17 @@ void StarHpwlOptimizer::BuildProblemX() {
     double inv_p = net.InvP();
 
     // assuming the 0-th pin in the net is the driver pin
-    int driver_blk_num = net.ComponentPins()[0].ComponentId();
+    int driver_component_id = net.ComponentPins()[0].ComponentId();
     double driver_pin_loc = net.ComponentPins()[0].AbsX();
     bool driver_is_movable = net.ComponentPins()[0].ComponentPtr()->IsMovable();
     double driver_offset = net.ComponentPins()[0].OffsetX();
 
     for (auto& pair : net.ComponentPins()) {
-      int blk_num = pair.ComponentId();
+      int component_id = pair.ComponentId();
       double pin_loc = pair.AbsX();
       bool is_movable = pair.ComponentPtr()->IsMovable();
 
-      if (blk_num != driver_blk_num) {
+      if (component_id != driver_component_id) {
         double distance = std::fabs(pin_loc - driver_pin_loc);
         // weight_adjust = base_factor + adjust_factor * (1 - exp(-distance /
         // decay_length)); weight = inv_p / (distance + width_epsilon_) *
@@ -863,18 +873,22 @@ void StarHpwlOptimizer::BuildProblemX() {
         double weight = inv_p / (distance + width_epsilon_);
         if (!is_movable && driver_is_movable) {
           bx[0] += (pin_loc - driver_offset) * weight;
-          coefficients_x_.emplace_back(driver_blk_num, driver_blk_num, weight);
+          coefficients_x_.emplace_back(driver_component_id, driver_component_id,
+                                       weight);
         } else if (is_movable && !driver_is_movable) {
-          bx[blk_num] += (driver_pin_loc - driver_offset) * weight;
-          coefficients_x_.emplace_back(blk_num, blk_num, weight);
+          bx[component_id] += (driver_pin_loc - driver_offset) * weight;
+          coefficients_x_.emplace_back(component_id, component_id, weight);
         } else if (is_movable && driver_is_movable) {
-          coefficients_x_.emplace_back(blk_num, blk_num, weight);
-          coefficients_x_.emplace_back(driver_blk_num, driver_blk_num, weight);
-          coefficients_x_.emplace_back(blk_num, driver_blk_num, -weight);
-          coefficients_x_.emplace_back(driver_blk_num, blk_num, -weight);
+          coefficients_x_.emplace_back(component_id, component_id, weight);
+          coefficients_x_.emplace_back(driver_component_id, driver_component_id,
+                                       weight);
+          coefficients_x_.emplace_back(component_id, driver_component_id,
+                                       -weight);
+          coefficients_x_.emplace_back(driver_component_id, component_id,
+                                       -weight);
           double offset_diff = (driver_offset - pair.OffsetX()) * weight;
-          bx[blk_num] += offset_diff;
-          bx[driver_blk_num] -= offset_diff;
+          bx[component_id] += offset_diff;
+          bx[driver_component_id] -= offset_diff;
         }
       }
     }
@@ -926,17 +940,17 @@ void StarHpwlOptimizer::BuildProblemY() {
     double inv_p = net.InvP();
 
     // assuming the 0-th pin in the net is the driver pin
-    int driver_blk_num = net.ComponentPins()[0].ComponentId();
+    int driver_component_id = net.ComponentPins()[0].ComponentId();
     double driver_pin_loc = net.ComponentPins()[0].AbsY();
     bool driver_is_movable = net.ComponentPins()[0].ComponentPtr()->IsMovable();
     double driver_offset = net.ComponentPins()[0].OffsetY();
 
     for (auto& pair : net.ComponentPins()) {
-      int blk_num = pair.ComponentId();
+      int component_id = pair.ComponentId();
       double pin_loc = pair.AbsY();
       bool is_movable = pair.ComponentPtr()->IsMovable();
 
-      if (blk_num != driver_blk_num) {
+      if (component_id != driver_component_id) {
         double distance = std::fabs(pin_loc - driver_pin_loc);
         // weight_adjust = base_factor + adjust_factor * (1 - exp(-distance /
         // decay_length)); weight = inv_p / (distance + height_epsilon_) *
@@ -944,18 +958,22 @@ void StarHpwlOptimizer::BuildProblemY() {
         double weight = inv_p / (distance + height_epsilon_);
         if (!is_movable && driver_is_movable) {
           by[0] += (pin_loc - driver_offset) * weight;
-          coefficients_y_.emplace_back(driver_blk_num, driver_blk_num, weight);
+          coefficients_y_.emplace_back(driver_component_id, driver_component_id,
+                                       weight);
         } else if (is_movable && !driver_is_movable) {
-          by[blk_num] += (driver_pin_loc - driver_offset) * weight;
-          coefficients_y_.emplace_back(blk_num, blk_num, weight);
+          by[component_id] += (driver_pin_loc - driver_offset) * weight;
+          coefficients_y_.emplace_back(component_id, component_id, weight);
         } else if (is_movable && driver_is_movable) {
-          coefficients_y_.emplace_back(blk_num, blk_num, weight);
-          coefficients_y_.emplace_back(driver_blk_num, driver_blk_num, weight);
-          coefficients_y_.emplace_back(blk_num, driver_blk_num, -weight);
-          coefficients_y_.emplace_back(driver_blk_num, blk_num, -weight);
+          coefficients_y_.emplace_back(component_id, component_id, weight);
+          coefficients_y_.emplace_back(driver_component_id, driver_component_id,
+                                       weight);
+          coefficients_y_.emplace_back(component_id, driver_component_id,
+                                       -weight);
+          coefficients_y_.emplace_back(driver_component_id, component_id,
+                                       -weight);
           double offset_diff = (driver_offset - pair.OffsetY()) * weight;
-          by[blk_num] += offset_diff;
-          by[driver_blk_num] -= offset_diff;
+          by[component_id] += offset_diff;
+          by[driver_component_id] -= offset_diff;
         }
       }
     }
@@ -1012,13 +1030,13 @@ void HpwlHpwlOptimizer::BuildProblemX() {
     int max_pin_index = net.MaxComponentPinIdX();
     int min_pin_index = net.MinComponentPinIdX();
 
-    int blk_num_max = net.ComponentPins()[max_pin_index].ComponentId();
+    int max_component_id = net.ComponentPins()[max_pin_index].ComponentId();
     double pin_loc_max = net.ComponentPins()[max_pin_index].AbsX();
     bool is_movable_max =
         net.ComponentPins()[max_pin_index].ComponentPtr()->IsMovable();
     double offset_max = net.ComponentPins()[max_pin_index].OffsetX();
 
-    int blk_num_min = net.ComponentPins()[min_pin_index].ComponentId();
+    int min_component_id = net.ComponentPins()[min_pin_index].ComponentId();
     double pin_loc_min = net.ComponentPins()[min_pin_index].AbsX();
     bool is_movable_min =
         net.ComponentPins()[min_pin_index].ComponentPtr()->IsMovable();
@@ -1030,19 +1048,19 @@ void HpwlHpwlOptimizer::BuildProblemX() {
     // weight_adjust;
     double weight = inv_p / (distance + width_epsilon_);
     if (!is_movable_min && is_movable_max) {
-      bx[blk_num_max] += (pin_loc_min - offset_max) * weight;
-      coefficients_x_.emplace_back(blk_num_max, blk_num_max, weight);
+      bx[max_component_id] += (pin_loc_min - offset_max) * weight;
+      coefficients_x_.emplace_back(max_component_id, max_component_id, weight);
     } else if (is_movable_min && !is_movable_max) {
-      bx[blk_num_min] += (pin_loc_max - offset_min) * weight;
-      coefficients_x_.emplace_back(blk_num_min, blk_num_min, weight);
+      bx[min_component_id] += (pin_loc_max - offset_min) * weight;
+      coefficients_x_.emplace_back(min_component_id, min_component_id, weight);
     } else if (is_movable_min && is_movable_max) {
-      coefficients_x_.emplace_back(blk_num_min, blk_num_min, weight);
-      coefficients_x_.emplace_back(blk_num_max, blk_num_max, weight);
-      coefficients_x_.emplace_back(blk_num_min, blk_num_max, -weight);
-      coefficients_x_.emplace_back(blk_num_max, blk_num_min, -weight);
+      coefficients_x_.emplace_back(min_component_id, min_component_id, weight);
+      coefficients_x_.emplace_back(max_component_id, max_component_id, weight);
+      coefficients_x_.emplace_back(min_component_id, max_component_id, -weight);
+      coefficients_x_.emplace_back(max_component_id, min_component_id, -weight);
       double offset_diff = (offset_max - offset_min) * weight;
-      bx[blk_num_min] += offset_diff;
-      bx[blk_num_max] -= offset_diff;
+      bx[min_component_id] += offset_diff;
+      bx[max_component_id] -= offset_diff;
     }
   }
 
@@ -1094,13 +1112,13 @@ void HpwlHpwlOptimizer::BuildProblemY() {
     int max_pin_index = net.MaxComponentPinIdY();
     int min_pin_index = net.MinComponentPinIdY();
 
-    int blk_num_max = net.ComponentPins()[max_pin_index].ComponentId();
+    int max_component_id = net.ComponentPins()[max_pin_index].ComponentId();
     double pin_loc_max = net.ComponentPins()[max_pin_index].AbsY();
     bool is_movable_max =
         net.ComponentPins()[max_pin_index].ComponentPtr()->IsMovable();
     double offset_max = net.ComponentPins()[max_pin_index].OffsetY();
 
-    int blk_num_min = net.ComponentPins()[min_pin_index].ComponentId();
+    int min_component_id = net.ComponentPins()[min_pin_index].ComponentId();
     double pin_loc_min = net.ComponentPins()[min_pin_index].AbsY();
     bool is_movable_min =
         net.ComponentPins()[min_pin_index].ComponentPtr()->IsMovable();
@@ -1112,19 +1130,19 @@ void HpwlHpwlOptimizer::BuildProblemY() {
     // weight_adjust;
     double weight = inv_p / (distance + height_epsilon_);
     if (!is_movable_min && is_movable_max) {
-      by[blk_num_max] += (pin_loc_min - offset_max) * weight;
-      coefficients_y_.emplace_back(blk_num_max, blk_num_max, weight);
+      by[max_component_id] += (pin_loc_min - offset_max) * weight;
+      coefficients_y_.emplace_back(max_component_id, max_component_id, weight);
     } else if (is_movable_min && !is_movable_max) {
-      by[blk_num_min] += (pin_loc_max - offset_max) * weight;
-      coefficients_y_.emplace_back(blk_num_min, blk_num_min, weight);
+      by[min_component_id] += (pin_loc_max - offset_max) * weight;
+      coefficients_y_.emplace_back(min_component_id, min_component_id, weight);
     } else if (is_movable_min && is_movable_max) {
-      coefficients_y_.emplace_back(blk_num_min, blk_num_min, weight);
-      coefficients_y_.emplace_back(blk_num_max, blk_num_max, weight);
-      coefficients_y_.emplace_back(blk_num_min, blk_num_max, -weight);
-      coefficients_y_.emplace_back(blk_num_max, blk_num_min, -weight);
+      coefficients_y_.emplace_back(min_component_id, min_component_id, weight);
+      coefficients_y_.emplace_back(max_component_id, max_component_id, weight);
+      coefficients_y_.emplace_back(min_component_id, max_component_id, -weight);
+      coefficients_y_.emplace_back(max_component_id, min_component_id, -weight);
       double offset_diff = (offset_max - offset_min) * weight;
-      by[blk_num_min] += offset_diff;
-      by[blk_num_max] -= offset_diff;
+      by[min_component_id] += offset_diff;
+      by[max_component_id] -= offset_diff;
     }
   }
   for (int i = 0; i < sz;
@@ -1157,12 +1175,12 @@ void StarHpwlHpwlOptimizer::InitializeDriverLoadPairs() {
   int sz = static_cast<int>(components.size());
 
   pair_connect.resize(sz);
-  for (auto& blk_pair : blk_pair_net_list_) {
-    int num0 = blk_pair.blk_num0;
-    int num1 = blk_pair.blk_num1;
+  for (auto& component_pair : component_pair_net_list_) {
+    int num0 = component_pair.component_id0;
+    int num1 = component_pair.component_id1;
     // LOG(info)   << num0 << " " << num1 << "\n";
-    pair_connect[num0].push_back(&blk_pair);
-    pair_connect[num1].push_back(&blk_pair);
+    pair_connect[num0].push_back(&component_pair);
+    pair_connect[num1].push_back(&component_pair);
   }
 
   diagonal_pair.clear();
@@ -1171,21 +1189,24 @@ void StarHpwlHpwlOptimizer::InitializeDriverLoadPairs() {
     diagonal_pair.emplace_back(i, i);
     pair_connect[i].push_back(&(diagonal_pair[i]));
     std::sort(pair_connect[i].begin(), pair_connect[i].end(),
-              [](const ComponentPairNets* blk_pair0,
-                 const ComponentPairNets* blk_pair1) {
-                if (blk_pair0->blk_num0 == blk_pair1->blk_num0) {
-                  return blk_pair0->blk_num1 < blk_pair1->blk_num1;
+              [](const ComponentPairNets* component_pair0,
+                 const ComponentPairNets* component_pair1) {
+                if (component_pair0->component_id0 ==
+                    component_pair1->component_id0) {
+                  return component_pair0->component_id1 <
+                         component_pair1->component_id1;
                 } else {
-                  return blk_pair0->blk_num0 < blk_pair1->blk_num0;
+                  return component_pair0->component_id0 <
+                         component_pair1->component_id0;
                 }
               });
   }
 
   std::vector<int> row_size(sz, 1);
   for (int i = 0; i < sz; ++i) {
-    for (auto& blk_pair : pair_connect[i]) {
-      int num0 = blk_pair->blk_num0;
-      int num1 = blk_pair->blk_num1;
+    for (auto& component_pair : pair_connect[i]) {
+      int num0 = component_pair->component_id0;
+      int num1 = component_pair->component_id1;
       if (num0 == num1) continue;
       if (components[num0].IsMovable() && components[num1].IsMovable()) {
         ++row_size[i];
@@ -1195,9 +1216,9 @@ void StarHpwlHpwlOptimizer::InitializeDriverLoadPairs() {
   Ax.reserve(row_size);
   SpMat_diag_x.resize(sz);
   for (int i = 0; i < sz; ++i) {
-    for (auto& blk_pair : pair_connect[i]) {
-      int num0 = blk_pair->blk_num0;
-      int num1 = blk_pair->blk_num1;
+    for (auto& component_pair : pair_connect[i]) {
+      int num0 = component_pair->component_id0;
+      int num1 = component_pair->component_id1;
       if (components[num0].IsMovable() && components[num1].IsMovable()) {
         int col;
         if (num0 == i) {
@@ -1218,18 +1239,18 @@ void StarHpwlHpwlOptimizer::InitializeDriverLoadPairs() {
       }
       key.first = std::max(row, col);
       key.second = std::min(row, col);
-      if (blk_pair_map_.find(key) == blk_pair_map_.end()) {
+      if (component_pair_map_.find(key) == component_pair_map_.end()) {
         LOG(info) << row << " " << col << std::endl;
         DaliExpects(
             false,
             "Cannot find component pair in the database, something wrong "
             "happens\n");
       }
-      EgId pair_index = blk_pair_map_[key];
-      if (blk_pair_net_list_[pair_index].blk_num0 == row) {
-        blk_pair_net_list_[pair_index].it01x = it;
+      EgId pair_index = component_pair_map_[key];
+      if (component_pair_net_list_[pair_index].component_id0 == row) {
+        component_pair_net_list_[pair_index].it01x = it;
       } else {
-        blk_pair_net_list_[pair_index].it10x = it;
+        component_pair_net_list_[pair_index].it10x = it;
       }
     }
   }
@@ -1237,9 +1258,9 @@ void StarHpwlHpwlOptimizer::InitializeDriverLoadPairs() {
   Ay.reserve(row_size);
   SpMat_diag_y.resize(sz);
   for (int i = 0; i < sz; ++i) {
-    for (auto& blk_pair : pair_connect[i]) {
-      int num0 = blk_pair->blk_num0;
-      int num1 = blk_pair->blk_num1;
+    for (auto& component_pair : pair_connect[i]) {
+      int num0 = component_pair->component_id0;
+      int num1 = component_pair->component_id1;
       if (components[num0].IsMovable() && components[num1].IsMovable()) {
         int col;
         if (num0 == i) {
@@ -1260,18 +1281,18 @@ void StarHpwlHpwlOptimizer::InitializeDriverLoadPairs() {
       }
       key.first = std::max(row, col);
       key.second = std::min(row, col);
-      if (blk_pair_map_.find(key) == blk_pair_map_.end()) {
+      if (component_pair_map_.find(key) == component_pair_map_.end()) {
         LOG(info) << row << " " << col << std::endl;
         DaliExpects(
             false,
             "Cannot find component pair in the database, something wrong "
             "happens\n");
       }
-      EgId pair_index = blk_pair_map_[key];
-      if (blk_pair_net_list_[pair_index].blk_num0 == row) {
-        blk_pair_net_list_[pair_index].it01y = it;
+      EgId pair_index = component_pair_map_[key];
+      if (component_pair_net_list_[pair_index].component_id0 == row) {
+        component_pair_net_list_[pair_index].it01y = it;
       } else {
-        blk_pair_net_list_[pair_index].it10y = it;
+        component_pair_net_list_[pair_index].it10y = it;
       }
     }
   }
@@ -1343,23 +1364,24 @@ void StarHpwlHpwlOptimizer::BuildProblemX() {
   }
 
   // double decay_length = decay_factor * ckt_ptr_->AverageComponentHeight();
-  std::vector<ComponentPairNets>& blk_pair_net_list = blk_pair_net_list_;
-  int pair_sz = blk_pair_net_list.size();
+  std::vector<ComponentPairNets>& component_pair_net_list =
+      component_pair_net_list_;
+  int pair_sz = component_pair_net_list.size();
   // #pragma omp parallel for
   for (int i = 0; i < pair_sz; ++i) {
-    ComponentPairNets& blk_pair = blk_pair_net_list[i];
-    blk_pair.ClearX();
-    for (auto& edge : blk_pair.edges) {
+    ComponentPairNets& component_pair = component_pair_net_list[i];
+    component_pair.ClearX();
+    for (auto& edge : component_pair.edges) {
       Net& net = *(edge.net);
       int d = edge.d;
       int l = edge.l;
-      int driver_blk_num = net.ComponentPins()[d].ComponentId();
+      int driver_component_id = net.ComponentPins()[d].ComponentId();
       double driver_pin_loc = net.ComponentPins()[d].AbsX();
       bool driver_is_movable =
           net.ComponentPins()[d].ComponentPtr()->IsMovable();
       double driver_offset = net.ComponentPins()[d].OffsetX();
 
-      int load_blk_num = net.ComponentPins()[l].ComponentId();
+      int load_component_id = net.ComponentPins()[l].ComponentId();
       double load_pin_loc = net.ComponentPins()[l].AbsX();
       bool load_is_movable = net.ComponentPins()[l].ComponentPtr()->IsMovable();
       double load_offset = net.ComponentPins()[l].OffsetX();
@@ -1367,13 +1389,13 @@ void StarHpwlHpwlOptimizer::BuildProblemX() {
       int max_pin_index = net.MaxComponentPinIdX();
       int min_pin_index = net.MinComponentPinIdX();
 
-      int blk_num_max = net.ComponentPins()[max_pin_index].ComponentId();
+      int max_component_id = net.ComponentPins()[max_pin_index].ComponentId();
       double pin_loc_max = net.ComponentPins()[max_pin_index].AbsX();
       // bool is_movable_max =
       // net.ComponentPins()[max_pin_index].ComponentPtr()->IsMovable(); double
       // offset_max = net.ComponentPins()[max_pin_index].OffsetX();
 
-      int blk_num_min = net.ComponentPins()[min_pin_index].ComponentId();
+      int min_component_id = net.ComponentPins()[min_pin_index].ComponentId();
       double pin_loc_min = net.ComponentPins()[min_pin_index].AbsX();
       // bool is_movable_min =
       // net.ComponentPins()[min_pin_index].ComponentPtr()->IsMovable(); double
@@ -1387,10 +1409,10 @@ void StarHpwlHpwlOptimizer::BuildProblemX() {
       // weight *= weight_adjust;
       // weight = inv_p / (distance + width_epsilon_);
       double adjust = 1.0;
-      if (driver_blk_num == blk_num_max) {
+      if (driver_component_id == max_component_id) {
         adjust = (driver_pin_loc - load_pin_loc) /
                  (driver_pin_loc - pin_loc_min + width_epsilon_);
-      } else if (driver_blk_num == blk_num_min) {
+      } else if (driver_component_id == min_component_id) {
         adjust = (load_pin_loc - driver_pin_loc) /
                  (pin_loc_max - driver_pin_loc + width_epsilon_);
       } else {
@@ -1406,37 +1428,37 @@ void StarHpwlHpwlOptimizer::BuildProblemX() {
       // weight *= std::pow(adjust, exponent);
       weight *= adjust;
       if (!load_is_movable && driver_is_movable) {
-        if (driver_blk_num == blk_pair.blk_num0) {
-          blk_pair.b0x += (load_pin_loc - driver_offset) * weight;
-          blk_pair.e00x += weight;
+        if (driver_component_id == component_pair.component_id0) {
+          component_pair.b0x += (load_pin_loc - driver_offset) * weight;
+          component_pair.e00x += weight;
         } else {
-          blk_pair.b1x += (load_pin_loc - driver_offset) * weight;
-          blk_pair.e11x += weight;
+          component_pair.b1x += (load_pin_loc - driver_offset) * weight;
+          component_pair.e11x += weight;
         }
       } else if (load_is_movable && !driver_is_movable) {
-        if (load_blk_num == blk_pair.blk_num0) {
-          blk_pair.b0x += (driver_pin_loc - driver_offset) * weight;
-          blk_pair.e00x += weight;
+        if (load_component_id == component_pair.component_id0) {
+          component_pair.b0x += (driver_pin_loc - driver_offset) * weight;
+          component_pair.e00x += weight;
         } else {
-          blk_pair.b1x += (driver_pin_loc - driver_offset) * weight;
-          blk_pair.e11x += weight;
+          component_pair.b1x += (driver_pin_loc - driver_offset) * weight;
+          component_pair.e11x += weight;
         }
       } else if (load_is_movable && driver_is_movable) {
         double offset_diff = (driver_offset - load_offset) * weight;
-        blk_pair.e00x += weight;
-        blk_pair.e01x -= weight;
-        blk_pair.e10x -= weight;
-        blk_pair.e11x += weight;
-        if (driver_blk_num == blk_pair.blk_num0) {
-          blk_pair.b0x -= offset_diff;
-          blk_pair.b1x += offset_diff;
+        component_pair.e00x += weight;
+        component_pair.e01x -= weight;
+        component_pair.e10x -= weight;
+        component_pair.e11x += weight;
+        if (driver_component_id == component_pair.component_id0) {
+          component_pair.b0x -= offset_diff;
+          component_pair.b1x += offset_diff;
         } else {
-          blk_pair.b0x += offset_diff;
-          blk_pair.b1x -= offset_diff;
+          component_pair.b0x += offset_diff;
+          component_pair.b1x -= offset_diff;
         }
       }
     }
-    blk_pair.WriteX();
+    component_pair.WriteX();
   }
 
   double center_weight = 0.03 / std::sqrt(sz);
@@ -1451,13 +1473,13 @@ void StarHpwlHpwlOptimizer::BuildProblemX() {
     } else {
       double diag_val = 0;
       double b = 0;
-      for (auto& blk_pair : pair_connect[i]) {
-        if (i == blk_pair->blk_num0) {
-          diag_val += blk_pair->e00x;
-          b += blk_pair->b0x;
+      for (auto& component_pair : pair_connect[i]) {
+        if (i == component_pair->component_id0) {
+          diag_val += component_pair->e00x;
+          b += component_pair->b0x;
         } else {
-          diag_val += blk_pair->e11x;
-          b += blk_pair->b1x;
+          diag_val += component_pair->e11x;
+          b += component_pair->b1x;
         }
       }
       SpMat_diag_x[i].valueRef() = diag_val;
@@ -1485,23 +1507,24 @@ void StarHpwlHpwlOptimizer::BuildProblemY() {
   }
 
   // double decay_length = decay_factor * ckt_ptr_->AverageComponentHeight();
-  std::vector<ComponentPairNets>& blk_pair_net_list = blk_pair_net_list_;
-  int pair_sz = blk_pair_net_list.size();
+  std::vector<ComponentPairNets>& component_pair_net_list =
+      component_pair_net_list_;
+  int pair_sz = component_pair_net_list.size();
   // #pragma omp parallel for
   for (int i = 0; i < pair_sz; ++i) {
-    ComponentPairNets& blk_pair = blk_pair_net_list[i];
-    blk_pair.ClearY();
-    for (auto& edge : blk_pair.edges) {
+    ComponentPairNets& component_pair = component_pair_net_list[i];
+    component_pair.ClearY();
+    for (auto& edge : component_pair.edges) {
       Net& net = *(edge.net);
       int d = edge.d;
       int l = edge.l;
-      int driver_blk_num = net.ComponentPins()[d].ComponentId();
+      int driver_component_id = net.ComponentPins()[d].ComponentId();
       double driver_pin_loc = net.ComponentPins()[d].AbsY();
       bool driver_is_movable =
           net.ComponentPins()[d].ComponentPtr()->IsMovable();
       double driver_offset = net.ComponentPins()[d].OffsetY();
 
-      int load_blk_num = net.ComponentPins()[l].ComponentId();
+      int load_component_id = net.ComponentPins()[l].ComponentId();
       double load_pin_loc = net.ComponentPins()[l].AbsY();
       bool load_is_movable = net.ComponentPins()[l].ComponentPtr()->IsMovable();
       double load_offset = net.ComponentPins()[l].OffsetY();
@@ -1509,13 +1532,13 @@ void StarHpwlHpwlOptimizer::BuildProblemY() {
       int max_pin_index = net.MaxComponentPinIdY();
       int min_pin_index = net.MinComponentPinIdY();
 
-      int blk_num_max = net.ComponentPins()[max_pin_index].ComponentId();
+      int max_component_id = net.ComponentPins()[max_pin_index].ComponentId();
       double pin_loc_max = net.ComponentPins()[max_pin_index].AbsY();
       // bool is_movable_max =
       // net.ComponentPins()[max_pin_index].ComponentPtr()->IsMovable(); double
       // offset_max = net.ComponentPins()[max_pin_index].OffsetY();
 
-      int blk_num_min = net.ComponentPins()[min_pin_index].ComponentId();
+      int min_component_id = net.ComponentPins()[min_pin_index].ComponentId();
       double pin_loc_min = net.ComponentPins()[min_pin_index].AbsY();
       // bool is_movable_min =
       // net.ComponentPins()[min_pin_index].ComponentPtr()->IsMovable(); double
@@ -1529,10 +1552,10 @@ void StarHpwlHpwlOptimizer::BuildProblemY() {
       // weight *= weight_adjust;
       // weight = inv_p / (distance + width_epsilon_);
       double adjust = 1.0;
-      if (driver_blk_num == blk_num_max) {
+      if (driver_component_id == max_component_id) {
         adjust = (driver_pin_loc - load_pin_loc) /
                  (driver_pin_loc - pin_loc_min + height_epsilon_);
-      } else if (driver_blk_num == blk_num_min) {
+      } else if (driver_component_id == min_component_id) {
         adjust = (load_pin_loc - driver_pin_loc) /
                  (pin_loc_max - driver_pin_loc + height_epsilon_);
       } else {
@@ -1548,37 +1571,37 @@ void StarHpwlHpwlOptimizer::BuildProblemY() {
       // weight *= std::pow(adjust, exponent);
       weight *= adjust;
       if (!load_is_movable && driver_is_movable) {
-        if (driver_blk_num == blk_pair.blk_num0) {
-          blk_pair.b0y += (load_pin_loc - driver_offset) * weight;
-          blk_pair.e00y += weight;
+        if (driver_component_id == component_pair.component_id0) {
+          component_pair.b0y += (load_pin_loc - driver_offset) * weight;
+          component_pair.e00y += weight;
         } else {
-          blk_pair.b1y += (load_pin_loc - driver_offset) * weight;
-          blk_pair.e11y += weight;
+          component_pair.b1y += (load_pin_loc - driver_offset) * weight;
+          component_pair.e11y += weight;
         }
       } else if (load_is_movable && !driver_is_movable) {
-        if (load_blk_num == blk_pair.blk_num0) {
-          blk_pair.b0y += (driver_pin_loc - driver_offset) * weight;
-          blk_pair.e00y += weight;
+        if (load_component_id == component_pair.component_id0) {
+          component_pair.b0y += (driver_pin_loc - driver_offset) * weight;
+          component_pair.e00y += weight;
         } else {
-          blk_pair.b1y += (driver_pin_loc - driver_offset) * weight;
-          blk_pair.e11y += weight;
+          component_pair.b1y += (driver_pin_loc - driver_offset) * weight;
+          component_pair.e11y += weight;
         }
       } else if (load_is_movable && driver_is_movable) {
         double offset_diff = (driver_offset - load_offset) * weight;
-        blk_pair.e00y += weight;
-        blk_pair.e01y -= weight;
-        blk_pair.e10y -= weight;
-        blk_pair.e11y += weight;
-        if (driver_blk_num == blk_pair.blk_num0) {
-          blk_pair.b0y -= offset_diff;
-          blk_pair.b1y += offset_diff;
+        component_pair.e00y += weight;
+        component_pair.e01y -= weight;
+        component_pair.e10y -= weight;
+        component_pair.e11y += weight;
+        if (driver_component_id == component_pair.component_id0) {
+          component_pair.b0y -= offset_diff;
+          component_pair.b1y += offset_diff;
         } else {
-          blk_pair.b0y += offset_diff;
-          blk_pair.b1y -= offset_diff;
+          component_pair.b0y += offset_diff;
+          component_pair.b1y -= offset_diff;
         }
       }
     }
-    blk_pair.WriteY();
+    component_pair.WriteY();
   }
 
   double center_weight = 0.03 / std::sqrt(sz);
@@ -1593,13 +1616,13 @@ void StarHpwlHpwlOptimizer::BuildProblemY() {
     } else {
       double diag_val = 0;
       double b = 0;
-      for (auto& blk_pair : pair_connect[i]) {
-        if (i == blk_pair->blk_num0) {
-          diag_val += blk_pair->e00y;
-          b += blk_pair->b0y;
+      for (auto& component_pair : pair_connect[i]) {
+        if (i == component_pair->component_id0) {
+          diag_val += component_pair->e00y;
+          b += component_pair->b0y;
         } else {
-          diag_val += blk_pair->e11y;
-          b += blk_pair->b1y;
+          diag_val += component_pair->e11y;
+          b += component_pair->b1y;
         }
       }
       SpMat_diag_y[i].valueRef() = diag_val;

@@ -99,7 +99,7 @@ class InitializerGridBin {
   void SetBoundary(int lx, int ly, int ux, int uy);
   void UpdateTotalArea();
   void UpdateMacroArea();
-  void AddComponent(Component* blk);
+  void AddComponent(Component* component);
   void InitializeComponentLocation(uint32_t random_seed, int num_trials);
 
  private:
@@ -131,13 +131,13 @@ class MonteCarloInitializer : public RandomInitializer {
  protected:
   virtual void InitializeGridBin();
   virtual void AssignFixedMacroToGridBin();
-  bool IsBlkLocationValid(Component& blk);
+  bool IsComponentLocationValid(Component& component);
 
   int grid_cnt_x_ = 30;
   int grid_cnt_y_ = 30;
   int bin_width_ = 0;
   int bin_height_ = 0;
-  int blk_size_factor_ = 5;
+  int component_size_factor_ = 5;
   std::vector<std::vector<InitializerGridBin>> grid_bins_;
   int num_trials_ = 50;
 };

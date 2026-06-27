@@ -141,7 +141,7 @@ class BoxBin {
       unsigned long long& box1_total_white_space,
       unsigned long long& box2_total_white_space);
   bool update_cut_point_cell_list_low_high_leaf(int& cut_line_w,
-                                                int ave_blk_height);
+                                                int average_component_height);
 
   void Report();
 };

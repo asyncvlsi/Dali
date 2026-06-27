@@ -116,10 +116,10 @@ void Placer::SetSpaceComponentRatio(double ratio) {
   placement_density_ = 1.0 / ratio;
 }
 
-double Placer::GetComponentHPWL(Component& blk) {
+double Placer::GetComponentHPWL(Component& component) {
   double hpwl = 0;
   std::vector<Net>& nets = ckt_ptr_->Nets();
-  for (auto& idx : blk.NetList()) {
+  for (auto& idx : component.NetList()) {
     hpwl += nets[idx].WeightedHPWL();
   }
   return hpwl;
@@ -333,8 +333,8 @@ void Placer::ShiftY(double shift_y) {
   }
 }
 
-bool Placer::IsDummyComponent(Component& blk) {
-  return blk.MacroPtr() == ckt_ptr_->tech().IoDummyMacroPtr();
+bool Placer::IsDummyComponent(Component& component) {
+  return component.MacroPtr() == ckt_ptr_->tech().IoDummyMacroPtr();
 }
 
 void Placer::PrintStartStatement(std::string const& name_of_process) {

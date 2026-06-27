@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_PLACER_GLOBAL_PLACER_BLOCK_PAIR_NETS_H_
-#define DALI_PLACER_GLOBAL_PLACER_BLOCK_PAIR_NETS_H_
+#ifndef DALI_PLACER_GLOBAL_PLACER_COMPONENT_PAIR_NETS_H_
+#define DALI_PLACER_GLOBAL_PLACER_COMPONENT_PAIR_NETS_H_
 
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/Sparse>
@@ -45,10 +45,11 @@ class ComponentPairEdge {
  */
 class ComponentPairNets {
  public:
-  ComponentPairNets(int blk0, int blk1) : blk_num0(blk0), blk_num1(blk1) {}
+  ComponentPairNets(int component_id0, int component_id1)
+      : component_id0(component_id0), component_id1(component_id1) {}
   std::vector<ComponentPairEdge> edges;
-  int blk_num0;
-  int blk_num1;
+  int component_id0;
+  int component_id1;
 
   double e00x = 0;
   double e01x = 0;
@@ -83,4 +84,4 @@ class ComponentPairNets {
 
 }  // namespace dali
 
-#endif  // DALI_PLACER_GLOBAL_PLACER_BLOCK_PAIR_NETS_H_
+#endif  // DALI_PLACER_GLOBAL_PLACER_COMPONENT_PAIR_NETS_H_

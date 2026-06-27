@@ -192,8 +192,8 @@ class Placer {
   /** Shift all components in y for testing. */
   void ShiftY(double shift_y);
 
-  /** Return true when blk is a dummy/helper component. */
-  bool IsDummyComponent(Component& blk);
+  /** Return true when component is a dummy/helper component. */
+  bool IsDummyComponent(Component& component);
 
  protected:
   /* essential data entries */
@@ -211,7 +211,7 @@ class Placer {
   // record start/end time
   ElapsedTime elapsed_time_;
 
-  double GetComponentHPWL(Component& blk);
+  double GetComponentHPWL(Component& component);
 
   virtual void PrintStartStatement(std::string const& name_of_process);
   virtual void PrintEndStatement(std::string const& name_of_process,

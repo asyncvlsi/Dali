@@ -31,7 +31,7 @@ void ComponentPairNets::ClearX() {
   b1x = 0;
 }
 void ComponentPairNets::WriteX() {
-  if (blk_num0 != blk_num1) {
+  if (component_id0 != component_id1) {
     it01x.valueRef() = e01x;
     it10x.valueRef() = e10x;
   }
@@ -47,7 +47,7 @@ void ComponentPairNets::ClearY() {
 }
 
 void ComponentPairNets::WriteY() {
-  if (blk_num0 != blk_num1) {
+  if (component_id0 != component_id1) {
     it01y.valueRef() = e01y;
     it10y.valueRef() = e10y;
   }

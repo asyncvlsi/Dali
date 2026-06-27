@@ -115,12 +115,13 @@ void LookAheadLegalizer::UpdatePlacementBlockagesInGridBins() {
   for (auto& blockage : ckt_ptr_->design().PlacementBlockages()) {
     const RectI& rect = blockage.GetRect();
     /* find the left, right, bottom, top index of the grid */
-    bool blockage_blk_out_of_region = rect.LLX() >= ckt_ptr_->RegionURX() ||
-                                      rect.URX() <= ckt_ptr_->RegionLLX() ||
-                                      rect.LLY() >= ckt_ptr_->RegionURY() ||
-                                      rect.URY() <= ckt_ptr_->RegionLLY();
+    bool blockage_component_out_of_region =
+        rect.LLX() >= ckt_ptr_->RegionURX() ||
+        rect.URX() <= ckt_ptr_->RegionLLX() ||
+        rect.LLY() >= ckt_ptr_->RegionURY() ||
+        rect.URY() <= ckt_ptr_->RegionLLY();
     // TODO: test and clean up this part of code using an adaptec benchmark
-    if (blockage_blk_out_of_region) continue;
+    if (blockage_component_out_of_region) continue;
     int left_index =
         std::floor((rect.LLX() - ckt_ptr_->RegionLLX()) / grid_bin_width);
     int right_index =
@@ -148,11 +149,11 @@ void LookAheadLegalizer::UpdatePlacementBlockagesInGridBins() {
          * the top/right of a fixed component overlap with the bottom/left of
          * a grid box. if this case happens, we need to ignore this fixed
          * component for this grid box. */
-        bool blk_out_of_bin = rect.LLX() >= grid_bin_mesh[j][k].right ||
-                              rect.URX() <= grid_bin_mesh[j][k].left ||
-                              rect.LLY() >= grid_bin_mesh[j][k].top ||
-                              rect.URY() <= grid_bin_mesh[j][k].bottom;
-        if (blk_out_of_bin) {
+        bool component_out_of_bin = rect.LLX() >= grid_bin_mesh[j][k].right ||
+                                    rect.URX() <= grid_bin_mesh[j][k].left ||
+                                    rect.LLY() >= grid_bin_mesh[j][k].top ||
+                                    rect.URY() <= grid_bin_mesh[j][k].bottom;
+        if (component_out_of_bin) {
           continue;
         }
         grid_bin_mesh[j][k].placement_blockages_.push_back(&blockage);
@@ -994,7 +995,7 @@ bool LookAheadLegalizer::RecursiveBisectionComponentSpreading() {
       /* if no terminals inside a box, do cell placement inside the box */
       // PlaceComponentInBoxBisection(box);
       PlaceComponentInBox(box);
-      // RoughLegalBlkInBox(box);
+      // RoughLegalComponentInBox(box);
     } else {
       SplitBox(box);
     }
