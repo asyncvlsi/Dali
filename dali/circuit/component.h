@@ -78,7 +78,7 @@ class Component {
   double URX() const { return llx_ + Width(); }
 
   /** Return upper-right y coordinate, including any stretch length. */
-  double URY() const { return lly_ + Height() + tot_stretch_length; }
+  double URY() const { return lly_ + Height() + total_stretch_length_; }
 
   /** Return center x coordinate in Dali grid units. */
   double X() const { return llx_ + Width() / 2.0; }
@@ -203,7 +203,11 @@ class Component {
   /** Return all stretch lengths. */
   std::vector<int>& StretchLengths();
 
-  int CumulativeStretchLength(size_t index);
+  /** Return all stretch lengths. */
+  const std::vector<int>& StretchLengths() const;
+
+  /** Return the total stretch length before a region boundary. */
+  int CumulativeStretchLength(size_t index) const;
 
   /** Log detailed component information for debugging. */
   void Report();
@@ -236,7 +240,7 @@ class Component {
 
   std::vector<int> stretch_length_;  // TODO : move these two attributes to
                                      // LegalizerComponentAux
-  double tot_stretch_length = 0;
+  double total_stretch_length_ = 0;
 };
 
 class ComponentAux {

@@ -109,13 +109,17 @@ void Component::SetStretchLength(size_t index, int length) {
     index = sz - 1 - index;
   }
   stretch_length_[index] = length;
-  tot_stretch_length =
+  total_stretch_length_ =
       std::accumulate(stretch_length_.begin(), stretch_length_.end(), 0);
 }
 
 std::vector<int>& Component::StretchLengths() { return stretch_length_; }
 
-int Component::CumulativeStretchLength(size_t index) {
+const std::vector<int>& Component::StretchLengths() const {
+  return stretch_length_;
+}
+
+int Component::CumulativeStretchLength(size_t index) const {
   if (MacroPtr()->RegionCount() == 1) return 0;
   if (stretch_length_.empty()) return 0;
 
