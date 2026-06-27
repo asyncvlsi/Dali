@@ -122,8 +122,8 @@ class GriddedRowLegalizer : public Placer {
   AbstractSpacePartitioner* space_partitioner_ = nullptr;
 
   int well_spacing_ = 0;
-  int tap_cell_p_height_ = 0;
-  int tap_cell_n_height_ = 0;
+  int well_tap_p_height_ = 0;
+  int well_tap_n_height_ = 0;
 
   std::vector<ClusterStripe> col_list_;
 

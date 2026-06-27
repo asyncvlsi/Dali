@@ -149,8 +149,8 @@ void Stripe::PrecomputeWellTapCellLocation(bool is_checker_board_mode,
   DaliExpects(tap_cell_interval_grid > 0,
               "Non-positive well-tap cell interval?");
   DaliExpects(well_tap_macro != nullptr, "Well-tap cell is a nullptr?");
-  well_tap_cell_width_ = well_tap_macro->Width();
-  DaliExpects(width_ > well_tap_cell_width_,
+  well_tap_width_ = well_tap_macro->Width();
+  DaliExpects(width_ > well_tap_width_,
               "Stripe width is smaller than well-tap cell width?");
 
   std::vector<int> locations;
@@ -177,8 +177,8 @@ void Stripe::PrecomputeWellTapCellLocation(bool is_checker_board_mode,
   }
 
   // check if the ux of the last well-tap cell is out of the region
-  int last_ux = locations.back() + well_tap_cell_width_;
-  int right_most_loc = URX() - well_tap_cell_width_;
+  int last_ux = locations.back() + well_tap_width_;
+  int right_most_loc = URX() - well_tap_width_;
   if (last_ux > URX()) {
     locations.back() = right_most_loc;
   } else {
@@ -197,7 +197,7 @@ void Stripe::PrecomputeWellTapCellLocation(bool is_checker_board_mode,
     well_tap_cell_location_odd_.reserve(half_sz);
     for (size_t i = 0; i < sz; ++i) {
       int lo_loc = locations[i];
-      int hi_loc = locations[i] + well_tap_cell_width_;
+      int hi_loc = locations[i] + well_tap_width_;
       if (i & 1) {  // if index i is an odd number
         well_tap_cell_location_odd_.emplace_back(lo_loc, hi_loc);
       } else {
@@ -210,7 +210,7 @@ void Stripe::PrecomputeWellTapCellLocation(bool is_checker_board_mode,
     well_tap_cell_location_odd_.reserve(sz);
     for (size_t i = 0; i < sz; ++i) {
       int lo_loc = locations[i];
-      int hi_loc = locations[i] + well_tap_cell_width_;
+      int hi_loc = locations[i] + well_tap_width_;
       well_tap_cell_location_odd_.emplace_back(lo_loc, hi_loc);
       well_tap_cell_location_even_.emplace_back(lo_loc, hi_loc);
     }

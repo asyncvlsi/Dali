@@ -60,7 +60,7 @@ class Stripe {
   std::vector<RectI> well_rect_list_;
 
   bool is_checkerboard_mode_ = false;
-  int well_tap_cell_width_ = -1;
+  int well_tap_width_ = -1;
   std::vector<SegI> well_tap_cell_location_even_;
   std::vector<SegI> well_tap_cell_location_odd_;
 

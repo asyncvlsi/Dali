@@ -47,8 +47,8 @@ void GriddedRowLegalizer::CheckWellInfo() {
   int op_spacing = std::ceil(n_well_layer.OppositeSpacing() / grid_value_x);
   well_spacing_ = std::max(same_spacing, op_spacing);
 
-  tap_cell_p_height_ = well_tap_macro_->PwellHeight(0);
-  tap_cell_n_height_ = well_tap_macro_->NwellHeight(0);
+  well_tap_p_height_ = well_tap_macro_->PwellHeight(0);
+  well_tap_n_height_ = well_tap_macro_->NwellHeight(0);
 }
 
 void GriddedRowLegalizer::SetNumThreads(int number_of_threads) {
@@ -227,12 +227,12 @@ bool GriddedRowLegalizer::StripeLegalizationUpward(Stripe& stripe,
 
   size_t processed_component_count = 0;
   while (processed_component_count < stripe.component_ptrs_vec_.size()) {
-    stripe.UpdateFrontClusterUpward(tap_cell_p_height_, tap_cell_n_height_);
+    stripe.UpdateFrontClusterUpward(well_tap_p_height_, well_tap_n_height_);
     processed_component_count = stripe.FitComponentsToFrontSpaceUpward(
         processed_component_count, greedy_cur_iter_);
     stripe.LegalizeFrontCluster(use_init_loc);
   }
-  stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_, true);
+  stripe.UpdateRemainingClusters(well_tap_p_height_, well_tap_n_height_, true);
   stripe.UpdateComponentYLocation();
   stripe.UpdateComponentStretchLength();
 
@@ -249,12 +249,12 @@ bool GriddedRowLegalizer::StripeLegalizationDownward(Stripe& stripe,
 
   size_t processed_component_count = 0;
   while (processed_component_count < stripe.component_ptrs_vec_.size()) {
-    stripe.UpdateFrontClusterDownward(tap_cell_p_height_, tap_cell_n_height_);
+    stripe.UpdateFrontClusterDownward(well_tap_p_height_, well_tap_n_height_);
     processed_component_count = stripe.FitComponentsToFrontSpaceDownward(
         processed_component_count, greedy_cur_iter_);
     stripe.LegalizeFrontCluster(use_init_loc);
   }
-  stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_, false);
+  stripe.UpdateRemainingClusters(well_tap_p_height_, well_tap_n_height_, false);
   stripe.UpdateComponentYLocation();
   stripe.UpdateComponentStretchLength();
 
@@ -313,13 +313,13 @@ bool GriddedRowLegalizer::StripeLegalizationUpwardWithDispCheck(
 
   size_t processed_component_count = 0;
   while (processed_component_count < stripe.component_ptrs_vec_.size()) {
-    stripe.UpdateFrontClusterUpward(tap_cell_p_height_, tap_cell_n_height_);
+    stripe.UpdateFrontClusterUpward(well_tap_p_height_, well_tap_n_height_);
     processed_component_count =
         stripe.FitComponentsToFrontSpaceUpwardWithDispCheck(
             processed_component_count, greedy_cur_iter_);
     stripe.LegalizeFrontCluster(use_init_loc);
   }
-  stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_, true);
+  stripe.UpdateRemainingClusters(well_tap_p_height_, well_tap_n_height_, true);
   stripe.UpdateComponentYLocation();
   stripe.UpdateComponentStretchLength();
 
