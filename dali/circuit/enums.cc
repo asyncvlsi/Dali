@@ -42,26 +42,21 @@ MetalDirection StrToMetalDirection(std::string const& str_metal_direction) {
 }
 
 std::string MetalDirectionStr(MetalDirection metal_direction) {
-  std::string s;
   switch (metal_direction) {
-    case 0: {
-      s = "HORIZONTAL";
-    } break;
-    case 1: {
-      s = "VERTICAL";
-    } break;
-    case 2: {
-      s = "DIAG45";
-    } break;
-    case 3: {
-      s = "DIAG135";
-    } break;
+    case HORIZONTAL:
+      return "HORIZONTAL";
+    case VERTICAL:
+      return "VERTICAL";
+    case DIAG45:
+      return "DIAG45";
+    case DIAG135:
+      return "DIAG135";
     default: {
       DaliExpects(false,
                   "MetalLayer direction error! This should never happen!");
     }
   }
-  return s;
+  return "";
 }
 
 ComponentOrient StrToOrient(std::string const& str_orient) {
@@ -91,38 +86,29 @@ ComponentOrient StrToOrient(std::string const& str_orient) {
 }
 
 std::string OrientStr(ComponentOrient orient) {
-  std::string s;
   switch (orient) {
-    case 0: {
-      s = "N";
-    } break;
-    case 1: {
-      s = "S";
-    } break;
-    case 2: {
-      s = "W";
-    } break;
-    case 3: {
-      s = "E";
-    } break;
-    case 4: {
-      s = "FN";
-    } break;
-    case 5: {
-      s = "FS";
-    } break;
-    case 6: {
-      s = "FW";
-    } break;
-    case 7: {
-      s = "FE";
-    } break;
+    case N:
+      return "N";
+    case S:
+      return "S";
+    case W:
+      return "W";
+    case E:
+      return "E";
+    case FN:
+      return "FN";
+    case FS:
+      return "FS";
+    case FW:
+      return "FW";
+    case FE:
+      return "FE";
     default: {
       DaliExpects(false,
                   "Component orientation error! This should never happen!");
     }
   }
-  return s;
+  return "";
 }
 
 PlaceStatus StrToPlaceStatus(std::string const& str_place_status) {
@@ -143,25 +129,20 @@ PlaceStatus StrToPlaceStatus(std::string const& str_place_status) {
 }
 
 std::string PlaceStatusStr(PlaceStatus place_status) {
-  std::string s;
   switch (place_status) {
-    case 0: {
-      s = "COVER";
-    } break;
-    case 1: {
-      s = "FIXED";
-    } break;
-    case 2: {
-      s = "PLACED";
-    } break;
-    case 3: {
-      s = "UNPLACED";
-    } break;
+    case COVER:
+      return "COVER";
+    case FIXED:
+      return "FIXED";
+    case PLACED:
+      return "PLACED";
+    case UNPLACED:
+      return "UNPLACED";
     default: {
       DaliExpects(false, "Placement status error! This should never happen!");
     }
   }
-  return s;
+  return "";
 }
 
 SignalDirection StrToSignalDirection(std::string const& str_signal_direction) {
@@ -181,26 +162,21 @@ SignalDirection StrToSignalDirection(std::string const& str_signal_direction) {
 }
 
 std::string SignalDirectionStr(SignalDirection signal_direction) {
-  std::string s;
   switch (signal_direction) {
-    case 0: {
-      s = "INPUT";
-    } break;
-    case 1: {
-      s = "OUTPUT";
-    } break;
-    case 2: {
-      s = "INOUT";
-    } break;
-    case 3: {
-      s = "FEEDTHRU";
-    } break;
+    case INPUT:
+      return "INPUT";
+    case OUTPUT:
+      return "OUTPUT";
+    case INOUT:
+      return "INOUT";
+    case FEEDTHRU:
+      return "FEEDTHRU";
     default: {
       DaliExpects(false,
                   "IOPIN signal direction error! This should never happen!");
     }
   }
-  return s;
+  return "";
 }
 
 SignalUse StrToSignalUse(std::string const& str_signal_use) {
@@ -228,37 +204,28 @@ SignalUse StrToSignalUse(std::string const& str_signal_use) {
 }
 
 std::string SignalUseStr(SignalUse signal_use) {
-  std::string s;
   switch (signal_use) {
-    case 0: {
-      s = "SIGNAL";
-    } break;
-    case 1: {
-      s = "POWER";
-    } break;
-    case 2: {
-      s = "GROUND";
-    } break;
-    case 3: {
-      s = "CLOCK";
-    } break;
-    case 4: {
-      s = "TIEOFF";
-    } break;
-    case 5: {
-      s = "ANALOG";
-    } break;
-    case 6: {
-      s = "SCAN";
-    } break;
-    case 7: {
-      s = "RESET";
-    } break;
+    case SIGNAL:
+      return "SIGNAL";
+    case POWER:
+      return "POWER";
+    case GROUND:
+      return "GROUND";
+    case CLOCK:
+      return "CLOCK";
+    case TIEOFF:
+      return "TIEOFF";
+    case ANALOG:
+      return "ANALOG";
+    case SCAN:
+      return "SCAN";
+    case RESET:
+      return "RESET";
     default: {
       DaliExpects(false, "IOPIN signal use error! This should never happen!");
     }
   }
-  return s;
+  return "";
 }
 
 }  // namespace dali
