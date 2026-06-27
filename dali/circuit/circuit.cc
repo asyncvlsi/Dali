@@ -2546,7 +2546,7 @@ void Circuit::LoadCell(phydb::PhyDB* phy_db_ptr) {
   tech_.pre_end_cap_min_width_ = phy_db_tech.GetPreEndCapMinWidth();
   tech_.pre_end_cap_min_p_height_ = phy_db_tech.GetPreEndCapMinPHeight();
   tech_.pre_end_cap_min_n_height_ = phy_db_tech.GetPreEndCapMinNHeight();
-  tech_.post_end_cap_min_width_ = phy_db_tech.GetPreEndCapMinWidth();
+  tech_.post_end_cap_min_width_ = phy_db_tech.GetPostEndCapMinWidth();
   tech_.post_end_cap_min_p_height_ = phy_db_tech.GetPostEndCapMinPHeight();
   tech_.post_end_cap_min_n_height_ = phy_db_tech.GetPostEndCapMinNHeight();
 
