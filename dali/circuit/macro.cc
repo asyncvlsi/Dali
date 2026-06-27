@@ -35,17 +35,7 @@ int Macro::GetPinId(std::string const& pin_name) const {
 }
 
 Pin* Macro::AddPin(std::string const& pin_name, bool is_input) {
-  auto ret = pin_name_id_map_.find(pin_name);
-  if (ret != pin_name_id_map_.end()) {
-    DaliExpects(
-        false, "Cannot add this pin in Macro: " + Name() +
-                   ", because this pin exists in component pin list already: " +
-                   pin_name);
-  }
-  pin_name_id_map_.insert(std::unordered_map<std::string, int>::value_type(
-      pin_name, static_cast<int>(pin_list_.size())));
-  std::pair<const std::string, int>* name_num_ptr =
-      &(*pin_name_id_map_.find(pin_name));
+  auto* name_num_ptr = RegisterPinName(pin_name);
   pin_list_.emplace_back(name_num_ptr, this);
   pin_list_.back().SetIoType(is_input);
   return &pin_list_.back();
@@ -53,17 +43,7 @@ Pin* Macro::AddPin(std::string const& pin_name, bool is_input) {
 
 void Macro::AddPin(std::string const& pin_name, double x_offset,
                    double y_offset) {
-  auto ret = pin_name_id_map_.find(pin_name);
-  if (ret != pin_name_id_map_.end()) {
-    DaliExpects(
-        false, "Cannot add this pin in Macro: " + Name() +
-                   ", because this pin exists in component pin list already: " +
-                   pin_name);
-  }
-  pin_name_id_map_.insert(std::unordered_map<std::string, int>::value_type(
-      pin_name, static_cast<int>(pin_list_.size())));
-  std::pair<const std::string, int>* name_num_ptr =
-      &(*pin_name_id_map_.find(pin_name));
+  auto* name_num_ptr = RegisterPinName(pin_name);
   pin_list_.emplace_back(name_num_ptr, this, x_offset, y_offset);
 }
 
@@ -265,6 +245,15 @@ int Macro::Nheight() {
     return Height() - n_rects_[0].LLY();
   }
   DaliExpects(false, "No rects found in well for " << Name());
+}
+
+std::pair<const std::string, int>* Macro::RegisterPinName(
+    std::string const& pin_name) {
+  auto [it, inserted] =
+      pin_name_id_map_.emplace(pin_name, static_cast<int>(pin_list_.size()));
+  DaliExpects(inserted,
+              "Cannot add duplicate pin to Macro " + Name() + ": " + pin_name);
+  return &(*it);
 }
 
 }  // namespace dali

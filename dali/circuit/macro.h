@@ -159,6 +159,9 @@ class Macro {
   int Nheight();
 
  private:
+  std::pair<const std::string, int>* RegisterPinName(
+      std::string const& pin_name);
+
   std::string const* name_ptr_;
   int width_ = 0;
   int height_ = 0;
