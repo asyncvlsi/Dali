@@ -172,6 +172,10 @@ class Dali {
   void InitializeMainPlacementCircuit();
   /** Choose the target density when the user did not provide one. */
   void ResolveTargetDensity();
+  /** Return true when the loaded design has at least one movable component. */
+  bool HasMovableComponents() const;
+  /** Return true when the loaded design has at least one net. */
+  bool HasNets() const;
   /** Run global placement and optional global-placement debug export. */
   bool RunGlobalPlacementStage();
   /** Run the configured legalization path and optional legalization export. */

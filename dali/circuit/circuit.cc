@@ -572,6 +572,8 @@ void Circuit::ReportIOPin() {
 
 std::vector<Net>& Circuit::Nets() { return design_.nets_; }
 
+const std::vector<Net>& Circuit::Nets() const { return design_.nets_; }
+
 bool Circuit::IsNetExisting(std::string const& net_name) {
   return !(design_.net_name_id_map_.find(net_name) ==
            design_.net_name_id_map_.end());

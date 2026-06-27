@@ -349,10 +349,22 @@ void Dali::ResolveTargetDensity() {
   }
 }
 
+bool Dali::HasMovableComponents() const {
+  return circuit_.TotalMovableComponentCnt() > 0;
+}
+
+bool Dali::HasNets() const { return !circuit_.Nets().empty(); }
+
 bool Dali::RunGlobalPlacementStage() {
   gb_placer_.SetCircuit(&circuit_);
   gb_placer_.SetNumThreads(num_threads_);
-  if (!disable_global_place_) {
+  if (disable_global_place_) {
+    LOG(info) << "Skip global placement: disabled by configuration\n";
+  } else if (!HasMovableComponents()) {
+    LOG(info) << "Skip global placement: no movable components\n";
+  } else if (!HasNets()) {
+    LOG(info) << "Skip global placement: no nets to optimize\n";
+  } else {
     gb_placer_.SetPlacementDensity(target_density_);
     if (!gb_placer_.StartPlacement()) {
       LOG(error) << "Global placement failed\n";
@@ -366,6 +378,10 @@ bool Dali::RunGlobalPlacementStage() {
 }
 
 bool Dali::RunStandardCellLegalization() {
+  if (!HasMovableComponents()) {
+    LOG(info) << "Skip standard-cell legalization: no movable components\n";
+    return true;
+  }
   legalizer_.CopyPlacementContextFrom(&gb_placer_);
   legalizer_.disable_cell_flip_ = disable_cell_flip_;
   if (!legalizer_.StartPlacement()) {
@@ -383,9 +399,16 @@ bool Dali::RunWellLegalization() {
   well_legalizer_.SetMaxRowWidth(max_row_width_);
   well_legalizer_.SetStripePartitionMode(
       static_cast<int>(well_legalization_mode_));
-  if (!well_legalizer_.StartPlacement()) {
-    LOG(error) << "Well legalization failed\n";
-    return false;
+  if (HasMovableComponents()) {
+    if (!well_legalizer_.StartPlacement()) {
+      LOG(error) << "Well legalization failed\n";
+      return false;
+    }
+  } else {
+    LOG(info) << "Skip movable-cell well legalization: no movable components\n";
+    well_legalizer_.InitializeWellLegalizer();
+    well_legalizer_.RunWellTapStage();
+    well_legalizer_.RunEndCapStage();
   }
   if (export_well_cluster_matlab_) {
     well_legalizer_.GenMatlabClusterTable("sc_result");

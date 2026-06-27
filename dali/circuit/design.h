@@ -148,6 +148,9 @@ class Design {
   /** Return all nets. */
   std::vector<Net>& Nets() { return nets_; }
 
+  /** Return all nets. */
+  const std::vector<Net>& Nets() const { return nets_; }
+
   /** Return all placement rows. */
   std::vector<GeneralRow>& Rows() { return rows_; }
 

@@ -307,6 +307,9 @@ class Circuit {
   // get all nets
   std::vector<Net>& Nets();
 
+  // get all nets
+  const std::vector<Net>& Nets() const;
+
   // check if a Net with a given name exists or not
   bool IsNetExisting(std::string const& net_name);
 
