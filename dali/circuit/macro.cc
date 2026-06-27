@@ -38,9 +38,9 @@ Pin* Macro::AddPin(std::string const& pin_name, bool is_input) {
   auto ret = pin_name_id_map_.find(pin_name);
   if (ret != pin_name_id_map_.end()) {
     DaliExpects(
-        false,
-        "Cannot add this pin in Macro: " + Name() +
-            ", because this pin exists in blk_pin_list already: " + pin_name);
+        false, "Cannot add this pin in Macro: " + Name() +
+                   ", because this pin exists in component pin list already: " +
+                   pin_name);
   }
   pin_name_id_map_.insert(std::unordered_map<std::string, int>::value_type(
       pin_name, static_cast<int>(pin_list_.size())));
@@ -56,9 +56,9 @@ void Macro::AddPin(std::string const& pin_name, double x_offset,
   auto ret = pin_name_id_map_.find(pin_name);
   if (ret != pin_name_id_map_.end()) {
     DaliExpects(
-        false,
-        "Cannot add this pin in Macro: " + Name() +
-            ", because this pin exists in blk_pin_list already: " + pin_name);
+        false, "Cannot add this pin in Macro: " + Name() +
+                   ", because this pin exists in component pin list already: " +
+                   pin_name);
   }
   pin_name_id_map_.insert(std::unordered_map<std::string, int>::value_type(
       pin_name, static_cast<int>(pin_list_.size())));

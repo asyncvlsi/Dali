@@ -37,11 +37,11 @@ class OptimalRegionDistance {
   Circuit* circuit_ = nullptr;
 
   /**
-   * Find the x/y interval where moving blk does not increase connected-net
-   * HPWL.
+   * Find the x/y interval where moving component does not increase
+   * connected-net HPWL.
    */
-  void FindOptimalRegionX(Component& blk, double& lx, double& ly, double& ux,
-                          double& uy) const;
+  void FindOptimalRegionX(Component& component, double& lx, double& ly,
+                          double& ux, double& uy) const;
 
   /** Write normalized optimal-region distances for all design components. */
   void SaveFile(std::string const& file_name) const;

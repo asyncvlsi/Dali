@@ -158,7 +158,7 @@ class Component {
   void SetAux(ComponentAux* aux);
 
   /** Swap only the lower-left location with another component. */
-  void SwapLoc(Component& blk);
+  void SwapLoc(Component& component);
 
   // increase x coordinate by a certain amount
   void IncreaseX(double displacement) { llx_ += displacement; }
@@ -181,9 +181,9 @@ class Component {
   void DecreaseY(double displacement) { lly_ -= displacement; }
 
   /** Return true when this component overlaps another component. */
-  bool IsOverlap(const Component& blk) const {
-    return !(LLX() > blk.URX() || blk.LLX() > URX() || LLY() > blk.URY() ||
-             blk.LLY() > URY());
+  bool IsOverlap(const Component& component) const {
+    return !(LLX() > component.URX() || component.LLX() > URX() ||
+             LLY() > component.URY() || component.LLY() > URY());
   }
 
   bool IsOverlap(const RectI& rect) const {
@@ -192,10 +192,12 @@ class Component {
   }
 
   /** Return true when this component overlaps another component pointer. */
-  bool IsOverlap(const Component* blk) const { return IsOverlap(*blk); }
+  bool IsOverlap(const Component* component) const {
+    return IsOverlap(*component);
+  }
 
   /** Return the overlap area with another component. */
-  double OverlapArea(const Component& blk) const;
+  double OverlapArea(const Component& component) const;
 
   // set stretch length
   void SetStretchLength(size_t index, int length);

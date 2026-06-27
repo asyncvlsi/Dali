@@ -78,10 +78,12 @@ class Net {
   NetAux* Aux();
 
   /** Return x bounds if component_ptr were excluded from this net. */
-  void GetXBoundIfBlkAbsent(Component* component_ptr, double& lo, double& hi);
+  void GetXBoundIfComponentAbsent(Component* component_ptr, double& lo,
+                                  double& hi);
 
   /** Return y bounds if component_ptr were excluded from this net. */
-  void GetYBoundIfBlkAbsent(Component* component_ptr, double& lo, double& hi);
+  void GetYBoundIfComponentAbsent(Component* component_ptr, double& lo,
+                                  double& hi);
 
   /** Sort component pins by component id, then pin id. */
   void SortComponentPinList();
@@ -177,7 +179,7 @@ class Net {
   std::pair<const std::string, int>* name_id_pair_ptr_;
   double weight_;
   int cnt_fixed_;
-  std::vector<NetPin> blk_pins_;
+  std::vector<NetPin> component_pins_;
   std::vector<IoPin*> iopin_ptrs_;
 
   // cached data

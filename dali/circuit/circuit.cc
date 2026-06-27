@@ -50,7 +50,7 @@ void Circuit::InitializeFromPhyDB(phydb::PhyDB* phy_db_ptr) {
   LoadTech(phy_db_ptr_);
   LoadDesign();
   LoadCell(phy_db_ptr_);
-  UpdateTotalBlkArea();
+  UpdateTotalComponentArea();
 
   elapsed_time.RecordEndTime();
   elapsed_time.PrintTimeElapsed();
@@ -329,10 +329,10 @@ void Circuit::ReportComponentType() {
 
 void Circuit::CopyComponentType(Circuit& circuit) {
   for (auto& macro : circuit.tech_.Macros()) {
-    auto type_name = macro.Name();
-    if (type_name == "PIN") continue;
+    auto macro_name = macro.Name();
+    if (macro_name == "PIN") continue;
     Macro* new_macro =
-        AddMacroWithGridUnit(type_name, macro.Width(), macro.Height());
+        AddMacroWithGridUnit(macro_name, macro.Width(), macro.Height());
     for (auto& pin : macro.PinList()) {
       new_macro->AddPin(pin.Name(), pin.OffsetX(), pin.OffsetY());
     }
@@ -434,7 +434,7 @@ void Circuit::AddComponent(std::string const& component_name,
                is_real_cel);
 }
 
-void Circuit::UpdateTotalBlkArea() {
+void Circuit::UpdateTotalComponentArea() {
   design_.tot_white_space_ =
       (unsigned long long)(design_.die_area_.region_right_ -
                            design_.die_area_.region_left_) *
@@ -457,12 +457,12 @@ void Circuit::UpdateTotalBlkArea() {
   if (design_.tot_white_space_ < design_.total_blockage_cover_area_) {
     DaliExpects(false,
                 "Fixed components takes more space than available space? " +
-                    std::to_string(design_.tot_blk_area_) + " " +
+                    std::to_string(design_.total_component_area_) + " " +
                     std::to_string(design_.total_blockage_cover_area_));
   }
   design_.tot_white_space_ -= design_.total_blockage_cover_area_;
-  design_.tot_blk_area_ =
-      design_.total_blockage_cover_area_ + design_.tot_mov_blk_area_;
+  design_.total_component_area_ = design_.total_blockage_cover_area_ +
+                                  design_.total_movable_component_area_;
 }
 
 void Circuit::ReportComponentList() {
@@ -614,10 +614,10 @@ void Circuit::AddIoPinToNet(std::string const& iopin_name,
   }
 }
 
-void Circuit::AddComponentPinToNet(std::string const& blk_name,
+void Circuit::AddComponentPinToNet(std::string const& component_name,
                                    std::string const& pin_name,
                                    std::string const& net_name) {
-  Component* component_ptr = GetComponentPtr(blk_name);
+  Component* component_ptr = GetComponentPtr(component_name);
   Pin* pin = component_ptr->MacroPtr()->GetPinPtr(pin_name);
   Net* net = GetNetPtr(net_name);
   net->AddComponentPinPair(component_ptr, pin);
@@ -677,16 +677,17 @@ void Circuit::ReportBriefSummary() {
   PrintHorizontalLine();
   LOG(info) << "Circuit brief summary:\n";
   LOG(info) << "  movable components: " << TotalMovableComponentCnt() << "\n";
-  LOG(info) << "  fixed components:   " << design_.tot_fixed_blk_num_ << "\n";
+  LOG(info) << "  fixed components:   " << design_.fixed_component_count_
+            << "\n";
   LOG(info) << "  components:         " << TotalComponentCount() << "\n";
   LOG(info) << "  iopins:         " << design_.iopins_.size() << "\n";
   LOG(info) << "  nets:           " << design_.nets_.size() << "\n";
   LOG(info) << "  grid size x/y:  " << GridValueX() << "/" << GridValueY()
             << "um\n";
-  LOG(info) << "  total movable blk area: " << design_.tot_mov_blk_area_
-            << "\n";
+  LOG(info) << "  total movable component area: "
+            << design_.total_movable_component_area_ << "\n";
   LOG(info) << "  total white space     : " << design_.tot_white_space_ << "\n";
-  LOG(info) << "  total component area      : " << design_.tot_blk_area_
+  LOG(info) << "  total component area      : " << design_.total_component_area_
             << "\n";
   LOG(info) << "  total space: "
             << (long long)RegionWidth() * (long long)RegionHeight() << "\n";
@@ -1003,16 +1004,20 @@ void Circuit::ReadMultiWellCell(std::string const& name_of_file) {
   // ReportWellShape();
 }
 
-int Circuit::MinComponentWidth() const { return design_.blk_min_width_; }
+int Circuit::MinComponentWidth() const { return design_.min_component_width_; }
 
-int Circuit::MaxComponentWidth() const { return design_.blk_max_width_; }
+int Circuit::MaxComponentWidth() const { return design_.max_component_width_; }
 
-int Circuit::MinComponentHeight() const { return design_.blk_min_height_; }
+int Circuit::MinComponentHeight() const {
+  return design_.min_component_height_;
+}
 
-int Circuit::MaxComponentHeight() const { return design_.blk_max_height_; }
+int Circuit::MaxComponentHeight() const {
+  return design_.max_component_height_;
+}
 
 unsigned long long Circuit::TotalComponentArea() const {
-  return design_.tot_blk_area_;
+  return design_.total_component_area_;
 }
 
 int Circuit::TotalComponentCount() const {
@@ -1020,13 +1025,13 @@ int Circuit::TotalComponentCount() const {
 }
 
 int Circuit::TotalMovableComponentCnt() const {
-  return design_.tot_mov_blk_num_;
+  return design_.movable_component_count_;
 }
 
 int Circuit::TotalFixedComponentCnt() {
   // TODO: fix int type
   return static_cast<int>(design_.Components().size()) -
-         design_.tot_mov_blk_num_;
+         design_.movable_component_count_;
 }
 
 double Circuit::AverageComponentWidth() const {
@@ -1038,7 +1043,7 @@ double Circuit::AverageComponentHeight() const {
 }
 
 double Circuit::AverageComponentArea() const {
-  return double(design_.tot_blk_area_) / double(TotalComponentCount());
+  return double(design_.total_component_area_) / double(TotalComponentCount());
 }
 
 double Circuit::AverageMovableComponentWidth() const {
@@ -1050,11 +1055,13 @@ double Circuit::AverageMovableComponentHeight() const {
 }
 
 double Circuit::AverageMovableComponentArea() const {
-  return double(design_.tot_mov_blk_area_) / TotalMovableComponentCnt();
+  return double(design_.total_movable_component_area_) /
+         TotalMovableComponentCnt();
 }
 
 double Circuit::WhiteSpaceUsage() const {
-  return double(design_.tot_mov_blk_area_) / double(design_.tot_white_space_);
+  return double(design_.total_movable_component_area_) /
+         double(design_.tot_white_space_);
 }
 
 void Circuit::NetSortComponentPin() {
@@ -1334,8 +1341,8 @@ void Circuit::GenLongNetTable(std::string const& name_of_file) {
     if (hpwl > threshold) {
       ave_hpwl += hpwl;
       ++count;
-      for (auto& blk_pin : net.ComponentPins()) {
-        ost << blk_pin.AbsX() << "\t" << blk_pin.AbsY() << "\t";
+      for (auto& component_pin : net.ComponentPins()) {
+        ost << component_pin.AbsX() << "\t" << component_pin.AbsY() << "\t";
       }
       ost << "\n";
     }
@@ -1365,24 +1372,23 @@ void Circuit::ExportEndCapCells(std::ofstream& ost) {
   DaliExpects(!sites.empty(), "Expect at least one site");
   std::string site_name = sites[0].GetName();
 
-  for (auto& end_cap_cell_type :
-       tech().EndCapCellMacroCollection().Instances()) {
+  for (auto& end_cap_macro : tech().EndCapCellMacroCollection().Instances()) {
     std::string end_cap_type = "POST";
-    if (end_cap_cell_type.Name().find("pre") != std::string::npos) {
+    if (end_cap_macro.Name().find("pre") != std::string::npos) {
       end_cap_type = "PRE";
     }
 
-    double width = end_cap_cell_type.Width() * GridValueX();
-    double height = end_cap_cell_type.Height() * GridValueY();
+    double width = end_cap_macro.Width() * GridValueX();
+    double height = end_cap_macro.Height() * GridValueY();
 
-    ost << "MACRO " << end_cap_cell_type.Name() << "\n";
+    ost << "MACRO " << end_cap_macro.Name() << "\n";
     ost << "    CLASS ENDCAP " << end_cap_type << " ;\n";
-    ost << "    FOREIGN " << end_cap_cell_type.Name() << " 0.0 0.0 ;\n";
+    ost << "    FOREIGN " << end_cap_macro.Name() << " 0.0 0.0 ;\n";
     ost << "    ORIGIN 0.0 0.0 ;\n";
     ost << "    SIZE " << width << " BY " << height << " ;\n";
     ost << "    SYMMETRY Y ;\n";
     ost << "    SITE " << site_name << " ;\n";
-    ost << "END " << end_cap_cell_type.Name() << "\n";
+    ost << "END " << end_cap_macro.Name() << "\n";
     ost << "\n";
   }
 }
@@ -1422,28 +1428,29 @@ void Circuit::SaveLefFile(std::string const& input_lef_file_full_name,
   ist.close();
 }
 
-void Circuit::SaveCell(std::ofstream& ost, Component& blk) const {
-  ost << "- " << blk.Name() << " " << blk.MacroPtr()->Name() << " + "
-      << blk.StatusStr() << " "
-      << "( " << LocDali2PhydbX(blk.LLX()) << " " << LocDali2PhydbY(blk.LLY())
-      << " ) " << OrientStr(blk.Orient()) << " ;\n";
+void Circuit::SaveCell(std::ofstream& ost, Component& component) const {
+  ost << "- " << component.Name() << " " << component.MacroPtr()->Name()
+      << " + " << component.StatusStr() << " "
+      << "( " << LocDali2PhydbX(component.LLX()) << " "
+      << LocDali2PhydbY(component.LLY()) << " ) "
+      << OrientStr(component.Orient()) << " ;\n";
 }
 
 void Circuit::SaveNormalCells(std::ofstream& ost,
                               std::unordered_set<PlaceStatus>* filter_out) {
-  for (auto& blk : design_.Components()) {
-    if (blk.MacroPtr() == tech_.io_dummy_macro_ptr_) continue;
+  for (auto& component : design_.Components()) {
+    if (component.MacroPtr() == tech_.io_dummy_macro_ptr_) continue;
     if (filter_out != nullptr &&
-        filter_out->find(blk.Status()) != filter_out->end()) {
+        filter_out->find(component.Status()) != filter_out->end()) {
       continue;
     }
-    SaveCell(ost, blk);
+    SaveCell(ost, component);
   }
 }
 
 void Circuit::SaveWellTapCells(std::ofstream& ost) {
-  for (auto& blk : design_.WellTaps()) {
-    SaveCell(ost, blk);
+  for (auto& component : design_.WellTaps()) {
+    SaveCell(ost, component);
   }
 }
 
@@ -1845,9 +1852,9 @@ void Circuit::SaveBookshelfNode(std::string const& name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file " + name_of_file);
   ost << "# this line is here just for ntuplace to recognize this file \n\n";
-  ost << "NumNodes : \t\t" << design_.tot_mov_blk_num_ << "\n"
-      << "NumTerminals : \t\t" << Components().size() - design_.tot_mov_blk_num_
-      << "\n";
+  ost << "NumNodes : \t\t" << design_.movable_component_count_ << "\n"
+      << "NumTerminals : \t\t"
+      << Components().size() - design_.movable_component_count_ << "\n";
   for (auto& component : Components()) {
     ost << "\t" << component.Name() << "\t"
         << component.Width() * design_.distance_microns_ * GridValueX() << "\t"
@@ -2100,29 +2107,29 @@ void Circuit::AddComponent(std::string const& component_name, Macro* macro_ptr,
   design_.tot_width_ += component.Width();
   design_.tot_height_ += component.Height();
   if (component.IsMovable()) {
-    ++design_.tot_mov_blk_num_;
-    auto old_tot_mov_area = design_.tot_mov_blk_area_;
-    design_.tot_mov_blk_area_ += component.Area();
-    DaliExpects(old_tot_mov_area <= design_.tot_mov_blk_area_,
+    ++design_.movable_component_count_;
+    auto old_tot_mov_area = design_.total_movable_component_area_;
+    design_.total_movable_component_area_ += component.Area();
+    DaliExpects(old_tot_mov_area <= design_.total_movable_component_area_,
                 "Total Movable Component Area Overflow, choose a different "
                 "MANUFACTURINGGRID/unit");
     design_.tot_mov_width_ += component.Width();
     design_.tot_mov_height_ += component.Height();
   } else {
-    ++design_.tot_fixed_blk_num_;
+    ++design_.fixed_component_count_;
     design_.AddFixedCellPlacementBlockage(component);
   }
-  if (component.Height() < design_.blk_min_height_) {
-    design_.blk_min_height_ = component.Height();
+  if (component.Height() < design_.min_component_height_) {
+    design_.min_component_height_ = component.Height();
   }
-  if (component.Height() > design_.blk_max_height_) {
-    design_.blk_max_height_ = component.Height();
+  if (component.Height() > design_.max_component_height_) {
+    design_.max_component_height_ = component.Height();
   }
-  if (component.Width() < design_.blk_min_width_) {
-    design_.blk_min_width_ = component.Width();
+  if (component.Width() < design_.min_component_width_) {
+    design_.min_component_width_ = component.Width();
   }
-  if (component.Width() > design_.blk_min_width_) {
-    design_.blk_max_width_ = component.Width();
+  if (component.Width() > design_.min_component_width_) {
+    design_.max_component_width_ = component.Width();
   }
 }
 
@@ -2133,13 +2140,13 @@ void Circuit::AddComponent(std::string const& component_name, Macro* macro_ptr,
  * relative location of the only cell pin "pin" is (0,0) with size 0.
  * ****/
 void Circuit::AddDummyIOPinComponentType() {
-  std::string iopin_type_name("__PIN__");
-  auto io_pin_type = AddMacroWithGridUnit(iopin_type_name, 0, 0);
+  std::string io_pin_macro_name("__PIN__");
+  auto io_pin_macro = AddMacroWithGridUnit(io_pin_macro_name, 0, 0);
   std::string tmp_pin_name("pin");
   // TO-DO, the value of @param is_input may not be true
-  Pin* pin = io_pin_type->AddPin(tmp_pin_name, true);
+  Pin* pin = io_pin_macro->AddPin(tmp_pin_name, true);
   pin->SetOffset(0, 0);
-  tech_.io_dummy_macro_ptr_ = io_pin_type;
+  tech_.io_dummy_macro_ptr_ = io_pin_macro;
 }
 
 IoPin* Circuit::AddUnplacedIoPin(std::string const& iopin_name) {
@@ -2378,20 +2385,20 @@ void Circuit::LoadTech(phydb::PhyDB* phy_db_ptr) {
     std::string macro_name(macro.GetName());
     double width = macro.GetWidth();
     double height = macro.GetHeight();
-    Macro* blk_type = nullptr;
+    Macro* macro_ptr = nullptr;
     if (macro.GetClass() == phydb::MacroClass::CORE_WELLTAP) {
       int component_index = AddWellTapMacro(macro_name, width, height);
-      blk_type = &(tech_.Macros()[component_index]);
+      macro_ptr = &(tech_.Macros()[component_index]);
     } else if (macro.GetClass() == phydb::MacroClass::CORE_SPACER) {
-      blk_type = AddFillerMacro(macro_name, width, height);
+      macro_ptr = AddFillerMacro(macro_name, width, height);
     } else if (macro.GetClass() == phydb::MacroClass::ENDCAP_PRE) {
-      blk_type = AddMacro(macro_name, width, height);
-      tech_.pre_end_cap_cell_ptr_ = blk_type;
+      macro_ptr = AddMacro(macro_name, width, height);
+      tech_.pre_end_cap_cell_ptr_ = macro_ptr;
     } else if (macro.GetClass() == phydb::MacroClass::ENDCAP_POST) {
-      blk_type = AddMacro(macro_name, width, height);
-      tech_.post_end_cap_cell_ptr_ = blk_type;
+      macro_ptr = AddMacro(macro_name, width, height);
+      tech_.post_end_cap_cell_ptr_ = macro_ptr;
     } else {
-      blk_type = AddMacro(macro_name, width, height);
+      macro_ptr = AddMacro(macro_name, width, height);
     }
     auto& macro_pins = macro.GetPinsRef();
     for (auto& pin : macro_pins) {
@@ -2401,11 +2408,11 @@ void Circuit::LoadTech(phydb::PhyDB* phy_db_ptr) {
       bool is_input = true;
       auto pin_direction = pin.GetDirection();
       is_input = (pin_direction == phydb::SignalDirection::INPUT);
-      Pin* new_pin = blk_type->AddPin(pin_name, is_input);
+      Pin* new_pin = macro_ptr->AddPin(pin_name, is_input);
 
       auto& layer_rects = pin.GetLayerRectRef();
       DaliExpects(!layer_rects.empty(),
-                  "No physical pins, Macro: " << blk_type->Name()
+                  "No physical pins, Macro: " << macro_ptr->Name()
                                               << ", pin: " << pin_name);
 
       auto bbox = pin.GetBoundingBox();
@@ -2456,7 +2463,7 @@ void Circuit::LoadComponents() {
   auto& phy_db_design = *(phy_db_ptr_->GetDesignPtr());
   auto& components = phy_db_design.GetComponentsRef();
   for (auto& comp : components) {
-    std::string blk_name(comp.GetName());
+    std::string component_name(comp.GetName());
     std::string macro_name(comp.GetMacro()->GetName());
     auto location = comp.GetLocation();
     int llx = location.x;
@@ -2465,7 +2472,7 @@ void Circuit::LoadComponents() {
     double ly = std::round(LocPhydb2DaliY(lly));
     auto place_status = PlaceStatus(comp.GetPlacementStatus());
     auto orient = ComponentOrient(comp.GetOrientation());
-    AddComponent(blk_name, macro_name, lx, ly, place_status, orient);
+    AddComponent(component_name, macro_name, lx, ly, place_status, orient);
   }
 }
 

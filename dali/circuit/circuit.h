@@ -268,7 +268,7 @@ class Circuit {
                     double lly = 0, PlaceStatus place_status = UNPLACED,
                     ComponentOrient orient = N, bool is_real_cel = true);
 
-  void UpdateTotalBlkArea();
+  void UpdateTotalComponentArea();
 
   // report the whole Component list for debugging purposes
   void ReportComponentList();
@@ -324,7 +324,7 @@ class Circuit {
                      std::string const& net_name);
 
   // add a component pin to a net
-  void AddComponentPinToNet(std::string const& blk_name,
+  void AddComponentPinToNet(std::string const& component_name,
                             std::string const& pin_name,
                             std::string const& net_name);
 
@@ -590,7 +590,7 @@ class Circuit {
   void LoadCell(phydb::PhyDB* phy_db_ptr);
 
   // export cells/components to an output stream
-  void SaveCell(std::ofstream& ost, Component& blk) const;
+  void SaveCell(std::ofstream& ost, Component& component) const;
   void SaveNormalCells(std::ofstream& ost,
                        std::unordered_set<PlaceStatus>* filter = nullptr);
   void SaveWellTapCells(std::ofstream& ost);

@@ -25,20 +25,20 @@
 
 namespace dali {
 
-void OptimalRegionDistance::FindOptimalRegionX(Component& blk, double& lx,
+void OptimalRegionDistance::FindOptimalRegionX(Component& component, double& lx,
                                                double& ly, double& ux,
                                                double& uy) const {
   std::vector<double> loc_list_x;
   std::vector<double> loc_list_y;
   auto& net_list = circuit_->design().Nets();
-  for (auto& it : blk.NetList()) {
+  for (auto& it : component.NetList()) {
     // find offset
     double offset_x = DBL_MAX;
     double offset_y = DBL_MAX;
-    for (auto& blk_pin : net_list[it].ComponentPins()) {
-      if (blk_pin.ComponentPtr() == &blk) {
-        offset_x = blk_pin.OffsetX();
-        offset_y = blk_pin.OffsetY();
+    for (auto& component_pin : net_list[it].ComponentPins()) {
+      if (component_pin.ComponentPtr() == &component) {
+        offset_x = component_pin.OffsetX();
+        offset_y = component_pin.OffsetY();
         break;
       }
     }
@@ -48,21 +48,21 @@ void OptimalRegionDistance::FindOptimalRegionX(Component& blk, double& lx,
     double max_x = -1e10;
     double min_y = 1e10;
     double max_y = -1e10;
-    for (auto& blk_pin : net_list[it].ComponentPins()) {
-      if (blk_pin.ComponentPtr() == &blk) {
+    for (auto& component_pin : net_list[it].ComponentPins()) {
+      if (component_pin.ComponentPtr() == &component) {
         continue;
       } else {
-        if (blk_pin.AbsX() < min_x) {
-          min_x = blk_pin.AbsX();
+        if (component_pin.AbsX() < min_x) {
+          min_x = component_pin.AbsX();
         }
-        if (blk_pin.AbsX() > max_x) {
-          max_x = blk_pin.AbsX();
+        if (component_pin.AbsX() > max_x) {
+          max_x = component_pin.AbsX();
         }
-        if (blk_pin.AbsY() < min_y) {
-          min_y = blk_pin.AbsY();
+        if (component_pin.AbsY() < min_y) {
+          min_y = component_pin.AbsY();
         }
-        if (blk_pin.AbsY() > max_y) {
-          max_y = blk_pin.AbsY();
+        if (component_pin.AbsY() > max_y) {
+          max_y = component_pin.AbsY();
         }
       }
     }
@@ -100,10 +100,10 @@ void OptimalRegionDistance::SaveFile(std::string const& file_name) const {
   double lx, ly, ux, uy;
   double llx, lly;
   double res;
-  for (auto& blk : circuit_->design().Components()) {
-    FindOptimalRegionX(blk, lx, ly, ux, uy);
-    llx = blk.LLX();
-    lly = blk.LLY();
+  for (auto& component : circuit_->design().Components()) {
+    FindOptimalRegionX(component, lx, ly, ux, uy);
+    llx = component.LLX();
+    lly = component.LLY();
     bool x_optimal = lx <= llx && llx <= ux;
     bool y_optimal = ly <= lly && lly <= uy;
     if (x_optimal && y_optimal) {

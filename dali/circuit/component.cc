@@ -60,13 +60,13 @@ void Component::SetOrient(ComponentOrient orient) { orient_ = orient; }
 
 void Component::SetAux(ComponentAux* aux) { aux_ptr_ = aux; }
 
-void Component::SwapLoc(Component& blk) {
+void Component::SwapLoc(Component& component) {
   double tmp_x = llx_;
   double tmp_y = lly_;
-  llx_ = blk.LLX();
-  lly_ = blk.LLY();
-  blk.SetLLX(tmp_x);
-  blk.SetLLY(tmp_y);
+  llx_ = component.LLX();
+  lly_ = component.LLY();
+  component.SetLLX(tmp_x);
+  component.SetLLY(tmp_y);
 }
 
 void Component::IncreaseX(double displacement, double upper, double lower) {
@@ -89,14 +89,14 @@ void Component::IncreaseY(double displacement, double upper, double lower) {
   }
 }
 
-double Component::OverlapArea(const Component& blk) const {
+double Component::OverlapArea(const Component& component) const {
   double overlap_area = 0;
-  if (IsOverlap(blk)) {
+  if (IsOverlap(component)) {
     double llx, urx, lly, ury;
-    llx = std::max(LLX(), blk.LLX());
-    urx = std::min(URX(), blk.URX());
-    lly = std::max(LLY(), blk.LLY());
-    ury = std::min(URY(), blk.URY());
+    llx = std::max(LLX(), component.LLX());
+    urx = std::min(URX(), component.URX());
+    lly = std::max(LLY(), component.LLY());
+    ury = std::min(URY(), component.URY());
     overlap_area = (urx - llx) * (ury - lly);
   }
   return overlap_area;

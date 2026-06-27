@@ -102,7 +102,7 @@ class Design {
   }
 
   /** Return the number of real, user/design-created components. */
-  int RealBlkCnt() const { return real_component_count_; }
+  int RealComponentCount() const { return real_component_count_; }
 
   /** Return well tap cell instances. */
   std::vector<Component>& WellTaps() {
@@ -197,7 +197,7 @@ class Design {
   int real_component_count_ = 0;
   // number of components given in DEF, these two numbers are supposed to be the
   // same
-  int blk_count_limit_ = 0;
+  int component_count_limit_ = 0;
 
   /****placement blockages****/
   std::vector<PlacementBlockage> intrinsic_blockages_;
@@ -227,18 +227,18 @@ class Design {
   /****statistical data of the circuit****/
   unsigned long tot_width_ = 0;
   unsigned long tot_height_ = 0;
-  unsigned long long tot_blk_area_ = 0;
+  unsigned long long total_component_area_ = 0;
   unsigned long long total_blockage_cover_area_ = 0;
   unsigned long long tot_white_space_ = 0;
   unsigned long tot_mov_width_ = 0;
   unsigned long tot_mov_height_ = 0;
-  unsigned long long tot_mov_blk_area_ = 0;
-  int tot_mov_blk_num_ = 0;
-  int tot_fixed_blk_num_ = 0;
-  int blk_min_width_ = INT_MAX;
-  int blk_max_width_ = INT_MIN;
-  int blk_min_height_ = INT_MAX;
-  int blk_max_height_ = INT_MIN;
+  unsigned long long total_movable_component_area_ = 0;
+  int movable_component_count_ = 0;
+  int fixed_component_count_ = 0;
+  int min_component_width_ = INT_MAX;
+  int max_component_width_ = INT_MIN;
+  int min_component_height_ = INT_MAX;
+  int max_component_height_ = INT_MIN;
 
   /****helper functions****/
   RectI ExpandOffGridPlacementBlockage(double lx, double ly, double ux,
