@@ -30,7 +30,7 @@
 
 namespace dali {
 
-/** Interface for rough legalizers that remove gross cell overlap. */
+/** Interface for rough legalizers that remove gross component overlap. */
 class RoughLegalizer {
  public:
   explicit RoughLegalizer(Circuit* ckt_ptr);
@@ -39,8 +39,8 @@ class RoughLegalizer {
   /** Initialize legalizer state for a target placement density. */
   virtual void Initialize(double placement_density) = 0;
 
-  /** Spread cells to reduce overlap and return current HPWL. */
-  virtual double RemoveCellOverlap() = 0;
+  /** Spread components to reduce overlap and return current HPWL. */
+  virtual double RemoveComponentOverlap() = 0;
 
   /** Return total legalizer runtime in seconds. */
   virtual double GetTime() = 0;
@@ -101,7 +101,7 @@ class LookAheadLegalizer : public RoughLegalizer {
   void PlaceComponentInBox(BoxBin& box);
   void SplitBox(BoxBin& box);
   bool RecursiveBisectionComponentSpreading();
-  double RemoveCellOverlap() override;
+  double RemoveComponentOverlap() override;
 
   double GetTime() override;
   void Close() override;

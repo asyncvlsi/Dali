@@ -25,7 +25,7 @@
 
 namespace dali {
 
-/** Continuous cell-area cut point used during recursive bisection. */
+/** Continuous component-area cut point used during recursive bisection. */
 struct ComponentCutPoint {
   ComponentCutPoint() : x(0), y(0) {}
   ComponentCutPoint(double x0, double y0) : x(x0), y(y0) {}

@@ -139,7 +139,7 @@ void GlobalPlacer::RunPlacementIterations() {
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     optimizer_->SetIteration(cur_iter_);
     optimizer_->OptimizeHpwl();
-    legalizer_->RemoveCellOverlap();
+    legalizer_->RemoveComponentOverlap();
     PrintHpwl();
     if (IsPlacementConverged()) break;
   }

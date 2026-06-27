@@ -282,7 +282,7 @@ void LookAheadLegalizer::UpdateGridBinState() {
 
   // for each component, find the index of the grid bin it should be in.
   // note that in extreme cases, the index might be smaller than 0 or larger
-  // than the maximum allowed index, because the cell is on the boundaries,
+  // than the maximum allowed index, because the component is on the boundaries,
   // so we need to make some modifications for these extreme cases.
   std::vector<Component>& components = ckt_ptr_->Components();
   int sz = static_cast<int>(components.size());
@@ -546,9 +546,9 @@ uint32_t LookAheadLegalizer::LookUpWhiteSpace(WindowQuadruple& window) {
 void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
   /****
    * this function find the box for the largest cluster,
-   * such that the total white space in the box is larger than the total cell
-   * area the way to do this is just by expanding the boundaries of the bounding
-   * box of the first cluster
+   * such that the total white space in the box is larger than the total
+   * component area the way to do this is just by expanding the boundaries of
+   * the bounding box of the first cluster
    *
    * Part 1
    * find the index of the maximum cluster
@@ -739,25 +739,6 @@ void LookAheadLegalizer::SplitGridBox(BoxBin& box) {
 }
 
 void LookAheadLegalizer::PlaceComponentInBox(BoxBin& box) {
-  /* this is the simplest version, just linearly move components in the
-   * component_box to the grid box non-linearity is not considered yet*/
-
-  /*double component_box_left, component_box_bottom;
-double component_box_width, component_box_height;
-component_box_left = box.ll_point.x;
-component_box_bottom = box.ll_point.y;
-component_box_width = box.ur_point.x - component_box_left;
-component_box_height = box.ur_point.y - component_box_bottom;
-Component *cell;
-
-for (auto &component: box.component_ptrs) {
-  cell = &component_list[component];
-  cell->SetCenterX((cell->X() - component_box_left)/component_box_width *
-(box.right - box.left) + box.left); cell->SetCenterY((cell->Y() -
-component_box_bottom)/component_box_height * (box.top - box.bottom) +
-box.bottom);
-}*/
-
   int sz = static_cast<int>(box.component_ptrs.size());
   std::vector<std::pair<Component*, double>> index_loc_list_x(sz);
   std::vector<std::pair<Component*, double>> index_loc_list_y(sz);
@@ -1010,7 +991,7 @@ bool LookAheadLegalizer::RecursiveBisectionComponentSpreading() {
   return true;
 }
 
-double LookAheadLegalizer::RemoveCellOverlap() {
+double LookAheadLegalizer::RemoveComponentOverlap() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 

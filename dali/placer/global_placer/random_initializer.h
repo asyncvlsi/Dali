@@ -142,7 +142,8 @@ class MonteCarloInitializer : public RandomInitializer {
   int num_trials_ = 50;
 };
 
-/** Density-aware initializer that places each cell in the least dense bin. */
+/** Density-aware initializer that places each component in the least dense bin.
+ */
 class DensityAwareInitializer : public MonteCarloInitializer {
  public:
   explicit DensityAwareInitializer(Circuit* ckt_ptr, uint32_t random_seed = 1);

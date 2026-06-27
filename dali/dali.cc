@@ -541,7 +541,7 @@ bool Dali::GlobalPlace(double density, int num_threads) {
 
 /**
  * Perform unified legalization for a gridded cell design.
- * Unified legalization includes removing cell overlaps and
+ * Unified legalization includes removing component overlaps and
  * fixing all N/P well design rule violations.
  *
  * N/P well rectangles, NP/PP rectangles, and clusters will

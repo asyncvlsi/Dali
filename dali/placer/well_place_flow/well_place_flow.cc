@@ -50,7 +50,7 @@ bool WellPlaceFlow::StartPlacement() {  // TODO: do not use this
   max_iter_ = 50;
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     LOG(trace) << cur_iter_ << "-th iteration\n";
-    legalizer_->RemoveCellOverlap();
+    legalizer_->RemoveComponentOverlap();
     if (cur_iter_ > 10) {
       ExtendedTetrisLegalizer legalizer;
       legalizer.CopyPlacementContextFrom(this);
