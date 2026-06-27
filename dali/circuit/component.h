@@ -130,54 +130,52 @@ class Component {
   /** Set lower-left location in Dali grid units. */
   void SetLoc(double lx, double ly);
 
-  // set the lower left x coordinate
+  /** Set lower-left x coordinate in Dali grid units. */
   void SetLLX(double lx) { llx_ = lx; }
 
-  // set the lower left y coordinate
+  /** Set lower-left y coordinate in Dali grid units. */
   void SetLLY(double ly) { lly_ = ly; }
 
-  // set the upper right x coordinate
+  /** Set upper-right x coordinate while preserving width. */
   void SetURX(double ux) { llx_ = ux - Width(); }
 
-  // set the upper right y coordinate
+  /** Set upper-right y coordinate while preserving effective height. */
   void SetURY(double uy) { lly_ = uy - Height(); }
 
-  // set the center x coordinate
+  /** Set center x coordinate while preserving width. */
   void SetCenterX(double center_x) { llx_ = center_x - Width() / 2.0; }
 
-  // set the center y coordinate
+  /** Set center y coordinate while preserving effective height. */
   void SetCenterY(double center_y) { lly_ = center_y - Height() / 2.0; }
 
-  // set the placement status of this Component
+  /** Set the placement status. */
   void SetPlacementStatus(PlaceStatus place_status);
 
-  // set the orientation of this Component
+  /** Set the component orientation. */
   void SetOrient(ComponentOrient orient);
 
-  // set the pointer to the auxiliary information
+  /** Attach auxiliary placement data owned by a later flow. */
   void SetAux(ComponentAux* aux);
 
   /** Swap only the lower-left location with another component. */
   void SwapLoc(Component& component);
 
-  // increase x coordinate by a certain amount
+  /** Increase x coordinate by displacement. */
   void IncreaseX(double displacement) { llx_ += displacement; }
 
-  // increase y coordinate by a certain amount
+  /** Increase y coordinate by displacement. */
   void IncreaseY(double displacement) { lly_ += displacement; }
 
-  // increase x coordinate by a certain amount, but the final location is
-  // bounded by @param lower, and upper
+  /** Increase x coordinate by displacement and clamp within [lower, upper]. */
   void IncreaseX(double displacement, double upper, double lower);
 
-  // increase y coordinate by a certain amount, but the final location is
-  // bounded by @param lower, and upper
+  /** Increase y coordinate by displacement and clamp within [lower, upper]. */
   void IncreaseY(double displacement, double upper, double lower);
 
-  // decrease x coordinate by a certain amount
+  /** Decrease x coordinate by displacement. */
   void DecreaseX(double displacement) { llx_ -= displacement; }
 
-  // decrease y coordinate by a certain amount
+  /** Decrease y coordinate by displacement. */
   void DecreaseY(double displacement) { lly_ -= displacement; }
 
   /** Return true when this component overlaps another component. */
@@ -199,10 +197,10 @@ class Component {
   /** Return the overlap area with another component. */
   double OverlapArea(const Component& component) const;
 
-  // set stretch length
+  /** Set stretch length for a region boundary. */
   void SetStretchLength(size_t index, int length);
 
-  // returns the stretching lengths
+  /** Return all stretch lengths. */
   std::vector<int>& StretchLengths();
 
   int CumulativeStretchLength(size_t index);
@@ -218,7 +216,7 @@ class Component {
 
  protected:
   Macro* macro_ptr_ = nullptr;
-  // name for finding its index in component_list
+  // Points to the canonical name owned by Design's component registry.
   std::string const* name_ptr_ = nullptr;
   int id_ = 0;
   double llx_ =
@@ -250,9 +248,6 @@ class ComponentAux {
 
   /** Return the component that owns this auxiliary data. */
   Component* GetComponentPtr() const { return component_ptr_; }
-
-  /** Return the component that owns this auxiliary data. */
-  Component* getComponentPtr() const { return GetComponentPtr(); }
 
  protected:
   Component* component_ptr_;
