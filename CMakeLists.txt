@@ -176,6 +176,7 @@ add_dali_executable(mhlg dali/application/multi_height_legalization.cc)
 enable_testing()
 add_subdirectory(tests/application)
 add_subdirectory(tests/common)
+add_subdirectory(tests/circuit)
 add_subdirectory(tests/placer)
 
 # ------------------------------------------------------------------------------

@@ -27,9 +27,15 @@
 #include "dali/common/helper.h"
 
 namespace dali {
+namespace {
 
-void CheckCommonSegment(std::pair<int2d, int2d>& seg_0,
-                        std::pair<int2d, int2d>& seg_1) {
+bool IsStrictlyBetween(int value, int bound_0, int bound_1) {
+  return value > std::min(bound_0, bound_1) &&
+         value < std::max(bound_0, bound_1);
+}
+
+void CheckCommonSegment(const std::pair<int2d, int2d>& seg_0,
+                        const std::pair<int2d, int2d>& seg_1) {
   bool is_horizontal_0 = (seg_0.first.y == seg_0.second.y);
   bool is_horizontal_1 = (seg_1.first.y == seg_1.second.y);
 
@@ -55,22 +61,26 @@ void CheckCommonSegment(std::pair<int2d, int2d>& seg_0,
                     << "line: " << seg_1.first << " " << seg_1.second);
   } else if (is_horizontal_0 && (!is_horizontal_1)) {
     int x_1 = seg_1.first.x;
-    int low_0 = std::min(seg_0.first.x, seg_0.second.x);
-    int high_0 = std::max(seg_0.first.x, seg_0.second.x);
-    DaliExpects((low_0 >= x_1) || (x_1 >= high_0),
+    int y_0 = seg_0.first.y;
+    bool crosses = IsStrictlyBetween(x_1, seg_0.first.x, seg_0.second.x) &&
+                   IsStrictlyBetween(y_0, seg_1.first.y, seg_1.second.y);
+    DaliExpects(!crosses,
                 "Die area contains intersecting lines\n"
                     << "line: " << seg_0.first << " " << seg_0.second << "\n"
                     << "line: " << seg_1.first << " " << seg_1.second);
   } else {  // !is_horizontal_0 && is_horizontal_1
     int x_0 = seg_0.first.x;
-    int low_1 = std::min(seg_1.first.x, seg_1.second.x);
-    int high_1 = std::max(seg_1.first.x, seg_1.second.x);
-    DaliExpects((low_1 >= x_0) || (x_0 >= high_1),
+    int y_1 = seg_1.first.y;
+    bool crosses = IsStrictlyBetween(x_0, seg_1.first.x, seg_1.second.x) &&
+                   IsStrictlyBetween(y_1, seg_0.first.y, seg_0.second.y);
+    DaliExpects(!crosses,
                 "Die area contains intersecting lines\n"
                     << "line: " << seg_0.first << " " << seg_0.second << "\n"
                     << "line: " << seg_1.first << " " << seg_1.second);
   }
 }
+
+}  // namespace
 
 /****
  * This function takes rectilinear die area in the unit of manufacturing grid,
@@ -85,8 +95,8 @@ void DieArea::SetRawRectilinearDieArea(
   rectilinear_die_area_ = rectilinear_die_area;
   MaybeExpandTwoPointsToFour();
   CheckRectilinearLines();
-  CheckIntersectingLines();
   CheckAndRemoveRedundantPoints();
+  CheckIntersectingLines();
   DetectMinimumBoundingBox();
   ShrinkOffGridBoundingBox();
   CreatePlacementBlockages();
@@ -234,10 +244,11 @@ void DieArea::CheckAndRemoveRedundantPointsImp() {
   }
 
   // now we have a new die area with a shorter length
+  size_t new_num_points = new_rectilinear_die_area_.size();
   rectilinear_die_area_.swap(new_rectilinear_die_area_);
 
   // if there is redundancy, we may need to check again
-  if (new_rectilinear_die_area_.size() != num_points) {
+  if (new_num_points != num_points) {
     CheckAndRemoveRedundantPointsImp();
   }
 }

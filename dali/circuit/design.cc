@@ -77,6 +77,7 @@ void Design::AddFixedComponentPlacementBlockage(Component& component) {
 }
 
 void Design::UpdateDieAreaPlacementBlockages() {
+  die_area_dummy_blockages_.clear();
   for (auto& rect : die_area_.PlacementBlockages()) {
     die_area_dummy_blockages_.emplace_back(rect);
   }
