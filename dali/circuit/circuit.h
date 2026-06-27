@@ -398,7 +398,7 @@ class Circuit {
   int TotalMovableComponentCnt() const;
 
   // returns the total number of fixed components
-  int TotalFixedComponentCnt();
+  int TotalFixedComponentCnt() const;
 
   // returns the average width of components
   double AverageComponentWidth() const;

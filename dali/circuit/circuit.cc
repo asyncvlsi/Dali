@@ -37,6 +37,18 @@
 
 namespace dali {
 
+namespace {
+
+double CheckedAverage(unsigned long long total, int count,
+                      const std::string& quantity_name) {
+  DaliExpects(count > 0, "Cannot compute average "
+                             << quantity_name
+                             << " without any matching components");
+  return static_cast<double>(total) / static_cast<double>(count);
+}
+
+}  // namespace
+
 Circuit::Circuit() { AddDummyIOPinComponentType(); }
 
 void Circuit::InitializeFromPhyDB(phydb::PhyDB* phy_db_ptr) {
@@ -1028,35 +1040,38 @@ int Circuit::TotalMovableComponentCnt() const {
   return design_.movable_component_count_;
 }
 
-int Circuit::TotalFixedComponentCnt() {
-  // TODO: fix int type
-  return static_cast<int>(design_.Components().size()) -
-         design_.movable_component_count_;
+int Circuit::TotalFixedComponentCnt() const {
+  return design_.fixed_component_count_;
 }
 
 double Circuit::AverageComponentWidth() const {
-  return double(design_.tot_width_) / double(TotalComponentCount());
+  return CheckedAverage(design_.tot_width_, TotalComponentCount(),
+                        "component width");
 }
 
 double Circuit::AverageComponentHeight() const {
-  return double(design_.tot_height_) / double(TotalComponentCount());
+  return CheckedAverage(design_.tot_height_, TotalComponentCount(),
+                        "component height");
 }
 
 double Circuit::AverageComponentArea() const {
-  return double(design_.total_component_area_) / double(TotalComponentCount());
+  return CheckedAverage(design_.total_component_area_, TotalComponentCount(),
+                        "component area");
 }
 
 double Circuit::AverageMovableComponentWidth() const {
-  return double(design_.tot_mov_width_) / TotalMovableComponentCnt();
+  return CheckedAverage(design_.tot_mov_width_, TotalMovableComponentCnt(),
+                        "movable component width");
 }
 
 double Circuit::AverageMovableComponentHeight() const {
-  return double(design_.tot_mov_height_) / TotalMovableComponentCnt();
+  return CheckedAverage(design_.tot_mov_height_, TotalMovableComponentCnt(),
+                        "movable component height");
 }
 
 double Circuit::AverageMovableComponentArea() const {
-  return double(design_.total_movable_component_area_) /
-         TotalMovableComponentCnt();
+  return CheckedAverage(design_.total_movable_component_area_,
+                        TotalMovableComponentCnt(), "movable component area");
 }
 
 double Circuit::WhiteSpaceUsage() const {
@@ -2128,7 +2143,7 @@ void Circuit::AddComponent(std::string const& component_name, Macro* macro_ptr,
   if (component.Width() < design_.min_component_width_) {
     design_.min_component_width_ = component.Width();
   }
-  if (component.Width() > design_.min_component_width_) {
+  if (component.Width() > design_.max_component_width_) {
     design_.max_component_width_ = component.Width();
   }
 }
