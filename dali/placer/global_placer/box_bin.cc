@@ -29,12 +29,12 @@
 namespace dali {
 namespace {
 
-double ComputeFillingRate(unsigned long long cell_area,
+double ComputeFillingRate(unsigned long long component_area,
                           unsigned long long white_space) {
   if (white_space == 0) {
-    return cell_area == 0 ? 0.0 : std::numeric_limits<double>::infinity();
+    return component_area == 0 ? 0.0 : std::numeric_limits<double>::infinity();
   }
-  return double(cell_area) / double(white_space);
+  return double(component_area) / double(white_space);
 }
 
 }  // namespace
@@ -42,11 +42,11 @@ double ComputeFillingRate(unsigned long long cell_area,
 BoxBin::BoxBin() {
   all_terminal = false;
   cut_direction_x = false;
-  total_cell_area = 0;
+  total_component_area = 0;
   total_white_space = 0;
   filling_rate = 0;
-  total_cell_area_low = 0;
-  total_cell_area_high = 0;
+  total_component_area_low = 0;
+  total_component_area_high = 0;
   left = 0;
   right = 0;
   bottom = 0;
@@ -68,45 +68,45 @@ void BoxBin::update_all_terminal(
   all_terminal = true;
 }
 
-void BoxBin::update_cell_area() {
+void BoxBin::UpdateComponentArea() {
   /*
-  int temp_total_cell_area = 0;
+  int temp_total_component_area = 0;
   Component *node;
-  for (auto &cell_id: cell_list) {
-    node = &Nodelist[cell_id];
-    temp_total_cell_area += node->Area();
+  for (auto &component: component_ptrs) {
+    node = &Nodelist[component];
+    temp_total_component_area += node->Area();
   }
-  LOG(info)   << "Total cell area: " << total_cell_area << "  " <<
-  temp_total_cell_area << "\n"; temp_total_cell_area = 0; for (auto &node:
-  Nodelist) { if (node.isterminal()) continue; if ((node.x0 >= ll_point.x) &&
-  (node.x0 < ur_point.x) && (node.y0 >= ll_point.y) && (node.y0 < ur_point.y)) {
-      temp_total_cell_area += node.Area();
+  LOG(info)   << "Total component area: " << total_component_area << "  " <<
+  temp_total_component_area << "\n"; temp_total_component_area = 0; for (auto
+  &node: Nodelist) { if (node.isterminal()) continue; if ((node.x0 >=
+  ll_point.x) && (node.x0 < ur_point.x) && (node.y0 >= ll_point.y) && (node.y0 <
+  ur_point.y)) { temp_total_component_area += node.Area();
     }
   }
-  LOG(info)   << "Total cell area: " << total_cell_area << "  " <<
-  temp_total_cell_area << "\n";
+  LOG(info)   << "Total component area: " << total_component_area << "  " <<
+  temp_total_component_area << "\n";
   */
 
-  total_cell_area = 0;
-  for (auto& component_ptr : cell_list) {
-    total_cell_area += component_ptr->Area();
+  total_component_area = 0;
+  for (auto& component_ptr : component_ptrs) {
+    total_component_area += component_ptr->Area();
   }
 }
 
-void BoxBin::update_cell_area_white_space(
+void BoxBin::UpdateComponentAreaWhiteSpace(
     std::vector<std::vector<GridBin>>& grid_bin_matrix) {
-  total_cell_area = 0;
+  total_component_area = 0;
   total_white_space = 0;
   for (int x = ll_index.x; x <= ur_index.x; x++) {
     for (int y = ll_index.y; y <= ur_index.y; y++) {
       total_white_space += grid_bin_matrix[x][y].white_space;
-      total_cell_area += grid_bin_matrix[x][y].cell_area;
+      total_component_area += grid_bin_matrix[x][y].component_area;
     }
   }
-  filling_rate = ComputeFillingRate(total_cell_area, total_white_space);
+  filling_rate = ComputeFillingRate(total_component_area, total_white_space);
 }
 
-void BoxBin::UpdateCellAreaWhiteSpaceFillingRate(
+void BoxBin::UpdateComponentAreaWhiteSpaceFillingRate(
     std::vector<std::vector<unsigned long long>>& grid_bin_white_space_LUT,
     std::vector<std::vector<GridBin>>& grid_bin_matrix) {
   if (ll_index.x == 0) {
@@ -128,13 +128,13 @@ void BoxBin::UpdateCellAreaWhiteSpaceFillingRate(
           grid_bin_white_space_LUT[ll_index.x - 1][ll_index.y - 1];
     }
   }
-  total_cell_area = 0;
+  total_component_area = 0;
   for (int x = ll_index.x; x <= ur_index.x; x++) {
     for (int y = ll_index.y; y <= ur_index.y; y++) {
-      total_cell_area += grid_bin_matrix[x][y].cell_area;
+      total_component_area += grid_bin_matrix[x][y].component_area;
     }
   }
-  filling_rate = ComputeFillingRate(total_cell_area, total_white_space);
+  filling_rate = ComputeFillingRate(total_component_area, total_white_space);
 }
 
 void BoxBin::ExpandBox(int grid_cnt_x, int grid_cnt_y) {
@@ -173,7 +173,7 @@ bool BoxBin::write_box_boundary(std::string const& NameOfFile) {
   return true;
 }
 
-bool BoxBin::write_cell_region(std::string const& NameOfFile) {
+bool BoxBin::WriteComponentRegion(std::string const& NameOfFile) {
   std::ofstream ost;
   ost.open(NameOfFile.c_str(), std::ios::app);
   if (ost.is_open() == 0) {
@@ -198,16 +198,16 @@ bool BoxBin::write_cell_region(std::string const& NameOfFile) {
   return true;
 }
 
-void BoxBin::UpdateCellList(
+void BoxBin::UpdateComponentList(
     std::vector<std::vector<GridBin>>& grid_bin_matrix) {
-  cell_list.clear();
+  component_ptrs.clear();
   for (int x = ll_index.x; x <= ur_index.x; x++) {
     for (int y = ll_index.y; y <= ur_index.y; y++) {
-      for (auto& component_ptr : grid_bin_matrix[x][y].cell_list) {
-        cell_list.push_back(component_ptr);
+      for (auto& component_ptr : grid_bin_matrix[x][y].component_ptrs) {
+        component_ptrs.push_back(component_ptr);
       }
-      grid_bin_matrix[x][y].cell_list.clear();
-      grid_bin_matrix[x][y].cell_area = 0;
+      grid_bin_matrix[x][y].component_ptrs.clear();
+      grid_bin_matrix[x][y].component_area = 0;
       grid_bin_matrix[x][y].over_fill = false;
     }
   }
@@ -319,14 +319,14 @@ bool BoxBin::IsMoreHorizontalCutlines() const {
   return horizontal_cutlines.size() > vertical_cutlines.size();
 }
 
-bool BoxBin::write_cell_in_box(std::string const& NameOfFile) {
+bool BoxBin::WriteComponentsInBox(std::string const& NameOfFile) {
   std::ofstream ost;
   ost.open(NameOfFile.c_str(), std::ios::app);
   if (ost.is_open() == 0) {
     LOG(info) << "Cannot open file" << NameOfFile << "\n";
     return false;
   }
-  for (auto& component_ptr : cell_list) {
+  for (auto& component_ptr : component_ptrs) {
     if (component_ptr->IsMovable()) {
       ost << component_ptr->X() << "\t" << component_ptr->Y() << "\n";
     }
@@ -418,16 +418,16 @@ bool BoxBin::update_cut_index_white_space(
   }
 }
 
-bool BoxBin::update_cut_point_cell_list_low_high(
+bool BoxBin::UpdateCutPointComponentLists(
     unsigned long long& box1_total_white_space,
     unsigned long long& box2_total_white_space) {
   // this member function will be called only when two white spaces are not
   // different from each other for several magnitudes
   DaliExpects(box1_total_white_space > 0,
-              "Cannot split cell list against zero lower-box white space");
-  DaliExpects(total_cell_area > 0,
-              "Cannot split an empty cell list by cell area");
-  unsigned long long cell_area_low = 0;
+              "Cannot split component list against zero lower-box white space");
+  DaliExpects(total_component_area > 0,
+              "Cannot split an empty component list by component area");
+  unsigned long long component_area_low = 0;
   double cut_line_low, cut_line_high;
   double cut_line = 0;
   double ratio =
@@ -440,18 +440,19 @@ bool BoxBin::update_cut_point_cell_list_low_high(
     cut_line_high = ur_point.y;
     for (int i = 0; i < 20; i++) {
       // LOG(info)   << i << "\n";
-      cell_area_low = 0;
+      component_area_low = 0;
       cut_line = (cut_line_low + cut_line_high) / 2;
-      for (auto& component_ptr : cell_list) {
+      for (auto& component_ptr : component_ptrs) {
         if (component_ptr->Y() < cut_line) {
-          cell_area_low += component_ptr->Area();
+          component_area_low += component_ptr->Area();
         }
       }
-      // LOG(info)   << cell_area_low/(double)total_cell_area <<
+      // LOG(info)   << component_area_low/(double)total_component_area <<
       // "\n";
-      double tmp_ratio = cell_area_low == 0
-                             ? std::numeric_limits<double>::infinity()
-                             : double(total_cell_area) / double(cell_area_low);
+      double tmp_ratio =
+          component_area_low == 0
+              ? std::numeric_limits<double>::infinity()
+              : double(total_component_area) / double(component_area_low);
       // TODO: this precision has some influence on the final result
       if (ratio > tmp_ratio) {
         cut_line_high = cut_line;
@@ -461,17 +462,17 @@ bool BoxBin::update_cut_point_cell_list_low_high(
         break;
       }
     }
-    total_cell_area_low = cell_area_low;
-    total_cell_area_high = total_cell_area - total_cell_area_low;
+    total_component_area_low = component_area_low;
+    total_component_area_high = total_component_area - total_component_area_low;
     cut_ll_point.y = cut_line;
     cut_ur_point.y = cut_line;
     // LOG(info)   << cut_line << " LLY " << ll_point.y << " URY "
     // << ll_point.y << "\n";
-    for (auto& component_ptr : cell_list) {
+    for (auto& component_ptr : component_ptrs) {
       if (component_ptr->Y() < cut_line) {
-        cell_list_low.push_back(component_ptr);
+        component_ptrs_low.push_back(component_ptr);
       } else {
-        cell_list_high.push_back(component_ptr);
+        component_ptrs_high.push_back(component_ptr);
       }
     }
   } else {
@@ -481,18 +482,19 @@ bool BoxBin::update_cut_point_cell_list_low_high(
     cut_line_high = ur_point.x;
     for (int i = 0; i < 20; i++) {
       // LOG(info)   << i << "\n";
-      cell_area_low = 0;
+      component_area_low = 0;
       cut_line = (cut_line_low + cut_line_high) / 2;
-      for (auto& component_ptr : cell_list) {
+      for (auto& component_ptr : component_ptrs) {
         if (component_ptr->X() < cut_line) {
-          cell_area_low += component_ptr->Area();
+          component_area_low += component_ptr->Area();
         }
       }
-      // LOG(info)   << cell_area_low/(double)total_cell_area <<
+      // LOG(info)   << component_area_low/(double)total_component_area <<
       // "\n";
-      double tmp_ratio = cell_area_low == 0
-                             ? std::numeric_limits<double>::infinity()
-                             : double(total_cell_area) / double(cell_area_low);
+      double tmp_ratio =
+          component_area_low == 0
+              ? std::numeric_limits<double>::infinity()
+              : double(total_component_area) / double(component_area_low);
       if (ratio > tmp_ratio) {
         cut_line_high = cut_line;
       } else if (ratio < tmp_ratio) {
@@ -501,42 +503,39 @@ bool BoxBin::update_cut_point_cell_list_low_high(
         break;
       }
     }
-    total_cell_area_low = cell_area_low;
-    total_cell_area_high = total_cell_area - total_cell_area_low;
+    total_component_area_low = component_area_low;
+    total_component_area_high = total_component_area - total_component_area_low;
     cut_ll_point.x = cut_line;
     cut_ur_point.x = cut_line;
     // LOG(info)   << cut_line << " LLX " << ll_point.x << " URX "
     // << ur_point.x << "\n";
-    for (auto& component_ptr : cell_list) {
+    for (auto& component_ptr : component_ptrs) {
       if (component_ptr->X() < cut_line) {
-        cell_list_low.push_back(component_ptr);
+        component_ptrs_low.push_back(component_ptr);
       } else {
-        cell_list_high.push_back(component_ptr);
+        component_ptrs_high.push_back(component_ptr);
       }
     }
   }
   return true;
 }
 
-bool BoxBin::update_cut_point_cell_list_low_high_leaf(
-    int& cut_line_w, int average_component_height) {
-  DaliExpects(total_cell_area > 0,
-              "Cannot split an empty leaf box by cell area");
-  unsigned long long cell_area_low = 0;
+bool BoxBin::UpdateCutPointComponentListsLeaf(int& cut_line_w,
+                                              int average_component_height) {
+  DaliExpects(total_component_area > 0,
+              "Cannot split an empty leaf box by component area");
+  unsigned long long component_area_low = 0;
   double cut_line = 0;
-  // the above three cut-lines are for cells, thus they needs to be double
+  // Cutlines are continuous placement coordinates, so keep them as doubles.
   double ratio = 2.0;
-  // this ratio is to say that cell_area_low should be close to
-  // total_cell_area/ratio
+  // this ratio is to say that component_area_low should be close to
+  // total_component_area/ratio
   double mini_error = 1;
-  double cell_area_low_percentage = 0;
+  double component_area_low_percentage = 0;
 
-  /* the way used here is sorting the cells instead of calculate the cut-line
-   * using bisection when cut_direction_x is true, the new cut line of white
-   * space is chosen to be the middle of top and bottom, then update
-   * cell_list_low and cell_list_high
-   * when cut_direction_x is false, the new cut line of white space is chosen to
-   * be close to one half of total cell area */
+  /* Sort components instead of using bisection. When cut_direction_x is true,
+   * the white-space cutline is chosen between top and bottom. Otherwise the
+   * cutline is chosen close to one half of the total component area. */
   Component *node, *node1;
   if (cut_direction_x) {
     int box_height = top - bottom;
@@ -558,146 +557,146 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(
     height is not the integer multiple of standard cell height!\n"; exit(1);
     }*/
 
-    /* second part, split the total cell_list to two part,
-     * by sort cell_list based on y location in ascending order */
+    /* second part, split the total component_ptrs to two part,
+     * by sort component_ptrs based on y location in ascending order */
     size_t mini_index;
     double mini_loc;
-    for (size_t i = 0; i < cell_list.size(); i++) {
-      node = cell_list[i];
+    for (size_t i = 0; i < component_ptrs.size(); i++) {
+      node = component_ptrs[i];
       mini_index = i;
       mini_loc = node->Y();
-      for (size_t j = i + 1; j < cell_list.size(); j++) {
-        node1 = cell_list[j];
+      for (size_t j = i + 1; j < component_ptrs.size(); j++) {
+        node1 = component_ptrs[j];
         if (node1->Y() < mini_loc) {
           mini_index = j;
           mini_loc = node1->Y();
         }
       }
-      Component* tmp_cell_ptr = cell_list[mini_index];
-      cell_list[mini_index] = cell_list[i];
-      cell_list[i] = tmp_cell_ptr;
+      Component* tmp_component_ptr = component_ptrs[mini_index];
+      component_ptrs[mini_index] = component_ptrs[i];
+      component_ptrs[i] = tmp_component_ptr;
     }
 
-    /* and then, find the index of cell, the total cell area below which is
-     * closest to one half of the total cell area */
-    unsigned long long tmp_tot_cell_area_low = 0;
-    int index_tot_cell_low_closest_to_half = 0;
-    for (size_t i = 0; i < cell_list.size(); i++) {
-      node = cell_list[i];
-      tmp_tot_cell_area_low += node->Area();
-      cell_area_low_percentage =
-          double(tmp_tot_cell_area_low) / double(total_cell_area);
-      // LOG(info)   << i << " " << cell_area_low_percentage <<
+    /* Find the component index whose cumulative area is closest to the target
+     * lower-box white-space ratio. */
+    unsigned long long tmp_total_component_area_low = 0;
+    int lower_area_split_index = 0;
+    for (size_t i = 0; i < component_ptrs.size(); i++) {
+      node = component_ptrs[i];
+      tmp_total_component_area_low += node->Area();
+      component_area_low_percentage =
+          double(tmp_total_component_area_low) / double(total_component_area);
+      // LOG(info)   << i << " " << component_area_low_percentage <<
       // "\n";
-      if (fabs(cell_area_low_percentage - low_white_space_total_ratio) <
+      if (fabs(component_area_low_percentage - low_white_space_total_ratio) <
           mini_error) {
         mini_error =
-            fabs(cell_area_low_percentage - low_white_space_total_ratio);
-        index_tot_cell_low_closest_to_half = i;
+            fabs(component_area_low_percentage - low_white_space_total_ratio);
+        lower_area_split_index = i;
       }
-      if (cell_area_low_percentage >= low_white_space_total_ratio) {
+      if (component_area_low_percentage >= low_white_space_total_ratio) {
         // LOG(info)   << "mini_error: " << mini_error << " index:
-        // " << index_tot_cell_low_closest_to_half << "\n";
+        // " << lower_area_split_index << "\n";
         break;
       }
     }
-    /* if the index is smaller than this index, put the cell_id to
-     * cell_list_low, otherwise, put it to cell_list_high and update
-     * total_cell_area_low and total_cell_area_high */
-    cell_area_low = 0;
-    for (int i = 0; i < (int)cell_list.size(); i++) {
-      node = cell_list[i];
-      if (i <= index_tot_cell_low_closest_to_half) {
-        cell_area_low += node->Area();
-        cell_list_low.push_back(cell_list[i]);
+    /* if the index is smaller than this index, put the component to
+     * component_ptrs_low, otherwise, put it to component_ptrs_high and update
+     * total_component_area_low and total_component_area_high */
+    component_area_low = 0;
+    for (int i = 0; i < (int)component_ptrs.size(); i++) {
+      node = component_ptrs[i];
+      if (i <= lower_area_split_index) {
+        component_area_low += node->Area();
+        component_ptrs_low.push_back(component_ptrs[i]);
       } else {
-        cell_list_high.push_back(cell_list[i]);
+        component_ptrs_high.push_back(component_ptrs[i]);
       }
     }
-    total_cell_area_low = cell_area_low;
-    total_cell_area_high = total_cell_area - total_cell_area_low;
+    total_component_area_low = component_area_low;
+    total_component_area_high = total_component_area - total_component_area_low;
 
-    /* third part, find the cut-line to split cell area,
+    /* third part, find the cut-line to split component area,
      * in this case, the absolute value of this line if actually not important,
-     * it is set to be the y-coordinate of the cell closest to half of the total
-     * cell area */
+     * it is set to the y-coordinate of the component closest to the target
+     * component-area split. */
     cut_ur_point.x = ur_point.x;
     cut_ll_point.x = ll_point.x;
-    node = cell_list[index_tot_cell_low_closest_to_half];
+    node = component_ptrs[lower_area_split_index];
     cut_line = node->Y();
     cut_ll_point.y = cut_line;
     cut_ur_point.y = cut_line;
   } else {
-    /* first, split the total cell_list to two part,
-     * by sort cell_list based on y location in ascending order */
+    /* first, split the total component_ptrs to two part,
+     * by sort component_ptrs based on y location in ascending order */
     size_t mini_index;
     double mini_loc;
-    for (size_t i = 0; i < cell_list.size(); i++) {
-      node = cell_list[i];
+    for (size_t i = 0; i < component_ptrs.size(); i++) {
+      node = component_ptrs[i];
       mini_index = i;
       mini_loc = node->X();
-      for (size_t j = i + 1; j < cell_list.size(); j++) {
-        node1 = cell_list[j];
+      for (size_t j = i + 1; j < component_ptrs.size(); j++) {
+        node1 = component_ptrs[j];
         if (node1->X() < mini_loc) {
           mini_index = j;
           mini_loc = node1->X();
         }
       }
-      Component* tmp_cell_ptr = cell_list[mini_index];
-      cell_list[mini_index] = cell_list[i];
-      cell_list[i] = tmp_cell_ptr;
+      Component* tmp_component_ptr = component_ptrs[mini_index];
+      component_ptrs[mini_index] = component_ptrs[i];
+      component_ptrs[i] = tmp_component_ptr;
     }
-    /* second, find the index of cell, the total cell area below which is
-     * closest to one half of the total cell area */
-    unsigned long long tmp_tot_cell_area_low = 0;
-    int index_tot_cell_low_closest_to_half = 0;
-    for (size_t i = 0; i < cell_list.size(); i++) {
-      node = cell_list[i];
-      tmp_tot_cell_area_low += node->Area();
-      cell_area_low_percentage =
-          double(tmp_tot_cell_area_low) / double(total_cell_area);
-      // LOG(info)   << i << " " << cell_area_low_percentage <<
+    /* Find the component index whose cumulative area is closest to one half of
+     * the total component area. */
+    unsigned long long tmp_total_component_area_low = 0;
+    int lower_area_split_index = 0;
+    for (size_t i = 0; i < component_ptrs.size(); i++) {
+      node = component_ptrs[i];
+      tmp_total_component_area_low += node->Area();
+      component_area_low_percentage =
+          double(tmp_total_component_area_low) / double(total_component_area);
+      // LOG(info)   << i << " " << component_area_low_percentage <<
       // "\n";
-      if (fabs(cell_area_low_percentage - 1 / ratio) < mini_error) {
-        mini_error = fabs(cell_area_low_percentage - 1 / ratio);
-        index_tot_cell_low_closest_to_half = i;
+      if (fabs(component_area_low_percentage - 1 / ratio) < mini_error) {
+        mini_error = fabs(component_area_low_percentage - 1 / ratio);
+        lower_area_split_index = i;
       }
-      if (cell_area_low_percentage > 0.5) {
+      if (component_area_low_percentage > 0.5) {
         // LOG(info)   << "mini_error: " << mini_error << " index:
-        // " << index_tot_cell_low_closest_to_half << "\n";
+        // " << lower_area_split_index << "\n";
         break;
       }
     }
-    /* third, if the index is smaller than this index, put the cell_id to
-     * cell_list_low, otherwise, put it to cell_list_high and update
-     * total_cell_area_low and total_cell_area_high */
-    cell_area_low = 0;
-    for (int i = 0; i < (int)cell_list.size(); i++) {
-      node = cell_list[i];
-      if (i <= index_tot_cell_low_closest_to_half) {
-        cell_area_low += node->Area();
-        cell_list_low.push_back(cell_list[i]);
+    /* third, if the index is smaller than this index, put the component to
+     * component_ptrs_low, otherwise, put it to component_ptrs_high and update
+     * total_component_area_low and total_component_area_high */
+    component_area_low = 0;
+    for (int i = 0; i < (int)component_ptrs.size(); i++) {
+      node = component_ptrs[i];
+      if (i <= lower_area_split_index) {
+        component_area_low += node->Area();
+        component_ptrs_low.push_back(component_ptrs[i]);
       } else {
-        cell_list_high.push_back(cell_list[i]);
+        component_ptrs_high.push_back(component_ptrs[i]);
       }
     }
-    total_cell_area_low = cell_area_low;
-    total_cell_area_high = total_cell_area - total_cell_area_low;
-    /* forth, find the cut-line to split cell area,
+    total_component_area_low = component_area_low;
+    total_component_area_high = total_component_area - total_component_area_low;
+    /* forth, find the cut-line to split component area,
      * in this case, the absolute value of this line if actually not important,
-     * it is set to be the y-coordinate of the cell closest to half of the total
-     * cell area */
+     * it is set to the coordinate of the component closest to half of the total
+     * component area. */
     cut_ur_point.y = ur_point.y;
     cut_ll_point.y = ll_point.y;
-    node = cell_list[index_tot_cell_low_closest_to_half];
+    node = component_ptrs[lower_area_split_index];
     cut_line = node->X();
     cut_ll_point.y = cut_line;
     cut_ur_point.y = cut_line;
     /* finally, the cut-line for white space is proportional to the
-     * total_cell_area_low */
-    cut_line_w =
-        left + (int)((double(total_cell_area_low) / double(total_cell_area)) *
-                     (right - left));
+     * total_component_area_low */
+    cut_line_w = left + (int)((double(total_component_area_low) /
+                               double(total_component_area)) *
+                              (right - left));
   }
   return true;
 }
@@ -713,28 +712,29 @@ void BoxBin::Report() {
             << "box coordinate: " << ll_point << " " << ur_point << "\n"
             << "box cut coordinate: " << cut_ll_point << " " << cut_ur_point
             << "\n"
-            << "total cell area: " << total_cell_area << "\n"
-            << "total cell area low: " << total_cell_area_low << "\n"
-            << "total cell area high: " << total_cell_area_high << "\n"
+            << "total component area: " << total_component_area << "\n"
+            << "total component area low: " << total_component_area_low << "\n"
+            << "total component area high: " << total_component_area_high
+            << "\n"
             << "shape: (" << left << ", " << bottom << ") (" << right << ", "
             << top << ")\n";
 
-  LOG(info) << "cell list: " << cell_list.size() << "\n";
-  for (auto& component : cell_list) {
+  LOG(info) << "component list: " << component_ptrs.size() << "\n";
+  for (auto& component : component_ptrs) {
     LOG(info) << component->Name() << ", "
               << "(" << component->LLX() << ", " << component->LLY() << "), "
               << "(" << component->URX() << ", " << component->URY() << ")\n";
   }
   LOG(info) << "\nend\n";
 
-  LOG(info) << "cell list low: " << cell_list_low.size() << "\n";
-  for (auto& num : cell_list_low) {
+  LOG(info) << "component list low: " << component_ptrs_low.size() << "\n";
+  for (auto& num : component_ptrs_low) {
     LOG(info) << num << ", ";
   }
   LOG(info) << "\nend\n";
 
-  LOG(info) << "cell list hi: " << cell_list_high.size() << "\n";
-  for (auto& num : cell_list_high) {
+  LOG(info) << "component list hi: " << component_ptrs_high.size() << "\n";
+  for (auto& num : component_ptrs_high) {
     LOG(info) << num << ", ";
   }
   LOG(info) << "\nend\n";

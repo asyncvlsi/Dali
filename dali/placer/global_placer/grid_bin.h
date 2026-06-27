@@ -81,22 +81,23 @@ struct GridBinIndexHasher {
 /** Connected overfilled-bin cluster used by look-ahead legalization. */
 struct GridBinCluster {
  public:
-  GridBinCluster() : total_cell_area(0), total_white_space(0) {}
-  unsigned long long total_cell_area;
+  GridBinCluster() : total_component_area(0), total_white_space(0) {}
+  unsigned long long total_component_area;
   unsigned long long total_white_space;
   std::set<GridBinIndex> bin_set;
   bool operator<(const GridBinCluster& rhs) const {
-    return (total_cell_area < rhs.total_cell_area);
+    return (total_component_area < rhs.total_component_area);
   }
   bool operator>(const GridBinCluster& rhs) const {
-    return (total_cell_area > rhs.total_cell_area);
+    return (total_component_area > rhs.total_component_area);
   }
   bool operator==(const GridBinCluster& rhs) const {
-    return (total_cell_area == rhs.total_cell_area);
+    return (total_component_area == rhs.total_component_area);
   }
 };
 
-/** Mesh bin storing local cell area, whitespace, blockages, and neighbors. */
+/** Mesh bin storing local component area, whitespace, blockages, and neighbors.
+ */
 class GridBin {
  public:
   GridBin();
@@ -106,15 +107,15 @@ class GridBin {
   int left;
   int right;
   unsigned long long white_space;
-  unsigned long long cell_area;
+  unsigned long long component_area;
   double filling_rate;
   bool all_terminal;
   // a grid bin is over-filled, if filling rate is larger than the target, or
-  // cells locate on terminals
+  // components locate on terminals
   bool over_fill;
   bool cluster_visited;
   bool global_placed;
-  std::vector<Component*> cell_list;
+  std::vector<Component*> component_ptrs;
   std::vector<const PlacementBlockage*> placement_blockages_;
   std::vector<GridBinIndex> adjacent_bin_index;
 

@@ -42,14 +42,14 @@ void RoughLegalizer::SetShouldSaveIntermediateResult(
 /****
  * @brief determine the grid bin height and width
  * grid_bin_height and grid_bin_width is determined by the following formula:
- *    grid_bin_height = sqrt(number_of_cell_in_bin_ * average_area /
+ *    grid_bin_height = sqrt(target_component_count_per_bin_ * average_area /
  * placement_density) the number of bins in the y-direction is given by:
  *    grid_cnt_y = (Top() - Bottom())/grid_bin_height
  *    grid_cnt_x = (Right() - Left())/grid_bin_width
  * And initialize the space of grid_bin_mesh
  */
 void LookAheadLegalizer::InitializeGridBinSize() {
-  double grid_bin_area = number_of_cell_in_bin_ *
+  double grid_bin_area = target_component_count_per_bin_ *
                          ckt_ptr_->AverageMovableComponentArea() /
                          placement_density_;
   grid_bin_height = static_cast<int>(std::round(std::sqrt(grid_bin_area)));
@@ -187,7 +187,7 @@ void LookAheadLegalizer::UpdateWhiteSpaceInGridBin(GridBin& grid_bin) {
 
 /****
  * This function initialize the grid bin matrix, each bin has an area which
- * can accommodate around number_of_cell_in_bin_ # of cells
+ * can accommodate around target_component_count_per_bin_ # of components
  * ****/
 void LookAheadLegalizer::InitGridBins() {
   InitializeGridBinSize();
@@ -263,9 +263,9 @@ void LookAheadLegalizer::ClearGridBinFlag() {
 }
 
 /****
- * this is a member function to update grid bin status, because the cell_list,
- * cell_area and over_fill state can be changed, so we need to update them when
- * necessary
+ * this is a member function to update grid bin status, because the
+ * component_ptrs, component_area and over_fill state can be changed, so we need
+ * to update them when necessary
  * ****/
 void LookAheadLegalizer::UpdateGridBinState() {
   ElapsedTime elapsed_time;
@@ -274,13 +274,13 @@ void LookAheadLegalizer::UpdateGridBinState() {
   // clean the old data
   for (auto& grid_bin_column : grid_bin_mesh) {
     for (auto& grid_bin : grid_bin_column) {
-      grid_bin.cell_list.clear();
-      grid_bin.cell_area = 0;
+      grid_bin.component_ptrs.clear();
+      grid_bin.component_area = 0;
       grid_bin.over_fill = false;
     }
   }
 
-  // for each cell, find the index of the grid bin it should be in.
+  // for each component, find the index of the grid bin it should be in.
   // note that in extreme cases, the index might be smaller than 0 or larger
   // than the maximum allowed index, because the cell is on the boundaries,
   // so we need to make some modifications for these extreme cases.
@@ -299,15 +299,15 @@ void LookAheadLegalizer::UpdateGridBinState() {
     if (x_index > grid_cnt_x - 1) x_index = grid_cnt_x - 1;
     if (y_index < 0) y_index = 0;
     if (y_index > grid_cnt_y - 1) y_index = grid_cnt_y - 1;
-    grid_bin_mesh[x_index][y_index].cell_list.push_back(&(components[i]));
-    grid_bin_mesh[x_index][y_index].cell_area += components[i].Area();
+    grid_bin_mesh[x_index][y_index].component_ptrs.push_back(&(components[i]));
+    grid_bin_mesh[x_index][y_index].component_area += components[i].Area();
   }
 
   /**** below is the criterion to decide whether a grid bin is over_filled or
    * not
-   * 1. if this bin if fully occupied by fixed components, but its cell_list is
-   *    non-empty, which means there is some cells overlap with this grid bin,
-   *    we say it is over_fill
+   * 1. if this bin if fully occupied by fixed components, but its
+   * component_ptrs is non-empty, which means there is some cells overlap with
+   * this grid bin, we say it is over_fill
    * 2. if not fully occupied by fixed components, but filling_rate is larger
    * than the TARGET_FILLING_RATE, then set is to over_fill
    * 3. if this bin is not overfilled, but cells in this bin overlaps with fixed
@@ -322,18 +322,18 @@ void LookAheadLegalizer::UpdateGridBinState() {
         continue;
       }
       if (grid_bin.IsAllFixedComponent()) {
-        if (!grid_bin.cell_list.empty()) {
+        if (!grid_bin.component_ptrs.empty()) {
           grid_bin.over_fill = true;
         }
       } else {
         grid_bin.filling_rate =
-            double(grid_bin.cell_area) / double(grid_bin.white_space);
+            double(grid_bin.component_area) / double(grid_bin.white_space);
         if (grid_bin.filling_rate > placement_density_) {
           grid_bin.over_fill = true;
         }
       }
       if (!grid_bin.OverFill()) {
-        for (auto& component_ptr : grid_bin.cell_list) {
+        for (auto& component_ptr : grid_bin.component_ptrs) {
           for (auto& blockage_ptr : grid_bin.placement_blockages_) {
             auto& rect = blockage_ptr->GetRect();
             over_fill = component_ptr->IsOverlap(rect);
@@ -355,10 +355,11 @@ void LookAheadLegalizer::UpdateGridBinState() {
 }
 
 void LookAheadLegalizer::UpdateClusterArea(GridBinCluster& cluster) {
-  cluster.total_cell_area = 0;
+  cluster.total_component_area = 0;
   cluster.total_white_space = 0;
   for (auto& index : cluster.bin_set) {
-    cluster.total_cell_area += grid_bin_mesh[index.x][index.y].cell_area;
+    cluster.total_component_area +=
+        grid_bin_mesh[index.x][index.y].component_area;
     cluster.total_white_space += grid_bin_mesh[index.x][index.y].white_space;
   }
 }
@@ -577,11 +578,11 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
     R.ur_index.y = std::max(R.ur_index.y, index.y);
   }
   while (true) {
-    // update cell area, white space, and thus filling rate to determine whether
-    // to expand this box or not
+    // update component area, white space, and thus filling rate to determine
+    // whether to expand this box or not
     R.total_white_space = LookUpWhiteSpace(R.ll_index, R.ur_index);
-    R.UpdateCellAreaWhiteSpaceFillingRate(grid_bin_white_space_LUT,
-                                          grid_bin_mesh);
+    R.UpdateComponentAreaWhiteSpaceFillingRate(grid_bin_white_space_LUT,
+                                               grid_bin_mesh);
     if (R.filling_rate > placement_density_) {
       R.ExpandBox(grid_cnt_x, grid_cnt_y);
     } else {
@@ -592,9 +593,9 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
   }
 
   R.total_white_space = LookUpWhiteSpace(R.ll_index, R.ur_index);
-  R.UpdateCellAreaWhiteSpaceFillingRate(grid_bin_white_space_LUT,
-                                        grid_bin_mesh);
-  R.UpdateCellList(grid_bin_mesh);
+  R.UpdateComponentAreaWhiteSpaceFillingRate(grid_bin_white_space_LUT,
+                                             grid_bin_mesh);
+  R.UpdateComponentList(grid_bin_mesh);
   R.ll_point.x = grid_bin_mesh[R.ll_index.x][R.ll_index.y].left;
   R.ll_point.y = grid_bin_mesh[R.ll_index.x][R.ll_index.y].bottom;
   R.ur_point.x = grid_bin_mesh[R.ur_index.x][R.ur_index.y].right;
@@ -614,7 +615,8 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
   queue_box_bin.push(R);
   // LOG(info)   << "Bounding box total white space: " <<
   // queue_box_bin.front().total_white_space << "\n"; LOG(info) <<
-  // "Bounding box total cell area: " << queue_box_bin.front().total_cell_area
+  // "Bounding box total component area: " <<
+  // queue_box_bin.front().total_component_area
   // << "\n";
 
   for (int kx = R.ll_index.x; kx <= R.ur_index.x; ++kx) {
@@ -663,29 +665,29 @@ void LookAheadLegalizer::SplitGridBox(BoxBin& box) {
         0.01) {
       box2.ll_point = box.ll_point;
       box2.ur_point = box.ur_point;
-      box2.cell_list = box.cell_list;
-      box2.total_cell_area = box.total_cell_area;
+      box2.component_ptrs = box.component_ptrs;
+      box2.total_component_area = box.total_component_area;
       box2.UpdateObsBoundary();
       queue_box_bin.push(box2);
     } else if (double(box2.total_white_space) / (double)box.total_white_space <=
                0.01) {
       box1.ll_point = box.ll_point;
       box1.ur_point = box.ur_point;
-      box1.cell_list = box.cell_list;
-      box1.total_cell_area = box.total_cell_area;
+      box1.component_ptrs = box.component_ptrs;
+      box1.total_component_area = box.total_component_area;
       box1.UpdateObsBoundary();
       queue_box_bin.push(box1);
     } else {
-      box.update_cut_point_cell_list_low_high(box1.total_white_space,
-                                              box2.total_white_space);
-      box1.cell_list = box.cell_list_low;
-      box2.cell_list = box.cell_list_high;
+      box.UpdateCutPointComponentLists(box1.total_white_space,
+                                       box2.total_white_space);
+      box1.component_ptrs = box.component_ptrs_low;
+      box2.component_ptrs = box.component_ptrs_high;
       box1.ll_point = box.ll_point;
       box2.ur_point = box.ur_point;
       box1.ur_point = box.cut_ur_point;
       box2.ll_point = box.cut_ll_point;
-      box1.total_cell_area = box.total_cell_area_low;
-      box2.total_cell_area = box.total_cell_area_high;
+      box1.total_component_area = box.total_component_area_low;
+      box2.total_component_area = box.total_component_area_high;
       box1.UpdateObsBoundary();
       box2.UpdateObsBoundary();
       queue_box_bin.push(box1);
@@ -705,29 +707,29 @@ void LookAheadLegalizer::SplitGridBox(BoxBin& box) {
         0.01) {
       box2.ll_point = box.ll_point;
       box2.ur_point = box.ur_point;
-      box2.cell_list = box.cell_list;
-      box2.total_cell_area = box.total_cell_area;
+      box2.component_ptrs = box.component_ptrs;
+      box2.total_component_area = box.total_component_area;
       box2.UpdateObsBoundary();
       queue_box_bin.push(box2);
     } else if (double(box2.total_white_space) / (double)box.total_white_space <=
                0.01) {
       box1.ll_point = box.ll_point;
       box1.ur_point = box.ur_point;
-      box1.cell_list = box.cell_list;
-      box1.total_cell_area = box.total_cell_area;
+      box1.component_ptrs = box.component_ptrs;
+      box1.total_component_area = box.total_component_area;
       box1.UpdateObsBoundary();
       queue_box_bin.push(box1);
     } else {
-      box.update_cut_point_cell_list_low_high(box1.total_white_space,
-                                              box2.total_white_space);
-      box1.cell_list = box.cell_list_low;
-      box2.cell_list = box.cell_list_high;
+      box.UpdateCutPointComponentLists(box1.total_white_space,
+                                       box2.total_white_space);
+      box1.component_ptrs = box.component_ptrs_low;
+      box2.component_ptrs = box.component_ptrs_high;
       box1.ll_point = box.ll_point;
       box2.ur_point = box.ur_point;
       box1.ur_point = box.cut_ur_point;
       box2.ll_point = box.cut_ll_point;
-      box1.total_cell_area = box.total_cell_area_low;
-      box2.total_cell_area = box.total_cell_area_high;
+      box1.total_component_area = box.total_component_area_low;
+      box2.total_component_area = box.total_component_area_high;
       box1.UpdateObsBoundary();
       box2.UpdateObsBoundary();
       queue_box_bin.push(box1);
@@ -737,36 +739,37 @@ void LookAheadLegalizer::SplitGridBox(BoxBin& box) {
 }
 
 void LookAheadLegalizer::PlaceComponentInBox(BoxBin& box) {
-  /* this is the simplest version, just linearly move cells in the cell_box to
-   * the grid box non-linearity is not considered yet*/
+  /* this is the simplest version, just linearly move components in the
+   * component_box to the grid box non-linearity is not considered yet*/
 
-  /*double cell_box_left, cell_box_bottom;
-double cell_box_width, cell_box_height;
-cell_box_left = box.ll_point.x;
-cell_box_bottom = box.ll_point.y;
-cell_box_width = box.ur_point.x - cell_box_left;
-cell_box_height = box.ur_point.y - cell_box_bottom;
+  /*double component_box_left, component_box_bottom;
+double component_box_width, component_box_height;
+component_box_left = box.ll_point.x;
+component_box_bottom = box.ll_point.y;
+component_box_width = box.ur_point.x - component_box_left;
+component_box_height = box.ur_point.y - component_box_bottom;
 Component *cell;
 
-for (auto &cell_id: box.cell_list) {
-  cell = &component_list[cell_id];
-  cell->SetCenterX((cell->X() - cell_box_left)/cell_box_width * (box.right -
-box.left) + box.left); cell->SetCenterY((cell->Y() -
-cell_box_bottom)/cell_box_height * (box.top - box.bottom) + box.bottom);
+for (auto &component: box.component_ptrs) {
+  cell = &component_list[component];
+  cell->SetCenterX((cell->X() - component_box_left)/component_box_width *
+(box.right - box.left) + box.left); cell->SetCenterY((cell->Y() -
+component_box_bottom)/component_box_height * (box.top - box.bottom) +
+box.bottom);
 }*/
 
-  int sz = static_cast<int>(box.cell_list.size());
+  int sz = static_cast<int>(box.component_ptrs.size());
   std::vector<std::pair<Component*, double>> index_loc_list_x(sz);
   std::vector<std::pair<Component*, double>> index_loc_list_y(sz);
   GridBin& grid_bin = grid_bin_mesh[box.ll_index.x][box.ll_index.y];
   for (int i = 0; i < sz; ++i) {
-    Component* component_ptr = box.cell_list[i];
+    Component* component_ptr = box.component_ptrs[i];
     index_loc_list_x[i].first = component_ptr;
     index_loc_list_x[i].second = component_ptr->X();
     index_loc_list_y[i].first = component_ptr;
     index_loc_list_y[i].second = component_ptr->Y();
-    grid_bin.cell_list.push_back(component_ptr);
-    grid_bin.cell_area += component_ptr->Area();
+    grid_bin.component_ptrs.push_back(component_ptr);
+    grid_bin.component_area += component_ptr->Area();
   }
 
   std::sort(index_loc_list_x.begin(), index_loc_list_x.end(),
@@ -775,7 +778,7 @@ cell_box_bottom)/cell_box_height * (box.top - box.bottom) + box.bottom);
               return p1.second < p2.second;
             });
   double total_length = 0;
-  for (auto& component_ptr : box.cell_list) {
+  for (auto& component_ptr : box.component_ptrs) {
     total_length += component_ptr->Width();
   }
   double cur_pos = 0;
@@ -799,7 +802,7 @@ cell_box_bottom)/cell_box_height * (box.top - box.bottom) + box.bottom);
               return p1.second < p2.second;
             });
   total_length = 0;
-  for (auto& component_ptr : box.cell_list) {
+  for (auto& component_ptr : box.component_ptrs) {
     total_length += component_ptr->Height();
   }
   cur_pos = 0;
@@ -867,8 +870,8 @@ void LookAheadLegalizer::SplitBox(BoxBin& box) {
       }
     }
   }
-  box1.update_cell_area_white_space(grid_bin_mesh);
-  box2.update_cell_area_white_space(grid_bin_mesh);
+  box1.UpdateComponentAreaWhiteSpace(grid_bin_mesh);
+  box2.UpdateComponentAreaWhiteSpace(grid_bin_mesh);
   // LOG(info)   << box1.ll_index_ << box1.ur_index_ << "\n";
   // LOG(info)   << box2.ll_index_ << box2.ur_index_ << "\n";
   // box1.update_all_terminal(grid_bin_matrix);
@@ -887,19 +890,19 @@ void LookAheadLegalizer::SplitBox(BoxBin& box) {
   box2.UpdateBoundaries(grid_bin_mesh);
 
   if (dominating_box_flag == 0) {
-    // LOG(info)   << "cell list size: " << box.cell_list.size()
-    // << "\n"; box.update_cell_area(component_list); LOG(info)   <<
-    // "total_cell_area: " << box.total_cell_area << "\n";
-    box.update_cut_point_cell_list_low_high(box1.total_white_space,
-                                            box2.total_white_space);
-    box1.cell_list = box.cell_list_low;
-    box2.cell_list = box.cell_list_high;
+    // LOG(info)   << "component list size: " << box.component_ptrs.size()
+    // << "\n"; box.UpdateComponentArea(component_list); LOG(info)   <<
+    // "total_component_area: " << box.total_component_area << "\n";
+    box.UpdateCutPointComponentLists(box1.total_white_space,
+                                     box2.total_white_space);
+    box1.component_ptrs = box.component_ptrs_low;
+    box2.component_ptrs = box.component_ptrs_high;
     box1.ll_point = box.ll_point;
     box2.ur_point = box.ur_point;
     box1.ur_point = box.cut_ur_point;
     box2.ll_point = box.cut_ll_point;
-    box1.total_cell_area = box.total_cell_area_low;
-    box2.total_cell_area = box.total_cell_area_high;
+    box1.total_component_area = box.total_component_area_low;
+    box2.total_component_area = box.total_component_area_high;
 
     if (box1.ll_index == box1.ur_index) {
       box1.UpdatePlacementBlockages(grid_bin_mesh);
@@ -925,13 +928,13 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
     // grid_bin_height, LEFT, BOTTOM);
     // box2.write_box_boundary("first_bounding_box.txt", grid_bin_width,
     // grid_bin_height, LEFT, BOTTOM);
-    // box1.write_cell_region("first_cell_bounding_box.txt");
-    // box2.write_cell_region("first_cell_bounding_box.txt");
+    // box1.WriteComponentRegion("first_cell_bounding_box.txt");
+    // box2.WriteComponentRegion("first_cell_bounding_box.txt");
   } else if (dominating_box_flag == 1) {
     box2.ll_point = box.ll_point;
     box2.ur_point = box.ur_point;
-    box2.cell_list = box.cell_list;
-    box2.total_cell_area = box.total_cell_area;
+    box2.component_ptrs = box.component_ptrs;
+    box2.total_component_area = box.total_component_area;
     if (box2.ll_index == box2.ur_index) {
       box2.UpdatePlacementBlockages(grid_bin_mesh);
       box2.UpdateObsBoundary();
@@ -945,12 +948,12 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
     queue_box_bin.push(box2);
     // box2.write_box_boundary("first_bounding_box.txt", grid_bin_width,
     // grid_bin_height, LEFT, BOTTOM);
-    // box2.write_cell_region("first_cell_bounding_box.txt");
+    // box2.WriteComponentRegion("first_cell_bounding_box.txt");
   } else {
     box1.ll_point = box.ll_point;
     box1.ur_point = box.ur_point;
-    box1.cell_list = box.cell_list;
-    box1.total_cell_area = box.total_cell_area;
+    box1.component_ptrs = box.component_ptrs;
+    box1.total_component_area = box.total_component_area;
     if (box1.ll_index == box1.ur_index) {
       box1.UpdatePlacementBlockages(grid_bin_mesh);
       box1.UpdateObsBoundary();
@@ -964,7 +967,7 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
     queue_box_bin.push(box1);
     // box1.write_box_boundary("first_bounding_box.txt", grid_bin_width,
     // grid_bin_height, LEFT, BOTTOM);
-    // box1.write_cell_region("first_cell_bounding_box.txt");
+    // box1.WriteComponentRegion("first_cell_bounding_box.txt");
   }
 }
 
@@ -992,7 +995,7 @@ bool LookAheadLegalizer::RecursiveBisectionComponentSpreading() {
         queue_box_bin.pop();
         continue;
       }
-      /* if no terminals inside a box, do cell placement inside the box */
+      /* if no terminals inside a box, do component placement inside the box */
       // PlaceComponentInBoxBisection(box);
       PlaceComponentInBox(box);
       // RoughLegalComponentInBox(box);

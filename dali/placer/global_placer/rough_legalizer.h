@@ -107,7 +107,7 @@ class LookAheadLegalizer : public RoughLegalizer {
   void Close() override;
 
  private:
-  int number_of_cell_in_bin_ = 30;
+  int target_component_count_per_bin_ = 30;
   int cluster_upper_size = 3;
 
   // look ahead legalization member function implemented below

@@ -63,25 +63,23 @@ class BoxBin {
   GridBinIndex ur_index;
   GridBinIndex cut_ll_index;
   GridBinIndex cut_ur_index;
-  /* Cut-line to split cell area. */
+  /* Cut-line to split component area. */
   ComponentCutPoint ll_point;
   ComponentCutPoint ur_point;
   ComponentCutPoint cut_ll_point;
   ComponentCutPoint cut_ur_point;
-  /* Total cell area, and the values in two child boxes. */
-  unsigned long long total_cell_area;
-  unsigned long long total_cell_area_low;
-  unsigned long long total_cell_area_high;
+  /* Total component area, and the values in two child boxes. */
+  unsigned long long total_component_area;
+  unsigned long long total_component_area_low;
+  unsigned long long total_component_area_high;
 
-  /* Cell ids in the box and in the two child boxes. */
-  std::vector<Component*> cell_list;
-  std::vector<Component*> cell_list_low;
-  std::vector<Component*> cell_list_high;
+  /* Component pointers in the box and in the two child boxes. */
+  std::vector<Component*> component_ptrs;
+  std::vector<Component*> component_ptrs_low;
+  std::vector<Component*> component_ptrs_high;
 
-  /* The cell_id for terminals in the box, will be updated only when the box is
-   * a GridBin if there is no terminal in the grid bin, do not have to further
-   * split the box into smaller boxs, otherwise split the box into smaller
-   * boxes, until there is no terminals in any boxes*/
+  /* Placement blockages copied from the matching grid bin. Boxes without fixed
+   * obstacles do not need blockage-driven recursive splitting. */
   std::vector<const PlacementBlockage*> placement_blockages_;
 
   /** Copy placement blockages from the matching grid bin. */
@@ -104,7 +102,7 @@ class BoxBin {
   bool IsMoreHorizontalCutlines() const;
 
   /* If the box is smaller than a grid bin, these placement-region boundaries
-   * define where cells will be placed. */
+   * define where components will be placed. */
   int left;
   int right;
   int bottom;
@@ -120,28 +118,27 @@ class BoxBin {
       std::vector<const PlacementBlockage*>& placement_blockages);
 
   void update_all_terminal(std::vector<std::vector<GridBin>>& grid_bin_matrix);
-  void update_cell_area();
-  void update_cell_area_white_space(
+  void UpdateComponentArea();
+  void UpdateComponentAreaWhiteSpace(
       std::vector<std::vector<GridBin>>& grid_bin_matrix);
-  void UpdateCellAreaWhiteSpaceFillingRate(
+  void UpdateComponentAreaWhiteSpaceFillingRate(
       std::vector<std::vector<unsigned long long>>& grid_bin_white_space_LUT,
       std::vector<std::vector<GridBin>>& grid_bin_matrix);
   void ExpandBox(int grid_cnt_x, int grid_cnt_y);
   bool write_box_boundary(std::string const& NameOfFile);
-  bool write_cell_region(
+  bool WriteComponentRegion(
       std::string const& NameOfFile = "first_cell_bounding_box.txt");
   static unsigned long long white_space_LUT(
       std::vector<std::vector<unsigned long long>>& grid_bin_white_space_LUT,
       GridBinIndex& ll, GridBinIndex& ur);
-  void UpdateCellList(std::vector<std::vector<GridBin>>& grid_bin_matrix);
-  bool write_cell_in_box(std::string const& NameOfFile);
+  void UpdateComponentList(std::vector<std::vector<GridBin>>& grid_bin_matrix);
+  bool WriteComponentsInBox(std::string const& NameOfFile);
   bool update_cut_index_white_space(
       std::vector<std::vector<unsigned long long>>& grid_bin_white_space_LUT);
-  bool update_cut_point_cell_list_low_high(
-      unsigned long long& box1_total_white_space,
-      unsigned long long& box2_total_white_space);
-  bool update_cut_point_cell_list_low_high_leaf(int& cut_line_w,
-                                                int average_component_height);
+  bool UpdateCutPointComponentLists(unsigned long long& box1_total_white_space,
+                                    unsigned long long& box2_total_white_space);
+  bool UpdateCutPointComponentListsLeaf(int& cut_line_w,
+                                        int average_component_height);
 
   void Report();
 };
