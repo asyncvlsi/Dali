@@ -37,19 +37,17 @@ namespace dali {
 
 /** Net fanout and HPWL statistics grouped into configured fanout buckets. */
 struct NetHistogram {
-  // this list defines the buckets for net size
+  // Inclusive upper fanout thresholds for all buckets except the final bucket.
   std::vector<size_t> buckets{2, 3, 4, 20, 40, 80, 160};
-  // the number of nets in each bucket
   std::vector<size_t> counts;
-  // the percentage of nets in each bucket
   std::vector<double> percents;
   std::vector<double> sum_hpwls;
   std::vector<double> ave_hpwls;
   std::vector<double> min_hpwls;
   std::vector<double> max_hpwls;
-  size_t tot_net_count;
-  double tot_hpwl;
-  double hpwl_unit;
+  size_t tot_net_count = 0;
+  double tot_hpwl = 0;
+  double hpwl_unit = 0;
 };
 
 /** DEF-side design data: instances, nets, rows, die area, and blockages. */
@@ -173,9 +171,16 @@ class Design {
   [[nodiscard]] const std::vector<PlacementBlockage>& PlacementBlockages()
       const;
 
+  /** Increment the net-count histogram bucket for a net fanout. */
   void UpdateFanOutHistogram(size_t net_size);
+
+  /** Initialize fanout buckets and count all existing nets. */
   void InitNetFanOutHistogram(std::vector<size_t>* histo_x = nullptr);
+
+  /** Accumulate a net HPWL value into the matching fanout bucket. */
   void UpdateNetHPWLHistogram(size_t net_size, double hpwl);
+
+  /** Log net count and HPWL statistics grouped by fanout bucket. */
   void ReportNetFanOutHistogram();
 
  private:

@@ -20,12 +20,31 @@
  ******************************************************************************/
 #include "design.h"
 
+#include <algorithm>
 #include <cfloat>
 #include <cstdio>
+#include <iterator>
 
 #include "dali/common/helper.h"
 
 namespace dali {
+
+namespace {
+
+size_t FindFanoutBucket(const std::vector<size_t>& buckets, size_t net_size) {
+  auto it = std::lower_bound(buckets.begin(), buckets.end(), net_size);
+  if (it == buckets.end()) {
+    return buckets.size() - 1;
+  }
+  return static_cast<size_t>(std::distance(buckets.begin(), it));
+}
+
+void NormalizeFanoutBuckets(std::vector<size_t>* buckets) {
+  std::sort(buckets->begin(), buckets->end());
+  buckets->erase(std::unique(buckets->begin(), buckets->end()), buckets->end());
+}
+
+}  // namespace
 
 RectI Design::ExpandOffGridPlacementBlockage(double lx, double ly, double ux,
                                              double uy) {
@@ -104,46 +123,17 @@ const std::vector<PlacementBlockage>& Design::PlacementBlockages() const {
   return all_blockages_;
 }
 
-/****
- * Increment the count of net in the corresponding bin using binary search
- * ****/
 void Design::UpdateFanOutHistogram(size_t net_size) {
-  // if there is no net bins, skip
   if (net_histogram_.buckets.empty()) return;
-  // if the net size is smaller than 2, skip
   if (net_size <= 1) return;
 
-  // find the bin to increment the count
-  size_t l = 0;
-  size_t r = net_histogram_.buckets.size() - 1;
-  while (l < r) {
-    size_t m = l + (r - l) / 2;
-    if (net_histogram_.buckets[m] == net_size) {
-      ++net_histogram_.counts[m];
-      return;
-    }
-    if (net_histogram_.buckets[m] > net_size) {
-      r = m - 1;
-    } else {
-      l = m + 1;
-    }
-  }
-  ++net_histogram_.counts[l];
+  ++net_histogram_.counts[FindFanoutBucket(net_histogram_.buckets, net_size)];
 }
 
-/****
- * Creates histogram bins using vector histo_x
- * If histo_x is a nullptr, then using default histogram bins
- * Classify nets to these bins, and compute the corresponding percentage
- * ****/
 void Design::InitNetFanOutHistogram(std::vector<size_t>* histo_x) {
   if (histo_x != nullptr) {
-    net_histogram_.buckets.clear();
-    int sz = (int)histo_x->size();
-    net_histogram_.buckets.assign(sz, 0);
-    for (int i = 0; i < sz; ++i) {
-      net_histogram_.buckets.push_back((*histo_x)[i]);
-    }
+    net_histogram_.buckets = *histo_x;
+    NormalizeFanoutBuckets(&net_histogram_.buckets);
   }
 
   size_t sz = net_histogram_.buckets.size();
@@ -151,17 +141,22 @@ void Design::InitNetFanOutHistogram(std::vector<size_t>* histo_x) {
   net_histogram_.percents.assign(sz, 0);
   net_histogram_.sum_hpwls.assign(sz, 0);
   net_histogram_.ave_hpwls.assign(sz, 0);
-  net_histogram_.min_hpwls.assign(sz, 0);
-  net_histogram_.max_hpwls.assign(sz, 0);
+  net_histogram_.min_hpwls.assign(sz, DBL_MAX);
+  net_histogram_.max_hpwls.assign(sz, -DBL_MAX);
+  net_histogram_.tot_net_count = 0;
+  net_histogram_.tot_hpwl = 0;
+
   for (auto& net : nets_) {
     size_t net_size = net.PinCnt();
     UpdateFanOutHistogram(net_size);
   }
 
-  net_histogram_.tot_net_count = 0;
   for (size_t i = 0; i < sz; ++i) {
     net_histogram_.tot_net_count += net_histogram_.counts[i];
   }
+
+  if (net_histogram_.tot_net_count == 0) return;
+
   for (size_t i = 0; i < sz; ++i) {
     net_histogram_.percents[i] =
         100.0 * static_cast<double>(net_histogram_.counts[i]) /
@@ -169,36 +164,18 @@ void Design::InitNetFanOutHistogram(std::vector<size_t>* histo_x) {
   }
 }
 
-/****
- * Increment the HPWL of a net in the corresponding bin using binary search
- * ****/
 void Design::UpdateNetHPWLHistogram(size_t net_size, double hpwl) {
-  // if there is no net bins, skip
   if (net_histogram_.buckets.empty()) return;
-  // if the net size is smaller than 2, skip
   if (net_size <= 1) return;
 
-  size_t l = 0;
-  size_t r = net_histogram_.buckets.size() - 1;
-  while (l < r) {
-    size_t m = l + (r - l) / 2;
-    if (net_histogram_.buckets[m] == net_size) {
-      l = m;
-      break;
-    }
-    if (net_histogram_.buckets[m] > net_size) {
-      r = m - 1;
-    } else {
-      l = m + 1;
-    }
-  }
+  size_t bucket_id = FindFanoutBucket(net_histogram_.buckets, net_size);
 
-  net_histogram_.sum_hpwls[l] += hpwl;
-  if (hpwl < net_histogram_.min_hpwls[l]) {
-    net_histogram_.min_hpwls[l] = hpwl;
+  net_histogram_.sum_hpwls[bucket_id] += hpwl;
+  if (hpwl < net_histogram_.min_hpwls[bucket_id]) {
+    net_histogram_.min_hpwls[bucket_id] = hpwl;
   }
-  if (hpwl > net_histogram_.max_hpwls[l]) {
-    net_histogram_.max_hpwls[l] = hpwl;
+  if (hpwl > net_histogram_.max_hpwls[bucket_id]) {
+    net_histogram_.max_hpwls[bucket_id] = hpwl;
   }
 }
 
