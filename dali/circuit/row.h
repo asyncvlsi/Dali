@@ -21,7 +21,6 @@
 #ifndef DALI_CIRCUIT_ROW_H_
 #define DALI_CIRCUIT_ROW_H_
 
-#include <unordered_map>
 #include <vector>
 
 #include "component.h"
@@ -60,10 +59,9 @@ class GeneralRowSegment {
   void SortComponents();
 
  private:
-  int lx_ = 0;      // lower left x coordinate
-  int width_ = -1;  // width of this row segment
-  std::vector<Component*>
-      components_;  // list of components in this row segment
+  int lx_ = 0;
+  int width_ = -1;
+  std::vector<Component*> components_;
 };
 
 /** Placement row shared by standard-cell and gridded-cell flows. */
@@ -105,11 +103,11 @@ class GeneralRow {
   std::vector<GeneralRowSegment>& RowSegments();
 
  private:
-  int ly_ = 0;               // lower left y coordinate
-  int height_ = -1;          // height of this row
-  bool is_orient_N_ = true;  // orientation of this row
-  int p_well_height_ = -1;   // height of P-well
-  int n_well_height_ = -1;   // height of N-well
+  int ly_ = 0;
+  int height_ = -1;
+  bool is_orient_N_ = true;
+  int p_well_height_ = -1;
+  int n_well_height_ = -1;
   std::vector<GeneralRowSegment> row_segments_;
 };
 
