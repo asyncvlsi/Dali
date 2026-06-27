@@ -61,10 +61,10 @@ void StdClusterWellLegalizer::FetchNpWellParams() {
   well_spacing_ = std::max(same_well_spacing, op_well_spacing);
   max_unplug_length_ =
       (int)std::floor(n_well_layer.MaxPlugDist() / grid_value_x);
-  DaliExpects(!ckt_ptr_->tech().WellTapCellIds().empty(),
+  DaliExpects(!ckt_ptr_->tech().WellTapMacroIds().empty(),
               "Cannot find the definition of well tap cell, well legalization "
               "cannot proceed\n");
-  int well_tap_macro_id = ckt_ptr_->tech().WellTapCellIds()[0];
+  int well_tap_macro_id = ckt_ptr_->tech().WellTapMacroIds()[0];
   well_tap_cell_ptr_ = &(ckt_ptr_->tech().Macros()[well_tap_macro_id]);
   well_tap_cell_width_ = well_tap_cell_ptr_->Width();
 

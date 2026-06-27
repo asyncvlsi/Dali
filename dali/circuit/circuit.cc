@@ -2017,10 +2017,10 @@ Macro* Circuit::AddMacroWithGridUnit(std::string const& macro_name, int width,
 int Circuit::AddWellTapMacroWithGridUnit(std::string const& macro_name,
                                          int width, int height) {
   AddMacroWithGridUnit(macro_name, width, height);
-  int well_tap_cell_id =
+  int well_tap_macro_id =
       tech_.macro_collection_.GetInstanceIdByName(macro_name);
-  tech_.well_tap_macro_ids_.push_back(well_tap_cell_id);
-  return well_tap_cell_id;
+  tech_.well_tap_macro_ids_.push_back(well_tap_macro_id);
+  return well_tap_macro_id;
 }
 
 Macro* Circuit::AddFillerMacroWithGridUnit(std::string const& macro_name,

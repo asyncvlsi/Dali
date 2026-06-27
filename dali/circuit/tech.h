@@ -47,7 +47,7 @@ class Tech {
   double GetManufacturingGrid() const;
 
   /** Return ids of macros marked as well tap cells. */
-  std::vector<int>& WellTapCellIds();
+  std::vector<int>& WellTapMacroIds();
 
   /** Return generated filler-cell macros. */
   std::vector<std::unique_ptr<Macro>>& FillerCellMacros();

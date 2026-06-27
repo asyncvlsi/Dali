@@ -784,9 +784,9 @@ void GriddedRowLegalizer::SetWellTapMacro(
     std::string const& well_tap_macro_name) {
   if (well_tap_macro_name.empty()) {
     LOG(info) << "Well tap cell type not specified\n";
-    DaliExpects(!ckt_ptr_->tech().WellTapCellIds().empty(),
+    DaliExpects(!ckt_ptr_->tech().WellTapMacroIds().empty(),
                 "No well tap cells provided in the cell library?");
-    int well_tap_macro_id = ckt_ptr_->tech().WellTapCellIds()[0];
+    int well_tap_macro_id = ckt_ptr_->tech().WellTapMacroIds()[0];
     well_tap_macro_ = &(ckt_ptr_->tech().Macros()[well_tap_macro_id]);
     LOG(info) << "Using the default well tap cell: " << well_tap_macro_->Name()
               << "\n";

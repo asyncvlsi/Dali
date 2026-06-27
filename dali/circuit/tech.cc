@@ -41,7 +41,7 @@ double Tech::GetManufacturingGrid() const {
   return manufacturing_grid_;
 }
 
-std::vector<int>& Tech::WellTapCellIds() { return well_tap_macro_ids_; }
+std::vector<int>& Tech::WellTapMacroIds() { return well_tap_macro_ids_; }
 
 std::vector<std::unique_ptr<Macro>>& Tech::FillerCellMacros() {
   return filler_ptrs_;
