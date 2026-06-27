@@ -34,8 +34,8 @@ class FillerCellPlacer : public Placer {
  public:
   FillerCellPlacer() = default;
 
-  /** Create filler-cell master types up to upper_width. */
-  void CreateFillerCellTypes(int upper_width);
+  /** Create filler-cell macros up to upper_width. */
+  void CreateFillerMacros(int upper_width);
 
   /** Fill one row interval with filler cells. */
   void PlaceFillerCells(int lx, int ux, int ly, bool is_orient_N,

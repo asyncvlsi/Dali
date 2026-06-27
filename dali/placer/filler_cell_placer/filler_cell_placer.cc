@@ -28,13 +28,8 @@
 
 namespace dali {
 
-/****
- * Create Filler Cell Macro and export it to PhyDB.
- * Assuming this is only for a standard cell design.
- *
- * @param upper_width: create 1X width filler cell, up to upper_widthX
- */
-void FillerCellPlacer::CreateFillerCellTypes(int upper_width) {
+/** Create filler-cell macros up to upper_width and export them to PhyDB. */
+void FillerCellPlacer::CreateFillerMacros(int upper_width) {
   DaliExpects(phy_db_ptr_ != nullptr, "phydb ptr not set");
 
   LOG(info) << "Creating and exporting filler cells\n";
@@ -48,7 +43,7 @@ void FillerCellPlacer::CreateFillerCellTypes(int upper_width) {
     double width = i * ckt_ptr_->GridValueX();
     std::string filler_name = "__filler__X" + std::to_string(i) + "__";
     phydb::Macro* phydb_macro = phy_db_ptr_->AddMacro(filler_name);
-    DaliExpects(phydb_macro != nullptr, "cannot add filler cell?");
+    DaliExpects(phydb_macro != nullptr, "cannot add filler macro?");
     phydb_macro->SetOrigin(0, 0);
     phydb_macro->SetSize(width, filler_height);
     phydb_macro->SetClass(phydb::MacroClass::CORE_SPACER);
@@ -72,33 +67,25 @@ void FillerCellPlacer::PlaceFillerCells(int lx, int ux, int ly,
   // fillers only. The flow already creates larger filler masters, so this can
   // be extended later to use a mixed-width strategy if reducing instance count
   // becomes important.
-  Macro* filler_macro = ckt_ptr_->tech().FillerCellPtrs()[0].get();
+  Macro* filler_macro = ckt_ptr_->tech().FillerCellMacros()[0].get();
   int space = ux - lx;
   for (int i = 0; i < space; ++i) {
-    std::string filler_cell_name =
+    std::string filler_component_name =
         "__filler_cell_component__" + std::to_string(filler_counter++);
-    auto [filler_cell, filler_cell_id] =
+    auto [filler_component, filler_component_id] =
         ckt_ptr_->design().FillerComponentCollection().CreateWithId(
-            filler_cell_name);
-    filler_cell.SetPlacementStatus(PLACED);
-    filler_cell.SetMacro(filler_macro);
-    filler_cell.SetId(static_cast<int>(filler_cell_id));
-    filler_cell.SetLLX(lx + i);
-    filler_cell.SetLLY(ly);
-    filler_cell.SetOrient(is_orient_N ? N : FS);
+            filler_component_name);
+    filler_component.SetPlacementStatus(PLACED);
+    filler_component.SetMacro(filler_macro);
+    filler_component.SetId(static_cast<int>(filler_component_id));
+    filler_component.SetLLX(lx + i);
+    filler_component.SetLLY(ly);
+    filler_component.SetOrient(is_orient_N ? N : FS);
   }
 }
 
 bool FillerCellPlacer::StartPlacement() {
   LOG(info) << "  Insert filler cells\n";
-  std::unordered_set<int> filler_cell_widths;
-  for (auto& filler : ckt_ptr_->tech().FillerCellPtrs()) {
-    filler_cell_widths.insert(filler->Width());
-  }
-  std::vector<int> filler_widths(filler_cell_widths.begin(),
-                                 filler_cell_widths.end());
-  std::sort(filler_widths.begin(), filler_widths.end());
-
   std::vector<GeneralRow>& rows = ckt_ptr_->design().Rows();
   int filler_counter = 0;
   for (auto& row : rows) {

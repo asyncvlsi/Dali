@@ -50,7 +50,7 @@ class Tech {
   std::vector<int>& WellTapCellIds();
 
   /** Return generated filler-cell macros. */
-  std::vector<std::unique_ptr<Macro>>& FillerCellPtrs();
+  std::vector<std::unique_ptr<Macro>>& FillerCellMacros();
 
   /** Return the synthetic macro used to model I/O pins. */
   Macro* IoDummyMacroPtr();

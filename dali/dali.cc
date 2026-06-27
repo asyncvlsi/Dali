@@ -417,7 +417,7 @@ bool Dali::RunFillerCellPlacement() {
   }
   filler_cell_placer_.CopyPlacementContextFrom(&gb_placer_);
   filler_cell_placer_.phy_db_ptr_ = phy_db_ptr_;
-  filler_cell_placer_.CreateFillerCellTypes(2);
+  filler_cell_placer_.CreateFillerMacros(2);
   if (!filler_cell_placer_.StartPlacement()) {
     LOG(error) << "Filler-cell placement failed\n";
     return false;
