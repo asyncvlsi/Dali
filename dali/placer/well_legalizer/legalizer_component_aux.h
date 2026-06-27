@@ -73,12 +73,12 @@ class LegalizerComponentAux : public ComponentAux {
   std::vector<double>& SubLocs();
 
   /** Return cached weighted average location. */
-  double AverageLoc();
+  double AverageLoc() const;
 
-  double2d InitLoc();
-  double2d GreedyLoc();
-  double2d QPLoc();
-  double2d ConsLoc();
+  double2d InitLoc() const;
+  double2d GreedyLoc() const;
+  double2d QPLoc() const;
+  double2d ConsLoc() const;
 
  private:
   double2d init_loc_;    // location before legalization
@@ -89,9 +89,6 @@ class LegalizerComponentAux : public ComponentAux {
   std::vector<double> sub_locs_;  // locations from different sub-cells
   std::vector<double> weights_;   // weights of clusters they belong to
   double average_loc_ = DBL_MAX;
-
-  std::vector<int> stretch_length_;
-  double tot_stretch_length = 0;
 };
 
 }  // namespace dali

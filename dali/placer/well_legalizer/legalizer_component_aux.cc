@@ -20,8 +20,6 @@
  ******************************************************************************/
 #include "legalizer_component_aux.h"
 
-#include <algorithm>
-
 namespace dali {
 
 LegalizerComponentAux::LegalizerComponentAux(Component* component_ptr)
@@ -115,14 +113,14 @@ void LegalizerComponentAux::ComputeAverageLoc() {
 
 std::vector<double>& LegalizerComponentAux::SubLocs() { return sub_locs_; }
 
-double LegalizerComponentAux::AverageLoc() { return average_loc_; }
+double LegalizerComponentAux::AverageLoc() const { return average_loc_; }
 
-double2d LegalizerComponentAux::InitLoc() { return init_loc_; }
+double2d LegalizerComponentAux::InitLoc() const { return init_loc_; }
 
-double2d LegalizerComponentAux::GreedyLoc() { return greedy_loc_; }
+double2d LegalizerComponentAux::GreedyLoc() const { return greedy_loc_; }
 
-double2d LegalizerComponentAux::QPLoc() { return qp_loc_; }
+double2d LegalizerComponentAux::QPLoc() const { return qp_loc_; }
 
-double2d LegalizerComponentAux::ConsLoc() { return cons_loc_; }
+double2d LegalizerComponentAux::ConsLoc() const { return cons_loc_; }
 
 }  // namespace dali
