@@ -175,8 +175,7 @@ class IoPin {
   int final_y_ = 0;  // database unit
   ComponentOrient orient_;
 
-  // set shape of its physical geometry, and compute rects for different
-  // orientations
+  /** Set physical shape and cache orientation-specific rectangles. */
   void SetRect(double llx, double lly, double urx, double ury);
 };
 

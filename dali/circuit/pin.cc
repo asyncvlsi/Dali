@@ -22,17 +22,17 @@
 
 #include "macro.h"
 
-#define NUM_OF_ORIENT 8
-
 namespace dali {
+namespace {
+constexpr int kOrientCount = 8;
+}  // namespace
 
 Pin::Pin(std::pair<const std::string, int>* name_id_pair_ptr, Macro* macro_ptr)
     : name_id_pair_ptr_(name_id_pair_ptr),
       macro_ptr_(macro_ptr),
       is_input_(true) {
-  manual_set_ = false;
-  x_offset_.resize(NUM_OF_ORIENT, 0);
-  y_offset_.resize(NUM_OF_ORIENT, 0);
+  x_offset_.resize(kOrientCount, 0);
+  y_offset_.resize(kOrientCount, 0);
 }
 
 Pin::Pin(std::pair<const std::string, int>* name_id_pair_ptr, Macro* macro_ptr,
@@ -40,9 +40,8 @@ Pin::Pin(std::pair<const std::string, int>* name_id_pair_ptr, Macro* macro_ptr,
     : name_id_pair_ptr_(name_id_pair_ptr),
       macro_ptr_(macro_ptr),
       is_input_(true) {
-  manual_set_ = true;
-  x_offset_.resize(NUM_OF_ORIENT, 0);
-  y_offset_.resize(NUM_OF_ORIENT, 0);
+  x_offset_.resize(kOrientCount, 0);
+  y_offset_.resize(kOrientCount, 0);
 
   CalculateOffset(x_offset, y_offset);
 }
@@ -53,7 +52,6 @@ int Pin::Id() const { return name_id_pair_ptr_->second; }
 
 void Pin::SetOffset(double x_offset, double y_offset) {
   CalculateOffset(x_offset, y_offset);
-  manual_set_ = true;
 }
 
 void Pin::SetBoundingBoxSize(double width, double height) {

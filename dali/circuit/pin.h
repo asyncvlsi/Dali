@@ -31,7 +31,7 @@ namespace dali {
 
 class Macro;
 
-/** Cell pin geometry and orientation-aware offsets for placement. */
+/** Macro pin geometry and orientation-aware offsets for placement. */
 class Pin {
  public:
   Pin(std::pair<const std::string, int>* name_id_pair_ptr, Macro* macro_ptr);
@@ -76,13 +76,12 @@ class Pin {
   Macro* macro_ptr_;
 
   bool is_input_;
-  bool manual_set_;
   std::vector<double> x_offset_;
   std::vector<double> y_offset_;
   double half_bbox_width_ = 0;
   double half_bbox_height_ = 0;
 
-  // calculate and cache offsets for all orientations
+  /** Calculate and cache offsets for all orientations. */
   void CalculateOffset(double x_offset, double y_offset);
 };
 

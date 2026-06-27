@@ -20,9 +20,10 @@
  ******************************************************************************/
 #include "io_pin.h"
 
-#define NUM_OF_ORIENT 8
-
 namespace dali {
+namespace {
+constexpr int kOrientCount = 8;
+}  // namespace
 
 IoPin::IoPin(std::pair<const std::string, int>* name_id_pair_ptr)
     : name_id_pair_ptr_(name_id_pair_ptr),
@@ -35,7 +36,7 @@ IoPin::IoPin(std::pair<const std::string, int>* name_id_pair_ptr)
       x_(0),
       y_(0),
       orient_(N) {
-  rects_.resize(NUM_OF_ORIENT, RectD(0, 0, 0, 0));
+  rects_.resize(kOrientCount, RectD(0, 0, 0, 0));
   rects_[0].SetValue(0, 0, 0, 0);
 }
 
@@ -51,7 +52,7 @@ IoPin::IoPin(std::pair<const std::string, int>* name_id_pair_ptr, double loc_x,
       x_(loc_x),
       y_(loc_y),
       orient_(N) {
-  rects_.resize(NUM_OF_ORIENT, RectD(0, 0, 0, 0));
+  rects_.resize(kOrientCount, RectD(0, 0, 0, 0));
   rects_[0].SetValue(0, 0, 0, 0);
 }
 
@@ -68,7 +69,7 @@ IoPin::IoPin(std::pair<const std::string, int>* name_id_pair_ptr,
       x_(loc_x),
       y_(loc_y),
       orient_(N) {
-  rects_.resize(NUM_OF_ORIENT, RectD(0, 0, 0, 0));
+  rects_.resize(kOrientCount, RectD(0, 0, 0, 0));
   rects_[0].SetValue(0, 0, 0, 0);
 }
 
@@ -84,7 +85,7 @@ IoPin::IoPin(double loc_x, double loc_y, ComponentOrient orient, double llx,
       x_(loc_x),
       y_(loc_y),
       orient_(orient) {
-  rects_.resize(NUM_OF_ORIENT, RectD(0, 0, 0, 0));
+  rects_.resize(kOrientCount, RectD(0, 0, 0, 0));
   SetRect(llx, lly, urx, ury);
 }
 
