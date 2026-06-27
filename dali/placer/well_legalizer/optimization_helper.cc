@@ -260,7 +260,7 @@ struct AbacusSegment {
   double sum_es_ = 0;
   int width = 0;
 
-  int CellCount() const { return last_id - first_id + 1; }
+  int ComponentCount() const { return last_id - first_id + 1; }
   void UpdatePosition() { x = sum_es_ / sum_e_; }
   void AddCell(ComponentDisplacementVariable& var, int i);
   void SetX(double init_x) { x = init_x; }

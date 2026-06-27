@@ -101,7 +101,7 @@ class DefaultSpacePartitioner : public AbstractSpacePartitioner {
   int well_spacing_ = 0;
 
   /**** stripe parameters ****/
-  int max_cell_width_ = 0;
+  int max_component_width_ = 0;
   double stripe_width_factor_ = 2.0;
 
   /**** write result to an external container in a legalizer ****/

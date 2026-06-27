@@ -161,20 +161,20 @@ void DefaultSpacePartitioner::UpdateWhiteSpaceInCol(ClusterStripe& col) {
       SegI* tmp_seg = stripe_seg.Joint(seg);
       if (tmp_seg != nullptr) {
         /*
-        if (tmp_seg->lo - seg.lo < max_cell_width_ * 2 + well_spacing_) {
+        if (tmp_seg->lo - seg.lo < max_component_width_ * 2 + well_spacing_) {
             if (tmp_seg->hi - seg.lo
                 < stripe_width_factor_ * max_unplug_length_) {
                 tmp_seg->lo = seg.lo;
             }
         }
         if (seg.hi - tmp_seg->hi
-            < max_cell_width_ * 2 + well_spacing_) {
+            < max_component_width_ * 2 + well_spacing_) {
             if (seg.hi - tmp_seg->lo
                 < stripe_width_factor_ * max_unplug_length_) {
                 tmp_seg->hi = seg.hi;
             }
         }
-        if (tmp_seg->Span() < max_cell_width_ * 2
+        if (tmp_seg->Span() < max_component_width_ * 2
             && tmp_seg->Span() < seg.Span()) {
             continue;
         }
@@ -272,7 +272,7 @@ void DefaultSpacePartitioner::AssignComponentToColBasedOnWhiteSpace() {
       col_list[col_num].component_count_++;
       component_column_assign[i] = col_num;
     } else {
-      DaliExpects(false, "Cannot find a column to place cell: " +
+      DaliExpects(false, "Cannot find a column to place component: " +
                              component_list[i].Name());
     }
   }
@@ -305,13 +305,13 @@ bool DefaultSpacePartitioner::StartPartitioning() {
 
   std::vector<ClusterStripe>& col_list = *output_stripes_;
   // find the maximum width among movable cells
-  max_cell_width_ = 0;
+  max_component_width_ = 0;
   for (auto& component : circuit_->Components()) {
     if (component.IsMovable()) {
-      max_cell_width_ = std::max(max_cell_width_, component.Width());
+      max_component_width_ = std::max(max_component_width_, component.Width());
     }
   }
-  LOG(info) << "Max movable cell width: " << max_cell_width_ << "\n";
+  LOG(info) << "Max movable component width: " << max_component_width_ << "\n";
 
   // determine the width of columns
   cluster_width_ = max_row_width_;
@@ -338,8 +338,8 @@ bool DefaultSpacePartitioner::StartPartitioning() {
   stripe_width_ = region_width / tot_col_num_;
   LOG(info) << "  Gridded row width: " << stripe_width_ * circuit_->GridValueX()
             << "um, " << stripe_width_ << "\n";
-  DaliWarns(stripe_width_ < max_cell_width_,
-            "Maximum cell width is longer than gridded row width?");
+  DaliWarns(stripe_width_ < max_component_width_,
+            "Maximum component width is longer than gridded row width?");
   for (int i = 0; i < tot_col_num_; ++i) {
     col_list[i].lx_ = Left() + i * stripe_width_;
     col_list[i].width_ = stripe_width_ - well_spacing_;

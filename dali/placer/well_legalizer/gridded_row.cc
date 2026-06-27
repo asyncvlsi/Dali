@@ -563,7 +563,7 @@ ComponentOrient GriddedRow::ComputeComponentOrient(Component* component,
 void GriddedRow::LegalizeSegmentsX(bool use_init_loc) {
   for (auto& segment : segments_) {
     segment.MinDisplacementLegalization(use_init_loc);
-    segment.SnapCellToPlacementGrid();
+    segment.SnapComponentsToPlacementGrid();
   }
 }
 

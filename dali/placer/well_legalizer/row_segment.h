@@ -49,7 +49,7 @@ class RowSegment {
   std::vector<ComponentRegion>& ComponentRegions();
   void AddComponentRegion(Component* component_ptr, int region_id);
   void MinDisplacementLegalization(bool use_init_loc);
-  void SnapCellToPlacementGrid();
+  void SnapComponentsToPlacementGrid();
 
   void SetOptimalAnchorWeight(double weight);
   void FitInRange(std::vector<ComponentDisplacementVariable>& vars);

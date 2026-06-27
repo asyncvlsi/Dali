@@ -97,7 +97,7 @@ void RowSegment::MinDisplacementLegalization(bool use_init_loc) {
   }
 }
 
-void RowSegment::SnapCellToPlacementGrid() {
+void RowSegment::SnapComponentsToPlacementGrid() {
   for (auto& component_region : component_regions_) {
     component_region.component->SetLLX(
         std::round(component_region.component->LLX()));
