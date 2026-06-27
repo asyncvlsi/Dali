@@ -46,8 +46,8 @@ void HpwlOptimizer::SetShouldSaveIntermediateResult(
  * distance between two pins. To improve numerical stability, a small number is
  * added to this distance.
  *
- * In our implementation, this small number is around the average movable cell
- * width for x and height for y.
+ * In our implementation, this small number is around the average movable
+ * component width for x and height for y.
  */
 void B2BHpwlOptimizer::UpdateEpsilon() {
   width_epsilon_ = ckt_ptr_->AverageMovableComponentWidth() * epsilon_factor_;

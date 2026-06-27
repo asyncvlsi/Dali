@@ -145,7 +145,7 @@ void ComponentDisplacementVariableSegment::UpdateVarLoc() {
  * @brief This function is for optimizing displacement.
  * Assuming the objective function is like this:
  *     obj = sum_i ( e_i(x_i - x_i0)^2 + a_i(x_i - x_ia)^2 )
- * where x_i is the location of cell i, x_i0 is its initial location,
+ * where x_i is the location of component i, x_i0 is its initial location,
  * x_ia is the anchor location if there is one, e_i is usually 1,
  * and a_i is 0 if there is no anchor,
  * the final solution needs to satisfy the following constraints:
@@ -201,7 +201,7 @@ void MinimizeQuadraticDisplacement(
  * @brief This function is for optimizing displacement.
  * Assuming the objective function is like this:
  *     obj = sum_i e_i|x_i - x_i0|
- * where x_i is the location of cell i, x_i0 is its initial location,
+ * where x_i is the location of component i, x_i0 is its initial location,
  * e_i is the weight, which is always non-negative, and most often 1
  * the final solution needs to satisfy the following constraints:
  *     lower_bound <= x_0

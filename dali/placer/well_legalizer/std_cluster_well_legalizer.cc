@@ -46,7 +46,7 @@ void StdClusterWellLegalizer::CheckWellStatus() {
   for (Component& component : components) {
     if (component.IsMovable()) {
       DaliExpects(component.MacroPtr()->HasWellInfo(),
-                  "Cannot find well info for cell: " << component.Name());
+                  "Cannot find well info for component: " << component.Name());
     }
   }
 }

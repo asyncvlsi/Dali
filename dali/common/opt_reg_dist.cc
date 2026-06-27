@@ -120,7 +120,7 @@ void OptimalRegionDistance::SaveFile(std::string const& file_name) const {
     ost << res / ave_size << "\n";
   }
   LOG(info) << ", done\n";
-  LOG(info) << "average cell width: " << ave_size << "\n";
+  LOG(info) << "average component width: " << ave_size << "\n";
 }
 
 }  // namespace dali

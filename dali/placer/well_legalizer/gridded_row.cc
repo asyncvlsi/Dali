@@ -710,7 +710,7 @@ void GriddedRow::AddStandardCell(Component* component, int region_id,
     }
   }
 
-  DaliExpects(is_added, "Unable to add cell to a row segment?!");
+  DaliExpects(is_added, "Unable to add component to a row segment?!");
 }
 
 size_t GriddedRow::OutOfBoundCell() {

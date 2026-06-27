@@ -144,11 +144,11 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   /**** two small positive numbers used to avoid divergence when calculating net
    * weights ****/
   double epsilon_factor_ = 1.5;
-  // this value will be set to 1/epsilon_factor_ times the average movable cell
-  // width
+  // this value will be set to 1/epsilon_factor_ times the average movable
+  // component width
   double width_epsilon_ = 1e-5;
-  // this value will be set to 1/epsilon_factor_ times the average movable cell
-  // height
+  // this value will be set to 1/epsilon_factor_ times the average movable
+  // component height
   double height_epsilon_ = 1e-5;
   // early stop threshold
   double hpwl_early_stop_threshold_ = 1.0;

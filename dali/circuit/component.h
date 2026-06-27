@@ -224,7 +224,7 @@ class Component {
   double llx_ =
       0;  // lower x coordinate, data type double, for global placement
   double lly_ = 0;         // lower y coordinate
-  std::vector<int> nets_;  // the list of nets connected to this cell
+  std::vector<int> nets_;  // the list of nets connected to this component
   PlaceStatus place_status_ =
       UNPLACED;  // placement status, i.e, PLACED, FIXED, UNPLACED
   ComponentOrient orient_ = N;  // orientation, normally, N or FS
