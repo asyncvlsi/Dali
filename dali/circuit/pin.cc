@@ -20,26 +20,25 @@
  ******************************************************************************/
 #include "pin.h"
 
-#include "block_type.h"
+#include "macro.h"
 
 #define NUM_OF_ORIENT 8
 
 namespace dali {
 
-Pin::Pin(std::pair<const std::string, int>* name_id_pair_ptr,
-         BlockType* blk_type_ptr)
+Pin::Pin(std::pair<const std::string, int>* name_id_pair_ptr, Macro* macro_ptr)
     : name_id_pair_ptr_(name_id_pair_ptr),
-      blk_type_ptr_(blk_type_ptr),
+      macro_ptr_(macro_ptr),
       is_input_(true) {
   manual_set_ = false;
   x_offset_.resize(NUM_OF_ORIENT, 0);
   y_offset_.resize(NUM_OF_ORIENT, 0);
 }
 
-Pin::Pin(std::pair<const std::string, int>* name_id_pair_ptr,
-         BlockType* blk_type_ptr, double x_offset, double y_offset)
+Pin::Pin(std::pair<const std::string, int>* name_id_pair_ptr, Macro* macro_ptr,
+         double x_offset, double y_offset)
     : name_id_pair_ptr_(name_id_pair_ptr),
-      blk_type_ptr_(blk_type_ptr),
+      macro_ptr_(macro_ptr),
       is_input_(true) {
   manual_set_ = true;
   x_offset_.resize(NUM_OF_ORIENT, 0);
@@ -63,9 +62,13 @@ void Pin::SetBoundingBoxSize(double width, double height) {
   half_bbox_height_ = height / 2.0;
 }
 
-double Pin::OffsetX(BlockOrient orient) const { return x_offset_[orient - N]; }
+double Pin::OffsetX(ComponentOrient orient) const {
+  return x_offset_[orient - N];
+}
 
-double Pin::OffsetY(BlockOrient orient) const { return y_offset_[orient - N]; }
+double Pin::OffsetY(ComponentOrient orient) const {
+  return y_offset_[orient - N];
+}
 
 void Pin::SetIoType(bool is_input) { is_input_ = is_input; }
 
@@ -100,8 +103,8 @@ void Pin::CalculateOffset(double x_offset, double y_offset) {
    *    x' = width - x;
    *    y' = height - y;
    ****/
-  x_offset_[S - N] = blk_type_ptr_->Width() - x_offset;
-  y_offset_[S - N] = blk_type_ptr_->Height() - y_offset;
+  x_offset_[S - N] = macro_ptr_->Width() - x_offset;
+  y_offset_[S - N] = macro_ptr_->Height() - y_offset;
 
   /****
    * rotate 90 degree counterclockwise
@@ -115,7 +118,7 @@ void Pin::CalculateOffset(double x_offset, double y_offset) {
    *    x' = height - y;
    *    y' = x;
    * ****/
-  x_offset_[W - N] = blk_type_ptr_->Height() - y_offset;
+  x_offset_[W - N] = macro_ptr_->Height() - y_offset;
   y_offset_[W - N] = x_offset;
 
   /****
@@ -131,13 +134,13 @@ void Pin::CalculateOffset(double x_offset, double y_offset) {
    *    y' = width - x;
    * ****/
   x_offset_[E - N] = y_offset;
-  y_offset_[E - N] = blk_type_ptr_->Width() - x_offset;
+  y_offset_[E - N] = macro_ptr_->Width() - x_offset;
 
   /****
    * Flip along the line through the middle of width
    *    x' = width - x; y = y;
    * ****/
-  x_offset_[FN - N] = blk_type_ptr_->Width() - x_offset;
+  x_offset_[FN - N] = macro_ptr_->Width() - x_offset;
   y_offset_[FN - N] = y_offset;
 
   /****
@@ -152,7 +155,7 @@ void Pin::CalculateOffset(double x_offset, double y_offset) {
    *    y' = height - y;
    * ****/
   x_offset_[FS - N] = x_offset;
-  y_offset_[FS - N] = blk_type_ptr_->Height() - y_offset;
+  y_offset_[FS - N] = macro_ptr_->Height() - y_offset;
 
   /****
    * rotate 90 degree counterclockwise
@@ -179,8 +182,8 @@ void Pin::CalculateOffset(double x_offset, double y_offset) {
    *    x' = height - y;
    *    y = width - x;
    * ****/
-  x_offset_[FE - N] = blk_type_ptr_->Height() - y_offset;
-  y_offset_[FE - N] = blk_type_ptr_->Width() - x_offset;
+  x_offset_[FE - N] = macro_ptr_->Height() - y_offset;
+  y_offset_[FE - N] = macro_ptr_->Width() - x_offset;
 }
 
 }  // namespace dali

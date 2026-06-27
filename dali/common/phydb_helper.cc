@@ -56,7 +56,7 @@ PlaceStatus PlaceStatusPhyDB2Dali(phydb::PlaceStatus phydb_place_status) {
   }
 }
 
-phydb::CompOrient OrientDali2PhyDB(BlockOrient dali_orient) {
+phydb::CompOrient OrientDali2PhyDB(ComponentOrient dali_orient) {
   switch (dali_orient) {
     case N:
       return phydb::CompOrient::N;
@@ -80,7 +80,7 @@ phydb::CompOrient OrientDali2PhyDB(BlockOrient dali_orient) {
   }
 }
 
-BlockOrient OrientPhyDB2Dali(phydb::CompOrient phydb_orient) {
+ComponentOrient OrientPhyDB2Dali(phydb::CompOrient phydb_orient) {
   switch (phydb_orient) {
     case phydb::CompOrient::N:
       return N;

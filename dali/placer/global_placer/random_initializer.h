@@ -25,8 +25,8 @@
 #include <string>
 #include <unordered_map>
 
-#include "dali/circuit/block.h"
 #include "dali/circuit/circuit.h"
+#include "dali/circuit/component.h"
 #include "dali/common/elapsed_time.h"
 
 namespace dali {
@@ -39,7 +39,7 @@ enum class RandomInitializerType {
   DENSITY_AWARE = 3
 };
 
-/** Interface for random initializers that seed block locations. */
+/** Interface for random initializers that seed component locations. */
 class RandomInitializer {
  public:
   RandomInitializer(Circuit* ckt_ptr, uint32_t random_seed);
@@ -52,7 +52,7 @@ class RandomInitializer {
   /** Enable or disable intermediate placement dumps. */
   void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
 
-  /** Assign initial block locations. */
+  /** Assign initial component locations. */
   virtual void RandomPlace() = 0;
 
  protected:
@@ -93,18 +93,18 @@ class GaussianInitializer : public RandomInitializer {
 /** Grid bin used to avoid fixed macros during random initialization. */
 class InitializerGridBin {
  public:
-  std::vector<Block*>& Macros();
+  std::vector<Component*>& Macros();
   double GetDensity() const;
   void UpdateDensity();
   void SetBoundary(int lx, int ly, int ux, int uy);
   void UpdateTotalArea();
   void UpdateMacroArea();
-  void AddBlock(Block* blk);
-  void InitializeBlockLocation(uint32_t random_seed, int num_trials);
+  void AddComponent(Component* blk);
+  void InitializeComponentLocation(uint32_t random_seed, int num_trials);
 
  private:
-  std::vector<Block*> macros_;
-  std::vector<Block*> blocks_;
+  std::vector<Component*> macros_;
+  std::vector<Component*> components_;
   double density_ = 0;
   unsigned long long total_area_ = 0;
   unsigned long long used_area_ = 0;
@@ -131,7 +131,7 @@ class MonteCarloInitializer : public RandomInitializer {
  protected:
   virtual void InitializeGridBin();
   virtual void AssignFixedMacroToGridBin();
-  bool IsBlkLocationValid(Block& blk);
+  bool IsBlkLocationValid(Component& blk);
 
   int grid_cnt_x_ = 30;
   int grid_cnt_y_ = 30;
@@ -157,7 +157,7 @@ class DensityAwareInitializer : public MonteCarloInitializer {
                       CompareInitializerGridBinPtr>
       density_queue_;
   void InitializePriorityQueue();
-  void AssignBlockToGridBin();
+  void AssignComponentToGridBin();
 };
 
 }  // namespace dali

@@ -21,15 +21,15 @@
 #ifndef DALI_PLACER_WELL_LEGALIZER_BLOCK_CLUSTER_H_
 #define DALI_PLACER_WELL_LEGALIZER_BLOCK_CLUSTER_H_
 
-#include "dali/circuit/block.h"
+#include "dali/circuit/component.h"
 
 namespace dali {
 
-/** Cluster of blocks that share legalized well geometry. */
-struct BlockCluster {
-  BlockCluster();
-  BlockCluster(int well_extension_x_init, int well_extension_y_init,
-               int plug_width_init);
+/** Cluster of components that share legalized well geometry. */
+struct ComponentCluster {
+  ComponentCluster();
+  ComponentCluster(int well_extension_x_init, int well_extension_y_init,
+                   int plug_width_init);
 
   int well_extension_x_;
   int well_extension_y_;
@@ -41,7 +41,7 @@ struct BlockCluster {
   int height_;
   int lx_;
   int ly_;
-  std::vector<Block*> blk_ptr_list_;
+  std::vector<Component*> component_ptr_list_;
 
   // Cached legalized x location.
   int modified_lx_;
@@ -72,7 +72,7 @@ struct BlockCluster {
   double CenterX() const { return lx_ + width_ / 2.0; }
   double CenterY() const { return ly_ + height_ / 2.0; }
 
-  int size() const { return blk_ptr_list_.size(); }
+  int size() const { return component_ptr_list_.size(); }
 
   void SetLLX(int lx) { lx_ = lx; }
   void SetLLY(int ly) { ly_ = ly; }
@@ -91,25 +91,25 @@ struct BlockCluster {
   void IncreX(int displacement) { lx_ += displacement; }
   void IncreY(int displacement) { ly_ += displacement; }
 
-  /** Append one block and update cluster dimensions. */
-  void AppendBlock(Block& block);
+  /** Append one component and update cluster dimensions. */
+  void AppendComponent(Component& component);
 
-  /** Optimize cluster height based on contained blocks. */
+  /** Optimize cluster height based on contained components. */
   void OptimizeHeight();
 
-  /** Write the cluster location back to contained blocks. */
-  void UpdateBlockLocation();
+  /** Write the cluster location back to contained components. */
+  void UpdateComponentLocation();
 };
 
 /** Pairing of a cluster pointer and candidate x/y location. */
-struct ClusterLocationPair {
-  BlockCluster* cluster;
+struct ComponentClusterLocation {
+  ComponentCluster* cluster;
   int x;
   int y;
-  explicit ClusterLocationPair(BlockCluster* cluster_init = nullptr,
-                               int x_init = 0, int y_init = 0)
+  explicit ComponentClusterLocation(ComponentCluster* cluster_init = nullptr,
+                                    int x_init = 0, int y_init = 0)
       : cluster(cluster_init), x(x_init), y(y_init) {}
-  bool operator<(const ClusterLocationPair& rhs) const {
+  bool operator<(const ComponentClusterLocation& rhs) const {
     return (x < rhs.x) || ((x == rhs.x) && (y < rhs.y));
   }
 };

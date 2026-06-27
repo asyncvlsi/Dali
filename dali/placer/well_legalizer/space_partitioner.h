@@ -85,7 +85,7 @@ class DefaultSpacePartitioner : public AbstractSpacePartitioner {
   void DetectAvailSpace();
   void UpdateWhiteSpaceInCol(ClusterStripe& col);
   void DecomposeSpaceToSimpleStripes();
-  void AssignBlockToColBasedOnWhiteSpace();
+  void AssignComponentToColBasedOnWhiteSpace();
 
   bool StartPartitioning() override;
 

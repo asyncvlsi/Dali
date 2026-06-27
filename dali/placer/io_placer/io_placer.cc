@@ -298,7 +298,7 @@ bool IoPlacer::AssignIoPinToBoundaryLayers() {
 
     // find the bounding box of the net containing this IOPIN
     Net* net = iopin.NetPtr();
-    if (net->BlockPins().empty()) {
+    if (net->ComponentPins().empty()) {
       // if this net only contain this IOPIN, do nothing
       LOG(warning) << "Net " << net->Name() << " only contains IOPIN "
                    << iopin.Name() << ", skip placing this IOPIN\n";

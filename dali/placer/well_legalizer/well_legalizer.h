@@ -74,11 +74,11 @@ class WellLegalizer : public ExtendedTetrisLegalizer {
 
   void InitWellLegalizer();
 
-  void UpdatePNBoundary(Block const& block);
-  bool FindLocation(Block& block, int2d& res);
-  void WellPlace(Block& block);
+  void UpdatePNBoundary(Component const& component);
+  bool FindLocation(Component& component, int2d& res);
+  void WellPlace(Component& component);
 
-  void MarkSpaceWellLeft(Block const& block, int p_row);
+  void MarkSpaceWellLeft(Component const& component, int p_row);
   bool IsCurLocWellDistanceLeft(int loc_x, int lo_row, int hi_row, int p_row);
   bool IsCurLocWellMinWidthLeft(int loc_x, int lo_row, int hi_row, int p_row);
   bool IsCurrentLocLegalLeft(Value2D<int>& loc, int width, int height,
@@ -89,7 +89,7 @@ class WellLegalizer : public ExtendedTetrisLegalizer {
                    int p_row);
   bool WellLegalizationLeft();
 
-  void MarkSpaceWellRight(Block const& block, int p_row);
+  void MarkSpaceWellRight(Component const& component, int p_row);
   bool IsCurLocWellDistanceRight(int loc_x, int lo_row, int hi_row, int p_row);
   bool IsCurLocWellMinWidthRight(int loc_x, int lo_row, int hi_row, int p_row);
   bool IsCurrentLocLegalRight(Value2D<int>& loc, int width, int height,

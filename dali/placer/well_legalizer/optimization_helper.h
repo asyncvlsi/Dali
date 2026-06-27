@@ -24,19 +24,19 @@
 #include <cfloat>
 #include <vector>
 
-#include "dali/placer/well_legalizer/block_helper.h"
+#include "dali/placer/well_legalizer/component_helper.h"
 
 namespace dali {
 
-void MinimizeQuadraticDisplacement(std::vector<BlockDisplacementVariable>& vars,
-                                   double lower_limit = -DBL_MAX,
-                                   double upper_limit = DBL_MAX);
+void MinimizeQuadraticDisplacement(
+    std::vector<ComponentDisplacementVariable>& vars,
+    double lower_limit = -DBL_MAX, double upper_limit = DBL_MAX);
 
-void MinimizeLinearDisplacement(std::vector<BlockDisplacementVariable>& vars,
-                                double lower_limit = -DBL_MAX,
-                                double upper_limit = DBL_MAX);
+void MinimizeLinearDisplacement(
+    std::vector<ComponentDisplacementVariable>& vars,
+    double lower_limit = -DBL_MAX, double upper_limit = DBL_MAX);
 
-void AbacusPlaceRow(std::vector<BlockDisplacementVariable>& vars,
+void AbacusPlaceRow(std::vector<ComponentDisplacementVariable>& vars,
                     double lower_limit = -DBL_MAX,
                     double upper_limit = DBL_MAX);
 

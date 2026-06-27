@@ -51,8 +51,8 @@ class GlobalPlacer : public Placer {
   /** Release optimizer and rough legalizer instances. */
   void CloseOptimizerAndLegalizer();
 
-  /** Initialize block locations before iterative placement. */
-  void InitializeBlockLocation();
+  /** Initialize component locations before iterative placement. */
+  void InitializeComponentLocation();
 
   /** Run global placement. */
   bool StartPlacement() override;
@@ -68,7 +68,7 @@ class GlobalPlacer : public Placer {
   // Save intermediate result for debugging and/or visualization.
   bool should_save_intermediate_result_ = false;
 
-  bool IsBlockListOrNetListEmpty() const;
+  bool IsComponentListOrNetListEmpty() const;
   static bool IsSeriesConverged(std::vector<double>& series, int window_size,
                                 double tolerance);
   bool IsPlacementConverged();

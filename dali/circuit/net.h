@@ -25,7 +25,7 @@
 #include <string>
 #include <vector>
 
-#include "block.h"
+#include "component.h"
 #include "dali/common/logging.h"
 #include "dali/common/misc.h"
 #include "net_pin.h"
@@ -35,7 +35,7 @@ namespace dali {
 class NetAux;
 class IoPin;
 
-/** Electrical net with connected block pins, I/O pins, and HPWL helpers. */
+/** Electrical net with connected component pins, I/O pins, and HPWL helpers. */
 class Net {
  public:
   Net(std::pair<const std::string, int>* name_id_pair_ptr, size_t capacity,
@@ -47,11 +47,11 @@ class Net {
   /** Return the net id. */
   int Id() const;
 
-  /** Add a connected block/pin pair. */
-  void AddBlkPinPair(Block* block_ptr, Pin* pin_ptr);
+  /** Add a connected component/pin pair. */
+  void AddComponentPinPair(Component* component_ptr, Pin* pin_ptr);
 
-  /** Return connected block pins. */
-  std::vector<NetPin>& BlockPins();
+  /** Return connected component pins. */
+  std::vector<NetPin>& ComponentPins();
 
   /** Add a connected I/O pin. */
   void AddIoPin(IoPin* io_pin);
@@ -65,7 +65,7 @@ class Net {
   /** Return net weight used by wirelength metrics. */
   double Weight() const;
 
-  /** Return total connected block and I/O pin count. */
+  /** Return total connected component and I/O pin count. */
   size_t PinCnt() const;
 
   /** Return 1/(p-1), where p is PinCnt(). */
@@ -77,47 +77,51 @@ class Net {
   /** Return attached auxiliary data, if any. */
   NetAux* Aux();
 
-  /** Return x bounds if blk_ptr were excluded from this net. */
-  void GetXBoundIfBlkAbsent(Block* blk_ptr, double& lo, double& hi);
+  /** Return x bounds if component_ptr were excluded from this net. */
+  void GetXBoundIfBlkAbsent(Component* component_ptr, double& lo, double& hi);
 
-  /** Return y bounds if blk_ptr were excluded from this net. */
-  void GetYBoundIfBlkAbsent(Block* blk_ptr, double& lo, double& hi);
+  /** Return y bounds if component_ptr were excluded from this net. */
+  void GetYBoundIfBlkAbsent(Component* component_ptr, double& lo, double& hi);
 
-  /** Sort block pins by block id, then pin id. */
-  void SortBlkPinList();
+  /** Sort component pins by component id, then pin id. */
+  void SortComponentPinList();
 
-  /** Update cached indices of min/max x block pins. */
+  /** Update cached indices of min/max x component pins. */
   void UpdateMaxMinIdX();
 
-  /** Update cached indices of min/max y block pins. */
+  /** Update cached indices of min/max y component pins. */
   void UpdateMaxMinIdY();
 
   /** Update cached min/max pin indices in both dimensions. */
   void UpdateMaxMinIndex();
 
-  // get the index of the BlockPin pair with the maximum x location
-  int MaxBlkPinIdX() const;
+  // get the index of the ComponentPin pair with the maximum x location
+  int MaxComponentPinIdX() const;
 
-  // get the index of the BlockPin pair with the minimum x location
-  int MinBlkPinIdX() const;
+  // get the index of the ComponentPin pair with the minimum x location
+  int MinComponentPinIdX() const;
 
-  // get the index of the BlockPin pair with the maximum y location
-  int MaxBlkPinIdY() const;
+  // get the index of the ComponentPin pair with the maximum y location
+  int MaxComponentPinIdY() const;
 
-  // get the index of the BlockPin pair with the minimum y location
-  int MinBlkPinIdY() const;
+  // get the index of the ComponentPin pair with the minimum y location
+  int MinComponentPinIdY() const;
 
-  // get the Block pointer of the BlockPin pair with the maximum x location
-  Block* MaxBlkPtrX() const;
+  // get the Component pointer of the ComponentPin pair with the maximum x
+  // location
+  Component* MaxComponentPtrX() const;
 
-  // get the Block pointer of the BlockPin pair with the minimum x location
-  Block* MinBlkPtrX() const;
+  // get the Component pointer of the ComponentPin pair with the minimum x
+  // location
+  Component* MinComponentPtrX() const;
 
-  // get the Block pointer of the BlockPin pair with the maximum y location
-  Block* MaxBlkPtrY() const;
+  // get the Component pointer of the ComponentPin pair with the maximum y
+  // location
+  Component* MaxComponentPtrY() const;
 
-  // get the Block pointer of the BlockPin pair with the minimum y location
-  Block* MinBlkPtrY() const;
+  // get the Component pointer of the ComponentPin pair with the minimum y
+  // location
+  Component* MinComponentPtrY() const;
 
   // get the weighted HPWLX of this net
   double WeightedHPWLX();

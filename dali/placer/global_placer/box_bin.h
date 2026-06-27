@@ -25,7 +25,7 @@
 #include <iostream>
 #include <vector>
 
-#include "dali/circuit/block.h"
+#include "dali/circuit/component.h"
 #include "dali/circuit/placement_blockage.h"
 #include "dali/placer/global_placer/cell_cut_point.h"
 #include "dali/placer/global_placer/grid_bin.h"
@@ -57,7 +57,7 @@ class BoxBin {
   bool all_terminal;
   unsigned long long total_white_space;
   double filling_rate;
-  bool IsAllFixedBlk() const { return all_terminal; };
+  bool IsAllFixedComponent() const { return all_terminal; };
   /* Cut-line to split box white space. */
   GridBinIndex ll_index;
   GridBinIndex ur_index;
@@ -74,9 +74,9 @@ class BoxBin {
   unsigned long long total_cell_area_high;
 
   /* Cell ids in the box and in the two child boxes. */
-  std::vector<Block*> cell_list;
-  std::vector<Block*> cell_list_low;
-  std::vector<Block*> cell_list_high;
+  std::vector<Component*> cell_list;
+  std::vector<Component*> cell_list_low;
+  std::vector<Component*> cell_list_high;
 
   /* The cell_id for terminals in the box, will be updated only when the box is
    * a GridBin if there is no terminal in the grid bin, do not have to further
@@ -113,9 +113,10 @@ class BoxBin {
   /** Update boundaries from the grid-bin matrix. */
   void UpdateBoundaries(std::vector<std::vector<GridBin>>& grid_bin_matrix);
 
-  /* UpdateWhiteSpaceAndFixedBlocks can only be called after boundaries are set.
+  /* UpdateWhiteSpaceAndFixedComponents can only be called after boundaries are
+   * set.
    */
-  void UpdateWhiteSpaceAndFixedBlocks(
+  void UpdateWhiteSpaceAndFixedComponents(
       std::vector<const PlacementBlockage*>& placement_blockages);
 
   void update_all_terminal(std::vector<std::vector<GridBin>>& grid_bin_matrix);

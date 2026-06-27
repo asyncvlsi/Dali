@@ -104,7 +104,7 @@ bool TetrisSpace::IsSpaceAvail(int llx, int lly, int width, int height) {
    * 1. Check if the current location is in the placement region, if not return
    * false. We need to find a new location; If in this region:
    * 2. We need to check from the bottom row to the top row, which occupied by
-   * this block to know if for each row, the space is available;
+   * this component to know if for each row, the space is available;
    * 3. If one of the answer is no, return false;
    * 4. If all of them are yes, make the region as used.
    * ****/
@@ -138,8 +138,8 @@ bool TetrisSpace::IsSpaceAvail(int llx, int lly, int width, int height) {
   return all_row_avail;
 }
 
-bool TetrisSpace::FindBlockLoc(int llx, int lly, int width, int height,
-                               int2d& result_loc) {
+bool TetrisSpace::FindComponentLoc(int llx, int lly, int width, int height,
+                                   int2d& result_loc) {
   if (llx < left_) {
     scan_line_ = left_;
   } else {

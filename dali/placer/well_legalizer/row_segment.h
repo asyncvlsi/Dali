@@ -25,9 +25,9 @@
 #include <unordered_map>
 #include <vector>
 
-#include "dali/circuit/block.h"
+#include "dali/circuit/component.h"
 #include "dali/common/misc.h"
-#include "dali/placer/well_legalizer/block_helper.h"
+#include "dali/placer/well_legalizer/component_helper.h"
 #include "dali/placer/well_legalizer/optimization_helper.h"
 
 namespace dali {
@@ -46,26 +46,27 @@ class RowSegment {
   int Width() const;
   int UsedSize() const;
 
-  std::vector<BlockRegion>& BlkRegions();
-  void AddBlockRegion(Block* blk_ptr, int region_id);
+  std::vector<ComponentRegion>& ComponentRegions();
+  void AddComponentRegion(Component* component_ptr, int region_id);
   void MinDisplacementLegalization(bool use_init_loc);
   void SnapCellToPlacementGrid();
 
   void SetOptimalAnchorWeight(double weight);
-  void FitInRange(std::vector<BlockDisplacementVariable>& vars);
-  double DispCost(std::vector<BlockDisplacementVariable>& vars, int l, int r,
-                  bool is_linear);
-  void FindBestLocalOrder(std::vector<BlockDisplacementVariable>& res,
+  void FitInRange(std::vector<ComponentDisplacementVariable>& vars);
+  double DispCost(std::vector<ComponentDisplacementVariable>& vars, int l,
+                  int r, bool is_linear);
+  void FindBestLocalOrder(std::vector<ComponentDisplacementVariable>& res,
                           double& best_cost,
-                          std::vector<BlockDisplacementVariable>& vars, int cur,
-                          int l, int r, double left_bound, double right_bound,
-                          double gap, int range, bool is_linear);
-  void LocalReorder(std::vector<BlockDisplacementVariable>& vars, int range = 3,
-                    int omit = 0, bool is_linear = false);
-  void LocalReorder2(std::vector<BlockDisplacementVariable>& vars);
-  std::vector<BlockDisplacementVariable> OptimizeQuadraticDisplacement(
+                          std::vector<ComponentDisplacementVariable>& vars,
+                          int cur, int l, int r, double left_bound,
+                          double right_bound, double gap, int range,
+                          bool is_linear);
+  void LocalReorder(std::vector<ComponentDisplacementVariable>& vars,
+                    int range = 3, int omit = 0, bool is_linear = false);
+  void LocalReorder2(std::vector<ComponentDisplacementVariable>& vars);
+  std::vector<ComponentDisplacementVariable> OptimizeQuadraticDisplacement(
       double lambda, bool is_weighted_anchor, bool is_reorder);
-  std::vector<BlockDisplacementVariable> OptimizeLinearDisplacement(
+  std::vector<ComponentDisplacementVariable> OptimizeLinearDisplacement(
       double lambda, bool is_weighted_anchor, bool is_reorder);
 
   void GenSubCellTable(std::ofstream& ost_cluster, std::ofstream& ost_sub_cell,
@@ -74,8 +75,8 @@ class RowSegment {
                        double row_uy);
 
  private:
-  // list of blocks in this segment
-  std::vector<BlockRegion> blk_regions_;
+  // list of components in this segment
+  std::vector<ComponentRegion> blk_regions_;
   int lx_ = INT_MIN;
   int width_ = 0;
   int used_size_ = 0;

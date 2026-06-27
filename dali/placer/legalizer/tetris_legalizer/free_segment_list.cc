@@ -301,11 +301,11 @@ bool FreeSegmentList::IsSpaceAvail(int x_loc, int width) {
 }
 
 /****
- * We assume any segment in this list has a length longer than block width
+ * We assume any segment in this list has a length longer than component width
  * ****/
 int FreeSegmentList::MinDispLoc(int width) {
   DaliExpects(Head()->Length() >= width,
-              "Segment length should be longer than block width");
+              "Segment length should be longer than component width");
   return Head()->Start();
 }
 

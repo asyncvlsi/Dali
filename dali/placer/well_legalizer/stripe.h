@@ -21,8 +21,8 @@
 #ifndef DALI_PLACER_WELL_LEGALIZER_STRIPE_H_
 #define DALI_PLACER_WELL_LEGALIZER_STRIPE_H_
 
-#include "dali/circuit/block.h"
 #include "dali/circuit/circuit.h"
+#include "dali/circuit/component.h"
 #include "dali/common/config.h"
 #include "dali/common/misc.h"
 #include "dali/placer/well_legalizer/gridded_row.h"
@@ -34,7 +34,8 @@ ILOSTLBEGIN
 
 namespace dali {
 
-/** Vertical legalization stripe containing gridded rows and assigned blocks. */
+/** Vertical legalization stripe containing gridded rows and assigned
+ * components. */
 class Stripe {
  public:
   int lx_;
@@ -51,9 +52,9 @@ class Stripe {
   std::vector<GriddedRow> gridded_rows_;
   bool is_bottom_up_ = false;
 
-  int block_count_;
-  std::vector<Block*> blk_ptrs_vec_;
-  std::unordered_map<Block*, int> blk_ptr_2_row_id_;
+  int component_count_;
+  std::vector<Component*> component_ptrs_vec_;
+  std::unordered_map<Component*, int> component_ptr_2_row_id_;
 
   bool is_first_row_orient_N_ = true;
   std::vector<RectI> well_rect_list_;
@@ -94,59 +95,61 @@ class Stripe {
 
   void MinDisplacementAdjustment();
 
-  void SortBlocksBasedOnLLY();
-  void SortBlocksBasedOnURY();
-  void SortBlocksBasedOnStretchedURY();
-  void SortBlocksBasedOnYLocation(int criterion);
+  void SortComponentsBasedOnLLY();
+  void SortComponentsBasedOnURY();
+  void SortComponentsBasedOnStretchedURY();
+  void SortComponentsBasedOnYLocation(int criterion);
 
   void PrecomputeWellTapCellLocation(bool is_checker_board_mode,
                                      int tap_cell_interval_grid,
-                                     BlockType* well_tap_type_ptr);
+                                     Macro* well_tap_macro);
 
   void UpdateFrontClusterUpward(int p_height, int n_height);
-  void SimplyAddFollowingClusters(Block* p_blk, bool is_upward);
-  bool AddBlockToFrontCluster(Block* p_blk, bool is_upward);
-  bool AddBlockToFrontClusterWithDispCheck(Block* p_blk,
-                                           double displacement_upper_limit,
-                                           bool is_upward);
-  size_t FitBlocksToFrontSpaceUpward(size_t start_id, int current_iteration);
-  size_t FitBlocksToFrontSpaceUpwardWithDispCheck(
+  void SimplyAddFollowingClusters(Component* component, bool is_upward);
+  bool AddComponentToFrontCluster(Component* component, bool is_upward);
+  bool AddComponentToFrontClusterWithDispCheck(Component* component,
+                                               double displacement_upper_limit,
+                                               bool is_upward);
+  size_t FitComponentsToFrontSpaceUpward(size_t start_id,
+                                         int current_iteration);
+  size_t FitComponentsToFrontSpaceUpwardWithDispCheck(
       size_t start_id, double displacement_upper_limit);
   void LegalizeFrontCluster(bool use_init_loc);
   void UpdateRemainingClusters(int p_height, int n_height, bool is_upward);
-  void UpdateBlockStretchLength();
+  void UpdateComponentStretchLength();
 
   void UpdateFrontClusterDownward(int p_height, int n_height);
-  size_t FitBlocksToFrontSpaceDownward(size_t start_id, int current_iteration);
+  size_t FitComponentsToFrontSpaceDownward(size_t start_id,
+                                           int current_iteration);
 
-  void UpdateBlockYLocation();
+  void UpdateComponentYLocation();
   void CleanUpTemporaryRowSegments();
 
-  size_t AddWellTapCells(Circuit* p_ckt, BlockType* well_tap_type_ptr,
+  size_t AddWellTapCells(Circuit* p_ckt, Macro* well_tap_macro,
                          size_t start_id);
 
   bool IsLeftmostPlacementLegal();
   bool IsStripeLegal();
 
   void CollectAllRowSegments();
-  void UpdateSubCellLocs(std::vector<BlockDisplacementVariable>& vars);
+  void UpdateSubCellLocs(std::vector<ComponentDisplacementVariable>& vars);
   void OptimizeDisplacementInEachRowSegment(double lambda,
                                             bool is_weighted_anchor,
                                             bool is_reorder);
   void ComputeAverageLoc();
   void ReportIterativeStatus(int i);
   bool IsDiscrepancyConverged();
-  void SetBlockLoc();
+  void SetComponentLoc();
   void ClearMultiRowCellBreaking();
   void IterativeCellReordering(int max_iter, int number_of_threads = 1);
 
-  void SortBlocksInEachRow();
+  void SortComponentsInEachRow();
 
   size_t OutOfBoundCell();
 
 #if DALI_USE_CPLEX
-  std::unordered_map<Block*, IloInt> blk_ptr_2_tmp_id;
-  std::unordered_map<IloInt, Block*> blk_tmp_id_2_ptr;
+  std::unordered_map<Component*, IloInt> component_ptr_2_tmp_id;
+  std::unordered_map<IloInt, Component*> blk_tmp_id_2_ptr;
   void PopulateVariableArray(IloModel& model, IloNumVarArray& x);
   void AddVariableConstraints(IloModel& model, IloNumVarArray& x,
                               IloRangeArray& c);
@@ -160,18 +163,20 @@ class Stripe {
   int row_height_ = 1;
   void ImportStandardRowSegments(phydb::PhyDB& phydb, Circuit& ckt);
   int LocY2RowId(double lly);
-  double EstimateCost(int row_id, Block* blk_ptr, SegI& range, double density);
-  void AddBlockToRow(int row_id, Block* blk_ptr, SegI range);
+  double EstimateCost(int row_id, Component* component_ptr, SegI& range,
+                      double density);
+  void AddComponentToRow(int row_id, Component* component_ptr, SegI range);
   void AssignStandardCellsToRowSegments(/*double white_space_usage*/);
 };
 
-/** Column-like collection of legalization stripes and their assigned blocks. */
+/** Column-like collection of legalization stripes and their assigned
+ * components. */
 struct ClusterStripe {
   int lx_;
   int width_;
 
-  int block_count_;
-  std::vector<Block*> block_list_;
+  int component_count_;
+  std::vector<Component*> component_list_;
 
   std::vector<RectI> well_rect_list_;
 
@@ -187,9 +192,10 @@ struct ClusterStripe {
   /** Return upper-right x in Dali grid units. */
   int URX() const { return lx_ + width_; }
   Stripe* GetStripeMatchSeg(SegI seg, int y_loc);
-  Stripe* GetStripeMatchBlk(Block* blk_ptr);
-  Stripe* GetStripeClosestToBlk(Block* blk_ptr, double& distance);
-  void AssignBlockToSimpleStripe();
+  Stripe* GetStripeMatchComponent(Component* component_ptr);
+  Stripe* GetStripeClosestToComponent(Component* component_ptr,
+                                      double& distance);
+  void AssignComponentToSimpleStripe();
 };
 
 }  // namespace dali

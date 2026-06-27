@@ -41,13 +41,13 @@ double Tech::GetManufacturingGrid() const {
   return manufacturing_grid_;
 }
 
-std::vector<int>& Tech::WellTapCellIds() { return well_tap_cell_type_ids_; }
+std::vector<int>& Tech::WellTapCellIds() { return well_tap_macro_ids_; }
 
-std::vector<std::unique_ptr<BlockType>>& Tech::FillerCellPtrs() {
+std::vector<std::unique_ptr<Macro>>& Tech::FillerCellPtrs() {
   return filler_ptrs_;
 }
 
-BlockType* Tech::IoDummyBlkTypePtr() { return io_dummy_blk_type_ptr_; }
+Macro* Tech::IoDummyMacroPtr() { return io_dummy_macro_ptr_; }
 
 WellLayer& Tech::NwellLayer() { return nwell_layer_; }
 
@@ -100,15 +100,13 @@ bool Tech::IsGndAtBottom(phydb::Macro* macro) {
   return true;
 }
 
-std::vector<BlockType>& Tech::BlockTypes() {
-  return block_type_collection_.Instances();
-}
+std::vector<Macro>& Tech::Macros() { return macro_collection_.Instances(); }
 
 void Tech::CreateFakeWellForStandardCell(phydb::PhyDB* phy_db) {
   std::unordered_set<int> height_set;
-  for (auto& block_type : BlockTypes()) {
-    if (&block_type == io_dummy_blk_type_ptr_) continue;
-    height_set.insert(block_type.Height());
+  for (auto& macro : Macros()) {
+    if (&macro == io_dummy_macro_ptr_) continue;
+    height_set.insert(macro.Height());
   }
 
   DaliExpects(!height_set.empty(), "No cell height?");
@@ -122,21 +120,21 @@ void Tech::CreateFakeWellForStandardCell(phydb::PhyDB* phy_db) {
   int p_height = standard_height - n_height;
   DaliExpects(n_height > 0 || p_height > 0, "Both heights are 0?");
 
-  for (auto& block_type : BlockTypes()) {
-    if (&block_type == io_dummy_blk_type_ptr_) continue;
-    auto* macro = phy_db->GetMacroPtr(block_type.Name());
-    int region_cnt = (int)std::round(block_type.Height() / standard_height);
+  for (auto& dali_macro : Macros()) {
+    if (&dali_macro == io_dummy_macro_ptr_) continue;
+    auto* phydb_macro = phy_db->GetMacroPtr(dali_macro.Name());
+    int region_cnt = (int)std::round(dali_macro.Height() / standard_height);
 
     // Create the well info
     int accumulative_height = 0;
-    bool is_pwell = IsGndAtBottom(macro);
+    bool is_pwell = IsGndAtBottom(phydb_macro);
     for (int i = 0; i < 2 * region_cnt; ++i) {
       if (is_pwell) {
-        block_type.AddNwellRect(0, accumulative_height, block_type.Width(),
+        dali_macro.AddNwellRect(0, accumulative_height, dali_macro.Width(),
                                 accumulative_height + n_height);
         accumulative_height += n_height;
       } else {
-        block_type.AddPwellRect(0, accumulative_height, block_type.Width(),
+        dali_macro.AddPwellRect(0, accumulative_height, dali_macro.Width(),
                                 accumulative_height + p_height);
         accumulative_height += p_height;
       }

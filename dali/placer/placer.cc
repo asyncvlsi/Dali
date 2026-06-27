@@ -59,8 +59,8 @@ void Placer::SetCircuit(Circuit* circuit) {
   DaliExpects(circuit != nullptr,
               "Invalid input circuit: not allowed to set nullptr as an input!");
   ckt_ptr_ = circuit;
-  if (ckt_ptr_->Blocks().empty()) {
-    LOG(info) << "Empty block list, nothing to place!\n";
+  if (ckt_ptr_->Components().empty()) {
+    LOG(info) << "Empty component list, nothing to place!\n";
   }
   if (ckt_ptr_->Nets().empty()) {
     LOG(info) << "Empty net list, nothing to optimize!\n";
@@ -110,13 +110,13 @@ void Placer::SetAspectRatio(double ratio) {
 
 double Placer::AspectRatio() const { return aspect_ratio_; }
 
-void Placer::SetSpaceBlockRatio(double ratio) {
+void Placer::SetSpaceComponentRatio(double ratio) {
   DaliExpects(ratio >= 1,
               "Invalid value: value should be in range [1, +infinity)");
   placement_density_ = 1.0 / ratio;
 }
 
-double Placer::GetBlkHPWL(Block& blk) {
+double Placer::GetComponentHPWL(Component& blk) {
   double hpwl = 0;
   std::vector<Net>& nets = ckt_ptr_->Nets();
   for (auto& idx : blk.NetList()) {
@@ -127,30 +127,30 @@ double Placer::GetBlkHPWL(Block& blk) {
 
 void Placer::CheckPlacementBoundary() {
   DaliExpects(
-      ckt_ptr_->MaxBlkWidth() <= RegionRight() - RegionLeft(),
+      ckt_ptr_->MaxComponentWidth() <= RegionRight() - RegionLeft(),
       "maximum cell width is larger than the width of placement region");
   DaliExpects(
-      ckt_ptr_->MaxBlkHeight() <= RegionTop() - RegionBottom(),
+      ckt_ptr_->MaxComponentHeight() <= RegionTop() - RegionBottom(),
       "maximum cell height is larger than the height of placement region");
 }
 
 void Placer::SetBoundaryAuto() {
   DaliExpects(ckt_ptr_ != nullptr,
               "Must set input circuit before setting boundaries");
-  auto tot_block_area = ckt_ptr_->TotBlkArea();
-  int width = std::ceil(
-      std::sqrt(double(tot_block_area) / aspect_ratio_ / placement_density_));
+  auto tot_component_area = ckt_ptr_->TotalComponentArea();
+  int width = std::ceil(std::sqrt(double(tot_component_area) / aspect_ratio_ /
+                                  placement_density_));
   int height = std::ceil(width * aspect_ratio_);
   LOG(info) << "Pre-set aspect ratio: " << aspect_ratio_ << "\n";
   aspect_ratio_ = height / (double)width;
   LOG(info) << "Adjusted aspect rate: " << aspect_ratio_ << "\n";
-  left_ = (int)(ckt_ptr_->AveBlkWidth());
+  left_ = (int)(ckt_ptr_->AverageComponentWidth());
   right_ = left_ + width;
-  bottom_ = (int)(ckt_ptr_->AveBlkWidth());
+  bottom_ = (int)(ckt_ptr_->AverageComponentWidth());
   top_ = bottom_ + height;
   int area = height * width;
   LOG(info) << "Pre-set filling rate: " << placement_density_ << "\n";
-  placement_density_ = double(tot_block_area) / area;
+  placement_density_ = double(tot_component_area) / area;
   LOG(info) << "Adjusted filling rate: " << placement_density_ << "\n";
   CheckPlacementBoundary();
 }
@@ -164,14 +164,14 @@ void Placer::SetBoundary(int left, int right, int bottom, int top) {
   DaliExpects(bottom < top,
               "Invalid boundary setting: bottom boundary should be less than "
               "top boundary!");
-  unsigned long long tot_block_area = ckt_ptr_->TotBlkArea();
+  unsigned long long tot_component_area = ckt_ptr_->TotalComponentArea();
   unsigned long long tot_area =
       (unsigned long long)(right - left) * (unsigned long long)(top - bottom);
-  DaliExpects(tot_area >= tot_block_area,
+  DaliExpects(tot_area >= tot_component_area,
               "Invalid boundary setting: given region has smaller area than "
-              "total block area!");
+              "total component area!");
   LOG(info) << "Pre-set filling rate: " << placement_density_ << "\n";
-  placement_density_ = (double)tot_block_area / (double)tot_area;
+  placement_density_ = (double)tot_component_area / (double)tot_area;
   LOG(info) << "Adjusted filling rate: " << placement_density_ << "\n";
   left_ = left;
   right_ = right;
@@ -200,10 +200,10 @@ void Placer::UpdateAspectRatio() {
   aspect_ratio_ = (top_ - bottom_) / (double)(right_ - left_);
 }
 
-void Placer::NetSortBlkPin() {
+void Placer::NetSortComponentPin() {
   DaliExpects(ckt_ptr_ != nullptr,
               "No input circuit specified, cannot modify any circuits!");
-  ckt_ptr_->NetSortBlkPin();
+  ckt_ptr_->NetSortComponentPin();
 }
 
 bool Placer::StartPlacement() {
@@ -229,11 +229,11 @@ void Placer::GenMATLABScriptPlaced(std::string const& name_of_file) {
   ost << RegionLeft() << " " << RegionBottom() << " "
       << RegionRight() - RegionLeft() << " " << RegionTop() - RegionBottom()
       << "\n";
-  auto& blocks = ckt_ptr_->Blocks();
-  for (auto& block : blocks) {
-    if (block.IsPlaced()) {
-      ost << block.LLX() << " " << block.LLY() << " " << block.Width() << " "
-          << block.Height() << "\n";
+  auto& components = ckt_ptr_->Components();
+  for (auto& component : components) {
+    if (component.IsPlaced()) {
+      ost << component.LLX() << " " << component.LLY() << " "
+          << component.Width() << " " << component.Height() << "\n";
     }
   }
   ost.close();
@@ -245,16 +245,16 @@ bool Placer::SaveNodeTerminal(std::string const& terminal_file,
   std::ofstream ost1(node_file.c_str());
   DaliExpects(ost.is_open() && ost1.is_open(),
               "Cannot open file " << terminal_file << " or " << node_file);
-  auto& blocks = ckt_ptr_->Blocks();
-  for (auto& block : blocks) {
-    if (block.IsMovable()) {
-      ost1 << block.X() << "\t" << block.Y() << "\n";
+  auto& components = ckt_ptr_->Components();
+  for (auto& component : components) {
+    if (component.IsMovable()) {
+      ost1 << component.X() << "\t" << component.Y() << "\n";
     } else {
       double low_x, low_y, width, height;
-      width = block.Width();
-      height = block.Height();
-      low_x = block.LLX();
-      low_y = block.LLY();
+      width = component.Width();
+      height = component.Height();
+      low_x = component.LLX();
+      low_y = component.LLY();
       for (int j = 0; j < height; j++) {
         ost << low_x << "\t" << low_y + j << "\n";
         ost << low_x + width << "\t" << low_y + j << "\n";
@@ -294,7 +294,7 @@ void Placer::CheckTargetDensity() const {
 void Placer::CheckNets() {  // TODO: empty nets should be allowed
   auto& nets = ckt_ptr_->Nets();
   for (auto& net : nets) {
-    if (net.BlockPins().empty()) {
+    if (net.ComponentPins().empty()) {
       DaliWarning("Empty net or this net only contains unplaced IOPINs: "
                   << net.Name());
     }
@@ -310,31 +310,31 @@ void Placer::SanityCheck() {
   CheckPlacementBoundary();
 }
 
-void Placer::UpdateMovableBlkPlacementStatus() {
-  auto& blocks = ckt_ptr_->Blocks();
-  for (auto& block : blocks) {
-    if (block.IsMovable()) {
-      block.SetPlacementStatus(PLACED);
+void Placer::UpdateMovableComponentPlacementStatus() {
+  auto& components = ckt_ptr_->Components();
+  for (auto& component : components) {
+    if (component.IsMovable()) {
+      component.SetPlacementStatus(PLACED);
     }
   }
 }
 
 void Placer::ShiftX(double shift_x) {
-  auto& blocks = ckt_ptr_->Blocks();
-  for (auto& block : blocks) {
-    block.IncreaseX(shift_x);
+  auto& components = ckt_ptr_->Components();
+  for (auto& component : components) {
+    component.IncreaseX(shift_x);
   }
 }
 
 void Placer::ShiftY(double shift_y) {
-  auto& blocks = ckt_ptr_->Blocks();
-  for (auto& block : blocks) {
-    block.IncreaseY(shift_y);
+  auto& components = ckt_ptr_->Components();
+  for (auto& component : components) {
+    component.IncreaseY(shift_y);
   }
 }
 
-bool Placer::IsDummyBlock(Block& blk) {
-  return blk.TypePtr() == ckt_ptr_->tech().IoDummyBlkTypePtr();
+bool Placer::IsDummyComponent(Component& blk) {
+  return blk.MacroPtr() == ckt_ptr_->tech().IoDummyMacroPtr();
 }
 
 void Placer::PrintStartStatement(std::string const& name_of_process) {

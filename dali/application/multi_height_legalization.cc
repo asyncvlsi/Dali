@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
   multi_well_legalizer->SetCircuit(&circuit);
   multi_well_legalizer->SetBoundaryFromCircuit();
   multi_well_legalizer->ImportStandardRowSegments(phy_db);
-  multi_well_legalizer->InitializeBlockAuxiliaryInfo();
+  multi_well_legalizer->InitializeComponentAuxiliaryInfo();
   multi_well_legalizer->SaveInitialLoc();
 
   tetris_legalizer->SetWidthHeightFactor(k_width, k_height);

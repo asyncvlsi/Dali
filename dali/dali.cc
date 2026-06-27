@@ -675,16 +675,18 @@ std::string Dali::CreateDetailedPlacementAndLegalizationScript(
 void Dali::ExportOrdinaryComponentsToPhyDB() {
   double factor_x = circuit_.DistanceMicrons() * circuit_.GridValueX();
   double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
-  for (auto& block : circuit_.Blocks()) {
-    if (block.TypePtr() == circuit_.tech().IoDummyBlkTypePtr()) {
+  for (auto& component : circuit_.Components()) {
+    if (component.MacroPtr() == circuit_.tech().IoDummyMacroPtr()) {
       // skip dummy cells for I/O pins
       continue;
     }
-    std::string comp_name = block.Name();
-    int lx = (int)(block.LLX() * factor_x) + circuit_.design().DieAreaOffsetX();
-    int ly = (int)(block.LLY() * factor_y) + circuit_.design().DieAreaOffsetY();
-    auto place_status = phydb::PlaceStatus(block.Status());
-    auto orient = phydb::CompOrient(block.Orient());
+    std::string comp_name = component.Name();
+    int lx =
+        (int)(component.LLX() * factor_x) + circuit_.design().DieAreaOffsetX();
+    int ly =
+        (int)(component.LLY() * factor_y) + circuit_.design().DieAreaOffsetY();
+    auto place_status = phydb::PlaceStatus(component.Status());
+    auto orient = phydb::CompOrient(component.Orient());
 
     phydb::Component* comp_ptr = phy_db_ptr_->GetComponentPtr(comp_name);
     DaliExpects(comp_ptr != nullptr,
@@ -698,13 +700,15 @@ void Dali::ExportOrdinaryComponentsToPhyDB() {
 void Dali::ExportWellTapCellsToPhyDB() {
   double factor_x = circuit_.DistanceMicrons() * circuit_.GridValueX();
   double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
-  for (auto& block : circuit_.design().WellTaps()) {
-    std::string comp_name = block.Name();
-    std::string macro_name = block.TypePtr()->Name();
-    int lx = (int)(block.LLX() * factor_x) + circuit_.design().DieAreaOffsetX();
-    int ly = (int)(block.LLY() * factor_y) + circuit_.design().DieAreaOffsetY();
-    auto place_status = phydb::PlaceStatus(block.Status());
-    auto orient = phydb::CompOrient(block.Orient());
+  for (auto& component : circuit_.design().WellTaps()) {
+    std::string comp_name = component.Name();
+    std::string macro_name = component.MacroPtr()->Name();
+    int lx =
+        (int)(component.LLX() * factor_x) + circuit_.design().DieAreaOffsetX();
+    int ly =
+        (int)(component.LLY() * factor_y) + circuit_.design().DieAreaOffsetY();
+    auto place_status = phydb::PlaceStatus(component.Status());
+    auto orient = phydb::CompOrient(component.Orient());
 
     auto* phydb_macro_ptr = phy_db_ptr_->GetMacroPtr(macro_name);
     DaliExpects(phydb_macro_ptr != nullptr,
@@ -717,13 +721,15 @@ void Dali::ExportWellTapCellsToPhyDB() {
 void Dali::ExportFillerCellsToPhyDB() {
   double factor_x = circuit_.DistanceMicrons() * circuit_.GridValueX();
   double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();
-  for (auto& block : circuit_.design().Fillers()) {
-    std::string comp_name = block.Name();
-    std::string macro_name = block.TypePtr()->Name();
-    int lx = (int)(block.LLX() * factor_x) + circuit_.design().DieAreaOffsetX();
-    int ly = (int)(block.LLY() * factor_y) + circuit_.design().DieAreaOffsetY();
-    auto place_status = phydb::PlaceStatus(block.Status());
-    auto orient = phydb::CompOrient(block.Orient());
+  for (auto& component : circuit_.design().Fillers()) {
+    std::string comp_name = component.Name();
+    std::string macro_name = component.MacroPtr()->Name();
+    int lx =
+        (int)(component.LLX() * factor_x) + circuit_.design().DieAreaOffsetX();
+    int ly =
+        (int)(component.LLY() * factor_y) + circuit_.design().DieAreaOffsetY();
+    auto place_status = phydb::PlaceStatus(component.Status());
+    auto orient = phydb::CompOrient(component.Orient());
 
     auto* phydb_macro_ptr = phy_db_ptr_->GetMacroPtr(macro_name);
     DaliExpects(phydb_macro_ptr != nullptr,

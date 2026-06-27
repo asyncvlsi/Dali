@@ -37,7 +37,7 @@
 
 namespace dali {
 
-Circuit::Circuit() { AddDummyIOPinBlockType(); }
+Circuit::Circuit() { AddDummyIOPinComponentType(); }
 
 void Circuit::InitializeFromPhyDB(phydb::PhyDB* phy_db_ptr) {
   ElapsedTime elapsed_time;
@@ -252,94 +252,89 @@ void Circuit::ReportMetalLayers() {
   LOG(info) << "\n";
 }
 
-std::vector<BlockType>& Circuit::BlockTypes() { return tech_.BlockTypes(); }
+std::vector<Macro>& Circuit::Macros() { return tech_.Macros(); }
 
-bool Circuit::IsBlockTypeExisting(std::string const& block_type_name) {
-  return tech_.block_type_collection_.NameExists(block_type_name);
+bool Circuit::IsMacroExisting(std::string const& macro_name) {
+  return tech_.macro_collection_.NameExists(macro_name);
 }
 
-BlockType* Circuit::GetBlockTypePtr(std::string const& block_type_name) {
-  BlockType* block_type_ptr =
-      tech_.block_type_collection_.GetInstanceByName(block_type_name);
-  return block_type_ptr;
+Macro* Circuit::GetMacroPtr(std::string const& macro_name) {
+  Macro* macro_ptr = tech_.macro_collection_.GetInstanceByName(macro_name);
+  return macro_ptr;
 }
 
-BlockType* Circuit::AddBlockType(std::string const& block_type_name,
-                                 double width, double height) {
+Macro* Circuit::AddMacro(std::string const& macro_name, double width,
+                         double height) {
   int gridded_width = 0;
   int gridded_height = 0;
-  BlockTypeSizeMicrometerToGridValue(block_type_name, width, height,
-                                     gridded_width, gridded_height);
-  return AddBlockTypeWithGridUnit(block_type_name, gridded_width,
-                                  gridded_height);
+  MacroSizeMicrometerToGridValue(macro_name, width, height, gridded_width,
+                                 gridded_height);
+  return AddMacroWithGridUnit(macro_name, gridded_width, gridded_height);
 }
 
-int Circuit::GetRoundOrCeilGriddedWidth(
-    double width, std::string const& block_type_name) const {
+int Circuit::GetRoundOrCeilGriddedWidth(double width,
+                                        std::string const& macro_name) const {
   double residual = AbsResidual(width, GridValueX());
   int gridded_width = (int)std::round(width / GridValueX());
   if (residual > constants_.epsilon) {
-    DaliWarning("BlockType width is not integer multiple of grid value in X: " +
-                block_type_name + " rounding up");
+    DaliWarning("Macro width is not integer multiple of grid value in X: " +
+                macro_name + " rounding up");
     gridded_width = (int)std::ceil(width / GridValueX());
   }
   return gridded_width;
 }
 
-int Circuit::GetRoundOrCeilGriddedHeight(
-    double height, std::string const& block_type_name) const {
+int Circuit::GetRoundOrCeilGriddedHeight(double height,
+                                         std::string const& macro_name) const {
   double residual = AbsResidual(height, GridValueY());
   int gridded_height = (int)std::round(height / GridValueY());
   if (residual > constants_.epsilon) {
-    DaliWarning(
-        "BlockType height is not integer multiple of grid value in Y: " +
-        block_type_name + " rounding up");
+    DaliWarning("Macro height is not integer multiple of grid value in Y: " +
+                macro_name + " rounding up");
     gridded_height = (int)std::ceil(height / GridValueY());
   }
   return gridded_height;
 }
 
-int Circuit::AddWellTapBlockType(std::string const& block_type_name,
-                                 double width, double height) {
-  int gridded_width = GetRoundOrCeilGriddedWidth(width, block_type_name);
-  int gridded_height = GetRoundOrCeilGriddedHeight(height, block_type_name);
+int Circuit::AddWellTapMacro(std::string const& macro_name, double width,
+                             double height) {
+  int gridded_width = GetRoundOrCeilGriddedWidth(width, macro_name);
+  int gridded_height = GetRoundOrCeilGriddedHeight(height, macro_name);
 
-  return AddWellTapBlockTypeWithGridUnit(block_type_name, gridded_width,
-                                         gridded_height);
+  return AddWellTapMacroWithGridUnit(macro_name, gridded_width, gridded_height);
 }
 
-BlockType* Circuit::AddFillerBlockType(std::string const& block_type_name,
-                                       double width, double height) {
-  int gridded_width = GetRoundOrCeilGriddedWidth(width, block_type_name);
-  int gridded_height = GetRoundOrCeilGriddedHeight(height, block_type_name);
+Macro* Circuit::AddFillerMacro(std::string const& macro_name, double width,
+                               double height) {
+  int gridded_width = GetRoundOrCeilGriddedWidth(width, macro_name);
+  int gridded_height = GetRoundOrCeilGriddedHeight(height, macro_name);
 
-  return AddFillerBlockTypeWithGridUnit(block_type_name, gridded_width,
-                                        gridded_height);
+  return AddFillerMacroWithGridUnit(macro_name, gridded_width, gridded_height);
 }
 
-Pin* Circuit::AddBlkTypePin(BlockType* blk_type_ptr,
-                            std::string const& pin_name, bool is_input) {
-  DaliExpects(blk_type_ptr != nullptr, "Add a pin to a nullptr?");
-  return blk_type_ptr->AddPin(pin_name, is_input);
+Pin* Circuit::AddMacroPin(Macro* macro_ptr, std::string const& pin_name,
+                          bool is_input) {
+  DaliExpects(macro_ptr != nullptr, "Add a pin to a nullptr?");
+  return macro_ptr->AddPin(pin_name, is_input);
 }
 
-void Circuit::ReportBlockType() {
-  LOG(info) << "Total BlockType: " << tech_.block_type_collection_.GetSize()
+void Circuit::ReportComponentType() {
+  LOG(info) << "Total Macro: " << tech_.macro_collection_.GetSize()
             << std::endl;
-  for (auto& block_type : tech_.BlockTypes()) {
-    block_type.Report();
+  for (auto& macro : tech_.Macros()) {
+    macro.Report();
   }
   LOG(info) << "\n";
 }
 
-void Circuit::CopyBlockType(Circuit& circuit) {
-  for (auto& block_type : circuit.tech_.BlockTypes()) {
-    auto type_name = block_type.Name();
+void Circuit::CopyComponentType(Circuit& circuit) {
+  for (auto& macro : circuit.tech_.Macros()) {
+    auto type_name = macro.Name();
     if (type_name == "PIN") continue;
-    BlockType* new_block_type = AddBlockTypeWithGridUnit(
-        type_name, block_type.Width(), block_type.Height());
-    for (auto& pin : block_type.PinList()) {
-      new_block_type->AddPin(pin.Name(), pin.OffsetX(), pin.OffsetY());
+    Macro* new_macro =
+        AddMacroWithGridUnit(type_name, macro.Width(), macro.Height());
+    for (auto& pin : macro.PinList()) {
+      new_macro->AddPin(pin.Name(), pin.OffsetX(), pin.OffsetY());
     }
   }
 }
@@ -411,31 +406,32 @@ int Circuit::DieAreaOffsetY() const {
 
 void Circuit::ReserveSpaceForDesignImp(size_t components_count,
                                        size_t pins_count, size_t nets_count) {
-  design_.Blocks().reserve(components_count + pins_count);
+  design_.Components().reserve(components_count + pins_count);
   design_.iopins_.reserve(pins_count);
   design_.nets_.reserve(nets_count);
 }
 
-std::vector<Block>& Circuit::Blocks() { return design_.Blocks(); }
+std::vector<Component>& Circuit::Components() { return design_.Components(); }
 
-bool Circuit::IsBlockExisting(std::string const& block_name) {
-  return design_.block_collection_.NameExists(block_name);
+bool Circuit::IsComponentExisting(std::string const& component_name) {
+  return design_.component_collection_.NameExists(component_name);
 }
 
-int Circuit::GetBlockId(std::string const& block_name) {
-  return design_.block_collection_.GetInstanceIdByName(block_name);
+int Circuit::GetComponentId(std::string const& component_name) {
+  return design_.component_collection_.GetInstanceIdByName(component_name);
 }
 
-Block* Circuit::GetBlockPtr(std::string const& block_name) {
-  return design_.block_collection_.GetInstanceByName(block_name);
+Component* Circuit::GetComponentPtr(std::string const& component_name) {
+  return design_.component_collection_.GetInstanceByName(component_name);
 }
 
-void Circuit::AddBlock(std::string const& block_name,
-                       std::string const& block_type_name, double llx,
-                       double lly, PlaceStatus place_status, BlockOrient orient,
-                       bool is_real_cel) {
-  BlockType* block_type = GetBlockTypePtr(block_type_name);
-  AddBlock(block_name, block_type, llx, lly, place_status, orient, is_real_cel);
+void Circuit::AddComponent(std::string const& component_name,
+                           std::string const& macro_name, double llx,
+                           double lly, PlaceStatus place_status,
+                           ComponentOrient orient, bool is_real_cel) {
+  Macro* macro = GetMacroPtr(macro_name);
+  AddComponent(component_name, macro, llx, lly, place_status, orient,
+               is_real_cel);
 }
 
 void Circuit::UpdateTotalBlkArea() {
@@ -459,25 +455,26 @@ void Circuit::UpdateTotalBlkArea() {
 
   design_.total_blockage_cover_area_ = GetCoverArea(rects);
   if (design_.tot_white_space_ < design_.total_blockage_cover_area_) {
-    DaliExpects(false, "Fixed blocks takes more space than available space? " +
-                           std::to_string(design_.tot_blk_area_) + " " +
-                           std::to_string(design_.total_blockage_cover_area_));
+    DaliExpects(false,
+                "Fixed components takes more space than available space? " +
+                    std::to_string(design_.tot_blk_area_) + " " +
+                    std::to_string(design_.total_blockage_cover_area_));
   }
   design_.tot_white_space_ -= design_.total_blockage_cover_area_;
   design_.tot_blk_area_ =
       design_.total_blockage_cover_area_ + design_.tot_mov_blk_area_;
 }
 
-void Circuit::ReportBlockList() {
-  LOG(info) << "Total Block: " << design_.Blocks().size() << "\n";
-  for (auto& block : design_.Blocks()) {
-    block.Report();
+void Circuit::ReportComponentList() {
+  LOG(info) << "Total Component: " << design_.Components().size() << "\n";
+  for (auto& component : design_.Components()) {
+    component.Report();
   }
   LOG(info) << "\n";
 }
 
-void Circuit::ReportBlockMap() {
-  for (auto& it : design_.BlockNameIdMap()) {
+void Circuit::ReportComponentMap() {
+  for (auto& it : design_.ComponentNameIdMap()) {
     LOG(info) << it.first << " " << it.second << "\n";
   }
 }
@@ -611,28 +608,28 @@ void Circuit::AddIoPinToNet(std::string const& iopin_name,
   iopin->SetNetPtr(io_net);
   io_net->AddIoPin(iopin);
   if (iopin->IsPrePlaced()) {
-    Block* blk_ptr = GetBlockPtr(iopin_name);
-    Pin* pin = &(blk_ptr->TypePtr()->PinList()[0]);
-    io_net->AddBlkPinPair(blk_ptr, pin);
+    Component* component_ptr = GetComponentPtr(iopin_name);
+    Pin* pin = &(component_ptr->MacroPtr()->PinList()[0]);
+    io_net->AddComponentPinPair(component_ptr, pin);
   }
 }
 
-void Circuit::AddBlkPinToNet(std::string const& blk_name,
-                             std::string const& pin_name,
-                             std::string const& net_name) {
-  Block* blk_ptr = GetBlockPtr(blk_name);
-  Pin* pin = blk_ptr->TypePtr()->GetPinPtr(pin_name);
+void Circuit::AddComponentPinToNet(std::string const& blk_name,
+                                   std::string const& pin_name,
+                                   std::string const& net_name) {
+  Component* component_ptr = GetComponentPtr(blk_name);
+  Pin* pin = component_ptr->MacroPtr()->GetPinPtr(pin_name);
   Net* net = GetNetPtr(net_name);
-  net->AddBlkPinPair(blk_ptr, pin);
+  net->AddComponentPinPair(component_ptr, pin);
 }
 
 void Circuit::ReportNetList() {
   LOG(info) << "Total Net: " << design_.nets_.size() << "\n";
   for (auto& net : design_.nets_) {
     LOG(info) << "  " << net.Name() << "  " << net.Weight() << "\n";
-    for (auto& block_pin : net.BlockPins()) {
-      LOG(info) << "\t" << " (" << block_pin.BlockName() << " "
-                << block_pin.PinName() << ") "
+    for (auto& component_pin : net.ComponentPins()) {
+      LOG(info) << "\t" << " (" << component_pin.ComponentName() << " "
+                << component_pin.PinName() << ") "
                 << "\n";
     }
   }
@@ -679,9 +676,9 @@ void Circuit::ReportNetFanoutHistogram() {
 void Circuit::ReportBriefSummary() {
   PrintHorizontalLine();
   LOG(info) << "Circuit brief summary:\n";
-  LOG(info) << "  movable blocks: " << TotMovBlkCnt() << "\n";
-  LOG(info) << "  fixed blocks:   " << design_.tot_fixed_blk_num_ << "\n";
-  LOG(info) << "  blocks:         " << TotBlkCnt() << "\n";
+  LOG(info) << "  movable components: " << TotalMovableComponentCnt() << "\n";
+  LOG(info) << "  fixed components:   " << design_.tot_fixed_blk_num_ << "\n";
+  LOG(info) << "  components:         " << TotalComponentCount() << "\n";
   LOG(info) << "  iopins:         " << design_.iopins_.size() << "\n";
   LOG(info) << "  nets:           " << design_.nets_.size() << "\n";
   LOG(info) << "  grid size x/y:  " << GridValueX() << "/" << GridValueY()
@@ -689,15 +686,17 @@ void Circuit::ReportBriefSummary() {
   LOG(info) << "  total movable blk area: " << design_.tot_mov_blk_area_
             << "\n";
   LOG(info) << "  total white space     : " << design_.tot_white_space_ << "\n";
-  LOG(info) << "  total block area      : " << design_.tot_blk_area_ << "\n";
+  LOG(info) << "  total component area      : " << design_.tot_blk_area_
+            << "\n";
   LOG(info) << "  total space: "
             << (long long)RegionWidth() * (long long)RegionHeight() << "\n";
   LOG(info) << "    left:   " << RegionLLX() << "\n";
   LOG(info) << "    right:  " << RegionURX() << "\n";
   LOG(info) << "    bottom: " << RegionLLY() << "\n";
   LOG(info) << "    top:    " << RegionURY() << "\n";
-  LOG(info) << "  average movable width/height: " << AveMovBlkWidth() << "/"
-            << AveMovBlkHeight() << "um\n";
+  LOG(info) << "  average movable width/height: "
+            << AverageMovableComponentWidth() << "/"
+            << AverageMovableComponentHeight() << "um\n";
   LOG(info) << "  white space utility: " << WhiteSpaceUsage() << "\n";
   ReportHPWL();
 }
@@ -725,42 +724,42 @@ void Circuit::SetLegalizerSpacing(double same_spacing, double any_spacing) {
 
 // TODO: discuss with Rajit about the necessity of having N/P-wells not fully
 // covering the prBoundary of a given cell.
-void Circuit::SetWellRect(std::string const& blk_type_name, bool is_n,
-                          double lx, double ly, double ux, double uy) {
+void Circuit::SetWellRect(std::string const& macro_name, bool is_n, double lx,
+                          double ly, double ux, double uy) {
   // check if well width is smaller than max_plug_distance
   double width = ux - lx;
   double max_plug_distance = 0;
   if (is_n) {
-    DaliExpects(tech_.n_set_, "Nwell layer not found, cannot set well rect: "
-                                  << blk_type_name);
+    DaliExpects(tech_.n_set_,
+                "Nwell layer not found, cannot set well rect: " << macro_name);
     max_plug_distance = tech_.nwell_layer_.MaxPlugDist();
     DaliWarns(width > max_plug_distance,
-              "BlockType has a Nwell wider than max_plug_distance, this may "
+              "Macro has a Nwell wider than max_plug_distance, this may "
               "make well legalization fail: "
-                  << blk_type_name);
+                  << macro_name);
   } else {
-    DaliExpects(tech_.p_set_, "Pwell layer not found, cannot set well rect: "
-                                  << blk_type_name);
+    DaliExpects(tech_.p_set_,
+                "Pwell layer not found, cannot set well rect: " << macro_name);
     max_plug_distance = tech_.pwell_layer_.MaxPlugDist();
     DaliWarns(width > max_plug_distance,
-              "BlockType has a Pwell wider than max_plug_distance, this may "
+              "Macro has a Pwell wider than max_plug_distance, this may "
               "make well legalization fail: "
-                  << blk_type_name);
+                  << macro_name);
   }
 
   // add well rect
-  BlockType* blk_type_ptr = GetBlockTypePtr(blk_type_name);
-  DaliExpects(blk_type_ptr != nullptr,
-              "Cannot find BlockType with name: " << blk_type_name);
+  Macro* macro_ptr = GetMacroPtr(macro_name);
+  DaliExpects(macro_ptr != nullptr,
+              "Cannot find Macro with name: " << macro_name);
   double ly_residual = AbsResidual(ly, GridValueY());
   if (ly_residual > constants_.epsilon) {
-    LOG(debug) << "NOTE: ly of well rect for " << blk_type_name
+    LOG(debug) << "NOTE: ly of well rect for " << macro_name
                << " is not an integer multiple of grid value y\n"
                << "  ly: " << ly << ", grid value y: " << GridValueY() << "\n";
   }
   double uy_residual = AbsResidual(uy, GridValueY());
   if (uy_residual > constants_.epsilon) {
-    LOG(debug) << "NOTE: uy of well rect for " << blk_type_name
+    LOG(debug) << "NOTE: uy of well rect for " << macro_name
                << " is not an integer multiple of grid value y\n"
                << "  uy: " << uy << ", grid value y: " << GridValueY() << "\n";
   }
@@ -769,60 +768,55 @@ void Circuit::SetWellRect(std::string const& blk_type_name, bool is_n,
   int ux_grid = int(std::round(ux / GridValueX()));
   int uy_grid = int(std::round(uy / GridValueY()));
 
-  blk_type_ptr->AddWellRect(is_n, lx_grid, ly_grid, ux_grid, uy_grid);
+  macro_ptr->AddWellRect(is_n, lx_grid, ly_grid, ux_grid, uy_grid);
 }
 
 /**
- * @brief Creates a new end-cap cell type and registers it in the circuit's
- * technology.
+ * @brief Creates a generated end-cap macro and registers it in the circuit's
+ * technology database.
  *
- * This function creates a new end-cap cell type with the specified parameters
- * if it doesn't already exist. It checks for the existence of the end-cap cell
- * type in `tech_.end_cap_cell_type_map_` and throws an error if the type
- * already exists.
+ * This function creates a macro with the specified parameters if it doesn't
+ * already exist. Generated end-cap macros are kept in a separate registry from
+ * macros loaded from the input library.
  *
- * @param end_cap_cell_type_name The name of the end-cap cell type to create.
- * @param width Width of the end-cap cell type.
- * @param n_well_height_in_grid_unit Height of the N-well component in grid
- * units.
- * @param p_well_height_in_grid_unit Height of the P-well component in grid
- * units.
- * @return id of the created BlockType representing the end-cap cell type.
+ * @param end_cap_macro_name The name of the end-cap macro to create.
+ * @param width Width of the end-cap macro.
+ * @param n_well_height_in_grid_unit Height of the N-well region in grid units.
+ * @param p_well_height_in_grid_unit Height of the P-well region in grid units.
+ * @return id of the created end-cap macro.
  */
-int Circuit::CreateEndCapCellType(std::string const& end_cap_cell_type_name,
-                                  int width, int n_well_height_in_grid_unit,
-                                  int p_well_height_in_grid_unit) {
-  // Create a new BlockType for the end-cap cell type
-  auto& new_end_cap_cell_type =
-      tech_.end_cap_cell_type_collection_.Create(end_cap_cell_type_name);
+int Circuit::CreateEndCapMacro(std::string const& end_cap_macro_name, int width,
+                               int n_well_height_in_grid_unit,
+                               int p_well_height_in_grid_unit) {
+  // Create a generated Macro for the end-cap cell.
+  auto& end_cap_macro =
+      tech_.end_cap_cell_macro_collection_.Create(end_cap_macro_name);
 
   // Calculate the total height
   int height = n_well_height_in_grid_unit + p_well_height_in_grid_unit;
 
-  // Set width height
-  new_end_cap_cell_type.SetSize(width, height);
+  // Set width and height.
+  end_cap_macro.SetSize(width, height);
 
   // Report if the area exceeds INT_MAX
-  if (new_end_cap_cell_type.Area() > INT_MAX) {
-    new_end_cap_cell_type.Report();
+  if (end_cap_macro.Area() > INT_MAX) {
+    end_cap_macro.Report();
   }
 
-  // Add well info
-  new_end_cap_cell_type.AddWellRect(false, 0, 0, width,
-                                    p_well_height_in_grid_unit);
-  new_end_cap_cell_type.AddWellRect(true, 0, p_well_height_in_grid_unit, width,
-                                    height);
+  // Add well geometry.
+  end_cap_macro.AddWellRect(false, 0, 0, width, p_well_height_in_grid_unit);
+  end_cap_macro.AddWellRect(true, 0, p_well_height_in_grid_unit, width, height);
 
-  return tech_.end_cap_cell_type_collection_.GetInstanceIdByName(
-      end_cap_cell_type_name);
+  return tech_.end_cap_cell_macro_collection_.GetInstanceIdByName(
+      end_cap_macro_name);
 }
 
 void Circuit::ReportWellShape() {
-  for (auto& block_type : tech_.BlockTypes()) {
-    if (block_type.HasWellInfo()) {
-      block_type.ReportWellInfo();
+  for (auto& macro : tech_.Macros()) {
+    if (macro.HasWellInfo()) {
+      macro.ReportWellInfo();
     } else {
-      LOG(info) << "no well info for BlockType " << block_type.Name() << "\n";
+      LOG(info) << "no well info for Macro " << macro.Name() << "\n";
     }
   }
 }
@@ -943,7 +937,7 @@ void Circuit::ReadMultiWellCell(std::string const& name_of_file) {
       std::vector<std::string> macro_fields;
       StrTokenize(line, macro_fields);
       std::string end_macro_flag = "END " + macro_fields[1];
-      BlockType* p_blk_type = GetBlockTypePtr(macro_fields[1]);
+      Macro* macro_ptr = GetMacroPtr(macro_fields[1]);
       do {
         getline(ist, line);
         if (line.find("REGION") != std::string::npos) {
@@ -992,8 +986,8 @@ void Circuit::ReadMultiWellCell(std::string const& name_of_file) {
                   int ly_grid = int(std::round(ly / GridValueY()));
                   int ux_grid = int(std::round(ux / GridValueX()));
                   int uy_grid = int(std::round(uy / GridValueY()));
-                  p_blk_type->AddWellRect(is_n, lx_grid, ly_grid, ux_grid,
-                                          uy_grid);
+                  macro_ptr->AddWellRect(is_n, lx_grid, ly_grid, ux_grid,
+                                         uy_grid);
                 }
                 getline(ist, line);
               } while (line.find("END REGION") == std::string::npos &&
@@ -1003,62 +997,69 @@ void Circuit::ReadMultiWellCell(std::string const& name_of_file) {
         }
       } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
       // well_ptr->Report();
-      p_blk_type->CheckLegality();
+      macro_ptr->CheckLegality();
     }
   }
   // ReportWellShape();
 }
 
-int Circuit::MinBlkWidth() const { return design_.blk_min_width_; }
+int Circuit::MinComponentWidth() const { return design_.blk_min_width_; }
 
-int Circuit::MaxBlkWidth() const { return design_.blk_max_width_; }
+int Circuit::MaxComponentWidth() const { return design_.blk_max_width_; }
 
-int Circuit::MinBlkHeight() const { return design_.blk_min_height_; }
+int Circuit::MinComponentHeight() const { return design_.blk_min_height_; }
 
-int Circuit::MaxBlkHeight() const { return design_.blk_max_height_; }
+int Circuit::MaxComponentHeight() const { return design_.blk_max_height_; }
 
-unsigned long long Circuit::TotBlkArea() const { return design_.tot_blk_area_; }
+unsigned long long Circuit::TotalComponentArea() const {
+  return design_.tot_blk_area_;
+}
 
-int Circuit::TotBlkCnt() const { return design_.real_block_count_; }
+int Circuit::TotalComponentCount() const {
+  return design_.real_component_count_;
+}
 
-int Circuit::TotMovBlkCnt() const { return design_.tot_mov_blk_num_; }
+int Circuit::TotalMovableComponentCnt() const {
+  return design_.tot_mov_blk_num_;
+}
 
-int Circuit::TotFixedBlkCnt() {
+int Circuit::TotalFixedComponentCnt() {
   // TODO: fix int type
-  return static_cast<int>(design_.Blocks().size()) - design_.tot_mov_blk_num_;
+  return static_cast<int>(design_.Components().size()) -
+         design_.tot_mov_blk_num_;
 }
 
-double Circuit::AveBlkWidth() const {
-  return double(design_.tot_width_) / double(TotBlkCnt());
+double Circuit::AverageComponentWidth() const {
+  return double(design_.tot_width_) / double(TotalComponentCount());
 }
 
-double Circuit::AveBlkHeight() const {
-  return double(design_.tot_height_) / double(TotBlkCnt());
+double Circuit::AverageComponentHeight() const {
+  return double(design_.tot_height_) / double(TotalComponentCount());
 }
 
-double Circuit::AveBlkArea() const {
-  return double(design_.tot_blk_area_) / double(TotBlkCnt());
+double Circuit::AverageComponentArea() const {
+  return double(design_.tot_blk_area_) / double(TotalComponentCount());
 }
 
-double Circuit::AveMovBlkWidth() const {
-  return double(design_.tot_mov_width_) / TotMovBlkCnt();
+double Circuit::AverageMovableComponentWidth() const {
+  return double(design_.tot_mov_width_) / TotalMovableComponentCnt();
 }
 
-double Circuit::AveMovBlkHeight() const {
-  return double(design_.tot_mov_height_) / TotMovBlkCnt();
+double Circuit::AverageMovableComponentHeight() const {
+  return double(design_.tot_mov_height_) / TotalMovableComponentCnt();
 }
 
-double Circuit::AveMovBlkArea() const {
-  return double(design_.tot_mov_blk_area_) / TotMovBlkCnt();
+double Circuit::AverageMovableComponentArea() const {
+  return double(design_.tot_mov_blk_area_) / TotalMovableComponentCnt();
 }
 
 double Circuit::WhiteSpaceUsage() const {
   return double(design_.tot_mov_blk_area_) / double(design_.tot_white_space_);
 }
 
-void Circuit::NetSortBlkPin() {
+void Circuit::NetSortComponentPin() {
   for (auto& net : design_.nets_) {
-    net.SortBlkPinList();
+    net.SortComponentPinList();
   }
 }
 
@@ -1286,15 +1287,15 @@ void Circuit::GenMATLABTable(std::string const& name_of_file,
                       true, 1, 1, 1);
   if (!only_well_tap) {
     // save ordinary cells
-    for (auto& block : design_.Blocks()) {
-      SaveMatlabPatchRect(ost, block.LLX(), block.LLY(), block.URX(),
-                          block.URY(), true, 0, 1, 1);
+    for (auto& component : design_.Components()) {
+      SaveMatlabPatchRect(ost, component.LLX(), component.LLY(),
+                          component.URX(), component.URY(), true, 0, 1, 1);
     }
   }
   // save well-tap cells
-  for (auto& block : design_.WellTaps()) {
-    SaveMatlabPatchRect(ost, block.LLX(), block.LLY(), block.URX(), block.URY(),
-                        true, 0, 1, 1);
+  for (auto& component : design_.WellTaps()) {
+    SaveMatlabPatchRect(ost, component.LLX(), component.LLY(), component.URX(),
+                        component.URY(), true, 0, 1, 1);
   }
   ost.close();
 }
@@ -1310,12 +1311,12 @@ void Circuit::GenMATLABWellTable(std::string const& name_of_file,
   std::ofstream ost(unplug_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + unplug_file);
   if (!only_well_tap) {
-    for (auto& block : design_.Blocks()) {
-      block.ExportWellToMatlabPatchRect(ost);
+    for (auto& component : design_.Components()) {
+      component.ExportWellToMatlabPatchRect(ost);
     }
   }
-  for (auto& block : design_.WellTaps()) {
-    block.ExportWellToMatlabPatchRect(ost);
+  for (auto& component : design_.WellTaps()) {
+    component.ExportWellToMatlabPatchRect(ost);
   }
   ost.close();
 }
@@ -1325,7 +1326,7 @@ void Circuit::GenLongNetTable(std::string const& name_of_file) {
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
 
   int multi_factor = 5;
-  double threshold = multi_factor * AveBlkHeight();
+  double threshold = multi_factor * AverageComponentHeight();
   int count = 0;
   double ave_hpwl = 0;
   for (auto& net : design_.nets_) {
@@ -1333,7 +1334,7 @@ void Circuit::GenLongNetTable(std::string const& name_of_file) {
     if (hpwl > threshold) {
       ave_hpwl += hpwl;
       ++count;
-      for (auto& blk_pin : net.BlockPins()) {
+      for (auto& blk_pin : net.ComponentPins()) {
         ost << blk_pin.AbsX() << "\t" << blk_pin.AbsY() << "\t";
       }
       ost << "\n";
@@ -1365,7 +1366,7 @@ void Circuit::ExportEndCapCells(std::ofstream& ost) {
   std::string site_name = sites[0].GetName();
 
   for (auto& end_cap_cell_type :
-       tech().EndCapCellTypeCollection().Instances()) {
+       tech().EndCapCellMacroCollection().Instances()) {
     std::string end_cap_type = "POST";
     if (end_cap_cell_type.Name().find("pre") != std::string::npos) {
       end_cap_type = "PRE";
@@ -1421,8 +1422,8 @@ void Circuit::SaveLefFile(std::string const& input_lef_file_full_name,
   ist.close();
 }
 
-void Circuit::SaveCell(std::ofstream& ost, Block& blk) const {
-  ost << "- " << blk.Name() << " " << blk.TypePtr()->Name() << " + "
+void Circuit::SaveCell(std::ofstream& ost, Component& blk) const {
+  ost << "- " << blk.Name() << " " << blk.MacroPtr()->Name() << " + "
       << blk.StatusStr() << " "
       << "( " << LocDali2PhydbX(blk.LLX()) << " " << LocDali2PhydbY(blk.LLY())
       << " ) " << OrientStr(blk.Orient()) << " ;\n";
@@ -1430,8 +1431,8 @@ void Circuit::SaveCell(std::ofstream& ost, Block& blk) const {
 
 void Circuit::SaveNormalCells(std::ofstream& ost,
                               std::unordered_set<PlaceStatus>* filter_out) {
-  for (auto& blk : design_.Blocks()) {
-    if (blk.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
+  for (auto& blk : design_.Components()) {
+    if (blk.MacroPtr() == tech_.io_dummy_macro_ptr_) continue;
     if (filter_out != nullptr &&
         filter_out->find(blk.Status()) != filter_out->end()) {
       continue;
@@ -1447,8 +1448,8 @@ void Circuit::SaveWellTapCells(std::ofstream& ost) {
 }
 
 void Circuit::SaveEndCapCells(std::ofstream& ost) {
-  for (auto& block : design_.EndCapCellCollection().Instances()) {
-    SaveCell(ost, block);
+  for (auto& component : design_.EndCapComponentCollection().Instances()) {
+    SaveCell(ost, component);
   }
 }
 
@@ -1475,15 +1476,15 @@ void Circuit::SaveCircuitPpnpCoverCell(std::ofstream& ost,
 void Circuit::ExportNormalCells(std::ofstream& ost) {
   // count the number of normal cells
   size_t cell_count = 0;
-  for (auto& block : design_.Blocks()) {
+  for (auto& component : design_.Components()) {
     // skip dummy cells for I/O pins
-    if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) {
+    if (component.MacroPtr() == tech_.io_dummy_macro_ptr_) {
       continue;
     }
     ++cell_count;
   }
   cell_count += design_.WellTaps().size();
-  cell_count += design_.EndCapCellCollection().Instances().size();
+  cell_count += design_.EndCapComponentCollection().Instances().size();
   ost << "COMPONENTS " << cell_count << " ;\n";
   SaveNormalCells(ost);
   SaveWellTapCells(ost);
@@ -1501,12 +1502,12 @@ void Circuit::ExportWellTapCells(std::ofstream& ost) {
 void Circuit::ExportNormalAndWellTapCells(std::ofstream& ost,
                                           std::string const& base_name) {
   size_t cell_count = 0;
-  for (auto& block : design_.Blocks()) {
-    if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
+  for (auto& component : design_.Components()) {
+    if (component.MacroPtr() == tech_.io_dummy_macro_ptr_) continue;
     ++cell_count;
   }
   cell_count += design_.WellTaps().size();
-  cell_count += design_.EndCapCellCollection().Instances().size();
+  cell_count += design_.EndCapComponentCollection().Instances().size();
   cell_count += 1;
   ost << "COMPONENTS " << cell_count << " ;\n";
   SaveCircuitWellCoverCell(ost, base_name);
@@ -1519,12 +1520,12 @@ void Circuit::ExportNormalAndWellTapCells(std::ofstream& ost,
 void Circuit::ExportNormalWellTapAndCoverCells(std::ofstream& ost,
                                                std::string const& base_name) {
   size_t cell_count = 0;
-  for (auto& block : design_.Blocks()) {
-    if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
+  for (auto& component : design_.Components()) {
+    if (component.MacroPtr() == tech_.io_dummy_macro_ptr_) continue;
     ++cell_count;
   }
   cell_count += design_.WellTaps().size();
-  cell_count += design_.EndCapCellCollection().Instances().size();
+  cell_count += design_.EndCapComponentCollection().Instances().size();
   cell_count += 2;
   ost << "COMPONENTS " << cell_count << " ;\n";
   SaveCircuitWellCoverCell(ost, base_name);
@@ -1538,9 +1539,9 @@ void Circuit::ExportNormalWellTapAndCoverCells(std::ofstream& ost,
 void Circuit::ExportCellsExcept(std::ofstream& ost,
                                 std::unordered_set<PlaceStatus>* filter) {
   size_t cell_count = 0;
-  for (auto& block : design_.Blocks()) {
-    if (block.TypePtr() == tech_.io_dummy_blk_type_ptr_) continue;
-    if (block.Status() == UNPLACED) continue;
+  for (auto& component : design_.Components()) {
+    if (component.MacroPtr() == tech_.io_dummy_macro_ptr_) continue;
+    if (component.Status() == UNPLACED) continue;
     ++cell_count;
   }
   cell_count += design_.WellTaps().size();
@@ -1664,11 +1665,11 @@ void Circuit::ExportAllNets(std::ofstream& ost) {
     for (auto& iopin : net.IoPinPtrs()) {
       ost << " ( PIN " << iopin->Name() << " ) ";
     }
-    for (auto& pin_pair : net.BlockPins()) {
-      if (pin_pair.BlkPtr()->TypePtr() == tech_.io_dummy_blk_type_ptr_) {
+    for (auto& pin_pair : net.ComponentPins()) {
+      if (pin_pair.ComponentPtr()->MacroPtr() == tech_.io_dummy_macro_ptr_) {
         continue;
       }
-      ost << " ( " << pin_pair.BlockName() << " " << pin_pair.PinName()
+      ost << " ( " << pin_pair.ComponentName() << " " << pin_pair.PinName()
           << " ) ";
     }
     ost << "\n" << " ;\n";
@@ -1681,15 +1682,15 @@ void Circuit::ExportPowerNetsForWellTapCells(std::ofstream& ost) {
   // GND
   ost << "- ggnndd\n";
   ost << " ";
-  for (auto& block : design_.WellTaps()) {
-    ost << " ( " << block.Name() << " g0 )";
+  for (auto& component : design_.WellTaps()) {
+    ost << " ( " << component.Name() << " g0 )";
   }
   ost << "\n" << " ;\n";
   // Vdd
   ost << "- vvdddd\n";
   ost << " ";
-  for (auto& block : design_.WellTaps()) {
-    ost << " ( " << block.Name() << " v0 )";
+  for (auto& component : design_.WellTaps()) {
+    ost << " ( " << component.Name() << " v0 )";
   }
   ost << "\n" << " ;\n";
   ost << "END NETS\n\n";
@@ -1845,12 +1846,13 @@ void Circuit::SaveBookshelfNode(std::string const& name_of_file) {
   DaliExpects(ost.is_open(), "Cannot open file " + name_of_file);
   ost << "# this line is here just for ntuplace to recognize this file \n\n";
   ost << "NumNodes : \t\t" << design_.tot_mov_blk_num_ << "\n"
-      << "NumTerminals : \t\t" << Blocks().size() - design_.tot_mov_blk_num_
+      << "NumTerminals : \t\t" << Components().size() - design_.tot_mov_blk_num_
       << "\n";
-  for (auto& block : Blocks()) {
-    ost << "\t" << block.Name() << "\t"
-        << block.Width() * design_.distance_microns_ * GridValueX() << "\t"
-        << block.Height() * design_.distance_microns_ * GridValueY() << "\n";
+  for (auto& component : Components()) {
+    ost << "\t" << component.Name() << "\t"
+        << component.Width() * design_.distance_microns_ * GridValueX() << "\t"
+        << component.Height() * design_.distance_microns_ * GridValueY()
+        << "\n";
   }
 }
 
@@ -1859,27 +1861,27 @@ void Circuit::SaveBookshelfNet(std::string const& name_of_file) {
   DaliExpects(ost.is_open(), "Cannot open file " + name_of_file);
   size_t num_pins = 0;
   for (auto& net : design_.nets_) {
-    num_pins += net.BlockPins().size();
+    num_pins += net.ComponentPins().size();
   }
   ost << "# this line is here just for ntuplace to recognize this file \n\n";
   ost << "NumNets : " << design_.nets_.size() << "\n"
       << "NumPins : " << num_pins << "\n\n";
   for (auto& net : design_.nets_) {
-    ost << "NetDegree : " << net.BlockPins().size() << "   " << net.Name()
+    ost << "NetDegree : " << net.ComponentPins().size() << "   " << net.Name()
         << "\n";
-    for (auto& pair : net.BlockPins()) {
-      ost << "\t" << pair.BlockName() << "\t";
+    for (auto& pair : net.ComponentPins()) {
+      ost << "\t" << pair.ComponentName() << "\t";
       if (pair.PinPtr()->IsInput()) {
         ost << "I : ";
       } else {
         ost << "O : ";
       }
       ost << (pair.PinPtr()->OffsetX() -
-              pair.BlkPtr()->TypePtr()->Width() / 2.0) *
+              pair.ComponentPtr()->MacroPtr()->Width() / 2.0) *
                  design_.distance_microns_ * GridValueX()
           << "\t"
           << (pair.PinPtr()->OffsetY() -
-              pair.BlkPtr()->TypePtr()->Height() / 2.0) *
+              pair.ComponentPtr()->MacroPtr()->Height() / 2.0) *
                  design_.distance_microns_ * GridValueY()
           << "\n";
     }
@@ -1890,11 +1892,12 @@ void Circuit::SaveBookshelfPl(std::string const& name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file " + name_of_file);
   ost << "# this line is here just for ntuplace to recognize this file \n\n";
-  for (auto& block : Blocks()) {
-    ost << block.Name() << "\t"
-        << int(block.LLX() * design_.distance_microns_ * GridValueX()) << "\t"
-        << int(block.LLY() * design_.distance_microns_ * GridValueY());
-    if (block.IsMovable()) {
+  for (auto& component : Components()) {
+    ost << component.Name() << "\t"
+        << int(component.LLX() * design_.distance_microns_ * GridValueX())
+        << "\t"
+        << int(component.LLY() * design_.distance_microns_ * GridValueY());
+    if (component.IsMovable()) {
       ost << "\t:\tN\n";
     } else {
       ost << "\t:\tN\t/FIXED\n";
@@ -1936,11 +1939,11 @@ void Circuit::LoadBookshelfPl(std::string const& name_of_file) {
     getline(ist, line);
     StrTokenize(line, res);
     if (res.size() >= 4) {
-      if (IsBlockExisting(res[0])) {
+      if (IsComponentExisting(res[0])) {
         try {
           lx = std::stod(res[1]) / GridValueX() / design_.distance_microns_;
           ly = std::stod(res[2]) / GridValueY() / design_.distance_microns_;
-          GetBlockPtr(res[0])->SetLoc(lx, ly);
+          GetComponentPtr(res[0])->SetLoc(lx, ly);
         } catch (...) {
           DaliExpects(false, "Invalid stod conversion:\n\t" + line);
         }
@@ -1960,26 +1963,27 @@ void Circuit::CreateFakeWellForStandardCell() {
 void Circuit::LoadImaginaryCellFile() {
   // 1. create fake well tap cell
   std::string tap_cell_name("welltap_svt");
-  AddWellTapBlockTypeWithGridUnit(tap_cell_name, MinBlkWidth(), MinBlkHeight());
+  AddWellTapMacroWithGridUnit(tap_cell_name, MinComponentWidth(),
+                              MinComponentHeight());
 
   // 2. create fake well parameters
   double fake_same_diff_spacing = 0;
   double fake_any_diff_spacing = 0;
   SetLegalizerSpacing(fake_same_diff_spacing, fake_any_diff_spacing);
 
-  double width = MinBlkHeight() / 2.0 * GridValueY();
-  double spacing = MinBlkWidth() * GridValueX();
-  double op_spacing = MinBlkWidth() * GridValueX();
-  double max_plug_dist = AveMovBlkWidth() * 10 * GridValueX();
+  double width = MinComponentHeight() / 2.0 * GridValueY();
+  double spacing = MinComponentWidth() * GridValueX();
+  double op_spacing = MinComponentWidth() * GridValueX();
+  double max_plug_dist = AverageMovableComponentWidth() * 10 * GridValueX();
   double overhang = 0;
   SetNwellParams(width, spacing, op_spacing, max_plug_dist, overhang);
   SetNwellParams(width, spacing, op_spacing, max_plug_dist, overhang);
 
-  // 3. create fake NP-well geometries for each BlockType
-  for (auto& block_type : tech_.BlockTypes()) {
-    int np_edge = block_type.Height() / 2;
-    block_type.AddPwellRect(0, 0, block_type.Width(), np_edge);
-    block_type.AddNwellRect(0, 0, block_type.Width(), block_type.Height());
+  // 3. create fake NP-well geometries for each Macro
+  for (auto& macro : tech_.Macros()) {
+    int np_edge = macro.Height() / 2;
+    macro.AddPwellRect(0, 0, macro.Width(), np_edge);
+    macro.AddNwellRect(0, 0, macro.Width(), macro.Height());
   }
 }
 
@@ -1989,34 +1993,32 @@ void Circuit::SetPhyDB(phydb::PhyDB* phy_db_ptr) {
   phy_db_ptr_ = phy_db_ptr;
 }
 
-BlockType* Circuit::AddBlockTypeWithGridUnit(std::string const& block_type_name,
-                                             int width, int height) {
-  DaliExpects(!IsBlockTypeExisting(block_type_name),
-              "BlockType exist, cannot create this block type again: " +
-                  block_type_name);
+Macro* Circuit::AddMacroWithGridUnit(std::string const& macro_name, int width,
+                                     int height) {
+  DaliExpects(!IsMacroExisting(macro_name),
+              "Macro already exists, cannot create it again: " + macro_name);
 
-  BlockType& block_type = tech_.block_type_collection_.Create(block_type_name);
-  block_type.SetSize(width, height);
+  Macro& macro = tech_.macro_collection_.Create(macro_name);
+  macro.SetSize(width, height);
 
-  if (block_type.Area() > INT_MAX) {
-    block_type.Report();
+  if (macro.Area() > INT_MAX) {
+    macro.Report();
   }
-  return &block_type;
+  return &macro;
 }
 
-int Circuit::AddWellTapBlockTypeWithGridUnit(std::string const& block_type_name,
-                                             int width, int height) {
-  AddBlockTypeWithGridUnit(block_type_name, width, height);
+int Circuit::AddWellTapMacroWithGridUnit(std::string const& macro_name,
+                                         int width, int height) {
+  AddMacroWithGridUnit(macro_name, width, height);
   int well_tap_cell_id =
-      tech_.block_type_collection_.GetInstanceIdByName(block_type_name);
-  tech_.well_tap_cell_type_ids_.push_back(well_tap_cell_id);
+      tech_.macro_collection_.GetInstanceIdByName(macro_name);
+  tech_.well_tap_macro_ids_.push_back(well_tap_cell_id);
   return well_tap_cell_id;
 }
 
-BlockType* Circuit::AddFillerBlockTypeWithGridUnit(
-    std::string const& block_type_name, int width, int height) {
-  BlockType* filler_ptr =
-      AddBlockTypeWithGridUnit(block_type_name, width, height);
+Macro* Circuit::AddFillerMacroWithGridUnit(std::string const& macro_name,
+                                           int width, int height) {
+  Macro* filler_ptr = AddMacroWithGridUnit(macro_name, width, height);
   tech_.filler_ptrs_.emplace_back(filler_ptr);
   return filler_ptr;
 }
@@ -2031,9 +2033,10 @@ void Circuit::SetBoundary(int left, int bottom, int right, int top) {
   design_.die_area_.die_area_set_ = true;
 }
 
-void Circuit::BlockTypeSizeMicrometerToGridValue(
-    std::string const& block_type_name, double width, double height,
-    int& gridded_width, int& gridded_height) {
+void Circuit::MacroSizeMicrometerToGridValue(std::string const& macro_name,
+                                             double width, double height,
+                                             int& gridded_width,
+                                             int& gridded_height) {
   double residual_x = AbsResidual(width, GridValueX());
   gridded_width = -1;
   if (residual_x < constants_.epsilon) {
@@ -2041,8 +2044,8 @@ void Circuit::BlockTypeSizeMicrometerToGridValue(
   } else {
     gridded_width = (int)std::ceil(width / GridValueX());
     LOG(warning)
-        << "BlockType width is not integer multiple of the grid value along X: "
-        << block_type_name << "\n"
+        << "Macro width is not integer multiple of the grid value along X: "
+        << macro_name << "\n"
         << "    width: " << width << " um\n"
         << "    grid value x: " << GridValueX() << " um\n"
         << "    residual: " << residual_x << "\n"
@@ -2057,9 +2060,9 @@ void Circuit::BlockTypeSizeMicrometerToGridValue(
   } else {
     gridded_height = (int)std::ceil(height / GridValueY());
     LOG(warning)
-        << "BlockType height is not integer multiple of the grid value along "
+        << "Macro height is not integer multiple of the grid value along "
            "Y: "
-        << block_type_name << "\n"
+        << macro_name << "\n"
         << "    height: " << height << " um\n"
         << "    grid value y: " << GridValueY() << " um\n"
         << "    residual: " << residual_y << "\n"
@@ -2068,73 +2071,75 @@ void Circuit::BlockTypeSizeMicrometerToGridValue(
   }
 }
 
-void Circuit::AddBlock(std::string const& block_name, BlockType* block_type_ptr,
-                       double llx, double lly, PlaceStatus place_status,
-                       BlockOrient orient, bool is_real_cel) {
+void Circuit::AddComponent(std::string const& component_name, Macro* macro_ptr,
+                           double llx, double lly, PlaceStatus place_status,
+                           ComponentOrient orient, bool is_real_cel) {
   DaliExpects(design_.nets_.empty(),
-              "Cannot add new Block, because net_list now is not empty");
-  DaliExpects(Blocks().size() < Blocks().capacity(),
-              "Cannot add new Block, because block list is full");
-  DaliExpects(!IsBlockExisting(block_name),
-              "Block exists, cannot create this block again: " + block_name);
-  size_t next_block_id = design_.BlockCollection().GetSize();
-  DaliExpects(next_block_id <= static_cast<size_t>(INT_MAX),
-              "Cannot add more blocks, the limit is INT_MAX");
+              "Cannot add new Component, because net_list now is not empty");
+  DaliExpects(Components().size() < Components().capacity(),
+              "Cannot add new Component, because component list is full");
+  DaliExpects(!IsComponentExisting(component_name),
+              "Component exists, cannot create this component again: " +
+                  component_name);
+  size_t next_component_id = design_.ComponentCollection().GetSize();
+  DaliExpects(next_component_id <= static_cast<size_t>(INT_MAX),
+              "Cannot add more components, the limit is INT_MAX");
 
-  auto [block, block_id] = design_.block_collection_.CreateWithId(block_name);
-  block.SetType(block_type_ptr);
-  block.SetId(static_cast<int>(block_id));
-  block.SetLLX(llx);
-  block.SetLLY(lly);
-  block.SetPlacementStatus(place_status);
-  block.SetOrient(orient);
+  auto [component, component_id] =
+      design_.component_collection_.CreateWithId(component_name);
+  component.SetMacro(macro_ptr);
+  component.SetId(static_cast<int>(component_id));
+  component.SetLLX(llx);
+  component.SetLLY(lly);
+  component.SetPlacementStatus(place_status);
+  component.SetOrient(orient);
 
   if (!is_real_cel) return;
-  // update statistics of blocks
-  ++design_.real_block_count_;
-  design_.tot_width_ += block.Width();
-  design_.tot_height_ += block.Height();
-  if (block.IsMovable()) {
+  // update statistics of components
+  ++design_.real_component_count_;
+  design_.tot_width_ += component.Width();
+  design_.tot_height_ += component.Height();
+  if (component.IsMovable()) {
     ++design_.tot_mov_blk_num_;
     auto old_tot_mov_area = design_.tot_mov_blk_area_;
-    design_.tot_mov_blk_area_ += block.Area();
+    design_.tot_mov_blk_area_ += component.Area();
     DaliExpects(old_tot_mov_area <= design_.tot_mov_blk_area_,
-                "Total Movable Block Area Overflow, choose a different "
+                "Total Movable Component Area Overflow, choose a different "
                 "MANUFACTURINGGRID/unit");
-    design_.tot_mov_width_ += block.Width();
-    design_.tot_mov_height_ += block.Height();
+    design_.tot_mov_width_ += component.Width();
+    design_.tot_mov_height_ += component.Height();
   } else {
     ++design_.tot_fixed_blk_num_;
-    design_.AddFixedCellPlacementBlockage(block);
+    design_.AddFixedCellPlacementBlockage(component);
   }
-  if (block.Height() < design_.blk_min_height_) {
-    design_.blk_min_height_ = block.Height();
+  if (component.Height() < design_.blk_min_height_) {
+    design_.blk_min_height_ = component.Height();
   }
-  if (block.Height() > design_.blk_max_height_) {
-    design_.blk_max_height_ = block.Height();
+  if (component.Height() > design_.blk_max_height_) {
+    design_.blk_max_height_ = component.Height();
   }
-  if (block.Width() < design_.blk_min_width_) {
-    design_.blk_min_width_ = block.Width();
+  if (component.Width() < design_.blk_min_width_) {
+    design_.blk_min_width_ = component.Width();
   }
-  if (block.Width() > design_.blk_min_width_) {
-    design_.blk_max_width_ = block.Width();
+  if (component.Width() > design_.blk_min_width_) {
+    design_.blk_max_width_ = component.Width();
   }
 }
 
 /****
- * This member function adds a dummy BlockType for IOPINs.
- * The name of this dummy BlockType is "PIN", and it contains one cell pin with
- * name "pin". The size of "PIN" BlockType is 0 (width) and 0(height). The
+ * This member function adds a dummy Macro for IOPINs.
+ * The name of this dummy Macro is "PIN", and it contains one cell pin with
+ * name "pin". The size of "PIN" Macro is 0 (width) and 0(height). The
  * relative location of the only cell pin "pin" is (0,0) with size 0.
  * ****/
-void Circuit::AddDummyIOPinBlockType() {
+void Circuit::AddDummyIOPinComponentType() {
   std::string iopin_type_name("__PIN__");
-  auto io_pin_type = AddBlockTypeWithGridUnit(iopin_type_name, 0, 0);
+  auto io_pin_type = AddMacroWithGridUnit(iopin_type_name, 0, 0);
   std::string tmp_pin_name("pin");
   // TO-DO, the value of @param is_input may not be true
   Pin* pin = io_pin_type->AddPin(tmp_pin_name, true);
   pin->SetOffset(0, 0);
-  tech_.io_dummy_blk_type_ptr_ = io_pin_type;
+  tech_.io_dummy_macro_ptr_ = io_pin_type;
 }
 
 IoPin* Circuit::AddUnplacedIoPin(std::string const& iopin_name) {
@@ -2151,7 +2156,7 @@ IoPin* Circuit::AddUnplacedIoPin(std::string const& iopin_name) {
 }
 
 /****
- * @brief PLACED I/O pins are treated as fixed blocks with no area
+ * @brief PLACED I/O pins are treated as fixed components with no area
  * @param iopin_name: name of this I/O pin
  * @param lx: x location of this pin
  * @param ly: y location of this pin
@@ -2170,8 +2175,8 @@ IoPin* Circuit::AddPlacedIOPin(std::string const& iopin_name, double lx,
   design_.iopins_.emplace_back(name_id_pair_ptr, lx, ly);
   design_.pre_placed_io_count_ += 1;
 
-  // add a dummy cell corresponding to this IOPIN to block_list.
-  AddBlock(iopin_name, tech_.io_dummy_blk_type_ptr_, lx, ly, FIXED, N, false);
+  // add a dummy cell corresponding to this IOPIN to component_list.
+  AddComponent(iopin_name, tech_.io_dummy_macro_ptr_, lx, ly, FIXED, N, false);
 
   return &(design_.iopins_.back());
 }
@@ -2373,20 +2378,20 @@ void Circuit::LoadTech(phydb::PhyDB* phy_db_ptr) {
     std::string macro_name(macro.GetName());
     double width = macro.GetWidth();
     double height = macro.GetHeight();
-    BlockType* blk_type = nullptr;
+    Macro* blk_type = nullptr;
     if (macro.GetClass() == phydb::MacroClass::CORE_WELLTAP) {
-      int block_index = AddWellTapBlockType(macro_name, width, height);
-      blk_type = &(tech_.BlockTypes()[block_index]);
+      int component_index = AddWellTapMacro(macro_name, width, height);
+      blk_type = &(tech_.Macros()[component_index]);
     } else if (macro.GetClass() == phydb::MacroClass::CORE_SPACER) {
-      blk_type = AddFillerBlockType(macro_name, width, height);
+      blk_type = AddFillerMacro(macro_name, width, height);
     } else if (macro.GetClass() == phydb::MacroClass::ENDCAP_PRE) {
-      blk_type = AddBlockType(macro_name, width, height);
+      blk_type = AddMacro(macro_name, width, height);
       tech_.pre_end_cap_cell_ptr_ = blk_type;
     } else if (macro.GetClass() == phydb::MacroClass::ENDCAP_POST) {
-      blk_type = AddBlockType(macro_name, width, height);
+      blk_type = AddMacro(macro_name, width, height);
       tech_.post_end_cap_cell_ptr_ = blk_type;
     } else {
-      blk_type = AddBlockType(macro_name, width, height);
+      blk_type = AddMacro(macro_name, width, height);
     }
     auto& macro_pins = macro.GetPinsRef();
     for (auto& pin : macro_pins) {
@@ -2414,7 +2419,7 @@ void Circuit::LoadTech(phydb::PhyDB* phy_db_ptr) {
       new_pin->SetBoundingBoxSize(bbox_width, bbox_height);
     }
   }
-  tech_.block_type_collection_.Freeze();
+  tech_.macro_collection_.Freeze();
 }
 
 void Circuit::ReserveSpaceForDesign() {
@@ -2452,15 +2457,15 @@ void Circuit::LoadComponents() {
   auto& components = phy_db_design.GetComponentsRef();
   for (auto& comp : components) {
     std::string blk_name(comp.GetName());
-    std::string blk_type_name(comp.GetMacro()->GetName());
+    std::string macro_name(comp.GetMacro()->GetName());
     auto location = comp.GetLocation();
     int llx = location.x;
     int lly = location.y;
     double lx = std::round(LocPhydb2DaliX(llx));
     double ly = std::round(LocPhydb2DaliY(lly));
     auto place_status = PlaceStatus(comp.GetPlacementStatus());
-    auto orient = BlockOrient(comp.GetOrientation());
-    AddBlock(blk_name, blk_type_name, lx, ly, place_status, orient);
+    auto orient = ComponentOrient(comp.GetOrientation());
+    AddComponent(blk_name, macro_name, lx, ly, place_status, orient);
   }
 }
 
@@ -2503,7 +2508,7 @@ void Circuit::LoadNets() {
       std::string const& comp_name = components[comp_id].GetName();
       int pin_id = net_pins[i].PinId();
       std::string const& pin_name = components[comp_id].GetPinName(pin_id);
-      AddBlkPinToNet(comp_name, pin_name, net_name);
+      AddComponentPinToNet(comp_name, pin_name, net_name);
     }
   }
 }
@@ -2517,7 +2522,7 @@ void Circuit::LoadDesign() {
   LoadPlacementBlockages();
   LoadNets();
 
-  design().BlockCollection().Freeze();
+  design().ComponentCollection().Freeze();
 }
 
 void Circuit::LoadCell(phydb::PhyDB* phy_db_ptr) {

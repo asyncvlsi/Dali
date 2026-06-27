@@ -95,13 +95,13 @@ void GlobalPlacer::CloseOptimizerAndLegalizer() {
 }
 
 /****
- * @brief This function is a wrapper to report HPWL before and after block
+ * @brief This function is a wrapper to report HPWL before and after component
  * location initialization using different methods.
  *
- * @param mode: the method to initialize the block locations
+ * @param mode: the method to initialize the component locations
  * @param std_dev: the standard deviation if normal distribution is used
  */
-void GlobalPlacer::InitializeBlockLocation() {
+void GlobalPlacer::InitializeComponentLocation() {
   std::unique_ptr<RandomInitializer> initializer(nullptr);
   switch (initializer_type_) {
     case RandomInitializerType::UNIFORM: {
@@ -131,7 +131,7 @@ void GlobalPlacer::InitializeBlockLocation() {
 
 void GlobalPlacer::PreparePlacement() {
   SanityCheck();
-  InitializeBlockLocation();
+  InitializeComponentLocation();
   InitializeOptimizerAndLegalizer();
 }
 
@@ -146,7 +146,7 @@ void GlobalPlacer::RunPlacementIterations() {
 }
 
 void GlobalPlacer::FinalizePlacement() {
-  UpdateMovableBlkPlacementStatus();
+  UpdateMovableComponentPlacementStatus();
   RecordPlacementMetric("global_placement", WeightedHPWL());
 }
 
@@ -156,7 +156,7 @@ void GlobalPlacer::FinalizePlacement() {
  * successfully performed.
  */
 bool GlobalPlacer::StartPlacement() {
-  if (IsBlockListOrNetListEmpty()) return true;
+  if (IsComponentListOrNetListEmpty()) return true;
   PrintStartStatement("global placement");
 
   PreparePlacement();
@@ -169,14 +169,15 @@ bool GlobalPlacer::StartPlacement() {
 }
 
 /****
- * @brief Check if block_list is empty or net_list is empty. If either of them
- * is empty, return true, so that the global placement can be skipped.
- * @return a boolean value indicate whether block_list or net_list is empty or
- * not.
+ * @brief Check if component_list is empty or net_list is empty. If either of
+ * them is empty, return true, so that the global placement can be skipped.
+ * @return a boolean value indicate whether component_list or net_list is empty
+ * or not.
  */
-bool GlobalPlacer::IsBlockListOrNetListEmpty() const {
-  if (ckt_ptr_->Blocks().empty()) {
-    LOG(info) << "Empty block list, nothing to place! Skip global placement!\n";
+bool GlobalPlacer::IsComponentListOrNetListEmpty() const {
+  if (ckt_ptr_->Components().empty()) {
+    LOG(info)
+        << "Empty component list, nothing to place! Skip global placement!\n";
     return true;
   }
   if (ckt_ptr_->Nets().empty()) {

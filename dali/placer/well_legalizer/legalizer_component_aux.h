@@ -23,38 +23,39 @@
 
 #include <cfloat>
 
-#include "dali/circuit/block.h"
+#include "dali/circuit/component.h"
 #include "dali/common/misc.h"
 
 namespace dali {
 
-/** Auxiliary legalization locations cached on each block. */
-class LegalizerBlockAux : public BlockAux {
+/** Auxiliary legalization locations cached on each component. */
+class LegalizerComponentAux : public ComponentAux {
  public:
-  explicit LegalizerBlockAux(Block* blk_ptr);
+  explicit LegalizerComponentAux(Component* component_ptr);
 
-  /** Cache the block's current location as its initial location. */
+  /** Cache the component's current location as its initial location. */
   void StoreCurLocAsInitLoc();
 
-  /** Cache the block's current location as its greedy legalization location. */
+  /** Cache the component's current location as its greedy legalization
+   * location. */
   void StoreCurLocAsGreedyLoc();
 
-  /** Cache the block's current location as its QP legalization location. */
+  /** Cache the component's current location as its QP legalization location. */
   void StoreCurLocAsQPLoc();
 
-  /** Cache the block's current location as its consensus location. */
+  /** Cache the component's current location as its consensus location. */
   void StoreCurLocAsConsLoc();
 
-  /** Restore the block to its initial location. */
+  /** Restore the component to its initial location. */
   void RecoverInitLoc();
 
-  /** Restore the block to its greedy legalization location. */
+  /** Restore the component to its greedy legalization location. */
   void RecoverGreedyLoc();
 
-  /** Restore the block to its QP legalization location. */
+  /** Restore the component to its QP legalization location. */
   void RecoverQPLoc();
 
-  /** Restore the block to its consensus location. */
+  /** Restore the component to its consensus location. */
   void RecoverConsLoc();
 
   void RecoverInitLocX();

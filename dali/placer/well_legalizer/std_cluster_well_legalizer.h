@@ -24,10 +24,10 @@
 #include <map>
 #include <tuple>
 
-#include "block_cluster.h"
-#include "block_segment.h"
-#include "dali/circuit/block.h"
-#include "dali/circuit/block_type.h"
+#include "component_cluster.h"
+#include "component_segment.h"
+#include "dali/circuit/component.h"
+#include "dali/circuit/macro.h"
 #include "dali/common/misc.h"
 #include "dali/placer/legalizer/extended_tetris_legalizer.h"
 #include "dali/placer/placer.h"
@@ -62,32 +62,33 @@ class StdClusterWellLegalizer : public Placer {
   /** Load N/P-well parameters from the input circuit. */
   void FetchNpWellParams();
 
-  /** Cache block locations before legalization. */
-  void SaveInitialBlockLocation();
+  /** Cache component locations before legalization. */
+  void SaveInitialComponentLocation();
 
   /** Initialize stripes, clusters, and cached parameters. */
   void InitializeWellLegalizer(int cluster_width = -1);
 
-  void CreateClusterAndAppendSingleWellBlock(Stripe& stripe, Block& blk);
-  void AppendSingleWellBlockToFrontCluster(Stripe& stripe, Block& blk);
-  void AppendBlockToColBottomUp(Stripe& stripe, Block& blk);
-  void AppendBlockToColTopDown(Stripe& stripe, Block& blk);
-  void AppendBlockToColBottomUpCompact(Stripe& stripe, Block& blk);
-  void AppendBlockToColTopDownCompact(Stripe& stripe, Block& blk);
+  void CreateClusterAndAppendSingleWellComponent(Stripe& stripe,
+                                                 Component& blk);
+  void AppendSingleWellComponentToFrontCluster(Stripe& stripe, Component& blk);
+  void AppendComponentToColBottomUp(Stripe& stripe, Component& blk);
+  void AppendComponentToColTopDown(Stripe& stripe, Component& blk);
+  void AppendComponentToColBottomUpCompact(Stripe& stripe, Component& blk);
+  void AppendComponentToColTopDownCompact(Stripe& stripe, Component& blk);
 
   bool StripeLegalizationBottomUp(Stripe& stripe);
   bool StripeLegalizationTopDown(Stripe& stripe);
   bool StripeLegalizationBottomUpCompact(Stripe& stripe);
   bool StripeLegalizationTopDownCompact(Stripe& stripe);
 
-  bool BlockClustering();
-  bool BlockClusteringLoose();
-  bool BlockClusteringCompact();
+  bool ComponentClustering();
+  bool ComponentClusteringLoose();
+  bool ComponentClusteringCompact();
 
   bool TrialClusterLegalization(Stripe& stripe);
 
   double WireLengthCost(GriddedRow* cluster, int l, int r);
-  void FindBestLocalOrder(std::vector<Block*>& res, double& cost,
+  void FindBestLocalOrder(std::vector<Component*>& res, double& cost,
                           GriddedRow* cluster, int cur, int l, int r,
                           int left_bound, int right_bound, int gap, int range);
   void LocalReorderInCluster(GriddedRow* cluster, int range = 3);
@@ -98,7 +99,7 @@ class StdClusterWellLegalizer : public Placer {
   void UpdateClusterOrient();
   void InsertWellTap();
 
-  void CreateEndCapCellTypes();
+  void CreateEndCapMacros();
   void InsertEndCapCells();
 
   void ClearCachedData();
@@ -122,7 +123,7 @@ class StdClusterWellLegalizer : public Placer {
   void EmitClusterRect(std::string const& name_of_file);
 
  private:
-  bool RunBlockClusteringStage();
+  bool RunComponentClusteringStage();
   void RunClusterOrientationStage();
   void RunLocalReorderingStage();
   void RunWellTapStage();
@@ -159,20 +160,20 @@ class StdClusterWellLegalizer : public Placer {
   DefaultSpacePartitioner space_partitioner_;
 
   /**** cached well tap cell parameters ****/
-  BlockType* well_tap_cell_ptr_ = nullptr;
+  Macro* well_tap_cell_ptr_ = nullptr;
   int tap_cell_p_height_;
   int tap_cell_n_height_;
   int space_to_well_tap_ = 1;
 
   // list of index loc pair for location sort
-  std::vector<BlockInitialLocation> index_loc_list_;
+  std::vector<ComponentInitialLocation> index_loc_list_;
   std::vector<ClusterStripe> col_list_;  // list of stripes
 
   /**** parameters for legalization ****/
   int max_iter_ = 10;
 
   /**** initial location ****/
-  std::vector<int2d> block_init_locations_;
+  std::vector<int2d> component_init_locations_;
 
   // dump result
   bool is_dump = false;

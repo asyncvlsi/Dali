@@ -26,8 +26,8 @@
 #include <cfloat>
 #include <climits>
 
-#include "dali/placer/well_legalizer/block_helper.h"
-#include "dali/placer/well_legalizer/legalizer_block_aux.h"
+#include "dali/placer/well_legalizer/component_helper.h"
+#include "dali/placer/well_legalizer/legalizer_component_aux.h"
 #include "dali/placer/well_legalizer/stripe_helper.h"
 
 namespace dali {
@@ -62,7 +62,7 @@ void Stripe::MinDisplacementAdjustment() {
   int lower_bound = ly_;
   int upper_bound = ly_ + height_;
   for (int i = 0; i < sz; ++i) {
-    // create a segment which contains only this block
+    // create a segment which contains only this component
     GriddedRow& row = gridded_rows_[i];
     double init_y = row.MinDisplacementLLY();
     if (init_y < lower_bound) {
@@ -98,58 +98,58 @@ void Stripe::MinDisplacementAdjustment() {
   }
 }
 
-void Stripe::SortBlocksBasedOnLLY() {
-  std::sort(blk_ptrs_vec_.begin(), blk_ptrs_vec_.end(),
-            [](const Block* lhs, const Block* rhs) {
+void Stripe::SortComponentsBasedOnLLY() {
+  std::sort(component_ptrs_vec_.begin(), component_ptrs_vec_.end(),
+            [](const Component* lhs, const Component* rhs) {
               return (lhs->LLY() < rhs->LLY()) ||
                      (lhs->LLY() == rhs->LLY() && lhs->LLX() < rhs->LLX());
             });
 }
 
-void Stripe::SortBlocksBasedOnURY() {
-  std::sort(blk_ptrs_vec_.begin(), blk_ptrs_vec_.end(),
-            [](const Block* lhs, const Block* rhs) {
+void Stripe::SortComponentsBasedOnURY() {
+  std::sort(component_ptrs_vec_.begin(), component_ptrs_vec_.end(),
+            [](const Component* lhs, const Component* rhs) {
               return (lhs->URY() < rhs->URY()) ||
                      (lhs->URY() == rhs->URY() && lhs->LLX() < rhs->LLX());
             });
 }
 
-void Stripe::SortBlocksBasedOnStretchedURY() {
-  std::sort(blk_ptrs_vec_.begin(), blk_ptrs_vec_.end(),
-            [](const Block* lhs, const Block* rhs) {
+void Stripe::SortComponentsBasedOnStretchedURY() {
+  std::sort(component_ptrs_vec_.begin(), component_ptrs_vec_.end(),
+            [](const Component* lhs, const Component* rhs) {
               return (lhs->URY() > rhs->URY()) ||
                      (lhs->URY() == rhs->URY() && lhs->LLX() < rhs->LLX());
             });
 }
 
-void Stripe::SortBlocksBasedOnYLocation(int criterion) {
+void Stripe::SortComponentsBasedOnYLocation(int criterion) {
   switch (criterion) {
     case 0: {
-      SortBlocksBasedOnLLY();
+      SortComponentsBasedOnLLY();
       break;
     }
     case 1: {
-      SortBlocksBasedOnURY();
+      SortComponentsBasedOnURY();
       break;
     }
     case 2: {
-      SortBlocksBasedOnStretchedURY();
+      SortComponentsBasedOnStretchedURY();
       break;
     }
     default: {
-      DaliExpects(false, "unknown block sorting criterion");
+      DaliExpects(false, "unknown component sorting criterion");
     }
   }
 }
 
 void Stripe::PrecomputeWellTapCellLocation(bool is_checker_board_mode,
                                            int tap_cell_interval_grid,
-                                           BlockType* well_tap_type_ptr) {
+                                           Macro* well_tap_macro) {
   is_checkerboard_mode_ = is_checker_board_mode;
   DaliExpects(tap_cell_interval_grid > 0,
               "Non-positive well-tap cell interval?");
-  DaliExpects(well_tap_type_ptr != nullptr, "Well-tap cell is a nullptr?");
-  well_tap_cell_width_ = well_tap_type_ptr->Width();
+  DaliExpects(well_tap_macro != nullptr, "Well-tap cell is a nullptr?");
+  well_tap_cell_width_ = well_tap_macro->Width();
   DaliExpects(width_ > well_tap_cell_width_,
               "Stripe width is smaller than well-tap cell width?");
 
@@ -248,13 +248,13 @@ void Stripe::UpdateFrontClusterUpward(int p_height, int n_height) {
 
 /****
  * Add following clusters and set orientation accordingly.
- * Add the corresponding block region into these clusters based on row
- * orientation and block orientation.
+ * Add the corresponding component region into these clusters based on row
+ * orientation and component orientation.
  *
- * @param p_blk
+ * @param component
  */
-void Stripe::SimplyAddFollowingClusters(Block* p_blk, bool is_upward) {
-  int region_count = p_blk->TypePtr()->RegionCount();
+void Stripe::SimplyAddFollowingClusters(Component* component, bool is_upward) {
+  int region_count = component->MacroPtr()->RegionCount();
   for (int i = 1; i < region_count; ++i) {
     int row_index = front_id_ + i;
     if (row_index >= static_cast<int>(gridded_rows_.size())) {
@@ -263,97 +263,98 @@ void Stripe::SimplyAddFollowingClusters(Block* p_blk, bool is_upward) {
     bool is_orient_N = !gridded_rows_[row_index - 1].IsOrientN();
     gridded_rows_[row_index].SetOrient(is_orient_N);
     int region_id = is_upward ? i : region_count - 1 - i;
-    gridded_rows_[row_index].AddBlockRegion(p_blk, region_id, true);
+    gridded_rows_[row_index].AddComponentRegion(component, region_id, true);
   }
 }
 
-bool Stripe::AddBlockToFrontCluster(Block* p_blk, bool is_upward) {
-  bool res = gridded_rows_[front_id_].AttemptToAdd(p_blk, is_upward);
+bool Stripe::AddComponentToFrontCluster(Component* component, bool is_upward) {
+  bool res = gridded_rows_[front_id_].AttemptToAdd(component, is_upward);
   if (!res) return false;
 
-  // add this block to other clusters above the front cluster
-  SimplyAddFollowingClusters(p_blk, is_upward);
+  // add this component to other clusters above the front cluster
+  SimplyAddFollowingClusters(component, is_upward);
 
   return true;
 }
 
-bool Stripe::AddBlockToFrontClusterWithDispCheck(
-    Block* p_blk, double displacement_upper_limit, bool is_upward) {
+bool Stripe::AddComponentToFrontClusterWithDispCheck(
+    Component* component, double displacement_upper_limit, bool is_upward) {
   bool res = gridded_rows_[front_id_].AttemptToAddWithDispCheck(
-      p_blk, displacement_upper_limit, is_upward);
+      component, displacement_upper_limit, is_upward);
   if (!res) return false;
 
-  // add this block to other clusters above the front cluster
-  SimplyAddFollowingClusters(p_blk, is_upward);
+  // add this component to other clusters above the front cluster
+  SimplyAddFollowingClusters(component, is_upward);
 
   return true;
 }
 
-size_t Stripe::FitBlocksToFrontSpaceUpward(size_t start_id,
-                                           int current_iteration) {
-  std::vector<Block*> legalized_blocks;
-  std::vector<Block*> skipped_blocks;
+size_t Stripe::FitComponentsToFrontSpaceUpward(size_t start_id,
+                                               int current_iteration) {
+  std::vector<Component*> legalized_components;
+  std::vector<Component*> skipped_components;
 
-  size_t blocks_sz = blk_ptrs_vec_.size();
-  for (size_t i = start_id; i < blocks_sz; ++i) {
-    Block* p_blk = blk_ptrs_vec_[i];
-    if (!gridded_rows_[front_id_].IsOverlap(p_blk, current_iteration, true)) {
+  size_t components_sz = component_ptrs_vec_.size();
+  for (size_t i = start_id; i < components_sz; ++i) {
+    Component* component = component_ptrs_vec_[i];
+    if (!gridded_rows_[front_id_].IsOverlap(component, current_iteration,
+                                            true)) {
       break;
     }
-    if (gridded_rows_[front_id_].IsOrientMatching(p_blk, 0)) {
-      if (AddBlockToFrontCluster(p_blk, true)) {
-        legalized_blocks.push_back(p_blk);
+    if (gridded_rows_[front_id_].IsOrientMatching(component, 0)) {
+      if (AddComponentToFrontCluster(component, true)) {
+        legalized_components.push_back(component);
       } else {
-        skipped_blocks.push_back(p_blk);
+        skipped_components.push_back(component);
       }
     } else {
-      skipped_blocks.push_back(p_blk);
+      skipped_components.push_back(component);
     }
   }
 
-  // put legalized blocks back to the sorted list
-  for (size_t i = 0; i < legalized_blocks.size(); ++i) {
-    blk_ptrs_vec_[i + start_id] = legalized_blocks[i];
+  // put legalized components back to the sorted list
+  for (size_t i = 0; i < legalized_components.size(); ++i) {
+    component_ptrs_vec_[i + start_id] = legalized_components[i];
   }
 
-  // put skipped blocks back to the sorted list
-  start_id = start_id + legalized_blocks.size();
-  for (size_t i = 0; i < skipped_blocks.size(); ++i) {
-    blk_ptrs_vec_[i + start_id] = skipped_blocks[i];
+  // put skipped components back to the sorted list
+  start_id = start_id + legalized_components.size();
+  for (size_t i = 0; i < skipped_components.size(); ++i) {
+    component_ptrs_vec_[i + start_id] = skipped_components[i];
   }
 
   return start_id;
 }
 
-size_t Stripe::FitBlocksToFrontSpaceUpwardWithDispCheck(
+size_t Stripe::FitComponentsToFrontSpaceUpwardWithDispCheck(
     size_t start_id, double displacement_upper_limit) {
-  std::vector<Block*> legalized_blocks;
-  std::vector<Block*> skipped_blocks;
+  std::vector<Component*> legalized_components;
+  std::vector<Component*> skipped_components;
 
-  size_t blocks_sz = blk_ptrs_vec_.size();
-  for (size_t i = start_id; i < blocks_sz; ++i) {
-    Block* p_blk = blk_ptrs_vec_[i];
-    if (gridded_rows_[front_id_].IsOrientMatching(p_blk, 0)) {
-      if (AddBlockToFrontClusterWithDispCheck(p_blk, displacement_upper_limit,
-                                              true)) {
-        legalized_blocks.push_back(p_blk);
+  size_t components_sz = component_ptrs_vec_.size();
+  for (size_t i = start_id; i < components_sz; ++i) {
+    Component* component = component_ptrs_vec_[i];
+    if (gridded_rows_[front_id_].IsOrientMatching(component, 0)) {
+      if (AddComponentToFrontClusterWithDispCheck(
+              component, displacement_upper_limit, true)) {
+        legalized_components.push_back(component);
       } else {
-        skipped_blocks.push_back(p_blk);
+        skipped_components.push_back(component);
       }
     } else {
-      skipped_blocks.push_back(p_blk);
+      skipped_components.push_back(component);
     }
   }
 
-  // put legalized blocks back to the sorted list
-  for (size_t i = 0; i < legalized_blocks.size(); ++i) {
-    blk_ptrs_vec_[i + start_id] = legalized_blocks[i];
+  // put legalized components back to the sorted list
+  for (size_t i = 0; i < legalized_components.size(); ++i) {
+    component_ptrs_vec_[i + start_id] = legalized_components[i];
   }
 
-  // put skipped blocks back to the sorted list
-  start_id = start_id + legalized_blocks.size();
-  for (size_t i = 0; i < skipped_blocks.size(); ++i) {
-    blk_ptrs_vec_[i + start_id] = skipped_blocks[i];
+  // put skipped components back to the sorted list
+  start_id = start_id + legalized_components.size();
+  for (size_t i = 0; i < skipped_components.size(); ++i) {
+    component_ptrs_vec_[i + start_id] = skipped_components[i];
   }
 
   return start_id;
@@ -378,14 +379,14 @@ void Stripe::UpdateRemainingClusters(int p_height, int n_height,
   }
 }
 
-void Stripe::UpdateBlockStretchLength() {
+void Stripe::UpdateComponentStretchLength() {
   if (!is_bottom_up_) {
     std::reverse(gridded_rows_.begin(), gridded_rows_.end());
     is_bottom_up_ = true;
   }
 
   for (auto& row : gridded_rows_) {
-    row.InitializeBlockStretching();
+    row.InitializeComponentStretching();
   }
 
   int sz = static_cast<int>(gridded_rows_.size());
@@ -395,15 +396,15 @@ void Stripe::UpdateBlockStretchLength() {
     for (auto& blk_region : cur_cluster.blk_regions_) {
       int id = blk_region.region_id;
       if (id >= 1) {
-        Block* p_blk = blk_region.block;
+        Component* component = blk_region.component;
         --id;
         int well_edge_distance =
-            blk_region.block->TypePtr()->AdjacentRegionEdgeDistance(
-                id, p_blk->IsFlipped());
+            blk_region.component->MacroPtr()->AdjacentRegionEdgeDistance(
+                id, component->IsFlipped());
         int actual_edge_distance = (cur_cluster.LLY() + cur_cluster.PNEdge()) -
                                    (pre_cluster.LLY() + pre_cluster.PNEdge());
         int length = actual_edge_distance - well_edge_distance;
-        p_blk->SetStretchLength(id, length);
+        component->SetStretchLength(id, length);
       }
     }
   }
@@ -422,16 +423,16 @@ void Stripe::UpdateFrontClusterDownward(int p_height, int n_height) {
   bool is_orient_N;
   if (front_id_ == 0) {
     uy = URY();
-    if (blk_ptrs_vec_.empty()) {
+    if (component_ptrs_vec_.empty()) {
       is_orient_N = is_first_row_orient_N_;
     } else {
-      BlockType* block_type_ptr = blk_ptrs_vec_[0]->TypePtr();
-      bool is_blk_flipped = blk_ptrs_vec_[0]->IsFlipped();
+      Macro* macro_ptr = component_ptrs_vec_[0]->MacroPtr();
+      bool is_blk_flipped = component_ptrs_vec_[0]->IsFlipped();
       if (is_blk_flipped) {
-        is_orient_N = !block_type_ptr->IsNwellAbovePwell(0);
+        is_orient_N = !macro_ptr->IsNwellAbovePwell(0);
       } else {
-        int region_id = block_type_ptr->RegionCount() - 1;
-        is_orient_N = block_type_ptr->IsNwellAbovePwell(region_id);
+        int region_id = macro_ptr->RegionCount() - 1;
+        is_orient_N = macro_ptr->IsNwellAbovePwell(region_id);
       }
     }
   } else {
@@ -448,38 +449,39 @@ void Stripe::UpdateFrontClusterDownward(int p_height, int n_height) {
   }
 }
 
-size_t Stripe::FitBlocksToFrontSpaceDownward(size_t start_id,
-                                             int current_iteration) {
-  std::vector<Block*> legalized_blocks;
-  std::vector<Block*> skipped_blocks;
+size_t Stripe::FitComponentsToFrontSpaceDownward(size_t start_id,
+                                                 int current_iteration) {
+  std::vector<Component*> legalized_components;
+  std::vector<Component*> skipped_components;
 
-  size_t blocks_sz = blk_ptrs_vec_.size();
-  for (size_t i = start_id; i < blocks_sz; ++i) {
-    Block* p_blk = blk_ptrs_vec_[i];
-    if (!gridded_rows_[front_id_].IsOverlap(p_blk, current_iteration, false)) {
+  size_t components_sz = component_ptrs_vec_.size();
+  for (size_t i = start_id; i < components_sz; ++i) {
+    Component* component = component_ptrs_vec_[i];
+    if (!gridded_rows_[front_id_].IsOverlap(component, current_iteration,
+                                            false)) {
       break;
     }
-    int region_id = p_blk->TypePtr()->RegionCount() - 1;
-    if (gridded_rows_[front_id_].IsOrientMatching(p_blk, region_id)) {
-      if (AddBlockToFrontCluster(p_blk, false)) {
-        legalized_blocks.push_back(p_blk);
+    int region_id = component->MacroPtr()->RegionCount() - 1;
+    if (gridded_rows_[front_id_].IsOrientMatching(component, region_id)) {
+      if (AddComponentToFrontCluster(component, false)) {
+        legalized_components.push_back(component);
       } else {
-        skipped_blocks.push_back(p_blk);
+        skipped_components.push_back(component);
       }
     } else {
-      skipped_blocks.push_back(p_blk);
+      skipped_components.push_back(component);
     }
   }
 
-  // put legalized blocks back to the sorted list
-  for (size_t i = 0; i < legalized_blocks.size(); ++i) {
-    blk_ptrs_vec_[i + start_id] = legalized_blocks[i];
+  // put legalized components back to the sorted list
+  for (size_t i = 0; i < legalized_components.size(); ++i) {
+    component_ptrs_vec_[i + start_id] = legalized_components[i];
   }
 
-  // put skipped blocks back to the sorted list
-  start_id = start_id + legalized_blocks.size();
-  for (size_t i = 0; i < skipped_blocks.size(); ++i) {
-    blk_ptrs_vec_[i + start_id] = skipped_blocks[i];
+  // put skipped components back to the sorted list
+  start_id = start_id + legalized_components.size();
+  for (size_t i = 0; i < skipped_components.size(); ++i) {
+    component_ptrs_vec_[i + start_id] = skipped_components[i];
   }
 
   return start_id;
@@ -488,7 +490,7 @@ size_t Stripe::FitBlocksToFrontSpaceDownward(size_t start_id,
 /****
  * @brief Update the Y location of all cells
  */
-void Stripe::UpdateBlockYLocation() {
+void Stripe::UpdateComponentYLocation() {
   for (GriddedRow& row : gridded_rows_) {
     row.LegalizeSegmentsY();
   }
@@ -523,21 +525,21 @@ void Stripe::CleanUpTemporaryRowSegments() {
     } else {
       row.UpdateSegments(well_tap_cell_location_even_, false);
     }
-    // assign blocks back to row segments
-    row.AssignBlocksToSegments();
+    // assign components back to row segments
+    row.AssignComponentsToSegments();
   }
 }
 
-size_t Stripe::AddWellTapCells(Circuit* p_ckt, BlockType* well_tap_type_ptr,
+size_t Stripe::AddWellTapCells(Circuit* p_ckt, Macro* well_tap_macro,
                                size_t start_id) {
   size_t row_cnt = gridded_rows_.size();
   for (size_t i = 0; i < row_cnt; ++i) {
     if (i & 1) {
       start_id = gridded_rows_[i].AddWellTapCells(
-          p_ckt, well_tap_type_ptr, start_id, well_tap_cell_location_odd_);
+          p_ckt, well_tap_macro, start_id, well_tap_cell_location_odd_);
     } else {
       start_id = gridded_rows_[i].AddWellTapCells(
-          p_ckt, well_tap_type_ptr, start_id, well_tap_cell_location_even_);
+          p_ckt, well_tap_macro, start_id, well_tap_cell_location_even_);
     }
   }
   return start_id;
@@ -545,14 +547,14 @@ size_t Stripe::AddWellTapCells(Circuit* p_ckt, BlockType* well_tap_type_ptr,
 
 bool Stripe::IsLeftmostPlacementLegal() {
   std::sort(
-      blk_ptrs_vec_.begin(), blk_ptrs_vec_.end(),
-      [](const Block* blk0, const Block* blk1) {
+      component_ptrs_vec_.begin(), component_ptrs_vec_.end(),
+      [](const Component* blk0, const Component* blk1) {
         return (blk0->LLX() < blk1->LLX()) ||
                ((blk0->LLX() == blk1->LLX()) && (blk0->Id() < blk1->Id()));
       });
 
   DaliExpects(false, "To be implemented");
-  // for (Block *&blk : blk_ptrs_vec_) {
+  // for (Component *&blk : component_ptrs_vec_) {
   // }
 
   return true;
@@ -578,12 +580,14 @@ void Stripe::CollectAllRowSegments() {
   }
 }
 
-void Stripe::UpdateSubCellLocs(std::vector<BlockDisplacementVariable>& vars) {
-  for (BlockDisplacementVariable& var : vars) {
-    Block* blk_ptr = var.block_region.block;
-    if (blk_ptr == nullptr) continue;  // skip dummy cells
-    auto* aux_ptr = static_cast<LegalizerBlockAux*>(blk_ptr->AuxPtr());
-    aux_ptr->SetSubCellLoc(var.block_region.region_id, var.Solution(),
+void Stripe::UpdateSubCellLocs(
+    std::vector<ComponentDisplacementVariable>& vars) {
+  for (ComponentDisplacementVariable& var : vars) {
+    Component* component_ptr = var.component_region.component;
+    if (component_ptr == nullptr) continue;  // skip dummy cells
+    auto* aux_ptr =
+        static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
+    aux_ptr->SetSubCellLoc(var.component_region.region_id, var.Solution(),
                            var.SegmentWeight());
   }
 }
@@ -595,10 +599,10 @@ void Stripe::OptimizeDisplacementInEachRowSegment(double lambda,
 #pragma omp parallel for
   for (size_t i = 0; i < sz; ++i) {
     RowSegment* seg = row_seg_ptrs_[i];
-    std::vector<BlockDisplacementVariable> vars =
+    std::vector<ComponentDisplacementVariable> vars =
         seg->OptimizeQuadraticDisplacement(lambda, is_weighted_anchor,
                                            is_reorder);
-    // std::vector<BlockDisplacementVariable> vars =
+    // std::vector<ComponentDisplacementVariable> vars =
     //     seg->OptimizeLinearDisplacement(lambda, is_weighted_anchor,
     //     is_reorder);
     UpdateSubCellLocs(vars);
@@ -606,13 +610,13 @@ void Stripe::OptimizeDisplacementInEachRowSegment(double lambda,
 }
 
 void Stripe::ComputeAverageLoc() {
-  size_t sz = blk_ptrs_vec_.size();
+  size_t sz = component_ptrs_vec_.size();
 #pragma omp parallel for
   for (size_t i = 0; i < sz; ++i) {
-    Block* blk_ptr = blk_ptrs_vec_[i];
-    auto aux_ptr = static_cast<LegalizerBlockAux*>(blk_ptr->AuxPtr());
+    Component* component_ptr = component_ptrs_vec_[i];
+    auto aux_ptr = static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
     aux_ptr->ComputeAverageLoc();
-    blk_ptr->SetLLX(aux_ptr->AverageLoc());
+    component_ptr->SetLLX(aux_ptr->AverageLoc());
   }
 }
 
@@ -620,9 +624,9 @@ void Stripe::ReportIterativeStatus(int i) {
   double disp_x = 0;
   double discrepancy = 0;
   max_discrepancy_ = 0;
-  for (auto& blk_ptr : blk_ptrs_vec_) {
+  for (auto& component_ptr : component_ptrs_vec_) {
     // compute displacement from init_x to average_x
-    auto aux_ptr = static_cast<LegalizerBlockAux*>(blk_ptr->AuxPtr());
+    auto aux_ptr = static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
     double2d init_loc = aux_ptr->InitLoc();
     double tmp_disp_x = std::fabs(aux_ptr->AverageLoc() - init_loc.x);
     disp_x += tmp_disp_x;
@@ -654,13 +658,13 @@ bool Stripe::IsDiscrepancyConverged() {
   return last_difference / discrepancies_[0] < threshold;
 }
 
-void Stripe::SetBlockLoc() {
-  size_t sz = blk_ptrs_vec_.size();
+void Stripe::SetComponentLoc() {
+  size_t sz = component_ptrs_vec_.size();
 #pragma omp parallel for
   for (size_t i = 0; i < sz; ++i) {
-    Block* blk_ptr = blk_ptrs_vec_[i];
-    auto aux_ptr = static_cast<LegalizerBlockAux*>(blk_ptr->AuxPtr());
-    blk_ptr->SetLLX(std::round(aux_ptr->AverageLoc()));
+    Component* component_ptr = component_ptrs_vec_[i];
+    auto aux_ptr = static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
+    component_ptr->SetLLX(std::round(aux_ptr->AverageLoc()));
   }
 }
 
@@ -683,16 +687,16 @@ void Stripe::IterativeCellReordering(int max_iter, int number_of_threads) {
     }
     if (max_discrepancy_ < 0.1) break;
   }
-  SetBlockLoc();
+  SetComponentLoc();
   omp_set_num_threads(1);
   ClearMultiRowCellBreaking();
   LOG(info) << "displacement: " << displacements_ << "\n";
   LOG(info) << "discrepancy : " << discrepancies_ << "\n";
 }
 
-void Stripe::SortBlocksInEachRow() {
+void Stripe::SortComponentsInEachRow() {
   for (auto& row : gridded_rows_) {
-    row.SortBlockRegions();
+    row.SortComponentRegions();
   }
 }
 
@@ -710,13 +714,14 @@ void Stripe::PopulateVariableArray(IloModel& model, IloNumVarArray& x) {
   IloInt cnt = 0;
   for (auto& row : gridded_rows_) {
     for (auto& blk_region : row.blk_regions_) {
-      Block* blk_ptr = blk_region.block;
-      if (blk_ptr_2_tmp_id.find(blk_ptr) == blk_ptr_2_tmp_id.end()) {
+      Component* component_ptr = blk_region.component;
+      if (component_ptr_2_tmp_id.find(component_ptr) ==
+          component_ptr_2_tmp_id.end()) {
         // x.add(IloNumVar(env, lx_, lx_ + width_));
         // x.add(IloNumVar(env, lx_, IloInfinity));
         x.add(IloNumVar(env, -IloInfinity, IloInfinity));
-        blk_ptr_2_tmp_id[blk_ptr] = cnt;
-        blk_tmp_id_2_ptr[cnt] = blk_ptr;
+        component_ptr_2_tmp_id[component_ptr] = cnt;
+        blk_tmp_id_2_ptr[cnt] = component_ptr;
         ++cnt;
       }
     }
@@ -729,11 +734,11 @@ void Stripe::AddVariableConstraints(IloModel& model, IloNumVarArray& x,
     size_t blk_cnt = row.blk_regions_.size();
     for (size_t i = 0; i < blk_cnt; ++i) {
       if (i > 0) {
-        Block* blk_ptr0 = row.blk_regions_[i - 1].block;
-        IloInt id0 = blk_ptr_2_tmp_id[blk_ptr0];
-        int width = blk_ptr0->Width();
-        Block* blk_ptr1 = row.blk_regions_[i].block;
-        IloInt id1 = blk_ptr_2_tmp_id[blk_ptr1];
+        Component* component_ptr0 = row.blk_regions_[i - 1].component;
+        IloInt id0 = component_ptr_2_tmp_id[component_ptr0];
+        int width = component_ptr0->Width();
+        Component* component_ptr1 = row.blk_regions_[i].component;
+        IloInt id1 = component_ptr_2_tmp_id[component_ptr1];
         c.add(x[id1] - x[id0] >= width);
       }
     }
@@ -747,10 +752,11 @@ void Stripe::ConstructQuadraticObjective(IloModel& model, IloNumVarArray& x) {
   IloExpr objExpr(env);
   for (auto& row : gridded_rows_) {
     for (auto& blk_region : row.blk_regions_) {
-      Block* blk_ptr = blk_region.block;
-      auto aux_ptr = static_cast<LegalizerBlockAux*>(blk_ptr->AuxPtr());
+      Component* component_ptr = blk_region.component;
+      auto aux_ptr =
+          static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
       double2d init = aux_ptr->InitLoc();
-      IloInt id = blk_ptr_2_tmp_id[blk_ptr];
+      IloInt id = component_ptr_2_tmp_id[component_ptr];
       objExpr += 1.0 * x[id] * x[id] - 2 * init.x * x[id];
     }
   }
@@ -782,8 +788,8 @@ bool Stripe::SolveQPProblem(IloCplex& cplex, IloNumVarArray& var) {
     IloInt nvars = var.getSize();
     for (IloInt j = 0; j < nvars; ++j) {
       // env.out() << "Variable " << j << ": Value = " << val[j] << endl;
-      Block* blk_ptr = blk_tmp_id_2_ptr[j];
-      blk_ptr->SetLLX(val[j]);
+      Component* component_ptr = blk_tmp_id_2_ptr[j];
+      component_ptr->SetLLX(val[j]);
     }
     val.end();
   } else {
@@ -797,7 +803,7 @@ bool Stripe::OptimizeDisplacementUsingQuadraticProgramming(
     int number_of_threads) {
   bool is_solved = true;
 
-  SortBlocksInEachRow();
+  SortComponentsInEachRow();
 
   IloEnv env;
   try {
@@ -882,14 +888,14 @@ int Stripe::LocY2RowId(double lly) {
   return static_cast<int>(std::round(height / row_height_));
 }
 
-double Stripe::EstimateCost(int row_id, Block* blk_ptr, SegI& range,
+double Stripe::EstimateCost(int row_id, Component* component_ptr, SegI& range,
                             double density) {
-  int region_cnt = blk_ptr->TypePtr()->RegionCount();
+  int region_cnt = component_ptr->MacroPtr()->RegionCount();
   std::vector<SegI> spaces;
   spaces.emplace_back(LLX(), URX());
   for (int i = 0; i < region_cnt; ++i) {
-    gridded_rows_[row_id + i].UpdateCommonSegment(spaces, blk_ptr->Width(),
-                                                  density);
+    gridded_rows_[row_id + i].UpdateCommonSegment(
+        spaces, component_ptr->Width(), density);
   }
 
   if (spaces.empty()) {
@@ -901,14 +907,14 @@ double Stripe::EstimateCost(int row_id, Block* blk_ptr, SegI& range,
   for (int i = 0; i < sz; ++i) {
     SegI& space = spaces[i];
     double tmp_cost = DBL_MAX;
-    if (space.lo <= blk_ptr->LLX() && space.hi >= blk_ptr->URX()) {
+    if (space.lo <= component_ptr->LLX() && space.hi >= component_ptr->URX()) {
       tmp_cost = 0;
     }
-    if (space.lo > blk_ptr->LLX()) {
-      tmp_cost = space.lo - blk_ptr->LLX();
+    if (space.lo > component_ptr->LLX()) {
+      tmp_cost = space.lo - component_ptr->LLX();
     }
-    if (space.hi < blk_ptr->URX()) {
-      tmp_cost = blk_ptr->URX() - space.hi;
+    if (space.hi < component_ptr->URX()) {
+      tmp_cost = component_ptr->URX() - space.hi;
     }
     if (tmp_cost < min_cost) {
       min_cost = tmp_cost;
@@ -918,30 +924,31 @@ double Stripe::EstimateCost(int row_id, Block* blk_ptr, SegI& range,
 
   range = spaces[min_id];
   // return min_cost;
-  double y_cost = std::fabs(blk_ptr->LLY() - gridded_rows_[row_id].LLY());
+  double y_cost = std::fabs(component_ptr->LLY() - gridded_rows_[row_id].LLY());
   return min_cost + y_cost;
 }
 
-void Stripe::AddBlockToRow(int row_id, Block* blk_ptr, SegI range) {
-  int region_cnt = blk_ptr->TypePtr()->RegionCount();
-  blk_ptr->SetLLY(gridded_rows_[row_id].LLY());
+void Stripe::AddComponentToRow(int row_id, Component* component_ptr,
+                               SegI range) {
+  int region_cnt = component_ptr->MacroPtr()->RegionCount();
+  component_ptr->SetLLY(gridded_rows_[row_id].LLY());
   for (int i = 0; i < region_cnt; ++i) {
-    gridded_rows_[row_id + i].AddStandardCell(blk_ptr, i, range);
+    gridded_rows_[row_id + i].AddStandardCell(component_ptr, i, range);
   }
 }
 
 void Stripe::AssignStandardCellsToRowSegments(/*double white_space_usage*/) {
   std::sort(
-      blk_ptrs_vec_.begin(), blk_ptrs_vec_.end(),
-      [](const Block* blk0, const Block* blk1) {
+      component_ptrs_vec_.begin(), component_ptrs_vec_.end(),
+      [](const Component* blk0, const Component* blk1) {
         return (blk0->LLY() < blk1->LLY()) ||
                ((blk0->LLY() == blk1->LLY()) && (blk0->Id() < blk1->Id()));
       });
   // int row_cnt = static_cast<int>(gridded_rows_.size());
-  for (auto& blk_ptr : blk_ptrs_vec_) {
-    int row_id = LocY2RowId(blk_ptr->LLY());
-    SegI range(blk_ptr->LLX(), blk_ptr->URX());
-    AddBlockToRow(row_id, blk_ptr, range);
+  for (auto& component_ptr : component_ptrs_vec_) {
+    int row_id = LocY2RowId(component_ptr->LLY());
+    SegI range(component_ptr->LLX(), component_ptr->URX());
+    AddComponentToRow(row_id, component_ptr, range);
   }
 }
 
@@ -957,10 +964,10 @@ Stripe* ClusterStripe::GetStripeMatchSeg(SegI seg, int y_loc) {
   return res;
 }
 
-Stripe* ClusterStripe::GetStripeMatchBlk(Block* blk_ptr) {
+Stripe* ClusterStripe::GetStripeMatchComponent(Component* component_ptr) {
   Stripe* res = nullptr;
-  double center_x = blk_ptr->X();
-  double center_y = blk_ptr->Y();
+  double center_x = component_ptr->X();
+  double center_y = component_ptr->Y();
   for (auto& Stripe : stripe_list_) {
     if ((Stripe.LLY() <= center_y) && (Stripe.URY() > center_y) &&
         (Stripe.LLX() <= center_x) && (Stripe.URX() > center_x)) {
@@ -971,10 +978,11 @@ Stripe* ClusterStripe::GetStripeMatchBlk(Block* blk_ptr) {
   return res;
 }
 
-Stripe* ClusterStripe::GetStripeClosestToBlk(Block* blk_ptr, double& distance) {
+Stripe* ClusterStripe::GetStripeClosestToComponent(Component* component_ptr,
+                                                   double& distance) {
   Stripe* res = nullptr;
-  double center_x = blk_ptr->X();
-  double center_y = blk_ptr->Y();
+  double center_x = component_ptr->X();
+  double center_y = component_ptr->Y();
   double min_distance = DBL_MAX;
   for (auto& Stripe : stripe_list_) {
     double tmp_distance;
@@ -1004,26 +1012,26 @@ Stripe* ClusterStripe::GetStripeClosestToBlk(Block* blk_ptr, double& distance) {
   return res;
 }
 
-void ClusterStripe::AssignBlockToSimpleStripe() {
+void ClusterStripe::AssignComponentToSimpleStripe() {
   for (auto& Stripe : stripe_list_) {
-    Stripe.block_count_ = 0;
-    Stripe.blk_ptrs_vec_.clear();
+    Stripe.component_count_ = 0;
+    Stripe.component_ptrs_vec_.clear();
   }
 
-  for (auto& blk_ptr : block_list_) {
+  for (auto& component_ptr : component_list_) {
     double tmp_dist;
-    auto Stripe = GetStripeClosestToBlk(blk_ptr, tmp_dist);
-    Stripe->block_count_++;
+    auto Stripe = GetStripeClosestToComponent(component_ptr, tmp_dist);
+    Stripe->component_count_++;
   }
 
   for (auto& Stripe : stripe_list_) {
-    Stripe.blk_ptrs_vec_.reserve(Stripe.block_count_);
+    Stripe.component_ptrs_vec_.reserve(Stripe.component_count_);
   }
 
-  for (auto& blk_ptr : block_list_) {
+  for (auto& component_ptr : component_list_) {
     double tmp_dist;
-    auto Stripe = GetStripeClosestToBlk(blk_ptr, tmp_dist);
-    Stripe->blk_ptrs_vec_.push_back(blk_ptr);
+    auto Stripe = GetStripeClosestToComponent(component_ptr, tmp_dist);
+    Stripe->component_ptrs_vec_.push_back(component_ptr);
   }
 }
 

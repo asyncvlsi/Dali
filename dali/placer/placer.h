@@ -64,8 +64,8 @@ class Placer {
   /** Return placement-region height/width ratio. */
   double AspectRatio() const;
 
-  /** Set target whitespace-to-block-area ratio. */
-  void SetSpaceBlockRatio(double ratio);
+  /** Set target whitespace-to-component-area ratio. */
+  void SetSpaceComponentRatio(double ratio);
 
   /** Verify that a placement boundary has been configured. */
   void CheckPlacementBoundary();
@@ -103,8 +103,8 @@ class Placer {
   /** Recompute aspect ratio from the current placement boundary. */
   void UpdateAspectRatio();
 
-  /** Sort block-pin lists on all nets. */
-  void NetSortBlkPin();
+  /** Sort component-pin lists on all nets. */
+  void NetSortComponentPin();
 
   /** Run the placement flow. */
   virtual bool StartPlacement();
@@ -163,8 +163,8 @@ class Placer {
   /** Run general placement precondition checks. */
   void SanityCheck();
 
-  /** Mark movable blocks as placed after placement. */
-  void UpdateMovableBlkPlacementStatus();
+  /** Mark movable components as placed after placement. */
+  void UpdateMovableComponentPlacementStatus();
 
   /** Generate a MATLAB well table from the attached circuit. */
   virtual void GenMATLABWellTable(std::string const& name_of_file,
@@ -172,9 +172,9 @@ class Placer {
     ckt_ptr_->GenMATLABWellTable(name_of_file);
   }
 
-  /** Generate a MATLAB script for placed block/net visualization. */
+  /** Generate a MATLAB script for placed component/net visualization. */
   void GenMATLABScriptPlaced(
-      std::string const& name_of_file = "block_net_list.m");
+      std::string const& name_of_file = "component_net_list.m");
 
   /** Save Bookshelf terminal and node files. */
   bool SaveNodeTerminal(std::string const& terminal_file = "terminal.txt",
@@ -186,14 +186,14 @@ class Placer {
       [[maybe_unused]] int well_emit_mode,
       [[maybe_unused]] bool enable_emitting_cluster = true);
 
-  /** Shift all blocks in x for testing. */
+  /** Shift all components in x for testing. */
   void ShiftX(double shift_x);
 
-  /** Shift all blocks in y for testing. */
+  /** Shift all components in y for testing. */
   void ShiftY(double shift_y);
 
-  /** Return true when blk is a dummy/helper block. */
-  bool IsDummyBlock(Block& blk);
+  /** Return true when blk is a dummy/helper component. */
+  bool IsDummyComponent(Component& blk);
 
  protected:
   /* essential data entries */
@@ -211,7 +211,7 @@ class Placer {
   // record start/end time
   ElapsedTime elapsed_time_;
 
-  double GetBlkHPWL(Block& blk);
+  double GetComponentHPWL(Component& blk);
 
   virtual void PrintStartStatement(std::string const& name_of_process);
   virtual void PrintEndStatement(std::string const& name_of_process,

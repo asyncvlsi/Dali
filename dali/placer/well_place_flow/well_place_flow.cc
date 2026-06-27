@@ -28,8 +28,8 @@ namespace dali {
 WellPlaceFlow::WellPlaceFlow() : GlobalPlacer() {}
 
 bool WellPlaceFlow::StartPlacement() {  // TODO: do not use this
-  if (ckt_ptr_->Blocks().empty()) {
-    LOG(info) << "Empty block list, nothing to place!\n";
+  if (ckt_ptr_->Components().empty()) {
+    LOG(info) << "Empty component list, nothing to place!\n";
   }
   if (ckt_ptr_->Nets().empty()) {
     LOG(info) << "Empty net list, nothing to optimize during placement!\n";
@@ -40,7 +40,7 @@ bool WellPlaceFlow::StartPlacement() {  // TODO: do not use this
   InitializeOptimizerAndLegalizer();
   optimizer_->Initialize();
   legalizer_->Initialize(PlacementDensity());
-  InitializeBlockLocation();
+  InitializeComponentLocation();
 
   optimizer_->OptimizeHpwl();
   // LOG(info)   << cg_total_hpwl_ << "  " << circuit_ptr_->HPWL()
@@ -89,7 +89,7 @@ bool WellPlaceFlow::StartPlacement() {  // TODO: do not use this
             << "s, lal time: " << legalizer_->GetTime() << "s)\n";
   legalizer_->Close();
   // CheckAndShift();
-  UpdateMovableBlkPlacementStatus();
+  UpdateMovableComponentPlacementStatus();
   ReportHPWL();
 
   well_legalizer_.CopyPlacementContextFrom(this);

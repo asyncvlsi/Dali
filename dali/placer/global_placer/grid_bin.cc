@@ -70,8 +70,8 @@ void GridBin::create_adjacent_bin_list(int grid_cnt_x, int grid_cnt_y) {
 }
 
 void GridBin::Report() {
-  LOG(info) << "  block count: " << cell_list.size() << "\n"
-            << "  block area:  " << cell_area << "\n"
+  LOG(info) << "  component count: " << cell_list.size() << "\n"
+            << "  component area:  " << cell_area << "\n"
             << "  filling rate: " << filling_rate << "\n"
             << "  white space: " << white_space << "\n"
             << "  over fill:   " << over_fill << "\n";

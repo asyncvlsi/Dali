@@ -21,22 +21,23 @@
 #ifndef DALI_PLACER_WELL_LEGALIZER_BLOCK_SEGMENT_H_
 #define DALI_PLACER_WELL_LEGALIZER_BLOCK_SEGMENT_H_
 
-#include "dali/circuit/block.h"
+#include "dali/circuit/component.h"
 
 namespace dali {
 
-/** Horizontal segment of one or more blocks for local legalization. */
-struct BlockSegment {
+/** Horizontal segment of one or more components for local legalization. */
+struct ComponentSegment {
  private:
   int lx_;
   int width_;
 
  public:
-  BlockSegment(Block* blk_ptr, int loc) : lx_(loc), width_(blk_ptr->Width()) {
-    blk_ptrs.push_back(blk_ptr);
+  ComponentSegment(Component* component_ptr, int loc)
+      : lx_(loc), width_(component_ptr->Width()) {
+    component_ptrs.push_back(component_ptr);
     initial_loc.push_back(loc);
   }
-  std::vector<Block*> blk_ptrs;
+  std::vector<Component*> component_ptrs;
   std::vector<double> initial_loc;
 
   /** Return lower x in Dali grid units. */
@@ -49,13 +50,13 @@ struct BlockSegment {
   int Width() const { return width_; }
 
   /** Return true when sc overlaps or touches this segment from the left. */
-  bool IsNotOnLeft(BlockSegment& sc) const { return sc.LX() < UX(); }
+  bool IsNotOnLeft(ComponentSegment& sc) const { return sc.LX() < UX(); }
 
   /** Merge another segment while respecting legal bounds. */
-  void Merge(BlockSegment& sc, int lower_bound, int upper_bound);
+  void Merge(ComponentSegment& sc, int lower_bound, int upper_bound);
 
-  /** Write segment locations back to contained blocks. */
-  void UpdateBlockLocation();
+  /** Write segment locations back to contained components. */
+  void UpdateComponentLocation();
 
   /** Log segment state for debugging. */
   void Report() const;

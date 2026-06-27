@@ -28,14 +28,14 @@
 #include <unordered_set>
 #include <vector>
 
-#include "block.h"
-#include "block_type.h"
+#include "component.h"
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
 #include "design.h"
 #include "enums.h"
 #include "io_pin.h"
 #include "layer.h"
+#include "macro.h"
 #include "net.h"
 #include "tech.h"
 
@@ -163,41 +163,40 @@ class Circuit {
   // print metal layer information
   void ReportMetalLayers();
 
-  /****API for BlockType****/
-  std::vector<BlockType>& BlockTypes();
+  /****API for Macro****/
+  std::vector<Macro>& Macros();
 
-  // check if a BlockType with a given name exists or not
-  bool IsBlockTypeExisting(std::string const& block_type_name);
+  // check if a Macro with a given name exists or not
+  bool IsMacroExisting(std::string const& macro_name);
 
-  // get the pointer to the BlockType with a given name, if not exist, return a
+  // get the pointer to the Macro with a given name, if not exist, return a
   // nullptr
-  BlockType* GetBlockTypePtr(std::string const& block_type_name);
+  Macro* GetMacroPtr(std::string const& macro_name);
 
-  // add a BlockType, width and height are in um
-  BlockType* AddBlockType(std::string const& block_type_name, double width,
-                          double height);
+  // add a Macro, width and height are in um
+  Macro* AddMacro(std::string const& macro_name, double width, double height);
 
   int GetRoundOrCeilGriddedWidth(double width,
-                                 std::string const& block_type_name) const;
+                                 std::string const& macro_name) const;
   int GetRoundOrCeilGriddedHeight(double height,
-                                  std::string const& block_type_name) const;
-  // add a BlockType for well tap cell
-  int AddWellTapBlockType(std::string const& block_type_name, double width,
-                          double height);
+                                  std::string const& macro_name) const;
+  // add a Macro for well tap cell
+  int AddWellTapMacro(std::string const& macro_name, double width,
+                      double height);
 
-  // add a BlockType for filler cell
-  BlockType* AddFillerBlockType(std::string const& block_type_name,
-                                double width, double height);
+  // add a Macro for filler cell
+  Macro* AddFillerMacro(std::string const& macro_name, double width,
+                        double height);
 
-  // add a cell pin with a given name to a BlockType
-  Pin* AddBlkTypePin(BlockType* blk_type_ptr, std::string const& pin_name,
-                     bool is_input);
+  // add a cell pin with a given name to a Macro
+  Pin* AddMacroPin(Macro* macro_ptr, std::string const& pin_name,
+                   bool is_input);
 
-  // print all BlockTypes
-  void ReportBlockType();
+  // print all Macros
+  void ReportComponentType();
 
-  // create BlockTypes by copying from another Circuit instance
-  void CopyBlockType(Circuit& circuit);
+  // create Macros by copying from another Circuit instance
+  void CopyComponentType(Circuit& circuit);
 
   /************************************************
    * The following APIs are for DEF
@@ -250,32 +249,32 @@ class Circuit {
   void ReserveSpaceForDesignImp(size_t components_count, size_t pins_count,
                                 size_t nets_count);
 
-  /**** APIs for Block (COMPONENTS in DEF) ****/
-  // get all blocks
-  std::vector<Block>& Blocks();
+  /**** APIs for Component (COMPONENTS in DEF) ****/
+  // get all components
+  std::vector<Component>& Components();
 
-  // check if a block with the given name exists or not
-  bool IsBlockExisting(std::string const& block_name);
+  // check if a component with the given name exists or not
+  bool IsComponentExisting(std::string const& component_name);
 
-  // returns the internal index of a block with a given name
-  int GetBlockId(std::string const& block_name);
+  // returns the internal index of a component with a given name
+  int GetComponentId(std::string const& component_name);
 
-  // returns a pointer to the block with a given name
-  Block* GetBlockPtr(std::string const& block_name);
+  // returns a pointer to the component with a given name
+  Component* GetComponentPtr(std::string const& component_name);
 
-  // create a block instance using the name of its type
-  void AddBlock(std::string const& block_name,
-                std::string const& block_type_name, double llx = 0,
-                double lly = 0, PlaceStatus place_status = UNPLACED,
-                BlockOrient orient = N, bool is_real_cel = true);
+  // create a component instance using the name of its type
+  void AddComponent(std::string const& component_name,
+                    std::string const& macro_name, double llx = 0,
+                    double lly = 0, PlaceStatus place_status = UNPLACED,
+                    ComponentOrient orient = N, bool is_real_cel = true);
 
   void UpdateTotalBlkArea();
 
-  // report the whole Block list for debugging purposes
-  void ReportBlockList();
+  // report the whole Component list for debugging purposes
+  void ReportComponentList();
 
-  // report the whole Block map for debugging purposes
-  void ReportBlockMap();
+  // report the whole Component map for debugging purposes
+  void ReportComponentMap();
 
   /**** API for I/O pins (PINS in DEF) ****/
   // get I/O pins
@@ -324,9 +323,10 @@ class Circuit {
   void AddIoPinToNet(std::string const& iopin_name,
                      std::string const& net_name);
 
-  // add a block pin to a net
-  void AddBlkPinToNet(std::string const& blk_name, std::string const& pin_name,
-                      std::string const& net_name);
+  // add a component pin to a net
+  void AddComponentPinToNet(std::string const& blk_name,
+                            std::string const& pin_name,
+                            std::string const& net_name);
 
   // print all nets
   void ReportNetList();
@@ -360,70 +360,70 @@ class Circuit {
   // set same_spacing (NN and PP) and any_spacing (NP)
   void SetLegalizerSpacing(double same_spacing, double any_spacing);
 
-  // set the N/P-well shape of a given BlockType, unit in micron
-  void SetWellRect(std::string const& blk_type_name, bool is_n, double lx,
+  // set the N/P-well shape of a given Macro, unit in micron
+  void SetWellRect(std::string const& macro_name, bool is_n, double lx,
                    double ly, double ux, double uy);
 
-  // create end cap cell type for gridded rows
-  int CreateEndCapCellType(std::string const& end_cap_cell_type_name, int width,
-                           int n_well_height_in_grid_unit,
-                           int p_well_height_in_grid_unit);
+  // create end-cap macro for gridded rows
+  int CreateEndCapMacro(std::string const& end_cap_macro_name, int width,
+                        int n_well_height_in_grid_unit,
+                        int p_well_height_in_grid_unit);
 
-  // report the well shape for each BlockType for debugging purposes
+  // report the well shape for each Macro for debugging purposes
   void ReportWellShape();
 
   // read cell file for multiwell gridded cells
   void ReadMultiWellCell(std::string const& name_of_file);
 
   /**** Functions to get useful values ****/
-  // returns the minimum width of blocks
-  int MinBlkWidth() const;
+  // returns the minimum width of components
+  int MinComponentWidth() const;
 
-  // returns the maximum width of blocks
-  int MaxBlkWidth() const;
+  // returns the maximum width of components
+  int MaxComponentWidth() const;
 
-  // returns the minimum height of blocks
-  int MinBlkHeight() const;
+  // returns the minimum height of components
+  int MinComponentHeight() const;
 
-  // returns the maximum height of blocks
-  int MaxBlkHeight() const;
+  // returns the maximum height of components
+  int MaxComponentHeight() const;
 
-  // returns the total block area
-  unsigned long long TotBlkArea() const;
+  // returns the total component area
+  unsigned long long TotalComponentArea() const;
 
-  // returns the total number of blocks
-  int TotBlkCnt() const;
+  // returns the total number of components
+  int TotalComponentCount() const;
 
-  // returns the total number of movable blocks
-  int TotMovBlkCnt() const;
+  // returns the total number of movable components
+  int TotalMovableComponentCnt() const;
 
-  // returns the total number of fixed blocks
-  int TotFixedBlkCnt();
+  // returns the total number of fixed components
+  int TotalFixedComponentCnt();
 
-  // returns the average width of blocks
-  double AveBlkWidth() const;
+  // returns the average width of components
+  double AverageComponentWidth() const;
 
-  // returns the average height of blocks
-  double AveBlkHeight() const;
+  // returns the average height of components
+  double AverageComponentHeight() const;
 
-  // returns the average area of blocks
-  double AveBlkArea() const;
+  // returns the average area of components
+  double AverageComponentArea() const;
 
-  // returns the average width of movable blocks
-  double AveMovBlkWidth() const;
+  // returns the average width of movable components
+  double AverageMovableComponentWidth() const;
 
-  // returns the average height of movable blocks
-  double AveMovBlkHeight() const;
+  // returns the average height of movable components
+  double AverageMovableComponentHeight() const;
 
-  // returns the average area of movable blocks
-  double AveMovBlkArea() const;
+  // returns the average area of movable components
+  double AverageMovableComponentArea() const;
 
   // returns the white space usage ratio
   double WhiteSpaceUsage() const;
 
   /**** Utility member functions ****/
-  // sort block pais in nets
-  void NetSortBlkPin();
+  // sort component pais in nets
+  void NetSortComponentPin();
 
   // returns HPWL in the x direction, considering cell pin offsets, unit in
   // micron
@@ -477,7 +477,7 @@ class Circuit {
 
   /**** Save placement results to various file formats ****/
   // save placement result as a Matlab table
-  void GenMATLABTable(std::string const& name_of_file = "block.txt",
+  void GenMATLABTable(std::string const& name_of_file = "component.txt",
                       bool only_well_tap = false);
 
   // save placement with well fillings as a Matlab tale
@@ -530,36 +530,35 @@ class Circuit {
 
   void SetPhyDB(phydb::PhyDB* phy_db_ptr);
 
-  // add a BlockType with name, with, and height. The return value is a pointer
-  // to this new BlockType for adding pins. Unit in grid value
-  BlockType* AddBlockTypeWithGridUnit(std::string const& block_type_name,
-                                      int width, int height);
+  // add a Macro with name, with, and height. The return value is a pointer
+  // to this new Macro for adding pins. Unit in grid value
+  Macro* AddMacroWithGridUnit(std::string const& macro_name, int width,
+                              int height);
 
-  // add a BlockType with name, with, and height. The return value is a pointer
-  // to this new BlockType for adding pins. Unit in grid value
-  int AddWellTapBlockTypeWithGridUnit(std::string const& block_type_name,
-                                      int width, int height);
+  // add a Macro with name, with, and height. The return value is a pointer
+  // to this new Macro for adding pins. Unit in grid value
+  int AddWellTapMacroWithGridUnit(std::string const& macro_name, int width,
+                                  int height);
 
-  BlockType* AddFillerBlockTypeWithGridUnit(std::string const& block_type_name,
-                                            int width, int height);
+  Macro* AddFillerMacroWithGridUnit(std::string const& macro_name, int width,
+                                    int height);
 
   // set the boundary of the placement region, unit is in corresponding grid
   // value
   void SetBoundary(int left, int bottom, int right, int top);
 
-  void BlockTypeSizeMicrometerToGridValue(std::string const& block_type_name,
-                                          double width, double height,
-                                          int& gridded_width,
-                                          int& gridded_height);
+  void MacroSizeMicrometerToGridValue(std::string const& macro_name,
+                                      double width, double height,
+                                      int& gridded_width, int& gridded_height);
 
-  // create a block instance using a pointer to its type
-  void AddBlock(std::string const& block_name, BlockType* block_type_ptr,
-                double llx = 0, double lly = 0,
-                PlaceStatus place_status = UNPLACED, BlockOrient orient = N,
-                bool is_real_cel = true);
+  // create a component instance using a pointer to its type
+  void AddComponent(std::string const& component_name, Macro* macro_ptr,
+                    double llx = 0, double lly = 0,
+                    PlaceStatus place_status = UNPLACED,
+                    ComponentOrient orient = N, bool is_real_cel = true);
 
-  // create a dummy BlockType for I/O pins
-  void AddDummyIOPinBlockType();
+  // create a dummy Macro for I/O pins
+  void AddDummyIOPinComponentType();
 
   // add an unplaced IOPin
   IoPin* AddUnplacedIoPin(std::string const& iopin_name);
@@ -591,7 +590,7 @@ class Circuit {
   void LoadCell(phydb::PhyDB* phy_db_ptr);
 
   // export cells/components to an output stream
-  void SaveCell(std::ofstream& ost, Block& blk) const;
+  void SaveCell(std::ofstream& ost, Component& blk) const;
   void SaveNormalCells(std::ofstream& ost,
                        std::unordered_set<PlaceStatus>* filter = nullptr);
   void SaveWellTapCells(std::ofstream& ost);

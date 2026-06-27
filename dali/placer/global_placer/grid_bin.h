@@ -25,7 +25,7 @@
 #include <set>
 #include <vector>
 
-#include "dali/circuit/block.h"
+#include "dali/circuit/component.h"
 #include "dali/circuit/placement_blockage.h"
 
 namespace dali {
@@ -114,7 +114,7 @@ class GridBin {
   bool over_fill;
   bool cluster_visited;
   bool global_placed;
-  std::vector<Block*> cell_list;
+  std::vector<Component*> cell_list;
   std::vector<const PlacementBlockage*> placement_blockages_;
   std::vector<GridBinIndex> adjacent_bin_index;
 
@@ -142,8 +142,9 @@ class GridBin {
            (unsigned long long)(right - left);
   }
 
-  /** Return true when the bin is fully occupied by fixed blocks/blockages. */
-  bool IsAllFixedBlk() const { return all_terminal; }
+  /** Return true when the bin is fully occupied by fixed components/blockages.
+   */
+  bool IsAllFixedComponent() const { return all_terminal; }
 
   /** Return true when the bin exceeds target utilization or has terminals. */
   bool OverFill() const { return over_fill; }

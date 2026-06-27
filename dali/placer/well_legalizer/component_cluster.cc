@@ -18,47 +18,48 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#include "block_cluster.h"
+#include "component_cluster.h"
 
 namespace dali {
 
-BlockCluster::BlockCluster() = default;
+ComponentCluster::ComponentCluster() = default;
 
-BlockCluster::BlockCluster(int well_extension_x_init, int well_extension_y_init,
-                           int plug_width_init)
+ComponentCluster::ComponentCluster(int well_extension_x_init,
+                                   int well_extension_y_init,
+                                   int plug_width_init)
     : well_extension_x_(well_extension_x_init),
       well_extension_y_(well_extension_y_init),
       plug_width_(plug_width_init) {}
 
-void BlockCluster::AppendBlock(Block& block) {
-  if (blk_ptr_list_.empty()) {
-    lx_ = int(block.LLX()) - well_extension_x_;
+void ComponentCluster::AppendComponent(Component& component) {
+  if (component_ptr_list_.empty()) {
+    lx_ = int(component.LLX()) - well_extension_x_;
     modified_lx_ = lx_ - well_extension_x_ - plug_width_;
-    ly_ = int(block.LLY()) - well_extension_y_;
-    width_ = block.Width() + well_extension_x_ * 2 + plug_width_;
-    height_ = block.Height() + well_extension_y_ * 2;
+    ly_ = int(component.LLY()) - well_extension_y_;
+    width_ = component.Width() + well_extension_x_ * 2 + plug_width_;
+    height_ = component.Height() + well_extension_y_ * 2;
   } else {
-    width_ += block.Width();
-    if (block.Height() > height_) {
-      ly_ -= (block.Height() - height_ + 1) / 2;
-      height_ = block.Height() + well_extension_y_ * 2;
+    width_ += component.Width();
+    if (component.Height() > height_) {
+      ly_ -= (component.Height() - height_ + 1) / 2;
+      height_ = component.Height() + well_extension_y_ * 2;
     }
   }
-  blk_ptr_list_.push_back(&block);
+  component_ptr_list_.push_back(&component);
 }
 
-void BlockCluster::OptimizeHeight() {
+void ComponentCluster::OptimizeHeight() {
   /****
    * This function aligns all N/P well boundaries of cells inside a cluster
    * ****/
 }
 
-void BlockCluster::UpdateBlockLocation() {
+void ComponentCluster::UpdateComponentLocation() {
   int current_loc = lx_;
-  for (auto& blk_ptr : blk_ptr_list_) {
-    blk_ptr->SetLLX(current_loc);
-    blk_ptr->SetCenterY(this->CenterY());
-    current_loc += blk_ptr->Width();
+  for (auto& component_ptr : component_ptr_list_) {
+    component_ptr->SetLLX(current_loc);
+    component_ptr->SetCenterY(this->CenterY());
+    current_loc += component_ptr->Width();
   }
 }
 

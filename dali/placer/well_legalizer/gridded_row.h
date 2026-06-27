@@ -24,9 +24,9 @@
 #include <cfloat>
 #include <unordered_map>
 
-#include "dali/circuit/block.h"
 #include "dali/circuit/circuit.h"
-#include "dali/placer/well_legalizer/block_segment.h"
+#include "dali/circuit/component.h"
+#include "dali/placer/well_legalizer/component_segment.h"
 #include "dali/placer/well_legalizer/row_segment.h"
 
 namespace dali {
@@ -98,20 +98,20 @@ class GriddedRow {
 
   void SetLoc(int lx, int ly);
 
-  void AddBlock(Block* blk_ptr);
-  std::vector<Block*>& Blocks();
-  std::unordered_map<Block*, double2d>& InitLocations();
-  void ShiftBlockX(int x_disp);
-  void ShiftBlockY(int y_disp);
-  void ShiftBlock(int x_disp, int y_disp);
-  void UpdateBlockLocY();
+  void AddComponent(Component* component_ptr);
+  std::vector<Component*>& Components();
+  std::unordered_map<Component*, double2d>& InitLocations();
+  void ShiftComponentX(int x_disp);
+  void ShiftComponentY(int y_disp);
+  void ShiftComponent(int x_disp, int y_disp);
+  void UpdateComponentLocY();
   void LegalizeCompactX(int left);
   void LegalizeCompactX();
   void LegalizeLooseX(int space_to_well_tap = 0);
   void SetOrient(bool is_orient_N);
-  void InsertWellTapCell(Block& tap_cell, int loc);
+  void InsertWellTapCell(Component& tap_cell, int loc);
 
-  void UpdateBlockLocationCompact();
+  void UpdateComponentLocationCompact();
 
   void MinDisplacementLegalization();
   void UpdateMinDisplacementLLY();
@@ -119,31 +119,34 @@ class GriddedRow {
 
   std::vector<RowSegment>& Segments();
   void UpdateSegments(std::vector<SegI>& blockage,
-                      bool is_existing_blocks_considered);
-  void AssignBlocksToSegments();
-  bool IsBelowMiddleLine(Block* p_blk) const;
-  bool IsBelowTopPlusKFirstRegionHeight(Block* p_blk, int iteration) const;
-  bool IsAboveMiddleLine(Block* p_blk) const;
-  bool IsAboveBottomMinusKFirstRegionHeight(Block* p_blk, int iteration) const;
-  bool IsOverlap(Block* p_blk, int iteration, bool is_upward) const;
+                      bool is_existing_components_considered);
+  void AssignComponentsToSegments();
+  bool IsBelowMiddleLine(Component* component) const;
+  bool IsBelowTopPlusKFirstRegionHeight(Component* component,
+                                        int iteration) const;
+  bool IsAboveMiddleLine(Component* component) const;
+  bool IsAboveBottomMinusKFirstRegionHeight(Component* component,
+                                            int iteration) const;
+  bool IsOverlap(Component* component, int iteration, bool is_upward) const;
 
-  bool IsOrientMatching(Block* p_blk, int region_id) const;
-  void AddBlockRegion(Block* p_blk, int region_id, bool is_upward);
-  std::vector<BlockRegion>& BlkRegions();
-  bool AttemptToAdd(Block* p_blk, bool is_upward = true);
-  bool AttemptToAddWithDispCheck(Block* p_blk, double displacement_upper_limit,
+  bool IsOrientMatching(Component* component, int region_id) const;
+  void AddComponentRegion(Component* component, int region_id, bool is_upward);
+  std::vector<ComponentRegion>& ComponentRegions();
+  bool AttemptToAdd(Component* component, bool is_upward = true);
+  bool AttemptToAddWithDispCheck(Component* component,
+                                 double displacement_upper_limit,
                                  bool is_upward);
-  BlockOrient ComputeBlockOrient(Block* p_blk, bool is_upward) const;
+  ComponentOrient ComputeComponentOrient(Component* component,
+                                         bool is_upward) const;
   void LegalizeSegmentsX(bool use_init_loc);
   void LegalizeSegmentsY();
   void RecomputeHeight(int p_well_height, int n_well_height);
-  void InitializeBlockStretching();
+  void InitializeComponentStretching();
 
-  size_t AddWellTapCells(Circuit* p_ckt, BlockType* well_tap_type_ptr,
-                         size_t start_id,
+  size_t AddWellTapCells(Circuit* p_ckt, Macro* well_tap_macro, size_t start_id,
                          std::vector<SegI>& well_tap_cell_locs);
 
-  void SortBlockRegions();
+  void SortComponentRegions();
 
   bool IsRowLegal();
 
@@ -153,18 +156,18 @@ class GriddedRow {
 
   void UpdateCommonSegment(std::vector<SegI>& avail_spaces, int width,
                            double density);
-  void AddStandardCell(Block* p_blk, int region_id, SegI range);
+  void AddStandardCell(Component* component, int region_id, SegI range);
 
   size_t OutOfBoundCell();
 
  private:
-  bool is_orient_N_ = true;       // orientation of this cluster
-  std::vector<Block*> blk_list_;  // list of blocks in this cluster
-  std::unordered_map<Block*, double2d> blk_initial_location_;
+  bool is_orient_N_ = true;           // orientation of this cluster
+  std::vector<Component*> blk_list_;  // list of components in this cluster
+  std::unordered_map<Component*, double2d> blk_initial_location_;
 
   /**** number of tap cells needed, and pointers to tap cells ****/
   int tap_cell_num_ = 0;
-  Block* tap_cell_ = nullptr;
+  Component* tap_cell_ = nullptr;
 
   /**** x/y coordinates and dimension ****/
   int lx_ = 0;
@@ -184,7 +187,7 @@ class GriddedRow {
   double min_displacement_lly_ = -DBL_MAX;
 
   /**** for multi-well legalization ****/
-  std::vector<BlockRegion> blk_regions_;
+  std::vector<ComponentRegion> blk_regions_;
   std::vector<RowSegment> segments_;
 };
 

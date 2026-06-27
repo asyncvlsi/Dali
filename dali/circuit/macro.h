@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_CIRCUIT_BLOCKTYPE_H_
-#define DALI_CIRCUIT_BLOCKTYPE_H_
+#ifndef DALI_CIRCUIT_MACRO_H_
+#define DALI_CIRCUIT_MACRO_H_
 
 #include <optional>
 #include <unordered_map>
@@ -31,23 +31,25 @@
 
 namespace dali {
 
-class BlockTypeWell;
+class MacroWell;
 
 /**
- * Physical master cell/macro used by block instances.
+ * Physical cell master used by component instances.
  *
- * A block type stores placement dimensions, pins, and optional N/P-well
- * rectangles for gridded-cell legalization. Well regions are expected to be
- * paired and abutted so downstream legalizers can infer stretch boundaries.
+ * Dali uses the LEF/PhyDB word "macro" for the reusable cell definition, even
+ * when the cell is a standard cell. A Macro stores placement dimensions, pins,
+ * and optional N/P-well rectangles for gridded-cell legalization. Well regions
+ * are expected to be paired and abutted so downstream legalizers can infer
+ * stretch boundaries.
  */
-class BlockType {
+class Macro {
  public:
-  explicit BlockType(std::string const* name_ptr);
+  explicit Macro(std::string const* name_ptr);
 
-  /** Return the block type name. */
+  /** Return the macro/master name. */
   [[nodiscard]] const std::string& Name() const { return *name_ptr_; }
 
-  /** Return true if this type has a pin named pin_name. */
+  /** Return true if this macro has a pin named pin_name. */
   [[nodiscard]] bool IsPinExisting(std::string const& pin_name) const {
     return pin_name_id_map_.find(pin_name) != pin_name_id_map_.end();
   }
@@ -82,10 +84,10 @@ class BlockType {
   /** Return area in grid-unit squared. */
   long long Area() const { return area_; }
 
-  /** Return pins for this block type. */
+  /** Return pins for this macro. */
   std::vector<Pin>& PinList() { return pin_list_; }
 
-  /** Log block-type information for debugging. */
+  /** Log macro information for debugging. */
   void Report() const;
 
   /** Recompute cached area from width and height. */
@@ -158,4 +160,4 @@ class BlockType {
 
 }  // namespace dali
 
-#endif  // DALI_CIRCUIT_BLOCKTYPE_H_
+#endif  // DALI_CIRCUIT_MACRO_H_

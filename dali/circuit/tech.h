@@ -29,10 +29,10 @@
 #include <unordered_map>
 #include <vector>
 
-#include "block.h"
-#include "block_type.h"
+#include "component.h"
 #include "dali/common/named_instance_registry.h"
 #include "layer.h"
+#include "macro.h"
 
 namespace dali {
 
@@ -46,14 +46,14 @@ class Tech {
   /** Return manufacturing grid in microns. */
   double GetManufacturingGrid() const;
 
-  /** Return ids of block types marked as well tap cells. */
+  /** Return ids of macros marked as well tap cells. */
   std::vector<int>& WellTapCellIds();
 
-  /** Return generated filler-cell block types. */
-  std::vector<std::unique_ptr<BlockType>>& FillerCellPtrs();
+  /** Return generated filler-cell macros. */
+  std::vector<std::unique_ptr<Macro>>& FillerCellPtrs();
 
-  /** Return the synthetic block type used to model I/O pins. */
-  BlockType* IoDummyBlkTypePtr();
+  /** Return the synthetic macro used to model I/O pins. */
+  Macro* IoDummyMacroPtr();
 
   /** Return N-well layer parameters. */
   WellLayer& NwellLayer();
@@ -73,17 +73,15 @@ class Tech {
   /** Return true when a macro's ground pin is below its power pin. */
   static bool IsGndAtBottom(phydb::Macro* macro);
 
-  /** Return all loaded standard block types. */
-  std::vector<BlockType>& BlockTypes();
+  /** Return all loaded standard-cell macros. */
+  std::vector<Macro>& Macros();
 
-  /** Return the named collection for standard block types. */
-  NamedInstanceRegistry<BlockType>& BlockTypeCollection() {
-    return block_type_collection_;
-  }
+  /** Return the named collection for standard-cell macros. */
+  NamedInstanceRegistry<Macro>& MacroCollection() { return macro_collection_; }
 
   /** Return the named collection for generated end-cap cell types. */
-  NamedInstanceRegistry<BlockType>& EndCapCellTypeCollection() {
-    return end_cap_cell_type_collection_;
+  NamedInstanceRegistry<Macro>& EndCapCellMacroCollection() {
+    return end_cap_cell_macro_collection_;
   }
 
   /** Synthesize simple well rectangles for standard cells when CELL lacks them.
@@ -116,14 +114,14 @@ class Tech {
   std::unordered_map<std::string, int> metal_name_map_;
 
   /**** macros ****/
-  NamedInstanceRegistry<BlockType> block_type_collection_;
-  BlockType* io_dummy_blk_type_ptr_ = nullptr;
-  std::vector<int> well_tap_cell_type_ids_;
-  std::vector<std::unique_ptr<BlockType>> filler_ptrs_;
+  NamedInstanceRegistry<Macro> macro_collection_;
+  Macro* io_dummy_macro_ptr_ = nullptr;
+  std::vector<int> well_tap_macro_ids_;
+  std::vector<std::unique_ptr<Macro>> filler_ptrs_;
   // pre and post end cap cell types are for standard cell placement
-  BlockType* pre_end_cap_cell_ptr_ = nullptr;
-  BlockType* post_end_cap_cell_ptr_ = nullptr;
-  NamedInstanceRegistry<BlockType> end_cap_cell_type_collection_;
+  Macro* pre_end_cap_cell_ptr_ = nullptr;
+  Macro* post_end_cap_cell_ptr_ = nullptr;
+  NamedInstanceRegistry<Macro> end_cap_cell_macro_collection_;
 
   /**** row height ****/
   double row_height_ = 0;

@@ -19,13 +19,13 @@
  *
  ******************************************************************************/
 
-/**** the following is an example to add a BlockType with one cell pin to a
- *Circuit std::string blk_type_name = "nand2"; // block type with name nand2 int
- *width = 4; // width 4 int height = 8; // height 8 BlockType *blk_type_ptr =
- *circuit.AddBlockType(blk_type_name, width, height); // add this BlockType to
- *circuit std::string pin_name = "in"; // block pin with name "in" Pin *pin_ptr
- *= circuit.AddBlkTypePin(blk_type_ptr, pin_name); // add this Pin to this
- *BlockType circuit.AddBlkTypePinRect(pin_ptr, 0, 1.9, 0.2, 2.1); // add the
+/**** the following is an example to add a Macro with one cell pin to a
+ *Circuit std::string macro_name = "nand2"; // macro with name nand2 int
+ *width = 4; // width 4 int height = 8; // height 8 Macro *macro_ptr =
+ *circuit.AddMacro(macro_name, width, height); // add this Macro to
+ *circuit std::string pin_name = "in"; // component pin with name "in" Pin
+ * *pin_ptr = circuit.AddMacroPin(macro_ptr, pin_name); // add this Pin to this
+ *Macro circuit.AddMacroPinRect(pin_ptr, 0, 1.9, 0.2, 2.1); // add the
  *shape of this Pin
  ****/
 
@@ -59,12 +59,11 @@ int main() {
   circuit.SetGridValue(0.2, 0.2);
   circuit.SetRowHeight(0.2);
 
-  // add block type "NAND2"
+  // add macro "INV2"
   std::string inv_type_name = "INV2";
   double inv_width = 0.8;
   double inv_height = 1.6;
-  BlockType* inv_ptr =
-      circuit.AddBlockType(inv_type_name, inv_width, inv_height);
+  Macro* inv_ptr = circuit.AddMacro(inv_type_name, inv_width, inv_height);
 
   // add cell pins
   std::string in_name = "IN";
@@ -72,7 +71,7 @@ int main() {
   double in_ly = 0.7;
   double in_ux = 0.2;
   double in_uy = 0.9;
-  Pin* in_pin_ptr = circuit.AddBlkTypePin(inv_ptr, in_name, true);
+  Pin* in_pin_ptr = circuit.AddMacroPin(inv_ptr, in_name, true);
   in_pin_ptr->SetOffset((in_lx + in_ux) / 2.0, (in_ly + in_uy) / 2.0);
 
   std::string out_name = "OUT";
@@ -80,7 +79,7 @@ int main() {
   double out_ly = 0.7;
   double out_ux = 0.8;
   double out_uy = 0.9;
-  Pin* out_pin_ptr = circuit.AddBlkTypePin(inv_ptr, out_name, false);
+  Pin* out_pin_ptr = circuit.AddMacroPin(inv_ptr, out_name, false);
   out_pin_ptr->SetOffset((out_lx + out_ly) / 2.0, (out_ux + out_uy) / 2.0);
 
   // set DEF Units distance microns, which would be better the same as LEF
@@ -97,11 +96,11 @@ int main() {
   // specify how many instances there are.
   circuit.ReserveSpaceForDesignImp(2, 2, 3);
 
-  // add block instances
+  // add component instances
   std::string inv1_name = "inv1";
-  circuit.AddBlock(inv1_name, inv_type_name, 0, 0, UNPLACED, N, true);
+  circuit.AddComponent(inv1_name, inv_type_name, 0, 0, UNPLACED, N, true);
   std::string inv2_name = "inv2";
-  circuit.AddBlock(inv2_name, inv_type_name, 0, 0, UNPLACED, N, true);
+  circuit.AddComponent(inv2_name, inv_type_name, 0, 0, UNPLACED, N, true);
 
   // add IOPIN
   std::string chip_in = "io_in";
@@ -113,22 +112,22 @@ int main() {
   std::string net_in_name = "net_in";
   circuit.AddNet(net_in_name, 2);
   circuit.AddIoPinToNet(chip_in, net_in_name);
-  circuit.AddBlkPinToNet(inv1_name, in_name, net_in_name);
+  circuit.AddComponentPinToNet(inv1_name, in_name, net_in_name);
 
   std::string net_between_name = "net_between";
   circuit.AddNet(net_between_name, 2);
-  circuit.AddBlkPinToNet(inv1_name, out_name, net_between_name);
-  circuit.AddBlkPinToNet(inv2_name, in_name, net_between_name);
+  circuit.AddComponentPinToNet(inv1_name, out_name, net_between_name);
+  circuit.AddComponentPinToNet(inv2_name, in_name, net_between_name);
 
   std::string net_out_name = "net_out";
   circuit.AddNet(net_out_name, 2);
-  circuit.AddBlkPinToNet(inv2_name, out_name, net_out_name);
+  circuit.AddComponentPinToNet(inv2_name, out_name, net_out_name);
   circuit.AddIoPinToNet(chip_out, net_out_name);
 
   // Report circuit detail
   circuit.ReportMetalLayers();
-  circuit.ReportBlockType();
-  circuit.ReportBlockList();
+  circuit.ReportComponentType();
+  circuit.ReportComponentList();
   circuit.ReportIOPin();
   circuit.ReportNetList();
 

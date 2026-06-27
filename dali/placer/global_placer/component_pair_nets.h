@@ -31,21 +31,22 @@ namespace dali {
 // Declares a row-major sparse matrix type of double.
 typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat;
 
-/** Directed driver/load edge induced by one net between two blocks. */
-class BlockBlockEdge {
+/** Directed driver/load edge induced by one net between two components. */
+class ComponentPairEdge {
  public:
-  BlockBlockEdge(Net* net_ptr, int d_index, int l_index)
+  ComponentPairEdge(Net* net_ptr, int d_index, int l_index)
       : net(net_ptr), d(d_index), l(l_index) {}
-  Net* net;  // the pointer to the net containing two blocks
+  Net* net;  // the pointer to the net containing two components
   int d;     // driver index
   int l;     // load index
 };
 
-/** Accumulates quadratic objective terms for one pair of connected blocks. */
-class BlockPairNets {
+/** Accumulates quadratic objective terms for one pair of connected components.
+ */
+class ComponentPairNets {
  public:
-  BlockPairNets(int blk0, int blk1) : blk_num0(blk0), blk_num1(blk1) {}
-  std::vector<BlockBlockEdge> edges;
+  ComponentPairNets(int blk0, int blk1) : blk_num0(blk0), blk_num1(blk1) {}
+  std::vector<ComponentPairEdge> edges;
   int blk_num0;
   int blk_num1;
 

@@ -59,7 +59,7 @@ void BoxBin::update_all_terminal(
   for (int x = ll_index.x; x <= ur_index.x; x++) {
     for (int y = ll_index.y; y <= ur_index.y; y++) {
       bin = &grid_bin_matrix[x][y];
-      if (!bin->IsAllFixedBlk()) {
+      if (!bin->IsAllFixedComponent()) {
         all_terminal = false;
         return;
       }
@@ -71,7 +71,7 @@ void BoxBin::update_all_terminal(
 void BoxBin::update_cell_area() {
   /*
   int temp_total_cell_area = 0;
-  Block *node;
+  Component *node;
   for (auto &cell_id: cell_list) {
     node = &Nodelist[cell_id];
     temp_total_cell_area += node->Area();
@@ -88,8 +88,8 @@ void BoxBin::update_cell_area() {
   */
 
   total_cell_area = 0;
-  for (auto& blk_ptr : cell_list) {
-    total_cell_area += blk_ptr->Area();
+  for (auto& component_ptr : cell_list) {
+    total_cell_area += component_ptr->Area();
   }
 }
 
@@ -203,8 +203,8 @@ void BoxBin::UpdateCellList(
   cell_list.clear();
   for (int x = ll_index.x; x <= ur_index.x; x++) {
     for (int y = ll_index.y; y <= ur_index.y; y++) {
-      for (auto& blk_ptr : grid_bin_matrix[x][y].cell_list) {
-        cell_list.push_back(blk_ptr);
+      for (auto& component_ptr : grid_bin_matrix[x][y].cell_list) {
+        cell_list.push_back(component_ptr);
       }
       grid_bin_matrix[x][y].cell_list.clear();
       grid_bin_matrix[x][y].cell_area = 0;
@@ -221,7 +221,7 @@ void BoxBin::UpdateBoundaries(
   top = grid_bin_matrix[ur_index.x][ur_index.y].top;
 }
 
-void BoxBin::UpdateWhiteSpaceAndFixedBlocks(
+void BoxBin::UpdateWhiteSpaceAndFixedComponents(
     std::vector<const PlacementBlockage*>& placement_blockages) {
   total_white_space =
       (unsigned long long)(right - left) * (unsigned long long)(top - bottom);
@@ -238,8 +238,9 @@ void BoxBin::UpdateWhiteSpaceAndFixedBlocks(
 
   unsigned long long used_area = GetCoverArea(rects);
   if (total_white_space < used_area) {
-    DaliExpects(false, "Fixed blocks takes more space than available space? "
-                           << total_white_space << " " << used_area);
+    DaliExpects(false,
+                "Fixed components takes more space than available space? "
+                    << total_white_space << " " << used_area);
   }
 
   total_white_space -= used_area;
@@ -325,9 +326,9 @@ bool BoxBin::write_cell_in_box(std::string const& NameOfFile) {
     LOG(info) << "Cannot open file" << NameOfFile << "\n";
     return false;
   }
-  for (auto& blk_ptr : cell_list) {
-    if (blk_ptr->IsMovable()) {
-      ost << blk_ptr->X() << "\t" << blk_ptr->Y() << "\n";
+  for (auto& component_ptr : cell_list) {
+    if (component_ptr->IsMovable()) {
+      ost << component_ptr->X() << "\t" << component_ptr->Y() << "\n";
     }
   }
   ost.close();
@@ -441,9 +442,9 @@ bool BoxBin::update_cut_point_cell_list_low_high(
       // LOG(info)   << i << "\n";
       cell_area_low = 0;
       cut_line = (cut_line_low + cut_line_high) / 2;
-      for (auto& blk_ptr : cell_list) {
-        if (blk_ptr->Y() < cut_line) {
-          cell_area_low += blk_ptr->Area();
+      for (auto& component_ptr : cell_list) {
+        if (component_ptr->Y() < cut_line) {
+          cell_area_low += component_ptr->Area();
         }
       }
       // LOG(info)   << cell_area_low/(double)total_cell_area <<
@@ -466,11 +467,11 @@ bool BoxBin::update_cut_point_cell_list_low_high(
     cut_ur_point.y = cut_line;
     // LOG(info)   << cut_line << " LLY " << ll_point.y << " URY "
     // << ll_point.y << "\n";
-    for (auto& blk_ptr : cell_list) {
-      if (blk_ptr->Y() < cut_line) {
-        cell_list_low.push_back(blk_ptr);
+    for (auto& component_ptr : cell_list) {
+      if (component_ptr->Y() < cut_line) {
+        cell_list_low.push_back(component_ptr);
       } else {
-        cell_list_high.push_back(blk_ptr);
+        cell_list_high.push_back(component_ptr);
       }
     }
   } else {
@@ -482,9 +483,9 @@ bool BoxBin::update_cut_point_cell_list_low_high(
       // LOG(info)   << i << "\n";
       cell_area_low = 0;
       cut_line = (cut_line_low + cut_line_high) / 2;
-      for (auto& blk_ptr : cell_list) {
-        if (blk_ptr->X() < cut_line) {
-          cell_area_low += blk_ptr->Area();
+      for (auto& component_ptr : cell_list) {
+        if (component_ptr->X() < cut_line) {
+          cell_area_low += component_ptr->Area();
         }
       }
       // LOG(info)   << cell_area_low/(double)total_cell_area <<
@@ -506,11 +507,11 @@ bool BoxBin::update_cut_point_cell_list_low_high(
     cut_ur_point.x = cut_line;
     // LOG(info)   << cut_line << " LLX " << ll_point.x << " URX "
     // << ur_point.x << "\n";
-    for (auto& blk_ptr : cell_list) {
-      if (blk_ptr->X() < cut_line) {
-        cell_list_low.push_back(blk_ptr);
+    for (auto& component_ptr : cell_list) {
+      if (component_ptr->X() < cut_line) {
+        cell_list_low.push_back(component_ptr);
       } else {
-        cell_list_high.push_back(blk_ptr);
+        cell_list_high.push_back(component_ptr);
       }
     }
   }
@@ -536,7 +537,7 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(int& cut_line_w,
    * cell_list_low and cell_list_high
    * when cut_direction_x is false, the new cut line of white space is chosen to
    * be close to one half of total cell area */
-  Block *node, *node1;
+  Component *node, *node1;
   if (cut_direction_x) {
     int box_height = top - bottom;
     int row_num = box_height / ave_blk_height;
@@ -571,7 +572,7 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(int& cut_line_w,
           mini_loc = node1->Y();
         }
       }
-      Block* tmp_cell_ptr = cell_list[mini_index];
+      Component* tmp_cell_ptr = cell_list[mini_index];
       cell_list[mini_index] = cell_list[i];
       cell_list[i] = tmp_cell_ptr;
     }
@@ -641,7 +642,7 @@ bool BoxBin::update_cut_point_cell_list_low_high_leaf(int& cut_line_w,
           mini_loc = node1->X();
         }
       }
-      Block* tmp_cell_ptr = cell_list[mini_index];
+      Component* tmp_cell_ptr = cell_list[mini_index];
       cell_list[mini_index] = cell_list[i];
       cell_list[i] = tmp_cell_ptr;
     }
@@ -718,10 +719,10 @@ void BoxBin::Report() {
             << top << ")\n";
 
   LOG(info) << "cell list: " << cell_list.size() << "\n";
-  for (auto& p_blk : cell_list) {
-    LOG(info) << p_blk->Name() << ", "
-              << "(" << p_blk->LLX() << ", " << p_blk->LLY() << "), "
-              << "(" << p_blk->URX() << ", " << p_blk->URY() << ")\n";
+  for (auto& component : cell_list) {
+    LOG(info) << component->Name() << ", "
+              << "(" << component->LLX() << ", " << component->LLY() << "), "
+              << "(" << component->URX() << ", " << component->URY() << ")\n";
   }
   LOG(info) << "\nend\n";
 

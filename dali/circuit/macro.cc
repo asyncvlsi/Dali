@@ -18,15 +18,15 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#include "block_type.h"
+#include "macro.h"
 
 #include <algorithm>
 
 namespace dali {
 
-BlockType::BlockType(std::string const* name_ptr) : name_ptr_(name_ptr) {}
+Macro::Macro(std::string const* name_ptr) : name_ptr_(name_ptr) {}
 
-int BlockType::GetPinId(std::string const& pin_name) const {
+int Macro::GetPinId(std::string const& pin_name) const {
   auto ret = pin_name_id_map_.find(pin_name);
   if (ret != pin_name_id_map_.end()) {
     return ret->second;
@@ -34,12 +34,12 @@ int BlockType::GetPinId(std::string const& pin_name) const {
   return -1;
 }
 
-Pin* BlockType::AddPin(std::string const& pin_name, bool is_input) {
+Pin* Macro::AddPin(std::string const& pin_name, bool is_input) {
   auto ret = pin_name_id_map_.find(pin_name);
   if (ret != pin_name_id_map_.end()) {
     DaliExpects(
         false,
-        "Cannot add this pin in BlockType: " + Name() +
+        "Cannot add this pin in Macro: " + Name() +
             ", because this pin exists in blk_pin_list already: " + pin_name);
   }
   pin_name_id_map_.insert(std::unordered_map<std::string, int>::value_type(
@@ -51,13 +51,13 @@ Pin* BlockType::AddPin(std::string const& pin_name, bool is_input) {
   return &pin_list_.back();
 }
 
-void BlockType::AddPin(std::string const& pin_name, double x_offset,
-                       double y_offset) {
+void Macro::AddPin(std::string const& pin_name, double x_offset,
+                   double y_offset) {
   auto ret = pin_name_id_map_.find(pin_name);
   if (ret != pin_name_id_map_.end()) {
     DaliExpects(
         false,
-        "Cannot add this pin in BlockType: " + Name() +
+        "Cannot add this pin in Macro: " + Name() +
             ", because this pin exists in blk_pin_list already: " + pin_name);
   }
   pin_name_id_map_.insert(std::unordered_map<std::string, int>::value_type(
@@ -67,7 +67,7 @@ void BlockType::AddPin(std::string const& pin_name, double x_offset,
   pin_list_.emplace_back(name_num_ptr, this, x_offset, y_offset);
 }
 
-Pin* BlockType::GetPinPtr(std::string const& pin_name) {
+Pin* Macro::GetPinPtr(std::string const& pin_name) {
   auto res = pin_name_id_map_.find(pin_name);
   if (res != pin_name_id_map_.end()) {
     return &(pin_list_[res->second]);
@@ -75,24 +75,24 @@ Pin* BlockType::GetPinPtr(std::string const& pin_name) {
   return nullptr;
 }
 
-void BlockType::SetWidth(int width) {
+void Macro::SetWidth(int width) {
   width_ = width;
   UpdateArea();
 }
 
-void BlockType::SetHeight(int height) {
+void Macro::SetHeight(int height) {
   height_ = height;
   UpdateArea();
 }
 
-void BlockType::SetSize(int width, int height) {
+void Macro::SetSize(int width, int height) {
   width_ = width;
   height_ = height;
   UpdateArea();
 }
 
-void BlockType::Report() const {
-  LOG(info) << "  BlockType name: " << Name() << "\n"
+void Macro::Report() const {
+  LOG(info) << "  Macro name: " << Name() << "\n"
             << "    width, height: " << Width() << " " << Height() << "\n"
             << "    pin list:\n";
   for (const auto& [name, id] : pin_name_id_map_) {
@@ -103,23 +103,23 @@ void BlockType::Report() const {
   }
 }
 
-void BlockType::UpdateArea() {
+void Macro::UpdateArea() {
   area_ = static_cast<long long>(width_) * static_cast<long long>(height_);
 }
 
-void BlockType::AddNwellRect(int llx, int lly, int urx, int ury) {
+void Macro::AddNwellRect(int llx, int lly, int urx, int ury) {
   has_well_info_ = true;
   n_rects_.emplace_back(llx, lly, urx, ury);
   region_count_ = static_cast<int>(std::max(n_rects_.size(), p_rects_.size()));
 }
 
-void BlockType::AddPwellRect(int llx, int lly, int urx, int ury) {
+void Macro::AddPwellRect(int llx, int lly, int urx, int ury) {
   has_well_info_ = true;
   p_rects_.emplace_back(llx, lly, urx, ury);
   region_count_ = static_cast<int>(std::max(n_rects_.size(), p_rects_.size()));
 }
 
-void BlockType::AddWellRect(bool is_n, int llx, int lly, int urx, int ury) {
+void Macro::AddWellRect(bool is_n, int llx, int lly, int urx, int ury) {
   if (is_n) {
     AddNwellRect(llx, lly, urx, ury);
   } else {
@@ -127,24 +127,24 @@ void BlockType::AddWellRect(bool is_n, int llx, int lly, int urx, int ury) {
   }
 }
 
-void BlockType::SetExtraBottomExtension(int bot_extension) {
+void Macro::SetExtraBottomExtension(int bot_extension) {
   extra_bot_extension_ = bot_extension;
 }
 
-void BlockType::SetExtraTopExtension(int top_extension) {
+void Macro::SetExtraTopExtension(int top_extension) {
   extra_top_extension_ = top_extension;
 }
 
-bool BlockType::IsNwellAbovePwell(int region_id) const {
+bool Macro::IsNwellAbovePwell(int region_id) const {
   DaliExpects(region_id < region_count_, "Index out of bound");
   return p_rects_[region_id].LLY() <= n_rects_[region_id].LLY();
 }
 
-int BlockType::RegionCount() const { return region_count_; }
+int Macro::RegionCount() const { return region_count_; }
 
-bool BlockType::HasOddRegions() const { return region_count_ & 1; }
+bool Macro::HasOddRegions() const { return region_count_ & 1; }
 
-bool BlockType::IsWellAbutted() {
+bool Macro::IsWellAbutted() {
   int row_count = RegionCount();
   std::vector<int> y_edges;
   bool is_well_p = IsNwellAbovePwell(0);
@@ -171,13 +171,13 @@ bool BlockType::IsWellAbutted() {
   return true;
 }
 
-bool BlockType::IsCellHeightConsistent() {
+bool Macro::IsCellHeightConsistent() {
   int cell_height = std::max(n_rects_.back().URY(), p_rects_.back().URY());
   int lef_height = Height();
   return cell_height == lef_height;
 }
 
-void BlockType::CheckLegality() {
+void Macro::CheckLegality() {
   DaliExpects(n_rects_.size() == p_rects_.size(),
               "Nwell count is different from Pwell count " + Name());
   DaliExpects(IsWellAbutted(), "Wells are not abutted for cell " + Name());
@@ -185,7 +185,7 @@ void BlockType::CheckLegality() {
               "Macro/well height inconsistency" + Name());
 }
 
-int BlockType::NwellHeight(int region_id, bool is_flipped) const {
+int Macro::NwellHeight(int region_id, bool is_flipped) const {
   DaliExpects(region_id < region_count_, "Index out of bound");
   if (is_flipped) {
     region_id = region_count_ - 1 - region_id;
@@ -193,7 +193,7 @@ int BlockType::NwellHeight(int region_id, bool is_flipped) const {
   return n_rects_[region_id].Height();
 }
 
-int BlockType::PwellHeight(int region_id, bool is_flipped) const {
+int Macro::PwellHeight(int region_id, bool is_flipped) const {
   DaliExpects(region_id < region_count_, "Index out of bound");
   if (is_flipped) {
     region_id = region_count_ - 1 - region_id;
@@ -201,7 +201,7 @@ int BlockType::PwellHeight(int region_id, bool is_flipped) const {
   return p_rects_[region_id].Height();
 }
 
-int BlockType::RegionHeight(int region_id, bool is_flipped) const {
+int Macro::RegionHeight(int region_id, bool is_flipped) const {
   DaliExpects(region_id < region_count_, "Index out of bound");
   if (is_flipped) {
     region_id = region_count_ - 1 - region_id;
@@ -215,7 +215,7 @@ int BlockType::RegionHeight(int region_id, bool is_flipped) const {
  * @param is_flipped
  * @return
  */
-int BlockType::AdjacentRegionEdgeDistance(int index, bool is_flipped) const {
+int Macro::AdjacentRegionEdgeDistance(int index, bool is_flipped) const {
   int row_cnt = RegionCount();
   DaliExpects(index + 1 < row_cnt, "Out of bound");
   if (is_flipped) {
@@ -228,18 +228,18 @@ int BlockType::AdjacentRegionEdgeDistance(int index, bool is_flipped) const {
   }
 }
 
-RectI& BlockType::NwellRect(int index) {
+RectI& Macro::NwellRect(int index) {
   DaliExpects(index < RegionCount(), "Out of bound");
   return n_rects_[index];
 }
 
-RectI& BlockType::PwellRect(int index) {
+RectI& Macro::PwellRect(int index) {
   DaliExpects(index < RegionCount(), "Out of bound");
   return p_rects_[index];
 }
 
-void BlockType::ReportWellInfo() const {
-  LOG(info) << "  Well of BlockType: " << Name() << "\n";
+void Macro::ReportWellInfo() const {
+  LOG(info) << "  Well of Macro: " << Name() << "\n";
   size_t sz = RegionCount();
   for (size_t i = 0; i < sz; ++i) {
     LOG(info) << "    Pwell: " << p_rects_[i].LLX() << "  " << p_rects_[i].LLY()
@@ -249,7 +249,7 @@ void BlockType::ReportWellInfo() const {
   }
 }
 
-int BlockType::Pheight() {
+int Macro::Pheight() {
   if (!p_rects_.empty()) {
     return p_rects_[0].URY();
   } else if (!n_rects_.empty()) {
@@ -258,7 +258,7 @@ int BlockType::Pheight() {
   DaliExpects(false, "No rects found in well for " << Name());
 }
 
-int BlockType::Nheight() {
+int Macro::Nheight() {
   if (!p_rects_.empty()) {
     return Height() - p_rects_[0].URY();
   } else if (!n_rects_.empty()) {

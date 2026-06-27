@@ -18,26 +18,27 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#include "block_segment.h"
+#include "component_segment.h"
 
 namespace dali {
 
-void BlockSegment::Merge(BlockSegment& sc, int lower_bound, int upper_bound) {
-  int sz = (int)sc.blk_ptrs.size();
+void ComponentSegment::Merge(ComponentSegment& sc, int lower_bound,
+                             int upper_bound) {
+  int sz = (int)sc.component_ptrs.size();
   DaliExpects(sz == (int)sc.initial_loc.size(),
-              "Block number does not match initial location number");
+              "Component number does not match initial location number");
   for (int i = 0; i < sz; ++i) {
-    blk_ptrs.push_back(sc.blk_ptrs[i]);
+    component_ptrs.push_back(sc.component_ptrs[i]);
     initial_loc.push_back(sc.initial_loc[i]);
   }
   width_ += sc.Width();
 
   std::vector<double> anchor;
   int accumulative_width = 0;
-  sz = (int)blk_ptrs.size();
+  sz = (int)component_ptrs.size();
   for (int i = 0; i < sz; ++i) {
     anchor.push_back(initial_loc[i] - accumulative_width);
-    accumulative_width += blk_ptrs[i]->Width();
+    accumulative_width += component_ptrs[i]->Width();
   }
   DaliExpects(width_ == accumulative_width,
               "Something is wrong, width does not match");
@@ -55,19 +56,20 @@ void BlockSegment::Merge(BlockSegment& sc, int lower_bound, int upper_bound) {
   }
 }
 
-void BlockSegment::UpdateBlockLocation() {
+void ComponentSegment::UpdateComponentLocation() {
   int cur_loc = lx_;
-  for (auto& blk : blk_ptrs) {
+  for (auto& blk : component_ptrs) {
     blk->SetLLX(cur_loc);
     cur_loc += blk->Width();
   }
 }
 
-void BlockSegment::Report() const {
-  int sz = (int)blk_ptrs.size();
+void ComponentSegment::Report() const {
+  int sz = (int)component_ptrs.size();
   for (int i = 0; i < sz; ++i) {
-    std::cout << blk_ptrs[i]->Name() << "  " << blk_ptrs[i]->LLX() << "  "
-              << blk_ptrs[i]->Width() << "  " << initial_loc[i] << "\n";
+    std::cout << component_ptrs[i]->Name() << "  " << component_ptrs[i]->LLX()
+              << "  " << component_ptrs[i]->Width() << "  " << initial_loc[i]
+              << "\n";
   }
 }
 

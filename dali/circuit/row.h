@@ -24,7 +24,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "block.h"
+#include "component.h"
 
 namespace dali {
 
@@ -41,8 +41,8 @@ class GeneralRowSegment {
   /** Set segment width in grid units. */
   void SetWidth(int width);
 
-  /** Add a block assigned to this segment. */
-  void AddBlock(Block* blk_ptr);
+  /** Add a component assigned to this segment. */
+  void AddComponent(Component* component_ptr);
 
   /** Return lower-left x coordinate in grid units. */
   int LX() const;
@@ -53,16 +53,17 @@ class GeneralRowSegment {
   /** Return segment width in grid units. */
   int Width() const;
 
-  /** Return blocks assigned to this segment. */
-  std::vector<Block*>& Blocks();
+  /** Return components assigned to this segment. */
+  std::vector<Component*>& Components();
 
-  /** Sort assigned blocks by x location. */
-  void SortBlocks();
+  /** Sort assigned components by x location. */
+  void SortComponents();
 
  private:
-  int lx_ = 0;                  // lower left x coordinate
-  int width_ = -1;              // width of this row segment
-  std::vector<Block*> blocks_;  // list of blocks in this row segment
+  int lx_ = 0;      // lower left x coordinate
+  int width_ = -1;  // width of this row segment
+  std::vector<Component*>
+      components_;  // list of components in this row segment
 };
 
 /** Placement row shared by standard-cell and gridded-cell flows. */

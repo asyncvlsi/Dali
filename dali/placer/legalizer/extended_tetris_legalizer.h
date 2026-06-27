@@ -21,7 +21,7 @@
 #ifndef DALI_PLACER_LEGALIZER_EXTENDED_TETRIS_LEGALIZER_H_
 #define DALI_PLACER_LEGALIZER_EXTENDED_TETRIS_LEGALIZER_H_
 
-#include "dali/circuit/block.h"
+#include "dali/circuit/component.h"
 #include "dali/common/misc.h"
 #include "dali/placer/displacement_viewer.h"
 #include "dali/placer/placer.h"
@@ -58,7 +58,7 @@ class ExtendedTetrisLegalizer : public Placer {
   /** Detect legal row whitespace. */
   void DetectWhiteSpace();
 
-  /** Initialize block id/location list. */
+  /** Initialize component id/location list. */
   void InitIndexLocList();
 
   /** Initialize all local legalizer state. */
@@ -74,28 +74,28 @@ class ExtendedTetrisLegalizer : public Placer {
   int AlignLocToRowLoc(double y_loc) const;
   bool IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row) const;
 
-  bool IsFitToRow(int row_id, Block& block) const;
-  bool ShouldOrientN(int row_id, Block& block) const;
+  bool IsFitToRow(int row_id, Component& component) const;
+  bool ShouldOrientN(int row_id, Component& component) const;
 
-  void InitBlockContourForward();
-  void InitAndSortBlockAscendingX();
-  void UseSpaceLeft(Block const& block);
-  bool IsCurrentLocLegalLeft(Value2D<int>& loc, Block& block);
+  void InitComponentContourForward();
+  void InitAndSortComponentAscendingX();
+  void UseSpaceLeft(Component const& component);
+  bool IsCurrentLocLegalLeft(Value2D<int>& loc, Component& component);
   int WhiteSpaceBoundLeft(int lo_x, int hi_x, int lo_row, int hi_row);
-  bool FindLocLeft(Value2D<int>& loc, Block& block);
+  bool FindLocLeft(Value2D<int>& loc, Component& component);
   bool LocalLegalizationLeft();
 
-  void InitBlockContourBackward();
-  void InitAndSortBlockDescendingX();
-  void UseSpaceRight(Block const& block);
-  bool IsCurrentLocLegalRight(Value2D<int>& loc, Block& block);
+  void InitComponentContourBackward();
+  void InitAndSortComponentDescendingX();
+  void UseSpaceRight(Component const& component);
+  bool IsCurrentLocLegalRight(Value2D<int>& loc, Component& component);
   int WhiteSpaceBoundRight(int lo_x, int hi_x, int lo_row, int hi_row);
-  bool FindLocRight(Value2D<int>& loc, Block& block);
+  bool FindLocRight(Value2D<int>& loc, Component& component);
   bool LocalLegalizationRight();
 
   void ResetLeftLimitFactor();
   void UpdateLeftLimitFactor();
-  double EstimatedHPWL(Block& block, int x, int y);
+  double EstimatedHPWL(Component& component, int x, int y);
 
   void ExportRowsToCircuit();
   bool StartPlacement() override;
@@ -107,8 +107,8 @@ class ExtendedTetrisLegalizer : public Placer {
  protected:
   bool is_row_assignment_ = false;
   std::vector<std::vector<SegI>> rows_;
-  std::vector<int> block_contour_;
-  std::vector<BlockInitialLocation> blk_inits_;
+  std::vector<int> component_contour_;
+  std::vector<ComponentInitialLocation> blk_inits_;
 
   int row_height_;
   bool row_height_set_;

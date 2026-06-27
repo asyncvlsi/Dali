@@ -25,7 +25,7 @@
 
 #include "dali/placer/displacement_viewer.h"
 #include "dali/placer/placer.h"
-#include "dali/placer/well_legalizer/legalizer_block_aux.h"
+#include "dali/placer/well_legalizer/legalizer_component_aux.h"
 #include "dali/placer/well_legalizer/space_partitioner.h"
 #include "dali/placer/well_legalizer/stripe.h"
 
@@ -57,17 +57,17 @@ class GriddedRowLegalizer : public Placer {
   /** Set maximum legalized row width. */
   void SetMaxRowWidth(double max_row_width);
 
-  /** Partition placement area and blocks into legalization stripes. */
-  void PartitionSpaceAndBlocks();
+  /** Partition placement area and components into legalization stripes. */
+  void PartitionSpaceAndComponents();
 
   void SetWellTapCellParameters(bool is_well_tap_needed = true,
                                 bool is_checker_board_mode = false,
                                 double tap_cell_interval_microns = -1,
-                                std::string const& well_tap_type_name = "");
+                                std::string const& well_tap_macro_name = "");
 
   void PrecomputeWellTapCellLocation();
 
-  void InitializeBlockAuxiliaryInfo();
+  void InitializeComponentAuxiliaryInfo();
   void SaveInitialLoc();
   void SaveUpDownLoc();
   void SaveQPLoc();
@@ -130,7 +130,7 @@ class GriddedRowLegalizer : public Placer {
   bool is_well_tap_needed_ = true;
   bool is_checker_board_mode_ = false;
   int tap_cell_interval_grid_ = -1;
-  BlockType* well_tap_type_ptr_ = nullptr;
+  Macro* well_tap_macro_ = nullptr;
 
   int greedy_cur_iter_ = 0;
   int greedy_max_iter_ = 30;
@@ -141,7 +141,7 @@ class GriddedRowLegalizer : public Placer {
   bool is_greedy_loc_cached_ = false;
   bool is_qp_loc_cached_ = false;
   bool is_cons_loc_cached_ = false;
-  std::vector<LegalizerBlockAux> blk_auxs_;
+  std::vector<LegalizerComponentAux> blk_auxs_;
 
   int number_of_threads_ = 1;
   bool use_cplex_ = false;
@@ -149,7 +149,7 @@ class GriddedRowLegalizer : public Placer {
   void SetWellTapCellNecessary(bool is_well_tap_needed);
   void SetWellTapCellPlacementMode(bool is_checker_board_mode);
   void SetWellTapCellInterval(double tap_cell_interval_microns);
-  void SetWellTapCellType(std::string const& well_tap_type_name);
+  void SetWellTapMacro(std::string const& well_tap_macro_name);
 };
 
 }  // namespace dali

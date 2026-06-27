@@ -60,28 +60,28 @@ void WellLegalizer::InitWellLegalizer() {
 
   InitLegalizer();
 
-  std::vector<Block>& block_list = ckt_ptr_->Blocks();
-  int sz = block_list.size();
+  std::vector<Component>& component_list = ckt_ptr_->Components();
+  int sz = component_list.size();
   init_loc_.resize(sz);
   for (int i = 0; i < sz; ++i) {
-    init_loc_[i].x = block_list[i].LLX();
-    init_loc_[i].y = block_list[i].LLY();
+    init_loc_[i].x = component_list[i].LLX();
+    init_loc_[i].y = component_list[i].LLY();
   }
 }
 
-void WellLegalizer::MarkSpaceWellLeft(Block const& block, int p_row) {
+void WellLegalizer::MarkSpaceWellLeft(Component const& component, int p_row) {
   /****
-   * Mark the space used by this block by changing the start point of available
-   * space in each related row
+   * Mark the space used by this component by changing the start point of
+   * available space in each related row
    * ****/
-  int lo_row = StartRow((int)std::round(block.LLY()));
+  int lo_row = StartRow((int)std::round(component.LLY()));
   int last_p_row = lo_row + p_row - 1;
-  int hi_row = EndRow((int)std::round(block.URY()));
+  int hi_row = EndRow((int)std::round(component.URY()));
 
   /*if (end_row >= int(row_well_status_.size())) {
-    //LOG(info)   << "  ly:     " << int(block.LLY())       <<
+    //LOG(info)   << "  ly:     " << int(component.LLY())       <<
   "\n"
-    //          << "  height: " << block.Height()   << "\n"
+    //          << "  height: " << component.Height()   << "\n"
     //          << "  top:    " << Top()    << "\n"
     //          << "  bottom: " << Bottom() << "\n";
     Assert(false, "Cannot use space out of range");
@@ -90,26 +90,27 @@ void WellLegalizer::MarkSpaceWellLeft(Block const& block, int p_row) {
   assert(hi_row < tot_num_rows_);
   assert(lo_row >= 0);
 
-  int end_x = int(block.URX());
+  int end_x = int(component.URX());
 
   for (int i = lo_row; i <= hi_row; ++i) {
-    block_contour_[i] = end_x;
+    component_contour_[i] = end_x;
     row_well_status_[i].is_n = (i > last_p_row);
   }
 }
 
-void WellLegalizer::UpdatePNBoundary(Block const& block) {
+void WellLegalizer::UpdatePNBoundary(Component const& component) {
   /****
-   * 1. If the newly placed gate block the alignment line, remove those lines.
-   * 2. Adding a new line, which is the P/N boundary of this block.
+   * 1. If the newly placed gate component the alignment line, remove those
+   * lines.
+   * 2. Adding a new line, which is the P/N boundary of this component.
    * ****/
-  auto it_lower = p_n_boundary_.lower_bound(block.LLY());
-  auto it_upper = p_n_boundary_.upper_bound(block.URY());
+  auto it_lower = p_n_boundary_.lower_bound(component.LLY());
+  auto it_upper = p_n_boundary_.upper_bound(component.URY());
   p_n_boundary_.erase(it_lower, it_upper);
-  p_n_boundary_.insert(block.LLY() + block.TypePtr()->PwellHeight(0));
+  p_n_boundary_.insert(component.LLY() + component.MacroPtr()->PwellHeight(0));
 }
 
-bool WellLegalizer::FindLocation(Block& block, int2d& res) {
+bool WellLegalizer::FindLocation(Component& component, int2d& res) {
   /****
    * For each row:
    *    Find the non-overlap location
@@ -117,24 +118,24 @@ bool WellLegalizer::FindLocation(Block& block, int2d& res) {
    *
    * Cost function is displacement
    * ****/
-  int init_x = int(block.LLX());
-  int init_y = int(block.LLY());
+  int init_x = int(component.LLX());
+  int init_y = int(component.LLY());
 
-  int height = int(block.Height());
+  int height = int(component.Height());
   int start_row = 0;
   int end_row = RegionTop() - RegionBottom() - height;
   // LOG(info)   << "    Starting row: " << start_row << "\n"
   //           << "    Ending row:   " << end_row   << "\n"
-  //           << "    Block Height: " << block.Height() << "\n"
+  //           << "    Component Height: " << component.Height() << "\n"
   //           << "    Top of the placement region " << Top() << "\n"
   //           << "    Number of rows: " << row_well_status_.size() << "\n"
-  //           << "    LX and LY: " << int(block.LLX()) << "  " <<
-  //           int(block.LLY()) << "\n";
+  //           << "    LX and LY: " << int(component.LLX()) << "  " <<
+  //           int(component.LLY()) << "\n";
 
   int best_row = 0;
   int best_loc = INT_MIN;
   int min_cost = INT_MAX;
-  int p_height = block.TypePtr()->PwellHeight(0);
+  int p_height = component.MacroPtr()->PwellHeight(0);
 
   int tmp_cost = INT_MAX;
   int tmp_end_row = 0;
@@ -145,7 +146,7 @@ bool WellLegalizer::FindLocation(Block& block, int2d& res) {
     tmp_end_row = tmp_row + height - 1;
     tmp_loc = RegionLeft();
     for (int i = tmp_row; i <= tmp_end_row; ++i) {
-      tmp_loc = std::max(tmp_loc, block_contour_[i]);
+      tmp_loc = std::max(tmp_loc, component_contour_[i]);
     }
 
     // 2. legalize the location to respect well rules
@@ -154,32 +155,32 @@ bool WellLegalizer::FindLocation(Block& block, int2d& res) {
     pn_boundary_row = tmp_row + p_height;
     //    P well distance
     for (int i = tmp_row; i <= pn_boundary_row; ++i) {
-      if (block_contour_[i] == RegionLeft()) continue;
+      if (component_contour_[i] == RegionLeft()) continue;
       if (!row_well_status_[i].is_n) {
-        if (tmp_loc > block_contour_[i] &&
-            tmp_loc < block_contour_[i] + pp_spacing_) {
-          tmp_loc = block_contour_[i] + pp_spacing_;
+        if (tmp_loc > component_contour_[i] &&
+            tmp_loc < component_contour_[i] + pp_spacing_) {
+          tmp_loc = component_contour_[i] + pp_spacing_;
         }
       } else {
-        if (tmp_loc > block_contour_[i] &&
-            tmp_loc < block_contour_[i] + np_spacing_) {
-          tmp_loc = block_contour_[i] + np_spacing_;
+        if (tmp_loc > component_contour_[i] &&
+            tmp_loc < component_contour_[i] + np_spacing_) {
+          tmp_loc = component_contour_[i] + np_spacing_;
         }
       }
     }
 
     //    N well distance
     for (int i = pn_boundary_row + 1; i <= tmp_end_row; ++i) {
-      if (block_contour_[i] == RegionLeft()) continue;
+      if (component_contour_[i] == RegionLeft()) continue;
       if (row_well_status_[i].is_n) {
-        if (tmp_loc > block_contour_[i] &&
-            tmp_loc < block_contour_[i] + nn_spacing_) {
-          tmp_loc = block_contour_[i] + nn_spacing_;
+        if (tmp_loc > component_contour_[i] &&
+            tmp_loc < component_contour_[i] + nn_spacing_) {
+          tmp_loc = component_contour_[i] + nn_spacing_;
         }
       } else {
-        if (tmp_loc > block_contour_[i] &&
-            tmp_loc < block_contour_[i] + np_spacing_) {
-          tmp_loc = block_contour_[i] + np_spacing_;
+        if (tmp_loc > component_contour_[i] &&
+            tmp_loc < component_contour_[i] + np_spacing_) {
+          tmp_loc = component_contour_[i] + np_spacing_;
         }
       }
     }
@@ -188,8 +189,8 @@ bool WellLegalizer::FindLocation(Block& block, int2d& res) {
     //    P well min-width
     int shared_length = 0;
     for (int i = tmp_row; i <= pn_boundary_row; ++i) {
-      if (block_contour_[i] == RegionLeft()) continue;
-      if (!(row_well_status_[i].is_n) && block_contour_[i] == tmp_loc) {
+      if (component_contour_[i] == RegionLeft()) continue;
+      if (!(row_well_status_[i].is_n) && component_contour_[i] == tmp_loc) {
         ++shared_length;
       } else {
         if (shared_length < p_min_width_) {
@@ -202,8 +203,8 @@ bool WellLegalizer::FindLocation(Block& block, int2d& res) {
     shared_length = 0;
     //    N well min-width
     for (int i = pn_boundary_row + 1; i <= tmp_end_row; ++i) {
-      if (block_contour_[i] == RegionLeft()) continue;
-      if (row_well_status_[i].is_n && block_contour_[i] == tmp_loc) {
+      if (component_contour_[i] == RegionLeft()) continue;
+      if (row_well_status_[i].is_n && component_contour_[i] == tmp_loc) {
         ++shared_length;
       } else {
         if (shared_length < n_min_width_) {
@@ -217,7 +218,7 @@ bool WellLegalizer::FindLocation(Block& block, int2d& res) {
                std::abs(tmp_row + RegionBottom() - init_y);
     bool is_abutted = false;
     for (int i = tmp_row; i <= tmp_end_row; ++i) {
-      if (block_contour_[i] == tmp_loc) {
+      if (component_contour_[i] == tmp_loc) {
         is_abutted = true;
         break;
       }
@@ -237,43 +238,43 @@ bool WellLegalizer::FindLocation(Block& block, int2d& res) {
   res.y = best_row + RegionBottom();
 
   // LOG(info)   << res.x << "  " << res.y << "  " << min_cost <<
-  // "  " << block.Num() << "\n";
+  // "  " << component.Num() << "\n";
 
   return (min_cost < INT_MAX);
 }
 
-void WellLegalizer::WellPlace(Block& block) {
+void WellLegalizer::WellPlace(Component& component) {
   /****
-   * 1. if there is no blocks on the left hand side of this block, switch the
-   * type to plugged
+   * 1. if there is no components on the left hand side of this component,
+   * switch the type to plugged
    * 2. if the current location is legal, use that space
    * 3.   else find a new location
    * ****/
-  /*int start_row = int(block.LLY()-Bottom());
-  int end_row = start_row + block.Height();
-  bool no_left_blocks = true;
+  /*int start_row = int(component.LLY()-Bottom());
+  int end_row = start_row + component.Height();
+  bool no_left_components = true;
   for (int i=start_row; i<=end_row; ++i) {
     if (row_well_status_[i].dist < n_max_plug_dist_) {
-      no_left_blocks = false;
+      no_left_components = false;
       break;
     }
   }
-  if (no_left_blocks) {
-    SwitchToPlugType(block);
+  if (no_left_components) {
+    SwitchToPlugType(component);
   }*/
-  // bool is_cur_loc_legal = IsSpaceLegal(block);
+  // bool is_cur_loc_legal = IsSpaceLegal(component);
   bool is_cur_loc_legal = false;
-  int2d res(block.LLX(), block.LLY());
+  int2d res(component.LLX(), component.LLY());
   if (!is_cur_loc_legal) {
-    bool loc_found = FindLocation(block, res);
+    bool loc_found = FindLocation(component, res);
     if (loc_found) {
-      block.SetLoc(res.x, res.y);
+      component.SetLoc(res.x, res.y);
     } else {
       DaliExpects(false, "Cannot find legal location");
     }
   }
-  UseSpaceLeft(block);
-  // UpdatePNBoundary(block);
+  UseSpaceLeft(component);
+  // UpdatePNBoundary(component);
 }
 
 bool WellLegalizer::IsCurLocWellDistanceLeft(int loc_x, int lo_row, int hi_row,
@@ -289,15 +290,15 @@ bool WellLegalizer::IsCurLocWellDistanceLeft(int loc_x, int lo_row, int hi_row,
   bool is_well_distance_legal = true;
   bool tmp_row_well_clean;
 
-  // for the P well of this block, check if the distance is satisfied
+  // for the P well of this component, check if the distance is satisfied
   for (int i = lo_row; i <= last_p_row; ++i) {
-    if (block_contour_[i] == left_) continue;
+    if (component_contour_[i] == left_) continue;
     if (!row_well_status_[i].is_n) {
-      tmp_row_well_clean = (loc_x == block_contour_[i] ||
-                            loc_x >= block_contour_[i] + pp_spacing_);
+      tmp_row_well_clean = (loc_x == component_contour_[i] ||
+                            loc_x >= component_contour_[i] + pp_spacing_);
     } else {
-      tmp_row_well_clean = (loc_x == block_contour_[i] ||
-                            loc_x >= block_contour_[i] + np_spacing_);
+      tmp_row_well_clean = (loc_x == component_contour_[i] ||
+                            loc_x >= component_contour_[i] + np_spacing_);
     }
     if (!tmp_row_well_clean) {
       is_well_distance_legal = false;
@@ -309,13 +310,13 @@ bool WellLegalizer::IsCurLocWellDistanceLeft(int loc_x, int lo_row, int hi_row,
   // rule is satisfied
   if (is_well_distance_legal) {
     for (int i = last_p_row + 1; i <= hi_row; ++i) {
-      if (block_contour_[i] == left_) continue;
+      if (component_contour_[i] == left_) continue;
       if (row_well_status_[i].is_n) {
-        tmp_row_well_clean = (loc_x == block_contour_[i] ||
-                              loc_x >= block_contour_[i] + nn_spacing_);
+        tmp_row_well_clean = (loc_x == component_contour_[i] ||
+                              loc_x >= component_contour_[i] + nn_spacing_);
       } else {
-        tmp_row_well_clean = (loc_x == block_contour_[i] ||
-                              loc_x >= block_contour_[i] + np_spacing_);
+        tmp_row_well_clean = (loc_x == component_contour_[i] ||
+                              loc_x >= component_contour_[i] + np_spacing_);
       }
       if (!tmp_row_well_clean) {
         is_well_distance_legal = false;
@@ -380,8 +381,8 @@ bool WellLegalizer::IsCurLocWellMinWidthLeft(int loc_x, int lo_row, int hi_row,
   int boundary_row = lo_row + p_row - 1;
   bool is_well_min_width_legal = true;
   for (int i = lo_row; i <= boundary_row; ++i) {
-    if (block_contour_[i] == left_) continue;
-    if (!(row_well_status_[i].is_n) && block_contour_[i] == loc_x) {
+    if (component_contour_[i] == left_) continue;
+    if (!(row_well_status_[i].is_n) && component_contour_[i] == loc_x) {
       ++shared_well_height;
     } else {
       if (shared_well_height < p_min_width_) {
@@ -395,8 +396,8 @@ bool WellLegalizer::IsCurLocWellMinWidthLeft(int loc_x, int lo_row, int hi_row,
     shared_well_height = 0;
     is_well_min_width_legal = true;
     for (int i = boundary_row + 1; i <= hi_row; ++i) {
-      if (block_contour_[i] == left_) continue;
-      if (row_well_status_[i].is_n && block_contour_[i] == loc_x) {
+      if (component_contour_[i] == left_) continue;
+      if (row_well_status_[i].is_n && component_contour_[i] == loc_x) {
         ++shared_well_height;
       } else {
         if (shared_well_height < n_min_width_) {
@@ -420,7 +421,7 @@ bool WellLegalizer::IsCurrentLocLegalLeft(Value2D<int>& loc, int width,
  * Returns whether the current location is legal
  *
  * 1. if the space itself is illegal, then return false
- * 2. if the space covers placed blocks, then return false
+ * 2. if the space covers placed components, then return false
  * 3. if the N/P well distance to its left hand side neighbors are not
  * satisfied, then return false
  * 4. if the N/P well minimum spacing rule is not satisfied, then return false
@@ -437,10 +438,10 @@ bool WellLegalizer::IsCurrentLocLegalLeft(int loc_x, int width, int lo_row,
     return false;
   }
 
-  // 2. check if the space covers any placed blocks
+  // 2. check if the space covers any placed components
   is_current_loc_legal = true;
   for (int i = lo_row; i <= hi_row; ++i) {
-    if (block_contour_[i] > loc_x) {
+    if (component_contour_[i] > loc_x) {
       is_current_loc_legal = false;
       break;
     }
@@ -480,21 +481,21 @@ bool WellLegalizer::FindLocLeft(Value2D<int>& loc, int num, int width,
    * location with the minimum cost function 1). make sure there is no cell
    * overlap 2). if there is well distance issues, add a penalty term to the
    * cost function 3). if there is well width issues, add a penalty term to the
-   * cost function 4). if the block touches its top block, add a benefit term
-   *    the formula of the cost function:
-   *        C = |tmp_x - cur_x| + |tmp_y - cur_y|
+   * cost function 4). if the component touches its top component, add a benefit
+   * term the formula of the cost function: C = |tmp_x - cur_x| + |tmp_y -
+   * cur_y|
    *          + k_distance * cur_iteration_num * I(disrespect distance rule)
    *          + k_min_width * cur_iteration_num * I(disrespect min-width rule)
-   *          - 1 * I(touch top/bottom blocks) (this factor is not taking into
-   * account yet)
+   *          - 1 * I(touch top/bottom components) (this factor is not taking
+   * into account yet)
    * 2. if the best location using the above procedure found is illegal
-   *    (blocks may be placed on the top of blocks or out of the placement
-   * range) enlarge the search range, and try to find a legal location
+   *    (components may be placed on the top of components or out of the
+   * placement range) enlarge the search range, and try to find a legal location
    * ****/
   bool is_successful;
 
   int blk_row_height;
-  int left_block_bound;
+  int left_component_bound;
   int left_white_space_bound;
 
   int max_search_row;
@@ -510,8 +511,8 @@ bool WellLegalizer::FindLocLeft(Value2D<int>& loc, int num, int width,
   int tmp_x;
   int tmp_y;
 
-  left_block_bound = (int)std::round(loc.x - k_left_ * width);
-  // left_block_bound = loc.x;
+  left_component_bound = (int)std::round(loc.x - k_left_ * width);
+  // left_component_bound = loc.x;
 
   max_search_row = MaxRow(height);
   blk_row_height = HeightToRow(height);
@@ -529,11 +530,11 @@ bool WellLegalizer::FindLocLeft(Value2D<int>& loc, int num, int width,
     left_white_space_bound =
         WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_row, tmp_end_row);
 
-    tmp_x = std::max(left_white_space_bound, left_block_bound);
+    tmp_x = std::max(left_white_space_bound, left_component_bound);
 
     // make sure no overlap
     for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
-      tmp_x = std::max(tmp_x, block_contour_[n]);
+      tmp_x = std::max(tmp_x, component_contour_[n]);
     }
 
     tmp_y = RowToLoc(tmp_start_row);
@@ -576,21 +577,21 @@ bool WellLegalizer::FindLocLeft(Value2D<int>& loc, int num, int width,
 bool WellLegalizer::WellLegalizationLeft() {
   int fail_count = 0;
   bool is_successful = true;
-  block_contour_.assign(block_contour_.size(), left_);
-  std::vector<Block>& block_list = ckt_ptr_->Blocks();
+  component_contour_.assign(component_contour_.size(), left_);
+  std::vector<Component>& component_list = ckt_ptr_->Components();
 
   int sz = blk_inits_.size();
   for (int i = 0; i < sz; ++i) {
-    blk_inits_[i].blk_ptr = &(block_list[i]);
-    blk_inits_[i].x = block_list[i].LLX();
-    blk_inits_[i].y = block_list[i].LLY();
+    blk_inits_[i].component_ptr = &(component_list[i]);
+    blk_inits_[i].x = component_list[i].LLX();
+    blk_inits_[i].y = component_list[i].LLY();
   }
-  std::sort(
-      blk_inits_.begin(), blk_inits_.end(),
-      [](const BlockInitialLocation& pair0, const BlockInitialLocation& pair1) {
-        return (pair0.x < pair1.x) ||
-               ((pair0.x == pair1.x) && (pair0.y < pair1.y));
-      });
+  std::sort(blk_inits_.begin(), blk_inits_.end(),
+            [](const ComponentInitialLocation& pair0,
+               const ComponentInitialLocation& pair1) {
+              return (pair0.x < pair1.x) ||
+                     ((pair0.x == pair1.x) && (pair0.y < pair1.y));
+            });
 
   int height;
   int width;
@@ -601,22 +602,22 @@ bool WellLegalizer::WellLegalizationLeft() {
   bool is_legal_loc_found;
 
   for (auto& pair : blk_inits_) {
-    auto& block = *(pair.blk_ptr);
-    if (block.IsFixed()) continue;
+    auto& component = *(pair.component_ptr);
+    if (component.IsFixed()) continue;
 
-    res.x = int(std::round(block.LLX()));
-    res.y = AlignLocToRowLoc(block.LLY());
-    height = int(block.Height());
-    width = int(block.Width());
+    res.x = int(std::round(component.LLX()));
+    res.y = AlignLocToRowLoc(component.LLY());
+    height = int(component.Height());
+    width = int(component.Width());
 
-    p_well_row_height = HeightToRow(block.TypePtr()->PwellHeight(0));
+    p_well_row_height = HeightToRow(component.MacroPtr()->PwellHeight(0));
 
     is_current_loc_legal =
         IsCurrentLocLegalLeft(res, width, height, p_well_row_height);
 
     if (!is_current_loc_legal) {
-      is_legal_loc_found = FindLocLeft(res, pair.blk_ptr->Id(), width, height,
-                                       p_well_row_height);
+      is_legal_loc_found = FindLocLeft(res, pair.component_ptr->Id(), width,
+                                       height, p_well_row_height);
       if (!is_legal_loc_found) {
         // LOG(info)  <<"LNum: %d, lx: %d, ly: %d\n", pair.num,
         // res.x, res.y);
@@ -627,8 +628,8 @@ bool WellLegalizer::WellLegalizationLeft() {
     // LOG(info)  <<"LNum final: %d, lx: %d, ly: %d\n", pair.num,
     // res.x, res.y);
 
-    block.SetLoc(res.x, res.y);
-    MarkSpaceWellLeft(block, p_well_row_height);
+    component.SetLoc(res.x, res.y);
+    MarkSpaceWellLeft(component, p_well_row_height);
   }
 
   LOG(info) << "fail count: " << fail_count << "\n";
@@ -636,32 +637,32 @@ bool WellLegalizer::WellLegalizationLeft() {
   return is_successful;
 }
 
-void WellLegalizer::MarkSpaceWellRight(Block const& block, int p_row) {
+void WellLegalizer::MarkSpaceWellRight(Component const& component, int p_row) {
   /****
-   * Mark the space used by this block by changing the start point of available
-   * space in each related row
+   * Mark the space used by this component by changing the start point of
+   * available space in each related row
    * ****/
-  int lo_row = StartRow((int)std::round(block.LLY()));
+  int lo_row = StartRow((int)std::round(component.LLY()));
   int last_p_row = lo_row + p_row - 1;
-  int hi_row = EndRow((int)std::round(block.URY()));
+  int hi_row = EndRow((int)std::round(component.URY()));
 
   /*if (end_row >= int(row_well_status_.size())) {
-    //LOG(info)   << "  ly:     " << int(block.LLY())       <<
+    //LOG(info)   << "  ly:     " << int(component.LLY())       <<
   "\n"
-    //          << "  height: " << block.Height()   << "\n"
+    //          << "  height: " << component.Height()   << "\n"
     //          << "  top:    " << Top()    << "\n"
     //          << "  bottom: " << Bottom() << "\n";
     Assert(false, "Cannot use space out of range");
   }*/
 
-  assert(block.URY() <= RegionTop());
+  assert(component.URY() <= RegionTop());
   assert(hi_row < tot_num_rows_);
   assert(lo_row >= 0);
 
-  int end_x = int(block.LLX());
+  int end_x = int(component.LLX());
 
   for (int i = lo_row; i <= hi_row; ++i) {
-    block_contour_[i] = end_x;
+    component_contour_[i] = end_x;
     row_well_status_[i].is_n = (i > last_p_row);
   }
 }
@@ -675,13 +676,13 @@ bool WellLegalizer::IsCurLocWellDistanceRight(int loc_x, int lo_row, int hi_row,
   bool is_well_distance_legal = true;
   bool tmp_row_well_clean;
   for (int i = lo_row; i <= last_p_row; ++i) {
-    if (block_contour_[i] == right_) continue;
+    if (component_contour_[i] == right_) continue;
     if (!row_well_status_[i].is_n) {
-      tmp_row_well_clean = (loc_x == block_contour_[i] ||
-                            loc_x <= block_contour_[i] - pp_spacing_);
+      tmp_row_well_clean = (loc_x == component_contour_[i] ||
+                            loc_x <= component_contour_[i] - pp_spacing_);
     } else {
-      tmp_row_well_clean = (loc_x == block_contour_[i] ||
-                            loc_x <= block_contour_[i] - np_spacing_);
+      tmp_row_well_clean = (loc_x == component_contour_[i] ||
+                            loc_x <= component_contour_[i] - np_spacing_);
     }
     if (!tmp_row_well_clean) {
       is_well_distance_legal = false;
@@ -691,13 +692,13 @@ bool WellLegalizer::IsCurLocWellDistanceRight(int loc_x, int lo_row, int hi_row,
 
   if (is_well_distance_legal) {
     for (int i = last_p_row + 1; i <= hi_row; ++i) {
-      if (block_contour_[i] == right_) continue;
+      if (component_contour_[i] == right_) continue;
       if (row_well_status_[i].is_n) {
-        tmp_row_well_clean = (loc_x == block_contour_[i] ||
-                              loc_x <= block_contour_[i] - nn_spacing_);
+        tmp_row_well_clean = (loc_x == component_contour_[i] ||
+                              loc_x <= component_contour_[i] - nn_spacing_);
       } else {
-        tmp_row_well_clean = (loc_x == block_contour_[i] ||
-                              loc_x <= block_contour_[i] - np_spacing_);
+        tmp_row_well_clean = (loc_x == component_contour_[i] ||
+                              loc_x <= component_contour_[i] - np_spacing_);
       }
       if (!tmp_row_well_clean) {
         is_well_distance_legal = false;
@@ -760,8 +761,8 @@ bool WellLegalizer::IsCurLocWellMinWidthRight(int loc_x, int lo_row, int hi_row,
   int boundary_row = lo_row + p_row - 1;
   bool is_well_min_width_legal = true;
   for (int i = lo_row; i <= boundary_row; ++i) {
-    if (block_contour_[i] == right_) continue;
-    if (!(row_well_status_[i].is_n) && block_contour_[i] == loc_x) {
+    if (component_contour_[i] == right_) continue;
+    if (!(row_well_status_[i].is_n) && component_contour_[i] == loc_x) {
       ++shared_well_height;
     } else {
       if (shared_well_height < p_min_width_) {
@@ -775,8 +776,8 @@ bool WellLegalizer::IsCurLocWellMinWidthRight(int loc_x, int lo_row, int hi_row,
     shared_well_height = 0;
     is_well_min_width_legal = true;
     for (int i = boundary_row + 1; i <= hi_row; ++i) {
-      if (block_contour_[i] == right_) continue;
-      if (row_well_status_[i].is_n && block_contour_[i] == loc_x) {
+      if (component_contour_[i] == right_) continue;
+      if (row_well_status_[i].is_n && component_contour_[i] == loc_x) {
         ++shared_well_height;
       } else {
         if (shared_well_height < n_min_width_) {
@@ -802,7 +803,7 @@ bool WellLegalizer::IsCurrentLocLegalRight(int loc_x, int width, int lo_row,
    * Returns whether the current location is legal
    *
    * 1. if the space itself is illegal, then return false
-   * 2. if the space covers placed blocks, then return false
+   * 2. if the space covers placed components, then return false
    * 3. if the N/P well distance to its left hand side neighbors are not
    * satisfied, then return false
    * 4. if the N/P well minimum spacing rule is not satisfied, then return false
@@ -818,10 +819,10 @@ bool WellLegalizer::IsCurrentLocLegalRight(int loc_x, int width, int lo_row,
     return false;
   }
 
-  // 2. check if the space covers any placed blocks
+  // 2. check if the space covers any placed components
   is_current_loc_legal = true;
   for (int i = lo_row; i <= hi_row; ++i) {
-    if (block_contour_[i] < loc_x) {
+    if (component_contour_[i] < loc_x) {
       is_current_loc_legal = false;
       break;
     }
@@ -856,7 +857,7 @@ bool WellLegalizer::FindLocRight(Value2D<int>& loc, int num, int width,
   bool is_successful;
 
   int blk_row_height;
-  int right_block_bound;
+  int right_component_bound;
   int right_white_space_bound;
 
   int max_search_row;
@@ -872,8 +873,8 @@ bool WellLegalizer::FindLocRight(Value2D<int>& loc, int num, int width,
   int tmp_x;
   int tmp_y;
 
-  right_block_bound = (int)std::round(loc.x + k_left_ * width);
-  // right_block_bound = loc.x;
+  right_component_bound = (int)std::round(loc.x + k_left_ * width);
+  // right_component_bound = loc.x;
 
   max_search_row = MaxRow(height);
   blk_row_height = HeightToRow(height);
@@ -891,11 +892,11 @@ bool WellLegalizer::FindLocRight(Value2D<int>& loc, int num, int width,
     right_white_space_bound =
         WhiteSpaceBoundRight(loc.x - width, loc.x, tmp_start_row, tmp_end_row);
 
-    tmp_x = std::min(right_white_space_bound, right_block_bound);
-    // tmp_x = std::min(right_, right_block_bound);
+    tmp_x = std::min(right_white_space_bound, right_component_bound);
+    // tmp_x = std::min(right_, right_component_bound);
 
     for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
-      tmp_x = std::min(tmp_x, block_contour_[n]);
+      tmp_x = std::min(tmp_x, component_contour_[n]);
     }
 
     tmp_y = RowToLoc(tmp_start_row);
@@ -935,20 +936,20 @@ bool WellLegalizer::FindLocRight(Value2D<int>& loc, int num, int width,
 bool WellLegalizer::WellLegalizationRight() {
   int fail_count = 0;
   bool is_successful = true;
-  block_contour_.assign(block_contour_.size(), right_);
-  std::vector<Block>& block_list = ckt_ptr_->Blocks();
+  component_contour_.assign(component_contour_.size(), right_);
+  std::vector<Component>& component_list = ckt_ptr_->Components();
 
   int sz = blk_inits_.size();
   for (int i = 0; i < sz; ++i) {
-    blk_inits_[i].blk_ptr = &(block_list[i]);
-    blk_inits_[i].x = block_list[i].URX();
-    blk_inits_[i].y = block_list[i].LLY();
+    blk_inits_[i].component_ptr = &(component_list[i]);
+    blk_inits_[i].x = component_list[i].URX();
+    blk_inits_[i].y = component_list[i].LLY();
   }
-  std::sort(
-      blk_inits_.begin(), blk_inits_.end(),
-      [](const BlockInitialLocation& lhs, const BlockInitialLocation& rhs) {
-        return (lhs.x > rhs.x) || (lhs.x == rhs.x && lhs.y > rhs.y);
-      });
+  std::sort(blk_inits_.begin(), blk_inits_.end(),
+            [](const ComponentInitialLocation& lhs,
+               const ComponentInitialLocation& rhs) {
+              return (lhs.x > rhs.x) || (lhs.x == rhs.x && lhs.y > rhs.y);
+            });
 
   int height;
   int width;
@@ -959,25 +960,25 @@ bool WellLegalizer::WellLegalizationRight() {
   bool is_legal_loc_found;
 
   for (auto& pair : blk_inits_) {
-    auto& block = *(pair.blk_ptr);
-    if (block.IsFixed()) continue;
+    auto& component = *(pair.component_ptr);
+    if (component.IsFixed()) continue;
 
-    res.x = int(std::round(block.URX()));
-    res.y = AlignLocToRowLoc(block.LLY());
-    height = int(block.Height());
-    width = int(block.Width());
+    res.x = int(std::round(component.URX()));
+    res.y = AlignLocToRowLoc(component.LLY());
+    height = int(component.Height());
+    width = int(component.Width());
 
-    p_well_row_height = HeightToRow(block.TypePtr()->PwellHeight(0));
+    p_well_row_height = HeightToRow(component.MacroPtr()->PwellHeight(0));
 
-    // LOG(info)   << block.Num() << "\n";
+    // LOG(info)   << component.Num() << "\n";
     is_current_loc_legal =
         IsCurrentLocLegalRight(res, width, height, p_well_row_height);
 
     if (!is_current_loc_legal) {
       // LOG(info)  <<"Num: %d, lx: %d, ly: %d\n", pair.num,
       // res.x, res.y);
-      is_legal_loc_found = FindLocRight(res, pair.blk_ptr->Id(), width, height,
-                                        p_well_row_height);
+      is_legal_loc_found = FindLocRight(res, pair.component_ptr->Id(), width,
+                                        height, p_well_row_height);
       if (!is_legal_loc_found) {
         // LOG(info)  <<"RNum: %d, lx: %d, ly: %d\n", pair.num,
         // res.x, res.y);
@@ -986,10 +987,10 @@ bool WellLegalizer::WellLegalizationRight() {
       }
     }
 
-    block.SetURX(res.x);
-    block.SetLLY(res.y);
+    component.SetURX(res.x);
+    component.SetLLY(res.y);
 
-    MarkSpaceWellRight(block, p_well_row_height);
+    MarkSpaceWellRight(component, p_well_row_height);
   }
 
   LOG(info) << "fail count: " << fail_count << "\n";
@@ -1002,7 +1003,7 @@ bool WellLegalizer::StartPlacement() {
 
   InitWellLegalizer();
   LOG(info) << "  Number of rows: " << row_well_status_.size() << "\n"
-            << "  Number of blocks: " << blk_inits_.size() << "\n"
+            << "  Number of components: " << blk_inits_.size() << "\n"
             << "  Well Rules:\n"
             << "    NN spacing: " << nn_spacing_ << "\n"
             << "    PP spacing: " << pp_spacing_ << "\n"

@@ -27,7 +27,7 @@
 #include <list>
 #include <vector>
 
-#include "dali/circuit/block_type.h"
+#include "dali/circuit/macro.h"
 #include "dali/common/misc.h"
 
 namespace dali {

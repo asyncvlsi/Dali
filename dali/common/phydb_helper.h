@@ -33,11 +33,11 @@ phydb::PlaceStatus PlaceStatusDali2PhyDB(PlaceStatus dali_place_status);
 /** Convert a PhyDB placement status to the matching Dali value. */
 PlaceStatus PlaceStatusPhyDB2Dali(phydb::PlaceStatus phydb_place_status);
 
-/** Convert a Dali block orientation to the matching PhyDB value. */
-phydb::CompOrient OrientDali2PhyDB(BlockOrient dali_orient);
+/** Convert a Dali component orientation to the matching PhyDB value. */
+phydb::CompOrient OrientDali2PhyDB(ComponentOrient dali_orient);
 
 /** Convert a PhyDB component orientation to the matching Dali value. */
-BlockOrient OrientPhyDB2Dali(phydb::CompOrient phydb_orient);
+ComponentOrient OrientPhyDB2Dali(phydb::CompOrient phydb_orient);
 
 }  // namespace dali
 

@@ -29,7 +29,7 @@
 namespace dali {
 
 /****
- * Create Filler Cell BlockType and export it to PhyDB.
+ * Create Filler Cell Macro and export it to PhyDB.
  * Assuming this is only for a standard cell design.
  *
  * @param upper_width: create 1X width filler cell, up to upper_widthX
@@ -56,7 +56,7 @@ void FillerCellPlacer::CreateFillerCellTypes(int upper_width) {
     phy_db_ptr_->tech().AutoAddPowerGroundPin(filler_name);
     phydb_macro->ExportToFile(ost);
 
-    ckt_ptr_->AddFillerBlockType(filler_name, width, filler_height);
+    ckt_ptr_->AddFillerMacro(filler_name, width, filler_height);
   }
   phy_db_ptr_->AddDummyWell();
   LOG(info) << "Filler cells exported to " << filler_lef_file_name << "\n";
@@ -72,16 +72,16 @@ void FillerCellPlacer::PlaceFillerCells(int lx, int ux, int ly,
   // fillers only. The flow already creates larger filler masters, so this can
   // be extended later to use a mixed-width strategy if reducing instance count
   // becomes important.
-  BlockType* filler_type_ptr = ckt_ptr_->tech().FillerCellPtrs()[0].get();
+  Macro* filler_macro = ckt_ptr_->tech().FillerCellPtrs()[0].get();
   int space = ux - lx;
   for (int i = 0; i < space; ++i) {
     std::string filler_cell_name =
         "__filler_cell_component__" + std::to_string(filler_counter++);
     auto [filler_cell, filler_cell_id] =
-        ckt_ptr_->design().FillerCellCollection().CreateWithId(
+        ckt_ptr_->design().FillerComponentCollection().CreateWithId(
             filler_cell_name);
     filler_cell.SetPlacementStatus(PLACED);
-    filler_cell.SetType(filler_type_ptr);
+    filler_cell.SetMacro(filler_macro);
     filler_cell.SetId(static_cast<int>(filler_cell_id));
     filler_cell.SetLLX(lx + i);
     filler_cell.SetLLY(ly);
@@ -103,12 +103,12 @@ bool FillerCellPlacer::StartPlacement() {
   int filler_counter = 0;
   for (auto& row : rows) {
     for (auto& segment : row.RowSegments()) {
-      segment.SortBlocks();
+      segment.SortComponents();
       int lx = segment.LX();
-      for (auto& blk_ptr : segment.Blocks()) {
-        int ux = blk_ptr->LLX();
+      for (auto& component_ptr : segment.Components()) {
+        int ux = component_ptr->LLX();
         PlaceFillerCells(lx, ux, row.LY(), row.IsOrientN(), filler_counter);
-        lx = blk_ptr->URX();
+        lx = component_ptr->URX();
       }
       PlaceFillerCells(lx, segment.UX(), row.LY(), row.IsOrientN(),
                        filler_counter);

@@ -60,7 +60,7 @@ class NamedInstanceRegistry {
    * Create and return a new named instance and its stable id.
    *
    * Prefer structured binding at call sites:
-   *   auto [block, block_id] = registry.CreateWithId(name);
+   *   auto [component, component_id] = registry.CreateWithId(name);
    *
    * The returned reference follows std::vector invalidation rules and must not
    * be kept across later registry mutations.

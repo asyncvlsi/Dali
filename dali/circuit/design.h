@@ -25,7 +25,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "block.h"
+#include "component.h"
 #include "dali/common/named_instance_registry.h"
 #include "die_area.h"
 #include "io_pin.h"
@@ -91,51 +91,57 @@ class Design {
     return die_area_.die_area_offset_y_residual_;
   }
 
-  /** Return all regular block instances. */
-  std::vector<Block>& Blocks() { return block_collection_.Instances(); }
-
-  /** Return regular block name-to-id lookup. */
-  std::unordered_map<std::string, size_t>& BlockNameIdMap() {
-    return block_collection_.NameToIdMap();
+  /** Return all regular component instances. */
+  std::vector<Component>& Components() {
+    return component_collection_.Instances();
   }
 
-  /** Return the number of real, user/design-created blocks. */
-  int RealBlkCnt() const { return real_block_count_; }
+  /** Return regular component name-to-id lookup. */
+  std::unordered_map<std::string, size_t>& ComponentNameIdMap() {
+    return component_collection_.NameToIdMap();
+  }
+
+  /** Return the number of real, user/design-created components. */
+  int RealBlkCnt() const { return real_component_count_; }
 
   /** Return well tap cell instances. */
-  std::vector<Block>& WellTaps() {
-    return well_tap_cell_collection_.Instances();
+  std::vector<Component>& WellTaps() {
+    return well_tap_component_collection_.Instances();
   }
 
   /** Return well tap cell name-to-id lookup. */
   std::unordered_map<std::string, size_t>& TapNameIdMap() {
-    return well_tap_cell_collection_.NameToIdMap();
+    return well_tap_component_collection_.NameToIdMap();
   };
 
   /** Return filler cell instances. */
-  std::vector<Block>& Fillers() { return filler_cell_collection_.Instances(); }
+  std::vector<Component>& Fillers() {
+    return filler_component_collection_.Instances();
+  }
 
   /** Return filler cell name-to-id lookup. */
   std::unordered_map<std::string, size_t>& FillerNameIdMap() {
-    return filler_cell_collection_.NameToIdMap();
+    return filler_component_collection_.NameToIdMap();
   };
 
-  /** Return regular block collection. */
-  NamedInstanceRegistry<Block>& BlockCollection() { return block_collection_; }
+  /** Return regular component collection. */
+  NamedInstanceRegistry<Component>& ComponentCollection() {
+    return component_collection_;
+  }
 
   /** Return well tap cell collection. */
-  NamedInstanceRegistry<Block>& WellTapCellCollection() {
-    return well_tap_cell_collection_;
+  NamedInstanceRegistry<Component>& WellTapComponentCollection() {
+    return well_tap_component_collection_;
   }
 
   /** Return filler cell collection. */
-  NamedInstanceRegistry<Block>& FillerCellCollection() {
-    return filler_cell_collection_;
+  NamedInstanceRegistry<Component>& FillerComponentCollection() {
+    return filler_component_collection_;
   };
 
   /** Return end-cap cell collection. */
-  NamedInstanceRegistry<Block>& EndCapCellCollection() {
-    return end_cap_cell_collection_;
+  NamedInstanceRegistry<Component>& EndCapComponentCollection() {
+    return end_cap_component_collection_;
   }
 
   /** Return all I/O pins. */
@@ -154,8 +160,8 @@ class Design {
   void AddIntrinsicPlacementBlockage(double lx, double ly, double ux,
                                      double uy);
 
-  /** Add a placement blockage covering a fixed block. */
-  void AddFixedCellPlacementBlockage(Block& block);
+  /** Add a placement blockage covering a fixed component. */
+  void AddFixedCellPlacementBlockage(Component& component);
 
   /** Refresh blockages implied by rectilinear die area. */
   void UpdateDieAreaPlacementBlockages();
@@ -183,13 +189,13 @@ class Design {
   DieArea die_area_;
 
   /****list of instances****/
-  NamedInstanceRegistry<Block> block_collection_;
-  NamedInstanceRegistry<Block> well_tap_cell_collection_;
-  NamedInstanceRegistry<Block> filler_cell_collection_;
-  NamedInstanceRegistry<Block> end_cap_cell_collection_;
-  // number of blocks added by calling the AddBlock() API
-  int real_block_count_ = 0;
-  // number of blocks given in DEF, these two numbers are supposed to be the
+  NamedInstanceRegistry<Component> component_collection_;
+  NamedInstanceRegistry<Component> well_tap_component_collection_;
+  NamedInstanceRegistry<Component> filler_component_collection_;
+  NamedInstanceRegistry<Component> end_cap_component_collection_;
+  // number of components added by calling the AddComponent() API
+  int real_component_count_ = 0;
+  // number of components given in DEF, these two numbers are supposed to be the
   // same
   int blk_count_limit_ = 0;
 

@@ -21,37 +21,39 @@
 #ifndef DALI_PLACER_WELL_LEGALIZER_BLOCK_HELPER_H_
 #define DALI_PLACER_WELL_LEGALIZER_BLOCK_HELPER_H_
 
-#include "dali/circuit/block.h"
+#include "dali/circuit/component.h"
 
 namespace dali {
 
-struct BlockRegion {
-  BlockRegion(Block* block_init, int id) : block(block_init), region_id(id) {}
-  Block* block = nullptr;
+struct ComponentRegion {
+  ComponentRegion(Component* component_init, int id)
+      : component(component_init), region_id(id) {}
+  Component* component = nullptr;
   int region_id = 0;
 };
 
 /****
- * @brief A structure containing information of a block for minimizing
+ * @brief A structure containing information of a component for minimizing
  * displacement
  */
-struct BlockDisplacementVariable {
-  int w;                     // width of this block
-  double x_0;                // initial location
-  double e;                  // weight of initial location
-  double x_a;                // anchor location
-  double a;                  // weight of anchor location
-  double x;                  // place to store final location
-  BlockRegion block_region;  // pointer to the block or dummy block
+struct ComponentDisplacementVariable {
+  int w;       // width of this component
+  double x_0;  // initial location
+  double e;    // weight of initial location
+  double x_a;  // anchor location
+  double a;    // weight of anchor location
+  double x;    // place to store final location
+  ComponentRegion
+      component_region;  // pointer to the component or dummy component
   double segment_weight_;
-  BlockDisplacementVariable(int width, double x_init, double weight = 1.0)
+  ComponentDisplacementVariable(int width, double x_init, double weight = 1.0)
       : w(width),
         x_0(x_init),
         e(weight),
         x_a(0.0),
         a(0.0),
         x(0.0),
-        block_region(nullptr, 0),
+        component_region(nullptr, 0),
         segment_weight_(1.0) {}
 
   int Width() { return w; }
@@ -61,7 +63,7 @@ struct BlockDisplacementVariable {
   double AnchorWeight() { return a; };
   double Solution() { return x; }
   double SegmentWeight() { return segment_weight_; }
-  BlockRegion Region() { return block_region; }
+  ComponentRegion Region() { return component_region; }
 
   void SetAnchor(double anchor, double anchor_weight) {
     x_a = anchor;
@@ -75,14 +77,14 @@ struct BlockDisplacementVariable {
   void SetWeight(double weight) { e = weight; }
   void SetSolution(double x_new) { x = x_new; }
   void SetClusterWeight(double c_weight) { segment_weight_ = c_weight; }
-  void UpdateBlockLocation() {
-    if (block_region.block != nullptr) {
-      block_region.block->SetLLX(x);
+  void UpdateComponentLocation() {
+    if (component_region.component != nullptr) {
+      component_region.component->SetLLX(x);
     }
   }
 
   bool IsMultideckCell() const {
-    return block_region.block->TypePtr()->RegionCount() > 1;
+    return component_region.component->MacroPtr()->RegionCount() > 1;
   }
   bool TendToRight() {
     const double epsilon = 0.01;

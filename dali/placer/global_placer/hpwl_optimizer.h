@@ -25,7 +25,7 @@
 #include <vector>
 
 #include "dali/circuit/circuit.h"
-#include "dali/placer/global_placer/block_pair_nets.h"
+#include "dali/placer/global_placer/component_pair_nets.h"
 
 namespace dali {
 
@@ -55,7 +55,7 @@ class HpwlOptimizer {
   /** Set current global-placement iteration. */
   void SetIteration(int cur_iter) { cur_iter_ = cur_iter; }
 
-  /** Optimize block locations and return the resulting HPWL estimate. */
+  /** Optimize component locations and return the resulting HPWL estimate. */
   virtual double OptimizeHpwl() = 0;
 
   /** Return total optimizer runtime in seconds. */
@@ -109,7 +109,7 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   bool IsSeriesOscillate(std::vector<double>& data, int window_size);
   virtual double OptimizeQuadraticMetricX(double cg_stop_criterion);
   virtual double OptimizeQuadraticMetricY(double cg_stop_criterion);
-  void PullBlockBackToRegion();
+  void PullComponentBackToRegion();
 
   void UpdateAnchorLocation();
   virtual void UpdateAnchorAlpha();
@@ -117,7 +117,7 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   void UpdateMaxMinY();
   virtual void BuildProblemWithAnchorX();
   virtual void BuildProblemWithAnchorY();
-  void BackUpBlockLocation();
+  void BackUpComponentLocation();
   void OptimizeHpwlXWithAnchor(int num_threads);
   void OptimizeHpwlYWithAnchor(int num_threads);
   double OptimizeHpwl() override;
@@ -170,8 +170,8 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
   std::vector<T> coefficients_y_;
   Eigen::ConjugateGradient<SpMat, Eigen::Lower | Eigen::Upper> cg_x_;
   Eigen::ConjugateGradient<SpMat, Eigen::Lower | Eigen::Upper> cg_y_;
-  std::vector<std::vector<BlockPairNets*>> pair_connect;
-  std::vector<BlockPairNets> diagonal_pair;
+  std::vector<std::vector<ComponentPairNets*>> pair_connect;
+  std::vector<ComponentPairNets> diagonal_pair;
   std::vector<SpMat::InnerIterator> SpMat_diag_x;
   std::vector<SpMat::InnerIterator> SpMat_diag_y;
 
@@ -242,7 +242,7 @@ class StarHpwlHpwlOptimizer : public B2BHpwlOptimizer {
   void UpdateAnchorAlpha() override;
 
  private:
-  std::vector<BlockPairNets> blk_pair_net_list_;
+  std::vector<ComponentPairNets> blk_pair_net_list_;
   std::unordered_map<PairEgId, EgId, boost::hash<PairEgId>> blk_pair_map_;
 };
 

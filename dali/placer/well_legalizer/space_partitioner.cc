@@ -77,12 +77,12 @@ void DefaultSpacePartitioner::DetectAvailSpace() {
   macro_segments.resize(tot_num_rows_);
   SegI tmp(0, 0);
   bool out_of_range;
-  for (auto& block : circuit_->Blocks()) {
-    if (block.IsMovable()) continue;
-    int ly = int(std::floor(block.LLY()));
-    int uy = int(std::ceil(block.URY()));
-    int lx = int(std::floor(block.LLX()));
-    int ux = int(std::ceil(block.URX()));
+  for (auto& component : circuit_->Components()) {
+    if (component.IsMovable()) continue;
+    int ly = int(std::floor(component.LLY()));
+    int uy = int(std::ceil(component.URY()));
+    int lx = int(std::floor(component.LLX()));
+    int ux = int(std::ceil(component.URX()));
 
     out_of_range =
         (ly >= Top()) || (uy <= Bottom()) || (lx >= Right()) || (ux <= Left());
@@ -138,7 +138,7 @@ void DefaultSpacePartitioner::DetectAvailSpace() {
   }
 
   white_space_in_rows_.resize(tot_num_rows_);
-  int min_blk_width = int(circuit_->MinBlkWidth());
+  int min_blk_width = int(circuit_->MinComponentWidth());
   for (int i = 0; i < tot_num_rows_; ++i) {
     int len = int(intermediate_seg_rows[i].size());
     white_space_in_rows_[i].reserve(len / 2);
@@ -203,7 +203,7 @@ void DefaultSpacePartitioner::DecomposeSpaceToSimpleStripes() {
           stripe->front_row_ = nullptr;
           stripe->used_height_ = 0;
           stripe->max_blk_capacity_per_cluster_ =
-              stripe->width_ / circuit_->MinBlkWidth();
+              stripe->width_ / circuit_->MinComponentWidth();
         } else {
           stripe->height_ += row_height_;
         }
@@ -216,7 +216,7 @@ void DefaultSpacePartitioner::DecomposeSpaceToSimpleStripes() {
   //     well_spacing_;
   // col_list_[tot_col_num_ - 1].stripe_list_[0].max_blk_capacity_per_cluster_ =
   //     col_list_[tot_col_num_ - 1].stripe_list_[0].width_ /
-  //     circuit_ptr_->MinBlkWidth();
+  //     circuit_ptr_->MinComponentWidth();
   /*for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
       stripe.height_ -= row_height_;
@@ -227,20 +227,20 @@ void DefaultSpacePartitioner::DecomposeSpaceToSimpleStripes() {
   // PlotAvailSpaceInCols();
 }
 
-void DefaultSpacePartitioner::AssignBlockToColBasedOnWhiteSpace() {
-  // assign blocks to columns
-  std::vector<Block>& block_list = circuit_->Blocks();
+void DefaultSpacePartitioner::AssignComponentToColBasedOnWhiteSpace() {
+  // assign components to columns
+  std::vector<Component>& component_list = circuit_->Components();
   std::vector<ClusterStripe>& col_list = *output_stripes_;
-  int sz = (int)block_list.size();
-  std::vector<int> block_column_assign(sz, -1);
+  int sz = (int)component_list.size();
+  std::vector<int> component_column_assign(sz, -1);
   for (int i = 0; i < tot_col_num_; ++i) {
-    col_list[i].block_count_ = 0;
-    col_list[i].block_list_.clear();
+    col_list[i].component_count_ = 0;
+    col_list[i].component_list_.clear();
   }
 
   for (int i = 0; i < sz; ++i) {
-    if (block_list[i].IsFixed()) continue;
-    int col_num = LocToCol((int)std::round(block_list[i].X()));
+    if (component_list[i].IsFixed()) continue;
+    int col_num = LocToCol((int)std::round(component_list[i].X()));
 
     std::vector<int> pos_col;
     std::vector<double> distance;
@@ -259,8 +259,8 @@ void DefaultSpacePartitioner::AssignBlockToColBasedOnWhiteSpace() {
     double min_dist = DBL_MAX;
     for (auto& num : pos_col) {
       double tmp_dist;
-      Stripe* res =
-          col_list[num].GetStripeClosestToBlk(&block_list[i], tmp_dist);
+      Stripe* res = col_list[num].GetStripeClosestToComponent(
+          &component_list[i], tmp_dist);
       if (tmp_dist < min_dist) {
         stripe = res;
         col_num = num;
@@ -268,28 +268,28 @@ void DefaultSpacePartitioner::AssignBlockToColBasedOnWhiteSpace() {
       }
     }
     if (stripe != nullptr) {
-      col_list[col_num].block_count_++;
-      block_column_assign[i] = col_num;
+      col_list[col_num].component_count_++;
+      component_column_assign[i] = col_num;
     } else {
-      DaliExpects(
-          false, "Cannot find a column to place cell: " + block_list[i].Name());
+      DaliExpects(false, "Cannot find a column to place cell: " +
+                             component_list[i].Name());
     }
   }
   for (int i = 0; i < tot_col_num_; ++i) {
-    int capacity = col_list[i].block_count_;
-    col_list[i].block_list_.reserve(capacity);
+    int capacity = col_list[i].component_count_;
+    col_list[i].component_list_.reserve(capacity);
   }
 
   for (int i = 0; i < sz; ++i) {
-    if (block_list[i].IsFixed()) continue;
-    int col_num = block_column_assign[i];
+    if (component_list[i].IsFixed()) continue;
+    int col_num = component_column_assign[i];
     if (col_num >= 0) {
-      col_list[col_num].block_list_.push_back(&block_list[i]);
+      col_list[col_num].component_list_.push_back(&component_list[i]);
     }
   }
 
   for (auto& col : col_list) {
-    col.AssignBlockToSimpleStripe();
+    col.AssignComponentToSimpleStripe();
   }
 }
 
@@ -305,7 +305,7 @@ bool DefaultSpacePartitioner::StartPartitioning() {
   std::vector<ClusterStripe>& col_list = *output_stripes_;
   // find the maximum width among movable cells
   max_cell_width_ = 0;
-  for (auto& blk : circuit_->Blocks()) {
+  for (auto& blk : circuit_->Components()) {
     if (blk.IsMovable()) {
       max_cell_width_ = std::max(max_cell_width_, blk.Width());
     }
@@ -332,7 +332,7 @@ bool DefaultSpacePartitioner::StartPartitioning() {
   }
   tot_col_num_ = std::ceil(region_width / (double)stripe_width_);
   LOG(info) << "  Total number of columns: " << tot_col_num_ << "\n";
-  int max_clusters_per_col = region_height / circuit_->MinBlkHeight();
+  int max_clusters_per_col = region_height / circuit_->MinComponentHeight();
   col_list.resize(tot_col_num_);
   stripe_width_ = region_width / tot_col_num_;
   LOG(info) << "  Gridded row width: " << stripe_width_ * circuit_->GridValueX()
@@ -358,7 +358,7 @@ bool DefaultSpacePartitioner::StartPartitioning() {
   LOG(info) << "Maximum possible number of gridded rows in a column: "
             << max_clusters_per_col << "\n";
 
-  AssignBlockToColBasedOnWhiteSpace();
+  AssignComponentToColBasedOnWhiteSpace();
 
   return true;
 }
@@ -375,10 +375,10 @@ void DefaultSpacePartitioner::PlotAvailSpace(std::string const& name_of_file) {
     }
   }
 
-  for (auto& block : circuit_->Blocks()) {
-    if (block.IsMovable()) continue;
-    SaveMatlabPatchRect(ost, block.LLX(), block.LLY(), block.URX(), block.URY(),
-                        true, 1, 1, 1);
+  for (auto& component : circuit_->Components()) {
+    if (component.IsMovable()) continue;
+    SaveMatlabPatchRect(ost, component.LLX(), component.LLY(), component.URX(),
+                        component.URY(), true, 1, 1, 1);
   }
 }
 
@@ -397,10 +397,10 @@ void DefaultSpacePartitioner::PlotAvailSpaceInCols(
     }
   }
 
-  for (auto& block : circuit_->Blocks()) {
-    if (block.IsMovable()) continue;
-    SaveMatlabPatchRect(ost, block.LLX(), block.LLY(), block.URX(), block.URY(),
-                        true, 0, 1, 1);
+  for (auto& component : circuit_->Components()) {
+    if (component.IsMovable()) continue;
+    SaveMatlabPatchRect(ost, component.LLX(), component.LLY(), component.URX(),
+                        component.URY(), true, 0, 1, 1);
   }
 }
 
@@ -416,10 +416,10 @@ void DefaultSpacePartitioner::PlotSimpleStripes(
     }
   }
 
-  for (auto& block : circuit_->Blocks()) {
-    if (block.IsMovable()) continue;
-    SaveMatlabPatchRect(ost, block.LLX(), block.LLY(), block.URX(), block.URY(),
-                        true, 0, 1, 1);
+  for (auto& component : circuit_->Components()) {
+    if (component.IsMovable()) continue;
+    SaveMatlabPatchRect(ost, component.LLX(), component.LLY(), component.URX(),
+                        component.URY(), true, 0, 1, 1);
   }
 }
 

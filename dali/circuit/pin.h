@@ -29,20 +29,19 @@
 
 namespace dali {
 
-class BlockType;
+class Macro;
 
 /** Cell pin geometry and orientation-aware offsets for placement. */
 class Pin {
  public:
-  Pin(std::pair<const std::string, int>* name_id_pair_ptr,
-      BlockType* blk_type_ptr);
-  Pin(std::pair<const std::string, int>* name_id_pair_ptr,
-      BlockType* blk_type_ptr, double x_offset, double y_offset);
+  Pin(std::pair<const std::string, int>* name_id_pair_ptr, Macro* macro_ptr);
+  Pin(std::pair<const std::string, int>* name_id_pair_ptr, Macro* macro_ptr,
+      double x_offset, double y_offset);
 
   /** Return the pin name. */
   const std::string& Name() const;
 
-  /** Return the pin id within its block type. */
+  /** Return the pin id within its owning macro. */
   int Id() const;
 
   /** Set N-orientation offset and compute offsets for all orientations. */
@@ -51,11 +50,11 @@ class Pin {
   /** Set the physical pin bounding-box size. */
   void SetBoundingBoxSize(double width, double height);
 
-  /** Return x offset for a given block orientation. */
-  double OffsetX(BlockOrient orient = N) const;
+  /** Return x offset for a given component orientation. */
+  double OffsetX(ComponentOrient orient = N) const;
 
-  /** Return y offset for a given block orientation. */
-  double OffsetY(BlockOrient orient = N) const;
+  /** Return y offset for a given component orientation. */
+  double OffsetY(ComponentOrient orient = N) const;
 
   /** Mark this pin as input or output. */
   void SetIoType(bool is_input);
@@ -74,7 +73,7 @@ class Pin {
 
  private:
   std::pair<const std::string, int>* name_id_pair_ptr_;
-  BlockType* blk_type_ptr_;
+  Macro* macro_ptr_;
 
   bool is_input_;
   bool manual_set_;

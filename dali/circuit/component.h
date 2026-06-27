@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_CIRCUIT_BLOCK_H_
-#define DALI_CIRCUIT_BLOCK_H_
+#ifndef DALI_CIRCUIT_COMPONENT_H_
+#define DALI_CIRCUIT_COMPONENT_H_
 
 #include <iostream>
 #include <map>
@@ -27,42 +27,42 @@
 #include <string>
 #include <vector>
 
-#include "block_type.h"
 #include "dali/common/logging.h"
 #include "dali/common/misc.h"
 #include "enums.h"
+#include "macro.h"
 
 namespace dali {
 
-class BlockAux;
+class ComponentAux;
 
 /**
  * Physical instance in a design.
  *
- * A block can represent a standard cell, macro, filler, well tap, or generated
- * helper instance. Its location is stored as the lower-left corner of the
- * placement bounding rectangle, matching DEF COMPONENT placement semantics.
+ * A component can represent a standard cell, macro, filler, well tap, or
+ * generated helper instance. Its location is stored as the lower-left corner of
+ * the placement bounding rectangle, matching DEF COMPONENT placement semantics.
  */
-class Block {
+class Component {
  public:
-  explicit Block(std::string const* name_ptr) : name_ptr_(name_ptr) {}
+  explicit Component(std::string const* name_ptr) : name_ptr_(name_ptr) {}
 
-  /** Return the block instance name. */
+  /** Return the component instance name. */
   const std::string& Name() const { return *name_ptr_; }
 
-  /** Return the master/type that defines this block's dimensions and pins. */
-  BlockType* TypePtr() const { return type_ptr_; }
+  /** Return the macro/master that defines this component's size and pins. */
+  Macro* MacroPtr() const { return macro_ptr_; }
 
-  /** Return the block's internal design id. */
+  /** Return the component's internal design id. */
   int Id() const { return id_; }
 
-  /** Return the block width in Dali grid units. */
-  int Width() const { return type_ptr_->Width(); }
+  /** Return the component width in Dali grid units. */
+  int Width() const { return macro_ptr_->Width(); }
 
   /** Set effective height and update the cached effective area. */
   void SetHeight(int height);
 
-  /** Reset effective height and area from the block type. */
+  /** Reset effective height and area from the component's macro. */
   void ResetHeight();
 
   /** Return the effective height in Dali grid units. */
@@ -86,10 +86,10 @@ class Block {
   /** Return center y coordinate in Dali grid units. */
   double Y() const { return lly_ + Height() / 2.0; }
 
-  /** Return the ids of nets connected to this block. */
+  /** Return the ids of nets connected to this component. */
   std::vector<int>& NetList() { return nets_; }
 
-  /** Return true if this block has a placed, fixed, or cover status. */
+  /** Return true if this component has a placed, fixed, or cover status. */
   bool IsPlaced() const {
     return place_status_ == PLACED || place_status_ == FIXED ||
            place_status_ == COVER;
@@ -106,26 +106,26 @@ class Block {
     return place_status_ == UNPLACED || place_status_ == PLACED;
   }
 
-  /** Return true when this block is fixed or cover. */
+  /** Return true when this component is fixed or cover. */
   bool IsFixed() const { return !IsMovable(); }
 
   /** Return cached effective area in grid-unit squared. */
   long long Area() const { return eff_area_; }
 
-  /** Return the current block orientation. */
-  BlockOrient Orient() const { return orient_; }
+  /** Return the current component orientation. */
+  ComponentOrient Orient() const { return orient_; }
 
-  /** Return true when the orientation mirrors the block. */
+  /** Return true when the orientation mirrors the component. */
   bool IsFlipped() const;
 
   /** Return optional auxiliary placement data attached by a later flow. */
-  BlockAux* AuxPtr() const { return aux_ptr_; }
+  ComponentAux* AuxPtr() const { return aux_ptr_; }
 
   /** Set the internal design id. */
   void SetId(size_t id) { id_ = id; }
 
-  /** Set the block type and reset effective dimensions from it. */
-  void SetType(BlockType* type_ptr);
+  /** Set the component macro and reset effective dimensions from it. */
+  void SetMacro(Macro* macro_ptr);
 
   /** Set lower-left location in Dali grid units. */
   void SetLoc(double lx, double ly);
@@ -148,17 +148,17 @@ class Block {
   // set the center y coordinate
   void SetCenterY(double center_y) { lly_ = center_y - Height() / 2.0; }
 
-  // set the placement status of this Block
+  // set the placement status of this Component
   void SetPlacementStatus(PlaceStatus place_status);
 
-  // set the orientation of this Block
-  void SetOrient(BlockOrient orient);
+  // set the orientation of this Component
+  void SetOrient(ComponentOrient orient);
 
   // set the pointer to the auxiliary information
-  void SetAux(BlockAux* aux);
+  void SetAux(ComponentAux* aux);
 
-  /** Swap only the lower-left location with another block. */
-  void SwapLoc(Block& blk);
+  /** Swap only the lower-left location with another component. */
+  void SwapLoc(Component& blk);
 
   // increase x coordinate by a certain amount
   void IncreaseX(double displacement) { llx_ += displacement; }
@@ -180,8 +180,8 @@ class Block {
   // decrease y coordinate by a certain amount
   void DecreaseY(double displacement) { lly_ -= displacement; }
 
-  /** Return true when this block overlaps another block. */
-  bool IsOverlap(const Block& blk) const {
+  /** Return true when this component overlaps another component. */
+  bool IsOverlap(const Component& blk) const {
     return !(LLX() > blk.URX() || blk.LLX() > URX() || LLY() > blk.URY() ||
              blk.LLY() > URY());
   }
@@ -191,11 +191,11 @@ class Block {
              rect.LLY() > URY());
   }
 
-  /** Return true when this block overlaps another block pointer. */
-  bool IsOverlap(const Block* blk) const { return IsOverlap(*blk); }
+  /** Return true when this component overlaps another component pointer. */
+  bool IsOverlap(const Component* blk) const { return IsOverlap(*blk); }
 
-  /** Return the overlap area with another block. */
-  double OverlapArea(const Block& blk) const;
+  /** Return the overlap area with another component. */
+  double OverlapArea(const Component& blk) const;
 
   // set stretch length
   void SetStretchLength(size_t index, int length);
@@ -205,18 +205,18 @@ class Block {
 
   int CumulativeStretchLength(size_t index);
 
-  /** Log detailed block information for debugging. */
+  /** Log detailed component information for debugging. */
   void Report();
 
-  /** Log the nets connected to this block. */
+  /** Log the nets connected to this component. */
   void ReportNet();
 
-  /** Write this block's well geometry as MATLAB patch rectangles. */
+  /** Write this component's well geometry as MATLAB patch rectangles. */
   void ExportWellToMatlabPatchRect(std::ofstream& ost);
 
  protected:
-  BlockType* type_ptr_ = nullptr;  // type
-  // name for finding its index in block_list
+  Macro* macro_ptr_ = nullptr;
+  // name for finding its index in component_list
   std::string const* name_ptr_ = nullptr;
   int id_ = 0;
   double llx_ =
@@ -224,45 +224,47 @@ class Block {
   double lly_ = 0;         // lower y coordinate
   std::vector<int> nets_;  // the list of nets connected to this cell
   PlaceStatus place_status_ =
-      UNPLACED;             // placement status, i.e, PLACED, FIXED, UNPLACED
-  BlockOrient orient_ = N;  // orientation, normally, N or FS
-  BlockAux* aux_ptr_ = nullptr;  // points to auxiliary information if needed
+      UNPLACED;  // placement status, i.e, PLACED, FIXED, UNPLACED
+  ComponentOrient orient_ = N;  // orientation, normally, N or FS
+  ComponentAux* aux_ptr_ =
+      nullptr;  // points to auxiliary information if needed
 
   // cached height, also used to store effective height, the unit is grid value
   // in the y-direction
   int eff_height_ = 0;
   long long eff_area_ = 0;  // cached effective area
 
-  std::vector<int>
-      stretch_length_;  // TODO : move these two attributes to LegalizerBlockAux
+  std::vector<int> stretch_length_;  // TODO : move these two attributes to
+                                     // LegalizerComponentAux
   double tot_stretch_length = 0;
 };
 
-class BlockAux {
+class ComponentAux {
  public:
-  explicit BlockAux(Block* blk_ptr) : blk_ptr_(blk_ptr) {
-    blk_ptr->SetAux(this);
+  explicit ComponentAux(Component* component_ptr)
+      : component_ptr_(component_ptr) {
+    component_ptr->SetAux(this);
   }
 
-  /** Return the block that owns this auxiliary data. */
-  Block* GetBlockPtr() const { return blk_ptr_; }
+  /** Return the component that owns this auxiliary data. */
+  Component* GetComponentPtr() const { return component_ptr_; }
 
-  /** Return the block that owns this auxiliary data. */
-  Block* getBlockPtr() const { return GetBlockPtr(); }
+  /** Return the component that owns this auxiliary data. */
+  Component* getComponentPtr() const { return GetComponentPtr(); }
 
  protected:
-  Block* blk_ptr_;
+  Component* component_ptr_;
 };
 
-struct BlockInitialLocation {
-  Block* blk_ptr;
+struct ComponentInitialLocation {
+  Component* component_ptr;
   double x;
   double y;
-  explicit BlockInitialLocation(Block* blk_ptr_init = nullptr,
-                                double x_init = 0, double y_init = 0)
-      : blk_ptr(blk_ptr_init), x(x_init), y(y_init) {}
+  explicit ComponentInitialLocation(Component* component_ptr_init = nullptr,
+                                    double x_init = 0, double y_init = 0)
+      : component_ptr(component_ptr_init), x(x_init), y(y_init) {}
 };
 
 }  // namespace dali
 
-#endif  // DALI_CIRCUIT_BLOCK_H_
+#endif  // DALI_CIRCUIT_COMPONENT_H_

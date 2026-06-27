@@ -35,13 +35,22 @@ MetalDirection StrToMetalDirection(std::string const& str_metal_direction);
 std::string MetalDirectionStr(MetalDirection metal_direction);
 
 /** DEF component orientation. */
-enum BlockOrient { N = 0, S = 1, W = 2, E = 3, FN = 4, FS = 5, FW = 6, FE = 7 };
+enum ComponentOrient {
+  N = 0,
+  S = 1,
+  W = 2,
+  E = 3,
+  FN = 4,
+  FS = 5,
+  FW = 6,
+  FE = 7
+};
 
 /** Convert DEF orientation string to enum. */
-BlockOrient StrToOrient(std::string const& str_orient);
+ComponentOrient StrToOrient(std::string const& str_orient);
 
 /** Convert orientation enum to DEF string. */
-std::string OrientStr(BlockOrient orient);
+std::string OrientStr(ComponentOrient orient);
 
 /** DEF placement status. */
 enum PlaceStatus {

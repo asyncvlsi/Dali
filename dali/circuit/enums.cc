@@ -64,8 +64,8 @@ std::string MetalDirectionStr(MetalDirection metal_direction) {
   return s;
 }
 
-BlockOrient StrToOrient(std::string const& str_orient) {
-  BlockOrient orient = N;
+ComponentOrient StrToOrient(std::string const& str_orient) {
+  ComponentOrient orient = N;
   if (str_orient == "N" || str_orient == "R0") {
     orient = N;
   } else if (str_orient == "S" || str_orient == "R180") {
@@ -85,12 +85,12 @@ BlockOrient StrToOrient(std::string const& str_orient) {
              str_orient == "MYR90") {
     orient = FE;
   } else {
-    DaliExpects(false, "Unknown Block orientation: " + str_orient);
+    DaliExpects(false, "Unknown Component orientation: " + str_orient);
   }
   return orient;
 }
 
-std::string OrientStr(BlockOrient orient) {
+std::string OrientStr(ComponentOrient orient) {
   std::string s;
   switch (orient) {
     case 0: {
@@ -118,7 +118,8 @@ std::string OrientStr(BlockOrient orient) {
       s = "FE";
     } break;
     default: {
-      DaliExpects(false, "Block orientation error! This should never happen!");
+      DaliExpects(false,
+                  "Component orientation error! This should never happen!");
     }
   }
   return s;

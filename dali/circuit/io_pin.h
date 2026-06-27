@@ -42,8 +42,8 @@ class IoPin {
   IoPin(std::pair<const std::string, int>* name_id_pair_ptr,
         SignalDirection direction, PlaceStatus init_place_status, double loc_x,
         double loc_y);
-  IoPin(double loc_x, double loc_y, BlockOrient orient, double llx, double lly,
-        double urx, double ury);
+  IoPin(double loc_x, double loc_y, ComponentOrient orient, double llx,
+        double lly, double urx, double ury);
 
   /** Return the I/O pin name. */
   const std::string& Name() const;
@@ -151,10 +151,10 @@ class IoPin {
   int FinalY() const;
 
   /** Set final orientation. */
-  void SetOrient(BlockOrient orient);
+  void SetOrient(ComponentOrient orient);
 
   /** Return final orientation. */
-  BlockOrient GetOrient() const;
+  ComponentOrient GetOrient() const;
 
   /** Log I/O pin information for debugging. */
   void Report() const;
@@ -173,7 +173,7 @@ class IoPin {
   double y_;         // grid unit
   int final_x_ = 0;  // database unit
   int final_y_ = 0;  // database unit
-  BlockOrient orient_;
+  ComponentOrient orient_;
 
   // set shape of its physical geometry, and compute rects for different
   // orientations

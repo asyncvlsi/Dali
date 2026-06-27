@@ -27,7 +27,7 @@
 
 namespace dali {
 
-struct BlockDisplacementVariableSegment {
+struct ComponentDisplacementVariableSegment {
  private:
   double lx_;
   int width_;
@@ -35,25 +35,26 @@ struct BlockDisplacementVariableSegment {
   double sum_e_;
 
  public:
-  BlockDisplacementVariableSegment(BlockDisplacementVariable* var, double lx)
+  ComponentDisplacementVariableSegment(ComponentDisplacementVariable* var,
+                                       double lx)
       : lx_(lx), width_(var->Width()) {
     vars_.push_back(var);
     sum_es_ = var->Weight() * var->InitX();
     sum_e_ = var->Weight();
   }
-  std::vector<BlockDisplacementVariable*> vars_;
+  std::vector<ComponentDisplacementVariable*> vars_;
 
   double LX() const { return lx_; }
   double UX() const { return lx_ + width_; }
   int Width() const { return width_; }
 
-  bool IsNotOnLeft(BlockDisplacementVariableSegment& sc) const {
+  bool IsNotOnLeft(ComponentDisplacementVariableSegment& sc) const {
     return sc.LX() < UX();
   }
-  void Merge(BlockDisplacementVariableSegment& seg, double lower_bound,
+  void Merge(ComponentDisplacementVariableSegment& seg, double lower_bound,
              double upper_bound);
-  void LinearMerge(BlockDisplacementVariableSegment& seg, double lower_bound,
-                   double upper_bound);
+  void LinearMerge(ComponentDisplacementVariableSegment& seg,
+                   double lower_bound, double upper_bound);
   void UpdateVarLoc();
 };
 
@@ -65,8 +66,8 @@ struct BlockDisplacementVariableSegment {
  * @param lower_bound
  * @param upper_bound
  */
-void BlockDisplacementVariableSegment::Merge(
-    BlockDisplacementVariableSegment& seg, double lower_bound,
+void ComponentDisplacementVariableSegment::Merge(
+    ComponentDisplacementVariableSegment& seg, double lower_bound,
     double upper_bound) {
   vars_.reserve(vars_.size() + seg.vars_.size());
   for (auto& var : seg.vars_) {
@@ -85,8 +86,8 @@ void BlockDisplacementVariableSegment::Merge(
   }
 }
 
-void BlockDisplacementVariableSegment::LinearMerge(
-    BlockDisplacementVariableSegment& seg, double lower_bound,
+void ComponentDisplacementVariableSegment::LinearMerge(
+    ComponentDisplacementVariableSegment& seg, double lower_bound,
     double upper_bound) {
   vars_.reserve(vars_.size() + seg.vars_.size());
   for (auto& var : seg.vars_) {
@@ -131,7 +132,7 @@ void BlockDisplacementVariableSegment::LinearMerge(
   }
 }
 
-void BlockDisplacementVariableSegment::UpdateVarLoc() {
+void ComponentDisplacementVariableSegment::UpdateVarLoc() {
   double cur_loc = lx_;
   for (auto& var : vars_) {
     var->SetSolution(cur_loc);
@@ -159,13 +160,14 @@ void BlockDisplacementVariableSegment::UpdateVarLoc() {
  * @param lower_limit: lower bound
  * @param upper_limit: upper bound
  */
-void MinimizeQuadraticDisplacement(std::vector<BlockDisplacementVariable>& vars,
-                                   double lower_limit, double upper_limit) {
-  std::vector<BlockDisplacementVariableSegment> segments;
+void MinimizeQuadraticDisplacement(
+    std::vector<ComponentDisplacementVariable>& vars, double lower_limit,
+    double upper_limit) {
+  std::vector<ComponentDisplacementVariableSegment> segments;
 
   size_t sz = vars.size();
   for (size_t i = 0; i < sz; ++i) {
-    // create a new segment which contains only this block
+    // create a new segment which contains only this component
     double lx = vars[i].x_0;
     lx = std::max(lx, lower_limit);
     lx = std::min(lx, upper_limit - vars[i].w);
@@ -177,8 +179,8 @@ void MinimizeQuadraticDisplacement(std::vector<BlockDisplacementVariable>& vars,
 
     // check if this segment overlap with the previous one, if yes, merge these
     // two segments repeats until this is no overlap or only one segment left
-    BlockDisplacementVariableSegment* cur_seg = &(segments[seg_sz - 1]);
-    BlockDisplacementVariableSegment* prev_seg = &(segments[seg_sz - 2]);
+    ComponentDisplacementVariableSegment* cur_seg = &(segments[seg_sz - 1]);
+    ComponentDisplacementVariableSegment* prev_seg = &(segments[seg_sz - 2]);
     while (prev_seg->IsNotOnLeft(*cur_seg)) {
       prev_seg->Merge(*cur_seg, lower_limit, upper_limit);
       segments.pop_back();
@@ -213,13 +215,14 @@ void MinimizeQuadraticDisplacement(std::vector<BlockDisplacementVariable>& vars,
  * @param lower_limit: lower bound
  * @param upper_limit: upper bound
  */
-void MinimizeLinearDisplacement(std::vector<BlockDisplacementVariable>& vars,
-                                double lower_limit, double upper_limit) {
-  std::vector<BlockDisplacementVariableSegment> segments;
+void MinimizeLinearDisplacement(
+    std::vector<ComponentDisplacementVariable>& vars, double lower_limit,
+    double upper_limit) {
+  std::vector<ComponentDisplacementVariableSegment> segments;
 
   size_t sz = vars.size();
   for (size_t i = 0; i < sz; ++i) {
-    // create a new segment which contains only this block
+    // create a new segment which contains only this component
     double lx = vars[i].x_0;
     lx = std::max(lx, lower_limit);
     lx = std::min(lx, upper_limit - vars[i].w);
@@ -231,8 +234,8 @@ void MinimizeLinearDisplacement(std::vector<BlockDisplacementVariable>& vars,
 
     // check if this segment overlap with the previous one, if yes, merge these
     // two segments repeats until this is no overlap or only one segment left
-    BlockDisplacementVariableSegment* cur_seg = &(segments[seg_sz - 1]);
-    BlockDisplacementVariableSegment* prev_seg = &(segments[seg_sz - 2]);
+    ComponentDisplacementVariableSegment* cur_seg = &(segments[seg_sz - 1]);
+    ComponentDisplacementVariableSegment* prev_seg = &(segments[seg_sz - 2]);
     while (prev_seg->IsNotOnLeft(*cur_seg)) {
       prev_seg->LinearMerge(*cur_seg, lower_limit, upper_limit);
       segments.pop_back();
@@ -259,7 +262,7 @@ struct AbacusSegment {
 
   int CellCount() const { return last_id - first_id + 1; }
   void UpdatePosition() { x = sum_es_ / sum_e_; }
-  void AddCell(BlockDisplacementVariable& var, int i);
+  void AddCell(ComponentDisplacementVariable& var, int i);
   void SetX(double init_x) { x = init_x; }
   void SetFirstId(int i) { first_id = i; }
   int LastId() { return last_id; }
@@ -271,7 +274,7 @@ struct AbacusSegment {
   void AddSegment(AbacusSegment& seg);
 };
 
-void AbacusSegment::AddCell(BlockDisplacementVariable& var, int i) {
+void AbacusSegment::AddCell(ComponentDisplacementVariable& var, int i) {
   last_id = i;
   sum_e_ += var.Weight();
   sum_es_ += var.Weight() * (var.InitX() - width);
@@ -307,7 +310,7 @@ void CollapseSegment(std::vector<AbacusSegment>& segments, double lower_limit,
   }
 }
 
-void AbacusPlaceRow(std::vector<BlockDisplacementVariable>& vars,
+void AbacusPlaceRow(std::vector<ComponentDisplacementVariable>& vars,
                     double lower_limit, double upper_limit) {
   if (vars.empty()) return;
   std::vector<AbacusSegment> segments;

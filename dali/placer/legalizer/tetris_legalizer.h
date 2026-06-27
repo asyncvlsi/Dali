@@ -23,7 +23,7 @@
 
 #include <vector>
 
-#include "dali/circuit/block.h"
+#include "dali/circuit/component.h"
 #include "dali/common/misc.h"
 #include "dali/placer/legalizer/tetris_legalizer/tetris_space.h"
 #include "dali/placer/placer.h"
@@ -41,7 +41,7 @@ class TetrisLegalizer : public Placer {
   int max_iteration_;
   int current_iteration_;
   bool flipped_;
-  std::vector<BlockInitialLocation> index_loc_list_;
+  std::vector<ComponentInitialLocation> index_loc_list_;
 
  public:
   TetrisLegalizer();

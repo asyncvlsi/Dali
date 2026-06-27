@@ -18,7 +18,7 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#include "block.h"
+#include "component.h"
 
 #include <algorithm>
 
@@ -26,41 +26,41 @@
 
 namespace dali {
 
-void Block::SetHeight(int height) {
+void Component::SetHeight(int height) {
   eff_height_ = height;
-  eff_area_ = eff_height_ * type_ptr_->Width();
+  eff_area_ = eff_height_ * macro_ptr_->Width();
 }
 
-void Block::ResetHeight() {
-  eff_height_ = type_ptr_->Height();
-  eff_area_ = type_ptr_->Area();
+void Component::ResetHeight() {
+  eff_height_ = macro_ptr_->Height();
+  eff_area_ = macro_ptr_->Area();
 }
 
-bool Block::IsFlipped() const {
+bool Component::IsFlipped() const {
   return orient_ == FN || orient_ == FS || orient_ == FW || orient_ == FE;
 }
 
-void Block::SetType(BlockType* type_ptr) {
-  DaliExpects(type_ptr != nullptr, "Set BlockType to nullptr?");
-  type_ptr_ = type_ptr;
-  eff_height_ = type_ptr_->Height();
-  eff_area_ = type_ptr_->Area();
+void Component::SetMacro(Macro* macro_ptr) {
+  DaliExpects(macro_ptr != nullptr, "Set Macro to nullptr?");
+  macro_ptr_ = macro_ptr;
+  eff_height_ = macro_ptr_->Height();
+  eff_area_ = macro_ptr_->Area();
 }
 
-void Block::SetLoc(double lx, double ly) {
+void Component::SetLoc(double lx, double ly) {
   llx_ = lx;
   lly_ = ly;
 }
 
-void Block::SetPlacementStatus(PlaceStatus place_status) {
+void Component::SetPlacementStatus(PlaceStatus place_status) {
   place_status_ = place_status;
 }
 
-void Block::SetOrient(BlockOrient orient) { orient_ = orient; }
+void Component::SetOrient(ComponentOrient orient) { orient_ = orient; }
 
-void Block::SetAux(BlockAux* aux) { aux_ptr_ = aux; }
+void Component::SetAux(ComponentAux* aux) { aux_ptr_ = aux; }
 
-void Block::SwapLoc(Block& blk) {
+void Component::SwapLoc(Component& blk) {
   double tmp_x = llx_;
   double tmp_y = lly_;
   llx_ = blk.LLX();
@@ -69,7 +69,7 @@ void Block::SwapLoc(Block& blk) {
   blk.SetLLY(tmp_y);
 }
 
-void Block::IncreaseX(double displacement, double upper, double lower) {
+void Component::IncreaseX(double displacement, double upper, double lower) {
   llx_ += displacement;
   double real_upper = upper - Width();
   if (llx_ < lower) {
@@ -79,7 +79,7 @@ void Block::IncreaseX(double displacement, double upper, double lower) {
   }
 }
 
-void Block::IncreaseY(double displacement, double upper, double lower) {
+void Component::IncreaseY(double displacement, double upper, double lower) {
   lly_ += displacement;
   double real_upper = upper - Height();
   if (lly_ < lower) {
@@ -89,7 +89,7 @@ void Block::IncreaseY(double displacement, double upper, double lower) {
   }
 }
 
-double Block::OverlapArea(const Block& blk) const {
+double Component::OverlapArea(const Component& blk) const {
   double overlap_area = 0;
   if (IsOverlap(blk)) {
     double llx, urx, lly, ury;
@@ -102,7 +102,7 @@ double Block::OverlapArea(const Block& blk) const {
   return overlap_area;
 }
 
-void Block::SetStretchLength(size_t index, int length) {
+void Component::SetStretchLength(size_t index, int length) {
   size_t sz = stretch_length_.size();
   DaliExpects(index < sz, "Out of bound");
   if (IsFlipped()) {
@@ -113,10 +113,10 @@ void Block::SetStretchLength(size_t index, int length) {
       std::accumulate(stretch_length_.begin(), stretch_length_.end(), 0);
 }
 
-std::vector<int>& Block::StretchLengths() { return stretch_length_; }
+std::vector<int>& Component::StretchLengths() { return stretch_length_; }
 
-int Block::CumulativeStretchLength(size_t index) {
-  if (TypePtr()->RegionCount() == 1) return 0;
+int Component::CumulativeStretchLength(size_t index) {
+  if (MacroPtr()->RegionCount() == 1) return 0;
   if (stretch_length_.empty()) return 0;
 
   size_t sz = stretch_length_.size();
@@ -129,9 +129,9 @@ int Block::CumulativeStretchLength(size_t index) {
   return res;
 }
 
-void Block::Report() {
-  LOG(info) << "  block name: " << Name() << "\n"
-            << "    block type: " << TypePtr()->Name() << "\n"
+void Component::Report() {
+  LOG(info) << "  component name: " << Name() << "\n"
+            << "    component macro: " << MacroPtr()->Name() << "\n"
             << "    width and height: " << Width() << " " << Height() << "\n"
             << "    lower left corner: " << llx_ << " " << lly_ << "\n"
             << "    movable: " << IsMovable() << "\n"
@@ -139,7 +139,7 @@ void Block::Report() {
             << "    assigned primary key: " << Id() << "\n";
 }
 
-void Block::ReportNet() {
+void Component::ReportNet() {
   LOG(info) << Name() << " connects to:\n";
   for (auto& net_num : nets_) {
     LOG(info) << net_num << "  ";
@@ -147,15 +147,15 @@ void Block::ReportNet() {
   LOG(info) << "\n";
 }
 
-void Block::ExportWellToMatlabPatchRect(std::ofstream& ost) {
+void Component::ExportWellToMatlabPatchRect(std::ofstream& ost) {
   std::vector<RectI> n_well_shapes;
   std::vector<RectI> p_well_shapes;
-  if (TypePtr()->HasWellInfo()) {
-    auto& n_rects = TypePtr()->Nrects();
+  if (MacroPtr()->HasWellInfo()) {
+    auto& n_rects = MacroPtr()->Nrects();
     for (auto& rect : n_rects) {
       n_well_shapes.push_back(rect);
     }
-    auto& p_rects = TypePtr()->Prects();
+    auto& p_rects = MacroPtr()->Prects();
     for (auto& rect : p_rects) {
       p_well_shapes.push_back(rect);
     }

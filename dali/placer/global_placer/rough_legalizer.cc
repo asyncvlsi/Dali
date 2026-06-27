@@ -49,8 +49,9 @@ void RoughLegalizer::SetShouldSaveIntermediateResult(
  * And initialize the space of grid_bin_mesh
  */
 void LookAheadLegalizer::InitializeGridBinSize() {
-  double grid_bin_area =
-      number_of_cell_in_bin_ * ckt_ptr_->AveMovBlkArea() / placement_density_;
+  double grid_bin_area = number_of_cell_in_bin_ *
+                         ckt_ptr_->AverageMovableComponentArea() /
+                         placement_density_;
   grid_bin_height = static_cast<int>(std::round(std::sqrt(grid_bin_area)));
   grid_bin_height = std::max(grid_bin_height, 1);
   grid_bin_width = grid_bin_height;
@@ -106,8 +107,8 @@ void LookAheadLegalizer::UpdateAttributesForAllGridBins() {
 }
 
 /****
- * @brief find fixed blocks in each grid bin
- * For each fixed block, we need to store its index in grid bins it overlaps
+ * @brief find fixed components in each grid bin
+ * For each fixed component, we need to store its index in grid bins it overlaps
  * with. This can help us to compute available white space in each grid bin.
  */
 void LookAheadLegalizer::UpdatePlacementBlockagesInGridBins() {
@@ -129,7 +130,7 @@ void LookAheadLegalizer::UpdatePlacementBlockagesInGridBins() {
     int top_index =
         std::floor((rect.URY() - ckt_ptr_->RegionLLY()) / grid_bin_height);
     /* the grid boundaries might be the placement region boundaries
-     * if a block touches the rightmost and topmost boundaries,
+     * if a component touches the rightmost and topmost boundaries,
      * the index need to be fixed to make sure no memory access out of scope */
     if (left_index < 0) left_index = 0;
     if (right_index >= grid_cnt_x) right_index = grid_cnt_x - 1;
@@ -144,9 +145,9 @@ void LookAheadLegalizer::UpdatePlacementBlockagesInGridBins() {
     for (int j = left_index; j <= right_index; ++j) {
       for (int k = bottom_index; k <= top_index; ++k) {
         /* the following case might happen:
-         * the top/right of a fixed block overlap with the bottom/left of
+         * the top/right of a fixed component overlap with the bottom/left of
          * a grid box. if this case happens, we need to ignore this fixed
-         * block for this grid box. */
+         * component for this grid box. */
         bool blk_out_of_bin = rect.LLX() >= grid_bin_mesh[j][k].right ||
                               rect.URX() <= grid_bin_mesh[j][k].left ||
                               rect.LLY() >= grid_bin_mesh[j][k].top ||
@@ -174,7 +175,7 @@ void LookAheadLegalizer::UpdateWhiteSpaceInGridBin(GridBin& grid_bin) {
 
   unsigned long long used_area = GetCoverArea(rects);
   DaliExpects(grid_bin.white_space >= used_area,
-              "Fixed blocks takes more space than available space? "
+              "Fixed components takes more space than available space? "
                   << grid_bin.white_space << " " << used_area);
 
   grid_bin.white_space -= used_area;
@@ -282,34 +283,34 @@ void LookAheadLegalizer::UpdateGridBinState() {
   // note that in extreme cases, the index might be smaller than 0 or larger
   // than the maximum allowed index, because the cell is on the boundaries,
   // so we need to make some modifications for these extreme cases.
-  std::vector<Block>& blocks = ckt_ptr_->Blocks();
-  int sz = static_cast<int>(blocks.size());
+  std::vector<Component>& components = ckt_ptr_->Components();
+  int sz = static_cast<int>(components.size());
   int x_index = 0;
   int y_index = 0;
 
   for (int i = 0; i < sz; i++) {
-    if (blocks[i].IsFixed()) continue;
-    x_index = (int)std::floor((blocks[i].X() - ckt_ptr_->RegionLLX()) /
+    if (components[i].IsFixed()) continue;
+    x_index = (int)std::floor((components[i].X() - ckt_ptr_->RegionLLX()) /
                               grid_bin_width);
-    y_index = (int)std::floor((blocks[i].Y() - ckt_ptr_->RegionLLY()) /
+    y_index = (int)std::floor((components[i].Y() - ckt_ptr_->RegionLLY()) /
                               grid_bin_height);
     if (x_index < 0) x_index = 0;
     if (x_index > grid_cnt_x - 1) x_index = grid_cnt_x - 1;
     if (y_index < 0) y_index = 0;
     if (y_index > grid_cnt_y - 1) y_index = grid_cnt_y - 1;
-    grid_bin_mesh[x_index][y_index].cell_list.push_back(&(blocks[i]));
-    grid_bin_mesh[x_index][y_index].cell_area += blocks[i].Area();
+    grid_bin_mesh[x_index][y_index].cell_list.push_back(&(components[i]));
+    grid_bin_mesh[x_index][y_index].cell_area += components[i].Area();
   }
 
   /**** below is the criterion to decide whether a grid bin is over_filled or
    * not
-   * 1. if this bin if fully occupied by fixed blocks, but its cell_list is
+   * 1. if this bin if fully occupied by fixed components, but its cell_list is
    *    non-empty, which means there is some cells overlap with this grid bin,
    *    we say it is over_fill
-   * 2. if not fully occupied by fixed blocks, but filling_rate is larger than
-   *    the TARGET_FILLING_RATE, then set is to over_fill
+   * 2. if not fully occupied by fixed components, but filling_rate is larger
+   * than the TARGET_FILLING_RATE, then set is to over_fill
    * 3. if this bin is not overfilled, but cells in this bin overlaps with fixed
-   *    blocks in this bin, we also mark it as over_fill
+   *    components in this bin, we also mark it as over_fill
    * ****/
   // TODO: the third criterion might be changed in the next
   bool over_fill = false;
@@ -319,7 +320,7 @@ void LookAheadLegalizer::UpdateGridBinState() {
         grid_bin.over_fill = false;
         continue;
       }
-      if (grid_bin.IsAllFixedBlk()) {
+      if (grid_bin.IsAllFixedComponent()) {
         if (!grid_bin.cell_list.empty()) {
           grid_bin.over_fill = true;
         }
@@ -331,10 +332,10 @@ void LookAheadLegalizer::UpdateGridBinState() {
         }
       }
       if (!grid_bin.OverFill()) {
-        for (auto& blk_ptr : grid_bin.cell_list) {
+        for (auto& component_ptr : grid_bin.cell_list) {
           for (auto& blockage_ptr : grid_bin.placement_blockages_) {
             auto& rect = blockage_ptr->GetRect();
-            over_fill = blk_ptr->IsOverlap(rect);
+            over_fill = component_ptr->IsOverlap(rect);
             if (over_fill) {
               grid_bin.over_fill = true;
               break;
@@ -654,8 +655,8 @@ void LookAheadLegalizer::SplitGridBox(BoxBin& box) {
     box1.top = box.horizontal_cutlines[0];
     box2.left = box.left;
     box2.bottom = box.horizontal_cutlines[0];
-    box1.UpdateWhiteSpaceAndFixedBlocks(box.placement_blockages_);
-    box2.UpdateWhiteSpaceAndFixedBlocks(box.placement_blockages_);
+    box1.UpdateWhiteSpaceAndFixedComponents(box.placement_blockages_);
+    box2.UpdateWhiteSpaceAndFixedComponents(box.placement_blockages_);
 
     if (double(box1.total_white_space) / (double)box.total_white_space <=
         0.01) {
@@ -696,8 +697,8 @@ void LookAheadLegalizer::SplitGridBox(BoxBin& box) {
     box1.top = box.top;
     box2.left = box.vertical_cutlines[0];
     box2.bottom = box.bottom;
-    box1.UpdateWhiteSpaceAndFixedBlocks(box.placement_blockages_);
-    box2.UpdateWhiteSpaceAndFixedBlocks(box.placement_blockages_);
+    box1.UpdateWhiteSpaceAndFixedComponents(box.placement_blockages_);
+    box2.UpdateWhiteSpaceAndFixedComponents(box.placement_blockages_);
 
     if (double(box1.total_white_space) / (double)box.total_white_space <=
         0.01) {
@@ -734,7 +735,7 @@ void LookAheadLegalizer::SplitGridBox(BoxBin& box) {
   }
 }
 
-void LookAheadLegalizer::PlaceBlkInBox(BoxBin& box) {
+void LookAheadLegalizer::PlaceComponentInBox(BoxBin& box) {
   /* this is the simplest version, just linearly move cells in the cell_box to
    * the grid box non-linearity is not considered yet*/
 
@@ -744,45 +745,45 @@ cell_box_left = box.ll_point.x;
 cell_box_bottom = box.ll_point.y;
 cell_box_width = box.ur_point.x - cell_box_left;
 cell_box_height = box.ur_point.y - cell_box_bottom;
-Block *cell;
+Component *cell;
 
 for (auto &cell_id: box.cell_list) {
-  cell = &block_list[cell_id];
+  cell = &component_list[cell_id];
   cell->SetCenterX((cell->X() - cell_box_left)/cell_box_width * (box.right -
 box.left) + box.left); cell->SetCenterY((cell->Y() -
 cell_box_bottom)/cell_box_height * (box.top - box.bottom) + box.bottom);
 }*/
 
   int sz = static_cast<int>(box.cell_list.size());
-  std::vector<std::pair<Block*, double>> index_loc_list_x(sz);
-  std::vector<std::pair<Block*, double>> index_loc_list_y(sz);
+  std::vector<std::pair<Component*, double>> index_loc_list_x(sz);
+  std::vector<std::pair<Component*, double>> index_loc_list_y(sz);
   GridBin& grid_bin = grid_bin_mesh[box.ll_index.x][box.ll_index.y];
   for (int i = 0; i < sz; ++i) {
-    Block* blk_ptr = box.cell_list[i];
-    index_loc_list_x[i].first = blk_ptr;
-    index_loc_list_x[i].second = blk_ptr->X();
-    index_loc_list_y[i].first = blk_ptr;
-    index_loc_list_y[i].second = blk_ptr->Y();
-    grid_bin.cell_list.push_back(blk_ptr);
-    grid_bin.cell_area += blk_ptr->Area();
+    Component* component_ptr = box.cell_list[i];
+    index_loc_list_x[i].first = component_ptr;
+    index_loc_list_x[i].second = component_ptr->X();
+    index_loc_list_y[i].first = component_ptr;
+    index_loc_list_y[i].second = component_ptr->Y();
+    grid_bin.cell_list.push_back(component_ptr);
+    grid_bin.cell_area += component_ptr->Area();
   }
 
   std::sort(index_loc_list_x.begin(), index_loc_list_x.end(),
-            [](const std::pair<Block*, double>& p1,
-               const std::pair<Block*, double>& p2) {
+            [](const std::pair<Component*, double>& p1,
+               const std::pair<Component*, double>& p2) {
               return p1.second < p2.second;
             });
   double total_length = 0;
-  for (auto& blk_ptr : box.cell_list) {
-    total_length += blk_ptr->Width();
+  for (auto& component_ptr : box.cell_list) {
+    total_length += component_ptr->Width();
   }
   double cur_pos = 0;
   int box_width = box.right - box.left;
   for (auto& pair : index_loc_list_x) {
-    Block* blk_ptr = pair.first;
+    Component* component_ptr = pair.first;
     double center_x = box.left + cur_pos / total_length * box_width;
-    blk_ptr->SetCenterX(center_x);
-    cur_pos += blk_ptr->Width();
+    component_ptr->SetCenterX(center_x);
+    cur_pos += component_ptr->Width();
     if (std::isnan(center_x)) {
       std::cout << "x " << total_length << "\n";
       box.Report();
@@ -792,18 +793,18 @@ cell_box_bottom)/cell_box_height * (box.top - box.bottom) + box.bottom);
   }
 
   std::sort(index_loc_list_y.begin(), index_loc_list_y.end(),
-            [](const std::pair<Block*, double>& p1,
-               const std::pair<Block*, double>& p2) {
+            [](const std::pair<Component*, double>& p1,
+               const std::pair<Component*, double>& p2) {
               return p1.second < p2.second;
             });
   total_length = 0;
-  for (auto& blk_ptr : box.cell_list) {
-    total_length += blk_ptr->Height();
+  for (auto& component_ptr : box.cell_list) {
+    total_length += component_ptr->Height();
   }
   cur_pos = 0;
   int box_height = box.top - box.bottom;
   for (auto& pair : index_loc_list_y) {
-    Block* blk_ptr = pair.first;
+    Component* component_ptr = pair.first;
     double center_y = box.bottom + cur_pos / total_length * box_height;
     if (std::isnan(center_y)) {
       std::cout << "y " << total_length << "\n";
@@ -811,8 +812,8 @@ cell_box_bottom)/cell_box_height * (box.top - box.bottom) + box.bottom);
       std::cout << std::endl;
       exit(1);
     }
-    blk_ptr->SetCenterY(center_y);
-    cur_pos += blk_ptr->Height();
+    component_ptr->SetCenterY(center_y);
+    cur_pos += component_ptr->Height();
   }
 }
 
@@ -886,7 +887,7 @@ void LookAheadLegalizer::SplitBox(BoxBin& box) {
 
   if (dominating_box_flag == 0) {
     // LOG(info)   << "cell list size: " << box.cell_list.size()
-    // << "\n"; box.update_cell_area(block_list); LOG(info)   <<
+    // << "\n"; box.update_cell_area(component_list); LOG(info)   <<
     // "total_cell_area: " << box.total_cell_area << "\n";
     box.update_cut_point_cell_list_low_high(box1.total_white_space,
                                             box2.total_white_space);
@@ -971,7 +972,7 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
  * of each box and cells should be assigned to the box
  * @return true if succeed, false if fail
  */
-bool LookAheadLegalizer::RecursiveBisectionBlockSpreading() {
+bool LookAheadLegalizer::RecursiveBisectionComponentSpreading() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
@@ -983,7 +984,7 @@ bool LookAheadLegalizer::RecursiveBisectionBlockSpreading() {
     // (a) the box is a grid bin box or a smaller box
     // (b) and with no fixed macros inside
     if (box.ll_index == box.ur_index) {
-      // UpdateGridBinBlocks(box);
+      // UpdateGridBinComponents(box);
       if (box.HasPlacementBlockages()) {  // if there is a fixed macro inside a
                                           // box, keep splitting the box
         SplitGridBox(box);
@@ -991,8 +992,8 @@ bool LookAheadLegalizer::RecursiveBisectionBlockSpreading() {
         continue;
       }
       /* if no terminals inside a box, do cell placement inside the box */
-      // PlaceBlkInBoxBisection(box);
-      PlaceBlkInBox(box);
+      // PlaceComponentInBoxBisection(box);
+      PlaceComponentInBox(box);
       // RoughLegalBlkInBox(box);
     } else {
       SplitBox(box);
@@ -1001,7 +1002,7 @@ bool LookAheadLegalizer::RecursiveBisectionBlockSpreading() {
   }
 
   elapsed_time.RecordEndTime();
-  recursive_bisection_block_spreading_time_ += elapsed_time.GetWallTime();
+  recursive_bisection_component_spreading_time_ += elapsed_time.GetWallTime();
   return true;
 }
 
@@ -1015,7 +1016,7 @@ double LookAheadLegalizer::RemoveCellOverlap() {
   do {
     UpdateLargestCluster();
     FindMinimumBoxForLargestCluster();
-    RecursiveBisectionBlockSpreading();
+    RecursiveBisectionComponentSpreading();
     // LOG(info) << "cluster count: " << cluster_set.size() <<
     // "\n";
   } while (!cluster_set.empty());
@@ -1046,8 +1047,8 @@ double LookAheadLegalizer::RemoveCellOverlap() {
              << "s)\n";
   LOG(debug) << "(FindMinimumBoxForLargestCluster time: "
              << find_minimum_box_for_largest_cluster_time_ << "s)\n";
-  LOG(debug) << "(RecursiveBisectionBlockSpreading time: "
-             << recursive_bisection_block_spreading_time_ << "s)\n";
+  LOG(debug) << "(RecursiveBisectionComponentSpreading time: "
+             << recursive_bisection_component_spreading_time_ << "s)\n";
 
   upper_bound_hpwl_.push_back(evaluate_result_x + evaluate_result_y);
   return upper_bound_hpwl_.back();

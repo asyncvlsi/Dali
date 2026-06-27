@@ -87,8 +87,8 @@ int main(int argc, char** argv) {
   // circuit.SetGridValue(0.01, 0.01);
   // circuit.ReadLefFile(adaptec1_lef);
   // circuit.ReadDefFile(adaptec1_def);
-  // circuit.ReportBlockType();
-  // circuit.ReportBlockList();
+  // circuit.ReportComponentType();
+  // circuit.ReportComponentList();
   // circuit.ReportNetList();
   // circuit.GenMATLABTable("_result.txt");
 

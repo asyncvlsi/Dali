@@ -18,11 +18,11 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#include "block_pair_nets.h"
+#include "component_pair_nets.h"
 
 namespace dali {
 
-void BlockPairNets::ClearX() {
+void ComponentPairNets::ClearX() {
   e00x = 0;
   e01x = 0;
   e10x = 0;
@@ -30,14 +30,14 @@ void BlockPairNets::ClearX() {
   b0x = 0;
   b1x = 0;
 }
-void BlockPairNets::WriteX() {
+void ComponentPairNets::WriteX() {
   if (blk_num0 != blk_num1) {
     it01x.valueRef() = e01x;
     it10x.valueRef() = e10x;
   }
 }
 
-void BlockPairNets::ClearY() {
+void ComponentPairNets::ClearY() {
   e00y = 0;
   e01y = 0;
   e10y = 0;
@@ -46,7 +46,7 @@ void BlockPairNets::ClearY() {
   b1y = 0;
 }
 
-void BlockPairNets::WriteY() {
+void ComponentPairNets::WriteY() {
   if (blk_num0 != blk_num1) {
     it01y.valueRef() = e01y;
     it10y.valueRef() = e10y;

@@ -70,9 +70,9 @@ void Design::AddIntrinsicPlacementBlockage(double lx, double ly, double ux,
   intrinsic_blockages_.emplace_back(rect);
 }
 
-void Design::AddFixedCellPlacementBlockage(Block& block) {
-  auto rect = ExpandOffGridPlacementBlockage(block.LLX(), block.LLY(),
-                                             block.URX(), block.URY());
+void Design::AddFixedCellPlacementBlockage(Component& component) {
+  auto rect = ExpandOffGridPlacementBlockage(component.LLX(), component.LLY(),
+                                             component.URX(), component.URY());
   fixed_cell_blockages_.emplace_back(rect);
 }
 

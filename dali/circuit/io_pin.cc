@@ -72,7 +72,7 @@ IoPin::IoPin(std::pair<const std::string, int>* name_id_pair_ptr,
   rects_[0].SetValue(0, 0, 0, 0);
 }
 
-IoPin::IoPin(double loc_x, double loc_y, BlockOrient orient, double llx,
+IoPin::IoPin(double loc_x, double loc_y, ComponentOrient orient, double llx,
              double lly, double urx, double ury)
     : name_id_pair_ptr_(nullptr),
       net_ptr_(nullptr),
@@ -201,9 +201,9 @@ void IoPin::SetFinalY(int final_y) { final_y_ = final_y; }
 
 int IoPin::FinalY() const { return final_y_; }
 
-void IoPin::SetOrient(BlockOrient orient) { orient_ = orient; }
+void IoPin::SetOrient(ComponentOrient orient) { orient_ = orient; }
 
-BlockOrient IoPin::GetOrient() const { return orient_; }
+ComponentOrient IoPin::GetOrient() const { return orient_; }
 
 void IoPin::Report() const {
   std::string net_name = (net_ptr_ == nullptr) ? "NA" : net_ptr_->Name();

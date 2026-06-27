@@ -98,9 +98,9 @@ class LookAheadLegalizer : public RoughLegalizer {
   uint32_t LookUpWhiteSpace(WindowQuadruple& window);
   void FindMinimumBoxForLargestCluster();
   void SplitGridBox(BoxBin& box);
-  void PlaceBlkInBox(BoxBin& box);
+  void PlaceComponentInBox(BoxBin& box);
   void SplitBox(BoxBin& box);
-  bool RecursiveBisectionBlockSpreading();
+  bool RecursiveBisectionComponentSpreading();
   double RemoveCellOverlap() override;
 
   double GetTime() override;
@@ -126,7 +126,7 @@ class LookAheadLegalizer : public RoughLegalizer {
   double update_cluster_area_time_ = 0;
   double update_cluster_list_time_ = 0;
   double find_minimum_box_for_largest_cluster_time_ = 0;
-  double recursive_bisection_block_spreading_time_ = 0;
+  double recursive_bisection_component_spreading_time_ = 0;
   double tot_lal_time = 0;
 };
 

@@ -25,7 +25,7 @@
 
 namespace dali {
 
-void OptimalRegionDistance::FindOptimalRegionX(Block& blk, double& lx,
+void OptimalRegionDistance::FindOptimalRegionX(Component& blk, double& lx,
                                                double& ly, double& ux,
                                                double& uy) const {
   std::vector<double> loc_list_x;
@@ -35,21 +35,21 @@ void OptimalRegionDistance::FindOptimalRegionX(Block& blk, double& lx,
     // find offset
     double offset_x = DBL_MAX;
     double offset_y = DBL_MAX;
-    for (auto& blk_pin : net_list[it].BlockPins()) {
-      if (blk_pin.BlkPtr() == &blk) {
+    for (auto& blk_pin : net_list[it].ComponentPins()) {
+      if (blk_pin.ComponentPtr() == &blk) {
         offset_x = blk_pin.OffsetX();
         offset_y = blk_pin.OffsetY();
         break;
       }
     }
 
-    // find max/min x/y of this net without this block
+    // find max/min x/y of this net without this component
     double min_x = 1e10;
     double max_x = -1e10;
     double min_y = 1e10;
     double max_y = -1e10;
-    for (auto& blk_pin : net_list[it].BlockPins()) {
-      if (blk_pin.BlkPtr() == &blk) {
+    for (auto& blk_pin : net_list[it].ComponentPins()) {
+      if (blk_pin.ComponentPtr() == &blk) {
         continue;
       } else {
         if (blk_pin.AbsX() < min_x) {
@@ -96,11 +96,11 @@ void OptimalRegionDistance::SaveFile(std::string const& file_name) const {
   DaliExpects(ost.is_open(), "Cannot open file " << file_name);
 
   if (circuit_ == nullptr) return;
-  double ave_size = circuit_->AveBlkHeight();
+  double ave_size = circuit_->AverageComponentHeight();
   double lx, ly, ux, uy;
   double llx, lly;
   double res;
-  for (auto& blk : circuit_->design().Blocks()) {
+  for (auto& blk : circuit_->design().Components()) {
     FindOptimalRegionX(blk, lx, ly, ux, uy);
     llx = blk.LLX();
     lly = blk.LLY();

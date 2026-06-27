@@ -40,7 +40,7 @@ struct PinBbox {
 };
 
 std::pair<double, double> TransformPinPoint(double px, double py,
-                                            BlockOrient orient) {
+                                            ComponentOrient orient) {
   switch (orient) {
     case N:
       return {px, py};
@@ -68,7 +68,7 @@ PinBbox GetPlacedPinBbox(phydb::IOPin& iopin, double extra_margin = 0.0) {
   const auto shape = iopin.GetRect();
   const int x = iopin.GetLocation().x;
   const int y = iopin.GetLocation().y;
-  const BlockOrient orient = OrientPhyDB2Dali(iopin.GetOrientation());
+  const ComponentOrient orient = OrientPhyDB2Dali(iopin.GetOrientation());
 
   const double llx = std::min(shape.LLX(), shape.URX()) - extra_margin;
   const double lly = std::min(shape.LLY(), shape.URY()) - extra_margin;
@@ -207,13 +207,13 @@ bool IsIoPinNotOverlapping(phydb::IOPin& io_pin0, phydb::IOPin& io_pin1) {
   phydb::Rect2D<int> shape0 = io_pin0.GetRect();
   int x0 = io_pin0.GetLocation().x;
   int y0 = io_pin0.GetLocation().y;
-  BlockOrient orient0 = OrientPhyDB2Dali(io_pin0.GetOrientation());
+  ComponentOrient orient0 = OrientPhyDB2Dali(io_pin0.GetOrientation());
   PinBbox bbox0 = GetPlacedPinBbox(io_pin0);
 
   phydb::Rect2D<int> shape1 = io_pin1.GetRect();
   int x1 = io_pin1.GetLocation().x;
   int y1 = io_pin1.GetLocation().y;
-  BlockOrient orient1 = OrientPhyDB2Dali(io_pin1.GetOrientation());
+  ComponentOrient orient1 = OrientPhyDB2Dali(io_pin1.GetOrientation());
   PinBbox bbox1 = GetPlacedPinBbox(io_pin1);
 
   bool no_overlap = bbox0.lx > bbox1.ux || bbox1.lx > bbox0.ux ||
@@ -251,13 +251,13 @@ bool IsIoPinNoSpacingViolation(phydb::PhyDB* p_phydb, phydb::IOPin& io_pin0,
   phydb::Rect2D<int> shape0 = io_pin0.GetRect();
   int x0 = io_pin0.GetLocation().x;
   int y0 = io_pin0.GetLocation().y;
-  BlockOrient orient0 = OrientPhyDB2Dali(io_pin0.GetOrientation());
+  ComponentOrient orient0 = OrientPhyDB2Dali(io_pin0.GetOrientation());
   PinBbox bbox0 = GetPlacedPinBbox(io_pin0, half_spacing);
 
   phydb::Rect2D<int> shape1 = io_pin1.GetRect();
   int x1 = io_pin1.GetLocation().x;
   int y1 = io_pin1.GetLocation().y;
-  BlockOrient orient1 = OrientPhyDB2Dali(io_pin1.GetOrientation());
+  ComponentOrient orient1 = OrientPhyDB2Dali(io_pin1.GetOrientation());
   PinBbox bbox1 = GetPlacedPinBbox(io_pin1, half_spacing);
 
   bool no_overlap = bbox0.lx > bbox1.ux || bbox1.lx > bbox0.ux ||
