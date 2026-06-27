@@ -2117,7 +2117,7 @@ void Circuit::AddComponent(std::string const& component_name, Macro* macro_ptr,
     design_.tot_mov_height_ += component.Height();
   } else {
     ++design_.fixed_component_count_;
-    design_.AddFixedCellPlacementBlockage(component);
+    design_.AddFixedComponentPlacementBlockage(component);
   }
   if (component.Height() < design_.min_component_height_) {
     design_.min_component_height_ = component.Height();

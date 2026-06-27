@@ -161,7 +161,7 @@ class Design {
                                      double uy);
 
   /** Add a placement blockage covering a fixed component. */
-  void AddFixedCellPlacementBlockage(Component& component);
+  void AddFixedComponentPlacementBlockage(Component& component);
 
   /** Refresh blockages implied by rectilinear die area. */
   void UpdateDieAreaPlacementBlockages();
@@ -201,7 +201,7 @@ class Design {
 
   /****placement blockages****/
   std::vector<PlacementBlockage> intrinsic_blockages_;
-  std::vector<PlacementBlockage> fixed_cell_blockages_;
+  std::vector<PlacementBlockage> fixed_component_blockages_;
   std::vector<PlacementBlockage> die_area_dummy_blockages_;
   std::vector<PlacementBlockage> all_blockages_;
 

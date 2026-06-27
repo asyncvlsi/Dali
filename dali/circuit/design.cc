@@ -70,10 +70,10 @@ void Design::AddIntrinsicPlacementBlockage(double lx, double ly, double ux,
   intrinsic_blockages_.emplace_back(rect);
 }
 
-void Design::AddFixedCellPlacementBlockage(Component& component) {
+void Design::AddFixedComponentPlacementBlockage(Component& component) {
   auto rect = ExpandOffGridPlacementBlockage(component.LLX(), component.LLY(),
                                              component.URX(), component.URY());
-  fixed_cell_blockages_.emplace_back(rect);
+  fixed_component_blockages_.emplace_back(rect);
 }
 
 void Design::UpdateDieAreaPlacementBlockages() {
@@ -85,13 +85,13 @@ void Design::UpdateDieAreaPlacementBlockages() {
 void Design::UpdatePlacementBlockages() {
   all_blockages_.clear();
   all_blockages_.reserve(intrinsic_blockages_.size() +
-                         fixed_cell_blockages_.size() +
+                         fixed_component_blockages_.size() +
                          die_area_dummy_blockages_.size());
 
   for (auto& blockage : intrinsic_blockages_) {
     all_blockages_.push_back(blockage);
   }
-  for (auto& blockage : fixed_cell_blockages_) {
+  for (auto& blockage : fixed_component_blockages_) {
     all_blockages_.push_back(blockage);
   }
   for (auto& blockage : die_area_dummy_blockages_) {
