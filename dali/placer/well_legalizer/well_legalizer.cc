@@ -494,7 +494,7 @@ bool WellLegalizer::FindLocLeft(Value2D<int>& loc, int num, int width,
    * ****/
   bool is_successful;
 
-  int blk_row_height;
+  int component_row_height;
   int left_component_bound;
   int left_white_space_bound;
 
@@ -515,7 +515,7 @@ bool WellLegalizer::FindLocLeft(Value2D<int>& loc, int num, int width,
   // left_component_bound = loc.x;
 
   max_search_row = MaxRow(height);
-  blk_row_height = HeightToRow(height);
+  component_row_height = HeightToRow(height);
 
   search_start_row = std::max(0, LocToRow(loc.y - 1 * height));
   search_end_row = std::min(max_search_row, LocToRow(loc.y + 2 * height));
@@ -526,7 +526,7 @@ bool WellLegalizer::FindLocLeft(Value2D<int>& loc, int num, int width,
 
   for (int tmp_start_row = search_start_row; tmp_start_row <= search_end_row;
        ++tmp_start_row) {
-    tmp_end_row = tmp_start_row + blk_row_height - 1;
+    tmp_end_row = tmp_start_row + component_row_height - 1;
     left_white_space_bound =
         WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_row, tmp_end_row);
 
@@ -565,8 +565,8 @@ bool WellLegalizer::FindLocLeft(Value2D<int>& loc, int num, int width,
                 << "cost: " << tmp_cost << "\n";
     }*/
   }
-  is_successful = IsCurrentLocLegalLeft(best_loc_x, width, best_row,
-                                        best_row + blk_row_height - 1, p_row);
+  is_successful = IsCurrentLocLegalLeft(
+      best_loc_x, width, best_row, best_row + component_row_height - 1, p_row);
 
   loc.x = best_loc_x;
   loc.y = RowToLoc(best_row);
@@ -580,13 +580,14 @@ bool WellLegalizer::WellLegalizationLeft() {
   component_contour_.assign(component_contour_.size(), left_);
   std::vector<Component>& component_list = ckt_ptr_->Components();
 
-  int sz = blk_inits_.size();
+  int sz = component_initial_locations_.size();
   for (int i = 0; i < sz; ++i) {
-    blk_inits_[i].component_ptr = &(component_list[i]);
-    blk_inits_[i].x = component_list[i].LLX();
-    blk_inits_[i].y = component_list[i].LLY();
+    component_initial_locations_[i].component_ptr = &(component_list[i]);
+    component_initial_locations_[i].x = component_list[i].LLX();
+    component_initial_locations_[i].y = component_list[i].LLY();
   }
-  std::sort(blk_inits_.begin(), blk_inits_.end(),
+  std::sort(component_initial_locations_.begin(),
+            component_initial_locations_.end(),
             [](const ComponentInitialLocation& pair0,
                const ComponentInitialLocation& pair1) {
               return (pair0.x < pair1.x) ||
@@ -601,7 +602,7 @@ bool WellLegalizer::WellLegalizationLeft() {
   bool is_current_loc_legal;
   bool is_legal_loc_found;
 
-  for (auto& pair : blk_inits_) {
+  for (auto& pair : component_initial_locations_) {
     auto& component = *(pair.component_ptr);
     if (component.IsFixed()) continue;
 
@@ -856,7 +857,7 @@ bool WellLegalizer::FindLocRight(Value2D<int>& loc, int num, int width,
                                  int height, int p_row) {
   bool is_successful;
 
-  int blk_row_height;
+  int component_row_height;
   int right_component_bound;
   int right_white_space_bound;
 
@@ -877,7 +878,7 @@ bool WellLegalizer::FindLocRight(Value2D<int>& loc, int num, int width,
   // right_component_bound = loc.x;
 
   max_search_row = MaxRow(height);
-  blk_row_height = HeightToRow(height);
+  component_row_height = HeightToRow(height);
 
   search_start_row = std::max(0, LocToRow(loc.y - 1 * height));
   search_end_row = std::min(max_search_row, LocToRow(loc.y + 2 * height));
@@ -888,7 +889,7 @@ bool WellLegalizer::FindLocRight(Value2D<int>& loc, int num, int width,
 
   for (int tmp_start_row = search_start_row; tmp_start_row <= search_end_row;
        ++tmp_start_row) {
-    tmp_end_row = tmp_start_row + blk_row_height - 1;
+    tmp_end_row = tmp_start_row + component_row_height - 1;
     right_white_space_bound =
         WhiteSpaceBoundRight(loc.x - width, loc.x, tmp_start_row, tmp_end_row);
 
@@ -923,8 +924,8 @@ bool WellLegalizer::FindLocRight(Value2D<int>& loc, int num, int width,
   }
 
   // if still cannot find a legal location, enter fail mode
-  is_successful = IsCurrentLocLegalRight(best_loc_x, width, best_row,
-                                         best_row + blk_row_height - 1, p_row);
+  is_successful = IsCurrentLocLegalRight(
+      best_loc_x, width, best_row, best_row + component_row_height - 1, p_row);
 
   loc.x = best_loc_x;
   loc.y = RowToLoc(best_row);
@@ -939,13 +940,14 @@ bool WellLegalizer::WellLegalizationRight() {
   component_contour_.assign(component_contour_.size(), right_);
   std::vector<Component>& component_list = ckt_ptr_->Components();
 
-  int sz = blk_inits_.size();
+  int sz = component_initial_locations_.size();
   for (int i = 0; i < sz; ++i) {
-    blk_inits_[i].component_ptr = &(component_list[i]);
-    blk_inits_[i].x = component_list[i].URX();
-    blk_inits_[i].y = component_list[i].LLY();
+    component_initial_locations_[i].component_ptr = &(component_list[i]);
+    component_initial_locations_[i].x = component_list[i].URX();
+    component_initial_locations_[i].y = component_list[i].LLY();
   }
-  std::sort(blk_inits_.begin(), blk_inits_.end(),
+  std::sort(component_initial_locations_.begin(),
+            component_initial_locations_.end(),
             [](const ComponentInitialLocation& lhs,
                const ComponentInitialLocation& rhs) {
               return (lhs.x > rhs.x) || (lhs.x == rhs.x && lhs.y > rhs.y);
@@ -959,7 +961,7 @@ bool WellLegalizer::WellLegalizationRight() {
   bool is_current_loc_legal;
   bool is_legal_loc_found;
 
-  for (auto& pair : blk_inits_) {
+  for (auto& pair : component_initial_locations_) {
     auto& component = *(pair.component_ptr);
     if (component.IsFixed()) continue;
 
@@ -1003,7 +1005,8 @@ bool WellLegalizer::StartPlacement() {
 
   InitWellLegalizer();
   LOG(info) << "  Number of rows: " << row_well_status_.size() << "\n"
-            << "  Number of components: " << blk_inits_.size() << "\n"
+            << "  Number of components: " << component_initial_locations_.size()
+            << "\n"
             << "  Well Rules:\n"
             << "    NN spacing: " << nn_spacing_ << "\n"
             << "    PP spacing: " << pp_spacing_ << "\n"

@@ -121,19 +121,19 @@ void GriddedRowLegalizer::PrecomputeWellTapCellLocation() {
 
 void GriddedRowLegalizer::InitializeComponentAuxiliaryInfo() {
   auto& components = ckt_ptr_->Components();
-  blk_auxs_.reserve(components.size());
-  for (Component& blk : components) {
-    if (IsDummyComponent(blk)) continue;
-    blk_auxs_.emplace_back(&blk);
+  component_auxs_.reserve(components.size());
+  for (Component& component : components) {
+    if (IsDummyComponent(component)) continue;
+    component_auxs_.emplace_back(&component);
   }
 }
 
 void GriddedRowLegalizer::SaveInitialLoc() {
   is_init_loc_cached_ = true;
   auto& components = ckt_ptr_->Components();
-  for (Component& blk : components) {
-    if (IsDummyComponent(blk)) continue;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(blk.AuxPtr());
+  for (Component& component : components) {
+    if (IsDummyComponent(component)) continue;
+    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
     aux_ptr->StoreCurLocAsInitLoc();
   }
 }
@@ -141,9 +141,9 @@ void GriddedRowLegalizer::SaveInitialLoc() {
 void GriddedRowLegalizer::SaveUpDownLoc() {
   is_greedy_loc_cached_ = true;
   auto& components = ckt_ptr_->Components();
-  for (Component& blk : components) {
-    if (IsDummyComponent(blk)) continue;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(blk.AuxPtr());
+  for (Component& component : components) {
+    if (IsDummyComponent(component)) continue;
+    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
     aux_ptr->StoreCurLocAsGreedyLoc();
   }
 }
@@ -151,9 +151,9 @@ void GriddedRowLegalizer::SaveUpDownLoc() {
 void GriddedRowLegalizer::SaveQPLoc() {
   is_qp_loc_cached_ = true;
   auto& components = ckt_ptr_->Components();
-  for (Component& blk : components) {
-    if (IsDummyComponent(blk)) continue;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(blk.AuxPtr());
+  for (Component& component : components) {
+    if (IsDummyComponent(component)) continue;
+    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
     aux_ptr->StoreCurLocAsQPLoc();
   }
 }
@@ -161,9 +161,9 @@ void GriddedRowLegalizer::SaveQPLoc() {
 void GriddedRowLegalizer::SaveConsensusLoc() {
   is_cons_loc_cached_ = true;
   auto& components = ckt_ptr_->Components();
-  for (Component& blk : components) {
-    if (IsDummyComponent(blk)) continue;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(blk.AuxPtr());
+  for (Component& component : components) {
+    if (IsDummyComponent(component)) continue;
+    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
     aux_ptr->StoreCurLocAsConsLoc();
   }
 }
@@ -172,9 +172,9 @@ void GriddedRowLegalizer::RestoreInitialLocX() {
   DaliExpects(is_init_loc_cached_,
               "Initial locations are not saved, no way to restore");
   auto& components = ckt_ptr_->Components();
-  for (Component& blk : components) {
-    if (IsDummyComponent(blk)) continue;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(blk.AuxPtr());
+  for (Component& component : components) {
+    if (IsDummyComponent(component)) continue;
+    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
     aux_ptr->RecoverInitLocX();
   }
 }
@@ -183,9 +183,9 @@ void GriddedRowLegalizer::RestoreGreedyLocX() {
   DaliExpects(is_greedy_loc_cached_,
               "Greedy locations are not saved, no way to restore");
   auto& components = ckt_ptr_->Components();
-  for (Component& blk : components) {
-    if (IsDummyComponent(blk)) continue;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(blk.AuxPtr());
+  for (Component& component : components) {
+    if (IsDummyComponent(component)) continue;
+    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
     aux_ptr->RecoverGreedyLocX();
   }
 }
@@ -195,9 +195,9 @@ void GriddedRowLegalizer::RestoreQPLocX() {
       is_qp_loc_cached_,
       "Quadratic programming locations are not saved, no way to restore");
   auto& components = ckt_ptr_->Components();
-  for (Component& blk : components) {
-    if (IsDummyComponent(blk)) continue;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(blk.AuxPtr());
+  for (Component& component : components) {
+    if (IsDummyComponent(component)) continue;
+    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
     aux_ptr->RecoverQPLocX();
   }
 }
@@ -206,9 +206,9 @@ void GriddedRowLegalizer::RestoreConsensusLocX() {
   DaliExpects(is_cons_loc_cached_,
               "Consensus locations are not saved, no way to restore");
   auto& components = ckt_ptr_->Components();
-  for (Component& blk : components) {
-    if (IsDummyComponent(blk)) continue;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(blk.AuxPtr());
+  for (Component& component : components) {
+    if (IsDummyComponent(component)) continue;
+    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
     aux_ptr->RecoverConsLocX();
   }
 }
@@ -225,11 +225,11 @@ bool GriddedRowLegalizer::StripeLegalizationUpward(Stripe& stripe,
 
   stripe.SortComponentsBasedOnYLocation(0);
 
-  size_t processed_blk_cnt = 0;
-  while (processed_blk_cnt < stripe.component_ptrs_vec_.size()) {
+  size_t processed_component_count = 0;
+  while (processed_component_count < stripe.component_ptrs_vec_.size()) {
     stripe.UpdateFrontClusterUpward(tap_cell_p_height_, tap_cell_n_height_);
-    processed_blk_cnt = stripe.FitComponentsToFrontSpaceUpward(
-        processed_blk_cnt, greedy_cur_iter_);
+    processed_component_count = stripe.FitComponentsToFrontSpaceUpward(
+        processed_component_count, greedy_cur_iter_);
     stripe.LegalizeFrontCluster(use_init_loc);
   }
   stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_, true);
@@ -247,11 +247,11 @@ bool GriddedRowLegalizer::StripeLegalizationDownward(Stripe& stripe,
 
   stripe.SortComponentsBasedOnYLocation(2);
 
-  size_t processed_blk_cnt = 0;
-  while (processed_blk_cnt < stripe.component_ptrs_vec_.size()) {
+  size_t processed_component_count = 0;
+  while (processed_component_count < stripe.component_ptrs_vec_.size()) {
     stripe.UpdateFrontClusterDownward(tap_cell_p_height_, tap_cell_n_height_);
-    processed_blk_cnt = stripe.FitComponentsToFrontSpaceDownward(
-        processed_blk_cnt, greedy_cur_iter_);
+    processed_component_count = stripe.FitComponentsToFrontSpaceDownward(
+        processed_component_count, greedy_cur_iter_);
     stripe.LegalizeFrontCluster(use_init_loc);
   }
   stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_, false);
@@ -311,11 +311,12 @@ bool GriddedRowLegalizer::StripeLegalizationUpwardWithDispCheck(
 
   stripe.SortComponentsBasedOnYLocation(0);
 
-  size_t processed_blk_cnt = 0;
-  while (processed_blk_cnt < stripe.component_ptrs_vec_.size()) {
+  size_t processed_component_count = 0;
+  while (processed_component_count < stripe.component_ptrs_vec_.size()) {
     stripe.UpdateFrontClusterUpward(tap_cell_p_height_, tap_cell_n_height_);
-    processed_blk_cnt = stripe.FitComponentsToFrontSpaceUpwardWithDispCheck(
-        processed_blk_cnt, greedy_cur_iter_);
+    processed_component_count =
+        stripe.FitComponentsToFrontSpaceUpwardWithDispCheck(
+            processed_component_count, greedy_cur_iter_);
     stripe.LegalizeFrontCluster(use_init_loc);
   }
   stripe.UpdateRemainingClusters(tap_cell_p_height_, tap_cell_n_height_, true);
@@ -483,12 +484,12 @@ void GriddedRowLegalizer::ReportDisplacement() {
   double disp_x = 0, disp_y = 0;
   double quadratic_disp_x = 0, quadratic_disp_y = 0;
   auto& components = ckt_ptr_->Components();
-  for (Component& blk : components) {
-    if (IsDummyComponent(blk)) continue;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(blk.AuxPtr());
+  for (Component& component : components) {
+    if (IsDummyComponent(component)) continue;
+    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
     double2d init_loc = aux_ptr->InitLoc();
-    double tmp_disp_x = std::fabs(blk.LLX() - init_loc.x);
-    double tmp_disp_y = std::fabs(blk.LLY() - init_loc.y);
+    double tmp_disp_x = std::fabs(component.LLX() - init_loc.x);
+    double tmp_disp_y = std::fabs(component.LLY() - init_loc.y);
     disp_x += tmp_disp_x;
     disp_y += tmp_disp_y;
     quadratic_disp_x += tmp_disp_x * tmp_disp_x;
@@ -571,9 +572,9 @@ void GriddedRowLegalizer::ImportStandardRowSegments(phydb::PhyDB& phydb) {
   stripe.ImportStandardRowSegments(phydb, *ckt_ptr_);
   auto& components = ckt_ptr_->Components();
   stripe.component_ptrs_vec_.reserve(components.size());
-  for (auto& blk : components) {
-    if (IsDummyComponent(blk)) continue;
-    stripe.component_ptrs_vec_.emplace_back(&blk);
+  for (auto& component : components) {
+    if (IsDummyComponent(component)) continue;
+    stripe.component_ptrs_vec_.emplace_back(&component);
   }
 }
 
@@ -594,12 +595,12 @@ void GriddedRowLegalizer::ReportStandardCellDisplacement() {
   double max_euclidean_disp = 0;
   int cell_count = 0;
   auto& components = ckt_ptr_->Components();
-  for (Component& blk : components) {
-    if (IsDummyComponent(blk)) continue;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(blk.AuxPtr());
+  for (Component& component : components) {
+    if (IsDummyComponent(component)) continue;
+    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
     double2d init_loc = aux_ptr->InitLoc();
-    double tmp_disp_x = std::fabs(blk.LLX() - init_loc.x);
-    double tmp_disp_y = std::fabs(blk.LLY() - init_loc.y);
+    double tmp_disp_x = std::fabs(component.LLX() - init_loc.x);
+    double tmp_disp_y = std::fabs(component.LLY() - init_loc.y);
     sum_disp_x += tmp_disp_x;
     sum_disp_y += tmp_disp_y;
     max_disp_x = std::max(max_disp_x, tmp_disp_x);
@@ -727,8 +728,8 @@ void GriddedRowLegalizer::ReportEffectiveDensity() {
   for (auto& col : col_list_) {
     for (auto& stripe : col.stripe_list_) {
       for (auto& row : stripe.gridded_rows_) {
-        for (auto& blk : row.ComponentRegions()) {
-          tot_eff_area += blk.component->Width() * row.Height();
+        for (auto& component : row.ComponentRegions()) {
+          tot_eff_area += component.component->Width() * row.Height();
         }
       }
     }

@@ -47,7 +47,7 @@ int RowSegment::Width() const { return width_; }
 int RowSegment::UsedSize() const { return used_size_; }
 
 std::vector<ComponentRegion>& RowSegment::ComponentRegions() {
-  return blk_regions_;
+  return component_regions_;
 }
 
 /****
@@ -58,12 +58,12 @@ std::vector<ComponentRegion>& RowSegment::ComponentRegions() {
  */
 void RowSegment::AddComponentRegion(Component* component_ptr, int region_id) {
   used_size_ += component_ptr->Width();
-  blk_regions_.emplace_back(component_ptr, region_id);
+  component_regions_.emplace_back(component_ptr, region_id);
 }
 
 void RowSegment::MinDisplacementLegalization(bool use_init_loc) {
-  if (blk_regions_.empty()) return;
-  std::sort(blk_regions_.begin(), blk_regions_.end(),
+  if (component_regions_.empty()) return;
+  std::sort(component_regions_.begin(), component_regions_.end(),
             [](const ComponentRegion& br0, const ComponentRegion& br1) {
               return (br0.component->LLX() < br1.component->LLX()) ||
                      ((br0.component->LLX() == br1.component->LLX()) &&
@@ -71,9 +71,9 @@ void RowSegment::MinDisplacementLegalization(bool use_init_loc) {
             });
 
   std::vector<ComponentDisplacementVariable> vars;
-  vars.reserve(blk_regions_.size());
+  vars.reserve(component_regions_.size());
   if (use_init_loc) {
-    for (auto& component_region : blk_regions_) {
+    for (auto& component_region : component_regions_) {
       auto aux_ptr = static_cast<LegalizerComponentAux*>(
           component_region.component->AuxPtr());
       vars.emplace_back(component_region.component->Width(),
@@ -81,7 +81,7 @@ void RowSegment::MinDisplacementLegalization(bool use_init_loc) {
       vars.back().component_region = component_region;
     }
   } else {
-    for (auto& component_region : blk_regions_) {
+    for (auto& component_region : component_regions_) {
       vars.emplace_back(component_region.component->Width(),
                         component_region.component->LLX(), 1.0);
       vars.back().component_region = component_region;
@@ -98,8 +98,9 @@ void RowSegment::MinDisplacementLegalization(bool use_init_loc) {
 }
 
 void RowSegment::SnapCellToPlacementGrid() {
-  for (auto& blk_region : blk_regions_) {
-    blk_region.component->SetLLX(std::round(blk_region.component->LLX()));
+  for (auto& component_region : component_regions_) {
+    component_region.component->SetLLX(
+        std::round(component_region.component->LLX()));
   }
 }
 
@@ -189,16 +190,17 @@ void RowSegment::LocalReorder(std::vector<ComponentDisplacementVariable>& vars,
   ComponentDisplacementVariable tmp(0, 0, 0);
   std::vector<ComponentDisplacementVariable> res_local_order(range, tmp);
   for (int l = omit; l <= last_segment; ++l) {
-    int tot_blk_width = 0;
+    int total_component_width = 0;
     for (int j = 0; j < range; ++j) {
       res_local_order[j] = vars[l + j];
-      tot_blk_width += res_local_order[j].Width();
+      total_component_width += res_local_order[j].Width();
     }
     int r = l + range - 1;
     double best_cost = DBL_MAX;
     double left_bound = vars[l].Solution();
     double right_bound = vars[r].Solution() + vars[r].Width();
-    double gap = (right_bound - left_bound - tot_blk_width) / (range - 1);
+    double gap =
+        (right_bound - left_bound - total_component_width) / (range - 1);
 
     FindBestLocalOrder(res_local_order, best_cost, vars, l, l, r, left_bound,
                        right_bound, gap, range, is_linear);
@@ -258,10 +260,10 @@ RowSegment::OptimizeQuadraticDisplacement(double lambda,
                                           bool is_weighted_anchor,
                                           bool is_reorder) {
   std::vector<ComponentDisplacementVariable> vars;
-  if (blk_regions_.empty()) return vars;
+  if (component_regions_.empty()) return vars;
 
   // sort cells based on their lower x location
-  std::sort(blk_regions_.begin(), blk_regions_.end(),
+  std::sort(component_regions_.begin(), component_regions_.end(),
             [](const ComponentRegion& br0, const ComponentRegion& br1) {
               return (br0.component->LLX() < br1.component->LLX()) ||
                      ((br0.component->LLX() == br1.component->LLX()) &&
@@ -273,7 +275,7 @@ RowSegment::OptimizeQuadraticDisplacement(double lambda,
   if (is_weighted_anchor) {
     int sub_cell_cnt = 0;
     double sum_discrepancy = 0;
-    for (auto& component_region : blk_regions_) {
+    for (auto& component_region : component_regions_) {
       Component* component_ptr = component_region.component;
       auto aux_ptr =
           static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
@@ -289,11 +291,11 @@ RowSegment::OptimizeQuadraticDisplacement(double lambda,
     }
   }
 
-  // vars.reserve(blk_regions_.size() + 2);
+  // vars.reserve(component_regions_.size() + 2);
   // vars.emplace_back(0, LLX(), 0);
   // double max_weight = 0;
-  vars.reserve(blk_regions_.size());
-  for (auto& component_region : blk_regions_) {
+  vars.reserve(component_regions_.size());
+  for (auto& component_region : component_regions_) {
     Component* component_ptr = component_region.component;
     int region_cnt = component_ptr->MacroPtr()->RegionCount();
     auto aux_ptr = static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
@@ -337,10 +339,10 @@ std::vector<ComponentDisplacementVariable>
 RowSegment::OptimizeLinearDisplacement(double lambda, bool is_weighted_anchor,
                                        bool is_reorder) {
   std::vector<ComponentDisplacementVariable> vars;
-  if (blk_regions_.empty()) return vars;
+  if (component_regions_.empty()) return vars;
 
   // sort cells based on their lower x location
-  std::sort(blk_regions_.begin(), blk_regions_.end(),
+  std::sort(component_regions_.begin(), component_regions_.end(),
             [](const ComponentRegion& br0, const ComponentRegion& br1) {
               return (br0.component->LLX() < br1.component->LLX()) ||
                      ((br0.component->LLX() == br1.component->LLX()) &&
@@ -352,7 +354,7 @@ RowSegment::OptimizeLinearDisplacement(double lambda, bool is_weighted_anchor,
   if (is_weighted_anchor) {
     int sub_cell_cnt = 0;
     double sum_discrepancy = 0;
-    for (auto& component_region : blk_regions_) {
+    for (auto& component_region : component_regions_) {
       Component* component_ptr = component_region.component;
       auto aux_ptr =
           static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
@@ -370,8 +372,8 @@ RowSegment::OptimizeLinearDisplacement(double lambda, bool is_weighted_anchor,
   }
 
   // create variables
-  vars.reserve(blk_regions_.size());
-  for (auto& component_region : blk_regions_) {
+  vars.reserve(component_regions_.size());
+  for (auto& component_region : component_regions_) {
     Component* component_ptr = component_region.component;
     int region_cnt = component_ptr->MacroPtr()->RegionCount();
     auto aux_ptr = static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
@@ -410,7 +412,7 @@ void RowSegment::GenSubCellTable(std::ofstream& ost_cluster,
   SaveMatlabPatchRect(ost_cluster, static_cast<double>(LLX()), row_ly,
                       static_cast<double>(URX()), row_uy, false, 0, 0, 0);
 
-  for (auto& component_region : blk_regions_) {
+  for (auto& component_region : component_regions_) {
     Component* component_ptr = component_region.component;
     auto aux_ptr = static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
     double ly = std::max(component_ptr->LLY(), row_ly);

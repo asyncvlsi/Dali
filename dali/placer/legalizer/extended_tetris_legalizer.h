@@ -108,7 +108,7 @@ class ExtendedTetrisLegalizer : public Placer {
   bool is_row_assignment_ = false;
   std::vector<std::vector<SegI>> rows_;
   std::vector<int> component_contour_;
-  std::vector<ComponentInitialLocation> blk_inits_;
+  std::vector<ComponentInitialLocation> component_initial_locations_;
 
   int row_height_;
   bool row_height_set_;

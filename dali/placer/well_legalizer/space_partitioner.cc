@@ -138,13 +138,13 @@ void DefaultSpacePartitioner::DetectAvailSpace() {
   }
 
   white_space_in_rows_.resize(tot_num_rows_);
-  int min_blk_width = int(circuit_->MinComponentWidth());
+  int min_component_width = int(circuit_->MinComponentWidth());
   for (int i = 0; i < tot_num_rows_; ++i) {
     int len = int(intermediate_seg_rows[i].size());
     white_space_in_rows_[i].reserve(len / 2);
     for (int j = 0; j < len; j += 2) {
       if (intermediate_seg_rows[i][j + 1] - intermediate_seg_rows[i][j] >=
-          min_blk_width) {
+          min_component_width) {
         white_space_in_rows_[i].emplace_back(intermediate_seg_rows[i][j],
                                              intermediate_seg_rows[i][j + 1]);
       }
@@ -202,7 +202,7 @@ void DefaultSpacePartitioner::DecomposeSpaceToSimpleStripes() {
           stripe->contour_ = y_loc;
           stripe->front_row_ = nullptr;
           stripe->used_height_ = 0;
-          stripe->max_blk_capacity_per_cluster_ =
+          stripe->max_component_capacity_per_cluster_ =
               stripe->width_ / circuit_->MinComponentWidth();
         } else {
           stripe->height_ += row_height_;
@@ -214,7 +214,8 @@ void DefaultSpacePartitioner::DecomposeSpaceToSimpleStripes() {
   // col_list_[tot_col_num_ - 1].stripe_list_[0].width_ =
   //     RegionRight() - col_list_[tot_col_num_ - 1].stripe_list_[0].LLX() -
   //     well_spacing_;
-  // col_list_[tot_col_num_ - 1].stripe_list_[0].max_blk_capacity_per_cluster_ =
+  // col_list_[tot_col_num_ -
+  // 1].stripe_list_[0].max_component_capacity_per_cluster_ =
   //     col_list_[tot_col_num_ - 1].stripe_list_[0].width_ /
   //     circuit_ptr_->MinComponentWidth();
   /*for (auto &col: col_list_) {
@@ -305,9 +306,9 @@ bool DefaultSpacePartitioner::StartPartitioning() {
   std::vector<ClusterStripe>& col_list = *output_stripes_;
   // find the maximum width among movable cells
   max_cell_width_ = 0;
-  for (auto& blk : circuit_->Components()) {
-    if (blk.IsMovable()) {
-      max_cell_width_ = std::max(max_cell_width_, blk.Width());
+  for (auto& component : circuit_->Components()) {
+    if (component.IsMovable()) {
+      max_cell_width_ = std::max(max_cell_width_, component.Width());
     }
   }
   LOG(info) << "Max movable cell width: " << max_cell_width_ << "\n";

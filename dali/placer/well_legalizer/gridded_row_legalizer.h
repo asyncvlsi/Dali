@@ -141,7 +141,7 @@ class GriddedRowLegalizer : public Placer {
   bool is_greedy_loc_cached_ = false;
   bool is_qp_loc_cached_ = false;
   bool is_cons_loc_cached_ = false;
-  std::vector<LegalizerComponentAux> blk_auxs_;
+  std::vector<LegalizerComponentAux> component_auxs_;
 
   int number_of_threads_ = 1;
   bool use_cplex_ = false;

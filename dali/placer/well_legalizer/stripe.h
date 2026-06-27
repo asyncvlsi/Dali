@@ -42,7 +42,7 @@ class Stripe {
   int ly_;
   int width_;
   int height_;
-  int max_blk_capacity_per_cluster_;
+  int max_component_capacity_per_cluster_;
 
   int contour_;
   int used_height_;
@@ -149,7 +149,7 @@ class Stripe {
 
 #if DALI_USE_CPLEX
   std::unordered_map<Component*, IloInt> component_ptr_2_tmp_id;
-  std::unordered_map<IloInt, Component*> blk_tmp_id_2_ptr;
+  std::unordered_map<IloInt, Component*> component_temp_id_to_ptr_;
   void PopulateVariableArray(IloModel& model, IloNumVarArray& x);
   void AddVariableConstraints(IloModel& model, IloNumVarArray& x,
                               IloRangeArray& c);

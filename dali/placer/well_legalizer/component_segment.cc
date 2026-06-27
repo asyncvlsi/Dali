@@ -58,9 +58,9 @@ void ComponentSegment::Merge(ComponentSegment& sc, int lower_bound,
 
 void ComponentSegment::UpdateComponentLocation() {
   int cur_loc = lx_;
-  for (auto& blk : component_ptrs) {
-    blk->SetLLX(cur_loc);
-    cur_loc += blk->Width();
+  for (auto& component : component_ptrs) {
+    component->SetLLX(cur_loc);
+    cur_loc += component->Width();
   }
 }
 

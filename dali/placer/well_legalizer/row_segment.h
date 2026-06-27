@@ -76,7 +76,7 @@ class RowSegment {
 
  private:
   // list of components in this segment
-  std::vector<ComponentRegion> blk_regions_;
+  std::vector<ComponentRegion> component_regions_;
   int lx_ = INT_MIN;
   int width_ = 0;
   int used_size_ = 0;

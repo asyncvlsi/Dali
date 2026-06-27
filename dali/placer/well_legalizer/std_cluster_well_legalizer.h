@@ -69,12 +69,14 @@ class StdClusterWellLegalizer : public Placer {
   void InitializeWellLegalizer(int cluster_width = -1);
 
   void CreateClusterAndAppendSingleWellComponent(Stripe& stripe,
-                                                 Component& blk);
-  void AppendSingleWellComponentToFrontCluster(Stripe& stripe, Component& blk);
-  void AppendComponentToColBottomUp(Stripe& stripe, Component& blk);
-  void AppendComponentToColTopDown(Stripe& stripe, Component& blk);
-  void AppendComponentToColBottomUpCompact(Stripe& stripe, Component& blk);
-  void AppendComponentToColTopDownCompact(Stripe& stripe, Component& blk);
+                                                 Component& component);
+  void AppendSingleWellComponentToFrontCluster(Stripe& stripe,
+                                               Component& component);
+  void AppendComponentToColBottomUp(Stripe& stripe, Component& component);
+  void AppendComponentToColTopDown(Stripe& stripe, Component& component);
+  void AppendComponentToColBottomUpCompact(Stripe& stripe,
+                                           Component& component);
+  void AppendComponentToColTopDownCompact(Stripe& stripe, Component& component);
 
   bool StripeLegalizationBottomUp(Stripe& stripe);
   bool StripeLegalizationTopDown(Stripe& stripe);

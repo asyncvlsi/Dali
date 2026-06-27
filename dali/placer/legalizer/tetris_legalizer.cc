@@ -92,13 +92,11 @@ void TetrisLegalizer::FastShift(int failure_point) {
 
 /****
  * flip_axis = (left_ + right_)/2;
- * blk_x = component.X();
- * flipped_x = -(blk_x - flip_axis) + flip_axis = 2*flip_axis - blk_x;
- * flipped_llx = flipped_x - component.Width()/2.0
- *             = 2*flip_axis - (component.X() + component.Width()/2.0)
- *             = 2*flip_axis - component.URX()
- *             = (left_ + right_) - component.URX()
- *             = sum_left_right - component.URX()
+ * component_x = component.X();
+ * flipped_x = -(component_x - flip_axis) + flip_axis = 2*flip_axis -
+ * component_x; flipped_llx = flipped_x - component.Width()/2.0 = 2*flip_axis -
+ * (component.X() + component.Width()/2.0) = 2*flip_axis - component.URX() =
+ * (left_ + right_) - component.URX() = sum_left_right - component.URX()
  * component.SetLLX(flipped_llx);
  *
  * ****/

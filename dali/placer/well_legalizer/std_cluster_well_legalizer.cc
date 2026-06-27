@@ -43,10 +43,10 @@ void StdClusterWellLegalizer::LoadConf(std::string const& config_file) {
 
 void StdClusterWellLegalizer::CheckWellStatus() {
   auto& components = ckt_ptr_->Components();
-  for (Component& blk : components) {
-    if (blk.IsMovable()) {
-      DaliExpects(blk.MacroPtr()->HasWellInfo(),
-                  "Cannot find well info for cell: " << blk.Name());
+  for (Component& component : components) {
+    if (component.IsMovable()) {
+      DaliExpects(component.MacroPtr()->HasWellInfo(),
+                  "Cannot find well info for cell: " << component.Name());
     }
   }
 }
@@ -156,18 +156,18 @@ void StdClusterWellLegalizer::InitializeWellLegalizer(int cluster_width) {
 }
 
 void StdClusterWellLegalizer::CreateClusterAndAppendSingleWellComponent(
-    Stripe& stripe, Component& blk) {
+    Stripe& stripe, Component& component) {
   stripe.gridded_rows_.emplace_back();
   GriddedRow* front_row = &(stripe.gridded_rows_.back());
-  front_row->Components().reserve(stripe.max_blk_capacity_per_cluster_);
-  front_row->AddComponent(&blk);
+  front_row->Components().reserve(stripe.max_component_capacity_per_cluster_);
+  front_row->AddComponent(&component);
 
-  int width = blk.Width();
-  int init_y = (int)std::round(blk.LLY());
+  int width = component.Width();
+  int init_y = (int)std::round(component.LLY());
   init_y = std::max(init_y, stripe.contour_);
 
-  int p_well_height = blk.MacroPtr()->Pheight();
-  int n_well_height = blk.MacroPtr()->Nheight();
+  int p_well_height = component.MacroPtr()->Pheight();
+  int n_well_height = component.MacroPtr()->Nheight();
 
   int space_for_well_tap = num_of_tap_cell_ * well_tap_cell_width_ +
                            num_of_tap_cell_ * space_to_well_tap_;
@@ -197,13 +197,13 @@ void StdClusterWellLegalizer::CreateClusterAndAppendSingleWellComponent(
 }
 
 void StdClusterWellLegalizer::AppendSingleWellComponentToFrontCluster(
-    Stripe& stripe, Component& blk) {
-  int width = blk.Width();
-  int p_well_height = blk.MacroPtr()->Pheight();
-  int n_well_height = blk.MacroPtr()->Nheight();
+    Stripe& stripe, Component& component) {
+  int width = component.Width();
+  int p_well_height = component.MacroPtr()->Pheight();
+  int n_well_height = component.MacroPtr()->Nheight();
 
   GriddedRow* front_row = stripe.front_row_;
-  front_row->AddComponent(&blk);
+  front_row->AddComponent(&component);
   front_row->UseSpace(width);
   if (p_well_height > front_row->PHeight() ||
       n_well_height > front_row->NHeight()) {
@@ -214,47 +214,48 @@ void StdClusterWellLegalizer::AppendSingleWellComponentToFrontCluster(
   stripe.contour_ = front_row->URY();
 }
 
-void StdClusterWellLegalizer::AppendComponentToColBottomUp(Stripe& stripe,
-                                                           Component& blk) {
+void StdClusterWellLegalizer::AppendComponentToColBottomUp(
+    Stripe& stripe, Component& component) {
   bool is_no_row_in_col = (stripe.contour_ == stripe.LLY());
   bool is_new_row_needed = is_no_row_in_col;
   if (!is_new_row_needed) {
     GriddedRow* front_row = stripe.front_row_;
-    bool is_not_in_top_row = stripe.contour_ <= blk.LLY();
-    bool is_top_row_full = front_row->UsedSize() + blk.Width() > stripe.width_;
+    bool is_not_in_top_row = stripe.contour_ <= component.LLY();
+    bool is_top_row_full =
+        front_row->UsedSize() + component.Width() > stripe.width_;
     is_new_row_needed = is_not_in_top_row || is_top_row_full;
   }
 
   if (is_new_row_needed) {
-    CreateClusterAndAppendSingleWellComponent(stripe, blk);
+    CreateClusterAndAppendSingleWellComponent(stripe, component);
   } else {
-    AppendSingleWellComponentToFrontCluster(stripe, blk);
+    AppendSingleWellComponentToFrontCluster(stripe, component);
   }
 }
 
-void StdClusterWellLegalizer::AppendComponentToColTopDown(Stripe& stripe,
-                                                          Component& blk) {
+void StdClusterWellLegalizer::AppendComponentToColTopDown(
+    Stripe& stripe, Component& component) {
   bool is_no_row = stripe.gridded_rows_.empty();
   bool is_new_row_needed = is_no_row;
   if (!is_new_row_needed) {
-    bool is_not_in_top_row = stripe.contour_ >= blk.URY();
+    bool is_not_in_top_row = stripe.contour_ >= component.URY();
     bool is_top_row_full =
-        stripe.front_row_->UsedSize() + blk.Width() > stripe.width_;
+        stripe.front_row_->UsedSize() + component.Width() > stripe.width_;
     is_new_row_needed = is_not_in_top_row || is_top_row_full;
   }
 
-  int width = blk.Width();
-  int init_y = (int)std::round(blk.URY());
+  int width = component.Width();
+  int init_y = (int)std::round(component.URY());
   init_y = std::min(init_y, stripe.contour_);
 
   GriddedRow* front_row;
-  int p_well_height = blk.MacroPtr()->Pheight();
-  int n_well_height = blk.MacroPtr()->Nheight();
+  int p_well_height = component.MacroPtr()->Pheight();
+  int n_well_height = component.MacroPtr()->Nheight();
   if (is_new_row_needed) {
     stripe.gridded_rows_.emplace_back();
     front_row = &(stripe.gridded_rows_.back());
-    front_row->Components().reserve(stripe.max_blk_capacity_per_cluster_);
-    front_row->AddComponent(&blk);
+    front_row->Components().reserve(stripe.max_component_capacity_per_cluster_);
+    front_row->AddComponent(&component);
     front_row->SetUsedSize(width + num_of_tap_cell_ * well_tap_cell_width_ +
                            num_of_tap_cell_ * space_to_well_tap_);
     front_row->UpdateWellHeightDownward(tap_cell_p_height_, tap_cell_n_height_);
@@ -268,7 +269,7 @@ void StdClusterWellLegalizer::AppendComponentToColTopDown(Stripe& stripe,
     stripe.used_height_ += front_row->Height();
   } else {
     front_row = stripe.front_row_;
-    front_row->AddComponent(&blk);
+    front_row->AddComponent(&component);
     front_row->UseSpace(width);
     if (p_well_height > front_row->PHeight() ||
         n_well_height > front_row->NHeight()) {
@@ -281,26 +282,27 @@ void StdClusterWellLegalizer::AppendComponentToColTopDown(Stripe& stripe,
 }
 
 void StdClusterWellLegalizer::AppendComponentToColBottomUpCompact(
-    Stripe& stripe, Component& blk) {
+    Stripe& stripe, Component& component) {
   bool is_new_cluster_needed = (stripe.contour_ == stripe.LLY());
   if (!is_new_cluster_needed) {
     bool is_top_cluster_full =
-        stripe.front_row_->UsedSize() + blk.Width() > stripe.width_;
+        stripe.front_row_->UsedSize() + component.Width() > stripe.width_;
     is_new_cluster_needed = is_top_cluster_full;
   }
 
-  int width = blk.Width();
-  int init_y = (int)std::round(blk.LLY());
+  int width = component.Width();
+  int init_y = (int)std::round(component.LLY());
   init_y = std::max(init_y, stripe.contour_);
 
   GriddedRow* front_cluster;
-  int p_well_height = blk.MacroPtr()->Pheight();
-  int n_well_height = blk.MacroPtr()->Nheight();
+  int p_well_height = component.MacroPtr()->Pheight();
+  int n_well_height = component.MacroPtr()->Nheight();
   if (is_new_cluster_needed) {
     stripe.gridded_rows_.emplace_back();
     front_cluster = &(stripe.gridded_rows_.back());
-    front_cluster->Components().reserve(stripe.max_blk_capacity_per_cluster_);
-    front_cluster->AddComponent(&blk);
+    front_cluster->Components().reserve(
+        stripe.max_component_capacity_per_cluster_);
+    front_cluster->AddComponent(&component);
     front_cluster->SetUsedSize(width + num_of_tap_cell_ * well_tap_cell_width_ +
                                num_of_tap_cell_ * space_to_well_tap_);
     front_cluster->UpdateWellHeightUpward(tap_cell_p_height_,
@@ -315,7 +317,7 @@ void StdClusterWellLegalizer::AppendComponentToColBottomUpCompact(
     stripe.used_height_ += front_cluster->Height();
   } else {
     front_cluster = stripe.front_row_;
-    front_cluster->AddComponent(&blk);
+    front_cluster->AddComponent(&component);
     front_cluster->UseSpace(width);
     if (p_well_height > front_cluster->PHeight() ||
         n_well_height > front_cluster->NHeight()) {
@@ -328,26 +330,27 @@ void StdClusterWellLegalizer::AppendComponentToColBottomUpCompact(
 }
 
 void StdClusterWellLegalizer::AppendComponentToColTopDownCompact(
-    Stripe& stripe, Component& blk) {
+    Stripe& stripe, Component& component) {
   bool is_new_cluster_needed = (stripe.contour_ == stripe.URY());
   if (!is_new_cluster_needed) {
     bool is_top_cluster_full =
-        stripe.front_row_->UsedSize() + blk.Width() > stripe.width_;
+        stripe.front_row_->UsedSize() + component.Width() > stripe.width_;
     is_new_cluster_needed = is_top_cluster_full;
   }
 
-  int width = blk.Width();
-  int init_y = (int)std::round(blk.URY());
+  int width = component.Width();
+  int init_y = (int)std::round(component.URY());
   init_y = std::min(init_y, stripe.contour_);
 
   GriddedRow* front_cluster;
-  int p_well_height = blk.MacroPtr()->Pheight();
-  int n_well_height = blk.MacroPtr()->Nheight();
+  int p_well_height = component.MacroPtr()->Pheight();
+  int n_well_height = component.MacroPtr()->Nheight();
   if (is_new_cluster_needed) {
     stripe.gridded_rows_.emplace_back();
     front_cluster = &(stripe.gridded_rows_.back());
-    front_cluster->Components().reserve(stripe.max_blk_capacity_per_cluster_);
-    front_cluster->AddComponent(&blk);
+    front_cluster->Components().reserve(
+        stripe.max_component_capacity_per_cluster_);
+    front_cluster->AddComponent(&component);
     front_cluster->SetUsedSize(width + num_of_tap_cell_ * well_tap_cell_width_ +
                                num_of_tap_cell_ * space_to_well_tap_);
     front_cluster->UpdateWellHeightDownward(tap_cell_p_height_,
@@ -362,7 +365,7 @@ void StdClusterWellLegalizer::AppendComponentToColTopDownCompact(
     stripe.used_height_ += front_cluster->Height();
   } else {
     front_cluster = stripe.front_row_;
-    front_cluster->AddComponent(&blk);
+    front_cluster->AddComponent(&component);
     front_cluster->UseSpace(width);
     if (p_well_height > front_cluster->PHeight() ||
         n_well_height > front_cluster->NHeight()) {
@@ -701,8 +704,8 @@ double StdClusterWellLegalizer::WireLengthCost(GriddedRow* cluster, int l,
   auto& net_list = ckt_ptr_->Nets();
   std::set<Net*> net_involved;
   for (int i = l; i <= r; ++i) {
-    auto* blk = cluster->Components()[i];
-    for (auto& net_num : blk->NetList()) {
+    auto* component = cluster->Components()[i];
+    for (auto& net_num : component->NetList()) {
       if (net_list[net_num].PinCnt() < 100) {
         net_involved.insert(&(net_list[net_num]));
       }
@@ -737,9 +740,9 @@ void StdClusterWellLegalizer::FindBestLocalOrder(
 
     int left_contour = left_bound + gap + cluster->Components()[l]->Width();
     for (int i = l + 1; i < r; ++i) {
-      auto* blk = cluster->Components()[i];
-      blk->SetLLX(left_contour);
-      left_contour += blk->Width() + gap;
+      auto* component = cluster->Components()[i];
+      component->SetLLX(left_contour);
+      left_contour += component->Width() + gap;
     }
 
     double tmp_cost = WireLengthCost(cluster, l, r);
@@ -751,17 +754,17 @@ void StdClusterWellLegalizer::FindBestLocalOrder(
     }
   } else {
     // Permutations made
-    auto& blk_list = cluster->Components();
+    auto& component_list = cluster->Components();
     for (int i = cur; i <= r; ++i) {
       // Swapping done
-      std::swap(blk_list[cur], blk_list[i]);
+      std::swap(component_list[cur], component_list[i]);
 
       // Recursion called
       FindBestLocalOrder(res, cost, cluster, cur + 1, l, r, left_bound,
                          right_bound, gap, range);
 
       // backtrack
-      std::swap(blk_list[cur], blk_list[i]);
+      std::swap(component_list[cur], component_list[i]);
     }
   }
 }
@@ -787,16 +790,16 @@ void StdClusterWellLegalizer::LocalReorderInCluster(GriddedRow* cluster,
   int last_segment = sz - range;
   std::vector<Component*> res_local_order(range, nullptr);
   for (int l = 0; l <= last_segment; ++l) {
-    int tot_blk_width = 0;
+    int total_component_width = 0;
     for (int j = 0; j < range; ++j) {
       res_local_order[j] = cluster->Components()[l + j];
-      tot_blk_width += res_local_order[j]->Width();
+      total_component_width += res_local_order[j]->Width();
     }
     int r = l + range - 1;
     double best_cost = DBL_MAX;
     int left_bound = (int)cluster->Components()[l]->LLX();
     int right_bound = (int)cluster->Components()[r]->URX();
-    int gap = (right_bound - left_bound - tot_blk_width) / (r - l);
+    int gap = (right_bound - left_bound - total_component_width) / (r - l);
 
     FindBestLocalOrder(res_local_order, best_cost, cluster, l, l, r, left_bound,
                        right_bound, gap, range);
@@ -808,9 +811,9 @@ void StdClusterWellLegalizer::LocalReorderInCluster(GriddedRow* cluster,
     cluster->Components()[r]->SetURX(right_bound);
     int left_contour = left_bound + cluster->Components()[l]->Width() + gap;
     for (int i = l + 1; i < r; ++i) {
-      auto* blk = cluster->Components()[i];
-      blk->SetLLX(left_contour);
-      left_contour += blk->Width() + gap;
+      auto* component = cluster->Components()[i];
+      component->SetLLX(left_contour);
+      left_contour += component->Width() + gap;
     }
   }
 }
@@ -851,10 +854,10 @@ void StdClusterWellLegalizer::SingleSegmentClusteringOptimization() {
   for (auto &col: col_list_) {
     for (auto &stripe: col.stripe_list_) {
       for (auto &cluster: stripe.cluster_list_) {
-        int num_old_cluster = cluster.blk_list_.size();
-        std::vector<ComponentSegment> old_cluster(num_old_cluster);
-        for (int i = 0; i < num_old_cluster; ++i) {
-          old_cluster[i].blk_index.push_back(i);
+        int old_cluster_component_count = cluster.components_.size();
+        std::vector<ComponentSegment> old_cluster(old_cluster_component_count);
+        for (int i = 0; i < old_cluster_component_count; ++i) {
+          old_cluster[i].component_index.push_back(i);
           old_cluster[i].circuit_ptr_ = circuit_ptr_;
           old_cluster[i].cluster_ = &cluster;
           old_cluster[i].UpdateBoundList();
@@ -867,7 +870,7 @@ void StdClusterWellLegalizer::SingleSegmentClusteringOptimization() {
           std::vector<ComponentSegment> new_cluster;
           new_cluster.push_back(old_cluster[0]);
           int j = 0;
-          while (j + 1 < num_old_cluster) {
+          while (j + 1 < old_cluster_component_count) {
             if (new_cluster.back().Overlap(old_cluster[j + 1])) {
               new_cluster.back().Merge(old_cluster[j + 1]);
             } else {
@@ -876,7 +879,7 @@ void StdClusterWellLegalizer::SingleSegmentClusteringOptimization() {
             j += 1;
           }
           int new_count = new_cluster.size();
-          num_old_cluster = new_count;
+          old_cluster_component_count = new_count;
           for (int i = 0; i < new_count; ++i) {
             old_cluster[i].CopyFrom(new_cluster[i]);
           }
@@ -893,7 +896,7 @@ void StdClusterWellLegalizer::SingleSegmentClusteringOptimization() {
 
         } while (is_overlap);
 
-        for (int i = 0; i < num_old_cluster; ++i) {
+        for (int i = 0; i < old_cluster_component_count; ++i) {
           old_cluster[i].UpdateComponentLocation();
         }
       }
@@ -1181,11 +1184,11 @@ bool StdClusterWellLegalizer::StartPlacement() {
 }
 
 void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
-  int tot_std_blk_area = 0;
+  int total_standard_component_area = 0;
   int max_n_height = 0;
   int max_p_height = 0;
-  for (auto& blk : ckt_ptr_->design().Components()) {
-    Macro* macro = blk.MacroPtr();
+  for (auto& component : ckt_ptr_->design().Components()) {
+    Macro* macro = component.MacroPtr();
     if (macro == ckt_ptr_->tech().IoDummyMacroPtr()) continue;
     if (macro->Nheight() > max_n_height) {
       max_n_height = macro->Nheight();
@@ -1202,7 +1205,7 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
   }
   int max_height = max_n_height + max_p_height;
 
-  int tot_eff_blk_area = 0;
+  int total_effective_component_area = 0;
   for (auto& col : col_list_) {
     for (auto& stripe : col.stripe_list_) {
       for (auto& cluster : stripe.gridded_rows_) {
@@ -1211,8 +1214,8 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
         for (auto& component_ptr : cluster.Components()) {
           tot_cell_width += component_ptr->Width();
         }
-        tot_eff_blk_area += tot_cell_width * eff_height;
-        tot_std_blk_area += tot_cell_width * max_height;
+        total_effective_component_area += tot_cell_width * eff_height;
+        total_standard_component_area += tot_cell_width * max_height;
       }
     }
   }
@@ -1224,13 +1227,15 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
             << ckt_ptr_->TotalComponentArea() / (double)RegionWidth() /
                    (double)RegionHeight()
             << ") um^2\n";
-  LOG(info) << "Total effective component area: " << tot_eff_blk_area * factor
-            << " ("
-            << tot_eff_blk_area / (double)RegionWidth() / (double)RegionHeight()
+  LOG(info) << "Total effective component area: "
+            << total_effective_component_area * factor << " ("
+            << total_effective_component_area / (double)RegionWidth() /
+                   (double)RegionHeight()
             << ") um^2\n";
   LOG(info) << "Total standard component area (lower bound):"
-            << tot_std_blk_area * factor << " ("
-            << tot_std_blk_area / (double)RegionWidth() / (double)RegionHeight()
+            << total_standard_component_area * factor << " ("
+            << total_standard_component_area / (double)RegionWidth() /
+                   (double)RegionHeight()
             << ") um^2\n";
 }
 

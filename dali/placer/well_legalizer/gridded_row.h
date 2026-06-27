@@ -161,9 +161,9 @@ class GriddedRow {
   size_t OutOfBoundCell();
 
  private:
-  bool is_orient_N_ = true;           // orientation of this cluster
-  std::vector<Component*> blk_list_;  // list of components in this cluster
-  std::unordered_map<Component*, double2d> blk_initial_location_;
+  bool is_orient_N_ = true;             // orientation of this cluster
+  std::vector<Component*> components_;  // list of components in this cluster
+  std::unordered_map<Component*, double2d> initial_locations_;
 
   /**** number of tap cells needed, and pointers to tap cells ****/
   int tap_cell_num_ = 0;
@@ -187,7 +187,7 @@ class GriddedRow {
   double min_displacement_lly_ = -DBL_MAX;
 
   /**** for multi-well legalization ****/
-  std::vector<ComponentRegion> blk_regions_;
+  std::vector<ComponentRegion> component_regions_;
   std::vector<RowSegment> segments_;
 };
 

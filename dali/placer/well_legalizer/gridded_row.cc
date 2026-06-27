@@ -103,40 +103,40 @@ void GriddedRow::SetLoc(int lx, int ly) {
 }
 
 void GriddedRow::AddComponent(Component* component_ptr) {
-  blk_list_.push_back(component_ptr);
+  components_.push_back(component_ptr);
   double y_init = component_ptr->LLY();
   Macro* macro_ptr = component_ptr->MacroPtr();
   y_init = component_ptr->LLY() + macro_ptr->Pheight();
-  blk_initial_location_[component_ptr] = double2d(component_ptr->LLX(), y_init);
+  initial_locations_[component_ptr] = double2d(component_ptr->LLX(), y_init);
 }
 
-std::vector<Component*>& GriddedRow::Components() { return blk_list_; }
+std::vector<Component*>& GriddedRow::Components() { return components_; }
 
 std::unordered_map<Component*, double2d>& GriddedRow::InitLocations() {
-  return blk_initial_location_;
+  return initial_locations_;
 }
 
 void GriddedRow::ShiftComponentX(int x_disp) {
-  for (auto& component_ptr : blk_list_) {
+  for (auto& component_ptr : components_) {
     component_ptr->IncreaseX(x_disp);
   }
 }
 
 void GriddedRow::ShiftComponentY(int y_disp) {
-  for (auto& component_ptr : blk_list_) {
+  for (auto& component_ptr : components_) {
     component_ptr->IncreaseY(y_disp);
   }
 }
 
 void GriddedRow::ShiftComponent(int x_disp, int y_disp) {
-  for (auto& component_ptr : blk_list_) {
+  for (auto& component_ptr : components_) {
     component_ptr->IncreaseX(x_disp);
     component_ptr->IncreaseY(y_disp);
   }
 }
 
 void GriddedRow::UpdateComponentLocY() {
-  for (auto& component_ptr : blk_list_) {
+  for (auto& component_ptr : components_) {
     Macro* macro_ptr = component_ptr->MacroPtr();
     component_ptr->SetLLY(ly_ + p_well_height_ - macro_ptr->Pheight());
   }
@@ -144,27 +144,27 @@ void GriddedRow::UpdateComponentLocY() {
 
 void GriddedRow::LegalizeCompactX(int left) {
   std::sort(
-      blk_list_.begin(), blk_list_.end(),
+      components_.begin(), components_.end(),
       [](const Component* component_ptr0, const Component* component_ptr1) {
         return component_ptr0->LLX() < component_ptr1->LLX();
       });
   int current_x = left;
-  for (auto& blk : blk_list_) {
-    blk->SetLLX(current_x);
-    current_x += blk->Width();
+  for (auto& component : components_) {
+    component->SetLLX(current_x);
+    current_x += component->Width();
   }
 }
 
 void GriddedRow::LegalizeCompactX() {
   std::sort(
-      blk_list_.begin(), blk_list_.end(),
+      components_.begin(), components_.end(),
       [](const Component* component_ptr0, const Component* component_ptr1) {
         return component_ptr0->LLX() < component_ptr1->LLX();
       });
   int current_x = lx_;
-  for (auto& blk : blk_list_) {
-    blk->SetLLX(current_x);
-    current_x += blk->Width();
+  for (auto& component : components_) {
+    component->SetLLX(current_x);
+    current_x += component->Width();
   }
 }
 
@@ -180,37 +180,39 @@ void GriddedRow::LegalizeCompactX() {
  * legal.
  * ****/
 void GriddedRow::LegalizeLooseX(int space_to_well_tap) {
-  if (blk_list_.empty()) {
+  if (components_.empty()) {
     return;
   }
   std::sort(
-      blk_list_.begin(), blk_list_.end(),
+      components_.begin(), components_.end(),
       [](const Component* component_ptr0, const Component* component_ptr1) {
         return component_ptr0->LLX() < component_ptr1->LLX();
       });
   int component_contour = lx_;
   int res_x;
-  for (auto& blk : blk_list_) {
-    res_x = std::max(component_contour, int(blk->LLX()));
-    blk->SetLLX(res_x);
-    component_contour = int(blk->URX());
-    if ((tap_cell_ != nullptr) && (blk->MacroPtr() == tap_cell_->MacroPtr())) {
+  for (auto& component : components_) {
+    res_x = std::max(component_contour, int(component->LLX()));
+    component->SetLLX(res_x);
+    component_contour = int(component->URX());
+    if ((tap_cell_ != nullptr) &&
+        (component->MacroPtr() == tap_cell_->MacroPtr())) {
       component_contour += space_to_well_tap;
     }
   }
 
   int ux = lx_ + width_;
   std::sort(
-      blk_list_.begin(), blk_list_.end(),
+      components_.begin(), components_.end(),
       [](const Component* component_ptr0, const Component* component_ptr1) {
         return component_ptr0->URX() > component_ptr1->URX();
       });
   component_contour = ux;
-  for (auto& blk : blk_list_) {
-    res_x = std::min(component_contour, int(blk->URX()));
-    blk->SetURX(res_x);
-    component_contour = int(blk->LLX());
-    if ((tap_cell_ != nullptr) && (blk->MacroPtr() == tap_cell_->MacroPtr())) {
+  for (auto& component : components_) {
+    res_x = std::min(component_contour, int(component->URX()));
+    component->SetURX(res_x);
+    component_contour = int(component->LLX());
+    if ((tap_cell_ != nullptr) &&
+        (component->MacroPtr() == tap_cell_->MacroPtr())) {
       component_contour -= space_to_well_tap;
     }
   }
@@ -221,7 +223,7 @@ void GriddedRow::SetOrient(bool is_orient_N) {
     is_orient_N_ = is_orient_N;
     ComponentOrient orient = is_orient_N_ ? N : FS;
     double y_flip_axis = ly_ + height_ / 2.0;
-    for (auto& component_ptr : blk_list_) {
+    for (auto& component_ptr : components_) {
       double ly_to_axis = y_flip_axis - component_ptr->LLY();
       component_ptr->SetOrient(orient);
       component_ptr->SetURY(y_flip_axis + ly_to_axis);
@@ -231,7 +233,7 @@ void GriddedRow::SetOrient(bool is_orient_N) {
 
 void GriddedRow::InsertWellTapCell(Component& tap_cell, int loc) {
   tap_cell_ = &tap_cell;
-  blk_list_.emplace_back(tap_cell_);
+  components_.emplace_back(tap_cell_);
   tap_cell_->SetCenterX(loc);
   Macro* macro_ptr = tap_cell_->MacroPtr();
   int p_well_height = macro_ptr->Pheight();
@@ -247,37 +249,37 @@ void GriddedRow::InsertWellTapCell(Component& tap_cell, int loc) {
 
 void GriddedRow::UpdateComponentLocationCompact() {
   std::sort(
-      blk_list_.begin(), blk_list_.end(),
+      components_.begin(), components_.end(),
       [](const Component* component_ptr0, const Component* component_ptr1) {
         return component_ptr0->LLX() < component_ptr1->LLX();
       });
   int current_x = lx_;
-  for (auto& blk : blk_list_) {
-    blk->SetLLX(current_x);
-    blk->SetCenterY(CenterY());
-    current_x += blk->Width();
+  for (auto& component : components_) {
+    component->SetLLX(current_x);
+    component->SetCenterY(CenterY());
+    current_x += component->Width();
   }
 }
 
 void GriddedRow::MinDisplacementLegalization() {
   std::sort(
-      blk_list_.begin(), blk_list_.end(),
+      components_.begin(), components_.end(),
       [](const Component* component_ptr0, const Component* component_ptr1) {
         return component_ptr0->X() < component_ptr1->X();
       });
 
   std::vector<ComponentSegment> segments;
 
-  DaliExpects(blk_list_.size() == blk_initial_location_.size(),
+  DaliExpects(components_.size() == initial_locations_.size(),
               "Component number does not equal initial location number\n");
 
-  size_t sz = blk_list_.size();
+  size_t sz = components_.size();
   int lower_bound = lx_;
   int upper_bound = lx_ + width_;
   for (size_t i = 0; i < sz; ++i) {
     // create a segment which contains only this component
-    Component* component_ptr = blk_list_[i];
-    double init_x = blk_initial_location_[component_ptr].x;
+    Component* component_ptr = components_[i];
+    double init_x = initial_locations_[component_ptr].x;
     if (init_x < lower_bound) {
       init_x = lower_bound;
     }
@@ -309,20 +311,20 @@ void GriddedRow::MinDisplacementLegalization() {
   // int count = 0;
   for (auto& seg : segments) {
     seg.UpdateComponentLocation();
-    // count += seg.blk_list.size();
+    // count += seg.component_list.size();
     // seg.Report();
   }
 }
 
 void GriddedRow::UpdateMinDisplacementLLY() {
-  DaliExpects(blk_list_.size() == blk_initial_location_.size(),
+  DaliExpects(components_.size() == initial_locations_.size(),
               "Component count does not equal initial location count\n");
   double sum = 0;
-  for (auto& [component_ptr, init_loc] : blk_initial_location_) {
+  for (auto& [component_ptr, init_loc] : initial_locations_) {
     double init_np_boundary = init_loc.y;
     sum += init_np_boundary;
   }
-  min_displacement_lly_ = sum / (int)(blk_initial_location_.size()) - PHeight();
+  min_displacement_lly_ = sum / (int)(initial_locations_.size()) - PHeight();
 }
 
 double GriddedRow::MinDisplacementLLY() const { return min_displacement_lly_; }
@@ -336,8 +338,8 @@ void GriddedRow::UpdateSegments(std::vector<SegI>& blockage,
 
   // treat existing components as blockages
   if (is_existing_components_considered) {
-    for (auto& blk_region : blk_regions_) {
-      Component* component = blk_region.component;
+    for (auto& component_region : component_regions_) {
+      Component* component = component_region.component;
       used_spaces.emplace_back(component->LLX(), component->URX());
     }
   }
@@ -389,11 +391,11 @@ void GriddedRow::UpdateSegments(std::vector<SegI>& blockage,
  * @brief: re-assign components to row segments
  */
 void GriddedRow::AssignComponentsToSegments() {
-  for (auto& [component, region_id] : blk_regions_) {
+  for (auto& [component, region_id] : component_regions_) {
     bool is_completely_in_a_seg = false;
     for (auto& seg : segments_) {
       if (component->LLX() >= seg.LLX() && component->URX() <= seg.URX()) {
-        // double2d &init_loc = blk_initial_location_[component];
+        // double2d &init_loc = initial_locations_[component];
         seg.AddComponentRegion(component, region_id);
         is_completely_in_a_seg = true;
         break;
@@ -453,7 +455,7 @@ bool GriddedRow::IsOrientMatching(Component* component, int region_id) const {
 
 void GriddedRow::AddComponentRegion(Component* component, int region_id,
                                     bool is_upward) {
-  blk_regions_.emplace_back(component, region_id);
+  component_regions_.emplace_back(component, region_id);
   Macro* macro_ptr = component->MacroPtr();
   int p_height = macro_ptr->PwellHeight(region_id, component->IsFlipped());
   int n_height = macro_ptr->NwellHeight(region_id, component->IsFlipped());
@@ -465,7 +467,7 @@ void GriddedRow::AddComponentRegion(Component* component, int region_id,
 }
 
 std::vector<ComponentRegion>& GriddedRow::ComponentRegions() {
-  return blk_regions_;
+  return component_regions_;
 }
 
 bool GriddedRow::AttemptToAdd(Component* component, bool is_upward) {
@@ -566,7 +568,7 @@ void GriddedRow::LegalizeSegmentsX(bool use_init_loc) {
 }
 
 void GriddedRow::LegalizeSegmentsY() {
-  for (auto& [component, region_id] : blk_regions_) {
+  for (auto& [component, region_id] : component_regions_) {
     if (region_id != 0) continue;
     Macro* macro_ptr = component->MacroPtr();
     double y_loc = LLY();
@@ -584,9 +586,9 @@ void GriddedRow::LegalizeSegmentsY() {
 void GriddedRow::RecomputeHeight(int p_well_height, int n_well_height) {
   p_well_height_ = p_well_height;
   n_well_height_ = n_well_height;
-  for (auto& blk_region : blk_regions_) {
-    auto* component = blk_region.component;
-    int region_id = blk_region.region_id;
+  for (auto& component_region : component_regions_) {
+    auto* component = component_region.component;
+    int region_id = component_region.region_id;
     Macro* macro_ptr = component->MacroPtr();
     int p_height = macro_ptr->PwellHeight(region_id, component->IsFlipped());
     int n_height = macro_ptr->NwellHeight(region_id, component->IsFlipped());
@@ -597,9 +599,9 @@ void GriddedRow::RecomputeHeight(int p_well_height, int n_well_height) {
 }
 
 void GriddedRow::InitializeComponentStretching() {
-  for (auto& blk_region : blk_regions_) {
-    auto* component = blk_region.component;
-    size_t region_id = blk_region.region_id;
+  for (auto& component_region : component_regions_) {
+    auto* component = component_region.component;
+    size_t region_id = component_region.region_id;
     Macro* macro_ptr = component->MacroPtr();
     size_t row_cnt = macro_ptr->RegionCount();
     if (region_id == 0) {
@@ -639,7 +641,7 @@ size_t GriddedRow::AddWellTapCells(Circuit* p_ckt, Macro* well_tap_macro,
  * If two cells have the same x location, then sort them based on their index.
  */
 void GriddedRow::SortComponentRegions() {
-  std::sort(blk_regions_.begin(), blk_regions_.end(),
+  std::sort(component_regions_.begin(), component_regions_.end(),
             [](const ComponentRegion r0, const ComponentRegion r1) {
               return (r0.component->LLX() < r1.component->LLX()) ||
                      ((r0.component->LLX() == r1.component->LLX()) &&
@@ -650,10 +652,10 @@ void GriddedRow::SortComponentRegions() {
 bool GriddedRow::IsRowLegal() {
   SortComponentRegions();
   int front = LLX();
-  for (ComponentRegion& blk_region : blk_regions_) {
-    Component* component_ptr = blk_region.component;
-    int blk_lx = static_cast<int>(std::round(component_ptr->LLX()));
-    if (blk_lx < front) return false;
+  for (ComponentRegion& component_region : component_regions_) {
+    Component* component_ptr = component_region.component;
+    int component_lx = static_cast<int>(std::round(component_ptr->LLX()));
+    if (component_lx < front) return false;
     front += component_ptr->Width();
   }
   return front <= URX();
@@ -713,8 +715,8 @@ void GriddedRow::AddStandardCell(Component* component, int region_id,
 
 size_t GriddedRow::OutOfBoundCell() {
   size_t cnt = 0;
-  for (auto& blk_region : blk_regions_) {
-    Component* component_ptr = blk_region.component;
+  for (auto& component_region : component_regions_) {
+    Component* component_ptr = component_region.component;
     if ((component_ptr->LLX() < LLX()) || (component_ptr->URX() > URX())) {
       ++cnt;
     }

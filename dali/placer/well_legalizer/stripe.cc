@@ -393,13 +393,13 @@ void Stripe::UpdateComponentStretchLength() {
   for (int i = 1; i < sz; ++i) {
     GriddedRow& cur_cluster = gridded_rows_[i];
     GriddedRow& pre_cluster = gridded_rows_[i - 1];
-    for (auto& blk_region : cur_cluster.blk_regions_) {
-      int id = blk_region.region_id;
+    for (auto& component_region : cur_cluster.component_regions_) {
+      int id = component_region.region_id;
       if (id >= 1) {
-        Component* component = blk_region.component;
+        Component* component = component_region.component;
         --id;
         int well_edge_distance =
-            blk_region.component->MacroPtr()->AdjacentRegionEdgeDistance(
+            component_region.component->MacroPtr()->AdjacentRegionEdgeDistance(
                 id, component->IsFlipped());
         int actual_edge_distance = (cur_cluster.LLY() + cur_cluster.PNEdge()) -
                                    (pre_cluster.LLY() + pre_cluster.PNEdge());
@@ -427,8 +427,8 @@ void Stripe::UpdateFrontClusterDownward(int p_height, int n_height) {
       is_orient_N = is_first_row_orient_N_;
     } else {
       Macro* macro_ptr = component_ptrs_vec_[0]->MacroPtr();
-      bool is_blk_flipped = component_ptrs_vec_[0]->IsFlipped();
-      if (is_blk_flipped) {
+      bool is_component_flipped = component_ptrs_vec_[0]->IsFlipped();
+      if (is_component_flipped) {
         is_orient_N = !macro_ptr->IsNwellAbovePwell(0);
       } else {
         int region_id = macro_ptr->RegionCount() - 1;
@@ -554,7 +554,7 @@ bool Stripe::IsLeftmostPlacementLegal() {
       });
 
   DaliExpects(false, "To be implemented");
-  // for (Component *&blk : component_ptrs_vec_) {
+  // for (Component *&component : component_ptrs_vec_) {
   // }
 
   return true;
@@ -713,15 +713,15 @@ void Stripe::PopulateVariableArray(IloModel& model, IloNumVarArray& x) {
   IloEnv env = model.getEnv();
   IloInt cnt = 0;
   for (auto& row : gridded_rows_) {
-    for (auto& blk_region : row.blk_regions_) {
-      Component* component_ptr = blk_region.component;
+    for (auto& component_region : row.component_regions_) {
+      Component* component_ptr = component_region.component;
       if (component_ptr_2_tmp_id.find(component_ptr) ==
           component_ptr_2_tmp_id.end()) {
         // x.add(IloNumVar(env, lx_, lx_ + width_));
         // x.add(IloNumVar(env, lx_, IloInfinity));
         x.add(IloNumVar(env, -IloInfinity, IloInfinity));
         component_ptr_2_tmp_id[component_ptr] = cnt;
-        blk_tmp_id_2_ptr[cnt] = component_ptr;
+        component_temp_id_to_ptr_[cnt] = component_ptr;
         ++cnt;
       }
     }
@@ -731,13 +731,13 @@ void Stripe::PopulateVariableArray(IloModel& model, IloNumVarArray& x) {
 void Stripe::AddVariableConstraints(IloModel& model, IloNumVarArray& x,
                                     IloRangeArray& c) {
   for (auto& row : gridded_rows_) {
-    size_t blk_cnt = row.blk_regions_.size();
-    for (size_t i = 0; i < blk_cnt; ++i) {
+    size_t component_count = row.component_regions_.size();
+    for (size_t i = 0; i < component_count; ++i) {
       if (i > 0) {
-        Component* component_ptr0 = row.blk_regions_[i - 1].component;
+        Component* component_ptr0 = row.component_regions_[i - 1].component;
         IloInt id0 = component_ptr_2_tmp_id[component_ptr0];
         int width = component_ptr0->Width();
-        Component* component_ptr1 = row.blk_regions_[i].component;
+        Component* component_ptr1 = row.component_regions_[i].component;
         IloInt id1 = component_ptr_2_tmp_id[component_ptr1];
         c.add(x[id1] - x[id0] >= width);
       }
@@ -751,8 +751,8 @@ void Stripe::ConstructQuadraticObjective(IloModel& model, IloNumVarArray& x) {
   IloEnv env = model.getEnv();
   IloExpr objExpr(env);
   for (auto& row : gridded_rows_) {
-    for (auto& blk_region : row.blk_regions_) {
-      Component* component_ptr = blk_region.component;
+    for (auto& component_region : row.component_regions_) {
+      Component* component_ptr = component_region.component;
       auto aux_ptr =
           static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
       double2d init = aux_ptr->InitLoc();
@@ -788,7 +788,7 @@ bool Stripe::SolveQPProblem(IloCplex& cplex, IloNumVarArray& var) {
     IloInt nvars = var.getSize();
     for (IloInt j = 0; j < nvars; ++j) {
       // env.out() << "Variable " << j << ": Value = " << val[j] << endl;
-      Component* component_ptr = blk_tmp_id_2_ptr[j];
+      Component* component_ptr = component_temp_id_to_ptr_[j];
       component_ptr->SetLLX(val[j]);
     }
     val.end();

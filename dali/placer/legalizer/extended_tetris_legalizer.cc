@@ -95,8 +95,9 @@ void ExtendedTetrisLegalizer::InitializeFromGriddedRowLegalizer(
   component_contour_.resize(tot_num_rows_, left_);
 
   ComponentInitialLocation tmp_index_loc_pair(nullptr, 0, 0);
-  blk_inits_.clear();
-  blk_inits_.resize(ckt_ptr_->Components().size(), tmp_index_loc_pair);
+  component_initial_locations_.clear();
+  component_initial_locations_.resize(ckt_ptr_->Components().size(),
+                                      tmp_index_loc_pair);
 }
 
 void ExtendedTetrisLegalizer::SetRowInfoAuto() {
@@ -182,13 +183,13 @@ void ExtendedTetrisLegalizer::DetectWhiteSpace() {
   }
 
   rows_.resize(tot_num_rows_);
-  int min_blk_width = int(ckt_ptr_->MinComponentWidth());
+  int min_component_width = int(ckt_ptr_->MinComponentWidth());
   for (int i = 0; i < tot_num_rows_; ++i) {
     int len = int(intermediate_seg_rows[i].size());
     rows_[i].reserve(len / 2);
     for (int j = 0; j < len; j += 2) {
       if (intermediate_seg_rows[i][j + 1] - intermediate_seg_rows[i][j] >=
-          min_blk_width) {
+          min_component_width) {
         rows_[i].emplace_back(intermediate_seg_rows[i][j],
                               intermediate_seg_rows[i][j + 1]);
       }
@@ -199,7 +200,8 @@ void ExtendedTetrisLegalizer::DetectWhiteSpace() {
 
 void ExtendedTetrisLegalizer::InitIndexLocList() {
   ComponentInitialLocation tmp_index_loc_pair(nullptr, 0, 0);
-  blk_inits_.resize(ckt_ptr_->Components().size(), tmp_index_loc_pair);
+  component_initial_locations_.resize(ckt_ptr_->Components().size(),
+                                      tmp_index_loc_pair);
 }
 
 /****
@@ -350,19 +352,20 @@ void ExtendedTetrisLegalizer::InitComponentContourForward() {
 }
 
 void ExtendedTetrisLegalizer::InitAndSortComponentAscendingX() {
-  blk_inits_.clear();
+  component_initial_locations_.clear();
   auto& components = ckt_ptr_->Components();
-  for (auto& blk : components) {
+  for (auto& component : components) {
     // skipp dummy components and fixed components
-    if (IsDummyComponent(blk)) continue;
-    if (blk.IsFixed()) continue;
-    double x_loc =
-        blk.LLX() - k_width_ * blk.Width() - k_height_ * blk.Height();
-    double y_loc = blk.LLY();
-    blk_inits_.emplace_back(&blk, x_loc, y_loc);
+    if (IsDummyComponent(component)) continue;
+    if (component.IsFixed()) continue;
+    double x_loc = component.LLX() - k_width_ * component.Width() -
+                   k_height_ * component.Height();
+    double y_loc = component.LLY();
+    component_initial_locations_.emplace_back(&component, x_loc, y_loc);
   }
 
-  std::sort(blk_inits_.begin(), blk_inits_.end(),
+  std::sort(component_initial_locations_.begin(),
+            component_initial_locations_.end(),
             [](const ComponentInitialLocation& pair0,
                const ComponentInitialLocation& pair1) {
               return (pair0.x < pair1.x) ||
@@ -471,7 +474,7 @@ bool ExtendedTetrisLegalizer::FindLocLeft(Value2D<int>& loc,
   int left_component_bound =
       static_cast<int>(std::round(loc.x - k_left_ * width));
   int max_search_row = MaxRow(height);
-  int blk_row_height = HeightToRow(height);
+  int component_row_height = HeightToRow(height);
 
   int lower_search_y = static_cast<int>(std::round(loc.y - k_start * height));
   int upper_search_y = static_cast<int>(std::round(loc.y + k_end * height));
@@ -484,7 +487,7 @@ bool ExtendedTetrisLegalizer::FindLocLeft(Value2D<int>& loc,
 
   for (int tmp_start_row = search_start_row; tmp_start_row <= search_end_row;
        ++tmp_start_row) {
-    int tmp_end_row = tmp_start_row + blk_row_height - 1;
+    int tmp_end_row = tmp_start_row + component_row_height - 1;
     bool is_fit_to_row = IsFitToRow(tmp_start_row, component);
     if (!is_fit_to_row) {
       continue;
@@ -513,17 +516,17 @@ bool ExtendedTetrisLegalizer::FindLocLeft(Value2D<int>& loc,
   int best_loc_x_legal = INT_MIN;
   double min_cost_legal = DBL_MAX;
   bool is_loc_legal = IsSpaceLegal(best_loc_x, best_loc_x + width, best_row,
-                                   best_row + blk_row_height - 1);
+                                   best_row + component_row_height - 1);
 
   if (!is_loc_legal) {
     int old_start_row = search_start_row;
     int old_end_row = search_end_row;
-    int extended_range = cur_iter_ * blk_row_height;
+    int extended_range = cur_iter_ * component_row_height;
     search_start_row = std::max(0, search_start_row - extended_range);
     search_end_row = std::min(max_search_row, search_end_row + extended_range);
     for (int tmp_start_row = search_start_row; tmp_start_row <= old_start_row;
          ++tmp_start_row) {
-      int tmp_end_row = tmp_start_row + blk_row_height - 1;
+      int tmp_end_row = tmp_start_row + component_row_height - 1;
       if (!IsFitToRow(tmp_start_row, component)) continue;
       int left_white_space_bound =
           WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_row, tmp_end_row);
@@ -556,7 +559,7 @@ bool ExtendedTetrisLegalizer::FindLocLeft(Value2D<int>& loc,
     }
     for (int tmp_start_row = old_end_row; tmp_start_row <= search_end_row;
          ++tmp_start_row) {
-      int tmp_end_row = tmp_start_row + blk_row_height - 1;
+      int tmp_end_row = tmp_start_row + component_row_height - 1;
       if (!IsFitToRow(tmp_start_row, component)) continue;
       int left_white_space_bound =
           WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_row, tmp_end_row);
@@ -591,12 +594,12 @@ bool ExtendedTetrisLegalizer::FindLocLeft(Value2D<int>& loc,
 
   // if still cannot find a legal location, enter fail mode
   bool is_successful = IsSpaceLegal(best_loc_x, best_loc_x + width, best_row,
-                                    best_row + blk_row_height - 1);
+                                    best_row + component_row_height - 1);
   if (!is_successful) {
     if (best_loc_x_legal >= left_ && best_loc_x_legal <= right_ - width) {
-      is_successful =
-          IsSpaceLegal(best_loc_x_legal, best_loc_x_legal + width,
-                       best_row_legal, best_row_legal + blk_row_height - 1);
+      is_successful = IsSpaceLegal(best_loc_x_legal, best_loc_x_legal + width,
+                                   best_row_legal,
+                                   best_row_legal + component_row_height - 1);
     }
     if (is_successful) {
       best_loc_x = best_loc_x_legal;
@@ -629,8 +632,8 @@ bool ExtendedTetrisLegalizer::LocalLegalizationLeft() {
   InitAndSortComponentAscendingX();
 
   bool is_successful = true;
-  for (auto& blk_init_pair : blk_inits_) {
-    auto& component = *(blk_init_pair.component_ptr);
+  for (auto& component_initial_location : component_initial_locations_) {
+    auto& component = *(component_initial_location.component_ptr);
 
     Value2D<int> target_loc;
     target_loc.x = static_cast<int>(std::round(component.LLX()));
@@ -665,17 +668,18 @@ void ExtendedTetrisLegalizer::InitComponentContourBackward() {
 }
 
 void ExtendedTetrisLegalizer::InitAndSortComponentDescendingX() {
-  blk_inits_.clear();
+  component_initial_locations_.clear();
   auto& components = ckt_ptr_->Components();
-  for (auto& blk : components) {
-    if (IsDummyComponent(blk)) continue;
-    if (blk.IsFixed()) continue;
-    double x_loc =
-        blk.URX() + k_width_ * blk.Width() + k_height_ * blk.Height();
-    double y_loc = blk.LLY();
-    blk_inits_.emplace_back(&blk, x_loc, y_loc);
+  for (auto& component : components) {
+    if (IsDummyComponent(component)) continue;
+    if (component.IsFixed()) continue;
+    double x_loc = component.URX() + k_width_ * component.Width() +
+                   k_height_ * component.Height();
+    double y_loc = component.LLY();
+    component_initial_locations_.emplace_back(&component, x_loc, y_loc);
   }
-  std::sort(blk_inits_.begin(), blk_inits_.end(),
+  std::sort(component_initial_locations_.begin(),
+            component_initial_locations_.end(),
             [](const ComponentInitialLocation& lhs,
                const ComponentInitialLocation& rhs) {
               return (lhs.x > rhs.x) || (lhs.x == rhs.x && lhs.y > rhs.y);
@@ -772,7 +776,7 @@ bool ExtendedTetrisLegalizer::FindLocRight(Value2D<int>& loc,
                                            Component& component) {
   bool is_successful;
 
-  int blk_row_height;
+  int component_row_height;
   int right_component_bound;
   int right_white_space_bound;
 
@@ -796,7 +800,7 @@ bool ExtendedTetrisLegalizer::FindLocRight(Value2D<int>& loc,
   // right_component_bound = loc.x;
 
   max_search_row = MaxRow(height);
-  blk_row_height = HeightToRow(height);
+  component_row_height = HeightToRow(height);
 
   search_start_row = std::max(0, LocToRow(loc.y - k_start * height));
   search_end_row = std::min(max_search_row, LocToRow(loc.y + k_end * height));
@@ -807,7 +811,7 @@ bool ExtendedTetrisLegalizer::FindLocRight(Value2D<int>& loc,
 
   for (int tmp_start_row = search_start_row; tmp_start_row <= search_end_row;
        ++tmp_start_row) {
-    tmp_end_row = tmp_start_row + blk_row_height - 1;
+    tmp_end_row = tmp_start_row + component_row_height - 1;
     if (!IsFitToRow(tmp_start_row, component)) continue;
     right_white_space_bound =
         WhiteSpaceBoundRight(loc.x - width, loc.x, tmp_start_row, tmp_end_row);
@@ -836,17 +840,17 @@ bool ExtendedTetrisLegalizer::FindLocRight(Value2D<int>& loc,
   int best_loc_x_legal = INT_MAX;
   double min_cost_legal = DBL_MAX;
   bool is_loc_legal = IsSpaceLegal(best_loc_x - width, best_loc_x, best_row,
-                                   best_row + blk_row_height - 1);
+                                   best_row + component_row_height - 1);
 
   if (!is_loc_legal) {
     int old_start_row = search_start_row;
     int old_end_row = search_end_row;
-    int extended_range = cur_iter_ * blk_row_height;
+    int extended_range = cur_iter_ * component_row_height;
     search_start_row = std::max(0, search_start_row - extended_range);
     search_end_row = std::min(max_search_row, search_end_row + extended_range);
     for (int tmp_start_row = search_start_row; tmp_start_row < old_start_row;
          ++tmp_start_row) {
-      tmp_end_row = tmp_start_row + blk_row_height - 1;
+      tmp_end_row = tmp_start_row + component_row_height - 1;
       if (!IsFitToRow(tmp_start_row, component)) continue;
       right_white_space_bound = WhiteSpaceBoundRight(
           loc.x - width, loc.x, tmp_start_row, tmp_end_row);
@@ -880,7 +884,7 @@ bool ExtendedTetrisLegalizer::FindLocRight(Value2D<int>& loc,
     }
     for (int tmp_start_row = old_end_row; tmp_start_row < search_end_row;
          ++tmp_start_row) {
-      tmp_end_row = tmp_start_row + blk_row_height - 1;
+      tmp_end_row = tmp_start_row + component_row_height - 1;
       if (!IsFitToRow(tmp_start_row, component)) continue;
       right_white_space_bound = WhiteSpaceBoundRight(
           loc.x - width, loc.x, tmp_start_row, tmp_end_row);
@@ -916,12 +920,12 @@ bool ExtendedTetrisLegalizer::FindLocRight(Value2D<int>& loc,
 
   // if still cannot find a legal location, enter fail mode
   is_successful = IsSpaceLegal(best_loc_x - width, best_loc_x, best_row,
-                               best_row + blk_row_height - 1);
+                               best_row + component_row_height - 1);
   if (!is_successful) {
     if (best_loc_x_legal <= right_ && best_loc_x_legal >= left_ + width) {
-      is_successful =
-          IsSpaceLegal(best_loc_x_legal - width, best_loc_x_legal,
-                       best_row_legal, best_row_legal + blk_row_height - 1);
+      is_successful = IsSpaceLegal(best_loc_x_legal - width, best_loc_x_legal,
+                                   best_row_legal,
+                                   best_row_legal + component_row_height - 1);
     }
     if (is_successful) {
       best_loc_x = best_loc_x_legal;
@@ -955,8 +959,8 @@ bool ExtendedTetrisLegalizer::LocalLegalizationRight() {
   InitAndSortComponentDescendingX();
 
   bool is_successful = true;
-  for (auto& blk_init_pair : blk_inits_) {
-    auto& component = *(blk_init_pair.component_ptr);
+  for (auto& component_initial_location : component_initial_locations_) {
+    auto& component = *(component_initial_location.component_ptr);
     Value2D<int> target_loc;
     target_loc.x = int(std::round(component.URX()));
     target_loc.y = AlignLocToRowLoc(component.LLY());
@@ -998,12 +1002,12 @@ double ExtendedTetrisLegalizer::EstimatedHPWL(Component& component, int x,
   for (auto& net_num : component.NetList()) {
     auto& net = net_list[net_num];
     if (net.PinCnt() > 100) continue;
-    for (auto& blk_pin : net.ComponentPins()) {
-      if (blk_pin.ComponentPtr() != &component) {
-        min_x = std::min(min_x, blk_pin.AbsX());
-        min_y = std::min(min_y, blk_pin.AbsY());
-        max_x = std::max(max_x, blk_pin.AbsX());
-        max_y = std::max(max_y, blk_pin.AbsY());
+    for (auto& component_pin : net.ComponentPins()) {
+      if (component_pin.ComponentPtr() != &component) {
+        min_x = std::min(min_x, component_pin.AbsX());
+        min_y = std::min(min_y, component_pin.AbsY());
+        max_x = std::max(max_x, component_pin.AbsX());
+        max_y = std::max(max_y, component_pin.AbsY());
       }
     }
     tot_hpwl += (max_x - min_x) + (max_y - min_y);
