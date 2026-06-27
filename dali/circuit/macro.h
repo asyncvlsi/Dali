@@ -54,7 +54,7 @@ class Macro {
     return pin_name_id_map_.find(pin_name) != pin_name_id_map_.end();
   }
 
-  /** Return the id of pin_name. Exits if the pin does not exist. */
+  /** Return the id of pin_name, or -1 if the pin does not exist. */
   int GetPinId(std::string const& pin_name) const;
 
   /** Create a pin and return it so callers can fill geometry. */
@@ -96,34 +96,49 @@ class Macro {
   /** Return true when N/P-well rectangles are available. */
   bool HasWellInfo() const { return has_well_info_; }
 
+  /** Add an N-well rectangle in macro-local grid units. */
   void AddNwellRect(int llx, int lly, int urx, int ury);
 
+  /** Add a P-well rectangle in macro-local grid units. */
   void AddPwellRect(int llx, int lly, int urx, int ury);
 
+  /** Add an N-well or P-well rectangle in macro-local grid units. */
   void AddWellRect(bool is_n, int llx, int lly, int urx, int ury);
 
+  /** Set extra bottom well extension needed by generated end-cap macros. */
   void SetExtraBottomExtension(int bot_extension);
 
+  /** Set extra top well extension needed by generated end-cap macros. */
   void SetExtraTopExtension(int top_extension);
 
+  /** Return true when N-well is above P-well in the given region. */
   bool IsNwellAbovePwell(int region_id) const;
 
+  /** Return the number of paired N/P-well regions. */
   int RegionCount() const;
 
+  /** Return true when the macro has an odd number of well regions. */
   bool HasOddRegions() const;
 
-  bool IsWellAbutted();
+  /** Return true when adjacent well rectangles abut without vertical gaps. */
+  bool IsWellAbutted() const;
 
-  bool IsCellHeightConsistent();
+  /** Return true when the top well edge matches macro height. */
+  bool IsWellHeightConsistent() const;
 
-  void CheckLegality();
+  /** Validate well pairing, abutment, and height consistency. */
+  void CheckLegality() const;
 
+  /** Return N-well height for a region, accounting for vertical flipping. */
   int NwellHeight(int region_id, bool is_flipped = false) const;
 
+  /** Return P-well height for a region, accounting for vertical flipping. */
   int PwellHeight(int region_id, bool is_flipped = false) const;
 
+  /** Return combined N/P-well height for a region. */
   int RegionHeight(int region_id, bool is_flipped = false) const;
 
+  /** Return distance between adjacent N/P boundary edges. */
   int AdjacentRegionEdgeDistance(int index, bool is_flipped = false) const;
 
   RectI& NwellRect(int index);
@@ -134,6 +149,7 @@ class Macro {
 
   std::vector<RectI>& Prects() { return p_rects_; }
 
+  /** Log all N/P-well rectangles for debugging. */
   void ReportWellInfo() const;
 
   /** Return first P-well height for legacy call sites. */

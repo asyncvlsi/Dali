@@ -144,7 +144,7 @@ int Macro::RegionCount() const { return region_count_; }
 
 bool Macro::HasOddRegions() const { return region_count_ & 1; }
 
-bool Macro::IsWellAbutted() {
+bool Macro::IsWellAbutted() const {
   int row_count = RegionCount();
   std::vector<int> y_edges;
   bool is_well_p = IsNwellAbovePwell(0);
@@ -171,17 +171,17 @@ bool Macro::IsWellAbutted() {
   return true;
 }
 
-bool Macro::IsCellHeightConsistent() {
+bool Macro::IsWellHeightConsistent() const {
   int cell_height = std::max(n_rects_.back().URY(), p_rects_.back().URY());
   int lef_height = Height();
   return cell_height == lef_height;
 }
 
-void Macro::CheckLegality() {
+void Macro::CheckLegality() const {
   DaliExpects(n_rects_.size() == p_rects_.size(),
               "Nwell count is different from Pwell count " + Name());
   DaliExpects(IsWellAbutted(), "Wells are not abutted for cell " + Name());
-  DaliExpects(IsCellHeightConsistent(),
+  DaliExpects(IsWellHeightConsistent(),
               "Macro/well height inconsistency" + Name());
 }
 
