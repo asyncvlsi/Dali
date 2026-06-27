@@ -71,7 +71,7 @@ void WellTapPlacer::FetchRowsFromPhyDB() {
     prev_y = orig_y + row_height_;
 
     bool is_N = phydb_row.GetOrient() == phydb::CompOrient::N;
-    Row& row = rows_.emplace_back();
+    WellTapRow& row = rows_.emplace_back();
     row.is_N = is_N;
     row.orig_x = orig_x;
     row.orig_y = orig_y;
@@ -118,34 +118,35 @@ void WellTapPlacer::InitializeWhiteSpaceInRows() {
   }
 }
 
-void WellTapPlacer::SetCell(phydb::Macro* cell) {
-  DaliExpects(cell != nullptr, "Cannot use nullptr as well-tap cell");
-  cell_ = cell;
-  cell_width_ = (int)std::ceil(
-      cell->GetWidth() * phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons() /
-      row_step_);
+void WellTapPlacer::SetWellTapMacro(phydb::Macro* well_tap_macro) {
+  DaliExpects(well_tap_macro != nullptr,
+              "Cannot use nullptr as well-tap macro");
+  well_tap_macro_ = well_tap_macro;
+  well_tap_width_ = (int)std::ceil(
+      well_tap_macro->GetWidth() *
+      phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons() / row_step_);
 }
 
-void WellTapPlacer::SetCellInterval(double cell_interval_microns) {
+void WellTapPlacer::SetWellTapInterval(double well_tap_interval_microns) {
   int unit_micron = phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons();
-  cell_interval_ =
-      (int)std::floor(cell_interval_microns * unit_micron / row_step_);
-  // std::cout << cell_interval_ << "\n";
+  well_tap_interval_ =
+      (int)std::floor(well_tap_interval_microns * unit_micron / row_step_);
+  // std::cout << well_tap_interval_ << "\n";
 }
 
-void WellTapPlacer::SetCellMinDistanceToBoundary(
-    double cell_min_distance_to_boundary_microns) {
+void WellTapPlacer::SetWellTapMinDistanceToBoundary(
+    double well_tap_min_distance_to_boundary_microns) {
   int unit_micron = phy_db_->GetDesignPtr()->GetUnitsDistanceMicrons();
-  cell_min_distance_to_boundary_ = (int)std::ceil(
-      cell_min_distance_to_boundary_microns * unit_micron / row_step_);
-  // std::cout << cell_min_distance_to_boundary_ << "\n";
+  well_tap_min_distance_to_boundary_ = (int)std::ceil(
+      well_tap_min_distance_to_boundary_microns * unit_micron / row_step_);
+  // std::cout << well_tap_min_distance_to_boundary_ << "\n";
 }
 
 void WellTapPlacer::UseCheckerBoardMode(bool is_checker_board) {
   is_checker_board_ = is_checker_board;
 }
 
-void WellTapPlacer::AddWellTapToRowUniform(Row& row, int first_loc,
+void WellTapPlacer::AddWellTapToRowUniform(WellTapRow& row, int first_loc,
                                            int interval) {
   int lo_col = 0;
   int hi_col = -1;
@@ -170,73 +171,74 @@ void WellTapPlacer::AddWellTapToRowUniform(Row& row, int first_loc,
     // we do a left->right scan to insert well tap cells for the first round
     int leftmost_tap_col = INT_MAX;
     int rightmost_tap_col = INT_MIN;
-    int number_of_cell_created = 0;
+    int number_of_taps_created = 0;
     for (int i = lo_col; i <= hi_col; ++i) {
       int loc_x = row.orig_x + i * row_step_;
       if ((loc_x - first_loc) % (interval * row_step_) == 0) {
         row.well_taps[i] = true;
         leftmost_tap_col = std::min(leftmost_tap_col, i);
         rightmost_tap_col = std::max(rightmost_tap_col, i);
-        ++number_of_cell_created;
+        ++number_of_taps_created;
       }
     }
 
-    if (number_of_cell_created == 0) {
-      // if no cell created, the distance must be smaller than cell_interval_
-      // otherwise, there should be at least one
+    if (number_of_taps_created == 0) {
+      // if no well tap created, the distance must be smaller than
+      // well_tap_interval_ otherwise, there should be at least one
       if (hi_col - lo_col > interval / 2) {
-        // add cells at both ends
+        // add well taps at both ends
         row.well_taps[lo_col] = true;
-        row.well_taps[hi_col + 1 - cell_width_] = true;
+        row.well_taps[hi_col + 1 - well_tap_width_] = true;
       } else {
-        // add cell at one end
+        // add well tap at one end
         row.well_taps[lo_col] = true;
       }
     } else {
       if (leftmost_tap_col - lo_col > interval / 2) {
-        // check if an extra cell is needed at left
+        // check if an extra well tap is needed at left
         row.well_taps[lo_col] = true;
       }
       if (hi_col - rightmost_tap_col > interval / 2) {
-        // check if an extra cell is needed at right
-        row.well_taps[hi_col + 1 - cell_width_] = true;
+        // check if an extra well tap is needed at right
+        row.well_taps[hi_col + 1 - well_tap_width_] = true;
       }
     }
   }
 }
 
 void WellTapPlacer::AddWellTapUniform() {
-  int first_loc = ((cell_interval_ - cell_width_) / 2) * row_step_ + left_;
+  int first_loc =
+      ((well_tap_interval_ - well_tap_width_) / 2) * row_step_ + left_;
   for (auto& row : rows_) {
-    AddWellTapToRowUniform(row, first_loc, cell_interval_);
+    AddWellTapToRowUniform(row, first_loc, well_tap_interval_);
   }
 }
 
 void WellTapPlacer::AddWellTapCheckerBoard() {
-  // add well tap cell using half cell interval
-  int half_cell_interval = cell_interval_ / 2;
+  // add well tap macro using half well-tap interval
+  int half_tap_interval = well_tap_interval_ / 2;
   int first_loc = left_;
   for (auto& row : rows_) {
-    AddWellTapToRowUniform(row, first_loc, half_cell_interval);
+    AddWellTapToRowUniform(row, first_loc, half_tap_interval);
   }
 
-  // trim redundant well tap cells
+  // trim redundant well taps
   // there is no need to trim the first and last row
   int tot_num_rows = (int)rows_.size();
   for (int r = 1; r < tot_num_rows - 1; ++r) {
     bool is_odd_row = r % 2 == 1;
-    Row& cur_row = rows_[r];
-    Row& prev_row = rows_[r - 1];
-    Row& next_row = rows_[r + 1];
+    WellTapRow& cur_row = rows_[r];
+    WellTapRow& prev_row = rows_[r - 1];
+    WellTapRow& next_row = rows_[r + 1];
     for (int i = 0; i < cur_row.num_x; ++i) {
       if (cur_row.well_taps[i]) {
-        if (i % half_cell_interval != 0) {
+        if (i % half_tap_interval != 0) {
           if (prev_row.well_taps[i] && next_row.well_taps[i]) {
             cur_row.well_taps[i] = false;
           }
         } else {
-          bool is_odd_cell = (i / half_cell_interval) % 2 == 1;
-          if (is_odd_row == is_odd_cell) {
+          bool is_odd_tap = (i / half_tap_interval) % 2 == 1;
+          if (is_odd_row == is_odd_tap) {
             if (prev_row.well_taps[i] && next_row.well_taps[i]) {
               cur_row.well_taps[i] = false;
             }
@@ -258,7 +260,7 @@ void WellTapPlacer::AddWellTap() {
 void WellTapPlacer::ExportWellTapCellsToPhyDB() {
   if (rows_.empty()) return;
   int counter = 0;
-  std::string macro_name = cell_->GetName();
+  std::string macro_name = well_tap_macro_->GetName();
   phydb::PlaceStatus place_status = phydb::PlaceStatus::FIXED;
   for (auto& row : rows_) {
     for (int i = 0; i < row.num_x; ++i) {

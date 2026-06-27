@@ -464,9 +464,9 @@ void Dali::AddWellTaps(phydb::Macro* cell, double cell_interval_microns,
   well_tap_placer_->FetchRowsFromPhyDB();
   well_tap_placer_->InitializeWhiteSpaceInRows();
 
-  well_tap_placer_->SetCell(cell);
-  well_tap_placer_->SetCellInterval(cell_interval_microns);
-  well_tap_placer_->SetCellMinDistanceToBoundary(0.1);
+  well_tap_placer_->SetWellTapMacro(cell);
+  well_tap_placer_->SetWellTapInterval(cell_interval_microns);
+  well_tap_placer_->SetWellTapMinDistanceToBoundary(0.1);
   well_tap_placer_->UseCheckerBoardMode(is_checker_board);
 
   well_tap_placer_->AddWellTap();

@@ -33,7 +33,7 @@
 namespace dali {
 
 /** Row occupancy and orientation data used for well-tap insertion. */
-struct Row {
+struct WellTapRow {
   int orig_x = 0;
   int orig_y = 0;
   int num_x = 0;
@@ -54,12 +54,12 @@ class WellTapPlacer {
   int row_height_ = 0;
   int row_step_ = 0;
 
-  std::vector<Row> rows_;  // white space in each row
+  std::vector<WellTapRow> rows_;  // white space in each row
 
-  phydb::Macro* cell_ = nullptr;            // pointer to well-tap cell
-  int cell_width_ = -1;                     // unit is row_step_
-  int cell_interval_ = -1;                  // unit is row_step_
-  int cell_min_distance_to_boundary_ = -1;  // unit is row_step_
+  phydb::Macro* well_tap_macro_ = nullptr;      // pointer to well-tap macro
+  int well_tap_width_ = -1;                     // unit is row_step_
+  int well_tap_interval_ = -1;                  // unit is row_step_
+  int well_tap_min_distance_to_boundary_ = -1;  // unit is row_step_
   bool is_checker_board_ = true;
 
  public:
@@ -73,20 +73,20 @@ class WellTapPlacer {
   void InitializeWhiteSpaceInRows();
 
   /** Set the macro used for inserted well taps. */
-  void SetCell(phydb::Macro* cell);
+  void SetWellTapMacro(phydb::Macro* well_tap_macro);
 
   /** Set maximum same-row well-tap spacing in microns. */
-  void SetCellInterval(double cell_interval_microns);
+  void SetWellTapInterval(double well_tap_interval_microns);
 
   /** Set minimum well-tap distance to row boundary in microns. */
-  void SetCellMinDistanceToBoundary(
-      double cell_min_distance_to_boundary_microns);
+  void SetWellTapMinDistanceToBoundary(
+      double well_tap_min_distance_to_boundary_microns);
 
   /** Enable or disable checkerboard insertion. */
   void UseCheckerBoardMode(bool is_checker_board);
 
   /** Add uniformly spaced well taps to one row. */
-  void AddWellTapToRowUniform(Row& row, int first_loc, int interval);
+  void AddWellTapToRowUniform(WellTapRow& row, int first_loc, int interval);
 
   /** Add uniformly spaced well taps to every row. */
   void AddWellTapUniform();

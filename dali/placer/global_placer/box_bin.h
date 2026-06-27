@@ -27,7 +27,7 @@
 
 #include "dali/circuit/component.h"
 #include "dali/circuit/placement_blockage.h"
-#include "dali/placer/global_placer/cell_cut_point.h"
+#include "dali/placer/global_placer/component_cut_point.h"
 #include "dali/placer/global_placer/grid_bin.h"
 
 namespace dali {
@@ -64,10 +64,10 @@ class BoxBin {
   GridBinIndex cut_ll_index;
   GridBinIndex cut_ur_index;
   /* Cut-line to split cell area. */
-  CellCutPoint ll_point;
-  CellCutPoint ur_point;
-  CellCutPoint cut_ll_point;
-  CellCutPoint cut_ur_point;
+  ComponentCutPoint ll_point;
+  ComponentCutPoint ur_point;
+  ComponentCutPoint cut_ll_point;
+  ComponentCutPoint cut_ur_point;
   /* Total cell area, and the values in two child boxes. */
   unsigned long long total_cell_area;
   unsigned long long total_cell_area_low;

@@ -18,17 +18,17 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_PLACER_GLOBAL_PLACER_CELL_CUT_POINT_H_
-#define DALI_PLACER_GLOBAL_PLACER_CELL_CUT_POINT_H_
+#ifndef DALI_PLACER_GLOBAL_PLACER_COMPONENT_CUT_POINT_H_
+#define DALI_PLACER_GLOBAL_PLACER_COMPONENT_CUT_POINT_H_
 
 #include <iostream>
 
 namespace dali {
 
 /** Continuous cell-area cut point used during recursive bisection. */
-struct CellCutPoint {
-  CellCutPoint() : x(0), y(0) {}
-  CellCutPoint(double x0, double y0) : x(x0), y(y0) {}
+struct ComponentCutPoint {
+  ComponentCutPoint() : x(0), y(0) {}
+  ComponentCutPoint(double x0, double y0) : x(x0), y(y0) {}
   double x;
   double y;
 
@@ -37,16 +37,17 @@ struct CellCutPoint {
     x = 0;
     y = 0;
   };
-  bool operator<(const CellCutPoint& rhs) const {
+  bool operator<(const ComponentCutPoint& rhs) const {
     return (x < rhs.x) || ((x == rhs.x) && (y < rhs.y));
   }
-  bool operator>(const CellCutPoint& rhs) const {
+  bool operator>(const ComponentCutPoint& rhs) const {
     return (x > rhs.x) || ((x == rhs.x) && (y > rhs.y));
   }
-  bool operator==(const CellCutPoint& rhs) const {
+  bool operator==(const ComponentCutPoint& rhs) const {
     return (x == rhs.x) && (y == rhs.y);
   }
-  friend std::ostream& operator<<(std::ostream& os, const CellCutPoint& p) {
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const ComponentCutPoint& p) {
     os << "(" << p.x << ", " << p.y << ") ";
     return os;
   }
@@ -54,4 +55,4 @@ struct CellCutPoint {
 
 }  // namespace dali
 
-#endif  // DALI_PLACER_GLOBAL_PLACER_CELLCUTPOINT_H_
+#endif  // DALI_PLACER_GLOBAL_PLACER_COMPONENT_CUT_POINT_H_
