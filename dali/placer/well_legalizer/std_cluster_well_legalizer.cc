@@ -33,7 +33,7 @@ namespace dali {
 
 StdClusterWellLegalizer::StdClusterWellLegalizer() {
   max_unplug_length_ = 0;
-  well_tap_cell_width_ = 0;
+  well_tap_width_ = 0;
 }
 
 void StdClusterWellLegalizer::LoadConf(std::string const& config_file) {
@@ -65,15 +65,15 @@ void StdClusterWellLegalizer::FetchNpWellParams() {
               "Cannot find the definition of well tap cell, well legalization "
               "cannot proceed\n");
   int well_tap_macro_id = ckt_ptr_->tech().WellTapMacroIds()[0];
-  well_tap_cell_ptr_ = &(ckt_ptr_->tech().Macros()[well_tap_macro_id]);
-  well_tap_cell_width_ = well_tap_cell_ptr_->Width();
+  well_tap_macro_ = &(ckt_ptr_->tech().Macros()[well_tap_macro_id]);
+  well_tap_width_ = well_tap_macro_->Width();
 
   LOG(info) << "  Well max plug distance: " << n_well_layer.MaxPlugDist()
             << "um, " << max_unplug_length_ << " \n";
   LOG(info) << "  GridValueX: " << ckt_ptr_->GridValueX() << " um\n";
   LOG(info) << "  Well spacing: " << n_well_layer.Spacing() << "um, "
             << well_spacing_ << "\n";
-  LOG(info) << "  Well tap cell width: " << well_tap_cell_width_ << "\n";
+  LOG(info) << "  Well tap cell width: " << well_tap_width_ << "\n";
 
   if (enable_end_cap_cell_) {
     pre_end_cap_min_width_ = ckt_ptr_->tech().PreEndCapMinWidth();
@@ -100,8 +100,8 @@ void StdClusterWellLegalizer::FetchNpWellParams() {
               << "\n";
   }
 
-  tap_cell_p_height_ = well_tap_cell_ptr_->Pheight();
-  tap_cell_n_height_ = well_tap_cell_ptr_->Nheight();
+  well_tap_p_height_ = well_tap_macro_->Pheight();
+  well_tap_n_height_ = well_tap_macro_->Nheight();
 }
 
 void StdClusterWellLegalizer::SaveInitialComponentLocation() {
@@ -127,7 +127,7 @@ void StdClusterWellLegalizer::SetMaxRowWidth(double max_row_width_microns) {
 
 void StdClusterWellLegalizer::InitializeWellLegalizer(int cluster_width) {
   if (disable_welltap_) {
-    num_of_tap_cell_ = 0;
+    well_tap_count_per_cluster_ = 0;
     LOG(info) << "set number of tap cells to 0, since well tap is disabled\n";
   }
 
@@ -169,8 +169,8 @@ void StdClusterWellLegalizer::CreateClusterAndAppendSingleWellComponent(
   int p_well_height = component.MacroPtr()->Pheight();
   int n_well_height = component.MacroPtr()->Nheight();
 
-  int space_for_well_tap = num_of_tap_cell_ * well_tap_cell_width_ +
-                           num_of_tap_cell_ * space_to_well_tap_;
+  int space_for_well_tap = well_tap_count_per_cluster_ * well_tap_width_ +
+                           well_tap_count_per_cluster_ * space_to_well_tap_;
 
   int space_for_end_cap = 0;
   if (enable_end_cap_cell_) {
@@ -183,7 +183,7 @@ void StdClusterWellLegalizer::CreateClusterAndAppendSingleWellComponent(
 
   front_row->SetUsedSize(space_for_well_tap + space_for_end_cap + width);
   // row height should be able to accommodate well tap cell
-  front_row->UpdateWellHeightUpward(tap_cell_p_height_, tap_cell_n_height_);
+  front_row->UpdateWellHeightUpward(well_tap_p_height_, well_tap_n_height_);
   // row height should be able to accommodate ordinary cell
   front_row->UpdateWellHeightUpward(p_well_height, n_well_height);
   front_row->SetLLY(init_y);
@@ -256,9 +256,10 @@ void StdClusterWellLegalizer::AppendComponentToColTopDown(
     front_row = &(stripe.gridded_rows_.back());
     front_row->Components().reserve(stripe.max_component_capacity_per_cluster_);
     front_row->AddComponent(&component);
-    front_row->SetUsedSize(width + num_of_tap_cell_ * well_tap_cell_width_ +
-                           num_of_tap_cell_ * space_to_well_tap_);
-    front_row->UpdateWellHeightDownward(tap_cell_p_height_, tap_cell_n_height_);
+    front_row->SetUsedSize(width +
+                           well_tap_count_per_cluster_ * well_tap_width_ +
+                           well_tap_count_per_cluster_ * space_to_well_tap_);
+    front_row->UpdateWellHeightDownward(well_tap_p_height_, well_tap_n_height_);
     front_row->UpdateWellHeightDownward(p_well_height, n_well_height);
     front_row->SetURY(init_y);
     front_row->SetLLX(stripe.LLX());
@@ -303,10 +304,11 @@ void StdClusterWellLegalizer::AppendComponentToColBottomUpCompact(
     front_cluster->Components().reserve(
         stripe.max_component_capacity_per_cluster_);
     front_cluster->AddComponent(&component);
-    front_cluster->SetUsedSize(width + num_of_tap_cell_ * well_tap_cell_width_ +
-                               num_of_tap_cell_ * space_to_well_tap_);
-    front_cluster->UpdateWellHeightUpward(tap_cell_p_height_,
-                                          tap_cell_n_height_);
+    front_cluster->SetUsedSize(
+        width + well_tap_count_per_cluster_ * well_tap_width_ +
+        well_tap_count_per_cluster_ * space_to_well_tap_);
+    front_cluster->UpdateWellHeightUpward(well_tap_p_height_,
+                                          well_tap_n_height_);
     front_cluster->SetLLY(init_y);
     front_cluster->SetLLX(stripe.LLX());
     front_cluster->SetWidth(stripe.Width());
@@ -351,10 +353,11 @@ void StdClusterWellLegalizer::AppendComponentToColTopDownCompact(
     front_cluster->Components().reserve(
         stripe.max_component_capacity_per_cluster_);
     front_cluster->AddComponent(&component);
-    front_cluster->SetUsedSize(width + num_of_tap_cell_ * well_tap_cell_width_ +
-                               num_of_tap_cell_ * space_to_well_tap_);
-    front_cluster->UpdateWellHeightDownward(tap_cell_p_height_,
-                                            tap_cell_n_height_);
+    front_cluster->SetUsedSize(
+        width + well_tap_count_per_cluster_ * well_tap_width_ +
+        well_tap_count_per_cluster_ * space_to_well_tap_);
+    front_cluster->UpdateWellHeightDownward(well_tap_p_height_,
+                                            well_tap_n_height_);
     front_cluster->UpdateWellHeightDownward(p_well_height, n_well_height);
     front_cluster->SetURY(init_y);
     front_cluster->SetLLX(stripe.LLX());
@@ -938,25 +941,25 @@ void StdClusterWellLegalizer::InsertWellTap() {
                                                           2);
 
   int counter = 0;
-  int tot_tap_cell_num = 0;
+  int total_well_tap_count = 0;
   for (auto& col : col_list_) {
     for (auto& stripe : col.stripe_list_) {
       for (auto& row : stripe.gridded_rows_) {
-        int tap_cell_num = 2;
-        tot_tap_cell_num += tap_cell_num;
+        int well_tap_count = 2;
+        total_well_tap_count += well_tap_count;
         int step = row.Width();
-        int tap_cell_loc = row.LLX() - well_tap_cell_ptr_->Width() / 2;
-        for (int i = 0; i < tap_cell_num; ++i) {
+        int well_tap_loc = row.LLX() - well_tap_macro_->Width() / 2;
+        for (int i = 0; i < well_tap_count; ++i) {
           std::string component_name =
               "__well_tap__" + std::to_string(counter++);
           auto [tap_cell, tap_cell_id] =
               ckt_ptr_->design().WellTapComponentCollection().CreateWithId(
                   component_name);
           tap_cell.SetPlacementStatus(PLACED);
-          tap_cell.SetMacro(well_tap_cell_ptr_);
+          tap_cell.SetMacro(well_tap_macro_);
           tap_cell.SetId(static_cast<int>(tap_cell_id));
-          row.InsertWellTapCell(tap_cell, tap_cell_loc);
-          tap_cell_loc += step;
+          row.InsertWellTapCell(tap_cell, well_tap_loc);
+          well_tap_loc += step;
         }
         row.LegalizeLooseX(space_to_well_tap_);
       }
@@ -964,7 +967,7 @@ void StdClusterWellLegalizer::InsertWellTap() {
   }
 
   ckt_ptr_->design().WellTapComponentCollection().Freeze();
-  LOG(info) << "Insertion complete: " << tot_tap_cell_num
+  LOG(info) << "Insertion complete: " << total_well_tap_count
             << " well tap cell created\n";
 }
 
@@ -1197,11 +1200,11 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
       max_p_height = macro->Pheight();
     }
   }
-  if (well_tap_cell_ptr_->Nheight() > max_n_height) {
-    max_n_height = well_tap_cell_ptr_->Nheight();
+  if (well_tap_macro_->Nheight() > max_n_height) {
+    max_n_height = well_tap_macro_->Nheight();
   }
-  if (well_tap_cell_ptr_->Pheight() > max_p_height) {
-    max_p_height = well_tap_cell_ptr_->Pheight();
+  if (well_tap_macro_->Pheight() > max_p_height) {
+    max_p_height = well_tap_macro_->Pheight();
   }
   int max_height = max_n_height + max_p_height;
 
@@ -1265,7 +1268,7 @@ void StdClusterWellLegalizer::GenPPNP(const std::string& name_of_file) {
   std::ofstream ostpp(pp_file.c_str());
   DaliExpects(ostpp.is_open(), "Cannot open output file: " + pp_file);
 
-  int adjust_width = well_tap_cell_ptr_->Width();
+  int adjust_width = well_tap_macro_->Width();
 
   for (auto& col : col_list_) {
     for (auto& stripe : col.stripe_list_) {
@@ -1408,7 +1411,7 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const& name_of_file) {
       << ckt_ptr_->LocDali2PhydbX(RegionRight()) << " "
       << ckt_ptr_->LocDali2PhydbY(RegionTop()) << "\n";
 
-  int adjust_width = well_tap_cell_ptr_->Width();
+  int adjust_width = well_tap_macro_->Width();
 
   for (auto& col : col_list_) {
     for (auto& stripe : col.stripe_list_) {
@@ -1543,7 +1546,7 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB* phydb_ptr) {
   auto* phydb_layout_container = phydb_ptr->CreatePpNpMacroAndComponent(
       bbox_llx, bbox_lly, bbox_urx, bbox_ury);
 
-  int adjust_width = well_tap_cell_ptr_->Width();
+  int adjust_width = well_tap_macro_->Width();
 
   for (auto& col : col_list_) {
     for (auto& stripe : col.stripe_list_) {

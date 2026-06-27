@@ -135,9 +135,9 @@ class StdClusterWellLegalizer : public Placer {
 
   /**** well parameters ****/
   bool disable_welltap_ = false;
-  int num_of_tap_cell_ = 2;
+  int well_tap_count_per_cluster_ = 2;
   int max_unplug_length_;
-  int well_tap_cell_width_;
+  int well_tap_width_;
   int well_spacing_;
 
   /**** cell orientation ****/
@@ -162,9 +162,9 @@ class StdClusterWellLegalizer : public Placer {
   DefaultSpacePartitioner space_partitioner_;
 
   /**** cached well tap cell parameters ****/
-  Macro* well_tap_cell_ptr_ = nullptr;
-  int tap_cell_p_height_;
-  int tap_cell_n_height_;
+  Macro* well_tap_macro_ = nullptr;
+  int well_tap_p_height_;
+  int well_tap_n_height_;
   int space_to_well_tap_ = 1;
 
   // list of index loc pair for location sort
