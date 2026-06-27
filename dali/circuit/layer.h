@@ -76,29 +76,28 @@ class MetalLayer : public Layer {
   /** Return minimum height implied by minimum area and width. */
   double MinHeight() const;
 
-  // set the pitch of this layer, this can be different from min_width +
-  // min_spacing
+  /** Set routing pitch; this may differ from width plus spacing. */
   void SetPitch(double x_pitch, double y_pitch);
 
-  // automatically compute pitches from min_width and min_spacing
+  /** Set both pitches to width plus spacing. */
   void SetPitchUsingWidthSpacing();
 
-  // get the pitch along x direction
+  /** Return routing pitch along x direction. */
   double PitchX() const;
 
-  // get the pitch along y direction
+  /** Return routing pitch along y direction. */
   double PitchY() const;
 
-  // set direction of this metal layer
+  /** Set preferred routing direction. */
   void SetDirection(MetalDirection direction);
 
-  // get direction of this metal layer
+  /** Return preferred routing direction. */
   MetalDirection Direction() const;
 
-  // get the string for the direction of this layer
+  /** Return preferred routing direction as a string. */
   std::string DirectionStr() const;
 
-  // print information of this layer
+  /** Log layer information for debugging. */
   void Report() const;
 
  private:
@@ -116,29 +115,29 @@ class WellLayer : public Layer {
   WellLayer(double width, double spacing, double opposite_spacing,
             double max_plug_dist, double overhang);
 
-  // set all parameters
+  /** Set all well-layer parameters. */
   void SetParams(double width, double spacing, double opposite_spacing,
                  double max_plug_dist, double overhang);
 
-  // set opposite spacing
+  /** Set minimum spacing to the opposite well type. */
   void SetOppositeSpacing(double opposite_spacing);
 
-  // get opposite spacing
+  /** Return minimum spacing to the opposite well type. */
   double OppositeSpacing() const;
 
-  // set max plug distance
+  /** Set maximum distance to a well tap plug. */
   void SetMaxPlugDist(double max_plug_dist);
 
-  // get max plug distance
+  /** Return maximum distance to a well tap plug. */
   double MaxPlugDist() const;
 
-  // set overhang
+  /** Set required well overhang beyond active diffusion. */
   void SetOverhang(double overhang);
 
-  // get overhang
+  /** Return required well overhang beyond active diffusion. */
   double Overhang() const;
 
-  // print information of this layer
+  /** Log well-layer information for debugging. */
   void Report() const;
 
  private:
