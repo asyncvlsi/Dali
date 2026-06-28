@@ -371,8 +371,8 @@ void Net::UpdateMaxMinCtoCY() {
 }
 
 void Net::UpdateMaxMinCtoC() {
-  UpdateMaxMinIdX();
-  UpdateMaxMinIdY();
+  UpdateMaxMinCtoCX();
+  UpdateMaxMinCtoCY();
 }
 
 int Net::MaxPinCtoCX() {
