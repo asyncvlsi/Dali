@@ -23,7 +23,9 @@
 
 namespace {
 
-class DaliCommandLineTest : public ::testing::Test {
+using testing::Test;
+
+class DaliCommandLineTest : public Test {
  protected:
   void SetUp() override { config_clear(); }
 

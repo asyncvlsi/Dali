@@ -5,6 +5,8 @@
 namespace dali {
 namespace {
 
+using testing::ExitedWithCode;
+
 Circuit MakeUnitGridCircuit() {
   Circuit circuit;
   circuit.SetManufacturingGrid(1);
@@ -46,11 +48,9 @@ TEST(CircuitStatisticsTest, TracksComponentCountsAndAverages) {
 TEST(CircuitStatisticsTest, RejectsAverageWithoutComponents) {
   Circuit circuit = MakeUnitGridCircuit();
 
-  EXPECT_EXIT(circuit.AverageComponentWidth(), ::testing::ExitedWithCode(1),
-              "");
-  EXPECT_EXIT(circuit.AverageMovableComponentArea(),
-              ::testing::ExitedWithCode(1), "");
-  EXPECT_EXIT(circuit.WhiteSpaceUsage(), ::testing::ExitedWithCode(1), "");
+  EXPECT_EXIT(circuit.AverageComponentWidth(), ExitedWithCode(1), "");
+  EXPECT_EXIT(circuit.AverageMovableComponentArea(), ExitedWithCode(1), "");
+  EXPECT_EXIT(circuit.WhiteSpaceUsage(), ExitedWithCode(1), "");
 }
 
 TEST(CircuitStatisticsTest, ReportsSummaryForFixedOnlyCircuit) {

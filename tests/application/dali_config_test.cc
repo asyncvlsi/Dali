@@ -19,7 +19,9 @@
 
 namespace {
 
-class DaliConfigTest : public ::testing::Test {
+using testing::Test;
+
+class DaliConfigTest : public Test {
  protected:
   void SetUp() override { config_clear(); }
   void TearDown() override { config_clear(); }
