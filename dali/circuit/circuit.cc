@@ -1085,6 +1085,8 @@ double Circuit::AverageMovableComponentArea() const {
 }
 
 double Circuit::WhiteSpaceUsage() const {
+  DaliExpects(design_.tot_white_space_ > 0,
+              "Cannot compute white space usage without available white space");
   return double(design_.total_movable_component_area_) /
          double(design_.tot_white_space_);
 }

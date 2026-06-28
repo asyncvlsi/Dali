@@ -40,6 +40,7 @@ TEST(CircuitStatisticsTest, TracksComponentCountsAndAverages) {
   EXPECT_DOUBLE_EQ(circuit.AverageMovableComponentWidth(), 7.0);
   EXPECT_DOUBLE_EQ(circuit.AverageMovableComponentHeight(), 2.5);
   EXPECT_DOUBLE_EQ(circuit.AverageMovableComponentArea(), 19.0);
+  EXPECT_DOUBLE_EQ(circuit.WhiteSpaceUsage(), 38.0 / 9970.0);
 }
 
 TEST(CircuitStatisticsTest, RejectsAverageWithoutComponents) {
@@ -49,6 +50,7 @@ TEST(CircuitStatisticsTest, RejectsAverageWithoutComponents) {
               "");
   EXPECT_EXIT(circuit.AverageMovableComponentArea(),
               ::testing::ExitedWithCode(1), "");
+  EXPECT_EXIT(circuit.WhiteSpaceUsage(), ::testing::ExitedWithCode(1), "");
 }
 
 TEST(CircuitStatisticsTest, ReportsSummaryForFixedOnlyCircuit) {

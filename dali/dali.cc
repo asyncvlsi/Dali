@@ -343,7 +343,11 @@ void Dali::InitializeMainPlacementCircuit() {
 void Dali::ResolveTargetDensity() {
   if (target_density_ == -1) {
     double default_density = 0.7;
-    target_density_ = std::max(circuit_.WhiteSpaceUsage(), default_density);
+    if (HasMovableComponents()) {
+      target_density_ = std::max(circuit_.WhiteSpaceUsage(), default_density);
+    } else {
+      target_density_ = default_density;
+    }
     LOG(info) << "Target density not provided, set it to default value: "
               << target_density_ << "\n";
   }
