@@ -483,6 +483,7 @@ void GriddedRowLegalizer::ReportDisplacement() {
   }
   double disp_x = 0, disp_y = 0;
   double quadratic_disp_x = 0, quadratic_disp_y = 0;
+  int measured_component_count = 0;
   auto& components = ckt_ptr_->Components();
   for (Component& component : components) {
     if (IsDummyComponent(component)) continue;
@@ -494,12 +495,17 @@ void GriddedRowLegalizer::ReportDisplacement() {
     disp_y += tmp_disp_y;
     quadratic_disp_x += tmp_disp_x * tmp_disp_x;
     quadratic_disp_y += tmp_disp_y * tmp_disp_y;
+    ++measured_component_count;
+  }
+  if (measured_component_count == 0) {
+    LOG(info) << "Skip displacement report: no components were measured\n";
+    return;
   }
   disp_x *= ckt_ptr_->GridValueX();
   disp_y *= ckt_ptr_->GridValueY();
   quadratic_disp_x *= ckt_ptr_->GridValueX() * ckt_ptr_->GridValueX();
   quadratic_disp_y *= ckt_ptr_->GridValueY() * ckt_ptr_->GridValueY();
-  auto count = static_cast<double>(ckt_ptr_->TotalMovableComponentCnt());
+  auto count = static_cast<double>(measured_component_count);
   LOG(info) << "  Current linear displacement\n";
   LOG(info) << "    x: " << disp_x << "(" << disp_x / count << ")"
             << ", y: " << disp_y << "(" << disp_y / count << ")"
