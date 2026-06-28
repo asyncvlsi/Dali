@@ -180,12 +180,16 @@ class Dali {
   bool RunGlobalPlacementStage();
   /** Run the configured legalization path and optional legalization export. */
   bool RunLegalizationStage();
+  /** Run global placement and legalization before post-placement completion. */
+  bool RunCorePlacementStages();
   bool RunStandardCellLegalization();
   /** Configure shared options before either well legalization path runs. */
   void ConfigureWellLegalizer();
   /** Run well tap and end-cap stages for designs with no movable cells. */
   void RunFixedOnlyWellCompletion();
   bool RunWellLegalization();
+  /** Run physical completion stages after core placement. */
+  bool RunPostPlacementCompletionStages();
   bool RunFillerCellPlacement();
   bool RunIoPinPlacementStage();
 

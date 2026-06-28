@@ -446,6 +446,10 @@ bool Dali::RunLegalizationStage() {
   return true;
 }
 
+bool Dali::RunCorePlacementStages() {
+  return RunGlobalPlacementStage() && RunLegalizationStage();
+}
+
 bool Dali::RunFillerCellPlacement() {
   if (!enable_filler_cell_) {
     return true;
@@ -476,13 +480,16 @@ bool Dali::RunIoPinPlacementStage() {
   return true;
 }
 
+bool Dali::RunPostPlacementCompletionStages() {
+  return RunFillerCellPlacement() && RunIoPinPlacementStage();
+}
+
 bool Dali::StartPlacement(double density, int number_of_threads) {
   ApplyPlacementOverrides(density, number_of_threads);
   InitializeMainPlacementCircuit();
   ResolveTargetDensity();
 
-  if (!RunGlobalPlacementStage() || !RunLegalizationStage() ||
-      !RunFillerCellPlacement() || !RunIoPinPlacementStage()) {
+  if (!RunCorePlacementStages() || !RunPostPlacementCompletionStages()) {
     return false;
   }
 
