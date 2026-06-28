@@ -70,5 +70,22 @@ TEST(CircuitStatisticsTest, ReportsSummaryForEmptyCircuit) {
   EXPECT_NO_FATAL_FAILURE(circuit.ReportBriefSummary());
 }
 
+TEST(CircuitStatisticsTest, ReportsHistogramsForEmptyCircuit) {
+  Circuit circuit = MakeUnitGridCircuit();
+
+  EXPECT_NO_FATAL_FAILURE(circuit.ReportHPWLHistogramLinear());
+  EXPECT_NO_FATAL_FAILURE(circuit.ReportHPWLHistogramLogarithm());
+  EXPECT_NO_FATAL_FAILURE(circuit.InitNetFanoutHistogram());
+  EXPECT_NO_FATAL_FAILURE(circuit.ReportNetFanoutHistogram());
+}
+
+TEST(CircuitStatisticsTest, ReportsHistogramsForNetsWithoutPins) {
+  Circuit circuit = MakeUnitGridCircuit();
+  circuit.AddNet("empty_net", 0);
+
+  EXPECT_NO_FATAL_FAILURE(circuit.ReportHPWLHistogramLinear());
+  EXPECT_NO_FATAL_FAILURE(circuit.ReportHPWLHistogramLogarithm());
+}
+
 }  // namespace
 }  // namespace dali

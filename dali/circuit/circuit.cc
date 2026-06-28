@@ -1150,6 +1150,7 @@ void Circuit::ReportBoundingBox() {
 }
 
 void Circuit::ReportHPWLHistogramLinear(int bin_num) {
+  DaliExpects(bin_num > 0, "Histogram bin count must be positive");
   std::vector<double> hpwl_list;
   double min_hpwl = DBL_MAX;
   double max_hpwl = -DBL_MAX;
@@ -1164,17 +1165,28 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
     }
   }
 
-  double step = (max_hpwl - min_hpwl) / bin_num;
-  std::vector<int> count(bin_num, 0);
-  for (auto& hpwl : hpwl_list) {
-    int tmp_num = (int)std::floor((hpwl - min_hpwl) / step);
-    if (tmp_num == bin_num) {
-      tmp_num = bin_num - 1;
-    }
-    ++count[tmp_num];
+  if (hpwl_list.empty()) {
+    LOG(info) << "Skip HPWL histogram: no nets with pins\n";
+    return;
   }
 
-  int tot_count = design_.nets_.size();
+  double step = 0;
+  std::vector<int> count;
+  if (max_hpwl - min_hpwl < 1e-5) {
+    bin_num = 1;
+    count.emplace_back(static_cast<int>(hpwl_list.size()));
+  } else {
+    step = (max_hpwl - min_hpwl) / bin_num;
+    count.assign(bin_num, 0);
+    for (auto& hpwl : hpwl_list) {
+      int tmp_num = (int)std::floor((hpwl - min_hpwl) / step);
+      if (tmp_num == bin_num) {
+        tmp_num = bin_num - 1;
+      }
+      ++count[tmp_num];
+    }
+  }
+
   LOG(info) << "\n";
   LOG(info) << "                  HPWL histogram (linear scale bins)\n";
   LOG(info) << "================================================="
@@ -1190,7 +1202,7 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
                                   "  [%.1e, %.1e) %8d  ", lo, hi, count[i]);
     buffer.resize(written_length);
 
-    int percent = std::ceil(50 * count[i] / (double)tot_count);
+    int percent = std::ceil(50 * count[i] / (double)hpwl_list.size());
     for (int j = 0; j < percent; ++j) {
       buffer.push_back('*');
     }
@@ -1210,6 +1222,7 @@ void Circuit::ReportHPWLHistogramLinear(int bin_num) {
  * @param bin_num The number of bins for the histogram.
  */
 void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
+  DaliExpects(bin_num > 0, "Histogram bin count must be positive");
   std::vector<double> hpwl_list;
   double min_hpwl = std::numeric_limits<double>::max();
   double max_hpwl = -std::numeric_limits<double>::max();
@@ -1227,6 +1240,11 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
       max_hpwl = std::max(max_hpwl, log_hpwl);
       ++num_nets_non_zero_hpwl;
     }
+  }
+
+  if (hpwl_list.empty()) {
+    LOG(info) << "Skip HPWL histogram: no nets with non-zero HPWL\n";
+    return;
   }
 
   double step;
@@ -1269,7 +1287,7 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
                                   "  [%.1e, %.1e) %8d  ", lo, hi, count[i]);
     buffer.resize(written_length);
 
-    int percent = std::ceil(50 * count[i] / design_.nets_.size());
+    int percent = std::ceil(50 * count[i] / (double)hpwl_list.size());
     buffer.append(percent, '*');
     buffer.push_back('\n');
     LOG(info) << buffer;
