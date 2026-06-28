@@ -56,3 +56,6 @@ include/
 
 # Ignore vscode files
 *.vscode*
+
+# Local development checklist
+TODO.md
