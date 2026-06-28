@@ -181,6 +181,10 @@ class Dali {
   /** Run the configured legalization path and optional legalization export. */
   bool RunLegalizationStage();
   bool RunStandardCellLegalization();
+  /** Configure shared options before either well legalization path runs. */
+  void ConfigureWellLegalizer();
+  /** Run well tap and end-cap stages for designs with no movable cells. */
+  void RunFixedOnlyWellCompletion();
   bool RunWellLegalization();
   bool RunFillerCellPlacement();
   bool RunIoPinPlacementStage();

@@ -395,7 +395,7 @@ bool Dali::RunStandardCellLegalization() {
   return true;
 }
 
-bool Dali::RunWellLegalization() {
+void Dali::ConfigureWellLegalizer() {
   well_legalizer_.CopyPlacementContextFrom(&gb_placer_);
   well_legalizer_.disable_welltap_ = disable_welltap_;
   well_legalizer_.disable_cell_flip_ = disable_cell_flip_;
@@ -403,16 +403,24 @@ bool Dali::RunWellLegalization() {
   well_legalizer_.SetMaxRowWidth(max_row_width_);
   well_legalizer_.SetStripePartitionMode(
       static_cast<int>(well_legalization_mode_));
+}
+
+void Dali::RunFixedOnlyWellCompletion() {
+  LOG(info) << "Skip movable-cell well legalization: no movable components\n";
+  well_legalizer_.InitializeWellLegalizer();
+  well_legalizer_.RunWellTapStage();
+  well_legalizer_.RunEndCapStage();
+}
+
+bool Dali::RunWellLegalization() {
+  ConfigureWellLegalizer();
   if (HasMovableComponents()) {
     if (!well_legalizer_.StartPlacement()) {
       LOG(error) << "Well legalization failed\n";
       return false;
     }
   } else {
-    LOG(info) << "Skip movable-cell well legalization: no movable components\n";
-    well_legalizer_.InitializeWellLegalizer();
-    well_legalizer_.RunWellTapStage();
-    well_legalizer_.RunEndCapStage();
+    RunFixedOnlyWellCompletion();
   }
   if (export_well_cluster_matlab_) {
     well_legalizer_.GenMatlabClusterTable("sc_result");
