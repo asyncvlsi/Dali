@@ -51,5 +51,24 @@ TEST(CircuitStatisticsTest, RejectsAverageWithoutComponents) {
               ::testing::ExitedWithCode(1), "");
 }
 
+TEST(CircuitStatisticsTest, ReportsSummaryForFixedOnlyCircuit) {
+  Circuit circuit = MakeUnitGridCircuit();
+  circuit.SetDieArea(0, 0, 100, 100);
+  circuit.AddMacro("fixed_cell", 6, 5);
+  circuit.AddComponent("u_fixed", "fixed_cell", 0, 0, FIXED);
+  circuit.UpdateTotalComponentArea();
+
+  EXPECT_EQ(circuit.TotalMovableComponentCnt(), 0);
+  EXPECT_NO_FATAL_FAILURE(circuit.ReportBriefSummary());
+}
+
+TEST(CircuitStatisticsTest, ReportsSummaryForEmptyCircuit) {
+  Circuit circuit = MakeUnitGridCircuit();
+
+  EXPECT_EQ(circuit.TotalComponentCount(), 0);
+  EXPECT_EQ(circuit.TotalMovableComponentCnt(), 0);
+  EXPECT_NO_FATAL_FAILURE(circuit.ReportBriefSummary());
+}
+
 }  // namespace
 }  // namespace dali

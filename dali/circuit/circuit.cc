@@ -709,10 +709,18 @@ void Circuit::ReportBriefSummary() {
   LOG(info) << "    right:  " << RegionURX() << "\n";
   LOG(info) << "    bottom: " << RegionLLY() << "\n";
   LOG(info) << "    top:    " << RegionURY() << "\n";
-  LOG(info) << "  average movable width/height: "
-            << AverageMovableComponentWidth() << "/"
-            << AverageMovableComponentHeight() << "um\n";
-  LOG(info) << "  white space utility: " << WhiteSpaceUsage() << "\n";
+  if (TotalMovableComponentCnt() > 0) {
+    LOG(info) << "  average movable width/height: "
+              << AverageMovableComponentWidth() << "/"
+              << AverageMovableComponentHeight() << "um\n";
+  } else {
+    LOG(info) << "  average movable width/height: N/A\n";
+  }
+  if (design_.tot_white_space_ > 0) {
+    LOG(info) << "  white space utility: " << WhiteSpaceUsage() << "\n";
+  } else {
+    LOG(info) << "  white space utility: N/A\n";
+  }
   ReportHPWL();
 }
 
