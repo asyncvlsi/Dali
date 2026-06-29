@@ -112,17 +112,17 @@ double Circuit::LocPhydb2DaliY(int loc) const {
 
 double Circuit::LengthPhydb2DaliX(double length) const {
   int mg_length =
-      static_cast<int>(std::round(length / tech_.GetManufacturingGrid()));
+      static_cast<int>(std::round(length / tech_.ManufacturingGrid()));
   int mg_grid_x =
-      static_cast<int>(std::round(GridValueX() / tech_.GetManufacturingGrid()));
+      static_cast<int>(std::round(GridValueX() / tech_.ManufacturingGrid()));
   return (double)mg_length / (double)mg_grid_x;
 }
 
 double Circuit::LengthPhydb2DaliY(double length) const {
   int mg_length =
-      static_cast<int>(std::round(length / tech_.GetManufacturingGrid()));
+      static_cast<int>(std::round(length / tech_.ManufacturingGrid()));
   int mg_grid_y =
-      static_cast<int>(std::round(GridValueY() / tech_.GetManufacturingGrid()));
+      static_cast<int>(std::round(GridValueY() / tech_.ManufacturingGrid()));
   return (double)mg_length / (double)mg_grid_y;
 }
 
@@ -154,10 +154,10 @@ void Circuit::SetGridValue(double grid_value_x, double grid_value_y) {
   DaliExpects(!tech_.is_grid_set_, "once set, grid_value cannot be changed!");
   DaliExpects(grid_value_x > 0, "grid_value_x must be a positive real number!");
   DaliExpects(grid_value_y > 0, "grid_value_y must be a positive real number!");
-  double residual_x = AbsResidual(grid_value_x, tech_.GetManufacturingGrid());
+  double residual_x = AbsResidual(grid_value_x, tech_.ManufacturingGrid());
   DaliExpects(residual_x < constants_.epsilon,
               "grid value x is not integer multiple of manufacturing grid?");
-  double residual_y = AbsResidual(grid_value_y, tech_.GetManufacturingGrid());
+  double residual_y = AbsResidual(grid_value_y, tech_.ManufacturingGrid());
   DaliExpects(residual_y < constants_.epsilon,
               "grid value y is not integer multiple of manufacturing grid?");
   tech_.grid_value_x_ = grid_value_x;

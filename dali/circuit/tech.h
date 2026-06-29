@@ -44,7 +44,10 @@ class Tech {
   Tech();
 
   /** Return manufacturing grid in microns. */
-  double GetManufacturingGrid() const;
+  double ManufacturingGrid() const;
+
+  /** Return manufacturing grid in microns. */
+  double GetManufacturingGrid() const { return ManufacturingGrid(); }
 
   /** Return ids of macros marked as well tap cells. */
   std::vector<int>& WellTapMacroIds();

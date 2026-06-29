@@ -32,7 +32,7 @@ namespace dali {
 
 Tech::Tech() = default;
 
-double Tech::GetManufacturingGrid() const {
+double Tech::ManufacturingGrid() const {
   DaliExpects(manufacturing_grid_ > 0, "Manufacturing grid not set");
   return manufacturing_grid_;
 }
