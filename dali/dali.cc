@@ -359,6 +359,10 @@ bool Dali::HasMovableComponents() const {
 
 bool Dali::HasNets() const { return !circuit_.Nets().empty(); }
 
+bool Dali::ShouldRunGlobalPlacement() const {
+  return !disable_global_place_ && HasMovableComponents() && HasNets();
+}
+
 bool Dali::RunGlobalPlacementStage() {
   gb_placer_.SetCircuit(&circuit_);
   gb_placer_.SetNumThreads(num_threads_);
@@ -368,7 +372,7 @@ bool Dali::RunGlobalPlacementStage() {
     LOG(info) << "Skip global placement: no movable components\n";
   } else if (!HasNets()) {
     LOG(info) << "Skip global placement: no nets to optimize\n";
-  } else {
+  } else if (ShouldRunGlobalPlacement()) {
     gb_placer_.SetPlacementDensity(target_density_);
     if (!gb_placer_.StartPlacement()) {
       LOG(error) << "Global placement failed\n";
