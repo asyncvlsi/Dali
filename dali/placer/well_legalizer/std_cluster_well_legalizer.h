@@ -37,7 +37,15 @@
 
 namespace dali {
 
-/** Standard cluster-based well legalizer and DEF/well-shape emitter. */
+/**
+ * Standard cluster-based well legalizer and DEF/well-shape emitter.
+ *
+ * The movable-cell path clusters components into gridded rows, assigns row
+ * orientation, and optionally performs local reordering to reduce wirelength.
+ * Physical completion then inserts well taps and end caps before the well/PPNP
+ * geometry is emitted. Fixed-only designs can reuse the physical completion
+ * stages without running movable-cell legalization.
+ */
 class StdClusterWellLegalizer : public Placer {
   friend class Dali;
 
@@ -128,8 +136,10 @@ class StdClusterWellLegalizer : public Placer {
   bool RunComponentClusteringStage();
   void RunClusterOrientationStage();
   void RunLocalReorderingStage();
+  bool RunMovableCellLegalizationStages();
   void RunWellTapStage();
   void RunEndCapStage();
+  void RunPhysicalCompletionStages();
 
   bool is_first_row_orient_N_ = true;
 

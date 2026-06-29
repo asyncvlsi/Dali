@@ -412,13 +412,13 @@ void Dali::ConfigureWellLegalizer() {
 void Dali::RunFixedOnlyWellCompletion() {
   LOG(info) << "Skip movable-cell well legalization: no movable components\n";
   well_legalizer_.InitializeWellLegalizer();
-  well_legalizer_.RunWellTapStage();
-  well_legalizer_.RunEndCapStage();
+  well_legalizer_.RunPhysicalCompletionStages();
 }
 
 bool Dali::RunWellLegalization() {
   ConfigureWellLegalizer();
-  if (HasMovableComponents()) {
+  bool has_movable_components = HasMovableComponents();
+  if (has_movable_components) {
     if (!well_legalizer_.StartPlacement()) {
       LOG(error) << "Well legalization failed\n";
       return false;
@@ -426,9 +426,12 @@ bool Dali::RunWellLegalization() {
   } else {
     RunFixedOnlyWellCompletion();
   }
-  if (export_well_cluster_matlab_) {
+  if (export_well_cluster_matlab_ && has_movable_components) {
     well_legalizer_.GenMatlabClusterTable("sc_result");
     well_legalizer_.GenMATLABWellTable("scw", 0);
+  } else if (export_well_cluster_matlab_) {
+    LOG(info)
+        << "Skip well-cluster MATLAB export: no movable clusters to report\n";
   }
   well_legalizer_.EmitDEFWellFile(output_name_, 1);
   return true;

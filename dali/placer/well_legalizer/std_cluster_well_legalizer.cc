@@ -1151,6 +1151,13 @@ void StdClusterWellLegalizer::RunLocalReorderingStage() {
   }
 }
 
+bool StdClusterWellLegalizer::RunMovableCellLegalizationStages() {
+  bool is_success = RunComponentClusteringStage();
+  RunClusterOrientationStage();
+  RunLocalReorderingStage();
+  return is_success;
+}
+
 void StdClusterWellLegalizer::RunWellTapStage() {
   if (disable_welltap_) {
     LOG(info) << "Skip inserting well tap cells\n";
@@ -1171,15 +1178,17 @@ void StdClusterWellLegalizer::RunEndCapStage() {
   }
 }
 
+void StdClusterWellLegalizer::RunPhysicalCompletionStages() {
+  RunWellTapStage();
+  RunEndCapStage();
+}
+
 bool StdClusterWellLegalizer::StartPlacement() {
   PrintStartStatement("standard cluster well legalization");
 
   InitializeWellLegalizer();
-  bool is_success = RunComponentClusteringStage();
-  RunClusterOrientationStage();
-  RunLocalReorderingStage();
-  RunWellTapStage();
-  RunEndCapStage();
+  bool is_success = RunMovableCellLegalizationStages();
+  RunPhysicalCompletionStages();
 
   PrintEndStatement("Standard Cluster Well Legalization", is_success);
 
