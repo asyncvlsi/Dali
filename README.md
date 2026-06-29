@@ -31,16 +31,31 @@ One can use the following command to specify the installation destination and in
 
     $ cmake .. -DCMAKE_INSTALL_PREFIX=path/to/installation
 
-### Run unit tests
+### Run tests
 After configuring and building from the `build/` directory, run:
 
+    $ make test-unit
+
+This runs the fast GoogleTest-based unit tests in `tests/application`,
+`tests/common`, and `tests/circuit`.
+
+To include integration tests such as the I/O placer benchmarks, run:
+
+    $ make test-integration
+
+To run every test registered with CTest, run:
+
+    $ make test-all
+
+The equivalent raw CTest commands are:
+
+    $ ctest --output-on-failure -L unit
+    $ ctest --output-on-failure -L integration
     $ ctest --output-on-failure
 
-This runs all unit tests currently registered with CTest, including:
-  * GoogleTest-based unit tests in `tests/common`, if GoogleTest was found
-  * I/O placer tests in `tests/placer/io_placer`
-
-If the test executables have not been built yet, build first:
+GoogleTest is optional. If CMake cannot find it, GoogleTest-based unit tests are
+skipped while integration tests and the rest of the build remain available. If
+the test executables have not been built yet, build first:
 
     $ make
 

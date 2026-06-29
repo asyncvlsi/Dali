@@ -19,6 +19,7 @@ function(add_dali_circuit_test test_name source_file)
     add_executable(${test_name} ${source_file})
     target_link_libraries(${test_name} PRIVATE dalilib ${DALI_GTEST_MAIN})
     add_test(NAME ${test_name} COMMAND ${test_name})
+    set_tests_properties(${test_name} PROPERTIES LABELS "unit;circuit")
 endfunction()
 
 add_dali_circuit_test(circuit_die_area_test die_area_test.cc)

@@ -179,6 +179,27 @@ add_subdirectory(tests/common)
 add_subdirectory(tests/circuit)
 add_subdirectory(tests/placer)
 
+add_custom_target(
+    test-unit
+    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -L unit
+    USES_TERMINAL
+    COMMENT "Run fast unit tests"
+)
+
+add_custom_target(
+    test-integration
+    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -L integration
+    USES_TERMINAL
+    COMMENT "Run integration tests"
+)
+
+add_custom_target(
+    test-all
+    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+    USES_TERMINAL
+    COMMENT "Run all configured tests"
+)
+
 # ------------------------------------------------------------------------------
 # Installation Rules
 # ------------------------------------------------------------------------------

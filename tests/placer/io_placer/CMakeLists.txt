@@ -9,6 +9,8 @@ add_test(
         -P ${CMAKE_CURRENT_SOURCE_DIR}/prepare_benchmark.cmake
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
+set_tests_properties(io_placer_benchmark_preparation
+                     PROPERTIES LABELS "integration;io_placer")
 
 # Place all I/O pins on the same metal layer
 add_executable(all_iopin_use_same_metal_layer all_iopin_use_same_metal_layer.cc helper.h helper.cc)
@@ -18,6 +20,8 @@ add_test(
     COMMAND all_iopin_use_same_metal_layer
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
+set_tests_properties(all_iopin_use_same_metal_layer
+                     PROPERTIES LABELS "integration;io_placer")
 
 # Add and place I/O pins manually
 add_executable(add_and_place_io_pins add_and_place_io_pins.cc helper.h helper.cc)
@@ -27,3 +31,5 @@ add_test(
     COMMAND add_and_place_io_pins
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
+set_tests_properties(add_and_place_io_pins
+                     PROPERTIES LABELS "integration;io_placer")
