@@ -63,6 +63,13 @@ class Circuit {
  public:
   Circuit();
 
+  /**
+   * Raw pointers returned by this class point into Circuit-owned collections.
+   * Adding another object to the same collection may reallocate storage and
+   * invalidate previously returned pointers. Reacquire objects by name or id
+   * after mutating metals, cell masters, components, I/O pins, or nets.
+   */
+
   /** Initialize from PhyDB. The PhyDB object must outlive this Circuit. */
   void InitializeFromPhyDB(phydb::PhyDB* phy_db_ptr);
 
@@ -155,7 +162,8 @@ class Circuit {
   // get a pointer to the metal layer with a given name
   MetalLayer* GetMetalLayerPtr(std::string const& metal_name);
 
-  // add a metal layer, unit is um
+  // add a metal layer, unit is um. The returned pointer is invalidated by
+  // adding another metal layer.
   MetalLayer* AddMetalLayer(std::string const& metal_name, double width,
                             double spacing, double min_area, double pitch_x,
                             double pitch_y, MetalDirection metal_direction);
@@ -173,7 +181,8 @@ class Circuit {
   // nullptr
   Macro* GetMacroPtr(std::string const& macro_name);
 
-  // add a Macro, width and height are in um
+  // add a Macro, width and height are in um. The returned pointer is
+  // invalidated by adding another macro.
   Macro* AddMacro(std::string const& macro_name, double width, double height);
 
   int GetRoundOrCeilGriddedWidth(double width,
@@ -184,11 +193,13 @@ class Circuit {
   int AddWellTapMacro(std::string const& macro_name, double width,
                       double height);
 
-  // add a Macro for filler cell
+  // add a Macro for filler cell. The returned pointer is invalidated by adding
+  // another macro.
   Macro* AddFillerMacro(std::string const& macro_name, double width,
                         double height);
 
-  // add a cell pin with a given name to a Macro
+  // add a cell pin with a given name to a Macro. Reacquire macro_ptr after
+  // adding macros before using this API.
   Pin* AddMacroPin(Macro* macro_ptr, std::string const& pin_name,
                    bool is_input);
 
@@ -259,7 +270,8 @@ class Circuit {
   // returns the internal index of a component with a given name
   int GetComponentId(std::string const& component_name);
 
-  // returns a pointer to the component with a given name
+  // returns a pointer to the component with a given name. The pointer is
+  // invalidated by adding another component.
   Component* GetComponentPtr(std::string const& component_name);
 
   // create a component instance using the name of its type
@@ -286,10 +298,12 @@ class Circuit {
   // returns the index of the IOPin with a given name
   int GetIoPinId(std::string const& iopin_name);
 
-  // returns a pointer to the IOPin with a given name
+  // returns a pointer to the IOPin with a given name. The pointer is
+  // invalidated by adding another I/O pin.
   IoPin* GetIoPinPtr(std::string const& iopin_name);
 
-  // add an I/O pin
+  // add an I/O pin. The returned pointer is invalidated by adding another I/O
+  // pin.
   IoPin* AddIoPin(std::string const& iopin_name, PlaceStatus place_status,
                   SignalUse signal_use, SignalDirection signal_direction,
                   double lx = 0, double ly = 0);
@@ -316,10 +330,12 @@ class Circuit {
   // returns the index of the Net with a given name
   int GetNetId(std::string const& net_name);
 
-  // returns a pointer to the Net with a given name
+  // returns a pointer to the Net with a given name. The pointer is invalidated
+  // by adding another net.
   Net* GetNetPtr(std::string const& net_name);
 
-  // add a net with given name and capacity (number of cell pins)
+  // add a net with given name and capacity (number of cell pins). The returned
+  // pointer is invalidated by adding another net.
   Net* AddNet(std::string const& net_name, size_t capacity, double weight = -1);
 
   // add a IoPin to a net
@@ -533,8 +549,9 @@ class Circuit {
 
   void SetPhyDB(phydb::PhyDB* phy_db_ptr);
 
-  // add a Macro with name, with, and height. The return value is a pointer
-  // to this new Macro for adding pins. Unit in grid value
+  // add a Macro with name, width, and height. The return value is a pointer
+  // to this new Macro for adding pins. Unit in grid value. The pointer is
+  // invalidated by adding another macro.
   Macro* AddMacroWithGridUnit(std::string const& macro_name, int width,
                               int height);
 
@@ -563,10 +580,12 @@ class Circuit {
   // create a dummy Macro for I/O pins
   void AddDummyIOPinComponentType();
 
-  // add an unplaced IOPin
+  // add an unplaced IOPin. The returned pointer is invalidated by adding
+  // another I/O pin.
   IoPin* AddUnplacedIoPin(std::string const& iopin_name);
 
-  // add a placed IOPin
+  // add a placed IOPin. The returned pointer is invalidated by adding another
+  // I/O pin.
   IoPin* AddPlacedIOPin(std::string const& iopin_name, double lx, double ly);
 
   // shrink off grid die area
