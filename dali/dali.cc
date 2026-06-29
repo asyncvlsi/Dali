@@ -799,7 +799,7 @@ void Dali::ExportIoPinsToPhyDB() {
       DaliExpects(phy_db_ptr_->IsIoPinExisting(iopin_name),
                   "IOPIN not in PhyDB? " << iopin_name);
       phydb::IOPin* phydb_iopin = phy_db_ptr_->GetIoPinPtr(iopin_name);
-      auto& rect = iopin.GetShape();
+      auto& rect = iopin.Shape();
       int llx = circuit_.Micron2DatabaseUnit(rect.LLX());
       int lly = circuit_.Micron2DatabaseUnit(rect.LLY());
       int urx = circuit_.Micron2DatabaseUnit(rect.URX());
@@ -819,8 +819,8 @@ void Dali::ExportIoPinsToPhyDB() {
         pin_orient = phydb::CompOrient::S;
       }
 
-      phydb_iopin->SetPlacement(PlaceStatusDali2PhyDB(iopin.GetPlaceStatus()),
-                                pin_x, pin_y, pin_orient);
+      phydb_iopin->SetPlacement(PlaceStatusDali2PhyDB(iopin.Status()), pin_x,
+                                pin_y, pin_orient);
     }
   }
 }

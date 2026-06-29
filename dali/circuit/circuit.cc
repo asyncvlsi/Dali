@@ -1647,11 +1647,12 @@ void Circuit::SaveIoPin(std::ofstream& ost, IoPin& iopin,
   if ((after_io_place && iopin.IsPlaced()) ||
       (!after_io_place && iopin.IsPrePlaced())) {
     std::string const& metal_name = iopin.LayerName();
+    const RectD& shape = iopin.Shape();
     ost << "\n  + LAYER " << metal_name << " ( "
-        << iopin.GetShape().LLX() * design_.distance_microns_ << " "
-        << iopin.GetShape().LLY() * design_.distance_microns_ << " ) "
-        << " ( " << iopin.GetShape().URX() * design_.distance_microns_ << " "
-        << iopin.GetShape().URY() * design_.distance_microns_ << " ) ";
+        << shape.LLX() * design_.distance_microns_ << " "
+        << shape.LLY() * design_.distance_microns_ << " ) "
+        << " ( " << shape.URX() * design_.distance_microns_ << " "
+        << shape.URY() * design_.distance_microns_ << " ) ";
     ost << "\n  + PLACED ( " << LocDali2PhydbX(iopin.X()) << " "
         << LocDali2PhydbY(iopin.Y()) << " ) ";
     if (iopin.X() == design_.die_area_.region_left_) {

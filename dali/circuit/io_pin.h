@@ -91,7 +91,16 @@ class IoPin {
   void SetShape(double llx, double lly, double urx, double ury);
 
   /** Return the N-orientation pin shape. */
-  RectD& GetShape();
+  RectD& Shape();
+
+  /** Return the N-orientation pin shape. */
+  const RectD& Shape() const;
+
+  /** Return the N-orientation pin shape. */
+  RectD& GetShape() { return Shape(); }
+
+  /** Return the N-orientation pin shape. */
+  const RectD& GetShape() const { return Shape(); }
 
   /** Return true when pin geometry is available. */
   bool IsShapeSet() const;
@@ -109,7 +118,10 @@ class IoPin {
   bool IsPlaced() const;
 
   /** Return current placement status. */
-  PlaceStatus GetPlaceStatus() const;
+  PlaceStatus Status() const;
+
+  /** Return current placement status. */
+  PlaceStatus GetPlaceStatus() const { return Status(); }
 
   /** Set x location in Dali grid units. */
   void SetLocX(double loc_x);
@@ -154,7 +166,10 @@ class IoPin {
   void SetOrient(ComponentOrient orient);
 
   /** Return final orientation. */
-  ComponentOrient GetOrient() const;
+  ComponentOrient Orient() const;
+
+  /** Return final orientation. */
+  ComponentOrient GetOrient() const { return Orient(); }
 
   /** Log I/O pin information for debugging. */
   void Report() const;

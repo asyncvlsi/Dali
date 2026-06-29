@@ -142,7 +142,9 @@ void IoPin::SetShape(double llx, double lly, double urx, double ury) {
   SetRect(llx, lly, urx, ury);
 }
 
-RectD& IoPin::GetShape() { return rects_[0]; }
+RectD& IoPin::Shape() { return rects_[0]; }
+
+const RectD& IoPin::Shape() const { return rects_[0]; }
 
 bool IoPin::IsShapeSet() const { return is_shape_set_; }
 
@@ -162,7 +164,7 @@ bool IoPin::IsPlaced() const {
   return place_status_ == FIXED || place_status_ == PLACED;
 }
 
-PlaceStatus IoPin::GetPlaceStatus() const { return place_status_; }
+PlaceStatus IoPin::Status() const { return place_status_; }
 
 void IoPin::SetLocX(double loc_x) { x_ = loc_x; }
 
@@ -204,7 +206,7 @@ int IoPin::FinalY() const { return final_y_; }
 
 void IoPin::SetOrient(ComponentOrient orient) { orient_ = orient; }
 
-ComponentOrient IoPin::GetOrient() const { return orient_; }
+ComponentOrient IoPin::Orient() const { return orient_; }
 
 void IoPin::Report() const {
   std::string net_name = (net_ptr_ == nullptr) ? "NA" : net_ptr_->Name();
