@@ -57,13 +57,22 @@ class Macro {
   /** Return the id of pin_name, or -1 if the pin does not exist. */
   int GetPinId(std::string const& pin_name) const;
 
-  /** Create a pin and return it so callers can fill geometry. */
+  /**
+   * Create a pin and return it so callers can fill geometry.
+   *
+   * The returned pointer refers to vector-backed storage and may be invalidated
+   * by later AddPin() calls. Reacquire pins by name after adding more pins.
+   */
   Pin* AddPin(std::string const& pin_name, bool is_input);
 
   /** Create a pin with a simple x/y offset. */
   void AddPin(std::string const& pin_name, double x_offset, double y_offset);
 
-  /** Return the pin named pin_name, or nullptr if absent. */
+  /**
+   * Return the pin named pin_name, or nullptr if absent.
+   *
+   * The returned pointer follows the same lifetime rules as AddPin().
+   */
   Pin* GetPinPtr(std::string const& pin_name);
 
   /** Set width in Dali grid units and update area. */

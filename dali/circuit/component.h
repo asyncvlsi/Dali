@@ -50,7 +50,7 @@ class Component {
   /** Return the component instance name. */
   const std::string& Name() const { return *name_ptr_; }
 
-  /** Return the macro/master that defines this component's size and pins. */
+  /** Return the non-owning macro/master pointer for this component. */
   Macro* MacroPtr() const { return macro_ptr_; }
 
   /** Return the component's internal design id. */
@@ -124,13 +124,19 @@ class Component {
   /** Return true when the orientation mirrors the component. */
   bool IsFlipped() const;
 
-  /** Return optional auxiliary placement data attached by a later flow. */
+  /** Return optional, non-owning auxiliary placement data attached by a flow.
+   */
   ComponentAux* AuxPtr() const { return aux_ptr_; }
 
   /** Set the internal design id. */
   void SetId(size_t id) { id_ = id; }
 
-  /** Set the component macro and reset effective dimensions from it. */
+  /**
+   * Set the non-owning component macro and reset effective dimensions from it.
+   *
+   * The macro must outlive this component. Circuit/Design-owned components
+   * satisfy this by referring to macros owned by Circuit/Tech.
+   */
   void SetMacro(Macro* macro_ptr);
 
   /** Set lower-left location in Dali grid units. */
@@ -163,7 +169,7 @@ class Component {
   /** Set the component orientation. */
   void SetOrient(ComponentOrient orient);
 
-  /** Attach auxiliary placement data owned by a later flow. */
+  /** Attach non-owning auxiliary placement data owned by a later flow. */
   void SetAux(ComponentAux* aux);
 
   /** Swap only the lower-left location with another component. */
