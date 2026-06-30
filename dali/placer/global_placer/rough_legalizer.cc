@@ -965,6 +965,10 @@ bool LookAheadLegalizer::RecursiveBisectionComponentSpreading() {
     // std::cout << queue_box_bin.size() << "\n";
     if (queue_box_bin.empty()) break;
     BoxBin& box = queue_box_bin.front();
+    if (box.total_component_area == 0 || box.component_ptrs.empty()) {
+      queue_box_bin.pop();
+      continue;
+    }
     // start moving cells to the box, if
     // (a) the box is a grid bin box or a smaller box
     // (b) and with no fixed macros inside

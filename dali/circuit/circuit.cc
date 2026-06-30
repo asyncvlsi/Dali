@@ -2622,6 +2622,7 @@ void Circuit::LoadCell(phydb::PhyDB* phy_db_ptr) {
     SetPwellParams(0.0, 0.0, 0.0, 1e8, 0.0);
   }
 
+  int generated_fake_well_count = 0;
   for (auto& macro : phy_db_tech.GetMacrosRef()) {
     std::string macro_name(macro.GetName());
     auto& macro_well = macro.WellPtrRef();
@@ -2642,13 +2643,16 @@ void Circuit::LoadCell(phydb::PhyDB* phy_db_ptr) {
                     p_rect->URX(), p_rect->URY());
       }
     } else {
-      LOG(info) << "No well info provided for MACRO: " + macro_name << "\n";
-      LOG(info) << "Creating fake well info for MACRO: " + macro_name << "\n";
+      ++generated_fake_well_count;
       double height = macro.GetHeight();
       double width = macro.GetWidth();
       SetWellRect(macro_name, false, 0, 0, width, height / 2.0);
       SetWellRect(macro_name, true, 0, height / 2.0, width, height);
     }
+  }
+  if (generated_fake_well_count > 0) {
+    LOG(debug) << "Created fake well geometry for " << generated_fake_well_count
+               << " macros without explicit well info\n";
   }
 }
 
