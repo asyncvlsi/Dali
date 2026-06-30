@@ -34,6 +34,8 @@
 
 namespace {
 
+constexpr int kDatabaseMicrons = 1000;
+
 struct BookshelfFiles {
   std::string nodes;
   std::string nets;
@@ -440,7 +442,7 @@ void WriteLef(Benchmark const& benchmark, std::string const& lef_path) {
   out << "VERSION 5.8 ;\n";
   out << "BUSBITCHARS \"[]\" ;\n";
   out << "DIVIDERCHAR \"/\" ;\n";
-  out << "UNITS\n  DATABASE MICRONS 1 ;\nEND UNITS\n";
+  out << "UNITS\n  DATABASE MICRONS " << kDatabaseMicrons << " ;\nEND UNITS\n";
   out << "MANUFACTURINGGRID 1 ;\n\n";
   out << "LAYER M1\n";
   out << "  TYPE ROUTING ;\n";
@@ -495,6 +497,8 @@ void ComputeDieArea(Benchmark const& benchmark, double* lx, double* ly,
   }
 }
 
+double ToDatabaseUnits(double value) { return value * kDatabaseMicrons; }
+
 void WriteDef(Benchmark const& benchmark, std::string const& def_path,
               std::string const& design_name) {
   std::ofstream out(def_path);
@@ -511,15 +515,17 @@ void WriteDef(Benchmark const& benchmark, std::string const& def_path,
   out << "DIVIDERCHAR \"/\" ;\n";
   out << "BUSBITCHARS \"[]\" ;\n";
   out << "DESIGN " << SanitizeName(design_name) << " ;\n";
-  out << "UNITS DISTANCE MICRONS 1 ;\n";
-  out << "DIEAREA ( " << die_lx << " " << die_ly << " ) ( " << die_ux << " "
-      << die_uy << " ) ;\n\n";
+  out << "UNITS DISTANCE MICRONS " << kDatabaseMicrons << " ;\n";
+  out << "DIEAREA ( " << ToDatabaseUnits(die_lx) << " "
+      << ToDatabaseUnits(die_ly) << " ) ( " << ToDatabaseUnits(die_ux) << " "
+      << ToDatabaseUnits(die_uy) << " ) ;\n\n";
 
   int row_id = 0;
   for (auto const& row : benchmark.rows) {
-    out << "ROW ROW_" << row_id++ << " DALI_SITE " << row.subrow_origin << " "
-        << row.coordinate << " N DO " << row.num_sites << " BY 1 STEP "
-        << row.site_spacing << " 0 ;\n";
+    out << "ROW ROW_" << row_id++ << " DALI_SITE "
+        << ToDatabaseUnits(row.subrow_origin) << " "
+        << ToDatabaseUnits(row.coordinate) << " N DO " << row.num_sites
+        << " BY 1 STEP " << ToDatabaseUnits(row.site_spacing) << " 0 ;\n";
   }
 
   out << "\nCOMPONENTS " << benchmark.nodes.size() << " ;\n";
@@ -532,9 +538,9 @@ void WriteDef(Benchmark const& benchmark, std::string const& def_path,
     bool fixed = node.terminal || placement.fixed;
     out << "  - " << benchmark.component_names.at(node.name) << " "
         << benchmark.macro_names.at(node.name) << "\n";
-    out << "    + " << (fixed ? "FIXED" : "PLACED") << " ( " << placement.x
-        << " " << placement.y << " ) " << SanitizeName(placement.orient)
-        << " ;\n";
+    out << "    + " << (fixed ? "FIXED" : "PLACED") << " ( "
+        << ToDatabaseUnits(placement.x) << " " << ToDatabaseUnits(placement.y)
+        << " ) " << SanitizeName(placement.orient) << " ;\n";
   }
   out << "END COMPONENTS\n\n";
 
