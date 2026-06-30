@@ -81,10 +81,16 @@ class Component {
   double URY() const { return lly_ + Height() + total_stretch_length_; }
 
   /** Return center x coordinate in Dali grid units. */
-  double X() const { return llx_ + Width() / 2.0; }
+  double CenterX() const { return llx_ + Width() / 2.0; }
 
   /** Return center y coordinate in Dali grid units. */
-  double Y() const { return lly_ + Height() / 2.0; }
+  double CenterY() const { return lly_ + Height() / 2.0; }
+
+  /** Return center x coordinate for legacy call sites. */
+  double X() const { return CenterX(); }
+
+  /** Return center y coordinate for legacy call sites. */
+  double Y() const { return CenterY(); }
 
   /** Return the ids of nets connected to this component. */
   std::vector<int>& NetList() { return nets_; }
@@ -128,7 +134,10 @@ class Component {
   void SetMacro(Macro* macro_ptr);
 
   /** Set lower-left location in Dali grid units. */
-  void SetLoc(double lx, double ly);
+  void SetLowerLeft(double lx, double ly);
+
+  /** Set lower-left location for legacy call sites. */
+  void SetLoc(double lx, double ly) { SetLowerLeft(lx, ly); }
 
   /** Set lower-left x coordinate in Dali grid units. */
   void SetLLX(double lx) { llx_ = lx; }

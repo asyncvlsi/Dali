@@ -332,12 +332,12 @@ void Net::UpdateMaxMinCtoCX() {
   if (component_pins_.empty()) return;
   max_x_pin_id_ = 0;
   min_x_pin_id_ = 0;
-  double max_x = component_pins_[0].ComponentPtr()->X();
+  double max_x = component_pins_[0].ComponentPtr()->CenterX();
   double min_x = max_x;
   double tmp_pin_loc = 0;
   int sz = static_cast<int>(component_pins_.size());
   for (int i = 1; i < sz; ++i) {
-    tmp_pin_loc = component_pins_[i].ComponentPtr()->X();
+    tmp_pin_loc = component_pins_[i].ComponentPtr()->CenterX();
     if (max_x < tmp_pin_loc) {
       max_x = tmp_pin_loc;
       max_x_pin_id_ = i;
@@ -353,12 +353,12 @@ void Net::UpdateMaxMinCtoCY() {
   if (component_pins_.empty()) return;
   max_y_pin_id_ = 0;
   min_y_pin_id_ = 0;
-  double max_y = component_pins_[0].ComponentPtr()->Y();
+  double max_y = component_pins_[0].ComponentPtr()->CenterY();
   double min_y = max_y;
   double tmp_pin_loc = 0;
   int sz = static_cast<int>(component_pins_.size());
   for (int i = 1; i < sz; ++i) {
-    tmp_pin_loc = component_pins_[i].ComponentPtr()->Y();
+    tmp_pin_loc = component_pins_[i].ComponentPtr()->CenterY();
     if (max_y < tmp_pin_loc) {
       max_y = tmp_pin_loc;
       max_y_pin_id_ = i;
@@ -378,12 +378,12 @@ void Net::UpdateMaxMinCtoC() {
 int Net::MaxPinCtoCX() {
   int max_pin_index = 0;
   auto* component = component_pins_[0].ComponentPtr();
-  double max_x = component->X();
+  double max_x = component->CenterX();
   int sz = static_cast<int>(component_pins_.size());
   for (int i = 0; i < sz; i++) {
     component = component_pins_[i].ComponentPtr();
-    if (max_x < component->X()) {
-      max_x = component->X();
+    if (max_x < component->CenterX()) {
+      max_x = component->CenterX();
       max_pin_index = i;
     }
   }
@@ -393,12 +393,12 @@ int Net::MaxPinCtoCX() {
 int Net::MinPinCtoCX() {
   int min_pin_index = 0;
   auto* component = component_pins_[0].ComponentPtr();
-  double min_x = component->X();
+  double min_x = component->CenterX();
   int sz = static_cast<int>(component_pins_.size());
   for (int i = 0; i < sz; i++) {
     component = component_pins_[i].ComponentPtr();
-    if (min_x > component->X()) {
-      min_x = component->X();
+    if (min_x > component->CenterX()) {
+      min_x = component->CenterX();
       min_pin_index = i;
     }
   }
@@ -408,12 +408,12 @@ int Net::MinPinCtoCX() {
 int Net::MaxPinCtoCY() {
   int max_pin_index = 0;
   auto* component = component_pins_[0].ComponentPtr();
-  double max_y = component->Y();
+  double max_y = component->CenterY();
   int sz = static_cast<int>(component_pins_.size());
   for (int i = 0; i < sz; i++) {
     component = component_pins_[i].ComponentPtr();
-    if (max_y < component->Y()) {
-      max_y = component->Y();
+    if (max_y < component->CenterY()) {
+      max_y = component->CenterY();
       max_pin_index = i;
     }
   }
@@ -423,12 +423,12 @@ int Net::MaxPinCtoCY() {
 int Net::MinPinCtoCY() {
   int min_pin_index = 0;
   auto* component = component_pins_[0].ComponentPtr();
-  double min_y = component->Y();
+  double min_y = component->CenterY();
   int sz = static_cast<int>(component_pins_.size());
   for (int i = 0; i < sz; i++) {
     component = component_pins_[i].ComponentPtr();
-    if (min_y > component->Y()) {
-      min_y = component->Y();
+    if (min_y > component->CenterY()) {
+      min_y = component->CenterY();
       min_pin_index = i;
     }
   }
@@ -438,16 +438,16 @@ int Net::MinPinCtoCY() {
 double Net::HPWLCtoCX() {
   if (component_pins_.empty()) return 0;
   auto* component = component_pins_[0].ComponentPtr();
-  double max_x = component->X();
-  double min_x = component->X();
+  double max_x = component->CenterX();
+  double min_x = component->CenterX();
 
   for (auto& pin : component_pins_) {
     component = pin.ComponentPtr();
-    if (max_x < component->X()) {
-      max_x = component->X();
+    if (max_x < component->CenterX()) {
+      max_x = component->CenterX();
     }
-    if (min_x > component->X()) {
-      min_x = component->X();
+    if (min_x > component->CenterX()) {
+      min_x = component->CenterX();
     }
   }
 
@@ -457,16 +457,16 @@ double Net::HPWLCtoCX() {
 double Net::HPWLCtoCY() {
   if (component_pins_.empty()) return 0;
   auto* component = component_pins_[0].ComponentPtr();
-  double max_y = component->Y();
-  double min_y = component->Y();
+  double max_y = component->CenterY();
+  double min_y = component->CenterY();
 
   for (auto& pin : component_pins_) {
     component = pin.ComponentPtr();
-    if (max_y < component->Y()) {
-      max_y = component->Y();
+    if (max_y < component->CenterY()) {
+      max_y = component->CenterY();
     }
-    if (min_y > component->Y()) {
-      min_y = component->Y();
+    if (min_y > component->CenterY()) {
+      min_y = component->CenterY();
     }
   }
 

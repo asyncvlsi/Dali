@@ -47,7 +47,7 @@ void Component::SetMacro(Macro* macro_ptr) {
   eff_area_ = macro_ptr_->Area();
 }
 
-void Component::SetLoc(double lx, double ly) {
+void Component::SetLowerLeft(double lx, double ly) {
   llx_ = lx;
   lly_ = ly;
 }

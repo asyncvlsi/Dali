@@ -23,6 +23,7 @@ function(add_dali_circuit_test test_name source_file)
 endfunction()
 
 add_dali_circuit_test(circuit_die_area_test die_area_test.cc)
+add_dali_circuit_test(circuit_component_test component_test.cc)
 add_dali_circuit_test(circuit_io_pin_test io_pin_test.cc)
 add_dali_circuit_test(circuit_macro_test macro_test.cc)
 add_dali_circuit_test(circuit_net_test net_test.cc)
