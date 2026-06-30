@@ -28,6 +28,7 @@
 
 #include "dali/circuit/circuit.h"
 #include "dali/placer.h"
+#include "dali/placer/global_placer/random_initializer.h"
 #include "dali/timing/star_pi_model_estimator.h"
 
 namespace dali {
@@ -54,6 +55,7 @@ class Dali {
     bool enable_filler_cell = false;
     bool enable_end_cap_cell = false;
     bool enable_shrink_off_grid_die_area = false;
+    RandomInitializerType global_initializer = RandomInitializerType::UNIFORM;
     std::string output_name = "dali_out";
   };
 
@@ -148,6 +150,7 @@ class Dali {
   bool enable_filler_cell_ = false;
   bool enable_end_cap_cell_ = false;
   bool enable_shrink_off_grid_die_area_ = false;
+  RandomInitializerType global_initializer_ = RandomInitializerType::UNIFORM;
   std::string output_name_ = "dali_out";
 
   // circuit and placer

@@ -42,6 +42,10 @@ class GlobalPlacer : public Placer {
   /** Enable or disable intermediate placement dumps. */
   void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
 
+  /** Select how movable component locations are initialized before placement.
+   */
+  void SetInitializerType(RandomInitializerType initializer_type);
+
   /** Load global placer configuration. */
   void LoadConf(std::string const& config_file) override;
 

@@ -71,6 +71,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -disable_legalization                      optional, if this flag is present, then legalization is skipped\n"
       << "  -io_metal_layer                            metal layer number for I/O placement (optional, default 1 for m1)\n"
       << "  -well_legalization_mode <scavenge/strict>  determine whether the last column use unassigned space\n"
+      << "  -global_initializer <keep/uniform/gaussian/monte_carlo/density_aware>\n"
       << "  -num_threads <n>                           number of OpenMP threads to use\n"
       << "  -v                                         verbosity_level (optional, 0-5, default 1)\n"
       << "  -disable_log_prefix                        optional, if this flag is present, then only messages will be saved to the log file\n"
@@ -169,6 +170,17 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.disable_legalization");
     } else if (arg == "-disable_global_place") {
       EnableConfigFlag("dali.disable_global_place");
+    } else if (arg == "-global_initializer") {
+      if (!TryGetValue(argc, argv, &i, &value)) {
+        error_output << "Invalid global initializer!\n";
+        return false;
+      }
+      if (value != "keep" && value != "uniform" && value != "gaussian" &&
+          value != "monte_carlo" && value != "density_aware") {
+        error_output << "Invalid global initializer!\n";
+        return false;
+      }
+      config_set_string("dali.global_initializer", value.c_str());
     } else if (arg == "-max_row_width") {
       double max_row_width = 0;
       if (!TryGetValue(argc, argv, &i, &value) ||

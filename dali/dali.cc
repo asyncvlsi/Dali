@@ -68,6 +68,26 @@ void LoadStringConfig(const std::string& name, std::string* value) {
   }
 }
 
+RandomInitializerType ParseGlobalInitializer(const std::string& name) {
+  if (name == "keep") {
+    return RandomInitializerType::KEEP;
+  }
+  if (name == "uniform") {
+    return RandomInitializerType::UNIFORM;
+  }
+  if (name == "gaussian") {
+    return RandomInitializerType::GAUSSIAN;
+  }
+  if (name == "monte_carlo") {
+    return RandomInitializerType::MONTE_CARLO;
+  }
+  if (name == "density_aware") {
+    return RandomInitializerType::DENSITY_AWARE;
+  }
+  std::cout << "Ignore unknown global_initializer: " << name << "\n";
+  return RandomInitializerType::UNIFORM;
+}
+
 }  // namespace
 
 Dali::Dali(phydb::PhyDB* phy_db_ptr, const std::string& severity_level,
@@ -110,6 +130,8 @@ void Dali::ShowParamsList() {
             << "  enable_end_cap_cell: " << enable_end_cap_cell_ << "\n"
             << "  enable_shrink_off_grid_die_area: "
             << enable_shrink_off_grid_die_area_ << "\n"
+            << "  global_initializer: " << static_cast<int>(global_initializer_)
+            << "\n"
             << "  output_name: " << output_name_ << "\n";
 }
 
@@ -158,6 +180,11 @@ void Dali::LoadParamsFromConfig() {
                  &enable_end_cap_cell_);
   LoadBoolConfig(ConfigName(prefix_, "enable_shrink_off_grid_die_area"),
                  &enable_shrink_off_grid_die_area_);
+  param_name = ConfigName(prefix_, "global_initializer");
+  if (ConfigExists(param_name)) {
+    global_initializer_ =
+        ParseGlobalInitializer(config_get_string(param_name.c_str()));
+  }
   LoadStringConfig(ConfigName(prefix_, "output_name"), &output_name_);
 }
 
@@ -193,6 +220,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       enable_filler_cell_,
       enable_end_cap_cell_,
       enable_shrink_off_grid_die_area_,
+      global_initializer_,
       output_name_,
   };
 }
@@ -378,6 +406,7 @@ bool Dali::RunGlobalPlacementStage() {
     LOG(info) << "Skip global placement: no nets to optimize\n";
   } else if (ShouldRunGlobalPlacement()) {
     gb_placer_.SetPlacementDensity(target_density_);
+    gb_placer_.SetInitializerType(global_initializer_);
     if (!gb_placer_.StartPlacement()) {
       LOG(error) << "Global placement failed\n";
       return false;

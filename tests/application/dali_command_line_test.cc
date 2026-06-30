@@ -65,7 +65,8 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
       Parse({"dali", "-lef", "input.lef", "-def", "input.def", "-output_name",
              "placed", "-metrics_file", "metrics.json", "-target_density",
              "0.72", "-num_threads", "8", "-io_metal_layer", "3",
-             "-well_legalization_mode", "scavenge", "-disable_io_place"},
+             "-well_legalization_mode", "scavenge", "-global_initializer",
+             "keep", "-disable_io_place"},
             &options));
 
   EXPECT_EQ(options.output_name, "placed");
@@ -74,6 +75,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.num_threads"), 8);
   EXPECT_EQ(config_get_int("dali.io_metal_layer"), 2);
   EXPECT_STREQ(config_get_string("dali.well_legalization_mode"), "scavenge");
+  EXPECT_STREQ(config_get_string("dali.global_initializer"), "keep");
   EXPECT_EQ(config_get_int("dali.disable_io_place"), 1);
 }
 
@@ -111,6 +113,9 @@ TEST_F(DaliCommandLineTest, RejectsOutOfRangeOptions) {
                      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-well_legalization_mode", "loose"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-global_initializer", "randomish"},
                      &options));
 }
 

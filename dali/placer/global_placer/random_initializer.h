@@ -31,8 +31,10 @@
 
 namespace dali {
 
-/** Available random-placement initialization strategies. */
+/** Available component-location initialization strategies. */
 enum class RandomInitializerType {
+  /** Preserve locations loaded from the input design. */
+  KEEP = -1,
   UNIFORM = 0,
   GAUSSIAN = 1,
   MONTE_CARLO = 2,

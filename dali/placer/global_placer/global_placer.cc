@@ -52,6 +52,10 @@ void GlobalPlacer::SetShouldSaveIntermediateResult(
   should_save_intermediate_result_ = should_save_intermediate_result;
 }
 
+void GlobalPlacer::SetInitializerType(RandomInitializerType initializer_type) {
+  initializer_type_ = initializer_type;
+}
+
 /****
  * @brief Load a configuration file for this placer.
  *
@@ -102,6 +106,16 @@ void GlobalPlacer::CloseOptimizerAndLegalizer() {
  * @param std_dev: the standard deviation if normal distribution is used
  */
 void GlobalPlacer::InitializeComponentLocation() {
+  if (initializer_type_ == RandomInitializerType::KEEP) {
+    LOG(info) << "  Component location initialization:\n"
+              << "    Preserve input component locations\n"
+              << "    HPWL before, " << WeightedHPWL() << "\n"
+              << "    HPWL after, " << WeightedHPWL() << "\n";
+    RecordPlacementMetric("initialization.before", WeightedHPWL());
+    RecordPlacementMetric("initialization.after", WeightedHPWL());
+    return;
+  }
+
   std::unique_ptr<RandomInitializer> initializer(nullptr);
   switch (initializer_type_) {
     case RandomInitializerType::UNIFORM: {
