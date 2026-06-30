@@ -63,7 +63,6 @@ int main(int argc, char** argv) {
   int num_of_thread_openmp = 1;
   omp_set_num_threads(num_of_thread_openmp);
 
-  Eigen::initParallel();
   // Eigen::setNbThreads(1);
   LOG(info) << "Eigen thread " << Eigen::nbThreads() << "\n";
 
