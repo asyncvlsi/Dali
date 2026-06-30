@@ -363,6 +363,10 @@ bool Dali::ShouldRunGlobalPlacement() const {
   return !disable_global_place_ && HasMovableComponents() && HasNets();
 }
 
+bool Dali::ShouldRunMovableCellLegalization() const {
+  return HasMovableComponents();
+}
+
 bool Dali::RunGlobalPlacementStage() {
   gb_placer_.SetCircuit(&circuit_);
   gb_placer_.SetNumThreads(num_threads_);
@@ -386,7 +390,7 @@ bool Dali::RunGlobalPlacementStage() {
 }
 
 bool Dali::RunStandardCellLegalization() {
-  if (!HasMovableComponents()) {
+  if (!ShouldRunMovableCellLegalization()) {
     LOG(info) << "Skip standard-cell legalization: no movable components\n";
     return true;
   }
@@ -417,7 +421,7 @@ void Dali::RunFixedOnlyWellCompletion() {
 
 bool Dali::RunWellLegalization() {
   ConfigureWellLegalizer();
-  bool has_movable_components = HasMovableComponents();
+  bool has_movable_components = ShouldRunMovableCellLegalization();
   if (has_movable_components) {
     if (!well_legalizer_.StartPlacement()) {
       LOG(error) << "Well legalization failed\n";

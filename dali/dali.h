@@ -98,6 +98,14 @@ class Dali {
    */
   bool ShouldRunGlobalPlacement() const;
 
+  /**
+   * Return true when legalization should move ordinary components.
+   *
+   * Fixed-only designs still need physical completion stages such as well tap
+   * and end-cap insertion, but should skip movable-cell legalization.
+   */
+  bool ShouldRunMovableCellLegalization() const;
+
   void AddWellTaps(phydb::Macro* cell, double cell_interval_microns,
                    bool is_checker_board);
   bool AddWellTaps(int argc, char** argv);

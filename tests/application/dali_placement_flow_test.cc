@@ -42,6 +42,14 @@ class DaliPlacementFlowTest : public Test {
     }
     circuit->AddComponent(component_name, "cell");
   }
+
+  static void AddFixedComponent(dali::Circuit* circuit,
+                                const std::string& component_name) {
+    if (!circuit->IsMacroExisting("fixed_cell")) {
+      circuit->AddMacro("fixed_cell", 10, 10);
+    }
+    circuit->AddComponent(component_name, "fixed_cell", 0, 0, dali::FIXED);
+  }
 };
 
 TEST_F(DaliPlacementFlowTest, SkipsGlobalPlacementWhenDisabled) {
@@ -82,6 +90,26 @@ TEST_F(DaliPlacementFlowTest, RunsGlobalPlacementForMovableNetlist) {
   circuit.AddComponentPinToNet("u1", "p", "n0");
 
   EXPECT_TRUE(placer.ShouldRunGlobalPlacement());
+  placer.Close();
+}
+
+TEST_F(DaliPlacementFlowTest, SkipsMovableCellLegalizationForFixedOnlyDesign) {
+  dali::Dali placer(nullptr, dali::severity::info);
+  dali::Circuit& circuit = placer.GetCircuit();
+  ConfigureCircuitGrid(&circuit);
+  AddFixedComponent(&circuit, "fixed0");
+
+  EXPECT_FALSE(placer.ShouldRunMovableCellLegalization());
+  placer.Close();
+}
+
+TEST_F(DaliPlacementFlowTest, RunsMovableCellLegalizationForMovableDesign) {
+  dali::Dali placer(nullptr, dali::severity::info);
+  dali::Circuit& circuit = placer.GetCircuit();
+  ConfigureCircuitGrid(&circuit);
+  AddMovableComponent(&circuit, "u0");
+
+  EXPECT_TRUE(placer.ShouldRunMovableCellLegalization());
   placer.Close();
 }
 
