@@ -229,22 +229,24 @@ void Macro::ReportWellInfo() const {
   }
 }
 
-int Macro::Pheight() {
+int Macro::FirstPwellHeight() const {
   if (!p_rects_.empty()) {
     return p_rects_[0].URY();
   } else if (!n_rects_.empty()) {
     return n_rects_[0].LLY();
   }
   DaliExpects(false, "No rects found in well for " << Name());
+  return 0;
 }
 
-int Macro::Nheight() {
+int Macro::FirstNwellHeight() const {
   if (!p_rects_.empty()) {
     return Height() - p_rects_[0].URY();
   } else if (!n_rects_.empty()) {
     return Height() - n_rects_[0].LLY();
   }
   DaliExpects(false, "No rects found in well for " << Name());
+  return 0;
 }
 
 std::pair<const std::string, int>* Macro::RegisterPinName(

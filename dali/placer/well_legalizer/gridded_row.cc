@@ -106,7 +106,7 @@ void GriddedRow::AddComponent(Component* component_ptr) {
   components_.push_back(component_ptr);
   double y_init = component_ptr->LLY();
   Macro* macro_ptr = component_ptr->MacroPtr();
-  y_init = component_ptr->LLY() + macro_ptr->Pheight();
+  y_init = component_ptr->LLY() + macro_ptr->FirstPwellHeight();
   initial_locations_[component_ptr] = double2d(component_ptr->LLX(), y_init);
 }
 
@@ -138,7 +138,7 @@ void GriddedRow::ShiftComponent(int x_disp, int y_disp) {
 void GriddedRow::UpdateComponentLocY() {
   for (auto& component_ptr : components_) {
     Macro* macro_ptr = component_ptr->MacroPtr();
-    component_ptr->SetLLY(ly_ + p_well_height_ - macro_ptr->Pheight());
+    component_ptr->SetLLY(ly_ + p_well_height_ - macro_ptr->FirstPwellHeight());
   }
 }
 
@@ -236,8 +236,8 @@ void GriddedRow::InsertWellTapCell(Component& tap_cell, int loc) {
   components_.emplace_back(tap_cell_);
   tap_cell_->SetCenterX(loc);
   Macro* macro_ptr = tap_cell_->MacroPtr();
-  int p_well_height = macro_ptr->Pheight();
-  int n_well_height = macro_ptr->Nheight();
+  int p_well_height = macro_ptr->FirstPwellHeight();
+  int n_well_height = macro_ptr->FirstNwellHeight();
   if (is_orient_N_) {
     tap_cell.SetOrient(N);
     tap_cell.SetLLY(ly_ + p_well_height_ - p_well_height);

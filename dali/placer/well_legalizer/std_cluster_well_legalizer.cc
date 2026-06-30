@@ -100,8 +100,8 @@ void StdClusterWellLegalizer::FetchNpWellParams() {
               << "\n";
   }
 
-  well_tap_p_height_ = well_tap_macro_->Pheight();
-  well_tap_n_height_ = well_tap_macro_->Nheight();
+  well_tap_p_height_ = well_tap_macro_->FirstPwellHeight();
+  well_tap_n_height_ = well_tap_macro_->FirstNwellHeight();
 }
 
 void StdClusterWellLegalizer::SaveInitialComponentLocation() {
@@ -166,8 +166,8 @@ void StdClusterWellLegalizer::CreateClusterAndAppendSingleWellComponent(
   int init_y = (int)std::round(component.LLY());
   init_y = std::max(init_y, stripe.contour_);
 
-  int p_well_height = component.MacroPtr()->Pheight();
-  int n_well_height = component.MacroPtr()->Nheight();
+  int p_well_height = component.MacroPtr()->FirstPwellHeight();
+  int n_well_height = component.MacroPtr()->FirstNwellHeight();
 
   int space_for_well_tap = well_tap_count_per_cluster_ * well_tap_width_ +
                            well_tap_count_per_cluster_ * space_to_well_tap_;
@@ -199,8 +199,8 @@ void StdClusterWellLegalizer::CreateClusterAndAppendSingleWellComponent(
 void StdClusterWellLegalizer::AppendSingleWellComponentToFrontCluster(
     Stripe& stripe, Component& component) {
   int width = component.Width();
-  int p_well_height = component.MacroPtr()->Pheight();
-  int n_well_height = component.MacroPtr()->Nheight();
+  int p_well_height = component.MacroPtr()->FirstPwellHeight();
+  int n_well_height = component.MacroPtr()->FirstNwellHeight();
 
   GriddedRow* front_row = stripe.front_row_;
   front_row->AddComponent(&component);
@@ -249,8 +249,8 @@ void StdClusterWellLegalizer::AppendComponentToColTopDown(
   init_y = std::min(init_y, stripe.contour_);
 
   GriddedRow* front_row;
-  int p_well_height = component.MacroPtr()->Pheight();
-  int n_well_height = component.MacroPtr()->Nheight();
+  int p_well_height = component.MacroPtr()->FirstPwellHeight();
+  int n_well_height = component.MacroPtr()->FirstNwellHeight();
   if (is_new_row_needed) {
     stripe.gridded_rows_.emplace_back();
     front_row = &(stripe.gridded_rows_.back());
@@ -296,8 +296,8 @@ void StdClusterWellLegalizer::AppendComponentToColBottomUpCompact(
   init_y = std::max(init_y, stripe.contour_);
 
   GriddedRow* front_cluster;
-  int p_well_height = component.MacroPtr()->Pheight();
-  int n_well_height = component.MacroPtr()->Nheight();
+  int p_well_height = component.MacroPtr()->FirstPwellHeight();
+  int n_well_height = component.MacroPtr()->FirstNwellHeight();
   if (is_new_cluster_needed) {
     stripe.gridded_rows_.emplace_back();
     front_cluster = &(stripe.gridded_rows_.back());
@@ -345,8 +345,8 @@ void StdClusterWellLegalizer::AppendComponentToColTopDownCompact(
   init_y = std::min(init_y, stripe.contour_);
 
   GriddedRow* front_cluster;
-  int p_well_height = component.MacroPtr()->Pheight();
-  int n_well_height = component.MacroPtr()->Nheight();
+  int p_well_height = component.MacroPtr()->FirstPwellHeight();
+  int n_well_height = component.MacroPtr()->FirstNwellHeight();
   if (is_new_cluster_needed) {
     stripe.gridded_rows_.emplace_back();
     front_cluster = &(stripe.gridded_rows_.back());
@@ -1202,18 +1202,18 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
   for (auto& component : ckt_ptr_->design().Components()) {
     Macro* macro = component.MacroPtr();
     if (macro == ckt_ptr_->tech().IoDummyMacroPtr()) continue;
-    if (macro->Nheight() > max_n_height) {
-      max_n_height = macro->Nheight();
+    if (macro->FirstNwellHeight() > max_n_height) {
+      max_n_height = macro->FirstNwellHeight();
     }
-    if (macro->Pheight() > max_p_height) {
-      max_p_height = macro->Pheight();
+    if (macro->FirstPwellHeight() > max_p_height) {
+      max_p_height = macro->FirstPwellHeight();
     }
   }
-  if (well_tap_macro_->Nheight() > max_n_height) {
-    max_n_height = well_tap_macro_->Nheight();
+  if (well_tap_macro_->FirstNwellHeight() > max_n_height) {
+    max_n_height = well_tap_macro_->FirstNwellHeight();
   }
-  if (well_tap_macro_->Pheight() > max_p_height) {
-    max_p_height = well_tap_macro_->Pheight();
+  if (well_tap_macro_->FirstPwellHeight() > max_p_height) {
+    max_p_height = well_tap_macro_->FirstPwellHeight();
   }
   int max_height = max_n_height + max_p_height;
 

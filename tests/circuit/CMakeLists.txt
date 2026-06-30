@@ -24,6 +24,7 @@ endfunction()
 
 add_dali_circuit_test(circuit_die_area_test die_area_test.cc)
 add_dali_circuit_test(circuit_io_pin_test io_pin_test.cc)
+add_dali_circuit_test(circuit_macro_test macro_test.cc)
 add_dali_circuit_test(circuit_net_test net_test.cc)
 add_dali_circuit_test(circuit_statistics_test circuit_statistics_test.cc)
 add_dali_circuit_test(circuit_tech_test tech_test.cc)

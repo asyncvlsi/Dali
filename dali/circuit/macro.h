@@ -152,11 +152,17 @@ class Macro {
   /** Log all N/P-well rectangles for debugging. */
   void ReportWellInfo() const;
 
+  /** Return first P-well height for single-row legacy standard cells. */
+  int FirstPwellHeight() const;
+
+  /** Return first N-well height for single-row legacy standard cells. */
+  int FirstNwellHeight() const;
+
   /** Return first P-well height for legacy call sites. */
-  int Pheight();
+  int Pheight() const { return FirstPwellHeight(); }
 
   /** Return first N-well height for legacy call sites. */
-  int Nheight();
+  int Nheight() const { return FirstNwellHeight(); }
 
  private:
   std::pair<const std::string, int>* RegisterPinName(
