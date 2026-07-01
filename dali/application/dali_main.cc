@@ -101,7 +101,15 @@ int main(int argc, char* argv[]) {
   using std::chrono::system_clock;
   system_clock::time_point today = system_clock::now();
   std::time_t tt = system_clock::to_time_t(today);
-  LOG(info) << "Today is: " << ctime(&tt) << "\n";
+  char time_buffer[64];
+  std::tm* local_time = std::localtime(&tt);
+  if (local_time != nullptr &&
+      std::strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S %Z",
+                    local_time) > 0) {
+    LOG(info) << "Run started at: " << time_buffer << "\n";
+  } else {
+    LOG(info) << "Run started at: " << tt << "\n";
+  }
 
   // save command line arguments for future reference
   SaveArgs(argc, argv);

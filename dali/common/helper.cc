@@ -36,11 +36,12 @@ namespace dali {
 void SaveArgs(int argc, char* argv[]) {
   std::string cmd_line_arguments;
   for (int i = 0; i < argc; ++i) {
+    if (i > 0) {
+      cmd_line_arguments.push_back(' ');
+    }
     cmd_line_arguments += argv[i];
-    cmd_line_arguments.push_back(' ');
   }
-  LOG(info) << "Command:\n";
-  LOG(info) << cmd_line_arguments << "\n" << std::endl;
+  LOG(info) << "Command: " << cmd_line_arguments << "\n";
 }
 
 std::vector<std::vector<std::string>> ParseArguments(

@@ -2265,9 +2265,8 @@ RectI Circuit::ShrinkOffGridDieArea(int lower_x, int lower_y, int upper_x,
   double f_left = lower_x / static_cast<double>(factor_x);
   if (AbsResidual(f_left, 1) > 1e-5) {
     left = std::ceil(f_left);
-    LOG(info) << "left placement boundary is not on placement grid: \n"
-              << "  shrink left from " << lower_x << " to " << left * factor_x
-              << "\n";
+    LOG(info) << "  placement boundary adjusted to grid: left " << lower_x
+              << " -> " << left * factor_x << " DBU\n";
   } else {
     left = static_cast<int>(std::round(f_left));
   }
@@ -2276,9 +2275,8 @@ RectI Circuit::ShrinkOffGridDieArea(int lower_x, int lower_y, int upper_x,
   double f_right = upper_x / static_cast<double>(factor_x);
   if (AbsResidual(f_right, 1) > 1e-5) {
     right = std::floor(f_right);
-    LOG(info) << "right placement boundary is not on placement grid: \n"
-              << "  shrink right from " << upper_x << " to " << right * factor_x
-              << "\n";
+    LOG(info) << "  placement boundary adjusted to grid: right " << upper_x
+              << " -> " << right * factor_x << " DBU\n";
   } else {
     right = static_cast<int>(std::round(f_right));
   }
@@ -2287,9 +2285,8 @@ RectI Circuit::ShrinkOffGridDieArea(int lower_x, int lower_y, int upper_x,
   double f_bottom = lower_y / static_cast<double>(factor_y);
   if (AbsResidual(f_bottom, 1) > 1e-5) {
     bottom = std::ceil(f_bottom);
-    LOG(info) << "bottom placement boundary is not on placement grid: \n"
-              << "  shrink bottom from " << lower_y << " to "
-              << bottom * factor_y << "\n";
+    LOG(info) << "  placement boundary adjusted to grid: bottom " << lower_y
+              << " -> " << bottom * factor_y << " DBU\n";
   } else {
     bottom = static_cast<int>(std::round(f_bottom));
   }
@@ -2298,9 +2295,8 @@ RectI Circuit::ShrinkOffGridDieArea(int lower_x, int lower_y, int upper_x,
   double f_top = upper_y / static_cast<double>(factor_y);
   if (AbsResidual(f_top, 1) > 1e-5) {
     top = std::floor(f_top);
-    LOG(info) << "top placement boundary is not on placement grid: \n"
-              << "  shrink top from " << upper_y << " to " << top * factor_y
-              << "\n";
+    LOG(info) << "  placement boundary adjusted to grid: top " << upper_y
+              << " -> " << top * factor_y << " DBU\n";
   } else {
     top = static_cast<int>(std::round(f_top));
   }
@@ -2325,18 +2321,16 @@ RectI Circuit::ShiftOffGridDieArea(int lower_x, int lower_y, int upper_x,
   int adjusted_upper_x = upper_x - design_.die_area_.die_area_offset_x_;
   int adjusted_upper_y = upper_y - design_.die_area_.die_area_offset_y_;
   if (design_.die_area_.die_area_offset_x_ != 0) {
-    LOG(info) << "left placement boundary is not on placement grid: \n"
-              << "  shift left from " << lower_x << " to " << adjusted_lower_x
-              << "\n"
-              << "  shift right from " << upper_x << " to " << adjusted_upper_x
-              << "\n";
+    LOG(info) << "  placement boundary shifted to grid: left " << lower_x
+              << " -> " << adjusted_lower_x << " DBU\n";
+    LOG(info) << "  placement boundary shifted to grid: right " << upper_x
+              << " -> " << adjusted_upper_x << " DBU\n";
   }
   if (design_.die_area_.die_area_offset_y_ != 0) {
-    LOG(info) << "bottom placement boundary is not on placement grid: \n"
-              << "  shift bottom from " << lower_y << " to " << adjusted_lower_y
-              << "\n"
-              << "  shift top from " << upper_y << " to " << adjusted_upper_y
-              << "\n";
+    LOG(info) << "  placement boundary shifted to grid: bottom " << lower_y
+              << " -> " << adjusted_lower_y << " DBU\n";
+    LOG(info) << "  placement boundary shifted to grid: top " << upper_y
+              << " -> " << adjusted_upper_y << " DBU\n";
   }
   lower_x = adjusted_lower_x;
   lower_y = adjusted_lower_y;
@@ -2350,14 +2344,12 @@ RectI Circuit::ShiftOffGridDieArea(int lower_x, int lower_y, int upper_x,
   adjusted_upper_x = upper_x - design_.die_area_.die_area_offset_x_residual_;
   adjusted_upper_y = upper_y - design_.die_area_.die_area_offset_y_residual_;
   if (design_.die_area_.die_area_offset_x_residual_ != 0) {
-    LOG(info) << "right placement boundary is not on placement grid: \n"
-              << "  shrink right from " << upper_x << " to " << adjusted_upper_x
-              << "\n";
+    LOG(info) << "  placement boundary adjusted to grid: right " << upper_x
+              << " -> " << adjusted_upper_x << " DBU\n";
   }
   if (design_.die_area_.die_area_offset_y_residual_ != 0) {
-    LOG(info) << "top placement boundary is not on placement grid: \n"
-              << "  shrink top from " << upper_y << " to " << adjusted_upper_y
-              << "\n";
+    LOG(info) << "  placement boundary adjusted to grid: top " << upper_y
+              << " -> " << adjusted_upper_y << " DBU\n";
   }
   upper_x = adjusted_upper_x;
   upper_y = adjusted_upper_y;
@@ -2390,18 +2382,18 @@ void Circuit::LoadTech(phydb::PhyDB* phy_db_ptr) {
   if (is_placement_grid_set) {
     SetGridValue(grid_value_x, grid_value_y);
   } else {
-    LOG(info) << "  placement grid not set in PhyDB\n";
-    LOG(info) << "  checking sites\n";
+    LOG(info) << "  placement grid source          : first LEF SITE "
+                 "(not set in PhyDB)\n";
     auto& sites = phy_db_tech.GetSitesRef();
     if (!sites.empty()) {
       grid_value_x = sites[0].GetWidth();
       grid_value_y = sites[0].GetHeight();
-      LOG(info) << "    width : " << grid_value_x << "um\n";
-      LOG(info) << "    height: " << grid_value_y << "um\n";
+      LOG(info) << "  placement grid size            : " << grid_value_x
+                << " x " << grid_value_y << " um\n";
       SetGridValue(grid_value_x, grid_value_y);
       SetRowHeight(grid_value_y);
     } else {
-      LOG(info) << "  no sites found\n";
+      LOG(info) << "  placement grid source          : no LEF SITE found\n";
     }
   }
 
@@ -2428,9 +2420,8 @@ void Circuit::LoadTech(phydb::PhyDB* phy_db_ptr) {
         min_spacing = layer.GetSpacing();
       }
       if (min_spacing <= 0) {
-        LOG(warning) << "A valid min spacing is not found for layer: " +
-                            layer_name
-                     << ", use its min width instead\n";
+        LOG(warning) << "Layer " << layer_name
+                     << " has no valid min spacing; using min width instead\n";
         min_spacing = min_width;
       }
 
@@ -2603,8 +2594,8 @@ void Circuit::LoadDesign() {
 void Circuit::LoadCell(phydb::PhyDB* phy_db_ptr) {
   auto& phy_db_tech = *(phy_db_ptr->GetTechPtr());
   if (!phy_db_tech.IsWellInfoSet()) {
-    LOG(info) << "N/P-Well layer info not found in PhyDB\n";
-    LOG(info) << "Will come up with some fake info\n";
+    LOG(info) << "  well layer info                : not found; using fallback "
+                 "standard-cell settings\n";
   }
 
   double same_diff_spacing = 0, any_diff_spacing = 0;
@@ -2627,7 +2618,7 @@ void Circuit::LoadCell(phydb::PhyDB* phy_db_ptr) {
     double overhang = n_well_layer->GetOverhang();
     SetNwellParams(width, spacing, op_spacing, max_plug_dist, overhang);
   } else {
-    LOG(info) << "No N-well layer info provided, creating fake info\n";
+    LOG(debug) << "  N-well layer missing; using zero-width fallback\n";
     SetNwellParams(0.0, 0.0, 0.0, 1e8, 0.0);
   }
 
@@ -2640,7 +2631,7 @@ void Circuit::LoadCell(phydb::PhyDB* phy_db_ptr) {
     double overhang = p_well_layer->GetOverhang();
     SetPwellParams(width, spacing, op_spacing, max_plug_dist, overhang);
   } else {
-    LOG(info) << "No P-well layer info provided, creating fake info\n";
+    LOG(debug) << "  P-well layer missing; using zero-width fallback\n";
     SetPwellParams(0.0, 0.0, 0.0, 1e8, 0.0);
   }
 
