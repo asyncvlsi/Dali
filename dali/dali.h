@@ -28,6 +28,7 @@
 
 #include "dali/circuit/circuit.h"
 #include "dali/placer.h"
+#include "dali/placer/detailed_placer/detailed_placer.h"
 #include "dali/placer/global_placer/random_initializer.h"
 #include "dali/timing/star_pi_model_estimator.h"
 
@@ -44,6 +45,7 @@ class Dali {
     DefaultPartitionMode well_legalization_mode = DefaultPartitionMode::STRICT;
     bool disable_global_place = false;
     bool disable_legalization = false;
+    bool disable_detailed_place = false;
     bool disable_io_place = false;
     double target_density = -1;
     int io_metal_layer = 0;
@@ -140,6 +142,7 @@ class Dali {
   DefaultPartitionMode well_legalization_mode_ = DefaultPartitionMode::STRICT;
   bool disable_global_place_ = false;
   bool disable_legalization_ = false;
+  bool disable_detailed_place_ = false;
   bool disable_io_place_ = false;
   double target_density_ = -1;
   int io_metal_layer_ = 0;
@@ -160,6 +163,7 @@ class Dali {
   phydb::PhyDB* phy_db_ptr_ = nullptr;
   GlobalPlacer gb_placer_;
   ExtendedTetrisLegalizer legalizer_;
+  DetailedPlacer detailed_placer_;
   StdClusterWellLegalizer well_legalizer_;
   std::unique_ptr<WellTapPlacer> well_tap_placer_;
   FillerCellPlacer filler_cell_placer_;
@@ -200,6 +204,9 @@ class Dali {
   /** Run global placement and legalization before post-placement completion. */
   bool RunCorePlacementStages();
   bool RunStandardCellLegalization();
+  /** Run HPWL-improving detailed placement after legal standard-cell placement.
+   */
+  bool RunDetailedPlacement();
   /** Configure shared options before either well legalization path runs. */
   void ConfigureWellLegalizer();
   /** Run well tap and end-cap stages for designs with no movable cells. */

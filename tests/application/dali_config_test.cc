@@ -37,6 +37,7 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_EQ(options.well_legalization_mode, dali::DefaultPartitionMode::STRICT);
   EXPECT_FALSE(options.disable_global_place);
   EXPECT_FALSE(options.disable_legalization);
+  EXPECT_FALSE(options.disable_detailed_place);
   EXPECT_FALSE(options.disable_io_place);
   EXPECT_DOUBLE_EQ(options.target_density, -1);
   EXPECT_EQ(options.io_metal_layer, 0);
@@ -62,6 +63,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_string("dali.well_legalization_mode", "scavenge");
   config_set_int("dali.disable_global_place", 1);
   config_set_int("dali.disable_legalization", 1);
+  config_set_int("dali.disable_detailed_place", 1);
   config_set_int("dali.disable_io_place", 1);
   config_set_real("dali.target_density", 0.71);
   config_set_int("dali.io_metal_layer", 2);
@@ -87,6 +89,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
             dali::DefaultPartitionMode::SCAVENGE);
   EXPECT_TRUE(options.disable_global_place);
   EXPECT_TRUE(options.disable_legalization);
+  EXPECT_TRUE(options.disable_detailed_place);
   EXPECT_TRUE(options.disable_io_place);
   EXPECT_DOUBLE_EQ(options.target_density, 0.71);
   EXPECT_EQ(options.io_metal_layer, 2);

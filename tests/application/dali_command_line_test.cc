@@ -66,7 +66,8 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
              "placed", "-metrics_file", "metrics.json", "-target_density",
              "0.72", "-num_threads", "8", "-io_metal_layer", "3",
              "-well_legalization_mode", "scavenge", "-global_initializer",
-             "keep", "-save_intermediate_result", "-disable_io_place"},
+             "keep", "-save_intermediate_result", "-disable_detailed_place",
+             "-disable_io_place"},
             &options));
 
   EXPECT_EQ(options.output_name, "placed");
@@ -77,6 +78,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_STREQ(config_get_string("dali.well_legalization_mode"), "scavenge");
   EXPECT_STREQ(config_get_string("dali.global_initializer"), "keep");
   EXPECT_EQ(config_get_int("dali.save_intermediate_result"), 1);
+  EXPECT_EQ(config_get_int("dali.disable_detailed_place"), 1);
   EXPECT_EQ(config_get_int("dali.disable_io_place"), 1);
 }
 

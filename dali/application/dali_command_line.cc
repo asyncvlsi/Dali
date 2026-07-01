@@ -69,6 +69,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -g/-grid <grid_value_x> <grid_value_y>     (optional, default metal1 and metal2 pitch values)\n"
       << "  -d/-target_density <density>               (optional, value interval (0,1], default max(space_utility, 0.7))\n"
       << "  -disable_legalization                      optional, if this flag is present, then legalization is skipped\n"
+      << "  -disable_detailed_place                    optional, skip post-legalization detailed placement\n"
       << "  -io_metal_layer                            metal layer number for I/O placement (optional, default 1 for m1)\n"
       << "  -well_legalization_mode <scavenge/strict>  determine whether the last column use unassigned space\n"
       << "  -global_initializer <keep/uniform/gaussian/monte_carlo/density_aware>\n"
@@ -169,6 +170,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       config_set_string("dali.well_legalization_mode", value.c_str());
     } else if (arg == "-disable_legalization") {
       EnableConfigFlag("dali.disable_legalization");
+    } else if (arg == "-disable_detailed_place") {
+      EnableConfigFlag("dali.disable_detailed_place");
     } else if (arg == "-disable_global_place") {
       EnableConfigFlag("dali.disable_global_place");
     } else if (arg == "-global_initializer") {

@@ -117,6 +117,7 @@ void Dali::ShowParamsList() {
             << static_cast<int>(well_legalization_mode_) << "\n"
             << "  disable_global_place: " << disable_global_place_ << "\n"
             << "  disable_legalization: " << disable_legalization_ << "\n"
+            << "  disable_detailed_place: " << disable_detailed_place_ << "\n"
             << "  disable_io_place: " << disable_io_place_ << "\n"
             << "  target_density: " << target_density_ << "\n"
             << "  io_metal_layer: " << io_metal_layer_ << "\n"
@@ -167,6 +168,8 @@ void Dali::LoadParamsFromConfig() {
                  &disable_global_place_);
   LoadBoolConfig(ConfigName(prefix_, "disable_legalization"),
                  &disable_legalization_);
+  LoadBoolConfig(ConfigName(prefix_, "disable_detailed_place"),
+                 &disable_detailed_place_);
   LoadBoolConfig(ConfigName(prefix_, "disable_io_place"), &disable_io_place_);
   LoadRealConfig(ConfigName(prefix_, "target_density"), &target_density_);
   LoadIntConfig(ConfigName(prefix_, "io_metal_layer"), &io_metal_layer_);
@@ -213,6 +216,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       well_legalization_mode_,
       disable_global_place_,
       disable_legalization_,
+      disable_detailed_place_,
       disable_io_place_,
       target_density_,
       io_metal_layer_,
@@ -435,6 +439,23 @@ bool Dali::RunStandardCellLegalization() {
     LOG(error) << "Standard-cell legalization failed\n";
     return false;
   }
+  if (!RunDetailedPlacement()) {
+    return false;
+  }
+  return true;
+}
+
+bool Dali::RunDetailedPlacement() {
+  if (disable_detailed_place_) {
+    LOG(info) << "Skip detailed placement: disabled by configuration\n";
+    return true;
+  }
+  detailed_placer_.CopyPlacementContextFrom(&legalizer_);
+  if (!detailed_placer_.StartPlacement()) {
+    LOG(error) << "Detailed placement failed\n";
+    return false;
+  }
+  RecordPlacementMetric("detailed_placement", circuit_.WeightedHPWL());
   return true;
 }
 
