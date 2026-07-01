@@ -21,9 +21,7 @@
 #include "std_cluster_well_legalizer.h"
 
 #include <algorithm>
-#include <cfloat>
 #include <cmath>
-#include <set>
 
 #include "dali/common/helper.h"
 #include "dali/common/placement_metrics.h"
@@ -693,163 +691,6 @@ bool StdClusterWellLegalizer::TrialClusterLegalization(Stripe& stripe) {
   return res;
 }
 
-/****
- * Returns the wire-length cost of the small group from l-th element to r-th
- * element in this cluster "for each order, we keep the left and right
- * boundaries of the group and evenly distribute the cells inside the group.
- * Since we have the Single-Segment Clustering technique to take care of the
- * cell positions, we do not pay much attention to the exact positions of the
- * cells during Local Re-ordering." from "An Efficient and Effective Detailed
- * Placement Algorithm"
- * ****/
-double StdClusterWellLegalizer::WireLengthCost(GriddedRow* cluster, int l,
-                                               int r) {
-  auto& net_list = ckt_ptr_->Nets();
-  std::set<Net*> net_involved;
-  for (int i = l; i <= r; ++i) {
-    auto* component = cluster->Components()[i];
-    for (auto& net_num : component->NetList()) {
-      if (net_list[net_num].PinCnt() < 100) {
-        net_involved.insert(&(net_list[net_num]));
-      }
-    }
-  }
-
-  double hpwl_x = 0;
-  double hpwl_y = 0;
-  for (auto& net : net_involved) {
-    hpwl_x += net->WeightedHPWLX();
-    hpwl_y += net->WeightedHPWLY();
-  }
-
-  return hpwl_x * ckt_ptr_->GridValueX() + hpwl_y * ckt_ptr_->GridValueY();
-}
-
-/****
- * Returns the best permutation in @param res
- * @param cost records the cost function associated with the best permutation
- * @param l is the left bound of the range
- * @param r is the right bound of the range
- * @param cluster points to the whole range, but we are only interested in the
- * permutation of range [l,r]
- * ****/
-void StdClusterWellLegalizer::FindBestLocalOrder(
-    std::vector<Component*>& res, double& cost, GriddedRow* cluster, int cur,
-    int l, int r, int left_bound, int right_bound, int gap, int range) {
-  // LOG(info)  <<"l : %d, r: %d\n", l, r);
-  if (cur == r) {
-    cluster->Components()[l]->SetLLX(left_bound);
-    cluster->Components()[r]->SetURX(right_bound);
-
-    int left_contour = left_bound + gap + cluster->Components()[l]->Width();
-    for (int i = l + 1; i < r; ++i) {
-      auto* component = cluster->Components()[i];
-      component->SetLLX(left_contour);
-      left_contour += component->Width() + gap;
-    }
-
-    double tmp_cost = WireLengthCost(cluster, l, r);
-    if (tmp_cost < cost) {
-      cost = tmp_cost;
-      for (int j = 0; j < range; ++j) {
-        res[j] = cluster->Components()[l + j];
-      }
-    }
-  } else {
-    // Permutations made
-    auto& component_list = cluster->Components();
-    for (int i = cur; i <= r; ++i) {
-      // Swapping done
-      std::swap(component_list[cur], component_list[i]);
-
-      // Recursion called
-      FindBestLocalOrder(res, cost, cluster, cur + 1, l, r, left_bound,
-                         right_bound, gap, range);
-
-      // backtrack
-      std::swap(component_list[cur], component_list[i]);
-    }
-  }
-}
-
-void StdClusterWellLegalizer::LocalReorderInCluster(GriddedRow* cluster,
-                                                    int range) {
-  /****
-   * Enumerate all local permutations, @param range determines how big the local
-   * range is
-   * ****/
-
-  assert(range > 0);
-
-  int sz = cluster->Components().size();
-  if (sz < 3) return;
-
-  std::sort(
-      cluster->Components().begin(), cluster->Components().end(),
-      [](const Component* component_ptr0, const Component* component_ptr1) {
-        return component_ptr0->LLX() < component_ptr1->LLX();
-      });
-
-  int last_segment = sz - range;
-  std::vector<Component*> res_local_order(range, nullptr);
-  for (int l = 0; l <= last_segment; ++l) {
-    int total_component_width = 0;
-    for (int j = 0; j < range; ++j) {
-      res_local_order[j] = cluster->Components()[l + j];
-      total_component_width += res_local_order[j]->Width();
-    }
-    int r = l + range - 1;
-    double best_cost = DBL_MAX;
-    int left_bound = (int)cluster->Components()[l]->LLX();
-    int right_bound = (int)cluster->Components()[r]->URX();
-    int gap = (right_bound - left_bound - total_component_width) / (r - l);
-
-    FindBestLocalOrder(res_local_order, best_cost, cluster, l, l, r, left_bound,
-                       right_bound, gap, range);
-    for (int j = 0; j < range; ++j) {
-      cluster->Components()[l + j] = res_local_order[j];
-    }
-
-    cluster->Components()[l]->SetLLX(left_bound);
-    cluster->Components()[r]->SetURX(right_bound);
-    int left_contour = left_bound + cluster->Components()[l]->Width() + gap;
-    for (int i = l + 1; i < r; ++i) {
-      auto* component = cluster->Components()[i];
-      component->SetLLX(left_contour);
-      left_contour += component->Width() + gap;
-    }
-  }
-}
-
-void StdClusterWellLegalizer::LocalReorderAllClusters() {
-  // sort all cluster based on their lower left corners
-  size_t tot_cluster_count = 0;
-  for (auto& col : col_list_) {
-    for (auto& stripe : col.stripe_list_) {
-      tot_cluster_count += stripe.gridded_rows_.size();
-    }
-  }
-  std::vector<GriddedRow*> cluster_ptr_list(tot_cluster_count, nullptr);
-  int counter = 0;
-  for (auto& col : col_list_) {
-    for (auto& stripe : col.stripe_list_) {
-      for (auto& cluster : stripe.gridded_rows_) {
-        cluster_ptr_list[counter] = &cluster;
-        ++counter;
-      }
-    }
-  }
-  std::sort(cluster_ptr_list.begin(), cluster_ptr_list.end(),
-            [](const GriddedRow* lhs, const GriddedRow* rhs) {
-              return (lhs->LLY() < rhs->LLY()) ||
-                     (lhs->LLY() == rhs->LLY() && lhs->LLX() < rhs->LLX());
-            });
-
-  for (auto& cluster_ptr : cluster_ptr_list) {
-    LocalReorderInCluster(cluster_ptr, 3);
-  }
-}
-
 /*
 void StdClusterWellLegalizer::SingleSegmentClusteringOptimization() {
   LOG(info) << "Start single segment clustering\n";
@@ -1141,20 +982,30 @@ void StdClusterWellLegalizer::RunClusterOrientationStage() {
   RecordPlacementMetric("well_legalization.orientation", WeightedHPWL());
 }
 
-void StdClusterWellLegalizer::RunLocalReorderingStage() {
-  LOG(info) << "Perform local reordering\n";
-  for (int i = 0; i < 6; ++i) {
-    LOG(info) << "reorder iteration: " << i << "\n";
-    LocalReorderAllClusters();
-    ReportHPWL();
-    RecordPlacementMetric("well_legalization.local_reorder", WeightedHPWL());
+std::vector<GriddedRow*> StdClusterWellLegalizer::CollectGriddedRows() {
+  std::vector<GriddedRow*> rows;
+  for (auto& col : col_list_) {
+    for (auto& stripe : col.stripe_list_) {
+      for (auto& row : stripe.gridded_rows_) {
+        rows.push_back(&row);
+      }
+    }
   }
+  return rows;
+}
+
+void StdClusterWellLegalizer::RunGriddedDetailedPlacementStage() {
+  LOG(info) << "Run gridded detailed placement\n";
+  gridded_detailed_placer_.CopyPlacementContextFrom(this);
+  gridded_detailed_placer_.SetRows(CollectGriddedRows());
+  gridded_detailed_placer_.StartPlacement();
+  RecordPlacementMetric("well_legalization.local_reorder", WeightedHPWL());
 }
 
 bool StdClusterWellLegalizer::RunMovableCellLegalizationStages() {
   bool is_success = RunComponentClusteringStage();
   RunClusterOrientationStage();
-  RunLocalReorderingStage();
+  RunGriddedDetailedPlacementStage();
   return is_success;
 }
 

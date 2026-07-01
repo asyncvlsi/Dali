@@ -31,6 +31,7 @@
 #include "dali/common/misc.h"
 #include "dali/placer/legalizer/extended_tetris_legalizer.h"
 #include "dali/placer/placer.h"
+#include "gridded_detailed_placer.h"
 #include "gridded_row.h"
 #include "space_partitioner.h"
 #include "stripe.h"
@@ -97,13 +98,6 @@ class StdClusterWellLegalizer : public Placer {
 
   bool TrialClusterLegalization(Stripe& stripe);
 
-  double WireLengthCost(GriddedRow* cluster, int l, int r);
-  void FindBestLocalOrder(std::vector<Component*>& res, double& cost,
-                          GriddedRow* cluster, int cur, int l, int r,
-                          int left_bound, int right_bound, int gap, int range);
-  void LocalReorderInCluster(GriddedRow* cluster, int range = 3);
-  void LocalReorderAllClusters();
-
   // void SingleSegmentClusteringOptimization();
 
   void UpdateClusterOrient();
@@ -135,7 +129,8 @@ class StdClusterWellLegalizer : public Placer {
  private:
   bool RunComponentClusteringStage();
   void RunClusterOrientationStage();
-  void RunLocalReorderingStage();
+  std::vector<GriddedRow*> CollectGriddedRows();
+  void RunGriddedDetailedPlacementStage();
   bool RunMovableCellLegalizationStages();
   void RunWellTapStage();
   void RunEndCapStage();
@@ -170,6 +165,7 @@ class StdClusterWellLegalizer : public Placer {
   int stripe_mode_ = 0;
   int max_row_width_ = -1;
   DefaultSpacePartitioner space_partitioner_;
+  GriddedDetailedPlacer gridded_detailed_placer_;
 
   /**** cached well tap cell parameters ****/
   Macro* well_tap_macro_ = nullptr;
