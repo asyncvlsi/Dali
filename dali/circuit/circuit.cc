@@ -26,6 +26,7 @@
 #include <climits>
 #include <cmath>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -690,36 +691,57 @@ void Circuit::ReportNetFanoutHistogram() {
 void Circuit::ReportBriefSummary() {
   PrintHorizontalLine();
   LOG(info) << "Circuit brief summary:\n";
-  LOG(info) << "  movable components: " << TotalMovableComponentCnt() << "\n";
-  LOG(info) << "  fixed components:   " << design_.fixed_component_count_
-            << "\n";
-  LOG(info) << "  components:         " << TotalComponentCount() << "\n";
-  LOG(info) << "  iopins:         " << design_.iopins_.size() << "\n";
-  LOG(info) << "  nets:           " << design_.nets_.size() << "\n";
-  LOG(info) << "  grid size x/y:  " << GridValueX() << "/" << GridValueY()
-            << "um\n";
-  LOG(info) << "  total movable component area: "
-            << design_.total_movable_component_area_ << "\n";
-  LOG(info) << "  total white space     : " << design_.tot_white_space_ << "\n";
-  LOG(info) << "  total component area      : " << design_.total_component_area_
-            << "\n";
-  LOG(info) << "  total space: "
-            << (long long)RegionWidth() * (long long)RegionHeight() << "\n";
-  LOG(info) << "    left:   " << RegionLLX() << "\n";
-  LOG(info) << "    right:  " << RegionURX() << "\n";
-  LOG(info) << "    bottom: " << RegionLLY() << "\n";
-  LOG(info) << "    top:    " << RegionURY() << "\n";
+  LOG(info) << "  " << std::left << std::setw(34) << "movable components"
+            << " : " << TotalMovableComponentCnt() << "\n";
+  LOG(info) << "  " << std::left << std::setw(34) << "fixed components" << " : "
+            << design_.fixed_component_count_ << "\n";
+  LOG(info) << "  " << std::left << std::setw(34) << "components" << " : "
+            << TotalComponentCount() << "\n";
+  LOG(info) << "  " << std::left << std::setw(34) << "iopins" << " : "
+            << design_.iopins_.size() << "\n";
+  LOG(info) << "  " << std::left << std::setw(34) << "nets" << " : "
+            << design_.nets_.size() << "\n";
+  LOG(info) << "  " << std::left << std::setw(34) << "grid size" << " : "
+            << GridValueX() << " x " << GridValueY() << " um\n";
+  LOG(info) << "  " << std::left << std::setw(34)
+            << "total movable component area"
+            << " : " << design_.total_movable_component_area_ << " grid^2\n";
+  LOG(info) << "  " << std::left << std::setw(34) << "total white space"
+            << " : " << design_.tot_white_space_ << " grid^2\n";
+  LOG(info) << "  " << std::left << std::setw(34) << "total component area"
+            << " : " << design_.total_component_area_ << " grid^2\n";
+  LOG(info) << "  " << std::left << std::setw(34) << "total placement area"
+            << " : "
+            << static_cast<long long>(RegionWidth()) *
+                   static_cast<long long>(RegionHeight())
+            << " grid^2\n";
+  LOG(info) << "  " << std::left << std::setw(34) << "placement boundary left"
+            << " : " << RegionLLX() << " um\n";
+  LOG(info) << "  " << std::left << std::setw(34) << "placement boundary right"
+            << " : " << RegionURX() << " um\n";
+  LOG(info) << "  " << std::left << std::setw(34) << "placement boundary bottom"
+            << " : " << RegionLLY() << " um\n";
+  LOG(info) << "  " << std::left << std::setw(34) << "placement boundary top"
+            << " : " << RegionURY() << " um\n";
   if (TotalMovableComponentCnt() > 0) {
-    LOG(info) << "  average movable width/height: "
-              << AverageMovableComponentWidth() << "/"
-              << AverageMovableComponentHeight() << "um\n";
+    double avg_width_grid = AverageMovableComponentWidth();
+    double avg_height_grid = AverageMovableComponentHeight();
+    LOG(info) << "  " << std::left << std::setw(34) << "average movable size"
+              << " : " << avg_width_grid << " x " << avg_height_grid
+              << " grid units\n";
+    LOG(info) << "  " << std::left << std::setw(34) << "average movable size"
+              << " : " << avg_width_grid * GridValueX() << " x "
+              << avg_height_grid * GridValueY() << " um\n";
   } else {
-    LOG(info) << "  average movable width/height: N/A\n";
+    LOG(info) << "  " << std::left << std::setw(34) << "average movable size"
+              << " : N/A\n";
   }
   if (design_.tot_white_space_ > 0) {
-    LOG(info) << "  white space utility: " << WhiteSpaceUsage() << "\n";
+    LOG(info) << "  " << std::left << std::setw(34) << "white space utility"
+              << " : " << WhiteSpaceUsage() << "\n";
   } else {
-    LOG(info) << "  white space utility: N/A\n";
+    LOG(info) << "  " << std::left << std::setw(34) << "white space utility"
+              << " : N/A\n";
   }
   ReportHPWL();
 }
