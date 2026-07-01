@@ -56,6 +56,7 @@ class Dali {
     bool enable_end_cap_cell = false;
     bool enable_shrink_off_grid_die_area = false;
     RandomInitializerType global_initializer = RandomInitializerType::UNIFORM;
+    bool save_intermediate_result = false;
     std::string output_name = "dali_out";
   };
 
@@ -151,6 +152,7 @@ class Dali {
   bool enable_end_cap_cell_ = false;
   bool enable_shrink_off_grid_die_area_ = false;
   RandomInitializerType global_initializer_ = RandomInitializerType::UNIFORM;
+  bool save_intermediate_result_ = false;
   std::string output_name_ = "dali_out";
 
   // circuit and placer

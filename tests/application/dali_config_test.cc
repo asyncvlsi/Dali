@@ -49,6 +49,7 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_FALSE(options.enable_end_cap_cell);
   EXPECT_FALSE(options.enable_shrink_off_grid_die_area);
   EXPECT_EQ(options.global_initializer, dali::RandomInitializerType::UNIFORM);
+  EXPECT_FALSE(options.save_intermediate_result);
   EXPECT_EQ(options.output_name, "dali_out");
 
   placer.Close();
@@ -73,6 +74,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_int("dali.enable_end_cap_cell", 1);
   config_set_int("dali.enable_shrink_off_grid_die_area", 1);
   config_set_string("dali.global_initializer", "keep");
+  config_set_int("dali.save_intermediate_result", 1);
   config_set_string("dali.output_name", "placed");
 
   dali::Dali placer(nullptr, dali::severity::info);
@@ -97,6 +99,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_TRUE(options.enable_end_cap_cell);
   EXPECT_TRUE(options.enable_shrink_off_grid_die_area);
   EXPECT_EQ(options.global_initializer, dali::RandomInitializerType::KEEP);
+  EXPECT_TRUE(options.save_intermediate_result);
   EXPECT_EQ(options.output_name, "placed");
 
   placer.Close();

@@ -132,6 +132,8 @@ void Dali::ShowParamsList() {
             << enable_shrink_off_grid_die_area_ << "\n"
             << "  global_initializer: " << static_cast<int>(global_initializer_)
             << "\n"
+            << "  save_intermediate_result: " << save_intermediate_result_
+            << "\n"
             << "  output_name: " << output_name_ << "\n";
 }
 
@@ -185,6 +187,8 @@ void Dali::LoadParamsFromConfig() {
     global_initializer_ =
         ParseGlobalInitializer(config_get_string(param_name.c_str()));
   }
+  LoadBoolConfig(ConfigName(prefix_, "save_intermediate_result"),
+                 &save_intermediate_result_);
   LoadStringConfig(ConfigName(prefix_, "output_name"), &output_name_);
 }
 
@@ -221,6 +225,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       enable_end_cap_cell_,
       enable_shrink_off_grid_die_area_,
       global_initializer_,
+      save_intermediate_result_,
       output_name_,
   };
 }
@@ -398,6 +403,7 @@ bool Dali::ShouldRunMovableCellLegalization() const {
 bool Dali::RunGlobalPlacementStage() {
   gb_placer_.SetCircuit(&circuit_);
   gb_placer_.SetNumThreads(num_threads_);
+  gb_placer_.SetShouldSaveIntermediateResult(save_intermediate_result_);
   if (disable_global_place_) {
     LOG(info) << "Skip global placement: disabled by configuration\n";
   } else if (!HasMovableComponents()) {

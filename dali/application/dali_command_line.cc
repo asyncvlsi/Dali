@@ -72,6 +72,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -io_metal_layer                            metal layer number for I/O placement (optional, default 1 for m1)\n"
       << "  -well_legalization_mode <scavenge/strict>  determine whether the last column use unassigned space\n"
       << "  -global_initializer <keep/uniform/gaussian/monte_carlo/density_aware>\n"
+      << "  -save_intermediate_result                  dump placement snapshots for visualization\n"
       << "  -num_threads <n>                           number of OpenMP threads to use\n"
       << "  -v                                         verbosity_level (optional, 0-5, default 1)\n"
       << "  -disable_log_prefix                        optional, if this flag is present, then only messages will be saved to the log file\n"
@@ -181,6 +182,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
         return false;
       }
       config_set_string("dali.global_initializer", value.c_str());
+    } else if (arg == "-save_intermediate_result") {
+      EnableConfigFlag("dali.save_intermediate_result");
     } else if (arg == "-max_row_width") {
       double max_row_width = 0;
       if (!TryGetValue(argc, argv, &i, &value) ||
