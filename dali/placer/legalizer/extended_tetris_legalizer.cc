@@ -30,6 +30,52 @@
 
 namespace dali {
 
+namespace {
+
+constexpr int kMaxLegalizationFailureExamples = 5;
+
+void LogLegalizationFailureExample(const char* pass_name, size_t iteration,
+                                   int example_id, const Component& component,
+                                   const Value2D<int>& target_loc,
+                                   int search_start_row, int search_end_row,
+                                   int total_rows, int region_left,
+                                   int region_right) {
+  LOG(warning) << "ExtendedTetris legalization could not place component "
+               << component.Name() << " during " << pass_name << " pass"
+               << " (iteration " << iteration << ", example " << example_id
+               << ")\n"
+               << "  reason: no legal row segment was found in the expanded "
+                  "search window\n"
+               << "  component size(grid): " << component.Width() << " x "
+               << component.Height() << "\n"
+               << "  original box(grid): (" << component.LLX() << ", "
+               << component.LLY() << ") - (" << component.URX() << ", "
+               << component.URY() << ")\n"
+               << "  candidate loc(grid): (" << target_loc.x << ", "
+               << target_loc.y << ")\n"
+               << "  search rows: [" << search_start_row << ", "
+               << search_end_row << "], total rows: " << total_rows << "\n"
+               << "  placement x-boundary(grid): [" << region_left << ", "
+               << region_right << "]\n";
+}
+
+void LogLegalizationFailureSummary(const char* pass_name, size_t iteration,
+                                   int failed_component_count,
+                                   size_t checked_component_count) {
+  LOG(warning) << "ExtendedTetris legalization " << pass_name
+               << " pass failed (iteration " << iteration
+               << "): " << failed_component_count << " of "
+               << checked_component_count
+               << " movable components could not be assigned to legal row "
+                  "space.\n"
+               << "  The local search window expands on each retry; this "
+                  "usually means the remaining row whitespace, fixed "
+                  "blockages, or target density cannot fit those components "
+                  "within the current legalizer settings.\n";
+}
+
+}  // namespace
+
 ExtendedTetrisLegalizer::ExtendedTetrisLegalizer()
     : Placer(),
       row_height_(0),
@@ -632,6 +678,7 @@ bool ExtendedTetrisLegalizer::LocalLegalizationLeft() {
   InitAndSortComponentAscendingX();
 
   bool is_successful = true;
+  int failed_component_count = 0;
   for (auto& component_initial_location : component_initial_locations_) {
     auto& component = *(component_initial_location.component_ptr);
 
@@ -648,6 +695,25 @@ bool ExtendedTetrisLegalizer::LocalLegalizationLeft() {
       bool is_legal_loc_found = FindLocLeft(target_loc, component);
       if (!is_legal_loc_found) {
         is_successful = false;
+        ++failed_component_count;
+        if (logged_legalization_failure_examples_ <
+            kMaxLegalizationFailureExamples) {
+          ++logged_legalization_failure_examples_;
+          int component_row_height = HeightToRow(component.Height());
+          int max_search_row = MaxRow(component.Height());
+          int extended_range = cur_iter_ * component_row_height;
+          int search_start_row = std::max(
+              0, LocToRow(component.LLY() - k_start * component.Height()) -
+                     extended_range);
+          int search_end_row =
+              std::min(max_search_row,
+                       LocToRow(component.LLY() + k_end * component.Height()) +
+                           extended_range);
+          LogLegalizationFailureExample(
+              "left-to-right", cur_iter_, logged_legalization_failure_examples_,
+              component, target_loc, search_start_row, search_end_row,
+              tot_num_rows_, RegionLeft(), RegionRight());
+        }
       }
     }
 
@@ -658,6 +724,12 @@ bool ExtendedTetrisLegalizer::LocalLegalizationLeft() {
     component.SetOrient(orient);
 
     UseSpaceLeft(component);
+  }
+
+  if (failed_component_count > 0) {
+    LogLegalizationFailureSummary("left-to-right", cur_iter_,
+                                  failed_component_count,
+                                  component_initial_locations_.size());
   }
 
   return is_successful;
@@ -959,6 +1031,7 @@ bool ExtendedTetrisLegalizer::LocalLegalizationRight() {
   InitAndSortComponentDescendingX();
 
   bool is_successful = true;
+  int failed_component_count = 0;
   for (auto& component_initial_location : component_initial_locations_) {
     auto& component = *(component_initial_location.component_ptr);
     Value2D<int> target_loc;
@@ -970,6 +1043,25 @@ bool ExtendedTetrisLegalizer::LocalLegalizationRight() {
       bool is_legal_loc_found = FindLocRight(target_loc, component);
       if (!is_legal_loc_found) {
         is_successful = false;
+        ++failed_component_count;
+        if (logged_legalization_failure_examples_ <
+            kMaxLegalizationFailureExamples) {
+          ++logged_legalization_failure_examples_;
+          int component_row_height = HeightToRow(component.Height());
+          int max_search_row = MaxRow(component.Height());
+          int extended_range = cur_iter_ * component_row_height;
+          int search_start_row = std::max(
+              0, LocToRow(component.LLY() - k_start * component.Height()) -
+                     extended_range);
+          int search_end_row =
+              std::min(max_search_row,
+                       LocToRow(component.LLY() + k_end * component.Height()) +
+                           extended_range);
+          LogLegalizationFailureExample(
+              "right-to-left", cur_iter_, logged_legalization_failure_examples_,
+              component, target_loc, search_start_row, search_end_row,
+              tot_num_rows_, RegionLeft(), RegionRight());
+        }
       }
     }
 
@@ -980,6 +1072,12 @@ bool ExtendedTetrisLegalizer::LocalLegalizationRight() {
     component.SetOrient(orient);
 
     UseSpaceRight(component);
+  }
+
+  if (failed_component_count > 0) {
+    LogLegalizationFailureSummary("right-to-left", cur_iter_,
+                                  failed_component_count,
+                                  component_initial_locations_.size());
   }
 
   return is_successful;
@@ -1062,6 +1160,7 @@ bool ExtendedTetrisLegalizer::StartPlacement() {
   PrintStartStatement("ExtendedTetrisLegalizer Legalization");
 
   is_row_assignment_ = false;
+  logged_legalization_failure_examples_ = 0;
   InitLegalizer();
   ResetLeftLimitFactor();
 
@@ -1096,6 +1195,7 @@ bool ExtendedTetrisLegalizer::StartRowAssignment() {
   PrintStartStatement("row assignment");
 
   is_row_assignment_ = true;
+  logged_legalization_failure_examples_ = 0;
   ResetLeftLimitFactor();
 
   bool is_success = false;

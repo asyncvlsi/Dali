@@ -118,6 +118,7 @@ class ExtendedTetrisLegalizer : public Placer {
   bool legalize_from_left_;
 
   bool disable_cell_flip_ = false;
+  int logged_legalization_failure_examples_ = 0;
 
   size_t cur_iter_;
   size_t max_iter_;
