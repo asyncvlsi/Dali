@@ -11,6 +11,7 @@
 #ifndef DALI_PLACER_WELL_LEGALIZER_GRIDDED_DETAILED_PLACER_H_
 #define DALI_PLACER_WELL_LEGALIZER_GRIDDED_DETAILED_PLACER_H_
 
+#include <string>
 #include <vector>
 
 #include "dali/placer/placer.h"
@@ -37,15 +38,49 @@ class GriddedDetailedPlacer : public Placer {
  private:
   static constexpr int kLocalReorderWindowSize = 3;
   static constexpr int kMaxLocalReorderIterations = 6;
+  static constexpr int kMaxDetailedIterations = 2;
+  static constexpr int kMaxSwapCandidatesPerRowPair = 1;
+  static constexpr int kMaxGlobalRowOffset = 4;
   static constexpr double kMinSignificantHpwlImprovement = 1e-9;
 
-  double WireLengthCost(GriddedRow* row, int left_index, int right_index);
+  struct SwapStats {
+    int candidates = 0;
+    int accepted = 0;
+  };
+
+  double WireLengthCost(GriddedRow* row, int left_index, int right_index) const;
   void FindBestLocalOrder(std::vector<Component*>& result, double& cost,
                           GriddedRow* row, int current_index, int left_index,
                           int right_index, int left_bound, int right_bound,
-                          int gap, int window_size);
-  int LocalReorderInRow(GriddedRow* row, int window_size);
+                          int gap, int window_size) const;
+  int LocalReorderInRow(GriddedRow* row, int window_size) const;
   int LocalReorderAllRows();
+  int RunLocalReorderStage();
+
+  bool IsSwapCandidate(Component* component) const;
+  int UsedWidthAfterSwap(GriddedRow* row, Component* removed,
+                         Component* added) const;
+  int RequiredPHeightAfterSwap(GriddedRow* row, Component* removed,
+                               Component* added) const;
+  int RequiredNHeightAfterSwap(GriddedRow* row, Component* removed,
+                               Component* added) const;
+  bool IsNonHeightIncreasingSwap(GriddedRow* first_row,
+                                 Component* first_component,
+                                 GriddedRow* second_row,
+                                 Component* second_component) const;
+  double RowPairWireLengthCost(GriddedRow* first_row,
+                               GriddedRow* second_row) const;
+  void PlaceComponentInRow(GriddedRow* row, Component* component) const;
+  void LegalizeRowsAfterSwap(GriddedRow* first_row, GriddedRow* second_row);
+  bool TrySwap(GriddedRow* first_row, int first_index, GriddedRow* second_row,
+               int second_index);
+  SwapStats TryClosestComponentSwaps(GriddedRow* first_row,
+                                     GriddedRow* second_row,
+                                     int max_candidates);
+  SwapStats RunVerticalSwapStage();
+  SwapStats RunGlobalSwapStage();
+  void LogSwapStage(const std::string& stage_name, const SwapStats& stats,
+                    double hpwl_before);
 
   std::vector<GriddedRow*> rows_;
 };
