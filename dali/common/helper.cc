@@ -24,6 +24,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -34,14 +35,38 @@
 namespace dali {
 
 void SaveArgs(int argc, char* argv[]) {
-  std::string cmd_line_arguments;
-  for (int i = 0; i < argc; ++i) {
-    if (i > 0) {
-      cmd_line_arguments.push_back(' ');
-    }
-    cmd_line_arguments += argv[i];
+  if (argc <= 0) {
+    LOG(info) << "Command: <unknown>\n";
+    return;
   }
-  LOG(info) << "Command: " << cmd_line_arguments << "\n";
+
+  std::vector<std::string> command_parts;
+  command_parts.emplace_back(argv[0]);
+  for (int i = 0; i < argc; ++i) {
+    if (i == 0) {
+      continue;
+    }
+
+    std::string arg = argv[i];
+    if (arg[0] == '-' && i + 1 < argc) {
+      std::string next_arg = argv[i + 1];
+      if (next_arg[0] != '-') {
+        command_parts.emplace_back(arg + " " + next_arg);
+        ++i;
+        continue;
+      }
+    }
+    command_parts.emplace_back(arg);
+  }
+
+  std::string cmd_line_arguments = "Command:\n  ";
+  for (size_t i = 0; i < command_parts.size(); ++i) {
+    cmd_line_arguments += command_parts[i];
+    if (i + 1 < command_parts.size()) {
+      cmd_line_arguments += " \\\n    ";
+    }
+  }
+  LOG(info) << cmd_line_arguments << "\n";
 }
 
 std::vector<std::vector<std::string>> ParseArguments(
