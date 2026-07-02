@@ -307,6 +307,117 @@ double GriddedDetailedPlacer::RowPairWireLengthCost(
   return cost;
 }
 
+double GriddedDetailedPlacer::DistanceToOptimalRegionX(
+    Component* component, const OptimalRegion& region) const {
+  if (component->LLX() < region.lx) {
+    return region.lx - component->LLX();
+  }
+  if (component->LLX() > region.ux) {
+    return component->LLX() - region.ux;
+  }
+  return 0;
+}
+
+double GriddedDetailedPlacer::DistanceToOptimalRegionY(
+    GriddedRow* row, Component* component, const OptimalRegion& region) const {
+  double lly = row->LLY();
+  if (row->IsOrientN()) {
+    lly += row->PHeight() - component->MacroPtr()->FirstPwellHeight();
+  } else {
+    lly += row->NHeight() - component->MacroPtr()->FirstNwellHeight();
+  }
+
+  if (lly < region.ly) {
+    return region.ly - lly;
+  }
+  if (lly > region.uy) {
+    return lly - region.uy;
+  }
+  return 0;
+}
+
+GriddedDetailedPlacer::OptimalRegion
+GriddedDetailedPlacer::ComputeOptimalRegion(Component* component) const {
+  std::vector<double> x_bounds;
+  std::vector<double> y_bounds;
+  auto& nets = ckt_ptr_->Nets();
+  for (int net_id : component->NetList()) {
+    Net& net = nets[net_id];
+    if (net.PinCnt() <= 1 || net.PinCnt() >= 100) {
+      continue;
+    }
+
+    bool found_component_pin = false;
+    double offset_x = 0;
+    double offset_y = 0;
+    double min_x = DBL_MAX;
+    double max_x = -DBL_MAX;
+    double min_y = DBL_MAX;
+    double max_y = -DBL_MAX;
+    for (NetPin& pin : net.ComponentPins()) {
+      if (pin.ComponentPtr() == component) {
+        found_component_pin = true;
+        offset_x = pin.OffsetX();
+        offset_y = pin.OffsetY();
+        continue;
+      }
+      min_x = std::min(min_x, pin.AbsX());
+      max_x = std::max(max_x, pin.AbsX());
+      min_y = std::min(min_y, pin.AbsY());
+      max_y = std::max(max_y, pin.AbsY());
+    }
+
+    if (!found_component_pin || min_x == DBL_MAX) {
+      continue;
+    }
+    x_bounds.push_back(min_x - offset_x);
+    x_bounds.push_back(max_x - offset_x);
+    y_bounds.push_back(min_y - offset_y);
+    y_bounds.push_back(max_y - offset_y);
+  }
+
+  if (x_bounds.empty() || y_bounds.empty()) {
+    return {};
+  }
+
+  std::sort(x_bounds.begin(), x_bounds.end());
+  std::sort(y_bounds.begin(), y_bounds.end());
+  int lx_index = static_cast<int>(x_bounds.size() - 1) / 2;
+  int ux_index = lx_index;
+  if (x_bounds.size() % 2 == 0) {
+    ++ux_index;
+  }
+  int ly_index = static_cast<int>(y_bounds.size() - 1) / 2;
+  int uy_index = ly_index;
+  if (y_bounds.size() % 2 == 0) {
+    ++uy_index;
+  }
+
+  return {true, x_bounds[lx_index], y_bounds[ly_index], x_bounds[ux_index],
+          y_bounds[uy_index]};
+}
+
+double GriddedDetailedPlacer::ComponentPairWireLengthCost(
+    Component* first_component, Component* second_component) const {
+  std::set<int> net_ids;
+  for (int net_id : first_component->NetList()) {
+    if (ckt_ptr_->Nets()[net_id].PinCnt() < 100) {
+      net_ids.insert(net_id);
+    }
+  }
+  for (int net_id : second_component->NetList()) {
+    if (ckt_ptr_->Nets()[net_id].PinCnt() < 100) {
+      net_ids.insert(net_id);
+    }
+  }
+
+  double cost = 0;
+  for (int net_id : net_ids) {
+    cost += ckt_ptr_->Nets()[net_id].WeightedHPWL();
+  }
+  return cost;
+}
+
 void GriddedDetailedPlacer::PlaceComponentInRow(GriddedRow* row,
                                                 Component* component) const {
   component->SetOrient(row->IsOrientN() ? N : FS);
@@ -343,18 +454,31 @@ bool GriddedDetailedPlacer::TrySwap(GriddedRow* first_row, int first_index,
     return false;
   }
 
-  double cost_before = RowPairWireLengthCost(first_row, second_row);
+  double local_cost_before =
+      ComponentPairWireLengthCost(first_component, second_component);
   auto row_state_before_swap = SaveRowState({first_row, second_row});
   std::swap(first_row->Components()[first_index],
             second_row->Components()[second_index]);
   LegalizeRowsAfterSwap(first_row, second_row);
 
-  double cost_after = RowPairWireLengthCost(first_row, second_row);
-  if (cost_after + kMinSignificantHpwlImprovement < cost_before) {
+  double local_cost_after =
+      ComponentPairWireLengthCost(first_component, second_component);
+  if (local_cost_after + kMinSignificantHpwlImprovement >= local_cost_before) {
+    RestoreRowState(row_state_before_swap);
+    return false;
+  }
+
+  double row_pair_cost_after = RowPairWireLengthCost(first_row, second_row);
+  RestoreRowState(row_state_before_swap);
+  double row_pair_cost_before = RowPairWireLengthCost(first_row, second_row);
+  if (row_pair_cost_after + kMinSignificantHpwlImprovement <
+      row_pair_cost_before) {
+    std::swap(first_row->Components()[first_index],
+              second_row->Components()[second_index]);
+    LegalizeRowsAfterSwap(first_row, second_row);
     return true;
   }
 
-  RestoreRowState(row_state_before_swap);
   return false;
 }
 
@@ -419,6 +543,85 @@ GriddedDetailedPlacer::TryClosestComponentSwaps(GriddedRow* first_row,
   return stats;
 }
 
+GriddedDetailedPlacer::SwapStats GriddedDetailedPlacer::TryOptimalRegionSwaps(
+    GriddedRow* source_row, int source_index) {
+  struct CandidateRow {
+    GriddedRow* row = nullptr;
+    double distance = 0;
+  };
+  struct CandidateComponent {
+    int index = -1;
+    double distance = 0;
+  };
+
+  Component* source_component = source_row->Components()[source_index];
+  if (!IsSwapCandidate(source_component)) {
+    return {};
+  }
+
+  OptimalRegion region = ComputeOptimalRegion(source_component);
+  if (!region.valid) {
+    return {};
+  }
+  double current_y_distance =
+      DistanceToOptimalRegionY(source_row, source_component, region);
+  if (current_y_distance <= kMinSignificantHpwlImprovement) {
+    return {};
+  }
+
+  std::vector<CandidateRow> candidate_rows;
+  candidate_rows.reserve(rows_.size());
+  for (GriddedRow* row : rows_) {
+    if (row == source_row) {
+      continue;
+    }
+    double row_distance =
+        DistanceToOptimalRegionY(row, source_component, region);
+    if (row_distance < current_y_distance) {
+      candidate_rows.push_back({row, row_distance});
+    }
+  }
+  std::sort(candidate_rows.begin(), candidate_rows.end(),
+            [](const CandidateRow& lhs, const CandidateRow& rhs) {
+              return lhs.distance < rhs.distance;
+            });
+
+  SwapStats stats;
+  int row_limit = std::min(kMaxOptimalRegionRowsPerComponent,
+                           static_cast<int>(candidate_rows.size()));
+  for (int row_id = 0; row_id < row_limit; ++row_id) {
+    GriddedRow* target_row = candidate_rows[row_id].row;
+    std::vector<CandidateComponent> target_components;
+    target_components.reserve(target_row->Components().size());
+    for (int target_index = 0;
+         target_index < static_cast<int>(target_row->Components().size());
+         ++target_index) {
+      Component* target_component = target_row->Components()[target_index];
+      if (!IsSwapCandidate(target_component)) {
+        continue;
+      }
+      target_components.push_back(
+          {target_index, DistanceToOptimalRegionX(target_component, region)});
+    }
+    std::sort(target_components.begin(), target_components.end(),
+              [](const CandidateComponent& lhs, const CandidateComponent& rhs) {
+                return lhs.distance < rhs.distance;
+              });
+
+    int component_limit = std::min(kMaxOptimalRegionCandidatesPerRow,
+                                   static_cast<int>(target_components.size()));
+    for (int candidate_id = 0; candidate_id < component_limit; ++candidate_id) {
+      ++stats.candidates;
+      if (TrySwap(source_row, source_index, target_row,
+                  target_components[candidate_id].index)) {
+        ++stats.accepted;
+        return stats;
+      }
+    }
+  }
+  return stats;
+}
+
 GriddedDetailedPlacer::SwapStats GriddedDetailedPlacer::RunVerticalSwapStage() {
   SwapStats total_stats;
   for (size_t i = 1; i < rows_.size(); ++i) {
@@ -432,16 +635,13 @@ GriddedDetailedPlacer::SwapStats GriddedDetailedPlacer::RunVerticalSwapStage() {
 
 GriddedDetailedPlacer::SwapStats GriddedDetailedPlacer::RunGlobalSwapStage() {
   SwapStats total_stats;
-  for (size_t i = 0; i < rows_.size(); ++i) {
-    for (int offset = 2; offset <= kMaxGlobalRowOffset; ++offset) {
-      size_t j = i + offset;
-      if (j >= rows_.size()) {
-        break;
-      }
-      SwapStats row_pair_stats = TryClosestComponentSwaps(
-          rows_[i], rows_[j], kMaxSwapCandidatesPerRowPair);
-      total_stats.candidates += row_pair_stats.candidates;
-      total_stats.accepted += row_pair_stats.accepted;
+  for (GriddedRow* row : rows_) {
+    for (int source_index = 0;
+         source_index < static_cast<int>(row->Components().size());
+         ++source_index) {
+      SwapStats component_stats = TryOptimalRegionSwaps(row, source_index);
+      total_stats.candidates += component_stats.candidates;
+      total_stats.accepted += component_stats.accepted;
     }
   }
   return total_stats;

@@ -40,12 +40,21 @@ class GriddedDetailedPlacer : public Placer {
   static constexpr int kMaxLocalReorderIterations = 6;
   static constexpr int kMaxDetailedIterations = 2;
   static constexpr int kMaxSwapCandidatesPerRowPair = 1;
-  static constexpr int kMaxGlobalRowOffset = 4;
+  static constexpr int kMaxOptimalRegionRowsPerComponent = 4;
+  static constexpr int kMaxOptimalRegionCandidatesPerRow = 2;
   static constexpr double kMinSignificantHpwlImprovement = 1e-9;
 
   struct SwapStats {
     int candidates = 0;
     int accepted = 0;
+  };
+
+  struct OptimalRegion {
+    bool valid = false;
+    double lx = 0;
+    double ly = 0;
+    double ux = 0;
+    double uy = 0;
   };
 
   double WireLengthCost(GriddedRow* row, int left_index, int right_index) const;
@@ -70,6 +79,13 @@ class GriddedDetailedPlacer : public Placer {
                                  Component* second_component) const;
   double RowPairWireLengthCost(GriddedRow* first_row,
                                GriddedRow* second_row) const;
+  double DistanceToOptimalRegionX(Component* component,
+                                  const OptimalRegion& region) const;
+  double DistanceToOptimalRegionY(GriddedRow* row, Component* component,
+                                  const OptimalRegion& region) const;
+  OptimalRegion ComputeOptimalRegion(Component* component) const;
+  double ComponentPairWireLengthCost(Component* first_component,
+                                     Component* second_component) const;
   void PlaceComponentInRow(GriddedRow* row, Component* component) const;
   void LegalizeRowsAfterSwap(GriddedRow* first_row, GriddedRow* second_row);
   bool TrySwap(GriddedRow* first_row, int first_index, GriddedRow* second_row,
@@ -77,6 +93,7 @@ class GriddedDetailedPlacer : public Placer {
   SwapStats TryClosestComponentSwaps(GriddedRow* first_row,
                                      GriddedRow* second_row,
                                      int max_candidates);
+  SwapStats TryOptimalRegionSwaps(GriddedRow* source_row, int source_index);
   SwapStats RunVerticalSwapStage();
   SwapStats RunGlobalSwapStage();
   void LogSwapStage(const std::string& stage_name, const SwapStats& stats,
