@@ -56,6 +56,7 @@ TEST_F(DaliCommandLineTest, ParsesRequiredInputsAndKeepsDefaults) {
   EXPECT_EQ(options.def_file_name, "input.def");
   EXPECT_EQ(options.output_name, "dali_out");
   EXPECT_EQ(options.metrics_file_name, "dali_metrics.json");
+  EXPECT_EQ(options.visualization_dir, "");
   EXPECT_EQ(options.verbose_level, dali::severity::info);
 }
 
@@ -64,15 +65,17 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_TRUE(
       Parse({"dali", "-lef", "input.lef", "-def", "input.def", "-output_name",
              "placed", "-metrics_file", "metrics.json", "-target_density",
-             "0.72", "-num_threads", "8", "-io_metal_layer", "3",
-             "-well_legalization_mode", "scavenge", "-global_initializer",
-             "keep", "-save_intermediate_result", "-disable_detailed_place",
-             "-disable_io_place"},
+             "0.72", "-visualization_dir", "dali_viz", "-num_threads", "8",
+             "-io_metal_layer", "3", "-well_legalization_mode", "scavenge",
+             "-global_initializer", "keep", "-save_intermediate_result",
+             "-disable_detailed_place", "-disable_io_place"},
             &options));
 
   EXPECT_EQ(options.output_name, "placed");
   EXPECT_EQ(options.metrics_file_name, "metrics.json");
+  EXPECT_EQ(options.visualization_dir, "dali_viz");
   EXPECT_DOUBLE_EQ(config_get_real("dali.target_density"), 0.72);
+  EXPECT_STREQ(config_get_string("dali.visualization_dir"), "dali_viz");
   EXPECT_EQ(config_get_int("dali.num_threads"), 8);
   EXPECT_EQ(config_get_int("dali.io_metal_layer"), 2);
   EXPECT_STREQ(config_get_string("dali.well_legalization_mode"), "scavenge");

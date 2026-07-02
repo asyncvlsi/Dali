@@ -41,6 +41,8 @@ cmake-build-release/
 build/
 build-asan/
 test-results/
+dali_viz/
+__pycache__/
 
 # Ignore any executables
 bin/

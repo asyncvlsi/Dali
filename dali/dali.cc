@@ -135,7 +135,8 @@ void Dali::ShowParamsList() {
             << "\n"
             << "  save_intermediate_result: " << save_intermediate_result_
             << "\n"
-            << "  output_name: " << output_name_ << "\n";
+            << "  output_name: " << output_name_ << "\n"
+            << "  visualization_dir: " << visualization_dir_ << "\n";
 }
 
 void Dali::LoadParamsFromConfig() {
@@ -193,6 +194,8 @@ void Dali::LoadParamsFromConfig() {
   LoadBoolConfig(ConfigName(prefix_, "save_intermediate_result"),
                  &save_intermediate_result_);
   LoadStringConfig(ConfigName(prefix_, "output_name"), &output_name_);
+  LoadStringConfig(ConfigName(prefix_, "visualization_dir"),
+                   &visualization_dir_);
 }
 
 void Dali::SetLogPrefix(bool disable_log_prefix) {
@@ -231,6 +234,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       global_initializer_,
       save_intermediate_result_,
       output_name_,
+      visualization_dir_,
   };
 }
 
@@ -375,6 +379,8 @@ void Dali::InitializeMainPlacementCircuit() {
   circuit_.ReportBriefSummary();
   ClearPlacementMetrics();
   RecordPlacementMetric("input", circuit_.WeightedHPWL());
+  InitializeVisualizationSnapshots();
+  WriteVisualizationSnapshot("input", "Input", "input");
 }
 
 void Dali::ResolveTargetDensity() {
@@ -425,6 +431,8 @@ bool Dali::RunGlobalPlacementStage() {
   if (export_well_cluster_matlab_) {
     circuit_.GenMATLABTable("gb_result.txt");
   }
+  WriteVisualizationSnapshot("global_placement.final", "After Global Placement",
+                             "global_placement");
   return true;
 }
 
@@ -510,6 +518,8 @@ bool Dali::RunLegalizationStage() {
   if (export_well_cluster_matlab_) {
     circuit_.GenMATLABTable("lg_result.txt");
   }
+  WriteVisualizationSnapshot("legalization.final", "After Legalization",
+                             "legalization");
   return true;
 }
 
@@ -551,6 +561,44 @@ bool Dali::RunPostPlacementCompletionStages() {
   return RunFillerCellPlacement() && RunIoPinPlacementStage();
 }
 
+void Dali::InitializeVisualizationSnapshots() {
+  if (visualization_dir_.empty()) {
+    return;
+  }
+  std::string design_name = circuit_.design().Name();
+  if (design_name.empty() && phy_db_ptr_ != nullptr &&
+      phy_db_ptr_->GetDesignPtr() != nullptr) {
+    design_name = phy_db_ptr_->GetDesignPtr()->GetName();
+  }
+  if (design_name.empty()) {
+    design_name = "unknown";
+  }
+  snapshot_writer_.StartRun(visualization_dir_, design_name,
+                            circuit_.DistanceMicrons(),
+                            get_git_version_short());
+  LOG(info) << "Writing placement visualization snapshots to "
+            << visualization_dir_ << "\n";
+}
+
+void Dali::WriteVisualizationSnapshot(const std::string& id,
+                                      const std::string& label,
+                                      const std::string& group,
+                                      const std::string& subgroup,
+                                      int iteration) {
+  if (!snapshot_writer_.IsEnabled()) {
+    return;
+  }
+  snapshot_writer_.WriteSnapshot(&circuit_, id, label, group, subgroup,
+                                 iteration);
+}
+
+void Dali::FinishVisualizationSnapshots() {
+  if (!snapshot_writer_.IsEnabled()) {
+    return;
+  }
+  snapshot_writer_.FinishRun();
+}
+
 bool Dali::StartPlacement(double density, int number_of_threads) {
   ApplyPlacementOverrides(density, number_of_threads);
   InitializeMainPlacementCircuit();
@@ -562,6 +610,8 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
 
   LOG(debug) << "dali git commit: " << get_git_version_short() << "\n";
   RecordPlacementMetric("final", circuit_.WeightedHPWL());
+  WriteVisualizationSnapshot("final", "Final", "final");
+  FinishVisualizationSnapshots();
 
   return true;
 }

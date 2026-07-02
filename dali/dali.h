@@ -27,6 +27,7 @@
 #include <string>
 
 #include "dali/circuit/circuit.h"
+#include "dali/common/placement_snapshot_writer.h"
 #include "dali/placer.h"
 #include "dali/placer/detailed_placer/detailed_placer.h"
 #include "dali/placer/global_placer/random_initializer.h"
@@ -60,6 +61,7 @@ class Dali {
     RandomInitializerType global_initializer = RandomInitializerType::UNIFORM;
     bool save_intermediate_result = false;
     std::string output_name = "dali_out";
+    std::string visualization_dir;
   };
 
   Dali(phydb::PhyDB* phy_db_ptr, const std::string& severity_level,
@@ -157,6 +159,7 @@ class Dali {
   RandomInitializerType global_initializer_ = RandomInitializerType::UNIFORM;
   bool save_intermediate_result_ = false;
   std::string output_name_ = "dali_out";
+  std::string visualization_dir_;
 
   // circuit and placer
   Circuit circuit_;
@@ -216,8 +219,16 @@ class Dali {
   bool RunPostPlacementCompletionStages();
   bool RunFillerCellPlacement();
   bool RunIoPinPlacementStage();
+  void InitializeVisualizationSnapshots();
+  void WriteVisualizationSnapshot(const std::string& id,
+                                  const std::string& label,
+                                  const std::string& group,
+                                  const std::string& subgroup = "",
+                                  int iteration = -1);
+  void FinishVisualizationSnapshots();
 
   bool is_circuit_initialized_ = false;
+  PlacementSnapshotWriter snapshot_writer_;
 };
 
 }  // namespace dali

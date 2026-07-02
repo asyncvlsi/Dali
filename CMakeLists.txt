@@ -134,6 +134,8 @@ add_library(
     STATIC
     ${SOURCES}
     dali/common/named_instance_registry.h
+    dali/common/placement_snapshot_writer.cc
+    dali/common/placement_snapshot_writer.h
 )
 
 if (DEFINED NEED_LIBCXXFS)
@@ -223,4 +225,5 @@ install(
 
 # Install binaries and libraries
 install(TARGETS dali DESTINATION bin)
+install(PROGRAMS scripts/dali_viz.py RENAME dali_viz DESTINATION bin)
 install(TARGETS dalilib DESTINATION lib)
