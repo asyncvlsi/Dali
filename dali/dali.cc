@@ -26,6 +26,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <string>
+#include <utility>
 
 #include "dali/common/git_version.h"
 #include "dali/common/helper.h"
@@ -108,6 +109,10 @@ Dali::Dali(phydb::PhyDB* phy_db_ptr, severity severity_level,
   InitLogging(log_file_name_, severity_level_, disable_log_prefix_);
 }
 
+void Dali::SetGuiSnapshotSinkFactory(SnapshotSinkFactory factory) {
+  gui_snapshot_sink_factory_ = std::move(factory);
+}
+
 void Dali::ShowParamsList() {
   LOG(info) << "Dali runtime parameters:\n"
             << "  log_file_name: " << log_file_name_ << "\n"
@@ -136,7 +141,9 @@ void Dali::ShowParamsList() {
             << "  save_intermediate_result: " << save_intermediate_result_
             << "\n"
             << "  output_name: " << output_name_ << "\n"
-            << "  visualization_dir: " << visualization_dir_ << "\n";
+            << "  visualization_dir: " << visualization_dir_ << "\n"
+            << "  gui_debug: " << gui_debug_ << "\n"
+            << "  gui_pause: " << gui_pause_ << "\n";
 }
 
 void Dali::LoadParamsFromConfig() {
@@ -196,6 +203,8 @@ void Dali::LoadParamsFromConfig() {
   LoadStringConfig(ConfigName(prefix_, "output_name"), &output_name_);
   LoadStringConfig(ConfigName(prefix_, "visualization_dir"),
                    &visualization_dir_);
+  LoadBoolConfig(ConfigName(prefix_, "gui_debug"), &gui_debug_);
+  LoadStringConfig(ConfigName(prefix_, "gui_pause"), &gui_pause_);
 }
 
 void Dali::SetLogPrefix(bool disable_log_prefix) {
@@ -235,6 +244,8 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       save_intermediate_result_,
       output_name_,
       visualization_dir_,
+      gui_debug_,
+      gui_pause_,
   };
 }
 
@@ -414,6 +425,12 @@ bool Dali::RunGlobalPlacementStage() {
   gb_placer_.SetCircuit(&circuit_);
   gb_placer_.SetNumThreads(num_threads_);
   gb_placer_.SetShouldSaveIntermediateResult(save_intermediate_result_);
+  gb_placer_.SetSnapshotCallback(
+      [this](const std::string& id, const std::string& label,
+             const std::string& subgroup, int iteration) {
+        WriteVisualizationSnapshot("global_placement." + id, label,
+                                   "global_placement", subgroup, iteration);
+      });
   if (disable_global_place_) {
     LOG(info) << "Skip global placement: disabled by configuration\n";
   } else if (!HasMovableComponents()) {
@@ -464,6 +481,8 @@ bool Dali::RunDetailedPlacement() {
     return false;
   }
   RecordPlacementMetric("detailed_placement", circuit_.WeightedHPWL());
+  WriteVisualizationSnapshot("detailed_placement.final",
+                             "After Detailed Placement", "detailed_placement");
   return true;
 }
 
@@ -562,7 +581,8 @@ bool Dali::RunPostPlacementCompletionStages() {
 }
 
 void Dali::InitializeVisualizationSnapshots() {
-  if (visualization_dir_.empty()) {
+  if (visualization_dir_.empty() && !gui_debug_) {
+    snapshot_sink_.reset();
     return;
   }
   std::string design_name = circuit_.design().Name();
@@ -573,9 +593,31 @@ void Dali::InitializeVisualizationSnapshots() {
   if (design_name.empty()) {
     design_name = "unknown";
   }
-  snapshot_writer_.StartRun(visualization_dir_, design_name,
-                            circuit_.DistanceMicrons(),
-                            get_git_version_short());
+  PlacementSnapshotRunMetadata run_metadata;
+  run_metadata.output_dir = visualization_dir_;
+  run_metadata.design_name = design_name;
+  run_metadata.database_microns = circuit_.DistanceMicrons();
+  run_metadata.git_commit = get_git_version_short();
+  run_metadata.pause_at_every_snapshot = gui_pause_ != "off";
+
+  if (gui_debug_) {
+    if (!gui_snapshot_sink_factory_) {
+      LOG(error)
+          << "GUI debug mode requested, but this Dali executable does "
+             "not include a GUI snapshot sink. Rebuild with Qt6 "
+             "available, or configure with -DDALI_GUI=ON to require it.\n";
+      snapshot_sink_.reset();
+      return;
+    }
+    auto gui_sink = gui_snapshot_sink_factory_();
+    gui_sink->StartRun(run_metadata);
+    snapshot_sink_ = std::move(gui_sink);
+    return;
+  }
+
+  auto snapshot_writer = std::make_unique<PlacementSnapshotWriter>();
+  snapshot_writer->StartRun(run_metadata);
+  snapshot_sink_ = std::move(snapshot_writer);
   LOG(info) << "Writing placement visualization snapshots to "
             << visualization_dir_ << "\n";
 }
@@ -585,18 +627,23 @@ void Dali::WriteVisualizationSnapshot(const std::string& id,
                                       const std::string& group,
                                       const std::string& subgroup,
                                       int iteration) {
-  if (!snapshot_writer_.IsEnabled()) {
+  if (snapshot_sink_ == nullptr || !snapshot_sink_->IsEnabled()) {
     return;
   }
-  snapshot_writer_.WriteSnapshot(&circuit_, id, label, group, subgroup,
-                                 iteration);
+  PlacementSnapshotMetadata metadata;
+  metadata.id = id;
+  metadata.label = label;
+  metadata.group = group;
+  metadata.subgroup = subgroup;
+  metadata.iteration = iteration;
+  snapshot_sink_->PublishSnapshot(&circuit_, metadata);
 }
 
 void Dali::FinishVisualizationSnapshots() {
-  if (!snapshot_writer_.IsEnabled()) {
+  if (snapshot_sink_ == nullptr || !snapshot_sink_->IsEnabled()) {
     return;
   }
-  snapshot_writer_.FinishRun();
+  snapshot_sink_->FinishRun();
 }
 
 bool Dali::StartPlacement(double density, int number_of_threads) {

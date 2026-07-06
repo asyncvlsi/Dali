@@ -21,6 +21,8 @@
 #ifndef DALI_PLACER_GLOBAL_PLACER_GLOBAL_PLACER_H_
 #define DALI_PLACER_GLOBAL_PLACER_GLOBAL_PLACER_H_
 
+#include <functional>
+#include <string>
 #include <vector>
 
 #include "dali/placer/global_placer/hpwl_optimizer.h"
@@ -41,6 +43,14 @@ class GlobalPlacer : public Placer {
 
   /** Enable or disable intermediate placement dumps. */
   void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
+
+  /** Callback used by the application to emit visualization snapshots. */
+  using SnapshotCallback =
+      std::function<void(const std::string& id, const std::string& label,
+                         const std::string& subgroup, int iteration)>;
+
+  /** Set a callback invoked after each global-placement iteration step. */
+  void SetSnapshotCallback(SnapshotCallback snapshot_callback);
 
   /** Select how movable component locations are initialized before placement.
    */
@@ -78,12 +88,16 @@ class GlobalPlacer : public Placer {
   bool IsPlacementConverged();
   void PreparePlacement();
   void RunPlacementIterations();
+  void EmitIterationSnapshot(const std::string& id_suffix,
+                             const std::string& label_suffix,
+                             const std::string& subgroup);
   void FinalizePlacement();
   void PrintHpwl() const;
   void PrintEndStatement(std::string const& name_of_process,
                          bool is_success) override;
 
   RandomInitializerType initializer_type_ = RandomInitializerType::UNIFORM;
+  SnapshotCallback snapshot_callback_;
   HpwlOptimizer* optimizer_ = nullptr;
   RoughLegalizer* legalizer_ = nullptr;
 };

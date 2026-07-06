@@ -23,10 +23,12 @@
 
 #include <phydb/phydb.h>
 
+#include <functional>
 #include <memory>
 #include <string>
 
 #include "dali/circuit/circuit.h"
+#include "dali/common/placement_snapshot_sink.h"
 #include "dali/common/placement_snapshot_writer.h"
 #include "dali/placer.h"
 #include "dali/placer/detailed_placer/detailed_placer.h"
@@ -62,6 +64,8 @@ class Dali {
     bool save_intermediate_result = false;
     std::string output_name = "dali_out";
     std::string visualization_dir;
+    bool gui_debug = false;
+    std::string gui_pause = "every_snapshot";
   };
 
   Dali(phydb::PhyDB* phy_db_ptr, const std::string& severity_level,
@@ -69,6 +73,10 @@ class Dali {
   Dali(phydb::PhyDB* phy_db_ptr, severity severity_level,
        const std::string& log_file_name = "");
   ~Dali() = default;
+
+  using SnapshotSinkFactory =
+      std::function<std::unique_ptr<PlacementSnapshotSink>()>;
+  void SetGuiSnapshotSinkFactory(SnapshotSinkFactory factory);
 
   /** Load runtime options from the ACT config database. */
   void ShowParamsList();
@@ -160,6 +168,8 @@ class Dali {
   bool save_intermediate_result_ = false;
   std::string output_name_ = "dali_out";
   std::string visualization_dir_;
+  bool gui_debug_ = false;
+  std::string gui_pause_ = "every_snapshot";
 
   // circuit and placer
   Circuit circuit_;
@@ -228,7 +238,8 @@ class Dali {
   void FinishVisualizationSnapshots();
 
   bool is_circuit_initialized_ = false;
-  PlacementSnapshotWriter snapshot_writer_;
+  std::unique_ptr<PlacementSnapshotSink> snapshot_sink_;
+  SnapshotSinkFactory gui_snapshot_sink_factory_;
 };
 
 }  // namespace dali

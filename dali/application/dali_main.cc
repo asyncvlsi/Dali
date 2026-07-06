@@ -23,6 +23,7 @@
 #include <chrono>
 #include <ctime>
 #include <iostream>
+#include <memory>
 
 #include "dali/application/dali_command_line.h"
 #include "dali/common/elapsed_time.h"
@@ -31,6 +32,9 @@
 #include "dali/common/logging.h"
 #include "dali/common/placement_metrics.h"
 #include "dali/dali.h"
+#ifdef DALI_HAS_QT_GUI
+#include "dali/gui/qt_placement_snapshot_sink.h"
+#endif
 
 using namespace dali;
 
@@ -96,6 +100,10 @@ int main(int argc, char* argv[]) {
   InitializePhyDb(options, &phy_db);
 
   Dali dali(&phy_db, options.verbose_level, options.log_file_name);
+#ifdef DALI_HAS_QT_GUI
+  dali.SetGuiSnapshotSinkFactory(
+      [] { return std::make_unique<QtPlacementSnapshotSink>(); });
+#endif
 
   // print the current time
   using std::chrono::system_clock;

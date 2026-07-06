@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <cfloat>
 #include <memory>
+#include <utility>
 
 #include "dali/common/logging.h"
 #include "dali/common/placement_metrics.h"
@@ -50,6 +51,10 @@ void GlobalPlacer::SetMaxIteration(int max_iter) {
 void GlobalPlacer::SetShouldSaveIntermediateResult(
     bool should_save_intermediate_result) {
   should_save_intermediate_result_ = should_save_intermediate_result;
+}
+
+void GlobalPlacer::SetSnapshotCallback(SnapshotCallback snapshot_callback) {
+  snapshot_callback_ = std::move(snapshot_callback);
 }
 
 void GlobalPlacer::SetInitializerType(RandomInitializerType initializer_type) {
@@ -153,10 +158,27 @@ void GlobalPlacer::RunPlacementIterations() {
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     optimizer_->SetIteration(cur_iter_);
     optimizer_->OptimizeHpwl();
+    EmitIterationSnapshot("lower_bound", "Lower Bound", "lower_bound");
     legalizer_->RemoveComponentOverlap();
+    EmitIterationSnapshot("upper_bound", "Upper Bound", "upper_bound");
     PrintHpwl();
     if (IsPlacementConverged()) break;
   }
+}
+
+void GlobalPlacer::EmitIterationSnapshot(const std::string& id_suffix,
+                                         const std::string& label_suffix,
+                                         const std::string& subgroup) {
+  if (!snapshot_callback_) return;
+
+  char buffer[128];
+  snprintf(buffer, sizeof(buffer), "iter_%03d.%s", cur_iter_,
+           id_suffix.c_str());
+  std::string id = buffer;
+  snprintf(buffer, sizeof(buffer), "Iteration %d %s", cur_iter_,
+           label_suffix.c_str());
+  std::string label = buffer;
+  snapshot_callback_(id, label, subgroup, cur_iter_);
 }
 
 void GlobalPlacer::FinalizePlacement() {

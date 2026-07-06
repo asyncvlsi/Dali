@@ -67,6 +67,8 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -o/-output_name <output_name>.def          (optional, default output def file name dali_out.def)\n"
       << "  -metrics_file <file.json>                  (optional, default dali_metrics.json)\n"
       << "  -visualization_dir <dir>                   emit placement visualization snapshots\n"
+      << "  -gui_debug                                 show live placement debug GUI when built with Qt\n"
+      << "  -gui_pause <every_snapshot/off>            GUI pause policy, default every_snapshot\n"
       << "  -g/-grid <grid_value_x> <grid_value_y>     (optional, default metal1 and metal2 pitch values)\n"
       << "  -d/-target_density <density>               (optional, value interval (0,1], default max(space_utility, 0.7))\n"
       << "  -disable_legalization                      optional, if this flag is present, then legalization is skipped\n"
@@ -130,6 +132,18 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       }
       config_set_string("dali.visualization_dir",
                         options->visualization_dir.c_str());
+    } else if (arg == "-gui_debug") {
+      EnableConfigFlag("dali.gui_debug");
+    } else if (arg == "-gui_pause") {
+      if (!TryGetValue(argc, argv, &i, &value)) {
+        error_output << "Invalid GUI pause policy!\n";
+        return false;
+      }
+      if (value != "every_snapshot" && value != "off") {
+        error_output << "Invalid GUI pause policy!\n";
+        return false;
+      }
+      config_set_string("dali.gui_pause", value.c_str());
     } else if (arg == "-v") {
       if (!TryGetValue(argc, argv, &i, &value)) {
         error_output << "Invalid verbosity level!\n";

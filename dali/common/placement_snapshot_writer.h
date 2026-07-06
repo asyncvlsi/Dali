@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "dali/circuit/circuit.h"
+#include "dali/common/placement_snapshot_sink.h"
 
 namespace dali {
 
@@ -37,58 +38,52 @@ struct PlacementSnapshotRecord {
  * The writer emits a manifest plus numbered snapshot folders:
  *
  *   manifest.json
- *   snapshots/0/{metadata,components,nets,top_net_pins,bottom_net_pins}.json
- *   snapshots/1/{metadata,components,nets,top_net_pins,bottom_net_pins}.json
+ *   shared/{components,nets,pins}.bin
+ *   snapshots/0/{metadata.json,components.bin,net_metrics.bin}
+ *   snapshots/1/{metadata.json,components.bin,net_metrics.bin}
  *
- * Coordinates are written in microns so visualizers do not need to know Dali's
- * internal grid values.
+ * Legalized snapshots use integer grid coordinates when all component
+ * lower-left locations are grid-aligned. Continuous placement snapshots use
+ * float micron coordinates.
  */
-class PlacementSnapshotWriter {
+class PlacementSnapshotWriter : public PlacementSnapshotSink {
  public:
   void StartRun(const std::filesystem::path& output_dir,
                 const std::string& design_name, int database_microns,
                 const std::string& git_commit);
+  void StartRun(const PlacementSnapshotRunMetadata& metadata) override;
 
-  bool IsEnabled() const { return enabled_; }
+  bool IsEnabled() const override { return enabled_; }
 
   void WriteSnapshot(Circuit* circuit, const std::string& id,
                      const std::string& label, const std::string& group,
                      const std::string& subgroup = "", int iteration = -1);
+  void PublishSnapshot(Circuit* circuit,
+                       const PlacementSnapshotMetadata& metadata) override;
 
-  void FinishRun();
+  void FinishRun() override;
 
  private:
   struct NetSummary {
     Net* net = nullptr;
     double weighted_hpwl = 0;
-    double lx = 0;
-    double ly = 0;
-    double ux = 0;
-    double uy = 0;
   };
-
-  static constexpr int kMaxTopNetPinCount = 3;
-  static constexpr double kStoredNetPercent = 100.0;
 
   std::filesystem::path SnapshotPath(int index) const;
   std::vector<NetSummary> BuildNetSummaries(Circuit* circuit) const;
-  std::vector<NetSummary> SelectTopNetSummaries(
-      std::vector<NetSummary> summaries) const;
-  std::vector<NetSummary> SelectBottomNetSummaries(
-      std::vector<NetSummary> summaries) const;
 
+  bool UseGridCoordinates(Circuit* circuit) const;
+  void WriteSharedDesign(Circuit* circuit);
   void WriteMetadata(Circuit* circuit, const PlacementSnapshotRecord& record,
-                     const std::filesystem::path& snapshot_dir) const;
-  void WriteComponents(Circuit* circuit,
+                     const std::filesystem::path& snapshot_dir,
+                     bool use_grid_coordinates) const;
+  void WriteSharedComponents(Circuit* circuit) const;
+  void WriteSharedNets(Circuit* circuit) const;
+  void WriteComponentLocations(Circuit* circuit,
+                               const std::filesystem::path& snapshot_dir,
+                               bool use_grid_coordinates) const;
+  void WriteNetMetrics(const std::vector<NetSummary>& summaries,
                        const std::filesystem::path& snapshot_dir) const;
-  void WriteNets(Circuit* circuit, const std::vector<NetSummary>& summaries,
-                 const std::filesystem::path& snapshot_dir) const;
-  void WriteTopNetPins(Circuit* circuit,
-                       const std::vector<NetSummary>& summaries,
-                       const std::filesystem::path& snapshot_dir) const;
-  void WriteBottomNetPins(Circuit* circuit,
-                          const std::vector<NetSummary>& summaries,
-                          const std::filesystem::path& snapshot_dir) const;
   void WriteManifest() const;
 
   std::filesystem::path output_dir_;
@@ -97,6 +92,7 @@ class PlacementSnapshotWriter {
   std::string git_commit_;
   std::vector<PlacementSnapshotRecord> records_;
   bool enabled_ = false;
+  bool shared_design_written_ = false;
 };
 
 }  // namespace dali

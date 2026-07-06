@@ -11,9 +11,13 @@
 #include "dali/common/placement_snapshot_writer.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstdint>
 #include <fstream>
 #include <iomanip>
+#include <iterator>
+#include <limits>
 #include <sstream>
 
 #include "dali/circuit/enums.h"
@@ -21,6 +25,68 @@
 
 namespace dali {
 namespace {
+
+constexpr uint32_t kBinarySchemaVersion = 1;
+constexpr uint32_t kInvalidIndex = std::numeric_limits<uint32_t>::max();
+constexpr size_t kDrawableNetMaxPinCount = 3;
+
+struct BinaryHeader {
+  char magic[8];
+  uint32_t schema_version;
+  uint32_t record_size;
+  uint64_t record_count;
+};
+
+struct SharedComponentRecord {
+  uint32_t id;
+  float width_um;
+  float height_um;
+  uint8_t initial_status;
+  uint8_t reserved[3];
+};
+
+struct SharedNetRecord {
+  uint32_t id;
+  uint32_t first_pin;
+  uint32_t pin_count;
+  uint32_t drawable_pin_count;
+};
+
+struct SharedPinRecord {
+  uint32_t component_id;
+  float offset_um[16];
+};
+
+struct ComponentGridRecord {
+  uint32_t id;
+  int32_t x_grid;
+  int32_t y_grid;
+  uint8_t orient;
+  uint8_t status;
+  uint8_t reserved[2];
+};
+
+struct ComponentContinuousRecord {
+  uint32_t id;
+  float x_um;
+  float y_um;
+  uint8_t orient;
+  uint8_t status;
+  uint8_t reserved[2];
+};
+
+struct NetMetricRecord {
+  uint32_t id;
+  float weighted_hpwl_um;
+};
+
+static_assert(sizeof(BinaryHeader) == 24);
+static_assert(sizeof(SharedComponentRecord) == 16);
+static_assert(sizeof(SharedNetRecord) == 16);
+static_assert(sizeof(SharedPinRecord) == 68);
+static_assert(sizeof(ComponentGridRecord) == 16);
+static_assert(sizeof(ComponentContinuousRecord) == 16);
+static_assert(sizeof(NetMetricRecord) == 8);
 
 std::string JsonEscape(const std::string& text) {
   std::ostringstream escaped;
@@ -69,6 +135,31 @@ double ToMicronY(Circuit* circuit, double y) {
 
 bool NetHasComponentPins(Net& net) { return !net.ComponentPins().empty(); }
 
+bool IsVisualizationComponent(Circuit* circuit, Component& component) {
+  return component.MacroPtr() != circuit->tech().IoDummyMacroPtr();
+}
+
+bool IsDrawableNet(Net& net) {
+  return NetHasComponentPins(net) &&
+         net.ComponentPins().size() <= kDrawableNetMaxPinCount;
+}
+
+template <typename Record>
+void WriteBinaryTable(const std::filesystem::path& path, const char (&magic)[8],
+                      const std::vector<Record>& records) {
+  std::ofstream out(path, std::ios::binary);
+  BinaryHeader header{};
+  std::copy(std::begin(magic), std::end(magic), std::begin(header.magic));
+  header.schema_version = kBinarySchemaVersion;
+  header.record_size = sizeof(Record);
+  header.record_count = records.size();
+  out.write(reinterpret_cast<const char*>(&header), sizeof(header));
+  if (!records.empty()) {
+    out.write(reinterpret_cast<const char*>(records.data()),
+              static_cast<std::streamsize>(records.size() * sizeof(Record)));
+  }
+}
+
 }  // namespace
 
 void PlacementSnapshotWriter::StartRun(const std::filesystem::path& output_dir,
@@ -81,11 +172,19 @@ void PlacementSnapshotWriter::StartRun(const std::filesystem::path& output_dir,
   git_commit_ = git_commit;
   records_.clear();
   enabled_ = !output_dir_.empty();
+  shared_design_written_ = false;
   if (!enabled_) {
     return;
   }
 
   std::filesystem::create_directories(output_dir_ / "snapshots");
+  std::filesystem::create_directories(output_dir_ / "shared");
+}
+
+void PlacementSnapshotWriter::StartRun(
+    const PlacementSnapshotRunMetadata& metadata) {
+  StartRun(metadata.output_dir, metadata.design_name, metadata.database_microns,
+           metadata.git_commit);
 }
 
 std::filesystem::path PlacementSnapshotWriter::SnapshotPath(int index) const {
@@ -101,72 +200,27 @@ PlacementSnapshotWriter::BuildNetSummaries(Circuit* circuit) const {
       continue;
     }
 
-    double min_x = std::numeric_limits<double>::max();
-    double min_y = std::numeric_limits<double>::max();
-    double max_x = std::numeric_limits<double>::lowest();
-    double max_y = std::numeric_limits<double>::lowest();
-    for (NetPin& pin : net.ComponentPins()) {
-      min_x = std::min(min_x, pin.AbsX());
-      min_y = std::min(min_y, pin.AbsY());
-      max_x = std::max(max_x, pin.AbsX());
-      max_y = std::max(max_y, pin.AbsY());
-    }
-
-    summaries.push_back({&net,
-                         net.WeightedHPWLX() * circuit->GridValueX() +
-                             net.WeightedHPWLY() * circuit->GridValueY(),
-                         ToMicronX(circuit, min_x), ToMicronY(circuit, min_y),
-                         ToMicronX(circuit, max_x), ToMicronY(circuit, max_y)});
+    summaries.push_back(
+        {&net, net.WeightedHPWLX() * circuit->GridValueX() +
+                   net.WeightedHPWLY() * circuit->GridValueY()});
   }
   return summaries;
 }
 
-std::vector<PlacementSnapshotWriter::NetSummary>
-PlacementSnapshotWriter::SelectTopNetSummaries(
-    std::vector<NetSummary> summaries) const {
-  constexpr double kMinDrawableSpan = 1e-9;
-  summaries.erase(
-      std::remove_if(summaries.begin(), summaries.end(),
-                     [](const NetSummary& summary) {
-                       return summary.net->PinCnt() > kMaxTopNetPinCount ||
-                              ((summary.ux - summary.lx) <= kMinDrawableSpan &&
-                               (summary.uy - summary.ly) <= kMinDrawableSpan);
-                     }),
-      summaries.end());
-  std::sort(summaries.begin(), summaries.end(),
-            [](const NetSummary& lhs, const NetSummary& rhs) {
-              return lhs.weighted_hpwl > rhs.weighted_hpwl;
-            });
-
-  size_t keep_count = static_cast<size_t>(
-      std::ceil(summaries.size() * kStoredNetPercent / 100.0));
-  keep_count = std::min(keep_count, summaries.size());
-  summaries.resize(keep_count);
-  return summaries;
-}
-
-std::vector<PlacementSnapshotWriter::NetSummary>
-PlacementSnapshotWriter::SelectBottomNetSummaries(
-    std::vector<NetSummary> summaries) const {
-  constexpr double kMinDrawableSpan = 1e-9;
-  summaries.erase(
-      std::remove_if(summaries.begin(), summaries.end(),
-                     [](const NetSummary& summary) {
-                       return summary.net->PinCnt() > kMaxTopNetPinCount ||
-                              ((summary.ux - summary.lx) <= kMinDrawableSpan &&
-                               (summary.uy - summary.ly) <= kMinDrawableSpan);
-                     }),
-      summaries.end());
-  std::sort(summaries.begin(), summaries.end(),
-            [](const NetSummary& lhs, const NetSummary& rhs) {
-              return lhs.weighted_hpwl < rhs.weighted_hpwl;
-            });
-
-  size_t keep_count = static_cast<size_t>(
-      std::ceil(summaries.size() * kStoredNetPercent / 100.0));
-  keep_count = std::min(keep_count, summaries.size());
-  summaries.resize(keep_count);
-  return summaries;
+bool PlacementSnapshotWriter::UseGridCoordinates(Circuit* circuit) const {
+  constexpr double kGridTolerance = 1e-6;
+  for (Component& component : circuit->Components()) {
+    if (!IsVisualizationComponent(circuit, component)) {
+      continue;
+    }
+    if (std::abs(component.LLX() - std::round(component.LLX())) >
+            kGridTolerance ||
+        std::abs(component.LLY() - std::round(component.LLY())) >
+            kGridTolerance) {
+      return false;
+    }
+  }
+  return true;
 }
 
 void PlacementSnapshotWriter::WriteSnapshot(
@@ -179,6 +233,7 @@ void PlacementSnapshotWriter::WriteSnapshot(
   int index = static_cast<int>(records_.size());
   std::filesystem::path snapshot_dir = SnapshotPath(index);
   std::filesystem::create_directories(snapshot_dir);
+  WriteSharedDesign(circuit);
 
   PlacementSnapshotRecord record;
   record.index = index;
@@ -191,28 +246,38 @@ void PlacementSnapshotWriter::WriteSnapshot(
   record.path = "snapshots/" + std::to_string(index);
 
   std::vector<NetSummary> net_summaries = BuildNetSummaries(circuit);
-  std::vector<NetSummary> top_net_summaries =
-      SelectTopNetSummaries(net_summaries);
-  std::vector<NetSummary> bottom_net_summaries =
-      SelectBottomNetSummaries(net_summaries);
+  bool use_grid_coordinates = UseGridCoordinates(circuit);
 
-  WriteMetadata(circuit, record, snapshot_dir);
-  WriteComponents(circuit, snapshot_dir);
-  WriteNets(circuit, net_summaries, snapshot_dir);
-  WriteTopNetPins(circuit, top_net_summaries, snapshot_dir);
-  WriteBottomNetPins(circuit, bottom_net_summaries, snapshot_dir);
+  WriteMetadata(circuit, record, snapshot_dir, use_grid_coordinates);
+  WriteComponentLocations(circuit, snapshot_dir, use_grid_coordinates);
+  WriteNetMetrics(net_summaries, snapshot_dir);
 
   records_.push_back(record);
   WriteManifest();
 }
 
+void PlacementSnapshotWriter::PublishSnapshot(
+    Circuit* circuit, const PlacementSnapshotMetadata& metadata) {
+  WriteSnapshot(circuit, metadata.id, metadata.label, metadata.group,
+                metadata.subgroup, metadata.iteration);
+}
+
+void PlacementSnapshotWriter::WriteSharedDesign(Circuit* circuit) {
+  if (shared_design_written_) return;
+  WriteSharedComponents(circuit);
+  WriteSharedNets(circuit);
+  shared_design_written_ = true;
+}
+
 void PlacementSnapshotWriter::WriteMetadata(
     Circuit* circuit, const PlacementSnapshotRecord& record,
-    const std::filesystem::path& snapshot_dir) const {
+    const std::filesystem::path& snapshot_dir,
+    bool use_grid_coordinates) const {
   std::ofstream out(snapshot_dir / "metadata.json");
   out << std::setprecision(12);
   out << "{\n";
-  out << "  \"schema_version\": 1,\n";
+  out << "  \"schema_version\": 2,\n";
+  out << "  \"encoding\": \"binary-le\",\n";
   out << "  \"index\": " << record.index << ",\n";
   out << "  \"id\": ";
   WriteJsonString(out, record.id);
@@ -228,141 +293,122 @@ void PlacementSnapshotWriter::WriteMetadata(
       << ", \"ly\": " << ToMicronY(circuit, circuit->RegionLLY())
       << ", \"ux\": " << ToMicronX(circuit, circuit->RegionURX())
       << ", \"uy\": " << ToMicronY(circuit, circuit->RegionURY()) << "},\n";
+  out << "  \"grid\": {\"x\": " << circuit->GridValueX()
+      << ", \"y\": " << circuit->GridValueY() << "},\n";
   out << "  \"component_count\": " << circuit->Components().size() << ",\n";
   out << "  \"net_count\": " << circuit->Nets().size() << ",\n";
-  out << "  \"top_net_policy\": {\"percent\": " << kStoredNetPercent
-      << ", \"max_pin_count\": " << kMaxTopNetPinCount << "},\n";
+  out << "  \"net_draw_policy\": {\"max_pin_count\": 3},\n";
+  out << "  \"coordinate_type\": ";
+  WriteJsonString(out, use_grid_coordinates ? "grid_int" : "continuous_um");
+  out << ",\n";
   out << "  \"available_payloads\": {\n";
-  out << "    \"components\": \"components.json\",\n";
-  out << "    \"nets\": \"nets.json\",\n";
-  out << "    \"top_net_pins\": \"top_net_pins.json\",\n";
-  out << "    \"bottom_net_pins\": \"bottom_net_pins.json\"\n";
+  out << "    \"components\": \"components.bin\",\n";
+  out << "    \"net_metrics\": \"net_metrics.bin\"\n";
   out << "  }\n";
   out << "}\n";
 }
 
-void PlacementSnapshotWriter::WriteComponents(
-    Circuit* circuit, const std::filesystem::path& snapshot_dir) const {
-  std::ofstream out(snapshot_dir / "components.json");
-  out << std::setprecision(12);
-  out << "[\n";
-  bool first = true;
+void PlacementSnapshotWriter::WriteSharedComponents(Circuit* circuit) const {
+  std::vector<SharedComponentRecord> records;
+  records.reserve(circuit->Components().size());
   for (Component& component : circuit->Components()) {
-    if (component.MacroPtr() == circuit->tech().IoDummyMacroPtr()) {
+    if (!IsVisualizationComponent(circuit, component)) {
       continue;
     }
-    if (!first) {
-      out << ",\n";
-    }
-    first = false;
-    out << "  {\"id\": " << component.Id() << ", \"name\": ";
-    WriteJsonString(out, component.Name());
-    out << ", \"macro\": ";
-    WriteJsonString(out, component.MacroPtr()->Name());
-    out << ", \"x\": " << ToMicronX(circuit, component.LLX())
-        << ", \"y\": " << ToMicronY(circuit, component.LLY())
-        << ", \"w\": " << component.Width() * circuit->GridValueX()
-        << ", \"h\": " << component.Height() * circuit->GridValueY()
-        << ", \"orient\": ";
-    WriteJsonString(out, OrientStr(component.Orient()));
-    out << ", \"status\": ";
-    WriteJsonString(out, component.StatusStr());
-    out << "}";
+    records.push_back(
+        {static_cast<uint32_t>(component.Id()),
+         static_cast<float>(component.Width() * circuit->GridValueX()),
+         static_cast<float>(component.Height() * circuit->GridValueY()),
+         static_cast<uint8_t>(component.Status()),
+         {0, 0, 0}});
   }
-  out << "\n]\n";
+  WriteBinaryTable(output_dir_ / "shared" / "components.bin", "DALICMP",
+                   records);
 }
 
-void PlacementSnapshotWriter::WriteNets(
-    Circuit* /*circuit*/, const std::vector<NetSummary>& summaries,
-    const std::filesystem::path& snapshot_dir) const {
-  std::ofstream out(snapshot_dir / "nets.json");
-  out << std::setprecision(12);
-  out << "[\n";
-  for (size_t i = 0; i < summaries.size(); ++i) {
-    const NetSummary& summary = summaries[i];
-    if (i > 0) {
-      out << ",\n";
+void PlacementSnapshotWriter::WriteSharedNets(Circuit* circuit) const {
+  constexpr ComponentOrient kOrientations[] = {N, S, W, E, FN, FS, FW, FE};
+  std::vector<SharedNetRecord> net_records;
+  std::vector<SharedPinRecord> pin_records;
+  net_records.reserve(circuit->Nets().size());
+  for (Net& net : circuit->Nets()) {
+    if (!NetHasComponentPins(net)) {
+      continue;
     }
-    out << "  {\"id\": " << summary.net->Id() << ", \"name\": ";
-    WriteJsonString(out, summary.net->Name());
-    out << ", \"weighted_hpwl\": " << summary.weighted_hpwl
-        << ", \"pin_count\": " << summary.net->PinCnt()
-        << ", \"bbox\": {\"lx\": " << summary.lx << ", \"ly\": " << summary.ly
-        << ", \"ux\": " << summary.ux << ", \"uy\": " << summary.uy << "}}";
-  }
-  out << "\n]\n";
-}
-
-void PlacementSnapshotWriter::WriteTopNetPins(
-    Circuit* circuit, const std::vector<NetSummary>& summaries,
-    const std::filesystem::path& snapshot_dir) const {
-  std::ofstream out(snapshot_dir / "top_net_pins.json");
-  out << std::setprecision(12);
-  out << "[\n";
-  for (size_t i = 0; i < summaries.size(); ++i) {
-    const NetSummary& summary = summaries[i];
-    if (i > 0) {
-      out << ",\n";
-    }
-    out << "  {\"id\": " << summary.net->Id() << ", \"name\": ";
-    WriteJsonString(out, summary.net->Name());
-    out << ", \"weighted_hpwl\": " << summary.weighted_hpwl
-        << ", \"pin_count\": " << summary.net->PinCnt()
-        << ", \"bbox\": {\"lx\": " << summary.lx << ", \"ly\": " << summary.ly
-        << ", \"ux\": " << summary.ux << ", \"uy\": " << summary.uy
-        << "}, \"pins\": [";
-    for (size_t pin_id = 0; pin_id < summary.net->ComponentPins().size();
-         ++pin_id) {
-      NetPin& pin = summary.net->ComponentPins()[pin_id];
-      if (pin_id > 0) {
-        out << ", ";
+    uint32_t first_pin = kInvalidIndex;
+    uint32_t drawable_pin_count = 0;
+    if (IsDrawableNet(net)) {
+      first_pin = static_cast<uint32_t>(pin_records.size());
+      drawable_pin_count = static_cast<uint32_t>(net.ComponentPins().size());
+      for (NetPin& pin : net.ComponentPins()) {
+        SharedPinRecord pin_record{};
+        pin_record.component_id = static_cast<uint32_t>(pin.ComponentId());
+        for (size_t orient_id = 0; orient_id < std::size(kOrientations);
+             ++orient_id) {
+          ComponentOrient orient = kOrientations[orient_id];
+          pin_record.offset_um[2 * orient_id] = static_cast<float>(
+              ToMicronX(circuit, pin.PinPtr()->OffsetX(orient)));
+          pin_record.offset_um[2 * orient_id + 1] = static_cast<float>(
+              ToMicronY(circuit, pin.PinPtr()->OffsetY(orient)));
+        }
+        pin_records.push_back(pin_record);
       }
-      out << "{\"component_id\": " << pin.ComponentId() << ", \"component\": ";
-      WriteJsonString(out, pin.ComponentName());
-      out << ", \"pin\": ";
-      WriteJsonString(out, pin.PinName());
-      out << ", \"x\": " << ToMicronX(circuit, pin.AbsX())
-          << ", \"y\": " << ToMicronY(circuit, pin.AbsY()) << "}";
     }
-    out << "]}";
+    net_records.push_back({static_cast<uint32_t>(net.Id()), first_pin,
+                           static_cast<uint32_t>(net.ComponentPins().size()),
+                           drawable_pin_count});
   }
-  out << "\n]\n";
+  WriteBinaryTable(output_dir_ / "shared" / "nets.bin", "DALINET", net_records);
+  WriteBinaryTable(output_dir_ / "shared" / "pins.bin", "DALIPIN", pin_records);
 }
 
-void PlacementSnapshotWriter::WriteBottomNetPins(
-    Circuit* circuit, const std::vector<NetSummary>& summaries,
-    const std::filesystem::path& snapshot_dir) const {
-  std::ofstream out(snapshot_dir / "bottom_net_pins.json");
-  out << std::setprecision(12);
-  out << "[\n";
-  for (size_t i = 0; i < summaries.size(); ++i) {
-    const NetSummary& summary = summaries[i];
-    if (i > 0) {
-      out << ",\n";
-    }
-    out << "  {\"id\": " << summary.net->Id() << ", \"name\": ";
-    WriteJsonString(out, summary.net->Name());
-    out << ", \"weighted_hpwl\": " << summary.weighted_hpwl
-        << ", \"pin_count\": " << summary.net->PinCnt()
-        << ", \"bbox\": {\"lx\": " << summary.lx << ", \"ly\": " << summary.ly
-        << ", \"ux\": " << summary.ux << ", \"uy\": " << summary.uy
-        << "}, \"pins\": [";
-    for (size_t pin_id = 0; pin_id < summary.net->ComponentPins().size();
-         ++pin_id) {
-      NetPin& pin = summary.net->ComponentPins()[pin_id];
-      if (pin_id > 0) {
-        out << ", ";
+void PlacementSnapshotWriter::WriteComponentLocations(
+    Circuit* circuit, const std::filesystem::path& snapshot_dir,
+    bool use_grid_coordinates) const {
+  if (use_grid_coordinates) {
+    std::vector<ComponentGridRecord> records;
+    records.reserve(circuit->Components().size());
+    for (Component& component : circuit->Components()) {
+      if (!IsVisualizationComponent(circuit, component)) {
+        continue;
       }
-      out << "{\"component_id\": " << pin.ComponentId() << ", \"component\": ";
-      WriteJsonString(out, pin.ComponentName());
-      out << ", \"pin\": ";
-      WriteJsonString(out, pin.PinName());
-      out << ", \"x\": " << ToMicronX(circuit, pin.AbsX())
-          << ", \"y\": " << ToMicronY(circuit, pin.AbsY()) << "}";
+      records.push_back({static_cast<uint32_t>(component.Id()),
+                         static_cast<int32_t>(std::llround(component.LLX())),
+                         static_cast<int32_t>(std::llround(component.LLY())),
+                         static_cast<uint8_t>(component.Orient()),
+                         static_cast<uint8_t>(component.Status()),
+                         {0, 0}});
     }
-    out << "]}";
+    WriteBinaryTable(snapshot_dir / "components.bin", "DALICLG", records);
+    return;
   }
-  out << "\n]\n";
+
+  std::vector<ComponentContinuousRecord> records;
+  records.reserve(circuit->Components().size());
+  for (Component& component : circuit->Components()) {
+    if (!IsVisualizationComponent(circuit, component)) {
+      continue;
+    }
+    records.push_back({static_cast<uint32_t>(component.Id()),
+                       static_cast<float>(ToMicronX(circuit, component.LLX())),
+                       static_cast<float>(ToMicronY(circuit, component.LLY())),
+                       static_cast<uint8_t>(component.Orient()),
+                       static_cast<uint8_t>(component.Status()),
+                       {0, 0}});
+  }
+  WriteBinaryTable(snapshot_dir / "components.bin", "DALICLC", records);
+}
+
+void PlacementSnapshotWriter::WriteNetMetrics(
+    const std::vector<NetSummary>& summaries,
+    const std::filesystem::path& snapshot_dir) const {
+  std::vector<NetMetricRecord> records;
+  records.reserve(summaries.size());
+  for (const NetSummary& summary : summaries) {
+    records.push_back({static_cast<uint32_t>(summary.net->Id()),
+                       static_cast<float>(summary.weighted_hpwl)});
+  }
+  WriteBinaryTable(snapshot_dir / "net_metrics.bin", "DALINMT", records);
 }
 
 void PlacementSnapshotWriter::FinishRun() {
@@ -376,14 +422,20 @@ void PlacementSnapshotWriter::WriteManifest() const {
   std::ofstream out(output_dir_ / "manifest.json");
   out << std::setprecision(12);
   out << "{\n";
-  out << "  \"schema_version\": 1,\n";
+  out << "  \"schema_version\": 2,\n";
+  out << "  \"encoding\": \"binary-le\",\n";
   out << "  \"design_name\": ";
   WriteJsonString(out, design_name_);
   out << ",\n  \"database_units_per_micron\": " << database_microns_ << ",\n";
   out << "  \"created_by\": \"Dali\",\n";
   out << "  \"git_commit\": ";
   WriteJsonString(out, git_commit_);
-  out << ",\n  \"snapshot_count\": " << records_.size() << ",\n";
+  out << ",\n  \"shared_payloads\": {\n";
+  out << "    \"components\": \"shared/components.bin\",\n";
+  out << "    \"nets\": \"shared/nets.bin\",\n";
+  out << "    \"pins\": \"shared/pins.bin\"\n";
+  out << "  },\n";
+  out << "  \"snapshot_count\": " << records_.size() << ",\n";
   out << "  \"snapshots\": [\n";
   for (size_t i = 0; i < records_.size(); ++i) {
     const PlacementSnapshotRecord& record = records_[i];

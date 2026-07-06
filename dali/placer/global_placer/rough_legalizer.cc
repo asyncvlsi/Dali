@@ -52,9 +52,19 @@ void LookAheadLegalizer::InitializeGridBinSize() {
   double grid_bin_area = target_component_count_per_bin_ *
                          ckt_ptr_->AverageMovableComponentArea() /
                          placement_density_;
-  grid_bin_height = static_cast<int>(std::round(std::sqrt(grid_bin_area)));
+  double grid_value_x = ckt_ptr_->GridValueX();
+  double grid_value_y = ckt_ptr_->GridValueY();
+  DaliExpects(grid_value_x > 0 && grid_value_y > 0,
+              "Placement grid values must be positive");
+
+  // Keep roughly the same bin area in Dali grid units, but make the bin close
+  // to square in physical microns when x/y grid units have different sizes.
+  double grid_y_to_x_ratio = grid_value_y / grid_value_x;
+  grid_bin_height = static_cast<int>(
+      std::round(std::sqrt(grid_bin_area / grid_y_to_x_ratio)));
   grid_bin_height = std::max(grid_bin_height, 1);
-  grid_bin_width = grid_bin_height;
+  grid_bin_width = std::max(
+      1, static_cast<int>(std::round(grid_bin_height * grid_y_to_x_ratio)));
   grid_cnt_x =
       std::max(1, static_cast<int>(std::ceil(double(ckt_ptr_->RegionWidth()) /
                                              grid_bin_width)));
@@ -63,6 +73,9 @@ void LookAheadLegalizer::InitializeGridBinSize() {
                                              grid_bin_height)));
   LOG(debug) << "  Global placement bin width, height: " << grid_bin_width
              << "  " << grid_bin_height << "\n";
+  LOG(debug) << "  Global placement bin physical width, height: "
+             << grid_bin_width * grid_value_x << "  "
+             << grid_bin_height * grid_value_y << "um\n";
 
   std::vector<GridBin> temp_grid_bin_column(grid_cnt_y);
   grid_bin_mesh.resize(grid_cnt_x, temp_grid_bin_column);
@@ -766,7 +779,8 @@ void LookAheadLegalizer::PlaceComponentInBox(BoxBin& box) {
   int box_width = box.right - box.left;
   for (auto& pair : index_loc_list_x) {
     Component* component_ptr = pair.first;
-    double center_x = box.left + cur_pos / total_length * box_width;
+    double center_x = box.left + (cur_pos + component_ptr->Width() / 2.0) /
+                                     total_length * box_width;
     component_ptr->SetCenterX(center_x);
     cur_pos += component_ptr->Width();
     if (std::isnan(center_x)) {
@@ -790,7 +804,8 @@ void LookAheadLegalizer::PlaceComponentInBox(BoxBin& box) {
   int box_height = box.top - box.bottom;
   for (auto& pair : index_loc_list_y) {
     Component* component_ptr = pair.first;
-    double center_y = box.bottom + cur_pos / total_length * box_height;
+    double center_y = box.bottom + (cur_pos + component_ptr->Height() / 2.0) /
+                                       total_length * box_height;
     if (std::isnan(center_y)) {
       std::cout << "y " << total_length << "\n";
       box.Report();

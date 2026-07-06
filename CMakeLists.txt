@@ -110,6 +110,53 @@ endif ()
 add_compile_options(-fopenmp)
 add_compile_options(-Wall -Wextra -Wshadow -Wnon-virtual-dtor -Werror=return-type -pedantic)
 
+set(DALI_GUI "AUTO" CACHE STRING "Qt live placement GUI mode: AUTO, ON, or OFF")
+set_property(CACHE DALI_GUI PROPERTY STRINGS AUTO ON OFF)
+string(TOUPPER "${DALI_GUI}" DALI_GUI_MODE)
+
+foreach(qt_prefix
+        /opt/homebrew/opt/qt
+        /opt/homebrew/opt/qt@6
+        /usr/local/opt/qt
+        /usr/local/opt/qt@6)
+    if (EXISTS "${qt_prefix}/lib/cmake/Qt6")
+        list(APPEND CMAKE_PREFIX_PATH "${qt_prefix}")
+    endif ()
+endforeach()
+
+find_program(BREW_EXECUTABLE brew)
+if (BREW_EXECUTABLE)
+    foreach(qt_formula qt qt@6)
+        execute_process(
+            COMMAND ${BREW_EXECUTABLE} --prefix ${qt_formula}
+            RESULT_VARIABLE brew_qt_result
+            OUTPUT_VARIABLE brew_qt_prefix
+            ERROR_QUIET
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        if (brew_qt_result EQUAL 0 AND EXISTS "${brew_qt_prefix}/lib/cmake/Qt6")
+            list(APPEND CMAKE_PREFIX_PATH "${brew_qt_prefix}")
+        endif ()
+    endforeach()
+endif ()
+
+if (DALI_GUI_MODE STREQUAL "OFF")
+    set(DALI_HAS_QT_GUI FALSE)
+else ()
+    find_package(Qt6 COMPONENTS Widgets QUIET)
+    if (Qt6Widgets_FOUND)
+        message(STATUS "Qt6 Widgets found: enabling Dali GUI debug support")
+        set(DALI_HAS_QT_GUI TRUE)
+    else ()
+        set(DALI_HAS_QT_GUI FALSE)
+        if (DALI_GUI_MODE STREQUAL "ON")
+            message(FATAL_ERROR "DALI_GUI=ON but Qt6 Widgets was not found")
+        else ()
+            message(STATUS "Qt6 Widgets not found: building Dali without GUI debug support")
+        endif ()
+    endif ()
+endif ()
+
 #Set output directories
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
@@ -154,6 +201,17 @@ target_link_libraries(
     ${LIBCXXFS_LIB}
 )
 
+if (DALI_HAS_QT_GUI)
+    add_library(
+        daligui
+        STATIC
+        dali/gui/qt_placement_snapshot_sink.cc
+        dali/gui/qt_placement_snapshot_sink.h
+    )
+    target_link_libraries(daligui PUBLIC dalilib Qt6::Widgets)
+    target_compile_definitions(daligui PUBLIC DALI_HAS_QT_GUI QT_NO_KEYWORDS)
+endif ()
+
 # ------------------------------------------------------------------------------
 # Executable Targets
 # ------------------------------------------------------------------------------
@@ -162,7 +220,14 @@ macro(add_dali_executable name source)
     target_link_libraries(${name} PRIVATE dalilib)
 endmacro()
 
-add_dali_executable(dali dali/application/dali_main.cc)
+if (DALI_HAS_QT_GUI)
+    set(DALI_EXECUTABLE_LIBRARIES daligui)
+else ()
+    set(DALI_EXECUTABLE_LIBRARIES dalilib)
+endif ()
+
+add_executable(dali dali/application/dali_main.cc)
+target_link_libraries(dali PRIVATE ${DALI_EXECUTABLE_LIBRARIES})
 add_dali_executable(dali-debug dali/application/debug.cc)
 add_dali_executable(wellflow dali/application/well_flow.cc)
 add_dali_executable(adaptec-debug dali/application/debug_adaptec.cc)
@@ -225,5 +290,7 @@ install(
 
 # Install binaries and libraries
 install(TARGETS dali DESTINATION bin)
-install(PROGRAMS scripts/dali_viz.py RENAME dali_viz DESTINATION bin)
 install(TARGETS dalilib DESTINATION lib)
+if (DALI_HAS_QT_GUI)
+    install(TARGETS daligui DESTINATION lib)
+endif ()

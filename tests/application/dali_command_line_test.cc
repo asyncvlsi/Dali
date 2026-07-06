@@ -65,17 +65,18 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_TRUE(
       Parse({"dali", "-lef", "input.lef", "-def", "input.def", "-output_name",
              "placed", "-metrics_file", "metrics.json", "-target_density",
-             "0.72", "-visualization_dir", "dali_viz", "-num_threads", "8",
+             "0.72", "-visualization_dir", "dali_snapshots", "-num_threads", "8",
              "-io_metal_layer", "3", "-well_legalization_mode", "scavenge",
              "-global_initializer", "keep", "-save_intermediate_result",
-             "-disable_detailed_place", "-disable_io_place"},
+             "-disable_detailed_place", "-disable_io_place", "-gui_debug",
+             "-gui_pause", "off"},
             &options));
 
   EXPECT_EQ(options.output_name, "placed");
   EXPECT_EQ(options.metrics_file_name, "metrics.json");
-  EXPECT_EQ(options.visualization_dir, "dali_viz");
+  EXPECT_EQ(options.visualization_dir, "dali_snapshots");
   EXPECT_DOUBLE_EQ(config_get_real("dali.target_density"), 0.72);
-  EXPECT_STREQ(config_get_string("dali.visualization_dir"), "dali_viz");
+  EXPECT_STREQ(config_get_string("dali.visualization_dir"), "dali_snapshots");
   EXPECT_EQ(config_get_int("dali.num_threads"), 8);
   EXPECT_EQ(config_get_int("dali.io_metal_layer"), 2);
   EXPECT_STREQ(config_get_string("dali.well_legalization_mode"), "scavenge");
@@ -83,6 +84,8 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.save_intermediate_result"), 1);
   EXPECT_EQ(config_get_int("dali.disable_detailed_place"), 1);
   EXPECT_EQ(config_get_int("dali.disable_io_place"), 1);
+  EXPECT_EQ(config_get_int("dali.gui_debug"), 1);
+  EXPECT_STREQ(config_get_string("dali.gui_pause"), "off");
 }
 
 TEST_F(DaliCommandLineTest, RejectsMissingRequiredInputs) {
@@ -122,6 +125,9 @@ TEST_F(DaliCommandLineTest, RejectsOutOfRangeOptions) {
                      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-global_initializer", "randomish"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-gui_pause", "sometimes"},
                      &options));
 }
 

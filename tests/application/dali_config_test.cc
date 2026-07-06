@@ -53,6 +53,8 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_FALSE(options.save_intermediate_result);
   EXPECT_EQ(options.output_name, "dali_out");
   EXPECT_EQ(options.visualization_dir, "");
+  EXPECT_FALSE(options.gui_debug);
+  EXPECT_EQ(options.gui_pause, "every_snapshot");
 
   placer.Close();
 }
@@ -79,7 +81,9 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_string("dali.global_initializer", "keep");
   config_set_int("dali.save_intermediate_result", 1);
   config_set_string("dali.output_name", "placed");
-  config_set_string("dali.visualization_dir", "dali_viz");
+  config_set_string("dali.visualization_dir", "dali_snapshots");
+  config_set_int("dali.gui_debug", 1);
+  config_set_string("dali.gui_pause", "off");
 
   dali::Dali placer(nullptr, dali::severity::info);
   const dali::Dali::RuntimeOptions options = placer.GetRuntimeOptions();
@@ -106,7 +110,9 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_EQ(options.global_initializer, dali::RandomInitializerType::KEEP);
   EXPECT_TRUE(options.save_intermediate_result);
   EXPECT_EQ(options.output_name, "placed");
-  EXPECT_EQ(options.visualization_dir, "dali_viz");
+  EXPECT_EQ(options.visualization_dir, "dali_snapshots");
+  EXPECT_TRUE(options.gui_debug);
+  EXPECT_EQ(options.gui_pause, "off");
 
   placer.Close();
 }
