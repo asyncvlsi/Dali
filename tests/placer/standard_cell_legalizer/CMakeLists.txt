@@ -26,3 +26,15 @@ add_test(
 )
 set_tests_properties(standard_cell_placement_model_test
                      PROPERTIES LABELS "unit;placer;standard_cell_legalizer")
+
+add_executable(
+    standard_cell_row_legalizer_test
+    standard_cell_row_legalizer_test.cc
+)
+target_link_libraries(standard_cell_row_legalizer_test PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(
+    NAME standard_cell_row_legalizer_test
+    COMMAND standard_cell_row_legalizer_test
+)
+set_tests_properties(standard_cell_row_legalizer_test
+                     PROPERTIES LABELS "unit;placer;standard_cell_legalizer")
