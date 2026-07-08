@@ -28,10 +28,17 @@
 #include "dali/common/logging.h"
 
 namespace dali {
-namespace {
 
-double ClampCenterToBox(double center, double box_min, double box_max,
-                        double component_size) {
+/** Keep a component center inside a target leaf box.
+ *
+ * Look-ahead legalization moves centers rather than lower-left coordinates.
+ * The valid center range is therefore shifted inward by half the component
+ * size. If the target box is narrower than the component, use the box center as
+ * the least surprising fallback and let later legalization handle exact row
+ * legality.
+ */
+static double ClampCenterToBox(double center, double box_min, double box_max,
+                               double component_size) {
   double half_size = component_size / 2.0;
   if (box_max - box_min <= component_size) {
     return (box_min + box_max) / 2.0;
@@ -39,10 +46,19 @@ double ClampCenterToBox(double center, double box_min, double box_max,
   return std::clamp(center, box_min + half_size, box_max - half_size);
 }
 
-void ScaleComponentCenters(std::vector<std::pair<Component*, double>>& locs,
-                           double box_min, double box_max, bool scale_x) {
+/** Scale one coordinate of components into a leaf box.
+ *
+ * The packed center keeps local density under control by spreading components
+ * according to their physical width/height. The affine center preserves the
+ * relative geometry produced by the lower-bound quadratic solve. Blending the
+ * two is a temporary compromise: it avoids the old full-repack HPWL damage
+ * while still adding spreading pressure for dense leaf boxes.
+ */
+static void ScaleComponentCenters(
+    std::vector<std::pair<Component*, double>>& locs, double box_min,
+    double box_max, bool scale_x) {
   if (locs.empty()) return;
-  constexpr double kAffineWeight = 0.65;
+  constexpr double kAffineScalingWeight = 0.65;
 
   auto [min_it, max_it] = std::minmax_element(
       locs.begin(), locs.end(),
@@ -52,10 +68,9 @@ void ScaleComponentCenters(std::vector<std::pair<Component*, double>>& locs,
   double source_span = max_loc - min_loc;
   double target_span = box_max - box_min;
 
-  std::sort(locs.begin(), locs.end(),
-            [](const auto& lhs, const auto& rhs) {
-              return lhs.second < rhs.second;
-            });
+  std::sort(locs.begin(), locs.end(), [](const auto& lhs, const auto& rhs) {
+    return lhs.second < rhs.second;
+  });
   double total_length = 0.0;
   for (auto& [component_ptr, loc] : locs) {
     (void)loc;
@@ -73,8 +88,8 @@ void ScaleComponentCenters(std::vector<std::pair<Component*, double>>& locs,
     if (source_span > 1e-9 && target_span > 1e-9) {
       double affine_center =
           box_min + (loc - min_loc) / source_span * target_span;
-      scaled_center =
-          kAffineWeight * affine_center + (1.0 - kAffineWeight) * packed_center;
+      scaled_center = kAffineScalingWeight * affine_center +
+                      (1.0 - kAffineScalingWeight) * packed_center;
     }
     scaled_center =
         ClampCenterToBox(scaled_center, box_min, box_max, component_size);
@@ -86,8 +101,6 @@ void ScaleComponentCenters(std::vector<std::pair<Component*, double>>& locs,
     cur_pos += component_size;
   }
 }
-
-}  // namespace
 
 RoughLegalizer::RoughLegalizer(Circuit* ckt_ptr) {
   DaliExpects(ckt_ptr != nullptr, "Circuit is a nullptr?");
@@ -1086,11 +1099,9 @@ double LookAheadLegalizer::RemoveComponentOverlap() {
              << recursive_bisection_component_spreading_time_ << "s)\n";
 
   LOG(info) << "    LAL density before/after: " << overfilled_bin_count_before
-            << "/" << last_overfilled_bin_count_
-            << " bins over target, peak " << peak_bin_density_before << "/"
-            << last_peak_bin_density_
-            << ", HPWL delta: " << last_hpwl_after_ - last_hpwl_before_
-            << "\n";
+            << "/" << last_overfilled_bin_count_ << " bins over target, peak "
+            << peak_bin_density_before << "/" << last_peak_bin_density_
+            << ", HPWL delta: " << last_hpwl_after_ - last_hpwl_before_ << "\n";
 
   upper_bound_hpwl_.push_back(last_hpwl_after_);
   return upper_bound_hpwl_.back();
