@@ -455,12 +455,22 @@ bool Dali::RunStandardCellLegalization() {
     LOG(info) << "Skip standard-cell legalization: no movable components\n";
     return true;
   }
-  legalizer_.CopyPlacementContextFrom(&gb_placer_);
-  legalizer_.disable_cell_flip_ = disable_cell_flip_;
-  if (!legalizer_.StartPlacement()) {
-    LOG(error) << "Standard-cell legalization failed\n";
-    return false;
+  Placer* legalizer_for_detailed_placement = &standard_cell_legalizer_;
+  standard_cell_legalizer_.CopyPlacementContextFrom(&gb_placer_);
+  standard_cell_legalizer_.SetDisableCellFlip(disable_cell_flip_);
+  if (!standard_cell_legalizer_.StartPlacement()) {
+    LOG(warning) << "Standard-cell legalizer failed; trying "
+                    "ExtendedTetrisLegalizer baseline\n";
+    legalizer_for_detailed_placement = &legalizer_;
+    legalizer_.CopyPlacementContextFrom(&gb_placer_);
+    legalizer_.disable_cell_flip_ = disable_cell_flip_;
+    if (!legalizer_.StartPlacement()) {
+      LOG(error) << "Standard-cell legalization failed\n";
+      return false;
+    }
   }
+  RecordPlacementMetric("legalization", circuit_.WeightedHPWL());
+  detailed_placer_.CopyPlacementContextFrom(legalizer_for_detailed_placement);
   if (!RunDetailedPlacement()) {
     return false;
   }
@@ -472,7 +482,6 @@ bool Dali::RunDetailedPlacement() {
     LOG(info) << "Skip detailed placement: disabled by configuration\n";
     return true;
   }
-  detailed_placer_.CopyPlacementContextFrom(&legalizer_);
   if (!detailed_placer_.StartPlacement()) {
     LOG(error) << "Detailed placement failed\n";
     return false;

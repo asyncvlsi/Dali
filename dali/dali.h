@@ -33,6 +33,7 @@
 #include "dali/placer.h"
 #include "dali/placer/detailed_placer/detailed_placer.h"
 #include "dali/placer/global_placer/random_initializer.h"
+#include "dali/placer/legalizer/standard_cell_legalizer/standard_cell_legalizer.h"
 #include "dali/timing/star_pi_model_estimator.h"
 
 namespace dali {
@@ -175,6 +176,7 @@ class Dali {
   Circuit circuit_;
   phydb::PhyDB* phy_db_ptr_ = nullptr;
   GlobalPlacer gb_placer_;
+  StandardCellLegalizer standard_cell_legalizer_;
   ExtendedTetrisLegalizer legalizer_;
   DetailedPlacer detailed_placer_;
   StdClusterWellLegalizer well_legalizer_;
