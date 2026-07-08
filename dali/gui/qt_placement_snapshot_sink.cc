@@ -224,6 +224,11 @@ class PlacementCanvas : public QWidget {
     update();
   }
 
+  void SetMovableDotMode(bool enabled) {
+    movable_dot_mode_ = enabled;
+    update();
+  }
+
  protected:
   void paintEvent(QPaintEvent* /*event*/) override {
     QPainter painter(this);
@@ -239,24 +244,17 @@ class PlacementCanvas : public QWidget {
                             boundary_width * scale_, boundary_height * scale_));
 
     for (const SnapshotComponent& component : components_) {
-      painter.setBrush(component.fixed ? QColor(76, 86, 106, 210)
-                                       : QColor(136, 192, 208, 190));
-      QRectF rect(WorldToScreenX(component.x),
-                  WorldToScreenY(component.y + component.height),
-                  std::max(component.width * scale_, 0.6),
-                  std::max(component.height * scale_, 0.6));
-      painter.setPen(
-          QPen(component.fixed ? QColor(35, 42, 55) : QColor(66, 94, 111), 1));
-      painter.drawRect(rect);
-
-      const double marker_size = std::min(
-          std::clamp(std::min(rect.width(), rect.height()) * 0.35, 3.0, 10.0),
-          std::min(rect.width(), rect.height()));
-      if (marker_size >= 2.0) {
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(QColor(17, 24, 39, 230));
-        painter.drawPolygon(
-            OrientationMarker(rect, component.orient, marker_size));
+      if (component.fixed) {
+        DrawComponent(&painter, component);
+      }
+    }
+    if (movable_dot_mode_) {
+      DrawMovableDots(&painter);
+    } else {
+      for (const SnapshotComponent& component : components_) {
+        if (!component.fixed) {
+          DrawComponent(&painter, component);
+        }
       }
     }
 
@@ -330,6 +328,62 @@ class PlacementCanvas : public QWidget {
                       QString("zoom %1 px/um").arg(scale_, 0, 'g', 4));
   }
 
+  QRectF VisiblePlacementArea() const {
+    return QRectF(0, 0, width(), std::max(height() - kStatusBandHeight, 0.0));
+  }
+
+  QRectF ComponentScreenRect(const SnapshotComponent& component) const {
+    return QRectF(WorldToScreenX(component.x),
+                  WorldToScreenY(component.y + component.height),
+                  std::max(component.width * scale_, 0.6),
+                  std::max(component.height * scale_, 0.6));
+  }
+
+  void DrawComponent(QPainter* painter,
+                     const SnapshotComponent& component) const {
+    const QRectF rect = ComponentScreenRect(component);
+    if (!rect.intersects(VisiblePlacementArea())) {
+      return;
+    }
+
+    painter->setBrush(component.fixed ? QColor(76, 86, 106, 170)
+                                      : QColor(136, 192, 208, 190));
+    painter->setPen(
+        QPen(component.fixed ? QColor(35, 42, 55) : QColor(66, 94, 111), 1));
+    painter->drawRect(rect);
+
+    const double marker_size = std::min(
+        std::clamp(std::min(rect.width(), rect.height()) * 0.35, 3.0, 10.0),
+        std::min(rect.width(), rect.height()));
+    if (marker_size >= 2.0) {
+      painter->setPen(Qt::NoPen);
+      painter->setBrush(QColor(17, 24, 39, 230));
+      painter->drawPolygon(
+          OrientationMarker(rect, component.orient, marker_size));
+    }
+  }
+
+  void DrawMovableDots(QPainter* painter) const {
+    const QRectF visible_area = VisiblePlacementArea();
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(QColor(33, 120, 143, 210));
+    for (const SnapshotComponent& component : components_) {
+      if (component.fixed) {
+        continue;
+      }
+      const double center_x =
+          WorldToScreenX(component.x + component.width / 2.0);
+      const double center_y =
+          WorldToScreenY(component.y + component.height / 2.0);
+      if (!visible_area.contains(QPointF(center_x, center_y))) {
+        continue;
+      }
+      const double radius = std::clamp(
+          std::min(component.width, component.height) * scale_ * 0.4, 1.0, 2.2);
+      painter->drawEllipse(QPointF(center_x, center_y), radius, radius);
+    }
+  }
+
   double WorldToScreenX(double x) const { return pan_x_ + x * scale_; }
   double WorldToScreenY(double y) const { return pan_y_ - y * scale_; }
   double ScreenToWorldX(double x) const { return (x - pan_x_) / scale_; }
@@ -352,6 +406,7 @@ class PlacementCanvas : public QWidget {
   bool has_view_ = false;
   bool has_snapshot_ = false;
   bool is_dragging_ = false;
+  bool movable_dot_mode_ = true;
   QPoint last_mouse_pos_;
 };
 
@@ -581,6 +636,8 @@ class QtPlacementWindow : public QWidget {
     canvas_ = new PlacementCanvas(this);
     pause_checkbox_ = new QCheckBox("Pause at every snapshot", this);
     pause_checkbox_->setChecked(true);
+    movable_dot_checkbox_ = new QCheckBox("Movable dots", this);
+    movable_dot_checkbox_->setChecked(true);
     step_button_ = new QPushButton("Step", this);
     continue_button_ = new QPushButton("Continue", this);
     fit_button_ = new QPushButton("Fit", this);
@@ -589,6 +646,7 @@ class QtPlacementWindow : public QWidget {
 
     auto* controls = new QHBoxLayout();
     controls->addWidget(pause_checkbox_);
+    controls->addWidget(movable_dot_checkbox_);
     controls->addWidget(step_button_);
     controls->addWidget(continue_button_);
     controls->addWidget(fit_button_);
@@ -611,6 +669,9 @@ class QtPlacementWindow : public QWidget {
     });
     QObject::connect(fit_button_, &QPushButton::clicked, this,
                      [this]() { canvas_->FitToView(); });
+    QObject::connect(
+        movable_dot_checkbox_, &QCheckBox::toggled, this,
+        [this](bool checked) { canvas_->SetMovableDotMode(checked); });
     QObject::connect(save_button_, &QPushButton::clicked, this,
                      [this]() { SaveCurrentImages(); });
   }
@@ -686,6 +747,7 @@ class QtPlacementWindow : public QWidget {
   PlacementCanvas* canvas_ = nullptr;
   HpwlHistoryPanel* hpwl_panel_ = nullptr;
   QCheckBox* pause_checkbox_ = nullptr;
+  QCheckBox* movable_dot_checkbox_ = nullptr;
   QPushButton* step_button_ = nullptr;
   QPushButton* continue_button_ = nullptr;
   QPushButton* fit_button_ = nullptr;
