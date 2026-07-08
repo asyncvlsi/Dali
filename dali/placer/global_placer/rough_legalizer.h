@@ -128,6 +128,11 @@ class LookAheadLegalizer : public RoughLegalizer {
   double find_minimum_box_for_largest_cluster_time_ = 0;
   double recursive_bisection_component_spreading_time_ = 0;
   double tot_lal_time = 0;
+
+  int last_overfilled_bin_count_ = 0;
+  double last_peak_bin_density_ = 0.0;
+  double last_hpwl_before_ = 0.0;
+  double last_hpwl_after_ = 0.0;
 };
 
 }  // namespace dali

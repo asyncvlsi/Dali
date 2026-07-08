@@ -28,6 +28,66 @@
 #include "dali/common/logging.h"
 
 namespace dali {
+namespace {
+
+double ClampCenterToBox(double center, double box_min, double box_max,
+                        double component_size) {
+  double half_size = component_size / 2.0;
+  if (box_max - box_min <= component_size) {
+    return (box_min + box_max) / 2.0;
+  }
+  return std::clamp(center, box_min + half_size, box_max - half_size);
+}
+
+void ScaleComponentCenters(std::vector<std::pair<Component*, double>>& locs,
+                           double box_min, double box_max, bool scale_x) {
+  if (locs.empty()) return;
+  constexpr double kAffineWeight = 0.65;
+
+  auto [min_it, max_it] = std::minmax_element(
+      locs.begin(), locs.end(),
+      [](const auto& lhs, const auto& rhs) { return lhs.second < rhs.second; });
+  double min_loc = min_it->second;
+  double max_loc = max_it->second;
+  double source_span = max_loc - min_loc;
+  double target_span = box_max - box_min;
+
+  std::sort(locs.begin(), locs.end(),
+            [](const auto& lhs, const auto& rhs) {
+              return lhs.second < rhs.second;
+            });
+  double total_length = 0.0;
+  for (auto& [component_ptr, loc] : locs) {
+    (void)loc;
+    total_length += scale_x ? component_ptr->Width() : component_ptr->Height();
+  }
+  if (total_length <= 1e-9) return;
+
+  double cur_pos = 0.0;
+  for (auto& [component_ptr, loc] : locs) {
+    double component_size =
+        scale_x ? component_ptr->Width() : component_ptr->Height();
+    double packed_center =
+        box_min + (cur_pos + component_size / 2.0) / total_length * target_span;
+    double scaled_center = packed_center;
+    if (source_span > 1e-9 && target_span > 1e-9) {
+      double affine_center =
+          box_min + (loc - min_loc) / source_span * target_span;
+      scaled_center =
+          kAffineWeight * affine_center + (1.0 - kAffineWeight) * packed_center;
+    }
+    scaled_center =
+        ClampCenterToBox(scaled_center, box_min, box_max, component_size);
+    if (scale_x) {
+      component_ptr->SetCenterX(scaled_center);
+    } else {
+      component_ptr->SetCenterY(scaled_center);
+    }
+    cur_pos += component_size;
+  }
+}
+
+}  // namespace
 
 RoughLegalizer::RoughLegalizer(Circuit* ckt_ptr) {
   DaliExpects(ckt_ptr != nullptr, "Circuit is a nullptr?");
@@ -328,6 +388,8 @@ void LookAheadLegalizer::UpdateGridBinState() {
    * ****/
   // TODO: the third criterion might be changed in the next
   bool over_fill = false;
+  last_overfilled_bin_count_ = 0;
+  last_peak_bin_density_ = 0.0;
   for (auto& grid_bin_column : grid_bin_mesh) {
     for (auto& grid_bin : grid_bin_column) {
       if (grid_bin.global_placed) {
@@ -345,6 +407,8 @@ void LookAheadLegalizer::UpdateGridBinState() {
           grid_bin.over_fill = true;
         }
       }
+      last_peak_bin_density_ =
+          std::max(last_peak_bin_density_, grid_bin.filling_rate);
       if (!grid_bin.OverFill()) {
         for (auto& component_ptr : grid_bin.component_ptrs) {
           for (auto& blockage_ptr : grid_bin.placement_blockages_) {
@@ -360,6 +424,9 @@ void LookAheadLegalizer::UpdateGridBinState() {
           }
           // two breaks have to be used to break two loops
         }
+      }
+      if (grid_bin.OverFill()) {
+        ++last_overfilled_bin_count_;
       }
     }
   }
@@ -766,55 +833,13 @@ void LookAheadLegalizer::PlaceComponentInBox(BoxBin& box) {
     grid_bin.component_area += component_ptr->Area();
   }
 
-  std::sort(index_loc_list_x.begin(), index_loc_list_x.end(),
-            [](const std::pair<Component*, double>& p1,
-               const std::pair<Component*, double>& p2) {
-              return p1.second < p2.second;
-            });
-  double total_length = 0;
-  for (auto& component_ptr : box.component_ptrs) {
-    total_length += component_ptr->Width();
-  }
-  double cur_pos = 0;
-  int box_width = box.right - box.left;
-  for (auto& pair : index_loc_list_x) {
-    Component* component_ptr = pair.first;
-    double center_x = box.left + (cur_pos + component_ptr->Width() / 2.0) /
-                                     total_length * box_width;
-    component_ptr->SetCenterX(center_x);
-    cur_pos += component_ptr->Width();
-    if (std::isnan(center_x)) {
-      std::cout << "x " << total_length << "\n";
-      box.Report();
-      std::cout << std::endl;
-      exit(1);
-    }
-  }
-
-  std::sort(index_loc_list_y.begin(), index_loc_list_y.end(),
-            [](const std::pair<Component*, double>& p1,
-               const std::pair<Component*, double>& p2) {
-              return p1.second < p2.second;
-            });
-  total_length = 0;
-  for (auto& component_ptr : box.component_ptrs) {
-    total_length += component_ptr->Height();
-  }
-  cur_pos = 0;
-  int box_height = box.top - box.bottom;
-  for (auto& pair : index_loc_list_y) {
-    Component* component_ptr = pair.first;
-    double center_y = box.bottom + (cur_pos + component_ptr->Height() / 2.0) /
-                                       total_length * box_height;
-    if (std::isnan(center_y)) {
-      std::cout << "y " << total_length << "\n";
-      box.Report();
-      std::cout << std::endl;
-      exit(1);
-    }
-    component_ptr->SetCenterY(center_y);
-    cur_pos += component_ptr->Height();
-  }
+  // Preserve the lower-bound placement geometry when possible. SimPL's
+  // look-ahead legalization spreads cells by scaling local coordinates; fully
+  // repacking every leaf by sorted width/height discards wirelength structure.
+  ScaleComponentCenters(index_loc_list_x, box.left, box.right,
+                        /*scale_x=*/true);
+  ScaleComponentCenters(index_loc_list_y, box.bottom, box.top,
+                        /*scale_x=*/false);
 }
 
 void LookAheadLegalizer::SplitBox(BoxBin& box) {
@@ -1013,9 +1038,12 @@ bool LookAheadLegalizer::RecursiveBisectionComponentSpreading() {
 double LookAheadLegalizer::RemoveComponentOverlap() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
+  last_hpwl_before_ = ckt_ptr_->WeightedHPWL();
 
   ClearGridBinFlag();
   UpdateGridBinState();
+  int overfilled_bin_count_before = last_overfilled_bin_count_;
+  double peak_bin_density_before = last_peak_bin_density_;
   UpdateClusterList();
   do {
     UpdateLargestCluster();
@@ -1033,6 +1061,9 @@ double LookAheadLegalizer::RemoveComponentOverlap() {
   upper_bound_hpwl_x_.push_back(evaluate_result_x);
   double evaluate_result_y = ckt_ptr_->WeightedHPWLY();
   upper_bound_hpwl_y_.push_back(evaluate_result_y);
+  last_hpwl_after_ = evaluate_result_x + evaluate_result_y;
+  ClearGridBinFlag();
+  UpdateGridBinState();
   LOG(debug) << "Look-ahead legalization complete\n";
 
   elapsed_time.RecordEndTime();
@@ -1054,7 +1085,14 @@ double LookAheadLegalizer::RemoveComponentOverlap() {
   LOG(debug) << "(RecursiveBisectionComponentSpreading time: "
              << recursive_bisection_component_spreading_time_ << "s)\n";
 
-  upper_bound_hpwl_.push_back(evaluate_result_x + evaluate_result_y);
+  LOG(info) << "    LAL density before/after: " << overfilled_bin_count_before
+            << "/" << last_overfilled_bin_count_
+            << " bins over target, peak " << peak_bin_density_before << "/"
+            << last_peak_bin_density_
+            << ", HPWL delta: " << last_hpwl_after_ - last_hpwl_before_
+            << "\n";
+
+  upper_bound_hpwl_.push_back(last_hpwl_after_);
   return upper_bound_hpwl_.back();
 }
 
