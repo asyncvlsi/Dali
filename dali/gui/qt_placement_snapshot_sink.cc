@@ -43,6 +43,7 @@ struct SnapshotComponent {
   float width = 0;
   float height = 0;
   bool fixed = false;
+  ComponentOrient orient = N;
 };
 
 std::string FormatHpwl(double hpwl) {
@@ -60,6 +61,56 @@ QString FormatCompactHpwl(double hpwl) {
     return QString("%1K").arg(hpwl / 1e3, 0, 'f', 1);
   }
   return QString("%1").arg(hpwl, 0, 'f', 0);
+}
+
+enum class CellMarkerCorner {
+  kLowerLeft,
+  kLowerRight,
+  kUpperLeft,
+  kUpperRight,
+};
+
+CellMarkerCorner LocalLowerLeftCorner(ComponentOrient orient) {
+  switch (orient) {
+    case N:
+    case FE:
+      return CellMarkerCorner::kLowerLeft;
+    case E:
+    case FN:
+      return CellMarkerCorner::kLowerRight;
+    case W:
+    case FS:
+      return CellMarkerCorner::kUpperLeft;
+    case S:
+    case FW:
+      return CellMarkerCorner::kUpperRight;
+  }
+  return CellMarkerCorner::kLowerLeft;
+}
+
+QPolygonF OrientationMarker(const QRectF& rect, ComponentOrient orient,
+                            double size) {
+  QPolygonF marker;
+  switch (LocalLowerLeftCorner(orient)) {
+    case CellMarkerCorner::kLowerLeft:
+      marker << rect.bottomLeft() << QPointF(rect.left() + size, rect.bottom())
+             << QPointF(rect.left(), rect.bottom() - size);
+      break;
+    case CellMarkerCorner::kLowerRight:
+      marker << rect.bottomRight()
+             << QPointF(rect.right() - size, rect.bottom())
+             << QPointF(rect.right(), rect.bottom() - size);
+      break;
+    case CellMarkerCorner::kUpperLeft:
+      marker << rect.topLeft() << QPointF(rect.left() + size, rect.top())
+             << QPointF(rect.left(), rect.top() + size);
+      break;
+    case CellMarkerCorner::kUpperRight:
+      marker << rect.topRight() << QPointF(rect.right() - size, rect.top())
+             << QPointF(rect.right(), rect.top() + size);
+      break;
+  }
+  return marker;
 }
 
 }  // namespace
@@ -99,10 +150,11 @@ class PlacementCanvas : public QWidget {
       const double component_width = component.Width() * circuit->GridValueX();
       const double component_height =
           component.Height() * circuit->GridValueY();
-      components_.push_back(
-          {static_cast<float>(component_lx), static_cast<float>(component_ly),
-           static_cast<float>(component_width),
-           static_cast<float>(component_height), component.IsFixed()});
+      components_.push_back({static_cast<float>(component_lx),
+                             static_cast<float>(component_ly),
+                             static_cast<float>(component_width),
+                             static_cast<float>(component_height),
+                             component.IsFixed(), component.Orient()});
       view_llx_ = std::min(view_llx_, component_lx);
       view_lly_ = std::min(view_lly_, component_ly);
       view_urx_ = std::max(view_urx_, component_lx + component_width);
@@ -144,7 +196,6 @@ class PlacementCanvas : public QWidget {
                             WorldToScreenY(boundary_ury_),
                             boundary_width * scale_, boundary_height * scale_));
 
-    painter.setPen(Qt::NoPen);
     for (const SnapshotComponent& component : components_) {
       painter.setBrush(component.fixed ? QColor(76, 86, 106, 210)
                                        : QColor(136, 192, 208, 190));
@@ -152,7 +203,19 @@ class PlacementCanvas : public QWidget {
                   WorldToScreenY(component.y + component.height),
                   std::max(component.width * scale_, 0.6),
                   std::max(component.height * scale_, 0.6));
+      painter.setPen(
+          QPen(component.fixed ? QColor(35, 42, 55) : QColor(66, 94, 111), 1));
       painter.drawRect(rect);
+
+      const double marker_size = std::min(
+          std::clamp(std::min(rect.width(), rect.height()) * 0.35, 3.0, 10.0),
+          std::min(rect.width(), rect.height()));
+      if (marker_size >= 2.0) {
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(QColor(17, 24, 39, 230));
+        painter.drawPolygon(
+            OrientationMarker(rect, component.orient, marker_size));
+      }
     }
 
     painter.setPen(QColor(31, 41, 55));
