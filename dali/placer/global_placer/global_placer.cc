@@ -150,7 +150,11 @@ void GlobalPlacer::InitializeComponentLocation() {
 
 void GlobalPlacer::PreparePlacement() {
   SanityCheck();
+  EmitSnapshot("initialization.before", "Before Location Initialization",
+               "initialization", -1);
   InitializeComponentLocation();
+  EmitSnapshot("initialization.after", "After Location Initialization",
+               "initialization", -1);
   InitializeOptimizerAndLegalizer();
 }
 
@@ -169,8 +173,6 @@ void GlobalPlacer::RunPlacementIterations() {
 void GlobalPlacer::EmitIterationSnapshot(const std::string& id_suffix,
                                          const std::string& label_suffix,
                                          const std::string& subgroup) {
-  if (!snapshot_callback_) return;
-
   char buffer[128];
   snprintf(buffer, sizeof(buffer), "iter_%03d.%s", cur_iter_,
            id_suffix.c_str());
@@ -178,7 +180,13 @@ void GlobalPlacer::EmitIterationSnapshot(const std::string& id_suffix,
   snprintf(buffer, sizeof(buffer), "Iteration %d %s", cur_iter_,
            label_suffix.c_str());
   std::string label = buffer;
-  snapshot_callback_(id, label, subgroup, cur_iter_);
+  EmitSnapshot(id, label, subgroup, cur_iter_);
+}
+
+void GlobalPlacer::EmitSnapshot(const std::string& id, const std::string& label,
+                                const std::string& subgroup, int iteration) {
+  if (!snapshot_callback_) return;
+  snapshot_callback_(id, label, subgroup, iteration);
 }
 
 void GlobalPlacer::FinalizePlacement() {

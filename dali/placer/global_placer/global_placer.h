@@ -88,6 +88,8 @@ class GlobalPlacer : public Placer {
   bool IsPlacementConverged();
   void PreparePlacement();
   void RunPlacementIterations();
+  void EmitSnapshot(const std::string& id, const std::string& label,
+                    const std::string& subgroup, int iteration);
   void EmitIterationSnapshot(const std::string& id_suffix,
                              const std::string& label_suffix,
                              const std::string& subgroup);
