@@ -5,7 +5,6 @@
 #include <unordered_map>
 
 namespace dali {
-namespace {
 
 TEST(IoPinTest, ExposesShapeStatusAndOrientationAccessors) {
   std::unordered_map<std::string, int> names;
@@ -26,5 +25,4 @@ TEST(IoPinTest, ExposesShapeStatusAndOrientationAccessors) {
   EXPECT_EQ(io_pin.Orient(), S);
 }
 
-}  // namespace
 }  // namespace dali

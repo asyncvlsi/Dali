@@ -27,17 +27,14 @@
 #include "dali/common/helper.h"
 
 namespace dali {
-namespace {
 
-double ComputeFillingRate(unsigned long long component_area,
-                          unsigned long long white_space) {
+static double ComputeFillingRate(unsigned long long component_area,
+                                 unsigned long long white_space) {
   if (white_space == 0) {
     return component_area == 0 ? 0.0 : std::numeric_limits<double>::infinity();
   }
   return double(component_area) / double(white_space);
 }
-
-}  // namespace
 
 BoxBin::BoxBin() {
   all_terminal = false;

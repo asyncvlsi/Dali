@@ -13,7 +13,6 @@
 #include "dali/circuit/circuit.h"
 
 namespace dali {
-namespace {
 
 TEST(CircuitProgrammaticConstructionTest, BuildsSmallCircuitThroughPublicApi) {
   Circuit circuit;
@@ -86,5 +85,4 @@ TEST(CircuitProgrammaticConstructionTest, BuildsSmallCircuitThroughPublicApi) {
   EXPECT_EQ(net_in->IoPinPtrs()[0]->Name(), "io_in");
 }
 
-}  // namespace
 }  // namespace dali

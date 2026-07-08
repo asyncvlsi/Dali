@@ -3,11 +3,10 @@
 #include "dali/circuit/circuit.h"
 
 namespace dali {
-namespace {
 
 using testing::ExitedWithCode;
 
-Circuit MakeUnitGridCircuit() {
+static Circuit MakeUnitGridCircuit() {
   Circuit circuit;
   circuit.SetManufacturingGrid(1);
   circuit.SetUnitsDistanceMicrons(1);
@@ -89,5 +88,4 @@ TEST(CircuitStatisticsTest, ReportsHistogramsForNetsWithoutPins) {
   EXPECT_NO_FATAL_FAILURE(circuit.ReportHPWLHistogramLogarithm());
 }
 
-}  // namespace
 }  // namespace dali

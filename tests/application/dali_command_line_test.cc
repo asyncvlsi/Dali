@@ -21,8 +21,6 @@
 #include <string>
 #include <vector>
 
-namespace {
-
 using testing::Test;
 
 class DaliCommandLineTest : public Test {
@@ -62,15 +60,34 @@ TEST_F(DaliCommandLineTest, ParsesRequiredInputsAndKeepsDefaults) {
 
 TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   dali::DaliCommandLineOptions options;
-  EXPECT_TRUE(
-      Parse({"dali", "-lef", "input.lef", "-def", "input.def", "-output_name",
-             "placed", "-metrics_file", "metrics.json", "-target_density",
-             "0.72", "-visualization_dir", "dali_snapshots", "-num_threads", "8",
-             "-io_metal_layer", "3", "-well_legalization_mode", "scavenge",
-             "-global_initializer", "keep", "-save_intermediate_result",
-             "-disable_detailed_place", "-disable_io_place", "-gui_debug",
-             "-gui_pause", "off"},
-            &options));
+  EXPECT_TRUE(Parse({"dali",
+                     "-lef",
+                     "input.lef",
+                     "-def",
+                     "input.def",
+                     "-output_name",
+                     "placed",
+                     "-metrics_file",
+                     "metrics.json",
+                     "-target_density",
+                     "0.72",
+                     "-visualization_dir",
+                     "dali_snapshots",
+                     "-num_threads",
+                     "8",
+                     "-io_metal_layer",
+                     "3",
+                     "-well_legalization_mode",
+                     "scavenge",
+                     "-global_initializer",
+                     "keep",
+                     "-save_intermediate_result",
+                     "-disable_detailed_place",
+                     "-disable_io_place",
+                     "-gui_debug",
+                     "-gui_pause",
+                     "off"},
+                    &options));
 
   EXPECT_EQ(options.output_name, "placed");
   EXPECT_EQ(options.metrics_file_name, "metrics.json");
@@ -130,5 +147,3 @@ TEST_F(DaliCommandLineTest, RejectsOutOfRangeOptions) {
                       "-gui_pause", "sometimes"},
                      &options));
 }
-
-}  // namespace

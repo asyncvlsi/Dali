@@ -20,9 +20,9 @@
 #include "dali/common/helper.h"
 
 namespace dali {
-namespace {
 
-bool TryGetValue(int argc, char* argv[], int* index, std::string* value) {
+static bool TryGetValue(int argc, char* argv[], int* index,
+                        std::string* value) {
   if (*index >= argc) {
     return false;
   }
@@ -30,7 +30,7 @@ bool TryGetValue(int argc, char* argv[], int* index, std::string* value) {
   return !value->empty();
 }
 
-bool TryParseDouble(const std::string& text, double* value) {
+static bool TryParseDouble(const std::string& text, double* value) {
   try {
     size_t parsed_length = 0;
     *value = std::stod(text, &parsed_length);
@@ -40,7 +40,7 @@ bool TryParseDouble(const std::string& text, double* value) {
   }
 }
 
-bool TryParseInt(const std::string& text, int* value) {
+static bool TryParseInt(const std::string& text, int* value) {
   try {
     size_t parsed_length = 0;
     *value = std::stoi(text, &parsed_length);
@@ -50,11 +50,9 @@ bool TryParseInt(const std::string& text, int* value) {
   }
 }
 
-void EnableConfigFlag(const char* config_name) {
+static void EnableConfigFlag(const char* config_name) {
   config_set_int(config_name, 1);
 }
-
-}  // namespace
 
 void ReportDaliUsage(std::ostream& output) {
   output

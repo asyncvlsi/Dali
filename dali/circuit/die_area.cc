@@ -27,15 +27,14 @@
 #include "dali/common/helper.h"
 
 namespace dali {
-namespace {
 
-bool IsStrictlyBetween(int value, int bound_0, int bound_1) {
+static bool IsStrictlyBetween(int value, int bound_0, int bound_1) {
   return value > std::min(bound_0, bound_1) &&
          value < std::max(bound_0, bound_1);
 }
 
-void CheckCommonSegment(const std::pair<int2d, int2d>& seg_0,
-                        const std::pair<int2d, int2d>& seg_1) {
+static void CheckCommonSegment(const std::pair<int2d, int2d>& seg_0,
+                               const std::pair<int2d, int2d>& seg_1) {
   bool is_horizontal_0 = (seg_0.first.y == seg_0.second.y);
   bool is_horizontal_1 = (seg_1.first.y == seg_1.second.y);
 
@@ -79,8 +78,6 @@ void CheckCommonSegment(const std::pair<int2d, int2d>& seg_0,
                     << "line: " << seg_1.first << " " << seg_1.second);
   }
 }
-
-}  // namespace
 
 /****
  * This function takes rectilinear die area in the unit of manufacturing grid,

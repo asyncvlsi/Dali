@@ -30,10 +30,9 @@
 #include "dali/common/placement_metrics.h"
 
 namespace dali {
-namespace {
 
-double ClampCenterToBox(double center, double lower, double upper,
-                        double object_size) {
+static double ClampCenterToBox(double center, double lower, double upper,
+                               double object_size) {
   double min_center = lower + object_size / 2.0;
   double max_center = upper - object_size / 2.0;
   if (min_center > max_center) {
@@ -41,8 +40,6 @@ double ClampCenterToBox(double center, double lower, double upper,
   }
   return std::clamp(center, min_center, max_center);
 }
-
-}  // namespace
 
 RandomInitializer::RandomInitializer(Circuit* ckt_ptr, uint32_t random_seed)
     : ckt_ptr_(ckt_ptr), random_seed_(random_seed) {

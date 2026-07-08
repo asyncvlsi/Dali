@@ -32,8 +32,6 @@
 
 #include "dali/common/logging.h"
 
-namespace {
-
 constexpr int kDatabaseMicrons = 1000;
 
 struct BookshelfFiles {
@@ -92,7 +90,7 @@ struct Benchmark {
   std::unordered_map<std::string, std::string> net_names;
 };
 
-std::string StripComment(std::string line) {
+static std::string StripComment(std::string line) {
   size_t pos = line.find('#');
   if (pos != std::string::npos) {
     line.resize(pos);
@@ -100,7 +98,7 @@ std::string StripComment(std::string line) {
   return line;
 }
 
-std::vector<std::string> Tokenize(std::string const& line) {
+static std::vector<std::string> Tokenize(std::string const& line) {
   std::istringstream stream(StripComment(line));
   std::vector<std::string> tokens;
   std::string token;
@@ -110,7 +108,7 @@ std::vector<std::string> Tokenize(std::string const& line) {
   return tokens;
 }
 
-std::string DirectoryName(std::string const& path) {
+static std::string DirectoryName(std::string const& path) {
   size_t pos = path.find_last_of("/\\");
   if (pos == std::string::npos) {
     return ".";
@@ -118,7 +116,7 @@ std::string DirectoryName(std::string const& path) {
   return path.substr(0, pos);
 }
 
-std::string BaseName(std::string const& path) {
+static std::string BaseName(std::string const& path) {
   size_t pos = path.find_last_of("/\\");
   if (pos == std::string::npos) {
     return path;
@@ -126,11 +124,11 @@ std::string BaseName(std::string const& path) {
   return path.substr(pos + 1);
 }
 
-bool IsAbsolutePath(std::string const& path) {
+static bool IsAbsolutePath(std::string const& path) {
   return !path.empty() && path.front() == '/';
 }
 
-std::string JoinPath(std::string const& dir, std::string const& file) {
+static std::string JoinPath(std::string const& dir, std::string const& file) {
   if (file.empty() || IsAbsolutePath(file)) {
     return file;
   }
@@ -140,7 +138,7 @@ std::string JoinPath(std::string const& dir, std::string const& file) {
   return dir + "/" + file;
 }
 
-std::string Stem(std::string path) {
+static std::string Stem(std::string path) {
   path = BaseName(path);
   size_t pos = path.find_last_of('.');
   if (pos == std::string::npos) {
@@ -149,7 +147,7 @@ std::string Stem(std::string path) {
   return path.substr(0, pos);
 }
 
-std::string SanitizeName(std::string const& name) {
+static std::string SanitizeName(std::string const& name) {
   std::string result;
   result.reserve(name.size() + 1);
   for (char c : name) {
@@ -168,8 +166,8 @@ std::string SanitizeName(std::string const& name) {
   return result;
 }
 
-std::string UniqueName(std::string const& name,
-                       std::unordered_map<std::string, int>* used_names) {
+static std::string UniqueName(
+    std::string const& name, std::unordered_map<std::string, int>* used_names) {
   std::string base = SanitizeName(name);
   int& count = (*used_names)[base];
   if (count == 0) {
@@ -184,7 +182,7 @@ std::string UniqueName(std::string const& name,
   return unique_name;
 }
 
-double ToDouble(std::string const& value, std::string const& context) {
+static double ToDouble(std::string const& value, std::string const& context) {
   try {
     return std::stod(value);
   } catch (...) {
@@ -193,7 +191,7 @@ double ToDouble(std::string const& value, std::string const& context) {
   return 0;
 }
 
-int ToInt(std::string const& value, std::string const& context) {
+static int ToInt(std::string const& value, std::string const& context) {
   try {
     return std::stoi(value);
   } catch (...) {
@@ -202,7 +200,7 @@ int ToInt(std::string const& value, std::string const& context) {
   return 0;
 }
 
-BookshelfFiles ParseAux(std::string const& aux_path) {
+static BookshelfFiles ParseAux(std::string const& aux_path) {
   std::ifstream input(aux_path);
   DaliExpects(input.is_open(), "Cannot open Bookshelf aux file: " << aux_path);
 
@@ -236,7 +234,7 @@ BookshelfFiles ParseAux(std::string const& aux_path) {
   return files;
 }
 
-void ParseNodes(std::string const& path, Benchmark* benchmark) {
+static void ParseNodes(std::string const& path, Benchmark* benchmark) {
   std::ifstream input(path);
   DaliExpects(input.is_open(), "Cannot open Bookshelf nodes file: " << path);
 
@@ -259,7 +257,7 @@ void ParseNodes(std::string const& path, Benchmark* benchmark) {
   }
 }
 
-void ParsePlacements(std::string const& path, Benchmark* benchmark) {
+static void ParsePlacements(std::string const& path, Benchmark* benchmark) {
   std::ifstream input(path);
   DaliExpects(input.is_open(),
               "Cannot open Bookshelf placement file: " << path);
@@ -284,7 +282,7 @@ void ParsePlacements(std::string const& path, Benchmark* benchmark) {
   }
 }
 
-void ParseNets(std::string const& path, Benchmark* benchmark) {
+static void ParseNets(std::string const& path, Benchmark* benchmark) {
   std::ifstream input(path);
   DaliExpects(input.is_open(), "Cannot open Bookshelf nets file: " << path);
 
@@ -331,7 +329,7 @@ void ParseNets(std::string const& path, Benchmark* benchmark) {
   }
 }
 
-void ParseRows(std::string const& path, Benchmark* benchmark) {
+static void ParseRows(std::string const& path, Benchmark* benchmark) {
   std::ifstream input(path);
   DaliExpects(input.is_open(), "Cannot open Bookshelf scl file: " << path);
 
@@ -375,7 +373,7 @@ void ParseRows(std::string const& path, Benchmark* benchmark) {
   }
 }
 
-void AssignLefDefNames(Benchmark* benchmark) {
+static void AssignLefDefNames(Benchmark* benchmark) {
   std::unordered_map<std::string, int> used_component_names;
   std::unordered_map<std::string, int> used_macro_names;
   for (auto const& node : benchmark->nodes) {
@@ -404,7 +402,7 @@ void AssignLefDefNames(Benchmark* benchmark) {
   }
 }
 
-Benchmark LoadBenchmark(std::string const& aux_path) {
+static Benchmark LoadBenchmark(std::string const& aux_path) {
   BookshelfFiles files = ParseAux(aux_path);
   Benchmark benchmark;
   ParseNodes(files.nodes, &benchmark);
@@ -417,21 +415,21 @@ Benchmark LoadBenchmark(std::string const& aux_path) {
   return benchmark;
 }
 
-double PinX(Node const& node, NetPin const& pin) {
+static double PinX(Node const& node, NetPin const& pin) {
   return node.width / 2.0 + pin.offset_x;
 }
 
-double PinY(Node const& node, NetPin const& pin) {
+static double PinY(Node const& node, NetPin const& pin) {
   return node.height / 2.0 + pin.offset_y;
 }
 
-void WriteRect(std::ostream& out, double x, double y) {
+static void WriteRect(std::ostream& out, double x, double y) {
   constexpr double kHalfPinSize = 0.5;
   out << "        RECT " << x - kHalfPinSize << " " << y - kHalfPinSize << " "
       << x + kHalfPinSize << " " << y + kHalfPinSize << " ;\n";
 }
 
-void WriteLef(Benchmark const& benchmark, std::string const& lef_path) {
+static void WriteLef(Benchmark const& benchmark, std::string const& lef_path) {
   std::ofstream out(lef_path);
   DaliExpects(out.is_open(), "Cannot open output LEF file: " << lef_path);
 
@@ -483,8 +481,8 @@ void WriteLef(Benchmark const& benchmark, std::string const& lef_path) {
   out << "END LIBRARY\n";
 }
 
-void ComputeDieArea(Benchmark const& benchmark, double* lx, double* ly,
-                    double* ux, double* uy) {
+static void ComputeDieArea(Benchmark const& benchmark, double* lx, double* ly,
+                           double* ux, double* uy) {
   *lx = std::numeric_limits<double>::max();
   *ly = std::numeric_limits<double>::max();
   *ux = std::numeric_limits<double>::lowest();
@@ -497,10 +495,10 @@ void ComputeDieArea(Benchmark const& benchmark, double* lx, double* ly,
   }
 }
 
-double ToDatabaseUnits(double value) { return value * kDatabaseMicrons; }
+static double ToDatabaseUnits(double value) { return value * kDatabaseMicrons; }
 
-void WriteDef(Benchmark const& benchmark, std::string const& def_path,
-              std::string const& design_name) {
+static void WriteDef(Benchmark const& benchmark, std::string const& def_path,
+                     std::string const& design_name) {
   std::ofstream out(def_path);
   DaliExpects(out.is_open(), "Cannot open output DEF file: " << def_path);
 
@@ -557,7 +555,7 @@ void WriteDef(Benchmark const& benchmark, std::string const& def_path,
   out << "END DESIGN\n";
 }
 
-void ReportUsage() {
+static void ReportUsage() {
   LOG(info) << "\033[0;36m"
             << "Usage: bookshelf2lefdef\n"
             << " -aux <file.aux>\n"
@@ -566,8 +564,6 @@ void ReportUsage() {
             << "(order does not matter)"
             << "\033[0m\n";
 }
-
-}  // namespace
 
 int main(int argc, char* argv[]) {
   std::string aux_path;

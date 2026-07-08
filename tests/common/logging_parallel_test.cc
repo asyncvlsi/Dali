@@ -30,18 +30,14 @@
 
 #include "dali/common/logging.h"
 
-namespace {
-
 constexpr int kThreadCount = 8;
 constexpr int kMessagesPerThread = 200;
 
-std::string ExpectedRecord(int thread_id, int message_id) {
+static std::string ExpectedRecord(int thread_id, int message_id) {
   std::ostringstream record;
   record << "BEGIN tid=" << thread_id << " msg=" << message_id << " END";
   return record.str();
 }
-
-}  // namespace
 
 TEST(LoggingTest, WritesCompleteRecordsFromParallelThreads) {
   const std::filesystem::path log_file =

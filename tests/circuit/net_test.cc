@@ -3,9 +3,8 @@
 #include "dali/circuit/circuit.h"
 
 namespace dali {
-namespace {
 
-Circuit MakeUnitGridCircuit() {
+static Circuit MakeUnitGridCircuit() {
   Circuit circuit;
   circuit.SetManufacturingGrid(1);
   circuit.SetUnitsDistanceMicrons(1);
@@ -35,5 +34,4 @@ TEST(NetTest, UpdatesCenterToCenterExtremesByComponentCenter) {
   EXPECT_EQ(net->MaxComponentPtrX()->Name(), "u_right");
 }
 
-}  // namespace
 }  // namespace dali

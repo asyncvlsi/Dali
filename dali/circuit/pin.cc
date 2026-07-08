@@ -23,9 +23,7 @@
 #include "macro.h"
 
 namespace dali {
-namespace {
 constexpr int kOrientCount = 8;
-}  // namespace
 
 Pin::Pin(std::pair<const std::string, int>* name_id_pair_ptr, Macro* macro_ptr)
     : name_id_pair_ptr_(name_id_pair_ptr),

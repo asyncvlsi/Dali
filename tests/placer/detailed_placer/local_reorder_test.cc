@@ -17,7 +17,6 @@
 #include "dali/placer/detailed_placer/detailed_placer.h"
 
 namespace dali {
-namespace {
 
 class DetailedPlacerLocalReorderTest : public testing::Test {
  protected:
@@ -62,7 +61,8 @@ class DetailedPlacerLocalReorderTest : public testing::Test {
   Circuit circuit_;
 };
 
-TEST_F(DetailedPlacerLocalReorderTest, ReordersThreeCellWindowWhenHpwlImproves) {
+TEST_F(DetailedPlacerLocalReorderTest,
+       ReordersThreeCellWindowWhenHpwlImproves) {
   double hpwl_before = circuit_.WeightedHPWL();
 
   DetailedPlacer placer;
@@ -79,5 +79,4 @@ TEST_F(DetailedPlacerLocalReorderTest, ReordersThreeCellWindowWhenHpwlImproves) 
   EXPECT_EQ(locations, std::vector<double>({0, 10, 20}));
 }
 
-}  // namespace
 }  // namespace dali

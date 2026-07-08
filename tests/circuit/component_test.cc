@@ -16,8 +16,6 @@
 
 #include "dali/circuit/macro.h"
 
-namespace {
-
 class ComponentTest : public testing::Test {
  protected:
   std::string macro_name = "cell";
@@ -65,5 +63,3 @@ TEST_F(ComponentTest, TracksEffectiveHeightAndArea) {
   EXPECT_EQ(component.Height(), 4);
   EXPECT_EQ(component.Area(), 40);
 }
-
-}  // namespace

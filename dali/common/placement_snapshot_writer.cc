@@ -24,7 +24,6 @@
 #include "dali/common/logging.h"
 
 namespace dali {
-namespace {
 
 constexpr uint32_t kBinarySchemaVersion = 1;
 constexpr uint32_t kInvalidIndex = std::numeric_limits<uint32_t>::max();
@@ -88,7 +87,7 @@ static_assert(sizeof(ComponentGridRecord) == 16);
 static_assert(sizeof(ComponentContinuousRecord) == 16);
 static_assert(sizeof(NetMetricRecord) == 8);
 
-std::string JsonEscape(const std::string& text) {
+static std::string JsonEscape(const std::string& text) {
   std::ostringstream escaped;
   for (char ch : text) {
     switch (ch) {
@@ -121,32 +120,35 @@ std::string JsonEscape(const std::string& text) {
   return escaped.str();
 }
 
-void WriteJsonString(std::ostream& out, const std::string& text) {
+static void WriteJsonString(std::ostream& out, const std::string& text) {
   out << '"' << JsonEscape(text) << '"';
 }
 
-double ToMicronX(Circuit* circuit, double x) {
+static double ToMicronX(Circuit* circuit, double x) {
   return x * circuit->GridValueX();
 }
 
-double ToMicronY(Circuit* circuit, double y) {
+static double ToMicronY(Circuit* circuit, double y) {
   return y * circuit->GridValueY();
 }
 
-bool NetHasComponentPins(Net& net) { return !net.ComponentPins().empty(); }
+static bool NetHasComponentPins(Net& net) {
+  return !net.ComponentPins().empty();
+}
 
-bool IsVisualizationComponent(Circuit* circuit, Component& component) {
+static bool IsVisualizationComponent(Circuit* circuit, Component& component) {
   return component.MacroPtr() != circuit->tech().IoDummyMacroPtr();
 }
 
-bool IsDrawableNet(Net& net) {
+static bool IsDrawableNet(Net& net) {
   return NetHasComponentPins(net) &&
          net.ComponentPins().size() <= kDrawableNetMaxPinCount;
 }
 
 template <typename Record>
-void WriteBinaryTable(const std::filesystem::path& path, const char (&magic)[8],
-                      const std::vector<Record>& records) {
+static void WriteBinaryTable(const std::filesystem::path& path,
+                             const char (&magic)[8],
+                             const std::vector<Record>& records) {
   std::ofstream out(path, std::ios::binary);
   BinaryHeader header{};
   std::copy(std::begin(magic), std::end(magic), std::begin(header.magic));
@@ -159,8 +161,6 @@ void WriteBinaryTable(const std::filesystem::path& path, const char (&magic)[8],
               static_cast<std::streamsize>(records.size() * sizeof(Record)));
   }
 }
-
-}  // namespace
 
 void PlacementSnapshotWriter::StartRun(const std::filesystem::path& output_dir,
                                        const std::string& design_name,

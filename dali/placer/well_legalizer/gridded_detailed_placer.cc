@@ -21,7 +21,6 @@
 #include "dali/common/placement_metrics.h"
 
 namespace dali {
-namespace {
 
 struct GriddedRowSnapshot {
   GriddedRow* row = nullptr;
@@ -31,7 +30,7 @@ struct GriddedRowSnapshot {
   std::vector<ComponentOrient> component_orient;
 };
 
-std::vector<GriddedRowSnapshot> SaveRowState(
+static std::vector<GriddedRowSnapshot> SaveRowState(
     const std::vector<GriddedRow*>& rows) {
   std::vector<GriddedRowSnapshot> snapshots;
   snapshots.reserve(rows.size());
@@ -52,7 +51,7 @@ std::vector<GriddedRowSnapshot> SaveRowState(
   return snapshots;
 }
 
-void RestoreRowState(const std::vector<GriddedRowSnapshot>& snapshots) {
+static void RestoreRowState(const std::vector<GriddedRowSnapshot>& snapshots) {
   for (const GriddedRowSnapshot& snapshot : snapshots) {
     snapshot.row->Components() = snapshot.component_order;
     for (size_t i = 0; i < snapshot.component_order.size(); ++i) {
@@ -62,8 +61,6 @@ void RestoreRowState(const std::vector<GriddedRowSnapshot>& snapshots) {
     }
   }
 }
-
-}  // namespace
 
 void GriddedDetailedPlacer::SetRows(std::vector<GriddedRow*> rows) {
   rows_ = std::move(rows);

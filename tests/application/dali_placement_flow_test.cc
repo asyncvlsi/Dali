@@ -17,8 +17,6 @@
 
 #include "dali/dali.h"
 
-namespace {
-
 using testing::Test;
 
 class DaliPlacementFlowTest : public Test {
@@ -112,5 +110,3 @@ TEST_F(DaliPlacementFlowTest, RunsMovableCellLegalizationForMovableDesign) {
   EXPECT_TRUE(placer.ShouldRunMovableCellLegalization());
   placer.Close();
 }
-
-}  // namespace

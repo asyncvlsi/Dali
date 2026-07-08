@@ -16,9 +16,7 @@
 #include <fstream>
 #include <string>
 
-namespace {
-
-std::string ReadFile(const std::filesystem::path& path) {
+static std::string ReadFile(const std::filesystem::path& path) {
   std::ifstream input(path);
   return std::string(std::istreambuf_iterator<char>(input),
                      std::istreambuf_iterator<char>());
@@ -69,5 +67,3 @@ TEST(PlacementMetricsTest, GlobalWrapperClearRemovesOldStageValues) {
 
   std::filesystem::remove(metrics_file);
 }
-
-}  // namespace

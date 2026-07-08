@@ -6,9 +6,8 @@
 #include "dali/common/misc.h"
 
 namespace dali {
-namespace {
 
-Circuit MakeUnitGridCircuit() {
+static Circuit MakeUnitGridCircuit() {
   Circuit circuit;
   circuit.SetManufacturingGrid(1);
   circuit.SetUnitsDistanceMicrons(1);
@@ -16,7 +15,8 @@ Circuit MakeUnitGridCircuit() {
   return circuit;
 }
 
-std::vector<int2d> MakeDieArea(std::initializer_list<std::pair<int, int>> pts) {
+static std::vector<int2d> MakeDieArea(
+    std::initializer_list<std::pair<int, int>> pts) {
   std::vector<int2d> die_area;
   die_area.reserve(pts.size());
   for (const auto& [x, y] : pts) {
@@ -67,5 +67,4 @@ TEST(DieAreaTest, RemovesRedundantRectilinearVertices) {
   EXPECT_EQ(blockages[0].GetRect().URY(), 10);
 }
 
-}  // namespace
 }  // namespace dali

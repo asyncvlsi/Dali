@@ -14,8 +14,6 @@
 
 #include <string>
 
-namespace {
-
 TEST(MacroTest, ReportsFirstWellHeights) {
   std::string name = "cell";
   dali::Macro macro(&name);
@@ -38,5 +36,3 @@ TEST(MacroTest, InfersFirstWellHeightsFromNwellOnlyGeometry) {
   EXPECT_EQ(macro.FirstPwellHeight(), 6);
   EXPECT_EQ(macro.FirstNwellHeight(), 14);
 }
-
-}  // namespace

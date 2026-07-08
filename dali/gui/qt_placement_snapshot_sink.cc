@@ -39,7 +39,6 @@
 #include "dali/common/logging.h"
 
 namespace dali {
-namespace {
 
 struct SnapshotComponent {
   float x = 0;
@@ -50,14 +49,14 @@ struct SnapshotComponent {
   ComponentOrient orient = N;
 };
 
-std::string FormatHpwl(double hpwl) {
+static std::string FormatHpwl(double hpwl) {
   std::ostringstream out;
   out.precision(8);
   out << hpwl;
   return out.str();
 }
 
-QString FormatCompactHpwl(double hpwl) {
+static QString FormatCompactHpwl(double hpwl) {
   if (std::abs(hpwl) >= 1e6) {
     return QString("%1M").arg(hpwl / 1e6, 0, 'f', 2);
   }
@@ -74,7 +73,7 @@ enum class CellMarkerCorner {
   kUpperRight,
 };
 
-CellMarkerCorner LocalLowerLeftCorner(ComponentOrient orient) {
+static CellMarkerCorner LocalLowerLeftCorner(ComponentOrient orient) {
   switch (orient) {
     case N:
     case FE:
@@ -92,8 +91,8 @@ CellMarkerCorner LocalLowerLeftCorner(ComponentOrient orient) {
   return CellMarkerCorner::kLowerLeft;
 }
 
-QPolygonF OrientationMarker(const QRectF& rect, ComponentOrient orient,
-                            double size) {
+static QPolygonF OrientationMarker(const QRectF& rect, ComponentOrient orient,
+                                   double size) {
   QPolygonF marker;
   switch (LocalLowerLeftCorner(orient)) {
     case CellMarkerCorner::kLowerLeft:
@@ -120,7 +119,7 @@ QPolygonF OrientationMarker(const QRectF& rect, ComponentOrient orient,
 constexpr double kCanvasMargin = 24.0;
 constexpr double kStatusBandHeight = 48.0;
 
-QString SanitizeFileStem(QString stem) {
+static QString SanitizeFileStem(QString stem) {
   stem = stem.trimmed();
   for (int i = 0; i < stem.size(); ++i) {
     const QChar ch = stem.at(i);
@@ -135,7 +134,7 @@ QString SanitizeFileStem(QString stem) {
   return stem.isEmpty() ? QString("dali_snapshot") : stem;
 }
 
-QString UniqueImagePath(const QDir& dir, const QString& file_stem) {
+static QString UniqueImagePath(const QDir& dir, const QString& file_stem) {
   QString path = dir.filePath(file_stem + ".png");
   int suffix = 1;
   while (QFileInfo::exists(path)) {
@@ -143,8 +142,6 @@ QString UniqueImagePath(const QDir& dir, const QString& file_stem) {
   }
   return path;
 }
-
-}  // namespace
 
 class PlacementCanvas : public QWidget {
  public:

@@ -18,14 +18,13 @@
 #include "dali/common/logging.h"
 
 namespace dali {
-namespace {
 
-PlacementMetrics& GlobalPlacementMetrics() {
+static PlacementMetrics& GlobalPlacementMetrics() {
   static PlacementMetrics metrics;
   return metrics;
 }
 
-std::string JsonEscape(const std::string& text) {
+static std::string JsonEscape(const std::string& text) {
   std::string escaped;
   escaped.reserve(text.size());
   for (char ch : text) {
@@ -52,8 +51,6 @@ std::string JsonEscape(const std::string& text) {
   }
   return escaped;
 }
-
-}  // namespace
 
 void PlacementMetrics::Clear() { metrics_.clear(); }
 

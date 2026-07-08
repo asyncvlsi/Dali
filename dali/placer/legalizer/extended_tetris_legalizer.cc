@@ -30,16 +30,15 @@
 
 namespace dali {
 
-namespace {
-
 constexpr int kMaxLegalizationFailureExamples = 5;
 
-void LogLegalizationFailureExample(const char* pass_name, size_t iteration,
-                                   int example_id, const Component& component,
-                                   const Value2D<int>& target_loc,
-                                   int search_start_row, int search_end_row,
-                                   int total_rows, int region_left,
-                                   int region_right) {
+static void LogLegalizationFailureExample(const char* pass_name,
+                                          size_t iteration, int example_id,
+                                          const Component& component,
+                                          const Value2D<int>& target_loc,
+                                          int search_start_row,
+                                          int search_end_row, int total_rows,
+                                          int region_left, int region_right) {
   LOG(warning) << "ExtendedTetris legalization could not place component "
                << component.Name() << " during " << pass_name << " pass"
                << " (iteration " << iteration << ", example " << example_id
@@ -59,9 +58,10 @@ void LogLegalizationFailureExample(const char* pass_name, size_t iteration,
                << region_right << "]\n";
 }
 
-void LogLegalizationFailureSummary(const char* pass_name, size_t iteration,
-                                   int failed_component_count,
-                                   size_t checked_component_count) {
+static void LogLegalizationFailureSummary(const char* pass_name,
+                                          size_t iteration,
+                                          int failed_component_count,
+                                          size_t checked_component_count) {
   LOG(warning) << "ExtendedTetris legalization " << pass_name
                << " pass failed (iteration " << iteration
                << "): " << failed_component_count << " of "
@@ -73,8 +73,6 @@ void LogLegalizationFailureSummary(const char* pass_name, size_t iteration,
                   "blockages, or target density cannot fit those components "
                   "within the current legalizer settings.\n";
 }
-
-}  // namespace
 
 ExtendedTetrisLegalizer::ExtendedTetrisLegalizer()
     : Placer(),

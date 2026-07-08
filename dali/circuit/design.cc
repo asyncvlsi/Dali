@@ -29,9 +29,8 @@
 
 namespace dali {
 
-namespace {
-
-size_t FindFanoutBucket(const std::vector<size_t>& buckets, size_t net_size) {
+static size_t FindFanoutBucket(const std::vector<size_t>& buckets,
+                               size_t net_size) {
   auto it = std::lower_bound(buckets.begin(), buckets.end(), net_size);
   if (it == buckets.end()) {
     return buckets.size() - 1;
@@ -39,12 +38,10 @@ size_t FindFanoutBucket(const std::vector<size_t>& buckets, size_t net_size) {
   return static_cast<size_t>(std::distance(buckets.begin(), it));
 }
 
-void NormalizeFanoutBuckets(std::vector<size_t>* buckets) {
+static void NormalizeFanoutBuckets(std::vector<size_t>* buckets) {
   std::sort(buckets->begin(), buckets->end());
   buckets->erase(std::unique(buckets->begin(), buckets->end()), buckets->end());
 }
-
-}  // namespace
 
 RectI Design::ExpandOffGridPlacementBlockage(double lx, double ly, double ux,
                                              double uy) {

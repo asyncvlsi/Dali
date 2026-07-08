@@ -26,9 +26,7 @@
 
 #include "dali/common/helper.h"
 
-namespace {
-
-unsigned long long CoverArea(std::vector<dali::RectI> rects) {
+static unsigned long long CoverArea(std::vector<dali::RectI> rects) {
   return GetCoverArea(rects);
 }
 
@@ -59,5 +57,3 @@ TEST(MiscTest, ComputesCoverAreaForDisjointAndOverlappingRectangles) {
                  dali::RectI(20, 20, 30, 30), dali::RectI(20, 25, 30, 35)}),
       325);
 }
-
-}  // namespace

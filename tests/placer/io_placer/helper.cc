@@ -30,8 +30,6 @@
 
 namespace dali {
 
-namespace {
-
 struct PinBbox {
   double lx;
   double ly;
@@ -39,8 +37,8 @@ struct PinBbox {
   double uy;
 };
 
-std::pair<double, double> TransformPinPoint(double px, double py,
-                                            ComponentOrient orient) {
+static std::pair<double, double> TransformPinPoint(double px, double py,
+                                                   ComponentOrient orient) {
   switch (orient) {
     case N:
       return {px, py};
@@ -64,7 +62,8 @@ std::pair<double, double> TransformPinPoint(double px, double py,
   }
 }
 
-PinBbox GetPlacedPinBbox(phydb::IOPin& iopin, double extra_margin = 0.0) {
+static PinBbox GetPlacedPinBbox(phydb::IOPin& iopin,
+                                double extra_margin = 0.0) {
   const auto shape = iopin.GetRect();
   const int x = iopin.GetLocation().x;
   const int y = iopin.GetLocation().y;
@@ -99,8 +98,6 @@ PinBbox GetPlacedPinBbox(phydb::IOPin& iopin, double extra_margin = 0.0) {
   }
   return bbox;
 }
-
-}  // namespace
 
 /****
  * @brief Set all iopins to UNPLACED state

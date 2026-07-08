@@ -38,17 +38,13 @@
 
 namespace dali {
 
-namespace {
-
-double CheckedAverage(unsigned long long total, int count,
-                      const std::string& quantity_name) {
+static double CheckedAverage(unsigned long long total, int count,
+                             const std::string& quantity_name) {
   DaliExpects(count > 0, "Cannot compute average "
                              << quantity_name
                              << " without any matching components");
   return static_cast<double>(total) / static_cast<double>(count);
 }
-
-}  // namespace
 
 Circuit::Circuit() { AddDummyIOPinComponentType(); }
 

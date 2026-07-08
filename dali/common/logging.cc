@@ -32,18 +32,17 @@
 #include <thread>
 
 namespace dali {
-namespace {
 
-std::ofstream g_log_file;
-std::mutex g_log_mutex;
-severity g_min_severity = severity::info;
-bool g_disable_log_prefix = false;
+static std::ofstream g_log_file;
+static std::mutex g_log_mutex;
+static severity g_min_severity = severity::info;
+static bool g_disable_log_prefix = false;
 
-bool ShouldLog(severity level) {
+static bool ShouldLog(severity level) {
   return static_cast<int>(level) >= static_cast<int>(g_min_severity);
 }
 
-std::string FindAvailableLogFileName() {
+static std::string FindAvailableLogFileName() {
   constexpr int kUpperLimit = 2048;
   for (int i = 0; i < kUpperLimit; ++i) {
     std::string file_name = "dali" + std::to_string(i) + ".log";
@@ -54,7 +53,7 @@ std::string FindAvailableLogFileName() {
   return "dali_out_of_bounds.log";
 }
 
-std::string CurrentTimestamp() {
+static std::string CurrentTimestamp() {
   auto now = std::chrono::system_clock::now();
   std::time_t current_time = std::chrono::system_clock::to_time_t(now);
   std::tm local_time{};
@@ -65,14 +64,12 @@ std::string CurrentTimestamp() {
   return timestamp.str();
 }
 
-std::string LogPrefix(severity level) {
+static std::string LogPrefix(severity level) {
   std::ostringstream prefix;
   prefix << "[" << CurrentTimestamp() << "] [" << std::this_thread::get_id()
          << "] [" << SeverityName(level) << "] ";
   return prefix.str();
 }
-
-}  // namespace
 
 const char* SeverityName(severity level) {
   switch (level) {

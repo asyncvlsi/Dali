@@ -17,8 +17,6 @@
 
 #include "dali/dali.h"
 
-namespace {
-
 using testing::Test;
 
 class DaliConfigTest : public Test {
@@ -127,5 +125,3 @@ TEST_F(DaliConfigTest, IgnoresUnknownWellLegalizationMode) {
 
   placer.Close();
 }
-
-}  // namespace

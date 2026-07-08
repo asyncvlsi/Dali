@@ -21,9 +21,7 @@
 #include "io_pin.h"
 
 namespace dali {
-namespace {
 constexpr int kOrientCount = 8;
-}  // namespace
 
 IoPin::IoPin(std::pair<const std::string, int>* name_id_pair_ptr)
     : name_id_pair_ptr_(name_id_pair_ptr),

@@ -24,8 +24,6 @@
 
 #include <string>
 
-namespace {
-
 class TestInstance {
  public:
   explicit TestInstance(const std::string* name) : name_(name) {}
@@ -81,5 +79,3 @@ TEST(NamedInstanceRegistryTest, ClearResetsFrozenStateAndContents) {
   EXPECT_EQ(created.Name(), "new");
   EXPECT_FALSE(collection.NameExists("old"));
 }
-
-}  // namespace

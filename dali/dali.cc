@@ -35,41 +35,40 @@
 #include "dali/common/placement_metrics.h"
 
 namespace dali {
-namespace {
 
-std::string ConfigName(const std::string& prefix, const char* name) {
+static std::string ConfigName(const std::string& prefix, const char* name) {
   return prefix + name;
 }
 
-bool ConfigExists(const std::string& name) {
+static bool ConfigExists(const std::string& name) {
   return config_exists(name.c_str());
 }
 
-void LoadBoolConfig(const std::string& name, bool* value) {
+static void LoadBoolConfig(const std::string& name, bool* value) {
   if (ConfigExists(name)) {
     *value = config_get_int(name.c_str()) == 1;
   }
 }
 
-void LoadIntConfig(const std::string& name, int* value) {
+static void LoadIntConfig(const std::string& name, int* value) {
   if (ConfigExists(name)) {
     *value = config_get_int(name.c_str());
   }
 }
 
-void LoadRealConfig(const std::string& name, double* value) {
+static void LoadRealConfig(const std::string& name, double* value) {
   if (ConfigExists(name)) {
     *value = config_get_real(name.c_str());
   }
 }
 
-void LoadStringConfig(const std::string& name, std::string* value) {
+static void LoadStringConfig(const std::string& name, std::string* value) {
   if (ConfigExists(name)) {
     *value = config_get_string(name.c_str());
   }
 }
 
-RandomInitializerType ParseGlobalInitializer(const std::string& name) {
+static RandomInitializerType ParseGlobalInitializer(const std::string& name) {
   if (name == "keep") {
     return RandomInitializerType::KEEP;
   }
@@ -88,8 +87,6 @@ RandomInitializerType ParseGlobalInitializer(const std::string& name) {
   std::cout << "Ignore unknown global_initializer: " << name << "\n";
   return RandomInitializerType::UNIFORM;
 }
-
-}  // namespace
 
 Dali::Dali(phydb::PhyDB* phy_db_ptr, const std::string& severity_level,
            const std::string& log_file_name) {

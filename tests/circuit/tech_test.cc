@@ -5,7 +5,6 @@
 #include "dali/circuit/circuit.h"
 
 namespace dali {
-namespace {
 
 using testing::ExitedWithCode;
 
@@ -23,5 +22,4 @@ TEST(TechTest, RejectsUnsetManufacturingGrid) {
   EXPECT_EXIT(tech.ManufacturingGrid(), ExitedWithCode(1), "");
 }
 
-}  // namespace
 }  // namespace dali

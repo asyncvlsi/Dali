@@ -38,10 +38,8 @@
 
 using namespace dali;
 
-namespace {
-
 /** Print the application banner shown at startup. */
-void PrintSoftwareStatement() {
+static void PrintSoftwareStatement() {
   std::cout
       // clang-format off
       << "\n"
@@ -67,8 +65,8 @@ void PrintSoftwareStatement() {
 }
 
 /** Load LEF/DEF/CELL inputs into PhyDB using parsed command-line options. */
-void InitializePhyDb(const DaliCommandLineOptions& options,
-                     phydb::PhyDB* phy_db) {
+static void InitializePhyDb(const DaliCommandLineOptions& options,
+                            phydb::PhyDB* phy_db) {
   if (options.x_grid > 0 && options.y_grid > 0) {
     phy_db->SetPlacementGrids(options.x_grid, options.y_grid);
   }
@@ -78,8 +76,6 @@ void InitializePhyDb(const DaliCommandLineOptions& options,
     phy_db->ReadCell(options.cell_file_name);
   }
 }
-
-}  // namespace
 
 int main(int argc, char* argv[]) {
   PrintSoftwareStatement();
