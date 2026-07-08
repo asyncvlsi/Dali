@@ -164,7 +164,8 @@ class PlacementCanvas : public QWidget {
       view_ury_ = std::max(view_ury_, component_ly + component_height);
     }
 
-    title_ = metadata.id + " | HPWL " + FormatHpwl(circuit->WeightedHPWL());
+    snapshot_label_ = metadata.id;
+    hpwl_label_ = "HPWL " + FormatHpwl(circuit->WeightedHPWL());
     has_snapshot_ = true;
     if (!has_view_) {
       FitToView();
@@ -292,9 +293,12 @@ class PlacementCanvas : public QWidget {
 
     painter->setPen(QColor(31, 41, 55));
     painter->drawText(QPointF(16, band.top() + 20),
-                      QString::fromStdString(title_));
+                      QString::fromStdString(snapshot_label_));
     painter->setPen(QColor(75, 85, 99));
     painter->drawText(QPointF(16, band.top() + 38),
+                      QString::fromStdString(hpwl_label_));
+    painter->drawText(QRectF(0, band.top() + 26, width() - 16, 18),
+                      Qt::AlignRight | Qt::AlignVCenter,
                       QString("zoom %1 px/um").arg(scale_, 0, 'g', 4));
   }
 
@@ -304,7 +308,8 @@ class PlacementCanvas : public QWidget {
   double ScreenToWorldY(double y) const { return (pan_y_ - y) / scale_; }
 
   std::vector<SnapshotComponent> components_;
-  std::string title_ = "Waiting for first placement snapshot";
+  std::string snapshot_label_ = "Waiting for first placement snapshot";
+  std::string hpwl_label_;
   double boundary_llx_ = 0;
   double boundary_lly_ = 0;
   double boundary_urx_ = 1;
