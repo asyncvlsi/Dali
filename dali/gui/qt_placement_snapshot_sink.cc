@@ -12,8 +12,12 @@
 
 #include <QApplication>
 #include <QCheckBox>
+#include <QDir>
+#include <QFileDialog>
+#include <QFileInfo>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QMessageBox>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPolygonF>
@@ -115,6 +119,30 @@ QPolygonF OrientationMarker(const QRectF& rect, ComponentOrient orient,
 
 constexpr double kCanvasMargin = 24.0;
 constexpr double kStatusBandHeight = 48.0;
+
+QString SanitizeFileStem(QString stem) {
+  stem = stem.trimmed();
+  for (int i = 0; i < stem.size(); ++i) {
+    const QChar ch = stem.at(i);
+    if (!ch.isLetterOrNumber() && ch != '_' && ch != '-' && ch != '.') {
+      stem[i] = '_';
+    }
+  }
+  while (stem.contains("__")) {
+    stem.replace("__", "_");
+  }
+  stem = stem.left(120);
+  return stem.isEmpty() ? QString("dali_snapshot") : stem;
+}
+
+QString UniqueImagePath(const QDir& dir, const QString& file_stem) {
+  QString path = dir.filePath(file_stem + ".png");
+  int suffix = 1;
+  while (QFileInfo::exists(path)) {
+    path = dir.filePath(QString("%1_%2.png").arg(file_stem).arg(suffix++));
+  }
+  return path;
+}
 
 }  // namespace
 
@@ -556,6 +584,7 @@ class QtPlacementWindow : public QWidget {
     step_button_ = new QPushButton("Step", this);
     continue_button_ = new QPushButton("Continue", this);
     fit_button_ = new QPushButton("Fit", this);
+    save_button_ = new QPushButton("Save PNG", this);
     hpwl_panel_ = new HpwlHistoryPanel(this);
 
     auto* controls = new QHBoxLayout();
@@ -563,6 +592,7 @@ class QtPlacementWindow : public QWidget {
     controls->addWidget(step_button_);
     controls->addWidget(continue_button_);
     controls->addWidget(fit_button_);
+    controls->addWidget(save_button_);
     controls->addStretch();
 
     auto* content = new QHBoxLayout();
@@ -581,6 +611,8 @@ class QtPlacementWindow : public QWidget {
     });
     QObject::connect(fit_button_, &QPushButton::clicked, this,
                      [this]() { canvas_->FitToView(); });
+    QObject::connect(save_button_, &QPushButton::clicked, this,
+                     [this]() { SaveCurrentImages(); });
   }
 
   void SetPauseAtEverySnapshot(bool pause) {
@@ -619,6 +651,37 @@ class QtPlacementWindow : public QWidget {
   }
 
  private:
+  void SaveCurrentImages() {
+    const QString start_dir =
+        last_export_dir_.isEmpty() ? QDir::currentPath() : last_export_dir_;
+    const QString dir_path = QFileDialog::getExistingDirectory(
+        this, "Save Dali GUI images", start_dir);
+    if (dir_path.isEmpty()) {
+      return;
+    }
+
+    last_export_dir_ = dir_path;
+    QDir dir(dir_path);
+    const QString base_name = SanitizeFileStem(current_snapshot_label_.isEmpty()
+                                                   ? QString("dali_snapshot")
+                                                   : current_snapshot_label_);
+    const QString placement_path =
+        UniqueImagePath(dir, base_name + "_placement");
+    const QString hpwl_path = UniqueImagePath(dir, base_name + "_hpwl");
+
+    const bool placement_saved = canvas_->grab().save(placement_path, "PNG");
+    const bool hpwl_saved = hpwl_panel_->grab().save(hpwl_path, "PNG");
+    if (!placement_saved || !hpwl_saved) {
+      QMessageBox::warning(this, "Save Dali GUI images",
+                           "Failed to save one or more PNG files.");
+      return;
+    }
+
+    status_label_->setText(QString("Saved %1 and %2")
+                               .arg(QFileInfo(placement_path).fileName())
+                               .arg(QFileInfo(hpwl_path).fileName()));
+  }
+
   QLabel* status_label_ = nullptr;
   PlacementCanvas* canvas_ = nullptr;
   HpwlHistoryPanel* hpwl_panel_ = nullptr;
@@ -626,7 +689,9 @@ class QtPlacementWindow : public QWidget {
   QPushButton* step_button_ = nullptr;
   QPushButton* continue_button_ = nullptr;
   QPushButton* fit_button_ = nullptr;
+  QPushButton* save_button_ = nullptr;
   QString current_snapshot_label_;
+  QString last_export_dir_;
   bool step_requested_ = false;
   bool continue_requested_ = false;
 };
