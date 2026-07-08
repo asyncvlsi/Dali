@@ -60,6 +60,9 @@ class RoughLegalizer {
   /** Enable or disable intermediate placement dumps. */
   void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
 
+  /** Update the current global-placement iteration. */
+  void SetIteration(int iteration) { cur_iter_ = iteration; }
+
  protected:
   Circuit* ckt_ptr_ = nullptr;
   double placement_density_ = 1.0;
@@ -87,6 +90,8 @@ class LookAheadLegalizer : public RoughLegalizer {
   void InitGridBins();
   void InitWhiteSpaceLUT();
   void Initialize(double placement_density) override;
+  int TargetComponentCountPerBin() const;
+  void RebuildGridBinsIfTargetChanged();
 
   void ClearGridBinFlag();
   void UpdateGridBinState();
@@ -108,6 +113,7 @@ class LookAheadLegalizer : public RoughLegalizer {
 
  private:
   int target_component_count_per_bin_ = 30;
+  int active_target_component_count_per_bin_ = 0;
   int cluster_upper_size = 3;
 
   // look ahead legalization member function implemented below

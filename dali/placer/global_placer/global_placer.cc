@@ -163,6 +163,7 @@ void GlobalPlacer::RunPlacementIterations() {
     optimizer_->SetIteration(cur_iter_);
     optimizer_->OptimizeHpwl();
     EmitIterationSnapshot("lower_bound", "Lower Bound", "lower_bound");
+    legalizer_->SetIteration(cur_iter_);
     legalizer_->RemoveComponentOverlap();
     EmitIterationSnapshot("upper_bound", "Upper Bound", "upper_bound");
     PrintHpwl();

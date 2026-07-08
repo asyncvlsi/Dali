@@ -122,6 +122,7 @@ void RoughLegalizer::SetShouldSaveIntermediateResult(
  * And initialize the space of grid_bin_mesh
  */
 void LookAheadLegalizer::InitializeGridBinSize() {
+  target_component_count_per_bin_ = TargetComponentCountPerBin();
   double grid_bin_area = target_component_count_per_bin_ *
                          ckt_ptr_->AverageMovableComponentArea() /
                          placement_density_;
@@ -149,6 +150,8 @@ void LookAheadLegalizer::InitializeGridBinSize() {
   LOG(debug) << "  Global placement bin physical width, height: "
              << grid_bin_width * grid_value_x << "  "
              << grid_bin_height * grid_value_y << "um\n";
+  LOG(info) << "    LAL target components per bin: "
+            << target_component_count_per_bin_ << "\n";
 
   std::vector<GridBin> temp_grid_bin_column(grid_cnt_y);
   grid_bin_mesh.resize(grid_cnt_x, temp_grid_bin_column);
@@ -276,7 +279,10 @@ void LookAheadLegalizer::UpdateWhiteSpaceInGridBin(GridBin& grid_bin) {
  * can accommodate around target_component_count_per_bin_ # of components
  * ****/
 void LookAheadLegalizer::InitGridBins() {
+  grid_bin_mesh.clear();
+  grid_bin_white_space_LUT.clear();
   InitializeGridBinSize();
+  active_target_component_count_per_bin_ = target_component_count_per_bin_;
   UpdateAttributesForAllGridBins();
   UpdatePlacementBlockagesInGridBins();
 
@@ -286,6 +292,24 @@ void LookAheadLegalizer::InitGridBins() {
       UpdateWhiteSpaceInGridBin(grid_bin);
     }
   }
+}
+
+int LookAheadLegalizer::TargetComponentCountPerBin() const {
+  // SimPL uses coarse-to-fine density grids. A coarse grid gives early
+  // iterations a smoother spreading force, then the finer default grid exposes
+  // local congestion before final legalization.
+  if (cur_iter_ < 5) return 100;
+  if (cur_iter_ < 15) return 60;
+  return 30;
+}
+
+void LookAheadLegalizer::RebuildGridBinsIfTargetChanged() {
+  int target_component_count_per_bin = TargetComponentCountPerBin();
+  if (target_component_count_per_bin == active_target_component_count_per_bin_) {
+    return;
+  }
+  InitGridBins();
+  InitWhiteSpaceLUT();
 }
 
 /****
@@ -1053,6 +1077,7 @@ double LookAheadLegalizer::RemoveComponentOverlap() {
   elapsed_time.RecordStartTime();
   last_hpwl_before_ = ckt_ptr_->WeightedHPWL();
 
+  RebuildGridBinsIfTargetChanged();
   ClearGridBinFlag();
   UpdateGridBinState();
   int overfilled_bin_count_before = last_overfilled_bin_count_;
