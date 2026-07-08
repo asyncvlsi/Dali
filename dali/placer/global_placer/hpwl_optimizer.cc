@@ -585,7 +585,7 @@ void B2BHpwlOptimizer::UpdateAnchorAlpha() {
   } else if (cur_iter_ < 15) {
     alpha_step = 0.02;
   } else {
-    alpha_step = 0.03;
+    alpha_step = 0.04;
   }
   alpha += alpha_step;
   LOG(info) << "    anchor alpha: " << alpha << " (step " << alpha_step
