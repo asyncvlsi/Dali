@@ -170,6 +170,10 @@ void InitializerGridBin::SetBoundary(int lx, int ly, int ux, int uy) {
   uy_ = uy;
 }
 
+void InitializerGridBin::SetPriorityTieBreaker(double priority_tie_breaker) {
+  priority_tie_breaker_ = priority_tie_breaker;
+}
+
 void InitializerGridBin::UpdateTotalArea() {
   total_area_ = (ux_ - lx_) * (uy_ - ly_);
 }
@@ -401,6 +405,8 @@ void DensityAwareInitializer::InitializeGridBin() {
   int region_ly = ckt_ptr_->RegionLLY();
   int region_ux = ckt_ptr_->RegionURX();
   int region_uy = ckt_ptr_->RegionURY();
+  std::minstd_rand0 generator{random_seed_};
+  std::uniform_real_distribution<double> distribution(0, 1);
   for (int ix = 0; ix < grid_cnt_x_; ++ix) {
     for (int iy = 0; iy < grid_cnt_y_; ++iy) {
       int lx = region_lx + ix * bin_width_;
@@ -410,6 +416,7 @@ void DensityAwareInitializer::InitializeGridBin() {
       ux = std::min(ux, region_ux);
       uy = std::min(uy, region_uy);
       grid_bins_[ix][iy].SetBoundary(lx, ly, ux, uy);
+      grid_bins_[ix][iy].SetPriorityTieBreaker(distribution(generator));
       grid_bins_[ix][iy].UpdateTotalArea();
     }
   }
@@ -425,6 +432,8 @@ void DensityAwareInitializer::AssignFixedMacroToGridBin() {
 }
 
 void DensityAwareInitializer::InitializePriorityQueue() {
+  decltype(density_queue_) empty_queue;
+  density_queue_.swap(empty_queue);
   for (int ix = 0; ix < grid_cnt_x_; ++ix) {
     for (int iy = 0; iy < grid_cnt_y_; ++iy) {
       density_queue_.emplace(&(grid_bins_[ix][iy]));
@@ -433,12 +442,20 @@ void DensityAwareInitializer::InitializePriorityQueue() {
 }
 
 void DensityAwareInitializer::AssignComponentToGridBin() {
-  std::vector<Component>& components = ckt_ptr_->Components();
-  for (auto& component : components) {
-    if (!component.IsMovable()) continue;
+  std::vector<Component*> movable_components;
+  movable_components.reserve(ckt_ptr_->Components().size());
+  for (auto& component : ckt_ptr_->Components()) {
+    if (component.IsMovable()) {
+      movable_components.push_back(&component);
+    }
+  }
+  std::minstd_rand0 generator{random_seed_};
+  std::shuffle(movable_components.begin(), movable_components.end(), generator);
+
+  for (Component* component : movable_components) {
     auto grid_bin = density_queue_.top();
     density_queue_.pop();
-    grid_bin->AddComponent(&component);
+    grid_bin->AddComponent(component);
     density_queue_.emplace(grid_bin);
   }
 }

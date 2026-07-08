@@ -97,8 +97,10 @@ class InitializerGridBin {
  public:
   std::vector<Component*>& Macros();
   double GetDensity() const;
+  double PriorityTieBreaker() const { return priority_tie_breaker_; }
   void UpdateDensity();
   void SetBoundary(int lx, int ly, int ux, int uy);
+  void SetPriorityTieBreaker(double priority_tie_breaker);
   void UpdateTotalArea();
   void UpdateMacroArea();
   void AddComponent(Component* component);
@@ -108,6 +110,7 @@ class InitializerGridBin {
   std::vector<Component*> macros_;
   std::vector<Component*> components_;
   double density_ = 0;
+  double priority_tie_breaker_ = 0;
   unsigned long long total_area_ = 0;
   unsigned long long used_area_ = 0;
   int lx_ = 0;
@@ -118,7 +121,10 @@ class InitializerGridBin {
 
 struct CompareInitializerGridBinPtr {
   bool operator()(InitializerGridBin const* p1, InitializerGridBin const* p2) {
-    return p1->GetDensity() > p2->GetDensity();
+    if (p1->GetDensity() != p2->GetDensity()) {
+      return p1->GetDensity() > p2->GetDensity();
+    }
+    return p1->PriorityTieBreaker() > p2->PriorityTieBreaker();
   }
 };
 
