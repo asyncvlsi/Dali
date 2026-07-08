@@ -588,6 +588,8 @@ void B2BHpwlOptimizer::UpdateAnchorAlpha() {
     alpha_step = 0.03;
   }
   alpha += alpha_step;
+  LOG(info) << "    anchor alpha: " << alpha << " (step " << alpha_step
+            << ")\n";
 }
 
 void B2BHpwlOptimizer::UpdateMaxMinX() {
