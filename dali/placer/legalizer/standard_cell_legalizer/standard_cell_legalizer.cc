@@ -23,6 +23,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <limits>
+#include <utility>
 
 #include "dali/common/logging.h"
 
@@ -43,9 +45,16 @@ bool StandardCellLegalizer::StartPlacement() {
     return true;
   }
 
+  std::vector<std::pair<double, double>> original_locations;
+  original_locations.reserve(components.size());
+  for (const Component* component : components) {
+    original_locations.emplace_back(component->LLX(), component->LLY());
+  }
+
   bool is_success = AssignComponentsToSegments(components);
   if (is_success) {
     LegalizeAssignedSegments();
+    ReportDisplacement(components, original_locations);
     ExportRowsToCircuit();
     UpdateMovableComponentPlacementStatus();
     ReportHPWL();
@@ -130,10 +139,10 @@ std::vector<Component*> StandardCellLegalizer::CollectMovableComponents() {
 
   std::sort(components.begin(), components.end(),
             [](const Component* lhs, const Component* rhs) {
-              if (lhs->LLY() == rhs->LLY()) {
-                return lhs->LLX() < rhs->LLX();
+              if (lhs->LLX() == rhs->LLX()) {
+                return lhs->LLY() < rhs->LLY();
               }
-              return lhs->LLY() < rhs->LLY();
+              return lhs->LLX() < rhs->LLX();
             });
   return components;
 }
@@ -142,7 +151,10 @@ bool StandardCellLegalizer::AssignComponentsToSegments(
     std::vector<Component*> components) {
   int failed_component_count = 0;
   for (Component* component : components) {
-    int assignment_index = FindBestSegment(*component);
+    std::vector<StandardCellRowLegalizationCell> legalized_cells;
+    double x_displacement = 0.0;
+    int assignment_index =
+        FindBestSegment(*component, &legalized_cells, &x_displacement);
     if (assignment_index < 0) {
       ++failed_component_count;
       if (failed_component_count <= 5) {
@@ -159,8 +171,8 @@ bool StandardCellLegalizer::AssignComponentsToSegments(
     auto& assignment = segment_assignments_[assignment_index];
     assignment.remaining_width -= component->Width();
     assignment.components.push_back(component);
-    assignment.cells.push_back(
-        {component->Id(), component->Width(), component->LLX(), 0});
+    assignment.cells = std::move(legalized_cells);
+    assignment.x_displacement = x_displacement;
   }
 
   if (failed_component_count > 0) {
@@ -172,9 +184,35 @@ bool StandardCellLegalizer::AssignComponentsToSegments(
   return true;
 }
 
-int StandardCellLegalizer::FindBestSegment(Component& component) const {
+int StandardCellLegalizer::FindBestSegment(
+    Component& component,
+    std::vector<StandardCellRowLegalizationCell>* legalized_cells,
+    double* x_displacement) const {
   int best_assignment = -1;
-  int best_cost = 0;
+  double best_cost = std::numeric_limits<double>::max();
+
+  for (const auto& candidate : FindCandidateSegments(component)) {
+    std::vector<StandardCellRowLegalizationCell> candidate_cells;
+    double candidate_x_displacement = 0.0;
+    double candidate_cost = 0.0;
+    const auto& assignment = segment_assignments_[candidate.assignment_index];
+    if (EvaluateCandidate(component, assignment, &candidate_cells,
+                          &candidate_x_displacement, &candidate_cost) &&
+        candidate_cost < best_cost) {
+      best_assignment = candidate.assignment_index;
+      best_cost = candidate_cost;
+      *legalized_cells = std::move(candidate_cells);
+      *x_displacement = candidate_x_displacement;
+    }
+  }
+
+  return best_assignment;
+}
+
+std::vector<StandardCellLegalizer::AssignmentCandidate>
+StandardCellLegalizer::FindCandidateSegments(Component& component) const {
+  std::vector<AssignmentCandidate> candidates;
+  candidates.reserve(kCandidateSegmentCount);
 
   for (int assignment_index = 0;
        assignment_index < static_cast<int>(segment_assignments_.size());
@@ -184,17 +222,49 @@ int StandardCellLegalizer::FindBestSegment(Component& component) const {
       continue;
     }
 
-    int cost = CandidateCost(component, assignment);
-    if (best_assignment < 0 || cost < best_cost) {
-      best_assignment = assignment_index;
-      best_cost = cost;
+    AssignmentCandidate candidate{assignment_index,
+                                  CandidateCost(component, assignment)};
+    auto insertion_point = std::lower_bound(
+        candidates.begin(), candidates.end(), candidate,
+        [](const AssignmentCandidate& lhs, const AssignmentCandidate& rhs) {
+          return lhs.estimated_cost < rhs.estimated_cost;
+        });
+    candidates.insert(insertion_point, candidate);
+    if (candidates.size() > kCandidateSegmentCount) {
+      candidates.pop_back();
     }
   }
-
-  return best_assignment;
+  return candidates;
 }
 
-int StandardCellLegalizer::CandidateCost(
+bool StandardCellLegalizer::EvaluateCandidate(
+    Component& component, const SegmentAssignment& assignment,
+    std::vector<StandardCellRowLegalizationCell>* legalized_cells,
+    double* x_displacement, double* incremental_cost) const {
+  const auto& row = placement_model_.Rows()[assignment.row_index];
+  const auto& segment = row.free_segments[assignment.segment_index];
+
+  *legalized_cells = assignment.cells;
+  legalized_cells->push_back(
+      {component.Id(), component.Width(), component.LLX(), 0});
+  StandardCellRowLegalizer row_legalizer;
+  if (!row_legalizer.Legalize(segment, row.site_width, legalized_cells)) {
+    return false;
+  }
+
+  *x_displacement = 0.0;
+  for (const auto& cell : *legalized_cells) {
+    *x_displacement += std::abs(cell.legal_lx - cell.target_lx);
+  }
+  double displacement_y =
+      std::abs(row.ly - static_cast<int>(std::llround(component.LLY())));
+  *incremental_cost =
+      (*x_displacement - assignment.x_displacement) * ckt_ptr_->GridValueX() +
+      displacement_y * ckt_ptr_->GridValueY();
+  return true;
+}
+
+double StandardCellLegalizer::CandidateCost(
     Component& component, const SegmentAssignment& assignment) const {
   const auto& row = placement_model_.Rows()[assignment.row_index];
   const auto& segment = row.free_segments[assignment.segment_index];
@@ -204,7 +274,8 @@ int StandardCellLegalizer::CandidateCost(
   int displacement_x = std::abs(legal_lx - target_lx);
   int displacement_y =
       std::abs(row.ly - static_cast<int>(std::llround(component.LLY())));
-  return displacement_x + displacement_y;
+  return displacement_x * ckt_ptr_->GridValueX() +
+         displacement_y * ckt_ptr_->GridValueY();
 }
 
 void StandardCellLegalizer::LegalizeAssignedSegments() {
@@ -230,6 +301,31 @@ void StandardCellLegalizer::LegalizeAssignedSegments() {
       component->SetOrient(OrientForRow(assignment.row_index));
     }
   }
+}
+
+void StandardCellLegalizer::ReportDisplacement(
+    const std::vector<Component*>& components,
+    const std::vector<std::pair<double, double>>& original_locations) const {
+  DaliExpects(components.size() == original_locations.size(),
+              "Component and original-location counts must match");
+
+  double total_displacement = 0.0;
+  double maximum_displacement = 0.0;
+  for (size_t i = 0; i < components.size(); ++i) {
+    double displacement =
+        std::abs(components[i]->LLX() - original_locations[i].first) *
+            ckt_ptr_->GridValueX() +
+        std::abs(components[i]->LLY() - original_locations[i].second) *
+            ckt_ptr_->GridValueY();
+    total_displacement += displacement;
+    maximum_displacement = std::max(maximum_displacement, displacement);
+  }
+
+  LOG(info) << "Standard-cell legalization displacement\n"
+            << "  total: " << total_displacement << " um\n"
+            << "  average: " << total_displacement / components.size()
+            << " um\n"
+            << "  maximum: " << maximum_displacement << " um\n";
 }
 
 void StandardCellLegalizer::ExportRowsToCircuit() {
