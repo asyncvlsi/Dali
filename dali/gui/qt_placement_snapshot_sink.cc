@@ -113,6 +113,9 @@ QPolygonF OrientationMarker(const QRectF& rect, ComponentOrient orient,
   return marker;
 }
 
+constexpr double kCanvasMargin = 24.0;
+constexpr double kStatusBandHeight = 48.0;
+
 }  // namespace
 
 class PlacementCanvas : public QWidget {
@@ -172,12 +175,13 @@ class PlacementCanvas : public QWidget {
   void FitToView() {
     const double design_width = std::max(view_urx_ - view_llx_, 1.0);
     const double design_height = std::max(view_ury_ - view_lly_, 1.0);
-    const double margin = 24.0;
-    scale_ = std::min((width() - 2.0 * margin) / design_width,
-                      (height() - 2.0 * margin) / design_height);
+    const double drawing_height =
+        std::max(height() - kStatusBandHeight - 2.0 * kCanvasMargin, 1.0);
+    scale_ = std::min((width() - 2.0 * kCanvasMargin) / design_width,
+                      drawing_height / design_height);
     scale_ = std::max(scale_, 1e-9);
-    pan_x_ = margin - view_llx_ * scale_;
-    pan_y_ = height() - margin + view_lly_ * scale_;
+    pan_x_ = kCanvasMargin - view_llx_ * scale_;
+    pan_y_ = height() - kStatusBandHeight - kCanvasMargin + view_lly_ * scale_;
     has_view_ = true;
     update();
   }
@@ -218,10 +222,7 @@ class PlacementCanvas : public QWidget {
       }
     }
 
-    painter.setPen(QColor(31, 41, 55));
-    painter.drawText(QPointF(16, 22), QString::fromStdString(title_));
-    painter.drawText(QPointF(16, 42),
-                     QString("zoom %1 px/um").arg(scale_, 0, 'g', 4));
+    DrawStatusBand(&painter);
   }
 
   void resizeEvent(QResizeEvent* /*event*/) override {
@@ -271,6 +272,23 @@ class PlacementCanvas : public QWidget {
   }
 
  private:
+  void DrawStatusBand(QPainter* painter) const {
+    const QRectF band(0, height() - kStatusBandHeight, width(),
+                      kStatusBandHeight);
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(QColor(255, 255, 255, 238));
+    painter->drawRect(band);
+    painter->setPen(QPen(QColor(229, 231, 235), 1));
+    painter->drawLine(QPointF(0, band.top()), QPointF(width(), band.top()));
+
+    painter->setPen(QColor(31, 41, 55));
+    painter->drawText(QPointF(16, band.top() + 20),
+                      QString::fromStdString(title_));
+    painter->setPen(QColor(75, 85, 99));
+    painter->drawText(QPointF(16, band.top() + 38),
+                      QString("zoom %1 px/um").arg(scale_, 0, 'g', 4));
+  }
+
   double WorldToScreenX(double x) const { return pan_x_ + x * scale_; }
   double WorldToScreenY(double y) const { return pan_y_ - y * scale_; }
   double ScreenToWorldX(double x) const { return (x - pan_x_) / scale_; }
