@@ -175,13 +175,22 @@ class PlacementCanvas : public QWidget {
   void FitToView() {
     const double design_width = std::max(view_urx_ - view_llx_, 1.0);
     const double design_height = std::max(view_ury_ - view_lly_, 1.0);
+    const double drawing_width = std::max(width() - 2.0 * kCanvasMargin, 1.0);
     const double drawing_height =
         std::max(height() - kStatusBandHeight - 2.0 * kCanvasMargin, 1.0);
-    scale_ = std::min((width() - 2.0 * kCanvasMargin) / design_width,
-                      drawing_height / design_height);
+    scale_ =
+        std::min(drawing_width / design_width, drawing_height / design_height);
     scale_ = std::max(scale_, 1e-9);
-    pan_x_ = kCanvasMargin - view_llx_ * scale_;
-    pan_y_ = height() - kStatusBandHeight - kCanvasMargin + view_lly_ * scale_;
+
+    const double fitted_width = design_width * scale_;
+    const double fitted_height = design_height * scale_;
+    const double centered_left =
+        kCanvasMargin + std::max(drawing_width - fitted_width, 0.0) / 2.0;
+    const double centered_bottom =
+        height() - kStatusBandHeight - kCanvasMargin -
+        std::max(drawing_height - fitted_height, 0.0) / 2.0;
+    pan_x_ = centered_left - view_llx_ * scale_;
+    pan_y_ = centered_bottom + view_lly_ * scale_;
     has_view_ = true;
     update();
   }
