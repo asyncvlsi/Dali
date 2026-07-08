@@ -23,7 +23,6 @@
 
 #include <phydb/phydb.h>
 
-#include <boost/functional/hash.hpp>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>

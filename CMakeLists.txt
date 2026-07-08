@@ -52,17 +52,13 @@ find_library(DEF_LIBRARY NAMES def PATHS $ENV{ACT_HOME}/lib REQUIRED)
 message(STATUS "Found libdef.a: ${DEF_LIBRARY}")
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#Dependencies : Galois, OpenMP, Boost headers, CPLEX, Git Commit
+#Dependencies : Galois, OpenMP, CPLEX, Git Commit
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 #Detect if galois_eda library exists
 include(cmake/FindGaloisEDA.cmake)
 
 #Detect if OpenMP library exists
 include(cmake/FindOpenMPPackage.cmake)
-
-#Detect Boost headers required by ACT/PhyDB public headers
-find_package(Boost 1.71.0 REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
 
 #Detect if CPLEX library exists
 include(cmake/FindCPLEX.cmake)

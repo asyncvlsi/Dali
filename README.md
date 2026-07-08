@@ -9,7 +9,6 @@
 
 ### Pre-requisite
   * [ACT](https://github.com/asyncvlsi/act)
-  * Boost, version >= 1.71.0 (lower version may work, not tested)
   * Si2 LEF/DEF parser, a mirror can be found [here](https://github.com/asyncvlsi/lefdef)
   * [PhyDB](https://github.com/asyncvlsi/phyDB)
   * OpenMP (for MacOS user, `libomp` from Homebrew will work)

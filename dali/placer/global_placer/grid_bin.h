@@ -21,12 +21,14 @@
 #ifndef DALI_PLACER_GLOBAL_PLACER_GRID_BIN_H_
 #define DALI_PLACER_GLOBAL_PLACER_GRID_BIN_H_
 
-#include <boost/functional/hash.hpp>
+#include <cstddef>
+#include <functional>
 #include <set>
 #include <vector>
 
 #include "dali/circuit/component.h"
 #include "dali/circuit/placement_blockage.h"
+#include "dali/common/hash.h"
 
 namespace dali {
 
@@ -62,18 +64,9 @@ struct GridBinIndex {
 
 struct GridBinIndexHasher {
   std::size_t operator()(const GridBinIndex& k) const {
-    using boost::hash_combine;
-    using boost::hash_value;
-
-    // Start with a hash value of 0    .
     std::size_t seed = 0;
-
-    // Modify 'seed' by XORing and bit-shifting in
-    // one member of 'Key' after the other:
-    hash_combine(seed, hash_value(k.x));
-    hash_combine(seed, hash_value(k.y));
-
-    // Return the result.
+    HashCombine(seed, k.x);
+    HashCombine(seed, k.y);
     return seed;
   }
 };

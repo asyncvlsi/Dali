@@ -22,15 +22,28 @@
 #define DALI_PLACER_GLOBAL_PLACER_HPWL_OPTIMIZER_H_
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/Sparse>
+#include <cstddef>
+#include <functional>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "dali/circuit/circuit.h"
+#include "dali/common/hash.h"
 #include "dali/placer/global_placer/component_pair_nets.h"
 
 namespace dali {
 
 typedef Eigen::Index EgId;
 typedef std::pair<EgId, EgId> PairEgId;
+struct PairEgIdHasher {
+  std::size_t operator()(const PairEgId& key) const {
+    std::size_t seed = 0;
+    HashCombine(seed, key.first);
+    HashCombine(seed, key.second);
+    return seed;
+  }
+};
 // Declares a row-major sparse matrix type of double.
 typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat;
 // A triplet is a simple object representing a non-zero entry as the triplet:
@@ -243,7 +256,7 @@ class StarHpwlHpwlOptimizer : public B2BHpwlOptimizer {
 
  private:
   std::vector<ComponentPairNets> component_pair_net_list_;
-  std::unordered_map<PairEgId, EgId, boost::hash<PairEgId>> component_pair_map_;
+  std::unordered_map<PairEgId, EgId, PairEgIdHasher> component_pair_map_;
 };
 
 }  // namespace dali
