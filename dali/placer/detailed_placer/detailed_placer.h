@@ -35,6 +35,8 @@ class DetailedPlacer : public Placer {
   static constexpr int kLocalReorderWindowSize = 3;
   static constexpr int kMaxOptimalRegionRows = 4;
   static constexpr int kMaxCandidatesPerRow = 3;
+  static constexpr int kMaxOptimizationRounds = 3;
+  static constexpr double kMinRelativeRoundImprovement = 0.001;
 
   struct OptimalRegion {
     bool valid = false;
@@ -93,6 +95,9 @@ class DetailedPlacer : public Placer {
    * is committed only when all nets incident to that segment improve.
    */
   int RunSingleSegmentClustering();
+
+  /** Run local reordering across every legal row segment once. */
+  int RunLocalReordering(int* visited_segment_count);
 
   std::vector<std::vector<Component*>> row_components_;
   std::vector<GeneralRow*> component_rows_;

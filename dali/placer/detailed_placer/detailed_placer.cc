@@ -542,38 +542,60 @@ int DetailedPlacer::RunSingleSegmentClustering() {
   return accepted_segments;
 }
 
+int DetailedPlacer::RunLocalReordering(int* visited_segment_count) {
+  DaliExpects(visited_segment_count != nullptr,
+              "Detailed placement requires a segment-count output");
+  *visited_segment_count = 0;
+  int reordered_windows = 0;
+  for (GeneralRow& row : ckt_ptr_->design().Rows()) {
+    for (GeneralRowSegment& segment : row.RowSegments()) {
+      ++(*visited_segment_count);
+      reordered_windows +=
+          LocalReorderSegment(&segment, kLocalReorderWindowSize);
+    }
+  }
+  return reordered_windows;
+}
+
 bool DetailedPlacer::StartPlacement() {
   PrintStartStatement("detailed placement");
   DaliExpects(ckt_ptr_ != nullptr,
               "No input circuit specified for detailed placement");
 
   double hpwl_before = WeightedHPWL();
-  int accepted_clusters_before = RunSingleSegmentClustering();
-  int accepted_swaps = RunOptimalRegionSwaps();
-  double hpwl_after_swaps = WeightedHPWL();
-  int reordered_windows = 0;
-  int segment_count = 0;
-  for (GeneralRow& row : ckt_ptr_->design().Rows()) {
-    for (GeneralRowSegment& segment : row.RowSegments()) {
-      ++segment_count;
-      reordered_windows +=
-          LocalReorderSegment(&segment, kLocalReorderWindowSize);
+  double previous_hpwl = hpwl_before;
+  for (int round = 0; round < kMaxOptimizationRounds; ++round) {
+    int accepted_clusters_before = RunSingleSegmentClustering();
+    int accepted_swaps = RunOptimalRegionSwaps();
+    double hpwl_after_swaps = WeightedHPWL();
+    int segment_count = 0;
+    int reordered_windows = RunLocalReordering(&segment_count);
+    int accepted_clusters_after = RunSingleSegmentClustering();
+    double current_hpwl = WeightedHPWL();
+    double relative_improvement =
+        (previous_hpwl - current_hpwl) / previous_hpwl;
+
+    LOG(info) << "  detailed placement round " << round << "\n"
+              << "    accepted initial segment clusters: "
+              << accepted_clusters_before << "\n"
+              << "    accepted optimal-region swaps: " << accepted_swaps << "\n"
+              << "    row segments visited: " << segment_count << "\n"
+              << "    accepted reorder windows: " << reordered_windows << "\n"
+              << "    accepted final segment clusters: "
+              << accepted_clusters_after << "\n"
+              << "    HPWL after swaps: " << hpwl_after_swaps << "um\n"
+              << "    HPWL after round: " << current_hpwl << "um\n"
+              << "    relative improvement: " << relative_improvement << "\n";
+    if (relative_improvement < kMinRelativeRoundImprovement) {
+      break;
     }
+    previous_hpwl = current_hpwl;
   }
 
-  int accepted_clusters_after = RunSingleSegmentClustering();
   double hpwl_after = WeightedHPWL();
-  LOG(info) << "Detailed placement local re-ordering:\n"
-            << "  accepted initial segment clusters: "
-            << accepted_clusters_before << "\n"
-            << "  accepted optimal-region swaps: " << accepted_swaps << "\n"
-            << "  row segments visited: " << segment_count << "\n"
-            << "  accepted reorder windows: " << reordered_windows << "\n"
-            << "  accepted final segment clusters: " << accepted_clusters_after
-            << "\n"
+  LOG(info) << "Detailed placement summary:\n"
             << "  HPWL before: " << hpwl_before << "um\n"
-            << "  HPWL after swaps: " << hpwl_after_swaps << "um\n"
-            << "  HPWL after : " << hpwl_after << "um\n";
+            << "  HPWL after: " << hpwl_after << "um\n";
 
   PrintEndStatement("detailed placement", true);
   return true;
