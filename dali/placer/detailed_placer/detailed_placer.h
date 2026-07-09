@@ -36,7 +36,7 @@ class DetailedPlacer : public Placer {
   static constexpr int kMaxOptimalRegionRows = 4;
   static constexpr int kMaxCandidatesPerRow = 3;
   static constexpr int kMaxSegmentsPerRow = 3;
-  static constexpr int kMaxMoveCandidatesPerRound = 5000;
+  static constexpr int kMaxMoveCandidatesPerRound = 10000;
   static constexpr int kMaxOptimizationRounds = 3;
   static constexpr double kMinRelativeRoundImprovement = 0.001;
 
