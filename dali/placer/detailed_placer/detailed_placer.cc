@@ -496,12 +496,59 @@ int DetailedPlacer::RunOptimalRegionSwaps() {
   return accepted;
 }
 
+int DetailedPlacer::RunSingleSegmentClustering() {
+  int accepted_segments = 0;
+  for (GeneralRow& row : ckt_ptr_->design().Rows()) {
+    for (GeneralRowSegment& segment : row.RowSegments()) {
+      if (segment.Components().empty()) {
+        continue;
+      }
+
+      std::set<int> net_ids;
+      std::vector<double> original_lx;
+      std::vector<StandardCellRowLegalizationCell> cells;
+      original_lx.reserve(segment.Components().size());
+      cells.reserve(segment.Components().size());
+      for (Component* component : segment.Components()) {
+        original_lx.push_back(component->LLX());
+        net_ids.insert(component->NetList().begin(),
+                       component->NetList().end());
+        OptimalRegion region = ComputeOptimalRegion(component);
+        double target_lx =
+            region.valid ? (region.lx + region.ux) / 2.0 : component->LLX();
+        cells.push_back({component->Id(), component->Width(), target_lx, 0});
+      }
+
+      double cost_before = AffectedWireLength(net_ids);
+      StandardCellRowLegalizer legalizer;
+      StandardCellFreeSegment free_segment{segment.LX(), segment.UX()};
+      bool legal = legalizer.Legalize(free_segment,
+                                      ckt_ptr_->MinComponentWidth(), &cells);
+      DaliExpects(legal, "A legal row segment failed clustering repack");
+      for (const auto& cell : cells) {
+        ckt_ptr_->Components()[cell.id].SetLLX(cell.legal_lx);
+      }
+
+      if (AffectedWireLength(net_ids) + 1e-9 < cost_before) {
+        ++accepted_segments;
+        segment.SortComponents();
+      } else {
+        for (size_t i = 0; i < segment.Components().size(); ++i) {
+          segment.Components()[i]->SetLLX(original_lx[i]);
+        }
+      }
+    }
+  }
+  return accepted_segments;
+}
+
 bool DetailedPlacer::StartPlacement() {
   PrintStartStatement("detailed placement");
   DaliExpects(ckt_ptr_ != nullptr,
               "No input circuit specified for detailed placement");
 
   double hpwl_before = WeightedHPWL();
+  int accepted_clusters_before = RunSingleSegmentClustering();
   int accepted_swaps = RunOptimalRegionSwaps();
   double hpwl_after_swaps = WeightedHPWL();
   int reordered_windows = 0;
@@ -514,11 +561,16 @@ bool DetailedPlacer::StartPlacement() {
     }
   }
 
+  int accepted_clusters_after = RunSingleSegmentClustering();
   double hpwl_after = WeightedHPWL();
   LOG(info) << "Detailed placement local re-ordering:\n"
+            << "  accepted initial segment clusters: "
+            << accepted_clusters_before << "\n"
             << "  accepted optimal-region swaps: " << accepted_swaps << "\n"
             << "  row segments visited: " << segment_count << "\n"
             << "  accepted reorder windows: " << reordered_windows << "\n"
+            << "  accepted final segment clusters: " << accepted_clusters_after
+            << "\n"
             << "  HPWL before: " << hpwl_before << "um\n"
             << "  HPWL after swaps: " << hpwl_after_swaps << "um\n"
             << "  HPWL after : " << hpwl_after << "um\n";

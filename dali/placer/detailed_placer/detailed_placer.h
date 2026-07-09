@@ -86,6 +86,14 @@ class DetailedPlacer : public Placer {
   /** Visit cells and try nearby candidates in their optimal regions. */
   int RunOptimalRegionSwaps();
 
+  /**
+   * Repack each segment toward per-cell optimal-region targets.
+   *
+   * Cell order and segment legality are preserved, and a clustered placement
+   * is committed only when all nets incident to that segment improve.
+   */
+  int RunSingleSegmentClustering();
+
   std::vector<std::vector<Component*>> row_components_;
   std::vector<GeneralRow*> component_rows_;
   std::vector<GeneralRowSegment*> component_segments_;
