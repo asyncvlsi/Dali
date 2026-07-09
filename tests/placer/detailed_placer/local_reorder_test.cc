@@ -125,4 +125,46 @@ TEST(DetailedPlacerGlobalSwapTest, SwapsCellsTowardTheirOptimalRegions) {
   EXPECT_LT(circuit.WeightedHPWL(), hpwl_before);
 }
 
+TEST(DetailedPlacerWhitespaceMoveTest, MovesCellIntoEmptyOptimalRegionSegment) {
+  Circuit circuit;
+  circuit.SetDatabaseMicrons(1000);
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.SetDieArea(0, 0, 200, 20);
+  circuit.ReserveSpaceForDesignImp(2, 0, 1);
+
+  Macro* cell = circuit.AddMacro("cell", 10, 10);
+  ASSERT_NE(cell, nullptr);
+  circuit.AddMacroPin(cell, "p", true)->SetOffset(5, 5);
+  circuit.AddComponent("movable", "cell", 0, 0, PLACED);
+  circuit.AddComponent("anchor", "cell", 100, 10, FIXED);
+  circuit.AddNet("pull_right", 2);
+  circuit.AddComponentPinToNet("movable", "p", "pull_right");
+  circuit.AddComponentPinToNet("anchor", "p", "pull_right");
+
+  for (int row_index = 0; row_index < 2; ++row_index) {
+    GeneralRow row;
+    row.SetLY(row_index * 10);
+    row.SetHeight(10);
+    GeneralRowSegment segment;
+    segment.SetLX(row_index == 0 ? 0 : 100);
+    segment.SetWidth(10);
+    if (row_index == 0) {
+      segment.AddComponent(circuit.GetComponentPtr("movable"));
+    }
+    row.RowSegments().push_back(segment);
+    circuit.design().Rows().push_back(row);
+  }
+
+  double hpwl_before = circuit.WeightedHPWL();
+  DetailedPlacer placer;
+  placer.SetCircuit(&circuit);
+  ASSERT_TRUE(placer.StartPlacement());
+
+  EXPECT_EQ(circuit.GetComponentPtr("movable")->LLX(), 100);
+  EXPECT_EQ(circuit.GetComponentPtr("movable")->LLY(), 10);
+  EXPECT_LT(circuit.WeightedHPWL(), hpwl_before);
+}
+
 }  // namespace dali

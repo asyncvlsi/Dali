@@ -35,6 +35,8 @@ class DetailedPlacer : public Placer {
   static constexpr int kLocalReorderWindowSize = 3;
   static constexpr int kMaxOptimalRegionRows = 4;
   static constexpr int kMaxCandidatesPerRow = 3;
+  static constexpr int kMaxSegmentsPerRow = 3;
+  static constexpr int kMaxMoveCandidatesPerRound = 5000;
   static constexpr int kMaxOptimizationRounds = 3;
   static constexpr double kMinRelativeRoundImprovement = 0.001;
 
@@ -60,6 +62,10 @@ class DetailedPlacer : public Placer {
   /** Compute the HPWL-optimal rectangle induced by a component's other pins. */
   OptimalRegion ComputeOptimalRegion(Component* component) const;
 
+  /** Return Manhattan distance from a location to an optimal region. */
+  double DistanceToRegion(double x, double y,
+                          const OptimalRegion& region) const;
+
   /** Return the row indices nearest to an optimal region's Y interval. */
   std::vector<int> FindClosestRows(const OptimalRegion& region) const;
 
@@ -68,6 +74,30 @@ class DetailedPlacer : public Placer {
 
   /** Repack one segment with Abacus while preserving its legal boundaries. */
   bool LegalizeSegment(GeneralRowSegment* segment, GeneralRow* row);
+
+  /** Return the total component width currently assigned to a segment. */
+  int UsedWidth(GeneralRowSegment* segment) const;
+
+  /** Return row index for a row pointer owned by the circuit row vector. */
+  size_t RowIndex(GeneralRow* row) const;
+
+  /** Return the row segments nearest to an x location inside one row. */
+  std::vector<GeneralRowSegment*> FindClosestSegmentsInRow(
+      int row_index, double target_x) const;
+
+  /**
+   * Trial-move a component into a free segment and commit only legal
+   * HPWL-improving results.
+   *
+   * The source and destination segments are repacked transactionally. The
+   * accepted move may shift other cells in both segments, so the HPWL check
+   * includes every net incident to those affected segments.
+   */
+  bool TryMove(Component* component, GeneralRow* target_row,
+               GeneralRowSegment* target_segment, double target_lx);
+
+  /** Move cells into whitespace near their optimal regions. */
+  int RunOptimalRegionMoves();
 
   /**
    * Quickly reject a swap unless exchanging the two raw locations improves
@@ -100,6 +130,7 @@ class DetailedPlacer : public Placer {
   int RunLocalReordering(int* visited_segment_count);
 
   std::vector<std::vector<Component*>> row_components_;
+  std::vector<std::vector<GeneralRowSegment*>> row_segments_;
   std::vector<GeneralRow*> component_rows_;
   std::vector<GeneralRowSegment*> component_segments_;
 };

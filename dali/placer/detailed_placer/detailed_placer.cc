@@ -133,12 +133,14 @@ int DetailedPlacer::LocalReorderSegment(GeneralRowSegment* segment,
 void DetailedPlacer::BuildSwapIndex() {
   auto& rows = ckt_ptr_->design().Rows();
   row_components_.assign(rows.size(), {});
+  row_segments_.assign(rows.size(), {});
   component_rows_.assign(ckt_ptr_->Components().size(), nullptr);
   component_segments_.assign(ckt_ptr_->Components().size(), nullptr);
 
   for (size_t row_index = 0; row_index < rows.size(); ++row_index) {
     GeneralRow& row = rows[row_index];
     for (GeneralRowSegment& segment : row.RowSegments()) {
+      row_segments_[row_index].push_back(&segment);
       segment.SortComponents();
       for (Component* component : segment.Components()) {
         row_components_[row_index].push_back(component);
@@ -199,6 +201,15 @@ DetailedPlacer::OptimalRegion DetailedPlacer::ComputeOptimalRegion(
   size_t upper = x_bounds.size() / 2;
   return {true, x_bounds[lower], y_bounds[lower], x_bounds[upper],
           y_bounds[upper]};
+}
+
+double DetailedPlacer::DistanceToRegion(double x, double y,
+                                        const OptimalRegion& region) const {
+  double dx =
+      x < region.lx ? region.lx - x : (x > region.ux ? x - region.ux : 0);
+  double dy =
+      y < region.ly ? region.ly - y : (y > region.uy ? y - region.uy : 0);
+  return dx + dy;
 }
 
 std::vector<int> DetailedPlacer::FindClosestRows(
@@ -267,6 +278,156 @@ bool DetailedPlacer::LegalizeSegment(GeneralRowSegment* segment,
     component.SetOrient(row->IsOrientN() ? N : FS);
   }
   segment->SortComponents();
+  return true;
+}
+
+int DetailedPlacer::UsedWidth(GeneralRowSegment* segment) const {
+  DaliExpects(segment != nullptr, "Cannot measure a null row segment");
+  int used_width = 0;
+  for (Component* component : segment->Components()) {
+    used_width += component->Width();
+  }
+  return used_width;
+}
+
+size_t DetailedPlacer::RowIndex(GeneralRow* row) const {
+  DaliExpects(row != nullptr, "Cannot index a null row");
+  const auto& rows = ckt_ptr_->design().Rows();
+  return static_cast<size_t>(row - &rows.front());
+}
+
+std::vector<GeneralRowSegment*> DetailedPlacer::FindClosestSegmentsInRow(
+    int row_index, double target_x) const {
+  std::vector<GeneralRowSegment*> segments = row_segments_[row_index];
+  std::sort(
+      segments.begin(), segments.end(),
+      [target_x](const GeneralRowSegment* lhs, const GeneralRowSegment* rhs) {
+        auto distance = [target_x](const GeneralRowSegment* segment) {
+          if (target_x < segment->LX()) {
+            return segment->LX() - target_x;
+          }
+          if (target_x > segment->UX()) {
+            return target_x - segment->UX();
+          }
+          return 0.0;
+        };
+        return distance(lhs) < distance(rhs);
+      });
+  if (segments.size() > kMaxSegmentsPerRow) {
+    segments.resize(kMaxSegmentsPerRow);
+  }
+  return segments;
+}
+
+bool DetailedPlacer::TryMove(Component* component, GeneralRow* target_row,
+                             GeneralRowSegment* target_segment,
+                             double target_lx) {
+  GeneralRow* source_row = component_rows_[component->Id()];
+  GeneralRowSegment* source_segment = component_segments_[component->Id()];
+  if (source_row == nullptr || source_segment == nullptr ||
+      target_row == nullptr || target_segment == nullptr ||
+      source_segment == target_segment) {
+    return false;
+  }
+  if (UsedWidth(target_segment) + component->Width() >
+      target_segment->Width()) {
+    return false;
+  }
+
+  struct ComponentPlacement {
+    Component* component = nullptr;
+    double lx = 0;
+    double ly = 0;
+    ComponentOrient orientation = N;
+  };
+  auto capture_placements = [](const std::vector<Component*>& components) {
+    std::vector<ComponentPlacement> placements;
+    placements.reserve(components.size());
+    for (Component* placed_component : components) {
+      placements.push_back({placed_component, placed_component->LLX(),
+                            placed_component->LLY(),
+                            placed_component->Orient()});
+    }
+    return placements;
+  };
+  auto restore_placements =
+      [](const std::vector<ComponentPlacement>& placements) {
+        for (const auto& placement : placements) {
+          placement.component->SetLowerLeft(placement.lx, placement.ly);
+          placement.component->SetOrient(placement.orientation);
+        }
+      };
+
+  auto source_components = source_segment->Components();
+  auto target_components = target_segment->Components();
+  auto original_placements = capture_placements(source_components);
+  auto target_placements = capture_placements(target_components);
+  original_placements.insert(original_placements.end(),
+                             target_placements.begin(),
+                             target_placements.end());
+
+  std::set<int> affected_net_ids;
+  for (const auto& placement : original_placements) {
+    affected_net_ids.insert(placement.component->NetList().begin(),
+                            placement.component->NetList().end());
+  }
+  double cost_before = AffectedWireLength(affected_net_ids);
+
+  // Trial placement: remove from the source, seed the target near the optimal
+  // region, then let row legalization resolve overlaps and site alignment.
+  auto source_it = std::find(source_segment->Components().begin(),
+                             source_segment->Components().end(), component);
+  DaliExpects(source_it != source_segment->Components().end(),
+              "Move component is not in its source segment");
+  source_segment->Components().erase(source_it);
+  target_segment->Components().push_back(component);
+  component->SetLowerLeft(target_lx, target_row->LY());
+  component->SetOrient(target_row->IsOrientN() ? N : FS);
+
+  bool legal = LegalizeSegment(source_segment, source_row);
+  if (legal) {
+    legal = LegalizeSegment(target_segment, target_row);
+  }
+
+  auto candidate_source_components = source_segment->Components();
+  auto candidate_target_components = target_segment->Components();
+  auto candidate_placements =
+      legal ? capture_placements(candidate_source_components)
+            : std::vector<ComponentPlacement>();
+  if (legal) {
+    auto placements = capture_placements(candidate_target_components);
+    candidate_placements.insert(candidate_placements.end(), placements.begin(),
+                                placements.end());
+  }
+  double cost_after = legal ? AffectedWireLength(affected_net_ids) : DBL_MAX;
+
+  source_segment->Components() = source_components;
+  target_segment->Components() = target_components;
+  restore_placements(original_placements);
+
+  if (cost_after + 1e-9 >= cost_before) {
+    return false;
+  }
+
+  source_segment->Components() = candidate_source_components;
+  target_segment->Components() = candidate_target_components;
+  restore_placements(candidate_placements);
+
+  auto& source_row_components = row_components_[RowIndex(source_row)];
+  auto source_row_it = std::find(source_row_components.begin(),
+                                 source_row_components.end(), component);
+  DaliExpects(source_row_it != source_row_components.end(),
+              "Move component is not in its indexed source row");
+  source_row_components.erase(source_row_it);
+  row_components_[RowIndex(target_row)].push_back(component);
+  for (auto& components : row_components_) {
+    std::sort(components.begin(), components.end(),
+              [](const Component* lhs, const Component* rhs) {
+                return lhs->CenterX() < rhs->CenterX();
+              });
+  }
+  component_rows_[component->Id()] = target_row;
+  component_segments_[component->Id()] = target_segment;
   return true;
 }
 
@@ -438,6 +599,72 @@ bool DetailedPlacer::TrySwap(Component* first, Component* second) {
   return false;
 }
 
+int DetailedPlacer::RunOptimalRegionMoves() {
+  BuildSwapIndex();
+  struct MoveCandidate {
+    Component* component = nullptr;
+    OptimalRegion region;
+    double current_distance = 0;
+  };
+
+  std::vector<MoveCandidate> move_candidates;
+  move_candidates.reserve(ckt_ptr_->Components().size());
+  for (Component& component : ckt_ptr_->Components()) {
+    if (!component.IsMovable() || component.NetList().empty()) {
+      continue;
+    }
+    OptimalRegion region = ComputeOptimalRegion(&component);
+    if (!region.valid) {
+      continue;
+    }
+    double current_distance =
+        DistanceToRegion(component.LLX(), component.LLY(), region);
+    if (current_distance > 1e-9) {
+      move_candidates.push_back({&component, region, current_distance});
+    }
+  }
+  std::sort(move_candidates.begin(), move_candidates.end(),
+            [](const MoveCandidate& lhs, const MoveCandidate& rhs) {
+              return lhs.current_distance > rhs.current_distance;
+            });
+  if (move_candidates.size() > kMaxMoveCandidatesPerRound) {
+    move_candidates.resize(kMaxMoveCandidatesPerRound);
+  }
+
+  int accepted = 0;
+  for (const MoveCandidate& candidate : move_candidates) {
+    Component* component = candidate.component;
+    double target_lx = (candidate.region.lx + candidate.region.ux) / 2.0;
+    for (int row_index : FindClosestRows(candidate.region)) {
+      bool moved = false;
+      GeneralRow* row = &ckt_ptr_->design().Rows()[row_index];
+      for (GeneralRowSegment* segment :
+           FindClosestSegmentsInRow(row_index, target_lx)) {
+        if (UsedWidth(segment) + component->Width() > segment->Width()) {
+          continue;
+        }
+        double clamped_target_lx = std::max<double>(
+            segment->LX(),
+            std::min<double>(segment->UX() - component->Width(), target_lx));
+        double target_distance =
+            DistanceToRegion(clamped_target_lx, row->LY(), candidate.region);
+        if (target_distance + 1e-9 >= candidate.current_distance) {
+          continue;
+        }
+        if (TryMove(component, row, segment, clamped_target_lx)) {
+          ++accepted;
+          moved = true;
+          break;
+        }
+      }
+      if (moved) {
+        break;
+      }
+    }
+  }
+  return accepted;
+}
+
 int DetailedPlacer::RunOptimalRegionSwaps() {
   BuildSwapIndex();
   int accepted = 0;
@@ -449,15 +676,8 @@ int DetailedPlacer::RunOptimalRegionSwaps() {
     if (!region.valid) {
       continue;
     }
-    auto distance_to_region = [&region](double x, double y) {
-      double dx =
-          x < region.lx ? region.lx - x : (x > region.ux ? x - region.ux : 0);
-      double dy =
-          y < region.ly ? region.ly - y : (y > region.uy ? y - region.uy : 0);
-      return dx + dy;
-    };
     double current_distance =
-        distance_to_region(component.LLX(), component.LLY());
+        DistanceToRegion(component.LLX(), component.LLY(), region);
     if (current_distance <= 1e-9) {
       continue;
     }
@@ -482,8 +702,8 @@ int DetailedPlacer::RunOptimalRegionSwaps() {
         if (index < 0 || index >= static_cast<int>(candidates.size())) {
           continue;
         }
-        if (distance_to_region(candidates[index]->LLX(),
-                               candidates[index]->LLY()) >= current_distance) {
+        if (DistanceToRegion(candidates[index]->LLX(), candidates[index]->LLY(),
+                             region) >= current_distance) {
           continue;
         }
         if (TrySwap(&component, candidates[index])) {
@@ -566,6 +786,7 @@ bool DetailedPlacer::StartPlacement() {
   double previous_hpwl = hpwl_before;
   for (int round = 0; round < kMaxOptimizationRounds; ++round) {
     int accepted_clusters_before = RunSingleSegmentClustering();
+    int accepted_moves = RunOptimalRegionMoves();
     int accepted_swaps = RunOptimalRegionSwaps();
     double hpwl_after_swaps = WeightedHPWL();
     int segment_count = 0;
@@ -578,6 +799,7 @@ bool DetailedPlacer::StartPlacement() {
     LOG(info) << "  detailed placement round " << round << "\n"
               << "    accepted initial segment clusters: "
               << accepted_clusters_before << "\n"
+              << "    accepted optimal-region moves: " << accepted_moves << "\n"
               << "    accepted optimal-region swaps: " << accepted_swaps << "\n"
               << "    row segments visited: " << segment_count << "\n"
               << "    accepted reorder windows: " << reordered_windows << "\n"
