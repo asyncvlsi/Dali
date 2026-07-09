@@ -68,12 +68,14 @@ bool StandardCellLegalizer::StartPlacement() {
 void StandardCellLegalizer::BuildPlacementModel() {
   placement_model_ = StandardCellPlacementModel();
   segment_assignments_.clear();
+  assignment_indices_by_row_.clear();
 
   AddRowsFromPlacementBoundary();
   AddBlockagesFromCircuit();
   placement_model_.BuildFreeSegments();
 
   const auto& rows = placement_model_.Rows();
+  assignment_indices_by_row_.resize(rows.size());
   for (int row_index = 0; row_index < static_cast<int>(rows.size());
        ++row_index) {
     const auto& row = rows[row_index];
@@ -89,6 +91,8 @@ void StandardCellLegalizer::BuildPlacementModel() {
       assignment.segment_index = segment_index;
       assignment.remaining_width = segment.Width();
       segment_assignments_.push_back(assignment);
+      assignment_indices_by_row_[row_index].push_back(
+          static_cast<int>(segment_assignments_.size()) - 1);
     }
   }
 
@@ -214,24 +218,34 @@ StandardCellLegalizer::FindCandidateSegments(Component& component) const {
   std::vector<AssignmentCandidate> candidates;
   candidates.reserve(kCandidateSegmentCount);
 
-  for (int assignment_index = 0;
-       assignment_index < static_cast<int>(segment_assignments_.size());
-       ++assignment_index) {
-    const auto& assignment = segment_assignments_[assignment_index];
-    if (assignment.remaining_width < component.Width()) {
+  const auto& rows = placement_model_.Rows();
+  int target_ly = static_cast<int>(std::llround(component.LLY()));
+  for (int row_index = 0; row_index < static_cast<int>(rows.size());
+       ++row_index) {
+    double row_displacement =
+        std::abs(rows[row_index].ly - target_ly) * ckt_ptr_->GridValueY();
+    if (candidates.size() == kCandidateSegmentCount &&
+        row_displacement > candidates.back().estimated_cost) {
       continue;
     }
 
-    AssignmentCandidate candidate{assignment_index,
-                                  CandidateCost(component, assignment)};
-    auto insertion_point = std::lower_bound(
-        candidates.begin(), candidates.end(), candidate,
-        [](const AssignmentCandidate& lhs, const AssignmentCandidate& rhs) {
-          return lhs.estimated_cost < rhs.estimated_cost;
-        });
-    candidates.insert(insertion_point, candidate);
-    if (candidates.size() > kCandidateSegmentCount) {
-      candidates.pop_back();
+    for (int assignment_index : assignment_indices_by_row_[row_index]) {
+      const auto& assignment = segment_assignments_[assignment_index];
+      if (assignment.remaining_width < component.Width()) {
+        continue;
+      }
+
+      AssignmentCandidate candidate{assignment_index,
+                                    CandidateCost(component, assignment)};
+      auto insertion_point = std::lower_bound(
+          candidates.begin(), candidates.end(), candidate,
+          [](const AssignmentCandidate& lhs, const AssignmentCandidate& rhs) {
+            return lhs.estimated_cost < rhs.estimated_cost;
+          });
+      candidates.insert(insertion_point, candidate);
+      if (candidates.size() > kCandidateSegmentCount) {
+        candidates.pop_back();
+      }
     }
   }
   return candidates;

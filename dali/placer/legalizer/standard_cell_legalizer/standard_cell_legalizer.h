@@ -93,6 +93,7 @@ class StandardCellLegalizer : public Placer {
 
   StandardCellPlacementModel placement_model_;
   std::vector<SegmentAssignment> segment_assignments_;
+  std::vector<std::vector<int>> assignment_indices_by_row_;
   bool disable_cell_flip_ = false;
 
   static constexpr int kCandidateSegmentCount = 4;
