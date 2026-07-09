@@ -11,6 +11,7 @@
 #ifndef DALI_PLACER_DETAILED_PLACER_DETAILED_PLACER_H_
 #define DALI_PLACER_DETAILED_PLACER_DETAILED_PLACER_H_
 
+#include <set>
 #include <vector>
 
 #include "dali/circuit/component.h"
@@ -32,6 +33,16 @@ class DetailedPlacer : public Placer {
 
  private:
   static constexpr int kLocalReorderWindowSize = 3;
+  static constexpr int kMaxOptimalRegionRows = 4;
+  static constexpr int kMaxCandidatesPerRow = 3;
+
+  struct OptimalRegion {
+    bool valid = false;
+    double lx = 0;
+    double ly = 0;
+    double ux = 0;
+    double uy = 0;
+  };
 
   double WindowWireLengthCost(const std::vector<Component*>& components,
                               int start, int window_size);
@@ -40,6 +51,44 @@ class DetailedPlacer : public Placer {
   bool ReorderWindow(std::vector<Component*>* components, int start,
                      int window_size);
   int LocalReorderSegment(GeneralRowSegment* segment, int window_size);
+
+  /** Index each legalized component by its current row and free segment. */
+  void BuildSwapIndex();
+
+  /** Compute the HPWL-optimal rectangle induced by a component's other pins. */
+  OptimalRegion ComputeOptimalRegion(Component* component) const;
+
+  /** Return the row indices nearest to an optimal region's Y interval. */
+  std::vector<int> FindClosestRows(const OptimalRegion& region) const;
+
+  /** Return physical HPWL for a deduplicated set of affected nets. */
+  double AffectedWireLength(const std::set<int>& net_ids) const;
+
+  /** Repack one segment with Abacus while preserving its legal boundaries. */
+  bool LegalizeSegment(GeneralRowSegment* segment, GeneralRow* row);
+
+  /**
+   * Quickly reject a swap unless exchanging the two raw locations improves
+   * the physical HPWL of the pair's incident nets.
+   */
+  bool IsPromisingSwap(Component* first, Component* second,
+                       GeneralRow* first_row, GeneralRow* second_row) const;
+
+  /**
+   * Trial-swap two components and commit only an HPWL-improving legal result.
+   *
+   * Unequal-width cells are supported because both affected segments are
+   * repacked. The cost transaction includes every net of every cell whose
+   * location changes during that repacking.
+   */
+  bool TrySwap(Component* first, Component* second);
+
+  /** Visit cells and try nearby candidates in their optimal regions. */
+  int RunOptimalRegionSwaps();
+
+  std::vector<std::vector<Component*>> row_components_;
+  std::vector<GeneralRow*> component_rows_;
+  std::vector<GeneralRowSegment*> component_segments_;
 };
 
 }  // namespace dali

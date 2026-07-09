@@ -79,4 +79,50 @@ TEST_F(DetailedPlacerLocalReorderTest,
   EXPECT_EQ(locations, std::vector<double>({0, 10, 20}));
 }
 
+TEST(DetailedPlacerGlobalSwapTest, SwapsCellsTowardTheirOptimalRegions) {
+  Circuit circuit;
+  circuit.SetDatabaseMicrons(1000);
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.SetDieArea(0, 0, 200, 20);
+  circuit.ReserveSpaceForDesignImp(4, 0, 2);
+
+  Macro* cell = circuit.AddMacro("cell", 10, 10);
+  ASSERT_NE(cell, nullptr);
+  circuit.AddMacroPin(cell, "p", true)->SetOffset(5, 5);
+  circuit.AddComponent("first", "cell", 0, 0, PLACED);
+  circuit.AddComponent("second", "cell", 100, 10, PLACED);
+  circuit.AddComponent("first_anchor", "cell", 100, 10, FIXED);
+  circuit.AddComponent("second_anchor", "cell", 0, 0, FIXED);
+  circuit.AddNet("first_net", 2);
+  circuit.AddComponentPinToNet("first", "p", "first_net");
+  circuit.AddComponentPinToNet("first_anchor", "p", "first_net");
+  circuit.AddNet("second_net", 2);
+  circuit.AddComponentPinToNet("second", "p", "second_net");
+  circuit.AddComponentPinToNet("second_anchor", "p", "second_net");
+
+  for (int row_index = 0; row_index < 2; ++row_index) {
+    GeneralRow row;
+    row.SetLY(row_index * 10);
+    row.SetHeight(10);
+    GeneralRowSegment segment;
+    segment.SetLX(row_index * 100);
+    segment.SetWidth(10);
+    segment.AddComponent(
+        circuit.GetComponentPtr(row_index == 0 ? "first" : "second"));
+    row.RowSegments().push_back(segment);
+    circuit.design().Rows().push_back(row);
+  }
+
+  double hpwl_before = circuit.WeightedHPWL();
+  DetailedPlacer placer;
+  placer.SetCircuit(&circuit);
+  ASSERT_TRUE(placer.StartPlacement());
+
+  EXPECT_EQ(circuit.GetComponentPtr("first")->LLY(), 10);
+  EXPECT_EQ(circuit.GetComponentPtr("second")->LLY(), 0);
+  EXPECT_LT(circuit.WeightedHPWL(), hpwl_before);
+}
+
 }  // namespace dali
