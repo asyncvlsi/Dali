@@ -193,6 +193,15 @@ double Circuit::GridValueX() const { return tech_.grid_value_x_; }
 
 double Circuit::GridValueY() const { return tech_.grid_value_y_; }
 
+void Circuit::SetPlacementGridOrigin(int origin_x, int origin_y) {
+  int factor_x = DistanceScaleFactorX();
+  int factor_y = DistanceScaleFactorY();
+  design_.die_area_.die_area_offset_x_ =
+      ((origin_x % factor_x) + factor_x) % factor_x;
+  design_.die_area_.die_area_offset_y_ =
+      ((origin_y % factor_y) + factor_y) % factor_y;
+}
+
 void Circuit::SetRowHeight(double row_height) {
   DaliExpects(row_height > 0, "Setting row height to a negative value?");
   // LOG(info) << row_height << "  " << GridValueY() << std::endl;
@@ -1964,14 +1973,15 @@ void Circuit::SaveBookshelfPl(std::string const& name_of_file) {
   DaliExpects(ost.is_open(), "Cannot open file " + name_of_file);
   ost << "# this line is here just for ntuplace to recognize this file \n\n";
   for (auto& component : Components()) {
-    ost << component.Name() << "\t"
-        << int(component.LLX() * design_.distance_microns_ * GridValueX())
-        << "\t"
-        << int(component.LLY() * design_.distance_microns_ * GridValueY());
+    double bookshelf_x = LocDali2PhydbX(component.LLX()) /
+                         static_cast<double>(DatabaseMicrons());
+    double bookshelf_y = LocDali2PhydbY(component.LLY()) /
+                         static_cast<double>(DatabaseMicrons());
+    ost << component.Name() << "\t" << bookshelf_x << "\t" << bookshelf_y;
     if (component.IsMovable()) {
-      ost << "\t:\tN\n";
+      ost << "\t:\t" << OrientStr(component.Orient()) << "\n";
     } else {
-      ost << "\t:\tN\t/FIXED\n";
+      ost << "\t:\t" << OrientStr(component.Orient()) << "\t/FIXED\n";
     }
   }
   ost.close();
@@ -2503,6 +2513,45 @@ void Circuit::LoadUnits() {
   SetUnitsDistanceMicrons(phy_db_design.GetUnitsDistanceMicrons());
 }
 
+void Circuit::LoadPlacementGridOrigin() {
+  const auto& rows = phy_db_ptr_->GetRowVec();
+  if (rows.empty()) {
+    return;
+  }
+
+  const auto& die_area = phy_db_ptr_->RectilinearPolygonDieAreaRef();
+  DaliExpects(!die_area.empty(),
+              "Cannot derive placement grid origin without a die area");
+  int die_lower_x = die_area.front().x;
+  int die_lower_y = die_area.front().y;
+  for (const auto& point : die_area) {
+    die_lower_x = std::min(die_lower_x, point.x);
+    die_lower_y = std::min(die_lower_y, point.y);
+  }
+
+  auto positive_remainder = [](int value, int divisor) {
+    return ((value % divisor) + divisor) % divisor;
+  };
+  int factor_x = DistanceScaleFactorX();
+  int factor_y = DistanceScaleFactorY();
+  int row_offset_x = positive_remainder(rows.front().GetOriginX(), factor_x);
+  int row_offset_y = positive_remainder(rows.front().GetOriginY(), factor_y);
+  int die_offset_x = positive_remainder(die_lower_x, factor_x);
+  int die_offset_y = positive_remainder(die_lower_y, factor_y);
+
+  // A row lattice may begin inside a larger die. In that case it cannot serve
+  // as the coordinate origin without shifting the physical die boundary.
+  if (row_offset_x != die_offset_x || row_offset_y != die_offset_y) {
+    return;
+  }
+
+  SetPlacementGridOrigin(rows.front().GetOriginX(), rows.front().GetOriginY());
+
+  LOG(info) << "  placement grid origin          : "
+            << design_.die_area_.die_area_offset_x_ << ", "
+            << design_.die_area_.die_area_offset_y_ << " DBU\n";
+}
+
 void Circuit::LoadDieArea() {
   auto rectilinear_polygon_die_area =
       phy_db_ptr_->RectilinearPolygonDieAreaRef();
@@ -2523,8 +2572,8 @@ void Circuit::LoadComponents() {
     auto location = comp.GetLocation();
     int llx = location.x;
     int lly = location.y;
-    double lx = std::round(LocPhydb2DaliX(llx));
-    double ly = std::round(LocPhydb2DaliY(lly));
+    double lx = LocPhydb2DaliX(llx);
+    double ly = LocPhydb2DaliY(lly);
     auto place_status = PlaceStatus(comp.GetPlacementStatus());
     auto orient = ComponentOrient(comp.GetOrientation());
     AddComponent(component_name, macro_name, lx, ly, place_status, orient);
@@ -2578,6 +2627,7 @@ void Circuit::LoadNets() {
 void Circuit::LoadDesign() {
   ReserveSpaceForDesign();
   LoadUnits();
+  LoadPlacementGridOrigin();
   LoadDieArea();
   LoadComponents();
   LoadIoPins();

@@ -67,4 +67,25 @@ TEST(DieAreaTest, RemovesRedundantRectilinearVertices) {
   EXPECT_EQ(blockages[0].GetRect().URY(), 10);
 }
 
+TEST(DieAreaTest, PreservesAnOffsetPlacementGridOrigin) {
+  Circuit circuit;
+  circuit.SetManufacturingGrid(0.001);
+  circuit.SetUnitsDistanceMicrons(1000);
+  circuit.SetGridValue(1, 12);
+  circuit.SetPlacementGridOrigin(459000, 459000);
+  std::vector<int2d> die_area = MakeDieArea({{459000, 459000},
+                                             {459000, 11139000},
+                                             {11151000, 11139000},
+                                             {11151000, 459000}});
+
+  circuit.SetRectilinearDieArea(die_area);
+
+  EXPECT_EQ(circuit.DieAreaOffsetX(), 0);
+  EXPECT_EQ(circuit.DieAreaOffsetY(), 3000);
+  EXPECT_EQ(circuit.RegionLLY(), 38);
+  EXPECT_EQ(circuit.RegionURY(), 928);
+  EXPECT_DOUBLE_EQ(circuit.LocPhydb2DaliY(8619000), 718);
+  EXPECT_EQ(circuit.LocDali2PhydbY(718), 8619000);
+}
+
 }  // namespace dali

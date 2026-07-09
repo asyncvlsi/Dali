@@ -265,7 +265,8 @@ void DieArea::DetectMinimumBoundingBox() {
 }
 
 void DieArea::ShrinkOffGridBoundingBox() {
-  double f_left = region_left_ / static_cast<double>(distance_scale_factor_x_);
+  double f_left = (region_left_ - die_area_offset_x_) /
+                  static_cast<double>(distance_scale_factor_x_);
   if (AbsResidual(f_left, 1) > 1e-5) {
     int shrunk_region_left_ = static_cast<int>(std::round(std::ceil(f_left)));
     LOG(info) << "left placement boundary is not on placement grid: \n"
@@ -276,8 +277,8 @@ void DieArea::ShrinkOffGridBoundingBox() {
     region_left_ = static_cast<int>(std::round(f_left));
   }
 
-  double f_right =
-      region_right_ / static_cast<double>(distance_scale_factor_x_);
+  double f_right = (region_right_ - die_area_offset_x_) /
+                   static_cast<double>(distance_scale_factor_x_);
   if (AbsResidual(f_right, 1) > 1e-5) {
     int shrunk_region_right_ =
         static_cast<int>(std::round(std::floor(f_right)));
@@ -289,8 +290,8 @@ void DieArea::ShrinkOffGridBoundingBox() {
     region_right_ = static_cast<int>(std::round(f_right));
   }
 
-  double f_bottom =
-      region_bottom_ / static_cast<double>(distance_scale_factor_y_);
+  double f_bottom = (region_bottom_ - die_area_offset_y_) /
+                    static_cast<double>(distance_scale_factor_y_);
   if (AbsResidual(f_bottom, 1) > 1e-5) {
     int shrunk_region_bottom_ =
         static_cast<int>(std::round(std::ceil(f_bottom)));
@@ -302,7 +303,8 @@ void DieArea::ShrinkOffGridBoundingBox() {
     region_bottom_ = static_cast<int>(std::round(f_bottom));
   }
 
-  double f_top = region_top_ / static_cast<double>(distance_scale_factor_y_);
+  double f_top = (region_top_ - die_area_offset_y_) /
+                 static_cast<double>(distance_scale_factor_y_);
   if (AbsResidual(f_top, 1) > 1e-5) {
     int shrunk_region_top_ = static_cast<int>(std::round(std::floor(f_top)));
     LOG(info) << "top placement boundary is not on placement grid: \n"
@@ -411,7 +413,8 @@ void DieArea::ConvertPlacementBlockagesToGridUnit() {
   std::vector<RectI> shrunk_placement_blockages_;
   for (auto& blockage : placement_blockages_) {
     int new_lx = 0;
-    double lx = blockage.LLX() / static_cast<double>(distance_scale_factor_x_);
+    double lx = (blockage.LLX() - die_area_offset_x_) /
+                static_cast<double>(distance_scale_factor_x_);
     if (AbsResidual(lx, 1) > 1e-5) {
       int shrunk_lx_ = static_cast<int>(std::round(std::floor(lx)));
       new_lx = shrunk_lx_;
@@ -420,7 +423,8 @@ void DieArea::ConvertPlacementBlockagesToGridUnit() {
     }
 
     int new_ux = 0;
-    double ux = blockage.URX() / static_cast<double>(distance_scale_factor_x_);
+    double ux = (blockage.URX() - die_area_offset_x_) /
+                static_cast<double>(distance_scale_factor_x_);
     if (AbsResidual(ux, 1) > 1e-5) {
       int shrunk_ux = static_cast<int>(std::round(std::ceil(ux)));
       new_ux = shrunk_ux;
@@ -429,7 +433,8 @@ void DieArea::ConvertPlacementBlockagesToGridUnit() {
     }
 
     int new_ly = 0;
-    double ly = blockage.LLY() / static_cast<double>(distance_scale_factor_y_);
+    double ly = (blockage.LLY() - die_area_offset_y_) /
+                static_cast<double>(distance_scale_factor_y_);
     if (AbsResidual(ly, 1) > 1e-5) {
       int shrunk_ly = static_cast<int>(std::round(std::floor(ly)));
       new_ly = shrunk_ly;
@@ -438,7 +443,8 @@ void DieArea::ConvertPlacementBlockagesToGridUnit() {
     }
 
     int new_uy = 0;
-    double uy = blockage.URY() / static_cast<double>(distance_scale_factor_y_);
+    double uy = (blockage.URY() - die_area_offset_y_) /
+                static_cast<double>(distance_scale_factor_y_);
     if (AbsResidual(uy, 1) > 1e-5) {
       int shrunk_uy = static_cast<int>(std::round(std::ceil(uy)));
       new_uy = shrunk_uy;

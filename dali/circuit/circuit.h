@@ -136,6 +136,9 @@ class Circuit {
   // get the grid value in y direction, unit is um
   double GridValueY() const;
 
+  /** Set the physical origin used by the placement-site lattice. */
+  void SetPlacementGridOrigin(int origin_x, int origin_y);
+
   // set the row height, unit is um
   void SetRowHeight(double row_height);
 
@@ -600,6 +603,7 @@ class Circuit {
   // load information in DEF
   void ReserveSpaceForDesign();
   void LoadUnits();
+  void LoadPlacementGridOrigin();
   void LoadDieArea();
   void LoadComponents();
   void LoadIoPins();
