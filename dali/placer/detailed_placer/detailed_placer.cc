@@ -178,16 +178,18 @@ DetailedPlacer::OptimalRegion DetailedPlacer::ComputeOptimalRegion(
         if (pin.ComponentPtr() == component) {
           continue;
         }
-        min_x = std::min(min_x, pin.AbsX());
-        max_x = std::max(max_x, pin.AbsX());
-        min_y = std::min(min_y, pin.AbsY());
-        max_y = std::max(max_y, pin.AbsY());
+        double pin_x = pin.ComponentPtr()->LLX() + pin.PinPtr()->OffsetX(N);
+        double pin_y = pin.ComponentPtr()->LLY() + pin.PinPtr()->OffsetY(N);
+        min_x = std::min(min_x, pin_x);
+        max_x = std::max(max_x, pin_x);
+        min_y = std::min(min_y, pin_y);
+        max_y = std::max(max_y, pin_y);
       }
       if (min_x != DBL_MAX) {
-        x_bounds.push_back(min_x - component_pin.OffsetX());
-        x_bounds.push_back(max_x - component_pin.OffsetX());
-        y_bounds.push_back(min_y - component_pin.OffsetY());
-        y_bounds.push_back(max_y - component_pin.OffsetY());
+        x_bounds.push_back(min_x - component_pin.PinPtr()->OffsetX(N));
+        x_bounds.push_back(max_x - component_pin.PinPtr()->OffsetX(N));
+        y_bounds.push_back(min_y - component_pin.PinPtr()->OffsetY(N));
+        y_bounds.push_back(max_y - component_pin.PinPtr()->OffsetY(N));
       }
     }
   }
@@ -201,6 +203,29 @@ DetailedPlacer::OptimalRegion DetailedPlacer::ComputeOptimalRegion(
   size_t upper = x_bounds.size() / 2;
   return {true, x_bounds[lower], y_bounds[lower], x_bounds[upper],
           y_bounds[upper]};
+}
+
+double DetailedPlacer::BookshelfStyleWireLength(int net_id) const {
+  Net& net = ckt_ptr_->Nets()[net_id];
+  if (net.ComponentPins().size() <= 1) {
+    return 0;
+  }
+
+  double min_x = DBL_MAX;
+  double max_x = -DBL_MAX;
+  double min_y = DBL_MAX;
+  double max_y = -DBL_MAX;
+  for (NetPin& pin : net.ComponentPins()) {
+    double pin_x = pin.ComponentPtr()->LLX() + pin.PinPtr()->OffsetX(N);
+    double pin_y = pin.ComponentPtr()->LLY() + pin.PinPtr()->OffsetY(N);
+    min_x = std::min(min_x, pin_x);
+    max_x = std::max(max_x, pin_x);
+    min_y = std::min(min_y, pin_y);
+    max_y = std::max(max_y, pin_y);
+  }
+  return ((max_x - min_x) * ckt_ptr_->GridValueX() +
+          (max_y - min_y) * ckt_ptr_->GridValueY()) *
+         net.Weight();
 }
 
 double DetailedPlacer::DistanceToRegion(double x, double y,
@@ -245,9 +270,7 @@ std::vector<int> DetailedPlacer::FindClosestRows(
 double DetailedPlacer::AffectedWireLength(const std::set<int>& net_ids) const {
   double cost = 0.0;
   for (int net_id : net_ids) {
-    Net& net = ckt_ptr_->Nets()[net_id];
-    cost += net.WeightedHPWLX() * ckt_ptr_->GridValueX() +
-            net.WeightedHPWLY() * ckt_ptr_->GridValueY();
+    cost += BookshelfStyleWireLength(net_id);
   }
   return cost;
 }

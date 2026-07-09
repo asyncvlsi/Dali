@@ -62,6 +62,16 @@ class DetailedPlacer : public Placer {
   /** Compute the HPWL-optimal rectangle induced by a component's other pins. */
   OptimalRegion ComputeOptimalRegion(Component* component) const;
 
+  /**
+   * Return physical HPWL for one net using unflipped macro pin offsets.
+   *
+   * Bookshelf's official evaluator combines lower-left cell locations with the
+   * N-orientation pin offsets from the `.nets` file and ignores row
+   * orientation. The standard-cell detailed placer uses this cost so local
+   * accept/reject decisions match the benchmark objective.
+   */
+  double BookshelfStyleWireLength(int net_id) const;
+
   /** Return Manhattan distance from a location to an optimal region. */
   double DistanceToRegion(double x, double y,
                           const OptimalRegion& region) const;
