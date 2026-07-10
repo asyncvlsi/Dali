@@ -22,7 +22,6 @@
 #include "global_placer.h"
 
 #include <algorithm>
-#include <cfloat>
 #include <memory>
 #include <utility>
 
@@ -270,42 +269,6 @@ bool GlobalPlacer::IsComponentListOrNetListEmpty() const {
   return false;
 }
 
-bool GlobalPlacer::IsSeriesConverged(const std::vector<double>& series,
-                                     int window_size, double tolerance) {
-  auto sz = static_cast<int>(series.size());
-  if (sz < window_size) {
-    return false;
-  }
-  double max_val = -DBL_MAX;
-  double min_val = DBL_MAX;
-  for (int i = 0; i < window_size; ++i) {
-    max_val = std::max(max_val, series[sz - 1 - i]);
-    min_val = std::min(min_val, series[sz - 1 - i]);
-  }
-  DaliExpects(max_val >= 0 && min_val >= 0,
-              "Negative series series not supported!");
-  if (max_val < 1e-10 && min_val <= 1e-10) {
-    return true;
-  }
-  if (min_val <= 1e-10) {
-    return false;
-  }
-  double ratio = max_val / min_val - 1;
-  return ratio < tolerance;
-}
-
-double GlobalPlacer::BestValueInWindow(const std::vector<double>& series,
-                                       int begin, int end) {
-  DaliExpects(begin >= 0 && begin < end &&
-                  end <= static_cast<int>(series.size()),
-              "invalid best-value window");
-  double best_value = DBL_MAX;
-  for (int i = begin; i < end; ++i) {
-    best_value = std::min(best_value, series[i]);
-  }
-  return best_value;
-}
-
 bool GlobalPlacer::IsPositive(double value) { return value > 1e-10; }
 
 double GlobalPlacer::RelativeImprovement(double old_value, double new_value) {
@@ -315,20 +278,23 @@ double GlobalPlacer::RelativeImprovement(double old_value, double new_value) {
   return (old_value - new_value) / old_value;
 }
 
-bool GlobalPlacer::HasUpperBoundHpwlPlateaued(
+bool GlobalPlacer::HasUpperBoundHpwlStalled(
     const std::vector<double>& upper_bound_hpwl) const {
   int series_size = static_cast<int>(upper_bound_hpwl.size());
-  int window = upper_bound_plateau_window_;
-  if (series_size < 2 * window) return false;
+  if (series_size <= upper_bound_improvement_patience_) return false;
 
-  int current_window_begin = series_size - window;
-  int previous_window_begin = current_window_begin - window;
-  double previous_best = BestValueInWindow(
-      upper_bound_hpwl, previous_window_begin, current_window_begin);
-  double current_best =
-      BestValueInWindow(upper_bound_hpwl, current_window_begin, series_size);
-  double improvement = RelativeImprovement(previous_best, current_best);
-  return improvement < upper_bound_plateau_threshold_;
+  double best_upper_bound_hpwl = upper_bound_hpwl.front();
+  int last_meaningful_improvement_iter = 0;
+  for (int i = 1; i < series_size; ++i) {
+    double improvement =
+        RelativeImprovement(best_upper_bound_hpwl, upper_bound_hpwl[i]);
+    if (improvement >= upper_bound_min_improvement_) {
+      best_upper_bound_hpwl = upper_bound_hpwl[i];
+      last_meaningful_improvement_iter = i;
+    }
+  }
+  return series_size - 1 - last_meaningful_improvement_iter >=
+         upper_bound_improvement_patience_;
 }
 
 /****
@@ -336,10 +302,8 @@ bool GlobalPlacer::HasUpperBoundHpwlPlateaued(
  * placement.
  *
  * Stopping criteria (SimPL, option 1):
- *    (a). the gap is reduced to 25% of the gap in the tenth iteration and
- *    upper-bound solution stops improving
- *    (b). the gap is smaller than 10% of the gap in the tenth iteration and
- *    upper-bound solution stops improving
+ *    the current lower/upper gap is small and the best upper-bound HPWL has
+ *    not improved meaningfully for several iterations
  * Stopping criteria (POLAR, option 2):
  *    the gap between lower bound wire-length and upper bound wire-length is
  *    less than 8%
@@ -351,27 +315,15 @@ bool GlobalPlacer::IsPlacementConverged() {
   auto& lower_bound_hpwl = optimizer_->GetHpwls();
   auto& upper_bound_hpwl = legalizer_->GetHpwls();
   if (convergence_criteria_ == 1) {
-    // (a) and (b) requires at least 10 iterations
-    if (lower_bound_hpwl.size() <= 10) {
+    if (lower_bound_hpwl.empty() || upper_bound_hpwl.empty()) {
       res = false;
     } else {
-      double tenth_gap = upper_bound_hpwl[9] - lower_bound_hpwl[9];
-      double last_gap = upper_bound_hpwl.back() - lower_bound_hpwl.back();
-      if (tenth_gap <= 1e-10) {
-        return last_gap <= 1e-10;
-      }
-      double gap_ratio = last_gap / tenth_gap;
-      bool upper_bound_has_plateaued =
-          HasUpperBoundHpwlPlateaued(upper_bound_hpwl);
-      if (gap_ratio < 0.1) {
-        res = upper_bound_has_plateaued;
-      } else if (gap_ratio < 0.25) {
-        res = upper_bound_has_plateaued &&
-              IsSeriesConverged(upper_bound_hpwl, 3,
-                                simpl_LAL_converge_criterion_);
-      } else {
-        res = false;
-      }
+      double lower_bound = lower_bound_hpwl.back();
+      double upper_bound = upper_bound_hpwl.back();
+      bool small_gap =
+          !IsPositive(lower_bound) ||
+          (upper_bound / lower_bound - 1 < polar_converge_criterion_);
+      res = small_gap && HasUpperBoundHpwlStalled(upper_bound_hpwl);
     }
   } else if (convergence_criteria_ == 2) {
     if (lower_bound_hpwl.empty()) {
