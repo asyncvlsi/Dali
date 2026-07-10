@@ -102,17 +102,28 @@ class InitializerGridBin {
   void SetBoundary(int lx, int ly, int ux, int uy);
   void SetPriorityTieBreaker(double priority_tie_breaker);
   void UpdateTotalArea();
-  void UpdateMacroArea();
+  /** Rebuild legal free rectangles after fixed macros are assigned. */
+  void UpdateFreeSpace();
   void AddComponent(Component* component);
+  /** Randomly place assigned components inside legal free rectangles. */
   void InitializeComponentLocation(uint32_t random_seed, int num_trials);
 
  private:
+  /** Return rectangle area using the unsigned type used by density accounting.
+   */
+  unsigned long long RectangleArea(const RectI& rect) const;
+
+  /** Slice this bin by macro edges and keep only unblocked sub-rectangles. */
+  void BuildFreeRectangles(std::vector<RectI> const& blocked_rects);
+
   std::vector<Component*> macros_;
   std::vector<Component*> components_;
+  std::vector<RectI> free_rects_;
   double density_ = 0;
   double priority_tie_breaker_ = 0;
   unsigned long long total_area_ = 0;
-  unsigned long long used_area_ = 0;
+  unsigned long long free_area_ = 0;
+  unsigned long long movable_area_ = 0;
   int lx_ = 0;
   int ly_ = 0;
   int ux_ = 0;

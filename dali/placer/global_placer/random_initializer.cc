@@ -23,9 +23,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <random>
 
-#include "dali/common/helper.h"
 #include "dali/common/logging.h"
 #include "dali/common/placement_metrics.h"
 
@@ -157,7 +157,12 @@ std::vector<Component*>& InitializerGridBin::Macros() { return macros_; }
 double InitializerGridBin::GetDensity() const { return density_; }
 
 void InitializerGridBin::UpdateDensity() {
-  density_ = static_cast<double>(used_area_) / static_cast<double>(total_area_);
+  if (free_area_ == 0) {
+    density_ = std::numeric_limits<double>::infinity();
+    return;
+  }
+  density_ =
+      static_cast<double>(movable_area_) / static_cast<double>(free_area_);
 }
 
 void InitializerGridBin::SetBoundary(int lx, int ly, int ux, int uy) {
@@ -175,9 +180,49 @@ void InitializerGridBin::UpdateTotalArea() {
   total_area_ = (ux_ - lx_) * (uy_ - ly_);
 }
 
-void InitializerGridBin::UpdateMacroArea() {
+unsigned long long InitializerGridBin::RectangleArea(const RectI& rect) const {
+  return static_cast<unsigned long long>(rect.Width()) *
+         static_cast<unsigned long long>(rect.Height());
+}
+
+void InitializerGridBin::BuildFreeRectangles(
+    std::vector<RectI> const& blocked_rects) {
+  free_rects_.clear();
+  std::vector<int> x_lines = {lx_, ux_};
+  std::vector<int> y_lines = {ly_, uy_};
+  for (const RectI& rect : blocked_rects) {
+    x_lines.push_back(rect.LLX());
+    x_lines.push_back(rect.URX());
+    y_lines.push_back(rect.LLY());
+    y_lines.push_back(rect.URY());
+  }
+  std::sort(x_lines.begin(), x_lines.end());
+  x_lines.erase(std::unique(x_lines.begin(), x_lines.end()), x_lines.end());
+  std::sort(y_lines.begin(), y_lines.end());
+  y_lines.erase(std::unique(y_lines.begin(), y_lines.end()), y_lines.end());
+
+  free_area_ = 0;
+  for (std::size_t ix = 1; ix < x_lines.size(); ++ix) {
+    for (std::size_t iy = 1; iy < y_lines.size(); ++iy) {
+      RectI candidate(x_lines[ix - 1], y_lines[iy - 1], x_lines[ix],
+                      y_lines[iy]);
+      if (candidate.Width() == 0 || candidate.Height() == 0) continue;
+
+      bool blocked = std::any_of(blocked_rects.begin(), blocked_rects.end(),
+                                 [&candidate](const RectI& rect) {
+                                   return candidate.IsOverlap(rect);
+                                 });
+      if (!blocked) {
+        free_area_ += RectangleArea(candidate);
+        free_rects_.push_back(candidate);
+      }
+    }
+  }
+}
+
+void InitializerGridBin::UpdateFreeSpace() {
   RectI bin_rect(lx_, ly_, ux_, uy_);
-  std::vector<RectI> rects;
+  std::vector<RectI> blocked_rects;
   for (auto& macro_ptr : macros_) {
     DaliExpects(macro_ptr->IsFixed(), "Only supports fixed macros");
     RectI fixed_component_rect(static_cast<int>(std::round(macro_ptr->LLX())),
@@ -185,17 +230,17 @@ void InitializerGridBin::UpdateMacroArea() {
                                static_cast<int>(std::round(macro_ptr->URX())),
                                static_cast<int>(std::round(macro_ptr->URY())));
     if (bin_rect.IsOverlap(fixed_component_rect)) {
-      rects.push_back(bin_rect.GetOverlapRect(fixed_component_rect));
+      blocked_rects.push_back(bin_rect.GetOverlapRect(fixed_component_rect));
     }
   }
 
-  used_area_ = GetCoverArea(rects);
+  BuildFreeRectangles(blocked_rects);
   UpdateDensity();
 }
 
 void InitializerGridBin::AddComponent(Component* component) {
   components_.emplace_back(component);
-  used_area_ += component->Area();
+  movable_area_ += component->Area();
   UpdateDensity();
 }
 
@@ -205,16 +250,41 @@ void InitializerGridBin::InitializeComponentLocation(uint32_t random_seed,
   std::minstd_rand0 generator{random_seed};
   std::uniform_real_distribution<double> distribution(0, 1);
 
-  int region_width = ux_ - lx_;
-  int region_height = uy_ - ly_;
+  if (free_rects_.empty()) return;
 
   for (auto& component_ptr : components_) {
     if (!component_ptr->IsMovable()) continue;
+    std::vector<const RectI*> candidate_rects;
+    std::vector<unsigned long long> cumulative_area;
+    unsigned long long total_candidate_area = 0;
+    for (const RectI& rect : free_rects_) {
+      if (rect.Width() < component_ptr->Width() ||
+          rect.Height() < component_ptr->Height()) {
+        continue;
+      }
+      total_candidate_area += RectangleArea(rect);
+      cumulative_area.push_back(total_candidate_area);
+      candidate_rects.push_back(&rect);
+    }
+    if (candidate_rects.empty()) continue;
+
+    std::uniform_int_distribution<unsigned long long> area_distribution(
+        0, total_candidate_area - 1);
     for (int i = 0; i < num_trials; ++i) {
-      double x_loc = lx_ + region_width * distribution(generator);
-      double y_loc = ly_ + region_height * distribution(generator);
-      x_loc = ClampCenterToBox(x_loc, lx_, ux_, component_ptr->Width());
-      y_loc = ClampCenterToBox(y_loc, ly_, uy_, component_ptr->Height());
+      unsigned long long area_sample = area_distribution(generator);
+      auto rect_iter = std::upper_bound(cumulative_area.begin(),
+                                        cumulative_area.end(), area_sample);
+      int rect_index =
+          static_cast<int>(std::distance(cumulative_area.begin(), rect_iter));
+      const RectI& free_rect = *candidate_rects[rect_index];
+      double x_loc =
+          free_rect.LLX() + free_rect.Width() * distribution(generator);
+      double y_loc =
+          free_rect.LLY() + free_rect.Height() * distribution(generator);
+      x_loc = ClampCenterToBox(x_loc, free_rect.LLX(), free_rect.URX(),
+                               component_ptr->Width());
+      y_loc = ClampCenterToBox(y_loc, free_rect.LLY(), free_rect.URY(),
+                               component_ptr->Height());
       component_ptr->SetCenterX(x_loc);
       component_ptr->SetCenterY(y_loc);
       bool is_no_overlap =
@@ -423,7 +493,7 @@ void DensityAwareInitializer::AssignFixedMacroToGridBin() {
   MonteCarloInitializer::AssignFixedMacroToGridBin();
   for (int ix = 0; ix < grid_cnt_x_; ++ix) {
     for (int iy = 0; iy < grid_cnt_y_; ++iy) {
-      grid_bins_[ix][iy].UpdateMacroArea();
+      grid_bins_[ix][iy].UpdateFreeSpace();
     }
   }
 }
