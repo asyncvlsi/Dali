@@ -22,7 +22,9 @@
 #include "box_bin.h"
 
 #include <cmath>
+#include <cstdlib>
 #include <limits>
+#include <unordered_set>
 
 #include "dali/common/helper.h"
 
@@ -218,8 +220,25 @@ void BoxBin::UpdateBoundaries(
   top = grid_bin_matrix[ur_index.x][ur_index.y].top;
 }
 
+void BoxBin::UpdatePlacementBlockages(
+    std::vector<std::vector<GridBin>>& grid_bin_matrix) {
+  placement_blockages_.clear();
+  std::unordered_set<const PlacementBlockage*> seen;
+  for (int x = ll_index.x; x <= ur_index.x; ++x) {
+    for (int y = ll_index.y; y <= ur_index.y; ++y) {
+      for (const PlacementBlockage* blockage_ptr :
+           grid_bin_matrix[x][y].placement_blockages_) {
+        if (seen.insert(blockage_ptr).second) {
+          placement_blockages_.push_back(blockage_ptr);
+        }
+      }
+    }
+  }
+}
+
 void BoxBin::UpdateWhiteSpaceAndFixedComponents(
-    std::vector<const PlacementBlockage*>& placement_blockages) {
+    const std::vector<const PlacementBlockage*>& placement_blockages) {
+  placement_blockages_.clear();
   total_white_space =
       (unsigned long long)(right - left) * (unsigned long long)(top - bottom);
   RectI bin_rect(left, bottom, right, top);
@@ -358,58 +377,91 @@ unsigned long long BoxBin::white_space_LUT(
 }
 
 bool BoxBin::update_cut_index_white_space(
-    std::vector<std::vector<unsigned long long>>& grid_bin_white_space_LUT) {
+    std::vector<std::vector<unsigned long long>>& grid_bin_white_space_LUT,
+    std::vector<std::vector<GridBin>>& grid_bin_matrix,
+    GlobalLalMacroBoundaryMode macro_boundary_mode) {
   DaliExpects(total_white_space > 0,
               "Cannot split a box without available white space");
-  double error, minimum_error = 1;
-  unsigned long long white_space_low;
-  int index_give_minimum_error;
+  auto choose_cut_index = [&](int first_index, int last_index,
+                              unsigned long long total_space,
+                              const std::vector<int>& macro_boundaries,
+                              bool split_y) {
+    DaliExpects(first_index < last_index, "Invalid cut index range");
+
+    auto white_space_error = [&](int index) {
+      GridBinIndex cut_ur = ur_index;
+      if (split_y) {
+        cut_ur.y = index;
+      } else {
+        cut_ur.x = index;
+      }
+      unsigned long long low_space =
+          white_space_LUT(grid_bin_white_space_LUT, ll_index, cut_ur);
+      return std::fabs(double(low_space) / double(total_space) - 0.5);
+    };
+
+    int balanced_index = first_index;
+    double balanced_error = std::numeric_limits<double>::infinity();
+    for (int index = first_index; index < last_index; ++index) {
+      double error = white_space_error(index);
+      if (error < balanced_error) {
+        balanced_error = error;
+        balanced_index = index;
+      }
+    }
+
+    if (macro_boundary_mode == GlobalLalMacroBoundaryMode::kOff) {
+      return balanced_index;
+    }
+
+    int macro_index = balanced_index;
+    double macro_error = std::numeric_limits<double>::infinity();
+    for (int boundary : macro_boundaries) {
+      int nearest_index = first_index;
+      int nearest_distance = std::numeric_limits<int>::max();
+      for (int index = first_index; index < last_index; ++index) {
+        int grid_boundary = split_y ? grid_bin_matrix[ll_index.x][index].top
+                                    : grid_bin_matrix[index][ll_index.y].right;
+        int distance = std::abs(grid_boundary - boundary);
+        if (distance < nearest_distance) {
+          nearest_distance = distance;
+          nearest_index = index;
+        }
+      }
+      double error = white_space_error(nearest_index);
+      if (error < macro_error) {
+        macro_error = error;
+        macro_index = nearest_index;
+      }
+    }
+
+    // Prefer obstacle-aligned cuts when they are close to a balanced
+    // whitespace split. This preserves SimPL's idea of using macro edges as
+    // natural stripe boundaries without forcing pathological tiny regions.
+    double macro_cut_extra_tolerance =
+        macro_boundary_mode == GlobalLalMacroBoundaryMode::kPreferred ? 0.10
+                                                                      : 0.0;
+    if (!macro_boundaries.empty() &&
+        macro_error <= balanced_error + macro_cut_extra_tolerance) {
+      return macro_index;
+    }
+    return balanced_index;
+  };
+
   if (cut_direction_x) {
     if (ll_index.y == ur_index.y) return false;
     cut_ur_index.x = ur_index.x;
     cut_ll_index.x = ll_index.x;
-
-    index_give_minimum_error = ll_index.y;
-
-    for (cut_ur_index.y = ll_index.y; cut_ur_index.y < ur_index.y - 1;
-         cut_ur_index.y++) {
-      // LOG(info)   << cut_ur_index.y << "\n";
-      white_space_low =
-          white_space_LUT(grid_bin_white_space_LUT, ll_index, cut_ur_index);
-      error =
-          std::fabs(double(white_space_low) / double(total_white_space) - 0.5);
-      if (error < minimum_error) index_give_minimum_error = cut_ur_index.y;
-      if (double(white_space_low) / double(total_white_space) > 0.5) break;
-    }
-    if (cut_ur_index.y != index_give_minimum_error) {
-      cut_ur_index.y = index_give_minimum_error;
-      // white_space_low = white_space_LUT(grid_bin_white_space_LUT, ll_index_,
-      // cut_ur_index);
-    }
+    cut_ur_index.y = choose_cut_index(ll_index.y, ur_index.y, total_white_space,
+                                      horizontal_cutlines, /*split_y=*/true);
     cut_ll_index.y = cut_ur_index.y + 1;
     return true;
   } else {
     if (ll_index.x == ur_index.x) return false;
     cut_ur_index.y = ur_index.y;
     cut_ll_index.y = ll_index.y;
-
-    index_give_minimum_error = ll_index.x;
-
-    for (cut_ur_index.x = ll_index.x; cut_ur_index.x < ur_index.x - 1;
-         cut_ur_index.x++) {
-      // LOG(info)   << cut_ur_index.x << "\n";
-      white_space_low =
-          white_space_LUT(grid_bin_white_space_LUT, ll_index, cut_ur_index);
-      error =
-          std::fabs(double(white_space_low) / double(total_white_space) - 0.5);
-      if (error < minimum_error) index_give_minimum_error = cut_ur_index.x;
-      if (double(white_space_low) / double(total_white_space) > 0.5) break;
-    }
-    if (cut_ur_index.x != index_give_minimum_error) {
-      cut_ur_index.x = index_give_minimum_error;
-      // white_space_low = white_space_LUT(grid_bin_white_space_LUT, ll_index_,
-      // cut_ur_index);
-    }
+    cut_ur_index.x = choose_cut_index(ll_index.x, ur_index.x, total_white_space,
+                                      vertical_cutlines, /*split_y=*/false);
     cut_ll_index.x = cut_ur_index.x + 1;
     return true;
   }

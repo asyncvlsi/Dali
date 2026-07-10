@@ -32,6 +32,13 @@
 
 namespace dali {
 
+/** How strongly LAL should prefer fixed-macro boundary cutlines. */
+enum class GlobalLalMacroBoundaryMode {
+  kOff,
+  kBalanced,
+  kPreferred,
+};
+
 /** Candidate rectangular window in grid-bin coordinates. */
 struct WindowQuadruple {
   int llx, lly, urx, ury;
@@ -82,14 +89,10 @@ class BoxBin {
    * obstacles do not need blockage-driven recursive splitting. */
   std::vector<const PlacementBlockage*> placement_blockages_;
 
-  /** Copy placement blockages from the matching grid bin. */
+  /** Copy placement blockages that overlap any grid bin covered by this box. */
   void UpdatePlacementBlockages(
-      std::vector<std::vector<GridBin>>& grid_bin_matrix) {
-    placement_blockages_ =
-        grid_bin_matrix[ll_index.x][ll_index.y].placement_blockages_;
-  };
-  /* UpdatePlacementBlockages can only be called when the box is a grid_bin_box.
-   */
+      std::vector<std::vector<GridBin>>& grid_bin_matrix);
+
   bool HasPlacementBlockages() const { return !placement_blockages_.empty(); };
 
   std::vector<int> vertical_cutlines;
@@ -115,7 +118,7 @@ class BoxBin {
    * set.
    */
   void UpdateWhiteSpaceAndFixedComponents(
-      std::vector<const PlacementBlockage*>& placement_blockages);
+      const std::vector<const PlacementBlockage*>& placement_blockages);
 
   void update_all_terminal(std::vector<std::vector<GridBin>>& grid_bin_matrix);
   void UpdateComponentArea();
@@ -134,7 +137,9 @@ class BoxBin {
   void UpdateComponentList(std::vector<std::vector<GridBin>>& grid_bin_matrix);
   bool WriteComponentsInBox(std::string const& NameOfFile);
   bool update_cut_index_white_space(
-      std::vector<std::vector<unsigned long long>>& grid_bin_white_space_LUT);
+      std::vector<std::vector<unsigned long long>>& grid_bin_white_space_LUT,
+      std::vector<std::vector<GridBin>>& grid_bin_matrix,
+      GlobalLalMacroBoundaryMode macro_boundary_mode);
   bool UpdateCutPointComponentLists(unsigned long long& box1_total_white_space,
                                     unsigned long long& box2_total_white_space);
   bool UpdateCutPointComponentListsLeaf(int& cut_line_w,

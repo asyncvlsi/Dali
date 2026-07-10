@@ -122,23 +122,44 @@ void RoughLegalizer::SetShouldSaveIntermediateResult(
  * And initialize the space of grid_bin_mesh
  */
 void LookAheadLegalizer::InitializeGridBinSize() {
-  target_component_count_per_bin_ = TargetComponentCountPerBin();
-  double grid_bin_area = target_component_count_per_bin_ *
-                         ckt_ptr_->AverageMovableComponentArea() /
-                         placement_density_;
   double grid_value_x = ckt_ptr_->GridValueX();
   double grid_value_y = ckt_ptr_->GridValueY();
   DaliExpects(grid_value_x > 0 && grid_value_y > 0,
               "Placement grid values must be positive");
 
-  // Keep roughly the same bin area in Dali grid units, but make the bin close
-  // to square in physical microns when x/y grid units have different sizes.
-  double grid_y_to_x_ratio = grid_value_y / grid_value_x;
-  grid_bin_height = static_cast<int>(
-      std::round(std::sqrt(grid_bin_area / grid_y_to_x_ratio)));
-  grid_bin_height = std::max(grid_bin_height, 1);
-  grid_bin_width = std::max(
-      1, static_cast<int>(std::round(grid_bin_height * grid_y_to_x_ratio)));
+  if (grid_schedule_ == GlobalGridSchedule::kSimpl) {
+    constexpr double kInitialGridCount = 100.0;
+    constexpr double kGridShrinkFactor = 1.06;
+    double refinement = std::pow(kGridShrinkFactor, cur_iter_);
+    double target_width =
+        double(ckt_ptr_->RegionWidth()) / (kInitialGridCount * refinement);
+    double target_height =
+        double(ckt_ptr_->RegionHeight()) / (kInitialGridCount * refinement);
+    target_width =
+        std::max(target_width, 4.0 * ckt_ptr_->AverageMovableComponentWidth());
+    target_height = std::max(target_height,
+                             4.0 * ckt_ptr_->AverageMovableComponentHeight());
+    grid_bin_width = std::max(1, static_cast<int>(std::round(target_width)));
+    grid_bin_height = std::max(1, static_cast<int>(std::round(target_height)));
+    target_component_count_per_bin_ =
+        std::max(1, static_cast<int>(std::round(
+                        grid_bin_width * grid_bin_height * placement_density_ /
+                        ckt_ptr_->AverageMovableComponentArea())));
+  } else {
+    target_component_count_per_bin_ = TargetComponentCountPerBin();
+    double grid_bin_area = target_component_count_per_bin_ *
+                           ckt_ptr_->AverageMovableComponentArea() /
+                           placement_density_;
+
+    // Keep roughly the same bin area in Dali grid units, but make the bin close
+    // to square in physical microns when x/y grid units have different sizes.
+    double grid_y_to_x_ratio = grid_value_y / grid_value_x;
+    grid_bin_height = static_cast<int>(
+        std::round(std::sqrt(grid_bin_area / grid_y_to_x_ratio)));
+    grid_bin_height = std::max(grid_bin_height, 1);
+    grid_bin_width = std::max(
+        1, static_cast<int>(std::round(grid_bin_height * grid_y_to_x_ratio)));
+  }
   grid_cnt_x =
       std::max(1, static_cast<int>(std::ceil(double(ckt_ptr_->RegionWidth()) /
                                              grid_bin_width)));
@@ -304,8 +325,15 @@ int LookAheadLegalizer::TargetComponentCountPerBin() const {
 }
 
 void LookAheadLegalizer::RebuildGridBinsIfTargetChanged() {
+  if (grid_schedule_ == GlobalGridSchedule::kSimpl) {
+    InitGridBins();
+    InitWhiteSpaceLUT();
+    return;
+  }
+
   int target_component_count_per_bin = TargetComponentCountPerBin();
-  if (target_component_count_per_bin == active_target_component_count_per_bin_) {
+  if (target_component_count_per_bin ==
+      active_target_component_count_per_bin_) {
     return;
   }
   InitGridBins();
@@ -660,6 +688,53 @@ uint32_t LookAheadLegalizer::LookUpWhiteSpace(WindowQuadruple& window) {
   return total_white_space;
 }
 
+bool LookAheadLegalizer::ExpandBoxByBestNeighbor(BoxBin* box) {
+  DaliExpects(box != nullptr, "Cannot expand a null LAL box");
+  std::vector<BoxBin> candidates;
+  candidates.reserve(4);
+
+  auto add_candidate = [&](int dlx, int dly, int durx, int dury) {
+    BoxBin candidate = *box;
+    candidate.ll_index.x += dlx;
+    candidate.ll_index.y += dly;
+    candidate.ur_index.x += durx;
+    candidate.ur_index.y += dury;
+    candidate.UpdateComponentAreaWhiteSpaceFillingRate(grid_bin_white_space_LUT,
+                                                       grid_bin_mesh);
+    candidates.push_back(candidate);
+  };
+
+  if (box->ll_index.x > 0) add_candidate(-1, 0, 0, 0);
+  if (box->ll_index.y > 0) add_candidate(0, -1, 0, 0);
+  if (box->ur_index.x < grid_cnt_x - 1) add_candidate(0, 0, 1, 0);
+  if (box->ur_index.y < grid_cnt_y - 1) add_candidate(0, 0, 0, 1);
+  if (candidates.empty()) {
+    return false;
+  }
+
+  auto score = [&](const BoxBin& candidate) {
+    double overflow =
+        std::max(0.0, candidate.filling_rate - placement_density_);
+    double area = double(candidate.ur_index.x - candidate.ll_index.x + 1) *
+                  double(candidate.ur_index.y - candidate.ll_index.y + 1);
+    double width = candidate.ur_index.x - candidate.ll_index.x + 1;
+    double height = candidate.ur_index.y - candidate.ll_index.y + 1;
+    double aspect_penalty = std::fabs(std::log(width / height));
+    return overflow * 1e9 + area + aspect_penalty;
+  };
+
+  auto best_it = std::min_element(candidates.begin(), candidates.end(),
+                                  [&](const BoxBin& lhs, const BoxBin& rhs) {
+                                    return score(lhs) < score(rhs);
+                                  });
+  box->ll_index = best_it->ll_index;
+  box->ur_index = best_it->ur_index;
+  box->total_component_area = best_it->total_component_area;
+  box->total_white_space = best_it->total_white_space;
+  box->filling_rate = best_it->filling_rate;
+  return true;
+}
+
 void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
   /****
    * this function find the box for the largest cluster,
@@ -701,7 +776,13 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
     R.UpdateComponentAreaWhiteSpaceFillingRate(grid_bin_white_space_LUT,
                                                grid_bin_mesh);
     if (R.filling_rate > placement_density_) {
-      R.ExpandBox(grid_cnt_x, grid_cnt_y);
+      if (expansion_mode_ == GlobalLalExpansionMode::kBestNeighbor) {
+        if (!ExpandBoxByBestNeighbor(&R)) {
+          LOG(fatal) << "Reach maximum, cannot further expand\n";
+        }
+      } else {
+        R.ExpandBox(grid_cnt_x, grid_cnt_y);
+      }
     } else {
       break;
     }
@@ -725,9 +806,10 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
 
   if (R.ll_index == R.ur_index) {
     R.UpdatePlacementBlockages(grid_bin_mesh);
-    if (R.HasPlacementBlockages()) {
-      R.UpdateObsBoundary();
-    }
+    R.UpdateObsBoundary();
+  } else {
+    R.UpdatePlacementBlockages(grid_bin_mesh);
+    R.UpdateObsBoundary();
   }
   queue_box_bin.push(R);
   // LOG(info)   << "Bounding box total white space: " <<
@@ -888,8 +970,8 @@ void LookAheadLegalizer::SplitBox(BoxBin& box) {
   // this part of code can be simplified, but after which the code might be
   // unclear cut-line along vertical direction
   if (box.cut_direction_x) {
-    flag_bisection_complete =
-        box.update_cut_index_white_space(grid_bin_white_space_LUT);
+    flag_bisection_complete = box.update_cut_index_white_space(
+        grid_bin_white_space_LUT, grid_bin_mesh, macro_boundary_mode_);
     if (flag_bisection_complete) {
       box1.cut_direction_x = false;
       box2.cut_direction_x = false;
@@ -898,8 +980,8 @@ void LookAheadLegalizer::SplitBox(BoxBin& box) {
     } else {
       // if bisection fail in one direction, do bisection in the other direction
       box.cut_direction_x = false;
-      flag_bisection_complete =
-          box.update_cut_index_white_space(grid_bin_white_space_LUT);
+      flag_bisection_complete = box.update_cut_index_white_space(
+          grid_bin_white_space_LUT, grid_bin_mesh, macro_boundary_mode_);
       if (flag_bisection_complete) {
         box1.cut_direction_x = false;
         box2.cut_direction_x = false;
@@ -909,8 +991,8 @@ void LookAheadLegalizer::SplitBox(BoxBin& box) {
     }
   } else {
     // cut-line along horizontal direction
-    flag_bisection_complete =
-        box.update_cut_index_white_space(grid_bin_white_space_LUT);
+    flag_bisection_complete = box.update_cut_index_white_space(
+        grid_bin_white_space_LUT, grid_bin_mesh, macro_boundary_mode_);
     if (flag_bisection_complete) {
       box1.cut_direction_x = true;
       box2.cut_direction_x = true;
@@ -918,8 +1000,8 @@ void LookAheadLegalizer::SplitBox(BoxBin& box) {
       box2.ll_index = box.cut_ll_index;
     } else {
       box.cut_direction_x = true;
-      flag_bisection_complete =
-          box.update_cut_index_white_space(grid_bin_white_space_LUT);
+      flag_bisection_complete = box.update_cut_index_white_space(
+          grid_bin_white_space_LUT, grid_bin_mesh, macro_boundary_mode_);
       if (flag_bisection_complete) {
         box1.cut_direction_x = true;
         box2.cut_direction_x = true;
@@ -946,6 +1028,10 @@ void LookAheadLegalizer::SplitBox(BoxBin& box) {
 
   box1.UpdateBoundaries(grid_bin_mesh);
   box2.UpdateBoundaries(grid_bin_mesh);
+  box1.UpdatePlacementBlockages(grid_bin_mesh);
+  box1.UpdateObsBoundary();
+  box2.UpdatePlacementBlockages(grid_bin_mesh);
+  box2.UpdateObsBoundary();
 
   if (dominating_box_flag == 0) {
     // LOG(info)   << "component list size: " << box.component_ptrs.size()
@@ -961,15 +1047,6 @@ void LookAheadLegalizer::SplitBox(BoxBin& box) {
     box2.ll_point = box.cut_ll_point;
     box1.total_component_area = box.total_component_area_low;
     box2.total_component_area = box.total_component_area_high;
-
-    if (box1.ll_index == box1.ur_index) {
-      box1.UpdatePlacementBlockages(grid_bin_mesh);
-      box1.UpdateObsBoundary();
-    }
-    if (box2.ll_index == box2.ur_index) {
-      box2.UpdatePlacementBlockages(grid_bin_mesh);
-      box2.UpdateObsBoundary();
-    }
 
     /*if ((box1.left < LEFT) || (box1.bottom < BOTTOM)) {
   LOG(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM <<
@@ -993,11 +1070,6 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
     box2.ur_point = box.ur_point;
     box2.component_ptrs = box.component_ptrs;
     box2.total_component_area = box.total_component_area;
-    if (box2.ll_index == box2.ur_index) {
-      box2.UpdatePlacementBlockages(grid_bin_mesh);
-      box2.UpdateObsBoundary();
-    }
-
     /*if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
   LOG(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM <<
 "\n"; LOG(info)   << box2.left << " " << box2.bottom << "\n";
@@ -1012,11 +1084,6 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
     box1.ur_point = box.ur_point;
     box1.component_ptrs = box.component_ptrs;
     box1.total_component_area = box.total_component_area;
-    if (box1.ll_index == box1.ur_index) {
-      box1.UpdatePlacementBlockages(grid_bin_mesh);
-      box1.UpdateObsBoundary();
-    }
-
     /*if ((box1.left < LEFT) || (box1.bottom < BOTTOM)) {
   LOG(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM <<
 "\n"; LOG(info)   << box1.left << " " << box1.bottom << "\n";

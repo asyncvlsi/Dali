@@ -34,6 +34,12 @@
 
 namespace dali {
 
+/** Schedule used to increase anchor pseudo-net strength across iterations. */
+enum class GlobalAnchorSchedule {
+  kDali,
+  kSimpl,
+};
+
 typedef Eigen::Index EgId;
 typedef std::pair<EgId, EgId> PairEgId;
 struct PairEgIdHasher {
@@ -67,6 +73,11 @@ class HpwlOptimizer {
 
   /** Set current global-placement iteration. */
   void SetIteration(int cur_iter) { cur_iter_ = cur_iter; }
+
+  /** Select how anchor pseudo-net strength is updated across iterations. */
+  void SetAnchorSchedule(GlobalAnchorSchedule schedule) {
+    anchor_schedule_ = schedule;
+  }
 
   /** Optimize component locations and return the resulting HPWL estimate. */
   virtual double OptimizeHpwl() = 0;
@@ -103,6 +114,7 @@ class HpwlOptimizer {
 
   // Save intermediate result for debugging and/or visualization.
   bool should_save_intermediate_result_ = false;
+  GlobalAnchorSchedule anchor_schedule_ = GlobalAnchorSchedule::kDali;
 };
 
 /** Bound-to-bound quadratic HPWL optimizer. */

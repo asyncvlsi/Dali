@@ -62,6 +62,12 @@ class Dali {
     bool enable_end_cap_cell = false;
     bool enable_shrink_off_grid_die_area = false;
     RandomInitializerType global_initializer = RandomInitializerType::UNIFORM;
+    GlobalAnchorSchedule global_anchor_schedule = GlobalAnchorSchedule::kDali;
+    GlobalGridSchedule global_grid_schedule = GlobalGridSchedule::kDali;
+    GlobalLalExpansionMode global_lal_expansion_mode =
+        GlobalLalExpansionMode::kSymmetric;
+    GlobalLalMacroBoundaryMode global_lal_macro_boundary_mode =
+        GlobalLalMacroBoundaryMode::kOff;
     bool save_intermediate_result = false;
     std::string output_name = "dali_out";
     std::string visualization_dir;
@@ -166,6 +172,12 @@ class Dali {
   bool enable_end_cap_cell_ = false;
   bool enable_shrink_off_grid_die_area_ = false;
   RandomInitializerType global_initializer_ = RandomInitializerType::UNIFORM;
+  GlobalAnchorSchedule global_anchor_schedule_ = GlobalAnchorSchedule::kDali;
+  GlobalGridSchedule global_grid_schedule_ = GlobalGridSchedule::kDali;
+  GlobalLalExpansionMode global_lal_expansion_mode_ =
+      GlobalLalExpansionMode::kSymmetric;
+  GlobalLalMacroBoundaryMode global_lal_macro_boundary_mode_ =
+      GlobalLalMacroBoundaryMode::kOff;
   bool save_intermediate_result_ = false;
   std::string output_name_ = "dali_out";
   std::string visualization_dir_;

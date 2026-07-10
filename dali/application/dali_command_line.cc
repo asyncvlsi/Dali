@@ -74,6 +74,10 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -io_metal_layer                            metal layer number for I/O placement (optional, default 1 for m1)\n"
       << "  -well_legalization_mode <scavenge/strict>  determine whether the last column use unassigned space\n"
       << "  -global_initializer <keep/uniform/gaussian/monte_carlo/density_aware>\n"
+      << "  -global_anchor_schedule <dali/simpl>       choose global-placement anchor pseudo-net schedule\n"
+      << "  -global_grid_schedule <dali/simpl>         choose look-ahead legalization grid schedule\n"
+      << "  -global_lal_expansion <symmetric/best_neighbor>\n"
+      << "  -global_lal_macro_boundary <off/balanced/preferred>\n"
       << "  -save_intermediate_result                  dump placement snapshots for visualization\n"
       << "  -num_threads <n>                           number of OpenMP threads to use\n"
       << "  -v                                         verbosity_level (optional, 0-5, default 1)\n"
@@ -205,6 +209,46 @@ bool ParseDaliCommandLine(int argc, char* argv[],
         return false;
       }
       config_set_string("dali.global_initializer", value.c_str());
+    } else if (arg == "-global_anchor_schedule") {
+      if (!TryGetValue(argc, argv, &i, &value)) {
+        error_output << "Invalid global anchor schedule!\n";
+        return false;
+      }
+      if (value != "dali" && value != "simpl") {
+        error_output << "Invalid global anchor schedule!\n";
+        return false;
+      }
+      config_set_string("dali.global_anchor_schedule", value.c_str());
+    } else if (arg == "-global_grid_schedule") {
+      if (!TryGetValue(argc, argv, &i, &value)) {
+        error_output << "Invalid global grid schedule!\n";
+        return false;
+      }
+      if (value != "dali" && value != "simpl") {
+        error_output << "Invalid global grid schedule!\n";
+        return false;
+      }
+      config_set_string("dali.global_grid_schedule", value.c_str());
+    } else if (arg == "-global_lal_expansion") {
+      if (!TryGetValue(argc, argv, &i, &value)) {
+        error_output << "Invalid global LAL expansion mode!\n";
+        return false;
+      }
+      if (value != "symmetric" && value != "best_neighbor") {
+        error_output << "Invalid global LAL expansion mode!\n";
+        return false;
+      }
+      config_set_string("dali.global_lal_expansion", value.c_str());
+    } else if (arg == "-global_lal_macro_boundary") {
+      if (!TryGetValue(argc, argv, &i, &value)) {
+        error_output << "Invalid global LAL macro boundary mode!\n";
+        return false;
+      }
+      if (value != "off" && value != "balanced" && value != "preferred") {
+        error_output << "Invalid global LAL macro boundary mode!\n";
+        return false;
+      }
+      config_set_string("dali.global_lal_macro_boundary", value.c_str());
     } else if (arg == "-save_intermediate_result") {
       EnableConfigFlag("dali.save_intermediate_result");
     } else if (arg == "-max_row_width") {

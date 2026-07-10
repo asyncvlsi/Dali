@@ -61,6 +61,22 @@ void GlobalPlacer::SetInitializerType(RandomInitializerType initializer_type) {
   initializer_type_ = initializer_type;
 }
 
+void GlobalPlacer::SetAnchorSchedule(GlobalAnchorSchedule schedule) {
+  anchor_schedule_ = schedule;
+}
+
+void GlobalPlacer::SetGridSchedule(GlobalGridSchedule schedule) {
+  grid_schedule_ = schedule;
+}
+
+void GlobalPlacer::SetLalExpansionMode(GlobalLalExpansionMode mode) {
+  lal_expansion_mode_ = mode;
+}
+
+void GlobalPlacer::SetLalMacroBoundaryMode(GlobalLalMacroBoundaryMode mode) {
+  lal_macro_boundary_mode_ = mode;
+}
+
 /****
  * @brief Load a configuration file for this placer.
  *
@@ -78,11 +94,15 @@ void GlobalPlacer::LoadConf(std::string const& config_file) {
 void GlobalPlacer::InitializeOptimizerAndLegalizer() {
   delete optimizer_;
   optimizer_ = new B2BHpwlOptimizer(ckt_ptr_, num_threads_);
+  optimizer_->SetAnchorSchedule(anchor_schedule_);
   optimizer_->SetShouldSaveIntermediateResult(should_save_intermediate_result_);
   optimizer_->Initialize();
 
   delete legalizer_;
   legalizer_ = new LookAheadLegalizer(ckt_ptr_);
+  legalizer_->SetGridSchedule(grid_schedule_);
+  legalizer_->SetExpansionMode(lal_expansion_mode_);
+  legalizer_->SetMacroBoundaryMode(lal_macro_boundary_mode_);
   legalizer_->SetShouldSaveIntermediateResult(should_save_intermediate_result_);
   legalizer_->Initialize(PlacementDensity());
 }

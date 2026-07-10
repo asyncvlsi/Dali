@@ -576,6 +576,13 @@ void B2BHpwlOptimizer::UpdateAnchorLocation() {
 }
 
 void B2BHpwlOptimizer::UpdateAnchorAlpha() {
+  if (anchor_schedule_ == GlobalAnchorSchedule::kSimpl) {
+    alpha = 0.01 * (cur_iter_ + 1);
+    alpha_step = cur_iter_ == 0 ? alpha : 0.01;
+    LOG(info) << "    anchor alpha: " << alpha << " (SimPL schedule)\n";
+    return;
+  }
+
   if (cur_iter_ == 0) {
     alpha_step = 0;
   } else if (0 < cur_iter_ && cur_iter_ < 5) {

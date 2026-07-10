@@ -88,6 +88,55 @@ static RandomInitializerType ParseGlobalInitializer(const std::string& name) {
   return RandomInitializerType::UNIFORM;
 }
 
+static GlobalAnchorSchedule ParseGlobalAnchorSchedule(const std::string& name) {
+  if (name == "dali") {
+    return GlobalAnchorSchedule::kDali;
+  }
+  if (name == "simpl") {
+    return GlobalAnchorSchedule::kSimpl;
+  }
+  std::cout << "Ignore unknown global_anchor_schedule: " << name << "\n";
+  return GlobalAnchorSchedule::kDali;
+}
+
+static GlobalGridSchedule ParseGlobalGridSchedule(const std::string& name) {
+  if (name == "dali") {
+    return GlobalGridSchedule::kDali;
+  }
+  if (name == "simpl") {
+    return GlobalGridSchedule::kSimpl;
+  }
+  std::cout << "Ignore unknown global_grid_schedule: " << name << "\n";
+  return GlobalGridSchedule::kDali;
+}
+
+static GlobalLalExpansionMode ParseGlobalLalExpansionMode(
+    const std::string& name) {
+  if (name == "symmetric") {
+    return GlobalLalExpansionMode::kSymmetric;
+  }
+  if (name == "best_neighbor") {
+    return GlobalLalExpansionMode::kBestNeighbor;
+  }
+  std::cout << "Ignore unknown global_lal_expansion: " << name << "\n";
+  return GlobalLalExpansionMode::kSymmetric;
+}
+
+static GlobalLalMacroBoundaryMode ParseGlobalLalMacroBoundaryMode(
+    const std::string& name) {
+  if (name == "off") {
+    return GlobalLalMacroBoundaryMode::kOff;
+  }
+  if (name == "balanced") {
+    return GlobalLalMacroBoundaryMode::kBalanced;
+  }
+  if (name == "preferred") {
+    return GlobalLalMacroBoundaryMode::kPreferred;
+  }
+  std::cout << "Ignore unknown global_lal_macro_boundary: " << name << "\n";
+  return GlobalLalMacroBoundaryMode::kOff;
+}
+
 Dali::Dali(phydb::PhyDB* phy_db_ptr, const std::string& severity_level,
            const std::string& log_file_name) {
   phy_db_ptr_ = phy_db_ptr;
@@ -135,6 +184,14 @@ void Dali::ShowParamsList() {
             << enable_shrink_off_grid_die_area_ << "\n"
             << "  global_initializer: " << static_cast<int>(global_initializer_)
             << "\n"
+            << "  global_anchor_schedule: "
+            << static_cast<int>(global_anchor_schedule_) << "\n"
+            << "  global_grid_schedule: "
+            << static_cast<int>(global_grid_schedule_) << "\n"
+            << "  global_lal_expansion: "
+            << static_cast<int>(global_lal_expansion_mode_) << "\n"
+            << "  global_lal_macro_boundary: "
+            << static_cast<int>(global_lal_macro_boundary_mode_) << "\n"
             << "  save_intermediate_result: " << save_intermediate_result_
             << "\n"
             << "  output_name: " << output_name_ << "\n"
@@ -195,6 +252,26 @@ void Dali::LoadParamsFromConfig() {
     global_initializer_ =
         ParseGlobalInitializer(config_get_string(param_name.c_str()));
   }
+  param_name = ConfigName(prefix_, "global_anchor_schedule");
+  if (ConfigExists(param_name)) {
+    global_anchor_schedule_ =
+        ParseGlobalAnchorSchedule(config_get_string(param_name.c_str()));
+  }
+  param_name = ConfigName(prefix_, "global_grid_schedule");
+  if (ConfigExists(param_name)) {
+    global_grid_schedule_ =
+        ParseGlobalGridSchedule(config_get_string(param_name.c_str()));
+  }
+  param_name = ConfigName(prefix_, "global_lal_expansion");
+  if (ConfigExists(param_name)) {
+    global_lal_expansion_mode_ =
+        ParseGlobalLalExpansionMode(config_get_string(param_name.c_str()));
+  }
+  param_name = ConfigName(prefix_, "global_lal_macro_boundary");
+  if (ConfigExists(param_name)) {
+    global_lal_macro_boundary_mode_ =
+        ParseGlobalLalMacroBoundaryMode(config_get_string(param_name.c_str()));
+  }
   LoadBoolConfig(ConfigName(prefix_, "save_intermediate_result"),
                  &save_intermediate_result_);
   LoadStringConfig(ConfigName(prefix_, "output_name"), &output_name_);
@@ -238,6 +315,10 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       enable_end_cap_cell_,
       enable_shrink_off_grid_die_area_,
       global_initializer_,
+      global_anchor_schedule_,
+      global_grid_schedule_,
+      global_lal_expansion_mode_,
+      global_lal_macro_boundary_mode_,
       save_intermediate_result_,
       output_name_,
       visualization_dir_,
@@ -437,6 +518,10 @@ bool Dali::RunGlobalPlacementStage() {
   } else if (ShouldRunGlobalPlacement()) {
     gb_placer_.SetPlacementDensity(target_density_);
     gb_placer_.SetInitializerType(global_initializer_);
+    gb_placer_.SetAnchorSchedule(global_anchor_schedule_);
+    gb_placer_.SetGridSchedule(global_grid_schedule_);
+    gb_placer_.SetLalExpansionMode(global_lal_expansion_mode_);
+    gb_placer_.SetLalMacroBoundaryMode(global_lal_macro_boundary_mode_);
     if (!gb_placer_.StartPlacement()) {
       LOG(error) << "Global placement failed\n";
       return false;

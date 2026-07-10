@@ -56,6 +56,18 @@ class GlobalPlacer : public Placer {
    */
   void SetInitializerType(RandomInitializerType initializer_type);
 
+  /** Select how anchor pseudo-net strength changes across iterations. */
+  void SetAnchorSchedule(GlobalAnchorSchedule schedule);
+
+  /** Select how look-ahead legalization grid dimensions are refined. */
+  void SetGridSchedule(GlobalGridSchedule schedule);
+
+  /** Select how LAL grows overfilled clusters into whitespace regions. */
+  void SetLalExpansionMode(GlobalLalExpansionMode mode);
+
+  /** Select whether fixed-macro boundaries influence LAL cutlines. */
+  void SetLalMacroBoundaryMode(GlobalLalMacroBoundaryMode mode);
+
   /** Load global placer configuration. */
   void LoadConf(std::string const& config_file) override;
 
@@ -99,6 +111,12 @@ class GlobalPlacer : public Placer {
                          bool is_success) override;
 
   RandomInitializerType initializer_type_ = RandomInitializerType::UNIFORM;
+  GlobalAnchorSchedule anchor_schedule_ = GlobalAnchorSchedule::kDali;
+  GlobalGridSchedule grid_schedule_ = GlobalGridSchedule::kDali;
+  GlobalLalExpansionMode lal_expansion_mode_ =
+      GlobalLalExpansionMode::kSymmetric;
+  GlobalLalMacroBoundaryMode lal_macro_boundary_mode_ =
+      GlobalLalMacroBoundaryMode::kOff;
   SnapshotCallback snapshot_callback_;
   HpwlOptimizer* optimizer_ = nullptr;
   RoughLegalizer* legalizer_ = nullptr;

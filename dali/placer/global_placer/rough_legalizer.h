@@ -30,6 +30,18 @@
 
 namespace dali {
 
+/** Grid refinement schedule used by look-ahead legalization. */
+enum class GlobalGridSchedule {
+  kDali,
+  kSimpl,
+};
+
+/** How LAL expands overfilled clusters into legal whitespace regions. */
+enum class GlobalLalExpansionMode {
+  kSymmetric,
+  kBestNeighbor,
+};
+
 /** Interface for rough legalizers that remove gross component overlap. */
 class RoughLegalizer {
  public:
@@ -63,6 +75,19 @@ class RoughLegalizer {
   /** Update the current global-placement iteration. */
   void SetIteration(int iteration) { cur_iter_ = iteration; }
 
+  /** Select how look-ahead legalization grid dimensions are refined. */
+  void SetGridSchedule(GlobalGridSchedule schedule) {
+    grid_schedule_ = schedule;
+  }
+
+  /** Select how overfilled LAL clusters expand into whitespace. */
+  void SetExpansionMode(GlobalLalExpansionMode mode) { expansion_mode_ = mode; }
+
+  /** Select whether macro boundaries influence LAL cutlines. */
+  void SetMacroBoundaryMode(GlobalLalMacroBoundaryMode mode) {
+    macro_boundary_mode_ = mode;
+  }
+
  protected:
   Circuit* ckt_ptr_ = nullptr;
   double placement_density_ = 1.0;
@@ -73,6 +98,10 @@ class RoughLegalizer {
   // Save intermediate result for debugging and/or visualization.
   bool should_save_intermediate_result_ = false;
   int cur_iter_ = 0;
+  GlobalGridSchedule grid_schedule_ = GlobalGridSchedule::kDali;
+  GlobalLalExpansionMode expansion_mode_ = GlobalLalExpansionMode::kSymmetric;
+  GlobalLalMacroBoundaryMode macro_boundary_mode_ =
+      GlobalLalMacroBoundaryMode::kOff;
 };
 
 /** Look-ahead legalization using grid bins and recursive bisection spreading.
@@ -101,6 +130,7 @@ class LookAheadLegalizer : public RoughLegalizer {
   uint32_t LookUpWhiteSpace(GridBinIndex const& ll_index,
                             GridBinIndex const& ur_index);
   uint32_t LookUpWhiteSpace(WindowQuadruple& window);
+  bool ExpandBoxByBestNeighbor(BoxBin* box);
   void FindMinimumBoxForLargestCluster();
   void SplitGridBox(BoxBin& box);
   void PlaceComponentInBox(BoxBin& box);
