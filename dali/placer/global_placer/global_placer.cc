@@ -348,11 +348,14 @@ void GlobalPlacer::PrintHpwl() const {
   if (optimizer_->GetHpwls().empty() || legalizer_->GetHpwls().empty()) return;
   double lo_hpwl = optimizer_->GetHpwls().back();
   double hi_hpwl = legalizer_->GetHpwls().back();
+  double hpwl_gap = hi_hpwl - lo_hpwl;
+  double hpwl_gap_percent = lo_hpwl <= 1e-10 ? 0 : hpwl_gap / lo_hpwl * 100.0;
   size_t buffer_size = 1024;
   std::string buffer(buffer_size, '\0');
   int written_length =
-      snprintf(&buffer[0], buffer_size, "  iter-%-3d: %.4e  %.4e\n", cur_iter_,
-               lo_hpwl, hi_hpwl);
+      snprintf(&buffer[0], buffer_size,
+               "  iter-%-3d: lower %.4e, upper %.4e, gap %.4e (%.2f%%)\n",
+               cur_iter_, lo_hpwl, hi_hpwl, hpwl_gap, hpwl_gap_percent);
   buffer.resize(written_length);
   LOG(info) << buffer;
   LOG(debug) << cur_iter_ << "-th iteration completed\n";

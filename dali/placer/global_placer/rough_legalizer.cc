@@ -1227,6 +1227,15 @@ double LookAheadLegalizer::RemoveComponentOverlap() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
   last_hpwl_before_ = ckt_ptr_->WeightedHPWL();
+  std::vector<double> lower_bound_center_x;
+  std::vector<double> lower_bound_center_y;
+  auto& components = ckt_ptr_->Components();
+  lower_bound_center_x.reserve(components.size());
+  lower_bound_center_y.reserve(components.size());
+  for (const Component& component : components) {
+    lower_bound_center_x.push_back(component.CenterX());
+    lower_bound_center_y.push_back(component.CenterY());
+  }
 
   RebuildGridBinsIfTargetChanged();
   ClearGridBinFlag();
@@ -1257,6 +1266,36 @@ double LookAheadLegalizer::RemoveComponentOverlap() {
   UpdateGridBinState();
   LOG(debug) << "Look-ahead legalization complete\n";
 
+  double total_displacement_grid = 0.0;
+  double max_displacement_grid = 0.0;
+  double total_displacement_um = 0.0;
+  double max_displacement_um = 0.0;
+  int moved_component_count = 0;
+  for (size_t i = 0; i < components.size(); ++i) {
+    const Component& component = components[i];
+    if (component.IsFixed()) continue;
+    double dx_grid = component.CenterX() - lower_bound_center_x[i];
+    double dy_grid = component.CenterY() - lower_bound_center_y[i];
+    double displacement_grid = std::sqrt(dx_grid * dx_grid + dy_grid * dy_grid);
+    double dx_um = dx_grid * ckt_ptr_->GridValueX();
+    double dy_um = dy_grid * ckt_ptr_->GridValueY();
+    double displacement_um = std::sqrt(dx_um * dx_um + dy_um * dy_um);
+    total_displacement_grid += displacement_grid;
+    max_displacement_grid = std::max(max_displacement_grid, displacement_grid);
+    total_displacement_um += displacement_um;
+    max_displacement_um = std::max(max_displacement_um, displacement_um);
+    ++moved_component_count;
+  }
+  double avg_displacement_grid =
+      moved_component_count == 0
+          ? 0
+          : total_displacement_grid /
+                static_cast<double>(moved_component_count);
+  double avg_displacement_um =
+      moved_component_count == 0
+          ? 0
+          : total_displacement_um / static_cast<double>(moved_component_count);
+
   elapsed_time.RecordEndTime();
   tot_lal_time += elapsed_time.GetWallTime();
 
@@ -1282,6 +1321,9 @@ double LookAheadLegalizer::RemoveComponentOverlap() {
             << ", hotspots: " << last_hotspot_count_
             << ", max hotspot overflow: " << last_max_hotspot_overflow_
             << ", HPWL delta: " << last_hpwl_after_ - last_hpwl_before_ << "\n";
+  LOG(info) << "    LAL displacement avg/max: " << avg_displacement_grid << "/"
+            << max_displacement_grid << " grid units, " << avg_displacement_um
+            << "/" << max_displacement_um << " um\n";
 
   upper_bound_hpwl_.push_back(last_hpwl_after_);
   return upper_bound_hpwl_.back();
