@@ -540,6 +540,9 @@ bool Dali::RunStandardCellLegalization() {
     LOG(info) << "Skip standard-cell legalization: no movable components\n";
     return true;
   }
+  WriteVisualizationSnapshot("legalization.start", "Before Legalization",
+                             "legalization");
+  FlushVisualizationEvents();
   Placer* legalizer_for_detailed_placement = &standard_cell_legalizer_;
   standard_cell_legalizer_.CopyPlacementContextFrom(&gb_placer_);
   standard_cell_legalizer_.SetDisableCellFlip(disable_cell_flip_);
@@ -567,6 +570,9 @@ bool Dali::RunDetailedPlacement() {
     LOG(info) << "Skip detailed placement: disabled by configuration\n";
     return true;
   }
+  WriteVisualizationSnapshot("detailed_placement.start",
+                             "Before Detailed Placement", "detailed_placement");
+  FlushVisualizationEvents();
   if (!detailed_placer_.StartPlacement()) {
     LOG(error) << "Detailed placement failed\n";
     return false;
@@ -596,6 +602,9 @@ void Dali::RunFixedOnlyWellCompletion() {
 bool Dali::RunWellLegalization() {
   ConfigureWellLegalizer();
   bool has_movable_components = ShouldRunMovableCellLegalization();
+  WriteVisualizationSnapshot("legalization.start", "Before Legalization",
+                             "legalization");
+  FlushVisualizationEvents();
   if (has_movable_components) {
     if (!well_legalizer_.StartPlacement()) {
       LOG(error) << "Well legalization failed\n";
@@ -728,6 +737,13 @@ void Dali::WriteVisualizationSnapshot(const std::string& id,
   metadata.subgroup = subgroup;
   metadata.iteration = iteration;
   snapshot_sink_->PublishSnapshot(&circuit_, metadata);
+}
+
+void Dali::FlushVisualizationEvents() {
+  if (snapshot_sink_ == nullptr || !snapshot_sink_->IsEnabled()) {
+    return;
+  }
+  snapshot_sink_->FlushEvents();
 }
 
 void Dali::FinishVisualizationSnapshots() {

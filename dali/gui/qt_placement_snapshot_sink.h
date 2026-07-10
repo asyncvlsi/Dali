@@ -42,6 +42,7 @@ class QtPlacementSnapshotSink : public PlacementSnapshotSink {
   bool IsEnabled() const override { return enabled_; }
   void PublishSnapshot(Circuit* circuit,
                        const PlacementSnapshotMetadata& metadata) override;
+  void FlushEvents() override;
   void FinishRun() override;
 
  private:

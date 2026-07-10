@@ -51,6 +51,8 @@ class PlacementSnapshotSink {
   virtual bool IsEnabled() const = 0;
   virtual void PublishSnapshot(Circuit* circuit,
                                const PlacementSnapshotMetadata& metadata) = 0;
+  /** Process pending UI/backend events without publishing a new snapshot. */
+  virtual void FlushEvents() {}
   virtual void FinishRun() = 0;
 };
 

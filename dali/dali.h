@@ -249,6 +249,8 @@ class Dali {
                                   const std::string& group,
                                   const std::string& subgroup = "",
                                   int iteration = -1);
+  /** Let live visualization backends repaint before long placement stages. */
+  void FlushVisualizationEvents();
   void FinishVisualizationSnapshots();
 
   bool is_circuit_initialized_ = false;

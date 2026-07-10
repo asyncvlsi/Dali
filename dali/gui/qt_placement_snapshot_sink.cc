@@ -796,6 +796,13 @@ void QtPlacementSnapshotSink::PublishSnapshot(
   }
 }
 
+void QtPlacementSnapshotSink::FlushEvents() {
+  if (!enabled_) {
+    return;
+  }
+  QApplication::processEvents();
+}
+
 void QtPlacementSnapshotSink::FinishRun() {
   if (!enabled_ || window_ == nullptr) {
     return;
