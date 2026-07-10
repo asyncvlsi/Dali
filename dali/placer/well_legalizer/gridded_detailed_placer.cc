@@ -66,6 +66,11 @@ void GriddedDetailedPlacer::SetRows(std::vector<GriddedRow*> rows) {
   rows_ = std::move(rows);
 }
 
+void GriddedDetailedPlacer::SetSnapshotCallback(
+    SnapshotCallback snapshot_callback) {
+  snapshot_callback_ = std::move(snapshot_callback);
+}
+
 double GriddedDetailedPlacer::WireLengthCost(GriddedRow* row, int left_index,
                                              int right_index) const {
   auto& net_list = ckt_ptr_->Nets();
@@ -653,6 +658,14 @@ void GriddedDetailedPlacer::LogSwapStage(const std::string& stage_name,
             << "um, improvement=" << hpwl_before - hpwl_after << "um\n";
 }
 
+void GriddedDetailedPlacer::EmitSnapshot(const std::string& id,
+                                         const std::string& label,
+                                         const std::string& subgroup,
+                                         int iteration) {
+  if (!snapshot_callback_) return;
+  snapshot_callback_(id, label, subgroup, iteration);
+}
+
 bool GriddedDetailedPlacer::StartPlacement() {
   PrintStartStatement("gridded detailed placement");
   DaliExpects(ckt_ptr_ != nullptr,
@@ -685,6 +698,10 @@ bool GriddedDetailedPlacer::StartPlacement() {
     global_swap_cpu_time += stage_timer.GetCpuTime();
     LogSwapStage("global swap", global_swap_stats, hpwl_before_stage);
     RecordPlacementMetric("gridded_detailed.global_swap", WeightedHPWL());
+    EmitSnapshot("gridded.iter_" + std::to_string(iteration) + ".global_swap",
+                 "Gridded Detailed Iteration " + std::to_string(iteration) +
+                     " Global Swap",
+                 "global_swap", iteration);
 
     hpwl_before_stage = WeightedHPWL();
     stage_timer.RecordStartTime();
@@ -694,12 +711,20 @@ bool GriddedDetailedPlacer::StartPlacement() {
     vertical_swap_cpu_time += stage_timer.GetCpuTime();
     LogSwapStage("vertical swap", vertical_swap_stats, hpwl_before_stage);
     RecordPlacementMetric("gridded_detailed.vertical_swap", WeightedHPWL());
+    EmitSnapshot("gridded.iter_" + std::to_string(iteration) + ".vertical_swap",
+                 "Gridded Detailed Iteration " + std::to_string(iteration) +
+                     " Vertical Swap",
+                 "vertical_swap", iteration);
 
     stage_timer.RecordStartTime();
     RunLocalReorderStage();
     stage_timer.RecordEndTime();
     local_reorder_wall_time += stage_timer.GetWallTime();
     local_reorder_cpu_time += stage_timer.GetCpuTime();
+    EmitSnapshot("gridded.iter_" + std::to_string(iteration) + ".local_reorder",
+                 "Gridded Detailed Iteration " + std::to_string(iteration) +
+                     " Local Reorder",
+                 "local_reorder", iteration);
 
     double current_hpwl = WeightedHPWL();
     double improvement = previous_hpwl - current_hpwl;

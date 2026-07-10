@@ -11,6 +11,7 @@
 #ifndef DALI_PLACER_WELL_LEGALIZER_GRIDDED_DETAILED_PLACER_H_
 #define DALI_PLACER_WELL_LEGALIZER_GRIDDED_DETAILED_PLACER_H_
 
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -29,8 +30,16 @@ namespace dali {
  */
 class GriddedDetailedPlacer : public Placer {
  public:
+  /** Callback used by the application to emit visualization snapshots. */
+  using SnapshotCallback =
+      std::function<void(const std::string& id, const std::string& label,
+                         const std::string& subgroup, int iteration)>;
+
   /** Attach the current legalized gridded rows. */
   void SetRows(std::vector<GriddedRow*> rows);
+
+  /** Set a callback invoked after each gridded detailed-placement stage. */
+  void SetSnapshotCallback(SnapshotCallback snapshot_callback);
 
   /** Run gridded detailed placement on the attached rows. */
   bool StartPlacement() override;
@@ -98,8 +107,11 @@ class GriddedDetailedPlacer : public Placer {
   SwapStats RunGlobalSwapStage();
   void LogSwapStage(const std::string& stage_name, const SwapStats& stats,
                     double hpwl_before);
+  void EmitSnapshot(const std::string& id, const std::string& label,
+                    const std::string& subgroup, int iteration);
 
   std::vector<GriddedRow*> rows_;
+  SnapshotCallback snapshot_callback_;
 };
 
 }  // namespace dali

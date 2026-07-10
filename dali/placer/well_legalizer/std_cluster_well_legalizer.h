@@ -21,7 +21,9 @@
 #ifndef DALI_PLACER_WELL_LEGALIZER_STD_CLUSTER_WELL_LEGALIZER_H_
 #define DALI_PLACER_WELL_LEGALIZER_STD_CLUSTER_WELL_LEGALIZER_H_
 
+#include <functional>
 #include <map>
+#include <string>
 #include <tuple>
 
 #include "component_cluster.h"
@@ -52,6 +54,14 @@ class StdClusterWellLegalizer : public Placer {
 
  public:
   StdClusterWellLegalizer();
+
+  /** Callback used by the application to emit visualization snapshots. */
+  using SnapshotCallback = std::function<void(
+      const std::string& id, const std::string& label, const std::string& group,
+      const std::string& subgroup, int iteration)>;
+
+  /** Set a callback invoked after legalization and gridded detailed stages. */
+  void SetSnapshotCallback(SnapshotCallback snapshot_callback);
 
   /** Load well legalizer configuration. */
   void LoadConf(std::string const& config_file) override;
@@ -135,12 +145,15 @@ class StdClusterWellLegalizer : public Placer {
   void RunWellTapStage();
   void RunEndCapStage();
   void RunPhysicalCompletionStages();
+  /** Emit a placement snapshot with the current legalization attempt prefix. */
+  void EmitSnapshot(const std::string& id, const std::string& label,
+                    const std::string& group, const std::string& subgroup = "",
+                    int iteration = -1);
   /** Retry strict partitioning with last-column scavenging when needed. */
   bool RetryMovableCellLegalizationWithScavenging();
   /** Log why a stripe could not be legalized inside its assigned whitespace. */
   void LogStripeLegalizationFailure(const ClusterStripe& col,
-                                    const Stripe& stripe,
-                                    int column_index,
+                                    const Stripe& stripe, int column_index,
                                     int stripe_index) const;
   /** Log a summary after component clustering to make failures debuggable. */
   void LogComponentClusteringSummary(int failed_stripe_count) const;
@@ -175,6 +188,8 @@ class StdClusterWellLegalizer : public Placer {
   int max_row_width_ = -1;
   DefaultSpacePartitioner space_partitioner_;
   GriddedDetailedPlacer gridded_detailed_placer_;
+  SnapshotCallback snapshot_callback_;
+  int snapshot_attempt_ = 0;
 
   /**** cached well tap cell parameters ****/
   Macro* well_tap_macro_ = nullptr;

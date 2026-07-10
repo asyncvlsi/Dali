@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <utility>
 
 #include "dali/common/helper.h"
 #include "dali/common/placement_metrics.h"
@@ -33,6 +34,11 @@ namespace dali {
 StdClusterWellLegalizer::StdClusterWellLegalizer() {
   max_unplug_length_ = 0;
   well_tap_width_ = 0;
+}
+
+void StdClusterWellLegalizer::SetSnapshotCallback(
+    SnapshotCallback snapshot_callback) {
+  snapshot_callback_ = std::move(snapshot_callback);
 }
 
 void StdClusterWellLegalizer::LoadConf(std::string const& config_file) {
@@ -548,8 +554,7 @@ bool StdClusterWellLegalizer::ComponentClusteringLoose() {
   int count = 0;
   bool res = true;
   int failed_stripe_count = 0;
-  for (int col_id = 0; col_id < static_cast<int>(col_list_.size());
-       ++col_id) {
+  for (int col_id = 0; col_id < static_cast<int>(col_list_.size()); ++col_id) {
     auto& col = col_list_[col_id];
     bool is_success = true;
     for (int stripe_id = 0;
@@ -631,8 +636,8 @@ void StdClusterWellLegalizer::LogStripeLegalizationFailure(
                << " rows=" << stripe.gridded_rows_.size()
                << " used_height=" << stripe.used_height_
                << " capacity_height=" << stripe.Height()
-               << " overflow_height=" << height_overflow
-               << " row_y=[" << lowest_row_y << ", " << highest_row_y << ")"
+               << " overflow_height=" << height_overflow << " row_y=["
+               << lowest_row_y << ", " << highest_row_y << ")"
                << " lower_overflow=" << lower_overflow
                << " upper_overflow=" << upper_overflow << " grid units, "
                << "overflow_height=" << height_overflow * grid_y << "um\n";
@@ -1024,6 +1029,8 @@ bool StdClusterWellLegalizer::RunComponentClusteringStage() {
   ReportHPWL();
   RecordPlacementMetric("well_legalization.component_clustering",
                         WeightedHPWL());
+  EmitSnapshot("component_clustering", "After Component Clustering",
+               "legalization", "component_clustering");
   return is_success;
 }
 
@@ -1036,6 +1043,8 @@ void StdClusterWellLegalizer::RunClusterOrientationStage() {
   UpdateClusterOrient();
   ReportHPWL();
   RecordPlacementMetric("well_legalization.orientation", WeightedHPWL());
+  EmitSnapshot("orientation", "After Cluster Orientation", "legalization",
+               "orientation");
 }
 
 std::vector<GriddedRow*> StdClusterWellLegalizer::CollectGriddedRows() {
@@ -1054,8 +1063,17 @@ void StdClusterWellLegalizer::RunGriddedDetailedPlacementStage() {
   LOG(info) << "Run gridded detailed placement\n";
   gridded_detailed_placer_.CopyPlacementContextFrom(this);
   gridded_detailed_placer_.SetRows(CollectGriddedRows());
+  gridded_detailed_placer_.SetSnapshotCallback(
+      [this](const std::string& id, const std::string& label,
+             const std::string& subgroup, int iteration) {
+        EmitSnapshot(id, label, "detailed_placement", subgroup, iteration);
+      });
+  EmitSnapshot("gridded.start", "Before Gridded Detailed Placement",
+               "detailed_placement", "start");
   gridded_detailed_placer_.StartPlacement();
   RecordPlacementMetric("well_legalization.local_reorder", WeightedHPWL());
+  EmitSnapshot("gridded.final", "After Gridded Detailed Placement",
+               "detailed_placement", "final");
 }
 
 bool StdClusterWellLegalizer::RunMovableCellLegalizationStages() {
@@ -1069,10 +1087,10 @@ bool StdClusterWellLegalizer::RetryMovableCellLegalizationWithScavenging() {
   if (stripe_mode_ == int(DefaultPartitionMode::SCAVENGE)) {
     return false;
   }
-  LOG(warning)
-      << "Strict well legalization failed; retry with scavenge mode\n";
+  LOG(warning) << "Strict well legalization failed; retry with scavenge mode\n";
   int previous_stripe_mode = stripe_mode_;
   stripe_mode_ = int(DefaultPartitionMode::SCAVENGE);
+  snapshot_attempt_ = 1;
   InitializeWellLegalizer();
   bool is_success = RunMovableCellLegalizationStages();
   stripe_mode_ = previous_stripe_mode;
@@ -1087,6 +1105,8 @@ void StdClusterWellLegalizer::RunWellTapStage() {
     InsertWellTap();
   }
   RecordPlacementMetric("well_legalization.well_tap", WeightedHPWL());
+  EmitSnapshot("well_tap", "After Well Tap Insertion", "legalization",
+               "well_tap");
 }
 
 void StdClusterWellLegalizer::RunEndCapStage() {
@@ -1097,6 +1117,7 @@ void StdClusterWellLegalizer::RunEndCapStage() {
   } else {
     LOG(info) << "Skip creating end cap cells\n";
   }
+  EmitSnapshot("end_cap", "After End Cap Insertion", "legalization", "end_cap");
 }
 
 void StdClusterWellLegalizer::RunPhysicalCompletionStages() {
@@ -1104,9 +1125,20 @@ void StdClusterWellLegalizer::RunPhysicalCompletionStages() {
   RunEndCapStage();
 }
 
+void StdClusterWellLegalizer::EmitSnapshot(const std::string& id,
+                                           const std::string& label,
+                                           const std::string& group,
+                                           const std::string& subgroup,
+                                           int iteration) {
+  if (!snapshot_callback_) return;
+  snapshot_callback_("attempt_" + std::to_string(snapshot_attempt_) + "." + id,
+                     label, group, subgroup, iteration);
+}
+
 bool StdClusterWellLegalizer::StartPlacement() {
   PrintStartStatement("standard cluster well legalization");
 
+  snapshot_attempt_ = 0;
   InitializeWellLegalizer();
   bool is_success = RunMovableCellLegalizationStages();
   if (!is_success) {

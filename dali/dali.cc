@@ -637,6 +637,14 @@ void Dali::ConfigureWellLegalizer() {
   well_legalizer_.SetMaxRowWidth(max_row_width_);
   well_legalizer_.SetStripePartitionMode(
       static_cast<int>(well_legalization_mode_));
+  well_legalizer_.SetSnapshotCallback(
+      [this](const std::string& id, const std::string& label,
+             const std::string& group, const std::string& subgroup,
+             int iteration) {
+        WriteVisualizationSnapshot(group + "." + id, label, group, subgroup,
+                                   iteration);
+        FlushVisualizationEvents();
+      });
 }
 
 void Dali::RunFixedOnlyWellCompletion() {
