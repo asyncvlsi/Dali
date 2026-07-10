@@ -105,7 +105,7 @@ class InitializerGridBin {
   /** Rebuild legal free rectangles after fixed macros are assigned. */
   void UpdateFreeSpace();
   void AddComponent(Component* component);
-  /** Randomly place assigned components inside legal free rectangles. */
+  /** Seed assigned components across legal free rectangles. */
   void InitializeComponentLocation(uint32_t random_seed, int num_trials);
 
  private:

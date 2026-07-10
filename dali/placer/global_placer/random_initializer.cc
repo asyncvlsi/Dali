@@ -41,6 +41,19 @@ static double ClampCenterToBox(double center, double lower, double upper,
   return std::clamp(center, min_center, max_center);
 }
 
+static double HaltonFraction(int index, int base) {
+  DaliExpects(index > 0, "Halton sequence index must be positive");
+  DaliExpects(base > 1, "Halton sequence base must be larger than one");
+  double fraction = 1.0;
+  double result = 0.0;
+  while (index > 0) {
+    fraction /= base;
+    result += fraction * (index % base);
+    index /= base;
+  }
+  return result;
+}
+
 RandomInitializer::RandomInitializer(Circuit* ckt_ptr, uint32_t random_seed)
     : ckt_ptr_(ckt_ptr), random_seed_(random_seed) {
   DaliExpects(ckt_ptr_ != nullptr, "Ckt is a null ptr?");
@@ -246,12 +259,20 @@ void InitializerGridBin::AddComponent(Component* component) {
 
 void InitializerGridBin::InitializeComponentLocation(uint32_t random_seed,
                                                      int num_trials) {
-  // initialize the random number generator
-  std::minstd_rand0 generator{random_seed};
-  std::uniform_real_distribution<double> distribution(0, 1);
+  (void)num_trials;
 
   if (free_rects_.empty()) return;
 
+  int movable_component_count = 0;
+  for (auto& component_ptr : components_) {
+    if (component_ptr->IsMovable()) {
+      ++movable_component_count;
+    }
+  }
+  if (movable_component_count == 0) return;
+
+  int sequence_offset = static_cast<int>(random_seed % 997) * 997;
+  int movable_component_index = 0;
   for (auto& component_ptr : components_) {
     if (!component_ptr->IsMovable()) continue;
     std::vector<const RectI*> candidate_rects;
@@ -268,37 +289,29 @@ void InitializerGridBin::InitializeComponentLocation(uint32_t random_seed,
     }
     if (candidate_rects.empty()) continue;
 
-    std::uniform_int_distribution<unsigned long long> area_distribution(
-        0, total_candidate_area - 1);
-    for (int i = 0; i < num_trials; ++i) {
-      unsigned long long area_sample = area_distribution(generator);
-      auto rect_iter = std::upper_bound(cumulative_area.begin(),
-                                        cumulative_area.end(), area_sample);
-      int rect_index =
-          static_cast<int>(std::distance(cumulative_area.begin(), rect_iter));
-      const RectI& free_rect = *candidate_rects[rect_index];
-      double x_loc =
-          free_rect.LLX() + free_rect.Width() * distribution(generator);
-      double y_loc =
-          free_rect.LLY() + free_rect.Height() * distribution(generator);
-      x_loc = ClampCenterToBox(x_loc, free_rect.LLX(), free_rect.URX(),
-                               component_ptr->Width());
-      y_loc = ClampCenterToBox(y_loc, free_rect.LLY(), free_rect.URY(),
-                               component_ptr->Height());
-      component_ptr->SetCenterX(x_loc);
-      component_ptr->SetCenterY(y_loc);
-      bool is_no_overlap =
-          std::all_of(macros_.begin(), macros_.end(),
-                      [component_ptr](const Component* macro_ptr) {
-                        return (component_ptr->LLX() >= macro_ptr->URX()) ||
-                               (component_ptr->LLY() >= macro_ptr->URY()) ||
-                               (component_ptr->URX() <= macro_ptr->LLX()) ||
-                               (component_ptr->URY() <= macro_ptr->LLY());
-                      });
-      if (is_no_overlap) {
-        break;
-      }
-    }
+    int sample_index = sequence_offset + movable_component_index + 1;
+    double area_fraction = HaltonFraction(sample_index, 5);
+    unsigned long long area_sample =
+        std::min(static_cast<unsigned long long>(
+                     area_fraction * static_cast<double>(total_candidate_area)),
+                 total_candidate_area - 1);
+    auto rect_iter = std::upper_bound(cumulative_area.begin(),
+                                      cumulative_area.end(), area_sample);
+    int rect_index =
+        static_cast<int>(std::distance(cumulative_area.begin(), rect_iter));
+    const RectI& free_rect = *candidate_rects[rect_index];
+
+    double x_fraction = HaltonFraction(sample_index, 2);
+    double y_fraction = HaltonFraction(sample_index, 3);
+    double x_loc = free_rect.LLX() + free_rect.Width() * x_fraction;
+    double y_loc = free_rect.LLY() + free_rect.Height() * y_fraction;
+    x_loc = ClampCenterToBox(x_loc, free_rect.LLX(), free_rect.URX(),
+                             component_ptr->Width());
+    y_loc = ClampCenterToBox(y_loc, free_rect.LLY(), free_rect.URY(),
+                             component_ptr->Height());
+    component_ptr->SetCenterX(x_loc);
+    component_ptr->SetCenterY(y_loc);
+    ++movable_component_index;
   }
 }
 
@@ -480,8 +493,8 @@ void DensityAwareInitializer::InitializeGridBin() {
       int ly = region_ly + iy * bin_height_;
       int ux = lx + bin_width_;
       int uy = ly + bin_height_;
-      ux = std::min(ux, region_ux);
-      uy = std::min(uy, region_uy);
+      ux = ix == grid_cnt_x_ - 1 ? region_ux : std::min(ux, region_ux);
+      uy = iy == grid_cnt_y_ - 1 ? region_uy : std::min(uy, region_uy);
       grid_bins_[ix][iy].SetBoundary(lx, ly, ux, uy);
       grid_bins_[ix][iy].SetPriorityTieBreaker(distribution(generator));
       grid_bins_[ix][iy].UpdateTotalArea();
