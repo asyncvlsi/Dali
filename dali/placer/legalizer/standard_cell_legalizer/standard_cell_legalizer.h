@@ -30,6 +30,8 @@
 
 namespace dali {
 
+class Net;
+
 /**
  * Standard-cell legalizer built around row search and Abacus row placement.
  *
@@ -82,6 +84,20 @@ class StandardCellLegalizer : public Placer {
       Component& component, const SegmentAssignment& assignment,
       std::vector<StandardCellRowLegalizationCell>* legalized_cells,
       double* x_displacement, double* incremental_cost) const;
+
+  /**
+   * Estimate weighted HPWL for one net if one component moved to a trial row
+   * location.
+   */
+  double NetWireLengthWithCandidate(Net& net, const Component& component,
+                                    double candidate_lx, double candidate_ly,
+                                    ComponentOrient candidate_orient) const;
+
+  /** Estimate incident-net HPWL delta for a candidate component location. */
+  double ComponentWireLengthDelta(const Component& component,
+                                  double candidate_lx, double candidate_ly,
+                                  ComponentOrient candidate_orient) const;
+
   double CandidateCost(Component& component,
                        const SegmentAssignment& assignment) const;
   void LegalizeAssignedSegments();
@@ -97,6 +113,8 @@ class StandardCellLegalizer : public Placer {
   bool disable_cell_flip_ = false;
 
   static constexpr int kCandidateSegmentCount = 4;
+  // Keep displacement as a small tie-breaker after the incident-net HPWL delta.
+  static constexpr double kDisplacementTieBreakWeight = 0.05;
 };
 
 }  // namespace dali

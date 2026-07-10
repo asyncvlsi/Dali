@@ -267,15 +267,67 @@ bool StandardCellLegalizer::EvaluateCandidate(
   }
 
   *x_displacement = 0.0;
+  double component_legal_lx = component.LLX();
   for (const auto& cell : *legalized_cells) {
     *x_displacement += std::abs(cell.legal_lx - cell.target_lx);
+    if (cell.id == component.Id()) {
+      component_legal_lx = cell.legal_lx;
+    }
   }
   double displacement_y =
       std::abs(row.ly - static_cast<int>(std::llround(component.LLY())));
-  *incremental_cost =
+  double displacement_cost =
       (*x_displacement - assignment.x_displacement) * ckt_ptr_->GridValueX() +
       displacement_y * ckt_ptr_->GridValueY();
+  double wire_length_delta =
+      ComponentWireLengthDelta(component, component_legal_lx, row.ly,
+                               OrientForRow(assignment.row_index));
+  *incremental_cost =
+      wire_length_delta + kDisplacementTieBreakWeight * displacement_cost;
   return true;
+}
+
+double StandardCellLegalizer::NetWireLengthWithCandidate(
+    Net& net, const Component& component, double candidate_lx,
+    double candidate_ly, ComponentOrient candidate_orient) const {
+  if (net.ComponentPins().size() <= 1) {
+    return 0.0;
+  }
+
+  double min_x = std::numeric_limits<double>::max();
+  double max_x = std::numeric_limits<double>::lowest();
+  double min_y = std::numeric_limits<double>::max();
+  double max_y = std::numeric_limits<double>::lowest();
+  for (const NetPin& net_pin : net.ComponentPins()) {
+    double pin_x = net_pin.AbsX();
+    double pin_y = net_pin.AbsY();
+    if (net_pin.ComponentId() == component.Id()) {
+      pin_x = candidate_lx + net_pin.PinPtr()->OffsetX(candidate_orient);
+      pin_y = candidate_ly + net_pin.PinPtr()->OffsetY(candidate_orient);
+    }
+    min_x = std::min(min_x, pin_x);
+    max_x = std::max(max_x, pin_x);
+    min_y = std::min(min_y, pin_y);
+    max_y = std::max(max_y, pin_y);
+  }
+
+  return net.Weight() * ((max_x - min_x) * ckt_ptr_->GridValueX() +
+                         (max_y - min_y) * ckt_ptr_->GridValueY());
+}
+
+double StandardCellLegalizer::ComponentWireLengthDelta(
+    const Component& component, double candidate_lx, double candidate_ly,
+    ComponentOrient candidate_orient) const {
+  double delta = 0.0;
+  for (int net_id : component.NetList()) {
+    Net& net = ckt_ptr_->Nets()[net_id];
+    double current_wire_length = net.WeightedHPWLX() * ckt_ptr_->GridValueX() +
+                                 net.WeightedHPWLY() * ckt_ptr_->GridValueY();
+    double candidate_wire_length = NetWireLengthWithCandidate(
+        net, component, candidate_lx, candidate_ly, candidate_orient);
+    delta += candidate_wire_length - current_wire_length;
+  }
+  return delta;
 }
 
 double StandardCellLegalizer::CandidateCost(

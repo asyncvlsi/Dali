@@ -94,6 +94,8 @@ class Component {
 
   /** Return the ids of nets connected to this component. */
   std::vector<int>& NetList() { return nets_; }
+  /** Return the ids of nets connected to this component. */
+  const std::vector<int>& NetList() const { return nets_; }
 
   /** Return true if this component has a placed, fixed, or cover status. */
   bool IsPlaced() const {
