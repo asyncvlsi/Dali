@@ -570,6 +570,13 @@ bool Dali::RunDetailedPlacement() {
     LOG(info) << "Skip detailed placement: disabled by configuration\n";
     return true;
   }
+  detailed_placer_.SetSnapshotCallback(
+      [this](const std::string& id, const std::string& label,
+             const std::string& subgroup, int iteration) {
+        WriteVisualizationSnapshot("detailed_placement." + id, label,
+                                   "detailed_placement", subgroup, iteration);
+        FlushVisualizationEvents();
+      });
   WriteVisualizationSnapshot("detailed_placement.start",
                              "Before Detailed Placement", "detailed_placement");
   FlushVisualizationEvents();

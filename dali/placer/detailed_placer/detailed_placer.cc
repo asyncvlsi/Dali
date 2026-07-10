@@ -16,11 +16,16 @@
 #include <numeric>
 #include <set>
 #include <unordered_set>
+#include <utility>
 
 #include "dali/common/logging.h"
 #include "dali/placer/legalizer/standard_cell_legalizer/standard_cell_row_legalizer.h"
 
 namespace dali {
+
+void DetailedPlacer::SetSnapshotCallback(SnapshotCallback snapshot_callback) {
+  snapshot_callback_ = std::move(snapshot_callback);
+}
 
 double DetailedPlacer::WindowWireLengthCost(
     const std::vector<Component*>& components, int start, int window_size) {
@@ -800,6 +805,13 @@ int DetailedPlacer::RunLocalReordering(int* visited_segment_count) {
   return reordered_windows;
 }
 
+void DetailedPlacer::EmitSnapshot(const std::string& id,
+                                  const std::string& label,
+                                  const std::string& subgroup, int iteration) {
+  if (!snapshot_callback_) return;
+  snapshot_callback_(id, label, subgroup, iteration);
+}
+
 bool DetailedPlacer::StartPlacement() {
   PrintStartStatement("detailed placement");
   DaliExpects(ckt_ptr_ != nullptr,
@@ -809,13 +821,33 @@ bool DetailedPlacer::StartPlacement() {
   double previous_hpwl = hpwl_before;
   for (int round = 0; round < kMaxOptimizationRounds; ++round) {
     int accepted_clusters_before = RunSingleSegmentClustering();
+    EmitSnapshot("round_" + std::to_string(round) + ".after_initial_clusters",
+                 "Detailed Placement Round " + std::to_string(round) +
+                     " After Initial Clustering",
+                 "initial_clustering", round);
     int accepted_moves = RunOptimalRegionMoves();
+    EmitSnapshot("round_" + std::to_string(round) + ".after_moves",
+                 "Detailed Placement Round " + std::to_string(round) +
+                     " After Optimal-Region Moves",
+                 "optimal_region_moves", round);
     int accepted_swaps = RunOptimalRegionSwaps();
     double hpwl_after_swaps = WeightedHPWL();
+    EmitSnapshot("round_" + std::to_string(round) + ".after_swaps",
+                 "Detailed Placement Round " + std::to_string(round) +
+                     " After Optimal-Region Swaps",
+                 "optimal_region_swaps", round);
     int segment_count = 0;
     int reordered_windows = RunLocalReordering(&segment_count);
+    EmitSnapshot("round_" + std::to_string(round) + ".after_reordering",
+                 "Detailed Placement Round " + std::to_string(round) +
+                     " After Local Reordering",
+                 "local_reordering", round);
     int accepted_clusters_after = RunSingleSegmentClustering();
     double current_hpwl = WeightedHPWL();
+    EmitSnapshot("round_" + std::to_string(round) + ".after_final_clusters",
+                 "Detailed Placement Round " + std::to_string(round) +
+                     " After Final Clustering",
+                 "final_clustering", round);
     double relative_improvement =
         (previous_hpwl - current_hpwl) / previous_hpwl;
 

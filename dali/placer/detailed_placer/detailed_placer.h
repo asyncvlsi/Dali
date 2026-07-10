@@ -11,7 +11,9 @@
 #ifndef DALI_PLACER_DETAILED_PLACER_DETAILED_PLACER_H_
 #define DALI_PLACER_DETAILED_PLACER_DETAILED_PLACER_H_
 
+#include <functional>
 #include <set>
+#include <string>
 #include <vector>
 
 #include "dali/circuit/component.h"
@@ -29,6 +31,15 @@ namespace dali {
  */
 class DetailedPlacer : public Placer {
  public:
+  /** Callback used by the application to emit visualization snapshots. */
+  using SnapshotCallback =
+      std::function<void(const std::string& id, const std::string& label,
+                         const std::string& subgroup, int iteration)>;
+
+  /** Set a callback invoked after each detailed-placement optimization phase.
+   */
+  void SetSnapshotCallback(SnapshotCallback snapshot_callback);
+
   bool StartPlacement() override;
 
  private:
@@ -139,10 +150,15 @@ class DetailedPlacer : public Placer {
   /** Run local reordering across every legal row segment once. */
   int RunLocalReordering(int* visited_segment_count);
 
+  /** Publish a detailed-placement checkpoint if visualization is enabled. */
+  void EmitSnapshot(const std::string& id, const std::string& label,
+                    const std::string& subgroup, int iteration);
+
   std::vector<std::vector<Component*>> row_components_;
   std::vector<std::vector<GeneralRowSegment*>> row_segments_;
   std::vector<GeneralRow*> component_rows_;
   std::vector<GeneralRowSegment*> component_segments_;
+  SnapshotCallback snapshot_callback_;
 };
 
 }  // namespace dali
