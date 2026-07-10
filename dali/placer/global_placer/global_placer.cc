@@ -73,6 +73,10 @@ void GlobalPlacer::SetLalExpansionMode(GlobalLalExpansionMode mode) {
   lal_expansion_mode_ = mode;
 }
 
+void GlobalPlacer::SetLalHotspotMode(GlobalLalHotspotMode mode) {
+  lal_hotspot_mode_ = mode;
+}
+
 void GlobalPlacer::SetLalMacroBoundaryMode(GlobalLalMacroBoundaryMode mode) {
   lal_macro_boundary_mode_ = mode;
 }
@@ -102,6 +106,7 @@ void GlobalPlacer::InitializeOptimizerAndLegalizer() {
   legalizer_ = new LookAheadLegalizer(ckt_ptr_);
   legalizer_->SetGridSchedule(grid_schedule_);
   legalizer_->SetExpansionMode(lal_expansion_mode_);
+  legalizer_->SetHotspotMode(lal_hotspot_mode_);
   legalizer_->SetMacroBoundaryMode(lal_macro_boundary_mode_);
   legalizer_->SetShouldSaveIntermediateResult(should_save_intermediate_result_);
   legalizer_->Initialize(PlacementDensity());

@@ -66,6 +66,8 @@ class Dali {
     GlobalGridSchedule global_grid_schedule = GlobalGridSchedule::kDali;
     GlobalLalExpansionMode global_lal_expansion_mode =
         GlobalLalExpansionMode::kSymmetric;
+    GlobalLalHotspotMode global_lal_hotspot_mode =
+        GlobalLalHotspotMode::kComponentArea;
     GlobalLalMacroBoundaryMode global_lal_macro_boundary_mode =
         GlobalLalMacroBoundaryMode::kOff;
     bool save_intermediate_result = false;
@@ -176,6 +178,8 @@ class Dali {
   GlobalGridSchedule global_grid_schedule_ = GlobalGridSchedule::kDali;
   GlobalLalExpansionMode global_lal_expansion_mode_ =
       GlobalLalExpansionMode::kSymmetric;
+  GlobalLalHotspotMode global_lal_hotspot_mode_ =
+      GlobalLalHotspotMode::kComponentArea;
   GlobalLalMacroBoundaryMode global_lal_macro_boundary_mode_ =
       GlobalLalMacroBoundaryMode::kOff;
   bool save_intermediate_result_ = false;

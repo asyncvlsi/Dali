@@ -23,6 +23,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iterator>
+#include <limits>
 
 #include "dali/common/elapsed_time.h"
 #include "dali/common/logging.h"
@@ -557,14 +559,49 @@ void LookAheadLegalizer::UpdateClusterList() {
   update_cluster_list_time_ += elapsed_time.GetWallTime();
 }
 
+std::multiset<GridBinCluster, std::greater<>>::iterator
+LookAheadLegalizer::SelectHotspotCluster() {
+  if (cluster_set.empty()) return cluster_set.end();
+  auto selected = cluster_set.begin();
+  double selected_score = HotspotScore(*selected);
+  for (auto it = std::next(cluster_set.begin()); it != cluster_set.end();
+       ++it) {
+    double score = HotspotScore(*it);
+    if (score > selected_score) {
+      selected = it;
+      selected_score = score;
+    }
+  }
+  return selected;
+}
+
+double LookAheadLegalizer::HotspotScore(const GridBinCluster& cluster) const {
+  double component_area = static_cast<double>(cluster.total_component_area);
+  double white_space = static_cast<double>(cluster.total_white_space);
+  double overflow = component_area - placement_density_ * white_space;
+
+  switch (hotspot_mode_) {
+    case GlobalLalHotspotMode::kOverflow:
+      return overflow;
+    case GlobalLalHotspotMode::kOverflowRatio:
+      if (white_space <= 0.0) {
+        return std::numeric_limits<double>::infinity();
+      }
+      return component_area / white_space - placement_density_;
+    case GlobalLalHotspotMode::kComponentArea:
+      return component_area;
+  }
+  return component_area;
+}
+
 void LookAheadLegalizer::UpdateLargestCluster() {
   if (cluster_set.empty()) return;
 
-  for (auto it = cluster_set.begin(); it != cluster_set.end();) {
+  for (auto it = SelectHotspotCluster(); it != cluster_set.end();) {
     bool is_contact = true;
 
     // if there is no grid bin has been roughly legalized, then this cluster is
-    // the largest one for sure
+    // the selected hotspot for sure.
     for (auto& index : it->bin_set) {
       if (grid_bin_mesh[index.x][index.y].global_placed) {
         is_contact = false;
@@ -629,6 +666,7 @@ void LookAheadLegalizer::UpdateLargestCluster() {
     }
 
     it = cluster_set.erase(it);
+    it = SelectHotspotCluster();
   }
 }
 
@@ -762,7 +800,7 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
   R.ur_index.y = 0;
   // initialize a box with y cut-direction
   // identify the bounding box of the initial cluster
-  auto it = cluster_set.begin();
+  auto it = SelectHotspotCluster();
   for (auto& index : it->bin_set) {
     R.ll_index.x = std::min(R.ll_index.x, index.x);
     R.ur_index.x = std::max(R.ur_index.x, index.x);

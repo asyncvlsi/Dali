@@ -42,6 +42,13 @@ enum class GlobalLalExpansionMode {
   kBestNeighbor,
 };
 
+/** How LAL chooses the next overfilled cluster to spread. */
+enum class GlobalLalHotspotMode {
+  kComponentArea,
+  kOverflow,
+  kOverflowRatio,
+};
+
 /** Interface for rough legalizers that remove gross component overlap. */
 class RoughLegalizer {
  public:
@@ -83,6 +90,9 @@ class RoughLegalizer {
   /** Select how overfilled LAL clusters expand into whitespace. */
   void SetExpansionMode(GlobalLalExpansionMode mode) { expansion_mode_ = mode; }
 
+  /** Select how the next overfilled LAL hotspot is ranked. */
+  void SetHotspotMode(GlobalLalHotspotMode mode) { hotspot_mode_ = mode; }
+
   /** Select whether macro boundaries influence LAL cutlines. */
   void SetMacroBoundaryMode(GlobalLalMacroBoundaryMode mode) {
     macro_boundary_mode_ = mode;
@@ -100,6 +110,7 @@ class RoughLegalizer {
   int cur_iter_ = 0;
   GlobalGridSchedule grid_schedule_ = GlobalGridSchedule::kDali;
   GlobalLalExpansionMode expansion_mode_ = GlobalLalExpansionMode::kSymmetric;
+  GlobalLalHotspotMode hotspot_mode_ = GlobalLalHotspotMode::kComponentArea;
   GlobalLalMacroBoundaryMode macro_boundary_mode_ =
       GlobalLalMacroBoundaryMode::kOff;
 };
@@ -126,6 +137,9 @@ class LookAheadLegalizer : public RoughLegalizer {
   void UpdateGridBinState();
   void UpdateClusterArea(GridBinCluster& cluster);
   void UpdateClusterList();
+  std::multiset<GridBinCluster, std::greater<>>::iterator
+  SelectHotspotCluster();
+  double HotspotScore(const GridBinCluster& cluster) const;
   void UpdateLargestCluster();
   uint32_t LookUpWhiteSpace(GridBinIndex const& ll_index,
                             GridBinIndex const& ur_index);

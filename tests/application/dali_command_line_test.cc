@@ -81,6 +81,8 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "scavenge",
                      "-global_initializer",
                      "keep",
+                     "-global_lal_hotspot",
+                     "overflow",
                      "-save_intermediate_result",
                      "-disable_detailed_place",
                      "-disable_io_place",
@@ -98,6 +100,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.io_metal_layer"), 2);
   EXPECT_STREQ(config_get_string("dali.well_legalization_mode"), "scavenge");
   EXPECT_STREQ(config_get_string("dali.global_initializer"), "keep");
+  EXPECT_STREQ(config_get_string("dali.global_lal_hotspot"), "overflow");
   EXPECT_EQ(config_get_int("dali.save_intermediate_result"), 1);
   EXPECT_EQ(config_get_int("dali.disable_detailed_place"), 1);
   EXPECT_EQ(config_get_int("dali.disable_io_place"), 1);
@@ -142,6 +145,9 @@ TEST_F(DaliCommandLineTest, RejectsOutOfRangeOptions) {
                      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-global_initializer", "randomish"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-global_lal_hotspot", "largest"},
                      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-gui_pause", "sometimes"},

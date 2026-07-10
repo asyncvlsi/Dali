@@ -65,6 +65,9 @@ class GlobalPlacer : public Placer {
   /** Select how LAL grows overfilled clusters into whitespace regions. */
   void SetLalExpansionMode(GlobalLalExpansionMode mode);
 
+  /** Select how LAL chooses the next overfilled cluster to spread. */
+  void SetLalHotspotMode(GlobalLalHotspotMode mode);
+
   /** Select whether fixed-macro boundaries influence LAL cutlines. */
   void SetLalMacroBoundaryMode(GlobalLalMacroBoundaryMode mode);
 
@@ -115,6 +118,7 @@ class GlobalPlacer : public Placer {
   GlobalGridSchedule grid_schedule_ = GlobalGridSchedule::kDali;
   GlobalLalExpansionMode lal_expansion_mode_ =
       GlobalLalExpansionMode::kSymmetric;
+  GlobalLalHotspotMode lal_hotspot_mode_ = GlobalLalHotspotMode::kComponentArea;
   GlobalLalMacroBoundaryMode lal_macro_boundary_mode_ =
       GlobalLalMacroBoundaryMode::kOff;
   SnapshotCallback snapshot_callback_;

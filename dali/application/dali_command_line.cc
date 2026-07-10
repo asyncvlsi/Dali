@@ -77,6 +77,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -global_anchor_schedule <dali/simpl>       choose global-placement anchor pseudo-net schedule\n"
       << "  -global_grid_schedule <dali/simpl>         choose look-ahead legalization grid schedule\n"
       << "  -global_lal_expansion <symmetric/best_neighbor>\n"
+      << "  -global_lal_hotspot <area/overflow/overflow_ratio>\n"
       << "  -global_lal_macro_boundary <off/balanced/preferred>\n"
       << "  -save_intermediate_result                  dump placement snapshots for visualization\n"
       << "  -num_threads <n>                           number of OpenMP threads to use\n"
@@ -239,6 +240,16 @@ bool ParseDaliCommandLine(int argc, char* argv[],
         return false;
       }
       config_set_string("dali.global_lal_expansion", value.c_str());
+    } else if (arg == "-global_lal_hotspot") {
+      if (!TryGetValue(argc, argv, &i, &value)) {
+        error_output << "Invalid global LAL hotspot mode!\n";
+        return false;
+      }
+      if (value != "area" && value != "overflow" && value != "overflow_ratio") {
+        error_output << "Invalid global LAL hotspot mode!\n";
+        return false;
+      }
+      config_set_string("dali.global_lal_hotspot", value.c_str());
     } else if (arg == "-global_lal_macro_boundary") {
       if (!TryGetValue(argc, argv, &i, &value)) {
         error_output << "Invalid global LAL macro boundary mode!\n";
