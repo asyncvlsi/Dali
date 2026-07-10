@@ -58,9 +58,8 @@ static double ClampCenterToBox(double center, double box_min, double box_max,
  */
 static void ScaleComponentCenters(
     std::vector<std::pair<Component*, double>>& locs, double box_min,
-    double box_max, bool scale_x) {
+    double box_max, bool scale_x, double affine_scaling_weight) {
   if (locs.empty()) return;
-  constexpr double kAffineScalingWeight = 0.65;
 
   auto [min_it, max_it] = std::minmax_element(
       locs.begin(), locs.end(),
@@ -90,8 +89,8 @@ static void ScaleComponentCenters(
     if (source_span > 1e-9 && target_span > 1e-9) {
       double affine_center =
           box_min + (loc - min_loc) / source_span * target_span;
-      scaled_center = kAffineScalingWeight * affine_center +
-                      (1.0 - kAffineScalingWeight) * packed_center;
+      scaled_center = affine_scaling_weight * affine_center +
+                      (1.0 - affine_scaling_weight) * packed_center;
     }
     scaled_center =
         ClampCenterToBox(scaled_center, box_min, box_max, component_size);
@@ -1041,9 +1040,9 @@ void LookAheadLegalizer::PlaceComponentInBox(BoxBin& box) {
   // look-ahead legalization spreads cells by scaling local coordinates; fully
   // repacking every leaf by sorted width/height discards wirelength structure.
   ScaleComponentCenters(index_loc_list_x, box.left, box.right,
-                        /*scale_x=*/true);
+                        /*scale_x=*/true, affine_scaling_weight_);
   ScaleComponentCenters(index_loc_list_y, box.bottom, box.top,
-                        /*scale_x=*/false);
+                        /*scale_x=*/false, affine_scaling_weight_);
 }
 
 void LookAheadLegalizer::SplitBox(BoxBin& box) {

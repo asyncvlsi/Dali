@@ -77,6 +77,12 @@ void GlobalPlacer::SetLalHotspotMode(GlobalLalHotspotMode mode) {
   lal_hotspot_mode_ = mode;
 }
 
+void GlobalPlacer::SetLalAffineScalingWeight(double weight) {
+  DaliExpects(weight >= 0.0 && weight <= 1.0,
+              "LAL affine scaling weight must be in [0, 1]");
+  lal_affine_scaling_weight_ = weight;
+}
+
 void GlobalPlacer::SetLalMacroBoundaryMode(GlobalLalMacroBoundaryMode mode) {
   lal_macro_boundary_mode_ = mode;
 }
@@ -107,6 +113,7 @@ void GlobalPlacer::InitializeOptimizerAndLegalizer() {
   legalizer_->SetGridSchedule(grid_schedule_);
   legalizer_->SetExpansionMode(lal_expansion_mode_);
   legalizer_->SetHotspotMode(lal_hotspot_mode_);
+  legalizer_->SetAffineScalingWeight(lal_affine_scaling_weight_);
   legalizer_->SetMacroBoundaryMode(lal_macro_boundary_mode_);
   legalizer_->SetShouldSaveIntermediateResult(should_save_intermediate_result_);
   legalizer_->Initialize(PlacementDensity());

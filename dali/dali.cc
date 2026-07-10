@@ -206,6 +206,8 @@ void Dali::ShowParamsList() {
             << static_cast<int>(global_lal_expansion_mode_) << "\n"
             << "  global_lal_hotspot: "
             << static_cast<int>(global_lal_hotspot_mode_) << "\n"
+            << "  global_lal_affine_weight: " << global_lal_affine_weight_
+            << "\n"
             << "  global_lal_macro_boundary: "
             << static_cast<int>(global_lal_macro_boundary_mode_) << "\n"
             << "  save_intermediate_result: " << save_intermediate_result_
@@ -288,6 +290,11 @@ void Dali::LoadParamsFromConfig() {
     global_lal_hotspot_mode_ =
         ParseGlobalLalHotspotMode(config_get_string(param_name.c_str()));
   }
+  LoadRealConfig(ConfigName(prefix_, "global_lal_affine_weight"),
+                 &global_lal_affine_weight_);
+  DaliExpects(
+      global_lal_affine_weight_ >= 0.0 && global_lal_affine_weight_ <= 1.0,
+      "global_lal_affine_weight must be in [0, 1]");
   param_name = ConfigName(prefix_, "global_lal_macro_boundary");
   if (ConfigExists(param_name)) {
     global_lal_macro_boundary_mode_ =
@@ -340,6 +347,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       global_grid_schedule_,
       global_lal_expansion_mode_,
       global_lal_hotspot_mode_,
+      global_lal_affine_weight_,
       global_lal_macro_boundary_mode_,
       save_intermediate_result_,
       output_name_,
@@ -544,6 +552,7 @@ bool Dali::RunGlobalPlacementStage() {
     gb_placer_.SetGridSchedule(global_grid_schedule_);
     gb_placer_.SetLalExpansionMode(global_lal_expansion_mode_);
     gb_placer_.SetLalHotspotMode(global_lal_hotspot_mode_);
+    gb_placer_.SetLalAffineScalingWeight(global_lal_affine_weight_);
     gb_placer_.SetLalMacroBoundaryMode(global_lal_macro_boundary_mode_);
     if (!gb_placer_.StartPlacement()) {
       LOG(error) << "Global placement failed\n";

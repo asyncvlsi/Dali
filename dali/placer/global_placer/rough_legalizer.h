@@ -93,6 +93,12 @@ class RoughLegalizer {
   /** Select how the next overfilled LAL hotspot is ranked. */
   void SetHotspotMode(GlobalLalHotspotMode mode) { hotspot_mode_ = mode; }
 
+  /** Set how strongly LAL preserves lower-bound affine geometry in leaf boxes.
+   */
+  void SetAffineScalingWeight(double weight) {
+    affine_scaling_weight_ = weight;
+  }
+
   /** Select whether macro boundaries influence LAL cutlines. */
   void SetMacroBoundaryMode(GlobalLalMacroBoundaryMode mode) {
     macro_boundary_mode_ = mode;
@@ -111,6 +117,7 @@ class RoughLegalizer {
   GlobalGridSchedule grid_schedule_ = GlobalGridSchedule::kDali;
   GlobalLalExpansionMode expansion_mode_ = GlobalLalExpansionMode::kSymmetric;
   GlobalLalHotspotMode hotspot_mode_ = GlobalLalHotspotMode::kComponentArea;
+  double affine_scaling_weight_ = 0.65;
   GlobalLalMacroBoundaryMode macro_boundary_mode_ =
       GlobalLalMacroBoundaryMode::kOff;
 };

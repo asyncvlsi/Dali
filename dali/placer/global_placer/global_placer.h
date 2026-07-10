@@ -68,6 +68,9 @@ class GlobalPlacer : public Placer {
   /** Select how LAL chooses the next overfilled cluster to spread. */
   void SetLalHotspotMode(GlobalLalHotspotMode mode);
 
+  /** Set the affine geometry-preservation weight used by LAL leaf spreading. */
+  void SetLalAffineScalingWeight(double weight);
+
   /** Select whether fixed-macro boundaries influence LAL cutlines. */
   void SetLalMacroBoundaryMode(GlobalLalMacroBoundaryMode mode);
 
@@ -119,6 +122,7 @@ class GlobalPlacer : public Placer {
   GlobalLalExpansionMode lal_expansion_mode_ =
       GlobalLalExpansionMode::kSymmetric;
   GlobalLalHotspotMode lal_hotspot_mode_ = GlobalLalHotspotMode::kComponentArea;
+  double lal_affine_scaling_weight_ = 0.65;
   GlobalLalMacroBoundaryMode lal_macro_boundary_mode_ =
       GlobalLalMacroBoundaryMode::kOff;
   SnapshotCallback snapshot_callback_;

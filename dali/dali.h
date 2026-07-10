@@ -68,6 +68,7 @@ class Dali {
         GlobalLalExpansionMode::kSymmetric;
     GlobalLalHotspotMode global_lal_hotspot_mode =
         GlobalLalHotspotMode::kComponentArea;
+    double global_lal_affine_weight = 0.65;
     GlobalLalMacroBoundaryMode global_lal_macro_boundary_mode =
         GlobalLalMacroBoundaryMode::kOff;
     bool save_intermediate_result = false;
@@ -180,6 +181,7 @@ class Dali {
       GlobalLalExpansionMode::kSymmetric;
   GlobalLalHotspotMode global_lal_hotspot_mode_ =
       GlobalLalHotspotMode::kComponentArea;
+  double global_lal_affine_weight_ = 0.65;
   GlobalLalMacroBoundaryMode global_lal_macro_boundary_mode_ =
       GlobalLalMacroBoundaryMode::kOff;
   bool save_intermediate_result_ = false;
