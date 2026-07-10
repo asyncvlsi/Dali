@@ -270,7 +270,7 @@ bool GlobalPlacer::IsComponentListOrNetListEmpty() const {
   return false;
 }
 
-bool GlobalPlacer::IsSeriesConverged(std::vector<double>& series,
+bool GlobalPlacer::IsSeriesConverged(const std::vector<double>& series,
                                      int window_size, double tolerance) {
   auto sz = static_cast<int>(series.size());
   if (sz < window_size) {
@@ -294,6 +294,43 @@ bool GlobalPlacer::IsSeriesConverged(std::vector<double>& series,
   return ratio < tolerance;
 }
 
+double GlobalPlacer::BestValueInWindow(const std::vector<double>& series,
+                                       int begin, int end) {
+  DaliExpects(begin >= 0 && begin < end &&
+                  end <= static_cast<int>(series.size()),
+              "invalid best-value window");
+  double best_value = DBL_MAX;
+  for (int i = begin; i < end; ++i) {
+    best_value = std::min(best_value, series[i]);
+  }
+  return best_value;
+}
+
+bool GlobalPlacer::IsPositive(double value) { return value > 1e-10; }
+
+double GlobalPlacer::RelativeImprovement(double old_value, double new_value) {
+  DaliExpects(old_value >= 0 && new_value >= 0,
+              "negative HPWL values are not supported");
+  if (!IsPositive(old_value)) return 0.0;
+  return (old_value - new_value) / old_value;
+}
+
+bool GlobalPlacer::HasUpperBoundHpwlPlateaued(
+    const std::vector<double>& upper_bound_hpwl) const {
+  int series_size = static_cast<int>(upper_bound_hpwl.size());
+  int window = upper_bound_plateau_window_;
+  if (series_size < 2 * window) return false;
+
+  int current_window_begin = series_size - window;
+  int previous_window_begin = current_window_begin - window;
+  double previous_best = BestValueInWindow(
+      upper_bound_hpwl, previous_window_begin, current_window_begin);
+  double current_best =
+      BestValueInWindow(upper_bound_hpwl, current_window_begin, series_size);
+  double improvement = RelativeImprovement(previous_best, current_best);
+  return improvement < upper_bound_plateau_threshold_;
+}
+
 /****
  * @brief Returns true or false indicating the convergence of the global
  * placement.
@@ -301,7 +338,8 @@ bool GlobalPlacer::IsSeriesConverged(std::vector<double>& series,
  * Stopping criteria (SimPL, option 1):
  *    (a). the gap is reduced to 25% of the gap in the tenth iteration and
  *    upper-bound solution stops improving
- *    (b). the gap is smaller than 10% of the gap in the tenth iteration
+ *    (b). the gap is smaller than 10% of the gap in the tenth iteration and
+ *    upper-bound solution stops improving
  * Stopping criteria (POLAR, option 2):
  *    the gap between lower bound wire-length and upper bound wire-length is
  *    less than 8%
@@ -323,10 +361,13 @@ bool GlobalPlacer::IsPlacementConverged() {
         return last_gap <= 1e-10;
       }
       double gap_ratio = last_gap / tenth_gap;
-      if (gap_ratio < 0.1) {  // (a)
-        res = true;
-      } else if (gap_ratio < 0.25) {  // (b)
-        res = IsSeriesConverged(upper_bound_hpwl, 3,
+      bool upper_bound_has_plateaued =
+          HasUpperBoundHpwlPlateaued(upper_bound_hpwl);
+      if (gap_ratio < 0.1) {
+        res = upper_bound_has_plateaued;
+      } else if (gap_ratio < 0.25) {
+        res = upper_bound_has_plateaued &&
+              IsSeriesConverged(upper_bound_hpwl, 3,
                                 simpl_LAL_converge_criterion_);
       } else {
         res = false;

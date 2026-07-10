@@ -51,7 +51,7 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_EQ(options.global_lal_hotspot_mode,
             dali::GlobalLalHotspotMode::kComponentArea);
   EXPECT_DOUBLE_EQ(options.global_lal_affine_weight, 0.65);
-  EXPECT_EQ(options.global_min_iterations, 100);
+  EXPECT_EQ(options.global_min_iterations, 30);
   EXPECT_FALSE(options.save_intermediate_result);
   EXPECT_EQ(options.output_name, "dali_out");
   EXPECT_EQ(options.visualization_dir, "");

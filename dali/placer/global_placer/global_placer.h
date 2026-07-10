@@ -96,17 +96,36 @@ class GlobalPlacer : public Placer {
   // Iteration and convergence controls for look-ahead legalization.
   int cur_iter_ = 0;
   int max_iter_ = 100;
-  int min_iter_ = 100;
+  int min_iter_ = 30;
   double simpl_LAL_converge_criterion_ = 0.005;
   double polar_converge_criterion_ = 0.08;
   int convergence_criteria_ = 1;
+  // Stop only after best legalized HPWL improves by less than 0.2% over two
+  // adjacent ten-iteration windows.
+  double upper_bound_plateau_threshold_ = 0.002;
+  int upper_bound_plateau_window_ = 10;
 
   // Save intermediate result for debugging and/or visualization.
   bool should_save_intermediate_result_ = false;
 
   bool IsComponentListOrNetListEmpty() const;
-  static bool IsSeriesConverged(std::vector<double>& series, int window_size,
-                                double tolerance);
+  /** Return true when the recent values are within the given relative range. */
+  static bool IsSeriesConverged(const std::vector<double>& series,
+                                int window_size, double tolerance);
+
+  /** Return true when best legalized HPWL improves little over two windows. */
+  bool HasUpperBoundHpwlPlateaued(
+      const std::vector<double>& upper_bound_hpwl) const;
+
+  /** Return the best value in a half-open range of a non-empty numeric series. */
+  static double BestValueInWindow(const std::vector<double>& series, int begin,
+                                  int end);
+
+  /** Return the relative improvement from old_value to new_value. */
+  static double RelativeImprovement(double old_value, double new_value);
+
+  /** Treat tiny floating-point values as zero for HPWL ratio checks. */
+  static bool IsPositive(double value);
   bool IsPlacementConverged();
   void PreparePlacement();
   void RunPlacementIterations();
