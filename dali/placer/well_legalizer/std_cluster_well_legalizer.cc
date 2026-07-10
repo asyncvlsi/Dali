@@ -110,14 +110,40 @@ void StdClusterWellLegalizer::FetchNpWellParams() {
 }
 
 void StdClusterWellLegalizer::SaveInitialComponentLocation() {
-  component_init_locations_.clear();
+  component_init_locations_ = CaptureComponentPlacement();
+}
+
+std::vector<StdClusterWellLegalizer::ComponentPlacementSnapshot>
+StdClusterWellLegalizer::CaptureComponentPlacement() const {
+  std::vector<ComponentPlacementSnapshot> component_snapshots;
+  const std::vector<Component>& component_list = ckt_ptr_->Components();
+  component_snapshots.reserve(component_list.size());
+  for (auto& component : component_list) {
+    ComponentPlacementSnapshot snapshot;
+    snapshot.lx = component.LLX();
+    snapshot.ly = component.LLY();
+    snapshot.orient = component.Orient();
+    component_snapshots.push_back(snapshot);
+  }
+  return component_snapshots;
+}
+
+void StdClusterWellLegalizer::RestoreComponentPlacement(
+    const std::vector<ComponentPlacementSnapshot>& component_snapshots) {
+  DaliExpects(component_snapshots.size() == ckt_ptr_->Components().size(),
+              "Cannot restore component placement: component count changed");
 
   std::vector<Component>& component_list = ckt_ptr_->Components();
-  component_init_locations_.reserve(component_list.size());
-
-  for (auto& component : component_list) {
-    component_init_locations_.emplace_back(component.LLX(), component.LLY());
+  for (size_t i = 0; i < component_list.size(); ++i) {
+    const ComponentPlacementSnapshot& snapshot = component_snapshots[i];
+    component_list[i].SetLLX(snapshot.lx);
+    component_list[i].SetLLY(snapshot.ly);
+    component_list[i].SetOrient(snapshot.orient);
   }
+}
+
+void StdClusterWellLegalizer::RestoreInitialComponentLocation() {
+  RestoreComponentPlacement(component_init_locations_);
 }
 
 void StdClusterWellLegalizer::SetMaxRowWidth(double max_row_width_microns) {
@@ -1091,6 +1117,7 @@ bool StdClusterWellLegalizer::RetryMovableCellLegalizationWithScavenging() {
   int previous_stripe_mode = stripe_mode_;
   stripe_mode_ = int(DefaultPartitionMode::SCAVENGE);
   snapshot_attempt_ = 1;
+  RestoreInitialComponentLocation();
   InitializeWellLegalizer();
   bool is_success = RunMovableCellLegalizationStages();
   stripe_mode_ = previous_stripe_mode;
@@ -1139,6 +1166,7 @@ bool StdClusterWellLegalizer::StartPlacement() {
   PrintStartStatement("standard cluster well legalization");
 
   snapshot_attempt_ = 0;
+  SaveInitialComponentLocation();
   InitializeWellLegalizer();
   bool is_success = RunMovableCellLegalizationStages();
   if (!is_success) {
@@ -1789,7 +1817,7 @@ void StdClusterWellLegalizer::ExportWellToPhyDB(phydb::PhyDB* phydb_ptr,
       if (well_emit_mode != 2) {
         std::string signal_name = "Vdd";
         std::string layer_name = "nwell";
-        for (auto& rect : p_rects) {
+        for (auto& rect : n_rects) {
           int rect_llx = ckt_ptr_->LocDali2PhydbX(rect.LLX());
           int rect_lly = ckt_ptr_->LocDali2PhydbY(rect.LLY());
           int rect_urx = ckt_ptr_->LocDali2PhydbX(rect.URX());

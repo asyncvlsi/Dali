@@ -59,38 +59,38 @@ void GenClusterTable(std::string const& name_of_file,
 void CollectWellFillingRects(Stripe& stripe, int bottom_boundary,
                              int top_boundary, std::vector<RectI>& n_rects,
                              std::vector<RectI>& p_rects) {
+  std::vector<GriddedRow*> rows;
+  rows.reserve(stripe.gridded_rows_.size());
+  for (auto& row : stripe.gridded_rows_) {
+    rows.push_back(&row);
+  }
+  std::sort(rows.begin(), rows.end(),
+            [](const GriddedRow* lhs, const GriddedRow* rhs) {
+              return lhs->LLY() < rhs->LLY();
+            });
+
   int loc_bottom = bottom_boundary;
-  if (!stripe.gridded_rows_.empty()) {
-    loc_bottom = std::min(loc_bottom, stripe.gridded_rows_[0].LLY());
+  if (!rows.empty()) {
+    loc_bottom = std::min(loc_bottom, rows.front()->LLY());
   }
   int loc_top = top_boundary;
-  if (!stripe.gridded_rows_.empty()) {
-    loc_top = std::max(loc_top, stripe.gridded_rows_.back().URY());
+  if (!rows.empty()) {
+    loc_top = std::max(loc_top, rows.back()->URY());
   }
 
   std::vector<int> pn_edge_list;
-  if (stripe.is_bottom_up_) {
-    pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
-    pn_edge_list.push_back(loc_bottom);
-  } else {
-    pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
-    pn_edge_list.push_back(loc_top);
+  pn_edge_list.reserve(rows.size() + 2);
+  pn_edge_list.push_back(loc_bottom);
+  for (auto* row : rows) {
+    pn_edge_list.push_back(row->LLY() + row->PNEdge());
   }
-  for (auto& row : stripe.gridded_rows_) {
-    pn_edge_list.push_back(row.LLY() + row.PNEdge());
-  }
-  if (stripe.is_bottom_up_) {
-    pn_edge_list.push_back(loc_top);
-  } else {
-    pn_edge_list.push_back(loc_bottom);
-    std::reverse(pn_edge_list.begin(), pn_edge_list.end());
-  }
+  pn_edge_list.push_back(loc_top);
 
   bool is_p_well_rect;
-  if (stripe.gridded_rows_.empty()) {
+  if (rows.empty()) {
     is_p_well_rect = stripe.is_first_row_orient_N_;
   } else {
-    is_p_well_rect = stripe.gridded_rows_[0].IsOrientN();
+    is_p_well_rect = rows.front()->IsOrientN();
   }
   int lx = stripe.LLX();
   int ux = stripe.URX();
@@ -100,6 +100,10 @@ void CollectWellFillingRects(Stripe& stripe, int bottom_boundary,
   for (int i = 0; i < rect_count; ++i) {
     ly = pn_edge_list[i];
     uy = pn_edge_list[i + 1];
+    if (uy <= ly) {
+      is_p_well_rect = !is_p_well_rect;
+      continue;
+    }
     if (is_p_well_rect) {
       p_rects.emplace_back(lx, ly, ux, uy);
     } else {

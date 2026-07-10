@@ -83,6 +83,8 @@ class StdClusterWellLegalizer : public Placer {
 
   /** Cache component locations before legalization. */
   void SaveInitialComponentLocation();
+  /** Restore component locations and orientations saved before legalization. */
+  void RestoreInitialComponentLocation();
 
   /** Initialize stripes, clusters, and cached parameters. */
   void InitializeWellLegalizer(int cluster_width = -1);
@@ -204,8 +206,21 @@ class StdClusterWellLegalizer : public Placer {
   /**** parameters for legalization ****/
   int max_iter_ = 10;
 
-  /**** initial location ****/
-  std::vector<int2d> component_init_locations_;
+  struct ComponentPlacementSnapshot {
+    int lx = 0;
+    int ly = 0;
+    ComponentOrient orient = N;
+  };
+
+  /** Capture every component's placement before a trial legalization change. */
+  std::vector<ComponentPlacementSnapshot> CaptureComponentPlacement() const;
+
+  /** Restore every component's placement from a captured snapshot. */
+  void RestoreComponentPlacement(
+      const std::vector<ComponentPlacementSnapshot>& component_snapshots);
+
+  /**** initial placement before movable-cell well legalization attempts ****/
+  std::vector<ComponentPlacementSnapshot> component_init_locations_;
 
   // dump result
   bool is_dump = false;
