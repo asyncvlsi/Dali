@@ -96,7 +96,7 @@ class GlobalPlacer : public Placer {
   // Iteration and convergence controls for look-ahead legalization.
   int cur_iter_ = 0;
   int max_iter_ = 100;
-  int min_iter_ = 30;
+  int min_iter_ = 10;
   double simpl_LAL_converge_criterion_ = 0.005;
   double polar_converge_criterion_ = 0.08;
   int convergence_criteria_ = 1;
