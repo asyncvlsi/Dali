@@ -71,6 +71,7 @@ class Dali {
     double global_lal_affine_weight = 0.65;
     GlobalLalMacroBoundaryMode global_lal_macro_boundary_mode =
         GlobalLalMacroBoundaryMode::kOff;
+    int global_min_iterations = 100;
     bool save_intermediate_result = false;
     std::string output_name = "dali_out";
     std::string visualization_dir;
@@ -184,6 +185,7 @@ class Dali {
   double global_lal_affine_weight_ = 0.65;
   GlobalLalMacroBoundaryMode global_lal_macro_boundary_mode_ =
       GlobalLalMacroBoundaryMode::kOff;
+  int global_min_iterations_ = 100;
   bool save_intermediate_result_ = false;
   std::string output_name_ = "dali_out";
   std::string visualization_dir_;

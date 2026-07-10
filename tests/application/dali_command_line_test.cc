@@ -85,6 +85,8 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "overflow",
                      "-global_lal_affine_weight",
                      "0.8",
+                     "-global_min_iterations",
+                     "25",
                      "-save_intermediate_result",
                      "-disable_detailed_place",
                      "-disable_io_place",
@@ -104,6 +106,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_STREQ(config_get_string("dali.global_initializer"), "keep");
   EXPECT_STREQ(config_get_string("dali.global_lal_hotspot"), "overflow");
   EXPECT_DOUBLE_EQ(config_get_real("dali.global_lal_affine_weight"), 0.8);
+  EXPECT_EQ(config_get_int("dali.global_min_iterations"), 25);
   EXPECT_EQ(config_get_int("dali.save_intermediate_result"), 1);
   EXPECT_EQ(config_get_int("dali.disable_detailed_place"), 1);
   EXPECT_EQ(config_get_int("dali.disable_io_place"), 1);
@@ -154,6 +157,9 @@ TEST_F(DaliCommandLineTest, RejectsOutOfRangeOptions) {
                      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-global_lal_affine_weight", "1.2"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-global_min_iterations", "-1"},
                      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-gui_pause", "sometimes"},

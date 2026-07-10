@@ -41,6 +41,9 @@ class GlobalPlacer : public Placer {
   /** Set maximum global placement iterations. */
   void SetMaxIteration(int max_iter);
 
+  /** Set minimum global placement iterations before convergence can stop. */
+  void SetMinIteration(int min_iter);
+
   /** Enable or disable intermediate placement dumps. */
   void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
 
@@ -93,6 +96,7 @@ class GlobalPlacer : public Placer {
   // Iteration and convergence controls for look-ahead legalization.
   int cur_iter_ = 0;
   int max_iter_ = 100;
+  int min_iter_ = 100;
   double simpl_LAL_converge_criterion_ = 0.005;
   double polar_converge_criterion_ = 0.08;
   int convergence_criteria_ = 1;

@@ -210,6 +210,7 @@ void Dali::ShowParamsList() {
             << "\n"
             << "  global_lal_macro_boundary: "
             << static_cast<int>(global_lal_macro_boundary_mode_) << "\n"
+            << "  global_min_iterations: " << global_min_iterations_ << "\n"
             << "  save_intermediate_result: " << save_intermediate_result_
             << "\n"
             << "  output_name: " << output_name_ << "\n"
@@ -300,6 +301,10 @@ void Dali::LoadParamsFromConfig() {
     global_lal_macro_boundary_mode_ =
         ParseGlobalLalMacroBoundaryMode(config_get_string(param_name.c_str()));
   }
+  LoadIntConfig(ConfigName(prefix_, "global_min_iterations"),
+                &global_min_iterations_);
+  DaliExpects(global_min_iterations_ >= 0,
+              "global_min_iterations must be non-negative");
   LoadBoolConfig(ConfigName(prefix_, "save_intermediate_result"),
                  &save_intermediate_result_);
   LoadStringConfig(ConfigName(prefix_, "output_name"), &output_name_);
@@ -349,6 +354,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       global_lal_hotspot_mode_,
       global_lal_affine_weight_,
       global_lal_macro_boundary_mode_,
+      global_min_iterations_,
       save_intermediate_result_,
       output_name_,
       visualization_dir_,
@@ -554,6 +560,7 @@ bool Dali::RunGlobalPlacementStage() {
     gb_placer_.SetLalHotspotMode(global_lal_hotspot_mode_);
     gb_placer_.SetLalAffineScalingWeight(global_lal_affine_weight_);
     gb_placer_.SetLalMacroBoundaryMode(global_lal_macro_boundary_mode_);
+    gb_placer_.SetMinIteration(global_min_iterations_);
     if (!gb_placer_.StartPlacement()) {
       LOG(error) << "Global placement failed\n";
       return false;

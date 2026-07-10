@@ -41,6 +41,11 @@ void GlobalPlacer::SetMaxIteration(int max_iter) {
   max_iter_ = max_iter;
 }
 
+void GlobalPlacer::SetMinIteration(int min_iter) {
+  DaliExpects(min_iter >= 0, "negative number of iterations?");
+  min_iter_ = min_iter;
+}
+
 /****
  * @brief Set an internal boolean variable to save or not save intermediate
  * results.
@@ -302,6 +307,8 @@ bool GlobalPlacer::IsSeriesConverged(std::vector<double>& series,
  *    less than 8%
  * ****/
 bool GlobalPlacer::IsPlacementConverged() {
+  if (cur_iter_ + 1 < min_iter_) return false;
+
   bool res;
   auto& lower_bound_hpwl = optimizer_->GetHpwls();
   auto& upper_bound_hpwl = legalizer_->GetHpwls();

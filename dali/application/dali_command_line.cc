@@ -80,6 +80,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -global_lal_hotspot <area/overflow/overflow_ratio>\n"
       << "  -global_lal_affine_weight <0..1>           blend between packed and affine LAL spreading, default 0.65\n"
       << "  -global_lal_macro_boundary <off/balanced/preferred>\n"
+      << "  -global_min_iterations <n>                 minimum global-placement iterations, default 100\n"
       << "  -save_intermediate_result                  dump placement snapshots for visualization\n"
       << "  -num_threads <n>                           number of OpenMP threads to use\n"
       << "  -v                                         verbosity_level (optional, 0-5, default 1)\n"
@@ -270,6 +271,15 @@ bool ParseDaliCommandLine(int argc, char* argv[],
         return false;
       }
       config_set_string("dali.global_lal_macro_boundary", value.c_str());
+    } else if (arg == "-global_min_iterations") {
+      int global_min_iterations = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseInt(value, &global_min_iterations) ||
+          global_min_iterations < 0) {
+        error_output << "Invalid global minimum iteration count!\n";
+        return false;
+      }
+      config_set_int("dali.global_min_iterations", global_min_iterations);
     } else if (arg == "-save_intermediate_result") {
       EnableConfigFlag("dali.save_intermediate_result");
     } else if (arg == "-max_row_width") {
