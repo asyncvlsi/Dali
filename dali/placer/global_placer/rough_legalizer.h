@@ -140,6 +140,7 @@ class LookAheadLegalizer : public RoughLegalizer {
   std::multiset<GridBinCluster, std::greater<>>::iterator
   SelectHotspotCluster();
   double HotspotScore(const GridBinCluster& cluster) const;
+  static const char* HotspotModeName(GlobalLalHotspotMode mode);
   void UpdateLargestCluster();
   uint32_t LookUpWhiteSpace(GridBinIndex const& ll_index,
                             GridBinIndex const& ur_index);
@@ -156,6 +157,21 @@ class LookAheadLegalizer : public RoughLegalizer {
   void Close() override;
 
  private:
+  /** Debug summary for the LAL hotspot chosen in the current spreading step. */
+  struct HotspotDebugInfo {
+    int bin_count = 0;
+    unsigned long long component_area = 0;
+    unsigned long long white_space = 0;
+    double overflow = 0;
+    double overflow_ratio = 0;
+    double score = 0;
+    GridBinIndex cluster_ll;
+    GridBinIndex cluster_ur;
+    GridBinIndex region_ll;
+    GridBinIndex region_ur;
+    double region_filling_rate = 0;
+  };
+
   int target_component_count_per_bin_ = 30;
   int active_target_component_count_per_bin_ = 0;
   int cluster_upper_size = 3;
@@ -183,6 +199,9 @@ class LookAheadLegalizer : public RoughLegalizer {
   double last_peak_bin_density_ = 0.0;
   double last_hpwl_before_ = 0.0;
   double last_hpwl_after_ = 0.0;
+  int last_hotspot_count_ = 0;
+  double last_max_hotspot_overflow_ = 0.0;
+  HotspotDebugInfo last_hotspot_debug_;
 };
 
 }  // namespace dali

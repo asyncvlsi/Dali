@@ -594,6 +594,18 @@ double LookAheadLegalizer::HotspotScore(const GridBinCluster& cluster) const {
   return component_area;
 }
 
+const char* LookAheadLegalizer::HotspotModeName(GlobalLalHotspotMode mode) {
+  switch (mode) {
+    case GlobalLalHotspotMode::kComponentArea:
+      return "area";
+    case GlobalLalHotspotMode::kOverflow:
+      return "overflow";
+    case GlobalLalHotspotMode::kOverflowRatio:
+      return "overflow_ratio";
+  }
+  return "area";
+}
+
 void LookAheadLegalizer::UpdateLargestCluster() {
   if (cluster_set.empty()) return;
 
@@ -801,12 +813,28 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
   // initialize a box with y cut-direction
   // identify the bounding box of the initial cluster
   auto it = SelectHotspotCluster();
+  last_hotspot_debug_ = HotspotDebugInfo();
+  last_hotspot_debug_.bin_count = static_cast<int>(it->bin_set.size());
+  last_hotspot_debug_.component_area = it->total_component_area;
+  last_hotspot_debug_.white_space = it->total_white_space;
+  last_hotspot_debug_.overflow =
+      static_cast<double>(it->total_component_area) -
+      placement_density_ * static_cast<double>(it->total_white_space);
+  last_hotspot_debug_.overflow_ratio =
+      it->total_white_space == 0
+          ? 0
+          : static_cast<double>(it->total_component_area) /
+                    static_cast<double>(it->total_white_space) -
+                placement_density_;
+  last_hotspot_debug_.score = HotspotScore(*it);
   for (auto& index : it->bin_set) {
     R.ll_index.x = std::min(R.ll_index.x, index.x);
     R.ur_index.x = std::max(R.ur_index.x, index.x);
     R.ll_index.y = std::min(R.ll_index.y, index.y);
     R.ur_index.y = std::max(R.ur_index.y, index.y);
   }
+  last_hotspot_debug_.cluster_ll = R.ll_index;
+  last_hotspot_debug_.cluster_ur = R.ur_index;
   while (true) {
     // update component area, white space, and thus filling rate to determine
     // whether to expand this box or not
@@ -831,6 +859,9 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
   R.total_white_space = LookUpWhiteSpace(R.ll_index, R.ur_index);
   R.UpdateComponentAreaWhiteSpaceFillingRate(grid_bin_white_space_LUT,
                                              grid_bin_mesh);
+  last_hotspot_debug_.region_ll = R.ll_index;
+  last_hotspot_debug_.region_ur = R.ur_index;
+  last_hotspot_debug_.region_filling_rate = R.filling_rate;
   R.UpdateComponentList(grid_bin_mesh);
   R.ll_point.x = grid_bin_mesh[R.ll_index.x][R.ll_index.y].left;
   R.ll_point.y = grid_bin_mesh[R.ll_index.x][R.ll_index.y].bottom;
@@ -850,6 +881,22 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
     R.UpdateObsBoundary();
   }
   queue_box_bin.push(R);
+  ++last_hotspot_count_;
+  last_max_hotspot_overflow_ =
+      std::max(last_max_hotspot_overflow_, last_hotspot_debug_.overflow);
+  LOG(debug) << "    LAL hotspot " << last_hotspot_count_ << " (mode "
+             << HotspotModeName(hotspot_mode_) << "): bins "
+             << last_hotspot_debug_.bin_count << ", component area "
+             << last_hotspot_debug_.component_area << ", whitespace "
+             << last_hotspot_debug_.white_space << ", overflow "
+             << last_hotspot_debug_.overflow << ", overflow ratio "
+             << last_hotspot_debug_.overflow_ratio << ", score "
+             << last_hotspot_debug_.score << "\n"
+             << "      cluster bins: " << last_hotspot_debug_.cluster_ll
+             << "to " << last_hotspot_debug_.cluster_ur << "\n"
+             << "      spreading region bins: " << last_hotspot_debug_.region_ll
+             << "to " << last_hotspot_debug_.region_ur << ", filling rate "
+             << last_hotspot_debug_.region_filling_rate << "\n";
   // LOG(info)   << "Bounding box total white space: " <<
   // queue_box_bin.front().total_white_space << "\n"; LOG(info) <<
   // "Bounding box total component area: " <<
@@ -1187,6 +1234,8 @@ double LookAheadLegalizer::RemoveComponentOverlap() {
   UpdateGridBinState();
   int overfilled_bin_count_before = last_overfilled_bin_count_;
   double peak_bin_density_before = last_peak_bin_density_;
+  last_hotspot_count_ = 0;
+  last_max_hotspot_overflow_ = 0.0;
   UpdateClusterList();
   do {
     UpdateLargestCluster();
@@ -1231,6 +1280,8 @@ double LookAheadLegalizer::RemoveComponentOverlap() {
   LOG(info) << "    LAL density before/after: " << overfilled_bin_count_before
             << "/" << last_overfilled_bin_count_ << " bins over target, peak "
             << peak_bin_density_before << "/" << last_peak_bin_density_
+            << ", hotspots: " << last_hotspot_count_
+            << ", max hotspot overflow: " << last_max_hotspot_overflow_
             << ", HPWL delta: " << last_hpwl_after_ - last_hpwl_before_ << "\n";
 
   upper_bound_hpwl_.push_back(last_hpwl_after_);
