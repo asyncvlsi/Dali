@@ -28,6 +28,7 @@
 #include <string>
 #include <utility>
 
+#include "dali/common/elapsed_time.h"
 #include "dali/common/git_version.h"
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
@@ -151,6 +152,18 @@ static GlobalLalMacroBoundaryMode ParseGlobalLalMacroBoundaryMode(
   return GlobalLalMacroBoundaryMode::kOff;
 }
 
+static StandardCellLegalizerCostMode ParseStandardCellLegalizerCostMode(
+    const std::string& name) {
+  if (name == "displacement") {
+    return StandardCellLegalizerCostMode::kDisplacement;
+  }
+  if (name == "hpwl") {
+    return StandardCellLegalizerCostMode::kHpwl;
+  }
+  std::cout << "Ignore unknown standard_cell_legalizer_cost: " << name << "\n";
+  return StandardCellLegalizerCostMode::kDisplacement;
+}
+
 Dali::Dali(phydb::PhyDB* phy_db_ptr, const std::string& severity_level,
            const std::string& log_file_name) {
   phy_db_ptr_ = phy_db_ptr;
@@ -211,6 +224,11 @@ void Dali::ShowParamsList() {
             << "  global_lal_macro_boundary: "
             << static_cast<int>(global_lal_macro_boundary_mode_) << "\n"
             << "  global_min_iterations: " << global_min_iterations_ << "\n"
+            << "  standard_cell_legalizer_cost: "
+            << static_cast<int>(standard_cell_legalizer_cost_mode_) << "\n"
+            << "  detailed_max_rounds: " << detailed_max_rounds_ << "\n"
+            << "  detailed_max_move_candidates: "
+            << detailed_max_move_candidates_ << "\n"
             << "  save_intermediate_result: " << save_intermediate_result_
             << "\n"
             << "  output_name: " << output_name_ << "\n"
@@ -305,6 +323,19 @@ void Dali::LoadParamsFromConfig() {
                 &global_min_iterations_);
   DaliExpects(global_min_iterations_ >= 0,
               "global_min_iterations must be non-negative");
+  param_name = ConfigName(prefix_, "standard_cell_legalizer_cost");
+  if (ConfigExists(param_name)) {
+    standard_cell_legalizer_cost_mode_ = ParseStandardCellLegalizerCostMode(
+        config_get_string(param_name.c_str()));
+  }
+  LoadIntConfig(ConfigName(prefix_, "detailed_max_rounds"),
+                &detailed_max_rounds_);
+  DaliExpects(detailed_max_rounds_ >= 0,
+              "detailed_max_rounds must be non-negative");
+  LoadIntConfig(ConfigName(prefix_, "detailed_max_move_candidates"),
+                &detailed_max_move_candidates_);
+  DaliExpects(detailed_max_move_candidates_ >= 0,
+              "detailed_max_move_candidates must be non-negative");
   LoadBoolConfig(ConfigName(prefix_, "save_intermediate_result"),
                  &save_intermediate_result_);
   LoadStringConfig(ConfigName(prefix_, "output_name"), &output_name_);
@@ -355,6 +386,9 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       global_lal_affine_weight_,
       global_lal_macro_boundary_mode_,
       global_min_iterations_,
+      standard_cell_legalizer_cost_mode_,
+      detailed_max_rounds_,
+      detailed_max_move_candidates_,
       save_intermediate_result_,
       output_name_,
       visualization_dir_,
@@ -536,6 +570,8 @@ bool Dali::ShouldRunMovableCellLegalization() const {
 }
 
 bool Dali::RunGlobalPlacementStage() {
+  ElapsedTime stage_timer;
+  stage_timer.RecordStartTime();
   gb_placer_.SetCircuit(&circuit_);
   gb_placer_.SetNumThreads(num_threads_);
   gb_placer_.SetShouldSaveIntermediateResult(save_intermediate_result_);
@@ -571,6 +607,11 @@ bool Dali::RunGlobalPlacementStage() {
   }
   WriteVisualizationSnapshot("global_placement.final", "After Global Placement",
                              "global_placement");
+  stage_timer.RecordEndTime();
+  RecordPlacementMetric("time.global_placement.wall_s",
+                        stage_timer.GetWallTime());
+  RecordPlacementMetric("time.global_placement.cpu_s",
+                        stage_timer.GetCpuTime());
   return true;
 }
 
@@ -585,6 +626,9 @@ bool Dali::RunStandardCellLegalization() {
   Placer* legalizer_for_detailed_placement = &standard_cell_legalizer_;
   standard_cell_legalizer_.CopyPlacementContextFrom(&gb_placer_);
   standard_cell_legalizer_.SetDisableCellFlip(disable_cell_flip_);
+  standard_cell_legalizer_.SetCostMode(standard_cell_legalizer_cost_mode_);
+  ElapsedTime legalization_timer;
+  legalization_timer.RecordStartTime();
   if (!standard_cell_legalizer_.StartPlacement()) {
     LOG(warning) << "Standard-cell legalizer failed; trying "
                     "ExtendedTetrisLegalizer baseline\n";
@@ -596,7 +640,12 @@ bool Dali::RunStandardCellLegalization() {
       return false;
     }
   }
+  legalization_timer.RecordEndTime();
   RecordPlacementMetric("legalization", circuit_.WeightedHPWL());
+  RecordPlacementMetric("time.legalization.wall_s",
+                        legalization_timer.GetWallTime());
+  RecordPlacementMetric("time.legalization.cpu_s",
+                        legalization_timer.GetCpuTime());
   detailed_placer_.CopyPlacementContextFrom(legalizer_for_detailed_placement);
   if (!RunDetailedPlacement()) {
     return false;
@@ -616,14 +665,23 @@ bool Dali::RunDetailedPlacement() {
                                    "detailed_placement", subgroup, iteration);
         FlushVisualizationEvents();
       });
+  detailed_placer_.SetMaxOptimizationRounds(detailed_max_rounds_);
+  detailed_placer_.SetMaxMoveCandidatesPerRound(detailed_max_move_candidates_);
   WriteVisualizationSnapshot("detailed_placement.start",
                              "Before Detailed Placement", "detailed_placement");
   FlushVisualizationEvents();
+  ElapsedTime stage_timer;
+  stage_timer.RecordStartTime();
   if (!detailed_placer_.StartPlacement()) {
     LOG(error) << "Detailed placement failed\n";
     return false;
   }
+  stage_timer.RecordEndTime();
   RecordPlacementMetric("detailed_placement", circuit_.WeightedHPWL());
+  RecordPlacementMetric("time.detailed_placement.wall_s",
+                        stage_timer.GetWallTime());
+  RecordPlacementMetric("time.detailed_placement.cpu_s",
+                        stage_timer.GetCpuTime());
   WriteVisualizationSnapshot("detailed_placement.final",
                              "After Detailed Placement", "detailed_placement");
   return true;

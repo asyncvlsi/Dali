@@ -32,6 +32,12 @@ namespace dali {
 
 class Net;
 
+/** Cost model used when assigning standard cells to legal row segments. */
+enum class StandardCellLegalizerCostMode {
+  kDisplacement,
+  kHpwl,
+};
+
 /**
  * Standard-cell legalizer built around row search and Abacus row placement.
  *
@@ -46,6 +52,9 @@ class StandardCellLegalizer : public Placer {
 
   /** Disable orientation flipping during legalization. */
   void SetDisableCellFlip(bool disable_cell_flip);
+
+  /** Select the candidate row-segment cost model. */
+  void SetCostMode(StandardCellLegalizerCostMode cost_mode);
 
   /** Run standard-cell legalization. */
   bool StartPlacement() override;
@@ -111,6 +120,8 @@ class StandardCellLegalizer : public Placer {
   std::vector<SegmentAssignment> segment_assignments_;
   std::vector<std::vector<int>> assignment_indices_by_row_;
   bool disable_cell_flip_ = false;
+  StandardCellLegalizerCostMode cost_mode_ =
+      StandardCellLegalizerCostMode::kHpwl;
 
   static constexpr int kCandidateSegmentCount = 4;
   // Keep displacement as a small tie-breaker after the incident-net HPWL delta.

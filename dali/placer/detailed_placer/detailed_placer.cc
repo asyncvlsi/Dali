@@ -27,6 +27,19 @@ void DetailedPlacer::SetSnapshotCallback(SnapshotCallback snapshot_callback) {
   snapshot_callback_ = std::move(snapshot_callback);
 }
 
+void DetailedPlacer::SetMaxOptimizationRounds(int max_optimization_rounds) {
+  DaliExpects(max_optimization_rounds >= 0,
+              "Detailed placement maximum rounds must be non-negative");
+  max_optimization_rounds_ = max_optimization_rounds;
+}
+
+void DetailedPlacer::SetMaxMoveCandidatesPerRound(
+    int max_move_candidates_per_round) {
+  DaliExpects(max_move_candidates_per_round >= 0,
+              "Detailed placement move candidate cap must be non-negative");
+  max_move_candidates_per_round_ = max_move_candidates_per_round;
+}
+
 double DetailedPlacer::WindowWireLengthCost(
     const std::vector<Component*>& components, int start, int window_size) {
   std::unordered_set<int> net_ids;
@@ -655,8 +668,9 @@ int DetailedPlacer::RunOptimalRegionMoves() {
             [](const MoveCandidate& lhs, const MoveCandidate& rhs) {
               return lhs.current_distance > rhs.current_distance;
             });
-  if (move_candidates.size() > kMaxMoveCandidatesPerRound) {
-    move_candidates.resize(kMaxMoveCandidatesPerRound);
+  if (move_candidates.size() >
+      static_cast<size_t>(max_move_candidates_per_round_)) {
+    move_candidates.resize(max_move_candidates_per_round_);
   }
 
   int accepted = 0;
@@ -819,7 +833,7 @@ bool DetailedPlacer::StartPlacement() {
 
   double hpwl_before = WeightedHPWL();
   double previous_hpwl = hpwl_before;
-  for (int round = 0; round < kMaxOptimizationRounds; ++round) {
+  for (int round = 0; round < max_optimization_rounds_; ++round) {
     int accepted_clusters_before = RunSingleSegmentClustering();
     EmitSnapshot("round_" + std::to_string(round) + ".after_initial_clusters",
                  "Detailed Placement Round " + std::to_string(round) +

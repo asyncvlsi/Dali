@@ -52,6 +52,10 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
             dali::GlobalLalHotspotMode::kComponentArea);
   EXPECT_DOUBLE_EQ(options.global_lal_affine_weight, 0.65);
   EXPECT_EQ(options.global_min_iterations, 10);
+  EXPECT_EQ(options.standard_cell_legalizer_cost_mode,
+            dali::StandardCellLegalizerCostMode::kDisplacement);
+  EXPECT_EQ(options.detailed_max_rounds, 1);
+  EXPECT_EQ(options.detailed_max_move_candidates, 1000);
   EXPECT_FALSE(options.save_intermediate_result);
   EXPECT_EQ(options.output_name, "dali_out");
   EXPECT_EQ(options.visualization_dir, "");
@@ -84,6 +88,9 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_string("dali.global_lal_hotspot", "overflow_ratio");
   config_set_real("dali.global_lal_affine_weight", 0.8);
   config_set_int("dali.global_min_iterations", 25);
+  config_set_string("dali.standard_cell_legalizer_cost", "hpwl");
+  config_set_int("dali.detailed_max_rounds", 2);
+  config_set_int("dali.detailed_max_move_candidates", 500);
   config_set_int("dali.save_intermediate_result", 1);
   config_set_string("dali.output_name", "placed");
   config_set_string("dali.visualization_dir", "dali_snapshots");
@@ -117,6 +124,10 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
             dali::GlobalLalHotspotMode::kOverflowRatio);
   EXPECT_DOUBLE_EQ(options.global_lal_affine_weight, 0.8);
   EXPECT_EQ(options.global_min_iterations, 25);
+  EXPECT_EQ(options.standard_cell_legalizer_cost_mode,
+            dali::StandardCellLegalizerCostMode::kHpwl);
+  EXPECT_EQ(options.detailed_max_rounds, 2);
+  EXPECT_EQ(options.detailed_max_move_candidates, 500);
   EXPECT_TRUE(options.save_intermediate_result);
   EXPECT_EQ(options.output_name, "placed");
   EXPECT_EQ(options.visualization_dir, "dali_snapshots");

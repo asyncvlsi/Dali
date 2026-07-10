@@ -40,6 +40,12 @@ class DetailedPlacer : public Placer {
    */
   void SetSnapshotCallback(SnapshotCallback snapshot_callback);
 
+  /** Set the maximum number of detailed-placement optimization rounds. */
+  void SetMaxOptimizationRounds(int max_optimization_rounds);
+
+  /** Set how many optimal-region move candidates are evaluated per round. */
+  void SetMaxMoveCandidatesPerRound(int max_move_candidates_per_round);
+
   bool StartPlacement() override;
 
  private:
@@ -47,8 +53,8 @@ class DetailedPlacer : public Placer {
   static constexpr int kMaxOptimalRegionRows = 4;
   static constexpr int kMaxCandidatesPerRow = 3;
   static constexpr int kMaxSegmentsPerRow = 3;
-  static constexpr int kMaxMoveCandidatesPerRound = 10000;
-  static constexpr int kMaxOptimizationRounds = 5;
+  static constexpr int kDefaultMaxMoveCandidatesPerRound = 10000;
+  static constexpr int kDefaultMaxOptimizationRounds = 5;
   static constexpr double kMinRelativeRoundImprovement = 0.001;
 
   struct OptimalRegion {
@@ -159,6 +165,8 @@ class DetailedPlacer : public Placer {
   std::vector<GeneralRow*> component_rows_;
   std::vector<GeneralRowSegment*> component_segments_;
   SnapshotCallback snapshot_callback_;
+  int max_move_candidates_per_round_ = kDefaultMaxMoveCandidatesPerRound;
+  int max_optimization_rounds_ = kDefaultMaxOptimizationRounds;
 };
 
 }  // namespace dali

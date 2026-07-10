@@ -72,6 +72,10 @@ class Dali {
     GlobalLalMacroBoundaryMode global_lal_macro_boundary_mode =
         GlobalLalMacroBoundaryMode::kOff;
     int global_min_iterations = 10;
+    StandardCellLegalizerCostMode standard_cell_legalizer_cost_mode =
+        StandardCellLegalizerCostMode::kDisplacement;
+    int detailed_max_rounds = 1;
+    int detailed_max_move_candidates = 1000;
     bool save_intermediate_result = false;
     std::string output_name = "dali_out";
     std::string visualization_dir;
@@ -186,6 +190,10 @@ class Dali {
   GlobalLalMacroBoundaryMode global_lal_macro_boundary_mode_ =
       GlobalLalMacroBoundaryMode::kOff;
   int global_min_iterations_ = 10;
+  StandardCellLegalizerCostMode standard_cell_legalizer_cost_mode_ =
+      StandardCellLegalizerCostMode::kDisplacement;
+  int detailed_max_rounds_ = 1;
+  int detailed_max_move_candidates_ = 1000;
   bool save_intermediate_result_ = false;
   std::string output_name_ = "dali_out";
   std::string visualization_dir_;

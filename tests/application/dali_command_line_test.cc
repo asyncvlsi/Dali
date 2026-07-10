@@ -87,6 +87,12 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "0.8",
                      "-global_min_iterations",
                      "25",
+                     "-standard_cell_legalizer_cost",
+                     "hpwl",
+                     "-detailed_max_rounds",
+                     "2",
+                     "-detailed_max_move_candidates",
+                     "500",
                      "-save_intermediate_result",
                      "-disable_detailed_place",
                      "-disable_io_place",
@@ -107,6 +113,9 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_STREQ(config_get_string("dali.global_lal_hotspot"), "overflow");
   EXPECT_DOUBLE_EQ(config_get_real("dali.global_lal_affine_weight"), 0.8);
   EXPECT_EQ(config_get_int("dali.global_min_iterations"), 25);
+  EXPECT_STREQ(config_get_string("dali.standard_cell_legalizer_cost"), "hpwl");
+  EXPECT_EQ(config_get_int("dali.detailed_max_rounds"), 2);
+  EXPECT_EQ(config_get_int("dali.detailed_max_move_candidates"), 500);
   EXPECT_EQ(config_get_int("dali.save_intermediate_result"), 1);
   EXPECT_EQ(config_get_int("dali.disable_detailed_place"), 1);
   EXPECT_EQ(config_get_int("dali.disable_io_place"), 1);
@@ -160,6 +169,15 @@ TEST_F(DaliCommandLineTest, RejectsOutOfRangeOptions) {
                      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-global_min_iterations", "-1"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-standard_cell_legalizer_cost", "wirelengthish"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-detailed_max_rounds", "-1"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-detailed_max_move_candidates", "-1"},
                      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-gui_pause", "sometimes"},

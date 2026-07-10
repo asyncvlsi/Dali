@@ -81,6 +81,9 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -global_lal_affine_weight <0..1>           blend between packed and affine LAL spreading, default 0.65\n"
       << "  -global_lal_macro_boundary <off/balanced/preferred>\n"
       << "  -global_min_iterations <n>                 minimum global-placement iterations, default 10\n"
+      << "  -standard_cell_legalizer_cost <displacement/hpwl>  default displacement\n"
+      << "  -detailed_max_rounds <n>                   detailed-placement optimization rounds, default 1\n"
+      << "  -detailed_max_move_candidates <n>          optimal-region move candidates per round, default 1000\n"
       << "  -save_intermediate_result                  dump placement snapshots for visualization\n"
       << "  -num_threads <n>                           number of OpenMP threads to use\n"
       << "  -v                                         verbosity_level (optional, 0-5, default 1)\n"
@@ -280,6 +283,35 @@ bool ParseDaliCommandLine(int argc, char* argv[],
         return false;
       }
       config_set_int("dali.global_min_iterations", global_min_iterations);
+    } else if (arg == "-standard_cell_legalizer_cost") {
+      if (!TryGetValue(argc, argv, &i, &value)) {
+        error_output << "Invalid standard-cell legalizer cost mode!\n";
+        return false;
+      }
+      if (value != "hpwl" && value != "displacement") {
+        error_output << "Invalid standard-cell legalizer cost mode!\n";
+        return false;
+      }
+      config_set_string("dali.standard_cell_legalizer_cost", value.c_str());
+    } else if (arg == "-detailed_max_rounds") {
+      int detailed_max_rounds = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseInt(value, &detailed_max_rounds) ||
+          detailed_max_rounds < 0) {
+        error_output << "Invalid detailed placement maximum round count!\n";
+        return false;
+      }
+      config_set_int("dali.detailed_max_rounds", detailed_max_rounds);
+    } else if (arg == "-detailed_max_move_candidates") {
+      int detailed_max_move_candidates = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseInt(value, &detailed_max_move_candidates) ||
+          detailed_max_move_candidates < 0) {
+        error_output << "Invalid detailed placement move candidate count!\n";
+        return false;
+      }
+      config_set_int("dali.detailed_max_move_candidates",
+                     detailed_max_move_candidates);
     } else if (arg == "-save_intermediate_result") {
       EnableConfigFlag("dali.save_intermediate_result");
     } else if (arg == "-max_row_width") {

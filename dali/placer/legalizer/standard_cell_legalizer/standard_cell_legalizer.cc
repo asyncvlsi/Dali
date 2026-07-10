@@ -34,6 +34,11 @@ void StandardCellLegalizer::SetDisableCellFlip(bool disable_cell_flip) {
   disable_cell_flip_ = disable_cell_flip;
 }
 
+void StandardCellLegalizer::SetCostMode(
+    StandardCellLegalizerCostMode cost_mode) {
+  cost_mode_ = cost_mode;
+}
+
 bool StandardCellLegalizer::StartPlacement() {
   PrintStartStatement("standard-cell legalization");
 
@@ -279,6 +284,11 @@ bool StandardCellLegalizer::EvaluateCandidate(
   double displacement_cost =
       (*x_displacement - assignment.x_displacement) * ckt_ptr_->GridValueX() +
       displacement_y * ckt_ptr_->GridValueY();
+  if (cost_mode_ == StandardCellLegalizerCostMode::kDisplacement) {
+    *incremental_cost = displacement_cost;
+    return true;
+  }
+
   double wire_length_delta =
       ComponentWireLengthDelta(component, component_legal_lx, row.ly,
                                OrientForRow(assignment.row_index));
