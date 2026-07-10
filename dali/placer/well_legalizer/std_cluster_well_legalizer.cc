@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 #include "dali/common/helper.h"
 #include "dali/common/placement_metrics.h"
@@ -546,9 +547,14 @@ bool StdClusterWellLegalizer::ComponentClusteringLoose() {
   int step = 50;
   int count = 0;
   bool res = true;
-  for (auto& col : col_list_) {
+  int failed_stripe_count = 0;
+  for (int col_id = 0; col_id < static_cast<int>(col_list_.size());
+       ++col_id) {
+    auto& col = col_list_[col_id];
     bool is_success = true;
-    for (auto& stripe : col.stripe_list_) {
+    for (int stripe_id = 0;
+         stripe_id < static_cast<int>(col.stripe_list_.size()); ++stripe_id) {
+      auto& stripe = col.stripe_list_[stripe_id];
       int i = 0;
       bool is_from_bottom = true;
       for (i = 0; i < max_iter_; ++i) {
@@ -566,6 +572,10 @@ bool StdClusterWellLegalizer::ComponentClusteringLoose() {
         }
       }
       res = res && is_success;
+      if (!is_success) {
+        ++failed_stripe_count;
+        LogStripeLegalizationFailure(col, stripe, col_id, stripe_id);
+      }
       /*if (is_success) {
         LOG(info)  <<"stripe legalization success, %d\n", i);
       } else {
@@ -589,7 +599,53 @@ bool StdClusterWellLegalizer::ComponentClusteringLoose() {
     }
   }
 
+  LogComponentClusteringSummary(failed_stripe_count);
   return res;
+}
+
+void StdClusterWellLegalizer::LogStripeLegalizationFailure(
+    const ClusterStripe& col, const Stripe& stripe, int column_index,
+    int stripe_index) const {
+  int lowest_row_y = std::numeric_limits<int>::max();
+  int highest_row_y = std::numeric_limits<int>::min();
+  for (const auto& row : stripe.gridded_rows_) {
+    lowest_row_y = std::min(lowest_row_y, row.LLY());
+    highest_row_y = std::max(highest_row_y, row.URY());
+  }
+  if (stripe.gridded_rows_.empty()) {
+    lowest_row_y = stripe.LLY();
+    highest_row_y = stripe.LLY();
+  }
+
+  int lower_overflow = std::max(0, stripe.LLY() - lowest_row_y);
+  int upper_overflow = std::max(0, highest_row_y - stripe.URY());
+  int height_overflow = std::max(0, stripe.used_height_ - stripe.Height());
+  double grid_y = ckt_ptr_->GridValueY();
+
+  LOG(warning) << "  stripe legalization failed:"
+               << " col=" << column_index << " stripe=" << stripe_index
+               << " col_x=[" << col.LLX() << ", " << col.URX() << ")"
+               << " stripe_box=[" << stripe.LLX() << ", " << stripe.LLY()
+               << "]-[" << stripe.URX() << ", " << stripe.URY() << ")"
+               << " components=" << stripe.component_ptrs_vec_.size()
+               << " rows=" << stripe.gridded_rows_.size()
+               << " used_height=" << stripe.used_height_
+               << " capacity_height=" << stripe.Height()
+               << " overflow_height=" << height_overflow
+               << " row_y=[" << lowest_row_y << ", " << highest_row_y << ")"
+               << " lower_overflow=" << lower_overflow
+               << " upper_overflow=" << upper_overflow << " grid units, "
+               << "overflow_height=" << height_overflow * grid_y << "um\n";
+}
+
+void StdClusterWellLegalizer::LogComponentClusteringSummary(
+    int failed_stripe_count) const {
+  if (failed_stripe_count == 0) {
+    LOG(info) << "  component clustering: all stripes legalized\n";
+    return;
+  }
+  LOG(warning) << "  component clustering failed in " << failed_stripe_count
+               << " stripe(s)\n";
 }
 
 bool StdClusterWellLegalizer::ComponentClusteringCompact() {
@@ -1009,6 +1065,20 @@ bool StdClusterWellLegalizer::RunMovableCellLegalizationStages() {
   return is_success;
 }
 
+bool StdClusterWellLegalizer::RetryMovableCellLegalizationWithScavenging() {
+  if (stripe_mode_ == int(DefaultPartitionMode::SCAVENGE)) {
+    return false;
+  }
+  LOG(warning)
+      << "Strict well legalization failed; retry with scavenge mode\n";
+  int previous_stripe_mode = stripe_mode_;
+  stripe_mode_ = int(DefaultPartitionMode::SCAVENGE);
+  InitializeWellLegalizer();
+  bool is_success = RunMovableCellLegalizationStages();
+  stripe_mode_ = previous_stripe_mode;
+  return is_success;
+}
+
 void StdClusterWellLegalizer::RunWellTapStage() {
   if (disable_welltap_) {
     LOG(info) << "Skip inserting well tap cells\n";
@@ -1039,6 +1109,9 @@ bool StdClusterWellLegalizer::StartPlacement() {
 
   InitializeWellLegalizer();
   bool is_success = RunMovableCellLegalizationStages();
+  if (!is_success) {
+    is_success = RetryMovableCellLegalizationWithScavenging();
+  }
   RunPhysicalCompletionStages();
 
   PrintEndStatement("Standard Cluster Well Legalization", is_success);
@@ -1159,14 +1232,16 @@ void StdClusterWellLegalizer::GenPPNP(const std::string& name_of_file) {
       for (int i = 0; i < rect_count; ++i) {
         ly = pn_edge_list[i];
         uy = pn_edge_list[i + 1];
-        if (is_p_well_rect) {
-          ostnp << lx + adjust_width << "\t" << ux - adjust_width << "\t"
-                << ux - adjust_width << "\t" << lx + adjust_width << "\t" << ly
-                << "\t" << ly << "\t" << uy << "\t" << uy << "\n";
-        } else {
-          ostpp << lx + adjust_width << "\t" << ux - adjust_width << "\t"
-                << ux - adjust_width << "\t" << lx + adjust_width << "\t" << ly
-                << "\t" << ly << "\t" << uy << "\t" << uy << "\n";
+        if (uy > ly && ux > lx + 2 * adjust_width) {
+          if (is_p_well_rect) {
+            ostnp << lx + adjust_width << "\t" << ux - adjust_width << "\t"
+                  << ux - adjust_width << "\t" << lx + adjust_width << "\t"
+                  << ly << "\t" << ly << "\t" << uy << "\t" << uy << "\n";
+          } else {
+            ostpp << lx + adjust_width << "\t" << ux - adjust_width << "\t"
+                  << ux - adjust_width << "\t" << lx + adjust_width << "\t"
+                  << ly << "\t" << ly << "\t" << uy << "\t" << uy << "\n";
+          }
         }
         is_p_well_rect = !is_p_well_rect;
       }
@@ -1437,6 +1512,10 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB* phydb_ptr) {
       for (int i = 0; i < rect_count; ++i) {
         ly = pn_edge_list[i];
         uy = pn_edge_list[i + 1];
+        if (uy <= ly || ux <= lx + 2 * adjust_width) {
+          is_p_well_rect = !is_p_well_rect;
+          continue;
+        }
         std::string signal_name("#");
         std::string layer_name;
         if (is_p_well_rect) {

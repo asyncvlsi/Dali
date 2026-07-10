@@ -135,6 +135,15 @@ class StdClusterWellLegalizer : public Placer {
   void RunWellTapStage();
   void RunEndCapStage();
   void RunPhysicalCompletionStages();
+  /** Retry strict partitioning with last-column scavenging when needed. */
+  bool RetryMovableCellLegalizationWithScavenging();
+  /** Log why a stripe could not be legalized inside its assigned whitespace. */
+  void LogStripeLegalizationFailure(const ClusterStripe& col,
+                                    const Stripe& stripe,
+                                    int column_index,
+                                    int stripe_index) const;
+  /** Log a summary after component clustering to make failures debuggable. */
+  void LogComponentClusteringSummary(int failed_stripe_count) const;
 
   bool is_first_row_orient_N_ = true;
 
