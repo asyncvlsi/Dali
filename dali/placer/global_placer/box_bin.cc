@@ -687,8 +687,8 @@ bool BoxBin::UpdateCutPointComponentListsLeaf(int& cut_line_w,
     cut_ll_point.y = ll_point.y;
     node = component_ptrs[lower_area_split_index];
     cut_line = node->X();
-    cut_ll_point.y = cut_line;
-    cut_ur_point.y = cut_line;
+    cut_ll_point.x = cut_line;
+    cut_ur_point.x = cut_line;
     /* finally, the cut-line for white space is proportional to the
      * total_component_area_low */
     cut_line_w = left + (int)((double(total_component_area_low) /
