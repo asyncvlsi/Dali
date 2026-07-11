@@ -27,7 +27,7 @@
 #include <climits>
 
 #include "dali/placer/well_legalizer/component_helper.h"
-#include "dali/placer/well_legalizer/legalizer_component_aux.h"
+#include "dali/placer/well_legalizer/component_legalization_state.h"
 #include "dali/placer/well_legalizer/stripe_helper.h"
 
 namespace dali {
@@ -586,7 +586,7 @@ void Stripe::UpdateSubCellLocs(
     Component* component_ptr = var.component_region.component;
     if (component_ptr == nullptr) continue;  // skip dummy cells
     auto* aux_ptr =
-        static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
+        static_cast<ComponentLegalizationState*>(component_ptr->AuxPtr());
     aux_ptr->SetSubCellLoc(var.component_region.region_id, var.Solution(),
                            var.SegmentWeight());
   }
@@ -614,7 +614,8 @@ void Stripe::ComputeAverageLoc() {
 #pragma omp parallel for
   for (size_t i = 0; i < sz; ++i) {
     Component* component_ptr = component_ptrs_vec_[i];
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
+    auto aux_ptr =
+        static_cast<ComponentLegalizationState*>(component_ptr->AuxPtr());
     aux_ptr->ComputeAverageLoc();
     component_ptr->SetLLX(aux_ptr->AverageLoc());
   }
@@ -626,7 +627,8 @@ void Stripe::ReportIterativeStatus(int i) {
   max_discrepancy_ = 0;
   for (auto& component_ptr : component_ptrs_vec_) {
     // compute displacement from init_x to average_x
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
+    auto aux_ptr =
+        static_cast<ComponentLegalizationState*>(component_ptr->AuxPtr());
     double2d init_loc = aux_ptr->InitLoc();
     double tmp_disp_x = std::fabs(aux_ptr->AverageLoc() - init_loc.x);
     disp_x += tmp_disp_x;
@@ -663,7 +665,8 @@ void Stripe::SetComponentLoc() {
 #pragma omp parallel for
   for (size_t i = 0; i < sz; ++i) {
     Component* component_ptr = component_ptrs_vec_[i];
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
+    auto aux_ptr =
+        static_cast<ComponentLegalizationState*>(component_ptr->AuxPtr());
     component_ptr->SetLLX(std::round(aux_ptr->AverageLoc()));
   }
 }
@@ -754,7 +757,7 @@ void Stripe::ConstructQuadraticObjective(IloModel& model, IloNumVarArray& x) {
     for (auto& component_region : row.component_regions_) {
       Component* component_ptr = component_region.component;
       auto aux_ptr =
-          static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
+          static_cast<ComponentLegalizationState*>(component_ptr->AuxPtr());
       double2d init = aux_ptr->InitLoc();
       IloInt id = component_ptr_2_tmp_id[component_ptr];
       objExpr += 1.0 * x[id] * x[id] - 2 * init.x * x[id];
@@ -979,7 +982,7 @@ Stripe* StripeColumn::GetStripeMatchComponent(Component* component_ptr) {
 }
 
 Stripe* StripeColumn::GetStripeClosestToComponent(Component* component_ptr,
-                                                   double& distance) {
+                                                  double& distance) {
   Stripe* res = nullptr;
   double center_x = component_ptr->X();
   double center_y = component_ptr->Y();

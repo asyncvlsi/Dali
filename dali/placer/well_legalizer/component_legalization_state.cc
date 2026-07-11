@@ -18,11 +18,11 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#include "legalizer_component_aux.h"
+#include "component_legalization_state.h"
 
 namespace dali {
 
-LegalizerComponentAux::LegalizerComponentAux(Component* component_ptr)
+ComponentLegalizationState::ComponentLegalizationState(Component* component_ptr)
     : ComponentAux(component_ptr) {
   DaliExpects(component_ptr->MacroPtr()->HasWellInfo(),
               "A component has no wellptr?");
@@ -32,68 +32,69 @@ LegalizerComponentAux::LegalizerComponentAux(Component* component_ptr)
   average_loc_ = component_ptr->LLX();
 }
 
-void LegalizerComponentAux::StoreCurLocAsInitLoc() {
+void ComponentLegalizationState::StoreCurLocAsInitLoc() {
   init_loc_.x = component_ptr_->LLX();
   init_loc_.y = component_ptr_->LLY();
 }
 
-void LegalizerComponentAux::StoreCurLocAsGreedyLoc() {
+void ComponentLegalizationState::StoreCurLocAsGreedyLoc() {
   greedy_loc_.x = component_ptr_->LLX();
   greedy_loc_.y = component_ptr_->LLY();
 }
 
-void LegalizerComponentAux::StoreCurLocAsQPLoc() {
+void ComponentLegalizationState::StoreCurLocAsQPLoc() {
   qp_loc_.x = component_ptr_->LLX();
   qp_loc_.y = component_ptr_->LLY();
 }
 
-void LegalizerComponentAux::StoreCurLocAsConsLoc() {
+void ComponentLegalizationState::StoreCurLocAsConsLoc() {
   cons_loc_.x = component_ptr_->LLX();
   cons_loc_.y = component_ptr_->LLY();
 }
 
-void LegalizerComponentAux::RecoverInitLoc() {
+void ComponentLegalizationState::RecoverInitLoc() {
   component_ptr_->SetLLX(init_loc_.x);
   component_ptr_->SetLLY(init_loc_.y);
 }
 
-void LegalizerComponentAux::RecoverGreedyLoc() {
+void ComponentLegalizationState::RecoverGreedyLoc() {
   component_ptr_->SetLLX(greedy_loc_.x);
   component_ptr_->SetLLY(greedy_loc_.y);
 }
 
-void LegalizerComponentAux::RecoverQPLoc() {
+void ComponentLegalizationState::RecoverQPLoc() {
   component_ptr_->SetLLX(qp_loc_.x);
   component_ptr_->SetLLY(qp_loc_.y);
 }
 
-void LegalizerComponentAux::RecoverConsLoc() {
+void ComponentLegalizationState::RecoverConsLoc() {
   component_ptr_->SetLLX(cons_loc_.x);
   component_ptr_->SetLLY(cons_loc_.y);
 }
 
-void LegalizerComponentAux::RecoverInitLocX() {
+void ComponentLegalizationState::RecoverInitLocX() {
   component_ptr_->SetLLX(init_loc_.x);
 }
 
-void LegalizerComponentAux::RecoverGreedyLocX() {
+void ComponentLegalizationState::RecoverGreedyLocX() {
   component_ptr_->SetLLX(greedy_loc_.x);
 }
 
-void LegalizerComponentAux::RecoverQPLocX() {
+void ComponentLegalizationState::RecoverQPLocX() {
   component_ptr_->SetLLX(qp_loc_.x);
 }
 
-void LegalizerComponentAux::RecoverConsLocX() {
+void ComponentLegalizationState::RecoverConsLocX() {
   component_ptr_->SetLLX(cons_loc_.x);
 }
 
-void LegalizerComponentAux::SetSubCellLoc(int id, double loc, double weight) {
+void ComponentLegalizationState::SetSubCellLoc(int id, double loc,
+                                               double weight) {
   sub_locs_[id] = loc;
   weights_[id] = weight;
 }
 
-void LegalizerComponentAux::ComputeAverageLoc() {
+void ComponentLegalizationState::ComputeAverageLoc() {
   size_t sz = sub_locs_.size();
   double sum_weight_loc = 0;
   double sum_weight = 0;
@@ -111,16 +112,16 @@ void LegalizerComponentAux::ComputeAverageLoc() {
   average_loc_ = sum_weight_loc / sum_weight;
 }
 
-std::vector<double>& LegalizerComponentAux::SubLocs() { return sub_locs_; }
+std::vector<double>& ComponentLegalizationState::SubLocs() { return sub_locs_; }
 
-double LegalizerComponentAux::AverageLoc() const { return average_loc_; }
+double ComponentLegalizationState::AverageLoc() const { return average_loc_; }
 
-double2d LegalizerComponentAux::InitLoc() const { return init_loc_; }
+double2d ComponentLegalizationState::InitLoc() const { return init_loc_; }
 
-double2d LegalizerComponentAux::GreedyLoc() const { return greedy_loc_; }
+double2d ComponentLegalizationState::GreedyLoc() const { return greedy_loc_; }
 
-double2d LegalizerComponentAux::QPLoc() const { return qp_loc_; }
+double2d ComponentLegalizationState::QPLoc() const { return qp_loc_; }
 
-double2d LegalizerComponentAux::ConsLoc() const { return cons_loc_; }
+double2d ComponentLegalizationState::ConsLoc() const { return cons_loc_; }
 
 }  // namespace dali

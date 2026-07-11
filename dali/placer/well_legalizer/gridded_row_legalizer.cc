@@ -133,7 +133,7 @@ void GriddedRowLegalizer::SaveInitialLoc() {
   auto& components = ckt_ptr_->Components();
   for (Component& component : components) {
     if (IsDummyComponent(component)) continue;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
+    auto aux_ptr = static_cast<ComponentLegalizationState*>(component.AuxPtr());
     aux_ptr->StoreCurLocAsInitLoc();
   }
 }
@@ -143,7 +143,7 @@ void GriddedRowLegalizer::SaveUpDownLoc() {
   auto& components = ckt_ptr_->Components();
   for (Component& component : components) {
     if (IsDummyComponent(component)) continue;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
+    auto aux_ptr = static_cast<ComponentLegalizationState*>(component.AuxPtr());
     aux_ptr->StoreCurLocAsGreedyLoc();
   }
 }
@@ -153,7 +153,7 @@ void GriddedRowLegalizer::SaveQPLoc() {
   auto& components = ckt_ptr_->Components();
   for (Component& component : components) {
     if (IsDummyComponent(component)) continue;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
+    auto aux_ptr = static_cast<ComponentLegalizationState*>(component.AuxPtr());
     aux_ptr->StoreCurLocAsQPLoc();
   }
 }
@@ -163,7 +163,7 @@ void GriddedRowLegalizer::SaveConsensusLoc() {
   auto& components = ckt_ptr_->Components();
   for (Component& component : components) {
     if (IsDummyComponent(component)) continue;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
+    auto aux_ptr = static_cast<ComponentLegalizationState*>(component.AuxPtr());
     aux_ptr->StoreCurLocAsConsLoc();
   }
 }
@@ -174,7 +174,7 @@ void GriddedRowLegalizer::RestoreInitialLocX() {
   auto& components = ckt_ptr_->Components();
   for (Component& component : components) {
     if (IsDummyComponent(component)) continue;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
+    auto aux_ptr = static_cast<ComponentLegalizationState*>(component.AuxPtr());
     aux_ptr->RecoverInitLocX();
   }
 }
@@ -185,7 +185,7 @@ void GriddedRowLegalizer::RestoreGreedyLocX() {
   auto& components = ckt_ptr_->Components();
   for (Component& component : components) {
     if (IsDummyComponent(component)) continue;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
+    auto aux_ptr = static_cast<ComponentLegalizationState*>(component.AuxPtr());
     aux_ptr->RecoverGreedyLocX();
   }
 }
@@ -197,7 +197,7 @@ void GriddedRowLegalizer::RestoreQPLocX() {
   auto& components = ckt_ptr_->Components();
   for (Component& component : components) {
     if (IsDummyComponent(component)) continue;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
+    auto aux_ptr = static_cast<ComponentLegalizationState*>(component.AuxPtr());
     aux_ptr->RecoverQPLocX();
   }
 }
@@ -208,7 +208,7 @@ void GriddedRowLegalizer::RestoreConsensusLocX() {
   auto& components = ckt_ptr_->Components();
   for (Component& component : components) {
     if (IsDummyComponent(component)) continue;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
+    auto aux_ptr = static_cast<ComponentLegalizationState*>(component.AuxPtr());
     aux_ptr->RecoverConsLocX();
   }
 }
@@ -487,7 +487,7 @@ void GriddedRowLegalizer::ReportDisplacement() {
   auto& components = ckt_ptr_->Components();
   for (Component& component : components) {
     if (IsDummyComponent(component)) continue;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
+    auto aux_ptr = static_cast<ComponentLegalizationState*>(component.AuxPtr());
     double2d init_loc = aux_ptr->InitLoc();
     double tmp_disp_x = std::fabs(component.LLX() - init_loc.x);
     double tmp_disp_y = std::fabs(component.LLY() - init_loc.y);
@@ -603,7 +603,7 @@ void GriddedRowLegalizer::ReportStandardCellDisplacement() {
   auto& components = ckt_ptr_->Components();
   for (Component& component : components) {
     if (IsDummyComponent(component)) continue;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
+    auto aux_ptr = static_cast<ComponentLegalizationState*>(component.AuxPtr());
     double2d init_loc = aux_ptr->InitLoc();
     double tmp_disp_x = std::fabs(component.LLX() - init_loc.x);
     double tmp_disp_y = std::fabs(component.LLY() - init_loc.y);
@@ -719,7 +719,7 @@ void GriddedRowLegalizer::GenDisplacement(std::string const& name_of_file) {
                    << " has not AuxPtr, cannot generate displacement vector\n";
       continue;
     }
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(component.AuxPtr());
+    auto aux_ptr = static_cast<ComponentLegalizationState*>(component.AuxPtr());
     double init_x = aux_ptr->InitLoc().x;
     double init_y = aux_ptr->InitLoc().y;
     double disp_x = component.LLX() - init_x;

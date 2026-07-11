@@ -24,8 +24,8 @@
 #include <cfloat>
 
 #include "dali/common/helper.h"
+#include "dali/placer/well_legalizer/component_legalization_state.h"
 #include "dali/placer/well_legalizer/component_segment.h"
-#include "dali/placer/well_legalizer/legalizer_component_aux.h"
 #include "dali/placer/well_legalizer/optimization_helper.h"
 
 namespace dali {
@@ -74,7 +74,7 @@ void RowSegment::MinDisplacementLegalization(bool use_init_loc) {
   vars.reserve(component_regions_.size());
   if (use_init_loc) {
     for (auto& component_region : component_regions_) {
-      auto aux_ptr = static_cast<LegalizerComponentAux*>(
+      auto aux_ptr = static_cast<ComponentLegalizationState*>(
           component_region.component->AuxPtr());
       vars.emplace_back(component_region.component->Width(),
                         aux_ptr->InitLoc().x, 1.0);
@@ -278,7 +278,7 @@ RowSegment::OptimizeQuadraticDisplacement(double lambda,
     for (auto& component_region : component_regions_) {
       Component* component_ptr = component_region.component;
       auto aux_ptr =
-          static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
+          static_cast<ComponentLegalizationState*>(component_ptr->AuxPtr());
       double average_loc = aux_ptr->AverageLoc();
       double sub_loc = aux_ptr->SubLocs()[component_region.region_id];
       double tmp_discrepancy = std::fabs(average_loc - sub_loc);
@@ -298,7 +298,8 @@ RowSegment::OptimizeQuadraticDisplacement(double lambda,
   for (auto& component_region : component_regions_) {
     Component* component_ptr = component_region.component;
     int region_cnt = component_ptr->MacroPtr()->RegionCount();
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
+    auto aux_ptr =
+        static_cast<ComponentLegalizationState*>(component_ptr->AuxPtr());
     vars.emplace_back(component_ptr->Width(), aux_ptr->InitLoc().x,
                       lambda / region_cnt);
     vars.back().component_region = component_region;
@@ -357,7 +358,7 @@ RowSegment::OptimizeLinearDisplacement(double lambda, bool is_weighted_anchor,
     for (auto& component_region : component_regions_) {
       Component* component_ptr = component_region.component;
       auto aux_ptr =
-          static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
+          static_cast<ComponentLegalizationState*>(component_ptr->AuxPtr());
       // int region_cnt = component_ptr->MacroPtr()->WellPtr()->RegionCount();
       double average_loc = aux_ptr->AverageLoc();
       double sub_loc = aux_ptr->SubLocs()[component_region.region_id];
@@ -376,7 +377,8 @@ RowSegment::OptimizeLinearDisplacement(double lambda, bool is_weighted_anchor,
   for (auto& component_region : component_regions_) {
     Component* component_ptr = component_region.component;
     int region_cnt = component_ptr->MacroPtr()->RegionCount();
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
+    auto aux_ptr =
+        static_cast<ComponentLegalizationState*>(component_ptr->AuxPtr());
     vars.emplace_back(component_ptr->Width(), aux_ptr->InitLoc().x,
                       lambda / region_cnt);
     vars.back().component_region = component_region;
@@ -414,7 +416,8 @@ void RowSegment::GenSubCellTable(std::ofstream& ost_cluster,
 
   for (auto& component_region : component_regions_) {
     Component* component_ptr = component_region.component;
-    auto aux_ptr = static_cast<LegalizerComponentAux*>(component_ptr->AuxPtr());
+    auto aux_ptr =
+        static_cast<ComponentLegalizationState*>(component_ptr->AuxPtr());
     double ly = std::max(component_ptr->LLY(), row_ly);
     double uy = std::min(component_ptr->URY(), row_uy);
     double sub_x = aux_ptr->SubLocs()[component_region.region_id];

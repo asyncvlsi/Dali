@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_PLACER_WELL_LEGALIZER_LEGALIZER_BLOCK_AUX_H_
-#define DALI_PLACER_WELL_LEGALIZER_LEGALIZER_BLOCK_AUX_H_
+#ifndef DALI_PLACER_WELL_LEGALIZER_COMPONENT_LEGALIZATION_STATE_H_
+#define DALI_PLACER_WELL_LEGALIZER_COMPONENT_LEGALIZATION_STATE_H_
 
 #include <cfloat>
 
@@ -29,9 +29,9 @@
 namespace dali {
 
 /** Auxiliary legalization locations cached on each component. */
-class LegalizerComponentAux : public ComponentAux {
+class ComponentLegalizationState : public ComponentAux {
  public:
-  explicit LegalizerComponentAux(Component* component_ptr);
+  explicit ComponentLegalizationState(Component* component_ptr);
 
   /** Cache the component's current location as its initial location. */
   void StoreCurLocAsInitLoc();
@@ -93,4 +93,4 @@ class LegalizerComponentAux : public ComponentAux {
 
 }  // namespace dali
 
-#endif  // DALI_PLACER_WELL_LEGALIZER_LEGALIZER_BLOCK_AUX_H_
+#endif  // DALI_PLACER_WELL_LEGALIZER_COMPONENT_LEGALIZATION_STATE_H_

@@ -25,7 +25,7 @@
 
 #include "dali/placer/displacement_viewer.h"
 #include "dali/placer/placer.h"
-#include "dali/placer/well_legalizer/legalizer_component_aux.h"
+#include "dali/placer/well_legalizer/component_legalization_state.h"
 #include "dali/placer/well_legalizer/space_partitioner.h"
 #include "dali/placer/well_legalizer/stripe.h"
 
@@ -140,7 +140,7 @@ class GriddedRowLegalizer : public Placer {
   bool is_greedy_loc_cached_ = false;
   bool is_qp_loc_cached_ = false;
   bool is_cons_loc_cached_ = false;
-  std::vector<LegalizerComponentAux> component_auxs_;
+  std::vector<ComponentLegalizationState> component_auxs_;
 
   int number_of_threads_ = 1;
   bool use_cplex_ = false;

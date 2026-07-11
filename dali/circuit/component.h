@@ -256,7 +256,7 @@ class Component {
   long long eff_area_ = 0;  // cached effective area
 
   std::vector<int> stretch_length_;  // TODO : move these two attributes to
-                                     // LegalizerComponentAux
+                                     // ComponentLegalizationState
   double total_stretch_length_ = 0;
 };
 
