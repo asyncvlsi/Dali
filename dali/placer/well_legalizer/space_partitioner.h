@@ -35,10 +35,10 @@ namespace dali {
  * The output StripeColumn list is consumed by well legalizers, which legalize
  * each rectangular sub-region independently.
  */
-class AbstractSpacePartitioner {
+class SpacePartitioner {
  public:
-  AbstractSpacePartitioner() = default;
-  virtual ~AbstractSpacePartitioner() = default;
+  SpacePartitioner() = default;
+  virtual ~SpacePartitioner() = default;
 
   /** Set the circuit to partition. */
   virtual void SetCircuit(Circuit* circuit);
@@ -73,13 +73,13 @@ class AbstractSpacePartitioner {
   int max_row_width_ = -1;
 };
 
-enum class DefaultPartitionMode { STRICT = 0, SCAVENGE = 1 };
+enum class WellPartitionMode { kStrict = 0, kScavenge = 1 };
 
-/** Default well-legalizer space partitioner. */
-class DefaultSpacePartitioner : public AbstractSpacePartitioner {
+/** Built-in space partitioner used by Dali's well legalizers. */
+class WellSpacePartitioner : public SpacePartitioner {
  public:
-  DefaultSpacePartitioner() = default;
-  ~DefaultSpacePartitioner() override = default;
+  WellSpacePartitioner() = default;
+  ~WellSpacePartitioner() override = default;
 
   void FetchWellParameters();
   void DetectAvailSpace();

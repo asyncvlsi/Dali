@@ -59,7 +59,7 @@ bool WellPlaceFlow::StartPlacement() {  // TODO: do not use this
       GriddedCellWellLegalizer well_legalizer;
       well_legalizer.CopyPlacementContextFrom(this);
       well_legalizer.SetStripePartitionMode(
-          int(DefaultPartitionMode::SCAVENGE));
+          int(WellPartitionMode::kScavenge));
       well_legalizer.WellLegalize();
       legalizer_->GetHpwls().back() = ckt_ptr_->WeightedHPWL();
 
@@ -93,7 +93,7 @@ bool WellPlaceFlow::StartPlacement() {  // TODO: do not use this
   ReportHPWL();
 
   well_legalizer_.CopyPlacementContextFrom(this);
-  well_legalizer_.SetStripePartitionMode(int(DefaultPartitionMode::SCAVENGE));
+  well_legalizer_.SetStripePartitionMode(int(WellPartitionMode::kScavenge));
   well_legalizer_.StartPlacement();
 
   PrintEndStatement("well place flow", true);

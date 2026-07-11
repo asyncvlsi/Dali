@@ -32,7 +32,7 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_EQ(options.log_file_name, "");
   EXPECT_FALSE(options.disable_log_prefix);
   EXPECT_EQ(options.num_threads, 1);
-  EXPECT_EQ(options.well_legalization_mode, dali::DefaultPartitionMode::STRICT);
+  EXPECT_EQ(options.well_legalization_mode, dali::WellPartitionMode::kStrict);
   EXPECT_FALSE(options.disable_global_place);
   EXPECT_FALSE(options.disable_legalization);
   EXPECT_FALSE(options.disable_detailed_place);
@@ -103,8 +103,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_EQ(options.log_file_name, "dali_test.log");
   EXPECT_TRUE(options.disable_log_prefix);
   EXPECT_EQ(options.num_threads, 4);
-  EXPECT_EQ(options.well_legalization_mode,
-            dali::DefaultPartitionMode::SCAVENGE);
+  EXPECT_EQ(options.well_legalization_mode, dali::WellPartitionMode::kScavenge);
   EXPECT_TRUE(options.disable_global_place);
   EXPECT_TRUE(options.disable_legalization);
   EXPECT_TRUE(options.disable_detailed_place);
@@ -143,7 +142,7 @@ TEST_F(DaliConfigTest, IgnoresUnknownWellLegalizationMode) {
   dali::Dali placer(nullptr, dali::severity::info);
   const dali::Dali::RuntimeOptions options = placer.GetRuntimeOptions();
 
-  EXPECT_EQ(options.well_legalization_mode, dali::DefaultPartitionMode::STRICT);
+  EXPECT_EQ(options.well_legalization_mode, dali::WellPartitionMode::kStrict);
 
   placer.Close();
 }

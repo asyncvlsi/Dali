@@ -61,7 +61,7 @@ void GriddedRowLegalizer::SetCplexEnabled(bool use_cplex) {
 }
 
 void GriddedRowLegalizer::SetExternalSpacePartitioner(
-    AbstractSpacePartitioner* p_external_partitioner) {
+    SpacePartitioner* p_external_partitioner) {
   space_partitioner_ = p_external_partitioner;
 }
 
@@ -83,7 +83,7 @@ void GriddedRowLegalizer::SetMaxRowWidth(double max_row_width) {
 void GriddedRowLegalizer::PartitionSpaceAndComponents() {
   bool is_external_partitioner_provided = (space_partitioner_ != nullptr);
   if (!is_external_partitioner_provided) {
-    space_partitioner_ = new DefaultSpacePartitioner;
+    space_partitioner_ = new WellSpacePartitioner;
   }
 
   space_partitioner_->SetCircuit(ckt_ptr_);

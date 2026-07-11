@@ -47,7 +47,7 @@ class Dali {
     std::string log_file_name;
     bool disable_log_prefix = false;
     int num_threads = 1;
-    DefaultPartitionMode well_legalization_mode = DefaultPartitionMode::STRICT;
+    WellPartitionMode well_legalization_mode = WellPartitionMode::kStrict;
     bool disable_global_place = false;
     bool disable_legalization = false;
     bool disable_detailed_place = false;
@@ -166,7 +166,7 @@ class Dali {
   std::string log_file_name_;
   bool disable_log_prefix_ = false;
   int num_threads_ = 1;
-  DefaultPartitionMode well_legalization_mode_ = DefaultPartitionMode::STRICT;
+  WellPartitionMode well_legalization_mode_ = WellPartitionMode::kStrict;
   bool disable_global_place_ = false;
   bool disable_legalization_ = false;
   bool disable_detailed_place_ = false;

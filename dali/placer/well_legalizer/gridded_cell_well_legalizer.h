@@ -199,7 +199,7 @@ class GriddedCellWellLegalizer : public Placer {
   /**** stripe parameters ****/
   int stripe_mode_ = 0;
   int max_row_width_ = -1;
-  DefaultSpacePartitioner space_partitioner_;
+  WellSpacePartitioner space_partitioner_;
   GriddedDetailedPlacer gridded_detailed_placer_;
   SnapshotCallback snapshot_callback_;
   int snapshot_attempt_ = 0;

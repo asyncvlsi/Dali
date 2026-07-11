@@ -48,8 +48,7 @@ class GriddedRowLegalizer : public Placer {
   void SetCplexEnabled(bool use_cplex);
 
   /** Inject an external space partitioner. */
-  void SetExternalSpacePartitioner(
-      AbstractSpacePartitioner* p_external_partitioner);
+  void SetExternalSpacePartitioner(SpacePartitioner* p_external_partitioner);
 
   /** Set built-in partitioning mode. */
   void SetPartitionMode(int partitioning_mode_);
@@ -119,7 +118,7 @@ class GriddedRowLegalizer : public Placer {
   // space partitioner
   int partitioning_mode_ = 0;
   int max_row_width_ = -1;
-  AbstractSpacePartitioner* space_partitioner_ = nullptr;
+  SpacePartitioner* space_partitioner_ = nullptr;
 
   int well_spacing_ = 0;
   int well_tap_p_height_ = 0;

@@ -566,7 +566,8 @@ bool GriddedCellWellLegalizer::StripeLegalizationBottomUpCompact(
   return stripe.contour_ <= RegionTop();
 }
 
-bool GriddedCellWellLegalizer::StripeLegalizationTopDownCompact(Stripe& stripe) {
+bool GriddedCellWellLegalizer::StripeLegalizationTopDownCompact(
+    Stripe& stripe) {
   stripe.gridded_rows_.clear();
   stripe.contour_ = stripe.URY();
   stripe.used_height_ = 0;
@@ -1045,12 +1046,12 @@ bool GriddedCellWellLegalizer::RunMovableCellLegalizationStages() {
 }
 
 bool GriddedCellWellLegalizer::RetryMovableCellLegalizationWithScavenging() {
-  if (stripe_mode_ == int(DefaultPartitionMode::SCAVENGE)) {
+  if (stripe_mode_ == int(WellPartitionMode::kScavenge)) {
     return false;
   }
   LOG(warning) << "Strict well legalization failed; retry with scavenge mode\n";
   int previous_stripe_mode = stripe_mode_;
-  stripe_mode_ = int(DefaultPartitionMode::SCAVENGE);
+  stripe_mode_ = int(WellPartitionMode::kScavenge);
   snapshot_attempt_ = 1;
   RestoreInitialComponentLocation();
   InitializeWellLegalizer();
@@ -1089,10 +1090,10 @@ void GriddedCellWellLegalizer::RunPhysicalCompletionStages() {
 }
 
 void GriddedCellWellLegalizer::EmitSnapshot(const std::string& id,
-                                           const std::string& label,
-                                           const std::string& group,
-                                           const std::string& subgroup,
-                                           int iteration) {
+                                            const std::string& label,
+                                            const std::string& group,
+                                            const std::string& subgroup,
+                                            int iteration) {
   if (!snapshot_callback_) return;
   snapshot_callback_("attempt_" + std::to_string(snapshot_attempt_) + "." + id,
                      label, group, subgroup, iteration);
@@ -1322,8 +1323,8 @@ void GriddedCellWellLegalizer::GenPPNP(const std::string& name_of_file) {
  * Fale: do not emit this file
  * ****/
 void GriddedCellWellLegalizer::EmitDEFWellFile(std::string const& name_of_file,
-                                              int well_emit_mode,
-                                              bool enable_emitting_cluster) {
+                                               int well_emit_mode,
+                                               bool enable_emitting_cluster) {
   EmitPPNPRect(name_of_file + "ppnp.rect");
   EmitWellRect(name_of_file + "well.rect", well_emit_mode);
   if (enable_emitting_cluster) {
@@ -1355,7 +1356,7 @@ void GriddedCellWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB* phydb_ptr) {
 }
 
 void GriddedCellWellLegalizer::EmitWellRect(std::string const& name_of_file,
-                                           int well_emit_mode) {
+                                            int well_emit_mode) {
   std::vector<WellGeometryRect> geometry =
       WellGeometryBuilder(col_list_, RegionBottom(), RegionTop()).Build(false);
   WellGeometryExporter(
@@ -1365,7 +1366,7 @@ void GriddedCellWellLegalizer::EmitWellRect(std::string const& name_of_file,
 }
 
 void GriddedCellWellLegalizer::ExportWellToPhyDB(phydb::PhyDB* phydb_ptr,
-                                                int well_emit_mode) {
+                                                 int well_emit_mode) {
   if (disable_welltap_) {
     LOG(info) << "Skip export wells to PhyDB since well tap is disabled\n";
     return;
@@ -1415,7 +1416,8 @@ GriddedCellWellLegalizer::CollectWellVisualizationRects() {
 /****
  * Emits a rect file for power routing
  * ****/
-void GriddedCellWellLegalizer::EmitClusterRect(std::string const& name_of_file) {
+void GriddedCellWellLegalizer::EmitClusterRect(
+    std::string const& name_of_file) {
   LOG(info) << "Writing cluster rect file: " << name_of_file << "\n";
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);

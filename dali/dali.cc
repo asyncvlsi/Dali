@@ -261,9 +261,9 @@ void Dali::LoadParamsFromConfig() {
   if (ConfigExists(param_name)) {
     std::string model_name = config_get_string(param_name.c_str());
     if (model_name == "scavenge") {
-      well_legalization_mode_ = DefaultPartitionMode::SCAVENGE;
+      well_legalization_mode_ = WellPartitionMode::kScavenge;
     } else if (model_name == "strict") {
-      well_legalization_mode_ = DefaultPartitionMode::STRICT;
+      well_legalization_mode_ = WellPartitionMode::kStrict;
     } else {
       std::cout << "Ignore unknown well_legalization_mode: " << model_name
                 << "\n";
@@ -1004,7 +1004,7 @@ bool Dali::GlobalPlace(double density, int num_threads) {
  */
 bool Dali::UnifiedLegalization() {
   well_legalizer_.CopyPlacementContextFrom(&gb_placer_);
-  well_legalizer_.SetStripePartitionMode(int(DefaultPartitionMode::SCAVENGE));
+  well_legalizer_.SetStripePartitionMode(int(WellPartitionMode::kScavenge));
   well_legalizer_.is_dump = false;
   return well_legalizer_.StartPlacement();
 }

@@ -25,37 +25,34 @@
 
 namespace dali {
 
-void AbstractSpacePartitioner::SetCircuit(Circuit* circuit) {
+void SpacePartitioner::SetCircuit(Circuit* circuit) {
   DaliExpects(circuit != nullptr, "Partition space for a null Circuit?");
   circuit_ = circuit;
 }
 
-void AbstractSpacePartitioner::SetOutput(
-    std::vector<StripeColumn>* output_stripes) {
+void SpacePartitioner::SetOutput(std::vector<StripeColumn>* output_stripes) {
   DaliExpects(output_stripes != nullptr,
               "Save partitioning result to a nullptr?");
   output_stripes_ = output_stripes;
 }
 
-void AbstractSpacePartitioner::SetReservedSpaceToBoundaries(int l_space,
-                                                            int r_space,
-                                                            int b_space,
-                                                            int t_space) {
+void SpacePartitioner::SetReservedSpaceToBoundaries(int l_space, int r_space,
+                                                    int b_space, int t_space) {
   l_space_ = l_space;
   r_space_ = r_space;
   b_space_ = b_space;
   t_space_ = t_space;
 }
 
-void AbstractSpacePartitioner::SetPartitionMode(int partition_mode) {
+void SpacePartitioner::SetPartitionMode(int partition_mode) {
   partition_mode_ = partition_mode;
 }
 
-void AbstractSpacePartitioner::SetMaxRowWidth(int max_row_width) {
+void SpacePartitioner::SetMaxRowWidth(int max_row_width) {
   max_row_width_ = max_row_width;
 }
 
-void DefaultSpacePartitioner::FetchWellParameters() {
+void WellSpacePartitioner::FetchWellParameters() {
   Tech& tech = circuit_->tech();
   WellLayer& n_well_layer = tech.NwellLayer();
   double grid_value_x = circuit_->GridValueX();
@@ -67,7 +64,7 @@ void DefaultSpacePartitioner::FetchWellParameters() {
       (int)std::floor(n_well_layer.MaxPlugDist() / grid_value_x);
 }
 
-void DefaultSpacePartitioner::DetectAvailSpace() {
+void WellSpacePartitioner::DetectAvailSpace() {
   if (!row_height_set_) {
     row_height_ = circuit_->RowHeightGridUnit();
   }
@@ -152,7 +149,7 @@ void DefaultSpacePartitioner::DetectAvailSpace() {
   }
 }
 
-void DefaultSpacePartitioner::UpdateWhiteSpaceInCol(StripeColumn& col) {
+void WellSpacePartitioner::UpdateWhiteSpaceInCol(StripeColumn& col) {
   SegI stripe_seg(col.LLX(), col.URX());
   col.white_space_.clear();
   col.white_space_.resize(tot_num_rows_);
@@ -186,7 +183,7 @@ void DefaultSpacePartitioner::UpdateWhiteSpaceInCol(StripeColumn& col) {
   }
 }
 
-void DefaultSpacePartitioner::DecomposeSpaceToSimpleStripes() {
+void WellSpacePartitioner::DecomposeSpaceToSimpleStripes() {
   for (auto& col : *output_stripes_) {
     for (int i = 0; i < tot_num_rows_; ++i) {
       for (auto& seg : col.white_space_[i]) {
@@ -228,7 +225,7 @@ void DefaultSpacePartitioner::DecomposeSpaceToSimpleStripes() {
   // PlotAvailSpaceInCols();
 }
 
-void DefaultSpacePartitioner::AssignComponentToColBasedOnWhiteSpace() {
+void WellSpacePartitioner::AssignComponentToColBasedOnWhiteSpace() {
   // assign components to columns
   std::vector<Component>& component_list = circuit_->Components();
   std::vector<StripeColumn>& col_list = *output_stripes_;
@@ -294,7 +291,7 @@ void DefaultSpacePartitioner::AssignComponentToColBasedOnWhiteSpace() {
   }
 }
 
-bool DefaultSpacePartitioner::StartPartitioning() {
+bool WellSpacePartitioner::StartPartitioning() {
   DaliExpects(circuit_ != nullptr, "Circuit is not set");
   DaliExpects(output_stripes_ != nullptr, "Output location is not set");
 
@@ -364,7 +361,7 @@ bool DefaultSpacePartitioner::StartPartitioning() {
   return true;
 }
 
-void DefaultSpacePartitioner::PlotAvailSpace(std::string const& name_of_file) {
+void WellSpacePartitioner::PlotAvailSpace(std::string const& name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
   SaveMatlabPatchRect(ost, Left(), Bottom(), Right(), Top(), true, 1, 1, 1);
@@ -383,7 +380,7 @@ void DefaultSpacePartitioner::PlotAvailSpace(std::string const& name_of_file) {
   }
 }
 
-void DefaultSpacePartitioner::PlotAvailSpaceInCols(
+void WellSpacePartitioner::PlotAvailSpaceInCols(
     std::string const& name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
@@ -405,8 +402,7 @@ void DefaultSpacePartitioner::PlotAvailSpaceInCols(
   }
 }
 
-void DefaultSpacePartitioner::PlotSimpleStripes(
-    std::string const& name_of_file) {
+void WellSpacePartitioner::PlotSimpleStripes(std::string const& name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
   SaveMatlabPatchRect(ost, Left(), Bottom(), Right(), Top(), true, 1, 1, 1);
@@ -424,27 +420,27 @@ void DefaultSpacePartitioner::PlotSimpleStripes(
   }
 }
 
-int DefaultSpacePartitioner::Left() const {
+int WellSpacePartitioner::Left() const {
   return circuit_->RegionLLX() + l_space_;
 }
 
-int DefaultSpacePartitioner::Right() const {
+int WellSpacePartitioner::Right() const {
   return circuit_->RegionURX() - r_space_;
 }
 
-int DefaultSpacePartitioner::Bottom() const {
+int WellSpacePartitioner::Bottom() const {
   return circuit_->RegionLLY() + b_space_;
 }
 
-int DefaultSpacePartitioner::Top() const {
+int WellSpacePartitioner::Top() const {
   return circuit_->RegionURY() - t_space_;
 }
 
-int DefaultSpacePartitioner::StartRow(int y_loc) const {
+int WellSpacePartitioner::StartRow(int y_loc) const {
   return (y_loc - Bottom()) / row_height_;
 }
 
-int DefaultSpacePartitioner::EndRow(int y_loc) const {
+int WellSpacePartitioner::EndRow(int y_loc) const {
   int relative_y = y_loc - Bottom();
   int res = relative_y / row_height_;
   if (relative_y % row_height_ == 0) {
@@ -453,11 +449,11 @@ int DefaultSpacePartitioner::EndRow(int y_loc) const {
   return res;
 }
 
-int DefaultSpacePartitioner::RowToLoc(int row_num, int displacement) const {
+int WellSpacePartitioner::RowToLoc(int row_num, int displacement) const {
   return row_num * row_height_ + Bottom() + displacement;
 }
 
-int DefaultSpacePartitioner::LocToCol(int x) const {
+int WellSpacePartitioner::LocToCol(int x) const {
   int col_num = (x - Left()) / stripe_width_;
   if (col_num < 0) {
     col_num = 0;
