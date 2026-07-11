@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_PLACER_WELL_LEGALIZER_STD_CLUSTER_WELL_LEGALIZER_H_
-#define DALI_PLACER_WELL_LEGALIZER_STD_CLUSTER_WELL_LEGALIZER_H_
+#ifndef DALI_PLACER_WELL_LEGALIZER_GRIDDED_CELL_WELL_LEGALIZER_H_
+#define DALI_PLACER_WELL_LEGALIZER_GRIDDED_CELL_WELL_LEGALIZER_H_
 
 #include <functional>
 #include <string>
@@ -49,11 +49,11 @@ namespace dali {
  * geometry is emitted. Fixed-only designs can reuse the physical completion
  * stages without running movable-cell legalization.
  */
-class StdClusterWellLegalizer : public Placer {
+class GriddedCellWellLegalizer : public Placer {
   friend class Dali;
 
  public:
-  StdClusterWellLegalizer();
+  GriddedCellWellLegalizer();
 
   /** Callback used by the application to emit visualization snapshots. */
   using SnapshotCallback = std::function<void(
@@ -240,4 +240,4 @@ class StdClusterWellLegalizer : public Placer {
 
 }  // namespace dali
 
-#endif  // DALI_PLACER_WELL_LEGALIZER_STD_CLUSTER_WELL_LEGALIZER_H_
+#endif  // DALI_PLACER_WELL_LEGALIZER_GRIDDED_CELL_WELL_LEGALIZER_H_

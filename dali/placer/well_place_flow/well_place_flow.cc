@@ -56,14 +56,14 @@ bool WellPlaceFlow::StartPlacement() {  // TODO: do not use this
       legalizer.CopyPlacementContextFrom(this);
       legalizer.StartPlacement();
 
-      StdClusterWellLegalizer well_legalizer;
+      GriddedCellWellLegalizer well_legalizer;
       well_legalizer.CopyPlacementContextFrom(this);
       well_legalizer.SetStripePartitionMode(
           int(DefaultPartitionMode::SCAVENGE));
       well_legalizer.WellLegalize();
       legalizer_->GetHpwls().back() = ckt_ptr_->WeightedHPWL();
 
-      // StdClusterWellLegalizer well_legalizer;
+      // GriddedCellWellLegalizer well_legalizer;
       // well_legalizer.TakeOver(this);
       // bool is_success = well_legalizer.StartPlacement();
       // well_legalizer_.GenMatlabClusterTable("sc_result");

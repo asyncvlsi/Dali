@@ -23,13 +23,13 @@
 
 #include "dali/placer/global_placer/global_placer.h"
 #include "dali/placer/legalizer/extended_tetris_legalizer.h"
-#include "dali/placer/well_legalizer/std_cluster_well_legalizer.h"
+#include "dali/placer/well_legalizer/gridded_cell_well_legalizer.h"
 
 namespace dali {
 
 /** End-to-end placement flow with global placement and well legalization. */
 class WellPlaceFlow : public GlobalPlacer {
-  StdClusterWellLegalizer well_legalizer_;
+  GriddedCellWellLegalizer well_legalizer_;
 
  public:
   WellPlaceFlow();

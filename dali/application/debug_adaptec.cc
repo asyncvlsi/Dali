@@ -125,7 +125,7 @@ int main(int argc, char** argv) {
 #if TEST_WLG
   circuit.LoadImaginaryCellFile();
   // circuit.ReportWellShape();
-  auto* well_legalizer = new StdClusterWellLegalizer;
+  auto* well_legalizer = new GriddedCellWellLegalizer;
   well_legalizer->CopyPlacementContextFrom(&gb_placer_);
   well_legalizer->SetRowHeight(1);
   well_legalizer->StartPlacement();

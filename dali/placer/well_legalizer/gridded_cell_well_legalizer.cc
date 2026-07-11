@@ -18,7 +18,7 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#include "std_cluster_well_legalizer.h"
+#include "gridded_cell_well_legalizer.h"
 
 #include <algorithm>
 #include <cmath>
@@ -33,22 +33,22 @@
 
 namespace dali {
 
-StdClusterWellLegalizer::StdClusterWellLegalizer() {
+GriddedCellWellLegalizer::GriddedCellWellLegalizer() {
   max_unplug_length_ = 0;
   well_tap_width_ = 0;
 }
 
-void StdClusterWellLegalizer::SetSnapshotCallback(
+void GriddedCellWellLegalizer::SetSnapshotCallback(
     SnapshotCallback snapshot_callback) {
   snapshot_callback_ = std::move(snapshot_callback);
 }
 
-void StdClusterWellLegalizer::LoadConf(std::string const& config_file) {
+void GriddedCellWellLegalizer::LoadConf(std::string const& config_file) {
   config_read(config_file.c_str());
   DaliExpects(false, "Not implemented");
 }
 
-void StdClusterWellLegalizer::CheckWellStatus() {
+void GriddedCellWellLegalizer::CheckWellStatus() {
   auto& components = ckt_ptr_->Components();
   for (Component& component : components) {
     if (component.IsMovable()) {
@@ -58,7 +58,7 @@ void StdClusterWellLegalizer::CheckWellStatus() {
   }
 }
 
-void StdClusterWellLegalizer::FetchNpWellParams() {
+void GriddedCellWellLegalizer::FetchNpWellParams() {
   Tech& tech = ckt_ptr_->tech();
   WellLayer& n_well_layer = tech.NwellLayer();
   double grid_value_x = ckt_ptr_->GridValueX();
@@ -113,12 +113,12 @@ void StdClusterWellLegalizer::FetchNpWellParams() {
   well_tap_n_height_ = well_tap_macro_->FirstNwellHeight();
 }
 
-void StdClusterWellLegalizer::SaveInitialComponentLocation() {
+void GriddedCellWellLegalizer::SaveInitialComponentLocation() {
   component_init_locations_ = CaptureComponentPlacement();
 }
 
-std::vector<StdClusterWellLegalizer::ComponentPlacementSnapshot>
-StdClusterWellLegalizer::CaptureComponentPlacement() const {
+std::vector<GriddedCellWellLegalizer::ComponentPlacementSnapshot>
+GriddedCellWellLegalizer::CaptureComponentPlacement() const {
   std::vector<ComponentPlacementSnapshot> component_snapshots;
   const std::vector<Component>& component_list = ckt_ptr_->Components();
   component_snapshots.reserve(component_list.size());
@@ -132,7 +132,7 @@ StdClusterWellLegalizer::CaptureComponentPlacement() const {
   return component_snapshots;
 }
 
-void StdClusterWellLegalizer::RestoreComponentPlacement(
+void GriddedCellWellLegalizer::RestoreComponentPlacement(
     const std::vector<ComponentPlacementSnapshot>& component_snapshots) {
   DaliExpects(component_snapshots.size() == ckt_ptr_->Components().size(),
               "Cannot restore component placement: component count changed");
@@ -146,11 +146,11 @@ void StdClusterWellLegalizer::RestoreComponentPlacement(
   }
 }
 
-void StdClusterWellLegalizer::RestoreInitialComponentLocation() {
+void GriddedCellWellLegalizer::RestoreInitialComponentLocation() {
   RestoreComponentPlacement(component_init_locations_);
 }
 
-void StdClusterWellLegalizer::SetMaxRowWidth(double max_row_width_microns) {
+void GriddedCellWellLegalizer::SetMaxRowWidth(double max_row_width_microns) {
   if (max_row_width_microns < 0) {
     max_row_width_ = -1;
     return;
@@ -160,7 +160,7 @@ void StdClusterWellLegalizer::SetMaxRowWidth(double max_row_width_microns) {
   LOG(info) << "Max row width in grid unit : " << max_row_width_ << "\n";
 }
 
-void StdClusterWellLegalizer::InitializeWellLegalizer(int cluster_width) {
+void GriddedCellWellLegalizer::InitializeWellLegalizer(int cluster_width) {
   if (disable_welltap_) {
     well_tap_count_per_cluster_ = 0;
     LOG(info) << "set number of tap cells to 0, since well tap is disabled\n";
@@ -190,7 +190,7 @@ void StdClusterWellLegalizer::InitializeWellLegalizer(int cluster_width) {
   index_loc_list_.resize(ckt_ptr_->Components().size());
 }
 
-int StdClusterWellLegalizer::PhysicalCompletionReservedWidth() const {
+int GriddedCellWellLegalizer::PhysicalCompletionReservedWidth() const {
   int reserved_width = 0;
   if (!disable_welltap_) {
     reserved_width = well_tap_count_per_cluster_ * well_tap_width_ +
@@ -202,7 +202,7 @@ int StdClusterWellLegalizer::PhysicalCompletionReservedWidth() const {
   return reserved_width;
 }
 
-void StdClusterWellLegalizer::ReservePhysicalCompletionSpace(
+void GriddedCellWellLegalizer::ReservePhysicalCompletionSpace(
     GriddedRow* row, bool grows_upward) {
   if (row == nullptr) {
     return;
@@ -225,7 +225,7 @@ void StdClusterWellLegalizer::ReservePhysicalCompletionSpace(
   }
 }
 
-void StdClusterWellLegalizer::EnsureUsableEndCapWidths() {
+void GriddedCellWellLegalizer::EnsureUsableEndCapWidths() {
   if (pre_end_cap_min_width_ > 0 && post_end_cap_min_width_ > 0) {
     return;
   }
@@ -245,25 +245,25 @@ void StdClusterWellLegalizer::EnsureUsableEndCapWidths() {
   }
 }
 
-int StdClusterWellLegalizer::LeftTapLx(const Stripe& stripe) const {
+int GriddedCellWellLegalizer::LeftTapLx(const Stripe& stripe) const {
   int end_cap_width = enable_end_cap_cell_ ? pre_end_cap_min_width_ : 0;
   return stripe.LLX() + end_cap_width;
 }
 
-int StdClusterWellLegalizer::LeftTapUx(const Stripe& stripe) const {
+int GriddedCellWellLegalizer::LeftTapUx(const Stripe& stripe) const {
   return LeftTapLx(stripe) + well_tap_width_;
 }
 
-int StdClusterWellLegalizer::RightTapUx(const Stripe& stripe) const {
+int GriddedCellWellLegalizer::RightTapUx(const Stripe& stripe) const {
   int end_cap_width = enable_end_cap_cell_ ? post_end_cap_min_width_ : 0;
   return stripe.URX() - end_cap_width;
 }
 
-int StdClusterWellLegalizer::RightTapLx(const Stripe& stripe) const {
+int GriddedCellWellLegalizer::RightTapLx(const Stripe& stripe) const {
   return RightTapUx(stripe) - well_tap_width_;
 }
 
-WellRowCompletionConfig StdClusterWellLegalizer::BuildRowCompletionConfig()
+WellRowCompletionConfig GriddedCellWellLegalizer::BuildRowCompletionConfig()
     const {
   WellRowCompletionConfig config;
   config.well_tap_macro = well_tap_macro_;
@@ -276,7 +276,7 @@ WellRowCompletionConfig StdClusterWellLegalizer::BuildRowCompletionConfig()
   return config;
 }
 
-void StdClusterWellLegalizer::CreateClusterAndAppendSingleWellComponent(
+void GriddedCellWellLegalizer::CreateClusterAndAppendSingleWellComponent(
     Stripe& stripe, Component& component) {
   stripe.gridded_rows_.emplace_back();
   GriddedRow* front_row = &(stripe.gridded_rows_.back());
@@ -304,7 +304,7 @@ void StdClusterWellLegalizer::CreateClusterAndAppendSingleWellComponent(
   stripe.contour_ = front_row->URY();
 }
 
-void StdClusterWellLegalizer::AppendSingleWellComponentToFrontCluster(
+void GriddedCellWellLegalizer::AppendSingleWellComponentToFrontCluster(
     Stripe& stripe, Component& component) {
   int width = component.Width();
   int p_well_height = component.MacroPtr()->FirstPwellHeight();
@@ -322,7 +322,7 @@ void StdClusterWellLegalizer::AppendSingleWellComponentToFrontCluster(
   stripe.contour_ = front_row->URY();
 }
 
-void StdClusterWellLegalizer::AppendComponentToColBottomUp(
+void GriddedCellWellLegalizer::AppendComponentToColBottomUp(
     Stripe& stripe, Component& component) {
   bool is_no_row_in_col = (stripe.contour_ == stripe.LLY());
   bool is_new_row_needed = is_no_row_in_col;
@@ -341,7 +341,7 @@ void StdClusterWellLegalizer::AppendComponentToColBottomUp(
   }
 }
 
-void StdClusterWellLegalizer::AppendComponentToColTopDown(
+void GriddedCellWellLegalizer::AppendComponentToColTopDown(
     Stripe& stripe, Component& component) {
   bool is_no_row = stripe.gridded_rows_.empty();
   bool is_new_row_needed = is_no_row;
@@ -388,7 +388,7 @@ void StdClusterWellLegalizer::AppendComponentToColTopDown(
   stripe.contour_ = front_row->LLY();
 }
 
-void StdClusterWellLegalizer::AppendComponentToColBottomUpCompact(
+void GriddedCellWellLegalizer::AppendComponentToColBottomUpCompact(
     Stripe& stripe, Component& component) {
   bool is_new_cluster_needed = (stripe.contour_ == stripe.LLY());
   if (!is_new_cluster_needed) {
@@ -434,7 +434,7 @@ void StdClusterWellLegalizer::AppendComponentToColBottomUpCompact(
   stripe.contour_ = front_cluster->URY();
 }
 
-void StdClusterWellLegalizer::AppendComponentToColTopDownCompact(
+void GriddedCellWellLegalizer::AppendComponentToColTopDownCompact(
     Stripe& stripe, Component& component) {
   bool is_new_cluster_needed = (stripe.contour_ == stripe.URY());
   if (!is_new_cluster_needed) {
@@ -480,7 +480,7 @@ void StdClusterWellLegalizer::AppendComponentToColTopDownCompact(
   stripe.contour_ = front_cluster->LLY();
 }
 
-bool StdClusterWellLegalizer::StripeLegalizationBottomUp(Stripe& stripe) {
+bool GriddedCellWellLegalizer::StripeLegalizationBottomUp(Stripe& stripe) {
   stripe.gridded_rows_.clear();
   stripe.contour_ = stripe.LLY();
   stripe.used_height_ = 0;
@@ -506,7 +506,7 @@ bool StdClusterWellLegalizer::StripeLegalizationBottomUp(Stripe& stripe) {
   return stripe.HasNoRowsSpillingOut();
 }
 
-bool StdClusterWellLegalizer::StripeLegalizationTopDown(Stripe& stripe) {
+bool GriddedCellWellLegalizer::StripeLegalizationTopDown(Stripe& stripe) {
   stripe.gridded_rows_.clear();
   stripe.contour_ = stripe.URY();
   stripe.used_height_ = 0;
@@ -539,7 +539,7 @@ bool StdClusterWellLegalizer::StripeLegalizationTopDown(Stripe& stripe) {
   return stripe.HasNoRowsSpillingOut();
 }
 
-bool StdClusterWellLegalizer::StripeLegalizationBottomUpCompact(
+bool GriddedCellWellLegalizer::StripeLegalizationBottomUpCompact(
     Stripe& stripe) {
   stripe.gridded_rows_.clear();
   stripe.contour_ = RegionBottom();
@@ -566,7 +566,7 @@ bool StdClusterWellLegalizer::StripeLegalizationBottomUpCompact(
   return stripe.contour_ <= RegionTop();
 }
 
-bool StdClusterWellLegalizer::StripeLegalizationTopDownCompact(Stripe& stripe) {
+bool GriddedCellWellLegalizer::StripeLegalizationTopDownCompact(Stripe& stripe) {
   stripe.gridded_rows_.clear();
   stripe.contour_ = stripe.URY();
   stripe.used_height_ = 0;
@@ -599,7 +599,7 @@ bool StdClusterWellLegalizer::StripeLegalizationTopDownCompact(Stripe& stripe) {
   return stripe.contour_ >= RegionBottom();
 }
 
-bool StdClusterWellLegalizer::ComponentClustering() {
+bool GriddedCellWellLegalizer::ComponentClustering() {
   /****
    * Clustering components in each stripe
    * After clustering, close pack clusters from bottom to top
@@ -644,7 +644,7 @@ bool StdClusterWellLegalizer::ComponentClustering() {
  * Clustering components in each stripe
  * After clustering, leave clusters as they are
  * ****/
-bool StdClusterWellLegalizer::ComponentClusteringLoose() {
+bool GriddedCellWellLegalizer::ComponentClusteringLoose() {
   int step = 50;
   int count = 0;
   bool res = true;
@@ -703,7 +703,7 @@ bool StdClusterWellLegalizer::ComponentClusteringLoose() {
   return res;
 }
 
-void StdClusterWellLegalizer::LogStripeLegalizationFailure(
+void GriddedCellWellLegalizer::LogStripeLegalizationFailure(
     const ClusterStripe& col, const Stripe& stripe, int column_index,
     int stripe_index) const {
   int lowest_row_y = std::numeric_limits<int>::max();
@@ -738,7 +738,7 @@ void StdClusterWellLegalizer::LogStripeLegalizationFailure(
                << "overflow_height=" << height_overflow * grid_y << "um\n";
 }
 
-void StdClusterWellLegalizer::LogComponentClusteringSummary(
+void GriddedCellWellLegalizer::LogComponentClusteringSummary(
     int failed_stripe_count) const {
   size_t overlap_count = CountComponentOverlapsInRows();
   if (failed_stripe_count == 0) {
@@ -757,7 +757,7 @@ void StdClusterWellLegalizer::LogComponentClusteringSummary(
   }
 }
 
-size_t StdClusterWellLegalizer::CountComponentOverlapsInRows() const {
+size_t GriddedCellWellLegalizer::CountComponentOverlapsInRows() const {
   size_t overlap_count = 0;
   for (const auto& col : col_list_) {
     for (const auto& stripe : col.stripe_list_) {
@@ -769,7 +769,7 @@ size_t StdClusterWellLegalizer::CountComponentOverlapsInRows() const {
   return overlap_count;
 }
 
-bool StdClusterWellLegalizer::ComponentClusteringCompact() {
+bool GriddedCellWellLegalizer::ComponentClusteringCompact() {
   /****
    * Clustering components in each stripe in a compact way
    * After clustering, leave clusters as they are
@@ -797,7 +797,7 @@ bool StdClusterWellLegalizer::ComponentClusteringCompact() {
   return res;
 }
 
-bool StdClusterWellLegalizer::TrialClusterLegalization(Stripe& stripe) {
+bool GriddedCellWellLegalizer::TrialClusterLegalization(Stripe& stripe) {
   /****
    * Legalize the location of all clusters using extended Tetris legalization
    * algorithm in columns where usage does not exceed capacity Closely pack the
@@ -869,7 +869,7 @@ bool StdClusterWellLegalizer::TrialClusterLegalization(Stripe& stripe) {
 }
 
 /*
-void StdClusterWellLegalizer::SingleSegmentClusteringOptimization() {
+void GriddedCellWellLegalizer::SingleSegmentClusteringOptimization() {
   LOG(info) << "Start single segment clustering\n";
 
   for (auto &col: col_list_) {
@@ -927,7 +927,7 @@ void StdClusterWellLegalizer::SingleSegmentClusteringOptimization() {
 }
  */
 
-void StdClusterWellLegalizer::UpdateClusterOrient() {
+void GriddedCellWellLegalizer::UpdateClusterOrient() {
   for (auto& col : col_list_) {
     bool is_orient_N = is_first_row_orient_N_;
     for (auto& stripe : col.stripe_list_) {
@@ -947,7 +947,7 @@ void StdClusterWellLegalizer::UpdateClusterOrient() {
   }
 }
 
-void StdClusterWellLegalizer::ClearCachedData() {
+void GriddedCellWellLegalizer::ClearCachedData() {
   for (auto& component : ckt_ptr_->Components()) {
     component.SetOrient(N);
   }
@@ -965,7 +965,7 @@ void StdClusterWellLegalizer::ClearCachedData() {
   // cluster_list_.clear();
 }
 
-bool StdClusterWellLegalizer::WellLegalize() {
+bool GriddedCellWellLegalizer::WellLegalize() {
   bool is_success = true;
   InitializeWellLegalizer();
   is_success = ComponentClusteringLoose();
@@ -985,7 +985,7 @@ bool StdClusterWellLegalizer::WellLegalize() {
   return is_success;
 }
 
-bool StdClusterWellLegalizer::RunComponentClusteringStage() {
+bool GriddedCellWellLegalizer::RunComponentClusteringStage() {
   LOG(info) << "Form component clustering\n";
   bool is_success = ComponentClusteringLoose();
   ReportHPWL();
@@ -996,7 +996,7 @@ bool StdClusterWellLegalizer::RunComponentClusteringStage() {
   return is_success;
 }
 
-void StdClusterWellLegalizer::RunClusterOrientationStage() {
+void GriddedCellWellLegalizer::RunClusterOrientationStage() {
   if (disable_cell_flip_) {
     LOG(info) << "Skip flipping cluster orientation\n";
     return;
@@ -1009,7 +1009,7 @@ void StdClusterWellLegalizer::RunClusterOrientationStage() {
                "orientation");
 }
 
-std::vector<GriddedRow*> StdClusterWellLegalizer::CollectGriddedRows() {
+std::vector<GriddedRow*> GriddedCellWellLegalizer::CollectGriddedRows() {
   std::vector<GriddedRow*> rows;
   for (auto& col : col_list_) {
     for (auto& stripe : col.stripe_list_) {
@@ -1021,7 +1021,7 @@ std::vector<GriddedRow*> StdClusterWellLegalizer::CollectGriddedRows() {
   return rows;
 }
 
-void StdClusterWellLegalizer::RunGriddedDetailedPlacementStage() {
+void GriddedCellWellLegalizer::RunGriddedDetailedPlacementStage() {
   LOG(info) << "Run gridded detailed placement\n";
   gridded_detailed_placer_.CopyPlacementContextFrom(this);
   gridded_detailed_placer_.SetRows(CollectGriddedRows());
@@ -1038,13 +1038,13 @@ void StdClusterWellLegalizer::RunGriddedDetailedPlacementStage() {
                "detailed_placement", "final");
 }
 
-bool StdClusterWellLegalizer::RunMovableCellLegalizationStages() {
+bool GriddedCellWellLegalizer::RunMovableCellLegalizationStages() {
   bool is_success = RunComponentClusteringStage();
   RunClusterOrientationStage();
   return is_success;
 }
 
-bool StdClusterWellLegalizer::RetryMovableCellLegalizationWithScavenging() {
+bool GriddedCellWellLegalizer::RetryMovableCellLegalizationWithScavenging() {
   if (stripe_mode_ == int(DefaultPartitionMode::SCAVENGE)) {
     return false;
   }
@@ -1059,7 +1059,7 @@ bool StdClusterWellLegalizer::RetryMovableCellLegalizationWithScavenging() {
   return is_success;
 }
 
-void StdClusterWellLegalizer::RunWellTapStage() {
+void GriddedCellWellLegalizer::RunWellTapStage() {
   if (disable_welltap_) {
     LOG(info) << "Skip inserting well tap cells\n";
   } else {
@@ -1072,7 +1072,7 @@ void StdClusterWellLegalizer::RunWellTapStage() {
                "well_tap");
 }
 
-void StdClusterWellLegalizer::RunEndCapStage() {
+void GriddedCellWellLegalizer::RunEndCapStage() {
   if (enable_end_cap_cell_) {
     LOG(info) << "Create end cap cells\n";
     WellRowCompleter(ckt_ptr_, &col_list_, BuildRowCompletionConfig())
@@ -1083,12 +1083,12 @@ void StdClusterWellLegalizer::RunEndCapStage() {
   EmitSnapshot("end_cap", "After End Cap Insertion", "legalization", "end_cap");
 }
 
-void StdClusterWellLegalizer::RunPhysicalCompletionStages() {
+void GriddedCellWellLegalizer::RunPhysicalCompletionStages() {
   RunWellTapStage();
   RunEndCapStage();
 }
 
-void StdClusterWellLegalizer::EmitSnapshot(const std::string& id,
+void GriddedCellWellLegalizer::EmitSnapshot(const std::string& id,
                                            const std::string& label,
                                            const std::string& group,
                                            const std::string& subgroup,
@@ -1098,7 +1098,7 @@ void StdClusterWellLegalizer::EmitSnapshot(const std::string& id,
                      label, group, subgroup, iteration);
 }
 
-bool StdClusterWellLegalizer::StartPlacement() {
+bool GriddedCellWellLegalizer::StartPlacement() {
   PrintStartStatement("standard cluster well legalization");
 
   snapshot_attempt_ = 0;
@@ -1121,7 +1121,7 @@ bool StdClusterWellLegalizer::StartPlacement() {
   return is_success;
 }
 
-void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
+void GriddedCellWellLegalizer::ReportEffectiveSpaceUtilization() {
   int total_standard_component_area = 0;
   int max_n_height = 0;
   int max_p_height = 0;
@@ -1177,14 +1177,14 @@ void StdClusterWellLegalizer::ReportEffectiveSpaceUtilization() {
             << ") um^2\n";
 }
 
-void StdClusterWellLegalizer::GenMatlabClusterTable(
+void GriddedCellWellLegalizer::GenMatlabClusterTable(
     std::string const& name_of_file) {
   std::string frame_file = name_of_file + "_outline.txt";
   ckt_ptr_->GenMATLABTable(frame_file);
   GenClusterTable(name_of_file, col_list_);
 }
 
-void StdClusterWellLegalizer::GenMATLABWellTable(
+void GriddedCellWellLegalizer::GenMATLABWellTable(
     std::string const& name_of_file, int well_emit_mode) {
   ckt_ptr_->GenMATLABWellTable(name_of_file, false);
 
@@ -1194,7 +1194,7 @@ void StdClusterWellLegalizer::GenMATLABWellTable(
   GenPPNP(name_of_file);
 }
 
-void StdClusterWellLegalizer::GenPPNP(const std::string& name_of_file) {
+void GriddedCellWellLegalizer::GenPPNP(const std::string& name_of_file) {
   std::string np_file = name_of_file + "_np.txt";
   std::ofstream ostnp(np_file.c_str());
   DaliExpects(ostnp.is_open(), "Cannot open output file: " + np_file);
@@ -1321,7 +1321,7 @@ void StdClusterWellLegalizer::GenPPNP(const std::string& name_of_file) {
  * True: emit cluster file
  * Fale: do not emit this file
  * ****/
-void StdClusterWellLegalizer::EmitDEFWellFile(std::string const& name_of_file,
+void GriddedCellWellLegalizer::EmitDEFWellFile(std::string const& name_of_file,
                                               int well_emit_mode,
                                               bool enable_emitting_cluster) {
   EmitPPNPRect(name_of_file + "ppnp.rect");
@@ -1331,7 +1331,7 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const& name_of_file,
   }
 }
 
-void StdClusterWellLegalizer::EmitPPNPRect(std::string const& name_of_file) {
+void GriddedCellWellLegalizer::EmitPPNPRect(std::string const& name_of_file) {
   std::vector<WellGeometryRect> geometry =
       WellGeometryBuilder(col_list_, RegionBottom(), RegionTop()).Build(true);
   WellGeometryExporter(
@@ -1340,7 +1340,7 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const& name_of_file) {
       .EmitImplantRectFile(name_of_file);
 }
 
-void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB* phydb_ptr) {
+void GriddedCellWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB* phydb_ptr) {
   if (disable_welltap_) {
     LOG(info) << "Skip export Pplus/Nplus fillings to PhyDB "
                  "since well tap is disabled\n";
@@ -1354,7 +1354,7 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB* phydb_ptr) {
       .ExportImplantsToPhyDB(phydb_ptr);
 }
 
-void StdClusterWellLegalizer::EmitWellRect(std::string const& name_of_file,
+void GriddedCellWellLegalizer::EmitWellRect(std::string const& name_of_file,
                                            int well_emit_mode) {
   std::vector<WellGeometryRect> geometry =
       WellGeometryBuilder(col_list_, RegionBottom(), RegionTop()).Build(false);
@@ -1364,7 +1364,7 @@ void StdClusterWellLegalizer::EmitWellRect(std::string const& name_of_file,
       .EmitWellRectFile(name_of_file, well_emit_mode);
 }
 
-void StdClusterWellLegalizer::ExportWellToPhyDB(phydb::PhyDB* phydb_ptr,
+void GriddedCellWellLegalizer::ExportWellToPhyDB(phydb::PhyDB* phydb_ptr,
                                                 int well_emit_mode) {
   if (disable_welltap_) {
     LOG(info) << "Skip export wells to PhyDB since well tap is disabled\n";
@@ -1379,7 +1379,7 @@ void StdClusterWellLegalizer::ExportWellToPhyDB(phydb::PhyDB* phydb_ptr,
 }
 
 std::vector<PlacementWellRect>
-StdClusterWellLegalizer::CollectWellVisualizationRects() {
+GriddedCellWellLegalizer::CollectWellVisualizationRects() {
   WellGeometryBuilder builder(col_list_, RegionBottom(), RegionTop());
   std::vector<WellGeometryRect> geometry =
       builder.Build(!disable_welltap_ && well_tap_macro_ != nullptr);
@@ -1415,7 +1415,7 @@ StdClusterWellLegalizer::CollectWellVisualizationRects() {
 /****
  * Emits a rect file for power routing
  * ****/
-void StdClusterWellLegalizer::EmitClusterRect(std::string const& name_of_file) {
+void GriddedCellWellLegalizer::EmitClusterRect(std::string const& name_of_file) {
   LOG(info) << "Writing cluster rect file: " << name_of_file << "\n";
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);

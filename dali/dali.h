@@ -210,7 +210,7 @@ class Dali {
   StandardCellLegalizer standard_cell_legalizer_;
   ExtendedTetrisLegalizer legalizer_;
   DetailedPlacer detailed_placer_;
-  StdClusterWellLegalizer well_legalizer_;
+  GriddedCellWellLegalizer well_legalizer_;
   std::unique_ptr<WellTapPlacer> well_tap_placer_;
   FillerCellPlacer filler_cell_placer_;
   std::unique_ptr<IoPlacer> io_placer_;
