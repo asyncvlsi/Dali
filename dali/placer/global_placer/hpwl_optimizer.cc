@@ -67,7 +67,8 @@ void BoundToBoundHpwlOptimizer::Initialize() {
   lower_bound_hpwl_.clear();
 
   size_t sz = ckt_ptr_->Components().size();
-  EgId eigen_sz = static_cast<EgId>(ckt_ptr_->Components().size());
+  SparseIndex eigen_sz =
+      static_cast<SparseIndex>(ckt_ptr_->Components().size());
   vx.resize(eigen_sz);
   vy.resize(eigen_sz);
   bx.resize(eigen_sz);
@@ -100,9 +101,9 @@ void BoundToBoundHpwlOptimizer::Initialize() {
   // this is to reserve space for anchor in the center of the placement region
   coefficient_size += sz;
   coefficients_x_.reserve(coefficient_size);
-  Ax.reserve(static_cast<EgId>(coefficient_size));
+  Ax.reserve(static_cast<SparseIndex>(coefficient_size));
   coefficients_y_.reserve(coefficient_size);
-  Ay.reserve(static_cast<EgId>(coefficient_size));
+  Ay.reserve(static_cast<SparseIndex>(coefficient_size));
 }
 
 void BoundToBoundHpwlOptimizer::BuildProblemX() {
@@ -634,7 +635,7 @@ void BoundToBoundHpwlOptimizer::BuildProblemWithAnchorX() {
     pin_loc1 = x_anchor[i];
     weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + width_epsilon_);
     bx[i] += pin_loc1 * weight;
-    coefficients_x_.emplace_back(T(i, i, weight));
+    coefficients_x_.emplace_back(SparseTriplet(i, i, weight));
   }
   elapsed_time.RecordEndTime();
   tot_triplets_time_x += elapsed_time.GetWallTime();
@@ -658,7 +659,7 @@ void BoundToBoundHpwlOptimizer::BuildProblemWithAnchorY() {
     pin_loc1 = y_anchor[i];
     weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + height_epsilon_);
     by[i] += pin_loc1 * weight;
-    coefficients_y_.emplace_back(T(i, i, weight));
+    coefficients_y_.emplace_back(SparseTriplet(i, i, weight));
   }
   elapsed_time.RecordEndTime();
   tot_triplets_time_y += elapsed_time.GetWallTime();

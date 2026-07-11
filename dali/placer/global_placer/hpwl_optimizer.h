@@ -35,12 +35,14 @@ enum class GlobalAnchorSchedule {
   kSimpl,
 };
 
-typedef Eigen::Index EgId;
-// Declares a row-major sparse matrix type of double.
-typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat;
-// A triplet is a simple object representing a non-zero entry as the triplet:
-// row index, column index, value.
-typedef Eigen::Triplet<double> T;
+/** Index type used by Eigen sparse matrices. */
+using SparseIndex = Eigen::Index;
+
+/** Row-major sparse matrix used by the quadratic placement problem. */
+using RowMajorSparseMatrix = Eigen::SparseMatrix<double, Eigen::RowMajor>;
+
+/** One row, column, and value entry used to assemble a sparse matrix. */
+using SparseTriplet = Eigen::Triplet<double>;
 
 /** Abstract interface for global-placement HPWL optimizers. */
 class HpwlOptimizer {
@@ -163,16 +165,18 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
 
   Eigen::VectorXd vx, vy;
   Eigen::VectorXd bx, by;
-  SpMat Ax;
-  SpMat Ay;
+  RowMajorSparseMatrix Ax;
+  RowMajorSparseMatrix Ay;
   Eigen::VectorXd x_anchor, y_anchor;
   Eigen::VectorXd x_anchor_weight, y_anchor_weight;
   bool x_anchor_set = false;
   bool y_anchor_set = false;
-  std::vector<T> coefficients_x_;
-  std::vector<T> coefficients_y_;
-  Eigen::ConjugateGradient<SpMat, Eigen::Lower | Eigen::Upper> cg_x_;
-  Eigen::ConjugateGradient<SpMat, Eigen::Lower | Eigen::Upper> cg_y_;
+  std::vector<SparseTriplet> coefficients_x_;
+  std::vector<SparseTriplet> coefficients_y_;
+  Eigen::ConjugateGradient<RowMajorSparseMatrix, Eigen::Lower | Eigen::Upper>
+      cg_x_;
+  Eigen::ConjugateGradient<RowMajorSparseMatrix, Eigen::Lower | Eigen::Upper>
+      cg_y_;
 
   int b2b_update_max_iteration_ = 50;
   size_t net_ignore_threshold_ = 100;
