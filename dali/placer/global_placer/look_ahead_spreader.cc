@@ -34,7 +34,7 @@ namespace dali {
 
 LookAheadSpreader::LookAheadSpreader(
     Circuit* circuit,
-    std::unique_ptr<PlacementCapacityModel> capacity_model)
+    std::shared_ptr<const PlacementCapacityModel> capacity_model)
     : GlobalSpreader(circuit), capacity_model_(std::move(capacity_model)) {
   DaliExpects(capacity_model_ != nullptr,
               "Look-ahead spreader requires a capacity model");

@@ -55,8 +55,9 @@ enum class GlobalLalHotspotMode {
  */
 class LookAheadSpreader : public GlobalSpreader {
  public:
-  LookAheadSpreader(Circuit* circuit,
-                    std::unique_ptr<PlacementCapacityModel> capacity_model);
+  LookAheadSpreader(
+      Circuit* circuit,
+      std::shared_ptr<const PlacementCapacityModel> capacity_model);
   ~LookAheadSpreader() override = default;
 
   /** Select how look-ahead legalization grid dimensions are refined. */
@@ -160,7 +161,7 @@ class LookAheadSpreader : public GlobalSpreader {
   int last_hotspot_count_ = 0;
   double last_max_hotspot_overflow_ = 0.0;
   HotspotDebugInfo last_hotspot_debug_;
-  std::unique_ptr<PlacementCapacityModel> capacity_model_;
+  std::shared_ptr<const PlacementCapacityModel> capacity_model_;
 
   GlobalGridSchedule grid_schedule_ = GlobalGridSchedule::kDali;
   GlobalLalExpansionMode expansion_mode_ = GlobalLalExpansionMode::kSymmetric;

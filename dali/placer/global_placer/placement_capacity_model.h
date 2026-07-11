@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "dali/circuit/component.h"
+#include "dali/placer/well_legalizer/gridded_capacity_estimator.h"
 
 namespace dali {
 
@@ -40,6 +41,20 @@ class AreaCapacityModel : public PlacementCapacityModel {
                              int region_width, int region_height,
                              unsigned long long whitespace_area,
                              double target_density) const override;
+};
+
+/** Capacity model that accounts for gridded rows, wells, and row completion. */
+class GriddedPlacementCapacityModel : public PlacementCapacityModel {
+ public:
+  explicit GriddedPlacementCapacityModel(GriddedCapacityConfig config);
+
+  PlacementCapacity Evaluate(const std::vector<Component*>& components,
+                             int region_width, int region_height,
+                             unsigned long long whitespace_area,
+                             double target_density) const override;
+
+ private:
+  GriddedCapacityConfig config_;
 };
 
 }  // namespace dali

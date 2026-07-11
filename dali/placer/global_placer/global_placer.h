@@ -79,6 +79,10 @@ class GlobalPlacer : public Placer {
   /** Select whether fixed-macro boundaries influence LAL cutlines. */
   void SetLalMacroBoundaryMode(GlobalLalMacroBoundaryMode mode);
 
+  /** Set the regional capacity policy used by the global spreader. */
+  void SetCapacityModel(
+      std::shared_ptr<const PlacementCapacityModel> capacity_model);
+
   /** Load global placer configuration. */
   void LoadConf(std::string const& config_file) override;
 
@@ -144,6 +148,8 @@ class GlobalPlacer : public Placer {
   GlobalLalMacroBoundaryMode lal_macro_boundary_mode_ =
       GlobalLalMacroBoundaryMode::kOff;
   SnapshotCallback snapshot_callback_;
+  std::shared_ptr<const PlacementCapacityModel> capacity_model_ =
+      std::make_shared<AreaCapacityModel>();
   std::unique_ptr<HpwlOptimizer> optimizer_;
   std::unique_ptr<GlobalSpreader> spreader_;
 };

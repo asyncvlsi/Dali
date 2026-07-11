@@ -92,6 +92,13 @@ void GlobalPlacer::SetLalMacroBoundaryMode(GlobalLalMacroBoundaryMode mode) {
   lal_macro_boundary_mode_ = mode;
 }
 
+void GlobalPlacer::SetCapacityModel(
+    std::shared_ptr<const PlacementCapacityModel> capacity_model) {
+  DaliExpects(capacity_model != nullptr,
+              "Global placer capacity model cannot be null");
+  capacity_model_ = std::move(capacity_model);
+}
+
 /****
  * @brief Load a configuration file for this placer.
  *
@@ -110,7 +117,7 @@ void GlobalPlacer::InitializePlacementEngines() {
   optimizer_->Initialize();
 
   auto look_ahead_spreader = std::make_unique<LookAheadSpreader>(
-      ckt_ptr_, std::make_unique<AreaCapacityModel>());
+      ckt_ptr_, capacity_model_);
   look_ahead_spreader->SetGridSchedule(grid_schedule_);
   look_ahead_spreader->SetExpansionMode(lal_expansion_mode_);
   look_ahead_spreader->SetHotspotMode(lal_hotspot_mode_);
