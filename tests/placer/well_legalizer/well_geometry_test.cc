@@ -26,7 +26,7 @@ TEST(WellGeometryBuilderTest, UsesFinalTapColumnsForImplantGeometry) {
   tap_macro->AddWellRect(false, 0, 0, 2, 4);
   tap_macro->AddWellRect(true, 0, 4, 2, 10);
 
-  std::vector<ClusterStripe> columns(1);
+  std::vector<StripeColumn> columns(1);
   columns.front().stripe_list_.resize(1);
   Stripe& stripe = columns.front().stripe_list_.front();
   stripe.lx_ = 10;

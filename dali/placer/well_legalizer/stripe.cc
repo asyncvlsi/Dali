@@ -952,7 +952,7 @@ void Stripe::AssignStandardCellsToRowSegments(/*double white_space_usage*/) {
   }
 }
 
-Stripe* ClusterStripe::GetStripeMatchSeg(SegI seg, int y_loc) {
+Stripe* StripeColumn::GetStripeMatchSeg(SegI seg, int y_loc) {
   Stripe* res = nullptr;
   for (auto& Stripe : stripe_list_) {
     if ((Stripe.URY() == y_loc) && (Stripe.LLX() == seg.lo) &&
@@ -964,7 +964,7 @@ Stripe* ClusterStripe::GetStripeMatchSeg(SegI seg, int y_loc) {
   return res;
 }
 
-Stripe* ClusterStripe::GetStripeMatchComponent(Component* component_ptr) {
+Stripe* StripeColumn::GetStripeMatchComponent(Component* component_ptr) {
   Stripe* res = nullptr;
   double center_x = component_ptr->X();
   double center_y = component_ptr->Y();
@@ -978,7 +978,7 @@ Stripe* ClusterStripe::GetStripeMatchComponent(Component* component_ptr) {
   return res;
 }
 
-Stripe* ClusterStripe::GetStripeClosestToComponent(Component* component_ptr,
+Stripe* StripeColumn::GetStripeClosestToComponent(Component* component_ptr,
                                                    double& distance) {
   Stripe* res = nullptr;
   double center_x = component_ptr->X();
@@ -1012,7 +1012,7 @@ Stripe* ClusterStripe::GetStripeClosestToComponent(Component* component_ptr,
   return res;
 }
 
-void ClusterStripe::AssignComponentToSimpleStripe() {
+void StripeColumn::AssignComponentToSimpleStripe() {
   for (auto& Stripe : stripe_list_) {
     Stripe.component_count_ = 0;
     Stripe.component_ptrs_vec_.clear();

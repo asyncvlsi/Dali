@@ -125,7 +125,7 @@ class GriddedRowLegalizer : public Placer {
   int well_tap_p_height_ = 0;
   int well_tap_n_height_ = 0;
 
-  std::vector<ClusterStripe> col_list_;
+  std::vector<StripeColumn> col_list_;
 
   bool is_well_tap_needed_ = true;
   bool is_checker_board_mode_ = false;

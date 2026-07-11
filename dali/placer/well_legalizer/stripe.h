@@ -171,7 +171,7 @@ class Stripe {
 
 /** Column-like collection of legalization stripes and their assigned
  * components. */
-struct ClusterStripe {
+struct StripeColumn {
   int lx_;
   int width_;
 

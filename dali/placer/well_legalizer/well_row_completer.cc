@@ -16,7 +16,7 @@
 namespace dali {
 
 WellRowCompleter::WellRowCompleter(Circuit* circuit,
-                                   std::vector<ClusterStripe>* columns,
+                                   std::vector<StripeColumn>* columns,
                                    WellRowCompletionConfig config)
     : circuit_(circuit), columns_(columns), config_(config) {
   DaliExpects(circuit_ != nullptr, "Well row completion requires a circuit");

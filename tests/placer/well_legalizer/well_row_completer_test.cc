@@ -33,7 +33,7 @@ TEST(WellRowCompleterTest, PlacesBoundaryCellsOutsideOrdinaryCellSpace) {
   circuit.ReserveSpaceForDesignImp(1, 0, 0);
   circuit.AddComponent("cell", "ordinary", 10, 20, PLACED);
 
-  std::vector<ClusterStripe> columns(1);
+  std::vector<StripeColumn> columns(1);
   columns.front().stripe_list_.resize(1);
   Stripe& stripe = columns.front().stripe_list_.front();
   stripe.gridded_rows_.resize(1);

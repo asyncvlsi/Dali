@@ -26,7 +26,7 @@
 namespace dali {
 
 void GenClusterTable(std::string const& name_of_file,
-                     std::vector<ClusterStripe>& col_list_) {
+                     std::vector<StripeColumn>& col_list_) {
   std::string cluster_file = name_of_file + "_cluster.txt";
   std::ofstream ost(cluster_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open output file: " << cluster_file);
@@ -114,7 +114,7 @@ void CollectWellFillingRects(const Stripe& stripe, int bottom_boundary,
 }
 
 void GenMATLABWellFillingTable(std::string const& base_file_name,
-                               std::vector<ClusterStripe>& col_list,
+                               std::vector<StripeColumn>& col_list,
                                int bottom_boundary, int top_boundary,
                                int well_emit_mode) {
   std::string p_file = base_file_name + "_pwell.txt";

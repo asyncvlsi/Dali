@@ -29,14 +29,14 @@
 namespace dali {
 
 void GenClusterTable(std::string const& name_of_file,
-                     std::vector<ClusterStripe>& col_list_);
+                     std::vector<StripeColumn>& col_list_);
 
 void CollectWellFillingRects(const Stripe& stripe, int bottom_boundary,
                              int top_boundary, std::vector<RectI>& n_rects,
                              std::vector<RectI>& p_rects);
 
 void GenMATLABWellFillingTable(std::string const& base_file_name,
-                               std::vector<ClusterStripe>& col_list,
+                               std::vector<StripeColumn>& col_list,
                                int bottom_boundary, int top_boundary,
                                int well_emit_mode = 0);
 

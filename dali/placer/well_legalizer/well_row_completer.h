@@ -38,7 +38,7 @@ struct WellRowCompletionConfig {
  */
 class WellRowCompleter {
  public:
-  WellRowCompleter(Circuit* circuit, std::vector<ClusterStripe>* columns,
+  WellRowCompleter(Circuit* circuit, std::vector<StripeColumn>* columns,
                    WellRowCompletionConfig config);
 
   /** Insert well taps into the reserved left and right row margins. */
@@ -54,7 +54,7 @@ class WellRowCompleter {
   void CreateEndCapMacros();
 
   Circuit* circuit_ = nullptr;
-  std::vector<ClusterStripe>* columns_ = nullptr;
+  std::vector<StripeColumn>* columns_ = nullptr;
   WellRowCompletionConfig config_;
   std::map<RowHeight, int> pre_end_cap_macro_ids_;
   std::map<RowHeight, int> post_end_cap_macro_ids_;

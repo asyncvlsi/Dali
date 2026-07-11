@@ -40,7 +40,7 @@ struct WellGeometryRect {
  */
 class WellGeometryBuilder {
  public:
-  WellGeometryBuilder(const std::vector<ClusterStripe>& columns,
+  WellGeometryBuilder(const std::vector<StripeColumn>& columns,
                       int region_bottom, int region_top);
 
   /** Build N/P-well rectangles and, when requested, N+/P+ rectangles. */
@@ -59,7 +59,7 @@ class WellGeometryBuilder {
   /** Return tap-cell vertical edges in ascending Y traversal order. */
   std::vector<int> CollectTapEdges(const Stripe& stripe) const;
 
-  const std::vector<ClusterStripe>& columns_;
+  const std::vector<StripeColumn>& columns_;
   int region_bottom_ = 0;
   int region_top_ = 0;
 };

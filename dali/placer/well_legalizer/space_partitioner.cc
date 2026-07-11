@@ -31,7 +31,7 @@ void AbstractSpacePartitioner::SetCircuit(Circuit* circuit) {
 }
 
 void AbstractSpacePartitioner::SetOutput(
-    std::vector<ClusterStripe>* output_stripes) {
+    std::vector<StripeColumn>* output_stripes) {
   DaliExpects(output_stripes != nullptr,
               "Save partitioning result to a nullptr?");
   output_stripes_ = output_stripes;
@@ -152,7 +152,7 @@ void DefaultSpacePartitioner::DetectAvailSpace() {
   }
 }
 
-void DefaultSpacePartitioner::UpdateWhiteSpaceInCol(ClusterStripe& col) {
+void DefaultSpacePartitioner::UpdateWhiteSpaceInCol(StripeColumn& col) {
   SegI stripe_seg(col.LLX(), col.URX());
   col.white_space_.clear();
   col.white_space_.resize(tot_num_rows_);
@@ -231,7 +231,7 @@ void DefaultSpacePartitioner::DecomposeSpaceToSimpleStripes() {
 void DefaultSpacePartitioner::AssignComponentToColBasedOnWhiteSpace() {
   // assign components to columns
   std::vector<Component>& component_list = circuit_->Components();
-  std::vector<ClusterStripe>& col_list = *output_stripes_;
+  std::vector<StripeColumn>& col_list = *output_stripes_;
   int sz = (int)component_list.size();
   std::vector<int> component_column_assign(sz, -1);
   for (int i = 0; i < tot_col_num_; ++i) {
@@ -303,7 +303,7 @@ bool DefaultSpacePartitioner::StartPartitioning() {
 
   FetchWellParameters();
 
-  std::vector<ClusterStripe>& col_list = *output_stripes_;
+  std::vector<StripeColumn>& col_list = *output_stripes_;
   // find the maximum width among movable cells
   max_component_width_ = 0;
   for (auto& component : circuit_->Components()) {

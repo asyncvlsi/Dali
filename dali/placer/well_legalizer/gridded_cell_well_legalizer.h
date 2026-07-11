@@ -168,7 +168,7 @@ class GriddedCellWellLegalizer : public Placer {
   /** Retry strict partitioning with last-column scavenging when needed. */
   bool RetryMovableCellLegalizationWithScavenging();
   /** Log why a stripe could not be legalized inside its assigned whitespace. */
-  void LogStripeLegalizationFailure(const ClusterStripe& col,
+  void LogStripeLegalizationFailure(const StripeColumn& col,
                                     const Stripe& stripe, int column_index,
                                     int stripe_index) const;
   /** Log a summary after component clustering to make failures debuggable. */
@@ -212,7 +212,7 @@ class GriddedCellWellLegalizer : public Placer {
 
   // list of index loc pair for location sort
   std::vector<ComponentInitialLocation> index_loc_list_;
-  std::vector<ClusterStripe> col_list_;  // list of stripes
+  std::vector<StripeColumn> col_list_;  // list of stripes
 
   /**** parameters for legalization ****/
   int max_iter_ = 10;

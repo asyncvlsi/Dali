@@ -32,7 +32,7 @@ namespace dali {
  * Partitions the placement region into rectangular stripes for well
  * legalization.
  *
- * The output ClusterStripe list is consumed by well legalizers, which legalize
+ * The output StripeColumn list is consumed by well legalizers, which legalize
  * each rectangular sub-region independently.
  */
 class AbstractSpacePartitioner {
@@ -44,7 +44,7 @@ class AbstractSpacePartitioner {
   virtual void SetCircuit(Circuit* circuit);
 
   /** Set the output stripe container. */
-  virtual void SetOutput(std::vector<ClusterStripe>* output_stripes);
+  virtual void SetOutput(std::vector<StripeColumn>* output_stripes);
 
   /** Reserve whitespace along placement boundaries. */
   virtual void SetReservedSpaceToBoundaries(int l_space, int r_space,
@@ -61,7 +61,7 @@ class AbstractSpacePartitioner {
 
  protected:
   Circuit* circuit_ = nullptr;
-  std::vector<ClusterStripe>* output_stripes_ = nullptr;
+  std::vector<StripeColumn>* output_stripes_ = nullptr;
 
   // some distances reserved to every edge
   int l_space_ = 0;
@@ -83,7 +83,7 @@ class DefaultSpacePartitioner : public AbstractSpacePartitioner {
 
   void FetchWellParameters();
   void DetectAvailSpace();
-  void UpdateWhiteSpaceInCol(ClusterStripe& col);
+  void UpdateWhiteSpaceInCol(StripeColumn& col);
   void DecomposeSpaceToSimpleStripes();
   void AssignComponentToColBasedOnWhiteSpace();
 

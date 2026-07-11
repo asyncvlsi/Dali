@@ -111,7 +111,7 @@ void GriddedRowLegalizer::SetWellTapCellParameters(
 
 void GriddedRowLegalizer::PrecomputeWellTapCellLocation() {
   if (!is_well_tap_needed_) return;
-  for (ClusterStripe& cluster : col_list_) {
+  for (StripeColumn& cluster : col_list_) {
     for (Stripe& stripe : cluster.stripe_list_) {
       stripe.PrecomputeWellTapCellLocation(
           is_checker_board_mode_, tap_cell_interval_grid_, well_tap_macro_);
@@ -262,7 +262,7 @@ bool GriddedRowLegalizer::StripeLegalizationDownward(Stripe& stripe,
 }
 
 void GriddedRowLegalizer::CleanUpTemporaryRowSegments() {
-  for (ClusterStripe& col : col_list_) {
+  for (StripeColumn& col : col_list_) {
     for (Stripe& stripe : col.stripe_list_) {
       stripe.CleanUpTemporaryRowSegments();
     }
@@ -275,7 +275,7 @@ bool GriddedRowLegalizer::UpwardDownwardLegalization(bool use_init_loc) {
   elapsed_time.RecordStartTime();
 
   bool res = true;
-  for (ClusterStripe& col : col_list_) {
+  for (StripeColumn& col : col_list_) {
     bool is_success = true;
     for (Stripe& stripe : col.stripe_list_) {
       stripe.max_disp_ = ckt_ptr_->AverageComponentWidth();
@@ -342,7 +342,7 @@ bool GriddedRowLegalizer::UpwardDownwardLegalizationWithDispCheck(
   elapsed_time.RecordStartTime();
 
   bool res = true;
-  for (ClusterStripe& col : col_list_) {
+  for (StripeColumn& col : col_list_) {
     bool is_success = true;
     for (Stripe& stripe : col.stripe_list_) {
       stripe.max_disp_ = ckt_ptr_->AverageComponentWidth();

@@ -704,7 +704,7 @@ bool GriddedCellWellLegalizer::ComponentClusteringLoose() {
 }
 
 void GriddedCellWellLegalizer::LogStripeLegalizationFailure(
-    const ClusterStripe& col, const Stripe& stripe, int column_index,
+    const StripeColumn& col, const Stripe& stripe, int column_index,
     int stripe_index) const {
   int lowest_row_y = std::numeric_limits<int>::max();
   int highest_row_y = std::numeric_limits<int>::min();
