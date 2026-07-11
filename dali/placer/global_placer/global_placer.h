@@ -27,8 +27,9 @@
 #include <vector>
 
 #include "dali/placer/global_placer/hpwl_optimizer.h"
+#include "dali/placer/global_placer/global_spreader.h"
+#include "dali/placer/global_placer/look_ahead_spreader.h"
 #include "dali/placer/global_placer/placement_initializer.h"
-#include "dali/placer/global_placer/rough_legalizer.h"
 #include "dali/placer/placer.h"
 
 namespace dali {
@@ -81,11 +82,11 @@ class GlobalPlacer : public Placer {
   /** Load global placer configuration. */
   void LoadConf(std::string const& config_file) override;
 
-  /** Create optimizer and rough legalizer instances. */
-  void InitializeOptimizerAndLegalizer();
+  /** Create the lower-bound optimizer and global spreader. */
+  void InitializePlacementEngines();
 
-  /** Release optimizer and rough legalizer instances. */
-  void CloseOptimizerAndLegalizer();
+  /** Release the lower-bound optimizer and global spreader. */
+  void ClosePlacementEngines();
 
   /** Initialize component locations before iterative placement. */
   void InitializeComponentLocation();
@@ -144,7 +145,7 @@ class GlobalPlacer : public Placer {
       GlobalLalMacroBoundaryMode::kOff;
   SnapshotCallback snapshot_callback_;
   std::unique_ptr<HpwlOptimizer> optimizer_;
-  std::unique_ptr<RoughLegalizer> legalizer_;
+  std::unique_ptr<GlobalSpreader> spreader_;
 };
 
 }  // namespace dali

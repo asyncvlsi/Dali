@@ -18,13 +18,13 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_PLACER_GLOBAL_PLACER_ROUGH_LEGALIZER_H_
-#define DALI_PLACER_GLOBAL_PLACER_ROUGH_LEGALIZER_H_
+#ifndef DALI_PLACER_GLOBAL_PLACER_LOOK_AHEAD_SPREADER_H_
+#define DALI_PLACER_GLOBAL_PLACER_LOOK_AHEAD_SPREADER_H_
 
 #include <queue>
 #include <set>
 
-#include "dali/circuit/circuit.h"
+#include "dali/placer/global_placer/global_spreader.h"
 #include "dali/placer/global_placer/grid_bin.h"
 #include "dali/placer/global_placer/spreading_region.h"
 
@@ -49,52 +49,25 @@ enum class GlobalLalHotspotMode {
   kOverflowRatio,
 };
 
-/** Interface for rough legalizers that remove gross component overlap. */
-class RoughLegalizer {
+/** Look-ahead legalization using grid bins and recursive bisection spreading.
+ */
+class LookAheadSpreader : public GlobalSpreader {
  public:
-  explicit RoughLegalizer(Circuit* ckt_ptr);
-  virtual ~RoughLegalizer() = default;
-
-  /** Initialize legalizer state for a target placement density. */
-  virtual void Initialize(double placement_density) = 0;
-
-  /** Spread components to reduce overlap and return current HPWL. */
-  virtual double RemoveComponentOverlap() = 0;
-
-  /** Return total legalizer runtime in seconds. */
-  virtual double GetTime() = 0;
-
-  /** Release legalizer resources. */
-  virtual void Close() = 0;
-
-  /** Return upper-bound HPWL history. */
-  std::vector<double>& GetHpwls() { return upper_bound_hpwl_; }
-
-  /** Return x upper-bound HPWL history. */
-  std::vector<double>& GetHpwlsX() { return upper_bound_hpwl_x_; }
-
-  /** Return y upper-bound HPWL history. */
-  std::vector<double>& GetHpwlsY() { return upper_bound_hpwl_y_; }
-
-  /** Enable or disable intermediate placement dumps. */
-  void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
-
-  /** Update the current global-placement iteration. */
-  void SetIteration(int iteration) { cur_iter_ = iteration; }
+  explicit LookAheadSpreader(Circuit* circuit) : GlobalSpreader(circuit) {}
+  ~LookAheadSpreader() override = default;
 
   /** Select how look-ahead legalization grid dimensions are refined. */
   void SetGridSchedule(GlobalGridSchedule schedule) {
     grid_schedule_ = schedule;
   }
 
-  /** Select how overfilled LAL clusters expand into whitespace. */
+  /** Select how overfilled clusters expand into whitespace. */
   void SetExpansionMode(GlobalLalExpansionMode mode) { expansion_mode_ = mode; }
 
-  /** Select how the next overfilled LAL hotspot is ranked. */
+  /** Select how the next overfilled hotspot is ranked. */
   void SetHotspotMode(GlobalLalHotspotMode mode) { hotspot_mode_ = mode; }
 
-  /** Set how strongly LAL preserves lower-bound affine geometry in leaf boxes.
-   */
+  /** Set the affine geometry-preservation weight used in leaf boxes. */
   void SetAffineScalingWeight(double weight) {
     affine_scaling_weight_ = weight;
   }
@@ -103,31 +76,6 @@ class RoughLegalizer {
   void SetMacroBoundaryMode(GlobalLalMacroBoundaryMode mode) {
     macro_boundary_mode_ = mode;
   }
-
- protected:
-  Circuit* ckt_ptr_ = nullptr;
-  double placement_density_ = 1.0;
-  std::vector<double> upper_bound_hpwl_;
-  std::vector<double> upper_bound_hpwl_x_;
-  std::vector<double> upper_bound_hpwl_y_;
-
-  // Save intermediate result for debugging and/or visualization.
-  bool should_save_intermediate_result_ = false;
-  int cur_iter_ = 0;
-  GlobalGridSchedule grid_schedule_ = GlobalGridSchedule::kDali;
-  GlobalLalExpansionMode expansion_mode_ = GlobalLalExpansionMode::kSymmetric;
-  GlobalLalHotspotMode hotspot_mode_ = GlobalLalHotspotMode::kComponentArea;
-  double affine_scaling_weight_ = 0.65;
-  GlobalLalMacroBoundaryMode macro_boundary_mode_ =
-      GlobalLalMacroBoundaryMode::kOff;
-};
-
-/** Look-ahead legalization using grid bins and recursive bisection spreading.
- */
-class LookAheadLegalizer : public RoughLegalizer {
- public:
-  explicit LookAheadLegalizer(Circuit* ckt_ptr) : RoughLegalizer(ckt_ptr) {}
-  ~LookAheadLegalizer() override = default;
 
   void InitializeGridBinSize();
   void UpdateAttributesForAllGridBins();
@@ -158,9 +106,9 @@ class LookAheadLegalizer : public RoughLegalizer {
   void PlaceComponentInBox(SpreadingRegion& box);
   void SplitBox(SpreadingRegion& box);
   bool RecursiveBisectionComponentSpreading();
-  double RemoveComponentOverlap() override;
+  double Spread() override;
 
-  double GetTime() override;
+  double GetTime() const override;
   void Close() override;
 
  private:
@@ -209,8 +157,15 @@ class LookAheadLegalizer : public RoughLegalizer {
   int last_hotspot_count_ = 0;
   double last_max_hotspot_overflow_ = 0.0;
   HotspotDebugInfo last_hotspot_debug_;
+
+  GlobalGridSchedule grid_schedule_ = GlobalGridSchedule::kDali;
+  GlobalLalExpansionMode expansion_mode_ = GlobalLalExpansionMode::kSymmetric;
+  GlobalLalHotspotMode hotspot_mode_ = GlobalLalHotspotMode::kComponentArea;
+  double affine_scaling_weight_ = 0.65;
+  GlobalLalMacroBoundaryMode macro_boundary_mode_ =
+      GlobalLalMacroBoundaryMode::kOff;
 };
 
 }  // namespace dali
 
-#endif  // DALI_PLACER_GLOBAL_PLACER_ROUGH_LEGALIZER_H_
+#endif  // DALI_PLACER_GLOBAL_PLACER_LOOK_AHEAD_SPREADER_H_

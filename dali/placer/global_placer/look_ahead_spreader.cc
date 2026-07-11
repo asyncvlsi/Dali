@@ -19,7 +19,7 @@
  *
  ******************************************************************************/
 
-#include "rough_legalizer.h"
+#include "dali/placer/global_placer/look_ahead_spreader.h"
 
 #include <algorithm>
 #include <cmath>
@@ -103,16 +103,6 @@ static void ScaleComponentCenters(
   }
 }
 
-RoughLegalizer::RoughLegalizer(Circuit* ckt_ptr) {
-  DaliExpects(ckt_ptr != nullptr, "Circuit is a nullptr?");
-  ckt_ptr_ = ckt_ptr;
-}
-
-void RoughLegalizer::SetShouldSaveIntermediateResult(
-    bool should_save_intermediate_result) {
-  should_save_intermediate_result_ = should_save_intermediate_result;
-}
-
 /****
  * @brief determine the grid bin height and width
  * grid_bin_height and grid_bin_width is determined by the following formula:
@@ -122,34 +112,34 @@ void RoughLegalizer::SetShouldSaveIntermediateResult(
  *    grid_cnt_x = (Right() - Left())/grid_bin_width
  * And initialize the space of grid_bin_mesh
  */
-void LookAheadLegalizer::InitializeGridBinSize() {
-  double grid_value_x = ckt_ptr_->GridValueX();
-  double grid_value_y = ckt_ptr_->GridValueY();
+void LookAheadSpreader::InitializeGridBinSize() {
+  double grid_value_x = circuit_->GridValueX();
+  double grid_value_y = circuit_->GridValueY();
   DaliExpects(grid_value_x > 0 && grid_value_y > 0,
               "Placement grid values must be positive");
 
   if (grid_schedule_ == GlobalGridSchedule::kSimpl) {
     constexpr double kInitialGridCount = 100.0;
     constexpr double kGridShrinkFactor = 1.06;
-    double refinement = std::pow(kGridShrinkFactor, cur_iter_);
+    double refinement = std::pow(kGridShrinkFactor, iteration_);
     double target_width =
-        double(ckt_ptr_->RegionWidth()) / (kInitialGridCount * refinement);
+        double(circuit_->RegionWidth()) / (kInitialGridCount * refinement);
     double target_height =
-        double(ckt_ptr_->RegionHeight()) / (kInitialGridCount * refinement);
+        double(circuit_->RegionHeight()) / (kInitialGridCount * refinement);
     target_width =
-        std::max(target_width, 4.0 * ckt_ptr_->AverageMovableComponentWidth());
+        std::max(target_width, 4.0 * circuit_->AverageMovableComponentWidth());
     target_height = std::max(target_height,
-                             4.0 * ckt_ptr_->AverageMovableComponentHeight());
+                             4.0 * circuit_->AverageMovableComponentHeight());
     grid_bin_width = std::max(1, static_cast<int>(std::round(target_width)));
     grid_bin_height = std::max(1, static_cast<int>(std::round(target_height)));
     target_component_count_per_bin_ =
         std::max(1, static_cast<int>(std::round(
                         grid_bin_width * grid_bin_height * placement_density_ /
-                        ckt_ptr_->AverageMovableComponentArea())));
+                        circuit_->AverageMovableComponentArea())));
   } else {
     target_component_count_per_bin_ = TargetComponentCountPerBin();
     double grid_bin_area = target_component_count_per_bin_ *
-                           ckt_ptr_->AverageMovableComponentArea() /
+                           circuit_->AverageMovableComponentArea() /
                            placement_density_;
 
     // Keep roughly the same bin area in Dali grid units, but make the bin close
@@ -162,10 +152,10 @@ void LookAheadLegalizer::InitializeGridBinSize() {
         1, static_cast<int>(std::round(grid_bin_height * grid_y_to_x_ratio)));
   }
   grid_cnt_x =
-      std::max(1, static_cast<int>(std::ceil(double(ckt_ptr_->RegionWidth()) /
+      std::max(1, static_cast<int>(std::ceil(double(circuit_->RegionWidth()) /
                                              grid_bin_width)));
   grid_cnt_y =
-      std::max(1, static_cast<int>(std::ceil(double(ckt_ptr_->RegionHeight()) /
+      std::max(1, static_cast<int>(std::ceil(double(circuit_->RegionHeight()) /
                                              grid_bin_height)));
   LOG(debug) << "  Global placement bin width, height: " << grid_bin_width
              << "  " << grid_bin_height << "\n";
@@ -185,16 +175,16 @@ void LookAheadLegalizer::InitializeGridBinSize() {
  * index, boundaries, area, and potential available white space. The adjacent
  * bin list is cached for the convenience of overfilled bin clustering.
  */
-void LookAheadLegalizer::UpdateAttributesForAllGridBins() {
+void LookAheadSpreader::UpdateAttributesForAllGridBins() {
   for (int i = 0; i < grid_cnt_x; i++) {
     for (int j = 0; j < grid_cnt_y; j++) {
       grid_bin_mesh[i][j].index = {i, j};
-      grid_bin_mesh[i][j].bottom = ckt_ptr_->RegionLLY() + j * grid_bin_height;
+      grid_bin_mesh[i][j].bottom = circuit_->RegionLLY() + j * grid_bin_height;
       grid_bin_mesh[i][j].top =
-          ckt_ptr_->RegionLLY() + (j + 1) * grid_bin_height;
-      grid_bin_mesh[i][j].left = ckt_ptr_->RegionLLX() + i * grid_bin_width;
+          circuit_->RegionLLY() + (j + 1) * grid_bin_height;
+      grid_bin_mesh[i][j].left = circuit_->RegionLLX() + i * grid_bin_width;
       grid_bin_mesh[i][j].right =
-          ckt_ptr_->RegionLLX() + (i + 1) * grid_bin_width;
+          circuit_->RegionLLX() + (i + 1) * grid_bin_width;
       grid_bin_mesh[i][j].white_space = grid_bin_mesh[i][j].Area();
       // at the very beginning, assuming the white space is the same as area
       grid_bin_mesh[i][j].create_adjacent_bin_list(grid_cnt_x, grid_cnt_y);
@@ -204,14 +194,14 @@ void LookAheadLegalizer::UpdateAttributesForAllGridBins() {
   // make sure the top placement boundary is the same as the top of the topmost
   // bins
   for (int i = 0; i < grid_cnt_x; ++i) {
-    grid_bin_mesh[i][grid_cnt_y - 1].top = ckt_ptr_->RegionURY();
+    grid_bin_mesh[i][grid_cnt_y - 1].top = circuit_->RegionURY();
     grid_bin_mesh[i][grid_cnt_y - 1].white_space =
         grid_bin_mesh[i][grid_cnt_y - 1].Area();
   }
   // make sure the right placement boundary is the same as the right of the
   // rightmost bins
   for (int i = 0; i < grid_cnt_y; ++i) {
-    grid_bin_mesh[grid_cnt_x - 1][i].right = ckt_ptr_->RegionURX();
+    grid_bin_mesh[grid_cnt_x - 1][i].right = circuit_->RegionURX();
     grid_bin_mesh[grid_cnt_x - 1][i].white_space =
         grid_bin_mesh[grid_cnt_x - 1][i].Area();
   }
@@ -222,25 +212,25 @@ void LookAheadLegalizer::UpdateAttributesForAllGridBins() {
  * For each fixed component, we need to store its index in grid bins it overlaps
  * with. This can help us to compute available white space in each grid bin.
  */
-void LookAheadLegalizer::UpdatePlacementBlockagesInGridBins() {
-  for (auto& blockage : ckt_ptr_->design().PlacementBlockages()) {
+void LookAheadSpreader::UpdatePlacementBlockagesInGridBins() {
+  for (auto& blockage : circuit_->design().PlacementBlockages()) {
     const RectI& rect = blockage.GetRect();
     /* find the left, right, bottom, top index of the grid */
     bool blockage_component_out_of_region =
-        rect.LLX() >= ckt_ptr_->RegionURX() ||
-        rect.URX() <= ckt_ptr_->RegionLLX() ||
-        rect.LLY() >= ckt_ptr_->RegionURY() ||
-        rect.URY() <= ckt_ptr_->RegionLLY();
+        rect.LLX() >= circuit_->RegionURX() ||
+        rect.URX() <= circuit_->RegionLLX() ||
+        rect.LLY() >= circuit_->RegionURY() ||
+        rect.URY() <= circuit_->RegionLLY();
     // TODO: test and clean up this part of code using an adaptec benchmark
     if (blockage_component_out_of_region) continue;
     int left_index =
-        std::floor((rect.LLX() - ckt_ptr_->RegionLLX()) / grid_bin_width);
+        std::floor((rect.LLX() - circuit_->RegionLLX()) / grid_bin_width);
     int right_index =
-        std::floor((rect.URX() - ckt_ptr_->RegionLLX()) / grid_bin_width);
+        std::floor((rect.URX() - circuit_->RegionLLX()) / grid_bin_width);
     int bottom_index =
-        std::floor((rect.LLY() - ckt_ptr_->RegionLLY()) / grid_bin_height);
+        std::floor((rect.LLY() - circuit_->RegionLLY()) / grid_bin_height);
     int top_index =
-        std::floor((rect.URY() - ckt_ptr_->RegionLLY()) / grid_bin_height);
+        std::floor((rect.URY() - circuit_->RegionLLY()) / grid_bin_height);
     /* the grid boundaries might be the placement region boundaries
      * if a component touches the rightmost and topmost boundaries,
      * the index need to be fixed to make sure no memory access out of scope */
@@ -273,7 +263,7 @@ void LookAheadLegalizer::UpdatePlacementBlockagesInGridBins() {
   }
 }
 
-void LookAheadLegalizer::UpdateWhiteSpaceInGridBin(GridBin& grid_bin) {
+void LookAheadSpreader::UpdateWhiteSpaceInGridBin(GridBin& grid_bin) {
   RectI bin_rect(grid_bin.LLX(), grid_bin.LLY(), grid_bin.URX(),
                  grid_bin.URY());
 
@@ -300,7 +290,7 @@ void LookAheadLegalizer::UpdateWhiteSpaceInGridBin(GridBin& grid_bin) {
  * This function initialize the grid bin matrix, each bin has an area which
  * can accommodate around target_component_count_per_bin_ # of components
  * ****/
-void LookAheadLegalizer::InitGridBins() {
+void LookAheadSpreader::InitGridBins() {
   grid_bin_mesh.clear();
   grid_bin_white_space_LUT.clear();
   InitializeGridBinSize();
@@ -316,16 +306,16 @@ void LookAheadLegalizer::InitGridBins() {
   }
 }
 
-int LookAheadLegalizer::TargetComponentCountPerBin() const {
+int LookAheadSpreader::TargetComponentCountPerBin() const {
   // SimPL uses coarse-to-fine density grids. A coarse grid gives early
   // iterations a smoother spreading force, then the finer default grid exposes
   // local congestion before final legalization.
-  if (cur_iter_ < 5) return 100;
-  if (cur_iter_ < 15) return 60;
+  if (iteration_ < 5) return 100;
+  if (iteration_ < 15) return 60;
   return 30;
 }
 
-void LookAheadLegalizer::RebuildGridBinsIfTargetChanged() {
+void LookAheadSpreader::RebuildGridBinsIfTargetChanged() {
   if (grid_schedule_ == GlobalGridSchedule::kSimpl) {
     InitGridBins();
     InitWhiteSpaceLUT();
@@ -349,7 +339,7 @@ void LookAheadLegalizer::RebuildGridBinsIfTargetChanged() {
  * want to find the white space in a region, the value can be easily extracted
  * from the look-up table
  * ****/
-void LookAheadLegalizer::InitWhiteSpaceLUT() {
+void LookAheadSpreader::InitWhiteSpaceLUT() {
   // this for loop is created to initialize the size of the loop-up table
   std::vector<unsigned long long> tmp_vector(grid_cnt_y);
   grid_bin_white_space_LUT.resize(grid_cnt_x, tmp_vector);
@@ -385,7 +375,7 @@ void LookAheadLegalizer::InitWhiteSpaceLUT() {
   }
 }
 
-void LookAheadLegalizer::Initialize(double placement_density) {
+void LookAheadSpreader::Initialize(double placement_density) {
   placement_density_ = placement_density;
 
   upper_bound_hpwl_x_.clear();
@@ -395,7 +385,7 @@ void LookAheadLegalizer::Initialize(double placement_density) {
   InitWhiteSpaceLUT();
 }
 
-void LookAheadLegalizer::ClearGridBinFlag() {
+void LookAheadSpreader::ClearGridBinFlag() {
   for (auto& bin_column : grid_bin_mesh) {
     for (auto& bin : bin_column) bin.global_placed = false;
   }
@@ -406,7 +396,7 @@ void LookAheadLegalizer::ClearGridBinFlag() {
  * component_ptrs, component_area and over_fill state can be changed, so we need
  * to update them when necessary
  * ****/
-void LookAheadLegalizer::UpdateGridBinState() {
+void LookAheadSpreader::UpdateGridBinState() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
@@ -423,16 +413,16 @@ void LookAheadLegalizer::UpdateGridBinState() {
   // note that in extreme cases, the index might be smaller than 0 or larger
   // than the maximum allowed index, because the component is on the boundaries,
   // so we need to make some modifications for these extreme cases.
-  std::vector<Component>& components = ckt_ptr_->Components();
+  std::vector<Component>& components = circuit_->Components();
   int sz = static_cast<int>(components.size());
   int x_index = 0;
   int y_index = 0;
 
   for (int i = 0; i < sz; i++) {
     if (components[i].IsFixed()) continue;
-    x_index = (int)std::floor((components[i].X() - ckt_ptr_->RegionLLX()) /
+    x_index = (int)std::floor((components[i].X() - circuit_->RegionLLX()) /
                               grid_bin_width);
-    y_index = (int)std::floor((components[i].Y() - ckt_ptr_->RegionLLY()) /
+    y_index = (int)std::floor((components[i].Y() - circuit_->RegionLLY()) /
                               grid_bin_height);
     if (x_index < 0) x_index = 0;
     if (x_index > grid_cnt_x - 1) x_index = grid_cnt_x - 1;
@@ -500,7 +490,7 @@ void LookAheadLegalizer::UpdateGridBinState() {
   update_grid_bin_state_time_ += elapsed_time.GetWallTime();
 }
 
-void LookAheadLegalizer::UpdateClusterArea(OverfilledBinCluster& cluster) {
+void LookAheadSpreader::UpdateClusterArea(OverfilledBinCluster& cluster) {
   cluster.total_component_area = 0;
   cluster.total_white_space = 0;
   for (auto& index : cluster.bin_set) {
@@ -510,7 +500,7 @@ void LookAheadLegalizer::UpdateClusterArea(OverfilledBinCluster& cluster) {
   }
 }
 
-void LookAheadLegalizer::UpdateClusterList() {
+void LookAheadSpreader::UpdateClusterList() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
   cluster_set.clear();
@@ -559,7 +549,7 @@ void LookAheadLegalizer::UpdateClusterList() {
 }
 
 std::multiset<OverfilledBinCluster, std::greater<>>::iterator
-LookAheadLegalizer::SelectHotspotCluster() {
+LookAheadSpreader::SelectHotspotCluster() {
   if (cluster_set.empty()) return cluster_set.end();
   auto selected = cluster_set.begin();
   double selected_score = HotspotScore(*selected);
@@ -574,7 +564,7 @@ LookAheadLegalizer::SelectHotspotCluster() {
   return selected;
 }
 
-double LookAheadLegalizer::HotspotScore(
+double LookAheadSpreader::HotspotScore(
     const OverfilledBinCluster& cluster) const {
   double component_area = static_cast<double>(cluster.total_component_area);
   double white_space = static_cast<double>(cluster.total_white_space);
@@ -594,7 +584,7 @@ double LookAheadLegalizer::HotspotScore(
   return component_area;
 }
 
-const char* LookAheadLegalizer::HotspotModeName(GlobalLalHotspotMode mode) {
+const char* LookAheadSpreader::HotspotModeName(GlobalLalHotspotMode mode) {
   switch (mode) {
     case GlobalLalHotspotMode::kComponentArea:
       return "area";
@@ -606,7 +596,7 @@ const char* LookAheadLegalizer::HotspotModeName(GlobalLalHotspotMode mode) {
   return "area";
 }
 
-void LookAheadLegalizer::UpdateLargestCluster() {
+void LookAheadSpreader::UpdateLargestCluster() {
   if (cluster_set.empty()) return;
 
   for (auto it = SelectHotspotCluster(); it != cluster_set.end();) {
@@ -682,7 +672,7 @@ void LookAheadLegalizer::UpdateLargestCluster() {
   }
 }
 
-uint32_t LookAheadLegalizer::LookUpWhiteSpace(GridBinIndex const& ll_index,
+uint32_t LookAheadSpreader::LookUpWhiteSpace(GridBinIndex const& ll_index,
                                               GridBinIndex const& ur_index) {
   /****
    * this function is used to return the white space in a region specified by
@@ -714,7 +704,7 @@ uint32_t LookAheadLegalizer::LookUpWhiteSpace(GridBinIndex const& ll_index,
   return total_white_space;
 }
 
-uint32_t LookAheadLegalizer::LookUpWhiteSpace(GridBinWindow& window) {
+uint32_t LookAheadSpreader::LookUpWhiteSpace(GridBinWindow& window) {
   uint32_t total_white_space;
   if (window.llx == 0) {
     if (window.lly == 0) {
@@ -738,7 +728,7 @@ uint32_t LookAheadLegalizer::LookUpWhiteSpace(GridBinWindow& window) {
   return total_white_space;
 }
 
-bool LookAheadLegalizer::ExpandBoxByBestNeighbor(SpreadingRegion* box) {
+bool LookAheadSpreader::ExpandBoxByBestNeighbor(SpreadingRegion* box) {
   DaliExpects(box != nullptr, "Cannot expand a null LAL box");
   std::vector<SpreadingRegion> candidates;
   candidates.reserve(4);
@@ -786,7 +776,7 @@ bool LookAheadLegalizer::ExpandBoxByBestNeighbor(SpreadingRegion* box) {
   return true;
 }
 
-void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
+void LookAheadSpreader::FindMinimumBoxForLargestCluster() {
   /****
    * this function find the box for the largest cluster,
    * such that the total white space in the box is larger than the total
@@ -919,7 +909,7 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
  *
  * @param box: region to partition into two child regions
  */
-void LookAheadLegalizer::SplitGridBox(SpreadingRegion& box) {
+void LookAheadSpreader::SplitGridBox(SpreadingRegion& box) {
   // 1. create two sub-boxes
   SpreadingRegion box1, box2;
   // the first sub-box should have the same lower left corner as the original
@@ -1023,7 +1013,7 @@ void LookAheadLegalizer::SplitGridBox(SpreadingRegion& box) {
   }
 }
 
-void LookAheadLegalizer::PlaceComponentInBox(SpreadingRegion& box) {
+void LookAheadSpreader::PlaceComponentInBox(SpreadingRegion& box) {
   int sz = static_cast<int>(box.component_ptrs.size());
   std::vector<std::pair<Component*, double>> index_loc_list_x(sz);
   std::vector<std::pair<Component*, double>> index_loc_list_y(sz);
@@ -1047,7 +1037,7 @@ void LookAheadLegalizer::PlaceComponentInBox(SpreadingRegion& box) {
                         /*scale_x=*/false, affine_scaling_weight_);
 }
 
-void LookAheadLegalizer::SplitBox(SpreadingRegion& box) {
+void LookAheadSpreader::SplitBox(SpreadingRegion& box) {
   bool flag_bisection_complete;
   int dominating_box_flag;  // indicate whether there is a dominating
                             // SpreadingRegion
@@ -1188,7 +1178,7 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
  * of each box and cells should be assigned to the box
  * @return true if succeed, false if fail
  */
-bool LookAheadLegalizer::RecursiveBisectionComponentSpreading() {
+bool LookAheadSpreader::RecursiveBisectionComponentSpreading() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
@@ -1226,13 +1216,13 @@ bool LookAheadLegalizer::RecursiveBisectionComponentSpreading() {
   return true;
 }
 
-double LookAheadLegalizer::RemoveComponentOverlap() {
+double LookAheadSpreader::Spread() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
-  last_hpwl_before_ = ckt_ptr_->WeightedHPWL();
+  last_hpwl_before_ = circuit_->WeightedHPWL();
   std::vector<double> lower_bound_center_x;
   std::vector<double> lower_bound_center_y;
-  auto& components = ckt_ptr_->Components();
+  auto& components = circuit_->Components();
   lower_bound_center_x.reserve(components.size());
   lower_bound_center_y.reserve(components.size());
   for (const Component& component : components) {
@@ -1256,13 +1246,10 @@ double LookAheadLegalizer::RemoveComponentOverlap() {
     // "\n";
   } while (!cluster_set.empty());
 
-  // ExtendedTetrisLegalizer legalizer_;
-  // legalizer_.TakeOver(this);
-  // legalizer_.StartPlacement();
 
-  double evaluate_result_x = ckt_ptr_->WeightedHPWLX();
+  double evaluate_result_x = circuit_->WeightedHPWLX();
   upper_bound_hpwl_x_.push_back(evaluate_result_x);
-  double evaluate_result_y = ckt_ptr_->WeightedHPWLY();
+  double evaluate_result_y = circuit_->WeightedHPWLY();
   upper_bound_hpwl_y_.push_back(evaluate_result_y);
   last_hpwl_after_ = evaluate_result_x + evaluate_result_y;
   ClearGridBinFlag();
@@ -1280,8 +1267,8 @@ double LookAheadLegalizer::RemoveComponentOverlap() {
     double dx_grid = component.CenterX() - lower_bound_center_x[i];
     double dy_grid = component.CenterY() - lower_bound_center_y[i];
     double displacement_grid = std::sqrt(dx_grid * dx_grid + dy_grid * dy_grid);
-    double dx_um = dx_grid * ckt_ptr_->GridValueX();
-    double dy_um = dy_grid * ckt_ptr_->GridValueY();
+    double dx_um = dx_grid * circuit_->GridValueX();
+    double dy_um = dy_grid * circuit_->GridValueY();
     double displacement_um = std::sqrt(dx_um * dx_um + dy_um * dy_um);
     total_displacement_grid += displacement_grid;
     max_displacement_grid = std::max(max_displacement_grid, displacement_grid);
@@ -1303,10 +1290,10 @@ double LookAheadLegalizer::RemoveComponentOverlap() {
   tot_lal_time += elapsed_time.GetWallTime();
 
   if (should_save_intermediate_result_) {
-    std::string file_name = "lal_result_" + std::to_string(cur_iter_) + ".txt";
-    ++cur_iter_;
-    ckt_ptr_->GenMATLABTable(file_name);
-    // DumpLookAheadDisplacement("displace_" + std::to_string(cur_iter_), 1);
+    std::string file_name = "lal_result_" + std::to_string(iteration_) + ".txt";
+    ++iteration_;
+    circuit_->GenMATLABTable(file_name);
+    // DumpLookAheadDisplacement("displace_" + std::to_string(iteration_), 1);
   }
 
   LOG(debug) << "(UpdateGridBinState time: " << update_grid_bin_state_time_
@@ -1332,9 +1319,9 @@ double LookAheadLegalizer::RemoveComponentOverlap() {
   return upper_bound_hpwl_.back();
 }
 
-double LookAheadLegalizer::GetTime() { return tot_lal_time; }
+double LookAheadSpreader::GetTime() const { return tot_lal_time; }
 
-void LookAheadLegalizer::Close() {
+void LookAheadSpreader::Close() {
   grid_bin_mesh.clear();
   grid_bin_white_space_LUT.clear();
 }

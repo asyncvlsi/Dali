@@ -102,38 +102,33 @@ void GlobalPlacer::LoadConf(std::string const& config_file) {
   DaliFatal("This function is not fully implemented");
 }
 
-/****
- * @brief Initialize HPWL optimizer and rough legalizer. If optimizer/legalizer
- * has been initialized, delete them and create a new instance.
- */
-void GlobalPlacer::InitializeOptimizerAndLegalizer() {
+void GlobalPlacer::InitializePlacementEngines() {
   optimizer_ =
       std::make_unique<BoundToBoundHpwlOptimizer>(ckt_ptr_, num_threads_);
   optimizer_->SetAnchorSchedule(anchor_schedule_);
   optimizer_->SetShouldSaveIntermediateResult(should_save_intermediate_result_);
   optimizer_->Initialize();
 
-  legalizer_ = std::make_unique<LookAheadLegalizer>(ckt_ptr_);
-  legalizer_->SetGridSchedule(grid_schedule_);
-  legalizer_->SetExpansionMode(lal_expansion_mode_);
-  legalizer_->SetHotspotMode(lal_hotspot_mode_);
-  legalizer_->SetAffineScalingWeight(lal_affine_scaling_weight_);
-  legalizer_->SetMacroBoundaryMode(lal_macro_boundary_mode_);
-  legalizer_->SetShouldSaveIntermediateResult(should_save_intermediate_result_);
-  legalizer_->Initialize(PlacementDensity());
+  auto look_ahead_spreader = std::make_unique<LookAheadSpreader>(ckt_ptr_);
+  look_ahead_spreader->SetGridSchedule(grid_schedule_);
+  look_ahead_spreader->SetExpansionMode(lal_expansion_mode_);
+  look_ahead_spreader->SetHotspotMode(lal_hotspot_mode_);
+  look_ahead_spreader->SetAffineScalingWeight(lal_affine_scaling_weight_);
+  look_ahead_spreader->SetMacroBoundaryMode(lal_macro_boundary_mode_);
+  look_ahead_spreader->SetShouldSaveIntermediateResult(
+      should_save_intermediate_result_);
+  look_ahead_spreader->Initialize(PlacementDensity());
+  spreader_ = std::move(look_ahead_spreader);
 }
 
-/****
- * @brief Close and delete both optimizer and legalizer.
- */
-void GlobalPlacer::CloseOptimizerAndLegalizer() {
+void GlobalPlacer::ClosePlacementEngines() {
   if (optimizer_) {
     optimizer_->Close();
     optimizer_.reset();
   }
-  if (legalizer_) {
-    legalizer_->Close();
-    legalizer_.reset();
+  if (spreader_) {
+    spreader_->Close();
+    spreader_.reset();
   }
 }
 
@@ -189,7 +184,7 @@ void GlobalPlacer::PreparePlacement() {
   InitializeComponentLocation();
   EmitSnapshot("initialization.after", "After Location Initialization",
                "initialization", -1);
-  InitializeOptimizerAndLegalizer();
+  InitializePlacementEngines();
 }
 
 void GlobalPlacer::RunPlacementIterations() {
@@ -197,8 +192,8 @@ void GlobalPlacer::RunPlacementIterations() {
     optimizer_->SetIteration(cur_iter_);
     optimizer_->OptimizeHpwl();
     EmitIterationSnapshot("lower_bound", "Lower Bound", "lower_bound");
-    legalizer_->SetIteration(cur_iter_);
-    legalizer_->RemoveComponentOverlap();
+    spreader_->SetIteration(cur_iter_);
+    spreader_->Spread();
     EmitIterationSnapshot("upper_bound", "Upper Bound", "upper_bound");
     PrintHpwl();
     if (IsPlacementConverged()) break;
@@ -243,7 +238,7 @@ bool GlobalPlacer::StartPlacement() {
   FinalizePlacement();
 
   PrintEndStatement("Global placement", true);
-  CloseOptimizerAndLegalizer();
+  ClosePlacementEngines();
   return true;
 }
 
@@ -311,7 +306,7 @@ bool GlobalPlacer::IsPlacementConverged() {
 
   bool res;
   auto& lower_bound_hpwl = optimizer_->GetHpwls();
-  auto& upper_bound_hpwl = legalizer_->GetHpwls();
+  auto& upper_bound_hpwl = spreader_->Hpwls();
   if (convergence_criteria_ == 1) {
     if (lower_bound_hpwl.empty() || upper_bound_hpwl.empty()) {
       res = false;
@@ -343,9 +338,9 @@ bool GlobalPlacer::IsPlacementConverged() {
  * @brief A helper function to format and print HPWL in each iteration.
  */
 void GlobalPlacer::PrintHpwl() const {
-  if (optimizer_->GetHpwls().empty() || legalizer_->GetHpwls().empty()) return;
+  if (optimizer_->GetHpwls().empty() || spreader_->Hpwls().empty()) return;
   double lo_hpwl = optimizer_->GetHpwls().back();
-  double hi_hpwl = legalizer_->GetHpwls().back();
+  double hi_hpwl = spreader_->Hpwls().back();
   double hpwl_gap = hi_hpwl - lo_hpwl;
   double hpwl_gap_percent = lo_hpwl <= 1e-10 ? 0 : hpwl_gap / lo_hpwl * 100.0;
   size_t buffer_size = 1024;
@@ -367,9 +362,9 @@ void GlobalPlacer::PrintEndStatement(std::string const& name_of_process,
   LOG(debug) << "  Iterative look-ahead legalization complete\n";
   LOG(debug) << "  Total number of iteration: " << cur_iter_ + 1 << "\n";
   LOG(debug) << "  Lower bound: " << optimizer_->GetHpwls() << "\n";
-  LOG(debug) << "  Upper bound: " << legalizer_->GetHpwls() << "\n";
+  LOG(debug) << "  Upper bound: " << spreader_->Hpwls() << "\n";
   LOG(debug) << "cg time: " << optimizer_->GetTime()
-             << "s, lal time: " << legalizer_->GetTime() << "s\n";
+             << "s, lal time: " << spreader_->GetTime() << "s\n";
   Placer::PrintEndStatement(name_of_process, is_success);
 }
 

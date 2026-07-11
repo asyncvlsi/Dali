@@ -37,9 +37,9 @@ bool WellPlaceFlow::StartPlacement() {  // TODO: do not use this
 
   PrintStartStatement("well place flow");
   SanityCheck();
-  InitializeOptimizerAndLegalizer();
+  InitializePlacementEngines();
   optimizer_->Initialize();
-  legalizer_->Initialize(PlacementDensity());
+  spreader_->Initialize(PlacementDensity());
   InitializeComponentLocation();
 
   optimizer_->OptimizeHpwl();
@@ -50,7 +50,7 @@ bool WellPlaceFlow::StartPlacement() {  // TODO: do not use this
   max_iter_ = 50;
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     LOG(trace) << cur_iter_ << "-th iteration\n";
-    legalizer_->RemoveComponentOverlap();
+    spreader_->Spread();
     if (cur_iter_ > 10) {
       ExtendedTetrisLegalizer legalizer;
       legalizer.CopyPlacementContextFrom(this);
@@ -61,7 +61,7 @@ bool WellPlaceFlow::StartPlacement() {  // TODO: do not use this
       well_legalizer.SetStripePartitionMode(
           int(WellPartitionMode::kScavenge));
       well_legalizer.WellLegalize();
-      legalizer_->GetHpwls().back() = ckt_ptr_->WeightedHPWL();
+      spreader_->Hpwls().back() = ckt_ptr_->WeightedHPWL();
 
       // GriddedCellWellLegalizer well_legalizer;
       // well_legalizer.TakeOver(this);
@@ -79,15 +79,15 @@ bool WellPlaceFlow::StartPlacement() {  // TODO: do not use this
       // }
     }
     LOG(info) << "It " << cur_iter_ << ": \t" << optimizer_->GetHpwls().back()
-              << " " << legalizer_->GetHpwls().back() << "\n";
+              << " " << spreader_->Hpwls().back() << "\n";
     optimizer_->OptimizeHpwl();
   }
 
   LOG(info) << "\033[0;36m" << "Global Placement complete\n"
             << "\033[0m";
   LOG(info) << "(cg time: " << optimizer_->GetTime()
-            << "s, lal time: " << legalizer_->GetTime() << "s)\n";
-  legalizer_->Close();
+            << "s, lal time: " << spreader_->GetTime() << "s)\n";
+  spreader_->Close();
   // CheckAndShift();
   UpdateMovableComponentPlacementStatus();
   ReportHPWL();
