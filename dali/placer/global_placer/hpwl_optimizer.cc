@@ -49,7 +49,7 @@ void HpwlOptimizer::SetShouldSaveIntermediateResult(
  * In our implementation, this small number is around the average movable
  * component width for x and height for y.
  */
-void B2BHpwlOptimizer::UpdateEpsilon() {
+void BoundToBoundHpwlOptimizer::UpdateEpsilon() {
   width_epsilon_ = ckt_ptr_->AverageMovableComponentWidth() * epsilon_factor_;
   height_epsilon_ = ckt_ptr_->AverageMovableComponentHeight() * epsilon_factor_;
 }
@@ -57,7 +57,7 @@ void B2BHpwlOptimizer::UpdateEpsilon() {
 /****
  * @brief Initialize variables for the conjugate gradient linear solver
  */
-void B2BHpwlOptimizer::Initialize() {
+void BoundToBoundHpwlOptimizer::Initialize() {
   // set a small value for net weight dividend to improve numerical stability
   UpdateEpsilon();
 
@@ -110,7 +110,7 @@ void B2BHpwlOptimizer::Initialize() {
   Ay.reserve(static_cast<EgId>(coefficient_size));
 }
 
-void B2BHpwlOptimizer::BuildProblemX() {
+void BoundToBoundHpwlOptimizer::BuildProblemX() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
@@ -226,7 +226,7 @@ void B2BHpwlOptimizer::BuildProblemX() {
   tot_triplets_time_x += elapsed_time.GetWallTime();
 }
 
-void B2BHpwlOptimizer::BuildProblemY() {
+void BoundToBoundHpwlOptimizer::BuildProblemY() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
@@ -342,8 +342,9 @@ void B2BHpwlOptimizer::BuildProblemY() {
   tot_triplets_time_y += elapsed_time.GetWallTime();
 }
 
-bool B2BHpwlOptimizer::IsSeriesConverged(std::vector<double>& data,
-                                         int window_size, double tolerance) {
+bool BoundToBoundHpwlOptimizer::IsSeriesConverged(std::vector<double>& data,
+                                                  int window_size,
+                                                  double tolerance) {
   int sz = (int)data.size();
   if (sz < window_size) {
     return false;
@@ -370,8 +371,8 @@ bool B2BHpwlOptimizer::IsSeriesConverged(std::vector<double>& data,
  * Returns if the given series of data is oscillating or not.
  * We will only look at the last several data points @param length.
  * ****/
-bool B2BHpwlOptimizer::IsSeriesOscillate(std::vector<double>& data,
-                                         int window_size) {
+bool BoundToBoundHpwlOptimizer::IsSeriesOscillate(std::vector<double>& data,
+                                                  int window_size) {
   // if the given length is too short, we cannot know whether it is oscillating
   // or not.
   if (window_size < 3) return false;
@@ -402,7 +403,8 @@ bool B2BHpwlOptimizer::IsSeriesOscillate(std::vector<double>& data,
   return is_oscillate;
 }
 
-double B2BHpwlOptimizer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
+double BoundToBoundHpwlOptimizer::OptimizeQuadraticMetricX(
+    double cg_stop_criterion) {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
   Ax.setFromTriplets(coefficients_x_.begin(), coefficients_x_.end());
@@ -460,7 +462,8 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricX(double cg_stop_criterion) {
   return eval_history.back();
 }
 
-double B2BHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
+double BoundToBoundHpwlOptimizer::OptimizeQuadraticMetricY(
+    double cg_stop_criterion) {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
   Ay.setFromTriplets(coefficients_y_.begin(), coefficients_y_.end());
@@ -518,7 +521,7 @@ double B2BHpwlOptimizer::OptimizeQuadraticMetricY(double cg_stop_criterion) {
   return eval_history.back();
 }
 
-void B2BHpwlOptimizer::PullComponentBackToRegion() {
+void BoundToBoundHpwlOptimizer::PullComponentBackToRegion() {
   int sz = static_cast<int>(vx.size());
   std::vector<Component>& component_list = ckt_ptr_->Components();
   double region_llx = ckt_ptr_->RegionLLX();
@@ -556,7 +559,7 @@ void B2BHpwlOptimizer::PullComponentBackToRegion() {
   }
 }
 
-void B2BHpwlOptimizer::UpdateAnchorLocation() {
+void BoundToBoundHpwlOptimizer::UpdateAnchorLocation() {
   if (cur_iter_ == 0) return;
   std::vector<Component>& component_list = ckt_ptr_->Components();
   int sz = static_cast<int>(component_list.size());
@@ -575,7 +578,7 @@ void B2BHpwlOptimizer::UpdateAnchorLocation() {
   y_anchor_set = true;
 }
 
-void B2BHpwlOptimizer::UpdateAnchorAlpha() {
+void BoundToBoundHpwlOptimizer::UpdateAnchorAlpha() {
   if (anchor_schedule_ == GlobalAnchorSchedule::kSimpl) {
     alpha = 0.01 * (cur_iter_ + 1);
     alpha_step = cur_iter_ == 0 ? alpha : 0.01;
@@ -599,7 +602,7 @@ void B2BHpwlOptimizer::UpdateAnchorAlpha() {
             << ")\n";
 }
 
-void B2BHpwlOptimizer::UpdateMaxMinX() {
+void BoundToBoundHpwlOptimizer::UpdateMaxMinX() {
   std::vector<Net>& net_list = ckt_ptr_->Nets();
   size_t sz = net_list.size();
   // #pragma omp parallel for
@@ -608,7 +611,7 @@ void B2BHpwlOptimizer::UpdateMaxMinX() {
   }
 }
 
-void B2BHpwlOptimizer::UpdateMaxMinY() {
+void BoundToBoundHpwlOptimizer::UpdateMaxMinY() {
   std::vector<Net>& net_list = ckt_ptr_->Nets();
   size_t sz = net_list.size();
   // #pragma omp parallel for
@@ -617,7 +620,7 @@ void B2BHpwlOptimizer::UpdateMaxMinY() {
   }
 }
 
-void B2BHpwlOptimizer::BuildProblemWithAnchorX() {
+void BoundToBoundHpwlOptimizer::BuildProblemWithAnchorX() {
   UpdateMaxMinX();
   BuildProblemX();
 
@@ -641,7 +644,7 @@ void B2BHpwlOptimizer::BuildProblemWithAnchorX() {
   elapsed_time.RecordEndTime();
   tot_triplets_time_x += elapsed_time.GetWallTime();
 }
-void B2BHpwlOptimizer::BuildProblemWithAnchorY() {
+void BoundToBoundHpwlOptimizer::BuildProblemWithAnchorY() {
   UpdateMaxMinY();
   BuildProblemY();
 
@@ -666,7 +669,7 @@ void B2BHpwlOptimizer::BuildProblemWithAnchorY() {
   tot_triplets_time_y += elapsed_time.GetWallTime();
 }
 
-void B2BHpwlOptimizer::BackUpComponentLocation() {
+void BoundToBoundHpwlOptimizer::BackUpComponentLocation() {
   std::vector<Component>& component_list = ckt_ptr_->Components();
   int sz = static_cast<int>(component_list.size());
   // #pragma omp for
@@ -676,7 +679,7 @@ void B2BHpwlOptimizer::BackUpComponentLocation() {
   }
 }
 
-void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(int num_threads) {
+void BoundToBoundHpwlOptimizer::OptimizeHpwlXWithAnchor(int num_threads) {
   Eigen::setNbThreads(num_threads);
   LOG(trace) << "threads in branch x: " << num_threads
              << " actual number of threads: " << omp_get_max_threads()
@@ -725,7 +728,7 @@ void B2BHpwlOptimizer::OptimizeHpwlXWithAnchor(int num_threads) {
   lower_bound_hpwl_x_.push_back(eval_history_x.back());
 }
 
-void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(int num_threads) {
+void BoundToBoundHpwlOptimizer::OptimizeHpwlYWithAnchor(int num_threads) {
   LOG(trace) << "threads in branch y: " << num_threads
              << " actual number of threads: " << omp_get_max_threads()
              << " Eigen threads: " << Eigen::nbThreads() << "\n";
@@ -773,7 +776,7 @@ void B2BHpwlOptimizer::OptimizeHpwlYWithAnchor(int num_threads) {
   lower_bound_hpwl_y_.push_back(eval_history_y.back());
 }
 
-double B2BHpwlOptimizer::OptimizeHpwl() {
+double BoundToBoundHpwlOptimizer::OptimizeHpwl() {
   omp_set_dynamic(0);
   int avail_threads_num = num_threads_ / 2;
   if (avail_threads_num == 0) {
@@ -815,9 +818,9 @@ double B2BHpwlOptimizer::OptimizeHpwl() {
   return lower_bound_hpwl_.back();
 }
 
-double B2BHpwlOptimizer::GetTime() { return tot_cg_time; }
+double BoundToBoundHpwlOptimizer::GetTime() { return tot_cg_time; }
 
-void B2BHpwlOptimizer::Close() {
+void BoundToBoundHpwlOptimizer::Close() {
   LOG(debug) << "total triplets time: " << tot_triplets_time_x << "s, "
              << tot_triplets_time_y << "s, "
              << tot_triplets_time_x + tot_triplets_time_y << "s\n";

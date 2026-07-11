@@ -108,7 +108,7 @@ void GlobalPlacer::LoadConf(std::string const& config_file) {
  */
 void GlobalPlacer::InitializeOptimizerAndLegalizer() {
   delete optimizer_;
-  optimizer_ = new B2BHpwlOptimizer(ckt_ptr_, num_threads_);
+  optimizer_ = new BoundToBoundHpwlOptimizer(ckt_ptr_, num_threads_);
   optimizer_->SetAnchorSchedule(anchor_schedule_);
   optimizer_->SetShouldSaveIntermediateResult(should_save_intermediate_result_);
   optimizer_->Initialize();

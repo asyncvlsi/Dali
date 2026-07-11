@@ -118,11 +118,11 @@ class HpwlOptimizer {
 };
 
 /** Bound-to-bound quadratic HPWL optimizer. */
-class B2BHpwlOptimizer : public HpwlOptimizer {
+class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
  public:
-  B2BHpwlOptimizer(Circuit* ckt_ptr, int num_threads)
+  BoundToBoundHpwlOptimizer(Circuit* ckt_ptr, int num_threads)
       : HpwlOptimizer(ckt_ptr, num_threads) {}
-  ~B2BHpwlOptimizer() override = default;
+  ~BoundToBoundHpwlOptimizer() override = default;
 
   void UpdateEpsilon();
   void Initialize() override;
@@ -220,10 +220,10 @@ class B2BHpwlOptimizer : public HpwlOptimizer {
 };
 
 /** Star-model quadratic HPWL optimizer. */
-class StarHpwlOptimizer : public B2BHpwlOptimizer {
+class StarHpwlOptimizer : public BoundToBoundHpwlOptimizer {
  public:
   StarHpwlOptimizer(Circuit* ckt_ptr, int num_threads)
-      : B2BHpwlOptimizer(ckt_ptr, num_threads) {}
+      : BoundToBoundHpwlOptimizer(ckt_ptr, num_threads) {}
   ~StarHpwlOptimizer() override = default;
 
   void BuildProblemX() override;
@@ -233,10 +233,10 @@ class StarHpwlOptimizer : public B2BHpwlOptimizer {
 };
 
 /** HPWL-weighted bound-to-bound optimizer variant. */
-class HpwlHpwlOptimizer : public B2BHpwlOptimizer {
+class HpwlHpwlOptimizer : public BoundToBoundHpwlOptimizer {
  public:
   HpwlHpwlOptimizer(Circuit* ckt_ptr, int num_threads)
-      : B2BHpwlOptimizer(ckt_ptr, num_threads) {}
+      : BoundToBoundHpwlOptimizer(ckt_ptr, num_threads) {}
   ~HpwlHpwlOptimizer() override = default;
 
   void BuildProblemX() override;
@@ -246,10 +246,10 @@ class HpwlHpwlOptimizer : public B2BHpwlOptimizer {
 };
 
 /** Star plus HPWL-weighted optimizer variant with driver/load pairs. */
-class StarHpwlHpwlOptimizer : public B2BHpwlOptimizer {
+class StarHpwlHpwlOptimizer : public BoundToBoundHpwlOptimizer {
  public:
   StarHpwlHpwlOptimizer(Circuit* ckt_ptr, int num_threads)
-      : B2BHpwlOptimizer(ckt_ptr, num_threads) {}
+      : BoundToBoundHpwlOptimizer(ckt_ptr, num_threads) {}
   ~StarHpwlHpwlOptimizer() override = default;
 
   void InitializeDriverLoadPairs();
