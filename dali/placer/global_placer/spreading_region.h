@@ -64,6 +64,7 @@ class SpreadingRegion {
   bool all_terminal;
   unsigned long long total_white_space;
   double filling_rate;
+  double capacity_target_utilization;
   bool IsAllFixedComponent() const { return all_terminal; };
   /* Cut-line to split region white space. */
   GridBinIndex ll_index;

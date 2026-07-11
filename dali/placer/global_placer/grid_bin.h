@@ -77,6 +77,9 @@ struct OverfilledBinCluster {
   OverfilledBinCluster() : total_component_area(0), total_white_space(0) {}
   unsigned long long total_component_area;
   unsigned long long total_white_space;
+  double capacity_demand = 0.0;
+  double capacity = 0.0;
+  double capacity_target_utilization = 1.0;
   std::set<GridBinIndex> bin_set;
   bool operator<(const OverfilledBinCluster& rhs) const {
     return (total_component_area < rhs.total_component_area);

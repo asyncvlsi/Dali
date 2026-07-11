@@ -504,11 +504,60 @@ void LookAheadSpreader::UpdateGridBinState() {
 void LookAheadSpreader::UpdateClusterArea(OverfilledBinCluster& cluster) {
   cluster.total_component_area = 0;
   cluster.total_white_space = 0;
+  std::vector<Component*> components;
+  GridBinIndex lower_left(grid_cnt_x - 1, grid_cnt_y - 1);
+  GridBinIndex upper_right(0, 0);
   for (auto& index : cluster.bin_set) {
-    cluster.total_component_area +=
-        grid_bin_mesh[index.x][index.y].component_area;
-    cluster.total_white_space += grid_bin_mesh[index.x][index.y].white_space;
+    const GridBin& bin = grid_bin_mesh[index.x][index.y];
+    cluster.total_component_area += bin.component_area;
+    cluster.total_white_space += bin.white_space;
+    components.insert(components.end(), bin.component_ptrs.begin(),
+                      bin.component_ptrs.end());
+    lower_left.x = std::min(lower_left.x, index.x);
+    lower_left.y = std::min(lower_left.y, index.y);
+    upper_right.x = std::max(upper_right.x, index.x);
+    upper_right.y = std::max(upper_right.y, index.y);
   }
+  int width = grid_bin_mesh[upper_right.x][upper_right.y].right -
+              grid_bin_mesh[lower_left.x][lower_left.y].left;
+  int height = grid_bin_mesh[upper_right.x][upper_right.y].top -
+               grid_bin_mesh[lower_left.x][lower_left.y].bottom;
+  PlacementCapacity capacity = capacity_model_->Evaluate(
+      components, width, height, cluster.total_white_space,
+      placement_density_);
+  cluster.capacity_demand = capacity.demand;
+  cluster.capacity = capacity.capacity;
+  cluster.capacity_target_utilization = capacity.target_utilization;
+}
+
+PlacementCapacity LookAheadSpreader::EvaluateWindow(
+    const GridBinIndex& lower_left, const GridBinIndex& upper_right,
+    unsigned long long whitespace_area) const {
+  std::vector<Component*> components;
+  for (int x = lower_left.x; x <= upper_right.x; ++x) {
+    for (int y = lower_left.y; y <= upper_right.y; ++y) {
+      const auto& bin_components = grid_bin_mesh[x][y].component_ptrs;
+      components.insert(components.end(), bin_components.begin(),
+                        bin_components.end());
+    }
+  }
+  int width = grid_bin_mesh[upper_right.x][upper_right.y].right -
+              grid_bin_mesh[lower_left.x][lower_left.y].left;
+  int height = grid_bin_mesh[upper_right.x][upper_right.y].top -
+               grid_bin_mesh[lower_left.x][lower_left.y].bottom;
+  return capacity_model_->Evaluate(components, width, height, whitespace_area,
+                                   placement_density_);
+}
+
+void LookAheadSpreader::UpdateRegionCapacity(SpreadingRegion* region) const {
+  DaliExpects(region != nullptr, "Cannot evaluate a null spreading region");
+  region->total_white_space =
+      LookUpWhiteSpace(region->ll_index, region->ur_index);
+  PlacementCapacity capacity =
+      EvaluateWindow(region->ll_index, region->ur_index,
+                     region->total_white_space);
+  region->filling_rate = capacity.Utilization();
+  region->capacity_target_utilization = capacity.target_utilization;
 }
 
 void LookAheadSpreader::UpdateClusterList() {
@@ -578,17 +627,18 @@ LookAheadSpreader::SelectHotspotCluster() {
 double LookAheadSpreader::HotspotScore(
     const OverfilledBinCluster& cluster) const {
   double component_area = static_cast<double>(cluster.total_component_area);
-  double white_space = static_cast<double>(cluster.total_white_space);
-  double overflow = component_area - placement_density_ * white_space;
+  double overflow = cluster.capacity_demand -
+                    cluster.capacity_target_utilization * cluster.capacity;
 
   switch (hotspot_mode_) {
     case GlobalLalHotspotMode::kOverflow:
       return overflow;
     case GlobalLalHotspotMode::kOverflowRatio:
-      if (white_space <= 0.0) {
+      if (cluster.capacity <= 0.0) {
         return std::numeric_limits<double>::infinity();
       }
-      return component_area / white_space - placement_density_;
+      return cluster.capacity_demand / cluster.capacity -
+             cluster.capacity_target_utilization;
     case GlobalLalHotspotMode::kComponentArea:
       return component_area;
   }
@@ -684,7 +734,7 @@ void LookAheadSpreader::UpdateLargestCluster() {
 }
 
 uint32_t LookAheadSpreader::LookUpWhiteSpace(GridBinIndex const& ll_index,
-                                              GridBinIndex const& ur_index) {
+                                              GridBinIndex const& ur_index) const {
   /****
    * this function is used to return the white space in a region specified by
    * ll_index, and ur_index there are four cases, element at (0,0), elements on
@@ -715,7 +765,7 @@ uint32_t LookAheadSpreader::LookUpWhiteSpace(GridBinIndex const& ll_index,
   return total_white_space;
 }
 
-uint32_t LookAheadSpreader::LookUpWhiteSpace(GridBinWindow& window) {
+uint32_t LookAheadSpreader::LookUpWhiteSpace(GridBinWindow& window) const {
   uint32_t total_white_space;
   if (window.llx == 0) {
     if (window.lly == 0) {
@@ -752,6 +802,7 @@ bool LookAheadSpreader::ExpandBoxByBestNeighbor(SpreadingRegion* box) {
     candidate.ur_index.y += dury;
     candidate.UpdateComponentAreaWhiteSpaceFillingRate(grid_bin_white_space_LUT,
                                                        grid_bin_mesh);
+    UpdateRegionCapacity(&candidate);
     candidates.push_back(candidate);
   };
 
@@ -765,7 +816,8 @@ bool LookAheadSpreader::ExpandBoxByBestNeighbor(SpreadingRegion* box) {
 
   auto score = [&](const SpreadingRegion& candidate) {
     double overflow =
-        std::max(0.0, candidate.filling_rate - placement_density_);
+        std::max(0.0, candidate.filling_rate -
+                          candidate.capacity_target_utilization);
     double area = double(candidate.ur_index.x - candidate.ll_index.x + 1) *
                   double(candidate.ur_index.y - candidate.ll_index.y + 1);
     double width = candidate.ur_index.x - candidate.ll_index.x + 1;
@@ -784,6 +836,7 @@ bool LookAheadSpreader::ExpandBoxByBestNeighbor(SpreadingRegion* box) {
   box->total_component_area = best_it->total_component_area;
   box->total_white_space = best_it->total_white_space;
   box->filling_rate = best_it->filling_rate;
+  box->capacity_target_utilization = best_it->capacity_target_utilization;
   return true;
 }
 
@@ -820,14 +873,12 @@ void LookAheadSpreader::FindMinimumBoxForLargestCluster() {
   last_hotspot_debug_.component_area = it->total_component_area;
   last_hotspot_debug_.white_space = it->total_white_space;
   last_hotspot_debug_.overflow =
-      static_cast<double>(it->total_component_area) -
-      placement_density_ * static_cast<double>(it->total_white_space);
+      it->capacity_demand - it->capacity_target_utilization * it->capacity;
   last_hotspot_debug_.overflow_ratio =
-      it->total_white_space == 0
+      it->capacity == 0
           ? 0
-          : static_cast<double>(it->total_component_area) /
-                    static_cast<double>(it->total_white_space) -
-                placement_density_;
+          : it->capacity_demand / it->capacity -
+                it->capacity_target_utilization;
   last_hotspot_debug_.score = HotspotScore(*it);
   for (auto& index : it->bin_set) {
     R.ll_index.x = std::min(R.ll_index.x, index.x);
@@ -840,10 +891,10 @@ void LookAheadSpreader::FindMinimumBoxForLargestCluster() {
   while (true) {
     // update component area, white space, and thus filling rate to determine
     // whether to expand this box or not
-    R.total_white_space = LookUpWhiteSpace(R.ll_index, R.ur_index);
     R.UpdateComponentAreaWhiteSpaceFillingRate(grid_bin_white_space_LUT,
                                                grid_bin_mesh);
-    if (R.filling_rate > placement_density_) {
+    UpdateRegionCapacity(&R);
+    if (R.filling_rate > R.capacity_target_utilization) {
       if (expansion_mode_ == GlobalLalExpansionMode::kBestNeighbor) {
         if (!ExpandBoxByBestNeighbor(&R)) {
           LOG(fatal) << "Reach maximum, cannot further expand\n";
@@ -858,9 +909,9 @@ void LookAheadSpreader::FindMinimumBoxForLargestCluster() {
     // R.filling_rate << "  " << FillingRate() << "\n";
   }
 
-  R.total_white_space = LookUpWhiteSpace(R.ll_index, R.ur_index);
   R.UpdateComponentAreaWhiteSpaceFillingRate(grid_bin_white_space_LUT,
                                              grid_bin_mesh);
+  UpdateRegionCapacity(&R);
   last_hotspot_debug_.region_ll = R.ll_index;
   last_hotspot_debug_.region_ur = R.ur_index;
   last_hotspot_debug_.region_filling_rate = R.filling_rate;

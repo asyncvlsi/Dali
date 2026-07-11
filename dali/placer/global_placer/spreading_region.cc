@@ -44,6 +44,7 @@ SpreadingRegion::SpreadingRegion() {
   total_component_area = 0;
   total_white_space = 0;
   filling_rate = 0;
+  capacity_target_utilization = 1.0;
   total_component_area_low = 0;
   total_component_area_high = 0;
   left = 0;

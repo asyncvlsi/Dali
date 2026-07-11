@@ -94,6 +94,10 @@ class LookAheadSpreader : public GlobalSpreader {
 
   void ClearGridBinFlag();
   void UpdateGridBinState();
+  PlacementCapacity EvaluateWindow(const GridBinIndex& lower_left,
+                                   const GridBinIndex& upper_right,
+                                   unsigned long long whitespace_area) const;
+  void UpdateRegionCapacity(SpreadingRegion* region) const;
   void UpdateClusterArea(OverfilledBinCluster& cluster);
   void UpdateClusterList();
   std::multiset<OverfilledBinCluster, std::greater<>>::iterator
@@ -102,8 +106,8 @@ class LookAheadSpreader : public GlobalSpreader {
   static const char* HotspotModeName(GlobalLalHotspotMode mode);
   void UpdateLargestCluster();
   uint32_t LookUpWhiteSpace(GridBinIndex const& ll_index,
-                            GridBinIndex const& ur_index);
-  uint32_t LookUpWhiteSpace(GridBinWindow& window);
+                            GridBinIndex const& ur_index) const;
+  uint32_t LookUpWhiteSpace(GridBinWindow& window) const;
   bool ExpandBoxByBestNeighbor(SpreadingRegion* box);
   void FindMinimumBoxForLargestCluster();
   void SplitGridBox(SpreadingRegion& box);
