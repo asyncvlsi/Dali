@@ -468,7 +468,8 @@ void LookAheadSpreader::UpdateGridBinState() {
       } else {
         PlacementCapacity capacity = capacity_model_->Evaluate(
             grid_bin.component_ptrs, grid_bin.Width(), grid_bin.Height(),
-            grid_bin.white_space, placement_density_);
+            grid_bin.white_space, placement_density_,
+            CapacityEvaluationPurpose::kDensityBin);
         grid_bin.filling_rate = capacity.Utilization();
         if (capacity.IsOverfilled()) {
           grid_bin.over_fill = true;
@@ -524,7 +525,7 @@ void LookAheadSpreader::UpdateClusterArea(OverfilledBinCluster& cluster) {
                grid_bin_mesh[lower_left.x][lower_left.y].bottom;
   PlacementCapacity capacity = capacity_model_->Evaluate(
       components, width, height, cluster.total_white_space,
-      placement_density_);
+      placement_density_, CapacityEvaluationPurpose::kHotspot);
   cluster.capacity_demand = capacity.demand;
   cluster.capacity = capacity.capacity;
   cluster.capacity_target_utilization = capacity.target_utilization;
@@ -532,7 +533,8 @@ void LookAheadSpreader::UpdateClusterArea(OverfilledBinCluster& cluster) {
 
 PlacementCapacity LookAheadSpreader::EvaluateWindow(
     const GridBinIndex& lower_left, const GridBinIndex& upper_right,
-    unsigned long long whitespace_area) const {
+    unsigned long long whitespace_area,
+    CapacityEvaluationPurpose purpose) const {
   std::vector<Component*> components;
   for (int x = lower_left.x; x <= upper_right.x; ++x) {
     for (int y = lower_left.y; y <= upper_right.y; ++y) {
@@ -546,7 +548,7 @@ PlacementCapacity LookAheadSpreader::EvaluateWindow(
   int height = grid_bin_mesh[upper_right.x][upper_right.y].top -
                grid_bin_mesh[lower_left.x][lower_left.y].bottom;
   return capacity_model_->Evaluate(components, width, height, whitespace_area,
-                                   placement_density_);
+                                   placement_density_, purpose);
 }
 
 void LookAheadSpreader::UpdateRegionCapacity(SpreadingRegion* region) const {
@@ -555,7 +557,8 @@ void LookAheadSpreader::UpdateRegionCapacity(SpreadingRegion* region) const {
       LookUpWhiteSpace(region->ll_index, region->ur_index);
   PlacementCapacity capacity =
       EvaluateWindow(region->ll_index, region->ur_index,
-                     region->total_white_space);
+                     region->total_white_space,
+                     CapacityEvaluationPurpose::kSpreadingRegion);
   region->filling_rate = capacity.Utilization();
   region->capacity_target_utilization = capacity.target_utilization;
 }

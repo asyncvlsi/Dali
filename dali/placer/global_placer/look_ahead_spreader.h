@@ -96,7 +96,8 @@ class LookAheadSpreader : public GlobalSpreader {
   void UpdateGridBinState();
   PlacementCapacity EvaluateWindow(const GridBinIndex& lower_left,
                                    const GridBinIndex& upper_right,
-                                   unsigned long long whitespace_area) const;
+                                   unsigned long long whitespace_area,
+                                   CapacityEvaluationPurpose purpose) const;
   void UpdateRegionCapacity(SpreadingRegion* region) const;
   void UpdateClusterArea(OverfilledBinCluster& cluster);
   void UpdateClusterList();

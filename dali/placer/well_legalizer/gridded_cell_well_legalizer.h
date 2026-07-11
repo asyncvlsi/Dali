@@ -81,6 +81,9 @@ class GriddedCellWellLegalizer : public Placer {
   /** Load N/P-well parameters from the input circuit. */
   void FetchNpWellParams();
 
+  /** Build the capacity model shared by global and final legalization. */
+  GriddedCapacityConfig BuildGriddedCapacityConfig(double target_density);
+
   /** Cache component locations before legalization. */
   void SaveInitialComponentLocation();
   /** Restore component locations and orientations saved before legalization. */
@@ -175,7 +178,7 @@ class GriddedCellWellLegalizer : public Placer {
   size_t CountComponentOverlapsInRows() const;
 
   /** Log estimated gridded-row demand before component clustering. */
-  void LogEstimatedGriddedCapacity() const;
+  void LogEstimatedGriddedCapacity();
 
   /** Log actual gridded-row area after component clustering. */
   void LogActualGriddedUtilization() const;
@@ -213,6 +216,7 @@ class GriddedCellWellLegalizer : public Placer {
   int well_tap_p_height_;
   int well_tap_n_height_;
   int space_to_well_tap_ = 1;
+  const Circuit* physical_parameter_circuit_ = nullptr;
 
   // list of index loc pair for location sort
   std::vector<ComponentInitialLocation> index_loc_list_;

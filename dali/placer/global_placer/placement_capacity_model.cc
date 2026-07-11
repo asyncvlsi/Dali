@@ -24,9 +24,10 @@ bool PlacementCapacity::IsOverfilled() const {
 PlacementCapacity AreaCapacityModel::Evaluate(
     const std::vector<Component*>& components, int region_width,
     int region_height, unsigned long long whitespace_area,
-    double target_density) const {
+    double target_density, CapacityEvaluationPurpose purpose) const {
   (void)region_width;
   (void)region_height;
+  (void)purpose;
   PlacementCapacity result;
   result.capacity = static_cast<double>(whitespace_area);
   result.target_utilization = target_density;
@@ -45,7 +46,15 @@ GriddedPlacementCapacityModel::GriddedPlacementCapacityModel(
 PlacementCapacity GriddedPlacementCapacityModel::Evaluate(
     const std::vector<Component*>& components, int region_width,
     int region_height, unsigned long long whitespace_area,
-    double target_density) const {
+    double target_density, CapacityEvaluationPurpose purpose) const {
+  // Grid bins are density samples, not independent future rows. Charging tap
+  // and end-cap reservation in every bin would make narrow edge bins appear
+  // to have zero capacity and grossly overstate global overflow.
+  if (purpose == CapacityEvaluationPurpose::kDensityBin) {
+    return AreaCapacityModel().Evaluate(
+        components, region_width, region_height, whitespace_area,
+        target_density, purpose);
+  }
   GriddedCapacityConfig config = config_;
   config.target_density = target_density;
   GriddedCapacityEstimate estimate = GriddedCapacityEstimator(config).Estimate(

@@ -93,6 +93,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "2",
                      "-detailed_max_move_candidates",
                      "500",
+                     "-enable_gridded_global_capacity",
                      "-save_intermediate_result",
                      "-disable_detailed_place",
                      "-disable_io_place",
@@ -116,6 +117,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_STREQ(config_get_string("dali.standard_cell_legalizer_cost"), "hpwl");
   EXPECT_EQ(config_get_int("dali.detailed_max_rounds"), 2);
   EXPECT_EQ(config_get_int("dali.detailed_max_move_candidates"), 500);
+  EXPECT_EQ(config_get_int("dali.enable_gridded_global_capacity"), 1);
   EXPECT_EQ(config_get_int("dali.save_intermediate_result"), 1);
   EXPECT_EQ(config_get_int("dali.disable_detailed_place"), 1);
   EXPECT_EQ(config_get_int("dali.disable_io_place"), 1);

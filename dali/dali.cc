@@ -214,6 +214,8 @@ void Dali::ShowParamsList() {
             << "  is_standard_cell: " << is_standard_cell_ << "\n"
             << "  enable_filler_cell: " << enable_filler_cell_ << "\n"
             << "  enable_end_cap_cell: " << enable_end_cap_cell_ << "\n"
+            << "  enable_gridded_global_capacity: "
+            << enable_gridded_global_capacity_ << "\n"
             << "  enable_shrink_off_grid_die_area: "
             << enable_shrink_off_grid_die_area_ << "\n"
             << "  global_initializer: " << static_cast<int>(global_initializer_)
@@ -290,6 +292,8 @@ void Dali::LoadParamsFromConfig() {
                  &enable_filler_cell_);
   LoadBoolConfig(ConfigName(prefix_, "enable_end_cap_cell"),
                  &enable_end_cap_cell_);
+  LoadBoolConfig(ConfigName(prefix_, "enable_gridded_global_capacity"),
+                 &enable_gridded_global_capacity_);
   LoadBoolConfig(ConfigName(prefix_, "enable_shrink_off_grid_die_area"),
                  &enable_shrink_off_grid_die_area_);
   param_name = ConfigName(prefix_, "global_initializer");
@@ -389,6 +393,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       is_standard_cell_,
       enable_filler_cell_,
       enable_end_cap_cell_,
+      enable_gridded_global_capacity_,
       enable_shrink_off_grid_die_area_,
       global_initializer_,
       global_anchor_schedule_,
@@ -611,6 +616,16 @@ bool Dali::RunGlobalPlacementStage() {
     gb_placer_.SetLalMacroBoundaryMode(global_lal_macro_boundary_mode_);
     gb_placer_.SetMinIteration(global_min_iterations_);
     gb_placer_.SetMaxIteration(global_max_iterations_);
+    if (is_standard_cell_ || !enable_gridded_global_capacity_) {
+      gb_placer_.SetCapacityModel(std::make_shared<AreaCapacityModel>());
+    } else {
+      LOG(info) << "  Enable experimental gridded global capacity model\n";
+      ConfigureWellLegalizer();
+      GriddedCapacityConfig capacity_config =
+          well_legalizer_.BuildGriddedCapacityConfig(target_density_);
+      gb_placer_.SetCapacityModel(
+          std::make_shared<GriddedPlacementCapacityModel>(capacity_config));
+    }
     if (!gb_placer_.StartPlacement()) {
       LOG(error) << "Global placement failed\n";
       return false;

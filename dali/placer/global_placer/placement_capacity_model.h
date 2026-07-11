@@ -11,6 +11,13 @@
 
 namespace dali {
 
+/** Geometric role of a capacity query in look-ahead spreading. */
+enum class CapacityEvaluationPurpose {
+  kDensityBin,
+  kHotspot,
+  kSpreadingRegion,
+};
+
 /** Demand and capacity reported for one global-placement region. */
 struct PlacementCapacity {
   double demand = 0.0;
@@ -31,7 +38,7 @@ class PlacementCapacityModel {
   virtual PlacementCapacity Evaluate(
       const std::vector<Component*>& components, int region_width,
       int region_height, unsigned long long whitespace_area,
-      double target_density) const = 0;
+      double target_density, CapacityEvaluationPurpose purpose) const = 0;
 };
 
 /** Traditional capacity model based only on component and whitespace area. */
@@ -40,7 +47,8 @@ class AreaCapacityModel : public PlacementCapacityModel {
   PlacementCapacity Evaluate(const std::vector<Component*>& components,
                              int region_width, int region_height,
                              unsigned long long whitespace_area,
-                             double target_density) const override;
+                             double target_density,
+                             CapacityEvaluationPurpose purpose) const override;
 };
 
 /** Capacity model that accounts for gridded rows, wells, and row completion. */
@@ -51,7 +59,8 @@ class GriddedPlacementCapacityModel : public PlacementCapacityModel {
   PlacementCapacity Evaluate(const std::vector<Component*>& components,
                              int region_width, int region_height,
                              unsigned long long whitespace_area,
-                             double target_density) const override;
+                             double target_density,
+                             CapacityEvaluationPurpose purpose) const override;
 
  private:
   GriddedCapacityConfig config_;

@@ -82,6 +82,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -global_lal_macro_boundary <off/balanced/preferred>\n"
       << "  -global_min_iterations <n>                 minimum global-placement iterations, default 10\n"
       << "  -global_max_iterations <n>                 maximum global-placement iterations, default 100\n"
+      << "  -enable_gridded_global_capacity            use experimental well-aware LAL capacity\n"
       << "  -standard_cell_legalizer_cost <displacement/hpwl>  default displacement\n"
       << "  -detailed_max_rounds <n>                   detailed-placement optimization rounds, default 1\n"
       << "  -detailed_max_move_candidates <n>          optimal-region move candidates per round, default 1000\n"
@@ -360,6 +361,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.enable_filler_cell");
     } else if (arg == "-enable_end_cap_cell") {
       EnableConfigFlag("dali.enable_end_cap_cell");
+    } else if (arg == "-enable_gridded_global_capacity") {
+      EnableConfigFlag("dali.enable_gridded_global_capacity");
     } else if (arg == "-enable_shrink_off_grid_die_area") {
       EnableConfigFlag("dali.enable_shrink_off_grid_die_area");
     } else {

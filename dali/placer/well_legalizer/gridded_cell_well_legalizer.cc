@@ -59,6 +59,9 @@ void GriddedCellWellLegalizer::CheckWellStatus() {
 }
 
 void GriddedCellWellLegalizer::FetchNpWellParams() {
+  if (physical_parameter_circuit_ == ckt_ptr_) {
+    return;
+  }
   Tech& tech = ckt_ptr_->tech();
   WellLayer& n_well_layer = tech.NwellLayer();
   double grid_value_x = ckt_ptr_->GridValueX();
@@ -111,6 +114,30 @@ void GriddedCellWellLegalizer::FetchNpWellParams() {
 
   well_tap_p_height_ = well_tap_macro_->FirstPwellHeight();
   well_tap_n_height_ = well_tap_macro_->FirstNwellHeight();
+  physical_parameter_circuit_ = ckt_ptr_;
+}
+
+GriddedCapacityConfig
+GriddedCellWellLegalizer::BuildGriddedCapacityConfig(double target_density) {
+  CheckWellStatus();
+  FetchNpWellParams();
+
+  GriddedCapacityConfig config;
+  config.reserved_width = PhysicalCompletionReservedWidth();
+  config.target_density = target_density;
+  if (!disable_welltap_) {
+    config.minimum_p_well_height = well_tap_p_height_;
+    config.minimum_n_well_height = well_tap_n_height_;
+  }
+  if (enable_end_cap_cell_) {
+    config.minimum_p_well_height = std::max(
+        config.minimum_p_well_height,
+        std::max(pre_end_cap_min_p_height_, post_end_cap_min_p_height_));
+    config.minimum_n_well_height = std::max(
+        config.minimum_n_well_height,
+        std::max(pre_end_cap_min_n_height_, post_end_cap_min_n_height_));
+  }
+  return config;
 }
 
 void GriddedCellWellLegalizer::SaveInitialComponentLocation() {
@@ -1124,23 +1151,9 @@ bool GriddedCellWellLegalizer::StartPlacement() {
   return is_success;
 }
 
-void GriddedCellWellLegalizer::LogEstimatedGriddedCapacity() const {
-  GriddedCapacityConfig config;
-  config.reserved_width = PhysicalCompletionReservedWidth();
-  config.target_density = PlacementDensity();
-  if (!disable_welltap_) {
-    config.minimum_p_well_height = well_tap_p_height_;
-    config.minimum_n_well_height = well_tap_n_height_;
-  }
-  if (enable_end_cap_cell_) {
-    config.minimum_p_well_height = std::max(
-        config.minimum_p_well_height,
-        std::max(pre_end_cap_min_p_height_, post_end_cap_min_p_height_));
-    config.minimum_n_well_height = std::max(
-        config.minimum_n_well_height,
-        std::max(pre_end_cap_min_n_height_, post_end_cap_min_n_height_));
-  }
-
+void GriddedCellWellLegalizer::LogEstimatedGriddedCapacity() {
+  GriddedCapacityConfig config =
+      BuildGriddedCapacityConfig(PlacementDensity());
   GriddedCapacityEstimator estimator(config);
   unsigned long long raw_component_area = 0;
   unsigned long long required_gridded_area = 0;
