@@ -24,7 +24,6 @@
 #include <functional>
 #include <string>
 
-#include "component_cluster.h"
 #include "component_segment.h"
 #include "dali/circuit/component.h"
 #include "dali/circuit/macro.h"
