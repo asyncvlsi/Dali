@@ -31,6 +31,7 @@
 #include "dali/common/placement_snapshot_sink.h"
 #include "dali/placer/legalizer/extended_tetris_legalizer.h"
 #include "dali/placer/placer.h"
+#include "gridded_capacity_estimator.h"
 #include "gridded_detailed_placer.h"
 #include "gridded_row.h"
 #include "space_partitioner.h"
@@ -118,8 +119,6 @@ class GriddedCellWellLegalizer : public Placer {
 
   bool StartPlacement() override;
 
-  void ReportEffectiveSpaceUtilization();
-
   /****member function for file IO****/
   void GenMatlabClusterTable(std::string const& name_of_file);
   void GenMATLABWellTable(std::string const& name_of_file,
@@ -174,6 +173,12 @@ class GriddedCellWellLegalizer : public Placer {
   void LogComponentClusteringSummary(int failed_stripe_count) const;
   /** Count component rectangle overlaps after legalization. */
   size_t CountComponentOverlapsInRows() const;
+
+  /** Log estimated gridded-row demand before component clustering. */
+  void LogEstimatedGriddedCapacity() const;
+
+  /** Log actual gridded-row area after component clustering. */
+  void LogActualGriddedUtilization() const;
 
   bool is_first_row_orient_N_ = true;
 

@@ -100,7 +100,10 @@ class GriddedRow {
   void SetLoc(int lx, int ly);
 
   void AddComponent(Component* component_ptr);
+  /** Return mutable ordinary components assigned to this row. */
   std::vector<Component*>& Components();
+  /** Return ordinary components assigned to this row. */
+  const std::vector<Component*>& Components() const;
   std::unordered_map<Component*, double2d>& InitLocations();
   void ShiftComponentX(int x_disp);
   void ShiftComponentY(int y_disp);

@@ -112,6 +112,10 @@ void GriddedRow::AddComponent(Component* component_ptr) {
 
 std::vector<Component*>& GriddedRow::Components() { return components_; }
 
+const std::vector<Component*>& GriddedRow::Components() const {
+  return components_;
+}
+
 std::unordered_map<Component*, double2d>& GriddedRow::InitLocations() {
   return initial_locations_;
 }

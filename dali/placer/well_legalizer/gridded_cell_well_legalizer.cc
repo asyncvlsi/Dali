@@ -1105,6 +1105,7 @@ bool GriddedCellWellLegalizer::StartPlacement() {
   snapshot_attempt_ = 0;
   SaveInitialComponentLocation();
   InitializeWellLegalizer();
+  LogEstimatedGriddedCapacity();
   bool is_success = RunMovableCellLegalizationStages();
   if (!is_success) {
     is_success = RetryMovableCellLegalizationWithScavenging();
@@ -1115,6 +1116,7 @@ bool GriddedCellWellLegalizer::StartPlacement() {
     PrintEndStatement("Standard Cluster Well Legalization", false);
     return false;
   }
+  LogActualGriddedUtilization();
   RunPhysicalCompletionStages();
 
   PrintEndStatement("Standard Cluster Well Legalization", is_success);
@@ -1122,60 +1124,106 @@ bool GriddedCellWellLegalizer::StartPlacement() {
   return is_success;
 }
 
-void GriddedCellWellLegalizer::ReportEffectiveSpaceUtilization() {
-  int total_standard_component_area = 0;
-  int max_n_height = 0;
-  int max_p_height = 0;
-  for (auto& component : ckt_ptr_->design().Components()) {
-    Macro* macro = component.MacroPtr();
-    if (macro == ckt_ptr_->tech().IoDummyMacroPtr()) continue;
-    if (macro->FirstNwellHeight() > max_n_height) {
-      max_n_height = macro->FirstNwellHeight();
-    }
-    if (macro->FirstPwellHeight() > max_p_height) {
-      max_p_height = macro->FirstPwellHeight();
-    }
+void GriddedCellWellLegalizer::LogEstimatedGriddedCapacity() const {
+  GriddedCapacityConfig config;
+  config.reserved_width = PhysicalCompletionReservedWidth();
+  config.target_density = PlacementDensity();
+  if (!disable_welltap_) {
+    config.minimum_p_well_height = well_tap_p_height_;
+    config.minimum_n_well_height = well_tap_n_height_;
   }
-  if (well_tap_macro_->FirstNwellHeight() > max_n_height) {
-    max_n_height = well_tap_macro_->FirstNwellHeight();
+  if (enable_end_cap_cell_) {
+    config.minimum_p_well_height = std::max(
+        config.minimum_p_well_height,
+        std::max(pre_end_cap_min_p_height_, post_end_cap_min_p_height_));
+    config.minimum_n_well_height = std::max(
+        config.minimum_n_well_height,
+        std::max(pre_end_cap_min_n_height_, post_end_cap_min_n_height_));
   }
-  if (well_tap_macro_->FirstPwellHeight() > max_p_height) {
-    max_p_height = well_tap_macro_->FirstPwellHeight();
-  }
-  int max_height = max_n_height + max_p_height;
 
-  int total_effective_component_area = 0;
-  for (auto& col : col_list_) {
-    for (auto& stripe : col.stripe_list_) {
-      for (auto& cluster : stripe.gridded_rows_) {
-        int eff_height = cluster.Height();
-        int tot_cell_width = 0;
-        for (auto& component_ptr : cluster.Components()) {
-          tot_cell_width += component_ptr->Width();
-        }
-        total_effective_component_area += tot_cell_width * eff_height;
-        total_standard_component_area += tot_cell_width * max_height;
+  GriddedCapacityEstimator estimator(config);
+  unsigned long long raw_component_area = 0;
+  unsigned long long required_gridded_area = 0;
+  unsigned long long available_gridded_area = 0;
+  unsigned long long predicted_overflow_area = 0;
+  int stripe_count = 0;
+  int overflowing_stripe_count = 0;
+  int estimated_row_count = 0;
+  int unplaceable_component_count = 0;
+  int single_region_fallback_count = 0;
+  for (const StripeColumn& column : col_list_) {
+    for (const Stripe& stripe : column.stripe_list_) {
+      unsigned long long raw_whitespace_area =
+          static_cast<unsigned long long>(stripe.Width()) * stripe.Height();
+      GriddedCapacityEstimate estimate =
+          estimator.Estimate(stripe.component_ptrs_vec_, stripe.Width(),
+                             stripe.Height(), raw_whitespace_area);
+      ++stripe_count;
+      raw_component_area += estimate.raw_component_area;
+      required_gridded_area += estimate.required_gridded_area;
+      available_gridded_area += estimate.available_gridded_area;
+      predicted_overflow_area += estimate.predicted_overflow_area;
+      estimated_row_count += estimate.estimated_row_count;
+      unplaceable_component_count += estimate.unplaceable_component_count;
+      single_region_fallback_count += estimate.single_region_fallback_count;
+      if (estimate.predicted_overflow_area > 0) {
+        ++overflowing_stripe_count;
       }
     }
   }
-  double factor = ckt_ptr_->GridValueX() * ckt_ptr_->GridValueY();
-  LOG(info) << "Total placement area: "
-            << (RegionWidth() * RegionHeight()) * factor << " um^2\n";
-  LOG(info) << "Total component area: "
-            << ckt_ptr_->TotalComponentArea() * factor << " ("
-            << ckt_ptr_->TotalComponentArea() / (double)RegionWidth() /
-                   (double)RegionHeight()
-            << ") um^2\n";
-  LOG(info) << "Total effective component area: "
-            << total_effective_component_area * factor << " ("
-            << total_effective_component_area / (double)RegionWidth() /
-                   (double)RegionHeight()
-            << ") um^2\n";
-  LOG(info) << "Total standard component area (lower bound):"
-            << total_standard_component_area * factor << " ("
-            << total_standard_component_area / (double)RegionWidth() /
-                   (double)RegionHeight()
-            << ") um^2\n";
+
+  double raw_utilization =
+      available_gridded_area == 0
+          ? 0.0
+          : raw_component_area / static_cast<double>(available_gridded_area);
+  double gridded_utilization =
+      available_gridded_area == 0
+          ? 0.0
+          : required_gridded_area / static_cast<double>(available_gridded_area);
+  LOG(info)
+      << "  Estimated gridded capacity:\n"
+      << "    stripes                     : " << stripe_count << "\n"
+      << "    predicted overflowing       : " << overflowing_stripe_count
+      << "\n"
+      << "    estimated rows              : " << estimated_row_count << "\n"
+      << "    reserved width per row      : " << config.reserved_width << "\n"
+      << "    target row density          : " << config.target_density << "\n"
+      << "    raw component area          : " << raw_component_area << "\n"
+      << "    required gridded area       : " << required_gridded_area << "\n"
+      << "    available gridded area      : " << available_gridded_area << "\n"
+      << "    predicted overflow area     : " << predicted_overflow_area << "\n"
+      << "    unplaceable components      : " << unplaceable_component_count
+      << "\n"
+      << "    single-region fallbacks     : " << single_region_fallback_count
+      << "\n"
+      << "    raw/gridded utilization     : " << raw_utilization << " / "
+      << gridded_utilization << "\n";
+}
+
+void GriddedCellWellLegalizer::LogActualGriddedUtilization() const {
+  unsigned long long occupied_row_area = 0;
+  unsigned long long allocated_row_area = 0;
+  int row_count = 0;
+  for (const StripeColumn& column : col_list_) {
+    for (const Stripe& stripe : column.stripe_list_) {
+      for (const GriddedRow& row : stripe.gridded_rows_) {
+        int component_width = 0;
+        for (const Component* component : row.Components()) {
+          component_width += component->Width();
+        }
+        ++row_count;
+        occupied_row_area +=
+            static_cast<unsigned long long>(component_width) * row.Height();
+        allocated_row_area +=
+            static_cast<unsigned long long>(row.Width()) * row.Height();
+      }
+    }
+  }
+  LOG(info) << "  Actual gridded utilization:\n"
+            << "    legalized rows              : " << row_count << "\n"
+            << "    occupied row area           : " << occupied_row_area << "\n"
+            << "    allocated row area          : " << allocated_row_area
+            << "\n";
 }
 
 void GriddedCellWellLegalizer::GenMatlabClusterTable(
