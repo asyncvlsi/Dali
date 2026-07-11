@@ -81,6 +81,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -global_lal_affine_weight <0..1>           blend between packed and affine LAL spreading, default 0.65\n"
       << "  -global_lal_macro_boundary <off/balanced/preferred>\n"
       << "  -global_min_iterations <n>                 minimum global-placement iterations, default 10\n"
+      << "  -global_max_iterations <n>                 maximum global-placement iterations, default 100\n"
       << "  -standard_cell_legalizer_cost <displacement/hpwl>  default displacement\n"
       << "  -detailed_max_rounds <n>                   detailed-placement optimization rounds, default 1\n"
       << "  -detailed_max_move_candidates <n>          optimal-region move candidates per round, default 1000\n"
@@ -283,6 +284,15 @@ bool ParseDaliCommandLine(int argc, char* argv[],
         return false;
       }
       config_set_int("dali.global_min_iterations", global_min_iterations);
+    } else if (arg == "-global_max_iterations") {
+      int global_max_iterations = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseInt(value, &global_max_iterations) ||
+          global_max_iterations < 0) {
+        error_output << "Invalid global maximum iteration count!\n";
+        return false;
+      }
+      config_set_int("dali.global_max_iterations", global_max_iterations);
     } else if (arg == "-standard_cell_legalizer_cost") {
       if (!TryGetValue(argc, argv, &i, &value)) {
         error_output << "Invalid standard-cell legalizer cost mode!\n";

@@ -41,6 +41,12 @@ static std::string ConfigName(const std::string& prefix, const char* name) {
   return prefix + name;
 }
 
+static bool ShouldVisualizeWellRects(const std::string& group,
+                                     const std::string& subgroup) {
+  return group == "legalization" &&
+         (subgroup == "well_tap" || subgroup == "end_cap");
+}
+
 static bool ConfigExists(const std::string& name) {
   return config_exists(name.c_str());
 }
@@ -224,6 +230,7 @@ void Dali::ShowParamsList() {
             << "  global_lal_macro_boundary: "
             << static_cast<int>(global_lal_macro_boundary_mode_) << "\n"
             << "  global_min_iterations: " << global_min_iterations_ << "\n"
+            << "  global_max_iterations: " << global_max_iterations_ << "\n"
             << "  standard_cell_legalizer_cost: "
             << static_cast<int>(standard_cell_legalizer_cost_mode_) << "\n"
             << "  detailed_max_rounds: " << detailed_max_rounds_ << "\n"
@@ -323,6 +330,10 @@ void Dali::LoadParamsFromConfig() {
                 &global_min_iterations_);
   DaliExpects(global_min_iterations_ >= 0,
               "global_min_iterations must be non-negative");
+  LoadIntConfig(ConfigName(prefix_, "global_max_iterations"),
+                &global_max_iterations_);
+  DaliExpects(global_max_iterations_ >= 0,
+              "global_max_iterations must be non-negative");
   param_name = ConfigName(prefix_, "standard_cell_legalizer_cost");
   if (ConfigExists(param_name)) {
     standard_cell_legalizer_cost_mode_ = ParseStandardCellLegalizerCostMode(
@@ -386,6 +397,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       global_lal_affine_weight_,
       global_lal_macro_boundary_mode_,
       global_min_iterations_,
+      global_max_iterations_,
       standard_cell_legalizer_cost_mode_,
       detailed_max_rounds_,
       detailed_max_move_candidates_,
@@ -597,6 +609,7 @@ bool Dali::RunGlobalPlacementStage() {
     gb_placer_.SetLalAffineScalingWeight(global_lal_affine_weight_);
     gb_placer_.SetLalMacroBoundaryMode(global_lal_macro_boundary_mode_);
     gb_placer_.SetMinIteration(global_min_iterations_);
+    gb_placer_.SetMaxIteration(global_max_iterations_);
     if (!gb_placer_.StartPlacement()) {
       LOG(error) << "Global placement failed\n";
       return false;
@@ -699,8 +712,12 @@ void Dali::ConfigureWellLegalizer() {
       [this](const std::string& id, const std::string& label,
              const std::string& group, const std::string& subgroup,
              int iteration) {
+        std::vector<PlacementWellRect> well_rects;
+        if (ShouldVisualizeWellRects(group, subgroup)) {
+          well_rects = well_legalizer_.CollectWellVisualizationRects();
+        }
         WriteVisualizationSnapshot(group + "." + id, label, group, subgroup,
-                                   iteration);
+                                   iteration, std::move(well_rects));
         FlushVisualizationEvents();
       });
 }
@@ -749,8 +766,13 @@ bool Dali::RunLegalizationStage() {
   if (export_well_cluster_matlab_) {
     circuit_.GenMATLABTable("lg_result.txt");
   }
+  std::vector<PlacementWellRect> final_well_rects;
+  if (!is_standard_cell_ && !disable_legalization_) {
+    final_well_rects = well_legalizer_.CollectWellVisualizationRects();
+  }
   WriteVisualizationSnapshot("legalization.final", "After Legalization",
-                             "legalization");
+                             "legalization", "", -1,
+                             std::move(final_well_rects));
   return true;
 }
 
@@ -834,11 +856,10 @@ void Dali::InitializeVisualizationSnapshots() {
             << visualization_dir_ << "\n";
 }
 
-void Dali::WriteVisualizationSnapshot(const std::string& id,
-                                      const std::string& label,
-                                      const std::string& group,
-                                      const std::string& subgroup,
-                                      int iteration) {
+void Dali::WriteVisualizationSnapshot(
+    const std::string& id, const std::string& label, const std::string& group,
+    const std::string& subgroup, int iteration,
+    std::vector<PlacementWellRect> well_rects) {
   if (snapshot_sink_ == nullptr || !snapshot_sink_->IsEnabled()) {
     return;
   }
@@ -848,6 +869,7 @@ void Dali::WriteVisualizationSnapshot(const std::string& id,
   metadata.group = group;
   metadata.subgroup = subgroup;
   metadata.iteration = iteration;
+  metadata.well_rects = std::move(well_rects);
   snapshot_sink_->PublishSnapshot(&circuit_, metadata);
 }
 
@@ -876,7 +898,12 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
 
   LOG(debug) << "dali git commit: " << get_git_version_short() << "\n";
   RecordPlacementMetric("final", circuit_.WeightedHPWL());
-  WriteVisualizationSnapshot("final", "Final", "final");
+  std::vector<PlacementWellRect> final_well_rects;
+  if (!is_standard_cell_ && !disable_legalization_) {
+    final_well_rects = well_legalizer_.CollectWellVisualizationRects();
+  }
+  WriteVisualizationSnapshot("final", "Final", "final", "", -1,
+                             std::move(final_well_rects));
   FinishVisualizationSnapshots();
 
   return true;

@@ -31,6 +31,7 @@
 #include "dali/circuit/component.h"
 #include "dali/circuit/macro.h"
 #include "dali/common/misc.h"
+#include "dali/common/placement_snapshot_sink.h"
 #include "dali/placer/legalizer/extended_tetris_legalizer.h"
 #include "dali/placer/placer.h"
 #include "gridded_detailed_placer.h"
@@ -137,8 +138,23 @@ class StdClusterWellLegalizer : public Placer {
   void EmitWellRect(std::string const& name_of_file, int well_emit_mode);
   void ExportWellToPhyDB(phydb::PhyDB* phydb_ptr, int well_emit_mode);
   void EmitClusterRect(std::string const& name_of_file);
+  /** Return current well rectangles in micron coordinates for visualization. */
+  std::vector<PlacementWellRect> CollectWellVisualizationRects();
 
  private:
+  /** Return x-capacity reserved for taps/end caps in every gridded row. */
+  int PhysicalCompletionReservedWidth() const;
+
+  /** Update a row so it can physically fit future tap/end-cap cells. */
+  void ReservePhysicalCompletionSpace(GriddedRow* row, bool grows_upward);
+
+  /** Replace missing generated end-cap widths with a usable fallback width. */
+  void EnsureUsableEndCapWidths();
+  int LeftTapLx(const Stripe& stripe) const;
+  int LeftTapUx(const Stripe& stripe) const;
+  int RightTapLx(const Stripe& stripe) const;
+  int RightTapUx(const Stripe& stripe) const;
+
   bool RunComponentClusteringStage();
   void RunClusterOrientationStage();
   std::vector<GriddedRow*> CollectGriddedRows();
@@ -159,6 +175,8 @@ class StdClusterWellLegalizer : public Placer {
                                     int stripe_index) const;
   /** Log a summary after component clustering to make failures debuggable. */
   void LogComponentClusteringSummary(int failed_stripe_count) const;
+  /** Count component rectangle overlaps after legalization. */
+  size_t CountComponentOverlapsInRows() const;
 
   bool is_first_row_orient_N_ = true;
 

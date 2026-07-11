@@ -26,6 +26,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "dali/circuit/circuit.h"
 #include "dali/common/placement_snapshot_sink.h"
@@ -72,6 +73,7 @@ class Dali {
     GlobalLalMacroBoundaryMode global_lal_macro_boundary_mode =
         GlobalLalMacroBoundaryMode::kOff;
     int global_min_iterations = 10;
+    int global_max_iterations = 100;
     StandardCellLegalizerCostMode standard_cell_legalizer_cost_mode =
         StandardCellLegalizerCostMode::kDisplacement;
     int detailed_max_rounds = 1;
@@ -190,6 +192,7 @@ class Dali {
   GlobalLalMacroBoundaryMode global_lal_macro_boundary_mode_ =
       GlobalLalMacroBoundaryMode::kOff;
   int global_min_iterations_ = 10;
+  int global_max_iterations_ = 100;
   StandardCellLegalizerCostMode standard_cell_legalizer_cost_mode_ =
       StandardCellLegalizerCostMode::kDisplacement;
   int detailed_max_rounds_ = 1;
@@ -260,11 +263,10 @@ class Dali {
   bool RunFillerCellPlacement();
   bool RunIoPinPlacementStage();
   void InitializeVisualizationSnapshots();
-  void WriteVisualizationSnapshot(const std::string& id,
-                                  const std::string& label,
-                                  const std::string& group,
-                                  const std::string& subgroup = "",
-                                  int iteration = -1);
+  void WriteVisualizationSnapshot(
+      const std::string& id, const std::string& label, const std::string& group,
+      const std::string& subgroup = "", int iteration = -1,
+      std::vector<PlacementWellRect> well_rects = {});
   /** Let live visualization backends repaint before long placement stages. */
   void FlushVisualizationEvents();
   void FinishVisualizationSnapshots();

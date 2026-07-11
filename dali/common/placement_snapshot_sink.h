@@ -13,10 +13,28 @@
 
 #include <filesystem>
 #include <string>
+#include <vector>
 
 namespace dali {
 
 class Circuit;
+
+/** N/P-well layer carried by a placement snapshot. */
+enum class PlacementWellLayer {
+  kPwell,
+  kNwell,
+  kPplus,
+  kNplus,
+};
+
+/** One well or implant rectangle in micron coordinates for visualization. */
+struct PlacementWellRect {
+  float lx = 0;
+  float ly = 0;
+  float ux = 0;
+  float uy = 0;
+  PlacementWellLayer layer = PlacementWellLayer::kPwell;
+};
 
 /** Run-level metadata shared by placement snapshot consumers. */
 struct PlacementSnapshotRunMetadata {
@@ -34,6 +52,7 @@ struct PlacementSnapshotMetadata {
   std::string group;
   std::string subgroup;
   int iteration = -1;
+  std::vector<PlacementWellRect> well_rects;
 };
 
 /**

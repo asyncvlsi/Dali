@@ -40,6 +40,12 @@
 
 namespace dali {
 
+enum class SnapshotComponentKind {
+  kOrdinary,
+  kWellTap,
+  kEndCap,
+};
+
 struct SnapshotComponent {
   float x = 0;
   float y = 0;
@@ -47,6 +53,15 @@ struct SnapshotComponent {
   float height = 0;
   bool fixed = false;
   ComponentOrient orient = N;
+  SnapshotComponentKind kind = SnapshotComponentKind::kOrdinary;
+};
+
+struct SnapshotWellRect {
+  float lx = 0;
+  float ly = 0;
+  float ux = 0;
+  float uy = 0;
+  PlacementWellLayer layer = PlacementWellLayer::kPwell;
 };
 
 static std::string FormatHpwl(double hpwl) {
@@ -154,6 +169,7 @@ class PlacementCanvas : public QWidget {
   void SetSnapshot(Circuit* circuit,
                    const PlacementSnapshotMetadata& metadata) {
     components_.clear();
+    well_rects_.clear();
     if (circuit == nullptr) {
       update();
       return;
@@ -168,25 +184,28 @@ class PlacementCanvas : public QWidget {
     view_urx_ = boundary_urx_;
     view_ury_ = boundary_ury_;
 
-    components_.reserve(circuit->Components().size());
-    for (Component& component : circuit->Components()) {
-      if (component.MacroPtr() == circuit->tech().IoDummyMacroPtr()) {
+    components_.reserve(
+        circuit->Components().size() + circuit->design().WellTaps().size() +
+        circuit->design().EndCapComponentCollection().Instances().size());
+    AppendComponents(circuit, circuit->Components(),
+                     SnapshotComponentKind::kOrdinary);
+    AppendComponents(circuit, circuit->design().WellTaps(),
+                     SnapshotComponentKind::kWellTap);
+    AppendComponents(circuit,
+                     circuit->design().EndCapComponentCollection().Instances(),
+                     SnapshotComponentKind::kEndCap);
+
+    well_rects_.reserve(metadata.well_rects.size());
+    for (const PlacementWellRect& well_rect : metadata.well_rects) {
+      if (well_rect.ux <= well_rect.lx || well_rect.uy <= well_rect.ly) {
         continue;
       }
-      const double component_lx = component.LLX() * circuit->GridValueX();
-      const double component_ly = component.LLY() * circuit->GridValueY();
-      const double component_width = component.Width() * circuit->GridValueX();
-      const double component_height =
-          component.Height() * circuit->GridValueY();
-      components_.push_back({static_cast<float>(component_lx),
-                             static_cast<float>(component_ly),
-                             static_cast<float>(component_width),
-                             static_cast<float>(component_height),
-                             component.IsFixed(), component.Orient()});
-      view_llx_ = std::min(view_llx_, component_lx);
-      view_lly_ = std::min(view_lly_, component_ly);
-      view_urx_ = std::max(view_urx_, component_lx + component_width);
-      view_ury_ = std::max(view_ury_, component_ly + component_height);
+      well_rects_.push_back({well_rect.lx, well_rect.ly, well_rect.ux,
+                             well_rect.uy, well_rect.layer});
+      view_llx_ = std::min(view_llx_, static_cast<double>(well_rect.lx));
+      view_lly_ = std::min(view_lly_, static_cast<double>(well_rect.ly));
+      view_urx_ = std::max(view_urx_, static_cast<double>(well_rect.ux));
+      view_ury_ = std::max(view_ury_, static_cast<double>(well_rect.uy));
     }
 
     snapshot_label_ = metadata.id;
@@ -235,13 +254,17 @@ class PlacementCanvas : public QWidget {
     const double boundary_width = std::max(boundary_urx_ - boundary_llx_, 1.0);
     const double boundary_height = std::max(boundary_ury_ - boundary_lly_, 1.0);
 
+    DrawWellRects(&painter);
+
     painter.setPen(QPen(QColor(40, 48, 60), 1));
+    painter.setBrush(Qt::NoBrush);
     painter.drawRect(QRectF(WorldToScreenX(boundary_llx_),
                             WorldToScreenY(boundary_ury_),
                             boundary_width * scale_, boundary_height * scale_));
 
     for (const SnapshotComponent& component : components_) {
-      if (component.fixed) {
+      if (component.fixed &&
+          component.kind == SnapshotComponentKind::kOrdinary) {
         DrawComponent(&painter, component);
       }
     }
@@ -249,9 +272,15 @@ class PlacementCanvas : public QWidget {
       DrawMovableDots(&painter);
     } else {
       for (const SnapshotComponent& component : components_) {
-        if (!component.fixed) {
+        if (!component.fixed &&
+            component.kind == SnapshotComponentKind::kOrdinary) {
           DrawComponent(&painter, component);
         }
+      }
+    }
+    for (const SnapshotComponent& component : components_) {
+      if (component.kind != SnapshotComponentKind::kOrdinary) {
+        DrawComponent(&painter, component);
       }
     }
 
@@ -329,11 +358,70 @@ class PlacementCanvas : public QWidget {
     return QRectF(0, 0, width(), std::max(height() - kStatusBandHeight, 0.0));
   }
 
+  void AppendComponents(Circuit* circuit, std::vector<Component>& components,
+                        SnapshotComponentKind kind) {
+    for (Component& component : components) {
+      if (component.MacroPtr() == circuit->tech().IoDummyMacroPtr()) {
+        continue;
+      }
+      const double component_lx = component.LLX() * circuit->GridValueX();
+      const double component_ly = component.LLY() * circuit->GridValueY();
+      const double component_width = component.Width() * circuit->GridValueX();
+      const double component_height =
+          component.Height() * circuit->GridValueY();
+      components_.push_back({static_cast<float>(component_lx),
+                             static_cast<float>(component_ly),
+                             static_cast<float>(component_width),
+                             static_cast<float>(component_height),
+                             component.IsFixed(), component.Orient(), kind});
+      view_llx_ = std::min(view_llx_, component_lx);
+      view_lly_ = std::min(view_lly_, component_ly);
+      view_urx_ = std::max(view_urx_, component_lx + component_width);
+      view_ury_ = std::max(view_ury_, component_ly + component_height);
+    }
+  }
+
   QRectF ComponentScreenRect(const SnapshotComponent& component) const {
     return QRectF(WorldToScreenX(component.x),
                   WorldToScreenY(component.y + component.height),
                   std::max(component.width * scale_, 0.6),
                   std::max(component.height * scale_, 0.6));
+  }
+
+  QRectF WellScreenRect(const SnapshotWellRect& well_rect) const {
+    return QRectF(WorldToScreenX(well_rect.lx), WorldToScreenY(well_rect.uy),
+                  std::max((well_rect.ux - well_rect.lx) * scale_, 0.6),
+                  std::max((well_rect.uy - well_rect.ly) * scale_, 0.6));
+  }
+
+  void DrawWellRects(QPainter* painter) const {
+    const QRectF visible_area = VisiblePlacementArea();
+    for (const SnapshotWellRect& well_rect : well_rects_) {
+      const QRectF rect = WellScreenRect(well_rect);
+      if (!rect.intersects(visible_area)) {
+        continue;
+      }
+
+      switch (well_rect.layer) {
+        case PlacementWellLayer::kPwell:
+          painter->setBrush(QColor(255, 238, 245, 24));
+          painter->setPen(QPen(QColor(219, 39, 119, 28), 1));
+          break;
+        case PlacementWellLayer::kNwell:
+          painter->setBrush(QColor(238, 247, 255, 24));
+          painter->setPen(QPen(QColor(37, 99, 235, 28), 1));
+          break;
+        case PlacementWellLayer::kPplus:
+          painter->setBrush(QColor(251, 207, 232, 70));
+          painter->setPen(QPen(QColor(190, 24, 93, 80), 1));
+          break;
+        case PlacementWellLayer::kNplus:
+          painter->setBrush(QColor(191, 219, 254, 70));
+          painter->setPen(QPen(QColor(29, 78, 216, 80), 1));
+          break;
+      }
+      painter->drawRect(rect);
+    }
   }
 
   void DrawComponent(QPainter* painter,
@@ -343,10 +431,18 @@ class PlacementCanvas : public QWidget {
       return;
     }
 
-    painter->setBrush(component.fixed ? QColor(76, 86, 106, 170)
-                                      : QColor(136, 192, 208, 190));
-    painter->setPen(
-        QPen(component.fixed ? QColor(35, 42, 55) : QColor(66, 94, 111), 1));
+    if (component.kind == SnapshotComponentKind::kWellTap) {
+      painter->setBrush(QColor(245, 158, 11, 220));
+      painter->setPen(QPen(QColor(146, 64, 14), 1));
+    } else if (component.kind == SnapshotComponentKind::kEndCap) {
+      painter->setBrush(QColor(16, 185, 129, 220));
+      painter->setPen(QPen(QColor(6, 95, 70), 1));
+    } else {
+      painter->setBrush(component.fixed ? QColor(76, 86, 106, 170)
+                                        : QColor(136, 192, 208, 190));
+      painter->setPen(
+          QPen(component.fixed ? QColor(35, 42, 55) : QColor(66, 94, 111), 1));
+    }
     painter->drawRect(rect);
 
     const double marker_size = std::min(
@@ -387,6 +483,7 @@ class PlacementCanvas : public QWidget {
   double ScreenToWorldY(double y) const { return (pan_y_ - y) / scale_; }
 
   std::vector<SnapshotComponent> components_;
+  std::vector<SnapshotWellRect> well_rects_;
   std::string snapshot_label_ = "Waiting for first placement snapshot";
   std::string hpwl_label_;
   double boundary_llx_ = 0;

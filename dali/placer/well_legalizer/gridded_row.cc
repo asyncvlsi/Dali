@@ -138,7 +138,13 @@ void GriddedRow::ShiftComponent(int x_disp, int y_disp) {
 void GriddedRow::UpdateComponentLocY() {
   for (auto& component_ptr : components_) {
     Macro* macro_ptr = component_ptr->MacroPtr();
-    component_ptr->SetLLY(ly_ + p_well_height_ - macro_ptr->FirstPwellHeight());
+    if (is_orient_N_) {
+      component_ptr->SetLLY(ly_ + p_well_height_ -
+                            macro_ptr->FirstPwellHeight());
+    } else {
+      component_ptr->SetLLY(ly_ + n_well_height_ -
+                            macro_ptr->FirstNwellHeight());
+    }
   }
 }
 
@@ -179,7 +185,8 @@ void GriddedRow::LegalizeCompactX() {
  * this cluster, two-rounds legalization is enough to make the final result
  * legal.
  * ****/
-void GriddedRow::LegalizeLooseX(int space_to_well_tap) {
+void GriddedRow::LegalizeLooseX(int space_to_well_tap, int left_margin,
+                                int right_margin) {
   if (components_.empty()) {
     return;
   }
@@ -188,7 +195,7 @@ void GriddedRow::LegalizeLooseX(int space_to_well_tap) {
       [](const Component* component_ptr0, const Component* component_ptr1) {
         return component_ptr0->LLX() < component_ptr1->LLX();
       });
-  int component_contour = lx_;
+  int component_contour = lx_ + left_margin;
   int res_x;
   for (auto& component : components_) {
     res_x = std::max(component_contour, int(component->LLX()));
@@ -200,7 +207,7 @@ void GriddedRow::LegalizeLooseX(int space_to_well_tap) {
     }
   }
 
-  int ux = lx_ + width_;
+  int ux = lx_ + width_ - right_margin;
   std::sort(
       components_.begin(), components_.end(),
       [](const Component* component_ptr0, const Component* component_ptr1) {
@@ -233,18 +240,44 @@ void GriddedRow::SetOrient(bool is_orient_N) {
 
 void GriddedRow::InsertWellTapCell(Component& tap_cell, int loc) {
   tap_cell_ = &tap_cell;
-  components_.emplace_back(tap_cell_);
-  tap_cell_->SetCenterX(loc);
-  Macro* macro_ptr = tap_cell_->MacroPtr();
+  tap_cells_.push_back(&tap_cell);
+  PlacePhysicalCell(tap_cell, loc);
+}
+
+void GriddedRow::PlacePhysicalCell(Component& cell, int loc) const {
+  cell.SetCenterX(loc);
+  Macro* macro_ptr = cell.MacroPtr();
   int p_well_height = macro_ptr->FirstPwellHeight();
   int n_well_height = macro_ptr->FirstNwellHeight();
   if (is_orient_N_) {
-    tap_cell.SetOrient(N);
-    tap_cell.SetLLY(ly_ + p_well_height_ - p_well_height);
+    cell.SetOrient(N);
+    cell.SetLLY(ly_ + p_well_height_ - p_well_height);
   } else {
-    tap_cell.SetOrient(FS);
-    tap_cell.SetLLY(ly_ + n_well_height_ - n_well_height);
+    cell.SetOrient(FS);
+    cell.SetLLY(ly_ + n_well_height_ - n_well_height);
   }
+}
+
+Component* GriddedRow::WellTapCell() const { return tap_cell_; }
+
+Component* GriddedRow::LeftWellTapCell() const {
+  if (tap_cells_.empty()) {
+    return nullptr;
+  }
+  return *std::min_element(tap_cells_.begin(), tap_cells_.end(),
+                           [](const Component* lhs, const Component* rhs) {
+                             return lhs->LLX() < rhs->LLX();
+                           });
+}
+
+Component* GriddedRow::RightWellTapCell() const {
+  if (tap_cells_.empty()) {
+    return nullptr;
+  }
+  return *std::max_element(tap_cells_.begin(), tap_cells_.end(),
+                           [](const Component* lhs, const Component* rhs) {
+                             return lhs->URX() < rhs->URX();
+                           });
 }
 
 void GriddedRow::UpdateComponentLocationCompact() {
@@ -659,6 +692,31 @@ bool GriddedRow::IsRowLegal() {
     front += component_ptr->Width();
   }
   return front <= URX();
+}
+
+size_t GriddedRow::CountComponentOverlaps() const {
+  std::vector<Component*> components = components_;
+  std::sort(components.begin(), components.end(),
+            [](const Component* lhs, const Component* rhs) {
+              return (lhs->LLX() < rhs->LLX()) ||
+                     (lhs->LLX() == rhs->LLX() && lhs->Id() < rhs->Id());
+            });
+
+  size_t overlap_count = 0;
+  for (size_t i = 0; i < components.size(); ++i) {
+    const Component* lhs = components[i];
+    for (size_t j = i + 1; j < components.size(); ++j) {
+      const Component* rhs = components[j];
+      if (rhs->LLX() >= lhs->URX()) {
+        break;
+      }
+      bool overlaps_in_y = rhs->LLY() < lhs->URY() && rhs->URY() > lhs->LLY();
+      if (overlaps_in_y) {
+        ++overlap_count;
+      }
+    }
+  }
+  return overlap_count;
 }
 
 void GriddedRow::GenSubCellTable(std::ofstream& ost_cluster,

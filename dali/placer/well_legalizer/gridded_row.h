@@ -35,13 +35,14 @@ namespace dali {
 class GriddedRow {
   // clang-format off
   /*
-   * For a gridded row, its overall structure is like this
-   * ┌──────────────────┬──────────────┬──────────────┬─────────────────────────────────────────┬───────────────┬──────────────┬───────────────────┐
-   * │                  │              │              │                                         │               │              │                   │
-   * │ pre_end_cap_cell │ welltap_cell │ordinary_cell │    ordinary cells and welltap cells     │ ordinary_cell │ welltap_cell │ post_end_cap_cell │
-   * │                  │              │              │                                         │               │              │                   │
-   * └──────────────────┴──────────────┴──────────────┴─────────────────────────────────────────┴───────────────┴──────────────┴───────────────────┘
-   * The post end cap cell are optional, they will only be inserted into a gridded row when enable_end_cap_cell is true.
+   * Physical row completion uses this x-order:
+   *
+   *   [pre-end-cap margin][well tap][ordinary cells ...][well tap]
+   *   [post-end-cap margin]
+   *
+   * The row legalizer packs ordinary cells between margins reserved for taps
+   * and end caps. Boundary cells are placed after legalization and are
+   * deliberately not added to components_.
    */
   // clang-format on
   friend class Stripe;
@@ -107,9 +108,20 @@ class GriddedRow {
   void UpdateComponentLocY();
   void LegalizeCompactX(int left);
   void LegalizeCompactX();
-  void LegalizeLooseX(int space_to_well_tap = 0);
+  /**
+   * Legalize ordinary cells within the row's usable x interval.
+   *
+   * The left and right margins remain untouched for boundary cells such as
+   * end caps, which are inserted only after row legalization finishes.
+   */
+  void LegalizeLooseX(int space_to_well_tap = 0, int left_margin = 0,
+                      int right_margin = 0);
   void SetOrient(bool is_orient_N);
   void InsertWellTapCell(Component& tap_cell, int loc);
+  void PlacePhysicalCell(Component& cell, int loc) const;
+  Component* WellTapCell() const;
+  Component* LeftWellTapCell() const;
+  Component* RightWellTapCell() const;
 
   void UpdateComponentLocationCompact();
 
@@ -149,6 +161,8 @@ class GriddedRow {
   void SortComponentRegions();
 
   bool IsRowLegal();
+  /** Count overlapping component rectangles in this row. */
+  size_t CountComponentOverlaps() const;
 
   void GenSubCellTable(std::ofstream& ost_cluster, std::ofstream& ost_sub_cell,
                        std::ofstream& ost_discrepancy,
@@ -168,6 +182,7 @@ class GriddedRow {
   /**** number of tap cells needed, and pointers to tap cells ****/
   int tap_cell_num_ = 0;
   Component* tap_cell_ = nullptr;
+  std::vector<Component*> tap_cells_;
 
   /**** x/y coordinates and dimension ****/
   int lx_ = 0;
