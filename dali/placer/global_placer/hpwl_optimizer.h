@@ -23,14 +23,9 @@
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/Sparse>
 #include <cstddef>
-#include <functional>
-#include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include "dali/circuit/circuit.h"
-#include "dali/common/hash.h"
-#include "dali/placer/global_placer/component_pair_nets.h"
 
 namespace dali {
 
@@ -41,23 +36,11 @@ enum class GlobalAnchorSchedule {
 };
 
 typedef Eigen::Index EgId;
-typedef std::pair<EgId, EgId> PairEgId;
-struct PairEgIdHasher {
-  std::size_t operator()(const PairEgId& key) const {
-    std::size_t seed = 0;
-    HashCombine(seed, key.first);
-    HashCombine(seed, key.second);
-    return seed;
-  }
-};
 // Declares a row-major sparse matrix type of double.
 typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat;
 // A triplet is a simple object representing a non-zero entry as the triplet:
 // row index, column index, value.
 typedef Eigen::Triplet<double> T;
-// A "doublet" is a simple object representing a non-zero entry as: column
-// index, value, for a given row index.
-typedef IndexVal D;
 
 /** Abstract interface for global-placement HPWL optimizers. */
 class HpwlOptimizer {
@@ -178,11 +161,6 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
   // early stop threshold
   double hpwl_early_stop_threshold_ = 1.0;
 
-  std::vector<int> Ax_row_size;
-  std::vector<int> Ay_row_size;
-  std::vector<std::vector<D>> ADx;
-  std::vector<std::vector<D>> ADy;
-
   Eigen::VectorXd vx, vy;
   Eigen::VectorXd bx, by;
   SpMat Ax;
@@ -195,10 +173,6 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
   std::vector<T> coefficients_y_;
   Eigen::ConjugateGradient<SpMat, Eigen::Lower | Eigen::Upper> cg_x_;
   Eigen::ConjugateGradient<SpMat, Eigen::Lower | Eigen::Upper> cg_y_;
-  std::vector<std::vector<ComponentPairNets*>> pair_connect;
-  std::vector<ComponentPairNets> diagonal_pair;
-  std::vector<SpMat::InnerIterator> SpMat_diag_x;
-  std::vector<SpMat::InnerIterator> SpMat_diag_y;
 
   int b2b_update_max_iteration_ = 50;
   size_t net_ignore_threshold_ = 100;
@@ -217,58 +191,6 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
   // pseudo-net weight additional factor for anchor pseudo-net
   double alpha = 0.00;
   double alpha_step = 0.00;
-};
-
-/** Star-model quadratic HPWL optimizer. */
-class StarHpwlOptimizer : public BoundToBoundHpwlOptimizer {
- public:
-  StarHpwlOptimizer(Circuit* ckt_ptr, int num_threads)
-      : BoundToBoundHpwlOptimizer(ckt_ptr, num_threads) {}
-  ~StarHpwlOptimizer() override = default;
-
-  void BuildProblemX() override;
-  void BuildProblemY() override;
-
-  void UpdateAnchorAlpha() override;
-};
-
-/** HPWL-weighted bound-to-bound optimizer variant. */
-class HpwlHpwlOptimizer : public BoundToBoundHpwlOptimizer {
- public:
-  HpwlHpwlOptimizer(Circuit* ckt_ptr, int num_threads)
-      : BoundToBoundHpwlOptimizer(ckt_ptr, num_threads) {}
-  ~HpwlHpwlOptimizer() override = default;
-
-  void BuildProblemX() override;
-  void BuildProblemY() override;
-
-  void UpdateAnchorAlpha() override;
-};
-
-/** Star plus HPWL-weighted optimizer variant with driver/load pairs. */
-class StarHpwlHpwlOptimizer : public BoundToBoundHpwlOptimizer {
- public:
-  StarHpwlHpwlOptimizer(Circuit* ckt_ptr, int num_threads)
-      : BoundToBoundHpwlOptimizer(ckt_ptr, num_threads) {}
-  ~StarHpwlHpwlOptimizer() override = default;
-
-  void InitializeDriverLoadPairs();
-  void Initialize() override;
-
-  void BuildProblemX() override;
-  void BuildProblemY() override;
-
-  void BuildProblemWithAnchorX() override;
-  void BuildProblemWithAnchorY() override;
-
-  double OptimizeQuadraticMetricX(double cg_stop_criterion) override;
-  double OptimizeQuadraticMetricY(double cg_stop_criterion) override;
-
-  void UpdateAnchorAlpha() override;
-
- private:
-  std::vector<ComponentPairNets> component_pair_net_list_;
-  std::unordered_map<PairEgId, EgId, PairEgIdHasher> component_pair_map_;
 };
 
 }  // namespace dali
