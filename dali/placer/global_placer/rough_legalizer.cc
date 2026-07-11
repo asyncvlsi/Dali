@@ -500,7 +500,7 @@ void LookAheadLegalizer::UpdateGridBinState() {
   update_grid_bin_state_time_ += elapsed_time.GetWallTime();
 }
 
-void LookAheadLegalizer::UpdateClusterArea(GridBinCluster& cluster) {
+void LookAheadLegalizer::UpdateClusterArea(OverfilledBinCluster& cluster) {
   cluster.total_component_area = 0;
   cluster.total_white_space = 0;
   for (auto& index : cluster.bin_set) {
@@ -526,7 +526,7 @@ void LookAheadLegalizer::UpdateClusterList() {
       if (grid_bin_mesh[i][j].cluster_visited || !grid_bin_mesh[i][j].over_fill)
         continue;
       GridBinIndex b(i, j);
-      GridBinCluster H;
+      OverfilledBinCluster H;
       H.bin_set.insert(b);
       grid_bin_mesh[i][j].cluster_visited = true;
       cnt = 0;
@@ -558,7 +558,7 @@ void LookAheadLegalizer::UpdateClusterList() {
   update_cluster_list_time_ += elapsed_time.GetWallTime();
 }
 
-std::multiset<GridBinCluster, std::greater<>>::iterator
+std::multiset<OverfilledBinCluster, std::greater<>>::iterator
 LookAheadLegalizer::SelectHotspotCluster() {
   if (cluster_set.empty()) return cluster_set.end();
   auto selected = cluster_set.begin();
@@ -574,7 +574,8 @@ LookAheadLegalizer::SelectHotspotCluster() {
   return selected;
 }
 
-double LookAheadLegalizer::HotspotScore(const GridBinCluster& cluster) const {
+double LookAheadLegalizer::HotspotScore(
+    const OverfilledBinCluster& cluster) const {
   double component_area = static_cast<double>(cluster.total_component_area);
   double white_space = static_cast<double>(cluster.total_white_space);
   double overflow = component_area - placement_density_ * white_space;
@@ -645,7 +646,7 @@ void LookAheadLegalizer::UpdateLargestCluster() {
       if (grid_bin_mesh[i][j].global_placed)
         continue;  // if this grid bin has been roughly legalized
       GridBinIndex b(i, j);
-      GridBinCluster H;
+      OverfilledBinCluster H;
       H.bin_set.insert(b);
       grid_bin_visited[grid_index] = true;
       cnt = 0;

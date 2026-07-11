@@ -72,19 +72,19 @@ struct GridBinIndexHasher {
 };
 
 /** Connected overfilled-bin cluster used by look-ahead legalization. */
-struct GridBinCluster {
+struct OverfilledBinCluster {
  public:
-  GridBinCluster() : total_component_area(0), total_white_space(0) {}
+  OverfilledBinCluster() : total_component_area(0), total_white_space(0) {}
   unsigned long long total_component_area;
   unsigned long long total_white_space;
   std::set<GridBinIndex> bin_set;
-  bool operator<(const GridBinCluster& rhs) const {
+  bool operator<(const OverfilledBinCluster& rhs) const {
     return (total_component_area < rhs.total_component_area);
   }
-  bool operator>(const GridBinCluster& rhs) const {
+  bool operator>(const OverfilledBinCluster& rhs) const {
     return (total_component_area > rhs.total_component_area);
   }
-  bool operator==(const GridBinCluster& rhs) const {
+  bool operator==(const OverfilledBinCluster& rhs) const {
     return (total_component_area == rhs.total_component_area);
   }
 };

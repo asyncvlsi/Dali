@@ -142,11 +142,11 @@ class LookAheadLegalizer : public RoughLegalizer {
 
   void ClearGridBinFlag();
   void UpdateGridBinState();
-  void UpdateClusterArea(GridBinCluster& cluster);
+  void UpdateClusterArea(OverfilledBinCluster& cluster);
   void UpdateClusterList();
-  std::multiset<GridBinCluster, std::greater<>>::iterator
+  std::multiset<OverfilledBinCluster, std::greater<>>::iterator
   SelectHotspotCluster();
-  double HotspotScore(const GridBinCluster& cluster) const;
+  double HotspotScore(const OverfilledBinCluster& cluster) const;
   static const char* HotspotModeName(GlobalLalHotspotMode mode);
   void UpdateLargestCluster();
   uint32_t LookUpWhiteSpace(GridBinIndex const& ll_index,
@@ -191,7 +191,7 @@ class LookAheadLegalizer : public RoughLegalizer {
   std::vector<std::vector<GridBin>> grid_bin_mesh;
   std::vector<std::vector<unsigned long long>> grid_bin_white_space_LUT;
 
-  std::multiset<GridBinCluster, std::greater<>> cluster_set;
+  std::multiset<OverfilledBinCluster, std::greater<>> cluster_set;
   std::queue<SpreadingRegion> spreading_region_queue_;
 
   double update_grid_bin_state_time_ = 0;
