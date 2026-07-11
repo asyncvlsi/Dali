@@ -147,6 +147,9 @@ class Macro {
   /** Return combined N/P-well height for a region. */
   int RegionHeight(int region_id, bool is_flipped = false) const;
 
+  /** Return true when every region has both an N-well and P-well rectangle. */
+  bool HasCompleteWellRegions() const;
+
   /** Return distance between adjacent N/P boundary edges. */
   int AdjacentRegionEdgeDistance(int index, bool is_flipped = false) const;
 

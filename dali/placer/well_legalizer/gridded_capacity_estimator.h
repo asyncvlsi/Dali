@@ -22,6 +22,7 @@ struct GriddedCapacityConfig {
   int reserved_width = 0;
   int minimum_p_well_height = 0;
   int minimum_n_well_height = 0;
+  double target_density = 1.0;
 };
 
 /** Read-only estimate of how components pack into a rectangular region. */
@@ -31,18 +32,21 @@ struct GriddedCapacityEstimate {
   unsigned long long available_gridded_area = 0;
   unsigned long long predicted_overflow_area = 0;
   int usable_row_width = 0;
+  int target_row_width = 0;
   int required_row_height = 0;
   int estimated_row_count = 0;
   int unplaceable_component_count = 0;
+  int single_region_fallback_count = 0;
 };
 
 /**
  * Estimates gridded-row demand without changing component placement.
  *
  * Components are sorted by required N/P-well height and packed into horizontal
- * shelves using first-fit decreasing. Each shelf reserves the configured tap
- * and end-cap width. This deliberately models row-height and row-boundary
- * overhead while remaining much cheaper than trial well legalization.
+ * shelves using a best-fit decreasing heuristic. Each shelf tracks maximum P
+ * and N heights separately and reserves the configured tap/end-cap width. This
+ * models row-height and row-boundary overhead while remaining much cheaper than
+ * trial well legalization.
  */
 class GriddedCapacityEstimator {
  public:

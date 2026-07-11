@@ -189,6 +189,12 @@ int Macro::RegionHeight(int region_id, bool is_flipped) const {
   return p_rects_[region_id].Height() + n_rects_[region_id].Height();
 }
 
+bool Macro::HasCompleteWellRegions() const {
+  return region_count_ > 0 &&
+         n_rects_.size() == static_cast<size_t>(region_count_) &&
+         p_rects_.size() == static_cast<size_t>(region_count_);
+}
+
 /****
  * Distance of NP-edge between Region index and Region index+1
  * @param index

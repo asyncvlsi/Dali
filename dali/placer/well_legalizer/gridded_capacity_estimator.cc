@@ -11,6 +11,8 @@
 #include "dali/placer/well_legalizer/gridded_capacity_estimator.h"
 
 #include <algorithm>
+#include <cmath>
+#include <utility>
 
 #include "dali/common/helper.h"
 
@@ -24,6 +26,8 @@ GriddedCapacityEstimator::GriddedCapacityEstimator(GriddedCapacityConfig config)
               "Minimum P-well height cannot be negative");
   DaliExpects(config_.minimum_n_well_height >= 0,
               "Minimum N-well height cannot be negative");
+  DaliExpects(config_.target_density > 0.0 && config_.target_density <= 1.0,
+              "Gridded capacity target density must be in (0, 1]");
 }
 
 GriddedCapacityEstimate GriddedCapacityEstimator::Estimate(
@@ -35,21 +39,35 @@ GriddedCapacityEstimate GriddedCapacityEstimator::Estimate(
   GriddedCapacityEstimate estimate;
   estimate.usable_row_width =
       std::max(0, region_width - config_.reserved_width);
+  estimate.target_row_width = static_cast<int>(
+      std::floor(estimate.usable_row_width * config_.target_density));
 
   if (region_width > 0) {
     unsigned long long width = static_cast<unsigned long long>(region_width);
-    unsigned long long usable_width =
-        static_cast<unsigned long long>(estimate.usable_row_width);
+    unsigned long long target_width =
+        static_cast<unsigned long long>(estimate.target_row_width);
     // Divide first so area * width cannot overflow on very large designs.
     estimate.available_gridded_area =
-        (raw_whitespace_area / width) * usable_width +
-        (raw_whitespace_area % width) * usable_width / width;
+        (raw_whitespace_area / width) * target_width +
+        (raw_whitespace_area % width) * target_width / width;
   }
 
   struct ComponentDemand {
+    struct RegionDemand {
+      int p_well_height;
+      int n_well_height;
+    };
+
     int width;
-    int row_height;
-    unsigned long long raw_area;
+    std::vector<RegionDemand> regions;
+
+    int TotalHeight() const {
+      int total_height = 0;
+      for (const RegionDemand& region : regions) {
+        total_height += region.p_well_height + region.n_well_height;
+      }
+      return total_height;
+    }
   };
   std::vector<ComponentDemand> demands;
   demands.reserve(components.size());
@@ -60,54 +78,117 @@ GriddedCapacityEstimate GriddedCapacityEstimator::Estimate(
     const Macro* macro = component->MacroPtr();
     DaliExpects(macro != nullptr, "Movable component has no cell master");
 
-    int p_well_height =
-        std::max(macro->FirstPwellHeight(), config_.minimum_p_well_height);
-    int n_well_height =
-        std::max(macro->FirstNwellHeight(), config_.minimum_n_well_height);
-    demands.push_back({component->Width(), p_well_height + n_well_height,
-                       static_cast<unsigned long long>(component->Area())});
-    estimate.raw_component_area += demands.back().raw_area;
+    ComponentDemand demand;
+    demand.width = component->Width();
+    if (macro->HasCompleteWellRegions()) {
+      demand.regions.reserve(macro->RegionCount());
+      for (int region_id = 0; region_id < macro->RegionCount(); ++region_id) {
+        int p_well_height =
+            std::max(macro->PwellHeight(region_id, component->IsFlipped()),
+                     config_.minimum_p_well_height);
+        int n_well_height =
+            std::max(macro->NwellHeight(region_id, component->IsFlipped()),
+                     config_.minimum_n_well_height);
+        demand.regions.push_back({p_well_height, n_well_height});
+      }
+    } else {
+      ++estimate.single_region_fallback_count;
+      int p_well_height =
+          std::max(macro->FirstPwellHeight(), config_.minimum_p_well_height);
+      int n_well_height =
+          std::max(macro->FirstNwellHeight(), config_.minimum_n_well_height);
+      demand.regions.push_back({p_well_height, n_well_height});
+    }
+    demands.push_back(std::move(demand));
+    estimate.raw_component_area +=
+        static_cast<unsigned long long>(component->Area());
   }
 
   std::sort(demands.begin(), demands.end(),
             [](const ComponentDemand& lhs, const ComponentDemand& rhs) {
-              if (lhs.row_height != rhs.row_height) {
-                return lhs.row_height > rhs.row_height;
+              if (lhs.regions.size() != rhs.regions.size()) {
+                return lhs.regions.size() > rhs.regions.size();
+              }
+              if (lhs.TotalHeight() != rhs.TotalHeight()) {
+                return lhs.TotalHeight() > rhs.TotalHeight();
               }
               return lhs.width > rhs.width;
             });
 
   struct Shelf {
     int remaining_width;
-    int height;
+    std::vector<ComponentDemand::RegionDemand> regions;
+
+    int TotalHeight() const {
+      int total_height = 0;
+      for (const ComponentDemand::RegionDemand& region : regions) {
+        total_height += region.p_well_height + region.n_well_height;
+      }
+      return total_height;
+    }
   };
   std::vector<Shelf> shelves;
   unsigned long long horizontal_overflow_area = 0;
   for (const ComponentDemand& demand : demands) {
-    if (demand.width > estimate.usable_row_width ||
-        estimate.usable_row_width == 0) {
+    if (demand.width > estimate.target_row_width ||
+        estimate.target_row_width == 0) {
       ++estimate.unplaceable_component_count;
       horizontal_overflow_area +=
-          static_cast<unsigned long long>(demand.width) * demand.row_height;
+          static_cast<unsigned long long>(demand.width) * demand.TotalHeight();
       continue;
     }
 
-    auto shelf = std::find_if(
-        shelves.begin(), shelves.end(), [&](const Shelf& candidate) {
-          return candidate.remaining_width >= demand.width;
-        });
-    if (shelf == shelves.end()) {
+    auto best_shelf = shelves.end();
+    int best_height_increase = demand.TotalHeight();
+    int best_remaining_width = estimate.target_row_width - demand.width;
+    for (auto shelf = shelves.begin(); shelf != shelves.end(); ++shelf) {
+      if (shelf->remaining_width < demand.width ||
+          shelf->regions.size() != demand.regions.size()) {
+        continue;
+      }
+      int height_increase = 0;
+      for (size_t region_id = 0; region_id < demand.regions.size();
+           ++region_id) {
+        const auto& shelf_region = shelf->regions[region_id];
+        const auto& demand_region = demand.regions[region_id];
+        height_increase +=
+            std::max(shelf_region.p_well_height, demand_region.p_well_height) +
+            std::max(shelf_region.n_well_height, demand_region.n_well_height) -
+            shelf_region.p_well_height - shelf_region.n_well_height;
+      }
+      int remaining_width = shelf->remaining_width - demand.width;
+      if (best_shelf == shelves.end() ||
+          height_increase < best_height_increase ||
+          (height_increase == best_height_increase &&
+           remaining_width < best_remaining_width)) {
+        best_shelf = shelf;
+        best_height_increase = height_increase;
+        best_remaining_width = remaining_width;
+      }
+    }
+
+    if (best_shelf == shelves.end()) {
       shelves.push_back(
-          {estimate.usable_row_width - demand.width, demand.row_height});
-      estimate.required_row_height += demand.row_height;
+          {estimate.target_row_width - demand.width, demand.regions});
+      estimate.required_row_height += demand.TotalHeight();
+      estimate.estimated_row_count += static_cast<int>(demand.regions.size());
     } else {
-      shelf->remaining_width -= demand.width;
+      best_shelf->remaining_width -= demand.width;
+      for (size_t region_id = 0; region_id < demand.regions.size();
+           ++region_id) {
+        auto& shelf_region = best_shelf->regions[region_id];
+        const auto& demand_region = demand.regions[region_id];
+        shelf_region.p_well_height =
+            std::max(shelf_region.p_well_height, demand_region.p_well_height);
+        shelf_region.n_well_height =
+            std::max(shelf_region.n_well_height, demand_region.n_well_height);
+      }
+      estimate.required_row_height += best_height_increase;
     }
   }
 
-  estimate.estimated_row_count = static_cast<int>(shelves.size());
   unsigned long long packed_shelf_area =
-      static_cast<unsigned long long>(estimate.usable_row_width) *
+      static_cast<unsigned long long>(estimate.target_row_width) *
       estimate.required_row_height;
   estimate.required_gridded_area = packed_shelf_area + horizontal_overflow_area;
   estimate.predicted_overflow_area = horizontal_overflow_area;
